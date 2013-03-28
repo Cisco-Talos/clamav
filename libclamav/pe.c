@@ -568,24 +568,22 @@ static int scan_pe_mdb (cli_ctx * ctx, struct cli_exe_section *exe_section)
     for(type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++) {
        if(foundsize[type] && cli_hm_scan(hashset[type], exe_section->rsz, &virname, mdb_sect, type) == CL_VIRUS) {
             cli_append_virus(ctx, virname);
-            if (!SCAN_ALL) {
-                for(type = CLI_HASH_AVAIL_TYPES; type > 0;)
-                    free(hashset[--type]);
-                return CL_VIRUS;
-            }
             ret = CL_VIRUS;
+            if (!SCAN_ALL) {
+                break;
+            }
        }
        if(foundwild[type] && cli_hm_scan_wild(hashset[type], &virname, mdb_sect, type) == CL_VIRUS) {
             cli_append_virus(ctx, virname);
-            if (!SCAN_ALL) {
-                for(type = CLI_HASH_AVAIL_TYPES; type > 0;)
-                    free(hashset[--type]);
-                return CL_VIRUS;
-            }
             ret = CL_VIRUS;
+            if (!SCAN_ALL) {
+                break;
+            }
        }
     }
 
+    for(type = CLI_HASH_AVAIL_TYPES; type > 0;)
+        free(hashset[--type]);
     return ret;
 }
 
