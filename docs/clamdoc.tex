@@ -1,6 +1,6 @@
 %  Clam AntiVirus: User Manual
 %
-%  Copyright (C) 2008 Sourcefire, Inc.
+%  Copyright (C) 2008-2013 Sourcefire, Inc.
 %  Copyright (C) 2002 - 2007 Tomasz Kojm <tkojm*clamav.net>
 %  Version 0.2x corrected by Dennis Leeuw <dleeuw*made-it.com>
 %  Version 0.80 corrected by Tomasz Papszun <tomek*clamav.net>
@@ -71,7 +71,7 @@
     \vspace{3cm}
     \begin{flushright}
 	\rule[-1ex]{8cm}{3pt}\\
-	\huge Clam AntiVirus 0.97.2\\
+	\huge Clam AntiVirus 0.98\\
 	\huge \emph{User Manual}\\
     \end{flushright}
 
@@ -83,7 +83,7 @@
     \noindent
     \begin{boxedminipage}[b]{\textwidth}
     ClamAV User Manual,
-    \copyright \  2007 - 2011 Sourcefire, Inc.
+    \copyright \  2007 - 2013 Sourcefire, Inc.
     Authors: Tomasz Kojm\\
     This document is distributed under the terms of the GNU General
     Public License v2.\\
@@ -581,6 +581,10 @@ N * * * *	/usr/local/bin/freshclam --quiet
 	\item \textbf{MULTISCAN file/directory}\\
 	    Scan file in a standard way or scan directory (recursively) using
 	    multiple threads (to make the scanning faster on SMP machines).
+	\item \textbf{ALLMATCHSCAN file/directory}\\
+	    ALLMATCHSCAN works just like SCAN except that it sets a mode
+	    where, after finding a virus within a file, continues scanning for
+            additional viruses.
 	\item \textbf{INSTREAM}\\
 	    \emph{It is mandatory to prefix this command with \textbf{n} or
 	    \textbf{z}.}\\
@@ -722,6 +726,8 @@ N * * * *	/usr/local/bin/freshclam --quiet
 	zolw@localhost:/tmp$ clamscan malware.zip 
 	malware.zip: Worm.Mydoom.U FOUND
     \end{verbatim}
+    When using the --allmatch(-z) flag, clamscan may print multiple virus
+    \verb+FOUND+ lines for archives and files.
 
     \subsubsection{clamd}
     The output format of \verb+clamd+ is very similar to \verb+clamscan+.
@@ -1572,14 +1578,43 @@ Verification OK.
     \section{Core Team}
 
     \begin{itemize}
+	\item Christoph Cordes \email{<ccordes*clamav.net>}, Germany\\
+	Role: virus database maintainer
+
+	\item Joel Esler \email{<jesler*sourcefire.com>}, USA\\
+	Role: open source community manager
+
+	\item Tom Judge \email{<tjudge*sourcefire.com>}, USA\\
+	Role: infrastucture developer
+
+	\item Steven Morgan \email{<smorgan*sourcefire.com>}, USA\\
+	Role: ClamAV developer
+
+	\item Matthew Olney \email{<molney*sourcefire.com>}, USA\\
+	Role: development manager
+
+	\item David Raynor \email{<draynor*sourcefire.com>}, USA\\
+	Role: ClamAV developer
+
+	\item Shawn Webb \email{<swebb*sourcefire.com>}, USA\\
+	Role: ClamAV developer
+
+	\item Carl Wu \email{<cwu*sourcefire.com>}, USA\\
+	Role: ClamAV developer
+
+	\item Alain Zidouemba \email{<azidouemba*sourcefire.com>}, USA\\
+	Role: virus database maintainer
+      
+    \end{itemize}
+
+    \section{Emeritus Team}
+
+    \begin{itemize}
 	\item aCaB \email{<acab*clamav.net>}, Italy\\
 	Role: virus database maintainer, coder
 
 	\item Mike Cathey \email{<mike*clamav.net>}, USA\\
 	Role: co-sysadmin
-
-	\item Christoph Cordes \email{<ccordes*clamav.net>}, Germany\\
-	Role: virus database maintainer
 
 	\item Diego d'Ambra \email{<diego*clamav.net>}, Denmark\\
 	Role: virus database maintainer
