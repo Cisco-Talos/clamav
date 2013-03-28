@@ -557,11 +557,11 @@ static int scan_pe_mdb (cli_ctx * ctx, struct cli_exe_section *exe_section)
     if (cli_debug_flag) {
         md5 = hashset[CLI_HASH_MD5];
         if (md5)
-            cli_dbgmsg("MDB: %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x:%u\n",
-                md5[0], md5[1], md5[2], md5[3], md5[4], md5[5], md5[6], md5[7], md5[8], md5[9],
-                md5[10], md5[11], md5[12], md5[13], md5[14], md5[15], exe_section->rsz);
+            cli_dbgmsg("MDB: %u:%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\n",
+                exe_section->rsz, md5[0], md5[1], md5[2], md5[3], md5[4], md5[5], md5[6], md5[7],
+                md5[8], md5[9], md5[10], md5[11], md5[12], md5[13], md5[14], md5[15]);
         else
-            cli_dbgmsg("MDB: notgenerated:%u\n", exe_section->rsz);
+            cli_dbgmsg("MDB: %u:notgenerated\n", exe_section->rsz);
     }
 
     /* Do scans */
