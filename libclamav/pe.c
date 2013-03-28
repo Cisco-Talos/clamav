@@ -193,6 +193,8 @@ FSGSTUFF; \
 
 #define DETECT_BROKEN_PE (DETECT_BROKEN && !ctx->corrupted_input)
 
+extern const unsigned int hashlen[];
+
 struct offset_list {
     uint32_t offset;
     struct offset_list *next;
@@ -528,13 +530,14 @@ static int scan_pe_mdb (cli_ctx * ctx, struct cli_exe_section *exe_section)
     int foundwild[CLI_HASH_AVAIL_TYPES];
     enum CLI_HASH_TYPE type;
     int ret = CL_CLEAN;
+    unsigned char * md5 = NULL;
  
     /* pick hashtypes to generate */
     for(type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++) {
         foundsize[type] = cli_hm_have_size(mdb_sect, type, exe_section->rsz);
         foundwild[type] = cli_hm_have_wild(mdb_sect, type);
         if(foundsize[type] || foundwild[type]) {
-            hashset[type] = cli_malloc(cli_hashlength(type));
+            hashset[type] = cli_malloc(hashlen[type]);
             if(!hashset[type]) {
                 cli_errmsg("scan_pe: cli_malloc failed!\n");
                 for(; type > 0;)
@@ -549,6 +552,17 @@ static int scan_pe_mdb (cli_ctx * ctx, struct cli_exe_section *exe_section)
 
     /* Generate hashes */
     cli_hashsect(*ctx->fmap, exe_section, hashset, foundsize, foundwild);
+
+    /* Print hash */
+    if (cli_debug_flag) {
+        md5 = hashset[CLI_HASH_MD5];
+        if (md5)
+            cli_dbgmsg("MDB: %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x:%u\n",
+                md5[0], md5[1], md5[2], md5[3], md5[4], md5[5], md5[6], md5[7], md5[8], md5[9],
+                md5[10], md5[11], md5[12], md5[13], md5[14], md5[15], exe_section->rsz);
+        else
+            cli_dbgmsg("MDB: notgenerated:%u\n", exe_section->rsz);
+    }
 
     /* Do scans */
     for(type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++) {
@@ -1026,10 +1040,9 @@ int cli_scanpe(cli_ctx *ctx)
 	if(exe_sections[i].chr & 0x80000000)
 	    cli_dbgmsg("Section's memory is writeable\n");
 
-	cli_dbgmsg("------------------------------------\n");
-
 	if (DETECT_BROKEN_PE && (!valign || (exe_sections[i].urva % valign))) { /* Bad virtual alignment */
 	    cli_dbgmsg("VirtualAddress is misaligned\n");
+	    cli_dbgmsg("------------------------------------\n");
 	    cli_append_virus(ctx, "Heuristics.Broken.Executable");
 	    free(section_hdr);
 	    free(exe_sections);
@@ -1039,6 +1052,7 @@ int cli_scanpe(cli_ctx *ctx)
 	if (exe_sections[i].rsz) { /* Don't bother with virtual only sections */
 	    if (exe_sections[i].raw >= fsize) { /* really broken */
 	      cli_dbgmsg("Broken PE file - Section %d starts beyond the end of file (Offset@ %lu, Total filesize %lu)\n", i, (unsigned long)exe_sections[i].raw, (unsigned long)fsize);
+	      cli_dbgmsg("------------------------------------\n");
 		free(section_hdr);
 		free(exe_sections);
 		if(DETECT_BROKEN_PE) {
@@ -1056,12 +1070,14 @@ int cli_scanpe(cli_ctx *ctx)
 	        if (ret != CL_CLEAN) {
 	            if (ret != CL_VIRUS)
 	                cli_errmsg("scan_pe: scan_pe_mdb failed: %s!\n", cl_strerror(ret));
+		    cli_dbgmsg("------------------------------------\n");
 	            free(section_hdr);
 	            free(exe_sections);
 	            return ret;
 	        }
 	    }
 	}
+	cli_dbgmsg("------------------------------------\n");
 
 	if (exe_sections[i].urva>>31 || exe_sections[i].uvsz>>31 || (exe_sections[i].rsz && exe_sections[i].uraw>>31) || exe_sections[i].ursz>>31) {
 	    cli_dbgmsg("Found PE values with sign bit set\n");

@@ -65,7 +65,7 @@ int hm_addhash_str(struct cli_matcher *root, const char *strhash, uint32_t size,
     return hm_addhash_bin(root, binhash, type, size, virusname);
 }
 
-static const unsigned int hashlen[] = {
+const unsigned int hashlen[] = {
     CLI_HASHLEN_MD5,
     CLI_HASHLEN_SHA1,
     CLI_HASHLEN_SHA256
