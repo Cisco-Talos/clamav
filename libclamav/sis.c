@@ -128,9 +128,16 @@ enum {
 };
 
 #define GETD(VAR) \
+  /* cli_dbgmsg("GETD smax: %d sleft: %d\n", smax, sleft); */ \
   if (sleft<4) { \
     memcpy(buff, buff+smax-sleft, sleft); \
-    if ((smax=fmap_readn(map, buff+sleft, pos, BUFSIZ-sleft)+sleft)<4) { \
+    smax=fmap_readn(map, buff+sleft, pos, BUFSIZ-sleft); \
+    if (smax < 0) { \
+      cli_dbgmsg("SIS: Read failed during GETD\n"); \
+      free(alangs); \
+      return CL_CLEAN; \
+    } \
+    else if ((smax+=sleft)<4) { \
       cli_dbgmsg("SIS: EOF\n"); \
       free(alangs); \
       return CL_CLEAN; \
@@ -143,9 +150,17 @@ enum {
 
 
 #define GETD2(VAR) {\
+  /* cli_dbgmsg("GETD2 smax: %d sleft: %d\n", smax, sleft); */ \
   if (sleft<4) { \
     memcpy(buff, buff+smax-sleft, sleft); \
-    if ((smax=fmap_readn(map, buff+sleft, pos, BUFSIZ-sleft)+sleft)<4) { \
+    smax=fmap_readn(map, buff+sleft, pos, BUFSIZ-sleft); \
+    if (smax < 0) { \
+      cli_dbgmsg("SIS: Read failed during GETD2\n"); \
+      free(alangs); \
+      free(ptrs); \
+      return CL_CLEAN; \
+    } \
+    else if ((smax+=sleft)<4) { \
       cli_dbgmsg("SIS: EOF\n"); \
       free(alangs); \
       free(ptrs); \
@@ -159,6 +174,7 @@ enum {
 }
 
 #define SKIP(N) \
+  /* cli_dbgmsg("SKIP smax: %d sleft: %d\n", smax, sleft); */ \
   if (sleft>=(N)) sleft-=(N); \
   else { \
     if ((N) < sleft) { \
@@ -168,6 +184,11 @@ enum {
     } \
     pos += (N)-sleft;\
     sleft=smax=fmap_readn(map, buff, pos,BUFSIZ); \
+    if (smax < 0) { \
+      cli_dbgmsg("SIS: Read failed during SKIP\n"); \
+      free(alangs); \
+      return CL_CLEAN; \
+    } \
     pos += smax;\
   }
 
@@ -560,7 +581,7 @@ static inline int getd(struct SISTREAM *s, uint32_t *v) {
     int nread;
     memcpy(s->buff, s->buff + s->smax - s->sleft, s->sleft);
     nread = fmap_readn(s->map, &s->buff[s->sleft], s->pos, BUFSIZ - s->sleft);
-    if ((s->sleft=s->smax=nread + s->sleft)<4) {
+    if ((nread < 0) || ((s->sleft=s->smax=nread + s->sleft)<4)) {
       return 1;
     }
     s->pos += nread;
