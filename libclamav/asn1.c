@@ -862,7 +862,7 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
 		    if(parent) {
                 if (parent->isBlacklisted) {
                     isBlacklisted = 1;
-                    cli_dbgmsg_internal("asn1_parse_mscat: Authenticode certificate %s is revoked. Flagging sample as virus.\n", (parent->name ? parent->name : "(no name)"));
+                    cli_dbgmsg("asn1_parse_mscat: Authenticode certificate %s is revoked. Flagging sample as virus.\n", (parent->name ? parent->name : "(no name)"));
                 }
 
 			x509->codeSign &= parent->codeSign;
