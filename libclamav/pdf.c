@@ -296,6 +296,9 @@ static void pdfobj_flag(struct pdf_struct *pdf, struct pdf_obj *obj, enum pdf_fl
 	case MANY_FILTERS:
 	    s = "more than 2 filters per obj";
 	    break;
+	case DECRYPTABLE_PDF:
+	    s = "decryptable PDF";
+	    break;
     }
     cli_dbgmsg("cli_pdf: %s flagged in object %u %u\n", s, obj->id>>8, obj->id&0xff);
 }
@@ -567,6 +570,8 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
     char *ascii_decoded = NULL;
     int dump = 1;
 
+    cli_dbgmsg("pdf_extract_obj: obj %u %u\n", obj->id>>8, obj->id&0xff);
+
     /* TODO: call bytecode hook here, allow override dumpability */
     if ((!(obj->flags & (1 << OBJ_STREAM)) ||
 	(obj->flags & (1 << OBJ_HASFILTERS)))
@@ -585,7 +590,7 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
     }
     if (!dump)
 	return CL_CLEAN;
-    cli_dbgmsg("cli_pdf: dumping obj %u %u\n", obj->id>>8, obj->id);
+    cli_dbgmsg("cli_pdf: dumping obj %u %u\n", obj->id>>8, obj->id&0xff);
     snprintf(fullname, sizeof(fullname), "%s"PATHSEP"pdf%02u", pdf->dir, pdf->files++);
     fout = open(fullname,O_RDWR|O_CREAT|O_EXCL|O_TRUNC|O_BINARY, 0600);
     if (fout < 0) {
@@ -907,6 +912,7 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	q2 = pdf_nextobject(q, bytesleft);
 	bytesleft -= q2 -q;
 	if (!q2 || bytesleft < 0) {
+            cli_dbgmsg("cli_pdf: %u %u obj: no dictionary\n", obj->id>>8, obj->id&0xff);
 	    return;
 	}
 	q3 = memchr(q-1, '<', q2-q+1);
@@ -922,6 +928,7 @@ static void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	q2 = pdf_nextobject(q, bytesleft);
 	bytesleft -= q2 -q;
 	if (!q2 || bytesleft < 0) {
+            cli_dbgmsg("cli_pdf: %u %u obj: broken dictionary\n", obj->id>>8, obj->id&0xff);
 	    return;
 	}
 	q3 = memchr(q-1, '>', q2-q+1);
@@ -1262,7 +1269,7 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
 	    password_empty = 1;
 	    /* Algorithm 3.2a could be used to recover encryption key */
 	}
-    } else {
+    } else if ((R >= 2) && (R <= 4)) {
 	/* 7.6.3.3 Algorithm 2 */
 	cli_md5_init(&md5);
 	/* empty password, password == padding */
@@ -1276,9 +1283,9 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
 	    cli_md5_update(&md5, &v, 4);
 	}
 	cli_md5_final(result, &md5);
+	if (length > 128)
+	    length = 128;
 	if (R >= 3) {
-	    if (length > 128)
-		length = 128;
 	    for (i=0;i<50;i++) {
 		cli_md5_init(&md5);
 		cli_md5_update(&md5, result, length/8);
@@ -1328,6 +1335,11 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
 	} else {
 	    cli_dbgmsg("cli_pdf: invalid revision %d\n", R);
 	}
+    }
+    else {
+	/* Supported R is in {2,3,4,5} */
+	cli_dbgmsg("cli_pdf: R value out of range\n");
+	return;
     }
     if (password_empty) {
 	cli_dbgmsg("cli_pdf: user password is empty\n");
@@ -1393,6 +1405,10 @@ static void pdf_handle_enc(struct pdf_struct *pdf)
 	R = pdf_readint(q, len, "/R");
 	if (R == ~0u) {
 	    cli_dbgmsg("cli_pdf: invalid R\n");
+	    break;
+	}
+	if ((R > 5) || (R < 2)) {
+	    cli_dbgmsg("cli_pdf: R value outside supported range [2..5]\n");
 	    break;
 	}
 
