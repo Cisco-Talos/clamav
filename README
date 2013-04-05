@@ -1,6 +1,12 @@
 Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
+0.97.8
+------
+ClamAV 0.97.8 addresses several reported potential security bugs.  Thanks to
+Felix Groebert of the Google Security Team for finding and reporting these
+issues.
+
 0.97.7
 ------
 ClamAV 0.97.7 addresses several reported potential security bugs.  Thanks to

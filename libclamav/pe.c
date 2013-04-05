@@ -1868,13 +1868,21 @@ int cli_scanpe(cli_ctx *ctx)
 
 	    if(epbuff[1] != '\xbe' || skew <= 0 || skew > 0xfff) { /* FIXME: legit skews?? */
 		skew = 0; 
-		if(upxfn(src, ssize, dest, &dsize, exe_sections[i].rva, exe_sections[i + 1].rva, vep) >= 0)
-		    upx_success = 1;
-
-	    } else {
+	    }
+	    else if(skew > ssize) {
+		/* Ignore suggested skew larger than section size */
+		cli_dbgmsg("UPX: Ignoring bad skew of %d bytes\n", skew);
+		skew = 0;
+	    }
+	    else {
 		cli_dbgmsg("UPX: UPX1 seems skewed by %d bytes\n", skew);
-		if(upxfn(src + skew, ssize - skew, dest, &dsize, exe_sections[i].rva, exe_sections[i + 1].rva, vep-skew) >= 0 || upxfn(src, ssize, dest, &dsize, exe_sections[i].rva, exe_sections[i + 1].rva, vep) >= 0)
-		    upx_success = 1;
+	    }
+
+	    if(upxfn(src + skew, ssize - skew, dest, &dsize, exe_sections[i].rva, exe_sections[i + 1].rva, vep-skew) >= 0 || upxfn(src, ssize, dest, &dsize, exe_sections[i].rva, exe_sections[i + 1].rva, vep) >= 0) {
+		upx_success = 1;
+	    }
+	    else if(skew && (upxfn(src, ssize, dest, &dsize, exe_sections[i].rva, exe_sections[i + 1].rva, vep) >= 0)) {
+		upx_success = 1;
 	    }
 
 	    if(upx_success)
