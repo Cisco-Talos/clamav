@@ -246,7 +246,7 @@ static void print_ole2_header(ole2_header_t *hdr)
 {
 	int i;
 	
-	if (!hdr) {
+	if (!hdr || !cli_debug_flag) {
 		return;
 	}
 	
