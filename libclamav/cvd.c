@@ -524,6 +524,11 @@ static int cli_cvdverify(FILE *fs, struct cl_cvd *cvdpt, unsigned int skipsig)
     }
 
     md5 = cli_hashstream(fs, NULL, 1);
+    if (md5 == NULL) {
+	cli_dbgmsg("cli_cvdverify: Cannot generate hash, out of memory\n");
+	cl_cvdfree(cvd);
+	return CL_EMEM;
+    }
     cli_dbgmsg("MD5(.tar.gz) = %s\n", md5);
 
     if(strncmp(md5, cvd->md5, 32)) {
