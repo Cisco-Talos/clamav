@@ -366,12 +366,12 @@ static const unsigned int fragsz[] = {
 
 struct MPMAP {
   struct MPMAP *next;
-  unsigned int size;
-  unsigned int usize;
+  size_t size;
+  size_t usize;
 };
 
 struct MP {
-  unsigned int psize;
+  size_t psize;
   struct FRAG *avail[FRAGSBITS];
   union {
       struct MPMAP mpm;
@@ -397,23 +397,23 @@ struct FRAG {
 };
 #define FRAG_OVERHEAD (offsetof(struct FRAG, u.a.fake))
 
-static unsigned int align_to_pagesize(struct MP *mp, unsigned int size) {
+static size_t align_to_pagesize(struct MP *mp, size_t size) {
   return (size / mp->psize + (size % mp->psize != 0)) * mp->psize;
 }
 
-static unsigned int to_bits(unsigned int size) {
+static unsigned int to_bits(size_t size) {
   unsigned int i;
   for(i=0; i<FRAGSBITS; i++)
     if(fragsz[i] >= size) return i;
   return FRAGSBITS;
 }
 
-static unsigned int from_bits(unsigned int bits) {
+static size_t from_bits(unsigned int bits) {
   if (bits >= FRAGSBITS) return 0;
   return fragsz[bits];
 }
 
-static inline unsigned int alignof(unsigned int size)
+static inline unsigned int alignof(size_t size)
 {
     /* conservative estimate of alignment.
      * A struct that needs alignment of 'align' is padded by the compiler
@@ -446,7 +446,7 @@ static inline size_t alignto(size_t p, size_t size)
 
 struct MP *mpool_create() {
   struct MP mp, *mpool_p;
-  unsigned int sz;
+  size_t sz;
   memset(&mp, 0, sizeof(mp));
   mp.psize = cli_getpagesize();
   sz = align_to_pagesize(&mp, MIN_FRAGSIZE);
@@ -470,13 +470,13 @@ struct MP *mpool_create() {
   memset(mpool_p, ALLOCPOISON, sz);
 #endif
   memcpy(mpool_p, &mp, sizeof(mp));
-  spam("Map created @%p->%p - size %u out of %u - voidptr=%u\n", mpool_p, (char *)mpool_p + mp.u.mpm.size, mp.u.mpm.usize, mp.u.mpm.size, SIZEOF_VOID_P);
+  spam("Map created @%p->%p - size %lu out of %lu - voidptr=%lu\n", mpool_p, (char *)mpool_p + mp.u.mpm.size, (unsigned long)mp.u.mpm.usize, (unsigned long)mp.u.mpm.size, (unsigned long)SIZEOF_VOID_P);
   return mpool_p;
 }
 
 void mpool_destroy(struct MP *mp) {
   struct MPMAP *mpm_next = mp->u.mpm.next, *mpm;
-  unsigned int mpmsize;
+  size_t mpmsize;
 
   while((mpm = mpm_next)) {
     mpmsize = mpm->size;
@@ -541,7 +541,7 @@ void mpool_flush(struct MP *mp) {
     }
     used += mp->u.mpm.size;
     cli_dbgmsg("pool memory used: %.3f MB\n", used/(1024*1024.0));
-    spam("Map flushed @%p, in use: %lu\n", mp, used);
+    spam("Map flushed @%p, in use: %lu\n", mp, (unsigned long)used);
 }
 
 int mpool_getstats(const struct cl_engine *eng, size_t *used, size_t *total)
@@ -565,13 +565,13 @@ int mpool_getstats(const struct cl_engine *eng, size_t *used, size_t *total)
   return 0;
 }
 
-static inline unsigned align_increase(unsigned size, unsigned a)
+static inline size_t align_increase(size_t size, size_t a)
 {
     /* we must pad with at most a-1 bytes to align start of struct */
     return size + a - 1;
 }
 
-static void* allocate_aligned(struct MPMAP *mpm, unsigned long size, unsigned align, const char *dbg)
+static void* allocate_aligned(struct MPMAP *mpm, size_t size, unsigned align, const char *dbg)
 {
     /* We could always align the size to maxalign (8), however that wastes
      * space.
@@ -584,8 +584,8 @@ static void* allocate_aligned(struct MPMAP *mpm, unsigned long size, unsigned al
     unsigned p_aligned = alignto(p, align);
     struct FRAG *f = (struct FRAG*)((char*)mpm + p_aligned - FRAG_OVERHEAD);
     unsigned realneed = p_aligned + size - mpm->usize;
-    unsigned sbits = to_bits(realneed);
-    unsigned needed = from_bits(sbits);
+    unsigned int sbits = to_bits(realneed);
+    size_t needed = from_bits(sbits);
 #ifdef CL_DEBUG
     assert(p_aligned + size <= mpm->size);
 #endif
@@ -596,7 +596,7 @@ static void* allocate_aligned(struct MPMAP *mpm, unsigned long size, unsigned al
 #ifdef CL_DEBUG
     assert(mpm->usize <= mpm->size);
 #endif
-    spam("malloc @%p size %u (%s) origsize %u overhead %u\n", f, realneed, dbg, size, needed - size);
+    spam("malloc @%p size %lu (%s) origsize %lu overhead %lu\n", f, (unsigned long)realneed, dbg, (unsigned long)size, (unsigned long)(needed - size));
 #ifdef CL_DEBUG
     f->magic = MPOOLMAGIC;
     memset(&f->u.a.fake, ALLOCPOISON, size);
@@ -605,15 +605,15 @@ static void* allocate_aligned(struct MPMAP *mpm, unsigned long size, unsigned al
 }
 
 void *mpool_malloc(struct MP *mp, size_t size) {
-  unsigned align = alignof(size);
-  unsigned int i, needed = align_increase(size+FRAG_OVERHEAD, align);
+  size_t align = alignof(size);
+  size_t i, needed = align_increase(size+FRAG_OVERHEAD, align);
   const unsigned int sbits = to_bits(needed);
   struct FRAG *f = NULL;
   struct MPMAP *mpm = &mp->u.mpm;
 
   /*  check_all(mp); */
   if (!size || sbits == FRAGSBITS) {
-    cli_errmsg("mpool_malloc(): Attempt to allocate %lu bytes. Please report to http://bugs.clamav.net\n", (unsigned long int) size);
+    cli_errmsg("mpool_malloc(): Attempt to allocate %lu bytes. Please report to http://bugs.clamav.net\n", (unsigned long) size);
     return NULL;
   }
 
@@ -629,12 +629,12 @@ void *mpool_malloc(struct MP *mp, size_t size) {
     f->magic = MPOOLMAGIC;
     memset(&f->u.a.fake, ALLOCPOISON, size);
 #endif
-    spam("malloc @%p size %u (freed) origsize %u overhead %u\n", f, f->u.a.padding + FRAG_OVERHEAD + size, size, needed - size);
+    spam("malloc @%p size %lu (freed) origsize %lu overhead %lu\n", f, (unsigned long)(f->u.a.padding + FRAG_OVERHEAD + size), (unsigned long)size, (unsigned long)(needed - size));
     return &f->u.a.fake;
   }
 
   if (!(needed = from_bits(sbits))) {
-    cli_errmsg("mpool_malloc(): Attempt to allocate %lu bytes. Please report to http://bugs.clamav.net\n", (unsigned long int) size);
+    cli_errmsg("mpool_malloc(): Attempt to allocate %lu bytes. Please report to http://bugs.clamav.net\n", (unsigned long) size);
     return NULL;
   }
 
@@ -656,8 +656,8 @@ void *mpool_malloc(struct MP *mp, size_t size) {
 #else
   if (!(mpm = (struct MPMAP *)VirtualAlloc(NULL, i, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE))) {
 #endif
-    cli_errmsg("mpool_malloc(): Can't allocate memory (%lu bytes).\n", (unsigned long int)i);
-    spam("failed to alloc %u bytes (%u requested)\n", i, size);
+    cli_errmsg("mpool_malloc(): Can't allocate memory (%lu bytes).\n", (unsigned long)i);
+    spam("failed to alloc %lu bytes (%lu requested)\n", (unsigned long)i, (unsigned long)size);
     return NULL;
   }
 #ifdef CL_DEBUG
@@ -699,7 +699,7 @@ void mpool_free(struct MP *mp, void *ptr) {
 }
 
 void *mpool_calloc(struct MP *mp, size_t nmemb, size_t size) {
-  unsigned int needed = nmemb*size;
+  size_t needed = nmemb*size;
   void *ptr;
 
   if(!needed) return NULL;
@@ -710,18 +710,18 @@ void *mpool_calloc(struct MP *mp, size_t nmemb, size_t size) {
 
 void *mpool_realloc(struct MP *mp, void *ptr, size_t size) {
   struct FRAG *f = (struct FRAG *)((char *)ptr - FRAG_OVERHEAD);
-  unsigned int csize;
+  size_t csize;
   void *new_ptr;
   if (!ptr) return mpool_malloc(mp, size);
 
   if(!size || !(csize = from_bits(f->u.a.sbits))) {
-    cli_errmsg("mpool_realloc(): Attempt to allocate %lu bytes. Please report to http://bugs.clamav.net\n", (unsigned long int) size);
+    cli_errmsg("mpool_realloc(): Attempt to allocate %lu bytes. Please report to http://bugs.clamav.net\n", (unsigned long) size);
     return NULL;
   }
   csize -= FRAG_OVERHEAD + f->u.a.padding;
   if (csize >= size && (!f->u.a.sbits || from_bits(f->u.a.sbits-1)-FRAG_OVERHEAD-f->u.a.padding < size)) {
     spam("free @%p\n", f);
-    spam("malloc @%p size %u (self) origsize %u overhead %u\n", f, size + FRAG_OVERHEAD + f->u.a.padding, size, csize-size+FRAG_OVERHEAD+f->u.a.padding);
+    spam("malloc @%p size %lu (self) origsize %lu overhead %lu\n", f, (unsigned long)(size + FRAG_OVERHEAD + f->u.a.padding), (unsigned long)size, (unsigned long)(csize-size+FRAG_OVERHEAD+f->u.a.padding));
     return ptr;
   }
   if (!(new_ptr = mpool_malloc(mp, size)))
@@ -763,7 +763,7 @@ unsigned char *cli_mpool_hex2str(mpool_t *mp, const char *hex) {
 
 char *cli_mpool_strdup(mpool_t *mp, const char *s) {
   char *alloc;
-  unsigned int strsz;
+  size_t strsz;
 
   if(s == NULL) {
     cli_errmsg("cli_mpool_strdup(): s == NULL. Please report to http://bugs.clamav.net\n");
@@ -773,7 +773,7 @@ char *cli_mpool_strdup(mpool_t *mp, const char *s) {
   strsz = strlen(s) + 1;
   alloc = mpool_malloc(mp, strsz);
   if(!alloc)
-    cli_errmsg("cli_mpool_strdup(): Can't allocate memory (%u bytes).\n", (unsigned int) strsz);
+    cli_errmsg("cli_mpool_strdup(): Can't allocate memory (%lu bytes).\n", (unsigned long) strsz);
   else
     memcpy(alloc, s, strsz);
   return alloc;
@@ -820,12 +820,12 @@ char *cli_mpool_virname(mpool_t *mp, const char *virname, unsigned int official)
 
 uint16_t *cli_mpool_hex2ui(mpool_t *mp, const char *hex) {
   uint16_t *str;
-  unsigned int len;
+  size_t len;
   
   len = strlen(hex);
 
   if(len % 2 != 0) {
-    cli_errmsg("cli_mpool_hex2ui(): Malformed hexstring: %s (length: %u)\n", hex, len);
+    cli_errmsg("cli_mpool_hex2ui(): Malformed hexstring: %s (length: %lu)\n", hex, (unsigned long)len);
     return NULL;
   }
 
@@ -843,26 +843,26 @@ uint16_t *cli_mpool_hex2ui(mpool_t *mp, const char *hex) {
 
 #ifdef DEBUGMPOOL
 void mpool_stats(struct MP *mp) {
-  unsigned int i=0, ta=0, tu=0;
+  size_t i=0, ta=0, tu=0;
   struct MPMAP *mpm = &mp->u.mpm;
 
   cli_warnmsg("MEMORY POOL STATISTICS\n map  \tsize\tused\t%\n");
   while(mpm) {
-    cli_warnmsg("- %u\t%u\t%u\t%f%%\n", i, mpm->size, mpm->usize, (float)mpm->usize/(float)mpm->size*100);
+    cli_warnmsg("- %lu\t%lu\t%lu\t%f%%\n", (unsigned long)i, (unsigned long)(mpm->size), (unsigned long)(mpm->usize), (float)mpm->usize/(float)mpm->size*100);
     ta+=mpm->size;
     tu+=mpm->usize;
     i++;
     mpm = mpm->next;
   }
-  cli_warnmsg("MEMORY POOL SUMMARY\nMaps: %u\nTotal: %u\nUsed: %u (%f%%)\n", i, ta, tu, (float)tu/(float)ta*100);
+  cli_warnmsg("MEMORY POOL SUMMARY\nMaps: %lu\nTotal: %lu\nUsed: %lu (%f%%)\n", (unsigned long)i, (unsigned long)ta, (unsigned long)tu, (float)tu/(float)ta*100);
 }
 
 void check_all(struct MP *mp) {
   struct MPMAP *mpm = &mp->u.mpm;
   while(mpm) {
     volatile unsigned char *c = (unsigned char *)mpm;
-    unsigned int len = mpm->size;
-    spam("checking object %p - size %u\n", mpm, len);
+    size_t len = mpm->size;
+    spam("checking object %p - size %lu\n", mpm, (unsigned long)len);
     while (len--) {
       c[len];
     }
@@ -882,4 +882,5 @@ void mpool_getstats() {}
 void mpool_calloc() {}
 
 #endif /* USE_MPOOL */
+
 
