@@ -1737,11 +1737,16 @@ static int cli_loadinfo(FILE *fs, struct cl_engine *engine, unsigned int options
 	    break;
 	}
 	len = strlen(buffer);
-	if(dbio->usebuf && buffer[len - 1] != '\n' && len + 1 < FILEBUFF) {
-	    /* cli_dbgets in buffered mode strips \n */
-	    buffer[len] = '\n';
-	    buffer[len + 1] = 0;
-	}
+    if (!len) {
+        buffer[len] = '\n';
+        buffer[len+1] = 0;
+    } else {
+        if(dbio->usebuf && buffer[len - 1] != '\n' && len + 1 < FILEBUFF) {
+            /* cli_dbgets in buffered mode strips \n */
+            buffer[len] = '\n';
+            buffer[len + 1] = 0;
+        }
+    }
 	sha256_update(&ctx, buffer, strlen(buffer));
 	cli_chomp(buffer);
 	if(!strncmp("ClamAV-VDB:", buffer, 11)) {
