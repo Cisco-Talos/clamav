@@ -352,7 +352,7 @@ static inline int cmp(int64_t *a, ssize_t sa, int64_t *b, ssize_t sb) {
 static int printtree(struct cache_set *cs, struct node *n, int d) {
     int i;
     int ab = 0;
-    if (n == NULL) return 0;
+    if ((n == NULL) || (cs == NULL) || (cs->data == NULL)) return 0;
     if(n == cs->root) { ptree("--------------------------\n"); }
     ab |= printtree(cs, n->right, d+1);
     if(n->right) {
@@ -373,17 +373,17 @@ static int printtree(struct cache_set *cs, struct node *n, int d) {
     }
     if(d){
 	if(!n->up) {
-	    ptree("no parent!\n");
+	    printf("no parent, [node %02u]!\n", n - cs->data);
 	    ab = 1;
 	} else {
 	    if(n->up->left != n && n->up->right != n) {
-		ptree("broken parent\n");
+		printf("broken parent [node %02u, parent node %02u]\n", n - cs->data, n->up - cs->data);
 		ab = 1;
 	    }
 	}
     } else {
 	if(n->up) {
-	    ptree("root with a parent!\n");
+	    printf("root with a parent, [node %02u]!\n", n - cs->data);
 	    ab = 1;
 	}
     }
@@ -392,6 +392,81 @@ static int printtree(struct cache_set *cs, struct node *n, int d) {
 }
 #else
 #define printtree(a,b,c) (0)
+#endif
+
+/* For troubleshooting only; prints out one specific node */
+/* #define PRINT_NODE */
+#ifdef PRINT_NODE
+static void printnode(const char *prefix, struct cache_set *cs, struct node *n) {
+    if (!prefix || !cs || !cs->data) {
+        printf("bad args!\n");
+        return;
+    }
+    if (!n) {
+        printf("no node!\n");
+        return;
+    }
+    printf("%s node [%02u]:", prefix, n - cs->data);
+    printf(" size=%lu digest=%llx,%llx\n", (unsigned long)(n->size), n->digest[0], n->digest[1]);
+    printf("\tleft=");
+    if(n->left)
+        printf("%02u ", n->left - cs->data);
+    else
+        printf("NULL ");
+    printf("right=");
+    if(n->right)
+        printf("%02u ", n->right - cs->data);
+    else
+        printf("NULL ");
+    printf("up=");
+    if(n->up)
+        printf("%02u ", n->up - cs->data);
+    else
+        printf("NULL ");
+
+    printf("\tprev=");
+    if(n->prev)
+        printf("%02u ", n->prev - cs->data);
+    else
+        printf("NULL ");
+    printf("next=");
+    if(n->next)
+        printf("%02u\n", n->next - cs->data);
+    else
+        printf("NULL\n");
+}
+#else
+#define printnode(a,b,c) (0)
+#endif
+
+/* #define PRINT_CHAINS */
+#ifdef PRINT_CHAINS
+/* For troubleshooting only, print the chain forwards and back */
+static inline void printchain(const char *prefix, struct cache_set *cs) {
+    if (!cs || !cs->data) return;
+    if (prefix) printf("%s: ", prefix);
+    printf("chain by next: ");
+    {
+        unsigned int i = 0;
+        struct node *x = cs->first;
+        while(x) {
+            printf("%02d,", x - cs->data);
+            x=x->next;
+            i++;
+        }
+        printf(" [count=%u]\nchain by prev: ", i);
+        x=cs->last;
+        i=0;
+        while(x) {
+            printf("%02d,", x - cs->data);
+            x=x->prev;
+            i++;
+        }
+        printf(" [count=%u]\n", i);
+    }
+}
+#else
+#define printchain(a,b) (0)
 #endif
 
 /* Looks up a node and splays it up to the root of the tree */
@@ -463,21 +538,7 @@ static inline int cacheset_lookup(struct cache_set *cs, unsigned char *md5, size
 	struct node *o = cs->root->prev, *p = cs->root, *q = cs->root->next;
 #ifdef PRINT_CHAINS
 	printf("promoting %02d\n", p - cs->data);
-	{
-	    struct node *x = cs->first;
-	    printf("before: ");
-	    while(x) {
-		printf("%02d,", x - cs->data);
-		x=x->next;
-	    }
-	    printf(" --- ");
-	    x=cs->last;
-	    while(x) {
-		printf("%02d,", x - cs->data);
-		x=x->prev;
-	    }
-	    printf("\n");
-	}
+	printchain("before", cs);
 #endif
     	if(q) {
 	    if(o)
@@ -491,21 +552,7 @@ static inline int cacheset_lookup(struct cache_set *cs, unsigned char *md5, size
 	    cs->last = p;
 	}
 #ifdef PRINT_CHAINS
-	{
-	    struct node *x = cs->first;
-	    printf("after : ");
-	    while(x) {
-		printf("%02d,", x - cs->data);
-		x=x->next;
-	    }
-	    printf(" --- ");
-	    x=cs->last;
-	    while(x) {
-		printf("%02d,", x - cs->data);
-		x=x->prev;
-	    }
-	    printf("\n");
-	}
+	printchain("after", cs);
 #endif
 	if(reclevel >= p->minrec)
 	    return 1;
@@ -537,10 +584,16 @@ static inline void cacheset_add(struct cache_set *cs, unsigned char *md5, size_t
     while(newnode) {
         if(!newnode->right && !newnode->left)
             break;
-        newnode = newnode->next;
-        if(newnode == newnode->next) {
-            cli_errmsg("cacheset_add: cache chain in a bad state\n");
-            return;
+        if(newnode->next) {
+            if(newnode == newnode->next) {
+                cli_errmsg("cacheset_add: cache chain in a bad state\n");
+                return;
+            }
+            newnode = newnode->next;
+        }
+        else {
+	    cli_warnmsg("cacheset_add: end of chain reached\n");
+	    return;
         }
     }
     if(!newnode) {
@@ -599,7 +652,9 @@ static inline void cacheset_add(struct cache_set *cs, unsigned char *md5, size_t
 	cli_errmsg("cacheset_add: inconsistent tree after adding newnode, good luck\n");
 	return;
     }
+    printnode("newnode", cs, newnode);
 }
+
 /* If the hash is not present nothing happens other than splaying the tree.
    Otherwise the identified node is removed from the tree and then placed back at 
    the front of the chain. */
@@ -616,6 +671,7 @@ static inline void cacheset_remove(struct cache_set *cs, unsigned char *md5, siz
 
     ptree("cacheset_remove: node found and splayed to root\n");
     targetnode = cs->root;
+    printnode("targetnode", cs, targetnode);
 
     /* First fix the tree */
     if(targetnode->left == NULL) {
@@ -630,15 +686,19 @@ static inline void cacheset_remove(struct cache_set *cs, unsigned char *md5, siz
         cs->root->up = NULL;
         /* splay tree, expecting not found, bringing rightmost member to root */
         splay(hash, size, cs);
-        
+
         if (targetnode->right) {
             /* reattach right tree to clean right-side attach point */
             reattachnode = cs->root;
             while (reattachnode->right) 
                 reattachnode = reattachnode->right; /* shouldn't happen, but safer in case of dupe */
             reattachnode->right = targetnode->right;
+            targetnode->right->up = reattachnode;
         }
     }
+    targetnode->size = (size_t)0;
+    targetnode->digest[0] = 0;
+    targetnode->digest[1] = 0;
     targetnode->up = NULL;
     targetnode->left = NULL;
     targetnode->right = NULL;
@@ -659,6 +719,12 @@ static inline void cacheset_remove(struct cache_set *cs, unsigned char *md5, siz
         cs->first = targetnode;
     }
     targetnode->prev = NULL;
+
+    printnode("root", cs, cs->root);
+    printnode("first", cs, cs->first);
+    printnode("last", cs, cs->last);
+
+    printchain("remove (after)", cs);
 }
 #endif /* USE_SPLAY */
 
@@ -733,6 +799,8 @@ static int cache_lookup_hash(unsigned char *md5, size_t len, struct CACHE *cache
 	return ret;
     }
 
+    /* cli_warnmsg("cache_lookup_hash: key is %u\n", key); */
+
     ret = (cacheset_lookup(&c->cacheset, md5, len, reclevel)) ? CL_CLEAN : CL_VIRUS;
     pthread_mutex_unlock(&c->mutex);
     /* if(ret == CL_CLEAN) cli_warnmsg("cached\n"); */
@@ -757,6 +825,8 @@ void cache_add(unsigned char *md5, size_t size, cli_ctx *ctx) {
 	return;
     }
 
+    /* cli_warnmsg("cache_add: key is %u\n", key); */
+
 #ifdef USE_LRUHASHCACHE
     cacheset_add(&c->cacheset, md5, size, ctx->engine->mempool);
 #else
@@ -779,6 +849,8 @@ void cache_remove(unsigned char *md5, size_t size, const struct cl_engine *engin
 
     if(!engine || !engine->cache)
        return;
+
+    /* cli_warnmsg("cache_remove: key is %u\n", key); */
 
     c = &engine->cache[key];
     if(pthread_mutex_lock(&c->mutex)) {
