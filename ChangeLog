@@ -1,3 +1,7 @@
+Fri Apr 5 17:36:54 EDT 2013 (dar)
+------------------------------------
+ * libclamav: Bugs reported by Felix Groebert of the Google Security Team
+
 Thu Feb 28 13:55:04 EDT 2013 (dar)
 ------------------------------------
  * libclamav/pe_icons.c: introduce LOGPARSEICONDETAILS define to reduce parseicon logging in default build
