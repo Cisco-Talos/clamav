@@ -53,7 +53,8 @@ static const void *needblock(const iso9660_t *iso, unsigned int block, int temp)
 
 static int iso_scan_file(const iso9660_t *iso, unsigned int block, unsigned int len) {
     char *tmpf;
-    int fd, ret;
+    int fd, ret = CL_SUCCESS;
+
     if(cli_gentempfd(iso->ctx->engine->tmpdir, &tmpf, &fd) != CL_SUCCESS)
         return CL_ETMPFILE;
 
@@ -64,28 +65,25 @@ static int iso_scan_file(const iso9660_t *iso, unsigned int block, unsigned int 
         if(!buf) {
             /* Block outside file */
             cli_dbgmsg("iso_scan_file: cannot dump block outside file, ISO may be truncated\n");
-            return CL_EFORMAT;
+            ret = CL_EFORMAT;
+            break;
         }
         if(cli_writen(fd, buf, todo) != todo) {
-            close(fd);
-            ret = cli_unlink(tmpf);
-            free(tmpf);
-            if(ret)
-                return CL_EUNLINK;
-            return CL_EWRITE;
+            cli_warnmsg("iso_scan_file: Can't write to file %s\n", tmpf);
+            ret = CL_EWRITE;
+            break;
         }
         len -= todo;
         block++;
     }
 
-    ret = cli_magic_scandesc(fd, iso->ctx);
+    if (!len)
+        ret = cli_magic_scandesc(fd, iso->ctx);
 
     close(fd);
-
     if(!iso->ctx->engine->keeptmp) {
 	if(cli_unlink(tmpf)) {
-	    free(tmpf);
-	    return CL_EUNLINK;
+	    ret = CL_EUNLINK;
 	}
     }
 
