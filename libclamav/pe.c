@@ -1162,6 +1162,7 @@ int cli_scanpe(cli_ctx *ctx)
     bc_ctx = cli_bytecode_context_alloc();
     if (!bc_ctx) {
 	cli_errmsg("cli_scanpe: can't allocate memory for bc_ctx\n");
+	free(exe_sections);
 	return CL_EMEM;
     }
     cli_bytecode_context_setpe(bc_ctx, &pedata, exe_sections);
