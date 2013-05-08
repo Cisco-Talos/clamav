@@ -820,12 +820,10 @@ static int vba_scandata(const unsigned char *data, unsigned int len, cli_ctx *ct
     ret = cli_scanbuff(data, len, 0, ctx, CL_TYPE_MSOLE2, mdata);
 
     if(ret != CL_VIRUS || SCAN_ALL) {
-	if (SCAN_ALL)
-	    viruses_found++;
 	ret = cli_lsig_eval(ctx, troot, &tmdata, NULL, NULL);
+	if (ret == CL_VIRUS && SCAN_ALL)
+	    viruses_found++;
 	if(ret != CL_VIRUS || SCAN_ALL)
-	    if (SCAN_ALL)
-		viruses_found++;
 	    ret = cli_lsig_eval(ctx, groot, &gmdata, NULL, NULL);
     }
     cli_ac_freedata(&tmdata);
