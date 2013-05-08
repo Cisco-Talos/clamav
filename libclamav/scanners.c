@@ -818,20 +818,21 @@ static int vba_scandata(const unsigned char *data, unsigned int len, cli_ctx *ct
     mdata[1] = &gmdata;
 
     ret = cli_scanbuff(data, len, 0, ctx, CL_TYPE_MSOLE2, mdata);
-
-    if(ret != CL_VIRUS || SCAN_ALL) {
+    if (ret == CL_VIRUS)
+	viruses_found++;
+    
+    if (ret == CL_CLEAN || (ret == CL_VIRUS && SCAN_ALL)) {
 	ret = cli_lsig_eval(ctx, troot, &tmdata, NULL, NULL);
-	if (ret == CL_VIRUS && SCAN_ALL)
+	if (ret == CL_VIRUS)
 	    viruses_found++;
-	if(ret != CL_VIRUS || SCAN_ALL)
+        
+	if (ret == CL_CLEAN || (ret == CL_VIRUS && SCAN_ALL))
 	    ret = cli_lsig_eval(ctx, groot, &gmdata, NULL, NULL);
     }
     cli_ac_freedata(&tmdata);
     cli_ac_freedata(&gmdata);
 
-    if (viruses_found)
-	return CL_VIRUS;
-    return ret;
+    return (ret != CL_CLEAN)?ret:viruses_found?CL_VIRUS:CL_CLEAN;
 }
 
 static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
