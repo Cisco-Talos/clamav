@@ -476,12 +476,12 @@ int cli_elfheader(fmap_t *map, struct cli_exe_info *elfinfo)
     }
 
     if(format == 2) {
-	    struct elf_file_hdr64 file_hdr64;
-	if(!fmap_readn(map, &file_hdr64, 0, sizeof(file_hdr64)) != sizeof(file_hdr64)) {
-	    /* Not an ELF file? */
-	    cli_dbgmsg("ELF: Can't read file header\n");
-	    return -1; 
-	}
+        struct elf_file_hdr64 file_hdr64;
+        if(fmap_readn(map, &file_hdr64, 0, sizeof(file_hdr64)) != sizeof(file_hdr64)) {
+            /* Not an ELF file? */
+            cli_dbgmsg("ELF: Can't read file header\n");
+            return -1;
+        }
 	/* it's enough for us to handle ELF64 as 32 */
 	file_hdr.e_entry = file_hdr64.e_entry;
         file_hdr.e_phoff = file_hdr64.e_phoff;
