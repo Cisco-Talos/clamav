@@ -99,7 +99,7 @@ static int jpeg_check_photoshop_8bim(int fd, cli_ctx *ctx)
 
 	if (memcmp(bim, "8BIM", 4) != 0) {
 		bim[4] = '\0';
-		cli_dbgmsg("missed 8bim: %s\n", bim);
+		cli_dbgmsg("missed 8bim\n");
 		return -1;
 	}
 
