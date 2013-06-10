@@ -1856,7 +1856,7 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
 {
 	int ret = CL_CLEAN, nret = CL_CLEAN;
 	struct cli_matched_type *ftoffset = NULL, *fpt;
-	uint32_t lastzip, lastrar;
+	uint32_t lastrar;
 	struct cli_exe_info peinfo;
 	unsigned int acmode = AC_SCAN_VIR, break_loop = 0;
 	fmap_t *map = *ctx->fmap;
@@ -1875,7 +1875,7 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
     if(ret >= CL_TYPENO) {
 	ctx->recursion++;
 	if(nret != CL_VIRUS) {
-	    lastzip = lastrar = 0xdeadbeef;
+	    lastrar = 0xdeadbeef;
 	    fpt = ftoffset;
 	    while(fpt) {
 		if(fpt->offset) switch(fpt->type) {
