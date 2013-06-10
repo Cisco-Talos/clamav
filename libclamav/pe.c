@@ -1290,9 +1290,10 @@ int cli_scanpe(cli_ctx *ctx)
 	    case KZSLOOP:
 		if (op==kzdsize+0x48 && *kzcode==0x75 && kzlen-(int8_t)kzcode[1]-3<=kzinitlen && kzlen-(int8_t)kzcode[1]>=kzxorlen) {
 		    cli_append_virus(ctx,"Heuristics.W32.Kriz");
-		    free(exe_sections);
-		    if (!SCAN_ALL)
+		    if (!SCAN_ALL) {
+		        free(exe_sections);
 			return CL_VIRUS;
+		    }
 		    viruses_found++;
 		}
 		cli_dbgmsg("kriz: loop out of bounds, corrupted sample?\n");
@@ -1319,9 +1320,10 @@ int cli_scanpe(cli_ctx *ctx)
 	    if((tbuff = fmap_need_off_once(map, exe_sections[nsections - 1].raw + rsize - bw, 4096))) {
 		if(cli_memstr(tbuff, 4091, "\xe8\x2c\x61\x00\x00", 5)) {
 		    cli_append_virus(ctx, dam ? "Heuristics.W32.Magistr.A.dam" : "Heuristics.W32.Magistr.A");
-		    free(exe_sections);
-		    if (!SCAN_ALL)
+		    if (!SCAN_ALL) {
+		        free(exe_sections);
 			return CL_VIRUS;
+		    }
 		    viruses_found++;
 		}
 	    }
@@ -1333,9 +1335,10 @@ int cli_scanpe(cli_ctx *ctx)
 	    if((tbuff = fmap_need_off_once(map, exe_sections[nsections - 1].raw + rsize - bw, 4096))) {
 		if(cli_memstr(tbuff, 4091, "\xe8\x04\x72\x00\x00", 5)) {
 		    cli_append_virus(ctx,dam ? "Heuristics.W32.Magistr.B.dam" : "Heuristics.W32.Magistr.B");
-		    free(exe_sections);
-		    if (!SCAN_ALL)
+		    if (!SCAN_ALL) {
+		        free(exe_sections);
 			return CL_VIRUS;
+		    }
 		    viruses_found++;
 		} 
 	    }
@@ -1383,10 +1386,11 @@ int cli_scanpe(cli_ctx *ctx)
 	    if(!(code = fmap_need_off_once(map, jumps[i], 9))) continue;
 	    if((jump=cli_readint32(code))==0x60ec8b55 || (code[4]==0x0ec && ((jump==0x83ec8b55 && code[6]==0x60) || (jump==0x81ec8b55 && !code[7] && !code[8])))) {
 		cli_append_virus(ctx,"Heuristics.W32.Polipos.A");
-		free(jumps);
-		free(exe_sections);
-		if (!SCAN_ALL)
+		if (!SCAN_ALL) {
+		    free(jumps);
+		    free(exe_sections);
 		    return CL_VIRUS;
+		}
 		viruses_found++;
 	    }
 	}
