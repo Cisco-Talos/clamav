@@ -106,7 +106,7 @@ void hash_callback(int fd, unsigned long long size, const unsigned char *md5, co
 int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data)
 {
     struct scan_cb_data *scandata = data->data;
-    const char *virname;
+    const char *virname = NULL;
     const char **virpp = &virname;
     int ret;
     int type = scandata->type;
@@ -234,7 +234,7 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
 
     if (scandata->options & CL_SCAN_ALLMATCHES) {
 	virpp = (const char **)*virpp; /* temp hack for scanall mode until api augmentation */
-	virname = virpp[0];
+	if (virpp) virname = virpp[0];
     }
 
     if (thrmgr_group_need_terminate(scandata->conn->group)) {
@@ -243,6 +243,11 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
 	    free((void *)virpp);
 	logg("*Client disconnected while scanjob was active\n");
 	return ret == CL_ETIMEOUT ? ret : CL_BREAK;
+    }
+
+    if ((ret == CL_VIRUS) && (virname == NULL)) {
+	logg("*%s: reported infected but no virname returned!\n", filename);
+	ret = CL_EMEM;
     }
 
     if (ret == CL_VIRUS) {
