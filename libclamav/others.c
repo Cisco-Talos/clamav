@@ -841,17 +841,19 @@ void cli_append_virus(cli_ctx * ctx, const char * virname)
 	return;
     if (SCAN_ALL) {
 	if (ctx->size_viruses == 0) {
-	    ctx->size_viruses = 2;
 	    if (!(ctx->virname = malloc(ctx->size_viruses * sizeof(char *)))) {
 		cli_errmsg("cli_append_virus: fails on malloc() - virus %s virname not appended.\n", virname);
 		return;
 	    }
+	    ctx->size_viruses = 2;
 	} else if (ctx->num_viruses+1 == ctx->size_viruses) {
-	    ctx->size_viruses *= 2;
-	    if ((ctx->virname = realloc((void *)ctx->virname, ctx->size_viruses * sizeof (char *))) == NULL) {
+	    void * newptr = NULL;
+	    if ((newptr = realloc((void *)ctx->virname, 2 * ctx->size_viruses * sizeof (char *))) == NULL) {
 		cli_errmsg("cli_append_virus: fails on realloc() - virus %s virname not appended.\n", virname);
 		return;
 	    }
+	    ctx->virname = newptr;
+	    ctx->size_viruses *= 2;
 	}
 	ctx->virname[ctx->num_viruses++] = virname;
 	ctx->virname[ctx->num_viruses] = NULL;
