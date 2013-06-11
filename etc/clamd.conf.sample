@@ -212,6 +212,11 @@ Example
 # Default: no
 #LeaveTemporaryFiles yes
 
+# Permit use of the ALLMATCHSCAN command. If set to no, clamd will reject
+# any ALLMATCHSCAN command as invalid.
+# Default: yes
+#AllowAllMatchScan no
+
 # Detect Possibly Unwanted Applications.
 # Default: no
 #DetectPUA yes
