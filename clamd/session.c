@@ -362,13 +362,18 @@ int command(client_conn_t *conn, int *virus)
 	     cli_unlink(conn->filename);
 	     return ret;
 	 case COMMAND_ALLMATCHSCAN:
-	     thrmgr_setactivetask(NULL, "ALLMATCHSCAN");
-	     scandata.options |= CL_SCAN_ALLMATCHES;
-	     type = TYPE_SCAN;
-	     break;
+	     if (!optget(opts, "AllowAllMatchScan")->enabled) {
+		logg("$Rejecting ALLMATCHSCAN command.\n");
+		conn_reply(conn, conn->filename, "ALLMATCHSCAN command disabled by clamd configuration.", "ERROR");
+		return 1;
+	    }
+	    thrmgr_setactivetask(NULL, "ALLMATCHSCAN");
+	    scandata.options |= CL_SCAN_ALLMATCHES;
+	    type = TYPE_SCAN;
+	    break;
 	 default:
-	     logg("!Invalid command distpached: %d\n", conn->cmdtype);
-	     return 1;
+	    logg("!Invalid command dispatched: %d\n", conn->cmdtype);
+	    return 1;
      }
 
      scandata.type = type;
