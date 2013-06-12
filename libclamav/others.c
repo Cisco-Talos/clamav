@@ -841,7 +841,7 @@ void cli_append_virus(cli_ctx * ctx, const char * virname)
 	return;
     if (SCAN_ALL) {
 	if (ctx->size_viruses == 0) {
-	    if (!(ctx->virname = malloc(ctx->size_viruses * sizeof(char *)))) {
+	    if (!(ctx->virname = malloc(2 * sizeof(char *)))) {
 		cli_errmsg("cli_append_virus: fails on malloc() - virus %s virname not appended.\n", virname);
 		return;
 	    }
