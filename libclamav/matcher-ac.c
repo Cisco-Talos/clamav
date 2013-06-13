@@ -1033,6 +1033,7 @@ void cli_ac_freedata(struct cli_ac_data *data)
 	    }
 	}
 	free(data->offmatrix);
+	data->offmatrix = NULL;
 	data->partsigs = 0;
     }
 
@@ -1052,6 +1053,7 @@ void cli_ac_freedata(struct cli_ac_data *data)
     }
 }
 
+/* returns only CL_SUCCESS or CL_EMEM */
 inline static int ac_addtype(struct cli_matched_type **list, cli_file_t type, off_t offset, const cli_ctx *ctx)
 {
 	struct cli_matched_type *tnode, *tnode_last;
@@ -1151,8 +1153,8 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 	struct cli_ac_patt *patt, *pt, *faillist;
         uint32_t i, bp, realoff, matchend;
 	uint16_t j;
+	uint8_t found, viruses_found = 0;
 	int32_t **offmatrix, swp;
-	uint8_t found;
 	int type = CL_CLEAN;
 	struct cli_ac_result *newres;
 
@@ -1244,6 +1246,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 			}
 			if(pt->sigid) { /* it's a partial signature */
 
+			    /* if 2nd or later part, confirm some prior part has matched */
 			    if(pt->partno != 1 && (!mdata->offmatrix[pt->sigid - 1] || !mdata->offmatrix[pt->sigid - 1][pt->partno - 2][0])) {
 				pt = pt->next_same;
 				continue;
@@ -1252,6 +1255,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 			    if(pt->partno + 1 > mdata->min_partno)
 				mdata->min_partno = pt->partno + 1;
 
+			    /* sparsely populated matrix, so allocate and initialize if NULL */
 			    if(!mdata->offmatrix[pt->sigid - 1]) {
 				mdata->offmatrix[pt->sigid - 1] = cli_malloc(pt->parts * sizeof(int32_t *));
 				if(!mdata->offmatrix[pt->sigid - 1]) {
@@ -1306,7 +1310,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 
 			    if(pt->partno == 1 || (found && (pt->partno != pt->parts))) {
 				if(offmatrix[pt->partno - 1][0] == CLI_DEFAULT_AC_TRACKLEN + 1)
-				    offmatrix[pt->partno - 1][0] = 1;
+				    offmatrix[pt->partno - 1][0] = 1; /* wrap, ends up at 2 */
 				offmatrix[pt->partno - 1][0]++;
 				offmatrix[pt->partno - 1][offmatrix[pt->partno - 1][0]] = offset + matchend;
 
@@ -1355,12 +1359,12 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 					pt = pt->next_same;
 					continue;
 				    } else {
-					if(virname) {
-					    if (ctx && SCAN_ALL && virname == ctx->virname)
-						cli_append_virus(ctx, (const char *)pt->virname);
-					    else
-						*virname = pt->virname;
+					if(ctx && SCAN_ALL) {
+					    cli_append_virus(ctx, (const char *)pt->virname);
+					    viruses_found = 1;
 					}
+					if (virname)
+					    *virname = pt->virname;
 					if(customdata)
 					    *customdata = pt->customdata;
 					if (!ctx || !SCAN_ALL)
@@ -1405,12 +1409,12 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 				    pt = pt->next_same;
 				    continue;
 				} else {
-				    if(virname) {
-					if (ctx && SCAN_ALL && virname == ctx->virname)
-					    cli_append_virus(ctx, pt->virname);
-					else
-					    *virname = pt->virname;
+				    if(ctx && SCAN_ALL) {
+					cli_append_virus(ctx, (const char *)pt->virname);
+					viruses_found = 1;
 				    }
+				    if (virname)
+					*virname = pt->virname;
 				    if(customdata)
 					*customdata = pt->customdata;
 				    if (!ctx || !SCAN_ALL)
@@ -1428,6 +1432,8 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 	}
     }
 
+    if (viruses_found)
+	return CL_VIRUS;
     return (mode & AC_SCAN_FT) ? type : CL_CLEAN;
 }
 

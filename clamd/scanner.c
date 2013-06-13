@@ -239,14 +239,14 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
 
     if (thrmgr_group_need_terminate(scandata->conn->group)) {
 	free(filename);
-	if (ret == CL_VIRUS && scandata->options & CL_SCAN_ALLMATCHES)
+	if (scandata->options & CL_SCAN_ALLMATCHES)
 	    free((void *)virpp);
 	logg("*Client disconnected while scanjob was active\n");
 	return ret == CL_ETIMEOUT ? ret : CL_BREAK;
     }
 
     if ((ret == CL_VIRUS) && (virname == NULL)) {
-	logg("*%s: reported infected but no virname returned!\n", filename);
+	logg("*%s: reported CL_VIRUS but no virname returned!\n", filename);
 	ret = CL_EMEM;
     }
 
@@ -282,6 +282,8 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
     } else if (ret != CL_CLEAN) {
 	scandata->errors++;
 	if (conn_reply(scandata->conn, filename, cl_strerror(ret), "ERROR") == -1) {
+	    if(scandata->options & CL_SCAN_ALLMATCHES)
+		free((void *)virpp);
 	    free(filename);
 	    return CL_ETIMEOUT;
 	}
@@ -291,7 +293,7 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
     }
 
     free(filename);
-    if (ret == CL_VIRUS && scandata->options & CL_SCAN_ALLMATCHES)
+    if (scandata->options & CL_SCAN_ALLMATCHES)
 	free((void *)virpp);
     if(ret == CL_EMEM) /* stop scanning */
 	return ret;
