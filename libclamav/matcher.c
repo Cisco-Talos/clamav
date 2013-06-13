@@ -146,9 +146,9 @@ static inline int matcher_run(const struct cli_matcher *root,
 	}
     }
     PERF_LOG_TRIES(acmode, 0, length);
-    ret = cli_ac_scanbuff(buffer, length, virname, NULL, acres, root, mdata, offset, ftype, ftoffset, acmode, NULL);
+    ret = cli_ac_scanbuff(buffer, length, virname, NULL, acres, root, mdata, offset, ftype, ftoffset, acmode, ctx);
 
-    if (ctx && ret == CL_VIRUS)
+    if (ctx && !SCAN_ALL && ret == CL_VIRUS)
 	cli_append_virus(ctx, *virname);
     if (ctx && SCAN_ALL && viruses_found)
 	return CL_VIRUS;
@@ -159,7 +159,7 @@ static inline int matcher_run(const struct cli_matcher *root,
 int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, cli_ctx *ctx, cli_file_t ftype, struct cli_ac_data **acdata)
 {
 	int ret = CL_CLEAN;
-	unsigned int i;
+	unsigned int i, viruses_found = 0;
 	struct cli_ac_data mdata;
 	struct cli_matcher *groot, *troot = NULL;
 	const char *virname = NULL;
@@ -191,8 +191,14 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, 
 	if(!acdata)
 	    cli_ac_freedata(&mdata);
 
-	if(ret == CL_VIRUS || ret == CL_EMEM)
+	if(ret == CL_EMEM)
 	    return ret;
+	if(ret == CL_VIRUS) {
+	    viruses_found = 1;
+	    if(ctx && !SCAN_ALL) {
+		return ret;
+	    }
+	}
     }
 
     virname = NULL;
@@ -205,6 +211,8 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, 
     if(!acdata)
 	cli_ac_freedata(&mdata);
 
+    if(viruses_found)
+	return CL_VIRUS;
     return ret;
 }
 
@@ -814,7 +822,8 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 	    ret = matcher_run(troot, buff, bytes, &virname, &tdata, offset, &info, ftype, ftoffset, acmode, acres, map, bm_offmode ? &toff : NULL, &viroffset, ctx);
 
 	    if (virname) {
-		viruses_found++;
+		/* virname already appended by matcher_run */
+		viruses_found = 1;
 	    }
 	    if((ret == CL_VIRUS && !SCAN_ALL) || ret == CL_EMEM) {
 		if(!ftonly)
@@ -835,7 +844,8 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 	    ret = matcher_run(groot, buff, bytes, &virname, &gdata, offset, &info, ftype, ftoffset, acmode, acres, map, NULL, &viroffset, ctx);
 
             if (virname) {
-		viruses_found++;
+		/* virname already appended by matcher_run */
+		viruses_found = 1;
 	    }
 	    if((ret == CL_VIRUS && !SCAN_ALL) || ret == CL_EMEM) {
 		cli_ac_freedata(&gdata);
@@ -924,7 +934,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 
 	    /* If matched size-based hash ... */
 	    if (found % 2) {
-		viruses_found++;
+		viruses_found = 1;
 		cli_append_virus(ctx, virname);
 		if (!SCAN_ALL)
 		    break;
@@ -932,7 +942,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 	    }
 	    /* If matched size-agnostic hash ... */
 	    if (found > 1) {
-		viruses_found++;
+		viruses_found = 1;
 		cli_append_virus(ctx, virname_w);
 		if (!SCAN_ALL)
 		    break;
