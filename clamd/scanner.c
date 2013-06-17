@@ -239,7 +239,7 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
 
     if (thrmgr_group_need_terminate(scandata->conn->group)) {
 	free(filename);
-	if (scandata->options & CL_SCAN_ALLMATCHES)
+	if ((scandata->options & CL_SCAN_ALLMATCHES) && (virpp != &virname))
 	    free((void *)virpp);
 	logg("*Client disconnected while scanjob was active\n");
 	return ret == CL_ETIMEOUT ? ret : CL_BREAK;
@@ -254,7 +254,7 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
 	scandata->infected++;
 	if (conn_reply_virus(scandata->conn, filename, virname) == -1) {
 	    free(filename);
-	    if (scandata->options & CL_SCAN_ALLMATCHES)
+	    if((scandata->options & CL_SCAN_ALLMATCHES) && (virpp != &virname))
 		free((void *)virpp);
 	    return CL_ETIMEOUT;
 	}
@@ -263,7 +263,8 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
 	    while (NULL != virpp[i])
 		if (conn_reply_virus(scandata->conn, filename, virpp[i++]) == -1) {
 		    free(filename);
-		    free((void *)virpp);
+		    if (virpp != &virname)
+			free((void *)virpp);
 		    return CL_ETIMEOUT;
 		}
 	}
@@ -282,7 +283,7 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
     } else if (ret != CL_CLEAN) {
 	scandata->errors++;
 	if (conn_reply(scandata->conn, filename, cl_strerror(ret), "ERROR") == -1) {
-	    if(scandata->options & CL_SCAN_ALLMATCHES)
+	    if((scandata->options & CL_SCAN_ALLMATCHES) && (virpp != &virname))
 		free((void *)virpp);
 	    free(filename);
 	    return CL_ETIMEOUT;
@@ -293,7 +294,7 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
     }
 
     free(filename);
-    if (scandata->options & CL_SCAN_ALLMATCHES)
+    if((scandata->options & CL_SCAN_ALLMATCHES) && (virpp != &virname))
 	free((void *)virpp);
     if(ret == CL_EMEM) /* stop scanning */
 	return ret;
