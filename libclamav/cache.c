@@ -819,6 +819,10 @@ void cache_add(unsigned char *md5, size_t size, cli_ctx *ctx) {
     level =  (*ctx->fmap && (*ctx->fmap)->dont_cache_flag) ? ctx->recursion : 0;
     if (ctx->found_possibly_unwanted && (level || !ctx->recursion))
 	return;
+    if (SCAN_ALL && (ctx->num_viruses > 0)) {
+	cli_dbgmsg("cache_add: alert found within same topfile, skipping cache\n");
+	return;
+    }
     c = &ctx->engine->cache[key];
     if(pthread_mutex_lock(&c->mutex)) {
 	cli_errmsg("cli_add: mutex lock fail\n");
