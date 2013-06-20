@@ -174,6 +174,7 @@ static int find_stream_bounds(const char *start, off_t bytesleft, off_t byteslef
     return 0;
 }
 
+/* Expected returns: 1 if success, 0 if no more objects, -1 if error */
 static int pdf_findobj(struct pdf_struct *pdf)
 {
     const char *start, *q, *q2, *q3, *eof;
@@ -1095,12 +1096,13 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 	rc2 = cli_magic_scandesc(fout, pdf->ctx);
 	if (rc2 == CL_VIRUS || rc == CL_SUCCESS)
 	    rc = rc2;
-	if (rc == CL_CLEAN) {
+	if ((rc == CL_CLEAN) || ((rc == CL_VIRUS) && (pdf->ctx->options & CL_SCAN_ALLMATCHES))) {
 	    rc2 = run_pdf_hooks(pdf, PDF_PHASE_POSTDUMP, fout, obj - pdf->objs);
 	    if (rc2 == CL_VIRUS)
 		rc = rc2;
 	}
-	if (rc == CL_CLEAN && (obj->flags & (1 << OBJ_CONTENTS))) {
+	if (((rc == CL_CLEAN) || ((rc == CL_VIRUS) && (pdf->ctx->options & CL_SCAN_ALLMATCHES)))
+		&& (obj->flags & (1 << OBJ_CONTENTS))) {
 	    lseek(fout, 0, SEEK_SET);
 	    cli_dbgmsg("cli_pdf: dumping contents %u %u\n", obj->id>>8, obj->id&0xff);
 	    rc2 = pdf_scan_contents(fout, pdf);
@@ -2044,7 +2046,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     long xref;
     const char *pdfver, *start, *eofmap, *q, *eof;
     int rc, badobjects = 0;
-    unsigned i;
+    unsigned i, alerts = 0;
 
     cli_dbgmsg("in cli_pdf(%s)\n", dir);
     memset(&pdf, 0, sizeof(pdf));
@@ -2138,10 +2140,16 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 	return CL_EMAP;
     }
     rc = run_pdf_hooks(&pdf, PDF_PHASE_PRE, -1, -1);
-    if (rc) {
+    if ((rc == CL_VIRUS) && SCAN_ALL) {
+        cli_dbgmsg("cli_pdf: (pre hooks) returned %d\n", rc);
+        alerts++;
+        rc = CL_CLEAN;
+    }
+    else if (rc) {
 	cli_dbgmsg("cli_pdf: (pre hooks) returning %d\n", rc);
 	return rc == CL_BREAK ? CL_CLEAN : rc;
     }
+
     /* parse PDF and find obj offsets */
     while ((rc = pdf_findobj(&pdf)) > 0) {
 	struct pdf_obj *obj = &pdf.objs[pdf.nobjs-1];
@@ -2171,20 +2179,41 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 	 * This doesn't trigger for PDFs that are encrypted but don't need
 	 * a password to decrypt */
 	cli_append_virus(ctx, "Heuristics.Encrypted.PDF");
-	rc = CL_VIRUS;
+	alerts++;
+        if (!SCAN_ALL)
+            rc = CL_VIRUS;
     }
 
-    if (!rc)
+    if (!rc) {
 	rc = run_pdf_hooks(&pdf, PDF_PHASE_PARSED, -1, -1);
+        cli_dbgmsg("cli_pdf: (parsed hooks) returned %d\n", rc);
+        if (rc == CL_VIRUS) {
+            alerts++;
+            if (SCAN_ALL) {
+                rc = CL_CLEAN;
+            }
+        }
+    }
+
     /* extract PDF objs */
     for (i=0;!rc && i<pdf.nobjs;i++) {
-	struct pdf_obj *obj = &pdf.objs[i];
-	rc = pdf_extract_obj(&pdf, obj);
-	if (rc == CL_EFORMAT) {
-            /* Don't halt on one bad object */
-            cli_dbgmsg("cli_pdf: bad format object, skipping to next\n");
-            badobjects++;
-            rc = CL_CLEAN;
+        struct pdf_obj *obj = &pdf.objs[i];
+        rc = pdf_extract_obj(&pdf, obj);
+        switch (rc) {
+            case CL_EFORMAT:
+                /* Don't halt on one bad object */
+                cli_dbgmsg("cli_pdf: bad format object, skipping to next\n");
+                badobjects++;
+                rc = CL_CLEAN;
+                break;
+            case CL_VIRUS:
+                alerts++;
+                if (SCAN_ALL) {
+                    rc = CL_CLEAN;
+                }
+                break;
+            default:
+                break;
         }
     }
 
@@ -2195,13 +2224,19 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
    if (pdf.flags && !rc) {
 	cli_dbgmsg("cli_pdf: flags 0x%02x\n", pdf.flags);
 	rc = run_pdf_hooks(&pdf, PDF_PHASE_END, -1, -1);
-	if (!rc && (ctx->options & CL_SCAN_ALGORITHMIC)) {
-	    if (pdf.flags & (1 << ESCAPED_COMMON_PDFNAME)) {
-		/* for example /Fl#61te#44#65#63#6f#64#65 instead of /FlateDecode */
-		cli_append_virus(ctx, "Heuristics.PDF.ObfuscatedNameObject");
-		rc = cli_found_possibly_unwanted(ctx);
-	    }
-	}
+        if (rc == CL_VIRUS) {
+            alerts++;
+            if (SCAN_ALL) {
+                rc = CL_CLEAN;
+            }
+        }
+        if (!rc && (ctx->options & CL_SCAN_ALGORITHMIC)) {
+            if (pdf.flags & (1 << ESCAPED_COMMON_PDFNAME)) {
+                /* for example /Fl#61te#44#65#63#6f#64#65 instead of /FlateDecode */
+                cli_append_virus(ctx, "Heuristics.PDF.ObfuscatedNameObject");
+                rc = cli_found_possibly_unwanted(ctx);
+            }
+        }
 #if 0
 	/* TODO: find both trailers, and /Encrypt settings */
 	if (pdf.flags & (1 << LINEARIZED_PDF))
@@ -2217,7 +2252,10 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 #endif
     }
 
-    if (!rc && badobjects) {
+    if (alerts) {
+        rc = CL_VIRUS;
+    }
+    else if (!rc && badobjects) {
         rc = CL_EFORMAT;
     }
 
