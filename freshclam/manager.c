@@ -1300,6 +1300,7 @@ getfile_mirman (const char *srcfile, const char *destfile,
         if (write (fd, buffer, bread) != bread)
         {
             logg ("getfile: Can't write %d bytes to %s\n", bread, destfile);
+            logg ("getfile: %s\n", strerror (errno));
             close (fd);
             unlink (destfile);
             return FCE_DBDIRACCESS;
@@ -2783,7 +2784,11 @@ downloadmanager (const struct optstruct *opts, const char *hostname,
     if (mkdir (updtmpdir, 0755))
     {
         logg ("!Can't create temporary directory %s\n", updtmpdir);
-        logg ("Hint: The database directory must be writable for UID %d or GID %d\n", getuid (), getgid ());
+        logg ("!%s\n", strerror (errno));
+        if (errno == EACCES)
+        {
+            logg ("Hint: The database directory must be writable for UID %d or GID %d\n", getuid (), getgid ());
+        }
         return FCE_DBDIRACCESS;
     }
 
