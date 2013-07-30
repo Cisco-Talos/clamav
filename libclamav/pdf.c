@@ -650,9 +650,13 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 			   orig_length, length, size);
 		pdfobj_flag(pdf, obj, BAD_STREAMLEN);
 	    }
-	    if (!length)
+	    if (!length) {
 		length = size;
-
+		if (!length) {
+		    cli_dbgmsg("pdf_extract_obj: length and size both 0\n");
+		    break; /* Empty stream, nothing to scan */
+		}
+	    }
 	    if (obj->flags & (1 << OBJ_FILTER_AH)) {
 		ascii_decoded = cli_malloc(length/2 + 1);
 		if (!ascii_decoded) {
