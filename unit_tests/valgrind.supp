@@ -23,3 +23,20 @@
     fun:_ZN4llvm12PassRegistry12registerPassERKNS_8PassInfoE
     fun:*
 }
+{
+    dl_catch_error-leak-1
+    Memcheck:Leak
+    ...
+    fun:dl_open_worker
+    fun:_dl_catch_error
+    ...
+}
+{
+    dl_catch_error-leak-2
+    Memcheck:Leak
+    ...
+    fun:_dl_close_worker
+    fun:_dl_close
+    fun:_dl_catch_error
+    ...
+}
