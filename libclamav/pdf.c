@@ -1851,6 +1851,7 @@ static enum enc_method parse_enc_method(const char *dict, unsigned len, const ch
 {
     const char *q;
     char *CFM = NULL;
+    enum enc_method ret = ENC_UNKNOWN;
     if (!key)
 	return def;
     if (!strcmp(key, "Identity"))
@@ -1862,24 +1863,20 @@ static enum enc_method parse_enc_method(const char *dict, unsigned len, const ch
     if (CFM) {
 	cli_dbgmsg("cli_pdf: %s CFM: %s\n", key, CFM);
 	if (!strncmp(CFM,"V2", 2)){
-	    free(CFM);	
-	    return ENC_V2;
+	    ret = ENC_V2;
 	}    
-	if (!strncmp(CFM,"AESV2",5)){
-	    free(CFM);	
-	    return ENC_AESV2;
+	else if (!strncmp(CFM,"AESV2",5)){
+	    ret = ENC_AESV2;
 	}    
-	if (!strncmp(CFM,"AESV3",5)){
-	    free(CFM);	
-	    return ENC_AESV3;
+	else if (!strncmp(CFM,"AESV3",5)){
+	    ret = ENC_AESV3;
 	}    
-	if (!strncmp(CFM,"None",4)){
-	    free(CFM);	
-	    return ENC_NONE;
+	else if (!strncmp(CFM,"None",4)){
+	    ret = ENC_NONE;
 	}
 	free(CFM);
     }
-    return ENC_UNKNOWN;
+    return ret;
 }
 
 static void pdf_handle_enc(struct pdf_struct *pdf)
