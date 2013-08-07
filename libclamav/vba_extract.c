@@ -175,7 +175,7 @@ static void vba56_test_middle(int fd)
 		cli_dbgmsg("middle found\n");
 }
 
-/* return count of valid strings found */
+/* return count of valid strings found, 0 on error */
 static int
 vba_read_project_strings(int fd, int big_endian)
 {
@@ -189,8 +189,10 @@ vba_read_project_strings(int fd, int big_endian)
         char *name;
 
         /* if no initial name length, exit */
-        if(getnewlength && !read_uint16(fd, &length, big_endian))
-            return 0;
+        if(getnewlength && !read_uint16(fd, &length, big_endian)) {
+            ret = 0;
+            break;
+        }
         getnewlength = 0;
 
         /* if too short, break */
