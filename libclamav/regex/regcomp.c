@@ -1414,8 +1414,8 @@ static void
 findmust(struct parse *p, struct re_guts *g)
 {
 	sop *scan;
-	sop *start;    /* start initialized in the default case, after that */
-	sop *newstart; /* newstart was initialized in the OCHAR case */
+	sop *start = NULL;    /* start initialized in the default case, after that */
+	sop *newstart = NULL; /* newstart was initialized in the OCHAR case */
 	sopno newlen;
 	sop s;
 	char *cp;
@@ -1466,6 +1466,10 @@ findmust(struct parse *p, struct re_guts *g)
 
 	if (g->mlen == 0)		/* there isn't one */
 		return;
+	if (start == NULL) {		/* something went wrong */
+		g->mlen = 0;
+		return;
+	}
 
 	/* turn it into a character string */
 	g->must = cli_malloc((size_t)g->mlen + 1);
