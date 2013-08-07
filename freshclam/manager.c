@@ -1507,8 +1507,10 @@ getpatch (const char *dbname, const char *tmpdir, int version,
         return FCE_DIRECTORY;
 
     tempname = cli_gentemp (".");
-    if(!tempname)
+    if(!tempname) {
+        CHDIR_ERR (olddir);
         return FCE_MEM;
+    }
     snprintf (patch, sizeof (patch), "%s-%d.cdiff", dbname, version);
 
     logg ("*Retrieving http://%s/%s\n", hostname, patch);
