@@ -2,6 +2,7 @@
  *  Extract RAR archives
  *
  *  Copyright (C) 2005 trog@uncon.org
+ *  Patches added by Sourcefire, Inc. Copyright (C) 2007-2013
  *
  *  This code is based on the work of Alexander L. Roshal (C)
  *
@@ -100,8 +101,9 @@ static int read_tables20(int fd, unpack_data_t *unpack_data)
 		rar_addbits(unpack_data, 4);
 	}
 	rar_make_decode_tables(bit_length, (struct Decode *)&unpack_data->BD, BC20);
-	i=0;
-	while (i < table_size) {
+
+	memset(table, 0, sizeof(table));
+	for (i=0; i<table_size;) {
 		if (unpack_data->in_addr > unpack_data->read_top-5) {
 			if (!rar_unp_read_buf(fd, unpack_data)) {
 				return FALSE;
