@@ -1,7 +1,7 @@
 /*
  *  Load, and verify ClamAV bytecode.
  *
- *  Copyright (C) 2009-2012 Sourcefire, Inc.
+ *  Copyright (C) 2009-2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
  *
@@ -1960,6 +1960,8 @@ void cli_bytecode_destroy(struct cli_bc *bc)
 	if (o > bc->num_globals) {\
 	    cli_errmsg("bytecode: global out of range: %u > %u, for instruction %u in function %u\n",\
 		       o, (unsigned)bc->num_globals, j, i);\
+	    free(map);\
+	    free(gmap);\
 	    return CL_EBYTECODE;\
 	}\
 	val = 0x80000000 | gmap[o];\
@@ -1967,6 +1969,8 @@ void cli_bytecode_destroy(struct cli_bc *bc)
     }\
     if (o > totValues) {\
 	cli_errmsg("bytecode: operand out of range: %u > %u, for instruction %u in function %u\n", o, totValues, j, i);\
+	free(map);\
+	free(gmap);\
 	return CL_EBYTECODE;\
     }\
     val = map[o]; } while (0)
