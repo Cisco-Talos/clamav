@@ -1967,7 +1967,7 @@ void cli_bytecode_destroy(struct cli_bc *bc)
 	val = 0x80000000 | gmap[o];\
 	break;\
     }\
-    if (o > totValues) {\
+    if (o >= totValues) {\
 	cli_errmsg("bytecode: operand out of range: %u > %u, for instruction %u in function %u\n", o, totValues, j, i);\
 	free(map);\
 	free(gmap);\
