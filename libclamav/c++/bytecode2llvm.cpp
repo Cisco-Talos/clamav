@@ -1453,6 +1453,7 @@ public:
 			    BasicBlock *False = BB[inst->u.branch.br_false];
 			    if (Cond->getType() != Type::getInt1Ty(Context)) {
 				cli_warnmsg("[Bytecode JIT]: type mismatch in condition");
+				apiMap.irgenTimer.stopTimer();
 				return 0;
 			    }
 			    Builder.CreateCondBr(Cond, True, False);
@@ -1556,8 +1557,10 @@ public:
 			    Value *V = convertOperand(func, SrcTy, inst->u.three[1]);
 			    Value *Op = convertOperand(func, I32Ty, inst->u.three[2]);
 			    Op = GEPOperand(Op);
-			    if (!createGEP(inst->dest, V, ARRAYREF(Value*, &Op, &Op+1)))
+			    if (!createGEP(inst->dest, V, ARRAYREF(Value*, &Op, &Op+1))) {
+				apiMap.irgenTimer.stopTimer();
 				return 0;
+			    }
 			    break;
 			}
 			case OP_BC_GEPZ:
@@ -1568,8 +1571,10 @@ public:
 			    Value *V = convertOperand(func, SrcTy, inst->u.three[1]);
 			    Ops[1] = convertOperand(func, I32Ty, inst->u.three[2]);
 			    Ops[1] = GEPOperand(Ops[1]);
-			    if (!createGEP(inst->dest, V, ARRAYREF(Value*, Ops, Ops+2)))
+			    if (!createGEP(inst->dest, V, ARRAYREF(Value*, Ops, Ops+2))) {
+				apiMap.irgenTimer.stopTimer();
 				return 0;
+			    }
 			    break;
 			}
 			case OP_BC_GEPN:
@@ -1583,8 +1588,10 @@ public:
 				Op = GEPOperand(Op);
 				Idxs.push_back(Op);
 			    }
-			    if (!createGEP(inst->dest, V, ARRAYREFVECTOR(Value*, Idxs)))
+			    if (!createGEP(inst->dest, V, ARRAYREFVECTOR(Value*, Idxs))) {
+				apiMap.irgenTimer.stopTimer();
 				return 0;
+			    }
 			    break;
 			}
 			case OP_BC_STORE:
@@ -1738,6 +1745,7 @@ public:
 			default:
 			    cli_warnmsg("[Bytecode JIT]: JIT doesn't implement opcode %d yet!\n",
 					inst->opcode);
+			    apiMap.irgenTimer.stopTimer();
 			    return 0;
 		    }
 		}
@@ -1752,6 +1760,17 @@ public:
 		    F->print(ostr);
 		    cli_dbgmsg_internal("[Bytecode JIT]: %s\n", ostr.str().c_str());
 		}
+		delete [] Values;
+		for (unsigned z=0; z < func->numBB ; z++) {
+		    delete BB[z];
+		}
+		delete [] BB;
+		apiMap.irgenTimer.stopTimer();
+		delete TypeMap;
+		for (unsigned z=0; z < bc->num_func; z++) {
+		    delete Functions[z];
+		}
+		delete [] Functions;
 		return 0;
 	    }
 	    delete [] Values;
@@ -1786,6 +1805,11 @@ public:
 	// If prototype matches, add to callable functions
 	if (Functions[0]->getFunctionType() != Callable) {
 	    cli_warnmsg("[Bytecode JIT]: Wrong prototype for function 0 in bytecode %d\n",  bc->id);
+	    apiMap.irgenTimer.stopTimer();
+	    for (unsigned z=0; z < bc->num_func; z++) {
+		delete Functions[z];
+	    }
+	    delete [] Functions;
 	    return 0;
 	}
 	// All functions have the Fast calling convention, however
@@ -2317,6 +2341,11 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	    Function *F = Codegen.generate();
 	    if (!F) {
 		cli_errmsg("[Bytecode JIT]: JIT codegen failed\n");
+		delete [] apiFuncs;
+		for (unsigned z=0; z < i; z++) {
+		    delete Functions[z];
+		}
+		delete [] Functions;
 		return CL_EBYTECODE;
 	    }
 	    Functions[i] = F;
