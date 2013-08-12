@@ -773,6 +773,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 			case HTML_BAD_STATE:
 				/* An engine error has occurred */
 				cli_dbgmsg("HTML Engine Error\n");
+				free(line);
 				goto abort;
 			case HTML_SKIP_WS:
 				if (isspace(*ptr)) {
