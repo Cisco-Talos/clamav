@@ -372,6 +372,7 @@ static char *getdsig(const char *host, const char *user, const unsigned char *da
     memset(buff, 0, sizeof(buff));
 
     if((bread = recv(sockd, buff, sizeof(buff)-1, 0)) > 0) {
+	buff[bread] = '\0';
 	if(!strstr(buff, "Signature:")) {
 	    mprintf("!getdsig: Error generating digital signature\n");
 	    mprintf("!getdsig: Answer from remote server: %s\n", buff);
