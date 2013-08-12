@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Nigel Horne
  *
@@ -226,8 +226,11 @@ textAddMessage(text *aText, message *aMessage)
 	else {
 		text *anotherText = messageToText(aMessage);
 
-		if(aText)
-			return textMove(aText, anotherText);
+		if(aText) {
+			text *newHead = textMove(aText, anotherText);
+			free(anotherText);
+			return newHead;
+		}
 		return anotherText;
 	}
 }
