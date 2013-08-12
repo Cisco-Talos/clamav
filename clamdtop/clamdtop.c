@@ -382,9 +382,12 @@ static void show_bar(WINDOW *win, size_t i, unsigned live, unsigned idle,
 	waddch(win, ']' | A_BOLD);
 	if(blink) {
 		getyx(win, y, x);
+		if ((x < 0) || (y < 0)) {
+			return; /* if getyx() failed, nevermind the blinking */
+		}
 		if (x >= 2) {
-			z = x - 2;         
-		}	
+			z = x - 2;
+		}
 		mvwaddch(win, y, z, '>' | A_BLINK | COLOR_PAIR(red_color));
 		move(y, z);
 	}
