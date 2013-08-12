@@ -2240,6 +2240,8 @@ static char *decodehexspecial(const char *hex, unsigned int *dlen)
 		    }
 		    if(i + 1 != altnum)
 			buff[len++] = '|';
+
+		    free(h);
 		    free(c);	
 		}
 		buff[len++] = '}';
