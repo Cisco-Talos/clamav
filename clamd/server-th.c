@@ -1298,9 +1298,14 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		}
 		thrmgr_group_terminate(buf->group);
 		if (thrmgr_group_finished(buf->group, EXIT_ERROR)) {
-		    logg("$Shutting down socket after error (FD %d)\n", buf->fd);
-		    shutdown(buf->fd, 2);
-		    closesocket(buf->fd);
+		    if (buf->fd < 0) {
+			logg("$Skipping shutdown of bad socket after error (FD %d)\n", buf->fd);
+		    }
+		    else {
+			logg("$Shutting down socket after error (FD %d)\n", buf->fd);
+			shutdown(buf->fd, 2);
+			closesocket(buf->fd);
+		    }
 		} else
 		    logg("$Socket not shut down due to active tasks\n");
 		buf->fd = -1;
