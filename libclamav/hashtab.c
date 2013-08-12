@@ -1,7 +1,7 @@
 /*
  *  Hash-table and -set data structures.
  *
- *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
  *
@@ -326,11 +326,18 @@ const struct cli_htu32_element *cli_htu32_next(const struct cli_htu32 *s, const 
 static int cli_hashtab_grow(struct cli_hashtable *s)
 {
 	const size_t new_capacity = nearest_power(s->capacity + 1);
-	struct cli_element* htable = cli_calloc(new_capacity, sizeof(*s->htable));
+	struct cli_element* htable;
 	size_t i,idx, used = 0;
+
 	cli_dbgmsg("hashtab.c: new capacity: %lu\n",new_capacity);
-	if(new_capacity == s->capacity || !htable)
+	if(new_capacity == s->capacity) {
+		cli_errmsg("hashtab.c: capacity problem growing from: %lu\n",s->capacity);
 		return CL_EMEM;
+	}
+	htable = cli_calloc(new_capacity, sizeof(*s->htable));
+	if(!htable) {
+		return CL_EMEM;
+	}
 
 	PROFILE_GROW_START(s);
 	cli_dbgmsg("hashtab.c: Warning: growing open-addressing hashtables is slow. Either allocate more storage when initializing, or use other hashtable types!\n");
