@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2009 Sourcefire, Inc.
+ *  Copyright (C) 2009-2013 Sourcefire, Inc.
  *  Author: Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -330,6 +330,7 @@ static void print_dbs(const char *dir)
 		dbfile = (char *) malloc(strlen(dent->d_name) + strlen(dir) + 2);
 		if(!dbfile) {
 		    printf("print_dbs: Can't allocate memory for dbfile\n");
+		    closedir(dd);
 		    return;
 		}
 		sprintf(dbfile, "%s"PATHSEP"%s", dir, dent->d_name);
