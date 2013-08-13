@@ -858,7 +858,7 @@ static int output_stats(struct stats *stats, unsigned idx)
 
 	if (!stats->db_time.tm_year) {
 		strncpy(timbuf,"N/A",sizeof(timbuf));
-		timbuf[size(timbuf)-1]='\0';
+		timbuf[sizeof(timbuf)-1]='\0';
 	}
 	else
 		snprintf(timbuf, sizeof(timbuf), "%04u-%02u-%02u %02uh",
