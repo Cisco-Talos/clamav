@@ -2,7 +2,7 @@
  *  Normalise HTML text.
  *  Decode MS Script Encoder protection. 
  *
- *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Trog
  *
@@ -773,7 +773,6 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 			case HTML_BAD_STATE:
 				/* An engine error has occurred */
 				cli_dbgmsg("HTML Engine Error\n");
-				free(line);
 				goto abort;
 			case HTML_SKIP_WS:
 				if (isspace(*ptr)) {
@@ -1782,6 +1781,8 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 	}
 	retval = TRUE;
 abort:
+	if (line) /* only needed for abort case */
+		free(line);
 	if (in_form_action)
 		free(in_form_action);
         if (in_ahref) /* tag not closed, force closing */
