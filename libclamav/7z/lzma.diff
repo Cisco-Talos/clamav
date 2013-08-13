@@ -107,9 +107,45 @@ diff -wu lzma_orig//7zDec.c 7z/7zDec.c
  
  #include "7z.h"
  
+diff -wu lzma_orig//7zFile.c 7z/7zFile.c
+--- lzma_orig//7zFile.h	2011-06-18 01:48:31.347602680 +0200
++++ 7z/7zFile.h	2013-08-13 14:29:34.193054251 +0200
+@@ -207,32 +207,6 @@
+   #endif
+ }
+ 
+-WRes File_GetLength(CSzFile *p, UInt64 *length)
+-{
+-  #ifdef USE_WINDOWS_FILE
+-  
+-  DWORD sizeHigh;
+-  DWORD sizeLow = GetFileSize(p->handle, &sizeHigh);
+-  if (sizeLow == 0xFFFFFFFF)
+-  {
+-    DWORD res = GetLastError();
+-    if (res != NO_ERROR)
+-      return res;
+-  }
+-  *length = (((UInt64)sizeHigh) << 32) + sizeLow;
+-  return 0;
+-  
+-  #else
+-  
+-  long pos = ftell(p->file);
+-  int res = fseek(p->file, 0, SEEK_END);
+-  *length = ftell(p->file);
+-  fseek(p->file, pos, SEEK_SET);
+-  return res;
+-  
+-  #endif
+-}
+-
+ 
+ /* ---------- FileSeqInStream ---------- */ 
+ 
 diff -wu lzma_orig//7zFile.h 7z/7zFile.h
 --- lzma_orig//7zFile.h	2011-06-18 01:48:31.347602680 +0200
-+++ 7z/7zFile.h	2011-06-18 01:27:02.229109090 +0200
++++ 7z/7zFile.h	2013-08-13 14:27:14.856436384 +0200
 @@ -27,6 +27,7 @@
    #else
    FILE *file;
@@ -118,6 +154,14 @@ diff -wu lzma_orig//7zFile.h 7z/7zFile.h
  } CSzFile;
  
  void File_Construct(CSzFile *p);
+@@ -48,7 +48,6 @@
+ WRes File_Write(CSzFile *p, const void *data, size_t *size);
+ 
+ WRes File_Seek(CSzFile *p, Int64 *pos, ESzSeek origin);
+-WRes File_GetLength(CSzFile *p, UInt64 *length);
+ 
+ 
+ /* ---------- FileInStream ---------- */
 diff -wu lzma_orig//CpuArch.h 7z/CpuArch.h
 --- lzma_orig//CpuArch.h	2011-06-18 01:48:31.363602662 +0200
 +++ 7z/CpuArch.h	2011-06-18 01:27:02.229109090 +0200
