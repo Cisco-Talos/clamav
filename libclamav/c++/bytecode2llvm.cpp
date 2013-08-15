@@ -1232,6 +1232,7 @@ public:
 	for (unsigned j=0;j<bc->num_func;j++) {
 	    PrettyStackTraceString CrashInfo("Generate LLVM IR");
 	    const struct cli_bc_func *func = &bc->funcs[j];
+	    bool broken = false;
 
 	    // Create all BasicBlocks
 	    Function *F = Functions[j];
@@ -1308,12 +1309,12 @@ public:
 	    }
 
 	    // Generate LLVM IR for each BB
-	    for (unsigned i=0;i<func->numBB;i++) {
+	    for (unsigned i=0;i<func->numBB && !broken;i++) {
 		bool unreachable = false;
 		const struct cli_bc_bb *bb = &func->BB[i];
 		Builder.SetInsertPoint(BB[i]);
 		unsigned c = 0;
-		for (unsigned j=0;j<bb->numInsts;j++) {
+		for (unsigned j=0;j<bb->numInsts && !broken;j++) {
 		    const struct cli_bc_inst *inst = &bb->insts[j];
 		    Value *Op0=0, *Op1=0, *Op2=0;
 		    // libclamav has already validated this.
@@ -1453,8 +1454,8 @@ public:
 			    BasicBlock *False = BB[inst->u.branch.br_false];
 			    if (Cond->getType() != Type::getInt1Ty(Context)) {
 				cli_warnmsg("[Bytecode JIT]: type mismatch in condition");
-				apiMap.irgenTimer.stopTimer();
-				return 0;
+				broken = true;
+				break;
 			    }
 			    Builder.CreateCondBr(Cond, True, False);
 			    break;
@@ -1558,8 +1559,8 @@ public:
 			    Value *Op = convertOperand(func, I32Ty, inst->u.three[2]);
 			    Op = GEPOperand(Op);
 			    if (!createGEP(inst->dest, V, ARRAYREF(Value*, &Op, &Op+1))) {
-				apiMap.irgenTimer.stopTimer();
-				return 0;
+				cli_warnmsg("[Bytecode JIT]: OP_BC_GEP1 createGEP failed\n");
+				broken = true;
 			    }
 			    break;
 			}
@@ -1572,8 +1573,8 @@ public:
 			    Ops[1] = convertOperand(func, I32Ty, inst->u.three[2]);
 			    Ops[1] = GEPOperand(Ops[1]);
 			    if (!createGEP(inst->dest, V, ARRAYREF(Value*, Ops, Ops+2))) {
-				apiMap.irgenTimer.stopTimer();
-				return 0;
+				cli_warnmsg("[Bytecode JIT]: OP_BC_GEPZ createGEP failed\n");
+				broken = true;
 			    }
 			    break;
 			}
@@ -1589,8 +1590,8 @@ public:
 				Idxs.push_back(Op);
 			    }
 			    if (!createGEP(inst->dest, V, ARRAYREFVECTOR(Value*, Idxs))) {
-				apiMap.irgenTimer.stopTimer();
-				return 0;
+				cli_warnmsg("[Bytecode JIT]: OP_BC_GEPN createGEP failed\n");
+				broken = true;
 			    }
 			    break;
 			}
@@ -1745,22 +1746,31 @@ public:
 			default:
 			    cli_warnmsg("[Bytecode JIT]: JIT doesn't implement opcode %d yet!\n",
 					inst->opcode);
-			    apiMap.irgenTimer.stopTimer();
-			    return 0;
+			    broken = true;
+			    break;
 		    }
 		}
 	    }
 
-	    if (verifyFunction(*F, PrintMessageAction)) {
-		// verification failed
-		cli_warnmsg("[Bytecode JIT]: Verification failed\n");
-		if (cli_debug_flag) {
-		    std::string str;
-		    raw_string_ostream ostr(str);
-		    F->print(ostr);
-		    cli_dbgmsg_internal("[Bytecode JIT]: %s\n", ostr.str().c_str());
+	    // If successful so far, run verifyFunction
+	    if (!broken) {
+		if (verifyFunction(*F, PrintMessageAction)) {
+		    // verification failed
+		    broken = true;
+		    cli_warnmsg("[Bytecode JIT]: Verification failed\n");
+		    if (cli_debug_flag) {
+			std::string str;
+			raw_string_ostream ostr(str);
+			F->print(ostr);
+			cli_dbgmsg_internal("[Bytecode JIT]: %s\n", ostr.str().c_str());
+		    }
 		}
-		delete [] Values;
+	    }
+
+	    delete [] Values;
+
+	    // Cleanup after failure and return 0
+	    if (broken) {
 		for (unsigned z=0; z < func->numBB ; z++) {
 		    delete BB[z];
 		}
@@ -1773,7 +1783,7 @@ public:
 		delete [] Functions;
 		return 0;
 	    }
-	    delete [] Values;
+
 	    delete [] BB;
 	    apiMap.irgenTimer.stopTimer();
 	    apiMap.pmTimer.startTimer();
