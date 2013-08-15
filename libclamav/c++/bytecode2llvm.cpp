@@ -1019,14 +1019,16 @@ public:
 		ExecutionEngine *EE, FunctionPassManager &PM, FunctionPassManager &PMUnsigned,
 		Function **apiFuncs, LLVMTypeMapper &apiMap)
 	: bc(bc), M(M), Context(M->getContext()), EE(EE),
-	PM(PM),PMUnsigned(PMUnsigned), apiFuncs(apiFuncs),apiMap(apiMap),
+	PM(PM),PMUnsigned(PMUnsigned), TypeMap(), apiFuncs(apiFuncs),apiMap(apiMap),
 	compiledFunctions(cFuncs), BytecodeID("bc"+Twine(bc->id)),
-	Folder(EE->getTargetData()), Builder(Context, Folder), CF(CF) {
+	Folder(EE->getTargetData()), Builder(Context, Folder), Values(), CF(CF) {
 
 	for (unsigned i=0;i<cli_apicall_maxglobal - _FIRST_GLOBAL;i++) {
 	    unsigned id = cli_globals[i].globalid;
 	    GVoffsetMap[id] = cli_globals[i].offset;
 	}
+	numLocals = 0;
+	numArgs = 0;
     }
 
 #ifndef LLVM30
