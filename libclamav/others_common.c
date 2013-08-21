@@ -688,6 +688,7 @@ static int cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb 
 		ret = callback(NULL, NULL, dirname, error_mem, data);
 		if (ret != CL_SUCCESS)
 		    break;
+		continue; /* have to skip this one if continuing after error */
 	    }
             if(!strcmp(dirname, PATHSEP))
 		sprintf(fname, PATHSEP"%s", dent->d_name);
