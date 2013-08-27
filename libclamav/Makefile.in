@@ -17,6 +17,7 @@
 
 #
 #  Copyright (C) 2002 - 2007 Tomasz Kojm <tkojm@clamav.net>
+#  Copyright (C) 2008 - 2013 Sourcefire, Inc.
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -184,7 +185,8 @@ am_libclamav_la_OBJECTS = libclamav_la-matcher-ac.lo \
 	libclamav_la-ishield.lo libclamav_la-bytecode_api.lo \
 	libclamav_la-bytecode_api_decl.lo libclamav_la-cache.lo \
 	libclamav_la-bytecode_detect.lo libclamav_la-events.lo \
-	libclamav_la-swf.lo libclamav_la-jpeg.lo libclamav_la-png.lo \
+	libclamav_la-dmg.lo libclamav_la-xar.lo libclamav_la-swf.lo \
+	libclamav_la-jpeg.lo libclamav_la-png.lo \
 	libclamav_la-iso9660.lo libclamav_la-arc4.lo \
 	libclamav_la-rijndael.lo libclamav_la-crtmgr.lo \
 	libclamav_la-asn1.lo libclamav_la-fp_add.lo \
@@ -706,12 +708,12 @@ libclamav_la_SOURCES = clamav.h matcher-ac.c matcher-ac.h matcher-bm.c \
 	bcfeatures.h bytecode_api.c bytecode_api_decl.c bytecode_api.h \
 	bytecode_api_impl.h bytecode_hooks.h cache.c cache.h \
 	bytecode_detect.c bytecode_detect.h builtin_bytecodes.h \
-	events.c events.h swf.c swf.h jpeg.c jpeg.h png.c png.h \
-	iso9660.c iso9660.h arc4.c arc4.h rijndael.c rijndael.h \
-	crtmgr.c crtmgr.h asn1.c asn1.h bignum.h bignum_fast.h \
-	tomsfastmath/addsub/fp_add.c tomsfastmath/addsub/fp_add_d.c \
-	tomsfastmath/addsub/fp_addmod.c tomsfastmath/addsub/fp_cmp.c \
-	tomsfastmath/addsub/fp_cmp_d.c \
+	events.c events.h dmg.c dmg.h xar.c xar.h swf.c swf.h jpeg.c \
+	jpeg.h png.c png.h iso9660.c iso9660.h arc4.c arc4.h \
+	rijndael.c rijndael.h crtmgr.c crtmgr.h asn1.c asn1.h bignum.h \
+	bignum_fast.h tomsfastmath/addsub/fp_add.c \
+	tomsfastmath/addsub/fp_add_d.c tomsfastmath/addsub/fp_addmod.c \
+	tomsfastmath/addsub/fp_cmp.c tomsfastmath/addsub/fp_cmp_d.c \
 	tomsfastmath/addsub/fp_cmp_mag.c tomsfastmath/addsub/fp_sub.c \
 	tomsfastmath/addsub/fp_sub_d.c tomsfastmath/addsub/fp_submod.c \
 	tomsfastmath/addsub/s_fp_add.c tomsfastmath/addsub/s_fp_sub.c \
@@ -931,6 +933,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-dconf.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-disasm.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-dlp.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-dmg.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-dsig.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-elf.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-entconv.Plo@am__quote@
@@ -1085,6 +1088,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-vba_extract.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-version.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-wwunpack.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-xar.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-yc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unrar.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unrar15.Plo@am__quote@
@@ -1837,6 +1841,20 @@ libclamav_la-events.lo: events.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='events.c' object='libclamav_la-events.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-events.lo `test -f 'events.c' || echo '$(srcdir)/'`events.c
+
+libclamav_la-dmg.lo: dmg.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-dmg.lo -MD -MP -MF $(DEPDIR)/libclamav_la-dmg.Tpo -c -o libclamav_la-dmg.lo `test -f 'dmg.c' || echo '$(srcdir)/'`dmg.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-dmg.Tpo $(DEPDIR)/libclamav_la-dmg.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='dmg.c' object='libclamav_la-dmg.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-dmg.lo `test -f 'dmg.c' || echo '$(srcdir)/'`dmg.c
+
+libclamav_la-xar.lo: xar.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-xar.lo -MD -MP -MF $(DEPDIR)/libclamav_la-xar.Tpo -c -o libclamav_la-xar.lo `test -f 'xar.c' || echo '$(srcdir)/'`xar.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-xar.Tpo $(DEPDIR)/libclamav_la-xar.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='xar.c' object='libclamav_la-xar.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-xar.lo `test -f 'xar.c' || echo '$(srcdir)/'`xar.c
 
 libclamav_la-swf.lo: swf.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-swf.lo -MD -MP -MF $(DEPDIR)/libclamav_la-swf.Tpo -c -o libclamav_la-swf.lo `test -f 'swf.c' || echo '$(srcdir)/'`swf.c

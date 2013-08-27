@@ -102,6 +102,9 @@
     <ClCompile Include="..\libclamav\dlp.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\libclamav\dmg.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\libclamav\dsig.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -280,6 +283,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\libclamav\wwunpack.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\xar.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\libclamav\sha256.c">

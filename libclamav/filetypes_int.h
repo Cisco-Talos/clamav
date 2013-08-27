@@ -172,6 +172,8 @@ static const char *ftypes_int[] = {
   "1:0:cafebabe0000001?:Universal Binary:CL_TYPE_ANY:CL_TYPE_MACHO_UNIBIN:73",
   "1:0:cafebabe0000002?:Java class file:CL_TYPE_ANY:CL_TYPE_JAVA:73",
   "1:0:cafebabe0000003?:Java class file:CL_TYPE_ANY:CL_TYPE_JAVA:73",
+  "1:EOF-512:6b6f6c79:DMG container file:CL_TYPE_ANY:CL_TYPE_DMG:73",
+  "0:0:78617221:XAR container file:CL_TYPE_ANY:CL_TYPE_XAR:73",
   NULL
 };
 

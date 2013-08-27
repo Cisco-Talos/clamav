@@ -101,6 +101,8 @@ static const struct ftmap_s {
     { "CL_TYPE_SWF",		CL_TYPE_SWF		},
     { "CL_TYPE_ISO9660",	CL_TYPE_ISO9660		},
     { "CL_TYPE_JAVA",		CL_TYPE_JAVA		},
+    { "CL_TYPE_DMG",		CL_TYPE_DMG		},
+    { "CL_TYPE_XAR",		CL_TYPE_XAR		},
     { NULL,			CL_TYPE_IGNORED		}
 };
 

@@ -94,6 +94,8 @@
 #include "jpeg.h"
 #include "png.h"
 #include "iso9660.h"
+#include "dmg.h"
+#include "xar.h"
 
 #ifdef HAVE_BZLIB_H
 #include <bzlib.h>
@@ -594,7 +596,6 @@ static int cli_scangzip(cli_ctx *ctx)
     free(tmpname);
     return ret;
 }
-
 
 #ifndef HAVE_BZLIB_H
 static int cli_scanbzip(cli_ctx *ctx) {
@@ -2114,6 +2115,14 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
 			}
 			break;
 
+		    case CL_TYPE_DMG:
+			if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_DMG)) {
+			    ctx->container_type = CL_TYPE_DMG;
+			    nret = cli_scandmg(ctx);
+			    cli_dbgmsg("DMG signature found at %u\n", (unsigned int) fpt->offset);
+			}
+			break;
+
 		    case CL_TYPE_PDF:
 			if(type != CL_TYPE_PDF && SCAN_PDF && (DCONF_DOC & DOC_CONF_PDF)) {
 			    ctx->container_type = CL_TYPE_PDF;
@@ -2648,6 +2657,12 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 		 * a normalised text
 		 */
 		ret = cli_scan_structured(ctx);
+	    break;
+
+	case CL_TYPE_XAR:
+	    ctx->container_type = CL_TYPE_XAR;
+	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_XAR))
+		ret = cli_scanxar(ctx);
 	    break;
 
 	default:

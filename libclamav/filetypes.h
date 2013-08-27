@@ -74,6 +74,7 @@ typedef enum {
     CL_TYPE_7Z,
     CL_TYPE_SWF,
     CL_TYPE_JAVA,
+    CL_TYPE_XAR,
 
     /* bigger numbers have higher priority (in o-t-f detection) */
     CL_TYPE_HTML, /* on the fly */
@@ -88,6 +89,7 @@ typedef enum {
     CL_TYPE_AUTOIT,
     CL_TYPE_ISHIELD_MSI,
     CL_TYPE_ISO9660,
+    CL_TYPE_DMG,
     CL_TYPE_IGNORED /* please don't add anything below */
 } cli_file_t;
 

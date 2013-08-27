@@ -1,5 +1,6 @@
 #
 #  Copyright (C) 2002 - 2007 Tomasz Kojm <tkojm@clamav.net>
+#  Copyright (C) 2008 - 2013 Sourcefire, Inc.
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -370,6 +371,10 @@ libclamav_la_SOURCES = \
 	builtin_bytecodes.h\
 	events.c\
 	events.h \
+	dmg.c \
+	dmg.h \
+	xar.c \
+	xar.h \
 	swf.c \
 	swf.h \
 	jpeg.c \
