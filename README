@@ -3,10 +3,88 @@ here may not be available in binary packages.
 --
 
 0.98
+------
+
+ClamAV 0.98 includes many new features, across all the different components
+of ClamAV. There are new scanning options, extensions to the libclamav API,
+support for additional filetypes and internal upgrades.
+
+    - Signature improvements: New signature targets have been added for
+      PDF files, Flash files and Java class files. NOTE: Java archive files
+      (JAR) are not part of the Java target. Hash signatures can now be
+      written with a * size if the size is unknown. Using wildcard size
+      requires setting the minimum engine FLEVEL to avoid backwards
+      compatibility issues. For more details read the ClamAV Signatures
+      guide.
+
+    - Scanning enhancements: New filetypes can be unpacked and scanned,
+      including ISO9660, Flash and self-extracting 7z files. PDF
+      handling is now more robust and better handles encrypted PDF files.
+
+    - Authenticode: ClamAV is now aware of the certificate chain when
+      scanning signed PE files. When the database contains signatures for
+      trusted root certificate authorities, the engine can whitelist
+      PE files with a valid signature. The same database file can also
+      include known compromised certificates to be rejected! This
+      feature can also be disabled in clamd.conf (DisableCertCheck) or
+      the command-line (nocerts).
+
+    - New options: Several new options for clamscan and clamd have been
+      added. For example, ClamAV can be set to print infected files and
+      error files and suppress printing OK results. This can be helpful
+      when scanning large numbers of files. This new option is "-o" for
+      clamscan and "LogClean" for clamd. Check clamd.conf or the clamscan
+      help message for specific details.
+
+    - New callbacks added to the API: The libclamav API has additional hooks
+      for developers to use when wrapping ClamAV scanning. These function
+      types are defined to start with "clcb_" and allow developers to add
+      logic at certain steps of the scanning process without directly
+      modifying the library. For more details refer to the clamav.h file.
+
+    - More configurable limits: Several hardcoded values are now configurable
+      parameters, providing more options for tuning the engine to match your
+      needs. Check clamd.conf or the clamscan help message for specific
+      details.
+
+    - Performance improvements: This release furthers the use of memory maps
+      during scanning and unpacking, continuing the conversion started in
+      prior releases. Complex math functions have been switched from
+      libtommath to tomsfastmath functions. The A/C matcher code has also
+      been optimized to provide a speed boost.
+
+    - Support for on-access scanning using Clamuko/Dazuko has been replaced
+      with fanotify. Accordingly, clamd.conf settings related to on-access
+      scanning have had Clamuko removed from the name. Clamuko-specific
+      configuration items have been marked deprecated and should no longer
+      be used.
+
+There are also fixes for other minor issues and code quality changes. Please
+see the ChangeLog file for details.
+
+--
+The ClamAV team (http://www.clamav.net/team)
+
+0.97.8
 ----
 
-Bug reported by Felix Groebert, Mateusz Jurczyk and Gynvael Coldwind of the Google Security
-Team.
+ClamAV 0.97.8 addresses several reported potential security bugs. Thanks to
+Felix Groebert of the Google Security Team for finding and reporting these
+issues.
+
+0.97.7
+----
+
+ClamAV 0.97.7 addresses several reported potential security bugs. Thanks to
+Felix Groebert, Mateusz Jurczyk and Gynvael Coldwind of the Google Security
+Team for finding and reporting these issues.
+
+0.97.6
+----
+
+ClamAV 0.97.6 includes minor bug fixes and detection improvements.
+ClamAV 0.97.6 corrects bug 5252 "CL_EFORMAT: Bad format or broken data ERROR
+reported as scan result."
 
 0.97.5
 ------
@@ -14,7 +92,7 @@ Team.
 ClamAV 0.97.5 addresses possible evasion cases in some archive formats 
 (CVE-2012-1457, CVE-2012-1458, CVE-2012-1459). It also addresses stability 
 issues in portions of the bytecode engine. This release is recommended for 
-all
+all users.
 
 0.97.4
 ------
