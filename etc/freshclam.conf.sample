@@ -225,13 +225,6 @@ DatabaseMirror database.clamav.net
 # Default: enabled
 #Bytecode yes
 
-# The enhanced signatures cvd contains certificate, file size wildcard hashing, 
-# and sha1 and sha256 hash signatures. If this option is enabled, retrieve the
-# file enhanced.cvd. If disabled, attempt to remove enhanced.cvd from the 
-# database directory.
-# Default: enabled
-#EnhancedSigs yes
-
 # Download an additional 3rd party signature database distributed through
 # the ClamAV mirrors. Here you can find a list of available databases:
 # http://www.clamav.net/download/cvd/3rdparty

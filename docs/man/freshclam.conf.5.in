@@ -188,11 +188,6 @@ Default: disabled
 This option enables downloading of bytecode.cvd, which includes additional detection mechanisms and improvements to the ClamAV engine.
 .br
 Default: enabled
-.TP
-\fEnhancedSigs BOOL\fR
-The enhanced signatures cvd contains certificate, file size wildcard hashing, and sha1 and sha256 signatures. If this option is enabled, retrieve the file enhanced.cvd. If disabled, attempt to remove enhanced.cvd from the database directory.
-.br
-Default: enabled
 .SH "FILES"
 .LP 
 @CFGDIR@/freshclam.conf
