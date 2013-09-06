@@ -126,10 +126,6 @@ textrecordfield (const char * dbname)
     {
         return 2;
     }
-    else if (!strcmp (dbname, "enhanced"))
-    {
-        return 8;
-    }
     else if (!strcmp (dbname, "bytecode"))
     {
         return 7;
@@ -2987,39 +2983,6 @@ downloadmanager (const struct optstruct *opts, const char *hostname,
         }
         else if (ret == 0)
             updated = 1;
-
-        if (optget(opts, "EnhancedSigs")->enabled) {
-            ret = updatedb("enhanced", hostname, ipaddr, &signo, opts,
-                           dnsreply, localip, outdated, &mdat, logerr, 0,
-                           attempt);
-            if (ret > 50) {
-                if (dnsreply)
-                    free (dnsreply);
-                if (newver)
-                    free (newver);
-                mirman_write ("mirrors.dat", dbdir, &mdat);
-                mirman_free (&mdat);
-                cli_rmdirs (updtmpdir);
-                return ret;
-            } else if (ret == 0) {
-                updated = 1;
-            }
-        }
-        else {
-            const char *enhanceddb = NULL;
-
-            if (!access("enhanced.cvd", R_OK))
-                enhanceddb = "enhanced.cvd";
-            else if (!access ("enhanced.cld", R_OK))
-                enhanceddb = "enhanced.cld";
-
-            if (enhanceddb) {
-                if (unlink (enhanceddb))
-                    logg ("^EnhancedSigs is disabled but can't remove old %s\n", enhanceddb);
-                else
-                    logg ("*%s removed\n", enhanceddb);
-             }
-        }
 
         if (!optget (opts, "SafeBrowsing")->enabled)
         {
