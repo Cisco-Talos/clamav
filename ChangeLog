@@ -1,3 +1,70 @@
+Tue Sep 3 18:37:13 2013 EDT 2013 (dar)
+------------------------------------
+ * V 0.98.0 RC
+
+Thu Aug 15 17:44:49 2013 EDT 2013 (dar)
+------------------------------------
+ * code quality fixes on libclamav, clamd, sigtool, clamav-milter, clamconf and clamdtop
+
+Fri Aug 9 18:33:06 2013 EDT 2013 (dar)
+------------------------------------
+ * code quality fixes on libclamav, libclamunrar and freshclam
+
+Wed Aug 7 18:55:13 EDT 2013 (dar)
+------------------------------------
+ * valgrind suppression rules for dl_catch_error complaints
+
+Tue Jul 30 15:07:25 EDT 2013 (dar)
+------------------------------------
+ * bb #8385: PDF ASCII85Decode zero-length fix
+
+Thu Jun 20 13:43:46 EDT 2013 (dar)
+------------------------------------
+ * libclamav: SCAN_ALL mode fixes
+
+Thu May 9 12:50:46 EDT 2013 (dar)
+------------------------------------
+ * bb #7436: elf64 header early exit
+
+Mon Apr 22 11:06:37 EDT 2013 (dar)
+------------------------------------
+ * iso9660: iso_scan_file rewrite
+
+Wed Apr 17 11:20:48 EDT 2013 (olney)
+------------------------------------
+ * V 0.97.8
+
+Mon Apr 15 17:58:26 EDT 2013 (dar)
+------------------------------------
+ * cache: cacheset_remove fix and better logging
+
+Fri Apr 12 14:20:23 EDT 2013 (swebb)
+------------------------------------
+ * libclamav: Fix bugs in mpool and readdb
+
+Fri Apr 5 17:36:54 EDT 2013 (dar)
+------------------------------------
+ * libclamav: Bugs reported by Felix Groebert of the Google Security Team
+
+Thu Mar 28 17:11:56 EDT 2013 (morgan)
+------------------------------------
+ * signature.pdf updates
+ * Update clam doc for allmatch mode
+ * doc: add target 12 for CL_TYPE_JAVA
+ * signature.tex fixup for bb6988
+
+Tue Mar 26 16:51:51 EDT 2013 (dar)
+------------------------------------
+ * libclamav: include cb_meta on copy or apply engine settings
+
+Fri Mar 22 12:05:59 EDT 2013 (dar)
+------------------------------------
+ * libclamav: vba strings fix-ups
+
+Tue Mar 12 15:00:07 EDT 2013 (swebb)
+------------------------------------
+ * Add valgrind suppression rule for LLVM subcode shutdown
+
 Fri Mar 8 17:48:34 EDT 2013 (dar)
 ------------------------------------
  * libclamav: SHA1/SHA256 handling changes and wildcard-size support
@@ -10,10 +77,18 @@ Thu Feb 28 13:55:04 EDT 2013 (dar)
 ------------------------------------
  * libclamav/pe_icons.c: introduce LOGPARSEICONDETAILS define to reduce parseicon logging in default build
 
+Thu Mar 7 16:10:49 EDT 2012 (olney)
+----------------------------------
+ * V 0.97.7
+
 Wed Feb 20 10:05:00 EDT 2013 (multiple)
 ------------------------------------
  * Bug reported by Felix Groebert, Mateusz Jurczyk and Gynvael Coldwind of the
  Google Security Team
+
+Thu Feb 7 14:04:06 EDT 2013 (dar)
+------------------------------------
+ * Add CL_TYPE_JAVA for Java class detection, type and target
 
 Tue Feb 5 19:38:35 EDT 2013 (dar)
 ------------------------------------
@@ -261,6 +336,10 @@ Mon Sep 17 12:47:47 EDT 2012 (morgan)
  * check return code from fstat(). If less than 0, log error message and
  return error to caller, bb#5778
 
+Mon Sep 17 11:19:33 EDT 2012 (olney)
+----------------------------------
+ * V 0.97.6
+
 Fri Sep 14 18:57:41 EDT 2012 (dar)
 ----------------------------------
  * bb #5659: Log rotation in Windows wrapper
@@ -407,6 +486,10 @@ Tue Apr 10 17:04:20 CEST 2012 (tk)
 Wed Mar 31 18:08:01 CET 2012 (acab)
 ---------------------------------
  * add recovery mode to 7z ansi
+
+Wed Mar 14 22:52:48 CET 2012 (tk)
+---------------------------------
+ * V 0.97.4
 
 Fri Mar 2 19:36:04 CET 2012 (tk)
 ---------------------------------
@@ -767,6 +850,10 @@ Mon Oct 17 19:40:34 CEST 2011 (tk)
 ----------------------------------
  * disable swf decoder in scanners.c
 
+Mon Oct 17 18:04:30 CEST 2011 (tk)
+----------------------------------
+ * V 0.97.3
+
 Mon Oct 17 15:03:08 CEST 2011 (tk)
 ----------------------------------
  * sync with daily.ftm
@@ -856,6 +943,7 @@ Wed Aug  3 15:41:28 CEST 2011 (tk)
 
 Tue Aug  2 17:03:33 CEST 2011 (tk)
 ----------------------------------
+ * V 0.97.2
  * docs: clarify behavior of --scan-*/Scan* options (bb#3134)
 
 Mon Jul 25 17:14:39 EEST 2011 (tk)
@@ -1077,7 +1165,7 @@ Fri Jun 10 21:22:46 CEST 2011 (edwin)
 ------------------------------------
  * fmapify cli_scanbzip
  
- Jun 10 20:17:19 CEST 2011 (edwin)
+Fri Jun 10 20:17:19 CEST 2011 (edwin)
 ------------------------------------
  * mbox already fmapified, just drop descriptor
  
@@ -1108,6 +1196,10 @@ Wed Jun 8 15:52:37 CEST 2011 (acab)
 Tue Jun 7 12:03:19 EEST 2011 (edwin)
 ------------------------------------
  * libclamav/phishcheck.c: fix safebrowsing detection on certain URLs
+
+Thu Jun  9 09:10:49 CEST 2011 (tk)
+----------------------------------
+ * V 0.97.1
 
 Thu Jun  9 08:22:31 CEST 2011 (acab)
 ------------------------------------
