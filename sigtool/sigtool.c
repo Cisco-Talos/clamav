@@ -822,16 +822,7 @@ static int build(const struct optstruct *opts)
     sprintf(header + strlen(header), "%u:", sigs);
 
     /* functionality level */
-    if(!strcmp(dbname, "main")) {
-	mprintf("Functionality level: ");
-	if(scanf("%u", &fl) == EOF || !fl || fl > 99) {
-	    mprintf("!build: Incorrect functionality level\n");
-	    FREE_LS(dblist2);
-	    return -1;
-	}
-    } else {
-	fl = CL_FLEVEL_SIGTOOL;
-    }
+    fl = (unsigned int)(optget(opts, "flevel")->numarg);
     sprintf(header + strlen(header), "%u:", fl);
 
     real_header = strlen(header);
@@ -2934,6 +2925,8 @@ static void help(void)
     mprintf("    --utf16-decode=FILE                    decode UTF16 encoded files\n");
     mprintf("    --info=FILE            -i FILE         print database information\n");
     mprintf("    --build=NAME [cvd] -b NAME             build a CVD file\n");
+    mprintf("    --max-bad-sigs=NUMBER                  Maximum number of mismatched signatures when building a CVD. Default: 3000\n");
+    mprintf("    --flevel=FLEVEL                        Specify a custom flevel. Default: %u\n", cl_retflevel());
     mprintf("    --no-cdiff                             Don't generate .cdiff file\n");
     mprintf("    --unsigned                             Create unsigned database file (.cud)\n");
     mprintf("    --print-certs=FILE                     Print Authenticode details from a PE\n");
