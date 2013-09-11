@@ -639,7 +639,7 @@ static int build(const struct optstruct *opts)
 {
 	int ret, bc = 0;
 	size_t bytes;
-	unsigned int i, sigs = 0, oldsigs = 0, entries = 0, version, real_header, fl;
+	unsigned int i, sigs = 0, oldsigs = 0, entries = 0, version, real_header, fl, maxentries;
 	STATBUF foo;
 	unsigned char buffer[FILEBUFF];
 	char *tarfile, header[513], smbuff[32], builder[32], *pt, olddb[512];
@@ -752,11 +752,15 @@ static int build(const struct optstruct *opts)
 	if(entries != sigs)
 	    mprintf("^build: Signatures in %s db files: %u, loaded by libclamav: %u\n", dbname, entries, sigs);
 
-	if(!entries || (sigs > entries && sigs - entries >= 1000)) {
-	    mprintf("!Bad number of signatures in database files\n");
-	    FREE_LS(dblist2);
-	    return -1;
-	}
+    maxentries = optget(opts, "max-bad-sigs")->numarg;
+
+    if (maxentries) {
+        if(!entries || (sigs > entries && sigs - entries >= maxentries)) {
+            mprintf("!Bad number of signatures in database files\n");
+            FREE_LS(dblist2);
+            return -1;
+        }
+    }
     }
 
     /* try to read cvd header of current database */
