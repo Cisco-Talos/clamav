@@ -49,6 +49,9 @@ struct xar_header {
     uint32_t chksum_alg; /* 0 = none */
 };
 
+#define XAR_HEADER_MAGIC 0x78617221
+#define XAR_HEADER_VERSION 0
+
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack()
 #endif
