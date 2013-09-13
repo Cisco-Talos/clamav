@@ -28,6 +28,21 @@
 #include "cltypes.h"
 #include "others.h"
 
+/* Simple stripe types */
+#define DMG_STRIPE_EMPTY   0x00000000
+#define DMG_STRIPE_STORED  0x00000001
+#define DMG_STRIPE_ZEROES  0x00000002
+/* Compressed stripe type */
+#define DMG_STRIPE_ADC     0x80000004
+#define DMG_STRIPE_DEFLATE 0x80000005
+#define DMG_STRIPE_BZ      0x80000006
+/* Stripe types that are only seen with sector count zero */
+#define DMG_STRIPE_SKIP    0x7FFFFFFE
+#define DMG_STRIPE_END     0xFFFFFFFF
+
+/* So far, this has been constant */
+#define DMG_SECTOR_SIZE   512
+
 #ifndef HAVE_ATTRIB_PACKED
 #define __attribute__(x)
 #endif
@@ -72,19 +87,34 @@ struct dmg_koly_block {
 
 /* 204-byte block, still big-endian */
 struct dmg_mish_block {
-    uint32_t magic;
-    uint32_t version;
+    uint32_t magic  __attribute__ ((packed));
+    uint32_t version  __attribute__ ((packed));
 
-    uint64_t startSector;
-    uint64_t sectorCount;
-    uint64_t dataOffset;
-    uint32_t bufferCount;
-    uint32_t descriptorBlocks;
+    uint64_t startSector  __attribute__ ((packed));
+    uint64_t sectorCount  __attribute__ ((packed));
+    uint64_t dataOffset  __attribute__ ((packed));
+    uint32_t bufferCount  __attribute__ ((packed));
+    uint32_t descriptorBlocks  __attribute__ ((packed));
 
     uint8_t  reserved[24];
 
-    uint32_t checksum[34];
-    uint64_t blockDescriptorCount;
+    uint32_t checksum[34]  __attribute__ ((packed));
+    uint32_t blockDataCount  __attribute__ ((packed));
+};
+
+/* 40-byte block, big-endian */
+struct dmg_block_data {
+    uint32_t type  __attribute__ ((packed));
+    uint32_t reserved  __attribute__ ((packed));
+    uint64_t startSector  __attribute__ ((packed));
+    uint64_t sectorCount  __attribute__ ((packed));
+    uint64_t dataOffset  __attribute__ ((packed));
+    uint64_t dataLength  __attribute__ ((packed));
+};
+
+struct dmg_mish_with_stripes {
+    struct dmg_mish_block *mish;
+    struct dmg_block_data *stripes;
 };
 
 #ifdef HAVE_PRAGMA_PACK

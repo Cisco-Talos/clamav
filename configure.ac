@@ -649,9 +649,27 @@ then
 fi
 
 AC_ARG_ENABLE([unrar],
-[  --disable-unrar	  don't build libclamunrar and libclamunrar_iface ],
+[  --disable-unrar	  do not build libclamunrar and libclamunrar_iface ],
 want_unrar=$enableval, want_unrar="yes")
 AM_CONDITIONAL([ENABLE_UNRAR],[test "$want_unrar" = "yes"])
+
+want_xml="yes"
+AC_ARG_ENABLE([xml],
+[  --disable-xml	  disable DMG and XAR support],
+want_xml=$enableval, want_xml="yes")
+AM_CONDITIONAL([ENABLE_XML],[test "$want_xml" = "yes"])
+
+if test "$want_xml" = "yes"
+then
+    AM_PATH_XML2(2.5.0)
+    AC_DEFINE([HAVE_LIBXML2],1,[Define to 1 if you have the 'libxml2' library (-lxml2).])
+else
+    XML_CPPFLAGS=""
+    XML_LIBS=""
+    AC_SUBST(XML_CPPFLAGS)
+    AC_SUBST(XML_LIBS)
+    AC_DEFINE([HAVE_LIBXML2],0,[Define to 1 if you have the 'libxml2' library (-lxml2).])
+fi
 
 AC_ARG_ENABLE([getaddrinfo],
 [  --disable-getaddrinfo          disable support for getaddrinfo],
@@ -796,7 +814,7 @@ AC_ARG_ENABLE([pthreads],
 have_pthreads=$enableval,)
 
 AC_ARG_ENABLE([cr],
-[  --disable-cr		  don't link with C reentrant library (BSD) ],
+[  --disable-cr		  do not link with C reentrant library (BSD) ],
 use_cr=$enableval,)
 
 AC_ARG_ENABLE([id-check],
@@ -1301,7 +1319,7 @@ then
     if test -z "$clamavuser" || test -z "$clamavgroup"
     then
 	AC_MSG_RESULT(no)
-	AC_MSG_ERROR([User $clamav_user (and/or group $clamav_group) doesn't exist. Please read the documentation !])
+	AC_MSG_ERROR([User $clamav_user (and/or group $clamav_group) does not exist. Please read the documentation !])
     else
 	AC_MSG_RESULT([yes, user $clamav_user and group $clamav_group])
         CLAMAVUSER="$clamav_user"
@@ -1709,6 +1727,12 @@ CL_MSG_STATUS([autoit_ea06 ],[$have_autoitea06],[])
 CL_MSG_STATUS([bzip2       ],[$bzip_check],[$want_bzip2])
 CL_MSG_STATUS([zlib        ],[$ZLIB_HOME],[yes])
 CL_MSG_STATUS([unrar       ],[$want_unrar],[$want_unrar])
+if test "x$XML_LIBS" = "x"; then
+    xml_libs="no"
+else
+    xml_libs="yes"
+fi
+CL_MSG_STATUS([dmg and xar ],[$xml_libs],[])
 
 # Yep, downgrading the compiler avoids the bug too:
 # 4.0.x, and 4.1.0 are the known buggy versions
