@@ -46,8 +46,6 @@
 #endif
 
 #if HAVE_LIBXML2
-#include <libxml/tree.h>
-#include <libxml/parser.h>
 #include <libxml/xmlreader.h>
 #endif
 
