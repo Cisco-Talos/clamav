@@ -45,9 +45,11 @@
 #endif
 #endif
 
+#if HAVE_LIBXML2
 #include <libxml/tree.h>
 #include <libxml/parser.h>
 #include <libxml/xmlreader.h>
+#endif
 
 #include "cltypes.h"
 #include "others.h"
@@ -648,6 +650,7 @@ static int dmg_handle_mish(cli_ctx *ctx, unsigned int mishblocknum, char *dir,
     ret = cli_checklimits("cli_scandmg", ctx, projected_size, 0, 0);
     if (ret != CL_CLEAN) {
         /* limits exceeded */
+        cli_dbgmsg("dmg_handle_mish: skipping block %u, limits exceeded\n", mishblocknum);
         return ret;
     }
 
@@ -663,6 +666,7 @@ static int dmg_handle_mish(cli_ctx *ctx, unsigned int mishblocknum, char *dir,
     }
     cli_dbgmsg("dmg_handle_mish: extracting block %u to %s\n", mishblocknum, outfile);
 
+    /* Push data, stripe by stripe */
     for(i=0; i < mish_set->mish->blockDataCount && ret == CL_CLEAN; i++) {
         switch (blocklist[i].type) {
             case DMG_STRIPE_EMPTY:
