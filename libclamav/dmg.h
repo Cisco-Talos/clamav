@@ -115,6 +115,7 @@ struct dmg_block_data {
 struct dmg_mish_with_stripes {
     struct dmg_mish_block *mish;
     struct dmg_block_data *stripes;
+    struct dmg_mish_with_stripes *next;
 };
 
 #ifdef HAVE_PRAGMA_PACK

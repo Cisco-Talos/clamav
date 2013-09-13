@@ -92,9 +92,12 @@ int cli_scandmg(cli_ctx *ctx)
     char *dirname, *tmpfile;
     const char *outdata;
     unsigned int file = 0;
-
-    unsigned int trailer = 0;
-    uint32_t filesize, namesize, hdr_namesize;
+    struct dmg_mish_with_stripes *mish_list = NULL, *mish_list_tail = NULL;
+    enum dmgReadState state = DMG_FIND_BASE_PLIST;
+    int stateDepth[DMG_MAX_STATE];
+#if HAVE_LIBXML2
+    xmlTextReaderPtr reader;
+#endif
 
     if (!ctx || !ctx->fmap) {
         cli_errmsg("cli_scandmg: Invalid context\n");
@@ -191,7 +194,7 @@ int cli_scandmg(cli_ctx *ctx)
 /* XML_PARSE_NOENT | XML_PARSE_NONET | XML_PARSE_COMPACT */
 #define DMG_XML_PARSE_OPTS (1 << 1 | 1 << 11 | 1 << 16)
 
-    xmlTextReaderPtr reader = xmlReaderForMemory(outdata, (int)hdr.xmlLength, "toc.xml", NULL, DMG_XML_PARSE_OPTS);
+    reader = xmlReaderForMemory(outdata, (int)hdr.xmlLength, "toc.xml", NULL, DMG_XML_PARSE_OPTS);
     if (!reader) {
         cli_dbgmsg("cli_scandmg: Failed parsing XML!\n");
         if (!ctx->engine->keeptmp)
@@ -200,8 +203,6 @@ int cli_scandmg(cli_ctx *ctx)
         return CL_EFORMAT;
     }
 
-    enum dmgReadState state = DMG_FIND_BASE_PLIST;
-    int stateDepth[DMG_MAX_STATE];
     stateDepth[DMG_FIND_BASE_PLIST] = -1;
 
     // May need to check for (xmlTextReaderIsEmptyElement(reader) == 0)
@@ -233,7 +234,7 @@ int cli_scandmg(cli_ctx *ctx)
             if ((state == DMG_FIND_DATA_MISH)
                     && (depth == stateDepth[state-1])) {
                 xmlChar * textValue;
-                struct dmg_mish_with_stripes mish_set;
+                struct dmg_mish_with_stripes *mish_set;
                 /* Reset state early, for continue cases */
                 stateDepth[DMG_FIND_KEY_DATA] = -1;
                 state--;
@@ -264,7 +265,14 @@ int cli_scandmg(cli_ctx *ctx)
                     continue;
                 }
                 /* Have encoded mish block */
-                ret = dmg_decode_mish(ctx, &file, textValue, &mish_set);
+                mish_set = cli_malloc(sizeof(struct dmg_mish_with_stripes));
+                if (mish_set == NULL) {
+                    ret = CL_EMEM;
+                    xmlFree(textValue);
+                    xmlFree(nodeName);
+                    break;
+                }
+                ret = dmg_decode_mish(ctx, &file, textValue, mish_set);
                 xmlFree(textValue);
                 if (ret == CL_EFORMAT) {
                     /* Didn't decode, or not a mish block */
@@ -276,9 +284,16 @@ int cli_scandmg(cli_ctx *ctx)
                     xmlFree(nodeName);
                     continue;
                 }
-                /* Handle & scan mish block */
-                ret = dmg_handle_mish(ctx, file, dirname, hdr.xmlOffset, &mish_set);
-                free(mish_set.mish);
+                /* Add mish block to list */
+                if (mish_list_tail != NULL) {
+                    mish_list_tail->next = mish_set;
+                    mish_list_tail = mish_set;
+                }
+                else {
+                    mish_list = mish_set;
+                    mish_list_tail = mish_set;
+                }
+                mish_list_tail->next = NULL;
             }
             if ((state == DMG_FIND_KEY_DATA)
                     && (depth > stateDepth[state-1])
@@ -424,13 +439,34 @@ int cli_scandmg(cli_ctx *ctx)
         }
     }
 
+    xmlFreeTextReader(reader);
+    xmlCleanupParser();
+
 #else
 
     cli_dbgmsg("cli_scandmg: libxml2 support is compiled out. It is required for full DMG support.\n");
 
 #endif
 
+    /* Loop over mish array */
+    file = 0;
+    while ((ret == CL_CLEAN) && (mish_list != NULL)) {
+        /* Handle & scan mish block */
+        ret = dmg_handle_mish(ctx, file++, dirname, hdr.xmlOffset, mish_list);
+        free(mish_list->mish);
+        mish_list_tail = mish_list;
+        mish_list = mish_list->next;
+        free(mish_list_tail);
+    }
+
     /* Cleanup */
+    /* If error occurred, need to free mish items and mish blocks */
+    while (mish_list != NULL) {
+        free(mish_list->mish);
+        mish_list_tail = mish_list;
+        mish_list = mish_list->next;
+        free(mish_list_tail);
+    }
     if (!ctx->engine->keeptmp)
         cli_rmdirs(dirname);
     free(dirname);
@@ -591,6 +627,175 @@ static int dmg_track_sectors(uint64_t *total, uint8_t *data_to_write,
     return ret;
 }
 
+/* Stripe handling: zero block (type 0x0 or 0x2) */
+static int dmg_stripe_zeroes(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish_with_stripes *mish_set)
+{
+    int ret = CL_CLEAN;
+    size_t len = mish_set->stripes[index].sectorCount * DMG_SECTOR_SIZE;
+    ssize_t written;
+    uint8_t obuf[BUFSIZ];
+
+    cli_dbgmsg("dmg_stripe_zeroes: stripe %lu\n", (unsigned long)index);
+    if (len == 0)
+        return CL_CLEAN;
+
+    memset(obuf, 0, sizeof(obuf));
+    while (len > sizeof(obuf)) {
+        written = cli_writen(fd, obuf, sizeof(obuf));
+        if (written != sizeof(obuf)) {
+            ret = CL_EWRITE;
+            break;
+        }
+        len -= sizeof(obuf);
+    }
+
+    if ((ret == CL_CLEAN) && (len > 0)) {
+        written = cli_writen(fd, obuf, len);
+        if (written != len) {
+            ret = CL_EWRITE;
+        }
+    }
+
+    if (ret != CL_CLEAN) {
+        cli_errmsg("dmg_stripe_zeroes: error writing bytes to file (out of disk space?)\n");
+        return CL_EWRITE;
+    }
+    return CL_CLEAN;
+}
+
+/* Stripe handling: stored block (type 0x1) */
+static int dmg_stripe_store(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish_with_stripes *mish_set)
+{
+    const void *obuf;
+    int ret;
+    size_t off = mish_set->stripes[index].dataOffset;
+    size_t len = mish_set->stripes[index].dataLength;
+    ssize_t written;
+
+    cli_dbgmsg("dmg_stripe_store: stripe %lu\n", (unsigned long)index);
+    if (len == 0)
+        return CL_CLEAN;
+
+    obuf = (void *)fmap_need_off_once(*ctx->fmap, off, len);
+    if (!obuf) {
+        cli_warnmsg("dmg_stripe_store: fmap need failed on stripe %lu\n", index);
+        return CL_EMAP;
+    }
+    written = cli_writen(fd, obuf, len);
+    if (written < 0) {
+        cli_errmsg("dmg_stripe_store: error writing bytes to file (out of disk space?)\n");
+        return CL_EWRITE;
+    }
+    else if (written != len) {
+        cli_errmsg("dmg_stripe_store: error writing bytes to file (out of disk space?)\n");
+        return CL_EWRITE;
+    }
+    return CL_CLEAN;
+}
+
+/* Stripe handling: ADC block (type 0x80000004) */
+static int dmg_stripe_adc(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish_with_stripes *mish_set)
+{
+    /* Temporary stub */
+    cli_dbgmsg("dmg_stripe_adc: stripe %lu\n", (unsigned long)index);
+
+    return CL_CLEAN;
+}
+
+/* Stripe handling: deflate block (type 0x80000005) */
+static int dmg_stripe_inflate(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish_with_stripes *mish_set)
+{
+    int ret = CL_CLEAN, zstat;
+    z_stream strm;
+    size_t off = mish_set->stripes[index].dataOffset;
+    size_t len = mish_set->stripes[index].dataLength;
+    off_t nbytes = 0;
+    char obuf[BUFSIZ];
+
+    cli_dbgmsg("dmg_stripe_inflate: stripe %lu\n", (unsigned long)index);
+    if (len == 0)
+        return CL_CLEAN;
+
+    memset(&strm, 0, sizeof(strm));
+    strm.next_in = (void*)fmap_need_off_once(*ctx->fmap, off, len);
+    if (!strm.next_in) {
+        cli_warnmsg("dmg_stripe_inflate: fmap need failed on stripe %lu\n", index);
+        return CL_EMAP;
+    }
+    strm.avail_in = len;
+    strm.next_out = obuf;
+    strm.avail_out = sizeof(obuf);
+
+    zstat = inflateInit(&strm);
+    if(zstat != Z_OK) {
+        cli_warnmsg("dmg_stripe_inflate: inflateInit failed\n");
+        return CL_EMEM;
+    }
+
+    while(strm.avail_in) {
+        int written;
+        zstat = inflate(&strm, Z_NO_FLUSH);   /* zlib */
+        switch(zstat) {
+            case Z_OK:
+                if(strm.avail_out == 0) {
+                    if ((written=cli_writen(fd, obuf, sizeof(obuf)))!=sizeof(obuf)) {
+                        cli_errmsg("dmg_stripe_inflate: failed write to output file\n");
+                        inflateEnd(&strm);
+                        return CL_EWRITE;
+                    }
+                    nbytes += written;
+                    strm.next_out = (Bytef *)obuf;
+                    strm.avail_out = sizeof(obuf);
+                }
+                continue;
+            case Z_STREAM_END:
+            default:
+                written = sizeof(obuf) - strm.avail_out;
+                if (written) {
+                    if ((cli_writen(fd, obuf, written))!=written) {
+                        cli_errmsg("dmg_stripe_inflate: failed write to output file\n");
+                        inflateEnd(&strm);
+                        return CL_EWRITE;
+                    }
+                    nbytes += written;
+                    strm.next_out = (Bytef *)obuf;
+                    strm.avail_out = sizeof(obuf);
+                    if (zstat == Z_STREAM_END)
+                        break;
+                }
+                if(strm.msg)
+                    cli_dbgmsg("dmg_stripe_inflate: after writing %lu bytes, got error \"%s\" inflating stripe %lu\n",
+                               (unsigned long)nbytes, strm.msg, index);
+                else
+                    cli_dbgmsg("dmg_stripe_inflate: after writing %lu bytes, got error %d inflating stripe %lu\n",
+                               (unsigned long)nbytes, zstat, index);
+                inflateEnd(&strm);
+                return CL_EFORMAT;
+        }
+        break;
+    }
+
+    if(strm.avail_out != sizeof(obuf)) {
+        if(cli_writen(fd, obuf, sizeof(obuf) - strm.avail_out) < 0) {
+            cli_errmsg("dmg_stripe_inflate: failed write to output file\n");
+            inflateEnd(&strm);
+            return CL_EWRITE;
+        }
+    }
+
+    inflateEnd(&strm);
+    return CL_CLEAN;
+}
+
+/* Stripe handling: bzip block (type 0x80000006) */
+static int dmg_stripe_bzip(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish_with_stripes *mish_set)
+{
+    /* Temporary stub */
+    cli_dbgmsg("dmg_stripe_bzip: stripe %lu\n", (unsigned long)index);
+
+    return CL_CLEAN;
+}
+
 /* Given mish data, reconstruct the partition details */
 static int dmg_handle_mish(cli_ctx *ctx, unsigned int mishblocknum, char *dir,
         uint64_t xmlOffset, struct dmg_mish_with_stripes *mish_set)
@@ -669,19 +874,19 @@ static int dmg_handle_mish(cli_ctx *ctx, unsigned int mishblocknum, char *dir,
         switch (blocklist[i].type) {
             case DMG_STRIPE_EMPTY:
             case DMG_STRIPE_ZEROES:
-                cli_dbgmsg("dmg_handle_mish: stripe %lu, zero block\n", (unsigned long)i);
+                ret = dmg_stripe_zeroes(ctx, ofd, i, mish_set);
                 break;
             case DMG_STRIPE_STORED:
-                cli_dbgmsg("dmg_handle_mish: stripe %lu, stored data block\n", (unsigned long)i);
+                ret = dmg_stripe_store(ctx, ofd, i, mish_set);
                 break;
             case DMG_STRIPE_ADC:
-                cli_dbgmsg("dmg_handle_mish: stripe %lu, ADC data block\n", (unsigned long)i);
+                ret = dmg_stripe_adc(ctx, ofd, i, mish_set);
                 break;
             case DMG_STRIPE_DEFLATE:
-                cli_dbgmsg("dmg_handle_mish: stripe %lu, zlib block\n", (unsigned long)i);
+                ret = dmg_stripe_inflate(ctx, ofd, i, mish_set);
                 break;
             case DMG_STRIPE_BZ:
-                cli_dbgmsg("dmg_handle_mish: stripe %lu, bzip block\n", (unsigned long)i);
+                ret = dmg_stripe_bzip(ctx, ofd, i, mish_set);
                 break;
             case DMG_STRIPE_SKIP:
             case DMG_STRIPE_END:
