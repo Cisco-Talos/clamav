@@ -418,7 +418,7 @@ int cli_scanxar(cli_ctx *ctx)
     if (rc == CL_BREAK)
         rc = CL_SUCCESS;
 #else
-    cli_debug("cli_scanxar: can't scan xar files, need libxml2.\n");
+    cli_dbgmsg("cli_scanxar: can't scan xar files, need libxml2.\n");
 #endif
 
     return rc;
