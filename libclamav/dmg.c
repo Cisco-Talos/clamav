@@ -56,11 +56,18 @@
 #include "sf_base64decode.h"
 
 // #define DEBUG_DMG_PARSE
+// #define DEBUG_DMG_BZIP
 
 #ifdef DEBUG_DMG_PARSE
 #  define dmg_parsemsg(...) cli_dbgmsg( __VA_ARGS__)
 #else
 #  define dmg_parsemsg(...) ;
+#endif
+
+#ifdef DEBUG_DMG_BZIP
+#  define dmg_bzipmsg(...) cli_dbgmsg( __VA_ARGS__)
+#else
+#  define dmg_bzipmsg(...) ;
 #endif
 
 enum dmgReadState {
@@ -126,6 +133,10 @@ int cli_scandmg(cli_ctx *ctx)
         cli_dbgmsg("cli_scandmg: No koly magic, %8x\n", hdr.magic);
         return CL_EFORMAT;
     }
+
+    hdr.dataForkOffset = be64_to_host(hdr.dataForkOffset);
+    hdr.dataForkLength = be64_to_host(hdr.dataForkLength);
+    cli_dbgmsg("cli_scandmg: data offset %lu len %d\n", (unsigned long)hdr.dataForkOffset, (int)hdr.dataForkLength);
 
     hdr.xmlOffset = be64_to_host(hdr.xmlOffset);
     hdr.xmlLength = be64_to_host(hdr.xmlLength);
@@ -710,7 +721,7 @@ static int dmg_stripe_inflate(cli_ctx *ctx, int fd, uint32_t index, struct dmg_m
     size_t off = mish_set->stripes[index].dataOffset;
     size_t len = mish_set->stripes[index].dataLength;
     off_t nbytes = 0;
-    char obuf[BUFSIZ];
+    uint8_t obuf[BUFSIZ];
 
     cli_dbgmsg("dmg_stripe_inflate: stripe %lu\n", (unsigned long)index);
     if (len == 0)
@@ -790,10 +801,109 @@ static int dmg_stripe_inflate(cli_ctx *ctx, int fd, uint32_t index, struct dmg_m
 /* Stripe handling: bzip block (type 0x80000006) */
 static int dmg_stripe_bzip(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish_with_stripes *mish_set)
 {
-    /* Temporary stub */
-    cli_dbgmsg("dmg_stripe_bzip: stripe %lu\n", (unsigned long)index);
+    int ret = CL_CLEAN;
+    size_t len = mish_set->stripes[index].dataLength;
+#if HAVE_BZLIB_H
+    size_t off = mish_set->stripes[index].dataOffset;
+    int rc;
+    bz_stream strm;
+    size_t size_so_far = 0;
+    uint8_t obuf[BUFSIZ];
+#endif
 
-    return CL_CLEAN;
+    cli_dbgmsg("dmg_stripe_bzip: stripe %lu initial len %lu expected len %lu\n", (unsigned long)index,
+            (unsigned long)len, (unsigned long)mish_set->stripes[index].sectorCount * DMG_SECTOR_SIZE);
+
+#if HAVE_BZLIB_H
+    memset(&strm, 0, sizeof(strm));
+    strm.next_out = obuf;
+    strm.avail_out = sizeof(obuf);
+    if (BZ2_bzDecompressInit(&strm, 0, 0) != BZ_OK) {
+        cli_dbgmsg("dmg_stripe_bzip: bzDecompressInit failed\n");
+        return CL_EOPEN;
+    }
+
+    do {
+        if (strm.avail_in == 0) {
+            size_t next_len = (len > sizeof(obuf)) ? sizeof(obuf) : len;
+            dmg_bzipmsg("dmg_stripe_bzip: off %lu len %lu next_len %lu\n", off, len, next_len);
+            strm.next_in = (void*)fmap_need_off_once(*ctx->fmap, off, next_len);
+            if (strm.next_in == NULL) {
+                cli_dbgmsg("dmg_stripe_bzip: expected more stream\n");
+                ret = CL_EMAP;
+                break;
+            }
+            strm.avail_in = next_len;
+            len -= next_len;
+            off += next_len;
+        }
+
+        dmg_bzipmsg("dmg_stripe_bzip: before = strm.avail_in %lu strm.avail_out: %lu\n", strm.avail_in, strm.avail_out);
+        rc = BZ2_bzDecompress(&strm);
+        if ((rc != BZ_OK) && (rc != BZ_STREAM_END)) {
+            cli_dbgmsg("dmg_stripe_bzip: decompress error: %d\n", rc);
+            ret = CL_EFORMAT;
+            break;
+        }
+
+        dmg_bzipmsg("dmg_stripe_bzip: after = strm.avail_in %lu strm.avail_out: %lu rc: %d %d\n",
+                strm.avail_in, strm.avail_out, rc, BZ_STREAM_END);
+        /* Drain output buffer */
+        if (!strm.avail_out) {
+            size_t next_write = sizeof(obuf);
+            do {
+                size_so_far += next_write;
+                dmg_bzipmsg("dmg_stripe_bzip: size_so_far: %lu next_write: %lu\n", size_so_far, next_write);
+
+                ret = cli_checklimits("dmg_stripe_bzip", ctx, (unsigned long)(size_so_far + sizeof(obuf)), 0, 0);
+                if (ret != CL_CLEAN) {
+                    break;
+                }
+
+                if (cli_writen(fd, obuf, next_write) != next_write) {
+                    cli_dbgmsg("dmg_stripe_bzip: error writing to tmpfile\n");
+                    ret = CL_EWRITE;
+                    break;
+                }
+
+                strm.next_out = obuf;
+                strm.avail_out = sizeof(obuf);
+
+                if (rc == BZ_OK)
+                    rc = BZ2_bzDecompress(&strm);
+                if ((rc != BZ_OK) && (rc != BZ_STREAM_END)) {
+                    cli_dbgmsg("dmg_stripe_bzip: decompress error: %d\n", rc);
+                    ret = CL_EFORMAT;
+                    break;
+                }
+            } while (!strm.avail_out);
+        }
+        /* Stream end, so write data if any remains in buffer */
+        if (rc == BZ_STREAM_END) {
+            size_t next_write = sizeof(obuf) - strm.avail_out;
+            size_so_far += next_write;
+            dmg_bzipmsg("dmg_stripe_bzip: size_so_far: %lu next_write: %lu\n", size_so_far, next_write);
+
+            ret = cli_checklimits("dmg_stripe_bzip", ctx, size_so_far + sizeof(obuf), 0, 0);
+            if (ret != CL_CLEAN) {
+                break;
+            }
+
+            if (cli_writen(fd, obuf, next_write) != next_write) {
+                cli_dbgmsg("dmg_stripe_bzip: error writing to tmpfile\n");
+                ret = CL_EWRITE;
+                break;
+            }
+
+            strm.next_out = obuf;
+            strm.avail_out = sizeof(obuf);
+        }
+    } while ((rc == BZ_OK) && (len > 0));
+
+    BZ2_bzDecompressEnd(&strm);
+#endif
+
+    return ret;
 }
 
 /* Given mish data, reconstruct the partition details */
@@ -816,7 +926,7 @@ static int dmg_handle_mish(cli_ctx *ctx, unsigned int mishblocknum, char *dir,
         blocklist[i].sectorCount = be64_to_host(blocklist[i].sectorCount);
         blocklist[i].dataOffset = be64_to_host(blocklist[i].dataOffset);
         blocklist[i].dataLength = be64_to_host(blocklist[i].dataLength);
-        cli_dbgmsg("mish %lu block %u type %lx start %lu count %lu source %lu length %lu\n", mishblocknum, i,
+        cli_dbgmsg("mish %lu stripe %u type %lx start %lu count %lu source %lu length %lu\n", mishblocknum, i,
             blocklist[i].type, blocklist[i].startSector, blocklist[i].sectorCount,
             blocklist[i].dataOffset, blocklist[i].dataLength);
         if ((blocklist[i].dataOffset > xmlOffset) || 
