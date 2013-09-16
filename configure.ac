@@ -42,11 +42,11 @@ dnl the date in the version
 AC_DEFINE([PACKAGE], PACKAGE_NAME, [Name of package])
 
 dnl change this on a release
-VERSION="devel-`date +%Y%m%d`"
-dnl VERSION="0.94rc1"
+dnl VERSION="devel-`date +%Y%m%d`"
+VERSION="0.98"
 
 LC_CURRENT=7
-LC_REVISION=11
+LC_REVISION=18
 LC_AGE=1
 LIBCLAMAV_VERSION="$LC_CURRENT":"$LC_REVISION":"$LC_AGE"
 AC_SUBST([LIBCLAMAV_VERSION])
