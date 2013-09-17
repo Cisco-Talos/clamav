@@ -498,11 +498,11 @@ static int dmg_decode_mish(cli_ctx *ctx, unsigned int *mishblocknum, xmlChar *mi
 
     (*mishblocknum)++;
     base64_len = strlen(mish_base64);
-    cli_dbgmsg("dmg_decode_mish: len of encoded block %u is %lu\n", *mishblocknum, base64_len);
+    dmg_parsemsg("dmg_decode_mish: len of encoded block %u is %lu\n", *mishblocknum, base64_len);
 
     /* speed vs memory, could walk the encoded data and skip whitespace in calculation */
     buff_size = 3 * base64_len / 4 + 4;
-    cli_dbgmsg("dmg_decode_mish: buffer for mish block %u is %lu\n", *mishblocknum, (unsigned long)buff_size);
+    dmg_parsemsg("dmg_decode_mish: buffer for mish block %u is %lu\n", *mishblocknum, (unsigned long)buff_size);
     decoded = cli_malloc(buff_size);
     if (!decoded)
         return CL_EMEM;
@@ -512,7 +512,7 @@ static int dmg_decode_mish(cli_ctx *ctx, unsigned int *mishblocknum, xmlChar *mi
         free(decoded);
         return CL_EFORMAT;
     }
-    cli_dbgmsg("dmg_decode_mish: len of decoded mish block %u is %lu\n", *mishblocknum, (unsigned long)decoded_len);
+    dmg_parsemsg("dmg_decode_mish: len of decoded mish block %u is %lu\n", *mishblocknum, (unsigned long)decoded_len);
     
     if (decoded_len < sizeof(struct dmg_mish_block)) {
         cli_dbgmsg("dmg_decode_mish: block %u too short for valid mish block\n", *mishblocknum);
@@ -535,11 +535,10 @@ static int dmg_decode_mish(cli_ctx *ctx, unsigned int *mishblocknum, xmlChar *mi
     // mish_set->mish->bufferCount = be32_to_host(mish_set->mish->bufferCount);
     mish_set->mish->blockDataCount = be32_to_host(mish_set->mish->blockDataCount);
 
-    cli_dbgmsg("dmg_decode_mish: startSector = %lu\n", mish_set->mish->startSector);
-    cli_dbgmsg("dmg_decode_mish: sectorCount = %lu\n", mish_set->mish->sectorCount);
-    cli_dbgmsg("dmg_decode_mish: dataOffset = %lu\n", mish_set->mish->dataOffset);
-    // cli_dbgmsg("dmg_decode_mish: bufferCount = %lu\n", mish_set->mish->bufferCount);
-    cli_dbgmsg("dmg_decode_mish: blockDataCount = %lu\n", mish_set->mish->blockDataCount);
+    cli_dbgmsg("dmg_decode_mish: startSector = %lu sectorCount = %lu "
+        "dataOffset = %lu stripeCount = %lu\n",
+        mish_set->mish->startSector, mish_set->mish->sectorCount,
+        mish_set->mish->dataOffset, mish_set->mish->blockDataCount);
 
     /* decoded length should be mish block + blockDataCount * 40 */
     if (decoded_len < (sizeof(struct dmg_mish_block)
@@ -1006,7 +1005,11 @@ static int dmg_handle_mish(cli_ctx *ctx, unsigned int mishblocknum, char *dir,
         }
     }
 
-    // ret = cli_magic_scandesc(ofd, ctx);
+    /* If okay so far, scan rebuilt partition */
+    if (ret == CL_CLEAN) {
+        ; // ret = cli_magic_scandesc(ofd, ctx);
+    }
+
     close(ofd);
     if (!ctx->engine->keeptmp)
         if (cli_unlink(outfile)) return CL_EUNLINK;
