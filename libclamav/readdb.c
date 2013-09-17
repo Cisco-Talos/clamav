@@ -1589,7 +1589,7 @@ static int cli_loadftm(FILE *fs, struct cl_engine *engine, unsigned int options,
 	struct cli_ftype *new;
 	cli_file_t rtype, type;
 	int ret;
-
+	int magictype;
 
     if((ret = cli_initroots(engine, options)))
 	return ret;
@@ -1650,11 +1650,12 @@ static int cli_loadftm(FILE *fs, struct cl_engine *engine, unsigned int options,
 	    break;
 	}
 
-	if(atoi(tokens[0]) == 1) { /* A-C */
+        magictype = atoi(tokens[0]);
+	if(magictype == 1) { /* A-C */
 	    if((ret = cli_parse_add(engine->root[0], tokens[3], tokens[2], rtype, type, tokens[1], 0, NULL, options)))
 		break;
 
-	} else if(atoi(tokens[0]) == 0) { /* memcmp() */
+	} else if ((magictype == 0) || (magictype == 4)) { /* memcmp() */
 	    if(!cli_isnumber(tokens[1])) {
 		cli_errmsg("cli_loadftm: Invalid offset\n");
 		ret = CL_EMALFDB;
@@ -1682,9 +1683,15 @@ static int cli_loadftm(FILE *fs, struct cl_engine *engine, unsigned int options,
 		ret = CL_EMEM;
 		break;
 	    }
-	    new->next = engine->ftypes;
-	    engine->ftypes = new;
-
+            /* files => ftypes, partitions => ptypes */
+	    if(magictype == 4) {
+		new->next = engine->ptypes;
+		engine->ptypes = new;
+	    }
+	    else {
+		new->next = engine->ftypes;
+		engine->ftypes = new;
+            }
 	} else {
 	    cli_dbgmsg("cli_loadftm: Unsupported mode %u\n", atoi(tokens[0]));
 	    continue;

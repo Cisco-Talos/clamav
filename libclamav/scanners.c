@@ -2327,10 +2327,13 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
         early_ret_from_magicscan(CL_CLEAN);
     }
     old_hook_lsig_matches = ctx->hook_lsig_matches;
+    if(type == CL_TYPE_PART_ANY) {
+	typercg = 0;
+    }
 
     perf_start(ctx, PERFT_FT);
-    if(type == CL_TYPE_ANY)
-	type = cli_filetype2(*ctx->fmap, ctx->engine);
+    if((type == CL_TYPE_ANY) || type == CL_TYPE_PART_ANY)
+	type = cli_filetype2(*ctx->fmap, ctx->engine, type);
     perf_stop(ctx, PERFT_FT);
     if(type == CL_TYPE_ERROR) {
 	cli_dbgmsg("cli_magic_scandesc: cli_filetype2 returned CL_TYPE_ERROR\n");
@@ -2651,6 +2654,12 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 		ret = cli_scanxar(ctx);
 	    break;
 
+	case CL_TYPE_PART_HFSPLUS:
+	    ctx->container_type = CL_TYPE_PART_HFSPLUS;
+	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_HFSPLUS))
+		ret = cli_scanhfsplus(ctx);
+	    break;
+
 	case CL_TYPE_BINARY_DATA:
 	case CL_TYPE_TEXT_UTF16BE:
 	    if(SCAN_ALGO && (DCONF_OTHER & OTHER_CONF_MYDOOMLOG))
@@ -2793,7 +2802,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
     }
 }
 
-int cli_magic_scandesc(int desc, cli_ctx *ctx)
+static int cli_base_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 {
     STATBUF sb;
     int ret;
@@ -2821,11 +2830,22 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
     }
     perf_stop(ctx, PERFT_MAP);
 
-    ret = magic_scandesc(ctx, CL_TYPE_ANY);
+    ret = magic_scandesc(ctx, type);
 
     funmap(*ctx->fmap);
     ctx->fmap--;
     return ret;
+}
+
+int cli_magic_scandesc(int desc, cli_ctx *ctx)
+{
+    return cli_base_scandesc(desc, ctx, CL_TYPE_ANY);
+}
+
+/* Have to keep partition typing separate */
+int cli_partition_scandesc(int desc, cli_ctx *ctx)
+{
+    return cli_base_scandesc(desc, ctx, CL_TYPE_PART_ANY);
 }
 
 int cli_magic_scandesc_type(cli_ctx *ctx, cli_file_t type)

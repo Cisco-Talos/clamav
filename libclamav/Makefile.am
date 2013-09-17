@@ -377,6 +377,8 @@ libclamav_la_SOURCES = \
 	xar.h \
 	sf_base64decode.c \
 	sf_base64decode.h \
+	hfsplus.c \
+	hfsplus.h \
 	swf.c \
 	swf.h \
 	jpeg.c \

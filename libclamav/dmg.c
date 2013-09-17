@@ -1007,7 +1007,7 @@ static int dmg_handle_mish(cli_ctx *ctx, unsigned int mishblocknum, char *dir,
 
     /* If okay so far, scan rebuilt partition */
     if (ret == CL_CLEAN) {
-        ; // ret = cli_magic_scandesc(ofd, ctx);
+        ret = cli_partition_scandesc(ofd, ctx);
     }
 
     close(ofd);

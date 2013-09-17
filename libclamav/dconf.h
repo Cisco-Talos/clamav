@@ -84,6 +84,7 @@ struct cli_dconf {
 #define ARCH_CONF_ISO9660   0x20000
 #define ARCH_CONF_DMG       0x40000
 #define ARCH_CONF_XAR       0x80000
+#define ARCH_CONF_HFSPLUS   0x100000
 
 /* Document flags */
 #define DOC_CONF_HTML		0x1

@@ -1,7 +1,7 @@
 /*
- *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *  Copyright (C) 2013 Sourcefire, Inc.
  *
- *  Authors: Tomasz Kojm
+ *  Authors: David Raynor <draynor@sourcefire.com>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -18,18 +18,15 @@
  *  MA 02110-1301, USA.
  */
 
-#ifndef __SCANNERS_H
-#define __SCANNERS_H
+#ifndef __HFSPLUS_H
+#define __HFSPLUS_H
 
-#include "clamav.h"
-#include "others.h"
-#include "filetypes.h"
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
 
-int cli_magic_scandesc(int desc, cli_ctx *ctx);
-int cli_partition_scandesc(int desc, cli_ctx *ctx);
-int cli_magic_scandesc_type(cli_ctx *ctx, cli_file_t type);
-int cli_map_scandesc(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx);
-int cli_mem_scandesc(const void *buffer, size_t length, cli_ctx *ctx);
-int cli_found_possibly_unwanted(cli_ctx* ctx);
+#include "cltypes.h"
+
+int cli_scanhfsplus(cli_ctx *ctx);
 
 #endif
