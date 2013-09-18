@@ -132,6 +132,9 @@
     <ClCompile Include="..\libclamav\hashtab.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\libclamav\hfsplus.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\libclamav\htmlnorm.c">
       <Filter>Source Files</Filter>
     </ClCompile>
