@@ -29,7 +29,7 @@
 #include <libxml/xmlreader.h>
 #include "scanners.h"
 #include "inflate64.h"
-#include "7z_iface.h"
+#include "lzma_iface.h"
 
 /*
    xar_cleanup_temp_file - cleanup after cli_gentempfd
@@ -147,15 +147,15 @@ static int xar_get_toc_data_values(xmlTextReaderPtr reader, long *length, long *
         } else {
             if (xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT) {
                 if (xmlStrEqual(name, (const xmlChar *)"data")) {
-                    cli_dbgmsg("cli_scanxar: xmlTextReaderRead read %s\n", name);
+                    cli_dbgmsg("cli_scanxar: xmlTextReaderRead read <data>\n");
                     indata = 1;
                 } else if (xmlStrEqual(name, (const xmlChar *)"ea")) {
-                    cli_dbgmsg("cli_scanxar: xmlTextReaderRead read %s\n", name);
+                    cli_dbgmsg("cli_scanxar: xmlTextReaderRead read <ea>\n");
                     inea = 1;
                 }
             } else if ((xmlTextReaderNodeType(reader) == XML_READER_TYPE_END_ELEMENT) &&
                        xmlStrEqual(name, (const xmlChar *)"xar")) {
-                cli_dbgmsg("cli_scanxar: finished parsing xml TOC.\n");   
+                cli_dbgmsg("cli_scanxar: finished parsing xar TOC.\n");   
             }
         }
         rc = xmlTextReaderRead(reader);
@@ -254,10 +254,10 @@ int cli_scanxar(cli_ctx *ctx)
         goto exit_toc;
     }
 
-       /* cli_dbgmsg("cli_scanxar: TOC xml:\n%s\n", toc); */
-       /* printf("cli_scanxar: TOC xml:\n%s\n", toc); */
-       /* cli_dbgmsg("cli_scanxar: TOC end:\n"); */
-       /* printf("cli_scanxar: TOC end:\n"); */
+    /* cli_dbgmsg("cli_scanxar: TOC xml:\n%s\n", toc); */
+    /* printf("cli_scanxar: TOC xml:\n%s\n", toc); */
+    /* cli_dbgmsg("cli_scanxar: TOC end:\n"); */
+    /* printf("cli_scanxar: TOC end:\n"); */
 
     /* scan the xml */
     cli_dbgmsg("cli_scanxar: scanning xar TOC xml.\n"); 
@@ -312,8 +312,9 @@ int cli_scanxar(cli_ctx *ctx)
             goto exit_reader;
         }
 
-        cli_dbgmsg("cli_scanxar: decompress and scanning heap offset %li len %li size %li\n",
-                   offset, length, size);
+        cli_dbgmsg("cli_scanxar: decompress into temp file:\n%s, size %li,\n"
+                   "from xar heap offset %li length %li\n",
+                   tmpname, size, offset, length);
 
         switch (encoding) {
         case CL_TYPE_GZ:
@@ -369,12 +370,113 @@ int cli_scanxar(cli_ctx *ctx)
             inflateEnd(&strm);
             break;
         case CL_TYPE_7Z:
-            /*LZMA: TODO*/
-            /* this is broken, gives SZ_ERROR_NO_ARCHIVE:  */
-            /* rc = cli_7unz(ctx, at); */
-            /* if (rc) { */
-            /*     cli_errmsg("cli_scanrar: cli_7unz() fails: %i\n", rc); */
-            /* } */
+            {
+#define CLI_LZMA_OBUF_SIZE 1024*1024
+#define CLI_LZMA_HDR_SIZE LZMA_PROPS_SIZE+8
+#define CLI_LZMA_CRATIO_SHIFT 2 /* estimated compression ratio 25% */
+                struct CLI_LZMA lz = {0};
+                unsigned long in_remaining = length;
+                unsigned long out_size = 0;
+                char * buff = __lzma_wrap_alloc(NULL, CLI_LZMA_OBUF_SIZE);
+                
+                if (buff == NULL) {
+                    cli_errmsg("cli_scanxar: memory request for lzma decompression buffer fails.\n");
+                    rc = CL_EMEM;
+                    goto exit_tmpfile;
+                    
+                }
+
+                blockp = (void*)fmap_need_off_once(map, at, CLI_LZMA_HDR_SIZE);
+                if (blockp == NULL) {
+                    cli_errmsg("cli_scanxar: Can't read %li bytes @ %li, errno:%s.\n",
+                               length, at, strerror(errno));
+                    rc = CL_EREAD;
+                    __lzma_wrap_free(NULL, buff);
+                    goto exit_tmpfile;
+                }
+
+                lz.next_in = blockp;
+                lz.avail_in = CLI_LZMA_HDR_SIZE;
+
+                rc = cli_LzmaInit(&lz, 0);
+                if (rc != LZMA_RESULT_OK) {
+                    cli_errmsg("cli_scanxar: cli_LzmaInit() fails: %i.\n", rc);
+                    rc = CL_EFORMAT;
+                    __lzma_wrap_free(NULL, buff);
+                    goto exit_tmpfile;
+                }
+                
+                at += CLI_LZMA_HDR_SIZE;
+                in_remaining -= CLI_LZMA_HDR_SIZE;                
+                while (at < map->len && at < offset+hdr.toc_length_compressed+hdr.size+length) {
+                    SizeT avail_in;
+                    SizeT avail_out;
+                    unsigned long in_consumed;
+
+                    lz.next_out = buff;
+                    lz.avail_out = CLI_LZMA_OBUF_SIZE;
+                    lz.avail_in = avail_in = MIN(CLI_LZMA_OBUF_SIZE>>CLI_LZMA_CRATIO_SHIFT, in_remaining);
+                    lz.next_in = (void*)fmap_need_off_once(map, at, lz.avail_in);
+                    if (lz.next_in == NULL) {
+                        cli_errmsg("cli_scanxar: Can't read %li bytes @ %li, errno: %s.\n",
+                                   length, at, strerror(errno));
+                        rc = CL_EREAD;
+                        __lzma_wrap_free(NULL, buff);
+                        cli_LzmaShutdown(&lz);
+                        goto exit_tmpfile;
+                    }
+
+                    rc = cli_LzmaDecode(&lz);
+                    if (rc != LZMA_RESULT_OK && rc != LZMA_STREAM_END) {
+                        cli_errmsg("cli_scanxar: cli_LzmaDecode() fails: %i.\n", rc);
+                        rc = CL_EFORMAT;
+                        __lzma_wrap_free(NULL, buff);
+                        cli_LzmaShutdown(&lz);
+                        goto exit_tmpfile;
+                    }
+
+                    in_consumed = avail_in - lz.avail_in;
+                    in_remaining -= in_consumed;
+                    at += in_consumed;
+                    avail_out = CLI_LZMA_OBUF_SIZE - lz.avail_out;
+                    
+                    if (avail_out == 0) {
+                        cli_errmsg("cli_scanxar: cli_LzmaDecode() produces no output for "
+                                   "avail_in %lu, avail_out %lu.\n", avail_in, avail_out);
+                        rc = CL_EFORMAT;
+                        __lzma_wrap_free(NULL, buff);
+                        cli_LzmaShutdown(&lz);
+                        goto exit_tmpfile;
+                    }
+                    
+                    /* Write a decompressed block. */
+                    cli_dbgmsg("Writing %li bytes to LZMA decompress temp file, "
+                               "consumed %li of %li available bytes.\n",
+                               avail_out, in_consumed, avail_in);
+                    
+                    if (cli_writen(fd, buff, avail_out) < 0) {
+                        cli_dbgmsg("cli_scanxar: cli_writen error writing lzma temp file for %li bytes.\n",
+                                   avail_out);
+                        __lzma_wrap_free(NULL, buff);
+                        cli_LzmaShutdown(&lz);
+                        rc = CL_EWRITE;
+                        goto exit_tmpfile;
+                    }
+                    
+                    /* Check file size limitation. */
+                    out_size += avail_out;
+                    if (cli_checklimits("cli_scanxar", ctx, out_size, 0, 0) != CL_CLEAN) {
+                        break;
+                    }
+                    
+                    if (rc == LZMA_STREAM_END)
+                        break;
+                }
+
+                cli_LzmaShutdown(&lz);
+                __lzma_wrap_free(NULL, buff);
+            }
+            break; 
         default:
         case CL_TYPE_BZ:
         case CL_TYPE_ANY:
