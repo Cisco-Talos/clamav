@@ -172,7 +172,71 @@ static int xar_get_toc_data_values(xmlTextReaderPtr reader, long *length, long *
     return rc;
 }
 
+/*
+  xar_process_subdocument - check TOC for xml subdocument. If found, extract and
+                            scan in memory.
+  Parameters:
+     reader - xmlTextReaderPtr
+     ctx - pointer to cli_ctx
+  Returns:
+     CL_SUCCESS - subdoc found and clean scan (or virus found and SCAN_ALL), or no subdocument
+     other - error return code from cli_mem_scandesc()
+*/                        
+static int xar_scan_subdocuments(xmlTextReaderPtr reader, cli_ctx *ctx)
+{
+    int rc, subdoc_len, fd;
+    xmlChar * subdoc;
+    const xmlChar *name;
+    char * tmpname;
+
+    while (xmlTextReaderRead(reader) == 1) {
+        name = xmlTextReaderConstLocalName(reader);
+        if (name == NULL) {
+            cli_errmsg("cli_scanxar: xmlTextReaderConstLocalName() no name.\n");
+            rc = CL_EFORMAT;
+            break;
+        }
+        if (xmlStrEqual(name, (const xmlChar *)"toc") && 
+            xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT)
+            return CL_SUCCESS;
+        if (xmlStrEqual(name, (const xmlChar *)"subdoc") && 
+            xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT) {
+            subdoc = xmlTextReaderReadInnerXml(reader);
+            if (subdoc == NULL) {
+                cli_errmsg("cli_scanxar: no content in subdoc element.\n");
+                xmlTextReaderNext(reader);
+                continue;
+            }
+            //            printf("subdoc:\n%s\n", subdoc);
+            subdoc_len = xmlStrlen(subdoc);
+            cli_dbgmsg("cli_scanxar: in-memory scan of xml subdocument, len %i.\n", subdoc_len);
+            rc = cli_mem_scandesc(subdoc, subdoc_len, ctx);
+            if (rc = CL_VIRUS && SCAN_ALL)
+                rc = CL_SUCCESS;
+            
+            /* make a file to leave if --leave-temps in effect */
+            if(ctx->engine->keeptmp) {
+                if ((rc = cli_gentempfd(ctx->engine->tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
+                    cli_errmsg("cli_scanxar: Can't create temporary file for subdocument.\n");
+                }
+                cli_dbgmsg("cli_scanxar: Writing subdoc to temp file %s.\n", tmpname);
+                if (cli_writen(fd, subdoc, subdoc_len) < 0) {
+                    cli_errmsg("cli_scanxar: cli_writen error writing subdoc temporary file.\n");
+                    rc = CL_EWRITE;
+                }
+                rc = xar_cleanup_temp_file(ctx, fd, tmpname);
+            }
+
+            xmlFree(subdoc);
+            if (rc != CL_SUCCESS)
+                return rc;
+            xmlTextReaderNext(reader);
+        }        
+    }
+    return rc;
+}
 #endif
+
 /*
   cli_scanxar - scan an xar archive.
   Parameters:
@@ -260,7 +324,7 @@ int cli_scanxar(cli_ctx *ctx)
     /* printf("cli_scanxar: TOC end:\n"); */
 
     /* scan the xml */
-    cli_dbgmsg("cli_scanxar: scanning xar TOC xml.\n"); 
+    cli_dbgmsg("cli_scanxar: scanning xar TOC xml in memory.\n"); 
     rc = cli_mem_scandesc(toc, hdr.toc_length_decompressed, ctx);
     if (rc != CL_SUCCESS) {
         if (rc != CL_VIRUS || !SCAN_ALL)
@@ -284,11 +348,15 @@ int cli_scanxar(cli_ctx *ctx)
             goto exit_toc;
     }
 
-    /*TODO: subdocuments*/
-
     reader = xmlReaderForMemory(toc, hdr.toc_length_decompressed, "noname.xml", NULL, 0);
     if (reader == NULL) {
         cli_errmsg("cli_scanxar: xmlReaderForMemory error for TOC\n");
+        goto exit_toc;
+    }
+
+    rc = xar_scan_subdocuments(reader, ctx);
+    if (rc != CL_SUCCESS) {
+        cli_errmsg("xar_scan_subdocuments returns %i.\n", rc);
         goto exit_toc;
     }
 
@@ -512,6 +580,7 @@ int cli_scanxar(cli_ctx *ctx)
     xar_cleanup_temp_file(ctx, fd, tmpname);
 
  exit_reader:
+    xmlTextReaderClose(reader);
     xmlFreeTextReader(reader);
     xmlCleanupParser();
 
