@@ -646,7 +646,6 @@ int cli_scanxar(cli_ctx *ctx)
 
                 xar_hash_update(a_hash_ctx, blockp, CLI_LZMA_HDR_SIZE, a_hash);
 
-
                 rc = cli_LzmaInit(&lz, 0);
                 if (rc != LZMA_RESULT_OK) {
                     cli_errmsg("cli_scanxar: cli_LzmaInit() fails: %i.\n", rc);
@@ -660,12 +659,13 @@ int cli_scanxar(cli_ctx *ctx)
                 while (at < map->len && at < offset+hdr.toc_length_compressed+hdr.size+length) {
                     SizeT avail_in;
                     SizeT avail_out;
+                    void * next_in;
                     unsigned long in_consumed;
 
                     lz.next_out = buff;
                     lz.avail_out = CLI_LZMA_OBUF_SIZE;
                     lz.avail_in = avail_in = MIN(CLI_LZMA_OBUF_SIZE>>CLI_LZMA_CRATIO_SHIFT, in_remaining);
-                    lz.next_in = (void*)fmap_need_off_once(map, at, lz.avail_in);
+                    lz.next_in = next_in = (void*)fmap_need_off_once(map, at, lz.avail_in);
                     if (lz.next_in == NULL) {
                         cli_errmsg("cli_scanxar: Can't read %li bytes @ %li, errno: %s.\n",
                                    length, at, strerror(errno));
@@ -674,8 +674,6 @@ int cli_scanxar(cli_ctx *ctx)
                         cli_LzmaShutdown(&lz);
                         goto exit_tmpfile;
                     }
-
-                    xar_hash_update(a_hash_ctx, lz.next_in, avail_in, a_hash);
 
                     rc = cli_LzmaDecode(&lz);
                     if (rc != LZMA_RESULT_OK && rc != LZMA_STREAM_END) {
@@ -691,21 +689,17 @@ int cli_scanxar(cli_ctx *ctx)
                     at += in_consumed;
                     avail_out = CLI_LZMA_OBUF_SIZE - lz.avail_out;
                     
-                    if (avail_out == 0) {
-                        cli_errmsg("cli_scanxar: cli_LzmaDecode() produces no output for "
+                    if (avail_out == 0)
+                        cli_dbgmsg("cli_scanxar: cli_LzmaDecode() produces no output for "
                                    "avail_in %lu, avail_out %lu.\n", avail_in, avail_out);
-                        rc = CL_EFORMAT;
-                        __lzma_wrap_free(NULL, buff);
-                        cli_LzmaShutdown(&lz);
-                        goto exit_tmpfile;
-                    }
-                    
+
+                    xar_hash_update(a_hash_ctx, next_in, in_consumed, a_hash);                    
                     xar_hash_update(e_hash_ctx, buff, avail_out, e_hash);
 
                     /* Write a decompressed block. */
-                    cli_dbgmsg("Writing %li bytes to LZMA decompress temp file, "
-                               "consumed %li of %li available compressed bytes.\n",
-                               avail_out, in_consumed, avail_in);
+                    /* cli_dbgmsg("Writing %li bytes to LZMA decompress temp file, " */
+                    /*            "consumed %li of %li available compressed bytes.\n", */
+                    /*            avail_out, in_consumed, avail_in); */
                     
                     if (cli_writen(fd, buff, avail_out) < 0) {
                         cli_dbgmsg("cli_scanxar: cli_writen error writing lzma temp file for %li bytes.\n",
@@ -736,7 +730,6 @@ int cli_scanxar(cli_ctx *ctx)
         case CL_TYPE_ANY:
             {
                 /* for uncompressed, bzip2, and unknown, just pull the file, cli_magic_scandesc does the rest */
-                // TODO ensure correct bounds for at/length
                 unsigned long write_len;
                 
                 if (ctx->engine->maxfilesize)
