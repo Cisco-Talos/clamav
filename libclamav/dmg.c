@@ -1044,6 +1044,7 @@ static int dmg_extract_xml(cli_ctx *ctx, char *dir, struct dmg_koly_block *hdr)
 
     /* Write out TOC XML */
     if ((ofd = open(xmlfile, O_CREAT|O_RDWR|O_EXCL|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
+        char err[128];
         cli_errmsg("cli_scandmg: Can't create temporary file %s: %s\n",
             xmlfile, cli_strerror(errno, err, sizeof(err)));
         free(xmlfile);
