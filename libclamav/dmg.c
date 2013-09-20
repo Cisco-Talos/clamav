@@ -150,6 +150,10 @@ int cli_scandmg(cli_ctx *ctx)
         return CL_EFORMAT;
     }
     cli_dbgmsg("cli_scandmg: XML offset %lu len %d\n", (unsigned long)hdr.xmlOffset, (int)hdr.xmlLength);
+    if (hdr.xmlLength == 0) {
+        cli_dbgmsg("cli_scandmg: Embedded XML length is zero.\n");
+        return CL_EFORMAT;
+    }
 
     /* Create temp folder for contents */
     if (!(dirname = cli_gentemp(ctx->engine->tmpdir))) {
@@ -1040,6 +1044,9 @@ static int dmg_extract_xml(cli_ctx *ctx, char *dir, struct dmg_koly_block *hdr)
 
     /* Write out TOC XML */
     if ((ofd = open(xmlfile, O_CREAT|O_RDWR|O_EXCL|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
+        cli_errmsg("cli_scandmg: Can't create temporary file %s: %s\n",
+            xmlfile, cli_strerror(errno, err, sizeof(err)));
+        free(xmlfile);
         return CL_ETMPFILE;
     }
 
