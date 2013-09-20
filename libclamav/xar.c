@@ -404,6 +404,7 @@ static int xar_hash_check(int hash, const void * result, const void * expected)
 int cli_scanxar(cli_ctx *ctx)
 {
     int rc = CL_SUCCESS;
+    unsigned int cksum_fails = 0;
 #if HAVE_LIBXML2
     int fd = -1;
     struct xar_header hdr;
@@ -415,7 +416,6 @@ int cli_scanxar(cli_ctx *ctx)
     xmlTextReaderPtr reader = NULL;
     int a_hash, e_hash;
     char *a_cksum = NULL, *e_cksum = NULL;
-    unsigned int cksum_fails = 0;
 
     /* retrieve xar header */
     if (fmap_readn(*ctx->fmap, &hdr, 0, sizeof(hdr)) != sizeof(hdr)) {
