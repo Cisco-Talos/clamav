@@ -52,6 +52,11 @@ struct xar_header {
 #define XAR_HEADER_MAGIC 0x78617221
 #define XAR_HEADER_VERSION 0
 
+#define XAR_CKSUM_NONE   0
+#define XAR_CKSUM_SHA1   1
+#define XAR_CKSUM_MD5    2
+#define XAR_CKSUM_OTHER  3
+
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack()
 #endif
