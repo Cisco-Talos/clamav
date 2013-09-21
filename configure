@@ -17032,24 +17032,21 @@ $as_echo "$XML_HOME" >&6; }
 fi
 
 
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: ****** checking XML_HOME $XML_HOME ******" >&5
-$as_echo "$as_me: WARNING: ****** checking XML_HOME $XML_HOME ******" >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for xmlreader.h in $XML_HOME" >&5
+$as_echo_n "checking for xmlreader.h in $XML_HOME... " >&6; }
 
   if test ! -f "$XML_HOME/include/libxml2/libxml/xmlreader.h"; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: ****** not found, cannot test ******" >&5
-$as_echo "$as_me: WARNING: ****** not found, cannot test ******" >&2;}
-    if test "$want_xml" = "yes"; then
-      as_fn_error $? "Please install libxml2 packages" "$LINENO" 5
-    fi
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+$as_echo "not found" >&6; }
   else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: ****** found, testing ******" >&5
-$as_echo "$as_me: WARNING: ****** found, testing ******" >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
+$as_echo "found" >&6; }
     save_LIBS="$LIBS"
     if test "$XML_HOME" != "/usr"; then
 	save_CPPFLAGS="$CPPFLAGS"
 	CPPFLAGS="$CPPFLAGS -I$XML_HOME/include"
 	save_LDFLAGS="$LDFLAGS"
-	LDFLAGS="$LDFLAGS -Wl,-rpath $XML_HOME/lib"
+	LDFLAGS="$LDFLAGS -L$XML_HOME/lib"
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for xmlTextReaderRead in -lxml2" >&5
 $as_echo_n "checking for xmlTextReaderRead in -lxml2... " >&6; }
 if ${ac_cv_lib_xml2_xmlTextReaderRead+:} false; then :
@@ -17087,7 +17084,7 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_xml2_xmlTextReaderRead" >&5
 $as_echo "$ac_cv_lib_xml2_xmlTextReaderRead" >&6; }
 if test "x$ac_cv_lib_xml2_xmlTextReaderRead" = xyes; then :
-  working_xml="yes";XML_CPPFLAGS="-I/usr/include/libxml2";XML_LIBS="-Wl,-rpath $XML_HOME/lib -lxml2"
+  working_xml="yes";XML_CPPFLAGS="-I$XML_HOME/include/libxml2";XML_LIBS="-L$XML_HOME/lib -lxml2"
 else
   working_xml="no"
 fi
@@ -17132,7 +17129,7 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_xml2_xmlTextReaderRead" >&5
 $as_echo "$ac_cv_lib_xml2_xmlTextReaderRead" >&6; }
 if test "x$ac_cv_lib_xml2_xmlTextReaderRead" = xyes; then :
-  working_xml="yes";XML_CPPFLAGS="-I/usr/include/libxml2";XML_LIBS="-lxml2"
+  working_xml="yes";XML_CPPFLAGS="-I$XML_HOME/include/libxml2";XML_LIBS="-lxml2"
 else
   working_xml="no"
 fi
@@ -17151,9 +17148,16 @@ $as_echo "#define ENABLE_XML 1" >>confdefs.h
 
 
 
+  { $as_echo "$as_me:${as_lineno-$LINENO}: Compiling and linking with libxml2 from $XML_HOME" >&5
+$as_echo "$as_me: Compiling and linking with libxml2 from $XML_HOME" >&6;}
 else
   if test "$want_xml" = "yes"; then
-     as_fn_error $? "Please install libxml2 packages" "$LINENO" 5
+     as_fn_error $? "****** Please install libxml2 packages!" "$LINENO" 5
+  else
+    if test "$want_xml" != "no"; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: ****** libxml2 support unavailable" >&5
+$as_echo "$as_me: ****** libxml2 support unavailable" >&6;}
+    fi
   fi
   XML_CPPFLAGS=""
   XML_LIBS=""
@@ -17166,8 +17170,6 @@ $as_echo "#define HAVE_LIBXML2 0" >>confdefs.h
 $as_echo "#define ENABLE_XML 0" >>confdefs.h
 
 fi
-
-
 
 # Check whether --enable-getaddrinfo was given.
 if test "${enable_getaddrinfo+set}" = set; then :

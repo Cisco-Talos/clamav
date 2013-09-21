@@ -679,26 +679,23 @@ if test "$want_xml" != "no"; then
   AC_MSG_RESULT([$XML_HOME])
   ])
 
-  AC_MSG_WARN([****** checking XML_HOME $XML_HOME ******])
+  AC_MSG_CHECKING([for xmlreader.h in $XML_HOME])
 
   if test ! -f "$XML_HOME/include/libxml2/libxml/xmlreader.h"; then
-    AC_MSG_WARN([****** not found, cannot test ******])
-    if test "$want_xml" = "yes"; then
-      AC_MSG_ERROR([Please install libxml2 packages])
-    fi
+    AC_MSG_RESULT([not found])
   else
-    AC_MSG_WARN([****** found, testing ******])
+    AC_MSG_RESULT([found])
     save_LIBS="$LIBS"
     if test "$XML_HOME" != "/usr"; then
 	save_CPPFLAGS="$CPPFLAGS"
 	CPPFLAGS="$CPPFLAGS -I$XML_HOME/include"
 	save_LDFLAGS="$LDFLAGS"
-	LDFLAGS="$LDFLAGS -Wl,-rpath $XML_HOME/lib"
-	AC_CHECK_LIB([xml2], [xmlTextReaderRead], [working_xml="yes";XML_CPPFLAGS="-I/usr/include/libxml2";XML_LIBS="-Wl,-rpath $XML_HOME/lib -lxml2"], working_xml="no")
+	LDFLAGS="$LDFLAGS -L$XML_HOME/lib"
+	AC_CHECK_LIB([xml2], [xmlTextReaderRead], [working_xml="yes";XML_CPPFLAGS="-I$XML_HOME/include/libxml2";XML_LIBS="-L$XML_HOME/lib -lxml2"], working_xml="no")
 	CPPFLAGS="$save_CPPFLAGS"
 	LDFLAGS="$save_LDFLAGS"
     else
-	AC_CHECK_LIB([xml2], [xmlTextReaderRead], [working_xml="yes";XML_CPPFLAGS="-I/usr/include/libxml2";XML_LIBS="-lxml2"], working_xml="no")
+	AC_CHECK_LIB([xml2], [xmlTextReaderRead], [working_xml="yes";XML_CPPFLAGS="-I$XML_HOME/include/libxml2";XML_LIBS="-lxml2"], working_xml="no")
     fi
     LIBS="$save_LIBS"
   fi
@@ -709,9 +706,14 @@ if test "$working_xml" = "yes"; then
   AC_DEFINE([ENABLE_XML],1,[Define to 1 if xml supported features can be enabled.])
   AC_SUBST(XML_CPPFLAGS)
   AC_SUBST(XML_LIBS)
+  AC_MSG_NOTICE([Compiling and linking with libxml2 from $XML_HOME])
 else
   if test "$want_xml" = "yes"; then
-     AC_MSG_ERROR([Please install libxml2 packages])
+     AC_MSG_ERROR([****** Please install libxml2 packages!])
+  else
+    if test "$want_xml" != "no"; then
+      AC_MSG_NOTICE([****** libxml2 support unavailable])
+    fi
   fi
   XML_CPPFLAGS=""
   XML_LIBS=""
@@ -720,24 +722,6 @@ else
   AC_DEFINE([HAVE_LIBXML2],0,[Define to 1 if you have the 'libxml2' library (-lxml2).])
   AC_DEFINE([ENABLE_XML],0,[Define to 1 if xml supported features can be enabled.])
 fi
-
-dnl want_xml="yes"
-dnl AC_ARG_ENABLE([xml],
-dnl [  --disable-xml	  disable DMG and XAR support],
-dnl want_xml=$enableval, want_xml="yes")
-dnl AM_CONDITIONAL([ENABLE_XML],[test "$want_xml" = "yes"])
-
-dnl if test "$want_xml" = "yes"
-dnl then
-    dnl AM_PATH_XML2(2.5.0)
-    dnl AC_DEFINE([HAVE_LIBXML2],1,[Define to 1 if you have the 'libxml2' library (-lxml2).])
-dnl else
-    dnl XML_CPPFLAGS=""
-    dnl XML_LIBS=""
-    dnl AC_SUBST(XML_CPPFLAGS)
-    dnl AC_SUBST(XML_LIBS)
-    dnl AC_DEFINE([HAVE_LIBXML2],0,[Define to 1 if you have the 'libxml2' library (-lxml2).])
-dnl fi
 
 AC_ARG_ENABLE([getaddrinfo],
 [  --disable-getaddrinfo          disable support for getaddrinfo],
