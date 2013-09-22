@@ -174,7 +174,8 @@ static const char *ftypes_int[] = {
   "1:0:cafebabe0000003?:Java class file:CL_TYPE_ANY:CL_TYPE_JAVA:73",
   "1:EOF-512:6b6f6c79:DMG container file:CL_TYPE_ANY:CL_TYPE_DMG:75",
   "0:0:78617221:XAR container file:CL_TYPE_ANY:CL_TYPE_XAR:75",
-  "4:1024:482B:HFS+ partition:CL_TYPE_PART_ANY:CL_TYPE_PART_HFSPLUS:75",
+  "4:1024:482B0004:HFS+ partition:CL_TYPE_PART_ANY:CL_TYPE_PART_HFSPLUS:75",
+  "4:1024:48580005:HFSX partition:CL_TYPE_PART_ANY:CL_TYPE_PART_HFSPLUS:75",
   NULL
 };
 
