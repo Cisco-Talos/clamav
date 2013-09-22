@@ -539,8 +539,8 @@ static int dmg_decode_mish(cli_ctx *ctx, unsigned int *mishblocknum, xmlChar *mi
     // mish_set->mish->bufferCount = be32_to_host(mish_set->mish->bufferCount);
     mish_set->mish->blockDataCount = be32_to_host(mish_set->mish->blockDataCount);
 
-    cli_dbgmsg("dmg_decode_mish: startSector = %lu sectorCount = %lu "
-        "dataOffset = %lu stripeCount = %lu\n",
+    cli_dbgmsg("dmg_decode_mish: startSector = " STDu64 " sectorCount = " STDu64
+        " dataOffset = " STDu64 " stripeCount = " STDu32 "\n",
         mish_set->mish->startSector, mish_set->mish->sectorCount,
         mish_set->mish->dataOffset, mish_set->mish->blockDataCount);
 
@@ -614,11 +614,11 @@ static int dmg_track_sectors(uint64_t *total, uint8_t *data_to_write,
         default:
             if (stripeCount) {
                 /* Continue for now */
-                cli_dbgmsg("dmg_track_sectors: unknown type on stripe %lu, will skip\n", stripeNum);
+                cli_dbgmsg("dmg_track_sectors: unknown type on stripe " STDu32 ", will skip\n", stripeNum);
             }
             else {
                 /* Continue, no sectors missed  */
-                cli_dbgmsg("dmg_track_sectors: unknown type on empty stripe %lu\n", stripeNum);
+                cli_dbgmsg("dmg_track_sectors: unknown type on empty stripe " STDu32 "\n", stripeNum);
             }
             break;
     }
@@ -634,7 +634,7 @@ static int dmg_track_sectors(uint64_t *total, uint8_t *data_to_write,
         }
         else {
             /* Can continue */
-            cli_dbgmsg("dmg_track_sectors: unexpected zero sectorCount on stripe %lu\n", stripeNum);
+            cli_dbgmsg("dmg_track_sectors: unexpected zero sectorCount on stripe " STDu32 "\n", stripeNum);
         }
     }
 
@@ -649,7 +649,7 @@ static int dmg_stripe_zeroes(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mi
     ssize_t written;
     uint8_t obuf[BUFSIZ];
 
-    cli_dbgmsg("dmg_stripe_zeroes: stripe %lu\n", (unsigned long)index);
+    cli_dbgmsg("dmg_stripe_zeroes: stripe " STDu32 "\n", index);
     if (len == 0)
         return CL_CLEAN;
 
@@ -686,13 +686,13 @@ static int dmg_stripe_store(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mis
     size_t len = mish_set->stripes[index].dataLength;
     ssize_t written;
 
-    cli_dbgmsg("dmg_stripe_store: stripe %lu\n", (unsigned long)index);
+    cli_dbgmsg("dmg_stripe_store: stripe " STDu32 "\n", index);
     if (len == 0)
         return CL_CLEAN;
 
     obuf = (void *)fmap_need_off_once(*ctx->fmap, off, len);
     if (!obuf) {
-        cli_warnmsg("dmg_stripe_store: fmap need failed on stripe %lu\n", index);
+        cli_warnmsg("dmg_stripe_store: fmap need failed on stripe " STDu32 "\n", index);
         return CL_EMAP;
     }
     written = cli_writen(fd, obuf, len);
@@ -711,7 +711,7 @@ static int dmg_stripe_store(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mis
 static int dmg_stripe_adc(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish_with_stripes *mish_set)
 {
     /* Temporary stub */
-    cli_dbgmsg("dmg_stripe_adc: stripe %lu\n", (unsigned long)index);
+    cli_dbgmsg("dmg_stripe_adc: stripe " STDu32 "\n", index);
 
     return CL_CLEAN;
 }
@@ -726,14 +726,14 @@ static int dmg_stripe_inflate(cli_ctx *ctx, int fd, uint32_t index, struct dmg_m
     off_t nbytes = 0;
     uint8_t obuf[BUFSIZ];
 
-    cli_dbgmsg("dmg_stripe_inflate: stripe %lu\n", (unsigned long)index);
+    cli_dbgmsg("dmg_stripe_inflate: stripe " STDu32 "\n", index);
     if (len == 0)
         return CL_CLEAN;
 
     memset(&strm, 0, sizeof(strm));
     strm.next_in = (void*)fmap_need_off_once(*ctx->fmap, off, len);
     if (!strm.next_in) {
-        cli_warnmsg("dmg_stripe_inflate: fmap need failed on stripe %lu\n", index);
+        cli_warnmsg("dmg_stripe_inflate: fmap need failed on stripe " STDu32 "\n", index);
         return CL_EMAP;
     }
     strm.avail_in = len;
@@ -778,10 +778,12 @@ static int dmg_stripe_inflate(cli_ctx *ctx, int fd, uint32_t index, struct dmg_m
                         break;
                 }
                 if(strm.msg)
-                    cli_dbgmsg("dmg_stripe_inflate: after writing %lu bytes, got error \"%s\" inflating stripe %lu\n",
+                    cli_dbgmsg("dmg_stripe_inflate: after writing %lu bytes, "
+                               "got error \"%s\" inflating stripe " STDu32 "\n",
                                (unsigned long)nbytes, strm.msg, index);
                 else
-                    cli_dbgmsg("dmg_stripe_inflate: after writing %lu bytes, got error %d inflating stripe %lu\n",
+                    cli_dbgmsg("dmg_stripe_inflate: after writing %lu bytes, "
+                               "got error %d inflating stripe " STDu32 "\n",
                                (unsigned long)nbytes, zstat, index);
                 inflateEnd(&strm);
                 return CL_EFORMAT;
@@ -814,8 +816,8 @@ static int dmg_stripe_bzip(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish
     uint8_t obuf[BUFSIZ];
 #endif
 
-    cli_dbgmsg("dmg_stripe_bzip: stripe %lu initial len %lu expected len %lu\n", (unsigned long)index,
-            (unsigned long)len, (unsigned long)mish_set->stripes[index].sectorCount * DMG_SECTOR_SIZE);
+    cli_dbgmsg("dmg_stripe_bzip: stripe " STDu32 " initial len " STDu64 " expected len " STDu64 "\n",
+            index, len, mish_set->stripes[index].sectorCount * DMG_SECTOR_SIZE);
 
 #if HAVE_BZLIB_H
     memset(&strm, 0, sizeof(strm));
@@ -929,8 +931,9 @@ static int dmg_handle_mish(cli_ctx *ctx, unsigned int mishblocknum, char *dir,
         blocklist[i].sectorCount = be64_to_host(blocklist[i].sectorCount);
         blocklist[i].dataOffset = be64_to_host(blocklist[i].dataOffset);
         blocklist[i].dataLength = be64_to_host(blocklist[i].dataLength);
-        cli_dbgmsg("mish %lu stripe %u type %lx start %lu count %lu source %lu length %lu\n", mishblocknum, i,
-            blocklist[i].type, blocklist[i].startSector, blocklist[i].sectorCount,
+        cli_dbgmsg("mish %u stripe " STDu32 " type " STDx32 " start " STDu64
+            " count " STDu64 " source " STDu64 " length " STDu64 "\n",
+            mishblocknum, i, blocklist[i].type, blocklist[i].startSector, blocklist[i].sectorCount,
             blocklist[i].dataOffset, blocklist[i].dataLength);
         if ((blocklist[i].dataOffset > xmlOffset) || 
                (blocklist[i].dataOffset + blocklist[i].dataLength > xmlOffset)) {
@@ -1004,7 +1007,7 @@ static int dmg_handle_mish(cli_ctx *ctx, unsigned int mishblocknum, char *dir,
             case DMG_STRIPE_SKIP:
             case DMG_STRIPE_END:
             default:
-                cli_dbgmsg("dmg_handle_mish: stripe %lu, skipped\n", (unsigned long)i);
+                cli_dbgmsg("dmg_handle_mish: stripe " STDu32 ", skipped\n", i);
                 break;
         }
     }
@@ -1031,7 +1034,7 @@ static int dmg_extract_xml(cli_ctx *ctx, char *dir, struct dmg_koly_block *hdr)
     /* Prep TOC XML for output */
     outdata = fmap_need_off_once_len(*ctx->fmap, hdr->xmlOffset, hdr->xmlLength, &nread);
     if (!outdata || (nread != hdr->xmlLength)) {
-        cli_errmsg("cli_scandmg: Failed getting XML from map, len %ld\n", hdr->xmlLength);
+        cli_errmsg("cli_scandmg: Failed getting XML from map, len " STDu64 "\n", hdr->xmlLength);
         return CL_EMAP;
     }
 
