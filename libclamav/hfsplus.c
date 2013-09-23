@@ -307,10 +307,12 @@ static int hfsplus_scanfile(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsHea
 
     /* check limits */
     targetSize = fork->logicalSize;
+#if SIZEOF_LONG < 8
     if (targetSize > ULONG_MAX) {
         cli_dbgmsg("hfsplus_dumpfile: File too large for limit check.\n");
         return CL_EFORMAT;
     }
+#endif
     ret = cli_checklimits("hfsplus_scanfile", ctx, (unsigned long)targetSize, 0, 0);
     if (ret != CL_CLEAN) {
         return ret;
