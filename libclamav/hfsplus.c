@@ -389,7 +389,7 @@ static int hfsplus_scanfile(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsHea
             outputSize += to_write;
             currBlock++;
             if (targetSize == 0) {
-                cli_dbgmsg("hfsplus_dumpfile: output complete\n");
+                cli_dbgmsg("hfsplus_dumpfile: all data written\n");
                 break;
             }
             if (outputBlocks >= fork->totalBlocks) {
@@ -685,6 +685,9 @@ static int hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hf
                     }
                     break;
                 }
+            }
+            else {
+                cli_dbgmsg("hfsplus_walk_catalog: record mode is not File\n");
             }
         }
         /* if return code, exit loop, message already logged */
