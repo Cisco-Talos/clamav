@@ -104,12 +104,12 @@ static void forkdata_to_host(hfsPlusForkData *fork)
 static void forkdata_print(const char *pfx, hfsPlusForkData *fork)
 {
     int i;
-    cli_dbgmsg("%s logicalSize %lu clumpSize %lu totalBlocks %lu\n", pfx,
+    cli_dbgmsg("%s logicalSize " STDu64 " clumpSize " STDu32 " totalBlocks " STDu32 "\n", pfx,
         fork->logicalSize, fork->clumpSize, fork->totalBlocks);
     for (i=0; i < 8; i++) {
         if (fork->extents[i].startBlock == 0)
             break;
-        cli_dbgmsg("%s extent[%d] startBlock %lu blockCount %lu\n", pfx, i,
+        cli_dbgmsg("%s extent[%d] startBlock " STDu32 " blockCount " STDu32 "\n", pfx, i,
             fork->extents[i].startBlock, fork->extents[i].blockCount);
     }
 }
@@ -165,10 +165,10 @@ static int hfsplus_volumeheader(cli_ctx *ctx, hfsPlusVolumeHeader **header)
     cli_dbgmsg("HFS+ Header:\n");
     cli_dbgmsg("Signature: %x\n", volHeader->signature);
     cli_dbgmsg("Attributes: %x\n", volHeader->attributes);
-    cli_dbgmsg("File Count: %lu\n", volHeader->fileCount);
-    cli_dbgmsg("Folder Count: %lu\n", volHeader->folderCount);
-    cli_dbgmsg("Block Size: %lu\n", volHeader->blockSize);
-    cli_dbgmsg("Total Blocks: %lu\n", volHeader->totalBlocks);
+    cli_dbgmsg("File Count: " STDu32 "\n", volHeader->fileCount);
+    cli_dbgmsg("Folder Count: " STDu32 "\n", volHeader->folderCount);
+    cli_dbgmsg("Block Size: " STDu32 "\n", volHeader->blockSize);
+    cli_dbgmsg("Total Blocks: " STDu32 "\n", volHeader->totalBlocks);
 
     /* Block Size must be power of 2 between 512 and 1 MB */
     if ((volHeader->blockSize < 512) || (volHeader->blockSize > (1 << 20))) {
@@ -307,10 +307,12 @@ static int hfsplus_scanfile(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsHea
 
     /* check limits */
     targetSize = fork->logicalSize;
+#if SIZEOF_LONG < 8
     if (targetSize > ULONG_MAX) {
         cli_dbgmsg("hfsplus_dumpfile: File too large for limit check.\n");
         return CL_EFORMAT;
     }
+#endif
     ret = cli_checklimits("hfsplus_scanfile", ctx, (unsigned long)targetSize, 0, 0);
     if (ret != CL_CLEAN) {
         return ret;
@@ -387,7 +389,7 @@ static int hfsplus_scanfile(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsHea
             outputSize += to_write;
             currBlock++;
             if (targetSize == 0) {
-                cli_dbgmsg("hfsplus_dumpfile: output complete\n");
+                cli_dbgmsg("hfsplus_dumpfile: all data written\n");
                 break;
             }
             if (outputBlocks >= fork->totalBlocks) {
@@ -460,7 +462,8 @@ static int hfsplus_fetch_node (cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfs
     /* Do we need one block or more? */
     if (catHeader->nodeSize <= volHeader->blockSize) {
         /* Need one block */
-        catalogOffset = node * catHeader->nodeSize;
+        /* First, calculate the node's offset within the catalog */
+        catalogOffset = (uint64_t)node * catHeader->nodeSize;
         /* Determine which block of the catalog we need */
         fetchBlock = (uint32_t) (catalogOffset / volHeader->blockSize);
         fetchStart = (uint32_t) (catalogOffset % volHeader->blockSize);
@@ -513,6 +516,7 @@ static int hfsplus_fetch_node (cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfs
     else {
         /* Need more than one block for this node */
         cli_dbgmsg("hfsplus_fetch_node: nodesize bigger than blocksize, is this allowed?\n");
+        return CL_EFORMAT;
     }
 
     if (fileOffset) {
@@ -543,6 +547,7 @@ static int hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hf
     hfsHeaderRecord *extHeader, const char *dirname)
 {
     int ret = CL_CLEAN;
+    unsigned int has_alerts = 0;
     uint32_t thisNode, nodeLimit, nodesScanned = 0;
     uint16_t nodeSize, recordNum, topOfOffsets;
     uint16_t distance, recordStart, nextDist, nextStart;
@@ -655,6 +660,13 @@ static int hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hf
                 }
                 if (ret != CL_CLEAN) {
                     cli_dbgmsg("hfsplus_walk_catalog: data fork retcode %d", ret);
+                    if (ret == CL_VIRUS) {
+                        has_alerts = 1;
+                        if (SCAN_ALL) {
+                            /* Continue scanning in SCAN_ALL mode */
+                            ret = CL_CLEAN;
+                        }
+                    }
                     break;
                 }
                 forkdata_to_host(&(fileRec.resourceFork));
@@ -664,8 +676,18 @@ static int hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hf
                 }
                 if (ret != CL_CLEAN) {
                     cli_dbgmsg("hfsplus_walk_catalog: resource fork retcode %d", ret);
+                    if (ret == CL_VIRUS) {
+                        has_alerts = 1;
+                        if (SCAN_ALL) {
+                            /* Continue scanning in SCAN_ALL mode */
+                            ret = CL_CLEAN;
+                        }
+                    }
                     break;
                 }
+            }
+            else {
+                cli_dbgmsg("hfsplus_walk_catalog: record mode is not File\n");
             }
         }
         /* if return code, exit loop, message already logged */
@@ -686,6 +708,9 @@ static int hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hf
     }
 
     free(nodeBuf);
+    if (has_alerts) {
+        ret = CL_VIRUS;
+    }
     return ret;
 }
 
