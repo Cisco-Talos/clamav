@@ -525,6 +525,7 @@ int cli_scanxar(cli_ctx *ctx)
     tmpname = NULL;
     while (CL_SUCCESS == (rc = xar_get_toc_data_values(reader, &length, &offset, &size, &encoding,
                                                        &a_cksum, &a_hash, &e_cksum, &e_hash))) {
+        int do_extract_cksum = 1;
         char * blockp;
         SHA1Context a_sc, e_sc;
         cli_md5_ctx a_mc, e_mc;
@@ -727,9 +728,10 @@ int cli_scanxar(cli_ctx *ctx)
                 __lzma_wrap_free(NULL, buff);
             }
             break; 
+        case CL_TYPE_ANY:
         default:
         case CL_TYPE_BZ:
-        case CL_TYPE_ANY:
+            do_extract_cksum = 0;
             {
                 /* for uncompressed, bzip2, and unknown, just pull the file, cli_magic_scandesc does the rest */
                 unsigned long write_len;
@@ -747,7 +749,6 @@ int cli_scanxar(cli_ctx *ctx)
                 }
                 
                 xar_hash_update(a_hash_ctx, blockp, length, a_hash);
-                xar_hash_update(e_hash_ctx, blockp, length, e_hash);
                 
                 if (cli_writen(fd, blockp, write_len) < 0) {
                     cli_dbgmsg("cli_scanxar: cli_writen error %li bytes @ %li.\n", length, at);
@@ -772,15 +773,17 @@ int cli_scanxar(cli_ctx *ctx)
             a_cksum = NULL;
         }
         if (e_cksum != NULL) {
-            xar_hash_final(e_hash_ctx, result, e_hash);
-            expected = cli_hex2str(e_cksum);
-            if (xar_hash_check(e_hash, result, expected) != 0) {
-                cli_dbgmsg("cli_scanxar: extracted-checksum missing or mismatch.\n");
-                cksum_fails++;
-            } else {
-                cli_dbgmsg("cli_scanxar: extracted-checksum matched.\n");                
+            if (do_extract_cksum) {
+                xar_hash_final(e_hash_ctx, result, e_hash);
+                expected = cli_hex2str(e_cksum);
+                if (xar_hash_check(e_hash, result, expected) != 0) {
+                    cli_dbgmsg("cli_scanxar: extracted-checksum missing or mismatch.\n");
+                    cksum_fails++;
+                } else {
+                    cli_dbgmsg("cli_scanxar: extracted-checksum matched.\n");                
+                }
+                free(expected);
             }
-            free(expected);
             xmlFree(e_cksum);
             e_cksum = NULL;
         }
