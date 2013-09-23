@@ -39,6 +39,11 @@ static int hfsplus_readheader(cli_ctx *, hfsPlusVolumeHeader *, hfsNodeDescripto
     hfsHeaderRecord *, int, const char *);
 static int hfsplus_scanfile(cli_ctx *, hfsPlusVolumeHeader *, hfsHeaderRecord *,
     hfsPlusForkData *, const char *);
+static int hfsplus_validate_catalog(cli_ctx *, hfsPlusVolumeHeader *, hfsHeaderRecord *);
+static int hfsplus_fetch_node (cli_ctx *, hfsPlusVolumeHeader *, hfsHeaderRecord *,
+    hfsHeaderRecord *, uint32_t, uint8_t *);
+static int hfsplus_walk_catalog(cli_ctx *, hfsPlusVolumeHeader *, hfsHeaderRecord *,
+    hfsHeaderRecord *, const char *);
 
 /* Header Record : fix endianness for useful fields */
 static void headerrecord_to_host(hfsHeaderRecord *hdr)
@@ -55,6 +60,7 @@ static void headerrecord_to_host(hfsHeaderRecord *hdr)
     hdr->attributes = be32_to_host(hdr->attributes); /* not too useful */
 }
 
+/* Header Record : print details in debug mode */
 static void headerrecord_print(const char *pfx, hfsHeaderRecord *hdr)
 {
     cli_dbgmsg("%s Header: depth %hu root %u leafRecords %u firstLeaf %u lastLeaf %u nodeSize %hu\n",
@@ -73,6 +79,7 @@ static void nodedescriptor_to_host(hfsNodeDescriptor *node)
     node->numRecords = be16_to_host(node->numRecords);
 }
 
+/* Node Descriptor : print details in debug mode */
 static void nodedescriptor_print(const char *pfx, hfsNodeDescriptor *node)
 {
     cli_dbgmsg("%s Desc: fLink %u bLink %u kind %d height %u numRecords %u\n",
@@ -93,6 +100,7 @@ static void forkdata_to_host(hfsPlusForkData *fork)
     }
 }
 
+/* ForkData : print details in debug mode */
 static void forkdata_print(const char *pfx, hfsPlusForkData *fork)
 {
     int i;
@@ -139,11 +147,9 @@ static int hfsplus_volumeheader(cli_ctx *ctx, hfsPlusVolumeHeader **header)
     volHeader->version = be16_to_host(volHeader->version);
     if ((volHeader->signature == 0x482B) && (volHeader->version == 4)) {
         cli_dbgmsg("cli_scanhfsplus: HFS+ signature matched\n");
-        return CL_EFORMAT;
     }
-    if ((volHeader->signature == 0x4858) && (volHeader->version == 5)) {
+    else if ((volHeader->signature == 0x4858) && (volHeader->version == 5)) {
         cli_dbgmsg("cli_scanhfsplus: HFSX v5 signature matched\n");
-        return CL_EFORMAT;
     }
     else {
         cli_dbgmsg("cli_scanhfsplus: no matching signature\n");
@@ -197,10 +203,11 @@ static int hfsplus_readheader(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsN
 {
     const uint8_t *mPtr = NULL;
     off_t offset;
-    uint32_t minSize;
+    uint32_t minSize, maxSize;
 
-    /* Node Size must be power of 2 between 512 and 32768 */
+    /* From TN1150: Node Size must be power of 2 between 512 and 32768 */
     /* Node Size for Catalog or Attributes must be at least 4096 */
+    maxSize = 32768; /* Doesn't seem to vary */
     switch (headerType) {
         case HFS_FILETREE_ALLOCATION:
             offset = volHeader->allocationFile.extents[0].startBlock * volHeader->blockSize;
@@ -250,7 +257,7 @@ static int hfsplus_readheader(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsN
     headerrecord_to_host(headerRec);
     headerrecord_print(name, headerRec);
 
-    if ((headerRec->nodeSize < minSize) || (volHeader->blockSize > 32768)) {
+    if ((headerRec->nodeSize < minSize) || (headerRec->nodeSize > maxSize)) {
         cli_dbgmsg("hfsplus_header: %s: Invalid nodesize\n", name);
         return CL_EFORMAT;
     }
@@ -345,6 +352,11 @@ static int hfsplus_scanfile(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsHea
             cli_dbgmsg("hfsplus_dumpfile: next extent empty, done\n");
             break;
         }
+        if ((currExt->startBlock & 0x10000000) && (currExt->blockCount & 0x10000000)) {
+            cli_dbgmsg("hfsplus_dumpfile: next extent illegal!\n");
+            ret = CL_EFORMAT;
+            break;
+        }
         currBlock = currExt->startBlock;
         endBlock = currExt->startBlock + currExt->blockCount - 1;
         if ((currBlock > volHeader->totalBlocks) || (endBlock > volHeader->totalBlocks)
@@ -405,7 +417,279 @@ static int hfsplus_scanfile(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsHea
     return ret;
 }
 
+/* Calculate true node limit for catalogFile */
+static int hfsplus_validate_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsHeaderRecord *catHeader)
+{
+    hfsPlusForkData *catFork;
 
+    catFork = &(volHeader->catalogFile);
+    if (catFork->totalBlocks >= volHeader->totalBlocks) {
+        cli_dbmsg("hfsplus_getnodelimit: catFork totalBlocks too large!\n");
+        return CL_EFORMAT;
+    }
+    if (catFork->logicalSize > (catFork->totalBlocks * volHeader->blockSize)) {
+        cli_dbmsg("hfsplus_getnodelimit: catFork logicalSize too large!\n");
+        return CL_EFORMAT;
+    }
+    if (catFork->logicalSize < (catHeader->totalNodes * catHeader->nodeSize)) {
+        cli_dbmsg("hfsplus_getnodelimit: too many nodes for catFile\n");
+        return CL_EFORMAT;
+    }
+
+    return CL_CLEAN;
+}
+
+/* Fetch a node's contents into the buffer */
+static int hfsplus_fetch_node (cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsHeaderRecord *catHeader,
+    hfsHeaderRecord *extHeader, uint32_t node, uint8_t *buff)
+{
+    int foundBlock = 0, ret = CL_CLEAN;
+    uint64_t catalogOffset;
+    uint32_t fetchBlock, fetchStart;
+    uint32_t extentNum = 0, realFileBlock;
+    size_t fileOffset = 0;
+    hfsPlusForkData *catFork;
+
+    /* Make sure node is in range */
+    if (node >= catHeader->totalNodes) {
+        cli_dbgmsg("hfsplus_fetch_node: invalid node number " STDu32 "\n", node);
+        return CL_EFORMAT;
+    }
+
+    catFork = &(volHeader->catalogFile);
+    /* Do we need one block or more? */
+    if (catHeader->nodeSize <= volHeader->blockSize) {
+        /* Need one block */
+        catalogOffset = node * catHeader->nodeSize;
+        /* Determine which block of the catalog we need */
+        fetchBlock = (uint32_t) (catalogOffset / volHeader->blockSize);
+        fetchStart = (uint32_t) (catalogOffset % volHeader->blockSize);
+        cli_dbgmsg("hfsplus_fetch_node: need catalog block " STDu32 "\n", fetchBlock);
+        if (fetchBlock >= catFork->totalBlocks) {
+            cli_dbgmsg("hfsplus_fetch_node: block number invalid!\n");
+            return CL_EFORMAT;
+        }
+
+        /* Find which extent has that block */
+        for (extentNum = 0; extentNum < 8; extentNum++) {
+            hfsPlusExtentDescriptor *currExt = &(catFork->extents[extentNum]);
+
+            /* Beware empty extent */
+            if ((currExt->startBlock == 0) || (currExt->blockCount == 0)) {
+                cli_dbgmsg("hfsplus_fetch_node: extent " STDu32 " empty!\n", extentNum);
+                return CL_EFORMAT;
+            }
+            /* Beware too long extent */
+            if ((currExt->startBlock & 0x10000000) && (currExt->blockCount & 0x10000000)) {
+                cli_dbgmsg("hfsplus_fetch_node: extent " STDu32 " illegal!\n", extentNum);
+                return CL_EFORMAT;
+            }
+            /* Check if block found in current extent */
+            if (fetchBlock < currExt->blockCount) {
+                cli_dbgmsg("hfsplus_fetch_node: found block in extent " STDu32 "\n", extentNum);
+                realFileBlock = currExt->startBlock + fetchBlock;
+                foundBlock = 1;
+                break;
+            }
+            else {
+                cli_dbgmsg("hfsplus_fetch_node: not in extent " STDu32 "\n", extentNum);
+                fetchBlock -= currExt->blockCount;
+            }
+        }
+
+        if (foundBlock == 0) {
+            cli_dbgmsg("hfsplus_fetch_node: not in first 8 extents\n");
+            cli_dbgmsg("hfsplus_fetch_node: finding this node requires extent overflow support\n");
+            return CL_EFORMAT;
+        }
+
+        /* Block found */
+        if (realFileBlock >= volHeader->totalBlocks) {
+            cli_dbgmsg("hfsplus_fetch_node: block past end of volume\n");
+            return CL_EFORMAT;
+        }
+        fileOffset = realFileBlock * volHeader->blockSize;
+    }
+    else {
+        /* Need more than one block for this node */
+        cli_dbgmsg("hfsplus_fetch_node: nodesize bigger than blocksize, is this allowed?\n");
+    }
+
+    if (fileOffset) {
+        if (fmap_readn(*ctx->fmap, buff, fileOffset, catHeader->nodeSize) != catHeader->nodeSize) {
+            cli_dbgmsg("hfsplus_fetch_node: not all bytes read\n");
+            return CL_EFORMAT;
+        }
+    }
+    else {
+        cli_dbgmsg("hfsplus_fetch_node: nodesize bigger than blocksize, is this allowed?\n");
+        return CL_EFORMAT;
+    }
+
+    return CL_CLEAN;
+}
+
+/* Given the catalog and other details, scan all the volume contents */
+static int hfsplus_scan_node(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsHeaderRecord *catHeader,
+    hfsHeaderRecord *extHeader, const char *dirname, uint8_t *nodeBuf)
+{
+    int ret = CL_CLEAN;
+
+    return ret;
+}
+
+/* Given the catalog and other details, scan all the volume contents */
+static int hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsHeaderRecord *catHeader,
+    hfsHeaderRecord *extHeader, const char *dirname)
+{
+    int ret = CL_CLEAN;
+    uint32_t thisNode, nodeLimit, nodesScanned = 0;
+    uint16_t nodeSize, recordNum, topOfOffsets;
+    uint16_t distance, recordStart, nextDist, nextStart;
+    uint8_t *nodeBuf = NULL;
+    hfsPlusForkData *catFork;
+
+    catFork = &(volHeader->catalogFile);
+    nodeLimit = MIN(catHeader->totalNodes, HFSPLUS_NODE_LIMIT);
+    thisNode = catHeader->firstLeafNode;
+    nodeSize = catHeader->nodeSize;
+
+    /* Need to buffer current node, map will keep moving */
+    nodeBuf = cli_malloc(nodeSize);
+    if (!nodeBuf) {
+        cli_dbgmsg("hfsplus_walk_catalog: failed to acquire node buffer, "
+            "size " STDu32 "\n", nodeSize);
+        return CL_EMEM;
+    }
+
+    /* Walk catalog leaf nodes, and scan contents of each */
+    /* Because we want to scan them all, the index nodes add no value */
+    while (ret == CL_CLEAN) {
+        hfsNodeDescriptor nodeDesc;
+
+        if (thisNode == 0) {
+            cli_dbgmsg("hfsplus_walk_catalog: reached end of leaf nodes.\n");
+            break;
+        }
+        if (nodesScanned++ > nodeLimit) {
+            cli_dbgmsg("hfsplus_walk_catalog: node scan limit reached.\n");
+            break;
+        }
+
+        /* fetch node into buffer */
+        ret = hfsplus_fetch_node(ctx, volHeader, catHeader, extHeader, thisNode, nodeBuf);
+        if (ret != CL_CLEAN) {
+            cli_dbgmsg("hfsplus_walk_catalog: node fetch failed.\n");
+            break;
+        }
+        memcpy(&nodeDesc, nodeBuf, 14);
+
+        /* convert and validate node */
+        nodedescriptor_to_host(&nodeDesc);
+        nodedescriptor_print("leaf node", &nodeDesc);
+        if ((nodeDesc.kind != HFS_NODEKIND_LEAF) || (nodeDesc.height != 1)) {
+            cli_dbgmsg("hfsplus_walk_catalog: invalid leaf node!\n");
+            ret = CL_EFORMAT;
+            break;
+        }
+        if ((nodeSize / 4) < nodeDesc.numRecords) {
+            cli_dbgmsg("hfsplus_walk_catalog: too many leaf records for one node!\n");
+            ret = CL_EFORMAT;
+            break;
+        }
+
+        /* Walk this node's records and scan */
+        distance = nodeSize;
+        recordStart = 14; /* 1st record can be after end of node descriptor */
+        /* offsets take 1 u16 per at the end of the node, along with an empty space offset */
+        topOfOffsets = nodeSize - (nodeDesc.numRecords * 2) - 2;
+        for (recordNum = 0; recordNum < nodeDesc.numRecords; recordNum++) {
+            uint16_t keylen;
+            int16_t rectype;
+            hfsPlusCatalogFile fileRec;
+
+            /* Locate next record */
+            nextDist = nodeSize - (recordNum * 2) - 2;
+            nextStart = nodeBuf[nextDist] * 0x100 + nodeBuf[nextDist+1];
+            /* Check record location */
+            if ((nextStart > topOfOffsets-1) || (nextStart < recordStart)) {
+                cli_dbgmsg("hfsplus_walk_catalog: bad record location %x for %u!\n", nextStart, recordNum);
+                ret = CL_EFORMAT;
+                break;
+            }
+            distance = nextDist;
+            recordStart = nextStart;
+            /* Get record key length */
+            keylen = nodeBuf[recordStart] * 0x100 + nodeBuf[recordStart+1];
+            keylen += keylen % 2; /* pad 1 byte if required to make 2-byte align */
+            /* Validate keylen */
+            if (recordStart + keylen + 4 >= topOfOffsets) {
+                cli_dbgmsg("hfsplus_walk_catalog: key too long for location %x for %u!\n",
+                    nextStart, recordNum);
+                ret = CL_EFORMAT;
+                break;
+            }
+            /* Copy type (after key, which is after keylength field) */
+            memcpy(&rectype, &(nodeBuf[recordStart+keylen+2]), 2);
+            rectype = be16_to_host(rectype);
+            cli_dbgmsg("hfsplus_walk_catalog: record %u nextStart %x keylen %u type %d\n",
+                recordNum, nextStart, keylen, rectype);
+            /* Non-file records are not needed */
+            if (rectype != HFSPLUS_RECTYPE_FILE) {
+                continue;
+            }
+            /* Check file record location */
+            if (recordStart+keylen+2+sizeof(hfsPlusCatalogFile) >= topOfOffsets) {
+                cli_dbgmsg("hfsplus_walk_catalog: not enough bytes for file record!\n");
+                ret = CL_EFORMAT;
+                break;
+            }
+            memcpy(&fileRec, &(nodeBuf[recordStart+keylen+2]), sizeof(hfsPlusCatalogFile));
+
+            if ((fileRec.permissions.fileMode & HFS_MODE_TYPEMASK) == HFS_MODE_FILE) {
+                /* Convert forks and scan */
+                forkdata_to_host(&(fileRec.dataFork));
+                forkdata_print("data fork:", &(fileRec.dataFork));
+                if (fileRec.dataFork.logicalSize) {
+                    ret = hfsplus_scanfile(ctx, volHeader, extHeader, &(fileRec.dataFork), dirname);
+                }
+                if (ret != CL_CLEAN) {
+                    cli_dbgmsg("hfsplus_walk_catalog: data fork retcode %d", ret);
+                    break;
+                }
+                forkdata_to_host(&(fileRec.resourceFork));
+                forkdata_print("resource fork:", &(fileRec.resourceFork));
+                if (fileRec.resourceFork.logicalSize) {
+                    ret = hfsplus_scanfile(ctx, volHeader, extHeader, &(fileRec.resourceFork), dirname);
+                }
+                if (ret != CL_CLEAN) {
+                    cli_dbgmsg("hfsplus_walk_catalog: resource fork retcode %d", ret);
+                    break;
+                }
+            }
+        }
+        /* if return code, exit loop, message already logged */
+        if (ret != CL_CLEAN) {
+            break;
+        }
+
+        /* After that, proceed to next node */
+        if (thisNode == nodeDesc.fLink) {
+            /* Future heuristic */
+            cli_warnmsg("hfsplus_walk_catalog: simple cycle detected!\n");
+            ret = CL_EFORMAT;
+            break;
+        }
+        else {
+            thisNode = nodeDesc.fLink;
+        }
+    }
+
+    free(nodeBuf);
+    return ret;
+}
+
+/* Base scan function for scanning HFS+ or HFSX partitions */
 int cli_scanhfsplus(cli_ctx *ctx)
 {
     char *targetdir = NULL;
@@ -428,7 +712,6 @@ int cli_scanhfsplus(cli_ctx *ctx)
         goto freeHeader;
     }
 
-
 /*
 cli_dbgmsg("sizeof(hfsUniStr255) is %lu\n", sizeof(hfsUniStr255));
 cli_dbgmsg("sizeof(hfsPlusBSDInfo) is %lu\n", sizeof(hfsPlusBSDInfo));
@@ -439,11 +722,12 @@ cli_dbgmsg("sizeof(hfsPlusVolumeHeader) is %lu\n", sizeof(hfsPlusVolumeHeader));
 cli_dbgmsg("sizeof(hfsNodeDescriptor) is %lu\n", sizeof(hfsNodeDescriptor));
  */
 
-    /* Get root node (header node) of catalog file */
+    /* Get root node (header node) of extent overflow file */
     ret = hfsplus_readheader(ctx, volHeader, &extentFileDesc, &extentFileHeader, HFS_FILETREE_EXTENTS, "extentFile");
     if (ret != CL_CLEAN) {
         goto freeHeader;
     }
+    /* Get root node (header node) of catalog file */
     ret = hfsplus_readheader(ctx, volHeader, &catFileDesc, &catFileHeader, HFS_FILETREE_CATALOG, "catalogFile");
     if (ret != CL_CLEAN) {
         goto freeHeader;
@@ -451,6 +735,7 @@ cli_dbgmsg("sizeof(hfsNodeDescriptor) is %lu\n", sizeof(hfsNodeDescriptor));
 
     /* Create temp folder for contents */
     if (!(targetdir = cli_gentemp(ctx->engine->tmpdir))) {
+        cli_errmsg("cli_scandmg: cli_gentemp failed\n");
         ret = CL_ETMPDIR;
         goto freeHeader;
     }
@@ -461,7 +746,24 @@ cli_dbgmsg("sizeof(hfsNodeDescriptor) is %lu\n", sizeof(hfsNodeDescriptor));
     }
     cli_dbgmsg("cli_scandmg: Extracting into %s\n", targetdir);
 
+    /* Can build and scan catalog file if we want ***
     ret = hfsplus_scanfile(ctx, volHeader, &extentFileHeader, &(volHeader->catalogFile), targetdir);
+     */
+    if (ret == CL_CLEAN) {
+        ret = hfsplus_validate_catalog(ctx, volHeader, &catFileHeader);
+        if (ret == CL_CLEAN) {
+            cli_dbgmsg("cli_scandmg: validation successful\n");
+        }
+        else {
+            cli_dbgmsg("cli_scandmg: validation returned %d : %s\n", ret, cl_strerror(ret));
+        }
+    }
+
+    /* Walk through catalog to identify files to scan */
+    if (ret == CL_CLEAN) {
+        ret = hfsplus_walk_catalog(ctx, volHeader, &catFileHeader, &extentFileHeader, targetdir);
+        cli_dbgmsg("cli_scandmg: walk catalog finished\n");
+    }
 
     /* Clean up extracted content, if needed */
     if (!ctx->engine->keeptmp) {

@@ -134,10 +134,6 @@ typedef struct hfsPlusVolumeHeader hfsPlusVolumeHeader;
 #define HFS_FILETREE_ATTRIBUTES 4
 #define HFS_FILETREE_STARTUP 5
 
-/******************************/
-/* File properties */
-/******************************/
-
 /* BSD object info (16 bytes) */
 /* important parts for scanning are fileMode and the special part */
 struct hfsPlusBSDInfo {
@@ -286,6 +282,9 @@ typedef struct hfsPlusExtentKey hfsPlusExtentKey;
 #define HFS_VOL_INCONSISTENT(hdr)	\
     ((hdr->attributes & (1 << hfsBootVolumeInconsistentBit))	\
     || !(hdr->attributes & (1 << hfsVolumeUnmountedBit)))
+
+/* Maximum number of catalog leaf nodes to scan for records */
+#define HFSPLUS_NODE_LIMIT 1000
 
 int cli_scanhfsplus(cli_ctx *ctx);
 
