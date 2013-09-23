@@ -424,15 +424,15 @@ static int hfsplus_validate_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader
 
     catFork = &(volHeader->catalogFile);
     if (catFork->totalBlocks >= volHeader->totalBlocks) {
-        cli_dbmsg("hfsplus_getnodelimit: catFork totalBlocks too large!\n");
+        cli_dbgmsg("hfsplus_getnodelimit: catFork totalBlocks too large!\n");
         return CL_EFORMAT;
     }
     if (catFork->logicalSize > (catFork->totalBlocks * volHeader->blockSize)) {
-        cli_dbmsg("hfsplus_getnodelimit: catFork logicalSize too large!\n");
+        cli_dbgmsg("hfsplus_getnodelimit: catFork logicalSize too large!\n");
         return CL_EFORMAT;
     }
     if (catFork->logicalSize < (catHeader->totalNodes * catHeader->nodeSize)) {
-        cli_dbmsg("hfsplus_getnodelimit: too many nodes for catFile\n");
+        cli_dbgmsg("hfsplus_getnodelimit: too many nodes for catFile\n");
         return CL_EFORMAT;
     }
 
