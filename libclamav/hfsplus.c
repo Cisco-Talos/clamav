@@ -547,6 +547,7 @@ static int hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hf
     hfsHeaderRecord *extHeader, const char *dirname)
 {
     int ret = CL_CLEAN;
+    unsigned int has_alerts = 0;
     uint32_t thisNode, nodeLimit, nodesScanned = 0;
     uint16_t nodeSize, recordNum, topOfOffsets;
     uint16_t distance, recordStart, nextDist, nextStart;
@@ -659,6 +660,13 @@ static int hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hf
                 }
                 if (ret != CL_CLEAN) {
                     cli_dbgmsg("hfsplus_walk_catalog: data fork retcode %d", ret);
+                    if (ret == CL_VIRUS) {
+                        has_alerts = 1;
+                        if (SCAN_ALL) {
+                            /* Continue scanning in SCAN_ALL mode */
+                            ret = CL_CLEAN;
+                        }
+                    }
                     break;
                 }
                 forkdata_to_host(&(fileRec.resourceFork));
@@ -668,6 +676,13 @@ static int hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hf
                 }
                 if (ret != CL_CLEAN) {
                     cli_dbgmsg("hfsplus_walk_catalog: resource fork retcode %d", ret);
+                    if (ret == CL_VIRUS) {
+                        has_alerts = 1;
+                        if (SCAN_ALL) {
+                            /* Continue scanning in SCAN_ALL mode */
+                            ret = CL_CLEAN;
+                        }
+                    }
                     break;
                 }
             }
@@ -690,6 +705,9 @@ static int hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hf
     }
 
     free(nodeBuf);
+    if (has_alerts) {
+        ret = CL_VIRUS;
+    }
     return ret;
 }
 
