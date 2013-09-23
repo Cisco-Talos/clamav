@@ -104,12 +104,12 @@ static void forkdata_to_host(hfsPlusForkData *fork)
 static void forkdata_print(const char *pfx, hfsPlusForkData *fork)
 {
     int i;
-    cli_dbgmsg("%s logicalSize %lu clumpSize %lu totalBlocks %lu\n", pfx,
+    cli_dbgmsg("%s logicalSize " STDu64 " clumpSize " STDu32 " totalBlocks " STDu32 "\n", pfx,
         fork->logicalSize, fork->clumpSize, fork->totalBlocks);
     for (i=0; i < 8; i++) {
         if (fork->extents[i].startBlock == 0)
             break;
-        cli_dbgmsg("%s extent[%d] startBlock %lu blockCount %lu\n", pfx, i,
+        cli_dbgmsg("%s extent[%d] startBlock " STDu32 " blockCount " STDu32 "\n", pfx, i,
             fork->extents[i].startBlock, fork->extents[i].blockCount);
     }
 }
@@ -165,10 +165,10 @@ static int hfsplus_volumeheader(cli_ctx *ctx, hfsPlusVolumeHeader **header)
     cli_dbgmsg("HFS+ Header:\n");
     cli_dbgmsg("Signature: %x\n", volHeader->signature);
     cli_dbgmsg("Attributes: %x\n", volHeader->attributes);
-    cli_dbgmsg("File Count: %lu\n", volHeader->fileCount);
-    cli_dbgmsg("Folder Count: %lu\n", volHeader->folderCount);
-    cli_dbgmsg("Block Size: %lu\n", volHeader->blockSize);
-    cli_dbgmsg("Total Blocks: %lu\n", volHeader->totalBlocks);
+    cli_dbgmsg("File Count: " STDu32 "\n", volHeader->fileCount);
+    cli_dbgmsg("Folder Count: " STDu32 "\n", volHeader->folderCount);
+    cli_dbgmsg("Block Size: " STDu32 "\n", volHeader->blockSize);
+    cli_dbgmsg("Total Blocks: " STDu32 "\n", volHeader->totalBlocks);
 
     /* Block Size must be power of 2 between 512 and 1 MB */
     if ((volHeader->blockSize < 512) || (volHeader->blockSize > (1 << 20))) {
