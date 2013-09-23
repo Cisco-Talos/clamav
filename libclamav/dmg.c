@@ -712,8 +712,8 @@ static int dmg_stripe_adc(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish_
 {
     /* Temporary stub */
     cli_dbgmsg("dmg_stripe_adc: stripe " STDu32 "\n", index);
-
-    return CL_CLEAN;
+    /* Return as format error to prevent scan for now */
+    return CL_EFORMAT;
 }
 
 /* Stripe handling: deflate block (type 0x80000005) */
@@ -723,7 +723,8 @@ static int dmg_stripe_inflate(cli_ctx *ctx, int fd, uint32_t index, struct dmg_m
     z_stream strm;
     size_t off = mish_set->stripes[index].dataOffset;
     size_t len = mish_set->stripes[index].dataLength;
-    off_t nbytes = 0;
+    uint64_t size_so_far = 0;
+    uint64_t expected_len = mish_set->stripes[index].sectorCount * DMG_SECTOR_SIZE;
     uint8_t obuf[BUFSIZ];
 
     cli_dbgmsg("dmg_stripe_inflate: stripe " STDu32 "\n", index);
@@ -748,6 +749,11 @@ static int dmg_stripe_inflate(cli_ctx *ctx, int fd, uint32_t index, struct dmg_m
 
     while(strm.avail_in) {
         int written;
+        if (size_so_far > expected_len) {
+            cli_warnmsg("dmg_stripe_inflate: expected size exceeded!\n");
+            inflateEnd(&strm);
+            return CL_EFORMAT;
+        }
         zstat = inflate(&strm, Z_NO_FLUSH);   /* zlib */
         switch(zstat) {
             case Z_OK:
@@ -757,7 +763,7 @@ static int dmg_stripe_inflate(cli_ctx *ctx, int fd, uint32_t index, struct dmg_m
                         inflateEnd(&strm);
                         return CL_EWRITE;
                     }
-                    nbytes += written;
+                    size_so_far += written;
                     strm.next_out = (Bytef *)obuf;
                     strm.avail_out = sizeof(obuf);
                 }
@@ -771,20 +777,20 @@ static int dmg_stripe_inflate(cli_ctx *ctx, int fd, uint32_t index, struct dmg_m
                         inflateEnd(&strm);
                         return CL_EWRITE;
                     }
-                    nbytes += written;
+                    size_so_far += written;
                     strm.next_out = (Bytef *)obuf;
                     strm.avail_out = sizeof(obuf);
                     if (zstat == Z_STREAM_END)
                         break;
                 }
                 if(strm.msg)
-                    cli_dbgmsg("dmg_stripe_inflate: after writing %lu bytes, "
+                    cli_dbgmsg("dmg_stripe_inflate: after writing " STDu64 " bytes, "
                                "got error \"%s\" inflating stripe " STDu32 "\n",
-                               (unsigned long)nbytes, strm.msg, index);
+                               size_so_far, strm.msg, index);
                 else
-                    cli_dbgmsg("dmg_stripe_inflate: after writing %lu bytes, "
+                    cli_dbgmsg("dmg_stripe_inflate: after writing " STDu64 " bytes, "
                                "got error %d inflating stripe " STDu32 "\n",
-                               (unsigned long)nbytes, zstat, index);
+                               size_so_far, zstat, index);
                 inflateEnd(&strm);
                 return CL_EFORMAT;
         }
@@ -807,17 +813,18 @@ static int dmg_stripe_inflate(cli_ctx *ctx, int fd, uint32_t index, struct dmg_m
 static int dmg_stripe_bzip(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish_with_stripes *mish_set)
 {
     int ret = CL_CLEAN;
-    size_t len = mish_set->stripes[index].dataLength;
-#if HAVE_BZLIB_H
     size_t off = mish_set->stripes[index].dataOffset;
+    size_t len = mish_set->stripes[index].dataLength;
+    uint64_t size_so_far = 0;
+    uint64_t expected_len = mish_set->stripes[index].sectorCount * DMG_SECTOR_SIZE;
+#if HAVE_BZLIB_H
     int rc;
     bz_stream strm;
-    size_t size_so_far = 0;
     uint8_t obuf[BUFSIZ];
 #endif
 
     cli_dbgmsg("dmg_stripe_bzip: stripe " STDu32 " initial len " STDu64 " expected len " STDu64 "\n",
-            index, len, mish_set->stripes[index].sectorCount * DMG_SECTOR_SIZE);
+            index, len, expected_len);
 
 #if HAVE_BZLIB_H
     memset(&strm, 0, sizeof(strm));
@@ -829,6 +836,11 @@ static int dmg_stripe_bzip(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish
     }
 
     do {
+        if (size_so_far > expected_len) {
+            cli_warnmsg("dmg_stripe_bzip: expected size exceeded!\n");
+            ret = CL_EFORMAT;
+            break;
+        }
         if (strm.avail_in == 0) {
             size_t next_len = (len > sizeof(obuf)) ? sizeof(obuf) : len;
             dmg_bzipmsg("dmg_stripe_bzip: off %lu len %lu next_len %lu\n", off, len, next_len);
@@ -858,7 +870,13 @@ static int dmg_stripe_bzip(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish
             size_t next_write = sizeof(obuf);
             do {
                 size_so_far += next_write;
-                dmg_bzipmsg("dmg_stripe_bzip: size_so_far: %lu next_write: %lu\n", size_so_far, next_write);
+                dmg_bzipmsg("dmg_stripe_bzip: size_so_far: " STDu64 " next_write: %lu\n", size_so_far, next_write);
+                if (size_so_far > expected_len) {
+                    cli_warnmsg("dmg_stripe_bzip: expected size exceeded!\n");
+                    ret = CL_EFORMAT;
+                    rc = BZ_DATA_ERROR; /* prevent stream end block */
+                    break;
+                }
 
                 ret = cli_checklimits("dmg_stripe_bzip", ctx, (unsigned long)(size_so_far + sizeof(obuf)), 0, 0);
                 if (ret != CL_CLEAN) {
@@ -887,9 +905,9 @@ static int dmg_stripe_bzip(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish
         if (rc == BZ_STREAM_END) {
             size_t next_write = sizeof(obuf) - strm.avail_out;
             size_so_far += next_write;
-            dmg_bzipmsg("dmg_stripe_bzip: size_so_far: %lu next_write: %lu\n", size_so_far, next_write);
+            dmg_bzipmsg("dmg_stripe_bzip: size_so_far: " STDu64 " next_write: %lu\n", size_so_far, next_write);
 
-            ret = cli_checklimits("dmg_stripe_bzip", ctx, size_so_far + sizeof(obuf), 0, 0);
+            ret = cli_checklimits("dmg_stripe_bzip", ctx, (unsigned long)(size_so_far + sizeof(obuf)), 0, 0);
             if (ret != CL_CLEAN) {
                 break;
             }
@@ -908,6 +926,11 @@ static int dmg_stripe_bzip(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish
     BZ2_bzDecompressEnd(&strm);
 #endif
 
+    if (ret == CL_CLEAN) {
+        if (size_so_far != expected_len) {
+            cli_dbgmsg("dmg_stripe_bzip: output does not match expected size!\n");
+        }
+    }
     return ret;
 }
 
