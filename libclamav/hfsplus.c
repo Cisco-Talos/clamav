@@ -460,7 +460,8 @@ static int hfsplus_fetch_node (cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfs
     /* Do we need one block or more? */
     if (catHeader->nodeSize <= volHeader->blockSize) {
         /* Need one block */
-        catalogOffset = node * catHeader->nodeSize;
+        /* First, calculate the node's offset within the catalog */
+        catalogOffset = (uint64_t)node * catHeader->nodeSize;
         /* Determine which block of the catalog we need */
         fetchBlock = (uint32_t) (catalogOffset / volHeader->blockSize);
         fetchStart = (uint32_t) (catalogOffset % volHeader->blockSize);
@@ -513,6 +514,7 @@ static int hfsplus_fetch_node (cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfs
     else {
         /* Need more than one block for this node */
         cli_dbgmsg("hfsplus_fetch_node: nodesize bigger than blocksize, is this allowed?\n");
+        return CL_EFORMAT;
     }
 
     if (fileOffset) {
