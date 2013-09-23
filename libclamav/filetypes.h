@@ -28,9 +28,9 @@
 #include "fmap.h"
 
 #define CL_FILE_MBUFF_SIZE 1024
-#define CL_PART_MBUFF_SIZE 1026
+#define CL_PART_MBUFF_SIZE 1028
 /* MAGIC_BUFFER_SIZE must be the bigger of the two sizes above */
-#define MAGIC_BUFFER_SIZE 1026
+#define MAGIC_BUFFER_SIZE 1028
 
 #define CL_TYPENO 500
 #define MAX_EMBEDDED_OBJ 10
