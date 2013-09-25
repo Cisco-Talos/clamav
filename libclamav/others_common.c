@@ -520,7 +520,7 @@ static int get_filetype(const char *fname, int flags, int need_stat,
     }
 
     if (need_stat) {
-	if (STAT(fname, statbuf) == -1)
+	if (CLAMSTAT(fname, statbuf) == -1)
 	    return -1;
 	stated = 1;
     }

@@ -275,7 +275,7 @@ int main(int argc, char **argv)
 
 #ifdef C_LINUX
     procdev = 0;
-    if(STAT("/proc", &sb) != -1 && !sb.st_size)
+    if(CLAMSTAT("/proc", &sb) != -1 && !sb.st_size)
 	procdev = sb.st_dev;
 #endif
 

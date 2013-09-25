@@ -92,7 +92,7 @@ int localserver(const struct optstruct *opts)
 		    close(sockfd);
 		    return -1;
 		}
-	    } else if(STAT(server.sun_path, &foo) != -1) {
+	    } else if(CLAMSTAT(server.sun_path, &foo) != -1) {
 		logg("!LOCAL: Socket file %s exists. Either remove it, or configure a different one.\n", server.sun_path);
 		close(sockfd);
 		return -1;

@@ -903,7 +903,7 @@ cli_rmdirs(const char *name)
 	char err[128];
 
 
-    if(STAT(name, &statb) < 0) {
+    if(CLAMSTAT(name, &statb) < 0) {
 	cli_warnmsg("cli_rmdirs: Can't locate %s: %s\n", name, cli_strerror(errno, err, sizeof(err)));
 	return -1;
     }
@@ -974,7 +974,7 @@ int cli_rmdirs(const char *dirname)
 
     chmod(dirname, 0700);
     if((dd = opendir(dirname)) != NULL) {
-	while(STAT(dirname, &maind) != -1) {
+	while(CLAMSTAT(dirname, &maind) != -1) {
 	    if(!rmdir(dirname)) break;
 	    if(errno != ENOTEMPTY && errno != EEXIST && errno != EBADF) {
 		cli_errmsg("cli_rmdirs: Can't remove temporary directory %s: %s\n", dirname, cli_strerror(errno, err, sizeof(err)));

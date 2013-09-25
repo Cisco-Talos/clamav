@@ -876,7 +876,7 @@ fan_checkowner (int pid, const struct optstruct *opts)
         return 0;
 
     snprintf (path, sizeof (path), "/proc/%u", pid);
-    if (STAT (path, &sb) == 0)
+    if (CLAMSTAT (path, &sb) == 0)
     {
         while (opt)
         {

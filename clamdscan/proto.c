@@ -296,7 +296,7 @@ int dsresult(int sockd, int scantype, const char *filename, int *printok, int *e
 	    logg("STDIN: noreply from clamd\n.");
 	    return -1;
 	}
-        if(STAT(filename, &sb) == -1) {
+        if(CLAMSTAT(filename, &sb) == -1) {
 	    logg("~%s: stat() failed with %s, clamd may not be responding\n",
 		 filename, strerror(errno));
 	    return -1;
