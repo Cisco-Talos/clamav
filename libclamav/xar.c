@@ -26,6 +26,11 @@
 #include "xar.h"
 #include "fmap.h"
 #if HAVE_LIBXML2
+#ifdef _WIN32
+#ifndef LIBXML_WRITER_ENABLED
+#define LIBXML_WRITER_ENABLED 1
+#endif
+#endif
 #include <libxml/xmlreader.h>
 #include "str.h"
 #include "scanners.h"

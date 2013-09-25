@@ -94,6 +94,7 @@ my %CONF = (
     'HAVE_LIBMILTER_MFAPI_H' => -1,
     'HAVE_LIBNCURSES' => -1,
     'HAVE_LIBPDCURSES' => -1,
+    'HAVE_LIBXML2' => '1',
     'HAVE_LIBZ' => '1',
     'HAVE_LIMITS_H' => '1',
     'HAVE_LTDL' => '1',
