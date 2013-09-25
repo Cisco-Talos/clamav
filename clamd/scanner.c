@@ -325,7 +325,7 @@ int scan_pathchk(const char *path, struct cli_ftw_cbdata *data)
     }
 
     if(!optget(scandata->opts, "CrossFilesystems")->enabled) {
-	if(STAT(path, &statbuf) == 0) {
+	if(CLAMSTAT(path, &statbuf) == 0) {
 	    if(statbuf.st_dev != scandata->dev) {
 		if(scandata->type != TYPE_MULTISCAN)
 		    conn_reply_single(scandata->conn, path, "Excluded (another filesystem)");

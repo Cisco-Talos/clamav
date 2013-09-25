@@ -2813,7 +2813,7 @@ rfc1341(message *m, const char *dir)
 	} else if(errno == EEXIST) {
 		STATBUF statb;
 
-		if(STAT(pdir, &statb) < 0) {
+		if(CLAMSTAT(pdir, &statb) < 0) {
 			char err[128];
 			cli_errmsg("Partial directory %s: %s\n", pdir,
 				cli_strerror(errno, err, sizeof(err)));

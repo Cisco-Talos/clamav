@@ -123,7 +123,7 @@ static void action_remove(const char *filename) {
 
 static int isdir(void) {
     STATBUF sb;
-    if(STAT(actarget, &sb) || !S_ISDIR(sb.st_mode)) {
+    if(CLAMSTAT(actarget, &sb) || !S_ISDIR(sb.st_mode)) {
 	logg("!'%s' doesn't exist or is not a directory\n", actarget);
 	return 0;
     }

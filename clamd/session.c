@@ -236,7 +236,7 @@ int command(client_conn_t *conn, int *virus)
 	    int multiscan, max, alive;
 
 	    /* use MULTISCAN only for directories (bb #1869) */
-	    if (STAT(conn->filename, &sb) == 0 &&
+	    if (CLAMSTAT(conn->filename, &sb) == 0 &&
 		!S_ISDIR(sb.st_mode)) {
 		thrmgr_setactivetask(NULL, "CONTSCAN");
 		type = TYPE_CONTSCAN;
@@ -384,7 +384,7 @@ int command(client_conn_t *conn, int *virus)
 	 flags |= CLI_FTW_FOLLOW_FILE_SYMLINK;
 
      if(!optget(opts, "CrossFilesystems")->enabled)
-	 if(STAT(conn->filename, &sb) == 0)
+	 if(CLAMSTAT(conn->filename, &sb) == 0)
 	     scandata.dev = sb.st_dev;
 
      ret = cli_ftw(conn->filename, flags,  maxdirrec ? maxdirrec : INT_MAX, scan_callback, &data, scan_pathchk);

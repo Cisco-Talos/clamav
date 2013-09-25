@@ -29,14 +29,14 @@
 #include <unistd.h>
 
 #define STATBUF struct stat64
-#define STAT stat64
+#define CLAMSTAT stat64
 #define LSTAT lstat64
 #define FSTAT fstat64
 #define safe_open(a, b) open(a, b|O_LARGEFILE)
 #else
 
 #define STATBUF struct stat
-#define STAT stat
+#define CLAMSTAT stat
 #define LSTAT lstat
 #define FSTAT fstat
 /* Nothing is safe in windows, not even open, safe_open defined under /win32 */

@@ -2901,7 +2901,7 @@ int cl_load(const char *path, struct cl_engine *engine, unsigned int *signo, uns
 	return CL_EARG;
     }
 
-    if(STAT(path, &sb) == -1) {
+    if(CLAMSTAT(path, &sb) == -1) {
         cli_errmsg("cl_load(): Can't get status of %s\n", path);
         return CL_ESTAT;
     }
@@ -3021,7 +3021,7 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 
 		strcpy(dbstat->statdname[dbstat->entries - 1], dent->d_name);
 #endif
-		STAT(fname, &dbstat->stattab[dbstat->entries - 1]);
+		CLAMSTAT(fname, &dbstat->stattab[dbstat->entries - 1]);
 		free(fname);
 	    }
 	}
@@ -3076,7 +3076,7 @@ int cl_statchkdir(const struct cl_stat *dbstat)
 		}
 
 		sprintf(fname, "%s"PATHSEP"%s", dbstat->dir, dent->d_name);
-		STAT(fname, &sb);
+		CLAMSTAT(fname, &sb);
 		free(fname);
 
 		found = 0;
@@ -3426,7 +3426,7 @@ int cl_countsigs(const char *path, unsigned int countoptions, unsigned int *sigs
     if(!sigs)
 	return CL_ENULLARG;
 
-    if(STAT(path, &sb) == -1) {
+    if(CLAMSTAT(path, &sb) == -1) {
 	cli_errmsg("cl_countsigs: Can't stat %s\n", path);
 	return CL_ESTAT;
     }

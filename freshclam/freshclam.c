@@ -333,7 +333,7 @@ main (int argc, char **argv)
 
     if (optget (opts, "HTTPProxyPassword")->enabled)
     {
-        if (STAT (cfgfile, &statbuf) == -1)
+        if (CLAMSTAT (cfgfile, &statbuf) == -1)
         {
             logg ("^Can't stat %s (critical error)\n", cfgfile);
             optfree (opts);

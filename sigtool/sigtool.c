@@ -172,7 +172,7 @@ static int hashsig(const struct optstruct *opts, unsigned int mdb, int type)
 
     if(opts->filename) {
 	for(i = 0; opts->filename[i]; i++) {
-	    if(STAT(opts->filename[i], &sb) == -1) {
+	    if(CLAMSTAT(opts->filename[i], &sb) == -1) {
 		mprintf("!hashsig: Can't access file %s\n", opts->filename[i]);
 		perror("hashsig");
 		return -1;
@@ -523,7 +523,7 @@ static int script2cdiff(const char *script, const char *builder, const struct op
 	int bytes;
 
 
-    if(STAT(script, &sb) == -1) {
+    if(CLAMSTAT(script, &sb) == -1) {
 	mprintf("!script2diff: Can't stat file %s\n", script);
 	return -1;
     }
@@ -669,7 +669,7 @@ static int build(const struct optstruct *opts)
     if(optget(opts, "datadir")->active)
 	localdbdir = optget(opts, "datadir")->strarg;
 
-    if(STAT("COPYING", &foo) == -1) {
+    if(CLAMSTAT("COPYING", &foo) == -1) {
 	mprintf("!build: COPYING file not found in current working directory.\n");
 	return -1;
     }
@@ -1444,7 +1444,7 @@ static int listsigs(const struct optstruct *opts, int mode)
 	name = optget(opts, "list-sigs")->strarg;
 	if(access(name, R_OK) && localdbdir)
 	    name = localdbdir;
-	if(STAT(name, &sb) == -1) {
+	if(CLAMSTAT(name, &sb) == -1) {
 	    mprintf("--list-sigs: Can't get status of %s\n", name);
 	    return -1;
 	}
@@ -1837,7 +1837,7 @@ static int dircopy(const char *src, const char *dest)
 	char spath[512], dpath[512];
 
 
-    if(STAT(dest, &sb) == -1) {
+    if(CLAMSTAT(dest, &sb) == -1) {
 	if(mkdir(dest, 0755)) {
 	    /* mprintf("!dircopy: Can't create temporary directory %s\n", dest); */
 	    return -1;
@@ -3039,7 +3039,7 @@ int main(int argc, char **argv)
 	    mprintf("!--verify-cdiff requires two arguments\n");
 	    ret = -1;
 	} else {
-	    if(STAT(opts->filename[0], &sb) == -1) {
+	    if(CLAMSTAT(opts->filename[0], &sb) == -1) {
 		mprintf("--verify-cdiff: Can't get status of %s\n", opts->filename[0]);
 		ret = -1;
 	    } else {

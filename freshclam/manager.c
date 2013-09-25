@@ -2621,7 +2621,7 @@ updatecustomdb (const char *url, int *signo, const struct optstruct *opts,
         rtimeout = optget (opts, "ReceiveTimeout")->numarg;
 
         *mtime = 0;
-        if (STAT (dbname, &sb) != -1)
+        if (CLAMSTAT (dbname, &sb) != -1)
             Rfc2822DateTime (mtime, sb.st_mtime);
 
         newfile = cli_gentemp (updtmpdir);
