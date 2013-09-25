@@ -100,9 +100,9 @@ static void xar_get_checksum_values(xmlTextReaderPtr reader, char ** cksum, int 
                    "for checksum element\n");
     } else {
         cli_dbgmsg("cli_scanxar: checksum algorithm is %s.\n", style);        
-        if (xmlStrEqual(style, (const xmlChar *)"sha1")) {
+        if (0 == xmlStrcasecmp(style, (const xmlChar *)"sha1")) {
             *hash = XAR_CKSUM_SHA1;
-        } else if (xmlStrEqual(style, (const xmlChar *)"md5")) {
+        } else if (0 == xmlStrcasecmp(style, (const xmlChar *)"md5")) {
             *hash = XAR_CKSUM_MD5;
         } else {
             cli_dbgmsg("cli_scanxar: checksum algorithm %s is unsupported.\n", style);
@@ -525,6 +525,7 @@ int cli_scanxar(cli_ctx *ctx)
     tmpname = NULL;
     while (CL_SUCCESS == (rc = xar_get_toc_data_values(reader, &length, &offset, &size, &encoding,
                                                        &a_cksum, &a_hash, &e_cksum, &e_hash))) {
+        int do_extract_cksum = 1;
         char * blockp;
         SHA1Context a_sc, e_sc;
         cli_md5_ctx a_mc, e_mc;
@@ -565,20 +566,19 @@ int cli_scanxar(cli_ctx *ctx)
             }
             
             while (at < map->len && at < offset+hdr.toc_length_compressed+hdr.size+length) {
+                unsigned long avail_in;
+                void * next_in;
                 unsigned int bytes = MIN(map->len - at, map->pgsz);
                 bytes = MIN(length, bytes);
                 cli_dbgmsg("cli_scanxar: fmap %u bytes\n", bytes);
-                if(!(strm.next_in = (void*)fmap_need_off_once(map, at, bytes))) {
+                if(!(strm.next_in = next_in = (void*)fmap_need_off_once(map, at, bytes))) {
                     cli_dbgmsg("cli_scanxar: Can't read %u bytes @ %lu.\n", bytes, (long unsigned)at);
                     inflateEnd(&strm);
                     rc = CL_EREAD;
                     goto exit_tmpfile;
                 }
-
-                xar_hash_update(a_hash_ctx, strm.next_in, bytes, a_hash);
-
                 at += bytes;
-                strm.avail_in = bytes;
+                strm.avail_in = avail_in = bytes;
                 do {
                     int inf, outsize = 0;
                     unsigned char buff[FILEBUFF];
@@ -611,6 +611,9 @@ int cli_scanxar(cli_ctx *ctx)
                         break;
                     }
                 } while (strm.avail_out == 0);
+
+                avail_in -= strm.avail_in;
+                xar_hash_update(a_hash_ctx, next_in, avail_in, a_hash);
             }
             
             inflateEnd(&strm);
@@ -725,9 +728,10 @@ int cli_scanxar(cli_ctx *ctx)
                 __lzma_wrap_free(NULL, buff);
             }
             break; 
+        case CL_TYPE_ANY:
         default:
         case CL_TYPE_BZ:
-        case CL_TYPE_ANY:
+            do_extract_cksum = 0;
             {
                 /* for uncompressed, bzip2, and unknown, just pull the file, cli_magic_scandesc does the rest */
                 unsigned long write_len;
@@ -745,7 +749,6 @@ int cli_scanxar(cli_ctx *ctx)
                 }
                 
                 xar_hash_update(a_hash_ctx, blockp, length, a_hash);
-                xar_hash_update(e_hash_ctx, blockp, length, e_hash);
                 
                 if (cli_writen(fd, blockp, write_len) < 0) {
                     cli_dbgmsg("cli_scanxar: cli_writen error %li bytes @ %li.\n", length, at);
@@ -770,15 +773,17 @@ int cli_scanxar(cli_ctx *ctx)
             a_cksum = NULL;
         }
         if (e_cksum != NULL) {
-            xar_hash_final(e_hash_ctx, result, e_hash);
-            expected = cli_hex2str(e_cksum);
-            if (xar_hash_check(e_hash, result, expected) != 0) {
-                cli_dbgmsg("cli_scanxar: extracted-checksum missing or mismatch.\n");
-                cksum_fails++;
-            } else {
-                cli_dbgmsg("cli_scanxar: extracted-checksum matched.\n");                
+            if (do_extract_cksum) {
+                xar_hash_final(e_hash_ctx, result, e_hash);
+                expected = cli_hex2str(e_cksum);
+                if (xar_hash_check(e_hash, result, expected) != 0) {
+                    cli_dbgmsg("cli_scanxar: extracted-checksum missing or mismatch.\n");
+                    cksum_fails++;
+                } else {
+                    cli_dbgmsg("cli_scanxar: extracted-checksum matched.\n");                
+                }
+                free(expected);
             }
-            free(expected);
             xmlFree(e_cksum);
             e_cksum = NULL;
         }
@@ -816,7 +821,7 @@ int cli_scanxar(cli_ctx *ctx)
     cli_dbgmsg("cli_scanxar: can't scan xar files, need libxml2.\n");
 #endif
     if (cksum_fails != 0)
-        cli_warnmsg("cli_scanxar: %u checksums missing/mismatched- use --debug for more info.\n", cksum_fails);
+        cli_warnmsg("cli_scanxar: %u checksums missing, mismatched, or unsupported - use --debug for more info.\n", cksum_fails);
 
     return rc;
 }
