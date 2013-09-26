@@ -329,7 +329,7 @@ static int hfsplus_scanfile(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsHea
     ext = 0;
     /* Dump file, extent by extent */
     do {
-        uint32_t currBlock, endBlock, outputSize;
+        uint32_t currBlock, endBlock, outputSize = 0;
         if (targetSize == 0) {
             cli_dbgmsg("hfsplus_dumpfile: output complete\n");
             break;
