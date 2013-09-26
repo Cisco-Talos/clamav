@@ -96,6 +96,7 @@
 #include "iso9660.h"
 #include "dmg.h"
 #include "xar.h"
+#include "hfsplus.h"
 
 #ifdef HAVE_BZLIB_H
 #include <bzlib.h>
