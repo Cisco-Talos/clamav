@@ -1,3 +1,11 @@
+Fri Sep 15 18:15:36 2013 EDT 2013 (morgan)
+------------------------------------
+ * win32: Import libxml2 2.9.1 components into windows builds for xmlReader support.
+
+Fri Sep 13 12:22:58 2013 EDT 2013 (morgan)
+------------------------------------
+ * libclamav: Add support for scanning xar/pkg archive files.
+
 Tue Sep 3 18:37:13 2013 EDT 2013 (dar)
 ------------------------------------
  * V 0.98.0 RC
