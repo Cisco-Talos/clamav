@@ -371,6 +371,8 @@ libclamav_la_SOURCES = \
 	builtin_bytecodes.h\
 	events.c\
 	events.h \
+	adc.c \
+	adc.h \
 	dmg.c \
 	dmg.h \
 	xar.c \

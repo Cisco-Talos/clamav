@@ -54,9 +54,10 @@
 #include "dmg.h"
 #include "scanners.h"
 #include "sf_base64decode.h"
+#include "adc.h"
 
-// #define DEBUG_DMG_PARSE
-// #define DEBUG_DMG_BZIP
+/* #define DEBUG_DMG_PARSE */
+/* #define DEBUG_DMG_BZIP */
 
 #ifdef DEBUG_DMG_PARSE
 #  define dmg_parsemsg(...) cli_dbgmsg( __VA_ARGS__)
@@ -710,10 +711,84 @@ static int dmg_stripe_store(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mis
 /* Stripe handling: ADC block (type 0x80000004) */
 static int dmg_stripe_adc(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish_with_stripes *mish_set)
 {
-    /* Temporary stub */
-    cli_dbgmsg("dmg_stripe_adc: stripe " STDu32 "\n", index);
-    /* Return as format error to prevent scan for now */
-    return CL_EFORMAT;
+    int ret = CL_CLEAN, adcret;
+    adc_stream strm;
+    size_t off = mish_set->stripes[index].dataOffset;
+    size_t len = mish_set->stripes[index].dataLength;
+    uint64_t size_so_far = 0;
+    uint64_t expected_len = mish_set->stripes[index].sectorCount * DMG_SECTOR_SIZE;
+    uint8_t obuf[BUFSIZ];
+
+    cli_dbgmsg("dmg_stripe_adc: stripe " STDu32 " initial len " STDu64 " expected len " STDu64 "\n",
+            index, len, expected_len);
+    if (len == 0)
+        return CL_CLEAN;
+
+    memset(&strm, 0, sizeof(strm));
+    strm.next_in = (void*)fmap_need_off_once(*ctx->fmap, off, len);
+    if (!strm.next_in) {
+        cli_warnmsg("dmg_stripe_adc: fmap need failed on stripe " STDu32 "\n", index);
+        return CL_EMAP;
+    }
+    strm.avail_in = len;
+    strm.next_out = obuf;
+    strm.avail_out = sizeof(obuf);
+
+    adcret = adc_decompressInit(&strm);
+    if(adcret != ADC_OK) {
+        cli_warnmsg("dmg_stripe_adc: adc_decompressInit failed\n");
+        return CL_EMEM;
+    }
+
+    while(adcret == ADC_OK) {
+        int written;
+        if (size_so_far > expected_len) {
+            cli_warnmsg("dmg_stripe_adc: expected size exceeded!\n");
+            adc_decompressEnd(&strm);
+            return CL_EFORMAT;
+        }
+        adcret = adc_decompress(&strm);
+        switch(adcret) {
+            case ADC_OK:
+                if(strm.avail_out == 0) {
+                    if ((written=cli_writen(fd, obuf, sizeof(obuf)))!=sizeof(obuf)) {
+                        cli_errmsg("dmg_stripe_adc: failed write to output file\n");
+                        adc_decompressEnd(&strm);
+                        return CL_EWRITE;
+                    }
+                    size_so_far += written;
+                    strm.next_out = obuf;
+                    strm.avail_out = sizeof(obuf);
+                }
+                continue;
+            case ADC_STREAM_END:
+            default:
+                written = sizeof(obuf) - strm.avail_out;
+                if (written) {
+                    if ((cli_writen(fd, obuf, written))!=written) {
+                        cli_errmsg("dmg_stripe_adc: failed write to output file\n");
+                        adc_decompressEnd(&strm);
+                        return CL_EWRITE;
+                    }
+                    size_so_far += written;
+                    strm.next_out = obuf;
+                    strm.avail_out = sizeof(obuf);
+                }
+                if (adcret == Z_STREAM_END)
+                    break;
+                cli_dbgmsg("dmg_stripe_adc: after writing " STDu64 " bytes, "
+                           "got error %d decompressing stripe " STDu32 "\n",
+                           size_so_far, adcret, index);
+                adc_decompressEnd(&strm);
+                return CL_EFORMAT;
+        }
+        break;
+    }
+
+    adc_decompressEnd(&strm);
+    cli_dbgmsg("dmg_stripe_adc: stripe " STDu32 " actual len " STDu64 " expected len " STDu64 "\n",
+            index, size_so_far, expected_len);
+    return CL_CLEAN;
 }
 
 /* Stripe handling: deflate block (type 0x80000005) */
