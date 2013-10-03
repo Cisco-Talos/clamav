@@ -51,6 +51,9 @@
     <ClCompile Include="..\libclamav\bytecode_api_decl.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\libclamav\adc.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\libclamav\aspack.c">
       <Filter>Source Files</Filter>
     </ClCompile>
