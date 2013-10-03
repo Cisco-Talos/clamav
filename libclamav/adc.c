@@ -52,7 +52,7 @@ int adc_decompressInit(adc_stream *strm)
     }
 
     /* Have to buffer maximum backward lookup */
-    strm->buffer = calloc(ADC_BUFF_SIZE, 1);
+    strm->buffer = (uint8_t *)calloc(ADC_BUFF_SIZE, 1);
     if (strm->buffer == NULL) {
         return ADC_MEM_ERROR;
     }
@@ -110,7 +110,7 @@ int adc_decompress(adc_stream *strm)
         switch (strm->state) {
             case ADC_STATE_GETTYPE: {
                 /* Grab action code */
-                bData = *(uint8_t *)(strm->next_in);
+                bData = *(strm->next_in);
                 strm->next_in++;
                 strm->avail_in--;
                 if (bData & 0x80) {
@@ -134,7 +134,7 @@ int adc_decompress(adc_stream *strm)
            }
            case ADC_STATE_LONGOP2: {
                 /* Grab first offset byte */
-                bData = *(uint8_t *)(strm->next_in);
+                bData = *(strm->next_in);
                 strm->next_in++;
                 strm->avail_in--;
                 strm->offset = bData * 0x100;
@@ -145,7 +145,7 @@ int adc_decompress(adc_stream *strm)
            }
            case ADC_STATE_LONGOP1: {
                 /* Grab second offset byte */
-                bData = *(uint8_t *)(strm->next_in);
+                bData = *(strm->next_in);
                 strm->next_in++;
                 strm->avail_in--;
                 strm->offset += bData + 1;
@@ -156,7 +156,7 @@ int adc_decompress(adc_stream *strm)
            }
            case ADC_STATE_SHORTOP: {
                 /* Grab offset byte */
-                bData = *(uint8_t *)(strm->next_in);
+                bData = *(strm->next_in);
                 strm->next_in++;
                 strm->avail_in--;
                 strm->offset += bData + 1;
@@ -170,18 +170,18 @@ int adc_decompress(adc_stream *strm)
                 /* Grab data */
                 adc_dbgmsg("adc_decompress: RAWDATA offset %u length %u\n", strm->offset, strm->length);
                 while ((strm->avail_in > 0) && (strm->avail_out > 0) && (strm->length > 0)) {
-                    bData = *(uint8_t *)(strm->next_in);
+                    bData = *(strm->next_in);
                     strm->next_in++;
                     strm->avail_in--;
                     /* store to output */
-                    *(uint8_t *)(strm->next_out) = bData;
+                    *(strm->next_out) = bData;
                     strm->next_out++;
                     strm->avail_out--;
                     /* store to buffer */
                     if (strm->curr >= (strm->buffer + ADC_BUFF_SIZE)) {
                         strm->curr = strm->buffer;
                     }
-                    *(uint8_t *)strm->curr = bData;
+                    *(strm->curr) = bData;
                     strm->curr++;
                     if (strm->buffered < ADC_BUFF_SIZE) {
                         strm->buffered++;
@@ -226,11 +226,11 @@ int adc_decompress(adc_stream *strm)
                         bData = *(uint8_t *)(strm->curr + ADC_BUFF_SIZE - strm->offset);
                     }
                     /* store to output */
-                    *(uint8_t *)(strm->next_out) = bData;
+                    *(strm->next_out) = bData;
                     strm->next_out++;
                     strm->avail_out--;
                     /* store to buffer */
-                    *(uint8_t *)strm->curr = bData;
+                    *(strm->curr) = bData;
                     strm->curr++;
                     if (strm->buffered < ADC_BUFF_SIZE) {
                         strm->buffered++;

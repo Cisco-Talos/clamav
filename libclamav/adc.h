@@ -4,11 +4,11 @@
 #define CLAM_ADC_H
 
 struct adc_stream {
-    void *next_in;
+    uint8_t *next_in;
     size_t avail_in;
     size_t total_in;
 
-    void *next_out;
+    uint8_t *next_out;
     size_t avail_out;
     size_t total_out;
 
