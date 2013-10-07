@@ -665,7 +665,7 @@ static int hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hf
                     has_alerts = 1;
                     if (SCAN_ALL) {
                         /* Continue scanning in SCAN_ALL mode */
-                        cli_dbgmsg("hfsplus_walk_catalog: data fork alert, continuing", ret);
+                        cli_dbgmsg("hfsplus_walk_catalog: data fork alert, continuing");
                         ret = CL_CLEAN;
                     }
                 }
@@ -684,7 +684,7 @@ static int hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hf
                     has_alerts = 1;
                     if (SCAN_ALL) {
                         /* Continue scanning in SCAN_ALL mode */
-                        cli_dbgmsg("hfsplus_walk_catalog: resource fork alert, continuing", ret);
+                        cli_dbgmsg("hfsplus_walk_catalog: resource fork alert, continuing");
                         ret = CL_CLEAN;
                     }
                 }

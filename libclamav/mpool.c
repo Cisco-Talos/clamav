@@ -452,12 +452,6 @@ struct MP *mpool_create() {
   sz = align_to_pagesize(&mp, MIN_FRAGSIZE);
   mp.u.mpm.usize = sizeof(struct MPMAP);
   mp.u.mpm.size = sz - sizeof(mp);
-#ifndef _WIN32
-  if ((mpool_p = (struct MP *)mmap(NULL, sz, PROT_READ | PROT_WRITE, MAP_PRIVATE|ANONYMOUS_MAP, -1, 0)) == MAP_FAILED)
-#else
-  if(!(mpool_p = (struct MP *)VirtualAlloc(NULL, sz, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE)))
-#endif
-    return NULL;
   if (FRAGSBITS > 255) {
       cli_errmsg("At most 255 frags possible!\n");
       return NULL;
@@ -466,6 +460,12 @@ struct MP *mpool_create() {
       cli_errmsg("fragsz[0] too small!\n");
       return NULL;
   }
+#ifndef _WIN32
+  if ((mpool_p = (struct MP *)mmap(NULL, sz, PROT_READ | PROT_WRITE, MAP_PRIVATE|ANONYMOUS_MAP, -1, 0)) == MAP_FAILED)
+#else
+  if(!(mpool_p = (struct MP *)VirtualAlloc(NULL, sz, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE)))
+#endif
+    return NULL;
 #ifdef CL_DEBUG
   memset(mpool_p, ALLOCPOISON, sz);
 #endif
