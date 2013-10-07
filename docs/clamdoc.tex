@@ -392,6 +392,28 @@ $ CK_FORK=no ./libtool --mode=execute valgrind unit_tests/check-clamav
 	 \end{verbatim}	
 	\end{itemize}
 
+    \subsection{Obtain Latest ClamAV anti-virus signature databases}
+    Before you can run ClamAV in daemon mode (clamd), 'clamdscan',
+    or 'clamscan' which is ClamAV's command line virus scanner,
+    you must have ClamAV Virus Database (.cvd) file(s) installed
+    in the appropriate location on your system.  The default
+    location for these database files are /usr/local/share/clamav
+    (in Linux/Unix).
+    \\\\
+    Here is a listing of currently available ClamAV Virus Database Files:
+    \\\\
+    bytecode.cvd        (signatures to detect bytecode in files)
+    main.cvd            (main ClamAV virus database file)
+    daily.cvd           (daily update file for ClamAV virus databases)
+    safebrowsing.cvd    (virus signatures for safe browsing)
+    \\\\
+    These files can be downloaded via HTTP from the main ClamAV website
+    or via the 'freshclam' utility on a periodic basis.  Using 'freshclam'
+    is the preferred method of keeping the ClamAV virus database files
+    up to date without manual intervention (see section \ref{conf:freshclam} for
+    information on how to configure 'freshclam' for automatic updating and section
+    \ref{sec:freshclam} for additional details on freshclam).
+
     \section{Configuration}
 
     \subsubsection{clamconf}
@@ -486,7 +508,7 @@ $ CK_FORK=no ./libtool --mode=execute valgrind unit_tests/check-clamav
     Please note that the scanned files must be accessible by the user running
     \verb+clamd+ or you will get an error.
 
-    \subsection{Setting up auto-updating}
+    \subsection{Setting up auto-updating}\label{conf:freshclam}
     \verb+freshclam+ is the automatic database update tool for Clam AntiVirus.
     It can work in two modes:
     \begin{itemize}
@@ -753,7 +775,7 @@ N * * * *	/usr/local/bin/freshclam --quiet
     used to test files which contain bytecode. For more detailed help,
     type 'man clambc' or 'clambc --help'.
 
-    \subsection{Freshclam}
+    \subsection{Freshclam}\ref{sec:freshclam}
     \verb+freshclam+ is ClamAV's virus database update tool and reads it's
     configuration from the file 'freshclam.conf' (this may be
     overriden by command line options). Here is a sample usage including cdiffs:
@@ -949,8 +971,14 @@ N * * * *	/usr/local/bin/freshclam --quiet
     decoding and normalization is only performed for HTML files.
 
     \subsubsection{Data Loss Prevention}
-    Libclamav includes a DLP module which can detect credit card and
-    social security numbers inside text files.
+    Libclamav includes a DLP module which can detect the following
+    credit card issuers: AMEX, VISA, MasterCard, Discover, Diner's Club,
+    and JCB and U.S. social security numbers inside text files.
+    \\\\
+    Future versions of Libclamav may include additional features to
+    detect other credit cards and other forms of PII (Personally
+    Identifiable Information) which may be transmitted without the
+    benefit of being encrypted.
 
     \subsubsection{Others}
     Libclamav can handle various obfuscators, encoders, files vulnerable to
