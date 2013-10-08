@@ -7,21 +7,21 @@ here may not be available in binary packages.
 
 ClamAV 0.98 includes many new features, across all the different components
 of ClamAV. There are new scanning options, extensions to the libclamav API,
-support for additional filetypes and internal upgrades.
+support for additional filetypes, and internal upgrades.
 
     - Signature improvements: New signature targets have been added for
-      PDF files, Flash files and Java class files. NOTE: Java archive files
-      (JAR) are not part of the Java target. Hash signatures can now be
-      written with a * size if the size is unknown. Using wildcard size
+      PDF files, Flash files and Java class files. (NOTE: Java archive files
+      (JAR) are not part of the Java target.) Hash signatures can now specify
+      a '*' (wildcard)  size if the size is unknown. Using wildcard size
       requires setting the minimum engine FLEVEL to avoid backwards
       compatibility issues. For more details read the ClamAV Signatures
       guide.
 
     - Scanning enhancements: New filetypes can be unpacked and scanned,
-      including ISO9660, Flash and self-extracting 7z files. PDF
+      including ISO9660, Flash, and self-extracting 7z files. PDF
       handling is now more robust and better handles encrypted PDF files.
 
-    - Authenticode: ClamAV is now aware of the certificate chain when
+    - Authenticode: ClamAV is now aware of the certificate chains when
       scanning signed PE files. When the database contains signatures for
       trusted root certificate authorities, the engine can whitelist
       PE files with a valid signature. The same database file can also
@@ -31,16 +31,16 @@ support for additional filetypes and internal upgrades.
 
     - New options: Several new options for clamscan and clamd have been
       added. For example, ClamAV can be set to print infected files and
-      error files and suppress printing OK results. This can be helpful
+      error files, and suppress printing OK results. This can be helpful
       when scanning large numbers of files. This new option is "-o" for
       clamscan and "LogClean" for clamd. Check clamd.conf or the clamscan
       help message for specific details.
 
     - New callbacks added to the API: The libclamav API has additional hooks
       for developers to use when wrapping ClamAV scanning. These function
-      types are defined to start with "clcb_" and allow developers to add
-      logic at certain steps of the scanning process without directly
-      modifying the library. For more details refer to the clamav.h file.
+      types are prefixed with "clcb_" and allow developers to add logic at 
+      certain steps of the scanning process without directly modifying the 
+      library. For more details refer to the clamav.h file.
 
     - More configurable limits: Several hardcoded values are now configurable
       parameters, providing more options for tuning the engine to match your

@@ -1589,7 +1589,7 @@ static int cli_loadftm(FILE *fs, struct cl_engine *engine, unsigned int options,
 	struct cli_ftype *new;
 	cli_file_t rtype, type;
 	int ret;
-
+	int magictype;
 
     if((ret = cli_initroots(engine, options)))
 	return ret;
@@ -1650,11 +1650,12 @@ static int cli_loadftm(FILE *fs, struct cl_engine *engine, unsigned int options,
 	    break;
 	}
 
-	if(atoi(tokens[0]) == 1) { /* A-C */
+        magictype = atoi(tokens[0]);
+	if(magictype == 1) { /* A-C */
 	    if((ret = cli_parse_add(engine->root[0], tokens[3], tokens[2], rtype, type, tokens[1], 0, NULL, options)))
 		break;
 
-	} else if(atoi(tokens[0]) == 0) { /* memcmp() */
+	} else if ((magictype == 0) || (magictype == 4)) { /* memcmp() */
 	    if(!cli_isnumber(tokens[1])) {
 		cli_errmsg("cli_loadftm: Invalid offset\n");
 		ret = CL_EMALFDB;
@@ -1682,9 +1683,15 @@ static int cli_loadftm(FILE *fs, struct cl_engine *engine, unsigned int options,
 		ret = CL_EMEM;
 		break;
 	    }
-	    new->next = engine->ftypes;
-	    engine->ftypes = new;
-
+            /* files => ftypes, partitions => ptypes */
+	    if(magictype == 4) {
+		new->next = engine->ptypes;
+		engine->ptypes = new;
+	    }
+	    else {
+		new->next = engine->ftypes;
+		engine->ftypes = new;
+            }
 	} else {
 	    cli_dbgmsg("cli_loadftm: Unsupported mode %u\n", atoi(tokens[0]));
 	    continue;
@@ -2902,7 +2909,36 @@ int cl_load(const char *path, struct cl_engine *engine, unsigned int *signo, uns
     }
 
     if(CLAMSTAT(path, &sb) == -1) {
-        cli_errmsg("cl_load(): Can't get status of %s\n", path);
+        switch (errno) {
+#if defined(EACCES)
+            case EACCES:
+                cli_errmsg("cl_load(): Access denied for path: %s\n", path);
+                break;
+#endif
+#if defined(ENOENT)
+            case ENOENT:
+                cli_errmsg("cl_load(): No such file or directory: %s\n", path);
+                break;
+#endif
+#if defined(ELOOP)
+            case ELOOP:
+                cli_errmsg("cl_load(): Too many symbolic links encountered in path: %s\n", path);
+                break;
+#endif
+#if defined(EOVERFLOW)
+            case EOVERFLOW:
+                cli_errmsg("cl_load(): File size is too large to be recognized. Path: %s\n", path);
+                break;
+#endif
+#if defined(EIO)
+            case EIO:
+                cli_errmsg("cl_load(): An I/O error occurred while reading from path: %s\n", path);
+                break;
+#endif
+            default:
+                cli_errmsg("cl_load: Can't get status of: %s\n", path);
+                break;
+        }
         return CL_ESTAT;
     }
 

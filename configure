@@ -666,6 +666,8 @@ CLAMD_LIBS
 LIBCLAMAV_LIBS
 CFGDIR
 DBDIR
+XML_LIBS
+XML_CPPFLAGS
 ENABLE_UNRAR_FALSE
 ENABLE_UNRAR_TRUE
 LIBBZ2_PREFIX
@@ -854,6 +856,8 @@ enable_zlib_vcheck
 enable_bzip2
 with_libbz2_prefix
 enable_unrar
+enable_xml
+with_xml
 enable_getaddrinfo
 enable_ipv6
 enable_dns
@@ -1531,7 +1535,8 @@ Optional Features:
                           (and sometimes confusing) to the casual installer
   --disable-zlib-vcheck	  do not check for buggy zlib version
   --disable-bzip2	  disable bzip2 support
-  --disable-unrar	  don't build libclamunrar and libclamunrar_iface
+  --disable-unrar	  do not build libclamunrar and libclamunrar_iface
+  --disable-xml	  disable DMG and XAR support
   --disable-getaddrinfo          disable support for getaddrinfo
   --disable-ipv6          disable IPv6 support
   --disable-dns           disable support for database verification through
@@ -1539,7 +1544,7 @@ Optional Features:
   --disable-fanotify	  disable fanotify support (Linux only)
   --enable-milter	  build clamav-milter
   --disable-pthreads      disable POSIX threads support
-  --disable-cr		  don't link with C reentrant library (BSD)
+  --disable-cr		  do not link with C reentrant library (BSD)
   --enable-id-check	  use id utility instead of /etc/passwd parsing
   --enable-yp-check	  use ypmatch utility instead of /etc/passwd parsing
   --disable-clamav	  disable test for clamav user/group
@@ -1574,6 +1579,8 @@ Optional Packages:
 			  /usr/local or /usr if not found in /usr/local)
   --with-libbz2-prefix[=DIR]  search for libbz2 in DIR/include and DIR/lib
   --without-libbz2-prefix     don't search for libbz2 in includedir and libdir
+  --with-xml=DIR	  path to directory containing libxml2 library (default=
+			  /usr/local or /usr if not found in /usr/local)
   --with-iconv supports iconv() (default=auto)
   --with-user=uid	  name of the clamav user (default=clamav)
   --with-group=gid	  name of the clamav group (default=clamav)
@@ -3407,10 +3414,10 @@ AM_BACKSLASH='\'
 $as_echo "#define PACKAGE PACKAGE_NAME" >>confdefs.h
 
 
-VERSION="0.98"
+VERSION="devel-`date +%Y%m%d`"
 
 LC_CURRENT=7
-LC_REVISION=18
+LC_REVISION=19
 LC_AGE=1
 LIBCLAMAV_VERSION="$LC_CURRENT":"$LC_REVISION":"$LC_AGE"
 
@@ -16988,6 +16995,182 @@ else
 fi
 
 
+want_xml="auto"
+# Check whether --enable-xml was given.
+if test "${enable_xml+set}" = set; then :
+  enableval=$enable_xml; want_xml=$enableval
+else
+  want_xml="auto"
+fi
+
+
+working_xml="no"
+if test "$want_xml" != "no"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for libxml2 installation" >&5
+$as_echo_n "checking for libxml2 installation... " >&6; }
+
+# Check whether --with-xml was given.
+if test "${with_xml+set}" = set; then :
+  withval=$with_xml;
+  if test "$withval"
+  then
+    XML_HOME="$withval"
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: using $XML_HOME" >&5
+$as_echo "using $XML_HOME" >&6; }
+  fi
+
+else
+
+  XML_HOME=/usr/local
+  if test ! -f "$XML_HOME/include/libxml/xmlreader.h"
+  then
+    XML_HOME=/usr
+  fi
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $XML_HOME" >&5
+$as_echo "$XML_HOME" >&6; }
+
+fi
+
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for xmlreader.h in $XML_HOME" >&5
+$as_echo_n "checking for xmlreader.h in $XML_HOME... " >&6; }
+
+  if test ! -f "$XML_HOME/include/libxml2/libxml/xmlreader.h"; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+$as_echo "not found" >&6; }
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
+$as_echo "found" >&6; }
+    save_LIBS="$LIBS"
+    if test "$XML_HOME" != "/usr"; then
+	save_CPPFLAGS="$CPPFLAGS"
+	CPPFLAGS="$CPPFLAGS -I$XML_HOME/include"
+	save_LDFLAGS="$LDFLAGS"
+	LDFLAGS="$LDFLAGS -L$XML_HOME/lib"
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for xmlTextReaderRead in -lxml2" >&5
+$as_echo_n "checking for xmlTextReaderRead in -lxml2... " >&6; }
+if ${ac_cv_lib_xml2_xmlTextReaderRead+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lxml2  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char xmlTextReaderRead ();
+int
+main ()
+{
+return xmlTextReaderRead ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_xml2_xmlTextReaderRead=yes
+else
+  ac_cv_lib_xml2_xmlTextReaderRead=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_xml2_xmlTextReaderRead" >&5
+$as_echo "$ac_cv_lib_xml2_xmlTextReaderRead" >&6; }
+if test "x$ac_cv_lib_xml2_xmlTextReaderRead" = xyes; then :
+  working_xml="yes";XML_CPPFLAGS="-I$XML_HOME/include/libxml2";XML_LIBS="-L$XML_HOME/lib -lxml2"
+else
+  working_xml="no"
+fi
+
+	CPPFLAGS="$save_CPPFLAGS"
+	LDFLAGS="$save_LDFLAGS"
+    else
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for xmlTextReaderRead in -lxml2" >&5
+$as_echo_n "checking for xmlTextReaderRead in -lxml2... " >&6; }
+if ${ac_cv_lib_xml2_xmlTextReaderRead+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lxml2  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char xmlTextReaderRead ();
+int
+main ()
+{
+return xmlTextReaderRead ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_xml2_xmlTextReaderRead=yes
+else
+  ac_cv_lib_xml2_xmlTextReaderRead=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_xml2_xmlTextReaderRead" >&5
+$as_echo "$ac_cv_lib_xml2_xmlTextReaderRead" >&6; }
+if test "x$ac_cv_lib_xml2_xmlTextReaderRead" = xyes; then :
+  working_xml="yes";XML_CPPFLAGS="-I$XML_HOME/include/libxml2";XML_LIBS="-lxml2"
+else
+  working_xml="no"
+fi
+
+    fi
+    LIBS="$save_LIBS"
+  fi
+fi
+
+if test "$working_xml" = "yes"; then
+
+$as_echo "#define HAVE_LIBXML2 1" >>confdefs.h
+
+
+$as_echo "#define ENABLE_XML 1" >>confdefs.h
+
+
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: Compiling and linking with libxml2 from $XML_HOME" >&5
+$as_echo "$as_me: Compiling and linking with libxml2 from $XML_HOME" >&6;}
+else
+  if test "$want_xml" = "yes"; then
+     as_fn_error $? "****** Please install libxml2 packages!" "$LINENO" 5
+  else
+    if test "$want_xml" != "no"; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: ****** libxml2 support unavailable" >&5
+$as_echo "$as_me: ****** libxml2 support unavailable" >&6;}
+    fi
+  fi
+  XML_CPPFLAGS=""
+  XML_LIBS=""
+
+
+
+$as_echo "#define HAVE_LIBXML2 0" >>confdefs.h
+
+
+$as_echo "#define ENABLE_XML 0" >>confdefs.h
+
+fi
+
 # Check whether --enable-getaddrinfo was given.
 if test "${enable_getaddrinfo+set}" = set; then :
   enableval=$enable_getaddrinfo; want_getaddrinfo=$enableval
@@ -18405,7 +18588,7 @@ $as_echo_n "checking for $clamav_user using ypmatch... " >&6; }
     then
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
-	as_fn_error $? "User $clamav_user (and/or group $clamav_group) doesn't exist. Please read the documentation !" "$LINENO" 5
+	as_fn_error $? "User $clamav_user (and/or group $clamav_group) does not exist. Please read the documentation !" "$LINENO" 5
     else
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes, user $clamav_user and group $clamav_group" >&5
 $as_echo "yes, user $clamav_user and group $clamav_group" >&6; }
@@ -26381,6 +26564,24 @@ elif test "x$want_unrar" = "x"; then :
   $as_echo "$want_unrar"
 else
   $as_echo "$want_unrar ($want_unrar)"
+fi
+
+if test "x$XML_LIBS" = "x"; then
+    xml_libs="no"
+else
+    xml_libs="yes"
+fi
+
+
+   $as_echo_n "              dmg and xar : "
+   if test "x" = "xno"; then :
+  $as_echo "$xml_libs (disabled)"
+elif test "x" = "xyes"; then :
+  $as_echo "$xml_libs"
+elif test "x" = "x"; then :
+  $as_echo "$xml_libs"
+else
+  $as_echo "$xml_libs ()"
 fi
 
 

@@ -1,3 +1,23 @@
+Thu Oct 3 10:49:11 2013 EDT 2013 (dar)
+------------------------------------
+ * bb #1570: Support ADC compression in DMG
+
+Wed Oct 2 11:22:40 2013 EDT 2013 (dar)
+------------------------------------
+ * bb #9053: ClamAV 0.98 can't be compiled on FreeBSD 7
+
+Mon Sep 30 11:04:58 2013 EDT 2013 (dar)
+------------------------------------
+ * bb #9017: tomsfastmath warning with zLinux on s390x
+
+Fri Sep 15 18:15:36 2013 EDT 2013 (morgan)
+------------------------------------
+ * win32: Import libxml2 2.9.1 components into windows builds for xmlReader support.
+
+Fri Sep 13 12:22:58 2013 EDT 2013 (morgan)
+------------------------------------
+ * libclamav: Add support for scanning xar/pkg archive files.
+
 Tue Sep 3 18:37:13 2013 EDT 2013 (dar)
 ------------------------------------
  * V 0.98.0 RC

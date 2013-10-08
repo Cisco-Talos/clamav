@@ -94,6 +94,9 @@
 #include "jpeg.h"
 #include "png.h"
 #include "iso9660.h"
+#include "dmg.h"
+#include "xar.h"
+#include "hfsplus.h"
 
 #ifdef HAVE_BZLIB_H
 #include <bzlib.h>
@@ -594,7 +597,6 @@ static int cli_scangzip(cli_ctx *ctx)
     free(tmpname);
     return ret;
 }
-
 
 #ifndef HAVE_BZLIB_H
 static int cli_scanbzip(cli_ctx *ctx) {
@@ -2114,6 +2116,14 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
 			}
 			break;
 
+		    case CL_TYPE_DMG:
+			if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_DMG)) {
+			    ctx->container_type = CL_TYPE_DMG;
+			    nret = cli_scandmg(ctx);
+			    cli_dbgmsg("DMG signature found at %u\n", (unsigned int) fpt->offset);
+			}
+			break;
+
 		    case CL_TYPE_PDF:
 			if(type != CL_TYPE_PDF && SCAN_PDF && (DCONF_DOC & DOC_CONF_PDF)) {
 			    ctx->container_type = CL_TYPE_PDF;
@@ -2318,10 +2328,13 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
         early_ret_from_magicscan(CL_CLEAN);
     }
     old_hook_lsig_matches = ctx->hook_lsig_matches;
+    if(type == CL_TYPE_PART_ANY) {
+	typercg = 0;
+    }
 
     perf_start(ctx, PERFT_FT);
-    if(type == CL_TYPE_ANY)
-	type = cli_filetype2(*ctx->fmap, ctx->engine);
+    if((type == CL_TYPE_ANY) || type == CL_TYPE_PART_ANY)
+	type = cli_filetype2(*ctx->fmap, ctx->engine, type);
     perf_stop(ctx, PERFT_FT);
     if(type == CL_TYPE_ERROR) {
 	cli_dbgmsg("cli_magic_scandesc: cli_filetype2 returned CL_TYPE_ERROR\n");
@@ -2636,6 +2649,18 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 		ret = cli_scansis(ctx);
 	    break;
 
+	case CL_TYPE_XAR:
+	    ctx->container_type = CL_TYPE_XAR;
+	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_XAR))
+		ret = cli_scanxar(ctx);
+	    break;
+
+	case CL_TYPE_PART_HFSPLUS:
+	    ctx->container_type = CL_TYPE_PART_HFSPLUS;
+	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_HFSPLUS))
+		ret = cli_scanhfsplus(ctx);
+	    break;
+
 	case CL_TYPE_BINARY_DATA:
 	case CL_TYPE_TEXT_UTF16BE:
 	    if(SCAN_ALGO && (DCONF_OTHER & OTHER_CONF_MYDOOMLOG))
@@ -2778,7 +2803,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
     }
 }
 
-int cli_magic_scandesc(int desc, cli_ctx *ctx)
+static int cli_base_scandesc(int desc, cli_ctx *ctx, cli_file_t type)
 {
     STATBUF sb;
     int ret;
@@ -2806,11 +2831,22 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
     }
     perf_stop(ctx, PERFT_MAP);
 
-    ret = magic_scandesc(ctx, CL_TYPE_ANY);
+    ret = magic_scandesc(ctx, type);
 
     funmap(*ctx->fmap);
     ctx->fmap--;
     return ret;
+}
+
+int cli_magic_scandesc(int desc, cli_ctx *ctx)
+{
+    return cli_base_scandesc(desc, ctx, CL_TYPE_ANY);
+}
+
+/* Have to keep partition typing separate */
+int cli_partition_scandesc(int desc, cli_ctx *ctx)
+{
+    return cli_base_scandesc(desc, ctx, CL_TYPE_PART_ANY);
 }
 
 int cli_magic_scandesc_type(cli_ctx *ctx, cli_file_t type)

@@ -42,11 +42,11 @@ dnl the date in the version
 AC_DEFINE([PACKAGE], PACKAGE_NAME, [Name of package])
 
 dnl change this on a release
-dnl VERSION="devel-`date +%Y%m%d`"
-VERSION="0.98"
+VERSION="devel-`date +%Y%m%d`"
+dnl VERSION="0.98"
 
 LC_CURRENT=7
-LC_REVISION=18
+LC_REVISION=19
 LC_AGE=1
 LIBCLAMAV_VERSION="$LC_CURRENT":"$LC_REVISION":"$LC_AGE"
 AC_SUBST([LIBCLAMAV_VERSION])
@@ -649,9 +649,79 @@ then
 fi
 
 AC_ARG_ENABLE([unrar],
-[  --disable-unrar	  don't build libclamunrar and libclamunrar_iface ],
+[  --disable-unrar	  do not build libclamunrar and libclamunrar_iface ],
 want_unrar=$enableval, want_unrar="yes")
 AM_CONDITIONAL([ENABLE_UNRAR],[test "$want_unrar" = "yes"])
+
+want_xml="auto"
+AC_ARG_ENABLE([xml],
+[  --disable-xml	  disable DMG and XAR support],
+want_xml=$enableval, want_xml="auto")
+
+working_xml="no"
+if test "$want_xml" != "no"; then
+  AC_MSG_CHECKING([for libxml2 installation])
+  AC_ARG_WITH([xml],
+  [  --with-xml=DIR	  path to directory containing libxml2 library (default=
+			  /usr/local or /usr if not found in /usr/local)],
+  [
+  if test "$withval"
+  then
+    XML_HOME="$withval"
+    AC_MSG_RESULT([using $XML_HOME])
+  fi
+  ], [
+  XML_HOME=/usr/local
+  if test ! -f "$XML_HOME/include/libxml/xmlreader.h"
+  then
+    XML_HOME=/usr
+  fi
+  AC_MSG_RESULT([$XML_HOME])
+  ])
+
+  AC_MSG_CHECKING([for xmlreader.h in $XML_HOME])
+
+  if test ! -f "$XML_HOME/include/libxml2/libxml/xmlreader.h"; then
+    AC_MSG_RESULT([not found])
+  else
+    AC_MSG_RESULT([found])
+    save_LIBS="$LIBS"
+    if test "$XML_HOME" != "/usr"; then
+	save_CPPFLAGS="$CPPFLAGS"
+	CPPFLAGS="$CPPFLAGS -I$XML_HOME/include"
+	save_LDFLAGS="$LDFLAGS"
+	LDFLAGS="$LDFLAGS -L$XML_HOME/lib"
+	AC_CHECK_LIB([xml2], [xmlTextReaderRead], [working_xml="yes";XML_CPPFLAGS="-I$XML_HOME/include/libxml2";XML_LIBS="-L$XML_HOME/lib -lxml2"], working_xml="no")
+	CPPFLAGS="$save_CPPFLAGS"
+	LDFLAGS="$save_LDFLAGS"
+    else
+	AC_CHECK_LIB([xml2], [xmlTextReaderRead], [working_xml="yes";XML_CPPFLAGS="-I$XML_HOME/include/libxml2";XML_LIBS="-lxml2"], working_xml="no")
+    fi
+    LIBS="$save_LIBS"
+  fi
+fi
+
+if test "$working_xml" = "yes"; then
+  AC_DEFINE([HAVE_LIBXML2],1,[Define to 1 if you have the 'libxml2' library (-lxml2).])
+  AC_DEFINE([ENABLE_XML],1,[Define to 1 if xml supported features can be enabled.])
+  AC_SUBST(XML_CPPFLAGS)
+  AC_SUBST(XML_LIBS)
+  AC_MSG_NOTICE([Compiling and linking with libxml2 from $XML_HOME])
+else
+  if test "$want_xml" = "yes"; then
+     AC_MSG_ERROR([****** Please install libxml2 packages!])
+  else
+    if test "$want_xml" != "no"; then
+      AC_MSG_NOTICE([****** libxml2 support unavailable])
+    fi
+  fi
+  XML_CPPFLAGS=""
+  XML_LIBS=""
+  AC_SUBST(XML_CPPFLAGS)
+  AC_SUBST(XML_LIBS)
+  AC_DEFINE([HAVE_LIBXML2],0,[Define to 1 if you have the 'libxml2' library (-lxml2).])
+  AC_DEFINE([ENABLE_XML],0,[Define to 1 if xml supported features can be enabled.])
+fi
 
 AC_ARG_ENABLE([getaddrinfo],
 [  --disable-getaddrinfo          disable support for getaddrinfo],
@@ -796,7 +866,7 @@ AC_ARG_ENABLE([pthreads],
 have_pthreads=$enableval,)
 
 AC_ARG_ENABLE([cr],
-[  --disable-cr		  don't link with C reentrant library (BSD) ],
+[  --disable-cr		  do not link with C reentrant library (BSD) ],
 use_cr=$enableval,)
 
 AC_ARG_ENABLE([id-check],
@@ -1301,7 +1371,7 @@ then
     if test -z "$clamavuser" || test -z "$clamavgroup"
     then
 	AC_MSG_RESULT(no)
-	AC_MSG_ERROR([User $clamav_user (and/or group $clamav_group) doesn't exist. Please read the documentation !])
+	AC_MSG_ERROR([User $clamav_user (and/or group $clamav_group) does not exist. Please read the documentation !])
     else
 	AC_MSG_RESULT([yes, user $clamav_user and group $clamav_group])
         CLAMAVUSER="$clamav_user"
@@ -1709,6 +1779,12 @@ CL_MSG_STATUS([autoit_ea06 ],[$have_autoitea06],[])
 CL_MSG_STATUS([bzip2       ],[$bzip_check],[$want_bzip2])
 CL_MSG_STATUS([zlib        ],[$ZLIB_HOME],[yes])
 CL_MSG_STATUS([unrar       ],[$want_unrar],[$want_unrar])
+if test "x$XML_LIBS" = "x"; then
+    xml_libs="no"
+else
+    xml_libs="yes"
+fi
+CL_MSG_STATUS([dmg and xar ],[$xml_libs],[])
 
 # Yep, downgrading the compiler avoids the bug too:
 # 4.0.x, and 4.1.0 are the known buggy versions

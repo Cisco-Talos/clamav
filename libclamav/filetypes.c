@@ -101,6 +101,10 @@ static const struct ftmap_s {
     { "CL_TYPE_SWF",		CL_TYPE_SWF		},
     { "CL_TYPE_ISO9660",	CL_TYPE_ISO9660		},
     { "CL_TYPE_JAVA",		CL_TYPE_JAVA		},
+    { "CL_TYPE_DMG",		CL_TYPE_DMG		},
+    { "CL_TYPE_XAR",		CL_TYPE_XAR		},
+    { "CL_TYPE_PART_ANY",	CL_TYPE_PART_ANY	},
+    { "CL_TYPE_PART_HFSPLUS",	CL_TYPE_PART_HFSPLUS	},
     { NULL,			CL_TYPE_IGNORED		}
 };
 
@@ -137,6 +141,32 @@ void cli_ftfree(const struct cl_engine *engine)
 	mpool_free(engine->mempool, pt->tname);
 	mpool_free(engine->mempool, pt);
     }
+
+    ftypes = engine->ptypes;
+    while(ftypes) {
+	pt = ftypes;
+	ftypes = ftypes->next;
+	mpool_free(engine->mempool, pt->magic);
+	mpool_free(engine->mempool, pt->tname);
+	mpool_free(engine->mempool, pt);
+    }
+}
+
+cli_file_t cli_partitiontype(const unsigned char *buf, size_t buflen, const struct cl_engine *engine)
+{
+    struct cli_ftype *ptype = engine->ptypes;
+
+    while(ptype) {
+	if(ptype->offset + ptype->length <= buflen) {
+	    if(!memcmp(buf + ptype->offset, ptype->magic, ptype->length)) {
+		cli_dbgmsg("Recognized %s partition\n", ptype->tname);
+		return ptype->type;
+	    }
+	}
+	ptype = ptype->next;
+    }
+
+    return CL_TYPE_PART_ANY;
 }
 
 cli_file_t cli_filetype(const unsigned char *buf, size_t buflen, const struct cl_engine *engine)
@@ -159,12 +189,12 @@ cli_file_t cli_filetype(const unsigned char *buf, size_t buflen, const struct cl
 
 int is_tar(const unsigned char *buf, unsigned int nbytes);
 
-cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine)
+cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t basetype)
 {
 	unsigned char buffer[MAGIC_BUFFER_SIZE];
 	const unsigned char *buff;
 	unsigned char *decoded;
-	int bread = MIN(map->len, MAGIC_BUFFER_SIZE), sret;
+	int bread, sret;
 	cli_file_t ret = CL_TYPE_BINARY_DATA;
 	struct cli_matcher *root;
 	struct cli_ac_data mdata;
@@ -173,6 +203,17 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine)
     if(!engine) {
 	cli_errmsg("cli_filetype2: engine == NULL\n");
 	return CL_TYPE_ERROR;
+    }
+
+    if(basetype == CL_TYPE_PART_ANY) {
+        bread = MIN(map->len, CL_PART_MBUFF_SIZE);
+    }
+    else {
+        bread = MIN(map->len, CL_FILE_MBUFF_SIZE);
+    }
+    if(bread > MAGIC_BUFFER_SIZE) {
+        /* Save anyone who tampered with the header */
+        bread = MAGIC_BUFFER_SIZE;
     }
 
     buff = fmap_need_off_once(map, 0, bread);
@@ -186,16 +227,22 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine)
     } else {
         return CL_TYPE_ERROR;
     }
-    ret = cli_filetype(buff, bread, engine);
 
-    if(ret == CL_TYPE_BINARY_DATA) {
-	switch(is_tar(buff, bread)) {
-	    case 1:
-		cli_dbgmsg("Recognized old fashioned tar file\n");
-		return CL_TYPE_OLD_TAR;
-	    case 2:
-		cli_dbgmsg("Recognized POSIX tar file\n");
-		return CL_TYPE_POSIX_TAR;
+    if(basetype == CL_TYPE_PART_ANY) { /* typing a partition */
+        ret = cli_partitiontype(buff, bread, engine);
+    }
+    else { /* typing a file */
+        ret = cli_filetype(buff, bread, engine);
+
+	if(ret == CL_TYPE_BINARY_DATA) {
+	    switch(is_tar(buff, bread)) {
+		case 1:
+		    cli_dbgmsg("Recognized old fashioned tar file\n");
+		    return CL_TYPE_OLD_TAR;
+		case 2:
+		    cli_dbgmsg("Recognized POSIX tar file\n");
+		    return CL_TYPE_POSIX_TAR;
+	    }
 	}
     }
 
