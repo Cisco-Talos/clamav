@@ -1,3 +1,7 @@
+Thu Oct 3 10:49:11 2013 EDT 2013 (dar)
+------------------------------------
+ * bb #1570: Support ADC compression in DMG
+
 Wed Oct 2 11:22:40 2013 EDT 2013 (dar)
 ------------------------------------
  * bb #9053: ClamAV 0.98 can't be compiled on FreeBSD 7

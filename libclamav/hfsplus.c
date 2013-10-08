@@ -651,6 +651,8 @@ static int hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hf
             }
             memcpy(&fileRec, &(nodeBuf[recordStart+keylen+2]), sizeof(hfsPlusCatalogFile));
 
+            /* Only scan files */
+            fileRec.permissions.fileMode = be16_to_host(fileRec.permissions.fileMode);
             if ((fileRec.permissions.fileMode & HFS_MODE_TYPEMASK) == HFS_MODE_FILE) {
                 /* Convert forks and scan */
                 forkdata_to_host(&(fileRec.dataFork));
@@ -658,36 +660,41 @@ static int hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hf
                 if (fileRec.dataFork.logicalSize) {
                     ret = hfsplus_scanfile(ctx, volHeader, extHeader, &(fileRec.dataFork), dirname);
                 }
+                /* Check return code */
+                if (ret == CL_VIRUS) {
+                    has_alerts = 1;
+                    if (SCAN_ALL) {
+                        /* Continue scanning in SCAN_ALL mode */
+                        cli_dbgmsg("hfsplus_walk_catalog: data fork alert, continuing");
+                        ret = CL_CLEAN;
+                    }
+                }
                 if (ret != CL_CLEAN) {
                     cli_dbgmsg("hfsplus_walk_catalog: data fork retcode %d", ret);
-                    if (ret == CL_VIRUS) {
-                        has_alerts = 1;
-                        if (SCAN_ALL) {
-                            /* Continue scanning in SCAN_ALL mode */
-                            ret = CL_CLEAN;
-                        }
-                    }
                     break;
                 }
+                /* Scan resource fork */
                 forkdata_to_host(&(fileRec.resourceFork));
                 forkdata_print("resource fork:", &(fileRec.resourceFork));
                 if (fileRec.resourceFork.logicalSize) {
                     ret = hfsplus_scanfile(ctx, volHeader, extHeader, &(fileRec.resourceFork), dirname);
                 }
+                /* Check return code */
+                if (ret == CL_VIRUS) {
+                    has_alerts = 1;
+                    if (SCAN_ALL) {
+                        /* Continue scanning in SCAN_ALL mode */
+                        cli_dbgmsg("hfsplus_walk_catalog: resource fork alert, continuing");
+                        ret = CL_CLEAN;
+                    }
+                }
                 if (ret != CL_CLEAN) {
                     cli_dbgmsg("hfsplus_walk_catalog: resource fork retcode %d", ret);
-                    if (ret == CL_VIRUS) {
-                        has_alerts = 1;
-                        if (SCAN_ALL) {
-                            /* Continue scanning in SCAN_ALL mode */
-                            ret = CL_CLEAN;
-                        }
-                    }
                     break;
                 }
             }
             else {
-                cli_dbgmsg("hfsplus_walk_catalog: record mode is not File\n");
+                cli_dbgmsg("hfsplus_walk_catalog: record mode %o is not File\n", fileRec.permissions.fileMode);
             }
         }
         /* if return code, exit loop, message already logged */

@@ -64,6 +64,9 @@ Initialization</A>
 	struct cl_engine *cl_engine_new(void);
 	int cl_engine_free(struct cl_engine *engine);
 </PRE>
+    At this time, <code>cl_init()</code> only supports the <code>CL_INIT_DEFAULT</code> option
+    which intializes libclamav with the default settings.
+
     <code>cl_init()</code> and <code>cl_engine_free()</code> return <code>CL_SUCCESS</code>
     on success or another code on error. <code>cl_engine_new()</code> return
     a pointer or NULL if there's not enough memory to allocate a new

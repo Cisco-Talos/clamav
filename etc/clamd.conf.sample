@@ -222,8 +222,8 @@ Example
 #DetectPUA yes
 
 # Exclude a specific PUA category. This directive can be used multiple times.
-# See http://www.clamav.net/support/pua for the complete list of PUA
-# categories.
+# See https://github.com/vrtadmin/clamav-faq/blob/master/faq/faq-pua.md for 
+# the complete list of PUA categories.
 # Default: Load all categories (if DetectPUA is activated)
 #ExcludePUA NetTool
 #ExcludePUA PWTool

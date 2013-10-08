@@ -2909,7 +2909,36 @@ int cl_load(const char *path, struct cl_engine *engine, unsigned int *signo, uns
     }
 
     if(CLAMSTAT(path, &sb) == -1) {
-        cli_errmsg("cl_load(): Can't get status of %s\n", path);
+        switch (errno) {
+#if defined(EACCES)
+            case EACCES:
+                cli_errmsg("cl_load(): Access denied for path: %s\n", path);
+                break;
+#endif
+#if defined(ENOENT)
+            case ENOENT:
+                cli_errmsg("cl_load(): No such file or directory: %s\n", path);
+                break;
+#endif
+#if defined(ELOOP)
+            case ELOOP:
+                cli_errmsg("cl_load(): Too many symbolic links encountered in path: %s\n", path);
+                break;
+#endif
+#if defined(EOVERFLOW)
+            case EOVERFLOW:
+                cli_errmsg("cl_load(): File size is too large to be recognized. Path: %s\n", path);
+                break;
+#endif
+#if defined(EIO)
+            case EIO:
+                cli_errmsg("cl_load(): An I/O error occurred while reading from path: %s\n", path);
+                break;
+#endif
+            default:
+                cli_errmsg("cl_load: Can't get status of: %s\n", path);
+                break;
+        }
         return CL_ESTAT;
     }
 
