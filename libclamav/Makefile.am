@@ -319,6 +319,21 @@ libclamav_la_SOURCES = \
 	7z/Ppmd7.h \
 	7z/Ppmd7Dec.c \
 	7z/Types.h \
+	7z/Xz.c \
+	7z/Xz.h \
+	7z/XzCrc64.c \
+	7z/XzCrc64.h \
+	7z/XzDec.c \
+	7z/XzIn.c \
+	7z/Sha256.c \
+	7z/Sha256.h \
+	7z/Delta.c \
+	7z/Delta.h \
+	7z/Alloc.h \
+	7z/BraIA64.c \
+	7z/CpuArch.c \
+	7z/CpuArch.h \
+	7z/7zCrcOpt.c \
 	explode.c \
 	explode.h \
 	textnorm.c \
@@ -375,6 +390,8 @@ libclamav_la_SOURCES = \
 	dmg.h \
 	xar.c \
 	xar.h \
+	xz_iface.c \
+	xz_iface.h \
 	sf_base64decode.c \
 	sf_base64decode.h \
 	hfsplus.c \

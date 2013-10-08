@@ -208,8 +208,7 @@ static int xar_get_toc_data_values(xmlTextReaderPtr reader, long *length, long *
                     *encoding = CL_TYPE_7Z;
                  } else if (xmlStrEqual(style, (const xmlChar *)"application/x-xz")) {
                     cli_dbgmsg("cli_scanxar: encoding = application/x-xz.\n");
-                    cli_dbgmsg("cli_scanxar: decompression of application/x-xz not supported.\n");
-                    *encoding = CL_TYPE_ANY;
+                    *encoding = CL_TYPE_XZ;
                 } else {
                     cli_errmsg("cli_scaxar: unknown style value=%s for encoding element\n", style);
                     *encoding = CL_TYPE_ANY;
@@ -575,7 +574,7 @@ int cli_scanxar(cli_ctx *ctx)
                 void * next_in;
                 unsigned int bytes = MIN(map->len - at, map->pgsz);
                 bytes = MIN(length, bytes);
-                cli_dbgmsg("cli_scanxar: fmap %u bytes\n", bytes);
+                //cli_dbgmsg("cli_scanxar: fmap %u bytes\n", bytes);
                 if(!(strm.next_in = next_in = (void*)fmap_need_off_once(map, at, bytes))) {
                     cli_dbgmsg("cli_scanxar: Can't read %u bytes @ %lu.\n", bytes, (long unsigned)at);
                     inflateEnd(&strm);
@@ -589,7 +588,7 @@ int cli_scanxar(cli_ctx *ctx)
                     unsigned char buff[FILEBUFF];
                     strm.avail_out = sizeof(buff);
                     strm.next_out = buff;
-                    cli_dbgmsg("cli_scanxar: inflating.....\n");
+                    //cli_dbgmsg("cli_scanxar: inflating.....\n");
                     inf = inflate(&strm, Z_SYNC_FLUSH);
                     if (inf != Z_OK && inf != Z_STREAM_END && inf != Z_BUF_ERROR) {
                         cli_errmsg("cli_scanxar: inflate error %i %s.\n", inf, strm.msg?strm.msg:"");
@@ -624,10 +623,10 @@ int cli_scanxar(cli_ctx *ctx)
             inflateEnd(&strm);
             break;
         case CL_TYPE_7Z:
-            {
 #define CLI_LZMA_OBUF_SIZE 1024*1024
 #define CLI_LZMA_HDR_SIZE LZMA_PROPS_SIZE+8
-#define CLI_LZMA_CRATIO_SHIFT 2 /* estimated compression ratio 25% */
+#define CLI_LZMA_IBUF_SIZE CLI_LZMA_OBUF_SIZE>>2 /* estimated compression ratio 25% */
+            {
                 struct CLI_LZMA lz = {0};
                 unsigned long in_remaining = length;
                 unsigned long out_size = 0;
@@ -672,7 +671,7 @@ int cli_scanxar(cli_ctx *ctx)
 
                     lz.next_out = buff;
                     lz.avail_out = CLI_LZMA_OBUF_SIZE;
-                    lz.avail_in = avail_in = MIN(CLI_LZMA_OBUF_SIZE>>CLI_LZMA_CRATIO_SHIFT, in_remaining);
+                    lz.avail_in = avail_in = MIN(CLI_LZMA_IBUF_SIZE, in_remaining);
                     lz.next_in = next_in = (void*)fmap_need_off_once(map, at, lz.avail_in);
                     if (lz.next_in == NULL) {
                         cli_errmsg("cli_scanxar: Can't read %li bytes @ %li, errno: %s.\n",
@@ -736,9 +735,10 @@ int cli_scanxar(cli_ctx *ctx)
         case CL_TYPE_ANY:
         default:
         case CL_TYPE_BZ:
+        case CL_TYPE_XZ:
+            /* for uncompressed, bzip2, xz, and unknown, just pull the file, cli_magic_scandesc does the rest */
             do_extract_cksum = 0;
             {
-                /* for uncompressed, bzip2, and unknown, just pull the file, cli_magic_scandesc does the rest */
                 unsigned long write_len;
                 
                 if (ctx->engine->maxfilesize)
