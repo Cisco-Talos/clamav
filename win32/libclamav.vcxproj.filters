@@ -858,9 +858,6 @@
     <ClCompile Include="..\libclamav\7z\Delta.c">
       <Filter>Source Files\7z</Filter>
     </ClCompile>
-    <ClCompile Include="..\libclamav\7z\Sha256.c">
-      <Filter>Source Files\7z</Filter>
-    </ClCompile>
     <ClCompile Include="..\libclamav\7z\Xz.c">
       <Filter>Source Files\7z</Filter>
     </ClCompile>

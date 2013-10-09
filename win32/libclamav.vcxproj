@@ -169,7 +169,6 @@
     <ClCompile Include="..\libclamav\7z\BraIA64.c" />
     <ClCompile Include="..\libclamav\7z\CpuArch.c" />
     <ClCompile Include="..\libclamav\7z\Delta.c" />
-    <ClCompile Include="..\libclamav\7z\Sha256.c" />
     <ClCompile Include="..\libclamav\7z\Xz.c" />
     <ClCompile Include="..\libclamav\7z\XzCrc64.c" />
     <ClCompile Include="..\libclamav\7z\XzDec.c" />

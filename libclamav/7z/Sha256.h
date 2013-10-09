@@ -24,7 +24,7 @@ void Sha256_Init(CSha256 *p);
 void Sha256_Update(CSha256 *p, const Byte *data, size_t size);
 void Sha256_Final(CSha256 *p, Byte *digest);
 #else
-#include "sha256.h"
+#include "../sha256.h"
 #define CSha256 SHA256_CTX
 #define Sha256_Init sha256_init
 #define Sha256_Update sha256_update
