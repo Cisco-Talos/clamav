@@ -709,19 +709,25 @@ static int cli_scanxz(cli_ctx *ctx)
     struct CLI_XZ strm = {0};
     size_t off = 0;
     size_t avail;
-    char buf[CLI_XZ_OBUF_SIZE];
+    char * buf = cli_malloc(CLI_XZ_OBUF_SIZE);
 
+    if (buf == NULL) {
+	cli_errmsg("cli_scanxz: DecompressInit failed: %i\n", rc);
+        return CL_EMEM;
+    }
     strm.next_out = buf;
-    strm.avail_out = sizeof(buf);
+    strm.avail_out = CLI_XZ_OBUF_SIZE;
     rc = cli_XzInit(&strm);
     if (rc != XZ_RESULT_OK) {
 	cli_errmsg("cli_scanxz: DecompressInit failed: %i\n", rc);
+        free(buf);
 	return CL_EOPEN;
     }
 
     if ((ret = cli_gentempfd(ctx->engine->tmpdir, &tmpname, &fd))) {
 	cli_errmsg("cli_scanxz: Can't generate temporary file.\n");
 	cli_XzShutdown(&strm);
+        free(buf);
 	return ret;
     }
     cli_dbgmsg("cli_scanxz: decompressing to file %s\n", tmpname);
@@ -751,7 +757,7 @@ static int cli_scanxz(cli_ctx *ctx)
         
         /* write decompress buffer */
 	if (!strm.avail_out || rc == XZ_STREAM_END) {            
-	    size_t towrite = sizeof(buf) - strm.avail_out;
+	    size_t towrite = CLI_XZ_OBUF_SIZE - strm.avail_out;
 	    size += towrite;
 
             //cli_dbgmsg("Writing %li bytes to XZ decompress temp file(%li byte total)\n",
@@ -768,7 +774,7 @@ static int cli_scanxz(cli_ctx *ctx)
 		break;
             }
 	    strm.next_out = buf;
-	    strm.avail_out = sizeof(buf);
+	    strm.avail_out = CLI_XZ_OBUF_SIZE;
 	}
     } while (XZ_STREAM_END != rc);
 
@@ -784,6 +790,7 @@ static int cli_scanxz(cli_ctx *ctx)
 	if (cli_unlink(tmpname) && ret == CL_CLEAN)
             ret = CL_EUNLINK;
     free(tmpname);
+    free(buf);
     return ret;
 }
 
