@@ -59,7 +59,6 @@ static unsigned char xz_getbyte(struct CLI_XZ *L, int *fail) {
 int cli_XzInit(struct CLI_XZ *XZ) {
     if (SZ_OK != XzUnpacker_Create(&XZ->state, &g_Alloc))
         return XZ_RESULT_DATA_ERROR;
-    CrcGenerateTable();
     Crc64GenerateTable();
     return XZ_RESULT_OK;
 }

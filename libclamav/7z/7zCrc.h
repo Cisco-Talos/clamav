@@ -8,10 +8,7 @@
 
 EXTERN_C_BEGIN
 
-extern UInt32 g_CrcTable[];
-
-/* Call CrcGenerateTable one time before other CRC functions */
-void MY_FAST_CALL CrcGenerateTable(void);
+extern const UInt32 g_CrcTable[];
 
 #define CRC_INIT_VAL 0xFFFFFFFF
 #define CRC_GET_DIGEST(crc) ((crc) ^ CRC_INIT_VAL)
