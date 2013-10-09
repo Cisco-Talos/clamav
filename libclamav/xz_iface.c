@@ -23,6 +23,7 @@
 #endif
 
 #include "7z/LzmaDec.h"
+#include "7z/XzCrc64.h"
 #include "xz_iface.h"
 
 void *__xz_wrap_alloc(void *unused, size_t size) { 
@@ -59,7 +60,8 @@ static unsigned char xz_getbyte(struct CLI_XZ *L, int *fail) {
 int cli_XzInit(struct CLI_XZ *XZ) {
     if (SZ_OK != XzUnpacker_Create(&XZ->state, &g_Alloc))
         return XZ_RESULT_DATA_ERROR;
-    Crc64GenerateTable();
+    if (g_Crc64Table[1] == 0)
+        Crc64GenerateTable();
     return XZ_RESULT_OK;
 }
 	
