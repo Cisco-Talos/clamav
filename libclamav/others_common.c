@@ -119,6 +119,7 @@ void cli_logg_unsetup(void)
 }
 #endif
 uint8_t cli_debug_flag = 0;
+uint8_t cli_always_gen_section_hash = 0;
 
 static void fputs_callback(enum cl_msg severity, const char *fullmsg, const char *msg, void *context)
 {

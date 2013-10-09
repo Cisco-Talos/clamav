@@ -187,6 +187,11 @@ void cl_debug(void)
     cli_debug_flag = 1;
 }
 
+void cl_always_gen_section_hash(void)
+{
+    cli_always_gen_section_hash = 1;
+}
+
 unsigned int cl_retflevel(void)
 {
     return CL_FLEVEL;
