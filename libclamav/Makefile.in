@@ -686,14 +686,14 @@ libclamav_la_SOURCES = clamav.h matcher-ac.c matcher-ac.h matcher-bm.c \
 	7z/Ppmd7.h 7z/Ppmd7Dec.c 7z/Types.h 7z/Xz.c 7z/Xz.h \
 	7z/XzCrc64.c 7z/XzCrc64.h 7z/XzDec.c 7z/XzIn.c 7z/Sha256.c \
 	7z/Sha256.h 7z/Delta.c 7z/Delta.h 7z/Alloc.h 7z/BraIA64.c \
-	7z/CpuArch.c 7z/CpuArch.h 7z/7zCrcOpt.c explode.c explode.h \
-	textnorm.c textnorm.h dlp.c dlp.h jsparse/js-norm.c \
-	jsparse/js-norm.h jsparse/lexglobal.h jsparse/textbuf.h uniq.c \
-	uniq.h version.c version.h mpool.c mpool.h filtering.h \
-	filtering.c fmap.c fmap.h perflogging.c perflogging.h \
-	default.h sha256.c sha256.h sha1.c sha1.h bytecode.c \
-	bytecode.h bytecode_vm.c bytecode_priv.h clambc.h cpio.c \
-	cpio.h macho.c macho.h ishield.c ishield.h type_desc.h \
+	7z/CpuArch.c 7z/CpuArch.h 7z/7zCrcOpt.c 7z/RotateDefs.h \
+	explode.c explode.h textnorm.c textnorm.h dlp.c dlp.h \
+	jsparse/js-norm.c jsparse/js-norm.h jsparse/lexglobal.h \
+	jsparse/textbuf.h uniq.c uniq.h version.c version.h mpool.c \
+	mpool.h filtering.h filtering.c fmap.c fmap.h perflogging.c \
+	perflogging.h default.h sha256.c sha256.h sha1.c sha1.h \
+	bytecode.c bytecode.h bytecode_vm.c bytecode_priv.h clambc.h \
+	cpio.c cpio.h macho.c macho.h ishield.c ishield.h type_desc.h \
 	bcfeatures.h bytecode_api.c bytecode_api_decl.c bytecode_api.h \
 	bytecode_api_impl.h bytecode_hooks.h cache.c cache.h \
 	bytecode_detect.c bytecode_detect.h builtin_bytecodes.h \

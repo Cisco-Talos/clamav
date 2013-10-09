@@ -334,6 +334,7 @@ libclamav_la_SOURCES = \
 	7z/CpuArch.c \
 	7z/CpuArch.h \
 	7z/7zCrcOpt.c \
+	7z/RotateDefs.h \
 	explode.c \
 	explode.h \
 	textnorm.c \
