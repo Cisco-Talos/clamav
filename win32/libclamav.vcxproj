@@ -165,6 +165,15 @@
     <ResourceCompile Include="res\libclamav.rc" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\libclamav\7z\7zCrcOpt.c" />
+    <ClCompile Include="..\libclamav\7z\BraIA64.c" />
+    <ClCompile Include="..\libclamav\7z\CpuArch.c" />
+    <ClCompile Include="..\libclamav\7z\Delta.c" />
+    <ClCompile Include="..\libclamav\7z\Sha256.c" />
+    <ClCompile Include="..\libclamav\7z\Xz.c" />
+    <ClCompile Include="..\libclamav\7z\XzCrc64.c" />
+    <ClCompile Include="..\libclamav\7z\XzDec.c" />
+    <ClCompile Include="..\libclamav\7z\XzIn.c" />
     <ClCompile Include="..\libclamav\sf_base64decode.c" />
     <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba_small_set.c" />
     <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba_9.c" />
@@ -376,6 +385,7 @@
     <ClCompile Include="..\libclamav\version.c" />
     <ClCompile Include="..\libclamav\wwunpack.c" />
     <ClCompile Include="..\libclamav\xar.c" />
+    <ClCompile Include="..\libclamav\xz_iface.c" />
     <ClCompile Include="..\libclamav\yc.c" />
     <ClCompile Include="..\shared\getopt.c" />
     <ClCompile Include="..\shared\misc.c" />

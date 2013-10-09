@@ -843,5 +843,35 @@
     <ClCompile Include="3rdparty\libxml2\xmlstring.c">
       <Filter>Source Files\libxml2</Filter>
     </ClCompile>
+    <ClCompile Include="..\libclamav\xz_iface.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\7z\7zCrcOpt.c">
+      <Filter>Source Files\7z</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\7z\BraIA64.c">
+      <Filter>Source Files\7z</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\7z\CpuArch.c">
+      <Filter>Source Files\7z</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\7z\Delta.c">
+      <Filter>Source Files\7z</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\7z\Sha256.c">
+      <Filter>Source Files\7z</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\7z\Xz.c">
+      <Filter>Source Files\7z</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\7z\XzCrc64.c">
+      <Filter>Source Files\7z</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\7z\XzDec.c">
+      <Filter>Source Files\7z</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\7z\XzIn.c">
+      <Filter>Source Files\7z</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

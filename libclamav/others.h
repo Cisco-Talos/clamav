@@ -60,6 +60,7 @@
 #define CL_FLEVEL_SIGTOOL CL_FLEVEL
 
 extern uint8_t cli_debug_flag;
+extern uint8_t cli_always_gen_section_hash;
 
 /*
  * CLI_ISCONTAINED(buf1, size1, buf2, size2) checks if buf2 is contained
