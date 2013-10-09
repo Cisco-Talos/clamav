@@ -159,7 +159,7 @@ am_libclamav_la_OBJECTS = libclamav_la-matcher-ac.lo \
 	libclamav_la-Ppmd7.lo libclamav_la-Ppmd7Dec.lo \
 	libclamav_la-Xz.lo libclamav_la-XzCrc64.lo \
 	libclamav_la-XzDec.lo libclamav_la-XzIn.lo \
-	libclamav_la-Sha256.lo libclamav_la-Delta.lo \
+	libclamav_la-Delta.lo \
 	libclamav_la-BraIA64.lo libclamav_la-CpuArch.lo \
 	libclamav_la-7zCrcOpt.lo libclamav_la-explode.lo \
 	libclamav_la-textnorm.lo libclamav_la-dlp.lo \
@@ -684,7 +684,7 @@ libclamav_la_SOURCES = clamav.h matcher-ac.c matcher-ac.h matcher-bm.c \
 	7z/Bra.c 7z/Bra.h 7z/Bra86.c 7z/CpuArch.h 7z/Lzma2Dec.c \
 	7z/Lzma2Dec.h 7z/LzmaDec.c 7z/LzmaDec.h 7z/Ppmd.h 7z/Ppmd7.c \
 	7z/Ppmd7.h 7z/Ppmd7Dec.c 7z/Types.h 7z/Xz.c 7z/Xz.h \
-	7z/XzCrc64.c 7z/XzCrc64.h 7z/XzDec.c 7z/XzIn.c 7z/Sha256.c \
+	7z/XzCrc64.c 7z/XzCrc64.h 7z/XzDec.c 7z/XzIn.c  \
 	7z/Sha256.h 7z/Delta.c 7z/Delta.h 7z/Alloc.h 7z/BraIA64.c \
 	7z/CpuArch.c 7z/CpuArch.h 7z/7zCrcOpt.c 7z/RotateDefs.h \
 	explode.c explode.h textnorm.c textnorm.h dlp.c dlp.h \
@@ -906,7 +906,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-LzmaDec.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-Ppmd7.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-Ppmd7Dec.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-Sha256.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-Xz.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-XzCrc64.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-XzDec.Plo@am__quote@
@@ -1718,13 +1717,6 @@ libclamav_la-XzIn.lo: 7z/XzIn.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='7z/XzIn.c' object='libclamav_la-XzIn.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-XzIn.lo `test -f '7z/XzIn.c' || echo '$(srcdir)/'`7z/XzIn.c
-
-libclamav_la-Sha256.lo: 7z/Sha256.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-Sha256.lo -MD -MP -MF $(DEPDIR)/libclamav_la-Sha256.Tpo -c -o libclamav_la-Sha256.lo `test -f '7z/Sha256.c' || echo '$(srcdir)/'`7z/Sha256.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-Sha256.Tpo $(DEPDIR)/libclamav_la-Sha256.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='7z/Sha256.c' object='libclamav_la-Sha256.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-Sha256.lo `test -f '7z/Sha256.c' || echo '$(srcdir)/'`7z/Sha256.c
 
 libclamav_la-Delta.lo: 7z/Delta.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-Delta.lo -MD -MP -MF $(DEPDIR)/libclamav_la-Delta.Tpo -c -o libclamav_la-Delta.lo `test -f '7z/Delta.c' || echo '$(srcdir)/'`7z/Delta.c

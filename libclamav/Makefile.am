@@ -325,7 +325,6 @@ libclamav_la_SOURCES = \
 	7z/XzCrc64.h \
 	7z/XzDec.c \
 	7z/XzIn.c \
-	7z/Sha256.c \
 	7z/Sha256.h \
 	7z/Delta.c \
 	7z/Delta.h \
