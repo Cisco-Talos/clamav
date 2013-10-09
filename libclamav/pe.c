@@ -556,12 +556,39 @@ static int scan_pe_mdb (cli_ctx * ctx, struct cli_exe_section *exe_section)
     /* Print hash */
     if (cli_debug_flag) {
         md5 = hashset[CLI_HASH_MD5];
-        if (md5)
+        if (md5) {
             cli_dbgmsg("MDB: %u:%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\n",
                 exe_section->rsz, md5[0], md5[1], md5[2], md5[3], md5[4], md5[5], md5[6], md5[7],
                 md5[8], md5[9], md5[10], md5[11], md5[12], md5[13], md5[14], md5[15]);
-        else
+        } else if (cli_always_gen_section_hash) {
+            const void *hashme = fmap_need_off_once(*ctx->fmap, exe_section->raw, exe_section->rsz);
+            cli_md5_ctx md5ctx;
+            if (!(hashme)) {
+                cli_errmsg("scan_pe_mdb: unable to read section data\n");
+                ret = CL_EREAD;
+                goto end;
+            }
+
+            md5 = cli_malloc(16);
+            if (!(md5)) {
+                cli_errmsg("scan_pe_mdb: cli_malloc failed!\n");
+                ret = CL_EMEM;
+                goto end;
+            }
+
+            cli_md5_init(&md5ctx);
+            cli_md5_update(&md5ctx, hashme, exe_section->rsz);
+            cli_md5_final(md5, &md5ctx);
+
+            cli_dbgmsg("MDB: %u:%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\n",
+                exe_section->rsz, md5[0], md5[1], md5[2], md5[3], md5[4], md5[5], md5[6], md5[7],
+                md5[8], md5[9], md5[10], md5[11], md5[12], md5[13], md5[14], md5[15]);
+
+            free(md5);
+
+        } else {
             cli_dbgmsg("MDB: %u:notgenerated\n", exe_section->rsz);
+        }
     }
 
     /* Do scans */
@@ -582,6 +609,7 @@ static int scan_pe_mdb (cli_ctx * ctx, struct cli_exe_section *exe_section)
        }
     }
 
+end:
     for(type = CLI_HASH_AVAIL_TYPES; type > 0;)
         free(hashset[--type]);
     return ret;

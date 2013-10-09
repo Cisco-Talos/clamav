@@ -106,6 +106,10 @@ int main(int argc, char **argv)
 	cl_debug(); /* enable debug messages */
     }
 
+    if (optget(opts, "gen-mdb")->enabled) {
+        cl_always_gen_section_hash();
+    }
+
     if(optget(opts, "version")->enabled) {
 	print_version(optget(opts, "database")->strarg);
 	optfree(opts);

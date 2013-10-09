@@ -41,6 +41,7 @@ CLAMAV_PUBLIC {
     cl_fmap_open_memory;
     cl_scanmap_callback;
     cl_fmap_close;
+    cl_always_gen_section_hash;
 };
 CLAMAV_PRIVATE {
   global:

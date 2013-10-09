@@ -86,6 +86,7 @@ const struct clam_option __clam_options[] = {
     { NULL, "allmatch", 'z', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_CLAMDSCAN, "", "" },
     { NULL, "database", 'd', TYPE_STRING, NULL, -1, DATADIR, FLAG_REQUIRED | FLAG_MULTIPLE, OPT_CLAMSCAN, "", "" }, /* merge it with DatabaseDirectory (and fix conflict with --datadir */
     { NULL, "recursive", 'r', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN, "", "" },
+    { NULL, "gen-mdb", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN, "Always generate MDB entries for PE sections", "" },
     { NULL, "follow-dir-symlinks", 0, TYPE_NUMBER, MATCH_NUMBER, 1, NULL, 0, OPT_CLAMSCAN, "", "" },
     { NULL, "follow-file-symlinks", 0, TYPE_NUMBER, MATCH_NUMBER, 1, NULL, 0, OPT_CLAMSCAN, "", "" },
     { NULL, "bell", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN, "", "" },
