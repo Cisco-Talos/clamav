@@ -1,3 +1,7 @@
+Fri Oct 11 16:50:34 2013 EDT 2013 (dar)
+------------------------------------
+ * bb #9072: clamscan message separator fix
+
 Thu Oct 3 10:49:11 2013 EDT 2013 (dar)
 ------------------------------------
  * bb #1570: Support ADC compression in DMG
