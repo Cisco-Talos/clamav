@@ -648,6 +648,8 @@ then
     fi
 fi
 
+AM_CONDITIONAL([HAVE_LIBBZ2], test "x$HAVE_LIBBZ2" = "xyes")
+
 AC_ARG_ENABLE([unrar],
 [  --disable-unrar	  do not build libclamunrar and libclamunrar_iface ],
 want_unrar=$enableval, want_unrar="yes")
