@@ -670,6 +670,8 @@ XML_LIBS
 XML_CPPFLAGS
 ENABLE_UNRAR_FALSE
 ENABLE_UNRAR_TRUE
+HAVE_LIBBZ2_FALSE
+HAVE_LIBBZ2_TRUE
 LIBBZ2_PREFIX
 LTLIBBZ2
 LIBBZ2
@@ -16979,6 +16981,15 @@ $as_echo "$as_me: WARNING: ****** bzip2 support disabled" >&2;}
     fi
 fi
 
+ if test "x$HAVE_LIBBZ2" = "xyes"; then
+  HAVE_LIBBZ2_TRUE=
+  HAVE_LIBBZ2_FALSE='#'
+else
+  HAVE_LIBBZ2_TRUE='#'
+  HAVE_LIBBZ2_FALSE=
+fi
+
+
 # Check whether --enable-unrar was given.
 if test "${enable_unrar+set}" = set; then :
   enableval=$enable_unrar; want_unrar=$enableval
@@ -21291,6 +21302,10 @@ if test -z "${MAINTAINER_MODE_TRUE}" && test -z "${MAINTAINER_MODE_FALSE}"; then
   as_fn_error $? "conditional \"MAINTAINER_MODE\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
+if test -z "${HAVE_LIBBZ2_TRUE}" && test -z "${HAVE_LIBBZ2_FALSE}"; then
+  as_fn_error $? "conditional \"HAVE_LIBBZ2\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 if test -z "${ENABLE_UNRAR_TRUE}" && test -z "${ENABLE_UNRAR_FALSE}"; then
   as_fn_error $? "conditional \"ENABLE_UNRAR\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -23897,6 +23912,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${MAINTAINER_MODE_TRUE}" && test -z "${MAINTAINER_MODE_FALSE}"; then
   as_fn_error $? "conditional \"MAINTAINER_MODE\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${HAVE_LIBBZ2_TRUE}" && test -z "${HAVE_LIBBZ2_FALSE}"; then
+  as_fn_error $? "conditional \"HAVE_LIBBZ2\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${ENABLE_UNRAR_TRUE}" && test -z "${ENABLE_UNRAR_FALSE}"; then
