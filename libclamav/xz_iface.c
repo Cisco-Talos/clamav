@@ -23,7 +23,6 @@
 #endif
 
 #include "7z/Sha256.h"
-#include "7z/LzmaDec.h"
 #include "7z/XzCrc64.h"
 #include "xz_iface.h"
 
@@ -44,19 +43,6 @@ void __xz_wrap_free(void *unused, void *freeme) {
 }
 
 static ISzAlloc g_Alloc = { __xz_wrap_alloc, __xz_wrap_free };
-
-static unsigned char xz_getbyte(struct CLI_XZ *L, int *fail) {
-    unsigned char c;
-    if (!L->next_in || !L->avail_in) {
-	*fail = 1;
-	return 0;
-    }
-    *fail = 0;
-    c = L->next_in[0];
-    L->next_in++;
-    L->avail_in--;
-    return c;
-}
     
 int cli_XzInit(struct CLI_XZ *XZ) {
     if (SZ_OK != XzUnpacker_Create(&XZ->state, &g_Alloc))
@@ -77,12 +63,12 @@ int cli_XzDecode(struct CLI_XZ *XZ) {
     inbytes = XZ->avail_in;
     outbytes = XZ->avail_out;
     res = XzUnpacker_Code(&XZ->state, XZ->next_out, &outbytes, 
-                          XZ->next_in, &inbytes, LZMA_FINISH_ANY, &XZ->status);
+                          XZ->next_in, &inbytes, CODER_FINISH_ANY, &XZ->status);
     XZ->avail_in -= inbytes;
     XZ->next_in += inbytes;
     XZ->avail_out -= outbytes;
     XZ->next_out += outbytes;
-    if (XZ->status == LZMA_STATUS_FINISHED_WITH_MARK || XzUnpacker_IsStreamWasFinished(&XZ->state))
+    if (XZ->status == CODER_STATUS_FINISHED_WITH_MARK || XzUnpacker_IsStreamWasFinished(&XZ->state))
         return XZ_STREAM_END;
     if (XZ->status == CODER_STATUS_NOT_FINISHED && XZ->avail_out == 0)
         return XZ_RESULT_OK;

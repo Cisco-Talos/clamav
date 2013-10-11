@@ -94,10 +94,10 @@ static int xar_get_numeric_from_xml_element(xmlTextReaderPtr reader, long * valu
     hash - pointer to int for returning checksum algorithm.
   returns - void
  */
-static void xar_get_checksum_values(xmlTextReaderPtr reader, char ** cksum, int * hash)
+static void xar_get_checksum_values(xmlTextReaderPtr reader, unsigned char ** cksum, int * hash)
 {
     xmlChar * style = xmlTextReaderGetAttribute(reader, (const xmlChar *)"style");
-    const char * xmlval;
+    const xmlChar * xmlval;
 
     *hash = XAR_CKSUM_NONE;
     if (style == NULL) {
@@ -116,7 +116,7 @@ static void xar_get_checksum_values(xmlTextReaderPtr reader, char ** cksum, int 
     }
 
     if (xmlTextReaderRead(reader) == 1 && xmlTextReaderNodeType(reader) == XML_READER_TYPE_TEXT) {
-        xmlval = (const char *)xmlTextReaderConstValue(reader);
+        xmlval = xmlTextReaderConstValue(reader);
         if (xmlval) {
             *cksum = xmlStrdup(xmlval); 
             cli_dbgmsg("cli_scanxar: checksum value is %s.\n", *cksum);
@@ -145,7 +145,7 @@ static void xar_get_checksum_values(xmlTextReaderPtr reader, char ** cksum, int 
    returns - CL_FORMAT, CL_SUCCESS, CL_BREAK. CL_BREAK indicates no more <data>/<ea> element.
  */
 static int xar_get_toc_data_values(xmlTextReaderPtr reader, long *length, long *offset, long *size, int *encoding,
-                                   char ** a_cksum, int * a_hash, char ** e_cksum, int * e_hash)
+                                   unsigned char ** a_cksum, int * a_hash, unsigned char ** e_cksum, int * e_hash)
 {
     const xmlChar *name;
     int indata = 0, inea = 0;
@@ -291,7 +291,7 @@ static int xar_scan_subdocuments(xmlTextReaderPtr reader, cli_ctx *ctx)
             subdoc_len = xmlStrlen(subdoc);
             cli_dbgmsg("cli_scanxar: in-memory scan of xml subdocument, len %i.\n", subdoc_len);
             rc = cli_mem_scandesc(subdoc, subdoc_len, ctx);
-            if (rc = CL_VIRUS && SCAN_ALL)
+            if (rc == CL_VIRUS && SCAN_ALL)
                 rc = CL_SUCCESS;
             
             /* make a file to leave if --leave-temps in effect */
@@ -419,7 +419,7 @@ int cli_scanxar(cli_ctx *ctx)
     char *toc, *tmpname;
     xmlTextReaderPtr reader = NULL;
     int a_hash, e_hash;
-    char *a_cksum = NULL, *e_cksum = NULL;
+    unsigned char *a_cksum = NULL, *e_cksum = NULL;
 
     /* retrieve xar header */
     if (fmap_readn(*ctx->fmap, &hdr, 0, sizeof(hdr)) != sizeof(hdr)) {
@@ -530,7 +530,7 @@ int cli_scanxar(cli_ctx *ctx)
     while (CL_SUCCESS == (rc = xar_get_toc_data_values(reader, &length, &offset, &size, &encoding,
                                                        &a_cksum, &a_hash, &e_cksum, &e_hash))) {
         int do_extract_cksum = 1;
-        char * blockp;
+        unsigned char * blockp;
         SHA1Context a_sc, e_sc;
         cli_md5_ctx a_mc, e_mc;
         void *a_hash_ctx, *e_hash_ctx;
@@ -627,11 +627,12 @@ int cli_scanxar(cli_ctx *ctx)
 #define CLI_LZMA_HDR_SIZE LZMA_PROPS_SIZE+8
 #define CLI_LZMA_IBUF_SIZE CLI_LZMA_OBUF_SIZE>>2 /* estimated compression ratio 25% */
             {
-                struct CLI_LZMA lz = {0};
+                struct CLI_LZMA lz;
                 unsigned long in_remaining = length;
                 unsigned long out_size = 0;
-                char * buff = __lzma_wrap_alloc(NULL, CLI_LZMA_OBUF_SIZE);
+                unsigned char * buff = __lzma_wrap_alloc(NULL, CLI_LZMA_OBUF_SIZE);
                 
+                memset(&lz, 0, sizeof(lz));
                 if (buff == NULL) {
                     cli_errmsg("cli_scanxar: memory request for lzma decompression buffer fails.\n");
                     rc = CL_EMEM;
@@ -766,7 +767,7 @@ int cli_scanxar(cli_ctx *ctx)
 
         xar_hash_final(a_hash_ctx, result, a_hash);
         if (a_cksum != NULL) {
-            expected = cli_hex2str(a_cksum);
+            expected = cli_hex2str((char *)a_cksum);
             if (xar_hash_check(a_hash, result, expected) != 0) {
                 cli_dbgmsg("cli_scanxar: archived-checksum missing or mismatch.\n");
                 cksum_fails++;
@@ -780,7 +781,7 @@ int cli_scanxar(cli_ctx *ctx)
         if (e_cksum != NULL) {
             if (do_extract_cksum) {
                 xar_hash_final(e_hash_ctx, result, e_hash);
-                expected = cli_hex2str(e_cksum);
+                expected = cli_hex2str((char *)e_cksum);
                 if (xar_hash_check(e_hash, result, expected) != 0) {
                     cli_dbgmsg("cli_scanxar: extracted-checksum missing or mismatch.\n");
                     cksum_fails++;

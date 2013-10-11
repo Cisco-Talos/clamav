@@ -706,13 +706,13 @@ static int cli_scanxz(cli_ctx *ctx)
     int ret = CL_CLEAN, fd, rc;
     unsigned long int size = 0;
     char *tmpname;
-    struct CLI_XZ strm = {0};
+    struct CLI_XZ strm = {{0}};
     size_t off = 0;
     size_t avail;
-    char * buf = cli_malloc(CLI_XZ_OBUF_SIZE);
+    unsigned char * buf = cli_malloc(CLI_XZ_OBUF_SIZE);
 
     if (buf == NULL) {
-	cli_errmsg("cli_scanxz: DecompressInit failed: %i\n", rc);
+	cli_errmsg("cli_scanxz: nomemory for decompress buffer.\n");
         return CL_EMEM;
     }
     strm.next_out = buf;
@@ -2399,7 +2399,6 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 	bitset_t *old_hook_lsig_matches;
 	const char *filetype;
 	int cache_clean = 0, res;
-	unsigned int viruses_found = 0;
 
     if(!ctx->engine) {
 	cli_errmsg("CRITICAL: engine == NULL\n");
