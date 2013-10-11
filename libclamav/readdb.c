@@ -2747,7 +2747,8 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
 	} result;
 #endif
 	char *dbfile;
-	int ret = CL_EOPEN, have_cld;
+	int ret = CL_EOPEN, have_cld, ends_with_sep = 0;
+	size_t dirname_len;
 	struct cl_cvd *daily_cld, *daily_cvd;
 
 
@@ -2756,6 +2757,14 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
     if((dd = opendir(dirname)) == NULL) {
         cli_errmsg("cli_loaddbdir(): Can't open directory %s\n", dirname);
         return CL_EOPEN;
+    }
+
+    dirname_len = strlen(dirname);
+    if(dirname_len >= strlen(PATHSEP)) {
+        if(strcmp(dirname + dirname_len - strlen(PATHSEP), PATHSEP) == 0) {
+            cli_dbgmsg("cli_loaddbdir(): dirname ends with separator\n");
+            ends_with_sep = 1;
+        }
     }
 
     /* first round - load .ign and .ign2 files */
@@ -2769,13 +2778,16 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
 	if(dent->d_ino)
 	{
 	    if(cli_strbcasestr(dent->d_name, ".ign") || cli_strbcasestr(dent->d_name, ".ign2")) {
-		dbfile = (char *) cli_malloc(strlen(dent->d_name) + strlen(dirname) + 2);
+		dbfile = (char *) cli_malloc(strlen(dent->d_name) + dirname_len + 2);
 		if(!dbfile) {
 		    cli_errmsg("cli_loaddbdir(): dbfile == NULL\n");
 		    closedir(dd);
 		    return CL_EMEM;
 		}
-		sprintf(dbfile, "%s"PATHSEP"%s", dirname, dent->d_name);
+		if(ends_with_sep)
+		    sprintf(dbfile, "%s%s", dirname, dent->d_name);
+		else
+                    sprintf(dbfile, "%s"PATHSEP"%s", dirname, dent->d_name);
 		ret = cli_load(dbfile, engine, signo, options, NULL);
 		if(ret) {
 		    cli_errmsg("cli_loaddbdir(): error loading database %s\n", dbfile);
@@ -2789,14 +2801,17 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
     }
 
     /* the daily db must be loaded before main */
-    dbfile = (char *) cli_malloc(strlen(dirname) + 20);
+    dbfile = (char *) cli_malloc(dirname_len + 20);
     if(!dbfile) {
 	closedir(dd);
     cli_errmsg("cli_loaddbdir: Can't allocate memory for dbfile\n");
 	return CL_EMEM;
     }
 
-    sprintf(dbfile, "%s"PATHSEP"daily.cld", dirname);
+    if(ends_with_sep)
+        sprintf(dbfile, "%sdaily.cld", dirname);
+    else
+        sprintf(dbfile, "%s"PATHSEP"daily.cld", dirname);
     have_cld = !access(dbfile, R_OK);
     if(have_cld) {
 	daily_cld = cl_cvdhead(dbfile);
@@ -2807,7 +2822,10 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
 	    return CL_EMALFDB;
 	}
     }
-    sprintf(dbfile, "%s"PATHSEP"daily.cvd", dirname); 
+    if(ends_with_sep)
+        sprintf(dbfile, "%sdaily.cvd", dirname);
+    else
+        sprintf(dbfile, "%s"PATHSEP"daily.cvd", dirname);
     if(!access(dbfile, R_OK)) {
 	if(have_cld) {
 	    daily_cvd = cl_cvdhead(dbfile);
@@ -2818,12 +2836,19 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
 		closedir(dd);
 		return CL_EMALFDB;
 	    }
-	    if(daily_cld->version > daily_cvd->version)
-		sprintf(dbfile, "%s"PATHSEP"daily.cld", dirname);
+	    if(daily_cld->version > daily_cvd->version) {
+		if(ends_with_sep)
+                    sprintf(dbfile, "%sdaily.cld", dirname);
+		else
+                    sprintf(dbfile, "%s"PATHSEP"daily.cld", dirname);
+	    }
 	    cl_cvdfree(daily_cvd);
 	}
     } else {
-	sprintf(dbfile, "%s"PATHSEP"daily.cld", dirname);
+	if(ends_with_sep)
+	    sprintf(dbfile, "%sdaily.cld", dirname);
+	else
+	    sprintf(dbfile, "%s"PATHSEP"daily.cld", dirname);
     }
     if(have_cld)
 	cl_cvdfree(daily_cld);
@@ -2835,7 +2860,10 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
     }
 
     /* try to load local.gdb next */
-    sprintf(dbfile, "%s"PATHSEP"local.gdb", dirname);
+    if(ends_with_sep)
+        sprintf(dbfile, "%slocal.gdb", dirname);
+    else
+        sprintf(dbfile, "%s"PATHSEP"local.gdb", dirname);
     if(!access(dbfile, R_OK) && (ret = cli_load(dbfile, engine, signo, options, NULL))) {
 	free(dbfile);
 	closedir(dd);
@@ -2843,7 +2871,10 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
     }
 
     /* check for and load daily.cfg */
-    sprintf(dbfile, "%s"PATHSEP"daily.cfg", dirname);
+    if(ends_with_sep)
+        sprintf(dbfile, "%sdaily.cfg", dirname);
+    else
+        sprintf(dbfile, "%s"PATHSEP"daily.cfg", dirname);
     if(!access(dbfile, R_OK) && (ret = cli_load(dbfile, engine, signo, options, NULL))) {
 	free(dbfile);
 	closedir(dd);
@@ -2868,13 +2899,16 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
 		    continue;
 		}
 
-		dbfile = (char *) cli_malloc(strlen(dent->d_name) + strlen(dirname) + 2);
+		dbfile = (char *) cli_malloc(strlen(dent->d_name) + dirname_len + 2);
 		if(!dbfile) {
 		    cli_errmsg("cli_loaddbdir(): dbfile == NULL\n");
 		    closedir(dd);
 		    return CL_EMEM;
 		}
-		sprintf(dbfile, "%s"PATHSEP"%s", dirname, dent->d_name);
+                if(ends_with_sep)
+		    sprintf(dbfile, "%s%s", dirname, dent->d_name);
+                else
+		    sprintf(dbfile, "%s"PATHSEP"%s", dirname, dent->d_name);
 		ret = cli_load(dbfile, engine, signo, options, NULL);
 		if(ret) {
 		    cli_errmsg("cli_loaddbdir(): error loading database %s\n", dbfile);
