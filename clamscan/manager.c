@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2012 Sourcefire, Inc.
+ *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
  *
@@ -908,8 +908,8 @@ int scanmanager(const struct optstruct *opts)
 
 	while((filename = filelist(opts, &ret)) && (file = strdup(filename))) {
 	    if(LSTAT(file, &sb) == -1) {
-		logg("^%s: Can't access file\n", file);
 		perror(file);
+		logg("^%s: Can't access file\n", file);
 		ret = 2;
 	    } else {
 		for(i = strlen(file) - 1; i > 0; i--) {

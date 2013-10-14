@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm, Trog
  *
@@ -195,8 +195,8 @@ void *cli_malloc(size_t size)
     alloc = malloc(size);
 
     if(!alloc) {
-	cli_errmsg("cli_malloc(): Can't allocate memory (%lu bytes).\n", (unsigned long int) size);
 	perror("malloc_problem");
+	cli_errmsg("cli_malloc(): Can't allocate memory (%lu bytes).\n", (unsigned long int) size);
 	return NULL;
     } else return alloc;
 }
@@ -215,8 +215,8 @@ void *cli_calloc(size_t nmemb, size_t size)
     alloc = calloc(nmemb, size);
 
     if(!alloc) {
-	cli_errmsg("cli_calloc(): Can't allocate memory (%lu bytes).\n", (unsigned long int) (nmemb * size));
 	perror("calloc_problem");
+	cli_errmsg("cli_calloc(): Can't allocate memory (%lu bytes).\n", (unsigned long int) (nmemb * size));
 	return NULL;
     } else return alloc;
 }
@@ -234,8 +234,8 @@ void *cli_realloc(void *ptr, size_t size)
     alloc = realloc(ptr, size);
 
     if(!alloc) {
-	cli_errmsg("cli_realloc(): Can't re-allocate memory to %lu bytes.\n", (unsigned long int) size);
 	perror("realloc_problem");
+	cli_errmsg("cli_realloc(): Can't re-allocate memory to %lu bytes.\n", (unsigned long int) size);
 	return NULL;
     } else return alloc;
 }
@@ -253,8 +253,8 @@ void *cli_realloc2(void *ptr, size_t size)
     alloc = realloc(ptr, size);
 
     if(!alloc) {
-	cli_errmsg("cli_realloc2(): Can't re-allocate memory to %lu bytes.\n", (unsigned long int) size);
 	perror("realloc_problem");
+	cli_errmsg("cli_realloc2(): Can't re-allocate memory to %lu bytes.\n", (unsigned long int) size);
 	if(ptr)
 	    free(ptr);
 	return NULL;
@@ -274,8 +274,8 @@ char *cli_strdup(const char *s)
     alloc = strdup(s);
 
     if(!alloc) {
-        cli_errmsg("cli_strdup(): Can't allocate memory (%u bytes).\n", (unsigned int) strlen(s));
         perror("strdup_problem");
+        cli_errmsg("cli_strdup(): Can't allocate memory (%u bytes).\n", (unsigned int) strlen(s));
         return NULL;
     }
 

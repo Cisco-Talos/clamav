@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2013 Sourcefire, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -82,8 +82,8 @@ clamd_connect (const char *cfgfile, const char *option)
 
         if ((sockd = socket (AF_UNIX, SOCK_STREAM, 0)) < 0)
         {
-            logg ("^Clamd was NOT notified: Can't create socket endpoint for %s\n", opt->strarg);
             perror ("socket()");
+            logg ("^Clamd was NOT notified: Can't create socket endpoint for %s\n", opt->strarg);
             optfree (opts);
             return -1;
         }
@@ -92,9 +92,9 @@ clamd_connect (const char *cfgfile, const char *option)
             (sockd, (struct sockaddr *) &server,
              sizeof (struct sockaddr_un)) < 0)
         {
+            perror ("connect()");
             closesocket (sockd);
             logg ("^Clamd was NOT notified: Can't connect to clamd through %s\n", opt->strarg);
-            perror ("connect()");
             optfree (opts);
             return -11;
         }
@@ -160,8 +160,8 @@ clamd_connect (const char *cfgfile, const char *option)
 
         if ((sockd = socket (AF_INET, SOCK_STREAM, 0)) < 0)
         {
-            logg ("!%s: Can't create TCP socket\n", option);
             perror ("socket()");
+            logg ("!%s: Can't create TCP socket\n", option);
             optfree (opts);
             return -1;
         }
@@ -189,9 +189,9 @@ clamd_connect (const char *cfgfile, const char *option)
             (sockd, (struct sockaddr *) &server2,
              sizeof (struct sockaddr_in)) < 0)
         {
+            perror ("connect()");
             closesocket (sockd);
             logg ("^Clamd was NOT notified: Can't connect to clamd on %s:%d\n", inet_ntoa (server2.sin_addr), ntohs (server2.sin_port));
-            perror ("connect()");
             optfree (opts);
             return -1;
         }
@@ -222,8 +222,8 @@ notify (const char *cfgfile)
 
     if (sendln (sockd, "RELOAD", 7) < 0)
     {
-        logg ("!NotifyClamd: Could not write to clamd socket\n");
         perror ("send()");
+        logg ("!NotifyClamd: Could not write to clamd socket\n");
         closesocket (sockd);
         return 1;
     }
