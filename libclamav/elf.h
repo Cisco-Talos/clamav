@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2009 Sourcefire, Inc.
+ *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
  *
@@ -27,11 +27,13 @@
 #include "others.h"
 #include "fmap.h"
 
+/* ELF File Headers */
 struct elf_file_hdr32 {
-    unsigned char e_ident[16];
+    uint8_t  e_ident[16];
     uint16_t e_type;
     uint16_t e_machine;
     uint32_t e_version;
+    /* fields after here are NOT aligned the same as 64 */
     uint32_t e_entry;
     uint32_t e_phoff;
     uint32_t e_shoff;
@@ -45,10 +47,11 @@ struct elf_file_hdr32 {
 };
 
 struct elf_file_hdr64 {
-    unsigned char e_ident[16];
+    uint8_t  e_ident[16];
     uint16_t e_type;
     uint16_t e_machine;
     uint32_t e_version;
+    /* fields after here are NOT aligned the same as 32 */
     uint64_t e_entry;
     uint64_t e_phoff;
     uint64_t e_shoff;
@@ -61,6 +64,21 @@ struct elf_file_hdr64 {
     uint16_t e_shstrndx;
 };
 
+/* ELF File Header Helpers */
+#define ELF_HDR_SIZEDIFF 12
+
+/* This part is the same on both headers */
+struct elf_file_hdr32plus {
+    struct elf_file_hdr32 hdr;
+    uint8_t pad[ELF_HDR_SIZEDIFF];
+};
+
+union elf_file_hdr {
+    struct elf_file_hdr32plus hdr32;
+    struct elf_file_hdr64 hdr64;
+};
+
+/* ELF Program Headers */
 struct elf_program_hdr32 {
     uint32_t p_type;
     uint32_t p_offset;
@@ -82,6 +100,16 @@ struct elf_program_hdr64 {
     uint64_t p_memsz;
     uint64_t p_align;
 };
+
+/* ELF Section Headers */
+
+/* Notable ELF section header flags */
+#define ELF_SHF_WRITE (1 << 0)
+#define ELF_SHF_ALLOC (1 << 1)
+#define ELF_SHF_EXECINSTR  (1 << 2)
+
+/* There are more section header flags, but these are the ones we log */
+#define ELF_SHF_MASK (ELF_SHF_WRITE | ELF_SHF_ALLOC | ELF_SHF_EXECINSTR)
 
 struct elf_section_hdr32 {
     uint32_t sh_name;
@@ -108,6 +136,8 @@ struct elf_section_hdr64 {
     uint64_t sh_addralign;
     uint64_t sh_entsize;
 };
+
+/* Exposed functions */
 
 int cli_scanelf(cli_ctx *ctx);
 
