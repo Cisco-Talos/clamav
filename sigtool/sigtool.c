@@ -173,8 +173,8 @@ static int hashsig(const struct optstruct *opts, unsigned int mdb, int type)
     if(opts->filename) {
 	for(i = 0; opts->filename[i]; i++) {
 	    if(CLAMSTAT(opts->filename[i], &sb) == -1) {
-		mprintf("!hashsig: Can't access file %s\n", opts->filename[i]);
 		perror("hashsig");
+		mprintf("!hashsig: Can't access file %s\n", opts->filename[i]);
 		return -1;
 	    } else {
 		if((sb.st_mode & S_IFMT) == S_IFREG) {
@@ -339,8 +339,8 @@ static char *getdsig(const char *host, const char *user, const unsigned char *da
     server.sin_port = htons(33101);
 
     if(connect(sockd, (struct sockaddr *) &server, sizeof(struct sockaddr_in)) < 0) {
-        closesocket(sockd);
 	perror("connect()");
+        closesocket(sockd);
 	mprintf("!getdsig: Can't connect to ClamAV Signing Service at %s\n", host);
 	memset(pass, 0, sizeof(pass));
 	return NULL;

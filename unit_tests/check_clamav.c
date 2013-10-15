@@ -355,7 +355,7 @@ END_TEST
 static char **testfiles = NULL;
 static unsigned testfiles_n = 0;
 
-#if HAVE_LIBBZ2
+#if HAVE_BZLIB_H
 static const int expected_testfiles = 48;
 #else
 static const int expected_testfiles = 46;

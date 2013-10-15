@@ -32,6 +32,6 @@ If MY_CPU_LE_UNALIGN is not defined, we don't know about these properties of pla
     SetUi32(p, (UInt32)_x64_); \
     SetUi32(((Byte *)(p)) + 4, (UInt32)(_x64_ >> 32)); }
 
-EXTERN_C_END
+#define GetBe16(p) (((UInt16)((const Byte *)(p))[0] << 8) | ((const Byte *)(p))[1])
 
 #endif

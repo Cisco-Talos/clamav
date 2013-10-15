@@ -79,6 +79,7 @@ typedef enum {
     CL_TYPE_SWF,
     CL_TYPE_JAVA,
     CL_TYPE_XAR,
+    CL_TYPE_XZ,
 
     /* Section for partition types */
     CL_TYPE_PART_ANY, /* unknown partition type */

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
  *
@@ -97,6 +97,7 @@
 #include "dmg.h"
 #include "xar.h"
 #include "hfsplus.h"
+#include "xz_iface.h"
 
 #ifdef HAVE_BZLIB_H
 #include <bzlib.h>
@@ -699,6 +700,99 @@ static int cli_scanbzip(cli_ctx *ctx)
     return ret;
 }
 #endif
+
+static int cli_scanxz(cli_ctx *ctx)
+{
+    int ret = CL_CLEAN, fd, rc;
+    unsigned long int size = 0;
+    char *tmpname;
+    struct CLI_XZ strm = {{0}};
+    size_t off = 0;
+    size_t avail;
+    unsigned char * buf = cli_malloc(CLI_XZ_OBUF_SIZE);
+
+    if (buf == NULL) {
+	cli_errmsg("cli_scanxz: nomemory for decompress buffer.\n");
+        return CL_EMEM;
+    }
+    strm.next_out = buf;
+    strm.avail_out = CLI_XZ_OBUF_SIZE;
+    rc = cli_XzInit(&strm);
+    if (rc != XZ_RESULT_OK) {
+	cli_errmsg("cli_scanxz: DecompressInit failed: %i\n", rc);
+        free(buf);
+	return CL_EOPEN;
+    }
+
+    if ((ret = cli_gentempfd(ctx->engine->tmpdir, &tmpname, &fd))) {
+	cli_errmsg("cli_scanxz: Can't generate temporary file.\n");
+	cli_XzShutdown(&strm);
+        free(buf);
+	return ret;
+    }
+    cli_dbgmsg("cli_scanxz: decompressing to file %s\n", tmpname);
+
+    do {
+        /* set up input buffer */
+	if (!strm.avail_in) {
+            strm.next_in = (void*)fmap_need_off_once_len(*ctx->fmap, off, CLI_XZ_IBUF_SIZE, &avail);
+	    strm.avail_in = avail;
+	    off += avail;
+	    if (!strm.avail_in) {
+		cli_errmsg("cli_scanxz: premature end of compressed stream\n");
+                ret = CL_EFORMAT;
+		goto xz_exit;
+	    }
+	}
+
+        /* xz decompress a chunk */
+	rc = cli_XzDecode(&strm);
+	if (XZ_RESULT_OK != rc && XZ_STREAM_END != rc) {
+	    cli_errmsg("cli_scanxz: decompress error: %d\n", rc);
+            ret = CL_EFORMAT;
+            goto xz_exit;
+	}
+        //cli_dbgmsg("cli_scanxz: xz decompressed %li of %li available bytes\n",
+        //           avail - strm.avail_in, avail);
+        
+        /* write decompress buffer */
+	if (!strm.avail_out || rc == XZ_STREAM_END) {            
+	    size_t towrite = CLI_XZ_OBUF_SIZE - strm.avail_out;
+	    size += towrite;
+
+            //cli_dbgmsg("Writing %li bytes to XZ decompress temp file(%li byte total)\n",
+            //           towrite, size);
+
+	    if(cli_writen(fd, buf, towrite) != towrite) {
+		cli_errmsg("cli_scanxz: Can't write to file.\n");
+                ret = CL_EWRITE;
+                goto xz_exit;
+	    }
+	    if (cli_checklimits("cli_scanxz", ctx, size, 0, 0) != CL_CLEAN) {
+                cli_warnmsg("cli_scanxz: decompress file size exceeds limits - "
+                            "only scanning %li bytes\n", size);
+		break;
+            }
+	    strm.next_out = buf;
+	    strm.avail_out = CLI_XZ_OBUF_SIZE;
+	}
+    } while (XZ_STREAM_END != rc);
+
+    /* scan decompressed file */
+    if ((ret = cli_magic_scandesc(fd, ctx)) == CL_VIRUS ) {
+	cli_dbgmsg("cli_scanxz: Infected with %s\n", cli_get_last_virus(ctx));
+    }
+
+ xz_exit:
+    cli_XzShutdown(&strm);
+    close(fd);
+    if(!ctx->engine->keeptmp)
+	if (cli_unlink(tmpname) && ret == CL_CLEAN)
+            ret = CL_EUNLINK;
+    free(tmpname);
+    free(buf);
+    return ret;
+}
 
 static int cli_scanszdd(cli_ctx *ctx)
 {
@@ -2305,7 +2399,6 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 	bitset_t *old_hook_lsig_matches;
 	const char *filetype;
 	int cache_clean = 0, res;
-	unsigned int viruses_found = 0;
 
     if(!ctx->engine) {
 	cli_errmsg("CRITICAL: engine == NULL\n");
@@ -2461,6 +2554,11 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 	case CL_TYPE_BZ:
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_BZ))
 		ret = cli_scanbzip(ctx);
+	    break;
+
+	case CL_TYPE_XZ:
+	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_XZ))
+		ret = cli_scanxz(ctx);
 	    break;
 
 	case CL_TYPE_ARJ:

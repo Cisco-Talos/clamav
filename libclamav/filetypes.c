@@ -105,6 +105,7 @@ static const struct ftmap_s {
     { "CL_TYPE_XAR",		CL_TYPE_XAR		},
     { "CL_TYPE_PART_ANY",	CL_TYPE_PART_ANY	},
     { "CL_TYPE_PART_HFSPLUS",	CL_TYPE_PART_HFSPLUS	},
+    { "CL_TYPE_XZ",     	CL_TYPE_XZ      	},
     { NULL,			CL_TYPE_IGNORED		}
 };
 
