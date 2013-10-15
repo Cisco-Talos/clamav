@@ -1,3 +1,11 @@
+Tue Oct 15 16:03:25 2013 EDT 2013 (dar)
+------------------------------------
+ * libclamav: bb #9154 - ELF handling re-write
+
+Tue Oct 15 16:00:14 2013 EDT 2013 (dar)
+------------------------------------
+ * libclamav: bb #8696 - Bug reported by NIW Solutions
+
 Fri Oct 11 16:50:34 2013 EDT 2013 (dar)
 ------------------------------------
  * bb #9072: clamscan message separator fix
