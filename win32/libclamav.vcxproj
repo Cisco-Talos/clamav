@@ -307,7 +307,12 @@
     <ClCompile Include="..\libclamav\dconf.c" />
     <ClCompile Include="..\libclamav\disasm.c" />
     <ClCompile Include="..\libclamav\dlp.c" />
-    <ClCompile Include="..\libclamav\dmg.c" />
+    <ClCompile Include="..\libclamav\dmg.c">
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">/D "LIBXML_STATIC" %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">/D "LIBXML_STATIC" %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">/D "LIBXML_STATIC" %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">/D "LIBXML_STATIC" %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
     <ClCompile Include="..\libclamav\dsig.c" />
     <ClCompile Include="..\libclamav\elf.c" />
     <ClCompile Include="..\libclamav\entconv.c" />
@@ -383,7 +388,12 @@
     <ClCompile Include="..\libclamav\vba_extract.c" />
     <ClCompile Include="..\libclamav\version.c" />
     <ClCompile Include="..\libclamav\wwunpack.c" />
-    <ClCompile Include="..\libclamav\xar.c" />
+    <ClCompile Include="..\libclamav\xar.c">
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">/D "LIBXML_STATIC" %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">/D "LIBXML_STATIC" %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">/D "LIBXML_STATIC" %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">/D "LIBXML_STATIC" %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
     <ClCompile Include="..\libclamav\xz_iface.c" />
     <ClCompile Include="..\libclamav\yc.c" />
     <ClCompile Include="..\shared\getopt.c" />
