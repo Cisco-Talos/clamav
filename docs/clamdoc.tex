@@ -144,9 +144,12 @@
 		\item Gzip
 		\item Bzip2
                 \item DMG
-                \item IMG 9660
-                \item ISO
+                \item IMG
+                \item ISO 9660
                 \item PKG
+                \item HFS+ partition
+                \item HFSX partition
+                \item XAR
                 \item XZ
 		\item MS OLE2
 		\item MS Cabinet Files (including SFX)
@@ -253,7 +256,6 @@
     \begin{itemize}
 	\item bzip2 and bzip2-devel library
         \item libxml2 and libxml2-dev library
-        \item libxar-dev library
 	\item \verb+check+ unit testing framework \footnote{See section \ref{unit-testing} on how to run the unit tests}.
     \end{itemize}
     The following packages are optional, but \textbf{required for bytecode JIT support}:
@@ -789,6 +791,7 @@ N * * * *	/usr/local/bin/freshclam --quiet
     fully replaced after several failed attempts unless otherwise specified.
     \\\\
     Here is a sample usage including cdiffs:
+{\footnotesize
     \begin{verbatim}
 $ freshclam
 
@@ -803,6 +806,7 @@ Downloading bytecode-228.cdiff [100%]
 bytecode.cld updated (version: 228, sigs: 43, f-level: 63, builder: neo)
 Database updated (2831219 signatures) from database.clamav.net (IP: 64.6.100.177)
     \end{verbatim}
+}
     For more detailed help, type 'man clamscan' or 'clamscan --help'.
 
     \subsection{Clamconf}\label{sec:clamconf}
@@ -812,54 +816,56 @@ Database updated (2831219 signatures) from database.clamav.net (IP: 64.6.100.177
     properly configured), the contents of freshclam.conf, and display
     information about software settings, database, platform, and build
     information. Here is a sample clamconf output:
+{\footnotesize
     \begin{verbatim}
-        $ clamconf
+$ clamconf
 
-        Checking configuration files in /etc/clamav
+Checking configuration files in /etc/clamav
 
-        Config file: clamd.conf
-        -----------------------
-        ERROR: Please edit the example config file /etc/clamav/clamd.conf
+Config file: clamd.conf
+-----------------------
+ERROR: Please edit the example config file /etc/clamav/clamd.conf
 
-        Config file: freshclam.conf
-        ---------------------------
-        ERROR: Please edit the example config file /etc/clamav/freshclam.conf
+Config file: freshclam.conf
+---------------------------
+ERROR: Please edit the example config file /etc/clamav/freshclam.conf
 
-        clamav-milter.conf not found
+clamav-milter.conf not found
 
-        Software settings
-        -----------------
-        Version: 0.97.6
-        Optional features supported: MEMPOOL IPv6 CLAMUKO AUTOIT_EA06 BZIP2 RAR JIT
+Software settings
+-----------------
+Version: 0.97.6
+Optional features supported: MEMPOOL IPv6 CLAMUKO AUTOIT_EA06 BZIP2 RAR JIT
 
-        Database information
-        --------------------
-        Database directory: /usr/local/share/clamav
-        WARNING: freshclam.conf and clamd.conf point to different database directories
-        print_dbs: Can't open directory /usr/local/share/clamav
+Database information
+--------------------
+Database directory: /usr/local/share/clamav
+WARNING: freshclam.conf and clamd.conf point to different database directories
+print_dbs: Can't open directory /usr/local/share/clamav
 
-        Platform information
-        --------------------
-        uname: Linux 2.6.32-279.el6.x86_64 #1 SMP Fri Jun 22 12:19:21 UTC 2012 x86_64
-        OS: linux-gnu, ARCH: x86_64, CPU: x86_64
-        Full OS version: ``CentOS release 6.3 (Final)''
-        zlib version: 1.2.3 (1.2.3), compile flags: a9
-        Triple: x86_64-unknown-linux-gnu
-        CPU: amdfam10, Little-endian
-        platform id: 0x0a2143430804040607040406
+Platform information
+--------------------
+uname: Linux 2.6.32-279.el6.x86_64 #1 SMP Fri Jun 22 12:19:21 UTC 2012 x86_64
+OS: linux-gnu, ARCH: x86_64, CPU: x86_64
+Full OS version: ``CentOS release 6.3 (Final)''
+zlib version: 1.2.3 (1.2.3), compile flags: a9
+Triple: x86_64-unknown-linux-gnu
+CPU: amdfam10, Little-endian
+platform id: 0x0a2143430804040607040406
 
-        Build information
-        -----------------
-        GNU C: 4.4.6 20120305 (Red Hat 4.4.6-4) (4.4.6)
-        GNU C++: 4.4.6 20120305 (Red Hat 4.4.6-4) (4.4.6)
-        CPPFLAGS: 
-        CFLAGS: -g -O2 -fno-strict-aliasing
-        CXXFLAGS: 
-        LDFLAGS: 
-        Configure: '--enable-check' '--sysconfdir=/etc/clamav'
-        --enable-ltdl-convenience
-        sizeof(void*) = 8
-    \end{verbatim}
+Build information
+-----------------
+GNU C: 4.4.6 20120305 (Red Hat 4.4.6-4) (4.4.6)
+GNU C++: 4.4.6 20120305 (Red Hat 4.4.6-4) (4.4.6)
+CPPFLAGS: 
+CFLAGS: -g -O2 -fno-strict-aliasing
+CXXFLAGS: 
+LDFLAGS: 
+Configure: '--enable-check' '--sysconfdir=/etc/clamav'
+--enable-ltdl-convenience
+sizeof(void*) = 8
+ \end{verbatim}
+}
     For more detailed help, type 'man clamconf' or 'clamconf --help'.
 
     \subsection{Output format}
@@ -958,9 +964,12 @@ Database updated (2831219 signatures) from database.clamav.net (IP: 64.6.100.177
 	\item Gzip
 	\item Bzip2
         \item DMG
-        \item IMG 9660
-        \item ISO
+        \item IMG
+        \item ISO 9660
         \item PKG
+        \item HFS+ partition
+        \item HFSX partition
+        \item XAR
         \item XZ
 	\item MS OLE2
 	\item MS Cabinet Files (+ SFX)
@@ -1767,9 +1776,6 @@ Verification OK.
 
 	\item Shawn Webb \email{<swebb*sourcefire.com>}, USA\\
 	Role: ClamAV developer
-
-	\item Carl Wu \email{<cwu*sourcefire.com>}, USA\\
-        Role: ClamAV developer
 
         \item Kevin Lin \email{<klin*sourcefire.com>}, USA\\
         Role: ClamAV developer
