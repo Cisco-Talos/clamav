@@ -2540,6 +2540,9 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 	    }
 	    break;
 
+        case CL_TYPE_OOXML_WORD:
+        case CL_TYPE_OOXML_PPT:
+        case CL_TYPE_OOXML_XL:
 	case CL_TYPE_ZIP:
 	    ctx->container_type = CL_TYPE_ZIP;
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ZIP))

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
  *
@@ -43,6 +43,8 @@
 #include "htmlnorm.h"
 #include "entconv.h"
 #include "mpool.h"
+#define UNZIP_PRIVATE
+#include "unzip.h"
 
 static const struct ftmap_s {
     const char *name;
@@ -106,6 +108,9 @@ static const struct ftmap_s {
     { "CL_TYPE_PART_ANY",	CL_TYPE_PART_ANY	},
     { "CL_TYPE_PART_HFSPLUS",	CL_TYPE_PART_HFSPLUS	},
     { "CL_TYPE_XZ",     	CL_TYPE_XZ      	},
+    { "CL_TYPE_OOXML_WORD",	CL_TYPE_OOXML_WORD     	},
+    { "CL_TYPE_OOXML_PPT",	CL_TYPE_OOXML_PPT     	},
+    { "CL_TYPE_OOXML_XL",	CL_TYPE_OOXML_XL     	},
     { NULL,			CL_TYPE_IGNORED		}
 };
 
@@ -244,7 +249,40 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
 		    cli_dbgmsg("Recognized POSIX tar file\n");
 		    return CL_TYPE_POSIX_TAR;
 	    }
-	}
+	} else if (ret == CL_TYPE_ZIP) {
+            const char lhdr_magic[4] = {0x50,0x4b,0x03,0x04};
+            const unsigned char * zbuff;
+            long zread, zoff = SIZEOF_LH;
+            int lhc = 1;
+
+            zbuff = buff + SIZEOF_LH;
+            zread = bread - SIZEOF_LH;
+
+            do {                
+                long zc = zread;
+                const char * zlh;
+                const unsigned char * zp = zbuff;
+               
+                while (zc > SIZEOF_LH && (zlh = cli_memstr(zp, zc, lhdr_magic, 4))) {
+                    lhc++;
+                    zp = zlh + SIZEOF_LH;
+                    zc = zp - zbuff;
+                    if (0 == memcmp(zp, "word/", 5)) {
+                        cli_dbgmsg("Recognized OOXML Word file\n");
+                        return CL_TYPE_OOXML_WORD;
+                    } else if (0 == memcmp(zp, "ppt/", 4)) {
+                        cli_dbgmsg("Recognized OOXML PPT file\n");
+                        return CL_TYPE_OOXML_PPT;                        
+                    } else if (0 == memcmp(zp, "xl/", 3)) {
+                        cli_dbgmsg("Recognized OOXML XL file\n");
+                        return CL_TYPE_OOXML_XL;
+                    }
+                    //cli_dbgmsg("zip file name:%.10s\n", zp); 
+                }
+                zoff += zread - SIZEOF_LH;
+                zread = MIN(MAGIC_BUFFER_SIZE, map->len-zoff);
+            } while (lhc < 3 && (zbuff = fmap_need_off_once(map, zoff, zread)));
+        }
     }
 
     if(ret >= CL_TYPE_TEXT_ASCII && ret <= CL_TYPE_BINARY_DATA) {
