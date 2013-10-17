@@ -80,6 +80,9 @@ typedef enum {
     CL_TYPE_JAVA,
     CL_TYPE_XAR,
     CL_TYPE_XZ,
+    CL_TYPE_OOXML_WORD,
+    CL_TYPE_OOXML_PPT,
+    CL_TYPE_OOXML_XL,
 
     /* Section for partition types */
     CL_TYPE_PART_ANY, /* unknown partition type */
