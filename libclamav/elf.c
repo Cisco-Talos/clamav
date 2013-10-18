@@ -228,7 +228,7 @@ static int cli_elf_ph32(cli_ctx *ctx, fmap_t *map, struct cli_exe_info *elfinfo,
 
         phoff = file_hdr->e_phoff;
         if(ctx) {
-            cli_dbgmsg("ELF: Program header table offset: %d\n", phoff);
+            cli_dbgmsg("ELF: Program header table offset: %u\n", phoff);
         }
 
         if(phnum) {
@@ -332,7 +332,7 @@ static int cli_elf_ph64(cli_ctx *ctx, fmap_t *map, struct cli_exe_info *elfinfo,
 
         phoff = file_hdr->e_phoff;
         if(ctx) {
-            cli_dbgmsg("ELF: Program header table offset: %d\n", phoff);
+            cli_dbgmsg("ELF: Program header table offset: " STDu64 "\n", phoff);
         }
 
         if(phnum) {
@@ -368,10 +368,10 @@ static int cli_elf_ph64(cli_ctx *ctx, fmap_t *map, struct cli_exe_info *elfinfo,
             if(ctx) {
                 cli_dbgmsg("ELF: Segment #%d\n", i);
                 cli_dbgmsg("ELF: Segment type: 0x%x\n", EC32(program_hdr[i].p_type, conv));
-                cli_dbgmsg("ELF: Segment offset: 0x%x\n", EC64(program_hdr[i].p_offset, conv));
-                cli_dbgmsg("ELF: Segment virtual address: 0x%x\n", EC64(program_hdr[i].p_vaddr, conv));
-                cli_dbgmsg("ELF: Segment real size: 0x%x\n", EC64(program_hdr[i].p_filesz, conv));
-                cli_dbgmsg("ELF: Segment virtual size: 0x%x\n", EC64(program_hdr[i].p_memsz, conv));
+                cli_dbgmsg("ELF: Segment offset: 0x" STDx64 "\n", EC64(program_hdr[i].p_offset, conv));
+                cli_dbgmsg("ELF: Segment virtual address: 0x" STDx64 "\n", EC64(program_hdr[i].p_vaddr, conv));
+                cli_dbgmsg("ELF: Segment real size: 0x" STDx64 "\n", EC64(program_hdr[i].p_filesz, conv));
+                cli_dbgmsg("ELF: Segment virtual size: 0x" STDx64 "\n", EC64(program_hdr[i].p_memsz, conv));
                 cli_dbgmsg("------------------------------------\n");
             }
         }
@@ -387,8 +387,8 @@ static int cli_elf_ph64(cli_ctx *ctx, fmap_t *map, struct cli_exe_info *elfinfo,
             return CL_EFORMAT;
         }
         if(ctx) {
-            cli_dbgmsg("ELF: Entry point address: 0x%.16x\n", entry);
-            cli_dbgmsg("ELF: Entry point offset: 0x%.16x (%d)\n", fentry, fentry);
+            cli_dbgmsg("ELF: Entry point address: 0x%.16" PRIx64 "\n", entry);
+            cli_dbgmsg("ELF: Entry point offset: 0x%.16" PRIx64 " (" STDi64 ")\n", fentry, fentry);
         }
     }
 
@@ -548,7 +548,7 @@ static int cli_elf_sh64(cli_ctx *ctx, fmap_t *map, struct cli_exe_info *elfinfo,
 
     shoff = file_hdr->e_shoff;
     if(ctx)
-        cli_dbgmsg("ELF: Section header table offset: %d\n", shoff);
+        cli_dbgmsg("ELF: Section header table offset: " STDu64 "\n", shoff);
 
     if(elfinfo) {
         elfinfo->section = (struct cli_exe_section *)cli_calloc(shnum, sizeof(struct cli_exe_section));
@@ -603,8 +603,8 @@ static int cli_elf_sh64(cli_ctx *ctx, fmap_t *map, struct cli_exe_info *elfinfo,
         }
         if(ctx) {
 	    cli_dbgmsg("ELF: Section %u\n", i);
-	    cli_dbgmsg("ELF: Section offset: %u\n", EC64(section_hdr[i].sh_offset, conv));
-	    cli_dbgmsg("ELF: Section size: %u\n", EC64(section_hdr[i].sh_size, conv));
+	    cli_dbgmsg("ELF: Section offset: " STDu64 "\n", EC64(section_hdr[i].sh_offset, conv));
+	    cli_dbgmsg("ELF: Section size: " STDu64 "\n", EC64(section_hdr[i].sh_size, conv));
 
             sh_type = EC32(section_hdr[i].sh_type, conv);
             sh_flags = (uint32_t)(EC64(section_hdr[i].sh_flags, conv) & ELF_SHF_MASK);
