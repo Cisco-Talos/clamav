@@ -197,7 +197,7 @@ static int cli_elf_ph32(cli_ctx *ctx, fmap_t *map, struct cli_exe_info *elfinfo,
 {
 	struct elf_program_hdr32 *program_hdr = NULL;
 	uint16_t phnum, phentsize;
-	uint32_t entry, fentry, phoff;
+	uint32_t entry, fentry = 0, phoff;
 	uint32_t i;
 	uint8_t err;
 
@@ -301,7 +301,7 @@ static int cli_elf_ph64(cli_ctx *ctx, fmap_t *map, struct cli_exe_info *elfinfo,
 {
 	struct elf_program_hdr64 *program_hdr = NULL;
 	uint16_t phnum, phentsize;
-	uint64_t entry, fentry, phoff;
+	uint64_t entry, fentry = 0, phoff;
 	uint32_t i;
 	uint8_t err;
 
