@@ -78,6 +78,16 @@ const char *types[] = {
     "CPIO_ODC",		/* 45 */
     "CPIO_NEWC",	/* 46 */
     "CPIO_CRC",		/* 47 */
+    "ISO9660",		/* 48 */
+    "JAVA",		/* 49 */
+    "DMG",		/* 50 */
+    "XAR",		/* 51 */
+    "PART_ANY",		/* 52 */
+    "PART_HFSPLUS",	/* 53 */
+    "XZ",		/* 54 */
+    "OOXML_WORD",	/* 55 */
+    "OOXML_PPT",	/* 56 */
+    "OOXML_XL",		/* 57 */
     NULL
 };
 
