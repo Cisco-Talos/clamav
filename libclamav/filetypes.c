@@ -281,7 +281,7 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
                 }
                 zoff += zread - SIZEOF_LH;
                 zread = MIN(MAGIC_BUFFER_SIZE, map->len-zoff);
-            } while (lhc < 3 && (zbuff = fmap_need_off_once(map, zoff, zread)));
+            } while (zread > SIZEOF_LH && lhc < 3 && (zbuff = fmap_need_off_once(map, zoff, zread)));
         }
     }
 
