@@ -6,6 +6,10 @@ Thu Oct 23 18:01:46 2013 EDT 2013 (dar)
 ------------------------------------
  * bb #9222: make fmap_unneed respect nested maps
 
+Wed Oct 23 16:21:46 2013 EDT 2013 (morgan)
+------------------------------------
+ * libclamav: bb#5978 - Allow html detection/normalization for graphic file types.
+
 Thu Oct 17 16:50:00 2013 EDT 2013 (morgan)
 ------------------------------------
  * libclamav: bb#6348 - Add file type recognition for Office Open XML.
