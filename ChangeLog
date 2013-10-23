@@ -1,3 +1,6 @@
+Wed Oct 23 16:21:46 2013 EDT 2013 (morgan)
+------------------------------------
+ * libclamav: bb#5978 - Allow html detection/normalization for graphic file types.
 
 Thu Oct 17 16:50:00 2013 EDT 2013 (morgan)
 ------------------------------------
