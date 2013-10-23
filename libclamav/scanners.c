@@ -2125,152 +2125,156 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
     if(ret >= CL_TYPENO) {
 	perf_nested_start(ctx, PERFT_RAWTYPENO, PERFT_SCAN);
 	ctx->recursion++;
-	if(nret != CL_VIRUS) { //TODO: don't need this test: nret == CL_CLEAN
-	    lastrar = 0xdeadbeef;
-	    fpt = ftoffset;
-	    while(fpt) {
-		if(fpt->offset) switch(fpt->type) {
-		    case CL_TYPE_RARSFX:
-			if(type != CL_TYPE_RAR && have_rar && SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_RAR)) {
-			    ctx->container_type = CL_TYPE_RAR;
-			    ctx->container_size = map->len - fpt->offset; /* not precise */
-			    cli_dbgmsg("RAR/RAR-SFX signature found at %u\n", (unsigned int) fpt->offset);
-			    nret = cli_scanrar(fmap_fd(map), ctx, fpt->offset, &lastrar);
-			}
-			break;
+        lastrar = 0xdeadbeef;
+        fpt = ftoffset;
 
-		    case CL_TYPE_ZIPSFX:
-			if(type != CL_TYPE_ZIP && SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ZIP)) {
-			    ctx->container_type = CL_TYPE_ZIP;
-			    ctx->container_size = map->len - fpt->offset; /* not precise */
-			    cli_dbgmsg("ZIP/ZIP-SFX signature found at %u\n", (unsigned int) fpt->offset);
-			    nret = cli_unzip_single(ctx, fpt->offset);
-			}
-			break;
+        while(fpt) {
+            if(fpt->offset) switch(fpt->type) {
+                case CL_TYPE_RARSFX:
+                    if(type != CL_TYPE_RAR && have_rar && SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_RAR)) {
+                        ctx->container_type = CL_TYPE_RAR;
+                        ctx->container_size = map->len - fpt->offset; /* not precise */
+                        cli_dbgmsg("RAR/RAR-SFX signature found at %u\n", (unsigned int) fpt->offset);
+                        nret = cli_scanrar(fmap_fd(map), ctx, fpt->offset, &lastrar);
+                    }
+                    break;
 
-		    case CL_TYPE_CABSFX:
-			if(type != CL_TYPE_MSCAB && SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_CAB)) {
-			    ctx->container_type = CL_TYPE_MSCAB;
-			    ctx->container_size = map->len - fpt->offset; /* not precise */
-			    cli_dbgmsg("CAB/CAB-SFX signature found at %u\n", (unsigned int) fpt->offset);
-			    nret = cli_scanmscab(ctx, fpt->offset);
-			}
-			break;
-		    case CL_TYPE_ARJSFX:
-			if(type != CL_TYPE_ARJ && SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ARJ)) {
-			    ctx->container_type = CL_TYPE_ARJ;
-			    ctx->container_size = map->len - fpt->offset; /* not precise */
-			    cli_dbgmsg("ARJ-SFX signature found at %u\n", (unsigned int) fpt->offset);
-			    nret = cli_scanarj(ctx, fpt->offset, &lastrar);
-			}
-			break;
+                case CL_TYPE_ZIPSFX:
+                    if(type != CL_TYPE_ZIP && SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ZIP)) {
+                        ctx->container_type = CL_TYPE_ZIP;
+                        ctx->container_size = map->len - fpt->offset; /* not precise */
+                        cli_dbgmsg("ZIP/ZIP-SFX signature found at %u\n", (unsigned int) fpt->offset);
+                        nret = cli_unzip_single(ctx, fpt->offset);
+                    }
+                    break;
 
-		    case CL_TYPE_7ZSFX:
-			if(type != CL_TYPE_7Z && SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_7Z)) {
-			    ctx->container_type = CL_TYPE_7Z;
-			    ctx->container_size = map->len - fpt->offset; /* not precise */
-			    cli_dbgmsg("7Zip-SFX signature found at %u\n", (unsigned int) fpt->offset);
-			    nret = cli_7unz(ctx, fpt->offset);
-			}
-			break;
+                case CL_TYPE_CABSFX:
+                    if(type != CL_TYPE_MSCAB && SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_CAB)) {
+                        ctx->container_type = CL_TYPE_MSCAB;
+                        ctx->container_size = map->len - fpt->offset; /* not precise */
+                        cli_dbgmsg("CAB/CAB-SFX signature found at %u\n", (unsigned int) fpt->offset);
+                        nret = cli_scanmscab(ctx, fpt->offset);
+                    }
+                    break;
 
-		    case CL_TYPE_ISO9660:
-			if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ISO9660)) {
-			    ctx->container_type = CL_TYPE_ISO9660;
-			    ctx->container_size = map->len - fpt->offset; /* not precise */
-			    cli_dbgmsg("ISO9660 signature found at %u\n", (unsigned int) fpt->offset);
-			    nret = cli_scaniso(ctx, fpt->offset);
-			}
-			break;
+                case CL_TYPE_ARJSFX:
+                    if(type != CL_TYPE_ARJ && SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ARJ)) {
+                        ctx->container_type = CL_TYPE_ARJ;
+                        ctx->container_size = map->len - fpt->offset; /* not precise */
+                        cli_dbgmsg("ARJ-SFX signature found at %u\n", (unsigned int) fpt->offset);
+                        nret = cli_scanarj(ctx, fpt->offset, &lastrar);
+                    }
+                    break;
 
-		    case CL_TYPE_NULSFT:
-		        if(SCAN_ARCHIVE && type == CL_TYPE_MSEXE && (DCONF_ARCH & ARCH_CONF_NSIS) && fpt->offset > 4) {
-			    ctx->container_type = CL_TYPE_NULSFT;
-			    ctx->container_size = map->len - fpt->offset; /* not precise */
-			    cli_dbgmsg("NSIS signature found at %u\n", (unsigned int) fpt->offset-4);
-			    nret = cli_scannulsft(ctx, fpt->offset - 4);
-			}
-			break;
+                case CL_TYPE_7ZSFX:
+                    if(type != CL_TYPE_7Z && SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_7Z)) {
+                        ctx->container_type = CL_TYPE_7Z;
+                        ctx->container_size = map->len - fpt->offset; /* not precise */
+                        cli_dbgmsg("7Zip-SFX signature found at %u\n", (unsigned int) fpt->offset);
+                        nret = cli_7unz(ctx, fpt->offset);
+                    }
+                    break;
 
-		    case CL_TYPE_AUTOIT:
-		        if(SCAN_ARCHIVE && type == CL_TYPE_MSEXE && (DCONF_ARCH & ARCH_CONF_AUTOIT)) {
-			    ctx->container_type = CL_TYPE_AUTOIT;
-			    ctx->container_size = map->len - fpt->offset; /* not precise */
-			    cli_dbgmsg("AUTOIT signature found at %u\n", (unsigned int) fpt->offset);
-			    nret = cli_scanautoit(ctx, fpt->offset + 23);
-			}
-			break;
+                case CL_TYPE_ISO9660:
+                    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ISO9660)) {
+                        ctx->container_type = CL_TYPE_ISO9660;
+                        ctx->container_size = map->len - fpt->offset; /* not precise */
+                        cli_dbgmsg("ISO9660 signature found at %u\n", (unsigned int) fpt->offset);
+                        nret = cli_scaniso(ctx, fpt->offset);
+                    }
+                    break;
 
-		    case CL_TYPE_ISHIELD_MSI:
-		        if(SCAN_ARCHIVE && type == CL_TYPE_MSEXE && (DCONF_ARCH & ARCH_CONF_ISHIELD)) {
-			    ctx->container_type = CL_TYPE_AUTOIT;
-			    ctx->container_size = map->len - fpt->offset; /* not precise */
-			    cli_dbgmsg("ISHIELD-MSI signature found at %u\n", (unsigned int) fpt->offset);
-			    nret = cli_scanishield_msi(ctx, fpt->offset + 14);
-			}
-			break;
+                case CL_TYPE_NULSFT:
+                    if(SCAN_ARCHIVE && type == CL_TYPE_MSEXE && (DCONF_ARCH & ARCH_CONF_NSIS) &&
+                       fpt->offset > 4) {
+                        ctx->container_type = CL_TYPE_NULSFT;
+                        ctx->container_size = map->len - fpt->offset; /* not precise */
+                        cli_dbgmsg("NSIS signature found at %u\n", (unsigned int) fpt->offset-4);
+                        nret = cli_scannulsft(ctx, fpt->offset - 4);
+                    }
+                    break;
 
-		    case CL_TYPE_DMG:
-			if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_DMG)) {
-			    ctx->container_type = CL_TYPE_DMG;
-			    nret = cli_scandmg(ctx);
-			    cli_dbgmsg("DMG signature found at %u\n", (unsigned int) fpt->offset);
-			}
-			break;
+                case CL_TYPE_AUTOIT:
+                    if(SCAN_ARCHIVE && type == CL_TYPE_MSEXE && (DCONF_ARCH & ARCH_CONF_AUTOIT)) {
+                        ctx->container_type = CL_TYPE_AUTOIT;
+                        ctx->container_size = map->len - fpt->offset; /* not precise */
+                        cli_dbgmsg("AUTOIT signature found at %u\n", (unsigned int) fpt->offset);
+                        nret = cli_scanautoit(ctx, fpt->offset + 23);
+                    }
+                    break;
 
-		    case CL_TYPE_PDF:
-			if(type != CL_TYPE_PDF && SCAN_PDF && (DCONF_DOC & DOC_CONF_PDF)) {
-			    ctx->container_type = CL_TYPE_PDF;
-			    ctx->container_size = map->len - fpt->offset; /* not precise */
-			    cli_dbgmsg("PDF signature found at %u\n", (unsigned int) fpt->offset);
-			    nret = cli_scanpdf(ctx, fpt->offset);
-			}
-			break;
+                case CL_TYPE_ISHIELD_MSI:
+                    if(SCAN_ARCHIVE && type == CL_TYPE_MSEXE && (DCONF_ARCH & ARCH_CONF_ISHIELD)) {
+                        ctx->container_type = CL_TYPE_AUTOIT;
+                        ctx->container_size = map->len - fpt->offset; /* not precise */
+                        cli_dbgmsg("ISHIELD-MSI signature found at %u\n", (unsigned int) fpt->offset);
+                        nret = cli_scanishield_msi(ctx, fpt->offset + 14);
+                    }
+                    break;
 
-		    case CL_TYPE_MSEXE:
- 			if(SCAN_PE && (type == CL_TYPE_MSEXE || type == CL_TYPE_ZIP || type == CL_TYPE_MSOLE2) && ctx->dconf->pe) {
-			    uint64_t curr_len = map->len;
-			    /* CL_ENGINE_MAX_EMBEDDED_PE */
-			    if(curr_len > ctx->engine->maxembeddedpe) {
-				cli_dbgmsg("cli_scanraw: MaxEmbeddedPE exceeded\n");
-				break;
-			    }
-			    ctx->container_type = CL_TYPE_MSEXE; /* PE is a container for another executable here */
-			    ctx->container_size = map->len - fpt->offset; /* not precise */
-			    memset(&peinfo, 0, sizeof(struct cli_exe_info));
-			    peinfo.offset = fpt->offset;
-			    if(cli_peheader(map, &peinfo) == 0) {
-				cli_dbgmsg("*** Detected embedded PE file at %u ***\n", (unsigned int) fpt->offset);
-				if(peinfo.section)
-				    free(peinfo.section);
-				cli_hashset_destroy(&peinfo.vinfo);
+                case CL_TYPE_DMG:
+                    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_DMG)) {
+                        ctx->container_type = CL_TYPE_DMG;
+                        nret = cli_scandmg(ctx);
+                        cli_dbgmsg("DMG signature found at %u\n", (unsigned int) fpt->offset);
+                    }
+                    break;
 
-				nret = cli_scanembpe(ctx, fpt->offset);
-				break_loop = 1; /* we can stop here and other
-						 * embedded executables will
-						 * be found recursively
-						 * through the above call
-						 */
-			    }
-			}
-			break;
+                case CL_TYPE_PDF:
+                    if(type != CL_TYPE_PDF && SCAN_PDF && (DCONF_DOC & DOC_CONF_PDF)) {
+                        ctx->container_type = CL_TYPE_PDF;
+                        ctx->container_size = map->len - fpt->offset; /* not precise */
+                        cli_dbgmsg("PDF signature found at %u\n", (unsigned int) fpt->offset);
+                        nret = cli_scanpdf(ctx, fpt->offset);
+                    }
+                    break;
 
-		    default:
-			cli_warnmsg("cli_scanraw: Type %u not handled in fpt loop\n", fpt->type);
+                case CL_TYPE_MSEXE:
+                    if(SCAN_PE && (type == CL_TYPE_MSEXE || type == CL_TYPE_ZIP || type == CL_TYPE_MSOLE2)
+                       && ctx->dconf->pe) {
+                        uint64_t curr_len = map->len;
+                        /* CL_ENGINE_MAX_EMBEDDED_PE */
+                        if(curr_len > ctx->engine->maxembeddedpe) {
+                            cli_dbgmsg("cli_scanraw: MaxEmbeddedPE exceeded\n");
+                            break;
+                        }
+                        ctx->container_type = CL_TYPE_MSEXE; /* PE is a container for another executable here */
+                        ctx->container_size = map->len - fpt->offset; /* not precise */
+                        memset(&peinfo, 0, sizeof(struct cli_exe_info));
+                        peinfo.offset = fpt->offset;
+                        if(cli_peheader(map, &peinfo) == 0) {
+                            cli_dbgmsg("*** Detected embedded PE file at %u ***\n", 
+                                       (unsigned int) fpt->offset);
+                            if(peinfo.section)
+                                free(peinfo.section);
+                            cli_hashset_destroy(&peinfo.vinfo);
+
+                            nret = cli_scanembpe(ctx, fpt->offset);
+                            break_loop = 1; /* we can stop here and other
+                                             * embedded executables will
+                                             * be found recursively
+                                             * through the above call
+                                             */
+                        }
+                    }
+                    break;
+
+                default:
+                    cli_warnmsg("cli_scanraw: Type %u not handled in fpt loop\n", fpt->type);
 		}
 
-		if(nret == CL_VIRUS || break_loop)
-		    break;
+            if(nret == CL_VIRUS || break_loop)
+                break;
 
-		fpt = fpt->next;
-	    }
-	    ctx->container_type = current_container_type;
-	    ctx->container_size = current_container_size;
-	}
-
+            fpt = fpt->next;
+        }
+        ctx->container_type = current_container_type;
+        ctx->container_size = current_container_size;
+        
 	if(nret != CL_VIRUS) switch(ret) {
 	    case CL_TYPE_HTML:
-		if(SCAN_HTML && type == CL_TYPE_TEXT_ASCII && (DCONF_DOC & DOC_CONF_HTML)) {
+		if (SCAN_HTML && (type == CL_TYPE_TEXT_ASCII || type == CL_TYPE_GRAPHICS) &&
+                    (DCONF_DOC & DOC_CONF_HTML)) {
 		    *dettype = CL_TYPE_HTML;
 		    nret = cli_scanhtml(ctx);
 		}
