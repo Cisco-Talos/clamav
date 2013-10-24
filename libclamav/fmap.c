@@ -261,6 +261,7 @@ extern cl_fmap_t *cl_fmap_open_handle(void *handle, size_t offset, size_t len,
     m->pread_cb = pread_cb;
     m->aging = use_aging;
     m->offset = offset;
+    m->nested_offset = 0;
     m->len = len;/* m->nested_offset + m->len = m->real_len */
     m->real_len = len;
     m->pages = pages;
@@ -520,6 +521,7 @@ static void handle_unneed_off(fmap_t *m, size_t at, size_t len) {
 	return;
     }
 
+    at += m->nested_offset;
     if(!CLI_ISCONTAINED(0, m->real_len, at, len)) {
 	cli_warnmsg("fmap: attempted oof unneed\n");
 	return;
