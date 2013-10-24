@@ -1,3 +1,7 @@
+Thu Oct 23 18:01:46 2013 EDT 2013 (dar)
+------------------------------------
+ * bb #9222: make fmap_unneed respect nested maps
+
 Tue Oct 15 16:03:25 2013 EDT 2013 (dar)
 ------------------------------------
  * libclamav: bb #9154 - ELF handling re-write
