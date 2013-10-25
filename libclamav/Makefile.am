@@ -413,7 +413,13 @@ libclamav_la_SOURCES = \
 	crtmgr.c \
 	crtmgr.h \
 	asn1.c \
-	asn1.h
+	asn1.h \
+	stats.c \
+	stats.h \
+	www.c \
+	www.h \
+	json.c \
+	json.h
 
 libclamav_la_SOURCES += bignum.h\
 	bignum_fast.h\
