@@ -137,6 +137,12 @@ CLEANFILES		       += libltdl.la \
 CLEANFILES	       += $(ltdl_LIBOBJS) $(ltdl_LTLIBOBJS)
 
 EXTRA_DIST	       += COPYING.LIB \
+			   \
+			   \
+			   \
+			   \
+			   \
+			   \
 			  README
 
 ## --------------------------- ##
@@ -151,7 +157,6 @@ EXTRA_DIST	+= argz_.h \
 # doesn't have one that works with the given compiler.
 all-local $(lib_OBJECTS): $(ARGZ_H)
 argz.h: argz_.h
-	$(mkinstalldirs) . 
 	cp $(srcdir)/argz_.h $@-t
 	mv $@-t $@
 MOSTLYCLEANFILES += argz.h \
