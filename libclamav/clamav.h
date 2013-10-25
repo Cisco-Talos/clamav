@@ -220,6 +220,8 @@ enum bytecode_mode {
     CL_BYTECODE_MODE_OFF /* for query only, not settable */
 };
 
+typedef enum cli_intel_sample_type { WHOLEFILE = 0, PESECTION = 1 } cli_intel_sample_type_t; /* For stats/intel gathering */
+
 extern int cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field field, long long num);
 
 extern long long cl_engine_get_num(const struct cl_engine *engine, enum cl_engine_field field, int *err);
@@ -354,6 +356,33 @@ extern void cl_engine_set_clcb_hash(struct cl_engine *engine, clcb_hash callback
 typedef cl_error_t (*clcb_meta)(const char* container_type, unsigned long fsize_container, const char *filename,
 			  unsigned long fsize_real,  int is_encrypted, unsigned int filepos_container, void *context);
 extern void cl_engine_set_clcb_meta(struct cl_engine *engine, clcb_meta callback);
+
+/* Statistics/intelligence gathering callbacks */
+extern void cl_engine_set_stats_set_cbdata(struct cl_engine *engine, void *cbdata);
+
+typedef void (*clcb_stats_add_sample)(const char *virname, const unsigned char *md5, size_t size, cli_intel_sample_type_t type, void *cbdata);
+extern void cl_engine_set_clcb_stats_add_sample(struct cl_engine *engine, clcb_stats_add_sample callback);
+
+typedef void (*clcb_stats_remove_sample)(const char *virname, const char *md5, size_t size, void *cbdata);
+extern void cl_engine_set_clcb_stats_remove_sample(struct cl_engine *engine, clcb_stats_remove_sample callback);
+
+typedef void (*clcb_stats_decrement_count)(const char *virname, const char *md5, size_t size, void *cbdata);
+extern void cl_engine_set_clcb_stats_decrement_count(struct cl_engine *engine, clcb_stats_decrement_count callback);
+
+typedef void (*clcb_stats_submit)(struct cl_engine *engine, void *cbdata);
+extern void cl_engine_set_clcb_stats_submit(struct cl_engine *engine, clcb_stats_submit callback);
+
+typedef void (*clcb_stats_flush)(struct cl_engine *engine, void *cbdata);
+extern void cl_engine_set_clcb_stats_flush(struct cl_engine *engine, clcb_stats_flush callback);
+
+typedef size_t (*clcb_stats_get_num)(void *cbdata);
+extern void cl_engine_set_clcb_stats_get_num(struct cl_engine *engine, clcb_stats_get_num callback);
+
+typedef size_t (*clcb_stats_get_size)(void *cbdata);
+extern void cl_engine_set_clcb_stats_get_size(struct cl_engine *engine, clcb_stats_get_size callback);
+
+typedef char * (*clcb_stats_get_hostid)(void *cbdata);
+extern void cl_engine_set_clcb_stats_get_hostid(struct cl_engine *engine, clcb_stats_get_hostid callback);
 
 struct cl_stat {
     char *dir;

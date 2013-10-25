@@ -3162,6 +3162,12 @@ uninstall-am: uninstall-includeHEADERS uninstall-libLTLIBRARIES
 @ENABLE_LLVM_FALSE@c++/Makefile: c++/Makefile.nollvm.in
 @ENABLE_LLVM_FALSE@	$(AM_V_at) cp $< $@
 @ENABLE_LLVM_FALSE@distclean-recursive distdir maintainer-clean-recursive: c++/Makefile
+	stats.c \
+	stats.h \
+	www.c \
+	www.h \
+	json.c \
+	json.h
 
 .PHONY: version.h.tmp
 version.c: version.h

@@ -418,6 +418,12 @@ libclamav_la_SOURCES = \
 	asn1.h \
 	fpu.c \
 	fpu.h
+	stats.c \
+	stats.h \
+	www.c \
+	www.h \
+	json.c \
+	json.h
 
 libclamav_la_SOURCES += bignum.h\
 	bignum_fast.h\

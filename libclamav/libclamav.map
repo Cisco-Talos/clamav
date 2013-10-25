@@ -42,6 +42,15 @@ CLAMAV_PUBLIC {
     cl_scanmap_callback;
     cl_fmap_close;
     cl_always_gen_section_hash;
+    cl_engine_set_stats_set_cbdata;
+    cl_engine_set_clcb_stats_add_sample;
+    cl_engine_set_clcb_stats_remove_sample;
+    cl_engine_set_clcb_stats_decrement_count;
+    cl_engine_set_clcb_stats_submit;
+    cl_engine_set_clcb_stats_flush;
+    cl_engine_set_clcb_stats_get_num;
+    cl_engine_set_clcb_stats_get_size;
+    cl_engine_set_clcb_stats_get_hostid;
 };
 CLAMAV_PRIVATE {
   global:

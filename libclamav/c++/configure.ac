@@ -20,7 +20,7 @@ AC_CONFIG_SRCDIR([llvm/configure])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADER([clamavcxx-config.h])
 AC_CANONICAL_TARGET
-AM_INIT_AUTOMAKE([1.9 -Wall -Wportability -Werror foreign no-define color-tests tar-pax])
+AM_INIT_AUTOMAKE([1.9 -Wall -Wportability foreign no-define color-tests tar-pax])
 AM_SILENT_RULES([yes])
 
 cxxset=${CXXFLAGS+set}
