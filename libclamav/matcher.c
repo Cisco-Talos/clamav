@@ -420,7 +420,7 @@ int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx)
 {
 	char md5[33];
 	unsigned int i;
-	const char *virname;
+	const char *virname=NULL;
         SHA1Context sha1;
         SHA256_CTX sha256;
         fmap_t *map;
@@ -530,6 +530,9 @@ int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx)
     }
     if (ctx->engine->cb_hash)
 	ctx->engine->cb_hash(fmap_fd(*ctx->fmap), size, md5, cli_get_last_virus(ctx), ctx->cb_ctx);
+
+    if (ctx->engine->cb_stats_add_sample)
+        ctx->engine->cb_stats_add_sample(virname, digest, size, WHOLEFILE, ctx->engine->stats_data);
 
     return CL_VIRUS;
 }

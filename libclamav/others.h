@@ -138,6 +138,31 @@ typedef struct cli_ctx_tag {
 #endif
 } cli_ctx;
 
+#define STATS_ANON_UUID "5b585e8f-3be5-11e3-bf0b-18037319526c"
+
+typedef struct cli_flagged_sample {
+    char **virus_name;
+    char md5[16];
+    cli_intel_sample_type_t type;
+    size_t size; /* A size of zero means size is unavailable (why would this ever happen?) */
+    uint32_t hits;
+
+    struct cli_flagged_sample *prev;
+    struct cli_flagged_sample *next;
+} cli_flagged_sample_t;
+
+typedef struct cli_clamav_intel {
+    char *hostid;
+    cli_flagged_sample_t *samples;
+    uint32_t nsamples;
+    uint32_t maxsamples;
+    uint32_t maxmem;
+    time_t nextupdate;
+    struct cl_engine *engine;
+#ifdef CL_THREAD_SAFE
+    pthread_mutex_t mutex;
+#endif
+} cli_intel_t;
 
 typedef struct {uint64_t v[2][4];} icon_groupset;
 
@@ -284,6 +309,17 @@ struct cl_engine {
     uint64_t maxhtmlnotags; /* max size for scanning normalized HTML */
     uint64_t maxscriptnormalize; /* max size to normalize scripts */
     uint64_t maxziptypercg; /* max size to re-do zip filetype */
+
+    /* Statistics/intelligence gathering */
+    void *stats_data;
+    clcb_stats_add_sample cb_stats_add_sample;
+    clcb_stats_remove_sample cb_stats_remove_sample;
+    clcb_stats_decrement_count cb_stats_decrement_count;
+    clcb_stats_submit cb_stats_submit;
+    clcb_stats_flush cb_stats_flush;
+    clcb_stats_get_num cb_stats_get_num;
+    clcb_stats_get_size cb_stats_get_size;
+    clcb_stats_get_hostid cb_stats_get_hostid;
 };
 
 struct cl_settings {

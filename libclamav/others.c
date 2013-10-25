@@ -52,6 +52,10 @@
 #include <malloc.h>
 #endif
 
+#ifdef CL_THREAD_SAFE
+#include <pthread.h>
+#endif
+
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
 #include <limits.h>
 #include <stddef.h>
@@ -71,6 +75,7 @@
 #include "bytecode.h"
 #include "bytecode_api_impl.h"
 #include "cache.h"
+#include "stats.h"
 
 int (*cli_unrar_open)(int fd, const char *dirname, unrar_state_t *state);
 int (*cli_unrar_extract_next_prepare)(unrar_state_t *state, const char *dirname);
@@ -306,7 +311,7 @@ int cl_init(unsigned int initoptions)
 struct cl_engine *cl_engine_new(void)
 {
 	struct cl_engine *new;
-
+    cli_intel_t *intel;
 
     new = (struct cl_engine *) cli_calloc(1, sizeof(struct cl_engine));
     if(!new) {
@@ -377,6 +382,27 @@ struct cl_engine *cl_engine_new(void)
 	free(new);
 	return NULL;
     }
+
+    /* Set up default stats/intel gathering callbacks */
+    intel = cli_calloc(1, sizeof(cli_intel_t));
+#ifdef CL_THREAD_SAFE
+    if (pthread_mutex_init(&(intel->mutex), NULL)) {
+        cli_errmsg("cli_engine_new: Cannot initialize stats gathering mutex\n");
+        mpool_free(new->mempool, new->dconf);
+        mpool_free(new->mempool, new->root);
+#ifdef USE_MPOOL
+        mpool_destroy(new->mempool);
+#endif
+        free(new);
+        return NULL;
+    }
+#endif
+    intel->engine = new;
+    intel->maxsamples = 10;
+    new->stats_data = intel;
+    new->cb_stats_add_sample = clamav_stats_add_sample;
+    new->cb_stats_submit = clamav_stats_submit;
+    new->cb_stats_flush = clamav_stats_flush;
 
     cli_dbgmsg("Initialized %s engine\n", cl_retver());
     return new;
