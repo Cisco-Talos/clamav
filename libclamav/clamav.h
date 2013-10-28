@@ -363,10 +363,10 @@ extern void cl_engine_set_stats_set_cbdata(struct cl_engine *engine, void *cbdat
 typedef void (*clcb_stats_add_sample)(const char *virname, const unsigned char *md5, size_t size, cli_intel_sample_type_t type, void *cbdata);
 extern void cl_engine_set_clcb_stats_add_sample(struct cl_engine *engine, clcb_stats_add_sample callback);
 
-typedef void (*clcb_stats_remove_sample)(const char *virname, const char *md5, size_t size, void *cbdata);
+typedef void (*clcb_stats_remove_sample)(const char *virname, const unsigned char *md5, size_t size, cli_intel_sample_type_t type, void *cbdata);
 extern void cl_engine_set_clcb_stats_remove_sample(struct cl_engine *engine, clcb_stats_remove_sample callback);
 
-typedef void (*clcb_stats_decrement_count)(const char *virname, const char *md5, size_t size, void *cbdata);
+typedef void (*clcb_stats_decrement_count)(const char *virname, const unsigned char *md5, size_t size, cli_intel_sample_type_t type, void *cbdata);
 extern void cl_engine_set_clcb_stats_decrement_count(struct cl_engine *engine, clcb_stats_decrement_count callback);
 
 typedef void (*clcb_stats_submit)(struct cl_engine *engine, void *cbdata);

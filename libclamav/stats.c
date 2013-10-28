@@ -18,6 +18,7 @@
 #include "libclamav/others.h"
 #include "libclamav/clamav.h"
 #include "libclamav/json.h"
+#include "libclamav/stats.h"
 
 static cli_flagged_sample_t *find_sample(cli_intel_t *intel, const char *virname, const unsigned char *md5, size_t size, cli_intel_sample_type_t type);
 void free_sample(cli_flagged_sample_t *sample);
@@ -28,35 +29,45 @@ void clamav_stats_add_sample(const char *virname, const unsigned char *md5, size
     cli_flagged_sample_t *sample;
     size_t i;
     char **p;
-    int err;
+    int err, submit=0;
 
     if (!(cbdata))
         return;
 
     intel = (cli_intel_t *)cbdata;
+    if (!(intel->engine))
+        return;
 
-    if (intel->maxsamples && intel->nsamples + 1 >= intel->maxsamples) {
-        if (!(intel->engine))
-            return;
+    /* First check if we need to submit stats based on memory/number limits */
+    if ((intel->engine->cb_stats_get_size))
+        submit = (intel->engine->cb_stats_get_size(cbdata) >= intel->maxmem);
+    else
+        submit = (clamav_stats_get_size(cbdata) >= intel->maxmem);
 
-        if (!(intel->engine->cb_stats_submit)) {
+    if (submit == 0) {
+        if ((intel->engine->cb_stats_get_num))
+            submit = (intel->engine->cb_stats_get_num(cbdata) >= intel->maxsamples);
+        else
+            submit = (clamav_stats_get_num(cbdata) >= intel->maxsamples);
+    }
+
+    if (submit) {
+        if ((intel->engine->cb_stats_submit)) {
+            intel->engine->cb_stats_submit(intel->engine, cbdata);
+        } else {
             if ((intel->engine->cb_stats_flush))
                 intel->engine->cb_stats_flush(intel->engine, intel);
 
             return;
         }
-
-        intel->engine->cb_stats_submit(intel->engine, cbdata);
     }
 
 #ifdef CL_THREAD_SAFE
-    cli_warnmsg("clamav_stats_add_sample: locking mutex\n");
     err = pthread_mutex_lock(&(intel->mutex));
     if (err) {
         cli_warnmsg("clamav_stats_add_sample: locking mutex failed (err: %d): %s\n", err, strerror(err));
         return;
     }
-    cli_warnmsg("clamav_stats_add_sample: locked mutex\n");
 #endif
 
     sample = find_sample(intel, virname, md5, size, type);
@@ -129,7 +140,6 @@ end:
     if (err) {
         cli_warnmsg("clamav_stats_add_sample: unlcoking mutex failed (err: %d): %s\n", err, strerror(err));
     }
-    cli_warnmsg("clamav_stats_add_sample: unlocked mutex\n");
 #endif
 }
 
@@ -145,13 +155,11 @@ void clamav_stats_flush(struct cl_engine *engine, void *cbdata)
     intel = (cli_intel_t *)cbdata;
 
 #ifdef CL_THREAD_SAFE
-    cli_warnmsg("clamav_stats_flush: locking mutex\n");
     err = pthread_mutex_lock(&(intel->mutex));
     if (err) {
         cli_warnmsg("clamav_stats_flush: locking mutex failed (err: %d): %s\n", err, strerror(err));
         return;
     }
-    cli_warnmsg("clamav_stats_flush: locked mutex\n");
 #endif
 
     for (sample=intel->samples; sample != NULL; sample = next) {
@@ -167,7 +175,6 @@ void clamav_stats_flush(struct cl_engine *engine, void *cbdata)
     err = pthread_mutex_unlock(&(intel->mutex));
     if (err)
         cli_warnmsg("clamav_stats_flush: unlocking mutex failed (err: %d): %s\n", err, strerror(err));
-    cli_warnmsg("clamav_stats_flush: unlocked mutex\n");
 #endif
 }
 
@@ -194,7 +201,6 @@ void clamav_stats_submit(struct cl_engine *engine, void *cbdata)
     intel = (cli_intel_t *)cbdata;
 
 #ifdef CL_THREAD_SAFE
-    cli_warnmsg("clamav_stats_submit: locking mutex\n");
     err = pthread_mutex_lock(&(intel->mutex));
     if (err) {
         cli_warnmsg("clamav_stats_submit: locking mutex failed (err: %d): %s\n", err, strerror(err));
@@ -204,7 +210,6 @@ void clamav_stats_submit(struct cl_engine *engine, void *cbdata)
 
         return;
     }
-    cli_warnmsg("clamav_stats_submit: locked mutex\n");
 #endif
 
     json = export_stats_to_json(engine, (cli_intel_t *)cbdata);
@@ -215,7 +220,6 @@ void clamav_stats_submit(struct cl_engine *engine, void *cbdata)
         cli_warnmsg("clamav_stats_submit: unlocking mutex failed (err: %d): %s\n", err, strerror(err));
     }
 
-    cli_warnmsg("clamav_stats_submit: unlocked mutex\n");
 #endif
 
     cli_warnmsg("--- JSON ---\n%s\n--- END JSON ---\n", json);
@@ -225,6 +229,138 @@ void clamav_stats_submit(struct cl_engine *engine, void *cbdata)
 
     if ((engine->cb_stats_flush))
         engine->cb_stats_flush(engine, cbdata);
+}
+
+void clamav_stats_remove_sample(const char *virname, const unsigned char *md5, size_t size, cli_intel_sample_type_t type, void *cbdata)
+{
+    cli_intel_t *intel;
+    cli_flagged_sample_t *sample;
+    int err;
+
+    intel = (cli_intel_t *)cbdata;
+    if (!(intel))
+        return;
+
+#ifdef CL_THREAD_SAFE
+    err = pthread_mutex_lock(&(intel->mutex));
+    if (err) {
+        cli_warnmsg("clamav_stats_remove_sample: locking mutex failed (err: %d): %s\n", err, strerror(err));
+        return;
+    }
+#endif
+
+    sample = find_sample(intel, virname, md5, size, type);
+    if (!(sample))
+        return;
+
+    if (sample->prev)
+        sample->prev->next = sample->next;
+    if (sample->next)
+        sample->next->prev = sample;
+    if (sample == intel->samples)
+        intel->samples = sample->next;
+
+    free_sample(sample);
+    intel->nsamples--;
+
+#ifdef CL_THREAD_SAFE
+    err = pthread_mutex_unlock(&(intel->mutex));
+    if (err) {
+        cli_warnmsg("clamav_stats_remove_sample: unlocking mutex failed (err: %d): %s\n", err, strerror(err));
+    }
+#endif
+}
+
+void clamav_stats_decrement_count(const char *virname, const unsigned char *md5, size_t size, cli_intel_sample_type_t type, void *cbdata)
+{
+    cli_intel_t *intel;
+    cli_flagged_sample_t *sample;
+    int err;
+
+    intel = (cli_intel_t *)cbdata;
+    if (!(intel))
+        return;
+
+#ifdef CL_THREAD_SAFE
+    err = pthread_mutex_lock(&(intel->mutex));
+    if (err) {
+        cli_warnmsg("clamav_stats_decrement_count: locking mutex failed (err: %d): %s\n", err, strerror(err));
+        return;
+    }
+#endif
+
+    sample = find_sample(intel, virname, md5, size, type);
+    if (!(sample))
+        return;
+
+    if (sample->hits == 1) {
+        if ((intel->engine->cb_stats_remove_sample))
+            intel->engine->cb_stats_remove_sample(virname, md5, size, type, intel);
+        else
+            clamav_stats_remove_sample(virname, md5, size, type, intel);
+
+        return;
+    }
+
+    sample->hits--;
+
+#ifdef CL_THREAD_SAFE
+    err = pthread_mutex_unlock(&(intel->mutex));
+    if (err) {
+        cli_warnmsg("clamav_stats_decrement_count: unlocking mutex failed (err: %d): %s\n", err, strerror(err));
+    }
+#endif
+}
+
+size_t clamav_stats_get_num(void *cbdata)
+{
+    cli_intel_t *intel;
+
+    intel = (cli_intel_t *)cbdata;
+
+    if (!(intel))
+        return 0;
+
+    return intel->nsamples;
+}
+
+size_t clamav_stats_get_size(void *cbdata)
+{
+    cli_intel_t *intel;
+    cli_flagged_sample_t *sample;
+    size_t sz, i;
+    int err;
+
+    intel = (cli_intel_t *)cbdata;
+    if (!(intel))
+        return 0;
+
+#ifdef CL_THREAD_SAFE
+    err = pthread_mutex_lock(&(intel->mutex));
+    if (err) {
+        cli_warnmsg("clamav_stats_get_size: locking mutex failed (err: %d): %s\n", err, strerror(err));
+        return;
+    }
+#endif
+
+    sz = sizeof(cli_intel_t);
+    for (sample = intel->samples; sample != NULL; sample = sample->next) {
+        sz += sizeof(cli_flagged_sample_t);
+        if ((sample->virus_name)) {
+            for (i=0; sample->virus_name[i] != NULL; i++)
+                sz += strlen(sample->virus_name[i]);
+            sz += sizeof(char **) * i;
+        }
+    }
+
+#ifdef CL_THREAD_SAFE
+    err = pthread_mutex_unlock(&(intel->mutex));
+    if (err) {
+        cli_warnmsg("clamav_stats_get_size: unlocking mutex failed (err: %d): %s\n", err, strerror(err));
+    }
+#endif
+
+    return sz;
 }
 
 static cli_flagged_sample_t *find_sample(cli_intel_t *intel, const char *virname, const unsigned char *md5, size_t size, cli_intel_sample_type_t type)
