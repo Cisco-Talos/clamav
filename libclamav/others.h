@@ -140,6 +140,7 @@ typedef struct cli_ctx_tag {
 
 #define STATS_ANON_UUID "5b585e8f-3be5-11e3-bf0b-18037319526c"
 #define STATS_MAX_SAMPLES 50
+#define STATS_MAX_MEM 1024*1024
 
 typedef struct cli_flagged_sample {
     char **virus_name;

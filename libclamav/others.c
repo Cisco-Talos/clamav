@@ -395,10 +395,15 @@ struct cl_engine *cl_engine_new(void)
 #endif
     intel->engine = new;
     intel->maxsamples = STATS_MAX_SAMPLES;
+    intel->maxmem = STATS_MAX_MEM;
     new->stats_data = intel;
     new->cb_stats_add_sample = clamav_stats_add_sample;
     new->cb_stats_submit = clamav_stats_submit;
     new->cb_stats_flush = clamav_stats_flush;
+    new->cb_stats_remove_sample = clamav_stats_remove_sample;
+    new->cb_stats_decrement_count = clamav_stats_decrement_count;
+    new->cb_stats_get_num = clamav_stats_get_num;
+    new->cb_stats_get_size = clamav_stats_get_size;
 
     cli_dbgmsg("Initialized %s engine\n", cl_retver());
     return new;
