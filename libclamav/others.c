@@ -398,7 +398,7 @@ struct cl_engine *cl_engine_new(void)
     }
 #endif
     intel->engine = new;
-    intel->maxsamples = 10;
+    intel->maxsamples = STATS_MAX_SAMPLES;
     new->stats_data = intel;
     new->cb_stats_add_sample = clamav_stats_add_sample;
     new->cb_stats_submit = clamav_stats_submit;

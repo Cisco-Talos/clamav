@@ -35,7 +35,7 @@ void clamav_stats_add_sample(const char *virname, const unsigned char *md5, size
 
     intel = (cli_intel_t *)cbdata;
 
-    if (intel->nsamples + 1 >= intel->maxsamples) {
+    if (intel->maxsamples && intel->nsamples + 1 >= intel->maxsamples) {
         if (!(intel->engine))
             return;
 
