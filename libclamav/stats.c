@@ -100,7 +100,7 @@ void clamav_stats_add_sample(const char *virname, const unsigned char *md5, size
             goto end;
         }
 
-        p = realloc(sample->virus_name, sizeof(char **) * (i+1));
+        p = realloc(sample->virus_name, sizeof(char **) * (i == 0 ? 2 : i+1));
         if (!(p)) {
             free(sample->virus_name);
             free(sample);
