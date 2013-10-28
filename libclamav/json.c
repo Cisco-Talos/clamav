@@ -113,6 +113,15 @@ char *export_stats_to_json(struct cl_engine *engine, cli_intel_t *intel)
         if (!(buf))
             return NULL;
 
+        snprintf(buf+curused, bufsz-curused, "\t\t\t\"hits\": \"%s\",\n", md5);
+        curused += strlen(buf+curused);
+
+        snprintf(md5, sizeof(md5), "%zu", sample->size);
+
+        buf = ensure_bufsize(buf, &bufsz, curused, strlen(md5) + 20);
+        if (!(buf))
+            return NULL;
+
         snprintf(buf+curused, bufsz-curused, "\t\t\t\"size\": \"%s\",\n", md5);
         curused += strlen(buf+curused);
 
