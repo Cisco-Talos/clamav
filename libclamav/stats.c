@@ -382,30 +382,26 @@ char *clamav_stats_get_hostid(void *cbdata)
     };
     size_t bufsz, i;
     char *buf;
-    int (*sysctlfunc)(const char *, void *, size_t *, const void *, size_t); /* FreeBSD conveniently provides sysctlbyname() */
 
-    /* Use sysctl's first and then fallback to the gethostid() function */
-    sysctlfunc = dlsym(NULL, "sysctlbyname");
-    if (sysctlfunc) {
-        /* FreeBSD-landia */
-        for (i=0; sysctls[i] != NULL; i++) {
-            if (sysctlfunc(sysctls[i], NULL, &bufsz, NULL, 0))
-                continue;
-            else
-                break; /* Got one */
-        }
+#if HAVE_SYSCTLBYNAME
+    /* FreeBSD-landia */
+    for (i=0; sysctls[i] != NULL; i++) {
+        if (sysctlbyname(sysctls[i], NULL, &bufsz, NULL, 0))
+            continue;
 
-        if (sysctls[i] != NULL) {
-            buf = calloc(1, bufsz+1);
-            if (sysctlfunc(sysctls[i], buf, &bufsz, NULL, 0))
-                return strdup(STATS_ANON_UUID); /* Not sure why this would happen, but we'll just default to the anon uuid on error */
-
-            return buf;
-        }
-    } else {
-        /* Linux-landia */
-        return strdup(STATS_ANON_UUID);
+        break; /* Got one */
     }
+
+    if (sysctls[i] != NULL) {
+        buf = calloc(1, bufsz+1);
+        if (sysctlbyname(sysctls[i], buf, &bufsz, NULL, 0))
+            return strdup(STATS_ANON_UUID); /* Not sure why this would happen, but we'll just default to the anon uuid on error */
+
+        return buf;
+    }
+#else
+        return strdup(STATS_ANON_UUID);
+#endif
 
     return strdup(STATS_ANON_UUID);
 }
