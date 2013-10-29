@@ -8,5 +8,6 @@ void clamav_stats_remove_sample(const char *virname, const unsigned char *md5, s
 void clamav_stats_decrement_count(const char *virname, const unsigned char *md5, size_t size, cli_intel_sample_type_t type, void *cbdata);
 size_t clamav_stats_get_num(void *cbdata);
 size_t clamav_stats_get_size(void *cbdata);
+char *clamav_stats_get_hostid(void *cbdata);
 
 #endif
