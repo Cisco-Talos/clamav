@@ -416,6 +416,8 @@ AC_COMPILE_CHECK_SIZEOF([long])
 AC_COMPILE_CHECK_SIZEOF([long long])
 AC_COMPILE_CHECK_SIZEOF([void *])
 
+AC_CHECK_FUNCS([sysctlbyname])
+
 AC_ARG_ENABLE([experimental],
 [  --enable-experimental	enable experimental code],
 enable_experimental=$enableval, enable_experimental="no")
