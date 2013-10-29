@@ -8,6 +8,10 @@
 #include <unistd.h>
 
 #include <sys/types.h>
+#if !defined(_WIN32)
+#include <sys/sysctl.h>
+#include <dlfcn.h>
+#endif
 
 #ifdef CL_THREAD_SAFE
 #include <pthread.h>
@@ -335,15 +339,16 @@ size_t clamav_stats_get_size(void *cbdata)
     if (!(intel))
         return 0;
 
+    sz = sizeof(cli_intel_t);
+
 #ifdef CL_THREAD_SAFE
     err = pthread_mutex_lock(&(intel->mutex));
     if (err) {
         cli_warnmsg("clamav_stats_get_size: locking mutex failed (err: %d): %s\n", err, strerror(err));
-        return;
+        return sz;
     }
 #endif
 
-    sz = sizeof(cli_intel_t);
     for (sample = intel->samples; sample != NULL; sample = sample->next) {
         sz += sizeof(cli_flagged_sample_t);
         if ((sample->virus_name)) {
@@ -362,6 +367,49 @@ size_t clamav_stats_get_size(void *cbdata)
 
     return sz;
 }
+
+#if defined(_WIN32)
+char *clamav_stats_get_hostid(void *cbdata)
+{
+    return strdup(STATS_ANON_UUID);
+}
+#else
+char *clamav_stats_get_hostid(void *cbdata)
+{
+    char *sysctls[] = {
+        "kern.hostuuid",
+        NULL
+    };
+    size_t bufsz, i;
+    char *buf;
+    int (*sysctlfunc)(const char *, void *, size_t *, const void *, size_t); /* FreeBSD conveniently provides sysctlbyname() */
+
+    /* Use sysctl's first and then fallback to the gethostid() function */
+    sysctlfunc = dlsym(NULL, "sysctlbyname");
+    if (sysctlfunc) {
+        /* FreeBSD-landia */
+        for (i=0; sysctls[i] != NULL; i++) {
+            if (sysctlfunc(sysctls[i], NULL, &bufsz, NULL, 0))
+                continue;
+            else
+                break; /* Got one */
+        }
+
+        if (sysctls[i] != NULL) {
+            buf = calloc(1, bufsz+1);
+            if (sysctlfunc(sysctls[i], buf, &bufsz, NULL, 0))
+                return strdup(STATS_ANON_UUID); /* Not sure why this would happen, but we'll just default to the anon uuid on error */
+
+            return buf;
+        }
+    } else {
+        /* Linux-landia */
+        return strdup(STATS_ANON_UUID);
+    }
+
+    return strdup(STATS_ANON_UUID);
+}
+#endif
 
 static cli_flagged_sample_t *find_sample(cli_intel_t *intel, const char *virname, const unsigned char *md5, size_t size, cli_intel_sample_type_t type)
 {
