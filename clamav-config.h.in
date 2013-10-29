@@ -368,6 +368,9 @@
 /* Define to 1 if sysconf(_SC_PAGESIZE) is available */
 #undef HAVE_SYSCONF_SC_PAGESIZE
 
+/* Define to 1 if you have the `sysctlbyname' function. */
+#undef HAVE_SYSCTLBYNAME
+
 /* Define to 1 if you have the <sys/dl.h> header file. */
 #undef HAVE_SYS_DL_H
 
