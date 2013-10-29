@@ -408,6 +408,7 @@ struct cl_engine *cl_engine_new(void)
     new->cb_stats_decrement_count = clamav_stats_decrement_count;
     new->cb_stats_get_num = clamav_stats_get_num;
     new->cb_stats_get_size = clamav_stats_get_size;
+    new->cb_stats_get_hostid = clamav_stats_get_hostid;
 
     cli_dbgmsg("Initialized %s engine\n", cl_retver());
     return new;
