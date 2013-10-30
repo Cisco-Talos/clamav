@@ -23,6 +23,7 @@
 #include "libclamav/clamav.h"
 #include "libclamav/json.h"
 #include "libclamav/stats.h"
+#include "libclamav/hostid.h"
 
 static cli_flagged_sample_t *find_sample(cli_intel_t *intel, const char *virname, const unsigned char *md5, size_t size, cli_intel_sample_type_t type);
 void free_sample(cli_flagged_sample_t *sample);
@@ -400,7 +401,10 @@ char *clamav_stats_get_hostid(void *cbdata)
         return buf;
     }
 #else
+    buf = internal_get_host_id();
+    if (!(buf))
         return strdup(STATS_ANON_UUID);
+    return buf;
 #endif
 
     return strdup(STATS_ANON_UUID);
