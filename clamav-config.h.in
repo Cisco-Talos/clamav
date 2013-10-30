@@ -184,6 +184,9 @@
 /* Define to 1 if the system has the type `error_t'. */
 #undef HAVE_ERROR_T
 
+/* Define to 1 if you have the <fcntl.h> header file */
+#undef HAVE_FCNTL_H
+
 /* have working file descriptor passing support */
 #undef HAVE_FD_PASSING
 
@@ -192,6 +195,9 @@
 
 /* have getaddrinfo() */
 #undef HAVE_GETADDRINFO
+
+/* Define to 1 if you have the `getifaddrs' function. */
+#undef HAVE_GETIFADDRS
 
 /* Define to 1 if getpagesize() is available */
 #undef HAVE_GETPAGESIZE
