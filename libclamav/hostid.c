@@ -68,16 +68,16 @@ struct device *get_device_entry(struct device *devices, size_t *ndevices, const 
     return devices;
 }
 
-#if HAVE_GETIFADDRS
+#if HAVE_GETIFADDRS && !HAVE_SYSCTLBYNAME
 struct device *get_devices(void)
 {
     struct ifaddrs *addrs, *addr;
     struct device *devices=NULL, *device=NULL;
     size_t ndevices=0, i;
-    struct ifreq ifr;
     void *p;
     uint8_t *mac;
     int sock;
+    struct ifreq ifr;
 
     if (getifaddrs(&addrs))
         return NULL;
