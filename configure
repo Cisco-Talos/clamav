@@ -14427,6 +14427,25 @@ _ACEOF
 fi
 done
 
+for ac_func in getifaddrs
+do :
+  ac_fn_c_check_func "$LINENO" "getifaddrs" "ac_cv_func_getifaddrs"
+if test "x$ac_cv_func_getifaddrs" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_GETIFADDRS 1
+_ACEOF
+
+fi
+done
+
+ac_fn_c_check_header_mongrel "$LINENO" "fcntl.h" "ac_cv_header_fcntl_h" "$ac_includes_default"
+if test "x$ac_cv_header_fcntl_h" = xyes; then :
+
+$as_echo "#define HAVE_FCNTL_H 1" >>confdefs.h
+
+fi
+
+
 
 # Check whether --enable-experimental was given.
 if test "${enable_experimental+set}" = set; then :

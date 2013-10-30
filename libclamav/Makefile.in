@@ -3167,7 +3167,9 @@ uninstall-am: uninstall-includeHEADERS uninstall-libLTLIBRARIES
 	www.c \
 	www.h \
 	json.c \
-	json.h
+	json.h \
+	hostid.c \
+	hostid.h
 
 .PHONY: version.h.tmp
 version.c: version.h
