@@ -674,7 +674,7 @@ if test "$want_xml" != "no"; then
   fi
   ], [
   XML_HOME=/usr/local
-  if test ! -f "$XML_HOME/include/libxml/xmlreader.h"
+  if test ! -f "$XML_HOME/include/libxml2/libxml/xmlreader.h"
   then
     XML_HOME=/usr
   fi
