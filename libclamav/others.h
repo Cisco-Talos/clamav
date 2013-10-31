@@ -31,6 +31,10 @@
 #include <unistd.h>
 #endif
 
+#if HAVE_PTHREAD_H
+#include <pthread.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "cltypes.h"
