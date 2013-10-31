@@ -870,5 +870,8 @@
     <ClCompile Include="..\libclamav\7z\XzIn.c">
       <Filter>Source Files\7z</Filter>
     </ClCompile>
+    <ClCompile Include="..\libclamav\fpu.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
