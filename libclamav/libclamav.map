@@ -194,6 +194,7 @@ CLAMAV_PRIVATE {
     cli_detect_environment;
     cli_disasm_one;
     cli_utf16_to_utf8;
+    get_fpu_endian;
   local:
     *;
 };
