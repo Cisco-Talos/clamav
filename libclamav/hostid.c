@@ -5,13 +5,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#if HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 
 #include <sys/types.h>
+#include <fcntl.h>
+
+#if !defined(_WIN32)
 #include <sys/socket.h>
 #include <netdb.h>
 #include <sys/ioctl.h>
-#include <fcntl.h>
+#endif
 
 #if defined(SIOCGIFHWADDR)
 #include <net/if.h>
