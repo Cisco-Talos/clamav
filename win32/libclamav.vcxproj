@@ -174,7 +174,10 @@
     <ClCompile Include="..\libclamav\7z\XzDec.c" />
     <ClCompile Include="..\libclamav\7z\XzIn.c" />
     <ClCompile Include="..\libclamav\fpu.c" />
+    <ClCompile Include="..\libclamav\hostid.c" />
+    <ClCompile Include="..\libclamav\json.c" />
     <ClCompile Include="..\libclamav\sf_base64decode.c" />
+    <ClCompile Include="..\libclamav\stats.c" />
     <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba_small_set.c" />
     <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba_9.c" />
     <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba_64.c" />
@@ -396,6 +399,8 @@
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">/D "LIBXML_STATIC" %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">/D "LIBXML_STATIC" %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
+    <ClCompile Include="..\libclamav\www.c" />
+    <ClCompile Include="..\libclamav\xar.c" />
     <ClCompile Include="..\libclamav\xz_iface.c" />
     <ClCompile Include="..\libclamav\yc.c" />
     <ClCompile Include="..\shared\getopt.c" />
@@ -488,6 +493,12 @@
     <ProjectReference Include="LLVMx86codegen.vcxproj">
       <Project>{81f5e6f8-6d82-4384-9202-66da2bae54a1}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\libclamav\hostid.h" />
+    <ClInclude Include="..\libclamav\json.h" />
+    <ClInclude Include="..\libclamav\stats.h" />
+    <ClInclude Include="..\libclamav\www.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

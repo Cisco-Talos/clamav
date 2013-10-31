@@ -1,14 +1,20 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
+
+#if HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
 #include <ctype.h>
 
 #include <sys/types.h>
+
+#if !defined(_WIN32)
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#endif
 
 #include "libclamav/others.h"
 #include "libclamav/clamav.h"
