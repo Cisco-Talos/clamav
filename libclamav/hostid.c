@@ -74,7 +74,7 @@ struct device *get_device_entry(struct device *devices, size_t *ndevices, const 
     return devices;
 }
 
-#if HAVE_GETIFADDRS && !HAVE_SYSCTLBYNAME
+#if HAVE_GETIFADDRS && !HAVE_SYSCTLBYNAME && defined(SIOCGIFHWADDR)
 struct device *get_devices(void)
 {
     struct ifaddrs *addrs, *addr;
@@ -111,7 +111,6 @@ struct device *get_devices(void)
     if (sock < 0)
         goto err;
 
-#if defined(SIOCGIFHWADDR)
     for (device = devices; device < devices + (ndevices); device++) {
         memset(&ifr, 0x00, sizeof(struct ifreq));
         strcpy(ifr.ifr_name, device->name);
@@ -124,7 +123,6 @@ struct device *get_devices(void)
         for (i=0; i<6; i++)
             snprintf(device->mac+strlen(device->mac), sizeof(device->mac)-strlen(device->mac)-1, "%02x:", mac[i]);
     }
-#endif
 
     close(sock);
     
