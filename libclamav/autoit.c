@@ -39,7 +39,7 @@
 #include "scanners.h"
 #include "autoit.h"
 #include "fmap.h"
-#include "hardware.h"
+#include "fpu.h"
 
 static int fpu_words = FPU_ENDIAN_INITME;
 
