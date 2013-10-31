@@ -78,6 +78,8 @@ AC_C_INLINE
 AC_C_FPU_BIGENDIAN
 AC_C_BIGENDIAN
 
+AM_CONDITIONAL([HAVE_AUTOITEA06], test "x$have_autoitea06" == "xyes")
+
 LT_LIB_M
 
 AC_ARG_ENABLE([gcc-vcheck],
