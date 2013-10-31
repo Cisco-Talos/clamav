@@ -13,6 +13,9 @@
 #if !defined(_WIN32)
 #include <sys/sysctl.h>
 #include <dlfcn.h>
+#else
+#include <Windows.h>
+#include <tchar.h>
 #endif
 
 #ifdef CL_THREAD_SAFE
@@ -374,7 +377,12 @@ size_t clamav_stats_get_size(void *cbdata)
 #if defined(_WIN32)
 char *clamav_stats_get_hostid(void *cbdata)
 {
-    return strdup(STATS_ANON_UUID);
+	HW_PROFILE_INFO HwProfInfo;
+
+	if (!GetCurrentHwProfile(&HwProfInfo))
+		return strdup(STATS_ANON_UUID);
+
+    return strdup(HwProfInfo.szHwProfileGuid);
 }
 #else
 char *clamav_stats_get_hostid(void *cbdata)
