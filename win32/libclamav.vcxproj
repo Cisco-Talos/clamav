@@ -173,6 +173,7 @@
     <ClCompile Include="..\libclamav\7z\XzCrc64.c" />
     <ClCompile Include="..\libclamav\7z\XzDec.c" />
     <ClCompile Include="..\libclamav\7z\XzIn.c" />
+    <ClCompile Include="..\libclamav\fpu.c" />
     <ClCompile Include="..\libclamav\sf_base64decode.c" />
     <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba_small_set.c" />
     <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba_9.c" />

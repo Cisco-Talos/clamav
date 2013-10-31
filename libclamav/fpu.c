@@ -25,6 +25,9 @@
    whether floating point little endian or big endian(IEEE-754) is in effect. */
 int get_fpu_endian(void)
 {
+#ifdef _WIN32
+  return FPU_ENDIAN_LITTLE;
+#else
     char * fpu_le = "elleemme";
     char * fpu_be = "emmeelle";
     static union sd {
@@ -44,4 +47,5 @@ int get_fpu_endian(void)
                    u_md.mem[4], u_md.mem[5], u_md.mem[6], u_md.mem[7]);
     }
     return FPU_ENDIAN_UNKNOWN;
+#endif
 }
