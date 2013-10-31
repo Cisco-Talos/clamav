@@ -1,3 +1,7 @@
+Wed Oct 31 12:48:00 2013 EDT 2013 (morgan)
+------------------------------------
+ * libclamav: bb#5341 - Change floating point byte order check from compile time to run time.
+
 Thu Oct 23 18:01:46 2013 EDT 2013 (dar)
 ------------------------------------
  * bb #9222: make fmap_unneed respect nested maps
