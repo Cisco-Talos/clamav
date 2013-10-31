@@ -17015,8 +17015,8 @@ else
 fi
 
 
-working_xml="no"
-if test "$want_xml" != "no"; then
+XML_HOME=""
+if test "X$want_xml" != "Xno"; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for libxml2 installation" >&5
 $as_echo_n "checking for libxml2 installation... " >&6; }
 
@@ -17028,21 +17028,54 @@ if test "${with_xml+set}" = set; then :
     XML_HOME="$withval"
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: using $XML_HOME" >&5
 $as_echo "using $XML_HOME" >&6; }
+  else
+    as_fn_error $? "cannot assign blank value to --with-xml" "$LINENO" 5
   fi
 
 else
 
   XML_HOME=/usr/local
-  if test ! -f "$XML_HOME/include/libxml2/libxml/xmlreader.h"
+  if test ! -x "$XML_HOME/bin/xml2-config"
   then
     XML_HOME=/usr
+    if test ! -x "$XML_HOME/bin/xml2-config"
+    then
+      XML_HOME=""
+    fi
   fi
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $XML_HOME" >&5
+  if test "x$XML_HOME" != "x"; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $XML_HOME" >&5
 $as_echo "$XML_HOME" >&6; }
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+$as_echo "not found" >&6; }
+  fi
 
 fi
 
+fi
 
+found_xml="no"
+XMLCONF_VERSION=""
+XML_CPPFLAGS=""
+XML_LIBS=""
+if test "x$XML_HOME" != "x"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking xml2-config version" >&5
+$as_echo_n "checking xml2-config version... " >&6; }
+  XMLCONF_VERSION="`$XML_HOME/bin/xml2-config --version`"
+  if test "x%XMLCONF_VERSION" != "x"; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $XMLCONF_VERSION" >&5
+$as_echo "$XMLCONF_VERSION" >&6; }
+    found_xml="yes"
+    XML_CPPFLAGS="`$XML_HOME/bin/xml2-config --cflags`"
+    XML_LIBS="`$XML_HOME/bin/xml2-config --libs`"
+  else
+    as_fn_error $? "xml2-config failed" "$LINENO" 5
+  fi
+fi
+
+working_xml="no"
+if test "X$found_xml" != "Xno"; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for xmlreader.h in $XML_HOME" >&5
 $as_echo_n "checking for xmlreader.h in $XML_HOME... " >&6; }
 
@@ -17053,12 +17086,12 @@ $as_echo "not found" >&6; }
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
 $as_echo "found" >&6; }
     save_LIBS="$LIBS"
-    if test "$XML_HOME" != "/usr"; then
-	save_CPPFLAGS="$CPPFLAGS"
-	CPPFLAGS="$CPPFLAGS -I$XML_HOME/include"
-	save_LDFLAGS="$LDFLAGS"
-	LDFLAGS="$LDFLAGS -L$XML_HOME/lib"
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for xmlTextReaderRead in -lxml2" >&5
+    save_CPPFLAGS="$CPPFLAGS"
+    CPPFLAGS="$CPPFLAGS $XML_CPPFLAGS"
+    save_LDFLAGS="$LDFLAGS"
+    LDFLAGS="$LDFLAGS $XML_LIBS"
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for xmlTextReaderRead in -lxml2" >&5
 $as_echo_n "checking for xmlTextReaderRead in -lxml2... " >&6; }
 if ${ac_cv_lib_xml2_xmlTextReaderRead+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -17095,57 +17128,14 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_xml2_xmlTextReaderRead" >&5
 $as_echo "$ac_cv_lib_xml2_xmlTextReaderRead" >&6; }
 if test "x$ac_cv_lib_xml2_xmlTextReaderRead" = xyes; then :
-  working_xml="yes";XML_CPPFLAGS="-I$XML_HOME/include/libxml2";XML_LIBS="-L$XML_HOME/lib -lxml2"
+  working_xml="yes"
 else
   working_xml="no"
 fi
 
-	CPPFLAGS="$save_CPPFLAGS"
-	LDFLAGS="$save_LDFLAGS"
-    else
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for xmlTextReaderRead in -lxml2" >&5
-$as_echo_n "checking for xmlTextReaderRead in -lxml2... " >&6; }
-if ${ac_cv_lib_xml2_xmlTextReaderRead+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lxml2  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
 
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char xmlTextReaderRead ();
-int
-main ()
-{
-return xmlTextReaderRead ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_xml2_xmlTextReaderRead=yes
-else
-  ac_cv_lib_xml2_xmlTextReaderRead=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_xml2_xmlTextReaderRead" >&5
-$as_echo "$ac_cv_lib_xml2_xmlTextReaderRead" >&6; }
-if test "x$ac_cv_lib_xml2_xmlTextReaderRead" = xyes; then :
-  working_xml="yes";XML_CPPFLAGS="-I$XML_HOME/include/libxml2";XML_LIBS="-lxml2"
-else
-  working_xml="no"
-fi
-
-    fi
+    CPPFLAGS="$save_CPPFLAGS"
+    LDFLAGS="$save_LDFLAGS"
     LIBS="$save_LIBS"
   fi
 fi
@@ -26586,23 +26576,34 @@ else
 fi
 
 if test "x$XML_LIBS" = "x"; then
-    xml_libs="no"
-else
-    xml_libs="yes"
-fi
 
 
    $as_echo_n "              dmg and xar : "
    if test "x" = "xno"; then :
-  $as_echo "$xml_libs (disabled)"
+  $as_echo "no (disabled)"
 elif test "x" = "xyes"; then :
-  $as_echo "$xml_libs"
+  $as_echo "no"
 elif test "x" = "x"; then :
-  $as_echo "$xml_libs"
+  $as_echo "no"
 else
-  $as_echo "$xml_libs ()"
+  $as_echo "no ()"
 fi
 
+else
+
+
+   $as_echo_n "              dmg and xar : "
+   if test "x" = "xno"; then :
+  $as_echo "yes, from $XML_HOME (disabled)"
+elif test "x" = "xyes"; then :
+  $as_echo "yes, from $XML_HOME"
+elif test "x" = "x"; then :
+  $as_echo "yes, from $XML_HOME"
+else
+  $as_echo "yes, from $XML_HOME ()"
+fi
+
+fi
 
 # Yep, downgrading the compiler avoids the bug too:
 # 4.0.x, and 4.1.0 are the known buggy versions
