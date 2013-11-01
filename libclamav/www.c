@@ -108,8 +108,9 @@ void submit_post(const char *host, const char *port, const char *url, const char
 
     bufsz = sizeof("POST   HTTP/1.1") + 1; /* Yes. Three blank spaces. +1 for the \n */
     bufsz += strlen(url);
-    bufsz += sizeof("Host: ");
-    bufsz += strlen(host) + 1; /* +1 for the \n */
+    bufsz += sizeof("Host: \n");
+    bufsz += strlen(host);
+    bufsz += sizeof("Connection: Close\n");
     bufsz += sizeof("Content-Type: application/x-www-form-urlencoded\n");
     bufsz += sizeof("Content-Length: \n") + 10;
     bufsz += 2; /* +2 for \n\n */
@@ -124,6 +125,7 @@ void submit_post(const char *host, const char *port, const char *url, const char
 
     snprintf(buf, bufsz, "POST %s HTTP/1.1\n", url);
     snprintf(buf+strlen(buf), bufsz-strlen(buf), "Host: %s\n", host);
+    snprintf(buf+strlen(buf), bufsz-strlen(buf), "Connection: Close\n");
     snprintf(buf+strlen(buf), bufsz-strlen(buf), "Content-Type: application/x-www-form-urlencoded\n");
     snprintf(buf+strlen(buf), bufsz-strlen(buf), "Content-Length: %u\n\n", (unsigned int)(strlen(encoded) + sizeof("postdata=") - 1));
     snprintf(buf+strlen(buf), bufsz-strlen(buf), "postdata=%s", encoded);
@@ -140,6 +142,19 @@ void submit_post(const char *host, const char *port, const char *url, const char
     cli_warnmsg("---- End sent data ----\n");
 
     send(sockfd, buf, strlen(buf), 0);
+
+    while (1) {
+        memset(buf, 0x00, bufsz);
+        if (recv(sockfd, buf, bufsz, 0) <= 0)
+            break;
+
+        if (strstr(buf, "STATOK"))
+            break;
+
+        cli_warnmsg("---- Received ----\n");
+        cli_warnmsg("%s\n", buf);
+        cli_warnmsg("---- End data received ----\n");
+    }
 
     close(sockfd);
     free(buf);
