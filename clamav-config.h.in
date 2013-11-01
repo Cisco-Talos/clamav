@@ -275,6 +275,9 @@
 /* Define to 1 if you have the <ndir.h> header file. */
 #undef HAVE_NDIR_H
 
+/* Define to 1 if you have the <net/if_dl.h> header file */
+#undef HAVE_NET_IF_DL_H
+
 /* Define to 1 if you have the `opendir' function. */
 #undef HAVE_OPENDIR
 

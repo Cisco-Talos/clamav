@@ -21,7 +21,9 @@
 
 #if defined(HAVE_GETIFADDRS)
 #include <net/if.h>
+#if defined(HAVE_NET_IF_DL_H)
 #include <net/if_dl.h>
+#endif
 #include <ifaddrs.h>
 #endif
 
