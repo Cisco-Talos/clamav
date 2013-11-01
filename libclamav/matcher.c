@@ -532,7 +532,7 @@ int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx)
 	ctx->engine->cb_hash(fmap_fd(*ctx->fmap), size, md5, cli_get_last_virus(ctx), ctx->cb_ctx);
 
     if (ctx->engine->cb_stats_add_sample)
-        ctx->engine->cb_stats_add_sample(virname, digest, size, WHOLEFILE, ctx->engine->stats_data);
+        ctx->engine->cb_stats_add_sample(cli_get_last_virus(ctx), digest, size, WHOLEFILE, ctx->engine->stats_data);
 
     return CL_VIRUS;
 }
