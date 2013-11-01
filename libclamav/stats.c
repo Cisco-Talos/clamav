@@ -29,6 +29,7 @@
 #include "libclamav/json.h"
 #include "libclamav/stats.h"
 #include "libclamav/hostid.h"
+#include "libclamav/www.h"
 
 static cli_flagged_sample_t *find_sample(cli_intel_t *intel, const char *virname, const unsigned char *md5, size_t size, cli_intel_sample_type_t type);
 void free_sample(cli_flagged_sample_t *sample);
@@ -205,10 +206,13 @@ void free_sample(cli_flagged_sample_t *sample)
 void clamav_stats_submit(struct cl_engine *engine, void *cbdata)
 {
     char *json;
-    cli_intel_t *intel;
+    cli_intel_t *intel, myintel;
+    cli_flagged_sample_t *sample, *next;
     int err;
 
     intel = (cli_intel_t *)cbdata;
+    if (!(intel) || !(engine))
+        return;
 
 #ifdef CL_THREAD_SAFE
     err = pthread_mutex_lock(&(intel->mutex));
@@ -222,23 +226,31 @@ void clamav_stats_submit(struct cl_engine *engine, void *cbdata)
     }
 #endif
 
-    json = export_stats_to_json(engine, (cli_intel_t *)cbdata);
+    /* Empty out the cached intelligence data so that other threads don't sit waiting to add data to the cache */
+    memcpy(&myintel, intel, sizeof(cli_intel_t));
+    intel->samples = NULL;
+    intel->nsamples = 0;
+
+    json = export_stats_to_json(engine, &myintel);
 
 #ifdef CL_THREAD_SAFE
     err = pthread_mutex_unlock(&(intel->mutex));
     if (err) {
         cli_warnmsg("clamav_stats_submit: unlocking mutex failed (err: %d): %s\n", err, strerror(err));
     }
-
 #endif
 
-    cli_warnmsg("--- JSON ---\n%s\n--- END JSON ---\n", json);
+    for (sample=myintel.samples; sample != NULL; sample = next) {
+        next = sample->next;
 
-    if (json)
+        free_sample(sample);
+    }
+
+    if (json) {
+        cli_warnmsg("====\tSUBMITTING STATS\t====\n");
+        submit_post(STATS_HOST, STATS_PORT, "/enginestats.php", json);
         free(json);
-
-    if ((engine->cb_stats_flush))
-        engine->cb_stats_flush(engine, cbdata);
+    }
 }
 
 void clamav_stats_remove_sample(const char *virname, const unsigned char *md5, size_t size, cli_intel_sample_type_t type, void *cbdata)
