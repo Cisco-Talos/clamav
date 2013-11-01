@@ -54,6 +54,8 @@ int connect_host(const char *host, const char *port)
 
     freeaddrinfo(servinfo);
 
+    cli_warnmsg("Connected to %s\n", host);
+
     return sockfd;
 }
 
@@ -108,6 +110,8 @@ void submit_post(const char *host, const char *port, const char *url, const char
     bufsz += strlen(url);
     bufsz += sizeof("Host: ");
     bufsz += strlen(host) + 1; /* +1 for the \n */
+    bufsz += sizeof("Content-Type: application/x-www-form-urlencoded\n");
+    bufsz += sizeof("Content-Length: \n") + 10;
     bufsz += 2; /* +2 for \n\n */
     bufsz += sizeof("postdata=");
     bufsz += strlen(encoded) + 1;
@@ -118,7 +122,11 @@ void submit_post(const char *host, const char *port, const char *url, const char
         return;
     }
 
-    sprintf(buf, "POST %s HTTP/1.1\nHost: %s\n\npostdata=%s", url, host, encoded);
+    snprintf(buf, bufsz, "POST %s HTTP/1.1\n", url);
+    snprintf(buf+strlen(buf), bufsz-strlen(buf), "Host: %s\n", host);
+    snprintf(buf+strlen(buf), bufsz-strlen(buf), "Content-Type: application/x-www-form-urlencoded\n");
+    snprintf(buf+strlen(buf), bufsz-strlen(buf), "Content-Length: %u\n\n", (unsigned int)(strlen(encoded) + sizeof("postdata=") - 1));
+    snprintf(buf+strlen(buf), bufsz-strlen(buf), "postdata=%s", encoded);
     free(encoded);
 
     sockfd = connect_host(host, port);
@@ -126,6 +134,10 @@ void submit_post(const char *host, const char *port, const char *url, const char
         free(buf);
         return;
     }
+
+    cli_warnmsg("---- Sending ----\n");
+    cli_warnmsg("%s\n", buf);
+    cli_warnmsg("---- End sent data ----\n");
 
     send(sockfd, buf, strlen(buf), 0);
 
