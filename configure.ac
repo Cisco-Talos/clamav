@@ -420,6 +420,8 @@ AC_COMPILE_CHECK_SIZEOF([void *])
 AC_CHECK_FUNCS([sysctlbyname])
 AC_CHECK_FUNCS([getifaddrs])
 AC_CHECK_HEADER([fcntl.h], AC_DEFINE([HAVE_FCNTL_H],1,[Define to 1 if you have the <fcntl.h> header file]))
+AC_CHECK_HEADER([pthread.h], AC_DEFINE([HAVE_PTHREAD_H],1,[Define to 1 if you have the <pthread.h> header file]))
+AC_CHECK_HEADER([net/if_dl.h], AC_DEFINE([HAVE_NET_IF_DL_H],1,[Define to 1 if you have the <net/if_dl.h> header file]))
 
 AC_ARG_ENABLE([experimental],
 [  --enable-experimental	enable experimental code],

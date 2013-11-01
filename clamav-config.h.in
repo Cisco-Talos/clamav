@@ -281,6 +281,9 @@
 /* Define to 1 if you have the <ndir.h> header file. */
 #undef HAVE_NDIR_H
 
+/* Define to 1 if you have the <net/if_dl.h> header file */
+#undef HAVE_NET_IF_DL_H
+
 /* Define to 1 if you have the `opendir' function. */
 #undef HAVE_OPENDIR
 
@@ -298,6 +301,9 @@
 
 /* Define if libtool can extract symbol lists from object files. */
 #undef HAVE_PRELOADED_SYMBOLS
+
+/* Define to 1 if you have the <pthread.h> header file */
+#undef HAVE_PTHREAD_H
 
 /* Define to 1 if you have the `pthread_yield' function. */
 #undef HAVE_PTHREAD_YIELD
