@@ -14454,6 +14454,14 @@ $as_echo "#define HAVE_PTHREAD_H 1" >>confdefs.h
 fi
 
 
+ac_fn_c_check_header_mongrel "$LINENO" "net/if_dl.h" "ac_cv_header_net_if_dl_h" "$ac_includes_default"
+if test "x$ac_cv_header_net_if_dl_h" = xyes; then :
+
+$as_echo "#define HAVE_NET_IF_DL_H 1" >>confdefs.h
+
+fi
+
+
 
 # Check whether --enable-experimental was given.
 if test "${enable_experimental+set}" = set; then :
