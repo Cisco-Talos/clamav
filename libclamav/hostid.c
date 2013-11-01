@@ -19,9 +19,13 @@
 #include <sys/ioctl.h>
 #endif
 
-#if defined(SIOCGIFHWADDR)
+#if defined(HAVE_GETIFADDRS)
 #include <net/if.h>
+#include <net/if_dl.h>
 #include <ifaddrs.h>
+#endif
+
+#if defined(SIOCGIFHWADDR)
 #include <linux/sockios.h>
 #endif
 
@@ -74,16 +78,21 @@ struct device *get_device_entry(struct device *devices, size_t *ndevices, const 
     return devices;
 }
 
-#if HAVE_GETIFADDRS && !HAVE_SYSCTLBYNAME && defined(SIOCGIFHWADDR)
+#if HAVE_GETIFADDRS
 struct device *get_devices(void)
 {
-    struct ifaddrs *addrs, *addr;
+    struct ifaddrs *addrs=NULL, *addr;
     struct device *devices=NULL, *device=NULL;
     size_t ndevices=0, i;
     void *p;
     uint8_t *mac;
     int sock;
+
+#if defined(SIOCGIFHWADDR)
     struct ifreq ifr;
+#else
+    struct sockaddr_dl *sdl;
+#endif
 
     if (getifaddrs(&addrs))
         return NULL;
@@ -92,14 +101,40 @@ struct device *get_devices(void)
         if (!(addr->ifa_addr))
             continue;
 
+#if defined(AF_PACKET)
         if (addr->ifa_addr->sa_family != AF_PACKET)
             continue;
+#elif defined(AF_LINK)
+        if (addr->ifa_addr->sa_family != AF_LINK)
+            continue;
+#else
+        break; /* We don't support anything else */
+#endif
 
         devices = get_device_entry(devices, &ndevices, addr->ifa_name);
         if (!(devices)) {
             freeifaddrs(addrs);
             return NULL;
         }
+
+#if !defined(SIOCGIFHWADDR)
+        for (device = devices; device < devices + ndevices; device++) {
+            if (!(strcmp(device->name, addr->ifa_name))) {
+                sdl = (struct sockaddr_dl *)(addr->ifa_addr);
+
+#if defined(LLADDR)
+                mac = LLADDR(sdl);
+#else
+                mac = ((uint8_t *)(sdl->sdl_data + sdl->sdl_nlen));
+#endif
+                for (i=0; i<6; i++)
+                    snprintf(device->mac+strlen(device->mac), sizeof(device->mac)-strlen(device->mac)-1, "%02x:", mac[i]);
+
+                cli_warnmsg("MAC for device %s: %s\n", device->name, device->mac);
+                break;
+            }
+        }
+#endif
     }
 
     if (addrs) {
@@ -107,22 +142,23 @@ struct device *get_devices(void)
         addrs = NULL;
     }
 
-    sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0)
-        goto err;
-
+#if defined(SIOCGIFHWADDR)
     for (device = devices; device < devices + (ndevices); device++) {
         memset(&ifr, 0x00, sizeof(struct ifreq));
         strcpy(ifr.ifr_name, device->name);
+        sock = socket(AF_INET, SOCK_DGRAM, 0);
+        if (sock < 0)
+            goto err;
         if (ioctl(sock, SIOCGIFHWADDR, &ifr)) {
             close(sock);
             goto err;
         }
-
         mac = ((uint8_t *)(ifr.ifr_ifru.ifru_hwaddr.sa_data));
+
         for (i=0; i<6; i++)
             snprintf(device->mac+strlen(device->mac), sizeof(device->mac)-strlen(device->mac)-1, "%02x:", mac[i]);
     }
+#endif
 
     close(sock);
     
