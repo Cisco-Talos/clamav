@@ -13701,6 +13701,11 @@ else
   HAVE_AUTOITEA06_FALSE=
 fi
 
+if test "x$have_autoitea06" == "xyes"; then
+
+$as_echo "#define HAVE_AUTOITEA06 1" >>confdefs.h
+
+fi
 
 LIBM=
 case $host in

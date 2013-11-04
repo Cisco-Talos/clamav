@@ -79,6 +79,9 @@ AC_C_FPU_BIGENDIAN
 AC_C_BIGENDIAN
 
 AM_CONDITIONAL([HAVE_AUTOITEA06], test "x$have_autoitea06" == "xyes")
+if test "x$have_autoitea06" == "xyes"; then
+   AC_DEFINE([HAVE_AUTOITEA06], 1, [autoitea06 enabled])
+fi
 
 LT_LIB_M
 
