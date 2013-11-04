@@ -389,10 +389,10 @@ size_t clamav_stats_get_size(void *cbdata)
 #if defined(_WIN32)
 char *clamav_stats_get_hostid(void *cbdata)
 {
-	HW_PROFILE_INFO HwProfInfo;
+    HW_PROFILE_INFO HwProfInfo;
 
-	if (!GetCurrentHwProfile(&HwProfInfo))
-		return strdup(STATS_ANON_UUID);
+    if (!GetCurrentHwProfile(&HwProfInfo))
+        return strdup(STATS_ANON_UUID);
 
     return strdup(HwProfInfo.szHwProfileGuid);
 }
@@ -407,7 +407,10 @@ char *clamav_stats_get_hostid(void *cbdata)
     char *buf;
 
 #if HAVE_SYSCTLBYNAME
-    /* FreeBSD-landia */
+    /*
+     * FreeBSD provides a handy-dandy sysctl for grabbing the system's HostID. In a jail that
+     * hasn't run the hostid rc.d script, the hostid defaults to all zeros.
+     */
     for (i=0; sysctls[i] != NULL; i++) {
         if (sysctlbyname(sysctls[i], NULL, &bufsz, NULL, 0))
             continue;

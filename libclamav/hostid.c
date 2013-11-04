@@ -77,6 +77,7 @@ struct device *get_device_entry(struct device *devices, size_t *ndevices, const 
 
     if (!(device->name))
         device->name = strdup(name);
+
     return devices;
 }
 
@@ -103,6 +104,10 @@ struct device *get_devices(void)
         if (!(addr->ifa_addr))
             continue;
 
+        /*
+         * Even though POSIX (BSD) sockets define AF_LINK, Linux decided to be clever
+         * and use AF_PACKET instead.
+         */
 #if defined(AF_PACKET)
         if (addr->ifa_addr->sa_family != AF_PACKET)
             continue;
@@ -119,6 +124,12 @@ struct device *get_devices(void)
             return NULL;
         }
 
+        /*
+         * Grab the MAC address for all devices that have them.
+         * Linux doesn't support (struct sockaddr_dl) as POSIX (BSD) sockets require.
+         * Instead, Linux uses its own ioctl. This code only runs if we're not Linux,
+         * Windows, or FreeBSD.
+         */
 #if !defined(SIOCGIFHWADDR)
         for (device = devices; device < devices + ndevices; device++) {
             if (!(strcmp(device->name, addr->ifa_name))) {
@@ -132,7 +143,6 @@ struct device *get_devices(void)
                 for (i=0; i<6; i++)
                     snprintf(device->mac+strlen(device->mac), sizeof(device->mac)-strlen(device->mac)-1, "%02x:", mac[i]);
 
-                cli_warnmsg("MAC for device %s: %s\n", device->name, device->mac);
                 break;
             }
         }
@@ -144,17 +154,23 @@ struct device *get_devices(void)
         addrs = NULL;
     }
 
+    /* This is the Linux version of getting the MAC addresses */
 #if defined(SIOCGIFHWADDR)
     for (device = devices; device < devices + (ndevices); device++) {
         memset(&ifr, 0x00, sizeof(struct ifreq));
+
         strcpy(ifr.ifr_name, device->name);
+
         sock = socket(AF_INET, SOCK_DGRAM, 0);
         if (sock < 0)
             goto err;
+
         if (ioctl(sock, SIOCGIFHWADDR, &ifr)) {
             close(sock);
             goto err;
         }
+
+        close(sock);
         mac = ((uint8_t *)(ifr.ifr_ifru.ifru_hwaddr.sa_data));
 
         for (i=0; i<6; i++)
@@ -177,6 +193,7 @@ struct device *get_devices(void)
 err:
     if (addrs)
         freeifaddrs(addrs);
+
     if (devices) {
         for (device = devices; device < devices + ndevices; device++)
             if (device->name)
@@ -195,6 +212,10 @@ struct device *get_devices(void)
 #endif /* HAVE_GETIFADDRS */
 
 #if !HAVE_SYSCTLBYNAME && !defined(_WIN32)
+/*
+ * Since we're getting potentially sensitive data (MAC addresses for all devices on the system),
+ * hash all the MAC addresses to provide basic anonymity and security.
+ */
 char *internal_get_host_id(void)
 {
     size_t i;
