@@ -138,6 +138,9 @@
 /* attrib packed */
 #undef HAVE_ATTRIB_PACKED
 
+/* autoitea06 enabled */
+#undef HAVE_AUTOITEA06
+
 /* have bzip2 */
 #undef HAVE_BZLIB_H
 
