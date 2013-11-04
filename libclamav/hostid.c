@@ -45,8 +45,8 @@ struct device *get_device_entry(struct device *devices, size_t *ndevices, const 
     if ((devices)) {
         int found = 0;
 
-        for (device = devices; device < devices + *ndevices; device++) {
-            if (!strcmp(device->name, name)) {
+        for (i = 0; i < *ndevices; i++) {
+            if (!strcmp(devices[i].name, name)) {
                 found = 1;
                 break;
             }
@@ -60,11 +60,10 @@ struct device *get_device_entry(struct device *devices, size_t *ndevices, const 
                 free(devices);
                 return NULL;
             }
-
             devices = p;
-            device = devices + *ndevices;
+
+            memset(devices + *ndevices, 0x00, sizeof(struct device));
             (*ndevices)++;
-            memset(device, 0x00, sizeof(struct device));
         }
     } else {
         devices = calloc(1, sizeof(device));
@@ -75,8 +74,8 @@ struct device *get_device_entry(struct device *devices, size_t *ndevices, const 
         *ndevices = 1;
     }
 
-    if (!(device->name))
-        device->name = strdup(name);
+    if (!(devices[*ndevices - 1].name) && name)
+        device[*ndevices - 1].name = strdup(name);
 
     return devices;
 }
@@ -85,8 +84,8 @@ struct device *get_device_entry(struct device *devices, size_t *ndevices, const 
 struct device *get_devices(void)
 {
     struct ifaddrs *addrs=NULL, *addr;
-    struct device *devices=NULL, *device=NULL;
-    size_t ndevices=0, i;
+    struct device *devices=NULL;
+    size_t ndevices=0, i, j;
     void *p;
     uint8_t *mac;
     int sock;
@@ -131,7 +130,7 @@ struct device *get_devices(void)
          * Windows, or FreeBSD.
          */
 #if !defined(SIOCGIFHWADDR)
-        for (device = devices; device < devices + ndevices; device++) {
+        for (i=0; i < ndevices; i++) {
             if (!(strcmp(device->name, addr->ifa_name))) {
                 sdl = (struct sockaddr_dl *)(addr->ifa_addr);
 
@@ -140,8 +139,8 @@ struct device *get_devices(void)
 #else
                 mac = ((uint8_t *)(sdl->sdl_data + sdl->sdl_nlen));
 #endif
-                for (i=0; i<6; i++)
-                    snprintf(device->mac+strlen(device->mac), sizeof(device->mac)-strlen(device->mac)-1, "%02x:", mac[i]);
+                for (j=0; j<6; j++)
+                    snprintf(devices[i].mac+strlen(devices[i].mac), sizeof(devices[i].mac)-strlen(devices[i].mac)-1, "%02x:", mac[j]);
 
                 break;
             }
@@ -156,10 +155,11 @@ struct device *get_devices(void)
 
     /* This is the Linux version of getting the MAC addresses */
 #if defined(SIOCGIFHWADDR)
-    for (device = devices; device < devices + (ndevices); device++) {
+    for (i=0; i < ndevices; i++) {
         memset(&ifr, 0x00, sizeof(struct ifreq));
+        memset(devices[i].mac, 0x00, sizeof(devices[i].mac));
 
-        strcpy(ifr.ifr_name, device->name);
+        strcpy(ifr.ifr_name, devices[i].name);
 
         sock = socket(AF_INET, SOCK_DGRAM, 0);
         if (sock < 0)
@@ -169,12 +169,14 @@ struct device *get_devices(void)
             close(sock);
             goto err;
         }
-
         close(sock);
-        mac = ((uint8_t *)(ifr.ifr_ifru.ifru_hwaddr.sa_data));
 
-        for (i=0; i<6; i++)
-            snprintf(device->mac+strlen(device->mac), sizeof(device->mac)-strlen(device->mac)-1, "%02x:", mac[i]);
+        mac = ((uint8_t *)(ifr.ifr_ifru.ifru_hwaddr.sa_data));
+        if (!(mac))
+            continue;
+
+        for (j=0; j<6; j++)
+            snprintf(devices[i].mac+strlen(devices[i].mac), sizeof(devices[i].mac)-strlen(devices[i].mac)-1, "%02x:", mac[j]);
     }
 #endif
 
@@ -195,9 +197,9 @@ err:
         freeifaddrs(addrs);
 
     if (devices) {
-        for (device = devices; device < devices + ndevices; device++)
-            if (device->name)
-                free(device->name);
+        for (i=0; i < ndevices; i++)
+            if (devices[i].name)
+                free(devices[i].name);
 
         free(devices);
     }
