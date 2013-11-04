@@ -35,10 +35,10 @@
 
 #include "hostid.h"
 #include "libclamav/md5.h"
+#include "libclamav/others.h"
 
 struct device *get_device_entry(struct device *devices, size_t *ndevices, const char *name)
 {
-    struct device *device;
     void *p;
     size_t i;
 
@@ -63,19 +63,18 @@ struct device *get_device_entry(struct device *devices, size_t *ndevices, const 
             devices = p;
 
             memset(devices + *ndevices, 0x00, sizeof(struct device));
-            (*ndevices)++;
+            *ndevices = *ndevices + 1;
         }
     } else {
-        devices = calloc(1, sizeof(device));
+        devices = calloc(1, sizeof(struct device));
         if (!(devices))
             return NULL;
 
-        device = devices;
         *ndevices = 1;
     }
 
-    if (!(devices[*ndevices - 1].name) && name)
-        device[*ndevices - 1].name = strdup(name);
+    if (*ndevices && !(devices[*ndevices - 1].name) && name)
+        devices[*ndevices - 1].name = strdup(name);
 
     return devices;
 }
@@ -156,6 +155,11 @@ struct device *get_devices(void)
     /* This is the Linux version of getting the MAC addresses */
 #if defined(SIOCGIFHWADDR)
     for (i=0; i < ndevices; i++) {
+        cli_warnmsg("devices[%lu]: %s\n", i, devices[i].name);
+
+        if (!(devices[i].name))
+            continue;
+
         memset(&ifr, 0x00, sizeof(struct ifreq));
         memset(devices[i].mac, 0x00, sizeof(devices[i].mac));
 
