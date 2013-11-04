@@ -54,8 +54,6 @@ int connect_host(const char *host, const char *port)
 
     freeaddrinfo(servinfo);
 
-    cli_warnmsg("Connected to %s\n", host);
-
     return sockfd;
 }
 
@@ -137,23 +135,22 @@ void submit_post(const char *host, const char *port, const char *url, const char
         return;
     }
 
-    cli_warnmsg("---- Sending ----\n");
-    cli_warnmsg("%s\n", buf);
-    cli_warnmsg("---- End sent data ----\n");
-
     send(sockfd, buf, strlen(buf), 0);
 
     while (1) {
+        /*
+         * Check to make sure the stats submitted okay (so that we don't kill the HTTP request
+         * while it's being processed).
+         *
+         * TODO: Add a time limit based on a call to select() to prevent lock-ups or major
+         * slow downs.
+         */
         memset(buf, 0x00, bufsz);
         if (recv(sockfd, buf, bufsz, 0) <= 0)
             break;
 
         if (strstr(buf, "STATOK"))
             break;
-
-        cli_warnmsg("---- Received ----\n");
-        cli_warnmsg("%s\n", buf);
-        cli_warnmsg("---- End data received ----\n");
     }
 
     close(sockfd);
