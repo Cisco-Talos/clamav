@@ -196,13 +196,18 @@ EOF
     if test_run 1 $CLAMSCAN --quiet -dtest-db $TESTFILES --log=clamscan4.log; then
 	scan_failed clamscan4.log "clamscan didn't detect icons correctly"
     fi
+    NINFECTED=`grep "Infected files" clamscan4.log | cut -f2 -d: | sed -e 's/ //g'`
     grep "clam.ea05.exe: ClamAV-Test-Icon-EA0X.UNOFFICIAL FOUND" clamscan4.log || die "icon-test1 failed"
-    grep "clam.ea06.exe: ClamAV-Test-Icon-EA0X.UNOFFICIAL FOUND" clamscan4.log || die "icon-test2 failed"
+    if test -e ../../test/clam.ea06.exe; then
+        grep "clam.ea06.exe: ClamAV-Test-Icon-EA0X.UNOFFICIAL FOUND" clamscan4.log || die "icon-test2 failed"
+        NEXPECT=4
+    else
+        NEXPECT=3
+    fi
     grep "clam_IScab_ext.exe: ClamAV-Test-Icon-IScab.UNOFFICIAL FOUND" clamscan4.log || die "icon-test3 failed"
     grep "clam_IScab_int.exe: ClamAV-Test-Icon-IScab.UNOFFICIAL FOUND" clamscan4.log || die "icon-test4 failed"
-    NINFECTED=`grep "Infected files" clamscan4.log | cut -f2 -d: | sed -e 's/ //g'`
-    if test "x$NINFECTED" != x4; then
-	scan_failed clamscan4.log "clamscan has detected spurious icons or whitlisting was not applier properly"
+    if test "x$NINFECTED" != "x$NEXPECT"; then
+	scan_failed clamscan4.log "clamscan has detected spurious icons or whitelisting was not applied properly"
     fi
 
 cat <<EOF >test-db/test.ldb

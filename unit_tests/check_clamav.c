@@ -388,6 +388,7 @@ static void init_testfiles(void)
 {
     struct dirent *dirent;
     unsigned i = 0;
+    int expect = expected_testfiles;
 
     DIR *d = opendir(OBJDIR"/../test");
     fail_unless(!!d, "opendir");
@@ -404,7 +405,10 @@ static void init_testfiles(void)
 	testfiles[i-1] = strdup(dirent->d_name);
     }
     testfiles_n = i;
-    fail_unless_fmt(testfiles_n == expected_testfiles, "testfiles: %d != %d", testfiles_n, expected_testfiles);
+#ifndef HAVE_AUTOITEA06
+    expect--;
+#endif
+    fail_unless_fmt(testfiles_n == expect, "testfiles: %d != %d", testfiles_n, expect);
 
     closedir(d);
 }
@@ -449,7 +453,7 @@ static int get_test_file(int i, char *file, unsigned fsize, unsigned long *size)
     int fd;
     STATBUF st;
 
-    fail_unless(i < testfiles_n);
+    fail_unless(i < testfiles_n, "%i < %i %s", i, testfiles_n, file);
     snprintf(file, fsize, OBJDIR"/../test/%s", testfiles[i]);
 
     fd = open(file, O_RDONLY);
@@ -594,6 +598,7 @@ static Suite *test_cl_suite(void)
     Suite *s = suite_create("cl_api");
     TCase *tc_cl = tcase_create("cl_dup");
     TCase *tc_cl_scan = tcase_create("cl_scan");
+    int expect = expected_testfiles;
     suite_add_tcase (s, tc_cl);
     tcase_add_test(tc_cl, test_cl_free);
     tcase_add_test(tc_cl, test_cl_dup);
@@ -616,18 +621,21 @@ static Suite *test_cl_suite(void)
     suite_add_tcase(s, tc_cl_scan);
     tcase_add_checked_fixture (tc_cl_scan, engine_setup, engine_teardown);
 #ifdef CHECK_HAVE_LOOPS
-    tcase_add_loop_test(tc_cl_scan, test_cl_scandesc, 0, expected_testfiles);
-    tcase_add_loop_test(tc_cl_scan, test_cl_scandesc_allscan, 0, expected_testfiles);
-    tcase_add_loop_test(tc_cl_scan, test_cl_scanfile, 0, expected_testfiles);
-    tcase_add_loop_test(tc_cl_scan, test_cl_scanfile_allscan, 0, expected_testfiles);
-    tcase_add_loop_test(tc_cl_scan, test_cl_scandesc_callback, 0, expected_testfiles);
-    tcase_add_loop_test(tc_cl_scan, test_cl_scandesc_callback_allscan, 0, expected_testfiles);
-    tcase_add_loop_test(tc_cl_scan, test_cl_scanfile_callback, 0, expected_testfiles);
-    tcase_add_loop_test(tc_cl_scan, test_cl_scanfile_callback_allscan, 0, expected_testfiles);
-    tcase_add_loop_test(tc_cl_scan, test_cl_scanmap_callback_handle, 0, expected_testfiles);
-    tcase_add_loop_test(tc_cl_scan, test_cl_scanmap_callback_handle_allscan, 0, expected_testfiles);
-    tcase_add_loop_test(tc_cl_scan, test_cl_scanmap_callback_mem, 0, expected_testfiles);
-    tcase_add_loop_test(tc_cl_scan, test_cl_scanmap_callback_mem_allscan, 0, expected_testfiles);
+#ifndef HAVE_AUTOITEA06    
+    expect--;
+#endif
+    tcase_add_loop_test(tc_cl_scan, test_cl_scandesc, 0, expect);
+    tcase_add_loop_test(tc_cl_scan, test_cl_scandesc_allscan, 0, expect);
+    tcase_add_loop_test(tc_cl_scan, test_cl_scanfile, 0, expect);
+    tcase_add_loop_test(tc_cl_scan, test_cl_scanfile_allscan, 0, expect);
+    tcase_add_loop_test(tc_cl_scan, test_cl_scandesc_callback, 0, expect);
+    tcase_add_loop_test(tc_cl_scan, test_cl_scandesc_callback_allscan, 0, expect);
+    tcase_add_loop_test(tc_cl_scan, test_cl_scanfile_callback, 0, expect);
+    tcase_add_loop_test(tc_cl_scan, test_cl_scanfile_callback_allscan, 0, expect);
+    tcase_add_loop_test(tc_cl_scan, test_cl_scanmap_callback_handle, 0, expect);
+    tcase_add_loop_test(tc_cl_scan, test_cl_scanmap_callback_handle_allscan, 0, expect);
+    tcase_add_loop_test(tc_cl_scan, test_cl_scanmap_callback_mem, 0, expect);
+    tcase_add_loop_test(tc_cl_scan, test_cl_scanmap_callback_mem_allscan, 0, expect);
 #endif
     return s;
 }
