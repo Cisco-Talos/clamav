@@ -28,20 +28,20 @@ int get_fpu_endian(void)
 #ifdef _WIN32
   return FPU_ENDIAN_LITTLE;
 #else
-    char * fpu_le = "elleemme";
-    char * fpu_be = "emmeelle";
-    static union sd {
+    const char * fpu_le = "elleemme";
+    const char * fpu_be = "emmeelle";
+    const union sd {
         double d;
         char mem[8];
     } u_md = {3815911171354501045744583353695226502220105394563506259449467213186125718792664588210662403287568710818873279842508553551908601408568128557088985172985437412593385138085986771664896.0};
     if (!memcmp(u_md.mem, fpu_le, 8)) {
         cli_dbgmsg("fpu: Floating point little endian detected.\n");
         return FPU_ENDIAN_LITTLE;
-    } else if (!memcmp(u_md.mem, fpu_be, 8) == 0) {
+    } else if (!memcmp(u_md.mem, fpu_be, 8)) {
         cli_dbgmsg("fpu: Floating point big endian detected.\n");
         return FPU_ENDIAN_BIG;
     } else {
-        cli_dbgmsg("fpu: Floating point endian detection failed."
+        cli_dbgmsg("fpu: Floating point endian detection failed. "
                    "Bytes: %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x \n",
                    u_md.mem[0], u_md.mem[1], u_md.mem[2], u_md.mem[3], 
                    u_md.mem[4], u_md.mem[5], u_md.mem[6], u_md.mem[7]);
