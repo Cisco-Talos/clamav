@@ -241,6 +241,10 @@ Example
 # Default: yes
 #AlgorithmicDetection yes
 
+# This option causes memory or nested map scans to dump the content to disk.
+# If you turn on this option, more data is written to disk and is available
+# when the LeaveTemporaryFiles option is enabled.
+#ForceToDisk yes
 
 ##
 ## Executable files
