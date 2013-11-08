@@ -157,7 +157,7 @@ int cli_scancpio_old(cli_ctx *ctx)
 	    if(ret == CL_EMAXFILES) {
 		return ret;
 	    } else if(ret == CL_SUCCESS) {
-		ret = cli_map_scandesc(*ctx->fmap, pos, filesize, ctx);
+		ret = cli_map_scan(*ctx->fmap, pos, filesize, ctx);
 		if(ret == CL_VIRUS)
 		    return ret;
 	    }
@@ -234,7 +234,7 @@ int cli_scancpio_odc(cli_ctx *ctx)
 	if(ret == CL_EMAXFILES) {
 	    return ret;
 	} else if(ret == CL_SUCCESS) {
-	    ret = cli_map_scandesc(*ctx->fmap, pos, filesize, ctx);
+	    ret = cli_map_scan(*ctx->fmap, pos, filesize, ctx);
 	    if(ret == CL_VIRUS)
 		return ret;
 	}
@@ -313,7 +313,7 @@ int cli_scancpio_newc(cli_ctx *ctx, int crc)
 	if(ret == CL_EMAXFILES) {
 	    return ret;
 	} else if(ret == CL_SUCCESS) {
-	    ret = cli_map_scandesc(*ctx->fmap, pos, filesize, ctx);
+	    ret = cli_map_scan(*ctx->fmap, pos, filesize, ctx);
 	    if(ret == CL_VIRUS)
 		return ret;
 	}

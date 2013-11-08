@@ -2964,7 +2964,67 @@ int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, cons
     return cl_scandesc_callback(desc, virname, scanned, engine, scanoptions, NULL);
 }
 
-/* length = 0, till the end */
+/* For map scans that may be forced to disk */
+int cli_map_scan(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx)
+{
+    off_t old_off = map->nested_offset;
+    size_t old_len = map->len;
+    int ret = CL_CLEAN;
+
+    cli_dbgmsg("cli_map_scan: [%ld, +%lu)\n",
+	       (long)offset, (unsigned long)length);
+    if (offset < 0 || offset >= map->len) {
+	cli_dbgmsg("Invalid offset: %ld\n", (long)offset);
+	return CL_CLEAN;
+    }
+
+    if (ctx->engine->forcetodisk) {
+        /* if this is forced to disk, then need to write the nested map and scan it */
+        const uint8_t *mapdata = NULL;
+        char *tempfile = NULL;
+        int fd = -1;
+        size_t nread = 0;
+
+        mapdata = fmap_need_off_once_len(map, offset, length, &nread);
+        if (!mapdata || (nread != length)) {
+            cli_errmsg("cli_map_scan: could not map sub-file\n");
+            return CL_EMAP;
+        }
+
+        ret = cli_gentempfd(ctx->engine->tmpdir, &tempfile, &fd);
+        if (ret != CL_SUCCESS) {
+            return ret;
+        }
+
+        cli_dbgmsg("cli_map_scan: writing nested map content to temp file %s\n", tempfile);
+        if (cli_writen(fd, mapdata, length) < 0) {
+            cli_errmsg("cli_map_scan: cli_writen error writing subdoc temporary file.\n");
+            ret = CL_EWRITE;
+        }
+
+        /* scan the temp file */
+        ret = cli_base_scandesc(fd, ctx, CL_TYPE_ANY);
+
+        /* remove the temp file, if needed */
+        if (fd > -1) {
+            close(fd);
+        }
+        if(!ctx->engine->keeptmp) {
+            if (cli_unlink(tempfile)) {
+                cli_errmsg("cli_map_scan: error unlinking tempfile %s\n", tempfile);
+                ret = CL_EUNLINK;
+            }
+        }
+        free(tempfile);
+    }
+    else {
+        /* Not forced to disk, use nested map */
+        ret = cli_map_scandesc(map, offset, length, ctx);
+    }
+    return ret;
+}
+
+/* For map scans that are not forced to disk */
 int cli_map_scandesc(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx)
 {
     off_t old_off = map->nested_offset;
