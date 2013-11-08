@@ -168,7 +168,7 @@ int cli_scandmg(cli_ctx *ctx)
     cli_dbgmsg("cli_scandmg: Extracting into %s\n", dirname);
 
     /* Dump XML to tempfile, if needed */
-    if (ctx->engine->keeptmp) {
+    if (ctx->engine->keeptmp && !ctx->engine->forcetodisk) {
         int xret;
         xret = dmg_extract_xml(ctx, dirname, &hdr);
 
@@ -180,7 +180,7 @@ int cli_scandmg(cli_ctx *ctx)
     }
 
     /* scan XML with cli_map_scandesc */
-    ret = cli_map_scandesc(*ctx->fmap, (off_t)hdr.xmlOffset, (size_t)hdr.xmlLength, ctx);
+    ret = cli_map_scan(*ctx->fmap, (off_t)hdr.xmlOffset, (size_t)hdr.xmlLength, ctx);
     if (ret != CL_CLEAN) {
         cli_dbgmsg("cli_scandmg: retcode from scanning TOC xml: %s\n", cl_strerror(ret));
         if (!ctx->engine->keeptmp)

@@ -631,6 +631,9 @@ int scanmanager(const struct optstruct *opts)
     if(optget(opts, "leave-temps")->enabled)
 	cl_engine_set_num(engine, CL_ENGINE_KEEPTMP, 1);
 
+    if(optget(opts, "force-to-disk")->enabled)
+	cl_engine_set_num(engine, CL_ENGINE_FORCETODISK, 1);
+
     if(optget(opts, "bytecode-unsigned")->enabled)
 	dboptions |= CL_DB_BYTECODE_UNSIGNED;
 

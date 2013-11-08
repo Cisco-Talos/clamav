@@ -461,6 +461,12 @@ int cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field field, long
 	case CL_ENGINE_KEEPTMP:
 	    engine->keeptmp = num;
 	    break;
+	case CL_ENGINE_FORCETODISK:
+	    if(num)
+	        engine->forcetodisk = 1;
+	    else
+	        engine->forcetodisk = 0;
+	    break;
 	case CL_ENGINE_BYTECODE_SECURITY:
 	    if (engine->dboptions & CL_DB_COMPILED) {
 		cli_errmsg("cl_engine_set_num: CL_ENGINE_BYTECODE_SECURITY cannot be set after engine was compiled\n");
@@ -541,6 +547,8 @@ long long cl_engine_get_num(const struct cl_engine *engine, enum cl_engine_field
 	    return engine->ac_maxdepth;
 	case CL_ENGINE_KEEPTMP:
 	    return engine->keeptmp;
+	case CL_ENGINE_FORCETODISK:
+	    return engine->forcetodisk;
 	case CL_ENGINE_BYTECODE_SECURITY:
 	    return engine->bytecode_security;
 	case CL_ENGINE_BYTECODE_TIMEOUT:
@@ -619,6 +627,7 @@ struct cl_settings *cl_engine_settings_copy(const struct cl_engine *engine)
     settings->ac_maxdepth = engine->ac_maxdepth;
     settings->tmpdir = engine->tmpdir ? strdup(engine->tmpdir) : NULL;
     settings->keeptmp = engine->keeptmp;
+    settings->forcetodisk = engine->forcetodisk;
     settings->maxscansize = engine->maxscansize;
     settings->maxfilesize = engine->maxfilesize;
     settings->maxreclevel = engine->maxreclevel;
@@ -652,6 +661,7 @@ int cl_engine_settings_apply(struct cl_engine *engine, const struct cl_settings 
     engine->ac_mindepth = settings->ac_mindepth;
     engine->ac_maxdepth = settings->ac_maxdepth;
     engine->keeptmp = settings->keeptmp;
+    engine->forcetodisk = settings->forcetodisk;
     engine->maxscansize = settings->maxscansize;
     engine->maxfilesize = settings->maxfilesize;
     engine->maxreclevel = settings->maxreclevel;
