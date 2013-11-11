@@ -75,13 +75,7 @@ AC_HEADER_STDC
 AC_C_RESTRICT
 AC_C_CONST
 AC_C_INLINE
-AC_C_FPU_BIGENDIAN
 AC_C_BIGENDIAN
-
-AM_CONDITIONAL([HAVE_AUTOITEA06], test "x$have_autoitea06" == "xyes")
-if test "x$have_autoitea06" == "xyes"; then
-   AC_DEFINE([HAVE_AUTOITEA06], 1, [autoitea06 enabled])
-fi
 
 LT_LIB_M
 
@@ -1811,7 +1805,6 @@ CL_MSG_STATUS([jit         ],[$have_jit],[$enable_llvm])
 CL_MSG_STATUS([mempool     ],[$have_mempool],[$enable_mempool])
 
 AC_MSG_NOTICE([Summary of engine detection features])
-CL_MSG_STATUS([autoit_ea06 ],[$have_autoitea06],[])
 CL_MSG_STATUS([bzip2       ],[$bzip_check],[$want_bzip2])
 CL_MSG_STATUS([zlib        ],[$ZLIB_HOME],[yes])
 CL_MSG_STATUS([unrar       ],[$want_unrar],[$want_unrar])

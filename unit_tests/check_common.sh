@@ -13,6 +13,8 @@ CHECK_CLAMD=$TOP/unit_tests/check_clamd
 CLAMDSCAN=$TOP/clamdscan/clamdscan
 TESTFILES=$TOP/test/clam*
 NFILES=`ls -1 $TESTFILES | wc -l`
+#CHECK_FPU_ENDIAN=$TOP/unit_tests/.libs/lt-check_fpu_endian
+CHECK_FPU_ENDIAN=$TOP/unit_tests/check_fpu_endian
 
 killclamd() {
     test -f clamd-test.pid &&
@@ -198,11 +200,13 @@ EOF
     fi
     NINFECTED=`grep "Infected files" clamscan4.log | cut -f2 -d: | sed -e 's/ //g'`
     grep "clam.ea05.exe: ClamAV-Test-Icon-EA0X.UNOFFICIAL FOUND" clamscan4.log || die "icon-test1 failed"
-    if test -e ../../test/clam.ea06.exe; then
+
+    test_run_check $CHECK_FPU_ENDIAN
+    if test $? -eq 3; then
+        NEXPECT=3
+    else
         grep "clam.ea06.exe: ClamAV-Test-Icon-EA0X.UNOFFICIAL FOUND" clamscan4.log || die "icon-test2 failed"
         NEXPECT=4
-    else
-        NEXPECT=3
     fi
     grep "clam_IScab_ext.exe: ClamAV-Test-Icon-IScab.UNOFFICIAL FOUND" clamscan4.log || die "icon-test3 failed"
     grep "clam_IScab_int.exe: ClamAV-Test-Icon-IScab.UNOFFICIAL FOUND" clamscan4.log || die "icon-test4 failed"

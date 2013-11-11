@@ -673,8 +673,6 @@ VERSIONSCRIPT_FALSE
 VERSIONSCRIPT_TRUE
 VERSIONSCRIPTFLAG
 LIBM
-HAVE_AUTOITEA06_FALSE
-HAVE_AUTOITEA06_TRUE
 LTDLOPEN
 LT_CONFIG_H
 CONVENIENCE_LTDL_FALSE
@@ -826,7 +824,6 @@ with_included_ltdl
 with_ltdl_include
 with_ltdl_lib
 enable_ltdl_install
-with_fpu_words_bigendian
 enable_gcc_vcheck
 enable_experimental
 enable_mempool
@@ -1557,7 +1554,6 @@ Optional Packages:
   --with-included-ltdl    use the GNU ltdl sources included here
   --with-ltdl-include=DIR use the ltdl headers installed in DIR
   --with-ltdl-lib=DIR     use the libltdl.la installed in DIR
-  --with-fpu-words-bigendian=(yes/no/auto)    specify FPU endianess (default=auto)
   --with-gnu-ld           assume the C compiler uses GNU ld default=no
   --with-libcheck-prefix[=DIR]  search for libcheck in DIR/include and DIR/lib
   --without-libcheck-prefix     don't search for libcheck in includedir and libdir
@@ -13403,71 +13399,6 @@ _ACEOF
     ;;
 esac
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether FPU byte ordering is bigendian" >&5
-$as_echo_n "checking whether FPU byte ordering is bigendian... " >&6; }
-if ${ac_cv_c_fpu_bigendian+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_cv_c_fpu_bigendian=auto
-
-# Check whether --with-fpu-words-bigendian was given.
-if test "${with_fpu_words_bigendian+set}" = set; then :
-  withval=$with_fpu_words_bigendian; ac_cv_c_fpu_bigendian=$with_fpu_words_bigendian
-else
-  ac_cv_c_fpu_bigendian=auto
-fi
-
-
-if test $ac_cv_c_fpu_bigendian = auto; then
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-double d = 3815911171354501045744583353695226502220105394563506259449467213186125718792664588210662403287568710818873279842508553551908601408568128557088985172985437412593385138085986771664896.0;
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-
-if ${GREP-grep} emmeelle conftest.$ac_objext >/dev/null 2>&1 ; then
-	ac_cv_c_fpu_bigendian=yes
-fi
-if ${GREP-grep} elleemme conftest.$ac_objext >/dev/null 2>&1 ; then
-	ac_cv_c_fpu_bigendian=no
-fi
-if test "$ac_cv_c_bigendian" = "universal"; then
-        ac_cv_c_fpu_bigendian=universal
-fi
-
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-fi
-
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_c_fpu_bigendian" >&5
-$as_echo "$ac_cv_c_fpu_bigendian" >&6; }
-have_autoitea06="no"
-case $ac_cv_c_fpu_bigendian in
-	yes)
-
-$as_echo "#define FPU_WORDS_BIGENDIAN 1" >>confdefs.h
-
-                have_autoitea06="yes"
-		;;
-	no)
-
-$as_echo "#define FPU_WORDS_BIGENDIAN 0" >>confdefs.h
-
-                have_autoitea06="yes"
-		;;
-	universal)
-
-$as_echo "#define FPU_WORDS_BIGENDIAN WORDS_BIGENDIAN" >>confdefs.h
-
-                have_autoitea06="yes"
-		;;
-	*)
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Unable to determine FPU endianess, some features may not be available in this build" >&5
-$as_echo "$as_me: WARNING: Unable to determine FPU endianess, some features may not be available in this build" >&2;}
-esac
-
  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether byte ordering is bigendian" >&5
 $as_echo_n "checking whether byte ordering is bigendian... " >&6; }
 if ${ac_cv_c_bigendian+:} false; then :
@@ -13692,20 +13623,6 @@ $as_echo "#define AC_APPLE_UNIVERSAL_BUILD 1" >>confdefs.h
  presetting ac_cv_c_bigendian=no (or yes) will help" "$LINENO" 5 ;;
  esac
 
-
- if test "x$have_autoitea06" == "xyes"; then
-  HAVE_AUTOITEA06_TRUE=
-  HAVE_AUTOITEA06_FALSE='#'
-else
-  HAVE_AUTOITEA06_TRUE='#'
-  HAVE_AUTOITEA06_FALSE=
-fi
-
-if test "x$have_autoitea06" == "xyes"; then
-
-$as_echo "#define HAVE_AUTOITEA06 1" >>confdefs.h
-
-fi
 
 LIBM=
 case $host in
@@ -21274,10 +21191,6 @@ LT_CONFIG_H=clamav-config.h
 
 
 
-if test -z "${HAVE_AUTOITEA06_TRUE}" && test -z "${HAVE_AUTOITEA06_FALSE}"; then
-  as_fn_error $? "conditional \"HAVE_AUTOITEA06\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
 if test -z "${VERSIONSCRIPT_TRUE}" && test -z "${VERSIONSCRIPT_FALSE}"; then
   as_fn_error $? "conditional \"VERSIONSCRIPT\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -23902,10 +23815,6 @@ LT_CONFIG_H=clamav-config.h
 
 
 
-if test -z "${HAVE_AUTOITEA06_TRUE}" && test -z "${HAVE_AUTOITEA06_FALSE}"; then
-  as_fn_error $? "conditional \"HAVE_AUTOITEA06\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
 if test -z "${VERSIONSCRIPT_TRUE}" && test -z "${VERSIONSCRIPT_FALSE}"; then
   as_fn_error $? "conditional \"VERSIONSCRIPT\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -26553,19 +26462,6 @@ fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: Summary of engine detection features" >&5
 $as_echo "$as_me: Summary of engine detection features" >&6;}
-
-
-   $as_echo_n "              autoit_ea06 : "
-   if test "x" = "xno"; then :
-  $as_echo "$have_autoitea06 (disabled)"
-elif test "x" = "xyes"; then :
-  $as_echo "$have_autoitea06"
-elif test "x" = "x"; then :
-  $as_echo "$have_autoitea06"
-else
-  $as_echo "$have_autoitea06 ()"
-fi
-
 
 
    $as_echo_n "              bzip2       : "
