@@ -48,7 +48,6 @@ my %CONF = (
     'DEFAULT_FD_SETSIZE' => '1024',
     'FDPASS_NEED_XOPEN' => -1,
     'FILEBUFF' => '8192',
-    'FPU_WORDS_BIGENDIAN' => '0',
     'FRESHCLAM_DNS_FIX' => -1,
     'FRESHCLAM_NO_CACHE' => -1,
     'HAVE_ARGZ_ADD' => -1,

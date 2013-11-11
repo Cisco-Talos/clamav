@@ -45,6 +45,7 @@
 #include "libclamav/bytecode.h"
 #include "libclamav/bytecode_detect.h"
 #include "target.h"
+#include "fpu.h"
 
 #ifndef _WIN32
 extern const struct clam_option *clam_options;
@@ -448,9 +449,8 @@ int main(int argc, char **argv)
 #ifdef FRESHCLAM_DNS_FIX
 	printf("FRESHCLAM_DNS_FIX ");
 #endif
-#ifdef FPU_WORDS_BIGENDIAN
-	printf("AUTOIT_EA06 ");
-#endif
+        if (get_fpu_endian() != FPU_ENDIAN_UNKNOWN)
+            printf("AUTOIT_EA06 ");
 #ifdef HAVE_BZLIB_H
 	printf("BZIP2 ");
 #endif

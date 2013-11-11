@@ -15,16 +15,18 @@ check10_clamd_hg.sh: $(FILES)
 $(FILES) :
 	cat $(SPLIT_DIR)/split.$@aa $(SPLIT_DIR)/split.$@ab > $@
 
+
 programs = check_clamav
 scripts = check_freshclam.sh check_sigtool.sh check_unit_vg.sh check1_clamscan.sh check2_clamd.sh check3_clamd.sh check4_clamd.sh\
 	  check5_clamd_vg.sh check6_clamd_vg.sh check7_clamd_hg.sh check8_clamd_hg.sh check9_clamscan_vg.sh
+utils = check_fpu_endian
 TESTS_ENVIRONMENT=export abs_srcdir=$(abs_srcdir) AWK=$(AWK);
 if ENABLE_UNRAR
 else
 TESTS_ENVIRONMENT += export unrar_disabled=1;
 endif
 TESTS = $(programs) $(scripts)
-check_PROGRAMS = $(programs) check_clamd
+check_PROGRAMS = $(programs) check_clamd $(utils)
 check_SCRIPTS = $(scripts)
 
 AM_CFLAGS=@WERR_CFLAGS@
@@ -43,6 +45,10 @@ check_clamd_SOURCES = check_clamav_skip.c
 check_clamav_SOURCES = check_clamav_skip.c
 endif
 
+check_fpu_endian_SOURCES = check_fpu_endian.c
+check_fpu_endian_CPPFLAGS = -I$(top_srcdir) @CHECK_CPPFLAGS@ -DSRCDIR=\"$(abs_srcdir)\" -DOBJDIR=\"$(abs_builddir)\"
+check_fpu_endian_LDADD = $(top_builddir)/libclamav/libclamav.la
+
 check_clamav.c: $(top_builddir)/test/clam.exe clamav.hdb
 check_clamd.sh: $(top_builddir)/test/clam.exe check_clamd
 check_clamscan.sh: $(top_builddir)/test/clam.exe
@@ -56,7 +62,7 @@ $(top_builddir)/test/clam.exe:
 quick-check:
 	VALGRIND=no LIBEFENCE=no LIBDUMA=no $(MAKE) check
 
-CLEANFILES=lcov.out *.gcno *.gcda *.log $(FILES) test-stderr.log clamscan.log accdenied clamav.hdb
+CLEANFILES=lcov.out *.gcno *.gcda *.log $(FILES) test-stderr.log clamscan.log accdenied clamav.hdb $(utils)
 EXTRA_DIST=.split $(srcdir)/*.ref input test-freshclam.conf valgrind.supp virusaction-test.sh $(scripts) preload_run.sh check_common.sh
 if ENABLE_COVERAGE
 LCOV_OUTPUT = lcov.out

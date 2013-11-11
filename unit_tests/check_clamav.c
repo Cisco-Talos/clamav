@@ -405,9 +405,8 @@ static void init_testfiles(void)
 	testfiles[i-1] = strdup(dirent->d_name);
     }
     testfiles_n = i;
-#ifndef HAVE_AUTOITEA06
-    expect--;
-#endif
+    if (get_fpu_endian() == FPU_ENDIAN_UNKNOWN)
+        expect--;
     fail_unless_fmt(testfiles_n == expect, "testfiles: %d != %d", testfiles_n, expect);
 
     closedir(d);
@@ -621,9 +620,8 @@ static Suite *test_cl_suite(void)
     suite_add_tcase(s, tc_cl_scan);
     tcase_add_checked_fixture (tc_cl_scan, engine_setup, engine_teardown);
 #ifdef CHECK_HAVE_LOOPS
-#ifndef HAVE_AUTOITEA06    
-    expect--;
-#endif
+    if (get_fpu_endian() == FPU_ENDIAN_UNKNOWN)
+        expect--;
     tcase_add_loop_test(tc_cl_scan, test_cl_scandesc, 0, expect);
     tcase_add_loop_test(tc_cl_scan, test_cl_scandesc_allscan, 0, expect);
     tcase_add_loop_test(tc_cl_scan, test_cl_scanfile, 0, expect);

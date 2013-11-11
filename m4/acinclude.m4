@@ -584,53 +584,6 @@ AC_DEFUN([AM_MAINTAINER_MODE],
 ]
 )
 
-dnl AC_C_FPU_BIGENDIAN
-dnl Detects FPU endianess
-dnl FPU_WORDS_BIGENDIAN = 1 for big endian
-dnl FPU_WORDS_BIGENDIAN = 0 for little endian
-dnl FPU_WORDS_BIGENDIAN undefined when endianes cannot be determined
-
-AC_DEFUN([AC_C_FPU_BIGENDIAN],
-[AC_CACHE_CHECK([whether FPU byte ordering is bigendian], [ac_cv_c_fpu_bigendian],
-[ac_cv_c_fpu_bigendian=auto
-AC_ARG_WITH(fpu-words-bigendian,
-[  --with-fpu-words-bigendian=(yes/no/auto)    specify FPU endianess (default=auto)],
-ac_cv_c_fpu_bigendian=$with_fpu_words_bigendian, ac_cv_c_fpu_bigendian=auto)
-
-if test $ac_cv_c_fpu_bigendian = auto; then
-AC_COMPILE_IFELSE([AC_LANG_SOURCE([[double d = 3815911171354501045744583353695226502220105394563506259449467213186125718792664588210662403287568710818873279842508553551908601408568128557088985172985437412593385138085986771664896.0;]])],[
-if ${GREP-grep} emmeelle conftest.$ac_objext >/dev/null 2>&1 ; then
-	ac_cv_c_fpu_bigendian=yes
-fi
-if ${GREP-grep} elleemme conftest.$ac_objext >/dev/null 2>&1 ; then
-	ac_cv_c_fpu_bigendian=no
-fi
-if test "$ac_cv_c_bigendian" = "universal"; then
-        ac_cv_c_fpu_bigendian=universal
-fi
-])
-fi
-
-])
-have_autoitea06="no"
-case $ac_cv_c_fpu_bigendian in
-	yes)
-		AC_DEFINE([FPU_WORDS_BIGENDIAN], 1, [FPU byte ordering is big endian])
-                have_autoitea06="yes"
-		;;
-	no)
-		AC_DEFINE([FPU_WORDS_BIGENDIAN], 0, [FPU byte ordering is little endian])
-                have_autoitea06="yes"
-		;;
-	universal)
-	        AC_DEFINE([FPU_WORDS_BIGENDIAN], [WORDS_BIGENDIAN], [FPU byte ordering matches CPU])
-                have_autoitea06="yes"
-		;;
-	*)
-		AC_MSG_WARN([Unable to determine FPU endianess, some features may not be available in this build])
-esac
-])
-
 dnl AC_C_CVE_2008_1372
 dnl Checks DoS in bzlib 
 AC_DEFUN([AC_C_CVE_2008_1372],

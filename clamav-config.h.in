@@ -99,9 +99,6 @@
 /* file i/o buffer size */
 #undef FILEBUFF
 
-/* FPU byte ordering matches CPU */
-#undef FPU_WORDS_BIGENDIAN
-
 /* enable workaround for broken DNS servers */
 #undef FRESHCLAM_DNS_FIX
 
@@ -137,9 +134,6 @@
 
 /* attrib packed */
 #undef HAVE_ATTRIB_PACKED
-
-/* autoitea06 enabled */
-#undef HAVE_AUTOITEA06
 
 /* have bzip2 */
 #undef HAVE_BZLIB_H
