@@ -449,8 +449,10 @@ int main(int argc, char **argv)
 #ifdef FRESHCLAM_DNS_FIX
 	printf("FRESHCLAM_DNS_FIX ");
 #endif
+#ifndef _WIN32
         if (get_fpu_endian() != FPU_ENDIAN_UNKNOWN)
-            printf("AUTOIT_EA06 ");
+#endif
+			printf("AUTOIT_EA06 ");
 #ifdef HAVE_BZLIB_H
 	printf("BZIP2 ");
 #endif
