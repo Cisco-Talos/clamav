@@ -670,7 +670,7 @@ static int hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hf
                     }
                 }
                 if (ret != CL_CLEAN) {
-                    cli_dbgmsg("hfsplus_walk_catalog: data fork retcode %d", ret);
+                    cli_dbgmsg("hfsplus_walk_catalog: data fork retcode %d\n", ret);
                     break;
                 }
                 /* Scan resource fork */
