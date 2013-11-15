@@ -130,7 +130,7 @@ struct device *get_devices(void)
          */
 #if !defined(SIOCGIFHWADDR)
         for (i=0; i < ndevices; i++) {
-            if (!(strcmp(device->name, addr->ifa_name))) {
+            if (!(strcmp(devices[i].name, addr->ifa_name))) {
                 sdl = (struct sockaddr_dl *)(addr->ifa_addr);
 
 #if defined(LLADDR)
