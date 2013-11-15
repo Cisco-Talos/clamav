@@ -246,6 +246,13 @@ Example
 # when the LeaveTemporaryFiles option is enabled.
 #ForceToDisk yes
 
+# This option allows you to disable the caching feature of the engine. By
+# default, the engine will store an MD5 in a cache of any files that are
+# not flagged as virus or that hit limits checks. Disabling the cache will
+# have a negative performance impact on large scans.
+# Default: no
+#DisableCache yes
+
 ##
 ## Executable files
 ##

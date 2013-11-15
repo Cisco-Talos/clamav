@@ -193,6 +193,7 @@ struct cl_engine {
     uint32_t ac_maxdepth;
     char *tmpdir;
     uint32_t keeptmp;
+    uint64_t engine_options;
 
     /* Limits */
     uint64_t maxscansize;  /* during the scanning of archives this size
@@ -307,6 +308,7 @@ struct cl_settings {
     uint32_t bytecode_timeout;
     enum bytecode_mode bytecode_mode;
     char *pua_cats;
+    uint64_t engine_options;
 
     /* callbacks */
     clcb_pre_cache cb_pre_cache;
