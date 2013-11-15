@@ -490,6 +490,15 @@ int cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field field, long
 	    if (num == CL_BYTECODE_MODE_TEST)
 		cli_infomsg(NULL, "bytecode engine in test mode\n");
 	    break;
+    case CL_ENGINE_DISABLE_CACHE:
+        if (num) {
+            engine->engine_options |= ENGINE_OPTIONS_DISABLE_CACHE;
+        } else {
+            engine->engine_options &= ~(ENGINE_OPTIONS_DISABLE_CACHE);
+            if (!(engine->cache))
+                cli_cache_init(engine);
+        }
+        break;
 	default:
 	    cli_errmsg("cl_engine_set_num: Incorrect field number\n");
 	    return CL_EARG;

@@ -567,6 +567,9 @@ int scanmanager(const struct optstruct *opts)
 	return 2;
     }
 
+    if (optget(opts, "disable-cache")->enabled)
+        cl_engine_set_num(engine, CL_ENGINE_DISABLE_CACHE, 1);
+
     if(optget(opts, "detect-pua")->enabled) {
 	dboptions |= CL_DB_PUA;
 	if((opt = optget(opts, "exclude-pua"))->enabled) {

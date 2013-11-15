@@ -338,6 +338,9 @@ int main(int argc, char **argv)
 	break;
     }
 
+    if (optget(opts, "disable-cache")->enabled)
+        cl_engine_set_num(engine, CL_ENGINE_DISABLE_CACHE, 1);
+
     /* load the database(s) */
     dbdir = optget(opts, "DatabaseDirectory")->strarg;
     logg("#Reading databases from %s\n", dbdir);

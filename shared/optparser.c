@@ -253,6 +253,8 @@ const struct clam_option __clam_options[] = {
 
     { "SelfCheck", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, 600, NULL, 0, OPT_CLAMD, "This option specifies the time intervals (in seconds) in which clamd\nshould perform a database check.", "600" },
 
+    { "DisableCache", "disable-cache", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option allows you to disable clamd's caching feature.", "no" },
+
     { "VirusEvent", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD, "Execute a command when a virus is found. In the command string %v will be\nreplaced with the virus name. Additionally, two environment variables will\nbe defined: $CLAM_VIRUSEVENT_FILENAME and $CLAM_VIRUSEVENT_VIRUSNAME.", "/usr/bin/mailx -s \"ClamAV VIRUS ALERT: %v\" alert < /dev/null" },
 
     { "ExitOnOOM", NULL, 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Stop the daemon when libclamav reports an out of memory condition.", "yes" },

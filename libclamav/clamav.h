@@ -194,7 +194,8 @@ enum cl_engine_field {
     CL_ENGINE_MAX_HTMLNOTAGS,       /* uint64_t */
     CL_ENGINE_MAX_SCRIPTNORMALIZE,  /* uint64_t */
     CL_ENGINE_MAX_ZIPTYPERCG,       /* uint64_t */
-    CL_ENGINE_FORCETODISK           /* uint32_t */
+    CL_ENGINE_FORCETODISK,          /* uint32_t */
+    CL_ENGINE_DISABLE_CACHE         /* uint32_t */
 };
 
 enum bytecode_security {
@@ -232,6 +233,13 @@ extern int cl_engine_addref(struct cl_engine *engine);
 
 extern int cl_engine_free(struct cl_engine *engine);
 
+extern void cli_cache_disable(void);
+
+extern int cli_cache_enable(struct cl_engine *engine);
+
+/* For the new engine_options bit field in the engine */
+#define ENGINE_OPTIONS_NONE             0
+#define ENGINE_OPTIONS_DISABLE_CACHE    1
 
 /* CALLBACKS */
 
