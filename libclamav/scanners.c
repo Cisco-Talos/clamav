@@ -2978,7 +2978,7 @@ int cli_map_scan(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx)
 	return CL_CLEAN;
     }
 
-    if (ctx->engine->forcetodisk) {
+    if (ctx->engine->engine_options & ENGINE_OPTIONS_FORCE_TO_DISK) {
         /* if this is forced to disk, then need to write the nested map and scan it */
         const uint8_t *mapdata = NULL;
         char *tempfile = NULL;

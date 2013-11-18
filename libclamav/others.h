@@ -284,8 +284,6 @@ struct cl_engine {
     uint64_t maxhtmlnotags; /* max size for scanning normalized HTML */
     uint64_t maxscriptnormalize; /* max size to normalize scripts */
     uint64_t maxziptypercg; /* max size to re-do zip filetype */
-
-    uint32_t forcetodisk; /* cause memory or map scans to dump to disk first */
 };
 
 struct cl_settings {
@@ -326,8 +324,6 @@ struct cl_settings {
     uint64_t maxhtmlnotags; /* max size for scanning normalized HTML */
     uint64_t maxscriptnormalize; /* max size to normalize scripts */
     uint64_t maxziptypercg; /* max size to re-do zip filetype */
-
-    uint32_t forcetodisk; /* cause memory or map scans to dump to disk first */
 };
 
 extern int (*cli_unrar_open)(int fd, const char *dirname, unrar_state_t *state);
