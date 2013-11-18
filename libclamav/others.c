@@ -463,9 +463,9 @@ int cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field field, long
 	    break;
 	case CL_ENGINE_FORCETODISK:
 	    if(num)
-	        engine->forcetodisk = 1;
+	        engine->engine_options |= ENGINE_OPTIONS_FORCE_TO_DISK;
 	    else
-	        engine->forcetodisk = 0;
+	        engine->engine_options &= ~(ENGINE_OPTIONS_FORCE_TO_DISK);
 	    break;
 	case CL_ENGINE_BYTECODE_SECURITY:
 	    if (engine->dboptions & CL_DB_COMPILED) {
@@ -557,13 +557,15 @@ long long cl_engine_get_num(const struct cl_engine *engine, enum cl_engine_field
 	case CL_ENGINE_KEEPTMP:
 	    return engine->keeptmp;
 	case CL_ENGINE_FORCETODISK:
-	    return engine->forcetodisk;
+	    return engine->engine_options & ENGINE_OPTIONS_FORCE_TO_DISK;
 	case CL_ENGINE_BYTECODE_SECURITY:
 	    return engine->bytecode_security;
 	case CL_ENGINE_BYTECODE_TIMEOUT:
 	    return engine->bytecode_timeout;
 	case CL_ENGINE_BYTECODE_MODE:
 	    return engine->bytecode_mode;
+    case CL_ENGINE_DISABLE_CACHE:
+        return engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE;
 	default:
 	    cli_errmsg("cl_engine_get: Incorrect field number\n");
 	    if(err)
@@ -636,7 +638,6 @@ struct cl_settings *cl_engine_settings_copy(const struct cl_engine *engine)
     settings->ac_maxdepth = engine->ac_maxdepth;
     settings->tmpdir = engine->tmpdir ? strdup(engine->tmpdir) : NULL;
     settings->keeptmp = engine->keeptmp;
-    settings->forcetodisk = engine->forcetodisk;
     settings->maxscansize = engine->maxscansize;
     settings->maxfilesize = engine->maxfilesize;
     settings->maxreclevel = engine->maxreclevel;
@@ -660,6 +661,7 @@ struct cl_settings *cl_engine_settings_copy(const struct cl_engine *engine)
     settings->cb_sigload_ctx = engine->cb_sigload_ctx;
     settings->cb_hash = engine->cb_hash;
     settings->cb_meta = engine->cb_meta;
+    settings->engine_options = engine->engine_options;
 
     return settings;
 }
@@ -670,7 +672,6 @@ int cl_engine_settings_apply(struct cl_engine *engine, const struct cl_settings 
     engine->ac_mindepth = settings->ac_mindepth;
     engine->ac_maxdepth = settings->ac_maxdepth;
     engine->keeptmp = settings->keeptmp;
-    engine->forcetodisk = settings->forcetodisk;
     engine->maxscansize = settings->maxscansize;
     engine->maxfilesize = settings->maxfilesize;
     engine->maxreclevel = settings->maxreclevel;
@@ -685,6 +686,7 @@ int cl_engine_settings_apply(struct cl_engine *engine, const struct cl_settings 
     engine->bytecode_security = settings->bytecode_security;
     engine->bytecode_timeout = settings->bytecode_timeout;
     engine->bytecode_mode = settings->bytecode_mode;
+    engine->engine_options = settings->engine_options;
 
     if(engine->tmpdir)
 	mpool_free(engine->mempool, engine->tmpdir);

@@ -168,7 +168,7 @@ int cli_scandmg(cli_ctx *ctx)
     cli_dbgmsg("cli_scandmg: Extracting into %s\n", dirname);
 
     /* Dump XML to tempfile, if needed */
-    if (ctx->engine->keeptmp && !ctx->engine->forcetodisk) {
+    if (ctx->engine->keeptmp && !(ctx->engine->engine_options & ENGINE_OPTIONS_FORCE_TO_DISK)) {
         int xret;
         xret = dmg_extract_xml(ctx, dirname, &hdr);
 

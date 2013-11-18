@@ -240,6 +240,7 @@ extern int cli_cache_enable(struct cl_engine *engine);
 /* For the new engine_options bit field in the engine */
 #define ENGINE_OPTIONS_NONE             0
 #define ENGINE_OPTIONS_DISABLE_CACHE    1
+#define ENGINE_OPTIONS_FORCE_TO_DISK    2
 
 /* CALLBACKS */
 
