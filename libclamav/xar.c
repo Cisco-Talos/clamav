@@ -642,8 +642,11 @@ int cli_scanxar(cli_ctx *ctx)
 
                 blockp = (void*)fmap_need_off_once(map, at, CLI_LZMA_HDR_SIZE);
                 if (blockp == NULL) {
+                    char errbuff[128];
+                    cli_strerror(errno, errbuff, sizeof(errbuff));
+                    errbuff[sizeof(errbuff)-1] = '\0';
                     cli_errmsg("cli_scanxar: Can't read %li bytes @ %li, errno:%s.\n",
-                               length, at, strerror(errno));
+                               length, at, &errbuff);
                     rc = CL_EREAD;
                     __lzma_wrap_free(NULL, buff);
                     goto exit_tmpfile;
@@ -675,8 +678,11 @@ int cli_scanxar(cli_ctx *ctx)
                     lz.avail_in = avail_in = MIN(CLI_LZMA_IBUF_SIZE, in_remaining);
                     lz.next_in = next_in = (void*)fmap_need_off_once(map, at, lz.avail_in);
                     if (lz.next_in == NULL) {
+                        char errbuff[128];
+                        cli_strerror(errno, errbuff, sizeof(errbuff));
+                        errbuff[sizeof(errbuff)-1] = '\0';
                         cli_errmsg("cli_scanxar: Can't read %li bytes @ %li, errno: %s.\n",
-                                   length, at, strerror(errno));
+                                   length, at, &errbuff);
                         rc = CL_EREAD;
                         __lzma_wrap_free(NULL, buff);
                         cli_LzmaShutdown(&lz);
@@ -748,8 +754,11 @@ int cli_scanxar(cli_ctx *ctx)
                     write_len = length;
                     
                 if (!(blockp = (void*)fmap_need_off_once(map, at, length))) {
+                    char errbuff[128];
+                    cli_strerror(errno, errbuff, sizeof(errbuff));
+                    errbuff[sizeof(errbuff)-1] = '\0';
                     cli_errmsg("cli_scanxar: Can't read %li bytes @ %li, errno:%s.\n",
-                               length, at, strerror(errno));
+                               length, at, &errbuff);
                     rc = CL_EREAD;
                     goto exit_tmpfile;
                 }
