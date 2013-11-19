@@ -2232,7 +2232,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
                 rc = CL_CLEAN;
             }
         }
-        if (!rc && (ctx->options & CL_SCAN_ALGORITHMIC)) {
+        if (!rc && SCAN_ALGO && (ctx->dconf->other & OTHER_CONF_PDFNAMEOBJ)) {
             if (pdf.flags & (1 << ESCAPED_COMMON_PDFNAME)) {
                 /* for example /Fl#61te#44#65#63#6f#64#65 instead of /FlateDecode */
                 cli_append_virus(ctx, "Heuristics.PDF.ObfuscatedNameObject");
