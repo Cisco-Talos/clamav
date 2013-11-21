@@ -644,7 +644,6 @@ int cli_scanxar(cli_ctx *ctx)
                 if (blockp == NULL) {
                     char errbuff[128];
                     cli_strerror(errno, errbuff, sizeof(errbuff));
-                    errbuff[sizeof(errbuff)-1] = '\0';
                     cli_errmsg("cli_scanxar: Can't read %li bytes @ %li, errno:%s.\n",
                                length, at, &errbuff);
                     rc = CL_EREAD;
@@ -680,7 +679,6 @@ int cli_scanxar(cli_ctx *ctx)
                     if (lz.next_in == NULL) {
                         char errbuff[128];
                         cli_strerror(errno, errbuff, sizeof(errbuff));
-                        errbuff[sizeof(errbuff)-1] = '\0';
                         cli_errmsg("cli_scanxar: Can't read %li bytes @ %li, errno: %s.\n",
                                    length, at, &errbuff);
                         rc = CL_EREAD;
@@ -756,7 +754,6 @@ int cli_scanxar(cli_ctx *ctx)
                 if (!(blockp = (void*)fmap_need_off_once(map, at, length))) {
                     char errbuff[128];
                     cli_strerror(errno, errbuff, sizeof(errbuff));
-                    errbuff[sizeof(errbuff)-1] = '\0';
                     cli_errmsg("cli_scanxar: Can't read %li bytes @ %li, errno:%s.\n",
                                length, at, &errbuff);
                     rc = CL_EREAD;
