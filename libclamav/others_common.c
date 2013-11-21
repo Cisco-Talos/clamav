@@ -812,6 +812,7 @@ const char* cli_strerror(int errnum, char *buf, size_t len)
 #endif
     err = strerror(errnum);
     strncpy(buf, err, len);
+    buf[len-1] = '\0'; /* just in case */
 # ifdef CL_THREAD_SAFE
     pthread_mutex_unlock(&cli_strerror_mutex);
 #endif
