@@ -219,7 +219,7 @@ int adc_decompress(adc_stream *strm)
                     if (strm->curr >= (strm->buffer + ADC_BUFF_SIZE)) {
                         strm->curr = strm->buffer;
                     }
-                    if (strm->curr > (strm->buffer + strm->offset)) {
+                    if (strm->curr >= (strm->buffer + strm->offset)) {
                         bData = *(uint8_t *)(strm->curr - strm->offset);
                     }
                     else {
