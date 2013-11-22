@@ -720,12 +720,12 @@ static int dmg_stripe_adc(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish_
     uint8_t obuf[BUFSIZ];
 
     cli_dbgmsg("dmg_stripe_adc: stripe " STDu32 " initial len " STDu64 " expected len " STDu64 "\n",
-            index, len, expected_len);
+            index, (uint64_t)len, (uint64_t)expected_len);
     if (len == 0)
         return CL_CLEAN;
 
     memset(&strm, 0, sizeof(strm));
-    strm.next_in = (void*)fmap_need_off_once(*ctx->fmap, off, len);
+    strm.next_in = (uint8_t *)fmap_need_off_once(*ctx->fmap, off, len);
     if (!strm.next_in) {
         cli_warnmsg("dmg_stripe_adc: fmap need failed on stripe " STDu32 "\n", index);
         return CL_EMAP;
