@@ -347,7 +347,7 @@ static void fmap_aging(fmap_t *m) {
 
 static int fmap_readpage(fmap_t *m, unsigned int first_page, unsigned int count, unsigned int lock_count) {
     size_t readsz = 0, eintr_off;
-    char *pptr = NULL, err[256];
+    char *pptr = NULL, errtxt[256];
     uint32_t s;
     unsigned int i, page = first_page, force_read = 0;
 
@@ -404,9 +404,9 @@ static int fmap_readpage(fmap_t *m, unsigned int first_page, unsigned int count,
 		    if(fmap_bitmap[j] & FM_MASK_SEEN) {
 			/* page we've seen before: check mtime */
 			STATBUF st;
-			char err[256];
 			if(FSTAT(_fd, &st)) {
-			    cli_warnmsg("fmap_readpage: fstat failed: %s\n", cli_strerror(errno, err, sizeof(err)));
+			    cli_strerror(errno, errtxt, sizeof(errtxt));
+			    cli_warnmsg("fmap_readpage: fstat failed: %s\n", &errtxt);
 			    return 1;
 			}
 			if(m->mtime != st.st_mtime) {
@@ -421,7 +421,8 @@ static int fmap_readpage(fmap_t *m, unsigned int first_page, unsigned int count,
 	    eintr_off = 0;
 	    while(readsz) {
 		ssize_t got;
-		got=m->pread_cb(m->handle, pptr, readsz, eintr_off + m->offset + first_page * m->pgsz);
+		off_t target_offset = eintr_off + m->offset + (first_page * m->pgsz);
+		got=m->pread_cb(m->handle, pptr, readsz, target_offset);
 
 		if(got < 0 && errno == EINTR)
 		    continue;
@@ -433,10 +434,13 @@ static int fmap_readpage(fmap_t *m, unsigned int first_page, unsigned int count,
 		    continue;
 		}
 
-		if(got <0)
-		    cli_errmsg("fmap_readpage: pread error: %s\n", cli_strerror(errno, err, sizeof(err)));
-		else
-		    cli_warnmsg("fmap_readpage: pread fail: asked for %lu bytes @ offset %lu, got %lu\n", (long unsigned int)readsz, (long unsigned int)(eintr_off + m->offset + first_page * m->pgsz), (long unsigned int)got);
+		if(got < 0) {
+		    cli_strerror(errno, errtxt, sizeof(errtxt));
+		    cli_errmsg("fmap_readpage: pread error: %s\n", &errtxt);
+		}
+		else {
+		    cli_warnmsg("fmap_readpage: pread fail: asked for %lu bytes @ offset %lu, got %lu\n", (long unsigned int)readsz, (long unsigned int)target_offset, (long unsigned int)got);
+		}
 		return 1;
 	    }
 
