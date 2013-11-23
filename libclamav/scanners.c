@@ -2131,12 +2131,36 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
 	    while(fpt) {
 		if(fpt->offset) switch(fpt->type) {
 		    case CL_TYPE_RARSFX:
-			if(type != CL_TYPE_RAR && have_rar && SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_RAR)) {
-			    ctx->container_type = CL_TYPE_RAR;
-			    ctx->container_size = map->len - fpt->offset; /* not precise */
-			    cli_dbgmsg("RAR/RAR-SFX signature found at %u\n", (unsigned int) fpt->offset);
-			    nret = cli_scanrar(fmap_fd(map), ctx, fpt->offset, &lastrar);
-			}
+                        if(type != CL_TYPE_RAR && have_rar && SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_RAR)) {
+                            char *tmpname = NULL;
+                            int tmpfd = fmap_fd(map);
+                            ctx->container_type = CL_TYPE_RAR;
+                            ctx->container_size = map->len - fpt->offset; /* not precise */
+                            cli_dbgmsg("RAR/RAR-SFX signature found at %u\n", (unsigned int) fpt->offset);
+                            /* if map is not file-backed, have to dump to file for scanrar */
+                            if(tmpfd == -1) {
+                                nret = fmap_dump_to_file(map, ctx->engine->tmpdir, &tmpname, &tmpfd);
+                                if(nret != CL_SUCCESS) {
+                                    cli_dbgmsg("cli_scanraw: failed to generate temporary file.\n");
+                                    ret = nret;
+                                    break_loop = 1;
+                                    break;
+                                }
+                            }
+                            /* scan existing file */
+                            nret = cli_scanrar(tmpfd, ctx, fpt->offset, &lastrar);
+                            /* if dumped tempfile, need to cleanup */
+                            if(tmpname) {
+                                close(tmpfd);
+                                if(!ctx->engine->keeptmp) {
+                                    if (cli_unlink(tmpname)) {
+                                        ret = nret = CL_EUNLINK;
+                                        break_loop = 1;
+                                    }
+                                }
+                                free(tmpname);
+                            }
+                        }
 			break;
 
 		    case CL_TYPE_ZIPSFX:
@@ -2504,32 +2528,12 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 		char *tmpname = NULL;
 		int desc = fmap_fd(*ctx->fmap);
 		if (desc == -1) {
-		    size_t pos = 0, len;
-
 		    cli_dbgmsg("fmap not backed by file, dumping ...\n");
-		    if ((ret = cli_gentempfd(((cli_ctx*)ctx)->engine->tmpdir, &tmpname, &desc)) != CL_SUCCESS) {
+		    ret = fmap_dump_to_file(*ctx->fmap, ctx->engine->tmpdir, &tmpname, &desc);
+		    if (ret != CL_SUCCESS) {
 			cli_dbgmsg("fmap_fd: failed to generate temporary file.\n");
 			break;
 		    }
-		    do {
-			const char *b;
-
-			len = 0;
-			b = fmap_need_off_once_len(*ctx->fmap, pos, BUFSIZ, &len);
-			pos += len;
-			if (b && len > 0) {
-			    if (cli_writen(desc, b, len) != len) {
-				close(desc);
-				unlink(tmpname);
-				cli_warnmsg("fmap_fd_dump: write failed\n");
-				ret = CL_EWRITE;
-				break;
-			    }
-			}
-		    } while (len > 0);
-		    if (lseek(desc, 0, SEEK_SET) == -1) {
-                cli_dbgmsg("magic_scandesc: call to lseek() failed\n");
-            }
 		}
 		ret = cli_scanrar(desc, ctx, 0, NULL);
 		if (tmpname) {
