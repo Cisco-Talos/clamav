@@ -735,6 +735,44 @@ static inline unsigned int fmap_which_page(fmap_t *m, size_t at) {
     return at / m->pgsz;
 }
 
+int fmap_dump_to_file(fmap_t *map, const char *tmpdir, char **outname, int *outfd)
+{
+    char *tmpname;
+    int tmpfd, ret;
+    size_t pos = 0, len;
+
+    cli_dbgmsg("fmap_dump_to_file: dumping fmap not backed by file...\n");
+    ret = cli_gentempfd(tmpdir, &tmpname, &tmpfd);
+    if(ret != CL_SUCCESS) {
+        cli_dbgmsg("fmap_dump_to_file: failed to generate temporary file.\n");
+        return ret;
+    }
+
+    do {
+        const char *b;
+        len = 0;
+        b = fmap_need_off_once_len(map, pos, BUFSIZ, &len);
+        pos += len;
+        if(b && (len > 0)) {
+            if (cli_writen(tmpfd, b, len) != len) {
+                cli_warnmsg("fmap_dump_to_file: write failed to %s!\n", tmpname);
+                close(tmpfd);
+                unlink(tmpname);
+                free(tmpname);
+                return CL_EWRITE;
+            }
+        }
+    } while (len > 0);
+
+    if(lseek(tmpfd, 0, SEEK_SET) == -1) {
+        cli_dbgmsg("fmap_dump_to_file: lseek failed\n");
+    }
+
+    *outname = tmpname;
+    *outfd = tmpfd;
+    return CL_SUCCESS;
+}
+
 int fmap_fd(fmap_t *m)
 {
     int fd, ret;
