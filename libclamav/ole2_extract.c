@@ -1,7 +1,7 @@
 /*
  *  Extract component parts of OLE2 files (e.g. MS Office Documents)
  *
- *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Trog
  *
@@ -41,8 +41,6 @@
 #include "ole2_extract.h"
 #include "scanners.h"
 #include "fmap.h"
-
-/* #define DEBUG_OLE2_LIST */
 
 #ifdef DEBUG_OLE2_LIST
 #define ole2_listmsg(...) cli_dbgmsg( __VA_ARGS__)
@@ -143,7 +141,9 @@ uint32_t ole2_list_size(ole2_list_t* list)
 int ole2_list_push(ole2_list_t* list, uint32_t val)
 {
 	// check the cli-malloc?
-	ole2_list_node_t *new_node = cli_malloc(sizeof(ole2_list_node_t));
+	ole2_list_node_t *new_node;
+
+    new_node = (ole2_list_node_t *)cli_malloc(sizeof(ole2_list_node_t));
 	if (!new_node) {
 		cli_dbgmsg("OLE2: could not allocate new node for worklist!\n");
 		return -1;
@@ -153,24 +153,27 @@ int ole2_list_push(ole2_list_t* list, uint32_t val)
 	new_node->Next = list->Head;
 
 	list->Head = new_node;
-	++(list->Size);
+	(list->Size)++;
 	return 0;
 }
 
 uint32_t ole2_list_pop(ole2_list_t* list)
 {
+    uint32_t val;
+    ole2_list_node_t *next;
+
 	if (ole2_list_is_empty(list)) {
 		cli_dbgmsg("OLE2: work list is empty and ole2_list_pop() called!\n");
 		return -1;
 	}
 
-	uint32_t val = list->Head->Val;
-        ole2_list_node_t *next = list->Head->Next;
+	val = list->Head->Val;
+    next = list->Head->Next;
 
 	free(list->Head);
 	list->Head = next;
 
-	--(list->Size);
+	(list->Size)--;
 	return val;
 }
 
@@ -602,7 +605,7 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
 				ole2_list_delete(&node_list);
                                 return CL_BREAK;
                         }
-                        if (!ctx || !ctx->engine->maxfilesize || prop_block[idx].size <= ctx->engine->maxfilesize || prop_block[idx].size <= *scansize) {
+                        if (!ctx || !(ctx->engine->maxfilesize) || prop_block[idx].size <= ctx->engine->maxfilesize || prop_block[idx].size <= *scansize) {
                                 (*file_count)++;
                                 *scansize-=prop_block[idx].size;
 				ole2_listmsg("running file handler\n");
