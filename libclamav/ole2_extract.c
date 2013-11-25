@@ -42,6 +42,14 @@
 #include "scanners.h"
 #include "fmap.h"
 
+/* #define DEBUG_OLE2_LIST */
+
+#ifdef DEBUG_OLE2_LIST
+#define ole2_listmsg(...) cli_dbgmsg( __VA_ARGS__)
+#else
+#define ole2_listmsg(...) ;
+#endif
+
 #define ole2_endian_convert_16(v) le16_to_host((uint16_t)(v))
 #define ole2_endian_convert_32(v) le32_to_host((uint32_t)(v))
 
@@ -93,7 +101,6 @@ typedef struct ole2_header_tag
 	int has_vba;
 } ole2_header_t;
 
-
 typedef struct property_tag
 {
 	char name[64];		/* in unicode */
@@ -115,6 +122,63 @@ typedef struct property_tag
 	uint32_t size __attribute__ ((packed));
 	unsigned char reserved[4];
 } property_t;
+
+int ole2_list_init(ole2_list_t* list)
+{
+	list->Head = NULL;
+	list->Size = 0;
+	return 0;
+}
+
+int ole2_isEmpty(ole2_list_t* list)
+{
+	return (list->Head == NULL);
+}
+
+uint32_t ole2_list_size(ole2_list_t* list)
+{
+	return (list->Size);
+}
+
+int ole2_list_push(ole2_list_t* list, uint32_t val)
+{
+	// check the cli-malloc?
+	ole2_list_node_t *new_node = cli_malloc(sizeof(ole2_list_node_t));
+	if (!new_node) {
+		cli_dbgmsg("OLE2: could not allocate new node for worklist!\n");
+		return -1;
+	}
+
+	new_node->Val = val;
+	new_node->Next = list->Head;
+
+	list->Head = new_node;
+	++(list->Size);
+	return 0;
+}
+
+uint32_t ole2_list_pop(ole2_list_t* list)
+{
+	if (ole2_isEmpty(list)) {
+		cli_dbgmsg("OLE2: work list is empty and ole2_list_pop() called!\n");
+		return -1;
+	}
+
+	uint32_t val = list->Head->Val;
+        ole2_list_node_t *next = list->Head->Next;
+
+	free(list->Head);
+	list->Head = next;
+
+	--(list->Size);
+	return val;
+}
+
+int ole2_list_delete(ole2_list_t* list)
+{
+	while (!ole2_isEmpty(list))
+	       ole2_list_pop(list);
+}
 
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack()
@@ -420,131 +484,161 @@ static int32_t ole2_get_sbat_data_block(ole2_header_t *hdr, void *buff, int32_t 
 	return(ole2_read_block(hdr, buff, 1 << hdr->log2_big_block_size, current_block));
 }
 
-static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t prop_index,
-				   int (*handler)(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx),
-				   unsigned int rec_level, unsigned int *file_count, cli_ctx *ctx, unsigned long *scansize)
+static int ole2_walk_property_tree2(ole2_header_t *hdr, const char *dir, int32_t prop_index,
+                                    int (*handler)(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx),
+                                    unsigned int rec_level, unsigned int *file_count, cli_ctx *ctx, unsigned long *scansize)
 {
-	property_t prop_block[4];
-	int32_t idx, current_block, i;
-	char *dirname;
+	ole2_listmsg("ole2_walk_property_tree2() called\n");
+        property_t prop_block[4];
+        int32_t idx, current_block, i;
+        char *dirname;
+	ole2_list_t node_list;
 	int ret;
 
-	current_block = hdr->prop_start;
+	ole2_list_init(&node_list);
 
-	if ((prop_index < 0) || (prop_index > (int32_t) hdr->max_block_no) || (rec_level > 100) || (*file_count > 100000)) {
+	ole2_listmsg("rec_level: %d\n", rec_level);
+	ole2_listmsg("file_count: %d\n", *file_count);
+
+	if ((rec_level > 100) || (*file_count > 100000)) {
 		return CL_SUCCESS;
 	}
-	if (ctx && ctx->engine->maxfiles && (*file_count > ctx->engine->maxfiles)) {
-		cli_dbgmsg("OLE2: File limit reached (max: %d)\n", ctx->engine->maxfiles);
-		return CL_SUCCESS;
-	}
-	
+
 	if (ctx && ctx->engine->maxreclevel && (rec_level > ctx->engine->maxreclevel)) {
-		cli_dbgmsg("OLE2: Recursion limit reached (max: %d)\n", ctx->engine->maxreclevel);
-		return CL_SUCCESS;
-	}
+                cli_dbgmsg("OLE2: Recursion limit reached (max: %d)\n", ctx->engine->maxreclevel);
+                return CL_SUCCESS;
+        }
 
-	idx = prop_index / 4;
-	for (i=0 ; i < idx ; i++) {
-		current_block = ole2_get_next_block_number(hdr, current_block);
-		if (current_block < 0) {
-			return CL_SUCCESS;
+	// push the 'root' node for the level onto the local list
+	ole2_list_push(&node_list, prop_index);
+
+	while (!ole2_isEmpty(&node_list)) {
+		ole2_listmsg("within working loop\n");
+		ole2_listmsg("worklist size: %d\n", ole2_list_size(&node_list));
+
+		current_block = hdr->prop_start;
+
+		// pop off a node to work on
+		int32_t curindex = ole2_list_pop(&node_list);
+		ole2_listmsg("current index: %d\n", curindex);
+		if ((curindex < 0) || (curindex > (int32_t) hdr->max_block_no)) {
+			continue;
 		}
-	}
-	idx = prop_index % 4;
-	if (!ole2_read_block(hdr, prop_block, 512,
-			current_block)) {
-		return CL_SUCCESS;
-	}	
-	if (prop_block[idx].type <= 0) {
-		return CL_SUCCESS;
-	}
-	prop_block[idx].name_size = ole2_endian_convert_16(prop_block[idx].name_size);
-	prop_block[idx].prev = ole2_endian_convert_32(prop_block[idx].prev);
-	prop_block[idx].next = ole2_endian_convert_32(prop_block[idx].next);
-	prop_block[idx].child = ole2_endian_convert_32(prop_block[idx].child);
-	prop_block[idx].user_flags = ole2_endian_convert_32(prop_block[idx].user_flags);
-	prop_block[idx].create_lowdate = ole2_endian_convert_32(prop_block[idx].create_lowdate);
-	prop_block[idx].create_highdate = ole2_endian_convert_32(prop_block[idx].create_highdate);
-	prop_block[idx].mod_lowdate = ole2_endian_convert_32(prop_block[idx].mod_lowdate);
-	prop_block[idx].mod_highdate = ole2_endian_convert_32(prop_block[idx].mod_highdate);
-	prop_block[idx].start_block = ole2_endian_convert_32(prop_block[idx].start_block);
-	prop_block[idx].size = ole2_endian_convert_32(prop_block[idx].size);
-	
-	if (dir) print_ole2_property(&prop_block[idx]);
 
-	/* Check we aren't in a loop */
-	if (cli_bitset_test(hdr->bitset, (unsigned long) prop_index)) {
-		/* Loop in property tree detected */
-		cli_dbgmsg("OLE2: Property tree loop detected at index %d\n", prop_index);
-		return CL_BREAK;
-	}
-	if (!cli_bitset_set(hdr->bitset, (unsigned long) prop_index)) {
-		return CL_SUCCESS;
-	}
+		// read in the sector referenced by the current index
+		idx = curindex / 4;
+                for (i=0 ; i < idx ; i++) {
+                        current_block = ole2_get_next_block_number(hdr, current_block);
+                        if (current_block < 0) {
+                                return CL_SUCCESS;
+                        }
+                }
+                idx = curindex % 4;
+                if (!ole2_read_block(hdr, prop_block, 512,
+                                     current_block)) {
+                        return CL_SUCCESS;
+                }
+                if (prop_block[idx].type <= 0) {
+                        return CL_SUCCESS;
+                }
+		ole2_listmsg("reading prop block\n");
 
-	switch (prop_block[idx].type) {
-		case 5: /* Root Entry */
-			if ((prop_index != 0) || (rec_level !=0) ||
-					(*file_count != 0)) {
-				/* Can only have RootEntry as the top */
-				cli_dbgmsg("ERROR: illegal Root Entry\n");
-				return CL_SUCCESS;
-			}
+                prop_block[idx].name_size = ole2_endian_convert_16(prop_block[idx].name_size);
+                prop_block[idx].prev = ole2_endian_convert_32(prop_block[idx].prev);
+                prop_block[idx].next = ole2_endian_convert_32(prop_block[idx].next);
+                prop_block[idx].child = ole2_endian_convert_32(prop_block[idx].child);
+                prop_block[idx].user_flags = ole2_endian_convert_32(prop_block[idx].user_flags);
+                prop_block[idx].create_lowdate = ole2_endian_convert_32(prop_block[idx].create_lowdate);
+                prop_block[idx].create_highdate = ole2_endian_convert_32(prop_block[idx].create_highdate);
+                prop_block[idx].mod_lowdate = ole2_endian_convert_32(prop_block[idx].mod_lowdate);
+                prop_block[idx].mod_highdate = ole2_endian_convert_32(prop_block[idx].mod_highdate);
+                prop_block[idx].start_block = ole2_endian_convert_32(prop_block[idx].start_block);
+                prop_block[idx].size = ole2_endian_convert_32(prop_block[idx].size);
+
+		ole2_listmsg("printing ole2 property\n");
+                if (dir) print_ole2_property(&prop_block[idx]);
+
+		ole2_listmsg("checking bitset\n");
+		/* Check we aren't in a loop */
+		if (cli_bitset_test(hdr->bitset, (unsigned long) curindex)) {
+                        /* Loop in property tree detected */
+                        cli_dbgmsg("OLE2: Property tree loop detected at index %d\n", curindex);
+                        return CL_BREAK;
+                }
+		ole2_listmsg("setting bitset\n");
+                if (!cli_bitset_set(hdr->bitset, (unsigned long) curindex)) {
+                        return CL_SUCCESS;
+                }
+
+		ole2_listmsg("prev: %d next %d child %d\n", prop_block[idx].prev,prop_block[idx].next, prop_block[idx].child);
+
+		ole2_listmsg("node type: %d\n", prop_block[idx].type);
+		switch (prop_block[idx].type) {
+                case 5: /* Root Entry */
+			ole2_listmsg("root node\n");
+                        if ((prop_index != 0) || (rec_level !=0) ||
+			    (*file_count != 0)) {
+                                /* Can only have RootEntry as the top */
+                                cli_dbgmsg("ERROR: illegal Root Entry\n");
+                                return CL_SUCCESS;
+                        }
+                        
 			hdr->sbat_root_start = prop_block[idx].start_block;
-			if (
-				(ret=ole2_walk_property_tree(hdr, dir, prop_block[idx].prev, handler, rec_level+1, file_count, ctx, scansize))!=CL_SUCCESS
-				||
-				(ret=ole2_walk_property_tree(hdr, dir, prop_block[idx].next, handler, rec_level+1, file_count, ctx, scansize))!=CL_SUCCESS
-				||
-				(ret=ole2_walk_property_tree(hdr, dir,prop_block[idx].child, handler, rec_level+1, file_count, ctx, scansize))!=CL_SUCCESS
-			) return ret;
-			break;
+                        if ((prop_block[idx].child != -1) &&
+			    (ret=ole2_walk_property_tree2(hdr, dir,prop_block[idx].child, handler, rec_level+1, file_count, ctx, scansize))!=CL_SUCCESS) 
+				return ret;
+			if (prop_block[idx].prev != -1) ole2_list_push(&node_list, prop_block[idx].prev);
+			if (prop_block[idx].next != -1) ole2_list_push(&node_list, prop_block[idx].next);
+                        break;
 		case 2: /* File */
-			if (ctx && ctx->engine->maxfiles && ctx->scannedfiles + *file_count > ctx->engine->maxfiles) {
-				cli_dbgmsg("OLE2: files limit reached (max: %u)\n", ctx->engine->maxfiles);
-				return CL_BREAK;
-			}
-			if (!ctx || !ctx->engine->maxfilesize || prop_block[idx].size <= ctx->engine->maxfilesize || prop_block[idx].size <= *scansize) {
-				(*file_count)++;
-				*scansize-=prop_block[idx].size;
-				if ((ret=handler(hdr, &prop_block[idx], dir, ctx)) != CL_SUCCESS)
-					return ret;
-			} else {
-				cli_dbgmsg("OLE2: filesize exceeded\n");
-			}
-			if (
-				(ret=ole2_walk_property_tree(hdr, dir, prop_block[idx].prev, handler, rec_level, file_count, ctx, scansize))!=CL_SUCCESS
-				||
-				(ret=ole2_walk_property_tree(hdr, dir, prop_block[idx].next, handler, rec_level, file_count, ctx, scansize))!=CL_SUCCESS
-				||
-				(ret=ole2_walk_property_tree(hdr, dir, prop_block[idx].child, handler, rec_level, file_count, ctx, scansize))!=CL_SUCCESS
-			) return ret;
-			break;
-		case 1: /* Directory */
-			if (dir) {
-				dirname = (char *) cli_malloc(strlen(dir)+8);
-				if (!dirname) return CL_BREAK;
-				snprintf(dirname, strlen(dir)+8, "%s"PATHSEP"%.6d", dir, prop_index);
-				if (mkdir(dirname, 0700) != 0) {
-					free(dirname);
-					return CL_BREAK;
+			ole2_listmsg("file node\n");
+                        if (ctx && ctx->engine->maxfiles && ctx->scannedfiles + *file_count > ctx->engine->maxfiles) {
+                                cli_dbgmsg("OLE2: files limit reached (max: %u)\n", ctx->engine->maxfiles);
+                                return CL_BREAK;
+                        }
+                        if (!ctx || !ctx->engine->maxfilesize || prop_block[idx].size <= ctx->engine->maxfilesize || prop_block[idx].size <= *scansize) {
+                                (*file_count)++;
+                                *scansize-=prop_block[idx].size;
+				ole2_listmsg("running file handler\n");
+                                if ((ret=handler(hdr, &prop_block[idx], dir, ctx)) != CL_SUCCESS) {
+                                        return ret;
 				}
-				cli_dbgmsg("OLE2 dir entry: %s\n",dirname);
-			} else dirname = NULL;
-			if (
-				(ret=ole2_walk_property_tree(hdr, dir, prop_block[idx].prev, handler, rec_level+1, file_count, ctx, scansize))!=CL_SUCCESS
-				||
-				(ret=ole2_walk_property_tree(hdr, dir,prop_block[idx].next, handler, rec_level+1, file_count, ctx, scansize))!=CL_SUCCESS
-				||
-				(ret=ole2_walk_property_tree(hdr, dirname, prop_block[idx].child, handler, rec_level+1, file_count, ctx, scansize))!=CL_SUCCESS
-			) {} 
-			if (dirname) free(dirname);
-			return ret;
-			break;
+                        } else {
+                                cli_dbgmsg("OLE2: filesize exceeded\n");
+                        }
+			ole2_listmsg("adding nodes: %d %d %d\n", prop_block[idx].child, prop_block[idx].prev, prop_block[idx].next);
+			if ((prop_block[idx].child != -1) &&
+			    (ret=ole2_walk_property_tree2(hdr, dir, prop_block[idx].child, handler, rec_level, file_count, ctx, scansize))!=CL_SUCCESS)
+				return ret;
+
+			ole2_listmsg("adding nodes: %d %d\n", prop_block[idx].prev, prop_block[idx].next);
+			if (prop_block[idx].prev != -1) ole2_list_push(&node_list, prop_block[idx].prev);
+			if (prop_block[idx].next != -1) ole2_list_push(&node_list, prop_block[idx].next);
+                        break;
+		case 1: /* Directory */
+			ole2_listmsg("directory node\n");
+                        if (dir) {
+                                dirname = (char *) cli_malloc(strlen(dir)+8);
+                                if (!dirname) return CL_BREAK;
+                                snprintf(dirname, strlen(dir)+8, "%s"PATHSEP"%.6d", dir, prop_index);
+                                if (mkdir(dirname, 0700) != 0) {
+                                        free(dirname);
+                                        return CL_BREAK;
+                                }
+                                cli_dbgmsg("OLE2 dir entry: %s\n",dirname);
+                        } else dirname = NULL;
+			if ((prop_block[idx].child != -1) &&
+			    (ret=ole2_walk_property_tree2(hdr, dirname, prop_block[idx].child, handler, rec_level+1, file_count, ctx, scansize))!=CL_SUCCESS)
+				return ret;
+			if (prop_block[idx].prev != -1) ole2_list_push(&node_list, prop_block[idx].prev);
+			if (prop_block[idx].next != -1) ole2_list_push(&node_list, prop_block[idx].next);
+                        if (dirname) free(dirname);
+                        break;
 		default:
-			cli_dbgmsg("ERROR: unknown OLE2 entry type: %d\n", prop_block[idx].type);
-			break;
+                        cli_dbgmsg("ERROR: unknown OLE2 entry type: %d\n", prop_block[idx].type);
+                        break;
+		}
+		ole2_listmsg("loop ended: %d %d\n", ole2_list_size(&node_list), ole2_isEmpty(&node_list));
 	}
 	return CL_SUCCESS;
 }
@@ -962,7 +1056,7 @@ int cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **vba)
 
 	/* PASS 1 : Count files and check for VBA */
 	hdr.has_vba = 0;
-	ret = ole2_walk_property_tree(&hdr, NULL, 0, handler_enum, 0, &file_count, ctx, &scansize);
+	ret = ole2_walk_property_tree2(&hdr, NULL, 0, handler_enum, 0, &file_count, ctx, &scansize);
 	cli_bitset_free(hdr.bitset);
 	hdr.bitset = NULL;
 	if (!file_count || !(hdr.bitset = cli_bitset_init()))
@@ -978,14 +1072,14 @@ int cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **vba)
 	    goto abort;
 	  }
 	  file_count = 0;
-	  ole2_walk_property_tree(&hdr, dirname, 0, handler_writefile, 0, &file_count, ctx, &scansize2);
+	  ole2_walk_property_tree2(&hdr, dirname, 0, handler_writefile, 0, &file_count, ctx, &scansize2);
 	  ret = CL_CLEAN;
 	  *vba = hdr.U;
 	} else {
 	  cli_dbgmsg("OLE2: no VBA projects found\n");
 	  /* PASS 2/B : OTF scan */
 	  file_count = 0;
-	  ret = ole2_walk_property_tree(&hdr, NULL, 0, handler_otf, 0, &file_count, ctx, &scansize2);
+	  ret = ole2_walk_property_tree2(&hdr, NULL, 0, handler_otf, 0, &file_count, ctx, &scansize2);
 	}
 
 abort:
