@@ -525,8 +525,7 @@ ole2_walk_property_tree(ole2_header_t * hdr, const char *dir, int32_t prop_index
         cli_dbgmsg("OLE2: Recursion limit reached (max: %d)\n", ctx->engine->maxreclevel);
         return CL_SUCCESS;
     }
-    //push the 'root' node for the
-        level onto the local list
+    //push the 'root' node for the level onto the local list
             ole2_list_push(&node_list, prop_index);
 
     while (!ole2_list_is_empty(&node_list)) {
