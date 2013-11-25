@@ -40,7 +40,7 @@ typedef struct ole2_list
 } ole2_list_t;
 
 int ole2_list_init(ole2_list_t*);
-int ole2_isEmpty(ole2_list_t*);
+int ole2_list_is_empty(ole2_list_t*);
 uint32_t ole2_list_size(ole2_list_t*);
 int ole2_list_push(ole2_list_t*, uint32_t);
 uint32_t ole2_list_pop(ole2_list_t*);

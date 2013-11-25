@@ -130,7 +130,7 @@ int ole2_list_init(ole2_list_t* list)
 	return 0;
 }
 
-int ole2_isEmpty(ole2_list_t* list)
+int ole2_list_is_empty(ole2_list_t* list)
 {
 	return (list->Head == NULL);
 }
@@ -159,7 +159,7 @@ int ole2_list_push(ole2_list_t* list, uint32_t val)
 
 uint32_t ole2_list_pop(ole2_list_t* list)
 {
-	if (ole2_isEmpty(list)) {
+	if (ole2_list_is_empty(list)) {
 		cli_dbgmsg("OLE2: work list is empty and ole2_list_pop() called!\n");
 		return -1;
 	}
@@ -176,7 +176,7 @@ uint32_t ole2_list_pop(ole2_list_t* list)
 
 int ole2_list_delete(ole2_list_t* list)
 {
-	while (!ole2_isEmpty(list))
+	while (!ole2_list_is_empty(list))
 	       ole2_list_pop(list);
 }
 
@@ -484,17 +484,17 @@ static int32_t ole2_get_sbat_data_block(ole2_header_t *hdr, void *buff, int32_t 
 	return(ole2_read_block(hdr, buff, 1 << hdr->log2_big_block_size, current_block));
 }
 
-static int ole2_walk_property_tree2(ole2_header_t *hdr, const char *dir, int32_t prop_index,
-                                    int (*handler)(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx),
-                                    unsigned int rec_level, unsigned int *file_count, cli_ctx *ctx, unsigned long *scansize)
+static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t prop_index,
+				   int (*handler)(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx),
+				   unsigned int rec_level, unsigned int *file_count, cli_ctx *ctx, unsigned long *scansize)
 {
-	ole2_listmsg("ole2_walk_property_tree2() called\n");
         property_t prop_block[4];
         int32_t idx, current_block, i;
         char *dirname;
 	ole2_list_t node_list;
 	int ret;
 
+	ole2_listmsg("ole2_walk_property_tree() called\n");
 	ole2_list_init(&node_list);
 
 	ole2_listmsg("rec_level: %d\n", rec_level);
@@ -512,14 +512,14 @@ static int ole2_walk_property_tree2(ole2_header_t *hdr, const char *dir, int32_t
 	// push the 'root' node for the level onto the local list
 	ole2_list_push(&node_list, prop_index);
 
-	while (!ole2_isEmpty(&node_list)) {
-		ole2_listmsg("within working loop\n");
-		ole2_listmsg("worklist size: %d\n", ole2_list_size(&node_list));
+	while (!ole2_list_is_empty(&node_list)) {
+		int32_t curindex;
 
+		ole2_listmsg("within working loop, worklist size: %d\n", ole2_list_size(&node_list));
 		current_block = hdr->prop_start;
 
 		// pop off a node to work on
-		int32_t curindex = ole2_list_pop(&node_list);
+		curindex = ole2_list_pop(&node_list);
 		ole2_listmsg("current index: %d\n", curindex);
 		if ((curindex < 0) || (curindex > (int32_t) hdr->max_block_no)) {
 			continue;
@@ -534,8 +534,7 @@ static int ole2_walk_property_tree2(ole2_header_t *hdr, const char *dir, int32_t
                         }
                 }
                 idx = curindex % 4;
-                if (!ole2_read_block(hdr, prop_block, 512,
-                                     current_block)) {
+                if (!ole2_read_block(hdr, prop_block, 512, current_block)) {
                         return CL_SUCCESS;
                 }
                 if (prop_block[idx].type <= 0) {
@@ -585,7 +584,7 @@ static int ole2_walk_property_tree2(ole2_header_t *hdr, const char *dir, int32_t
                         
 			hdr->sbat_root_start = prop_block[idx].start_block;
                         if ((prop_block[idx].child != -1) &&
-			    (ret=ole2_walk_property_tree2(hdr, dir,prop_block[idx].child, handler, rec_level+1, file_count, ctx, scansize))!=CL_SUCCESS) 
+			    (ret=ole2_walk_property_tree(hdr, dir,prop_block[idx].child, handler, rec_level+1, file_count, ctx, scansize))!=CL_SUCCESS) 
 				return ret;
 			if (prop_block[idx].prev != -1) ole2_list_push(&node_list, prop_block[idx].prev);
 			if (prop_block[idx].next != -1) ole2_list_push(&node_list, prop_block[idx].next);
@@ -606,12 +605,9 @@ static int ole2_walk_property_tree2(ole2_header_t *hdr, const char *dir, int32_t
                         } else {
                                 cli_dbgmsg("OLE2: filesize exceeded\n");
                         }
-			ole2_listmsg("adding nodes: %d %d %d\n", prop_block[idx].child, prop_block[idx].prev, prop_block[idx].next);
 			if ((prop_block[idx].child != -1) &&
-			    (ret=ole2_walk_property_tree2(hdr, dir, prop_block[idx].child, handler, rec_level, file_count, ctx, scansize))!=CL_SUCCESS)
+			    (ret=ole2_walk_property_tree(hdr, dir, prop_block[idx].child, handler, rec_level, file_count, ctx, scansize))!=CL_SUCCESS)
 				return ret;
-
-			ole2_listmsg("adding nodes: %d %d\n", prop_block[idx].prev, prop_block[idx].next);
 			if (prop_block[idx].prev != -1) ole2_list_push(&node_list, prop_block[idx].prev);
 			if (prop_block[idx].next != -1) ole2_list_push(&node_list, prop_block[idx].next);
                         break;
@@ -628,7 +624,7 @@ static int ole2_walk_property_tree2(ole2_header_t *hdr, const char *dir, int32_t
                                 cli_dbgmsg("OLE2 dir entry: %s\n",dirname);
                         } else dirname = NULL;
 			if ((prop_block[idx].child != -1) &&
-			    (ret=ole2_walk_property_tree2(hdr, dirname, prop_block[idx].child, handler, rec_level+1, file_count, ctx, scansize))!=CL_SUCCESS)
+			    (ret=ole2_walk_property_tree(hdr, dirname, prop_block[idx].child, handler, rec_level+1, file_count, ctx, scansize))!=CL_SUCCESS)
 				return ret;
 			if (prop_block[idx].prev != -1) ole2_list_push(&node_list, prop_block[idx].prev);
 			if (prop_block[idx].next != -1) ole2_list_push(&node_list, prop_block[idx].next);
@@ -638,10 +634,11 @@ static int ole2_walk_property_tree2(ole2_header_t *hdr, const char *dir, int32_t
                         cli_dbgmsg("ERROR: unknown OLE2 entry type: %d\n", prop_block[idx].type);
                         break;
 		}
-		ole2_listmsg("loop ended: %d %d\n", ole2_list_size(&node_list), ole2_isEmpty(&node_list));
+		ole2_listmsg("loop ended: %d %d\n", ole2_list_size(&node_list), ole2_list_is_empty(&node_list));
 	}
 	return CL_SUCCESS;
 }
+
 /* Write file Handler - write the contents of the entry to a file */
 static int handler_writefile(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx)
 {
@@ -1056,7 +1053,7 @@ int cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **vba)
 
 	/* PASS 1 : Count files and check for VBA */
 	hdr.has_vba = 0;
-	ret = ole2_walk_property_tree2(&hdr, NULL, 0, handler_enum, 0, &file_count, ctx, &scansize);
+	ret = ole2_walk_property_tree(&hdr, NULL, 0, handler_enum, 0, &file_count, ctx, &scansize);
 	cli_bitset_free(hdr.bitset);
 	hdr.bitset = NULL;
 	if (!file_count || !(hdr.bitset = cli_bitset_init()))
@@ -1072,14 +1069,14 @@ int cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **vba)
 	    goto abort;
 	  }
 	  file_count = 0;
-	  ole2_walk_property_tree2(&hdr, dirname, 0, handler_writefile, 0, &file_count, ctx, &scansize2);
+	  ole2_walk_property_tree(&hdr, dirname, 0, handler_writefile, 0, &file_count, ctx, &scansize2);
 	  ret = CL_CLEAN;
 	  *vba = hdr.U;
 	} else {
 	  cli_dbgmsg("OLE2: no VBA projects found\n");
 	  /* PASS 2/B : OTF scan */
 	  file_count = 0;
-	  ret = ole2_walk_property_tree2(&hdr, NULL, 0, handler_otf, 0, &file_count, ctx, &scansize2);
+	  ret = ole2_walk_property_tree(&hdr, NULL, 0, handler_otf, 0, &file_count, ctx, &scansize2);
 	}
 
 abort:
