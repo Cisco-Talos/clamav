@@ -128,7 +128,7 @@ ole2_list_init(ole2_list_t * list)
 {
     list->Head = NULL;
     list->Size = 0;
-    return 0;
+    return CL_SUCCESS;
 }
 
 int
@@ -152,14 +152,14 @@ ole2_list_push(ole2_list_t * list, uint32_t val)
     new_node = (ole2_list_node_t *) cli_malloc(sizeof(ole2_list_node_t));
     if (!new_node) {
         cli_dbgmsg("OLE2: could not allocate new node for worklist!\n");
-        return -1;
+        return CL_EMEM;
     }
     new_node->Val = val;
     new_node->Next = list->Head;
 
     list->Head = new_node;
     (list->Size)++;
-    return 0;
+    return CL_SUCCESS;
 }
 
 uint32_t
@@ -187,7 +187,7 @@ ole2_list_delete(ole2_list_t * list)
 {
     while (!ole2_list_is_empty(list))
         ole2_list_pop(list);
-    return 0;
+    return CL_SUCCESS;
 }
 
 #ifdef HAVE_PRAGMA_PACK
@@ -527,7 +527,10 @@ ole2_walk_property_tree(ole2_header_t * hdr, const char *dir, int32_t prop_index
         return CL_SUCCESS;
     }
     //push the 'root' node for the level onto the local list
-            ole2_list_push(&node_list, prop_index);
+    if ((ret=ole2_list_push(&node_list, prop_index)) != CL_SUCCESS) {
+        ole2_list_delete(&node_list);
+        return ret;
+    }
 
     while (!ole2_list_is_empty(&node_list)) {
         ole2_listmsg("within working loop, worklist size: %d\n", ole2_list_size(&node_list));
@@ -607,10 +610,18 @@ ole2_walk_property_tree(ole2_header_t * hdr, const char *dir, int32_t prop_index
                 ole2_list_delete(&node_list);
                 return ret;
             }
-            if (prop_block[idx].prev != -1)
-                ole2_list_push(&node_list, prop_block[idx].prev);
-            if (prop_block[idx].next != -1)
-                ole2_list_push(&node_list, prop_block[idx].next);
+            if (prop_block[idx].prev != -1) {
+	        if ((ret=ole2_list_push(&node_list, prop_block[idx].prev)) != CL_SUCCESS) {
+		    ole2_list_delete(&node_list);
+		    return ret;
+		}
+	    }
+	    if (prop_block[idx].next != -1) {
+	        if ((ret=ole2_list_push(&node_list, prop_block[idx].next)) != CL_SUCCESS) {
+		    ole2_list_delete(&node_list);
+		    return ret;
+		}
+	    }
             break;
         case 2:                /* File */
             ole2_listmsg("file node\n");
@@ -635,10 +646,18 @@ ole2_walk_property_tree(ole2_header_t * hdr, const char *dir, int32_t prop_index
                 ole2_list_delete(&node_list);
                 return ret;
             }
-            if (prop_block[idx].prev != -1)
-                ole2_list_push(&node_list, prop_block[idx].prev);
-            if (prop_block[idx].next != -1)
-                ole2_list_push(&node_list, prop_block[idx].next);
+            if (prop_block[idx].prev != -1) {
+	        if ((ret=ole2_list_push(&node_list, prop_block[idx].prev)) != CL_SUCCESS) {
+		    ole2_list_delete(&node_list);
+		    return ret;
+		}
+            }
+            if (prop_block[idx].next != -1) {
+                if ((ret=ole2_list_push(&node_list, prop_block[idx].next)) != CL_SUCCESS) {
+		    ole2_list_delete(&node_list);
+		    return ret;
+		}
+            }
             break;
         case 1:                /* Directory */
             ole2_listmsg("directory node\n");
@@ -662,10 +681,18 @@ ole2_walk_property_tree(ole2_header_t * hdr, const char *dir, int32_t prop_index
                 ole2_list_delete(&node_list);
                 return ret;
             }
-            if (prop_block[idx].prev != -1)
-                ole2_list_push(&node_list, prop_block[idx].prev);
-            if (prop_block[idx].next != -1)
-                ole2_list_push(&node_list, prop_block[idx].next);
+            if (prop_block[idx].prev != -1) {
+	        if ((ret=ole2_list_push(&node_list, prop_block[idx].prev)) != CL_SUCCESS) {
+		    ole2_list_delete(&node_list);
+		    return ret;
+		}
+            }
+            if (prop_block[idx].next != -1) {
+                if ((ret=ole2_list_push(&node_list, prop_block[idx].next)) != CL_SUCCESS) {
+		    ole2_list_delete(&node_list);
+		    return ret;
+		}
+            }
             if (dirname)
                 free(dirname);
             break;
