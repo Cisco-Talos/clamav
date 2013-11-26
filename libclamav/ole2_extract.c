@@ -187,6 +187,7 @@ ole2_list_delete(ole2_list_t * list)
 {
     while (!ole2_list_is_empty(list))
         ole2_list_pop(list);
+    return 0;
 }
 
 #ifdef HAVE_PRAGMA_PACK
