@@ -1105,6 +1105,12 @@ cli_ole2_extract(const char *dirname, cli_ctx * ctx, struct uniq **vba)
     if (hdr.sbat_cutoff != 4096) {
         cli_dbgmsg("WARNING: Untested sbat cutoff (%u); data may not extract correctly\n", hdr.sbat_cutoff);
     }
+
+    if (hdr.map->len > INT32_MAX) {
+        cli_dbgmsg("OLE2 extract: Overflow detected\n");
+	ret = CL_EFORMAT;
+        goto abort;
+    }
     /* 8 SBAT blocks per file block */
     hdr.max_block_no = (hdr.map->len - MAX(512, 1 << hdr.log2_big_block_size)) / (1 << hdr.log2_small_block_size);
 
