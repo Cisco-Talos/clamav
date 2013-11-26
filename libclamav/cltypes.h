@@ -107,4 +107,8 @@
 #define STDx32 "%" PRIx32
 #endif
 
+#ifndef INT32_MAX
+#define INT32_MAX 2147483647
+#endif
+
 #endif
