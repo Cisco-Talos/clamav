@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2009 Sourcefire, Inc.
+ *  Copyright (C) 2009-2013 Sourcefire, Inc.
  *
  *  Authors: aCaB <acab@clamav.net>
  *
@@ -406,7 +406,7 @@ static int fmap_readpage(fmap_t *m, unsigned int first_page, unsigned int count,
 			STATBUF st;
 			if(FSTAT(_fd, &st)) {
 			    cli_strerror(errno, errtxt, sizeof(errtxt));
-			    cli_warnmsg("fmap_readpage: fstat failed: %s\n", &errtxt);
+			    cli_warnmsg("fmap_readpage: fstat failed: %s\n", errtxt);
 			    return 1;
 			}
 			if(m->mtime != st.st_mtime) {
@@ -436,7 +436,7 @@ static int fmap_readpage(fmap_t *m, unsigned int first_page, unsigned int count,
 
 		if(got < 0) {
 		    cli_strerror(errno, errtxt, sizeof(errtxt));
-		    cli_errmsg("fmap_readpage: pread error: %s\n", &errtxt);
+		    cli_errmsg("fmap_readpage: pread error: %s\n", errtxt);
 		}
 		else {
 		    cli_warnmsg("fmap_readpage: pread fail: asked for %lu bytes @ offset %lu, got %lu\n", (long unsigned int)readsz, (long unsigned int)target_offset, (long unsigned int)got);
