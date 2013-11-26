@@ -645,7 +645,7 @@ int cli_scanxar(cli_ctx *ctx)
                     char errbuff[128];
                     cli_strerror(errno, errbuff, sizeof(errbuff));
                     cli_errmsg("cli_scanxar: Can't read %li bytes @ %li, errno:%s.\n",
-                               length, at, &errbuff);
+                               length, at, errbuff);
                     rc = CL_EREAD;
                     __lzma_wrap_free(NULL, buff);
                     goto exit_tmpfile;
@@ -680,7 +680,7 @@ int cli_scanxar(cli_ctx *ctx)
                         char errbuff[128];
                         cli_strerror(errno, errbuff, sizeof(errbuff));
                         cli_errmsg("cli_scanxar: Can't read %li bytes @ %li, errno: %s.\n",
-                                   length, at, &errbuff);
+                                   length, at, errbuff);
                         rc = CL_EREAD;
                         __lzma_wrap_free(NULL, buff);
                         cli_LzmaShutdown(&lz);
@@ -755,7 +755,7 @@ int cli_scanxar(cli_ctx *ctx)
                     char errbuff[128];
                     cli_strerror(errno, errbuff, sizeof(errbuff));
                     cli_errmsg("cli_scanxar: Can't read %li bytes @ %li, errno:%s.\n",
-                               length, at, &errbuff);
+                               length, at, errbuff);
                     rc = CL_EREAD;
                     goto exit_tmpfile;
                 }
