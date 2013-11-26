@@ -597,7 +597,7 @@ ole2_walk_property_tree(ole2_header_t * hdr, const char *dir, int32_t prop_index
         switch (prop_block[idx].type) {
         case 5:                /* Root Entry */
             ole2_listmsg("root node\n");
-            if ((prop_index != 0) || (rec_level != 0) ||
+            if ((curindex != 0) || (rec_level != 0) ||
                     (*file_count != 0)) {
                 /* Can only have RootEntry as the top */
                 cli_dbgmsg("ERROR: illegal Root Entry\n");
@@ -635,7 +635,8 @@ ole2_walk_property_tree(ole2_header_t * hdr, const char *dir, int32_t prop_index
                 *scansize -= prop_block[idx].size;
                 ole2_listmsg("running file handler\n");
                 if ((ret = handler(hdr, &prop_block[idx], dir, ctx)) != CL_SUCCESS) {
-                    ole2_list_delete(&node_list);
+                    ole2_listmsg("file handler returned %d\n", ret);
+		    ole2_list_delete(&node_list);
                     return ret;
                 }
             } else {
@@ -664,11 +665,13 @@ ole2_walk_property_tree(ole2_header_t * hdr, const char *dir, int32_t prop_index
             if (dir) {
                 dirname = (char *)cli_malloc(strlen(dir) + 8);
                 if (!dirname) {
+		    ole2_listmsg("OLE2: malloc failed for dirname\n");
                     ole2_list_delete(&node_list);
-                    return CL_BREAK;
+                    return CL_EMEM;
                 }
-                snprintf(dirname, strlen(dir) + 8, "%s" PATHSEP "%.6d", dir, prop_index);
+                snprintf(dirname, strlen(dir) + 8, "%s" PATHSEP "%.6d", dir, curindex);
                 if (mkdir(dirname, 0700) != 0) {
+		    ole2_listmsg("OLE2: mkdir failed for directory %s\n", dirname);
                     free(dirname);
                     ole2_list_delete(&node_list);
                     return CL_BREAK;
