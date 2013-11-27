@@ -547,18 +547,15 @@ ole2_walk_property_tree(ole2_header_t * hdr, const char *dir, int32_t prop_index
         for (i = 0; i < idx; i++) {
             current_block = ole2_get_next_block_number(hdr, current_block);
             if (current_block < 0) {
-                ole2_list_delete(&node_list);
-                return CL_SUCCESS;
+                continue;
             }
         }
         idx = curindex % 4;
         if (!ole2_read_block(hdr, prop_block, 512, current_block)) {
-            ole2_list_delete(&node_list);
-            return CL_SUCCESS;
+            continue;
         }
         if (prop_block[idx].type <= 0) {
-            ole2_list_delete(&node_list);
-            return CL_SUCCESS;
+            continue;
         }
         ole2_listmsg("reading prop block\n");
 
@@ -588,8 +585,7 @@ ole2_walk_property_tree(ole2_header_t * hdr, const char *dir, int32_t prop_index
         }
         ole2_listmsg("setting bitset\n");
         if (!cli_bitset_set(hdr->bitset, (unsigned long)curindex)) {
-            ole2_list_delete(&node_list);
-            return CL_SUCCESS;
+            continue;
         }
         ole2_listmsg("prev: %d next %d child %d\n", prop_block[idx].prev, prop_block[idx].next, prop_block[idx].child);
 
@@ -601,8 +597,7 @@ ole2_walk_property_tree(ole2_header_t * hdr, const char *dir, int32_t prop_index
                     (*file_count != 0)) {
                 /* Can only have RootEntry as the top */
                 cli_dbgmsg("ERROR: illegal Root Entry\n");
-                ole2_list_delete(&node_list);
-                return CL_SUCCESS;
+                continue;
             }
             hdr->sbat_root_start = prop_block[idx].start_block;
             if ((prop_block[idx].child != -1) &&
