@@ -203,7 +203,9 @@ attachment.exe: OK
 
     \subsection{Hash-based signatures}
     The easiest way to create signatures for ClamAV is to use filehash checksums,
-    however this method can be only used against static malware. To create a
+    however this method can be only used against static malware.
+    \subsubsection{MD5 hash-based signatures}
+    To create a
     MD5 signature for \verb+test.exe+ use the \verb+--md5+ option of sigtool:
     \begin{verbatim}
 zolw@localhost:/tmp/test$ sigtool --md5 test.exe > test.hdb
@@ -238,7 +240,7 @@ Time: 0.024 sec (0 m 0 s)
     left in /tmp. Please keep in mind that a hash signature will stop
     matching as soon as a single byte changes in the target file.}
 
-    \subsection{SHA1, SHA256}
+    \subsubsection{SHA1 and SHA256 hash-based signatures}
     ClamAV 0.98 has also added support for SHA1 and SHA256 file checksums.
     The format is the same as for MD5 file checksum. 
     It can differentiate between them based on the length of the hash string
@@ -248,7 +250,7 @@ Time: 0.024 sec (0 m 0 s)
 HashString:FileSize:MalwareName
     \end{verbatim}
 
-    \subsection{PE section based}
+    \subsubsection{PE section based hash signatures}
     You can create a hash signature for a specific section in a PE file.
     Such signatures shall be stored inside \verb+.mdb+ files in the
     following format:
@@ -265,7 +267,7 @@ PESectionSize:PESectionHash:MalwareName
     in the signature. For best backwards compatibility, these should be
     placed inside a \verb+*.msb+ file.
 
-    \subsection{Unknown size}
+    \subsubsection{Hash signatures with unknown size}
     ClamAV 0.98 has also added support for hash signatures where the size
     is not known but the hash is. It is much more performance-efficient to
     use signatures with specific sizes, so be cautious when using this
@@ -323,6 +325,11 @@ How do I look in hex?
 	Match aa or bb or cc..
 	\item \verb+!(aa|bb|cc|..)+\\
 	Match any byte except aa and bb and cc.. (ClamAV$\ge$0.96)
+	\item \verb+(aaaa|bbbb|cccc|..)+\\
+	Match alternative strings aaaa or bbbb or cccc. Alternative strings must have identical lengths.
+	\item \verb+!(aaaa|bbbb|cccc|..)+\\
+	Match any string except aaaa and bbbb and cccc. Alternative strings must have identical lengths.
+        (ClamAV$\ge$0.98.2)
 	\item \verb+HEXSIG[x-y]aa+ or \verb+aa[x-y]HEXSIG+\\
 	Match aa anchored to a hex-signature, see
 	\url{https://wwws.clamav.net/bugzilla/show_bug.cgi?id=776} for
