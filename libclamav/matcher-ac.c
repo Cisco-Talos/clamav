@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2009 Sourcefire, Inc.
+ *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
  *
@@ -166,8 +166,12 @@ int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
     while(ph) {
 	if(!ph_add_after && ph->partno <= pattern->partno && (!ph->next || ph->next->partno > pattern->partno))
 	    ph_add_after = ph;
-	if((ph->length == pattern->length) && (ph->prefix_length == pattern->prefix_length) && (ph->ch[0] == pattern->ch[0]) && (ph->ch[1] == pattern->ch[1])) {
-	    if(!memcmp(ph->pattern, pattern->pattern, ph->length * sizeof(uint16_t)) && !memcmp(ph->prefix, pattern->prefix, ph->prefix_length * sizeof(uint16_t))) {
+	if((ph->length == pattern->length) &&
+           (ph->prefix_length == pattern->prefix_length) &&
+           (ph->special_len == pattern->special_len) &&
+           (ph->ch[0] == pattern->ch[0]) && (ph->ch[1] == pattern->ch[1])) {
+	    if(!memcmp(ph->pattern, pattern->pattern, ph->length * sizeof(uint16_t)) &&
+               !memcmp(ph->prefix, pattern->prefix, ph->prefix_length * sizeof(uint16_t))) {
 		if(!ph->special && !pattern->special) {
 		    match = 1;
 		} else if(ph->special == pattern->special) {
@@ -806,12 +810,13 @@ int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigne
 
 inline static int ac_findmatch(const unsigned char *buffer, uint32_t offset, uint32_t fileoffset, uint32_t length, const struct cli_ac_patt *pattern, uint32_t *end)
 {
-	uint32_t bp, match;
-	uint16_t wc, i, j, specialcnt = pattern->special_pattern;
-	struct cli_ac_special *special;
+    uint32_t bp, match;
+    uint16_t wc, i, j, specialcnt = pattern->special_pattern;
+    struct cli_ac_special *special;
 
 
-    if((offset + pattern->length > length) || (pattern->prefix_length > offset))
+    if ((offset + pattern->length + pattern->special_len > length) ||
+        (pattern->prefix_length + pattern->special_len > offset))
 	return 0;
 
     bp = offset + pattern->depth;
@@ -874,7 +879,7 @@ inline static int ac_findmatch(const unsigned char *buffer, uint32_t offset, uin
 
     if(pattern->prefix) {
 	specialcnt = 0;
-	bp = offset - pattern->prefix_length;
+        bp = offset - pattern->prefix_length - pattern->special_len;
 	match = 1;
 	for(i = 0; i < pattern->prefix_length; i++) {
 	    AC_MATCH_CHAR(pattern->prefix[i],buffer[bp]);
@@ -885,7 +890,7 @@ inline static int ac_findmatch(const unsigned char *buffer, uint32_t offset, uin
     }
 
     if(!(pattern->ch[0] & CLI_MATCH_IGNORE)) {
-	bp = offset - pattern->prefix_length;
+	bp = offset - pattern->prefix_length - pattern->special_len;
 	if(pattern->ch_mindist[0] + (uint32_t) 1 > bp)
 	    return 0;
 	bp -= pattern->ch_mindist[0] + 1;
@@ -1198,12 +1203,16 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 		    continue;
 		}
 		bp = i + 1 - patt->depth;
-		if(patt->offdata[0] != CLI_OFF_VERSION && patt->offdata[0] != CLI_OFF_MACRO && !patt->next_same && (patt->offset_min != CLI_OFF_ANY) && (!patt->sigid || patt->partno == 1)) {
+		if (patt->offdata[0] != CLI_OFF_VERSION && 
+                    patt->offdata[0] != CLI_OFF_MACRO && 
+                    !patt->next_same && 
+                    (patt->offset_min != CLI_OFF_ANY) && 
+                    (!patt->sigid || patt->partno == 1)) {
 		    if(patt->offset_min == CLI_OFF_NONE) {
 			patt = patt->next;
 			continue;
 		    }
-		    realoff = offset + bp - patt->prefix_length;
+		    realoff = offset + bp - patt->prefix_length - patt->special_len;
 		    if(patt->offdata[0] == CLI_OFF_ABSOLUTE) {
 			if(patt->offset_max < realoff || patt->offset_min > realoff) {
 			    patt = patt->next;
@@ -1225,7 +1234,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 			    pt = pt->next_same;
 			    continue;
 			}
-			realoff = offset + bp - pt->prefix_length;
+			realoff = offset + bp - pt->prefix_length - patt->special_len;
 			if(pt->offdata[0] == CLI_OFF_VERSION) {
 			    if(!cli_hashset_contains_maybe_noalloc(mdata->vinfo, realoff)) {
 				pt = pt->next_same;
@@ -1358,9 +1367,10 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 				    if(res) {
 					newres = (struct cli_ac_result *) malloc(sizeof(struct cli_ac_result));
 					if(!newres) {
-                        cli_errmsg("cli_ac_scanbuff: Can't allocate memory for newres %u\n", sizeof(struct cli_ac_result));
+                                            cli_errmsg("cli_ac_scanbuff: Can't allocate memory for newres %u\n",
+                                                       sizeof(struct cli_ac_result));
 					    return CL_EMEM;
-                    }
+                                        }
 					newres->virname = pt->virname;
 					newres->customdata = pt->customdata;
 					newres->next = *res;
@@ -1391,7 +1401,8 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 				if(pt->type == CL_TYPE_IGNORED && (!pt->rtype || ftype == pt->rtype))
 				    return CL_TYPE_IGNORED;
 
-				if((pt->type > type || pt->type >= CL_TYPE_SFX || pt->type == CL_TYPE_MSEXE) && (!pt->rtype || ftype == pt->rtype)) {
+				if((pt->type > type || pt->type >= CL_TYPE_SFX || pt->type == CL_TYPE_MSEXE) &&
+                                   (!pt->rtype || ftype == pt->rtype)) {
 
 				    cli_dbgmsg("Matched signature for file type %s at %u\n", pt->virname, realoff);
 				    type = pt->type;
@@ -1411,9 +1422,10 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 				if(res) {
 				    newres = (struct cli_ac_result *) malloc(sizeof(struct cli_ac_result));
 				    if(!newres) {
-                        cli_errmsg("cli_ac_scanbuff: Can't allocate memory for newres %u\n", sizeof(struct cli_ac_result));
-                        return CL_EMEM;
-                    }
+                                        cli_errmsg("cli_ac_scanbuff: Can't allocate memory for newres %u\n",
+                                                   sizeof(struct cli_ac_result));
+                                        return CL_EMEM;
+                                    }
 				    newres->virname = pt->virname;
 				    newres->customdata = pt->customdata;
 				    newres->offset = realoff;
@@ -1675,6 +1687,10 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 		newspecial->type = AC_SPECIAL_WHITE;
 	    */
 	    } else {
+                /* This code block needs to be refactored to support alternate strings of varying lengths.
+                   Only alternate strings of the same length are supported by this code block. A related
+                   but different issue to resolve is mixing strings with individual characters
+                   (ie, AC_SPECIAL_ALT_CHAR vs. AC_SPECIAL_ALT_STR). */
 		newspecial->num = 1;
 		for(i = 0; i < strlen(pt); i++)
 		    if(pt[i] == '|')
@@ -1689,7 +1705,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 			break;
 		    }
 		} else {
-		    newspecial->type = AC_SPECIAL_ALT_STR;
+                    newspecial->type = AC_SPECIAL_ALT_STR;
 		}
 
 		for(i = 0; i < newspecial->num; i++) {
@@ -1730,9 +1746,16 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 			    }
 			    specialpt->next->str = (unsigned char *) c;
 			    specialpt->next->len = clen;
+                            specialpt->next->negative = specialpt->negative;
+                            specialpt->next->type = specialpt->type;
+                            /* following two lines are temporary to revert to previous behavior for 
+                               alternate string with varying lengths, which is not supported currently. */
+                            if (clen-1 != new->special_len)
+                                new->special_len = 0;
 			} else {
 			    newspecial->str = (unsigned char *) c;
 			    newspecial->len = clen;
+                            new->special_len = clen-1;
 			}
 		    }
 		}
@@ -1839,8 +1862,8 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 		new->special_pattern++;
     }
 
-    if(new->length + new->prefix_length > root->maxpatlen)
-	root->maxpatlen = new->length + new->prefix_length;
+    if(new->length + new->prefix_length + new->special_len > root->maxpatlen)
+	root->maxpatlen = new->length + new->prefix_length + new->special_len;
 
     new->virname = cli_mpool_virname(root->mempool, virname, options & CL_DB_OFFICIAL);
     if(!new->virname) {
