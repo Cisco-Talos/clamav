@@ -246,6 +246,7 @@ Example
 # when the LeaveTemporaryFiles option is enabled.
 #ForceToDisk yes
 
+
 ##
 ## Executable files
 ##
@@ -293,7 +294,6 @@ Example
 # Default: yes
 #ScanOLE2 yes
 
-
 # With this option enabled OLE2 files with VBA macros, which were not
 # detected by signatures will be marked as "Heuristics.OLE2.ContainsMacros".
 # Default: no
@@ -328,7 +328,6 @@ Example
 #	   Never use it on loaded servers.
 # Default: no
 #ScanPartialMessages yes
-
 
 # With this option enabled ClamAV will try to detect phishing attempts by using
 # signatures.
@@ -366,6 +365,7 @@ Example
 #
 # Default: no
 #HeuristicScanPrecedence yes
+
 
 ##
 ## Data Loss Prevention (DLP)
@@ -499,48 +499,41 @@ Example
 
 
 ##
-## Clamuko settings
+## On-access Scan Settings
 ##
 
-# Enable Clamuko. Dazuko must be configured and running. Clamuko supports
-# both Dazuko (/dev/dazuko) and DazukoFS (/dev/dazukofs.ctrl). DazukoFS
-# is the preferred option. For more information please visit www.dazuko.org
+# Enable on-access scanning. Currently, this is supported via fanotify.
+# Clamuko/Dazuko support has been deprecated.
 # Default: no
-#ClamukoScanOnAccess yes
+#ScanOnAccess yes
 
-# The number of scanner threads that will be started (DazukoFS only).
-# Having multiple scanner threads allows Clamuko to serve multiple
-# processes simultaneously. This is particularly beneficial on SMP machines.
-# Default: 3
-#ClamukoScannerCount 3
-
-# Don't scan files larger than ClamukoMaxFileSize
+# Don't scan files larger than OnAccessMaxFileSize
 # Value of 0 disables the limit.
 # Default: 5M
-#ClamukoMaxFileSize 10M
-
-# Set access mask for Clamuko (Dazuko only).
-# Default: no
-#ClamukoScanOnOpen yes
-#ClamukoScanOnClose yes
-#ClamukoScanOnExec yes
+#OnAccessMaxFileSize 10M
 
 # Set the include paths (all files inside them will be scanned). You can have
-# multiple ClamukoIncludePath directives but each directory must be added
-# in a seperate line. (Dazuko only)
+# multiple OnAccessIncludePath directives but each directory must be added
+# in a separate line. (On-access scan only)
 # Default: disabled
-#ClamukoIncludePath /home
-#ClamukoIncludePath /students
+#OnAccessIncludePath /home
+#OnAccessIncludePath /students
 
-# Set the exclude paths. All subdirectories are also excluded. (Dazuko only)
+# Set the exclude paths. All subdirectories are also excluded.
+# (On-access scan only)
 # Default: disabled
-#ClamukoExcludePath /home/bofh
+#OnAccessExcludePath /home/bofh
 
 # With this option you can whitelist specific UIDs. Processes with these UIDs
 # will be able to access all files.
 # This option can be used multiple times (one per line).
 # Default: disabled
-#ClamukoExcludeUID 0
+#OnAccessExcludeUID 0
+
+
+##
+## Bytecode
+##
 
 # With this option enabled ClamAV will load bytecode from the database. 
 # It is highly recommended you keep this option on, otherwise you'll miss detections for many new viruses.
