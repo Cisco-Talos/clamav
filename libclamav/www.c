@@ -97,37 +97,33 @@ void submit_post(const char *host, const char *port, const char *url, const char
 {
     int sockfd;
     unsigned int i;
-    char *buf, *encoded;
+    char *buf;
     size_t bufsz;
+    char chunkedlen[21];
 
-    encoded = encode_data(postdata);
-    if (!(encoded))
-        return;
+    snprintf(chunkedlen, sizeof(chunkedlen), "%X\r\n", strlen(postdata));
 
     bufsz = sizeof("POST   HTTP/1.1") + 1; /* Yes. Three blank spaces. +1 for the \n */
     bufsz += strlen(url);
     bufsz += sizeof("Host: \n");
     bufsz += strlen(host);
     bufsz += sizeof("Connection: Close\n");
-    bufsz += sizeof("Content-Type: application/x-www-form-urlencoded\n");
-    bufsz += sizeof("Content-Length: \n") + 10;
+    bufsz += sizeof("Transfer-Encoding: Chunked\n");
     bufsz += 2; /* +2 for \n\n */
-    bufsz += sizeof("postdata=");
-    bufsz += strlen(encoded) + 1;
+    bufsz += strlen(chunkedlen) + 9; /* 9 for "\r\n(data)0\r\n\r\n\0" */
+    bufsz += strlen(postdata) + 1;
+    bufsz += 2; /* Terminating \n\n */
 
     buf = cli_calloc(1, bufsz);
     if (!(buf)) {
-        free(encoded);
         return;
     }
 
     snprintf(buf, bufsz, "POST %s HTTP/1.1\n", url);
     snprintf(buf+strlen(buf), bufsz-strlen(buf), "Host: %s\n", host);
     snprintf(buf+strlen(buf), bufsz-strlen(buf), "Connection: Close\n");
-    snprintf(buf+strlen(buf), bufsz-strlen(buf), "Content-Type: application/x-www-form-urlencoded\n");
-    snprintf(buf+strlen(buf), bufsz-strlen(buf), "Content-Length: %u\n\n", (unsigned int)(strlen(encoded) + sizeof("postdata=") - 1));
-    snprintf(buf+strlen(buf), bufsz-strlen(buf), "postdata=%s", encoded);
-    free(encoded);
+    snprintf(buf+strlen(buf), bufsz-strlen(buf), "Transfer-encoding: Chunked\n\n");
+    snprintf(buf+strlen(buf), bufsz-strlen(buf), "%s%s\r\n0\r\n\r\n", chunkedlen, postdata);
 
     sockfd = connect_host(host, port);
     if (sockfd < 0) {
