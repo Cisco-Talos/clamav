@@ -823,7 +823,6 @@ int cli_scanxar(cli_ctx *ctx)
  exit_reader:
     xmlTextReaderClose(reader);
     xmlFreeTextReader(reader);
-    xmlCleanupParser();
 
  exit_toc:
     free(toc);

@@ -297,6 +297,9 @@ int cl_init(unsigned int initoptions)
     rc = bytecode_init();
     if (rc)
 	return rc;
+#ifdef HAVE_LIBXML2
+    xmlInitParser();
+#endif
     return CL_SUCCESS;
 }
 
