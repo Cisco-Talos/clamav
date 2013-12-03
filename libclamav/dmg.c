@@ -456,7 +456,6 @@ int cli_scandmg(cli_ctx *ctx)
     }
 
     xmlFreeTextReader(reader);
-    xmlCleanupParser();
 
 #else
 
