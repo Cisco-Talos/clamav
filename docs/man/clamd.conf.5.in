@@ -138,25 +138,24 @@ Default: disabled
 Maximum length the queue of pending connections may grow to.
 .br 
 Default: 200
-
 .TP
 \fBStreamMaxLength SIZE\fR
 Close the STREAM session when the data size limit is exceeded.
-\br
+.br
 The value should match your MTA's limit for the maximum attachment size.
-\br
-Default: 26214400
+.br
+Default: 25M
 .TP
 \fBStreamMinPort NUMBER\fR
 The STREAM command uses an FTP-like protocol.
-\br
+.br
 This option sets the lower boundary for the port range.
-\br
+.br
 Default: 1024
 .TP
 \fBStreamMaxPort NUMBER\fR
 This option sets the upper boundary for the port range.
-\br
+.br
 Default: 2048
 .TP 
 \fBMaxThreads NUMBER\fR
