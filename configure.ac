@@ -733,7 +733,6 @@ fi
 
 if test "$working_xml" = "yes"; then
   AC_DEFINE([HAVE_LIBXML2],1,[Define to 1 if you have the 'libxml2' library (-lxml2).])
-  AC_DEFINE([ENABLE_XML],1,[Define to 1 if xml supported features can be enabled.])
   AC_SUBST(XML_CPPFLAGS)
   AC_SUBST(XML_LIBS)
   AC_MSG_NOTICE([Compiling and linking with libxml2 from $XML_HOME])
@@ -749,8 +748,6 @@ else
   XML_LIBS=""
   AC_SUBST(XML_CPPFLAGS)
   AC_SUBST(XML_LIBS)
-  AC_DEFINE([HAVE_LIBXML2],0,[Define to 1 if you have the 'libxml2' library (-lxml2).])
-  AC_DEFINE([ENABLE_XML],0,[Define to 1 if xml supported features can be enabled.])
 fi
 
 AC_ARG_ENABLE([getaddrinfo],
