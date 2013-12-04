@@ -79,7 +79,7 @@ char *export_stats_to_json(struct cl_engine *engine, cli_intel_t *intel)
 
     bufsz = JSON_BUFSZ;
     sprintf(buf, "{\n\t\"hostid\": \"%s\",\n", hostid);
-    sprintf(buf+strlen(buf), "\t\"samples\": {\n");
+    sprintf(buf+strlen(buf), "\t\"samples\": [\n");
     curused = strlen(buf);
 
     for (sample = intel->samples; sample != NULL; sample = sample->next) {
@@ -93,7 +93,14 @@ char *export_stats_to_json(struct cl_engine *engine, cli_intel_t *intel)
         if (!(buf))
             return NULL;
 
-        snprintf(buf+curused, bufsz-curused, "\t\t\"%s%s\": {\n", SAMPLE_PREFIX, md5);
+        snprintf(buf+curused, bufsz-curused, "\t\t\{\n");
+        curused += strlen(buf+curused);
+
+        buf = ensure_bufsize(buf, &bufsz, curused, sizeof("\t\t\t\"hash\": \"\",\n") + strlen(md5) + 1);
+        if (!(buf))
+            return NULL;
+
+        snprintf(buf+curused, bufsz-curused, "\t\t\t\"hash\": \"%s\",\n", md5);
         curused += strlen(buf+curused);
 
         type = get_sample_type(sample->type);
@@ -156,7 +163,7 @@ char *export_stats_to_json(struct cl_engine *engine, cli_intel_t *intel)
     if (!(buf))
         return NULL;
 
-    snprintf(buf+curused, bufsz-curused, "\t}\n}\n");
+    snprintf(buf+curused, bufsz-curused, "\t]\n}\n");
 
     return buf;
 }
