@@ -521,7 +521,7 @@ int cli_scanxar(cli_ctx *ctx)
     rc = xar_scan_subdocuments(reader, ctx);
     if (rc != CL_SUCCESS) {
         cli_errmsg("xar_scan_subdocuments returns %i.\n", rc);
-        goto exit_toc;
+        goto exit_reader;
     }
 
     /* Walk the TOC XML and extract files */
