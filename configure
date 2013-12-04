@@ -17060,9 +17060,6 @@ if test "$working_xml" = "yes"; then
 $as_echo "#define HAVE_LIBXML2 1" >>confdefs.h
 
 
-$as_echo "#define ENABLE_XML 1" >>confdefs.h
-
-
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: Compiling and linking with libxml2 from $XML_HOME" >&5
 $as_echo "$as_me: Compiling and linking with libxml2 from $XML_HOME" >&6;}
@@ -17078,12 +17075,6 @@ $as_echo "$as_me: ****** libxml2 support unavailable" >&6;}
   XML_CPPFLAGS=""
   XML_LIBS=""
 
-
-
-$as_echo "#define HAVE_LIBXML2 0" >>confdefs.h
-
-
-$as_echo "#define ENABLE_XML 0" >>confdefs.h
 
 fi
 
