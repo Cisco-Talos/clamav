@@ -920,6 +920,7 @@ int cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t lsigs,
 	cli_errmsg("cli_ac_init: data == NULL\n");
 	return CL_ENULLARG;
     }
+    memset((void *)data, 0, sizeof(struct cli_ac_data));
 
     data->reloffsigs = reloffsigs;
     if(reloffsigs) {

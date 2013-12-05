@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2009 Sourcefire, Inc.
+ *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
  *
@@ -393,7 +393,7 @@ int cli_caloff(const char *offstr, const struct cli_target_info *info, unsigned 
     return CL_SUCCESS;
 }
 
-static void targetinfo(struct cli_target_info *info, unsigned int target, fmap_t *map)
+void cli_targetinfo(struct cli_target_info *info, unsigned int target, fmap_t *map)
 {
 	int (*einfo)(fmap_t *, struct cli_exe_info *) = NULL;
 
@@ -744,7 +744,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 	    maxpatlen = groot->maxpatlen;
     }
 
-    targetinfo(&info, i, map);
+    cli_targetinfo(&info, i, map);
 
     if(!ftonly)
 	if((ret = cli_ac_initdata(&gdata, groot->ac_partsigs, groot->ac_lsigs, groot->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN)) || (ret = cli_ac_caloff(groot, &gdata, &info))) {
