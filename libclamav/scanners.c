@@ -1251,6 +1251,7 @@ static int cli_scanscript(cli_ctx *ctx)
     size_t at = 0;
     unsigned int viruses_found = 0;
     uint64_t curr_len;
+    struct cli_target_info info;
 
     if (!ctx || !ctx->engine->root)
         return CL_ENULLARG;
@@ -1289,6 +1290,15 @@ static int cli_scanscript(cli_ctx *ctx)
 
 	if ((ret = cli_ac_initdata(&tmdata, troot?troot->ac_partsigs:0, troot?troot->ac_lsigs:0, troot?troot->ac_reloff_num:0, CLI_DEFAULT_AC_TRACKLEN))) 
 	    return ret;
+
+        if (troot) {
+	    cli_targetinfo(&info, 7, map);
+	    ret = cli_ac_caloff(troot, &tmdata, &info);
+	    if (ret) {
+		cli_ac_freedata(&tmdata);
+		return ret;
+	    }
+	}
 
 	if ((ret = cli_ac_initdata(&gmdata, groot->ac_partsigs, groot->ac_lsigs, groot->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN))) {
 	    cli_ac_freedata(&tmdata);

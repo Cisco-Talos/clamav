@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2009 Sourcefire, Inc.
+ *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
  *
@@ -177,5 +177,7 @@ int cli_caloff(const char *offstr, const struct cli_target_info *info, unsigned 
 int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx);
 
 int cli_matchmeta(cli_ctx *ctx, const char *fname, size_t fsizec, size_t fsizer, int encrypted, unsigned int filepos, int res1, void *res2);
+
+void cli_targetinfo(struct cli_target_info *info, unsigned int target, fmap_t *map);
 
 #endif

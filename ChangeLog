@@ -1,3 +1,7 @@
+Mon Dec 5 18:10:24 2013 EDT 2013 (morgan)
+------------------------------------
+ * bb#9595 fix for sigs targeted for ascii files containing offsets of the form EOF-n.
+
 Mon Dec 2 15:55:24 2013 EDT 2013 (morgan)
 ------------------------------------
  * bb#9491 Support wildcard alternate strings of identical length in Aho-Corasick pattern matcher.
