@@ -2993,7 +2993,7 @@ int cli_map_scan(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx, cli_
 
     cli_dbgmsg("cli_map_scan: [%ld, +%lu)\n",
 	       (long)offset, (unsigned long)length);
-    if (offset < 0 || offset >= map->len) {
+    if (offset < 0 || offset >= old_len) {
 	cli_dbgmsg("Invalid offset: %ld\n", (long)offset);
 	return CL_CLEAN;
     }
@@ -3005,6 +3005,24 @@ int cli_map_scan(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx, cli_
         int fd = -1;
         size_t nread = 0;
 
+        /* Then check length */
+        if (!length) length = old_len - offset;
+        if (length > old_len - offset) {
+            cli_dbgmsg("cli_map_scan: Data truncated: %lu -> %lu\n",
+                       (unsigned long)length, (unsigned long)(old_len - offset));
+            length = old_len - offset;
+        }
+        if (length <= 5) {
+            cli_dbgmsg("cli_map_scan: Small data (%u bytes)\n", (unsigned int) length);
+            return CL_CLEAN;
+        }
+        if (!CLI_ISCONTAINED(old_off, old_len, old_off + offset, length)) {
+            cli_dbgmsg("cli_map_scan: map error occurred [%ld, %lu]\n",
+                       (long)old_off, (unsigned long)old_len);
+            return CL_CLEAN;
+        }
+
+        /* Length checked, now get map */
         mapdata = fmap_need_off_once_len(map, offset, length, &nread);
         if (!mapdata || (nread != length)) {
             cli_errmsg("cli_map_scan: could not map sub-file\n");
