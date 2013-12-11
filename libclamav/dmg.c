@@ -773,7 +773,7 @@ static int dmg_stripe_adc(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish_
                     strm.next_out = obuf;
                     strm.avail_out = sizeof(obuf);
                 }
-                if (adcret == Z_STREAM_END)
+                if (adcret == ADC_STREAM_END)
                     break;
                 cli_dbgmsg("dmg_stripe_adc: after writing " STDu64 " bytes, "
                            "got error %d decompressing stripe " STDu32 "\n",
