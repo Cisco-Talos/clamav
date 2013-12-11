@@ -1,7 +1,7 @@
 /*
  *  ClamdTOP
  *
- *  Copyright (C) 2008 - 2009 Sourcefire, Inc.
+ *  Copyright (C) 2008 - 2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
  *
@@ -1157,6 +1157,10 @@ static void setup_connections(int argc, char *argv[])
 
 	    if((opt = optget(clamd_opts, "LocalSocket"))->enabled) {
 		conn = strdup(opt->strarg);
+		if (!conn) {
+		    fprintf(stderr, "Can't strdup LocalSocket value\n");
+		    EXIT_PROGRAM(FAIL_INITIAL_CONN);
+		}
 	    } else if ((opt = optget(clamd_opts, "TCPSocket"))->enabled) {
 		char buf[512];
 		const struct optstruct *opt_addr;
