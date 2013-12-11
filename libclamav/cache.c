@@ -743,14 +743,14 @@ int cli_cache_init(struct cl_engine *engine) {
     struct CACHE *cache;
     unsigned int i, j;
 
-    if (engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE) {
-        cli_dbgmsg("cli_cache_init: Caching disabled.\n");
-        return 0;
-    }
-
     if(!engine) {
 	cli_errmsg("cli_cache_init: mpool malloc fail\n");
 	return 1;
+    }
+
+    if (engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE) {
+        cli_dbgmsg("cli_cache_init: Caching disabled.\n");
+        return 0;
     }
 
     if(!(cache = mpool_malloc(engine->mempool, sizeof(struct CACHE) * TREES))) {
@@ -782,12 +782,12 @@ void cli_cache_destroy(struct cl_engine *engine) {
     struct CACHE *cache;
     unsigned int i;
 
+    if(!engine || !(cache = engine->cache))
+	return;
+
     if (engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE) {
         return;
     }
-
-    if(!engine || !(cache = engine->cache))
-	return;
 
     for(i=0; i<TREES; i++) {
 	cacheset_destroy(&cache[i].cacheset, engine->mempool);
@@ -822,13 +822,13 @@ void cache_add(unsigned char *md5, size_t size, cli_ctx *ctx) {
     uint32_t level;
     struct CACHE *c;
 
+    if(!ctx || !ctx->engine || !ctx->engine->cache)
+       return;
+
     if (ctx->engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE) {
         cli_dbgmsg("cache_add: Caching disabled. Not adding sample to cache.\n");
         return;
     }
-
-    if(!ctx || !ctx->engine || !ctx->engine->cache)
-       return;
 
     level =  (*ctx->fmap && (*ctx->fmap)->dont_cache_flag) ? ctx->recursion : 0;
     if (ctx->found_possibly_unwanted && (level || !ctx->recursion))
@@ -865,13 +865,13 @@ void cache_remove(unsigned char *md5, size_t size, const struct cl_engine *engin
     unsigned int key = getkey(md5);
     struct CACHE *c;
 
+    if(!engine || !engine->cache)
+       return;
+
     if (engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE) {
         cli_dbgmsg("cache_remove: Caching disabled.\n");
         return;
     }
-
-    if(!engine || !engine->cache)
-       return;
 
     /* cli_warnmsg("cache_remove: key is %u\n", key); */
 
@@ -905,13 +905,13 @@ int cache_check(unsigned char *hash, cli_ctx *ctx) {
     cli_md5_ctx md5;
     int ret;
 
+    if(!ctx || !ctx->engine || !ctx->engine->cache)
+       return CL_VIRUS;
+
     if (ctx->engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE) {
         cli_dbgmsg("cache_check: Caching disabled. Returning CL_VIRUS.\n");
         return CL_VIRUS;
     }
-
-    if(!ctx || !ctx->engine || !ctx->engine->cache)
-       return CL_VIRUS;
 
     map = *ctx->fmap;
     todo = map->len;
