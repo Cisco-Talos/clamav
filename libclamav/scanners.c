@@ -3098,7 +3098,7 @@ int cli_mem_scandesc(const void *buffer, size_t length, cli_ctx *ctx)
     if (!map) {
 	return CL_EMAP;
     }
-    ret = cli_map_scandesc(map, 0, length, ctx);
+    ret = cli_map_scan(map, 0, length, ctx);
     cl_fmap_close(map);
     return ret;
 }
