@@ -115,12 +115,12 @@ void submit_post(const char *host, const char *port, const char *method, const c
         return;
 
     bufsz = strlen(method);
-    bufsz += sizeof("   HTTP/1.1") + 1; /* Yes. Three blank spaces. +1 for the \n */
+    bufsz += sizeof("   HTTP/1.1") + 2; /* Yes. Three blank spaces. +1 for the \n */
     bufsz += strlen(url);
-    bufsz += sizeof("Host: \n");
+    bufsz += sizeof("Host: \r\n");
     bufsz += strlen(host);
-    bufsz += sizeof("Connection: Close\n");
-    bufsz += 2; /* +2 for \n\n */
+    bufsz += sizeof("Connection: Close\r\n");
+    bufsz += 4; /* +4 for \r\n\r\n */
 
     if (!strcmp(method, "POST") || !strcmp(method, "PUT")) {
         encoded = encode_data(postdata);
@@ -128,8 +128,8 @@ void submit_post(const char *host, const char *port, const char *method, const c
             return;
 
         snprintf(chunkedlen, sizeof(chunkedlen), "%zu", strlen(encoded));
-        bufsz += sizeof("Content-Type: application/x-www-form-urlencoded\n");
-        bufsz += sizeof("Content-Length: \n");
+        bufsz += sizeof("Content-Type: application/x-www-form-urlencoded\r\n");
+        bufsz += sizeof("Content-Length: \r\n");
         bufsz += strlen(chunkedlen);
         bufsz += strlen(encoded);
     }
@@ -142,14 +142,14 @@ void submit_post(const char *host, const char *port, const char *method, const c
         return;
     }
 
-    snprintf(buf, bufsz, "%s %s HTTP/1.1\n", method, url);
-    snprintf(buf+strlen(buf), bufsz-strlen(buf), "Host: %s\n", host);
-    snprintf(buf+strlen(buf), bufsz-strlen(buf), "Connection: Close\n");
+    snprintf(buf, bufsz, "%s %s HTTP/1.1\r\n", method, url);
+    snprintf(buf+strlen(buf), bufsz-strlen(buf), "Host: %s\r\n", host);
+    snprintf(buf+strlen(buf), bufsz-strlen(buf), "Connection: Close\r\n");
 
     if (!strcmp(method, "POST") || !strcmp(method, "PUT")) {
-        snprintf(buf+strlen(buf), bufsz-strlen(buf), "Content-Type: appplication/x-www-form-urlencoded\n");
-        snprintf(buf+strlen(buf), bufsz-strlen(buf), "Content-Length: %s\n", chunkedlen);
-        snprintf(buf+strlen(buf), bufsz-strlen(buf), "\n");
+        snprintf(buf+strlen(buf), bufsz-strlen(buf), "Content-Type: appplication/x-www-form-urlencoded\r\n");
+        snprintf(buf+strlen(buf), bufsz-strlen(buf), "Content-Length: %s\r\n", chunkedlen);
+        snprintf(buf+strlen(buf), bufsz-strlen(buf), "\r\n");
         snprintf(buf+strlen(buf), bufsz-strlen(buf), "%s", encoded);
         free(encoded);
     }
