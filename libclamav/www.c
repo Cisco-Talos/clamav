@@ -9,6 +9,10 @@
 #include <ctype.h>
 
 #include <sys/types.h>
+#include <fcntl.h>
+#include <sys/select.h>
+
+#include <errno.h>
 
 #if !defined(_WIN32)
 #include <sys/socket.h>
@@ -20,10 +24,13 @@
 #include "libclamav/clamav.h"
 #include "libclamav/www.h"
 
-int connect_host(const char *host, const char *port)
+int connect_host(const char *host, const char *port, int useAsync)
 {
     int sockfd;
     struct addrinfo hints, *servinfo, *p;
+    int flags;
+    fd_set write_fds;
+    struct timeval tv;
 
     memset(&hints, 0x00, sizeof(struct addrinfo));
     hints.ai_family = AF_UNSPEC;
@@ -37,9 +44,27 @@ int connect_host(const char *host, const char *port)
         if (sockfd < 0)
             continue;
 
+        if (useAsync) {
+            flags = fcntl(sockfd, F_GETFL, 0);
+            fcntl(sockfd, F_SETFL, flags | O_NONBLOCK);
+        }
+
         if (connect(sockfd, p->ai_addr, p->ai_addrlen)) {
-            close(sockfd);
-            continue;
+            if (errno != EINPROGRESS) {
+                close(sockfd);
+                continue;
+            }
+
+            FD_ZERO(&write_fds);
+            FD_SET(sockfd, &write_fds);
+
+            tv.tv_sec = 10;
+            tv.tv_usec = 0;
+
+            if (select(sockfd + 1, NULL, &write_fds, NULL, &tv) <= 0) {
+                close(sockfd);
+                continue;
+            }
         }
 
         /* Connected to host */
@@ -154,13 +179,17 @@ void submit_post(const char *host, const char *port, const char *method, const c
         free(encoded);
     }
 
-    sockfd = connect_host(host, port);
+    sockfd = connect_host(host, port, 1);
     if (sockfd < 0) {
+        cli_warnmsg("Could not connect to stats server\n");
         free(buf);
         return;
     }
 
-    send(sockfd, buf, strlen(buf), 0);
+    if (send(sockfd, buf, strlen(buf), 0) != strlen(buf)) {
+        cli_warnmsg("Could not send stats\n");
+        perror("send");
+    }
 
     while (1) {
         /*
@@ -171,8 +200,14 @@ void submit_post(const char *host, const char *port, const char *method, const c
          * slow downs.
          */
         memset(buf, 0x00, bufsz);
-        if (recv(sockfd, buf, bufsz, 0) <= 0)
+        if (recv(sockfd, buf, bufsz, 0) <= 0) {
+            if (errno == EAGAIN)
+                continue;
+
+            cli_warnmsg("Could not receive data back from stats server. Errno: %d\n", errno);
+            perror("recv");
             break;
+        }
 
         if (strstr(buf, "STATOK"))
             break;
