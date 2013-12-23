@@ -50,18 +50,23 @@ int connect_host(const char *host, const char *port, int useAsync)
         }
 
         if (connect(sockfd, p->ai_addr, p->ai_addrlen)) {
-            if (errno != EINPROGRESS) {
-                close(sockfd);
-                continue;
-            }
+            if (useAsync) {
+                if (errno != EINPROGRESS) {
+                    close(sockfd);
+                    continue;
+                }
 
-            FD_ZERO(&write_fds);
-            FD_SET(sockfd, &write_fds);
+                FD_ZERO(&write_fds);
+                FD_SET(sockfd, &write_fds);
 
-            tv.tv_sec = 10;
-            tv.tv_usec = 0;
+                tv.tv_sec = 10;
+                tv.tv_usec = 0;
 
-            if (select(sockfd + 1, NULL, &write_fds, NULL, &tv) <= 0) {
+                if (select(sockfd + 1, NULL, &write_fds, NULL, &tv) <= 0) {
+                    close(sockfd);
+                    continue;
+                }
+            } else {
                 close(sockfd);
                 continue;
             }
