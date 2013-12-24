@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Error handling</TITLE>
-<META NAME="description" CONTENT="Error handling">
+<TITLE>Data Loss Prevention</TITLE>
+<META NAME="description" CONTENT="Data Loss Prevention">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -20,56 +20,56 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="next" HREF="node48.html">
 <LINK REL="previous" HREF="node46.html">
-<LINK REL="up" HREF="node43.html">
+<LINK REL="up" HREF="node42.html">
 <LINK REL="next" HREF="node48.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html833"
+<A NAME="tex2html841"
   HREF="node48.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html829"
-  HREF="node43.html">
+<A NAME="tex2html837"
+  HREF="node42.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html823"
+<A NAME="tex2html831"
   HREF="node46.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html831"
+<A NAME="tex2html839"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html834"
-  HREF="node48.html">Engine structure</A>
-<B> Up:</B> <A NAME="tex2html830"
-  HREF="node43.html">API</A>
-<B> Previous:</B> <A NAME="tex2html824"
-  HREF="node46.html">Database loading</A>
- &nbsp; <B>  <A NAME="tex2html832"
+<B> Next:</B> <A NAME="tex2html842"
+  HREF="node48.html">Others</A>
+<B> Up:</B> <A NAME="tex2html838"
+  HREF="node42.html">Supported formats and features</A>
+<B> Previous:</B> <A NAME="tex2html832"
+  HREF="node46.html">Documents</A>
+ &nbsp; <B>  <A NAME="tex2html840"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00073400000000000000">
-Error handling</A>
+<H3><A NAME="SECTION00072500000000000000">
+Data Loss Prevention</A>
 </H3>
-    Use <code>cl_strerror()</code> to convert error codes into human readable
-    messages.  The function returns a statically allocated string:
-    <PRE>
-	if(ret != CL_SUCCESS) {
-	    printf("cl_load() error: %s\n", cl_strerror(ret));
-	    cl_engine_free(engine);
-	    return 1;
-	}
-</PRE>
+    Libclamav includes a DLP module which can detect the following
+    credit card issuers: AMEX, VISA, MasterCard, Discover, Diner's Club,
+    and JCB and U.S. social security numbers inside text files.
+    
+<BR>
+<BR>
+Future versions of Libclamav may include additional features to
+    detect other credit cards and other forms of PII (Personally
+    Identifiable Information) which may be transmitted without the
+    benefit of being encrypted.
 
 <P>
 <BR><HR>
 <ADDRESS>
-Tomasz Kojm
-2010-08-12
+Sourcefire 2013-12-24
 </ADDRESS>
 </BODY>
 </HTML>

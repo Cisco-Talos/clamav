@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>clamd</TITLE>
-<META NAME="description" CONTENT="clamd">
+<TITLE>Configuration</TITLE>
+<META NAME="description" CONTENT="Configuration">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -18,53 +18,47 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node22.html">
-<LINK REL="previous" HREF="node19.html">
-<LINK REL="up" HREF="node19.html">
+<LINK REL="next" HREF="node28.html">
+<LINK REL="previous" HREF="node11.html">
+<LINK REL="up" HREF="clamdoc.html">
 <LINK REL="next" HREF="node21.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html467"
+<A NAME="tex2html473"
   HREF="node21.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html469"
+  HREF="clamdoc.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
 <A NAME="tex2html463"
   HREF="node19.html">
-<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html457"
-  HREF="node19.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html465"
+<A NAME="tex2html471"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html468"
-  HREF="node21.html">On-access scanning</A>
-<B> Up:</B> <A NAME="tex2html464"
-  HREF="node19.html">Configuration</A>
-<B> Previous:</B> <A NAME="tex2html458"
-  HREF="node19.html">Configuration</A>
- &nbsp; <B>  <A NAME="tex2html466"
+<B> Next:</B> <A NAME="tex2html474"
+  HREF="node21.html">clamd</A>
+<B> Up:</B> <A NAME="tex2html470"
+  HREF="clamdoc.html">clamdoc</A>
+<B> Previous:</B> <A NAME="tex2html464"
+  HREF="node19.html">Obtain Latest ClamAV anti-virus</A>
+ &nbsp; <B>  <A NAME="tex2html472"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00051000000000000000">
-clamd</A>
-</H2>
-    Before you start using the daemon you have to edit the configuration file
-    (in other case <code>clamd</code> won't run):
-    <PRE>
-	$ clamd
-	ERROR: Please edit the example config file /etc/clamd.conf.
-</PRE>
-    This shows the location of the default configuration file. The format and
-    options of this file are fully described in the <SPAN  CLASS="textit">clamd.conf(5)</SPAN>
-    manual. The config file is well commented and configuration should be
-    straightforward.
+<H1><A NAME="SECTION00050000000000000000">
+Configuration</A>
+</H1>
+    Before proceeding with the steps below, you should
+    run the 'clamconf' command, which gives important information
+    about your ClamAV configuration. See section <A HREF="node36.html#sec:clamconf">5.8</A> 
+    for more details.
 
 <P>
 <BR><HR>
@@ -72,14 +66,31 @@ clamd</A>
 <A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
 
 <UL CLASS="ChildLinks">
-<LI><A NAME="tex2html469"
-  HREF="node21.html">On-access scanning</A>
+<LI><A NAME="tex2html475"
+  HREF="node21.html">clamd</A>
+<UL>
+<LI><A NAME="tex2html476"
+  HREF="node22.html">On-access scanning</A>
+</UL>
+<BR>
+<LI><A NAME="tex2html477"
+  HREF="node23.html">clamav-milter</A>
+<LI><A NAME="tex2html478"
+  HREF="node24.html">Testing</A>
+<LI><A NAME="tex2html479"
+  HREF="node25.html">Setting up auto-updating</A>
+<UL>
+<LI><A NAME="tex2html480"
+  HREF="node26.html">Closest mirrors</A>
+</UL>
+<BR>
+<LI><A NAME="tex2html481"
+  HREF="node27.html">ClamAV Active Malware Report</A>
 </UL>
 <!--End of Table of Child-Links-->
 <BR><HR>
 <ADDRESS>
-Tomasz Kojm
-2010-08-12
+Sourcefire 2013-12-24
 </ADDRESS>
 </BODY>
 </HTML>

@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Database checks</TITLE>
-<META NAME="description" CONTENT="Database checks">
+<TITLE>Header file</TITLE>
+<META NAME="description" CONTENT="Header file">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -20,90 +20,50 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="next" HREF="node51.html">
 <LINK REL="previous" HREF="node49.html">
-<LINK REL="up" HREF="node43.html">
+<LINK REL="up" HREF="node49.html">
 <LINK REL="next" HREF="node51.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html869"
+<A NAME="tex2html887"
   HREF="node51.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html865"
-  HREF="node43.html">
+<A NAME="tex2html883"
+  HREF="node49.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html859"
+<A NAME="tex2html877"
   HREF="node49.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html867"
+<A NAME="tex2html885"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html870"
-  HREF="node51.html">Data scan functions</A>
-<B> Up:</B> <A NAME="tex2html866"
-  HREF="node43.html">API</A>
-<B> Previous:</B> <A NAME="tex2html860"
-  HREF="node49.html">Limits</A>
- &nbsp; <B>  <A NAME="tex2html868"
+<B> Next:</B> <A NAME="tex2html888"
+  HREF="node51.html">Initialization</A>
+<B> Up:</B> <A NAME="tex2html884"
+  HREF="node49.html">API</A>
+<B> Previous:</B> <A NAME="tex2html878"
+  HREF="node49.html">API</A>
+ &nbsp; <B>  <A NAME="tex2html886"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00073700000000000000">
-Database checks</A>
+<H3><A NAME="SECTION00073100000000000000">
+Header file</A>
 </H3>
-    It's very important  to keep the internal instance of the database up to
-    date. You can watch database changes with the <code>cl_stat..()</code> family
-    of functions.
+    Every program using libclamav must include the header file <code>clamav.h</code>:
     <PRE>
-	int cl_statinidir(const char *dirname, struct cl_stat *dbstat);
-	int cl_statchkdir(const struct cl_stat *dbstat);
-	int cl_statfree(struct cl_stat *dbstat);
+	#include &lt;clamav.h&gt;
 </PRE>
-    Initialization:
-    <PRE>
-	    ...
-	    struct cl_stat dbstat;
-
-	memset(&amp;dbstat, 0, sizeof(struct cl_stat));
-	cl_statinidir(dbdir, &amp;dbstat);
-</PRE>
-    To check for a change you just need to call <code>cl_statchkdir</code> and check
-    its return value (0 - no change, 1 - some change occured). Remember to reset
-    the <code>cl_stat</code> structure after reloading the database.
-    <PRE>
-	if(cl_statchkdir(&amp;dbstat) == 1) {
-	    reload_database...;
-	    cl_statfree(&amp;dbstat);
-	    cl_statinidir(cl_retdbdir(), &amp;dbstat);
-	}
-</PRE>
-    Libclamav <SPAN CLASS="MATH"><IMG
- WIDTH="58" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
- SRC="img5.png"
- ALT="$\ge0.96$"></SPAN> includes and additional call to check the number of
-    signatures that can be loaded from a given directory:
-    <PRE>
-	int cl_countsigs(const char *path, unsigned int countoptions,
-	    unsigned int *sigs);
-</PRE>
-    The first argument points to the database directory, the second one
-    specifies what signatures should be counted:
-    <code>CL_COUNTSIGS_OFFICIAL</code> (official signatures),
-<BR>    <code>CL_COUNTSIGS_UNOFFICIAL</code> (third party signatures),
-    <code>CL_COUNTSIGS_ALL</code> (all signatures). The last argument points
-    to the counter to which the number of detected signatures will
-    be added (therefore the counter should be initially set to 0).
-    The call returns <code>CL_SUCCESS</code> or an error code.
 
 <P>
 <BR><HR>
 <ADDRESS>
-Tomasz Kojm
-2010-08-12
+Sourcefire 2013-12-24
 </ADDRESS>
 </BODY>
 </HTML>

@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>LibClamAV</TITLE>
-<META NAME="description" CONTENT="LibClamAV">
+<TITLE>ClamBC</TITLE>
+<META NAME="description" CONTENT="ClamBC">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -18,118 +18,51 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node61.html">
-<LINK REL="previous" HREF="node27.html">
-<LINK REL="up" HREF="clamdoc.html">
+<LINK REL="next" HREF="node35.html">
+<LINK REL="previous" HREF="node33.html">
+<LINK REL="up" HREF="node28.html">
 <LINK REL="next" HREF="node35.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html635"
+<A NAME="tex2html655"
   HREF="node35.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html631"
-  HREF="clamdoc.html">
+<A NAME="tex2html651"
+  HREF="node28.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html625"
+<A NAME="tex2html645"
   HREF="node33.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html633"
+<A NAME="tex2html653"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html636"
-  HREF="node35.html">Licence</A>
-<B> Up:</B> <A NAME="tex2html632"
-  HREF="clamdoc.html">clamdoc</A>
-<B> Previous:</B> <A NAME="tex2html626"
-  HREF="node33.html">clamd</A>
- &nbsp; <B>  <A NAME="tex2html634"
+<B> Next:</B> <A NAME="tex2html656"
+  HREF="node35.html">Freshclam</A>
+<B> Up:</B> <A NAME="tex2html652"
+  HREF="node28.html">Usage</A>
+<B> Previous:</B> <A NAME="tex2html646"
+  HREF="node33.html">Clamscan</A>
+ &nbsp; <B>  <A NAME="tex2html654"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H1><A NAME="SECTION00070000000000000000">
-LibClamAV</A>
-</H1>
-    Libclamav provides an easy and effective way to add a virus protection into
-    your software. The library is thread-safe and transparently recognizes and
-    scans within archives, mail files, MS Office document files, executables
-    and other special formats.
+<H2><A NAME="SECTION00066000000000000000">
+ClamBC</A>
+</H2>
+    <code>clambc</code> is Clam Anti-Virus' bytecode testing tool.  It can be
+    used to test files which contain bytecode. For more detailed help,
+    type 'man clambc' or 'clambc -help'.
 
 <P>
 <BR><HR>
-<!--Table of Child-Links-->
-<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
-
-<UL CLASS="ChildLinks">
-<LI><A NAME="tex2html637"
-  HREF="node35.html">Licence</A>
-<LI><A NAME="tex2html638"
-  HREF="node36.html">Supported formats and features</A>
-<UL>
-<LI><A NAME="tex2html639"
-  HREF="node37.html">Executables</A>
-<LI><A NAME="tex2html640"
-  HREF="node38.html">Mail files</A>
-<LI><A NAME="tex2html641"
-  HREF="node39.html">Archives and compressed files</A>
-<LI><A NAME="tex2html642"
-  HREF="node40.html">Documents</A>
-<LI><A NAME="tex2html643"
-  HREF="node41.html">Data Loss Prevention</A>
-<LI><A NAME="tex2html644"
-  HREF="node42.html">Others</A>
-</UL>
-<BR>
-<LI><A NAME="tex2html645"
-  HREF="node43.html">API</A>
-<UL>
-<LI><A NAME="tex2html646"
-  HREF="node44.html">Header file</A>
-<LI><A NAME="tex2html647"
-  HREF="node45.html">Initialization</A>
-<LI><A NAME="tex2html648"
-  HREF="node46.html">Database loading</A>
-<LI><A NAME="tex2html649"
-  HREF="node47.html">Error handling</A>
-<LI><A NAME="tex2html650"
-  HREF="node48.html">Engine structure</A>
-<LI><A NAME="tex2html651"
-  HREF="node49.html">Limits</A>
-<LI><A NAME="tex2html652"
-  HREF="node50.html">Database checks</A>
-<LI><A NAME="tex2html653"
-  HREF="node51.html">Data scan functions</A>
-<LI><A NAME="tex2html654"
-  HREF="node52.html">Memory</A>
-<LI><A NAME="tex2html655"
-  HREF="node53.html">Forking daemons</A>
-<LI><A NAME="tex2html656"
-  HREF="node54.html">clamav-config</A>
-<LI><A NAME="tex2html657"
-  HREF="node55.html">Example</A>
-</UL>
-<BR>
-<LI><A NAME="tex2html658"
-  HREF="node56.html">CVD format</A>
-<LI><A NAME="tex2html659"
-  HREF="node57.html">Contributors</A>
-<LI><A NAME="tex2html660"
-  HREF="node58.html">Donors</A>
-<LI><A NAME="tex2html661"
-  HREF="node59.html">Graphics</A>
-<LI><A NAME="tex2html662"
-  HREF="node60.html">OpenAntiVirus</A>
-</UL>
-<!--End of Table of Child-Links-->
-<BR><HR>
 <ADDRESS>
-Tomasz Kojm
-2010-08-12
+Sourcefire 2013-12-24
 </ADDRESS>
 </BODY>
 </HTML>

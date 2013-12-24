@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>CVD format</TITLE>
-<META NAME="description" CONTENT="CVD format">
+<TITLE>Database checks</TITLE>
+<META NAME="description" CONTENT="Database checks">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -19,70 +19,90 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
 <LINK REL="next" HREF="node57.html">
-<LINK REL="previous" HREF="node43.html">
-<LINK REL="up" HREF="node34.html">
+<LINK REL="previous" HREF="node55.html">
+<LINK REL="up" HREF="node49.html">
 <LINK REL="next" HREF="node57.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html939"
+<A NAME="tex2html959"
   HREF="node57.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html935"
-  HREF="node34.html">
+<A NAME="tex2html955"
+  HREF="node49.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html929"
+<A NAME="tex2html949"
   HREF="node55.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html937"
+<A NAME="tex2html957"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html940"
-  HREF="node57.html">Contributors</A>
-<B> Up:</B> <A NAME="tex2html936"
-  HREF="node34.html">LibClamAV</A>
-<B> Previous:</B> <A NAME="tex2html930"
-  HREF="node55.html">Example</A>
- &nbsp; <B>  <A NAME="tex2html938"
+<B> Next:</B> <A NAME="tex2html960"
+  HREF="node57.html">Data scan functions</A>
+<B> Up:</B> <A NAME="tex2html956"
+  HREF="node49.html">API</A>
+<B> Previous:</B> <A NAME="tex2html950"
+  HREF="node55.html">Limits</A>
+ &nbsp; <B>  <A NAME="tex2html958"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00074000000000000000">
-CVD format</A>
-</H2>
-    CVD (ClamAV Virus Database) is a digitally signed tarball containing
-    one or more databases. The header is a 512-bytes long string with colon
-    separated fields:
+<H3><A NAME="SECTION00073700000000000000">
+Database checks</A>
+</H3>
+    It's very important  to keep the internal instance of the database up to
+    date. You can watch database changes with the <code>cl_stat..()</code> family
+    of functions.
     <PRE>
-ClamAV-VDB:build time:version:number of signatures:functionality
-level required:MD5 checksum:digital signature:builder name:build time (sec)
+	int cl_statinidir(const char *dirname, struct cl_stat *dbstat);
+	int cl_statchkdir(const struct cl_stat *dbstat);
+	int cl_statfree(struct cl_stat *dbstat);
 </PRE>
-    <code>sigtool --info</code> displays detailed information on CVD files:
+    Initialization:
     <PRE>
-zolw@localhost:/usr/local/share/clamav$ sigtool -i daily.cvd 
-File: daily.cvd
-Build time: 10 Mar 2008 10:45 +0000
-Version: 6191
-Signatures: 59084
-Functionality level: 26
-Builder: ccordes
-MD5: 6e6e29dae36b4b7315932c921e568330
-Digital signature: zz9irc9irupR3z7yX6J+OR6XdFPUat4HIM9ERn3kAcOWpcMFxq
-Fs4toG5WJsHda0Jj92IUusZ7wAgYjpai1Nr+jFfXHsJxv0dBkS5/XWMntj0T1ctNgqmiF
-+RLU6V0VeTl4Oej3Aya0cVpd9K4XXevEO2eTTvzWNCAq0ZzWNdjc
-Verification OK.
+	    ...
+	    struct cl_stat dbstat;
+
+	memset(&amp;dbstat, 0, sizeof(struct cl_stat));
+	cl_statinidir(dbdir, &amp;dbstat);
 </PRE>
+    To check for a change you just need to call <code>cl_statchkdir</code> and check
+    its return value (0 - no change, 1 - some change occured). Remember to reset
+    the <code>cl_stat</code> structure after reloading the database.
+    <PRE>
+	if(cl_statchkdir(&amp;dbstat) == 1) {
+	    reload_database...;
+	    cl_statfree(&amp;dbstat);
+	    cl_statinidir(cl_retdbdir(), &amp;dbstat);
+	}
+</PRE>
+    Libclamav <SPAN CLASS="MATH"><IMG
+ WIDTH="58" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
+ SRC="img6.png"
+ ALT="$\ge0.96$"></SPAN> includes and additional call to check the number of
+    signatures that can be loaded from a given directory:
+    <PRE>
+	int cl_countsigs(const char *path, unsigned int countoptions,
+	    unsigned int *sigs);
+</PRE>
+    The first argument points to the database directory, the second one
+    specifies what signatures should be counted:
+    <code>CL_COUNTSIGS_OFFICIAL</code> (official signatures),
+<BR>    <code>CL_COUNTSIGS_UNOFFICIAL</code> (third party signatures),
+    <code>CL_COUNTSIGS_ALL</code> (all signatures). The last argument points
+    to the counter to which the number of detected signatures will
+    be added (therefore the counter should be initially set to 0).
+    The call returns <code>CL_SUCCESS</code> or an error code.
 
 <P>
 <BR><HR>
 <ADDRESS>
-Tomasz Kojm
-2010-08-12
+Sourcefire 2013-12-24
 </ADDRESS>
 </BODY>
 </HTML>

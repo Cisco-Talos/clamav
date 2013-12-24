@@ -27,26 +27,26 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html426"
+<A NAME="tex2html439"
   HREF="node18.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html422"
+<A NAME="tex2html435"
   HREF="node11.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html416"
+<A NAME="tex2html429"
   HREF="node16.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html424"
+<A NAME="tex2html437"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html427"
+<B> Next:</B> <A NAME="tex2html440"
   HREF="node18.html">Reporting a unit test</A>
-<B> Up:</B> <A NAME="tex2html423"
+<B> Up:</B> <A NAME="tex2html436"
   HREF="node11.html">Installation</A>
-<B> Previous:</B> <A NAME="tex2html417"
+<B> Previous:</B> <A NAME="tex2html430"
   HREF="node16.html">Compilation with clamav-milter enabled</A>
- &nbsp; <B>  <A NAME="tex2html425"
+ &nbsp; <B>  <A NAME="tex2html438"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
@@ -57,37 +57,39 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 Running unit tests
 </H2>
 	ClamAV includes unit tests that allow you to test that the compiled binaries work correctly on your platform.
-
-<P>
+        
+<BR>
+<BR>
 The first step is to use your OS's package manager to install the <code>check</code> package. 
 	If your OS doesn't have that package, you can download it from <TT><A NAME="tex2html11"
   HREF="http://check.sourceforge.net/">http://check.sourceforge.net/</A></TT>, 
 	build it and install it.
-
-<P>
+        
+<BR>
+<BR>
 To help clamav's configure script locate <code>check</code>, it is recommended that you install <code>pkg-config</code>, preferably
 	using your OS's package manager, or from <TT><A NAME="tex2html12"
   HREF="http://pkg-config.freedesktop.org">http://pkg-config.freedesktop.org</A></TT>.
-
-<P>
+        
+<BR>
+<BR>
 The recommended way to run unit-tests is the following, which ensures you will get an error if unit tests cannot be built:
 	<A NAME="tex2html13"
-  HREF="footnode.html#foot165"><SUP><SPAN CLASS="arabic">7</SPAN></SUP></A>	<PRE>
+  HREF="footnode.html#foot167"><SUP><SPAN CLASS="arabic">7</SPAN></SUP></A>	<PRE>
 	 $ ./configure --enable-check
 	 $ make
 	 $ make check
 </PRE>
-
-<P>
-When <code>make check</code> is finished, you should get a message similar to this:
+	When <code>make check</code> is finished, you should get a message similar to this:
 	<PRE>
 ==================
 All 8 tests passed
 ==================
 </PRE>
-
-<P>
-If a unit test fails, you get a message similar to the following. 
+	If a unit test fails, you get a message similar to the following.
+        Note that in older versions of make check may report failures due to
+        the absence of optional packages. Please make sure you have the
+        latest versions of the components noted in section /refsec:components.
 	See the next section on how to report a bug when a unit test fails.
 	<PRE>
 ========================================
@@ -95,9 +97,7 @@ If a unit test fails, you get a message similar to the following.
 Please report to http://bugs.clamav.net/
 ========================================
 </PRE>
-
-<P>
-If unit tests are disabled (and you didn't use -enable-check), you will get this message:
+	If unit tests are disabled (and you didn't use -enable-check), you will get this message:
 	<PRE>
 *** Unit tests disabled in this build
 *** Use ./configure --enable-check to enable them
@@ -118,31 +118,30 @@ All 4 tests passed
 
 <DIV CLASS="navigation"><HR>
 <!--Navigation Panel-->
-<A NAME="tex2html426"
+<A NAME="tex2html439"
   HREF="node18.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html422"
+<A NAME="tex2html435"
   HREF="node11.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html416"
+<A NAME="tex2html429"
   HREF="node16.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html424"
+<A NAME="tex2html437"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html427"
+<B> Next:</B> <A NAME="tex2html440"
   HREF="node18.html">Reporting a unit test</A>
-<B> Up:</B> <A NAME="tex2html423"
+<B> Up:</B> <A NAME="tex2html436"
   HREF="node11.html">Installation</A>
-<B> Previous:</B> <A NAME="tex2html417"
+<B> Previous:</B> <A NAME="tex2html430"
   HREF="node16.html">Compilation with clamav-milter enabled</A>
- &nbsp; <B>  <A NAME="tex2html425"
+ &nbsp; <B>  <A NAME="tex2html438"
   HREF="node1.html">Contents</A></B> </DIV>
 <!--End of Navigation Panel-->
 <ADDRESS>
-Tomasz Kojm
-2010-08-12
+Sourcefire 2013-12-24
 </ADDRESS>
 </BODY>
 </HTML>

@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Supported formats and features</TITLE>
-<META NAME="description" CONTENT="Supported formats and features">
+<TITLE>Clamconf</TITLE>
+<META NAME="description" CONTENT="Clamconf">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -18,68 +18,104 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node43.html">
+<LINK REL="next" HREF="node37.html">
 <LINK REL="previous" HREF="node35.html">
-<LINK REL="up" HREF="node34.html">
+<LINK REL="up" HREF="node28.html">
 <LINK REL="next" HREF="node37.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html685"
+<A NAME="tex2html679"
   HREF="node37.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html681"
-  HREF="node34.html">
-<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
 <A NAME="tex2html675"
+  HREF="node28.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html669"
   HREF="node35.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html683"
+<A NAME="tex2html677"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html686"
-  HREF="node37.html">Executables</A>
-<B> Up:</B> <A NAME="tex2html682"
-  HREF="node34.html">LibClamAV</A>
-<B> Previous:</B> <A NAME="tex2html676"
-  HREF="node35.html">Licence</A>
- &nbsp; <B>  <A NAME="tex2html684"
+<B> Next:</B> <A NAME="tex2html680"
+  HREF="node37.html">Output format</A>
+<B> Up:</B> <A NAME="tex2html676"
+  HREF="node28.html">Usage</A>
+<B> Previous:</B> <A NAME="tex2html670"
+  HREF="node35.html">Freshclam</A>
+ &nbsp; <B>  <A NAME="tex2html678"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00072000000000000000">
-Supported formats and features</A>
+<H2><A NAME="SECTION00068000000000000000"></A><A NAME="sec:clamconf"></A>
+<BR>
+Clamconf
 </H2>
+    <code>clamconf</code> is the Clam Anti-Virus configuration utility.  It is used
+    for displaying values of configurations options in ClamAV, which
+    will show the contents of clamd.conf (or tell you if it is not
+    properly configured), the contents of freshclam.conf, and display
+    information about software settings, database, platform, and build
+    information. Here is a sample clamconf output:
+<SMALL CLASS="FOOTNOTESIZE">    </SMALL><PRE>
+$ clamconf
+
+Checking configuration files in /etc/clamav
+
+Config file: clamd.conf
+-----------------------
+ERROR: Please edit the example config file /etc/clamav/clamd.conf
+
+Config file: freshclam.conf
+---------------------------
+ERROR: Please edit the example config file /etc/clamav/freshclam.conf
+
+clamav-milter.conf not found
+
+Software settings
+-----------------
+Version: 0.98.1
+Optional features supported: MEMPOOL IPv6 AUTOIT_EA06 BZIP2 RAR JIT
+
+Database information
+--------------------
+Database directory: /xclam/gcc/release/share/clamav
+WARNING: freshclam.conf and clamd.conf point to different database directories
+print_dbs: Can't open directory /xclam/gcc/release/share/clamav
+
+Platform information
+--------------------
+uname: Linux 3.5.0-44-generic #67~precise1-Ubuntu SMP Wed Nov 13 16:20:03 UTC 2013 i686
+OS: linux-gnu, ARCH: i386, CPU: i686
+Full OS version: Ubuntu 12.04.3 LTS
+zlib version: 1.2.3.4 (1.2.3.4), compile flags: 55
+Triple: i386-pc-linux-gnu
+CPU: i686, Little-endian
+platform id: 0x0a114d4d0404060401040604
+
+Build information
+-----------------
+GNU C: 4.6.4 (4.6.4)
+GNU C++: 4.6.4 (4.6.4)
+CPPFLAGS:
+CFLAGS: -g -O0 -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE
+CXXFLAGS:
+LDFLAGS:
+Configure: '--prefix=/xclam/gcc/release/' '--disable-clamav' '--enable-debug' 'CFLAGS=-g -O0'
+sizeof(void*) = 4
+Engine flevel: 77, dconf: 77
+</PRE>
+    For more detailed help, type 'man clamconf' or 'clamconf -help'.
 
 <P>
 <BR><HR>
-<!--Table of Child-Links-->
-<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
-
-<UL CLASS="ChildLinks">
-<LI><A NAME="tex2html687"
-  HREF="node37.html">Executables</A>
-<LI><A NAME="tex2html688"
-  HREF="node38.html">Mail files</A>
-<LI><A NAME="tex2html689"
-  HREF="node39.html">Archives and compressed files</A>
-<LI><A NAME="tex2html690"
-  HREF="node40.html">Documents</A>
-<LI><A NAME="tex2html691"
-  HREF="node41.html">Data Loss Prevention</A>
-<LI><A NAME="tex2html692"
-  HREF="node42.html">Others</A>
-</UL>
-<!--End of Table of Child-Links-->
-<BR><HR>
 <ADDRESS>
-Tomasz Kojm
-2010-08-12
+Sourcefire 2013-12-24
 </ADDRESS>
 </BODY>
 </HTML>
