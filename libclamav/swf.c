@@ -59,7 +59,7 @@
 	bitbuf = (unsigned int) get_c;						\
 	offset += sizeof(get_c);						\
     } else {									\
-	cli_errmsg("cli_scanswf: INITBITS: Can't read file\n");			\
+	cli_warnmsg("cli_scanswf: INITBITS: Can't read file or file truncated\n");	\
 	return CL_EFORMAT;							\
     }										\
 }
@@ -76,7 +76,7 @@
 	    bitpos = 8;								\
 	    offset += sizeof(get_c);						\
 	} else {								\
-	    cli_errmsg("cli_scanswf: GETBITS: Can't read file\n");		\
+	    cli_warnmsg("cli_scanswf: GETBITS: Can't read file or file truncated\n");	\
 	    return CL_EFORMAT;							\
 	}									\
     }										\
@@ -92,14 +92,14 @@
 	getword_1 = (unsigned int) get_c;					\
 	offset += sizeof(get_c);						\
     } else {									\
-	cli_errmsg("cli_scanswf: GETWORD: Can't read file\n");			\
+	cli_warnmsg("cli_scanswf: GETWORD: Can't read file or file truncated\n");	\
 	return CL_EFORMAT;							\
     }										\
     if(fmap_readn(map, &get_c, offset, sizeof(get_c)) == sizeof(get_c)) {	\
 	getword_2 = (unsigned int) get_c;					\
 	offset += sizeof(get_c);						\
     } else {									\
-	cli_errmsg("cli_scanswf: GETWORD: Can't read file\n");			\
+	cli_warnmsg("cli_scanswf: GETWORD: Can't read file or file truncated\n");	\
 	return CL_EFORMAT;							\
     }										\
     v = (uint16_t)(getword_1 & 0xff) | ((getword_2 & 0xff) << 8);		\
@@ -296,7 +296,7 @@ int cli_scanswf(cli_ctx *ctx)
 	cli_dbgmsg("SWF: %s\n", pt ? pt : "UNKNOWN TAG");
 	cli_dbgmsg("SWF: Tag length: %u\n", tag_len);
 	if (tag_len > map->len) {
-	    cli_warnmsg("SWF: Invalid tag length.\n");
+	    cli_dbgmsg("SWF: Invalid tag length.\n");
 	    return CL_EFORMAT;
 	}
 	if ((offset + tag_len) < offset) {
