@@ -59,6 +59,7 @@ int connect_host(const char *host, const char *port, int useAsync)
                 FD_ZERO(&write_fds);
                 FD_SET(sockfd, &write_fds);
 
+                /* TODO: Make this timeout configurable */
                 tv.tv_sec = 10;
                 tv.tv_usec = 0;
 
@@ -130,6 +131,8 @@ void submit_post(const char *host, const char *port, const char *method, const c
     char *buf, *encoded=NULL;
     size_t bufsz ;
     char chunkedlen[21];
+    fd_set readfds;
+    struct timeval tv;
     char *acceptable_methods[] = {
         "GET",
         "PUT",
@@ -197,25 +200,33 @@ void submit_post(const char *host, const char *port, const char *method, const c
     }
 
     while (1) {
+        FD_ZERO(&readfds);
+        FD_SET(sockfd, &readfds);
+
         /*
          * Check to make sure the stats submitted okay (so that we don't kill the HTTP request
          * while it's being processed).
-         *
-         * TODO: Add a time limit based on a call to select() to prevent lock-ups or major
-         * slow downs.
          */
-        memset(buf, 0x00, bufsz);
-        if (recv(sockfd, buf, bufsz, 0) <= 0) {
-            if (errno == EAGAIN)
-                continue;
-
-            cli_warnmsg("Could not receive data back from stats server. Errno: %d\n", errno);
-            perror("recv");
+        tv.tv_sec = 10;
+        tv.tv_usec = 0;
+        if (select(sockfd+1, &readfds, NULL, NULL, &tv) <= 0) {
             break;
         }
 
-        if (strstr(buf, "STATOK"))
-            break;
+        if (FD_ISSET(sockfd, &readfds)) {
+            memset(buf, 0x00, bufsz);
+            if (recv(sockfd, buf, bufsz, 0) <= 0) {
+                if (errno == EAGAIN)
+                    continue;
+
+                cli_warnmsg("Could not receive data back from stats server. Errno: %d\n", errno);
+                perror("recv");
+                break;
+            }
+
+            if (strstr(buf, "STATOK"))
+                break;
+        }
     }
 
     close(sockfd);
