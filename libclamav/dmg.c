@@ -898,7 +898,7 @@ static int dmg_stripe_bzip(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish
 #endif
 
     cli_dbgmsg("dmg_stripe_bzip: stripe " STDu32 " initial len " STDu64 " expected len " STDu64 "\n",
-            index, len, expected_len);
+            index, (uint64_t)len, (uint64_t)expected_len);
 
 #if HAVE_BZLIB_H
     memset(&strm, 0, sizeof(strm));
