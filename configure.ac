@@ -20,7 +20,7 @@ dnl   MA 02110-1301, USA.
 AC_PREREQ([2.59])
 dnl For a release change [devel] to the real version [0.xy]
 dnl also change VERSION below
-AC_INIT([ClamAV], [devel], [http://bugs.clamav.net/], [clamav], [http://www.clamav.net/])
+AC_INIT([ClamAV], [0.98.1], [http://bugs.clamav.net/], [clamav], [http://www.clamav.net/])
 
 AH_BOTTOM([#include "platform.h"])
 dnl put configure auxiliary into config
@@ -42,11 +42,11 @@ dnl the date in the version
 AC_DEFINE([PACKAGE], PACKAGE_NAME, [Name of package])
 
 dnl change this on a release
-VERSION="devel-`date +%Y%m%d`"
-dnl VERSION="0.98"
+dnl VERSION="devel-`date +%Y%m%d`"
+VERSION="0.98.1"
 
 LC_CURRENT=7
-LC_REVISION=19
+LC_REVISION=20
 LC_AGE=1
 LIBCLAMAV_VERSION="$LC_CURRENT":"$LC_REVISION":"$LC_AGE"
 AC_SUBST([LIBCLAMAV_VERSION])
