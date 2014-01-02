@@ -315,9 +315,10 @@ static int ac_maketrans(struct cli_matcher *root)
     while((node = bfs_dequeue(&bfs, &bfs_last))) {
 	if(IS_LEAF(node)) {
 	    struct cli_ac_node *failtarget = node->fail;
-	    while(IS_LEAF(failtarget))
+	    while (NULL != failtarget && (IS_LEAF(failtarget) || !IS_FINAL(failtarget)))
 		failtarget = failtarget->fail;
-	    node->fail = failtarget;
+            if (NULL != failtarget)
+                node->fail = failtarget;
 	    continue;
 	}
 
