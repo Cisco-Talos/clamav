@@ -654,6 +654,44 @@ then
     fi
 fi
 
+have_curl="no"
+curl_msg="Please use the web interface for submitting FPs/FNs."
+AC_MSG_CHECKING([for libcurl installation])
+
+AC_ARG_WITH([libcurl],
+[  --with-libcurl=DIR   path to directory containing libcurl (default=
+    /usr/local or /usr if not found in /usr/local)],
+[
+if test "$withval"; then
+    LIBCURL_HOME="$withval"
+fi
+], [
+LIBCURL_HOME=/usr/local
+if test ! -f "$LIBCURL_HOME/include/curl/curl.h"
+then
+    LIBCURL_HOME=/usr
+fi
+AC_MSG_RESULT([$LIBCURL_HOME])
+])
+
+if test ! -f "$LIBCURL_HOME/include/curl/curl.h"
+then
+    AC_MSG_WARN([libcurl not found. Please use the web interface for submitting FPs/FNs.])
+else
+    if test -f "$LIBCURL_HOME/bin/curl-config"; then
+        CURL_LDFLAGS=$($LIBCURL_HOME/bin/curl-config --libs)
+        CURL_CPPFLAGS=$($LIBCURL_HOME/bin/curl-config --cflags)
+    else
+        CURL_LDFLAGS="-L$LIBCURL_HOME/lib -lcurl"
+        CURL_CPPFLAGS="-I$LIBCURL_HOME/include"
+    fi
+
+    save_LDFLAGS="$LDFLAGS"
+    LDFLAGS="-L$LIBCURL_HOME/lib -lcurl"
+    AC_CHECK_LIB([curl], [curl_easy_init], [curl_msg="";have_curl="yes";CLAMSUBMIT_LIBS="$CLAMSUBMIT_LIBS $CURL_LDFLAGS"],
+            [AC_MSG_WARN([Your libcurl is misconfigured. Please use the web interface for submitting FPs/FNs.])])
+fi
+
 AM_CONDITIONAL([HAVE_LIBBZ2], test "x$HAVE_LIBBZ2" = "xyes")
 
 AC_ARG_ENABLE([unrar],
@@ -1178,6 +1216,7 @@ AC_SUBST([FRESHCLAM_LIBS])
 AC_SUBST([CLAMDSCAN_LIBS])
 AC_SUBST([TH_SAFE])
 AC_SUBST([THREAD_LIBS])
+AC_SUBST([CLAMSUBMIT_LIBS])
 
 dnl --enable-milter
 if test "$have_milter" = "yes"; then
@@ -1701,6 +1740,8 @@ if test "$enable_sha_collector" != "no"; then
     AC_DEFINE([HAVE__INTERNAL__SHA_COLLECT], 1, [For internal use only - DO NOT DEFINE])
 fi
 
+AM_CONDITIONAL([ENABLE_CLAMSUBMIT], [test "$have_curl" = "yes"])
+
 AC_OUTPUT([
 clamscan/Makefile
 database/Makefile
@@ -1711,6 +1752,7 @@ clamav-milter/Makefile
 freshclam/Makefile
 sigtool/Makefile
 clamconf/Makefile
+clamsubmit/Makefile
 etc/Makefile
 test/Makefile
 unit_tests/Makefile
@@ -1768,6 +1810,7 @@ CL_MSG_STATUS([IPv6        ],[$have_cv_ipv6],[$want_ipv6])
 AC_MSG_NOTICE([Summary of optional tools])
 CL_MSG_STATUS([clamdtop    ],[$CURSES_LIBS],[$enable_clamdtop])
 CL_MSG_STATUS([milter      ],[yes],[$have_milter])
+CL_MSG_STATUS([clamsubmit  ],[$have_curl],[$curl_msg])
 
 AC_MSG_NOTICE([Summary of engine performance features)])
 if test "x$enable_debug" = "xyes"; then
