@@ -71,6 +71,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
+@ENABLE_CLAMSUBMIT_TRUE@am__append_1 = clamsubmit
 subdir = .
 DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/clamav-config.h.in \
@@ -173,7 +174,9 @@ AM_RECURSIVE_TARGETS = $(RECURSIVE_TARGETS:-recursive=) \
 	distdir dist dist-all distcheck
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = $(SUBDIRS)
+DIST_SUBDIRS = libltdl libclamav clamscan clamd clamdscan freshclam \
+	sigtool clamconf database docs etc clamav-milter test clamdtop \
+	clambc unit_tests clamsubmit
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 distdir = $(PACKAGE)-$(VERSION)
 top_distdir = $(distdir)
@@ -234,6 +237,7 @@ CLAMAVUSER = @CLAMAVUSER@
 CLAMAV_MILTER_LIBS = @CLAMAV_MILTER_LIBS@
 CLAMDSCAN_LIBS = @CLAMDSCAN_LIBS@
 CLAMD_LIBS = @CLAMD_LIBS@
+CLAMSUBMIT_LIBS = @CLAMSUBMIT_LIBS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CURSES_CPPFLAGS = @CURSES_CPPFLAGS@
@@ -381,7 +385,9 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 ACLOCAL_AMFLAGS = -I m4
-SUBDIRS = libltdl libclamav clamscan clamd clamdscan freshclam sigtool clamconf database docs etc clamav-milter test clamdtop clambc unit_tests
+SUBDIRS = libltdl libclamav clamscan clamd clamdscan freshclam sigtool \
+	clamconf database docs etc clamav-milter test clamdtop clambc \
+	unit_tests $(am__append_1)
 EXTRA_DIST = FAQ examples BUGS shared libclamav.pc.in libclamunrar_iface/Makefile.am libclamunrar_iface/Makefile.in UPGRADE COPYING.bzip2 COPYING.lzma COPYING.unrar COPYING.LGPL COPYING.llvm COPYING.file COPYING.zlib COPYING.getopt COPYING.regex COPYING.sha256 platform.h.in clamdscan/clamdscan.map win32
 bin_SCRIPTS = clamav-config
 pkgconfigdir = $(libdir)/pkgconfig
