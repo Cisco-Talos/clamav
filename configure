@@ -643,6 +643,8 @@ am__EXEEXT_FALSE
 am__EXEEXT_TRUE
 LTLIBOBJS
 LIBOBJS
+ENABLE_CLAMSUBMIT_FALSE
+ENABLE_CLAMSUBMIT_TRUE
 subdirs
 WERR_CFLAGS_MILTER
 WERR_CFLAGS
@@ -657,6 +659,7 @@ HAVE_MILTER_FALSE
 HAVE_MILTER_TRUE
 BUILD_CLAMD_FALSE
 BUILD_CLAMD_TRUE
+CLAMSUBMIT_LIBS
 THREAD_LIBS
 TH_SAFE
 CLAMDSCAN_LIBS
@@ -856,6 +859,7 @@ with_zlib
 enable_zlib_vcheck
 enable_bzip2
 with_libbz2_prefix
+with_libcurl
 enable_unrar
 enable_xml
 with_xml
@@ -1579,6 +1583,8 @@ Optional Packages:
 			  /usr/local or /usr if not found in /usr/local)
   --with-libbz2-prefix[=DIR]  search for libbz2 in DIR/include and DIR/lib
   --without-libbz2-prefix     don't search for libbz2 in includedir and libdir
+  --with-libcurl=DIR   path to directory containing libcurl (default=
+    /usr/local or /usr if not found in /usr/local)
   --with-xml=DIR	  path to directory containing libxml2 library (default=
 			  /usr/local or /usr if not found in /usr/local)
   --with-iconv supports iconv() (default=auto)
@@ -16946,6 +16952,92 @@ $as_echo "$as_me: WARNING: ****** bzip2 support disabled" >&2;}
     fi
 fi
 
+have_curl="no"
+curl_msg="Please use the web interface for submitting FPs/FNs."
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for libcurl installation" >&5
+$as_echo_n "checking for libcurl installation... " >&6; }
+
+
+# Check whether --with-libcurl was given.
+if test "${with_libcurl+set}" = set; then :
+  withval=$with_libcurl;
+if test "$withval"; then
+    LIBCURL_HOME="$withval"
+fi
+
+else
+
+LIBCURL_HOME=/usr/local
+if test ! -f "$LIBCURL_HOME/include/curl/curl.h"
+then
+    LIBCURL_HOME=/usr
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $LIBCURL_HOME" >&5
+$as_echo "$LIBCURL_HOME" >&6; }
+
+fi
+
+
+if test ! -f "$LIBCURL_HOME/include/curl/curl.h"
+then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: libcurl not found. Please use the web interface for submitting FPs/FNs." >&5
+$as_echo "$as_me: WARNING: libcurl not found. Please use the web interface for submitting FPs/FNs." >&2;}
+else
+    if test -f "$LIBCURL_HOME/bin/curl-config"; then
+        CURL_LDFLAGS=$($LIBCURL_HOME/bin/curl-config --libs)
+        CURL_CPPFLAGS=$($LIBCURL_HOME/bin/curl-config --cflags)
+    else
+        CURL_LDFLAGS="-L$LIBCURL_HOME/lib -lcurl"
+        CURL_CPPFLAGS="-I$LIBCURL_HOME/include"
+    fi
+
+    save_LDFLAGS="$LDFLAGS"
+    LDFLAGS="-L$LIBCURL_HOME/lib -lcurl"
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for curl_easy_init in -lcurl" >&5
+$as_echo_n "checking for curl_easy_init in -lcurl... " >&6; }
+if ${ac_cv_lib_curl_curl_easy_init+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lcurl  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char curl_easy_init ();
+int
+main ()
+{
+return curl_easy_init ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_curl_curl_easy_init=yes
+else
+  ac_cv_lib_curl_curl_easy_init=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_curl_curl_easy_init" >&5
+$as_echo "$ac_cv_lib_curl_curl_easy_init" >&6; }
+if test "x$ac_cv_lib_curl_curl_easy_init" = xyes; then :
+  curl_msg="";have_curl="yes";CLAMSUBMIT_LIBS="$CLAMSUBMIT_LIBS $CURL_LDFLAGS"
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Your libcurl is misconfigured. Please use the web interface for submitting FPs/FNs." >&5
+$as_echo "$as_me: WARNING: Your libcurl is misconfigured. Please use the web interface for submitting FPs/FNs." >&2;}
+fi
+
+fi
+
  if test "x$HAVE_LIBBZ2" = "xyes"; then
   HAVE_LIBBZ2_TRUE=
   HAVE_LIBBZ2_FALSE='#'
@@ -18013,6 +18105,7 @@ $as_echo "#define C_GNU_HURD 1" >>confdefs.h
 *)
     ;;
 esac
+
 
 
 
@@ -21079,7 +21172,16 @@ $as_echo "#define HAVE__INTERNAL__SHA_COLLECT 1" >>confdefs.h
 
 fi
 
-ac_config_files="$ac_config_files clamscan/Makefile database/Makefile docs/Makefile clamd/Makefile clamdscan/Makefile clamav-milter/Makefile freshclam/Makefile sigtool/Makefile clamconf/Makefile etc/Makefile test/Makefile unit_tests/Makefile clamdtop/Makefile clambc/Makefile Makefile clamav-config libclamav.pc platform.h docs/man/clamav-milter.8 docs/man/clamav-milter.conf.5 docs/man/clambc.1 docs/man/clamconf.1 docs/man/clamd.8 docs/man/clamd.conf.5 docs/man/clamdscan.1 docs/man/clamscan.1 docs/man/freshclam.1 docs/man/freshclam.conf.5 docs/man/sigtool.1 docs/man/clamdtop.1"
+ if test "$have_curl" = "yes"; then
+  ENABLE_CLAMSUBMIT_TRUE=
+  ENABLE_CLAMSUBMIT_FALSE='#'
+else
+  ENABLE_CLAMSUBMIT_TRUE='#'
+  ENABLE_CLAMSUBMIT_FALSE=
+fi
+
+
+ac_config_files="$ac_config_files clamscan/Makefile database/Makefile docs/Makefile clamd/Makefile clamdscan/Makefile clamav-milter/Makefile freshclam/Makefile sigtool/Makefile clamconf/Makefile clamsubmit/Makefile etc/Makefile test/Makefile unit_tests/Makefile clamdtop/Makefile clambc/Makefile Makefile clamav-config libclamav.pc platform.h docs/man/clamav-milter.8 docs/man/clamav-milter.conf.5 docs/man/clambc.1 docs/man/clamconf.1 docs/man/clamd.8 docs/man/clamd.conf.5 docs/man/clamdscan.1 docs/man/clamscan.1 docs/man/freshclam.1 docs/man/freshclam.conf.5 docs/man/sigtool.1 docs/man/clamdtop.1"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -21266,6 +21368,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_CURSES_TRUE}" && test -z "${HAVE_CURSES_FALSE}"; then
   as_fn_error $? "conditional \"HAVE_CURSES\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${ENABLE_CLAMSUBMIT_TRUE}" && test -z "${ENABLE_CLAMSUBMIT_FALSE}"; then
+  as_fn_error $? "conditional \"ENABLE_CLAMSUBMIT\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 
@@ -22151,6 +22257,7 @@ do
     "freshclam/Makefile") CONFIG_FILES="$CONFIG_FILES freshclam/Makefile" ;;
     "sigtool/Makefile") CONFIG_FILES="$CONFIG_FILES sigtool/Makefile" ;;
     "clamconf/Makefile") CONFIG_FILES="$CONFIG_FILES clamconf/Makefile" ;;
+    "clamsubmit/Makefile") CONFIG_FILES="$CONFIG_FILES clamsubmit/Makefile" ;;
     "etc/Makefile") CONFIG_FILES="$CONFIG_FILES etc/Makefile" ;;
     "test/Makefile") CONFIG_FILES="$CONFIG_FILES test/Makefile" ;;
     "unit_tests/Makefile") CONFIG_FILES="$CONFIG_FILES unit_tests/Makefile" ;;
@@ -23880,6 +23987,10 @@ if test -z "${HAVE_CURSES_TRUE}" && test -z "${HAVE_CURSES_FALSE}"; then
   as_fn_error $? "conditional \"HAVE_CURSES\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
+if test -z "${ENABLE_CLAMSUBMIT_TRUE}" && test -z "${ENABLE_CLAMSUBMIT_FALSE}"; then
+  as_fn_error $? "conditional \"ENABLE_CLAMSUBMIT\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 if test -z "${am__EXEEXT_TRUE}" && test -z "${am__EXEEXT_FALSE}"; then
   as_fn_error $? "conditional \"am__EXEEXT\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -24772,6 +24883,7 @@ do
     "freshclam/Makefile") CONFIG_FILES="$CONFIG_FILES freshclam/Makefile" ;;
     "sigtool/Makefile") CONFIG_FILES="$CONFIG_FILES sigtool/Makefile" ;;
     "clamconf/Makefile") CONFIG_FILES="$CONFIG_FILES clamconf/Makefile" ;;
+    "clamsubmit/Makefile") CONFIG_FILES="$CONFIG_FILES clamsubmit/Makefile" ;;
     "etc/Makefile") CONFIG_FILES="$CONFIG_FILES etc/Makefile" ;;
     "test/Makefile") CONFIG_FILES="$CONFIG_FILES test/Makefile" ;;
     "unit_tests/Makefile") CONFIG_FILES="$CONFIG_FILES unit_tests/Makefile" ;;
@@ -26412,6 +26524,19 @@ elif test "x$have_milter" = "x"; then :
   $as_echo "yes"
 else
   $as_echo "yes ($have_milter)"
+fi
+
+
+
+   $as_echo_n "              clamsubmit  : "
+   if test "x$curl_msg" = "xno"; then :
+  $as_echo "$have_curl (disabled)"
+elif test "x$curl_msg" = "xyes"; then :
+  $as_echo "$have_curl"
+elif test "x$curl_msg" = "x"; then :
+  $as_echo "$have_curl"
+else
+  $as_echo "$have_curl ($curl_msg)"
 fi
 
 
