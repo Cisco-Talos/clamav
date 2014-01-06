@@ -9,6 +9,10 @@
 #include <ctype.h>
 
 #include <sys/types.h>
+#include <fcntl.h>
+#include <sys/select.h>
+
+#include <errno.h>
 
 #if !defined(_WIN32)
 #include <sys/socket.h>
@@ -20,10 +24,13 @@
 #include "libclamav/clamav.h"
 #include "libclamav/www.h"
 
-int connect_host(const char *host, const char *port)
+int connect_host(const char *host, const char *port, int useAsync)
 {
     int sockfd;
     struct addrinfo hints, *servinfo, *p;
+    int flags;
+    fd_set write_fds;
+    struct timeval tv;
 
     memset(&hints, 0x00, sizeof(struct addrinfo));
     hints.ai_family = AF_UNSPEC;
@@ -37,9 +44,33 @@ int connect_host(const char *host, const char *port)
         if (sockfd < 0)
             continue;
 
+        if (useAsync) {
+            flags = fcntl(sockfd, F_GETFL, 0);
+            fcntl(sockfd, F_SETFL, flags | O_NONBLOCK);
+        }
+
         if (connect(sockfd, p->ai_addr, p->ai_addrlen)) {
-            close(sockfd);
-            continue;
+            if (useAsync) {
+                if (errno != EINPROGRESS) {
+                    close(sockfd);
+                    continue;
+                }
+
+                FD_ZERO(&write_fds);
+                FD_SET(sockfd, &write_fds);
+
+                /* TODO: Make this timeout configurable */
+                tv.tv_sec = 10;
+                tv.tv_usec = 0;
+
+                if (select(sockfd + 1, NULL, &write_fds, NULL, &tv) <= 0) {
+                    close(sockfd);
+                    continue;
+                }
+            } else {
+                close(sockfd);
+                continue;
+            }
         }
 
         /* Connected to host */
@@ -93,64 +124,109 @@ char *encode_data(const char *postdata)
     return buf;
 }
 
-void submit_post(const char *host, const char *port, const char *url, const char *postdata)
+void submit_post(const char *host, const char *port, const char *method, const char *url, const char *postdata)
 {
     int sockfd;
     unsigned int i;
-    char *buf, *encoded;
-    size_t bufsz;
+    char *buf, *encoded=NULL;
+    size_t bufsz ;
+    char chunkedlen[21];
+    fd_set readfds;
+    struct timeval tv;
+    char *acceptable_methods[] = {
+        "GET",
+        "PUT",
+        "POST",
+        NULL
+    };
 
-    encoded = encode_data(postdata);
-    if (!(encoded))
+    for (i=0; acceptable_methods[i] != NULL; i++)
+        if (!strcmp(method, acceptable_methods[i]))
+            break;
+
+    if (acceptable_methods[i] == NULL)
         return;
 
-    bufsz = sizeof("POST   HTTP/1.1") + 1; /* Yes. Three blank spaces. +1 for the \n */
+    bufsz = strlen(method);
+    bufsz += sizeof("   HTTP/1.1") + 2; /* Yes. Three blank spaces. +1 for the \n */
     bufsz += strlen(url);
-    bufsz += sizeof("Host: \n");
+    bufsz += sizeof("Host: \r\n");
     bufsz += strlen(host);
-    bufsz += sizeof("Connection: Close\n");
-    bufsz += sizeof("Content-Type: application/x-www-form-urlencoded\n");
-    bufsz += sizeof("Content-Length: \n") + 10;
-    bufsz += 2; /* +2 for \n\n */
-    bufsz += sizeof("postdata=");
-    bufsz += strlen(encoded) + 1;
+    bufsz += sizeof("Connection: Close\r\n");
+    bufsz += 4; /* +4 for \r\n\r\n */
+
+    if (!strcmp(method, "POST") || !strcmp(method, "PUT")) {
+        encoded = encode_data(postdata);
+        if (!(encoded))
+            return;
+
+        snprintf(chunkedlen, sizeof(chunkedlen), "%zu", strlen(encoded));
+        bufsz += sizeof("Content-Type: application/x-www-form-urlencoded\r\n");
+        bufsz += sizeof("Content-Length: \r\n");
+        bufsz += strlen(chunkedlen);
+        bufsz += strlen(encoded);
+    }
 
     buf = cli_calloc(1, bufsz);
     if (!(buf)) {
-        free(encoded);
+        if ((encoded))
+            free(encoded);
+
         return;
     }
 
-    snprintf(buf, bufsz, "POST %s HTTP/1.1\n", url);
-    snprintf(buf+strlen(buf), bufsz-strlen(buf), "Host: %s\n", host);
-    snprintf(buf+strlen(buf), bufsz-strlen(buf), "Connection: Close\n");
-    snprintf(buf+strlen(buf), bufsz-strlen(buf), "Content-Type: application/x-www-form-urlencoded\n");
-    snprintf(buf+strlen(buf), bufsz-strlen(buf), "Content-Length: %u\n\n", (unsigned int)(strlen(encoded) + sizeof("postdata=") - 1));
-    snprintf(buf+strlen(buf), bufsz-strlen(buf), "postdata=%s", encoded);
-    free(encoded);
+    snprintf(buf, bufsz, "%s %s HTTP/1.1\r\n", method, url);
+    snprintf(buf+strlen(buf), bufsz-strlen(buf), "Host: %s\r\n", host);
+    snprintf(buf+strlen(buf), bufsz-strlen(buf), "Connection: Close\r\n");
 
-    sockfd = connect_host(host, port);
+    if (!strcmp(method, "POST") || !strcmp(method, "PUT")) {
+        snprintf(buf+strlen(buf), bufsz-strlen(buf), "Content-Type: appplication/x-www-form-urlencoded\r\n");
+        snprintf(buf+strlen(buf), bufsz-strlen(buf), "Content-Length: %s\r\n", chunkedlen);
+        snprintf(buf+strlen(buf), bufsz-strlen(buf), "\r\n");
+        snprintf(buf+strlen(buf), bufsz-strlen(buf), "%s", encoded);
+        free(encoded);
+    }
+
+    sockfd = connect_host(host, port, 1);
     if (sockfd < 0) {
+        cli_warnmsg("Could not connect to stats server\n");
         free(buf);
         return;
     }
 
-    send(sockfd, buf, strlen(buf), 0);
+    if (send(sockfd, buf, strlen(buf), 0) != strlen(buf)) {
+        cli_warnmsg("Could not send stats\n");
+        perror("send");
+    }
 
     while (1) {
+        FD_ZERO(&readfds);
+        FD_SET(sockfd, &readfds);
+
         /*
          * Check to make sure the stats submitted okay (so that we don't kill the HTTP request
          * while it's being processed).
-         *
-         * TODO: Add a time limit based on a call to select() to prevent lock-ups or major
-         * slow downs.
          */
-        memset(buf, 0x00, bufsz);
-        if (recv(sockfd, buf, bufsz, 0) <= 0)
+        tv.tv_sec = 10;
+        tv.tv_usec = 0;
+        if (select(sockfd+1, &readfds, NULL, NULL, &tv) <= 0) {
             break;
+        }
 
-        if (strstr(buf, "STATOK"))
-            break;
+        if (FD_ISSET(sockfd, &readfds)) {
+            memset(buf, 0x00, bufsz);
+            if (recv(sockfd, buf, bufsz, 0) <= 0) {
+                if (errno == EAGAIN)
+                    continue;
+
+                cli_warnmsg("Could not receive data back from stats server. Errno: %d\n", errno);
+                perror("recv");
+                break;
+            }
+
+            if (strstr(buf, "STATOK"))
+                break;
+        }
     }
 
     close(sockfd);
