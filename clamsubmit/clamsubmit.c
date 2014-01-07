@@ -10,12 +10,13 @@
 
 void usage(char *name)
 {
-    fprintf(stderr, "USAGE: %s -pnih?\n", name);
+    fprintf(stderr, "USAGE: %s -hHinp?\n", name);
     fprintf(stderr, "OPTIONS:\n");
-    fprintf(stderr, "    -p [FILE]\tSubmit a fase positive (FP)\n");
-    fprintf(stderr, "    -n [FILE]\tSubmit a false negative (FN)\n");
-    fprintf(stderr, "    -i [FILE]\tSubmit an \"interesting\" file\n");
     fprintf(stderr, "    -h or -?\tShow the help text\n");
+    fprintf(stderr, "    -H [HostID]\tAttach a custom HostID to the submission.\n");
+    fprintf(stderr, "    -i [FILE]\tSubmit an \"interesting\" file\n");
+    fprintf(stderr, "    -n [FILE]\tSubmit a false negative (FN)\n");
+    fprintf(stderr, "    -p [FILE]\tSubmit a fase positive (FP)\n");
     exit(0);
 }
 
@@ -27,18 +28,29 @@ int main(int argc, char *argv[])
     struct curl_httppost *post=NULL, *last=NULL;
     struct curl_slist *slist = NULL;
     char *type;
-    char *hostid;
+    char *hostid=NULL;
     struct cl_engine *engine;
 
-    cl_init(0);
-    engine = cl_engine_new();
-    if (!(engine)) {
-        fprintf(stderr, "Unable to create new ClamAV engine\n");
-        return 1;
+    while ((ch = my_getopt(argc, argv, "H:")) > 0) {
+        if (ch == 'H')
+            hostid = optarg;
     }
 
-    hostid = engine->cb_stats_get_hostid(engine->stats_data);
-    printf("HostID: %s\n", hostid);
+    /* Reset getopt */
+    optind = opterr = 1;
+    optopt = 0;
+    optarg = NULL;
+
+    if (!(hostid)) {
+        cl_init(0);
+        engine = cl_engine_new();
+        if (!(engine)) {
+            fprintf(stderr, "Unable to create new ClamAV engine\n");
+            return 1;
+        }
+
+        hostid = engine->cb_stats_get_hostid(engine->stats_data);
+    }
 
     curl_global_init(CURL_GLOBAL_ALL);
 
