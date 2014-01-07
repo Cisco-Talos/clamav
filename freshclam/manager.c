@@ -1784,6 +1784,7 @@ test_database (const char *newfile, const char *newdb, int bytecode)
     {
         return FCE_TESTFAIL;
     }
+    cl_engine_set_clcb_stats_submit(engine, NULL);
 
     if ((ret =
          cl_load (newfile, engine, &newsigs,
