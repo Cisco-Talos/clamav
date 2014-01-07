@@ -567,6 +567,7 @@ int cl_cvdverify(const char *file)
 	fclose(fs);
 	return CL_EMEM;
     }
+    engine->cb_stats_submit = NULL; /* Don't submit stats if we're just verifying a CVD */
 
     ret = cli_cvdload(fs, engine, NULL, CL_DB_STDOPT | CL_DB_PUA, !!cli_strbcasestr(file, ".cld"), file, 1);
 
