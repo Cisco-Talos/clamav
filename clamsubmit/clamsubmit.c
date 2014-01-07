@@ -8,6 +8,8 @@
 #include "libclamav/clamav.h"
 #include "libclamav/others.h"
 
+#define OPTS "p:n:i:H:h?"
+
 void usage(char *name)
 {
     fprintf(stderr, "USAGE: %s -hHinp?\n", name);
@@ -31,7 +33,7 @@ int main(int argc, char *argv[])
     char *hostid=NULL;
     struct cl_engine *engine;
 
-    while ((ch = my_getopt(argc, argv, "H:")) > 0) {
+    while ((ch = my_getopt(argc, argv, OPTS)) > 0) {
         if (ch == 'H')
             hostid = optarg;
     }
@@ -60,7 +62,10 @@ int main(int argc, char *argv[])
     slist = curl_slist_append(slist, "Expect:");
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, slist);
 
-    while ((ch = my_getopt(argc, argv, "p:n:i:h?")) > 0) {
+    while ((ch = my_getopt(argc, argv, OPTS)) > 0) {
+        if (ch == 'H')
+            continue;
+
         switch (ch) {
             case 'p':
                 type = "fp";
