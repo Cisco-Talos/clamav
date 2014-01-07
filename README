@@ -2,6 +2,32 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
+0.98.1
+------
+ClamAV 0.98.1 provides improved support of Mac OS X platform, support for new file types, and 
+quality improvements. These include:
+
+    - Extraction, decompression, and scanning of files within Apple Disk Image (DMG) format.
+
+    - Extraction, decompression, and scanning of files within Extensible Archive (XAR) format.
+      XAR format is commonly used for software packaging, such as PKG and RPM, as well as 
+      general archival.
+
+    - Decompression and scanning of files in "Xz" compression format.
+
+    - Recognition of Open Office XML formats.
+
+    - Improvements and fixes to extraction and scanning of ole formats.
+
+    - Option to force all scanned data to disk. This impacts only a few file types where
+      some embedded content is normally scanned in memory. Enabling this option
+      ensures that a file descriptor exists when callback functions are used, at a small
+      performance cost. This should only be needed when callback functions are used
+      that need file access.
+
+    - Various improvements to ClamAV configuration, support of third party libraries, 
+      and unit tests.
+
 0.98
 ------
 
