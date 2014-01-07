@@ -461,3 +461,48 @@ static cli_flagged_sample_t *find_sample(cli_intel_t *intel, const char *virname
 
     return NULL;
 }
+
+void cl_engine_set_clcb_stats_submit(struct cl_engine *engine, clcb_stats_submit callback)
+{
+    engine->cb_stats_submit = callback;
+}
+
+void cl_engine_stats_set_cbdata(struct cl_engine *engine, void *cbdata)
+{
+    engine->stats_data = cbdata;
+}
+
+void cl_engine_set_clcb_stats_add_sample(struct cl_engine *engine, clcb_stats_add_sample callback)
+{
+    engine->cb_stats_add_sample = callback;
+}
+
+void cl_engine_set_clcb_stats_remove_sample(struct cl_engine *engine, clcb_stats_remove_sample callback)
+{
+    engine->cb_stats_remove_sample = callback;
+}
+
+void cl_engine_set_clcb_stats_decrement_count(struct cl_engine *engine, clcb_stats_decrement_count callback)
+{
+    engine->cb_stats_decrement_count = callback;
+}
+
+void cl_engine_set_clcb_stats_flush(struct cl_engine *engine, clcb_stats_flush callback)
+{
+    engine->cb_stats_flush = callback;
+}
+
+void cl_engine_set_clcb_stats_get_num(struct cl_engine *engine, clcb_stats_get_num callback)
+{
+    engine->cb_stats_get_num = callback;
+}
+
+void cl_engine_set_clcb_stats_get_size(struct cl_engine *engine, clcb_stats_get_size callback)
+{
+    engine->cb_stats_get_size = callback;
+}
+
+void cl_engine_set_clcb_stats_get_hostid(struct cl_engine *engine, clcb_stats_get_hostid callback)
+{
+    engine->cb_stats_get_hostid = callback;
+}
