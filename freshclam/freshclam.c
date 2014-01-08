@@ -69,6 +69,8 @@ char updtmpdir[512], dbdir[512];
 int sigchld_wait = 1;
 const char *pidfile = NULL;
 
+void submit_host_info(struct optstruct *opts);
+
 static void
 sighandler (int sig)
 {
@@ -330,6 +332,8 @@ main (int argc, char **argv)
         optfree (opts);
         return 0;
     }
+
+    submit_host_info(opts);
 
     if (optget (opts, "HTTPProxyPassword")->enabled)
     {
@@ -725,4 +729,33 @@ main (int argc, char **argv)
     optfree (opts);
 
     return (ret);
+}
+
+void submit_host_info(struct optstruct *opts)
+{
+    struct optstruct *opt;
+    struct cl_engine *engine;
+    cli_intel_t *intel;
+
+    engine = cl_engine_new();
+    if (!(engine))
+        return;
+
+    intel = engine->stats_data;
+    if (!(intel)) {
+        engine->cb_stats_submit = NULL;
+        cl_engine_free(engine);
+        return;
+    }
+
+    intel->host_info = calloc(1, strlen(TARGET_OS_TYPE) + strlen(TARGET_ARCH_TYPE) + 2);
+    if (!(intel->host_info)) {
+        engine->cb_stats_submit = NULL;
+        cl_engine_free(engine);
+        return;
+    }
+
+    sprintf(intel->host_info, "%s %s", TARGET_OS_TYPE, TARGET_ARCH_TYPE);
+
+    cl_engine_free(engine);
 }
