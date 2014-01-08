@@ -159,6 +159,7 @@ typedef struct cli_flagged_sample {
 
 typedef struct cli_clamav_intel {
     char *hostid;
+    char *host_info;
     cli_flagged_sample_t *samples;
     uint32_t nsamples;
     uint32_t maxsamples;
