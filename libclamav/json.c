@@ -79,6 +79,9 @@ char *export_stats_to_json(struct cl_engine *engine, cli_intel_t *intel)
 
     bufsz = JSON_BUFSZ;
     sprintf(buf, "{\n\t\"hostid\": \"%s\",\n", hostid);
+    if (intel->host_info)
+        sprintf(buf+strlen(buf), "\t\"host_info\": \"%s\",\n", intel->host_info);
+
     sprintf(buf+strlen(buf), "\t\"samples\": [\n");
     curused = strlen(buf);
 
