@@ -85,6 +85,10 @@ int connect_host(const char *host, const char *port, int useAsync)
 
     freeaddrinfo(servinfo);
 
+    /* Return to using a synchronous socket to make Linux happy */
+    if (useAsync)
+        fcntl(sockfd, F_SETFL, flags);
+
     return sockfd;
 }
 
@@ -195,8 +199,10 @@ void submit_post(const char *host, const char *port, const char *method, const c
     }
 
     if (send(sockfd, buf, strlen(buf), 0) != strlen(buf)) {
-        cli_warnmsg("Could not send stats\n");
-        perror("send");
+        if (errno != EINPROGRESS) {
+            cli_warnmsg("Could not send stats\n");
+            perror("send");
+        }
     }
 
     while (1) {
@@ -210,14 +216,19 @@ void submit_post(const char *host, const char *port, const char *method, const c
         tv.tv_sec = 10;
         tv.tv_usec = 0;
         if (select(sockfd+1, &readfds, NULL, NULL, &tv) <= 0) {
-            break;
+            if (errno != EINPROGRESS) {
+                perror("select");
+                break;
+            }
         }
 
         if (FD_ISSET(sockfd, &readfds)) {
             memset(buf, 0x00, bufsz);
             if (recv(sockfd, buf, bufsz, 0) <= 0) {
-                if (errno == EAGAIN)
+                if (errno == EAGAIN) {
+                    cli_warnmsg("recv returned EAGAIN\n");
                     continue;
+                }
 
                 cli_warnmsg("Could not receive data back from stats server. Errno: %d\n", errno);
                 perror("recv");
