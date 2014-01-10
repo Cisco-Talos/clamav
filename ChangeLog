@@ -1,3 +1,7 @@
+Tue Nov 26 16:00:57 2013 EDT 2013 (klin)
+------------------------------------
+ * Improvements to OLE2 extraction and scanning
+
 Fri Nov 8 17:08:09 2013 EDT 2013 (morgan)
 ------------------------------------
  * Add ForceToDisk option for clamd and force-to-disk arg for clamscan
@@ -17,6 +21,10 @@ Tue Oct 15 16:00:14 2013 EDT 2013 (dar)
 Fri Oct 11 16:50:34 2013 EDT 2013 (dar)
 ------------------------------------
  * bb #9072: clamscan message separator fix
+
+Tue Oct 8 17:17:44 2013 EDT 2013 (morgan)
+------------------------------------
+ * xz file type support
 
 Thu Oct 3 10:49:11 2013 EDT 2013 (dar)
 ------------------------------------
