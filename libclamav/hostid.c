@@ -234,7 +234,7 @@ char *internal_get_host_id(void)
     if (!(devices))
         return NULL;
 
-    printable_md5 = calloc(1, 33);
+    printable_md5 = calloc(1, 37);
     if (!(printable_md5))
         return NULL;
 
@@ -248,8 +248,19 @@ char *internal_get_host_id(void)
         free(devices[i].name);
     free(devices);
 
-    for (i=0; i < sizeof(raw_md5); i++)
-        sprintf(printable_md5+(i*2), "%02x", raw_md5[i]);
+    for (i=0; i < sizeof(raw_md5); i++) {
+        size_t len = strlen(printable_md5);
+        switch (len) {
+            case 8:
+            case 13:
+            case 18:
+            case 23:
+                printable_md5[len++] = '-';
+                break;
+        }
+
+        sprintf(printable_md5+len, "%02x", raw_md5[i]);
+    }
 
     return printable_md5;
 }
