@@ -15,8 +15,6 @@ quality improvements. These include:
 
     - Decompression and scanning of files in "Xz" compression format.
 
-    - Recognition of Open Office XML formats.
-
     - Improvements and fixes to extraction and scanning of ole formats.
 
     - Option to force all scanned data to disk. This impacts only a few file types where
