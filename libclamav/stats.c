@@ -214,6 +214,14 @@ void clamav_stats_submit(struct cl_engine *engine, void *cbdata)
     if (!(intel) || !(engine))
         return;
 
+    if (!(engine->cb_stats_get_hostid)) {
+        /* Submitting stats is disabled due to HostID being turned off */
+        if ((engine->cb_stats_flush))
+            engine->cb_stats_flush(engine, cbdata);
+
+        return;
+    }
+
 #ifdef CL_THREAD_SAFE
     err = pthread_mutex_lock(&(intel->mutex));
     if (err) {
