@@ -179,6 +179,7 @@ const struct clam_option __clam_options[] = {
 
     /* config file/cmdline options */
     { "LogFile", "log", 'l', TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD | OPT_MILTER | OPT_CLAMSCAN | OPT_CLAMDSCAN, "Save all reports to a log file.", "/tmp/clamav.log" },
+    { "StatsHostID", "stats-host-id", 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM | OPT_CLAMD | OPT_CLAMSCAN, "HostID in the form of an UUID to use when submitting statistical information. See the clamscan manpage for more information.", "default" },
 
     { "LogFileUnlock", NULL, 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_MILTER, "By default the log file is locked for writing and only a single\ndaemon process can write to it. This option disables the lock.", "yes" },
 

@@ -68,8 +68,10 @@ static short foreground = 1;
 char updtmpdir[512], dbdir[512];
 int sigchld_wait = 1;
 const char *pidfile = NULL;
+char hostid[37];
 
 void submit_host_info(struct optstruct *opts);
+char *get_hostid(void *cbdata);
 
 static void
 sighandler (int sig)
@@ -333,6 +335,22 @@ main (int argc, char **argv)
         return 0;
     }
 
+    /* Stats/intelligence gathering  */
+    if (optget(opts, "stats-host-id")->enabled) {
+        char *p = optget(opts, "stats-host-id")->strarg;
+
+        if (strcmp(p, "default")) {
+            if (strlen(p) > 36) {
+                logg("!Invalid HostID\n");
+                optfree(opts);
+                return FCE_INIT;
+            }
+
+            strcpy(hostid, p);
+        } else {
+            strcpy(hostid, "default");
+        }
+    }
     submit_host_info(opts);
 
     if (optget (opts, "HTTPProxyPassword")->enabled)
@@ -757,5 +775,44 @@ void submit_host_info(struct optstruct *opts)
 
     sprintf(intel->host_info, "%s %s", TARGET_OS_TYPE, TARGET_ARCH_TYPE);
 
+    if (!strcmp(hostid, "none"))
+        cl_engine_set_clcb_stats_get_hostid(engine, NULL);
+    else if (strcmp(hostid, "default"))
+        cl_engine_set_clcb_stats_get_hostid(engine, get_hostid);
+
     cl_engine_free(engine);
+}
+
+int is_valid_hostid(void)
+{
+    int count, i;
+
+    if (strlen(hostid) != 36)
+        return 0;
+
+    count=0;
+    for (i=0; i < 36; i++)
+        if (hostid[i] == '-')
+            count++;
+
+    if (count != 4)
+        return 0;
+
+    if (hostid[8] != '-' || hostid[13] != '-' || hostid[18] != '-' || hostid[23] != '-')
+        return 0;
+
+    return 1;
+}
+
+char *get_hostid(void *cbdata)
+{
+    if (!strcmp(hostid, "none"))
+        return NULL;
+
+    if (!is_valid_hostid())
+        return strdup(STATS_ANON_UUID);
+
+    logg("HostID is valid: %s\n", hostid);
+
+    return strdup(hostid);
 }
