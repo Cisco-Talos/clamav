@@ -73,6 +73,9 @@
 
 short debug_mode = 0, logok = 0;
 short foreground = 0;
+char hostid[37];
+
+char *get_hostid(void *cbdata);
 
 static void help(void)
 {
@@ -336,6 +339,28 @@ int main(int argc, char **argv)
 	logg("!Can't initialize antivirus engine\n");
 	ret = 1;
 	break;
+    }
+
+    if (optget(opts, "StatsHostID")->enabled) {
+        char *p = optget(opts, "StatsHostID")->strarg;
+
+        if (strcmp(p, "default")) {
+            if (!strcmp(p, "none")) {
+                cl_engine_set_clcb_stats_get_hostid(engine, NULL);
+            } else {
+                if (strlen(p) > 36) {
+                    logg("!Invalid HostID\n");
+                    optfree(opts);
+                    cl_engine_set_clcb_stats_submit(engine, NULL);
+                    cl_engine_free(engine);
+                    ret = 1;
+                    break;
+                }
+
+                strcpy(hostid, p);
+                cl_engine_set_clcb_stats_get_hostid(engine, get_hostid);
+            }
+        }
     }
 
     /* load the database(s) */
@@ -628,4 +653,36 @@ int main(int argc, char **argv)
     optfree(opts);
 
     return ret;
+}
+
+int is_valid_hostid(void)
+{
+    int count, i;
+
+    if (strlen(hostid) != 36)
+        return 0;
+
+    count=0;
+    for (i=0; i < 36; i++)
+        if (hostid[i] == '-')
+            count++;
+
+    if (count != 4)
+        return 0;
+
+    if (hostid[8] != '-' || hostid[13] != '-' || hostid[18] != '-' || hostid[23] != '-')
+        return 0;
+
+    return 1;
+}
+
+char *get_hostid(void *cbdata)
+{
+    if (!strcmp(hostid, "none"))
+        return NULL;
+
+    if (!is_valid_hostid())
+        return strdup(STATS_ANON_UUID);
+
+    return strdup(hostid);
 }
