@@ -675,6 +675,16 @@ struct cl_settings *cl_engine_settings_copy(const struct cl_engine *engine)
     settings->cb_hash = engine->cb_hash;
     settings->cb_meta = engine->cb_meta;
 
+    settings->stats_data = engine->stats_data;
+    settings->cb_stats_add_sample = engine->cb_stats_add_sample;
+    settings->cb_stats_remove_sample = engine->cb_stats_remove_sample;
+    settings->cb_stats_decrement_count = engine->cb_stats_decrement_count;
+    settings->cb_stats_submit = engine->cb_stats_submit;
+    settings->cb_stats_flush = engine->cb_stats_flush;
+    settings->cb_stats_get_num = engine->cb_stats_get_num;
+    settings->cb_stats_get_size = engine->cb_stats_get_size;
+    settings->cb_stats_get_hostid = engine->cb_stats_get_hostid;
+
     return settings;
 }
 
@@ -726,6 +736,16 @@ int cl_engine_settings_apply(struct cl_engine *engine, const struct cl_settings 
     engine->cb_sigload_ctx = settings->cb_sigload_ctx;
     engine->cb_hash = settings->cb_hash;
     engine->cb_meta = settings->cb_meta;
+
+    engine->stats_data = settings->stats_data;
+    engine->cb_stats_add_sample = settings->cb_stats_add_sample;
+    engine->cb_stats_remove_sample = settings->cb_stats_remove_sample;
+    engine->cb_stats_decrement_count = settings->cb_stats_decrement_count;
+    engine->cb_stats_submit = settings->cb_stats_submit;
+    engine->cb_stats_flush = settings->cb_stats_flush;
+    engine->cb_stats_get_num = settings->cb_stats_get_num;
+    engine->cb_stats_get_size = settings->cb_stats_get_size;
+    engine->cb_stats_get_hostid = settings->cb_stats_get_hostid;
 
     return CL_SUCCESS;
 }

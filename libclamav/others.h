@@ -365,6 +365,17 @@ struct cl_settings {
     uint64_t maxhtmlnotags; /* max size for scanning normalized HTML */
     uint64_t maxscriptnormalize; /* max size to normalize scripts */
     uint64_t maxziptypercg; /* max size to re-do zip filetype */
+
+    /* Statistics/intelligence gathering */
+    void *stats_data;
+    clcb_stats_add_sample cb_stats_add_sample;
+    clcb_stats_remove_sample cb_stats_remove_sample;
+    clcb_stats_decrement_count cb_stats_decrement_count;
+    clcb_stats_submit cb_stats_submit;
+    clcb_stats_flush cb_stats_flush;
+    clcb_stats_get_num cb_stats_get_num;
+    clcb_stats_get_size cb_stats_get_size;
+    clcb_stats_get_hostid cb_stats_get_hostid;
 };
 
 extern int (*cli_unrar_open)(int fd, const char *dirname, unrar_state_t *state);
