@@ -657,12 +657,7 @@ main (int argc, char **argv)
         {
             ret = download (opts, cfgfile);
 
-            if (ret <= 1)
-            {
-                if ((opt = optget (opts, "SubmitDetectionStats"))->enabled)
-                    submitstats (opt->strarg, opts);
-            }
-            else
+            if (ret > 1)
             {
                 if ((opt = optget (opts, "OnErrorExecute"))->enabled)
                     arg = opt->strarg;
@@ -718,19 +713,7 @@ main (int argc, char **argv)
     }
     else
     {
-        if ((opt = optget (opts, "submit-stats"))->active)
-        {
-            if (!optget (opts, "no-warnings")->enabled)
-                logg (" *** Virus databases are not updated in this mode ***\n");
-            ret = submitstats (opt->strarg, opts);
-        }
-        else
-        {
-            ret = download (opts, cfgfile);
-
-            if ((opt = optget (opts, "SubmitDetectionStats"))->enabled)
-                submitstats (opt->strarg, opts);
-        }
+        ret = download (opts, cfgfile);
     }
 
     if (ret > 1)
