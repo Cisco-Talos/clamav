@@ -68,8 +68,6 @@ static int fan_scanfile(int fan_fd, const char *fname, struct fanotify_event_met
     context.filename = fname;
     context.virsize = 0;
     if(scan && cl_scandesc_callback(fmd->fd, &virname, NULL, tharg->engine, tharg->options, &context) == CL_VIRUS) {
-	if(context.virsize)
-	    detstats_add(virname, fname, context.virsize, context.virhash);
 	if(extinfo && context.virsize)
 	    logg("ScanOnAccess: %s: %s(%s:%llu) FOUND\n", fname, virname, context.virhash, context.virsize);
 	else
@@ -277,8 +275,6 @@ static int cauth_scanfile(const char *fname, int extinfo, struct thrarg *tharg)
 	return -1;
 
     if(cl_scandesc_callback(fd, &virname, NULL, tharg->engine, tharg->options, &context) == CL_VIRUS) {
-	if(context.virsize)
-	    detstats_add(virname, fname, context.virsize, context.virhash);
 	if(extinfo && context.virsize)
 	    logg("ScanOnAccess: %s: %s(%s:%llu) FOUND\n", fname, virname, context.virhash, context.virsize);
 	else

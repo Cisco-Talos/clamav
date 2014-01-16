@@ -596,12 +596,12 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
 	    }
 	case COMMAND_DETSTATSCLEAR:
 	    {
-		detstats_clear();
+        /* TODO: tell client this command has been removed */
 		return 1;
 	    }
 	case COMMAND_DETSTATS:
 	    {
-		detstats_print(desc, conn->term);
+        /* TODO: tell client this command has been removed */
 		return 1;
 	    }
 	case COMMAND_INSTREAM:
