@@ -464,7 +464,6 @@ int main(int argc, char **argv)
         }
 
         cl_engine_set_clcb_hash(engine, hash_callback);
-        detstats_clear();
 
         if(optget(opts, "LeaveTemporaryFiles")->enabled)
             cl_engine_set_num(engine, CL_ENGINE_KEEPTMP, 1);

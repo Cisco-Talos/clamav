@@ -82,10 +82,6 @@ void fds_cleanup(struct fd_data *data);
 int fds_poll_recv(struct fd_data *data, int timeout, int check_signals, void *event);
 void fds_free(struct fd_data *data);
 
-void detstats_clear(void);
-void detstats_add(const char *virname, const char *fname, unsigned int fsize, const char *md5);
-void detstats_print(int desc, char term);
-
 #ifdef FANOTIFY
 int fan_checkowner(int pid, const struct optstruct *opts);
 #endif
