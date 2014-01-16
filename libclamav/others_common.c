@@ -903,7 +903,6 @@ char *cli_gentemp(const char *dir)
 
 int cli_gentempfd(const char *dir, char **name, int *fd)
 {
-
     *name = cli_gentemp(dir);
     if(!*name)
 	return CL_EMEM;
@@ -913,10 +912,11 @@ int cli_gentempfd(const char *dir, char **name, int *fd)
      * EEXIST is almost impossible to occur, so we just treat it as other
      * errors
      */
-   if(*fd == -1) {
-	cli_errmsg("cli_gentempfd: Can't create temporary file %s: %s\n", *name, strerror(errno));
-	free(*name);
-	return CL_ECREAT;
+    if(*fd == -1) {
+        cli_errmsg("cli_gentempfd: Can't create temporary file %s: %s\n", *name, strerror(errno));
+        free(*name);
+        *name = NULL;
+        return CL_ECREAT;
     }
 
     return CL_SUCCESS;
