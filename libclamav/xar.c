@@ -50,14 +50,17 @@
 static int xar_cleanup_temp_file(cli_ctx *ctx, int fd, char * tmpname)
 {
     int rc = CL_SUCCESS;
-    close(fd);
-    if(!ctx->engine->keeptmp) {
-        if (cli_unlink(tmpname)) {
-            cli_errmsg("cli_scanxar: error unlinking tmpfile %s\n", tmpname); 
-            rc = CL_EUNLINK;
+    if (fd > -1)
+        close(fd);
+    if (tmpname != NULL) {
+        if (!ctx->engine->keeptmp) {
+            if (cli_unlink(tmpname)) {
+                cli_errmsg("cli_scanxar: error unlinking tmpfile %s\n", tmpname); 
+                rc = CL_EUNLINK;
+            }
         }
+        free(tmpname);
     }
-    free(tmpname);
     return rc;
 }
 
@@ -815,12 +818,12 @@ int cli_scanxar(cli_ctx *ctx)
 
  exit_tmpfile:
     xar_cleanup_temp_file(ctx, fd, tmpname);
+
+ exit_reader:
     if (a_cksum != NULL)
         xmlFree(a_cksum);   
     if (e_cksum != NULL)
         xmlFree(e_cksum);
-
- exit_reader:
     xmlTextReaderClose(reader);
     xmlFreeTextReader(reader);
 
