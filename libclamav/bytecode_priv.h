@@ -63,13 +63,13 @@ struct cli_bc_inst {
     operand_t dest;
     interp_op_t interp_op;/* opcode for interpreter */
     union {
-	operand_t unaryop;
-	struct cli_bc_cast cast;
-	operand_t binop[2];
-	operand_t three[3];
-	struct cli_bc_callop ops;
-	struct branch branch;
-	bbid_t jump;
+        operand_t unaryop;
+        struct cli_bc_cast cast;
+        operand_t binop[2];
+        operand_t three[3];
+        struct cli_bc_callop ops;
+        struct branch branch;
+        bbid_t jump;
     } u;
 };
 
