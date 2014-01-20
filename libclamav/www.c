@@ -28,8 +28,9 @@ int connect_host(const char *host, const char *port, int useAsync)
 {
     int sockfd;
     struct addrinfo hints, *servinfo, *p;
-    int flags;
-    fd_set write_fds;
+    int flags, error;
+    socklen_t len;
+    fd_set read_fds, write_fds;
     struct timeval tv;
 
     memset(&hints, 0x00, sizeof(struct addrinfo));
@@ -46,24 +47,40 @@ int connect_host(const char *host, const char *port, int useAsync)
 
         if (useAsync) {
             flags = fcntl(sockfd, F_GETFL, 0);
-            fcntl(sockfd, F_SETFL, flags | O_NONBLOCK);
+            if (fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) < 0) {
+                close(sockfd);
+                continue;
+            }
         }
 
-        if (connect(sockfd, p->ai_addr, p->ai_addrlen)) {
+        if ((error = connect(sockfd, p->ai_addr, p->ai_addrlen))) {
             if (useAsync) {
                 if (errno != EINPROGRESS) {
                     close(sockfd);
                     continue;
                 }
+                errno = 0;
 
                 FD_ZERO(&write_fds);
+                FD_ZERO(&read_fds);
+                FD_SET(sockfd, &read_fds);
                 FD_SET(sockfd, &write_fds);
 
                 /* TODO: Make this timeout configurable */
                 tv.tv_sec = 10;
                 tv.tv_usec = 0;
+                if (select(sockfd + 1, &read_fds, &write_fds, NULL, &tv) <= 0) {
+                    close(sockfd);
+                    continue;
+                }
 
-                if (select(sockfd + 1, NULL, &write_fds, NULL, &tv) <= 0) {
+                if (FD_ISSET(sockfd, &read_fds) || FD_ISSET(sockfd, &write_fds)) {
+                    len = sizeof(error);
+                    if (getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &error, &len) < 0) {
+                        close(sockfd);
+                        continue;
+                    }
+                } else {
                     close(sockfd);
                     continue;
                 }
@@ -72,6 +89,7 @@ int connect_host(const char *host, const char *port, int useAsync)
                 continue;
             }
         }
+
 
         /* Connected to host */
         break;
@@ -86,8 +104,12 @@ int connect_host(const char *host, const char *port, int useAsync)
     freeaddrinfo(servinfo);
 
     /* Return to using a synchronous socket to make Linux happy */
-    if (useAsync)
-        fcntl(sockfd, F_SETFL, flags);
+    if (useAsync) {
+        if (fcntl(sockfd, F_SETFL, flags) < 0) {
+            close(sockfd);
+            return -1;
+        }
+    }
 
     return sockfd;
 }
@@ -130,10 +152,11 @@ char *encode_data(const char *postdata)
 
 void submit_post(const char *host, const char *port, const char *method, const char *url, const char *postdata)
 {
-    int sockfd;
+    int sockfd, n;
     unsigned int i;
     char *buf, *encoded=NULL;
-    size_t bufsz ;
+    size_t bufsz;
+    ssize_t recvsz;
     char chunkedlen[21];
     fd_set readfds;
     struct timeval tv;
@@ -193,16 +216,14 @@ void submit_post(const char *host, const char *port, const char *method, const c
 
     sockfd = connect_host(host, port, 1);
     if (sockfd < 0) {
-        cli_warnmsg("Could not connect to stats server\n");
         free(buf);
         return;
     }
 
     if (send(sockfd, buf, strlen(buf), 0) != strlen(buf)) {
-        if (errno != EINPROGRESS) {
-            cli_warnmsg("Could not send stats\n");
-            perror("send");
-        }
+        close(sockfd);
+        free(buf);
+        return;
     }
 
     while (1) {
@@ -211,27 +232,20 @@ void submit_post(const char *host, const char *port, const char *method, const c
 
         /*
          * Check to make sure the stats submitted okay (so that we don't kill the HTTP request
-         * while it's being processed).
+         * while it's being processed). Give a ten-second timeout so we don't have a major
+         * impact on scanning.
          */
         tv.tv_sec = 10;
         tv.tv_usec = 0;
-        if (select(sockfd+1, &readfds, NULL, NULL, &tv) <= 0) {
-            if (errno != EINPROGRESS) {
-                perror("select");
-                break;
-            }
-        }
+        if ((n = select(sockfd+1, &readfds, NULL, NULL, &tv)) <= 0)
+            break;
 
         if (FD_ISSET(sockfd, &readfds)) {
             memset(buf, 0x00, bufsz);
-            if (recv(sockfd, buf, bufsz, 0) <= 0) {
-                if (errno == EAGAIN) {
-                    cli_warnmsg("recv returned EAGAIN\n");
-                    continue;
-                }
+            if ((recvsz = recv(sockfd, buf, bufsz, 0) <= 0)) {
+                if (recvsz < 0)
+                    break;
 
-                cli_warnmsg("Could not receive data back from stats server. Errno: %d\n", errno);
-                perror("recv");
                 break;
             }
 
