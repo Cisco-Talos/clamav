@@ -242,12 +242,8 @@ void submit_post(const char *host, const char *port, const char *method, const c
 
         if (FD_ISSET(sockfd, &readfds)) {
             memset(buf, 0x00, bufsz);
-            if ((recvsz = recv(sockfd, buf, bufsz, 0) <= 0)) {
-                if (recvsz < 0)
-                    break;
-
+            if ((recvsz = recv(sockfd, buf, bufsz, 0) <= 0))
                 break;
-            }
 
             if (strstr(buf, "STATOK"))
                 break;
