@@ -60,6 +60,7 @@
 #include "ishield.h"
 #include "asn1.h"
 #include "sha1.h"
+#include "libclamav/md5.h"
 
 #define DCONF ctx->dconf->pe
 
@@ -2796,7 +2797,7 @@ static int sort_sects(const void *first, const void *second) {
     return (a->raw - b->raw);
 }
 
-int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1) {
+int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uint32_t flags) {
     uint16_t e_magic; /* DOS signature ("MZ") */
     uint16_t nsections;
     uint32_t e_lfanew; /* address of new exe header */
@@ -2814,6 +2815,14 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1) {
     struct pe_image_data_dir *dirs;
     fmap_t *map = *ctx->fmap;
     SHA1Context sha1;
+    cli_md5_ctx md5ctx;
+
+    if (flags & CL_CHECKFP_PE_FLAG_STATS)
+        if (!(hashes))
+            return CL_EFORMAT;
+
+    if (flags == CL_CHECKFP_PE_FLAG_NONE)
+        return 0;
 
     if(!(DCONF & PE_CONF_CATALOG))
         return CL_EFORMAT;
@@ -2903,6 +2912,15 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1) {
 
     hdr_size = PESALIGN(hdr_size, falign); /* Aligned headers virtual size */
 
+    if (flags & CL_CHECKFP_PE_FLAG_STATS) {
+        hashes->nsections = nsections;
+        hashes->sections = cli_calloc(nsections, sizeof(struct cli_section_hash));
+        if (!(hashes->sections)) {
+            free(exe_sections);
+            return CL_EMEM;
+        }
+    }
+
     for(i = 0; i < nsections; i++) {
         exe_sections[i].rva = PEALIGN(EC32(section_hdr[i].VirtualAddress), valign);
         exe_sections[i].vsz = PESALIGN(EC32(section_hdr[i].VirtualSize), valign);
@@ -2928,9 +2946,10 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1) {
 
     cli_qsort(exe_sections, nsections, sizeof(*exe_sections), sort_sects);
 
-    SHA1Init(&sha1);
+    if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE)
+        SHA1Init(&sha1);
 
-#define hash_chunk(where, size) \
+#define hash_chunk(where, size, isStatAble, section) \
     do { \
         const uint8_t *hptr; \
         if(!(size)) break; \
@@ -2938,13 +2957,20 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1) {
             free(exe_sections); \
             return CL_EFORMAT; \
         } \
-        SHA1Update(&sha1, hptr, size); \
+        if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE) \
+            SHA1Update(&sha1, hptr, size); \
+        if (isStatAble && flags & CL_CHECKFP_PE_FLAG_STATS) { \
+            cli_md5_init(&md5ctx); \
+            cli_md5_update(&md5ctx, hptr, size); \
+            cli_md5_final(hashes->sections[section].md5, &md5ctx); \
+            hashes->sections[section].len = size; \
+        } \
     } while(0)
 
     /* MZ to checksum */
     at = 0;
     hlen = e_lfanew + sizeof(struct pe_image_file_hdr) + (pe_plus ? offsetof(struct pe_image_optional_hdr64, CheckSum) : offsetof(struct pe_image_optional_hdr32, CheckSum));
-    hash_chunk(0, hlen);
+    hash_chunk(0, hlen, 0, 0);
     at = hlen + 4;
 
     /* Checksum to security */
@@ -2952,7 +2978,7 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1) {
         hlen = offsetof(struct pe_image_optional_hdr64, DataDirectory[4]) - offsetof(struct pe_image_optional_hdr64, CheckSum) - 4;
     else
         hlen = offsetof(struct pe_image_optional_hdr32, DataDirectory[4]) - offsetof(struct pe_image_optional_hdr32, CheckSum) - 4;
-    hash_chunk(at, hlen);
+    hash_chunk(at, hlen, 0, 0);
     at += hlen + 8;
 
     if(at > hdr_size) {
@@ -2962,7 +2988,7 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1) {
 
     /* Security to End of header */
     hlen = hdr_size - at;
-    hash_chunk(at, hlen);
+    hash_chunk(at, hlen, 0, 0);
 
     /* Sections */
     at = hdr_size;
@@ -2970,7 +2996,7 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1) {
         if(!exe_sections[i].rsz)
             continue;
 
-        hash_chunk(exe_sections[i].raw, exe_sections[i].rsz);
+        hash_chunk(exe_sections[i].raw, exe_sections[i].rsz, 1, i);
         at += exe_sections[i].rsz;
     }
 
@@ -2982,7 +3008,7 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1) {
         }
 
         hlen -= dirs[4].Size;
-        hash_chunk(at, hlen);
+        hash_chunk(at, hlen, 0, 0);
         at += hlen;
     }
     free(exe_sections);

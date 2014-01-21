@@ -31,10 +31,84 @@
 #include "libclamav/hostid.h"
 #include "libclamav/www.h"
 
-static cli_flagged_sample_t *find_sample(cli_intel_t *intel, const char *virname, const unsigned char *md5, size_t size, cli_intel_sample_type_t type);
+#define DEBUG_STATS 1
+
+static cli_flagged_sample_t *find_sample(cli_intel_t *intel, const char *virname, const unsigned char *md5, size_t size, stats_section_t *sections);
 void free_sample(cli_flagged_sample_t *sample);
 
-void clamav_stats_add_sample(const char *virname, const unsigned char *md5, size_t size, cli_intel_sample_type_t type, void *cbdata)
+#if DEBUG_STATS
+char *get_hash(unsigned char *md5)
+{
+    char *hash;
+    int i;
+
+    hash = calloc(1, 33);
+    if (!(hash))
+        return NULL;
+
+    for (i=0; i<16; i++)
+        sprintf(hash+(i*2), "%02x", md5[i]);
+
+    return hash;
+}
+
+char *get_sample_names(char **names)
+{
+    char *ret;
+    size_t n, i, sz;
+
+    sz = 0;
+    for (n=0; names[n] != NULL; n++)
+        sz += strlen(names[n]);
+
+    ret = calloc(1, sz + n + 1);
+    if (!(ret))
+        return NULL;
+
+    for (i=0; names[i] != NULL; i++)
+        sprintf(ret+strlen(ret), "%s%s", (i==0) ? "" : " ", names[i]);
+
+    return ret;
+}
+
+void print_sample(cli_flagged_sample_t *sample)
+{
+    char *hash, *names;
+    size_t i;
+
+    if (!(sample))
+        return;
+
+    hash = get_hash(sample->md5);
+    if (!(hash))
+        return;
+
+    cli_warnmsg("Sample[%s]:\n", hash);
+    cli_warnmsg("    * Size: %zu\n", sample->size);
+    cli_warnmsg("    * Hits: %u\n", sample->hits);
+
+    free(hash);
+
+    names = get_sample_names(sample->virus_name);
+    if ((names))
+        cli_warnmsg("    * Names: %s\n", names);
+
+    if (sample->sections && sample->sections->nsections) {
+        for (i=0; i < sample->sections->nsections; i++) {
+            hash = get_hash(sample->sections->sections[i].md5);
+            if ((hash)) {
+                cli_warnmsg("    * Section[%zu] (%zu): %s\n", i, sample->sections->sections[i].len, hash);
+                free(hash);
+            }
+        }
+    }
+
+    if ((names))
+        free(names);
+}
+#endif
+
+void clamav_stats_add_sample(const char *virname, const unsigned char *md5, size_t size, stats_section_t *sections, void *cbdata)
 {
     cli_intel_t *intel;
     cli_flagged_sample_t *sample;
@@ -81,7 +155,7 @@ void clamav_stats_add_sample(const char *virname, const unsigned char *md5, size
     }
 #endif
 
-    sample = find_sample(intel, virname, md5, size, type);
+    sample = find_sample(intel, virname, md5, size, sections);
     if (!(sample)) {
         if (!(intel->samples)) {
             sample = intel->samples = calloc(1, sizeof(cli_flagged_sample_t));
@@ -136,9 +210,15 @@ void clamav_stats_add_sample(const char *virname, const unsigned char *md5, size
         sample->virus_name[i+1] = NULL;
 
         memcpy(sample->md5, md5, sizeof(sample->md5));
-        sample->type = type;
         sample->size = size;
         intel->nsamples++;
+
+        if (sections && sections->nsections && !(sample->sections)) {
+            /* Copy the section data that has already been allocated. We don't care if calloc fails; just skip copying if it does. */
+            sample->sections = calloc(1, sizeof(stats_section_t));
+            if ((sample->sections))
+                memcpy(sample->sections, sections, sizeof(stats_section_t));
+        }
     }
 
     cli_warnmsg("Added %s to the stats cache\n", (virname != NULL) ? virname: "[unknown]");
@@ -249,6 +329,9 @@ void clamav_stats_submit(struct cl_engine *engine, void *cbdata)
 #endif
 
     for (sample=myintel.samples; sample != NULL; sample = next) {
+#if DEBUG_STATS
+        print_sample(sample);
+#endif
         next = sample->next;
 
         free_sample(sample);
@@ -261,7 +344,7 @@ void clamav_stats_submit(struct cl_engine *engine, void *cbdata)
     }
 }
 
-void clamav_stats_remove_sample(const char *virname, const unsigned char *md5, size_t size, cli_intel_sample_type_t type, void *cbdata)
+void clamav_stats_remove_sample(const char *virname, const unsigned char *md5, size_t size, void *cbdata)
 {
     cli_intel_t *intel;
     cli_flagged_sample_t *sample;
@@ -279,19 +362,17 @@ void clamav_stats_remove_sample(const char *virname, const unsigned char *md5, s
     }
 #endif
 
-    sample = find_sample(intel, virname, md5, size, type);
-    if (!(sample))
-        return;
+    while ((sample = find_sample(intel, virname, md5, size, NULL))) {
+        if (sample->prev)
+            sample->prev->next = sample->next;
+        if (sample->next)
+            sample->next->prev = sample->prev;
+        if (sample == intel->samples)
+            intel->samples = sample->next;
 
-    if (sample->prev)
-        sample->prev->next = sample->next;
-    if (sample->next)
-        sample->next->prev = sample;
-    if (sample == intel->samples)
-        intel->samples = sample->next;
-
-    free_sample(sample);
-    intel->nsamples--;
+        free_sample(sample);
+        intel->nsamples--;
+    }
 
 #ifdef CL_THREAD_SAFE
     err = pthread_mutex_unlock(&(intel->mutex));
@@ -301,7 +382,7 @@ void clamav_stats_remove_sample(const char *virname, const unsigned char *md5, s
 #endif
 }
 
-void clamav_stats_decrement_count(const char *virname, const unsigned char *md5, size_t size, cli_intel_sample_type_t type, void *cbdata)
+void clamav_stats_decrement_count(const char *virname, const unsigned char *md5, size_t size, void *cbdata)
 {
     cli_intel_t *intel;
     cli_flagged_sample_t *sample;
@@ -319,15 +400,15 @@ void clamav_stats_decrement_count(const char *virname, const unsigned char *md5,
     }
 #endif
 
-    sample = find_sample(intel, virname, md5, size, type);
+    sample = find_sample(intel, virname, md5, size, NULL);
     if (!(sample))
         return;
 
     if (sample->hits == 1) {
         if ((intel->engine->cb_stats_remove_sample))
-            intel->engine->cb_stats_remove_sample(virname, md5, size, type, intel);
+            intel->engine->cb_stats_remove_sample(virname, md5, size, intel);
         else
-            clamav_stats_remove_sample(virname, md5, size, type, intel);
+            clamav_stats_remove_sample(virname, md5, size, intel);
 
         return;
     }
@@ -444,14 +525,13 @@ char *clamav_stats_get_hostid(void *cbdata)
 }
 #endif
 
-static cli_flagged_sample_t *find_sample(cli_intel_t *intel, const char *virname, const unsigned char *md5, size_t size, cli_intel_sample_type_t type)
+static cli_flagged_sample_t *find_sample(cli_intel_t *intel, const char *virname, const unsigned char *md5, size_t size, stats_section_t *sections)
 {
     cli_flagged_sample_t *sample;
     size_t i;
 
     for (sample = intel->samples; sample != NULL; sample = sample->next) {
-        if (sample->type != type)
-            continue;
+        int foundSections = 0;
 
         if (sample->size != size)
             continue;
@@ -462,9 +542,24 @@ static cli_flagged_sample_t *find_sample(cli_intel_t *intel, const char *virname
         if (!(virname))
             return sample;
 
-        for (i=0; sample->virus_name[i] != NULL; i++)
-            if (!strcmp(sample->virus_name[i], virname))
-                return sample;
+        if ((sections) && (sample->sections)) {
+            if (sections->nsections == sample->sections->nsections) {
+                for (i=0; i < sections->nsections; i++)
+                    if (sections->sections[i].len == sample->sections->sections[i].len)
+                        if (memcmp(sections->sections[i].md5, sample->sections->sections[i].md5, sizeof(stats_section_t)))
+                            break;
+
+                if (i == sections->nsections)
+                    foundSections = 1;
+            }
+        } else {
+            foundSections = 1;
+        }
+
+        if (foundSections)
+            for (i=0; sample->virus_name[i] != NULL; i++)
+                if (!strcmp(sample->virus_name[i], virname))
+                    return sample;
     }
 
     return NULL;
