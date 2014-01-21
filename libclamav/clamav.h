@@ -220,7 +220,15 @@ enum bytecode_mode {
     CL_BYTECODE_MODE_OFF /* for query only, not settable */
 };
 
-typedef enum cli_intel_sample_type { WHOLEFILE = 0, PESECTION = 1 } cli_intel_sample_type_t; /* For stats/intel gathering */
+struct cli_section_hash {
+    unsigned char md5[16];
+    size_t len;
+};
+
+typedef struct cli_stats_sections {
+    size_t nsections;
+    struct cli_section_hash *sections;
+} stats_section_t;
 
 extern int cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field field, long long num);
 
@@ -360,13 +368,13 @@ extern void cl_engine_set_clcb_meta(struct cl_engine *engine, clcb_meta callback
 /* Statistics/intelligence gathering callbacks */
 extern void cl_engine_set_stats_set_cbdata(struct cl_engine *engine, void *cbdata);
 
-typedef void (*clcb_stats_add_sample)(const char *virname, const unsigned char *md5, size_t size, cli_intel_sample_type_t type, void *cbdata);
+typedef void (*clcb_stats_add_sample)(const char *virname, const unsigned char *md5, size_t size, stats_section_t *sections, void *cbdata);
 extern void cl_engine_set_clcb_stats_add_sample(struct cl_engine *engine, clcb_stats_add_sample callback);
 
-typedef void (*clcb_stats_remove_sample)(const char *virname, const unsigned char *md5, size_t size, cli_intel_sample_type_t type, void *cbdata);
+typedef void (*clcb_stats_remove_sample)(const char *virname, const unsigned char *md5, size_t size, void *cbdata);
 extern void cl_engine_set_clcb_stats_remove_sample(struct cl_engine *engine, clcb_stats_remove_sample callback);
 
-typedef void (*clcb_stats_decrement_count)(const char *virname, const unsigned char *md5, size_t size, cli_intel_sample_type_t type, void *cbdata);
+typedef void (*clcb_stats_decrement_count)(const char *virname, const unsigned char *md5, size_t size, void *cbdata);
 extern void cl_engine_set_clcb_stats_decrement_count(struct cl_engine *engine, clcb_stats_decrement_count callback);
 
 typedef void (*clcb_stats_submit)(struct cl_engine *engine, void *cbdata);
