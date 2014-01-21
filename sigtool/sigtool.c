@@ -2873,7 +2873,7 @@ static int dumpcerts(const struct optstruct *opts)
     SHA1Update(&sha1, fmptr, sb.st_size);
     SHA1Final(&sha1, shash1);
 
-    ret = cli_checkfp_pe(&ctx, shash1);
+    ret = cli_checkfp_pe(&ctx, shash1, NULL, CL_CHECKFP_PE_FLAG_AUTHENTICODE);
     
     switch(ret) {
         case CL_CLEAN:

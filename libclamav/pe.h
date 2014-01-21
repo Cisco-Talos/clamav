@@ -160,8 +160,12 @@ struct cli_pe_hook_data {
 
 int cli_scanpe(cli_ctx *ctx);
 
+#define CL_CHECKFP_PE_FLAG_NONE             0x00000000
+#define CL_CHECKFP_PE_FLAG_STATS            0x00000001
+#define CL_CHECKFP_PE_FLAG_AUTHENTICODE     0x00000002
+
 int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo);
-int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1);
+int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uint32_t flags);
 
 uint32_t cli_rawaddr(uint32_t, const struct cli_exe_section *, uint16_t, unsigned int *, size_t, uint32_t);
 void findres(uint32_t, uint32_t, uint32_t, fmap_t *map, struct cli_exe_section *, uint16_t, uint32_t, int (*)(void *, uint32_t, uint32_t, uint32_t, uint32_t), void *);

@@ -428,6 +428,7 @@ int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx)
     uint8_t shash1[SHA1_HASH_SIZE*2+1];
     uint8_t shash256[SHA256_HASH_SIZE*2+1];
     int have_sha1, have_sha256, do_dsig_check = 1;
+    stats_section_t sections;
 
     if(cli_hm_scan(digest, size, &virname, ctx->engine->hm_fp, CLI_HASH_MD5) == CL_VIRUS) {
         cli_dbgmsg("cli_checkfp(md5): Found false positive detection (fp sig: %s), size: %d\n", virname, (int)size);
@@ -522,8 +523,11 @@ int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx)
     }
 #endif
 
-    if(do_dsig_check) {
-        switch(cli_checkfp_pe(ctx, shash1)) {
+    memset(&sections, 0x00, sizeof(stats_section_t));
+    if(do_dsig_check || ctx->engine->cb_stats_add_sample) {
+        uint32_t flags = (do_dsig_check ? CL_CHECKFP_PE_FLAG_AUTHENTICODE : 0) | (ctx->engine->cb_stats_add_sample ? CL_CHECKFP_PE_FLAG_STATS : 0);
+
+        switch(cli_checkfp_pe(ctx, shash1, &sections, flags)) {
         case CL_CLEAN:
             cli_dbgmsg("cli_checkfp(pe): PE file whitelisted due to valid embedded digital signature\n");
             return CL_CLEAN;
@@ -540,7 +544,7 @@ int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx)
         ctx->engine->cb_hash(fmap_fd(*ctx->fmap), size, md5, cli_get_last_virus(ctx), ctx->cb_ctx);
 
     if (ctx->engine->cb_stats_add_sample)
-        ctx->engine->cb_stats_add_sample(cli_get_last_virus(ctx), digest, size, WHOLEFILE, ctx->engine->stats_data);
+        ctx->engine->cb_stats_add_sample(cli_get_last_virus(ctx), digest, size, &sections, ctx->engine->stats_data);
 
     return CL_VIRUS;
 }

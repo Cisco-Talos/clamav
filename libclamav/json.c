@@ -30,18 +30,6 @@ char *hex_encode(char *buf, char *data, size_t len)
     return p;
 }
 
-const char *get_sample_type(cli_intel_sample_type_t type)
-{
-    switch (type) {
-        case WHOLEFILE:
-            return "whole-file";
-        case PESECTION:
-            return "PE section";
-        default:
-            return NULL;
-    }
-}
-
 char *ensure_bufsize(char *buf, size_t *oldsize, size_t used, size_t additional)
 {
     char *p=buf;
@@ -104,19 +92,6 @@ char *export_stats_to_json(struct cl_engine *engine, cli_intel_t *intel)
             return NULL;
 
         snprintf(buf+curused, bufsz-curused, "\t\t\t\"hash\": \"%s\",\n", md5);
-        curused += strlen(buf+curused);
-
-        type = get_sample_type(sample->type);
-        if (!(type)) {
-            free(buf);
-            return NULL;
-        }
-
-        buf = ensure_bufsize(buf, &bufsz, curused, sizeof("type") + strlen(type) + 15);
-        if (!(buf))
-            return NULL;
-
-        snprintf(buf+curused, bufsz-curused, "\t\t\t\"type\": \"%s\",\n", type);
         curused += strlen(buf+curused);
 
         /* Reuse the md5 variable for serializing the number of hits */
