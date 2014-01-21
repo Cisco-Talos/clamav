@@ -51,9 +51,8 @@ char *ensure_bufsize(char *buf, size_t *oldsize, size_t used, size_t additional)
 char *export_stats_to_json(struct cl_engine *engine, cli_intel_t *intel)
 {
     char *buf=NULL, *p, *hostid, md5[33];
-    const char *type;
     cli_flagged_sample_t *sample;
-    size_t bufsz, curused, i;
+    size_t bufsz, curused, i, j;
 
     if (!(intel->hostid))
         if ((engine->cb_stats_get_hostid))
@@ -117,6 +116,56 @@ char *export_stats_to_json(struct cl_engine *engine, cli_intel_t *intel)
         if (!(buf))
             return NULL;
 
+        if ((sample->sections) && (sample->sections->nsections)) {
+            buf = ensure_bufsize(buf, &bufsz, curused, 30);
+            if (!(buf))
+                return NULL;
+
+            snprintf(buf+curused, bufsz-curused, "\t\t\t\"sections\": [\n");
+            curused += strlen(buf+curused);
+
+            for (i=0; i < sample->sections->nsections; i++) {
+                buf = ensure_bufsize(buf, &bufsz, curused, 30);
+                if (!(buf))
+                    return NULL;
+
+                snprintf(buf+curused, bufsz-curused, "\t\t\t\t%s{\n", (i > 0) ? "," : "");
+                curused += strlen(buf+curused);
+
+                buf = ensure_bufsize(buf, &bufsz, curused, 65);
+                if (!(buf))
+                    return NULL;
+
+                memset(md5, 0x00, sizeof(md5));
+                for (j=0; j < 16; j++)
+                    sprintf(md5+(j*2), "%02x", sample->sections->sections[i].md5[j]);
+
+                snprintf(buf+curused, bufsz-curused, "\t\t\t\t\t\"hash\": \"%s\",\n", md5);
+                curused += strlen(buf+curused);
+
+                buf = ensure_bufsize(buf, &bufsz, curused, 65);
+                if (!(buf))
+                    return NULL;
+
+                snprintf(buf+curused, bufsz-curused, "\t\t\t\t\t\"size\": %zu\n", sample->sections->sections[i].len);
+                curused += strlen(buf+curused);
+
+                buf = ensure_bufsize(buf, &bufsz, curused, 30);
+                if (!(buf))
+                    return NULL;
+
+                snprintf(buf+curused, bufsz-curused, "\t\t\t\t}\n");
+                curused += strlen(buf+curused);
+            }
+
+            buf = ensure_bufsize(buf, &bufsz, curused, 20);
+            if (!(buf))
+                return NULL;
+
+            snprintf(buf+curused, bufsz-curused, "\t\t\t],\n");
+            curused += strlen(buf+curused);
+        }
+
         snprintf(buf+curused, bufsz-curused, "\t\t\t\"virus_names\": [ ");
         curused += strlen(buf+curused);
 
@@ -142,6 +191,8 @@ char *export_stats_to_json(struct cl_engine *engine, cli_intel_t *intel)
         return NULL;
 
     snprintf(buf+curused, bufsz-curused, "\t]\n}\n");
+
+    cli_warnmsg("JSON object:\n%s\n", buf);
 
     return buf;
 }
