@@ -3013,20 +3013,24 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
     }
     free(exe_sections);
 
-    SHA1Final(&sha1, authsha1);
+    if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE) {
+        SHA1Final(&sha1, authsha1);
 
-    if(cli_debug_flag) {
-        char shatxt[SHA1_HASH_SIZE*2+1];
-        for(i=0; i<SHA1_HASH_SIZE; i++)
-            sprintf(&shatxt[i*2], "%02x", authsha1[i]);
-        cli_dbgmsg("Authenticode: %s\n", shatxt);
-    }
+        if(cli_debug_flag) {
+            char shatxt[SHA1_HASH_SIZE*2+1];
+            for(i=0; i<SHA1_HASH_SIZE; i++)
+                sprintf(&shatxt[i*2], "%02x", authsha1[i]);
+            cli_dbgmsg("Authenticode: %s\n", shatxt);
+        }
 
-    hlen = dirs[4].Size;
-    if(hlen < 8)
+        hlen = dirs[4].Size;
+        if(hlen < 8)
+            return CL_VIRUS;
+
+        hlen -= 8;
+
+        return asn1_check_mscat((struct cl_engine *)(ctx->engine), map, at + 8, hlen, authsha1);
+    } else {
         return CL_VIRUS;
-
-    hlen -= 8;
-
-    return asn1_check_mscat((struct cl_engine *)(ctx->engine), map, at + 8, hlen, authsha1);
+    }
 }

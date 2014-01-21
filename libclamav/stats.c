@@ -370,6 +370,11 @@ void clamav_stats_remove_sample(const char *virname, const unsigned char *md5, s
         if (sample == intel->samples)
             intel->samples = sample->next;
 
+        if ((sample->sections) && (sample->sections->nsections)) {
+            free(sample->sections->sections);
+            free(sample->sections);
+        }
+
         free_sample(sample);
         intel->nsamples--;
     }

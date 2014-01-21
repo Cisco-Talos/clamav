@@ -535,7 +535,7 @@ int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx)
             if(cli_hm_scan(shash1, 2, &virname, ctx->engine->hm_fp, CLI_HASH_SHA1) == CL_VIRUS) {
                 cli_dbgmsg("cli_checkfp(pe): PE file whitelisted by catalog file\n");
 
-            return CL_CLEAN;
+                return CL_CLEAN;
             }
         }
     }
