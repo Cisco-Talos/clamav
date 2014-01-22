@@ -2886,9 +2886,6 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
         dirs = optional_hdr64.DataDirectory;
     }
 
-    if(!cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA1, 2) && dirs[4].Size < 8)
-        return CL_BREAK;
-
     fsize = map->len;
 
     valign = (pe_plus)?EC32(optional_hdr64.SectionAlignment):EC32(optional_hdr32.SectionAlignment);
@@ -2946,8 +2943,19 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
 
     cli_qsort(exe_sections, nsections, sizeof(*exe_sections), sort_sects);
 
-    if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE)
+    if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE) {
+        /* Check to see if we have a security section. */
+        if(!cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA1, 2) && dirs[4].Size < 8) {
+            if (flags & CL_CHECKFP_PE_FLAG_STATS) {
+                /* If stats is enabled, continue parsing the sample */
+                flags ^= CL_CHECKFP_PE_FLAG_AUTHENTICODE;
+            } else {
+                return CL_BREAK;
+            }
+        }
+
         SHA1Init(&sha1);
+    }
 
 #define hash_chunk(where, size, isStatAble, section) \
     do { \
@@ -2967,50 +2975,70 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
         } \
     } while(0)
 
-    /* MZ to checksum */
-    at = 0;
-    hlen = e_lfanew + sizeof(struct pe_image_file_hdr) + (pe_plus ? offsetof(struct pe_image_optional_hdr64, CheckSum) : offsetof(struct pe_image_optional_hdr32, CheckSum));
-    hash_chunk(0, hlen, 0, 0);
-    at = hlen + 4;
+    while (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE) {
+        /* MZ to checksum */
+        at = 0;
+        hlen = e_lfanew + sizeof(struct pe_image_file_hdr) + (pe_plus ? offsetof(struct pe_image_optional_hdr64, CheckSum) : offsetof(struct pe_image_optional_hdr32, CheckSum));
+        hash_chunk(0, hlen, 0, 0);
+        at = hlen + 4;
 
-    /* Checksum to security */
-    if(pe_plus)
-        hlen = offsetof(struct pe_image_optional_hdr64, DataDirectory[4]) - offsetof(struct pe_image_optional_hdr64, CheckSum) - 4;
-    else
-        hlen = offsetof(struct pe_image_optional_hdr32, DataDirectory[4]) - offsetof(struct pe_image_optional_hdr32, CheckSum) - 4;
-    hash_chunk(at, hlen, 0, 0);
-    at += hlen + 8;
+        /* Checksum to security */
+        if(pe_plus)
+            hlen = offsetof(struct pe_image_optional_hdr64, DataDirectory[4]) - offsetof(struct pe_image_optional_hdr64, CheckSum) - 4;
+        else
+            hlen = offsetof(struct pe_image_optional_hdr32, DataDirectory[4]) - offsetof(struct pe_image_optional_hdr32, CheckSum) - 4;
+        hash_chunk(at, hlen, 0, 0);
+        at += hlen + 8;
 
-    if(at > hdr_size) {
-        free(exe_sections);
-        return CL_EFORMAT;
+        if(at > hdr_size) {
+            if (flags & CL_CHECKFP_PE_FLAG_STATS) {
+                flags ^= CL_CHECKFP_PE_FLAG_AUTHENTICODE;
+                break;
+            } else {
+                free(exe_sections);
+                return CL_EFORMAT;
+            }
+        }
+
+        /* Security to End of header */
+        hlen = hdr_size - at;
+        hash_chunk(at, hlen, 0, 0);
+
+        at = hdr_size;
+        break;
     }
 
-    /* Security to End of header */
-    hlen = hdr_size - at;
-    hash_chunk(at, hlen, 0, 0);
-
-    /* Sections */
-    at = hdr_size;
+    /* Hash the sections */
     for(i = 0; i < nsections; i++) {
         if(!exe_sections[i].rsz)
             continue;
 
         hash_chunk(exe_sections[i].raw, exe_sections[i].rsz, 1, i);
-        at += exe_sections[i].rsz;
+        if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE)
+            at += exe_sections[i].rsz;
     }
 
-    if(at < fsize) {
-        hlen = fsize - at;
-        if(dirs[4].Size > hlen) {
-            free(exe_sections);
-            return CL_EFORMAT;
+    while (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE) {
+        if(at < fsize) {
+            hlen = fsize - at;
+            if(dirs[4].Size > hlen) {
+                if (flags & CL_CHECKFP_PE_FLAG_STATS) {
+                    flags ^= CL_CHECKFP_PE_FLAG_AUTHENTICODE;
+                    break;
+                } else {
+                    free(exe_sections);
+                    return CL_EFORMAT;
+                }
+            }
+
+            hlen -= dirs[4].Size;
+            hash_chunk(at, hlen, 0, 0);
+            at += hlen;
         }
 
-        hlen -= dirs[4].Size;
-        hash_chunk(at, hlen, 0, 0);
-        at += hlen;
-    }
+        break;
+    } while (0);
+
     free(exe_sections);
 
     if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE) {
