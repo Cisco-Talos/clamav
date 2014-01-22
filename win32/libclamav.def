@@ -42,6 +42,15 @@ EXPORTS cl_engine_set_clcb_hash @34
 EXPORTS cl_engine_set_clcb_pre_cache @35
 EXPORTS cl_engine_set_clcb_meta @36
 EXPORTS cl_always_gen_section_hash @37
+EXPORTS cl_engine_set_stats_set_cbdata @38
+EXPORTS cl_engine_set_clcb_stats_add_sample @39
+EXPORTS cl_engine_set_clcb_stats_remove_sample @40
+EXPORTS cl_engine_set_clcb_stats_decrement_count @41
+EXPORTS cl_engine_set_clcb_stats_submit @42
+EXPORTS cl_engine_set_clcb_stats_flush @43
+EXPORTS cl_engine_set_clcb_stats_get_num @44
+EXPORTS cl_engine_set_clcb_stats_get_size @45
+EXPORTS cl_engine_set_clcb_stats_get_hostid @46
 
 
 ; path variables

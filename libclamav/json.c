@@ -83,7 +83,7 @@ char *export_stats_to_json(struct cl_engine *engine, cli_intel_t *intel)
         if (!(buf))
             return NULL;
 
-        snprintf(buf+curused, bufsz-curused, "\t\t\{\n");
+        snprintf(buf+curused, bufsz-curused, "\t\t\t{\n");
         curused += strlen(buf+curused);
 
         buf = ensure_bufsize(buf, &bufsz, curused, sizeof("\t\t\t\"hash\": \"\",\n") + strlen(md5) + 1);
