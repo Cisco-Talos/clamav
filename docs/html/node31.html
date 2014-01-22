@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Output format</TITLE>
-<META NAME="description" CONTENT="Output format">
+<TITLE>On-access Scanning</TITLE>
+<META NAME="description" CONTENT="On-access Scanning">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -18,59 +18,79 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
+<LINK REL="next" HREF="node32.html">
 <LINK REL="previous" HREF="node30.html">
-<LINK REL="up" HREF="node27.html">
+<LINK REL="up" HREF="node28.html">
 <LINK REL="next" HREF="node32.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html599"
+<A NAME="tex2html619"
   HREF="node32.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html595"
-  HREF="node27.html">
+<A NAME="tex2html615"
+  HREF="node28.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html591"
+<A NAME="tex2html609"
   HREF="node30.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html597"
+<A NAME="tex2html617"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html600"
-  HREF="node32.html">clamscan</A>
-<B> Up:</B> <A NAME="tex2html596"
-  HREF="node27.html">Usage</A>
-<B> Previous:</B> <A NAME="tex2html592"
-  HREF="node30.html">Clamuko</A>
- &nbsp; <B>  <A NAME="tex2html598"
+<B> Next:</B> <A NAME="tex2html620"
+  HREF="node32.html">Clamdtop</A>
+<B> Up:</B> <A NAME="tex2html616"
+  HREF="node28.html">Usage</A>
+<B> Previous:</B> <A NAME="tex2html610"
+  HREF="node30.html">Clamdscan</A>
+ &nbsp; <B>  <A NAME="tex2html618"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00064000000000000000">
-Output format</A>
+<H2><A NAME="SECTION00063000000000000000"></A><A NAME="On-access"></A>
+<BR>
+On-access Scanning
 </H2>
+    There is a special thread in <code>clamd</code> that performs on-access
+    scanning under Linux and shares internal virus database
+    with the daemon. <SPAN  CLASS="textbf">You must follow some important rules when
+    using it:</SPAN>
+    
+<UL>
+<LI>Always stop the daemon cleanly - using the SHUTDOWN command or
+	      the
+<BR>
+SIGTERM signal. In other case you can lose access
+	      to protected files until the system is restarted.
+</LI>
+<LI>Never protect the directory your mail-scanner software
+	      uses for attachment unpacking. Access to all infected
+	      files will be automatically blocked and the scanner (including
+	      <code>clamd</code>!) will not be able to detect any viruses. In the
+	      result <SPAN  CLASS="textbf">all infected mails may be delivered.</SPAN>
+    
+</LI>
+</UL>
+    For example, to protect the whole system add the following lines to
+    <code>clamd.conf</code>:
+    <PRE>
+	ScanOnAccess yes
+	OnAccessIncludePath /
+	OnAccessExcludePath /proc
+	OnAccessExcludePath /temporary/dir/of/your/mail/scanning/software
+</PRE>
+    For more configuration options, type 'man clamd.conf' or reference the
+    example clamd.conf.
 
 <P>
 <BR><HR>
-<!--Table of Child-Links-->
-<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
-
-<UL CLASS="ChildLinks">
-<LI><A NAME="tex2html601"
-  HREF="node32.html">clamscan</A>
-<LI><A NAME="tex2html602"
-  HREF="node33.html">clamd</A>
-</UL>
-<!--End of Table of Child-Links-->
-<BR><HR>
 <ADDRESS>
-Tomasz Kojm
-2010-08-12
+Sourcefire 2013-12-24
 </ADDRESS>
 </BODY>
 </HTML>

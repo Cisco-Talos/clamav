@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>clamd</TITLE>
-<META NAME="description" CONTENT="clamd">
+<TITLE>Clamscan</TITLE>
+<META NAME="description" CONTENT="Clamscan">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -18,72 +18,60 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
+<LINK REL="next" HREF="node34.html">
 <LINK REL="previous" HREF="node32.html">
-<LINK REL="up" HREF="node31.html">
+<LINK REL="up" HREF="node28.html">
 <LINK REL="next" HREF="node34.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html623"
+<A NAME="tex2html643"
   HREF="node34.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html619"
-  HREF="node31.html">
+<A NAME="tex2html639"
+  HREF="node28.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html615"
+<A NAME="tex2html633"
   HREF="node32.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html621"
+<A NAME="tex2html641"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html624"
-  HREF="node34.html">LibClamAV</A>
-<B> Up:</B> <A NAME="tex2html620"
-  HREF="node31.html">Output format</A>
-<B> Previous:</B> <A NAME="tex2html616"
-  HREF="node32.html">clamscan</A>
- &nbsp; <B>  <A NAME="tex2html622"
+<B> Next:</B> <A NAME="tex2html644"
+  HREF="node34.html">ClamBC</A>
+<B> Up:</B> <A NAME="tex2html640"
+  HREF="node28.html">Usage</A>
+<B> Previous:</B> <A NAME="tex2html634"
+  HREF="node32.html">Clamdtop</A>
+ &nbsp; <B>  <A NAME="tex2html642"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00064200000000000000">
-clamd</A>
-</H3>
-    The output format of <code>clamd</code> is very similar to <code>clamscan</code>.
-    <PRE>
-	zolw@localhost:~$ telnet localhost 3310
-	Trying 127.0.0.1...
-	Connected to localhost.
-	Escape character is '^]'.
-	SCAN /home/zolw/test
-	/home/zolw/test/clam.exe: ClamAV-Test-File FOUND
-	Connection closed by foreign host.
-</PRE>
-    In the <SPAN  CLASS="textbf">SCAN</SPAN> mode it closes the connection when the first virus
-    is found.
-    <PRE>
-	SCAN /home/zolw/test/clam.zip
-	/home/zolw/test/clam.zip: ClamAV-Test-File FOUND
-</PRE>
-    <SPAN  CLASS="textbf">CONTSCAN</SPAN> and <SPAN  CLASS="textbf">MULTISCAN</SPAN> don't stop scanning in case
-    a virus is found.
+<H2><A NAME="SECTION00065000000000000000">
+Clamscan</A>
+</H2>
+    <code>clamscan</code> is ClamAV's command line virus scanner.  It can be used to
+    scan files and/or directories for viruses.  In order for clamscan
+    to work proper, the ClamAV virus database files must be installed on
+    the system you are using clamscan on.
+    
 <BR>
-Error messages are printed in the following format:
-    <PRE>
-	SCAN /no/such/file
-	/no/such/file: Can't stat() the file. ERROR
-</PRE>
+<BR>
+The general usage of clamscan is: clamscan [options] [file/directory/-]
+    
+<BR>
+<BR>
+For more detailed help, type 'man clamscan' or 'clamscan -help'.
 
 <P>
 <BR><HR>
 <ADDRESS>
-Tomasz Kojm
-2010-08-12
+Sourcefire 2013-12-24
 </ADDRESS>
 </BODY>
 </HTML>

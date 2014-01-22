@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Setting up auto-updating</TITLE>
-<META NAME="description" CONTENT="Setting up auto-updating">
+<TITLE>Testing</TITLE>
+<META NAME="description" CONTENT="Testing">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -18,129 +18,63 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node26.html">
+<LINK REL="next" HREF="node25.html">
 <LINK REL="previous" HREF="node23.html">
-<LINK REL="up" HREF="node19.html">
+<LINK REL="up" HREF="node20.html">
 <LINK REL="next" HREF="node25.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html514"
+<A NAME="tex2html527"
   HREF="node25.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html510"
-  HREF="node19.html">
+<A NAME="tex2html523"
+  HREF="node20.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html504"
+<A NAME="tex2html517"
   HREF="node23.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html512"
+<A NAME="tex2html525"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html515"
-  HREF="node25.html">Closest mirrors</A>
-<B> Up:</B> <A NAME="tex2html511"
-  HREF="node19.html">Configuration</A>
-<B> Previous:</B> <A NAME="tex2html505"
-  HREF="node23.html">Testing</A>
- &nbsp; <B>  <A NAME="tex2html513"
+<B> Next:</B> <A NAME="tex2html528"
+  HREF="node25.html">Setting up auto-updating</A>
+<B> Up:</B> <A NAME="tex2html524"
+  HREF="node20.html">Configuration</A>
+<B> Previous:</B> <A NAME="tex2html518"
+  HREF="node23.html">clamav-milter</A>
+ &nbsp; <B>  <A NAME="tex2html526"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00054000000000000000">
-Setting up auto-updating</A>
+<H2><A NAME="SECTION00053000000000000000">
+Testing</A>
 </H2>
-    <code>freshclam</code> is the automatic database update tool for Clam AntiVirus.
-    It can work in two modes:
-    
-<UL>
-<LI>interactive - on demand from command line
-</LI>
-<LI>daemon - silently in the background
-    
-</LI>
-</UL>
-    <code>freshclam</code> is advanced tool: it supports scripted updates (instead
-    of transferring the whole CVD file at each update it only transfers the
-    differences between the latest and the current database via a special
-    script), database version checks through DNS, proxy servers (with
-    authentication), digital signatures and various error scenarios.
-    <SPAN  CLASS="textbf">Quick test: run freshclam (as superuser) with no parameters
-    and check the output.</SPAN> If everything is OK you may create the log file in
-    /var/log (owned by <SPAN  CLASS="textit">clamav</SPAN> or another user <code>freshclam</code> will be
-    running as):
+    Try to scan recursively the source directory:
     <PRE>
-	# touch /var/log/freshclam.log
-	# chmod 600 /var/log/freshclam.log
-	# chown clamav /var/log/freshclam.log
+	$ clamscan -r -l scan.txt clamav-x.yz
 </PRE>
-    Now you <SPAN  CLASS="textit">should</SPAN> edit the configuration file <code>freshclam.conf</code>
-    and point the <SPAN  CLASS="textit">UpdateLogFile</SPAN> directive to the log file. Finally, to
-    run <code>freshclam</code> in the daemon mode, execute:
+    It should find some test files in the clamav-x.yz/test directory.
+    The scan result will be saved in the <code>scan.txt</code> log file
+    <A NAME="tex2html16"
+  HREF="footnode.html#foot207"><SUP><SPAN CLASS="arabic">8</SPAN></SUP></A>.
+    To test <code>clamd</code>, start it and use <code>clamdscan</code> (or instead connect
+    directly to its socket and run the SCAN command):
     <PRE>
-	# freshclam -d
+	$ clamdscan -l scan.txt clamav-x.yz
 </PRE>
-    The other way is to use the <SPAN  CLASS="textit">cron</SPAN> daemon. You have to add the
-    following line to the crontab of <SPAN  CLASS="textbf">root</SPAN> or <SPAN  CLASS="textbf">clamav</SPAN> user:
-    <SMALL CLASS="SMALL">    </SMALL><PRE>
-N * * * *	/usr/local/bin/freshclam --quiet
-</PRE>
-    to check for a new database every hour. <SPAN  CLASS="textbf">N should be a
-    number between 3 and 57 of your choice. Please don't choose any multiple
-    of 10, because there are already too many clients using those time slots.</SPAN>
-    Proxy settings are only configurable via the configuration file and
-    <code>freshclam</code> will require strict permission settings for the config
-    file when <code>HTTPProxyPassword</code> is turned on.
-    <PRE>
-	HTTPProxyServer myproxyserver.com
-	HTTPProxyPort 1234
-	HTTPProxyUsername myusername
-	HTTPProxyPassword mypass
-</PRE>
+    Please note that the scanned files must be accessible by the user running
+    <code>clamd</code> or you will get an error.
 
 <P>
 <BR><HR>
-<!--Table of Child-Links-->
-<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
-
-<UL CLASS="ChildLinks">
-<LI><A NAME="tex2html516"
-  HREF="node25.html">Closest mirrors</A>
-</UL>
-<!--End of Table of Child-Links-->
-
-<DIV CLASS="navigation"><HR>
-<!--Navigation Panel-->
-<A NAME="tex2html514"
-  HREF="node25.html">
-<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html510"
-  HREF="node19.html">
-<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html504"
-  HREF="node23.html">
-<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html512"
-  HREF="node1.html">
-<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
-<BR>
-<B> Next:</B> <A NAME="tex2html515"
-  HREF="node25.html">Closest mirrors</A>
-<B> Up:</B> <A NAME="tex2html511"
-  HREF="node19.html">Configuration</A>
-<B> Previous:</B> <A NAME="tex2html505"
-  HREF="node23.html">Testing</A>
- &nbsp; <B>  <A NAME="tex2html513"
-  HREF="node1.html">Contents</A></B> </DIV>
-<!--End of Navigation Panel-->
 <ADDRESS>
-Tomasz Kojm
-2010-08-12
+Sourcefire 2013-12-24
 </ADDRESS>
 </BODY>
 </HTML>

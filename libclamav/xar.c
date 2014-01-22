@@ -521,7 +521,7 @@ int cli_scanxar(cli_ctx *ctx)
     rc = xar_scan_subdocuments(reader, ctx);
     if (rc != CL_SUCCESS) {
         cli_errmsg("xar_scan_subdocuments returns %i.\n", rc);
-        goto exit_toc;
+        goto exit_reader;
     }
 
     /* Walk the TOC XML and extract files */
@@ -642,8 +642,10 @@ int cli_scanxar(cli_ctx *ctx)
 
                 blockp = (void*)fmap_need_off_once(map, at, CLI_LZMA_HDR_SIZE);
                 if (blockp == NULL) {
+                    char errbuff[128];
+                    cli_strerror(errno, errbuff, sizeof(errbuff));
                     cli_errmsg("cli_scanxar: Can't read %li bytes @ %li, errno:%s.\n",
-                               length, at, strerror(errno));
+                               length, at, errbuff);
                     rc = CL_EREAD;
                     __lzma_wrap_free(NULL, buff);
                     goto exit_tmpfile;
@@ -675,8 +677,10 @@ int cli_scanxar(cli_ctx *ctx)
                     lz.avail_in = avail_in = MIN(CLI_LZMA_IBUF_SIZE, in_remaining);
                     lz.next_in = next_in = (void*)fmap_need_off_once(map, at, lz.avail_in);
                     if (lz.next_in == NULL) {
+                        char errbuff[128];
+                        cli_strerror(errno, errbuff, sizeof(errbuff));
                         cli_errmsg("cli_scanxar: Can't read %li bytes @ %li, errno: %s.\n",
-                                   length, at, strerror(errno));
+                                   length, at, errbuff);
                         rc = CL_EREAD;
                         __lzma_wrap_free(NULL, buff);
                         cli_LzmaShutdown(&lz);
@@ -748,8 +752,10 @@ int cli_scanxar(cli_ctx *ctx)
                     write_len = length;
                     
                 if (!(blockp = (void*)fmap_need_off_once(map, at, length))) {
+                    char errbuff[128];
+                    cli_strerror(errno, errbuff, sizeof(errbuff));
                     cli_errmsg("cli_scanxar: Can't read %li bytes @ %li, errno:%s.\n",
-                               length, at, strerror(errno));
+                               length, at, errbuff);
                     rc = CL_EREAD;
                     goto exit_tmpfile;
                 }
@@ -817,7 +823,6 @@ int cli_scanxar(cli_ctx *ctx)
  exit_reader:
     xmlTextReaderClose(reader);
     xmlFreeTextReader(reader);
-    xmlCleanupParser();
 
  exit_toc:
     free(toc);

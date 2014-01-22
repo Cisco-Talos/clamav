@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>On-access scanning</TITLE>
-<META NAME="description" CONTENT="On-access scanning">
+<TITLE>clamd</TITLE>
+<META NAME="description" CONTENT="clamd">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -18,6 +18,7 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
+<LINK REL="next" HREF="node23.html">
 <LINK REL="previous" HREF="node20.html">
 <LINK REL="up" HREF="node20.html">
 <LINK REL="next" HREF="node22.html">
@@ -26,71 +27,58 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html478"
+<A NAME="tex2html492"
   HREF="node22.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html474"
+<A NAME="tex2html488"
   HREF="node20.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html470"
+<A NAME="tex2html482"
   HREF="node20.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html476"
+<A NAME="tex2html490"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html479"
-  HREF="node22.html">clamav-milter</A>
-<B> Up:</B> <A NAME="tex2html475"
-  HREF="node20.html">clamd</A>
-<B> Previous:</B> <A NAME="tex2html471"
-  HREF="node20.html">clamd</A>
- &nbsp; <B>  <A NAME="tex2html477"
+<B> Next:</B> <A NAME="tex2html493"
+  HREF="node22.html">On-access scanning</A>
+<B> Up:</B> <A NAME="tex2html489"
+  HREF="node20.html">Configuration</A>
+<B> Previous:</B> <A NAME="tex2html483"
+  HREF="node20.html">Configuration</A>
+ &nbsp; <B>  <A NAME="tex2html491"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00051100000000000000">
-On-access scanning</A>
-</H3>
-    One of the interesting features of <code>clamd</code> is on-access scanning
-    based on the Dazuko module, available from <TT><A NAME="tex2html16"
-  HREF="http://dazuko.org/">http://dazuko.org/</A></TT>.
-    <SPAN  CLASS="textbf">This module is not required to run clamd - furthermore, you
-    shouldn't run Dazuko on production systems</SPAN>. At the moment Dazuko is
-    avaliable for Linux and FreeBSD, but the following information only covers
-    Linux.
+<H2><A NAME="SECTION00051000000000000000">
+clamd</A>
+</H2>
+    Before you start using the daemon you have to edit the configuration file
+    (in other case <code>clamd</code> won't run):
     <PRE>
-	$ tar zxpvf dazuko-a.b.c.tar.gz
-	$ cd dazuko-a.b.c
-	$ make dazuko
-	or
-	$ make dazuko-smp (for smp kernels)
-	$ su
-	# insmod dazuko.o
-	# cp dazuko.o /lib/modules/`uname -r`/misc
-	# depmod -a
+	$ clamd
+	ERROR: Please edit the example config file /etc/clamd.conf.
 </PRE>
-    Depending on your Linux distribution you may need to add a "dazuko" entry to
-    <SPAN  CLASS="textit">/etc/modules</SPAN> or run the module during system's startup by adding
-    <PRE>
-	/sbin/modprobe dazuko
-</PRE>
-    to some startup file. You must also create a new device:
-    <PRE>
-	$ cat /proc/devices | grep dazuko
-	254 dazuko
-	$ su -c "mknod -m 600 /dev/dazuko c 254 0"
-</PRE>
-    Now configure Clamuko in <code>clamd.conf</code> and read the <A HREF="node30.html#clamuko">5.3</A>
-    section.
+    This shows the location of the default configuration file. The format and
+    options of this file are fully described in the <SPAN  CLASS="textit">clamd.conf(5)</SPAN>
+    manual. The config file is well commented and configuration should be
+    straightforward.
 
 <P>
 <BR><HR>
+<!--Table of Child-Links-->
+<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
+
+<UL CLASS="ChildLinks">
+<LI><A NAME="tex2html494"
+  HREF="node22.html">On-access scanning</A>
+</UL>
+<!--End of Table of Child-Links-->
+<BR><HR>
 <ADDRESS>
-Tomasz Kojm
-2010-08-12
+Sourcefire 2013-12-24
 </ADDRESS>
 </BODY>
 </HTML>

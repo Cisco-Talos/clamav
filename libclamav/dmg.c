@@ -168,7 +168,7 @@ int cli_scandmg(cli_ctx *ctx)
     cli_dbgmsg("cli_scandmg: Extracting into %s\n", dirname);
 
     /* Dump XML to tempfile, if needed */
-    if (ctx->engine->keeptmp) {
+    if (ctx->engine->keeptmp && !ctx->engine->forcetodisk) {
         int xret;
         xret = dmg_extract_xml(ctx, dirname, &hdr);
 
@@ -180,7 +180,7 @@ int cli_scandmg(cli_ctx *ctx)
     }
 
     /* scan XML with cli_map_scandesc */
-    ret = cli_map_scandesc(*ctx->fmap, (off_t)hdr.xmlOffset, (size_t)hdr.xmlLength, ctx);
+    ret = cli_map_scan(*ctx->fmap, (off_t)hdr.xmlOffset, (size_t)hdr.xmlLength, ctx);
     if (ret != CL_CLEAN) {
         cli_dbgmsg("cli_scandmg: retcode from scanning TOC xml: %s\n", cl_strerror(ret));
         if (!ctx->engine->keeptmp)
@@ -456,7 +456,6 @@ int cli_scandmg(cli_ctx *ctx)
     }
 
     xmlFreeTextReader(reader);
-    xmlCleanupParser();
 
 #else
 
@@ -720,12 +719,12 @@ static int dmg_stripe_adc(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish_
     uint8_t obuf[BUFSIZ];
 
     cli_dbgmsg("dmg_stripe_adc: stripe " STDu32 " initial len " STDu64 " expected len " STDu64 "\n",
-            index, len, expected_len);
+            index, (uint64_t)len, (uint64_t)expected_len);
     if (len == 0)
         return CL_CLEAN;
 
     memset(&strm, 0, sizeof(strm));
-    strm.next_in = (void*)fmap_need_off_once(*ctx->fmap, off, len);
+    strm.next_in = (uint8_t *)fmap_need_off_once(*ctx->fmap, off, len);
     if (!strm.next_in) {
         cli_warnmsg("dmg_stripe_adc: fmap need failed on stripe " STDu32 "\n", index);
         return CL_EMAP;
@@ -774,7 +773,7 @@ static int dmg_stripe_adc(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish_
                     strm.next_out = obuf;
                     strm.avail_out = sizeof(obuf);
                 }
-                if (adcret == Z_STREAM_END)
+                if (adcret == ADC_STREAM_END)
                     break;
                 cli_dbgmsg("dmg_stripe_adc: after writing " STDu64 " bytes, "
                            "got error %d decompressing stripe " STDu32 "\n",

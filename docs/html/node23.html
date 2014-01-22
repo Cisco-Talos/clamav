@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Testing</TITLE>
-<META NAME="description" CONTENT="Testing">
+<TITLE>clamav-milter</TITLE>
+<META NAME="description" CONTENT="clamav-milter">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -19,63 +19,79 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
 <LINK REL="next" HREF="node24.html">
-<LINK REL="previous" HREF="node22.html">
-<LINK REL="up" HREF="node19.html">
+<LINK REL="previous" HREF="node21.html">
+<LINK REL="up" HREF="node20.html">
 <LINK REL="next" HREF="node24.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html502"
+<A NAME="tex2html515"
   HREF="node24.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html498"
-  HREF="node19.html">
+<A NAME="tex2html511"
+  HREF="node20.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html492"
+<A NAME="tex2html505"
   HREF="node22.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html500"
+<A NAME="tex2html513"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html503"
-  HREF="node24.html">Setting up auto-updating</A>
-<B> Up:</B> <A NAME="tex2html499"
-  HREF="node19.html">Configuration</A>
-<B> Previous:</B> <A NAME="tex2html493"
-  HREF="node22.html">clamav-milter</A>
- &nbsp; <B>  <A NAME="tex2html501"
+<B> Next:</B> <A NAME="tex2html516"
+  HREF="node24.html">Testing</A>
+<B> Up:</B> <A NAME="tex2html512"
+  HREF="node20.html">Configuration</A>
+<B> Previous:</B> <A NAME="tex2html506"
+  HREF="node22.html">On-access scanning</A>
+ &nbsp; <B>  <A NAME="tex2html514"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00053000000000000000">
-Testing</A>
+<H2><A NAME="SECTION00052000000000000000"></A><A NAME="sec:clamavmilter"></A>
+<BR>
+clamav-milter
 </H2>
-    Try to scan recursively the source directory:
+    ClamAV <SPAN CLASS="MATH"><IMG
+ WIDTH="58" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
+ SRC="img5.png"
+ ALT="$\ge0.95$"></SPAN> includes a new, redesigned clamav-milter. The most notable
+    difference is that the internal mode has been dropped and now a working
+    clamd companion is required. The second important difference is that now
+    the milter has got its own configuration and log files. 
+    
+<BR>
+<BR>
+To compile ClamAV with the clamav-milter just run <code>./configure</code>
+    <code>--enable-milter</code> and make as usual. In order to use the 
+    '-enable-milter' option with 'configure', your system MUST have the milter 
+    library installed.  If you use the '-enable-milter' option without the 
+    library being installed, you will most likely see output like this during 
+    'configure':
     <PRE>
-	$ clamscan -r -l scan.txt clamav-x.yz
+        checking for libiconv_open in -liconv... no
+        checking for iconv... yes
+        checking whether in_port_t is defined... yes
+        checking for in_addr_t definition... yes
+        checking for mi_stop in -lmilter... no
+        checking for library containing strlcpy... no
+        checking for mi_stop in -lmilter... no
+        configure: error: Cannot find libmilter
 </PRE>
-    It should find some test files in the clamav-x.yz/test directory.
-    The scan result will be saved in the <code>scan.txt</code> log file
-    <A NAME="tex2html17"
-  HREF="footnode.html#foot203"><SUP><SPAN CLASS="arabic">8</SPAN></SUP></A>.
-    To test <code>clamd</code>, start it and use <code>clamdscan</code> (or instead connect
-    directly to its socket and run the SCAN command):
-    <PRE>
-	$ clamdscan -l scan.txt clamav-x.yz
-</PRE>
-    Please note that the scanned files must be accessible by the user running
-    <code>clamd</code> or you will get an error.
+    At which point the 'configure' script will stop processing.
+    
+<BR>
+<BR>
+Please consult your MTA's manual on how to connect ClamAV with the milter.
 
 <P>
 <BR><HR>
 <ADDRESS>
-Tomasz Kojm
-2010-08-12
+Sourcefire 2013-12-24
 </ADDRESS>
 </BODY>
 </HTML>

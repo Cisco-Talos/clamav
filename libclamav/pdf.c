@@ -154,9 +154,9 @@ static int find_stream_bounds(const char *start, off_t bytesleft, off_t byteslef
 	    return 0;
 	if (bytesleft >= 2 && q2[0] == '\xd' && q2[1] == '\xa') {
 	    q2 += 2;
-	    if (newline_hack && q2[0] == '\xa')
+	    if (newline_hack && (bytesleft > 2) && q2[0] == '\xa')
 		q2++;
-	} else if (q2[0] == '\xa')
+	} else if (bytesleft && q2[0] == '\xa')
 	    q2++;
 	*stream = q2 - start;
 	bytesleft2 -= q2 - start;
@@ -2232,7 +2232,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
                 rc = CL_CLEAN;
             }
         }
-        if (!rc && (ctx->options & CL_SCAN_ALGORITHMIC)) {
+        if (!rc && SCAN_ALGO && (ctx->dconf->other & OTHER_CONF_PDFNAMEOBJ)) {
             if (pdf.flags & (1 << ESCAPED_COMMON_PDFNAME)) {
                 /* for example /Fl#61te#44#65#63#6f#64#65 instead of /FlateDecode */
                 cli_append_virus(ctx, "Heuristics.PDF.ObfuscatedNameObject");

@@ -71,7 +71,7 @@
     \vspace{3cm}
     \begin{flushright}
 	\rule[-1ex]{8cm}{3pt}\\
-	\huge Clam AntiVirus 0.98\\
+	\huge Clam AntiVirus 0.98.1\\
 	\huge \emph{User Manual}\\
     \end{flushright}
 
@@ -126,7 +126,7 @@
 	\item{Licensed under the GNU General Public License, Version 2}
 	\item{POSIX compliant, portable}
 	\item{Fast scanning}
-	\item{Supports on-access scanning (Linux and FreeBSD only)}
+	\item{Supports on-access scanning (Linux only)}
 	\item{Detects over 1 million viruses, worms and trojans, including
 	      Microsoft Office macro viruses, mobile malware, and other threats}
 	\item{Built-in bytecode interpreter allows the ClamAV signature writers
@@ -143,6 +143,14 @@
 		\item CPIO
 		\item Gzip
 		\item Bzip2
+                \item DMG
+                \item IMG
+                \item ISO 9660
+                \item PKG
+                \item HFS+ partition
+                \item HFSX partition
+                \item XAR
+                \item XZ
 		\item MS OLE2
 		\item MS Cabinet Files (including SFX)
 		\item MS CHM (Compiled HTML)
@@ -230,7 +238,7 @@
 
     \section{Installation}
 
-    \subsection{Requirements}
+    \subsection{Requirements}\label{sec:components}
     The following components are required to compile ClamAV under UNIX:
     \footnote{For Windows instructions please see win32/README in the
     main source code directory.}
@@ -247,6 +255,7 @@
     The following packages are optional but \textbf{highly recommended}:
     \begin{itemize}
 	\item bzip2 and bzip2-devel library
+        \item libxml2 and libxml2-dev library
 	\item \verb+check+ unit testing framework \footnote{See section \ref{unit-testing} on how to run the unit tests}.
     \end{itemize}
     The following packages are optional, but \textbf{required for bytecode JIT support}:
@@ -320,14 +329,14 @@
 
     \subsection{Running unit tests}\label{unit-testing}
 	ClamAV includes unit tests that allow you to test that the compiled binaries work correctly on your platform.
-
+        \\\\
 	The first step is to use your OS's package manager to install the \verb+check+ package. 
 	If your OS doesn't have that package, you can download it from \url{http://check.sourceforge.net/}, 
 	build it and install it.
-
+        \\\\
 	To help clamav's configure script locate \verb+check+, it is recommended that you install \verb+pkg-config+, preferably
 	using your OS's package manager, or from \url{http://pkg-config.freedesktop.org}.
-
+        \\\\
 	The recommended way to run unit-tests is the following, which ensures you will get an error if unit tests cannot be built:
 	\footnote{The configure script in ClamAV automatically enables the unit tests, if it finds the check framework, however it doesn't consider it a fatal error if unit tests cannot be enabled.}
 	\begin{verbatim}
@@ -335,15 +344,16 @@
 	 $ make
 	 $ make check
 	\end{verbatim}
-
 	When \verb+make check+ is finished, you should get a message similar to this:
 	\begin{verbatim}
 ==================
 All 8 tests passed
 ==================
 	\end{verbatim}
-
-	If a unit test fails, you get a message similar to the following. 
+	If a unit test fails, you get a message similar to the following.
+        Note that in older versions of make check may report failures due to
+        the absence of optional packages. Please make sure you have the
+        latest versions of the components noted in section /ref{sec:components}.
 	See the next section on how to report a bug when a unit test fails.
 	\begin{verbatim}
 ========================================
@@ -351,7 +361,6 @@ All 8 tests passed
 Please report to http://bugs.clamav.net/
 ========================================
 	\end{verbatim}
-
 	If unit tests are disabled (and you didn't use --enable-check), you will get this message:
 	\begin{verbatim}
 *** Unit tests disabled in this build
@@ -401,12 +410,12 @@ $ CK_FORK=no ./libtool --mode=execute valgrind unit_tests/check-clamav
     (in Linux/Unix).
     \\\\
     Here is a listing of currently available ClamAV Virus Database Files:
-    \\\\
-    bytecode.cvd        (signatures to detect bytecode in files)
-    main.cvd            (main ClamAV virus database file)
-    daily.cvd           (daily update file for ClamAV virus databases)
-    safebrowsing.cvd    (virus signatures for safe browsing)
-    \\\\
+    \begin{itemize}
+           \item bytecode.cvd        (signatures to detect bytecode in files)
+           \item main.cvd            (main ClamAV virus database file)
+           \item daily.cvd           (daily update file for ClamAV virus databases)
+           \item safebrowsing.cvd    (virus signatures for safe browsing)
+    \end{itemize}
     These files can be downloaded via HTTP from the main ClamAV website
     or via the 'freshclam' utility on a periodic basis.  Using 'freshclam'
     is the preferred method of keeping the ClamAV virus database files
@@ -415,8 +424,6 @@ $ CK_FORK=no ./libtool --mode=execute valgrind unit_tests/check-clamav
     \ref{sec:freshclam} for additional details on freshclam).
 
     \section{Configuration}
-
-    \subsubsection{clamconf}
     Before proceeding with the steps below, you should
     run the 'clamconf' command, which gives important information
     about your ClamAV configuration. See section \ref{sec:clamconf} 
@@ -436,42 +443,19 @@ $ CK_FORK=no ./libtool --mode=execute valgrind unit_tests/check-clamav
 
     \subsubsection{On-access scanning}
     One of the interesting features of \verb+clamd+ is on-access scanning
-    based on the Dazuko module, available from \url{http://dazuko.org/}.
-    \textbf{This module is not required to run clamd - furthermore, you
-    shouldn't run Dazuko on production systems}. At the moment Dazuko is
-    avaliable for Linux and FreeBSD, but the following information only covers
-    Linux.
-    \begin{verbatim}
-	$ tar zxpvf dazuko-a.b.c.tar.gz
-	$ cd dazuko-a.b.c
-	$ make dazuko
-	or
-	$ make dazuko-smp (for smp kernels)
-	$ su
-	# insmod dazuko.o
-	# cp dazuko.o /lib/modules/`uname -r`/misc
-	# depmod -a
-    \end{verbatim}
-    Depending on your Linux distribution you may need to add a "dazuko" entry to
-    \emph{/etc/modules} or run the module during system's startup by adding
-    \begin{verbatim}
-	/sbin/modprobe dazuko
-    \end{verbatim}
-    to some startup file. You must also create a new device:
-    \begin{verbatim}
-	$ cat /proc/devices | grep dazuko
-	254 dazuko
-	$ su -c "mknod -m 600 /dev/dazuko c 254 0"
-    \end{verbatim}
-    Now configure Clamuko in \verb+clamd.conf+ and read the \ref{clamuko}
-    section.
+    based on fanotify, included in Linux since kernel 2.6.36.
+    \textbf{This is not required to run clamd}. At the moment the fanotify header is
+    only avaliable for Linux.
+    \\\\
+    Configure on-access scanning in \verb+clamd.conf+ and read the 
+    \ref{On-access} section for on-access scanning usage.
 
     \subsection{clamav-milter}\label{sec:clamavmilter}
     ClamAV $\ge0.95$ includes a new, redesigned clamav-milter. The most notable
     difference is that the internal mode has been dropped and now a working
     clamd companion is required. The second important difference is that now
     the milter has got its own configuration and log files. 
-
+    \\\\
     To compile ClamAV with the clamav-milter just run \verb+./configure+
     \verb+--enable-milter+ and make as usual. In order to use the 
     '--enable-milter' option with 'configure', your system MUST have the milter 
@@ -579,14 +563,14 @@ N * * * *	/usr/local/bin/freshclam --quiet
     been detected. This data is then used to generate real-time reports on
     active malware. These reports, along with geographical and historic trends,
     will be published on \url{http://www.clamav.net/}.
-
+    \\\\
     The more data that we receive from ClamAV users, the more reports, and the
     better the quality of the reports, will be. To enable the submission of
     data to us for use in the Active Malware Report, enable
     SubmitDetectionStats in freshclam.conf, and LogTime and LogFile in
     clamd.conf. You should only enable this feature if you're running clamd
     to scan incoming data in your environment.
-
+    \\\\
     The only private data that is transferred is an IP address, which is used
     to create the geographical data. The size of the data that is sent is small;
     it contains just the filename, malware name and time of detection. The data
@@ -723,9 +707,9 @@ N * * * *	/usr/local/bin/freshclam --quiet
 	      try to workaround this limitation by using FILDES
     \end{itemize}
 
-    \subsection{Clamuko}\label{clamuko}
-    Clamuko is a special thread in \verb+clamd+ that performs on-access
-    scanning under Linux and FreeBSD and shares internal virus database
+    \subsection{On-access Scanning}\label{On-access}
+    There is a special thread in \verb+clamd+ that performs on-access
+    scanning under Linux and shares internal virus database
     with the daemon. \textbf{You must follow some important rules when
     using it:}
     \begin{itemize}
@@ -741,14 +725,13 @@ N * * * *	/usr/local/bin/freshclam --quiet
     For example, to protect the whole system add the following lines to
     \verb+clamd.conf+:
     \begin{verbatim}
-	ClamukoScanOnAccess
-	ClamukoIncludePath /
-	ClamukoExcludePath /proc
-	ClamukoExcludePath /temporary/dir/of/your/mail/scanning/software
+	ScanOnAccess yes
+	OnAccessIncludePath /
+	OnAccessExcludePath /proc
+	OnAccessExcludePath /temporary/dir/of/your/mail/scanning/software
     \end{verbatim}
-    You can also use clamuko to protect files on Samba/Netatalk but a far
-    more better and safe idea is to use the \textbf{samba-vscan} module.
-    NFS is not supported because Dazuko doesn't intercept NFS access calls.
+    For more configuration options, type 'man clamd.conf' or reference the
+    example clamd.conf.
 
     \subsection{Clamdtop}
     \verb+clamdtop+ is a tool to monitor one or multiple instances of clamd.  It
@@ -775,24 +758,31 @@ N * * * *	/usr/local/bin/freshclam --quiet
     used to test files which contain bytecode. For more detailed help,
     type 'man clambc' or 'clambc --help'.
 
-    \subsection{Freshclam}\ref{sec:freshclam}
+    \subsection{Freshclam}\label{sec:freshclam}
     \verb+freshclam+ is ClamAV's virus database update tool and reads it's
     configuration from the file 'freshclam.conf' (this may be
-    overriden by command line options). Here is a sample usage including cdiffs:
+    overriden by command line options). Freshclam's default behavior is to
+    attempt to update databases that are paired with downloaded cdiffs.
+    Potentially corrupted databases are not updated and are automatically
+    fully replaced after several failed attempts unless otherwise specified.
+    \\\\
+    Here is a sample usage including cdiffs:
+{\footnotesize
     \begin{verbatim}
-        $ freshclam
+$ freshclam
 
-        ClamAV update process started at Mon Oct  7 08:15:10 2013
-        main.cld is up to date (version: 55, sigs: 2424225, f-level: 60, builder: neo)
-        Downloading daily-17945.cdiff [100%]
-        Downloading daily-17946.cdiff [100%]
-        Downloading daily-17947.cdiff [100%]
-        daily.cld updated (version: 17947, sigs: 406951, f-level: 63, builder: neo)
-        Downloading bytecode-227.cdiff [100%]
-        Downloading bytecode-228.cdiff [100%]
-        bytecode.cld updated (version: 228, sigs: 43, f-level: 63, builder: neo)
-        Database updated (2831219 signatures) from database.clamav.net (IP: 64.6.100.177)
+ClamAV update process started at Mon Oct  7 08:15:10 2013
+main.cld is up to date (version: 55, sigs: 2424225, f-level: 60, builder: neo)
+Downloading daily-17945.cdiff [100%]
+Downloading daily-17946.cdiff [100%]
+Downloading daily-17947.cdiff [100%]
+daily.cld updated (version: 17947, sigs: 406951, f-level: 63, builder: neo)
+Downloading bytecode-227.cdiff [100%]
+Downloading bytecode-228.cdiff [100%]
+bytecode.cld updated (version: 228, sigs: 43, f-level: 63, builder: neo)
+Database updated (2831219 signatures) from database.clamav.net (IP: 64.6.100.177)
     \end{verbatim}
+}
     For more detailed help, type 'man clamscan' or 'clamscan --help'.
 
     \subsection{Clamconf}\label{sec:clamconf}
@@ -802,54 +792,56 @@ N * * * *	/usr/local/bin/freshclam --quiet
     properly configured), the contents of freshclam.conf, and display
     information about software settings, database, platform, and build
     information. Here is a sample clamconf output:
+{\footnotesize
     \begin{verbatim}
-        $ clamconf
+$ clamconf
 
-        Checking configuration files in /etc/clamav
+Checking configuration files in /etc/clamav
 
-        Config file: clamd.conf
-        -----------------------
-        ERROR: Please edit the example config file /etc/clamav/clamd.conf
+Config file: clamd.conf
+-----------------------
+ERROR: Please edit the example config file /etc/clamav/clamd.conf
 
-        Config file: freshclam.conf
-        ---------------------------
-        ERROR: Please edit the example config file /etc/clamav/freshclam.conf
+Config file: freshclam.conf
+---------------------------
+ERROR: Please edit the example config file /etc/clamav/freshclam.conf
 
-        clamav-milter.conf not found
+clamav-milter.conf not found
 
-        Software settings
-        -----------------
-        Version: 0.97.6
-        Optional features supported: MEMPOOL IPv6 CLAMUKO AUTOIT_EA06 BZIP2 RAR JIT
+Software settings
+-----------------
+Version: 0.98.1
+Optional features supported: MEMPOOL IPv6 AUTOIT_EA06 BZIP2 RAR JIT
 
-        Database information
-        --------------------
-        Database directory: /usr/local/share/clamav
-        WARNING: freshclam.conf and clamd.conf point to different database directories
-        print_dbs: Can't open directory /usr/local/share/clamav
+Database information
+--------------------
+Database directory: /xclam/gcc/release/share/clamav
+WARNING: freshclam.conf and clamd.conf point to different database directories
+print_dbs: Can't open directory /xclam/gcc/release/share/clamav
 
-        Platform information
-        --------------------
-        uname: Linux 2.6.32-279.el6.x86_64 #1 SMP Fri Jun 22 12:19:21 UTC 2012 x86_64
-        OS: linux-gnu, ARCH: x86_64, CPU: x86_64
-        Full OS version: ``CentOS release 6.3 (Final)''
-        zlib version: 1.2.3 (1.2.3), compile flags: a9
-        Triple: x86_64-unknown-linux-gnu
-        CPU: amdfam10, Little-endian
-        platform id: 0x0a2143430804040607040406
+Platform information
+--------------------
+uname: Linux 3.5.0-44-generic #67~precise1-Ubuntu SMP Wed Nov 13 16:20:03 UTC 2013 i686
+OS: linux-gnu, ARCH: i386, CPU: i686
+Full OS version: Ubuntu 12.04.3 LTS
+zlib version: 1.2.3.4 (1.2.3.4), compile flags: 55
+Triple: i386-pc-linux-gnu
+CPU: i686, Little-endian
+platform id: 0x0a114d4d0404060401040604
 
-        Build information
-        -----------------
-        GNU C: 4.4.6 20120305 (Red Hat 4.4.6-4) (4.4.6)
-        GNU C++: 4.4.6 20120305 (Red Hat 4.4.6-4) (4.4.6)
-        CPPFLAGS: 
-        CFLAGS: -g -O2 -fno-strict-aliasing
-        CXXFLAGS: 
-        LDFLAGS: 
-        Configure: '--enable-check' '--sysconfdir=/etc/clamav'
-        --enable-ltdl-convenience
-        sizeof(void*) = 8
-    \end{verbatim}
+Build information
+-----------------
+GNU C: 4.6.4 (4.6.4)
+GNU C++: 4.6.4 (4.6.4)
+CPPFLAGS:
+CFLAGS: -g -O0 -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE
+CXXFLAGS:
+LDFLAGS:
+Configure: '--prefix=/xclam/gcc/release/' '--disable-clamav' '--enable-debug' 'CFLAGS=-g -O0'
+sizeof(void*) = 4
+Engine flevel: 77, dconf: 77
+ \end{verbatim}
+}
     For more detailed help, type 'man clamconf' or 'clamconf --help'.
 
     \subsection{Output format}
@@ -947,6 +939,14 @@ N * * * *	/usr/local/bin/freshclam --quiet
 	\item CPIO
 	\item Gzip
 	\item Bzip2
+        \item DMG
+        \item IMG
+        \item ISO 9660
+        \item PKG
+        \item HFS+ partition
+        \item HFSX partition
+        \item XAR
+        \item XZ
 	\item MS OLE2
 	\item MS Cabinet Files (+ SFX)
 	\item MS CHM (Compiled HTML)
@@ -1736,7 +1736,7 @@ Verification OK.
 	Role: virus database maintainer
 
 	\item Joel Esler \email{<jesler*sourcefire.com>}, USA\\
-	Role: open source community manager
+	Role: community manager
 
 	\item Tom Judge \email{<tjudge*sourcefire.com>}, USA\\
 	Role: infrastucture developer
@@ -1753,8 +1753,14 @@ Verification OK.
 	\item Shawn Webb \email{<swebb*sourcefire.com>}, USA\\
 	Role: ClamAV developer
 
-	\item Carl Wu \email{<cwu*sourcefire.com>}, USA\\
-	Role: ClamAV developer
+    \item Kevin Lin \email{<klin*sourcefire.com>}, USA\\
+    Role: ClamAV developer
+
+    \item Dave Suffling \email{<dsuffling*sourcefire.com>}, Canada\\
+    Role: ClamAV developer
+
+    \item Samir Sapra \email{<ssapra*sourcefire.com>}, USA\\
+    Role: ClamAV developer
 
 	\item Alain Zidouemba \email{<azidouemba*sourcefire.com>}, USA\\
 	Role: virus database maintainer

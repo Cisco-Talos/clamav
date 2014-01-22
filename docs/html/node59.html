@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Graphics</TITLE>
-<META NAME="description" CONTENT="Graphics">
+<TITLE>Forking daemons</TITLE>
+<META NAME="description" CONTENT="Forking daemons">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -20,50 +20,51 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="next" HREF="node60.html">
 <LINK REL="previous" HREF="node58.html">
-<LINK REL="up" HREF="node34.html">
+<LINK REL="up" HREF="node49.html">
 <LINK REL="next" HREF="node60.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html975"
+<A NAME="tex2html995"
   HREF="node60.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html971"
-  HREF="node34.html">
+<A NAME="tex2html991"
+  HREF="node49.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html965"
+<A NAME="tex2html985"
   HREF="node58.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html973"
+<A NAME="tex2html993"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html976"
-  HREF="node60.html">OpenAntiVirus</A>
-<B> Up:</B> <A NAME="tex2html972"
-  HREF="node34.html">LibClamAV</A>
-<B> Previous:</B> <A NAME="tex2html966"
-  HREF="node58.html">Donors</A>
- &nbsp; <B>  <A NAME="tex2html974"
+<B> Next:</B> <A NAME="tex2html996"
+  HREF="node60.html">clamav-config</A>
+<B> Up:</B> <A NAME="tex2html992"
+  HREF="node49.html">API</A>
+<B> Previous:</B> <A NAME="tex2html986"
+  HREF="node58.html">Memory</A>
+ &nbsp; <B>  <A NAME="tex2html994"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00077000000000000000">
-Graphics</A>
-</H2>
-    The ClamAV logo was created by Mia Kalenius and Sergei Pronin from
-    Finndesign (<TT><A NAME="tex2html112"
-  HREF="http://www.finndesign.fi/">http://www.finndesign.fi/</A></TT>).
+<H3><A NAME="SECTION000731000000000000000">
+Forking daemons</A>
+</H3>
+    If you're using libclamav with a forking daemon you should call
+    <code>srand()</code> inside a forked child before making any calls to the
+    libclamav functions. This will avoid possible collisions with temporary
+    filenames created by other processes of the daemon. This procedure
+    is not required for multi-threaded daemons.
 
 <P>
 <BR><HR>
 <ADDRESS>
-Tomasz Kojm
-2010-08-12
+Sourcefire 2013-12-24
 </ADDRESS>
 </BODY>
 </HTML>

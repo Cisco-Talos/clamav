@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Usage</TITLE>
-<META NAME="description" CONTENT="Usage">
+<TITLE>ClamAV Active Malware Report</TITLE>
+<META NAME="description" CONTENT="ClamAV Active Malware Report">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -18,69 +18,98 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node34.html">
-<LINK REL="previous" HREF="node19.html">
-<LINK REL="up" HREF="clamdoc.html">
+<LINK REL="previous" HREF="node25.html">
+<LINK REL="up" HREF="node20.html">
 <LINK REL="next" HREF="node28.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html547"
+<A NAME="tex2html560"
   HREF="node28.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html543"
-  HREF="clamdoc.html">
+<A NAME="tex2html556"
+  HREF="node20.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html537"
+<A NAME="tex2html552"
   HREF="node26.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html545"
+<A NAME="tex2html558"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html548"
-  HREF="node28.html">Clam daemon</A>
-<B> Up:</B> <A NAME="tex2html544"
-  HREF="clamdoc.html">clamdoc</A>
-<B> Previous:</B> <A NAME="tex2html538"
-  HREF="node26.html">ClamAV Active Malware Report</A>
- &nbsp; <B>  <A NAME="tex2html546"
+<B> Next:</B> <A NAME="tex2html561"
+  HREF="node28.html">Usage</A>
+<B> Up:</B> <A NAME="tex2html557"
+  HREF="node20.html">Configuration</A>
+<B> Previous:</B> <A NAME="tex2html553"
+  HREF="node26.html">Closest mirrors</A>
+ &nbsp; <B>  <A NAME="tex2html559"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H1><A NAME="SECTION00060000000000000000">
-Usage</A>
-</H1>
+<H2><A NAME="SECTION00055000000000000000">
+ClamAV Active Malware Report</A>
+</H2>
 
 <P>
-<BR><HR>
-<!--Table of Child-Links-->
-<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
+The ClamAV Active Malware Report that was introduced in ClamAV 0.94.1 uses
+    freshclam to send summary data to our server about the malware that has
+    been detected. This data is then used to generate real-time reports on
+    active malware. These reports, along with geographical and historic trends,
+    will be published on <TT><A NAME="tex2html20"
+  HREF="http://www.clamav.net/">http://www.clamav.net/</A></TT>.
+    
+<BR>
+<BR>
+The more data that we receive from ClamAV users, the more reports, and the
+    better the quality of the reports, will be. To enable the submission of
+    data to us for use in the Active Malware Report, enable
+    SubmitDetectionStats in freshclam.conf, and LogTime and LogFile in
+    clamd.conf. You should only enable this feature if you're running clamd
+    to scan incoming data in your environment.
+    
+<BR>
+<BR>
+The only private data that is transferred is an IP address, which is used
+    to create the geographical data. The size of the data that is sent is small;
+    it contains just the filename, malware name and time of detection. The data
+    is sent in sets of 10 records, up to 50 records per session. For example,
+    if you have 45 new records, then freshclam will submit 40; if 78 then it
+    will submit the latest 50 entries; and if you have 9 records no statistics
+    will be sent.
 
-<UL CLASS="ChildLinks">
-<LI><A NAME="tex2html549"
-  HREF="node28.html">Clam daemon</A>
-<LI><A NAME="tex2html550"
-  HREF="node29.html">Clam<SPAN  CLASS="textbf">d</SPAN>scan</A>
-<LI><A NAME="tex2html551"
-  HREF="node30.html">Clamuko</A>
-<LI><A NAME="tex2html552"
-  HREF="node31.html">Output format</A>
-<UL>
-<LI><A NAME="tex2html553"
-  HREF="node32.html">clamscan</A>
-<LI><A NAME="tex2html554"
-  HREF="node33.html">clamd</A>
-</UL></UL>
-<!--End of Table of Child-Links-->
-<BR><HR>
+<P>
+
+<DIV CLASS="navigation"><HR>
+<!--Navigation Panel-->
+<A NAME="tex2html560"
+  HREF="node28.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html556"
+  HREF="node20.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html552"
+  HREF="node26.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
+<A NAME="tex2html558"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
+<BR>
+<B> Next:</B> <A NAME="tex2html561"
+  HREF="node28.html">Usage</A>
+<B> Up:</B> <A NAME="tex2html557"
+  HREF="node20.html">Configuration</A>
+<B> Previous:</B> <A NAME="tex2html553"
+  HREF="node26.html">Closest mirrors</A>
+ &nbsp; <B>  <A NAME="tex2html559"
+  HREF="node1.html">Contents</A></B> </DIV>
+<!--End of Navigation Panel-->
 <ADDRESS>
-Tomasz Kojm
-2010-08-12
+Sourcefire 2013-12-24
 </ADDRESS>
 </BODY>
 </HTML>

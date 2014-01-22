@@ -2131,12 +2131,36 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
 	    while(fpt) {
 		if(fpt->offset) switch(fpt->type) {
 		    case CL_TYPE_RARSFX:
-			if(type != CL_TYPE_RAR && have_rar && SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_RAR)) {
-			    ctx->container_type = CL_TYPE_RAR;
-			    ctx->container_size = map->len - fpt->offset; /* not precise */
-			    cli_dbgmsg("RAR/RAR-SFX signature found at %u\n", (unsigned int) fpt->offset);
-			    nret = cli_scanrar(fmap_fd(map), ctx, fpt->offset, &lastrar);
-			}
+                        if(type != CL_TYPE_RAR && have_rar && SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_RAR)) {
+                            char *tmpname = NULL;
+                            int tmpfd = fmap_fd(map);
+                            ctx->container_type = CL_TYPE_RAR;
+                            ctx->container_size = map->len - fpt->offset; /* not precise */
+                            cli_dbgmsg("RAR/RAR-SFX signature found at %u\n", (unsigned int) fpt->offset);
+                            /* if map is not file-backed, have to dump to file for scanrar */
+                            if(tmpfd == -1) {
+                                nret = fmap_dump_to_file(map, ctx->engine->tmpdir, &tmpname, &tmpfd);
+                                if(nret != CL_SUCCESS) {
+                                    cli_dbgmsg("cli_scanraw: failed to generate temporary file.\n");
+                                    ret = nret;
+                                    break_loop = 1;
+                                    break;
+                                }
+                            }
+                            /* scan existing file */
+                            nret = cli_scanrar(tmpfd, ctx, fpt->offset, &lastrar);
+                            /* if dumped tempfile, need to cleanup */
+                            if(tmpname) {
+                                close(tmpfd);
+                                if(!ctx->engine->keeptmp) {
+                                    if (cli_unlink(tmpname)) {
+                                        ret = nret = CL_EUNLINK;
+                                        break_loop = 1;
+                                    }
+                                }
+                                free(tmpname);
+                            }
+                        }
 			break;
 
 		    case CL_TYPE_ZIPSFX:
@@ -2504,32 +2528,12 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 		char *tmpname = NULL;
 		int desc = fmap_fd(*ctx->fmap);
 		if (desc == -1) {
-		    size_t pos = 0, len;
-
 		    cli_dbgmsg("fmap not backed by file, dumping ...\n");
-		    if ((ret = cli_gentempfd(((cli_ctx*)ctx)->engine->tmpdir, &tmpname, &desc)) != CL_SUCCESS) {
+		    ret = fmap_dump_to_file(*ctx->fmap, ctx->engine->tmpdir, &tmpname, &desc);
+		    if (ret != CL_SUCCESS) {
 			cli_dbgmsg("fmap_fd: failed to generate temporary file.\n");
 			break;
 		    }
-		    do {
-			const char *b;
-
-			len = 0;
-			b = fmap_need_off_once_len(*ctx->fmap, pos, BUFSIZ, &len);
-			pos += len;
-			if (b && len > 0) {
-			    if (cli_writen(desc, b, len) != len) {
-				close(desc);
-				unlink(tmpname);
-				cli_warnmsg("fmap_fd_dump: write failed\n");
-				ret = CL_EWRITE;
-				break;
-			    }
-			}
-		    } while (len > 0);
-		    if (lseek(desc, 0, SEEK_SET) == -1) {
-                cli_dbgmsg("magic_scandesc: call to lseek() failed\n");
-            }
 		}
 		ret = cli_scanrar(desc, ctx, 0, NULL);
 		if (tmpname) {
@@ -2957,7 +2961,86 @@ int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, cons
     return cl_scandesc_callback(desc, virname, scanned, engine, scanoptions, NULL);
 }
 
-/* length = 0, till the end */
+/* For map scans that may be forced to disk */
+int cli_map_scan(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx)
+{
+    off_t old_off = map->nested_offset;
+    size_t old_len = map->len;
+    int ret = CL_CLEAN;
+
+    cli_dbgmsg("cli_map_scan: [%ld, +%lu)\n",
+	       (long)offset, (unsigned long)length);
+
+    if (offset < 0 || offset >= old_len) {
+	cli_dbgmsg("Invalid offset: %ld\n", (long)offset);
+	return CL_CLEAN;
+    }
+
+    if (ctx->engine->forcetodisk) {
+        /* if this is forced to disk, then need to write the nested map and scan it */
+        const uint8_t *mapdata = NULL;
+        char *tempfile = NULL;
+        int fd = -1;
+        size_t nread = 0;
+
+        /* Then check length */
+        if (!length) length = old_len - offset;
+        if (length > old_len - offset) {
+            cli_dbgmsg("cli_map_scan: Data truncated: %lu -> %lu\n",
+                       (unsigned long)length, (unsigned long)(old_len - offset));
+            length = old_len - offset;
+        }
+        if (length <= 5) {
+            cli_dbgmsg("cli_map_scan: Small data (%u bytes)\n", (unsigned int) length);
+            return CL_CLEAN;
+        }
+        if (!CLI_ISCONTAINED(old_off, old_len, old_off + offset, length)) {
+            cli_dbgmsg("cli_map_scan: map error occurred [%ld, %lu]\n",
+                       (long)old_off, (unsigned long)old_len);
+            return CL_CLEAN;
+        }
+
+        /* Length checked, now get map */
+        mapdata = fmap_need_off_once_len(map, offset, length, &nread);
+        if (!mapdata || (nread != length)) {
+            cli_errmsg("cli_map_scan: could not map sub-file\n");
+            return CL_EMAP;
+        }
+
+        ret = cli_gentempfd(ctx->engine->tmpdir, &tempfile, &fd);
+        if (ret != CL_SUCCESS) {
+            return ret;
+        }
+
+        cli_dbgmsg("cli_map_scan: writing nested map content to temp file %s\n", tempfile);
+        if (cli_writen(fd, mapdata, length) < 0) {
+            cli_errmsg("cli_map_scan: cli_writen error writing subdoc temporary file.\n");
+            ret = CL_EWRITE;
+        }
+
+        /* scan the temp file */
+        ret = cli_base_scandesc(fd, ctx, CL_TYPE_ANY);
+
+        /* remove the temp file, if needed */
+        if (fd > -1) {
+            close(fd);
+        }
+        if(!ctx->engine->keeptmp) {
+            if (cli_unlink(tempfile)) {
+                cli_errmsg("cli_map_scan: error unlinking tempfile %s\n", tempfile);
+                ret = CL_EUNLINK;
+            }
+        }
+        free(tempfile);
+    }
+    else {
+        /* Not forced to disk, use nested map */
+        ret = cli_map_scandesc(map, offset, length, ctx);
+    }
+    return ret;
+}
+
+/* For map scans that are not forced to disk */
 int cli_map_scandesc(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx)
 {
     off_t old_off = map->nested_offset;
@@ -3015,7 +3098,7 @@ int cli_mem_scandesc(const void *buffer, size_t length, cli_ctx *ctx)
     if (!map) {
 	return CL_EMAP;
     }
-    ret = cli_map_scandesc(map, 0, length, ctx);
+    ret = cli_map_scan(map, 0, length, ctx);
     cl_fmap_close(map);
     return ret;
 }

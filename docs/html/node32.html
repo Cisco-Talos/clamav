@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>clamscan</TITLE>
-<META NAME="description" CONTENT="clamscan">
+<TITLE>Clamdtop</TITLE>
+<META NAME="description" CONTENT="Clamdtop">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -20,66 +20,56 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="next" HREF="node33.html">
 <LINK REL="previous" HREF="node31.html">
-<LINK REL="up" HREF="node31.html">
+<LINK REL="up" HREF="node28.html">
 <LINK REL="next" HREF="node33.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html613"
+<A NAME="tex2html631"
   HREF="node33.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html609"
-  HREF="node31.html">
+<A NAME="tex2html627"
+  HREF="node28.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html603"
+<A NAME="tex2html621"
   HREF="node31.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html611"
+<A NAME="tex2html629"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html614"
-  HREF="node33.html">clamd</A>
-<B> Up:</B> <A NAME="tex2html610"
-  HREF="node31.html">Output format</A>
-<B> Previous:</B> <A NAME="tex2html604"
-  HREF="node31.html">Output format</A>
- &nbsp; <B>  <A NAME="tex2html612"
+<B> Next:</B> <A NAME="tex2html632"
+  HREF="node33.html">Clamscan</A>
+<B> Up:</B> <A NAME="tex2html628"
+  HREF="node28.html">Usage</A>
+<B> Previous:</B> <A NAME="tex2html622"
+  HREF="node31.html">On-access Scanning</A>
+ &nbsp; <B>  <A NAME="tex2html630"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00064100000000000000">
-clamscan</A>
-</H3>
-    <code>clamscan</code> writes all regular program messages to <SPAN  CLASS="textbf">stdout</SPAN> and
-    errors/warnings to <SPAN  CLASS="textbf">stderr</SPAN>. You can use the option <code>--stdout</code>
-    to redirect all program messages to <SPAN  CLASS="textbf">stdout</SPAN>. Warnings and error
-    messages from <code>libclamav</code> are always printed to <SPAN  CLASS="textbf">stderr</SPAN>.
-    A typical output from <code>clamscan</code> looks like this:
-    <PRE>
-	/tmp/test/removal-tool.exe: Worm.Sober FOUND
-	/tmp/test/md5.o: OK
-	/tmp/test/blob.c: OK
-	/tmp/test/message.c: OK
-	/tmp/test/error.hta: VBS.Inor.D FOUND
-</PRE>
-    When a virus is found its name is printed between the <code>filename:</code> and
-    <code>FOUND</code> strings. In case of archives the scanner depends on libclamav
-    and only prints the first virus found within an archive:
-    <PRE>
-	zolw@localhost:/tmp$ clamscan malware.zip 
-	malware.zip: Worm.Mydoom.U FOUND
-</PRE>
+<H2><A NAME="SECTION00064000000000000000">
+Clamdtop</A>
+</H2>
+    <code>clamdtop</code> is a tool to monitor one or multiple instances of clamd.  It
+    has a (color) ncurses interface, that shows the jobs in clamd's queue,
+    memory usage, and information about the loaded signature database.
+    You can specify on the command-line to which clamd(s) it should connect
+    to. By default it will attempt to connect to the local clamd as defined
+    in clamd.conf.
+    
+<BR>
+<BR>
+For more detailed help, type 'man clamdtop' or 'clamdtop -help'.
 
 <P>
 <BR><HR>
 <ADDRESS>
-Tomasz Kojm
-2010-08-12
+Sourcefire 2013-12-24
 </ADDRESS>
 </BODY>
 </HTML>

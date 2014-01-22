@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Example</TITLE>
-<META NAME="description" CONTENT="Example">
+<TITLE>Limits</TITLE>
+<META NAME="description" CONTENT="Limits">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -18,54 +18,67 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
+<LINK REL="next" HREF="node56.html">
 <LINK REL="previous" HREF="node54.html">
-<LINK REL="up" HREF="node43.html">
+<LINK REL="up" HREF="node49.html">
 <LINK REL="next" HREF="node56.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html927"
+<A NAME="tex2html947"
   HREF="node56.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html923"
-  HREF="node43.html">
+<A NAME="tex2html943"
+  HREF="node49.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html919"
+<A NAME="tex2html937"
   HREF="node54.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html925"
+<A NAME="tex2html945"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html928"
-  HREF="node56.html">CVD format</A>
-<B> Up:</B> <A NAME="tex2html924"
-  HREF="node43.html">API</A>
-<B> Previous:</B> <A NAME="tex2html920"
-  HREF="node54.html">clamav-config</A>
- &nbsp; <B>  <A NAME="tex2html926"
+<B> Next:</B> <A NAME="tex2html948"
+  HREF="node56.html">Database checks</A>
+<B> Up:</B> <A NAME="tex2html944"
+  HREF="node49.html">API</A>
+<B> Previous:</B> <A NAME="tex2html938"
+  HREF="node54.html">Engine structure</A>
+ &nbsp; <B>  <A NAME="tex2html946"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION000731200000000000000">
-Example</A>
+<H3><A NAME="SECTION00073600000000000000">
+Limits</A>
 </H3>
-    You will find an example scanner application in the clamav source
-    package (/example). Provided you have ClamAV already installed, execute
-    the following to compile it:
+    When you create a new engine with <code>cl_engine_new()</code>, it will have
+    all internal settings set to default values as recommended by the
+    ClamAV authors. It's possible to check and modify the values (numerical
+    and strings) using the following set of functions:
     <PRE>
-	gcc -Wall ex1.c -o ex1 -lclamav
+int cl_engine_set_num(struct cl_engine *engine,
+  enum cl_engine_field field, long long num);
+
+long long cl_engine_get_num(const struct cl_engine *engine,
+  enum cl_engine_field field, int *err);
+
+int cl_engine_set_str(struct cl_engine *engine,
+  enum cl_engine_field field, const char *str);
+
+const char *cl_engine_get_str(const struct cl_engine *engine,
+  enum cl_engine_field field, int *err);
 </PRE>
+    Please don't modify the default values unless you know what you're doing.
+    Refer to the ClamAV sources (clamscan, clamd) for examples.
 
 <P>
 <BR><HR>
 <ADDRESS>
-Tomasz Kojm
-2010-08-12
+Sourcefire 2013-12-24
 </ADDRESS>
 </BODY>
 </HTML>

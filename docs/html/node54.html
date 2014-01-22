@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>clamav-config</TITLE>
-<META NAME="description" CONTENT="clamav-config">
+<TITLE>Engine structure</TITLE>
+<META NAME="description" CONTENT="Engine structure">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -20,54 +20,61 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="next" HREF="node55.html">
 <LINK REL="previous" HREF="node53.html">
-<LINK REL="up" HREF="node43.html">
+<LINK REL="up" HREF="node49.html">
 <LINK REL="next" HREF="node55.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html917"
+<A NAME="tex2html935"
   HREF="node55.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html913"
-  HREF="node43.html">
+<A NAME="tex2html931"
+  HREF="node49.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html907"
+<A NAME="tex2html925"
   HREF="node53.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html915"
+<A NAME="tex2html933"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html918"
-  HREF="node55.html">Example</A>
-<B> Up:</B> <A NAME="tex2html914"
-  HREF="node43.html">API</A>
-<B> Previous:</B> <A NAME="tex2html908"
-  HREF="node53.html">Forking daemons</A>
- &nbsp; <B>  <A NAME="tex2html916"
+<B> Next:</B> <A NAME="tex2html936"
+  HREF="node55.html">Limits</A>
+<B> Up:</B> <A NAME="tex2html932"
+  HREF="node49.html">API</A>
+<B> Previous:</B> <A NAME="tex2html926"
+  HREF="node53.html">Error handling</A>
+ &nbsp; <B>  <A NAME="tex2html934"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION000731100000000000000">
-clamav-config</A>
+<H3><A NAME="SECTION00073500000000000000">
+Engine structure</A>
 </H3>
-    Use <code>clamav-config</code> to check compilation information for libclamav.
+    When all required databases are loaded you should prepare the detection
+    engine by calling <code>cl_engine_compile()</code>. In case of failure you
+    should still free the memory allocated to the engine with
+    <code>cl_engine_free()</code>:
     <PRE>
-	zolw@localhost:~$ clamav-config --libs
-	-L/usr/local/lib -lz -lbz2 -lgmp -lpthread
-	zolw@localhost:~$ clamav-config --cflags
-	-I/usr/local/include -g -O2
+	int cl_engine_compile(struct cl_engine *engine);
+</PRE>
+    In our example:
+    <PRE>
+	if((ret = cl_engine_compile(engine)) != CL_SUCCESS) {
+	    printf("cl_engine_compile() error: %s\n", cl_strerror(ret));
+	    cl_engine_free(engine);
+	    return 1;
+	}
 </PRE>
 
 <P>
 <BR><HR>
 <ADDRESS>
-Tomasz Kojm
-2010-08-12
+Sourcefire 2013-12-24
 </ADDRESS>
 </BODY>
 </HTML>

@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>clamav-milter</TITLE>
-<META NAME="description" CONTENT="clamav-milter">
+<TITLE>On-access scanning</TITLE>
+<META NAME="description" CONTENT="On-access scanning">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -18,59 +18,56 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node23.html">
-<LINK REL="previous" HREF="node20.html">
-<LINK REL="up" HREF="node19.html">
+<LINK REL="previous" HREF="node21.html">
+<LINK REL="up" HREF="node21.html">
 <LINK REL="next" HREF="node23.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html490"
+<A NAME="tex2html503"
   HREF="node23.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html486"
-  HREF="node19.html">
+<A NAME="tex2html499"
+  HREF="node21.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html480"
+<A NAME="tex2html495"
   HREF="node21.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html488"
+<A NAME="tex2html501"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html491"
-  HREF="node23.html">Testing</A>
-<B> Up:</B> <A NAME="tex2html487"
-  HREF="node19.html">Configuration</A>
-<B> Previous:</B> <A NAME="tex2html481"
-  HREF="node21.html">On-access scanning</A>
- &nbsp; <B>  <A NAME="tex2html489"
+<B> Next:</B> <A NAME="tex2html504"
+  HREF="node23.html">clamav-milter</A>
+<B> Up:</B> <A NAME="tex2html500"
+  HREF="node21.html">clamd</A>
+<B> Previous:</B> <A NAME="tex2html496"
+  HREF="node21.html">clamd</A>
+ &nbsp; <B>  <A NAME="tex2html502"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00052000000000000000">
-clamav-milter</A>
-</H2>
-    ClamAV <SPAN CLASS="MATH"><IMG
- WIDTH="58" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
- SRC="img4.png"
- ALT="$\ge0.95$"></SPAN> includes a new, redesigned clamav-milter. The most notable
-    difference is that the internal mode has been dropped and now a working
-    clamd companion is required. The second important difference is that now
-    the milter has got its own configuration and log files. To compile ClamAV
-    with the clamav-milter just run <code>./configure</code> <code>--enable-milter</code>
-    and make as usual. Please consult your MTA's manual on how to connect it
-    with the milter.
+<H3><A NAME="SECTION00051100000000000000">
+On-access scanning</A>
+</H3>
+    One of the interesting features of <code>clamd</code> is on-access scanning
+    based on fanotify, included in Linux since kernel 2.6.36.
+    <SPAN  CLASS="textbf">This is not required to run clamd</SPAN>. At the moment the fanotify header is
+    only avaliable for Linux.
+    
+<BR>
+<BR>
+Configure on-access scanning in <code>clamd.conf</code> and read the 
+    <A HREF="node31.html#On-access">5.3</A> section for on-access scanning usage.
 
 <P>
 <BR><HR>
 <ADDRESS>
-Tomasz Kojm
-2010-08-12
+Sourcefire 2013-12-24
 </ADDRESS>
 </BODY>
 </HTML>

@@ -315,6 +315,7 @@ struct cl_engine {
     uint64_t maxhtmlnotags; /* max size for scanning normalized HTML */
     uint64_t maxscriptnormalize; /* max size to normalize scripts */
     uint64_t maxziptypercg; /* max size to re-do zip filetype */
+    uint32_t forcetodisk; /* cause memory or map scans to dump to disk first */
 
     /* Statistics/intelligence gathering */
     void *stats_data;
@@ -365,6 +366,7 @@ struct cl_settings {
     uint64_t maxhtmlnotags; /* max size for scanning normalized HTML */
     uint64_t maxscriptnormalize; /* max size to normalize scripts */
     uint64_t maxziptypercg; /* max size to re-do zip filetype */
+    uint32_t forcetodisk; /* cause memory or map scans to dump to disk first */
 
     /* Statistics/intelligence gathering */
     void *stats_data;

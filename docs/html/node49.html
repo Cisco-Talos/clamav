@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Limits</TITLE>
-<META NAME="description" CONTENT="Limits">
+<TITLE>API</TITLE>
+<META NAME="description" CONTENT="API">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -18,68 +18,79 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node50.html">
-<LINK REL="previous" HREF="node48.html">
-<LINK REL="up" HREF="node43.html">
+<LINK REL="next" HREF="node62.html">
+<LINK REL="previous" HREF="node42.html">
+<LINK REL="up" HREF="node40.html">
 <LINK REL="next" HREF="node50.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html857"
+<A NAME="tex2html863"
   HREF="node50.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html853"
-  HREF="node43.html">
+<A NAME="tex2html859"
+  HREF="node40.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html847"
+<A NAME="tex2html853"
   HREF="node48.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html855"
+<A NAME="tex2html861"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html858"
-  HREF="node50.html">Database checks</A>
-<B> Up:</B> <A NAME="tex2html854"
-  HREF="node43.html">API</A>
-<B> Previous:</B> <A NAME="tex2html848"
-  HREF="node48.html">Engine structure</A>
- &nbsp; <B>  <A NAME="tex2html856"
+<B> Next:</B> <A NAME="tex2html864"
+  HREF="node50.html">Header file</A>
+<B> Up:</B> <A NAME="tex2html860"
+  HREF="node40.html">LibClamAV</A>
+<B> Previous:</B> <A NAME="tex2html854"
+  HREF="node48.html">Others</A>
+ &nbsp; <B>  <A NAME="tex2html862"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00073600000000000000">
-Limits</A>
-</H3>
-    When you create a new engine with <code>cl_engine_new()</code>, it will have
-    all internal settings set to default values as recommended by the
-    ClamAV authors. It's possible to check and modify the values (numerical
-    and strings) using the following set of functions:
-    <PRE>
-int cl_engine_set_num(struct cl_engine *engine,
-  enum cl_engine_field field, long long num);
-
-long long cl_engine_get_num(const struct cl_engine *engine,
-  enum cl_engine_field field, int *err);
-
-int cl_engine_set_str(struct cl_engine *engine,
-  enum cl_engine_field field, const char *str);
-
-const char *cl_engine_get_str(const struct cl_engine *engine,
-  enum cl_engine_field field, int *err);
-</PRE>
-    Please don't modify the default values unless you know what you're doing.
-    Refer to the ClamAV sources (clamscan, clamd) for examples.
+<H2><A NAME="SECTION00073000000000000000">
+API</A>
+</H2>
 
 <P>
 <BR><HR>
+<!--Table of Child-Links-->
+<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
+
+<UL CLASS="ChildLinks">
+<LI><A NAME="tex2html865"
+  HREF="node50.html">Header file</A>
+<LI><A NAME="tex2html866"
+  HREF="node51.html">Initialization</A>
+<LI><A NAME="tex2html867"
+  HREF="node52.html">Database loading</A>
+<LI><A NAME="tex2html868"
+  HREF="node53.html">Error handling</A>
+<LI><A NAME="tex2html869"
+  HREF="node54.html">Engine structure</A>
+<LI><A NAME="tex2html870"
+  HREF="node55.html">Limits</A>
+<LI><A NAME="tex2html871"
+  HREF="node56.html">Database checks</A>
+<LI><A NAME="tex2html872"
+  HREF="node57.html">Data scan functions</A>
+<LI><A NAME="tex2html873"
+  HREF="node58.html">Memory</A>
+<LI><A NAME="tex2html874"
+  HREF="node59.html">Forking daemons</A>
+<LI><A NAME="tex2html875"
+  HREF="node60.html">clamav-config</A>
+<LI><A NAME="tex2html876"
+  HREF="node61.html">Example</A>
+</UL>
+<!--End of Table of Child-Links-->
+<BR><HR>
 <ADDRESS>
-Tomasz Kojm
-2010-08-12
+Sourcefire 2013-12-24
 </ADDRESS>
 </BODY>
 </HTML>

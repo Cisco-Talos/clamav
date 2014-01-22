@@ -20,7 +20,7 @@ dnl   MA 02110-1301, USA.
 AC_PREREQ([2.59])
 dnl For a release change [devel] to the real version [0.xy]
 dnl also change VERSION below
-AC_INIT([ClamAV], [devel], [http://bugs.clamav.net/], [clamav], [http://www.clamav.net/])
+AC_INIT([ClamAV], [0.98.1], [http://bugs.clamav.net/], [clamav], [http://www.clamav.net/])
 
 AH_BOTTOM([#include "platform.h"])
 dnl put configure auxiliary into config
@@ -42,11 +42,11 @@ dnl the date in the version
 AC_DEFINE([PACKAGE], PACKAGE_NAME, [Name of package])
 
 dnl change this on a release
-VERSION="devel-`date +%Y%m%d`"
-dnl VERSION="0.98"
+dnl VERSION="devel-`date +%Y%m%d`"
+VERSION="0.98.1"
 
 LC_CURRENT=7
-LC_REVISION=19
+LC_REVISION=20
 LC_AGE=1
 LIBCLAMAV_VERSION="$LC_CURRENT":"$LC_REVISION":"$LC_AGE"
 AC_SUBST([LIBCLAMAV_VERSION])
@@ -699,13 +699,14 @@ AC_ARG_ENABLE([unrar],
 want_unrar=$enableval, want_unrar="yes")
 AM_CONDITIONAL([ENABLE_UNRAR],[test "$want_unrar" = "yes"])
 
+dnl libxml2
 want_xml="auto"
 AC_ARG_ENABLE([xml],
 [  --disable-xml	  disable DMG and XAR support],
 want_xml=$enableval, want_xml="auto")
 
-working_xml="no"
-if test "$want_xml" != "no"; then
+XML_HOME=""
+if test "X$want_xml" != "Xno"; then
   AC_MSG_CHECKING([for libxml2 installation])
   AC_ARG_WITH([xml],
   [  --with-xml=DIR	  path to directory containing libxml2 library (default=
@@ -715,16 +716,46 @@ if test "$want_xml" != "no"; then
   then
     XML_HOME="$withval"
     AC_MSG_RESULT([using $XML_HOME])
+  else
+    AC_MSG_ERROR([cannot assign blank value to --with-xml])
   fi
   ], [
   XML_HOME=/usr/local
-  if test ! -f "$XML_HOME/include/libxml/xmlreader.h"
+  if test ! -x "$XML_HOME/bin/xml2-config"
   then
     XML_HOME=/usr
+    if test ! -x "$XML_HOME/bin/xml2-config"
+    then
+      XML_HOME=""
+    fi
   fi
-  AC_MSG_RESULT([$XML_HOME])
+  if test "x$XML_HOME" != "x"; then
+    AC_MSG_RESULT([$XML_HOME])
+  else
+    AC_MSG_RESULT([not found])
+  fi
   ])
+fi
 
+found_xml="no"
+XMLCONF_VERSION=""
+XML_CPPFLAGS=""
+XML_LIBS=""
+if test "x$XML_HOME" != "x"; then
+  AC_MSG_CHECKING([xml2-config version])
+  XMLCONF_VERSION="`$XML_HOME/bin/xml2-config --version`"
+  if test "x%XMLCONF_VERSION" != "x"; then
+    AC_MSG_RESULT([$XMLCONF_VERSION])
+    found_xml="yes"
+    XML_CPPFLAGS="`$XML_HOME/bin/xml2-config --cflags`"
+    XML_LIBS="`$XML_HOME/bin/xml2-config --libs`"
+  else
+    AC_MSG_ERROR([xml2-config failed])
+  fi
+fi
+
+working_xml="no"
+if test "X$found_xml" != "Xno"; then
   AC_MSG_CHECKING([for xmlreader.h in $XML_HOME])
 
   if test ! -f "$XML_HOME/include/libxml2/libxml/xmlreader.h"; then
@@ -732,24 +763,21 @@ if test "$want_xml" != "no"; then
   else
     AC_MSG_RESULT([found])
     save_LIBS="$LIBS"
-    if test "$XML_HOME" != "/usr"; then
-	save_CPPFLAGS="$CPPFLAGS"
-	CPPFLAGS="$CPPFLAGS -I$XML_HOME/include"
-	save_LDFLAGS="$LDFLAGS"
-	LDFLAGS="$LDFLAGS -L$XML_HOME/lib"
-	AC_CHECK_LIB([xml2], [xmlTextReaderRead], [working_xml="yes";XML_CPPFLAGS="-I$XML_HOME/include/libxml2";XML_LIBS="-L$XML_HOME/lib -lxml2"], working_xml="no")
-	CPPFLAGS="$save_CPPFLAGS"
-	LDFLAGS="$save_LDFLAGS"
-    else
-	AC_CHECK_LIB([xml2], [xmlTextReaderRead], [working_xml="yes";XML_CPPFLAGS="-I$XML_HOME/include/libxml2";XML_LIBS="-lxml2"], working_xml="no")
-    fi
+    save_CPPFLAGS="$CPPFLAGS"
+    CPPFLAGS="$CPPFLAGS $XML_CPPFLAGS"
+    save_LDFLAGS="$LDFLAGS"
+    LDFLAGS="$LDFLAGS $XML_LIBS"
+
+    AC_CHECK_LIB([xml2], [xmlTextReaderRead], [working_xml="yes"], [working_xml="no"])
+
+    CPPFLAGS="$save_CPPFLAGS"
+    LDFLAGS="$save_LDFLAGS"
     LIBS="$save_LIBS"
   fi
 fi
 
 if test "$working_xml" = "yes"; then
   AC_DEFINE([HAVE_LIBXML2],1,[Define to 1 if you have the 'libxml2' library (-lxml2).])
-  AC_DEFINE([ENABLE_XML],1,[Define to 1 if xml supported features can be enabled.])
   AC_SUBST(XML_CPPFLAGS)
   AC_SUBST(XML_LIBS)
   AC_MSG_NOTICE([Compiling and linking with libxml2 from $XML_HOME])
@@ -765,8 +793,6 @@ else
   XML_LIBS=""
   AC_SUBST(XML_CPPFLAGS)
   AC_SUBST(XML_LIBS)
-  AC_DEFINE([HAVE_LIBXML2],0,[Define to 1 if you have the 'libxml2' library (-lxml2).])
-  AC_DEFINE([ENABLE_XML],0,[Define to 1 if xml supported features can be enabled.])
 fi
 
 AC_ARG_ENABLE([getaddrinfo],
@@ -1831,11 +1857,10 @@ CL_MSG_STATUS([bzip2       ],[$bzip_check],[$want_bzip2])
 CL_MSG_STATUS([zlib        ],[$ZLIB_HOME],[yes])
 CL_MSG_STATUS([unrar       ],[$want_unrar],[$want_unrar])
 if test "x$XML_LIBS" = "x"; then
-    xml_libs="no"
+    CL_MSG_STATUS([dmg and xar ],[no],[])
 else
-    xml_libs="yes"
+    CL_MSG_STATUS([dmg and xar ],[yes, from $XML_HOME],[])
 fi
-CL_MSG_STATUS([dmg and xar ],[$xml_libs],[])
 
 # Yep, downgrading the compiler avoids the bug too:
 # 4.0.x, and 4.1.0 are the known buggy versions

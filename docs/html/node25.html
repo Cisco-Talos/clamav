@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Closest mirrors</TITLE>
-<META NAME="description" CONTENT="Closest mirrors">
+<TITLE>Setting up auto-updating</TITLE>
+<META NAME="description" CONTENT="Setting up auto-updating">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -18,66 +18,129 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
+<LINK REL="next" HREF="node27.html">
 <LINK REL="previous" HREF="node24.html">
-<LINK REL="up" HREF="node24.html">
+<LINK REL="up" HREF="node20.html">
 <LINK REL="next" HREF="node26.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html525"
+<A NAME="tex2html539"
   HREF="node26.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html521"
-  HREF="node24.html">
+<A NAME="tex2html535"
+  HREF="node20.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html517"
+<A NAME="tex2html529"
   HREF="node24.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html523"
+<A NAME="tex2html537"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html526"
-  HREF="node26.html">ClamAV Active Malware Report</A>
-<B> Up:</B> <A NAME="tex2html522"
-  HREF="node24.html">Setting up auto-updating</A>
-<B> Previous:</B> <A NAME="tex2html518"
-  HREF="node24.html">Setting up auto-updating</A>
- &nbsp; <B>  <A NAME="tex2html524"
+<B> Next:</B> <A NAME="tex2html540"
+  HREF="node26.html">Closest mirrors</A>
+<B> Up:</B> <A NAME="tex2html536"
+  HREF="node20.html">Configuration</A>
+<B> Previous:</B> <A NAME="tex2html530"
+  HREF="node24.html">Testing</A>
+ &nbsp; <B>  <A NAME="tex2html538"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00054100000000000000">
-Closest mirrors</A>
-</H3>
-    The <code>DatabaseMirror</code> directive in the config file specifies the
-    database server <code>freshclam</code> will attempt (up to <code>MaxAttempts</code>
-    times) to download the database from. The default database mirror
-    is <TT><A NAME="tex2html18"
-  HREF="database.clamav.net">database.clamav.net</A></TT> but multiple directives are allowed.
-    In order to download the database from the closest mirror you should  
-    configure <code>freshclam</code> to use <TT><A NAME="tex2html19"
-  HREF="db.xx.clamav.net">db.xx.clamav.net</A></TT> where xx
-    represents your country code. For example, if your server is in "Ascension
-    Island" you should have the following lines included in <code>freshclam.conf</code>:
+<H2><A NAME="SECTION00054000000000000000"></A><A NAME="conf:freshclam"></A>
+<BR>
+Setting up auto-updating
+</H2>
+    <code>freshclam</code> is the automatic database update tool for Clam AntiVirus.
+    It can work in two modes:
+    
+<UL>
+<LI>interactive - on demand from command line
+</LI>
+<LI>daemon - silently in the background
+    
+</LI>
+</UL>
+    <code>freshclam</code> is advanced tool: it supports scripted updates (instead
+    of transferring the whole CVD file at each update it only transfers the
+    differences between the latest and the current database via a special
+    script), database version checks through DNS, proxy servers (with
+    authentication), digital signatures and various error scenarios.
+    <SPAN  CLASS="textbf">Quick test: run freshclam (as superuser) with no parameters
+    and check the output.</SPAN> If everything is OK you may create the log file in
+    /var/log (owned by <SPAN  CLASS="textit">clamav</SPAN> or another user <code>freshclam</code> will be
+    running as):
     <PRE>
-	DNSDatabaseInfo current.cvd.clamav.net
-	DatabaseMirror db.ac.clamav.net
-	DatabaseMirror database.clamav.net
+	# touch /var/log/freshclam.log
+	# chmod 600 /var/log/freshclam.log
+	# chown clamav /var/log/freshclam.log
 </PRE>
-    The second entry acts as a fallback in case the connection to the first
-    mirror fails for some reason. The full list of two-letters country codes
-    is available at <TT><A NAME="tex2html20"
-  HREF="http://www.iana.org/cctld/cctld-whois.htm">http://www.iana.org/cctld/cctld-whois.htm</A></TT>
+    Now you <SPAN  CLASS="textit">should</SPAN> edit the configuration file <code>freshclam.conf</code>
+    and point the <SPAN  CLASS="textit">UpdateLogFile</SPAN> directive to the log file. Finally, to
+    run <code>freshclam</code> in the daemon mode, execute:
+    <PRE>
+	# freshclam -d
+</PRE>
+    The other way is to use the <SPAN  CLASS="textit">cron</SPAN> daemon. You have to add the
+    following line to the crontab of <SPAN  CLASS="textbf">root</SPAN> or <SPAN  CLASS="textbf">clamav</SPAN> user:
+    <SMALL CLASS="SMALL">    </SMALL><PRE>
+N * * * *	/usr/local/bin/freshclam --quiet
+</PRE>
+    to check for a new database every hour. <SPAN  CLASS="textbf">N should be a
+    number between 3 and 57 of your choice. Please don't choose any multiple
+    of 10, because there are already too many clients using those time slots.</SPAN>
+    Proxy settings are only configurable via the configuration file and
+    <code>freshclam</code> will require strict permission settings for the config
+    file when <code>HTTPProxyPassword</code> is turned on.
+    <PRE>
+	HTTPProxyServer myproxyserver.com
+	HTTPProxyPort 1234
+	HTTPProxyUsername myusername
+	HTTPProxyPassword mypass
+</PRE>
+
 <P>
 <BR><HR>
+<!--Table of Child-Links-->
+<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
+
+<UL CLASS="ChildLinks">
+<LI><A NAME="tex2html541"
+  HREF="node26.html">Closest mirrors</A>
+</UL>
+<!--End of Table of Child-Links-->
+
+<DIV CLASS="navigation"><HR>
+<!--Navigation Panel-->
+<A NAME="tex2html539"
+  HREF="node26.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html535"
+  HREF="node20.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html529"
+  HREF="node24.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
+<A NAME="tex2html537"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
+<BR>
+<B> Next:</B> <A NAME="tex2html540"
+  HREF="node26.html">Closest mirrors</A>
+<B> Up:</B> <A NAME="tex2html536"
+  HREF="node20.html">Configuration</A>
+<B> Previous:</B> <A NAME="tex2html530"
+  HREF="node24.html">Testing</A>
+ &nbsp; <B>  <A NAME="tex2html538"
+  HREF="node1.html">Contents</A></B> </DIV>
+<!--End of Navigation Panel-->
 <ADDRESS>
-Tomasz Kojm
-2010-08-12
+Sourcefire 2013-12-24
 </ADDRESS>
 </BODY>
 </HTML>

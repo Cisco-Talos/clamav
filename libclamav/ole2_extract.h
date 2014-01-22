@@ -26,6 +26,26 @@
 #include "others.h"
 #include "uniq.h"
 
+struct ole2_list_node;
+typedef struct ole2_list_node
+{
+  uint32_t Val;
+  struct ole2_list_node *Next;
+} ole2_list_node_t;
+
+typedef struct ole2_list
+{
+  uint32_t Size;
+  ole2_list_node_t *Head;
+} ole2_list_t;
+
+int ole2_list_init(ole2_list_t*);
+int ole2_list_is_empty(ole2_list_t*);
+uint32_t ole2_list_size(ole2_list_t*);
+int ole2_list_push(ole2_list_t*, uint32_t);
+uint32_t ole2_list_pop(ole2_list_t*);
+int ole2_list_delete(ole2_list_t*);
+
 int cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **);
 
 #endif

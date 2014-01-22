@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>OpenAntiVirus</TITLE>
-<META NAME="description" CONTENT="OpenAntiVirus">
+<TITLE>clamav-config</TITLE>
+<META NAME="description" CONTENT="clamav-config">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -18,51 +18,55 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
+<LINK REL="next" HREF="node61.html">
 <LINK REL="previous" HREF="node59.html">
-<LINK REL="up" HREF="node34.html">
+<LINK REL="up" HREF="node49.html">
 <LINK REL="next" HREF="node61.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html985"
+<A NAME="tex2html1007"
   HREF="node61.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html981"
-  HREF="node34.html">
+<A NAME="tex2html1003"
+  HREF="node49.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html977"
+<A NAME="tex2html997"
   HREF="node59.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html983"
+<A NAME="tex2html1005"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html986"
-  HREF="node61.html">Core Team</A>
-<B> Up:</B> <A NAME="tex2html982"
-  HREF="node34.html">LibClamAV</A>
-<B> Previous:</B> <A NAME="tex2html978"
-  HREF="node59.html">Graphics</A>
- &nbsp; <B>  <A NAME="tex2html984"
+<B> Next:</B> <A NAME="tex2html1008"
+  HREF="node61.html">Example</A>
+<B> Up:</B> <A NAME="tex2html1004"
+  HREF="node49.html">API</A>
+<B> Previous:</B> <A NAME="tex2html998"
+  HREF="node59.html">Forking daemons</A>
+ &nbsp; <B>  <A NAME="tex2html1006"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00078000000000000000">
-OpenAntiVirus</A>
-</H2>
-    Our database includes the virus database (about 7000 signatures) from
-    OpenAntiVirus (<TT><A NAME="tex2html113"
-  HREF="http://OpenAntiVirus.org">http://OpenAntiVirus.org</A></TT>).
+<H3><A NAME="SECTION000731100000000000000">
+clamav-config</A>
+</H3>
+    Use <code>clamav-config</code> to check compilation information for libclamav.
+    <PRE>
+	$ clamav-config --libs
+	-L/usr/local/lib -lz -lbz2 -lgmp -lpthread
+	$ clamav-config --cflags
+	-I/usr/local/include -g -O2
+</PRE>
 
 <P>
 <BR><HR>
 <ADDRESS>
-Tomasz Kojm
-2010-08-12
+Sourcefire 2013-12-24
 </ADDRESS>
 </BODY>
 </HTML>
