@@ -1122,7 +1122,6 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
                     WRITE64(inst->dest, ptr_compose(stackid,
                                                     inst->u.three[1]+off));
                 } else {
-                    int32_t off;
                     READ64(ptr, inst->u.three[1]);
                     off += (ptr & 0x00000000ffffffff);
                     iptr = (ptr & 0xffffffff00000000) + (uint64_t)(off);
