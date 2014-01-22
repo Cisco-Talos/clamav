@@ -280,6 +280,11 @@ void free_sample(cli_flagged_sample_t *sample)
         free(sample->virus_name);
     }
 
+    if ((sample->sections) && (sample->sections->nsections)) {
+        free(sample->sections->sections);
+        free(sample->sections);
+    }
+
     free(sample);
 }
 
@@ -369,11 +374,6 @@ void clamav_stats_remove_sample(const char *virname, const unsigned char *md5, s
             sample->next->prev = sample->prev;
         if (sample == intel->samples)
             intel->samples = sample->next;
-
-        if ((sample->sections) && (sample->sections->nsections)) {
-            free(sample->sections->sections);
-            free(sample->sections);
-        }
 
         free_sample(sample);
         intel->nsamples--;
