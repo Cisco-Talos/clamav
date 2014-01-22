@@ -575,7 +575,7 @@ void cl_engine_set_clcb_stats_submit(struct cl_engine *engine, clcb_stats_submit
     engine->cb_stats_submit = callback;
 }
 
-void cl_engine_stats_set_cbdata(struct cl_engine *engine, void *cbdata)
+void cl_engine_set_stats_set_cbdata(struct cl_engine *engine, void *cbdata)
 {
     engine->stats_data = cbdata;
 }

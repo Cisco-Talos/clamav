@@ -10,12 +10,12 @@
 
 #include <sys/types.h>
 #include <fcntl.h>
-#include <sys/select.h>
 
 #include <errno.h>
 
 #if !defined(_WIN32)
 #include <sys/socket.h>
+#include <sys/select.h>
 #include <netinet/in.h>
 #include <netdb.h>
 #endif
