@@ -192,7 +192,5 @@ char *export_stats_to_json(struct cl_engine *engine, cli_intel_t *intel)
 
     snprintf(buf+curused, bufsz-curused, "\t]\n}\n");
 
-    cli_warnmsg("JSON object:\n%s\n", buf);
-
     return buf;
 }
