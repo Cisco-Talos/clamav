@@ -2979,7 +2979,7 @@ int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, cons
 }
 
 /* For map scans that may be forced to disk */
-int cli_map_scan(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx)
+int cli_map_scan(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx, cli_file_t type)
 {
     off_t old_off = map->nested_offset;
     size_t old_len = map->len;
@@ -3017,7 +3017,7 @@ int cli_map_scan(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx)
         }
 
         /* scan the temp file */
-        ret = cli_base_scandesc(fd, ctx, CL_TYPE_ANY);
+        ret = cli_base_scandesc(fd, ctx, type);
 
         /* remove the temp file, if needed */
         if (fd > -1) {
@@ -3033,13 +3033,13 @@ int cli_map_scan(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx)
     }
     else {
         /* Not forced to disk, use nested map */
-        ret = cli_map_scandesc(map, offset, length, ctx);
+        ret = cli_map_scandesc(map, offset, length, ctx, type);
     }
     return ret;
 }
 
 /* For map scans that are not forced to disk */
-int cli_map_scandesc(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx)
+int cli_map_scandesc(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx, cli_file_t type)
 {
     off_t old_off = map->nested_offset;
     size_t old_len = map->len;
@@ -3073,7 +3073,7 @@ int cli_map_scandesc(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx)
     map->len = length;
     map->real_len = map->nested_offset + length;
     if (CLI_ISCONTAINED(old_off, old_len, map->nested_offset, map->len)) {
-	ret = magic_scandesc(ctx, CL_TYPE_ANY);
+	ret = magic_scandesc(ctx, type);
     } else {
 	long long len1, len2;
 	len1 = old_off + old_len;
@@ -3096,7 +3096,7 @@ int cli_mem_scandesc(const void *buffer, size_t length, cli_ctx *ctx)
     if (!map) {
 	return CL_EMAP;
     }
-    ret = cli_map_scan(map, 0, length, ctx);
+    ret = cli_map_scan(map, 0, length, ctx, CL_TYPE_ANY);
     cl_fmap_close(map);
     return ret;
 }
@@ -3145,7 +3145,7 @@ static int scan_common(int desc, cl_fmap_t *map, const char **virname, unsigned 
 #endif
 
     cli_logg_setup(&ctx);
-    rc = map ? cli_map_scandesc(map, 0, map->len, &ctx) : cli_magic_scandesc(desc, &ctx);
+    rc = map ? cli_map_scandesc(map, 0, map->len, &ctx, CL_TYPE_ANY) : cli_magic_scandesc(desc, &ctx);
 
     if (ctx.options & CL_SCAN_ALLMATCHES) {
 	*virname = (char *)ctx.virname; /* temp hack for scanall mode until api augmentation */
