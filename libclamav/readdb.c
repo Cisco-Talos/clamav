@@ -3241,9 +3241,17 @@ int cl_engine_free(struct cl_engine *engine)
         engine->cb_stats_submit(engine, engine->stats_data);
 
 #ifdef CL_THREAD_SAFE
-    pthread_mutex_destroy(&(((cli_intel_t *)(engine->stats_data))->mutex));
+    if (engine->stats_data) {
+        cli_intel_t *intel = (cli_intel_t *)(engine->stats_data);
+
+        pthread_mutex_destroy(&(intel->mutex));
+    }
+
     pthread_mutex_unlock(&cli_ref_mutex);
 #endif
+    if (engine->stats_data)
+        free(engine->stats_data);
+
     if(engine->root) {
 	for(i = 0; i < CLI_MTARGETS; i++) {
 	    if((root = engine->root[i])) {

@@ -699,7 +699,6 @@ struct cl_settings *cl_engine_settings_copy(const struct cl_engine *engine)
     settings->cb_meta = engine->cb_meta;
     settings->engine_options = engine->engine_options;
 
-    settings->stats_data = engine->stats_data;
     settings->cb_stats_add_sample = engine->cb_stats_add_sample;
     settings->cb_stats_remove_sample = engine->cb_stats_remove_sample;
     settings->cb_stats_decrement_count = engine->cb_stats_decrement_count;
@@ -714,6 +713,8 @@ struct cl_settings *cl_engine_settings_copy(const struct cl_engine *engine)
 
 int cl_engine_settings_apply(struct cl_engine *engine, const struct cl_settings *settings)
 {
+    cli_intel_t *intel;
+
     engine->ac_only = settings->ac_only;
     engine->ac_mindepth = settings->ac_mindepth;
     engine->ac_maxdepth = settings->ac_maxdepth;
@@ -762,7 +763,12 @@ int cl_engine_settings_apply(struct cl_engine *engine, const struct cl_settings 
     engine->cb_hash = settings->cb_hash;
     engine->cb_meta = settings->cb_meta;
 
-    engine->stats_data = settings->stats_data;
+    intel = (cli_intel_t *)cli_calloc(1, sizeof(cli_intel_t));
+    intel->engine = engine;
+    intel->maxsamples = STATS_MAX_SAMPLES;
+    intel->maxmem = STATS_MAX_MEM;
+
+    engine->stats_data = (void *)intel;
     engine->cb_stats_add_sample = settings->cb_stats_add_sample;
     engine->cb_stats_remove_sample = settings->cb_stats_remove_sample;
     engine->cb_stats_decrement_count = settings->cb_stats_decrement_count;
