@@ -216,8 +216,16 @@ void clamav_stats_add_sample(const char *virname, const unsigned char *md5, size
         if (sections && sections->nsections && !(sample->sections)) {
             /* Copy the section data that has already been allocated. We don't care if calloc fails; just skip copying if it does. */
             sample->sections = calloc(1, sizeof(stats_section_t));
-            if ((sample->sections))
-                memcpy(sample->sections, sections, sizeof(stats_section_t));
+            if ((sample->sections)) {
+                sample->sections->sections = calloc(sections->nsections, sizeof(struct cli_section_hash));
+                if ((sample->sections->sections)) {
+                    memcpy(sample->sections->sections, sections->sections, sections->nsections * sizeof(struct cli_section_hash));
+                    sample->sections->nsections = sections->nsections;
+                } else {
+                    free(sample->sections);
+                    sample->sections = NULL;
+                }
+            }
         }
     }
 
@@ -261,6 +269,10 @@ void clamav_stats_flush(struct cl_engine *engine, void *cbdata)
 
     intel->samples = NULL;
     intel->nsamples = 0;
+    if (intel->hostid) {
+        free(intel->hostid);
+        intel->hostid = NULL;
+    }
 
 #ifdef CL_THREAD_SAFE
     err = pthread_mutex_unlock(&(intel->mutex));
@@ -346,6 +358,11 @@ void clamav_stats_submit(struct cl_engine *engine, void *cbdata)
         cli_warnmsg("====\tSUBMITTING STATS\t====\n");
         submit_post(STATS_HOST, STATS_PORT, "PUT", "/clamav/1/submit/stats", json);
         free(json);
+    }
+
+    if (myintel.hostid && !(intel->hostid)) {
+        free(myintel.hostid);
+        myintel.hostid = NULL;
     }
 }
 

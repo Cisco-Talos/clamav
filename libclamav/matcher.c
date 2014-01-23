@@ -546,6 +546,9 @@ int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx)
     if (ctx->engine->cb_stats_add_sample)
         ctx->engine->cb_stats_add_sample(cli_get_last_virus(ctx), digest, size, &sections, ctx->engine->stats_data);
 
+    if (sections.sections)
+        free(sections.sections);
+
     return CL_VIRUS;
 }
 
