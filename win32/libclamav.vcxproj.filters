@@ -129,6 +129,9 @@
     <ClCompile Include="..\libclamav\fsg.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\libclamav\gpt.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\libclamav\hashtab.c">
       <Filter>Source Files</Filter>
     </ClCompile>
