@@ -250,39 +250,58 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
 		    cli_dbgmsg("Recognized POSIX tar file\n");
 		    return CL_TYPE_POSIX_TAR;
 	    }
-	} else if (ret == CL_TYPE_ZIP) {
+	} else if (ret == CL_TYPE_ZIP && bread > 2*(SIZEOF_LH+5)) {
             const char lhdr_magic[4] = {0x50,0x4b,0x03,0x04};
-            const unsigned char * zbuff;
-            long zread, zoff = SIZEOF_LH;
-            int lhc = 1;
-
-            zbuff = buff + SIZEOF_LH;
-            zread = bread - SIZEOF_LH;
-
-            do {                
-                long zc = zread;
-                const char * zlh;
-                const unsigned char * zp = zbuff;
-               
-                while (zc > SIZEOF_LH && (zlh = cli_memstr(zp, zc, lhdr_magic, 4))) {
-                    lhc++;
-                    zp = zlh + SIZEOF_LH;
-                    zc = zp - zbuff;
-                    if (0 == memcmp(zp, "word/", 5)) {
-                        cli_dbgmsg("Recognized OOXML Word file\n");
-                        return CL_TYPE_OOXML_WORD;
-                    } else if (0 == memcmp(zp, "ppt/", 4)) {
-                        cli_dbgmsg("Recognized OOXML PPT file\n");
-                        return CL_TYPE_OOXML_PPT;                        
-                    } else if (0 == memcmp(zp, "xl/", 3)) {
-                        cli_dbgmsg("Recognized OOXML XL file\n");
-                        return CL_TYPE_OOXML_XL;
+            const unsigned char *zbuff = buff;
+            uint32_t zread = bread;
+            uint64_t zoff = bread;
+            const unsigned char * znamep = buff;
+            int32_t zlen = bread;
+            int lhc = 0;
+            int zi;
+            
+            for (zi=0; zi<32; zi++) {
+                znamep = cli_memstr(znamep, zlen, lhdr_magic, 4);
+                if (NULL != znamep) {
+                    znamep += SIZEOF_LH;
+                    zlen = zread - (znamep - zbuff);
+                    if (zlen > 4) { /* Ensure we've mapped for OOXML filename compare */
+                        if (0 == memcmp(znamep, "xl/", 3)) {
+                            cli_dbgmsg("Recognized OOXML XL file\n");
+                            return CL_TYPE_OOXML_XL;
+                        } else if (0 == memcmp(znamep, "ppt/", 4)) {
+                            cli_dbgmsg("Recognized OOXML PPT file\n");
+                            return CL_TYPE_OOXML_PPT;                        
+                        } else if (0 == memcmp(znamep, "word/", 5)) {
+                            cli_dbgmsg("Recognized OOXML Word file\n");
+                            return CL_TYPE_OOXML_WORD;
+                        }
+                        if (++lhc > 2)
+                            break; /* only check first three zip headers */
                     }
-                    //cli_dbgmsg("zip file name:%.10s\n", zp); 
+                    else {
+                        znamep = NULL; /* force to map more */
+                    }
                 }
-                zoff += zread - SIZEOF_LH;
-                zread = MIN(MAGIC_BUFFER_SIZE, map->len-zoff);
-            } while (zread > SIZEOF_LH && lhc < 3 && (zbuff = fmap_need_off_once(map, zoff, zread)));
+
+                if (znamep == NULL) {
+                    if (map->len-zoff > SIZEOF_LH) {
+                        zoff -= SIZEOF_LH+5; /* remap for SIZEOF_LH+filelen for header overlap map boundary */ 
+                        zread = MIN(MAGIC_BUFFER_SIZE, map->len-zoff);
+                        zbuff = fmap_need_off_once(map, zoff, zread);
+                        if (zbuff == NULL) {
+                            cli_dbgmsg("cli_filetype2: error mapping data for OOXML check\n");
+                            return CL_TYPE_ERROR;
+                        }
+                        zoff += zread;
+                        znamep = zbuff;
+                        zlen = zread;
+                    }
+                    else {
+                        break; /* end of data */
+                    }
+                }
+            }
         }
     }
 
