@@ -87,9 +87,6 @@
 /* "default FD_SETSIZE value" */
 #undef DEFAULT_FD_SETSIZE
 
-/* Define to 1 if xml supported features can be enabled. */
-#undef ENABLE_XML
-
 /* use fanotify */
 #undef FANOTIFY
 
