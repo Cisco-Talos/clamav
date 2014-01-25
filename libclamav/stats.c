@@ -356,9 +356,7 @@ void clamav_stats_submit(struct cl_engine *engine, void *cbdata)
 
     if (json) {
         cli_warnmsg("====\tSUBMITTING STATS\t====\n");
-#if 0
         submit_post(STATS_HOST, STATS_PORT, "PUT", "/clamav/1/submit/stats", json);
-#endif
         free(json);
     }
 
