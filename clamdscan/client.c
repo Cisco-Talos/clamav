@@ -83,38 +83,50 @@ static int isremote(const struct optstruct *opts) {
     int s, ret;
     const struct optstruct *opt;
     static struct sockaddr_in testsock;
+    char *ipaddr;
 
 #ifndef _WIN32
     if((opt = optget(clamdopts, "LocalSocket"))->enabled) {
-	memset((void *)&nixsock, 0, sizeof(nixsock));
-	nixsock.sun_family = AF_UNIX;
-	strncpy(nixsock.sun_path, opt->strarg, sizeof(nixsock.sun_path));
-	nixsock.sun_path[sizeof(nixsock.sun_path)-1]='\0';
-	mainsa = (struct sockaddr *)&nixsock;
-	mainsasz = sizeof(nixsock);
-	return 0;
+        memset((void *)&nixsock, 0, sizeof(nixsock));
+        nixsock.sun_family = AF_UNIX;
+        strncpy(nixsock.sun_path, opt->strarg, sizeof(nixsock.sun_path));
+        nixsock.sun_path[sizeof(nixsock.sun_path)-1]='\0';
+        mainsa = (struct sockaddr *)&nixsock;
+        mainsasz = sizeof(nixsock);
+        return 0;
     }
 #endif
     if(!(opt = optget(clamdopts, "TCPSocket"))->enabled)
-	return 0;
+        return 0;
 
     mainsa = (struct sockaddr *)&tcpsock;
     mainsasz = sizeof(tcpsock);
 
-    if (cfg_tcpsock(clamdopts, &tcpsock, INADDR_LOOPBACK) == -1) {
-	logg("!Can't lookup clamd hostname: %s.\n", strerror(errno));
-	mainsa = NULL;
-	return 0;
+    opt = optget(clamdopts, "TCPAddr");
+    while (opt) {
+        ipaddr = (!strcmp(opt->strarg, "any") ? NULL : opt->strarg);
+
+        if (cfg_tcpsock(ipaddr, clamdopts, &tcpsock, INADDR_LOOPBACK) == -1) {
+            logg("!Can't lookup clamd hostname: %s.\n", strerror(errno));
+            mainsa = NULL;
+            return 0;
+        }
+
+        memcpy((void *)&testsock, (void *)&tcpsock, sizeof(testsock));
+        testsock.sin_port = htons(INADDR_ANY);
+        if((s = socket(testsock.sin_family, SOCK_STREAM, 0)) < 0) {
+            logg("isremote: socket() returning: %s.\n", strerror(errno));
+            mainsa = NULL;
+            return 0;
+        }
+
+        ret = (bind(s, (struct sockaddr *)&testsock, (socklen_t)sizeof(testsock)) != 0);
+        closesocket(s);
+        if (ret)
+            return ret;
+
+        opt = opt->nextarg;
     }
-    memcpy((void *)&testsock, (void *)&tcpsock, sizeof(testsock));
-    testsock.sin_port = htons(INADDR_ANY);
-    if((s = socket(testsock.sin_family, SOCK_STREAM, 0)) < 0) {
-      logg("isremote: socket() returning: %s.\n", strerror(errno));
-      mainsa = NULL;
-      return 0;
-    }
-    ret = (bind(s, (struct sockaddr *)&testsock, (socklen_t)sizeof(testsock)) != 0);
-    closesocket(s);
     return ret;
 }
 

@@ -319,25 +319,28 @@ int match_regex(const char *filename, const char *pattern)
 	return match;
 }
 
-int cfg_tcpsock(const struct optstruct *opts, struct sockaddr_in *tcpsock, in_addr_t defaultbind)
+int cfg_tcpsock(char *ipaddr, const struct optstruct *opts, struct sockaddr_in *tcpsock, in_addr_t defaultbind)
 {
     struct hostent *he;
     const struct optstruct *opt = optget(opts, "TCPSocket");
 
     if(opt->numarg > 65535)
-	return -1;
+        return -1;
 
     memset(tcpsock, 0, sizeof(*tcpsock));
     tcpsock->sin_family = AF_INET;
     tcpsock->sin_port = htons(opt->numarg);
 
-    if(!(opt = optget(opts, "TCPAddr"))->enabled) {
-	tcpsock->sin_addr.s_addr = htonl(defaultbind);
-	return 0;
+    if(!(ipaddr)) {
+        tcpsock->sin_addr.s_addr = htonl(defaultbind);
+        return 0;
     }
-    he = gethostbyname(opt->strarg);
-    if(!he)
-	return -1;
+
+    he = gethostbyname(ipaddr);
+    if(!he) {
+        cli_errmsg("gethostbyname: %s\n", strerror(errno));
+        return -1;
+    }
 
     tcpsock->sin_addr = *(struct in_addr *) he->h_addr_list[0];
     return 0;

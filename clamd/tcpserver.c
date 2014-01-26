@@ -46,50 +46,77 @@
 #include "server.h"
 #include "tcpserver.h"
 
-int tcpserver(const struct optstruct *opts)
+int tcpserver(int **lsockets, unsigned int *nlsockets, char *ipaddr, const struct optstruct *opts)
 {
-    struct sockaddr_in server;
+    struct addrinfo hints, *info, *p;
+    int *sockets;
     int sockfd, backlog;
-    char *estr;
-    int true = 1;
+    int *t;
+    char *estr, port[10];
+    int yes = 1;
+    int res;
 
-    if (cfg_tcpsock(opts, &server, INADDR_ANY) == -1) {
-	logg("!TCP: Couldn't configure socket, check your configuration\n");
-	return -1;
+    sockets = *lsockets;
+
+    snprintf(port, sizeof(port), "%lld", optget(opts, "TCPSocket")->numarg);
+
+    memset(&hints, 0x00, sizeof(struct addrinfo));
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = AI_PASSIVE;
+
+    if ((res = getaddrinfo(ipaddr, port, &hints, &info))) {
+        logg("!TCP: getaddrinfo: %s\n", gai_strerror(res));
+        return -1;
     }
 
-    if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-	estr = strerror(errno);
-	logg("!TCP: socket() error: %s\n", estr);
-	return -1;
+    for (p = info; p != NULL; p = p->ai_next) {
+        t = realloc(sockets, sizeof(int) * (*nlsockets + 1));
+        if (!(t)) {
+            return -1;
+        }
+        sockets = t;
+
+        if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
+            estr = strerror(errno);
+            logg("!TCP: socket() error: %s\n", estr);
+            continue;
+        }
+
+        if(setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (void *) &yes, sizeof(yes)) == -1) {
+            logg("!TCP: setsocktopt(SO_REUSEADDR) error: %s\n", strerror(errno));
+        }
+
+        if(bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
+            estr = strerror(errno);
+            logg("!TCP: bind() error when trying to listen on [%s]:%s: %s\n", ipaddr, port, estr);
+            closesocket(sockfd);
+
+            continue;
+        } else {
+            if((ipaddr))
+                logg("#TCP: Bound to address %s on port %u\n", ipaddr, (unsigned int) optget(opts, "TCPSocket")->numarg);
+            else
+                logg("#TCP: Bound to port %u\n", (unsigned int) optget(opts, "TCPSocket")->numarg);
+        }
+
+        backlog = optget(opts, "MaxConnectionQueueLength")->numarg;
+        logg("#TCP: Setting connection queue length to %d\n", backlog);
+
+        if(listen(sockfd, backlog) == -1) {
+            estr = strerror(errno);
+            logg("!TCP: listen() error: %s\n", estr);
+            closesocket(sockfd);
+
+            continue;
+        }
+
+        sockets[*nlsockets] = sockfd;
+        (*nlsockets)++;
     }
 
-    if(setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (void *) &true, sizeof(true)) == -1) {
-	logg("!TCP: setsocktopt(SO_REUSEADDR) error: %s\n", strerror(errno));
-    }
+    freeaddrinfo(info);
+    *lsockets = sockets;
 
-    if(bind(sockfd, (struct sockaddr *) &server, (socklen_t)sizeof(struct sockaddr_in)) == -1) {
-	estr = strerror(errno);
-	logg("!TCP: bind() error: %s\n", estr);
-	closesocket(sockfd);
-	return -1;
-    } else {
-	const struct optstruct *taddr = optget(opts, "TCPAddr");
-	if(taddr->enabled)
-	    logg("#TCP: Bound to address %s on port %u\n", taddr->strarg, (unsigned int) optget(opts, "TCPSocket")->numarg);
-	else
-	    logg("#TCP: Bound to port %u\n", (unsigned int) optget(opts, "TCPSocket")->numarg);
-    }
-
-    backlog = optget(opts, "MaxConnectionQueueLength")->numarg;
-    logg("#TCP: Setting connection queue length to %d\n", backlog);
-
-    if(listen(sockfd, backlog) == -1) {
-	estr = strerror(errno);
-	logg("!TCP: listen() error: %s\n", estr);
-	closesocket(sockfd);
-	return -1;
-    }
-
-    return sockfd;
+    return 0;
 }

@@ -217,7 +217,7 @@ const struct clam_option __clam_options[] = {
     { "TCPSocket", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, -1, NULL, 0, OPT_CLAMD, "A TCP port number the daemon will listen on.", "3310" },
 
     /* FIXME: add a regex for IP addr */
-    { "TCPAddr", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD, "By default clamd binds to INADDR_ANY.\nThis option allows you to restrict the TCP address and provide\nsome degree of protection from the outside world.", "127.0.0.1" },
+    { "TCPAddr", NULL, 0, TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD, "By default clamd binds to INADDR_ANY.\nThis option allows you to restrict the TCP address and provide\nsome degree of protection from the outside world.", "127.0.0.1" },
 
     { "MaxConnectionQueueLength", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, 200, NULL, 0, OPT_CLAMD, "Maximum length the queue of pending connections may grow to.", "30" },
 
