@@ -117,7 +117,8 @@ int main(int argc, char **argv)
     char *pua_cats = NULL, *pt;
     int ret, tcpsock = 0, localsock = 0, i, min_port, max_port;
     unsigned int sigs = 0;
-    int lsockets[2], nlsockets = 0;
+    int *lsockets=NULL;
+    unsigned int nlsockets = 0;
     unsigned int dboptions = 0;
 #ifdef C_LINUX
     STATBUF sb;
@@ -537,15 +538,48 @@ int main(int argc, char **argv)
         }
 
         if(tcpsock) {
-            if ((lsockets[nlsockets] = tcpserver(opts)) == -1) {
-                ret = 1;
-                break;
+            int *t;
+
+            opt = optget(opts, "TCPAddr");
+            if (opt->enabled) {
+                int breakout = 0;
+
+                while (opt && opt->strarg) {
+                    char *ipaddr = (!strcmp(opt->strarg, "all") ? NULL : opt->strarg);
+
+                    if (tcpserver(&lsockets, &nlsockets, ipaddr, opts) == -1) {
+                        ret = 1;
+                        breakout = 1;
+                        break;
+                    }
+
+                    opt = opt->nextarg;
+                }
+
+                if (breakout)
+                    break;
+            } else {
+                if (tcpserver(&lsockets, &nlsockets, NULL, opts) == -1) {
+                    ret = 1;
+                    break;
+                }
             }
-            nlsockets++;
         }
 #ifndef _WIN32
         if(localsock) {
+            int *t;
             mode_t sock_mode, umsk = umask(0777); /* socket is created with 000 to avoid races */
+
+            t = realloc(lsockets, sizeof(int) * (nlsockets + 1));
+            if (!(t)) {
+                if ((lsockets))
+                    free(lsockets);
+
+                ret = 1;
+                break;
+            }
+            lsockets = t;
+
             if ((lsockets[nlsockets] = localserver(opts)) == -1) {
                 ret = 1;
                 umask(umsk);
