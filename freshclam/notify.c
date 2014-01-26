@@ -50,7 +50,7 @@ clamd_connect (const char *cfgfile, const char *option)
     struct sockaddr_un server;
 #endif
 #ifdef HAVE_GETADDRINFO
-    struct addrinfo hints, *res;
+    struct addrinfo hints, *res, *p;
     char port[6];
     const char *addr;
     int ret;
@@ -61,7 +61,6 @@ clamd_connect (const char *cfgfile, const char *option)
     struct optstruct *opts;
     const struct optstruct *opt;
     int sockd;
-    const char *socktype;
 
 
     if ((opts = optparse (cfgfile, 0, NULL, 1, OPT_CLAMD, 0, NULL)) == NULL)
@@ -74,7 +73,6 @@ clamd_connect (const char *cfgfile, const char *option)
 #ifndef	_WIN32
     if ((opt = optget (opts, "LocalSocket"))->enabled)
     {
-        socktype = "UNIX";
         memset(&server, 0x00, sizeof(server));
         server.sun_family = AF_UNIX;
         strncpy (server.sun_path, opt->strarg, sizeof (server.sun_path));
@@ -104,57 +102,54 @@ clamd_connect (const char *cfgfile, const char *option)
 #endif
     if ((opt = optget (opts, "TCPSocket"))->enabled)
     {
-        socktype = "TCP";
-
 #ifdef HAVE_GETADDRINFO
         memset (&hints, 0, sizeof (hints));
-/*
-#ifdef SUPPORT_IPv6
-	hints.ai_family = AF_UNSPEC;
-#else
-*/
-        hints.ai_family = AF_INET;
+        hints.ai_family = AF_UNSPEC;
         hints.ai_socktype = SOCK_STREAM;
+        hints.ai_flags = AI_PASSIVE;
+
         snprintf (port, sizeof (port), "%u", (unsigned int) opt->numarg);
         port[5] = 0;
 
-        if ((opt = optget (opts, "TCPAddr"))->enabled)
-            addr = opt->strarg;
-        else
-            addr = NULL;
+        opt = optget(opts, "TCPAddr");
+        while (opt) {
+            ret = getaddrinfo (opt->strarg, port, &hints, &res);
 
-        ret = getaddrinfo (addr, port, &hints, &res);
+            if (ret)
+            {
+                logg ("!%s: Can't resolve hostname %s (%s)\n", option,
+                      opt->strarg ? opt->strarg : "",
+                      (ret ==
+                       EAI_SYSTEM) ? strerror (errno) : gai_strerror (ret));
+                opt = opt->nextarg;
+                continue;
+            }
 
-        if (ret)
-        {
-            logg ("!%s: Can't resolve hostname %s (%s)\n", option,
-                  addr ? addr : "",
-                  (ret ==
-                   EAI_SYSTEM) ? strerror (errno) : gai_strerror (ret));
-            optfree (opts);
-            return -1;
-        }
+            for (p = res; p != NULL; p = p->ai_next) {
+                if ((sockd = socket (p->ai_family, p->ai_socktype, p->ai_protocol)) < 0)
+                {
+                    perror ("socket()");
+                    logg ("!%s: Can't create TCP socket to connect to %s\n", option, opt->strarg);
+                    continue;
+                }
 
-        if ((sockd = socket (res->ai_family, SOCK_STREAM, 0)) < 0)
-        {
-            perror ("socket()");
-            logg ("!%s: Can't create TCP socket\n", option);
-            optfree (opts);
+                if (connect (sockd, p->ai_addr, p->ai_addrlen) == -1)
+                {
+                    perror ("connect()");
+                    closesocket (sockd);
+                    logg ("!%s: Can't connect to clamd on %s:%s\n", option,
+                          addr ? addr : "localhost", port);
+                    continue;
+                }
+
+                optfree(opts);
+                freeaddrinfo(res);
+                return sockd;
+            }
+
             freeaddrinfo (res);
-            return -1;
+            opt = opt->nextarg;
         }
-
-        if (connect (sockd, res->ai_addr, res->ai_addrlen) == -1)
-        {
-            perror ("connect()");
-            closesocket (sockd);
-            logg ("!%s: Can't connect to clamd on %s:%s\n", option,
-                  addr ? addr : "localhost", port);
-            optfree (opts);
-            freeaddrinfo (res);
-            return -1;
-        }
-        freeaddrinfo (res);
 
 #else /* IPv4 */
 
