@@ -52,30 +52,69 @@
 #include "proto.h"
 #include "client.h"
 
-extern struct sockaddr *mainsa;
-extern int mainsasz;
 extern unsigned long int maxstream;
 int printinfected;
 extern struct optstruct *clamdopts;
+#ifndef _WIN32
+extern struct sockaddr_un nixsock;
+#endif
 
 static const char *scancmd[] = { "CONTSCAN", "MULTISCAN", "INSTREAM", "FILDES", "ALLMATCHSCAN" };
 
 /* Connects to clamd 
  * Returns a FD or -1 on error */
 int dconnect() {
-    int sockd;
+    int sockd, res;
+    const struct optstruct *opt;
+    struct addrinfo hints, *info, *p;
+    char port[10];
 
-    if((sockd = socket(mainsa->sa_family, SOCK_STREAM, 0)) < 0) {
-	logg("!Can't create the socket: %s\n", strerror(errno));
-	return -1;
+#ifndef _WIN32
+    opt = optget(clamdopts, "LocalSocket");
+    if (opt->enabled) {
+        if ((sockd = socket(AF_UNIX, SOCK_STREAM, 0)) >= 0) {
+            if (connect(sockd, (struct sockaddr *)&nixsock, sizeof(nixsock)) == 0)
+                return sockd;
+            else
+                close(sockd);
+        }
+    }
+#endif
+
+    snprintf(port, sizeof(port), "%lld", optget(clamdopts, "TCPSocket")->numarg);
+
+    opt = optget(clamdopts, "TCPAddr");
+    while (opt) {
+        memset(&hints, 0x00, sizeof(struct addrinfo));
+        hints.ai_family = AF_UNSPEC;
+        hints.ai_socktype = SOCK_STREAM;
+        hints.ai_flags = AI_PASSIVE;
+
+        if ((res = getaddrinfo(opt->strarg, port, &hints, &info))) {
+            continue;
+        }
+
+        for (p = info; p != NULL; p = p->ai_next) {
+            if((sockd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) < 0) {
+                logg("!Can't create the socket: %s\n", strerror(errno));
+                continue;
+            }
+
+            if(connect(sockd, p->ai_addr, p->ai_addrlen) < 0) {
+                closesocket(sockd);
+                continue;
+            }
+
+            freeaddrinfo(info);
+            return sockd;
+        }
+
+        freeaddrinfo(info);
+
+        opt = opt->nextarg;
     }
 
-    if(connect(sockd, (struct sockaddr *)mainsa, mainsasz) < 0) {
-	closesocket(sockd);
-	logg("!Can't connect to clamd: %s\n", strerror(errno));
-	return -1;
-    }
-    return sockd;
+    return -1;
 }
 
 /* Issues an INSTREAM command to clamd and streams the given file

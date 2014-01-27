@@ -64,17 +64,10 @@
 #include "client.h"
 #include "proto.h"
 
-#ifndef INADDR_LOOPBACK
-#define INADDR_LOOPBACK 0x7f000001
-#endif
-
-struct sockaddr *mainsa = NULL;
-int mainsasz;
 unsigned long int maxstream;
 #ifndef _WIN32
-static struct sockaddr_un nixsock;
+struct sockaddr_un nixsock;
 #endif
-static struct sockaddr_in tcpsock;
 extern struct optstruct *clamdopts;
 
 /* Inits the communication layer
@@ -83,39 +76,84 @@ static int isremote(const struct optstruct *opts) {
     int s, ret;
     const struct optstruct *opt;
     static struct sockaddr_in testsock;
+    char *ipaddr, port[10];
+    struct addrinfo hints, *info, *p;
+    int res;
 
 #ifndef _WIN32
     if((opt = optget(clamdopts, "LocalSocket"))->enabled) {
-	memset((void *)&nixsock, 0, sizeof(nixsock));
-	nixsock.sun_family = AF_UNIX;
-	strncpy(nixsock.sun_path, opt->strarg, sizeof(nixsock.sun_path));
-	nixsock.sun_path[sizeof(nixsock.sun_path)-1]='\0';
-	mainsa = (struct sockaddr *)&nixsock;
-	mainsasz = sizeof(nixsock);
-	return 0;
+        memset((void *)&nixsock, 0, sizeof(nixsock));
+        nixsock.sun_family = AF_UNIX;
+        strncpy(nixsock.sun_path, opt->strarg, sizeof(nixsock.sun_path));
+        nixsock.sun_path[sizeof(nixsock.sun_path)-1]='\0';
+        return 0;
     }
 #endif
     if(!(opt = optget(clamdopts, "TCPSocket"))->enabled)
-	return 0;
+        return 0;
 
-    mainsa = (struct sockaddr *)&tcpsock;
-    mainsasz = sizeof(tcpsock);
+    snprintf(port, sizeof(port), "%lld", optget(clamdopts, "TCPSocket")->numarg);
 
-    if (cfg_tcpsock(clamdopts, &tcpsock, INADDR_LOOPBACK) == -1) {
-	logg("!Can't lookup clamd hostname: %s.\n", strerror(errno));
-	mainsa = NULL;
-	return 0;
+    opt = optget(clamdopts, "TCPAddr");
+    while (opt) {
+        if (opt->enabled)
+            ipaddr = (!strcmp(opt->strarg, "any") ? NULL : opt->strarg);
+        else
+            ipaddr = NULL;
+
+        memset(&hints, 0x00, sizeof(struct addrinfo));
+        hints.ai_family = AF_UNSPEC;
+        hints.ai_socktype = SOCK_STREAM;
+        hints.ai_flags = AI_PASSIVE;
+
+        if ((res = getaddrinfo(ipaddr, port, &hints, &info))) {
+            logg("!Can't lookup clamd hostname: %s\n", gai_strerror(res));
+            continue;
+        }
+
+        for (p = info; p != NULL; p = p->ai_next) {
+            if((s = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) < 0) {
+                logg("isremote: socket() returning: %s.\n", strerror(errno));
+                continue;
+            }
+
+            switch (p->ai_family) {
+            case AF_INET:
+                ((struct sockaddr_in *)(p->ai_addr))->sin_port = htons(INADDR_ANY);
+                break;
+            case AF_INET6:
+                ((struct sockaddr_in6 *)(p->ai_addr))->sin6_port = htons(INADDR_ANY);
+                break;
+            default:
+                break;
+            }
+
+            ret = bind(s, p->ai_addr, p->ai_addrlen);
+            if (ret) {
+                if (errno == EADDRINUSE) {
+                    /* 
+                     * If we can't bind, then either we're attempting to listen on an IP that isn't
+                     * ours or that clamd is already listening on.
+                     */
+                    closesocket(s);
+                    freeaddrinfo(info);
+                    return 0;
+                }
+
+                closesocket(s);
+                freeaddrinfo(info);
+                return 1;
+            }
+
+            closesocket(s);
+        }
+
+        freeaddrinfo(info);
+
+        opt = opt->nextarg;
     }
-    memcpy((void *)&testsock, (void *)&tcpsock, sizeof(testsock));
-    testsock.sin_port = htons(INADDR_ANY);
-    if((s = socket(testsock.sin_family, SOCK_STREAM, 0)) < 0) {
-      logg("isremote: socket() returning: %s.\n", strerror(errno));
-      mainsa = NULL;
-      return 0;
-    }
-    ret = (bind(s, (struct sockaddr *)&testsock, (socklen_t)sizeof(testsock)) != 0);
-    closesocket(s);
-    return ret;
+
+    return 0;
 }
 
 
@@ -174,7 +212,6 @@ int get_clamd_version(const struct optstruct *opts)
 	struct RCVLN rcv;
 
     isremote(opts);
-    if(!mainsa) return 2;
     if((sockd = dconnect()) < 0) return 2;
     recvlninit(&rcv, sockd);
 
@@ -202,7 +239,6 @@ int reload_clamd_database(const struct optstruct *opts)
 	struct RCVLN rcv;
 
     isremote(opts);
-    if(!mainsa) return 2;
     if((sockd = dconnect()) < 0) return 2;
     recvlninit(&rcv, sockd);
 
@@ -248,11 +284,6 @@ int client(const struct optstruct *opts, int *infected, int *err)
     if (optget(clamdopts, "FollowFileSymlinks")->enabled)
 	flags |= CLI_FTW_FOLLOW_FILE_SYMLINK;
     flags |= CLI_FTW_TRIM_SLASHES;
-
-    if(!mainsa) {
-	logg("!Clamd is not configured properly.\n");
-	return 2;
-    }
 
     *infected = 0;
 
