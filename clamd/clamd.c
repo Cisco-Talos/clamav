@@ -671,6 +671,12 @@ int main(int argc, char **argv)
         }
 #endif
 
+        if (nlsockets == 0) {
+            logg("!Not listening on any interfaces\n");
+            ret = 1;
+            break;
+        }
+
         ret = recvloop_th(lsockets, nlsockets, engine, dboptions, opts);
 
     } while (0);

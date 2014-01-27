@@ -55,6 +55,7 @@ int tcpserver(int **lsockets, unsigned int *nlsockets, char *ipaddr, const struc
     char *estr, port[10];
     int yes = 1;
     int res;
+    unsigned int i=0;
 
     sockets = *lsockets;
 
@@ -65,12 +66,23 @@ int tcpserver(int **lsockets, unsigned int *nlsockets, char *ipaddr, const struc
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
 
+#if C_LINUX
+    if (!(ipaddr)) {
+        /*
+         * By default, getaddrinfo() will return 0.0.0.0 if NULL is passed in as the first parameter.
+         * Binding to 0.0.0.0 will prevent us from also binding IPv6 ::0 (errno = EADDRINUSE). However,
+         * if we bind to ::0 (or shorthand, ::), then Linux will bind to both IPv4 and IPv6.
+         */
+        ipaddr = "::";
+    }
+#endif
+
     if ((res = getaddrinfo(ipaddr, port, &hints, &info))) {
         logg("!TCP: getaddrinfo: %s\n", gai_strerror(res));
         return -1;
     }
 
-    for (p = info; p != NULL; p = p->ai_next) {
+    for (p = info; p != NULL; p = p->ai_next, i++) {
         t = realloc(sockets, sizeof(int) * (*nlsockets + 1));
         if (!(t)) {
             return -1;
@@ -89,7 +101,8 @@ int tcpserver(int **lsockets, unsigned int *nlsockets, char *ipaddr, const struc
 
         if(bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
             estr = strerror(errno);
-            logg("!TCP: bind() error when trying to listen on [%s]:%s: %s\n", ipaddr, port, estr);
+            if (ipaddr || i == 0)
+                logg("!TCP: bind() error when trying to listen on [%s]:%s: %s\n", ipaddr, port, estr);
             closesocket(sockfd);
 
             continue;
