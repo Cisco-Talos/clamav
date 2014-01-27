@@ -222,7 +222,7 @@ static int gpt_validate_header(cli_ctx *ctx, struct gpt_header hdr, size_t secto
 
 int cli_scangpt(cli_ctx *ctx)
 {
-    struct gpt_header hdr;
+    struct gpt_header hdr, chdr;
     struct gpt_partition_entry gpe;
     int ret = 0, func_ret = 0;
     size_t sectorsize, maplen, part_size;
@@ -272,6 +272,15 @@ int cli_scangpt(cli_ctx *ctx)
             cli_dbgmsg("cli_scangpt: Secondary GPT header is invalid\n");
             cli_dbgmsg("cli_scangpt: Disk is unusable\n");
             return CL_EFORMAT;
+        }
+    }
+    else {
+        /* check validity of secondary header; still using the primary */
+        if (fmap_readn(*ctx->fmap, &chdr, pos, sizeof(chdr)) != sizeof(chdr)) {
+            cli_dbgmsg("cli_scangpt: Invalid secondary GPT header\n");
+        }
+        else  if (gpt_validate_header(ctx, chdr, sectorsize)) {
+            cli_dbgmsg("cli_scangpt: Secondary GPT header is invalid\n");
         }
     }
 
@@ -343,7 +352,7 @@ int cli_scangpt(cli_ctx *ctx)
 
             /* send the partition to cli_map_scan */
             part_off = gpe.firstLBA * sectorsize;
-            part_size = (gpe.lastLBA - gpe.firstLBA) * sectorsize;
+            part_size = (gpe.lastLBA - gpe.firstLBA + 1) * sectorsize;
             ret = cli_map_scan(*ctx->fmap, part_off, part_size, ctx, CL_TYPE_PART_ANY);
             if (ret != CL_CLEAN) {
                 if ((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS)) {
