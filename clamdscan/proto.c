@@ -55,6 +55,9 @@
 extern unsigned long int maxstream;
 int printinfected;
 extern struct optstruct *clamdopts;
+#ifndef _WIN32
+extern struct sockaddr_un nixsock;
+#endif
 
 static const char *scancmd[] = { "CONTSCAN", "MULTISCAN", "INSTREAM", "FILDES", "ALLMATCHSCAN" };
 
@@ -65,6 +68,18 @@ int dconnect() {
     const struct optstruct *opt;
     struct addrinfo hints, *info, *p;
     char port[10];
+
+#ifndef _WIN32
+    opt = optget(clamdopts, "LocalSocket");
+    if (opt->enabled) {
+        if ((sockd = socket(AF_UNIX, SOCK_STREAM, 0)) >= 0) {
+            if (connect(sockd, (struct sockaddr *)&nixsock, sizeof(nixsock)) == 0)
+                return sockd;
+            else
+                close(sockd);
+        }
+    }
+#endif
 
     snprintf(port, sizeof(port), "%lld", optget(clamdopts, "TCPSocket")->numarg);
 

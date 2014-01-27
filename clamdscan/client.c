@@ -66,7 +66,7 @@
 
 unsigned long int maxstream;
 #ifndef _WIN32
-static struct sockaddr_un nixsock;
+struct sockaddr_un nixsock;
 #endif
 extern struct optstruct *clamdopts;
 
@@ -117,16 +117,35 @@ static int isremote(const struct optstruct *opts) {
                 continue;
             }
 
-            ret = (bind(s, (struct sockaddr *)&testsock, (socklen_t)sizeof(testsock)) != 0);
-            closesocket(s);
+            switch (p->ai_family) {
+            case AF_INET:
+                ((struct sockaddr_in *)(p->ai_addr))->sin_port = htons(INADDR_ANY);
+                break;
+            case AF_INET6:
+                ((struct sockaddr_in6 *)(p->ai_addr))->sin6_port = htons(INADDR_ANY);
+                break;
+            default:
+                break;
+            }
+
+            ret = bind(s, p->ai_addr, p->ai_addrlen);
             if (ret) {
-                /* 
-                 * If we can't bind, then either we're attempting to listen on an IP that isn't
-                 * ours or that clamd is already listening on.
-                 */
+                if (errno == EADDRINUSE) {
+                    /* 
+                     * If we can't bind, then either we're attempting to listen on an IP that isn't
+                     * ours or that clamd is already listening on.
+                     */
+                    closesocket(s);
+                    freeaddrinfo(info);
+                    return 0;
+                }
+
+                closesocket(s);
                 freeaddrinfo(info);
                 return 1;
             }
+
+            closesocket(s);
         }
 
         freeaddrinfo(info);
@@ -134,7 +153,7 @@ static int isremote(const struct optstruct *opts) {
         opt = opt->nextarg;
     }
 
-    return 1;
+    return 0;
 }
 
 
