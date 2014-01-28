@@ -417,7 +417,7 @@ libclamav_la_SOURCES = \
 	asn1.c \
 	asn1.h \
 	fpu.c \
-	fpu.h
+	fpu.h \
 	stats.c \
 	stats.h \
 	www.c \
