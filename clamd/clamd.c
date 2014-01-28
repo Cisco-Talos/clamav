@@ -698,6 +698,8 @@ int main(int argc, char **argv)
     }
 #endif
 
+    free(lsockets);
+
     logg_close();
     optfree(opts);
 
