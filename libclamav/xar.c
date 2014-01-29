@@ -55,7 +55,7 @@ static int xar_cleanup_temp_file(cli_ctx *ctx, int fd, char * tmpname)
     if (tmpname != NULL) {
         if (!ctx->engine->keeptmp) {
             if (cli_unlink(tmpname)) {
-                cli_errmsg("cli_scanxar: error unlinking tmpfile %s\n", tmpname); 
+                cli_dbgmsg("cli_scanxar: error unlinking tmpfile %s\n", tmpname); 
                 rc = CL_EUNLINK;
             }
         }
@@ -79,13 +79,13 @@ static int xar_get_numeric_from_xml_element(xmlTextReaderPtr reader, long * valu
         if (numstr) {
             *value = atol((const char *)numstr);
             if (*value < 0) {
-                cli_errmsg("cli_scanxar: XML element value %li\n", *value);
+                cli_dbgmsg("cli_scanxar: XML element value %li\n", *value);
                 return CL_EFORMAT;
             }
             return CL_SUCCESS;
         }
     }
-    cli_errmsg("cli_scanxar: No text for XML element\n");
+    cli_dbgmsg("cli_scanxar: No text for XML element\n");
     return CL_EFORMAT;
 }
 
@@ -104,7 +104,7 @@ static void xar_get_checksum_values(xmlTextReaderPtr reader, unsigned char ** ck
 
     *hash = XAR_CKSUM_NONE;
     if (style == NULL) {
-        cli_errmsg("cli_scaxar: xmlTextReaderGetAttribute no style attribute "
+        cli_dbgmsg("cli_scaxar: xmlTextReaderGetAttribute no style attribute "
                    "for checksum element\n");
     } else {
         cli_dbgmsg("cli_scanxar: checksum algorithm is %s.\n", style);        
@@ -125,11 +125,11 @@ static void xar_get_checksum_values(xmlTextReaderPtr reader, unsigned char ** ck
             cli_dbgmsg("cli_scanxar: checksum value is %s.\n", *cksum);
         } else {
             *cksum = NULL;
-            cli_errmsg("cli_scanxar: xmlTextReaderConstValue() returns NULL for checksum value.\n");           
+            cli_dbgmsg("cli_scanxar: xmlTextReaderConstValue() returns NULL for checksum value.\n");           
         }
     }
     else
-        cli_errmsg("cli_scanxar: No text for XML checksum element.\n");
+        cli_dbgmsg("cli_scanxar: No text for XML checksum element.\n");
 }
 
 /*
@@ -194,7 +194,7 @@ static int xar_get_toc_data_values(xmlTextReaderPtr reader, long *length, long *
                        xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT) {
                 xmlChar * style = xmlTextReaderGetAttribute(reader, (const xmlChar *)"style");
                 if (style == NULL) {
-                    cli_errmsg("cli_scaxar: xmlTextReaderGetAttribute no style attribute "
+                    cli_dbgmsg("cli_scaxar: xmlTextReaderGetAttribute no style attribute "
                                "for encoding element\n");
                     *encoding = CL_TYPE_ANY;
                 } else if (xmlStrEqual(style, (const xmlChar *)"application/x-gzip")) {
@@ -213,7 +213,7 @@ static int xar_get_toc_data_values(xmlTextReaderPtr reader, long *length, long *
                     cli_dbgmsg("cli_scanxar: encoding = application/x-xz.\n");
                     *encoding = CL_TYPE_XZ;
                 } else {
-                    cli_errmsg("cli_scaxar: unknown style value=%s for encoding element\n", style);
+                    cli_dbgmsg("cli_scaxar: unknown style value=%s for encoding element\n", style);
                     *encoding = CL_TYPE_ANY;
                 }
 
@@ -275,7 +275,7 @@ static int xar_scan_subdocuments(xmlTextReaderPtr reader, cli_ctx *ctx)
     while (xmlTextReaderRead(reader) == 1) {
         name = xmlTextReaderConstLocalName(reader);
         if (name == NULL) {
-            cli_errmsg("cli_scanxar: xmlTextReaderConstLocalName() no name.\n");
+            cli_dbgmsg("cli_scanxar: xmlTextReaderConstLocalName() no name.\n");
             rc = CL_EFORMAT;
             break;
         }
@@ -286,7 +286,7 @@ static int xar_scan_subdocuments(xmlTextReaderPtr reader, cli_ctx *ctx)
             xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT) {
             subdoc = xmlTextReaderReadInnerXml(reader);
             if (subdoc == NULL) {
-                cli_errmsg("cli_scanxar: no content in subdoc element.\n");
+                cli_dbgmsg("cli_scanxar: no content in subdoc element.\n");
                 xmlTextReaderNext(reader);
                 continue;
             }
@@ -300,11 +300,11 @@ static int xar_scan_subdocuments(xmlTextReaderPtr reader, cli_ctx *ctx)
             /* make a file to leave if --leave-temps in effect */
             if(ctx->engine->keeptmp) {
                 if ((rc = cli_gentempfd(ctx->engine->tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
-                    cli_errmsg("cli_scanxar: Can't create temporary file for subdocument.\n");
+                    cli_warnmsg("cli_scanxar: Can't create temporary file for subdocument.\n");
                 } else {
                     cli_dbgmsg("cli_scanxar: Writing subdoc to temp file %s.\n", tmpname);
                     if (cli_writen(fd, subdoc, subdoc_len) < 0) {
-                        cli_errmsg("cli_scanxar: cli_writen error writing subdoc temporary file.\n");
+                        cli_dbgmsg("cli_scanxar: cli_writen error writing subdoc temporary file.\n");
                         rc = CL_EWRITE;
                     }
                     rc = xar_cleanup_temp_file(ctx, fd, tmpname);
@@ -348,7 +348,7 @@ static void xar_hash_update(void * hash_ctx, const void * data, unsigned long si
         return;
     case XAR_CKSUM_MD5:
         if (0 == cli_md5_update(hash_ctx, data, size)) {
-            cli_errmsg("cli_scanxar: cli_md5_update invalid return.\n");
+            cli_dbgmsg("cli_scanxar: cli_md5_update invalid return.\n");
             return;
         }
         return;
@@ -426,7 +426,7 @@ int cli_scanxar(cli_ctx *ctx)
 
     /* retrieve xar header */
     if (fmap_readn(*ctx->fmap, &hdr, 0, sizeof(hdr)) != sizeof(hdr)) {
-        cli_errmsg("cli_scanxar: Invalid header, too short.\n");
+        cli_dbgmsg("cli_scanxar: Invalid header, too short.\n");
         return CL_EFORMAT;
     }
     hdr.magic = be32_to_host(hdr.magic);
@@ -435,7 +435,7 @@ int cli_scanxar(cli_ctx *ctx)
         cli_dbgmsg("cli_scanxar: Matched magic\n");
     }
     else {
-        cli_errmsg("cli_scanxar: Invalid magic\n");
+        cli_dbgmsg("cli_scanxar: Invalid magic\n");
         return CL_EFORMAT;
     }
     hdr.size = be16_to_host(hdr.size);
@@ -454,13 +454,13 @@ int cli_scanxar(cli_ctx *ctx)
     /* Uncompress TOC */
     strm.next_in = (unsigned char *)fmap_need_off_once(*ctx->fmap, hdr.size, hdr.toc_length_compressed);
     if (strm.next_in == NULL) {
-        cli_errmsg("cli_scanxar: fmap_need_off_once fails on TOC.\n");
-        return CL_EFORMAT;
+        cli_dbgmsg("cli_scanxar: fmap_need_off_once fails on TOC.\n");
+        return CL_EREAD;
     }
     strm.avail_in = hdr.toc_length_compressed; 
     toc = cli_malloc(hdr.toc_length_decompressed+1);
     if (toc == NULL) {
-        cli_errmsg("cli_scanxar: cli_malloc fails on TOC decompress buffer.\n");
+        cli_dbgmsg("cli_scanxar: cli_malloc fails on TOC decompress buffer.\n");
         return CL_EMEM;
     }
     toc[hdr.toc_length_decompressed] = '\0';
@@ -468,19 +468,19 @@ int cli_scanxar(cli_ctx *ctx)
     strm.next_out = (unsigned char *)toc;
     rc = inflateInit(&strm);
     if (rc != Z_OK) {
-        cli_errmsg("cli_scanxar:inflateInit error %i \n", rc);
+        cli_dbgmsg("cli_scanxar:inflateInit error %i \n", rc);
         rc = CL_EFORMAT;
         goto exit_toc;
     }    
     rc = inflate(&strm, Z_SYNC_FLUSH);
     if (rc != Z_OK && rc != Z_STREAM_END) {
-        cli_errmsg("cli_scanxar:inflate error %i \n", rc);
+        cli_dbgmsg("cli_scanxar:inflate error %i \n", rc);
         rc = CL_EFORMAT;
         goto exit_toc;
     }
     rc = inflateEnd(&strm);
     if (rc != Z_OK) {
-        cli_errmsg("cli_scanxar:inflateEnd error %i \n", rc);
+        cli_dbgmsg("cli_scanxar:inflateEnd error %i \n", rc);
         rc = CL_EFORMAT;
         goto exit_toc;
     }
@@ -501,11 +501,11 @@ int cli_scanxar(cli_ctx *ctx)
     /* make a file to leave if --leave-temps in effect */
     if(ctx->engine->keeptmp) {
         if ((rc = cli_gentempfd(ctx->engine->tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
-            cli_errmsg("cli_scanxar: Can't create temporary file for TOC.\n");
+            cli_dbgmsg("cli_scanxar: Can't create temporary file for TOC.\n");
             goto exit_toc;
         }
         if (cli_writen(fd, toc, hdr.toc_length_decompressed) < 0) {
-            cli_errmsg("cli_scanxar: cli_writen error writing TOC.\n");
+            cli_dbgmsg("cli_scanxar: cli_writen error writing TOC.\n");
             rc = CL_EWRITE;
             xar_cleanup_temp_file(ctx, fd, tmpname);
             goto exit_toc;
@@ -517,13 +517,13 @@ int cli_scanxar(cli_ctx *ctx)
 
     reader = xmlReaderForMemory(toc, hdr.toc_length_decompressed, "noname.xml", NULL, 0);
     if (reader == NULL) {
-        cli_errmsg("cli_scanxar: xmlReaderForMemory error for TOC\n");
+        cli_dbgmsg("cli_scanxar: xmlReaderForMemory error for TOC\n");
         goto exit_toc;
     }
 
     rc = xar_scan_subdocuments(reader, ctx);
     if (rc != CL_SUCCESS) {
-        cli_errmsg("xar_scan_subdocuments returns %i.\n", rc);
+        cli_dbgmsg("xar_scan_subdocuments returns %i.\n", rc);
         goto exit_reader;
     }
 
@@ -550,7 +550,7 @@ int cli_scanxar(cli_ctx *ctx)
         at = offset + hdr.toc_length_compressed + hdr.size;
 
         if ((rc = cli_gentempfd(ctx->engine->tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
-            cli_errmsg("cli_scanxar: Can't generate temporary file.\n");
+            cli_dbgmsg("cli_scanxar: Can't generate temporary file.\n");
             goto exit_reader;
         }
 
@@ -567,7 +567,7 @@ int cli_scanxar(cli_ctx *ctx)
             /* inflate gzip directly because file segments do not contain magic */
             memset(&strm, 0, sizeof(strm));
             if ((rc = inflateInit(&strm)) != Z_OK) {
-                cli_errmsg("cli_scanxar: InflateInit failed: %d\n", rc);
+                cli_dbgmsg("cli_scanxar: InflateInit failed: %d\n", rc);
                 rc = CL_EFORMAT;
                 goto exit_tmpfile;
             }
@@ -594,7 +594,7 @@ int cli_scanxar(cli_ctx *ctx)
                     //cli_dbgmsg("cli_scanxar: inflating.....\n");
                     inf = inflate(&strm, Z_SYNC_FLUSH);
                     if (inf != Z_OK && inf != Z_STREAM_END && inf != Z_BUF_ERROR) {
-                        cli_errmsg("cli_scanxar: inflate error %i %s.\n", inf, strm.msg?strm.msg:"");
+                        cli_dbgmsg("cli_scanxar: inflate error %i %s.\n", inf, strm.msg?strm.msg:"");
                         at = map->len;
                         rc = CL_EFORMAT;
                         goto exit_tmpfile;
@@ -605,7 +605,7 @@ int cli_scanxar(cli_ctx *ctx)
                     xar_hash_update(e_hash_ctx, buff, bytes, e_hash);
                    
                     if (cli_writen(fd, buff, bytes) < 0) {
-                        cli_errmsg("cli_scanxar: cli_writen error file %s.\n", tmpname);
+                        cli_dbgmsg("cli_scanxar: cli_writen error file %s.\n", tmpname);
                         inflateEnd(&strm);
                         rc = CL_EWRITE;
                         goto exit_tmpfile;
@@ -637,7 +637,7 @@ int cli_scanxar(cli_ctx *ctx)
                 
                 memset(&lz, 0, sizeof(lz));
                 if (buff == NULL) {
-                    cli_errmsg("cli_scanxar: memory request for lzma decompression buffer fails.\n");
+                    cli_dbgmsg("cli_scanxar: memory request for lzma decompression buffer fails.\n");
                     rc = CL_EMEM;
                     goto exit_tmpfile;
                     
@@ -647,7 +647,7 @@ int cli_scanxar(cli_ctx *ctx)
                 if (blockp == NULL) {
                     char errbuff[128];
                     cli_strerror(errno, errbuff, sizeof(errbuff));
-                    cli_errmsg("cli_scanxar: Can't read %li bytes @ %li, errno:%s.\n",
+                    cli_dbgmsg("cli_scanxar: Can't read %li bytes @ %li, errno:%s.\n",
                                length, at, errbuff);
                     rc = CL_EREAD;
                     __lzma_wrap_free(NULL, buff);
@@ -661,7 +661,7 @@ int cli_scanxar(cli_ctx *ctx)
 
                 rc = cli_LzmaInit(&lz, 0);
                 if (rc != LZMA_RESULT_OK) {
-                    cli_errmsg("cli_scanxar: cli_LzmaInit() fails: %i.\n", rc);
+                    cli_dbgmsg("cli_scanxar: cli_LzmaInit() fails: %i.\n", rc);
                     rc = CL_EFORMAT;
                     __lzma_wrap_free(NULL, buff);
                     goto exit_tmpfile;
@@ -682,7 +682,7 @@ int cli_scanxar(cli_ctx *ctx)
                     if (lz.next_in == NULL) {
                         char errbuff[128];
                         cli_strerror(errno, errbuff, sizeof(errbuff));
-                        cli_errmsg("cli_scanxar: Can't read %li bytes @ %li, errno: %s.\n",
+                        cli_dbgmsg("cli_scanxar: Can't read %li bytes @ %li, errno: %s.\n",
                                    length, at, errbuff);
                         rc = CL_EREAD;
                         __lzma_wrap_free(NULL, buff);
@@ -692,7 +692,7 @@ int cli_scanxar(cli_ctx *ctx)
 
                     rc = cli_LzmaDecode(&lz);
                     if (rc != LZMA_RESULT_OK && rc != LZMA_STREAM_END) {
-                        cli_errmsg("cli_scanxar: cli_LzmaDecode() fails: %i.\n", rc);
+                        cli_dbgmsg("cli_scanxar: cli_LzmaDecode() fails: %i.\n", rc);
                         rc = CL_EFORMAT;
                         __lzma_wrap_free(NULL, buff);
                         cli_LzmaShutdown(&lz);
@@ -757,7 +757,7 @@ int cli_scanxar(cli_ctx *ctx)
                 if (!(blockp = (void*)fmap_need_off_once(map, at, length))) {
                     char errbuff[128];
                     cli_strerror(errno, errbuff, sizeof(errbuff));
-                    cli_errmsg("cli_scanxar: Can't read %li bytes @ %li, errno:%s.\n",
+                    cli_dbgmsg("cli_scanxar: Can't read %li bytes @ %li, errno:%s.\n",
                                length, at, errbuff);
                     rc = CL_EREAD;
                     goto exit_tmpfile;
@@ -810,7 +810,7 @@ int cli_scanxar(cli_ctx *ctx)
                 if (!SCAN_ALL)
                     goto exit_tmpfile;
             } else if (rc != CL_BREAK) {
-                cli_errmsg("cli_scanxar: cli_magic_scandesc error %i\n", rc);
+                cli_dbgmsg("cli_scanxar: cli_magic_scandesc error %i\n", rc);
                 goto exit_tmpfile;
             }
         }
