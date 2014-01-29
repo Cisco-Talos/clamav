@@ -2822,7 +2822,7 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
             return CL_EFORMAT;
 
     if (flags == CL_CHECKFP_PE_FLAG_NONE)
-        return 0;
+        return CL_VIRUS;
 
     if(!(DCONF & PE_CONF_CATALOG))
         return CL_EFORMAT;

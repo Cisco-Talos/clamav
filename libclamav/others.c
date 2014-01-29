@@ -535,6 +535,13 @@ int cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field field, long
                 cli_cache_init(engine);
         }
         break;
+    case CL_ENGINE_DISABLE_PE_STATS:
+        if (num) {
+            engine->engine_options |= ENGINE_OPTIONS_DISABLE_PE_STATS;
+        } else {
+            engine->engine_options &= ~(ENGINE_OPTIONS_DISABLE_PE_STATS);
+        }
+        break;
 	default:
 	    cli_errmsg("cl_engine_set_num: Incorrect field number\n");
 	    return CL_EARG;
