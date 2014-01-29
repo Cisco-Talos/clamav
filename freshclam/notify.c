@@ -52,7 +52,6 @@ clamd_connect (const char *cfgfile, const char *option)
 #ifdef HAVE_GETADDRINFO
     struct addrinfo hints, *res, *p;
     char port[6];
-    const char *addr;
     int ret;
 #else
     struct sockaddr_in server2;
@@ -129,7 +128,7 @@ clamd_connect (const char *cfgfile, const char *option)
                 if ((sockd = socket (p->ai_family, p->ai_socktype, p->ai_protocol)) < 0)
                 {
                     perror ("socket()");
-                    logg ("!%s: Can't create TCP socket to connect to %s\n", option, opt->strarg);
+                    logg ("!%s: Can't create TCP socket to connect to %s\n", option, opt->strarg ? opt->strarg : "localhost");
                     continue;
                 }
 
@@ -138,7 +137,7 @@ clamd_connect (const char *cfgfile, const char *option)
                     perror ("connect()");
                     closesocket (sockd);
                     logg ("!%s: Can't connect to clamd on %s:%s\n", option,
-                          addr ? addr : "localhost", port);
+                          opt->strarg ? opt->strarg : "localhost", port);
                     continue;
                 }
 
