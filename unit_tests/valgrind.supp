@@ -40,3 +40,12 @@
     fun:_dl_catch_error
     ...
 }
+{
+    mbox-leak-01
+    Memcheck:Leak
+    ...
+    fun:tableInsert
+    fun:messageSetMimeType
+    fun:parseEmailHeader
+    ...
+}
