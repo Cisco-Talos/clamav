@@ -166,6 +166,7 @@ typedef enum {
 #define ENGINE_OPTIONS_NONE             0x0
 #define ENGINE_OPTIONS_DISABLE_CACHE    0x1
 #define ENGINE_OPTIONS_FORCE_TO_DISK    0x2
+#define ENGINE_OPTIONS_DISABLE_PE_STATS 0x3
 
 struct cl_engine;
 struct cl_settings;
@@ -202,7 +203,8 @@ enum cl_engine_field {
     CL_ENGINE_MAX_SCRIPTNORMALIZE,  /* uint64_t */
     CL_ENGINE_MAX_ZIPTYPERCG,       /* uint64_t */
     CL_ENGINE_FORCETODISK,          /* uint32_t */
-    CL_ENGINE_DISABLE_CACHE         /* uint32_t */
+    CL_ENGINE_DISABLE_CACHE,        /* uint32_t */
+    CL_ENGINE_DISABLE_PE_STATS      /* uint32_t */
 };
 
 enum bytecode_security {

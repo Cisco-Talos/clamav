@@ -574,6 +574,14 @@ int scanmanager(const struct optstruct *opts)
     if (optget(opts, "disable-cache")->enabled)
         cl_engine_set_num(engine, CL_ENGINE_DISABLE_CACHE, 1);
 
+    if (optget(opts, "disable-pe-stats")->enabled) {
+        cl_engine_set_num(engine, CL_ENGINE_DISABLE_PE_STATS, 1);
+    }
+
+    if (optget(opts, "disable-stats")->enabled) {
+        cl_engine_set_clcb_stats_add_sample(engine, NULL);
+    }
+
     if (optget(opts, "stats-host-id")->enabled) {
         char *p = optget(opts, "stats-host-id")->strarg;
 
