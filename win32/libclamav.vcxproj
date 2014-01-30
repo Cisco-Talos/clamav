@@ -400,7 +400,6 @@
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">/D "LIBXML_STATIC" %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <ClCompile Include="..\libclamav\www.c" />
-    <ClCompile Include="..\libclamav\xar.c" />
     <ClCompile Include="..\libclamav\xz_iface.c" />
     <ClCompile Include="..\libclamav\yc.c" />
     <ClCompile Include="..\shared\getopt.c" />
