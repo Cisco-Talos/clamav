@@ -85,6 +85,9 @@ int tcpserver(int **lsockets, unsigned int *nlsockets, char *ipaddr, const struc
     for (p = info; p != NULL; p = p->ai_next, i++) {
         t = realloc(sockets, sizeof(int) * (*nlsockets + 1));
         if (!(t)) {
+            for (i=0; i < *nlsockets; i++)
+                close(sockets[i]);
+
             return -1;
         }
         sockets = t;
