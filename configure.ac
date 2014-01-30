@@ -687,7 +687,7 @@ else
 
     save_LDFLAGS="$LDFLAGS"
     LDFLAGS="-L$LIBCURL_HOME/lib -lcurl"
-    AC_CHECK_LIB([curl], [curl_easy_init], [curl_msg="";have_curl="yes";CLAMSUBMIT_LIBS="$CLAMSUBMIT_LIBS $CURL_LDFLAGS"],
+    AC_CHECK_LIB([curl], [curl_easy_init], [curl_msg="";have_curl="yes";CLAMSUBMIT_LIBS="$CLAMSUBMIT_LIBS $CURL_LDFLAGS";CLAMSUBMIT_CFLAGS="$CLAMSUBMIT_CFLAGS $CURL_CPPFLAGS"],
             [AC_MSG_WARN([Your libcurl is misconfigured. Please use the web interface for submitting FPs/FNs.])])
 fi
 
@@ -1242,6 +1242,7 @@ AC_SUBST([CLAMDSCAN_LIBS])
 AC_SUBST([TH_SAFE])
 AC_SUBST([THREAD_LIBS])
 AC_SUBST([CLAMSUBMIT_LIBS])
+AC_SUBST([CLAMSUBMIT_CFLAGS])
 
 dnl --enable-milter
 if test "$have_milter" = "yes"; then
