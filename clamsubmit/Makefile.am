@@ -29,7 +29,7 @@ clamsubmit_SOURCES = \
     $(top_srcdir)/shared/misc.h \
 	clamsubmit.c
 
-AM_CFLAGS=@WERR_CFLAGS@
+AM_CFLAGS=@WERR_CFLAGS@ @CLAMSUBMIT_CFLAGS@
 DEFS = @DEFS@ -DCL_NOTHREADS
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
 LIBS = $(top_builddir)/libclamav/libclamav.la @CLAMSUBMIT_LIBS@ @THREAD_LIBS@

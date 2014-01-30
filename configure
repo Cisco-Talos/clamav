@@ -659,6 +659,7 @@ HAVE_MILTER_FALSE
 HAVE_MILTER_TRUE
 BUILD_CLAMD_FALSE
 BUILD_CLAMD_TRUE
+CLAMSUBMIT_CFLAGS
 CLAMSUBMIT_LIBS
 THREAD_LIBS
 TH_SAFE
@@ -17030,7 +17031,7 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_curl_curl_easy_init" >&5
 $as_echo "$ac_cv_lib_curl_curl_easy_init" >&6; }
 if test "x$ac_cv_lib_curl_curl_easy_init" = xyes; then :
-  curl_msg="";have_curl="yes";CLAMSUBMIT_LIBS="$CLAMSUBMIT_LIBS $CURL_LDFLAGS"
+  curl_msg="";have_curl="yes";CLAMSUBMIT_LIBS="$CLAMSUBMIT_LIBS $CURL_LDFLAGS";CLAMSUBMIT_CFLAGS="$CLAMSUBMIT_CFLAGS $CURL_CPPFLAGS"
 else
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Your libcurl is misconfigured. Please use the web interface for submitting FPs/FNs." >&5
 $as_echo "$as_me: WARNING: Your libcurl is misconfigured. Please use the web interface for submitting FPs/FNs." >&2;}
@@ -18105,6 +18106,7 @@ $as_echo "#define C_GNU_HURD 1" >>confdefs.h
 *)
     ;;
 esac
+
 
 
 
