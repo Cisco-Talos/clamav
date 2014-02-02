@@ -112,6 +112,7 @@ const struct clam_option __clam_options[] = {
     { NULL, "build", 'b', TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", "" },
     { NULL, "max-bad-sigs", 0, TYPE_NUMBER, MATCH_NUMBER, 3000, NULL, 0, OPT_SIGTOOL, "Maximum number of mismatched signatures when building a CVD. Zero disables this limit.", "3000" },
     { NULL, "flevel", 0, TYPE_NUMBER, MATCH_NUMBER, CL_FLEVEL, NULL, 0, OPT_SIGTOOL, "Feature level to put in the CVD", "" },
+    { NULL, "cvd-version", 0, TYPE_NUMBER, MATCH_NUMBER, 0, NULL, 0, OPT_SIGTOOL, "Version number of the CVD to build", "" },
     { NULL, "unsigned", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_SIGTOOL, "", "" },
     { NULL, "no-cdiff", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_SIGTOOL, "", "" },
     { NULL, "server", 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", "" },

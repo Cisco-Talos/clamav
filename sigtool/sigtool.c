@@ -793,6 +793,8 @@ static int build(const struct optstruct *opts)
 	version = oldcvd->version + 1;
 	oldsigs = oldcvd->sigs;
 	cl_cvdfree(oldcvd);
+    } else if (optget(opts, "cvd-version")->numarg != 0) {
+        version = optget(opts, "cvd-version")->numarg;
     } else {
 	mprintf("Version number: ");
 	if(scanf("%u", &version) == EOF) {
@@ -2927,11 +2929,12 @@ static void help(void)
     mprintf("    --build=NAME [cvd] -b NAME             build a CVD file\n");
     mprintf("    --max-bad-sigs=NUMBER                  Maximum number of mismatched signatures when building a CVD. Default: 3000\n");
     mprintf("    --flevel=FLEVEL                        Specify a custom flevel. Default: %u\n", cl_retflevel());
+    mprintf("    --cvd-version=NUMBER                   Specify the version number to use for the build. Default is to prompt if no old CVD can me found\n");
     mprintf("    --no-cdiff                             Don't generate .cdiff file\n");
     mprintf("    --unsigned                             Create unsigned database file (.cud)\n");
     mprintf("    --print-certs=FILE                     Print Authenticode details from a PE\n");
     mprintf("    --server=ADDR                          ClamAV Signing Service address\n");
-    mprintf("    --datadir=DIR				Use DIR as default database directory\n");
+    mprintf("    --datadir=DIR                          Use DIR as default database directory\n");
     mprintf("    --unpack=FILE          -u FILE         Unpack a CVD/CLD file\n");
     mprintf("    --unpack-current=SHORTNAME             Unpack local CVD/CLD into cwd\n");
     mprintf("    --list-sigs[=FILE]     -l[FILE]        List signature names\n");
