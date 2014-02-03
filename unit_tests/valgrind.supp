@@ -24,6 +24,14 @@
     fun:*
 }
 {
+    llvm-03
+    Memcheck:Leak
+    fun:_Znwm
+    ...
+    fun:_ZN4llvm12PassRegistry12registerPassERKNS_8PassInfoE
+    ...
+}
+{
     dl_catch_error-leak-1
     Memcheck:Leak
     ...
