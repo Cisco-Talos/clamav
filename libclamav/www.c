@@ -24,7 +24,7 @@
 #include "libclamav/clamav.h"
 #include "libclamav/www.h"
 
-int connect_host(const char *host, const char *port, int useAsync)
+int connect_host(const char *host, const char *port, uint32_t timeout, int useAsync)
 {
     int sockfd;
     struct addrinfo hints, *servinfo, *p;
@@ -67,7 +67,7 @@ int connect_host(const char *host, const char *port, int useAsync)
                 FD_SET(sockfd, &write_fds);
 
                 /* TODO: Make this timeout configurable */
-                tv.tv_sec = 10;
+                tv.tv_sec = timeout;
                 tv.tv_usec = 0;
                 if (select(sockfd + 1, &read_fds, &write_fds, NULL, &tv) <= 0) {
                     close(sockfd);
@@ -150,7 +150,7 @@ char *encode_data(const char *postdata)
     return buf;
 }
 
-void submit_post(const char *host, const char *port, const char *method, const char *url, const char *postdata)
+void submit_post(const char *host, const char *port, const char *method, const char *url, const char *postdata, uint32_t timeout)
 {
     int sockfd, n;
     unsigned int i;
@@ -214,7 +214,7 @@ void submit_post(const char *host, const char *port, const char *method, const c
         free(encoded);
     }
 
-    sockfd = connect_host(host, port, 1);
+    sockfd = connect_host(host, port, timeout, 1);
     if (sockfd < 0) {
         free(buf);
         return;
@@ -235,7 +235,7 @@ void submit_post(const char *host, const char *port, const char *method, const c
          * while it's being processed). Give a ten-second timeout so we don't have a major
          * impact on scanning.
          */
-        tv.tv_sec = 10;
+        tv.tv_sec = timeout;
         tv.tv_usec = 0;
         if ((n = select(sockfd+1, &readfds, NULL, NULL, &tv)) <= 0)
             break;

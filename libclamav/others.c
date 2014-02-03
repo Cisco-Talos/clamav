@@ -400,6 +400,7 @@ struct cl_engine *cl_engine_new(void)
     intel->engine = new;
     intel->maxsamples = STATS_MAX_SAMPLES;
     intel->maxmem = STATS_MAX_MEM;
+    intel->timeout = 10;
     new->stats_data = intel;
     new->cb_stats_add_sample = clamav_stats_add_sample;
     new->cb_stats_submit = clamav_stats_submit;
@@ -542,6 +543,12 @@ int cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field field, long
             engine->engine_options &= ~(ENGINE_OPTIONS_DISABLE_PE_STATS);
         }
         break;
+    case CL_ENGINE_STATS_TIMEOUT:
+        if ((engine->stats_data)) {
+            cli_intel_t *intel = (cli_intel_t *)(engine->stats_data);
+
+            intel->timeout = (uint32_t)num;
+        }
 	default:
 	    cli_errmsg("cl_engine_set_num: Incorrect field number\n");
 	    return CL_EARG;
