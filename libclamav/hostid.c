@@ -155,8 +155,6 @@ struct device *get_devices(void)
     /* This is the Linux version of getting the MAC addresses */
 #if defined(SIOCGIFHWADDR)
     for (i=0; i < ndevices; i++) {
-        cli_warnmsg("devices[%lu]: %s\n", i, devices[i].name);
-
         if (!(devices[i].name))
             continue;
 
