@@ -438,6 +438,10 @@ int main(int argc, char **argv)
             cl_engine_set_num(engine, CL_ENGINE_DISABLE_PE_STATS, 1);
         }
 
+        if (optget(opts, "StatsTimeout")->enabled) {
+            cl_engine_set_num(engine, CL_ENGINE_STATS_TIMEOUT, optget(opts, "StatsTimeout")->numarg);
+        }
+
         if (optget(opts, "StatsHostID")->enabled) {
             char *p = optget(opts, "StatsHostID")->strarg;
 

@@ -164,6 +164,7 @@ typedef struct cli_clamav_intel {
     uint32_t nsamples;
     uint32_t maxsamples;
     uint32_t maxmem;
+    uint32_t timeout;
     time_t nextupdate;
     struct cl_engine *engine;
 #ifdef CL_THREAD_SAFE

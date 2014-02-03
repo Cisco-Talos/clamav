@@ -763,6 +763,10 @@ void submit_host_info(struct optstruct *opts)
     else if (strcmp(hostid, "default"))
         cl_engine_set_clcb_stats_get_hostid(engine, get_hostid);
 
+    if (optget(opts, "stats-timeout")->enabled) {
+        cl_engine_set_num(engine, CL_ENGINE_STATS_TIMEOUT, optget(opts, "StatsTimeout")->numarg);
+    }
+
     cl_engine_free(engine);
 }
 

@@ -353,7 +353,7 @@ void clamav_stats_submit(struct cl_engine *engine, void *cbdata)
     }
 
     if (json) {
-        submit_post(STATS_HOST, STATS_PORT, "PUT", "/clamav/1/submit/stats", json);
+        submit_post(STATS_HOST, STATS_PORT, "PUT", "/clamav/1/submit/stats", json, myintel.timeout);
         free(json);
     }
 
