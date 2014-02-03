@@ -31,7 +31,7 @@
 #include "libclamav/hostid.h"
 #include "libclamav/www.h"
 
-#define DEBUG_STATS 1
+#define DEBUG_STATS 0
 
 static cli_flagged_sample_t *find_sample(cli_intel_t *intel, const char *virname, const unsigned char *md5, size_t size, stats_section_t *sections);
 void free_sample(cli_flagged_sample_t *sample);
@@ -229,8 +229,6 @@ void clamav_stats_add_sample(const char *virname, const unsigned char *md5, size
         }
     }
 
-    cli_warnmsg("Added %s to the stats cache\n", (virname != NULL) ? virname: "[unknown]");
-
     sample->hits++;
 
 end:
@@ -355,7 +353,6 @@ void clamav_stats_submit(struct cl_engine *engine, void *cbdata)
     }
 
     if (json) {
-        cli_warnmsg("====\tSUBMITTING STATS\t====\n");
         submit_post(STATS_HOST, STATS_PORT, "PUT", "/clamav/1/submit/stats", json);
         free(json);
     }
