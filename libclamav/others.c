@@ -549,6 +549,7 @@ int cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field field, long
 
             intel->timeout = (uint32_t)num;
         }
+        break;
 	default:
 	    cli_errmsg("cl_engine_set_num: Incorrect field number\n");
 	    return CL_EARG;
@@ -616,6 +617,8 @@ long long cl_engine_get_num(const struct cl_engine *engine, enum cl_engine_field
 	    return engine->bytecode_mode;
     case CL_ENGINE_DISABLE_CACHE:
         return engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE;
+    case CL_ENGINE_STATS_TIMEOUT:
+        return ((cli_intel_t *)(engine->stats_data))->timeout;
 	default:
 	    cli_errmsg("cl_engine_get: Incorrect field number\n");
 	    if(err)
