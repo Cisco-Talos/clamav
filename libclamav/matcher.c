@@ -526,7 +526,7 @@ int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx)
     memset(&sections, 0x00, sizeof(stats_section_t));
     if(do_dsig_check || ctx->engine->cb_stats_add_sample) {
         uint32_t flags = (do_dsig_check ? CL_CHECKFP_PE_FLAG_AUTHENTICODE : 0);
-        if (!(ctx->engine->engine_options & ENGINE_OPTIONS_DISABLE_PE_STATS))
+        if (!(ctx->engine->engine_options & ENGINE_OPTIONS_DISABLE_PE_STATS) && !(ctx->engine->dconf->stats & (DCONF_STATS_DISABLED | DCONF_STATS_PE_SECTION_DISABLED)))
             flags |= CL_CHECKFP_PE_FLAG_STATS;
 
         switch(cli_checkfp_pe(ctx, shash1, &sections, flags)) {

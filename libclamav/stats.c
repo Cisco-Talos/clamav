@@ -26,6 +26,7 @@
 
 #include "libclamav/others.h"
 #include "libclamav/clamav.h"
+#include "libclamav/dconf.h"
 #include "libclamav/json.h"
 #include "libclamav/stats.h"
 #include "libclamav/hostid.h"
@@ -121,6 +122,9 @@ void clamav_stats_add_sample(const char *virname, const unsigned char *md5, size
 
     intel = (cli_intel_t *)cbdata;
     if (!(intel->engine))
+        return;
+
+    if (intel->engine->dconf->stats & DCONF_STATS_DISABLED)
         return;
 
     /* First check if we need to submit stats based on memory/number limits */
@@ -307,6 +311,9 @@ void clamav_stats_submit(struct cl_engine *engine, void *cbdata)
 
     intel = (cli_intel_t *)cbdata;
     if (!(intel) || !(engine))
+        return;
+
+    if (engine->dconf->stats & DCONF_STATS_DISABLED)
         return;
 
     if (!(engine->cb_stats_get_hostid)) {
