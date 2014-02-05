@@ -1227,6 +1227,10 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
     mpool_free(x.mempool, x.macro_ptids);\
   } while(0);
 
+/*     0         1        2      3        4        5    ... (max 66)
+ * VirusName:Attributes:Logic:SubSig1[:SubSig2[:SubSig3 ... ]]
+ * NOTE: Maximum of 64 subsignatures (last would be token 66)
+ */
 #define LDB_TOKENS 67
 static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsigned int options, const char *dbname, unsigned int line, unsigned int *sigs, unsigned bc_idx, const char *buffer_cpy, int *skip)
 {
@@ -1580,6 +1584,9 @@ static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     return CL_SUCCESS;
 }
 
+/*     0       1      2     3        4            5          6      7
+ * MagicType:Offset:HexSig:Name:RequiredType:DetectedType[:MinFL[:MaxFL]]
+ */
 #define FTM_TOKENS 8
 static int cli_loadftm(FILE *fs, struct cl_engine *engine, unsigned int options, unsigned int internal, struct cli_dbio *dbio)
 {
