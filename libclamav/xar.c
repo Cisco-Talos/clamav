@@ -117,6 +117,8 @@ static void xar_get_checksum_values(xmlTextReaderPtr reader, unsigned char ** ck
             *hash = XAR_CKSUM_OTHER;
         }
     }
+    if (style != NULL)
+        xmlFree(style);
 
     if (xmlTextReaderRead(reader) == 1 && xmlTextReaderNodeType(reader) == XML_READER_TYPE_TEXT) {
         xmlval = xmlTextReaderConstValue(reader);
@@ -216,6 +218,8 @@ static int xar_get_toc_data_values(xmlTextReaderPtr reader, long *length, long *
                     cli_dbgmsg("cli_scaxar: unknown style value=%s for encoding element\n", style);
                     *encoding = CL_TYPE_ANY;
                 }
+                if (style != NULL)
+                    xmlFree(style);
 
            } else if (indata && xmlStrEqual(name, (const xmlChar *)"data") &&
                        xmlTextReaderNodeType(reader) == XML_READER_TYPE_END_ELEMENT) {
