@@ -451,7 +451,6 @@ int main(int argc, char **argv)
                 } else {
                     if (strlen(p) > 36) {
                         logg("!Invalid HostID\n");
-                        optfree(opts);
                         cl_engine_set_clcb_stats_submit(engine, NULL);
                         cl_engine_free(engine);
                         ret = 1;
