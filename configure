@@ -17890,8 +17890,8 @@ $as_echo "#define C_LINUX 1" >>confdefs.h
 	THREAD_LIBS="-lpthread"
 	TH_SAFE="-thread-safe"
 	if test "$want_fanotify" = "yes"; then
-	    ac_fn_c_check_header_mongrel "$LINENO" "linux/fanotify.h" "ac_cv_header_linux_fanotify_h" "$ac_includes_default"
-if test "x$ac_cv_header_linux_fanotify_h" = xyes; then :
+	    ac_fn_c_check_header_mongrel "$LINENO" "sys/fanotify.h" "ac_cv_header_sys_fanotify_h" "$ac_includes_default"
+if test "x$ac_cv_header_sys_fanotify_h" = xyes; then :
 
 $as_echo "#define FANOTIFY 1" >>confdefs.h
 
