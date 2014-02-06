@@ -150,6 +150,7 @@ typedef enum {
 #define CL_SCAN_BLOCKMACROS		0x100000
 #define CL_SCAN_ALLMATCHES		0x200000
 #define CL_SCAN_SWF			0x400000
+#define CL_SCAN_PARTITION_INTXN         0x800000
 
 #define CL_SCAN_PERFORMANCE_INFO        0x40000000 /* collect performance timings */
 #define CL_SCAN_INTERNAL_COLLECT_SHA    0x80000000 /* Enables hash output in sha-collect builds - for internal use only */
@@ -204,7 +205,8 @@ enum cl_engine_field {
     CL_ENGINE_MAX_ZIPTYPERCG,       /* uint64_t */
     CL_ENGINE_FORCETODISK,          /* uint32_t */
     CL_ENGINE_DISABLE_CACHE,        /* uint32_t */
-    CL_ENGINE_DISABLE_PE_STATS      /* uint32_t */
+    CL_ENGINE_DISABLE_PE_STATS,     /* uint32_t */
+    CL_ENGINE_MAX_PARTITIONS        /* uint32_t */
 };
 
 enum bytecode_security {
