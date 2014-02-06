@@ -510,77 +510,97 @@ static void print_con_info(conn_t *conn, const char *fmt, ...)
 
 static int make_connection_real(const char *soname, conn_t *conn)
 {
-	int s;
-	struct timeval tv;
-	conn->tcp = 0;
-#ifdef _WIN32
-    {
-#else
-	if(cli_is_abspath(soname) || (access(soname, F_OK) == 0)) {
-		struct sockaddr_un addr;
-		s = socket(AF_UNIX, SOCK_STREAM, 0);
-		if(s < 0) {
-			perror("socket");
-			return -1;
-		}
-		memset(&addr, 0, sizeof(addr));
-		addr.sun_family = AF_UNIX;
-		strncpy(addr.sun_path, soname, sizeof(addr.sun_path));
-		addr.sun_path[sizeof(addr.sun_path) - 1] = 0x0;
-		print_con_info(conn, "Connecting to: %s\n", soname);
-		if (connect(s, (struct sockaddr *)&addr, sizeof(addr))) {
-			perror("connect");
+    int s;
+    struct timeval tv;
+    char *port;
+    char *name, *pt = strdup(soname);
+    const char *host = pt;
+    struct addrinfo hints, *res=NULL, *p;
+
+    conn->tcp = 0;
+
+#ifndef _WIN32
+    if(cli_is_abspath(soname) || (access(soname, F_OK) == 0)) {
+        struct sockaddr_un addr;
+
+        s = socket(AF_UNIX, SOCK_STREAM, 0);
+        if(s < 0) {
+            perror("socket");
+            return -1;
+        }
+
+        memset(&addr, 0, sizeof(addr));
+        addr.sun_family = AF_UNIX;
+        strncpy(addr.sun_path, soname, sizeof(addr.sun_path));
+        addr.sun_path[sizeof(addr.sun_path) - 1] = 0x0;
+
+        print_con_info(conn, "Connecting to: %s\n", soname);
+        if (connect(s, (struct sockaddr *)&addr, sizeof(addr))) {
+            perror("connect");
             close(s);
-			return -1;
-		}
-	} else {
+            return -1;
+        }
+
+        goto end;
+    }
 #endif
-		struct sockaddr_in server;
-		struct hostent *hp;
-		unsigned port = 0;
-		char *name, *pt = strdup(soname);
-		const char *host = pt;
-        memset(&server, 0x00, sizeof(struct sockaddr_in));
-		conn->tcp=1;
-		name = strchr(pt, ':');
-		if(name) {
-			*name++ = '\0';
-			port = atoi(name);
-		}
-		if(!port)
-			port = 3310;
-		print_con_info(conn, "Looking up: %s\n", host);
-		if((hp = gethostbyname(host)) == NULL) {
-			fprintf(stderr, "Cannot find host");
-			return -1;
-		}
-		free(pt);
-		s = socket(AF_INET, SOCK_STREAM, 0);
-		if(s < 0) {
-			perror("socket");
-			return -1;
-		}
-		server.sin_family = AF_INET;
-		server.sin_port = htons(port);
-		server.sin_addr.s_addr = ((struct in_addr*)(hp->h_addr))->s_addr;
-		print_con_info(conn, "Connecting to: %s:%u\n", inet_ntoa(server.sin_addr), port);
-		if (connect(s, (struct sockaddr *)&server, (socklen_t)sizeof(server))) {
-			perror("connect");
+
+    memset(&hints, 0x00, sizeof(struct addrinfo));
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = AI_PASSIVE;
+
+    conn->tcp=1;
+    name = strchr(pt, '/');
+    if(name) {
+        *name = '\0';
+        port = name+1;
+    } else {
+        port = NULL;
+    }
+
+    print_con_info(conn, "Looking up: %s\n", host);
+    if (getaddrinfo(host, (port != NULL) ? port : "3310", &hints, &res))
+        return -1;
+
+    for (p = res; p != NULL; p = p->ai_next) {
+        if ((s = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) < 0) {
+            perror("socket");
+            continue;
+        }
+
+        print_con_info(conn, "Connecting to: %s:%s\n", host, port);
+        if (connect(s, p->ai_addr, p->ai_addrlen)) {
+            perror("connect");
             close(s);
-			return -1;
-		}
-	}
-	if (conn->remote != soname) {
-	    /* when we reconnect, they are the same */
-	    if (conn->remote) free(conn->remote);
-	    conn->remote = strdup(soname);
-	}
-	conn->sd = s;
-	gettimeofday(&conn->tv_conn, NULL);
-	tv.tv_sec = 30;
-	tv.tv_usec = 0;
-	setsockopt(conn->sd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
-	return 0;
+            continue;
+        }
+
+        break;
+    }
+
+    free(pt);
+
+    if (res)
+        freeaddrinfo(res);
+
+    if (p == NULL)
+        return -1;
+
+end:
+    if (conn->remote != soname) {
+        /* when we reconnect, they are the same */
+        if (conn->remote)
+            free(conn->remote);
+
+        conn->remote = strdup(soname);
+    }
+    conn->sd = s;
+    gettimeofday(&conn->tv_conn, NULL);
+    tv.tv_sec = 30;
+    tv.tv_usec = 0;
+    setsockopt(conn->sd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+    return 0;
 }
 
 static int make_connection(const char *soname, conn_t *conn)
@@ -588,20 +608,23 @@ static int make_connection(const char *soname, conn_t *conn)
     int rc;
 
     if ((rc = make_connection_real(soname, conn)))
-	return rc;
+        return rc;
+
     send_string(conn, "nIDSESSION\nnVERSION\n");
     free(conn->version);
     conn->version = NULL;
     if (!read_version(conn))
-	return 0;
+        return 0;
 
     /* clamd < 0.95 */
     if ((rc = make_connection_real(soname, conn)))
-	return rc;
+        return rc;
+
     send_string(conn, "nSESSION\nnVERSION\n");
     conn->version = NULL;
     if (!read_version(conn))
-	return 0;
+        return 0;
+
     return -1;
 }
 
@@ -1109,7 +1132,7 @@ static void help(void)
     printf("    --version              -V         Show version\n");
     printf("    --config-file=FILE     -c FILE    Read clamd's configuration files from FILE\n");
     printf("    --defaultcolors	       -d	  Use default terminal colors\n");
-    printf("	host[:port]			  Connect to clamd on host at port (default 3310)\n");
+    printf("	host[/port]			  Connect to clamd on host at port (default 3310)\n");
     printf("    /path/to/clamd.socket		  Connect to clamd over a local socket\n");
     printf("\n");
     return;
@@ -1118,100 +1141,105 @@ static int default_colors=0;
 /* -------------------------- Initialization ---------------- */
 static void setup_connections(int argc, char *argv[])
 {
-	struct optstruct *opts;
-	struct optstruct *clamd_opts;
-	unsigned i;
-	char *conn = NULL;
+    struct optstruct *opts;
+    struct optstruct *clamd_opts;
+    unsigned i;
+    char *conn = NULL;
 
-	opts = optparse(NULL, argc, argv, 1, OPT_CLAMDTOP, 0, NULL);
-	if (!opts) {
-	    fprintf(stderr, "ERROR: Can't parse command line options\n");
-	    EXIT_PROGRAM(FAIL_CMDLINE);
-	}
+    opts = optparse(NULL, argc, argv, 1, OPT_CLAMDTOP, 0, NULL);
+    if (!opts) {
+        fprintf(stderr, "ERROR: Can't parse command line options\n");
+        EXIT_PROGRAM(FAIL_CMDLINE);
+    }
 
-	if(optget(opts, "help")->enabled) {
-	    optfree(opts);
-	    help();
-	    normal_exit = 1;
-	    exit(0);
-	}
+    if(optget(opts, "help")->enabled) {
+        optfree(opts);
+        help();
+        normal_exit = 1;
+        exit(0);
+    }
 
-	if(optget(opts, "version")->enabled) {
-	    printf("Clam AntiVirus Monitoring Tool %s\n", get_version());
-	    optfree(opts);
-	    normal_exit = 1;
-	    exit(0);
-	}
+    if(optget(opts, "version")->enabled) {
+        printf("Clam AntiVirus Monitoring Tool %s\n", get_version());
+        optfree(opts);
+        normal_exit = 1;
+        exit(0);
+    }
 
-	if(optget(opts, "defaultcolors")->enabled)
-	    default_colors = 1;
-	memset(&global, 0, sizeof(global));
-	if (!opts->filename || !opts->filename[0]) {
-	    const struct optstruct *opt;
-	    const char *clamd_conf = optget(opts, "config-file")->strarg;
+    if(optget(opts, "defaultcolors")->enabled)
+        default_colors = 1;
 
-	    if ((clamd_opts = optparse(clamd_conf, 0, NULL, 1, OPT_CLAMD, 0, NULL)) == NULL) {
-		fprintf(stderr, "Can't parse clamd configuration file %s\n", clamd_conf);
-		EXIT_PROGRAM(FAIL_CMDLINE);
-	    }
+    memset(&global, 0, sizeof(global));
+    if (!opts->filename || !opts->filename[0]) {
+        const struct optstruct *opt;
+        const char *clamd_conf = optget(opts, "config-file")->strarg;
 
-	    if((opt = optget(clamd_opts, "LocalSocket"))->enabled) {
-		conn = strdup(opt->strarg);
-		if (!conn) {
-		    fprintf(stderr, "Can't strdup LocalSocket value\n");
-		    EXIT_PROGRAM(FAIL_INITIAL_CONN);
-		}
-	    } else if ((opt = optget(clamd_opts, "TCPSocket"))->enabled) {
-		char buf[512];
-		const struct optstruct *opt_addr;
-		const char *host = "localhost";
-		if ((opt_addr = optget(clamd_opts, "TCPAddr"))->enabled) {
-		    host = opt_addr->strarg;
-		}
-		snprintf(buf, sizeof(buf), "%s:%llu", host, opt->numarg);
-		conn = strdup(buf);
-	    } else {
-		fprintf(stderr, "Can't find how to connect to clamd\n");
-		EXIT_PROGRAM(FAIL_INITIAL_CONN);
-	    }
-	    optfree(clamd_opts);
-	    global.num_clamd = 1;
-	} else {
-	    unsigned i = 0;
-	    while (opts->filename[i]) { i++; }
-	    global.num_clamd = i;
-	}
+        if ((clamd_opts = optparse(clamd_conf, 0, NULL, 1, OPT_CLAMD, 0, NULL)) == NULL) {
+            fprintf(stderr, "Can't parse clamd configuration file %s\n", clamd_conf);
+            EXIT_PROGRAM(FAIL_CMDLINE);
+        }
+
+        if((opt = optget(clamd_opts, "LocalSocket"))->enabled) {
+            conn = strdup(opt->strarg);
+            if (!conn) {
+                fprintf(stderr, "Can't strdup LocalSocket value\n");
+                EXIT_PROGRAM(FAIL_INITIAL_CONN);
+            }
+        } else if ((opt = optget(clamd_opts, "TCPSocket"))->enabled) {
+            char buf[512];
+            const struct optstruct *opt_addr;
+            const char *host = "localhost";
+            if ((opt_addr = optget(clamd_opts, "TCPAddr"))->enabled) {
+                host = opt_addr->strarg;
+            }
+            snprintf(buf, sizeof(buf), "%s/%llu", host, opt->numarg);
+            conn = strdup(buf);
+        } else {
+            fprintf(stderr, "Can't find how to connect to clamd\n");
+            EXIT_PROGRAM(FAIL_INITIAL_CONN);
+        }
+
+        optfree(clamd_opts);
+        global.num_clamd = 1;
+    } else {
+        unsigned i = 0;
+        while (opts->filename[i]) { i++; }
+        global.num_clamd = i;
+    }
 
 #ifdef _WIN32
-	WSADATA wsaData;
-	if (WSAStartup(MAKEWORD(2,2), &wsaData) != NO_ERROR) {
-		fprintf(stderr, "Error at WSAStartup(): %d\n", WSAGetLastError());
-		EXIT_PROGRAM(FAIL_INITIAL_CONN);
-	}
+    WSADATA wsaData;
+    if (WSAStartup(MAKEWORD(2,2), &wsaData) != NO_ERROR) {
+        fprintf(stderr, "Error at WSAStartup(): %d\n", WSAGetLastError());
+        EXIT_PROGRAM(FAIL_INITIAL_CONN);
+    }
 #endif
-	/* clamdtop */
-	puts( "        __                    ____");
-	puts("  _____/ /___ _____ ___  ____/ / /_____  ____");
-	puts(" / ___/ / __ `/ __ `__ \\/ __  / __/ __ \\/ __ \\");
-	puts("/ /__/ / /_/ / / / / / / /_/ / /_/ /_/ / /_/ /");
-	puts("\\___/_/\\__,_/_/ /_/ /_/\\__,_/\\__/\\____/ .___/");
-	puts("                                     /_/");
-	global.all_stats = calloc(global.num_clamd, sizeof(*global.all_stats));
-	OOM_CHECK(global.all_stats);
-	global.conn = calloc(global.num_clamd, sizeof(*global.conn));
-	OOM_CHECK(global.conn);
-	for (i=0;i < global.num_clamd;i++) {
-		const char *soname = conn ? conn : opts->filename[i];
-		global.conn[i].line = i+1;
-		if (make_connection(soname, &global.conn[i]) < 0) {
-			EXIT_PROGRAM(FAIL_INITIAL_CONN);
-		}
-	}
-	optfree(opts);
-	free(conn);
+    /* clamdtop */
+    puts( "        __                    ____");
+    puts("  _____/ /___ _____ ___  ____/ / /_____  ____");
+    puts(" / ___/ / __ `/ __ `__ \\/ __  / __/ __ \\/ __ \\");
+    puts("/ /__/ / /_/ / / / / / / /_/ / /_/ /_/ / /_/ /");
+    puts("\\___/_/\\__,_/_/ /_/ /_/\\__,_/\\__/\\____/ .___/");
+    puts("                                     /_/");
+
+    global.all_stats = calloc(global.num_clamd, sizeof(*global.all_stats));
+    OOM_CHECK(global.all_stats);
+    global.conn = calloc(global.num_clamd, sizeof(*global.conn));
+    OOM_CHECK(global.conn);
+
+    for (i=0;i < global.num_clamd;i++) {
+        const char *soname = conn ? conn : opts->filename[i];
+        global.conn[i].line = i+1;
+        if (make_connection(soname, &global.conn[i]) < 0) {
+            EXIT_PROGRAM(FAIL_INITIAL_CONN);
+        }
+    }
+
+    optfree(opts);
+    free(conn);
 #ifndef _WIN32
-	signal(SIGPIPE, SIG_IGN);
-	signal(SIGINT, sigint);
+    signal(SIGPIPE, SIG_IGN);
+    signal(SIGINT, sigint);
 #endif
 }
 
