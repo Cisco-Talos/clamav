@@ -394,6 +394,7 @@ struct cl_engine *cl_engine_new(void)
         mpool_destroy(new->mempool);
 #endif
         free(new);
+        free(intel);
         return NULL;
     }
 #endif

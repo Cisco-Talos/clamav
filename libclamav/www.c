@@ -117,7 +117,8 @@ int connect_host(const char *host, const char *port, uint32_t timeout, int useAs
 
     if (!(p)) {
         freeaddrinfo(servinfo);
-        close(sockfd);
+        if (sockfd >= 0)
+            close(sockfd);
         return -1;
     }
 
@@ -264,6 +265,8 @@ void submit_post(const char *host, const char *port, const char *method, const c
             memset(buf, 0x00, bufsz);
             if ((recvsz = recv(sockfd, buf, bufsz-1, 0) <= 0))
                 break;
+
+            buf[bufsz-1] = '\0';
 
             if (strstr(buf, "STATOK"))
                 break;

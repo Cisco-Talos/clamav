@@ -96,6 +96,8 @@ clamd_connect (const char *cfgfile, const char *option)
             return -11;
         }
 
+        return sockd;
+
     }
     else
 #endif
@@ -143,6 +145,7 @@ clamd_connect (const char *cfgfile, const char *option)
 
                 optfree(opts);
                 freeaddrinfo(res);
+
                 return sockd;
             }
 
@@ -190,8 +193,8 @@ clamd_connect (const char *cfgfile, const char *option)
             return -1;
         }
 
+        return sockd;
 #endif
-
     }
     else
     {
@@ -202,7 +205,7 @@ clamd_connect (const char *cfgfile, const char *option)
     }
 
     optfree (opts);
-    return sockd;
+    return -1;
 }
 
 int
@@ -229,7 +232,7 @@ notify (const char *cfgfile)
         {
             logg ("!NotifyClamd: Unknown answer from clamd: '%s'\n", buff);
             closesocket (sockd);
-            return 1;
+            return -1;
         }
     }
 

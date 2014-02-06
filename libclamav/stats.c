@@ -223,8 +223,8 @@ void clamav_stats_add_sample(const char *virname, const unsigned char *md5, size
 
         sample->virus_name[i] = strdup((virname != NULL) ? virname : "[unknown]");
         if (!(sample->virus_name[i])) {
-            free(sample);
             free(sample->virus_name);
+            free(sample);
             if (sample == intel->samples)
                 intel->samples = NULL;
 
