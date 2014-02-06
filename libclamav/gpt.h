@@ -32,7 +32,7 @@
  * values. Sector size for GPT can be found by the offset the GPT header
  * signature is located (marking the beginning of the second sector.
 */
-#define GPT_SECTOR_SIZE 512
+#define GPT_DEFAULT_SECTOR_SIZE 512
 #define GPT_PARTITION_ENTRY_SIZE 128
 
 #define GPT_SIGNATURE 0x4546492050415254ULL
@@ -84,7 +84,7 @@ struct gpt_partition_entry {
     uint64_t firstLBA  __attribute__ ((packed));
     uint64_t lastLBA  __attribute__ ((packed));
     uint64_t attributes  __attribute__ ((packed));
-    uint8_t name[72];
+    uint16_t name[36] __attribute__ ((packed));
 };
 
 #ifdef HAVE_PRAGMA_PACK
