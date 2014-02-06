@@ -57,3 +57,10 @@
     fun:parseEmailHeader
     ...
 }
+{
+    ubuntu-libc-getaddrinfo-01
+    Memcheck:Param
+    sendmsg(mmsg[0].msg_hdr)
+    fun:sendmmsg
+    ...
+}

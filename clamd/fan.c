@@ -34,8 +34,7 @@
 #include <string.h>
 #include <errno.h>
 
-#include <linux/fanotify.h>
-#include "fan-syscalllib.h"
+#include <sys/fanotify.h>
 #include "fan.h"
 
 #include "libclamav/clamav.h"

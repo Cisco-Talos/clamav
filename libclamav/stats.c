@@ -198,6 +198,17 @@ void clamav_stats_add_sample(const char *virname, const unsigned char *md5, size
         if ((sample->virus_name)) {
             for (i=0; sample->virus_name[i] != NULL; i++)
                 ;
+            p = realloc(sample->virus_name, sizeof(char **) * (i + 1));
+            if (!(p)) {
+                free(sample->virus_name);
+                free(sample);
+                if (sample == intel->samples)
+                    intel->samples = NULL;
+
+                goto end;
+            }
+
+            sample->virus_name = p;
         } else {
             i=0;
             sample->virus_name = calloc(1, sizeof(char **));
@@ -212,15 +223,15 @@ void clamav_stats_add_sample(const char *virname, const unsigned char *md5, size
 
         sample->virus_name[i] = strdup((virname != NULL) ? virname : "[unknown]");
         if (!(sample->virus_name[i])) {
-            free(sample);
             free(sample->virus_name);
+            free(sample);
             if (sample == intel->samples)
                 intel->samples = NULL;
 
             goto end;
         }
 
-        p = realloc(sample->virus_name, sizeof(char **) * (i == 0 ? 2 : i+1));
+        p = realloc(sample->virus_name, sizeof(char **) * (i+2));
         if (!(p)) {
             free(sample->virus_name);
             free(sample);

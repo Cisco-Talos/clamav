@@ -202,8 +202,6 @@ struct device *get_devices(void)
     }
 #endif
 
-    close(sock);
-    
     p = realloc(devices, sizeof(struct device) * (ndevices + 1));
     if (!(p))
         goto err;
@@ -215,9 +213,6 @@ struct device *get_devices(void)
     return devices;
 
 err:
-    if (addrs)
-        freeifaddrs(addrs);
-
     if (devices) {
         for (i=0; i < ndevices; i++)
             if (devices[i].name)
@@ -253,8 +248,10 @@ char *internal_get_host_id(void)
         return NULL;
 
     printable_md5 = calloc(1, 37);
-    if (!(printable_md5))
+    if (!(printable_md5)) {
+        free(devices);
         return NULL;
+    }
 
     cli_md5_init(&ctx);
     for (i=0; devices[i].name != NULL; i++)

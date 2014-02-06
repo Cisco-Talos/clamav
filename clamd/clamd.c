@@ -604,9 +604,6 @@ int main(int argc, char **argv)
 
             t = realloc(lsockets, sizeof(int) * (nlsockets + 1));
             if (!(t)) {
-                if ((lsockets))
-                    free(lsockets);
-
                 ret = 1;
                 break;
             }
