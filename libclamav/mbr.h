@@ -66,7 +66,7 @@ struct mbr_partition_entry {
     uint8_t type;
     uint8_t lastCHS[3];
     uint32_t firstLBA  __attribute__ ((packed));
-    uint32_t numSectors  __attribute__ ((packed));
+    uint32_t numLBA  __attribute__ ((packed));
 };
 
 struct mbr_boot_record {
