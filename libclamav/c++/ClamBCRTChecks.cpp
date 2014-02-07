@@ -1,7 +1,7 @@
 /*
  *  Compile LLVM bytecode to ClamAV bytecode.
  *
- *  Copyright (C) 2009-2010 Sourcefire, Inc.
+ *  Copyright (C) 2009-2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
  *
@@ -90,10 +90,13 @@ namespace llvm {
     CallGraphNode *rootNode;
   public:
     static char ID;
-    DEFINEPASS(PtrVerifier), rootNode(0) {
+    DEFINEPASS(PtrVerifier), rootNode(0), PT(), TD(), SE(), DT(),
+    AbrtBB(), EP() {
 #ifdef LLVM30
 	initializePtrVerifierPass(*PassRegistry::getPassRegistry());
 #endif
+	Changed = false;
+	valid = false;
     }
 
     virtual bool runOnFunction(Function &F) {

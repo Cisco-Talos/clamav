@@ -643,6 +643,8 @@ am__EXEEXT_FALSE
 am__EXEEXT_TRUE
 LTLIBOBJS
 LIBOBJS
+ENABLE_CLAMSUBMIT_FALSE
+ENABLE_CLAMSUBMIT_TRUE
 subdirs
 WERR_CFLAGS_MILTER
 WERR_CFLAGS
@@ -657,6 +659,8 @@ HAVE_MILTER_FALSE
 HAVE_MILTER_TRUE
 BUILD_CLAMD_FALSE
 BUILD_CLAMD_TRUE
+CLAMSUBMIT_CFLAGS
+CLAMSUBMIT_LIBS
 THREAD_LIBS
 TH_SAFE
 CLAMDSCAN_LIBS
@@ -666,8 +670,12 @@ CLAMD_LIBS
 LIBCLAMAV_LIBS
 CFGDIR
 DBDIR
+XML_LIBS
+XML_CPPFLAGS
 ENABLE_UNRAR_FALSE
 ENABLE_UNRAR_TRUE
+HAVE_LIBBZ2_FALSE
+HAVE_LIBBZ2_TRUE
 LIBBZ2_PREFIX
 LTLIBBZ2
 LIBBZ2
@@ -840,7 +848,6 @@ with_included_ltdl
 with_ltdl_include
 with_ltdl_lib
 enable_ltdl_install
-with_fpu_words_bigendian
 enable_gcc_vcheck
 enable_experimental
 enable_mempool
@@ -853,7 +860,10 @@ with_zlib
 enable_zlib_vcheck
 enable_bzip2
 with_libbz2_prefix
+with_libcurl
 enable_unrar
+enable_xml
+with_xml
 enable_getaddrinfo
 enable_ipv6
 enable_dns
@@ -1531,7 +1541,8 @@ Optional Features:
                           (and sometimes confusing) to the casual installer
   --disable-zlib-vcheck	  do not check for buggy zlib version
   --disable-bzip2	  disable bzip2 support
-  --disable-unrar	  don't build libclamunrar and libclamunrar_iface
+  --disable-unrar	  do not build libclamunrar and libclamunrar_iface
+  --disable-xml	  disable DMG and XAR support
   --disable-getaddrinfo          disable support for getaddrinfo
   --disable-ipv6          disable IPv6 support
   --disable-dns           disable support for database verification through
@@ -1539,7 +1550,7 @@ Optional Features:
   --disable-fanotify	  disable fanotify support (Linux only)
   --enable-milter	  build clamav-milter
   --disable-pthreads      disable POSIX threads support
-  --disable-cr		  don't link with C reentrant library (BSD)
+  --disable-cr		  do not link with C reentrant library (BSD)
   --enable-id-check	  use id utility instead of /etc/passwd parsing
   --enable-yp-check	  use ypmatch utility instead of /etc/passwd parsing
   --disable-clamav	  disable test for clamav user/group
@@ -1566,7 +1577,6 @@ Optional Packages:
   --with-included-ltdl    use the GNU ltdl sources included here
   --with-ltdl-include=DIR use the ltdl headers installed in DIR
   --with-ltdl-lib=DIR     use the libltdl.la installed in DIR
-  --with-fpu-words-bigendian=(yes/no/auto)    specify FPU endianess (default=auto)
   --with-gnu-ld           assume the C compiler uses GNU ld default=no
   --with-libcheck-prefix[=DIR]  search for libcheck in DIR/include and DIR/lib
   --without-libcheck-prefix     don't search for libcheck in includedir and libdir
@@ -1574,6 +1584,10 @@ Optional Packages:
 			  /usr/local or /usr if not found in /usr/local)
   --with-libbz2-prefix[=DIR]  search for libbz2 in DIR/include and DIR/lib
   --without-libbz2-prefix     don't search for libbz2 in includedir and libdir
+  --with-libcurl=DIR   path to directory containing libcurl (default=
+    /usr/local or /usr if not found in /usr/local)
+  --with-xml=DIR	  path to directory containing libxml2 library (default=
+			  /usr/local or /usr if not found in /usr/local)
   --with-iconv supports iconv() (default=auto)
   --with-user=uid	  name of the clamav user (default=clamav)
   --with-group=gid	  name of the clamav group (default=clamav)
@@ -3410,7 +3424,7 @@ $as_echo "#define PACKAGE PACKAGE_NAME" >>confdefs.h
 VERSION="devel-`date +%Y%m%d`"
 
 LC_CURRENT=7
-LC_REVISION=11
+LC_REVISION=19
 LC_AGE=1
 LIBCLAMAV_VERSION="$LC_CURRENT":"$LC_REVISION":"$LC_AGE"
 
@@ -5692,10 +5706,6 @@ freebsd* | dragonfly*)
   fi
   ;;
 
-gnu*)
-  lt_cv_deplibs_check_method=pass_all
-  ;;
-
 haiku*)
   lt_cv_deplibs_check_method=pass_all
   ;;
@@ -5734,7 +5744,7 @@ irix5* | irix6* | nonstopux*)
   ;;
 
 # This must be glibc/ELF.
-linux* | k*bsd*-gnu | kopensolaris*-gnu)
+linux* | k*bsd*-gnu | kopensolaris*-gnu | gnu*)
   lt_cv_deplibs_check_method=pass_all
   ;;
 
@@ -8659,7 +8669,7 @@ lt_prog_compiler_static=
       lt_prog_compiler_static='-non_shared'
       ;;
 
-    linux* | k*bsd*-gnu | kopensolaris*-gnu)
+    linux* | k*bsd*-gnu | kopensolaris*-gnu | gnu*)
       case $cc_basename in
       # old Intel for x86_64 which still supported -KPIC.
       ecc*)
@@ -10829,17 +10839,6 @@ freebsd* | dragonfly*)
   esac
   ;;
 
-gnu*)
-  version_type=linux # correct to gnu/linux during the next big refactor
-  need_lib_prefix=no
-  need_version=no
-  library_names_spec='${libname}${release}${shared_ext}$versuffix ${libname}${release}${shared_ext}${major} ${libname}${shared_ext}'
-  soname_spec='${libname}${release}${shared_ext}$major'
-  shlibpath_var=LD_LIBRARY_PATH
-  shlibpath_overrides_runpath=no
-  hardcode_into_libs=yes
-  ;;
-
 haiku*)
   version_type=linux # correct to gnu/linux during the next big refactor
   need_lib_prefix=no
@@ -10956,7 +10955,7 @@ linux*oldld* | linux*aout* | linux*coff*)
   ;;
 
 # This must be glibc/ELF.
-linux* | k*bsd*-gnu | kopensolaris*-gnu)
+linux* | k*bsd*-gnu | kopensolaris*-gnu | gnu*)
   version_type=linux # correct to gnu/linux during the next big refactor
   need_lib_prefix=no
   need_version=no
@@ -13410,71 +13409,6 @@ _ACEOF
     ;;
 esac
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether FPU byte ordering is bigendian" >&5
-$as_echo_n "checking whether FPU byte ordering is bigendian... " >&6; }
-if ${ac_cv_c_fpu_bigendian+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_cv_c_fpu_bigendian=auto
-
-# Check whether --with-fpu-words-bigendian was given.
-if test "${with_fpu_words_bigendian+set}" = set; then :
-  withval=$with_fpu_words_bigendian; ac_cv_c_fpu_bigendian=$with_fpu_words_bigendian
-else
-  ac_cv_c_fpu_bigendian=auto
-fi
-
-
-if test $ac_cv_c_fpu_bigendian = auto; then
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-double d = 3815911171354501045744583353695226502220105394563506259449467213186125718792664588210662403287568710818873279842508553551908601408568128557088985172985437412593385138085986771664896.0;
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-
-if ${GREP-grep} emmeelle conftest.$ac_objext >/dev/null 2>&1 ; then
-	ac_cv_c_fpu_bigendian=yes
-fi
-if ${GREP-grep} elleemme conftest.$ac_objext >/dev/null 2>&1 ; then
-	ac_cv_c_fpu_bigendian=no
-fi
-if test "$ac_cv_c_bigendian" = "universal"; then
-        ac_cv_c_fpu_bigendian=universal
-fi
-
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-fi
-
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_c_fpu_bigendian" >&5
-$as_echo "$ac_cv_c_fpu_bigendian" >&6; }
-have_autoitea06="no"
-case $ac_cv_c_fpu_bigendian in
-	yes)
-
-$as_echo "#define FPU_WORDS_BIGENDIAN 1" >>confdefs.h
-
-                have_autoitea06="yes"
-		;;
-	no)
-
-$as_echo "#define FPU_WORDS_BIGENDIAN 0" >>confdefs.h
-
-                have_autoitea06="yes"
-		;;
-	universal)
-
-$as_echo "#define FPU_WORDS_BIGENDIAN WORDS_BIGENDIAN" >>confdefs.h
-
-                have_autoitea06="yes"
-		;;
-	*)
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Unable to determine FPU endianess, some features may not be available in this build" >&5
-$as_echo "$as_me: WARNING: Unable to determine FPU endianess, some features may not be available in this build" >&2;}
-esac
-
  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether byte ordering is bigendian" >&5
 $as_echo_n "checking whether byte ordering is bigendian... " >&6; }
 if ${ac_cv_c_bigendian+:} false; then :
@@ -14486,6 +14420,53 @@ $as_echo "$ac_cv_sizeof_void_p" >&6; }
 cat >>confdefs.h <<_ACEOF
 #define SIZEOF_VOID_P $ac_cv_sizeof_void_p
 _ACEOF
+
+
+
+for ac_func in sysctlbyname
+do :
+  ac_fn_c_check_func "$LINENO" "sysctlbyname" "ac_cv_func_sysctlbyname"
+if test "x$ac_cv_func_sysctlbyname" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_SYSCTLBYNAME 1
+_ACEOF
+
+fi
+done
+
+for ac_func in getifaddrs
+do :
+  ac_fn_c_check_func "$LINENO" "getifaddrs" "ac_cv_func_getifaddrs"
+if test "x$ac_cv_func_getifaddrs" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_GETIFADDRS 1
+_ACEOF
+
+fi
+done
+
+ac_fn_c_check_header_mongrel "$LINENO" "fcntl.h" "ac_cv_header_fcntl_h" "$ac_includes_default"
+if test "x$ac_cv_header_fcntl_h" = xyes; then :
+
+$as_echo "#define HAVE_FCNTL_H 1" >>confdefs.h
+
+fi
+
+
+ac_fn_c_check_header_mongrel "$LINENO" "pthread.h" "ac_cv_header_pthread_h" "$ac_includes_default"
+if test "x$ac_cv_header_pthread_h" = xyes; then :
+
+$as_echo "#define HAVE_PTHREAD_H 1" >>confdefs.h
+
+fi
+
+
+ac_fn_c_check_header_mongrel "$LINENO" "net/if_dl.h" "ac_cv_header_net_if_dl_h" "$ac_includes_default"
+if test "x$ac_cv_header_net_if_dl_h" = xyes; then :
+
+$as_echo "#define HAVE_NET_IF_DL_H 1" >>confdefs.h
+
+fi
 
 
 
@@ -15952,7 +15933,7 @@ $as_echo "$as_me: WARNING: ****** stability problems to the ClamAV developers!" 
     if test "$ZLIB_HOME" != "/usr"; then
 	CPPFLAGS="$CPPFLAGS -I$ZLIB_HOME/include"
 	save_LDFLAGS="$LDFLAGS"
-	LDFLAGS="$LDFLAGS -Wl,-rpath=$ZLIB_HOME/lib"
+	LDFLAGS="$LDFLAGS -L$ZLIB_HOME/lib"
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for inflateEnd in -lz" >&5
 $as_echo_n "checking for inflateEnd in -lz... " >&6; }
 if ${ac_cv_lib_z_inflateEnd+:} false; then :
@@ -15990,7 +15971,7 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_z_inflateEnd" >&5
 $as_echo "$ac_cv_lib_z_inflateEnd" >&6; }
 if test "x$ac_cv_lib_z_inflateEnd" = xyes; then :
-  LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -Wl,-rpath=$ZLIB_HOME/lib -lz"; FRESHCLAM_LIBS="$FRESHCLAM_LIBS -Wl,-rpath=$ZLIB_HOME/lib -lz"
+  LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -L$ZLIB_HOME/lib -lz"; FRESHCLAM_LIBS="$FRESHCLAM_LIBS -L$ZLIB_HOME/lib -lz"
 else
   as_fn_error $? "Please install zlib and zlib-devel packages" "$LINENO" 5
 fi
@@ -16972,6 +16953,101 @@ $as_echo "$as_me: WARNING: ****** bzip2 support disabled" >&2;}
     fi
 fi
 
+have_curl="no"
+curl_msg="Please use the web interface for submitting FPs/FNs."
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for libcurl installation" >&5
+$as_echo_n "checking for libcurl installation... " >&6; }
+
+
+# Check whether --with-libcurl was given.
+if test "${with_libcurl+set}" = set; then :
+  withval=$with_libcurl;
+if test "$withval"; then
+    LIBCURL_HOME="$withval"
+fi
+
+else
+
+LIBCURL_HOME=/usr/local
+if test ! -f "$LIBCURL_HOME/include/curl/curl.h"
+then
+    LIBCURL_HOME=/usr
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $LIBCURL_HOME" >&5
+$as_echo "$LIBCURL_HOME" >&6; }
+
+fi
+
+
+if test ! -f "$LIBCURL_HOME/include/curl/curl.h"
+then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: libcurl not found. Please use the web interface for submitting FPs/FNs." >&5
+$as_echo "$as_me: WARNING: libcurl not found. Please use the web interface for submitting FPs/FNs." >&2;}
+else
+    if test -f "$LIBCURL_HOME/bin/curl-config"; then
+        CURL_LDFLAGS=$($LIBCURL_HOME/bin/curl-config --libs)
+        CURL_CPPFLAGS=$($LIBCURL_HOME/bin/curl-config --cflags)
+    else
+        CURL_LDFLAGS="-L$LIBCURL_HOME/lib -lcurl"
+        CURL_CPPFLAGS="-I$LIBCURL_HOME/include"
+    fi
+
+    save_LDFLAGS="$LDFLAGS"
+    LDFLAGS="-L$LIBCURL_HOME/lib -lcurl"
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for curl_easy_init in -lcurl" >&5
+$as_echo_n "checking for curl_easy_init in -lcurl... " >&6; }
+if ${ac_cv_lib_curl_curl_easy_init+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lcurl  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char curl_easy_init ();
+int
+main ()
+{
+return curl_easy_init ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_curl_curl_easy_init=yes
+else
+  ac_cv_lib_curl_curl_easy_init=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_curl_curl_easy_init" >&5
+$as_echo "$ac_cv_lib_curl_curl_easy_init" >&6; }
+if test "x$ac_cv_lib_curl_curl_easy_init" = xyes; then :
+  curl_msg="";have_curl="yes";CLAMSUBMIT_LIBS="$CLAMSUBMIT_LIBS $CURL_LDFLAGS";CLAMSUBMIT_CFLAGS="$CLAMSUBMIT_CFLAGS $CURL_CPPFLAGS"
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Your libcurl is misconfigured. Please use the web interface for submitting FPs/FNs." >&5
+$as_echo "$as_me: WARNING: Your libcurl is misconfigured. Please use the web interface for submitting FPs/FNs." >&2;}
+fi
+
+fi
+
+ if test "x$HAVE_LIBBZ2" = "xyes"; then
+  HAVE_LIBBZ2_TRUE=
+  HAVE_LIBBZ2_FALSE='#'
+else
+  HAVE_LIBBZ2_TRUE='#'
+  HAVE_LIBBZ2_FALSE=
+fi
+
+
 # Check whether --enable-unrar was given.
 if test "${enable_unrar+set}" = set; then :
   enableval=$enable_unrar; want_unrar=$enableval
@@ -16987,6 +17063,163 @@ else
   ENABLE_UNRAR_FALSE=
 fi
 
+
+want_xml="auto"
+# Check whether --enable-xml was given.
+if test "${enable_xml+set}" = set; then :
+  enableval=$enable_xml; want_xml=$enableval
+else
+  want_xml="auto"
+fi
+
+
+XML_HOME=""
+if test "X$want_xml" != "Xno"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for libxml2 installation" >&5
+$as_echo_n "checking for libxml2 installation... " >&6; }
+
+# Check whether --with-xml was given.
+if test "${with_xml+set}" = set; then :
+  withval=$with_xml;
+  if test "$withval"
+  then
+    XML_HOME="$withval"
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: using $XML_HOME" >&5
+$as_echo "using $XML_HOME" >&6; }
+  else
+    as_fn_error $? "cannot assign blank value to --with-xml" "$LINENO" 5
+  fi
+
+else
+
+  XML_HOME=/usr/local
+  if test ! -x "$XML_HOME/bin/xml2-config"
+  then
+    XML_HOME=/usr
+    if test ! -x "$XML_HOME/bin/xml2-config"
+    then
+      XML_HOME=""
+    fi
+  fi
+  if test "x$XML_HOME" != "x"; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $XML_HOME" >&5
+$as_echo "$XML_HOME" >&6; }
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+$as_echo "not found" >&6; }
+  fi
+
+fi
+
+fi
+
+found_xml="no"
+XMLCONF_VERSION=""
+XML_CPPFLAGS=""
+XML_LIBS=""
+if test "x$XML_HOME" != "x"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking xml2-config version" >&5
+$as_echo_n "checking xml2-config version... " >&6; }
+  XMLCONF_VERSION="`$XML_HOME/bin/xml2-config --version`"
+  if test "x%XMLCONF_VERSION" != "x"; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $XMLCONF_VERSION" >&5
+$as_echo "$XMLCONF_VERSION" >&6; }
+    found_xml="yes"
+    XML_CPPFLAGS="`$XML_HOME/bin/xml2-config --cflags`"
+    XML_LIBS="`$XML_HOME/bin/xml2-config --libs`"
+  else
+    as_fn_error $? "xml2-config failed" "$LINENO" 5
+  fi
+fi
+
+working_xml="no"
+if test "X$found_xml" != "Xno"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for xmlreader.h in $XML_HOME" >&5
+$as_echo_n "checking for xmlreader.h in $XML_HOME... " >&6; }
+
+  if test ! -f "$XML_HOME/include/libxml2/libxml/xmlreader.h"; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+$as_echo "not found" >&6; }
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
+$as_echo "found" >&6; }
+    save_LIBS="$LIBS"
+    save_CPPFLAGS="$CPPFLAGS"
+    CPPFLAGS="$CPPFLAGS $XML_CPPFLAGS"
+    save_LDFLAGS="$LDFLAGS"
+    LDFLAGS="$LDFLAGS $XML_LIBS"
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for xmlTextReaderRead in -lxml2" >&5
+$as_echo_n "checking for xmlTextReaderRead in -lxml2... " >&6; }
+if ${ac_cv_lib_xml2_xmlTextReaderRead+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lxml2  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char xmlTextReaderRead ();
+int
+main ()
+{
+return xmlTextReaderRead ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_xml2_xmlTextReaderRead=yes
+else
+  ac_cv_lib_xml2_xmlTextReaderRead=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_xml2_xmlTextReaderRead" >&5
+$as_echo "$ac_cv_lib_xml2_xmlTextReaderRead" >&6; }
+if test "x$ac_cv_lib_xml2_xmlTextReaderRead" = xyes; then :
+  working_xml="yes"
+else
+  working_xml="no"
+fi
+
+
+    CPPFLAGS="$save_CPPFLAGS"
+    LDFLAGS="$save_LDFLAGS"
+    LIBS="$save_LIBS"
+  fi
+fi
+
+if test "$working_xml" = "yes"; then
+
+$as_echo "#define HAVE_LIBXML2 1" >>confdefs.h
+
+
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: Compiling and linking with libxml2 from $XML_HOME" >&5
+$as_echo "$as_me: Compiling and linking with libxml2 from $XML_HOME" >&6;}
+else
+  if test "$want_xml" = "yes"; then
+     as_fn_error $? "****** Please install libxml2 packages!" "$LINENO" 5
+  else
+    if test "$want_xml" != "no"; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: ****** libxml2 support unavailable" >&5
+$as_echo "$as_me: ****** libxml2 support unavailable" >&6;}
+    fi
+  fi
+  XML_CPPFLAGS=""
+  XML_LIBS=""
+
+
+fi
 
 # Check whether --enable-getaddrinfo was given.
 if test "${enable_getaddrinfo+set}" = set; then :
@@ -17657,8 +17890,8 @@ $as_echo "#define C_LINUX 1" >>confdefs.h
 	THREAD_LIBS="-lpthread"
 	TH_SAFE="-thread-safe"
 	if test "$want_fanotify" = "yes"; then
-	    ac_fn_c_check_header_mongrel "$LINENO" "linux/fanotify.h" "ac_cv_header_linux_fanotify_h" "$ac_includes_default"
-if test "x$ac_cv_header_linux_fanotify_h" = xyes; then :
+	    ac_fn_c_check_header_mongrel "$LINENO" "sys/fanotify.h" "ac_cv_header_sys_fanotify_h" "$ac_includes_default"
+if test "x$ac_cv_header_sys_fanotify_h" = xyes; then :
 
 $as_echo "#define FANOTIFY 1" >>confdefs.h
 
@@ -17873,6 +18106,8 @@ $as_echo "#define C_GNU_HURD 1" >>confdefs.h
 *)
     ;;
 esac
+
+
 
 
 
@@ -18405,7 +18640,7 @@ $as_echo_n "checking for $clamav_user using ypmatch... " >&6; }
     then
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
-	as_fn_error $? "User $clamav_user (and/or group $clamav_group) doesn't exist. Please read the documentation !" "$LINENO" 5
+	as_fn_error $? "User $clamav_user (and/or group $clamav_group) does not exist. Please read the documentation !" "$LINENO" 5
     else
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes, user $clamav_user and group $clamav_group" >&5
 $as_echo "yes, user $clamav_user and group $clamav_group" >&6; }
@@ -20939,7 +21174,16 @@ $as_echo "#define HAVE__INTERNAL__SHA_COLLECT 1" >>confdefs.h
 
 fi
 
-ac_config_files="$ac_config_files clamscan/Makefile database/Makefile docs/Makefile clamd/Makefile clamdscan/Makefile clamav-milter/Makefile freshclam/Makefile sigtool/Makefile clamconf/Makefile etc/Makefile test/Makefile unit_tests/Makefile clamdtop/Makefile clambc/Makefile Makefile clamav-config libclamav.pc platform.h docs/man/clamav-milter.8 docs/man/clamav-milter.conf.5 docs/man/clambc.1 docs/man/clamconf.1 docs/man/clamd.8 docs/man/clamd.conf.5 docs/man/clamdscan.1 docs/man/clamscan.1 docs/man/freshclam.1 docs/man/freshclam.conf.5 docs/man/sigtool.1 docs/man/clamdtop.1"
+ if test "$have_curl" = "yes"; then
+  ENABLE_CLAMSUBMIT_TRUE=
+  ENABLE_CLAMSUBMIT_FALSE='#'
+else
+  ENABLE_CLAMSUBMIT_TRUE='#'
+  ENABLE_CLAMSUBMIT_FALSE=
+fi
+
+
+ac_config_files="$ac_config_files clamscan/Makefile database/Makefile docs/Makefile clamd/Makefile clamdscan/Makefile clamav-milter/Makefile freshclam/Makefile sigtool/Makefile clamconf/Makefile clamsubmit/Makefile etc/Makefile test/Makefile unit_tests/Makefile clamdtop/Makefile clambc/Makefile Makefile clamav-config libclamav.pc platform.h docs/man/clamav-milter.8 docs/man/clamav-milter.conf.5 docs/man/clambc.1 docs/man/clamconf.1 docs/man/clamd.8 docs/man/clamd.conf.5 docs/man/clamdscan.1 docs/man/clamscan.1 docs/man/freshclam.1 docs/man/freshclam.conf.5 docs/man/sigtool.1 docs/man/clamdtop.1"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -21108,6 +21352,10 @@ if test -z "${MAINTAINER_MODE_TRUE}" && test -z "${MAINTAINER_MODE_FALSE}"; then
   as_fn_error $? "conditional \"MAINTAINER_MODE\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
+if test -z "${HAVE_LIBBZ2_TRUE}" && test -z "${HAVE_LIBBZ2_FALSE}"; then
+  as_fn_error $? "conditional \"HAVE_LIBBZ2\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 if test -z "${ENABLE_UNRAR_TRUE}" && test -z "${ENABLE_UNRAR_FALSE}"; then
   as_fn_error $? "conditional \"ENABLE_UNRAR\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -21122,6 +21370,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_CURSES_TRUE}" && test -z "${HAVE_CURSES_FALSE}"; then
   as_fn_error $? "conditional \"HAVE_CURSES\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${ENABLE_CLAMSUBMIT_TRUE}" && test -z "${ENABLE_CLAMSUBMIT_FALSE}"; then
+  as_fn_error $? "conditional \"ENABLE_CLAMSUBMIT\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 
@@ -22007,6 +22259,7 @@ do
     "freshclam/Makefile") CONFIG_FILES="$CONFIG_FILES freshclam/Makefile" ;;
     "sigtool/Makefile") CONFIG_FILES="$CONFIG_FILES sigtool/Makefile" ;;
     "clamconf/Makefile") CONFIG_FILES="$CONFIG_FILES clamconf/Makefile" ;;
+    "clamsubmit/Makefile") CONFIG_FILES="$CONFIG_FILES clamsubmit/Makefile" ;;
     "etc/Makefile") CONFIG_FILES="$CONFIG_FILES etc/Makefile" ;;
     "test/Makefile") CONFIG_FILES="$CONFIG_FILES test/Makefile" ;;
     "unit_tests/Makefile") CONFIG_FILES="$CONFIG_FILES unit_tests/Makefile" ;;
@@ -23716,6 +23969,10 @@ if test -z "${MAINTAINER_MODE_TRUE}" && test -z "${MAINTAINER_MODE_FALSE}"; then
   as_fn_error $? "conditional \"MAINTAINER_MODE\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
+if test -z "${HAVE_LIBBZ2_TRUE}" && test -z "${HAVE_LIBBZ2_FALSE}"; then
+  as_fn_error $? "conditional \"HAVE_LIBBZ2\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 if test -z "${ENABLE_UNRAR_TRUE}" && test -z "${ENABLE_UNRAR_FALSE}"; then
   as_fn_error $? "conditional \"ENABLE_UNRAR\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -23730,6 +23987,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_CURSES_TRUE}" && test -z "${HAVE_CURSES_FALSE}"; then
   as_fn_error $? "conditional \"HAVE_CURSES\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${ENABLE_CLAMSUBMIT_TRUE}" && test -z "${ENABLE_CLAMSUBMIT_FALSE}"; then
+  as_fn_error $? "conditional \"ENABLE_CLAMSUBMIT\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${am__EXEEXT_TRUE}" && test -z "${am__EXEEXT_FALSE}"; then
@@ -24624,6 +24885,7 @@ do
     "freshclam/Makefile") CONFIG_FILES="$CONFIG_FILES freshclam/Makefile" ;;
     "sigtool/Makefile") CONFIG_FILES="$CONFIG_FILES sigtool/Makefile" ;;
     "clamconf/Makefile") CONFIG_FILES="$CONFIG_FILES clamconf/Makefile" ;;
+    "clamsubmit/Makefile") CONFIG_FILES="$CONFIG_FILES clamsubmit/Makefile" ;;
     "etc/Makefile") CONFIG_FILES="$CONFIG_FILES etc/Makefile" ;;
     "test/Makefile") CONFIG_FILES="$CONFIG_FILES test/Makefile" ;;
     "unit_tests/Makefile") CONFIG_FILES="$CONFIG_FILES unit_tests/Makefile" ;;
@@ -26267,6 +26529,19 @@ else
 fi
 
 
+
+   $as_echo_n "              clamsubmit  : "
+   if test "x$curl_msg" = "xno"; then :
+  $as_echo "$have_curl (disabled)"
+elif test "x$curl_msg" = "xyes"; then :
+  $as_echo "$have_curl"
+elif test "x$curl_msg" = "x"; then :
+  $as_echo "$have_curl"
+else
+  $as_echo "$have_curl ($curl_msg)"
+fi
+
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: Summary of engine performance features)" >&5
 $as_echo "$as_me: Summary of engine performance features)" >&6;}
 if test "x$enable_debug" = "xyes"; then
@@ -26333,19 +26608,6 @@ fi
 $as_echo "$as_me: Summary of engine detection features" >&6;}
 
 
-   $as_echo_n "              autoit_ea06 : "
-   if test "x" = "xno"; then :
-  $as_echo "$have_autoitea06 (disabled)"
-elif test "x" = "xyes"; then :
-  $as_echo "$have_autoitea06"
-elif test "x" = "x"; then :
-  $as_echo "$have_autoitea06"
-else
-  $as_echo "$have_autoitea06 ()"
-fi
-
-
-
    $as_echo_n "              bzip2       : "
    if test "x$want_bzip2" = "xno"; then :
   $as_echo "$bzip_check (disabled)"
@@ -26383,6 +26645,35 @@ else
   $as_echo "$want_unrar ($want_unrar)"
 fi
 
+if test "x$XML_LIBS" = "x"; then
+
+
+   $as_echo_n "              dmg and xar : "
+   if test "x" = "xno"; then :
+  $as_echo "no (disabled)"
+elif test "x" = "xyes"; then :
+  $as_echo "no"
+elif test "x" = "x"; then :
+  $as_echo "no"
+else
+  $as_echo "no ()"
+fi
+
+else
+
+
+   $as_echo_n "              dmg and xar : "
+   if test "x" = "xno"; then :
+  $as_echo "yes, from $XML_HOME (disabled)"
+elif test "x" = "xyes"; then :
+  $as_echo "yes, from $XML_HOME"
+elif test "x" = "x"; then :
+  $as_echo "yes, from $XML_HOME"
+else
+  $as_echo "yes, from $XML_HOME ()"
+fi
+
+fi
 
 # Yep, downgrading the compiler avoids the bug too:
 # 4.0.x, and 4.1.0 are the known buggy versions

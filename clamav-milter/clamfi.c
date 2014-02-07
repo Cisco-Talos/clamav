@@ -148,7 +148,6 @@ static void nullify(SMFICTX *ctx, struct CLAMFI *cf, enum CFWHAT closewhat) {
 	free(cf->recipients);
     }
     smfi_setpriv(ctx, NULL);
-    free(cf);
 }
 
 
@@ -225,6 +224,7 @@ sfsistat clamfi_header(SMFICTX *ctx, char *headerf, char *headerv) {
     if(!cf->totsz && cf->all_whitelisted) {
 	logg("*Skipping scan (all destinations whitelisted)\n");
 	nullify(ctx, cf, CF_NONE);
+    free(cf);
 	return SMFIS_ACCEPT;
     }
 
@@ -244,12 +244,18 @@ sfsistat clamfi_header(SMFICTX *ctx, char *headerf, char *headerv) {
 	if(!strcasecmp(headerf, "X-Virus-Status")) cf->status_count++;
     }
 
-    if((ret = sendchunk(cf, (unsigned char *)headerf, strlen(headerf), ctx)) != SMFIS_CONTINUE)
-	return ret;
-    if((ret = sendchunk(cf, (unsigned char *)": ", 2, ctx)) != SMFIS_CONTINUE)
-	return ret;
-    if(headerv && (ret = sendchunk(cf, (unsigned char *)headerv, strlen(headerv), ctx)) != SMFIS_CONTINUE)
-	return ret;
+    if((ret = sendchunk(cf, (unsigned char *)headerf, strlen(headerf), ctx)) != SMFIS_CONTINUE) {
+        free(cf);
+        return ret;
+    }
+    if((ret = sendchunk(cf, (unsigned char *)": ", 2, ctx)) != SMFIS_CONTINUE) {
+        free(cf);
+        return ret;
+    }
+    if(headerv && (ret = sendchunk(cf, (unsigned char *)headerv, strlen(headerv), ctx)) != SMFIS_CONTINUE) {
+        free(cf);
+        return ret;
+    }
     return sendchunk(cf, (unsigned char *)"\r\n", 2, ctx);
 }
 

@@ -64,4 +64,51 @@
 #endif
 #endif
 
+/* Ensure we have print format types */
+/* PRIu64 should be in <inttypes.h> */
+#ifndef PRIu64
+#ifndef _SF64_PREFIX
+#if SIZEOF_LONG == 8
+#define _SF64_PREFIX "l"
+#elif SIZEOF_LONG_LONG == 8
+#define _SF64_PREFIX "ll"
+#endif
+#endif
+
+#define PRIu64 _SF64_PREFIX "u"
+#define PRIi64 _SF64_PREFIX "i"
+#define PRIx64 _SF64_PREFIX "x"
+#endif
+
+#ifndef STDu64
+#define STDu64 "%" PRIu64
+#define STDi64 "%" PRIi64
+#define STDx64 "%" PRIx64
+#endif
+
+/* PRIu32 should also be in <inttypes.h> */
+#ifndef PRIu32
+#ifndef _SF32_PREFIX
+#if SIZEOF_INT == 4
+#define _SF32_PREFIX ""
+#elif SIZEOF_LONG == 4
+#define _SF32_PREFIX "l"
+#endif
+#endif
+
+#define PRIu32 _SF32_PREFIX "u"
+#define PRIi32 _SF32_PREFIX "i"
+#define PRIx32 _SF32_PREFIX "x"
+#endif
+
+#ifndef STDu32
+#define STDu32 "%" PRIu32
+#define STDi32 "%" PRIi32
+#define STDx32 "%" PRIx32
+#endif
+
+#ifndef INT32_MAX
+#define INT32_MAX 2147483647
+#endif
+
 #endif

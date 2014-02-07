@@ -68,7 +68,7 @@ RWMutexImpl::RWMutexImpl()
 
 #ifdef __APPLE__
     // Workaround a bug/mis-feature in Darwin's pthread_rwlock_init.
-    bzero(rwlock, sizeof(pthread_rwlock_t));
+    memset(rwlock, 0x00, sizeof(pthread_rwlock_t));
 #endif
 
     // Initialize the rwlock

@@ -201,10 +201,12 @@ attachment.exe: OK
 
     \section{Signature formats}
 
-    \subsection{MD5}
-    The easiest way to create signatures for ClamAV is to use MD5 checksums,
-    however this method can be only used against static malware. To create
-    a signature for \verb+test.exe+ use the \verb+--md5+ option of sigtool:
+    \subsection{Hash-based signatures}
+    The easiest way to create signatures for ClamAV is to use filehash checksums,
+    however this method can be only used against static malware.
+    \subsubsection{MD5 hash-based signatures}
+    To create a
+    MD5 signature for \verb+test.exe+ use the \verb+--md5+ option of sigtool:
     \begin{verbatim}
 zolw@localhost:/tmp/test$ sigtool --md5 test.exe > test.hdb
 zolw@localhost:/tmp/test$ cat test.hdb 
@@ -238,16 +240,49 @@ Time: 0.024 sec (0 m 0 s)
     left in /tmp. Please keep in mind that a hash signature will stop
     matching as soon as a single byte changes in the target file.}
 
-    \subsection{MD5, PE section based}
-    You can create a MD5 signature for a specific section in a PE file.
+    \subsubsection{SHA1 and SHA256 hash-based signatures}
+    ClamAV 0.98 has also added support for SHA1 and SHA256 file checksums.
+    The format is the same as for MD5 file checksum. 
+    It can differentiate between them based on the length of the hash string
+    in the signature. For best backwards compatibility, these should be
+    placed inside a \verb+*.hsb+ file. The format is:
+    \begin{verbatim}
+HashString:FileSize:MalwareName
+    \end{verbatim}
+
+    \subsubsection{PE section based hash signatures}
+    You can create a hash signature for a specific section in a PE file.
     Such signatures shall be stored inside \verb+.mdb+ files in the
     following format:
     \begin{verbatim}
-PESectionSize:MD5:MalwareName
+PESectionSize:PESectionHash:MalwareName
     \end{verbatim}
     The easiest way to generate MD5 based section signatures is to extract
     target PE sections into separate files and then run sigtool with the
     option \verb+--mdb+
+
+    ClamAV 0.98 has also added support for SHA1 and SHA256 section based
+    signatures. The format is the same as for MD5 PE section based signatures.
+    It can differentiate between them based on the length of the hash string
+    in the signature. For best backwards compatibility, these should be
+    placed inside a \verb+*.msb+ file.
+
+    \subsubsection{Hash signatures with unknown size}
+    ClamAV 0.98 has also added support for hash signatures where the size
+    is not known but the hash is. It is much more performance-efficient to
+    use signatures with specific sizes, so be cautious when using this
+    feature. For these cases, the '*' character can be used in the size
+    field. To ensure proper backwards compatibility with older versions of
+    ClamAV, these signatures must have a minimum functional level of 73 or
+    higher. Signatures that use the wildcard size without this level set
+    will be rejected as malformed.
+    \begin{verbatim}
+Sample .hsb signature matching any size
+HashString:*:MalwareName:73
+
+Sample .msb signature matching any size
+*:PESectionHash:MalwareName:73
+    \end{verbatim}
 
     \subsection{Body-based signatures}
     ClamAV stores all body-based signatures in a hexadecimal format. In this
@@ -290,6 +325,11 @@ How do I look in hex?
 	Match aa or bb or cc..
 	\item \verb+!(aa|bb|cc|..)+\\
 	Match any byte except aa and bb and cc.. (ClamAV$\ge$0.96)
+	\item \verb+(aaaa|bbbb|cccc|..)+\\
+	Match alternative strings aaaa or bbbb or cccc. Alternative strings must have identical lengths.
+	\item \verb+!(aaaa|bbbb|cccc|..)+\\
+	Match any string except aaaa and bbbb and cccc. Alternative strings must have identical lengths.
+        (ClamAV$\ge$0.98.2)
 	\item \verb+HEXSIG[x-y]aa+ or \verb+aa[x-y]HEXSIG+\\
 	Match aa anchored to a hex-signature, see
 	\url{https://wwws.clamav.net/bugzilla/show_bug.cgi?id=776} for
@@ -343,6 +383,7 @@ MalwareName:TargetType:Offset:HexSignature[:MinFL:[MaxFL]]
 	\item 9 = Mach-O files
 	\item 10 = PDF files
 	\item 11 = Flash files
+	\item 12 = Java class files
     \end{itemize}
     And	\verb+Offset+ is an asterisk or a decimal number \verb+n+ possibly
     combined with a special modifier:
@@ -357,11 +398,9 @@ MalwareName:TargetType:Offset:HexSignature[:MinFL:[MaxFL]]
 	\item \verb#EP-n# = entry point minus n bytes
 	\item \verb#Sx+n# = start of section \verb+x+'s (counted from 0)
 	data plus \verb+n+ bytes
-	\item \verb#Sx-n# = start of section \verb+x+'s data minus \verb+n+ bytes
 	\item \verb#SEx# = entire section \verb+x+ (offset must lie within section
 	boundaries)
 	\item \verb#SL+n# = start of last section plus \verb+n+ bytes
-	\item \verb#SL-n# = start of last section minus \verb+n+ bytes
     \end{itemize}
     All the above offsets except \verb+*+ can be turned into
     \textbf{floating offsets} and represented as \verb+Offset,MaxShift+ where
@@ -609,7 +648,7 @@ NotBefore;Comment[;minFL[;maxFL]]
             this variable. Defaults to 0 if left empty
         \item \verb+Comment:+ comments for this entry
     \end{itemize}
-    The signatures for certs are stored inside \verb+.crtdb+ files.
+    The signatures for certs are stored inside \verb+.crb+ files.
 
     \subsection{Signatures based on container metadata}
     ClamAV 0.96 allows creating generic signatures matching files stored
@@ -670,7 +709,10 @@ fileno:max depth
 
     \subsection{Whitelist databases}
     To whitelist a specific file use the MD5 signature format and place
-    it inside a database file with the extension of \verb+.fp+.\\
+    it inside a database file with the extension of \verb+.fp+.
+    To whitelist a specific file with the SHA1 or SHA256 file hash signature
+    format, place the signature inside a database file with the extension
+    of \verb+.sfp+.\\
 
     \noindent
     To whitelist a specific signature from the database you just add

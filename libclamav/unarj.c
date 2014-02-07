@@ -849,13 +849,17 @@ static int arj_read_main_header(arj_metadata_t *metadata)
 	}
 
 	filename = fmap_need_offstr(metadata->map, metadata->offset, header_size);
-	if (!filename)
+	if (!filename) {
+        cli_dbgmsg("UNARJ: Unable to allocate memory for filename\n");
 		return FALSE;
+    }
 	metadata->offset += strlen(filename) + 1;
 
 	comment = fmap_need_offstr(metadata->map, metadata->offset, header_size);
-	if (!comment)
+	if (!comment) {
+        cli_dbgmsg("UNARJ: Unable to allocate memory for comment\n");
 		return FALSE;
+    }
 	metadata->offset += strlen(comment) + 1;
 	cli_dbgmsg("Filename: %s\n", filename);
 	cli_dbgmsg("Comment: %s\n", comment);
@@ -929,13 +933,17 @@ static int arj_read_file_header(arj_metadata_t *metadata)
 	}
 
 	filename = fmap_need_offstr(metadata->map, metadata->offset, header_size);
-	if (!filename)
+	if (!filename) {
+        cli_dbgmsg("UNARJ: Unable to allocate memory for filename\n");
 		return FALSE;
+    }
 	metadata->offset += strlen(filename) + 1;
 
 	comment = fmap_need_offstr(metadata->map, metadata->offset, header_size);
-	if (!comment)
+	if (!comment) {
+        cli_dbgmsg("UNARJ: Unable to allocate memory for comment\n");
 		return FALSE;
+    }
 	metadata->offset += strlen(comment) + 1;
 	cli_dbgmsg("Filename: %s\n", filename);
 	cli_dbgmsg("Comment: %s\n", comment);

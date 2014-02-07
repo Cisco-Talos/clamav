@@ -108,7 +108,7 @@ Load bytecode.
 	    unsigned int sigs = 0;
 	    int ret;
 
-	if((ret = cl_init()) != CL_SUCCESS) {
+	if((ret = cl_init(CL_INIT_DEFAULT)) != CL_SUCCESS) {
 	    printf("cl_init() error: %s\n", cl_strerror(ret));
 	    return 1;
 	}

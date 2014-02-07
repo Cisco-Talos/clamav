@@ -23,6 +23,10 @@ EXTRA_DIST = FAQ examples BUGS shared libclamav.pc.in libclamunrar_iface/Makefil
 
 bin_SCRIPTS=clamav-config
 
+if ENABLE_CLAMSUBMIT
+SUBDIRS += clamsubmit
+endif
+
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libclamav.pc
 

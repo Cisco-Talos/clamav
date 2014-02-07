@@ -52,9 +52,17 @@
 #include <malloc.h>
 #endif
 
+#ifdef CL_THREAD_SAFE
+#include <pthread.h>
+#endif
+
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
 #include <limits.h>
 #include <stddef.h>
+#endif
+
+#ifdef HAVE_LIBXML2
+#include <libxml/parser.h>
 #endif
 
 #include "clamav.h"
@@ -70,6 +78,8 @@
 #include "scanners.h"
 #include "bytecode.h"
 #include "bytecode_api_impl.h"
+#include "cache.h"
+#include "stats.h"
 
 int (*cli_unrar_open)(int fd, const char *dirname, unrar_state_t *state);
 int (*cli_unrar_extract_next_prepare)(unrar_state_t *state, const char *dirname);
@@ -187,6 +197,11 @@ void cl_debug(void)
     cli_debug_flag = 1;
 }
 
+void cl_always_gen_section_hash(void)
+{
+    cli_always_gen_section_hash = 1;
+}
+
 unsigned int cl_retflevel(void)
 {
     return CL_FLEVEL;
@@ -291,13 +306,16 @@ int cl_init(unsigned int initoptions)
     rc = bytecode_init();
     if (rc)
 	return rc;
+#ifdef HAVE_LIBXML2
+    xmlInitParser();
+#endif
     return CL_SUCCESS;
 }
 
 struct cl_engine *cl_engine_new(void)
 {
 	struct cl_engine *new;
-
+    cli_intel_t *intel;
 
     new = (struct cl_engine *) cli_calloc(1, sizeof(struct cl_engine));
     if(!new) {
@@ -368,6 +386,38 @@ struct cl_engine *cl_engine_new(void)
 	free(new);
 	return NULL;
     }
+
+    /* Set up default stats/intel gathering callbacks */
+    intel = cli_calloc(1, sizeof(cli_intel_t));
+#ifdef CL_THREAD_SAFE
+    if (pthread_mutex_init(&(intel->mutex), NULL)) {
+        cli_errmsg("cli_engine_new: Cannot initialize stats gathering mutex\n");
+        mpool_free(new->mempool, new->dconf);
+        mpool_free(new->mempool, new->root);
+#ifdef USE_MPOOL
+        mpool_destroy(new->mempool);
+#endif
+        free(new);
+        free(intel);
+        return NULL;
+    }
+#endif
+    intel->engine = new;
+    intel->maxsamples = STATS_MAX_SAMPLES;
+    intel->maxmem = STATS_MAX_MEM;
+    intel->timeout = 10;
+    new->stats_data = intel;
+    new->cb_stats_add_sample = NULL;
+    new->cb_stats_submit = NULL;
+    new->cb_stats_flush = clamav_stats_flush;
+    new->cb_stats_remove_sample = clamav_stats_remove_sample;
+    new->cb_stats_decrement_count = clamav_stats_decrement_count;
+    new->cb_stats_get_num = clamav_stats_get_num;
+    new->cb_stats_get_size = clamav_stats_get_size;
+    new->cb_stats_get_hostid = clamav_stats_get_hostid;
+
+    /* Setup raw dmg max settings */
+    new->maxpartitions = 50;
 
     cli_dbgmsg("Initialized %s engine\n", cl_retver());
     return new;
@@ -456,6 +506,12 @@ int cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field field, long
 	case CL_ENGINE_KEEPTMP:
 	    engine->keeptmp = num;
 	    break;
+	case CL_ENGINE_FORCETODISK:
+	    if(num)
+	        engine->engine_options |= ENGINE_OPTIONS_FORCE_TO_DISK;
+	    else
+	        engine->engine_options &= ~(ENGINE_OPTIONS_FORCE_TO_DISK);
+	    break;
 	case CL_ENGINE_BYTECODE_SECURITY:
 	    if (engine->dboptions & CL_DB_COMPILED) {
 		cli_errmsg("cl_engine_set_num: CL_ENGINE_BYTECODE_SECURITY cannot be set after engine was compiled\n");
@@ -478,6 +534,32 @@ int cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field field, long
 	    engine->bytecode_mode = num;
 	    if (num == CL_BYTECODE_MODE_TEST)
 		cli_infomsg(NULL, "bytecode engine in test mode\n");
+	    break;
+	case CL_ENGINE_DISABLE_CACHE:
+	    if (num) {
+		engine->engine_options |= ENGINE_OPTIONS_DISABLE_CACHE;
+	    } else {
+		engine->engine_options &= ~(ENGINE_OPTIONS_DISABLE_CACHE);
+		if (!(engine->cache))
+		    cli_cache_init(engine);
+	    }
+	    break;
+	case CL_ENGINE_DISABLE_PE_STATS:
+	    if (num) {
+		engine->engine_options |= ENGINE_OPTIONS_DISABLE_PE_STATS;
+	    } else {
+		engine->engine_options &= ~(ENGINE_OPTIONS_DISABLE_PE_STATS);
+	    }
+	    break;
+	case CL_ENGINE_STATS_TIMEOUT:
+	    if ((engine->stats_data)) {
+		cli_intel_t *intel = (cli_intel_t *)(engine->stats_data);
+
+		intel->timeout = (uint32_t)num;
+	    }
+	    break;
+	case CL_ENGINE_MAX_PARTITIONS:
+	    engine->maxpartitions = (uint32_t)num;
 	    break;
 	default:
 	    cli_errmsg("cl_engine_set_num: Incorrect field number\n");
@@ -536,12 +618,20 @@ long long cl_engine_get_num(const struct cl_engine *engine, enum cl_engine_field
 	    return engine->ac_maxdepth;
 	case CL_ENGINE_KEEPTMP:
 	    return engine->keeptmp;
+	case CL_ENGINE_FORCETODISK:
+	    return engine->engine_options & ENGINE_OPTIONS_FORCE_TO_DISK;
 	case CL_ENGINE_BYTECODE_SECURITY:
 	    return engine->bytecode_security;
 	case CL_ENGINE_BYTECODE_TIMEOUT:
 	    return engine->bytecode_timeout;
 	case CL_ENGINE_BYTECODE_MODE:
 	    return engine->bytecode_mode;
+	case CL_ENGINE_DISABLE_CACHE:
+	    return engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE;
+	case CL_ENGINE_STATS_TIMEOUT:
+	    return ((cli_intel_t *)(engine->stats_data))->timeout;
+	case CL_ENGINE_MAX_PARTITIONS:
+	    return engine->maxpartitions;
 	default:
 	    cli_errmsg("cl_engine_get: Incorrect field number\n");
 	    if(err)
@@ -604,8 +694,10 @@ struct cl_settings *cl_engine_settings_copy(const struct cl_engine *engine)
 	struct cl_settings *settings;
 
     settings = (struct cl_settings *) malloc(sizeof(struct cl_settings));
-    if(!settings)
-	return NULL;
+    if(!settings) {
+        cli_errmsg("cl_engine_settings_copy: Unable to allocate memory for settings %u\n", sizeof(struct cl_settings));
+        return NULL;
+    }
 
     settings->ac_only = engine->ac_only;
     settings->ac_mindepth = engine->ac_mindepth;
@@ -634,12 +726,27 @@ struct cl_settings *cl_engine_settings_copy(const struct cl_engine *engine)
     settings->cb_sigload = engine->cb_sigload;
     settings->cb_sigload_ctx = engine->cb_sigload_ctx;
     settings->cb_hash = engine->cb_hash;
+    settings->cb_meta = engine->cb_meta;
+    settings->engine_options = engine->engine_options;
+
+    settings->cb_stats_add_sample = engine->cb_stats_add_sample;
+    settings->cb_stats_remove_sample = engine->cb_stats_remove_sample;
+    settings->cb_stats_decrement_count = engine->cb_stats_decrement_count;
+    settings->cb_stats_submit = engine->cb_stats_submit;
+    settings->cb_stats_flush = engine->cb_stats_flush;
+    settings->cb_stats_get_num = engine->cb_stats_get_num;
+    settings->cb_stats_get_size = engine->cb_stats_get_size;
+    settings->cb_stats_get_hostid = engine->cb_stats_get_hostid;
+
+    settings->maxpartitions = engine->maxpartitions;
 
     return settings;
 }
 
 int cl_engine_settings_apply(struct cl_engine *engine, const struct cl_settings *settings)
 {
+    cli_intel_t *intel;
+
     engine->ac_only = settings->ac_only;
     engine->ac_mindepth = settings->ac_mindepth;
     engine->ac_maxdepth = settings->ac_maxdepth;
@@ -658,6 +765,7 @@ int cl_engine_settings_apply(struct cl_engine *engine, const struct cl_settings 
     engine->bytecode_security = settings->bytecode_security;
     engine->bytecode_timeout = settings->bytecode_timeout;
     engine->bytecode_mode = settings->bytecode_mode;
+    engine->engine_options = settings->engine_options;
 
     if(engine->tmpdir)
 	mpool_free(engine->mempool, engine->tmpdir);
@@ -685,6 +793,24 @@ int cl_engine_settings_apply(struct cl_engine *engine, const struct cl_settings 
     engine->cb_sigload = settings->cb_sigload;
     engine->cb_sigload_ctx = settings->cb_sigload_ctx;
     engine->cb_hash = settings->cb_hash;
+    engine->cb_meta = settings->cb_meta;
+
+    intel = (cli_intel_t *)cli_calloc(1, sizeof(cli_intel_t));
+    intel->engine = engine;
+    intel->maxsamples = STATS_MAX_SAMPLES;
+    intel->maxmem = STATS_MAX_MEM;
+
+    engine->stats_data = (void *)intel;
+    engine->cb_stats_add_sample = settings->cb_stats_add_sample;
+    engine->cb_stats_remove_sample = settings->cb_stats_remove_sample;
+    engine->cb_stats_decrement_count = settings->cb_stats_decrement_count;
+    engine->cb_stats_submit = settings->cb_stats_submit;
+    engine->cb_stats_flush = settings->cb_stats_flush;
+    engine->cb_stats_get_num = settings->cb_stats_get_num;
+    engine->cb_stats_get_size = settings->cb_stats_get_size;
+    engine->cb_stats_get_hostid = settings->cb_stats_get_hostid;
+
+    engine->maxpartitions = settings->maxpartitions;
 
     return CL_SUCCESS;
 }
@@ -837,17 +963,19 @@ void cli_append_virus(cli_ctx * ctx, const char * virname)
 	return;
     if (SCAN_ALL) {
 	if (ctx->size_viruses == 0) {
-	    ctx->size_viruses = 2;
-	    if (!(ctx->virname = malloc(ctx->size_viruses * sizeof(char *)))) {
+	    if (!(ctx->virname = malloc(2 * sizeof(char *)))) {
 		cli_errmsg("cli_append_virus: fails on malloc() - virus %s virname not appended.\n", virname);
 		return;
 	    }
+	    ctx->size_viruses = 2;
 	} else if (ctx->num_viruses+1 == ctx->size_viruses) {
-	    ctx->size_viruses *= 2;
-	    if ((ctx->virname = realloc((void *)ctx->virname, ctx->size_viruses * sizeof (char *))) == NULL) {
+	    void * newptr = NULL;
+	    if ((newptr = realloc((void *)ctx->virname, 2 * ctx->size_viruses * sizeof (char *))) == NULL) {
 		cli_errmsg("cli_append_virus: fails on realloc() - virus %s virname not appended.\n", virname);
 		return;
 	    }
+	    ctx->virname = newptr;
+	    ctx->size_viruses *= 2;
 	}
 	ctx->virname[ctx->num_viruses++] = virname;
 	ctx->virname[ctx->num_viruses] = NULL;
@@ -897,7 +1025,7 @@ cli_rmdirs(const char *name)
 	char err[128];
 
 
-    if(STAT(name, &statb) < 0) {
+    if(CLAMSTAT(name, &statb) < 0) {
 	cli_warnmsg("cli_rmdirs: Can't locate %s: %s\n", name, cli_strerror(errno, err, sizeof(err)));
 	return -1;
     }
@@ -929,6 +1057,7 @@ cli_rmdirs(const char *name)
 	path = cli_malloc(strlen(name) + strlen(dent->d_name) + 2);
 
 	if(path == NULL) {
+        cli_errmsg("cli_rmdirs: Unable to allocate memory for path %u\n", strlen(name) + strlen(dent->d_name) + 2);
 	    closedir(dd);
 	    return -1;
 	}
@@ -967,7 +1096,7 @@ int cli_rmdirs(const char *dirname)
 
     chmod(dirname, 0700);
     if((dd = opendir(dirname)) != NULL) {
-	while(STAT(dirname, &maind) != -1) {
+	while(CLAMSTAT(dirname, &maind) != -1) {
 	    if(!rmdir(dirname)) break;
 	    if(errno != ENOTEMPTY && errno != EEXIST && errno != EBADF) {
 		cli_errmsg("cli_rmdirs: Can't remove temporary directory %s: %s\n", dirname, cli_strerror(errno, err, sizeof(err)));
@@ -987,6 +1116,7 @@ int cli_rmdirs(const char *dirname)
 		    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
 			path = cli_malloc(strlen(dirname) + strlen(dent->d_name) + 2);
 			if(!path) {
+                cli_errmsg("cli_rmdirs: Unable to allocate memory for path %u\n", strlen(dirname) + strlen(dent->d_name) + 2);
 			    closedir(dd);
 			    return -1;
 			}
@@ -1058,11 +1188,13 @@ bitset_t *cli_bitset_init(void)
 	
 	bs = cli_malloc(sizeof(bitset_t));
 	if (!bs) {
+        cli_errmsg("cli_bitset_init: Unable to allocate memory for bs %u\n", sizeof(bitset_t));
 		return NULL;
 	}
 	bs->length = BITSET_DEFAULT_SIZE;
 	bs->bitset = cli_calloc(BITSET_DEFAULT_SIZE, 1);
 	if (!bs->bitset) {
+        cli_errmsg("cli_bitset_init: Unable to allocate memory for bs->bitset %u\n", BITSET_DEFAULT_SIZE);
 	    free(bs);
 	    return NULL;
 	}

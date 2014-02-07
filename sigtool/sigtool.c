@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007 - 2008 Sourcefire, Inc.
+ *  Copyright (C) 2007 - 2013 Sourcefire, Inc.
  *  Copyright (C) 2002 - 2007 Tomasz Kojm <tkojm@clamav.net>
  *  CDIFF code (C) 2006 Sensory Networks, Inc.
  *  Author: Tomasz Kojm <tkojm@clamav.net>
@@ -59,6 +59,7 @@
 #include "shared/optparser.h"
 #include "shared/misc.h"
 #include "shared/cdiff.h"
+#include "libclamav/sha1.h"
 #include "libclamav/sha256.h"
 #include "shared/tar.h"
 
@@ -72,8 +73,13 @@
 #include "libclamav/fmap.h"
 #include "libclamav/readdb.h"
 #include "libclamav/others.h"
+#include "libclamav/pe.h"
 
 #define MAX_DEL_LOOKAHEAD   5000
+
+//struct s_info info;
+short recursion = 0, bell = 0;
+short printinfected = 0, printclean = 1;
 
 static const struct dblist_s {
     const char *ext;
@@ -110,7 +116,7 @@ static const struct dblist_s {
     { "gdb",   1 },
     { "pdb",   1 },
     { "wdb",   0 },
-    { "crtdb", 1 },
+    { "crb", 1 },
 
     { NULL,	    0 }
 };
@@ -166,9 +172,9 @@ static int hashsig(const struct optstruct *opts, unsigned int mdb, int type)
 
     if(opts->filename) {
 	for(i = 0; opts->filename[i]; i++) {
-	    if(STAT(opts->filename[i], &sb) == -1) {
-		mprintf("!hashsig: Can't access file %s\n", opts->filename[i]);
+	    if(CLAMSTAT(opts->filename[i], &sb) == -1) {
 		perror("hashsig");
+		mprintf("!hashsig: Can't access file %s\n", opts->filename[i]);
 		return -1;
 	    } else {
 		if((sb.st_mode & S_IFMT) == S_IFREG) {
@@ -280,6 +286,7 @@ static char *getdsig(const char *host, const char *user, const unsigned char *da
 	struct termios old, new;
 #endif
 
+    memset(&server, 0x00, sizeof(struct sockaddr_in));
 
     if((pt = getenv("SIGNDPASS"))) {
 	strncpy(pass, pt, sizeof(pass));
@@ -332,8 +339,8 @@ static char *getdsig(const char *host, const char *user, const unsigned char *da
     server.sin_port = htons(33101);
 
     if(connect(sockd, (struct sockaddr *) &server, sizeof(struct sockaddr_in)) < 0) {
-        closesocket(sockd);
 	perror("connect()");
+        closesocket(sockd);
 	mprintf("!getdsig: Can't connect to ClamAV Signing Service at %s\n", host);
 	memset(pass, 0, sizeof(pass));
 	return NULL;
@@ -364,7 +371,8 @@ static char *getdsig(const char *host, const char *user, const unsigned char *da
     memset(pass, 0, sizeof(pass));
     memset(buff, 0, sizeof(buff));
 
-    if((bread = recv(sockd, buff, sizeof(buff), 0)) > 0) {
+    if((bread = recv(sockd, buff, sizeof(buff)-1, 0)) > 0) {
+	buff[bread] = '\0';
 	if(!strstr(buff, "Signature:")) {
 	    mprintf("!getdsig: Error generating digital signature\n");
 	    mprintf("!getdsig: Answer from remote server: %s\n", buff);
@@ -410,9 +418,14 @@ static char *sha256file(const char *file, unsigned int *size)
     sha256_final(&ctx, digest);
     sha = (char *) malloc(65);
     if(!sha)
+    {
+        fclose(fh);
 	return NULL;
+    }	
     for(i = 0; i < 32; i++)
 	sprintf(sha + i * 2, "%02x", digest[i]);
+
+    fclose(fh);	
     return sha;
 }
 
@@ -510,7 +523,7 @@ static int script2cdiff(const char *script, const char *builder, const struct op
 	int bytes;
 
 
-    if(STAT(script, &sb) == -1) {
+    if(CLAMSTAT(script, &sb) == -1) {
 	mprintf("!script2diff: Can't stat file %s\n", script);
 	return -1;
     }
@@ -626,7 +639,7 @@ static int build(const struct optstruct *opts)
 {
 	int ret, bc = 0;
 	size_t bytes;
-	unsigned int i, sigs = 0, oldsigs = 0, entries = 0, version, real_header, fl;
+	unsigned int i, sigs = 0, oldsigs = 0, entries = 0, version, real_header, fl, maxentries;
 	STATBUF foo;
 	unsigned char buffer[FILEBUFF];
 	char *tarfile, header[513], smbuff[32], builder[32], *pt, olddb[512];
@@ -656,7 +669,7 @@ static int build(const struct optstruct *opts)
     if(optget(opts, "datadir")->active)
 	localdbdir = optget(opts, "datadir")->strarg;
 
-    if(STAT("COPYING", &foo) == -1) {
+    if(CLAMSTAT("COPYING", &foo) == -1) {
 	mprintf("!build: COPYING file not found in current working directory.\n");
 	return -1;
     }
@@ -739,11 +752,15 @@ static int build(const struct optstruct *opts)
 	if(entries != sigs)
 	    mprintf("^build: Signatures in %s db files: %u, loaded by libclamav: %u\n", dbname, entries, sigs);
 
-	if(!entries || (sigs > entries && sigs - entries >= 1000)) {
-	    mprintf("!Bad number of signatures in database files\n");
-	    FREE_LS(dblist2);
-	    return -1;
-	}
+    maxentries = optget(opts, "max-bad-sigs")->numarg;
+
+    if (maxentries) {
+        if(!entries || (sigs > entries && sigs - entries >= maxentries)) {
+            mprintf("!Bad number of signatures in database files\n");
+            FREE_LS(dblist2);
+            return -1;
+        }
+    }
     }
 
     /* try to read cvd header of current database */
@@ -776,6 +793,8 @@ static int build(const struct optstruct *opts)
 	version = oldcvd->version + 1;
 	oldsigs = oldcvd->sigs;
 	cl_cvdfree(oldcvd);
+    } else if (optget(opts, "cvd-version")->numarg != 0) {
+        version = optget(opts, "cvd-version")->numarg;
     } else {
 	mprintf("Version number: ");
 	if(scanf("%u", &version) == EOF) {
@@ -805,16 +824,7 @@ static int build(const struct optstruct *opts)
     sprintf(header + strlen(header), "%u:", sigs);
 
     /* functionality level */
-    if(!strcmp(dbname, "main")) {
-	mprintf("Functionality level: ");
-	if(scanf("%u", &fl) == EOF || !fl || fl > 99) {
-	    mprintf("!build: Incorrect functionality level\n");
-	    FREE_LS(dblist2);
-	    return -1;
-	}
-    } else {
-	fl = CL_FLEVEL_SIGTOOL;
-    }
+    fl = (unsigned int)(optget(opts, "flevel")->numarg);
     sprintf(header + strlen(header), "%u:", fl);
 
     real_header = strlen(header);
@@ -1131,6 +1141,10 @@ static int cvdinfo(const struct optstruct *opts)
     mprintf("File: %s\n", pt);
 
     pt = strchr(cvd->time, '-');
+    if(!pt){
+        cl_cvdfree(cvd);
+        return -1;
+    }
     *pt = ':';
     mprintf("Build time: %s\n", cvd->time);
     mprintf("Version: %u\n", cvd->version);
@@ -1191,7 +1205,8 @@ static int listdir(const char *dirname, const regex_t *regex)
 	     cli_strbcasestr(dent->d_name, ".cdb") ||
 	     cli_strbcasestr(dent->d_name, ".cbc") ||
 	     cli_strbcasestr(dent->d_name, ".cld") ||
-	     cli_strbcasestr(dent->d_name, ".cvd"))) {
+	     cli_strbcasestr(dent->d_name, ".cvd") ||  
+	     cli_strbcasestr(dent->d_name, ".crb"))) {
 
 		dbfile = (char *) malloc(strlen(dent->d_name) + strlen(dirname) + 2);
 		if(!dbfile) {
@@ -1315,7 +1330,23 @@ static int listdb(const char *filename, const regex_t *regex)
 	    mprintf("%s\n", start);
 	}
 
-    } else if(cli_strbcasestr(filename, ".hdb") || cli_strbcasestr(filename, ".hdu") || cli_strbcasestr(filename, ".mdb") || cli_strbcasestr(filename, ".mdu")) { /* hash database */
+    } else if (cli_strbcasestr(filename, ".crb")) {
+        while (fgets(buffer, FILEBUFF, fh)) {
+            cli_chomp(buffer);
+            
+            if (buffer[0] == '#')
+                continue;
+
+            if (regex) {
+                if (!cli_regexec(regex, buffer, 0 , NULL, 0))
+                    mprintf("[%s] %s\n", dbname, buffer);
+
+                continue;
+            }
+            line++;
+            mprintf("%s\n", buffer);
+        }
+    } else if(cli_strbcasestr(filename, ".hdb") || cli_strbcasestr(filename, ".hdu") || cli_strbcasestr(filename, ".mdb") || cli_strbcasestr(filename, ".mdu") || cli_strbcasestr(filename, ".hsb") || cli_strbcasestr(filename, ".hsu") || cli_strbcasestr(filename, ".msb") || cli_strbcasestr(filename, ".msu")) { /* hash database */
 
 	while(fgets(buffer, FILEBUFF, fh)) {
 	    cli_chomp(buffer);
@@ -1410,7 +1441,7 @@ static int listsigs(const struct optstruct *opts, int mode)
 	name = optget(opts, "list-sigs")->strarg;
 	if(access(name, R_OK) && localdbdir)
 	    name = localdbdir;
-	if(STAT(name, &sb) == -1) {
+	if(CLAMSTAT(name, &sb) == -1) {
 	    mprintf("--list-sigs: Can't get status of %s\n", name);
 	    return -1;
 	}
@@ -1614,9 +1645,11 @@ static int maxlinelen(const char *file)
 
     if(bytes == -1) {
 	mprintf("!maxlinelen: Can't read file %s\n", file);
+	close(fd);
 	return -1;
     }
-
+    
+    close(fd);
     return nmax + 1;
 }
 
@@ -1801,7 +1834,7 @@ static int dircopy(const char *src, const char *dest)
 	char spath[512], dpath[512];
 
 
-    if(STAT(dest, &sb) == -1) {
+    if(CLAMSTAT(dest, &sb) == -1) {
 	if(mkdir(dest, 0755)) {
 	    /* mprintf("!dircopy: Can't create temporary directory %s\n", dest); */
 	    return -1;
@@ -2021,6 +2054,7 @@ static char *decodehexstr(const char *hex, unsigned int *dlen)
 
     decoded = calloc(len + 1 + wildcard * 32, sizeof(char));
     if(!decoded) {
+        free(str16);
 	mprintf("!decodehexstr: Can't allocate memory for decoded\n");
 	return NULL;
     }
@@ -2043,6 +2077,7 @@ static char *decodehexstr(const char *hex, unsigned int *dlen)
 		default:
 		    mprintf("!decodehexstr: Unknown wildcard (0x%x@%u)\n", str16[i] & CLI_MATCH_WILDCARD, i);
 		    free(decoded);
+		    free(str16);
 		    return NULL;
 	    }
 	} else {
@@ -2053,7 +2088,7 @@ static char *decodehexstr(const char *hex, unsigned int *dlen)
 
     if(dlen)
 	*dlen = p;
-
+    free(str16);
     return decoded;
 }
 
@@ -2063,6 +2098,9 @@ static char *decodehexspecial(const char *hex, unsigned int *dlen)
 	unsigned int i, len = 0, hlen, negative, altnum, alttype;
 	char *buff;
 
+    
+    hexcpy = NULL;
+    buff = NULL;
 
     hexcpy = strdup(hex);
     if(!hexcpy) {
@@ -2077,6 +2115,7 @@ static char *decodehexspecial(const char *hex, unsigned int *dlen)
 	buff = calloc(strlen(hex) + 512, sizeof(char));
 	if(!buff) {
 	    mprintf("!decodehexspecial: Can't allocate memory for buff\n");
+	    free(hexcpy);
 	    return NULL;
 	}
 	start = hexcpy;
@@ -2085,6 +2124,8 @@ static char *decodehexspecial(const char *hex, unsigned int *dlen)
 	    *pt++ = 0;
 	    if(!start) {
 		mprintf("!decodehexspecial: Unexpected EOL\n");
+		free(hexcpy);
+		free(buff);
 		return NULL;
 	    }
 	    if(pt >= hexcpy + 2) {
@@ -2096,6 +2137,7 @@ static char *decodehexspecial(const char *hex, unsigned int *dlen)
 	    if(!(decoded = decodehexstr(start, &hlen))) {
 		mprintf("!Decoding failed (1): %s\n", pt);
 		free(hexcpy);
+		free(buff);
 		return NULL;
 	    }
 	    memcpy(&buff[len], decoded, hlen);
@@ -2105,6 +2147,7 @@ static char *decodehexspecial(const char *hex, unsigned int *dlen)
 	    if(!(start = strchr(pt, ')'))) {
 		mprintf("!decodehexspecial: Missing closing parethesis\n");
 		free(hexcpy);
+		free(buff);
 		return NULL;
 	    }
 
@@ -2112,6 +2155,7 @@ static char *decodehexspecial(const char *hex, unsigned int *dlen)
 	    if(!strlen(pt)) {
 		mprintf("!decodehexspecial: Empty block\n");
 		free(hexcpy);
+		free(buff);
 		return NULL;
 	    }
 
@@ -2152,6 +2196,7 @@ static char *decodehexspecial(const char *hex, unsigned int *dlen)
 		if(!altnum) {
 		    mprintf("!decodehexspecial: Empty block\n");
 		    free(hexcpy);
+		    free(buff);
 		    return NULL;
 		}
 		altnum++;
@@ -2173,12 +2218,14 @@ static char *decodehexspecial(const char *hex, unsigned int *dlen)
 		for(i = 0; i < altnum; i++) {
 		    if(!(h = cli_strtok(pt, i, "|"))) {
 			free(hexcpy);
+			free(buff);
 			return NULL;
 		    }
 
 		    if(!(c = cli_hex2str(h))) {
 			free(h);
 			free(hexcpy);
+			free(buff);
 			return NULL;
 		    }
 
@@ -2190,6 +2237,9 @@ static char *decodehexspecial(const char *hex, unsigned int *dlen)
 		    }
 		    if(i + 1 != altnum)
 			buff[len++] = '|';
+
+		    free(h);
+		    free(c);	
 		}
 		buff[len++] = '}';
 	    }
@@ -2198,11 +2248,13 @@ static char *decodehexspecial(const char *hex, unsigned int *dlen)
 	if(start) {
 	    if(!(decoded = decodehexstr(start, &hlen))) {
 		mprintf("!Decoding failed (2)\n");
+		free(buff);
 		free(hexcpy);
 		return NULL;
 	    }
 	    memcpy(&buff[len], decoded, hlen);
 	    len += hlen;
+	    free(decoded);
 	}
     }
     free(hexcpy);
@@ -2342,6 +2394,7 @@ static int decodehex(const char *hexsig)
 	    }
 	    if(!(decoded = decodehexspecial(pt, &dlen))) {
 		mprintf("!Decoding failed\n");
+        free(pt);
 		return -1;
 	    }
 	    bw = write(1, decoded, dlen);
@@ -2732,12 +2785,129 @@ static int makediff(const struct optstruct *opts)
     return 0;
 }
 
+static int dumpcerts(const struct optstruct *opts)
+{
+    char * filename = NULL;
+    STATBUF sb;
+    const char * fmptr;
+    SHA1Context sha1;
+    struct cl_engine *engine;
+    cli_ctx ctx;
+    int fd, ret;
+    uint8_t shash1[SHA1_HASH_SIZE];
+
+    logg_file = NULL;
+
+    filename = optget(opts, "print-certs")->strarg;
+    if(!filename) {
+	mprintf("!dumpcerts: No filename!\n");
+        return -1;
+    }
+
+    /* build engine */
+    if(!(engine = cl_engine_new())) {
+	mprintf("!dumpcerts: Can't create new engine\n");
+	return -1;
+    }
+    cl_engine_set_num(engine, CL_ENGINE_AC_ONLY, 1);
+
+    if(cli_initroots(engine, 0) != CL_SUCCESS) {
+	mprintf("!dumpcerts: cli_initroots() failed\n");
+	cl_engine_free(engine);
+	return -1;
+    }
+
+    if(cli_parse_add(engine->root[0], "test", "deadbeef", 0, 0, "*", 0, NULL, 0) != CL_SUCCESS) {
+	mprintf("!dumpcerts: Can't parse signature\n");
+	cl_engine_free(engine);
+	return -1;
+    }
+
+    if(cl_engine_compile(engine) != CL_SUCCESS) {
+	mprintf("!dumpcerts: Can't compile engine\n");
+	cl_engine_free(engine);
+	return -1;
+    }
+
+    engine->dconf->pe |= PE_CONF_DUMPCERT;
+    cl_debug();
+
+    /* prepare context */
+    memset(&ctx, '\0', sizeof(cli_ctx));
+    ctx.engine = engine;
+    ctx.options = CL_SCAN_STDOPT;
+    ctx.container_type = CL_TYPE_ANY;
+    ctx.dconf = (struct cli_dconf *) engine->dconf;
+    ctx.fmap = calloc(sizeof(fmap_t *), 1);
+    if(!ctx.fmap) {
+	cl_engine_free(engine);
+	return -1;
+    }
+
+    /* Prepare file */
+    fd = open(filename, O_RDONLY);
+    if(fd < 0) {
+	mprintf("!dumpcerts: Can't open file %s!\n", filename);
+        cl_engine_free(engine);
+        return -1;
+    }
+
+    lseek(fd, 0, SEEK_SET);
+    FSTAT(fd, &sb);
+    if(!(*ctx.fmap = fmap(fd, 0, sb.st_size))) {
+	free(ctx.fmap);
+	close(fd);
+	cl_engine_free(engine);
+	return -1;
+    }
+
+    fmptr = fmap_need_off_once(*ctx.fmap, 0, sb.st_size);
+    if(!fmptr) {
+        mprintf("!dumpcerts: fmap_need_off_once failed!\n");
+        free(ctx.fmap);
+        close(fd);
+        cl_engine_free(engine);
+	return -1;
+    }
+
+    /* Generate SHA1 */
+    SHA1Init(&sha1);
+    SHA1Update(&sha1, fmptr, sb.st_size);
+    SHA1Final(&sha1, shash1);
+
+    ret = cli_checkfp_pe(&ctx, shash1, NULL, CL_CHECKFP_PE_FLAG_AUTHENTICODE);
+    
+    switch(ret) {
+        case CL_CLEAN:
+            mprintf("*dumpcerts: CL_CLEAN after cli_checkfp_pe()!\n");
+            break;
+        case CL_VIRUS:
+            mprintf("*dumpcerts: CL_VIRUS after cli_checkfp_pe()!\n");
+            break;
+        case CL_BREAK:
+            mprintf("*dumpcerts: CL_BREAK after cli_checkfp_pe()!\n");
+            break;
+        case CL_EFORMAT:
+            mprintf("!dumpcerts: Not a valid PE file!\n");
+            break;
+        default:
+            mprintf("!dumpcerts: Other error %d inside cli_checkfp_pe.\n", ret);
+            break;
+    }
+
+    /* Cleanup */
+    free(ctx.fmap);
+    close(fd);
+    cl_engine_free(engine);
+    return 0;
+}
+
 static void help(void)
 {
     mprintf("\n");
-    mprintf("             Clam AntiVirus: Signature Tool (sigtool)  %s\n", get_version());
-    printf("           By The ClamAV Team: http://www.clamav.net/team\n");
-    printf("           (C) 2007-2009 Sourcefire, Inc. et al.\n\n");
+    mprintf("Clam AntiVirus: Signature Tool (sigtool)  %s\n", get_version());
+    mprintf("       By The ClamAV Team: http://www.clamav.net/team\n");
+    mprintf("       (C) 2007-2009 Sourcefire, Inc. et al.\n\n");
 
     mprintf("    --help                 -h              show help\n");
     mprintf("    --version              -V              print version number and exit\n");
@@ -2757,20 +2927,36 @@ static void help(void)
     mprintf("    --utf16-decode=FILE                    decode UTF16 encoded files\n");
     mprintf("    --info=FILE            -i FILE         print database information\n");
     mprintf("    --build=NAME [cvd] -b NAME             build a CVD file\n");
+    mprintf("    --max-bad-sigs=NUMBER                  Maximum number of mismatched signatures\n");
+    mprintf("                                           when building a CVD. Default: 3000\n");
+    mprintf("    --flevel=FLEVEL                        Specify a custom flevel.\n");
+    mprintf("                                           Default: %u\n", cl_retflevel());
+    mprintf("    --cvd-version=NUMBER                   Specify the version number to use for\n");
+    mprintf("                                           the build. Default is to use the value+1\n");
+    mprintf("                                           from the current CVD in --datadir.\n");
+    mprintf("                                           If no datafile is found the default\n");
+    mprintf("                                           behaviour is to prompt for a version\n");
+    mprintf("                                           number, this switch will prevent the\n");
+    mprintf("                                           prompt.  NOTE: If a CVD is found in the\n");
+    mprintf("                                           --datadir its version+1 is used and\n");
+    mprintf("                                           this value is ignored.\n");
     mprintf("    --no-cdiff                             Don't generate .cdiff file\n");
     mprintf("    --unsigned                             Create unsigned database file (.cud)\n");
+    mprintf("    --print-certs=FILE                     Print Authenticode details from a PE\n");
     mprintf("    --server=ADDR                          ClamAV Signing Service address\n");
-    mprintf("    --datadir=DIR				Use DIR as default database directory\n");
+    mprintf("    --datadir=DIR                          Use DIR as default database directory\n");
     mprintf("    --unpack=FILE          -u FILE         Unpack a CVD/CLD file\n");
     mprintf("    --unpack-current=SHORTNAME             Unpack local CVD/CLD into cwd\n");
     mprintf("    --list-sigs[=FILE]     -l[FILE]        List signature names\n");
     mprintf("    --find-sigs=REGEX      -fREGEX         Find signatures matching REGEX\n");
     mprintf("    --decode-sigs                          Decode signatures from stdin\n");
-    mprintf("    --test-sigs=DATABASE TARGET_FILE       Test signatures from DATABASE against TARGET_FILE\n");
+    mprintf("    --test-sigs=DATABASE TARGET_FILE       Test signatures from DATABASE against \n");
+    mprintf("                                           TARGET_FILE\n");
     mprintf("    --vba=FILE                             Extract VBA/Word6 macro code\n");
     mprintf("    --vba-hex=FILE                         Extract Word6 macro code with hex values\n");
     mprintf("    --diff=OLD NEW         -d OLD NEW      Create diff for OLD and NEW CVDs\n");
-    mprintf("    --compare=OLD NEW      -c OLD NEW      Show diff between OLD and NEW files in cdiff format\n");
+    mprintf("    --compare=OLD NEW      -c OLD NEW      Show diff between OLD and NEW files in\n");
+    mprintf("                                           cdiff format\n");
     mprintf("    --run-cdiff=FILE       -r FILE         Execute update script FILE in cwd\n");
     mprintf("    --verify-cdiff=DIFF CVD/CLD            Verify DIFF against CVD/CLD\n");
     mprintf("\n");
@@ -2856,6 +3042,8 @@ int main(int argc, char **argv)
 	ret = makediff(opts);
     else if(optget(opts, "compare")->enabled)
 	ret = compareone(opts);
+    else if(optget(opts, "print-certs")->enabled)
+	ret = dumpcerts(opts);
     else if(optget(opts, "run-cdiff")->enabled)
 	ret = rundiff(opts);
     else if(optget(opts, "verify-cdiff")->enabled) {
@@ -2863,7 +3051,7 @@ int main(int argc, char **argv)
 	    mprintf("!--verify-cdiff requires two arguments\n");
 	    ret = -1;
 	} else {
-	    if(STAT(opts->filename[0], &sb) == -1) {
+	    if(CLAMSTAT(opts->filename[0], &sb) == -1) {
 		mprintf("--verify-cdiff: Can't get status of %s\n", opts->filename[0]);
 		ret = -1;
 	    } else {

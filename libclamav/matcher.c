@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2009 Sourcefire, Inc.
+ *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
  *
@@ -146,9 +146,9 @@ static inline int matcher_run(const struct cli_matcher *root,
 	}
     }
     PERF_LOG_TRIES(acmode, 0, length);
-    ret = cli_ac_scanbuff(buffer, length, virname, NULL, acres, root, mdata, offset, ftype, ftoffset, acmode, NULL);
+    ret = cli_ac_scanbuff(buffer, length, virname, NULL, acres, root, mdata, offset, ftype, ftoffset, acmode, ctx);
 
-    if (ctx && ret == CL_VIRUS)
+    if (ctx && !SCAN_ALL && ret == CL_VIRUS)
 	cli_append_virus(ctx, *virname);
     if (ctx && SCAN_ALL && viruses_found)
 	return CL_VIRUS;
@@ -159,7 +159,7 @@ static inline int matcher_run(const struct cli_matcher *root,
 int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, cli_ctx *ctx, cli_file_t ftype, struct cli_ac_data **acdata)
 {
 	int ret = CL_CLEAN;
-	unsigned int i;
+	unsigned int i, viruses_found = 0;
 	struct cli_ac_data mdata;
 	struct cli_matcher *groot, *troot = NULL;
 	const char *virname = NULL;
@@ -191,8 +191,14 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, 
 	if(!acdata)
 	    cli_ac_freedata(&mdata);
 
-	if(ret == CL_VIRUS || ret == CL_EMEM)
+	if(ret == CL_EMEM)
 	    return ret;
+	if(ret == CL_VIRUS) {
+	    viruses_found = 1;
+	    if(ctx && !SCAN_ALL) {
+		return ret;
+	    }
+	}
     }
 
     virname = NULL;
@@ -205,6 +211,8 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, 
     if(!acdata)
 	cli_ac_freedata(&mdata);
 
+    if(viruses_found)
+	return CL_VIRUS;
     return ret;
 }
 
@@ -385,7 +393,7 @@ int cli_caloff(const char *offstr, const struct cli_target_info *info, unsigned 
     return CL_SUCCESS;
 }
 
-static void targetinfo(struct cli_target_info *info, unsigned int target, fmap_t *map)
+void cli_targetinfo(struct cli_target_info *info, unsigned int target, fmap_t *map)
 {
 	int (*einfo)(fmap_t *, struct cli_exe_info *) = NULL;
 
@@ -410,103 +418,138 @@ static void targetinfo(struct cli_target_info *info, unsigned int target, fmap_t
 
 int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx)
 {
-	char md5[33];
-	unsigned int i;
-	const char *virname;
-        SHA1Context sha1;
-        SHA256_CTX sha256;
-        fmap_t *map;
-        const char *ptr;
-        uint8_t shash1[SHA1_HASH_SIZE*2+1];
-        uint8_t shash256[SHA256_HASH_SIZE*2+1];
-	int have_sha1, have_sha256, do_dsig_check = 1;
+    char md5[33];
+    unsigned int i;
+    const char *virname=NULL;
+    SHA1Context sha1;
+    SHA256_CTX sha256;
+    fmap_t *map;
+    const char *ptr;
+    uint8_t shash1[SHA1_HASH_SIZE*2+1];
+    uint8_t shash256[SHA256_HASH_SIZE*2+1];
+    int have_sha1, have_sha256, do_dsig_check = 1;
+    stats_section_t sections;
 
     if(cli_hm_scan(digest, size, &virname, ctx->engine->hm_fp, CLI_HASH_MD5) == CL_VIRUS) {
-	cli_dbgmsg("cli_checkfp(md5): Found false positive detection (fp sig: %s), size: %d\n", virname, (int)size);
-	return CL_CLEAN;
+        cli_dbgmsg("cli_checkfp(md5): Found false positive detection (fp sig: %s), size: %d\n", virname, (int)size);
+        return CL_CLEAN;
+    }
+    else if(cli_hm_scan_wild(digest, &virname, ctx->engine->hm_fp, CLI_HASH_MD5) == CL_VIRUS) {
+        cli_dbgmsg("cli_checkfp(md5): Found false positive detection (fp sig: %s), size: *\n", virname);
+        return CL_CLEAN;
     }
 
     if(cli_debug_flag || ctx->engine->cb_hash) {
-	for(i = 0; i < 16; i++)
-	    sprintf(md5 + i * 2, "%02x", digest[i]);
-	md5[32] = 0;
-	cli_dbgmsg("FP SIGNATURE: %s:%u:%s\n", md5, (unsigned int) size,
-		   cli_get_last_virus(ctx) ? cli_get_last_virus(ctx) : "Name");
+        for(i = 0; i < 16; i++)
+            sprintf(md5 + i * 2, "%02x", digest[i]);
+        md5[32] = 0;
+        cli_dbgmsg("FP SIGNATURE: %s:%u:%s\n", md5, (unsigned int) size,
+               cli_get_last_virus(ctx) ? cli_get_last_virus(ctx) : "Name");
     }
 
     if(cli_get_last_virus(ctx))
-	do_dsig_check = strncmp("W32S.", cli_get_last_virus(ctx), 5);
+        do_dsig_check = strncmp("W32S.", cli_get_last_virus(ctx), 5);
 
     map = *ctx->fmap;
-    have_sha1 = cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA1, size) || (cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA1, 1) && do_dsig_check);
-    have_sha256 = cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA256, size);
+    have_sha1 = cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA1, size)
+     || cli_hm_have_wild(ctx->engine->hm_fp, CLI_HASH_SHA1)
+     || (cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA1, 1) && do_dsig_check);
+    have_sha256 = cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA256, size)
+     || cli_hm_have_wild(ctx->engine->hm_fp, CLI_HASH_SHA256);
     if(have_sha1 || have_sha256) {
-	if((ptr = fmap_need_off_once(map, 0, size))) {
-	    if(have_sha1) {
-		SHA1Init(&sha1);
-		SHA1Update(&sha1, ptr, size);
-		SHA1Final(&sha1, &shash1[SHA1_HASH_SIZE]);
-		if(cli_hm_scan(&shash1[SHA1_HASH_SIZE], size, &virname, ctx->engine->hm_fp, CLI_HASH_SHA1) == CL_VIRUS) {
-		    cli_dbgmsg("cli_checkfp(sha1): Found false positive detection (fp sig: %s)\n", virname);
-		    return CL_CLEAN;
-		}
-		if(do_dsig_check && cli_hm_scan(&shash1[SHA1_HASH_SIZE], 1, &virname, ctx->engine->hm_fp, CLI_HASH_SHA1) == CL_VIRUS) {
-		    cli_dbgmsg("cli_checkfp(sha1): Found false positive detection via catalog file\n");
-		    return CL_CLEAN;
-		}
-	    }
-	    if(have_sha256) {
-		sha256_init(&sha256);
-		sha256_update(&sha256, ptr, size);
-		sha256_final(&sha256, &shash256[SHA256_HASH_SIZE]);
-		if(cli_hm_scan(&shash256[SHA256_HASH_SIZE], size, &virname, ctx->engine->hm_fp, CLI_HASH_SHA256) == CL_VIRUS) {
-		    cli_dbgmsg("cli_checkfp(sha256): Found false positive detection (fp sig: %s)\n", virname);
-		    return CL_CLEAN;
-		}
-	    }
-	}
+        if((ptr = fmap_need_off_once(map, 0, size))) {
+            if(have_sha1) {
+                SHA1Init(&sha1);
+                SHA1Update(&sha1, ptr, size);
+                SHA1Final(&sha1, &shash1[SHA1_HASH_SIZE]);
+
+                if(cli_hm_scan(&shash1[SHA1_HASH_SIZE], size, &virname, ctx->engine->hm_fp, CLI_HASH_SHA1) == CL_VIRUS) {
+                    cli_dbgmsg("cli_checkfp(sha1): Found false positive detection (fp sig: %s)\n", virname);
+                    return CL_CLEAN;
+                }
+                if(cli_hm_scan_wild(&shash1[SHA1_HASH_SIZE], &virname, ctx->engine->hm_fp, CLI_HASH_SHA1) == CL_VIRUS) {
+                    cli_dbgmsg("cli_checkfp(sha1): Found false positive detection (fp sig: %s)\n", virname);
+                    return CL_CLEAN;
+                }
+                if(do_dsig_check && cli_hm_scan(&shash1[SHA1_HASH_SIZE], 1, &virname, ctx->engine->hm_fp, CLI_HASH_SHA1) == CL_VIRUS) {
+                    cli_dbgmsg("cli_checkfp(sha1): Found false positive detection via catalog file\n");
+                    return CL_CLEAN;
+                }
+            }
+
+            if(have_sha256) {
+                sha256_init(&sha256);
+                sha256_update(&sha256, ptr, size);
+                sha256_final(&sha256, &shash256[SHA256_HASH_SIZE]);
+
+                if(cli_hm_scan(&shash256[SHA256_HASH_SIZE], size, &virname, ctx->engine->hm_fp, CLI_HASH_SHA256) == CL_VIRUS) {
+                    cli_dbgmsg("cli_checkfp(sha256): Found false positive detection (fp sig: %s)\n", virname);
+                    return CL_CLEAN;
+                }
+                if(cli_hm_scan_wild(&shash256[SHA256_HASH_SIZE], &virname, ctx->engine->hm_fp, CLI_HASH_SHA256) == CL_VIRUS) {
+                    cli_dbgmsg("cli_checkfp(sha256): Found false positive detection (fp sig: %s)\n", virname);
+                    return CL_CLEAN;
+                }
+            }
+        }
     }
 
 #ifdef HAVE__INTERNAL__SHA_COLLECT
     if((ctx->options & CL_SCAN_INTERNAL_COLLECT_SHA) && ctx->sha_collect>0) {
         if((ptr = fmap_need_off_once(map, 0, size))) {
-	    if(!have_sha256) {
-		sha256_init(&sha256);
-		sha256_update(&sha256, ptr, size);
-		sha256_final(&sha256, &shash256[SHA256_HASH_SIZE]);
-	    }
+            if(!have_sha256) {
+                sha256_init(&sha256);
+                sha256_update(&sha256, ptr, size);
+                sha256_final(&sha256, &shash256[SHA256_HASH_SIZE]);
+            }
+
             for(i=0; i<SHA256_HASH_SIZE; i++)
                 sprintf((char *)shash256+i*2, "%02x", shash256[SHA256_HASH_SIZE+i]);
 
-	    if(!have_sha1) {
-		SHA1Init(&sha1);
-		SHA1Update(&sha1, ptr, size);
-		SHA1Final(&sha1, &shash1[SHA1_HASH_SIZE]);
-	    }
+            if(!have_sha1) {
+                SHA1Init(&sha1);
+                SHA1Update(&sha1, ptr, size);
+                SHA1Final(&sha1, &shash1[SHA1_HASH_SIZE]);
+            }
+
             for(i=0; i<SHA1_HASH_SIZE; i++)
                 sprintf((char *)shash1+i*2, "%02x", shash1[SHA1_HASH_SIZE+i]);
 
-	    cli_errmsg("COLLECT:%s:%s:%u:%s:%s\n", shash256, shash1, size, cli_get_last_virus(ctx), ctx->entry_filename);
+            cli_errmsg("COLLECT:%s:%s:%u:%s:%s\n", shash256, shash1, size, cli_get_last_virus(ctx), ctx->entry_filename);
         } else
             cli_errmsg("can't compute sha\n!");
+
         ctx->sha_collect = -1;
     }
 #endif
 
-    if(do_dsig_check) {
-	switch(cli_checkfp_pe(ctx, shash1)) {
-	case CL_CLEAN:
-	    cli_dbgmsg("cli_checkfp(pe): PE file whitelisted due to valid embedded digital signature\n");
-	    return CL_CLEAN;
-	case CL_VIRUS:
-	    if(cli_hm_scan(shash1, 2, &virname, ctx->engine->hm_fp, CLI_HASH_SHA1) == CL_VIRUS) {
-		cli_dbgmsg("cli_checkfp(pe): PE file whitelisted by catalog file\n");
-		return CL_CLEAN;
-	    }
-	}
+    memset(&sections, 0x00, sizeof(stats_section_t));
+    if(do_dsig_check || ctx->engine->cb_stats_add_sample) {
+        uint32_t flags = (do_dsig_check ? CL_CHECKFP_PE_FLAG_AUTHENTICODE : 0);
+        if (!(ctx->engine->engine_options & ENGINE_OPTIONS_DISABLE_PE_STATS) && !(ctx->engine->dconf->stats & (DCONF_STATS_DISABLED | DCONF_STATS_PE_SECTION_DISABLED)))
+            flags |= CL_CHECKFP_PE_FLAG_STATS;
+
+        switch(cli_checkfp_pe(ctx, shash1, &sections, flags)) {
+        case CL_CLEAN:
+            cli_dbgmsg("cli_checkfp(pe): PE file whitelisted due to valid embedded digital signature\n");
+            return CL_CLEAN;
+        case CL_VIRUS:
+            if(cli_hm_scan(shash1, 2, &virname, ctx->engine->hm_fp, CLI_HASH_SHA1) == CL_VIRUS) {
+                cli_dbgmsg("cli_checkfp(pe): PE file whitelisted by catalog file\n");
+
+                return CL_CLEAN;
+            }
+        }
     }
+
     if (ctx->engine->cb_hash)
-	ctx->engine->cb_hash(fmap_fd(*ctx->fmap), size, md5, cli_get_last_virus(ctx), ctx->cb_ctx);
+        ctx->engine->cb_hash(fmap_fd(*ctx->fmap), size, md5, cli_get_last_virus(ctx), ctx->cb_ctx);
+
+    if (ctx->engine->cb_stats_add_sample)
+        ctx->engine->cb_stats_add_sample(cli_get_last_virus(ctx), digest, size, &sections, ctx->engine->stats_data);
+
+    if (sections.sections)
+        free(sections.sections);
 
     return CL_VIRUS;
 }
@@ -721,7 +764,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 	    maxpatlen = groot->maxpatlen;
     }
 
-    targetinfo(&info, i, map);
+    cli_targetinfo(&info, i, map);
 
     if(!ftonly)
 	if((ret = cli_ac_initdata(&gdata, groot->ac_partsigs, groot->ac_lsigs, groot->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN)) || (ret = cli_ac_caloff(groot, &gdata, &info))) {
@@ -771,13 +814,15 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 	    memcpy(digest[CLI_HASH_MD5], refhash, 16);
 	}
 
-	if(cli_hm_have_size(hdb, CLI_HASH_SHA1, map->len) || cli_hm_have_size(fp, CLI_HASH_SHA1, map->len)) {
+	if(cli_hm_have_size(hdb, CLI_HASH_SHA1, map->len) || cli_hm_have_wild(hdb, CLI_HASH_SHA1)
+		|| cli_hm_have_size(fp, CLI_HASH_SHA1, map->len) || cli_hm_have_wild(fp, CLI_HASH_SHA1) ) {
 	    SHA1Init(&sha1ctx);
 	    compute_hash[CLI_HASH_SHA1] = 1;
 	} else
 	    compute_hash[CLI_HASH_SHA1] = 0;
 
-	if(cli_hm_have_size(hdb, CLI_HASH_SHA256, map->len) || cli_hm_have_size(fp, CLI_HASH_SHA256, map->len)) {
+	if(cli_hm_have_size(hdb, CLI_HASH_SHA256, map->len) || cli_hm_have_wild(hdb, CLI_HASH_SHA256)
+		|| cli_hm_have_size(fp, CLI_HASH_SHA256, map->len) || cli_hm_have_wild(fp, CLI_HASH_SHA256)) {
 	    sha256_init(&sha256ctx);
 	    compute_hash[CLI_HASH_SHA256] = 1;
 	} else
@@ -797,7 +842,8 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 	    ret = matcher_run(troot, buff, bytes, &virname, &tdata, offset, &info, ftype, ftoffset, acmode, acres, map, bm_offmode ? &toff : NULL, &viroffset, ctx);
 
 	    if (virname) {
-		viruses_found++;
+		/* virname already appended by matcher_run */
+		viruses_found = 1;
 	    }
 	    if((ret == CL_VIRUS && !SCAN_ALL) || ret == CL_EMEM) {
 		if(!ftonly)
@@ -818,7 +864,8 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 	    ret = matcher_run(groot, buff, bytes, &virname, &gdata, offset, &info, ftype, ftoffset, acmode, acres, map, NULL, &viroffset, ctx);
 
             if (virname) {
-		viruses_found++;
+		/* virname already appended by matcher_run */
+		viruses_found = 1;
 	    }
 	    if((ret == CL_VIRUS && !SCAN_ALL) || ret == CL_EMEM) {
 		cli_ac_freedata(&gdata);
@@ -871,24 +918,54 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 
 	virname = NULL;
 	for(hashtype = CLI_HASH_MD5; hashtype < CLI_HASH_AVAIL_TYPES; hashtype++) {
-	    if(compute_hash[hashtype] &&
-	       (ret = cli_hm_scan(digest[hashtype], map->len, &virname, hdb, hashtype)) == CL_VIRUS) {
-		if(fp) {
-		    for(hashtype2 = CLI_HASH_MD5; hashtype2 < CLI_HASH_AVAIL_TYPES; hashtype2++) {
-			if(compute_hash[hashtype2] &&
-			   cli_hm_scan(digest[hashtype2], map->len, NULL, fp, hashtype2) == CL_VIRUS) {
-			    ret = CL_CLEAN;
-			    break;
-			}
+	    const char * virname_w = NULL;
+	    int found = 0;
+
+	    /* If no hash, skip to next type */
+	    if(!compute_hash[hashtype])
+		continue;
+
+	    /* Do hash scan */
+	    if((ret = cli_hm_scan(digest[hashtype], map->len, &virname, hdb, hashtype)) == CL_VIRUS) {
+		found += 1;
+	    }
+	    if(!found || SCAN_ALL) {
+		if ((ret = cli_hm_scan_wild(digest[hashtype], &virname_w, hdb, hashtype)) == CL_VIRUS)
+		    found += 2;
+	    }
+
+	    /* If found, do immediate hash-only FP check */
+	    if (found && fp) {
+		for(hashtype2 = CLI_HASH_MD5; hashtype2 < CLI_HASH_AVAIL_TYPES; hashtype2++) {
+		    if(!compute_hash[hashtype2])
+			continue;
+		    if(cli_hm_scan(digest[hashtype2], map->len, NULL, fp, hashtype2) == CL_VIRUS) {
+			found = 0;
+			ret = CL_CLEAN;
+			break;
+		    }
+		    else if(cli_hm_scan_wild(digest[hashtype2], NULL, fp, hashtype2) == CL_VIRUS) {
+			found = 0;
+			ret = CL_CLEAN;
+			break;
 		    }
 		}
-		if (ret == CL_VIRUS) {
-		    viruses_found++;
-		    cli_append_virus(ctx, virname);
-		    if (!SCAN_ALL)
-			break;
-		}
+	    }
+
+	    /* If matched size-based hash ... */
+	    if (found % 2) {
+		viruses_found = 1;
+		cli_append_virus(ctx, virname);
+		if (!SCAN_ALL)
+		    break;
 		virname = NULL;
+	    }
+	    /* If matched size-agnostic hash ... */
+	    if (found > 1) {
+		viruses_found = 1;
+		cli_append_virus(ctx, virname_w);
+		if (!SCAN_ALL)
+		    break;
 	    }
 	}
     }

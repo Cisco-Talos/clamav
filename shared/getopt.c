@@ -153,10 +153,12 @@ static int _getopt_internal(int argc, char * argv[], const char *shortopts,
                      const struct option *longopts, int *longind,
                      int long_only)
 {
-  char mode, colon_mode = *shortopts;
+  char mode, colon_mode;
   int shortoff = 0, opt = -1;
 
-  if(getenv("POSIXLY_CORRECT")) colon_mode = mode = '+';
+  if(getenv("POSIXLY_CORRECT")) {
+    colon_mode = mode = '+';
+  }
   else {
     if((colon_mode = *shortopts) == ':') shortoff ++;
     if(((mode = shortopts[shortoff]) == '+') || (mode == '-')) {

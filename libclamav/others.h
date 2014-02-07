@@ -31,6 +31,10 @@
 #include <unistd.h>
 #endif
 
+#if HAVE_PTHREAD_H
+#include <pthread.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "cltypes.h"
@@ -55,11 +59,12 @@
  * in re-enabling affected modules.
  */
 
-#define CL_FLEVEL 73
+#define CL_FLEVEL 77
 #define CL_FLEVEL_DCONF	CL_FLEVEL
 #define CL_FLEVEL_SIGTOOL CL_FLEVEL
 
 extern uint8_t cli_debug_flag;
+extern uint8_t cli_always_gen_section_hash;
 
 /*
  * CLI_ISCONTAINED(buf1, size1, buf2, size2) checks if buf2 is contained
@@ -137,6 +142,35 @@ typedef struct cli_ctx_tag {
 #endif
 } cli_ctx;
 
+#define STATS_ANON_UUID "5b585e8f-3be5-11e3-bf0b-18037319526c"
+#define STATS_MAX_SAMPLES 50
+#define STATS_MAX_MEM 1024*1024
+
+typedef struct cli_flagged_sample {
+    char **virus_name;
+    char md5[16];
+    size_t size; /* A size of zero means size is unavailable (why would this ever happen?) */
+    uint32_t hits;
+    stats_section_t *sections;
+
+    struct cli_flagged_sample *prev;
+    struct cli_flagged_sample *next;
+} cli_flagged_sample_t;
+
+typedef struct cli_clamav_intel {
+    char *hostid;
+    char *host_info;
+    cli_flagged_sample_t *samples;
+    uint32_t nsamples;
+    uint32_t maxsamples;
+    uint32_t maxmem;
+    uint32_t timeout;
+    time_t nextupdate;
+    struct cl_engine *engine;
+#ifdef CL_THREAD_SAFE
+    pthread_mutex_t mutex;
+#endif
+} cli_intel_t;
 
 typedef struct {uint64_t v[2][4];} icon_groupset;
 
@@ -192,6 +226,7 @@ struct cl_engine {
     uint32_t ac_maxdepth;
     char *tmpdir;
     uint32_t keeptmp;
+    uint64_t engine_options;
 
     /* Limits */
     uint64_t maxscansize;  /* during the scanning of archives this size
@@ -235,6 +270,7 @@ struct cl_engine {
 
     /* Filetype definitions */
     struct cli_ftype *ftypes;
+    struct cli_ftype *ptypes;
 
     /* Ignored signatures */
     struct cli_matcher *ignored;
@@ -281,6 +317,20 @@ struct cl_engine {
     uint64_t maxhtmlnotags; /* max size for scanning normalized HTML */
     uint64_t maxscriptnormalize; /* max size to normalize scripts */
     uint64_t maxziptypercg; /* max size to re-do zip filetype */
+
+    /* Statistics/intelligence gathering */
+    void *stats_data;
+    clcb_stats_add_sample cb_stats_add_sample;
+    clcb_stats_remove_sample cb_stats_remove_sample;
+    clcb_stats_decrement_count cb_stats_decrement_count;
+    clcb_stats_submit cb_stats_submit;
+    clcb_stats_flush cb_stats_flush;
+    clcb_stats_get_num cb_stats_get_num;
+    clcb_stats_get_size cb_stats_get_size;
+    clcb_stats_get_hostid cb_stats_get_hostid;
+
+    /* Raw dmg max settings */
+    uint32_t maxpartitions;
 };
 
 struct cl_settings {
@@ -303,6 +353,7 @@ struct cl_settings {
     uint32_t bytecode_timeout;
     enum bytecode_mode bytecode_mode;
     char *pua_cats;
+    uint64_t engine_options;
 
     /* callbacks */
     clcb_pre_cache cb_pre_cache;
@@ -312,6 +363,7 @@ struct cl_settings {
     void *cb_sigload_ctx;
     clcb_msg cb_msg;
     clcb_hash cb_hash;
+    clcb_meta cb_meta;
 
     /* Engine max settings */
     uint64_t maxembeddedpe;  /* max size to scan MSEXE for PE */
@@ -319,6 +371,20 @@ struct cl_settings {
     uint64_t maxhtmlnotags; /* max size for scanning normalized HTML */
     uint64_t maxscriptnormalize; /* max size to normalize scripts */
     uint64_t maxziptypercg; /* max size to re-do zip filetype */
+
+    /* Statistics/intelligence gathering */
+    void *stats_data;
+    clcb_stats_add_sample cb_stats_add_sample;
+    clcb_stats_remove_sample cb_stats_remove_sample;
+    clcb_stats_decrement_count cb_stats_decrement_count;
+    clcb_stats_submit cb_stats_submit;
+    clcb_stats_flush cb_stats_flush;
+    clcb_stats_get_num cb_stats_get_num;
+    clcb_stats_get_size cb_stats_get_size;
+    clcb_stats_get_hostid cb_stats_get_hostid;
+
+    /* Raw dmg max settings */
+    uint32_t maxpartitions;
 };
 
 extern int (*cli_unrar_open)(int fd, const char *dirname, unrar_state_t *state);
@@ -549,7 +615,7 @@ char *cli_gentemp(const char *dir);
 int cli_gentempfd(const char *dir, char **name, int *fd);
 unsigned int cli_rndnum(unsigned int max);
 int cli_filecopy(const char *src, const char *dest);
-int cli_mapscan(fmap_t *map, off_t offset, size_t size, cli_ctx *ctx);
+int cli_mapscan(fmap_t *map, off_t offset, size_t size, cli_ctx *ctx, cli_file_t type);
 bitset_t *cli_bitset_init(void);
 void cli_bitset_free(bitset_t *bs);
 int cli_bitset_set(bitset_t *bs, unsigned long bit_offset);

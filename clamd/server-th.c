@@ -853,6 +853,16 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     val = cl_engine_get_num(engine, CL_ENGINE_MAX_ZIPTYPERCG, NULL);
     logg("Limits: MaxZipTypeRcg limit set to %llu bytes.\n", val);
 
+    if((opt = optget(opts, "MaxPartitions"))->active) {
+        if((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_PARTITIONS, opt->numarg))) {
+            logg("!cli_engine_set_num(MaxPartitions) failed: %s\n", cl_strerror(ret));
+            cl_engine_free(engine);
+            return 1;
+        }
+    }
+    val = cl_engine_get_num(engine, CL_ENGINE_MAX_PARTITIONS, NULL);
+    logg("Limits: MaxPartitions limit set to %llu.\n", val);
+
     if(optget(opts, "ScanArchive")->enabled) {
 	logg("Archive support enabled.\n");
 	options |= CL_SCAN_ARCHIVE;
@@ -950,6 +960,11 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	    options |= CL_SCAN_PHISHING_BLOCKSSL;
 	    logg("Phishing: Always checking for ssl mismatches\n");
 	}
+    }
+
+    if(optget(opts,"PartitionIntersection")->enabled) {
+        options |= CL_SCAN_PARTITION_INTXN;
+        logg("Raw DMG: Always checking for partitons intersections\n");
     }
 
     if(optget(opts,"HeuristicScanPrecedence")->enabled) {
@@ -1298,9 +1313,14 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		}
 		thrmgr_group_terminate(buf->group);
 		if (thrmgr_group_finished(buf->group, EXIT_ERROR)) {
-		    logg("$Shutting down socket after error (FD %d)\n", buf->fd);
-		    shutdown(buf->fd, 2);
-		    closesocket(buf->fd);
+		    if (buf->fd < 0) {
+			logg("$Skipping shutdown of bad socket after error (FD %d)\n", buf->fd);
+		    }
+		    else {
+			logg("$Shutting down socket after error (FD %d)\n", buf->fd);
+			shutdown(buf->fd, 2);
+			closesocket(buf->fd);
+		    }
 		} else
 		    logg("$Socket not shut down due to active tasks\n");
 		buf->fd = -1;

@@ -41,6 +41,16 @@ EXPORTS cl_set_clcb_msg @33
 EXPORTS cl_engine_set_clcb_hash @34
 EXPORTS cl_engine_set_clcb_pre_cache @35
 EXPORTS cl_engine_set_clcb_meta @36
+EXPORTS cl_always_gen_section_hash @37
+EXPORTS cl_engine_set_stats_set_cbdata @38
+EXPORTS cl_engine_set_clcb_stats_add_sample @39
+EXPORTS cl_engine_set_clcb_stats_remove_sample @40
+EXPORTS cl_engine_set_clcb_stats_decrement_count @41
+EXPORTS cl_engine_set_clcb_stats_submit @42
+EXPORTS cl_engine_set_clcb_stats_flush @43
+EXPORTS cl_engine_set_clcb_stats_get_num @44
+EXPORTS cl_engine_set_clcb_stats_get_size @45
+EXPORTS cl_engine_set_clcb_stats_get_hostid @46
 
 
 ; path variables
@@ -129,6 +139,7 @@ EXPORTS cli_fmap_scandesc @44265 NONAME
 EXPORTS cli_hashset_destroy @44266 NONAME
 EXPORTS cli_detect_environment @44267 NONAME
 EXPORTS cli_filecopy @44268 NONAME
+EXPORTS cli_checkfp_pe @44353 NONAME
 
 ; compatibility layer, tommath, zlib
 EXPORTS w32_srand @44269 NONAME
@@ -139,9 +150,10 @@ EXPORTS readdir @44273 NONAME
 EXPORTS closedir @44274 NONAME
 EXPORTS safe_open @44275 NONAME
 EXPORTS snprintf @44276 NONAME
-;EXPORTS mp_init @44277 NONAME
-;EXPORTS mp_read_radix @44278 NONAME
-;EXPORTS mp_clear @44279 NONAME
+; SHA1 numbers reused from mp_* functions
+EXPORTS SHA1Init @44277 NONAME
+EXPORTS SHA1Update @44278 NONAME
+EXPORTS SHA1Final @44279 NONAME
 EXPORTS sha256_init @44280 NONAME
 EXPORTS sha256_update @44281 NONAME
 EXPORTS sha256_final @44282 NONAME

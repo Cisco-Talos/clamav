@@ -192,7 +192,7 @@ int command(client_conn_t *conn, int *virus)
     struct cl_engine *engine = conn->engine;
     unsigned int options = conn->options;
     const struct optstruct *opts = conn->opts;
-    int type = -1; /* TODO: make this enum */
+    enum scan_type type = TYPE_INIT;
     int maxdirrec;
     int ret = 0;
     int flags = CLI_FTW_STD;
@@ -236,7 +236,7 @@ int command(client_conn_t *conn, int *virus)
 	    int multiscan, max, alive;
 
 	    /* use MULTISCAN only for directories (bb #1869) */
-	    if (STAT(conn->filename, &sb) == 0 &&
+	    if (CLAMSTAT(conn->filename, &sb) == 0 &&
 		!S_ISDIR(sb.st_mode)) {
 		thrmgr_setactivetask(NULL, "CONTSCAN");
 		type = TYPE_CONTSCAN;
@@ -362,13 +362,18 @@ int command(client_conn_t *conn, int *virus)
 	     cli_unlink(conn->filename);
 	     return ret;
 	 case COMMAND_ALLMATCHSCAN:
-	     thrmgr_setactivetask(NULL, "ALLMATCHSCAN");
-	     scandata.options |= CL_SCAN_ALLMATCHES;
-	     type = TYPE_SCAN;
-	     break;
+	     if (!optget(opts, "AllowAllMatchScan")->enabled) {
+		logg("$Rejecting ALLMATCHSCAN command.\n");
+		conn_reply(conn, conn->filename, "ALLMATCHSCAN command disabled by clamd configuration.", "ERROR");
+		return 1;
+	    }
+	    thrmgr_setactivetask(NULL, "ALLMATCHSCAN");
+	    scandata.options |= CL_SCAN_ALLMATCHES;
+	    type = TYPE_SCAN;
+	    break;
 	 default:
-	     logg("!Invalid command distpached: %d\n", conn->cmdtype);
-	     return 1;
+	    logg("!Invalid command dispatched: %d\n", conn->cmdtype);
+	    return 1;
      }
 
      scandata.type = type;
@@ -379,7 +384,7 @@ int command(client_conn_t *conn, int *virus)
 	 flags |= CLI_FTW_FOLLOW_FILE_SYMLINK;
 
      if(!optget(opts, "CrossFilesystems")->enabled)
-	 if(STAT(conn->filename, &sb) == 0)
+	 if(CLAMSTAT(conn->filename, &sb) == 0)
 	     scandata.dev = sb.st_dev;
 
      ret = cli_ftw(conn->filename, flags,  maxdirrec ? maxdirrec : INT_MAX, scan_callback, &data, scan_pathchk);
@@ -591,12 +596,12 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
 	    }
 	case COMMAND_DETSTATSCLEAR:
 	    {
-		detstats_clear();
+        /* TODO: tell client this command has been removed */
 		return 1;
 	    }
 	case COMMAND_DETSTATS:
 	    {
-		detstats_print(desc, conn->term);
+        /* TODO: tell client this command has been removed */
 		return 1;
 	    }
 	case COMMAND_INSTREAM:

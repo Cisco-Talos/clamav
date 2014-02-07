@@ -212,13 +212,18 @@ Example
 # Default: no
 #LeaveTemporaryFiles yes
 
+# Permit use of the ALLMATCHSCAN command. If set to no, clamd will reject
+# any ALLMATCHSCAN command as invalid.
+# Default: yes
+#AllowAllMatchScan no
+
 # Detect Possibly Unwanted Applications.
 # Default: no
 #DetectPUA yes
 
 # Exclude a specific PUA category. This directive can be used multiple times.
-# See http://www.clamav.net/support/pua for the complete list of PUA
-# categories.
+# See https://github.com/vrtadmin/clamav-faq/blob/master/faq/faq-pua.md for 
+# the complete list of PUA categories.
 # Default: Load all categories (if DetectPUA is activated)
 #ExcludePUA NetTool
 #ExcludePUA PWTool
@@ -236,6 +241,17 @@ Example
 # Default: yes
 #AlgorithmicDetection yes
 
+# This option causes memory or nested map scans to dump the content to disk.
+# If you turn on this option, more data is written to disk and is available
+# when the LeaveTemporaryFiles option is enabled.
+#ForceToDisk yes
+
+# This option allows you to disable the caching feature of the engine. By
+# default, the engine will store an MD5 in a cache of any files that are
+# not flagged as virus or that hit limits checks. Disabling the cache will
+# have a negative performance impact on large scans.
+# Default: no
+#DisableCache yes
 
 ##
 ## Executable files
@@ -284,7 +300,6 @@ Example
 # Default: yes
 #ScanOLE2 yes
 
-
 # With this option enabled OLE2 files with VBA macros, which were not
 # detected by signatures will be marked as "Heuristics.OLE2.ContainsMacros".
 # Default: no
@@ -319,7 +334,6 @@ Example
 #	   Never use it on loaded servers.
 # Default: no
 #ScanPartialMessages yes
-
 
 # With this option enabled ClamAV will try to detect phishing attempts by using
 # signatures.
@@ -357,6 +371,7 @@ Example
 #
 # Default: no
 #HeuristicScanPrecedence yes
+
 
 ##
 ## Data Loss Prevention (DLP)
@@ -490,48 +505,41 @@ Example
 
 
 ##
-## Clamuko settings
+## On-access Scan Settings
 ##
 
-# Enable Clamuko. Dazuko must be configured and running. Clamuko supports
-# both Dazuko (/dev/dazuko) and DazukoFS (/dev/dazukofs.ctrl). DazukoFS
-# is the preferred option. For more information please visit www.dazuko.org
+# Enable on-access scanning. Currently, this is supported via fanotify.
+# Clamuko/Dazuko support has been deprecated.
 # Default: no
-#ClamukoScanOnAccess yes
+#ScanOnAccess yes
 
-# The number of scanner threads that will be started (DazukoFS only).
-# Having multiple scanner threads allows Clamuko to serve multiple
-# processes simultaneously. This is particularly beneficial on SMP machines.
-# Default: 3
-#ClamukoScannerCount 3
-
-# Don't scan files larger than ClamukoMaxFileSize
+# Don't scan files larger than OnAccessMaxFileSize
 # Value of 0 disables the limit.
 # Default: 5M
-#ClamukoMaxFileSize 10M
-
-# Set access mask for Clamuko (Dazuko only).
-# Default: no
-#ClamukoScanOnOpen yes
-#ClamukoScanOnClose yes
-#ClamukoScanOnExec yes
+#OnAccessMaxFileSize 10M
 
 # Set the include paths (all files inside them will be scanned). You can have
-# multiple ClamukoIncludePath directives but each directory must be added
-# in a seperate line. (Dazuko only)
+# multiple OnAccessIncludePath directives but each directory must be added
+# in a separate line. (On-access scan only)
 # Default: disabled
-#ClamukoIncludePath /home
-#ClamukoIncludePath /students
+#OnAccessIncludePath /home
+#OnAccessIncludePath /students
 
-# Set the exclude paths. All subdirectories are also excluded. (Dazuko only)
+# Set the exclude paths. All subdirectories are also excluded.
+# (On-access scan only)
 # Default: disabled
-#ClamukoExcludePath /home/bofh
+#OnAccessExcludePath /home/bofh
 
 # With this option you can whitelist specific UIDs. Processes with these UIDs
 # will be able to access all files.
 # This option can be used multiple times (one per line).
 # Default: disabled
-#ClamukoExcludeUID 0
+#OnAccessExcludeUID 0
+
+
+##
+## Bytecode
+##
 
 # With this option enabled ClamAV will load bytecode from the database. 
 # It is highly recommended you keep this option on, otherwise you'll miss detections for many new viruses.

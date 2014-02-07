@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2006 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2013 Tomasz Kojm <tkojm@clamav.net>
  *  HTTP/1.1 compliance by Arkadiusz Miskiewicz <misiek@pld.org.pl>
  *  Proxy support by Nigel Horne <njh@bandsman.co.uk>
  *  Proxy authorization support by Gernot Tenchio <g.tenchio@telco-tech.de>
@@ -150,7 +150,7 @@ getclientsock (const char *localip, int prot)
         socketfd = socket (AF_INET, SOCK_STREAM, 0);
     if (socketfd < 0)
     {
-        logg ("!Can't create new socket\n");
+        logg ("!Can't create new socket: %s\n", strerror(errno));
         return -1;
     }
 
@@ -171,7 +171,7 @@ getclientsock (const char *localip, int prot)
         {
             char ipaddr[46];
 
-            if (bind (socketfd, res->ai_addr, res->ai_addrlen) != 0)
+            if (bind (socketfd, res->ai_addr, (socklen_t)res->ai_addrlen) != 0)
             {
                 logg ("!Could not bind to local ip address '%s': %s\n",
                       localip, strerror (errno));
@@ -214,7 +214,7 @@ getclientsock (const char *localip, int prot)
             client.sin_addr = *(struct in_addr *) he->h_addr_list[0];
             if (bind
                 (socketfd, (struct sockaddr *) &client,
-                 sizeof (struct sockaddr_in)) != 0)
+                 (socklen_t)sizeof (struct sockaddr_in)) != 0)
             {
                 logg ("!Could not bind to local ip address '%s': %s\n",
                       localip, strerror (errno));
@@ -628,238 +628,6 @@ proxyauth (const char *user, const char *pass)
 
     return auth;
 }
-
-#if BUILD_CLAMD
-int
-submitstats (const char *clamdcfg, const struct optstruct *opts)
-{
-    int sd, clamsockd, bread, cnt, ret;
-    char post[SUBMIT_MIN_ENTRIES * 256 + 512];
-    char query[SUBMIT_MIN_ENTRIES * 256];
-    char uastr[128], *line;
-    char *pt, *auth = NULL;
-    const char *country = NULL, *user, *proxy = NULL, *hostid = NULL;
-    const struct optstruct *opt;
-    unsigned int qcnt, entries, submitted = 0, permfail = 0, port = 0;
-    struct RCVLN rcv;
-    const char *tokens[5];
-
-
-    if ((opt = optget (opts, "DetectionStatsCountry"))->enabled)
-    {
-        if (strlen (opt->strarg) != 2 || !isalpha (opt->strarg[0])
-            || !isalpha (opt->strarg[1]))
-        {
-            logg ("!SubmitDetectionStats: DetectionStatsCountry requires a two-letter country code\n");
-            return FCE_CONFIG;
-        }
-        country = opt->strarg;
-    }
-
-    if ((opt = optget (opts, "DetectionStatsHostID"))->enabled)
-    {
-        if (strlen (opt->strarg) != 32)
-        {
-            logg ("!SubmitDetectionStats: The unique ID must be 32 characters long\n");
-            return FCE_CONFIG;
-        }
-        hostid = opt->strarg;
-    }
-
-    if ((opt = optget (opts, "HTTPUserAgent"))->enabled)
-        strncpy (uastr, opt->strarg, sizeof (uastr));
-    else
-        snprintf (uastr, sizeof (uastr),
-                  PACKAGE "/%s (OS: " TARGET_OS_TYPE ", ARCH: "
-                  TARGET_ARCH_TYPE ", CPU: " TARGET_CPU_TYPE "):%s:%s",
-                  get_version (), country ? country : "",
-                  hostid ? hostid : "");
-    uastr[sizeof (uastr) - 1] = 0;
-
-    if ((opt = optget (opts, "HTTPProxyServer"))->enabled)
-    {
-        proxy = opt->strarg;
-        if (!strncasecmp (proxy, "http://", 7))
-            proxy += 7;
-
-        if ((opt = optget (opts, "HTTPProxyUsername"))->enabled)
-        {
-            user = opt->strarg;
-            if (!(opt = optget (opts, "HTTPProxyPassword"))->enabled)
-            {
-                logg ("!SubmitDetectionStats: HTTPProxyUsername requires HTTPProxyPassword\n");
-                return FCE_CONFIG;
-            }
-            auth = proxyauth (user, opt->strarg);
-            if (!auth)
-                return FCE_CONFIG;
-        }
-
-        if ((opt = optget (opts, "HTTPProxyPort"))->enabled)
-            port = opt->numarg;
-
-        logg ("*Connecting via %s\n", proxy);
-    }
-
-    if ((clamsockd = clamd_connect (clamdcfg, "SubmitDetectionStats")) < 0)
-        return FCE_CONNECTION;
-
-    recvlninit (&rcv, clamsockd);
-    if (sendln (clamsockd, "zDETSTATS", 10))
-    {
-        closesocket (clamsockd);
-        return FCE_CONNECTION;
-    }
-
-    ret = 0;
-    memset (query, 0, sizeof (query));
-    qcnt = 0;
-    entries = 0;
-    while (recvln (&rcv, &line, NULL) > 0)
-    {
-        if (cli_strtokenize (line, ':', 5, tokens) != 5)
-        {
-            logg ("!SubmitDetectionStats: Invalid data format\n");
-            ret = FCE_CONNECTION;
-            break;
-        }
-
-        qcnt +=
-            snprintf (&query[qcnt], sizeof (query) - qcnt,
-                      "ts[]=%s&fname[]=%s&virus[]=%s(%s:%s)&", tokens[0],
-                      tokens[4], tokens[3], tokens[1], tokens[2]);
-        entries++;
-
-        if (entries == SUBMIT_MIN_ENTRIES)
-        {
-            sd = wwwconnect ("stats.clamav.net", proxy, port, NULL,
-                             optget (opts, "LocalIPAddress")->strarg,
-                             optget (opts, "ConnectTimeout")->numarg, NULL, 0,
-                             0, 1);
-            if (sd < 0)
-            {
-                logg ("!SubmitDetectionStats: Can't connect to server\n");
-                ret = FCE_CONNECTION;
-                break;
-            }
-            query[sizeof (query) - 1] = 0;
-            if (mdprintf (sd,
-                          "POST http://stats.clamav.net/submit.php HTTP/1.0\r\n"
-                          "Host: stats.clamav.net\r\n%s%s%s%s"
-                          "Content-Type: application/x-www-form-urlencoded\r\n"
-                          "User-Agent: %s\r\n"
-                          "Content-Length: %u\r\n\r\n"
-                          "%s",
-                          auth ? auth : "", hostid ? "X-HostID: " : "",
-                          hostid ? hostid : "", hostid ? "\r\n" : "", uastr,
-                          (unsigned int) strlen (query), query) < 0)
-            {
-                logg ("!SubmitDetectionStats: Can't write to socket\n");
-                ret = FCE_CONNECTION;
-                closesocket (sd);
-                break;
-            }
-
-            pt = post;
-            cnt = sizeof (post) - 1;
-#ifdef SO_ERROR
-            while ((bread =
-                    wait_recv (sd, pt, cnt, 0,
-                               optget (opts, "ReceiveTimeout")->numarg)) > 0)
-            {
-#else
-            while ((bread = recv (sd, pt, cnt, 0)) > 0)
-            {
-#endif
-                pt += bread;
-                cnt -= bread;
-                if (cnt <= 0)
-                    break;
-            }
-            *pt = 0;
-            closesocket (sd);
-
-            if (bread < 0)
-            {
-                logg ("!SubmitDetectionStats: Can't read from socket\n");
-                ret = FCE_CONNECTION;
-                break;
-            }
-
-            if (strstr (post, "SUBMIT_OK"))
-            {
-                submitted += entries;
-                if (submitted + SUBMIT_MIN_ENTRIES > SUBMIT_MAX_ENTRIES)
-                    break;
-                qcnt = 0;
-                entries = 0;
-                memset (query, 0, sizeof (query));
-                continue;
-            }
-
-            ret = FCE_CONNECTION;
-            if ((pt = strstr (post, "SUBMIT_PERMANENT_FAILURE")))
-            {
-                if (!submitted)
-                {
-                    permfail = 1;
-                    if ((pt + 32 <= post + sizeof (post)) && pt[24] == ':')
-                        logg ("!SubmitDetectionStats: Remote server reported permanent failure: %s\n", &pt[25]);
-                    else
-                        logg ("!SubmitDetectionStats: Remote server reported permanent failure\n");
-                }
-            }
-            else if ((pt = strstr (post, "SUBMIT_TEMPORARY_FAILURE")))
-            {
-                if (!submitted)
-                {
-                    if ((pt + 32 <= post + sizeof (post)) && pt[24] == ':')
-                        logg ("!SubmitDetectionStats: Remote server reported temporary failure: %s\n", &pt[25]);
-                    else
-                        logg ("!SubmitDetectionStats: Remote server reported temporary failure\n");
-                }
-            }
-            else
-            {
-                if (!submitted)
-                    logg ("!SubmitDetectionStats: Incorrect answer from server\n");
-            }
-
-            break;
-        }
-    }
-    closesocket (clamsockd);
-    if (auth)
-        free (auth);
-
-    if (ret == 0)
-    {
-        if (!submitted)
-        {
-            logg ("SubmitDetectionStats: Not enough recent data for submission\n");
-        }
-        else
-        {
-            logg ("SubmitDetectionStats: Submitted %u records\n", submitted);
-            if ((clamsockd =
-                 clamd_connect (clamdcfg, "SubmitDetectionStats")) != -1)
-            {
-                sendln (clamsockd, "DETSTATSCLEAR", 14);
-                recv (clamsockd, query, sizeof (query), 0);
-                closesocket (clamsockd);
-            }
-        }
-    }
-    return ret;
-}
-#else
-int
-submitstats (const char *clamdcfg, const struct optstruct *opts)
-{
-    logg ("clamd not built, no statistics");
-    return FCE_CONNECTION;
-}
-#endif
 
 static int
 Rfc2822DateTime (char *buf, time_t mtime)
@@ -1495,6 +1263,10 @@ getpatch (const char *dbname, const char *tmpdir, int version,
         return FCE_DIRECTORY;
 
     tempname = cli_gentemp (".");
+    if(!tempname) {
+        CHDIR_ERR (olddir);
+        return FCE_MEM;
+    }
     snprintf (patch, sizeof (patch), "%s-%d.cdiff", dbname, version);
 
     logg ("*Retrieving http://%s/%s\n", hostname, patch);
@@ -1772,11 +1544,12 @@ test_database (const char *newfile, const char *newdb, int bytecode)
     {
         return FCE_TESTFAIL;
     }
+    cl_engine_set_clcb_stats_submit(engine, NULL);
 
     if ((ret =
          cl_load (newfile, engine, &newsigs,
                   CL_DB_PHISHING | CL_DB_PHISHING_URLS | CL_DB_BYTECODE |
-                  CL_DB_PUA)) != CL_SUCCESS)
+                  CL_DB_PUA | CL_DB_ENHANCED)) != CL_SUCCESS)
     {
         logg ("!Failed to load new database: %s\n", cl_strerror (ret));
         cl_engine_free (engine);
@@ -1822,7 +1595,8 @@ test_database_wrap (const char *file, const char *newdb, int bytecode)
     {
     case 0:
         close (pipefd[0]);
-        dup2 (pipefd[1], 2);
+        if (dup2 (pipefd[1], 2) == -1)
+            logg("^dup2() failed: %s\n", strerror(errno));
         exit (test_database (file, newdb, bytecode));
     case -1:
         close (pipefd[0]);
@@ -2086,7 +1860,7 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
             return FCE_FAILEDUPDATE;
         }
 
-        if (pt = cli_strtok (dnsreply, field, ":"))
+        if ((pt = cli_strtok (dnsreply, field, ":")))
         {
             if (!cli_isnumber (pt))
             {
@@ -2291,6 +2065,9 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
         nodb = 1;
 
     newfile = cli_gentemp (updtmpdir);
+    if(!newfile)
+        return FCE_MEM;
+
     if (nodb)
     {
         if (optget (opts, "PrivateMirror")->enabled)
@@ -2308,10 +2085,12 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
                             mdat, logerr, can_whitelist, opts, attempt);
         }
         else
+        {
             ret =
                 getcvd (cvdfile, newfile, hostname, ip, localip, proxy, port,
                         user, pass, uas, newver, ctimeout, rtimeout, mdat,
                         logerr, can_whitelist, opts, attempt);
+        }
 
         if (ret)
         {
@@ -2336,6 +2115,11 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
         ret = 0;
 
         tmpdir = cli_gentemp (updtmpdir);
+	if(!tmpdir){
+	    free(newfile);
+	    return FCE_MEM;
+	}    
+
         maxattempts = optget (opts, "MaxAttempts")->numarg;
         for (i = currver + 1; i <= newver; i++)
         {
@@ -2434,6 +2218,7 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
             logg ("!Can't allocate memory for filename!\n");
             unlink (newfile);
             free (newfile);
+            cl_cvdfree(current);
             return FCE_TESTFAIL;
         }
         newfile2[strlen (newfile2) - 4] = '.';
@@ -2447,6 +2232,7 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
             unlink (newfile);
             free (newfile);
             free (newfile2);
+            cl_cvdfree(current);
             return FCE_DBDIRACCESS;
         }
         free (newfile);
@@ -2458,6 +2244,7 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
             logg ("!Failed to load new database\n");
             unlink (newfile);
             free (newfile);
+            cl_cvdfree(current);
             return FCE_TESTFAIL;
         }
         sigchld_wait = 1;
@@ -2595,7 +2382,7 @@ updatecustomdb (const char *url, int *signo, const struct optstruct *opts,
         rtimeout = optget (opts, "ReceiveTimeout")->numarg;
 
         *mtime = 0;
-        if (STAT (dbname, &sb) != -1)
+        if (CLAMSTAT (dbname, &sb) != -1)
             Rfc2822DateTime (mtime, sb.st_mtime);
 
         newfile = cli_gentemp (updtmpdir);

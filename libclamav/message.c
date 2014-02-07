@@ -548,6 +548,7 @@ messageAddArguments(message *m, const char *s)
 				ptr = strchr(kcopy, ':');
                 if (ptr == NULL) {
                     cli_dbgmsg("Can't parse header \"%s\"\n", s);
+                    free(kcopy);
                     return;
                 }
             }
@@ -888,8 +889,10 @@ messageAddLine(message *m, line_t *line)
 		m->body_last = m->body_last->t_next;
 	}
 
-	if(m->body_last == NULL)
+	if(m->body_last == NULL) {
+        cli_errmsg("messageAddLine: out of memory for m->body_last\n");
 		return -1;
+    }
 
 	m->body_last->t_next = NULL;
 
@@ -2292,8 +2295,10 @@ rfc2231(const char *in)
 
 		/* Don't handle continuations, decode what we can */
 		p = ret = cli_malloc(strlen(in) + 16);
-		if(ret == NULL)
+		if(ret == NULL) {
+            cli_errmsg("rfc2331: out of memory, unable to proceed\n");
 			return NULL;
+        }
 
 		do {
 			switch(*in) {
@@ -2346,8 +2351,10 @@ rfc2231(const char *in)
 
 	ret = cli_malloc(strlen(in) + 1);
 
-	if(ret == NULL)
+	if(ret == NULL) {
+        cli_errmsg("rfc2331: out of memory for ret\n");
 		return NULL;
+    }
 
 	/*
 	 * memcpy(out, in, (ptr - in));

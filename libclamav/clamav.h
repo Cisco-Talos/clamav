@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2009 Sourcefire, Inc.
+ *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
  *
@@ -22,21 +22,21 @@
 #define __CLAMAV_H
 
 /* Certain OSs already use 64bit variables in their stat struct */
-#define STAT64_BLACKLIST !defined(__FreeBSD__)
+#define STAT64_BLACKLIST !defined(__FreeBSD__) && !defined(__APPLE__)
 
 #if defined(HAVE_STAT64) && STAT64_BLACKLIST
 
 #include <unistd.h>
 
 #define STATBUF struct stat64
-#define STAT stat64
+#define CLAMSTAT stat64
 #define LSTAT lstat64
 #define FSTAT fstat64
 #define safe_open(a, b) open(a, b|O_LARGEFILE)
 #else
 
 #define STATBUF struct stat
-#define STAT stat
+#define CLAMSTAT stat
 #define LSTAT lstat
 #define FSTAT fstat
 /* Nothing is safe in windows, not even open, safe_open defined under /win32 */
@@ -121,6 +121,7 @@ typedef enum {
 #define CL_DB_BYTECODE_UNSIGNED	0x8000
 #define CL_DB_UNSIGNED	    0x10000 /* internal */
 #define CL_DB_BYTECODE_STATS 0x20000
+#define CL_DB_ENHANCED      0x40000
 
 /* recommended db settings */
 #define CL_DB_STDOPT	    (CL_DB_PHISHING | CL_DB_PHISHING_URLS | CL_DB_BYTECODE)
@@ -149,6 +150,7 @@ typedef enum {
 #define CL_SCAN_BLOCKMACROS		0x100000
 #define CL_SCAN_ALLMATCHES		0x200000
 #define CL_SCAN_SWF			0x400000
+#define CL_SCAN_PARTITION_INTXN         0x800000
 
 #define CL_SCAN_PERFORMANCE_INFO        0x40000000 /* collect performance timings */
 #define CL_SCAN_INTERNAL_COLLECT_SHA    0x80000000 /* Enables hash output in sha-collect builds - for internal use only */
@@ -161,6 +163,12 @@ typedef enum {
 #define CL_COUNTSIGS_UNOFFICIAL	    0x2
 #define CL_COUNTSIGS_ALL	    (CL_COUNTSIGS_OFFICIAL | CL_COUNTSIGS_UNOFFICIAL)
 
+/* For the new engine_options bit field in the engine */
+#define ENGINE_OPTIONS_NONE             0x0
+#define ENGINE_OPTIONS_DISABLE_CACHE    0x1
+#define ENGINE_OPTIONS_FORCE_TO_DISK    0x2
+#define ENGINE_OPTIONS_DISABLE_PE_STATS 0x3
+
 struct cl_engine;
 struct cl_settings;
 
@@ -168,6 +176,8 @@ struct cl_settings;
 extern int cl_init(unsigned int initoptions);
 
 extern struct cl_engine *cl_engine_new(void);
+
+extern void cl_always_gen_section_hash(void);
 
 enum cl_engine_field {
     CL_ENGINE_MAX_SCANSIZE,	    /* uint64_t */
@@ -192,7 +202,12 @@ enum cl_engine_field {
     CL_ENGINE_MAX_HTMLNORMALIZE,    /* uint64_t */
     CL_ENGINE_MAX_HTMLNOTAGS,       /* uint64_t */
     CL_ENGINE_MAX_SCRIPTNORMALIZE,  /* uint64_t */
-    CL_ENGINE_MAX_ZIPTYPERCG        /* uint64_t */
+    CL_ENGINE_MAX_ZIPTYPERCG,       /* uint64_t */
+    CL_ENGINE_FORCETODISK,          /* uint32_t */
+    CL_ENGINE_DISABLE_CACHE,        /* uint32_t */
+    CL_ENGINE_DISABLE_PE_STATS,     /* uint32_t */
+    CL_ENGINE_STATS_TIMEOUT,        /* uint32_t */
+    CL_ENGINE_MAX_PARTITIONS        /* uint32_t */
 };
 
 enum bytecode_security {
@@ -209,6 +224,16 @@ enum bytecode_mode {
 			      all failures are fatal */
     CL_BYTECODE_MODE_OFF /* for query only, not settable */
 };
+
+struct cli_section_hash {
+    unsigned char md5[16];
+    size_t len;
+};
+
+typedef struct cli_stats_sections {
+    size_t nsections;
+    struct cli_section_hash *sections;
+} stats_section_t;
 
 extern int cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field field, long long num);
 
@@ -230,6 +255,9 @@ extern int cl_engine_addref(struct cl_engine *engine);
 
 extern int cl_engine_free(struct cl_engine *engine);
 
+extern void cli_cache_disable(void);
+
+extern int cli_cache_enable(struct cl_engine *engine);
 
 /* CALLBACKS */
 
@@ -341,6 +369,33 @@ extern void cl_engine_set_clcb_hash(struct cl_engine *engine, clcb_hash callback
 typedef cl_error_t (*clcb_meta)(const char* container_type, unsigned long fsize_container, const char *filename,
 			  unsigned long fsize_real,  int is_encrypted, unsigned int filepos_container, void *context);
 extern void cl_engine_set_clcb_meta(struct cl_engine *engine, clcb_meta callback);
+
+/* Statistics/intelligence gathering callbacks */
+extern void cl_engine_set_stats_set_cbdata(struct cl_engine *engine, void *cbdata);
+
+typedef void (*clcb_stats_add_sample)(const char *virname, const unsigned char *md5, size_t size, stats_section_t *sections, void *cbdata);
+extern void cl_engine_set_clcb_stats_add_sample(struct cl_engine *engine, clcb_stats_add_sample callback);
+
+typedef void (*clcb_stats_remove_sample)(const char *virname, const unsigned char *md5, size_t size, void *cbdata);
+extern void cl_engine_set_clcb_stats_remove_sample(struct cl_engine *engine, clcb_stats_remove_sample callback);
+
+typedef void (*clcb_stats_decrement_count)(const char *virname, const unsigned char *md5, size_t size, void *cbdata);
+extern void cl_engine_set_clcb_stats_decrement_count(struct cl_engine *engine, clcb_stats_decrement_count callback);
+
+typedef void (*clcb_stats_submit)(struct cl_engine *engine, void *cbdata);
+extern void cl_engine_set_clcb_stats_submit(struct cl_engine *engine, clcb_stats_submit callback);
+
+typedef void (*clcb_stats_flush)(struct cl_engine *engine, void *cbdata);
+extern void cl_engine_set_clcb_stats_flush(struct cl_engine *engine, clcb_stats_flush callback);
+
+typedef size_t (*clcb_stats_get_num)(void *cbdata);
+extern void cl_engine_set_clcb_stats_get_num(struct cl_engine *engine, clcb_stats_get_num callback);
+
+typedef size_t (*clcb_stats_get_size)(void *cbdata);
+extern void cl_engine_set_clcb_stats_get_size(struct cl_engine *engine, clcb_stats_get_size callback);
+
+typedef char * (*clcb_stats_get_hostid)(void *cbdata);
+extern void cl_engine_set_clcb_stats_get_hostid(struct cl_engine *engine, clcb_stats_get_hostid callback);
 
 struct cl_stat {
     char *dir;

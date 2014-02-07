@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2009 Sourcefire, Inc.
+ *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
  *
@@ -93,6 +93,7 @@ struct cli_matcher {
 
     /* HASH */
     struct cli_hash_patt hm;
+    struct cli_hash_wild hwild;
 
     /* Extended Aho-Corasick */
     uint32_t ac_partsigs, ac_nodes, ac_patterns, ac_lsigs;
@@ -137,7 +138,7 @@ struct cli_mtarget {
     uint8_t enable_prefiltering;
 };
 
-#define CLI_MTARGETS 12
+#define CLI_MTARGETS 13
 static const struct cli_mtarget cli_mtargets[CLI_MTARGETS] =  {
     { 0,                    "GENERIC",      0,  0, 1 },
     { CL_TYPE_MSEXE,        "PE",           1,  0, 1 },
@@ -150,7 +151,8 @@ static const struct cli_mtarget cli_mtargets[CLI_MTARGETS] =  {
     { CL_TYPE_ERROR,        "NOT USED",     8,  1, 0 },
     { CL_TYPE_MACHO,        "MACH-O",       9,  1, 0 },
     { CL_TYPE_PDF,          "PDF",         10,  1, 0 },
-    { CL_TYPE_SWF,          "FLASH",       11,  1, 0 }
+    { CL_TYPE_SWF,          "FLASH",       11,  1, 0 },
+    { CL_TYPE_JAVA,         "JAVA",        12,  1, 0 }
 };
 
 #define CLI_OFF_ANY         0xffffffff
@@ -175,5 +177,7 @@ int cli_caloff(const char *offstr, const struct cli_target_info *info, unsigned 
 int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx);
 
 int cli_matchmeta(cli_ctx *ctx, const char *fname, size_t fsizec, size_t fsizer, int encrypted, unsigned int filepos, int res1, void *res2);
+
+void cli_targetinfo(struct cli_target_info *info, unsigned int target, fmap_t *map);
 
 #endif

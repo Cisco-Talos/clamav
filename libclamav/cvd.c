@@ -137,6 +137,7 @@ static int cli_untgz(int fd, const char *destdir)
 	    if(outfile) {
 		if(fclose(outfile)) {
 		    cli_errmsg("cli_untgz: Cannot close file %s\n", path);
+		    outfile = NULL;
 		    cli_untgz_cleanup(path, infile, outfile, fdd);
 		    return -1;
 		}
@@ -207,14 +208,19 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
 
     cli_dbgmsg("in cli_tgzload()\n");
 
-    lseek(fd, 512, SEEK_SET);
+    if(lseek(fd, 512, SEEK_SET) < 0) {
+        return CL_ESEEK;
+    }
+
     if(cli_readn(fd, block, 7) != 7)
 	return CL_EFORMAT; /* truncated file? */
 
     if(!strncmp(block, "COPYING", 7))
 	compr = 0;
 
-    lseek(fd, 512, SEEK_SET);
+    if(lseek(fd, 512, SEEK_SET) < 0) {
+        return CL_ESEEK;
+    }
 
     if((fdd = dup(fd)) == -1) {
 	cli_errmsg("cli_tgzload: Can't duplicate descriptor %d\n", fd);
@@ -518,6 +524,11 @@ static int cli_cvdverify(FILE *fs, struct cl_cvd *cvdpt, unsigned int skipsig)
     }
 
     md5 = cli_hashstream(fs, NULL, 1);
+    if (md5 == NULL) {
+	cli_dbgmsg("cli_cvdverify: Cannot generate hash, out of memory\n");
+	cl_cvdfree(cvd);
+	return CL_EMEM;
+    }
     cli_dbgmsg("MD5(.tar.gz) = %s\n", md5);
 
     if(strncmp(md5, cvd->md5, 32)) {
@@ -556,6 +567,7 @@ int cl_cvdverify(const char *file)
 	fclose(fs);
 	return CL_EMEM;
     }
+    engine->cb_stats_submit = NULL; /* Don't submit stats if we're just verifying a CVD */
 
     ret = cli_cvdload(fs, engine, NULL, CL_DB_STDOPT | CL_DB_PUA, !!cli_strbcasestr(file, ".cld"), file, 1);
 

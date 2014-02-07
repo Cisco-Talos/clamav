@@ -75,7 +75,6 @@
 #include "others.h"
 
 static pthread_mutex_t virusaction_lock = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t detstats_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static void xfree(void *p)
 {
@@ -798,72 +797,6 @@ fds_free (struct fd_data *data)
     fds_unlock (data);
 }
 
-struct detstats_s
-{
-    char virname[128];
-    char fname[128];
-    char md5[33];
-    unsigned int fsize;
-    unsigned int time;
-};
-#define DETSTATS_MAX 50
-static struct detstats_s detstats_data[DETSTATS_MAX];
-static unsigned int detstats_idx = 0, detstats_total = 0;
-
-void
-detstats_clear (void)
-{
-    pthread_mutex_lock (&detstats_lock);
-    detstats_idx = detstats_total = 0;
-    pthread_mutex_unlock (&detstats_lock);
-}
-
-void
-detstats_add (const char *virname, const char *fname, unsigned int fsize,
-              const char *md5)
-{
-    pthread_mutex_lock (&detstats_lock);
-
-    strncpy (detstats_data[detstats_idx].virname, virname,
-             sizeof (detstats_data[detstats_idx].virname));
-    detstats_data[detstats_idx].
-        virname[sizeof (detstats_data[detstats_idx].virname) - 1] = 0;
-
-    if ((fname = strrchr (fname, *PATHSEP)))
-        fname++;
-    strncpy (detstats_data[detstats_idx].fname,
-             (!fname
-              || !strlen (fname)) ? "NOFNAME" : fname,
-             sizeof (detstats_data[detstats_idx].fname));
-    detstats_data[detstats_idx].
-        fname[sizeof (detstats_data[detstats_idx].fname) - 1] = 0;
-
-    strncpy (detstats_data[detstats_idx].md5, md5,
-             sizeof (detstats_data[detstats_idx].md5));
-    detstats_data[detstats_idx].md5[sizeof (detstats_data[detstats_idx].md5) -
-                                    1] = 0;
-
-    detstats_data[detstats_idx].fsize = fsize;
-    detstats_data[detstats_idx++].time = time (NULL);
-    if (detstats_idx == DETSTATS_MAX)
-        detstats_idx = 0;
-    detstats_total++;
-    pthread_mutex_unlock (&detstats_lock);
-}
-
-void
-detstats_print (int desc, char term)
-{
-    unsigned int i;
-
-    pthread_mutex_lock (&detstats_lock);
-    for (i = 0; i < DETSTATS_MAX && i < detstats_total; i++)
-        mdprintf (desc, "%u:%s:%u:%s:%s%c", detstats_data[i].time,
-                  detstats_data[i].md5, detstats_data[i].fsize,
-                  detstats_data[i].virname, detstats_data[i].fname, term);
-    pthread_mutex_unlock (&detstats_lock);
-}
-
 #ifdef FANOTIFY
 int
 fan_checkowner (int pid, const struct optstruct *opts)
@@ -876,7 +809,7 @@ fan_checkowner (int pid, const struct optstruct *opts)
         return 0;
 
     snprintf (path, sizeof (path), "/proc/%u", pid);
-    if (STAT (path, &sb) == 0)
+    if (CLAMSTAT (path, &sb) == 0)
     {
         while (opt)
         {

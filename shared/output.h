@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2009 Sourcefire, Inc.
+ *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
  *
@@ -25,7 +25,12 @@
 #include "clamav-config.h"
 #endif
 
+#if HAVE_STDLIB_H
 #include <stdlib.h>
+#endif
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
 
 #ifdef __GNUC__
 int mdprintf(int desc, const char *str, ...) __attribute__((format(printf, 2,3)));

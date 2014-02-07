@@ -1019,14 +1019,16 @@ public:
 		ExecutionEngine *EE, FunctionPassManager &PM, FunctionPassManager &PMUnsigned,
 		Function **apiFuncs, LLVMTypeMapper &apiMap)
 	: bc(bc), M(M), Context(M->getContext()), EE(EE),
-	PM(PM),PMUnsigned(PMUnsigned), apiFuncs(apiFuncs),apiMap(apiMap),
+	PM(PM),PMUnsigned(PMUnsigned), TypeMap(), apiFuncs(apiFuncs),apiMap(apiMap),
 	compiledFunctions(cFuncs), BytecodeID("bc"+Twine(bc->id)),
-	Folder(EE->getTargetData()), Builder(Context, Folder), CF(CF) {
+	Folder(EE->getTargetData()), Builder(Context, Folder), Values(), CF(CF) {
 
 	for (unsigned i=0;i<cli_apicall_maxglobal - _FIRST_GLOBAL;i++) {
 	    unsigned id = cli_globals[i].globalid;
 	    GVoffsetMap[id] = cli_globals[i].offset;
 	}
+	numLocals = 0;
+	numArgs = 0;
     }
 
 #ifndef LLVM30
@@ -1232,6 +1234,7 @@ public:
 	for (unsigned j=0;j<bc->num_func;j++) {
 	    PrettyStackTraceString CrashInfo("Generate LLVM IR");
 	    const struct cli_bc_func *func = &bc->funcs[j];
+	    bool broken = false;
 
 	    // Create all BasicBlocks
 	    Function *F = Functions[j];
@@ -1308,12 +1311,12 @@ public:
 	    }
 
 	    // Generate LLVM IR for each BB
-	    for (unsigned i=0;i<func->numBB;i++) {
+	    for (unsigned i=0;i<func->numBB && !broken;i++) {
 		bool unreachable = false;
 		const struct cli_bc_bb *bb = &func->BB[i];
 		Builder.SetInsertPoint(BB[i]);
 		unsigned c = 0;
-		for (unsigned j=0;j<bb->numInsts;j++) {
+		for (unsigned j=0;j<bb->numInsts && !broken;j++) {
 		    const struct cli_bc_inst *inst = &bb->insts[j];
 		    Value *Op0=0, *Op1=0, *Op2=0;
 		    // libclamav has already validated this.
@@ -1453,7 +1456,8 @@ public:
 			    BasicBlock *False = BB[inst->u.branch.br_false];
 			    if (Cond->getType() != Type::getInt1Ty(Context)) {
 				cli_warnmsg("[Bytecode JIT]: type mismatch in condition");
-				return 0;
+				broken = true;
+				break;
 			    }
 			    Builder.CreateCondBr(Cond, True, False);
 			    break;
@@ -1556,8 +1560,10 @@ public:
 			    Value *V = convertOperand(func, SrcTy, inst->u.three[1]);
 			    Value *Op = convertOperand(func, I32Ty, inst->u.three[2]);
 			    Op = GEPOperand(Op);
-			    if (!createGEP(inst->dest, V, ARRAYREF(Value*, &Op, &Op+1)))
-				return 0;
+			    if (!createGEP(inst->dest, V, ARRAYREF(Value*, &Op, &Op+1))) {
+				cli_warnmsg("[Bytecode JIT]: OP_BC_GEP1 createGEP failed\n");
+				broken = true;
+			    }
 			    break;
 			}
 			case OP_BC_GEPZ:
@@ -1568,8 +1574,10 @@ public:
 			    Value *V = convertOperand(func, SrcTy, inst->u.three[1]);
 			    Ops[1] = convertOperand(func, I32Ty, inst->u.three[2]);
 			    Ops[1] = GEPOperand(Ops[1]);
-			    if (!createGEP(inst->dest, V, ARRAYREF(Value*, Ops, Ops+2)))
-				return 0;
+			    if (!createGEP(inst->dest, V, ARRAYREF(Value*, Ops, Ops+2))) {
+				cli_warnmsg("[Bytecode JIT]: OP_BC_GEPZ createGEP failed\n");
+				broken = true;
+			    }
 			    break;
 			}
 			case OP_BC_GEPN:
@@ -1583,8 +1591,10 @@ public:
 				Op = GEPOperand(Op);
 				Idxs.push_back(Op);
 			    }
-			    if (!createGEP(inst->dest, V, ARRAYREFVECTOR(Value*, Idxs)))
-				return 0;
+			    if (!createGEP(inst->dest, V, ARRAYREFVECTOR(Value*, Idxs))) {
+				cli_warnmsg("[Bytecode JIT]: OP_BC_GEPN createGEP failed\n");
+				broken = true;
+			    }
 			    break;
 			}
 			case OP_BC_STORE:
@@ -1610,7 +1620,7 @@ public:
 			    Value *Dst = convertOperand(func, inst, inst->u.three[0]);
 			    Dst = Builder.CreatePointerCast(Dst, PointerType::getUnqual(Type::getInt8Ty(Context)));
 			    Value *Val = convertOperand(func, Type::getInt8Ty(Context), inst->u.three[1]);
-			    Value *Len = convertOperand(func, Type::getInt32Ty(Context), inst->u.three[2]);
+			    Value *Len = convertOperand(func, Type::getInt64Ty(Context), inst->u.three[2]);
 #ifdef LLVM30
 			    CallInst *c = Builder.CreateCall5(CF->FMemset, Dst, Val, Len,
 								ConstantInt::get(Type::getInt32Ty(Context), 1),
@@ -1631,7 +1641,7 @@ public:
 			    Dst = Builder.CreatePointerCast(Dst, PointerType::getUnqual(Type::getInt8Ty(Context)));
 			    Value *Src = convertOperand(func, inst, inst->u.three[1]);
 			    Src = Builder.CreatePointerCast(Src, PointerType::getUnqual(Type::getInt8Ty(Context)));
-			    Value *Len = convertOperand(func, Type::getInt32Ty(Context), inst->u.three[2]);
+			    Value *Len = convertOperand(func, Type::getInt64Ty(Context), inst->u.three[2]);
 #ifdef LLVM30
 			    CallInst *c = Builder.CreateCall5(CF->FMemcpy, Dst, Src, Len,
 								ConstantInt::get(Type::getInt32Ty(Context), 1),
@@ -1652,7 +1662,7 @@ public:
 			    Dst = Builder.CreatePointerCast(Dst, PointerType::getUnqual(Type::getInt8Ty(Context)));
 			    Value *Src = convertOperand(func, inst, inst->u.three[1]);
 			    Src = Builder.CreatePointerCast(Src, PointerType::getUnqual(Type::getInt8Ty(Context)));
-			    Value *Len = convertOperand(func, Type::getInt32Ty(Context), inst->u.three[2]);
+			    Value *Len = convertOperand(func, Type::getInt64Ty(Context), inst->u.three[2]);
 #ifdef LLVM30
 			    CallInst *c = Builder.CreateCall5(CF->FMemmove, Dst, Src, Len,
 								ConstantInt::get(Type::getInt32Ty(Context), 1),
@@ -1738,23 +1748,44 @@ public:
 			default:
 			    cli_warnmsg("[Bytecode JIT]: JIT doesn't implement opcode %d yet!\n",
 					inst->opcode);
-			    return 0;
+			    broken = true;
+			    break;
 		    }
 		}
 	    }
 
-	    if (verifyFunction(*F, PrintMessageAction)) {
-		// verification failed
-		cli_warnmsg("[Bytecode JIT]: Verification failed\n");
-		if (cli_debug_flag) {
-		    std::string str;
-		    raw_string_ostream ostr(str);
-		    F->print(ostr);
-		    cli_dbgmsg_internal("[Bytecode JIT]: %s\n", ostr.str().c_str());
+	    // If successful so far, run verifyFunction
+	    if (!broken) {
+		if (verifyFunction(*F, PrintMessageAction)) {
+		    // verification failed
+		    broken = true;
+		    cli_warnmsg("[Bytecode JIT]: Verification failed\n");
+		    if (cli_debug_flag) {
+			std::string str;
+			raw_string_ostream ostr(str);
+			F->print(ostr);
+			cli_dbgmsg_internal("[Bytecode JIT]: %s\n", ostr.str().c_str());
+		    }
 		}
+	    }
+
+	    delete [] Values;
+
+	    // Cleanup after failure and return 0
+	    if (broken) {
+		for (unsigned z=0; z < func->numBB ; z++) {
+		    delete BB[z];
+		}
+		delete [] BB;
+		apiMap.irgenTimer.stopTimer();
+		delete TypeMap;
+		for (unsigned z=0; z < bc->num_func; z++) {
+		    delete Functions[z];
+		}
+		delete [] Functions;
 		return 0;
 	    }
-	    delete [] Values;
+
 	    delete [] BB;
 	    apiMap.irgenTimer.stopTimer();
 	    apiMap.pmTimer.startTimer();
@@ -1786,6 +1817,11 @@ public:
 	// If prototype matches, add to callable functions
 	if (Functions[0]->getFunctionType() != Callable) {
 	    cli_warnmsg("[Bytecode JIT]: Wrong prototype for function 0 in bytecode %d\n",  bc->id);
+	    apiMap.irgenTimer.stopTimer();
+	    for (unsigned z=0; z < bc->num_func; z++) {
+		delete Functions[z];
+	    }
+	    delete [] Functions;
 	    return 0;
 	}
 	// All functions have the Fast calling convention, however
@@ -1860,7 +1896,7 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
     std::vector<constType*> args;
     args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
     args.push_back(Type::getInt8Ty(Context));
-    args.push_back(Type::getInt32Ty(Context));
+    args.push_back(Type::getInt64Ty(Context));
     args.push_back(Type::getInt32Ty(Context));
 #ifdef LLVM30
     args.push_back(Type::getInt1Ty(Context));
@@ -1869,9 +1905,9 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
 					       args, false);
     CF->FMemset = Function::Create(FuncTy_3, GlobalValue::ExternalLinkage,
 #ifdef LLVM30
-					 "llvm.memset.p0i8.i32",
+					 "llvm.memset.p0i8.i64",
 #else
-					 "llvm.memset.i32",
+					 "llvm.memset.i64",
 #endif
 					 M);
     CF->FMemset->setDoesNotThrow();
@@ -1880,7 +1916,7 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
     args.clear();
     args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
     args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
-    args.push_back(Type::getInt32Ty(Context));
+    args.push_back(Type::getInt64Ty(Context));
     args.push_back(Type::getInt32Ty(Context));
 #ifdef LLVM30
     args.push_back(Type::getInt1Ty(Context));
@@ -1889,9 +1925,9 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
 					       args, false);
     CF->FMemmove = Function::Create(FuncTy_4, GlobalValue::ExternalLinkage,
 #ifdef LLVM30
-					  "llvm.memmove.p0i8.i32",
+					  "llvm.memmove.p0i8.i64",
 #else
-					  "llvm.memmove.i32",
+					  "llvm.memmove.i64",
 #endif
 					  M);
     CF->FMemmove->setDoesNotThrow();
@@ -1899,9 +1935,9 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
 
     CF->FMemcpy = Function::Create(FuncTy_4, GlobalValue::ExternalLinkage,
 #ifdef LLVM30
-					 "llvm.memcpy.p0i8.p0i8.i32",
+					 "llvm.memcpy.p0i8.p0i8.i64",
 #else
-					 "llvm.memcpy.i32",
+					 "llvm.memcpy.i64",
 #endif
 					 M);
     CF->FMemcpy->setDoesNotThrow();
@@ -2317,6 +2353,11 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	    Function *F = Codegen.generate();
 	    if (!F) {
 		cli_errmsg("[Bytecode JIT]: JIT codegen failed\n");
+		delete [] apiFuncs;
+		for (unsigned z=0; z < i; z++) {
+		    delete Functions[z];
+		}
+		delete [] Functions;
 		return CL_EBYTECODE;
 	    }
 	    Functions[i] = F;

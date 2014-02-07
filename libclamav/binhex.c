@@ -109,7 +109,11 @@ int cli_binhex(cli_ctx *ctx) {
 		}
 		if(!datalen) {
 		    write_phase++;
-		    lseek(datafd, 0, SEEK_SET);
+		    if (lseek(datafd, 0, SEEK_SET) == -1) {
+                cli_dbgmsg("cli_binhex: call to lseek() has failed\n");
+                ret = CL_ESEEK;
+                break;
+            }
 		    ret = cli_magic_scandesc(datafd, ctx);
 		    if(ret == CL_VIRUS) break;
 		}
@@ -151,7 +155,11 @@ int cli_binhex(cli_ctx *ctx) {
 		    break;
 		}
 		if(!reslen) {
-		    lseek(resfd, 0, SEEK_SET);
+		    if (lseek(resfd, 0, SEEK_SET) == -1) {
+                cli_dbgmsg("cli_binhex: call to lseek() has failed\n");
+                ret = CL_ESEEK;
+                break;
+            }
 		    ret = cli_magic_scandesc(resfd, ctx);
 		    break;
 		}
@@ -159,11 +167,19 @@ int cli_binhex(cli_ctx *ctx) {
 	    if(!enc_todo) {
 		if(write_phase == IN_DATA) {
 		    cli_dbgmsg("cli_binhex: scanning partially extracted data fork\n");
-		    lseek(datafd, 0, SEEK_SET);
+		    if (lseek(datafd, 0, SEEK_SET) == -1) {
+                cli_dbgmsg("cli_binhex: call to lseek() has failed\n");
+                ret = CL_ESEEK;
+                break;
+            }
 		    ret = cli_magic_scandesc(datafd, ctx);
 		} else if(write_phase == IN_RES) {
 		    cli_dbgmsg("cli_binhex: scanning partially extracted resource fork\n");
-		    lseek(resfd, 0, SEEK_SET);
+		    if (lseek(resfd, 0, SEEK_SET) == -1) {
+                cli_dbgmsg("cli_binhex: call to lseek() has failed\n");
+                ret = CL_ESEEK;
+                break;
+            }
 		    ret = cli_magic_scandesc(resfd, ctx);
 		}
 		break;

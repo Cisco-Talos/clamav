@@ -96,9 +96,6 @@
 /* file i/o buffer size */
 #undef FILEBUFF
 
-/* FPU byte ordering matches CPU */
-#undef FPU_WORDS_BIGENDIAN
-
 /* enable workaround for broken DNS servers */
 #undef FRESHCLAM_DNS_FIX
 
@@ -181,6 +178,9 @@
 /* Define to 1 if the system has the type `error_t'. */
 #undef HAVE_ERROR_T
 
+/* Define to 1 if you have the <fcntl.h> header file */
+#undef HAVE_FCNTL_H
+
 /* have working file descriptor passing support */
 #undef HAVE_FD_PASSING
 
@@ -189,6 +189,9 @@
 
 /* have getaddrinfo() */
 #undef HAVE_GETADDRINFO
+
+/* Define to 1 if you have the `getifaddrs' function. */
+#undef HAVE_GETIFADDRS
 
 /* Define to 1 if getpagesize() is available */
 #undef HAVE_GETPAGESIZE
@@ -232,6 +235,9 @@
 /* Define to '1' if you have the curses.h library */
 #undef HAVE_LIBPDCURSES
 
+/* Define to 1 if you have the 'libxml2' library (-lxml2). */
+#undef HAVE_LIBXML2
+
 /* Define to 1 if you have the `z' library (-lz). */
 #undef HAVE_LIBZ
 
@@ -269,6 +275,9 @@
 /* Define to 1 if you have the <ndir.h> header file. */
 #undef HAVE_NDIR_H
 
+/* Define to 1 if you have the <net/if_dl.h> header file */
+#undef HAVE_NET_IF_DL_H
+
 /* Define to 1 if you have the `opendir' function. */
 #undef HAVE_OPENDIR
 
@@ -286,6 +295,9 @@
 
 /* Define if libtool can extract symbol lists from object files. */
 #undef HAVE_PRELOADED_SYMBOLS
+
+/* Define to 1 if you have the <pthread.h> header file */
+#undef HAVE_PTHREAD_H
 
 /* Define to 1 if you have the `pthread_yield' function. */
 #undef HAVE_PTHREAD_YIELD
@@ -361,6 +373,9 @@
 
 /* Define to 1 if sysconf(_SC_PAGESIZE) is available */
 #undef HAVE_SYSCONF_SC_PAGESIZE
+
+/* Define to 1 if you have the `sysctlbyname' function. */
+#undef HAVE_SYSCTLBYNAME
 
 /* Define to 1 if you have the <sys/dl.h> header file. */
 #undef HAVE_SYS_DL_H

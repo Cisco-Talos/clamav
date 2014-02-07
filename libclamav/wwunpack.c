@@ -94,7 +94,10 @@ int wwunpack(uint8_t *exe, uint32_t exesz, uint8_t *wwsect, struct cli_exe_secti
       break;
     }
     cli_dbgmsg("WWP: src: %x, szd: %x, srcend: %x - %x\n", src, szd, srcend, srcend+4-szd);
-    if (!(compd = cli_malloc(szd))) break;
+    if (!(compd = cli_malloc(szd))) {
+        cli_dbgmsg("WWPack: Unable to allocate memory for compd\n");
+        break;
+    }
     memcpy(compd, unpd, szd);
     memset(unpd, -1, szd); /*FIXME*/
     ccur=compd;
@@ -223,12 +226,22 @@ int wwunpack(uint8_t *exe, uint32_t exesz, uint8_t *wwsect, struct cli_exe_secti
 
     structs = &exe[(0xffff&cli_readint32(&exe[pe+0x14]))+pe+0x18];
     for(i=0 ; i<scount ; i++) {
+	  if (!CLI_ISCONTAINED(exe, exesz, structs, 0x28)) {
+	    cli_dbgmsg("WWPack: structs pointer out of bounds\n");
+	    return CL_EFORMAT;
+	  }
+
       cli_writeint32(structs+8, sects[i].vsz);
       cli_writeint32(structs+12, sects[i].rva);
       cli_writeint32(structs+16, sects[i].vsz);
       cli_writeint32(structs+20, sects[i].rva);
       structs+=0x28;
     }
+	if (!CLI_ISCONTAINED(exe, exesz, structs, 0x28)) {
+	  cli_dbgmsg("WWPack: structs pointer out of bounds\n");
+	  return CL_EFORMAT;
+	}
+
     memset(structs, 0, 0x28);
     error = cli_writen(desc, exe, exesz)!=exesz;
   }

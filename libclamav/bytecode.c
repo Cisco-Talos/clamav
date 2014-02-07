@@ -1,7 +1,7 @@
 /*
  *  Load, and verify ClamAV bytecode.
  *
- *  Copyright (C) 2009-2012 Sourcefire, Inc.
+ *  Copyright (C) 2009-2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
  *
@@ -89,7 +89,7 @@ static void context_safe(struct cli_bc_ctx *ctx)
     if (!ctx->hooks.match_counts)
 	ctx->hooks.match_counts = nomatch;
     if (!ctx->hooks.match_offsets)
-	ctx->hooks.match_counts = nooffsets;
+	ctx->hooks.match_offsets = nooffsets;
     if (!ctx->hooks.filesize)
 	ctx->hooks.filesize = &nofilesize;
     if (!ctx->hooks.pedata)
@@ -161,8 +161,10 @@ static int cli_bytecode_context_reset(struct cli_bc_ctx *ctx)
 	    if(fd >= 0) {
 		ret = cli_scandesc(fd, cctx, CL_TYPE_HTML, 0, NULL, AC_SCAN_VIR, NULL);
 		if (ret == CL_CLEAN) {
-		    lseek(fd, 0, SEEK_SET);
-		    ret = cli_scandesc(fd, cctx, CL_TYPE_TEXT_ASCII, 0, NULL, AC_SCAN_VIR, NULL);
+		    if (lseek(fd, 0, SEEK_SET) == -1)
+                cli_dbgmsg("cli_bytecode: call to lseek() has failed\n");
+            else
+                ret = cli_scandesc(fd, cctx, CL_TYPE_TEXT_ASCII, 0, NULL, AC_SCAN_VIR, NULL);
 		}
 		close(fd);
 	    }
@@ -1388,8 +1390,10 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 	    return CL_EMALFDB;
 	}
 	bcfunc->dbgnodes = cli_malloc(num*sizeof(*bcfunc->dbgnodes));
-	if (!bcfunc->dbgnodes)
+	if (!bcfunc->dbgnodes) {
+        cli_errmsg("Unable to allocate memory for dbg nodes: %s\n", num*sizeof(*bcfunc->dbgnodes));
 	    return CL_EMEM;
+    }
 	for (i=0;i<num;i++) {
 	    bcfunc->dbgnodes[i] = readNumber(buffer, &offset, len, &ok);
 	    if (!ok)
@@ -1956,13 +1960,17 @@ void cli_bytecode_destroy(struct cli_bc *bc)
 	if (o > bc->num_globals) {\
 	    cli_errmsg("bytecode: global out of range: %u > %u, for instruction %u in function %u\n",\
 		       o, (unsigned)bc->num_globals, j, i);\
+	    free(map);\
+	    free(gmap);\
 	    return CL_EBYTECODE;\
 	}\
 	val = 0x80000000 | gmap[o];\
 	break;\
     }\
-    if (o > totValues) {\
+    if (o >= totValues) {\
 	cli_errmsg("bytecode: operand out of range: %u > %u, for instruction %u in function %u\n", o, totValues, j, i);\
+	free(map);\
+	free(gmap);\
 	return CL_EBYTECODE;\
     }\
     val = map[o]; } while (0)
@@ -2040,8 +2048,10 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
     int ret=CL_SUCCESS;
     bc->numGlobalBytes = 0;
     gmap = cli_malloc(bc->num_globals*sizeof(*gmap));
-    if (!gmap)
-	return CL_EMEM;
+    if (!gmap) {
+        cli_errmsg("interpreter: Unable to allocate memory for global map: %u\n", bc->num_globals*sizeof(*gmap));
+        return CL_EMEM;
+    }
     for (j=0;j<bc->num_globals;j++) {
 	uint16_t ty = bc->globaltys[j];
 	unsigned align = typealign(bc, ty);
@@ -2053,6 +2063,7 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
     if (bc->numGlobalBytes) {
 	bc->globalBytes = cli_calloc(1, bc->numGlobalBytes);
 	if (!bc->globalBytes) {
+        cli_errmsg("interpreter: Unable to allocate memory for globalBytes: %u\n", bc->numGlobalBytes);
         free(gmap);
 	    return CL_EMEM;
     }
@@ -2120,6 +2131,7 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 	unsigned totValues = bcfunc->numValues + bcfunc->numConstants + bc->num_globals;
 	unsigned *map = cli_malloc(sizeof(*map)*totValues);
 	if (!map) {
+        cli_errmsg("interpreter: Unable to allocate memory for map: %u\n", sizeof(*map)*totValues);
         free(gmap);
 	    return CL_EMEM;
     }

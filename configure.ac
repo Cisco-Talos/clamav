@@ -34,7 +34,7 @@ AC_CREATE_TARGET_H([target.h])
 
 dnl -Wall and -Werror here are NOT CFLAGS, they refer to automake warnings
 dnl enable stealth builds and psychedelic tests
-AM_INIT_AUTOMAKE([1.11 -Wall -Wportability -Wno-override -Werror std-options foreign dist-bzip2 no-define color-tests parallel-tests tar-ustar])
+AM_INIT_AUTOMAKE([1.11 -Wall -Wportability -Wno-override std-options foreign dist-bzip2 no-define color-tests parallel-tests tar-ustar])
 AM_SILENT_RULES([yes])
 
 dnl we told automake to not define these, since we want to include
@@ -43,10 +43,10 @@ AC_DEFINE([PACKAGE], PACKAGE_NAME, [Name of package])
 
 dnl change this on a release
 VERSION="devel-`date +%Y%m%d`"
-dnl VERSION="0.94rc1"
+dnl VERSION="0.98"
 
 LC_CURRENT=7
-LC_REVISION=11
+LC_REVISION=19
 LC_AGE=1
 LIBCLAMAV_VERSION="$LC_CURRENT":"$LC_REVISION":"$LC_AGE"
 AC_SUBST([LIBCLAMAV_VERSION])
@@ -75,7 +75,6 @@ AC_HEADER_STDC
 AC_C_RESTRICT
 AC_C_CONST
 AC_C_INLINE
-AC_C_FPU_BIGENDIAN
 AC_C_BIGENDIAN
 
 LT_LIB_M
@@ -417,6 +416,12 @@ AC_COMPILE_CHECK_SIZEOF([long])
 AC_COMPILE_CHECK_SIZEOF([long long])
 AC_COMPILE_CHECK_SIZEOF([void *])
 
+AC_CHECK_FUNCS([sysctlbyname])
+AC_CHECK_FUNCS([getifaddrs])
+AC_CHECK_HEADER([fcntl.h], AC_DEFINE([HAVE_FCNTL_H],1,[Define to 1 if you have the <fcntl.h> header file]))
+AC_CHECK_HEADER([pthread.h], AC_DEFINE([HAVE_PTHREAD_H],1,[Define to 1 if you have the <pthread.h> header file]))
+AC_CHECK_HEADER([net/if_dl.h], AC_DEFINE([HAVE_NET_IF_DL_H],1,[Define to 1 if you have the <net/if_dl.h> header file]))
+
 AC_ARG_ENABLE([experimental],
 [  --enable-experimental	enable experimental code],
 enable_experimental=$enableval, enable_experimental="no")
@@ -557,8 +562,8 @@ else
     if test "$ZLIB_HOME" != "/usr"; then
 	CPPFLAGS="$CPPFLAGS -I$ZLIB_HOME/include"
 	save_LDFLAGS="$LDFLAGS"
-	LDFLAGS="$LDFLAGS -Wl,-rpath=$ZLIB_HOME/lib"
-	AC_CHECK_LIB([z], [inflateEnd], [LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -Wl,-rpath=$ZLIB_HOME/lib -lz"; FRESHCLAM_LIBS="$FRESHCLAM_LIBS -Wl,-rpath=$ZLIB_HOME/lib -lz"], AC_MSG_ERROR([Please install zlib and zlib-devel packages]))
+	LDFLAGS="$LDFLAGS -L$ZLIB_HOME/lib"
+	AC_CHECK_LIB([z], [inflateEnd], [LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -L$ZLIB_HOME/lib -lz"; FRESHCLAM_LIBS="$FRESHCLAM_LIBS -L$ZLIB_HOME/lib -lz"], AC_MSG_ERROR([Please install zlib and zlib-devel packages]))
 	AC_CHECK_LIB([z], [gzopen], [], AC_MSG_ERROR([Your zlib is missing gzopen()]))
 	LDFLAGS="$save_LDFLAGS"
     else
@@ -648,10 +653,146 @@ then
     fi
 fi
 
+have_curl="no"
+curl_msg="Please use the web interface for submitting FPs/FNs."
+AC_MSG_CHECKING([for libcurl installation])
+
+AC_ARG_WITH([libcurl],
+[  --with-libcurl=DIR   path to directory containing libcurl (default=
+    /usr/local or /usr if not found in /usr/local)],
+[
+if test "$withval"; then
+    LIBCURL_HOME="$withval"
+fi
+], [
+LIBCURL_HOME=/usr/local
+if test ! -f "$LIBCURL_HOME/include/curl/curl.h"
+then
+    LIBCURL_HOME=/usr
+fi
+AC_MSG_RESULT([$LIBCURL_HOME])
+])
+
+if test ! -f "$LIBCURL_HOME/include/curl/curl.h"
+then
+    AC_MSG_WARN([libcurl not found. Please use the web interface for submitting FPs/FNs.])
+else
+    if test -f "$LIBCURL_HOME/bin/curl-config"; then
+        CURL_LDFLAGS=$($LIBCURL_HOME/bin/curl-config --libs)
+        CURL_CPPFLAGS=$($LIBCURL_HOME/bin/curl-config --cflags)
+    else
+        CURL_LDFLAGS="-L$LIBCURL_HOME/lib -lcurl"
+        CURL_CPPFLAGS="-I$LIBCURL_HOME/include"
+    fi
+
+    save_LDFLAGS="$LDFLAGS"
+    LDFLAGS="-L$LIBCURL_HOME/lib -lcurl"
+    AC_CHECK_LIB([curl], [curl_easy_init], [curl_msg="";have_curl="yes";CLAMSUBMIT_LIBS="$CLAMSUBMIT_LIBS $CURL_LDFLAGS";CLAMSUBMIT_CFLAGS="$CLAMSUBMIT_CFLAGS $CURL_CPPFLAGS"],
+            [AC_MSG_WARN([Your libcurl is misconfigured. Please use the web interface for submitting FPs/FNs.])])
+fi
+
+AM_CONDITIONAL([HAVE_LIBBZ2], test "x$HAVE_LIBBZ2" = "xyes")
+
 AC_ARG_ENABLE([unrar],
-[  --disable-unrar	  don't build libclamunrar and libclamunrar_iface ],
+[  --disable-unrar	  do not build libclamunrar and libclamunrar_iface ],
 want_unrar=$enableval, want_unrar="yes")
 AM_CONDITIONAL([ENABLE_UNRAR],[test "$want_unrar" = "yes"])
+
+dnl libxml2
+want_xml="auto"
+AC_ARG_ENABLE([xml],
+[  --disable-xml	  disable DMG and XAR support],
+want_xml=$enableval, want_xml="auto")
+
+XML_HOME=""
+if test "X$want_xml" != "Xno"; then
+  AC_MSG_CHECKING([for libxml2 installation])
+  AC_ARG_WITH([xml],
+  [  --with-xml=DIR	  path to directory containing libxml2 library (default=
+			  /usr/local or /usr if not found in /usr/local)],
+  [
+  if test "$withval"
+  then
+    XML_HOME="$withval"
+    AC_MSG_RESULT([using $XML_HOME])
+  else
+    AC_MSG_ERROR([cannot assign blank value to --with-xml])
+  fi
+  ], [
+  XML_HOME=/usr/local
+  if test ! -x "$XML_HOME/bin/xml2-config"
+  then
+    XML_HOME=/usr
+    if test ! -x "$XML_HOME/bin/xml2-config"
+    then
+      XML_HOME=""
+    fi
+  fi
+  if test "x$XML_HOME" != "x"; then
+    AC_MSG_RESULT([$XML_HOME])
+  else
+    AC_MSG_RESULT([not found])
+  fi
+  ])
+fi
+
+found_xml="no"
+XMLCONF_VERSION=""
+XML_CPPFLAGS=""
+XML_LIBS=""
+if test "x$XML_HOME" != "x"; then
+  AC_MSG_CHECKING([xml2-config version])
+  XMLCONF_VERSION="`$XML_HOME/bin/xml2-config --version`"
+  if test "x%XMLCONF_VERSION" != "x"; then
+    AC_MSG_RESULT([$XMLCONF_VERSION])
+    found_xml="yes"
+    XML_CPPFLAGS="`$XML_HOME/bin/xml2-config --cflags`"
+    XML_LIBS="`$XML_HOME/bin/xml2-config --libs`"
+  else
+    AC_MSG_ERROR([xml2-config failed])
+  fi
+fi
+
+working_xml="no"
+if test "X$found_xml" != "Xno"; then
+  AC_MSG_CHECKING([for xmlreader.h in $XML_HOME])
+
+  if test ! -f "$XML_HOME/include/libxml2/libxml/xmlreader.h"; then
+    AC_MSG_RESULT([not found])
+  else
+    AC_MSG_RESULT([found])
+    save_LIBS="$LIBS"
+    save_CPPFLAGS="$CPPFLAGS"
+    CPPFLAGS="$CPPFLAGS $XML_CPPFLAGS"
+    save_LDFLAGS="$LDFLAGS"
+    LDFLAGS="$LDFLAGS $XML_LIBS"
+
+    AC_CHECK_LIB([xml2], [xmlTextReaderRead], [working_xml="yes"], [working_xml="no"])
+
+    CPPFLAGS="$save_CPPFLAGS"
+    LDFLAGS="$save_LDFLAGS"
+    LIBS="$save_LIBS"
+  fi
+fi
+
+if test "$working_xml" = "yes"; then
+  AC_DEFINE([HAVE_LIBXML2],1,[Define to 1 if you have the 'libxml2' library (-lxml2).])
+  AC_SUBST(XML_CPPFLAGS)
+  AC_SUBST(XML_LIBS)
+  AC_MSG_NOTICE([Compiling and linking with libxml2 from $XML_HOME])
+else
+  if test "$want_xml" = "yes"; then
+     AC_MSG_ERROR([****** Please install libxml2 packages!])
+  else
+    if test "$want_xml" != "no"; then
+      AC_MSG_NOTICE([****** libxml2 support unavailable])
+    fi
+  fi
+  XML_CPPFLAGS=""
+  XML_LIBS=""
+  AC_SUBST(XML_CPPFLAGS)
+  AC_SUBST(XML_LIBS)
+fi
 
 AC_ARG_ENABLE([getaddrinfo],
 [  --disable-getaddrinfo          disable support for getaddrinfo],
@@ -796,7 +937,7 @@ AC_ARG_ENABLE([pthreads],
 have_pthreads=$enableval,)
 
 AC_ARG_ENABLE([cr],
-[  --disable-cr		  don't link with C reentrant library (BSD) ],
+[  --disable-cr		  do not link with C reentrant library (BSD) ],
 use_cr=$enableval,)
 
 AC_ARG_ENABLE([id-check],
@@ -931,7 +1072,7 @@ linux*)
 	THREAD_LIBS="-lpthread"
 	TH_SAFE="-thread-safe"
 	if test "$want_fanotify" = "yes"; then
-	    AC_CHECK_HEADER([linux/fanotify.h],AC_DEFINE([FANOTIFY],1,[use fanotify]),)
+	    AC_CHECK_HEADER([sys/fanotify.h],AC_DEFINE([FANOTIFY],1,[use fanotify]),)
 	fi
     fi
     ;;
@@ -1100,6 +1241,8 @@ AC_SUBST([FRESHCLAM_LIBS])
 AC_SUBST([CLAMDSCAN_LIBS])
 AC_SUBST([TH_SAFE])
 AC_SUBST([THREAD_LIBS])
+AC_SUBST([CLAMSUBMIT_LIBS])
+AC_SUBST([CLAMSUBMIT_CFLAGS])
 
 dnl --enable-milter
 if test "$have_milter" = "yes"; then
@@ -1301,7 +1444,7 @@ then
     if test -z "$clamavuser" || test -z "$clamavgroup"
     then
 	AC_MSG_RESULT(no)
-	AC_MSG_ERROR([User $clamav_user (and/or group $clamav_group) doesn't exist. Please read the documentation !])
+	AC_MSG_ERROR([User $clamav_user (and/or group $clamav_group) does not exist. Please read the documentation !])
     else
 	AC_MSG_RESULT([yes, user $clamav_user and group $clamav_group])
         CLAMAVUSER="$clamav_user"
@@ -1623,6 +1766,8 @@ if test "$enable_sha_collector" != "no"; then
     AC_DEFINE([HAVE__INTERNAL__SHA_COLLECT], 1, [For internal use only - DO NOT DEFINE])
 fi
 
+AM_CONDITIONAL([ENABLE_CLAMSUBMIT], [test "$have_curl" = "yes"])
+
 AC_OUTPUT([
 clamscan/Makefile
 database/Makefile
@@ -1633,6 +1778,7 @@ clamav-milter/Makefile
 freshclam/Makefile
 sigtool/Makefile
 clamconf/Makefile
+clamsubmit/Makefile
 etc/Makefile
 test/Makefile
 unit_tests/Makefile
@@ -1690,6 +1836,7 @@ CL_MSG_STATUS([IPv6        ],[$have_cv_ipv6],[$want_ipv6])
 AC_MSG_NOTICE([Summary of optional tools])
 CL_MSG_STATUS([clamdtop    ],[$CURSES_LIBS],[$enable_clamdtop])
 CL_MSG_STATUS([milter      ],[yes],[$have_milter])
+CL_MSG_STATUS([clamsubmit  ],[$have_curl],[$curl_msg])
 
 AC_MSG_NOTICE([Summary of engine performance features)])
 if test "x$enable_debug" = "xyes"; then
@@ -1705,10 +1852,14 @@ CL_MSG_STATUS([jit         ],[$have_jit],[$enable_llvm])
 CL_MSG_STATUS([mempool     ],[$have_mempool],[$enable_mempool])
 
 AC_MSG_NOTICE([Summary of engine detection features])
-CL_MSG_STATUS([autoit_ea06 ],[$have_autoitea06],[])
 CL_MSG_STATUS([bzip2       ],[$bzip_check],[$want_bzip2])
 CL_MSG_STATUS([zlib        ],[$ZLIB_HOME],[yes])
 CL_MSG_STATUS([unrar       ],[$want_unrar],[$want_unrar])
+if test "x$XML_LIBS" = "x"; then
+    CL_MSG_STATUS([dmg and xar ],[no],[])
+else
+    CL_MSG_STATUS([dmg and xar ],[yes, from $XML_HOME],[])
+fi
 
 # Yep, downgrading the compiler avoids the bug too:
 # 4.0.x, and 4.1.0 are the known buggy versions

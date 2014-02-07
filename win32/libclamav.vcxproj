@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -24,7 +23,7 @@
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>libclamav</RootNamespace>
   </PropertyGroup>
-  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props"/>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
@@ -47,22 +46,22 @@
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
-  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props"/>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
-    <Import Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props"/>
+    <Import Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
-    <Import Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props"/>
+    <Import Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
-    <Import Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props"/>
+    <Import Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
-    <Import Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props"/>
+    <Import Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" />
   </ImportGroup>
-  <PropertyGroup Label="UserMacros"/>
+  <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <IntDir>$(SolutionDir)build\$(PlatformName)\$(ProjectName)\$(Configuration)\</IntDir>
@@ -89,7 +88,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;PTW32_STATIC_LIB;THIS_IS_LIBCLAMAV;WIN32;_DEBUG;_WINDOWS;_USRDLL;LIBCLAMAV_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>"$(SolutionDir)";"$(SolutionDir)..\libclamav";"$(SolutionDir)compat";"$(SolutionDir)3rdparty\zlib";"$(SolutionDir)3rdparty\pthreads";"$(SolutionDir)3rdparty\bzip2";"$(SolutionDir).."</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\libxml2;$(SolutionDir)3rdparty\libxml2\include;$(SolutionDir)..</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4996;4090;4244;4018;4101;4333;4146</DisableSpecificWarnings>
     </ClCompile>
@@ -106,7 +105,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;PTW32_STATIC_LIB;THIS_IS_LIBCLAMAV;WIN32;_DEBUG;_WINDOWS;_USRDLL;LIBCLAMAV_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>"$(SolutionDir)";"$(SolutionDir)..\libclamav";"$(SolutionDir)compat";"$(SolutionDir)3rdparty\zlib";"$(SolutionDir)3rdparty\pthreads";"$(SolutionDir)3rdparty\bzip2";"$(SolutionDir).."</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\libxml2;$(SolutionDir)3rdparty\libxml2\include;$(SolutionDir)..</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4996;4090;4244;4018;4101;4333;4146;4267;4334</DisableSpecificWarnings>
     </ClCompile>
@@ -125,7 +124,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;PTW32_STATIC_LIB;THIS_IS_LIBCLAMAV;WIN32;NDEBUG;_WINDOWS;_USRDLL;LIBCLAMAV_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>"$(SolutionDir)";"$(SolutionDir)..\libclamav";"$(SolutionDir)compat";"$(SolutionDir)3rdparty\zlib";"$(SolutionDir)3rdparty\pthreads";"$(SolutionDir)3rdparty\bzip2";"$(SolutionDir).."</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\libxml2;$(SolutionDir)3rdparty\libxml2\include;$(SolutionDir)..</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4996;4090;4244;4018;4101;4333;4146</DisableSpecificWarnings>
     </ClCompile>
@@ -146,7 +145,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;PTW32_STATIC_LIB;THIS_IS_LIBCLAMAV;WIN32;NDEBUG;_WINDOWS;_USRDLL;LIBCLAMAV_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>"$(SolutionDir)";"$(SolutionDir)..\libclamav";"$(SolutionDir)compat";"$(SolutionDir)3rdparty\zlib";"$(SolutionDir)3rdparty\pthreads";"$(SolutionDir)3rdparty\bzip2";"$(SolutionDir).."</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\libxml2;$(SolutionDir)3rdparty\libxml2\include;$(SolutionDir)..</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4996;4090;4244;4018;4101;4333;4146;4267;4334</DisableSpecificWarnings>
     </ClCompile>
@@ -160,222 +159,255 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <None Include="libclamav.def"/>
+    <None Include="libclamav.def" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="res\libclamav.rc"/>
+    <ResourceCompile Include="res\libclamav.rc" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba_small_set.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba_9.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba_64.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\bin\fp_radix_size.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\bin\fp_read_signed_bin.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\bit\fp_div_2d.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\sqr\fp_sqr_comba_generic.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\addsub\fp_sub_d.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mulmod.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\bit\fp_lshd.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\mont\fp_montgomery_reduce.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\sqr\fp_sqr.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\sqr\fp_sqrmod.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\mont\fp_montgomery_setup.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\bit\fp_cnt_lsb.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\sqr\fp_sqr_comba_28.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\sqr\fp_sqr_comba_64.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\bin\fp_reverse.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\sqr\fp_sqr_comba_20.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\addsub\s_fp_add.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\sqr\fp_sqr_comba_6.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\mont\fp_montgomery_calc_normalization.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\addsub\fp_cmp.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\bin\fp_to_unsigned_bin.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\misc\fp_ident.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\bit\fp_div_2.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba_32.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba_20.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\numtheory\fp_invmod.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\addsub\fp_cmp_d.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\sqr\fp_sqr_comba_9.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\exptmod\fp_exptmod.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\sqr\fp_sqr_comba_4.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\divide\fp_div.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\divide\fp_mod_d.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\bin\fp_to_signed_bin.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\bit\fp_mod_2d.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\exptmod\fp_2expt.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\bin\fp_read_unsigned_bin.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba_12.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba_7.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\addsub\fp_submod.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\sqr\fp_sqr_comba_48.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\bin\fp_read_radix.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\divide\fp_div_d.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\addsub\fp_addmod.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\addsub\fp_add_d.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\addsub\fp_cmp_mag.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\divide\fp_mod.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_2d.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\addsub\s_fp_sub.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\addsub\fp_sub.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\bit\fp_count_bits.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\bin\fp_unsigned_bin_size.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\sqr\fp_sqr_comba_7.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba_3.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\sqr\fp_sqr_comba_8.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\bin\fp_signed_bin_size.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\sqr\fp_sqr_comba_12.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\bit\fp_rshd.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\sqr\fp_sqr_comba_17.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\addsub\fp_add.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_2.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\sqr\fp_sqr_comba_3.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba_17.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba_28.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\bin\fp_toradix.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\bin\fp_toradix_n.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\sqr\fp_sqr_comba_small_set.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba_8.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\sqr\fp_sqr_comba_24.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\misc\fp_set.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba_4.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba_6.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_d.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba_24.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba_48.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\sqr\fp_sqr_comba_32.c"/>
-    <ClCompile Include="..\libclamav\tomsfastmath\bin\fp_s_rmap.c"/>
-    <ClCompile Include="..\libclamav\7z_iface.c"/>
-    <ClCompile Include="..\libclamav\7z\7zDec.c"/>
-    <ClCompile Include="..\libclamav\7z\7zAlloc.c"/>
-    <ClCompile Include="..\libclamav\7z\Ppmd7Dec.c"/>
-    <ClCompile Include="..\libclamav\asn1.c"/>
-    <ClCompile Include="..\libclamav\7z\7zBuf2.c"/>
-    <ClCompile Include="..\libclamav\7z\Ppmd7.c"/>
-    <ClCompile Include="..\libclamav\7z\7zIn.c"/>
-    <ClCompile Include="..\libclamav\7z\Lzma2Dec.c"/>
-    <ClCompile Include="..\libclamav\crtmgr.c"/>
-    <ClCompile Include="..\libclamav\rijndael.c"/>
-    <ClCompile Include="..\libclamav\iso9660.c"/>
-    <ClCompile Include="..\libclamav\arc4.c"/>
-    <ClCompile Include="..\libclamav\png.c"/>
-    <ClCompile Include="..\libclamav\jpeg.c"/>
-    <ClCompile Include="..\libclamav\swf.c"/>
-    <ClCompile Include="..\libclamav\matcher-hash.c"/>
-    <ClCompile Include="..\libclamav\sha1.c"/>
-    <ClCompile Include="..\libclamav\events.c"/>
-    <ClCompile Include="..\libclamav\bytecode_detect.c"/>
-    <ClCompile Include="..\libclamav\regex_list.c"/>
-    <ClCompile Include="..\libclamav\rtf.c"/>
-    <ClCompile Include="..\libclamav\regex_suffix.c"/>
-    <ClCompile Include="..\libclamav\readdb.c"/>
-    <ClCompile Include="..\libclamav\scanners.c"/>
-    <ClCompile Include="..\libclamav\qsort.c"/>
-    <ClCompile Include="..\libclamav\rebuildpe.c"/>
-    <ClCompile Include="..\libclamav\7z\7zBuf.c"/>
-    <ClCompile Include="..\libclamav\7z\7zCrc.c"/>
-    <ClCompile Include="..\libclamav\7z\7zFile.c"/>
-    <ClCompile Include="..\libclamav\7z\7zStream.c"/>
-    <ClCompile Include="..\libclamav\7z\Bcj2.c"/>
-    <ClCompile Include="..\libclamav\7z\Bra.c"/>
-    <ClCompile Include="..\libclamav\7z\Bra86.c"/>
-    <ClCompile Include="..\libclamav\7z\LzmaDec.c"/>
-    <ClCompile Include="..\libclamav\aspack.c"/>
-    <ClCompile Include="..\libclamav\autoit.c"/>
-    <ClCompile Include="..\libclamav\binhex.c"/>
-    <ClCompile Include="..\libclamav\blob.c"/>
-    <ClCompile Include="..\libclamav\bytecode.c"/>
-    <ClCompile Include="..\libclamav\bytecode_api.c"/>
-    <ClCompile Include="..\libclamav\bytecode_api_decl.c"/>
-    <ClCompile Include="..\libclamav\bytecode_vm.c"/>
-    <ClCompile Include="..\libclamav\cab.c"/>
-    <ClCompile Include="..\libclamav\cache.c"/>
-    <ClCompile Include="..\libclamav\chmunpack.c"/>
-    <ClCompile Include="..\libclamav\cpio.c"/>
-    <ClCompile Include="..\libclamav\cvd.c"/>
-    <ClCompile Include="..\libclamav\dconf.c"/>
-    <ClCompile Include="..\libclamav\disasm.c"/>
-    <ClCompile Include="..\libclamav\dlp.c"/>
-    <ClCompile Include="..\libclamav\dsig.c"/>
-    <ClCompile Include="..\libclamav\elf.c"/>
-    <ClCompile Include="..\libclamav\entconv.c"/>
-    <ClCompile Include="..\libclamav\explode.c"/>
-    <ClCompile Include="..\libclamav\filetypes.c"/>
-    <ClCompile Include="..\libclamav\filtering.c"/>
-    <ClCompile Include="..\libclamav\fmap.c"/>
-    <ClCompile Include="..\libclamav\fsg.c"/>
-    <ClCompile Include="..\libclamav\hashtab.c"/>
-    <ClCompile Include="..\libclamav\htmlnorm.c"/>
-    <ClCompile Include="..\libclamav\inflate64.c"/>
-    <ClCompile Include="..\libclamav\iowrap.c"/>
-    <ClCompile Include="..\libclamav\ishield.c"/>
-    <ClCompile Include="..\libclamav\is_tar.c"/>
-    <ClCompile Include="..\libclamav\jsparse\js-norm.c"/>
-    <ClCompile Include="..\libclamav\line.c"/>
-    <ClCompile Include="..\libclamav\lzma_iface.c"/>
-    <ClCompile Include="..\libclamav\macho.c"/>
-    <ClCompile Include="..\libclamav\matcher-ac.c"/>
-    <ClCompile Include="..\libclamav\matcher-bm.c"/>
-    <ClCompile Include="..\libclamav\matcher.c"/>
-    <ClCompile Include="..\libclamav\mbox.c"/>
-    <ClCompile Include="..\libclamav\md5.c"/>
-    <ClCompile Include="..\libclamav\message.c"/>
-    <ClCompile Include="..\libclamav\mew.c"/>
-    <ClCompile Include="..\libclamav\mpool.c"/>
-    <ClCompile Include="..\libclamav\msexpand.c"/>
-    <ClCompile Include="..\libclamav\mspack.c"/>
+    <ClCompile Include="..\libclamav\7z\7zCrcOpt.c" />
+    <ClCompile Include="..\libclamav\7z\BraIA64.c" />
+    <ClCompile Include="..\libclamav\7z\CpuArch.c" />
+    <ClCompile Include="..\libclamav\7z\Delta.c" />
+    <ClCompile Include="..\libclamav\7z\Xz.c" />
+    <ClCompile Include="..\libclamav\7z\XzCrc64.c" />
+    <ClCompile Include="..\libclamav\7z\XzDec.c" />
+    <ClCompile Include="..\libclamav\7z\XzIn.c" />
+    <ClCompile Include="..\libclamav\fpu.c" />
+    <ClCompile Include="..\libclamav\hostid.c" />
+    <ClCompile Include="..\libclamav\json.c" />
+    <ClCompile Include="..\libclamav\sf_base64decode.c" />
+    <ClCompile Include="..\libclamav\stats.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba_small_set.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba_9.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba_64.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\bin\fp_radix_size.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\bin\fp_read_signed_bin.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\bit\fp_div_2d.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\sqr\fp_sqr_comba_generic.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\addsub\fp_sub_d.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mulmod.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\bit\fp_lshd.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\mont\fp_montgomery_reduce.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\sqr\fp_sqr.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\sqr\fp_sqrmod.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\mont\fp_montgomery_setup.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\bit\fp_cnt_lsb.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\sqr\fp_sqr_comba_28.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\sqr\fp_sqr_comba_64.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\bin\fp_reverse.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\sqr\fp_sqr_comba_20.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\addsub\s_fp_add.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\sqr\fp_sqr_comba_6.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\mont\fp_montgomery_calc_normalization.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\addsub\fp_cmp.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\bin\fp_to_unsigned_bin.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\misc\fp_ident.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\bit\fp_div_2.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba_32.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba_20.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\numtheory\fp_invmod.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\addsub\fp_cmp_d.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\sqr\fp_sqr_comba_9.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\exptmod\fp_exptmod.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\sqr\fp_sqr_comba_4.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\divide\fp_div.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\divide\fp_mod_d.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\bin\fp_to_signed_bin.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\bit\fp_mod_2d.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\exptmod\fp_2expt.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\bin\fp_read_unsigned_bin.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba_12.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba_7.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\addsub\fp_submod.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\sqr\fp_sqr_comba_48.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\bin\fp_read_radix.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\divide\fp_div_d.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\addsub\fp_addmod.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\addsub\fp_add_d.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\addsub\fp_cmp_mag.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\divide\fp_mod.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_2d.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\addsub\s_fp_sub.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\addsub\fp_sub.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\bit\fp_count_bits.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\bin\fp_unsigned_bin_size.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\sqr\fp_sqr_comba_7.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba_3.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\sqr\fp_sqr_comba_8.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\bin\fp_signed_bin_size.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\sqr\fp_sqr_comba_12.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\bit\fp_rshd.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\sqr\fp_sqr_comba_17.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\addsub\fp_add.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_2.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\sqr\fp_sqr_comba_3.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba_17.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba_28.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\bin\fp_toradix.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\bin\fp_toradix_n.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\sqr\fp_sqr_comba_small_set.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba_8.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\sqr\fp_sqr_comba_24.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\misc\fp_set.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba_4.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba_6.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_d.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba_24.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba_48.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\sqr\fp_sqr_comba_32.c" />
+    <ClCompile Include="..\libclamav\tomsfastmath\bin\fp_s_rmap.c" />
+    <ClCompile Include="..\libclamav\7z_iface.c" />
+    <ClCompile Include="..\libclamav\7z\7zDec.c" />
+    <ClCompile Include="..\libclamav\7z\7zAlloc.c" />
+    <ClCompile Include="..\libclamav\7z\Ppmd7Dec.c" />
+    <ClCompile Include="..\libclamav\asn1.c" />
+    <ClCompile Include="..\libclamav\7z\7zBuf2.c" />
+    <ClCompile Include="..\libclamav\7z\Ppmd7.c" />
+    <ClCompile Include="..\libclamav\7z\7zIn.c" />
+    <ClCompile Include="..\libclamav\7z\Lzma2Dec.c" />
+    <ClCompile Include="..\libclamav\crtmgr.c" />
+    <ClCompile Include="..\libclamav\rijndael.c" />
+    <ClCompile Include="..\libclamav\iso9660.c" />
+    <ClCompile Include="..\libclamav\arc4.c" />
+    <ClCompile Include="..\libclamav\png.c" />
+    <ClCompile Include="..\libclamav\jpeg.c" />
+    <ClCompile Include="..\libclamav\swf.c" />
+    <ClCompile Include="..\libclamav\matcher-hash.c" />
+    <ClCompile Include="..\libclamav\sha1.c" />
+    <ClCompile Include="..\libclamav\events.c" />
+    <ClCompile Include="..\libclamav\bytecode_detect.c" />
+    <ClCompile Include="..\libclamav\regex_list.c" />
+    <ClCompile Include="..\libclamav\rtf.c" />
+    <ClCompile Include="..\libclamav\regex_suffix.c" />
+    <ClCompile Include="..\libclamav\readdb.c" />
+    <ClCompile Include="..\libclamav\scanners.c" />
+    <ClCompile Include="..\libclamav\qsort.c" />
+    <ClCompile Include="..\libclamav\rebuildpe.c" />
+    <ClCompile Include="..\libclamav\7z\7zBuf.c" />
+    <ClCompile Include="..\libclamav\7z\7zCrc.c" />
+    <ClCompile Include="..\libclamav\7z\7zFile.c" />
+    <ClCompile Include="..\libclamav\7z\7zStream.c" />
+    <ClCompile Include="..\libclamav\7z\Bcj2.c" />
+    <ClCompile Include="..\libclamav\7z\Bra.c" />
+    <ClCompile Include="..\libclamav\7z\Bra86.c" />
+    <ClCompile Include="..\libclamav\7z\LzmaDec.c" />
+    <ClCompile Include="..\libclamav\adc.c" />
+    <ClCompile Include="..\libclamav\apm.c" />
+    <ClCompile Include="..\libclamav\aspack.c" />
+    <ClCompile Include="..\libclamav\autoit.c" />
+    <ClCompile Include="..\libclamav\binhex.c" />
+    <ClCompile Include="..\libclamav\blob.c" />
+    <ClCompile Include="..\libclamav\bytecode.c" />
+    <ClCompile Include="..\libclamav\bytecode_api.c" />
+    <ClCompile Include="..\libclamav\bytecode_api_decl.c" />
+    <ClCompile Include="..\libclamav\bytecode_vm.c" />
+    <ClCompile Include="..\libclamav\cab.c" />
+    <ClCompile Include="..\libclamav\cache.c" />
+    <ClCompile Include="..\libclamav\chmunpack.c" />
+    <ClCompile Include="..\libclamav\cpio.c" />
+    <ClCompile Include="..\libclamav\cvd.c" />
+    <ClCompile Include="..\libclamav\dconf.c" />
+    <ClCompile Include="..\libclamav\disasm.c" />
+    <ClCompile Include="..\libclamav\dlp.c" />
+    <ClCompile Include="..\libclamav\dmg.c">
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">/D "LIBXML_STATIC" %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">/D "LIBXML_STATIC" %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">/D "LIBXML_STATIC" %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">/D "LIBXML_STATIC" %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\dsig.c" />
+    <ClCompile Include="..\libclamav\elf.c" />
+    <ClCompile Include="..\libclamav\entconv.c" />
+    <ClCompile Include="..\libclamav\explode.c" />
+    <ClCompile Include="..\libclamav\filetypes.c" />
+    <ClCompile Include="..\libclamav\filtering.c" />
+    <ClCompile Include="..\libclamav\fmap.c" />
+    <ClCompile Include="..\libclamav\fsg.c" />
+    <ClCompile Include="..\libclamav\gpt.c" />
+    <ClCompile Include="..\libclamav\hashtab.c" />
+    <ClCompile Include="..\libclamav\hfsplus.c" />
+    <ClCompile Include="..\libclamav\htmlnorm.c" />
+    <ClCompile Include="..\libclamav\inflate64.c" />
+    <ClCompile Include="..\libclamav\iowrap.c" />
+    <ClCompile Include="..\libclamav\ishield.c" />
+    <ClCompile Include="..\libclamav\is_tar.c" />
+    <ClCompile Include="..\libclamav\jsparse\js-norm.c" />
+    <ClCompile Include="..\libclamav\line.c" />
+    <ClCompile Include="..\libclamav\lzma_iface.c" />
+    <ClCompile Include="..\libclamav\macho.c" />
+    <ClCompile Include="..\libclamav\matcher-ac.c" />
+    <ClCompile Include="..\libclamav\matcher-bm.c" />
+    <ClCompile Include="..\libclamav\matcher.c" />
+    <ClCompile Include="..\libclamav\mbox.c" />
+    <ClCompile Include="..\libclamav\mbr.c" />
+    <ClCompile Include="..\libclamav\md5.c" />
+    <ClCompile Include="..\libclamav\message.c" />
+    <ClCompile Include="..\libclamav\mew.c" />
+    <ClCompile Include="..\libclamav\mpool.c" />
+    <ClCompile Include="..\libclamav\msexpand.c" />
+    <ClCompile Include="..\libclamav\mspack.c" />
     <ClCompile Include="..\libclamav\nsis\bzlib.c">
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)\nsis_bzlib</ObjectFileName>
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)\nsis_bzlib</ObjectFileName>
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)\nsis_bzlib</ObjectFileName>
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)\nsis_bzlib</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="..\libclamav\nsis\infblock.c"/>
-    <ClCompile Include="..\libclamav\nsis\nulsft.c"/>
-    <ClCompile Include="..\libclamav\ole2_extract.c"/>
-    <ClCompile Include="..\libclamav\others.c"/>
-    <ClCompile Include="..\libclamav\others_common.c"/>
-    <ClCompile Include="..\libclamav\packlibs.c"/>
-    <ClCompile Include="..\libclamav\pdf.c"/>
-    <ClCompile Include="..\libclamav\pe.c"/>
-    <ClCompile Include="..\libclamav\perflogging.c"/>
-    <ClCompile Include="..\libclamav\petite.c"/>
-    <ClCompile Include="..\libclamav\pe_icons.c"/>
-    <ClCompile Include="..\libclamav\phishcheck.c"/>
-    <ClCompile Include="..\libclamav\phish_domaincheck_db.c"/>
-    <ClCompile Include="..\libclamav\phish_whitelist.c"/>
-    <ClCompile Include="..\libclamav\regex\regcomp.c"/>
-    <ClCompile Include="..\libclamav\regex\regerror.c"/>
-    <ClCompile Include="..\libclamav\regex\regexec.c"/>
-    <ClCompile Include="..\libclamav\regex\regfree.c"/>
-    <ClCompile Include="..\libclamav\regex\strlcpy.c"/>
-    <ClCompile Include="..\libclamav\sha256.c"/>
-    <ClCompile Include="..\libclamav\sis.c"/>
-    <ClCompile Include="..\libclamav\special.c"/>
-    <ClCompile Include="..\libclamav\spin.c"/>
-    <ClCompile Include="..\libclamav\str.c"/>
-    <ClCompile Include="..\libclamav\table.c"/>
-    <ClCompile Include="..\libclamav\text.c"/>
-    <ClCompile Include="..\libclamav\textdet.c"/>
-    <ClCompile Include="..\libclamav\textnorm.c"/>
-    <ClCompile Include="..\libclamav\tnef.c"/>
-    <ClCompile Include="..\libclamav\unarj.c"/>
-    <ClCompile Include="..\libclamav\uniq.c"/>
-    <ClCompile Include="..\libclamav\unsp.c"/>
-    <ClCompile Include="..\libclamav\untar.c"/>
-    <ClCompile Include="..\libclamav\unzip.c"/>
-    <ClCompile Include="..\libclamav\upack.c"/>
-    <ClCompile Include="..\libclamav\upx.c"/>
-    <ClCompile Include="..\libclamav\uuencode.c"/>
-    <ClCompile Include="..\libclamav\vba_extract.c"/>
-    <ClCompile Include="..\libclamav\version.c"/>
-    <ClCompile Include="..\libclamav\wwunpack.c"/>
-    <ClCompile Include="..\libclamav\yc.c"/>
-    <ClCompile Include="..\shared\getopt.c"/>
-    <ClCompile Include="..\shared\misc.c"/>
-    <ClCompile Include="3rdparty\bzip2\blocksort.c"/>
+    <ClCompile Include="..\libclamav\nsis\infblock.c" />
+    <ClCompile Include="..\libclamav\nsis\nulsft.c" />
+    <ClCompile Include="..\libclamav\ole2_extract.c" />
+    <ClCompile Include="..\libclamav\others.c" />
+    <ClCompile Include="..\libclamav\others_common.c" />
+    <ClCompile Include="..\libclamav\packlibs.c" />
+    <ClCompile Include="..\libclamav\pdf.c" />
+    <ClCompile Include="..\libclamav\pe.c" />
+    <ClCompile Include="..\libclamav\perflogging.c" />
+    <ClCompile Include="..\libclamav\petite.c" />
+    <ClCompile Include="..\libclamav\pe_icons.c" />
+    <ClCompile Include="..\libclamav\phishcheck.c" />
+    <ClCompile Include="..\libclamav\phish_domaincheck_db.c" />
+    <ClCompile Include="..\libclamav\phish_whitelist.c" />
+    <ClCompile Include="..\libclamav\prtn_intxn.c" />
+    <ClCompile Include="..\libclamav\regex\regcomp.c" />
+    <ClCompile Include="..\libclamav\regex\regerror.c" />
+    <ClCompile Include="..\libclamav\regex\regexec.c" />
+    <ClCompile Include="..\libclamav\regex\regfree.c" />
+    <ClCompile Include="..\libclamav\regex\strlcpy.c" />
+    <ClCompile Include="..\libclamav\sha256.c" />
+    <ClCompile Include="..\libclamav\sis.c" />
+    <ClCompile Include="..\libclamav\special.c" />
+    <ClCompile Include="..\libclamav\spin.c" />
+    <ClCompile Include="..\libclamav\str.c" />
+    <ClCompile Include="..\libclamav\table.c" />
+    <ClCompile Include="..\libclamav\text.c" />
+    <ClCompile Include="..\libclamav\textdet.c" />
+    <ClCompile Include="..\libclamav\textnorm.c" />
+    <ClCompile Include="..\libclamav\tnef.c" />
+    <ClCompile Include="..\libclamav\unarj.c" />
+    <ClCompile Include="..\libclamav\uniq.c" />
+    <ClCompile Include="..\libclamav\unsp.c" />
+    <ClCompile Include="..\libclamav\untar.c" />
+    <ClCompile Include="..\libclamav\unzip.c" />
+    <ClCompile Include="..\libclamav\upack.c" />
+    <ClCompile Include="..\libclamav\upx.c" />
+    <ClCompile Include="..\libclamav\uuencode.c" />
+    <ClCompile Include="..\libclamav\vba_extract.c" />
+    <ClCompile Include="..\libclamav\version.c" />
+    <ClCompile Include="..\libclamav\wwunpack.c" />
+    <ClCompile Include="..\libclamav\xar.c">
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">/D "LIBXML_STATIC" %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">/D "LIBXML_STATIC" %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">/D "LIBXML_STATIC" %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">/D "LIBXML_STATIC" %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\www.c" />
+    <ClCompile Include="..\libclamav\xz_iface.c" />
+    <ClCompile Include="..\libclamav\yc.c" />
+    <ClCompile Include="..\shared\getopt.c" />
+    <ClCompile Include="..\shared\misc.c" />
+    <ClCompile Include="3rdparty\bzip2\blocksort.c" />
     <ClCompile Include="3rdparty\bzip2\bzlib.c">
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)\bzip2_bzlib</ObjectFileName>
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)\bzip2_bzlib</ObjectFileName>
@@ -388,42 +420,64 @@
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)\compress_bzip2</ObjectFileName>
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)\compress_bzip2</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="3rdparty\bzip2\crctable.c"/>
-    <ClCompile Include="3rdparty\bzip2\decompress.c"/>
-    <ClCompile Include="3rdparty\bzip2\huffman.c"/>
-    <ClCompile Include="3rdparty\bzip2\randtable.c"/>
-    <ClCompile Include="3rdparty\pthreads\pthread.c"/>
-    <ClCompile Include="3rdparty\zlib\adler32.c"/>
+    <ClCompile Include="3rdparty\bzip2\crctable.c" />
+    <ClCompile Include="3rdparty\bzip2\decompress.c" />
+    <ClCompile Include="3rdparty\bzip2\huffman.c" />
+    <ClCompile Include="3rdparty\bzip2\randtable.c" />
+    <ClCompile Include="3rdparty\libxml2\buf.c" />
+    <ClCompile Include="3rdparty\libxml2\chvalid.c" />
+    <ClCompile Include="3rdparty\libxml2\dict.c" />
+    <ClCompile Include="3rdparty\libxml2\encoding.c" />
+    <ClCompile Include="3rdparty\libxml2\entities.c" />
+    <ClCompile Include="3rdparty\libxml2\error.c" />
+    <ClCompile Include="3rdparty\libxml2\globals.c" />
+    <ClCompile Include="3rdparty\libxml2\hash.c" />
+    <ClCompile Include="3rdparty\libxml2\list.c" />
+    <ClCompile Include="3rdparty\libxml2\parser.c" />
+    <ClCompile Include="3rdparty\libxml2\parserInternals.c" />
+    <ClCompile Include="3rdparty\libxml2\SAX.c" />
+    <ClCompile Include="3rdparty\libxml2\SAX2.c" />
+    <ClCompile Include="3rdparty\libxml2\threads.c" />
+    <ClCompile Include="3rdparty\libxml2\tree.c" />
+    <ClCompile Include="3rdparty\libxml2\uri.c" />
+    <ClCompile Include="3rdparty\libxml2\valid.c" />
+    <ClCompile Include="3rdparty\libxml2\xmlIO.c" />
+    <ClCompile Include="3rdparty\libxml2\xmlmemory.c" />
+    <ClCompile Include="3rdparty\libxml2\xmlreader.c" />
+    <ClCompile Include="3rdparty\libxml2\xmlsave.c" />
+    <ClCompile Include="3rdparty\libxml2\xmlstring.c" />
+    <ClCompile Include="3rdparty\pthreads\pthread.c" />
+    <ClCompile Include="3rdparty\zlib\adler32.c" />
     <ClCompile Include="3rdparty\zlib\compress.c">
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)\compress_zlib</ObjectFileName>
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)\compress_zlib</ObjectFileName>
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)\compress_zlib</ObjectFileName>
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)\compress_zlib</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="3rdparty\zlib\crc32.c"/>
-    <ClCompile Include="3rdparty\zlib\deflate.c"/>
-    <ClCompile Include="3rdparty\zlib\gzclose.c"/>
-    <ClCompile Include="3rdparty\zlib\gzlib.c"/>
-    <ClCompile Include="3rdparty\zlib\gzread.c"/>
-    <ClCompile Include="3rdparty\zlib\gzwrite.c"/>
-    <ClCompile Include="3rdparty\zlib\inffast.c"/>
-    <ClCompile Include="3rdparty\zlib\inflate.c"/>
-    <ClCompile Include="3rdparty\zlib\inftrees.c"/>
-    <ClCompile Include="3rdparty\zlib\trees.c"/>
-    <ClCompile Include="3rdparty\zlib\uncompr.c"/>
-    <ClCompile Include="3rdparty\zlib\zutil.c"/>
-    <ClCompile Include="compat\dirent.c"/>
-    <ClCompile Include="compat\gettimeofday.c"/>
-    <ClCompile Include="compat\glob.c"/>
-    <ClCompile Include="compat\libclamav_main.c"/>
-    <ClCompile Include="compat\libgen.c"/>
-    <ClCompile Include="compat\ltdl.c"/>
-    <ClCompile Include="compat\net.c"/>
-    <ClCompile Include="compat\random.c"/>
-    <ClCompile Include="compat\snprintf.c"/>
-    <ClCompile Include="compat\utf8_util.c"/>
-    <ClCompile Include="compat\w32_errno.c"/>
-    <ClCompile Include="compat\w32_stat.c"/>
+    <ClCompile Include="3rdparty\zlib\crc32.c" />
+    <ClCompile Include="3rdparty\zlib\deflate.c" />
+    <ClCompile Include="3rdparty\zlib\gzclose.c" />
+    <ClCompile Include="3rdparty\zlib\gzlib.c" />
+    <ClCompile Include="3rdparty\zlib\gzread.c" />
+    <ClCompile Include="3rdparty\zlib\gzwrite.c" />
+    <ClCompile Include="3rdparty\zlib\inffast.c" />
+    <ClCompile Include="3rdparty\zlib\inflate.c" />
+    <ClCompile Include="3rdparty\zlib\inftrees.c" />
+    <ClCompile Include="3rdparty\zlib\trees.c" />
+    <ClCompile Include="3rdparty\zlib\uncompr.c" />
+    <ClCompile Include="3rdparty\zlib\zutil.c" />
+    <ClCompile Include="compat\dirent.c" />
+    <ClCompile Include="compat\gettimeofday.c" />
+    <ClCompile Include="compat\glob.c" />
+    <ClCompile Include="compat\libclamav_main.c" />
+    <ClCompile Include="compat\libgen.c" />
+    <ClCompile Include="compat\ltdl.c" />
+    <ClCompile Include="compat\net.c" />
+    <ClCompile Include="compat\random.c" />
+    <ClCompile Include="compat\snprintf.c" />
+    <ClCompile Include="compat\utf8_util.c" />
+    <ClCompile Include="compat\w32_errno.c" />
+    <ClCompile Include="compat\w32_stat.c" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="libclamavcxx.vcxproj">
@@ -442,7 +496,13 @@
       <Project>{81f5e6f8-6d82-4384-9202-66da2bae54a1}</Project>
     </ProjectReference>
   </ItemGroup>
-  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets"/>
+  <ItemGroup>
+    <ClInclude Include="..\libclamav\hostid.h" />
+    <ClInclude Include="..\libclamav\json.h" />
+    <ClInclude Include="..\libclamav\stats.h" />
+    <ClInclude Include="..\libclamav\www.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
 </Project>

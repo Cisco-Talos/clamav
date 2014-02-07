@@ -1,7 +1,7 @@
 /*
  *  Extract VBA source code for component MS Office Documents
  *
- *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Trog, Nigel Horne
  *
@@ -104,8 +104,10 @@ get_unicode_name(const char *name, int size, int big_endian)
 		return NULL;
 
 	newname = (char *)cli_malloc(size * 7 + 1);
-	if(newname == NULL)
+	if(newname == NULL) {
+        cli_errmsg("get_unicode_name: Unable to allocate memory for newname\n");
 		return NULL;
+    }
 
 	if((!big_endian) && (size & 0x1)) {
 		cli_dbgmsg("get_unicode_name: odd number of bytes %d\n", size);
@@ -165,82 +167,112 @@ static void vba56_test_middle(int fd)
 	if((memcmp(test_middle, middle1_str, MIDDLE_SIZE) != 0) &&
 	   (memcmp(test_middle, middle2_str, MIDDLE_SIZE) != 0)) {
 		cli_dbgmsg("middle not found\n");
-		lseek(fd, -MIDDLE_SIZE, SEEK_CUR);
+		if (lseek(fd, -MIDDLE_SIZE, SEEK_CUR) == -1) {
+            cli_dbgmsg("vba_test_middle: call to lseek() failed\n");
+            return;
+        }
 	} else
 		cli_dbgmsg("middle found\n");
 }
 
+/* return count of valid strings found, 0 on error */
 static int
 vba_read_project_strings(int fd, int big_endian)
 {
-	unsigned char *buf = NULL;
-	uint16_t buflen = 0;
-	int ret = 0;
+    unsigned char *buf = NULL;
+    uint16_t buflen = 0;
+    uint16_t length = 0;
+    int ret = 0, getnewlength = 1;
 
-	for(;;) {
-		off_t offset;
-		uint16_t length;
-		char *name;
+    for(;;) {
+        off_t offset;
+        char *name;
 
-		if(!read_uint16(fd, &length, big_endian))
-			break;
+        /* if no initial name length, exit */
+        if(getnewlength && !read_uint16(fd, &length, big_endian)) {
+            ret = 0;
+            break;
+        }
+        getnewlength = 0;
 
-		if (length < 6) {
-			lseek(fd, -2, SEEK_CUR);
-			break;
-		}
-		if(length > buflen) {
-			unsigned char *newbuf = (unsigned char *)cli_realloc(buf, length);
-			if(newbuf == NULL) {
-				if(buf)
-					free(buf);
-				return 0;
-			}
-			buflen = length;
-			buf = newbuf;
-		}
+        /* if too short, break */
+        if (length < 6) {
+            if (lseek(fd, -2, SEEK_CUR) == -1) {
+                cli_dbgmsg("vba_read_project_strings: call to lseek() has failed\n");
+                ret = 0;
+            }
+            break;
+        }
+        /* ensure buffer is large enough */
+        if(length > buflen) {
+            unsigned char *newbuf = (unsigned char *)cli_realloc(buf, length);
+            if(newbuf == NULL) {
+                ret = 0;
+                break;
+            }
+            buflen = length;
+            buf = newbuf;
+        }
 
-		offset = lseek(fd, 0, SEEK_CUR);
+        /* save current offset */
+        offset = lseek(fd, 0, SEEK_CUR);
+        if (offset == -1) {
+            cli_dbgmsg("vba_read_project_strings: call to lseek() has failed\n");
+            ret = 0;
+            break;
+        }
 
-		if(cli_readn(fd, buf, length) != (int)length) {
-			cli_dbgmsg("read name failed - rewinding\n");
-			lseek(fd, offset, SEEK_SET);
-			break;
-		}
-		name = get_unicode_name((const char *)buf, length, big_endian);
-		cli_dbgmsg("length: %d, name: %s\n", length, (name) ? name : "[null]");
+        /* if read name failed, break */
+        if(cli_readn(fd, buf, length) != (int)length) {
+            cli_dbgmsg("read name failed - rewinding\n");
+            if (lseek(fd, offset, SEEK_SET) == -1) {
+                cli_dbgmsg("call to lseek() in read name failed\n");
+                ret = 0;
+            }
+            break;
+        }
+        name = get_unicode_name((const char *)buf, length, big_endian);
+        cli_dbgmsg("length: %d, name: %s\n", length, (name) ? name : "[null]");
 
-		if((name == NULL) || (memcmp("*\\", name, 2) != 0) ||
-		   (strchr("ghcd", name[2]) == NULL)) {
-			/* Not a string */
-			lseek(fd, -(length+2), SEEK_CUR);
-			if(name)
-				free(name);
-			break;
-		}
-		free(name);
+        /* if invalid name, break */
+        if((name == NULL) || (memcmp("*\\", name, 2) != 0) ||
+           (strchr("ghcd", name[2]) == NULL)) {
+            /* Not a valid string, rewind */
+            if (lseek(fd, -(length+2), SEEK_CUR) == -1) {
+                cli_dbgmsg("call to lseek() after get_unicode_name has failed\n");
+                ret = 0;
+            }
+            free(name);
+            break;
+        }
+        free(name);
 
-		if(!read_uint16(fd, &length, big_endian)) {
-			if(buf) {
-				free(buf);
-				buf = NULL;
-			}
-			break;
-		}
+        /* can't get length, break */
+        if(!read_uint16(fd, &length, big_endian)) {
+            break;
+        }
 
-		ret++;
+        ret++;
 
-		if ((length != 0) && (length != 65535)) {
-			lseek(fd, -2, SEEK_CUR);
-			continue;
-		}
-		offset = lseek(fd, 10, SEEK_CUR);
-		cli_dbgmsg("offset: %lu\n", (unsigned long)offset);
-		vba56_test_middle(fd);
-	}
-	if(buf)
-		free(buf);
-	return ret;
+        /* continue on reasonable length value */
+        if ((length != 0) && (length != 65535)) {
+            continue;
+        }
+
+        /* determine offset and run middle test */
+        offset = lseek(fd, 10, SEEK_CUR);
+        if (offset == -1) {
+            cli_dbgmsg("call to lseek() has failed\n");
+            ret = 0;
+            break;
+        }
+        cli_dbgmsg("offset: %lu\n", (unsigned long)offset);
+        vba56_test_middle(fd);
+        getnewlength = 1;
+    }
+
+    free(buf);
+    return ret;
 }
 
 vba_project_t *
@@ -284,8 +316,13 @@ cli_vba_readdir(const char *dir, struct uniq *U, uint32_t which)
 	}
 
 	i = vba_read_project_strings(fd, TRUE);
-	seekback = lseek(fd, 0, SEEK_CUR);
+	if ((seekback = lseek(fd, 0, SEEK_CUR)) == -1) {
+		cli_dbgmsg("vba_readdir: lseek() failed. Unable to guess VBA type\n");
+		close(fd);
+		return NULL;
+	}
 	if (lseek(fd, sizeof(struct vba56_header), SEEK_SET) == -1) {
+		cli_dbgmsg("vba_readdir: lseek() failed. Unable to guess VBA type\n");
 		close(fd);
 		return NULL;
 	}
@@ -297,7 +334,11 @@ cli_vba_readdir(const char *dir, struct uniq *U, uint32_t which)
 	}
 	if (i > j) {
 		big_endian = TRUE;
-		lseek(fd, seekback, SEEK_SET);
+		if (lseek(fd, seekback, SEEK_SET) == -1) {
+			cli_dbgmsg("vba_readdir: call to lseek() while guessing big-endian has failed\n");
+			close(fd);
+			return NULL;
+		}
 		cli_dbgmsg("vba_readdir: Guessing big-endian\n");
 	} else {
 		cli_dbgmsg("vba_readdir: Guessing little-endian\n");
@@ -316,16 +357,26 @@ cli_vba_readdir(const char *dir, struct uniq *U, uint32_t which)
 		close(fd);
 		return NULL;
 	}
-	if (ffff != 0xFFFF)
-		lseek(fd, 1, SEEK_CUR);
+	if (ffff != 0xFFFF) {
+		if (lseek(fd, 1, SEEK_CUR) == -1) {
+            cli_dbgmsg("call to lseek() while checking alignment error has failed\n");
+            close(fd);
+            return NULL;
+        }
+    }
 
 	if(!read_uint16(fd, &ffff, big_endian)) {
 		close(fd);
 		return NULL;
 	}
 
-	if(ffff != 0xFFFF)
-		lseek(fd, ffff, SEEK_CUR);
+	if(ffff != 0xFFFF) {
+		if (lseek(fd, ffff, SEEK_CUR) == -1) {
+            cli_dbgmsg("call to lseek() while checking alignment error has failed\n");
+            close(fd);
+            return NULL;
+        }
+    }
 
 	if(!read_uint16(fd, &ffff, big_endian)) {
 		close(fd);
@@ -335,7 +386,11 @@ cli_vba_readdir(const char *dir, struct uniq *U, uint32_t which)
 	if(ffff == 0xFFFF)
 		ffff = 0;
 
-	lseek(fd, ffff + 100, SEEK_CUR);
+	if (lseek(fd, ffff + 100, SEEK_CUR) == -1) {
+        cli_dbgmsg("call to lseek() failed\n");
+        close(fd);
+        return NULL;
+    }
 
 	if(!read_uint16(fd, &record_count, big_endian)) {
 		close(fd);
@@ -854,8 +909,10 @@ word_read_macro_entry(int fd, macro_info_t *macro_info)
 
 	msize = count * sizeof(struct macro);
 	m = cli_malloc(msize);
-	if(m == NULL)
+	if(m == NULL) {
+        cli_errmsg("word_read_macro_entry: Unable to allocate memory for 'm'\n");
 		return FALSE;
+    }
 
 	if(cli_readn(fd, m, msize) != msize) {
 		free(m);
@@ -889,6 +946,7 @@ word_read_macro_info(int fd, macro_info_t *macro_info)
 	macro_info->entries = (macro_entry_t *)cli_malloc(sizeof(macro_entry_t) * macro_info->count);
 	if(macro_info->entries == NULL) {
 		macro_info->count = 0;
+        cli_errmsg("word_read_macro_info: Unable to allocate memory for macro_info->entries\n");
 		return NULL;
 	}
 	if(!word_read_macro_entry(fd, macro_info)) {
@@ -1123,6 +1181,7 @@ cli_wm_readdir(int fd)
 				m++;
 			}
 		} else {
+            cli_errmsg("cli_wm_readdir: Unable to allocate memory for vba_project\n");
 			free(vba_project->name);
 			free(vba_project->colls);
 			free(vba_project->dir);
@@ -1152,8 +1211,10 @@ cli_wm_decrypt_macro(int fd, off_t offset, uint32_t len, unsigned char key)
 		return NULL;
 
 	buff = (unsigned char *)cli_malloc(len);
-	if(buff == NULL)
+	if(buff == NULL) {
+        cli_errmsg("cli_wm_decrypt_macro: Unable to allocate memory for buff\n");
 		return NULL;
+    }
 
 	if(!seekandread(fd, offset, SEEK_SET, buff, len)) {
 		free(buff);
@@ -1241,8 +1302,10 @@ create_vba_project(int record_count, const char *dir, struct uniq *U)
 
 	ret = (vba_project_t *) cli_malloc(sizeof(struct vba_project_tag));
 
-	if(ret == NULL)
+	if(ret == NULL) {
+        cli_errmsg("create_vba_project: Unable to allocate memory for vba project structure\n");
 		return NULL;
+    }
 
 	ret->name = (char **)cli_malloc(sizeof(char *) * record_count);
 	ret->colls = (uint32_t *)cli_malloc(sizeof(uint32_t) * record_count);
@@ -1259,6 +1322,7 @@ create_vba_project(int record_count, const char *dir, struct uniq *U)
 		if(ret->offset)
 			free(ret->offset);
 		free(ret);
+        cli_errmsg("create_vba_project: Unable to allocate memory for vba project elements\n");
 		return NULL;
 	}
 	ret->count = record_count;

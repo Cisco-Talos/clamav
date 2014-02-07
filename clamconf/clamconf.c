@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2009 Sourcefire, Inc.
+ *  Copyright (C) 2009-2013 Sourcefire, Inc.
  *  Author: Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -45,6 +45,7 @@
 #include "libclamav/bytecode.h"
 #include "libclamav/bytecode_detect.h"
 #include "target.h"
+#include "fpu.h"
 
 #ifndef _WIN32
 extern const struct clam_option *clam_options;
@@ -330,6 +331,7 @@ static void print_dbs(const char *dir)
 		dbfile = (char *) malloc(strlen(dent->d_name) + strlen(dir) + 2);
 		if(!dbfile) {
 		    printf("print_dbs: Can't allocate memory for dbfile\n");
+		    closedir(dd);
 		    return;
 		}
 		sprintf(dbfile, "%s"PATHSEP"%s", dir, dent->d_name);
@@ -370,7 +372,6 @@ int main(int argc, char **argv)
 	unsigned int i, j;
 	struct cli_environment env;
 
-
     opts = optparse(NULL, argc, argv, 1, OPT_CLAMCONF, 0, NULL);
     if(!opts) {
 	printf("ERROR: Can't parse command line options\n");
@@ -396,6 +397,7 @@ int main(int argc, char **argv)
     }
 
     dbdir[0] = 0;
+    clamd_dbdir[0] = 0;
     dir = optget(opts, "config-dir")->strarg;
     printf("Checking configuration files in %s\n", dir);
     for(i = 0; cfgfile[i].name; i++) {
@@ -447,9 +449,10 @@ int main(int argc, char **argv)
 #ifdef FRESHCLAM_DNS_FIX
 	printf("FRESHCLAM_DNS_FIX ");
 #endif
-#ifdef FPU_WORDS_BIGENDIAN
-	printf("AUTOIT_EA06 ");
+#ifndef _WIN32
+        if (get_fpu_endian() != FPU_ENDIAN_UNKNOWN)
 #endif
+			printf("AUTOIT_EA06 ");
 #ifdef HAVE_BZLIB_H
 	printf("BZIP2 ");
 #endif

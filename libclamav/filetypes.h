@@ -27,7 +27,11 @@
 #include "cltypes.h"
 #include "fmap.h"
 
-#define MAGIC_BUFFER_SIZE 1024
+#define CL_FILE_MBUFF_SIZE 1024
+#define CL_PART_MBUFF_SIZE 1028
+/* MAGIC_BUFFER_SIZE must be the bigger of the two sizes above */
+#define MAGIC_BUFFER_SIZE 1028
+
 #define CL_TYPENO 500
 #define MAX_EMBEDDED_OBJ 10
 
@@ -73,6 +77,16 @@ typedef enum {
     CL_TYPE_RTF,
     CL_TYPE_7Z,
     CL_TYPE_SWF,
+    CL_TYPE_JAVA,
+    CL_TYPE_XAR,
+    CL_TYPE_XZ,
+    CL_TYPE_OOXML_WORD,
+    CL_TYPE_OOXML_PPT,
+    CL_TYPE_OOXML_XL,
+
+    /* Section for partition types */
+    CL_TYPE_PART_ANY, /* unknown partition type */
+    CL_TYPE_PART_HFSPLUS,
 
     /* bigger numbers have higher priority (in o-t-f detection) */
     CL_TYPE_HTML, /* on the fly */
@@ -87,6 +101,10 @@ typedef enum {
     CL_TYPE_AUTOIT,
     CL_TYPE_ISHIELD_MSI,
     CL_TYPE_ISO9660,
+    CL_TYPE_DMG,
+    CL_TYPE_MBR,
+    CL_TYPE_GPT,
+    CL_TYPE_APM,
     CL_TYPE_IGNORED /* please don't add anything below */
 } cli_file_t;
 
@@ -110,7 +128,7 @@ cli_file_t cli_ftcode(const char *name);
 const char *cli_ftname(cli_file_t code);
 void cli_ftfree(const struct cl_engine *engine);
 cli_file_t cli_filetype(const unsigned char *buf, size_t buflen, const struct cl_engine *engine);
-cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine);
+cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t basetype);
 int cli_addtypesigs(struct cl_engine *engine);
 
 #endif

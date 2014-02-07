@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Alberto Wu
  *
@@ -280,7 +280,13 @@ static int unz(const uint8_t *src, uint32_t csize, uint32_t usize, uint16_t meth
   if(!res) {
     (*fu)++;
     cli_dbgmsg("cli_unzip: extracted to %s\n", tempfile);
-    lseek(of, 0, SEEK_SET);
+    if (lseek(of, 0, SEEK_SET) == -1) {
+        cli_dbgmsg("cli_unzip: call to lseek() failed\n");
+        if (!(tmpd))
+            free(tempfile);
+        close(of);
+        return CL_ESEEK;
+    }
     ret = cli_magic_scandesc(of, ctx);
     close(of);
     if(!ctx->engine->keeptmp)

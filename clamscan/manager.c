@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2012 Sourcefire, Inc.
+ *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
  *
@@ -66,6 +66,10 @@
 #ifdef C_LINUX
 dev_t procdev;
 #endif
+
+char hostid[37];
+
+char *get_hostid(void *cbdata);
 
 #ifdef _WIN32
 /* FIXME: If possible, handle users correctly */
@@ -249,7 +253,7 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
     }
 
     /* argh, don't scan /proc files */
-    if(STAT(filename, &sb) != -1) {
+    if(CLAMSTAT(filename, &sb) != -1) {
 #ifdef C_LINUX
 	if(procdev && sb.st_dev == procdev) {
 	    if(!printinfected)
@@ -412,7 +416,7 @@ static void scandirs(const char *dirname, struct cl_engine *engine, const struct
 			    if(dirlnk != 2 && filelnk != 2) {
 				if(!printinfected)
 				    logg("%s: Symbolic link\n", fname);
-			    } else if(STAT(fname, &sb) != -1) {
+			    } else if(CLAMSTAT(fname, &sb) != -1) {
 				if(S_ISREG(sb.st_mode) && filelnk == 2) {
 				    scanfile(fname, engine, opts, options);
 				} else if(S_ISDIR(sb.st_mode) && dirlnk == 2) {
@@ -567,6 +571,40 @@ int scanmanager(const struct optstruct *opts)
 	return 2;
     }
 
+    if (optget(opts, "disable-cache")->enabled)
+        cl_engine_set_num(engine, CL_ENGINE_DISABLE_CACHE, 1);
+
+    if (optget(opts, "disable-pe-stats")->enabled) {
+        cl_engine_set_num(engine, CL_ENGINE_DISABLE_PE_STATS, 1);
+    }
+
+    if (optget(opts, "disable-stats")->enabled) {
+        cl_engine_set_clcb_stats_add_sample(engine, NULL);
+    }
+
+    if (optget(opts, "stats-timeout")->enabled) {
+        cl_engine_set_num(engine, CL_ENGINE_STATS_TIMEOUT, optget(opts, "StatsTimeout")->numarg);
+    }
+
+    if (optget(opts, "stats-host-id")->enabled) {
+        char *p = optget(opts, "stats-host-id")->strarg;
+
+        if (strcmp(p, "default")) {
+            if (!strcmp(p, "none")) {
+                cl_engine_set_clcb_stats_get_hostid(engine, NULL);
+            } else {
+                if (strlen(p) > 36) {
+                    logg("!Invalid HostID\n");
+                    cl_engine_set_clcb_stats_submit(engine, NULL);
+                    cl_engine_free(engine);
+                    return 2;
+                }
+
+                strcpy(hostid, p);
+            }
+        }
+    }
+
     if(optget(opts, "detect-pua")->enabled) {
 	dboptions |= CL_DB_PUA;
 	if((opt = optget(opts, "exclude-pua"))->enabled) {
@@ -630,6 +668,9 @@ int scanmanager(const struct optstruct *opts)
 
     if(optget(opts, "leave-temps")->enabled)
 	cl_engine_set_num(engine, CL_ENGINE_KEEPTMP, 1);
+
+    if(optget(opts, "force-to-disk")->enabled)
+	cl_engine_set_num(engine, CL_ENGINE_FORCETODISK, 1);
 
     if(optget(opts, "bytecode-unsigned")->enabled)
 	dboptions |= CL_DB_BYTECODE_UNSIGNED;
@@ -786,6 +827,14 @@ int scanmanager(const struct optstruct *opts)
 	}
     }
 
+    if((opt = optget(opts, "max-partitions"))->active) {
+	if((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_PARTITIONS, opt->numarg))) {
+	    logg("!cli_engine_set_num(CL_ENGINE_MAX_PARTITIONS) failed: %s\n", cl_strerror(ret));
+	    cl_engine_free(engine);
+	    return 2;
+	}
+    }
+
     /* set scan options */
     if(optget(opts, "allmatch")->enabled)
 	options |= CL_SCAN_ALLMATCHES;
@@ -795,6 +844,9 @@ int scanmanager(const struct optstruct *opts)
 
     if(optget(opts,"phishing-cloak")->enabled)
 	options |= CL_SCAN_PHISHING_BLOCKCLOAK;
+
+    if(optget(opts,"partition-intersection")->enabled)
+	options |= CL_SCAN_PARTITION_INTXN;
 
     if(optget(opts,"heuristic-scan-precedence")->enabled)
 	options |= CL_SCAN_HEURISTIC_PRECEDENCE;
@@ -884,7 +936,7 @@ int scanmanager(const struct optstruct *opts)
 
 #ifdef C_LINUX
     procdev = (dev_t) 0;
-    if(STAT("/proc", &sb) != -1 && !sb.st_size)
+    if(CLAMSTAT("/proc", &sb) != -1 && !sb.st_size)
 	procdev = sb.st_dev;
 #endif
 
@@ -895,7 +947,7 @@ int scanmanager(const struct optstruct *opts)
 	    logg("!Can't get absolute pathname of current working directory\n");
 	    ret = 2;
 	} else {
-	    STAT(cwd, &sb);
+	    CLAMSTAT(cwd, &sb);
 	    scandirs(cwd, engine, opts, options, 1, sb.st_dev);
 	}
 
@@ -908,8 +960,8 @@ int scanmanager(const struct optstruct *opts)
 
 	while((filename = filelist(opts, &ret)) && (file = strdup(filename))) {
 	    if(LSTAT(file, &sb) == -1) {
-		logg("^%s: Can't access file\n", file);
 		perror(file);
+		logg("^%s: Can't access file\n", file);
 		ret = 2;
 	    } else {
 		for(i = strlen(file) - 1; i > 0; i--) {
@@ -923,7 +975,7 @@ int scanmanager(const struct optstruct *opts)
 		    if(dirlnk == 0 && filelnk == 0) {
 			if(!printinfected)
 			    logg("%s: Symbolic link\n", file);
-		    } else if(STAT(file, &sb) != -1) {
+		    } else if(CLAMSTAT(file, &sb) != -1) {
 			if(S_ISREG(sb.st_mode) && filelnk) {
 			    scanfile(file, engine, opts, options);
 			} else if(S_ISDIR(sb.st_mode) && dirlnk) {
@@ -961,4 +1013,38 @@ int scanmanager(const struct optstruct *opts)
 	ret = 2;
 
     return ret;
+}
+
+int is_valid_hostid(void)
+{
+    int count, i;
+
+    if (strlen(hostid) != 36)
+        return 0;
+
+    count=0;
+    for (i=0; i < 36; i++)
+        if (hostid[i] == '-')
+            count++;
+
+    if (count != 4)
+        return 0;
+
+    if (hostid[8] != '-' || hostid[13] != '-' || hostid[18] != '-' || hostid[23] != '-')
+        return 0;
+
+    return 1;
+}
+
+char *get_hostid(void *cbdata)
+{
+    if (!strcmp(hostid, "none"))
+        return NULL;
+
+    if (!is_valid_hostid())
+        return strdup(STATS_ANON_UUID);
+
+    logg("HostID is valid: %s\n", hostid);
+
+    return strdup(hostid);
 }

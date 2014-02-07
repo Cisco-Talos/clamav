@@ -1,5 +1,6 @@
 #
 #  Copyright (C) 2002 - 2007 Tomasz Kojm <tkojm@clamav.net>
+#  Copyright (C) 2008 - 2013 Sourcefire, Inc.
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -132,8 +133,8 @@ libclamav_nocxx_la_SOURCES = bytecode_nojit.c
 
 libclamav_la_LIBADD = @LIBLTDL@ $(IFACELIBADD) $(LLVMLIBADD) libclamav_internal_utils.la @LIBCLAMAV_LIBS@ @THREAD_LIBS@ @LIBM@
 libclamav_la_DEPENDENCIES =  @LTDLDEPS@ $(IFACEDEP) $(LLVMDEP) libclamav_internal_utils.la
-libclamav_la_CFLAGS =$(AM_CFLAGS) -DSEARCH_LIBDIR=\"$(libdir)\"
-libclamav_la_LDFLAGS = @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@ -no-undefined
+libclamav_la_CFLAGS =$(AM_CFLAGS) $(XML_CPPFLAGS) -DSEARCH_LIBDIR=\"$(libdir)\"
+libclamav_la_LDFLAGS = @TH_SAFE@ $(XML_LIBS) -version-info @LIBCLAMAV_VERSION@ -no-undefined
 
 if VERSIONSCRIPT
 libclamav_la_LDFLAGS += -Wl,@VERSIONSCRIPTFLAG@,@top_srcdir@/libclamav/libclamav.map
@@ -318,6 +319,21 @@ libclamav_la_SOURCES = \
 	7z/Ppmd7.h \
 	7z/Ppmd7Dec.c \
 	7z/Types.h \
+	7z/Xz.c \
+	7z/Xz.h \
+	7z/XzCrc64.c \
+	7z/XzCrc64.h \
+	7z/XzDec.c \
+	7z/XzIn.c \
+	7z/Sha256.h \
+	7z/Delta.c \
+	7z/Delta.h \
+	7z/Alloc.h \
+	7z/BraIA64.c \
+	7z/CpuArch.c \
+	7z/CpuArch.h \
+	7z/7zCrcOpt.c \
+	7z/RotateDefs.h \
 	explode.c \
 	explode.h \
 	textnorm.c \
@@ -370,6 +386,26 @@ libclamav_la_SOURCES = \
 	builtin_bytecodes.h\
 	events.c\
 	events.h \
+	adc.c \
+	adc.h \
+	dmg.c \
+	dmg.h \
+	xar.c \
+	xar.h \
+	mbr.c \
+    mbr.h \
+	gpt.c \
+	gpt.h \
+	apm.c \
+	apm.h \
+	prtn_intxn.c \
+	prtn_intxn.h \
+	xz_iface.c \
+	xz_iface.h \
+	sf_base64decode.c \
+	sf_base64decode.h \
+	hfsplus.c \
+	hfsplus.h \
 	swf.c \
 	swf.h \
 	jpeg.c \
@@ -385,7 +421,17 @@ libclamav_la_SOURCES = \
 	crtmgr.c \
 	crtmgr.h \
 	asn1.c \
-	asn1.h
+	asn1.h \
+	fpu.c \
+	fpu.h \
+	stats.c \
+	stats.h \
+	www.c \
+	www.h \
+	json.c \
+	json.h \
+	hostid.c \
+	hostid.h
 
 libclamav_la_SOURCES += bignum.h\
 	bignum_fast.h\

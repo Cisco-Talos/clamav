@@ -2,7 +2,7 @@
  *  Normalise HTML text.
  *  Decode MS Script Encoder protection. 
  *
- *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Trog
  *
@@ -174,6 +174,7 @@ static unsigned char *cli_readchunk(FILE *stream, m_area_t *m_area, unsigned int
 
 	chunk = (unsigned char *) cli_malloc(max_len);
 	if (!chunk) {
+        cli_errmsg("readchunk: Unable to allocate memory for chunk\n");
 		return NULL;
 	}
 
@@ -193,7 +194,7 @@ static unsigned char *cli_readchunk(FILE *stream, m_area_t *m_area, unsigned int
 		start = ptr;
 		end = ptr - m_area->offset + m_area->length;
 
-		if (start >= end) {
+		if ((start >= end) || !start) {
 			free(chunk);
 			return NULL;
 		}
@@ -520,8 +521,10 @@ static inline void html_tag_contents_done(tag_arguments_t *tags,int idx, struct 
 	unsigned char *p;
 	cont->contents[cont->pos++] = '\0';
 	p = cli_malloc(cont->pos);
-	if(!p)
+	if(!p) {
+        cli_errmsg("html_tag_contents_done: Unable to allocate memory for p\n");
 		return;
+    }
 	memcpy(p, cont->contents, cont->pos);
 	tags->contents[idx-1] = p;
 	cont->pos = 0;
@@ -646,7 +649,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 	html_state state=HTML_NORM, next_state=HTML_BAD_STATE, saved_next_state=HTML_BAD_STATE;
 	char filename[1024], tag[HTML_STR_LENGTH+1], tag_arg[HTML_STR_LENGTH+1];
 	char tag_val[HTML_STR_LENGTH+1], *tmp_file, *arg_value;
-	unsigned char *line, *ptr, *ptr_screnc = NULL;
+	unsigned char *line = NULL, *ptr, *ptr_screnc = NULL;
 	tag_arguments_t tag_args;
 	quoted_state quoted = NOT_QUOTED;
 	unsigned long length = 0;
@@ -702,6 +705,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 
 		file_buff_o2 = (file_buff_t *) cli_malloc(sizeof(file_buff_t));
 		if (!file_buff_o2) {
+            cli_errmsg("cli_html_normalise: Unable to allocate memory for file_buff_o2\n");
 			file_buff_o2 = file_buff_text = NULL;
 			goto abort;
 		}
@@ -721,6 +725,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 			close(file_buff_o2->fd);
 			free(file_buff_o2);
 			file_buff_o2 = file_buff_text = NULL;
+            cli_errmsg("cli_html_normalise: Unable to allocate memory for file_buff_text\n");
 			goto abort;
 		}
 
@@ -1596,6 +1601,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 				if (dirname) {
 					file_tmp_o1 = (file_buff_t *) cli_malloc(sizeof(file_buff_t));
 					if (!file_tmp_o1) {
+                        cli_errmsg("cli_html_normalise: Unable to allocate memory for file_tmp_o1\n");
 						goto abort;
 					}
 					snprintf(filename, 1024, "%s"PATHSEP"rfc2397", dirname);
@@ -1775,6 +1781,8 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 	}
 	retval = TRUE;
 abort:
+	if (line) /* only needed for abort case */
+		free(line);
 	if (in_form_action)
 		free(in_form_action);
         if (in_ahref) /* tag not closed, force closing */

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Alberto Wu
  *
@@ -39,7 +39,9 @@
 #include "scanners.h"
 #include "autoit.h"
 #include "fmap.h"
+#include "fpu.h"
 
+static int fpu_words = FPU_ENDIAN_INITME;
 
 /* FIXME: use unicode detection and normalization from edwin */
 static unsigned int u2a(uint8_t *dest, unsigned int len) {
@@ -379,7 +381,11 @@ static int ea05(cli_ctx *ctx, const uint8_t *base, char *tmpd) {
       cli_dbgmsg("autoit: file extracted to %s\n", tempfile);
     else 
       cli_dbgmsg("autoit: file successfully extracted\n");
-    lseek(i, 0, SEEK_SET);
+    if (lseek(i, 0, SEEK_SET) == -1) {
+        cli_dbgmsg("autoit: call to lseek() has failed\n");
+        close(i);
+        return CL_ESEEK;
+    }
     if(cli_magic_scandesc(i, ctx) == CL_VIRUS) {
       close(i);
       if(!ctx->engine->keeptmp)
@@ -398,7 +404,6 @@ static int ea05(cli_ctx *ctx, const uint8_t *base, char *tmpd) {
   LAME realted stuff 
 *********************/
 
-#ifdef FPU_WORDS_BIGENDIAN
 #define ROFL(a,b) (( a << (b % (sizeof(a)<<3) ))  |  (a >> (  (sizeof(a)<<3)  -  (b % (sizeof(a)<<3 )) ) ))
 
 struct LAME {
@@ -412,13 +417,8 @@ static double LAME_fpusht(struct LAME *l) {
   union {
     double as_double;
     struct {
-#if FPU_WORDS_BIGENDIAN == 0
       uint32_t lo;
       uint32_t hi;
-#else
-      uint32_t hi;
-      uint32_t lo;
-#endif
     } as_uint;
   } ret;
 
@@ -434,8 +434,13 @@ static double LAME_fpusht(struct LAME *l) {
 /*       return 0.0; */
 /*   } */
 
-  ret.as_uint.lo = rolled << 0x14;
-  ret.as_uint.hi = 0x3ff00000 | (rolled >> 0xc);
+  if (fpu_words == FPU_ENDIAN_LITTLE) {
+      ret.as_uint.lo = rolled << 0x14;
+      ret.as_uint.hi = 0x3ff00000 | (rolled >> 0xc);
+  } else {
+      ret.as_uint.hi = rolled << 0x14;
+      ret.as_uint.lo = 0x3ff00000 | (rolled >> 0xc);
+  }
   return ret.as_double - 1.0;
 }
 
@@ -740,19 +745,18 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd) {
 	    }
 	    buf = newout;
 	  }
-#if FPU_WORDS_BIGENDIAN == 0
-	  snprintf((char *)&buf[UNP.cur_output], 39, "%g ", *(double *)&UNP.outputbuf[UNP.cur_input]);
-#else
-	  do {
-	    double x;
-	    uint8_t *j = (uint8_t *)&x;
-	    unsigned int i;
-
-	    for(i=0; i<8; i++)
-	      j[7-i]=UNP.outputbuf[UNP.cur_input+i];
-	    snprintf((char *)&buf[UNP.cur_output], 39, "%g ", x); /* FIXME: check */
-	  } while(0);
-#endif
+          if (fpu_words == FPU_ENDIAN_LITTLE)
+              snprintf((char *)&buf[UNP.cur_output], 39, "%g ", *(double *)&UNP.outputbuf[UNP.cur_input]);
+          else
+              do {
+                  double x;
+                  uint8_t *j = (uint8_t *)&x;
+                  unsigned int i;
+                  
+                  for(i=0; i<8; i++)
+                      j[7-i]=UNP.outputbuf[UNP.cur_input+i];
+                  snprintf((char *)&buf[UNP.cur_output], 39, "%g ", x); /* FIXME: check */
+              } while(0);
 	  buf[UNP.cur_output+38]=' ';
 	  buf[UNP.cur_output+39]='\0';
 	  UNP.cur_output += strlen((char *)&buf[UNP.cur_output]);
@@ -896,7 +900,11 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd) {
       cli_dbgmsg("autoit: %s extracted to %s\n", (script)?"script":"file", tempfile);
     else 
       cli_dbgmsg("autoit: %s successfully extracted\n", (script)?"script":"file");
-    lseek(i, 0, SEEK_SET);
+    if (lseek(i, 0, SEEK_SET) == -1) {
+        cli_dbgmsg("autoit: call to lseek() has failed\n");
+        close(i);
+        return CL_ESEEK;
+    }
     if(cli_magic_scandesc(i, ctx) == CL_VIRUS) {
       close(i);
       if(!ctx->engine->keeptmp) 
@@ -909,8 +917,6 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd) {
   }
   return ret;
 }
-
-#endif /* FPU_WORDS_BIGENDIAN */
 
 /*********************
    autoit3 wrapper 
@@ -942,13 +948,16 @@ int cli_scanautoit(cli_ctx *ctx, off_t offset) {
     r = ea05(ctx, version + 1, tmpd);
     break;
   case 0x36:
-#ifdef FPU_WORDS_BIGENDIAN
-    r = ea06(ctx, version + 1, tmpd);
-#else
-    cli_dbgmsg("autoit: EA06 support not available\n");
-    r = CL_CLEAN;
-#endif
-    break;
+      if (fpu_words == FPU_ENDIAN_INITME)
+          fpu_words = get_fpu_endian();
+      if (fpu_words == FPU_ENDIAN_UNKNOWN) {
+          cli_dbgmsg("autoit: EA06 support not available"
+                     "(cannot extract ea06 doubles, unknown floating double representation).\n");
+          r = CL_CLEAN;
+      }
+      else
+          r = ea06(ctx, version + 1, tmpd);
+      break;
   default:
     /* NOT REACHED */
     cli_dbgmsg("autoit: unknown method\n");

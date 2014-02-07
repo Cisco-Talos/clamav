@@ -207,32 +207,6 @@ WRes File_Seek(CSzFile *p, Int64 *pos, ESzSeek origin)
   #endif
 }
 
-WRes File_GetLength(CSzFile *p, UInt64 *length)
-{
-  #ifdef USE_WINDOWS_FILE
-  
-  DWORD sizeHigh;
-  DWORD sizeLow = GetFileSize(p->handle, &sizeHigh);
-  if (sizeLow == 0xFFFFFFFF)
-  {
-    DWORD res = GetLastError();
-    if (res != NO_ERROR)
-      return res;
-  }
-  *length = (((UInt64)sizeHigh) << 32) + sizeLow;
-  return 0;
-  
-  #else
-  
-  long pos = ftell(p->file);
-  int res = fseek(p->file, 0, SEEK_END);
-  *length = ftell(p->file);
-  fseek(p->file, pos, SEEK_SET);
-  return res;
-  
-  #endif
-}
-
 
 /* ---------- FileSeqInStream ---------- */
 

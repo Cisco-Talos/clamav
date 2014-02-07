@@ -41,6 +41,16 @@ CLAMAV_PUBLIC {
     cl_fmap_open_memory;
     cl_scanmap_callback;
     cl_fmap_close;
+    cl_always_gen_section_hash;
+    cl_engine_set_stats_set_cbdata;
+    cl_engine_set_clcb_stats_add_sample;
+    cl_engine_set_clcb_stats_remove_sample;
+    cl_engine_set_clcb_stats_decrement_count;
+    cl_engine_set_clcb_stats_submit;
+    cl_engine_set_clcb_stats_flush;
+    cl_engine_set_clcb_stats_get_num;
+    cl_engine_set_clcb_stats_get_size;
+    cl_engine_set_clcb_stats_get_hostid;
 };
 CLAMAV_PRIVATE {
   global:
@@ -141,6 +151,7 @@ CLAMAV_PRIVATE {
     cli_initroots;
     cli_scanbuff;
     cli_fmap_scandesc;
+    cli_checkfp_pe;
     html_screnc_decode;
     mpool_create;
     mpool_calloc;
@@ -153,6 +164,9 @@ CLAMAV_PRIVATE {
     cli_ftw;
     cli_unlink;
     cli_writen;
+    SHA1Init;
+    SHA1Update;
+    SHA1Final;
     sha256_init;
     sha256_update;
     sha256_final;
@@ -189,6 +203,7 @@ CLAMAV_PRIVATE {
     cli_detect_environment;
     cli_disasm_one;
     cli_utf16_to_utf8;
+    get_fpu_endian;
   local:
     *;
 };

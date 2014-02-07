@@ -106,7 +106,7 @@ void hash_callback(int fd, unsigned long long size, const unsigned char *md5, co
 int scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data)
 {
     struct scan_cb_data *scandata = data->data;
-    const char *virname;
+    const char *virname = NULL;
     const char **virpp = &virname;
     int ret;
     int type = scandata->type;
@@ -233,22 +233,27 @@ int scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_ftw_rea
 
     if (scandata->options & CL_SCAN_ALLMATCHES) {
 	virpp = (const char **)*virpp; /* temp hack for scanall mode until api augmentation */
-	virname = virpp[0];
+	if (virpp) virname = virpp[0];
     }
 
     if (thrmgr_group_need_terminate(scandata->conn->group)) {
 	free(filename);
-	if (ret == CL_VIRUS && scandata->options & CL_SCAN_ALLMATCHES)
+	if ((scandata->options & CL_SCAN_ALLMATCHES) && (virpp != &virname))
 	    free((void *)virpp);
 	logg("*Client disconnected while scanjob was active\n");
 	return ret == CL_ETIMEOUT ? ret : CL_BREAK;
+    }
+
+    if ((ret == CL_VIRUS) && (virname == NULL)) {
+        logg("*%s: reported CL_VIRUS but no virname returned!\n", filename);
+        ret = CL_EMEM;
     }
 
     if (ret == CL_VIRUS) {
 	scandata->infected++;
 	if (conn_reply_virus(scandata->conn, filename, virname) == -1) {
 	    free(filename);
-	    if (scandata->options & CL_SCAN_ALLMATCHES)
+	    if((scandata->options & CL_SCAN_ALLMATCHES) && (virpp != &virname))
 		free((void *)virpp);
 	    return CL_ETIMEOUT;
 	}
@@ -257,12 +262,11 @@ int scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_ftw_rea
 	    while (NULL != virpp[i])
 		if (conn_reply_virus(scandata->conn, filename, virpp[i++]) == -1) {
 		    free(filename);
-		    free((void *)virpp);
+		    if (virpp != &virname)
+			free((void *)virpp);
 		    return CL_ETIMEOUT;
 		}
 	}
-	if(context.virsize)
-	    detstats_add(virname, filename, context.virsize, context.virhash);
 	if(context.virsize && optget(scandata->opts, "ExtendedDetectionInfo")->enabled)
 	    logg("~%s: %s(%s:%llu) FOUND\n", filename, virname, context.virhash, context.virsize);
 	else
@@ -276,6 +280,8 @@ int scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_ftw_rea
     } else if (ret != CL_CLEAN) {
 	scandata->errors++;
 	if (conn_reply(scandata->conn, filename, cl_strerror(ret), "ERROR") == -1) {
+	    if((scandata->options & CL_SCAN_ALLMATCHES) && (virpp != &virname))
+		free((void *)virpp);
 	    free(filename);
 	    return CL_ETIMEOUT;
 	}
@@ -285,7 +291,7 @@ int scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_ftw_rea
     }
 
     free(filename);
-    if (ret == CL_VIRUS && scandata->options & CL_SCAN_ALLMATCHES)
+    if((scandata->options & CL_SCAN_ALLMATCHES) && (virpp != &virname))
 	free((void *)virpp);
     if(ret == CL_EMEM) /* stop scanning */
 	return ret;
@@ -317,7 +323,7 @@ int scan_pathchk(const char *path, struct cli_ftw_cbdata *data)
     }
 
     if(!optget(scandata->opts, "CrossFilesystems")->enabled) {
-	if(STAT(path, &statbuf) == 0) {
+	if(CLAMSTAT(path, &statbuf) == 0) {
 	    if(statbuf.st_dev != scandata->dev) {
 		if(scandata->type != TYPE_MULTISCAN)
 		    conn_reply_single(scandata->conn, path, "Excluded (another filesystem)");
@@ -373,8 +379,6 @@ int scanfd(const client_conn_t *conn, unsigned long int *scanned,
 	if(ret == CL_VIRUS) {
 		if (conn_reply_virus(conn, reply_fdstr, virname) == -1)
 		    ret = CL_ETIMEOUT;
-		if(context.virsize)
-		    detstats_add(virname, "NOFNAME", context.virsize, context.virhash);
 		if(context.virsize && optget(opts, "ExtendedDetectionInfo")->enabled)
 		    logg("%s: %s(%s:%llu) FOUND\n", fdstr, virname, context.virhash, context.virsize);
 		else
@@ -427,7 +431,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
 	if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
 	    continue;
 
-	if(bind(sockfd, (struct sockaddr *) &server, sizeof(struct sockaddr_in)) == -1)
+	if(bind(sockfd, (struct sockaddr *) &server, (socklen_t)sizeof(struct sockaddr_in)) == -1)
 	    closesocket(sockfd);
 	else {
 	    bound = 1;
@@ -444,7 +448,11 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
 	mdprintf(odesc, "Can't find any free port. ERROR%c", term);
 	return -1;
     } else {
-	listen(sockfd, 1);
+	if (listen(sockfd, 1) == -1) {
+        logg("!ScanStream: listen() error on socket. Error returned is %s.\n", strerror(errno));
+        closesocket(sockfd);
+        return -1;
+    }
 	if(mdprintf(odesc, "PORT %u%c", port, term) <= 0) {
 	    logg("!ScanStream: error transmitting port.\n");
 	    closesocket(sockfd);
@@ -462,7 +470,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
     }
 
     addrlen = sizeof(peer);
-    if((acceptd = accept(sockfd, (struct sockaddr *) &peer, &addrlen)) == -1) {
+    if((acceptd = accept(sockfd, (struct sockaddr *) &peer, (socklen_t *)&addrlen)) == -1) {
 	closesocket(sockfd);
 	mdprintf(odesc, "accept() ERROR%c", term);
 	logg("!ScanStream %u: accept() failed.\n", port);
@@ -541,8 +549,6 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
     closesocket(sockfd);
 
     if(ret == CL_VIRUS) {
-	if(context.virsize)
-	    detstats_add(virname, "NOFNAME", context.virsize, context.virhash);
 	if(context.virsize && optget(opts, "ExtendedDetectionInfo")->enabled) {
 	    mdprintf(odesc, "stream: %s(%s:%llu) FOUND%c", virname, context.virhash, context.virsize, term);
 	    logg("stream(%s@%u): %s(%s:%llu) FOUND\n", peer_addr, port, virname, context.virhash, context.virsize);

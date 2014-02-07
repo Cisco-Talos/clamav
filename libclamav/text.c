@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Nigel Horne
  *
@@ -146,6 +146,7 @@ textCopy(const text *t_head)
 		}
 
 		if(last == NULL) {
+            cli_errmsg("textCopy: Unable to allocate memory to clone object\n");
 			if(first)
 				textDestroy(first);
 			return NULL;
@@ -225,8 +226,11 @@ textAddMessage(text *aText, message *aMessage)
 	else {
 		text *anotherText = messageToText(aMessage);
 
-		if(aText)
-			return textMove(aText, anotherText);
+		if(aText) {
+			text *newHead = textMove(aText, anotherText);
+			free(anotherText);
+			return newHead;
+		}
 		return anotherText;
 	}
 }
@@ -247,8 +251,10 @@ textMove(text *t_head, text *t)
 			return NULL;
 		}
 		t_head = (text *)cli_malloc(sizeof(text));
-		if(t_head == NULL)
+		if(t_head == NULL) {
+            cli_errmsg("textMove: Unable to allocate memory for head\n");
 			return NULL;
+        }
 		t_head->t_line = t->t_line;
 		t_head->t_next = t->t_next;
 		t->t_line = NULL;
@@ -269,8 +275,10 @@ textMove(text *t_head, text *t)
 	 * empty, the rest is moved by a simple pointer reassignment
 	 */
 	t_head->t_next = (text *)cli_malloc(sizeof(text));
-	if(t_head->t_next == NULL)
+	if(t_head->t_next == NULL) {
+        cli_errmsg("textMove: Unable to allocate memory for head->next\n");
 		return NULL;
+    }
 	t_head = t_head->t_next;
 
 	assert(t_head != NULL);

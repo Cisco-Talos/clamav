@@ -499,12 +499,12 @@ static int mszip_inflate(struct mszip_stream *zip) {
 	}
 	else {
 	  code -= 257;
-	  if (code > 29) return INF_ERR_LITCODE;
+	  if (code >= 29) return INF_ERR_LITCODE;
 	  MSZIP_READ_BITS_T(length, mszip_lit_extrabits[code]);
 	  length += mszip_lit_lengths[code];
 
 	  MSZIP_READ_HUFFSYM(DISTANCE, code);
-	  if (code > 30) return INF_ERR_DISTCODE;
+	  if (code >= 30) return INF_ERR_DISTCODE;
 	  MSZIP_READ_BITS_T(distance, mszip_dist_extrabits[code]);
 	  distance += mszip_dist_offsets[code];
 
@@ -603,12 +603,14 @@ struct mszip_stream *mszip_init(int ofd,
 
   /* allocate decompression state */
   if (!(zip = cli_calloc(1, sizeof(struct mszip_stream)))) {
+      cli_errmsg("mszip_stream: Unable to allocate zip buffer\n");
     return NULL;
   }
 
   /* allocate input buffer */
   zip->inbuf  = cli_malloc((size_t) input_buffer_size);
   if (!zip->inbuf) {
+      cli_errmsg("mszip_stream: Unable to allocate input buffer\n");
     free(zip);
     return NULL;
   }
@@ -641,12 +643,12 @@ int mszip_decompress(struct mszip_stream *zip, uint32_t out_bytes) {
   int i, ret, state, error;
 
   /* easy answers */
-  if (!zip || (out_bytes < 0)) return CL_ENULLARG;
+  if (!zip) return CL_ENULLARG;
   if (zip->error) return zip->error;
 
   /* flush out any stored-up bytes before we begin */
   i = zip->o_end - zip->o_ptr;
-  if ((off_t) i > out_bytes) i = (int) out_bytes;
+  if (((off_t) i > out_bytes) && ((int) out_bytes >= 0)) i = (int) out_bytes;
   if (i) {
     if (zip->wflag && (ret = mspack_write(zip->ofd, zip->o_ptr, i, zip->file)) != CL_SUCCESS) {
       return zip->error = ret;
@@ -1113,12 +1115,12 @@ int lzx_decompress(struct lzx_stream *lzx, uint32_t out_bytes) {
   unsigned int R0, R1, R2;
 
   /* easy answers */
-  if (!lzx || (out_bytes < 0)) return CL_ENULLARG;
+  if (!lzx) return CL_ENULLARG;
   if (lzx->error) return lzx->error;
 
   /* flush out any stored-up bytes before we begin */
   i = lzx->o_end - lzx->o_ptr;
-  if ((off_t) i > out_bytes) i = (int) out_bytes;
+  if (((off_t) i > out_bytes) && ((int) out_bytes >= 0)) i = (int) out_bytes;
   if (i) {
     if (lzx->wflag && (ret = mspack_write(lzx->ofd, lzx->o_ptr, i, lzx->file)) != CL_SUCCESS) {
       return lzx->error = ret;
@@ -1783,12 +1785,14 @@ struct qtm_stream *qtm_init(int ofd,
   /* allocate decompression window and input buffer */
   qtm->window = cli_malloc((size_t) window_size);
   if (!qtm->window) {
+      cli_errmsg("qtm_init: Unable to allocate decompression window\n");
     free(qtm);
     return NULL;
   }
 
   qtm->inbuf  = cli_malloc((size_t) input_buffer_size);
   if (!qtm->inbuf) {
+      cli_errmsg("qtm_init: Unable to allocate input buffer\n");
     free(qtm->window);
     free(qtm);
     return NULL;
@@ -1843,12 +1847,12 @@ int qtm_decompress(struct qtm_stream *qtm, uint32_t out_bytes) {
   unsigned char bits_needed, bit_run;
 
   /* easy answers */
-  if (!qtm || (out_bytes < 0)) return CL_ENULLARG;
+  if (!qtm) return CL_ENULLARG;
   if (qtm->error) return qtm->error;
 
   /* flush out any stored-up bytes before we begin */
   i = qtm->o_end - qtm->o_ptr;
-  if ((off_t) i > out_bytes) i = (int) out_bytes;
+  if (((off_t) i > out_bytes) && ((int) out_bytes >= 0)) i = (int) out_bytes;
   if (i) {
     if (qtm->wflag && (ret = mspack_write(qtm->ofd, qtm->o_ptr, i, qtm->file)) != CL_SUCCESS) {
       return qtm->error = ret;

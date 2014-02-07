@@ -95,9 +95,6 @@
 /* file i/o buffer size */
 #define FILEBUFF 8192
 
-/* FPU byte ordering matches CPU */
-#define FPU_WORDS_BIGENDIAN 0
-
 /* enable workaround for broken DNS servers */
 /* #undef FRESHCLAM_DNS_FIX */
 
@@ -230,6 +227,9 @@
 
 /* Define to '1' if you have the curses.h library */
 /* #undef HAVE_LIBPDCURSES */
+
+/* Define to 1 if you have the 'libxml2' library (-lxml2). */
+#define HAVE_LIBXML2 1
 
 /* Define to 1 if you have the `z' library (-lz). */
 #define HAVE_LIBZ 1

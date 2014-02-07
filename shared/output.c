@@ -261,7 +261,7 @@ static int logg_open(void)
 
     if(logg_file)
         if(logg_size > 0)
-            if(STAT(logg_file, &sb) != -1)
+            if(CLAMSTAT(logg_file, &sb) != -1)
                 if(sb.st_size > logg_size)
 	                if (rename_logg(&sb))
                         return -1;

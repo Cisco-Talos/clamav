@@ -177,6 +177,8 @@ static inline const void *fmap_need_ptr_once_len(fmap_t *m, const void *ptr, siz
     return fmap_need_off_once_len(m, fmap_ptr2off(m, ptr), len, lenout);
 }
 
+int fmap_dump_to_file(fmap_t *map, const char *tmpdir, char **outname, int *outfd);
+
 /* deprecated */
 int fmap_fd(fmap_t *m);
 

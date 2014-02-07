@@ -23,6 +23,6 @@
 
 #include "shared/optparser.h"
 
-int tcpserver(const struct optstruct *opts);
+int tcpserver(int **lsockets, unsigned int *nlsockets, char *ipaddr, const struct optstruct *opts);
 
 #endif

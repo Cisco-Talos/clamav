@@ -31,6 +31,7 @@ int cli_crt_init(cli_crt *x509) {
 	cli_errmsg("cli_crt_init: mp_init_multi failed with %d\n", ret);
 	return 1;
     }
+    x509->name = NULL;
     x509->isBlacklisted = 0;
     x509->not_before = x509->not_after = 0;
     x509->prev = x509->next = NULL;
@@ -53,7 +54,7 @@ cli_crt *crtmgr_lookup(crtmgr *m, cli_crt *x509) {
 	   !memcmp(x509->subject, i->subject, sizeof(i->subject)) &&
 	   !memcmp(x509->serial, i->serial, sizeof(i->serial)) &&
 	   !mp_cmp(&x509->n, &i->n) &&
-	   !mp_cmp(&x509->e, &i->e)) {
+	   !mp_cmp(&x509->e, &i->e) && !(i->isBlacklisted)) {
 	    return i;
 	}
     }
@@ -120,6 +121,12 @@ int crtmgr_add(crtmgr *m, cli_crt *x509) {
 	free(i);
 	return 1;
     }
+
+    if ((x509->name))
+        i->name = strdup(x509->name);
+    else
+        i->name = NULL;
+
     memcpy(i->subject, x509->subject, sizeof(i->subject));
     memcpy(i->serial, x509->serial, sizeof(i->serial));
     memcpy(i->issuer, x509->issuer, sizeof(i->issuer));
@@ -157,6 +164,8 @@ void crtmgr_del(crtmgr *m, cli_crt *x509) {
 	    if(i->next)
 		i->next->prev = i->prev;
 	    cli_crt_clear(x509);
+        if ((x509->name))
+            free(x509->name);
 	    free(x509);
 	    m->items--;
 	    return;
