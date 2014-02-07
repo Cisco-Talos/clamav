@@ -34,6 +34,7 @@
 #include "cltypes.h"
 #include "others.h"
 #include "gpt.h"
+#include "str.h"
 #include "prtn_intxn.h"
 #include "scanners.h"
 

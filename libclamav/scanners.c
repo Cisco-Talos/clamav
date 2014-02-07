@@ -98,6 +98,7 @@
 #include "xar.h"
 #include "hfsplus.h"
 #include "xz_iface.h"
+#include "mbr.h"
 #include "gpt.h"
 #include "apm.h"
 
