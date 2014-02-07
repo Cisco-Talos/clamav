@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -295,6 +295,7 @@
     <ClCompile Include="..\libclamav\7z\Bra86.c" />
     <ClCompile Include="..\libclamav\7z\LzmaDec.c" />
     <ClCompile Include="..\libclamav\adc.c" />
+    <ClCompile Include="..\libclamav\apm.c" />
     <ClCompile Include="..\libclamav\aspack.c" />
     <ClCompile Include="..\libclamav\autoit.c" />
     <ClCompile Include="..\libclamav\binhex.c" />
@@ -341,6 +342,7 @@
     <ClCompile Include="..\libclamav\matcher-bm.c" />
     <ClCompile Include="..\libclamav\matcher.c" />
     <ClCompile Include="..\libclamav\mbox.c" />
+    <ClCompile Include="..\libclamav\mbr.c" />
     <ClCompile Include="..\libclamav\md5.c" />
     <ClCompile Include="..\libclamav\message.c" />
     <ClCompile Include="..\libclamav\mew.c" />
@@ -367,6 +369,7 @@
     <ClCompile Include="..\libclamav\phishcheck.c" />
     <ClCompile Include="..\libclamav\phish_domaincheck_db.c" />
     <ClCompile Include="..\libclamav\phish_whitelist.c" />
+    <ClCompile Include="..\libclamav\prtn_intxn.c" />
     <ClCompile Include="..\libclamav\regex\regcomp.c" />
     <ClCompile Include="..\libclamav\regex\regerror.c" />
     <ClCompile Include="..\libclamav\regex\regexec.c" />

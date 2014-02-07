@@ -39,6 +39,7 @@
 #include "textdet.h"
 #include "default.h"
 #include "iowrap.h"
+#include "mbr.h"
 
 #include "htmlnorm.h"
 #include "entconv.h"
@@ -104,7 +105,9 @@ static const struct ftmap_s {
     { "CL_TYPE_ISO9660",	CL_TYPE_ISO9660		},
     { "CL_TYPE_JAVA",		CL_TYPE_JAVA		},
     { "CL_TYPE_DMG",		CL_TYPE_DMG		},
+    { "CL_TYPE_MBR",        CL_TYPE_MBR     },
     { "CL_TYPE_GPT",        CL_TYPE_GPT     },
+    { "CL_TYPE_APM",        CL_TYPE_APM     },
     { "CL_TYPE_XAR",		CL_TYPE_XAR		},
     { "CL_TYPE_PART_ANY",	CL_TYPE_PART_ANY	},
     { "CL_TYPE_PART_HFSPLUS",	CL_TYPE_PART_HFSPLUS	},
@@ -302,6 +305,27 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
                     }
                 }
             }
+        } else if (ret == CL_TYPE_MBR) {
+            const unsigned char *rbuff = buff+512;
+            int ri;
+
+            /* raw dmgs must be a multiple of 512 */
+            if ((map->len % 512) == 0 && map->len > 512) {
+                /* check if detected MBR is protective on GPT */
+                if (0 == memcmp(rbuff, "EFI PART", 8)) {
+                    cli_dbgmsg("Recognized GUID Partition Table file\n");
+                    return CL_TYPE_GPT;
+                }
+
+                /* check if the MBR is a valid configuration */
+                if (cli_mbr_check(buff, bread, map->len) == 0) {
+                    return CL_TYPE_MBR;
+                }
+            }
+
+            /* re-detect type */
+            cli_dbgmsg("Recognized binary data\n");
+            ret = CL_TYPE_BINARY_DATA;
         }
     }
 

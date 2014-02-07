@@ -328,6 +328,9 @@ struct cl_engine {
     clcb_stats_get_num cb_stats_get_num;
     clcb_stats_get_size cb_stats_get_size;
     clcb_stats_get_hostid cb_stats_get_hostid;
+
+    /* Raw dmg max settings */
+    uint32_t maxpartitions;
 };
 
 struct cl_settings {
@@ -379,6 +382,9 @@ struct cl_settings {
     clcb_stats_get_num cb_stats_get_num;
     clcb_stats_get_size cb_stats_get_size;
     clcb_stats_get_hostid cb_stats_get_hostid;
+
+    /* Raw dmg max settings */
+    uint32_t maxpartitions;
 };
 
 extern int (*cli_unrar_open)(int fd, const char *dirname, unrar_state_t *state);

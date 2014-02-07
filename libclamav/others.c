@@ -412,6 +412,9 @@ struct cl_engine *cl_engine_new(void)
     new->cb_stats_get_size = clamav_stats_get_size;
     new->cb_stats_get_hostid = clamav_stats_get_hostid;
 
+    /* Setup raw dmg max settings */
+    new->maxpartitions = 50;
+
     cli_dbgmsg("Initialized %s engine\n", cl_retver());
     return new;
 }
@@ -528,29 +531,32 @@ int cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field field, long
 	    if (num == CL_BYTECODE_MODE_TEST)
 		cli_infomsg(NULL, "bytecode engine in test mode\n");
 	    break;
-    case CL_ENGINE_DISABLE_CACHE:
-        if (num) {
-            engine->engine_options |= ENGINE_OPTIONS_DISABLE_CACHE;
-        } else {
-            engine->engine_options &= ~(ENGINE_OPTIONS_DISABLE_CACHE);
-            if (!(engine->cache))
-                cli_cache_init(engine);
-        }
-        break;
-    case CL_ENGINE_DISABLE_PE_STATS:
-        if (num) {
-            engine->engine_options |= ENGINE_OPTIONS_DISABLE_PE_STATS;
-        } else {
-            engine->engine_options &= ~(ENGINE_OPTIONS_DISABLE_PE_STATS);
-        }
-        break;
-    case CL_ENGINE_STATS_TIMEOUT:
-        if ((engine->stats_data)) {
-            cli_intel_t *intel = (cli_intel_t *)(engine->stats_data);
+	case CL_ENGINE_DISABLE_CACHE:
+	    if (num) {
+		engine->engine_options |= ENGINE_OPTIONS_DISABLE_CACHE;
+	    } else {
+		engine->engine_options &= ~(ENGINE_OPTIONS_DISABLE_CACHE);
+		if (!(engine->cache))
+		    cli_cache_init(engine);
+	    }
+	    break;
+	case CL_ENGINE_DISABLE_PE_STATS:
+	    if (num) {
+		engine->engine_options |= ENGINE_OPTIONS_DISABLE_PE_STATS;
+	    } else {
+		engine->engine_options &= ~(ENGINE_OPTIONS_DISABLE_PE_STATS);
+	    }
+	    break;
+	case CL_ENGINE_STATS_TIMEOUT:
+	    if ((engine->stats_data)) {
+		cli_intel_t *intel = (cli_intel_t *)(engine->stats_data);
 
-            intel->timeout = (uint32_t)num;
-        }
-        break;
+		intel->timeout = (uint32_t)num;
+	    }
+	    break;
+	case CL_ENGINE_MAX_PARTITIONS:
+	    engine->maxpartitions = (uint32_t)num;
+	    break;
 	default:
 	    cli_errmsg("cl_engine_set_num: Incorrect field number\n");
 	    return CL_EARG;
@@ -616,10 +622,12 @@ long long cl_engine_get_num(const struct cl_engine *engine, enum cl_engine_field
 	    return engine->bytecode_timeout;
 	case CL_ENGINE_BYTECODE_MODE:
 	    return engine->bytecode_mode;
-    case CL_ENGINE_DISABLE_CACHE:
-        return engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE;
-    case CL_ENGINE_STATS_TIMEOUT:
-        return ((cli_intel_t *)(engine->stats_data))->timeout;
+	case CL_ENGINE_DISABLE_CACHE:
+	    return engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE;
+	case CL_ENGINE_STATS_TIMEOUT:
+	    return ((cli_intel_t *)(engine->stats_data))->timeout;
+	case CL_ENGINE_MAX_PARTITIONS:
+	    return engine->maxpartitions;
 	default:
 	    cli_errmsg("cl_engine_get: Incorrect field number\n");
 	    if(err)
@@ -726,6 +734,8 @@ struct cl_settings *cl_engine_settings_copy(const struct cl_engine *engine)
     settings->cb_stats_get_size = engine->cb_stats_get_size;
     settings->cb_stats_get_hostid = engine->cb_stats_get_hostid;
 
+    settings->maxpartitions = engine->maxpartitions;
+
     return settings;
 }
 
@@ -795,6 +805,8 @@ int cl_engine_settings_apply(struct cl_engine *engine, const struct cl_settings 
     engine->cb_stats_get_num = settings->cb_stats_get_num;
     engine->cb_stats_get_size = settings->cb_stats_get_size;
     engine->cb_stats_get_hostid = settings->cb_stats_get_hostid;
+
+    engine->maxpartitions = settings->maxpartitions;
 
     return CL_SUCCESS;
 }

@@ -102,7 +102,9 @@ typedef enum {
     CL_TYPE_ISHIELD_MSI,
     CL_TYPE_ISO9660,
     CL_TYPE_DMG,
+    CL_TYPE_MBR,
     CL_TYPE_GPT,
+    CL_TYPE_APM,
     CL_TYPE_IGNORED /* please don't add anything below */
 } cli_file_t;
 

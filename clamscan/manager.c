@@ -827,6 +827,14 @@ int scanmanager(const struct optstruct *opts)
 	}
     }
 
+    if((opt = optget(opts, "max-partitions"))->active) {
+	if((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_PARTITIONS, opt->numarg))) {
+	    logg("!cli_engine_set_num(CL_ENGINE_MAX_PARTITIONS) failed: %s\n", cl_strerror(ret));
+	    cl_engine_free(engine);
+	    return 2;
+	}
+    }
+
     /* set scan options */
     if(optget(opts, "allmatch")->enabled)
 	options |= CL_SCAN_ALLMATCHES;
@@ -836,6 +844,9 @@ int scanmanager(const struct optstruct *opts)
 
     if(optget(opts,"phishing-cloak")->enabled)
 	options |= CL_SCAN_PHISHING_BLOCKCLOAK;
+
+    if(optget(opts,"partition-intersection")->enabled)
+	options |= CL_SCAN_PARTITION_INTXN;
 
     if(optget(opts,"heuristic-scan-precedence")->enabled)
 	options |= CL_SCAN_HEURISTIC_PRECEDENCE;

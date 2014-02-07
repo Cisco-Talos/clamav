@@ -392,8 +392,14 @@ libclamav_la_SOURCES = \
 	dmg.h \
 	xar.c \
 	xar.h \
+	mbr.c \
+    mbr.h \
 	gpt.c \
 	gpt.h \
+	apm.c \
+	apm.h \
+	prtn_intxn.c \
+	prtn_intxn.h \
 	xz_iface.c \
 	xz_iface.h \
 	sf_base64decode.c \
