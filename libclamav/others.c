@@ -61,6 +61,10 @@
 #include <stddef.h>
 #endif
 
+#ifdef HAVE_LIBXML2
+#include <libxml/parser.h>
+#endif
+
 #include "clamav.h"
 #include "others.h"
 #include "md5.h"

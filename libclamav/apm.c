@@ -36,7 +36,7 @@
 #include "prtn_intxn.h"
 #include "scanners.h"
 
-#define DEBUG_APM_PARSE
+//#define DEBUG_APM_PARSE
 
 #ifdef DEBUG_APM_PARSE
 #  define apm_parsemsg(...) cli_dbgmsg( __VA_ARGS__)
@@ -51,7 +51,7 @@ int cli_scanapm(cli_ctx *ctx)
     struct apm_driver_desc_map ddm;
     struct apm_partition_info aptable, apentry;
     int ret = 0, old_school = 0;
-    size_t sectorsize, maplen, partsize, sectorcheck;;
+    size_t sectorsize, maplen, partsize, sectorcheck;
     off_t pos = 0, partoff = 0;
     unsigned i;
     uint32_t max_prtns = 0;
@@ -229,8 +229,8 @@ int cli_scanapm(cli_ctx *ctx)
         }
     } 
 
-    if (i < aptable.numPartitions) {
-        cli_dbgmsg("cli_scanapm: max partitions exceeded\n");
+    if (i <= aptable.numPartitions) {
+        cli_dbgmsg("cli_scanapm: max partitions reached\n");
     }
 
     return ret;
