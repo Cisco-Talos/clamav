@@ -99,6 +99,7 @@
 #include "hfsplus.h"
 #include "xz_iface.h"
 #include "gpt.h"
+#include "apm.h"
 
 #ifdef HAVE_BZLIB_H
 #include <bzlib.h>
@@ -2583,9 +2584,19 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 		ret = cli_scanxz(ctx);
 	    break;
 
+	case CL_TYPE_MBR:
+	    //if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_MBR))
+		ret = cli_scanmbr(ctx);
+	    break;
+
 	case CL_TYPE_GPT:
 	    //if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_GPT))
 		ret = cli_scangpt(ctx);
+	    break;
+
+	case CL_TYPE_APM:
+	    //if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_APM))
+		ret = cli_scanapm(ctx);
 	    break;
 
 	case CL_TYPE_ARJ:
