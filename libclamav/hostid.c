@@ -1,3 +1,23 @@
+/*
+ *  Copyright (C) 2014 Cisco and/or its affiliates. All rights reserved.
+ *
+ *  Author: Shawn Webb
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License version 2 as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ *  MA 02110-1301, USA.
+ */
+
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
@@ -155,8 +175,6 @@ struct device *get_devices(void)
     /* This is the Linux version of getting the MAC addresses */
 #if defined(SIOCGIFHWADDR)
     for (i=0; i < ndevices; i++) {
-        cli_warnmsg("devices[%lu]: %s\n", i, devices[i].name);
-
         if (!(devices[i].name))
             continue;
 
@@ -184,8 +202,6 @@ struct device *get_devices(void)
     }
 #endif
 
-    close(sock);
-    
     p = realloc(devices, sizeof(struct device) * (ndevices + 1));
     if (!(p))
         goto err;
@@ -197,9 +213,6 @@ struct device *get_devices(void)
     return devices;
 
 err:
-    if (addrs)
-        freeifaddrs(addrs);
-
     if (devices) {
         for (i=0; i < ndevices; i++)
             if (devices[i].name)
@@ -235,8 +248,10 @@ char *internal_get_host_id(void)
         return NULL;
 
     printable_md5 = calloc(1, 37);
-    if (!(printable_md5))
+    if (!(printable_md5)) {
+        free(devices);
         return NULL;
+    }
 
     cli_md5_init(&ctx);
     for (i=0; devices[i].name != NULL; i++)

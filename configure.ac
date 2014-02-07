@@ -1072,7 +1072,7 @@ linux*)
 	THREAD_LIBS="-lpthread"
 	TH_SAFE="-thread-safe"
 	if test "$want_fanotify" = "yes"; then
-	    AC_CHECK_HEADER([linux/fanotify.h],AC_DEFINE([FANOTIFY],1,[use fanotify]),)
+	    AC_CHECK_HEADER([sys/fanotify.h],AC_DEFINE([FANOTIFY],1,[use fanotify]),)
 	fi
     fi
     ;;

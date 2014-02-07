@@ -438,6 +438,10 @@ int main(int argc, char **argv)
             cl_engine_set_num(engine, CL_ENGINE_DISABLE_PE_STATS, 1);
         }
 
+        if (optget(opts, "StatsTimeout")->enabled) {
+            cl_engine_set_num(engine, CL_ENGINE_STATS_TIMEOUT, optget(opts, "StatsTimeout")->numarg);
+        }
+
         if (optget(opts, "StatsHostID")->enabled) {
             char *p = optget(opts, "StatsHostID")->strarg;
 
@@ -447,7 +451,6 @@ int main(int argc, char **argv)
                 } else {
                     if (strlen(p) > 36) {
                         logg("!Invalid HostID\n");
-                        optfree(opts);
                         cl_engine_set_clcb_stats_submit(engine, NULL);
                         cl_engine_free(engine);
                         ret = 1;
@@ -601,9 +604,6 @@ int main(int argc, char **argv)
 
             t = realloc(lsockets, sizeof(int) * (nlsockets + 1));
             if (!(t)) {
-                if ((lsockets))
-                    free(lsockets);
-
                 ret = 1;
                 break;
             }

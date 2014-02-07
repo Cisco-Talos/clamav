@@ -1,3 +1,7 @@
+Wed Feb 5 14:30:24 2013 EDT 2013 (dar)
+------------------------------------
+ * bb#9156/10335: switch fanotify support to use sys/fanotify.h instead of coded syscalls
+
 Mon Dec 5 18:10:24 2013 EDT 2013 (morgan)
 ------------------------------------
  * bb#9595 fix for sigs targeted for ascii files containing offsets of the form EOF-n.

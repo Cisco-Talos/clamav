@@ -1,3 +1,23 @@
+/*
+ *  Copyright (C) 2014 Cisco and/or its affiliates. All rights reserved.
+ *
+ *  Author: Shawn Webb
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License version 2 as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ *  MA 02110-1301, USA.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -24,7 +44,7 @@
 #include "libclamav/clamav.h"
 #include "libclamav/www.h"
 
-int connect_host(const char *host, const char *port, int useAsync)
+int connect_host(const char *host, const char *port, uint32_t timeout, int useAsync)
 {
     int sockfd;
     struct addrinfo hints, *servinfo, *p;
@@ -67,7 +87,7 @@ int connect_host(const char *host, const char *port, int useAsync)
                 FD_SET(sockfd, &write_fds);
 
                 /* TODO: Make this timeout configurable */
-                tv.tv_sec = 10;
+                tv.tv_sec = timeout;
                 tv.tv_usec = 0;
                 if (select(sockfd + 1, &read_fds, &write_fds, NULL, &tv) <= 0) {
                     close(sockfd);
@@ -97,7 +117,8 @@ int connect_host(const char *host, const char *port, int useAsync)
 
     if (!(p)) {
         freeaddrinfo(servinfo);
-        close(sockfd);
+        if (sockfd >= 0)
+            close(sockfd);
         return -1;
     }
 
@@ -150,7 +171,7 @@ char *encode_data(const char *postdata)
     return buf;
 }
 
-void submit_post(const char *host, const char *port, const char *method, const char *url, const char *postdata)
+void submit_post(const char *host, const char *port, const char *method, const char *url, const char *postdata, uint32_t timeout)
 {
     int sockfd, n;
     unsigned int i;
@@ -214,7 +235,7 @@ void submit_post(const char *host, const char *port, const char *method, const c
         free(encoded);
     }
 
-    sockfd = connect_host(host, port, 1);
+    sockfd = connect_host(host, port, timeout, 1);
     if (sockfd < 0) {
         free(buf);
         return;
@@ -235,7 +256,7 @@ void submit_post(const char *host, const char *port, const char *method, const c
          * while it's being processed). Give a ten-second timeout so we don't have a major
          * impact on scanning.
          */
-        tv.tv_sec = 10;
+        tv.tv_sec = timeout;
         tv.tv_usec = 0;
         if ((n = select(sockfd+1, &readfds, NULL, NULL, &tv)) <= 0)
             break;
@@ -244,6 +265,8 @@ void submit_post(const char *host, const char *port, const char *method, const c
             memset(buf, 0x00, bufsz);
             if ((recvsz = recv(sockfd, buf, bufsz-1, 0) <= 0))
                 break;
+
+            buf[bufsz-1] = '\0';
 
             if (strstr(buf, "STATOK"))
                 break;

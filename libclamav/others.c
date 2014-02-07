@@ -394,12 +394,14 @@ struct cl_engine *cl_engine_new(void)
         mpool_destroy(new->mempool);
 #endif
         free(new);
+        free(intel);
         return NULL;
     }
 #endif
     intel->engine = new;
     intel->maxsamples = STATS_MAX_SAMPLES;
     intel->maxmem = STATS_MAX_MEM;
+    intel->timeout = 10;
     new->stats_data = intel;
     new->cb_stats_add_sample = clamav_stats_add_sample;
     new->cb_stats_submit = clamav_stats_submit;
@@ -529,25 +531,32 @@ int cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field field, long
 	    if (num == CL_BYTECODE_MODE_TEST)
 		cli_infomsg(NULL, "bytecode engine in test mode\n");
 	    break;
-    case CL_ENGINE_DISABLE_CACHE:
-        if (num) {
-            engine->engine_options |= ENGINE_OPTIONS_DISABLE_CACHE;
-        } else {
-            engine->engine_options &= ~(ENGINE_OPTIONS_DISABLE_CACHE);
-            if (!(engine->cache))
-                cli_cache_init(engine);
-        }
-        break;
-    case CL_ENGINE_DISABLE_PE_STATS:
-        if (num) {
-            engine->engine_options |= ENGINE_OPTIONS_DISABLE_PE_STATS;
-        } else {
-            engine->engine_options &= ~(ENGINE_OPTIONS_DISABLE_PE_STATS);
-        }
-        break;
-    case CL_ENGINE_MAX_PARTITIONS:
-        engine->maxpartitions = (uint32_t)num;
-        break;
+	case CL_ENGINE_DISABLE_CACHE:
+	    if (num) {
+		engine->engine_options |= ENGINE_OPTIONS_DISABLE_CACHE;
+	    } else {
+		engine->engine_options &= ~(ENGINE_OPTIONS_DISABLE_CACHE);
+		if (!(engine->cache))
+		    cli_cache_init(engine);
+	    }
+	    break;
+	case CL_ENGINE_DISABLE_PE_STATS:
+	    if (num) {
+		engine->engine_options |= ENGINE_OPTIONS_DISABLE_PE_STATS;
+	    } else {
+		engine->engine_options &= ~(ENGINE_OPTIONS_DISABLE_PE_STATS);
+	    }
+	    break;
+	case CL_ENGINE_STATS_TIMEOUT:
+	    if ((engine->stats_data)) {
+		cli_intel_t *intel = (cli_intel_t *)(engine->stats_data);
+
+		intel->timeout = (uint32_t)num;
+	    }
+	    break;
+	case CL_ENGINE_MAX_PARTITIONS:
+	    engine->maxpartitions = (uint32_t)num;
+	    break;
 	default:
 	    cli_errmsg("cl_engine_set_num: Incorrect field number\n");
 	    return CL_EARG;
@@ -613,10 +622,12 @@ long long cl_engine_get_num(const struct cl_engine *engine, enum cl_engine_field
 	    return engine->bytecode_timeout;
 	case CL_ENGINE_BYTECODE_MODE:
 	    return engine->bytecode_mode;
-    case CL_ENGINE_DISABLE_CACHE:
-        return engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE;
-    case CL_ENGINE_MAX_PARTITIONS:
-        return engine->maxpartitions;
+	case CL_ENGINE_DISABLE_CACHE:
+	    return engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE;
+	case CL_ENGINE_STATS_TIMEOUT:
+	    return ((cli_intel_t *)(engine->stats_data))->timeout;
+	case CL_ENGINE_MAX_PARTITIONS:
+	    return engine->maxpartitions;
 	default:
 	    cli_errmsg("cl_engine_get: Incorrect field number\n");
 	    if(err)

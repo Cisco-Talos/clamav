@@ -178,7 +178,7 @@ Mark encrypted archives as viruses (Encrypted.Zip, Encrypted.RAR).
 Extract and scan at most #n bytes from each archive. You may pass the value in kilobytes in format xK or xk, or megabytes in format xM or xm, where x is a number. This option protects your system against DoS attacks (default: 25 MB, max: <4 GB)
 .TP 
 \fB\-\-max\-scansize=#n\fR
-Extract and scan at most #n bytes from each archive. You may pass the value in kilobytes in format xK or xk, or megabytes in format xM or xm, where x is a number. This option protects your system against DoS attacks (default: 100 MB, max: <4 GB)
+Extract and scan at most #n bytes from each archive. The size the archive plus the sum of the sizes of all files within archive count toward the scan size. For example, a 1M uncompressed archive containing a single 1M inner file counts as 2M toward max-scansize. You may pass the value in kilobytes in format xK or xk, or megabytes in format xM or xm, where x is a number. This option protects your system against DoS attacks (default: 100 MB, max: <4 GB)
 .TP
 \fB\-\-max\-files=#n\fR
 Extract at most #n files from each scanned file (when this is an archive, a document or another kind of container). This option protects your system against DoS attacks (default: 10000)

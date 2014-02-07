@@ -112,6 +112,7 @@ const struct clam_option __clam_options[] = {
     { NULL, "build", 'b', TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", "" },
     { NULL, "max-bad-sigs", 0, TYPE_NUMBER, MATCH_NUMBER, 3000, NULL, 0, OPT_SIGTOOL, "Maximum number of mismatched signatures when building a CVD. Zero disables this limit.", "3000" },
     { NULL, "flevel", 0, TYPE_NUMBER, MATCH_NUMBER, CL_FLEVEL, NULL, 0, OPT_SIGTOOL, "Feature level to put in the CVD", "" },
+    { NULL, "cvd-version", 0, TYPE_NUMBER, MATCH_NUMBER, 0, NULL, 0, OPT_SIGTOOL, "Version number of the CVD to build", "" },
     { NULL, "unsigned", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_SIGTOOL, "", "" },
     { NULL, "no-cdiff", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_SIGTOOL, "", "" },
     { NULL, "server", 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", "" },
@@ -184,6 +185,8 @@ const struct clam_option __clam_options[] = {
     { "StatsDisabled", "disable-stats", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_CLAMSCAN, "Disable submission of statistical data", "no" },
 
     { "StatsPEDisabled", "disable-pe-stats", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Disable submission of PE section statistical data", "no" },
+
+    { "StatsTimeout", "stats-timeout", 0, TYPE_NUMBER, MATCH_NUMBER, -1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN | OPT_FRESHCLAM, "Timeout in seconds to timeout communication with the stats server.", "10" },
 
     { "LogFileUnlock", NULL, 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_MILTER, "By default the log file is locked for writing and only a single\ndaemon process can write to it. This option disables the lock.", "yes" },
 

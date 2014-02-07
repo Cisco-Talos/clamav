@@ -1,3 +1,23 @@
+/*
+ *  Copyright (C) 2014 Cisco and/or its affiliates. All rights reserved.
+ *
+ *  Author: Shawn Webb
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License version 2 as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ *  MA 02110-1301, USA.
+ */
+
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
@@ -26,12 +46,13 @@
 
 #include "libclamav/others.h"
 #include "libclamav/clamav.h"
+#include "libclamav/dconf.h"
 #include "libclamav/json.h"
 #include "libclamav/stats.h"
 #include "libclamav/hostid.h"
 #include "libclamav/www.h"
 
-#define DEBUG_STATS 1
+#define DEBUG_STATS 0
 
 static cli_flagged_sample_t *find_sample(cli_intel_t *intel, const char *virname, const unsigned char *md5, size_t size, stats_section_t *sections);
 void free_sample(cli_flagged_sample_t *sample);
@@ -123,6 +144,9 @@ void clamav_stats_add_sample(const char *virname, const unsigned char *md5, size
     if (!(intel->engine))
         return;
 
+    if (intel->engine->dconf->stats & DCONF_STATS_DISABLED)
+        return;
+
     /* First check if we need to submit stats based on memory/number limits */
     if ((intel->engine->cb_stats_get_size))
         submit = (intel->engine->cb_stats_get_size(cbdata) >= intel->maxmem);
@@ -174,6 +198,17 @@ void clamav_stats_add_sample(const char *virname, const unsigned char *md5, size
         if ((sample->virus_name)) {
             for (i=0; sample->virus_name[i] != NULL; i++)
                 ;
+            p = realloc(sample->virus_name, sizeof(char **) * (i + 1));
+            if (!(p)) {
+                free(sample->virus_name);
+                free(sample);
+                if (sample == intel->samples)
+                    intel->samples = NULL;
+
+                goto end;
+            }
+
+            sample->virus_name = p;
         } else {
             i=0;
             sample->virus_name = calloc(1, sizeof(char **));
@@ -188,15 +223,15 @@ void clamav_stats_add_sample(const char *virname, const unsigned char *md5, size
 
         sample->virus_name[i] = strdup((virname != NULL) ? virname : "[unknown]");
         if (!(sample->virus_name[i])) {
-            free(sample);
             free(sample->virus_name);
+            free(sample);
             if (sample == intel->samples)
                 intel->samples = NULL;
 
             goto end;
         }
 
-        p = realloc(sample->virus_name, sizeof(char **) * (i == 0 ? 2 : i+1));
+        p = realloc(sample->virus_name, sizeof(char **) * (i+2));
         if (!(p)) {
             free(sample->virus_name);
             free(sample);
@@ -228,8 +263,6 @@ void clamav_stats_add_sample(const char *virname, const unsigned char *md5, size
             }
         }
     }
-
-    cli_warnmsg("Added %s to the stats cache\n", (virname != NULL) ? virname: "[unknown]");
 
     sample->hits++;
 
@@ -311,6 +344,9 @@ void clamav_stats_submit(struct cl_engine *engine, void *cbdata)
     if (!(intel) || !(engine))
         return;
 
+    if (engine->dconf->stats & DCONF_STATS_DISABLED)
+        return;
+
     if (!(engine->cb_stats_get_hostid)) {
         /* Submitting stats is disabled due to HostID being turned off */
         if ((engine->cb_stats_flush))
@@ -355,8 +391,7 @@ void clamav_stats_submit(struct cl_engine *engine, void *cbdata)
     }
 
     if (json) {
-        cli_warnmsg("====\tSUBMITTING STATS\t====\n");
-        submit_post(STATS_HOST, STATS_PORT, "PUT", "/clamav/1/submit/stats", json);
+        submit_post(STATS_HOST, STATS_PORT, "PUT", "/clamav/1/submit/stats", json, myintel.timeout);
         free(json);
     }
 

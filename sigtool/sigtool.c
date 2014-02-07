@@ -793,6 +793,8 @@ static int build(const struct optstruct *opts)
 	version = oldcvd->version + 1;
 	oldsigs = oldcvd->sigs;
 	cl_cvdfree(oldcvd);
+    } else if (optget(opts, "cvd-version")->numarg != 0) {
+        version = optget(opts, "cvd-version")->numarg;
     } else {
 	mprintf("Version number: ");
 	if(scanf("%u", &version) == EOF) {
@@ -2903,9 +2905,9 @@ static int dumpcerts(const struct optstruct *opts)
 static void help(void)
 {
     mprintf("\n");
-    mprintf("             Clam AntiVirus: Signature Tool (sigtool)  %s\n", get_version());
-    printf("           By The ClamAV Team: http://www.clamav.net/team\n");
-    printf("           (C) 2007-2009 Sourcefire, Inc. et al.\n\n");
+    mprintf("Clam AntiVirus: Signature Tool (sigtool)  %s\n", get_version());
+    mprintf("       By The ClamAV Team: http://www.clamav.net/team\n");
+    mprintf("       (C) 2007-2009 Sourcefire, Inc. et al.\n\n");
 
     mprintf("    --help                 -h              show help\n");
     mprintf("    --version              -V              print version number and exit\n");
@@ -2925,23 +2927,36 @@ static void help(void)
     mprintf("    --utf16-decode=FILE                    decode UTF16 encoded files\n");
     mprintf("    --info=FILE            -i FILE         print database information\n");
     mprintf("    --build=NAME [cvd] -b NAME             build a CVD file\n");
-    mprintf("    --max-bad-sigs=NUMBER                  Maximum number of mismatched signatures when building a CVD. Default: 3000\n");
-    mprintf("    --flevel=FLEVEL                        Specify a custom flevel. Default: %u\n", cl_retflevel());
+    mprintf("    --max-bad-sigs=NUMBER                  Maximum number of mismatched signatures\n");
+    mprintf("                                           when building a CVD. Default: 3000\n");
+    mprintf("    --flevel=FLEVEL                        Specify a custom flevel.\n");
+    mprintf("                                           Default: %u\n", cl_retflevel());
+    mprintf("    --cvd-version=NUMBER                   Specify the version number to use for\n");
+    mprintf("                                           the build. Default is to use the value+1\n");
+    mprintf("                                           from the current CVD in --datadir.\n");
+    mprintf("                                           If no datafile is found the default\n");
+    mprintf("                                           behaviour is to prompt for a version\n");
+    mprintf("                                           number, this switch will prevent the\n");
+    mprintf("                                           prompt.  NOTE: If a CVD is found in the\n");
+    mprintf("                                           --datadir its version+1 is used and\n");
+    mprintf("                                           this value is ignored.\n");
     mprintf("    --no-cdiff                             Don't generate .cdiff file\n");
     mprintf("    --unsigned                             Create unsigned database file (.cud)\n");
     mprintf("    --print-certs=FILE                     Print Authenticode details from a PE\n");
     mprintf("    --server=ADDR                          ClamAV Signing Service address\n");
-    mprintf("    --datadir=DIR				Use DIR as default database directory\n");
+    mprintf("    --datadir=DIR                          Use DIR as default database directory\n");
     mprintf("    --unpack=FILE          -u FILE         Unpack a CVD/CLD file\n");
     mprintf("    --unpack-current=SHORTNAME             Unpack local CVD/CLD into cwd\n");
     mprintf("    --list-sigs[=FILE]     -l[FILE]        List signature names\n");
     mprintf("    --find-sigs=REGEX      -fREGEX         Find signatures matching REGEX\n");
     mprintf("    --decode-sigs                          Decode signatures from stdin\n");
-    mprintf("    --test-sigs=DATABASE TARGET_FILE       Test signatures from DATABASE against TARGET_FILE\n");
+    mprintf("    --test-sigs=DATABASE TARGET_FILE       Test signatures from DATABASE against \n");
+    mprintf("                                           TARGET_FILE\n");
     mprintf("    --vba=FILE                             Extract VBA/Word6 macro code\n");
     mprintf("    --vba-hex=FILE                         Extract Word6 macro code with hex values\n");
     mprintf("    --diff=OLD NEW         -d OLD NEW      Create diff for OLD and NEW CVDs\n");
-    mprintf("    --compare=OLD NEW      -c OLD NEW      Show diff between OLD and NEW files in cdiff format\n");
+    mprintf("    --compare=OLD NEW      -c OLD NEW      Show diff between OLD and NEW files in\n");
+    mprintf("                                           cdiff format\n");
     mprintf("    --run-cdiff=FILE       -r FILE         Execute update script FILE in cwd\n");
     mprintf("    --verify-cdiff=DIFF CVD/CLD            Verify DIFF against CVD/CLD\n");
     mprintf("\n");

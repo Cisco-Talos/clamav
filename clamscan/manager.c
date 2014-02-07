@@ -582,6 +582,10 @@ int scanmanager(const struct optstruct *opts)
         cl_engine_set_clcb_stats_add_sample(engine, NULL);
     }
 
+    if (optget(opts, "stats-timeout")->enabled) {
+        cl_engine_set_num(engine, CL_ENGINE_STATS_TIMEOUT, optget(opts, "StatsTimeout")->numarg);
+    }
+
     if (optget(opts, "stats-host-id")->enabled) {
         char *p = optget(opts, "stats-host-id")->strarg;
 
