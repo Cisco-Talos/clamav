@@ -3316,20 +3316,23 @@ int cl_engine_free(struct cl_engine *engine)
 	mpool_free(engine->mempool, pt);
     }
 
-    if(engine->dconf->bytecode & BYTECODE_ENGINE_MASK) {
-	if (engine->bcs.all_bcs)
-	    for(i=0;i<engine->bcs.count;i++)
-		cli_bytecode_destroy(&engine->bcs.all_bcs[i]);
-	cli_bytecode_done(&engine->bcs);
-	free(engine->bcs.all_bcs);
-	for (i=0;i<_BC_LAST_HOOK - _BC_START_HOOKS;i++) {
-	    free (engine->hooks[i]);
-	}
+    if(engine->dconf) {
+        if(engine->dconf->bytecode & BYTECODE_ENGINE_MASK) {
+            if (engine->bcs.all_bcs)
+                for(i=0;i<engine->bcs.count;i++)
+                    cli_bytecode_destroy(&engine->bcs.all_bcs[i]);
+            cli_bytecode_done(&engine->bcs);
+            free(engine->bcs.all_bcs);
+            for (i=0;i<_BC_LAST_HOOK - _BC_START_HOOKS;i++) {
+                free (engine->hooks[i]);
+            }
+        }
+
+        if(engine->dconf->phishing & PHISHING_CONF_ENGINE)
+            phishing_done(engine);
+
+        mpool_free(engine->mempool, engine->dconf);
     }
-    if(engine->dconf->phishing & PHISHING_CONF_ENGINE)
-	phishing_done(engine);
-    if(engine->dconf)
-	mpool_free(engine->mempool, engine->dconf);
 
     if(engine->pua_cats)
 	mpool_free(engine->mempool, engine->pua_cats);
