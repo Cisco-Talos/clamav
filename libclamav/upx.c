@@ -202,7 +202,9 @@ static int pefromupx (const char *src, uint32_t ssize, char *dst, uint32_t *dsiz
     cli_dbgmsg("UPX: PE structure added to uncompressed data\n");
     return 1;
   }
-  
+
+  if (!sections)
+    sectcnt = 0;
   foffset = PESALIGN(foffset+0x28*sectcnt, valign);
   
   for (upd = 0; upd <sectcnt ; upd++) {
