@@ -230,7 +230,7 @@ int cli_scanapm(cli_ctx *ctx)
         }
     } 
 
-    if (i <= aptable.numPartitions) {
+    if (i >= ctx->engine->maxpartitions) {
         cli_dbgmsg("cli_scanapm: max partitions reached\n");
     }
 

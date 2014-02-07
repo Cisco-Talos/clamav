@@ -302,7 +302,7 @@ static int gpt_scan_partitions(cli_ctx *ctx, struct gpt_header hdr, size_t secto
         pos += hdr.tableEntrySize;
     }
 
-    if (i <= hdr.tableNumEntries) {
+    if (i >= ctx->engine->maxpartitions) {
         cli_dbgmsg("cli_scangpt: max partitions reached\n");
     }
 
