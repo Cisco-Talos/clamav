@@ -36,6 +36,7 @@
 #include "mbr.h"
 #include "prtn_intxn.h"
 #include "scanners.h"
+#include "dconf.h"
 
 //#define DEBUG_MBR_PARSE
 //#define DEBUG_EBR_PARSE
@@ -133,7 +134,7 @@ int cli_scanmbr(cli_ctx *ctx)
     }
 
     /* check that the partition table has no intersections - HEURISTICS */
-    if (ctx->options & CL_SCAN_PARTITION_INTXN) {
+    if ((ctx->options & CL_SCAN_PARTITION_INTXN) && (ctx->dconf->other & OTHER_CONF_PRTNINTXN)) {
         ret = mbr_primary_prtn_intxn(ctx, mbr, sectorsize);
         if ((ret != CL_CLEAN) &&
             !((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))) {

@@ -37,6 +37,7 @@
 #include "str.h"
 #include "prtn_intxn.h"
 #include "scanners.h"
+#include "dconf.h"
 
 //#define DEBUG_GPT_PARSE
 //#define DEBUG_GPT_PRINT
@@ -148,7 +149,7 @@ int cli_scangpt(cli_ctx *ctx)
     }
 
     /* check that the partition table has no intersections - HEURISTICS */
-    if (ctx->options & CL_SCAN_PARTITION_INTXN) {
+    if ((ctx->options & CL_SCAN_PARTITION_INTXN) && (ctx->dconf->other & OTHER_CONF_PRTNINTXN)) {
         ret = gpt_prtn_intxn(ctx, phdr, sectorsize);
         if ((ret != CL_CLEAN) &&
             !((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))) {
@@ -550,14 +551,14 @@ static int gpt_prtn_intxn(cli_ctx *ctx, struct gpt_header hdr, size_t sectorsize
                 if ((ctx->options & CL_SCAN_ALLMATCHES) && (tmp == CL_VIRUS)) {
                     cli_dbgmsg("cli_scangpt: detected intersection with partitions "
                                "[%u, %u]\n", pitxn, i);
-                    cli_append_virus(ctx, "Heuristic.PartitionIntersection");
+                    cli_append_virus(ctx, PRTN_INTXN_DETECTION);
                     ret = tmp;
                     tmp = 0;
                 }
                 else if (tmp == CL_VIRUS) {
                     cli_dbgmsg("cli_scangpt: detected intersection with partitions "
                                "[%u, %u]\n", pitxn, i);
-                    cli_append_virus(ctx, "Heuristic.PartitionIntersection");
+                    cli_append_virus(ctx, PRTN_INTXN_DETECTION);
                     prtn_intxn_list_free(&prtncheck);
                     return CL_VIRUS;
                 }
