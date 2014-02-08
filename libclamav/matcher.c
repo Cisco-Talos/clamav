@@ -718,48 +718,22 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
     const char *virname = NULL;
     uint32_t viroffset = 0;
     uint32_t viruses_found = 0;
-    EVP_MD_CTX *md5ctx, *sha1ctx, *sha256ctx;
+    EVP_MD_CTX md5ctx, sha1ctx, sha256ctx;
 
     if(!ctx->engine) {
         cli_errmsg("cli_scandesc: engine == NULL\n");
         return CL_ENULLARG;
     }
 
-    md5ctx = EVP_MD_CTX_create();
-    if (!(md5ctx))
-        return CL_CLEAN;
-
-    sha1ctx = EVP_MD_CTX_create();
-    if (!(sha1ctx)) {
-        EVP_MD_CTX_destroy(md5ctx);
+    if (!EVP_DigestInit(&md5ctx, EVP_md5())) {
         return CL_CLEAN;
     }
 
-    sha256ctx = EVP_MD_CTX_create();
-    if (!(sha256ctx)) {
-        EVP_MD_CTX_destroy(md5ctx);
-        EVP_MD_CTX_destroy(sha1ctx);
+    if (!EVP_DigestInit(&sha1ctx, EVP_sha1())) {
         return CL_CLEAN;
     }
 
-    if (!EVP_DigestInit(md5ctx, EVP_md5())) {
-        EVP_MD_CTX_destroy(md5ctx);
-        EVP_MD_CTX_destroy(sha1ctx);
-        EVP_MD_CTX_destroy(sha256ctx);
-        return CL_CLEAN;
-    }
-
-    if (!EVP_DigestInit(sha1ctx, EVP_sha1())) {
-        EVP_MD_CTX_destroy(md5ctx);
-        EVP_MD_CTX_destroy(sha1ctx);
-        EVP_MD_CTX_destroy(sha256ctx);
-        return CL_CLEAN;
-    }
-
-    if (!EVP_DigestInit(sha256ctx, EVP_sha256())) {
-        EVP_MD_CTX_destroy(md5ctx);
-        EVP_MD_CTX_destroy(sha1ctx);
-        EVP_MD_CTX_destroy(sha256ctx);
+    if (!EVP_DigestInit(&sha256ctx, EVP_sha256())) {
         return CL_CLEAN;
     }
 
@@ -795,9 +769,6 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
                 free(info.exeinfo.section);
 
             cli_hashset_destroy(&info.exeinfo.vinfo);
-            EVP_MD_CTX_destroy(md5ctx);
-            EVP_MD_CTX_destroy(sha1ctx);
-            EVP_MD_CTX_destroy(sha256ctx);
             return ret;
         }
     }
@@ -810,9 +781,6 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
                 free(info.exeinfo.section);
 
             cli_hashset_destroy(&info.exeinfo.vinfo);
-            EVP_MD_CTX_destroy(md5ctx);
-            EVP_MD_CTX_destroy(sha1ctx);
-            EVP_MD_CTX_destroy(sha256ctx);
             return ret;
         }
         if(troot->bm_offmode) {
@@ -826,9 +794,6 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
                         free(info.exeinfo.section);
 
                     cli_hashset_destroy(&info.exeinfo.vinfo);
-                    EVP_MD_CTX_destroy(md5ctx);
-                    EVP_MD_CTX_destroy(sha1ctx);
-                    EVP_MD_CTX_destroy(sha256ctx);
                     return ret;
                 }
 
@@ -895,9 +860,6 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
                     free(info.exeinfo.section);
 
                 cli_hashset_destroy(&info.exeinfo.vinfo);
-                EVP_MD_CTX_destroy(md5ctx);
-                EVP_MD_CTX_destroy(sha1ctx);
-                EVP_MD_CTX_destroy(sha256ctx);
                 return ret;
             }
         }
@@ -934,11 +896,11 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
                 uint32_t data_len = bytes - maxpatlen * (offset!=0);
 
                 if(compute_hash[CLI_HASH_MD5])
-                    EVP_DigestUpdate(md5ctx, data, data_len);
+                    EVP_DigestUpdate(&md5ctx, data, data_len);
                 if(compute_hash[CLI_HASH_SHA1])
-                    EVP_DigestUpdate(sha1ctx, data, data_len);
+                    EVP_DigestUpdate(&sha1ctx, data, data_len);
                 if(compute_hash[CLI_HASH_SHA256])
-                    EVP_DigestUpdate(sha256ctx, data, data_len);
+                    EVP_DigestUpdate(&sha256ctx, data, data_len);
             }
         }
 
@@ -957,13 +919,13 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
         enum CLI_HASH_TYPE hashtype, hashtype2;
 
         if(compute_hash[CLI_HASH_MD5])
-            EVP_DigestFinal(md5ctx, digest[CLI_HASH_MD5], NULL);
+            EVP_DigestFinal(&md5ctx, digest[CLI_HASH_MD5], NULL);
         if(refhash)
             compute_hash[CLI_HASH_MD5] = 1;
         if(compute_hash[CLI_HASH_SHA1])
-            EVP_DigestFinal(sha1ctx, digest[CLI_HASH_SHA1], NULL);
+            EVP_DigestFinal(&sha1ctx, digest[CLI_HASH_SHA1], NULL);
         if(compute_hash[CLI_HASH_SHA256])
-            EVP_DigestFinal(sha256ctx, digest[CLI_HASH_SHA256], NULL);
+            EVP_DigestFinal(&sha256ctx, digest[CLI_HASH_SHA256], NULL);
 
         virname = NULL;
         for(hashtype = CLI_HASH_MD5; hashtype < CLI_HASH_AVAIL_TYPES; hashtype++) {
@@ -1019,10 +981,6 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
             }
         }
     }
-
-    EVP_MD_CTX_destroy(md5ctx);
-    EVP_MD_CTX_destroy(sha1ctx);
-    EVP_MD_CTX_destroy(sha256ctx);
 
     if(troot) {
         if(ret != CL_VIRUS || SCAN_ALL)

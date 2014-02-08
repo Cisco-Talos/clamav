@@ -32,7 +32,7 @@ struct cli_dbio {
     char *buf, *bufpt, *readpt;
     unsigned int usebuf, bufsize, readsize;
     unsigned int chkonly;
-    EVP_MD_CTX *hashctx;
+    EVP_MD_CTX hashctx;
 };
 
 int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, unsigned int dbtype, const char *filename, unsigned int chkonly);

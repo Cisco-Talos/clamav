@@ -2796,7 +2796,6 @@ rfc1341(message *m, const char *dir)
 	int n;
 	char pdir[NAME_MAX + 1];
 	unsigned char md5_val[16];
-	EVP_MD_CTX *ctx;
 	char *md5_hex;
 
 	id = (char *)messageFindArgument(m, "id");
@@ -2853,14 +2852,7 @@ rfc1341(message *m, const char *dir)
 	}
 
 	n = atoi(number);
-    ctx = EVP_MD_CTX_create();
-    if (!(ctx)) {
-        free(id);
-        return CL_EMEM;
-    }
-    EVP_DigestInit(ctx, EVP_md5());
-    EVP_DigestUpdate(ctx, id, strlen(id));
-    EVP_DigestFinal(ctx, md5_val, NULL);
+    cl_hash_data("md5", id, strlen(id), md5_val, NULL);
 	md5_hex = cli_str2hex((const char*)md5_val, 16);
 
 	if(!md5_hex) {

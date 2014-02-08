@@ -2800,7 +2800,7 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
     struct cli_exe_section *exe_sections;
     struct pe_image_data_dir *dirs;
     fmap_t *map = *ctx->fmap;
-    EVP_MD_CTX *hashctx;
+    EVP_MD_CTX hashctx;
 
     if (flags & CL_CHECKFP_PE_FLAG_STATS)
         if (!(hashes))
@@ -2939,13 +2939,7 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
             }
         }
 
-        hashctx = EVP_MD_CTX_create();
-        if (!(hashctx)) {
-            free(exe_sections);
-            return CL_EMEM;
-        }
-
-        EVP_DigestInit(hashctx, EVP_sha1());
+        EVP_DigestInit(&hashctx, EVP_sha1());
     }
 
 #define hash_chunk(where, size, isStatAble, section) \
@@ -2957,16 +2951,12 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
             return CL_EFORMAT; \
         } \
         if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE) \
-            EVP_DigestUpdate(hashctx, hptr, size); \
+            EVP_DigestUpdate(&hashctx, hptr, size); \
         if (isStatAble && flags & CL_CHECKFP_PE_FLAG_STATS) { \
-            EVP_MD_CTX *md5ctx; \
-            md5ctx = EVP_MD_CTX_create(); \
-            if ((md5ctx)) { \
-                EVP_DigestInit(md5ctx, EVP_md5()); \
-                EVP_DigestUpdate(md5ctx, hptr, size); \
-                EVP_DigestFinal(md5ctx, hashes->sections[section].md5, NULL); \
-                EVP_MD_CTX_destroy(md5ctx); \
-            } \
+            EVP_MD_CTX md5ctx; \
+            EVP_DigestInit(&md5ctx, EVP_md5()); \
+            EVP_DigestUpdate(&md5ctx, hptr, size); \
+            EVP_DigestFinal(&md5ctx, hashes->sections[section].md5, NULL); \
         } \
     } while(0)
 
@@ -3018,11 +3008,9 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
             hlen = fsize - at;
             if(dirs[4].Size > hlen) {
                 if (flags & CL_CHECKFP_PE_FLAG_STATS) {
-                    EVP_MD_CTX_destroy(hashctx);
                     flags ^= CL_CHECKFP_PE_FLAG_AUTHENTICODE;
                     break;
                 } else {
-                    EVP_MD_CTX_destroy(hashctx);
                     free(exe_sections);
                     return CL_EFORMAT;
                 }
@@ -3039,8 +3027,7 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
     free(exe_sections);
 
     if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE) {
-        EVP_DigestFinal(hashctx, authsha1, NULL);
-        EVP_MD_CTX_destroy(hashctx);
+        EVP_DigestFinal(&hashctx, authsha1, NULL);
 
         if(cli_debug_flag) {
             char shatxt[SHA1_HASH_SIZE*2+1];

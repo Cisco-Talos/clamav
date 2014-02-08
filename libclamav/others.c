@@ -864,24 +864,19 @@ char *cli_hashstream(FILE *fs, unsigned char *digcpy, int type)
     char buff[FILEBUFF];
     char *hashstr, *pt;
     int i, bytes, size;
-    EVP_MD_CTX *ctx;
-
-    ctx = EVP_MD_CTX_create();
-    if (!(ctx))
-        return NULL;
+    EVP_MD_CTX ctx;
 
     if(type == 1)
-        EVP_DigestInit(ctx, EVP_md5());
+        EVP_DigestInit(&ctx, EVP_md5());
     else if(type == 2)
-        EVP_DigestInit(ctx, EVP_sha1());
+        EVP_DigestInit(&ctx, EVP_sha1());
     else
-        EVP_DigestInit(ctx, EVP_sha256());
+        EVP_DigestInit(&ctx, EVP_sha256());
 
     while((bytes = fread(buff, 1, FILEBUFF, fs)))
-        EVP_DigestUpdate(ctx, buff, bytes);
+        EVP_DigestUpdate(&ctx, buff, bytes);
 
-    EVP_DigestFinal(ctx, digest, &size);
-    EVP_MD_CTX_destroy(ctx);
+    EVP_DigestFinal(&ctx, digest, &size);
 
     if(!(hashstr = (char *) cli_calloc(size*2 + 1, sizeof(char))))
         return NULL;

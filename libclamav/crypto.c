@@ -78,7 +78,7 @@ void cl_cleanup_crypto(void)
 
 unsigned char *cl_hash_data(char *alg, const void *buf, size_t len, unsigned char *obuf, unsigned int *olen)
 {
-    EVP_MD_CTX *ctx;
+    EVP_MD_CTX ctx;
     unsigned char *ret;
     size_t mdsz;
     const EVP_MD *md;
@@ -95,54 +95,41 @@ unsigned char *cl_hash_data(char *alg, const void *buf, size_t len, unsigned cha
     if (!(ret))
         return NULL;
 
-    ctx = EVP_MD_CTX_create();
-    if (!(ctx)) {
-        if (!(obuf))
-            free(ret);
-
-        return NULL;
-    }
-
-    if (!EVP_DigestInit(ctx, md)) {
+    if (!EVP_DigestInit(&ctx, md)) {
         if (!(obuf))
             free(ret);
 
         if ((olen))
             *olen = 0;
 
-        EVP_MD_CTX_destroy(ctx);
         return NULL;
     }
 
     cur=0;
     while (cur < len) {
         size_t todo = MIN(EVP_MD_block_size(md), len-cur);
-        if (!EVP_DigestUpdate(ctx, (void *)(((unsigned char *)buf)+cur), todo)) {
+        if (!EVP_DigestUpdate(&ctx, (void *)(((unsigned char *)buf)+cur), todo)) {
             if (!(obuf))
                 free(ret);
 
             if ((olen))
                 *olen = 0;
 
-            EVP_MD_CTX_destroy(ctx);
             return NULL;
         }
 
         cur += todo;
     }
 
-    if (!EVP_DigestFinal(ctx, ret, &i)) {
+    if (!EVP_DigestFinal(&ctx, ret, &i)) {
         if (!(obuf))
             free(ret);
 
         if ((olen))
             *olen = 0;
 
-        EVP_MD_CTX_destroy(ctx);
         return NULL;
     }
-
-    EVP_MD_CTX_destroy(ctx);
 
     if ((olen))
         *olen = i;
@@ -152,7 +139,7 @@ unsigned char *cl_hash_data(char *alg, const void *buf, size_t len, unsigned cha
 
 unsigned char *cl_hash_file_fd(int fd, char *alg, unsigned int *olen)
 {
-    EVP_MD_CTX *ctx;
+    EVP_MD_CTX ctx;
     const EVP_MD *md;
     unsigned char *res;
 
@@ -160,18 +147,12 @@ unsigned char *cl_hash_file_fd(int fd, char *alg, unsigned int *olen)
     if (!(md))
         return NULL;
 
-    ctx = EVP_MD_CTX_create();
-    if (!(ctx))
-        return NULL;
-
-    if (!EVP_DigestInit(ctx, md)) {
-        EVP_MD_CTX_destroy(ctx);
+    if (!EVP_DigestInit(&ctx, md)) {
         return NULL;
     }
 
-    res = cl_hash_file_fd_ctx(ctx, fd, olen);
+    res = cl_hash_file_fd_ctx(&ctx, fd, olen);
 
-    EVP_MD_CTX_destroy(ctx);
     return res;
 }
 
@@ -259,7 +240,7 @@ unsigned char *cl_sha1(const void *buf, size_t len, unsigned char *obuf, unsigne
 
 int cl_verify_signature_hash(EVP_PKEY *pkey, char *alg, unsigned char *sig, unsigned int siglen, unsigned char *digest)
 {
-    EVP_MD_CTX *ctx;
+    EVP_MD_CTX ctx;
     const EVP_MD *md;
     size_t mdsz;
 
@@ -269,33 +250,24 @@ int cl_verify_signature_hash(EVP_PKEY *pkey, char *alg, unsigned char *sig, unsi
 
     mdsz = EVP_MD_size(md);
 
-    ctx = EVP_MD_CTX_create();
-    if (!(ctx)) {
+    if (!EVP_VerifyInit(&ctx, md)) {
         return -1;
     }
 
-    if (!EVP_VerifyInit(ctx, md)) {
-        EVP_MD_CTX_destroy(ctx);
+    if (!EVP_VerifyUpdate(&ctx, digest, mdsz)) {
         return -1;
     }
 
-    if (!EVP_VerifyUpdate(ctx, digest, mdsz)) {
-        EVP_MD_CTX_destroy(ctx);
+    if (EVP_VerifyFinal(&ctx, sig, siglen, pkey) != 0) {
         return -1;
     }
 
-    if (EVP_VerifyFinal(ctx, sig, siglen, pkey) != 0) {
-        EVP_MD_CTX_destroy(ctx);
-        return -1;
-    }
-
-    EVP_MD_CTX_destroy(ctx);
     return 0;
 }
 
 int cl_verify_signature_fd(EVP_PKEY *pkey, char *alg, unsigned char *sig, unsigned int siglen, int fd)
 {
-    EVP_MD_CTX *ctx;
+    EVP_MD_CTX ctx;
     const EVP_MD *md;
     size_t mdsz;
     unsigned char *digest;
@@ -310,38 +282,28 @@ int cl_verify_signature_fd(EVP_PKEY *pkey, char *alg, unsigned char *sig, unsign
 
     mdsz = EVP_MD_size(md);
 
-    ctx = EVP_MD_CTX_create();
-    if (!(ctx)) {
+    if (!EVP_VerifyInit(&ctx, md)) {
         free(digest);
         return -1;
     }
 
-    if (!EVP_VerifyInit(ctx, md)) {
+    if (!EVP_VerifyUpdate(&ctx, digest, mdsz)) {
         free(digest);
-        EVP_MD_CTX_destroy(ctx);
         return -1;
     }
 
-    if (!EVP_VerifyUpdate(ctx, digest, mdsz)) {
+    if (EVP_VerifyFinal(&ctx, sig, siglen, pkey) != 0) {
         free(digest);
-        EVP_MD_CTX_destroy(ctx);
         return -1;
     }
 
-    if (EVP_VerifyFinal(ctx, sig, siglen, pkey) != 0) {
-        free(digest);
-        EVP_MD_CTX_destroy(ctx);
-        return -1;
-    }
-
-    EVP_MD_CTX_destroy(ctx);
     free(digest);
     return 0;
 }
 
 int cl_verify_signature(EVP_PKEY *pkey, char *alg, unsigned char *sig, unsigned int siglen, unsigned char *data, size_t datalen, int decode)
 {
-    EVP_MD_CTX *ctx;
+    EVP_MD_CTX ctx;
     const EVP_MD *md;
     size_t mdsz;
     unsigned char *digest;
@@ -377,8 +339,7 @@ int cl_verify_signature(EVP_PKEY *pkey, char *alg, unsigned char *sig, unsigned 
 
     mdsz = EVP_MD_size(md);
 
-    ctx = EVP_MD_CTX_create();
-    if (!(ctx)) {
+    if (!EVP_VerifyInit(&ctx, md)) {
         free(digest);
         if (decode)
             free(sig);
@@ -386,9 +347,7 @@ int cl_verify_signature(EVP_PKEY *pkey, char *alg, unsigned char *sig, unsigned 
         return -1;
     }
 
-    if (!EVP_VerifyInit(ctx, md)) {
-        EVP_MD_CTX_destroy(ctx);
-
+    if (!EVP_VerifyUpdate(&ctx, digest, mdsz)) {
         free(digest);
         if (decode)
             free(sig);
@@ -396,27 +355,13 @@ int cl_verify_signature(EVP_PKEY *pkey, char *alg, unsigned char *sig, unsigned 
         return -1;
     }
 
-    if (!EVP_VerifyUpdate(ctx, digest, mdsz)) {
-        EVP_MD_CTX_destroy(ctx);
-
+    if (EVP_VerifyFinal(&ctx, sig, siglen, pkey) != 0) {
         free(digest);
         if (decode)
             free(sig);
 
         return -1;
     }
-
-    if (EVP_VerifyFinal(ctx, sig, siglen, pkey) != 0) {
-        EVP_MD_CTX_destroy(ctx);
-
-        free(digest);
-        if (decode)
-            free(sig);
-
-        return -1;
-    }
-
-    EVP_MD_CTX_destroy(ctx);
 
     if (decode)
         free(sig);
@@ -579,7 +524,7 @@ unsigned char *cl_sign_data_keyfile(char *keypath, char *alg, unsigned char *has
 
 unsigned char *cl_sign_data(EVP_PKEY *pkey, char *alg, unsigned char *hash, unsigned int *olen, int encode)
 {
-    EVP_MD_CTX *ctx;
+    EVP_MD_CTX ctx;
     const EVP_MD *md;
     unsigned int siglen;
     unsigned char *sig;
@@ -588,35 +533,25 @@ unsigned char *cl_sign_data(EVP_PKEY *pkey, char *alg, unsigned char *hash, unsi
     if (!(md))
         return NULL;
 
-    ctx = EVP_MD_CTX_create();
-    if (!(ctx)) {
-        free(hash);
-        return NULL;
-    }
-
     sig = (unsigned char *)calloc(1, EVP_PKEY_size(pkey));
     if (!(sig)) {
-        EVP_MD_CTX_destroy(ctx);
         free(hash);
         return NULL;
     }
 
-    if (!EVP_SignInit(ctx, md)) {
-        EVP_MD_CTX_destroy(ctx);
+    if (!EVP_SignInit(&ctx, md)) {
         free(sig);
         free(hash);
         return NULL;
     }
 
-    if (!EVP_SignUpdate(ctx, hash, EVP_MD_size(md))) {
-        EVP_MD_CTX_destroy(ctx);
+    if (!EVP_SignUpdate(&ctx, hash, EVP_MD_size(md))) {
         free(sig);
         free(hash);
         return NULL;
     }
 
-    if (!EVP_SignFinal(ctx, sig, &siglen, pkey)) {
-        EVP_MD_CTX_destroy(ctx);
+    if (!EVP_SignFinal(&ctx, sig, &siglen, pkey)) {
         free(sig);
         free(hash);
         return NULL;
@@ -625,7 +560,6 @@ unsigned char *cl_sign_data(EVP_PKEY *pkey, char *alg, unsigned char *hash, unsi
     if (encode) {
         unsigned char *newsig = (unsigned char *)cl_base64_encode(sig, siglen);
         if (!(newsig)) {
-            EVP_MD_CTX_destroy(ctx);
             free(sig);
             free(hash);
             return NULL;
@@ -636,7 +570,6 @@ unsigned char *cl_sign_data(EVP_PKEY *pkey, char *alg, unsigned char *hash, unsi
         siglen = (unsigned int)strlen((const char *)newsig);
     }
 
-    EVP_MD_CTX_destroy(ctx);
     free(hash);
 
     *olen = siglen;
