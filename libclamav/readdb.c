@@ -39,6 +39,10 @@
 #include <zlib.h>
 #include <errno.h>
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "clamav.h"
 #include "cvd.h"
 #ifdef	HAVE_STRINGS_H
@@ -56,8 +60,6 @@
 #include "readdb.h"
 #include "cltypes.h"
 #include "default.h"
-#include "md5.h"
-#include "sha256.h"
 #include "dsig.h"
 #include "asn1.h"
 
@@ -418,7 +420,8 @@ char *cli_dbgets(char *buff, unsigned int size, FILE *fs, struct cli_dbio *dbio)
 		dbio->bufpt = dbio->buf;
 		dbio->size -= bread;
 		dbio->bread += bread;
-		sha256_update(&dbio->sha256ctx, dbio->readpt, bread);
+        if ((dbio->hashctx))
+            EVP_DigestUpdate(dbio->hashctx, dbio->readpt, bread);
 	    }
 	    if(dbio->chkonly && dbio->bufpt) {
 		dbio->bufpt = NULL;
@@ -475,30 +478,29 @@ char *cli_dbgets(char *buff, unsigned int size, FILE *fs, struct cli_dbio *dbio)
 	bs = strlen(buff);
 	dbio->size -= bs;
 	dbio->bread += bs;
-	sha256_update(&dbio->sha256ctx, buff, bs);
+    if ((dbio->hashctx))
+        EVP_DigestUpdate(dbio->hashctx, buff, bs);
 	return pt;
     }
 }
 
 static int cli_chkign(const struct cli_matcher *ignored, const char *signame, const char *entry)
 {
-	const char *md5_expected = NULL;
-        cli_md5_ctx md5ctx;
-        unsigned char digest[16];
+    const char *md5_expected = NULL;
+    unsigned char digest[16];
 
     if(!ignored || !signame || !entry)
-	return 0;
+        return 0;
 
     if(cli_bm_scanbuff((const unsigned char *) signame, strlen(signame), &md5_expected, NULL, ignored, 0, NULL, NULL,NULL) == CL_VIRUS) {
-	if(md5_expected) {
-	    cli_md5_init(&md5ctx);
-            cli_md5_update(&md5ctx, entry, strlen(entry));
-	    cli_md5_final(digest, &md5ctx);
-	    if(memcmp(digest, (const unsigned char *) md5_expected, 16))
-		return 0;
-	}
-	cli_dbgmsg("Ignoring signature %s\n", signame);
-	return 1;
+        if(md5_expected) {
+            cl_hash_data("md5", entry, strlen(entry), digest, NULL);
+            if(memcmp(digest, (const unsigned char *) md5_expected, 16))
+                return 0;
+        }
+
+        cli_dbgmsg("Ignoring signature %s\n", signame);
+        return 1;
     }
 
     return 0;
@@ -1724,19 +1726,26 @@ static int cli_loadinfo(FILE *fs, struct cl_engine *engine, unsigned int options
 	unsigned char hash[32];
         struct cli_dbinfo *last = NULL, *new;
 	int ret = CL_SUCCESS, dsig = 0;
-	SHA256_CTX ctx;
+    EVP_MD_CTX *ctx;
 
 
     if(!dbio) {
 	cli_errmsg("cli_loadinfo: .info files can only be loaded from within database container files\n");
 	return CL_EMALFDB;
     }
-    sha256_init(&ctx);
+
+    ctx = EVP_MD_CTX_create();
+    if (!(ctx))
+        return CL_EMALFDB;
+
+    EVP_DigestInit(ctx, EVP_sha256());
+
     while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
 	line++;
 	if(!(options & CL_DB_UNSIGNED) && !strncmp(buffer, "DSIG:", 5)) {
 	    dsig = 1;
-	    sha256_final(&ctx, hash);
+	    EVP_DigestFinal(ctx, hash, NULL);
+        EVP_MD_CTX_destroy(ctx);
 	    if(cli_versig2(hash, buffer + 5, INFO_NSTR, INFO_ESTR) != CL_SUCCESS) {
 		cli_errmsg("cli_loadinfo: Incorrect digital signature\n");
 		ret = CL_EMALFDB;
@@ -1754,7 +1763,7 @@ static int cli_loadinfo(FILE *fs, struct cl_engine *engine, unsigned int options
             buffer[len + 1] = 0;
         }
     }
-	sha256_update(&ctx, buffer, strlen(buffer));
+	EVP_DigestUpdate(ctx, buffer, strlen(buffer));
 	cli_chomp(buffer);
 	if(!strncmp("ClamAV-VDB:", buffer, 11)) {
 	    if(engine->dbinfo) { /* shouldn't be initialized at this point */

@@ -111,6 +111,10 @@ nsp1:00435A5A                 push    8000h
 
 #include <stdlib.h>
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "cltypes.h"
 #include "clamav.h"
 #include "others.h"

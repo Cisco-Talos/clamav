@@ -34,6 +34,10 @@
 #include <string.h>
 #include <ctype.h>
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "clamav.h"
 #include "others.h"
 #include "phish_whitelist.h"

@@ -24,6 +24,11 @@
 
 #include <stdio.h>
 #include <assert.h>
+
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "clamav.h"
 #include "memory.h"
 #include "others.h"

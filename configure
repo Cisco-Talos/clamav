@@ -906,6 +906,7 @@ with_libcurl
 with_libconfig
 enable_xml
 with_xml
+with_openssl
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1612,6 +1613,8 @@ Optional Packages:
     /usr/local or /usr if not found in /usr/local)
   --with-xml=DIR	  path to directory containing libxml2 library (default=
 			  /usr/local or /usr if not found in /usr/local)
+  --with-openssl=DIR   path to directory containing openssl (default=
+    /usr/local or /usr if not found in /usr/local)
 
 Some influential environment variables:
   CC          C compiler command
@@ -21592,6 +21595,7 @@ CLAMBC_CPPFLAGS="$CLAMBC_CPPFLAGS -I$LIBCONFIG_HOME/include"
 LDFLAGS="$save_ldflags"
 
 
+
 want_xml="auto"
 # Check whether --enable-xml was given.
 if test "${enable_xml+set}" = set; then :
@@ -21748,6 +21752,129 @@ $as_echo "$as_me: ****** libxml2 support unavailable" >&6;}
 
 
 fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for OpenSSL installation" >&5
+$as_echo_n "checking for OpenSSL installation... " >&6; }
+
+
+# Check whether --with-openssl was given.
+if test "${with_openssl+set}" = set; then :
+  withval=$with_openssl;
+if test "$withval"; then
+    LIBSSL_HOME="$withval"
+fi
+
+else
+
+LIBSSL_HOME=/usr/local
+if test ! -f "$LIBSSL_HOME/include/openssl/ssl.h"
+then
+    LIBSSL_HOME=/usr
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $LIBSSL_HOME" >&5
+$as_echo "$LIBSSL_HOME" >&6; }
+
+fi
+
+
+if test ! -f "$LIBSSL_HOME/include/openssl/ssl.h"
+then
+    as_fn_error $? "OpenSSL not found." "$LINENO" 5
+fi
+
+SSL_LDFLAGS="-L$LIBSSL_HOME/lib -lssl"
+SSL_CPPFLAGS="-I$LIBSSL_HOME/include"
+
+save_LDFLAGS="$LDFLAGS"
+LDFLAGS="-L$LIBSSL_HOME/lib -lssl"
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for SSL_library_init in -lssl" >&5
+$as_echo_n "checking for SSL_library_init in -lssl... " >&6; }
+if ${ac_cv_lib_ssl_SSL_library_init+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lssl  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char SSL_library_init ();
+int
+main ()
+{
+return SSL_library_init ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_ssl_SSL_library_init=yes
+else
+  ac_cv_lib_ssl_SSL_library_init=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_ssl_SSL_library_init" >&5
+$as_echo "$ac_cv_lib_ssl_SSL_library_init" >&6; }
+if test "x$ac_cv_lib_ssl_SSL_library_init" = xyes; then :
+  LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS $SSL_LDFLAGS"
+else
+  as_fn_error $? "Your OpenSSL is misconfigured" "$LINENO" 5
+fi
+
+
+LDFLAGS="-L$LIBSSL_HOME/lib -lcrypto"
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for EVP_EncryptInit in -lcrypto" >&5
+$as_echo_n "checking for EVP_EncryptInit in -lcrypto... " >&6; }
+if ${ac_cv_lib_crypto_EVP_EncryptInit+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lcrypto  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char EVP_EncryptInit ();
+int
+main ()
+{
+return EVP_EncryptInit ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_crypto_EVP_EncryptInit=yes
+else
+  ac_cv_lib_crypto_EVP_EncryptInit=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_crypto_EVP_EncryptInit" >&5
+$as_echo "$ac_cv_lib_crypto_EVP_EncryptInit" >&6; }
+if test "x$ac_cv_lib_crypto_EVP_EncryptInit" = xyes; then :
+  LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lcrypto"
+else
+  as_fn_error $? "Your OpenSSL installation is misconfigured" "$LINENO" 5
+fi
+
+
+LDFLAGS="$save_LDFLAGS"
 
 
 

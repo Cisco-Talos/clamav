@@ -3,6 +3,10 @@
 
 #include <string.h>
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "7zCrc.h"
 #include "CpuArch.h"
 #include "Xz.h"

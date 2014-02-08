@@ -34,6 +34,10 @@
 #include <string.h>
 #include <ctype.h>
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "clamav.h"
 #include "cltypes.h"
 #include "others.h"
@@ -45,7 +49,6 @@
 #include "iana_tld.h"
 #include "iana_cctld.h"
 #include "scanners.h"
-#include "sha256.h"
 #include <assert.h>
 
 #include "mpool.h"
@@ -1199,12 +1202,18 @@ static int hash_match(const struct regex_matcher *rlist, const char *host, size_
 	    unsigned char h[65];
 	    unsigned char sha256_dig[32];
 	    unsigned i;
-	    SHA256_CTX sha256;
+        EVP_MD_CTX *sha256;
 
-	    sha256_init(&sha256);
-	    sha256_update(&sha256, host, hlen);
-	    sha256_update(&sha256, path, plen);
-	    sha256_final(&sha256, sha256_dig);
+        sha256 = EVP_MD_CTX_create();
+        if (!(sha256))
+            return CL_SUCCESS;
+
+        EVP_DigestInit(sha256, EVP_sha256());
+        EVP_DigestUpdate(sha256, host, hlen);
+        EVP_DigestUpdate(sha256, path, plen);
+        EVP_DigestFinal(sha256, sha256_dig, NULL);
+
+        EVP_MD_CTX_destroy(sha256);
 	    for(i=0;i<32;i++) {
 		h[2*i] = hexchars[sha256_dig[i]>>4];
 		h[2*i+1] = hexchars[sha256_dig[i]&0xf];

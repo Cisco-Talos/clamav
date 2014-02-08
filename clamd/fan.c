@@ -34,6 +34,10 @@
 #include <string.h>
 #include <errno.h>
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include <linux/fanotify.h>
 #include "fan-syscalllib.h"
 #include "fan.h"

@@ -46,6 +46,10 @@
 #include <syslog.h>
 #endif
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "target.h"
 #include "clamav.h"
 #include "freshclamcodes.h"

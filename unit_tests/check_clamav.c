@@ -12,12 +12,16 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <sys/mman.h>
+
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "../libclamav/clamav.h"
 #include "../libclamav/others.h"
 #include "../libclamav/matcher.h"
 #include "../libclamav/version.h"
 #include "../libclamav/dsig.h"
-#include "../libclamav/sha256.h"
 #include "../libclamav/fpu.h"
 #include "checks.h"
 
@@ -790,27 +794,23 @@ static uint8_t res256[3][SHA256_HASH_SIZE] = {
 
 START_TEST (test_sha256)
 {
-    SHA256_CTX sha256;
+    EVP_MD_CTX sha256;
     uint8_t hsha256[SHA256_HASH_SIZE];
     uint8_t buf[1000];
     int i;
 
     memset (buf, 0x61, sizeof (buf));
 
-    sha256_init (&sha256);
-    sha256_update (&sha256, tv1, sizeof (tv1));
-    sha256_final (&sha256, hsha256);
+    cl_sha256(tv1, sizeof(tv1), hsha256, NULL);
     fail_unless(!memcmp (hsha256, res256[0], sizeof (hsha256)), "sha256 test vector #1 failed");
 
-    sha256_init (&sha256);
-    sha256_update (&sha256, tv2, sizeof (tv2));
-    sha256_final (&sha256, hsha256);
+    cl_sha256(tv2, sizeof(tv2), hsha256, NULL);
     fail_unless(!memcmp (hsha256, res256[1], sizeof (hsha256)), "sha256 test vector #2 failed");
 
-    sha256_init (&sha256);
+    EVP_DigestInit (&sha256, EVP_sha256());
     for (i = 0; i < 1000; i++)
-	sha256_update (&sha256, buf, sizeof (buf));
-    sha256_final (&sha256, hsha256);
+        EVP_DigestUpdate (&sha256, buf, sizeof (buf));
+    EVP_DigestFinal (&sha256, hsha256, NULL);
     fail_unless(!memcmp (hsha256, res256[2], sizeof (hsha256)), "sha256 test vector #3 failed");
 }
 END_TEST

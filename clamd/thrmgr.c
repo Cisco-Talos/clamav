@@ -29,6 +29,10 @@
 #include <errno.h>
 #include <string.h>
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "shared/output.h"
 
 #include "thrmgr.h"

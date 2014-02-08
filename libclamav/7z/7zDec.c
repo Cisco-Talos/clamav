@@ -3,6 +3,10 @@
 
 #include <string.h>
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #define _7ZIP_PPMD_SUPPPORT
 
 #include "7z.h"

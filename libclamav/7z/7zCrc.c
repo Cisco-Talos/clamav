@@ -1,6 +1,10 @@
 /* 7zCrc.c -- CRC32 calculation
 2009-11-23 : Igor Pavlov : Public domain */
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "7zCrc.h"
 #include "CpuArch.h"
 

@@ -51,14 +51,16 @@
 #include <termios.h>
 #endif
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "vba.h"
 
 #include "shared/output.h"
 #include "shared/optparser.h"
 #include "shared/misc.h"
 #include "shared/cdiff.h"
-#include "libclamav/sha1.h"
-#include "libclamav/sha256.h"
 #include "shared/tar.h"
 
 #include "libclamav/clamav.h"
@@ -398,10 +400,10 @@ static char *sha256file(const char *file, unsigned int *size)
 	unsigned int i, bytes;
 	unsigned char digest[32], buffer[FILEBUFF];
 	char *sha;
-	SHA256_CTX ctx;
+	EVP_MD_CTX ctx;
 
 
-    sha256_init(&ctx);
+    EVP_DigestInit(&ctx, EVP_sha256());
     if(!(fh = fopen(file, "rb"))) {
 	mprintf("!sha256file: Can't open file %s\n", file);
 	return NULL;
@@ -409,11 +411,11 @@ static char *sha256file(const char *file, unsigned int *size)
     if(size)
 	*size = 0;
     while((bytes = fread(buffer, 1, sizeof(buffer), fh))) {
-	sha256_update(&ctx, buffer, bytes);
+	EVP_DigestUpdate(&ctx, buffer, bytes);
 	if(size)
 	    *size += bytes;
     }
-    sha256_final(&ctx, digest);
+    EVP_DigestFinal(&ctx, digest, NULL);
     sha = (char *) malloc(65);
     if(!sha)
     {
@@ -433,7 +435,7 @@ static int writeinfo(const char *dbname, const char *builder, const char *header
 	unsigned int i, bytes;
 	char file[32], *pt, dbfile[32];
 	unsigned char digest[32], buffer[FILEBUFF];
-	SHA256_CTX ctx;
+	EVP_MD_CTX ctx;
 
     snprintf(file, sizeof(file), "%s.info", dbname);
     if(!access(file, R_OK)) {
@@ -490,10 +492,10 @@ static int writeinfo(const char *dbname, const char *builder, const char *header
     }
     if(!optget(opts, "unsigned")->enabled) {
 	rewind(fh);
-	sha256_init(&ctx);
+	EVP_DigestInit(&ctx, EVP_sha256());
 	while((bytes = fread(buffer, 1, sizeof(buffer), fh)))
-	    sha256_update(&ctx, buffer, bytes);
-	sha256_final(&ctx, digest);
+	    EVP_DigestUpdate(&ctx, buffer, bytes);
+	EVP_DigestFinal(&ctx, digest, NULL);
 	if(!(pt = getdsig(optget(opts, "server")->strarg, builder, digest, 32, 3))) {
 	    mprintf("!writeinfo: Can't get digital signature from remote server\n");
 	    fclose(fh);
@@ -513,7 +515,7 @@ static int script2cdiff(const char *script, const char *builder, const struct op
 {
 	char *cdiff, *pt, buffer[FILEBUFF];
 	unsigned char digest[32];
-	SHA256_CTX ctx;
+	EVP_MD_CTX ctx;
 	STATBUF sb;
 	FILE *scripth, *cdiffh;
 	gzFile gzh;
@@ -597,13 +599,13 @@ static int script2cdiff(const char *script, const char *builder, const struct op
 	return -1;
     }
 
-    sha256_init(&ctx);
+    EVP_DigestInit(&ctx, EVP_sha256());
 
     while((bytes = fread(buffer, 1, sizeof(buffer), cdiffh)))
-	sha256_update(&ctx, (unsigned char *) buffer, bytes);
+	EVP_DigestUpdate(&ctx, (unsigned char *) buffer, bytes);
 
     fclose(cdiffh);
-    sha256_final(&ctx, digest);
+    EVP_DigestFinal(&ctx, digest, NULL);
 
     if(!(pt = getdsig(optget(opts, "server")->strarg, builder, digest, 32, 2))) {
 	mprintf("!script2cdiff: Can't get digital signature from remote server\n");
@@ -2788,7 +2790,6 @@ static int dumpcerts(const struct optstruct *opts)
     char * filename = NULL;
     STATBUF sb;
     const char * fmptr;
-    SHA1Context sha1;
     struct cl_engine *engine;
     cli_ctx ctx;
     int fd, ret;
@@ -2869,9 +2870,7 @@ static int dumpcerts(const struct optstruct *opts)
     }
 
     /* Generate SHA1 */
-    SHA1Init(&sha1);
-    SHA1Update(&sha1, fmptr, sb.st_size);
-    SHA1Final(&sha1, shash1);
+    cl_sha1(fmptr, sb.st_size, shash1, NULL);
 
     ret = cli_checkfp_pe(&ctx, shash1, NULL, CL_CHECKFP_PE_FLAG_AUTHENTICODE);
     

@@ -48,6 +48,11 @@
 #include <string.h>
 #include <limits.h>
 #include <ctype.h>
+
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "others.h"
 #include "regex.h"
 

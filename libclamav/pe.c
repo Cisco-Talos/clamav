@@ -35,6 +35,10 @@
 #include <time.h>
 #include <stdarg.h>
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "cltypes.h"
 #include "clamav.h"
 #include "others.h"
@@ -50,7 +54,6 @@
 #include "scanners.h"
 #include "str.h"
 #include "execs.h"
-#include "md5.h"
 #include "mew.h"
 #include "upack.h"
 #include "matcher.h"
@@ -59,8 +62,6 @@
 #include "special.h"
 #include "ishield.h"
 #include "asn1.h"
-#include "sha1.h"
-#include "libclamav/md5.h"
 
 #define DCONF ctx->dconf->pe
 
@@ -487,9 +488,6 @@ static void cli_parseres_special(uint32_t base, uint32_t rva, fmap_t *map, struc
 static unsigned int cli_hashsect(fmap_t *map, struct cli_exe_section *s, unsigned char **digest, int * foundhash, int * foundwild)
 {
     const void *hashme;
-    cli_md5_ctx md5;
-    SHA1Context sha1ctx;
-    SHA256_CTX sha256ctx;
 
     if (s->rsz > CLI_MAX_ALLOCATION) {
         cli_dbgmsg("cli_hashsect: skipping hash calculation for too big section\n");
@@ -502,21 +500,12 @@ static unsigned int cli_hashsect(fmap_t *map, struct cli_exe_section *s, unsigne
         return 0;
     }
 
-    if(foundhash[CLI_HASH_MD5] || foundwild[CLI_HASH_MD5]) {
-        cli_md5_init(&md5);
-        cli_md5_update(&md5, hashme, s->rsz);
-        cli_md5_final(digest[CLI_HASH_MD5], &md5);
-    }
-    if(foundhash[CLI_HASH_SHA1] || foundwild[CLI_HASH_SHA1]) {
-        SHA1Init(&sha1ctx);
-        SHA1Update(&sha1ctx, hashme, s->rsz);
-        SHA1Final(&sha1ctx, digest[CLI_HASH_SHA1]);
-    }
-    if(foundhash[CLI_HASH_SHA256] || foundwild[CLI_HASH_SHA256]) {
-        sha256_init(&sha256ctx);
-        sha256_update(&sha256ctx, hashme, s->rsz);
-        sha256_final(&sha256ctx, digest[CLI_HASH_SHA256]);
-    }
+    if(foundhash[CLI_HASH_MD5] || foundwild[CLI_HASH_MD5])
+        cl_hash_data("md5", hashme, s->rsz, digest[CLI_HASH_MD5], NULL);
+    if(foundhash[CLI_HASH_SHA1] || foundwild[CLI_HASH_SHA1])
+        cl_sha1(hashme, s->rsz, digest[CLI_HASH_SHA1], NULL);
+    if(foundhash[CLI_HASH_SHA256] || foundwild[CLI_HASH_SHA256])
+        cl_sha256(hashme, s->rsz, digest[CLI_HASH_SHA256], NULL);
 
     return 1;
 }
@@ -563,7 +552,6 @@ static int scan_pe_mdb (cli_ctx * ctx, struct cli_exe_section *exe_section)
                 md5[8], md5[9], md5[10], md5[11], md5[12], md5[13], md5[14], md5[15]);
         } else if (cli_always_gen_section_hash) {
             const void *hashme = fmap_need_off_once(*ctx->fmap, exe_section->raw, exe_section->rsz);
-            cli_md5_ctx md5ctx;
             if (!(hashme)) {
                 cli_errmsg("scan_pe_mdb: unable to read section data\n");
                 ret = CL_EREAD;
@@ -577,9 +565,7 @@ static int scan_pe_mdb (cli_ctx * ctx, struct cli_exe_section *exe_section)
                 goto end;
             }
 
-            cli_md5_init(&md5ctx);
-            cli_md5_update(&md5ctx, hashme, exe_section->rsz);
-            cli_md5_final(md5, &md5ctx);
+            cl_hash_data("md5", hashme, exe_section->rsz, md5, NULL);
 
             cli_dbgmsg("MDB: %u:%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\n",
                 exe_section->rsz, md5[0], md5[1], md5[2], md5[3], md5[4], md5[5], md5[6], md5[7],
@@ -2814,8 +2800,7 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
     struct cli_exe_section *exe_sections;
     struct pe_image_data_dir *dirs;
     fmap_t *map = *ctx->fmap;
-    SHA1Context sha1;
-    cli_md5_ctx md5ctx;
+    EVP_MD_CTX *hashctx;
 
     if (flags & CL_CHECKFP_PE_FLAG_STATS)
         if (!(hashes))
@@ -2954,7 +2939,13 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
             }
         }
 
-        SHA1Init(&sha1);
+        hashctx = EVP_MD_CTX_create();
+        if (!(hashctx)) {
+            free(exe_sections);
+            return CL_EMEM;
+        }
+
+        EVP_DigestInit(hashctx, EVP_sha1());
     }
 
 #define hash_chunk(where, size, isStatAble, section) \
@@ -2966,12 +2957,16 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
             return CL_EFORMAT; \
         } \
         if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE) \
-            SHA1Update(&sha1, hptr, size); \
+            EVP_DigestUpdate(hashctx, hptr, size); \
         if (isStatAble && flags & CL_CHECKFP_PE_FLAG_STATS) { \
-            cli_md5_init(&md5ctx); \
-            cli_md5_update(&md5ctx, hptr, size); \
-            cli_md5_final(hashes->sections[section].md5, &md5ctx); \
-            hashes->sections[section].len = size; \
+            EVP_MD_CTX *md5ctx; \
+            md5ctx = EVP_MD_CTX_create(); \
+            if ((md5ctx)) { \
+                EVP_DigestInit(md5ctx, EVP_md5()); \
+                EVP_DigestUpdate(md5ctx, hptr, size); \
+                EVP_DigestFinal(md5ctx, hashes->sections[section].md5, NULL); \
+                EVP_MD_CTX_destroy(md5ctx); \
+            } \
         } \
     } while(0)
 
@@ -3023,9 +3018,11 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
             hlen = fsize - at;
             if(dirs[4].Size > hlen) {
                 if (flags & CL_CHECKFP_PE_FLAG_STATS) {
+                    EVP_MD_CTX_destroy(hashctx);
                     flags ^= CL_CHECKFP_PE_FLAG_AUTHENTICODE;
                     break;
                 } else {
+                    EVP_MD_CTX_destroy(hashctx);
                     free(exe_sections);
                     return CL_EFORMAT;
                 }
@@ -3042,7 +3039,8 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
     free(exe_sections);
 
     if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE) {
-        SHA1Final(&sha1, authsha1);
+        EVP_DigestFinal(hashctx, authsha1, NULL);
+        EVP_MD_CTX_destroy(hashctx);
 
         if(cli_debug_flag) {
             char shatxt[SHA1_HASH_SIZE*2+1];
