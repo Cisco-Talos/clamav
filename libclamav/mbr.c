@@ -104,7 +104,7 @@ int cli_scanmbr(cli_ctx *ctx)
         return CL_ENULLARG;
     }
 
-    /* sector size calculation */
+    /* sector size calculation, actual value is OS dependent */
     sectorsize = MBR_SECTOR_SIZE;
 
     /* size of total file must be a multiple of the sector size */
@@ -130,6 +130,13 @@ int cli_scanmbr(cli_ctx *ctx)
     /* MBR checks */
     ret = mbr_check_mbr(&mbr, maplen, sectorsize);
     if (ret != CL_CLEAN) {
+        return ret;
+    }
+
+    /* MBR is valid, examine bootstrap code */
+    ret = cli_map_scan(*ctx->fmap, 0, MBR_BASE_OFFSET, ctx, CL_TYPE_FILE_ANY);
+    if ((ret != CL_CLEAN) &&
+        !((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))) {
         return ret;
     }
 
