@@ -17037,6 +17037,7 @@ else
 $as_echo "$as_me: WARNING: Your libcurl is misconfigured. Please use the web interface for submitting FPs/FNs." >&2;}
 fi
 
+    LDFLAGS="$save_LDFLAGS"
 fi
 
  if test "x$HAVE_LIBBZ2" = "xyes"; then
