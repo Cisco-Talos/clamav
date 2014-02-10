@@ -67,7 +67,6 @@ enum MBR_STATE {
 static int mbr_scanextprtn(cli_ctx *ctx, unsigned *prtncount, off_t extlba, 
                            size_t extlbasize, size_t sectorsize);
 static void mbr_printbr(struct mbr_boot_record *record);
-static void mbr_convert_to_host(struct mbr_boot_record *record);
 static int mbr_check_mbr(struct mbr_boot_record *record, size_t maplen, size_t sectorsize);
 static int mbr_check_ebr(struct mbr_boot_record *record);
 static int mbr_primary_prtn_intxn(cli_ctx *ctx, struct mbr_boot_record mbr, size_t sectorsize);
@@ -273,11 +272,11 @@ static int mbr_scanextprtn(cli_ctx *ctx, unsigned *prtncount, off_t extlba, size
                         logiclba = 0;
                         /* fall-through */
                     case SEEN_EXTENDED:
-                        cli_dbgmsg("cli_scanebr: detected a logical boot record "
-                                   "without a partition record\n");
+                        cli_warnmsg("cli_scanebr: detected a logical boot record "
+                                    "without a partition record\n");
                         break;
                     default:
-                        cli_dbgmsg("cli_scanebr: undefined state for EBR parsing\n");
+                        cli_warnmsg("cli_scanebr: undefined state for EBR parsing\n");
                         return CL_EPARSE;
                     }
                 }
@@ -289,12 +288,12 @@ static int mbr_scanextprtn(cli_ctx *ctx, unsigned *prtncount, off_t extlba, size
                     case SEEN_PARTITION:
                         break;
                     case SEEN_EMPTY:
-                        cli_dbgmsg("cli_scanebr: detected a logical boot record "
-                                   "without a partition record\n");
+                        cli_warnmsg("cli_scanebr: detected a logical boot record "
+                                    "without a partition record\n");
                         break;
                     case SEEN_EXTENDED:
-                        cli_dbgmsg("cli_scanebr: detected a logical boot record "
-                                   "with multiple extended partition records\n");
+                        cli_warnmsg("cli_scanebr: detected a logical boot record "
+                                    "with multiple extended partition records\n");
                         return CL_EFORMAT;
                     default:
                         cli_dbgmsg("cli_scanebr: undefined state for EBR parsing\n");
@@ -309,17 +308,17 @@ static int mbr_scanextprtn(cli_ctx *ctx, unsigned *prtncount, off_t extlba, size
                         state = SEEN_PARTITION;
                         break;
                     case SEEN_PARTITION:
-                        cli_dbgmsg("cli_scanebr: detected a logical boot record "
-                                   "with multiple partition records\n");
+                        cli_warnmsg("cli_scanebr: detected a logical boot record "
+                                    "with multiple partition records\n");
                         logiclba = 0; /* no extended partitions are possible */
                         break;
                     case SEEN_EXTENDED:
-                        cli_dbgmsg("cli_scanebr: detected a logical boot record "
-                                   "with extended partition record first\n");
+                        cli_warnmsg("cli_scanebr: detected a logical boot record "
+                                    "with extended partition record first\n");
                         break;
                     case SEEN_EMPTY:
-                        cli_dbgmsg("cli_scanebr: detected a logical boot record "
-                                   "with empty partition record first\n");
+                        cli_warnmsg("cli_scanebr: detected a logical boot record "
+                                    "with empty partition record first\n");
                         logiclba = 0; /* no extended partitions are possible */
                         break;
                     default:
@@ -357,6 +356,20 @@ static int mbr_scanextprtn(cli_ctx *ctx, unsigned *prtncount, off_t extlba, size
     return ret;
 }
 
+void mbr_convert_to_host(struct mbr_boot_record *record)
+{
+    struct mbr_partition_entry *entry;
+    unsigned i;
+ 
+    for (i = 0; i < MBR_MAX_PARTITION_ENTRIES; ++i) {
+        entry = &record->entries[i];
+ 
+        entry->firstLBA = le32_to_host(entry->firstLBA);
+        entry->numLBA = le32_to_host(entry->numLBA);
+    }
+    record->signature = be16_to_host(record->signature);
+}
+
 static void mbr_printbr(struct mbr_boot_record *record)
 {
     unsigned i;
@@ -373,20 +386,6 @@ static void mbr_printbr(struct mbr_boot_record *record)
         cli_dbgmsg("\tfirstLBA: %u\n", record->entries[i].firstLBA);
         cli_dbgmsg("\tnumLBA: %u\n", record->entries[i].numLBA);
     }
-}
-
-static void mbr_convert_to_host(struct mbr_boot_record *record)
-{
-    struct mbr_partition_entry *entry;
-    unsigned i;
- 
-    for (i = 0; i < MBR_MAX_PARTITION_ENTRIES; ++i) {
-        entry = &record->entries[i];
- 
-        entry->firstLBA = le32_to_host(entry->firstLBA);
-        entry->numLBA = le32_to_host(entry->numLBA);
-    }
-    record->signature = be16_to_host(record->signature);
 }
 
 static int mbr_check_mbr(struct mbr_boot_record *record, size_t maplen, size_t sectorsize)

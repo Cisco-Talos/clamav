@@ -44,6 +44,8 @@
 /* MBR Partition Types */
 #define MBR_EMPTY      0x00
 #define MBR_EXTENDED   0x05
+#define MBR_HYBRID     0xed
+#define MBR_PROTECTIVE 0xee
 /* End Partition Types */
 
 #ifndef HAVE_ATTRIB_PACKED
@@ -84,5 +86,6 @@ struct mbr_boot_record {
 
 int cli_mbr_check(const unsigned char *buff, size_t len, size_t maplen);
 int cli_scanmbr(cli_ctx *ctx, size_t sectorsize);
+void mbr_convert_to_host(struct mbr_boot_record *record);
 
 #endif
