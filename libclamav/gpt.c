@@ -68,12 +68,37 @@ static void gpt_printName(uint16_t name[], const char* msg);
 static void gpt_printGUID(uint8_t GUID[], const char* msg);
 static int gpt_prtn_intxn(cli_ctx *ctx, struct gpt_header hdr, size_t sectorsize);
 
-int cli_scangpt(cli_ctx *ctx)
+/* returns 0 on failing to detect sectorsize */
+size_t gpt_detect_size(fmap_t *map)
+{
+    unsigned char *buff;
+
+    buff = (unsigned char*)fmap_need_off_once(map, 512, 8);
+    if (0 == strncmp(buff, GPT_SIGNATURE_STR, 8))
+        return 512;
+
+    buff = (unsigned char*)fmap_need_off_once(map, 1024, 8);
+    if (0 == strncmp(buff, GPT_SIGNATURE_STR, 8))
+        return 1024;
+
+    buff = (unsigned char*)fmap_need_off_once(map, 2048, 8);
+    if (0 == strncmp(buff, GPT_SIGNATURE_STR, 8))
+        return 2048;
+
+    buff = (unsigned char*)fmap_need_off_once(map, 4096, 8);
+    if (0 == strncmp(buff, GPT_SIGNATURE_STR, 8))
+        return 4096;
+
+    return 0;
+}
+
+/* attempts to detect sector size is input as 0 */
+int cli_scangpt(cli_ctx *ctx, size_t sectorsize)
 {
     struct gpt_header phdr, shdr;
     enum GPT_SCANSTATE state = INVALID;
     int ret = 0;
-    size_t sectorsize, maplen;
+    size_t maplen;
     off_t pos = 0;
 
     gpt_parsemsg("The beginning of something big: GPT parsing\n");
@@ -84,7 +109,14 @@ int cli_scangpt(cli_ctx *ctx)
     }
 
     /* sector size calculatation */
-    sectorsize = GPT_DEFAULT_SECTOR_SIZE;
+    if (sectorsize == 0) {
+        sectorsize = gpt_detect_size((*ctx->fmap));
+        cli_errmsg("cli_scangpt: detected %u sector size\n", sectorsize);
+    }
+    if (sectorsize == 0) {
+        cli_errmsg("cli_scangpt: could not detemine sector size\n");
+        return CL_EFORMAT;
+    }
 
     /* size of total file must be a multiple of the sector size */
     maplen = (*ctx->fmap)->real_len;
@@ -395,7 +427,7 @@ static int gpt_validate_header(cli_ctx *ctx, struct gpt_header hdr, size_t secto
     }
 
     /* check that valid table entry size */
-    if (hdr.tableEntrySize != GPT_PARTITION_ENTRY_SIZE) {
+    if (hdr.tableEntrySize != sizeof(struct gpt_partition_entry)) {
         cli_dbgmsg("cli_scangpt: cannot parse gpt with partition entry sized %u\n",
                    hdr.tableEntrySize);
         return CL_EFORMAT;

@@ -33,7 +33,6 @@
 #define CL_MAX_LOGICAL_PARTITIONS 50
 
 #define MBR_SIGNATURE 0x55aa
-#define MBR_BASE_OFFSET 446
 #define MBR_SECTOR 0
 
 /* MBR Status */
@@ -84,6 +83,6 @@ struct mbr_boot_record {
 #endif
 
 int cli_mbr_check(const unsigned char *buff, size_t len, size_t maplen);
-int cli_scanmbr(cli_ctx *ctx);
+int cli_scanmbr(cli_ctx *ctx, size_t sectorsize);
 
 #endif

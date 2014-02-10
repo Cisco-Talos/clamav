@@ -40,6 +40,7 @@
 #include "default.h"
 #include "iowrap.h"
 #include "mbr.h"
+#include "gpt.h"
 
 #include "htmlnorm.h"
 #include "entconv.h"
@@ -312,7 +313,7 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
             /* raw dmgs must be a multiple of 512 */
             if ((map->len % 512) == 0 && map->len > 512) {
                 /* check if detected MBR is protective on GPT */
-                if (0 == memcmp(rbuff, "EFI PART", 8)) {
+                if (gpt_detect_size(map) != 0) {
                     cli_dbgmsg("Recognized GUID Partition Table file\n");
                     return CL_TYPE_GPT;
                 }

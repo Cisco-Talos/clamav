@@ -2587,12 +2587,12 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 
 	case CL_TYPE_MBR:
 	    //if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_MBR))
-		ret = cli_scanmbr(ctx);
+	    ret = cli_scanmbr(ctx, 0);
 	    break;
 
 	case CL_TYPE_GPT:
 	    //if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_GPT))
-		ret = cli_scangpt(ctx);
+	    ret = cli_scangpt(ctx, 0);
 	    break;
 
 	case CL_TYPE_APM:
