@@ -903,7 +903,6 @@ enable_distcheck_werror
 enable_llvm
 enable_sha_collector_for_internal_use
 with_libcurl
-with_libconfig
 enable_xml
 with_xml
 with_openssl
@@ -1608,8 +1607,6 @@ Optional Packages:
   --with-libpdcurses-prefix[=DIR]  search for libpdcurses in DIR/include and DIR/lib
   --without-libpdcurses-prefix     don't search for libpdcurses in includedir and libdir
   --with-libcurl=DIR   path to directory containing libcurl (default=
-    /usr/local or /usr if not found in /usr/local)
-  --with-libconfig=DIR   path to directory containing libconfig (default=
     /usr/local or /usr if not found in /usr/local)
   --with-xml=DIR	  path to directory containing libxml2 library (default=
 			  /usr/local or /usr if not found in /usr/local)
@@ -21492,107 +21489,11 @@ else
 $as_echo "$as_me: WARNING: Your libcurl is misconfigured. Please use the web interface for submitting FPs/FNs." >&2;}
 fi
 
+    LDFLAGS="$save_LDFLAGS"
 fi
 
 
 
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for libconfig installation" >&5
-$as_echo_n "checking for libconfig installation... " >&6; }
-
-
-# Check whether --with-libconfig was given.
-if test "${with_libconfig+set}" = set; then :
-  withval=$with_libconfig;
-if test "$withval"; then
-    LIBCONFIG_HOME="$withval"
-fi
-
-else
-
-LIBCONFIG_HOME=/usr/local
-if test ! -f "$LIBCONFIG_HOME/include/libconfig.h"
-then
-    LIBCONFIG_HOME=/usr
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $LIBCONFIG_HOME" >&5
-$as_echo "$LIBCONFIG_HOME" >&6; }
-
-fi
-
-
-if test ! -f "$LIBCONFIG_HOME/include/libconfig.h"
-then
-    as_fn_error $? "libconfig not found." "$LINENO" 5
-fi
-
-save_LDFLAGS="$LDFLAGS"
-LDFLAGS="-L$LIBCONFIG_HOME/lib -lconfig"
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for config_init in -lconfig" >&5
-$as_echo_n "checking for config_init in -lconfig... " >&6; }
-if ${ac_cv_lib_config_config_init+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lconfig  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char config_init ();
-int
-main ()
-{
-return config_init ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_config_config_init=yes
-else
-  ac_cv_lib_config_config_init=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_config_config_init" >&5
-$as_echo "$ac_cv_lib_config_config_init" >&6; }
-if test "x$ac_cv_lib_config_config_init" = xyes; then :
-  FRESHCLAM_LIBS="$FRESHCLAM_LIBS -L$LIBCONFIG_HOME/lib -lconfig"
-else
-  as_fn_error $? "Your libconfig installation is misconfigured" "$LINENO" 5
-fi
-
-
-CLAMSCAN_LIBS="$CLAMSCAN_LIBS -L$LIBCONFIG_HOME/lib -lconfig"
-CLAMDSCAN_LIBS="$CLAMDSCAN_LIBS -L$LIBCONFIG_HOME/lib -lconfig"
-CLAMD_LIBS="$CLAMD_LIBS -L$LIBCONFIG_HOME/lib -lconfig"
-CLAMMEM_LIBS="$CLAMMEM_LIBS -L$LIBCONFIG_HOME/lib -lconfig"
-CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -L$LIBCONFIG_HOME/lib -lconfig"
-LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -L$LIBCONFIG_HOME/lib -lconfig"
-CLAMDTOP_LIBS="$CLAMDTOP_LIBS -L$LIBCONFIG_HOME/lib -lconfig"
-CLAMBC_LIBS="$CLAMBC_LIBS -L$LIBCONFIG_HOME/lib -lconfig"
-
-CLAMSCAN_CPPFLAGS="$FRESHCLAM_CPPFLAGS -I$LIBCONFIG_HOME/include"
-CLAMDSCAN_CPPFLAGS="$CLAMDSCAN_CPPFLAGS -I$LIBCONFIG_HOME/include"
-CLAMD_CPPFLAGS="$CLAMD_CPPFLAGS -I$LIBCONFIG_HOME/include"
-CLAMMEM_CPPFLAGS="$CLAMMEM_CPPFLAGS -I$LIBCONFIG_HOME/include"
-CLAMAV_MILTER_CPPFLAGS="$CLAMAV_MILTER_CPPFLAGS -I$LIBCONFIG_HOME/include"
-LIBCLAMAV_CPPFLAGS="$LIBCLAMAV_CPPFLAGS -I$LIBCONFIG_HOME/include"
-LIBCLAMSHARED_CPPFLAGS="$LIBCLAMSHARED_CPPFLAGS -I$LIBCONFIG_HOME/include"
-SIGTOOL_CPPFLAGS="$SIGTOOL_CPPFLAGS -I$LIBCONFIG_HOME/include"
-CLAMCONF_CPPFLAGS="$CLAMCONF_CPPFLAGS -I$LIBCONFIG_HOME/include"
-CLAMDTOP_CPPFLAGS="$CLAMDTOP_CPPFLAGS -I$LIBCONFIG_HOME/include"
-CLAMBC_CPPFLAGS="$CLAMBC_CPPFLAGS -I$LIBCONFIG_HOME/include"
-
-LDFLAGS="$save_ldflags"
 
 
 
