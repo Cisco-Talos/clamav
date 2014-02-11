@@ -122,7 +122,6 @@ m4_include([m4/reorganization/bsd.m4])
 
 dnl Freshclam dependencies
 m4_include([m4/reorganization/libs/curl.m4])
-m4_include([m4/reorganization/libs/libconfig.m4])
 
 dnl libclamav dependencies
 m4_include([m4/reorganization/libs/xml.m4])
