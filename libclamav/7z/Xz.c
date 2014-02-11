@@ -1,6 +1,11 @@
 /* Xz.c - Xz
 2009-04-15 : Igor Pavlov : Public domain */
 
+#if defined(_WIN32)
+#include <WinSock2.h>
+#include <Windows.h>
+#endif
+
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include "libclamav/crypto.h"

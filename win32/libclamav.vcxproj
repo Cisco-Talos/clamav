@@ -88,7 +88,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;PTW32_STATIC_LIB;THIS_IS_LIBCLAMAV;WIN32;_DEBUG;_WINDOWS;_USRDLL;LIBCLAMAV_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\libxml2;$(SolutionDir)3rdparty\libxml2\include;$(SolutionDir)..</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\libxml2;$(SolutionDir)3rdparty\libxml2\include;$(SolutionDir)..;C:\clamdeps\win32\openssl\include</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4996;4090;4244;4018;4101;4333;4146</DisableSpecificWarnings>
     </ClCompile>
@@ -97,6 +97,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>$(SolutionDir)libclamav.def</ModuleDefinitionFile>
+      <AdditionalLibraryDirectories>C:\clamdeps\win32\openssl\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -173,6 +174,8 @@
     <ClCompile Include="..\libclamav\7z\XzCrc64.c" />
     <ClCompile Include="..\libclamav\7z\XzDec.c" />
     <ClCompile Include="..\libclamav\7z\XzIn.c" />
+    <ClCompile Include="..\libclamav\conv.c" />
+    <ClCompile Include="..\libclamav\crypto.c" />
     <ClCompile Include="..\libclamav\fpu.c" />
     <ClCompile Include="..\libclamav\hostid.c" />
     <ClCompile Include="..\libclamav\json.c" />
@@ -276,7 +279,6 @@
     <ClCompile Include="..\libclamav\jpeg.c" />
     <ClCompile Include="..\libclamav\swf.c" />
     <ClCompile Include="..\libclamav\matcher-hash.c" />
-    <ClCompile Include="..\libclamav\sha1.c" />
     <ClCompile Include="..\libclamav\events.c" />
     <ClCompile Include="..\libclamav\bytecode_detect.c" />
     <ClCompile Include="..\libclamav\regex_list.c" />
@@ -341,7 +343,6 @@
     <ClCompile Include="..\libclamav\matcher-bm.c" />
     <ClCompile Include="..\libclamav\matcher.c" />
     <ClCompile Include="..\libclamav\mbox.c" />
-    <ClCompile Include="..\libclamav\md5.c" />
     <ClCompile Include="..\libclamav\message.c" />
     <ClCompile Include="..\libclamav\mew.c" />
     <ClCompile Include="..\libclamav\mpool.c" />
@@ -372,7 +373,6 @@
     <ClCompile Include="..\libclamav\regex\regexec.c" />
     <ClCompile Include="..\libclamav\regex\regfree.c" />
     <ClCompile Include="..\libclamav\regex\strlcpy.c" />
-    <ClCompile Include="..\libclamav\sha256.c" />
     <ClCompile Include="..\libclamav\sis.c" />
     <ClCompile Include="..\libclamav\special.c" />
     <ClCompile Include="..\libclamav\spin.c" />
@@ -472,6 +472,7 @@
     <ClCompile Include="compat\net.c" />
     <ClCompile Include="compat\random.c" />
     <ClCompile Include="compat\snprintf.c" />
+    <ClCompile Include="compat\strptime.c" />
     <ClCompile Include="compat\utf8_util.c" />
     <ClCompile Include="compat\w32_errno.c" />
     <ClCompile Include="compat\w32_stat.c" />
@@ -494,6 +495,8 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\libclamav\conv.h" />
+    <ClInclude Include="..\libclamav\crypto.h" />
     <ClInclude Include="..\libclamav\hostid.h" />
     <ClInclude Include="..\libclamav\json.h" />
     <ClInclude Include="..\libclamav\stats.h" />
@@ -502,4 +505,8 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
+  <ItemGroup>
+    <Library Include="libeay32.lib" />
+    <Library Include="ssleay32.lib" />
+  </ItemGroup>
 </Project>

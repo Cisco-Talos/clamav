@@ -10,6 +10,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#if defined(_WIN32)
+#include <WinSock2.h>
+#include <Windows.h>
+#endif
+
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include "libclamav/crypto.h"

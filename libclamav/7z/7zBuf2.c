@@ -2,6 +2,12 @@
 2008-10-04 : Igor Pavlov : Public domain */
 
 #include <string.h>
+
+#if defined(_WIN32)
+#include <WinSock2.h>
+#include <Windows.h>
+#endif
+
 #include "7zBuf.h"
 
 void DynBuf_Construct(CDynBuf *p)

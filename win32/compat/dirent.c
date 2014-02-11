@@ -19,6 +19,11 @@
  */
 
 #include <errno.h>
+
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "others.h"
 #include "dirent.h"
 #include "w32_stat.h"
