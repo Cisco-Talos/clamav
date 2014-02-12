@@ -32,6 +32,10 @@
 #include <string.h>
 #include <sys/stat.h>
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "../libclamav/clamav.h"
 #include "../libclamav/others.h"
 #include "../libclamav/disasm.h"

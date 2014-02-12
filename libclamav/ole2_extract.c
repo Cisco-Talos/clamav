@@ -35,6 +35,10 @@
 #include <stdlib.h>
 #include "clamav.h"
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "cltypes.h"
 #include "others.h"
 #include "ole2_extract.h"

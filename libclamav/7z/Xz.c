@@ -1,6 +1,15 @@
 /* Xz.c - Xz
 2009-04-15 : Igor Pavlov : Public domain */
 
+#if defined(_WIN32)
+#include <WinSock2.h>
+#include <Windows.h>
+#endif
+
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "7zCrc.h"
 #include "CpuArch.h"
 #include "Xz.h"
@@ -49,7 +58,7 @@ void XzCheck_Init(CXzCheck *p, int mode)
   {
     case XZ_CHECK_CRC32: p->crc = CRC_INIT_VAL; break;
     case XZ_CHECK_CRC64: p->crc64 = CRC64_INIT_VAL; break;
-    case XZ_CHECK_SHA256: Sha256_Init(&p->sha); break;
+    case XZ_CHECK_SHA256: EVP_DigestInit(&p->sha, EVP_sha256()); break;
   }
 }
 
@@ -59,7 +68,7 @@ void XzCheck_Update(CXzCheck *p, const void *data, size_t size)
   {
     case XZ_CHECK_CRC32: p->crc = CrcUpdate(p->crc, data, size); break;
     case XZ_CHECK_CRC64: p->crc64 = Crc64Update(p->crc64, data, size); break;
-    case XZ_CHECK_SHA256: Sha256_Update(&p->sha, (const Byte *)data, size); break;
+    case XZ_CHECK_SHA256: EVP_DigestUpdate(&p->sha, (const Byte *)data, size); break;
   }
 }
 
@@ -79,7 +88,8 @@ int XzCheck_Final(CXzCheck *p, Byte *digest)
       break;
     }
     case XZ_CHECK_SHA256:
-      Sha256_Final(&p->sha, digest);
+      EVP_DigestFinal(&p->sha, digest, NULL);
+      EVP_MD_CTX_cleanup(&(p->sha));
       break;
     default:
       return 0;

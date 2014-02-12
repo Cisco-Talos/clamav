@@ -29,9 +29,12 @@
 #include <string.h>
 #endif
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "uniq.h"
 #include "others.h"
-#include "md5.h"
 
 struct uniq *uniq_init(uint32_t count) {
   struct uniq *U;
@@ -57,12 +60,9 @@ void uniq_free(struct uniq *U) {
 uint32_t uniq_add(struct uniq *U, const char *key, uint32_t key_len, char **rhash) {
   unsigned int i;
   uint8_t digest[16];
-  cli_md5_ctx md5;
   struct UNIQMD5 *m = NULL;
 
-  cli_md5_init(&md5);
-  cli_md5_update(&md5, key, key_len);
-  cli_md5_final(digest, &md5);
+  cl_hash_data("md5", key, key_len, digest, NULL);
 
   if(U->items && U->md5s[U->idx[*digest]].md5[0]==*digest)
     for(m=&U->md5s[U->idx[*digest]]; m; m=m->next)
@@ -96,12 +96,9 @@ uint32_t uniq_add(struct uniq *U, const char *key, uint32_t key_len, char **rhas
 
 uint32_t uniq_get(struct uniq *U, const char *key, uint32_t key_len, char **rhash) {
   uint8_t digest[16];
-  cli_md5_ctx md5;
   struct UNIQMD5 *m = NULL;
 
-  cli_md5_init(&md5);
-  cli_md5_update(&md5, key, key_len);
-  cli_md5_final(digest, &md5);
+  cl_hash_data("md5", key, key_len, digest, NULL);
 
   if(!U->items || U->md5s[U->idx[*digest]].md5[0]!=*digest)
     return 0;

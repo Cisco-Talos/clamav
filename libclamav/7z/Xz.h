@@ -4,7 +4,9 @@
 #ifndef __XZ_H
 #define __XZ_H
 
-#include "Sha256.h"
+#include "Types.h"
+
+#define SHA256_DIGEST_SIZE 32
 
 EXTERN_C_BEGIN
 
@@ -79,7 +81,7 @@ typedef struct
   int mode;
   UInt32 crc;
   UInt64 crc64;
-  CSha256 sha;
+  EVP_MD_CTX sha;
 } CXzCheck;
 
 void XzCheck_Init(CXzCheck *p, int mode);
@@ -215,7 +217,7 @@ typedef struct
   CMixCoder decoder;
   CXzBlock block;
   CXzCheck check;
-  CSha256 sha;
+  EVP_MD_CTX sha;
   Byte shaDigest[SHA256_DIGEST_SIZE];
   Byte buf[XZ_BLOCK_HEADER_SIZE_MAX];
 } CXzUnpacker;

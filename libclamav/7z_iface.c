@@ -18,6 +18,14 @@
  *  MA 02110-1301, USA.
  */
 
+#if defined(_WIN32)
+#include <WinSock2.h>
+#include <Windows.h>
+#endif
+
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
 
 #include "7z_iface.h"
 #include "lzma_iface.h"

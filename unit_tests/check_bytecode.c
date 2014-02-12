@@ -31,6 +31,11 @@
 #include <check.h>
 #include <fcntl.h>
 #include <errno.h>
+
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "../libclamav/clamav.h"
 #include "../libclamav/others.h"
 #include "../libclamav/bytecode.h"

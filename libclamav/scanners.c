@@ -43,6 +43,10 @@
 #include <sys/times.h>
 #endif
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #define DCONF_ARCH  ctx->dconf->archive
 #define DCONF_DOC   ctx->dconf->doc
 #define DCONF_MAIL  ctx->dconf->mail
@@ -110,6 +114,8 @@
 #include <limits.h>
 #include <stddef.h>
 #endif
+
+#include <string.h>
 
 static int cli_scanfile(const char *filename, cli_ctx *ctx);
 

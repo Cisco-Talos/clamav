@@ -49,5 +49,8 @@
     <ClCompile Include="..\shared\misc.c">
       <Filter>Source Files\shared</Filter>
     </ClCompile>
+    <ClCompile Include="..\clamd\fan.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

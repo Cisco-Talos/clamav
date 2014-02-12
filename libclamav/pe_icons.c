@@ -25,6 +25,10 @@
 #include <string.h>
 #include <math.h>
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "pe_icons.h"
 #include "others.h"
 

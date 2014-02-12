@@ -40,6 +40,10 @@
 #include <netdb.h>
 #endif
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "libclamav/others.h"
 #include "libclamav/clamav.h"
 #include "libclamav/www.h"

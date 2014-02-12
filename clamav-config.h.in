@@ -178,9 +178,6 @@
 /* Define to 1 if the system has the type `error_t'. */
 #undef HAVE_ERROR_T
 
-/* Define to 1 if you have the <fcntl.h> header file */
-#undef HAVE_FCNTL_H
-
 /* have working file descriptor passing support */
 #undef HAVE_FD_PASSING
 
@@ -189,9 +186,6 @@
 
 /* have getaddrinfo() */
 #undef HAVE_GETADDRINFO
-
-/* Define to 1 if you have the `getifaddrs' function. */
-#undef HAVE_GETIFADDRS
 
 /* Define to 1 if getpagesize() is available */
 #undef HAVE_GETPAGESIZE
@@ -274,9 +268,6 @@
 
 /* Define to 1 if you have the <ndir.h> header file. */
 #undef HAVE_NDIR_H
-
-/* Define to 1 if you have the <net/if_dl.h> header file */
-#undef HAVE_NET_IF_DL_H
 
 /* Define to 1 if you have the `opendir' function. */
 #undef HAVE_OPENDIR
@@ -373,9 +364,6 @@
 
 /* Define to 1 if sysconf(_SC_PAGESIZE) is available */
 #undef HAVE_SYSCONF_SC_PAGESIZE
-
-/* Define to 1 if you have the `sysctlbyname' function. */
-#undef HAVE_SYSCTLBYNAME
 
 /* Define to 1 if you have the <sys/dl.h> header file. */
 #undef HAVE_SYS_DL_H
@@ -526,6 +514,28 @@
 /* use syslog */
 #undef USE_SYSLOG
 
+/* Enable extensions on AIX 3, Interix.  */
+#ifndef _ALL_SOURCE
+# undef _ALL_SOURCE
+#endif
+/* Enable GNU extensions on systems that have them.  */
+#ifndef _GNU_SOURCE
+# undef _GNU_SOURCE
+#endif
+/* Enable threading extensions on Solaris.  */
+#ifndef _POSIX_PTHREAD_SEMANTICS
+# undef _POSIX_PTHREAD_SEMANTICS
+#endif
+/* Enable extensions on HP NonStop.  */
+#ifndef _TANDEM_SOURCE
+# undef _TANDEM_SOURCE
+#endif
+/* Enable general extensions on Solaris.  */
+#ifndef __EXTENSIONS__
+# undef __EXTENSIONS__
+#endif
+
+
 /* Version number of package */
 #undef VERSION
 
@@ -547,8 +557,18 @@
 /* Define to 1 to make fseeko visible on some hosts (e.g. glibc 2.2). */
 #undef _LARGEFILE_SOURCE
 
+/* Define to 1 if on MINIX. */
+#undef _MINIX
+
+/* Define to 2 if the system does not provide POSIX.1 features except with
+   this defined. */
+#undef _POSIX_1_SOURCE
+
 /* POSIX compatibility */
 #undef _POSIX_PII_SOCKET
+
+/* Define to 1 if you need to in order for `stat' and other things to work. */
+#undef _POSIX_SOURCE
 
 /* thread safe */
 #undef _REENTRANT

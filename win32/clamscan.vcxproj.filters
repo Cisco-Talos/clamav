@@ -19,9 +19,6 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\clamscan\others.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\clamscan\clamscan.c">
       <Filter>Source Files</Filter>
     </ClCompile>

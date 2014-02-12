@@ -24,9 +24,11 @@
 
 #include <time.h>
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "asn1.h"
-#include "sha1.h"
-#include "md5.h"
 #include "bignum.h"
 #include "matcher-hash.h"
 
@@ -97,37 +99,19 @@ struct cli_asn1 {
 };
 
 static int map_sha1(fmap_t *map, const void *data, unsigned int len, uint8_t sha1[SHA1_HASH_SIZE]) {
-    SHA1Context ctx;
     if(!fmap_need_ptr_once(map, data, len)) {
 	cli_dbgmsg("map_sha1: failed to read hash data\n");
 	return 1;
     }
-    SHA1Init(&ctx);
-    while(len) {
-	unsigned int todo = MIN(len, map->pgsz);
-	SHA1Update(&ctx, data, todo);
-	data = (uint8_t *)data + todo;
-	len -= todo;
-    }
-    SHA1Final(&ctx, sha1);
-    return 0;
+    return (cl_sha1(data, len, sha1, NULL) == NULL);
 }
 
 static int map_md5(fmap_t *map, const void *data, unsigned int len, uint8_t *md5) {
-    cli_md5_ctx ctx;
     if(!fmap_need_ptr_once(map, data, len)) {
 	cli_dbgmsg("map_md5: failed to read hash data\n");
 	return 1;
     }
-    cli_md5_init(&ctx);
-    while(len) {
-	unsigned int todo = MIN(len, map->pgsz);
-	cli_md5_update(&ctx, data, len);
-	data = (uint8_t *)data + todo;
-	len -= todo;
-    }
-    cli_md5_final(md5, &ctx);
-    return 0;
+    return (cl_hash_data("md5", data, len, md5, NULL) == NULL);
 }
 
 
@@ -746,8 +730,8 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
     const uint8_t *message, *attrs;
     unsigned int dsize, message_size, attrs_size;
     cli_crt_hashtype hashtype;
-    SHA1Context ctx;
     cli_crt *x509;
+    EVP_MD_CTX ctx;
     int result;
     int isBlacklisted = 0;
 
@@ -1037,10 +1021,11 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
 	    break;
 	}
 
-	SHA1Init(&ctx);
-	SHA1Update(&ctx, "\x31", 1);
-	SHA1Update(&ctx, attrs + 1, attrs_size - 1);
-	SHA1Final(&ctx, sha1);
+    EVP_DigestInit(&ctx, EVP_sha1());
+	EVP_DigestUpdate(&ctx, "\x31", 1);
+	EVP_DigestUpdate(&ctx, attrs + 1, attrs_size - 1);
+	EVP_DigestFinal(&ctx, sha1, NULL);
+    EVP_MD_CTX_cleanup(&ctx);
 
 	if(!fmap_need_ptr_once(map, asn1.content, asn1.size)) {
 	    cli_dbgmsg("asn1_parse_mscat: failed to read encryptedDigest\n");
@@ -1278,16 +1263,17 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
 	}
 
 	if(hashtype == CLI_SHA1RSA) {
-	    SHA1Init(&ctx);
-	    SHA1Update(&ctx, "\x31", 1);
-	    SHA1Update(&ctx, attrs + 1, attrs_size - 1);
-	    SHA1Final(&ctx, sha1);
+        EVP_DigestInit(&ctx, EVP_sha1());
+        EVP_DigestUpdate(&ctx, "\x31", 1);
+        EVP_DigestUpdate(&ctx, attrs + 1, attrs_size - 1);
+        EVP_DigestFinal(&ctx, sha1, NULL);
+        EVP_MD_CTX_cleanup(&ctx);
 	} else {
-	    cli_md5_ctx ctx;
-	    cli_md5_init(&ctx);
-	    cli_md5_update(&ctx, "\x31", 1);
-	    cli_md5_update(&ctx, attrs + 1, attrs_size - 1);
-	    cli_md5_final(sha1, &ctx);
+        EVP_DigestInit(&ctx, EVP_md5());
+        EVP_DigestUpdate(&ctx, "\x31", 1);
+        EVP_DigestUpdate(&ctx, attrs + 1, attrs_size - 1);
+        EVP_DigestFinal(&ctx, sha1, NULL);
+        EVP_MD_CTX_cleanup(&ctx);
 	}
 
 	if(!fmap_need_ptr_once(map, asn1.content, asn1.size)) {

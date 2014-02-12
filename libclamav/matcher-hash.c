@@ -18,12 +18,16 @@
  *  MA 02110-1301, USA.
  */
 
+#include <string.h>
+#include <stdlib.h>
+
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "matcher.h"
 #include "others.h"
 #include "str.h"
-
-#include <string.h>
-#include <stdlib.h>
 
 
 int hm_addhash_str(struct cli_matcher *root, const char *strhash, uint32_t size, const char *virusname) {

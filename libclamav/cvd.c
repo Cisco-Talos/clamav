@@ -35,6 +35,10 @@
 #include <time.h>
 #include <errno.h>
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "clamav.h"
 #include "others.h"
 #include "dsig.h"
@@ -42,7 +46,6 @@
 #include "cvd.h"
 #include "readdb.h"
 #include "default.h"
-#include "sha256.h"
 
 #define TAR_BLOCKSIZE 512
 
@@ -194,6 +197,11 @@ static void cli_tgzload_cleanup(int comp, struct cli_dbio *dbio, int fdd)
         free(dbio->buf);
         dbio->buf = NULL;
     }
+
+    if (dbio->hashctx) {
+        EVP_MD_CTX_destroy(dbio->hashctx);
+        dbio->hashctx = NULL;
+    }
 }
 
 static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio, struct cli_dbinfo *dbinfo)
@@ -312,7 +320,14 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
 	dbio->readsize = dbio->size < dbio->bufsize ? dbio->size : dbio->bufsize - 1;
 	dbio->bufpt = NULL;
 	dbio->readpt = dbio->buf;
-	sha256_init(&dbio->sha256ctx);
+    if (!(dbio->hashctx)) {
+        dbio->hashctx = EVP_MD_CTX_create();
+        if (!(dbio->hashctx)) {
+            cli_tgzload_cleanup(compr, dbio, fdd);
+            return CL_EMALFDB;
+        }
+        EVP_DigestInit(dbio->hashctx, EVP_sha256());
+    }
 	dbio->bread = 0;
 
 	/* cli_dbgmsg("cli_tgzload: Loading %s, size: %u\n", name, size); */
@@ -346,7 +361,8 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
 			cli_tgzload_cleanup(compr, dbio, fdd);
 			return CL_EMALFDB;
 		    }
-		    sha256_final(&dbio->sha256ctx, hash);
+            EVP_DigestFinal(dbio->hashctx, hash, NULL);
+            EVP_DigestInit(dbio->hashctx, EVP_sha256());
 		    if(memcmp(db->hash, hash, 32)) {
 			cli_errmsg("cli_tgzload: Invalid checksum for file %s\n", name);
 			cli_tgzload_cleanup(compr, dbio, fdd);
@@ -586,6 +602,8 @@ int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigne
 	struct cli_dbio dbio;
 	struct cli_dbinfo *dbinfo = NULL;
 	char *dupname;
+
+    dbio.hashctx = NULL;
 
     cli_dbgmsg("in cli_cvdload()\n");
 

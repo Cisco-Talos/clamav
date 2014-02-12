@@ -30,8 +30,6 @@ static	char	const	rcsid[] = "$Id: mbox.c,v 1.381 2007/02/15 12:26:44 njh Exp $";
 #endif
 #endif
 
-#define _GNU_SOURCE
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -66,12 +64,15 @@ static	char	const	rcsid[] = "$Id: mbox.c,v 1.381 2007/02/15 12:26:44 njh Exp $";
 #include <pthread.h>
 #endif
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "others.h"
 #include "str.h"
 #include "filetypes.h"
 #include "mbox.h"
 #include "dconf.h"
-#include "md5.h"
 #include "fmap.h"
 
 #define DCONF_PHISHING mctx->ctx->dconf->phishing
@@ -2795,7 +2796,6 @@ rfc1341(message *m, const char *dir)
 	int n;
 	char pdir[NAME_MAX + 1];
 	unsigned char md5_val[16];
-	cli_md5_ctx md5;
 	char *md5_hex;
 
 	id = (char *)messageFindArgument(m, "id");
@@ -2852,9 +2852,7 @@ rfc1341(message *m, const char *dir)
 	}
 
 	n = atoi(number);
-	cli_md5_init(&md5);
-	cli_md5_update(&md5, id, strlen(id));
-	cli_md5_final(md5_val, &md5);
+    cl_hash_data("md5", id, strlen(id), md5_val, NULL);
 	md5_hex = cli_str2hex((const char*)md5_val, 16);
 
 	if(!md5_hex) {

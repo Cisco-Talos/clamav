@@ -24,7 +24,6 @@
 #include <time.h>
 
 #include "bignum.h"
-#include "sha1.h"
 
 typedef enum { CLI_SHA1RSA, CLI_MD5RSA } cli_crt_hashtype;
 typedef enum {VRFY_CODE, VRFY_TIME} cli_vrfy_type;
