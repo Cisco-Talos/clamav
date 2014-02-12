@@ -1025,6 +1025,7 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
 	EVP_DigestUpdate(&ctx, "\x31", 1);
 	EVP_DigestUpdate(&ctx, attrs + 1, attrs_size - 1);
 	EVP_DigestFinal(&ctx, sha1, NULL);
+    EVP_MD_CTX_cleanup(&ctx);
 
 	if(!fmap_need_ptr_once(map, asn1.content, asn1.size)) {
 	    cli_dbgmsg("asn1_parse_mscat: failed to read encryptedDigest\n");
@@ -1266,11 +1267,13 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
         EVP_DigestUpdate(&ctx, "\x31", 1);
         EVP_DigestUpdate(&ctx, attrs + 1, attrs_size - 1);
         EVP_DigestFinal(&ctx, sha1, NULL);
+        EVP_MD_CTX_cleanup(&ctx);
 	} else {
         EVP_DigestInit(&ctx, EVP_md5());
         EVP_DigestUpdate(&ctx, "\x31", 1);
         EVP_DigestUpdate(&ctx, attrs + 1, attrs_size - 1);
         EVP_DigestFinal(&ctx, sha1, NULL);
+        EVP_MD_CTX_cleanup(&ctx);
 	}
 
 	if(!fmap_need_ptr_once(map, asn1.content, asn1.size)) {

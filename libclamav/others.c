@@ -877,6 +877,7 @@ char *cli_hashstream(FILE *fs, unsigned char *digcpy, int type)
         EVP_DigestUpdate(&ctx, buff, bytes);
 
     EVP_DigestFinal(&ctx, digest, &size);
+    EVP_MD_CTX_cleanup(&ctx);
 
     if(!(hashstr = (char *) cli_calloc(size*2 + 1, sizeof(char))))
         return NULL;

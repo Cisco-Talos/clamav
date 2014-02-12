@@ -706,6 +706,7 @@ SRes XzUnpacker_Code(CXzUnpacker *p, Byte *dest, SizeT *destLen,
             p->indexPos = p->indexPreSize;
             p->indexSize += p->indexPreSize;
             EVP_DigestFinal(&p->sha, p->shaDigest, NULL);
+            EVP_MD_CTX_cleanup(&p->sha);
             EVP_DigestInit(&p->sha, EVP_sha256());
             p->crc = CrcUpdate(CRC_INIT_VAL, p->buf, p->indexPreSize);
             p->state = XZ_STATE_STREAM_INDEX;
@@ -806,6 +807,7 @@ SRes XzUnpacker_Code(CXzUnpacker *p, Byte *dest, SizeT *destLen,
             p->indexSize += 4;
             p->pos = 0;
             EVP_DigestFinal(&p->sha, digest, NULL);
+            EVP_MD_CTX_cleanup(&p->sha);
             if (memcmp(digest, p->shaDigest, SHA256_DIGEST_SIZE) != 0)
               return SZ_ERROR_CRC;
           }

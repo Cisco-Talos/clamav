@@ -1208,6 +1208,7 @@ static int hash_match(const struct regex_matcher *rlist, const char *host, size_
         EVP_DigestUpdate(&sha256, host, hlen);
         EVP_DigestUpdate(&sha256, path, plen);
         EVP_DigestFinal(&sha256, sha256_dig, NULL);
+        EVP_MD_CTX_cleanup(&sha256);
 
 	    for(i=0;i<32;i++) {
 		h[2*i] = hexchars[sha256_dig[i]>>4];

@@ -89,6 +89,7 @@ int XzCheck_Final(CXzCheck *p, Byte *digest)
     }
     case XZ_CHECK_SHA256:
       EVP_DigestFinal(&p->sha, digest, NULL);
+      EVP_MD_CTX_cleanup(&(p->sha));
       break;
     default:
       return 0;

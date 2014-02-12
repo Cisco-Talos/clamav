@@ -264,6 +264,7 @@ char *internal_get_host_id(void)
         EVP_DigestUpdate(&ctx, devices[i].mac, sizeof(devices[i].mac));
 
     EVP_DigestFinal(&ctx, raw_md5, NULL);
+    EVP_MD_CTX_cleanup(&ctx);
 
     for (i=0; devices[i].name != NULL; i++)
         free(devices[i].name);

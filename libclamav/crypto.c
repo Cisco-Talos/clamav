@@ -131,6 +131,8 @@ unsigned char *cl_hash_data(char *alg, const void *buf, size_t len, unsigned cha
         return NULL;
     }
 
+    EVP_MD_CTX_cleanup(&ctx);
+
     if ((olen))
         *olen = i;
 
@@ -214,6 +216,8 @@ unsigned char *cl_hash_file_fd_ctx(EVP_MD_CTX *ctx, int fd, unsigned int *olen)
 
         return NULL;
     }
+
+    EVP_MD_CTX_cleanup(&ctx);
 
     if ((olen))
         *olen = hashlen;

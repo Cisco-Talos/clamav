@@ -191,6 +191,7 @@ int cli_versig2(const unsigned char *sha256, const char *dsig_str, const char *n
 	EVP_DigestUpdate(&ctx, digest2, HASH_LEN);
 	EVP_DigestUpdate(&ctx, c, 4);
 	EVP_DigestFinal(&ctx, digest3, NULL);
+    EVP_MD_CTX_cleanup(&ctx);
 	if(i + 1 == rounds)
             memcpy(&data[i * 32], digest3, BLK_LEN - i * HASH_LEN);
 	else
@@ -215,6 +216,7 @@ int cli_versig2(const unsigned char *sha256, const char *dsig_str, const char *n
     EVP_DigestInit(&ctx, EVP_sha256());
 	EVP_DigestUpdate(&ctx, final, sizeof(final));
 	EVP_DigestFinal(&ctx, digest1, NULL);
+    EVP_MD_CTX_cleanup(&ctx);
 
     return memcmp(digest1, digest2, HASH_LEN) ? CL_EVERIFY : CL_SUCCESS;
 }

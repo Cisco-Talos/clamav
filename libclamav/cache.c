@@ -938,6 +938,7 @@ int cache_check(unsigned char *hash, cli_ctx *ctx) {
     }
 
     EVP_DigestFinal(&hashctx, hash, NULL);
+    EVP_MD_CTX_cleanup(&hashctx);
 
     ret = cache_lookup_hash(hash, map->len, ctx->engine->cache, ctx->recursion);
     cli_dbgmsg("cache_check: %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x is %s\n", hash[0], hash[1], hash[2], hash[3], hash[4], hash[5], hash[6], hash[7], hash[8], hash[9], hash[10], hash[11], hash[12], hash[13], hash[14], hash[15], (ret == CL_VIRUS) ? "negative" : "positive");

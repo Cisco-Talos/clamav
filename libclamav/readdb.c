@@ -420,7 +420,8 @@ char *cli_dbgets(char *buff, unsigned int size, FILE *fs, struct cli_dbio *dbio)
 		dbio->bufpt = dbio->buf;
 		dbio->size -= bread;
 		dbio->bread += bread;
-        EVP_DigestUpdate(&(dbio->hashctx), dbio->readpt, bread);
+        if (dbio->hashctx)
+            EVP_DigestUpdate(dbio->hashctx, dbio->readpt, bread);
 	    }
 	    if(dbio->chkonly && dbio->bufpt) {
 		dbio->bufpt = NULL;
@@ -477,7 +478,8 @@ char *cli_dbgets(char *buff, unsigned int size, FILE *fs, struct cli_dbio *dbio)
 	bs = strlen(buff);
 	dbio->size -= bs;
 	dbio->bread += bs;
-    EVP_DigestUpdate(&(dbio->hashctx), buff, bs);
+    if (dbio->hashctx)
+        EVP_DigestUpdate(dbio->hashctx, buff, bs);
 	return pt;
     }
 }

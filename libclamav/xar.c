@@ -370,6 +370,7 @@ static void xar_hash_final(EVP_MD_CTX * hash_ctx, void * result, int hash)
     }
 
     EVP_DigestFinal(hash_ctx, result, NULL);
+    EVP_MD_CTX_cleanup(hash_ctx);
 }
 
 static int xar_hash_check(int hash, const void * result, const void * expected)

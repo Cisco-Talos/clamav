@@ -2927,6 +2927,7 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
     }
 
     cli_qsort(exe_sections, nsections, sizeof(*exe_sections), sort_sects);
+    EVP_DigestInit(&hashctx, EVP_sha1());
 
     if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE) {
         /* Check to see if we have a security section. */
@@ -2935,11 +2936,10 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
                 /* If stats is enabled, continue parsing the sample */
                 flags ^= CL_CHECKFP_PE_FLAG_AUTHENTICODE;
             } else {
+                EVP_MD_CTX_cleanup(&hashctx);
                 return CL_BREAK;
             }
         }
-
-        EVP_DigestInit(&hashctx, EVP_sha1());
     }
 
 #define hash_chunk(where, size, isStatAble, section) \
@@ -2957,6 +2957,7 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
             EVP_DigestInit(&md5ctx, EVP_md5()); \
             EVP_DigestUpdate(&md5ctx, hptr, size); \
             EVP_DigestFinal(&md5ctx, hashes->sections[section].md5, NULL); \
+            EVP_MD_CTX_cleanup(&md5ctx); \
         } \
     } while(0)
 
@@ -2981,6 +2982,7 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
                 break;
             } else {
                 free(exe_sections);
+                EVP_MD_CTX_cleanup(&hashctx);
                 return CL_EFORMAT;
             }
         }
@@ -3012,6 +3014,7 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
                     break;
                 } else {
                     free(exe_sections);
+                    EVP_MD_CTX_cleanup(&hashctx);
                     return CL_EFORMAT;
                 }
             }
@@ -3042,8 +3045,10 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
 
         hlen -= 8;
 
+        EVP_MD_CTX_cleanup(&hashctx);
         return asn1_check_mscat((struct cl_engine *)(ctx->engine), map, at + 8, hlen, authsha1);
     } else {
+        EVP_MD_CTX_cleanup(&hashctx);
         return CL_VIRUS;
     }
 }
