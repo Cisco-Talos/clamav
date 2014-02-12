@@ -30,6 +30,10 @@
 #include <ctype.h>
 #include <fcntl.h>
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "cltypes.h"
 #include "others.h"
 #include "apm.h"
