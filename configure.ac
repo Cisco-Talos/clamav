@@ -132,7 +132,6 @@ m4_include([m4/reorganization/substitutions.m4])
 AM_CONDITIONAL([ENABLE_CLAMSUBMIT], [test "$have_curl" = "yes"])
 
 AC_CONFIG_FILES([
-shared/Makefile
 clamscan/Makefile
 database/Makefile
 docs/Makefile

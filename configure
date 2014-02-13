@@ -21813,7 +21813,7 @@ else
 fi
 
 
-ac_config_files="$ac_config_files shared/Makefile clamscan/Makefile database/Makefile docs/Makefile clamd/Makefile clamdscan/Makefile clamsubmit/Makefile clamav-milter/Makefile freshclam/Makefile sigtool/Makefile clamconf/Makefile etc/Makefile test/Makefile unit_tests/Makefile clamdtop/Makefile clambc/Makefile Makefile clamav-config libclamav.pc platform.h docs/man/clamav-milter.8 docs/man/clamav-milter.conf.5 docs/man/clambc.1 docs/man/clamconf.1 docs/man/clamd.8 docs/man/clamd.conf.5 docs/man/clamdscan.1 docs/man/clamscan.1 docs/man/freshclam.1 docs/man/freshclam.conf.5 docs/man/sigtool.1 docs/man/clamdtop.1"
+ac_config_files="$ac_config_files clamscan/Makefile database/Makefile docs/Makefile clamd/Makefile clamdscan/Makefile clamsubmit/Makefile clamav-milter/Makefile freshclam/Makefile sigtool/Makefile clamconf/Makefile etc/Makefile test/Makefile unit_tests/Makefile clamdtop/Makefile clambc/Makefile Makefile clamav-config libclamav.pc platform.h docs/man/clamav-milter.8 docs/man/clamav-milter.conf.5 docs/man/clambc.1 docs/man/clamconf.1 docs/man/clamd.8 docs/man/clamd.conf.5 docs/man/clamdscan.1 docs/man/clamscan.1 docs/man/freshclam.1 docs/man/freshclam.conf.5 docs/man/sigtool.1 docs/man/clamdtop.1"
 
 
 cat >confcache <<\_ACEOF
@@ -22881,7 +22881,6 @@ do
     "depfiles") CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;
     "libtool") CONFIG_COMMANDS="$CONFIG_COMMANDS libtool" ;;
     "libltdl/Makefile") CONFIG_FILES="$CONFIG_FILES libltdl/Makefile" ;;
-    "shared/Makefile") CONFIG_FILES="$CONFIG_FILES shared/Makefile" ;;
     "clamscan/Makefile") CONFIG_FILES="$CONFIG_FILES clamscan/Makefile" ;;
     "database/Makefile") CONFIG_FILES="$CONFIG_FILES database/Makefile" ;;
     "docs/Makefile") CONFIG_FILES="$CONFIG_FILES docs/Makefile" ;;
@@ -25508,7 +25507,6 @@ do
     "depfiles") CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;
     "libtool") CONFIG_COMMANDS="$CONFIG_COMMANDS libtool" ;;
     "libltdl/Makefile") CONFIG_FILES="$CONFIG_FILES libltdl/Makefile" ;;
-    "shared/Makefile") CONFIG_FILES="$CONFIG_FILES shared/Makefile" ;;
     "clamscan/Makefile") CONFIG_FILES="$CONFIG_FILES clamscan/Makefile" ;;
     "database/Makefile") CONFIG_FILES="$CONFIG_FILES database/Makefile" ;;
     "docs/Makefile") CONFIG_FILES="$CONFIG_FILES docs/Makefile" ;;
