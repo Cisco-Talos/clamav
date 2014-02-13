@@ -217,7 +217,7 @@ unsigned char *cl_hash_file_fd_ctx(EVP_MD_CTX *ctx, int fd, unsigned int *olen)
         return NULL;
     }
 
-    EVP_MD_CTX_cleanup(&ctx);
+    EVP_MD_CTX_cleanup(ctx);
 
     if ((olen))
         *olen = hashlen;
