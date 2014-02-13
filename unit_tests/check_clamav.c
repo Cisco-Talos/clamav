@@ -794,7 +794,7 @@ static uint8_t res256[3][SHA256_HASH_SIZE] = {
 
 START_TEST (test_sha256)
 {
-    EVP_MD_CTX sha256;
+    EVP_MD_CTX *sha256;
     uint8_t hsha256[SHA256_HASH_SIZE];
     uint8_t buf[1000];
     int i;
@@ -807,10 +807,14 @@ START_TEST (test_sha256)
     cl_sha256(tv2, sizeof(tv2), hsha256, NULL);
     fail_unless(!memcmp (hsha256, res256[1], sizeof (hsha256)), "sha256 test vector #2 failed");
 
-    EVP_DigestInit (&sha256, EVP_sha256());
+    sha256 = EVP_MD_CTX_create();
+    fail_unless(sha256 != NULL, "Could not create EVP_MD_CTX for sha256");
+
+    EVP_DigestInit_ex(sha256, EVP_sha256(), NULL);
     for (i = 0; i < 1000; i++)
-        EVP_DigestUpdate (&sha256, buf, sizeof (buf));
-    EVP_DigestFinal (&sha256, hsha256, NULL);
+        EVP_DigestUpdate (sha256, buf, sizeof (buf));
+    EVP_DigestFinal_ex(sha256, hsha256, NULL);
+    EVP_MD_CTX_destroy(sha256);
     fail_unless(!memcmp (hsha256, res256[2], sizeof (hsha256)), "sha256 test vector #3 failed");
 }
 END_TEST

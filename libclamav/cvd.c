@@ -326,7 +326,7 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
             cli_tgzload_cleanup(compr, dbio, fdd);
             return CL_EMALFDB;
         }
-        EVP_DigestInit(dbio->hashctx, EVP_sha256());
+        EVP_DigestInit_ex(dbio->hashctx, EVP_sha256(), NULL);
     }
 	dbio->bread = 0;
 
@@ -361,8 +361,8 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
 			cli_tgzload_cleanup(compr, dbio, fdd);
 			return CL_EMALFDB;
 		    }
-            EVP_DigestFinal(dbio->hashctx, hash, NULL);
-            EVP_DigestInit(dbio->hashctx, EVP_sha256());
+            EVP_DigestFinal_ex(dbio->hashctx, hash, NULL);
+            EVP_DigestInit_ex(dbio->hashctx, EVP_sha256(), NULL);
 		    if(memcmp(db->hash, hash, 32)) {
 			cli_errmsg("cli_tgzload: Invalid checksum for file %s\n", name);
 			cli_tgzload_cleanup(compr, dbio, fdd);

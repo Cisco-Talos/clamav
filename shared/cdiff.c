@@ -767,7 +767,7 @@ int cdiff_apply(int fd, unsigned short mode)
 	int end, i, n;
 	struct stat sb;
 	int desc;
-	EVP_MD_CTX sha256ctx;
+	EVP_MD_CTX *sha256ctx;
 	unsigned char digest[32];
 	int sum, bread;
 #define DSIGBUFF 350
@@ -851,18 +851,27 @@ int cdiff_apply(int fd, unsigned short mode)
 	    return -1;
 	}
 
-	EVP_DigestInit(&sha256ctx, EVP_sha256());
+    sha256ctx = EVP_MD_CTX_create();
+    if (!(sha256ctx)) {
+        close(desc);
+        free(line);
+        free(lbuf);
+        return -1;
+    }
+
+	EVP_DigestInit_ex(sha256ctx, EVP_sha256(), NULL);
 	sum = 0;
 	while((bread = read(desc, buff, FILEBUFF)) > 0) {
 	    if(sum + bread >= end) {
-		EVP_DigestUpdate(&sha256ctx, (unsigned char *) buff, end - sum);
+		EVP_DigestUpdate(sha256ctx, (unsigned char *) buff, end - sum);
 		break;
 	    } else {
-		EVP_DigestUpdate(&sha256ctx, (unsigned char *) buff, bread);
+		EVP_DigestUpdate(sha256ctx, (unsigned char *) buff, bread);
 	    }
 	    sum += bread;
 	}
-	EVP_DigestFinal(&sha256ctx, digest, NULL);
+	EVP_DigestFinal_ex(sha256ctx, digest, NULL);
+    EVP_MD_CTX_destroy(sha256ctx);
 
 	if(cli_versig2(digest, dsig, PSS_NSTR, PSS_ESTR) != CL_SUCCESS) {
 	    logg("!cdiff_apply: Incorrect digital signature\n");

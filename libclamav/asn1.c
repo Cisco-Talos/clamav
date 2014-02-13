@@ -731,7 +731,7 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
     unsigned int dsize, message_size, attrs_size;
     cli_crt_hashtype hashtype;
     cli_crt *x509;
-    EVP_MD_CTX ctx;
+    EVP_MD_CTX *ctx;
     int result;
     int isBlacklisted = 0;
 
@@ -1021,11 +1021,15 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
 	    break;
 	}
 
-    EVP_DigestInit(&ctx, EVP_sha1());
-	EVP_DigestUpdate(&ctx, "\x31", 1);
-	EVP_DigestUpdate(&ctx, attrs + 1, attrs_size - 1);
-	EVP_DigestFinal(&ctx, sha1, NULL);
-    EVP_MD_CTX_cleanup(&ctx);
+    ctx = EVP_MD_CTX_create();
+    if (!(ctx))
+        break;
+
+    EVP_DigestInit_ex(ctx, EVP_sha1(), NULL);
+	EVP_DigestUpdate(ctx, "\x31", 1);
+	EVP_DigestUpdate(ctx, attrs + 1, attrs_size - 1);
+	EVP_DigestFinal_ex(ctx, sha1, NULL);
+    EVP_MD_CTX_destroy(ctx);
 
 	if(!fmap_need_ptr_once(map, asn1.content, asn1.size)) {
 	    cli_dbgmsg("asn1_parse_mscat: failed to read encryptedDigest\n");
@@ -1263,17 +1267,25 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
 	}
 
 	if(hashtype == CLI_SHA1RSA) {
-        EVP_DigestInit(&ctx, EVP_sha1());
-        EVP_DigestUpdate(&ctx, "\x31", 1);
-        EVP_DigestUpdate(&ctx, attrs + 1, attrs_size - 1);
-        EVP_DigestFinal(&ctx, sha1, NULL);
-        EVP_MD_CTX_cleanup(&ctx);
+        ctx = EVP_MD_CTX_create();
+        if (!(ctx))
+            break;
+
+        EVP_DigestInit_ex(ctx, EVP_sha1(), NULL);
+        EVP_DigestUpdate(ctx, "\x31", 1);
+        EVP_DigestUpdate(ctx, attrs + 1, attrs_size - 1);
+        EVP_DigestFinal_ex(ctx, sha1, NULL);
+        EVP_MD_CTX_destroy(ctx);
 	} else {
-        EVP_DigestInit(&ctx, EVP_md5());
-        EVP_DigestUpdate(&ctx, "\x31", 1);
-        EVP_DigestUpdate(&ctx, attrs + 1, attrs_size - 1);
-        EVP_DigestFinal(&ctx, sha1, NULL);
-        EVP_MD_CTX_cleanup(&ctx);
+        ctx = EVP_MD_CTX_create();
+        if (!(ctx))
+            break;
+
+        EVP_DigestInit_ex(ctx, EVP_md5(), NULL);
+        EVP_DigestUpdate(ctx, "\x31", 1);
+        EVP_DigestUpdate(ctx, attrs + 1, attrs_size - 1);
+        EVP_DigestFinal_ex(ctx, sha1, NULL);
+        EVP_MD_CTX_destroy(ctx);
 	}
 
 	if(!fmap_need_ptr_once(map, asn1.content, asn1.size)) {

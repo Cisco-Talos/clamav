@@ -325,17 +325,27 @@ static int xar_scan_subdocuments(xmlTextReaderPtr reader, cli_ctx *ctx)
     return rc;
 }
 
-static EVP_MD_CTX * xar_hash_init(int hash, EVP_MD_CTX *sc, EVP_MD_CTX *mc)
+static EVP_MD_CTX * xar_hash_init(int hash, EVP_MD_CTX **sc, EVP_MD_CTX **mc)
 {
     if (!sc && !mc)
         return NULL;
     switch (hash) {
     case XAR_CKSUM_SHA1:
-        EVP_DigestInit(sc, EVP_sha1());
-        return sc;
+        *sc = EVP_MD_CTX_create();
+        if (!(*sc)) {
+            return NULL;
+        }
+
+        EVP_DigestInit_ex(*sc, EVP_sha1(), NULL);
+        return *sc;
     case XAR_CKSUM_MD5:
-        EVP_DigestInit(mc, EVP_md5());
-        return mc;
+        *mc = EVP_MD_CTX_create();
+        if (!(*mc)) {
+            return NULL;
+        }
+
+        EVP_DigestInit_ex(*mc, EVP_md5(), NULL);
+        return *mc;
     case XAR_CKSUM_OTHER:
     case XAR_CKSUM_NONE:
     default:
@@ -369,8 +379,8 @@ static void xar_hash_final(EVP_MD_CTX * hash_ctx, void * result, int hash)
         return;
     }
 
-    EVP_DigestFinal(hash_ctx, result, NULL);
-    EVP_MD_CTX_cleanup(hash_ctx);
+    EVP_DigestFinal_ex(hash_ctx, result, NULL);
+    EVP_MD_CTX_destroy(hash_ctx);
 }
 
 static int xar_hash_check(int hash, const void * result, const void * expected)
@@ -530,8 +540,8 @@ int cli_scanxar(cli_ctx *ctx)
                                                        &a_cksum, &a_hash, &e_cksum, &e_hash))) {
         int do_extract_cksum = 1;
         unsigned char * blockp;
-        EVP_MD_CTX a_sc, e_sc;
-        EVP_MD_CTX a_mc, e_mc;
+        EVP_MD_CTX *a_sc, *e_sc;
+        EVP_MD_CTX *a_mc, *e_mc;
         EVP_MD_CTX *a_hash_ctx, *e_hash_ctx;
         char result[SHA1_HASH_SIZE];
         char * expected;

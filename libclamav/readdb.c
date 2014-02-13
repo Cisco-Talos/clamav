@@ -1745,13 +1745,13 @@ static int cli_loadinfo(FILE *fs, struct cl_engine *engine, unsigned int options
     if (!(ctx))
         return CL_EMALFDB;
 
-    EVP_DigestInit(ctx, EVP_sha256());
+    EVP_DigestInit_ex(ctx, EVP_sha256(), NULL);
 
     while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
 	line++;
 	if(!(options & CL_DB_UNSIGNED) && !strncmp(buffer, "DSIG:", 5)) {
 	    dsig = 1;
-	    EVP_DigestFinal(ctx, hash, NULL);
+	    EVP_DigestFinal_ex(ctx, hash, NULL);
         EVP_MD_CTX_destroy(ctx);
 	    if(cli_versig2(hash, buffer + 5, INFO_NSTR, INFO_ESTR) != CL_SUCCESS) {
 		cli_errmsg("cli_loadinfo: Incorrect digital signature\n");

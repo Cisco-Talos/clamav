@@ -81,7 +81,7 @@ typedef struct
   int mode;
   UInt32 crc;
   UInt64 crc64;
-  EVP_MD_CTX sha;
+  EVP_MD_CTX *sha;
 } CXzCheck;
 
 void XzCheck_Init(CXzCheck *p, int mode);
@@ -217,7 +217,7 @@ typedef struct
   CMixCoder decoder;
   CXzBlock block;
   CXzCheck check;
-  EVP_MD_CTX sha;
+  EVP_MD_CTX *sha;
   Byte shaDigest[SHA256_DIGEST_SIZE];
   Byte buf[XZ_BLOCK_HEADER_SIZE_MAX];
 } CXzUnpacker;

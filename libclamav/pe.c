@@ -2800,7 +2800,7 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
     struct cli_exe_section *exe_sections;
     struct pe_image_data_dir *dirs;
     fmap_t *map = *ctx->fmap;
-    EVP_MD_CTX hashctx;
+    EVP_MD_CTX *hashctx=NULL;
 
     if (flags & CL_CHECKFP_PE_FLAG_STATS)
         if (!(hashes))
@@ -2927,7 +2927,13 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
     }
 
     cli_qsort(exe_sections, nsections, sizeof(*exe_sections), sort_sects);
-    EVP_DigestInit(&hashctx, EVP_sha1());
+    hashctx = EVP_MD_CTX_create();
+    if (!(hashctx)) {
+        if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE)
+            flags ^= CL_CHECKFP_PE_FLAG_AUTHENTICODE;
+    }
+    if (hashctx)
+        EVP_DigestInit_ex(hashctx, EVP_sha1(), NULL);
 
     if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE) {
         /* Check to see if we have a security section. */
@@ -2936,7 +2942,8 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
                 /* If stats is enabled, continue parsing the sample */
                 flags ^= CL_CHECKFP_PE_FLAG_AUTHENTICODE;
             } else {
-                EVP_MD_CTX_cleanup(&hashctx);
+                if (hashctx)
+                    EVP_MD_CTX_destroy(hashctx);
                 return CL_BREAK;
             }
         }
@@ -2948,16 +2955,21 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
         if(!(size)) break; \
         if(!(hptr = fmap_need_off_once(map, where, size))){ \
             free(exe_sections); \
+            if (hashctx) \
+                EVP_MD_CTX_destroy(hashctx); \
             return CL_EFORMAT; \
         } \
-        if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE) \
-            EVP_DigestUpdate(&hashctx, hptr, size); \
+        if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE && hashctx) \
+            EVP_DigestUpdate(hashctx, hptr, size); \
         if (isStatAble && flags & CL_CHECKFP_PE_FLAG_STATS) { \
-            EVP_MD_CTX md5ctx; \
-            EVP_DigestInit(&md5ctx, EVP_md5()); \
-            EVP_DigestUpdate(&md5ctx, hptr, size); \
-            EVP_DigestFinal(&md5ctx, hashes->sections[section].md5, NULL); \
-            EVP_MD_CTX_cleanup(&md5ctx); \
+            EVP_MD_CTX *md5ctx; \
+            md5ctx = EVP_MD_CTX_create(); \
+            if (md5ctx) { \
+                EVP_DigestInit_ex(md5ctx, EVP_md5(), NULL); \
+                EVP_DigestUpdate(md5ctx, hptr, size); \
+                EVP_DigestFinal_ex(md5ctx, hashes->sections[section].md5, NULL); \
+                EVP_MD_CTX_destroy(md5ctx); \
+            } \
         } \
     } while(0)
 
@@ -2982,7 +2994,8 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
                 break;
             } else {
                 free(exe_sections);
-                EVP_MD_CTX_cleanup(&hashctx);
+                if (hashctx)
+                    EVP_MD_CTX_destroy(hashctx);
                 return CL_EFORMAT;
             }
         }
@@ -3014,7 +3027,8 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
                     break;
                 } else {
                     free(exe_sections);
-                    EVP_MD_CTX_cleanup(&hashctx);
+                    if (hashctx)
+                        EVP_MD_CTX_destroy(hashctx);
                     return CL_EFORMAT;
                 }
             }
@@ -3029,8 +3043,8 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
 
     free(exe_sections);
 
-    if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE) {
-        EVP_DigestFinal(&hashctx, authsha1, NULL);
+    if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE && hashctx) {
+        EVP_DigestFinal_ex(hashctx, authsha1, NULL);
 
         if(cli_debug_flag) {
             char shatxt[SHA1_HASH_SIZE*2+1];
@@ -3045,10 +3059,11 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
 
         hlen -= 8;
 
-        EVP_MD_CTX_cleanup(&hashctx);
+        EVP_MD_CTX_destroy(hashctx);
         return asn1_check_mscat((struct cl_engine *)(ctx->engine), map, at + 8, hlen, authsha1);
     } else {
-        EVP_MD_CTX_cleanup(&hashctx);
+        if (hashctx)
+            EVP_MD_CTX_destroy(hashctx);
         return CL_VIRUS;
     }
 }
