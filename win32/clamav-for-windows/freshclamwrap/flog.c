@@ -21,6 +21,10 @@
 #include <stdio.h>
 #include <io.h>
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "flog.h"
 
 static HANDLE logh = INVALID_HANDLE_VALUE;

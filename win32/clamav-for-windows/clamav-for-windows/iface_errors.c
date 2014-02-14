@@ -21,6 +21,10 @@
 #include "clamav-config.h"
 #endif
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "clamav.h"
 #include "clscanapi.h"
 #include "iface_errors.h"
