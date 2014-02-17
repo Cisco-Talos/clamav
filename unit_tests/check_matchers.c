@@ -25,6 +25,10 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "../libclamav/clamav.h"
 #include "../libclamav/readdb.h"
 #include "../libclamav/matcher.h"

@@ -40,9 +40,11 @@
 #include <sys/types.h>
 #include <assert.h>
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
 
 #include "regex/regex.h"
-
 
 #include "clamav.h"
 #include "others.h"

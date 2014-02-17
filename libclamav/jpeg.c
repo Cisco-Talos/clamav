@@ -33,6 +33,10 @@
 #endif
 #include <time.h>
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "cltypes.h"
 #include "jpeg.h"
 #include "clamav.h"

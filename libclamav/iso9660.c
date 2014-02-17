@@ -19,6 +19,11 @@
  */
 
 #include <string.h>
+
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "scanners.h"
 #include "iso9660.h"
 #include "fmap.h"

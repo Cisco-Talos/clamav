@@ -30,11 +30,16 @@
 #include <ctype.h>
 #include <fcntl.h>
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "cltypes.h"
 #include "others.h"
 #include "apm.h"
 #include "prtn_intxn.h"
 #include "scanners.h"
+#include "dconf.h"
 
 //#define DEBUG_APM_PARSE
 
@@ -132,7 +137,7 @@ int cli_scanapm(cli_ctx *ctx)
     }
 
     /* check that the partition table fits in the space specified - HEURISTICS */
-    if (ctx->options & CL_SCAN_PARTITION_INTXN) {
+    if ((ctx->options & CL_SCAN_PARTITION_INTXN) && (ctx->dconf->other & OTHER_CONF_PRTNINTXN)) {
         ret = apm_prtn_intxn(ctx, aptable, sectorsize, old_school);
         if ((ret != CL_CLEAN) &&
             !((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))) {
@@ -229,7 +234,7 @@ int cli_scanapm(cli_ctx *ctx)
         }
     } 
 
-    if (i <= aptable.numPartitions) {
+    if (i >= ctx->engine->maxpartitions) {
         cli_dbgmsg("cli_scanapm: max partitions reached\n");
     }
 
@@ -288,7 +293,7 @@ static int apm_prtn_intxn(cli_ctx *ctx, struct apm_partition_info aptable, size_
 
                 cli_dbgmsg("cli_scanapm: detected intersection with partitions "
                            "[%u, %u]\n", pitxn, i);
-                cli_append_virus(ctx, "Heuristic.PartitionIntersection");
+                cli_append_virus(ctx, PRTN_INTXN_DETECTION);
                 ret = tmp;
                 tmp = 0;
             }
@@ -298,7 +303,7 @@ static int apm_prtn_intxn(cli_ctx *ctx, struct apm_partition_info aptable, size_
 
                 cli_dbgmsg("cli_scanapm: detected intersection with partitions "
                            "[%u, %u]\n", pitxn, i);
-                cli_append_virus(ctx, "Heuristic.PartitionIntersection");
+                cli_append_virus(ctx, PRTN_INTXN_DETECTION);
                 prtn_intxn_list_free(&prtncheck);
                 return CL_VIRUS;
             }

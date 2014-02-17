@@ -43,6 +43,10 @@
 #include <sys/times.h>
 #endif
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #define DCONF_ARCH  ctx->dconf->archive
 #define DCONF_DOC   ctx->dconf->doc
 #define DCONF_MAIL  ctx->dconf->mail
@@ -110,6 +114,8 @@
 #include <limits.h>
 #include <stddef.h>
 #endif
+
+#include <string.h>
 
 static int cli_scanfile(const char *filename, cli_ctx *ctx);
 
@@ -2587,12 +2593,12 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 
 	case CL_TYPE_MBR:
 	    //if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_MBR))
-		ret = cli_scanmbr(ctx);
+	    ret = cli_scanmbr(ctx, 0);
 	    break;
 
 	case CL_TYPE_GPT:
 	    //if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_GPT))
-		ret = cli_scangpt(ctx);
+	    ret = cli_scangpt(ctx, 0);
 	    break;
 
 	case CL_TYPE_APM:

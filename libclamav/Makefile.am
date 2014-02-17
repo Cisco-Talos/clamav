@@ -73,10 +73,13 @@ endif
 
 libclamav_internal_utils_la_SOURCES=str.c\
 				    str.h\
+					conv.c \
+					conv.h \
+					crypto.c \
+					crypto.h \
+					clamav.h \
 				    iowrap.c \
 				    iowrap.h \
-				    md5.c\
-				    md5.h\
 				    others_common.c \
 				    others.h \
 				    qsort.c \
@@ -91,15 +94,18 @@ libclamav_internal_utils_la_SOURCES=str.c\
 				    regex/regex2.h \
 				    regex/utils.h
 
-libclamav_internal_utils_la_LDFLAGS=-static
+libclamav_internal_utils_la_LDFLAGS=-static @LIBCLAMAV_LIBS@
 libclamav_internal_utils_la_CFLAGS=$(AM_CFLAGS)  -fPIC -DPIC
 
 libclamav_internal_utils_nothreads_la_SOURCES=str.c\
+					conv.c \
+					conv.h \
+					crypto.c \
+					crypto.h \
+					clamav.h \
 				    str.h\
 				    iowrap.c \
 				    iowrap.h \
-				    md5.c\
-				    md5.h\
 				    others_common.c \
 				    others.h \
 				    qsort.c \
@@ -114,7 +120,7 @@ libclamav_internal_utils_nothreads_la_SOURCES=str.c\
 				    regex/regex2.h \
 				    regex/utils.h
 
-libclamav_internal_utils_nothreads_la_LDFLAGS=-static
+libclamav_internal_utils_nothreads_la_LDFLAGS=-static @LIBCLAMAV_LIBS@
 libclamav_internal_utils_nothreads_la_CFLAGS=$(AM_CFLAGS) -DCL_NOTHREADS
 
 if ENABLE_LLVM
@@ -143,7 +149,6 @@ endif
 include_HEADERS = clamav.h
 
 libclamav_la_SOURCES = \
-	clamav.h \
         matcher-ac.c \
         matcher-ac.h \
         matcher-bm.c \
@@ -325,7 +330,6 @@ libclamav_la_SOURCES = \
 	7z/XzCrc64.h \
 	7z/XzDec.c \
 	7z/XzIn.c \
-	7z/Sha256.h \
 	7z/Delta.c \
 	7z/Delta.h \
 	7z/Alloc.h \
@@ -357,10 +361,6 @@ libclamav_la_SOURCES = \
 	perflogging.c\
 	perflogging.h\
 	default.h\
-	sha256.c\
-	sha256.h\
-	sha1.c\
-	sha1.h\
 	bytecode.c\
 	bytecode.h\
 	bytecode_vm.c\

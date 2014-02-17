@@ -52,6 +52,10 @@
 #include <sys/uio.h>
 #endif
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "shared/optparser.h"
 #include "shared/output.h"
 #include "shared/misc.h"

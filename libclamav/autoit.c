@@ -35,6 +35,10 @@
 #include <unistd.h>
 #endif
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "others.h"
 #include "scanners.h"
 #include "autoit.h"

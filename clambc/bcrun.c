@@ -27,6 +27,11 @@
 #include <sys/time.h>
 #endif
 #include <stdlib.h>
+
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "bytecode.h"
 #include "bytecode_priv.h"
 #include "clamav.h"

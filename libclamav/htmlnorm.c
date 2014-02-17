@@ -40,6 +40,10 @@
 #include <stdio.h>
 #include <ctype.h>
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "fmap.h"
 #include "others.h"
 #include "htmlnorm.h"

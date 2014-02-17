@@ -942,6 +942,8 @@
     <ClCompile Include="..\..\src\univ\winuniv.cpp">
       <Filter>wxUniv Sources</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\common\taskbarcmn.cpp" />
+    <ClCompile Include="..\..\src\msw\taskbar.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\..\src\msw\version.rc">

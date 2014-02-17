@@ -33,6 +33,11 @@
 #include <string.h>
 #include <math.h>
 #include <ctype.h>
+
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "cltypes.h"
 #include "clambc.h"
 #include "bytecode.h"

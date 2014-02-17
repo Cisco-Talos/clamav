@@ -10,6 +10,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+#if defined(_WIN32)
+#include <WinSock2.h>
+#include <Windows.h>
+#endif
+
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "7zCrc.h"
 #include "Alloc.h"
 #include "Bra.h"
@@ -642,7 +651,8 @@ SRes XzUnpacker_Code(CXzUnpacker *p, Byte *dest, SizeT *destLen,
         Byte temp[32];
         unsigned num = Xz_WriteVarInt(temp, p->packSize + p->blockHeaderSize + XzFlags_GetCheckSize(p->streamFlags));
         num += Xz_WriteVarInt(temp + num, p->unpackSize);
-        Sha256_Update(&p->sha, temp, num);
+        if ((p->sha))
+            EVP_DigestUpdate(p->sha, temp, num);
         p->indexSize += num;
         p->numBlocks++;
         
@@ -677,7 +687,9 @@ SRes XzUnpacker_Code(CXzUnpacker *p, Byte *dest, SizeT *destLen,
         {
           RINOK(Xz_ParseHeader(&p->streamFlags, p->buf));
           p->state = XZ_STATE_BLOCK_HEADER;
-          Sha256_Init(&p->sha);
+          p->sha = EVP_MD_CTX_create();
+          if ((p->sha))
+              EVP_DigestInit_ex(p->sha, EVP_sha256(), NULL);
           p->indexSize = 0;
           p->numBlocks = 0;
           p->pos = 0;
@@ -696,8 +708,13 @@ SRes XzUnpacker_Code(CXzUnpacker *p, Byte *dest, SizeT *destLen,
             p->indexPreSize = 1 + Xz_WriteVarInt(p->buf + 1, p->numBlocks);
             p->indexPos = p->indexPreSize;
             p->indexSize += p->indexPreSize;
-            Sha256_Final(&p->sha, p->shaDigest);
-            Sha256_Init(&p->sha);
+            if ((p->sha)) {
+                EVP_DigestFinal_ex(p->sha, p->shaDigest, NULL);
+                EVP_MD_CTX_destroy(p->sha);
+                p->sha = EVP_MD_CTX_create();
+                if ((p->sha))
+                    EVP_DigestInit_ex(p->sha, EVP_sha256(), NULL);
+            }
             p->crc = CrcUpdate(CRC_INIT_VAL, p->buf, p->indexPreSize);
             p->state = XZ_STATE_STREAM_INDEX;
           }
@@ -775,7 +792,8 @@ SRes XzUnpacker_Code(CXzUnpacker *p, Byte *dest, SizeT *destLen,
             if (srcRem > cur)
               srcRem = (SizeT)cur;
             p->crc = CrcUpdate(p->crc, src, srcRem);
-            Sha256_Update(&p->sha, src, srcRem);
+            if ((p->sha))
+                EVP_DigestUpdate(p->sha, src, srcRem);
             (*srcLen) += srcRem;
             src += srcRem;
             p->indexPos += srcRem;
@@ -796,7 +814,11 @@ SRes XzUnpacker_Code(CXzUnpacker *p, Byte *dest, SizeT *destLen,
             p->state = XZ_STATE_STREAM_INDEX_CRC;
             p->indexSize += 4;
             p->pos = 0;
-            Sha256_Final(&p->sha, digest);
+            if ((p->sha)) {
+                EVP_DigestFinal_ex(p->sha, digest, NULL);
+                EVP_MD_CTX_destroy(p->sha);
+            }
+
             if (memcmp(digest, p->shaDigest, SHA256_DIGEST_SIZE) != 0)
               return SZ_ERROR_CRC;
           }

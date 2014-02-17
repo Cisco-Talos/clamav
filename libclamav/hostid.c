@@ -53,8 +53,11 @@
 
 #include <errno.h>
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "hostid.h"
-#include "libclamav/md5.h"
 #include "libclamav/others.h"
 
 struct device *get_device_entry(struct device *devices, size_t *ndevices, const char *name)
@@ -240,8 +243,8 @@ char *internal_get_host_id(void)
     size_t i;
     unsigned char raw_md5[16];
     char *printable_md5;
-    cli_md5_ctx ctx;
     struct device *devices;
+    EVP_MD_CTX *ctx;
 
     devices = get_devices();
     if (!(devices))
@@ -253,11 +256,23 @@ char *internal_get_host_id(void)
         return NULL;
     }
 
-    cli_md5_init(&ctx);
-    for (i=0; devices[i].name != NULL; i++)
-        cli_md5_update(&ctx, devices[i].mac, sizeof(devices[i].mac));
+    ctx = EVP_MD_CTX_create();
+    if (!(ctx)) {
+        for (i=0; devices[i].name != NULL; i++)
+            free(devices[i].name);
 
-    cli_md5_final(raw_md5, &ctx);
+        free(devices);
+        free(printable_md5);
+
+        return NULL;
+    }
+
+    EVP_DigestInit_ex(ctx, EVP_md5(), NULL);
+    for (i=0; devices[i].name != NULL; i++)
+        EVP_DigestUpdate(ctx, devices[i].mac, sizeof(devices[i].mac));
+
+    EVP_DigestFinal_ex(ctx, raw_md5, NULL);
+    EVP_MD_CTX_destroy(ctx);
 
     for (i=0; devices[i].name != NULL; i++)
         free(devices[i].name);

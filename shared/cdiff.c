@@ -32,10 +32,13 @@
 #include <unistd.h>
 #endif
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "shared/misc.h"
 #include "shared/output.h"
 #include "shared/cdiff.h"
-#include "libclamav/sha256.h"
 
 #include "libclamav/str.h"
 #include "libclamav/others.h"
@@ -764,7 +767,7 @@ int cdiff_apply(int fd, unsigned short mode)
 	int end, i, n;
 	struct stat sb;
 	int desc;
-	SHA256_CTX sha256ctx;
+	EVP_MD_CTX *sha256ctx;
 	unsigned char digest[32];
 	int sum, bread;
 #define DSIGBUFF 350
@@ -848,18 +851,27 @@ int cdiff_apply(int fd, unsigned short mode)
 	    return -1;
 	}
 
-	sha256_init(&sha256ctx);
+    sha256ctx = EVP_MD_CTX_create();
+    if (!(sha256ctx)) {
+        close(desc);
+        free(line);
+        free(lbuf);
+        return -1;
+    }
+
+	EVP_DigestInit_ex(sha256ctx, EVP_sha256(), NULL);
 	sum = 0;
 	while((bread = read(desc, buff, FILEBUFF)) > 0) {
 	    if(sum + bread >= end) {
-		sha256_update(&sha256ctx, (unsigned char *) buff, end - sum);
+		EVP_DigestUpdate(sha256ctx, (unsigned char *) buff, end - sum);
 		break;
 	    } else {
-		sha256_update(&sha256ctx, (unsigned char *) buff, bread);
+		EVP_DigestUpdate(sha256ctx, (unsigned char *) buff, bread);
 	    }
 	    sum += bread;
 	}
-	sha256_final(&sha256ctx, digest);
+	EVP_DigestFinal_ex(sha256ctx, digest, NULL);
+    EVP_MD_CTX_destroy(sha256ctx);
 
 	if(cli_versig2(digest, dsig, PSS_NSTR, PSS_ESTR) != CL_SUCCESS) {
 	    logg("!cdiff_apply: Incorrect digital signature\n");

@@ -48,6 +48,10 @@
 #include <string.h>
 #endif
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "cltypes.h"
 #include "pe.h"
 #include "others.h"

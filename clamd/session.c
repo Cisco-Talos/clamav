@@ -49,6 +49,10 @@
 #include <stddef.h>
 #include <limits.h>
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "libclamav/clamav.h"
 #include "libclamav/str.h"
 #include "libclamav/others.h"

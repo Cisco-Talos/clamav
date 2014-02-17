@@ -28,6 +28,8 @@
 #include "cltypes.h"
 #include "others.h"
 
+#define PRTN_INTXN_DETECTION "heuristic.partitionintersection"
+
 struct prtn_intxn_node;
 typedef struct prtn_intxn_node {
     off_t Start;

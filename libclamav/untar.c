@@ -36,6 +36,10 @@ static	char	const	rcsid[] = "$Id: untar.c,v 1.35 2007/02/12 20:46:09 njh Exp $";
 #include <sys/param.h>	/* for NAME_MAX */
 #endif
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "clamav.h"
 #include "others.h"
 #include "untar.h"

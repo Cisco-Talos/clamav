@@ -33,6 +33,10 @@
 #include <unistd.h>
 #endif
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "others.h"
 #include "rtf.h"
 #include "clamav.h"

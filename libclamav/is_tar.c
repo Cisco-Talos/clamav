@@ -20,6 +20,10 @@
 #include <sys/types.h>
 #include "is_tar.h"
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "others.h"
 
 #define	isodigit(c)	( ((c) >= '0') && ((c) <= '7') )

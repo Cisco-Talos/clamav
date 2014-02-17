@@ -48,6 +48,10 @@ const char inflate64_copyright[] =
 
 
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "inflate64_priv.h"
 
 #include <stdlib.h> /* calloc/free */

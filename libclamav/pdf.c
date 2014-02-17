@@ -44,6 +44,10 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.61 2007/02/12 20:46:09 njh Exp $";
 #endif
 #include <zlib.h>
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "clamav.h"
 #include "others.h"
 #include "pdf.h"
@@ -52,10 +56,8 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.61 2007/02/12 20:46:09 njh Exp $";
 #include "str.h"
 #include "bytecode.h"
 #include "bytecode_api.h"
-#include "md5.h"
 #include "arc4.h"
 #include "rijndael.h"
-#include "sha256.h"
 #include "textnorm.h"
 
 
@@ -665,7 +667,6 @@ static char *decrypt_any(struct pdf_struct *pdf, uint32_t id, const char *in, of
 {
     unsigned char *key, *q, result[16];
     unsigned n;
-    cli_md5_ctx md5;
     struct arc4_state arc4;
 
     if (!length || !*length || !in) {
@@ -690,9 +691,7 @@ static char *decrypt_any(struct pdf_struct *pdf, uint32_t id, const char *in, of
     *q++ = 0;
     if (enc_method == ENC_AESV2)
 	memcpy(q, "sAlT", 4);
-    cli_md5_init(&md5);
-    cli_md5_update(&md5, key, n);
-    cli_md5_final(result, &md5);
+    cl_hash_data("md5", key, n, result, NULL);
     free(key);
 
     n = pdf->keylen + 5;
@@ -1722,7 +1721,6 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
     unsigned i;
     uint8_t result[16];
     char data[32];
-    cli_md5_ctx md5;
     struct arc4_state arc4;
     unsigned password_empty = 0;
 
@@ -1730,20 +1728,15 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
     dbg_printhex("O: ", O, 32);
     if (R == 5) {
 	uint8_t result2[32];
-	SHA256_CTX sha256;
 	/* supplement to ISO3200, 3.5.2 Algorithm 3.11 */
-	sha256_init(&sha256);
 	/* user validation salt */
-	sha256_update(&sha256, U+32, 8);
-	sha256_final(&sha256, result2);
+    cl_sha256(U+32, 8, result2, NULL);
 	dbg_printhex("Computed U", result2, 32);
 	if (!memcmp(result2, U, 32)) {
 	    off_t n;
 	    password_empty = 1;
 	    /* Algorithm 3.2a could be used to recover encryption key */
-	    sha256_init(&sha256);
-	    sha256_update(&sha256, U+40, 8);
-	    sha256_final(&sha256, result2);
+        cl_sha256(U+40, 8, result2, NULL);
 	    n = UE ? strlen(UE) : 0;
 	    if (n != 32) {
 		cli_dbgmsg("cli_pdf: UE length is not 32: %d\n", (int)n);
@@ -1760,27 +1753,32 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
 	    }
 	}
     } else if ((R >= 2) && (R <= 4)) {
+        unsigned char *d;
+        size_t sz = 68 + pdf->fileIDlen + (R >= 4 && !EM ? 4 : 0);
+        d = calloc(1, sz);
+
+        if (!(d))
+            return;
+
+        memcpy(d, key_padding, 32);
+        memcpy(d+32, O, 32);
+        P = le32_to_host(P);
+        memcpy(d+64, &P, 4);
+        memcpy(d+68, pdf->fileID, pdf->fileIDlen);
 	/* 7.6.3.3 Algorithm 2 */
-	cli_md5_init(&md5);
 	/* empty password, password == padding */
-	cli_md5_update(&md5, key_padding, 32);
-	cli_md5_update(&md5, O, 32);
-	P = le32_to_host(P);
-	cli_md5_update(&md5, &P, 4);
-	cli_md5_update(&md5, pdf->fileID, pdf->fileIDlen);
 	if (R >= 4 && !EM) {
 	    uint32_t v = 0xFFFFFFFF;
-	    cli_md5_update(&md5, &v, 4);
+        memcpy(d+68+pdf->fileIDlen, &v, 4);
 	}
-	cli_md5_final(result, &md5);
+    cl_hash_data("md5", d, sz, result, NULL);
+    free(d);
 	if (length > 128)
 	    length = 128;
 	if (R >= 3) {
-	    for (i=0;i<50;i++) {
-		cli_md5_init(&md5);
-		cli_md5_update(&md5, result, length/8);
-		cli_md5_final(result, &md5);
-	    }
+        /* Yes, this really is on purpose */
+	    for (i=0;i<50;i++)
+            cl_hash_data("md5", result, length/8, result, NULL);
 	}
 	if (R == 2)
 	    length = 40;
@@ -1803,11 +1801,16 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
 		password_empty = 1;
 	} else if (R >= 3) {
 	    unsigned len = pdf->keylen;
+        unsigned char *d;
+
+        d = calloc(1, 32 + pdf->fileIDlen);
+        if (!(d))
+            return;
+
 	    /* 7.6.3.3 Algorithm 5 */
-	    cli_md5_init(&md5);
-	    cli_md5_update(&md5, key_padding, 32);
-	    cli_md5_update(&md5, pdf->fileID, pdf->fileIDlen);
-	    cli_md5_final(result, &md5);
+        memcpy(d, key_padding, 32);
+        memcpy(d+32, pdf->fileID, pdf->fileIDlen);
+        cl_hash_data("md5", d, 32 + pdf->fileIDlen, result, NULL);
 	    memcpy(data, pdf->key, len);
 	    arc4_init(&arc4, data, len);
 	    arc4_apply(&arc4, result, 16);

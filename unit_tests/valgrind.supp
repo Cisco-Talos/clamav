@@ -64,3 +64,10 @@
     fun:sendmmsg
     ...
 }
+{
+    openssl-globals-01
+    Memcheck:Leak
+    ...
+    fun:cl_initialize_crypto
+    ...
+}

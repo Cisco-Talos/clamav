@@ -24,6 +24,7 @@
 #ifndef _WIN32
 #include <sys/time.h>
 #endif
+
 #include "ClamBCModule.h"
 #include "ClamBCDiagnostics.h"
 #include "llvm/Analysis/DebugInfo.h"
@@ -126,15 +127,20 @@ void LLVMInitializePowerPCAsmPrinter();
 #undef PACKAGE_URL
 #include "clamav-config.h"
 #endif
+
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+
+extern "C" {
+#include "libclamav/crypto.h"
+}
+
 #include "dconf.h"
 #include "clamav.h"
 #include "clambc.h"
 #include "bytecode.h"
 #include "bytecode_priv.h"
 #include "type_desc.h"
-extern "C" {
-#include "md5.h"
-}
 
 #define MODULE "libclamav JIT: "
 
@@ -2201,15 +2207,12 @@ int cli_vm_execute_jit(const struct cli_all_bc *bcs, struct cli_bc_ctx *ctx,
 static unsigned char name_salt[16] = { 16, 38, 97, 12, 8, 4, 72, 196, 217, 144, 33, 124, 18, 11, 17, 253 };
 static void setGuard(unsigned char* guardbuf)
 {
-    cli_md5_ctx ctx;
     char salt[48];
     memcpy(salt, name_salt, 16);
     for(unsigned i = 16; i < 48; i++)
-	salt[i] = cli_rndnum(255);
+        salt[i] = cli_rndnum(255);
 
-    cli_md5_init(&ctx);
-    cli_md5_update(&ctx, salt, 48);
-    cli_md5_final(guardbuf, &ctx);
+    cl_hash_data("md5", salt, 48, guardbuf, NULL);
 }
 
 static void addFPasses(FunctionPassManager &FPM, bool trusted, const TargetData *TD)

@@ -65,6 +65,10 @@
 #endif /* HAVE_POLL_H */
 #endif /* HAVE_POLL */
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include <limits.h>
 #include "shared/optparser.h"
 #include "shared/output.h"

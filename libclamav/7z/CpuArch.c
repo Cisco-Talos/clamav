@@ -1,6 +1,15 @@
 /* CpuArch.c -- CPU specific code
 2010-10-26: Igor Pavlov : Public domain */
 
+#if defined(_WIN32)
+#include <WinSock2.h>
+#include <Windows.h>
+#endif
+
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "CpuArch.h"
 
 #ifdef MY_CPU_X86_OR_AMD64
