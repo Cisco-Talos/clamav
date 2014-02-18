@@ -560,9 +560,15 @@ static int cli_scangzip(cli_ctx *ctx)
             z.next_out = buff;
 	    inf = inflate(&z, Z_NO_FLUSH);
 	    if(inf != Z_OK && inf != Z_STREAM_END && inf != Z_BUF_ERROR) {
-		cli_dbgmsg("GZip: Bad stream.\n");
-		at = map->len;
-		break;
+		if (sizeof(buff) == z.avail_out) {
+		    cli_dbgmsg("GZip: Bad stream, nothing in output buffer.\n");
+		    at = map->len;
+		    break;
+		}
+		else {
+		    cli_dbgmsg("GZip: Bad stream, data in output buffer.\n");
+		    /* no break yet, flush extracted bytes to file */
+		}
 	    }
 	    if(cli_writen(fd, buff, sizeof(buff) - z.avail_out) < 0) {
 		inflateEnd(&z);	    
@@ -582,6 +588,10 @@ static int cli_scangzip(cli_ctx *ctx)
 	    if(inf == Z_STREAM_END) {
 		at -= z.avail_in;
 		inflateReset(&z);
+		break;
+	    }
+	    else if(inf != Z_OK && inf != Z_BUF_ERROR) {
+		at = map->len;
 		break;
 	    }
 	} while (z.avail_out == 0);
