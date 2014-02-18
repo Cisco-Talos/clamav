@@ -42,11 +42,20 @@
 #define OID_1_2_840_113549_1_1_1 "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x01"
 #define OID_rsaEncryption OID_1_2_840_113549_1_1_1
 
+#define OID_1_2_840_113549_1_1_2 "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x02"
+#define OID_md2WithRSAEncryption OID_1_2_840_113549_1_1_2
+
 #define OID_1_2_840_113549_1_1_4 "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x04"
 #define OID_md5WithRSAEncryption OID_1_2_840_113549_1_1_4
 
 #define OID_1_2_840_113549_1_1_5 "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x05"
 #define OID_sha1WithRSAEncryption OID_1_2_840_113549_1_1_5
+
+#define OID_1_2_840_113549_1_1_11 "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x0b"
+#define OID_sha256WithRSAEncryption OID_1_2_840_113549_1_1_11
+
+#define OID_1_2_840_113549_1_1_13 "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x0d"
+#define OID_sha512WithRSAEncryption OID_1_2_840_113549_1_1_13
 
 #define OID_1_2_840_113549_1_7_1 "\x2a\x86\x48\x86\xf7\x0d\x01\x07\x01"
 #define OID_pkcs7_data OID_1_2_840_113549_1_7_1
@@ -248,8 +257,20 @@ static int asn1_expect_rsa(fmap_t *map, const void **asn1data, unsigned int *asn
 	*hashtype = CLI_SHA1RSA; /* sha1withRSAEncryption 1.2.840.113549.1.1.5 */
     else if(obj.size == lenof(OID_md5WithRSAEncryption) && !memcmp(obj.content, OID_md5WithRSAEncryption, lenof(OID_md5WithRSAEncryption)))
 	*hashtype = CLI_MD5RSA; /* md5withRSAEncryption 1.2.840.113549.1.1.4 */
+    else if(obj.size == lenof(OID_md2WithRSAEncryption) && !memcmp(obj.content, OID_md2WithRSAEncryption, lenof(OID_md2WithRSAEncryption))) {
+	cli_dbgmsg("asn1_expect_rsa: MD2 with RSA (not yet supported)\n");
+	return 1;
+    }
+    else if(obj.size == lenof(OID_sha256WithRSAEncryption) && !memcmp(obj.content, OID_sha256WithRSAEncryption, lenof(OID_sha256WithRSAEncryption))) {
+	cli_dbgmsg("asn1_expect_rsa: SHA256 with RSA (not yet supported)\n");
+	return 1;
+    }
+    else if(obj.size == lenof(OID_sha512WithRSAEncryption) && !memcmp(obj.content, OID_sha512WithRSAEncryption, lenof(OID_sha512WithRSAEncryption))) {
+	cli_dbgmsg("asn1_expect_rsa: SHA512 with RSA (not yet supported)\n");
+	return 1;
+    }
     else {
-	cli_dbgmsg("asn1_expect_rsa: OID mismatch\n");
+	cli_dbgmsg("asn1_expect_rsa: OID mismatch (size %u)\n", obj.size);
 	return 1;
     }
     if((ret = asn1_expect_obj(map, &obj.next, &avail, 0x05, 0, NULL))) /* NULL */
