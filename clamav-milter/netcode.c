@@ -23,7 +23,9 @@
 #endif
 
 /* for Solaris, so that both FDPassing and IPV6 work */
+#if !defined(__EXTENSIONS__)
 #define __EXTENSIONS__
+#endif
 /* must be first because it may define _XOPEN_SOURCE */
 #include "shared/fdpassing.h"
 #include <stdio.h>

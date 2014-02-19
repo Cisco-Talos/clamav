@@ -615,6 +615,7 @@ static int script2cdiff(const char *script, const char *builder, const struct op
     if (!(ctx)) {
         unlink(cdiff);
         free(cdiff);
+        fclose(cdiffh);
         return -1;
     }
     EVP_DigestInit_ex(ctx, EVP_sha256(), NULL);
@@ -1530,6 +1531,7 @@ static int vbadump(const struct optstruct *opts)
     }
     if(!(ctx = convenience_ctx(fd))) {
 	close(fd);
+    free(dir);
 	return -1;
     }
     if(cli_ole2_extract(dir, ctx, &vba)) {

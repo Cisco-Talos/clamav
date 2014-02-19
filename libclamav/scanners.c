@@ -402,8 +402,11 @@ static int cli_scanarj(cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_check)
 	   break;
 	}
 	file++;
-	if(cli_matchmeta(ctx, metadata.filename, metadata.comp_size, metadata.orig_size, metadata.encrypted, file, 0, NULL) == CL_VIRUS)
+	if(cli_matchmeta(ctx, metadata.filename, metadata.comp_size, metadata.orig_size, metadata.encrypted, file, 0, NULL) == CL_VIRUS) {
+        cli_rmdirs(dir);
+        free(dir);
 	    return CL_VIRUS;
+    }
 
 	if ((ret = cli_checklimits("ARJ", ctx, metadata.orig_size, metadata.comp_size, 0))!=CL_CLEAN) {
 	    ret = CL_SUCCESS;
@@ -1363,7 +1366,8 @@ static int cli_scanscript(cli_ctx *ctx)
 	}
 	if(ctx->engine->keeptmp) {
 		free(tmpname);
-		close(ofd);
+        if (ofd >= 0)
+            close(ofd);
 	}
 	free(normalized);
 	if(ret != CL_VIRUS || SCAN_ALL)  {
