@@ -977,6 +977,13 @@ handler_otf(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * c
     }
 
     if (lseek(ofd, 0, SEEK_SET) == -1) {
+        close(ofd);
+        if (ctx && !(ctx->engine->keeptmp))
+            cli_unlink(tempfile);
+
+        free(tempfile);
+        free(buff);
+        cli_bitset_free(blk_bitset);
         return CL_ESEEK;
     }
     ret = cli_magic_scandesc(ofd, ctx);

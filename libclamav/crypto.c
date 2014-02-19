@@ -631,8 +631,6 @@ unsigned char *cl_sign_data(EVP_PKEY *pkey, char *alg, unsigned char *hash, unsi
         siglen = (unsigned int)strlen((const char *)newsig);
     }
 
-    free(hash);
-
     *olen = siglen;
     EVP_MD_CTX_destroy(ctx);
     return sig;
@@ -730,8 +728,10 @@ int cl_validate_certificate_chain_ts_dir(char *tsdir, char *certpath)
                 while (nauths > 0)
                     free(authorities[--nauths]);
                 free(authorities);
-                return -1;
             }
+
+            closedir(dp);
+            return -1;
         }
 
         authorities = t;
@@ -742,13 +742,17 @@ int cl_validate_certificate_chain_ts_dir(char *tsdir, char *certpath)
                     free(authorities[nauths--]);
                 free(authorities[0]);
                 free(authorities);
-                return -1;
             }
+
+            closedir(dp);
+            return -1;
         }
 
         sprintf(authorities[nauths], "%s"PATHSEP"%s", tsdir, dirent->d_name);
         nauths++;
     }
+
+    closedir(dp);
 
     t = (char **)realloc(authorities, sizeof(char **) * (nauths + 1));
     if (!(t)) {
@@ -756,14 +760,13 @@ int cl_validate_certificate_chain_ts_dir(char *tsdir, char *certpath)
             while (nauths > 0)
                 free(authorities[--nauths]);
             free(authorities);
-            return -1;
         }
+
+        return -1;
     }
 
     authorities = t;
     authorities[nauths] = NULL;
-
-    closedir(dp);
 
     res = cl_validate_certificate_chain(authorities, NULL, certpath);
 

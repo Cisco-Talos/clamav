@@ -375,7 +375,6 @@ static void xar_hash_final(EVP_MD_CTX * hash_ctx, void * result, int hash)
     switch (hash) {
     case XAR_CKSUM_OTHER:
     case XAR_CKSUM_NONE:
-    default:
         return;
     }
 
