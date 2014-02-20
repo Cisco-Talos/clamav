@@ -1,4 +1,14 @@
-Wed Feb 5 14:30:24 2013 EDT 2013 (dar)
+Thu Feb 20 16:42:00 2014 EDT 2013 (swebb)
+------------------------------------
+ * Replace in-house crypto code (md5, sha1, sha256 hashing algorithms) with
+ calls to OpenSSL. This makes OpenSSL a required dependency for the engine.
+
+Thu Feb 20 16:42:00 2014 EDT 2013 (swebb)
+------------------------------------
+ * bb#3395: Support IPv6 in clamd, clamdscan, freshclam, and clamdtop.
+ clamav-milter already has IPv6 support.
+
+Wed Feb 5 14:30:24 2013 EDT 2014 (dar)
 ------------------------------------
  * bb#9156/10335: switch fanotify support to use sys/fanotify.h instead of coded syscalls
 
