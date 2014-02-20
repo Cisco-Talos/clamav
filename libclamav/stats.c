@@ -359,6 +359,8 @@ void clamav_stats_submit(struct cl_engine *engine, void *cbdata)
         return;
     }
 
+    cli_dbgmsg("stats - start\n");
+
 #ifdef CL_THREAD_SAFE
     err = pthread_mutex_lock(&(intel->mutex));
     if (err) {
@@ -403,6 +405,8 @@ void clamav_stats_submit(struct cl_engine *engine, void *cbdata)
         free(myintel.hostid);
         myintel.hostid = NULL;
     }
+
+    cli_dbgmsg("stats - end\n");
 }
 
 void clamav_stats_remove_sample(const char *virname, const unsigned char *md5, size_t size, void *cbdata)
