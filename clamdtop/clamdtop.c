@@ -507,6 +507,89 @@ static void print_con_info(conn_t *conn, const char *fmt, ...)
 	va_end(ap);
 }
 
+char *get_ip(const char *ip)
+{
+    char *dupip, *p1;
+
+    /*
+     * Expected format of ip:
+     *     1) IPv4:Port
+     *     2) [IPv6]:Port
+     * 
+     * Use of IPv6:Port is incorrect. An IPv6 address must be enclosed in brackets.
+     */
+
+    dupip = strdup(ip);
+    if (!(dupip))
+        return NULL;
+
+    if (dupip[0] == '[') {
+        /* IPv6 */
+        p1 = strchr(dupip, ']');
+        if (!(p1)) {
+            free(dupip);
+            return NULL;
+        }
+
+        *p1 = '\0';
+
+        return (dupip+1);
+    }
+
+    p1 = strchr(dupip, ':');
+    if (!(p1)) {
+        /* Port number is required */
+        free(dupip);
+        return NULL;
+    }
+
+    *p1++ = '\0';
+
+    /* Extra sanity checking. If we have another colon, then we're IPv6. */
+    p1 = strchr(p1, ':');
+    if ((p1)) {
+        free(dupip);
+        return NULL;
+    }
+
+    return dupip;
+}
+
+char *get_port(const char *ip)
+{
+    char *dupip, *p;
+
+    dupip = get_ip(ip);
+    if (!(dupip))
+        return NULL;
+
+    p = dupip + strlen(dupip) + 1;
+    if (*p == ':')
+        return p+1;
+
+    return p;
+}
+
+char *make_ip(const char *host, const char *port)
+{
+    char *ip;
+    size_t len;
+    int ipv6;
+
+    len = strlen(host) + strlen(port);
+
+    ipv6 = (strchr(host, ':') != NULL);
+
+    len += (ipv6 ? 3 : 2);
+
+    ip = calloc(1, len);
+    if (!(ip))
+        return NULL;
+
+    snprintf(ip, len, "%s%s%s:%s", ipv6 ? "[" : "", host, ipv6 ? "]" : "", port);
+
+    return ip;
+}
 
 static int make_connection_real(const char *soname, conn_t *conn)
 {
@@ -516,6 +599,7 @@ static int make_connection_real(const char *soname, conn_t *conn)
     char *name, *pt = strdup(soname);
     const char *host = pt;
     struct addrinfo hints, *res=NULL, *p;
+    int err;
 
     conn->tcp = 0;
 
@@ -550,18 +634,19 @@ static int make_connection_real(const char *soname, conn_t *conn)
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
 
-    conn->tcp=1;
-    name = strchr(pt, '/');
-    if(name) {
-        *name = '\0';
-        port = name+1;
-    } else {
-        port = NULL;
-    }
-
-    print_con_info(conn, "Looking up: %s\n", host);
-    if (getaddrinfo(host, (port != NULL) ? port : "3310", &hints, &res))
+    host = get_ip(soname);
+    if (!(host))
         return -1;
+
+    port = get_port(soname);
+
+    conn->tcp=1;
+
+    print_con_info(conn, "Looking up: %s:%s\n", host, port ? port : "3310");
+    if ((err = getaddrinfo(host, (port != NULL) ? port : "3310", &hints, &res))) {
+        print_con_info(conn, "Could not look up %s:%s, getaddrinfo returned: %s\n", host, port ? port : "3310", gai_strerror(err));
+        return -1;
+    }
 
     for (p = res; p != NULL; p = p->ai_next) {
         if ((s = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) < 0) {
@@ -569,7 +654,7 @@ static int make_connection_real(const char *soname, conn_t *conn)
             continue;
         }
 
-        print_con_info(conn, "Connecting to: %s:%s\n", host, port);
+        print_con_info(conn, "Connecting to: %s\n", soname);
         if (connect(s, p->ai_addr, p->ai_addrlen)) {
             perror("connect");
             close(s);
@@ -593,7 +678,7 @@ end:
         if (conn->remote)
             free(conn->remote);
 
-        conn->remote = strdup(soname);
+        conn->remote = make_ip(host, (port != NULL) ? port : "3310");
     }
     conn->sd = s;
     gettimeofday(&conn->tv_conn, NULL);
@@ -1132,7 +1217,7 @@ static void help(void)
     printf("    --version              -V         Show version\n");
     printf("    --config-file=FILE     -c FILE    Read clamd's configuration files from FILE\n");
     printf("    --defaultcolors	       -d	  Use default terminal colors\n");
-    printf("	host[/port]			  Connect to clamd on host at port (default 3310)\n");
+    printf("	host[:port]			  Connect to clamd on host at port (default 3310)\n");
     printf("    /path/to/clamd.socket		  Connect to clamd over a local socket\n");
     printf("\n");
     return;
@@ -1192,8 +1277,8 @@ static void setup_connections(int argc, char *argv[])
             if ((opt_addr = optget(clamd_opts, "TCPAddr"))->enabled) {
                 host = opt_addr->strarg;
             }
-            snprintf(buf, sizeof(buf), "%s/%llu", host, opt->numarg);
-            conn = strdup(buf);
+            snprintf(buf, sizeof(buf), "%lld", opt->numarg);
+            conn = make_ip(host, buf);
         } else {
             fprintf(stderr, "Can't find how to connect to clamd\n");
             EXIT_PROGRAM(FAIL_INITIAL_CONN);

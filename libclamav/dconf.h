@@ -112,6 +112,7 @@ struct cli_dconf {
 #define OTHER_CONF_MYDOOMLOG	0x40
 #define OTHER_CONF_PREFILTERING 0x80
 #define OTHER_CONF_PDFNAMEOBJ	0x100
+#define OTHER_CONF_PRTNINTXN	0x200
 
 /* Phishing flags */
 #define PHISHING_CONF_ENGINE   0x1

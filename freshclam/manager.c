@@ -30,7 +30,6 @@
  * fails on Solaris because it would require a c99 compiler,
  * 500 fails completely on Solaris, and FreeBSD, and w/o _XOPEN_SOURCE
  * strptime is not defined on Linux */
-#define _GNU_SOURCE
 #define __EXTENSIONS
 
 #include <stdio.h>
@@ -60,6 +59,10 @@
 #include <dirent.h>
 #include <errno.h>
 #include <zlib.h>
+
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
 
 #include "target.h"
 

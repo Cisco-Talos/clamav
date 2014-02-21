@@ -63,6 +63,10 @@ static	char	const	rcsid[] = "$Id: line.c,v 1.11 2007/02/12 20:46:08 njh Exp $";
 #include <string.h>
 #include <assert.h>
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "line.h"
 #include "others.h"
 

@@ -26,6 +26,10 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "others.h"
 #include "clamav.h"
 #include "mspack.h"

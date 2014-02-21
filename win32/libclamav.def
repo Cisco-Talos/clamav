@@ -51,7 +51,25 @@ EXPORTS cl_engine_set_clcb_stats_flush @43
 EXPORTS cl_engine_set_clcb_stats_get_num @44
 EXPORTS cl_engine_set_clcb_stats_get_size @45
 EXPORTS cl_engine_set_clcb_stats_get_hostid @46
-
+EXPORTS cl_hash_data @47
+EXPORTS cl_initialize_crypto @48
+EXPORTS cl_cleanup_crypto @49
+EXPORTS cl_hash_file_fd @50
+EXPORTS cl_hash_file_fp @51
+EXPORTS cl_sha256 @52
+EXPORTS cl_sha1 @53
+EXPORTS cl_verify_signature @54
+EXPORTS cl_verify_signature_x509_keyfile @55
+EXPORTS cl_verify_signature_x509 @56
+EXPORTS cl_sign_data_keyfile @57
+EXPORTS cl_sign_data @58
+EXPORTS cl_sign_file_fd @59
+EXPORTS cl_sign_file_fp @60
+EXPORTS cl_get_x509_from_mem @61
+EXPORTS cl_validate_certificate_chain @62
+EXPORTS cl_load_cert @63
+EXPORTS cl_ASN1_GetTimeT @64
+EXPORTS cl_load_crl @65
 
 ; path variables
 ; --------------
@@ -150,13 +168,6 @@ EXPORTS readdir @44273 NONAME
 EXPORTS closedir @44274 NONAME
 EXPORTS safe_open @44275 NONAME
 EXPORTS snprintf @44276 NONAME
-; SHA1 numbers reused from mp_* functions
-EXPORTS SHA1Init @44277 NONAME
-EXPORTS SHA1Update @44278 NONAME
-EXPORTS SHA1Final @44279 NONAME
-EXPORTS sha256_init @44280 NONAME
-EXPORTS sha256_update @44281 NONAME
-EXPORTS sha256_final @44282 NONAME
 EXPORTS optget @44283 NONAME
 EXPORTS optparse @44284 NONAME
 EXPORTS optfree @44285 NONAME

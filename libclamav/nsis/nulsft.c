@@ -31,6 +31,10 @@
 #include <unistd.h>
 #endif
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "others.h"
 #include "cltypes.h"
 #include "nsis_bzlib.h"

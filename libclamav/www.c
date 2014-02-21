@@ -40,6 +40,10 @@
 #include <netdb.h>
 #endif
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "libclamav/others.h"
 #include "libclamav/clamav.h"
 #include "libclamav/www.h"
@@ -241,11 +245,15 @@ void submit_post(const char *host, const char *port, const char *method, const c
         return;
     }
 
+    cli_dbgmsg("stats - Connected to %s:%s\n", host, port);
+
     if (send(sockfd, buf, strlen(buf), 0) != strlen(buf)) {
         close(sockfd);
         free(buf);
         return;
     }
+
+    cli_dbgmsg("stats - Sending %s\n", buf);
 
     while (1) {
         FD_ZERO(&readfds);
@@ -268,8 +276,10 @@ void submit_post(const char *host, const char *port, const char *method, const c
 
             buf[bufsz-1] = '\0';
 
-            if (strstr(buf, "STATOK"))
+            if (strstr(buf, "STATOK")) {
+                cli_dbgmsg("stats - Data received okay\n");
                 break;
+            }
         }
     }
 

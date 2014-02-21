@@ -40,6 +40,10 @@
 #endif
 #include <stddef.h>
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "others.h"
 #include "str.h"
 #include "readdb.h"

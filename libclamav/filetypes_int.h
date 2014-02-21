@@ -177,6 +177,9 @@ static const char *ftypes_int[] = {
   "4:1024:482B0004:HFS+ partition:CL_TYPE_PART_ANY:CL_TYPE_PART_HFSPLUS:75",
   "4:1024:48580005:HFSX partition:CL_TYPE_PART_ANY:CL_TYPE_PART_HFSPLUS:75",
   "0:0:FD377A585A00:XZ container file:CL_TYPE_ANY:CL_TYPE_XZ:75",
+  "0:510:55AA:Disk Image - Master Boot Record:CL_TYPE_ANY:CL_TYPE_MBR:77",
+  "0:512:4546492050415254:Disk Image - GUID Partition Table:CL_TYPE_ANY:CL_TYPE_GPT:77",
+  "1:0:4552{510}504D0000:Disk Image - Apple Partition Map:CL_TYPE_ANY:CL_TYPE_APM:77",
   NULL
 };
 

@@ -22,6 +22,11 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "cltypes.h"
 #include "bytecode.h"
 #include "bytecode_priv.h"

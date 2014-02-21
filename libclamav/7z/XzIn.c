@@ -3,6 +3,15 @@
 
 #include <string.h>
 
+#if defined(_WIN32)
+#include <WinSock2.h>
+#include <Windows.h>
+#endif
+
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "7zCrc.h"
 #include "CpuArch.h"
 #include "Xz.h"

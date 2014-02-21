@@ -19,14 +19,20 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
+
+#ifndef _WIN32
+#include <sys/time.h>
+#endif
+
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "events.h"
 #include "others.h"
 #include "7z/7zCrc.h"
 #include "str.h"
 #include <string.h>
-#ifndef _WIN32
-#include <sys/time.h>
-#endif
 
 struct cli_event {
     const char *name;

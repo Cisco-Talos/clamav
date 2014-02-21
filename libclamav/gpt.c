@@ -31,12 +31,18 @@
 #include <fcntl.h>
 #include <zlib.h>
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "cltypes.h"
 #include "others.h"
 #include "gpt.h"
+#include "mbr.h"
 #include "str.h"
 #include "prtn_intxn.h"
 #include "scanners.h"
+#include "dconf.h"
 
 //#define DEBUG_GPT_PARSE
 //#define DEBUG_GPT_PRINT
@@ -62,17 +68,43 @@ enum GPT_SCANSTATE {
 
 static int gpt_scan_partitions(cli_ctx *ctx, struct gpt_header hdr, size_t sectorsize);
 static int gpt_validate_header(cli_ctx *ctx, struct gpt_header hdr, size_t sectorsize);
+static int gpt_check_mbr(cli_ctx *ctx, size_t sectorsize);
 static void gpt_printSectors(cli_ctx *ctx, size_t sectorsize);
 static void gpt_printName(uint16_t name[], const char* msg);
 static void gpt_printGUID(uint8_t GUID[], const char* msg);
 static int gpt_prtn_intxn(cli_ctx *ctx, struct gpt_header hdr, size_t sectorsize);
 
-int cli_scangpt(cli_ctx *ctx)
+/* returns 0 on failing to detect sectorsize */
+size_t gpt_detect_size(fmap_t *map)
+{
+    unsigned char *buff;
+
+    buff = (unsigned char*)fmap_need_off_once(map, 512, 8);
+    if (0 == strncmp(buff, GPT_SIGNATURE_STR, 8))
+        return 512;
+
+    buff = (unsigned char*)fmap_need_off_once(map, 1024, 8);
+    if (0 == strncmp(buff, GPT_SIGNATURE_STR, 8))
+        return 1024;
+
+    buff = (unsigned char*)fmap_need_off_once(map, 2048, 8);
+    if (0 == strncmp(buff, GPT_SIGNATURE_STR, 8))
+        return 2048;
+
+    buff = (unsigned char*)fmap_need_off_once(map, 4096, 8);
+    if (0 == strncmp(buff, GPT_SIGNATURE_STR, 8))
+        return 4096;
+
+    return 0;
+}
+
+/* attempts to detect sector size is input as 0 */
+int cli_scangpt(cli_ctx *ctx, size_t sectorsize)
 {
     struct gpt_header phdr, shdr;
     enum GPT_SCANSTATE state = INVALID;
     int ret = 0;
-    size_t sectorsize, maplen;
+    size_t maplen;
     off_t pos = 0;
 
     gpt_parsemsg("The beginning of something big: GPT parsing\n");
@@ -83,7 +115,14 @@ int cli_scangpt(cli_ctx *ctx)
     }
 
     /* sector size calculatation */
-    sectorsize = GPT_DEFAULT_SECTOR_SIZE;
+    if (sectorsize == 0) {
+        sectorsize = gpt_detect_size((*ctx->fmap));
+        cli_dbgmsg("cli_scangpt: detected %u sector size\n", sectorsize);
+    }
+    if (sectorsize == 0) {
+        cli_errmsg("cli_scangpt: could not detemine sector size\n");
+        return CL_EFORMAT;
+    }
 
     /* size of total file must be a multiple of the sector size */
     maplen = (*ctx->fmap)->real_len;
@@ -91,6 +130,14 @@ int cli_scangpt(cli_ctx *ctx)
         cli_dbgmsg("cli_scangpt: File sized %u is not a multiple of sector size %u\n",
                    maplen, sectorsize);
         return CL_EFORMAT;
+    }
+
+    /* check the protective mbr */
+    ret = gpt_check_mbr(ctx, sectorsize);
+    if ((ret != CL_CLEAN) &&
+        !((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))) {
+
+        return ret;
     }
 
     pos = GPT_PRIMARY_HDR_LBA * sectorsize; /* sector 1 (second sector) is the primary gpt header */
@@ -148,7 +195,7 @@ int cli_scangpt(cli_ctx *ctx)
     }
 
     /* check that the partition table has no intersections - HEURISTICS */
-    if (ctx->options & CL_SCAN_PARTITION_INTXN) {
+    if ((ctx->options & CL_SCAN_PARTITION_INTXN) && (ctx->dconf->other & OTHER_CONF_PRTNINTXN)) {
         ret = gpt_prtn_intxn(ctx, phdr, sectorsize);
         if ((ret != CL_CLEAN) &&
             !((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))) {
@@ -301,7 +348,7 @@ static int gpt_scan_partitions(cli_ctx *ctx, struct gpt_header hdr, size_t secto
         pos += hdr.tableEntrySize;
     }
 
-    if (i <= hdr.tableNumEntries) {
+    if (i >= ctx->engine->maxpartitions) {
         cli_dbgmsg("cli_scangpt: max partitions reached\n");
     }
 
@@ -394,7 +441,7 @@ static int gpt_validate_header(cli_ctx *ctx, struct gpt_header hdr, size_t secto
     }
 
     /* check that valid table entry size */
-    if (hdr.tableEntrySize != GPT_PARTITION_ENTRY_SIZE) {
+    if (hdr.tableEntrySize != sizeof(struct gpt_partition_entry)) {
         cli_dbgmsg("cli_scangpt: cannot parse gpt with partition entry sized %u\n",
                    hdr.tableEntrySize);
         return CL_EFORMAT;
@@ -419,6 +466,58 @@ static int gpt_validate_header(cli_ctx *ctx, struct gpt_header hdr, size_t secto
     }
 
     return CL_SUCCESS;
+}
+
+static int gpt_check_mbr(cli_ctx *ctx, size_t sectorsize)
+{
+    struct mbr_boot_record pmbr;
+    off_t pos = 0, mbr_base = 0;
+    int ret = CL_CLEAN;
+    unsigned i = 0;
+
+    /* read the mbr */
+    mbr_base = sectorsize - sizeof(struct mbr_boot_record);
+    pos = (MBR_SECTOR * sectorsize) + mbr_base;
+
+    if (fmap_readn(*ctx->fmap, &pmbr, pos, sizeof(pmbr)) != sizeof(pmbr)) {
+        cli_dbgmsg("cli_scangpt: Invalid primary MBR header\n");
+        return CL_EFORMAT;
+    }
+
+    /* convert mbr */
+    mbr_convert_to_host(&pmbr);
+
+    /* check the protective mbr - warning */
+    if (pmbr.entries[0].type == MBR_PROTECTIVE) {
+        /* check the efi partition matches the gpt spec */
+        if (pmbr.entries[0].firstLBA != GPT_PRIMARY_HDR_LBA) {
+            cli_warnmsg("cli_scangpt: protective MBR first LBA is incorrect %u\n",
+                        pmbr.entries[0].firstLBA);
+        }
+
+        /* other entries are empty */
+        for (i = 1; i < MBR_MAX_PARTITION_ENTRIES; ++i) {
+            if (pmbr.entries[i].type != MBR_EMPTY) {
+                cli_warnmsg("cli_scangpt: protective MBR has non-empty partition\n");
+                break;
+            }
+        }
+    }
+    else if (pmbr.entries[0].type == MBR_HYBRID) {
+        /* hybrid mbr detected */
+        cli_warnmsg("cli_scangpt: detected a hybrid MBR\n");
+    }
+    else {
+        /* non-protective mbr detected */
+        cli_warnmsg("cli_scangpt: detected a non-protective MBR\n");
+    }
+
+    /* scan the bootloader segment - pushed to scanning mbr */
+    /* check if MBR size matches GPT size */
+    /* check if the MBR and GPT partitions align - heuristic */
+    /* scan the MBR partitions - additional scans */
+
+    return ret;
 }
 
 static void gpt_printSectors(cli_ctx *ctx, size_t sectorsize)
@@ -550,14 +649,14 @@ static int gpt_prtn_intxn(cli_ctx *ctx, struct gpt_header hdr, size_t sectorsize
                 if ((ctx->options & CL_SCAN_ALLMATCHES) && (tmp == CL_VIRUS)) {
                     cli_dbgmsg("cli_scangpt: detected intersection with partitions "
                                "[%u, %u]\n", pitxn, i);
-                    cli_append_virus(ctx, "Heuristic.PartitionIntersection");
+                    cli_append_virus(ctx, PRTN_INTXN_DETECTION);
                     ret = tmp;
                     tmp = 0;
                 }
                 else if (tmp == CL_VIRUS) {
                     cli_dbgmsg("cli_scangpt: detected intersection with partitions "
                                "[%u, %u]\n", pitxn, i);
-                    cli_append_virus(ctx, "Heuristic.PartitionIntersection");
+                    cli_append_virus(ctx, PRTN_INTXN_DETECTION);
                     prtn_intxn_list_free(&prtncheck);
                     return CL_VIRUS;
                 }

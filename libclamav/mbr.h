@@ -33,7 +33,6 @@
 #define CL_MAX_LOGICAL_PARTITIONS 50
 
 #define MBR_SIGNATURE 0x55aa
-#define MBR_BASE_OFFSET 446
 #define MBR_SECTOR 0
 
 /* MBR Status */
@@ -45,6 +44,8 @@
 /* MBR Partition Types */
 #define MBR_EMPTY      0x00
 #define MBR_EXTENDED   0x05
+#define MBR_HYBRID     0xed
+#define MBR_PROTECTIVE 0xee
 /* End Partition Types */
 
 #ifndef HAVE_ATTRIB_PACKED
@@ -66,7 +67,7 @@ struct mbr_partition_entry {
     uint8_t type;
     uint8_t lastCHS[3];
     uint32_t firstLBA  __attribute__ ((packed));
-    uint32_t numSectors  __attribute__ ((packed));
+    uint32_t numLBA  __attribute__ ((packed));
 };
 
 struct mbr_boot_record {
@@ -84,6 +85,7 @@ struct mbr_boot_record {
 #endif
 
 int cli_mbr_check(const unsigned char *buff, size_t len, size_t maplen);
-int cli_scanmbr(cli_ctx *ctx);
+int cli_scanmbr(cli_ctx *ctx, size_t sectorsize);
+void mbr_convert_to_host(struct mbr_boot_record *record);
 
 #endif

@@ -43,6 +43,10 @@
 #include <sys/times.h>
 #endif
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #define DCONF_ARCH  ctx->dconf->archive
 #define DCONF_DOC   ctx->dconf->doc
 #define DCONF_MAIL  ctx->dconf->mail
@@ -110,6 +114,8 @@
 #include <limits.h>
 #include <stddef.h>
 #endif
+
+#include <string.h>
 
 static int cli_scanfile(const char *filename, cli_ctx *ctx);
 
@@ -396,8 +402,11 @@ static int cli_scanarj(cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_check)
 	   break;
 	}
 	file++;
-	if(cli_matchmeta(ctx, metadata.filename, metadata.comp_size, metadata.orig_size, metadata.encrypted, file, 0, NULL) == CL_VIRUS)
+	if(cli_matchmeta(ctx, metadata.filename, metadata.comp_size, metadata.orig_size, metadata.encrypted, file, 0, NULL) == CL_VIRUS) {
+        cli_rmdirs(dir);
+        free(dir);
 	    return CL_VIRUS;
+    }
 
 	if ((ret = cli_checklimits("ARJ", ctx, metadata.orig_size, metadata.comp_size, 0))!=CL_CLEAN) {
 	    ret = CL_SUCCESS;
@@ -554,9 +563,15 @@ static int cli_scangzip(cli_ctx *ctx)
             z.next_out = buff;
 	    inf = inflate(&z, Z_NO_FLUSH);
 	    if(inf != Z_OK && inf != Z_STREAM_END && inf != Z_BUF_ERROR) {
-		cli_dbgmsg("GZip: Bad stream.\n");
-		at = map->len;
-		break;
+		if (sizeof(buff) == z.avail_out) {
+		    cli_dbgmsg("GZip: Bad stream, nothing in output buffer.\n");
+		    at = map->len;
+		    break;
+		}
+		else {
+		    cli_dbgmsg("GZip: Bad stream, data in output buffer.\n");
+		    /* no break yet, flush extracted bytes to file */
+		}
 	    }
 	    if(cli_writen(fd, buff, sizeof(buff) - z.avail_out) < 0) {
 		inflateEnd(&z);	    
@@ -576,6 +591,10 @@ static int cli_scangzip(cli_ctx *ctx)
 	    if(inf == Z_STREAM_END) {
 		at -= z.avail_in;
 		inflateReset(&z);
+		break;
+	    }
+	    else if(inf != Z_OK && inf != Z_BUF_ERROR) {
+		at = map->len;
 		break;
 	    }
 	} while (z.avail_out == 0);
@@ -1347,7 +1366,8 @@ static int cli_scanscript(cli_ctx *ctx)
 	}
 	if(ctx->engine->keeptmp) {
 		free(tmpname);
-		close(ofd);
+        if (ofd >= 0)
+            close(ofd);
 	}
 	free(normalized);
 	if(ret != CL_VIRUS || SCAN_ALL)  {
@@ -2587,12 +2607,12 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 
 	case CL_TYPE_MBR:
 	    //if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_MBR))
-		ret = cli_scanmbr(ctx);
+	    ret = cli_scanmbr(ctx, 0);
 	    break;
 
 	case CL_TYPE_GPT:
 	    //if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_GPT))
-		ret = cli_scangpt(ctx);
+	    ret = cli_scangpt(ctx, 0);
 	    break;
 
 	case CL_TYPE_APM:

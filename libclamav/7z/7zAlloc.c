@@ -3,6 +3,11 @@
 
 #include "7zAlloc.h"
 
+#if defined(_WIN32)
+#include <WinSock2.h>
+#include <Windows.h>
+#endif
+
 /* #define _SZ_ALLOC_DEBUG */
 /* use _SZ_ALLOC_DEBUG to debug alloc/free operations */
 

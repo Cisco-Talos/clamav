@@ -22,6 +22,10 @@
 #include "clamav-config.h"
 #endif
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include <errno.h>
 #include "xar.h"
 #include "fmap.h"
@@ -36,8 +40,6 @@
 #include "scanners.h"
 #include "inflate64.h"
 #include "lzma_iface.h"
-#include "sha1.h"
-#include "md5.h"
 
 /*
    xar_cleanup_temp_file - cleanup after cli_gentempfd
@@ -323,17 +325,27 @@ static int xar_scan_subdocuments(xmlTextReaderPtr reader, cli_ctx *ctx)
     return rc;
 }
 
-static void * xar_hash_init(int hash, SHA1Context *sc, cli_md5_ctx *mc)
+static EVP_MD_CTX * xar_hash_init(int hash, EVP_MD_CTX **sc, EVP_MD_CTX **mc)
 {
     if (!sc && !mc)
         return NULL;
     switch (hash) {
     case XAR_CKSUM_SHA1:
-        SHA1Init(sc);
-        return sc;
+        *sc = EVP_MD_CTX_create();
+        if (!(*sc)) {
+            return NULL;
+        }
+
+        EVP_DigestInit_ex(*sc, EVP_sha1(), NULL);
+        return *sc;
     case XAR_CKSUM_MD5:
-        cli_md5_init(mc);
-        return mc;
+        *mc = EVP_MD_CTX_create();
+        if (!(*mc)) {
+            return NULL;
+        }
+
+        EVP_DigestInit_ex(*mc, EVP_md5(), NULL);
+        return *mc;
     case XAR_CKSUM_OTHER:
     case XAR_CKSUM_NONE:
     default:
@@ -341,44 +353,33 @@ static void * xar_hash_init(int hash, SHA1Context *sc, cli_md5_ctx *mc)
     }
 }
 
-static void xar_hash_update(void * hash_ctx, const void * data, unsigned long size, int hash)
+static void xar_hash_update(EVP_MD_CTX * hash_ctx, const void * data, unsigned long size, int hash)
 {
     if (!hash_ctx || !data || !size)
         return;
+
     switch (hash) {
-    case XAR_CKSUM_SHA1:
-        SHA1Update(hash_ctx, data, size);
-        return;
-    case XAR_CKSUM_MD5:
-        if (0 == cli_md5_update(hash_ctx, data, size)) {
-            cli_dbgmsg("cli_scanxar: cli_md5_update invalid return.\n");
-            return;
-        }
-        return;
-    case XAR_CKSUM_OTHER:
     case XAR_CKSUM_NONE:
-    default:
+    case XAR_CKSUM_OTHER:
         return;
     }
+
+    EVP_DigestUpdate(hash_ctx, data, size);
 }
 
-static void xar_hash_final(void * hash_ctx, void * result, int hash)
+static void xar_hash_final(EVP_MD_CTX * hash_ctx, void * result, int hash)
 {
-    
     if (!hash_ctx || !result)
         return;
+
     switch (hash) {
-    case XAR_CKSUM_SHA1:
-        SHA1Final(hash_ctx, result);
-        return;
-    case XAR_CKSUM_MD5:
-        cli_md5_final(result, hash_ctx);
-        return;
     case XAR_CKSUM_OTHER:
     case XAR_CKSUM_NONE:
-    default:
         return;
     }
+
+    EVP_DigestFinal_ex(hash_ctx, result, NULL);
+    EVP_MD_CTX_destroy(hash_ctx);
 }
 
 static int xar_hash_check(int hash, const void * result, const void * expected)
@@ -538,9 +539,9 @@ int cli_scanxar(cli_ctx *ctx)
                                                        &a_cksum, &a_hash, &e_cksum, &e_hash))) {
         int do_extract_cksum = 1;
         unsigned char * blockp;
-        SHA1Context a_sc, e_sc;
-        cli_md5_ctx a_mc, e_mc;
-        void *a_hash_ctx, *e_hash_ctx;
+        EVP_MD_CTX *a_sc, *e_sc;
+        EVP_MD_CTX *a_mc, *e_mc;
+        EVP_MD_CTX *a_hash_ctx, *e_hash_ctx;
         char result[SHA1_HASH_SIZE];
         char * expected;
 

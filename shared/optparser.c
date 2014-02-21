@@ -38,6 +38,10 @@
 #endif
 #include <ctype.h>
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "shared/optparser.h"
 #include "shared/misc.h"
 
@@ -1136,5 +1140,177 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
 
     /* optprint(opts); */
 
+    return opts;
+}
+
+struct optstruct *optadditem(const char *name, const char *arg, int verbose, int toolmask, int ignore,
+                            struct optstruct *oldopts)
+{
+	int i, err = 0, sc = 0, lc=0, line = 0, ret;
+	struct optstruct *opts = NULL, *opts_last = NULL, *opt;
+	char *buff;
+	regex_t regex;
+	long long numarg, lnumarg;
+	int regflags = REG_EXTENDED | REG_NOSUB;
+    const struct clam_option *optentry = NULL;
+    
+    if(oldopts)
+        opts = oldopts;
+    
+    
+    for(i = 0; ; i++) {
+        optentry = &clam_options[i];
+        if(!optentry->name && !optentry->longopt)
+            break;
+        
+        if(((optentry->owner & toolmask) && ((optentry->owner & toolmask) != OPT_DEPRECATED)) || (ignore && (optentry->owner & ignore))) {
+            if(!oldopts && optadd(&opts, &opts_last, optentry->name, optentry->longopt, optentry->strarg, optentry->numarg, optentry->flags, i) < 0) {
+                fprintf(stderr, "ERROR: optparse: Can't register new option (not enough memory)\n");
+                optfree(opts);
+                return NULL;
+            }
+            
+        }
+    }
+    
+    if(MAX(sc, lc) > MAXCMDOPTS) {
+	    fprintf(stderr, "ERROR: optparse: (short|long)opts[] is too small\n");
+	    optfree(opts);
+	    return NULL;
+	}
+    
+    while(1) {
+        if(!name) {
+            fprintf(stderr, "ERROR: Problem parsing options (name == NULL)\n");
+            err = 1;
+            break;
+        }
+        
+        opt = optget_i(opts, name);
+        if(!opt) {
+            if(verbose)
+                fprintf(stderr, "ERROR: Parse error at line %d: Unknown option %s\n", line, name);
+            err = 1;
+            break;
+        }
+        optentry = &clam_options[opt->idx];
+        
+        if(ignore && (optentry->owner & ignore) && !(optentry->owner & toolmask)) {
+            if(verbose)
+                fprintf(stderr, "WARNING: Ignoring unsupported option %s at line %u\n", opt->name, line);
+            continue;
+        }
+        
+        if(optentry->owner & OPT_DEPRECATED) {
+            if(toolmask & OPT_DEPRECATED) {
+                if(optaddarg(opts, name, "foo", 1) < 0) {
+                    fprintf(stderr, "ERROR: Can't register argument for option %s\n", name);
+                    err = 1;
+                    break;
+                }
+            } else {
+                if(verbose)
+                    fprintf(stderr, "WARNING: Ignoring deprecated option %s at line %u\n", opt->name, line);
+            }
+            continue;
+        }
+        
+        if(optentry->regex) {
+            if(!(optentry->flags & FLAG_REG_CASE))
+                regflags |= REG_ICASE;
+            
+            if(cli_regcomp(&regex, optentry->regex, regflags)) {
+                fprintf(stderr, "ERROR: optparse: Can't compile regular expression %s for option %s\n", optentry->regex, name);
+                err = 1;
+                break;
+            }
+            ret = cli_regexec(&regex, arg, 0, NULL, 0);
+            cli_regfree(&regex);
+            if(ret == REG_NOMATCH) {
+                fprintf(stderr, "ERROR: Incorrect argument format for option %s\n", name);
+                err = 1;
+                break;
+            }
+        }
+        
+        numarg = -1;
+        switch(optentry->argtype) {
+            case TYPE_STRING:
+                if(!arg)
+                    arg = optentry->strarg;
+                
+                break;
+                
+            case TYPE_NUMBER:
+                if (arg)
+                    numarg = atoi(arg);
+                else
+                    numarg = 0;
+                arg = NULL;
+                break;
+                
+            case TYPE_SIZE:
+                errno = 0;
+                if(arg)
+                    lnumarg = strtoul(arg, &buff, 0);
+                else {
+                    numarg = 0;
+                    break;
+                }
+                if(errno != ERANGE) {
+                    switch(*buff) {
+                        case 'M':
+                        case 'm':
+                            if(lnumarg <= UINT_MAX/(1024*1024)) lnumarg *= 1024*1024;
+                            else errno = ERANGE;
+                            break;
+                        case 'K':
+                        case 'k':
+                            if(lnumarg <= UINT_MAX/1024) lnumarg *= 1024;
+                            else errno = ERANGE;
+                            break;
+                        case '\0':
+                            break;
+                        default:
+                            fprintf(stderr, "ERROR: Can't parse numerical argument for option %s\n", name);
+                            err = 1;
+                    }
+                }
+                
+                arg = NULL;
+                if(err) break;
+                if(errno == ERANGE) {
+                    fprintf(stderr, "WARNING: Numerical value for option %s too high, resetting to 4G\n", name);
+                    lnumarg = UINT_MAX;
+                }
+                
+                numarg = lnumarg ? lnumarg : UINT_MAX;
+                break;
+                
+            case TYPE_BOOL:
+                if(!strcasecmp(arg, "yes") || !strcmp(arg, "1") || !strcasecmp(arg, "true"))
+                    numarg = 1;
+                else
+                    numarg = 0;
+                
+                arg = NULL;
+                break;
+        }
+        
+        if(err)
+            break;
+        
+        if(optaddarg(opts, name, arg, numarg) < 0) {
+            fprintf(stderr, "ERROR: Can't register argument for option --%s\n", optentry->longopt);
+            err = 1;
+        }
+        break;
+    }
+    
+    if(err) {
+        optfree(opts);
+        return NULL;
+    }
+      
     return opts;
 }

@@ -22,6 +22,10 @@
 #include "clamav-config.h"
 #endif
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "others.h"
 #include "crtmgr.h"
 

@@ -72,5 +72,6 @@ const struct optstruct *optget(const struct optstruct *opts, const char *name);
 void optfree(struct optstruct *opts);
 
 struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbose, int toolmask, int ignore, struct optstruct *oldopts);
+struct optstruct *optadditem(const char *name, const char *arg, int verbose, int toolmask, int ignore, struct optstruct *oldopts);
 
 #endif

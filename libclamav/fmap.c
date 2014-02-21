@@ -41,6 +41,10 @@
 #include <pthread.h>
 #endif
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "others.h"
 #include "cltypes.h"
 

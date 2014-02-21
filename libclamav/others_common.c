@@ -52,14 +52,16 @@
 #include <malloc.h>
 #endif
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "clamav.h"
 #include "others.h"
-#include "md5.h"
 #include "cltypes.h"
 #include "regex/regex.h"
 #include "ltdl.h"
 #include "matcher-ac.h"
-#include "md5.h"
 
 static unsigned char name_salt[16] = { 16, 38, 97, 12, 8, 4, 72, 196, 217, 144, 33, 124, 18, 11, 17, 253 };
 
@@ -823,13 +825,9 @@ static char *cli_md5buff(const unsigned char *buffer, unsigned int len, unsigned
 {
 	unsigned char digest[16];
 	char *md5str, *pt;
-	cli_md5_ctx ctx;
 	int i;
 
-
-    cli_md5_init(&ctx);
-    cli_md5_update(&ctx, buffer, len);
-    cli_md5_final(digest, &ctx);
+    cl_hash_data("md5", buffer, len, digest, NULL);
 
     if(dig)
 	memcpy(dig, digest, 16);

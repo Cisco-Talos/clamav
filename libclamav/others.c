@@ -65,11 +65,12 @@
 #include <libxml/parser.h>
 #endif
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "clamav.h"
 #include "others.h"
-#include "md5.h"
-#include "sha1.h"
-#include "sha256.h"
 #include "cltypes.h"
 #include "regex/regex.h"
 #include "ltdl.h"
@@ -876,53 +877,40 @@ int cli_updatelimits(cli_ctx *ctx, unsigned long needed) {
  */
 char *cli_hashstream(FILE *fs, unsigned char *digcpy, int type)
 {
-	unsigned char digest[32];
-	char buff[FILEBUFF];
-	cli_md5_ctx md5;
-	SHA1Context sha1;
-	SHA256_CTX sha256;
-	char *hashstr, *pt;
-	int i, bytes, size;
+    unsigned char digest[32];
+    char buff[FILEBUFF];
+    char *hashstr, *pt;
+    int i, bytes, size;
+    EVP_MD_CTX *ctx;
 
+    ctx = EVP_MD_CTX_create();
+    if (!(ctx))
+        return NULL;
 
     if(type == 1)
-	cli_md5_init(&md5);
+        EVP_DigestInit_ex(ctx, EVP_md5(), NULL);
     else if(type == 2)
-	SHA1Init(&sha1);
+        EVP_DigestInit_ex(ctx, EVP_sha1(), NULL);
     else
-	sha256_init(&sha256);
+        EVP_DigestInit_ex(ctx, EVP_sha256(), NULL);
 
-    while((bytes = fread(buff, 1, FILEBUFF, fs))) {
-	if(type == 1)
-	    cli_md5_update(&md5, buff, bytes);
-	else if(type == 2)
-	    SHA1Update(&sha1, buff, bytes);
-	else
-	    sha256_update(&sha256, buff, bytes);
-    }
+    while((bytes = fread(buff, 1, FILEBUFF, fs)))
+        EVP_DigestUpdate(ctx, buff, bytes);
 
-    if(type == 1) {
-	cli_md5_final(digest, &md5);
-	size = 16;
-    } else if(type == 2) {
-	SHA1Final(&sha1, digest);
-	size = 20;
-    } else {
-	sha256_final(&sha256, digest);
-	size = 32;
-    }
+    EVP_DigestFinal_ex(ctx, digest, &size);
+    EVP_MD_CTX_destroy(ctx);
 
     if(!(hashstr = (char *) cli_calloc(size*2 + 1, sizeof(char))))
-	return NULL;
+        return NULL;
 
     pt = hashstr;
     for(i = 0; i < size; i++) {
-	sprintf(pt, "%02x", digest[i]);
-	pt += 2;
+        sprintf(pt, "%02x", digest[i]);
+        pt += 2;
     }
 
     if(digcpy)
-	memcpy(digcpy, digest, size);
+        memcpy(digcpy, digest, size);
 
     return hashstr;
 }
@@ -1283,4 +1271,14 @@ void cl_engine_set_clcb_hash(struct cl_engine *engine, clcb_hash callback)
 void cl_engine_set_clcb_meta(struct cl_engine *engine, clcb_meta callback)
 {
     engine->cb_meta = callback;
+}
+
+__attribute__((constructor)) void init(void)
+{
+    cl_initialize_crypto();
+}
+
+__attribute__((destructor)) void deinit(void)
+{
+    cl_cleanup_crypto();
 }
