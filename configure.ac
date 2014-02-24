@@ -31,7 +31,6 @@ dnl safety check, this used to be a parameter to AC_INIT
 AC_CONFIG_SRCDIR([clamscan/clamscan.c])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CREATE_TARGET_H([target.h])
-AC_USE_SYSTEM_EXTENSIONS
 
 dnl -Wall and -Werror here are NOT CFLAGS, they refer to automake warnings
 dnl enable stealth builds and psychedelic tests

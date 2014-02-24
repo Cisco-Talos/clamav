@@ -158,7 +158,7 @@ static inline int matcher_run(const struct cli_matcher *root,
 int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, cli_ctx *ctx, cli_file_t ftype, struct cli_ac_data **acdata)
 {
 	int ret = CL_CLEAN;
-	unsigned int i, viruses_found = 0;
+	unsigned int i = 0, j = 0, viruses_found = 0;
 	struct cli_ac_data mdata;
 	struct cli_matcher *groot, *troot = NULL;
 	const char *virname = NULL;
@@ -172,12 +172,15 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, 
     groot = engine->root[0]; /* generic signatures */
 
     if(ftype) {
-	for(i = 1; i < CLI_MTARGETS; i++) {
-	    if(cli_mtargets[i].target == ftype) {
-		troot = engine->root[i];
-		break;
-	    }
-	}
+        for(i = 1; i < CLI_MTARGETS; i++) {
+            for (j = 0; j < cli_mtargets[i].target_count; ++j) {
+                if(cli_mtargets[i].target[j] == ftype) {
+                    troot = ctx->engine->root[i];
+                    break;
+                }
+            }
+            if (troot) break;
+        }
     }
 
     if(troot) {
@@ -706,7 +709,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 {
     const unsigned char *buff;
     int ret = CL_CLEAN, type = CL_CLEAN, bytes, compute_hash[CLI_HASH_AVAIL_TYPES];
-    unsigned int i = 0, bm_offmode = 0;
+    unsigned int i = 0, j = 0, bm_offmode = 0;
     uint32_t maxpatlen, offset = 0;
     struct cli_ac_data gdata, tdata;
     struct cli_bm_off toff;
@@ -759,10 +762,13 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 
     if(ftype) {
         for(i = 1; i < CLI_MTARGETS; i++) {
-            if(cli_mtargets[i].target == ftype) {
-                troot = ctx->engine->root[i];
-                break;
+            for (j = 0; j < cli_mtargets[i].target_count; ++j) {
+                if(cli_mtargets[i].target[j] == ftype) {
+                    troot = ctx->engine->root[i];
+                    break;
+                }
             }
+            if (troot) break;
         }
     }
 

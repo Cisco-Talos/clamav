@@ -1,4 +1,5 @@
 /*
+ *  Copyright (C) 2014 Cisco Systems, Inc.
  *  Copyright (C) 2007 - 2013 Sourcefire, Inc.
  *  Copyright (C) 2002 - 2007 Tomasz Kojm <tkojm@clamav.net>
  *  CDIFF code (C) 2006 Sensory Networks, Inc.
@@ -2544,6 +2545,15 @@ static int decodesig(char *sig, int fd)
 		break;
 	    case 9:
 		mprintf("MACHO\n");
+		break;
+	    case 10:
+		mprintf("PDF\n");
+		break;
+	    case 11:
+		mprintf("FLASH\n");
+		break;
+	    case 12:
+		mprintf("JAVA CLASS\n");
 		break;
 	    default:
 		mprintf("!decodesig: Invalid target type\n");
