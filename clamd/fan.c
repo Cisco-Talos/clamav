@@ -236,6 +236,10 @@ void *fan_th(void *arg)
 #include <string.h>
 #include <errno.h>
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "libclamav/crypto.h"
+
 #include "libclamav/clamav.h"
 #include "libclamav/scanners.h"
 
