@@ -591,28 +591,24 @@ unsigned char *cl_sign_data(EVP_PKEY *pkey, char *alg, unsigned char *hash, unsi
 
     sig = (unsigned char *)calloc(1, EVP_PKEY_size(pkey));
     if (!(sig)) {
-        free(hash);
         EVP_MD_CTX_destroy(ctx);
         return NULL;
     }
 
     if (!EVP_SignInit_ex(ctx, md, NULL)) {
         free(sig);
-        free(hash);
         EVP_MD_CTX_destroy(ctx);
         return NULL;
     }
 
     if (!EVP_SignUpdate(ctx, hash, EVP_MD_size(md))) {
         free(sig);
-        free(hash);
         EVP_MD_CTX_destroy(ctx);
         return NULL;
     }
 
     if (!EVP_SignFinal(ctx, sig, &siglen, pkey)) {
         free(sig);
-        free(hash);
         EVP_MD_CTX_destroy(ctx);
         return NULL;
     }
@@ -621,7 +617,6 @@ unsigned char *cl_sign_data(EVP_PKEY *pkey, char *alg, unsigned char *hash, unsi
         unsigned char *newsig = (unsigned char *)cl_base64_encode(sig, siglen);
         if (!(newsig)) {
             free(sig);
-            free(hash);
             EVP_MD_CTX_destroy(ctx);
             return NULL;
         }
@@ -741,9 +736,9 @@ int cl_validate_certificate_chain_ts_dir(char *tsdir, char *certpath)
                 while (nauths > 0)
                     free(authorities[nauths--]);
                 free(authorities[0]);
-                free(authorities);
             }
 
+            free(authorities);
             closedir(dp);
             return -1;
         }
@@ -922,7 +917,7 @@ struct tm *cl_ASN1_GetTimeT(ASN1_TIME *timeobj)
     struct tm *t;
     char* str;
     size_t i = 0;
-    const char *fmt;
+    const char *fmt=NULL;
     time_t localt;
 #ifdef _WIN32
     struct tm localtm, *ltm;
@@ -960,6 +955,11 @@ struct tm *cl_ASN1_GetTimeT(ASN1_TIME *timeobj)
         } else {
             str[5]--;
         }
+    }
+
+    if (!(fmt)) {
+        free(t);
+        return NULL;
     }
 
     if (!strptime(str, fmt, t)) {

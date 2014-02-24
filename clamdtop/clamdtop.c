@@ -595,7 +595,7 @@ static int make_connection_real(const char *soname, conn_t *conn)
 {
     int s;
     struct timeval tv;
-    char *port;
+    char *port=NULL;
     char *name, *pt = strdup(soname);
     const char *host = pt;
     struct addrinfo hints, *res=NULL, *p;

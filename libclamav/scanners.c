@@ -1304,6 +1304,7 @@ static int cli_scanscript(cli_ctx *ctx)
 
 	if(!(normalized = cli_malloc(SCANBUFF + maxpatlen))) {
 		cli_dbgmsg("cli_scanscript: Unable to malloc %u bytes\n", SCANBUFF);
+        free(tmpname);
 		return CL_EMEM;
 	}
 
@@ -1318,12 +1319,14 @@ static int cli_scanscript(cli_ctx *ctx)
 	    ret = cli_ac_caloff(troot, &tmdata, &info);
 	    if (ret) {
 		cli_ac_freedata(&tmdata);
+        free(tmpname);
 		return ret;
 	    }
 	}
 
 	if ((ret = cli_ac_initdata(&gmdata, groot->ac_partsigs, groot->ac_lsigs, groot->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN))) {
 	    cli_ac_freedata(&tmdata);
+        free(tmpname);
 	    return ret;
 	}
 	mdata[0] = &tmdata;
@@ -3076,7 +3079,7 @@ int cli_map_scan(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx, cli_
         ret = cli_base_scandesc(fd, ctx, type);
 
         /* remove the temp file, if needed */
-        if (fd > -1) {
+        if (fd >= 0) {
             close(fd);
         }
         if(!ctx->engine->keeptmp) {
