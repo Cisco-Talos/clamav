@@ -1180,6 +1180,8 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 				break;
 			}
 
+            cli_chomp(boundary);
+
 			/* Perhaps it should assume mixed? */
 			if(mimeSubtype[0] == '\0') {
 				cli_dbgmsg("Multipart has no subtype assuming alternative\n");
@@ -2136,32 +2138,57 @@ boundaryStart(const char *line, const char *boundary)
 	char *out;
 	int rc;
 	char buf[RFC2821LENGTH + 1];
+    char *newline;
 
 	if(line == NULL)
 		return 0;	/* empty line */
 	if(boundary == NULL)
 		return 0;
 
-	/*cli_dbgmsg("boundaryStart: line = '%s' boundary = '%s'\n", line, boundary);*/
+    newline = strdup(line);
+    if (!(newline))
+        newline = line;
 
-	if((*line != '-') && (*line != '('))
+    if (newline != line && strlen(newline)) {
+        char *p;
+        /* Trim trailing spaces */
+        p = newline + strlen(newline)-1;
+        while (*p == ' ')
+            *(p--) = '\0';
+    }
+
+    if (newline != line)
+        cli_chomp(newline);
+
+	cli_dbgmsg("boundaryStart: line = '%s' boundary = '%s'\n", line, boundary);
+
+	if((*newline != '-') && (*newline != '(')) {
+        if (newline != line)
+            free(newline);
 		return 0;
+    }
 
-	if(strchr(line, '-') == NULL)
+	if(strchr(newline, '-') == NULL) {
+        if (newline != line)
+            free(newline);
 		return 0;
+    }
 
-	if(strlen(line) <= sizeof(buf)) {
+	if(strlen(newline) <= sizeof(buf)) {
 		out = NULL;
-		ptr = rfc822comments(line, buf);
+		ptr = rfc822comments(newline, buf);
 	} else
-		ptr = out = rfc822comments(line, NULL);
+		ptr = out = rfc822comments(newline, NULL);
 
 	if(ptr == NULL)
-		ptr = line;
+		ptr = newline;
 
 	if((*ptr++ != '-') || (*ptr == '\0')) {
 		if(out)
 			free(out);
+        if (newline != line)
+            free(newline);
+
 		return 0;
 	}
 
@@ -2185,7 +2212,7 @@ boundaryStart(const char *line, const char *boundary)
 	 * they're not. Irrespective of whatever RFC2822 says, we need to find
 	 * viruses in both types of mails.
 	 */
-	if((strstr(&ptr[1], boundary) != NULL) || (strstr(line, boundary) != NULL)) {
+	if((strstr(&ptr[1], boundary) != NULL) || (strstr(newline, boundary) != NULL)) {
 		const char *k = ptr;
 
 		/*
@@ -2220,6 +2247,9 @@ boundaryStart(const char *line, const char *boundary)
 	if(rc == 1)
 		cli_dbgmsg("boundaryStart: found %s in %s\n", boundary, line);
 
+    if (newline != line)
+        free(newline);
+
 	return rc;
 }
 
@@ -2232,30 +2262,52 @@ static int
 boundaryEnd(const char *line, const char *boundary)
 {
 	size_t len;
+    char *newline, *p, *p2;
 
 	if(line == NULL)
 		return 0;
 
-	/*cli_dbgmsg("boundaryEnd: line = '%s' boundary = '%s'\n", line, boundary);*/
+    p = newline = strdup(line);
+    if (!(newline))
+        newline = line;
 
-	if(*line++ != '-')
+    if (newline != line && strlen(newline)) {
+        /* Trim trailing spaces */
+        p2 = newline + strlen(newline)-1;
+        while (*p2 == ' ')
+            *(p2--) = '\0';
+    }
+
+	cli_dbgmsg("boundaryEnd: line = '%s' boundary = '%s'\n", newline, boundary);
+
+	if(*p++ != '-')
 		return 0;
-	if(*line++ != '-')
+	if(*p++ != '-')
 		return 0;
 	len = strlen(boundary);
-	if(strncasecmp(line, boundary, len) != 0)
+	if(strncasecmp(p, boundary, len) != 0) {
+        if (newline != line)
+            free(newline);
+
 		return 0;
+    }
 	/*
 	 * Use < rather than == because some broken mails have white
 	 * space after the boundary
 	 */
-	if(strlen(line) < (len + 2))
+	if(strlen(p) < (len + 2))
 		return 0;
-	line = &line[len];
-	if(*line++ != '-')
+	p = &p[len];
+	if(*p++ != '-') {
+        if (newline != line)
+            free(newline);
+
 		return 0;
-	if(*line == '-') {
-		cli_dbgmsg("boundaryEnd: found %s in %s\n", boundary, line);
+    }
+	if(*p == '-') {
+		cli_dbgmsg("boundaryEnd: found %s in %s\n", boundary, p);
+        if (newline != line)
+            free(newline);
 		return 1;
 	}
 	return 0;
