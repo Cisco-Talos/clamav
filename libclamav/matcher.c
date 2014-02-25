@@ -459,7 +459,7 @@ int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx)
     if(have_sha1 || have_sha256) {
         if((ptr = fmap_need_off_once(map, 0, size))) {
             if(have_sha1) {
-                cl_sha1(ptr, size, shash1, NULL);
+                cl_sha1(ptr, size, &shash1[SHA1_HASH_SIZE], NULL);
 
                 if(cli_hm_scan(&shash1[SHA1_HASH_SIZE], size, &virname, ctx->engine->hm_fp, CLI_HASH_SHA1) == CL_VIRUS) {
                     cli_dbgmsg("cli_checkfp(sha1): Found false positive detection (fp sig: %s)\n", virname);
@@ -476,7 +476,7 @@ int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx)
             }
 
             if(have_sha256) {
-                cl_sha256(ptr, size, shash256, NULL);
+                cl_sha256(ptr, size, &shash256[SHA256_HASH_SIZE], NULL);
 
                 if(cli_hm_scan(&shash256[SHA256_HASH_SIZE], size, &virname, ctx->engine->hm_fp, CLI_HASH_SHA256) == CL_VIRUS) {
                     cli_dbgmsg("cli_checkfp(sha256): Found false positive detection (fp sig: %s)\n", virname);
