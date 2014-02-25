@@ -89,6 +89,7 @@ CLAMAV_PRIVATE {
     cli_hashstream;
     html_normalise_map;
     cli_utf16toascii;
+    cli_cache_purge;
 
     cli_malloc;
     cli_memstr;

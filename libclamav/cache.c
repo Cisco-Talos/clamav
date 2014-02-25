@@ -799,6 +799,21 @@ void cli_cache_destroy(struct cl_engine *engine) {
     mpool_free(engine->mempool, cache);
 }
 
+void cli_cache_purge(struct cl_engine *engine) {
+    unsigned int i;
+
+    if (!(engine) || !(engine->cache))
+        return;
+
+    if (engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE)
+        return;
+
+    for (i=0; i < TREES; i++) {
+        cacheset_destroy(&(engine->cache[i].cacheset), engine->mempool);
+        cacheset_init(&(engine->cache[i].cacheset), engine->mempool);
+    }
+}
+
 /* Looks up an hash in the proper tree */
 static int cache_lookup_hash(unsigned char *md5, size_t len, struct CACHE *cache, uint32_t reclevel) {
     unsigned int key = getkey(md5);
