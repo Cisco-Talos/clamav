@@ -181,7 +181,7 @@ unsigned char *cl_hash_file_fd_ctx(EVP_MD_CTX *ctx, int fd, unsigned int *olen)
     unsigned char *hash;
     int mdsz;
     unsigned int hashlen;
-    struct stat sb;
+    STATBUF sb;
 
 	unsigned int blocksize;
 
@@ -193,7 +193,7 @@ unsigned char *cl_hash_file_fd_ctx(EVP_MD_CTX *ctx, int fd, unsigned int *olen)
 
     mdsz = EVP_MD_CTX_size(ctx);
 
-    if (fstat(fd, &sb) < 0) {
+    if (FSTAT(fd, &sb) < 0) {
         return NULL;
     }
 
