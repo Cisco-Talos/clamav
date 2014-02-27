@@ -2281,10 +2281,19 @@ boundaryEnd(const char *line, const char *boundary)
 
 	/* cli_dbgmsg("boundaryEnd: line = '%s' boundary = '%s'\n", newline, boundary); */
 
-	if(*p++ != '-')
+	if(*p++ != '-') {
+        if (newline != line)
+            free(newline);
 		return 0;
-	if(*p++ != '-')
+    }
+
+	if(*p++ != '-') {
+        if (newline != line)
+            free(newline);
+
 		return 0;
+    }
+
 	len = strlen(boundary);
 	if(strncasecmp(p, boundary, len) != 0) {
         if (newline != line)
@@ -2302,6 +2311,7 @@ boundaryEnd(const char *line, const char *boundary)
 
 		return 0;
     }
+
 	p = &p[len];
 	if(*p++ != '-') {
         if (newline != line)
@@ -2309,6 +2319,7 @@ boundaryEnd(const char *line, const char *boundary)
 
 		return 0;
     }
+
 	if(*p == '-') {
 		/* cli_dbgmsg("boundaryEnd: found %s in %s\n", boundary, p); */
         if (newline != line)
