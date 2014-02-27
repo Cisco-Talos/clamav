@@ -2160,7 +2160,7 @@ boundaryStart(const char *line, const char *boundary)
     if (newline != line)
         cli_chomp(newline);
 
-	cli_dbgmsg("boundaryStart: line = '%s' boundary = '%s'\n", line, boundary);
+	/* cli_dbgmsg("boundaryStart: line = '%s' boundary = '%s'\n", line, boundary); */
 
 	if((*newline != '-') && (*newline != '(')) {
         if (newline != line)
@@ -2268,8 +2268,9 @@ boundaryEnd(const char *line, const char *boundary)
 		return 0;
 
     p = newline = strdup(line);
-    if (!(newline))
-        newline = line;
+    if (!(newline)) {
+        p = newline = line;
+    }
 
     if (newline != line && strlen(newline)) {
         /* Trim trailing spaces */
@@ -2278,7 +2279,7 @@ boundaryEnd(const char *line, const char *boundary)
             *(p2--) = '\0';
     }
 
-	cli_dbgmsg("boundaryEnd: line = '%s' boundary = '%s'\n", newline, boundary);
+	/* cli_dbgmsg("boundaryEnd: line = '%s' boundary = '%s'\n", newline, boundary); */
 
 	if(*p++ != '-')
 		return 0;
@@ -2295,8 +2296,12 @@ boundaryEnd(const char *line, const char *boundary)
 	 * Use < rather than == because some broken mails have white
 	 * space after the boundary
 	 */
-	if(strlen(p) < (len + 2))
+	if(strlen(p) < (len + 2)) {
+        if (newline != line)
+            free(newline);
+
 		return 0;
+    }
 	p = &p[len];
 	if(*p++ != '-') {
         if (newline != line)
@@ -2305,9 +2310,10 @@ boundaryEnd(const char *line, const char *boundary)
 		return 0;
     }
 	if(*p == '-') {
-		cli_dbgmsg("boundaryEnd: found %s in %s\n", boundary, p);
+		/* cli_dbgmsg("boundaryEnd: found %s in %s\n", boundary, p); */
         if (newline != line)
             free(newline);
+
 		return 1;
 	}
 
