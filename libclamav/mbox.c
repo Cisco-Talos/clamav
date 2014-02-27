@@ -2310,6 +2310,10 @@ boundaryEnd(const char *line, const char *boundary)
             free(newline);
 		return 1;
 	}
+
+    if (newline != line)
+        free(newline);
+
 	return 0;
 }
 
