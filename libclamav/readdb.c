@@ -421,7 +421,7 @@ char *cli_dbgets(char *buff, unsigned int size, FILE *fs, struct cli_dbio *dbio)
 		dbio->size -= bread;
 		dbio->bread += bread;
         if (dbio->hashctx)
-            EVP_DigestUpdate(dbio->hashctx, dbio->readpt, bread);
+            cl_update_hash(dbio->hashctx, dbio->readpt, bread);
 	    }
 	    if(dbio->chkonly && dbio->bufpt) {
 		dbio->bufpt = NULL;
@@ -479,7 +479,7 @@ char *cli_dbgets(char *buff, unsigned int size, FILE *fs, struct cli_dbio *dbio)
 	dbio->size -= bs;
 	dbio->bread += bs;
     if (dbio->hashctx)
-        EVP_DigestUpdate(dbio->hashctx, buff, bs);
+        cl_update_hash(dbio->hashctx, buff, bs);
 	return pt;
     }
 }
@@ -1733,7 +1733,7 @@ static int cli_loadinfo(FILE *fs, struct cl_engine *engine, unsigned int options
 	unsigned char hash[32];
         struct cli_dbinfo *last = NULL, *new;
 	int ret = CL_SUCCESS, dsig = 0;
-    EVP_MD_CTX *ctx;
+    void *ctx;
 
 
     if(!dbio) {
@@ -1741,18 +1741,15 @@ static int cli_loadinfo(FILE *fs, struct cl_engine *engine, unsigned int options
 	return CL_EMALFDB;
     }
 
-    ctx = EVP_MD_CTX_create();
+    ctx = cl_hash_init("sha256");
     if (!(ctx))
         return CL_EMALFDB;
-
-    EVP_DigestInit_ex(ctx, EVP_sha256(), NULL);
 
     while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
 	line++;
 	if(!(options & CL_DB_UNSIGNED) && !strncmp(buffer, "DSIG:", 5)) {
 	    dsig = 1;
-	    EVP_DigestFinal_ex(ctx, hash, NULL);
-        EVP_MD_CTX_destroy(ctx);
+	    cl_finish_hash(ctx, hash);
 	    if(cli_versig2(hash, buffer + 5, INFO_NSTR, INFO_ESTR) != CL_SUCCESS) {
 		cli_errmsg("cli_loadinfo: Incorrect digital signature\n");
 		ret = CL_EMALFDB;
@@ -1770,7 +1767,7 @@ static int cli_loadinfo(FILE *fs, struct cl_engine *engine, unsigned int options
             buffer[len + 1] = 0;
         }
     }
-	EVP_DigestUpdate(ctx, buffer, strlen(buffer));
+	cl_update_hash(ctx, buffer, strlen(buffer));
 	cli_chomp(buffer);
 	if(!strncmp("ClamAV-VDB:", buffer, 11)) {
 	    if(engine->dbinfo) { /* shouldn't be initialized at this point */

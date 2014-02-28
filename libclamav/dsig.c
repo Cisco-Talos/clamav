@@ -158,7 +158,7 @@ int cli_versig2(const unsigned char *sha256, const char *dsig_str, const char *n
 	unsigned char *decoded, digest1[HASH_LEN], digest2[HASH_LEN], digest3[HASH_LEN], *salt;
 	unsigned char mask[BLK_LEN], data[BLK_LEN], final[8 + 2 * HASH_LEN], c[4];
 	unsigned int i, rounds;
-    EVP_MD_CTX *ctx;
+    void *ctx;
 	mp_int n, e;
 
     mp_init(&e);
@@ -187,15 +187,13 @@ int cli_versig2(const unsigned char *sha256, const char *dsig_str, const char *n
 	c[2] = (unsigned char) (i / 256);
 	c[3] = (unsigned char) i;
 
-    ctx = EVP_MD_CTX_create();
+    ctx = cl_hash_init("sha256");
     if (!(ctx))
         return CL_EMEM;
 
-    EVP_DigestInit_ex(ctx, EVP_sha256(), NULL);
-	EVP_DigestUpdate(ctx, digest2, HASH_LEN);
-	EVP_DigestUpdate(ctx, c, 4);
-	EVP_DigestFinal_ex(ctx, digest3, NULL);
-    EVP_MD_CTX_destroy(ctx);
+	cl_update_hash(ctx, digest2, HASH_LEN);
+	cl_update_hash(ctx, c, 4);
+	cl_finish_hash(ctx, digest3);
 	if(i + 1 == rounds)
             memcpy(&data[i * 32], digest3, BLK_LEN - i * HASH_LEN);
 	else
@@ -217,14 +215,12 @@ int cli_versig2(const unsigned char *sha256, const char *dsig_str, const char *n
     memcpy(&final[8], sha256, HASH_LEN);
     memcpy(&final[8 + HASH_LEN], salt, SALT_LEN);
 
-    ctx = EVP_MD_CTX_create();
+    ctx = cl_hash_init("sha256");
     if (!(ctx))
         return CL_EMEM;
 
-    EVP_DigestInit_ex(ctx, EVP_sha256(), NULL);
-	EVP_DigestUpdate(ctx, final, sizeof(final));
-	EVP_DigestFinal_ex(ctx, digest1, NULL);
-    EVP_MD_CTX_destroy(ctx);
+	cl_update_hash(ctx, final, sizeof(final));
+	cl_finish_hash(ctx, digest1);
 
     return memcmp(digest1, digest2, HASH_LEN) ? CL_EVERIFY : CL_SUCCESS;
 }

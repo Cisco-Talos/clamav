@@ -59,9 +59,7 @@ void XzCheck_Init(CXzCheck *p, int mode)
     case XZ_CHECK_CRC32: p->crc = CRC_INIT_VAL; break;
     case XZ_CHECK_CRC64: p->crc64 = CRC64_INIT_VAL; break;
     case XZ_CHECK_SHA256:
-        p->sha = EVP_MD_CTX_create();
-        if ((p->sha))
-            EVP_DigestInit_ex(p->sha, EVP_sha256(), NULL);
+        p->sha = cl_hash_init("sha256");
         break;
   }
 }
@@ -74,7 +72,7 @@ void XzCheck_Update(CXzCheck *p, const void *data, size_t size)
     case XZ_CHECK_CRC64: p->crc64 = Crc64Update(p->crc64, data, size); break;
     case XZ_CHECK_SHA256:
         if ((p->sha))
-            EVP_DigestUpdate(p->sha, (const Byte *)data, size);
+            cl_update_hash(p->sha, (const Byte *)data, size);
         break;
   }
 }
@@ -98,8 +96,7 @@ int XzCheck_Final(CXzCheck *p, Byte *digest)
       if (!(p->sha))
           return 0;
 
-      EVP_DigestFinal_ex(p->sha, digest, NULL);
-      EVP_MD_CTX_destroy(p->sha);
+      cl_finish_hash(p->sha, digest);
       break;
     default:
       return 0;

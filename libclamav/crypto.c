@@ -1017,3 +1017,59 @@ X509_CRL *cl_load_crl(const char *file)
 
     return x;
 }
+
+void *cl_hash_init(const char *alg)
+{
+    EVP_MD_CTX *ctx;
+    const EVP_MD *md;
+
+    md = EVP_get_digestbyname(alg);
+    if (!(md))
+        return NULL;
+
+    ctx = EVP_MD_CTX_create();
+    if (!(ctx)) {
+        return NULL;
+    }
+
+    if (!EVP_DigestInit_ex(ctx, md, NULL)) {
+        EVP_MD_CTX_destroy(ctx);
+        return NULL;
+    }
+
+    return (void *)ctx;
+}
+
+int cl_update_hash(void *ctx, void *data, size_t sz)
+{
+    if (!(ctx) || !(data))
+        return -1;
+
+    if (!EVP_DigestUpdate((EVP_MD_CTX *)ctx, data, sz))
+        return -1;
+
+    return 0;
+}
+
+int cl_finish_hash(void *ctx, void *buf)
+{
+    int res=0;
+
+    if (!(ctx) || !(buf))
+        return -1;
+
+    if (!EVP_DigestFinal_ex((EVP_MD_CTX *)ctx, (unsigned char *)buf, NULL))
+        res = -1;
+
+    EVP_MD_CTX_destroy((EVP_MD_CTX *)ctx);
+
+    return res;
+}
+
+void cl_hash_destroy(void *ctx)
+{
+    if (!(ctx))
+        return;
+
+    EVP_MD_CTX_destroy((EVP_MD_CTX *)ctx);
+}
