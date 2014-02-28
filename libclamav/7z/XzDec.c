@@ -652,7 +652,7 @@ SRes XzUnpacker_Code(CXzUnpacker *p, Byte *dest, SizeT *destLen,
         unsigned num = Xz_WriteVarInt(temp, p->packSize + p->blockHeaderSize + XzFlags_GetCheckSize(p->streamFlags));
         num += Xz_WriteVarInt(temp + num, p->unpackSize);
         if ((p->sha))
-            EVP_DigestUpdate(p->sha, temp, num);
+            cl_update_hash(p->sha, temp, num);
         p->indexSize += num;
         p->numBlocks++;
         
@@ -687,9 +687,7 @@ SRes XzUnpacker_Code(CXzUnpacker *p, Byte *dest, SizeT *destLen,
         {
           RINOK(Xz_ParseHeader(&p->streamFlags, p->buf));
           p->state = XZ_STATE_BLOCK_HEADER;
-          p->sha = EVP_MD_CTX_create();
-          if ((p->sha))
-              EVP_DigestInit_ex(p->sha, EVP_sha256(), NULL);
+          p->sha = cl_hash_init("sha256");
           p->indexSize = 0;
           p->numBlocks = 0;
           p->pos = 0;
@@ -709,11 +707,8 @@ SRes XzUnpacker_Code(CXzUnpacker *p, Byte *dest, SizeT *destLen,
             p->indexPos = p->indexPreSize;
             p->indexSize += p->indexPreSize;
             if ((p->sha)) {
-                EVP_DigestFinal_ex(p->sha, p->shaDigest, NULL);
-                EVP_MD_CTX_destroy(p->sha);
-                p->sha = EVP_MD_CTX_create();
-                if ((p->sha))
-                    EVP_DigestInit_ex(p->sha, EVP_sha256(), NULL);
+                cl_finish_hash(p->sha, p->shaDigest);
+                p->sha = cl_hash_init("sha256");
             }
             p->crc = CrcUpdate(CRC_INIT_VAL, p->buf, p->indexPreSize);
             p->state = XZ_STATE_STREAM_INDEX;
@@ -793,7 +788,7 @@ SRes XzUnpacker_Code(CXzUnpacker *p, Byte *dest, SizeT *destLen,
               srcRem = (SizeT)cur;
             p->crc = CrcUpdate(p->crc, src, srcRem);
             if ((p->sha))
-                EVP_DigestUpdate(p->sha, src, srcRem);
+                cl_update_hash(p->sha, src, srcRem);
             (*srcLen) += srcRem;
             src += srcRem;
             p->indexPos += srcRem;
@@ -814,10 +809,8 @@ SRes XzUnpacker_Code(CXzUnpacker *p, Byte *dest, SizeT *destLen,
             p->state = XZ_STATE_STREAM_INDEX_CRC;
             p->indexSize += 4;
             p->pos = 0;
-            if ((p->sha)) {
-                EVP_DigestFinal_ex(p->sha, digest, NULL);
-                EVP_MD_CTX_destroy(p->sha);
-            }
+            if ((p->sha))
+                cl_finish_hash(p->sha, digest);
 
             if (memcmp(digest, p->shaDigest, SHA256_DIGEST_SIZE) != 0)
               return SZ_ERROR_CRC;

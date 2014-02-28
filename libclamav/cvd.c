@@ -199,7 +199,7 @@ static void cli_tgzload_cleanup(int comp, struct cli_dbio *dbio, int fdd)
     }
 
     if (dbio->hashctx) {
-        EVP_MD_CTX_destroy(dbio->hashctx);
+        cl_hash_destroy(dbio->hashctx);
         dbio->hashctx = NULL;
     }
 }
@@ -321,12 +321,11 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
 	dbio->bufpt = NULL;
 	dbio->readpt = dbio->buf;
     if (!(dbio->hashctx)) {
-        dbio->hashctx = EVP_MD_CTX_create();
+        dbio->hashctx = cl_hash_init("sha256");
         if (!(dbio->hashctx)) {
             cli_tgzload_cleanup(compr, dbio, fdd);
             return CL_EMALFDB;
         }
-        EVP_DigestInit_ex(dbio->hashctx, EVP_sha256(), NULL);
     }
 	dbio->bread = 0;
 
@@ -361,8 +360,12 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
 			cli_tgzload_cleanup(compr, dbio, fdd);
 			return CL_EMALFDB;
 		    }
-            EVP_DigestFinal_ex(dbio->hashctx, hash, NULL);
-            EVP_DigestInit_ex(dbio->hashctx, EVP_sha256(), NULL);
+            cl_finish_hash(dbio->hashctx, hash);
+            dbio->hashctx = cl_hash_init("sha256");
+            if (!(dbio->hashctx)) {
+                cli_tgzload_cleanup(compr, dbio, fdd);
+                return CL_EMALFDB;
+            }
 		    if(memcmp(db->hash, hash, 32)) {
 			cli_errmsg("cli_tgzload: Invalid checksum for file %s\n", name);
 			cli_tgzload_cleanup(compr, dbio, fdd);

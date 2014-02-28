@@ -401,27 +401,25 @@ static char *sha256file(const char *file, unsigned int *size)
 	unsigned int i, bytes;
 	unsigned char digest[32], buffer[FILEBUFF];
 	char *sha;
-	EVP_MD_CTX *ctx;
+	void *ctx;
 
-    ctx = EVP_MD_CTX_create();
+    ctx = cl_hash_init("sha256");
     if (!(ctx))
         return NULL;
 
-    EVP_DigestInit_ex(ctx, EVP_sha256(), NULL);
     if(!(fh = fopen(file, "rb"))) {
 	mprintf("!sha256file: Can't open file %s\n", file);
-    EVP_MD_CTX_destroy(ctx);
+    cl_hash_destroy(ctx);
 	return NULL;
     }
     if(size)
 	*size = 0;
     while((bytes = fread(buffer, 1, sizeof(buffer), fh))) {
-	EVP_DigestUpdate(ctx, buffer, bytes);
+	cl_update_hash(ctx, buffer, bytes);
 	if(size)
 	    *size += bytes;
     }
-    EVP_DigestFinal_ex(ctx, digest, NULL);
-    EVP_MD_CTX_destroy(ctx);
+    cl_finish_hash(ctx, digest);
     sha = (char *) malloc(65);
     if(!sha)
     {
@@ -441,7 +439,7 @@ static int writeinfo(const char *dbname, const char *builder, const char *header
 	unsigned int i, bytes;
 	char file[32], *pt, dbfile[32];
 	unsigned char digest[32], buffer[FILEBUFF];
-	EVP_MD_CTX *ctx;
+	void *ctx;
 
     snprintf(file, sizeof(file), "%s.info", dbname);
     if(!access(file, R_OK)) {
@@ -498,17 +496,15 @@ static int writeinfo(const char *dbname, const char *builder, const char *header
     }
     if(!optget(opts, "unsigned")->enabled) {
 	rewind(fh);
-    ctx = EVP_MD_CTX_create();
+    ctx = cl_hash_init("sha256");
     if (!(ctx)) {
         fclose(fh);
         return -1;
     }
 
-	EVP_DigestInit_ex(ctx, EVP_sha256(), NULL);
 	while((bytes = fread(buffer, 1, sizeof(buffer), fh)))
-	    EVP_DigestUpdate(ctx, buffer, bytes);
-	EVP_DigestFinal_ex(ctx, digest, NULL);
-    EVP_MD_CTX_destroy(ctx);
+	    cl_update_hash(ctx, buffer, bytes);
+	cl_finish_hash(ctx, digest);
 	if(!(pt = getdsig(optget(opts, "server")->strarg, builder, digest, 32, 3))) {
 	    mprintf("!writeinfo: Can't get digital signature from remote server\n");
 	    fclose(fh);
@@ -528,7 +524,7 @@ static int script2cdiff(const char *script, const char *builder, const struct op
 {
 	char *cdiff, *pt, buffer[FILEBUFF];
 	unsigned char digest[32];
-	EVP_MD_CTX *ctx;
+	void *ctx;
 	STATBUF sb;
 	FILE *scripth, *cdiffh;
 	gzFile gzh;
@@ -612,21 +608,19 @@ static int script2cdiff(const char *script, const char *builder, const struct op
 	return -1;
     }
 
-    ctx = EVP_MD_CTX_create();
+    ctx = cl_hash_init("sha256");
     if (!(ctx)) {
         unlink(cdiff);
         free(cdiff);
         fclose(cdiffh);
         return -1;
     }
-    EVP_DigestInit_ex(ctx, EVP_sha256(), NULL);
 
     while((bytes = fread(buffer, 1, sizeof(buffer), cdiffh)))
-	EVP_DigestUpdate(ctx, (unsigned char *) buffer, bytes);
+	cl_update_hash(ctx, (unsigned char *) buffer, bytes);
 
     fclose(cdiffh);
-    EVP_DigestFinal_ex(ctx, digest, NULL);
-    EVP_MD_CTX_destroy(ctx);
+    cl_finish_hash(ctx, digest);
 
     if(!(pt = getdsig(optget(opts, "server")->strarg, builder, digest, 32, 2))) {
 	mprintf("!script2cdiff: Can't get digital signature from remote server\n");

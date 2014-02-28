@@ -244,7 +244,7 @@ char *internal_get_host_id(void)
     unsigned char raw_md5[16];
     char *printable_md5;
     struct device *devices;
-    EVP_MD_CTX *ctx;
+    void *ctx;
 
     devices = get_devices();
     if (!(devices))
@@ -256,7 +256,7 @@ char *internal_get_host_id(void)
         return NULL;
     }
 
-    ctx = EVP_MD_CTX_create();
+    ctx = cl_hash_init("md5");
     if (!(ctx)) {
         for (i=0; devices[i].name != NULL; i++)
             free(devices[i].name);
@@ -267,12 +267,10 @@ char *internal_get_host_id(void)
         return NULL;
     }
 
-    EVP_DigestInit_ex(ctx, EVP_md5(), NULL);
     for (i=0; devices[i].name != NULL; i++)
-        EVP_DigestUpdate(ctx, devices[i].mac, sizeof(devices[i].mac));
+        cl_update_hash(ctx, devices[i].mac, sizeof(devices[i].mac));
 
-    EVP_DigestFinal_ex(ctx, raw_md5, NULL);
-    EVP_MD_CTX_destroy(ctx);
+    cl_finish_hash(ctx, raw_md5);
 
     for (i=0; devices[i].name != NULL; i++)
         free(devices[i].name);
