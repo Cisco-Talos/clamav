@@ -51,6 +51,10 @@ CLAMAV_PUBLIC {
     cl_engine_set_clcb_stats_get_num;
     cl_engine_set_clcb_stats_get_size;
     cl_engine_set_clcb_stats_get_hostid;
+    cl_hash_init;
+    cl_update_hash;
+    cl_finish_hash;
+    cl_hash_destroy;
 };
 CLAMAV_PRIVATE {
   global:

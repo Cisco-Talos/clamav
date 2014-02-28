@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2012 Sourcefire, Inc.
+ *  Copyright (C) 2007-2014 Cisco Systems, Inc.
  *
  *  Authors: Tomasz Kojm
  *
@@ -79,6 +79,7 @@
 #include "bytecode_api.h"
 #include "bytecode_priv.h"
 #include "cache.h"
+#include "openioc.h"
 #ifdef CL_THREAD_SAFE
 #  include <pthread.h>
 static pthread_mutex_t cli_ref_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -421,7 +422,7 @@ char *cli_dbgets(char *buff, unsigned int size, FILE *fs, struct cli_dbio *dbio)
 		dbio->size -= bread;
 		dbio->bread += bread;
         if (dbio->hashctx)
-            EVP_DigestUpdate(dbio->hashctx, dbio->readpt, bread);
+            cl_update_hash(dbio->hashctx, dbio->readpt, bread);
 	    }
 	    if(dbio->chkonly && dbio->bufpt) {
 		dbio->bufpt = NULL;
@@ -479,7 +480,7 @@ char *cli_dbgets(char *buff, unsigned int size, FILE *fs, struct cli_dbio *dbio)
 	dbio->size -= bs;
 	dbio->bread += bs;
     if (dbio->hashctx)
-        EVP_DigestUpdate(dbio->hashctx, buff, bs);
+        cl_update_hash(dbio->hashctx, buff, bs);
 	return pt;
     }
 }
@@ -1733,7 +1734,7 @@ static int cli_loadinfo(FILE *fs, struct cl_engine *engine, unsigned int options
 	unsigned char hash[32];
         struct cli_dbinfo *last = NULL, *new;
 	int ret = CL_SUCCESS, dsig = 0;
-    EVP_MD_CTX *ctx;
+    void *ctx;
 
 
     if(!dbio) {
@@ -1741,18 +1742,15 @@ static int cli_loadinfo(FILE *fs, struct cl_engine *engine, unsigned int options
 	return CL_EMALFDB;
     }
 
-    ctx = EVP_MD_CTX_create();
+    ctx = cl_hash_init("sha256");
     if (!(ctx))
         return CL_EMALFDB;
-
-    EVP_DigestInit_ex(ctx, EVP_sha256(), NULL);
 
     while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
 	line++;
 	if(!(options & CL_DB_UNSIGNED) && !strncmp(buffer, "DSIG:", 5)) {
 	    dsig = 1;
-	    EVP_DigestFinal_ex(ctx, hash, NULL);
-        EVP_MD_CTX_destroy(ctx);
+	    cl_finish_hash(ctx, hash);
 	    if(cli_versig2(hash, buffer + 5, INFO_NSTR, INFO_ESTR) != CL_SUCCESS) {
 		cli_errmsg("cli_loadinfo: Incorrect digital signature\n");
 		ret = CL_EMALFDB;
@@ -1770,7 +1768,7 @@ static int cli_loadinfo(FILE *fs, struct cl_engine *engine, unsigned int options
             buffer[len + 1] = 0;
         }
     }
-	EVP_DigestUpdate(ctx, buffer, strlen(buffer));
+	cl_update_hash(ctx, buffer, strlen(buffer));
 	cli_chomp(buffer);
 	if(!strncmp("ClamAV-VDB:", buffer, 11)) {
 	    if(engine->dbinfo) { /* shouldn't be initialized at this point */
@@ -2604,6 +2602,14 @@ static int cli_loadmscat(FILE *fs, const char *dbname, struct cl_engine *engine,
     return 0;
 }
 
+static int cli_loadopenioc(FILE *fs, const char *dbname, struct cl_engine *engine)
+{
+    int rc;
+    rc = openioc_parse(dbname, fileno(fs), engine);
+    if (rc != CL_SUCCESS)
+        return CL_EMALFDB;
+}
+
 static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned int *signo, unsigned int options);
 
 int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio)
@@ -2732,6 +2738,8 @@ int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo
     	ret = cli_loadcdb(fs, engine, signo, options, dbio);
     } else if(cli_strbcasestr(dbname, ".cat")) {
 	ret = cli_loadmscat(fs, dbname, engine, options, dbio);
+    } else if(cli_strbcasestr(dbname, ".ioc")) {
+	ret = cli_loadopenioc(fs, dbname, engine);
     } else {
 	cli_dbgmsg("cli_load: unknown extension - assuming old database format\n");
 	ret = cli_loaddb(fs, engine, signo, options, dbio, dbname);
@@ -2938,7 +2946,7 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
     }
     closedir(dd);
     if(ret == CL_EOPEN)
-	cli_errmsg("cli_loaddb(): No supported database files found in %s\n", dirname);
+	cli_errmsg("cli_loaddbdir(): No supported database files found in %s\n", dirname);
 
     return ret;
 }

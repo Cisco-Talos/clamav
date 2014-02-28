@@ -1,7 +1,7 @@
 /*
- *  Copyright (C) 2007-2010 Sourcefire, Inc.
+ *  Copyright (C) 2014 Cisco Systems, Inc.
  *
- *  Authors: Tomasz Kojm
+ *  Authors: Steven Morgan <smorgan@sourcefire.com>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -18,24 +18,9 @@
  *  MA 02110-1301, USA.
  */
 
-#ifndef __CVD_H
-#define __CVD_H
+#ifndef _OPENIOC_H_ 
+#define _OPENIOC_H_ 
 
-#include <stdio.h>
-#include <zlib.h>
-#include "clamav.h"
-
-struct cli_dbio {
-    gzFile gzs;
-    FILE *fs;
-    unsigned int size, bread;
-    char *buf, *bufpt, *readpt;
-    unsigned int usebuf, bufsize, readsize;
-    unsigned int chkonly;
-    void *hashctx;
-};
-
-int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, unsigned int dbtype, const char *filename, unsigned int chkonly);
-int cli_cvdunpack(const char *file, const char *dir);
+int openioc_parse(const char * fname, int fd, struct cl_engine *engine);
 
 #endif

@@ -1202,17 +1202,15 @@ static int hash_match(const struct regex_matcher *rlist, const char *host, size_
 	    unsigned char h[65];
 	    unsigned char sha256_dig[32];
 	    unsigned i;
-        EVP_MD_CTX *sha256;
+        void *sha256;
 
-        sha256 = EVP_MD_CTX_create();
+        sha256 = cl_hash_init("sha256");
         if (!(sha256))
             return CL_EMEM;
 
-        EVP_DigestInit_ex(sha256, EVP_sha256(), NULL);
-        EVP_DigestUpdate(sha256, host, hlen);
-        EVP_DigestUpdate(sha256, path, plen);
-        EVP_DigestFinal_ex(sha256, sha256_dig, NULL);
-        EVP_MD_CTX_destroy(sha256);
+        cl_update_hash(sha256, host, hlen);
+        cl_update_hash(sha256, path, plen);
+        cl_finish_hash(sha256, sha256_dig);
 
 	    for(i=0;i<32;i++) {
 		h[2*i] = hexchars[sha256_dig[i]>>4];

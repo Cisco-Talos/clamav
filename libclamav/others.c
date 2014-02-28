@@ -880,25 +880,33 @@ char *cli_hashstream(FILE *fs, unsigned char *digcpy, int type)
     unsigned char digest[32];
     char buff[FILEBUFF];
     char *hashstr, *pt;
+    const char *alg=NULL;
     int i, bytes, size;
-    EVP_MD_CTX *ctx;
+    void *ctx;
 
-    ctx = EVP_MD_CTX_create();
+    switch (type) {
+        case 1:
+            alg = "md5";
+            size = 16;
+            break;
+        case 2:
+            alg = "sha1";
+            size = 20;
+            break;
+        default:
+            alg = "sha256";
+            size = 32;
+            break;
+    }
+
+    ctx = cl_hash_init(alg);
     if (!(ctx))
         return NULL;
 
-    if(type == 1)
-        EVP_DigestInit_ex(ctx, EVP_md5(), NULL);
-    else if(type == 2)
-        EVP_DigestInit_ex(ctx, EVP_sha1(), NULL);
-    else
-        EVP_DigestInit_ex(ctx, EVP_sha256(), NULL);
-
     while((bytes = fread(buff, 1, FILEBUFF, fs)))
-        EVP_DigestUpdate(ctx, buff, bytes);
+        cl_update_hash(ctx, buff, bytes);
 
-    EVP_DigestFinal_ex(ctx, digest, &size);
-    EVP_MD_CTX_destroy(ctx);
+    cl_finish_hash(ctx, digest);
 
     if(!(hashstr = (char *) cli_calloc(size*2 + 1, sizeof(char))))
         return NULL;

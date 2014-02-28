@@ -297,11 +297,13 @@ int cli_scandmg(cli_ctx *ctx)
                 if (ret == CL_EFORMAT) {
                     /* Didn't decode, or not a mish block */
                     ret = CL_CLEAN;
+                    free(mish_set);
                     xmlFree(nodeName);
                     continue;
                 }
                 else if (ret != CL_CLEAN) {
                     xmlFree(nodeName);
+                    free(mish_set);
                     continue;
                 }
                 /* Add mish block to list */

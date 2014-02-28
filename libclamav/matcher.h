@@ -130,29 +130,31 @@ struct cli_cdb
     struct cli_cdb *next;
 };
 
+#define CLI_MAX_TARGETS 2 /* maximum filetypes for a specific target */
 struct cli_mtarget {
-    cli_file_t target;
+    cli_file_t target[CLI_MAX_TARGETS];
     const char *name;
     uint8_t idx;    /* idx of matcher */
     uint8_t ac_only;
     uint8_t enable_prefiltering;
+    uint8_t target_count; /* must be synced with non-zero values in the target array */
 };
 
 #define CLI_MTARGETS 13
 static const struct cli_mtarget cli_mtargets[CLI_MTARGETS] =  {
-    { 0,                    "GENERIC",      0,  0, 1 },
-    { CL_TYPE_MSEXE,        "PE",           1,  0, 1 },
-    { CL_TYPE_MSOLE2,       "OLE2",         2,  1, 0 },
-    { CL_TYPE_HTML,         "HTML",         3,  1, 0 },
-    { CL_TYPE_MAIL,         "MAIL",         4,  1, 1 },
-    { CL_TYPE_GRAPHICS,     "GRAPHICS",     5,  1, 0 },
-    { CL_TYPE_ELF,          "ELF",          6,  1, 0 },
-    { CL_TYPE_TEXT_ASCII,   "ASCII",        7,  1, 1 },
-    { CL_TYPE_ERROR,        "NOT USED",     8,  1, 0 },
-    { CL_TYPE_MACHO,        "MACH-O",       9,  1, 0 },
-    { CL_TYPE_PDF,          "PDF",         10,  1, 0 },
-    { CL_TYPE_SWF,          "FLASH",       11,  1, 0 },
-    { CL_TYPE_JAVA,         "JAVA",        12,  1, 0 }
+    { {0, 0},                                   "GENERIC",      0,  0, 1, 1 },
+    { {CL_TYPE_MSEXE, 0},                       "PE",           1,  0, 1, 1 },
+    { {CL_TYPE_MSOLE2, 0},                      "OLE2",         2,  1, 0, 1 },
+    { {CL_TYPE_HTML, 0},                        "HTML",         3,  1, 0, 1 },
+    { {CL_TYPE_MAIL, 0},                        "MAIL",         4,  1, 1, 1 },
+    { {CL_TYPE_GRAPHICS, 0},                    "GRAPHICS",     5,  1, 0, 1 },
+    { {CL_TYPE_ELF, 0},                         "ELF",          6,  1, 0, 1 },
+    { {CL_TYPE_TEXT_ASCII, 0},                  "ASCII",        7,  1, 1, 1 },
+    { {CL_TYPE_ERROR, 0},                       "NOT USED",     8,  1, 0, 1 },
+    { {CL_TYPE_MACHO, CL_TYPE_MACHO_UNIBIN},    "MACH-O",       9,  1, 0, 2 },
+    { {CL_TYPE_PDF, 0},                         "PDF",         10,  1, 0, 1 },
+    { {CL_TYPE_SWF, 0},                         "FLASH",       11,  1, 0, 1 },
+    { {CL_TYPE_JAVA, 0},                        "JAVA",        12,  1, 0, 1 }
 };
 
 #define CLI_OFF_ANY         0xffffffff

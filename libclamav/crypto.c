@@ -181,7 +181,7 @@ unsigned char *cl_hash_file_fd_ctx(EVP_MD_CTX *ctx, int fd, unsigned int *olen)
     unsigned char *hash;
     int mdsz;
     unsigned int hashlen;
-    struct stat sb;
+    STATBUF sb;
 
 	unsigned int blocksize;
 
@@ -193,7 +193,7 @@ unsigned char *cl_hash_file_fd_ctx(EVP_MD_CTX *ctx, int fd, unsigned int *olen)
 
     mdsz = EVP_MD_CTX_size(ctx);
 
-    if (fstat(fd, &sb) < 0) {
+    if (FSTAT(fd, &sb) < 0) {
         return NULL;
     }
 
@@ -591,28 +591,24 @@ unsigned char *cl_sign_data(EVP_PKEY *pkey, char *alg, unsigned char *hash, unsi
 
     sig = (unsigned char *)calloc(1, EVP_PKEY_size(pkey));
     if (!(sig)) {
-        free(hash);
         EVP_MD_CTX_destroy(ctx);
         return NULL;
     }
 
     if (!EVP_SignInit_ex(ctx, md, NULL)) {
         free(sig);
-        free(hash);
         EVP_MD_CTX_destroy(ctx);
         return NULL;
     }
 
     if (!EVP_SignUpdate(ctx, hash, EVP_MD_size(md))) {
         free(sig);
-        free(hash);
         EVP_MD_CTX_destroy(ctx);
         return NULL;
     }
 
     if (!EVP_SignFinal(ctx, sig, &siglen, pkey)) {
         free(sig);
-        free(hash);
         EVP_MD_CTX_destroy(ctx);
         return NULL;
     }
@@ -621,7 +617,6 @@ unsigned char *cl_sign_data(EVP_PKEY *pkey, char *alg, unsigned char *hash, unsi
         unsigned char *newsig = (unsigned char *)cl_base64_encode(sig, siglen);
         if (!(newsig)) {
             free(sig);
-            free(hash);
             EVP_MD_CTX_destroy(ctx);
             return NULL;
         }
@@ -741,9 +736,9 @@ int cl_validate_certificate_chain_ts_dir(char *tsdir, char *certpath)
                 while (nauths > 0)
                     free(authorities[nauths--]);
                 free(authorities[0]);
-                free(authorities);
             }
 
+            free(authorities);
             closedir(dp);
             return -1;
         }
@@ -922,7 +917,7 @@ struct tm *cl_ASN1_GetTimeT(ASN1_TIME *timeobj)
     struct tm *t;
     char* str;
     size_t i = 0;
-    const char *fmt;
+    const char *fmt=NULL;
     time_t localt;
 #ifdef _WIN32
     struct tm localtm, *ltm;
@@ -960,6 +955,11 @@ struct tm *cl_ASN1_GetTimeT(ASN1_TIME *timeobj)
         } else {
             str[5]--;
         }
+    }
+
+    if (!(fmt)) {
+        free(t);
+        return NULL;
     }
 
     if (!strptime(str, fmt, t)) {
@@ -1016,4 +1016,60 @@ X509_CRL *cl_load_crl(const char *file)
     }
 
     return x;
+}
+
+void *cl_hash_init(const char *alg)
+{
+    EVP_MD_CTX *ctx;
+    const EVP_MD *md;
+
+    md = EVP_get_digestbyname(alg);
+    if (!(md))
+        return NULL;
+
+    ctx = EVP_MD_CTX_create();
+    if (!(ctx)) {
+        return NULL;
+    }
+
+    if (!EVP_DigestInit_ex(ctx, md, NULL)) {
+        EVP_MD_CTX_destroy(ctx);
+        return NULL;
+    }
+
+    return (void *)ctx;
+}
+
+int cl_update_hash(void *ctx, void *data, size_t sz)
+{
+    if (!(ctx) || !(data))
+        return -1;
+
+    if (!EVP_DigestUpdate((EVP_MD_CTX *)ctx, data, sz))
+        return -1;
+
+    return 0;
+}
+
+int cl_finish_hash(void *ctx, void *buf)
+{
+    int res=0;
+
+    if (!(ctx) || !(buf))
+        return -1;
+
+    if (!EVP_DigestFinal_ex((EVP_MD_CTX *)ctx, (unsigned char *)buf, NULL))
+        res = -1;
+
+    EVP_MD_CTX_destroy((EVP_MD_CTX *)ctx);
+
+    return res;
+}
+
+void cl_hash_destroy(void *ctx)
+{
+    if (!(ctx))
+        return;
+
+    EVP_MD_CTX_destroy((EVP_MD_CTX *)ctx);
 }

@@ -905,7 +905,7 @@ void cache_remove(unsigned char *md5, size_t size, const struct cl_engine *engin
 int cache_check(unsigned char *hash, cli_ctx *ctx) {
     fmap_t *map;
     size_t todo, at = 0;
-    EVP_MD_CTX *hashctx;
+    void *hashctx;
     int ret;
 
     if(!ctx || !ctx->engine || !ctx->engine->cache)
@@ -919,30 +919,31 @@ int cache_check(unsigned char *hash, cli_ctx *ctx) {
     map = *ctx->fmap;
     todo = map->len;
 
-    hashctx = EVP_MD_CTX_create();
+    hashctx = cl_hash_init("md5");
     if (!(hashctx))
         return CL_VIRUS;
 
-    EVP_DigestInit_ex(hashctx, EVP_md5(), NULL);
 
     while(todo) {
         const void *buf;
         size_t readme = todo < FILEBUFF ? todo : FILEBUFF;
 
-        if(!(buf = fmap_need_off_once(map, at, readme)))
+        if(!(buf = fmap_need_off_once(map, at, readme))) {
+            cl_hash_destroy(hashctx);
             return CL_EREAD;
+        }
 
         todo -= readme;
         at += readme;
 
-        if (!EVP_DigestUpdate(hashctx, buf, readme)) {
+        if (cl_update_hash(hashctx, buf, readme)) {
+            cl_hash_destroy(hashctx);
             cli_errmsg("cache_check: error reading while generating hash!\n");
             return CL_EREAD;
         }
     }
 
-    EVP_DigestFinal_ex(hashctx, hash, NULL);
-    EVP_MD_CTX_destroy(hashctx);
+    cl_finish_hash(hashctx, hash);
 
     ret = cache_lookup_hash(hash, map->len, ctx->engine->cache, ctx->recursion);
     cli_dbgmsg("cache_check: %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x is %s\n", hash[0], hash[1], hash[2], hash[3], hash[4], hash[5], hash[6], hash[7], hash[8], hash[9], hash[10], hash[11], hash[12], hash[13], hash[14], hash[15], (ret == CL_VIRUS) ? "negative" : "positive");

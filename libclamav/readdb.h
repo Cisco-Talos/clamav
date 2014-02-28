@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2009 Sourcefire, Inc.
+ *  Copyright (C) 2007-2014 Cisco Systems, Inc.
  *
  *  Authors: Tomasz Kojm
  *
@@ -61,7 +61,8 @@
 	cli_strbcasestr(ext, ".cdb")   ||	\
 	cli_strbcasestr(ext, ".cat")   ||	\
 	cli_strbcasestr(ext, ".crb")   ||	\
-	cli_strbcasestr(ext, ".idb")		\
+	cli_strbcasestr(ext, ".idb")   ||	\
+	cli_strbcasestr(ext, ".ioc")		\
     )
 
 char *cli_virname(char *virname, unsigned int official);

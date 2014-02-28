@@ -2800,7 +2800,7 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
     struct cli_exe_section *exe_sections;
     struct pe_image_data_dir *dirs;
     fmap_t *map = *ctx->fmap;
-    EVP_MD_CTX *hashctx=NULL;
+    void *hashctx=NULL;
 
     if (flags & CL_CHECKFP_PE_FLAG_STATS)
         if (!(hashes))
@@ -2927,13 +2927,11 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
     }
 
     cli_qsort(exe_sections, nsections, sizeof(*exe_sections), sort_sects);
-    hashctx = EVP_MD_CTX_create();
+    hashctx = cl_hash_init("sha1");
     if (!(hashctx)) {
         if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE)
             flags ^= CL_CHECKFP_PE_FLAG_AUTHENTICODE;
     }
-    if (hashctx)
-        EVP_DigestInit_ex(hashctx, EVP_sha1(), NULL);
 
     if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE) {
         /* Check to see if we have a security section. */
@@ -2943,7 +2941,7 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
                 flags ^= CL_CHECKFP_PE_FLAG_AUTHENTICODE;
             } else {
                 if (hashctx)
-                    EVP_MD_CTX_destroy(hashctx);
+                    cl_hash_destroy(hashctx);
                 return CL_BREAK;
             }
         }
@@ -2956,19 +2954,17 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
         if(!(hptr = fmap_need_off_once(map, where, size))){ \
             free(exe_sections); \
             if (hashctx) \
-                EVP_MD_CTX_destroy(hashctx); \
+                cl_hash_destroy(hashctx); \
             return CL_EFORMAT; \
         } \
         if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE && hashctx) \
-            EVP_DigestUpdate(hashctx, hptr, size); \
+            cl_update_hash(hashctx, hptr, size); \
         if (isStatAble && flags & CL_CHECKFP_PE_FLAG_STATS) { \
-            EVP_MD_CTX *md5ctx; \
-            md5ctx = EVP_MD_CTX_create(); \
+            void *md5ctx; \
+            md5ctx = cl_hash_init("md5"); \
             if (md5ctx) { \
-                EVP_DigestInit_ex(md5ctx, EVP_md5(), NULL); \
-                EVP_DigestUpdate(md5ctx, hptr, size); \
-                EVP_DigestFinal_ex(md5ctx, hashes->sections[section].md5, NULL); \
-                EVP_MD_CTX_destroy(md5ctx); \
+                cl_update_hash(md5ctx, hptr, size); \
+                cl_finish_hash(md5ctx, hashes->sections[section].md5); \
             } \
         } \
     } while(0)
@@ -2995,7 +2991,7 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
             } else {
                 free(exe_sections);
                 if (hashctx)
-                    EVP_MD_CTX_destroy(hashctx);
+                    cl_hash_destroy(hashctx);
                 return CL_EFORMAT;
             }
         }
@@ -3028,7 +3024,7 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
                 } else {
                     free(exe_sections);
                     if (hashctx)
-                        EVP_MD_CTX_destroy(hashctx);
+                        cl_hash_destroy(hashctx);
                     return CL_EFORMAT;
                 }
             }
@@ -3044,7 +3040,7 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
     free(exe_sections);
 
     if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE && hashctx) {
-        EVP_DigestFinal_ex(hashctx, authsha1, NULL);
+        cl_finish_hash(hashctx, authsha1);
 
         if(cli_debug_flag) {
             char shatxt[SHA1_HASH_SIZE*2+1];
@@ -3059,11 +3055,10 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
 
         hlen -= 8;
 
-        EVP_MD_CTX_destroy(hashctx);
         return asn1_check_mscat((struct cl_engine *)(ctx->engine), map, at + 8, hlen, authsha1);
     } else {
         if (hashctx)
-            EVP_MD_CTX_destroy(hashctx);
+            cl_hash_destroy(hashctx);
         return CL_VIRUS;
     }
 }

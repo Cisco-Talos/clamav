@@ -325,26 +325,24 @@ static int xar_scan_subdocuments(xmlTextReaderPtr reader, cli_ctx *ctx)
     return rc;
 }
 
-static EVP_MD_CTX * xar_hash_init(int hash, EVP_MD_CTX **sc, EVP_MD_CTX **mc)
+static void * xar_hash_init(int hash, void **sc, void **mc)
 {
     if (!sc && !mc)
         return NULL;
     switch (hash) {
     case XAR_CKSUM_SHA1:
-        *sc = EVP_MD_CTX_create();
+        *sc = cl_hash_init("sha1");
         if (!(*sc)) {
             return NULL;
         }
 
-        EVP_DigestInit_ex(*sc, EVP_sha1(), NULL);
         return *sc;
     case XAR_CKSUM_MD5:
-        *mc = EVP_MD_CTX_create();
+        *mc = cl_hash_init("md5");
         if (!(*mc)) {
             return NULL;
         }
 
-        EVP_DigestInit_ex(*mc, EVP_md5(), NULL);
         return *mc;
     case XAR_CKSUM_OTHER:
     case XAR_CKSUM_NONE:
@@ -353,7 +351,7 @@ static EVP_MD_CTX * xar_hash_init(int hash, EVP_MD_CTX **sc, EVP_MD_CTX **mc)
     }
 }
 
-static void xar_hash_update(EVP_MD_CTX * hash_ctx, const void * data, unsigned long size, int hash)
+static void xar_hash_update(void * hash_ctx, const void * data, unsigned long size, int hash)
 {
     if (!hash_ctx || !data || !size)
         return;
@@ -364,10 +362,10 @@ static void xar_hash_update(EVP_MD_CTX * hash_ctx, const void * data, unsigned l
         return;
     }
 
-    EVP_DigestUpdate(hash_ctx, data, size);
+    cl_update_hash(hash_ctx, data, size);
 }
 
-static void xar_hash_final(EVP_MD_CTX * hash_ctx, void * result, int hash)
+static void xar_hash_final(void * hash_ctx, void * result, int hash)
 {
     if (!hash_ctx || !result)
         return;
@@ -378,8 +376,7 @@ static void xar_hash_final(EVP_MD_CTX * hash_ctx, void * result, int hash)
         return;
     }
 
-    EVP_DigestFinal_ex(hash_ctx, result, NULL);
-    EVP_MD_CTX_destroy(hash_ctx);
+    cl_finish_hash(hash_ctx, result);
 }
 
 static int xar_hash_check(int hash, const void * result, const void * expected)
@@ -539,9 +536,9 @@ int cli_scanxar(cli_ctx *ctx)
                                                        &a_cksum, &a_hash, &e_cksum, &e_hash))) {
         int do_extract_cksum = 1;
         unsigned char * blockp;
-        EVP_MD_CTX *a_sc, *e_sc;
-        EVP_MD_CTX *a_mc, *e_mc;
-        EVP_MD_CTX *a_hash_ctx, *e_hash_ctx;
+        void *a_sc, *e_sc;
+        void *a_mc, *e_mc;
+        void *a_hash_ctx, *e_hash_ctx;
         char result[SHA1_HASH_SIZE];
         char * expected;
 
