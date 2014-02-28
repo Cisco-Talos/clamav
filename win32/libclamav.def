@@ -70,6 +70,10 @@ EXPORTS cl_validate_certificate_chain @62
 EXPORTS cl_load_cert @63
 EXPORTS cl_ASN1_GetTimeT @64
 EXPORTS cl_load_crl @65
+EXPORTS cl_hash_init @66
+EXPORTS cl_update_hash @67
+EXPORTS cl_finish_hash @68
+EXPORTS cl_hash_destroy @69
 
 ; path variables
 ; --------------
