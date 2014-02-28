@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2012 Sourcefire, Inc.
+ *  Copyright (C) 2007-2014 Cisco Systems, Inc.
  *
  *  Authors: Tomasz Kojm
  *
@@ -79,6 +79,7 @@
 #include "bytecode_api.h"
 #include "bytecode_priv.h"
 #include "cache.h"
+#include "openioc.h"
 #ifdef CL_THREAD_SAFE
 #  include <pthread.h>
 static pthread_mutex_t cli_ref_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -2601,6 +2602,14 @@ static int cli_loadmscat(FILE *fs, const char *dbname, struct cl_engine *engine,
     return 0;
 }
 
+static int cli_loadopenioc(FILE *fs, const char *dbname, struct cl_engine *engine)
+{
+    int rc;
+    rc = openioc_parse(dbname, fileno(fs), engine);
+    if (rc != CL_SUCCESS)
+        return CL_EMALFDB;
+}
+
 static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned int *signo, unsigned int options);
 
 int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio)
@@ -2729,6 +2738,8 @@ int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo
     	ret = cli_loadcdb(fs, engine, signo, options, dbio);
     } else if(cli_strbcasestr(dbname, ".cat")) {
 	ret = cli_loadmscat(fs, dbname, engine, options, dbio);
+    } else if(cli_strbcasestr(dbname, ".ioc")) {
+	ret = cli_loadopenioc(fs, dbname, engine);
     } else {
 	cli_dbgmsg("cli_load: unknown extension - assuming old database format\n");
 	ret = cli_loaddb(fs, engine, signo, options, dbio, dbname);
@@ -2935,7 +2946,7 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
     }
     closedir(dd);
     if(ret == CL_EOPEN)
-	cli_errmsg("cli_loaddb(): No supported database files found in %s\n", dirname);
+	cli_errmsg("cli_loaddbdir(): No supported database files found in %s\n", dirname);
 
     return ret;
 }
