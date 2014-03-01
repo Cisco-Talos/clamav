@@ -26,22 +26,20 @@
 #include <dirent.h>
 #include <errno.h>
 #include <string.h>
-
-#if HAVE_LIBXML2
-#ifdef _WIN32
-#ifndef LIBXML_WRITER_ENABLED
-#define LIBXML_WRITER_ENABLED 1
-#endif
-#endif
-#include <libxml/xmlreader.h>
-#endif
-
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 
 #include "libclamav/crypto.h"
 #include "others.h"
 #include "openioc.h"
+
+#ifdef HAVE_LIBXML2
+#ifdef _WIN32
+#ifndef LIBXML_WRITER_ENABLED
+#define LIBXML_WRITER_ENABLED 1
+#endif
+#endif
+#include <libxml/xmlreader.h>
 
 struct openioc_hash {
     unsigned char * hash;
@@ -165,7 +163,6 @@ int openioc_parse(const char * fname, int fd, struct cl_engine *engine)
     const xmlChar * name;
     struct openioc_hash * elems = NULL, * elem = NULL;
     const char * iocp = NULL;
-    char iocname[MAXPATHLEN] = {0};
     uint16_t ioclen;
     char * virusname;
     
@@ -208,8 +205,7 @@ int openioc_parse(const char * fname, int fd, struct cl_engine *engine)
     else
         iocp++;
 
-    strncpy(iocname, iocp, MAXPATHLEN-1);
-    ioclen = strlen(iocname);
+    ioclen = strlen(fname);
 
     if (elems != NULL) {
         if (NULL == engine->hm_hdb) {
@@ -223,7 +219,8 @@ int openioc_parse(const char * fname, int fd, struct cl_engine *engine)
     }
 
     while (elems != NULL) {
-        char * hash, * sp, * vp;
+        const char * sp;
+        char * hash, * vp;
         int i, hashlen;
 
         elem = elems;
@@ -237,9 +234,9 @@ int openioc_parse(const char * fname, int fd, struct cl_engine *engine)
             free(elem);
             continue;
         }
-        sp = hash+hashlen-1;
-        while (isspace(*sp) && sp > hash) {
-            *sp-- = '\0';
+        vp = hash+hashlen-1;
+        while (isspace(*vp) && vp > hash) {
+            *vp-- = '\0';
             hashlen--;
         }
         virusname = cli_malloc(ioclen+hashlen+2);
@@ -248,7 +245,7 @@ int openioc_parse(const char * fname, int fd, struct cl_engine *engine)
             return CL_EMEM;
         }
         vp = virusname;
-        sp = iocname;
+        sp = fname;
         for (i=0; i<ioclen; i++, sp++, vp++) {
             switch (*sp) {
             case '\\':
@@ -285,4 +282,12 @@ int openioc_parse(const char * fname, int fd, struct cl_engine *engine)
         xmlFree(elem->hash);
         free(elem);
     }
+    return CL_SUCCESS;
 }
+#else
+int openioc_parse(const char * fname, int fd, struct cl_engine *engine)
+{
+    cli_dbgmsg("cli_openioc: libxml2 support is compiled out and is needed for OpenIOC support.\n");
+    return CL_SUCCESS;
+}
+#endif
