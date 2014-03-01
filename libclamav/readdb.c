@@ -2608,6 +2608,7 @@ static int cli_loadopenioc(FILE *fs, const char *dbname, struct cl_engine *engin
     rc = openioc_parse(dbname, fileno(fs), engine);
     if (rc != CL_SUCCESS)
         return CL_EMALFDB;
+    return rc;
 }
 
 static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned int *signo, unsigned int options);
