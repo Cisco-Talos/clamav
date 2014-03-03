@@ -580,7 +580,7 @@ char *make_ip(const char *host, const char *port)
 
     ipv6 = (strchr(host, ':') != NULL);
 
-    len += (ipv6 ? 3 : 2);
+    len += (ipv6 ? 4 : 3);
 
     ip = calloc(1, len);
     if (!(ip))
