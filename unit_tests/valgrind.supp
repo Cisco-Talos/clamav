@@ -58,6 +58,15 @@
     ...
 }
 {
+    mbox-leak-02
+    Memcheck:Leak
+    ...
+    fun:tableInsert
+    fun:cli_parse_mbox
+    fun:cli_scanmail
+    ...
+}
+{
     ubuntu-libc-getaddrinfo-01
     Memcheck:Param
     sendmsg(mmsg[0].msg_hdr)
