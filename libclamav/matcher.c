@@ -546,7 +546,7 @@ int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx)
 
 static int matchicon(cli_ctx *ctx, struct cli_exe_info *exeinfo, const char *grp1, const char *grp2)
 {
-	icon_groupset iconset;
+    icon_groupset iconset;
 
     if(!ctx ||
        !ctx->engine ||
@@ -555,6 +555,9 @@ static int matchicon(cli_ctx *ctx, struct cli_exe_info *exeinfo, const char *grp
        !ctx->engine->iconcheck->group_counts[1] ||
        !exeinfo->res_addr
     ) return CL_CLEAN;
+
+    if (!(ctx->dconf->pe & PE_CONF_MATCHICON))
+        return CL_CLEAN;
 
     cli_icongroupset_init(&iconset);
     cli_icongroupset_add(grp1 ? grp1 : "*", &iconset, 0, ctx);

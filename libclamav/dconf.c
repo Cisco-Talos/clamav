@@ -64,7 +64,7 @@ static struct dconf_module modules[] = {
     { "PE",     "MD5SECT",      PE_CONF_MD5SECT,        1 },
     { "PE",     "UPX",      PE_CONF_UPX,        1 },
     { "PE",     "FSG",      PE_CONF_FSG,        1 },
-    { "PE",         "SWIZZOR",      PE_CONF_SWIZZOR,        1 },
+    { "PE",     "SWIZZOR",      PE_CONF_SWIZZOR,        1 },
 
     { "PE",     "PETITE",       PE_CONF_PETITE,     1 },
     { "PE",     "PESPIN",       PE_CONF_PESPIN,     1 },
@@ -78,6 +78,7 @@ static struct dconf_module modules[] = {
     { "PE",     "CATALOG",      PE_CONF_CATALOG,        1 },
     { "PE",     "DISABLECERT",  PE_CONF_DISABLECERT,    0 },
     { "PE",     "DUMPCERT",     PE_CONF_DUMPCERT,       0 },
+    { "PE",     "MATCHICON",     PE_CONF_MATCHICON,       1 },
 
     { "ELF",        NULL,       0x1,            1 },
 
