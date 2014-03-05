@@ -144,6 +144,9 @@ Block SSL mismatches in URLs (might lead to false positives!).
 \fB\-\-phishing\-cloak[=yes/no(*)]\fR
 Block cloaked URLs (might lead to some false positives).
 .TP
+\fB\-\-partition\-intersection[=yes/no(*)]\fR
+Detect partition intersections in raw disk images using heuristics.
+.TP
 \fB\-\-algorithmic\-detection[=yes(*)/no]\fR
 In some cases (eg. complex malware, exploits in graphic files, and others), ClamAV uses special algorithms to provide accurate detection. This option can be used to control the algorithmic detection.
 .TP 

@@ -253,6 +253,7 @@ void help(void)
     mprintf("    --heuristic-scan-precedence[=yes/no(*)] Stop scanning as soon as a heuristic match is found\n");
     mprintf("    --phishing-ssl[=yes/no(*)]           Always block SSL mismatches in URLs (phishing module)\n");
     mprintf("    --phishing-cloak[=yes/no(*)]         Always block cloaked URLs (phishing module)\n");
+    mprintf("    --partition-intersection[=yes/no(*)] Detect partition intersections in raw disk images using heuristics.\n");
     mprintf("    --algorithmic-detection[=yes(*)/no]  Algorithmic detection\n");
     mprintf("    --scan-pe[=yes(*)/no]                Scan PE files\n");
     mprintf("    --scan-elf[=yes(*)/no]               Scan ELF files\n");

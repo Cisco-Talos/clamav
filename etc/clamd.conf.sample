@@ -356,6 +356,10 @@ Example
 # Default: no
 #PhishingAlwaysBlockCloak no
 
+# Detect partition intersections in raw disk images using heuristics.
+# Default: no
+#PartitionIntersection no
+
 # Allow heuristic match to take precedence.
 # When enabled, if a heuristic scan (such as phishingScan) detects
 # a possible virus/phish it will stop scan immediately. Recommended, saves CPU
