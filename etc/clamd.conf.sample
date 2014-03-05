@@ -503,6 +503,12 @@ Example
 # Default: 1M
 #MaxZipTypeRcg 1M
 
+# This option sets the maximum number of partitions of a raw disk image to be scanned.
+# Raw disk images with more partitions than this value will have up to the value number
+# partitions scanned. Negative values are not allowed.
+# Note: setting this limit too high may result in severe damage or impact performance.
+# Default: 50
+#MaxPartitions 128
 
 ##
 ## On-access Scan Settings

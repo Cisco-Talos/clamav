@@ -571,6 +571,17 @@ WARNING: setting this limit too high may result in severe damage or impact perfo
 .br
 Default: 1M
 .TP 
+\fBMaxPartitions SIZE\fR
+This option sets the maximum number of partitions of a raw disk image to be scanned.
+.br
+Raw disk images with more partitions than this value will have up to the value partitions scanned.
+.br
+Negative values are not allowed.
+.br
+WARNING: setting this limit too high may result in severe damage or impact performance.
+.br
+Default: 50
+.TP
 \fBClamukoScanOnAccess (OBSOLETE)\fR
 \fBWARNING:\fR This option is no longer accepted. See \fBScanOnAccess\fR.
 .TP 

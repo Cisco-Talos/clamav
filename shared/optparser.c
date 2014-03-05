@@ -375,7 +375,7 @@ const struct clam_option __clam_options[] = {
 
     { "MaxZipTypeRcg", "max-ziptypercg", 0, TYPE_SIZE, MATCH_SIZE, CLI_DEFAULT_MAXZIPTYPERCG, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the maximum size of a ZIP file to reanalyze type recognition.\nZIP files larger than this value will skip the step to potentially reanalyze as PE.\nNegative values are not allowed.\nWARNING: setting this limit too high may result in severe damage or impact performance.", "1M" },
 
-    { "MaxPartitions", "max-partitions", 0, TYPE_NUMBER, MATCH_NUMBER, 50, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the maximum number of partitions of a raw DMG to be scanned.\nRaw DMGs with more partitions than this value will have up to the value number partitions scanned.\nNegative values are not allowed.\nWARNING: setting this limit too high may result in severe damage or impact performance.", "128" },
+    { "MaxPartitions", "max-partitions", 0, TYPE_NUMBER, MATCH_NUMBER, 50, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the maximum number of partitions of a raw disk image to be scanned.\nRaw disk images with more partitions than this value will have up to the value number partitions scanned.\nNegative values are not allowed.\nWARNING: setting this limit too high may result in severe damage or impact performance.", "128" },
 
     /* OnAccess settings */
     { "ScanOnAccess", NULL, 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_CLAMD, "This option enables on-access scanning (Linux only)", "no" },
