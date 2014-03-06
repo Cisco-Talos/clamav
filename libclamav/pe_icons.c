@@ -32,6 +32,7 @@
 #include "pe_icons.h"
 #include "others.h"
 
+#define PE_MAXICONS 100
 
 #define READ32(x) cli_readint32(&(x))
 #define READ16(x) cli_readint16(&(x))
@@ -47,7 +48,7 @@
 struct GICONS {
     unsigned int cnt;
     uint32_t lastg;
-    uint32_t rvas[100];
+    uint32_t rvas[PE_MAXICONS];
 };
 
 static int groupicon_cb(void *ptr, uint32_t type, uint32_t name, uint32_t lang, uint32_t rva) {
@@ -58,47 +59,66 @@ static int groupicon_cb(void *ptr, uint32_t type, uint32_t name, uint32_t lang, 
 	gicons->rvas[gicons->cnt] = rva;
 	gicons->cnt++;
 	gicons->lastg = name;
-	if(gicons->cnt < 100)
+	if(gicons->cnt < PE_MAXICONS)
 	    return 0;
     }
     return 1;
 }
 
-struct ICONS {
-    unsigned int cnt;
-    uint32_t rvas[100];
+struct ICON_ENV {
+    cli_ctx *ctx;
+    unsigned int icnt;
+    int result;
+
+    icon_groupset *set;
+    struct cli_exe_section *exe_sections;
+    uint16_t nsections;
+    uint32_t hdr_size;
 };
-
-static int icon_cb(void *ptr, uint32_t type, uint32_t name, uint32_t lang, uint32_t rva) {
-    struct ICONS *icons = ptr;
-    type = type; lang = lang;
-    cli_dbgmsg("icon_cb: got icon %x\n", name);
-    if(icons->cnt >= 100)
-	return 1;
-    icons->rvas[icons->cnt] = rva;
-    icons->cnt++;
-    return 0;
-}
-
 
 static int parseicon(icon_groupset *set, uint32_t rva, cli_ctx *ctx, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size);
 
+static int icon_scan_cb(void *ptr, uint32_t type, uint32_t name, uint32_t lang, uint32_t rva) {
+    struct ICON_ENV *icon_env = ptr;
+    int ret = CL_CLEAN;
+    type = type; lang = lang;
+    cli_dbgmsg("icon_cb: scanning icon %x\n", name);
+
+    ret = parseicon(icon_env->set, rva, icon_env->ctx, icon_env->exe_sections, icon_env->nsections, icon_env->hdr_size);
+    if (ret != CL_CLEAN) icon_env->result = ret;
+    icon_env->icnt++;
+
+    if ((ret != CL_CLEAN) &&
+	!((icon_env->ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))) {
+	return 1;
+    }
+    return 0;
+}
+
 int cli_scanicon(icon_groupset *set, uint32_t resdir_rva, cli_ctx *ctx, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size) {
     struct GICONS gicons;
-    struct ICONS icons;
+    struct ICON_ENV icon_env;
     unsigned int curicon, err;
     fmap_t *map = *ctx->fmap;
 
+    icon_env.ctx = ctx;
+    icon_env.icnt = 0;
+    icon_env.result = CL_CLEAN;
+    icon_env.set = set;
+    icon_env.exe_sections = exe_sections;
+    icon_env.nsections = nsections;
+    icon_env.hdr_size = hdr_size;
+
     gicons.cnt = 0;
-    icons.cnt = 0;
     findres(14, 0xffffffff, resdir_rva, map, exe_sections, nsections, hdr_size, groupicon_cb, &gicons);
 	
-    for(curicon=0; curicon<gicons.cnt; curicon++) {
+    for(curicon=0; curicon<gicons.cnt /* && (remaining amount of icons) */; curicon++) {
 	const uint8_t *grp = fmap_need_off_once(map, cli_rawaddr(gicons.rvas[curicon], exe_sections, nsections, &err, map->len, hdr_size), 16);
 	if(grp && !err) {
 	    uint32_t gsz = cli_readint32(grp + 4);
 	    if(gsz>6) {
 		uint32_t icnt;
+		unsigned int piconcnt;
 		struct icondir {
 		    uint8_t w;
 		    uint8_t h;
@@ -110,29 +130,52 @@ int cli_scanicon(icon_groupset *set, uint32_t resdir_rva, cli_ctx *ctx, struct c
 		    uint16_t id;
 		} *dir;
 
+                cli_dbgmsg("cli_scanicon: start of icon group @%x\n", cli_rawaddr(cli_readint32(grp), exe_sections, nsections, &err, map->len, hdr_size));
 		grp = fmap_need_off_once(map, cli_rawaddr(cli_readint32(grp), exe_sections, nsections, &err, map->len, hdr_size), gsz);
-		if(grp && !err) {
+		if(grp && !err /* && (remaining amount of icons) */) {
 		    icnt = cli_readint32(grp+2) >> 16;
+                    if (icnt > /* remaining amount of icons */icnt) {
+			icnt = /* remaining amount of icons */icnt;
+		    }
 		    grp+=6;
 		    gsz-=6;
 
 		    while(icnt && gsz >= 14) {
+			piconcnt = icon_env.icnt;
 			dir = (struct icondir *)grp;
 			cli_dbgmsg("cli_scanicon: Icongrp @%x - %ux%ux%u - (id=%x, rsvd=%u, planes=%u, palcnt=%u, sz=%x)\n", gicons.rvas[curicon], dir->w, dir->h, cli_readint16(&dir->depth), cli_readint16(&dir->id), cli_readint16(&dir->planes), dir->palcnt, dir->rsvd, cli_readint32(&dir->sz));
-			findres(3, cli_readint16(&dir->id), resdir_rva, map, exe_sections, nsections, hdr_size, icon_cb, &icons);
+			findres(3, cli_readint16(&dir->id), resdir_rva, map, exe_sections, nsections, hdr_size, icon_scan_cb, &icon_env);
+			if ((icon_env.result != CL_CLEAN) &&
+			    !((ctx->options & CL_SCAN_ALLMATCHES) && (icon_env.result == CL_VIRUS))) {
+
+			    return icon_env.result;
+			}
+
+			if (piconcnt == icon_env.icnt) {
+			    cli_dbgmsg("cli_scanicon: could not find icon id %u in group @%x\n",
+				       dir->id, gicons.rvas[curicon]);
+			    if (0) {
+			    /* heuristic goes here */
+			    }
+			}
+
 			grp += 14;
 			gsz -= 14;
+			icnt--;
+		    }
+
+		    if (icnt != 0) {
+			cli_dbgmsg("cli_scanicon: could not find %u icons\n", icnt);
+		    }
+		    if (gsz != 0) {
+			cli_dbgmsg("cli_scanicon: could not parse %u bytes of icon entries\n", gsz);
 		    }
 		}
 	    }
 	}
     }
 
-    for(curicon=0; curicon<icons.cnt; curicon++) {
-	if(parseicon(set, icons.rvas[curicon], ctx, exe_sections, nsections, hdr_size) == CL_VIRUS)
-	    return CL_VIRUS;
-    }
-    return 0;
+    return icon_env.result;
 }
 
 
