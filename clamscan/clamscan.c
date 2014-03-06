@@ -278,6 +278,7 @@ void help(void)
     mprintf("    --max-scriptnormalize=#n             Maximum size of script file to normalize\n");
     mprintf("    --max-ziptypercg=#n                  Maximum size zip to type reanalyze\n");
     mprintf("    --max-partitions=#n                  Maximum number of partitions in disk image to be scanned\n");
+    mprintf("    --max-iconspe=#n                     Maximum number of icons in PE file to be scanned\n");
     mprintf("\n");
     mprintf("(*) Default scan settings\n");
     mprintf("(**) Certain files (e.g. documents, archives, etc.) may in turn contain other\n");

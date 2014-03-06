@@ -32,8 +32,6 @@
 #include "pe_icons.h"
 #include "others.h"
 
-#define PE_MAXICONS 1000
-
 #define READ32(x) cli_readint32(&(x))
 #define READ16(x) cli_readint16(&(x))
 #define USE_FLOATS
@@ -115,7 +113,7 @@ int cli_scanicon(icon_groupset *set, uint32_t resdir_rva, cli_ctx *ctx, struct c
     icon_env.nsections = nsections;
     icon_env.hdr_size = hdr_size;
 
-    icon_env.max_icons = PE_MAXICONS;
+    icon_env.max_icons = ctx->engine->maxiconspe;
 
     /* icon group scan callback --> groupicon_scan_cb() */
     findres(14, 0xffffffff, resdir_rva, map, exe_sections, nsections, hdr_size, groupicon_scan_cb, &icon_env);
@@ -124,7 +122,7 @@ int cli_scanicon(icon_groupset *set, uint32_t resdir_rva, cli_ctx *ctx, struct c
     if (icon_env.result == CL_EMAXSIZE) {
 	cli_dbgmsg("cli_scanicon: max icon count reached\n");
     }
-    cli_dbgmsg("cli_scanicon: scanned a total of %u icons across %u icon groups\n", icon_env.icnt, icon_env.gcnt);
+    cli_dbgmsg("cli_scanicon: scanned a total of %u[%u actual] icons across %u groups\n", icon_env.icnt, icon_env.hcnt, icon_env.gcnt);
 
     /* ignore all error returns (previous behavior) */
     if (icon_env.result == CL_VIRUS) {

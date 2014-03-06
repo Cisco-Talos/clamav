@@ -514,6 +514,13 @@ Example
 # Default: 50
 #MaxPartitions 128
 
+# This option sets the maximum number of icons within a PE to be scanned.
+# PE files with more icons than this value will have up to the value number icons scanned.
+# Negative values are not allowed.
+# WARNING: setting this limit too high may result in severe damage or impact performance.
+# Default: 100
+#MaxIconsPE 200
+
 ##
 ## On-access Scan Settings
 ##

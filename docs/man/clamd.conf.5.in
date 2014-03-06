@@ -586,6 +586,17 @@ Negative values are not allowed.
 WARNING: setting this limit too high may result in severe damage or impact performance.
 .br
 Default: 50
+.TP 
+\fBMaxIconsPE SIZE\fR
+This option sets the maximum number of icons within a PE to be scanned.
+.br
+PE files with more icons than this value will have up to the value number icons scanned.
+.br
+Negative values are not allowed.
+.br
+WARNING: setting this limit too high may result in severe damage or impact performance.
+.br
+Default: 100
 .TP
 \fBClamukoScanOnAccess (OBSOLETE)\fR
 \fBWARNING:\fR This option is no longer accepted. See \fBScanOnAccess\fR.

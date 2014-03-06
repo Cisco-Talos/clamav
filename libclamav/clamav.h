@@ -207,7 +207,8 @@ enum cl_engine_field {
     CL_ENGINE_DISABLE_CACHE,        /* uint32_t */
     CL_ENGINE_DISABLE_PE_STATS,     /* uint32_t */
     CL_ENGINE_STATS_TIMEOUT,        /* uint32_t */
-    CL_ENGINE_MAX_PARTITIONS        /* uint32_t */
+    CL_ENGINE_MAX_PARTITIONS,       /* uint32_t */
+    CL_ENGINE_MAX_ICONSPE           /* uint32_t */
 };
 
 enum bytecode_security {

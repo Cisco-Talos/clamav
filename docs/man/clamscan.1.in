@@ -205,11 +205,14 @@ Maximum size of normalized HTML file to scan. You may pass the value in kilobyte
 \fB\-\-max\-scriptnormalize=#n\fR
 Maximum size of script file to normalize. You may pass the value in kilobytes in format xK or xk, or megabytes in format xM or xm, where x is a number (default: 5 MB, max: <4 GB).
 .TP
-\fB\-\-max-ziptypercg=#n\fR
+\fB\-\-max\-ziptypercg=#n\fR
 Maximum size zip to type reanalyze. You may pass the value in kilobytes in format xK or xk, or megabytes in format xM or xm, where x is a number (default: 1 MB, max: <4 GB).
 .TP
-\fB\-\-max-partitions=#n\fR
+\fB\-\-max\-partitions=#n\fR
 This option sets the maximum number of partitions of a raw disk image to be scanned. This must be a positive integer (default: 50).
+.TP
+\fB\-\-max\-iconspe=#n\fR
+This option sets the maximum number of icons within a PE to be scanned. This must be a positive integer (default: 100).
 .SH "EXAMPLES"
 .LP 
 .TP 
