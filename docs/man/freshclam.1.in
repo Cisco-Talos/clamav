@@ -80,6 +80,12 @@ Upload detection statistics to the ClamAV Project (see freshclam.conf(5):SubmitD
 .TP
 \fB\-\-update\-db=DBNAME\fR
 With this option you can limit updates to a subset of database files. The DBNAME should be "main", "daily", "bytecode", "safebrowsing" or one of the 3rd party database names. This option can be used multiple times and only works with the official and 3rd party databases distrubuted through the ClamAV mirrors, your custom databases (specified with DatabaseCustomURL in freshclam.conf) will not be ignored.
+.TP
+\fB\-\-enable\-stats\fR
+Enable submission of statistical data.
+.TP
+\fB\-\-stats\-host\-id=UUID\fR
+HostID in the form of an UUID to use when submitting statistical information.
 .SH "EXAMPLES"
 .LP 
 .TP 

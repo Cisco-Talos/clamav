@@ -65,6 +65,10 @@ int main(int argc, char **argv)
 	struct sigaction sigact;
 #endif
 
+#if defined(_WIN32)
+    cl_initialize_crypto();
+#endif
+
     if((opts = optparse(NULL, argc, argv, 1, OPT_CLAMDSCAN, OPT_CLAMSCAN, NULL)) == NULL) {
 	mprintf("!Can't parse command line options\n");
 	return 2;

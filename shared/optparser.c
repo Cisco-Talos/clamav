@@ -186,7 +186,7 @@ const struct clam_option __clam_options[] = {
 
     { "StatsHostID", "stats-host-id", 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM | OPT_CLAMD | OPT_CLAMSCAN, "HostID in the form of an UUID to use when submitting statistical information. See the clamscan manpage for more information.", "default" },
 
-    { "StatsDisabled", "disable-stats", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_CLAMSCAN, "Disable submission of statistical data", "no" },
+    { "StatsEnabled", "enable-stats", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_CLAMSCAN, "Enable submission of statistical data", "yes" },
 
     { "StatsPEDisabled", "disable-pe-stats", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Disable submission of PE section statistical data", "no" },
 
@@ -326,7 +326,7 @@ const struct clam_option __clam_options[] = {
 
     { "PhishingAlwaysBlockSSLMismatch", "phishing-ssl", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Always block SSL mismatches in URLs, even if they're not in the database.\nThis feature can lead to false positives.", "" },
 
-    { "PartitionIntersection", "partition-intersection", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Detect partition intersections in raw dmgs using heuristics.", "yes" },
+    { "PartitionIntersection", "partition-intersection", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Detect partition intersections in raw disk images using heuristics.", "yes" },
 
     { "HeuristicScanPrecedence", "heuristic-scan-precedence", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Allow heuristic match to take precedence.\nWhen enabled, if a heuristic scan (such as phishingScan) detects\na possible virus/phish it will stop scan immediately. Recommended, saves CPU\nscan-time.\nWhen disabled, virus/phish detected by heuristic scans will be reported only\nat the end of a scan. If an archive contains both a heuristically detected\nvirus/phish, and a real malware, the real malware will be reported.\nKeep this disabled if you intend to handle \"*.Heuristics.*\" viruses\ndifferently from \"real\" malware.\nIf a non-heuristically-detected virus (signature-based) is found first,\nthe scan is interrupted immediately, regardless of this config option.", "yes" },
 
@@ -375,7 +375,9 @@ const struct clam_option __clam_options[] = {
 
     { "MaxZipTypeRcg", "max-ziptypercg", 0, TYPE_SIZE, MATCH_SIZE, CLI_DEFAULT_MAXZIPTYPERCG, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the maximum size of a ZIP file to reanalyze type recognition.\nZIP files larger than this value will skip the step to potentially reanalyze as PE.\nNegative values are not allowed.\nWARNING: setting this limit too high may result in severe damage or impact performance.", "1M" },
 
-    { "MaxPartitions", "max-partitions", 0, TYPE_NUMBER, MATCH_NUMBER, 50, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the maximum number of partitions of a raw DMG to be scanned.\nRaw DMGs with more partitions than this value will have up to the value number partitions scanned.\nNegative values are not allowed.\nWARNING: setting this limit too high may result in severe damage or impact performance.", "128" },
+    { "MaxPartitions", "max-partitions", 0, TYPE_NUMBER, MATCH_NUMBER, CLI_DEFAULT_MAXPARTITIONS, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the maximum number of partitions of a raw disk image to be scanned.\nRaw disk images with more partitions than this value will have up to the value number partitions scanned.\nNegative values are not allowed.\nWARNING: setting this limit too high may result in severe damage or impact performance.", "128" },
+
+    { "MaxIconsPE", "max-iconspe", 0, TYPE_NUMBER, MATCH_NUMBER, CLI_DEFAULT_MAXICONSPE, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the maximum number of icons within a PE to be scanned.\nPE files with more icons than this value will have up to the value number icons scanned.\nNegative values are not allowed.\nWARNING: setting this limit too high may result in severe damage or impact performance.", "100" },
 
     /* OnAccess settings */
     { "ScanOnAccess", NULL, 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_CLAMD, "This option enables on-access scanning (Linux only)", "no" },

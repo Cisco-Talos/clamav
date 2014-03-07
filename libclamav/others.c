@@ -417,8 +417,11 @@ struct cl_engine *cl_engine_new(void)
     new->cb_stats_get_size = clamav_stats_get_size;
     new->cb_stats_get_hostid = clamav_stats_get_hostid;
 
-    /* Setup raw dmg max settings */
-    new->maxpartitions = 50;
+    /* Setup raw disk image max settings */
+    new->maxpartitions = CLI_DEFAULT_MAXPARTITIONS;
+
+    /* Engine max settings */
+    new->maxiconspe = CLI_DEFAULT_MAXICONSPE;
 
     cli_dbgmsg("Initialized %s engine\n", cl_retver());
     return new;
@@ -562,6 +565,9 @@ int cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field field, long
 	case CL_ENGINE_MAX_PARTITIONS:
 	    engine->maxpartitions = (uint32_t)num;
 	    break;
+	case CL_ENGINE_MAX_ICONSPE:
+	   engine->maxiconspe = (uint32_t)num;
+	   break;
 	default:
 	    cli_errmsg("cl_engine_set_num: Incorrect field number\n");
 	    return CL_EARG;
@@ -633,6 +639,8 @@ long long cl_engine_get_num(const struct cl_engine *engine, enum cl_engine_field
 	    return ((cli_intel_t *)(engine->stats_data))->timeout;
 	case CL_ENGINE_MAX_PARTITIONS:
 	    return engine->maxpartitions;
+	case CL_ENGINE_MAX_ICONSPE:
+	    return engine->maxiconspe;
 	default:
 	    cli_errmsg("cl_engine_get: Incorrect field number\n");
 	    if(err)
@@ -741,6 +749,8 @@ struct cl_settings *cl_engine_settings_copy(const struct cl_engine *engine)
 
     settings->maxpartitions = engine->maxpartitions;
 
+    settings->maxiconspe = engine->maxiconspe;
+
     return settings;
 }
 
@@ -812,6 +822,8 @@ int cl_engine_settings_apply(struct cl_engine *engine, const struct cl_settings 
     engine->cb_stats_get_hostid = settings->cb_stats_get_hostid;
 
     engine->maxpartitions = settings->maxpartitions;
+
+    engine->maxiconspe = settings->maxiconspe;
 
     return CL_SUCCESS;
 }
@@ -1281,6 +1293,7 @@ void cl_engine_set_clcb_meta(struct cl_engine *engine, clcb_meta callback)
     engine->cb_meta = callback;
 }
 
+#if !defined(_WIN32)
 __attribute__((constructor)) void init(void)
 {
     cl_initialize_crypto();
@@ -1290,3 +1303,4 @@ __attribute__((destructor)) void deinit(void)
 {
     cl_cleanup_crypto();
 }
+#endif

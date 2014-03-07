@@ -80,6 +80,10 @@ int main(int argc, char **argv)
     sigprocmask(SIG_SETMASK, &sigset, NULL);
 #endif
 
+#if defined(_WIN32)
+    cl_initialize_crypto();
+#endif
+
 
     if((opts = optparse(NULL, argc, argv, 1, OPT_CLAMSCAN, 0, NULL)) == NULL) {
 	mprintf("!Can't parse command line options\n");
@@ -253,6 +257,7 @@ void help(void)
     mprintf("    --heuristic-scan-precedence[=yes/no(*)] Stop scanning as soon as a heuristic match is found\n");
     mprintf("    --phishing-ssl[=yes/no(*)]           Always block SSL mismatches in URLs (phishing module)\n");
     mprintf("    --phishing-cloak[=yes/no(*)]         Always block cloaked URLs (phishing module)\n");
+    mprintf("    --partition-intersection[=yes/no(*)] Detect partition intersections in raw disk images using heuristics.\n");
     mprintf("    --algorithmic-detection[=yes(*)/no]  Algorithmic detection\n");
     mprintf("    --scan-pe[=yes(*)/no]                Scan PE files\n");
     mprintf("    --scan-elf[=yes(*)/no]               Scan ELF files\n");
@@ -276,6 +281,12 @@ void help(void)
     mprintf("    --max-htmlnotags=#n                  Maximum size of normalized HTML file to scan\n");
     mprintf("    --max-scriptnormalize=#n             Maximum size of script file to normalize\n");
     mprintf("    --max-ziptypercg=#n                  Maximum size zip to type reanalyze\n");
+    mprintf("    --max-partitions=#n                  Maximum number of partitions in disk image to be scanned\n");
+    mprintf("    --max-iconspe=#n                     Maximum number of icons in PE file to be scanned\n");
+    mprintf("    --enable-stats                       Enable statistical reporting of malware\n");
+    mprintf("    --disable-pe-stats                   Disable submission of individual PE sections in stats submissions\n");
+    mprintf("    --stats-timeout=#n                   Number of seconds to wait for waiting a response back from the stats server\n");
+    mprintf("    --stats-host-id=UUID                 Set the Host ID used when submitting statistical info.\n");
     mprintf("\n");
     mprintf("(*) Default scan settings\n");
     mprintf("(**) Certain files (e.g. documents, archives, etc.) may in turn contain other\n");

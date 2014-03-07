@@ -357,6 +357,10 @@ Example
 # Default: no
 #PhishingAlwaysBlockCloak no
 
+# Detect partition intersections in raw disk images using heuristics.
+# Default: no
+#PartitionIntersection no
+
 # Allow heuristic match to take precedence.
 # When enabled, if a heuristic scan (such as phishingScan) detects
 # a possible virus/phish it will stop scan immediately. Recommended, saves CPU
@@ -504,6 +508,19 @@ Example
 # Default: 1M
 #MaxZipTypeRcg 1M
 
+# This option sets the maximum number of partitions of a raw disk image to be scanned.
+# Raw disk images with more partitions than this value will have up to the value number
+# partitions scanned. Negative values are not allowed.
+# Note: setting this limit too high may result in severe damage or impact performance.
+# Default: 50
+#MaxPartitions 128
+
+# This option sets the maximum number of icons within a PE to be scanned.
+# PE files with more icons than this value will have up to the value number icons scanned.
+# Negative values are not allowed.
+# WARNING: setting this limit too high may result in severe damage or impact performance.
+# Default: 100
+#MaxIconsPE 200
 
 ##
 ## On-access Scan Settings
@@ -565,3 +582,23 @@ Example
 # 
 # Default: 5000
 # BytecodeTimeout 1000
+
+##
+## Statistics gathering and submitting
+##
+
+# Enable statistical reporting.
+# Default: no
+#StatsEnabled yes
+
+# Disable submission of individual PE sections for files flagged as malware.
+# Default: no
+#StatsPEDisabled yes
+
+# HostID in the form of an UUID to use when submitting statistical information.
+# Default: auto
+#StatsHostID auto
+
+# Time in seconds to wait for the stats server to come back with a response
+# Default: 10
+#StatsTimeout 10

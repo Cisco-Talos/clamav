@@ -329,8 +329,11 @@ struct cl_engine {
     clcb_stats_get_size cb_stats_get_size;
     clcb_stats_get_hostid cb_stats_get_hostid;
 
-    /* Raw dmg max settings */
+    /* Raw disk image max settings */
     uint32_t maxpartitions;
+
+    /* Engine max settings */
+    uint32_t maxiconspe; /* max number of icons to scan for PE */
 };
 
 struct cl_settings {
@@ -383,8 +386,11 @@ struct cl_settings {
     clcb_stats_get_size cb_stats_get_size;
     clcb_stats_get_hostid cb_stats_get_hostid;
 
-    /* Raw dmg max settings */
-    uint32_t maxpartitions;
+    /* Raw disk image max settings */
+    uint32_t maxpartitions; /* max number of partitions to scan in a disk image */
+
+    /* Engine max settings */
+    uint32_t maxiconspe; /* max number of icons to scan for PE */
 };
 
 extern int (*cli_unrar_open)(int fd, const char *dirname, unrar_state_t *state);

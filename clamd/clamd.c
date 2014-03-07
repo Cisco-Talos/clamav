@@ -139,6 +139,8 @@ int main(int argc, char **argv)
     sa.sa_handler = SIG_IGN;
     sigaction(SIGHUP, &sa, NULL);
     sigaction(SIGUSR2, &sa, NULL);
+#else
+    cl_initialize_crypto();
 #endif
 
     if((opts = optparse(NULL, argc, argv, 1, OPT_CLAMD, 0, NULL)) == NULL) {
@@ -434,8 +436,8 @@ int main(int argc, char **argv)
             logg("#Not loading PUA signatures.\n");
         }
 
-        if (optget(opts, "StatsDisabled")->enabled) {
-            cl_engine_set_clcb_stats_add_sample(engine, NULL);
+        if (optget(opts, "StatsEnabled")->enabled) {
+            cl_engine_stats_enable(engine);
         }
 
         if (optget(opts, "StatsPEDisabled")->enabled) {

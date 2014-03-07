@@ -198,7 +198,9 @@ help (void)
     mprintf
         ("    --list-mirrors                       print mirrors from mirrors.dat\n");
     mprintf
-        ("    --submit-stats[=/path/clamd.conf]    only submit detection statistics\n");
+        ("    --enable-stats                       enable statistical information reporting\n");
+    mprintf
+        ("    --stats-host-id=UUID                 HostID in the form of an UUID to use when submitting statistical information\n");
     mprintf
         ("    --update-db=DBNAME                   only update database DBNAME\n");
 
@@ -299,6 +301,10 @@ main (int argc, char **argv)
 
     if (check_flevel ())
         exit (FCE_INIT);
+
+#if defined(_WIN32)
+    cl_initialize_crypto();
+#endif
 
     if ((retcl = cl_init (CL_INIT_DEFAULT)))
     {
@@ -741,6 +747,9 @@ void submit_host_info(struct optstruct *opts)
     struct optstruct *opt;
     struct cl_engine *engine;
     cli_intel_t *intel;
+
+    if (!optget(opts, "enable-stats")->enabled)
+        return;
 
     engine = cl_engine_new();
     if (!(engine))

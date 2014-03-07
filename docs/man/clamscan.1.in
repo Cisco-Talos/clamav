@@ -144,6 +144,9 @@ Block SSL mismatches in URLs (might lead to false positives!).
 \fB\-\-phishing\-cloak[=yes/no(*)]\fR
 Block cloaked URLs (might lead to some false positives).
 .TP
+\fB\-\-partition\-intersection[=yes/no(*)]\fR
+Detect partition intersections in raw disk images using heuristics.
+.TP
 \fB\-\-algorithmic\-detection[=yes(*)/no]\fR
 In some cases (eg. complex malware, exploits in graphic files, and others), ClamAV uses special algorithms to provide accurate detection. This option can be used to control the algorithmic detection.
 .TP 
@@ -202,8 +205,26 @@ Maximum size of normalized HTML file to scan. You may pass the value in kilobyte
 \fB\-\-max\-scriptnormalize=#n\fR
 Maximum size of script file to normalize. You may pass the value in kilobytes in format xK or xk, or megabytes in format xM or xm, where x is a number (default: 5 MB, max: <4 GB).
 .TP
-\fB\-\-max-ziptypercg=#n\fR
+\fB\-\-max\-ziptypercg=#n\fR
 Maximum size zip to type reanalyze. You may pass the value in kilobytes in format xK or xk, or megabytes in format xM or xm, where x is a number (default: 1 MB, max: <4 GB).
+.TP
+\fB\-\-max\-partitions=#n\fR
+This option sets the maximum number of partitions of a raw disk image to be scanned. This must be a positive integer (default: 50).
+.TP
+\fB\-\-max\-iconspe=#n\fR
+This option sets the maximum number of icons within a PE to be scanned. This must be a positive integer (default: 100).
+.TP
+\fB\-\-enable\-stats\fR
+This option enables submission of statistical data. (Default: stats submissions disabled)
+.TP
+\fB\-\-stats\-host\-id\fR
+This option sets the HostID, in the form of an UUID, to use when submitting statistical information.
+.TP
+\fB\-\-disable\-pe\-stats\fR
+This option disables the submission of PE section data. (Default: submitting of PE section data enabled if stats submissions as a whole is enabled).
+.TP
+\fB\-\-stats\-timeout=#n\fR
+This option sets the timeout in seconds to wait for communication back from the stats server. (Default: 10).
 .SH "EXAMPLES"
 .LP 
 .TP 

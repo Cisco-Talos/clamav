@@ -582,8 +582,8 @@ int scanmanager(const struct optstruct *opts)
         cl_engine_set_num(engine, CL_ENGINE_DISABLE_PE_STATS, 1);
     }
 
-    if (optget(opts, "disable-stats")->enabled) {
-        cl_engine_set_clcb_stats_add_sample(engine, NULL);
+    if (optget(opts, "enable-stats")->enabled) {
+        cl_engine_stats_enable(engine);
     }
 
     if (optget(opts, "stats-timeout")->enabled) {
@@ -834,6 +834,14 @@ int scanmanager(const struct optstruct *opts)
     if((opt = optget(opts, "max-partitions"))->active) {
 	if((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_PARTITIONS, opt->numarg))) {
 	    logg("!cli_engine_set_num(CL_ENGINE_MAX_PARTITIONS) failed: %s\n", cl_strerror(ret));
+	    cl_engine_free(engine);
+	    return 2;
+	}
+    }
+
+    if((opt = optget(opts, "max-iconspe"))->active) {
+	if((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_ICONSPE, opt->numarg))) {
+	    logg("!cli_engine_set_num(CL_ENGINE_MAX_ICONSPE) failed: %s\n", cl_strerror(ret));
 	    cl_engine_free(engine);
 	    return 2;
 	}

@@ -207,7 +207,8 @@ enum cl_engine_field {
     CL_ENGINE_DISABLE_CACHE,        /* uint32_t */
     CL_ENGINE_DISABLE_PE_STATS,     /* uint32_t */
     CL_ENGINE_STATS_TIMEOUT,        /* uint32_t */
-    CL_ENGINE_MAX_PARTITIONS        /* uint32_t */
+    CL_ENGINE_MAX_PARTITIONS,       /* uint32_t */
+    CL_ENGINE_MAX_ICONSPE           /* uint32_t */
 };
 
 enum bytecode_security {
@@ -396,6 +397,8 @@ extern void cl_engine_set_clcb_stats_get_size(struct cl_engine *engine, clcb_sta
 
 typedef char * (*clcb_stats_get_hostid)(void *cbdata);
 extern void cl_engine_set_clcb_stats_get_hostid(struct cl_engine *engine, clcb_stats_get_hostid callback);
+
+extern void cl_engine_stats_enable(struct cl_engine *engine);
 
 struct cl_stat {
     char *dir;
