@@ -509,12 +509,15 @@ static void print_con_info(conn_t *conn, const char *fmt, ...)
 
 char *get_ip(const char *ip)
 {
-    char *dupip, *p1;
+    char *dupip, *p1, *p2;
+    unsigned int i;
 
     /*
      * Expected format of ip:
-     *     1) IPv4:Port
-     *     2) [IPv6]:Port
+     *     1) IPv4
+     *     2) IPv4:Port
+     *     3) IPv6
+     *     4) [IPv6]:Port
      * 
      * Use of IPv6:Port is incorrect. An IPv6 address must be enclosed in brackets.
      */
@@ -533,23 +536,25 @@ char *get_ip(const char *ip)
 
         *p1 = '\0';
 
-        return (dupip+1);
+        p1 = strdup(dupip+1);
+        free(dupip);
+        return p1;
     }
 
-    p1 = strchr(dupip, ':');
-    if (!(p1)) {
-        /* Port number is required */
-        free(dupip);
-        return NULL;
+    p1 = dupip;
+    i=0;
+    while (p1 = strchr(p1, ':')) {
+        i++;
+        p1++;
     }
 
-    *p1++ = '\0';
+    if (i == 0 || i > 1)
+        return dupip;
 
-    /* Extra sanity checking. If we have another colon, then we're IPv6. */
-    p1 = strchr(p1, ':');
-    if ((p1)) {
-        free(dupip);
-        return NULL;
+    if (i == 1) {
+        p1 = strchr(dupip, ':');
+        *p1 = '\0';
+        return dupip;
     }
 
     return dupip;
@@ -558,16 +563,23 @@ char *get_ip(const char *ip)
 char *get_port(const char *ip)
 {
     char *dupip, *p;
+    unsigned int offset=0;
 
     dupip = get_ip(ip);
     if (!(dupip))
         return NULL;
 
-    p = dupip + strlen(dupip) + 1;
-    if (*p == ':')
-        return p+1;
+    if (ip[0] == '[')
+        offset += 2;
 
-    return p;
+    p = ip + strlen(dupip) + offset;
+    if (*p == ':') {
+        p = strdup(p+1);
+        free(dupip);
+        return p;
+    }
+
+    return NULL;
 }
 
 char *make_ip(const char *host, const char *port)
@@ -680,6 +692,8 @@ end:
 
         conn->remote = make_ip(host, (port != NULL) ? port : "3310");
     }
+    if (port)
+        free(port);
     conn->sd = s;
     gettimeofday(&conn->tv_conn, NULL);
     tv.tv_sec = 30;
