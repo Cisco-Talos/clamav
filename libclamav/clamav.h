@@ -398,6 +398,8 @@ extern void cl_engine_set_clcb_stats_get_size(struct cl_engine *engine, clcb_sta
 typedef char * (*clcb_stats_get_hostid)(void *cbdata);
 extern void cl_engine_set_clcb_stats_get_hostid(struct cl_engine *engine, clcb_stats_get_hostid callback);
 
+extern void cl_engine_stats_enable(struct cl_engine *engine);
+
 struct cl_stat {
     char *dir;
     STATBUF *stattab;

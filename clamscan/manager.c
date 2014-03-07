@@ -582,8 +582,8 @@ int scanmanager(const struct optstruct *opts)
         cl_engine_set_num(engine, CL_ENGINE_DISABLE_PE_STATS, 1);
     }
 
-    if (optget(opts, "disable-stats")->enabled) {
-        cl_engine_set_clcb_stats_add_sample(engine, NULL);
+    if (optget(opts, "enable-stats")->enabled) {
+        cl_engine_stats_enable(engine);
     }
 
     if (optget(opts, "stats-timeout")->enabled) {

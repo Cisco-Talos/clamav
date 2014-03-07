@@ -672,3 +672,9 @@ void cl_engine_set_clcb_stats_get_hostid(struct cl_engine *engine, clcb_stats_ge
 {
     engine->cb_stats_get_hostid = callback;
 }
+
+void cl_engine_stats_enable(struct cl_engine *engine)
+{
+    engine->cb_stats_add_sample = clamav_stats_add_sample;
+    engine->cb_stats_submit = clamav_stats_submit;
+}

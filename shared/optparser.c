@@ -186,7 +186,7 @@ const struct clam_option __clam_options[] = {
 
     { "StatsHostID", "stats-host-id", 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM | OPT_CLAMD | OPT_CLAMSCAN, "HostID in the form of an UUID to use when submitting statistical information. See the clamscan manpage for more information.", "default" },
 
-    { "StatsDisabled", "disable-stats", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_CLAMSCAN, "Disable submission of statistical data", "no" },
+    { "StatsEnabled", "enable-stats", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_CLAMSCAN, "Enable submission of statistical data", "yes" },
 
     { "StatsPEDisabled", "disable-pe-stats", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Disable submission of PE section statistical data", "no" },
 

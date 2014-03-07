@@ -742,6 +742,9 @@ void submit_host_info(struct optstruct *opts)
     struct cl_engine *engine;
     cli_intel_t *intel;
 
+    if (!optget(opts, "enable-stats")->enabled)
+        return;
+
     engine = cl_engine_new();
     if (!(engine))
         return;

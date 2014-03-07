@@ -74,6 +74,7 @@ EXPORTS cl_hash_init @66
 EXPORTS cl_update_hash @67
 EXPORTS cl_finish_hash @68
 EXPORTS cl_hash_destroy @69
+EXPORTS cl_engine_stats_enable @70
 
 ; path variables
 ; --------------

@@ -434,8 +434,8 @@ int main(int argc, char **argv)
             logg("#Not loading PUA signatures.\n");
         }
 
-        if (optget(opts, "StatsDisabled")->enabled) {
-            cl_engine_set_clcb_stats_add_sample(engine, NULL);
+        if (optget(opts, "StatsEnabled")->enabled) {
+            cl_engine_stats_enable(engine);
         }
 
         if (optget(opts, "StatsPEDisabled")->enabled) {
