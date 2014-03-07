@@ -123,6 +123,9 @@ int cli_scanicon(icon_groupset *set, uint32_t resdir_rva, cli_ctx *ctx, struct c
 	cli_dbgmsg("cli_scanicon: max icon count reached\n");
     }
     cli_dbgmsg("cli_scanicon: scanned a total of %u[%u actual] icons across %u groups\n", icon_env.icnt, icon_env.hcnt, icon_env.gcnt);
+    if (icon_env.hcnt < icon_env.icnt) {
+	cli_warnmsg("cli_scanicon: found %u invalid icon entries of %u total\n", icon_env.icnt-icon_env.hcnt, icon_env.icnt);
+    }
 
     /* ignore all error returns (previous behavior) */
     if (icon_env.result == CL_VIRUS) {
@@ -183,13 +186,8 @@ int cli_groupiconscan(struct ICON_ENV *icon_env, uint32_t rva)
 		    }
 
 		    if (piconcnt == icon_env->hcnt) {
-			cli_dbgmsg("cli_scanicon: could not find icon id %u in group @%x\n",
+			cli_dbgmsg("cli_scanicon: invalid icon entry %u in group @%x\n",
 				   dir->id, rva);
-			if (0) {
-			/* heuristic goes here */
-			    icon_env->result = CL_VIRUS;
-			    return icon_env->result;
-			}
 		    }
 
 		    icon_env->icnt++;
