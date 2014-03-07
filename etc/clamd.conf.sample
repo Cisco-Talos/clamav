@@ -103,7 +103,8 @@ Example
 # TCP address.
 # By default we bind to INADDR_ANY, probably not wise.
 # Enable the following to provide some degree of protection
-# from the outside world.
+# from the outside world. This option can be specified multiple
+# times if you want to listen on multiple IPs. IPv6 is now supported.
 # Default: no
 #TCPAddr 127.0.0.1
 

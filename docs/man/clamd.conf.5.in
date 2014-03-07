@@ -130,7 +130,7 @@ Default: disabled
 \fBTCPAddr STRING\fR
 By default clamd binds to INADDR_ANY.
 .br
-This option allows you to restrict the TCP address and provide some degree of protection from the outside world.
+This option allows you to restrict the TCP address and provide some degree of protection from the outside world. This option can be specified multiple times in order to listen on multiple IPs. IPv6 is now supported.
 .br 
 Default: disabled
 .TP 
