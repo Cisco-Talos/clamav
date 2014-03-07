@@ -198,7 +198,9 @@ help (void)
     mprintf
         ("    --list-mirrors                       print mirrors from mirrors.dat\n");
     mprintf
-        ("    --submit-stats[=/path/clamd.conf]    only submit detection statistics\n");
+        ("    --enable-stats                       enable statistical information reporting\n");
+    mprintf
+        ("    --stats-host-id=UUID                 HostID in the form of an UUID to use when submitting statistical information\n");
     mprintf
         ("    --update-db=DBNAME                   only update database DBNAME\n");
 

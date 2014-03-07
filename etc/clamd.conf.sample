@@ -582,3 +582,23 @@ Example
 # 
 # Default: 5000
 # BytecodeTimeout 1000
+
+##
+## Statistics gathering and submitting
+##
+
+# Enable statistical reporting.
+# Default: no
+#StatsEnabled yes
+
+# Disable submission of individual PE sections for files flagged as malware.
+# Default: no
+#StatsPEDisabled yes
+
+# HostID in the form of an UUID to use when submitting statistical information.
+# Default: auto
+#StatsHostID auto
+
+# Time in seconds to wait for the stats server to come back with a response
+# Default: 10
+#StatsTimeout 10

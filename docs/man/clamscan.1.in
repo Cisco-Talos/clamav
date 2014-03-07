@@ -213,6 +213,18 @@ This option sets the maximum number of partitions of a raw disk image to be scan
 .TP
 \fB\-\-max\-iconspe=#n\fR
 This option sets the maximum number of icons within a PE to be scanned. This must be a positive integer (default: 100).
+.TP
+\fB\-\-enable\-stats\fR
+This option enables submission of statistical data. (Default: stats submissions disabled)
+.TP
+\fB\-\-stats\-host\-id\fR
+This option sets the HostID, in the form of an UUID, to use when submitting statistical information.
+.TP
+\fB\-\-disable\-pe\-stats\fR
+This option disables the submission of PE section data. (Default: submitting of PE section data enabled if stats submissions as a whole is enabled).
+.TP
+\fB\-\-stats\-timeout=#n\fR
+This option sets the timeout in seconds to wait for communication back from the stats server. (Default: 10).
 .SH "EXAMPLES"
 .LP 
 .TP 
