@@ -103,6 +103,7 @@ int cli_scanicon(icon_groupset *set, uint32_t resdir_rva, cli_ctx *ctx, struct c
 
     icon_env.ctx = ctx;
     icon_env.gcnt = 0;
+    icon_env.hcnt = 0;
     icon_env.icnt = 0;
     icon_env.lastg = 0;
     icon_env.result = CL_CLEAN;
