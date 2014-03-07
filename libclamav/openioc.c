@@ -59,26 +59,48 @@ static const xmlChar * openioc_read(xmlTextReaderPtr reader)
     return name;   
 }
 
-static int openioc_parse_content(xmlTextReaderPtr reader, struct openioc_hash ** elems)
+
+static int openioc_is_context_hash(xmlTextReaderPtr reader)
 {
-    xmlChar * type = xmlTextReaderGetAttribute(reader, (const xmlChar *)"type");
+    xmlChar * document = xmlTextReaderGetAttribute(reader, (const xmlChar *)"document");
+    xmlChar * search = xmlTextReaderGetAttribute(reader, (const xmlChar *)"search");
+    int rc = 0;
+
+    if ((document != NULL && search != NULL) &&
+        !xmlStrcmp(document, (const xmlChar *)"FileItem") &&
+        (!xmlStrcmp(search, (const xmlChar *)"FileItem/Md5sum") ||
+         !xmlStrcmp(search, (const xmlChar *)"FileItem/Sha1sum") ||
+         !xmlStrcmp(search, (const xmlChar *)"FileItem/Sha256sum")))
+        rc = 1;
+    if (document != NULL)
+        xmlFree(document);
+    if (search != NULL)
+        xmlFree(search);
+    return rc;
+}
+
+static int openioc_parse_content(xmlTextReaderPtr reader, struct openioc_hash ** elems, int context_hash)
+{
     const xmlChar * xmlval;
     struct openioc_hash * elem;
     int rc = CL_SUCCESS;
 
-    if (type == NULL) {
-        cli_dbgmsg("cli_openioc: xmlTextReaderGetAttribute no type attribute "
-                   "for <Content> element\n");
-        return rc;
-    } else { 
-        if (xmlStrcasecmp(type, (const xmlChar *)"sha1") &&
-            xmlStrcasecmp(type, (const xmlChar *)"sha256") &&
-            xmlStrcasecmp(type, (const xmlChar *)"md5")) {
-            xmlFree(type);
+    if (context_hash == 0) {
+        xmlChar * type = xmlTextReaderGetAttribute(reader, (const xmlChar *)"type");
+        if (type == NULL) {
+            cli_dbgmsg("cli_openioc: xmlTextReaderGetAttribute no type attribute "
+                       "for <Content> element\n");
             return rc;
+        } else { 
+            if (xmlStrcasecmp(type, (const xmlChar *)"sha1") &&
+                xmlStrcasecmp(type, (const xmlChar *)"sha256") &&
+                xmlStrcasecmp(type, (const xmlChar *)"md5")) {
+                xmlFree(type);
+                return rc;
+            }
         }
+        xmlFree(type);
     }
-    xmlFree(type);
     
     if (xmlTextReaderRead(reader) == 1 && xmlTextReaderNodeType(reader) == XML_READER_TYPE_TEXT) {
         xmlval = xmlTextReaderConstValue(reader);
@@ -105,14 +127,18 @@ static int openioc_parse_indicatoritem(xmlTextReaderPtr reader, struct openioc_h
 {
     const xmlChar * name;
     int rc = CL_SUCCESS;
+    int context_hash = 0;
 
     while (1) {
         name = openioc_read(reader);
         if (name == NULL)
             break;
-        if (xmlStrEqual(name, (const xmlChar *)"Content") && 
+        if (xmlStrEqual(name, (const xmlChar *)"Context") && 
             xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT) {
-            rc = openioc_parse_content(reader, elems);
+            context_hash = openioc_is_context_hash(reader);
+        } else if (xmlStrEqual(name, (const xmlChar *)"Content") && 
+            xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT) {
+            rc = openioc_parse_content(reader, elems, context_hash);
             if (rc != CL_SUCCESS) {
                 cli_dbgmsg("cli_openioc: openioc_parse_content error.\n");
                 break;
@@ -275,13 +301,14 @@ int openioc_parse(const char * fname, int fd, struct cl_engine *engine)
         }
         *vp = '\0';
         rc = hm_addhash_str(engine->hm_hdb, hash, 0, virusname);
-        if (rc != CL_SUCCESS) {
+        if (rc != CL_SUCCESS)
             cli_dbgmsg("cli_openioc: hm_addhash_str failed with %i hash len %i for %s.\n",
                        rc, hashlen, virusname);
-        }
+        
         xmlFree(elem->hash);
         free(elem);
     }
+
     return CL_SUCCESS;
 }
 #else
