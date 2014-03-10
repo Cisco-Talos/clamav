@@ -76,6 +76,10 @@ m4_include([m4/reorganization/code_checks/mpool.m4])
 m4_include([m4/reorganization/code_checks/unit_tests.m4])
 m4_include([m4/reorganization/code_checks/coverage.m4])
 
+dnl libclamav dependencies
+m4_include([m4/reorganization/libs/xml.m4])
+m4_include([m4/reorganization/libs/openssl.m4])
+
 AM_MAINTAINER_MODE
 m4_include([m4/reorganization/libs/libz.m4])
 m4_include([m4/reorganization/libs/bzip.m4])
@@ -121,10 +125,6 @@ m4_include([m4/reorganization/bsd.m4])
 
 dnl Freshclam dependencies
 m4_include([m4/reorganization/libs/curl.m4])
-
-dnl libclamav dependencies
-m4_include([m4/reorganization/libs/xml.m4])
-m4_include([m4/reorganization/libs/openssl.m4])
 
 m4_include([m4/reorganization/substitutions.m4])
 

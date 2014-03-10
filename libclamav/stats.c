@@ -31,7 +31,11 @@
 
 #include <sys/types.h>
 #if !defined(_WIN32)
+#if defined(C_SOLARIS)
+#include <sys/utsname.h>
+#else
 #include <sys/sysctl.h>
+#endif
 #include <dlfcn.h>
 #else
 #include <Windows.h>
@@ -549,6 +553,18 @@ char *clamav_stats_get_hostid(void *cbdata)
         return strdup(STATS_ANON_UUID);
 
     return strdup(HwProfInfo.szHwProfileGuid);
+}
+#elif defined(C_SOLARIS)
+char *clamav_stats_get_hostid(void *cbdata)
+{
+    struct utsname utsnm;
+    int ret;
+
+    ret = uname(&utsnm);
+    if (ret != -1)
+        return strdup(utsnm.nodename);
+
+    return strdup(STATS_ANON_UUID);
 }
 #else
 char *clamav_stats_get_hostid(void *cbdata)
