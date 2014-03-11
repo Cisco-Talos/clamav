@@ -226,7 +226,7 @@ CLAMAV_PRIVATE {
     cl_load_cert;
     cl_ASN1_GetTimeT;
     cl_load_crl;
-    sl_sign_data_keyfile;
+    cl_sign_data_keyfile;
     cl_sign_data;
     cl_sign_file_fd;
     cl_sign_file_fp;
