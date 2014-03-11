@@ -64,7 +64,7 @@ int cli_groupiconscan(struct ICON_ENV *icon_env, uint32_t rva);
 static int groupicon_scan_cb(void *ptr, uint32_t type, uint32_t name, uint32_t lang, uint32_t rva) {
     struct ICON_ENV *icon_env = ptr;
     int ret = CL_CLEAN;
-    type = type; lang = lang;
+    type = type; lang = lang; /* Prevent compiler warnings regarding unused variables */
 
     cli_dbgmsg("groupicon_cb: scanning group %x\n", name);
     if(!icon_env->gcnt || icon_env->lastg == name) {
@@ -86,7 +86,7 @@ static int parseicon(icon_groupset *set, uint32_t rva, cli_ctx *ctx, struct cli_
 
 static int icon_scan_cb(void *ptr, uint32_t type, uint32_t name, uint32_t lang, uint32_t rva) {
     struct ICON_ENV *icon_env = ptr;
-    type = type; lang = lang;
+    type = type; lang = lang; /* Prevent compiler warnings regarding unused variables */
     cli_dbgmsg("icon_cb: scanning icon %x\n", name);
 
     /* scan icon */
