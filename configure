@@ -15728,6 +15728,18 @@ fi
 done
 
 
+for ac_func in timegm
+do :
+  ac_fn_c_check_func "$LINENO" "timegm" "ac_cv_func_timegm"
+if test "x$ac_cv_func_timegm" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_TIMEGM 1
+_ACEOF
+
+fi
+done
+
+
 # Check whether --enable-mempool was given.
 if test "${enable_mempool+set}" = set; then :
   enableval=$enable_mempool; enable_mempool=$enableval
