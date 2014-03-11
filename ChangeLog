@@ -1,7 +1,8 @@
 Fri Mar 10 16:55:00 EDT 2014 (klin)
 ------------------------------------
- * bb#10650: fix for issues with parsing malformed icon groups in PE files
- * libclamav: added option to specify maximum number of PE icons to scan
+ * bb#10650: fix for issues with parsing malformed icon groups in PE files.
+	Thanks to Joxean Koret for providing feedback on this bug.
+ * libclamav: added option to specify maximum number of PE icons to scan.
 
 Fri Feb 28 15:19:00 EDT 2014 (smorgan)
 ------------------------------------
@@ -9,7 +10,7 @@ Fri Feb 28 15:19:00 EDT 2014 (smorgan)
 
 Thu Feb 20 16:50:03 EDT 2014 (klin)
 ------------------------------------
- * bb#10537: fixed sigtool not identifying certain targets (>9)
+ * bb#10537: fixed sigtool not identifying certain targets (>9).
 
 Thu Feb 20 16:42:00 EDT 2014 (swebb)
 ------------------------------------
@@ -23,9 +24,9 @@ Thu Feb 20 16:42:00 EDT 2014 (swebb)
 
 Fri Feb 14 12:30:32 EDT 2014 (klin)
 ------------------------------------
- * bb#9798: Added support for parsing raw disk images using GPT, MBR or APM partitioning
- * libclamav: Added an option to specify the maximum number of partitions to scan
- * libclamav: Added a heuristic to detect intersecting partitions in raw disk images
+ * bb#9798: Added support for parsing raw disk images using GPT, MBR or APM partitioning.
+ * libclamav: Added an option to specify the maximum number of partitions to scan.
+ * libclamav: Added a heuristic to detect intersecting partitions in raw disk images.
 
 Wed Feb 5 14:30:24 EDT 2014 (dar)
 ------------------------------------
