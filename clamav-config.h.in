@@ -401,6 +401,9 @@
 /* Define to 1 if you have the <termios.h> header file. */
 #undef HAVE_TERMIOS_H
 
+/* Define to 1 if you have the `timegm' function. */
+#undef HAVE_TIMEGM
+
 /* Define this if uname(2) is POSIX */
 #undef HAVE_UNAME_SYSCALL
 

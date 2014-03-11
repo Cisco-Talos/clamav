@@ -99,7 +99,7 @@ int cli_scanmbr(cli_ctx *ctx, size_t sectorsize)
 {
     struct mbr_boot_record mbr;
     enum MBR_STATE state = SEEN_NOTHING;
-    int ret = CL_CLEAN;
+    int ret = CL_CLEAN, detection = CL_CLEAN;
     off_t pos = 0, mbr_base = 0, partoff = 0;
     unsigned i = 0, prtncount = 0;
     size_t maplen, partsize;
@@ -145,18 +145,21 @@ int cli_scanmbr(cli_ctx *ctx, size_t sectorsize)
 
     /* MBR is valid, examine bootstrap code */
     ret = cli_map_scan(*ctx->fmap, 0, sectorsize, ctx, CL_TYPE_ANY);
-    if ((ret != CL_CLEAN) &&
-        !((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))) {
-        return ret;
+    if (ret != CL_CLEAN) {
+        if ((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))
+            detection = CL_VIRUS;
+        else
+            return ret;
     }
 
     /* check that the partition table has no intersections - HEURISTICS */
     if ((ctx->options & CL_SCAN_PARTITION_INTXN) && (ctx->dconf->other & OTHER_CONF_PRTNINTXN)) {
         ret = mbr_primary_prtn_intxn(ctx, mbr, sectorsize);
-        if ((ret != CL_CLEAN) &&
-            !((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))) {
-        
-            return ret;
+        if (ret != CL_CLEAN) {
+            if ((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))
+                detection = CL_VIRUS;
+            else
+                return ret;
         }
     }
 
@@ -186,9 +189,11 @@ int cli_scanmbr(cli_ctx *ctx, size_t sectorsize)
 
             ret = mbr_scanextprtn(ctx, &prtncount, mbr.entries[i].firstLBA, 
                                   mbr.entries[i].numLBA, sectorsize);
-            if ((ret != CL_CLEAN) &&
-                !((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))) {
-                return ret;
+            if (ret != CL_CLEAN) {
+                if ((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))
+                    detection = CL_VIRUS;
+                else
+                    return ret;
             }
         }
         else {
@@ -198,8 +203,10 @@ int cli_scanmbr(cli_ctx *ctx, size_t sectorsize)
             partsize = mbr.entries[i].numLBA * sectorsize;
             mbr_parsemsg("cli_map_scan: [%u, +%u)\n", partoff, partsize);
             ret = cli_map_scan(*ctx->fmap, partoff, partsize, ctx, CL_TYPE_PART_ANY);
-            if ((ret != CL_CLEAN) &&
-                !((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))) {
+            if (ret != CL_CLEAN) {
+                if ((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))
+                    detection = CL_VIRUS;
+                else
                     return ret;
             }
         }
@@ -208,14 +215,15 @@ int cli_scanmbr(cli_ctx *ctx, size_t sectorsize)
     if (prtncount >= ctx->engine->maxpartitions) {
         cli_dbgmsg("cli_scanmbr: maximum partitions reached\n");
     }
-    return ret;
+
+    return detection;
 }
 
 static int mbr_scanextprtn(cli_ctx *ctx, unsigned *prtncount, off_t extlba, size_t extlbasize, size_t sectorsize)
 {
     struct mbr_boot_record ebr;
     enum MBR_STATE state = SEEN_NOTHING;
-    int ret = CL_CLEAN;
+    int ret = CL_CLEAN, detection = CL_CLEAN;
     off_t pos = 0, mbr_base = 0, logiclba = 0, extoff = 0, partoff = 0;
     size_t partsize, extsize;
     unsigned i = 0, j = 0;
@@ -338,9 +346,11 @@ static int mbr_scanextprtn(cli_ctx *ctx, unsigned *prtncount, off_t extlba, size
                     }
 
                     ret = cli_map_scan(*ctx->fmap, partoff, partsize, ctx, CL_TYPE_PART_ANY);
-                    if ((ret != CL_CLEAN) &&
-                        !((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))) {
-                        return ret;
+                    if (ret != CL_CLEAN) {
+                        if ((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))
+                            detection = CL_VIRUS;
+                        else
+                            return ret;
                     }
                 }
             }
@@ -357,7 +367,8 @@ static int mbr_scanextprtn(cli_ctx *ctx, unsigned *prtncount, off_t extlba, size
     } while (logiclba != 0 && (*prtncount) < ctx->engine->maxpartitions);
 
     cli_dbgmsg("cli_scanmbr: examined %u logical partitions\n", i);
-    return ret;
+
+    return detection;
 }
 
 void mbr_convert_to_host(struct mbr_boot_record *record)
@@ -450,7 +461,7 @@ static int mbr_primary_prtn_intxn(cli_ctx *ctx, struct mbr_boot_record mbr, size
 {
     prtn_intxn_list_t prtncheck;
     unsigned i = 0, pitxn = 0, prtncount = 0;
-    int ret = 0, tmp = 0;
+    int ret = CL_CLEAN, tmp = CL_CLEAN;
 
     prtn_intxn_list_init(&prtncheck);
 
@@ -518,7 +529,7 @@ static int mbr_extended_prtn_intxn(cli_ctx *ctx, unsigned *prtncount, off_t extl
     struct mbr_boot_record ebr;
     prtn_intxn_list_t prtncheck;
     unsigned i, pitxn;
-    int ret = 0, mbr_base = 0, tmp = 0;
+    int ret = CL_CLEAN, tmp = CL_CLEAN, mbr_base = 0;
     off_t pos = 0, logiclba = 0;
 
     mbr_base = sectorsize - sizeof(struct mbr_boot_record);

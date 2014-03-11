@@ -80,3 +80,9 @@
     fun:cl_initialize_crypto
     ...
 }
+{
+    openssl-globals-02
+    Memcheck:Leak
+    ...
+    fun:SSL_library_init
+}

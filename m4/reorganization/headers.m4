@@ -1,5 +1,3 @@
-AC_INCLUDES_DEFAULT
-
 AC_CHECK_HEADERS([stdint.h unistd.h sys/int_types.h dlfcn.h inttypes.h sys/inttypes.h sys/times.h memory.h ndir.h stdlib.h strings.h string.h sys/mman.h sys/param.h sys/stat.h sys/types.h malloc.h poll.h limits.h sys/filio.h sys/uio.h termios.h stdbool.h pwd.h grp.h])
 AC_CHECK_HEADER([syslog.h],AC_DEFINE([USE_SYSLOG],1,[use syslog]),)
 

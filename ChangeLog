@@ -1,62 +1,78 @@
-Fri Feb 28 2014 15:19:00 EDT (smorgan)
+Fri Mar 10 16:55:00 EDT 2014 (klin)
+------------------------------------
+ * bb#10650: fix for issues with parsing malformed icon groups in PE files.
+	Thanks to Joxean Koret for providing feedback on this bug.
+ * libclamav: added option to specify maximum number of PE icons to scan.
+
+Fri Feb 28 15:19:00 EDT 2014 (smorgan)
 ------------------------------------
  * Support for OpenIOC md5, sha1, sha256 hashes.
 
-Thu Feb 20 16:42:00 2014 EDT 2013 (swebb)
+Thu Feb 20 16:50:03 EDT 2014 (klin)
+------------------------------------
+ * bb#10537: fixed sigtool not identifying certain targets (>9).
+
+Thu Feb 20 16:42:00 EDT 2014 (swebb)
 ------------------------------------
  * Replace in-house crypto code (md5, sha1, sha256 hashing algorithms) with
  calls to OpenSSL. This makes OpenSSL a required dependency for the engine.
 
-Thu Feb 20 16:42:00 2014 EDT 2013 (swebb)
+Thu Feb 20 16:42:00 EDT 2014 (swebb)
 ------------------------------------
  * bb#3395: Support IPv6 in clamd, clamdscan, freshclam, and clamdtop.
  clamav-milter already has IPv6 support.
 
-Wed Feb 5 14:30:24 2013 EDT 2014 (dar)
+Fri Feb 14 12:30:32 EDT 2014 (klin)
+------------------------------------
+ * bb#9798: Added support for parsing raw disk images using GPT, MBR or APM partitioning.
+ * libclamav: Added an option to specify the maximum number of partitions to scan.
+ * libclamav: Added a heuristic to detect intersecting partitions in raw disk images.
+
+Wed Feb 5 14:30:24 EDT 2014 (dar)
 ------------------------------------
  * bb#9156/10335: switch fanotify support to use sys/fanotify.h instead of coded syscalls
 
-Mon Dec 5 18:10:24 2013 EDT 2013 (morgan)
+Mon Dec 5 18:10:24 EDT 2013 (morgan)
 ------------------------------------
  * bb#9595 fix for sigs targeted for ascii files containing offsets of the form EOF-n.
 
-Mon Dec 2 15:55:24 2013 EDT 2013 (morgan)
+Mon Dec 2 15:55:24 EDT 2013 (morgan)
 ------------------------------------
  * bb#9491 Support wildcard alternate strings of identical length in Aho-Corasick pattern matcher.
 
-Fri Nov 8 17:08:09 2013 EDT 2013 (morgan)
+Fri Nov 8 17:08:09 EDT 2013 (morgan)
 ------------------------------------
  * Add ForceToDisk option for clamd and force-to-disk arg for clamscan
 
-Wed Oct 31 12:48:00 2013 EDT 2013 (morgan)
+Wed Oct 31 12:48:00 EDT 2013 (morgan)
 ------------------------------------
  * libclamav: bb#5341 - Change floating point byte order check from compile time to run time.
 
-Thu Oct 23 18:01:46 2013 EDT 2013 (dar)
+Thu Oct 23 18:01:46 EDT 2013 (dar)
 ------------------------------------
  * bb #9222: make fmap_unneed respect nested maps
 
-Wed Oct 23 16:21:46 2013 EDT 2013 (morgan)
+Wed Oct 23 16:21:46 EDT 2013 (morgan)
 ------------------------------------
  * libclamav: bb#5978 - Allow html detection/normalization for graphic file types.
 
-Thu Oct 17 16:50:00 2013 EDT 2013 (morgan)
+Thu Oct 17 16:50:00 EDT 2013 (morgan)
 ------------------------------------
  * libclamav: bb#6348 - Add file type recognition for Office Open XML.
 
-Tue Oct 15 16:03:25 2013 EDT 2013 (dar)
+Tue Oct 15 16:03:25 EDT 2013 (dar)
 ------------------------------------
  * libclamav: bb #9154 - ELF handling re-write
 
-Tue Oct 15 16:00:14 2013 EDT 2013 (dar)
+Tue Oct 15 16:00:14 EDT 2013 (dar)
 ------------------------------------
  * libclamav: bb #8696 - Bug reported by NIW Solutions
 
-Mon Oct 14 17:07:40 2013 EDT 2013 (morgan)
+Mon Oct 14 17:07:40 EDT 2013 (morgan)
 ------------------------------------
  * bb #8209 - move perror()'s so they will work. Patches supplied by Bill Parker.
 
-Fri Oct 11 16:50:34 2013 EDT 2013 (dar)
+Fri Oct 11 16:50:34 EDT 2013 (dar)
 ------------------------------------
  * bb #9072: clamscan message separator fix
 
@@ -64,35 +80,35 @@ Tue Oct 8 17:17:44 EDT 2013 (morgan)
 ------------------------------------
  * libclamav: Add support for XZ file type recognition and decompression.
 
-Thu Oct 3 10:49:11 2013 EDT 2013 (dar)
+Thu Oct 3 10:49:11 EDT 2013 (dar)
 ------------------------------------
  * bb #1570: Support ADC compression in DMG
 
-Wed Oct 2 11:22:40 2013 EDT 2013 (dar)
+Wed Oct 2 11:22:40 EDT 2013 (dar)
 ------------------------------------
  * bb #9053: ClamAV 0.98 can't be compiled on FreeBSD 7
 
-Mon Sep 30 11:04:58 2013 EDT 2013 (dar)
+Mon Sep 30 11:04:58 EDT 2013 (dar)
 ------------------------------------
  * bb #9017: tomsfastmath warning with zLinux on s390x
 
-Fri Sep 15 18:15:36 2013 EDT 2013 (morgan)
+Fri Sep 15 18:15:36 EDT 2013 (morgan)
 ------------------------------------
  * win32: Import libxml2 2.9.1 components into windows builds for xmlReader support.
 
-Fri Sep 13 12:22:58 2013 EDT 2013 (morgan)
+Fri Sep 13 12:22:58 EDT 2013 (morgan)
 ------------------------------------
  * libclamav: Add support for scanning xar/pkg archive files.
 
-Tue Sep 3 18:37:13 2013 EDT 2013 (dar)
+Tue Sep 3 18:37:13 EDT 2013 (dar)
 ------------------------------------
  * V 0.98.0 RC
 
-Thu Aug 15 17:44:49 2013 EDT 2013 (dar)
+Thu Aug 15 17:44:49 EDT 2013 (dar)
 ------------------------------------
  * code quality fixes on libclamav, clamd, sigtool, clamav-milter, clamconf and clamdtop
 
-Fri Aug 9 18:33:06 2013 EDT 2013 (dar)
+Fri Aug 9 18:33:06 EDT 2013 (dar)
 ------------------------------------
  * code quality fixes on libclamav, libclamunrar and freshclam
 
@@ -311,65 +327,65 @@ Wed Nov 28 19:15:44 EDT 2012 (morgan)
 -------------------------------------
  * bb#1891 add Mark Pizzolato patch to fix clamd buffer bookkeeping errors
 
-Wed Nov 28 17:11:07 2012 (dar)
+Wed Nov 28 17:11:07 EDT 2012 (dar)
 -------------------------------------
  * bb #5405: raise configurable option limit
 
-Tue Nov 27 17:48:50 2012 (morgan)
+Tue Nov 27 17:48:50 EDT 2012 (morgan)
 -------------------------------------
  * for allscan mode, update usage messages and man pages
 
-Tue Nov 27 17:15:02 2012 (dar)
+Tue Nov 27 17:15:02 EDT 2012 (dar)
 -------------------------------------
  * bb #5405: Convert hard-coded maximum file sizes to configurable values with
  defaults
 
-Tue Nov 27 16:17:31 2012 (dar)
+Tue Nov 27 16:17:31 EDT 2012 (dar)
 -------------------------------------
  * Refactoring cache_remove to engine instead of full context object
 
-Tue Nov 27 11:24:52 2012 (dar)
+Tue Nov 27 11:24:52 EDT 2012 (dar)
 -------------------------------------
  * cache_remove and cacheset_remove functions to support corrections of false
  negatives
 
-Fri Nov 16 20:03:57 2012 (morgan) 
+Fri Nov 16 20:03:57 EDT 2012 (morgan)
 -------------------------------------
  * portability improvement for ping domain naming
 
-Thu Nov 15 10:50:22 2012 (morgan)
+Thu Nov 15 10:50:22 EDT 2012 (morgan)
 -------------------------------------
  * change formatting of ip address dns label within freshclam ping-host names to hex ascii
 
-Wed Nov 14 16:12:21 2012 (morgan)
+Wed Nov 14 16:12:21 EDT 2012 (morgan)
 -------------------------------------
  * widen freshclam domain arrays
 
-Fri Nov 9 17:08:50 2012 (morgan)
+Fri Nov 9 17:08:50 EDT 2012 (morgan)
 -------------------------------------
  * bb5224: fix dereference of a null pointer reported by clang analyzer
 
-Fri Nov 9 15:31:51 2012 (morgan)
+Fri Nov 9 15:31:51 EDT 2012 (morgan)
 -------------------------------------
  * fix dereference of a null pointer reported by clang analyzer
 
-Fri Nov 9 11:49:27 2012 (dar)
+Fri Nov 9 11:49:27 EDT 2012 (dar)
 -------------------------------------
  * libclamav: type tweak for CAB files
 
-Tue Nov 6 10:35:10 2012 (dar)
+Tue Nov 6 10:35:10 EDT 2012 (dar)
 -------------------------------------
  * bb#6038: fix compile warning in unit test code due to type mismatch
 
-Tue Nov 6 10:05:35 2012 (dar)
+Tue Nov 6 10:05:35 EDT 2012 (dar)
 -------------------------------------
  * bb #4516 - fix for mszip compression in CAB files
 
-Mon Nov 5 13:36:22 2012 (swebb)
+Mon Nov 5 13:36:22 EDT 2012 (swebb)
 -------------------------------------
  * bb1823 - Enable linking with custom zlib
 
-Fri Nov 2 14:15:45 2012 (morgan)
+Fri Nov 2 14:15:45 EDT 2012 (morgan)
 -------------------------------------
  * fixes cvd load error on some i386 builds caused by -D_FILE_OFFSET_BITS=64 and a long story
 

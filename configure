@@ -656,6 +656,7 @@ CLAMAV_MILTER_LIBS
 CLAMMEM_LIBS
 CLAMD_LIBS
 LIBCLAMAV_LIBS
+SSL_CPPFLAGS
 LIBCLAMSHARED_CPPFLAGS
 CLAMBC_CPPFLAGS
 CLAMDTOP_CPPFLAGS
@@ -668,8 +669,6 @@ CLAMD_CPPFLAGS
 CLAMDSCAN_CPPFLAGS
 CLAMSCAN_CPPFLAGS
 FRESHCLAM_CPPFLAGS
-XML_LIBS
-XML_CPPFLAGS
 CLAMSUBMIT_CFLAGS
 CLAMSUBMIT_LIBS
 subdirs
@@ -698,6 +697,8 @@ LIBBZ2
 MAINT
 MAINTAINER_MODE_FALSE
 MAINTAINER_MODE_TRUE
+XML_LIBS
+XML_CPPFLAGS
 ENABLE_COVERAGE_FALSE
 ENABLE_COVERAGE_TRUE
 GENHTML
@@ -871,6 +872,9 @@ enable_check
 enable_rpath
 with_libcheck_prefix
 enable_coverage
+enable_xml
+with_xml
+with_openssl
 enable_maintainer_mode
 with_zlib
 enable_zlib_vcheck
@@ -903,9 +907,6 @@ enable_distcheck_werror
 enable_llvm
 enable_sha_collector_for_internal_use
 with_libcurl
-enable_xml
-with_xml
-with_openssl
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1554,6 +1555,7 @@ Optional Features:
   --enable-check           Enable 'check' unit tests (default=auto)
   --disable-rpath         do not hardcode runtime library paths
   --enable-coverage       turn on test coverage [default=no]
+  --disable-xml	  disable DMG and XAR support
   --enable-maintainer-mode enable make rules and dependencies not useful
                           (and sometimes confusing) to the casual installer
   --disable-zlib-vcheck	  do not check for buggy zlib version
@@ -1579,7 +1581,6 @@ Optional Features:
                           enable warnings as error for distcheck [default=no]
   --enable-llvm           Enable 'llvm' JIT/verifier support [default=auto]
 
-  --disable-xml	  disable DMG and XAR support
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -1595,6 +1596,10 @@ Optional Packages:
   --with-gnu-ld           assume the C compiler uses GNU ld default=no
   --with-libcheck-prefix[=DIR]  search for libcheck in DIR/include and DIR/lib
   --without-libcheck-prefix     don't search for libcheck in includedir and libdir
+  --with-xml=DIR	  path to directory containing libxml2 library (default=
+			  /usr/local or /usr if not found in /usr/local)
+  --with-openssl=DIR   path to directory containing openssl (default=
+    /usr/local or /usr if not found in /usr/local)
   --with-zlib=DIR	  path to directory containing zlib library (default=
 			  /usr/local or /usr if not found in /usr/local)
   --with-libbz2-prefix[=DIR]  search for libbz2 in DIR/include and DIR/lib
@@ -1609,10 +1614,6 @@ Optional Packages:
   --with-libpdcurses-prefix[=DIR]  search for libpdcurses in DIR/include and DIR/lib
   --without-libpdcurses-prefix     don't search for libpdcurses in includedir and libdir
   --with-libcurl=DIR   path to directory containing libcurl (default=
-    /usr/local or /usr if not found in /usr/local)
-  --with-xml=DIR	  path to directory containing libxml2 library (default=
-			  /usr/local or /usr if not found in /usr/local)
-  --with-openssl=DIR   path to directory containing openssl (default=
     /usr/local or /usr if not found in /usr/local)
 
 Some influential environment variables:
@@ -5866,6 +5867,10 @@ freebsd* | dragonfly*)
   fi
   ;;
 
+gnu*)
+  lt_cv_deplibs_check_method=pass_all
+  ;;
+
 haiku*)
   lt_cv_deplibs_check_method=pass_all
   ;;
@@ -5904,11 +5909,11 @@ irix5* | irix6* | nonstopux*)
   ;;
 
 # This must be glibc/ELF.
-linux* | k*bsd*-gnu | kopensolaris*-gnu | gnu*)
+linux* | k*bsd*-gnu | kopensolaris*-gnu)
   lt_cv_deplibs_check_method=pass_all
   ;;
 
-netbsd* | netbsdelf*-gnu)
+netbsd*)
   if echo __ELF__ | $CC -E - | $GREP __ELF__ > /dev/null; then
     lt_cv_deplibs_check_method='match_pattern /lib[^/]+(\.so\.[0-9]+\.[0-9]+|_pic\.a)$'
   else
@@ -8829,7 +8834,7 @@ lt_prog_compiler_static=
       lt_prog_compiler_static='-non_shared'
       ;;
 
-    linux* | k*bsd*-gnu | kopensolaris*-gnu | gnu*)
+    linux* | k*bsd*-gnu | kopensolaris*-gnu)
       case $cc_basename in
       # old Intel for x86_64 which still supported -KPIC.
       ecc*)
@@ -9307,9 +9312,6 @@ $as_echo_n "checking whether the $compiler linker ($LD) supports shared librarie
   openbsd*)
     with_gnu_ld=no
     ;;
-  linux* | k*bsd*-gnu | gnu*)
-    link_all_deplibs=no
-    ;;
   esac
 
   ld_shlibs=yes
@@ -9531,7 +9533,7 @@ _LT_EOF
       fi
       ;;
 
-    netbsd* | netbsdelf*-gnu)
+    netbsd*)
       if echo __ELF__ | $CC -E - | $GREP __ELF__ >/dev/null; then
 	archive_cmds='$LD -Bshareable $libobjs $deplibs $linker_flags -o $lib'
 	wlarc=
@@ -9708,7 +9710,6 @@ _LT_EOF
 	if test "$aix_use_runtimelinking" = yes; then
 	  shared_flag="$shared_flag "'${wl}-G'
 	fi
-	link_all_deplibs=no
       else
 	# not using gcc
 	if test "$host_cpu" = ia64; then
@@ -10162,7 +10163,7 @@ $as_echo "$lt_cv_irix_exported_symbol" >&6; }
       link_all_deplibs=yes
       ;;
 
-    netbsd* | netbsdelf*-gnu)
+    netbsd*)
       if echo __ELF__ | $CC -E - | $GREP __ELF__ >/dev/null; then
 	archive_cmds='$LD -Bshareable -o $lib $libobjs $deplibs $linker_flags'  # a.out
       else
@@ -10999,6 +11000,17 @@ freebsd* | dragonfly*)
   esac
   ;;
 
+gnu*)
+  version_type=linux # correct to gnu/linux during the next big refactor
+  need_lib_prefix=no
+  need_version=no
+  library_names_spec='${libname}${release}${shared_ext}$versuffix ${libname}${release}${shared_ext}${major} ${libname}${shared_ext}'
+  soname_spec='${libname}${release}${shared_ext}$major'
+  shlibpath_var=LD_LIBRARY_PATH
+  shlibpath_overrides_runpath=no
+  hardcode_into_libs=yes
+  ;;
+
 haiku*)
   version_type=linux # correct to gnu/linux during the next big refactor
   need_lib_prefix=no
@@ -11115,7 +11127,7 @@ linux*oldld* | linux*aout* | linux*coff*)
   ;;
 
 # This must be glibc/ELF.
-linux* | k*bsd*-gnu | kopensolaris*-gnu | gnu*)
+linux* | k*bsd*-gnu | kopensolaris*-gnu)
   version_type=linux # correct to gnu/linux during the next big refactor
   need_lib_prefix=no
   need_version=no
@@ -11177,18 +11189,6 @@ fi
   # people can always --disable-shared, the test was removed, and we
   # assume the GNU/Linux dynamic linker is in use.
   dynamic_linker='GNU/Linux ld.so'
-  ;;
-
-netbsdelf*-gnu)
-  version_type=linux
-  need_lib_prefix=no
-  need_version=no
-  library_names_spec='${libname}${release}${shared_ext}$versuffix ${libname}${release}${shared_ext}$major ${libname}${shared_ext}'
-  soname_spec='${libname}${release}${shared_ext}$major'
-  shlibpath_var=LD_LIBRARY_PATH
-  shlibpath_overrides_runpath=no
-  hardcode_into_libs=yes
-  dynamic_linker='NetBSD ld.elf_so'
   ;;
 
 netbsd*)
@@ -12771,7 +12771,7 @@ else
     # at 6.2 and later dlopen does load deplibs.
     lt_cv_sys_dlopen_deplibs=yes
     ;;
-  netbsd* | netbsdelf*-gnu)
+  netbsd*)
     lt_cv_sys_dlopen_deplibs=yes
     ;;
   openbsd*)
@@ -14135,8 +14135,6 @@ fi
 esac
 
 
-
-$ac_includes_default
 
 for ac_header in stdint.h unistd.h sys/int_types.h dlfcn.h inttypes.h sys/inttypes.h sys/times.h memory.h ndir.h stdlib.h strings.h string.h sys/mman.h sys/param.h sys/stat.h sys/types.h malloc.h poll.h limits.h sys/filio.h sys/uio.h termios.h stdbool.h pwd.h grp.h
 do :
@@ -15728,6 +15726,18 @@ fi
 done
 
 
+for ac_func in timegm
+do :
+  ac_fn_c_check_func "$LINENO" "timegm" "ac_cv_func_timegm"
+if test "x$ac_cv_func_timegm" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_TIMEGM 1
+_ACEOF
+
+fi
+done
+
+
 # Check whether --enable-mempool was given.
 if test "${enable_mempool+set}" = set; then :
   enableval=$enable_mempool; enable_mempool=$enableval
@@ -16646,6 +16656,307 @@ else
   ENABLE_COVERAGE_FALSE=
 fi
 
+
+
+
+want_xml="auto"
+# Check whether --enable-xml was given.
+if test "${enable_xml+set}" = set; then :
+  enableval=$enable_xml; want_xml=$enableval
+else
+  want_xml="auto"
+fi
+
+
+XML_HOME=""
+if test "X$want_xml" != "Xno"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for libxml2 installation" >&5
+$as_echo_n "checking for libxml2 installation... " >&6; }
+
+# Check whether --with-xml was given.
+if test "${with_xml+set}" = set; then :
+  withval=$with_xml;
+  if test "$withval"
+  then
+    XML_HOME="$withval"
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: using $XML_HOME" >&5
+$as_echo "using $XML_HOME" >&6; }
+  else
+    as_fn_error $? "cannot assign blank value to --with-xml" "$LINENO" 5
+  fi
+
+else
+
+  XML_HOME=/usr/local
+  if test ! -x "$XML_HOME/bin/xml2-config"
+  then
+    XML_HOME=/usr
+    if test ! -x "$XML_HOME/bin/xml2-config"
+    then
+      XML_HOME=""
+    fi
+  fi
+  if test "x$XML_HOME" != "x"; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $XML_HOME" >&5
+$as_echo "$XML_HOME" >&6; }
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+$as_echo "not found" >&6; }
+  fi
+
+fi
+
+fi
+
+found_xml="no"
+XMLCONF_VERSION=""
+XML_CPPFLAGS=""
+XML_LIBS=""
+if test "x$XML_HOME" != "x"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking xml2-config version" >&5
+$as_echo_n "checking xml2-config version... " >&6; }
+  XMLCONF_VERSION="`$XML_HOME/bin/xml2-config --version`"
+  if test "x%XMLCONF_VERSION" != "x"; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $XMLCONF_VERSION" >&5
+$as_echo "$XMLCONF_VERSION" >&6; }
+    found_xml="yes"
+    XML_CPPFLAGS="`$XML_HOME/bin/xml2-config --cflags`"
+    XML_LIBS="`$XML_HOME/bin/xml2-config --libs`"
+  else
+    as_fn_error $? "xml2-config failed" "$LINENO" 5
+  fi
+fi
+
+working_xml="no"
+if test "X$found_xml" != "Xno"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for xmlreader.h in $XML_HOME" >&5
+$as_echo_n "checking for xmlreader.h in $XML_HOME... " >&6; }
+
+  if test ! -f "$XML_HOME/include/libxml2/libxml/xmlreader.h"; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+$as_echo "not found" >&6; }
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
+$as_echo "found" >&6; }
+    save_LIBS="$LIBS"
+    save_CPPFLAGS="$CPPFLAGS"
+    CPPFLAGS="$CPPFLAGS $XML_CPPFLAGS"
+    save_LDFLAGS="$LDFLAGS"
+    LDFLAGS="$LDFLAGS $XML_LIBS"
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for xmlTextReaderRead in -lxml2" >&5
+$as_echo_n "checking for xmlTextReaderRead in -lxml2... " >&6; }
+if ${ac_cv_lib_xml2_xmlTextReaderRead+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lxml2  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char xmlTextReaderRead ();
+int
+main ()
+{
+return xmlTextReaderRead ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_xml2_xmlTextReaderRead=yes
+else
+  ac_cv_lib_xml2_xmlTextReaderRead=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_xml2_xmlTextReaderRead" >&5
+$as_echo "$ac_cv_lib_xml2_xmlTextReaderRead" >&6; }
+if test "x$ac_cv_lib_xml2_xmlTextReaderRead" = xyes; then :
+  working_xml="yes"
+else
+  working_xml="no"
+fi
+
+
+    CPPFLAGS="$save_CPPFLAGS"
+    LDFLAGS="$save_LDFLAGS"
+    LIBS="$save_LIBS"
+  fi
+fi
+
+if test "$working_xml" = "yes"; then
+
+$as_echo "#define HAVE_LIBXML2 1" >>confdefs.h
+
+
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: Compiling and linking with libxml2 from $XML_HOME" >&5
+$as_echo "$as_me: Compiling and linking with libxml2 from $XML_HOME" >&6;}
+else
+  if test "$want_xml" = "yes"; then
+     as_fn_error $? "****** Please install libxml2 packages!" "$LINENO" 5
+  else
+    if test "$want_xml" != "no"; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: ****** libxml2 support unavailable" >&5
+$as_echo "$as_me: ****** libxml2 support unavailable" >&6;}
+    fi
+  fi
+  XML_CPPFLAGS=""
+  XML_LIBS=""
+
+
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for OpenSSL installation" >&5
+$as_echo_n "checking for OpenSSL installation... " >&6; }
+
+
+# Check whether --with-openssl was given.
+if test "${with_openssl+set}" = set; then :
+  withval=$with_openssl;
+if test "$withval"; then
+    LIBSSL_HOME="$withval"
+fi
+
+else
+
+LIBSSL_HOME=/usr/local
+if test ! -f "$LIBSSL_HOME/include/openssl/ssl.h"
+then
+    LIBSSL_HOME=/usr
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $LIBSSL_HOME" >&5
+$as_echo "$LIBSSL_HOME" >&6; }
+
+fi
+
+
+if test ! -f "$LIBSSL_HOME/include/openssl/ssl.h"
+then
+    as_fn_error $? "OpenSSL not found." "$LINENO" 5
+fi
+
+SSL_LDFLAGS="-L$LIBSSL_HOME/lib -lssl -lcrypto"
+SSL_CPPFLAGS="-I$LIBSSL_HOME/include"
+
+save_LDFLAGS="$LDFLAGS"
+LDFLAGS="-L$LIBSSL_HOME/lib -lssl -lcrypto"
+
+have_ssl="no"
+have_crypto="no"
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for SSL_library_init in -lssl" >&5
+$as_echo_n "checking for SSL_library_init in -lssl... " >&6; }
+if ${ac_cv_lib_ssl_SSL_library_init+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lssl  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char SSL_library_init ();
+int
+main ()
+{
+return SSL_library_init ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_ssl_SSL_library_init=yes
+else
+  ac_cv_lib_ssl_SSL_library_init=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_ssl_SSL_library_init" >&5
+$as_echo "$ac_cv_lib_ssl_SSL_library_init" >&6; }
+if test "x$ac_cv_lib_ssl_SSL_library_init" = xyes; then :
+  have_ssl="yes"
+else
+  as_fn_error $? "Your OpenSSL installation is misconfigured or missing" "$LINENO" 5
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for EVP_EncryptInit in -lcrypto" >&5
+$as_echo_n "checking for EVP_EncryptInit in -lcrypto... " >&6; }
+if ${ac_cv_lib_crypto_EVP_EncryptInit+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lcrypto  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char EVP_EncryptInit ();
+int
+main ()
+{
+return EVP_EncryptInit ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_crypto_EVP_EncryptInit=yes
+else
+  ac_cv_lib_crypto_EVP_EncryptInit=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_crypto_EVP_EncryptInit" >&5
+$as_echo "$ac_cv_lib_crypto_EVP_EncryptInit" >&6; }
+if test "x$ac_cv_lib_crypto_EVP_EncryptInit" = xyes; then :
+  have_crypto="yes"
+else
+  as_fn_error $? "Your OpenSSL installation is misconfigured or missing" "$LINENO" 5
+fi
+
+
+if test "x$have_ssl" = "xyes"; then
+    LIBCLAMAV_LIBS="$SSL_LDFLAGS $LIBCLAMAV_LIBS"
+    CLAMSCAN_LIBS="$SSL_LDFLAGS $CLAMSCAN_LIBS"
+    FRESHCLAM_LIBS="$SSL_LDFLAGS $FRESHCLAM_LIBS"
+    CLAMD_LIBS="$SSL_LDFLAGS $CLAMD_LIBS"
+    CLAMDSCAN_LIBS="$SSL_LDFLAGS $CLAMDSCAN_LIBS"
+    SIGTOOL_LIBS="$SSL_LDFLAGS $SIGTOOL_LIBS"
+
+    LIBCLAMAV_CPPFLAGS="$SSL_CPPFLAGS $LIBCLAMAV_CPPFLAGS"
+    CLAMSCAN_CPPFLAGS="$SSL_CPPFLAGS $CLAMSCAN_CPPFLAGS"
+    FRESHCLAM_CPPFLAGS="$SSL_CPPFLAGS $FRESHCLAM_CPPFLAGS"
+    CLAMD_CPPFLAGS="$SSL_CPPFLAGS $CLAMD_CPPFLAGS"
+    CLAMDSCAN_CPPFLAGS="$SSL_CPPFLAGS $CLAMDSCAN_CPPFLAGS"
+    SIGTOOL_CPPFLAGS="$SSL_CPPFLAGS $SIGTOOL_CPPFLAGS"
+fi
+
+LDFLAGS="$save_LDFLAGS"
 
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to enable maintainer-specific portions of Makefiles" >&5
@@ -21839,287 +22150,6 @@ fi
 
 
 
-
-
-want_xml="auto"
-# Check whether --enable-xml was given.
-if test "${enable_xml+set}" = set; then :
-  enableval=$enable_xml; want_xml=$enableval
-else
-  want_xml="auto"
-fi
-
-
-XML_HOME=""
-if test "X$want_xml" != "Xno"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for libxml2 installation" >&5
-$as_echo_n "checking for libxml2 installation... " >&6; }
-
-# Check whether --with-xml was given.
-if test "${with_xml+set}" = set; then :
-  withval=$with_xml;
-  if test "$withval"
-  then
-    XML_HOME="$withval"
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: using $XML_HOME" >&5
-$as_echo "using $XML_HOME" >&6; }
-  else
-    as_fn_error $? "cannot assign blank value to --with-xml" "$LINENO" 5
-  fi
-
-else
-
-  XML_HOME=/usr/local
-  if test ! -x "$XML_HOME/bin/xml2-config"
-  then
-    XML_HOME=/usr
-    if test ! -x "$XML_HOME/bin/xml2-config"
-    then
-      XML_HOME=""
-    fi
-  fi
-  if test "x$XML_HOME" != "x"; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $XML_HOME" >&5
-$as_echo "$XML_HOME" >&6; }
-  else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
-$as_echo "not found" >&6; }
-  fi
-
-fi
-
-fi
-
-found_xml="no"
-XMLCONF_VERSION=""
-XML_CPPFLAGS=""
-XML_LIBS=""
-if test "x$XML_HOME" != "x"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking xml2-config version" >&5
-$as_echo_n "checking xml2-config version... " >&6; }
-  XMLCONF_VERSION="`$XML_HOME/bin/xml2-config --version`"
-  if test "x%XMLCONF_VERSION" != "x"; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $XMLCONF_VERSION" >&5
-$as_echo "$XMLCONF_VERSION" >&6; }
-    found_xml="yes"
-    XML_CPPFLAGS="`$XML_HOME/bin/xml2-config --cflags`"
-    XML_LIBS="`$XML_HOME/bin/xml2-config --libs`"
-  else
-    as_fn_error $? "xml2-config failed" "$LINENO" 5
-  fi
-fi
-
-working_xml="no"
-if test "X$found_xml" != "Xno"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for xmlreader.h in $XML_HOME" >&5
-$as_echo_n "checking for xmlreader.h in $XML_HOME... " >&6; }
-
-  if test ! -f "$XML_HOME/include/libxml2/libxml/xmlreader.h"; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
-$as_echo "not found" >&6; }
-  else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
-$as_echo "found" >&6; }
-    save_LIBS="$LIBS"
-    save_CPPFLAGS="$CPPFLAGS"
-    CPPFLAGS="$CPPFLAGS $XML_CPPFLAGS"
-    save_LDFLAGS="$LDFLAGS"
-    LDFLAGS="$LDFLAGS $XML_LIBS"
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for xmlTextReaderRead in -lxml2" >&5
-$as_echo_n "checking for xmlTextReaderRead in -lxml2... " >&6; }
-if ${ac_cv_lib_xml2_xmlTextReaderRead+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lxml2  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char xmlTextReaderRead ();
-int
-main ()
-{
-return xmlTextReaderRead ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_xml2_xmlTextReaderRead=yes
-else
-  ac_cv_lib_xml2_xmlTextReaderRead=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_xml2_xmlTextReaderRead" >&5
-$as_echo "$ac_cv_lib_xml2_xmlTextReaderRead" >&6; }
-if test "x$ac_cv_lib_xml2_xmlTextReaderRead" = xyes; then :
-  working_xml="yes"
-else
-  working_xml="no"
-fi
-
-
-    CPPFLAGS="$save_CPPFLAGS"
-    LDFLAGS="$save_LDFLAGS"
-    LIBS="$save_LIBS"
-  fi
-fi
-
-if test "$working_xml" = "yes"; then
-
-$as_echo "#define HAVE_LIBXML2 1" >>confdefs.h
-
-
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: Compiling and linking with libxml2 from $XML_HOME" >&5
-$as_echo "$as_me: Compiling and linking with libxml2 from $XML_HOME" >&6;}
-else
-  if test "$want_xml" = "yes"; then
-     as_fn_error $? "****** Please install libxml2 packages!" "$LINENO" 5
-  else
-    if test "$want_xml" != "no"; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: ****** libxml2 support unavailable" >&5
-$as_echo "$as_me: ****** libxml2 support unavailable" >&6;}
-    fi
-  fi
-  XML_CPPFLAGS=""
-  XML_LIBS=""
-
-
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for OpenSSL installation" >&5
-$as_echo_n "checking for OpenSSL installation... " >&6; }
-
-
-# Check whether --with-openssl was given.
-if test "${with_openssl+set}" = set; then :
-  withval=$with_openssl;
-if test "$withval"; then
-    LIBSSL_HOME="$withval"
-fi
-
-else
-
-LIBSSL_HOME=/usr/local
-if test ! -f "$LIBSSL_HOME/include/openssl/ssl.h"
-then
-    LIBSSL_HOME=/usr
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $LIBSSL_HOME" >&5
-$as_echo "$LIBSSL_HOME" >&6; }
-
-fi
-
-
-if test ! -f "$LIBSSL_HOME/include/openssl/ssl.h"
-then
-    as_fn_error $? "OpenSSL not found." "$LINENO" 5
-fi
-
-SSL_LDFLAGS="-L$LIBSSL_HOME/lib -lssl"
-SSL_CPPFLAGS="-I$LIBSSL_HOME/include"
-
-save_LDFLAGS="$LDFLAGS"
-LDFLAGS="-L$LIBSSL_HOME/lib -lssl"
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for SSL_library_init in -lssl" >&5
-$as_echo_n "checking for SSL_library_init in -lssl... " >&6; }
-if ${ac_cv_lib_ssl_SSL_library_init+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lssl  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char SSL_library_init ();
-int
-main ()
-{
-return SSL_library_init ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_ssl_SSL_library_init=yes
-else
-  ac_cv_lib_ssl_SSL_library_init=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_ssl_SSL_library_init" >&5
-$as_echo "$ac_cv_lib_ssl_SSL_library_init" >&6; }
-if test "x$ac_cv_lib_ssl_SSL_library_init" = xyes; then :
-  LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS $SSL_LDFLAGS";CLAMSCAN_LIBS="$CLAMSCAN_LIBS $SSL_LDFLAGS";FRESHCLAM_LIBS="$FRESHCLAM_LIBS $SSL_LDFLAGS";CLAMD_LIBS="$CLAMD_LIBS $SSL_LDFLAGS";SIGTOOL_LIBS="$SIGTOOL_LIBS $SSL_LDFLAGS"
-else
-  as_fn_error $? "Your OpenSSL is misconfigured" "$LINENO" 5
-fi
-
-
-LDFLAGS="-L$LIBSSL_HOME/lib -lcrypto"
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for EVP_EncryptInit in -lcrypto" >&5
-$as_echo_n "checking for EVP_EncryptInit in -lcrypto... " >&6; }
-if ${ac_cv_lib_crypto_EVP_EncryptInit+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lcrypto  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char EVP_EncryptInit ();
-int
-main ()
-{
-return EVP_EncryptInit ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_crypto_EVP_EncryptInit=yes
-else
-  ac_cv_lib_crypto_EVP_EncryptInit=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_crypto_EVP_EncryptInit" >&5
-$as_echo "$ac_cv_lib_crypto_EVP_EncryptInit" >&6; }
-if test "x$ac_cv_lib_crypto_EVP_EncryptInit" = xyes; then :
-  LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lcrypto";CLAMSCAN_LIBS="$CLAMSCAN_LIBS -lcrypto";FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lcrypto";CLAMD_LIBS="$CLAMD_LIBS -lcrypto";SIGTOOL_LIBS="$SIGTOOL_LIBS $SSL_LDFLAGS"
-else
-  as_fn_error $? "Your OpenSSL installation is misconfigured" "$LINENO" 5
-fi
-
-
-LDFLAGS="$save_LDFLAGS"
 
 
 

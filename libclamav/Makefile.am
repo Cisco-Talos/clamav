@@ -95,7 +95,7 @@ libclamav_internal_utils_la_SOURCES=str.c\
 				    regex/utils.h
 
 libclamav_internal_utils_la_LDFLAGS=-static @LIBCLAMAV_LIBS@
-libclamav_internal_utils_la_CFLAGS=$(AM_CFLAGS)  -fPIC -DPIC
+libclamav_internal_utils_la_CFLAGS=$(AM_CFLAGS)  -fPIC -DPIC @LIBCLAMAV_CPPFLAGS@
 
 libclamav_internal_utils_nothreads_la_SOURCES=str.c\
 					conv.c \
@@ -121,7 +121,7 @@ libclamav_internal_utils_nothreads_la_SOURCES=str.c\
 				    regex/utils.h
 
 libclamav_internal_utils_nothreads_la_LDFLAGS=-static @LIBCLAMAV_LIBS@
-libclamav_internal_utils_nothreads_la_CFLAGS=$(AM_CFLAGS) -DCL_NOTHREADS
+libclamav_internal_utils_nothreads_la_CFLAGS=$(AM_CFLAGS) -DCL_NOTHREADS @LIBCLAMAV_CPPFLAGS@
 
 if ENABLE_LLVM
 LLVMLIBADD=c++/libclamavcxx.la -lstdc++ -lm
@@ -137,10 +137,10 @@ endif
 
 libclamav_nocxx_la_SOURCES = bytecode_nojit.c
 
-libclamav_la_LIBADD = @LIBLTDL@ $(IFACELIBADD) $(LLVMLIBADD) libclamav_internal_utils.la @LIBCLAMAV_LIBS@ @THREAD_LIBS@ @LIBM@
+libclamav_la_LIBADD = @LIBCLAMAV_LIBS@ @LIBLTDL@ $(IFACELIBADD) $(LLVMLIBADD) libclamav_internal_utils.la @THREAD_LIBS@ @LIBM@
 libclamav_la_DEPENDENCIES =  @LTDLDEPS@ $(IFACEDEP) $(LLVMDEP) libclamav_internal_utils.la
-libclamav_la_CFLAGS =$(AM_CFLAGS) $(XML_CPPFLAGS) -DSEARCH_LIBDIR=\"$(libdir)\"
-libclamav_la_LDFLAGS = @TH_SAFE@ $(XML_LIBS) -version-info @LIBCLAMAV_VERSION@ -no-undefined
+libclamav_la_CFLAGS =$(AM_CFLAGS) $(XML_CPPFLAGS) -DSEARCH_LIBDIR=\"$(libdir)\" @LIBCLAMAV_CPPFLAGS@
+libclamav_la_LDFLAGS = @LIBCLAMAV_LIBS@ @TH_SAFE@ $(XML_LIBS) -version-info @LIBCLAMAV_VERSION@ -no-undefined
 
 if VERSIONSCRIPT
 libclamav_la_LDFLAGS += -Wl,@VERSIONSCRIPTFLAG@,@top_srcdir@/libclamav/libclamav.map
