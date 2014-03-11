@@ -103,7 +103,7 @@ int cli_scangpt(cli_ctx *ctx, size_t sectorsize)
 {
     struct gpt_header phdr, shdr;
     enum GPT_SCANSTATE state = INVALID;
-    int ret = 0;
+    int ret = CL_CLEAN, detection = CL_CLEAN;
     size_t maplen;
     off_t pos = 0;
 
@@ -134,10 +134,11 @@ int cli_scangpt(cli_ctx *ctx, size_t sectorsize)
 
     /* check the protective mbr */
     ret = gpt_check_mbr(ctx, sectorsize);
-    if ((ret != CL_CLEAN) &&
-        !((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))) {
-
-        return ret;
+    if (ret != CL_CLEAN) {
+        if ((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))
+            detection = CL_VIRUS;
+        else
+            return ret;
     }
 
     pos = GPT_PRIMARY_HDR_LBA * sectorsize; /* sector 1 (second sector) is the primary gpt header */
@@ -197,16 +198,18 @@ int cli_scangpt(cli_ctx *ctx, size_t sectorsize)
     /* check that the partition table has no intersections - HEURISTICS */
     if ((ctx->options & CL_SCAN_PARTITION_INTXN) && (ctx->dconf->other & OTHER_CONF_PRTNINTXN)) {
         ret = gpt_prtn_intxn(ctx, phdr, sectorsize);
-        if ((ret != CL_CLEAN) &&
-            !((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))) {
-            
-            return ret;
+        if (ret != CL_CLEAN) {
+            if ((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))
+                detection = CL_VIRUS;
+            else
+                return ret;
         }
         ret = gpt_prtn_intxn(ctx, shdr, sectorsize);
-        if ((ret != CL_CLEAN) &&
-            !((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))) {
-            
-            return ret;
+        if (ret != CL_CLEAN) {
+            if ((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))
+                detection = CL_VIRUS;
+            else
+                return ret;
         }
     }
 
@@ -215,44 +218,52 @@ int cli_scangpt(cli_ctx *ctx, size_t sectorsize)
     case PRIMARY_ONLY:
         cli_dbgmsg("cli_scangpt: Scanning primary GPT partitions only\n");
         ret = gpt_scan_partitions(ctx, phdr, sectorsize);
-        if ((ret != CL_CLEAN) && 
-            !((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))) {
-                break;
+        if (ret != CL_CLEAN) {
+            if ((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))
+                detection = CL_VIRUS;
+            else
+                return ret;
         }
         break;
     case SECONDARY_ONLY:
         cli_dbgmsg("cli_scangpt: Scanning secondary GPT partitions only\n");
         ret = gpt_scan_partitions(ctx, shdr, sectorsize);
-        if ((ret != CL_CLEAN) && 
-            !((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))) {
-                break;
+        if (ret != CL_CLEAN) {
+            if ((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))
+                detection = CL_VIRUS;
+            else
+                return ret;
         }
         break;
     case BOTH:
         cli_dbgmsg("cli_scangpt: Scanning primary GPT partitions\n");
         ret = gpt_scan_partitions(ctx, phdr, sectorsize);
-        if ((ret != CL_CLEAN) &&
-            !((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))) {
-                break;
+        if (ret != CL_CLEAN) {
+            if ((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))
+                detection = CL_VIRUS;
+            else
+                return ret;
         }
         cli_dbgmsg("cli_scangpt: Scanning secondary GPT partitions\n");
         ret = gpt_scan_partitions(ctx, shdr, sectorsize);
-        if ((ret != CL_CLEAN) &&
-            !((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))) {
-                break;
+        if (ret != CL_CLEAN) {
+            if ((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))
+                detection = CL_VIRUS;
+            else
+                return ret;
         }
         break;
     default:
         cli_dbgmsg("cli_scangpt: State is invalid\n");
     }
 
-    return ret;
+    return detection;
 }
 
 static int gpt_scan_partitions(cli_ctx *ctx, struct gpt_header hdr, size_t sectorsize)
 {
     struct gpt_partition_entry gpe;
-    int ret = 0;
+    int ret = CL_CLEAN, detection = CL_CLEAN;
     size_t maplen, part_size = 0;
     off_t pos = 0, part_off = 0;
     unsigned i = 0, j = 0;
@@ -337,9 +348,10 @@ static int gpt_scan_partitions(cli_ctx *ctx, struct gpt_header hdr, size_t secto
             part_off = gpe.firstLBA * sectorsize;
             part_size = (gpe.lastLBA - gpe.firstLBA + 1) * sectorsize;
             ret = cli_map_scan(*ctx->fmap, part_off, part_size, ctx, CL_TYPE_PART_ANY);
-            if ((ret != CL_CLEAN) &&
-                !((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))) {
-                    //gpt_printName(gpe.name, "Detection in Partition");
+            if (ret != CL_CLEAN) {
+                if ((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))
+                    detection = CL_VIRUS;
+                else
                     return ret;
             }
         }
@@ -352,7 +364,7 @@ static int gpt_scan_partitions(cli_ctx *ctx, struct gpt_header hdr, size_t secto
         cli_dbgmsg("cli_scangpt: max partitions reached\n");
     }
 
-    return ret;
+    return detection;
 }
 
 static int gpt_validate_header(cli_ctx *ctx, struct gpt_header hdr, size_t sectorsize)
@@ -599,7 +611,7 @@ static int gpt_prtn_intxn(cli_ctx *ctx, struct gpt_header hdr, size_t sectorsize
     prtn_intxn_list_t prtncheck;
     struct gpt_partition_entry gpe;
     unsigned i, pitxn;
-    int ret = 0, tmp = 0;
+    int ret = CL_CLEAN, tmp = CL_CLEAN;
     off_t pos;
     size_t maplen;
     uint32_t max_prtns = 0;

@@ -55,7 +55,7 @@ int cli_scanapm(cli_ctx *ctx)
 {
     struct apm_driver_desc_map ddm;
     struct apm_partition_info aptable, apentry;
-    int ret = 0, old_school = 0;
+    int ret = CL_CLEAN, detection = CL_CLEAN, old_school = 0;
     size_t sectorsize, maplen, partsize, sectorcheck;
     off_t pos = 0, partoff = 0;
     unsigned i;
@@ -139,10 +139,11 @@ int cli_scanapm(cli_ctx *ctx)
     /* check that the partition table fits in the space specified - HEURISTICS */
     if ((ctx->options & CL_SCAN_PARTITION_INTXN) && (ctx->dconf->other & OTHER_CONF_PRTNINTXN)) {
         ret = apm_prtn_intxn(ctx, aptable, sectorsize, old_school);
-        if ((ret != CL_CLEAN) &&
-            !((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))) {
-
-            return ret;
+        if (ret != CL_CLEAN) {
+            if ((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))
+                detection = CL_VIRUS;
+            else
+                return ret;
         }
     }
 
@@ -223,13 +224,15 @@ int cli_scanapm(cli_ctx *ctx)
         cli_dbgmsg("Type: %s\n", (char*)apentry.type);
         cli_dbgmsg("Signature: %x\n", apentry.signature);
         cli_dbgmsg("Partition Count: %u\n", apentry.numPartitions);
-        cli_dbgmsg("Blocks: [%u, +%u), ([%u, +%u))\n",
-                   apentry.pBlockStart, apentry.pBlockCount, partoff, partsize);
+        cli_dbgmsg("Blocks: [%u, +%u), ([%lu, +%lu))\n",
+                   apentry.pBlockStart, apentry.pBlockCount, (long unsigned)partoff, (long unsigned)partsize);
 
         /* send the partition to cli_map_scan */
         ret = cli_map_scan(*ctx->fmap, partoff, partsize, ctx, CL_TYPE_PART_ANY);
-        if ((ret != CL_CLEAN) &&
-            !((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))) {
+        if (ret != CL_CLEAN) {
+            if ((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))
+                detection = CL_VIRUS;
+            else
                 return ret;
         }
     } 
@@ -238,7 +241,7 @@ int cli_scanapm(cli_ctx *ctx)
         cli_dbgmsg("cli_scanapm: max partitions reached\n");
     }
 
-    return ret;
+    return detection;
 }
 
 static int apm_prtn_intxn(cli_ctx *ctx, struct apm_partition_info aptable, size_t sectorsize, int old_school)
@@ -246,7 +249,7 @@ static int apm_prtn_intxn(cli_ctx *ctx, struct apm_partition_info aptable, size_
     prtn_intxn_list_t prtncheck;
     struct apm_partition_info apentry;
     unsigned i, pitxn;
-    int ret = 0, tmp = 0;
+    int ret = CL_CLEAN, tmp = CL_CLEAN;
     off_t pos;
     uint32_t max_prtns = 0;
 
