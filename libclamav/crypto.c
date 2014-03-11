@@ -59,7 +59,7 @@ char * strptime(const char *buf, const char *fmt, struct tm *tm);
     #define MIN(x,y) ((x)<(y)?(x):(y))
 #endif
 
-#if !defined(HAVE_TIMEGM)
+#if !defined(HAVE_TIMEGM) && !defined(_WIN32)
 /*
  * Solaris 10 and earlier don't have timegm. Provide a portable version of it.
  * This function is from the timegm manpage at http://man7.org/linux/man-pages/man3/timegm.3.html
