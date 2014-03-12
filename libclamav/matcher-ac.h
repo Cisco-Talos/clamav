@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2013 Sourcefire, Inc.
+ *  Copyright (C) 2007-2009 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
  *
@@ -62,7 +62,7 @@ struct cli_ac_patt {
     void *customdata;
     uint16_t ch_mindist[2];
     uint16_t ch_maxdist[2];
-    uint16_t parts, partno, special, special_pattern, special_len;
+    uint16_t parts, partno, special, special_pattern;
     struct cli_ac_special **special_table;
     struct cli_ac_patt *next, *next_same;
     uint16_t rtype, type;
