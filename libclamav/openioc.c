@@ -214,6 +214,8 @@ int openioc_parse(const char * fname, int fd, struct cl_engine *engine)
             rc = openioc_parse_indicator(reader, &elems);
             if (rc != CL_SUCCESS) {
                 cli_dbgmsg("cli_openioc: openioc_parse_indicator error.\n");
+                xmlTextReaderClose(reader);
+                xmlFreeTextReader(reader);
                 return rc;
             }
         }
@@ -236,8 +238,11 @@ int openioc_parse(const char * fname, int fd, struct cl_engine *engine)
     if (elems != NULL) {
         if (NULL == engine->hm_hdb) {
             engine->hm_hdb = mpool_calloc(engine->mempool, 1, sizeof(struct cli_matcher));
-            if (NULL == engine->hm_hdb)            
+            if (NULL == engine->hm_hdb) {            
+                xmlTextReaderClose(reader);
+                xmlFreeTextReader(reader);
                 return CL_EMEM;
+            }
 #ifdef USE_MPOOL
             engine->hm_hdb->mempool = engine->mempool;
 #endif
@@ -268,6 +273,8 @@ int openioc_parse(const char * fname, int fd, struct cl_engine *engine)
         virusname = mpool_malloc(engine->mempool, ioclen+hashlen+2);
         if (NULL == virusname) {
             cli_dbgmsg("cli_openioc: mpool_malloc for virname memory failed.\n");
+            xmlTextReaderClose(reader);
+            xmlFreeTextReader(reader);
             return CL_EMEM;
         }
         vp = virusname;
