@@ -265,9 +265,9 @@ int openioc_parse(const char * fname, int fd, struct cl_engine *engine)
             *vp-- = '\0';
             hashlen--;
         }
-        virusname = cli_malloc(ioclen+hashlen+2);
+        virusname = mpool_malloc(engine->mempool, ioclen+hashlen+2);
         if (NULL == virusname) {
-            cli_dbgmsg("cli_openioc: malloc virname failed.\n");
+            cli_dbgmsg("cli_openioc: mpool_malloc for virname memory failed.\n");
             return CL_EMEM;
         }
         vp = virusname;
@@ -308,6 +308,9 @@ int openioc_parse(const char * fname, int fd, struct cl_engine *engine)
         xmlFree(elem->hash);
         free(elem);
     }
+
+    xmlTextReaderClose(reader);
+    xmlFreeTextReader(reader);
 
     return CL_SUCCESS;
 }
