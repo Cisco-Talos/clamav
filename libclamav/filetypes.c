@@ -311,21 +311,14 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
                 }
             }
         } else if (ret == CL_TYPE_MBR) {
-            const unsigned char *rbuff = buff+512;
-            int ri;
-
-            /* raw dmgs must be a multiple of 512 */
-            if ((map->len % 512) == 0 && map->len > 512) {
-                /* check if the MBR is a valid configuration */
-                if (cli_mbr_check(buff, bread, map->len) == 0) {
-                    return CL_TYPE_MBR;
-                }
-
-                /* check if detected MBR is protective or hybridon GPT */
-                if (cli_mbr_check_gpt(buff, bread) != 0) {
-                    cli_dbgmsg("Recognized GUID Partition Table file\n");
-                    return CL_TYPE_GPT;
-                }
+            /* given filetype sig type 0 */
+            int iret = cli_mbr_check(buff, bread, map->len);
+            if (iret == CL_TYPE_GPT) {
+                cli_dbgmsg("Recognized GUID Partition Table file\n");
+                return CL_TYPE_GPT;
+            }
+            else if (iret == CL_CLEAN) {
+                return CL_TYPE_MBR;
             }
 
             /* re-detect type */
