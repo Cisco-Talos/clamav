@@ -232,7 +232,7 @@ void submit_post(const char *host, const char *port, const char *method, const c
     snprintf(buf+strlen(buf), bufsz-strlen(buf), "Connection: Close\r\n");
 
     if (!strcmp(method, "POST") || !strcmp(method, "PUT")) {
-        snprintf(buf+strlen(buf), bufsz-strlen(buf), "Content-Type: appplication/x-www-form-urlencoded\r\n");
+        snprintf(buf+strlen(buf), bufsz-strlen(buf), "Content-Type: application/x-www-form-urlencoded\r\n");
         snprintf(buf+strlen(buf), bufsz-strlen(buf), "Content-Length: %s\r\n", chunkedlen);
         snprintf(buf+strlen(buf), bufsz-strlen(buf), "\r\n");
         snprintf(buf+strlen(buf), bufsz-strlen(buf), "%s", encoded);
