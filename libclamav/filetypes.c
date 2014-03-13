@@ -316,15 +316,15 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
 
             /* raw dmgs must be a multiple of 512 */
             if ((map->len % 512) == 0 && map->len > 512) {
-                /* check if detected MBR is protective on GPT */
-                if (gpt_detect_size(map) != 0) {
-                    cli_dbgmsg("Recognized GUID Partition Table file\n");
-                    return CL_TYPE_GPT;
-                }
-
                 /* check if the MBR is a valid configuration */
                 if (cli_mbr_check(buff, bread, map->len) == 0) {
                     return CL_TYPE_MBR;
+                }
+
+                /* check if detected MBR is protective or hybridon GPT */
+                if (cli_mbr_check_gpt(buff, bread) != 0) {
+                    cli_dbgmsg("Recognized GUID Partition Table file\n");
+                    return CL_TYPE_GPT;
                 }
             }
 

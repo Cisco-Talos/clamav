@@ -94,6 +94,23 @@ int cli_mbr_check(const unsigned char *buff, size_t len, size_t maplen) {
     return mbr_check_mbr(&mbr, maplen, sectorsize);
 }
 
+int cli_mbr_check_gpt(const unsigned char *buff, size_t len) {
+    struct mbr_boot_record mbr;
+    off_t mbr_base = 0;
+    size_t sectorsize = 512;
+
+    if (len < sectorsize) {
+        return CL_EFORMAT;
+    }
+
+    mbr_base = sectorsize - sizeof(struct mbr_boot_record);
+    memcpy(&mbr, buff+mbr_base, sizeof(mbr));
+    mbr_convert_to_host(&mbr);
+
+    return ((mbr.entries[0].type == MBR_PROTECTIVE) || 
+            (mbr.entries[0].type == MBR_HYBRID));
+}
+
 /* sets sectorsize to default value if specfied to be 0 */
 int cli_scanmbr(cli_ctx *ctx, size_t sectorsize)
 {

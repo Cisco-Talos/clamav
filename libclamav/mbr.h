@@ -85,6 +85,7 @@ struct mbr_boot_record {
 #endif
 
 int cli_mbr_check(const unsigned char *buff, size_t len, size_t maplen);
+int cli_mbr_check_gpt(const unsigned char *buff, size_t len);
 int cli_scanmbr(cli_ctx *ctx, size_t sectorsize);
 void mbr_convert_to_host(struct mbr_boot_record *record);
 
