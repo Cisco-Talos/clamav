@@ -89,26 +89,49 @@ int cli_mbr_check(const unsigned char *buff, size_t len, size_t maplen) {
     memcpy(&mbr, buff+mbr_base, sizeof(mbr));
     mbr_convert_to_host(&mbr);
 
-    //mbr_printbr(&mbr);
+    if ((mbr.entries[0].type == MBR_PROTECTIVE) || (mbr.entries[0].type == MBR_HYBRID))
+        return CL_TYPE_GPT;
 
     return mbr_check_mbr(&mbr, maplen, sectorsize);
 }
 
-int cli_mbr_check_gpt(const unsigned char *buff, size_t len) {
+int cli_mbr_check2(cli_ctx *ctx, size_t sectorsize) {
     struct mbr_boot_record mbr;
-    off_t mbr_base = 0;
-    size_t sectorsize = 512;
+    off_t pos = 0, mbr_base = 0;
+    size_t maplen;
 
-    if (len < sectorsize) {
+    if (!ctx || !ctx->fmap) {
+        cli_errmsg("cli_scanmbr: Invalid context\n");
+        return CL_ENULLARG;
+    }
+
+    /* sector size calculation, actual value is OS dependent */
+    if (sectorsize == 0)
+        sectorsize = MBR_SECTOR_SIZE;
+
+    mbr_base = sectorsize - sizeof(struct mbr_boot_record);
+
+    /* size of total file must be a multiple of the sector size */
+    maplen = (*ctx->fmap)->real_len;
+    if ((maplen % sectorsize) != 0) {
+        cli_dbgmsg("cli_scanmbr: File sized %u is not a multiple of sector size %u\n",
+                   maplen, sectorsize);
         return CL_EFORMAT;
     }
 
-    mbr_base = sectorsize - sizeof(struct mbr_boot_record);
-    memcpy(&mbr, buff+mbr_base, sizeof(mbr));
-    mbr_convert_to_host(&mbr);
+    /* sector 0 (first sector) is the master boot record */
+    pos = (MBR_SECTOR * sectorsize) + mbr_base;
 
-    return ((mbr.entries[0].type == MBR_PROTECTIVE) || 
-            (mbr.entries[0].type == MBR_HYBRID));
+    /* read the master boot record */
+    if (fmap_readn(*ctx->fmap, &mbr, pos, sizeof(mbr)) != sizeof(mbr)) {
+        cli_dbgmsg("cli_scanmbr: Invalid master boot record\n");
+        return CL_EFORMAT;
+    }
+
+    if ((mbr.entries[0].type == MBR_PROTECTIVE) || (mbr.entries[0].type == MBR_HYBRID))
+        return CL_TYPE_GPT;
+
+    return mbr_check_mbr(&mbr, maplen, sectorsize);
 }
 
 /* sets sectorsize to default value if specfied to be 0 */
@@ -445,6 +468,12 @@ static int mbr_check_mbr(struct mbr_boot_record *record, size_t maplen, size_t s
     /* check the signature */
     if (record->signature != MBR_SIGNATURE) {
         cli_dbgmsg("cli_scanmbr: Invalid boot record signature\n");
+        return CL_EFORMAT;
+    }
+
+    /* check the maplen */
+    if ((maplen / sectorsize) < 2) {
+        cli_dbgmsg("cli_scanmbr: file is too small to hold disk image\n");
         return CL_EFORMAT;
     }
 
