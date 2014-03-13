@@ -378,8 +378,12 @@ libclamav_internal_utils_nothreads_la_LINK = $(LIBTOOL) $(AM_V_lt) \
 	$(CFLAGS) $(libclamav_internal_utils_nothreads_la_LDFLAGS) \
 	$(LDFLAGS) -o $@
 libclamav_nocxx_la_LIBADD =
-am_libclamav_nocxx_la_OBJECTS = bytecode_nojit.lo
+am_libclamav_nocxx_la_OBJECTS = libclamav_nocxx_la-bytecode_nojit.lo
 libclamav_nocxx_la_OBJECTS = $(am_libclamav_nocxx_la_OBJECTS)
+libclamav_nocxx_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(libclamav_nocxx_la_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
 libclamunrar_la_LIBADD =
 am__libclamunrar_la_SOURCES_DIST = ../libclamunrar/unrar15.c \
 	../libclamunrar/unrar20.h ../libclamunrar/unrar.h \
@@ -808,6 +812,7 @@ libclamav_internal_utils_nothreads_la_CFLAGS = $(AM_CFLAGS) -DCL_NOTHREADS @LIBC
 @ENABLE_LLVM_TRUE@LLVMDEP = c++/libclamavcxx.la
 @ENABLE_LLVM_TRUE@SUBDIRS = c++
 libclamav_nocxx_la_SOURCES = bytecode_nojit.c
+libclamav_nocxx_la_CFLAGS = $(AM_CFLAGS) @LIBCLAMAV_CPPFLAGS@
 libclamav_la_LIBADD = @LIBCLAMAV_LIBS@ @LIBLTDL@ $(IFACELIBADD) $(LLVMLIBADD) libclamav_internal_utils.la @THREAD_LIBS@ @LIBM@
 libclamav_la_DEPENDENCIES = @LTDLDEPS@ $(IFACEDEP) $(LLVMDEP) libclamav_internal_utils.la
 libclamav_la_CFLAGS = $(AM_CFLAGS) $(XML_CPPFLAGS) -DSEARCH_LIBDIR=\"$(libdir)\" @LIBCLAMAV_CPPFLAGS@
@@ -1028,7 +1033,7 @@ libclamav_internal_utils_nothreads.la: $(libclamav_internal_utils_nothreads_la_O
 	$(AM_V_CCLD)$(libclamav_internal_utils_nothreads_la_LINK)  $(libclamav_internal_utils_nothreads_la_OBJECTS) $(libclamav_internal_utils_nothreads_la_LIBADD) $(LIBS)
 
 libclamav_nocxx.la: $(libclamav_nocxx_la_OBJECTS) $(libclamav_nocxx_la_DEPENDENCIES) $(EXTRA_libclamav_nocxx_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(LINK)  $(libclamav_nocxx_la_OBJECTS) $(libclamav_nocxx_la_LIBADD) $(LIBS)
+	$(AM_V_CCLD)$(libclamav_nocxx_la_LINK)  $(libclamav_nocxx_la_OBJECTS) $(libclamav_nocxx_la_LIBADD) $(LIBS)
 
 libclamunrar.la: $(libclamunrar_la_OBJECTS) $(libclamunrar_la_DEPENDENCIES) $(EXTRA_libclamunrar_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(libclamunrar_la_LINK) $(am_libclamunrar_la_rpath) $(libclamunrar_la_OBJECTS) $(libclamunrar_la_LIBADD) $(LIBS)
@@ -1042,7 +1047,6 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bytecode_nojit.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_internal_utils_la-conv.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_internal_utils_la-crypto.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_internal_utils_la-iowrap.Plo@am__quote@
@@ -1279,6 +1283,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-xar.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-xz_iface.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-yc.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_nocxx_la-bytecode_nojit.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unrar.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unrar15.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unrar20.Plo@am__quote@
@@ -2961,6 +2966,13 @@ libclamav_internal_utils_nothreads_la-regfree.lo: regex/regfree.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='regex/regfree.c' object='libclamav_internal_utils_nothreads_la-regfree.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_internal_utils_nothreads_la_CFLAGS) $(CFLAGS) -c -o libclamav_internal_utils_nothreads_la-regfree.lo `test -f 'regex/regfree.c' || echo '$(srcdir)/'`regex/regfree.c
+
+libclamav_nocxx_la-bytecode_nojit.lo: bytecode_nojit.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_nocxx_la_CFLAGS) $(CFLAGS) -MT libclamav_nocxx_la-bytecode_nojit.lo -MD -MP -MF $(DEPDIR)/libclamav_nocxx_la-bytecode_nojit.Tpo -c -o libclamav_nocxx_la-bytecode_nojit.lo `test -f 'bytecode_nojit.c' || echo '$(srcdir)/'`bytecode_nojit.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_nocxx_la-bytecode_nojit.Tpo $(DEPDIR)/libclamav_nocxx_la-bytecode_nojit.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='bytecode_nojit.c' object='libclamav_nocxx_la-bytecode_nojit.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_nocxx_la_CFLAGS) $(CFLAGS) -c -o libclamav_nocxx_la-bytecode_nojit.lo `test -f 'bytecode_nojit.c' || echo '$(srcdir)/'`bytecode_nojit.c
 
 unrar15.lo: ../libclamunrar/unrar15.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT unrar15.lo -MD -MP -MF $(DEPDIR)/unrar15.Tpo -c -o unrar15.lo `test -f '../libclamunrar/unrar15.c' || echo '$(srcdir)/'`../libclamunrar/unrar15.c

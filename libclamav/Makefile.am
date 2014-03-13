@@ -136,6 +136,7 @@ distclean-recursive distdir maintainer-clean-recursive: c++/Makefile
 endif
 
 libclamav_nocxx_la_SOURCES = bytecode_nojit.c
+libclamav_nocxx_la_CFLAGS=$(AM_CFLAGS) @LIBCLAMAV_CPPFLAGS@
 
 libclamav_la_LIBADD = @LIBCLAMAV_LIBS@ @LIBLTDL@ $(IFACELIBADD) $(LLVMLIBADD) libclamav_internal_utils.la @THREAD_LIBS@ @LIBM@
 libclamav_la_DEPENDENCIES =  @LTDLDEPS@ $(IFACEDEP) $(LLVMDEP) libclamav_internal_utils.la
