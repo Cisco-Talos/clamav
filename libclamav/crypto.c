@@ -62,30 +62,38 @@ char * strptime(const char *buf, const char *fmt, struct tm *tm);
 #if !defined(HAVE_TIMEGM) && !defined(_WIN32)
 /*
  * Solaris 10 and earlier don't have timegm. Provide a portable version of it.
- * This function is from the timegm manpage at http://man7.org/linux/man-pages/man3/timegm.3.html
+ * A special thank you to Dave Simonson for helping test and develop this.
  */
-time_t timegm(struct tm *tm)
+time_t timegm(struct tm *t)
 {
-    time_t ret;
-    char *tz;
+    time_t tl, tb;
+    struct tm *tg;
 
-    tz = getenv("TZ");
-    if (tz)
-        tz = strdup(tz);
-
-    setenv("TZ", "", 1);
-    tzset();
-
-    ret = mktime(tm);
-    if (tz) {
-        setenv("TZ", tz, 1);
-        free(tz);
-    } else {
-        unsetenv("TZ");
+    tl = mktime (t);
+    if (tl == -1)
+    {
+        t->tm_hour--;
+        tl = mktime (t);
+        if (tl == -1)
+            return -1; /* can't deal with output from strptime */
+        tl += 3600;
     }
 
-    tzset();
-    return ret;
+    tg = gmtime (&tl);
+    tg->tm_isdst = 0;
+    tb = mktime (tg);
+
+    if (tb == -1)
+    {
+        tg->tm_hour--;
+        tb = mktime (tg);
+        if (tb == -1)
+            return -1; /* can't deal with output from gmtime */
+
+        tb += 3600;
+    }
+
+    return (tl - (tb - tl));
 }
 #endif
 
