@@ -28,6 +28,9 @@ SSL_CPPFLAGS="-I$LIBSSL_HOME/include"
 save_LDFLAGS="$LDFLAGS"
 LDFLAGS="-L$LIBSSL_HOME/lib -lssl -lcrypto"
 
+save_CFLAGS="$CFLAGS"
+CFLAGS="$SSL_CPPFLAGS"
+
 have_ssl="no"
 have_crypto="no"
 
@@ -52,3 +55,4 @@ if test "x$have_ssl" = "xyes"; then
 fi
 
 LDFLAGS="$save_LDFLAGS"
+CFLAGS="$save_CFLAGS"
