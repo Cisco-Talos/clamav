@@ -53,7 +53,7 @@ static const xmlChar * openioc_read(xmlTextReaderPtr reader)
         return NULL;
     name = xmlTextReaderConstLocalName(reader);
     if (name != NULL) {
-        cli_dbgmsg("cli_openioc: xmlTextReaderRead read %s%s\n", name,
+        cli_dbgmsg("openioc_parse: xmlTextReaderRead read %s%s\n", name,
                    xmlTextReaderNodeType(reader) == XML_READER_TYPE_END_ELEMENT?" end tag":"");
     }
     return name;   
@@ -88,7 +88,7 @@ static int openioc_parse_content(xmlTextReaderPtr reader, struct openioc_hash **
     if (context_hash == 0) {
         xmlChar * type = xmlTextReaderGetAttribute(reader, (const xmlChar *)"type");
         if (type == NULL) {
-            cli_dbgmsg("cli_openioc: xmlTextReaderGetAttribute no type attribute "
+            cli_dbgmsg("openioc_parse: xmlTextReaderGetAttribute no type attribute "
                        "for <Content> element\n");
             return rc;
         } else { 
@@ -107,18 +107,18 @@ static int openioc_parse_content(xmlTextReaderPtr reader, struct openioc_hash **
         if (xmlval) {
             elem = cli_calloc(1, sizeof(struct openioc_hash));
             if (NULL == elem) {
-                cli_dbgmsg("cli_openioc: calloc fails for openioc_hash.\n");
+                cli_dbgmsg("openioc_parse: calloc fails for openioc_hash.\n");
                 return CL_EMEM;
             }
             elem->hash = xmlStrdup(xmlval);
             elem->next = *elems;
             *elems = elem; 
         } else {
-            cli_dbgmsg("cli_openioc: xmlTextReaderConstValue() returns NULL for Content md5 value.\n");           
+            cli_dbgmsg("openioc_parse: xmlTextReaderConstValue() returns NULL for Content md5 value.\n");           
         }
     }
     else {
-        cli_dbgmsg("cli_openioc: No text for XML Content element.\n");
+        cli_dbgmsg("openioc_parse: No text for XML Content element.\n");
     }
     return rc;
 }
@@ -140,7 +140,6 @@ static int openioc_parse_indicatoritem(xmlTextReaderPtr reader, struct openioc_h
             xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT) {
             rc = openioc_parse_content(reader, elems, context_hash);
             if (rc != CL_SUCCESS) {
-                cli_dbgmsg("cli_openioc: openioc_parse_content error.\n");
                 break;
             }
         } else if (xmlStrEqual(name, (const xmlChar *)"IndicatorItem") &&
@@ -164,14 +163,13 @@ static int openioc_parse_indicator(xmlTextReaderPtr reader, struct openioc_hash 
             xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT) {
             rc = openioc_parse_indicator(reader, elems);
             if (rc != CL_SUCCESS) {
-                cli_dbgmsg("cli_openioc: openioc_parse_indicator recursion error.\n");
+                cli_dbgmsg("openioc_parse: openioc_parse_indicator recursion error.\n");
                 break;
             }
         } else if (xmlStrEqual(name, (const xmlChar *)"IndicatorItem") && 
             xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT) {
             rc = openioc_parse_indicatoritem(reader, elems);
             if (rc != CL_SUCCESS) {
-                cli_dbgmsg("cli_openioc: openioc_parse_indicatoritem error.\n");
                 break;
             }
         } else if (xmlStrEqual(name, (const xmlChar *)"Indicator") &&
@@ -191,6 +189,7 @@ int openioc_parse(const char * fname, int fd, struct cl_engine *engine)
     const char * iocp = NULL;
     uint16_t ioclen;
     char * virusname;
+    int hash_count = 0;
     
     if (fname == NULL)
         return CL_ENULLARG;
@@ -198,22 +197,21 @@ int openioc_parse(const char * fname, int fd, struct cl_engine *engine)
     if (fd < 0)
         return CL_EARG;
 
-    cli_dbgmsg("cli_openioc: XML parsing file %s\n", fname);
+    cli_dbgmsg("openioc_parse: XML parsing file %s\n", fname);
 
     reader = xmlReaderForFd(fd, NULL, NULL, 0);
     if (reader == NULL) {
-        cli_dbgmsg("cli_openioc: xmlReaderForFd error\n");
+        cli_dbgmsg("openioc_parse: xmlReaderForFd error\n");
         return CL_EOPEN;
     }
     rc = xmlTextReaderRead(reader);
     while (rc == 1) {
         name = xmlTextReaderConstLocalName(reader);
-        cli_dbgmsg("cli_openioc: xmlTextReaderRead read %s\n", name);
+        cli_dbgmsg("openioc_parse: xmlTextReaderRead read %s\n", name);
         if (xmlStrEqual(name, (const xmlChar *)"Indicator") && 
             xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT) {
             rc = openioc_parse_indicator(reader, &elems);
             if (rc != CL_SUCCESS) {
-                cli_dbgmsg("cli_openioc: openioc_parse_indicator error.\n");
                 xmlTextReaderClose(reader);
                 xmlFreeTextReader(reader);
                 return rc;
@@ -272,7 +270,7 @@ int openioc_parse(const char * fname, int fd, struct cl_engine *engine)
         }
         virusname = mpool_malloc(engine->mempool, ioclen+hashlen+2);
         if (NULL == virusname) {
-            cli_dbgmsg("cli_openioc: mpool_malloc for virname memory failed.\n");
+            cli_dbgmsg("openioc_parse: mpool_malloc for virname memory failed.\n");
             xmlTextReaderClose(reader);
             xmlFreeTextReader(reader);
             return CL_EMEM;
@@ -309,12 +307,20 @@ int openioc_parse(const char * fname, int fd, struct cl_engine *engine)
         *vp = '\0';
         rc = hm_addhash_str(engine->hm_hdb, hash, 0, virusname);
         if (rc != CL_SUCCESS)
-            cli_dbgmsg("cli_openioc: hm_addhash_str failed with %i hash len %i for %s.\n",
+            cli_dbgmsg("openioc_parse: hm_addhash_str failed with %i hash len %i for %s.\n",
                        rc, hashlen, virusname);
-        
+        else
+            hash_count++;
+
         xmlFree(elem->hash);
         free(elem);
     }
+
+    if (hash_count == 0)
+        cli_warnmsg("openioc_parse: No hash signatures extracted from %s.\n", fname);
+    else
+        cli_dbgmsg("openioc_parse: %i hash signature%s extracted from %s.\n",
+                   hash_count, hash_count==1?"":"s", fname);
 
     xmlTextReaderClose(reader);
     xmlFreeTextReader(reader);
@@ -324,7 +330,7 @@ int openioc_parse(const char * fname, int fd, struct cl_engine *engine)
 #else
 int openioc_parse(const char * fname, int fd, struct cl_engine *engine)
 {
-    cli_dbgmsg("cli_openioc: libxml2 support is compiled out and is needed for OpenIOC support.\n");
+    cli_dbgmsg("openioc_parse: libxml2 support is compiled out and is needed for OpenIOC support.\n");
     return CL_SUCCESS;
 }
 #endif

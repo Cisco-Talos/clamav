@@ -2280,6 +2280,23 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
                     }
                     break;
 
+                case CL_TYPE_MBR:
+                    {
+                        int iret = cli_mbr_check2(ctx, 0);
+                        if (iret == CL_TYPE_GPT) {
+                            cli_dbgmsg("Recognized GUID Partition Table file\n");
+                            ctx->container_type = CL_TYPE_GPT;
+                            nret = cli_scangpt(ctx, 0);
+                            cli_dbgmsg("GPT signature found at %u\n", (unsigned int) fpt->offset);
+                        }
+                        else if (iret == CL_CLEAN) {
+                            ctx->container_type = CL_TYPE_MBR;
+                            nret = cli_scanmbr(ctx, 0);
+                            cli_dbgmsg("MBR signature found at %u\n", (unsigned int) fpt->offset);
+                        }
+                    }
+                    break;
+
                 case CL_TYPE_PDF:
                     if(type != CL_TYPE_PDF && SCAN_PDF && (DCONF_DOC & DOC_CONF_PDF)) {
                         ctx->container_type = CL_TYPE_PDF;
@@ -3137,8 +3154,8 @@ int cli_map_scandesc(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx, 
 	long long len1, len2;
 	len1 = old_off + old_len;
         len2 = map->nested_offset + map->len;
-	cli_warnmsg("internal map error: %ld, %lld; %ld, %lld\n", old_off,
-		    len1, map->offset, len2);
+	cli_warnmsg("internal map error: %lu, %llu; %lu, %llu\n", (long unsigned)old_off,
+		    (long long unsigned)len1, (long unsigned)map->offset, (long long unsigned)len2);
     }
 
     ctx->fmap--;
