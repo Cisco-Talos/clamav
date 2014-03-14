@@ -290,6 +290,7 @@ int openioc_parse(const char * fname, int fd, struct cl_engine *engine)
             case '<':
             case '>':
                 *vp = '_';
+                break;
             default:
                 if (isspace(*sp))
                     *vp = '_';
