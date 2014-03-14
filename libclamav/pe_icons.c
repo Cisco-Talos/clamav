@@ -719,7 +719,7 @@ static uint32_t labdiff2(unsigned int b) {
 #endif
 
 static void makebmp(const char *step, const char *tempd, int w, int h, void *data) {
-    unsigned int tmp1, tmp2, tmp3, tmp4, y;
+    unsigned int tmp1=0, tmp2=0, tmp3=0, tmp4=0, y;
     char *fname;
     FILE *f;
 
