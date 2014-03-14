@@ -280,6 +280,7 @@ CLAMAV_MILTER_LIBS = @CLAMAV_MILTER_LIBS@
 CLAMBC_CPPFLAGS = @CLAMBC_CPPFLAGS@
 CLAMBC_LIBS = @CLAMBC_LIBS@
 CLAMCONF_CPPFLAGS = @CLAMCONF_CPPFLAGS@
+CLAMCONF_LIBS = @CLAMCONF_LIBS@
 CLAMDSCAN_CPPFLAGS = @CLAMDSCAN_CPPFLAGS@
 CLAMDSCAN_LIBS = @CLAMDSCAN_LIBS@
 CLAMDTOP_CPPFLAGS = @CLAMDTOP_CPPFLAGS@
@@ -374,6 +375,8 @@ SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 SIGTOOL_CPPFLAGS = @SIGTOOL_CPPFLAGS@
 SSL_CPPFLAGS = @SSL_CPPFLAGS@
+SSL_LDFLAGS = @SSL_LDFLAGS@
+SSL_LIBS = @SSL_LIBS@
 STRIP = @STRIP@
 THREAD_LIBS = @THREAD_LIBS@
 TH_SAFE = @TH_SAFE@
@@ -472,7 +475,7 @@ top_srcdir = @top_srcdir@
 @BUILD_CLAMD_TRUE@    fan.h
 
 @BUILD_CLAMD_TRUE@AM_CFLAGS = @WERR_CFLAGS@
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @CLAMD_CPPFLAGS@
+AM_CPPFLAGS = @SSL_CPPFLAGS@ -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
 
 # it does support --help and --version but with the default config file
 # it outputs an error message which tells us to edit the config files
