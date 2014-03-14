@@ -121,7 +121,7 @@ int cli_scangpt(cli_ctx *ctx, size_t sectorsize)
     /* sector size calculatation */
     if (sectorsize == 0) {
         sectorsize = gpt_detect_size((*ctx->fmap));
-        cli_dbgmsg("cli_scangpt: detected %u sector size\n", sectorsize);
+        cli_dbgmsg("cli_scangpt: detected %lu sector size\n", (unsigned long)sectorsize);
     }
     if (sectorsize == 0) {
         cli_errmsg("cli_scangpt: could not detemine sector size\n");
@@ -131,8 +131,8 @@ int cli_scangpt(cli_ctx *ctx, size_t sectorsize)
     /* size of total file must be a multiple of the sector size */
     maplen = (*ctx->fmap)->real_len;
     if ((maplen % sectorsize) != 0) {
-        cli_dbgmsg("cli_scangpt: File sized %u is not a multiple of sector size %u\n",
-                   maplen, sectorsize);
+        cli_dbgmsg("cli_scangpt: File sized %lu is not a multiple of sector size %lu\n",
+                   (unsigned long)maplen, (unsigned long)sectorsize);
         return CL_EFORMAT;
     }
 
