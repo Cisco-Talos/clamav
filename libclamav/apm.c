@@ -49,7 +49,7 @@
 #  define apm_parsemsg(...) ;
 #endif
 
-static int apm_prtn_intxn(cli_ctx *ctx, struct apm_partition_info aptable, size_t sectorsize, int old_school);
+static int apm_prtn_intxn(cli_ctx *ctx, struct apm_partition_info *aptable, size_t sectorsize, int old_school);
 
 int cli_scanapm(cli_ctx *ctx)
 {
@@ -89,8 +89,8 @@ int cli_scanapm(cli_ctx *ctx)
     /* size of total file must be described by the ddm */
     maplen = (*ctx->fmap)->real_len;
     if ((ddm.blockSize * ddm.blockCount) != maplen) {
-        cli_dbgmsg("cli_scanapm: File described %u size does not match %u actual size\n",
-                   (ddm.blockSize * ddm.blockCount), maplen);
+        cli_dbgmsg("cli_scanapm: File described %u size does not match %lu actual size\n",
+                   (ddm.blockSize * ddm.blockCount), (unsigned long)maplen);
         return CL_EFORMAT;
     }
 
@@ -138,7 +138,7 @@ int cli_scanapm(cli_ctx *ctx)
 
     /* check that the partition table fits in the space specified - HEURISTICS */
     if ((ctx->options & CL_SCAN_PARTITION_INTXN) && (ctx->dconf->other & OTHER_CONF_PRTNINTXN)) {
-        ret = apm_prtn_intxn(ctx, aptable, sectorsize, old_school);
+        ret = apm_prtn_intxn(ctx, &aptable, sectorsize, old_school);
         if (ret != CL_CLEAN) {
             if ((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))
                 detection = CL_VIRUS;
@@ -153,10 +153,10 @@ int cli_scanapm(cli_ctx *ctx)
     cli_dbgmsg("Type: %s\n", (char*)aptable.type);
     cli_dbgmsg("Signature: %x\n", aptable.signature);
     cli_dbgmsg("Partition Count: %u\n", aptable.numPartitions);
-    cli_dbgmsg("Blocks: [%u, +%u), ([%u, +%u))\n",
+    cli_dbgmsg("Blocks: [%u, +%u), ([%lu, +%lu))\n",
                aptable.pBlockStart, aptable.pBlockCount,
-               (aptable.pBlockStart * sectorsize),
-               (aptable.pBlockCount * sectorsize));
+               (unsigned long)(aptable.pBlockStart * sectorsize),
+               (unsigned long)(aptable.pBlockCount * sectorsize));
 
     /* check engine maxpartitions limit */
     if (aptable.numPartitions < ctx->engine->maxpartitions) {
@@ -244,7 +244,7 @@ int cli_scanapm(cli_ctx *ctx)
     return detection;
 }
 
-static int apm_prtn_intxn(cli_ctx *ctx, struct apm_partition_info aptable, size_t sectorsize, int old_school)
+static int apm_prtn_intxn(cli_ctx *ctx, struct apm_partition_info *aptable, size_t sectorsize, int old_school)
 {
     prtn_intxn_list_t prtncheck;
     struct apm_partition_info apentry;
@@ -256,8 +256,8 @@ static int apm_prtn_intxn(cli_ctx *ctx, struct apm_partition_info aptable, size_
     prtn_intxn_list_init(&prtncheck);
 
     /* check engine maxpartitions limit */
-    if (aptable.numPartitions < ctx->engine->maxpartitions) {
-        max_prtns = aptable.numPartitions;
+    if (aptable->numPartitions < ctx->engine->maxpartitions) {
+        max_prtns = aptable->numPartitions;
     }
     else {
         max_prtns = ctx->engine->maxpartitions;

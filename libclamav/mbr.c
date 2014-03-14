@@ -114,8 +114,8 @@ int cli_mbr_check2(cli_ctx *ctx, size_t sectorsize) {
     /* size of total file must be a multiple of the sector size */
     maplen = (*ctx->fmap)->real_len;
     if ((maplen % sectorsize) != 0) {
-        cli_dbgmsg("cli_scanmbr: File sized %u is not a multiple of sector size %u\n",
-                   maplen, sectorsize);
+        cli_dbgmsg("cli_scanmbr: File sized %lu is not a multiple of sector size %lu\n",
+                   (unsigned long)maplen, (unsigned long)sectorsize);
         return CL_EFORMAT;
     }
 
@@ -160,8 +160,8 @@ int cli_scanmbr(cli_ctx *ctx, size_t sectorsize)
     /* size of total file must be a multiple of the sector size */
     maplen = (*ctx->fmap)->real_len;
     if ((maplen % sectorsize) != 0) {
-        cli_dbgmsg("cli_scanmbr: File sized %u is not a multiple of sector size %u\n",
-                   maplen, sectorsize);
+        cli_dbgmsg("cli_scanmbr: File sized %lu is not a multiple of sector size %lu\n",
+                   (unsigned long)maplen, (unsigned long)sectorsize);
         return CL_EFORMAT;
     }
 
@@ -210,10 +210,10 @@ int cli_scanmbr(cli_ctx *ctx, size_t sectorsize)
         cli_dbgmsg("MBR Partition Entry %u:\n", i);
         cli_dbgmsg("Status: %u\n", mbr.entries[i].status);
         cli_dbgmsg("Type: %x\n", mbr.entries[i].type);
-        cli_dbgmsg("Blocks: [%u, +%u), ([%u, +%u))\n",
+        cli_dbgmsg("Blocks: [%u, +%u), ([%lu, +%lu))\n",
                    mbr.entries[i].firstLBA, mbr.entries[i].numLBA,
-                   (mbr.entries[i].firstLBA * sectorsize),
-                   (mbr.entries[i].numLBA * sectorsize));
+                   (unsigned long)(mbr.entries[i].firstLBA * sectorsize),
+                   (unsigned long)(mbr.entries[i].numLBA * sectorsize));
 
         /* Handle MBR entry based on type */
         if (mbr.entries[i].type == MBR_EMPTY) {
@@ -306,10 +306,10 @@ static int mbr_scanextprtn(cli_ctx *ctx, unsigned *prtncount, off_t extlba, size
                 cli_dbgmsg("Logical Partition Entry %u:\n", j);
                 cli_dbgmsg("Status: %u\n", ebr.entries[j].status);
                 cli_dbgmsg("Type: %x\n", ebr.entries[j].type);
-                cli_dbgmsg("Blocks: [%u, +%u), ([%u, +%u))\n",
+                cli_dbgmsg("Blocks: [%u, +%u), ([%lu, +%lu))\n",
                            ebr.entries[j].firstLBA, ebr.entries[j].numLBA,
-                           (ebr.entries[j].firstLBA * sectorsize),
-                           (ebr.entries[j].numLBA * sectorsize));
+                           (unsigned long)(ebr.entries[j].firstLBA * sectorsize),
+                           (unsigned long)(ebr.entries[j].numLBA * sectorsize));
 
                 if (ebr.entries[j].type == MBR_EMPTY) {
                     /* empty partiton entry */

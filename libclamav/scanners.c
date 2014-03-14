@@ -1311,8 +1311,10 @@ static int cli_scanscript(cli_ctx *ctx)
 	text_normalize_init(&state, normalized, SCANBUFF + maxpatlen);
 	ret = CL_CLEAN;
 
-	if ((ret = cli_ac_initdata(&tmdata, troot?troot->ac_partsigs:0, troot?troot->ac_lsigs:0, troot?troot->ac_reloff_num:0, CLI_DEFAULT_AC_TRACKLEN))) 
+	if ((ret = cli_ac_initdata(&tmdata, troot?troot->ac_partsigs:0, troot?troot->ac_lsigs:0, troot?troot->ac_reloff_num:0, CLI_DEFAULT_AC_TRACKLEN))) {
+        free(tmpname);
 	    return ret;
+	}
 
         if (troot) {
 	    cli_targetinfo(&info, 7, map);
