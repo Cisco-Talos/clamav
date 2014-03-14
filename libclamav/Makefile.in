@@ -338,7 +338,7 @@ am__v_lt_1 =
 libclamav_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libclamav_la_CFLAGS) \
 	$(CFLAGS) $(libclamav_la_LDFLAGS) $(LDFLAGS) -o $@
-libclamav_internal_utils_la_LIBADD =
+libclamav_internal_utils_la_DEPENDENCIES =
 am_libclamav_internal_utils_la_OBJECTS =  \
 	libclamav_internal_utils_la-str.lo \
 	libclamav_internal_utils_la-conv.lo \
@@ -357,7 +357,7 @@ libclamav_internal_utils_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(libclamav_internal_utils_la_CFLAGS) $(CFLAGS) \
 	$(libclamav_internal_utils_la_LDFLAGS) $(LDFLAGS) -o $@
-libclamav_internal_utils_nothreads_la_LIBADD =
+libclamav_internal_utils_nothreads_la_DEPENDENCIES =
 am_libclamav_internal_utils_nothreads_la_OBJECTS =  \
 	libclamav_internal_utils_nothreads_la-str.lo \
 	libclamav_internal_utils_nothreads_la-conv.lo \
@@ -551,6 +551,7 @@ CLAMAV_MILTER_LIBS = @CLAMAV_MILTER_LIBS@
 CLAMBC_CPPFLAGS = @CLAMBC_CPPFLAGS@
 CLAMBC_LIBS = @CLAMBC_LIBS@
 CLAMCONF_CPPFLAGS = @CLAMCONF_CPPFLAGS@
+CLAMCONF_LIBS = @CLAMCONF_LIBS@
 CLAMDSCAN_CPPFLAGS = @CLAMDSCAN_CPPFLAGS@
 CLAMDSCAN_LIBS = @CLAMDSCAN_LIBS@
 CLAMDTOP_CPPFLAGS = @CLAMDTOP_CPPFLAGS@
@@ -645,6 +646,8 @@ SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 SIGTOOL_CPPFLAGS = @SIGTOOL_CPPFLAGS@
 SSL_CPPFLAGS = @SSL_CPPFLAGS@
+SSL_LDFLAGS = @SSL_LDFLAGS@
+SSL_LIBS = @SSL_LIBS@
 STRIP = @STRIP@
 THREAD_LIBS = @THREAD_LIBS@
 TH_SAFE = @TH_SAFE@
@@ -779,8 +782,9 @@ libclamav_internal_utils_la_SOURCES = str.c\
 				    regex/regex2.h \
 				    regex/utils.h
 
-libclamav_internal_utils_la_LDFLAGS = -static @LIBCLAMAV_LIBS@
-libclamav_internal_utils_la_CFLAGS = $(AM_CFLAGS)  -fPIC -DPIC @LIBCLAMAV_CPPFLAGS@
+libclamav_internal_utils_la_LDFLAGS = -static @SSL_LDFLAGS@
+libclamav_internal_utils_la_CFLAGS = $(AM_CFLAGS)  -fPIC -DPIC @SSL_CPPFLAGS@
+libclamav_internal_utils_la_LIBADD = @SSL_LIBS@
 libclamav_internal_utils_nothreads_la_SOURCES = str.c\
 					conv.c \
 					conv.h \
@@ -804,19 +808,20 @@ libclamav_internal_utils_nothreads_la_SOURCES = str.c\
 				    regex/regex2.h \
 				    regex/utils.h
 
-libclamav_internal_utils_nothreads_la_LDFLAGS = -static @LIBCLAMAV_LIBS@
-libclamav_internal_utils_nothreads_la_CFLAGS = $(AM_CFLAGS) -DCL_NOTHREADS @LIBCLAMAV_CPPFLAGS@
+libclamav_internal_utils_nothreads_la_LDFLAGS = -static @SSL_LDFLAGS@
+libclamav_internal_utils_nothreads_la_CFLAGS = $(AM_CFLAGS) -DCL_NOTHREADS @SSL_CPPFLAGS@
+libclamav_internal_utils_nothreads_la_LIBADD = @SSL_LIBS@
 @ENABLE_LLVM_FALSE@LLVMLIBADD = libclamav_nocxx.la
 @ENABLE_LLVM_TRUE@LLVMLIBADD = c++/libclamavcxx.la -lstdc++ -lm
 @ENABLE_LLVM_FALSE@LLVMDEP = libclamav_nocxx.la
 @ENABLE_LLVM_TRUE@LLVMDEP = c++/libclamavcxx.la
 @ENABLE_LLVM_TRUE@SUBDIRS = c++
 libclamav_nocxx_la_SOURCES = bytecode_nojit.c
-libclamav_nocxx_la_CFLAGS = $(AM_CFLAGS) @LIBCLAMAV_CPPFLAGS@
-libclamav_la_LIBADD = @LIBCLAMAV_LIBS@ @LIBLTDL@ $(IFACELIBADD) $(LLVMLIBADD) libclamav_internal_utils.la @THREAD_LIBS@ @LIBM@
+libclamav_nocxx_la_CFLAGS = $(AM_CFLAGS) @SSL_CPPFLAGS@
+libclamav_la_LIBADD = @SSL_LIBS@ @LIBCLAMAV_LIBS@ @LIBLTDL@ $(IFACELIBADD) $(LLVMLIBADD) libclamav_internal_utils.la @THREAD_LIBS@ @LIBM@
 libclamav_la_DEPENDENCIES = @LTDLDEPS@ $(IFACEDEP) $(LLVMDEP) libclamav_internal_utils.la
 libclamav_la_CFLAGS = $(AM_CFLAGS) $(XML_CPPFLAGS) -DSEARCH_LIBDIR=\"$(libdir)\" @LIBCLAMAV_CPPFLAGS@
-libclamav_la_LDFLAGS = @LIBCLAMAV_LIBS@ @TH_SAFE@ $(XML_LIBS) \
+libclamav_la_LDFLAGS = @SSL_LDFLAGS@ @TH_SAFE@ $(XML_LIBS) \
 	-version-info @LIBCLAMAV_VERSION@ -no-undefined \
 	$(am__append_6)
 include_HEADERS = clamav.h
