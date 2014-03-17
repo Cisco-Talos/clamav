@@ -351,7 +351,7 @@ static void * xar_hash_init(int hash, void **sc, void **mc)
     }
 }
 
-static void xar_hash_update(void * hash_ctx, const void * data, unsigned long size, int hash)
+static void xar_hash_update(void * hash_ctx, void * data, unsigned long size, int hash)
 {
     if (!hash_ctx || !data || !size)
         return;

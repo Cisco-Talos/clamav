@@ -1817,7 +1817,8 @@ abort:
 	}
 	if(file_tmp_o1) {
 		html_output_flush(file_tmp_o1);
-		close(file_tmp_o1->fd);
+		if(file_buff_text->fd != -1)
+			close(file_tmp_o1->fd);
 		free(file_tmp_o1);
 	}
 	return retval;

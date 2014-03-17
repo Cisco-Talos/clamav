@@ -57,10 +57,23 @@ Print a CVD information and verify MD5 and a digital signature.
 \fB\-b, \-\-build\fR
 Build a CVD file. \-s, \-\-server is required.
 .TP 
-\fB\-b, \-\-no\-cdiff\fR
+\fB\-\-max\-bad\-sigs=NUMBER\fR
+Maximum number of mismatched signatures when building a CVD. Default: 3000
+.TP 
+\fB\-\-flevel\fR
+Specify a custom flevel. Default: 77
+.TP 
+\fB\-\-cvd\-version\fR
+Specify the version number to use for the build. Default is to use the value+1
+from the current CVD in --datadir. If no datafile is found the default
+behaviour is to prompt for a version number, this switch will prevent the
+prompt.
+NOTE: If a CVD is found in the --datadir its version+1 is used and this value is ignored.
+.TP 
+\fB\-\-no\-cdiff\fR
 Don't create a .cdiff file when building a new database file.
 .TP 
-\fB\-b, \-\-unsigned\fR
+\fB\-\-unsigned\fR
 Create a database file without digital signatures (.cua).
 .TP 
 \fB\-\-server\fR
@@ -93,11 +106,14 @@ List all signature names from the local database directory (default) or from FIL
 \fB\-fREGEX, \-\-find\-sigs=REGEX\fR
 Find and display signatures from the local database directory which match the given REGEX. The whole signature body (name, hex string, etc.) is checked.
 .TP 
-\fB\-fREGEX, \-\-decode\-sigs=REGEX\fR
+\fB\-\-decode\-sigs=REGEX\fR
 Decode signatures read from the standard input (eg. piped from \-\-find\-sigs)
 .TP 
-\fB\-fREGEX, \-\-test\-sigs=DATABASE TARGET_FILE\fR
+\fB\-\-test\-sigs=DATABASE TARGET_FILE\fR
 Test all signatures from DATABASE against TARGET_FILE. This option will only give valid results if the target file is the final one (after unpacking, normalization, etc.) for which the signatures were created.
+.TP
+\fB\-\-print\-certs=FILE\fR
+Print Authenticode details from a PE file.
 .SH "EXAMPLES"
 .LP 
 .TP 
