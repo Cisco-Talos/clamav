@@ -79,8 +79,8 @@ clamd_connect (const char *cfgfile, const char *option)
 
         if ((sockd = socket (AF_UNIX, SOCK_STREAM, 0)) < 0)
         {
-            perror ("socket()");
-            logg ("^Clamd was NOT notified: Can't create socket endpoint for %s\n", opt->strarg);
+            logg ("^Clamd was NOT notified: Can't create socket endpoint for %s: %s\n",
+                opt->strarg, strerror(errno));
             optfree (opts);
             return -1;
         }
@@ -89,9 +89,9 @@ clamd_connect (const char *cfgfile, const char *option)
             (sockd, (struct sockaddr *) &server,
              sizeof (struct sockaddr_un)) < 0)
         {
-            perror ("connect()");
+            logg ("^Clamd was NOT notified: Can't connect to clamd through %s: %s\n",
+                opt->strarg, strerror(errno));
             closesocket (sockd);
-            logg ("^Clamd was NOT notified: Can't connect to clamd through %s\n", opt->strarg);
             optfree (opts);
             return -11;
         }
@@ -129,17 +129,16 @@ clamd_connect (const char *cfgfile, const char *option)
             for (p = res; p != NULL; p = p->ai_next) {
                 if ((sockd = socket (p->ai_family, p->ai_socktype, p->ai_protocol)) < 0)
                 {
-                    perror ("socket()");
-                    logg ("!%s: Can't create TCP socket to connect to %s\n", option, opt->strarg ? opt->strarg : "localhost");
+                    logg ("!%s: Can't create TCP socket to connect to %s: %s\n",
+                          option, opt->strarg ? opt->strarg : "localhost", strerror(errno));
                     continue;
                 }
 
                 if (connect (sockd, p->ai_addr, p->ai_addrlen) == -1)
                 {
-                    perror ("connect()");
+                    logg ("!%s: Can't connect to clamd on %s:%s: %s\n", option,
+                          opt->strarg ? opt->strarg : "localhost", port, strerror(errno));
                     closesocket (sockd);
-                    logg ("!%s: Can't connect to clamd on %s:%s\n", option,
-                          opt->strarg ? opt->strarg : "localhost", port);
                     continue;
                 }
 
@@ -157,8 +156,7 @@ clamd_connect (const char *cfgfile, const char *option)
 
         if ((sockd = socket (AF_INET, SOCK_STREAM, 0)) < 0)
         {
-            perror ("socket()");
-            logg ("!%s: Can't create TCP socket\n", option);
+            logg ("!%s: Can't create TCP socket: %s\n", option, strerror(errno));
             optfree (opts);
             return -1;
         }
@@ -170,8 +168,8 @@ clamd_connect (const char *cfgfile, const char *option)
         {
             if ((he = gethostbyname (opt->strarg)) == 0)
             {
-                perror ("gethostbyname()");
-                logg ("^Clamd was NOT notified: Can't resolve hostname '%s'\n", opt->strarg);
+                logg ("^Clamd was NOT notified: Can't resolve hostname '%s': %s\n",
+                    opt->strarg, strerror(errno));
                 optfree (opts);
                 closesocket (sockd);
                 return -1;
@@ -186,9 +184,9 @@ clamd_connect (const char *cfgfile, const char *option)
             (sockd, (struct sockaddr *) &server2,
              sizeof (struct sockaddr_in)) < 0)
         {
-            perror ("connect()");
+            logg ("^Clamd was NOT notified: Can't connect to clamd on %s:%d: %s\n",
+                inet_ntoa (server2.sin_addr), ntohs (server2.sin_port), strerror(errno));
             closesocket (sockd);
-            logg ("^Clamd was NOT notified: Can't connect to clamd on %s:%d\n", inet_ntoa (server2.sin_addr), ntohs (server2.sin_port));
             optfree (opts);
             return -1;
         }
@@ -219,8 +217,7 @@ notify (const char *cfgfile)
 
     if (sendln (sockd, "RELOAD", 7) < 0)
     {
-        perror ("send()");
-        logg ("!NotifyClamd: Could not write to clamd socket\n");
+        logg ("!NotifyClamd: Could not write to clamd socket: %s\n", strerror(errno));
         closesocket (sockd);
         return 1;
     }
