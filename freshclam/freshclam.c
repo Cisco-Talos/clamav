@@ -350,13 +350,17 @@ main (int argc, char **argv)
         char *p = optget(opts, "stats-host-id")->strarg;
 
         if (strcmp(p, "default")) {
-            if (strlen(p) > 36) {
-                logg("!Invalid HostID\n");
-                optfree(opts);
-                return FCE_INIT;
-            }
+            if (!strcmp(p, "anonymous")) {
+                strcpy(hostid, STATS_ANON_UUID);
+            } else {
+                if (strlen(p) > 36) {
+                    logg("!Invalid HostID\n");
+                    optfree(opts);
+                    return FCE_INIT;
+                }
 
-            strcpy(hostid, p);
+                strcpy(hostid, p);
+            }
         } else {
             strcpy(hostid, "default");
         }
