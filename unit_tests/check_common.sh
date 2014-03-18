@@ -122,13 +122,8 @@ test_end() {
 }
 
 scan_failed() {
-    if test "X$unrar_disabled" = "X1" && test `grep -v '\.rar' $1 | grep OK | wc -l` -eq 0
-    then
-	error "UNRAR is disabled, won't be able to detect unrar files!"
-    else
-	cat $1
-    	die "$2";
-    fi
+    cat $1
+    die "$2";
 }
 
 # ----------- valgrind wrapper 
