@@ -15740,6 +15740,17 @@ _ACEOF
 fi
 done
 
+for ac_func in sysctlbyname
+do :
+  ac_fn_c_check_func "$LINENO" "sysctlbyname" "ac_cv_func_sysctlbyname"
+if test "x$ac_cv_func_sysctlbyname" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_SYSCTLBYNAME 1
+_ACEOF
+
+fi
+done
+
 
 # Check whether --enable-mempool was given.
 if test "${enable_mempool+set}" = set; then :

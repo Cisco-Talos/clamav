@@ -13,3 +13,4 @@ AC_C_FUNC_MMAP_ANONYMOUS
 AC_CHECK_FUNCS([enable_extended_FILE_stdio])
 
 AC_CHECK_FUNCS([timegm])
+AC_CHECK_FUNCS([sysctlbyname])
