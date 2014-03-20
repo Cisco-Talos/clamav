@@ -28,7 +28,11 @@ Be quiet \- only output error messages.
 Write all messages (except for libclamav output) to the standard output (stdout).
 .TP 
 \fB\-\-config\-file=FILE\fR
-Read clamd settings from FILE.
+Read clamd settings from FILE. If this option is not specified, the program
+tries @CFGDIR@/clamdscan.conf, and if that is not found, it tries 
+@CFGDIR@/clamd.conf.  The program recognizes a small subset of clamd.conf's 
+configuration directives, and ignores all others. See the provided configuration 
+sample.
 .TP 
 \fB\-l FILE, \-\-log=FILE\fR
 Save the scan report to FILE.

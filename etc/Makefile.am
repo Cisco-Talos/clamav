@@ -16,10 +16,10 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #  MA 02110-1301, USA.
 
-EXTRA_DIST = clamd.conf.sample freshclam.conf.sample clamav-milter.conf.sample
+EXTRA_DIST = clamd.conf.sample freshclam.conf.sample clamav-milter.conf.sample clamdscan.conf.sample 
 CFGINST = @CFGDIR@
 
-sysconf_DATA = clamd.conf.sample freshclam.conf.sample
+sysconf_DATA = clamd.conf.sample freshclam.conf.sample clamdscan.conf.sample
 
 if BUILD_CLAMD
 if HAVE_MILTER

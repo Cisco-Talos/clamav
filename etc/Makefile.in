@@ -301,9 +301,9 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-EXTRA_DIST = clamd.conf.sample freshclam.conf.sample clamav-milter.conf.sample
+EXTRA_DIST = clamd.conf.sample freshclam.conf.sample clamav-milter.conf.sample clamdscan.conf.sample
 CFGINST = @CFGDIR@
-sysconf_DATA = clamd.conf.sample freshclam.conf.sample $(am__append_1)
+sysconf_DATA = clamd.conf.sample freshclam.conf.sample clamdscan.conf.sample $(am__append_1)
 all: all-am
 
 .SUFFIXES:

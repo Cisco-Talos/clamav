@@ -35,6 +35,7 @@ typedef	unsigned	int	in_addr_t;
 #endif
 
 #define CONFDIR_CLAMD CONFDIR PATHSEP "clamd.conf"
+#define CONFDIR_CLAMDSCAN CONFDIR PATHSEP "clamdscan.conf"
 #define CONFDIR_FRESHCLAM CONFDIR PATHSEP "freshclam.conf"
 #define CONFDIR_MILTER CONFDIR PATHSEP "clamav-milter.conf"
 

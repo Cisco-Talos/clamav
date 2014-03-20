@@ -59,6 +59,7 @@ int main(int argc, char **argv)
 	int ds, dms, ret, infected = 0, err = 0;
 	struct timeval t1, t2;
 	time_t starttime;
+	char *config_file;
         struct optstruct *opts;
         const struct optstruct *opt;
 #ifndef _WIN32
@@ -70,8 +71,30 @@ int main(int argc, char **argv)
 	return 2;
     }
 
-    if((clamdopts = optparse(optget(opts, "config-file")->strarg, 0, NULL, 1, OPT_CLAMD, 0, NULL)) == NULL) {
-	logg("!Can't parse clamd configuration file %s\n", optget(opts, "config-file")->strarg);
+	/* XXX: if the user-specified config file does not exist, 
+         *      try the clamd.conf file. */
+    config_file = optget(opts, "config-file")->strarg;
+	/* XXX: assert: config_file contains either 
+ 	 * 	/etc/clamdscan.conf or user-provided string */
+    if ( access(config_file,R_OK) ) {
+	/* XXX: file not found or readable: abort if the user provided the filename  
+   	* 	(one bug here: user specifies CONFDIR_CLAMDSCAN which is not found
+   	* 	and then we read CONFDIR_CLAMD ) */
+	if (strcmp(config_file,CONFDIR_CLAMDSCAN)) {
+		logg("!Can't find or read requested clamd configuration file %s\n", config_file);
+		return 2;
+	}
+	else {
+		config_file = CONFDIR_CLAMD;
+    		if ( access(config_file,R_OK) ) {
+			logg("!Can't find any readable clamd configuration file");
+			return 2;
+		}
+	}
+    }
+
+    if((clamdopts = optparse(config_file, 0, NULL, 1, OPT_CLAMD, 0, NULL)) == NULL) {
+	logg("!Can't parse clamd configuration file %s\n", config_file);
 	return 2;
     }
 

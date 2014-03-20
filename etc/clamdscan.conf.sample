@@ -1,0 +1,40 @@
+##
+## Sample clamdscan.conf file for a clamdscan program to 
+## work with a remote clamd scanner.
+##
+## Please read the clamd.conf(5) manual before editing this file.
+## The options in this sample file are all those that the clamdscan 
+##    program recognizes
+##
+
+## Connection information for daemon
+# Use local socket (unix only)
+# Default: yes
+LocalSocket yes
+
+## Or use TCP sockets
+# TCPSocket 3310
+# TCPAddr 127.0.0.1
+
+# Close the connection when the data size limit is exceeded.
+# The value should match your MTA's limit for a maximum attachment size.
+# <This option also used by clamdscan>
+# Default: 25M
+StreamMaxLength 200M
+
+# Maximum depth directories are scanned at.
+# Default: 15
+MaxDirectoryRecursion 250
+
+# This directive can be used multiple times
+# Default: scan all
+#ExcludePath ^/proc/
+#ExcludePath ^/sys/
+
+# Follow directory symlinks.
+# Default: no
+#FollowDirectorySymlinks yes
+
+# Follow regular file symlinks.
+# Default: no
+#FollowFileSymlinks yes
