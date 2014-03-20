@@ -382,24 +382,31 @@ END_TEST
 static char **testfiles = NULL;
 static unsigned testfiles_n = 0;
 
-#if HAVE_BZLIB_H
 static const int expected_testfiles = 48;
+
+static unsigned skip_files(void)
+{
+    unsigned skipped = 0;
+
+    /* skip .rar files if unrar is disabled */
+    const char *s = getenv("unrar_disabled");
+    if (s && !strcmp(s, "1")) {
+        skipped += 2;
+    }
+
+    /* skip .bz2 files if bzip is disabled */
+#if HAVE_BZLIB_H
 #else
-static const int expected_testfiles = 46;
+    skipped += 2;
 #endif
 
-static unsigned skip_unrar_files(void)
-{
-    const char *s = getenv("unrar_disabled");
+    /* skip [placeholder] files if xml is disabled */
+#if HAVE_LIBXML2
+#else
+    skipped += 0;
+#endif
 
-    if (!s)
-        return 0;
-
-    if (strcmp(s, "1"))
-        return 0;
-
-    /* number of .rar files we skipp */
-    return 2;
+    return skipped;
 }
 
 static void init_testfiles(void)
@@ -417,10 +424,6 @@ static void init_testfiles(void)
     while ((dirent = readdir(d))) {
 	if (strncmp(dirent->d_name, "clam", 4))
 	    continue;
-	if (strstr(dirent->d_name, ".rar") && skip_unrar_files()) {
-            cli_dbgmsg("skipping (no unrar) %s\n", dirent->d_name);
-            continue;
-        }
         i++;
 	testfiles = cli_realloc(testfiles, i*sizeof(*testfiles));
 	fail_unless(!!testfiles, "cli_realloc");
@@ -429,7 +432,7 @@ static void init_testfiles(void)
     testfiles_n = i;
     if (get_fpu_endian() == FPU_ENDIAN_UNKNOWN)
         expect--;
-    expect -= skip_unrar_files();
+    expect -= skip_files();
     fail_unless_fmt(testfiles_n == expect, "testfiles: %d != %d", testfiles_n, expect);
 
     closedir(d);
@@ -645,7 +648,7 @@ static Suite *test_cl_suite(void)
 #ifdef CHECK_HAVE_LOOPS
     if (get_fpu_endian() == FPU_ENDIAN_UNKNOWN)
         expect--;
-    expect -= skip_unrar_files();
+    expect -= skip_files();
     tcase_add_loop_test(tc_cl_scan, test_cl_scandesc, 0, expect);
     tcase_add_loop_test(tc_cl_scan, test_cl_scandesc_allscan, 0, expect);
     tcase_add_loop_test(tc_cl_scan, test_cl_scanfile, 0, expect);

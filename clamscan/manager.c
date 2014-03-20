@@ -596,6 +596,8 @@ int scanmanager(const struct optstruct *opts)
         if (strcmp(p, "default")) {
             if (!strcmp(p, "none")) {
                 cl_engine_set_clcb_stats_get_hostid(engine, NULL);
+            } else if (!strcmp(p, "anonymous")) {
+                strcpy(hostid, STATS_ANON_UUID);
             } else {
                 if (strlen(p) > 36) {
                     logg("!Invalid HostID\n");
@@ -606,6 +608,8 @@ int scanmanager(const struct optstruct *opts)
 
                 strcpy(hostid, p);
             }
+
+            cl_engine_set_clcb_stats_get_hostid(engine, get_hostid);
         }
     }
 
