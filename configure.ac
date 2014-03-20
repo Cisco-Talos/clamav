@@ -162,6 +162,7 @@ docs/man/freshclam.1
 docs/man/freshclam.conf.5
 docs/man/sigtool.1
 docs/man/clamdtop.1
+docs/man/clamsubmit.1
 ])
 
 AC_OUTPUT

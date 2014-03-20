@@ -1,0 +1,33 @@
+.TH "Config tool" "1" "March 20, 2014" "ClamAV @VERSION@" "Clam AntiVirus"
+.SH "NAME"
+.LP 
+clamsubmit \- File submission utility for ClamAV
+.SH "SYNOPSIS"
+.LP 
+clamsubmit [options]
+.SH "DESCRIPTION"
+.LP 
+clamsubmit submits files to Sourcefire for further analysis.
+.SH "OPTIONS"
+.LP 
+
+.TP 
+\fB\-h, \-?\fR
+Display help to stderr and exit.
+.TP 
+\fB\-e EMAIL\fR
+Required option for setting the email address for the submission.
+.TP 
+\fB\-n FILE\fR
+Submit a file that reports as a false negative (ClamAV reports CLEAN). FILE can be - to specify stdin. Mutually exclusive with -p.
+.TP 
+\fB\-N NAME\fR
+Required option for setting the name of the sender for the submission.
+.TP
+\fB-p FILE\fR
+Submit a file that reports as a false positive (ClamAV flags the file as virus). FILE can be - to specify stdin. Mutually exclusive with -n.
+.SH "CREDITS"
+The idea of this tool is based on Postfix's postconf. clamconf was created under pressure from Tomasz Papszun ;-)
+.SH "AUTHOR"
+.LP 
+Shawn Webb <swebb@sourcefire.com>
