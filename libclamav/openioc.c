@@ -268,7 +268,7 @@ int openioc_parse(const char * fname, int fd, struct cl_engine *engine)
             *vp-- = '\0';
             hashlen--;
         }
-        virusname = mpool_malloc(engine->mempool, ioclen+hashlen+2);
+        virusname = mpool_malloc(engine->mempool, ioclen+hashlen+13);
         if (NULL == virusname) {
             cli_dbgmsg("openioc_parse: mpool_malloc for virname memory failed.\n");
             xmlTextReaderClose(reader);
@@ -305,7 +305,7 @@ int openioc_parse(const char * fname, int fd, struct cl_engine *engine)
                 *vp++ = *sp;
             }
         }
-        *vp = '\0';
+        strcpy (vp, ".UNOFFICIAL");
         rc = hm_addhash_str(engine->hm_hdb, hash, 0, virusname);
         if (rc != CL_SUCCESS)
             cli_dbgmsg("openioc_parse: hm_addhash_str failed with %i hash len %i for %s.\n",

@@ -1,3 +1,7 @@
+Wed Mar 19 09:55:08 EDT 2014 (dar)
+------------------------------------
+ * bb#10757: fix C++11 compatibility issue in LoopInfo.h
+
 Fri Mar 10 16:55:00 EDT 2014 (klin)
 ------------------------------------
  * bb#10650: fix for issues with parsing malformed icon groups in PE files.

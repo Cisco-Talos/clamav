@@ -700,6 +700,8 @@ LIBBZ2
 MAINT
 MAINTAINER_MODE_FALSE
 MAINTAINER_MODE_TRUE
+HAVE_LIBXML2_FALSE
+HAVE_LIBXML2_TRUE
 XML_LIBS
 XML_CPPFLAGS
 ENABLE_COVERAGE_FALSE
@@ -16830,6 +16832,15 @@ $as_echo "$as_me: ****** libxml2 support unavailable" >&6;}
 
 fi
 
+ if test "x$HAVE_LIBXML2" = "xyes"; then
+  HAVE_LIBXML2_TRUE=
+  HAVE_LIBXML2_FALSE='#'
+else
+  HAVE_LIBXML2_TRUE='#'
+  HAVE_LIBXML2_FALSE=
+fi
+
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for OpenSSL installation" >&5
 $as_echo_n "checking for OpenSSL installation... " >&6; }
 
@@ -22194,7 +22205,7 @@ else
 fi
 
 
-ac_config_files="$ac_config_files clamscan/Makefile database/Makefile docs/Makefile clamd/Makefile clamdscan/Makefile clamsubmit/Makefile clamav-milter/Makefile freshclam/Makefile sigtool/Makefile clamconf/Makefile etc/Makefile test/Makefile unit_tests/Makefile clamdtop/Makefile clambc/Makefile Makefile clamav-config libclamav.pc platform.h docs/man/clamav-milter.8 docs/man/clamav-milter.conf.5 docs/man/clambc.1 docs/man/clamconf.1 docs/man/clamd.8 docs/man/clamd.conf.5 docs/man/clamdscan.1 docs/man/clamscan.1 docs/man/freshclam.1 docs/man/freshclam.conf.5 docs/man/sigtool.1 docs/man/clamdtop.1"
+ac_config_files="$ac_config_files clamscan/Makefile database/Makefile docs/Makefile clamd/Makefile clamdscan/Makefile clamsubmit/Makefile clamav-milter/Makefile freshclam/Makefile sigtool/Makefile clamconf/Makefile etc/Makefile test/Makefile unit_tests/Makefile clamdtop/Makefile clambc/Makefile Makefile clamav-config libclamav.pc platform.h docs/man/clamav-milter.8 docs/man/clamav-milter.conf.5 docs/man/clambc.1 docs/man/clamconf.1 docs/man/clamd.8 docs/man/clamd.conf.5 docs/man/clamdscan.1 docs/man/clamscan.1 docs/man/freshclam.1 docs/man/freshclam.conf.5 docs/man/sigtool.1 docs/man/clamdtop.1 docs/man/clamsubmit.1"
 
 
 cat >confcache <<\_ACEOF
@@ -22370,6 +22381,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${ENABLE_COVERAGE_TRUE}" && test -z "${ENABLE_COVERAGE_FALSE}"; then
   as_fn_error $? "conditional \"ENABLE_COVERAGE\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${HAVE_LIBXML2_TRUE}" && test -z "${HAVE_LIBXML2_FALSE}"; then
+  as_fn_error $? "conditional \"HAVE_LIBXML2\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${MAINTAINER_MODE_TRUE}" && test -z "${MAINTAINER_MODE_FALSE}"; then
@@ -23305,6 +23320,7 @@ do
     "docs/man/freshclam.conf.5") CONFIG_FILES="$CONFIG_FILES docs/man/freshclam.conf.5" ;;
     "docs/man/sigtool.1") CONFIG_FILES="$CONFIG_FILES docs/man/sigtool.1" ;;
     "docs/man/clamdtop.1") CONFIG_FILES="$CONFIG_FILES docs/man/clamdtop.1" ;;
+    "docs/man/clamsubmit.1") CONFIG_FILES="$CONFIG_FILES docs/man/clamsubmit.1" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac
@@ -24999,6 +25015,10 @@ if test -z "${ENABLE_COVERAGE_TRUE}" && test -z "${ENABLE_COVERAGE_FALSE}"; then
   as_fn_error $? "conditional \"ENABLE_COVERAGE\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
+if test -z "${HAVE_LIBXML2_TRUE}" && test -z "${HAVE_LIBXML2_FALSE}"; then
+  as_fn_error $? "conditional \"HAVE_LIBXML2\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 if test -z "${MAINTAINER_MODE_TRUE}" && test -z "${MAINTAINER_MODE_FALSE}"; then
   as_fn_error $? "conditional \"MAINTAINER_MODE\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -25941,6 +25961,7 @@ do
     "docs/man/freshclam.conf.5") CONFIG_FILES="$CONFIG_FILES docs/man/freshclam.conf.5" ;;
     "docs/man/sigtool.1") CONFIG_FILES="$CONFIG_FILES docs/man/sigtool.1" ;;
     "docs/man/clamdtop.1") CONFIG_FILES="$CONFIG_FILES docs/man/clamdtop.1" ;;
+    "docs/man/clamsubmit.1") CONFIG_FILES="$CONFIG_FILES docs/man/clamsubmit.1" ;;
     "libclamav/Makefile") CONFIG_FILES="$CONFIG_FILES libclamav/Makefile" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;

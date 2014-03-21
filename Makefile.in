@@ -115,11 +115,13 @@ DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/docs/man/freshclam.1.in \
 	$(top_srcdir)/docs/man/freshclam.conf.5.in \
 	$(top_srcdir)/docs/man/sigtool.1.in \
-	$(top_srcdir)/docs/man/clamdtop.1.in AUTHORS COPYING ChangeLog \
-	INSTALL NEWS README config/compile config/config.guess \
-	config/config.rpath config/config.sub config/depcomp \
-	config/install-sh config/missing config/ltmain.sh \
-	$(top_srcdir)/config/compile $(top_srcdir)/config/config.guess \
+	$(top_srcdir)/docs/man/clamdtop.1.in \
+	$(top_srcdir)/docs/man/clamsubmit.1.in AUTHORS COPYING \
+	ChangeLog INSTALL NEWS README config/compile \
+	config/config.guess config/config.rpath config/config.sub \
+	config/depcomp config/install-sh config/missing \
+	config/ltmain.sh $(top_srcdir)/config/compile \
+	$(top_srcdir)/config/config.guess \
 	$(top_srcdir)/config/config.rpath \
 	$(top_srcdir)/config/config.sub \
 	$(top_srcdir)/config/install-sh $(top_srcdir)/config/ltmain.sh \
@@ -201,7 +203,7 @@ CONFIG_CLEAN_FILES = clamav-config libclamav.pc platform.h \
 	docs/man/clambc.1 docs/man/clamconf.1 docs/man/clamd.8 \
 	docs/man/clamd.conf.5 docs/man/clamdscan.1 docs/man/clamscan.1 \
 	docs/man/freshclam.1 docs/man/freshclam.conf.5 \
-	docs/man/sigtool.1 docs/man/clamdtop.1
+	docs/man/sigtool.1 docs/man/clamdtop.1 docs/man/clamsubmit.1
 CONFIG_CLEAN_VPATH_FILES =
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
@@ -617,6 +619,8 @@ docs/man/freshclam.conf.5: $(top_builddir)/config.status $(top_srcdir)/docs/man/
 docs/man/sigtool.1: $(top_builddir)/config.status $(top_srcdir)/docs/man/sigtool.1.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 docs/man/clamdtop.1: $(top_builddir)/config.status $(top_srcdir)/docs/man/clamdtop.1.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
+docs/man/clamsubmit.1: $(top_builddir)/config.status $(top_srcdir)/docs/man/clamsubmit.1.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 install-binSCRIPTS: $(bin_SCRIPTS)
 	@$(NORMAL_INSTALL)
