@@ -269,7 +269,7 @@ int openioc_parse(const char * fname, int fd, struct cl_engine *engine, unsigned
             hashlen--;
         }
         virusname = calloc(1, ioclen+hashlen+1);
-        if (NULL == vp) {
+        if (NULL == virusname) {
             cli_dbgmsg("openioc_parse: mpool_malloc for virname memory failed.\n");
             xmlTextReaderClose(reader);
             xmlFreeTextReader(reader);
