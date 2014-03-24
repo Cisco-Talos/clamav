@@ -180,7 +180,7 @@ static int openioc_parse_indicator(xmlTextReaderPtr reader, struct openioc_hash 
     return rc;
 }
 
-int openioc_parse(const char * fname, int fd, struct cl_engine *engine)
+int openioc_parse(const char * fname, int fd, struct cl_engine *engine, unsigned int options)
 {
     int rc;
     xmlTextReaderPtr reader = NULL;
@@ -268,15 +268,15 @@ int openioc_parse(const char * fname, int fd, struct cl_engine *engine)
             *vp-- = '\0';
             hashlen--;
         }
-        virusname = mpool_malloc(engine->mempool, ioclen+hashlen+13);
+        virusname = calloc(1, ioclen+hashlen+2);
         if (NULL == virusname) {
             cli_dbgmsg("openioc_parse: mpool_malloc for virname memory failed.\n");
             xmlTextReaderClose(reader);
             xmlFreeTextReader(reader);
             return CL_EMEM;
         }
-        vp = virusname;
         sp = fname;
+        vp = virusname;
         for (i=0; i<ioclen; i++, sp++, vp++) {
             switch (*sp) {
             case '\\':
@@ -305,7 +305,19 @@ int openioc_parse(const char * fname, int fd, struct cl_engine *engine)
                 *vp++ = *sp;
             }
         }
-        strcpy (vp, ".UNOFFICIAL");
+
+        vp = virusname;
+        virusname = cli_mpool_virname(engine->mempool, virusname, options & CL_DB_OFFICIAL);
+        if (!(virusname)) {
+            cli_dbgmsg("openioc_parse: mpool_malloc for virname memory failed.\n");
+            xmlTextReaderClose(reader);
+            xmlFreeTextReader(reader);
+            free(vp);
+            return CL_EMEM;
+        }
+
+        free(vp);
+
         rc = hm_addhash_str(engine->hm_hdb, hash, 0, virusname);
         if (rc != CL_SUCCESS)
             cli_dbgmsg("openioc_parse: hm_addhash_str failed with %i hash len %i for %s.\n",
