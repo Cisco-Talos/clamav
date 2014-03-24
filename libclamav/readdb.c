@@ -2602,10 +2602,10 @@ static int cli_loadmscat(FILE *fs, const char *dbname, struct cl_engine *engine,
     return 0;
 }
 
-static int cli_loadopenioc(FILE *fs, const char *dbname, struct cl_engine *engine)
+static int cli_loadopenioc(FILE *fs, const char *dbname, struct cl_engine *engine, unsigned int options)
 {
     int rc;
-    rc = openioc_parse(dbname, fileno(fs), engine);
+    rc = openioc_parse(dbname, fileno(fs), engine, options);
     if (rc != CL_SUCCESS)
         return CL_EMALFDB;
     return rc;
@@ -2740,7 +2740,7 @@ int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo
     } else if(cli_strbcasestr(dbname, ".cat")) {
 	ret = cli_loadmscat(fs, dbname, engine, options, dbio);
     } else if(cli_strbcasestr(dbname, ".ioc")) {
-	ret = cli_loadopenioc(fs, dbname, engine);
+	ret = cli_loadopenioc(fs, dbname, engine, options);
     } else {
 	cli_dbgmsg("cli_load: unknown extension - assuming old database format\n");
 	ret = cli_loaddb(fs, engine, signo, options, dbio, dbname);
