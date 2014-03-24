@@ -2509,8 +2509,10 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
     }
 
     perf_start(ctx, PERFT_FT);
-    if((type == CL_TYPE_ANY) || type == CL_TYPE_PART_ANY)
+    if((type == CL_TYPE_ANY) || type == CL_TYPE_PART_ANY) {
 	type = cli_filetype2(*ctx->fmap, ctx->engine, type);
+        cli_warnmsg("cli_filetype2(*ctx->fmap, ctx->engine, type) returns %d\n", type);
+    }
     perf_stop(ctx, PERFT_FT);
     if(type == CL_TYPE_ERROR) {
 	cli_dbgmsg("cli_magic_scandesc: cli_filetype2 returned CL_TYPE_ERROR\n");
@@ -2635,11 +2637,6 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 	case CL_TYPE_GPT:
 	    //if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_GPT))
 	    ret = cli_scangpt(ctx, 0);
-	    break;
-
-	case CL_TYPE_APM:
-	    //if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_APM))
-		ret = cli_scanapm(ctx);
 	    break;
 
 	case CL_TYPE_ARJ:
@@ -2881,6 +2878,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
     /* CL_TYPE_HTML: raw HTML files are not scanned, unless safety measure activated via DCONF */
     if(type != CL_TYPE_IGNORED && (type != CL_TYPE_HTML || !(DCONF_DOC & DOC_CONF_HTML_SKIPRAW)) && !ctx->engine->sdb) {
 	res = cli_scanraw(ctx, type, typercg, &dettype, hash);
+        cli_warnmsg("cli_scanraw(ctx, type, typercg, &dettype, hash) returns %d\n", res);
 	if(res != CL_CLEAN) {
 	    switch(res) {
 		/* List of scan halts, runtime errors only! */

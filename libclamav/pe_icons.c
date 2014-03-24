@@ -45,7 +45,7 @@
 
 struct ICON_ENV {
     cli_ctx *ctx;
-    unsigned int gcnt, hcnt;
+    unsigned int gcnt, hcnt; /* gcnt -> number of icon groups parsed, hcnt -> "actual" image count */
     uint32_t lastg;
     int result;
 
@@ -55,8 +55,12 @@ struct ICON_ENV {
     uint16_t nsections;
     uint32_t hdr_size;
 
-    uint32_t icnt;
+    uint32_t icnt; /* number of icon entries parsed, declared images */
     uint32_t max_icons;
+
+    uint32_t err_oof;   /* parseicon: offset to icon is out of file */
+    uint32_t err_bhoof; /* parseicon: bmp header is out of file */
+    uint32_t err_bhts;  /* parseicon: BMP header too small */
 };
 
 int cli_groupiconscan(struct ICON_ENV *icon_env, uint32_t rva);
@@ -82,15 +86,15 @@ static int groupicon_scan_cb(void *ptr, uint32_t type, uint32_t name, uint32_t l
     return 1;
 }
 
-static int parseicon(icon_groupset *set, uint32_t rva, cli_ctx *ctx, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size);
+static int parseicon(struct ICON_ENV *icon_env, uint32_t rva);
 
 static int icon_scan_cb(void *ptr, uint32_t type, uint32_t name, uint32_t lang, uint32_t rva) {
     struct ICON_ENV *icon_env = ptr;
     type = type; lang = lang; /* Prevent compiler warnings regarding unused variables */
-    cli_dbgmsg("icon_cb: scanning icon %x\n", name);
+    //cli_dbgmsg("icon_cb: scanning icon %x\n", name);
 
     /* scan icon */
-    icon_env->result = parseicon(icon_env->set, rva, icon_env->ctx, icon_env->exe_sections, icon_env->nsections, icon_env->hdr_size);
+    icon_env->result = parseicon(icon_env, rva);
     icon_env->hcnt++;
 
     if (icon_env->result != CL_CLEAN)
@@ -118,6 +122,10 @@ int cli_scanicon(icon_groupset *set, uint32_t resdir_rva, cli_ctx *ctx, struct c
 
     icon_env.max_icons = ctx->engine->maxiconspe;
 
+    icon_env.err_oof = 0;
+    icon_env.err_bhoof = 0;
+    icon_env.err_bhts = 0;
+
     /* icon group scan callback --> groupicon_scan_cb() */
     findres(14, 0xffffffff, resdir_rva, map, exe_sections, nsections, hdr_size, groupicon_scan_cb, &icon_env);
 
@@ -128,6 +136,16 @@ int cli_scanicon(icon_groupset *set, uint32_t resdir_rva, cli_ctx *ctx, struct c
     cli_dbgmsg("cli_scanicon: scanned a total of %u[%u actual] icons across %u groups\n", icon_env.icnt, icon_env.hcnt, icon_env.gcnt);
     if (icon_env.hcnt < icon_env.icnt)
         cli_warnmsg("cli_scanicon: found %u invalid icon entries of %u total\n", icon_env.icnt-icon_env.hcnt, icon_env.icnt);
+
+    if ((icon_env.err_oof+icon_env.err_bhoof+icon_env.err_bhts) > 0) {
+        cli_dbgmsg("cli_scanicon: detected %u image parsing issues\n", icon_env.err_oof+icon_env.err_bhoof+icon_env.err_bhts);
+        if (icon_env.err_oof > 0)
+            cli_dbgmsg("cli_scanicon: detected %u cases of 'parseicon: offset to icon is out of file'\n", icon_env.err_oof);
+        if (icon_env.err_bhoof > 0)
+            cli_dbgmsg("cli_scanicon: detected %u cases of 'parseicon: bmp header is out of file'\n", icon_env.err_bhoof);
+        if (icon_env.err_bhts > 0)
+            cli_dbgmsg("cli_scanicon: detected %u cases of 'parseicon: BMP header too small'\n", icon_env.err_bhts);
+    }
 
     /* ignore all error returns (previous behavior) */
     if (icon_env.result == CL_VIRUS)
@@ -1262,8 +1280,13 @@ static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr 
     return CL_CLEAN;
 }
 
+static int parseicon(struct ICON_ENV *icon_env, uint32_t rva) {
+    icon_groupset *set = icon_env->set;
+    cli_ctx *ctx = icon_env->ctx;
+    struct cli_exe_section *exe_sections = icon_env->exe_sections;
+    uint16_t nsections = icon_env->nsections;
+    uint32_t hdr_size = icon_env->hdr_size;
 
-static int parseicon(icon_groupset *set, uint32_t rva, cli_ctx *ctx, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size) {
     struct {
 	unsigned int sz;
 	unsigned int w;
@@ -1298,19 +1321,22 @@ static int parseicon(icon_groupset *set, uint32_t rva, cli_ctx *ctx, struct cli_
 
     /* read the bitmap header */
     if(err || !(rawimage = fmap_need_off_once(map, icoff, 4))) {
-	cli_dbgmsg("parseicon: offset to icon is out of file\n");
+        icon_env->err_oof++;
+	//cli_dbgmsg("parseicon: offset to icon is out of file\n");
 	return CL_SUCCESS;
     }
 
     rva = cli_readint32(rawimage);
     icoff = cli_rawaddr(rva, exe_sections, nsections, &err, map->len, hdr_size);
     if(err || fmap_readn(map, &bmphdr, icoff, sizeof(bmphdr)) != sizeof(bmphdr)) {
-	cli_dbgmsg("parseicon: bmp header is out of file\n");
+        icon_env->err_bhoof++;
+	//cli_dbgmsg("parseicon: bmp header is out of file\n");
 	return CL_SUCCESS;
     }
 
     if(READ32(bmphdr.sz) < sizeof(bmphdr)) {
-	cli_dbgmsg("parseicon: BMP header too small\n");
+        icon_env->err_bhts++;
+	//cli_dbgmsg("parseicon: BMP header too small\n");
 	return CL_SUCCESS;
     }
 
