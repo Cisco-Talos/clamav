@@ -543,7 +543,7 @@ char *get_ip(const char *ip)
 
     p1 = dupip;
     i=0;
-    while (p1 = strchr(p1, ':')) {
+    while ((p1 = strchr(p1, ':'))) {
         i++;
         p1++;
     }
@@ -572,7 +572,7 @@ char *get_port(const char *ip)
     if (ip[0] == '[')
         offset += 2;
 
-    p = ip + strlen(dupip) + offset;
+    p = (char *)ip + strlen(dupip) + offset;
     if (*p == ':') {
         p = strdup(p+1);
         free(dupip);
