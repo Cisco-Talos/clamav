@@ -21,6 +21,6 @@
 #ifndef _OPENIOC_H_ 
 #define _OPENIOC_H_ 
 
-int openioc_parse(const char * fname, int fd, struct cl_engine *engine);
+int openioc_parse(const char * fname, int fd, struct cl_engine *engine, unsigned int options);
 
 #endif
