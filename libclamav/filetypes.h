@@ -89,6 +89,7 @@ typedef enum {
     CL_TYPE_PART_HFSPLUS,
 
     /* bigger numbers have higher priority (in o-t-f detection) */
+    CL_TYPE_MBR,
     CL_TYPE_HTML, /* on the fly */
     CL_TYPE_MAIL,  /* magic + on the fly */
     CL_TYPE_SFX, /* foo SFX marker */
@@ -102,7 +103,6 @@ typedef enum {
     CL_TYPE_ISHIELD_MSI,
     CL_TYPE_ISO9660,
     CL_TYPE_DMG,
-    CL_TYPE_MBR,
     CL_TYPE_GPT,
     CL_TYPE_APM,
     CL_TYPE_IGNORED /* please don't add anything below */

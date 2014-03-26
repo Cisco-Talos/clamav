@@ -2509,8 +2509,9 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
     }
 
     perf_start(ctx, PERFT_FT);
-    if((type == CL_TYPE_ANY) || type == CL_TYPE_PART_ANY)
+    if((type == CL_TYPE_ANY) || type == CL_TYPE_PART_ANY) {
 	type = cli_filetype2(*ctx->fmap, ctx->engine, type);
+    }
     perf_stop(ctx, PERFT_FT);
     if(type == CL_TYPE_ERROR) {
 	cli_dbgmsg("cli_magic_scandesc: cli_filetype2 returned CL_TYPE_ERROR\n");
@@ -2627,19 +2628,12 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 		ret = cli_scanxz(ctx);
 	    break;
 
-	case CL_TYPE_MBR:
-	    //if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_MBR))
-	    ret = cli_scanmbr(ctx, 0);
-	    break;
-
 	case CL_TYPE_GPT:
-	    //if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_GPT))
 	    ret = cli_scangpt(ctx, 0);
 	    break;
 
 	case CL_TYPE_APM:
-	    //if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_APM))
-		ret = cli_scanapm(ctx);
+	    ret = cli_scanapm(ctx);
 	    break;
 
 	case CL_TYPE_ARJ:
