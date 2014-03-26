@@ -11,7 +11,7 @@ clamdtop_SOURCES = \
     clamdtop.c
 
 AM_CFLAGS=@WERR_CFLAGS@
-AM_CPPFLAGS = -I$(top_srcdir) @CURSES_CPPFLAGS@
+AM_CPPFLAGS = -I$(top_srcdir) @CURSES_CPPFLAGS@ @SSL_CPPFLAGS@
 clamdtop_LDADD = @CURSES_LIBS@ $(top_builddir)/libclamav/libclamav_internal_utils_nothreads.la
 endif
 DEFS = @DEFS@ -DCL_NOTHREADS -DCL_NOLIBCLAMAV

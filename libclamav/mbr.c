@@ -128,6 +128,9 @@ int cli_mbr_check2(cli_ctx *ctx, size_t sectorsize) {
         return CL_EFORMAT;
     }
 
+    /* convert the little endian to host, include the internal  */
+    mbr_convert_to_host(&mbr);
+
     if ((mbr.entries[0].type == MBR_PROTECTIVE) || (mbr.entries[0].type == MBR_HYBRID))
         return CL_TYPE_GPT;
 
@@ -380,8 +383,8 @@ static int mbr_scanextprtn(cli_ctx *ctx, unsigned *prtncount, off_t extlba, size
 
                     partoff = (extlba + logiclba + ebr.entries[j].firstLBA) * sectorsize;
                     partsize = ebr.entries[j].numLBA * sectorsize;
-                    if (extoff + partsize > extsize) {
-                        cli_dbgmsg("cli_scanmbr: Invalid partition entry\n");
+                    if (partoff + partsize > extoff + extsize) {
+                        cli_dbgmsg("cli_scanebr: Invalid extended partition entry\n");
                         return CL_EFORMAT;
                     }
 
