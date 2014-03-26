@@ -11,6 +11,7 @@
 
 #include "libclamav/clamav.h"
 #include "libclamav/others.h"
+#include "shared/getopt.h"
 
 #define OPTS "e:p:n:N:H:h?"
 
