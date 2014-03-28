@@ -1638,8 +1638,6 @@ static int parseicon(struct ICON_ENV *icon_env, uint32_t rva) {
 
 	if(confidence >= positivematch) {
 	    cli_dbgmsg("confidence: %u\n", confidence);
-
-	    cli_append_virus(ctx,matcher->icons[enginesize][x].name);
 	    return CL_VIRUS;
 	}
     }

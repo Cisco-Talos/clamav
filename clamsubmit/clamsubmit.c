@@ -11,9 +11,10 @@
 
 #include "libclamav/clamav.h"
 #include "libclamav/others.h"
+#include "shared/misc.h"
 #include "shared/getopt.h"
 
-#define OPTS "e:p:n:N:H:h?"
+#define OPTS "e:p:n:N:H:h?v"
 
 char *read_stream(void);
 
@@ -26,7 +27,14 @@ void usage(char *name)
     fprintf(stderr, "    -n [FILE]\tSubmit a false negative (FN)\n");
     fprintf(stderr, "    -N [NAME]\tYour name (required)\n");
     fprintf(stderr, "    -p [FILE]\tSubmit a fase positive (FP)\n");
+    fprintf(stderr, "    -v\t\tShow version number and exit\n");
     fprintf(stderr, "You must specify -n or -p. Both are mutually exclusive. Pass in - as the filename for stdin.\n");
+    exit(0);
+}
+
+void version(void)
+{
+    print_version(NULL);
     exit(0);
 }
 
@@ -52,6 +60,8 @@ int main(int argc, char *argv[])
 
     while ((ch = my_getopt(argc, argv, OPTS)) > 0) {
         switch (ch) {
+            case 'v':
+                version();
             case 'e':
                 email = optarg;
                 break;
