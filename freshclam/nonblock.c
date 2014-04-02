@@ -240,7 +240,7 @@ nonblock_recv (int sock, void *buf, size_t len, int flags, int secs)
         {
             recvd = recv(sock, buf, len, flags);
             if (recvd < 0) {
-                if (errno == EAGAIN)
+                if (errno == EINTR)
                     continue;
 
                 return -1;
