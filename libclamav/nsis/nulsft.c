@@ -106,7 +106,6 @@ static int nsis_init(struct nsis_st *n) {
     nsis_inflateInit(&n->z);
     n->freecomp=0;
   }
-  n->opened = 0;
   return CL_SUCCESS;
 }
 
@@ -208,6 +207,7 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx) {
     snprintf(n->ofn, 1023, "%s"PATHSEP"headers", n->dir);
 
   n->fno++;
+  n->opened = 0;
 
   if (!n->solid) {
     if (fmap_readn(n->map, &size, n->curpos, 4)!=4) {
