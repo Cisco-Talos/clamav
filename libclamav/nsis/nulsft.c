@@ -59,6 +59,7 @@ enum {
 struct nsis_st {
   size_t curpos;
   int ofd;
+  int opened;
   off_t off;
   off_t fullsz;
   char *dir;
@@ -105,6 +106,7 @@ static int nsis_init(struct nsis_st *n) {
     nsis_inflateInit(&n->z);
     n->freecomp=0;
   }
+  n->opened = 0;
   return CL_SUCCESS;
 }
 
@@ -189,7 +191,7 @@ static int nsis_decomp(struct nsis_st *n) {
 static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx) {
   const unsigned char *ibuf;
   uint32_t size, loops;
-  int ret, gotsome=0;
+  int ret, gotsome=0, opened=0;
   unsigned char obuf[BUFSIZ];
 
   if (n->eof) {
@@ -207,21 +209,14 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx) {
 
   n->fno++;
 
-  if ((n->ofd=open(n->ofn, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, 0600))==-1) {
-    cli_errmsg("NSIS: unable to create output file %s - aborting.", n->ofn);
-    return CL_ECREAT;
-  }
-
   if (!n->solid) {
     if (fmap_readn(n->map, &size, n->curpos, 4)!=4) {
       cli_dbgmsg("NSIS: reached EOF - extraction complete\n");
-      close(n->ofd);
       return CL_BREAK;
     }
     n->curpos += 4;
     if (n->asz==4) {
       cli_dbgmsg("NSIS: reached CRC - extraction complete\n");
-      close(n->ofd);
       return CL_BREAK;
     }
     loops = EC32(size);
@@ -231,24 +226,27 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx) {
     }
     if (n->asz <4 || size > n->asz-4) {
       cli_dbgmsg("NSIS: next file is outside the archive\n");
-      close(n->ofd);
       return CL_BREAK;
     }
 
     n->asz -= size+4;
 
     if ((ret=cli_checklimits("NSIS", ctx, size, 0, 0))!=CL_CLEAN) {
-      close(n->ofd);
       n->curpos += size;
       return ret;
     }
     if (!(ibuf = fmap_need_off_once(n->map, n->curpos, size))) {
       cli_dbgmsg("NSIS: cannot read %u bytes"__AT__"\n", size);
-      close(n->ofd);
       return CL_EREAD;
     }
+  if ((n->ofd=open(n->ofn, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, 0600))==-1) {
+    cli_errmsg("NSIS: unable to create output file %s - aborting.", n->ofn);
+    return CL_ECREAT;
+  }
+  n->opened = 1;
     n->curpos += size;
     if (loops==size) {
+
       if (cli_writen(n->ofd, ibuf, size) != (ssize_t) size) {
 	cli_dbgmsg("NSIS: cannot write output file"__AT__"\n");
 	close(n->ofd);
@@ -321,12 +319,10 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx) {
     if (!n->freeme) {
       if ((ret=nsis_init(n))!=CL_SUCCESS) {
 	cli_dbgmsg("NSIS: decompressor init failed\n");
-	close(n->ofd);
 	return ret;
       }
       if(!(n->freeme = fmap_need_off_once(n->map, n->curpos, n->asz))) {
 	cli_dbgmsg("NSIS: cannot read %u bytes"__AT__"\n", n->asz);
-	close(n->ofd);
 	return CL_EREAD;
       }
       n->nsis.next_in = (void*)n->freeme;
@@ -335,7 +331,6 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx) {
 
     if (n->nsis.avail_in<=4) {
       cli_dbgmsg("NSIS: extraction complete\n");
-      close(n->ofd);
       return CL_BREAK;
     }
     n->nsis.next_out = obuf;
@@ -353,19 +348,28 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx) {
 
     if (ret != CL_SUCCESS) {
       cli_dbgmsg("NSIS: bad stream"__AT__"\n");
-      close(n->ofd);
       return CL_EFORMAT;
     }
 
     size=cli_readint32(obuf);
     if ((ret=cli_checklimits("NSIS", ctx, size, 0, 0))!=CL_CLEAN) {
-      close(n->ofd);
       return ret;
+    }
+
+    if (size == 0) {
+        cli_dbgmsg("NSIS: Empty file found.\n");
+        return CL_SUCCESS;
     }
 
     n->nsis.next_out = obuf;
     n->nsis.avail_out = MIN(BUFSIZ,size);
     loops = 0;
+
+      if ((n->ofd=open(n->ofn, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, 0600))==-1) {
+        cli_errmsg("NSIS: unable to create output file %s - aborting.", n->ofn);
+        return CL_ECREAT;
+      }
+      n->opened = 1;
 
     while (size && (ret=nsis_decomp(n))==CL_SUCCESS) {
       unsigned int wsz;
@@ -514,6 +518,10 @@ int cli_scannulsft(cli_ctx *ctx, off_t offset) {
 
     do {
         ret = cli_nsis_unpack(&nsist, ctx);
+        if (ret == CL_SUCCESS && nsist.opened == 0) {
+            /* Don't scan a non-existent file */
+            continue;
+        }
 	if (ret == CL_SUCCESS) {
 	  cli_dbgmsg("NSIS: Successully extracted file #%u\n", nsist.fno);
 	  if (lseek(nsist.ofd, 0, SEEK_SET) == -1) {
