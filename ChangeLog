@@ -1,3 +1,7 @@
+Mon Mar 31 06:35:00 EDT 2014 (swebb)
+------------------------------------
+ * 0.98.2 branched
+
 Wed Mar 19 09:55:08 EDT 2014 (dar)
 ------------------------------------
  * bb#10757: fix C++11 compatibility issue in LoopInfo.h
