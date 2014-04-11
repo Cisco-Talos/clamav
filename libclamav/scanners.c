@@ -3177,6 +3177,19 @@ static int scan_common(int desc, cl_fmap_t *map, const char **virname, unsigned 
 {
     cli_ctx ctx;
     int rc;
+    STATBUF sb;
+
+    /* We have a limit of around 2.8GB (UINT_MAX - 2). Enforce it here. */
+    if (desc > 0) {
+        if (FSTAT(desc, &sb))
+            return CL_ESTAT;
+
+        if (sb.st_size > (UINT_MAX - 2))
+            return CL_CLEAN;
+    } else {
+        if (map != NULL && map->real_len > (UINT_MAX - 2))
+            return CL_CLEAN;
+    }
 
     memset(&ctx, '\0', sizeof(cli_ctx));
     ctx.engine = engine;
