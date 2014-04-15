@@ -3179,15 +3179,15 @@ static int scan_common(int desc, cl_fmap_t *map, const char **virname, unsigned 
     int rc;
     STATBUF sb;
 
-    /* We have a limit of around 2.8GB (UINT_MAX - 2). Enforce it here. */
-    if (desc > 0) {
+    /* We have a limit of around 2.17GB (INT_MAX - 2). Enforce it here. */
+    if (map != NULL) {
+        if ((size_t)(map->real_len) > (size_t)(INT_MAX - 2))
+            return CL_CLEAN;
+    } else {
         if (FSTAT(desc, &sb))
             return CL_ESTAT;
 
-        if (sb.st_size > (UINT_MAX - 2))
-            return CL_CLEAN;
-    } else {
-        if (map != NULL && map->real_len > (UINT_MAX - 2))
+        if ((size_t)(sb.st_size) > (size_t)(INT_MAX - 2))
             return CL_CLEAN;
     }
 
