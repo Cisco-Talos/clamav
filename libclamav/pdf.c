@@ -72,6 +72,31 @@ static	int	ascii85decode(const char *buf, off_t len, unsigned char *output);
 static	const	char	*pdf_nextlinestart(const char *ptr, size_t len);
 static	const	char	*pdf_nextobject(const char *ptr, size_t len);
 
+/* PDF statistics callbacks */
+struct pdf_struct;
+struct pdf_action;
+
+static void ASCIIHexDecode_cb(struct pdf_struct *, struct pdf_obj *, struct pdf_action *);
+static void ASCII85Decode_cb(struct pdf_struct *, struct pdf_obj *, struct pdf_action *);
+static void EmbeddedFile_cb(struct pdf_struct *, struct pdf_obj *, struct pdf_action *);
+static void FlateDecode_cb(struct pdf_struct *, struct pdf_obj *, struct pdf_action *);
+static void Image_cb(struct pdf_struct *, struct pdf_obj *, struct pdf_action *);
+static void LZWDecode_cb(struct pdf_struct *, struct pdf_obj *, struct pdf_action *);
+static void RunLengthDecode_cb(struct pdf_struct *, struct pdf_obj *, struct pdf_action *);
+static void CCITTFaxDecode_cb(struct pdf_struct *, struct pdf_obj *, struct pdf_action *);
+static void JBIG2Decode_cb(struct pdf_struct *, struct pdf_obj *, struct pdf_action *);
+static void DCTDecode_cb(struct pdf_struct *, struct pdf_obj *, struct pdf_action *);
+static void JPXDecode_cb(struct pdf_struct *, struct pdf_obj *, struct pdf_action *);
+static void Crypt_cb(struct pdf_struct *, struct pdf_obj *, struct pdf_action *);
+static void Standard_cb(struct pdf_struct *, struct pdf_obj *, struct pdf_action *);
+static void Sig_cb(struct pdf_struct *, struct pdf_obj *, struct pdf_action *);
+static void JavaScript_cb(struct pdf_struct *, struct pdf_obj *, struct pdf_action *);
+static void OpenAction_cb(struct pdf_struct *, struct pdf_obj *, struct pdf_action *);
+static void Launch_cb(struct pdf_struct *, struct pdf_obj *, struct pdf_action *);
+static void Page_cb(struct pdf_struct *, struct pdf_obj *, struct pdf_action *);
+static void print_pdf_stats(struct pdf_struct *);
+/* End PDF statistics callbacks */
+
 static int xrefCheck(const char *xref, const char *eof)
 {
     const char *q;
@@ -107,6 +132,31 @@ enum enc_method {
     ENC_AESV3
 };
 
+struct pdf_stats {
+    unsigned long ninvalidobjs;     /* Number of invalid objects */
+    unsigned long njs;              /* Number of javascript objects */
+    unsigned long nflate;           /* Number of flate-encoded objects */
+    unsigned long nactivex;         /* Number of ActiveX objects */
+    unsigned long nflash;           /* Number of flash objects */
+    unsigned long ncolors;          /* Number of colors */
+    unsigned long nasciihexdecode;  /* Number of ASCIIHexDecode-filtered objects */
+    unsigned long nascii85decode;   /* Number of ASCII85Decode-filtered objects */
+    unsigned long nembeddedfile;    /* Number of embedded files */
+    unsigned long nimage;           /* Number of image objects */
+    unsigned long nlzw;             /* Number of LZW-filtered objects */
+    unsigned long nrunlengthdecode; /* Number of RunLengthDecode-filtered objects */
+    unsigned long nfaxdecode;       /* Number of CCITT-filtered objects */
+    unsigned long njbig2decode;     /* Number of JBIG2Decode-filtered objects */
+    unsigned long ndctdecode;       /* Number of DCTDecode-filtered objects */
+    unsigned long njpxdecode;       /* Number of JPXDecode-filtered objects */
+    unsigned long ncrypt;           /* Number of Crypt-filtered objects */
+    unsigned long nstandard;        /* Number of Standard-filtered objects */
+    unsigned long nsigned;          /* Number of Signed objects */
+    unsigned long nopenaction;      /* Number of OpenAction objects */
+    unsigned long nlaunch;          /* Number of Launch objects */
+    unsigned long npage;            /* Number of Page objects */
+};
+
 struct pdf_struct {
     struct pdf_obj *objs;
     unsigned nobjs;
@@ -128,6 +178,7 @@ struct pdf_struct {
     unsigned fileIDlen;
     char *key;
     unsigned keylen;
+    struct pdf_stats stats;
 };
 
 /* define this to be noisy about things that we can't parse properly */
@@ -1282,42 +1333,43 @@ struct pdfname_action {
     enum pdf_objflags set_objflag;/* OBJ_DICT is noop */
     enum objstate from_state;/* STATE_NONE is noop */
     enum objstate to_state;
+    void (*pdf_stats_cb)(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act);
 };
 
 static struct pdfname_action pdfname_actions[] = {
-    {"ASCIIHexDecode", OBJ_FILTER_AH, STATE_FILTER, STATE_FILTER},
-    {"ASCII85Decode", OBJ_FILTER_A85, STATE_FILTER, STATE_FILTER},
-    {"A85", OBJ_FILTER_A85, STATE_FILTER, STATE_FILTER},
-    {"AHx", OBJ_FILTER_AH, STATE_FILTER, STATE_FILTER},
-    {"EmbeddedFile", OBJ_EMBEDDED_FILE, STATE_NONE, STATE_NONE},
-    {"FlateDecode", OBJ_FILTER_FLATE, STATE_FILTER, STATE_FILTER},
-    {"Fl", OBJ_FILTER_FLATE, STATE_FILTER, STATE_FILTER},
-    {"Image", OBJ_IMAGE, STATE_NONE, STATE_NONE},
-    {"LZWDecode", OBJ_FILTER_LZW, STATE_FILTER, STATE_FILTER},
-    {"LZW", OBJ_FILTER_LZW, STATE_FILTER, STATE_FILTER},
-    {"RunLengthDecode", OBJ_FILTER_RL, STATE_FILTER, STATE_FILTER},
-    {"RL", OBJ_FILTER_RL, STATE_FILTER, STATE_FILTER},
-    {"CCITTFaxDecode", OBJ_FILTER_FAX, STATE_FILTER, STATE_FILTER},
-    {"CCF", OBJ_FILTER_FAX, STATE_FILTER, STATE_FILTER},
-    {"JBIG2Decode", OBJ_FILTER_DCT, STATE_FILTER, STATE_FILTER},
-    {"DCTDecode", OBJ_FILTER_DCT, STATE_FILTER, STATE_FILTER},
-    {"DCT", OBJ_FILTER_DCT, STATE_FILTER, STATE_FILTER},
-    {"JPXDecode", OBJ_FILTER_JPX, STATE_FILTER, STATE_FILTER},
-    {"Crypt",  OBJ_FILTER_CRYPT, STATE_FILTER, STATE_NONE},
-    {"Standard", OBJ_FILTER_STANDARD, STATE_FILTER, STATE_FILTER},
-    {"Sig",    OBJ_SIGNED, STATE_ANY, STATE_NONE},
-    {"V",     OBJ_SIGNED, STATE_ANY, STATE_NONE},
-    {"R",     OBJ_SIGNED, STATE_ANY, STATE_NONE},
-    {"Linearized", OBJ_DICT, STATE_NONE, STATE_LINEARIZED},
-    {"Filter", OBJ_HASFILTERS, STATE_ANY, STATE_FILTER},
-    {"JavaScript", OBJ_JAVASCRIPT, STATE_S, STATE_JAVASCRIPT},
-    {"Length", OBJ_DICT, STATE_FILTER, STATE_NONE},
-    {"S", OBJ_DICT, STATE_NONE, STATE_S},
-    {"Type", OBJ_DICT, STATE_NONE, STATE_NONE},
-    {"OpenAction", OBJ_OPENACTION, STATE_ANY, STATE_OPENACTION},
-    {"Launch", OBJ_LAUNCHACTION, STATE_ANY, STATE_LAUNCHACTION},
-    {"Page", OBJ_PAGE, STATE_NONE, STATE_NONE},
-    {"Contents", OBJ_CONTENTS, STATE_NONE, STATE_CONTENTS}
+    {"ASCIIHexDecode", OBJ_FILTER_AH, STATE_FILTER, STATE_FILTER, ASCIIHexDecode_cb},
+    {"ASCII85Decode", OBJ_FILTER_A85, STATE_FILTER, STATE_FILTER, ASCII85Decode_cb},
+    {"A85", OBJ_FILTER_A85, STATE_FILTER, STATE_FILTER, ASCII85Decode_cb},
+    {"AHx", OBJ_FILTER_AH, STATE_FILTER, STATE_FILTER, ASCIIHexDecode_cb},
+    {"EmbeddedFile", OBJ_EMBEDDED_FILE, STATE_NONE, STATE_NONE, EmbeddedFile_cb},
+    {"FlateDecode", OBJ_FILTER_FLATE, STATE_FILTER, STATE_FILTER, FlateDecode_cb},
+    {"Fl", OBJ_FILTER_FLATE, STATE_FILTER, STATE_FILTER, FlateDecode_cb},
+    {"Image", OBJ_IMAGE, STATE_NONE, STATE_NONE, Image_cb},
+    {"LZWDecode", OBJ_FILTER_LZW, STATE_FILTER, STATE_FILTER, LZWDecode_cb},
+    {"LZW", OBJ_FILTER_LZW, STATE_FILTER, STATE_FILTER, LZWDecode_cb},
+    {"RunLengthDecode", OBJ_FILTER_RL, STATE_FILTER, STATE_FILTER, RunLengthDecode_cb},
+    {"RL", OBJ_FILTER_RL, STATE_FILTER, STATE_FILTER, RunLengthDecode_cb},
+    {"CCITTFaxDecode", OBJ_FILTER_FAX, STATE_FILTER, STATE_FILTER, CCITTFaxDecode_cb},
+    {"CCF", OBJ_FILTER_FAX, STATE_FILTER, STATE_FILTER, CCITTFaxDecode_cb},
+    {"JBIG2Decode", OBJ_FILTER_DCT, STATE_FILTER, STATE_FILTER, JBIG2Decode_cb},
+    {"DCTDecode", OBJ_FILTER_DCT, STATE_FILTER, STATE_FILTER, DCTDecode_cb},
+    {"DCT", OBJ_FILTER_DCT, STATE_FILTER, STATE_FILTER, DCTDecode_cb},
+    {"JPXDecode", OBJ_FILTER_JPX, STATE_FILTER, STATE_FILTER, JPXDecode_cb},
+    {"Crypt",  OBJ_FILTER_CRYPT, STATE_FILTER, STATE_NONE, Crypt_cb},
+    {"Standard", OBJ_FILTER_STANDARD, STATE_FILTER, STATE_FILTER, Standard_cb},
+    {"Sig",    OBJ_SIGNED, STATE_ANY, STATE_NONE, Sig_cb},
+    {"V",     OBJ_SIGNED, STATE_ANY, STATE_NONE, NULL},
+    {"R",     OBJ_SIGNED, STATE_ANY, STATE_NONE, NULL},
+    {"Linearized", OBJ_DICT, STATE_NONE, STATE_LINEARIZED, NULL},
+    {"Filter", OBJ_HASFILTERS, STATE_ANY, STATE_FILTER, NULL},
+    {"JavaScript", OBJ_JAVASCRIPT, STATE_S, STATE_JAVASCRIPT, JavaScript_cb},
+    {"Length", OBJ_DICT, STATE_FILTER, STATE_NONE, NULL},
+    {"S", OBJ_DICT, STATE_NONE, STATE_S, NULL},
+    {"Type", OBJ_DICT, STATE_NONE, STATE_NONE, NULL},
+    {"OpenAction", OBJ_OPENACTION, STATE_ANY, STATE_OPENACTION, OpenAction_cb},
+    {"Launch", OBJ_LAUNCHACTION, STATE_ANY, STATE_LAUNCHACTION, Launch_cb},
+    {"Page", OBJ_PAGE, STATE_NONE, STATE_NONE, Page_cb},
+    {"Contents", OBJ_CONTENTS, STATE_NONE, STATE_CONTENTS, NULL}
 };
 
 #define KNOWN_FILTERS ((1 << OBJ_FILTER_AH) | (1 << OBJ_FILTER_RL) | (1 << OBJ_FILTER_A85) | (1 << OBJ_FILTER_FLATE) | (1 << OBJ_FILTER_LZW) | (1 << OBJ_FILTER_FAX) | (1 << OBJ_FILTER_DCT) | (1 << OBJ_FILTER_JPX) | (1 << OBJ_FILTER_CRYPT))
@@ -1344,6 +1396,9 @@ static void handle_pdfname(struct pdf_struct *pdf, struct pdf_obj *obj, const ch
 
         return;
     }
+
+    if ((act->pdf_stats_cb))
+        act->pdf_stats_cb(pdf, obj, act);
 
     if (escapes) {
         /* if a commonly used PDF name is escaped that is certainly
@@ -2475,6 +2530,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
                 /* Don't halt on one bad object */
                 cli_dbgmsg("cli_pdf: bad format object, skipping to next\n");
                 badobjects++;
+                pdf.stats.ninvalidobjs++;
                 rc = CL_CLEAN;
                 break;
             case CL_VIRUS:
@@ -2530,6 +2586,8 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     else if (!rc && badobjects) {
         rc = CL_EFORMAT;
     }
+
+    print_pdf_stats(&pdf);
 
     cli_dbgmsg("cli_pdf: returning %d\n", rc);
     free(pdf.objs);
@@ -2717,4 +2775,179 @@ pdf_nextobject(const char *ptr, size_t len)
     }
 
     return NULL;
+}
+
+/* PDF statistics */
+static void ASCIIHexDecode_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act)
+{
+    if (!(pdf))
+        return;
+
+    pdf->stats.nasciihexdecode++;
+}
+
+static void ASCII85Decode_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act)
+{
+    if (!(pdf))
+        return;
+
+    pdf->stats.nascii85decode++;
+}
+
+static void EmbeddedFile_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act)
+{
+    if (!(pdf))
+        return;
+
+    pdf->stats.nembeddedfile++;
+}
+
+static void FlateDecode_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act)
+{
+    if (!(pdf))
+        return;
+
+    pdf->stats.nflate++;
+}
+
+static void Image_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act)
+{
+    if (!(pdf))
+        return;
+
+    pdf->stats.nimage++;
+}
+
+static void LZWDecode_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act)
+{
+    if (!(pdf))
+        return;
+
+    pdf->stats.nlzw++;
+}
+
+static void RunLengthDecode_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act)
+{
+    if (!(pdf))
+        return;
+
+    pdf->stats.nrunlengthdecode++;
+}
+
+static void CCITTFaxDecode_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act)
+{
+    if (!(pdf))
+        return;
+
+    pdf->stats.nfaxdecode++;
+}
+
+static void JBIG2Decode_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act)
+{
+     if (!(pdf))
+         return;
+
+     pdf->stats.njbig2decode++;
+}
+
+static void DCTDecode_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act)
+{
+    if (!(pdf))
+        return;
+
+    pdf->stats.ndctdecode++;
+}
+
+static void JPXDecode_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act)
+{
+    if (!(pdf))
+        return;
+
+    pdf->stats.njpxdecode++;
+}
+
+static void Crypt_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act)
+{
+    if (!(pdf))
+        return;
+
+    pdf->stats.ncrypt++;
+}
+
+static void Standard_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act)
+{
+    if (!(pdf))
+        return;
+
+    pdf->stats.nstandard++;
+}
+
+static void Sig_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act)
+{
+    if (!(pdf))
+        return;
+
+    pdf->stats.nsigned++;
+}
+
+static void JavaScript_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act)
+{
+    if (!(pdf))
+        return;
+
+    pdf->stats.njs++;
+}
+
+static void OpenAction_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act)
+{
+    if (!(pdf))
+        return;
+
+    pdf->stats.nopenaction++;
+}
+
+static void Launch_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act)
+{
+    if (!(pdf))
+        return;
+
+    pdf->stats.nlaunch++;
+}
+
+static void Page_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act)
+{
+    if (!(pdf))
+        return;
+
+    pdf->stats.npage++;
+}
+
+static void print_pdf_stats(struct pdf_struct *pdf)
+{
+    if (!(pdf))
+        return;
+
+    cli_dbgmsg("Statistics collected from PDF:\n");
+    cli_dbgmsg("    Invalid Objects:\t\t\t\t%lu\n", pdf->stats.ninvalidobjs);
+    cli_dbgmsg("    Number of JavaScript Objects:\t\t%lu\n", pdf->stats.njs);
+    cli_dbgmsg("    Number of Inflate-Encoded Objects:\t\t%lu\n", pdf->stats.nflate);
+    cli_dbgmsg("    Number of ActiveX Objects:\t\t\t%lu\n", pdf->stats.nactivex);
+    cli_dbgmsg("    Number of Flash Objects:\t\t\t%lu\n", pdf->stats.nflash);
+    cli_dbgmsg("    Number of Declared Colors:\t\t\t%lu\n", pdf->stats.ncolors);
+    cli_dbgmsg("    Number of ASCIIHexEncoded Objects:\t\t%lu\n", pdf->stats.nasciihexdecode);
+    cli_dbgmsg("    Number of ASCII85Encoded Objects:\t\t%lu\n", pdf->stats.nascii85decode);
+    cli_dbgmsg("    Number of Embedded Files:\t\t\t%lu\n", pdf->stats.nembeddedfile);
+    cli_dbgmsg("    Number of Image Objects:\t\t\t%lu\n", pdf->stats.nimage);
+    cli_dbgmsg("    Number of LZW-Encoded Objects:\t\t%lu\n", pdf->stats.nlzw);
+    cli_dbgmsg("    Number of RunLengthEncoded Objects:\t%lu\n", pdf->stats.nrunlengthdecode);
+    cli_dbgmsg("    Number of Fax-Encoded Objects:\t\t%lu\n", pdf->stats.nfaxdecode);
+    cli_dbgmsg("    Number of JBIG2-Encoded Objects:\t\t%lu\n", pdf->stats.njbig2decode);
+    cli_dbgmsg("    Number of DCT-Encoded Objects:\t\t%lu\n", pdf->stats.ndctdecode);
+    cli_dbgmsg("    Number of JPX-Encoded Objects:\t\t%lu\n", pdf->stats.njpxdecode);
+    cli_dbgmsg("    Number of Crypt-Encoded Objects:\t\t%lu\n", pdf->stats.ncrypt);
+    cli_dbgmsg("    Number of Standard-Filtered Objects:\t%lu\n", pdf->stats.nstandard);
+    cli_dbgmsg("    Number of Signed Objects:\t\t\t%lu\n", pdf->stats.nsigned);
+    cli_dbgmsg("    Number of Open Actions:\t\t\t%lu\n", pdf->stats.nopenaction);
+    cli_dbgmsg("    Number of Launch Objects:\t\t\t%lu\n", pdf->stats.nlaunch);
+    cli_dbgmsg("    Number of Objects with /Pages:\t\t%lu\n", pdf->stats.npage);
 }
