@@ -16745,11 +16745,13 @@ $as_echo "$LIBJSON_HOME" >&6; }
 fi
 
 
+have_json="no"
+
 if test ! -f "$LIBJSON_HOME/include/json/json.h"
 then
-    as_fn_error $? "libjson not found." "$LINENO" 5
-fi
-
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: json not found." >&5
+$as_echo "$as_me: WARNING: json not found." >&2;}
+else
 JSON_LDFLAGS="-L$LIBJSON_HOME/lib"
 JSON_LIBS="-ljson"
 JSON_CPPFLAGS="-I$LIBJSON_HOME/include"
@@ -16759,8 +16761,6 @@ LDFLAGS="-L$LIBJSON_HOME/lib $JSON_LIBS"
 
 save_CFLAGS="$CFLAGS"
 CFLAGS="$JSON_CPPFLAGS"
-
-have_json="no"
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for json_object_new_object in -ljson" >&5
 $as_echo_n "checking for json_object_new_object in -ljson... " >&6; }
@@ -16807,6 +16807,7 @@ fi
 
 LDFLAGS="$save_LDFLAGS"
 CFLAGS="$save_CFLAGS"
+fi
 
 if test "$have_json" = "yes"; then
 
