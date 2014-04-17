@@ -380,7 +380,7 @@ clamscan_SOURCES = \
     manager.h
 
 AM_CFLAGS = @WERR_CFLAGS@
-AM_CPPFLAGS = @SSL_CPPFLAGS@ -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @CLAMSCAN_CPPFLAGS@
+AM_CPPFLAGS = @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @CLAMSCAN_CPPFLAGS@
 CLEANFILES = *.gcda *.gcno
 all: all-am
 
