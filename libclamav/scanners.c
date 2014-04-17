@@ -1,4 +1,5 @@
 /*
+ *  Copyright (C) 2014 Cisco Systems, Inc.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -2518,6 +2519,30 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 	early_ret_from_magicscan(CL_EREAD);
     }
     filetype = cli_ftname(type);
+
+#ifdef HAVE_JSON
+    if (SCAN_PROPERTIES && NULL==ctx->properties) {
+        json_object *ftobj, *fsobj;
+        ctx->properties = json_object_new_object();
+        if (NULL == ctx->properties) {
+            cli_errmsg("magic_scandesc: no memory for json properties object\n");
+            early_ret_from_magicscan(CL_EMEM);       
+        }
+        ftobj = json_object_new_string(filetype);
+        if (NULL == ftobj) {
+            cli_errmsg("magic_scandesc: no memory for json file type object.\n");
+            early_ret_from_magicscan(CL_EMEM);       
+        }
+        json_object_object_add(ctx->properties, "FileType", ftobj);
+        fsobj = json_object_new_int((*ctx->fmap)->len);
+        if (NULL == fsobj) {
+            cli_errmsg("magic_scandesc: no memory for json file size object.\n");
+            early_ret_from_magicscan(CL_EMEM);       
+        }
+        json_object_object_add(ctx->properties, "FileSize", fsobj);
+    }
+#endif
+
     hashed_size = 0;
     CALL_PRESCAN_CB(cb_pre_cache);
 
@@ -3196,8 +3221,8 @@ static int scan_common(int desc, cl_fmap_t *map, const char **virname, unsigned 
     ctx.virname = virname;
     ctx.scanned = scanned;
     ctx.options = scanoptions;
-#if 0 /* for development testing only */
-    ctx.options |= CL_SCAN_ALLMATCHES;
+#if 1 /* for development testing only */
+    ctx.options |= CL_SCAN_FILE_PROPERTIES;
 #endif
     ctx.found_possibly_unwanted = 0;
     ctx.container_type = CL_TYPE_ANY;
@@ -3237,6 +3262,20 @@ static int scan_common(int desc, cl_fmap_t *map, const char **virname, unsigned 
 	if (rc == CL_CLEAN && ctx.num_viruses)
 	    rc = CL_VIRUS;
     }
+
+#ifdef HAVE_JSON
+    if (ctx.options & CL_SCAN_FILE_PROPERTIES && ctx.properties!=NULL) {
+        // serialize, etc.
+        const char * jstring = json_object_to_json_string(ctx.properties);
+        if (NULL == jstring) {
+            cli_errmsg("scan_common: no memory for json serialization.\n");
+        }
+        else {
+            cli_errmsg("%s\n", jstring);
+        }
+        json_object_put(ctx.properties); // frees
+    }
+#endif
 
     cli_bitset_free(ctx.hook_lsig_matches);
     free(ctx.fmap);

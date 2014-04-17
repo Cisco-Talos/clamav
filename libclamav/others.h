@@ -1,4 +1,5 @@
 /*
+ *  Copyright (C) 2014 Cisco Systems, Inc.
  *  Copyright (C) 2007-2010 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -49,6 +50,9 @@
 #include "bytecode_api.h"
 #include "events.h"
 #include "crtmgr.h"
+#ifdef HAVE_JSON
+#include "json/json_object.h"
+#endif
 
 /*
  * CL_FLEVEL is the signature f-level specific to the current code and
@@ -139,6 +143,9 @@ typedef struct cli_ctx_tag {
 #ifdef HAVE__INTERNAL__SHA_COLLECT
     char entry_filename[2048];
     int sha_collect;
+#endif
+#ifdef HAVE_JSON
+    struct json_object *properties;
 #endif
 } cli_ctx;
 
@@ -414,6 +421,7 @@ extern int have_rar;
 #define SCAN_STRUCTURED	    (ctx->options & CL_SCAN_STRUCTURED)
 #define SCAN_ALL            (ctx->options & CL_SCAN_ALLMATCHES)
 #define SCAN_SWF            (ctx->options & CL_SCAN_SWF)
+#define SCAN_PROPERTIES     (ctx->options & CL_SCAN_FILE_PROPERTIES)
 
 /* based on macros from A. Melnikoff */
 #define cbswap16(v) (((v & 0xff) << 8) | (((v) >> 8) & 0xff))

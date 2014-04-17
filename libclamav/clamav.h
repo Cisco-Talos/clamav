@@ -1,4 +1,5 @@
 /*
+ *  Copyright (C) 2014 Cisco Systems, Inc.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -151,7 +152,8 @@ typedef enum {
 #define CL_SCAN_ALLMATCHES		0x200000
 #define CL_SCAN_SWF			0x400000
 #define CL_SCAN_PARTITION_INTXN         0x800000
-
+#define CL_SCAN_FILE_PROPERTIES        0x10000000
+//#define UNUSED                        0x20000000
 #define CL_SCAN_PERFORMANCE_INFO        0x40000000 /* collect performance timings */
 #define CL_SCAN_INTERNAL_COLLECT_SHA    0x80000000 /* Enables hash output in sha-collect builds - for internal use only */
 
