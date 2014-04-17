@@ -51,7 +51,7 @@
 #include "events.h"
 #include "crtmgr.h"
 #ifdef HAVE_JSON
-#include "json/json_object.h"
+#include "json/json.h"
 #endif
 
 /*
