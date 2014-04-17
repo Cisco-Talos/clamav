@@ -707,9 +707,9 @@ libclamav_internal_utils_la_SOURCES = str.c\
 				    regex/regex2.h \
 				    regex/utils.h
 
-libclamav_internal_utils_la_LDFLAGS = -static @SSL_LDFLAGS@
-libclamav_internal_utils_la_CFLAGS = $(AM_CFLAGS)  -fPIC -DPIC @SSL_CPPFLAGS@
-libclamav_internal_utils_la_LIBADD = @SSL_LIBS@
+libclamav_internal_utils_la_LDFLAGS = -static @SSL_LDFLAGS@ @JSON_LDFLAGS@
+libclamav_internal_utils_la_CFLAGS = $(AM_CFLAGS)  -fPIC -DPIC @SSL_CPPFLAGS@ @JSON_CPPFLAGS@
+libclamav_internal_utils_la_LIBADD = @SSL_LIBS@ @JSON_LIBS@
 libclamav_internal_utils_nothreads_la_SOURCES = str.c\
 					conv.c \
 					conv.h \
@@ -733,9 +733,9 @@ libclamav_internal_utils_nothreads_la_SOURCES = str.c\
 				    regex/regex2.h \
 				    regex/utils.h
 
-libclamav_internal_utils_nothreads_la_LDFLAGS = -static @SSL_LDFLAGS@
-libclamav_internal_utils_nothreads_la_CFLAGS = $(AM_CFLAGS) -DCL_NOTHREADS @SSL_CPPFLAGS@
-libclamav_internal_utils_nothreads_la_LIBADD = @SSL_LIBS@
+libclamav_internal_utils_nothreads_la_LDFLAGS = -static @SSL_LDFLAGS@ @JSON_LDFLAGS@
+libclamav_internal_utils_nothreads_la_CFLAGS = $(AM_CFLAGS) -DCL_NOTHREADS @SSL_CPPFLAGS@ @JSON_CPPFLAGS@
+libclamav_internal_utils_nothreads_la_LIBADD = @SSL_LIBS@ @JSON_LIBS@
 @ENABLE_LLVM_FALSE@LLVMLIBADD = libclamav_nocxx.la
 @ENABLE_LLVM_TRUE@LLVMLIBADD = c++/libclamavcxx.la -lstdc++ -lm
 @ENABLE_LLVM_FALSE@LLVMDEP = libclamav_nocxx.la
