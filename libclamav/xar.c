@@ -638,6 +638,7 @@ int cli_scanxar(cli_ctx *ctx)
                 unsigned long in_remaining = length;
                 unsigned long out_size = 0;
                 unsigned char * buff = __lzma_wrap_alloc(NULL, CLI_LZMA_OBUF_SIZE);
+                int lret;
                 
                 memset(&lz, 0, sizeof(lz));
                 if (buff == NULL) {
@@ -663,9 +664,9 @@ int cli_scanxar(cli_ctx *ctx)
 
                 xar_hash_update(a_hash_ctx, blockp, CLI_LZMA_HDR_SIZE, a_hash);
 
-                rc = cli_LzmaInit(&lz, 0);
-                if (rc != LZMA_RESULT_OK) {
-                    cli_dbgmsg("cli_scanxar: cli_LzmaInit() fails: %i.\n", rc);
+                lret = cli_LzmaInit(&lz, 0);
+                if (lret != LZMA_RESULT_OK) {
+                    cli_dbgmsg("cli_scanxar: cli_LzmaInit() fails: %i.\n", lret);
                     rc = CL_EFORMAT;
                     __lzma_wrap_free(NULL, buff);
                     extract_errors++;
@@ -695,9 +696,9 @@ int cli_scanxar(cli_ctx *ctx)
                         goto exit_tmpfile;
                     }
 
-                    rc = cli_LzmaDecode(&lz);
-                    if (rc != LZMA_RESULT_OK && rc != LZMA_STREAM_END) {
-                        cli_dbgmsg("cli_scanxar: cli_LzmaDecode() fails: %i.\n", rc);
+                    lret = cli_LzmaDecode(&lz);
+                    if (lret != LZMA_RESULT_OK && lret != LZMA_STREAM_END) {
+                        cli_dbgmsg("cli_scanxar: cli_LzmaDecode() fails: %i.\n", lret);
                         rc = CL_EFORMAT;
                         extract_errors++;
                         break;
@@ -735,7 +736,7 @@ int cli_scanxar(cli_ctx *ctx)
                         break;
                     }
 
-                    if (rc == LZMA_STREAM_END)
+                    if (lret == LZMA_STREAM_END)
                         break;
                 }
 
