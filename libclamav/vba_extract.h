@@ -46,4 +46,6 @@ char	*cli_ppt_vba_read(int fd, cli_ctx *ctx);
 unsigned char	*cli_wm_decrypt_macro(int fd, off_t offset, uint32_t len,
 					unsigned char key);
 
+int	cli_vba_summary_json(cli_ctx *ctx, int fd, int mode);
+
 #endif

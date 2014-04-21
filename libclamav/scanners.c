@@ -1102,6 +1102,34 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
     if(ret != CL_CLEAN && !(ret == CL_VIRUS && SCAN_ALL))
     	return ret;
 
+    /* JSON Output Summary Information */
+    hashcnt = uniq_get(U, "_5_summaryinformation", 21, &hash);
+    while(hashcnt--) {
+	snprintf(vbaname, sizeof(vbaname), "%s"PATHSEP"%s_%u", dirname, hash, hashcnt);
+	vbaname[sizeof(vbaname)-1] = '\0';
+
+	fd = open(vbaname, O_RDONLY|O_BINARY);
+	if (fd >= 0) {
+            cli_dbgmsg("VBADir: detected a '_5_summaryinformation' stream\n");
+            cli_vba_summary_json(ctx, fd, 0);
+            close(fd);
+	}
+    }
+
+    hashcnt = uniq_get(U, "_5_documentsummaryinformation", 29, &hash);
+    while(hashcnt--) {
+        snprintf(vbaname, sizeof(vbaname), "%s"PATHSEP"%s_%u", dirname, hash, hashcnt);
+        vbaname[sizeof(vbaname)-1] = '\0';
+
+        fd = open(vbaname, O_RDONLY|O_BINARY);
+        if (fd >= 0) {
+            cli_dbgmsg("VBADir: detected a '_5_documentsummaryinformation' stream\n");
+            cli_vba_summary_json(ctx, fd, 1);
+            close(fd);
+        }
+    }
+    
+
     /* Check directory for embedded OLE objects */
     hashcnt = uniq_get(U, "_1_ole10native", 14, &hash);
     while(hashcnt--) {
