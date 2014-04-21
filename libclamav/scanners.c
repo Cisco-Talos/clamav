@@ -1111,7 +1111,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 	fd = open(vbaname, O_RDONLY|O_BINARY);
 	if (fd >= 0) {
             cli_dbgmsg("VBADir: detected a '_5_summaryinformation' stream\n");
-            cli_vba_summary_json(ctx, fd, 0);
+            cli_ole2_summary_json(ctx, fd, 0);
             close(fd);
 	}
     }
@@ -1124,7 +1124,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
         fd = open(vbaname, O_RDONLY|O_BINARY);
         if (fd >= 0) {
             cli_dbgmsg("VBADir: detected a '_5_documentsummaryinformation' stream\n");
-            cli_vba_summary_json(ctx, fd, 1);
+            cli_ole2_summary_json(ctx, fd, 1);
             close(fd);
         }
     }
