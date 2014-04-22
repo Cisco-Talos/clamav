@@ -34,13 +34,19 @@
 #ifdef HAVE_JSON
 int cli_jsonnull(json_object *obj, const char* key)
 {
-    json_object *fpobj = json_object_new_object();
+    json_object *fpobj;
     if (NULL == obj) {
-        cli_errmsg("json: no parent object specified to cli_jsonnull\n");
+        cli_errmsg("json: null 'obj' specified to cli_jsonnull\n");
         return CL_ENULLARG;
     }
+    if (NULL == key) {
+        cli_errmsg("json: null string specified as key to cli_jsonnull\n");
+        return CL_ENULLARG;
+    }
+
+    fpobj = json_object_new_object();
     if (NULL == fpobj) {
-        cli_errmsg("json: no memory for json string object.\n");
+        cli_errmsg("json: no memory for json string object\n");
         return CL_EMEM;
     }
     json_object_object_add(obj, key, fpobj);
@@ -49,28 +55,44 @@ int cli_jsonnull(json_object *obj, const char* key)
 
 int cli_jsonstr(json_object *obj, const char* key, const char* s)
 {
-    json_object *fpobj = json_object_new_string(s);
+    json_object *fpobj;
     if (NULL == obj) {
-        cli_errmsg("json: no parent object specified to cli_jsonstr\n");
+        cli_errmsg("json: null 'obj' specified to cli_jsonstr\n");
         return CL_ENULLARG;
     }
+    if (NULL == key) {
+        cli_errmsg("json: null string specified as 'key' to cli_jsonstr\n");
+        return CL_ENULLARG;
+    }
+    if (NULL == s) {
+        cli_errmsg("json: null string specified as 's' to  cli_jsonstr\n");
+        return CL_ENULLARG;
+    }
+
+    fpobj = json_object_new_string(s);
     if (NULL == fpobj) {
-        cli_errmsg("json: no memory for json string object.\n");
+        cli_errmsg("json: no memory for json string object\n");
         return CL_EMEM;
     }
     json_object_object_add(obj, key, fpobj);
     return CL_SUCCESS;
 }
 
-int cli_jsonint(json_object *obj, const char* key, int32_t val)
+int cli_jsonint(json_object *obj, const char* key, int32_t i)
 {
-    json_object *fpobj = json_object_new_int(val);
+    json_object *fpobj;
     if (NULL == obj) {
         cli_errmsg("json: no parent object specified to cli_jsonint\n");
         return CL_ENULLARG;
     }
+    if (NULL == key) {
+        cli_errmsg("json: null string specified as key to cli_jsonnull\n");
+        return CL_ENULLARG;
+    }
+
+    fpobj = json_object_new_int(i);
     if (NULL == fpobj) {
-        cli_errmsg("json: no memory for json int object.\n");
+        cli_errmsg("json: no memory for json int object\n");
         return CL_EMEM;
     }
     json_object_object_add(obj, key, fpobj);
@@ -80,11 +102,17 @@ int cli_jsonint(json_object *obj, const char* key, int32_t val)
 #ifdef JSON10
 int cli_jsonint64(json_object *obj, const char* key, int64_t i)
 {
-    json_object *fpobj = json_object_new_int64(i);
+    json_object *fpobj;
     if (NULL == obj) {
         cli_errmsg("json: no parent object specified to cli_jsonint64\n");
         return CL_ENULLARG;
     }
+    if (NULL == key) {
+        cli_errmsg("json: null string specified as key to cli_jsonint64\n");
+        return CL_ENULLARG;
+    }
+
+    fpobj = json_object_new_int64(i);
     if (NULL == fpobj) {
         cli_errmsg("json: no memory for json int object.\n");
         return CL_EMEM;
@@ -97,11 +125,17 @@ int cli_jsonint64(json_object *obj, const char* key, int64_t i)
 {
     int32_t li, hi;
     json_object *fpobj0, *fpobj1;
-    json_object *fparr = json_object_new_array();
+    json_object *fparr;
     if (NULL == obj) {
         cli_errmsg("json: no parent object specified to cli_jsonint64\n");
         return CL_ENULLARG;
     }
+    if (NULL == key) {
+        cli_errmsg("json: null string specified as key to cli_jsonint64\n");
+        return CL_ENULLARG;
+    }
+
+    fparr = json_object_new_array();
     if (NULL == fparr) {
         cli_errmsg("json: no memory for json array object.\n");
         return CL_EMEM;
@@ -135,11 +169,17 @@ int cli_jsonint64(json_object *obj, const char* key, int64_t i)
 
 int cli_jsonbool(json_object *obj, const char* key, int i)
 {
-    json_object *fpobj = json_object_new_boolean(i);
+    json_object *fpobj;
     if (NULL == obj) {
         cli_errmsg("json: no parent object specified to cli_jsonbool\n");
         return CL_ENULLARG;
     }
+    if (NULL == key) {
+        cli_errmsg("json: null string specified as key to cli_jsonbool\n");
+        return CL_ENULLARG;
+    }
+
+    fpobj = json_object_new_boolean(i);
     if (NULL == fpobj) {
         cli_errmsg("json: no memory for json boolean object.\n");
         return CL_EMEM;
@@ -150,11 +190,17 @@ int cli_jsonbool(json_object *obj, const char* key, int i)
 
 int cli_jsondouble(json_object *obj, const char* key, double d)
 {
-    json_object *fpobj = json_object_new_double(d);
+    json_object *fpobj;
     if (NULL == obj) {
         cli_errmsg("json: no parent object specified to cli_jsondouble\n");
         return CL_ENULLARG;
     }
+    if (NULL == key) {
+        cli_errmsg("json: null string specified as key to cli_jsondouble\n");
+        return CL_ENULLARG;
+    }
+
+    fpobj = json_object_new_double(d);
     if (NULL == fpobj) {
         cli_errmsg("json: no memory for json double object.\n");
         return CL_EMEM;
