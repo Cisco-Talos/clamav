@@ -44,6 +44,7 @@
 #include "ole2_extract.h"
 #include "scanners.h"
 #include "fmap.h"
+#include "json_api.h"
 
 #ifdef DEBUG_OLE2_LIST
 #define ole2_listmsg(...) cli_dbgmsg( __VA_ARGS__)
@@ -1217,78 +1218,6 @@ abort:
 }
 
 /* Summary and Document Information Parsing to JSON */
-#ifdef HAVE_JSON
-#define cli_jsonnull(o,n)                                               \
-    {                                                                   \
-        json_object *fpobj = json_object_new_string("null");            \
-        if (NULL == fpobj) {                                            \
-            cli_errmsg("json: no memory for json string object.\n");    \
-            return CL_EMEM;                                             \
-        }                                                               \
-        json_object_object_add(o, n, fpobj);                            \
-    }
-
-#define cli_jsonstr(o,n,s)						\
-    {                                                                   \
-        json_object *fpobj = json_object_new_string(s);                 \
-        if (NULL == fpobj) {                                            \
-            cli_errmsg("json: no memory for json string object.\n");    \
-            return CL_EMEM;                                             \
-        }                                                               \
-        json_object_object_add(o, n, fpobj);                            \
-    }
-
-#define cli_jsonint(o,n,i)						\
-    {                                                                   \
-        json_object *fpobj = json_object_new_int(i);                    \
-        if (NULL == fpobj) {                                            \
-            cli_errmsg("json: no memory for json int object.\n");       \
-            return CL_EMEM;                                             \
-        }                                                               \
-        json_object_object_add(o, n, fpobj);                            \
-    }
-/*
-#define cli_jsonint64(o,n,i)						\
-    {                                                                   \
-        json_object *fpobj = json_object_new_int64(i);                  \
-        if (NULL == fpobj) {                                            \
-            cli_errmsg("json: no memory for json int object.\n");       \
-            return CL_EMEM;                                             \
-        }                                                               \
-        json_object_object_add(o, n, fpobj);                            \
-    }
-*/
-#define cli_jsonint64(o,n,i) cli_dbgmsg("%s: %lld [%llx]\n", n, i, i)
-
-#define cli_jsonbool(o,n,b)						\
-    {                                                                   \
-        json_object *fpobj = json_object_new_boolean(b);                \
-        if (NULL == fpobj) {                                            \
-            cli_errmsg("json: no memory for json int object.\n");       \
-            return CL_EMEM;                                             \
-        }                                                               \
-        json_object_object_add(o, n, fpobj);                            \
-    }
-
-#define cli_jsondouble(o,n,d)						\
-    {                                                                   \
-        json_object *fpobj = json_object_new_double(d);                 \
-        if (NULL == fpobj) {                                            \
-            cli_errmsg("json: no memory for json int object.\n");       \
-            return CL_EMEM;                                             \
-        }                                                               \
-        json_object_object_add(o, n, fpobj);                            \
-    }
-
-#else
-#define cli_jsonnull(o,n)     cli_dbgmsg("%s: null\n", n)
-#define cli_jsonstr(o,n,s)    cli_dbgmsg("%s: \"%s\"\n", n, s)
-#define cli_jsonint(o,n,i)    cli_dbgmsg("%s: %d [%x]\n", n, i, i)
-#define cli_jsonint64(o,n,i)  cli_dbgmsg("%s: %lld [%llx]\n", n, i, i)
-#define cli_jsonbool(o,n,b)   cli_dbgmsg("%s: %s\n", n, b ? "true":"false")
-#define cli_jsondouble(o,n,d) cli_dbgmsg("%s: %f\n", n, d)
-#endif
-
 #define WINUNICODE 0x04B0
 #define PROPCNTLIMIT 25
 #define PROPSTRLIMIT 100
@@ -1668,10 +1597,7 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, size_t buflen
     case PT_FILETIME:
 	{
             uint32_t ltime, htime;
-#ifdef HAVE_JSON
-#else
             uint64_t wtime = 0, utime =0;
-#endif
 
             if (offset+sizeof(ltime)+sizeof(htime) > buflen) {
                 return CL_EFORMAT;
@@ -1683,42 +1609,23 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, size_t buflen
             ltime = sum32_endian_convert(ltime);
             htime = sum32_endian_convert(htime);
 
-#ifdef HAVE_JSON
-            /* Raw Output */
-            {
-                json_object *fpobj0, *fpobj1;
-                json_object *fparr = json_object_new_array();
-                if (NULL == fparr) {
-                    cli_errmsg("ole2_process_property: no memory for json array object.\n");
-                    return CL_EMEM;
-                }
-
-                fpobj0 = json_object_new_int(ltime);
-                if (NULL == fpobj0) {
-                    cli_errmsg("ole2_process_property: no memory for json int object.\n");
-                    return CL_EMEM;
-                }
-                fpobj1 = json_object_new_int(htime);
-                if (NULL == fpobj1) {
-                    cli_errmsg("ole2_process_property: no memory for json int object.\n");
-                    return CL_EMEM;
-                }
-
-                json_object_array_add(fparr, fpobj0);
-                json_object_array_add(fparr, fpobj1);
-                json_object_object_add(sctx->summary, sctx->propname, fparr);
-            }
-#else
-            /* human-readable formatting */
+            /* UNIX timestamp formatting */
             wtime = htime;
             wtime <<= 32;
             wtime |= ltime;
 
             utime = wtime / 10000000;
             utime -= 11644473600LL;
-		
-            cli_jsonstr(sctx->summary, sctx->propname, ctime((timer_t*)&utime));
-#endif					       
+
+            if ((uint32_t)((utime & 0xFFFFFFFF00000000) >> 32)) {
+                cli_dbgmsg("ole2_process_property: UNIX timestamp is larger than 32-bit number\n");
+            }
+            else {
+                cli_jsonint(sctx->summary, sctx->propname, (uint32_t)(utime & 0xFFFFFFFF));
+            }
+
+            /* human-readble string JSON output */
+            //cli_jsonstr(sctx->summary, sctx->propname, ctime((timer_t*)&utime));
             break;
 	}
     default:
