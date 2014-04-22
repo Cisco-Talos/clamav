@@ -2,6 +2,9 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
+0.98.2
+------
+
 0.98.1
 ------
 ClamAV 0.98.1 provides improved support of Mac OS X platform, support for new file types, and 
