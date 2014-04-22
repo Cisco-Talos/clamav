@@ -1,31 +1,60 @@
-0.98.1
+0.98.2
 ------
-ClamAV 0.98.1 provides improved support of Mac OS X platform, support for new file types, and 
-quality improvements. These include:
 
-    - Extraction, decompression, and scanning of files within Apple Disk Image (DMG) format.
+Here are the new features and improvements in ClamAV 0.98.2:
 
-    - Extraction, decompression, and scanning of files within Extensible Archive (XAR) format.
-      XAR format is commonly used for software packaging, such as PKG and RPM, as well as 
-      general archival.
+    - Support for common raw disk image formats using 512 byte sectors,
+      specifically GPT, APM, and MBR partitioning.
 
-    - Decompression and scanning of files in "Xz" compression format.
+    - Experimental support of OpenIOC files. ClamAV will now extract file
+      hashes from OpenIOC files residing in the signature database location,
+      and generate ClamAV hash signatures. ClamAV uses no other OpenIOC
+      features at this time. No OpenIOC files will be delivered through
+      freshclam. See openioc.org and iocbucket.com for additional information
+      about OpenIOC.
 
-    - Recognition of Open Office XML formats.
+    - All ClamAV sockets (clamd, freshclam, clamav-milter, clamdscan, clamdtop)
+      now support IPV6 addresses and configuration parameters.
 
-    - Improvements and fixes to extraction and scanning of ole formats.
+    - Use OpenSSL file hash functions for improved performance. OpenSSL 
+      is now prerequisite software for ClamAV 0.98.2.
 
-    - Option to force all scanned data to disk. This impacts only a few file types where
-      some embedded content is normally scanned in memory. Enabling this option
-      ensures that a file descriptor exists when callback functions are used, at a small
-      performance cost. This should only be needed when callback functions are used
-      that need file access.
+    - Improved detection of malware scripts within image files. Issue reported
+      by Maarten Broekman.
 
-    - Various improvements to ClamAV configuration, support of third party libraries, 
-      and unit tests.
+    - Change to circumvent possible denial of service when processing icons within
+      specially crafted PE files. Icon limits are now in place with corresponding
+      clamd and clamscan configuration parameters. This issue was reported by 
+      Joxean Koret.
 
-There are also fixes for other minor issues and code quality changes. Please
-see the ChangeLog file for details.
+    - Improvements to the fidelity of the ClamAV pattern matcher, an issue
+      reported by Christian Blichmann.
+
+    - Opt-in collection of statistics. Statistics collected are: sizes and MD5 
+      hashes of files, PE file section counts and section MD5 hashes, and names
+      and counts of detected viruses. Enable statistics collection with the
+      --enable-stats clamscan flag or StatsEnabled clamd configuration
+      parameter.
+
+    - Improvements to ClamAV build process, unit tests, and platform support with
+      assistance and suggestions by Sebastian Andrzej Siewior, Scott Kitterman,
+      and Dave Simonson.
+
+    - Patch by Arkadiusz Miskiewicz to improve error handling in freshclam.
+
+    - ClamAV 0.98.2 also includes miscellaneous bug fixes and documentation 
+      improvements.
+
+Thanks to the following ClamAV community members for sending patches or reporting
+bugs and issues that are addressed in ClamAV 0.98.2:
+
+Sebastian Andrzej Siewior
+Scott Kitterman
+Joxean Koret
+Arkadiusz Miskiewicz
+Dave Simonson
+Maarten Broekman
+Christian Blichmann 
 
 --
 The ClamAV team (http://www.clamav.net/team)
