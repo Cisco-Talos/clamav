@@ -47,6 +47,9 @@
 #include "mbox.h"
 #endif
 #include "blob.h"
+#ifdef HAVE_JSON
+#include "json/json.h"
+#endif
 
 #define PPT_LZW_BUFFSIZE 8192
 #define VBA_COMPRESSION_WINDOW 4096
