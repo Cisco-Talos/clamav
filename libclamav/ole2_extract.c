@@ -1012,6 +1012,7 @@ handler_otf(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * c
         cli_dbgmsg("OLE2: detected a '_5_documentsummaryinformation' stream\n");
         cli_ole2_summary_json(ctx, ofd, 1);
     }
+    free(name);
 
     /* Normal File Scan */
     ret = cli_magic_scandesc(ofd, ctx);
