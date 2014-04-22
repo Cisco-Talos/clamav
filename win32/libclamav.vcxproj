@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -341,6 +341,7 @@
     <ClCompile Include="..\libclamav\ishield.c" />
     <ClCompile Include="..\libclamav\is_tar.c" />
     <ClCompile Include="..\libclamav\jsparse\js-norm.c" />
+    <ClCompile Include="..\libclamav\json_api.c" />
     <ClCompile Include="..\libclamav\line.c" />
     <ClCompile Include="..\libclamav\lzma_iface.c" />
     <ClCompile Include="..\libclamav\macho.c" />
