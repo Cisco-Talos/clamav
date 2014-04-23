@@ -26,10 +26,14 @@
 #include "clamav-config.h"
 #endif
 
+#if HAVE_JSON
+#include "json/json.h"
+#endif
+
 #include "cltypes.h"
 #include "others.h"
 
-#ifdef HAVE_JSON
+#if HAVE_JSON
 int cli_jsonnull(json_object *obj, const char* key);
 int cli_jsonstr(json_object *obj, const char* key, const char* s);
 int cli_jsonint(json_object *obj, const char* key, int32_t val);

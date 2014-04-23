@@ -1320,10 +1320,10 @@ typedef struct propset_summary_entry {
 
 typedef struct summary_ctx {
     cli_ctx *ctx;
-#ifdef HAVE_JSON
+#if HAVE_JSON
     json_object *summary;
 #else
-    char *summary;
+    void *summary;
 #endif
 
     uint16_t byte_order;
@@ -1876,7 +1876,7 @@ cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
     unsigned char *databuf;
     size_t maplen;
     int ret = CL_SUCCESS;
-#ifdef HAVE_JSON
+#if HAVE_JSON
     struct json_object *check = NULL;
 #endif
 
@@ -1930,7 +1930,7 @@ cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
     /* summary context setup */
     sctx.byte_order = sumstub.byte_order;
     sctx.version = sumstub.version;
-#ifdef HAVE_JSON
+#if HAVE_JSON
     sctx.summary = json_object_new_object();
     if (!sctx.summary) {
         cli_errmsg("ole2_summary_json: no memory for json object.\n");
@@ -1957,13 +1957,13 @@ cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
         /* TODO - check return and mode */
         if (!mode) {
             ret = ole2_summary_propset_json(&sctx, sumfmap, &pentry[0]);
-#ifdef HAVE_JSON
+#if HAVE_JSON
             json_object_object_add(ctx->wrkproperty, "SummaryInfo", sctx.summary);
 #endif
         }
         else {
             ret = ole2_docsum_propset_json(&sctx, sumfmap, &pentry[0]);
-#ifdef HAVE_JSON
+#if HAVE_JSON
             json_object_object_add(ctx->wrkproperty, "DocSummaryInfo", sctx.summary);
 #endif			
         }
@@ -1984,13 +1984,13 @@ cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
         /* TODO - check return and mode */
         if (!mode) {
             ret = ole2_summary_propset_json(&sctx, sumfmap, &pentry[0]);
-#ifdef HAVE_JSON
+#if HAVE_JSON
             json_object_object_add(ctx->wrkproperty, "SummaryInfo", sctx.summary);
 #endif
         }
         else {
             ret = ole2_docsum_propset_json(&sctx, sumfmap, &pentry[0]);
-#ifdef HAVE_JSON
+#if HAVE_JSON
             json_object_object_add(ctx->wrkproperty, "DocSummaryInfo", sctx.summary);
 #endif
         }
@@ -2000,7 +2000,7 @@ cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
         return CL_EFORMAT;
     }
 
-#ifdef HAVE_JSON
+#if HAVE_JSON
     if (check = json_object_object_get(sctx.summary, "AppName")) {
         const char *nstr = json_object_get_string(check);
 
@@ -2052,24 +2052,6 @@ cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
       fprintf(stderr, "\n");
       cli_dbgmsg("offset1: %u\n", pentry[1].offset);
       }
-
-      json_object* newobj = json_object_new_object();
-      json_object* obj0 = json_object_new_boolean(1);
-      json_object* obj1 = json_object_new_boolean(0);
-      json_object* obj2 = json_object_new_int(-1);
-      //json_object* obj3 = json_object_new_int64(-64);
-      json_object* obj4 = json_object_new_string("hello world!");
-      json_object* obj5 = json_object_new_string_len("hello world!", 5);
-
-      json_object_object_add(newobj, "bool", obj0);
-      json_object_object_add(newobj, "bool", obj1);
-      json_object_object_add(newobj, "int", obj2);
-      //json_object_object_add(newobj, "int64", obj3);
-      json_object_object_add(newobj, "string", obj4);
-      json_object_object_add(newobj, "string_len", obj5);
-
-      json_object_object_add(ctx->wrkproperty, "summary2", newobj);
-
       -----------------*/
 
     funmap(sumfmap);
