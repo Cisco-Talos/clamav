@@ -1322,8 +1322,6 @@ typedef struct summary_ctx {
     cli_ctx *ctx;
 #if HAVE_JSON
     json_object *summary;
-#else
-    void *summary;
 #endif
 
     uint16_t byte_order;
@@ -1936,8 +1934,6 @@ cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
         cli_errmsg("ole2_summary_json: no memory for json object.\n");
         return CL_EMEM;
     }
-#else
-    sctx.summary = NULL;
 #endif
 
     sctx.codepage = 0;
