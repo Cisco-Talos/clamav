@@ -1955,13 +1955,13 @@ cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
         if (!mode) {
             ret = ole2_summary_propset_json(&sctx, sumfmap, &pentry[0]);
 #ifdef HAVE_JSON
-            json_object_object_add(ctx->properties, "SummaryInfo", sctx.summary);
+            json_object_object_add(ctx->wrkproperty, "SummaryInfo", sctx.summary);
 #endif
         }
         else {
             ret = ole2_docsum_propset_json(&sctx, sumfmap, &pentry[0]);
 #ifdef HAVE_JSON
-            json_object_object_add(ctx->properties, "DocSummaryInfo", sctx.summary);
+            json_object_object_add(ctx->wrkproperty, "DocSummaryInfo", sctx.summary);
 #endif			
         }
     }
@@ -1982,13 +1982,13 @@ cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
         if (!mode) {
             ret = ole2_summary_propset_json(&sctx, sumfmap, &pentry[0]);
 #ifdef HAVE_JSON
-            json_object_object_add(ctx->properties, "SummaryInfo", sctx.summary);
+            json_object_object_add(ctx->wrkproperty, "SummaryInfo", sctx.summary);
 #endif
         }
         else {
             ret = ole2_docsum_propset_json(&sctx, sumfmap, &pentry[0]);
 #ifdef HAVE_JSON
-            json_object_object_add(ctx->properties, "DocSummaryInfo", sctx.summary);
+            json_object_object_add(ctx->wrkproperty, "DocSummaryInfo", sctx.summary);
 #endif
         }
     }
@@ -2050,7 +2050,7 @@ cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
       json_object_object_add(newobj, "string", obj4);
       json_object_object_add(newobj, "string_len", obj5);
 
-      json_object_object_add(ctx->properties, "summary2", newobj);
+      json_object_object_add(ctx->wrkproperty, "summary2", newobj);
 
       -----------------*/
 

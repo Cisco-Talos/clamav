@@ -146,6 +146,7 @@ typedef struct cli_ctx_tag {
 #endif
 #ifdef HAVE_JSON
     struct json_object *properties;
+    struct json_object *wrkproperty;
 #endif
 } cli_ctx;
 
