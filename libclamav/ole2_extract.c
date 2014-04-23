@@ -1876,15 +1876,18 @@ cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
     unsigned char *databuf;
     size_t maplen;
     int ret = CL_SUCCESS;
+#ifdef HAVE_JSON
+    struct json_object *check = NULL;
+#endif
 
     if (ctx == NULL) {
-        return -42;
+        return CL_ENULLARG;
     }
     sctx.ctx = ctx;
 
     if (fd < 0) {
         cli_dbgmsg("ole2_summary_json: invalid file descriptor\n");
-        return -42; /* placeholder */
+        return CL_ENULLARG; /* placeholder */
     }
 
     if (FSTAT(fd, &statbuf) == -1) {
@@ -1997,6 +2000,22 @@ cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
         return CL_EFORMAT;
     }
 
+#ifdef HAVE_JSON
+    if (check = json_object_object_get(sctx.summary, "AppName")) {
+        const char *nstr = json_object_get_string(check);
+
+        if (!strncmp(nstr, "Microsoft Office Word", 21)) {
+            cli_jsonstr(ctx->wrkproperty, "FileType", "CL_TYPE_MSDOC");
+        }
+        else if (!strncmp(nstr, "Microsoft Office PowerPoint", 27)) {
+            cli_jsonstr(ctx->wrkproperty, "FileType", "CL_TYPE_MSPPT");
+        }
+        else if (!strncmp(nstr, "Microsoft Excel", 15)) {
+            cli_jsonstr(ctx->wrkproperty, "FileType", "CL_TYPE_MSXLS");
+        }
+    }
+#endif
+
     /*------DEBUG------
       int i;
       cli_dbgmsg("byte_order: %x\n", sumstub.byte_order);
@@ -2039,7 +2058,6 @@ cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
       json_object* obj1 = json_object_new_boolean(0);
       json_object* obj2 = json_object_new_int(-1);
       //json_object* obj3 = json_object_new_int64(-64);
-
       json_object* obj4 = json_object_new_string("hello world!");
       json_object* obj5 = json_object_new_string_len("hello world!", 5);
 
