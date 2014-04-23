@@ -891,7 +891,7 @@ handler_enum(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * 
 static int
 handler_otf(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * ctx)
 {
-    char           *tempfile, *name;
+    char           *tempfile;
     unsigned char  *buff;
     int32_t         current_block, len, offset;
     int             ofd, ret;
@@ -1002,17 +1002,21 @@ handler_otf(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * c
         return CL_ESEEK;
     }
 
-    /* JSON Parsing */
-    name = get_property_name2(prop->name, prop->name_size);
-    if (!strncmp(name, "_5_summaryinformation", 21)) {
-        cli_dbgmsg("OLE2: detected a '_5_summaryinformation' stream\n");
-        cli_ole2_summary_json(ctx, ofd, 0);
+#if HAVE_JSON
+    /* JSON Output Summary Information */
+    if (ctx->options & CL_SCAN_FILE_PROPERTIES && ctx->properties != NULL) {
+        char *name = get_property_name2(prop->name, prop->name_size);
+        if (!strncmp(name, "_5_summaryinformation", 21)) {
+            cli_dbgmsg("OLE2: detected a '_5_summaryinformation' stream\n");
+            cli_ole2_summary_json(ctx, ofd, 0);
+        }
+        if (!strncmp(name, "_5_documentsummaryinformation", 29)) {
+            cli_dbgmsg("OLE2: detected a '_5_documentsummaryinformation' stream\n");
+            cli_ole2_summary_json(ctx, ofd, 1);
+        }
+        free(name);
     }
-    if (!strncmp(name, "_5_documentsummaryinformation", 29)) {
-        cli_dbgmsg("OLE2: detected a '_5_documentsummaryinformation' stream\n");
-        cli_ole2_summary_json(ctx, ofd, 1);
-    }
-    free(name);
+#endif
 
     /* Normal File Scan */
     ret = cli_magic_scandesc(ofd, ctx);
