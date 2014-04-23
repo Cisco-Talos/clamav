@@ -1,5 +1,6 @@
 %  Clam AntiVirus: User Manual
 %
+%  Copyright (C) 2014 Cisco Systems, Inc.
 %  Copyright (C) 2008-2013 Sourcefire, Inc.
 %  Copyright (C) 2002 - 2007 Tomasz Kojm <tkojm*clamav.net>
 %  Version 0.2x corrected by Dennis Leeuw <dleeuw*made-it.com>
@@ -71,7 +72,7 @@
     \vspace{3cm}
     \begin{flushright}
 	\rule[-1ex]{8cm}{3pt}\\
-	\huge Clam AntiVirus 0.98.1\\
+	\huge Clam AntiVirus 0.98.2\\
 	\huge \emph{User Manual}\\
     \end{flushright}
 
@@ -83,7 +84,7 @@
     \noindent
     \begin{boxedminipage}[b]{\textwidth}
     ClamAV User Manual,
-    \copyright \  2007 - 2013 Sourcefire, Inc.
+    \copyright \  2014 Cisco Systems, Inc.
     Authors: Tomasz Kojm\\
     This document is distributed under the terms of the GNU General
     Public License v2.\\
@@ -107,7 +108,7 @@
     \vspace{0.3cm}
     \noindent
     \begin{boxedminipage}[b]{\textwidth}
-    ClamAV and Clam AntiVirus are trademarks of Sourcefire, Inc.
+    ClamAV and Clam AntiVirus are trademarks of Cisco Systems, Inc.
     \end{boxedminipage}
 
     \newpage
@@ -149,6 +150,9 @@
                 \item PKG
                 \item HFS+ partition
                 \item HFSX partition
+                \item APM disk image
+                \item GPT disk image
+                \item MBR disk image
                 \item XAR
                 \item XZ
 		\item MS OLE2
@@ -811,7 +815,7 @@ clamav-milter.conf not found
 
 Software settings
 -----------------
-Version: 0.98.1
+Version: 0.98.2
 Optional features supported: MEMPOOL IPv6 AUTOIT_EA06 BZIP2 RAR JIT
 
 Database information
@@ -946,6 +950,9 @@ Engine flevel: 77, dconf: 77
         \item PKG
         \item HFS+ partition
         \item HFSX partition
+        \item APM disk image
+        \item GPT disk image
+        \item MBR disk image
         \item XAR
         \item XZ
 	\item MS OLE2
@@ -1733,38 +1740,41 @@ Verification OK.
     \section{Core Team}
 
     \begin{itemize}
-	\item Christoph Cordes \email{<ccordes*clamav.net>}, Germany\\
-	Role: virus database maintainer
-
-	\item Joel Esler \email{<jesler*sourcefire.com>}, USA\\
+	\item Joel Esler \email{<jesler*cisco.com>}, USA\\
 	Role: community manager
 
-	\item Tom Judge \email{<tjudge*sourcefire.com>}, USA\\
+	\item Erin Germ \email{<egerm*cisco.com>}, USA\\
+	Role: ClamAV quality engineering
+
+	\item Douglas Gastonguay-Goddard \email{<douggg*cisco.com>}, USA\\
+	Role: virus database maintainer
+
+	\item Tom Judge \email{<tomjudge*cisco.com>}, USA\\
 	Role: infrastucture developer
 
-	\item Steven Morgan \email{<smorgan*sourcefire.com>}, USA\\
-	Role: ClamAV developer
+	\item Steven Morgan \email{<stevmorg*cisco.com>}, USA\\
+	Role: ClamAV technical lead
 
-	\item Matthew Olney \email{<molney*sourcefire.com>}, USA\\
+	\item Matthew Olney \email{<molney*cisco.com>}, USA\\
 	Role: development manager
 
-	\item David Raynor \email{<draynor*sourcefire.com>}, USA\\
+	\item David Raynor \email{<draynor*cisco.com>}, USA\\
 	Role: ClamAV developer
 
-	\item Shawn Webb \email{<swebb*sourcefire.com>}, USA\\
+	\item Shawn Webb \email{<shawebb*sourcefire.com>}, USA\\
 	Role: ClamAV developer
 
-    \item Kevin Lin \email{<klin*sourcefire.com>}, USA\\
-    Role: ClamAV developer
+	\item Kevin Lin \email{<kevlin2*cisco.com>}, USA\\
+	Role: ClamAV developer
 
-    \item Dave Suffling \email{<dsuffling*sourcefire.com>}, Canada\\
-    Role: ClamAV developer
+	\item Dave Suffling \email{<dsufflin*cisco.com>}, Canada\\
+	Role: ClamAV developer
 
-    \item Samir Sapra \email{<ssapra*sourcefire.com>}, USA\\
-    Role: ClamAV developer
+	\item Samir Sapra \email{<ssapra*cisco.com>}, USA\\
+	Role: ClamAV developer
 
-	\item Alain Zidouemba \email{<azidouemba*sourcefire.com>}, USA\\
-	Role: virus database maintainer
+	\item Alain Zidouemba \email{<azidouem*cisco.com>}, USA\\
+	Role: manager, virus databases
       
     \end{itemize}
 
@@ -1773,6 +1783,9 @@ Verification OK.
     \begin{itemize}
 	\item aCaB \email{<acab*clamav.net>}, Italy\\
 	Role: virus database maintainer, coder
+
+	\item Christoph Cordes \email{<ccordes*clamav.net>}, Germany\\
+	Role: virus database maintainer
 
 	\item Mike Cathey \email{<mike*clamav.net>}, USA\\
 	Role: co-sysadmin
