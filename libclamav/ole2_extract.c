@@ -2012,44 +2012,6 @@ cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
     }
 #endif
 
-    /*------DEBUG------
-      int i;
-      cli_dbgmsg("byte_order: %x\n", sumstub.byte_order);
-      cli_dbgmsg("version: %x\n", sumstub.version);
-      cli_dbgmsg("system: %x\n", sumstub.system);
-      cli_dbgmsg("CLSID: ");
-      for (i = 0; i < 16; ++i) {
-      if (i == 3 || i == 5 || i == 7) {
-      fprintf(stderr, "-");
-      }
-      fprintf(stderr, "%02x", sumstub.CLSID[i]);
-      }
-      fprintf(stderr, "\n");
-
-      cli_dbgmsg("num_propsets: %u\n", sumstub.num_propsets);
-      cli_dbgmsg("FMTID0: ");
-      for (i = 0; i < 16; ++i) {
-      if (i == 3 || i == 5 || i == 7) {
-      fprintf(stderr, "-");
-      }
-      fprintf(stderr, "%02x", pentry[0].FMTID[i]);
-      }
-      fprintf(stderr, "\n");
-      cli_dbgmsg("offset0: %u\n", pentry[0].offset);
-
-      if (sumstub.num_propsets == 2) {
-      cli_dbgmsg("FMTID1: ");
-      for (i = 0; i < 16; ++i) {
-      if (i == 3 || i == 5 || i == 7) {
-      fprintf(stderr, "-");
-      }
-      fprintf(stderr, "%02x", pentry[1].FMTID[i]);
-      }
-      fprintf(stderr, "\n");
-      cli_dbgmsg("offset1: %u\n", pentry[1].offset);
-      }
-      -----------------*/
-
     funmap(sumfmap);
     return ret;
 }
