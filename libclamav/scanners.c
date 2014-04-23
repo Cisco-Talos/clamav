@@ -2445,6 +2445,7 @@ static void emax_reached(cli_ctx *ctx) {
 #define ret_from_magicscan(retcode)					\
     do {								\
 	cli_dbgmsg("cli_magic_scandesc: returning %d %s\n", retcode, __AT__); \
+        ctx->wrkproperty = parent_property;                             \
 	if(ctx->engine->cb_post_scan) {					\
 	    perf_start(ctx, PERFT_POSTCB);				\
 	    switch(ctx->engine->cb_post_scan(fmap_fd(*ctx->fmap), retcode, retcode == CL_VIRUS ? cli_get_last_virus(ctx) : NULL, ctx->cb_ctx)) { \
@@ -2511,6 +2512,9 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 	bitset_t *old_hook_lsig_matches;
 	const char *filetype;
 	int cache_clean = 0, res;
+#ifdef HAVE_JSON
+	struct json_object *parent_property = NULL;
+#endif
 
     if(!ctx->engine) {
 	cli_errmsg("CRITICAL: engine == NULL\n");
@@ -2549,25 +2553,48 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
     filetype = cli_ftname(type);
 
 #ifdef HAVE_JSON
-    if (SCAN_PROPERTIES && NULL==ctx->properties) {
-        json_object *ftobj, *fsobj;
-        ctx->properties = json_object_new_object();
+    if (SCAN_PROPERTIES) {
+        json_object *arrobj, *ftobj, *fsobj;
+
         if (NULL == ctx->properties) {
-            cli_errmsg("magic_scandesc: no memory for json properties object\n");
-            early_ret_from_magicscan(CL_EMEM);       
+            ctx->properties = json_object_new_object();
+            if (NULL == ctx->properties) {
+                cli_errmsg("magic_scandesc: no memory for json properties object\n");
+                early_ret_from_magicscan(CL_EMEM);       
+            }
+            ctx->wrkproperty = ctx->properties;
         }
+        else {
+            parent_property = ctx->wrkproperty;
+            arrobj = json_object_object_get(parent_property, "EmbeddedObjects");
+            if (NULL == arrobj) {
+                arrobj = json_object_new_array();
+                if (NULL == arrobj) {
+                    cli_errmsg("magic_scandesc: no memory for json properties object\n");
+                    early_ret_from_magicscan(CL_EMEM);
+                }
+                json_object_object_add(parent_property, "EmbeddedObjects", arrobj);
+            }
+            ctx->wrkproperty = json_object_new_object();
+            if (NULL == ctx->wrkproperty) {
+                cli_errmsg("magic_scandesc: no memory for json properties object\n");
+                early_ret_from_magicscan(CL_EMEM);
+            }
+            json_object_array_add(arrobj, ctx->wrkproperty);
+        }
+
         ftobj = json_object_new_string(filetype);
         if (NULL == ftobj) {
             cli_errmsg("magic_scandesc: no memory for json file type object.\n");
             early_ret_from_magicscan(CL_EMEM);       
         }
-        json_object_object_add(ctx->properties, "FileType", ftobj);
+        json_object_object_add(ctx->wrkproperty, "FileType", ftobj);
         fsobj = json_object_new_int((*ctx->fmap)->len);
         if (NULL == fsobj) {
             cli_errmsg("magic_scandesc: no memory for json file size object.\n");
             early_ret_from_magicscan(CL_EMEM);       
         }
-        json_object_object_add(ctx->properties, "FileSize", fsobj);
+        json_object_object_add(ctx->wrkproperty, "FileSize", fsobj);
     }
 #endif
 
@@ -2578,6 +2605,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
     res = cache_check(hash, ctx);
     if(res != CL_VIRUS) {
 	perf_stop(ctx, PERFT_CACHE);
+        ctx->wrkproperty = parent_property;
 	early_ret_from_magicscan(res);
     }
 
