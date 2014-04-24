@@ -106,6 +106,7 @@
 #include "mbr.h"
 #include "gpt.h"
 #include "apm.h"
+#include "json_api.h"
 
 #ifdef HAVE_BZLIB_H
 #include <bzlib.h>
@@ -1104,7 +1105,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 
 #if HAVE_JSON
     /* JSON Output Summary Information */
-    if (ctx->options & CL_SCAN_FILE_PROPERTIES && ctx->properties != NULL) {
+    if (ctx->options & CL_SCAN_FILE_PROPERTIES && ctx->wrkproperty != NULL) {
         hashcnt = uniq_get(U, "_5_summaryinformation", 21, &hash);
         while(hashcnt--) {
             snprintf(vbaname, sizeof(vbaname), "%s"PATHSEP"%s_%u", dirname, hash, hashcnt);
@@ -1113,6 +1114,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
             fd = open(vbaname, O_RDONLY|O_BINARY);
             if (fd >= 0) {
                 cli_dbgmsg("VBADir: detected a '_5_summaryinformation' stream\n");
+                /* JSONOLE2 - what to do if something breaks? */
                 cli_ole2_summary_json(ctx, fd, 0);
                 close(fd);
             }
@@ -1126,6 +1128,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
             fd = open(vbaname, O_RDONLY|O_BINARY);
             if (fd >= 0) {
                 cli_dbgmsg("VBADir: detected a '_5_documentsummaryinformation' stream\n");
+                /* JSONOLE2 - what to do if something breaks? */
                 cli_ole2_summary_json(ctx, fd, 1);
                 close(fd);
             }
@@ -1204,6 +1207,19 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
     if (SCAN_ALL && viruses_found)
 	return CL_VIRUS;
     return ret;
+}
+
+static int cli_processooxml(cli_ctx *ctx)
+{
+    /* find "[Content Type].xml" */
+    /* extract "[Content Type].xml" to tmpfile */
+    /* locate core-properties */
+    /* extract core-properties and process */
+    /* locate extended-properties */
+    /* extract extended-properties and process */
+    /* locate custom-properties (optional)  */
+    /* extract custom-properties and process */
+    /* return ret */
 }
 
 static int cli_scanhtml(cli_ctx *ctx)
@@ -2589,7 +2605,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
     filetype = cli_ftname(type);
 
 #if HAVE_JSON
-    if (SCAN_PROPERTIES) {
+    if (SCAN_PROPERTIES /* ctx.options & CL_SCAN_FILE_PROPERTIES */) {
         json_object *arrobj, *ftobj, *fsobj;
 
         if (NULL == ctx->properties) {
@@ -2619,18 +2635,12 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
             json_object_array_add(arrobj, ctx->wrkproperty);
         }
 
-        ftobj = json_object_new_string(filetype);
-        if (NULL == ftobj) {
-            cli_errmsg("magic_scandesc: no memory for json file type object.\n");
-            early_ret_from_magicscan(CL_EMEM);       
+        if (ret = cli_jsonstr(ctx->wrkproperty, "FileType", filetype) != CL_SUCCESS) {
+            early_ret_from_magicscan(ret);
         }
-        json_object_object_add(ctx->wrkproperty, "FileType", ftobj);
-        fsobj = json_object_new_int((*ctx->fmap)->len);
-        if (NULL == fsobj) {
-            cli_errmsg("magic_scandesc: no memory for json file size object.\n");
-            early_ret_from_magicscan(CL_EMEM);       
+        if (ret = cli_jsonint(ctx->wrkproperty, "FileSize", (*ctx->fmap)->len) != CL_SUCCESS) {
+            early_ret_from_magicscan(ret);
         }
-        json_object_object_add(ctx->wrkproperty, "FileSize", fsobj);
     }
 #endif
 
@@ -2639,6 +2649,18 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 
     perf_start(ctx, PERFT_CACHE);
     res = cache_check(hash, ctx);
+
+#if HAVE_JSON
+    if (SCAN_PROPERTIES /* ctx.options & CL_SCAN_FILE_PROPERTIES && ctx->wrkproperty != NULL */) {
+        char hashstr[33];
+        snprintf(hashstr, 33, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x", hash[0], hash[1], hash[2], hash[3], hash[4], hash[5], hash[6], hash[7], hash[8], hash[9], hash[10], hash[11], hash[12], hash[13], hash[14], hash[15]);
+
+        if (ret = cli_jsonstr(ctx->wrkproperty, "FileMD5", hashstr) != CL_SUCCESS) {
+            early_ret_from_magicscan(ret);
+        }
+    }
+#endif
+
     if(res != CL_VIRUS) {
 	perf_stop(ctx, PERFT_CACHE);
 #if HAVE_JSON
@@ -2726,6 +2748,15 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
         case CL_TYPE_OOXML_WORD:
         case CL_TYPE_OOXML_PPT:
         case CL_TYPE_OOXML_XL:
+#if HAVE_JSON
+            if ((ctx.options & CL_SCAN_FILE_PROPERTIES) && (ctx.wrkproperty != NULL)) {
+                ret = cli_processooxml(ctx);
+                if (ret != CL_SUCCESS) {
+                    /* JSONOOXML - what to do if something fails? placeholder */
+                    ret = CL_SUCCESS;
+                }
+            }
+#endif
 	case CL_TYPE_ZIP:
 	    ctx->container_type = CL_TYPE_ZIP;
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ZIP))

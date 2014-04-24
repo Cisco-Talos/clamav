@@ -1008,10 +1008,12 @@ handler_otf(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * c
         char *name = get_property_name2(prop->name, prop->name_size);
         if (!strncmp(name, "_5_summaryinformation", 21)) {
             cli_dbgmsg("OLE2: detected a '_5_summaryinformation' stream\n");
+            /* JSONOLE2 - what to do if something breaks? */
             cli_ole2_summary_json(ctx, ofd, 0);
         }
         if (!strncmp(name, "_5_documentsummaryinformation", 29)) {
             cli_dbgmsg("OLE2: detected a '_5_documentsummaryinformation' stream\n");
+            /* JSONOLE2 - what to do if something breaks? */
             cli_ole2_summary_json(ctx, ofd, 1);
         }
         free(name);
@@ -1340,6 +1342,7 @@ static int
 ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, size_t buflen, uint32_t offset)
 {
     uint16_t proptype, padding;
+    int ret = CL_SUCCESS;
 
     if (offset+4 > buflen) {
         return CL_EFORMAT;
@@ -1359,10 +1362,10 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, size_t buflen
 
     switch (proptype) {
     case PT_EMPTY:
-        cli_jsonnull(sctx->summary, sctx->propname);
+        ret = cli_jsonnull(sctx->summary, sctx->propname);
         break;
     case PT_NULL:
-        cli_jsonnull(sctx->summary, sctx->propname);
+        ret = cli_jsonnull(sctx->summary, sctx->propname);
         break;
     case PT_INT16:
 	{
@@ -1377,7 +1380,7 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, size_t buflen
 
             if (sctx->writecp) sctx->codepage = dout;
 
-            cli_jsonint(sctx->summary, sctx->propname, dout);
+            ret = cli_jsonint(sctx->summary, sctx->propname, dout);
             break;
 	}
     case PT_INT32:
@@ -1392,7 +1395,7 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, size_t buflen
             /* endian conversion */
             dout = sum32_endian_convert(dout);
 
-            cli_jsonint(sctx->summary, sctx->propname, dout);
+            ret = cli_jsonint(sctx->summary, sctx->propname, dout);
             break;
 	}
     case PT_FLOAT32: /* review this please */
@@ -1405,7 +1408,7 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, size_t buflen
             offset+=sizeof(dout);
             /* TODO - endian conversion */
 
-            cli_jsondouble(sctx->summary, sctx->propname, dout);
+            ret = cli_jsondouble(sctx->summary, sctx->propname, dout);
             break;
 	}
     case PT_DATE:
@@ -1419,7 +1422,7 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, size_t buflen
             offset+=sizeof(dout);
             /* TODO - endian conversion */
 
-            cli_jsondouble(sctx->summary, sctx->propname, dout);
+            ret = cli_jsondouble(sctx->summary, sctx->propname, dout);
             break;
 	}
     case PT_BOOL:
@@ -1432,7 +1435,7 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, size_t buflen
             offset+=sizeof(dout);
             /* no need for endian conversion */
 
-            cli_jsonbool(sctx->summary, sctx->propname, dout);
+            ret = cli_jsonbool(sctx->summary, sctx->propname, dout);
             break;
 	}
     case PT_INT8v1:
@@ -1445,7 +1448,7 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, size_t buflen
             offset+=sizeof(dout);
             /* no need for endian conversion */
 
-            cli_jsonint(sctx->summary, sctx->propname, dout);
+            ret = cli_jsonint(sctx->summary, sctx->propname, dout);
             break;
 	}
     case PT_UINT8:
@@ -1458,7 +1461,7 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, size_t buflen
             offset+=sizeof(dout);
             /* no need for endian conversion */
 
-            cli_jsonint(sctx->summary, sctx->propname, dout);
+            ret = cli_jsonint(sctx->summary, sctx->propname, dout);
             break;
 	}
     case PT_UINT16:
@@ -1474,7 +1477,7 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, size_t buflen
 
             if (sctx->writecp) sctx->codepage = dout;
 
-            cli_jsonint(sctx->summary, sctx->propname, dout);
+            ret = cli_jsonint(sctx->summary, sctx->propname, dout);
             break;
 	}
     case PT_UINT32:
@@ -1489,7 +1492,7 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, size_t buflen
             /* endian conversion */
             dout = sum32_endian_convert(dout);
 
-            cli_jsonint(sctx->summary, sctx->propname, dout);
+            ret = cli_jsonint(sctx->summary, sctx->propname, dout);
             break;
 	}
     case PT_INT64:
@@ -1503,7 +1506,7 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, size_t buflen
             /* endian conversion */
             dout = sum64_endian_convert(dout);
 
-            cli_jsonint64(sctx->summary, sctx->propname, dout);
+            ret = cli_jsonint64(sctx->summary, sctx->propname, dout);
             break;
 	}
     case PT_UINT64:
@@ -1517,7 +1520,7 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, size_t buflen
             /* endian conversion */
             dout = sum64_endian_convert(dout);
 
-            cli_jsonint64(sctx->summary, sctx->propname, dout);
+            ret = cli_jsonint64(sctx->summary, sctx->propname, dout);
             break;
 	}
     case PT_BSTR:
@@ -1555,7 +1558,7 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, size_t buflen
             }
             strncpy(outstr, databuf+offset, strsize);
             outstr[strsize] = '\0'; /* guarentee a NULL-termination */
-            cli_jsonstr(sctx->summary, sctx->propname, outstr);
+            ret = cli_jsonstr(sctx->summary, sctx->propname, outstr);
             free(outstr);
             break;
         }
@@ -1592,7 +1595,7 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, size_t buflen
             outstr[strsize] = '\0';
 
             outstr2 = (char*)get_property_name2(outstr, strsize);
-            cli_jsonstr(sctx->summary, sctx->propname, outstr);
+            ret = cli_jsonstr(sctx->summary, sctx->propname, outstr);
             free(outstr);
             free(outstr2);
             break;
@@ -1624,11 +1627,11 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, size_t buflen
                 cli_dbgmsg("ole2_process_property: UNIX timestamp is larger than 32-bit number\n");
             }
             else {
-                cli_jsonint(sctx->summary, sctx->propname, (uint32_t)(utime & 0xFFFFFFFF));
+                ret = cli_jsonint(sctx->summary, sctx->propname, (uint32_t)(utime & 0xFFFFFFFF));
             }
 
             /* human-readble string JSON output */
-            //cli_jsonstr(sctx->summary, sctx->propname, ctime((timer_t*)&utime));
+            //ret = cli_jsonstr(sctx->summary, sctx->propname, ctime((timer_t*)&utime));
             break;
 	}
     default:
@@ -1636,7 +1639,7 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, size_t buflen
                    proptype, sctx->propname);
     }
 
-    return CL_SUCCESS;
+    return ret;
 }
 
 static int
@@ -1646,7 +1649,7 @@ ole2_docsum_propset_json(summary_ctx_t *sctx, fmap_t *sumfmap, propset_entry_t *
     uint32_t propid, poffset;
     unsigned char *databuf, *ptr = NULL;
     unsigned i;
-    int ret;
+    int ret = CL_SUCCESS;
 
     sctx->codepage = 0;
     sctx->writecp = 0;
@@ -1756,9 +1759,12 @@ ole2_docsum_propset_json(summary_ctx_t *sctx, fmap_t *sumfmap, propset_entry_t *
         default:
             cli_dbgmsg("ole2_docsum_propset_json: unrecognized propid!\n");
         }
+
+        if (ret != CL_SUCCESS)
+            break;
     }
 
-    return CL_SUCCESS;
+    return ret;
 }
 
 static int
@@ -1962,7 +1968,9 @@ cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
 #endif
         }
         else {
-            ret = ole2_docsum_propset_json(&sctx, sumfmap, &pentry[0]);
+            if ((ret = ole2_docsum_propset_json(&sctx, sumfmap, &pentry[0])) != CL_SUCCESS) {
+                return ret;
+            }
 #if HAVE_JSON
             json_object_object_add(ctx->wrkproperty, "DocSummaryInfo", sctx.summary);
 #endif			
@@ -1985,7 +1993,9 @@ cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
         if (!mode) {
             ret = ole2_summary_propset_json(&sctx, sumfmap, &pentry[0]);
 #if HAVE_JSON
-            json_object_object_add(ctx->wrkproperty, "SummaryInfo", sctx.summary);
+            if ((ret = json_object_object_add(ctx->wrkproperty, "SummaryInfo", sctx.summary)) != CL_SUCCESS) {
+                return ret;
+            }
 #endif
         }
         else {

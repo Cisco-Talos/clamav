@@ -208,5 +208,47 @@ int cli_jsondouble(json_object *obj, const char* key, double d)
     json_object_object_add(obj, key, fpobj);
     return CL_SUCCESS;
 }
+
 #else
+
+int cli_json_nojson()
+{
+    nojson_func("nojson: json needs to be enabled for this feature\n");
+    return CL_SUCCESS;
+}
+
+int cli_jsonnull_nojson(const char* key)
+{
+    nojson_func("nojson: %s: null\n", key);
+    return CL_SUCCESS;
+}
+
+int cli_jsonstr_nojson(const char* key, const char* s)
+{
+    nojson_func("nojson: %s: %s\n", key, s);
+    return CL_SUCCESS;
+}
+
+int cli_jsonint_nojson(const char* key, int32_t i)
+{
+    nojson_func("nojson: %s: %d\n", key, i);
+    return CL_SUCCESS;
+}
+
+int cli_jsonint64_nojson(const char* key, int64_t i)
+{
+    nojson_func("nojson: %s: %ld\n", key, (long int)i);
+    return CL_SUCCESS;
+}
+
+int cli_jsonbool_nojson(const char* key, int i)
+{
+    nojson_func("nojson: %s: %s\n", key, i ? "true" : "false"); 
+}
+
+int cli_jsondouble_nojson(const char* key, double d)
+{
+    nojson_func("nojson: %s: %f\n", key, d);
+}
+
 #endif

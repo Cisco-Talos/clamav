@@ -36,17 +36,28 @@
 #if HAVE_JSON
 int cli_jsonnull(json_object *obj, const char* key);
 int cli_jsonstr(json_object *obj, const char* key, const char* s);
-int cli_jsonint(json_object *obj, const char* key, int32_t val);
+int cli_jsonint(json_object *obj, const char* key, int32_t i);
 int cli_jsonint64(json_object *obj, const char* key, int64_t i);
 int cli_jsonbool(json_object *obj, const char* key, int i);
 int cli_jsondouble(json_object *obj, const char* key, double d);
 #else
-#define cli_jsonnull(o,n)     cli_dbgmsg("%s: null\n", n)
-#define cli_jsonstr(o,n,s)    cli_dbgmsg("%s: \"%s\"\n", n, s)
-#define cli_jsonint(o,n,i)    cli_dbgmsg("%s: %d [%x]\n", n, i, i)
-#define cli_jsonint64(o,n,i)  cli_dbgmsg("%s: %lld [%llx]\n", n, i, i)
-#define cli_jsonbool(o,n,b)   cli_dbgmsg("%s: %s\n", n, b ? "true":"false")
-#define cli_jsondouble(o,n,d) cli_dbgmsg("%s: %f\n", n, d)
+#define nojson_func cli_dbgmsg
+
+/* internal functions */
+int cli_json_nojson();
+
+int cli_jsonnull_nojson(const char* key);
+int cli_jsonint_nojson(const char* key, int32_t i);
+int cli_jsonint64_nojson(const char* key, int64_t i);
+int cli_jsonbool_nojson(const char* key, int i);
+int cli_jsondouble_nojson(const char* key, double d);
+
+#define cli_jsonnull(o,n)       cli_jsonnull_nojson(n)
+#define cli_jsonstr(o,n,s)      cli_jsonstr_nojson(n,s)
+#define cli_jsonint(o,n,i)      cli_jsonint_nojson(n,i)
+#define cli_jsonint64(o,n,i)    cli_jsonint64_nojson(n,i)
+#define cli_jsonbool(o,n,b)     cli_jsonbool_nojson(n,b)
+#define cli_jsondouble(o,n,d)   cli_jsondouble_nojson(n,d)
 #endif
 
 #endif /*__JSON_C_H__*/
