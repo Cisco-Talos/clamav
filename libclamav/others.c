@@ -408,8 +408,8 @@ struct cl_engine *cl_engine_new(void)
     intel->maxmem = STATS_MAX_MEM;
     intel->timeout = 10;
     new->stats_data = intel;
-    new->cb_stats_add_sample = NULL;
-    new->cb_stats_submit = NULL;
+    new->cb_stats_add_sample = clamav_stats_add_sample;
+    new->cb_stats_submit = clamav_stats_submit;
     new->cb_stats_flush = clamav_stats_flush;
     new->cb_stats_remove_sample = clamav_stats_remove_sample;
     new->cb_stats_decrement_count = clamav_stats_decrement_count;
