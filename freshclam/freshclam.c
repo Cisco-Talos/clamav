@@ -759,6 +759,8 @@ void submit_host_info(struct optstruct *opts)
     if (!(engine))
         return;
 
+    cl_engine_stats_enable(engine);
+
     intel = engine->stats_data;
     if (!(intel)) {
         engine->cb_stats_submit = NULL;
