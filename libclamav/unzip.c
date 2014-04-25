@@ -479,6 +479,7 @@ int cli_unzip(cli_ctx *ctx) {
   fmap_t *map = *ctx->fmap;
   char *tmpd;
   const char *ptr;
+  int virus_found = 0;
 
   cli_dbgmsg("in cli_unzip\n");
   fsize = (uint32_t)map->len;
@@ -525,6 +526,10 @@ int cli_unzip(cli_ctx *ctx) {
     while (ret==CL_CLEAN && lhoff<fsize && (coff=lhdr(map, lhoff, fsize-lhoff, &fu, fc+1, NULL, &ret, ctx, tmpd, 1))) {
       fc++;
       lhoff+=coff;
+      if (SCAN_ALL && ret == CL_VIRUS) {
+          ret = CL_CLEAN;
+          virus_found = 1;
+      }
       if (ctx->engine->maxfiles && fu>=ctx->engine->maxfiles) {
 	cli_dbgmsg("cli_unzip: Files limit reached (max: %u)\n", ctx->engine->maxfiles);
 	ret=CL_EMAXFILES;
@@ -534,6 +539,9 @@ int cli_unzip(cli_ctx *ctx) {
 
   if (!ctx->engine->keeptmp) cli_rmdirs(tmpd);
   free(tmpd);
+
+  if (ret == CL_CLEAN && virus_found)
+    ret = CL_VIRUS;
 
   return ret;
 }
