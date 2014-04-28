@@ -1209,19 +1209,6 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
     return ret;
 }
 
-static int cli_processooxml(cli_ctx *ctx)
-{
-    /* find "[Content Type].xml" */
-    /* extract "[Content Type].xml" to tmpfile */
-    /* locate core-properties */
-    /* extract core-properties and process */
-    /* locate extended-properties */
-    /* extract extended-properties and process */
-    /* locate custom-properties (optional)  */
-    /* extract custom-properties and process */
-    /* return ret */
-}
-
 static int cli_scanhtml(cli_ctx *ctx)
 {
     char *tempname, fullname[1024];
@@ -2749,8 +2736,8 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
         case CL_TYPE_OOXML_PPT:
         case CL_TYPE_OOXML_XL:
 #if HAVE_JSON
-            if ((ctx.options & CL_SCAN_FILE_PROPERTIES) && (ctx.wrkproperty != NULL)) {
-                ret = cli_processooxml(ctx);
+            if ((ctx->options & CL_SCAN_FILE_PROPERTIES) && (ctx->wrkproperty != NULL)) {
+                ret = cli_process_ooxml(ctx);
                 if (ret != CL_SUCCESS) {
                     /* JSONOOXML - what to do if something fails? placeholder */
                     ret = CL_SUCCESS;
