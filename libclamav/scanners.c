@@ -2590,21 +2590,21 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
         json_object *arrobj, *ftobj, *fsobj;
 
         if (NULL == ctx->properties) {
-	    if (type == CL_TYPE_PDF ||   /* file types we collect properties about */
-		type == CL_TYPE_MSOLE2 ||
-		type == CL_TYPE_MSEXE ||
-		type == CL_TYPE_OOXML_WORD ||
-		type == CL_TYPE_OOXML_PPT ||
-		type == CL_TYPE_OOXML_XL) { 
-		ctx->properties = json_object_new_object();
-		if (NULL == ctx->properties) {
-		    cli_errmsg("magic_scandesc: no memory for json properties object\n");
-		    early_ret_from_magicscan(CL_EMEM);       
-		}
-		ctx->wrkproperty = ctx->properties;
+            if (type == CL_TYPE_PDF ||   /* file types we collect properties about */
+                type == CL_TYPE_MSOLE2 ||
+                type == CL_TYPE_MSEXE ||
+                type == CL_TYPE_OOXML_WORD ||
+                type == CL_TYPE_OOXML_PPT ||
+                type == CL_TYPE_OOXML_XL) { 
+                ctx->properties = json_object_new_object();
+                if (NULL == ctx->properties) {
+                    cli_errmsg("magic_scandesc: no memory for json properties object\n");
+                    early_ret_from_magicscan(CL_EMEM);       
+                }
+                ctx->wrkproperty = ctx->properties;
 	    } else { /* turn off property collection flag for file types we don't care about */
-		ctx->options &= ~CL_SCAN_FILE_PROPERTIES;	
-	    } 
+                ctx->options &= ~CL_SCAN_FILE_PROPERTIES;	
+            }
         }
         else {
             parent_property = ctx->wrkproperty;
