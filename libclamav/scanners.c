@@ -2593,7 +2593,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
     filetype = cli_ftname(type);
 
 #if HAVE_JSON
-    if (SCAN_PROPERTIES /* ctx.options & CL_SCAN_FILE_PROPERTIES */) {
+    if (ctx->options & CL_SCAN_FILE_PROPERTIES) {
         json_object *arrobj, *ftobj, *fsobj;
 
         if (NULL == ctx->properties) {
@@ -2631,7 +2631,9 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
             }
             json_object_array_add(arrobj, ctx->wrkproperty);
         }
+    }
 
+    if (ctx->options & CL_SCAN_FILE_PROPERTIES) { /* separated for cases json is not tracked */
         if (ret = cli_jsonstr(ctx->wrkproperty, "FileType", filetype) != CL_SUCCESS) {
             early_ret_from_magicscan(ret);
         }
