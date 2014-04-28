@@ -1993,9 +1993,7 @@ cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
         if (!mode) {
             ret = ole2_summary_propset_json(&sctx, sumfmap, &pentry[0]);
 #if HAVE_JSON
-            if ((ret = json_object_object_add(ctx->wrkproperty, "SummaryInfo", sctx.summary)) != CL_SUCCESS) {
-                return ret;
-            }
+            json_object_object_add(ctx->wrkproperty, "SummaryInfo", sctx.summary);
 #endif
         }
         else {
