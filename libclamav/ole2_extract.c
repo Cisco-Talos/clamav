@@ -912,9 +912,16 @@ handler_enum(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * 
         if (name) {
             if (!strcmp(name, "_vba_project") || !strcmp(name, "powerpoint document") || !strcmp(name, "worddocument") || !strcmp(name, "_1_ole10native"))
                 hdr->has_vba = 1;
+#if HAVE_JSON
+#else
             free(name);
+#endif
         }
     }
+#if HAVE_JSON
+    free(name);
+#endif
+
     return CL_SUCCESS;
 }
 
