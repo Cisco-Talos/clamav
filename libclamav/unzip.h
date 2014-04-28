@@ -28,6 +28,7 @@
 #include "others.h"
 int cli_unzip(cli_ctx *);
 int cli_unzip_single(cli_ctx *, off_t);
+int cli_process_ooxml(cli_ctx *);
 
 #ifdef UNZIP_PRIVATE
 #define F_ENCR  (1<<0)
