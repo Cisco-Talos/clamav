@@ -875,9 +875,40 @@ static int
 handler_enum(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * ctx)
 {
     char           *name;
+#if HAVE_JSON
+    json_object *arrobj, *strmobj;
+
+    name = get_property_name2(prop->name, prop->name_size);
+    arrobj = json_object_object_get(ctx->wrkproperty, "Streams");
+    if (NULL == arrobj) {
+        arrobj = json_object_new_array();
+        if (NULL == arrobj) {
+            cli_errmsg("ole2: no memory for streams list as json array\n");
+            return CL_EMEM;
+        }
+        json_object_object_add(ctx->wrkproperty, "Streams", arrobj);
+    }
+    strmobj = json_object_new_string(name);
+    json_object_array_add(arrobj, strmobj);
+
+    if (ctx->options & CL_SCAN_FILE_PROPERTIES && ctx->wrkproperty != NULL) {
+        if (!strcmp(name, "powerpoint document")) {
+            cli_jsonstr(ctx->wrkproperty, "FileType", "CL_TYPE_MSPPT");
+        }
+        if (!strcmp(name, "worddocument")) {
+            cli_jsonstr(ctx->wrkproperty, "FileType", "CL_TYPE_MSDOC");
+        }
+        if (!strcmp(name, "workbook")) {
+            cli_jsonstr(ctx->wrkproperty, "FileType", "CL_TYPE_MSXLS");
+        }
+    }
+#endif
 
     if (!hdr->has_vba) {
+#if HAVE_JSON
+#else
         name = get_property_name2(prop->name, prop->name_size);
+#endif
         if (name) {
             if (!strcmp(name, "_vba_project") || !strcmp(name, "powerpoint document") || !strcmp(name, "worddocument") || !strcmp(name, "_1_ole10native"))
                 hdr->has_vba = 1;
@@ -1891,6 +1922,7 @@ cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
     if (ctx == NULL) {
         return CL_ENULLARG;
     }
+    memset(&sctx, 0, sizeof(sctx));
     sctx.ctx = ctx;
 
     if (fd < 0) {
@@ -1956,13 +1988,14 @@ cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
         if (!databuf) {
             return CL_EREAD;
         }
-        memcpy(pentry, databuf, sizeof(summary_stub_t));
+        memcpy(pentry, databuf, sizeof(propset_entry_t));
         /* endian conversion */
         pentry[0].offset = sum32_endian_convert(pentry[0].offset);
 
-        /* TODO - check return and mode */
         if (!mode) {
-            ret = ole2_summary_propset_json(&sctx, sumfmap, &pentry[0]);
+            if ((ret = ole2_summary_propset_json(&sctx, sumfmap, &pentry[0])) != CL_SUCCESS) {
+                return ret;
+            }
 #if HAVE_JSON
             json_object_object_add(ctx->wrkproperty, "SummaryInfo", sctx.summary);
 #endif
@@ -1982,22 +2015,27 @@ cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
         if (!databuf) {
             return CL_EREAD;
         }
-        memcpy(pentry, databuf, 2*sizeof(summary_stub_t));
+        memcpy(pentry, databuf, 2*sizeof(propset_entry_t));
         /* endian conversion */
         pentry[0].offset = sum32_endian_convert(pentry[0].offset);
         pentry[1].offset = sum32_endian_convert(pentry[1].offset);
 
         /* multi-propset handling */
+        cli_jsonbool(ctx->wrkproperty, "HasUserDefined", 1);
+
         /* first propset is user-defined, ignored for now */
-        /* TODO - check return and mode */
         if (!mode) {
-            ret = ole2_summary_propset_json(&sctx, sumfmap, &pentry[0]);
+            if ((ret = ole2_summary_propset_json(&sctx, sumfmap, &pentry[0])) != CL_SUCCESS) {
+                return ret;
+            }
 #if HAVE_JSON
             json_object_object_add(ctx->wrkproperty, "SummaryInfo", sctx.summary);
 #endif
         }
         else {
-            ret = ole2_docsum_propset_json(&sctx, sumfmap, &pentry[0]);
+            if ((ret = ole2_docsum_propset_json(&sctx, sumfmap, &pentry[0])) != CL_SUCCESS) {
+                return ret;
+            }
 #if HAVE_JSON
             json_object_object_add(ctx->wrkproperty, "DocSummaryInfo", sctx.summary);
 #endif
@@ -2007,22 +2045,6 @@ cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
         cli_dbgmsg("ole2_summary_json: invalid number of property sets\n");
         return CL_EFORMAT;
     }
-
-#if HAVE_JSON
-    if (check = json_object_object_get(sctx.summary, "AppName")) {
-        const char *nstr = json_object_get_string(check);
-
-        if (!strncmp(nstr, "Microsoft Office Word", 21)) {
-            cli_jsonstr(ctx->wrkproperty, "FileType", "CL_TYPE_MSDOC");
-        }
-        else if (!strncmp(nstr, "Microsoft Office PowerPoint", 27)) {
-            cli_jsonstr(ctx->wrkproperty, "FileType", "CL_TYPE_MSPPT");
-        }
-        else if (!strncmp(nstr, "Microsoft Excel", 15)) {
-            cli_jsonstr(ctx->wrkproperty, "FileType", "CL_TYPE_MSXLS");
-        }
-    }
-#endif
 
     funmap(sumfmap);
     return ret;

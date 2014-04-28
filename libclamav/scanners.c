@@ -1199,6 +1199,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
     }
 
     closedir(dd);
+    if (hasmacros) cli_jsonbool(ctx->wrkproperty, "HasMacros", 1);
     if(BLOCK_MACROS && hasmacros) {
 	cli_append_virus(ctx, "Heuristics.OLE2.ContainsMacros");
 	ret = CL_VIRUS;
@@ -2605,14 +2606,14 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
         }
         else {
             parent_property = ctx->wrkproperty;
-            arrobj = json_object_object_get(parent_property, "EmbeddedObjects");
+            arrobj = json_object_object_get(parent_property, "ContainedObjects");
             if (NULL == arrobj) {
                 arrobj = json_object_new_array();
                 if (NULL == arrobj) {
                     cli_errmsg("magic_scandesc: no memory for json properties object\n");
                     early_ret_from_magicscan(CL_EMEM);
                 }
-                json_object_object_add(parent_property, "EmbeddedObjects", arrobj);
+                json_object_object_add(parent_property, "ContainedObjects", arrobj);
             }
             ctx->wrkproperty = json_object_new_object();
             if (NULL == ctx->wrkproperty) {
