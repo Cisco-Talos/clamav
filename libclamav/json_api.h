@@ -40,6 +40,15 @@ int cli_jsonint(json_object *obj, const char* key, int32_t i);
 int cli_jsonint64(json_object *obj, const char* key, int64_t i);
 int cli_jsonbool(json_object *obj, const char* key, int i);
 int cli_jsondouble(json_object *obj, const char* key, double d);
+
+#define JSON_KEY_FILETYPE   "FileType"
+#define JSON_KEY_FILESIZE   "FileSize"
+
+#define JSON_VALUE_FILETYPE_PDF     "CL_TYPE_PDF"
+#define JSON_VALUE_FILETYPE_PPT     "CL_TYPE_MSPPT"
+#define JSON_VALUE_FILETYPE_WORD    "CL_TYPE_WORD"
+#define JSON_VALUE_FILETYPE_EXCEL   "CL_TYPE_MSXLS"
+
 #else
 #define nojson_func cli_dbgmsg
 
