@@ -60,7 +60,7 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.61 2007/02/12 20:46:09 njh Exp $";
 #include "arc4.h"
 #include "rijndael.h"
 #include "textnorm.h"
-
+#include "json_api.h"
 
 #ifdef	CL_DEBUG
 /*#define	SAVE_TMP	
@@ -72,9 +72,11 @@ static	int	ascii85decode(const char *buf, off_t len, unsigned char *output);
 static	const	char	*pdf_nextlinestart(const char *ptr, size_t len);
 static	const	char	*pdf_nextobject(const char *ptr, size_t len);
 
-/* PDF statistics callbacks */
+/* PDF statistics callbacks and related */
 struct pdf_struct;
 struct pdf_action;
+
+static void pdf_export_json(struct pdf_struct *);
 
 static void ASCIIHexDecode_cb(struct pdf_struct *, struct pdf_obj *, struct pdf_action *);
 static void ASCII85Decode_cb(struct pdf_struct *, struct pdf_obj *, struct pdf_action *);
@@ -95,7 +97,7 @@ static void OpenAction_cb(struct pdf_struct *, struct pdf_obj *, struct pdf_acti
 static void Launch_cb(struct pdf_struct *, struct pdf_obj *, struct pdf_action *);
 static void Page_cb(struct pdf_struct *, struct pdf_obj *, struct pdf_action *);
 static void print_pdf_stats(struct pdf_struct *);
-/* End PDF statistics callbacks */
+/* End PDF statistics callbacks and related */
 
 static int xrefCheck(const char *xref, const char *eof)
 {
@@ -133,28 +135,28 @@ enum enc_method {
 };
 
 struct pdf_stats {
-    unsigned long ninvalidobjs;     /* Number of invalid objects */
-    unsigned long njs;              /* Number of javascript objects */
-    unsigned long nflate;           /* Number of flate-encoded objects */
-    unsigned long nactivex;         /* Number of ActiveX objects */
-    unsigned long nflash;           /* Number of flash objects */
-    unsigned long ncolors;          /* Number of colors */
-    unsigned long nasciihexdecode;  /* Number of ASCIIHexDecode-filtered objects */
-    unsigned long nascii85decode;   /* Number of ASCII85Decode-filtered objects */
-    unsigned long nembeddedfile;    /* Number of embedded files */
-    unsigned long nimage;           /* Number of image objects */
-    unsigned long nlzw;             /* Number of LZW-filtered objects */
-    unsigned long nrunlengthdecode; /* Number of RunLengthDecode-filtered objects */
-    unsigned long nfaxdecode;       /* Number of CCITT-filtered objects */
-    unsigned long njbig2decode;     /* Number of JBIG2Decode-filtered objects */
-    unsigned long ndctdecode;       /* Number of DCTDecode-filtered objects */
-    unsigned long njpxdecode;       /* Number of JPXDecode-filtered objects */
-    unsigned long ncrypt;           /* Number of Crypt-filtered objects */
-    unsigned long nstandard;        /* Number of Standard-filtered objects */
-    unsigned long nsigned;          /* Number of Signed objects */
-    unsigned long nopenaction;      /* Number of OpenAction objects */
-    unsigned long nlaunch;          /* Number of Launch objects */
-    unsigned long npage;            /* Number of Page objects */
+    int32_t ninvalidobjs;     /* Number of invalid objects */
+    int32_t njs;              /* Number of javascript objects */
+    int32_t nflate;           /* Number of flate-encoded objects */
+    int32_t nactivex;         /* Number of ActiveX objects */
+    int32_t nflash;           /* Number of flash objects */
+    int32_t ncolors;          /* Number of colors */
+    int32_t nasciihexdecode;  /* Number of ASCIIHexDecode-filtered objects */
+    int32_t nascii85decode;   /* Number of ASCII85Decode-filtered objects */
+    int32_t nembeddedfile;    /* Number of embedded files */
+    int32_t nimage;           /* Number of image objects */
+    int32_t nlzw;             /* Number of LZW-filtered objects */
+    int32_t nrunlengthdecode; /* Number of RunLengthDecode-filtered objects */
+    int32_t nfaxdecode;       /* Number of CCITT-filtered objects */
+    int32_t njbig2decode;     /* Number of JBIG2Decode-filtered objects */
+    int32_t ndctdecode;       /* Number of DCTDecode-filtered objects */
+    int32_t njpxdecode;       /* Number of JPXDecode-filtered objects */
+    int32_t ncrypt;           /* Number of Crypt-filtered objects */
+    int32_t nstandard;        /* Number of Standard-filtered objects */
+    int32_t nsigned;          /* Number of Signed objects */
+    int32_t nopenaction;      /* Number of OpenAction objects */
+    int32_t nlaunch;          /* Number of Launch objects */
+    int32_t npage;            /* Number of Page objects */
 };
 
 struct pdf_struct {
@@ -2587,7 +2589,11 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
         rc = CL_EFORMAT;
     }
 
+    pdf_export_json(&pdf);
+
+#if 0
     print_pdf_stats(&pdf);
+#endif
 
     cli_dbgmsg("cli_pdf: returning %d\n", rc);
     free(pdf.objs);
@@ -2950,4 +2956,70 @@ static void print_pdf_stats(struct pdf_struct *pdf)
     cli_dbgmsg("    Number of Open Actions:\t\t\t%lu\n", pdf->stats.nopenaction);
     cli_dbgmsg("    Number of Launch Objects:\t\t\t%lu\n", pdf->stats.nlaunch);
     cli_dbgmsg("    Number of Objects with /Pages:\t\t%lu\n", pdf->stats.npage);
+}
+
+static void pdf_export_json(struct pdf_struct *pdf)
+{
+#if HAVE_JSON
+    json_object *pdfobj;
+
+    if (!(pdf))
+        return;
+
+    if (!(pdf->ctx))
+        return;
+
+    if (!(pdf->ctx->options & CL_SCAN_FILE_PROPERTIES) || !(pdf->ctx->wrkproperty))
+        return;
+
+    pdfobj = json_object_new_object();
+    if (!(pdfobj))
+        return;
+
+    json_object_object_add(pdf->ctx->wrkproperty, "PDFStats", pdfobj);
+    if (pdf->stats.ninvalidobjs)
+        cli_jsonint(pdfobj, "InvalidObjectCount", pdf->stats.ninvalidobjs);
+    if (pdf->stats.njs)
+        cli_jsonint(pdfobj, "JavaScriptObjectCount", pdf->stats.njs);
+    if (pdf->stats.nflate)
+        cli_jsonint(pdfobj, "DeflateObjectCount", pdf->stats.nflate);
+    if (pdf->stats.nactivex)
+        cli_jsonint(pdfobj, "ActiveXObjectCount", pdf->stats.nactivex);
+    if (pdf->stats.nflash)
+        cli_jsonint(pdfobj, "FlashObjectCount", pdf->stats.nflash);
+    if (pdf->stats.ncolors)
+        cli_jsonint(pdfobj, "ColorCount", pdf->stats.ncolors);
+    if (pdf->stats.nasciihexdecode)
+        cli_jsonint(pdfobj, "AsciiHexDecodeObjectCount", pdf->stats.nasciihexdecode);
+    if (pdf->stats.nascii85decode)
+        cli_jsonint(pdfobj, "Ascii85DecodeObjectCount", pdf->stats.nascii85decode);
+    if (pdf->stats.nembeddedfile)
+        cli_jsonint(pdfobj, "EmbeddedFileCount", pdf->stats.nembeddedfile);
+    if (pdf->stats.nimage)
+        cli_jsonint(pdfobj, "ImageCount", pdf->stats.nimage);
+    if (pdf->stats.nlzw)
+        cli_jsonint(pdfobj, "LZWCount", pdf->stats.nlzw);
+    if (pdf->stats.nrunlengthdecode)
+        cli_jsonint(pdfobj, "RunLengthDecodeCount", pdf->stats.nrunlengthdecode);
+    if (pdf->stats.nfaxdecode)
+        cli_jsonint(pdfobj, "FaxDecodeCount", pdf->stats.nfaxdecode);
+    if (pdf->stats.njbig2decode)
+        cli_jsonint(pdfobj, "JBIG2DecodeCount", pdf->stats.njbig2decode);
+    if (pdf->stats.ndctdecode)
+        cli_jsonint(pdfobj, "DCTDecodeCount", pdf->stats.ndctdecode);
+    if (pdf->stats.njpxdecode)
+        cli_jsonint(pdfobj, "JPXDecodeCount", pdf->stats.njpxdecode);
+    if (pdf->stats.ncrypt)
+        cli_jsonint(pdfobj, "CryptCount", pdf->stats.ncrypt);
+    if (pdf->stats.nstandard)
+        cli_jsonint(pdfobj, "StandardCount", pdf->stats.nstandard);
+    if (pdf->stats.nsigned)
+        cli_jsonint(pdfobj, "SignedCount", pdf->stats.nsigned);
+    if (pdf->stats.nopenaction)
+        cli_jsonint(pdfobj, "OpenActionCount", pdf->stats.nopenaction);
+    if (pdf->stats.nlaunch)
+        cli_jsonint(pdfobj, "LaunchCount", pdf->stats.nlaunch);
+    if (pdf->stats.npage)
+        cli_jsonint(pdfobj, "PageCount", pdf->stats.npage);
+#endif
 }
