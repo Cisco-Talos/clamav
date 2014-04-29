@@ -2609,6 +2609,9 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
                     early_ret_from_magicscan(CL_EMEM);       
                 }
                 ctx->wrkproperty = ctx->properties;
+                if (ret = cli_jsonstr(ctx->properties, "Magic", "JSON") != CL_SUCCESS) {
+                    early_ret_from_magicscan(ret);
+                }
 	    } else { /* turn off property collection flag for file types we don't care about */
                 ctx->options &= ~CL_SCAN_FILE_PROPERTIES;	
             }
@@ -3396,6 +3399,8 @@ static int scan_common(int desc, cl_fmap_t *map, const char **virname, unsigned 
         }
         else {
             cli_errmsg("%s\n", jstring);
+            ctx.options &= ~CL_SCAN_FILE_PROPERTIES;
+            rc = cli_mem_scandesc(jstring, strlen(jstring), &ctx);
         }
         json_object_put(ctx.properties); // frees
     }

@@ -180,6 +180,7 @@ static const char *ftypes_int[] = {
   "1:510:55AA:Disk Image - Master Boot Record:CL_TYPE_ANY:CL_TYPE_MBR:77",
   "0:512:4546492050415254:Disk Image - GUID Partition Table:CL_TYPE_ANY:CL_TYPE_GPT:77",
   "1:0:4552{510}504D0000:Disk Image - Apple Partition Map:CL_TYPE_ANY:CL_TYPE_APM:77",
+  "0:2:224d61676963223a20224a534f4e22:Internal properties:CL_TYPE_ANY:CL_TYPE_INTERNAL:77",
   NULL
 };
 

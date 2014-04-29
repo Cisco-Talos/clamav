@@ -120,6 +120,7 @@ static const struct ftmap_s {
     { "CL_TYPE_OOXML_WORD",	CL_TYPE_OOXML_WORD     	},
     { "CL_TYPE_OOXML_PPT",	CL_TYPE_OOXML_PPT     	},
     { "CL_TYPE_OOXML_XL",	CL_TYPE_OOXML_XL     	},
+    { "CL_TYPE_INTERNAL",	CL_TYPE_INTERNAL     	},
     { NULL,			CL_TYPE_IGNORED		}
 };
 
