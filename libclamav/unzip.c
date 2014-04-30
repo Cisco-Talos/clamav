@@ -46,6 +46,15 @@
 #include <bzlib.h>
 #endif
 
+#if HAVE_LIBXML2
+#ifdef _WIN32
+#ifndef LIBXML_WRITER_ENABLED
+#define LIBXML_WRITER_ENABLED 1
+#endif
+#endif
+#include <libxml/xmlreader.h>
+#endif
+
 #include "explode.h"
 #include "others.h"
 #include "clamav.h"
@@ -659,22 +668,50 @@ static int unzip_search(cli_ctx *ctx, const char *name, size_t nlen, uint32_t *l
 
 static int ooxml_content_cb(int fd, cli_ctx *ctx)
 {
-    cli_dbgmsg("in ooxml_content_cb\n");
-    cli_errmsg("HI MOM! IT FUCKING WORKS!\n");
-    /* locate core-properties */
-    /* extract core-properties and process */
-    /* locate extended-properties */
-    /* extract extended-properties and process */
-    /* locate custom-properties (optional)  */
-    /* extract custom-properties and process */
-    /* return ret */
+#if HAVE_LIBXML2
+    int tmp, i, ret = CL_SUCCESS;
+    const xmlChar *name, *value;
+    xmlTextReaderPtr reader = NULL;
 
+    cli_dbgmsg("in ooxml_content_cb\n");
+
+    reader = xmlReaderForFd(fd, "[Content_Types].xml", NULL, 0);
+    if (reader == NULL) {
+        cli_dbgmsg("ooxml_content_cb: xmlReaderForFd error for ""[Content_Types].xml""\n");
+        return CL_SUCCESS; // libxml2 failed!
+    }
+
+    /* locate core-properties, extended-properties, and custom-properties (optional)  */
+    while (xmlTextReaderRead(reader) == 1) {
+        name = xmlTextReaderConstLocalName(reader);
+        if (name == NULL) continue;
+
+        if (strcmp(name, "Override")) continue;
+
+        if (!xmlTextReaderHasAttributes(reader)) continue;
+
+        while (xmlTextReaderMoveToNextAttribute(reader) == 1) {
+            name = xmlTextReaderConstLocalName(reader);
+            value = xmlTextReaderConstValue(reader);
+            if (name == NULL || value == NULL) continue;
+
+            cli_dbgmsg("%s: %s\n", name, value);
+        }
+    }
+
+ oocml_content_exit:
+    xmlTextReaderClose(reader);
+    xmlFreeTextReader(reader);
+    return ret;
+#else
+    cli_dbgmsg("ooxml_content_cb: libxml2 needs to enabled!");
     return CL_SUCCESS;
+#endif
 }
 
 int cli_process_ooxml(cli_ctx *ctx)
 {
-    int ret = CL_SUCCESS;
+#if HAVE_LIBXML2
     uint32_t loff = 0;
 
     cli_dbgmsg("in cli_processooxml\n");
@@ -687,10 +724,12 @@ int cli_process_ooxml(cli_ctx *ctx)
         cli_dbgmsg("cli_process_ooxml: failed to find ""[Content_Types].xml""!\n");
         return CL_EFORMAT;
     }
-
-    /* loff conatins the location of the [Content Type].xml ZIP entry */
     cli_dbgmsg("cli_process_ooxml: found ""[Content_Types].xml"" @ %x\n", loff);
 
-    ret = unzip_single_internal(ctx, loff, ooxml_content_cb);
+    return unzip_single_internal(ctx, loff, ooxml_content_cb);
+#else
+    cli_dbgmsg("in cli_processooxml\n");
+    cli_dbgmsg("cli_process_ooxml: libxml2 needs to enabled!");
     return CL_SUCCESS;
+#endif
 }
