@@ -956,6 +956,9 @@ int scanmanager(const struct optstruct *opts)
 	procdev = sb.st_dev;
 #endif
 
+    if (optget(opts, "gen-json")->enabled)
+        options |= CL_SCAN_FILE_PROPERTIES;
+
     /* check filetype */
     if(!opts->filename && !optget(opts, "file-list")->enabled) {
 	/* we need full path for some reasons (eg. archive handling) */
