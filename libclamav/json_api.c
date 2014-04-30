@@ -44,7 +44,7 @@ int cli_jsonnull(json_object *obj, const char* key)
         return CL_ENULLARG;
     }
 
-    fpobj = json_object_new_object();
+    fpobj = json_object_new_string("null");
     if (NULL == fpobj) {
         cli_errmsg("json: no memory for json string object\n");
         return CL_EMEM;
@@ -226,6 +226,18 @@ int cli_jsonnull_nojson(const char* key)
 int cli_jsonstr_nojson(const char* key, const char* s)
 {
     nojson_func("nojson: %s: %s\n", key, s);
+    return CL_SUCCESS;
+}
+
+int cli_jsonstrlen_nojson(const char* key, const char* s, int len)
+{
+    char *sp = cli_malloc(len+1);
+    strncpy(sp, s, len);
+    sp[len] = '\0';
+
+    nojson_func("nojson: %s: %s\n", key, sp);
+
+    free(sp);
     return CL_SUCCESS;
 }
 
