@@ -1,6 +1,6 @@
 /*
- *  Copyright (C) 2014 Cisco Systems, Inc.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
+ *  Copyright (C) 2014 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: Tomasz Kojm
  *
@@ -3391,12 +3391,6 @@ static int scan_common(int desc, cl_fmap_t *map, const char **virname, unsigned 
     cli_logg_setup(&ctx);
     rc = map ? cli_map_scandesc(map, 0, map->len, &ctx, CL_TYPE_ANY) : cli_magic_scandesc(desc, &ctx);
 
-    if (ctx.options & CL_SCAN_ALLMATCHES) {
-	*virname = (char *)ctx.virname; /* temp hack for scanall mode until api augmentation */
-	if (rc == CL_CLEAN && ctx.num_viruses)
-	    rc = CL_VIRUS;
-    }
-
 #if HAVE_JSON
     if (ctx.options & CL_SCAN_FILE_PROPERTIES && ctx.properties!=NULL) {
         // serialize, etc.
@@ -3412,6 +3406,12 @@ static int scan_common(int desc, cl_fmap_t *map, const char **virname, unsigned 
         json_object_put(ctx.properties); // frees
     }
 #endif
+
+    if (ctx.options & CL_SCAN_ALLMATCHES) {
+	*virname = (char *)ctx.virname; /* temp hack for scanall mode until api augmentation */
+	if (rc == CL_CLEAN && ctx.num_viruses)
+	    rc = CL_VIRUS;
+    }
 
     cli_bitset_free(ctx.hook_lsig_matches);
     free(ctx.fmap);

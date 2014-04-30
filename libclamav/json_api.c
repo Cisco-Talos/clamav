@@ -1,7 +1,7 @@
 /*
  * JSON Object API
  * 
- * Copyright (C) 2014 Cisco Systems, Inc.
+ * Copyright (C) 2014 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  * 
  * Authors: Kevin Lin
  * 
