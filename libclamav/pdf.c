@@ -3021,5 +3021,18 @@ static void pdf_export_json(struct pdf_struct *pdf)
         cli_jsonint(pdfobj, "LaunchCount", pdf->stats.nlaunch);
     if (pdf->stats.npage)
         cli_jsonint(pdfobj, "PageCount", pdf->stats.npage);
+    if (pdf->flags & (1 << BAD_PDF_VERSION))
+        cli_jsonbool(pdfobj, "BadVersion", 1);
+    if (pdf->flags & (1 << BAD_PDF_HEADERPOS))
+        cli_jsonbool(pdfobj, "BadHeaderPosition", 1);
+    if (pdf->flags & (1 << BAD_PDF_TRAILER))
+        cli_jsonbool(pdfobj, "BadTrailer", 1);
+    if (pdf->flags & (1 << BAD_PDF_TOOMANYOBJS))
+        cli_jsonbool(pdfobj, "TooManyObjects", 1);
+    if (pdf->flags & (1 << ENCRYPTED_PDF)) {
+        cli_jsonbool(pdfobj, "Encrypted", 1);
+        if (pdf->flags & (1 << DECRYPTABLE_PDF))
+            cli_jsonbool(pdfobj, "Decryptable", 1);
+    }
 #endif
 }
