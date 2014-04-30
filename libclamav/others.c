@@ -990,6 +990,26 @@ void cli_append_virus(cli_ctx * ctx, const char * virname)
     }
     else
 	*ctx->virname = virname;
+#if HAVE_JSON
+    if (SCAN_PROPERTIES && ctx->wrkproperty) {
+        json_object *arrobj, *virobj;
+        arrobj  = json_object_object_get(ctx->wrkproperty, "Viruses");
+        if (NULL == arrobj) {
+            arrobj = json_object_new_array();
+            if (NULL == arrobj) {
+                cli_errmsg("cli_append_virus: no memory for json virus array\n");
+                return;
+            }
+            json_object_object_add(ctx->wrkproperty, "Viruses", arrobj);
+        }
+        virobj = json_object_new_string(virname);
+        if (NULL == virobj) {
+            cli_errmsg("cli_append_virus: no memory for json virus name object\n");
+            return;
+        }
+        json_object_array_add(arrobj, virobj);
+    }
+#endif
 }
 
 const char * cli_get_last_virus(const cli_ctx * ctx)
