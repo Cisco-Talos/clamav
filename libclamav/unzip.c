@@ -666,12 +666,24 @@ static int unzip_search(cli_ctx *ctx, const char *name, size_t nlen, uint32_t *l
     return ret;
 }
 
+static int ooxml_core_cb(int fd, cli_ctx *ctx)
+{
+    cli_dbgmsg("in ooxml_core_cb\n");
+}
+
+static int ooxml_extn_cb(int fd, cli_ctx *ctx)
+{
+    cli_dbgmsg("in ooxml_extn_cb\n");
+}
+
 static int ooxml_content_cb(int fd, cli_ctx *ctx)
 {
 #if HAVE_LIBXML2
-    int tmp, i, ret = CL_SUCCESS;
-    const xmlChar *name, *value;
+    int ret = CL_SUCCESS;
+    int core=0, extn=0, cust=0;
+    const xmlChar *name, *value, *CT, *PN;
     xmlTextReaderPtr reader = NULL;
+    uint32_t loff;
 
     cli_dbgmsg("in ooxml_content_cb\n");
 
@@ -690,16 +702,73 @@ static int ooxml_content_cb(int fd, cli_ctx *ctx)
 
         if (!xmlTextReaderHasAttributes(reader)) continue;
 
+        CT = NULL; PN = NULL;
         while (xmlTextReaderMoveToNextAttribute(reader) == 1) {
             name = xmlTextReaderConstLocalName(reader);
             value = xmlTextReaderConstValue(reader);
             if (name == NULL || value == NULL) continue;
 
+            if (!xmlStrcmp(name, "ContentType")) {
+                CT = value;
+            }
+            else if (!xmlStrcmp(name, "PartName")) {
+                PN = value;
+            }
+
             cli_dbgmsg("%s: %s\n", name, value);
         }
+
+        if (!CT && !PN) continue;
+
+        if (!core && !xmlStrcmp(CT, "application/vnd.openxmlformats-package.core-properties+xml")) {
+            /* default: /docProps/core.xml*/
+            if (unzip_search(ctx, PN+1, xmlStrlen(PN)-1, &loff) != CL_VIRUS) {
+                cli_dbgmsg("cli_process_ooxml: failed to find core properties file \"%s\"!\n", PN);
+            }
+            else {
+                cli_dbgmsg("ooxml_content_cb: found core properties file \"%s\" @ %x\n", PN, loff);
+                ret = unzip_single_internal(ctx, loff, ooxml_core_cb);
+            }
+            core = 1;
+        }
+        else if (!extn && !xmlStrcmp(CT, "application/vnd.openxmlformats-officedocument.extended-properties+xml")) {
+            /* default: /docProps/app.xml */
+            if (unzip_search(ctx, PN+1, xmlStrlen(PN)-1, &loff) != CL_VIRUS) {
+                cli_dbgmsg("cli_process_ooxml: failed to find extended properties file \"%s\"!\n", PN);
+            }
+            else {
+                cli_dbgmsg("ooxml_content_cb: found extended properties file \"%s\" @ %x\n", PN, loff);
+                ret = unzip_single_internal(ctx, loff, ooxml_extn_cb);
+            }
+            extn = 1;
+        }
+        else if (!cust && !xmlStrcmp(CT, "application/vnd.openxmlformats-officedocument.custom-properties+xml")) {
+            /* default: /docProps/custom.xml */
+            if (unzip_search(ctx, PN+1, xmlStrlen(PN)-1, &loff) != CL_VIRUS) {
+                cli_dbgmsg("cli_process_ooxml: failed to find custom properties file \"%s\"!\n", PN);
+            }
+            else {
+                cli_dbgmsg("ooxml_content_cb: found custom properties file \"%s\" @ %x\n", PN, loff);
+                /* custom properties ignored for now */
+            }
+            cust = 1;
+        }
+
+        if (ret != CL_SUCCESS)
+            goto ooxml_content_exit;
     }
 
- oocml_content_exit:
+    if (!core) {
+        cli_dbgmsg("cli_process_ooxml: file does not contain core properties file\n");
+    }
+    if (!extn) {
+        cli_dbgmsg("cli_process_ooxml: file does not contain extended properties file\n");
+    }
+    if (!cust) {
+        cli_dbgmsg("cli_process_ooxml: file does not contain custom properties file\n");
+    }
+
+ ooxml_content_exit:
     xmlTextReaderClose(reader);
     xmlFreeTextReader(reader);
     return ret;
