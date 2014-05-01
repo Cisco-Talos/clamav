@@ -364,6 +364,7 @@
     <ClCompile Include="..\libclamav\nsis\infblock.c" />
     <ClCompile Include="..\libclamav\nsis\nulsft.c" />
     <ClCompile Include="..\libclamav\ole2_extract.c" />
+    <ClCompile Include="..\libclamav\ooxml.c" />
     <ClCompile Include="..\libclamav\others.c" />
     <ClCompile Include="..\libclamav\others_common.c" />
     <ClCompile Include="..\libclamav\packlibs.c" />

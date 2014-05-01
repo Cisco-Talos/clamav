@@ -232,6 +232,8 @@ libclamav_la_SOURCES = \
 	untar.h \
 	unzip.c \
 	unzip.h \
+	ooxml.c \
+	ooxml.h \
 	inflate64.c \
 	inflate64.h \
 	inffixed64.h \

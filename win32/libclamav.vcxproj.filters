@@ -201,6 +201,9 @@
     <ClCompile Include="..\libclamav\ole2_extract.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\libclamav\ooxml.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\libclamav\others.c">
       <Filter>Source Files</Filter>
     </ClCompile>

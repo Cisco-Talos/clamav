@@ -33,7 +33,6 @@ int cli_unzip(cli_ctx *);
 int cli_unzip_single_internal(cli_ctx *, off_t, zip_cb);
 int cli_unzip_single(cli_ctx *, off_t);
 int unzip_search(cli_ctx *, const char *, size_t, uint32_t *);
-int cli_process_ooxml(cli_ctx *);
 
 #ifdef UNZIP_PRIVATE
 #define F_ENCR  (1<<0)
