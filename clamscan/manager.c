@@ -956,8 +956,10 @@ int scanmanager(const struct optstruct *opts)
 	procdev = sb.st_dev;
 #endif
 
+#if HAVE_JSON
     if (optget(opts, "gen-json")->enabled)
         options |= CL_SCAN_FILE_PROPERTIES;
+#endif
 
     /* check filetype */
     if(!opts->filename && !optget(opts, "file-list")->enabled) {
