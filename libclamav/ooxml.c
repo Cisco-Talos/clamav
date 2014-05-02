@@ -61,11 +61,12 @@ static int ooxml_is_int(const char *value, size_t len, int32_t *val2)
 
 static int ooxml_basic_json(int fd, cli_ctx *ctx, const char *key)
 {
+    int ret = CL_SUCCESS;
 #if HAVE_LIBXML2
 #if HAVE_JSON
     const xmlChar *stack[OOXML_JSON_RECLEVEL];
     json_object *summary, *wrkptr;
-    int type, rlvl = 0, ret = CL_SUCCESS;
+    int type, rlvl = 0;
     int32_t val2;
     const xmlChar *name, *value;
     xmlTextReaderPtr reader = NULL;
