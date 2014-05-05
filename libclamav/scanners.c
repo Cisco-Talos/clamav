@@ -3397,12 +3397,33 @@ static int scan_common(int desc, cl_fmap_t *map, const char **virname, unsigned 
         const char * jstring = json_object_to_json_string(ctx.properties);
         if (NULL == jstring) {
             cli_errmsg("scan_common: no memory for json serialization.\n");
+            rc = CL_EMEM;
         }
-        else {
-            cli_errmsg("%s\n", jstring);
+        else if (rc != CL_VIRUS) {
             ctx.options &= ~CL_SCAN_FILE_PROPERTIES;
             rc = cli_mem_scandesc(jstring, strlen(jstring), &ctx);
         }
+        cli_errmsg("%s\n", jstring); //temp
+
+        if (ctx.engine->keeptmp && NULL!=jstring) {
+            int ret = CL_SUCCESS, fd = -1;
+            char * tmpname = NULL;
+            if ((ret = cli_gentempfd(ctx.engine->tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
+                cli_dbgmsg("scan_common: Can't create json properties file.\n");
+            } else {
+                if (cli_writen(fd, jstring, strlen(jstring)) < 0) {
+                    cli_dbgmsg("scan_common: cli_writen error writing json properties file.\n");
+                    ret = CL_EWRITE;
+                }
+            }
+            if (fd != -1)
+                close(fd);
+            if (NULL != tmpname)
+                free(tmpname);
+            if (rc == CL_SUCCESS)
+                rc = ret;
+        }
+
         json_object_put(ctx.properties); // frees
     }
 #endif
