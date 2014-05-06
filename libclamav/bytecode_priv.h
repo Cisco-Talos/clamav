@@ -32,6 +32,9 @@
 #include "mpool.h"
 #include "hashtab.h"
 #include "events.h"
+#if HAVE_JSON
+#include "json/json.h"
+#endif
 
 typedef uint32_t operand_t;
 typedef uint16_t bbid_t;
@@ -227,6 +230,10 @@ struct cli_bc_ctx {
     cli_events_t *bc_events;
     int on_jit;
     int no_diff;
+#if HAVE_JSON
+    json_object **jsonobjs;
+    unsigned njsonobjs;
+#endif
 };
 struct cli_all_bc;
 int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct cli_bc_func *func, const struct cli_bc_inst *inst);
