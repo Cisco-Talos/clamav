@@ -56,6 +56,15 @@ int connect_host(const char *host, const char *port, uint32_t timeout, int useAs
     socklen_t len;
     fd_set read_fds, write_fds;
     struct timeval tv;
+#ifdef _WIN32
+	int iResult;
+	WSADATA wsaData;
+
+	/* Force initialization of Windows sockets, even if it already happened elsewhere */
+	iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
+	if (iResult != 0)
+		return -1;
+#endif
 
     memset(&hints, 0x00, sizeof(struct addrinfo));
     hints.ai_family = AF_UNSPEC;
@@ -80,7 +89,9 @@ int connect_host(const char *host, const char *port, uint32_t timeout, int useAs
         if ((error = connect(sockfd, p->ai_addr, p->ai_addrlen))) {
             if (useAsync) {
                 if (errno != EINPROGRESS) {
+#ifndef _WIN32
                     close(sockfd);
+#endif
                     continue;
                 }
                 errno = 0;
@@ -121,8 +132,10 @@ int connect_host(const char *host, const char *port, uint32_t timeout, int useAs
 
     if (!(p)) {
         freeaddrinfo(servinfo);
+#ifndef _WIN32
         if (sockfd >= 0)
             close(sockfd);
+#endif
         return -1;
     }
 
