@@ -2,8 +2,8 @@
  *  ClamAV bytecode internal API
  *  This is an automatically generated file!
  *
- *  Copyright (C) 2009-2010 Sourcefire, Inc.
- *  All rights reserved.
+ *  Copyright (C) 2009-2013 Sourcefire, Inc.
+ *  Copyright (C) 2014 Cisco Systems, Inc. and/or its affiliates. *  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -50,7 +50,7 @@ int32_t cli_bcapi_file_find(struct cli_bc_ctx *ctx , const uint8_t*, uint32_t);
 int32_t cli_bcapi_file_byteat(struct cli_bc_ctx *ctx , uint32_t);
 uint8_t* cli_bcapi_malloc(struct cli_bc_ctx *ctx , uint32_t);
 uint32_t cli_bcapi_test2(struct cli_bc_ctx *ctx , uint32_t);
-int32_t cli_bcapi_get_pe_section(struct cli_bc_ctx *ctx , void*, uint32_t);
+int32_t cli_bcapi_get_pe_section(struct cli_bc_ctx *ctx , struct cli_exe_section*, uint32_t);
 int32_t cli_bcapi_fill_buffer(struct cli_bc_ctx *ctx , uint8_t*, uint32_t, uint32_t, uint32_t, uint32_t);
 int32_t cli_bcapi_extract_new(struct cli_bc_ctx *ctx , int32_t);
 int32_t cli_bcapi_read_number(struct cli_bc_ctx *ctx , uint32_t);
@@ -122,5 +122,12 @@ int32_t cli_bcapi_pdf_get_dumpedobjid(struct cli_bc_ctx *ctx );
 int32_t cli_bcapi_matchicon(struct cli_bc_ctx *ctx , const uint8_t*, int32_t, const uint8_t*, int32_t);
 int32_t cli_bcapi_running_on_jit(struct cli_bc_ctx *ctx );
 int32_t cli_bcapi_get_file_reliability(struct cli_bc_ctx *ctx );
+int32_t cli_bcapi_json_is_active(struct cli_bc_ctx *ctx );
+int32_t cli_bcapi_json_get_object(struct cli_bc_ctx *ctx , const int8_t*, int32_t, int32_t);
+int32_t cli_bcapi_json_get_type(struct cli_bc_ctx *ctx , int32_t);
+int32_t cli_bcapi_json_get_array_length(struct cli_bc_ctx *ctx , int32_t);
+int32_t cli_bcapi_json_get_array_idx(struct cli_bc_ctx *ctx , int32_t, int32_t);
+int32_t cli_bcapi_json_get_string_length(struct cli_bc_ctx *ctx , int32_t);
+int32_t cli_bcapi_json_get_string(struct cli_bc_ctx *ctx , int8_t*, int32_t, int32_t);
 
 #endif
