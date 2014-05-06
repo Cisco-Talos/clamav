@@ -99,7 +99,8 @@ enum FunctionalityLevels {
     FUNC_LEVEL_097_8     = 69, /**< LibClamAV release 0.97.8 */
     FUNC_LEVEL_098_1     = 76, /**< LibClamAV release 0.98.2 */ /*last syncing to clamav*/
     FUNC_LEVEL_098_2     = 77, /**< LibClamAV release 0.98.2 */
-    FUNC_LEVEL_098_3     = 78, /**< LibClamAV release 0.98.3 */
+    FUNC_LEVEL_098_3     = 77, /**< LibClamAV release 0.98.3 */
+    FUNC_LEVEL_098_4     = 78, /**< LibClamAV release 0.98.4: JSON reading API requires this minimum level */
     FUNC_LEVEL_100       = 100 /*future release candidate*/
 };
 
@@ -1118,7 +1119,7 @@ int32_t running_on_jit(void);
 int32_t get_file_reliability(void);
 
 /* ----------------- END 0.96.4 APIs ---------------------------------- */
-/* ----------------- BEGIN 0.98.3 APIs -------------------------------- */
+/* ----------------- BEGIN 0.98.4 APIs -------------------------------- */
 /* ----------------- JSON Parsing APIs -------------------------------- */
 /*
 \group_json
@@ -1147,11 +1148,6 @@ int32_t json_get_object(const int8_t* name, int32_t name_len, int32_t objid);
  */
 int32_t json_get_type(int32_t objid);
 
-
-//int32_t json_get_boolean(int32_t objid);
-//double json_get_double(int32_t objid);
-//int32_t json_get_int(int32_t objid);
-
 /*
 \group_json
  * @return number of elements in the json array of objid
@@ -1174,7 +1170,7 @@ int32_t json_get_array_idx(int32_t idx, int32_t objid);
 
 /*
 \group_json
- * @return length of json string of objid
+ * @return length of json string of objid, not including terminating null-character
  * @return -1 if an error has occurred
  * @return -2 if object is not JSON_TYPE_STRING
  * @param[in] objid - id value of json object (should be JSON_TYPE_STRING) to query
@@ -1183,15 +1179,34 @@ int32_t json_get_string_length(int32_t objid);
 
 /*
 \group_json
- * @return number of characters transferred (capped by str_len)
+ * @return number of characters transferred (capped by str_len), 
+ *         including terminating null-character
  * @return -1 if an error has occurred
  * @return -2 if object is not JSON_TYPE_STRING
- * @param[out] str - user location to store string data
- * @param[in] str_len - length of str or limit of string data to read
+ * @param[out] str - user location to store string data; will be null-terminated
+ * @param[in] str_len - length of str or limit of string data to read,
+ *                      including terminating null-character
  * @param[in] objid - id value of json object (should be JSON_TYPE_STRING) to query
  */
 int32_t json_get_string(int8_t* str, int32_t str_len, int32_t objid);
 
-/* ----------------- END 0.98.3 APIs ---------------------------------- */
+/*
+\group_json
+ * @return boolean value of queried objid; will force other types to boolean
+ * @param[in] objid - id value of json object to query
+ */
+int32_t json_get_boolean(int32_t objid);
+
+/*
+\group_json
+ * @return integer value of queried objid; will force other types to integer
+ * @param[in] objid - id value of json object to query
+ */
+int32_t json_get_int(int32_t objid);
+
+/* bytecode does not support double type */
+//double json_get_double(int32_t objid);
+
+/* ----------------- END 0.98.4 APIs ---------------------------------- */
 #endif
 #endif

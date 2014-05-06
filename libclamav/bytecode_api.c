@@ -1747,7 +1747,7 @@ int32_t cli_bcapi_json_get_string_length(struct cli_bc_ctx *ctx, int32_t objid)
 
     INIT_JSON_OBJS(ctx);
     if (objid < 0 || objid >= ctx->njsonobjs) {
-        cli_dbgmsg("bytecode api[json_array_get_idx]: invalid json objid requested\n");
+        cli_dbgmsg("bytecode api[json_get_string_length]: invalid json objid requested\n");
         return -1;
     }
 
@@ -1781,7 +1781,7 @@ int32_t cli_bcapi_json_get_string(struct cli_bc_ctx *ctx, int8_t* str, int32_t s
 
     INIT_JSON_OBJS(ctx);
     if (objid < 0 || objid >= ctx->njsonobjs) {
-        cli_dbgmsg("bytecode api[json_array_get_idx]: invalid json objid requested\n");
+        cli_dbgmsg("bytecode api[json_get_string]: invalid json objid requested\n");
         return -1;
     }
 
@@ -1815,3 +1815,44 @@ int32_t cli_bcapi_json_get_string(struct cli_bc_ctx *ctx, int8_t* str, int32_t s
     return -1;
 #endif
 }
+
+int32_t cli_bcapi_json_get_boolean(struct cli_bc_ctx *ctx, int32_t objid)
+{
+#if HAVE_JSON
+    json_object *jobj;
+
+    INIT_JSON_OBJS(ctx);
+    if (objid < 0 || objid >= ctx->njsonobjs) {
+        cli_dbgmsg("bytecode api[json_get_boolean]: invalid json objid requested\n");
+        return -1;
+    }
+
+    jobj = ctx->jsonobjs[objid];
+    return json_object_get_boolean(jobj);
+#else
+    cli_dbgmsg("bytecode api: libjson is not enabled!\n");
+    return 0;
+#endif
+}
+
+int32_t cli_bcapi_json_get_int(struct cli_bc_ctx *ctx, int32_t objid)
+{
+#if HAVE_JSON
+    json_object *jobj;
+
+    INIT_JSON_OBJS(ctx);
+    if (objid < 0 || objid >= ctx->njsonobjs) {
+        cli_dbgmsg("bytecode api[json_get_int]: invalid json objid requested\n");
+        return -1;
+    }
+
+    jobj = ctx->jsonobjs[objid];
+    return json_object_get_int(jobj);
+#else
+    cli_dbgmsg("bytecode api: libjson is not enabled!\n");
+    return 0;
+#endif
+}
+
+//int64_t cli_bcapi_json_get_int64(struct cli_bc_ctx *ctx, int32_t objid);
+//double cli_bcapi_json_get_double(struct cli_bc_ctx *ctx, int32_t objid);

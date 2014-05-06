@@ -129,5 +129,7 @@ int32_t cli_bcapi_json_get_array_length(struct cli_bc_ctx *ctx , int32_t);
 int32_t cli_bcapi_json_get_array_idx(struct cli_bc_ctx *ctx , int32_t, int32_t);
 int32_t cli_bcapi_json_get_string_length(struct cli_bc_ctx *ctx , int32_t);
 int32_t cli_bcapi_json_get_string(struct cli_bc_ctx *ctx , int8_t*, int32_t, int32_t);
+int32_t cli_bcapi_json_get_boolean(struct cli_bc_ctx *ctx , int32_t);
+int32_t cli_bcapi_json_get_int(struct cli_bc_ctx *ctx , int32_t);
 
 #endif
