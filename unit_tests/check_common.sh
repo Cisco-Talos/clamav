@@ -155,7 +155,7 @@ end_valgrind() {
 # ----------- clamscan tests --------------------------------------------------------
 test_clamscan() {
     test_start $1
-    if test_run 1 $CLAMSCAN --debug --quiet -dtest-db/test.hdb $TESTFILES --log=clamscan.log; then
+    if test_run 1 $CLAMSCAN --gen-json --debug --quiet -dtest-db/test.hdb $TESTFILES --log=clamscan.log; then
 	scan_failed clamscan.log "clamscan didn't detect all testfiles correctly"
     fi
     NINFECTED=`grep "Infected files" clamscan.log | cut -f2 -d: | sed -e 's/ //g'`
@@ -166,12 +166,12 @@ test_clamscan() {
     cat <<EOF >test-db/test.pdb
 H:example.com
 EOF
-    if test_run 0 $CLAMSCAN --quiet -dtest-db $abs_srcdir/input/phish-test-* --log=clamscan2.log; then
+    if test_run 0 $CLAMSCAN --gen-json --quiet -dtest-db $abs_srcdir/input/phish-test-* --log=clamscan2.log; then
 	cat clamscan2.log;
 	die "Failed to run clamscan (phish-test)";
     fi
 
-    if test_run 1 $CLAMSCAN --quiet --phishing-ssl --phishing-cloak -dtest-db $abs_srcdir/input/phish-test-* --log=clamscan3.log; then
+    if test_run 1 $CLAMSCAN --gen-json --quiet --phishing-ssl --phishing-cloak -dtest-db $abs_srcdir/input/phish-test-* --log=clamscan3.log; then
 	cat clamscan3.log;
 	die "Failed to run clamscan (phish-test2)";
     fi
@@ -190,7 +190,7 @@ EOF
 ClamAV-Test-Icon-EA0X;Engine:52-1000,Target:1,IconGroup1:ea0x-grp1,IconGroup2:*;(0);0:4d5a
 ClamAV-Test-Icon-IScab;Engine:52-1000,Target:1,IconGroup2:iscab-grp2;(0);0:4d5a
 EOF
-    if test_run 1 $CLAMSCAN --quiet -dtest-db $TESTFILES --log=clamscan4.log; then
+    if test_run 1 $CLAMSCAN --gen-json --quiet -dtest-db $TESTFILES --log=clamscan4.log; then
 	scan_failed clamscan4.log "clamscan didn't detect icons correctly"
     fi
     NINFECTED=`grep "Infected files" clamscan4.log | cut -f2 -d: | sed -e 's/ //g'`
@@ -212,7 +212,7 @@ EOF
 cat <<EOF >test-db/test.ldb
 Clam-VI-Test:Target;Engine:52-255,Target:1;(0&1);VI:43006f006d00700061006e0079004e0061006d0065000000000063006f006d00700061006e007900;VI:500072006f0064007500630074004e0061006d0065000000000063006c0061006d00
 EOF
-    if test_run 1 $CLAMSCAN --quiet -dtest-db/test.ldb $TESTFILES --log=clamscan5.log; then
+    if test_run 1 $CLAMSCAN --gen-json --quiet -dtest-db/test.ldb $TESTFILES --log=clamscan5.log; then
 	scan_failed clamscan5.log "clamscan didn't detect VI correctly"
     fi
     grep "clam_ISmsi_ext.exe: Clam-VI-Test:Target.UNOFFICIAL FOUND" clamscan5.log || die "VI-test1 failed"
