@@ -1565,7 +1565,9 @@ static int32_t cli_bcapi_json_objs_init(struct cli_bc_ctx *ctx) {
 #endif
 }
 
-#define INIT_JSON_OBJS(ctx)\
+#define INIT_JSON_OBJS(ctx)                                             \
+    if (!cli_bcapi_json_is_active(ctx))                                 \
+        return -1;                                                      \
     if (ctx->njsonobjs == 0) {                                          \
         if (cli_bcapi_json_objs_init(ctx)) {                            \
             return -1;                                                  \
