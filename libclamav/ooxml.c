@@ -30,6 +30,9 @@
 #include "cltypes.h"
 #include "others.h"
 #include "unzip.h"
+#if HAVE_JSON
+#include "json/json.h"
+#endif
 #include "json_api.h"
 
 #if HAVE_LIBXML2
