@@ -41,37 +41,5 @@ $noresave{$key} = "$nosave";
 # labels from external_latex_labels array.
 
 
-$key = q/sec:clamconf/;
-$external_latex_labels{$key} = q|5.8|; 
-$noresave{$key} = "$nosave";
-
-$key = q/sec:components/;
-$external_latex_labels{$key} = q|3.1|; 
-$noresave{$key} = "$nosave";
-
-$key = q/sec:clamavmilter/;
-$external_latex_labels{$key} = q|4.2|; 
-$noresave{$key} = "$nosave";
-
-$key = q/On-access/;
-$external_latex_labels{$key} = q|5.3|; 
-$noresave{$key} = "$nosave";
-
-$key = q/clamd/;
-$external_latex_labels{$key} = q|5.1|; 
-$noresave{$key} = "$nosave";
-
-$key = q/conf:freshclam/;
-$external_latex_labels{$key} = q|4.4|; 
-$noresave{$key} = "$nosave";
-
-$key = q/unit-testing/;
-$external_latex_labels{$key} = q|3.6|; 
-$noresave{$key} = "$nosave";
-
-$key = q/sec:freshclam/;
-$external_latex_labels{$key} = q|5.7|; 
-$noresave{$key} = "$nosave";
-
 1;
 
