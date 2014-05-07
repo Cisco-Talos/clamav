@@ -18,6 +18,10 @@
  *  MA 02110-1301, USA.
  */
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -39,6 +43,8 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #endif
+
+#include "platform.h"
 
 #include <openssl/ssl.h>
 #include <openssl/err.h>
@@ -81,7 +87,7 @@ int connect_host(const char *host, const char *port, uint32_t timeout, int useAs
         if (useAsync) {
             flags = fcntl(sockfd, F_GETFL, 0);
             if (fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) < 0) {
-                close(sockfd);
+                closesocket(sockfd);
                 continue;
             }
         }
@@ -89,9 +95,7 @@ int connect_host(const char *host, const char *port, uint32_t timeout, int useAs
         if ((error = connect(sockfd, p->ai_addr, p->ai_addrlen))) {
             if (useAsync) {
                 if (errno != EINPROGRESS) {
-#ifndef _WIN32
-                    close(sockfd);
-#endif
+                    closesocket(sockfd);
                     continue;
                 }
                 errno = 0;
@@ -105,22 +109,22 @@ int connect_host(const char *host, const char *port, uint32_t timeout, int useAs
                 tv.tv_sec = timeout;
                 tv.tv_usec = 0;
                 if (select(sockfd + 1, &read_fds, &write_fds, NULL, &tv) <= 0) {
-                    close(sockfd);
+                    closesocket(sockfd);
                     continue;
                 }
 
                 if (FD_ISSET(sockfd, &read_fds) || FD_ISSET(sockfd, &write_fds)) {
                     len = sizeof(error);
                     if (getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &error, &len) < 0) {
-                        close(sockfd);
+                        closesocket(sockfd);
                         continue;
                     }
                 } else {
-                    close(sockfd);
+                    closesocket(sockfd);
                     continue;
                 }
             } else {
-                close(sockfd);
+                closesocket(sockfd);
                 continue;
             }
         }
@@ -132,10 +136,8 @@ int connect_host(const char *host, const char *port, uint32_t timeout, int useAs
 
     if (!(p)) {
         freeaddrinfo(servinfo);
-#ifndef _WIN32
         if (sockfd >= 0)
-            close(sockfd);
-#endif
+            closesocket(sockfd);
         return -1;
     }
 
@@ -144,7 +146,7 @@ int connect_host(const char *host, const char *port, uint32_t timeout, int useAs
     /* Return to using a synchronous socket to make Linux happy */
     if (useAsync) {
         if (fcntl(sockfd, F_SETFL, flags) < 0) {
-            close(sockfd);
+            closesocket(sockfd);
             return -1;
         }
     }
@@ -261,7 +263,7 @@ void submit_post(const char *host, const char *port, const char *method, const c
     cli_dbgmsg("stats - Connected to %s:%s\n", host, port);
 
     if (send(sockfd, buf, strlen(buf), 0) != strlen(buf)) {
-        close(sockfd);
+        closesocket(sockfd);
         free(buf);
         return;
     }
@@ -296,6 +298,6 @@ void submit_post(const char *host, const char *port, const char *method, const c
         }
     }
 
-    close(sockfd);
+    closesocket(sockfd);
     free(buf);
 }
