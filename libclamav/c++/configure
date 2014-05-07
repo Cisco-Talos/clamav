@@ -637,6 +637,9 @@ ac_subst_vars='am__EXEEXT_FALSE
 am__EXEEXT_TRUE
 LTLIBOBJS
 LIBOBJS
+JSON_CPPFLAGS
+JSON_LDFLAGS
+JSON_LIBS
 BUILD_LLVM3_FALSE
 BUILD_LLVM3_TRUE
 BUILD_EXTERNAL_LLVM_FALSE
@@ -800,6 +803,7 @@ with_system_llvm
 enable_llvm
 enable_optimized
 enable_all_jit_targets
+with_libjson
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1459,6 +1463,8 @@ Optional Packages:
                         (or the compiler's sysroot if not specified).
   -with-system-llvm       Use system llvm instead of built-in, requires full
                           path to llvm-config
+  --with-libjson=DIR   path to directory containing libjson (default=
+    /usr/local or /usr if not found in /usr/local)
 
 Some influential environment variables:
   CXX         C++ compiler command
@@ -15724,6 +15730,105 @@ else
   BUILD_LLVM3_TRUE='#'
   BUILD_LLVM3_FALSE=
 fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for libjson installation" >&5
+$as_echo_n "checking for libjson installation... " >&6; }
+
+
+# Check whether --with-libjson was given.
+if test "${with_libjson+set}" = set; then :
+  withval=$with_libjson;
+if test "$withval"; then
+    LIBJSON_HOME="$withval"
+fi
+
+else
+
+LIBJSON_HOME=/usr/local
+if test ! -f "$LIBJSON_HOME/include/json/json.h"
+then
+    LIBJSON_HOME=/usr
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $LIBJSON_HOME" >&5
+$as_echo "$LIBJSON_HOME" >&6; }
+
+fi
+
+
+have_json="no"
+
+if test ! -f "$LIBJSON_HOME/include/json/json.h"
+then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: json not found." >&5
+$as_echo "$as_me: WARNING: json not found." >&2;}
+else
+JSON_LDFLAGS="-L$LIBJSON_HOME/lib"
+JSON_LIBS="-ljson"
+JSON_CPPFLAGS="-I$LIBJSON_HOME/include"
+
+save_LDFLAGS="$LDFLAGS"
+LDFLAGS="-L$LIBJSON_HOME/lib $JSON_LIBS"
+
+save_CFLAGS="$CFLAGS"
+CFLAGS="$JSON_CPPFLAGS"
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for json_object_new_object in -ljson" >&5
+$as_echo_n "checking for json_object_new_object in -ljson... " >&6; }
+if ${ac_cv_lib_json_json_object_new_object+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-ljson  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char json_object_new_object ();
+int
+main ()
+{
+return json_object_new_object ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_json_json_object_new_object=yes
+else
+  ac_cv_lib_json_json_object_new_object=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_json_json_object_new_object" >&5
+$as_echo "$ac_cv_lib_json_json_object_new_object" >&6; }
+if test "x$ac_cv_lib_json_json_object_new_object" = xyes; then :
+  have_json="yes"
+else
+  as_fn_error $? "Your libjson installation is misconfigured or missing" "$LINENO" 5
+fi
+
+
+LDFLAGS="$save_LDFLAGS"
+CFLAGS="$save_CFLAGS"
+fi
+
+if test "$have_json" = "yes"; then
+
+$as_echo "#define HAVE_JSON 1" >>confdefs.h
+
+fi
+
+
+
+
 
 
 ac_config_files="$ac_config_files Makefile"

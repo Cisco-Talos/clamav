@@ -91,6 +91,7 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/check_gnu_make.m4 \
 	$(top_srcdir)/m4/cxx_flag_check.m4 $(top_srcdir)/m4/libtool.m4 \
 	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
 	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
+	$(top_srcdir)/../../m4/reorganization/libs/json.m4 \
 	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
@@ -890,6 +891,9 @@ INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
+JSON_CPPFLAGS = @JSON_CPPFLAGS@
+JSON_LDFLAGS = @JSON_LDFLAGS@
+JSON_LIBS = @JSON_LIBS@
 LD = @LD@
 LDFLAGS = @LDFLAGS@
 LIBOBJS = @LIBOBJS@
@@ -1007,15 +1011,16 @@ libclamavcxx_la_SOURCES = bytecode2llvm.cpp ClamBCRTChecks.cpp \
 #LLVM_DEPS=$(shell $(LLVM_CONFIG) --libfiles jit nativecodegen)
 @BUILD_EXTERNAL_LLVM_TRUE@libclamavcxx_la_CXXFLAGS = $(AM_CPPFLAGS) \
 @BUILD_EXTERNAL_LLVM_TRUE@	@LLVMCONFIG_CXXFLAGS@ -fexceptions \
-@BUILD_EXTERNAL_LLVM_TRUE@	-DLLVM28 -DLLVM29 $(am__append_1)
+@BUILD_EXTERNAL_LLVM_TRUE@	-DLLVM28 -DLLVM29 @JSON_CPPFLAGS@ \
+@BUILD_EXTERNAL_LLVM_TRUE@	$(am__append_1)
 @BUILD_EXTERNAL_LLVM_FALSE@libclamavcxx_la_LDFLAGS = -no-undefined
-@BUILD_EXTERNAL_LLVM_TRUE@libclamavcxx_la_LDFLAGS = @LLVMCONFIG_LDFLAGS@ @LLVMCONFIG_LIBS@
+@BUILD_EXTERNAL_LLVM_TRUE@libclamavcxx_la_LDFLAGS = @LLVMCONFIG_LDFLAGS@ @LLVMCONFIG_LIBS@ @JSON_LDFLAGS@
 @BUILD_EXTERNAL_LLVM_FALSE@libclamavcxx_la_DEPENDENCIES =  \
 @BUILD_EXTERNAL_LLVM_FALSE@	libllvmjit.la libllvmcodegen.la \
 @BUILD_EXTERNAL_LLVM_FALSE@	libllvmsystem.la $(am__append_5) \
 @BUILD_EXTERNAL_LLVM_FALSE@	$(am__append_8)
 @BUILD_EXTERNAL_LLVM_TRUE@libclamavcxx_la_DEPENDENCIES =  \
-@BUILD_EXTERNAL_LLVM_TRUE@	@LLVMCONFIG_LIBFILES@ \
+@BUILD_EXTERNAL_LLVM_TRUE@	@LLVMCONFIG_LIBFILES@ @JSON_LIBS@ \
 @BUILD_EXTERNAL_LLVM_TRUE@	$(am__append_5) $(am__append_8)
 @BUILD_EXTERNAL_LLVM_FALSE@noinst_LTLIBRARIES = libclamavcxx.la \
 @BUILD_EXTERNAL_LLVM_FALSE@	libllvmsystem.la libllvmcodegen.la \
