@@ -226,8 +226,11 @@ void submit_post(const char *host, const char *port, const char *method, const c
         encoded = encode_data(postdata);
         if (!(encoded))
             return;
-
+#if defined(_WIN32)
+		snprintf(chunkedlen, sizeof(chunkedlen), "%u", strlen(encoded));
+#else
         snprintf(chunkedlen, sizeof(chunkedlen), "%zu", strlen(encoded));
+#endif
         bufsz += sizeof("Content-Type: application/x-www-form-urlencoded\r\n");
         bufsz += sizeof("Content-Length: \r\n");
         bufsz += strlen(chunkedlen);
@@ -253,8 +256,11 @@ void submit_post(const char *host, const char *port, const char *method, const c
         snprintf(buf+strlen(buf), bufsz-strlen(buf), "%s", encoded);
         free(encoded);
     }
-
+#if defined(_WIN32)
+	sockfd = connect_host(host, port, timeout, 0);
+#else
     sockfd = connect_host(host, port, timeout, 1);
+#endif
     if (sockfd < 0) {
         free(buf);
         return;
