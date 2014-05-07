@@ -1,7 +1,7 @@
-0.98.2
+0.98.3
 ------
 
-Here are the new features and improvements in ClamAV 0.98.2:
+Here are the new features and improvements in ClamAV 0.98.3:
 
     - Support for common raw disk image formats using 512 byte sectors,
       specifically GPT, APM, and MBR partitioning.
