@@ -595,6 +595,8 @@ char *clamav_stats_get_hostid(void *cbdata)
 
         return buf;
     }
+
+    return strdup(STATS_ANON_UUID);
 #else
     buf = internal_get_host_id();
     if (!(buf))
