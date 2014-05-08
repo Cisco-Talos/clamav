@@ -100,6 +100,7 @@ int dconnect() {
         hints.ai_flags = AI_PASSIVE;
 
         if ((res = getaddrinfo(opt->strarg, port, &hints, &info))) {
+            opt = opt->nextarg;
             continue;
         }
 
