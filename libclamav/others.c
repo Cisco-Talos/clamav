@@ -1292,15 +1292,3 @@ void cl_engine_set_clcb_meta(struct cl_engine *engine, clcb_meta callback)
 {
     engine->cb_meta = callback;
 }
-
-#if !defined(_WIN32)
-__attribute__((constructor)) void init(void)
-{
-    cl_initialize_crypto();
-}
-
-__attribute__((destructor)) void deinit(void)
-{
-    cl_cleanup_crypto();
-}
-#endif
