@@ -445,5 +445,6 @@ int main(int argc, char *argv[])
 	close(fd);
     if (debug_flag)
 	printf("[clambc] Exiting\n");
+    cl_cleanup_crypto();
     return 0;
 }

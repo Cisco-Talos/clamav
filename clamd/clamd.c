@@ -744,6 +744,8 @@ int main(int argc, char **argv)
     logg_close();
     optfree(opts);
 
+    cl_cleanup_crypto();
+
     return ret;
 }
 

@@ -488,5 +488,6 @@ int main(int argc, char **argv)
     cli_detect_environment(&env);
     print_platform(&env);
     print_build(&env);
+    cl_cleanup_crypto();
     return 0;
 }

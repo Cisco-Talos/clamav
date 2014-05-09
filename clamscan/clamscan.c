@@ -193,6 +193,8 @@ int main(int argc, char **argv)
 
     optfree(opts);
 
+    cl_cleanup_crypto();
+
     return ret;
 }
 
