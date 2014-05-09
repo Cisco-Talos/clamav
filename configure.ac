@@ -40,6 +40,7 @@ AM_SILENT_RULES([yes])
 dnl we told automake to not define these, since we want to include
 dnl the date in the version
 AC_DEFINE([PACKAGE], PACKAGE_NAME, [Name of package])
+AC_USE_SYSTEM_EXTENSIONS
 
 m4_include([m4/reorganization/version.m4])
 
