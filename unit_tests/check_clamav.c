@@ -986,6 +986,8 @@ int main(void)
     Suite *s;
     SRunner *sr;
 
+    cl_initialize_crypto();
+
     fpu_words  = get_fpu_endian();
   
     check_version_compatible();
@@ -1015,6 +1017,8 @@ int main(void)
     srunner_run_all(sr, CK_NORMAL);
     nf = srunner_ntests_failed(sr);
     srunner_free(sr);
+
+    cl_cleanup_crypto();
 
     return (nf == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
