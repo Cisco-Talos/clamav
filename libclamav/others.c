@@ -390,24 +390,29 @@ struct cl_engine *cl_engine_new(void)
 
     /* Set up default stats/intel gathering callbacks */
     intel = cli_calloc(1, sizeof(cli_intel_t));
+    if ((intel)) {
 #ifdef CL_THREAD_SAFE
-    if (pthread_mutex_init(&(intel->mutex), NULL)) {
-        cli_errmsg("cli_engine_new: Cannot initialize stats gathering mutex\n");
-        mpool_free(new->mempool, new->dconf);
-        mpool_free(new->mempool, new->root);
+        if (pthread_mutex_init(&(intel->mutex), NULL)) {
+            cli_errmsg("cli_engine_new: Cannot initialize stats gathering mutex\n");
+            mpool_free(new->mempool, new->dconf);
+            mpool_free(new->mempool, new->root);
 #ifdef USE_MPOOL
-        mpool_destroy(new->mempool);
+            mpool_destroy(new->mempool);
 #endif
-        free(new);
-        free(intel);
-        return NULL;
+            free(new);
+            free(intel);
+            return NULL;
+        }
+#endif
+        intel->engine = new;
+        intel->maxsamples = STATS_MAX_SAMPLES;
+        intel->maxmem = STATS_MAX_MEM;
+        intel->timeout = 10;
+        new->stats_data = intel;
+    } else {
+        new->stats_data = NULL;
     }
-#endif
-    intel->engine = new;
-    intel->maxsamples = STATS_MAX_SAMPLES;
-    intel->maxmem = STATS_MAX_MEM;
-    intel->timeout = 10;
-    new->stats_data = intel;
+
     new->cb_stats_add_sample = NULL;
     new->cb_stats_submit = NULL;
     new->cb_stats_flush = clamav_stats_flush;
@@ -806,12 +811,6 @@ int cl_engine_settings_apply(struct cl_engine *engine, const struct cl_settings 
     engine->cb_hash = settings->cb_hash;
     engine->cb_meta = settings->cb_meta;
 
-    intel = (cli_intel_t *)cli_calloc(1, sizeof(cli_intel_t));
-    intel->engine = engine;
-    intel->maxsamples = STATS_MAX_SAMPLES;
-    intel->maxmem = STATS_MAX_MEM;
-
-    engine->stats_data = (void *)intel;
     engine->cb_stats_add_sample = settings->cb_stats_add_sample;
     engine->cb_stats_remove_sample = settings->cb_stats_remove_sample;
     engine->cb_stats_decrement_count = settings->cb_stats_decrement_count;
