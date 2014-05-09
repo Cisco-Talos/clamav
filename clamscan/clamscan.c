@@ -80,9 +80,7 @@ int main(int argc, char **argv)
     sigprocmask(SIG_SETMASK, &sigset, NULL);
 #endif
 
-#if defined(_WIN32)
     cl_initialize_crypto();
-#endif
 
 
     if((opts = optparse(NULL, argc, argv, 1, OPT_CLAMSCAN, 0, NULL)) == NULL) {
