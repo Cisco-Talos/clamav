@@ -22,6 +22,10 @@
 #include "clamav-config.h"
 #endif
 
+#if defined(C_SOLARIS)
+#define __EXTENSIONS__
+#endif
+
 /* must be first because it may define _XOPEN_SOURCE */
 #include "shared/fdpassing.h"
 #include <stdio.h>
@@ -41,6 +45,7 @@
 #ifndef _WIN32
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <netdb.h>
 #endif
 
 #include <openssl/ssl.h>
@@ -95,6 +100,7 @@ int dconnect() {
         hints.ai_flags = AI_PASSIVE;
 
         if ((res = getaddrinfo(opt->strarg, port, &hints, &info))) {
+            opt = opt->nextarg;
             continue;
         }
 

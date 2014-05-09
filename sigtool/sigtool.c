@@ -2995,9 +2995,7 @@ int main(int argc, char **argv)
     if(check_flevel())
 	exit(1);
 
-#if defined(_WIN32)
     cl_initialize_crypto();
-#endif
 
     if((ret = cl_init(CL_INIT_DEFAULT)) != CL_SUCCESS) {
 	mprintf("!Can't initialize libclamav: %s\n", cl_strerror(ret));

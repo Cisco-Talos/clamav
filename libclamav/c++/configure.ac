@@ -225,6 +225,11 @@ AC_MSG_RESULT([$NO_VARIADIC_MACROS $NO_MISSING_FIELD_INITIALIZERS])
 AM_CONDITIONAL(BUILD_EXTERNAL_LLVM, [test -n "$llvmconfig"])
 AM_CONDITIONAL(BUILD_LLVM3, [test -n "$llvmconfig" && test "$llvmver" != "2.9"])
 
+m4_include([../../m4/reorganization/libs/json.m4])
+AC_SUBST([JSON_LIBS])
+AC_SUBST([JSON_LDFLAGS])
+AC_SUBST([JSON_CPPFLAGS])
+
 AC_OUTPUT([
     Makefile
 ])
