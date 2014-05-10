@@ -215,8 +215,9 @@ DatabaseMirror database.clamav.net
 # freshclam at least every 30 minutes.
 # Freshclam uses the ClamAV's mirror infrastructure to distribute the
 # database and its updates but all the contents are provided under Google's
-# terms of use. See http://code.google.com/support/bin/answer.py?answer=70015
-# and http://safebrowsing.clamav.net for more information.
+# terms of use. See http://www.google.com/transparencyreport/safebrowsing
+# and https://github.com/vrtadmin/clamav-faq/blob/master/faq/faq-safebrowsing.md
+# for more information.
 # Default: disabled
 #SafeBrowsing yes
 
