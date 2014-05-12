@@ -8,5 +8,4 @@ redefining command \email
 
 previous meaning of \email will be lost
 
-The clamdoc.aux file was not found, so sections will not be numbered 
-and cross-references will be shown as icons.
+clamdoc.tex is newer than clamdoc.aux: Please rerun latex.
