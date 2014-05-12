@@ -2,7 +2,25 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
-0.98.3
+0.98.4
+------
+
+ClamAV 0.98.4 is a bug fix release. The following issues are now resolved:
+
+    - Various build problems on Solaris, OpenBSD, AIX.
+
+    - Crashes of clamd on Windows and Mac OS X platforms when reloading
+      the virus signature database.
+
+    - Infinite loop in clamdscan when clamd is not running.
+
+    - Freshclam failure on Solaris 10.
+
+    - Buffer underruns when handling multi-part MIME email attachments.
+
+    - Configuration of OpenSSL on various platforms.
+
+0.98.2
 ------
 
 Here are the new features and improvements in ClamAV 0.98.3:
