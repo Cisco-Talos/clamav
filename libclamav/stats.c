@@ -34,7 +34,12 @@
 #if defined(C_SOLARIS)
 #include <sys/utsname.h>
 #else
+#if HAVE_SYS_PARAM_H
+#include <sys/param.h>
+#endif
+#if HAVE_SYSCTLBYNAME
 #include <sys/sysctl.h>
+#endif
 #endif
 #include <dlfcn.h>
 #else
