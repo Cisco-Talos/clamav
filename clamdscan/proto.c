@@ -94,6 +94,11 @@ int dconnect() {
 
     opt = optget(clamdopts, "TCPAddr");
     while (opt) {
+        if (!(opt))
+            break;
+        if (strcmp(opt->name, "TCPAddr"))
+            break;
+
         memset(&hints, 0x00, sizeof(struct addrinfo));
         hints.ai_family = AF_UNSPEC;
         hints.ai_socktype = SOCK_STREAM;
