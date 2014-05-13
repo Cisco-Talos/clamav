@@ -77,6 +77,7 @@ int dconnect() {
     const struct optstruct *opt;
     struct addrinfo hints, *info, *p;
     char port[10];
+    char *ipaddr;
 
 #ifndef _WIN32
     opt = optget(clamdopts, "LocalSocket");
@@ -94,16 +95,17 @@ int dconnect() {
 
     opt = optget(clamdopts, "TCPAddr");
     while (opt) {
-        if (strcmp(opt->name, "TCPAddr"))
-            break;
+        ipaddr = NULL;
+        if (opt->strarg)
+            ipaddr = (!strcmp(opt->strarg, "any") ? NULL : opt->strarg);
 
         memset(&hints, 0x00, sizeof(struct addrinfo));
         hints.ai_family = AF_UNSPEC;
         hints.ai_socktype = SOCK_STREAM;
         hints.ai_flags = AI_PASSIVE;
 
-        if ((res = getaddrinfo(opt->strarg, port, &hints, &info))) {
-            opt = opt->next;
+        if ((res = getaddrinfo(ipaddr, port, &hints, &info))) {
+            opt = opt->nextarg;
             continue;
         }
 
@@ -124,7 +126,7 @@ int dconnect() {
 
         freeaddrinfo(info);
 
-        opt = opt->next;
+        opt = opt->nextarg;
     }
 
     return -1;
