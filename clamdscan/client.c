@@ -100,8 +100,6 @@ static int isremote(const struct optstruct *opts) {
 
     opt = optget(clamdopts, "TCPAddr");
     while (opt) {
-        if (!(opt))
-            break;
         if (strcmp(opt->name, "TCPAddr"))
             break;
 
@@ -160,7 +158,7 @@ static int isremote(const struct optstruct *opts) {
 
         freeaddrinfo(info);
 
-        opt = opt->nextarg;
+        opt = opt->next;
     }
 
     return 0;
