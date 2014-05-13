@@ -94,8 +94,6 @@ int dconnect() {
 
     opt = optget(clamdopts, "TCPAddr");
     while (opt) {
-        if (!(opt))
-            break;
         if (strcmp(opt->name, "TCPAddr"))
             break;
 
@@ -105,7 +103,7 @@ int dconnect() {
         hints.ai_flags = AI_PASSIVE;
 
         if ((res = getaddrinfo(opt->strarg, port, &hints, &info))) {
-            opt = opt->nextarg;
+            opt = opt->next;
             continue;
         }
 
@@ -126,7 +124,7 @@ int dconnect() {
 
         freeaddrinfo(info);
 
-        opt = opt->nextarg;
+        opt = opt->next;
     }
 
     return -1;
