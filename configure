@@ -4895,6 +4895,8 @@ LC_AGE=1
 LIBCLAMAV_VERSION="$LC_CURRENT":"$LC_REVISION":"$LC_AGE"
 
 
+major=`expr $LC_CURRENT - $LC_AGE`
+
 
 cat >>confdefs.h <<_ACEOF
 #define LIBCLAMAV_FULLVER "$major.$LC_AGE.$LC_REVISION"
