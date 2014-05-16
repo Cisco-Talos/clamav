@@ -8,6 +8,8 @@ LC_AGE=1
 LIBCLAMAV_VERSION="$LC_CURRENT":"$LC_REVISION":"$LC_AGE"
 AC_SUBST([LIBCLAMAV_VERSION])
 
+major=`expr $LC_CURRENT - $LC_AGE`
+
 AC_DEFINE_UNQUOTED([LIBCLAMAV_FULLVER], "$major.$LC_AGE.$LC_REVISION",
         ["Full library version number"])
 
