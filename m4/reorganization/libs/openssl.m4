@@ -39,5 +39,8 @@ AC_CHECK_LIB([ssl], [SSL_library_init], [have_ssl="yes"], [AC_MSG_ERROR([Your Op
 
 AC_CHECK_LIB([crypto], [EVP_EncryptInit], [have_crypto="yes"], [AC_MSG_ERROR([Your OpenSSL installation is misconfigured or missing])])
 
+dnl OpenSSL 0.9.8 is the minimum required version due to X509_VERIFY_PARAM
+AC_CHECK_LIB([ssl], [X509_VERIFY_PARAM_new], [], [AC_MSG_ERROR([Your OpenSSL installation is missing the X509_VERIFY_PARAM function. Please upgrade to a more recent version of OpenSSL.])], [-lcrypto])
+
 LDFLAGS="$save_LDFLAGS"
 CFLAGS="$save_CFLAGS"
