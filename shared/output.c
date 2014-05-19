@@ -55,6 +55,7 @@
 #include "libclamav/crypto.h"
 
 #include "output.h"
+#include "libclamav/clamav.h"
 #include "libclamav/others.h"
 #include "libclamav/str.h"
 
