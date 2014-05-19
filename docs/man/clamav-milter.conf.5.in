@@ -156,7 +156,7 @@ Action to be performed on error conditions (this includes failure to allocate da
 Default: Defer
 .TP 
 \fBRejectMsg STRING\fR
-This option allows to set a specific rejection reason for infected messages and it\'s therefore only useful together with "OnInfected Reject". The string "%v", if present, will be replaced with the virus name.
+This option allows you to set a specific rejection reason for infected messages and it\'s therefore only useful together with "OnInfected Reject". The string "%v", if present, will be replaced with the virus name.
 .br
 Default: MTA specific
 .TP 
@@ -166,7 +166,7 @@ If this option is set to "Replace" (or "Yes"), an "X-Virus-Scanned" and an "X-Vi
 Default: no
 .TP 
 \fBReportHostname STRING\fr
-When AddHeader is in use, this option allows to arbitrary set the reported hostname. This may be desirable in order to avoid leaking internal names. If unset the real machine name is used.
+When AddHeader is in use, this option allows you to set the reported hostname. This may be desirable in order to avoid leaking internal names. If unset the real machine name is used.
 .br
 Default: disabled
 .TP 
@@ -212,7 +212,7 @@ Enable verbose logging.
 Default: no
 .TP 
 \fBLogInfected STRING\fR
-This option allows to tune what is logged when a message is infected. Possible values are Off (the default \- nothing is logged), Basic (minimal info logged), Full (verbose info logged)
+This option allows you to tune what is logged when a message is infected. Possible values are Off (the default \- nothing is logged), Basic (minimal info logged), Full (verbose info logged)
 .br
 Note: For this to work properly in sendmail, make sure the msg_id, mail_addr, rcpt_addr and i macroes are available in eom. In other words add a line like: Milter.macros.eom={msg_id}, {mail_addr}, {rcpt_addr}, i to your .cf file. Alternatively use the macro: define(`confMILTER_MACROS_EOM', `{msg_id}, {mail_addr}, {rcpt_addr}, i')
 .br
@@ -221,7 +221,7 @@ Postfix should be working fine with the default settings.
 Default: disabled
 .TP 
 \fBLogClean STRING\fR
-This option allows to tune what is logged when no threat is found in a scanned message.
+This option allows you to tune what is logged when no threat is found in a scanned message.
 .br
 See LogInfected for possible values and caveats.
 .br
