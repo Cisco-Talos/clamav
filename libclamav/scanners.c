@@ -1199,8 +1199,10 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
     }
 
     closedir(dd);
+#if HAVE_JSON
     if (hasmacros && ctx->options & CL_SCAN_FILE_PROPERTIES && ctx->wrkproperty != NULL)
         cli_jsonbool(ctx->wrkproperty, "HasMacros", 1);
+#endif
     if(BLOCK_MACROS && hasmacros) {
 	cli_append_virus(ctx, "Heuristics.OLE2.ContainsMacros");
 	ret = CL_VIRUS;

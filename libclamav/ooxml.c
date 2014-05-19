@@ -44,6 +44,8 @@
 #include <libxml/xmlreader.h>
 #endif
 
+#if HAVE_LIBXML2 && HAVE_JSON
+
 #define OOXML_JSON_RECLEVEL 16
 #define OOXML_JSON_RECLEVEL_MAX 5
 #define OOXML_JSON_STRLEN_MAX 100
@@ -184,8 +186,7 @@ static const char *ooxml_check_key(const char* key, size_t keylen)
 
     return NULL;
 }
-#if HAVE_LIBXML2
-#if HAVE_JSON
+
 static int ooxml_parse_element(xmlTextReaderPtr reader, json_object *wrkptr, int rlvl, int skip)
 {
     const char *element_tag = NULL, *end_tag = NULL;
@@ -347,14 +348,10 @@ static int ooxml_parse_document(int fd, cli_ctx *ctx)
     xmlFreeTextReader(reader);
     return ret;
 }
-#endif
-#endif
 
 static int ooxml_basic_json(int fd, cli_ctx *ctx, const char *key)
 {
     int ret = CL_SUCCESS;
-#if HAVE_LIBXML2
-#if HAVE_JSON
     const xmlChar *stack[OOXML_JSON_RECLEVEL];
     json_object *summary, *wrkptr;
     int type, rlvl = 0;
@@ -455,12 +452,6 @@ static int ooxml_basic_json(int fd, cli_ctx *ctx, const char *key)
  ooxml_basic_exit:
     xmlTextReaderClose(reader);
     xmlFreeTextReader(reader);
-#else
-    cli_dbgmsg("ooxml_basic_json: libjson needs to enabled!\n");
-#endif
-#else
-    cli_dbgmsg("ooxml_basic_json: libxml2 needs to enabled!\n");
-#endif
     return ret;
 }
 
@@ -480,7 +471,6 @@ static int ooxml_extn_cb(int fd, cli_ctx *ctx)
 
 static int ooxml_content_cb(int fd, cli_ctx *ctx)
 {
-#if HAVE_LIBXML2
     int ret = CL_SUCCESS;
     int core=0, extn=0, cust=0;
     const xmlChar *name, *value, *CT, *PN;
@@ -575,15 +565,12 @@ static int ooxml_content_cb(int fd, cli_ctx *ctx)
     xmlTextReaderClose(reader);
     xmlFreeTextReader(reader);
     return ret;
-#else
-    cli_dbgmsg("ooxml_content_cb: libxml2 needs to enabled!");
-    return CL_SUCCESS;
-#endif
 }
+#endif
 
 int cli_process_ooxml(cli_ctx *ctx)
 {
-#if HAVE_LIBXML2
+#if HAVE_LIBXML2 && HAVE_JSON
     uint32_t loff = 0;
 
     cli_dbgmsg("in cli_processooxml\n");
@@ -601,7 +588,12 @@ int cli_process_ooxml(cli_ctx *ctx)
     return unzip_single_internal(ctx, loff, ooxml_content_cb);
 #else
     cli_dbgmsg("in cli_processooxml\n");
+#if !HAVE_LIBXML2
     cli_dbgmsg("cli_process_ooxml: libxml2 needs to enabled!");
+#endif
+#if !HAVE_JSON
+    cli_dbgmsg("cli_process_ooxml: libjson needs to enabled!");
+#endif
     return CL_SUCCESS;
 #endif
 }
