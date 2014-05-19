@@ -472,7 +472,7 @@ static int ooxml_extn_cb(int fd, cli_ctx *ctx)
 static int ooxml_content_cb(int fd, cli_ctx *ctx)
 {
     int ret = CL_SUCCESS;
-    int core=0, extn=0, cust=0;
+    int core=0, extn=0, cust=0, dsig=0;
     const xmlChar *name, *value, *CT, *PN;
     xmlTextReaderPtr reader = NULL;
     uint32_t loff;
@@ -542,9 +542,22 @@ static int ooxml_content_cb(int fd, cli_ctx *ctx)
             else {
                 cli_dbgmsg("ooxml_content_cb: found custom properties file \"%s\" @ %x\n", PN, loff);
                 /* custom properties ignored for now */
+                cli_jsonbool(ctx->wrkproperty, "CustomProperties", 1);
                 //ret = unzip_single_internal(ctx, loff, ooxml_cust_cb);
             }
             cust = 1;
+        }
+        else if (!dsig && !xmlStrcmp(CT, "application/vnd.openxmlformats-package.digital-signature-xmlsignature+xml")) {
+            if (unzip_search(ctx, PN+1, xmlStrlen(PN)-1, &loff) != CL_VIRUS) {
+                cli_dbgmsg("cli_process_ooxml: failed to find digital signature file \"%s\"!\n", PN);
+            }
+            else {
+                cli_dbgmsg("ooxml_content_cb: found digital signature file \"%s\" @ %x\n", PN, loff);
+                /* digital signatures ignored for now */
+                cli_jsonbool(ctx->wrkproperty, "DigitalSignatures", 1);
+                //ret = unzip_single_internal(ctx, loff, ooxml_dsig_cb);
+            }
+            dsig = 1;
         }
 
         if (ret != CL_SUCCESS)

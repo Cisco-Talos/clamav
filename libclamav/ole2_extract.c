@@ -528,7 +528,7 @@ ole2_walk_property_tree(ole2_header_t * hdr, const char *dir, int32_t prop_index
 {
     property_t      prop_block[4];
     int32_t         idx, current_block, i, curindex;
-    char           *dirname;
+    char           *name, *dirname;
     ole2_list_t     node_list;
     int             ret, func_ret;
 
@@ -698,6 +698,18 @@ ole2_walk_property_tree(ole2_header_t * hdr, const char *dir, int32_t prop_index
         case 1:                /* Directory */
             ole2_listmsg("directory node\n");
             if (dir) {
+#if HAVE_JSON
+                if ((ctx->options & CL_SCAN_FILE_PROPERTIES) && (ctx->wrkproperty != NULL)) {
+                    if (json_object_object_get(ctx->wrkproperty, "DigitalSignatures") == NULL) {
+                        name = get_property_name2(prop_block[idx].name, prop_block[idx].name_size);
+                        cli_dbgmsg("[dir] %s\n", name);
+                        if (name && (!strcmp(name, "_xmlsignatures") || !strcmp(name, "_signatures"))) {
+                            cli_jsonbool(ctx->wrkproperty, "DigitalSignatures", 1);
+                            free(name);
+                        }
+                    }
+                }
+#endif
                 dirname = (char *)cli_malloc(strlen(dir) + 8);
                 if (!dirname) {
 		    ole2_listmsg("OLE2: malloc failed for dirname\n");
