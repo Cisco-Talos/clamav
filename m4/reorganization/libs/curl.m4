@@ -26,8 +26,13 @@ else
         CURL_LDFLAGS=$($LIBCURL_HOME/bin/curl-config --libs)
         CURL_CPPFLAGS=$($LIBCURL_HOME/bin/curl-config --cflags)
     else
-        CURL_LDFLAGS="-L$LIBCURL_HOME/lib -lcurl"
-        CURL_CPPFLAGS="-I$LIBCURL_HOME/include"
+        if test "$LIBCURL_HOME" != "/usr"; then
+            CURL_LDFLAGS="-L$LIBCURL_HOME/lib -lcurl"
+            CURL_CPPFLAGS="-I$LIBCURL_HOME/include"
+        else
+            CURL_LDFLAGS="-lcurl"
+            CURL_CPPFLAGS=""
+        fi
     fi
 
     save_LDFLAGS="$LDFLAGS"
