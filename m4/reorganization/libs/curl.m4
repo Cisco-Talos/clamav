@@ -36,7 +36,7 @@ else
     fi
 
     save_LDFLAGS="$LDFLAGS"
-    LDFLAGS="-L$LIBCURL_HOME/lib -lcurl"
+    LDFLAGS="$CURL_LDFLAGS"
     AC_CHECK_LIB([curl], [curl_easy_init], [curl_msg="";have_curl="yes";CLAMSUBMIT_LIBS="$CLAMSUBMIT_LIBS $CURL_LDFLAGS";CLAMSUBMIT_CFLAGS="$CLAMSUBMIT_CFLAGS $CURL_CPPFLAGS"],
             [AC_MSG_WARN([Your libcurl is misconfigured. Please use the web interface for submitting FPs/FNs.])])
     LDFLAGS="$save_LDFLAGS"
