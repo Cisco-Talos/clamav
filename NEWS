@@ -16,5 +16,23 @@ ClamAV 0.98.4 is a bug fix release. The following issues are now resolved:
 
     - Configuration of OpenSSL on various platforms.
 
+    - Name collisions on Ubuntu 14.04, Debian sid, and Slackware 14.1.
+
+Thanks to the following individuals for testing, writing patches, and
+initiating quality improvements in this release:
+
+Tuomo Soini
+Scott Kitterman
+Jim Klimov
+Curtis Smith
+Steve Basford
+Martin Preen
+Lars Hecking
+Stuart Henderson
+Ismail Paruk
+Larry Rosenbaum
+Dave Simonson
+Sebastian Andrzej Siewior
+
 --
 The ClamAV team (http://www.clamav.net/team)
