@@ -702,7 +702,6 @@ ole2_walk_property_tree(ole2_header_t * hdr, const char *dir, int32_t prop_index
                 if ((ctx->options & CL_SCAN_FILE_PROPERTIES) && (ctx->wrkproperty != NULL)) {
                     if (json_object_object_get(ctx->wrkproperty, "DigitalSignatures") == NULL) {
                         name = get_property_name2(prop_block[idx].name, prop_block[idx].name_size);
-                        cli_dbgmsg("[dir] %s\n", name);
                         if (name) {
                             if (!strcmp(name, "_xmlsignatures") || !strcmp(name, "_signatures")) {
                                 cli_jsonbool(ctx->wrkproperty, "DigitalSignatures", 1);
