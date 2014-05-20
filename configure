@@ -22096,7 +22096,7 @@ else
     fi
 
     save_LDFLAGS="$LDFLAGS"
-    LDFLAGS="-L$LIBCURL_HOME/lib -lcurl"
+    LDFLAGS="$CURL_LDFLAGS"
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for curl_easy_init in -lcurl" >&5
 $as_echo_n "checking for curl_easy_init in -lcurl... " >&6; }
 if ${ac_cv_lib_curl_curl_easy_init+:} false; then :
