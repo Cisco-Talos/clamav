@@ -22,15 +22,20 @@ then
     AC_MSG_ERROR([OpenSSL not found.])
 fi
 
-SSL_LDFLAGS="-L$LIBSSL_HOME/lib"
-SSL_LIBS="-lssl -lcrypto"
-SSL_CPPFLAGS="-I$LIBSSL_HOME/include"
-
 save_LDFLAGS="$LDFLAGS"
-LDFLAGS="-L$LIBSSL_HOME/lib $SSL_LIBS"
-
 save_CFLAGS="$CFLAGS"
-CFLAGS="$SSL_CPPFLAGS"
+
+if test "$LIBSSL_HOME" != "/usr"; then
+    SSL_LDFLAGS="-L$LIBSSL_HOME/lib"
+    SSL_CPPFLAGS="-I$LIBSSL_HOME/include"
+    LDFLAGS="-L$LIBSSL_HOME/lib $SSL_LIBS"
+    CFLAGS="$SSL_CPPFLAGS"
+else
+    SSL_LDFLAGS=""
+    SSL_CPPFLAGS=""
+fi
+
+SSL_LIBS="-lssl -lcrypto"
 
 have_ssl="no"
 have_crypto="no"
