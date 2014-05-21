@@ -105,6 +105,7 @@ int dconnect() {
         hints.ai_flags = AI_PASSIVE;
 
         if ((res = getaddrinfo(ipaddr, port, &hints, &info))) {
+            logg("!Could not lookup %s: %s\n", opt->strarg, gai_strerror(res));
             opt = opt->nextarg;
             continue;
         }
@@ -116,6 +117,7 @@ int dconnect() {
             }
 
             if(connect(sockd, p->ai_addr, p->ai_addrlen) < 0) {
+                logg("!Could not connect to clamd on %s: %s\n", opt->strarg, strerror(errno));
                 closesocket(sockd);
                 continue;
             }
