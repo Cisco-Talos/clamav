@@ -24,6 +24,9 @@ fi
 
 save_LDFLAGS="$LDFLAGS"
 save_CFLAGS="$CFLAGS"
+save_LIBS="$LIBS"
+
+SSL_LIBS="-lssl -lcrypto"
 
 if test "$LIBSSL_HOME" != "/usr"; then
     SSL_LDFLAGS="-L$LIBSSL_HOME/lib"
@@ -34,8 +37,6 @@ else
     SSL_LDFLAGS=""
     SSL_CPPFLAGS=""
 fi
-
-SSL_LIBS="-lssl -lcrypto"
 
 have_ssl="no"
 have_crypto="no"
@@ -49,3 +50,4 @@ AC_CHECK_LIB([ssl], [X509_VERIFY_PARAM_new], [], [AC_MSG_ERROR([Your OpenSSL ins
 
 LDFLAGS="$save_LDFLAGS"
 CFLAGS="$save_CFLAGS"
+LIBS="$save_LIBS"
