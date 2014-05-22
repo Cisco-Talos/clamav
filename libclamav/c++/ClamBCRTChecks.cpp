@@ -27,7 +27,6 @@
 #include "llvm/ADT/SCCIterator.h"
 #include "llvm/Analysis/CallGraph.h"
 #include "llvm/Analysis/Verifier.h"
-#include "llvm/Analysis/DebugInfo.h"
 #include "llvm/Analysis/Dominators.h"
 #include "llvm/Analysis/ConstantFolding.h"
 //#include "llvm/Analysis/LiveValues.h"
@@ -42,24 +41,48 @@
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
 #include "llvm/Analysis/ScalarEvolutionExpander.h"
 #include "llvm/Config/config.h"
+#include "llvm/Pass.h"
+#include "llvm/Support/CommandLine.h"
+#include "llvm/Support/DataFlow.h"
+#include "llvm/Support/InstIterator.h"
+#include "llvm/Support/GetElementPtrTypeIterator.h"
+#include "llvm/ADT/DepthFirstIterator.h"
+#include "llvm/Transforms/Scalar.h"
+#include "llvm/Transforms/Utils/BasicBlockUtils.h"
+#include "llvm/Support/Debug.h"
+#include "llvm30_compat.h"
+
+#if LLVM_VERSION < 32
+#include "llvm/Analysis/DebugInfo.h"
+#else
+#include "llvm/DebugInfo.h"
+#endif
+
+#if LLVM_VERSION < 32
+#include "llvm/Target/TargetData.h"
+#elif LLVM_VERSION < 33
+#include "llvm/DataLayout.h"
+#else
+#include "llvm/IR/DataLayout.h"
+#endif
+
+#if LLVM_VERSION < 33
 #include "llvm/DerivedTypes.h"
 #include "llvm/Instructions.h"
 #include "llvm/IntrinsicInst.h"
 #include "llvm/Intrinsics.h"
 #include "llvm/LLVMContext.h"
 #include "llvm/Module.h"
-#include "llvm/Pass.h"
-#include "llvm/Support/CommandLine.h"
-#include "llvm/Support/DataFlow.h"
-#include "llvm/Support/InstIterator.h"
 #include "llvm/Support/InstVisitor.h"
-#include "llvm/Support/GetElementPtrTypeIterator.h"
-#include "llvm/ADT/DepthFirstIterator.h"
-#include "llvm/Target/TargetData.h"
-#include "llvm/Transforms/Scalar.h"
-#include "llvm/Transforms/Utils/BasicBlockUtils.h"
-#include "llvm/Support/Debug.h"
-#include "llvm30_compat.h"
+#else
+#include "llvm/IR/DerivedTypes.h"
+#include "llvm/IR/Instructions.h"
+#include "llvm/IR/IntrinsicInst.h"
+#include "llvm/IR/Intrinsics.h"
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/InstVisitor.h"
+#endif
 
 #ifndef LLVM28
 #define LLVM28
@@ -72,7 +95,11 @@
 
 using namespace llvm;
 #ifndef LLVM29
+#if LLVM_VERSION < 32
 static Value *GetUnderlyingObject(Value *P, TargetData *TD)
+#else
+static Value *GetUnderlyingObject(Value *P, DataLayout *TD)
+#endif
 {
     return P->getUnderlyingObject();
 }
@@ -137,8 +164,11 @@ namespace llvm {
       BasicBlock::iterator It = F.getEntryBlock().begin();
       while (isa<AllocaInst>(It) || isa<PHINode>(It)) ++It;
       EP = &*It;
-
+#if LLVM_VERSION < 32
       TD = &getAnalysis<TargetData>();
+#else
+      TD = &getAnalysis<DataLayout>();
+#endif
       SE = &getAnalysis<ScalarEvolution>();
       PT = &getAnalysis<PointerTracking>();
       DT = &getAnalysis<DominatorTree>();
@@ -247,8 +277,13 @@ namespace llvm {
 	CallInst *AbrtC = CallInst::Create(func_abort, "", UI);
         AbrtC->setCallingConv(CallingConv::C);
         AbrtC->setTailCall(true);
+#if LLVM_VERSION < 32
         AbrtC->setDoesNotReturn(true);
         AbrtC->setDoesNotThrow(true);
+#else
+        AbrtC->setDoesNotReturn();
+        AbrtC->setDoesNotThrow();
+#endif
 	// remove all instructions from entry
 	BasicBlock::iterator BBI = I, BBE=BB->end();
 	while (BBI != BBE) {
@@ -265,7 +300,11 @@ namespace llvm {
     }
 
     virtual void getAnalysisUsage(AnalysisUsage &AU) const {
+#if LLVM_VERSION < 32
       AU.addRequired<TargetData>();
+#else
+      AU.addRequired<DataLayout>();
+#endif
       AU.addRequired<DominatorTree>();
       AU.addRequired<ScalarEvolution>();
       AU.addRequired<PointerTracking>();
@@ -275,7 +314,11 @@ namespace llvm {
     bool isValid() const { return valid; }
   private:
     PointerTracking *PT;
+#if LLVM_VERSION < 32
     TargetData *TD;
+#else
+    DataLayout *TD;
+#endif
     ScalarEvolution *SE;
     DominatorTree *DT;
     DenseMap<Value*, Value*> BaseMap;
@@ -511,13 +554,22 @@ namespace llvm {
           CallInst *RtErrCall = CallInst::Create(func_rterr, PN, "", AbrtBB);
           RtErrCall->setCallingConv(CallingConv::C);
           RtErrCall->setTailCall(true);
+#if LLVM_VERSION < 32
           RtErrCall->setDoesNotThrow(true);
+#else
+          RtErrCall->setDoesNotThrow();
+#endif
         }
         CallInst* AbrtC = CallInst::Create(func_abort, "", AbrtBB);
         AbrtC->setCallingConv(CallingConv::C);
         AbrtC->setTailCall(true);
+#if LLVM_VERSION < 32
         AbrtC->setDoesNotReturn(true);
         AbrtC->setDoesNotThrow(true);
+#else
+        AbrtC->setDoesNotReturn();
+        AbrtC->setDoesNotThrow();
+#endif
         new UnreachableInst(BB->getContext(), AbrtBB);
         DT->addNewBlock(AbrtBB, BB);
         //verifyFunction(*BB->getParent());
@@ -732,10 +784,18 @@ namespace llvm {
 }
 #ifdef LLVM30
 INITIALIZE_PASS_BEGIN(PtrVerifier, "", "", false, false)
+#if LLVM_VERSION < 32
 INITIALIZE_PASS_DEPENDENCY(TargetData)
+#else
+INITIALIZE_PASS_DEPENDENCY(DataLayout)
+#endif
 INITIALIZE_PASS_DEPENDENCY(DominatorTree)
 INITIALIZE_PASS_DEPENDENCY(ScalarEvolution)
+#if LLVM_VERSION < 34
 INITIALIZE_AG_DEPENDENCY(CallGraph)
+#else
+INITIALIZE_PASS_DEPENDENCY(CallGraph)
+#endif
 INITIALIZE_PASS_DEPENDENCY(PointerTracking)
 INITIALIZE_PASS_END(PtrVerifier, "clambcrtchecks", "ClamBC RTchecks", false, false)
 #endif

@@ -56,16 +56,27 @@ static void warn_assumptions(const char *msg, int a, int b)
 
 void cli_detect_env_jit(struct cli_environment *env)
 {
+#if LLVM_VERSION < 31
     std::string host_triple = sys::getHostTriple();
+#else
+    std::string host_triple = sys::getDefaultTargetTriple();
+#endif
     INIT_STRFIELD(env->triple, host_triple.c_str());
 
     std::string cpu = sys::getHostCPUName();
     INIT_STRFIELD(env->cpu, cpu.c_str());
 
+#if LLVM_VERSION < 33
     if (env->big_endian != (int)sys::isBigEndianHost()) {
 	warn_assumptions("host endianness", env->big_endian, sys::isBigEndianHost());
 	env->big_endian = sys::isBigEndianHost();
     }
+#else
+    if (env->big_endian != (int)sys::IsBigEndianHost) {
+	warn_assumptions("host endianness", env->big_endian, sys::IsBigEndianHost);
+	env->big_endian = sys::IsBigEndianHost;
+    }
+#endif
 
 #ifdef __GNUC__
     env->cpp_version = MAKE_VERSION(0, __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
@@ -149,7 +160,9 @@ void cli_detect_env_jit(struct cli_environment *env)
 #endif
 	CASE_OS(NetBSD,  os_bsd);
 	CASE_OS(OpenBSD, os_bsd);
+#if LLVM_VERSION < 31
 	CASE_OS(Psp, os_unknown);
+#endif
 	CASE_OS(Solaris, os_solaris);
 	case Triple::Win32:
 	     env->os = llvm_os_Win32;

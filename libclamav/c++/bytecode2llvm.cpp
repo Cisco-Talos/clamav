@@ -24,10 +24,8 @@
 #ifndef _WIN32
 #include <sys/time.h>
 #endif
-
 #include "ClamBCModule.h"
 #include "ClamBCDiagnostics.h"
-#include "llvm/Analysis/DebugInfo.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/BitVector.h"
 #include "llvm/ADT/PostOrderIterator.h"
@@ -40,15 +38,9 @@
 #include "llvm/Analysis/ScalarEvolution.h"
 #include "llvm/Analysis/Verifier.h"
 #include "llvm/AutoUpgrade.h"
-#include "llvm/CallingConv.h"
-#include "llvm/DerivedTypes.h"
-#include "llvm/Function.h"
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
 #include "llvm/ExecutionEngine/JIT.h"
 #include "llvm/ExecutionEngine/JITEventListener.h"
-#include "llvm/LLVMContext.h"
-#include "llvm/Intrinsics.h"
-#include "llvm/Module.h"
 #include "llvm/PassManager.h"
 #include "llvm/Support/Compiler.h"
 #include "llvm/Support/Debug.h"
@@ -58,7 +50,6 @@
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/SourceMgr.h"
-#include "llvm/Support/IRBuilder.h"
 #include "llvm/Support/PrettyStackTrace.h"
 
 #ifdef LLVM29
@@ -70,8 +61,12 @@
 #include "llvm/Support/Signals.h"
 #include "llvm/Support/Threading.h"
 #include "llvm/Support/ThreadLocal.h"
-#include "llvm/IntrinsicInst.h"
 #include "llvm/PassRegistry.h"
+#if LLVM_VERSION < 33
+#include "llvm/IntrinsicInst.h"
+#else
+#include "llvm/IR/IntrinsicInst.h"
+#endif
 #else
 #include "llvm/System/DataTypes.h"
 #include "llvm/System/Host.h"
@@ -94,7 +89,6 @@ void LLVMInitializePowerPCAsmPrinter();
 #else
 #include "llvm/Target/TargetSelect.h"
 #endif
-#include "llvm/Target/TargetData.h"
 #include "llvm/Target/TargetOptions.h"
 #include "llvm/Support/TargetFolder.h"
 #include "llvm/Transforms/Scalar.h"
@@ -106,12 +100,57 @@ void LLVMInitializePowerPCAsmPrinter();
 #include <cerrno>
 #include <string>
 
+#if LLVM_VERSION < 32
+#include "llvm/Analysis/DebugInfo.h"
+#else
+#include "llvm/DebugInfo.h"
+#endif
+
+#if LLVM_VERSION < 32
+#include "llvm/Support/IRBuilder.h"
+#include "llvm/Target/TargetData.h"
+#elif LLVM_VERSION < 33
+#include "llvm/IRBuilder.h"
+#include "llvm/DataLayout.h"
+#else
+#include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/DataLayout.h"
+#endif
+
+#if LLVM_VERSION < 33
+#include "llvm/CallingConv.h"
+#include "llvm/DerivedTypes.h"
+#include "llvm/Function.h"
+#include "llvm/LLVMContext.h"
+#include "llvm/Intrinsics.h"
+#include "llvm/Module.h"
+#else
+#include "llvm/IR/CallingConv.h"
+#include "llvm/IR/DerivedTypes.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Intrinsics.h"
+#include "llvm/IR/Module.h"
+#endif
+
+#if LLVM_VERSION >= 34
+#include "llvm/Analysis/CFG.h"
+#endif
+
 //#define TIMING
 #undef TIMING
 
 #include "llvm/Config/config.h"
+#ifdef ENABLE_THREADS
 #if !ENABLE_THREADS
 #error "Thread support was explicitly disabled. Cannot continue"
+#endif
+#endif
+
+#ifdef LLVM_ENABLE_THREADS
+#if !LLVM_ENABLE_THREADS
+#error "Thread support was explicitly disabled. Cannot continue"
+#endif
 #endif
 
 #ifdef _GLIBCXX_PARALLEL
@@ -127,13 +166,15 @@ void LLVMInitializePowerPCAsmPrinter();
 #undef PACKAGE_URL
 #include "clamav-config.h"
 #endif
-
 #include "dconf.h"
 #include "clamav.h"
 #include "clambc.h"
 #include "bytecode.h"
 #include "bytecode_priv.h"
 #include "type_desc.h"
+extern "C" {
+#include "md5.h"
+}
 
 #define MODULE "libclamav JIT: "
 
@@ -267,7 +308,11 @@ static void NORETURN jit_ssp_handler(void)
     jit_exception_handler();
 }
 
+#if LLVM_VERSION < 33
 void llvm_error_handler(void *user_data, const std::string &reason)
+#else
+void llvm_error_handler(void *user_data, const std::string &reason, bool gen_crash_diag = true)
+#endif
 {
     // Output it to stderr, it might exceed the 1k/4k limit of cli_errmsg
     cli_errmsg("[Bytecode JIT]: [LLVM error] %s\n", reason.c_str());
@@ -376,7 +421,11 @@ public:
 	if (!cli_debug_flag)
 	    return;
 	cli_dbgmsg_internal("[Bytecode JIT]: emitted function %s of %ld bytes at %p\n",
+#if LLVM_VERSION < 31
 			    F.getNameStr().c_str(), (long)Size, Code);
+#else
+			    F.getName().str().c_str(), (long)Size, Code);
+#endif
     }
 };
 
@@ -669,8 +718,13 @@ public:
         CallInst* AbrtC = CallInst::Create(func_abort, "", AbrtBB);
         AbrtC->setCallingConv(CallingConv::C);
         AbrtC->setTailCall(true);
+#if LLVM_VERSION < 32
         AbrtC->setDoesNotReturn(true);
         AbrtC->setDoesNotThrow(true);
+#else
+        AbrtC->setDoesNotReturn();
+        AbrtC->setDoesNotThrow();
+#endif
         new UnreachableInst(F.getContext(), AbrtBB);
 	IRBuilder<false> Builder(F.getContext());
 
@@ -1020,7 +1074,11 @@ public:
 	: bc(bc), M(M), Context(M->getContext()), EE(EE),
 	PM(PM),PMUnsigned(PMUnsigned), TypeMap(), apiFuncs(apiFuncs),apiMap(apiMap),
 	compiledFunctions(cFuncs), BytecodeID("bc"+Twine(bc->id)),
+#if LLVM_VERSION < 32
 	Folder(EE->getTargetData()), Builder(Context, Folder), Values(), CF(CF) {
+#else
+	Folder(EE->getDataLayout()), Builder(Context, Folder), Values(), CF(CF) {
+#endif
 
 	for (unsigned i=0;i<cli_apicall_maxglobal - _FIRST_GLOBAL;i++) {
 	    unsigned id = cli_globals[i].globalid;
@@ -1151,7 +1209,11 @@ public:
 	    }
 	    V = SI->getOperand(0);
 	}
+#if LLVM_VERSION < 32
 	if (EE->getTargetData()->getPointerSize() == 8) {
+#else
+	if (EE->getDataLayout()->getPointerSize() == 8) {
+#endif
 	    // eliminate useless trunc, GEP can take i64 too
 	    if (TruncInst *I = dyn_cast<TruncInst>(V)) {
 		Value *Src = I->getOperand(0);
@@ -1226,7 +1288,12 @@ public:
 	    Functions[j]->setLinkage(GlobalValue::InternalLinkage);
 #ifdef C_LINUX
 	    /* bb #2270, this should really be fixed either by LLVM or GCC.*/
+#if LLVM_VERSION < 32
 	    Functions[j]->addFnAttr(Attribute::constructStackAlignmentFromInt(16));
+#else
+	// TODO: How does this translate?
+//	    Functions[j]->addFnAttr(Attribute::StackAlignment);
+#endif
 #endif
 	}
 	constType *I32Ty = Type::getInt32Ty(Context);
@@ -1527,7 +1594,11 @@ public:
 			    }
 			    CallInst *CI = Builder.CreateCall(DestF, ARRAYREF(Value*, args.begin(), args.end()));
 			    CI->setCallingConv(CallingConv::Fast);
+#if LLVM_VERSION < 32
 			    CI->setDoesNotThrow(true);
+#else
+			    CI->setDoesNotThrow();
+#endif
 			    if (CI->getType()->getTypeID() != Type::VoidTyID)
 				Store(inst->dest, CI);
 			    break;
@@ -1548,7 +1619,11 @@ public:
 				args.push_back(convertOperand(func, DestF->getFunctionType()->getParamType(a+1), op));
 			    }
 			    CallInst *CI = Builder.CreateCall(DestF, ARRAYREFVECTOR(Value*, args));
+#if LLVM_VERSION < 32
 			    CI->setDoesNotThrow(true);
+#else
+			    CI->setDoesNotThrow();
+#endif
 			    Store(inst->dest, CI);
 			    }
 			    break;
@@ -1681,7 +1756,11 @@ public:
 			    Dst = Builder.CreatePointerCast(Dst, PointerType::getUnqual(Type::getInt8Ty(Context)));
 			    Value *Src = convertOperand(func, inst, inst->u.three[1]);
 			    Src = Builder.CreatePointerCast(Src, PointerType::getUnqual(Type::getInt8Ty(Context)));
+#if LLVM_VERSION < 32
 			    Value *Len = convertOperand(func, EE->getTargetData()->getIntPtrType(Context), inst->u.three[2]);
+#else
+			    Value *Len = convertOperand(func, EE->getDataLayout()->getIntPtrType(Context), inst->u.three[2]);
+#endif
 			    CallInst *c = Builder.CreateCall3(CF->FRealmemcmp, Dst, Src, Len);
 			    c->setTailCall(true);
 			    c->setDoesNotThrow();
@@ -1706,7 +1785,11 @@ public:
 			    {
 				CallInst *C = Builder.CreateCall(CF->FBSwap16, convertOperand(func, inst, inst->u.unaryop));
 				C->setTailCall(true);
+#if LLVM_VERSION < 32
 				C->setDoesNotThrow(true);
+#else
+				C->setDoesNotThrow();
+#endif
 				Store(inst->dest, C);
 				break;
 			    }
@@ -1714,7 +1797,11 @@ public:
 			    {
 				CallInst *C = Builder.CreateCall(CF->FBSwap32, convertOperand(func, inst, inst->u.unaryop));
 				C->setTailCall(true);
+#if LLVM_VERSION < 32
 				C->setDoesNotThrow(true);
+#else
+				C->setDoesNotThrow();
+#endif
 				Store(inst->dest, C);
 				break;
 			    }
@@ -1722,7 +1809,11 @@ public:
 			    {
 				CallInst *C = Builder.CreateCall(CF->FBSwap64, convertOperand(func, inst, inst->u.unaryop));
 				C->setTailCall(true);
+#if LLVM_VERSION < 32
 				C->setDoesNotThrow(true);
+#else
+				C->setDoesNotThrow();
+#endif
 				Store(inst->dest, C);
 				break;
 			    }
@@ -1827,7 +1918,11 @@ public:
 	// entrypoint can only be C, emit wrapper
 	Function *F = Function::Create(Functions[0]->getFunctionType(),
 				       Function::ExternalLinkage,
+#if LLVM_VERSION < 33
 				       Functions[0]->getName()+"_wrap", M);
+#else
+				       Functions[0]->getName().str()+"_wrap", M);
+#endif
 	F->setDoesNotThrow();
 	BasicBlock *BB = BasicBlock::Create(Context, "", F);
 	std::vector<Value*> Args;
@@ -1886,8 +1981,11 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
 					  "clamjit.fail", M);
     CF->FHandler->setDoesNotReturn();
     CF->FHandler->setDoesNotThrow();
+#if LLVM_VERSION == 32
+    CF->FHandler->addFnAttr(Attributes::NoInline);
+#else
     CF->FHandler->addFnAttr(Attribute::NoInline);
-
+#endif
     EE->addGlobalMapping(CF->FHandler, (void*)(intptr_t)jit_exception_handler);
     EE->InstallLazyFunctionCreator(noUnknownFunctions);
     EE->getPointerToFunction(CF->FHandler);
@@ -1910,7 +2008,11 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
 #endif
 					 M);
     CF->FMemset->setDoesNotThrow();
+#if LLVM_VERSION < 32
     CF->FMemset->setDoesNotCapture(1, true);
+#else
+    CF->FMemset->setDoesNotCapture(1);
+#endif
 
     args.clear();
     args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
@@ -1930,7 +2032,11 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
 #endif
 					  M);
     CF->FMemmove->setDoesNotThrow();
+#if LLVM_VERSION < 32
     CF->FMemmove->setDoesNotCapture(1, true);
+#else
+    CF->FMemmove->setDoesNotCapture(1);
+#endif
 
     CF->FMemcpy = Function::Create(FuncTy_4, GlobalValue::ExternalLinkage,
 #ifdef LLVM30
@@ -1940,7 +2046,11 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
 #endif
 					 M);
     CF->FMemcpy->setDoesNotThrow();
+#if LLVM_VERSION < 32
     CF->FMemcpy->setDoesNotCapture(1, true);
+#else
+    CF->FMemcpy->setDoesNotCapture(1);
+#endif
 
     args.clear();
     args.push_back(Type::getInt16Ty(Context));
@@ -1980,7 +2090,11 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
     args.clear();
     args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
     args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
+#if LLVM_VERSION < 32
     args.push_back(EE->getTargetData()->getIntPtrType(Context));
+#else
+    args.push_back(EE->getDataLayout()->getIntPtrType(Context));
+#endif
     FuncTy_5 = FunctionType::get(Type::getInt32Ty(Context),
 				 args, false);
     CF->FRealmemcmp = Function::Create(FuncTy_5, GlobalValue::ExternalLinkage, "memcmp", M);
@@ -2200,19 +2314,29 @@ int cli_vm_execute_jit(const struct cli_all_bc *bcs, struct cli_bc_ctx *ctx,
 static unsigned char name_salt[16] = { 16, 38, 97, 12, 8, 4, 72, 196, 217, 144, 33, 124, 18, 11, 17, 253 };
 static void setGuard(unsigned char* guardbuf)
 {
+    cli_md5_ctx ctx;
     char salt[48];
     memcpy(salt, name_salt, 16);
     for(unsigned i = 16; i < 48; i++)
-        salt[i] = cli_rndnum(255);
+	salt[i] = cli_rndnum(255);
 
-    cl_hash_data("md5", salt, 48, guardbuf, NULL);
+    cli_md5_init(&ctx);
+    cli_md5_update(&ctx, salt, 48);
+    cli_md5_final(guardbuf, &ctx);
 }
-
+#if LLVM_VERSION < 32
 static void addFPasses(FunctionPassManager &FPM, bool trusted, const TargetData *TD)
+#else
+static void addFPasses(FunctionPassManager &FPM, bool trusted, const DataLayout *TD)
+#endif
 {
     // Set up the optimizer pipeline.  Start with registering info about how
     // the target lays out data structures.
+#if LLVM_VERSION < 32
     FPM.add(new TargetData(*TD));
+#else
+    FPM.add(new DataLayout(*TD));
+#endif
     // Promote allocas to registers.
     FPM.add(createPromoteMemoryToRegisterPass());
     FPM.add(new BrSimplifier());
@@ -2234,6 +2358,24 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	// Create the JIT.
 	std::string ErrorMsg;
 	EngineBuilder builder(M);
+
+#if LLVM_VERSION >= 31
+	TargetOptions Options;
+#ifdef CL_DEBUG
+	//disable this for now, it leaks
+	Options.JITEmitDebugInfo = false;
+//	Options.JITEmitDebugInfo = true;
+#else
+	Options.JITEmitDebugInfo = false;
+#endif
+#if LLVM_VERSION < 34
+	Options.DwarfExceptionHandling = false;
+#else
+	// TODO: How to do this now?
+#endif
+	builder.setTargetOptions(Options);
+#endif
+
 	builder.setErrorStr(&ErrorMsg);
 	builder.setEngineKind(EngineKind::JIT);
 	builder.setOptLevel(CodeGenOpt::Default);
@@ -2258,11 +2400,24 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	addFunctionProtos(&CF, EE, M);
 
 	FunctionPassManager OurFPM(M), OurFPMUnsigned(M);
+#if LLVM_VERSION < 32
 	M->setDataLayout(EE->getTargetData()->getStringRepresentation());
+#else
+	M->setDataLayout(EE->getDataLayout()->getStringRepresentation());
+#endif
+#if LLVM_VERSION < 31
 	M->setTargetTriple(sys::getHostTriple());
-
+#else
+	M->setTargetTriple(sys::getDefaultTargetTriple());
+#endif
+#if LLVM_VERSION < 32
 	addFPasses(OurFPM, true, EE->getTargetData());
 	addFPasses(OurFPMUnsigned, false, EE->getTargetData());
+#else
+	addFPasses(OurFPM, true, EE->getDataLayout());
+	addFPasses(OurFPMUnsigned, false, EE->getDataLayout());
+#endif
+
 
 	//TODO: create a wrapper that calls pthread_getspecific
 	unsigned maxh = cli_globals[0].offset + sizeof(struct cli_bc_hooks);
@@ -2369,7 +2524,11 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	    }
 	}
 	PassManager PM;
+#if LLVM_VERSION < 32
 	PM.add(new TargetData(*EE->getTargetData()));
+#else
+	PM.add(new DataLayout(*EE->getDataLayout()));
+#endif
 	// TODO: only run this on the untrusted bytecodes, not all of them...
 	if (has_untrusted)
 	    PM.add(createClamBCRTChecks());
@@ -2434,11 +2593,17 @@ int bytecode_init(void)
     llvm_install_error_handler(llvm_error_handler);
 #ifdef CL_DEBUG
     sys::PrintStackTraceOnErrorSignal();
+#if LLVM_VERSION >= 34
+    llvm::EnablePrettyStackTrace();
+#endif
 #else
+#if LLVM_VERSION < 34
     llvm::DisablePrettyStackTrace = true;
+#endif
 #endif
     atexit(do_shutdown);
 
+#if LLVM_VERSION < 31
 #ifdef CL_DEBUG
     //disable this for now, it leaks
     llvm::JITEmitDebugInfo = false;
@@ -2447,6 +2612,7 @@ int bytecode_init(void)
     llvm::JITEmitDebugInfo = false;
 #endif
     llvm::DwarfExceptionHandling = false;
+#endif
     llvm_start_multithreaded();
 
     // If we have a native target, initialize it to ensure it is linked in and
@@ -2605,7 +2771,11 @@ namespace ClamBCModule {
 void stop(const char *msg, llvm::Function* F, llvm::Instruction* I)
 {
     if (F && F->hasName()) {
+#if LLVM_VERSION < 31
 	cli_warnmsg("[Bytecode JIT] in function %s: %s", F->getNameStr().c_str(), msg);
+#else
+	cli_warnmsg("[Bytecode JIT] in function %s: %s", F->getName().str().c_str(), msg);
+#endif
     } else {
 	cli_warnmsg("[Bytecode JIT] %s", msg);
     }
@@ -2672,7 +2842,12 @@ static const DbgDeclareInst *findDbgDeclare(const Value *V) {
 static bool getLocationInfo(const Value *V, std::string &DisplayName,
                             std::string &Type, unsigned &LineNo,
                             std::string &File, std::string &Dir) {
+#if LLVM_VERSION < 33
   DICompileUnit Unit;
+#else
+  StringRef G;
+  StringRef H;
+#endif
   DIType TypeD;
 
   if (GlobalVariable *GV = dyn_cast<GlobalVariable>(const_cast<Value*>(V))) {
@@ -2684,7 +2859,12 @@ static bool getLocationInfo(const Value *V, std::string &DisplayName,
     if (!D.empty())
       DisplayName = D;
     LineNo = Var.getLineNumber();
+#if LLVM_VERSION < 33
     Unit = Var.getCompileUnit();
+#else
+    G = Var.getFilename();
+    H = Var.getDirectory();
+#endif
     TypeD = Var.getType();
   } else if (Function *F = dyn_cast<Function>(const_cast<Value*>(V))){
     Value *DIF = findDbgSubprogramDeclare(F);
@@ -2695,7 +2875,12 @@ static bool getLocationInfo(const Value *V, std::string &DisplayName,
     if (!D.empty())
       DisplayName = D;
     LineNo = Var.getLineNumber();
+#if LLVM_VERSION < 33
     Unit = Var.getCompileUnit();
+#else
+    G = Var.getFilename();
+    H = Var.getDirectory();
+#endif
     TypeD = Var.getType();
   } else {
     const DbgDeclareInst *DDI = findDbgDeclare(V);
@@ -2706,19 +2891,27 @@ static bool getLocationInfo(const Value *V, std::string &DisplayName,
     if (!D.empty())
       DisplayName = D;
     LineNo = Var.getLineNumber();
+#if LLVM_VERSION < 33
     Unit = Var.getCompileUnit();
+#else
+    // getFilename and getDirectory are not defined
+    G = StringRef();
+    H = StringRef();
+#endif
     TypeD = Var.getType();
   }
 
   StringRef T = TypeD.getName();
   if (!T.empty())
     Type = T;
-  StringRef F = Unit.getFilename();
-  if (!F.empty())
-    File = F;
-  StringRef D = Unit.getDirectory();
-  if (!D.empty())
-    Dir = D;
+#if LLVM_VERSION < 33
+  StringRef G = Unit.getFilename();
+  StringRef H = Unit.getDirectory();
+#endif
+  if (!G.empty())
+    File = G;
+  if (!H.empty())
+    Dir = H;
   return true;
 }
 #endif

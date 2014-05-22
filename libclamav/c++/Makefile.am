@@ -38,6 +38,7 @@ libclamavcxx_la_CXXFLAGS = $(AM_CPPFLAGS) @LLVMCONFIG_CXXFLAGS@ -fexceptions -DL
 if BUILD_LLVM3
 libclamavcxx_la_CXXFLAGS += -DLLVM30
 endif
+libclamavcxx_la_CXXFLAGS += -DLLVM_VERSION=${LLVM_VERSION}
 libclamavcxx_la_LDFLAGS = @LLVMCONFIG_LDFLAGS@ @LLVMCONFIG_LIBS@ @JSON_LDFLAGS@
 libclamavcxx_la_DEPENDENCIES = @LLVMCONFIG_LIBFILES@ @JSON_LIBS@
 noinst_LTLIBRARIES = libclamavcxx.la
@@ -51,7 +52,7 @@ noinst_LTLIBRARIES = libclamavcxx.la libllvmsystem.la\
 libclamavcxx_la_LIBADD=libllvmjit.la
 libclamavcxx_la_DEPENDENCIES=libllvmjit.la libllvmcodegen.la libllvmsystem.la
 libclamavcxx_la_LDFLAGS=-no-undefined
-libclamavcxx_la_CXXFLAGS = $(LLVM_CXXFLAGS) @JSON_CPPFLAGS@
+libclamavcxx_la_CXXFLAGS = $(LLVM_CXXFLAGS) -DLLVM_VERSION=${LLVM_VERSION} @JSON_CPPFLAGS@
 
 
 if BUILD_X86

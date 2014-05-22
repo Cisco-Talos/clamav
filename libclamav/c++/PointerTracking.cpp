@@ -23,19 +23,36 @@
 #include "PointerTracking.h"
 #include "llvm/Analysis/ScalarEvolution.h"
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
-#include "llvm/Constants.h"
-#include "llvm/Module.h"
-#include "llvm/Value.h"
 #include "llvm/Support/CallSite.h"
 #include "llvm/Support/InstIterator.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Target/TargetLibraryInfo.h"
+
+#if LLVM_VERSION < 32
 #include "llvm/Target/TargetData.h"
+#elif LLVM_VERSION < 33
+#include "llvm/DataLayout.h"
+#else
+#include "llvm/IR/DataLayout.h"
+#endif
+
+#if LLVM_VERSION < 33
+#include "llvm/Constants.h"
+#include "llvm/Module.h"
+#include "llvm/Value.h"
+#else
+#include "llvm/IR/Constants.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Value.h"
+#endif
+
 using namespace llvm;
 namespace llvm {
     void initializePointerTrackingPass(llvm::PassRegistry&);
 };
 INITIALIZE_PASS_BEGIN(PointerTracking, "pointertracking",
                 "Track pointer bounds", false, true)
+
 INITIALIZE_PASS_DEPENDENCY(DominatorTree)
 INITIALIZE_PASS_DEPENDENCY(LoopInfo)
 INITIALIZE_PASS_DEPENDENCY(ScalarEvolution)
@@ -52,7 +69,11 @@ bool PointerTracking::runOnFunction(Function &F) {
   predCache.clear();
   assert(analyzing.empty());
   FF = &F;
+#if LLVM_VERSION < 32
   TD = getAnalysisIfAvailable<TargetData>();
+#else
+  TD = getAnalysisIfAvailable<DataLayout>();
+#endif
   SE = &getAnalysis<ScalarEvolution>();
   LI = &getAnalysis<LoopInfo>();
   DT = &getAnalysis<DominatorTree>();
@@ -119,9 +140,17 @@ const SCEV *PointerTracking::computeAllocationCount(Value *P,
     return SE->getSCEV(arraySize);
   }
 
+#if LLVM_VERSION < 32
   if (CallInst *CI = extractMallocCall(V)) {
     Value *arraySize = getMallocArraySize(CI, TD);
     constType* AllocTy = getMallocAllocatedType(CI);
+#else
+  TargetLibraryInfo* TLI = new TargetLibraryInfo();
+
+  if (CallInst *CI = extractMallocCall(V, TLI)) {
+    Value *arraySize = getMallocArraySize(CI, TD, TLI);
+    constType* AllocTy = getMallocAllocatedType(CI, TLI);
+#endif
     if (!AllocTy || !arraySize) return SE->getCouldNotCompute();
     Ty = AllocTy;
     // arraySize elements of type Ty.
@@ -171,11 +200,21 @@ Value *PointerTracking::computeAllocationCountValue(Value *P, constType *&Ty) co
     return AI->getArraySize();
   }
 
+#if LLVM_VERSION < 32
   if (CallInst *CI = extractMallocCall(V)) {
     Ty = getMallocAllocatedType(CI);
     if (!Ty)
       return 0;
     Value *arraySize = getMallocArraySize(CI, TD);
+#else
+  TargetLibraryInfo* TLI = new TargetLibraryInfo();
+
+  if (CallInst *CI = extractMallocCall(V, TLI)) {
+    Ty = getMallocAllocatedType(CI, TLI);
+    if (!Ty)
+      return 0;
+    Value *arraySize = getMallocArraySize(CI, TD, TLI);
+#endif
     if (!arraySize) {
       Ty = Type::getInt8Ty(P->getContext());
       return CI->getArgOperand(0);

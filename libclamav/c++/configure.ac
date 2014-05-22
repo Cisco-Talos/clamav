@@ -59,10 +59,7 @@ AC_ARG_WITH([system-llvm], AC_HELP_STRING([-with-system-llvm],
   *)
     llvmconfig="$withval"
     llvmver=`$llvmconfig --version`
-    if test "$llvmver" != "2.9" && test "$llvmver" != "3.0svn" &&
-	test "$llvmver" != "3.0"; then
-	AC_MSG_ERROR([LLVM 2.9 required, but "$llvmver" found])
-    fi
+
     AC_SUBST(LLVMCONFIG_CXXFLAGS, [`$llvmconfig --cxxflags`])
     AC_SUBST(LLVMCONFIG_LDFLAGS, [`$llvmconfig --ldflags`])
     AC_SUBST(LLVMCONFIG_LIBS, [`$llvmconfig --libs jit nativecodegen scalaropts ipo`])
@@ -75,9 +72,24 @@ AC_ARG_WITH([system-llvm], AC_HELP_STRING([-with-system-llvm],
   esac
 ])
 
+AC_MSG_CHECKING([for supported LLVM version])
 if test "x$llvmconfig" = "x"; then
     AC_CONFIG_SUBDIRS([llvm])
+    llvmver=`llvm/configure --version | sed -n 1p | sed 's/llvm configure //'`
 fi
+
+llvmver_int=`echo "$llvmver" | sed -e 's/\.//g' | sed -e 's/svn//g'`
+
+if test $llvmver_int -lt 28; then
+    AC_MSG_RESULT([no ($llvmver)])
+    AC_MSG_ERROR([LLVM >= 2.8 required, but "$llvmver" found])
+elif test $llvmver_int -gt 34; then
+    AC_MSG_RESULT([no ($llvmver)])
+    AC_MSG_ERROR([LLVM <= 3.4 required, but "$llvmver" found])
+else
+AC_MSG_RESULT([ok ($llvmver)])
+fi
+AC_SUBST([LLVM_VERSION], [$llvmver_int])
 
 AC_ARG_ENABLE([llvm],AC_HELP_STRING([-enable-llvm],
 				    [Enable 'llvm' JIT/verifier support @<:@default=auto@:>@]),
