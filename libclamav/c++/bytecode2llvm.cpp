@@ -24,6 +24,7 @@
 #ifndef _WIN32
 #include <sys/time.h>
 #endif
+
 #include "ClamBCModule.h"
 #include "ClamBCDiagnostics.h"
 #include "llvm/ADT/DenseMap.h"
@@ -166,15 +167,20 @@ void LLVMInitializePowerPCAsmPrinter();
 #undef PACKAGE_URL
 #include "clamav-config.h"
 #endif
+
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+
+extern "C" {
+#include "libclamav/crypto.h"
+}
+
 #include "dconf.h"
 #include "clamav.h"
 #include "clambc.h"
 #include "bytecode.h"
 #include "bytecode_priv.h"
 #include "type_desc.h"
-extern "C" {
-#include "md5.h"
-}
 
 #define MODULE "libclamav JIT: "
 
@@ -1694,7 +1700,8 @@ public:
 			    Value *Dst = convertOperand(func, inst, inst->u.three[0]);
 			    Dst = Builder.CreatePointerCast(Dst, PointerType::getUnqual(Type::getInt8Ty(Context)));
 			    Value *Val = convertOperand(func, Type::getInt8Ty(Context), inst->u.three[1]);
-			    Value *Len = convertOperand(func, Type::getInt32Ty(Context), inst->u.three[2]);
+			    //Value *Len = convertOperand(func, Type::getInt32Ty(Context), inst->u.three[2]);
+                            Value *Len = convertOperand(func, Type::getInt64Ty(Context), inst->u.three[2]);
 #ifdef LLVM30
 			    CallInst *c = Builder.CreateCall5(CF->FMemset, Dst, Val, Len,
 								ConstantInt::get(Type::getInt32Ty(Context), 1),
@@ -1715,7 +1722,8 @@ public:
 			    Dst = Builder.CreatePointerCast(Dst, PointerType::getUnqual(Type::getInt8Ty(Context)));
 			    Value *Src = convertOperand(func, inst, inst->u.three[1]);
 			    Src = Builder.CreatePointerCast(Src, PointerType::getUnqual(Type::getInt8Ty(Context)));
-			    Value *Len = convertOperand(func, Type::getInt32Ty(Context), inst->u.three[2]);
+			    //Value *Len = convertOperand(func, Type::getInt32Ty(Context), inst->u.three[2]);
+                            Value *Len = convertOperand(func, Type::getInt64Ty(Context), inst->u.three[2]);
 #ifdef LLVM30
 			    CallInst *c = Builder.CreateCall5(CF->FMemcpy, Dst, Src, Len,
 								ConstantInt::get(Type::getInt32Ty(Context), 1),
@@ -1736,7 +1744,8 @@ public:
 			    Dst = Builder.CreatePointerCast(Dst, PointerType::getUnqual(Type::getInt8Ty(Context)));
 			    Value *Src = convertOperand(func, inst, inst->u.three[1]);
 			    Src = Builder.CreatePointerCast(Src, PointerType::getUnqual(Type::getInt8Ty(Context)));
-			    Value *Len = convertOperand(func, Type::getInt32Ty(Context), inst->u.three[2]);
+                            //Value *Len = convertOperand(func, Type::getInt32Ty(Context), inst->u.three[2]);
+                            Value *Len = convertOperand(func, Type::getInt64Ty(Context), inst->u.three[2]);
 #ifdef LLVM30
 			    CallInst *c = Builder.CreateCall5(CF->FMemmove, Dst, Src, Len,
 								ConstantInt::get(Type::getInt32Ty(Context), 1),
@@ -1993,7 +2002,8 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
     std::vector<constType*> args;
     args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
     args.push_back(Type::getInt8Ty(Context));
-    args.push_back(Type::getInt32Ty(Context));
+    //args.push_back(Type::getInt32Ty(Context));
+    args.push_back(Type::getInt64Ty(Context));
     args.push_back(Type::getInt32Ty(Context));
 #ifdef LLVM30
     args.push_back(Type::getInt1Ty(Context));
@@ -2002,11 +2012,13 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
 					       args, false);
     CF->FMemset = Function::Create(FuncTy_3, GlobalValue::ExternalLinkage,
 #ifdef LLVM30
-					 "llvm.memset.p0i8.i32",
+                                   //"llvm.memset.p0i8.i32",
+                                   "llvm.memset.p0i8.i64",
 #else
-					 "llvm.memset.i32",
+                                   //"llvm.memset.i32",
+                                   "llvm.memset.i64",
 #endif
-					 M);
+                                   M);
     CF->FMemset->setDoesNotThrow();
 #if LLVM_VERSION < 32
     CF->FMemset->setDoesNotCapture(1, true);
@@ -2017,7 +2029,8 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
     args.clear();
     args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
     args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
-    args.push_back(Type::getInt32Ty(Context));
+    //args.push_back(Type::getInt32Ty(Context));
+    args.push_back(Type::getInt64Ty(Context));
     args.push_back(Type::getInt32Ty(Context));
 #ifdef LLVM30
     args.push_back(Type::getInt1Ty(Context));
@@ -2026,11 +2039,13 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
 					       args, false);
     CF->FMemmove = Function::Create(FuncTy_4, GlobalValue::ExternalLinkage,
 #ifdef LLVM30
-					  "llvm.memmove.p0i8.i32",
+                                    //"llvm.memmove.p0i8.i32",
+                                    "llvm.memmove.p0i8.i64",
 #else
-					  "llvm.memmove.i32",
+                                    //"llvm.memmove.i32",
+                                    "llvm.memcpy.i64",
 #endif
-					  M);
+                                    M);
     CF->FMemmove->setDoesNotThrow();
 #if LLVM_VERSION < 32
     CF->FMemmove->setDoesNotCapture(1, true);
@@ -2040,11 +2055,13 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
 
     CF->FMemcpy = Function::Create(FuncTy_4, GlobalValue::ExternalLinkage,
 #ifdef LLVM30
-					 "llvm.memcpy.p0i8.p0i8.i32",
+                                   //"llvm.memcpy.p0i8.p0i8.i32",
+                                   "llvm.memcpy.p0i8.p0i8.i64",
 #else
-					 "llvm.memcpy.i32",
+                                   //"llvm.memcpy.i32",
+                                   "llvm.memcpy.i64",
 #endif
-					 M);
+                                   M);
     CF->FMemcpy->setDoesNotThrow();
 #if LLVM_VERSION < 32
     CF->FMemcpy->setDoesNotCapture(1, true);
@@ -2314,15 +2331,12 @@ int cli_vm_execute_jit(const struct cli_all_bc *bcs, struct cli_bc_ctx *ctx,
 static unsigned char name_salt[16] = { 16, 38, 97, 12, 8, 4, 72, 196, 217, 144, 33, 124, 18, 11, 17, 253 };
 static void setGuard(unsigned char* guardbuf)
 {
-    cli_md5_ctx ctx;
     char salt[48];
     memcpy(salt, name_salt, 16);
     for(unsigned i = 16; i < 48; i++)
 	salt[i] = cli_rndnum(255);
 
-    cli_md5_init(&ctx);
-    cli_md5_update(&ctx, salt, 48);
-    cli_md5_final(guardbuf, &ctx);
+    cl_hash_data("md5", salt, 48, guardbuf, NULL);
 }
 #if LLVM_VERSION < 32
 static void addFPasses(FunctionPassManager &FPM, bool trusted, const TargetData *TD)
