@@ -1,5 +1,6 @@
 /*
  *  Copyright (C) 2011-2013 Sourcefire, Inc.
+ *  Copyright (C) 2014 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  The code is based on Flasm, command line assembler & disassembler of Flash
  *  ActionScript bytecode Copyright (c) 2001 Opaque Industries, (c) 2002-2007
@@ -249,7 +250,7 @@ int cli_scanswf(cli_ctx *ctx)
     fmap_t *map = *ctx->fmap;
     unsigned int bitpos, bitbuf, getbits_n, nbits, getword_1, getword_2, getdword_1, getdword_2;
     const char *pt;
-    char get_c;
+    unsigned char get_c;
     size_t offset = 0;
     unsigned int val, foo, tag_hdr, tag_type, tag_len;
     unsigned long int bits;
@@ -278,14 +279,24 @@ int cli_scanswf(cli_ctx *ctx)
     INITBITS;
 
     GETBITS(nbits, 5);
-    GETBITS(foo, nbits); /* xMin */
-    GETBITS(foo, nbits); /* xMax */
-    GETBITS(foo, nbits); /* yMin */
-    GETBITS(foo, nbits); /* yMax */
+    cli_dbgmsg("SWF: FrameSize RECT size bits: %u\n", nbits);
+    {
+        uint32_t xMin = 0, xMax = 0, yMin = 0, yMax = 0;
+        GETBITS(xMin, nbits); /* Should be zero */
+        GETBITS(xMax, nbits);
+        GETBITS(yMin, nbits); /* Should be zero */
+        GETBITS(yMax, nbits);
+        cli_dbgmsg("SWF: FrameSize xMin %u xMax %u yMin %u yMax %u\n", xMin, xMax, yMin, yMax);
+    }
 
     GETWORD(foo);
     GETWORD(val);
     cli_dbgmsg("SWF: Frames total: %d\n", val);
+
+    /* Skip Flash tag walk unless debug mode */
+    if(!cli_debug_flag) {
+        return CL_CLEAN;
+    }
 
     while(offset < map->len) {
 	GETWORD(tag_hdr);

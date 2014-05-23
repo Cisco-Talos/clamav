@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Database loading</TITLE>
-<META NAME="description" CONTENT="Database loading">
+<TITLE>Documents</TITLE>
+<META NAME="description" CONTENT="Documents">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -20,112 +20,62 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="next" HREF="node47.html">
 <LINK REL="previous" HREF="node45.html">
-<LINK REL="up" HREF="node43.html">
+<LINK REL="up" HREF="node42.html">
 <LINK REL="next" HREF="node47.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html821"
+<A NAME="tex2html829"
   HREF="node47.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html817"
-  HREF="node43.html">
+<A NAME="tex2html825"
+  HREF="node42.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html811"
+<A NAME="tex2html819"
   HREF="node45.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html819"
+<A NAME="tex2html827"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html822"
-  HREF="node47.html">Error handling</A>
-<B> Up:</B> <A NAME="tex2html818"
-  HREF="node43.html">API</A>
-<B> Previous:</B> <A NAME="tex2html812"
-  HREF="node45.html">Initialization</A>
- &nbsp; <B>  <A NAME="tex2html820"
+<B> Next:</B> <A NAME="tex2html830"
+  HREF="node47.html">Data Loss Prevention</A>
+<B> Up:</B> <A NAME="tex2html826"
+  HREF="node42.html">Supported formats and features</A>
+<B> Previous:</B> <A NAME="tex2html820"
+  HREF="node45.html">Archives and compressed files</A>
+ &nbsp; <B>  <A NAME="tex2html828"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00073300000000000000">
-Database loading</A>
+<H3><A NAME="SECTION00072400000000000000">
+Documents</A>
 </H3>
-    The following set of functions provides an interface for loading
-    the virus database:
-    <PRE>
-	const char *cl_retdbdir(void);
-
-	int cl_load(const char *path, struct cl_engine *engine,
-		    unsigned int *signo, unsigned int options);
-</PRE>
-    <code>cl_retdbdir()</code> returns the default (hardcoded) path to the directory
-    with ClamAV databases.
-    <code>cl_load()</code> loads a single database file or all databases from a
-    given directory (when <code>path</code> points to a directory). The second
-    argument is used for passing in the pointer to the engine that should
-    be previously allocated with <code>cl_engine_new()</code>. A number of loaded
-    signatures will be <SPAN  CLASS="textbf">added</SPAN> to <code>signo</code> <A NAME="tex2html23"
-  HREF="footnode.html#foot336"><SUP><SPAN CLASS="arabic">10</SPAN></SUP></A>. The last argument can
-    pass the following flags:
+    The most popular file formats are supported:
     
 <UL>
-<LI><SPAN  CLASS="textbf">CL_DB_STDOPT</SPAN>
-<BR>
-This is an alias for a recommended set of scan options.
+<LI>MS Office and MacOffice files
 </LI>
-<LI><SPAN  CLASS="textbf">CL_DB_PHISHING</SPAN>
-<BR>
-Load phishing signatures.
+<LI>RTF
 </LI>
-<LI><SPAN  CLASS="textbf">CL_DB_PHISHING_URLS</SPAN>
-<BR>
-Initialize the phishing detection module and load .wdb and .pdb files.
+<LI>PDF
 </LI>
-<LI><SPAN  CLASS="textbf">CL_DB_PUA</SPAN>
-<BR>
-Load signatures for Potentially Unwanted Applications.
-</LI>
-<LI><SPAN  CLASS="textbf">CL_DB_OFFICIAL_ONLY</SPAN>
-<BR>
-Only load official signatures from digitally signed databases.
-</LI>
-<LI><SPAN  CLASS="textbf">CL_DB_BYTECODE</SPAN>
-<BR>
-Load bytecode.
+<LI>HTML
     
 </LI>
 </UL>
-    <code>cl_load()</code> returns <code>CL_SUCCESS</code> on success and another code on
-    failure.
-    <PRE>
-	    ...
-	    struct cl_engine *engine;
-	    unsigned int sigs = 0;
-	    int ret;
-
-	if((ret = cl_init(CL_INIT_DEFAULT)) != CL_SUCCESS) {
-	    printf("cl_init() error: %s\n", cl_strerror(ret));
-	    return 1;
-	}
-
-	if(!(engine = cl_engine_new())) {
-	    printf("Can't create new engine\n");
-	    return 1;
-	}
-
-	ret = cl_load(cl_retdbdir(), engine, &amp;sigs, CL_DB_STDOPT);
-</PRE>
+    In the case of Office, RTF and PDF files, libclamav will only extract the
+    embedded objects and will not decode the text data itself. The text
+    decoding and normalization is only performed for HTML files.
 
 <P>
 <BR><HR>
 <ADDRESS>
-Tomasz Kojm
-2010-08-12
+Cisco 2014-05-21
 </ADDRESS>
 </BODY>
 </HTML>

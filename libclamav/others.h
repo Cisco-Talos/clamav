@@ -338,7 +338,7 @@ struct cl_engine {
     clcb_stats_get_hostid cb_stats_get_hostid;
 
     /* Raw disk image max settings */
-    uint32_t maxpartitions;
+    uint32_t maxpartitions; /* max number of partitions to scan in a disk image */
 
     /* Engine max settings */
     uint32_t maxiconspe; /* max number of icons to scan for PE */

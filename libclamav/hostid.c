@@ -48,7 +48,12 @@
 #endif
 
 #if defined(SIOCGIFHWADDR)
+#if defined(AIX)
+#include <sys/ndd_var.h>
+#include <sys/kinfo.h>
+#else
 #include <linux/sockios.h>
+#endif
 #endif
 
 #include <errno.h>

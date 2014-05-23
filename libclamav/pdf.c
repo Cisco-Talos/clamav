@@ -45,6 +45,8 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.61 2007/02/12 20:46:09 njh Exp $";
 #endif
 #include <zlib.h>
 
+#include <iconv.h>
+
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include "libclamav/crypto.h"
@@ -71,6 +73,7 @@ static	int	asciihexdecode(const char *buf, off_t len, char *output);
 static	int	ascii85decode(const char *buf, off_t len, unsigned char *output);
 static	const	char	*pdf_nextlinestart(const char *ptr, size_t len);
 static	const	char	*pdf_nextobject(const char *ptr, size_t len);
+static char *pdf_parse_string(const char *objstart, size_t objsize, const char *str);
 
 /* PDF statistics callbacks and related */
 struct pdf_struct;
@@ -97,6 +100,11 @@ static void OpenAction_cb(struct pdf_struct *, struct pdf_obj *, struct pdf_acti
 static void Launch_cb(struct pdf_struct *, struct pdf_obj *, struct pdf_action *);
 static void Page_cb(struct pdf_struct *, struct pdf_obj *, struct pdf_action *);
 static void print_pdf_stats(struct pdf_struct *);
+static void Author_cb(struct pdf_struct *, struct pdf_obj *, struct pdf_action *);
+static void Creator_cb(struct pdf_struct *, struct pdf_obj *, struct pdf_action *);
+static void Producer_cb(struct pdf_struct *, struct pdf_obj *, struct pdf_action *);
+static void CreationDate_cb(struct pdf_struct *, struct pdf_obj *, struct pdf_action *);
+static void ModificationDate_cb(struct pdf_struct *, struct pdf_obj *, struct pdf_action *);
 /* End PDF statistics callbacks and related */
 
 static int xrefCheck(const char *xref, const char *eof)
@@ -157,6 +165,11 @@ struct pdf_stats {
     int32_t nopenaction;      /* Number of OpenAction objects */
     int32_t nlaunch;          /* Number of Launch objects */
     int32_t npage;            /* Number of Page objects */
+    char *author;             /* Author of the PDF */
+    char *creator;            /* Application used to create the PDF */
+    char *producer;           /* Application used to produce the PDF */
+    char *creationdate;       /* Date the PDF was created */
+    char *modificationdate;   /* Date the PDF was modified */
 };
 
 struct pdf_struct {
@@ -1371,7 +1384,12 @@ static struct pdfname_action pdfname_actions[] = {
     {"OpenAction", OBJ_OPENACTION, STATE_ANY, STATE_OPENACTION, OpenAction_cb},
     {"Launch", OBJ_LAUNCHACTION, STATE_ANY, STATE_LAUNCHACTION, Launch_cb},
     {"Page", OBJ_PAGE, STATE_NONE, STATE_NONE, Page_cb},
-    {"Contents", OBJ_CONTENTS, STATE_NONE, STATE_CONTENTS, NULL}
+    {"Contents", OBJ_CONTENTS, STATE_NONE, STATE_CONTENTS, NULL},
+    {"Author", OBJ_DICT, STATE_NONE, STATE_NONE, Author_cb},
+    {"Producer", OBJ_DICT, STATE_NONE, STATE_NONE, Producer_cb},
+    {"CreationDate", OBJ_DICT, STATE_NONE, STATE_NONE, CreationDate_cb},
+    {"ModDate", OBJ_DICT, STATE_NONE, STATE_NONE, ModificationDate_cb},
+    {"Creator", OBJ_DICT, STATE_NONE, STATE_NONE, Creator_cb}
 };
 
 #define KNOWN_FILTERS ((1 << OBJ_FILTER_AH) | (1 << OBJ_FILTER_RL) | (1 << OBJ_FILTER_A85) | (1 << OBJ_FILTER_FLATE) | (1 << OBJ_FILTER_LZW) | (1 << OBJ_FILTER_FAX) | (1 << OBJ_FILTER_DCT) | (1 << OBJ_FILTER_JPX) | (1 << OBJ_FILTER_CRYPT))
@@ -2783,6 +2801,130 @@ pdf_nextobject(const char *ptr, size_t len)
     return NULL;
 }
 
+static char *pdf_parse_string(const char *objstart, size_t objsize, const char *str)
+{
+    const char *q = objstart;
+    char *p1, *p2;
+    size_t inlen, outlen, len;
+    char *buf, *outbuf, *res;
+    iconv_t cd;
+    int likelyutf = 0;
+    unsigned int i;
+    char *encodings[] = {
+        "UTF-8",
+        "UTF-16",
+        NULL
+    };
+
+    if (objsize < strlen(str) + 3)
+        return NULL;
+
+    res = NULL;
+
+    /* Yes, all of this is required to find the start and end of a potentially UTF-* string */
+
+    for (p1=(char *)q; (p1 - q) < objsize-8; p1++)
+        if (!strncmp(p1, str, strlen(str)))
+            break;
+
+    if (p1 - q > objsize - 8 || strncmp(p1, str, strlen(str)))
+        return NULL;
+
+    while ((p1 - q) <= objsize && *p1 != '(')
+        p1++;
+
+    if ((p1 - q) > objsize || *p1 != '(')
+        return NULL;
+
+    p2 = ++p1;
+    while (1) {
+        int shouldbreak=1;
+        unsigned int upperlimit=1;
+
+        while ((p2 - q) < objsize && *p2 != ')') {
+            if (!likelyutf && (*((unsigned char *)p2) > (unsigned char)0x7f || *p2 == '\0'))
+                likelyutf = 1;
+
+            p2++;
+        }
+
+        if ((p2 - q) > objsize || *p2 != ')')
+            return NULL;
+
+        if (likelyutf)
+            upperlimit = 3;
+
+        for (i=0; i <= upperlimit && p2 - i > p1; i++) {
+            if (*(p2-i) == '\\') {
+                shouldbreak=0;
+                p2++;
+            }
+        }
+
+        if (shouldbreak) {
+            p2--;
+            break;
+        }
+    }
+
+    if (p2 - p1 == 0)
+        return NULL;
+
+    len = inlen = outlen = (size_t)(p2 - p1) + 1;
+
+    if (likelyutf == 0) {
+        res = cli_calloc(1, len);
+        if (!(res))
+            return NULL;
+
+        memcpy(res, p1, len);
+        return res;
+    }
+
+    buf = cli_calloc(1, inlen);
+    if (!(buf))
+        return NULL;
+
+    memcpy(buf, p1, inlen);
+    p1 = buf;
+
+    p2 = outbuf = cli_calloc(1, outlen);
+    if (!(outbuf)) {
+        free(buf);
+        return NULL;
+    }
+
+    for (i=0; encodings[i] != NULL; i++) {
+        buf = p1;
+        outbuf = p2;
+
+        cd = iconv_open("ASCII", encodings[i]);
+        if (cd == (iconv_t)(-1)) {
+            cli_errmsg("Could not initialize iconv\n");
+            continue;
+        }
+
+        iconv(cd, &buf, &inlen, &outbuf, &outlen);
+
+        if (outlen == len) {
+            /* Decoding unsuccessful right from the start */
+            iconv_close(cd);
+            continue;
+        }
+
+        p2[len - outlen] = '\0';
+
+        res = strdup(p2);
+        iconv_close(cd);
+        break;
+    }
+
+    free(p1);
+    free(p2);
+
+    return res;
+}
+
 /* PDF statistics */
 static void ASCIIHexDecode_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act)
 {
@@ -2928,34 +3070,74 @@ static void Page_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_acti
     pdf->stats.npage++;
 }
 
+static void Author_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act)
+{
+    if (!(pdf))
+        return;
+
+    pdf->stats.author = pdf_parse_string(obj->start + pdf->map, obj_size(pdf, obj, 1), "/Author");
+}
+
+static void Creator_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act)
+{
+    if (!(pdf))
+        return;
+
+    pdf->stats.creator = pdf_parse_string(obj->start + pdf->map, obj_size(pdf, obj, 1), "/Creator");
+}
+
+static void ModificationDate_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act)
+{
+    if (!(pdf))
+        return;
+
+    pdf->stats.modificationdate = pdf_parse_string(obj->start + pdf->map, obj_size(pdf, obj, 1), "/ModDate");
+}
+
+static void CreationDate_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act)
+{
+    if (!(pdf))
+        return;
+
+    pdf->stats.creationdate = pdf_parse_string(obj->start + pdf->map, obj_size(pdf, obj, 1), "/CreationDate");
+}
+
+static void Producer_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act)
+{
+    if (!(pdf))
+        return;
+
+    pdf->stats.producer = pdf_parse_string(obj->start + pdf->map, obj_size(pdf, obj, 1), "/Producer");
+}
+
 static void print_pdf_stats(struct pdf_struct *pdf)
 {
     if (!(pdf))
         return;
 
     cli_dbgmsg("Statistics collected from PDF:\n");
-    cli_dbgmsg("    Invalid Objects:\t\t\t\t%lu\n", pdf->stats.ninvalidobjs);
-    cli_dbgmsg("    Number of JavaScript Objects:\t\t%lu\n", pdf->stats.njs);
-    cli_dbgmsg("    Number of Inflate-Encoded Objects:\t\t%lu\n", pdf->stats.nflate);
-    cli_dbgmsg("    Number of ActiveX Objects:\t\t\t%lu\n", pdf->stats.nactivex);
-    cli_dbgmsg("    Number of Flash Objects:\t\t\t%lu\n", pdf->stats.nflash);
-    cli_dbgmsg("    Number of Declared Colors:\t\t\t%lu\n", pdf->stats.ncolors);
-    cli_dbgmsg("    Number of ASCIIHexEncoded Objects:\t\t%lu\n", pdf->stats.nasciihexdecode);
-    cli_dbgmsg("    Number of ASCII85Encoded Objects:\t\t%lu\n", pdf->stats.nascii85decode);
-    cli_dbgmsg("    Number of Embedded Files:\t\t\t%lu\n", pdf->stats.nembeddedfile);
-    cli_dbgmsg("    Number of Image Objects:\t\t\t%lu\n", pdf->stats.nimage);
-    cli_dbgmsg("    Number of LZW-Encoded Objects:\t\t%lu\n", pdf->stats.nlzw);
-    cli_dbgmsg("    Number of RunLengthEncoded Objects:\t%lu\n", pdf->stats.nrunlengthdecode);
-    cli_dbgmsg("    Number of Fax-Encoded Objects:\t\t%lu\n", pdf->stats.nfaxdecode);
-    cli_dbgmsg("    Number of JBIG2-Encoded Objects:\t\t%lu\n", pdf->stats.njbig2decode);
-    cli_dbgmsg("    Number of DCT-Encoded Objects:\t\t%lu\n", pdf->stats.ndctdecode);
-    cli_dbgmsg("    Number of JPX-Encoded Objects:\t\t%lu\n", pdf->stats.njpxdecode);
-    cli_dbgmsg("    Number of Crypt-Encoded Objects:\t\t%lu\n", pdf->stats.ncrypt);
-    cli_dbgmsg("    Number of Standard-Filtered Objects:\t%lu\n", pdf->stats.nstandard);
-    cli_dbgmsg("    Number of Signed Objects:\t\t\t%lu\n", pdf->stats.nsigned);
-    cli_dbgmsg("    Number of Open Actions:\t\t\t%lu\n", pdf->stats.nopenaction);
-    cli_dbgmsg("    Number of Launch Objects:\t\t\t%lu\n", pdf->stats.nlaunch);
-    cli_dbgmsg("    Number of Objects with /Pages:\t\t%lu\n", pdf->stats.npage);
+    cli_dbgmsg("    Invalid Objects:\t\t\t\t%u\n", pdf->stats.ninvalidobjs);
+    cli_dbgmsg("    Number of JavaScript Objects:\t\t%u\n", pdf->stats.njs);
+    cli_dbgmsg("    Number of Inflate-Encoded Objects:\t\t%u\n", pdf->stats.nflate);
+    cli_dbgmsg("    Number of ActiveX Objects:\t\t\t%u\n", pdf->stats.nactivex);
+    cli_dbgmsg("    Number of Flash Objects:\t\t\t%u\n", pdf->stats.nflash);
+    cli_dbgmsg("    Number of Declared Colors:\t\t\t%u\n", pdf->stats.ncolors);
+    cli_dbgmsg("    Number of ASCIIHexEncoded Objects:\t\t%u\n", pdf->stats.nasciihexdecode);
+    cli_dbgmsg("    Number of ASCII85Encoded Objects:\t\t%u\n", pdf->stats.nascii85decode);
+    cli_dbgmsg("    Number of Embedded Files:\t\t\t%u\n", pdf->stats.nembeddedfile);
+    cli_dbgmsg("    Number of Image Objects:\t\t\t%u\n", pdf->stats.nimage);
+    cli_dbgmsg("    Number of LZW-Encoded Objects:\t\t%u\n", pdf->stats.nlzw);
+    cli_dbgmsg("    Number of RunLengthEncoded Objects:\t%u\n", pdf->stats.nrunlengthdecode);
+    cli_dbgmsg("    Number of Fax-Encoded Objects:\t\t%u\n", pdf->stats.nfaxdecode);
+    cli_dbgmsg("    Number of JBIG2-Encoded Objects:\t\t%u\n", pdf->stats.njbig2decode);
+    cli_dbgmsg("    Number of DCT-Encoded Objects:\t\t%u\n", pdf->stats.ndctdecode);
+    cli_dbgmsg("    Number of JPX-Encoded Objects:\t\t%u\n", pdf->stats.njpxdecode);
+    cli_dbgmsg("    Number of Crypt-Encoded Objects:\t\t%u\n", pdf->stats.ncrypt);
+    cli_dbgmsg("    Number of Standard-Filtered Objects:\t%u\n", pdf->stats.nstandard);
+    cli_dbgmsg("    Number of Signed Objects:\t\t\t%u\n", pdf->stats.nsigned);
+    cli_dbgmsg("    Number of Open Actions:\t\t\t%u\n", pdf->stats.nopenaction);
+    cli_dbgmsg("    Number of Launch Objects:\t\t\t%u\n", pdf->stats.nlaunch);
+    cli_dbgmsg("    Number of Objects with /Pages:\t\t%u\n", pdf->stats.npage);
 }
 
 static void pdf_export_json(struct pdf_struct *pdf)
@@ -2977,6 +3159,41 @@ static void pdf_export_json(struct pdf_struct *pdf)
         return;
 
     json_object_object_add(pdf->ctx->wrkproperty, "PDFStats", pdfobj);
+    if (pdf->stats.author) {
+        cli_jsonstr(pdfobj, "Author", pdf->stats.author);
+
+        free(pdf->stats.author);
+        pdf->stats.author = NULL;
+    }
+
+    if (pdf->stats.creator) {
+        cli_jsonstr(pdfobj, "Creator", pdf->stats.creator);
+
+        free(pdf->stats.creator);
+        pdf->stats.creator = NULL;
+    }
+
+    if (pdf->stats.producer) {
+        cli_jsonstr(pdfobj, "Producer", pdf->stats.producer);
+
+        free(pdf->stats.producer);
+        pdf->stats.producer = NULL;
+    }
+
+    if (pdf->stats.modificationdate) {
+        cli_jsonstr(pdfobj, "ModificationDate", pdf->stats.modificationdate);
+
+        free(pdf->stats.modificationdate);
+        pdf->stats.modificationdate = NULL;
+    }
+
+    if (pdf->stats.creationdate) {
+        cli_jsonstr(pdfobj, "CreationDate", pdf->stats.creationdate);
+
+        free(pdf->stats.creationdate);
+        pdf->stats.creationdate = NULL;
+    }
+
     if (pdf->stats.ninvalidobjs)
         cli_jsonint(pdfobj, "InvalidObjectCount", pdf->stats.ninvalidobjs);
     if (pdf->stats.njs)

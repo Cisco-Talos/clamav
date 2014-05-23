@@ -226,6 +226,12 @@ static int cli_bytecode_context_reset(struct cli_bc_ctx *ctx)
     ctx->maps = NULL;
     ctx->nmaps = 0;
 
+#if HAVE_JSON
+    free(ctx->jsonobjs);
+    ctx->jsonobjs = NULL;
+    ctx->njsonobjs = 0;
+#endif
+
     ctx->containertype = CL_TYPE_ANY;
     return CL_SUCCESS;
 }

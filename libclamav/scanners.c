@@ -1199,7 +1199,10 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
     }
 
     closedir(dd);
-    if (hasmacros) cli_jsonbool(ctx->wrkproperty, "HasMacros", 1);
+#if HAVE_JSON
+    if (hasmacros && ctx->options & CL_SCAN_FILE_PROPERTIES && ctx->wrkproperty != NULL)
+        cli_jsonbool(ctx->wrkproperty, "HasMacros", 1);
+#endif
     if(BLOCK_MACROS && hasmacros) {
 	cli_append_virus(ctx, "Heuristics.OLE2.ContainsMacros");
 	ret = CL_VIRUS;
@@ -3403,7 +3406,6 @@ static int scan_common(int desc, cl_fmap_t *map, const char **virname, unsigned 
             ctx.options &= ~CL_SCAN_FILE_PROPERTIES;
             rc = cli_mem_scandesc(jstring, strlen(jstring), &ctx);
         }
-        cli_errmsg("%s\n", jstring); //temp
 
         if (ctx.engine->keeptmp && NULL!=jstring) {
             int ret = CL_SUCCESS, fd = -1;
@@ -3414,6 +3416,8 @@ static int scan_common(int desc, cl_fmap_t *map, const char **virname, unsigned 
                 if (cli_writen(fd, jstring, strlen(jstring)) < 0) {
                     cli_dbgmsg("scan_common: cli_writen error writing json properties file.\n");
                     ret = CL_EWRITE;
+                } else {
+                    cli_errmsg("json written to: %s\n", tmpname);
                 }
             }
             if (fd != -1)
@@ -3422,6 +3426,9 @@ static int scan_common(int desc, cl_fmap_t *map, const char **virname, unsigned 
                 free(tmpname);
             if (rc == CL_SUCCESS)
                 rc = ret;
+        } else {
+            if ((jstring))
+                cli_errmsg("%s\n", jstring); //temp
         }
 
         json_object_put(ctx.properties); // frees

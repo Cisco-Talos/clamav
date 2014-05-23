@@ -1,5 +1,7 @@
 /*
- *  Copyright (C) 2008 Sourcefire, Inc.
+ *  Copyright (C) 2008-2013 Sourcefire, Inc.
+ *  Copyright (C) 2014 Cisco Systems, Inc. and/or its affiliates.
+ *  All rights reserved.
  *
  *  Authors: aCaB <acab@clamav.net>
  *
@@ -93,57 +95,57 @@ static const uint8_t sizemap[SIZE_NOSIZE+1][2] = {
 
 static const uint8_t regmap[SIZE_DWORD+1][ADDR_REG_GS+1] = {
   /* SIZE_BYTE */
-  {REG_AL, REG_CL, REG_DL, REG_BL, REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID}, 
+  {X86_REG_AL, X86_REG_CL, X86_REG_DL, X86_REG_BL, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID}, 
   /* SIZE_BYTEH */
-  {REG_AH, REG_CH, REG_DH, REG_BH, REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID}, 
+  {X86_REG_AH, X86_REG_CH, X86_REG_DH, X86_REG_BH, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID}, 
   /* SIZE_WORD */
-  {REG_AX, REG_CX, REG_DX, REG_BX, REG_SP, REG_BP, REG_SI, REG_DI, REG_ES, REG_CS, REG_SS, REG_DS, REG_FS, REG_GS},
+  {X86_REG_AX, X86_REG_CX, X86_REG_DX, X86_REG_BX, X86_REG_SP, X86_REG_BP, X86_REG_SI, X86_REG_DI, X86_REG_ES, X86_REG_CS, X86_REG_SS, X86_REG_DS, X86_REG_FS, X86_REG_GS},
   /* SIZE_DWORD */
-  {REG_EAX, REG_ECX, REG_EDX, REG_EBX, REG_ESP, REG_EBP, REG_ESI, REG_EDI, REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID}
+  {X86_REG_EAX, X86_REG_ECX, X86_REG_EDX, X86_REG_EBX, X86_REG_ESP, X86_REG_EBP, X86_REG_ESI, X86_REG_EDI, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID}
 };
 
 static const uint8_t mrm_regmap[3][8] = {
   /* SIZEB */
-  {REG_AL, REG_CL, REG_DL, REG_BL, REG_AH, REG_CH, REG_DH, REG_BH},
+  {X86_REG_AL, X86_REG_CL, X86_REG_DL, X86_REG_BL, X86_REG_AH, X86_REG_CH, X86_REG_DH, X86_REG_BH},
   /* SIZEW */
-  {REG_AX, REG_CX, REG_DX, REG_BX, REG_SP, REG_BP, REG_SI, REG_DI},
+  {X86_REG_AX, X86_REG_CX, X86_REG_DX, X86_REG_BX, X86_REG_SP, X86_REG_BP, X86_REG_SI, X86_REG_DI},
   /* SIZED */
-  {REG_EAX, REG_ECX, REG_EDX, REG_EBX, REG_ESP, REG_EBP, REG_ESI, REG_EDI}
+  {X86_REG_EAX, X86_REG_ECX, X86_REG_EDX, X86_REG_EBX, X86_REG_ESP, X86_REG_EBP, X86_REG_ESI, X86_REG_EDI}
 };
 
 static const uint8_t mrm_sregmap[3][8] = {
   /* SIZEB */
-  {REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID},
+  {X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID},
   /* SIZEW */
-  {REG_ES, REG_CS, REG_SS, REG_DS, REG_FS, REG_GS, REG_INVALID, REG_INVALID},
+  {X86_REG_ES, X86_REG_CS, X86_REG_SS, X86_REG_DS, X86_REG_FS, X86_REG_GS, X86_REG_INVALID, X86_REG_INVALID},
   /* SIZED */
-  {REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID}
+  {X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID}
 };
 
 static const uint8_t mrm_cregmap[3][8] = {
   /* SIZEB */
-  {REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID},
+  {X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID},
   /* SIZEW */
-  {REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID},
+  {X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID},
   /* SIZED */
-  {REG_CR0, REG_INVALID, REG_CR2, REG_CR3, REG_CR4, REG_INVALID, REG_INVALID, REG_INVALID}
+  {X86_REG_CR0, X86_REG_INVALID, X86_REG_CR2, X86_REG_CR3, X86_REG_CR4, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID}
 };
 
 static const uint8_t mrm_dregmap[3][8] = {
   /* SIZEB */
-  {REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID},
+  {X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID},
   /* SIZEW */
-  {REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID, REG_INVALID},
+  {X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID, X86_REG_INVALID},
   /* SIZED */
-  {REG_DR0, REG_DR1, REG_DR2, REG_DR3, REG_INVALID, REG_INVALID, REG_DR6, REG_DR7}
+  {X86_REG_DR0, X86_REG_DR1, X86_REG_DR2, X86_REG_DR3, X86_REG_INVALID, X86_REG_INVALID, X86_REG_DR6, X86_REG_DR7}
 };
 
 static const struct {
   enum X86REGS r1;
   enum X86REGS r2;
 } mrm_regmapw[8] = {
-  {REG_BX, REG_SI}, {REG_BX, REG_DI}, {REG_BP, REG_SI}, {REG_BP, REG_DI}, {REG_SI, REG_INVALID}, {REG_DI, REG_INVALID}, {REG_BP, REG_INVALID}, {REG_BX, REG_INVALID}
-};  
+  {X86_REG_BX, X86_REG_SI}, {X86_REG_BX, X86_REG_DI}, {X86_REG_BP, X86_REG_SI}, {X86_REG_BP, X86_REG_DI}, {X86_REG_SI, X86_REG_INVALID}, {X86_REG_DI, X86_REG_INVALID}, {X86_REG_BP, X86_REG_INVALID}, {X86_REG_BX, X86_REG_INVALID}
+};
 
 static const struct {
   enum X86OPS op;
@@ -1219,7 +1221,7 @@ static void spam_x86(struct DISASMED *s, char *hr) {
       if(s->segment) hr += sprintf(hr, "%s:", x86regs[s->segment]);
       *hr++ = '[';
       *hr = '\0';
-      if(s->args[i].arg.marg.r1!=REG_INVALID) {
+      if(s->args[i].arg.marg.r1!=X86_REG_INVALID) {
 	switch(s->args[i].arg.marg.scale) {
 	case 1:
 	  hr += sprintf(hr, "%s", x86regs[s->args[i].arg.marg.r1]);
@@ -1232,7 +1234,7 @@ static void spam_x86(struct DISASMED *s, char *hr) {
 	  gotstuff="+";
 	}
       }
-      if(s->args[i].arg.marg.r2!=REG_INVALID) {
+      if(s->args[i].arg.marg.r2!=X86_REG_INVALID) {
 	hr += sprintf(hr, "%s%s", gotstuff, x86regs[s->args[i].arg.marg.r2]);
 	gotstuff="+";
       }
@@ -1309,10 +1311,10 @@ static const uint8_t *disasm_x86(const uint8_t *command, unsigned int len, struc
 	  reversed = 1;
 	case X87_R:
 	  s->args[reversed^1].access = ACCESS_REG;
-	  s->args[reversed^1].reg = REG_ST0;
+	  s->args[reversed^1].reg = X86_REG_ST0;
 	case X87_ONE:
 	  s->args[reversed].access = ACCESS_REG;
-	  s->args[reversed].reg = REG_ST0 + (rm&7);
+	  s->args[reversed].reg = X86_REG_ST0 + (rm&7);
 	  break;
 	case X87_NONE:
 	  break;
@@ -1340,24 +1342,24 @@ static const uint8_t *disasm_x86(const uint8_t *command, unsigned int len, struc
 	  base&=7;
 	  
 	  s->args[0].arg.marg.scale = 1<<scale;
-	  if((s->args[0].arg.marg.r2=mrm_regmap[SIZED][base])==REG_EBP && mod==0) {
-	    s->args[0].arg.marg.r2=REG_INVALID;
+	  if((s->args[0].arg.marg.r2=mrm_regmap[SIZED][base])==X86_REG_EBP && mod==0) {
+	    s->args[0].arg.marg.r2=X86_REG_INVALID;
 	    mod=2;
 	  }
-	  if((s->args[0].arg.marg.r1=mrm_regmap[SIZED][idx])==REG_ESP) {
+	  if((s->args[0].arg.marg.r1=mrm_regmap[SIZED][idx])==X86_REG_ESP) {
 	    s->args[0].arg.marg.r1=s->args[0].arg.marg.r2;
-	    s->args[0].arg.marg.scale = (s->args[0].arg.marg.r2!=REG_INVALID);
-	    s->args[0].arg.marg.r2=REG_INVALID;
+	    s->args[0].arg.marg.scale = (s->args[0].arg.marg.r2!=X86_REG_INVALID);
+	    s->args[0].arg.marg.r2=X86_REG_INVALID;
 	  }
 	} else {
 	  if (mod==0 && rm==5) {
 	    mod=2;
-	    s->args[0].arg.marg.r1=REG_INVALID;
+	    s->args[0].arg.marg.r1=X86_REG_INVALID;
 	  } else {
 	    s->args[0].arg.marg.scale=1;
 	    s->args[0].arg.marg.r1=mrm_regmap[SIZED][rm];
 	  }
-	  s->args[0].arg.marg.r2=REG_INVALID;
+	  s->args[0].arg.marg.r2=X86_REG_INVALID;
 	}
 	if(mod==2) mod+=mod;
 	for (i=0; i<mod; i++) {
@@ -1367,7 +1369,7 @@ static const uint8_t *disasm_x86(const uint8_t *command, unsigned int len, struc
 	}
       } else {
 	if (mod==0 && rm==6) {
-	  s->args[0].arg.marg.r1=REG_INVALID;
+	  s->args[0].arg.marg.r1=X86_REG_INVALID;
 	  mod=2;
 	} else {
 	  s->args[0].arg.marg.scale=1;
@@ -1490,7 +1492,7 @@ static const uint8_t *disasm_x86(const uint8_t *command, unsigned int len, struc
 	}
 
 	s->args[reversed^1].access = ACCESS_REG;
-	if ((s->args[reversed^1].reg = p[s->args[reversed].size][rop]) == REG_INVALID) INVALIDATE;
+	if ((s->args[reversed^1].reg = p[s->args[reversed].size][rop]) == X86_REG_INVALID) INVALIDATE;
 
 	/* MOVZX size fixxup */
 	if(s->real_op == OP_MOVZX || s->real_op == OP_MOVSX)
@@ -1527,24 +1529,24 @@ static const uint8_t *disasm_x86(const uint8_t *command, unsigned int len, struc
 	    base&=7;
 
 	    s->args[reversed].arg.marg.scale = 1<<scale;
-	    if((s->args[reversed].arg.marg.r2=mrm_regmap[SIZED][base])==REG_EBP && mod==0) {
-	      s->args[reversed].arg.marg.r2=REG_INVALID;
+	    if((s->args[reversed].arg.marg.r2=mrm_regmap[SIZED][base])==X86_REG_EBP && mod==0) {
+	      s->args[reversed].arg.marg.r2=X86_REG_INVALID;
 	      mod=2;
 	    }
-	    if((s->args[reversed].arg.marg.r1=mrm_regmap[SIZED][idx])==REG_ESP) {
+	    if((s->args[reversed].arg.marg.r1=mrm_regmap[SIZED][idx])==X86_REG_ESP) {
 	      s->args[reversed].arg.marg.r1=s->args[reversed].arg.marg.r2;
-	      s->args[reversed].arg.marg.scale = (s->args[reversed].arg.marg.r2!=REG_INVALID);
-	      s->args[reversed].arg.marg.r2=REG_INVALID;
+	      s->args[reversed].arg.marg.scale = (s->args[reversed].arg.marg.r2!=X86_REG_INVALID);
+	      s->args[reversed].arg.marg.r2=X86_REG_INVALID;
 	    }
 	  } else {
 	    if (mod==0 && rm==5) {
 	      mod=2;
-	      s->args[reversed].arg.marg.r1=REG_INVALID;
+	      s->args[reversed].arg.marg.r1=X86_REG_INVALID;
 	    } else {
 	      s->args[reversed].arg.marg.scale=1;
 	      s->args[reversed].arg.marg.r1=mrm_regmap[SIZED][rm];
 	    }
-	    s->args[reversed].arg.marg.r2=REG_INVALID;
+	    s->args[reversed].arg.marg.r2=X86_REG_INVALID;
 	  }
 	  if(mod==2) mod+=mod;
 	  for (i=0; i<mod; i++) {
@@ -1557,7 +1559,7 @@ static const uint8_t *disasm_x86(const uint8_t *command, unsigned int len, struc
 	  } else s->args[reversed].arg.marg.disp=0;
 	} else {
 	  if (mod==0 && rm==6) {
-	    s->args[reversed].arg.marg.r1=REG_INVALID;
+	    s->args[reversed].arg.marg.r1=X86_REG_INVALID;
 	    mod=2;
 	  } else {
 	    s->args[reversed].arg.marg.scale=1;
@@ -1597,8 +1599,8 @@ static const uint8_t *disasm_x86(const uint8_t *command, unsigned int len, struc
 	s->args[0].size=sizemap[x86ops[table][s->table_op].dsize][s->opsize];
 	assert(s->args[0].size!=255);
 	s->args[0].size>>=1;
-	s->args[0].arg.marg.r1=REG_INVALID;
-	s->args[0].arg.marg.r2=REG_INVALID;
+	s->args[0].arg.marg.r1=X86_REG_INVALID;
+	s->args[0].arg.marg.r2=X86_REG_INVALID;
 	for (i=0; i<sz; i++) {
 	  GETBYTE(b);
 	  s->args[0].arg.marg.disp+=b<<(i*8);
@@ -1661,8 +1663,8 @@ static const uint8_t *disasm_x86(const uint8_t *command, unsigned int len, struc
 	s->args[1].size=sizemap[x86ops[table][s->table_op].ssize][s->opsize];
 	assert(s->args[1].size!=255);
 	s->args[1].size>>=1;
-	s->args[1].arg.marg.r1=REG_INVALID;
-	s->args[1].arg.marg.r2=REG_INVALID;
+	s->args[1].arg.marg.r1=X86_REG_INVALID;
+	s->args[1].arg.marg.r2=X86_REG_INVALID;
 	for (i=0; i<sz; i++) {
 	  GETBYTE(b);
 	  s->args[1].arg.marg.disp+=b<<(i*8);

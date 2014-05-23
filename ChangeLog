@@ -1,3 +1,47 @@
+Mon, 12 May 17:30:00 EDT 2014 (morgan)
+------------------------------------
+* 0.98.4 release
+
+Mon, 12 May 2014 14:02:23 EDT (morgan)
+------------------------------------
+* bb#10996: fix buffer underruns in mbox.c
+
+Mon, 12 May 2014 11:59:07 EDT (swebb)
+------------------------------------
+* bb#10990: Configuration of OpenSSL fails on Solaris w/ClamAV 0.98.3
+
+Mon, 12 May 2014 12:01:15 EDT (swebb)
+------------------------------------
+* bb#10997 - Add <sys/param.h> header if we have it for stats
+
+Sat, 10 May 2014 15:25:54 (morgan)
+------------------------------------
+* bz#10991 Add to stats.c missing #if HAVE_SYSCTLBYNAME
+
+Fri, 9 May 2014 16:27:16
+------------------------------------
+* bb#10988 - fixed stats overwrite on settings transfer
+
+Fri, 9 May 2014 15:22:22 EDT (swebb)
+------------------------------------
+* bb#10986: Bug in stats HostID code
+
+Fri, 9 May 2014 15:22:03 EDT (swebb)
+------------------------------------
+* bb#10987: clamdscan infinite loop
+
+Fri, 9 May 2014 13:42:44 EDT (swebb)
+------------------------------------
+* bb#10985: Fix build on Solaris 10
+
+Wed May 07 09:00:00 EDT 2014 (swebb)
+------------------------------------
+* 0.98.3 released to address Windows-specific issues
+
+Fri Apr 25 08:54:00 EDT 2014 (swebb)
+------------------------------------
+ * 0.98.2 released
+
 Mon Mar 31 06:35:00 EDT 2014 (swebb)
 ------------------------------------
  * 0.98.2 branched

@@ -1312,7 +1312,7 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
 	    break;
 	}
 
-	cli_dbgmsg("asn1_parse_mscat: catalog succesfully parsed\n");
+	cli_dbgmsg("asn1_parse_mscat: catalog successfully parsed\n");
     if (isBlacklisted) {
         return 1;
     }

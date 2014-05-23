@@ -139,9 +139,9 @@ int main(int argc, char **argv)
     sa.sa_handler = SIG_IGN;
     sigaction(SIGHUP, &sa, NULL);
     sigaction(SIGUSR2, &sa, NULL);
-#else
-    cl_initialize_crypto();
 #endif
+
+    cl_initialize_crypto();
 
     if((opts = optparse(NULL, argc, argv, 1, OPT_CLAMD, 0, NULL)) == NULL) {
         mprintf("!Can't parse command line options\n");
@@ -743,6 +743,8 @@ int main(int argc, char **argv)
 
     logg_close();
     optfree(opts);
+
+    cl_cleanup_crypto();
 
     return ret;
 }

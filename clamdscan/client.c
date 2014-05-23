@@ -100,10 +100,9 @@ static int isremote(const struct optstruct *opts) {
 
     opt = optget(clamdopts, "TCPAddr");
     while (opt) {
-        if (opt->enabled)
+        ipaddr = NULL;
+        if (opt->strarg)
             ipaddr = (!strcmp(opt->strarg, "any") ? NULL : opt->strarg);
-        else
-            ipaddr = NULL;
 
         memset(&hints, 0x00, sizeof(struct addrinfo));
         hints.ai_family = AF_UNSPEC;
@@ -112,6 +111,7 @@ static int isremote(const struct optstruct *opts) {
 
         if ((res = getaddrinfo(ipaddr, port, &hints, &info))) {
             logg("!Can't lookup clamd hostname: %s\n", gai_strerror(res));
+            opt = opt->nextarg;
             continue;
         }
 

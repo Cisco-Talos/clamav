@@ -34,7 +34,7 @@
 #ifdef HAVE_JSON
 int cli_jsonnull(json_object *obj, const char* key)
 {
-    json_object *fpobj;
+    json_object *fpobj = NULL;
     if (NULL == obj) {
         cli_errmsg("json: null 'obj' specified to cli_jsonnull\n");
         return CL_ENULLARG;
@@ -44,11 +44,6 @@ int cli_jsonnull(json_object *obj, const char* key)
         return CL_ENULLARG;
     }
 
-    fpobj = json_object_new_string("null");
-    if (NULL == fpobj) {
-        cli_errmsg("json: no memory for json string object\n");
-        return CL_EMEM;
-    }
     json_object_object_add(obj, key, fpobj);
     return CL_SUCCESS;
 }

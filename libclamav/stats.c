@@ -34,7 +34,12 @@
 #if defined(C_SOLARIS)
 #include <sys/utsname.h>
 #else
+#if HAVE_SYS_PARAM_H
+#include <sys/param.h>
+#endif
+#if HAVE_SYSCTLBYNAME
 #include <sys/sysctl.h>
+#endif
 #endif
 #include <dlfcn.h>
 #else
@@ -471,7 +476,7 @@ void clamav_stats_decrement_count(const char *virname, const unsigned char *md5,
 
     sample = find_sample(intel, virname, md5, size, NULL);
     if (!(sample))
-        return;
+        goto clamav_stats_decrement_end;
 
     if (sample->hits == 1) {
         if ((intel->engine->cb_stats_remove_sample))
@@ -479,11 +484,12 @@ void clamav_stats_decrement_count(const char *virname, const unsigned char *md5,
         else
             clamav_stats_remove_sample(virname, md5, size, intel);
 
-        return;
+        goto clamav_stats_decrement_end;
     }
 
     sample->hits--;
 
+ clamav_stats_decrement_end:
 #ifdef CL_THREAD_SAFE
     err = pthread_mutex_unlock(&(intel->mutex));
     if (err) {
@@ -595,6 +601,8 @@ char *clamav_stats_get_hostid(void *cbdata)
 
         return buf;
     }
+
+    return strdup(STATS_ANON_UUID);
 #else
     buf = internal_get_host_id();
     if (!(buf))
