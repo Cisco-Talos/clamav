@@ -293,6 +293,11 @@ int cli_scanswf(cli_ctx *ctx)
     GETWORD(val);
     cli_dbgmsg("SWF: Frames total: %d\n", val);
 
+    /* Skip Flash tag walk unless debug mode */
+    if(!cli_debug_flag) {
+        return CL_CLEAN;
+    }
+
     while(offset < map->len) {
 	GETWORD(tag_hdr);
 	tag_type = tag_hdr >> 6;
