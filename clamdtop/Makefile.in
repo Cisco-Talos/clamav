@@ -408,7 +408,7 @@ top_srcdir = @top_srcdir@
 
 @HAVE_CURSES_TRUE@AM_CFLAGS = @WERR_CFLAGS@
 @HAVE_CURSES_TRUE@AM_CPPFLAGS = -I$(top_srcdir) @CURSES_CPPFLAGS@ @SSL_CPPFLAGS@
-@HAVE_CURSES_TRUE@clamdtop_LDADD = @CURSES_LIBS@ $(top_builddir)/libclamav/libclamav_internal_utils_nothreads.la
+@HAVE_CURSES_TRUE@clamdtop_LDADD = @CURSES_LIBS@ @SSL_LDFLAGS@ @SSL_LIBS@ $(top_builddir)/libclamav/libclamav_internal_utils_nothreads.la
 EXTRA_DIST = clamdtop.c
 all: all-am
 
