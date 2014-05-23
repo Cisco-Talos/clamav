@@ -141,6 +141,9 @@ clamdtop_OBJECTS = $(am_clamdtop_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
+clamdtop_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(clamdtop_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
@@ -408,7 +411,8 @@ top_srcdir = @top_srcdir@
 
 @HAVE_CURSES_TRUE@AM_CFLAGS = @WERR_CFLAGS@
 @HAVE_CURSES_TRUE@AM_CPPFLAGS = -I$(top_srcdir) @CURSES_CPPFLAGS@ @SSL_CPPFLAGS@
-@HAVE_CURSES_TRUE@clamdtop_LDADD = @CURSES_LIBS@ @SSL_LDFLAGS@ @SSL_LIBS@ $(top_builddir)/libclamav/libclamav_internal_utils_nothreads.la
+@HAVE_CURSES_TRUE@clamdtop_LDFLAGS = @SSL_LDFLAGS@ @CURSES_LIBS@
+@HAVE_CURSES_TRUE@clamdtop_LDADD = $(top_builddir)/libclamav/libclamav_internal_utils_nothreads.la
 EXTRA_DIST = clamdtop.c
 all: all-am
 
@@ -508,7 +512,7 @@ installcheck-binPROGRAMS: $(bin_PROGRAMS)
 	done; rm -f c$${pid}_.???; exit $$bad
 clamdtop$(EXEEXT): $(clamdtop_OBJECTS) $(clamdtop_DEPENDENCIES) $(EXTRA_clamdtop_DEPENDENCIES) 
 	@rm -f clamdtop$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(clamdtop_OBJECTS) $(clamdtop_LDADD) $(LIBS)
+	$(AM_V_CCLD)$(clamdtop_LINK) $(clamdtop_OBJECTS) $(clamdtop_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
