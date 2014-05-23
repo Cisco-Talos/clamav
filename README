@@ -22,6 +22,8 @@ ClamAV 0.98.4 is a bug fix release. The following issues are now resolved:
 
     - Name collisions on Ubuntu 14.04, Debian sid, and Slackware 14.1.
 
+    - Linking issues with libclamunrar
+
 Thanks to the following individuals for testing, writing patches, and
 initiating quality improvements in this release:
 
