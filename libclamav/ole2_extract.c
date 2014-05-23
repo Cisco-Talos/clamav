@@ -910,10 +910,10 @@ handler_enum(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * 
                 cli_jsonstr(ctx->wrkproperty, "FileType", "CL_TYPE_MSPPT");
             }
             if (!strcmp(name, "worddocument")) {
-                cli_jsonstr(ctx->wrkproperty, "FileType", "CL_TYPE_MSDOC");
+                cli_jsonstr(ctx->wrkproperty, "FileType", "CL_TYPE_MSWORD");
             }
             if (!strcmp(name, "workbook")) {
-                cli_jsonstr(ctx->wrkproperty, "FileType", "CL_TYPE_MSXLS");
+                cli_jsonstr(ctx->wrkproperty, "FileType", "CL_TYPE_MSXL");
             }
         }
 
