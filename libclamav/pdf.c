@@ -2397,6 +2397,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     if (!pdfver) {
         cli_dbgmsg("cli_pdf: no PDF- header found\n");
         noisy_warnmsg("cli_pdf: no PDF- header found\n");
+        pdf_export_json(&pdf);
         return CL_SUCCESS;
     }
 
@@ -2424,6 +2425,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     eofmap = fmap_need_off_once(map, map_off, bytesleft);
     if (!eofmap) {
         cli_errmsg("cli_pdf: mmap() failed (2)\n");
+        pdf_export_json(&pdf);
         return CL_EMAP;
     }
 
@@ -2478,6 +2480,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     pdf.map = fmap_need_off(map, offset, size);
     if (!pdf.map) {
         cli_errmsg("cli_pdf: mmap() failed (3)\n");
+        pdf_export_json(&pdf);
         return CL_EMAP;
     }
 
@@ -2490,6 +2493,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
         rc = CL_CLEAN;
     } else if (rc) {
         cli_dbgmsg("cli_pdf: (pre hooks) returning %d\n", rc);
+        pdf_export_json(&pdf);
         return rc == CL_BREAK ? CL_CLEAN : rc;
     }
 
@@ -3075,7 +3079,8 @@ static void Author_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_ac
     if (!(pdf))
         return;
 
-    pdf->stats.author = pdf_parse_string(obj->start + pdf->map, obj_size(pdf, obj, 1), "/Author");
+    if (!(pdf->stats.author))
+        pdf->stats.author = pdf_parse_string(obj->start + pdf->map, obj_size(pdf, obj, 1), "/Author");
 }
 
 static void Creator_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act)
@@ -3083,7 +3088,8 @@ static void Creator_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_a
     if (!(pdf))
         return;
 
-    pdf->stats.creator = pdf_parse_string(obj->start + pdf->map, obj_size(pdf, obj, 1), "/Creator");
+    if (!(pdf->stats.creator))
+        pdf->stats.creator = pdf_parse_string(obj->start + pdf->map, obj_size(pdf, obj, 1), "/Creator");
 }
 
 static void ModificationDate_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act)
@@ -3091,7 +3097,8 @@ static void ModificationDate_cb(struct pdf_struct *pdf, struct pdf_obj *obj, str
     if (!(pdf))
         return;
 
-    pdf->stats.modificationdate = pdf_parse_string(obj->start + pdf->map, obj_size(pdf, obj, 1), "/ModDate");
+    if (!(pdf->stats.modificationdate))
+        pdf->stats.modificationdate = pdf_parse_string(obj->start + pdf->map, obj_size(pdf, obj, 1), "/ModDate");
 }
 
 static void CreationDate_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act)
@@ -3099,7 +3106,8 @@ static void CreationDate_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct 
     if (!(pdf))
         return;
 
-    pdf->stats.creationdate = pdf_parse_string(obj->start + pdf->map, obj_size(pdf, obj, 1), "/CreationDate");
+    if (!(pdf->stats.creationdate))
+        pdf->stats.creationdate = pdf_parse_string(obj->start + pdf->map, obj_size(pdf, obj, 1), "/CreationDate");
 }
 
 static void Producer_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act)
@@ -3107,7 +3115,8 @@ static void Producer_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_
     if (!(pdf))
         return;
 
-    pdf->stats.producer = pdf_parse_string(obj->start + pdf->map, obj_size(pdf, obj, 1), "/Producer");
+    if (!(pdf->stats.producer))
+        pdf->stats.producer = pdf_parse_string(obj->start + pdf->map, obj_size(pdf, obj, 1), "/Producer");
 }
 
 static void print_pdf_stats(struct pdf_struct *pdf)
