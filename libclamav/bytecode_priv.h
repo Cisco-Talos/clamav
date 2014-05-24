@@ -33,7 +33,7 @@
 #include "hashtab.h"
 #include "events.h"
 #if HAVE_JSON
-#include "json/json.h"
+#include "json.h"
 #endif
 
 typedef uint32_t operand_t;

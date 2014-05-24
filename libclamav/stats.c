@@ -60,7 +60,7 @@
 #include "libclamav/others.h"
 #include "libclamav/clamav.h"
 #include "libclamav/dconf.h"
-#include "libclamav/json.h"
+#include "libclamav/stats_json.h"
 #include "libclamav/stats.h"
 #include "libclamav/hostid.h"
 #include "libclamav/www.h"

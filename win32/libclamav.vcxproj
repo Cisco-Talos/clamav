@@ -181,7 +181,7 @@
     <ClCompile Include="..\libclamav\crypto.c" />
     <ClCompile Include="..\libclamav\fpu.c" />
     <ClCompile Include="..\libclamav\hostid.c" />
-    <ClCompile Include="..\libclamav\json.c" />
+    <ClCompile Include="..\libclamav\stats_json.c" />
     <ClCompile Include="..\libclamav\openioc.c" />
     <ClCompile Include="..\libclamav\sf_base64decode.c" />
     <ClCompile Include="..\libclamav\stats.c" />
@@ -507,7 +507,7 @@
     <ClInclude Include="..\libclamav\conv.h" />
     <ClInclude Include="..\libclamav\crypto.h" />
     <ClInclude Include="..\libclamav\hostid.h" />
-    <ClInclude Include="..\libclamav\json.h" />
+    <ClInclude Include="..\libclamav\stats_json.h" />
     <ClInclude Include="..\libclamav\stats.h" />
     <ClInclude Include="..\libclamav\www.h" />
   </ItemGroup>

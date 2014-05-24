@@ -435,8 +435,8 @@ libclamav_la_SOURCES = \
 	stats.h \
 	www.c \
 	www.h \
-	json.c \
-	json.h \
+	stats_json.c \
+	stats_json.h \
 	hostid.c \
 	hostid.h \
 	openioc.c \

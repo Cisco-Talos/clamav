@@ -48,7 +48,7 @@
 #endif
 #include "blob.h"
 #ifdef HAVE_JSON
-#include "json/json.h"
+#include "json.h"
 #endif
 
 #define PPT_LZW_BUFFSIZE 8192

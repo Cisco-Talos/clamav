@@ -885,7 +885,7 @@
     <ClCompile Include="..\libclamav\hostid.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\libclamav\json.c">
+    <ClCompile Include="..\libclamav\stats_json.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\libclamav\stats.c">
@@ -911,7 +911,7 @@
     <ClInclude Include="..\libclamav\hostid.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\libclamav\json.h">
+    <ClInclude Include="..\libclamav\stats_json.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="..\libclamav\stats.h">

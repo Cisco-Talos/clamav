@@ -27,7 +27,7 @@
 #endif
 
 #if HAVE_JSON
-#include "json/json.h"
+#include "json.h"
 #endif
 
 #include "cltypes.h"

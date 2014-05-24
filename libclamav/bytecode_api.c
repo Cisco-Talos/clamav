@@ -55,7 +55,7 @@
 #include "str.h"
 #include "filetypes.h"
 #if HAVE_JSON
-#include "json/json.h"
+#include "json.h"
 #endif
 
 #define EV ctx->bc_events
