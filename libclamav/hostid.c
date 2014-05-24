@@ -48,7 +48,7 @@
 #endif
 
 #if defined(SIOCGIFHWADDR)
-#if defined(AIX)
+#if defined(_AIX)
 #include <sys/ndd_var.h>
 #include <sys/kinfo.h>
 #else
