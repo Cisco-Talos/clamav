@@ -297,6 +297,8 @@ void submit_post(const char *host, const char *port, const char *method, const c
 
             buf[bufsz-1] = '\0';
 
+            cli_dbgmsg("stats - received: %s\n", buf);
+
             if (strstr(buf, "STATOK")) {
                 cli_dbgmsg("stats - Data received okay\n");
                 break;

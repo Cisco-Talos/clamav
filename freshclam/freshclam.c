@@ -759,6 +759,12 @@ void submit_host_info(struct optstruct *opts)
     if (!(engine))
         return;
 
+    if (optget (opts, "Debug")->enabled || optget (opts, "debug")->enabled)
+        cl_debug ();
+
+    if (optget (opts, "verbose")->enabled)
+        mprintf_verbose = 1;
+
     cl_engine_stats_enable(engine);
 
     intel = engine->stats_data;
