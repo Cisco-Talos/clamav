@@ -2809,7 +2809,7 @@ static char *pdf_parse_string(const char *objstart, size_t objsize, const char *
 {
     const char *q = objstart;
     char *p1, *p2;
-    size_t inlen, outlen, len;
+    size_t inlen, outlen, len, checklen;
     char *buf, *outbuf, *res;
     iconv_t cd;
     int likelyutf = 0;
@@ -2825,19 +2825,21 @@ static char *pdf_parse_string(const char *objstart, size_t objsize, const char *
 
     res = NULL;
 
+    checklen = strlen(str);
+
     /* Yes, all of this is required to find the start and end of a potentially UTF-* string */
 
-    for (p1=(char *)q; (p1 - q) < objsize-8; p1++)
-        if (!strncmp(p1, str, strlen(str)))
+    for (p1=(char *)q; (p1 - q) < objsize-checklen; p1++)
+        if (!strncmp(p1, str, checklen))
             break;
 
-    if (p1 - q > objsize - 8 || strncmp(p1, str, strlen(str)))
+    if (p1 - q > objsize - checklen || strncmp(p1, str, checklen))
         return NULL;
 
-    while ((p1 - q) <= objsize && *p1 != '(')
+    while ((p1 - q) < objsize && *p1 != '(')
         p1++;
 
-    if ((p1 - q) > objsize || *p1 != '(')
+    if ((p1 - q) == objsize || *p1 != '(')
         return NULL;
 
     p2 = ++p1;
@@ -2852,7 +2854,7 @@ static char *pdf_parse_string(const char *objstart, size_t objsize, const char *
             p2++;
         }
 
-        if ((p2 - q) > objsize || *p2 != ')')
+        if ((p2 - q) == objsize || *p2 != ')')
             return NULL;
 
         if (likelyutf)
@@ -3076,47 +3078,57 @@ static void Page_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_acti
 
 static void Author_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act)
 {
+#if HAVE_JSON
     if (!(pdf))
         return;
 
     if (!(pdf->stats.author))
         pdf->stats.author = pdf_parse_string(obj->start + pdf->map, obj_size(pdf, obj, 1), "/Author");
+#endif
 }
 
 static void Creator_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act)
 {
+#if HAVE_JSON
     if (!(pdf))
         return;
 
     if (!(pdf->stats.creator))
         pdf->stats.creator = pdf_parse_string(obj->start + pdf->map, obj_size(pdf, obj, 1), "/Creator");
+#endif
 }
 
 static void ModificationDate_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act)
 {
+#if HAVE_JSON
     if (!(pdf))
         return;
 
     if (!(pdf->stats.modificationdate))
         pdf->stats.modificationdate = pdf_parse_string(obj->start + pdf->map, obj_size(pdf, obj, 1), "/ModDate");
+#endif
 }
 
 static void CreationDate_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act)
 {
+#if HAVE_JSON
     if (!(pdf))
         return;
 
     if (!(pdf->stats.creationdate))
         pdf->stats.creationdate = pdf_parse_string(obj->start + pdf->map, obj_size(pdf, obj, 1), "/CreationDate");
+#endif
 }
 
 static void Producer_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act)
 {
+#if HAVE_JSON
     if (!(pdf))
         return;
 
     if (!(pdf->stats.producer))
         pdf->stats.producer = pdf_parse_string(obj->start + pdf->map, obj_size(pdf, obj, 1), "/Producer");
+#endif
 }
 
 static void print_pdf_stats(struct pdf_struct *pdf)
