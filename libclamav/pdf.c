@@ -45,7 +45,9 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.61 2007/02/12 20:46:09 njh Exp $";
 #endif
 #include <zlib.h>
 
+#if HAVE_ICONV
 #include <iconv.h>
+#endif
 
 #include <openssl/ssl.h>
 #include <openssl/err.h>
@@ -2887,6 +2889,7 @@ static char *pdf_parse_string(const char *objstart, size_t objsize, const char *
         return res;
     }
 
+#if HAVE_ICONV
     buf = cli_calloc(1, inlen);
     if (!(buf))
         return NULL;
@@ -2927,6 +2930,7 @@ static char *pdf_parse_string(const char *objstart, size_t objsize, const char *
 
     free(p1);
     free(p2);
+#endif
 
     return res;
 }
