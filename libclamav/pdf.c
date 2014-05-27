@@ -2813,14 +2813,16 @@ static char *pdf_parse_string(const char *objstart, size_t objsize, const char *
     char *p1, *p2;
     size_t inlen, outlen, len, checklen;
     char *buf, *outbuf, *res;
-    iconv_t cd;
     int likelyutf = 0;
     unsigned int i;
+#if HAVE_ICONV
     char *encodings[] = {
         "UTF-8",
         "UTF-16",
         NULL
     };
+    iconv_t cd;
+#endif
 
     if (objsize < strlen(str) + 3)
         return NULL;
@@ -2838,8 +2840,14 @@ static char *pdf_parse_string(const char *objstart, size_t objsize, const char *
     if (p1 - q > objsize - checklen || strncmp(p1, str, checklen))
         return NULL;
 
-    while ((p1 - q) < objsize && *p1 != '(')
+    p1 += checklen;
+
+    while ((p1 - q) < objsize && *p1 != '(') {
+        if (!isspace(p1[0]))
+            break;
+
         p1++;
+    }
 
     if ((p1 - q) == objsize || *p1 != '(')
         return NULL;
