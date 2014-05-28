@@ -21,18 +21,17 @@
  */
 
 #include "llvm/ADT/Triple.h"
-#include "llvm/Support/raw_ostream.h"
-#ifdef LLVM29
-#include "llvm/Support/Host.h"
-#include "llvm/Support/DataTypes.h"
-#include "llvm/Support/Memory.h"
-#else
-#include "llvm/System/Host.h"
-#include "llvm/System/DataTypes.h"
-#include "llvm/System/Memory.h"
-#endif
-
 #include "llvm/Config/config.h"
+#include "llvm/Support/raw_ostream.h"
+#if LLVM_VERSION < 29
+#include "llvm/System/DataTypes.h"
+#include "llvm/System/Host.h"
+#include "llvm/System/Memory.h"
+#else
+#include "llvm/Support/DataTypes.h"
+#include "llvm/Support/Host.h"
+#include "llvm/Support/Memory.h"
+#endif
 
 extern "C" {
 #include "bytecode_detect.h"
@@ -155,7 +154,7 @@ void cli_detect_env_jit(struct cli_environment *env)
 	CASE_OS(Linux, os_linux);
 	CASE_OS(Lv2, os_unknown);
 	CASE_OS(MinGW32, os_win32);
-#ifndef LLVM29
+#if LLVM_VERSION < 29
 	CASE_OS(MinGW64, os_win64);
 #endif
 	CASE_OS(NetBSD,  os_bsd);
