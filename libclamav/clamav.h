@@ -167,7 +167,7 @@ typedef enum {
 #define ENGINE_OPTIONS_NONE             0x0
 #define ENGINE_OPTIONS_DISABLE_CACHE    0x1
 #define ENGINE_OPTIONS_FORCE_TO_DISK    0x2
-#define ENGINE_OPTIONS_DISABLE_PE_STATS 0x3
+#define ENGINE_OPTIONS_DISABLE_PE_STATS 0x4
 
 struct cl_engine;
 struct cl_settings;
