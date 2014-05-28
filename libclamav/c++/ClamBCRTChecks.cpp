@@ -174,7 +174,7 @@ namespace llvm {
           SE = &getAnalysis<ScalarEvolution>();
           PT = &getAnalysis<PointerTracking>();
           DT = &getAnalysis<DominatorTree>();
-          expander = new SCEVExpander(*SE);
+          expander = new SCEVExpander(*SE OPT("SCEVexpander"));
 
           std::vector<Instruction*> insns;
 
@@ -210,11 +210,11 @@ namespace llvm {
               Instruction *II = insns[Idx];
               DEBUG(dbgs() << "checking " << *II << "\n");
               if (LoadInst *LI = dyn_cast<LoadInst>(II)) {
-                  const Type *Ty = LI->getType();
+                  constType *Ty = LI->getType();
                   valid &= validateAccess(LI->getPointerOperand(),
                                           TD->getTypeAllocSize(Ty), LI);
               } else if (StoreInst *SI = dyn_cast<StoreInst>(II)) {
-                  const Type *Ty = SI->getOperand(0)->getType();
+                  constType *Ty = SI->getOperand(0)->getType();
                   valid &= validateAccess(SI->getPointerOperand(),
                                           TD->getTypeAllocSize(Ty), SI);
               } else if (MemIntrinsic *MI = dyn_cast<MemIntrinsic>(II)) {
@@ -225,7 +225,7 @@ namespace llvm {
               } else if (CallInst *CI = dyn_cast<CallInst>(II)) {
                   Value *V = CI->getCalledValue()->stripPointerCasts();
                   Function *F = cast<Function>(V);
-                  const FunctionType *FTy = F->getFunctionType();
+                  constFunctionType *FTy = F->getFunctionType();
                   CallSite CS(CI);
                   if (F->getName().equals("memcmp") && FTy->getNumParams() == 3) {
                       valid &= validateAccess(CS.getArgument(0), CS.getArgument(2), CI);
@@ -435,7 +435,7 @@ namespace llvm {
       Value* getPointerBounds(Value *Base) {
           if (BoundsMap.count(Base))
               return BoundsMap[Base];
-          const Type *I64Ty =
+          constType *I64Ty =
               Type::getInt64Ty(Base->getContext());
 
           if (Base->getType()->isPointerTy()) {
@@ -469,17 +469,17 @@ namespace llvm {
           // first arg is hidden ctx
           if (Argument *A = dyn_cast<Argument>(Base)) {
               if (A->getArgNo() == 0) {
-                  const Type *Ty = cast<PointerType>(A->getType())->getElementType();
+                  constType *Ty = cast<PointerType>(A->getType())->getElementType();
                   return ConstantInt::get(I64Ty, TD->getTypeAllocSize(Ty));
               }
           }
           if (LoadInst *LI = dyn_cast<LoadInst>(Base)) {
-              Value *V = LI->getPointerOperand()->stripPointerCasts()->getUnderlyingObject();
+              Value *V = GetUnderlyingObject(LI->getPointerOperand()->stripPointerCasts(), TD);
               if (Argument *A = dyn_cast<Argument>(V)) {
                   if (A->getArgNo() == 0) {
                       // pointers from hidden ctx are trusted to be at least the
                       // size they say they are
-                      const Type *Ty = cast<PointerType>(LI->getType())->getElementType();
+                      constType *Ty = cast<PointerType>(LI->getType())->getElementType();
                       return ConstantInt::get(I64Ty, TD->getTypeAllocSize(Ty));
                   }
               }
@@ -527,7 +527,7 @@ namespace llvm {
               Base = Base->stripPointerCasts();
               if (CallInst *CI = dyn_cast<CallInst>(Base)) {
                   Function *F = CI->getCalledFunction();
-                  const FunctionType *FTy = F->getFunctionType();
+                  constFunctionType *FTy = F->getFunctionType();
                   // last operand is always size for this API call kind
                   if (F->isDeclaration() && FTy->getNumParams() > 0) {
                       CallSite CS(CI);
@@ -606,7 +606,7 @@ namespace llvm {
           unsigned MDDbgKind = I->getContext().getMDKindID("dbg");
           //verifyFunction(*BB->getParent());
           if (!AbrtBB) {
-              std::vector<const Type*>args;
+              std::vector<constType*>args;
               FunctionType* abrtTy = FunctionType::get(Type::getVoidTy(BB->getContext()),args,false);
               args.push_back(Type::getInt32Ty(BB->getContext()));
               FunctionType* rterrTy = FunctionType::get(Type::getInt32Ty(BB->getContext()),args,false);
@@ -788,7 +788,7 @@ namespace llvm {
               }
           }
 
-      const Type *I64Ty =
+      constType *I64Ty =
           Type::getInt64Ty(Base->getContext());
       const SCEV *SLen = SE->getSCEV(Length);
       const SCEV *OffsetP = SE->getMinusSCEV(SE->getSCEV(Pointer),
@@ -870,7 +870,7 @@ INITIALIZE_AG_DEPENDENCY(CallGraph)
 INITIALIZE_PASS_DEPENDENCY(CallGraph)
 #endif
 INITIALIZE_PASS_DEPENDENCY(PointerTracking)
-INITIALIZE_PASS_END(PtrVerifier, "clambcrtchecks", "ClamBC RTchecks", false, false)
+INITIALIZE_PASS_END(PtrVerifier, "clambc-rtchecks", "ClamBC RTchecks", false, false)
 #endif
 
 

@@ -47,22 +47,33 @@
 #endif
 
 using namespace llvm;
+#if LLVM_VERSION < 29
+/* function is succeeded in later LLVM with LLVM correspoding standalone */
+static Value *GetUnderlyingObject(Value *P, TargetData *TD)
+{
+    return P->getUnderlyingObject();
+}
+#endif
+
+#if LLVM_VERSION >= 30
 namespace llvm {
     void initializePointerTrackingPass(llvm::PassRegistry&);
 };
 INITIALIZE_PASS_BEGIN(PointerTracking, "pointertracking",
                 "Track pointer bounds", false, true)
-
 INITIALIZE_PASS_DEPENDENCY(DominatorTree)
 INITIALIZE_PASS_DEPENDENCY(LoopInfo)
 INITIALIZE_PASS_DEPENDENCY(ScalarEvolution)
 INITIALIZE_PASS_DEPENDENCY(DominatorTree)
 INITIALIZE_PASS_END(PointerTracking, "pointertracking",
                 "Track pointer bounds", false, true)
+#endif
 
 char PointerTracking::ID = 0;
 PointerTracking::PointerTracking() : FunctionPass(ID) {
+#if LLVM_VERSION >= 30
     initializePointerTrackingPass(*PassRegistry::getPassRegistry());
+#endif
 }
 
 bool PointerTracking::runOnFunction(Function &F) {
