@@ -48,13 +48,16 @@ char *hex_encode(char *buf, char *data, size_t len)
 {
     size_t i;
     char *p;
+    int t;
 
     p = (buf != NULL) ? buf : calloc(1, (len*2)+1);
     if (!(p))
         return NULL;
 
-    for (i=0; i<len; i++)
-        sprintf(p+(i*2), "%02x", (int)data[i]);
+    for (i=0; i<len; i++) {
+        t = data[i] & 0xff;
+        sprintf(p+(i*2), "%02x", t);
+    }
 
     return p;
 }
@@ -132,7 +135,7 @@ char *export_stats_to_json(struct cl_engine *engine, cli_intel_t *intel)
         snprintf(buf+curused, bufsz-curused, "\t\t\t\"hits\": %s,\n", md5);
         curused += strlen(buf+curused);
 
-        snprintf(md5, sizeof(md5), "%zu", sample->size);
+        snprintf(md5, sizeof(md5), "%u", sample->size);
 
         buf = ensure_bufsize(buf, &bufsz, curused, strlen(md5) + 20);
         if (!(buf))
@@ -176,7 +179,7 @@ char *export_stats_to_json(struct cl_engine *engine, cli_intel_t *intel)
                 if (!(buf))
                     return NULL;
 
-                snprintf(buf+curused, bufsz-curused, "\t\t\t\t\t\"size\": %zu\n", sample->sections->sections[i].len);
+                snprintf(buf+curused, bufsz-curused, "\t\t\t\t\t\"size\": %u\n", sample->sections->sections[i].len);
                 curused += strlen(buf+curused);
 
                 buf = ensure_bufsize(buf, &bufsz, curused, 30);

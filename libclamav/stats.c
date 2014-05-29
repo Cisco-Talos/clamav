@@ -258,7 +258,7 @@ void clamav_stats_add_sample(const char *virname, const unsigned char *md5, size
         sample->virus_name[i+1] = NULL;
 
         memcpy(sample->md5, md5, sizeof(sample->md5));
-        sample->size = size;
+        sample->size = (uint32_t)size;
         intel->nsamples++;
 
         if (sections && sections->nsections && !(sample->sections)) {
