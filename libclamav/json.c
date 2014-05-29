@@ -54,7 +54,7 @@ char *hex_encode(char *buf, char *data, size_t len)
         return NULL;
 
     for (i=0; i<len; i++)
-        sprintf(p+(i*2), "%02x", *(int *)(data+i) & 0xff);
+        sprintf(p+(i*2), "%02x", (int)data[i])
 
     return p;
 }
