@@ -16851,19 +16851,22 @@ then
   if test ! -n "$withval"
   then
     LIBJSON_HOME="$withval"
-    have_json="yes"
+    if test -d "$LIBJSON_HOME/include/json" -o -d "$LIBJSON_HOME/include/json-c"
+    then
+      have_json_header="yes"
+    fi
   else
     LIBJSON_HOME=/usr/local
     if test -d "$LIBJSON_HOME/include/json" -o -d "$LIBJSON_HOME/include/json-c"
     then
-      have_json="yes"
+      have_json_header="yes"
     else
       LIBJSON_HOME=/usr
       if test -d "$LIBJSON_HOME/include/json" -o -d "$LIBJSON_HOME/include/json-c"
       then
-        have_json="yes"
+        have_json_header="yes"
       else
-        have_json="no"
+        have_json_header="no"
       fi
     fi
   fi
@@ -16874,12 +16877,12 @@ $as_echo "$LIBJSON_HOME" >&6; }
 
 else
 
-have_json="no"
+have_json_header="no"
 
 fi
 
 
-if test "X$have_json" = "Xyes"
+if test "X$have_json_header" = "Xyes"
 then
   if test -d "$LIBJSON_HOME/include/json"
   then
@@ -16892,29 +16895,16 @@ then
 
   if test ! -f "$LIBJSON_HOME/$JSON_INCLUDE/json.h"
   then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: json not found." >&5
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: json not found." >&5
 $as_echo "$as_me: WARNING: json not found." >&2;}
   else
-    JSON_LDFLAGS="-L$LIBJSON_HOME/lib"
-    JSON_LIBS="-ljson-c"
     JSON_CPPFLAGS="-I$LIBJSON_HOME/$JSON_INCLUDE"
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: JSON_CPPFLAGS is $JSON_CPPFLAGS" >&5
-$as_echo "$as_me: JSON_CPPFLAGS is $JSON_CPPFLAGS" >&6;}
-
-    save_LDFLAGS="$LDFLAGS"
-    LDFLAGS="-L$LIBJSON_HOME/lib $JSON_LIBS"
-
-    save_CFLAGS="$CFLAGS"
-    CFLAGS="$JSON_CPPFLAGS"
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for json_object_new_object in -ljson-c" >&5
-$as_echo_n "checking for json_object_new_object in -ljson-c... " >&6; }
-if ${ac_cv_lib_json_c_json_object_new_object+:} false; then :
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing json_object_new_object" >&5
+$as_echo_n "checking for library containing json_object_new_object... " >&6; }
+if ${ac_cv_search_json_object_new_object+:} false; then :
   $as_echo_n "(cached) " >&6
 else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-ljson-c  $LIBS"
+  ac_func_search_save_LIBS=$LIBS
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -16933,72 +16923,39 @@ return json_object_new_object ();
   return 0;
 }
 _ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_json_c_json_object_new_object=yes
-else
-  ac_cv_lib_json_c_json_object_new_object=no
+for ac_lib in '' json-c json; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_search_json_object_new_object=$ac_res
 fi
 rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
+    conftest$ac_exeext
+  if ${ac_cv_search_json_object_new_object+:} false; then :
+  break
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_json_c_json_object_new_object" >&5
-$as_echo "$ac_cv_lib_json_c_json_object_new_object" >&6; }
-if test "x$ac_cv_lib_json_c_json_object_new_object" = xyes; then :
+done
+if ${ac_cv_search_json_object_new_object+:} false; then :
+
+else
+  ac_cv_search_json_object_new_object=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_json_object_new_object" >&5
+$as_echo "$ac_cv_search_json_object_new_object" >&6; }
+ac_res=$ac_cv_search_json_object_new_object
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
   have_json="yes"
 else
   have_json="no"
 fi
-
-    if test "X$have_json" = "Xno"
-    then
-      JSON_LIBS="-ljson"
-      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for json_object_new_object in -ljson" >&5
-$as_echo_n "checking for json_object_new_object in -ljson... " >&6; }
-if ${ac_cv_lib_json_json_object_new_object+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-ljson  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char json_object_new_object ();
-int
-main ()
-{
-return json_object_new_object ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_json_json_object_new_object=yes
-else
-  ac_cv_lib_json_json_object_new_object=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_json_json_object_new_object" >&5
-$as_echo "$ac_cv_lib_json_json_object_new_object" >&6; }
-if test "x$ac_cv_lib_json_json_object_new_object" = xyes; then :
-  have_json="yes"
-else
-  have_json="no"
-fi
-
-    fi
-
-    LDFLAGS="$save_LDFLAGS"
-    CFLAGS="$save_CFLAGS"
 
   fi
 fi
