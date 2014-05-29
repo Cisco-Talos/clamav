@@ -149,7 +149,7 @@ typedef struct cli_ctx_tag {
 typedef struct cli_flagged_sample {
     char **virus_name;
     char md5[16];
-    size_t size; /* A size of zero means size is unavailable (why would this ever happen?) */
+    uint32_t size; /* A size of zero means size is unavailable (why would this ever happen?) */
     uint32_t hits;
     stats_section_t *sections;
 
