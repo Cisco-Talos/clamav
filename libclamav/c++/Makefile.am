@@ -51,7 +51,7 @@ noinst_LTLIBRARIES = libclamavcxx.la libllvmsystem.la\
 libclamavcxx_la_LIBADD=libllvmjit.la
 libclamavcxx_la_DEPENDENCIES=libllvmjit.la libllvmcodegen.la libllvmsystem.la
 libclamavcxx_la_LDFLAGS=-no-undefined
-libclamavcxx_la_CXXFLAGS = $(LLVM_CXXFLAGS)
+libclamavcxx_la_CXXFLAGS = $(LLVM_CXXFLAGS) @JSON_CPPFLAGS@
 
 
 if BUILD_X86
