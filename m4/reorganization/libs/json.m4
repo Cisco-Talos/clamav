@@ -53,11 +53,29 @@ then
     AC_MSG_WARN([json not found.])
   else
     JSON_CPPFLAGS="-I$LIBJSON_HOME/$JSON_INCLUDE"
+    save_LDFLAGS="$LDFLAGS"
+    save_CFLAGS="$CFLAGS"
+    save_LIBS="$LIBS"
+    LIBS=""
+    JSON_LIBS=""
+    if test "$LIBJSON_HOME" != "/usr"; then
+        JSON_LDFLAGS="-L$LIBJSON_HOME/lib"
+
+        LDFLAGS="$LDFLAGS $JSON_LDFLAGS"
+        CFLAGS="$CFLAGS $JSON_CPPFLAGS"
+    fi
+        
     AC_SEARCH_LIBS([json_object_new_object], [json-c json],  [have_json="yes"], [have_json="no"])
+
+    CFLAGS="$save_CFLAGS"
+    LDFLAGS="$save_LDFLAGS"
   fi
 fi
 
 if test "X$have_json" = "Xyes"; then
 AC_DEFINE([HAVE_JSON],1,[Define to 1 if you have the 'libjson' library (-ljson).])
+JSON_LIBS="$LIBS"
 fi
+
+LIBS="$save_LIBS"
 
