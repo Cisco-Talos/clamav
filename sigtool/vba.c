@@ -93,7 +93,8 @@ cli_ctx *convenience_ctx(int fd) {
 
 void destroy_ctx(int desc, cli_ctx *ctx) {
     funmap(*(ctx->fmap));
-    close(desc);
+    if (desc >= 0)
+        close(desc);
     free(ctx->fmap);
     cl_engine_free((struct cl_engine *)ctx->engine);
     free(ctx);
