@@ -43,6 +43,8 @@
 #include "libclamav/ole2_extract.h"
 #include "shared/output.h"
 
+#include "vba.h"
+
 typedef struct mac_token_tag
 {
     unsigned char token;
