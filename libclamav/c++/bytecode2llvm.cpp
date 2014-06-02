@@ -1626,7 +1626,7 @@ public:
 			    Value *Dst = convertOperand(func, inst, inst->u.three[0]);
 			    Dst = Builder.CreatePointerCast(Dst, PointerType::getUnqual(Type::getInt8Ty(Context)));
 			    Value *Val = convertOperand(func, Type::getInt8Ty(Context), inst->u.three[1]);
-			    Value *Len = convertOperand(func, Type::getInt64Ty(Context), inst->u.three[2]);
+			    Value *Len = convertOperand(func, Type::getInt32Ty(Context), inst->u.three[2]);
 #ifdef LLVM30
 			    CallInst *c = Builder.CreateCall5(CF->FMemset, Dst, Val, Len,
 								ConstantInt::get(Type::getInt32Ty(Context), 1),
@@ -1647,7 +1647,7 @@ public:
 			    Dst = Builder.CreatePointerCast(Dst, PointerType::getUnqual(Type::getInt8Ty(Context)));
 			    Value *Src = convertOperand(func, inst, inst->u.three[1]);
 			    Src = Builder.CreatePointerCast(Src, PointerType::getUnqual(Type::getInt8Ty(Context)));
-			    Value *Len = convertOperand(func, Type::getInt64Ty(Context), inst->u.three[2]);
+			    Value *Len = convertOperand(func, Type::getInt32Ty(Context), inst->u.three[2]);
 #ifdef LLVM30
 			    CallInst *c = Builder.CreateCall5(CF->FMemcpy, Dst, Src, Len,
 								ConstantInt::get(Type::getInt32Ty(Context), 1),
@@ -1668,7 +1668,7 @@ public:
 			    Dst = Builder.CreatePointerCast(Dst, PointerType::getUnqual(Type::getInt8Ty(Context)));
 			    Value *Src = convertOperand(func, inst, inst->u.three[1]);
 			    Src = Builder.CreatePointerCast(Src, PointerType::getUnqual(Type::getInt8Ty(Context)));
-			    Value *Len = convertOperand(func, Type::getInt64Ty(Context), inst->u.three[2]);
+			    Value *Len = convertOperand(func, Type::getInt32Ty(Context), inst->u.three[2]);
 #ifdef LLVM30
 			    CallInst *c = Builder.CreateCall5(CF->FMemmove, Dst, Src, Len,
 								ConstantInt::get(Type::getInt32Ty(Context), 1),
@@ -1902,7 +1902,7 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
     std::vector<constType*> args;
     args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
     args.push_back(Type::getInt8Ty(Context));
-    args.push_back(Type::getInt64Ty(Context));
+    args.push_back(Type::getInt32Ty(Context));
     args.push_back(Type::getInt32Ty(Context));
 #ifdef LLVM30
     args.push_back(Type::getInt1Ty(Context));
@@ -1911,9 +1911,9 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
 					       args, false);
     CF->FMemset = Function::Create(FuncTy_3, GlobalValue::ExternalLinkage,
 #ifdef LLVM30
-					 "llvm.memset.p0i8.i64",
+					 "llvm.memset.p0i8.i32",
 #else
-					 "llvm.memset.i64",
+					 "llvm.memset.i32",
 #endif
 					 M);
     CF->FMemset->setDoesNotThrow();
@@ -1922,7 +1922,7 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
     args.clear();
     args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
     args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
-    args.push_back(Type::getInt64Ty(Context));
+    args.push_back(Type::getInt32Ty(Context));
     args.push_back(Type::getInt32Ty(Context));
 #ifdef LLVM30
     args.push_back(Type::getInt1Ty(Context));
@@ -1931,9 +1931,9 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
 					       args, false);
     CF->FMemmove = Function::Create(FuncTy_4, GlobalValue::ExternalLinkage,
 #ifdef LLVM30
-					  "llvm.memmove.p0i8.i64",
+					  "llvm.memmove.p0i8.i32",
 #else
-					  "llvm.memmove.i64",
+					  "llvm.memmove.i32",
 #endif
 					  M);
     CF->FMemmove->setDoesNotThrow();
@@ -1941,9 +1941,9 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
 
     CF->FMemcpy = Function::Create(FuncTy_4, GlobalValue::ExternalLinkage,
 #ifdef LLVM30
-					 "llvm.memcpy.p0i8.p0i8.i64",
+					 "llvm.memcpy.p0i8.p0i8.i32",
 #else
-					 "llvm.memcpy.i64",
+					 "llvm.memcpy.i32",
 #endif
 					 M);
     CF->FMemcpy->setDoesNotThrow();
