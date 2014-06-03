@@ -44,6 +44,9 @@
 #include "bytecode_api.h"
 #include "bytecode_api_impl.h"
 #include "builtin_bytecodes.h"
+#if HAVE_JSON
+#include "json.h"
+#endif
 
 #define MAX_BC 64
 #define BC_EVENTS_PER_SIG 2

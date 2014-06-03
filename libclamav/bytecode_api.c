@@ -1547,15 +1547,15 @@ int32_t cli_bcapi_json_is_active(struct cli_bc_ctx *ctx )
 static int32_t cli_bcapi_json_objs_init(struct cli_bc_ctx *ctx) {
 #if HAVE_JSON 
     unsigned n = ctx->njsonobjs + 1;
-    json_object **j, jobjs = (json_object**)(ctx->jsonobjs);
+    json_object **j, **jobjs = (json_object **)(ctx->jsonobjs);
     cli_ctx *cctx = (cli_ctx *)ctx->ctx;
 
-    j = cli_realloc(jobjs, sizeof(*jobjs)*n);
+    j = cli_realloc(jobjs, sizeof(json_object *)*n);
     if (!j) { /* memory allocation failure */
         cli_event_error_oom(EV, 0);
         return -1;
     }
-    ctx->jsonobjs = j;
+    ctx->jsonobjs = (void **)j;
     ctx->njsonobjs = n;
     j[n-1] = cctx->properties;    
 
@@ -1578,7 +1578,7 @@ int32_t cli_bcapi_json_get_object(struct cli_bc_ctx *ctx, const int8_t* name, in
 {
 #if HAVE_JSON
     unsigned n;
-    json_object **j, *jobj, **jobjs = (json_object**)(ctx->jsonobjs);
+    json_object **j, *jobj, **jobjs = (json_object **)(ctx->jsonobjs);
     char *namep;
 
     INIT_JSON_OBJS(ctx);
@@ -1608,13 +1608,13 @@ int32_t cli_bcapi_json_get_object(struct cli_bc_ctx *ctx, const int8_t* name, in
         return 0;
     }
 
-    j = cli_realloc(jobjs, sizeof(*jobjs)*n);
+    j = cli_realloc(jobjs, sizeof(json_object *)*n);
     if (!j) { /* memory allocation failure */
         free(namep);
         cli_event_error_oom(EV, 0);
         return -1;
     }
-    ctx->jsonobjs = j;
+    ctx->jsonobjs = (void **)j;
     ctx->njsonobjs = n;
     j[n-1] = jobj;
 
@@ -1631,7 +1631,7 @@ int32_t cli_bcapi_json_get_type(struct cli_bc_ctx *ctx, int32_t objid)
 {
 #if HAVE_JSON
     enum json_type type;
-    json_object **jobjs = (json_object**)(ctx->jsonobjs);
+    json_object **jobjs = (json_object **)(ctx->jsonobjs);
 
     INIT_JSON_OBJS(ctx);
     if (objid < 0 || objid >= ctx->njsonobjs) {
@@ -1669,7 +1669,7 @@ int32_t cli_bcapi_json_get_array_length(struct cli_bc_ctx *ctx, int32_t objid)
 {
 #if HAVE_JSON
     enum json_type type;
-    json_object **jobjs = (json_object**)(ctx->jsonobjs);
+    json_object **jobjs = (json_object **)(ctx->jsonobjs);
 
     INIT_JSON_OBJS(ctx);
     if (objid < 0 || objid >= ctx->njsonobjs) {
@@ -1695,7 +1695,7 @@ int32_t cli_bcapi_json_get_array_idx(struct cli_bc_ctx *ctx, int32_t idx, int32_
     enum json_type type;
     unsigned n;
     int length;
-    json_object **j, *jarr = NULL, *jobj = NULL, **jobjs = (json_object**)(ctx->jsonobjs);
+    json_object **j, *jarr = NULL, *jobj = NULL, **jobjs = (json_object **)(ctx->jsonobjs);
 
     INIT_JSON_OBJS(ctx);
     if (objid < 0 || objid >= ctx->njsonobjs) {
@@ -1721,12 +1721,12 @@ int32_t cli_bcapi_json_get_array_idx(struct cli_bc_ctx *ctx, int32_t idx, int32_
             return 0;
         }
 
-        j = cli_realloc(jobjs, sizeof(*jobjs)*n);
+        j = cli_realloc(jobjs, sizeof(json_object *)*n);
         if (!j) { /* memory allocation failure */
             cli_event_error_oom(EV, 0);
             return -1;
         }
-        ctx->jsonobjs = j;
+        ctx->jsonobjs = (void **)j;
         ctx->njsonobjs = n;
         j[n-1] = jobj;
 
@@ -1745,7 +1745,7 @@ int32_t cli_bcapi_json_get_string_length(struct cli_bc_ctx *ctx, int32_t objid)
 {
 #if HAVE_JSON
     enum json_type type;
-    json_object *jobj, **jobjs = (json_object**)(ctx->jsonobjs);
+    json_object *jobj, **jobjs = (json_object **)(ctx->jsonobjs);
     int32_t len;
     const char *jstr;
 
@@ -1779,7 +1779,7 @@ int32_t cli_bcapi_json_get_string(struct cli_bc_ctx *ctx, int8_t* str, int32_t s
 {
 #if HAVE_JSON
     enum json_type type;
-    json_object *jobj, **jobjs = (json_object**)(ctx->jsonobjs);
+    json_object *jobj, **jobjs = (json_object **)(ctx->jsonobjs);
     int32_t len;
     const char *jstr;
 
@@ -1823,7 +1823,7 @@ int32_t cli_bcapi_json_get_string(struct cli_bc_ctx *ctx, int8_t* str, int32_t s
 int32_t cli_bcapi_json_get_boolean(struct cli_bc_ctx *ctx, int32_t objid)
 {
 #if HAVE_JSON
-    json_object *jobj, **jobjs = (json_object**)(ctx->jsonobjs);
+    json_object *jobj, **jobjs = (json_object **)(ctx->jsonobjs);
 
     INIT_JSON_OBJS(ctx);
     if (objid < 0 || objid >= ctx->njsonobjs) {
@@ -1842,7 +1842,7 @@ int32_t cli_bcapi_json_get_boolean(struct cli_bc_ctx *ctx, int32_t objid)
 int32_t cli_bcapi_json_get_int(struct cli_bc_ctx *ctx, int32_t objid)
 {
 #if HAVE_JSON
-    json_object *jobj, **jobjs = (json_object**)(ctx->jsonobjs);
+    json_object *jobj, **jobjs = (json_object **)(ctx->jsonobjs);
 
     INIT_JSON_OBJS(ctx);
     if (objid < 0 || objid >= ctx->njsonobjs) {
