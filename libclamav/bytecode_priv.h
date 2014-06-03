@@ -32,9 +32,6 @@
 #include "mpool.h"
 #include "hashtab.h"
 #include "events.h"
-#if HAVE_JSON
-#include "json.h"
-#endif
 
 typedef uint32_t operand_t;
 typedef uint16_t bbid_t;
@@ -231,7 +228,7 @@ struct cli_bc_ctx {
     int on_jit;
     int no_diff;
 #if HAVE_JSON
-    json_object **jsonobjs;
+    void **jsonobjs;
     unsigned njsonobjs;
 #endif
 };

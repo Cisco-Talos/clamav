@@ -227,7 +227,7 @@ static int cli_bytecode_context_reset(struct cli_bc_ctx *ctx)
     ctx->nmaps = 0;
 
 #if HAVE_JSON
-    free(ctx->jsonobjs);
+    free((json_object**)(ctx->jsonobjs));
     ctx->jsonobjs = NULL;
     ctx->njsonobjs = 0;
 #endif
