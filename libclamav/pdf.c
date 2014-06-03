@@ -71,14 +71,15 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.61 2007/02/12 20:46:09 njh Exp $";
  *Save the file being worked on in tmp */
 #endif
 
+struct pdf_struct;
+
 static	int	asciihexdecode(const char *buf, off_t len, char *output);
 static	int	ascii85decode(const char *buf, off_t len, unsigned char *output);
 static	const	char	*pdf_nextlinestart(const char *ptr, size_t len);
 static	const	char	*pdf_nextobject(const char *ptr, size_t len);
-static char *pdf_parse_string(const char *objstart, size_t objsize, const char *str);
+static char *pdf_parse_string(struct pdf_struct *pdf, const char *objstart, size_t objsize, const char *str);
 
 /* PDF statistics callbacks and related */
-struct pdf_struct;
 struct pdf_action;
 
 static void pdf_export_json(struct pdf_struct *);
@@ -2807,7 +2808,7 @@ pdf_nextobject(const char *ptr, size_t len)
     return NULL;
 }
 
-static char *pdf_parse_string(const char *objstart, size_t objsize, const char *str)
+static char *pdf_parse_string(struct pdf_struct *pdf, const char *objstart, size_t objsize, const char *str)
 {
     const char *q = objstart;
     char *p1, *p2;
@@ -2849,8 +2850,23 @@ static char *pdf_parse_string(const char *objstart, size_t objsize, const char *
         p1++;
     }
 
-    if ((p1 - q) == objsize || *p1 != '(')
+    if ((p1 - q) == objsize)
         return NULL;
+
+    if (isdigit(p1[0])) {
+        unsigned long objnum;
+        char *end;
+
+        objnum = strtoul(p1, &end, 10);
+        if ((end - p1) == 0)
+            return NULL;
+
+        if (objnum > pdf->nobjs)
+            return NULL;
+
+        res = NULL;
+        return res;
+    }
 
     p2 = ++p1;
     while (1) {
@@ -3095,7 +3111,7 @@ static void Author_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_ac
         return;
 
     if (!(pdf->stats.author))
-        pdf->stats.author = pdf_parse_string(obj->start + pdf->map, obj_size(pdf, obj, 1), "/Author");
+        pdf->stats.author = pdf_parse_string(pdf, obj->start + pdf->map, obj_size(pdf, obj, 1), "/Author");
 #endif
 }
 
@@ -3106,7 +3122,7 @@ static void Creator_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_a
         return;
 
     if (!(pdf->stats.creator))
-        pdf->stats.creator = pdf_parse_string(obj->start + pdf->map, obj_size(pdf, obj, 1), "/Creator");
+        pdf->stats.creator = pdf_parse_string(pdf, obj->start + pdf->map, obj_size(pdf, obj, 1), "/Creator");
 #endif
 }
 
@@ -3117,7 +3133,7 @@ static void ModificationDate_cb(struct pdf_struct *pdf, struct pdf_obj *obj, str
         return;
 
     if (!(pdf->stats.modificationdate))
-        pdf->stats.modificationdate = pdf_parse_string(obj->start + pdf->map, obj_size(pdf, obj, 1), "/ModDate");
+        pdf->stats.modificationdate = pdf_parse_string(pdf, obj->start + pdf->map, obj_size(pdf, obj, 1), "/ModDate");
 #endif
 }
 
@@ -3128,7 +3144,7 @@ static void CreationDate_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct 
         return;
 
     if (!(pdf->stats.creationdate))
-        pdf->stats.creationdate = pdf_parse_string(obj->start + pdf->map, obj_size(pdf, obj, 1), "/CreationDate");
+        pdf->stats.creationdate = pdf_parse_string(pdf, obj->start + pdf->map, obj_size(pdf, obj, 1), "/CreationDate");
 #endif
 }
 
@@ -3139,7 +3155,7 @@ static void Producer_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_
         return;
 
     if (!(pdf->stats.producer))
-        pdf->stats.producer = pdf_parse_string(obj->start + pdf->map, obj_size(pdf, obj, 1), "/Producer");
+        pdf->stats.producer = pdf_parse_string(pdf, obj->start + pdf->map, obj_size(pdf, obj, 1), "/Producer");
 #endif
 }
 
