@@ -36,11 +36,11 @@ int cli_jsonnull(json_object *obj, const char* key)
 {
     json_object *fpobj = NULL;
     if (NULL == obj) {
-        cli_errmsg("json: null 'obj' specified to cli_jsonnull\n");
+        cli_dbgmsg("json: null 'obj' specified to cli_jsonnull\n");
         return CL_ENULLARG;
     }
     if (NULL == key) {
-        cli_errmsg("json: null string specified as key to cli_jsonnull\n");
+        cli_dbgmsg("json: null string specified as key to cli_jsonnull\n");
         return CL_ENULLARG;
     }
 
@@ -52,15 +52,15 @@ int cli_jsonstr(json_object *obj, const char* key, const char* s)
 {
     json_object *fpobj;
     if (NULL == obj) {
-        cli_errmsg("json: null 'obj' specified to cli_jsonstr\n");
+        cli_dbgmsg("json: null 'obj' specified to cli_jsonstr\n");
         return CL_ENULLARG;
     }
     if (NULL == key) {
-        cli_errmsg("json: null string specified as 'key' to cli_jsonstr\n");
+        cli_dbgmsg("json: null string specified as 'key' to cli_jsonstr\n");
         return CL_ENULLARG;
     }
     if (NULL == s) {
-        cli_errmsg("json: null string specified as 's' to  cli_jsonstr\n");
+        cli_dbgmsg("json: null string specified as 's' to  cli_jsonstr\n");
         return CL_ENULLARG;
     }
 
@@ -77,11 +77,11 @@ int cli_jsonint(json_object *obj, const char* key, int32_t i)
 {
     json_object *fpobj;
     if (NULL == obj) {
-        cli_errmsg("json: no parent object specified to cli_jsonint\n");
+        cli_dbgmsg("json: no parent object specified to cli_jsonint\n");
         return CL_ENULLARG;
     }
     if (NULL == key) {
-        cli_errmsg("json: null string specified as key to cli_jsonnull\n");
+        cli_dbgmsg("json: null string specified as key to cli_jsonnull\n");
         return CL_ENULLARG;
     }
 
@@ -99,11 +99,11 @@ int cli_jsonint64(json_object *obj, const char* key, int64_t i)
 {
     json_object *fpobj;
     if (NULL == obj) {
-        cli_errmsg("json: no parent object specified to cli_jsonint64\n");
+        cli_dbgmsg("json: no parent object specified to cli_jsonint64\n");
         return CL_ENULLARG;
     }
     if (NULL == key) {
-        cli_errmsg("json: null string specified as key to cli_jsonint64\n");
+        cli_dbgmsg("json: null string specified as key to cli_jsonint64\n");
         return CL_ENULLARG;
     }
 
@@ -122,11 +122,11 @@ int cli_jsonint64(json_object *obj, const char* key, int64_t i)
     json_object *fpobj0, *fpobj1;
     json_object *fparr;
     if (NULL == obj) {
-        cli_errmsg("json: no parent object specified to cli_jsonint64\n");
+        cli_dbgmsg("json: no parent object specified to cli_jsonint64\n");
         return CL_ENULLARG;
     }
     if (NULL == key) {
-        cli_errmsg("json: null string specified as key to cli_jsonint64\n");
+        cli_dbgmsg("json: null string specified as key to cli_jsonint64\n");
         return CL_ENULLARG;
     }
 
@@ -166,11 +166,11 @@ int cli_jsonbool(json_object *obj, const char* key, int i)
 {
     json_object *fpobj;
     if (NULL == obj) {
-        cli_errmsg("json: no parent object specified to cli_jsonbool\n");
+        cli_dbgmsg("json: no parent object specified to cli_jsonbool\n");
         return CL_ENULLARG;
     }
     if (NULL == key) {
-        cli_errmsg("json: null string specified as key to cli_jsonbool\n");
+        cli_dbgmsg("json: null string specified as key to cli_jsonbool\n");
         return CL_ENULLARG;
     }
 
@@ -187,11 +187,11 @@ int cli_jsondouble(json_object *obj, const char* key, double d)
 {
     json_object *fpobj;
     if (NULL == obj) {
-        cli_errmsg("json: no parent object specified to cli_jsondouble\n");
+        cli_dbgmsg("json: no parent object specified to cli_jsondouble\n");
         return CL_ENULLARG;
     }
     if (NULL == key) {
-        cli_errmsg("json: null string specified as key to cli_jsondouble\n");
+        cli_dbgmsg("json: null string specified as key to cli_jsondouble\n");
         return CL_ENULLARG;
     }
 
