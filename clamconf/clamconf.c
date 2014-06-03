@@ -89,7 +89,7 @@ static void printopts(struct optstruct *opts, int nondef)
 	if(!opts->enabled) 
 	    printf("%s disabled\n", opts->name);
 	else switch(clam_options[opts->idx].argtype) {
-	    case TYPE_STRING:
+	    case CLOPT_TYPE_STRING:
 		printf("%s = \"%s\"", opts->name, opts->strarg);
 		opt = opts;
 		while((opt = opt->nextarg))
@@ -97,8 +97,8 @@ static void printopts(struct optstruct *opts, int nondef)
 		printf("\n");
 		break;
 
-	    case TYPE_NUMBER:
-	    case TYPE_SIZE:
+	    case CLOPT_TYPE_NUMBER:
+	    case CLOPT_TYPE_SIZE:
 		printf("%s = \"%lld\"", opts->name, opts->numarg);
 		opt = opts;
 		while((opt = opt->nextarg))
@@ -106,7 +106,7 @@ static void printopts(struct optstruct *opts, int nondef)
 		printf("\n");
 		break;
 
-	    case TYPE_BOOL:
+	    case CLOPT_TYPE_BOOL:
 		printf("%s = \"yes\"\n", opts->name);
 		break;
 
@@ -152,21 +152,21 @@ static int printconf(const char *name)
 		printf("# %s\n", tokens[j]);
 
 	    switch(cpt->argtype) {
-		case TYPE_STRING:
+		case CLOPT_TYPE_STRING:
 		    if(cpt->strarg)
 			printf("# Default: %s\n", cpt->strarg);
 		    else
 			printf("# Default: disabled\n");
 		    break;
 
-		case TYPE_NUMBER:
+		case CLOPT_TYPE_NUMBER:
 		    if(cpt->numarg != -1)
 			printf("# Default: %lld\n", cpt->numarg);
 		    else
 			printf("# Default: disabled\n");
 		    break;
 
-		case TYPE_SIZE:
+		case CLOPT_TYPE_SIZE:
 		    printf("# You may use 'M' or 'm' for megabytes (1M = 1m = 1048576 bytes)\n# and 'K' or 'k' for kilobytes (1K = 1k = 1024 bytes). To specify the size\n# in bytes just don't use modifiers.\n");
 		    if(cpt->numarg != -1)
 			printf("# Default: %lld\n", cpt->numarg);
@@ -174,7 +174,7 @@ static int printconf(const char *name)
 			printf("# Default: disabled\n");
 		    break;
 
-		case TYPE_BOOL:
+		case CLOPT_TYPE_BOOL:
 		    if(cpt->numarg != -1)
 			printf("# Default: %s\n", cpt->numarg ? "yes" : "no");
 		    else
