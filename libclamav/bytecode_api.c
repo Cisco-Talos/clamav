@@ -1578,10 +1578,11 @@ int32_t cli_bcapi_json_get_object(struct cli_bc_ctx *ctx, const int8_t* name, in
 {
 #if HAVE_JSON
     unsigned n;
-    json_object **j, *jobj, **jobjs = (json_object **)(ctx->jsonobjs);
+    json_object **j, *jobj, **jobjs;
     char *namep;
 
     INIT_JSON_OBJS(ctx);
+    jobjs = ((json_object **)(ctx->jsonobjs));
     if (objid < 0 || objid >= ctx->njsonobjs) {
         cli_dbgmsg("bytecode api[json_get_object]: invalid json objid requested\n");
         return -1;
@@ -1631,9 +1632,10 @@ int32_t cli_bcapi_json_get_type(struct cli_bc_ctx *ctx, int32_t objid)
 {
 #if HAVE_JSON
     enum json_type type;
-    json_object **jobjs = (json_object **)(ctx->jsonobjs);
+    json_object **jobjs;
 
     INIT_JSON_OBJS(ctx);
+    jobjs = ((json_object **)(ctx->jsonobjs));
     if (objid < 0 || objid >= ctx->njsonobjs) {
         cli_dbgmsg("bytecode api[json_get_type]: invalid json objid requested\n");
         return -1;
@@ -1669,9 +1671,10 @@ int32_t cli_bcapi_json_get_array_length(struct cli_bc_ctx *ctx, int32_t objid)
 {
 #if HAVE_JSON
     enum json_type type;
-    json_object **jobjs = (json_object **)(ctx->jsonobjs);
+    json_object **jobjs;
 
     INIT_JSON_OBJS(ctx);
+    jobjs = (json_object **)(ctx->jsonobjs);
     if (objid < 0 || objid >= ctx->njsonobjs) {
         cli_dbgmsg("bytecode api[json_array_get_length]: invalid json objid requested\n");
         return -1;
@@ -1695,9 +1698,10 @@ int32_t cli_bcapi_json_get_array_idx(struct cli_bc_ctx *ctx, int32_t idx, int32_
     enum json_type type;
     unsigned n;
     int length;
-    json_object **j, *jarr = NULL, *jobj = NULL, **jobjs = (json_object **)(ctx->jsonobjs);
+    json_object **j, *jarr = NULL, *jobj = NULL, **jobjs;
 
     INIT_JSON_OBJS(ctx);
+    jobjs = (json_object **)(ctx->jsonobjs);
     if (objid < 0 || objid >= ctx->njsonobjs) {
         cli_dbgmsg("bytecode api[json_array_get_idx]: invalid json objid requested\n");
         return -1;
@@ -1745,11 +1749,12 @@ int32_t cli_bcapi_json_get_string_length(struct cli_bc_ctx *ctx, int32_t objid)
 {
 #if HAVE_JSON
     enum json_type type;
-    json_object *jobj, **jobjs = (json_object **)(ctx->jsonobjs);
+    json_object *jobj, **jobjs;
     int32_t len;
     const char *jstr;
 
     INIT_JSON_OBJS(ctx);
+    jobjs = (json_object **)(ctx->jsonobjs);
     if (objid < 0 || objid >= ctx->njsonobjs) {
         cli_dbgmsg("bytecode api[json_get_string_length]: invalid json objid requested\n");
         return -1;
@@ -1779,11 +1784,12 @@ int32_t cli_bcapi_json_get_string(struct cli_bc_ctx *ctx, int8_t* str, int32_t s
 {
 #if HAVE_JSON
     enum json_type type;
-    json_object *jobj, **jobjs = (json_object **)(ctx->jsonobjs);
+    json_object *jobj, **jobjs;
     int32_t len;
     const char *jstr;
 
     INIT_JSON_OBJS(ctx);
+    jobjs = (json_object **)(ctx->jsonobjs);
     if (objid < 0 || objid >= ctx->njsonobjs) {
         cli_dbgmsg("bytecode api[json_get_string]: invalid json objid requested\n");
         return -1;
@@ -1823,9 +1829,10 @@ int32_t cli_bcapi_json_get_string(struct cli_bc_ctx *ctx, int8_t* str, int32_t s
 int32_t cli_bcapi_json_get_boolean(struct cli_bc_ctx *ctx, int32_t objid)
 {
 #if HAVE_JSON
-    json_object *jobj, **jobjs = (json_object **)(ctx->jsonobjs);
+    json_object *jobj, **jobjs;
 
     INIT_JSON_OBJS(ctx);
+    jobjs = (json_object **)(ctx->jsonobjs);
     if (objid < 0 || objid >= ctx->njsonobjs) {
         cli_dbgmsg("bytecode api[json_get_boolean]: invalid json objid requested\n");
         return -1;
@@ -1842,9 +1849,10 @@ int32_t cli_bcapi_json_get_boolean(struct cli_bc_ctx *ctx, int32_t objid)
 int32_t cli_bcapi_json_get_int(struct cli_bc_ctx *ctx, int32_t objid)
 {
 #if HAVE_JSON
-    json_object *jobj, **jobjs = (json_object **)(ctx->jsonobjs);
+    json_object *jobj, **jobjs;
 
     INIT_JSON_OBJS(ctx);
+    jobjs = (json_object **)(ctx->jsonobjs);
     if (objid < 0 || objid >= ctx->njsonobjs) {
         cli_dbgmsg("bytecode api[json_get_int]: invalid json objid requested\n");
         return -1;
