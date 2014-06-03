@@ -309,6 +309,8 @@ struct cl_engine {
     void *cb_sigload_ctx;
     clcb_hash cb_hash;
     clcb_meta cb_meta;
+    clcb_file_props cb_file_props;
+    void *cb_file_props_data;
 
     /* Used for bytecode */
     struct cli_all_bc bcs;
@@ -375,6 +377,8 @@ struct cl_settings {
     clcb_msg cb_msg;
     clcb_hash cb_hash;
     clcb_meta cb_meta;
+    clcb_file_props cb_file_props;
+    void *cb_file_props_data;
 
     /* Engine max settings */
     uint64_t maxembeddedpe;  /* max size to scan MSEXE for PE */

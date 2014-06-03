@@ -1311,3 +1311,9 @@ void cl_engine_set_clcb_meta(struct cl_engine *engine, clcb_meta callback)
 {
     engine->cb_meta = callback;
 }
+
+ void cl_engine_set_clcb_file_props(struct cl_engine *engine, clcb_file_props callback, void * cbdata)
+{
+    engine->cb_file_props = callback;
+    engine->cb_file_props_data = cbdata;
+}

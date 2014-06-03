@@ -3396,42 +3396,48 @@ static int scan_common(int desc, cl_fmap_t *map, const char **virname, unsigned 
 
 #if HAVE_JSON
     if (ctx.options & CL_SCAN_FILE_PROPERTIES && ctx.properties!=NULL) {
-        // serialize, etc.
-        const char * jstring = json_object_to_json_string(ctx.properties);
+        /* serialize json properties to string */
+        const char *jstring = json_object_to_json_string(ctx.properties);
         if (NULL == jstring) {
             cli_errmsg("scan_common: no memory for json serialization.\n");
             rc = CL_EMEM;
         }
-        else if (rc != CL_VIRUS) {
-            ctx.options &= ~CL_SCAN_FILE_PROPERTIES;
-            rc = cli_mem_scandesc(jstring, strlen(jstring), &ctx);
-        }
-
-        if (ctx.engine->keeptmp && NULL!=jstring) {
-            int ret = CL_SUCCESS, fd = -1;
-            char * tmpname = NULL;
-            if ((ret = cli_gentempfd(ctx.engine->tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
-                cli_dbgmsg("scan_common: Can't create json properties file.\n");
-            } else {
-                if (cli_writen(fd, jstring, strlen(jstring)) < 0) {
-                    cli_dbgmsg("scan_common: cli_writen error writing json properties file.\n");
-                    ret = CL_EWRITE;
-                } else {
-                    cli_errmsg("json written to: %s\n", tmpname);
-                }
+        else {
+            int ret = CL_SUCCESS;
+            cli_dbgmsg("%s\n", jstring);
+ 
+           /* Scan the json string unless a virus was detected */ 
+            if (rc != CL_VIRUS) {
+                ctx.options &= ~CL_SCAN_FILE_PROPERTIES;
+                rc = cli_mem_scandesc(jstring, strlen(jstring), &ctx);
             }
-            if (fd != -1)
-                close(fd);
-            if (NULL != tmpname)
-                free(tmpname);
-            if (rc == CL_SUCCESS)
-                rc = ret;
-        } else {
-            if ((jstring))
-                cli_errmsg("%s\n", jstring); //temp
-        }
 
-        json_object_put(ctx.properties); // frees
+            /* Invoke file props callback */
+            if (ctx.engine->cb_file_props != NULL) {
+                ret = ctx.engine->cb_file_props(jstring, rc, ctx.engine->cb_file_props_data);
+                if (ret != CL_SUCCESS)
+                    rc = ret;
+            }
+
+            /* keeptmp file processing for file properties json string */
+            if (ctx.engine->keeptmp) {
+                int fd = -1;
+                char * tmpname = NULL;
+                if ((ret = cli_gentempfd(ctx.engine->tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
+                    cli_dbgmsg("scan_common: Can't create json properties file, ret = %i.\n", ret);
+                } else {
+                    if (cli_writen(fd, jstring, strlen(jstring)) < 0)
+                        cli_dbgmsg("scan_common: cli_writen error writing json properties file.\n");
+                    else
+                        cli_dbgmsg("json written to: %s\n", tmpname);
+                }
+                if (fd != -1)
+                    close(fd);
+                if (NULL != tmpname)
+                    free(tmpname);
+            }
+        }
+        json_object_put(ctx.properties); /* frees all json memory */
     }
 #endif
 

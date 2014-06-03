@@ -373,6 +373,10 @@ typedef cl_error_t (*clcb_meta)(const char* container_type, unsigned long fsize_
 			  unsigned long fsize_real,  int is_encrypted, unsigned int filepos_container, void *context);
 extern void cl_engine_set_clcb_meta(struct cl_engine *engine, clcb_meta callback);
 
+/* File properties callback */
+typedef int (*clcb_file_props)(const char *j_propstr, int rc, void *cbdata);
+extern void cl_engine_set_clcb_file_props(struct cl_engine *engine, clcb_file_props callback, void * cbdata);
+
 /* Statistics/intelligence gathering callbacks */
 extern void cl_engine_set_stats_set_cbdata(struct cl_engine *engine, void *cbdata);
 
