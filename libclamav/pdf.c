@@ -2832,7 +2832,14 @@ static char *pdf_parse_string(struct pdf_struct *pdf, const char *objstart, size
 
     checklen = strlen(str);
 
-    /* Yes, all of this is required to find the start and end of a potentially UTF-* string */
+    /* Yes, all of this is required to find the start and end of a potentially UTF-* string
+     *
+     * First, find the key of the key/value pair we're looking for in this object.
+     * Second, determine whether the value points to another object (NOTE: this is sketchy behavior)
+     * Third, attempt to determine if we're ASCII or UTF-*
+     * If we're ASCII, just copy the ASCII string into a new heap-allocated string and return that
+     * Fourth, Attempt to decode from UTF-* to ASCII
+     */
 
     for (p1=(char *)q; (p1 - q) < objsize-checklen; p1++)
         if (!strncmp(p1, str, checklen))
@@ -2853,21 +2860,44 @@ static char *pdf_parse_string(struct pdf_struct *pdf, const char *objstart, size
     if ((p1 - q) == objsize)
         return NULL;
 
+    /* We should be at the start of the string, minus 1 */
+
     if (isdigit(p1[0])) {
-        unsigned long objnum;
+        unsigned long objnum, revnum;
         char *end;
 
+        /*
+         * This is kind of sketchy... This string says it points to another object.
+         * Try to get/parse the object and return the decoded value as an ASCII string.
+         */
+
+        /* Get the object number */
         objnum = strtoul(p1, &end, 10);
+        if ((end - p1) == 0)
+            return NULL;
+
+        /* Skip whitespaces */
+        p1 = end;
+        while ((p1 - q) < objsize && isspace(p1[0]))
+            p1++;
+
+        if (p1 - q == objsize)
+            return NULL;
+
+        /* Get revision number */
+        revnum = strtoul(p1, &end, 10);
         if ((end - p1) == 0)
             return NULL;
 
         if (objnum > pdf->nobjs)
             return NULL;
 
+        /* TODO: Parse the object, decode it if necessary, and return the string */
         res = NULL;
         return res;
     }
 
+    /* Make a best effort to find the end of the string and determine if UTF-* */
     p2 = ++p1;
     while (1) {
         int shouldbreak=1;
@@ -2905,6 +2935,7 @@ static char *pdf_parse_string(struct pdf_struct *pdf, const char *objstart, size
     len = inlen = outlen = (size_t)(p2 - p1) + 1;
 
     if (likelyutf == 0) {
+        /* We're not UTF-*, so just make a copy of the string and return that */
         res = cli_calloc(1, len);
         if (!(res))
             return NULL;
@@ -2914,6 +2945,7 @@ static char *pdf_parse_string(struct pdf_struct *pdf, const char *objstart, size
     }
 
 #if HAVE_ICONV
+    /* We should be UTF-* from this point on, try to decode */
     buf = cli_calloc(1, inlen);
     if (!(buf))
         return NULL;
