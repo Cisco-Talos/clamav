@@ -1578,6 +1578,9 @@ public:
 			case OP_BC_ICMP_SLT:
 			    Store(inst->dest, Builder.CreateICmpSLT(Op0, Op1));
 			    break;
+			case OP_BC_ICMP_SLE:
+			    Store(inst->dest, Builder.CreateICmpSLE(Op0, Op1));
+			    break;
 			case OP_BC_SELECT:
 			    Store(inst->dest, Builder.CreateSelect(Op0, Op1, Op2));
 			    break;
