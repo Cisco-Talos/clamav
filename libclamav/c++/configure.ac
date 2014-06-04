@@ -74,8 +74,9 @@ AC_ARG_WITH([system-llvm], AC_HELP_STRING([-with-system-llvm],
 
 AC_MSG_CHECKING([for supported LLVM version])
 if test "x$llvmconfig" = "x"; then
+    dnl macro not available in older autotools
     AC_CONFIG_SUBDIRS([llvm])
-    llvmver=`llvm/configure --version | sed -n 1p | sed 's/llvm configure //'`
+    llvmver=`$srcdir/llvm/configure --version | sed -n 1p | sed 's/llvm configure //'`
 fi
 
 llvmver_int=`echo "$llvmver" | sed -e 's/\.//g' | sed -e 's/svn//g'`
@@ -235,7 +236,6 @@ CXX_FLAG_CHECK(NO_MISSING_FIELD_INITIALIZERS, [-Wno-missing-field-initializers])
 AC_MSG_RESULT([$NO_VARIADIC_MACROS $NO_MISSING_FIELD_INITIALIZERS])
 
 AM_CONDITIONAL(BUILD_EXTERNAL_LLVM, [test -n "$llvmconfig"])
-AM_CONDITIONAL(BUILD_LLVM3, [test -n "$llvmconfig" && test "$llvmver" != "2.9"])
 
 m4_include([../../m4/reorganization/libs/json.m4])
 AC_SUBST([JSON_LIBS])
