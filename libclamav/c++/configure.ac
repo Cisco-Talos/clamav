@@ -79,18 +79,26 @@ if test "x$llvmconfig" = "x"; then
     llvmver=`$srcdir/llvm/configure --version | sed -n 1p | sed 's/llvm configure //'`
 fi
 
-llvmver_int=`echo "$llvmver" | sed -e 's/\.//g' | sed -e 's/svn//g'`
+llvmver_val=`echo "$llvmver" | sed -e 's/\.//' | sed -e 's/svn//g'`
+llvmver_major=`echo "$llvmver_val" | sed 's/\..*//'`
+llvmver_minor=`echo "$llvmver_val" | sed 's/[^.]*\.//'` | sed -e 's/\.//p'
+if test "x$llvmver_minor" = "x"; then
+   llvmver_minor=0
+fi
 
-if test $llvmver_int -lt 28; then
+if test $llvmver_major -lt 28; then
     AC_MSG_RESULT([no ($llvmver)])
     AC_MSG_ERROR([LLVM >= 2.8 required, but "$llvmver" found])
-elif test $llvmver_int -gt 34; then
+elif test $llvmver_major -eq 34 && test $llvmver_minor -gt 1; then
     AC_MSG_RESULT([no ($llvmver)])
-    AC_MSG_ERROR([LLVM <= 3.4 required, but "$llvmver" found])
+    AC_MSG_ERROR([LLVM <= 3.4.1 required, but "$llvmver" found])
+elif test $llvmver_major -gt 34; then
+    AC_MSG_RESULT([no ($llvmver)])
+    AC_MSG_ERROR([LLVM <= 3.4.1 required, but "$llvmver" found])
 else
 AC_MSG_RESULT([ok ($llvmver)])
 fi
-AC_SUBST([LLVM_VERSION], [$llvmver_int])
+AC_SUBST([LLVM_VERSION], [$llvmver_major])
 
 AC_ARG_ENABLE([llvm],AC_HELP_STRING([-enable-llvm],
 				    [Enable 'llvm' JIT/verifier support @<:@default=auto@:>@]),
