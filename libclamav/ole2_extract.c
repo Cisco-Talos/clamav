@@ -1056,15 +1056,17 @@ handler_otf(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * c
     /* JSON Output Summary Information */
     if (ctx->options & CL_SCAN_FILE_PROPERTIES && ctx->properties != NULL) {
         char *name = get_property_name2(prop->name, prop->name_size);
-        if (!strncmp(name, "_5_summaryinformation", 21)) {
-            cli_dbgmsg("OLE2: detected a '_5_summaryinformation' stream\n");
-            /* JSONOLE2 - what to do if something breaks? */
-            cli_ole2_summary_json(ctx, ofd, 0);
-        }
-        if (!strncmp(name, "_5_documentsummaryinformation", 29)) {
-            cli_dbgmsg("OLE2: detected a '_5_documentsummaryinformation' stream\n");
-            /* JSONOLE2 - what to do if something breaks? */
-            cli_ole2_summary_json(ctx, ofd, 1);
+        if (name) {
+            if (!strncmp(name, "_5_summaryinformation", 21)) {
+                cli_dbgmsg("OLE2: detected a '_5_summaryinformation' stream\n");
+                /* JSONOLE2 - what to do if something breaks? */
+                cli_ole2_summary_json(ctx, ofd, 0);
+            }
+            if (!strncmp(name, "_5_documentsummaryinformation", 29)) {
+                cli_dbgmsg("OLE2: detected a '_5_documentsummaryinformation' stream\n");
+                /* JSONOLE2 - what to do if something breaks? */
+                cli_ole2_summary_json(ctx, ofd, 1);
+            }
         }
         free(name);
     }
@@ -1643,11 +1645,12 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, size_t buflen
             strncpy(outstr, databuf+offset, strsize);
             outstr[strsize-1] = '\0'; /* guarentee a UTF-16 NULL-termination */
             outstr[strsize] = '\0';
-
             outstr2 = (char*)get_property_name2(outstr, strsize);
-            ret = cli_jsonstr(sctx->summary, sctx->propname, outstr);
+            if (outstr2) {
+                ret = cli_jsonstr(sctx->summary, sctx->propname, outstr);
+                free(outstr2);
+            }
             free(outstr);
-            free(outstr2);
             break;
 	}
     case PT_FILETIME:
