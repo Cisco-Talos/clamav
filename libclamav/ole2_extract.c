@@ -1643,8 +1643,8 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, size_t buflen
                 return CL_EMEM;
             }
             strncpy(outstr, databuf+offset, strsize);
-            outstr[strsize-1] = '\0'; /* guarentee a UTF-16 NULL-termination */
-            outstr[strsize] = '\0';
+            outstr[strsize] = '\0'; /* guarentee a UTF-16 NULL-termination */
+            outstr[strsize+1] = '\0';
             outstr2 = (char*)get_property_name2(outstr, strsize);
             if (outstr2) {
                 ret = cli_jsonstr(sctx->summary, sctx->propname, outstr);
