@@ -5,28 +5,26 @@ AC_ARG_WITH([libjson],
 [  --with-libjson=DIR   path to directory containing libjson (default=
     /usr/local or /usr if not found in /usr/local)],
 [
-if test "X$withval" != "Xno"
+if test "X$withval" != "Xyes"
 then
-  if test ! -n "$withval"
+  LIBJSON_HOME="$withval"
+  if test -f "$LIBJSON_HOME/include/json/json.h" -o -f "$LIBJSON_HOME/include/json-c/json.h"
   then
-    LIBJSON_HOME="$withval"
-    if test -d "$LIBJSON_HOME/include/json" -o -d "$LIBJSON_HOME/include/json-c"
-    then
-      have_json_header="yes"
-    fi
+    have_json_header="yes"
+  fi
+else
+  LIBJSON_HOME=/usr/local
+  if test -f "$LIBJSON_HOME/include/json/json.h" -o -f "$LIBJSON_HOME/include/json-c/json.h"
+  then
+    have_json_header="yes"
   else
-    LIBJSON_HOME=/usr/local
-    if test -d "$LIBJSON_HOME/include/json" -o -d "$LIBJSON_HOME/include/json-c"
+    LIBJSON_HOME=/usr
+    if test -f "$LIBJSON_HOME/include/json/json.h" -o -f "$LIBJSON_HOME/include/json-c/json.h"
     then
       have_json_header="yes"
     else
-      LIBJSON_HOME=/usr
-      if test -d "$LIBJSON_HOME/include/json" -o -d "$LIBJSON_HOME/include/json-c"
-      then
-        have_json_header="yes"
-      else
-        have_json_header="no"
-      fi
+      have_json_header="no"
+      LIBJSON_HOME=""
     fi
   fi
 fi
@@ -39,42 +37,41 @@ have_json_header="no"
 
 if test "X$have_json_header" = "Xyes"
 then
-  if test -d "$LIBJSON_HOME/include/json"
+  if test -f "$LIBJSON_HOME/include/json/json.h"
   then
     JSON_INCLUDE="include/json"
   fi
-  if test -d "$LIBJSON_HOME/include/json-c"
+  if test -f "$LIBJSON_HOME/include/json-c/json.h"
   then
     JSON_INCLUDE="include/json-c"
   fi
-
-  if test ! -f "$LIBJSON_HOME/$JSON_INCLUDE/json.h"
+  if test -z $JSON_INCLUDE
   then
-    AC_MSG_WARN([json not found.])
-  else
-    JSON_CPPFLAGS="-I$LIBJSON_HOME/$JSON_INCLUDE"
-    save_LDFLAGS="$LDFLAGS"
-    save_CFLAGS="$CFLAGS"
-    save_LIBS="$LIBS"
-    LIBS=""
-    JSON_LIBS=""
-    if test "$LIBJSON_HOME" != "/usr"; then
-        JSON_LDFLAGS="-L$LIBJSON_HOME/lib"
-
-        LDFLAGS="$LDFLAGS $JSON_LDFLAGS"
-        CFLAGS="$CFLAGS $JSON_CPPFLAGS"
-    fi
-        
-    AC_SEARCH_LIBS([json_object_new_object], [json-c json],  [have_json="yes"], [have_json="no"])
-
-    CFLAGS="$save_CFLAGS"
-    LDFLAGS="$save_LDFLAGS"
+    AC_MSG_WARN([json header lost.])
   fi
+
+  JSON_CPPFLAGS="-I$LIBJSON_HOME/$JSON_INCLUDE"
+  save_LDFLAGS="$LDFLAGS"
+  save_CFLAGS="$CFLAGS"
+  save_LIBS="$LIBS"
+  LIBS=""
+  JSON_LIBS=""
+  if test "$LIBJSON_HOME" != "/usr"
+  then
+    JSON_LDFLAGS="-L$LIBJSON_HOME/lib"
+    LDFLAGS="$LDFLAGS $JSON_LDFLAGS"
+    CFLAGS="$CFLAGS $JSON_CPPFLAGS"
+  fi
+
+  AC_SEARCH_LIBS([json_object_object_get_ex], [json-c json], [have_json="yes"], [have_json="no"])
+
+  CFLAGS="$save_CFLAGS"
+  LDFLAGS="$save_LDFLAGS"
 fi
 
 if test "X$have_json" = "Xyes"; then
-AC_DEFINE([HAVE_JSON],1,[Define to 1 if you have the 'libjson' library (-ljson).])
-JSON_LIBS="$LIBS"
+  AC_DEFINE([HAVE_JSON],1,[Define to 1 if you have the 'libjson' library (-ljson).])
+  JSON_LIBS="$LIBS"
 fi
 
 LIBS="$save_LIBS"
