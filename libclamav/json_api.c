@@ -251,11 +251,13 @@ int cli_jsonint64_nojson(const char* key, int64_t i)
 int cli_jsonbool_nojson(const char* key, int i)
 {
     nojson_func("nojson: %s: %s\n", key, i ? "true" : "false"); 
+    return CL_SUCCESS;
 }
 
 int cli_jsondouble_nojson(const char* key, double d)
 {
     nojson_func("nojson: %s: %f\n", key, d);
+    return CL_SUCCESS;
 }
 
 #endif
