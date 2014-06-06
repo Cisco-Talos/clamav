@@ -996,8 +996,7 @@ void cli_append_virus(cli_ctx * ctx, const char * virname)
 #if HAVE_JSON
     if (SCAN_PROPERTIES && ctx->wrkproperty) {
         json_object *arrobj, *virobj;
-        arrobj  = json_object_object_get(ctx->wrkproperty, "Viruses");
-        if (NULL == arrobj) {
+        if (!json_object_object_get_ex(ctx->wrkproperty, "Viruses", &arrobj)) {
             arrobj = json_object_new_array();
             if (NULL == arrobj) {
                 cli_errmsg("cli_append_virus: no memory for json virus array\n");

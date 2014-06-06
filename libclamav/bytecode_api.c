@@ -1603,8 +1603,7 @@ int32_t cli_bcapi_json_get_object(struct cli_bc_ctx *ctx, const int8_t* name, in
     strncpy(namep, (char*)name, name_len);
     namep[name_len] = '\0';
 
-    jobj = json_object_object_get(jobj,namep);
-    if (!jobj) { /* object not found */
+    if (!json_object_object_get_ex(jobj, namep, &jobj)) { /* object not found */
         free(namep);
         return 0;
     }

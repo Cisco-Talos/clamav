@@ -234,8 +234,7 @@ static int ooxml_parse_element(xmlTextReaderPtr reader, json_object *wrkptr, int
         switch (node_type) {
         case XML_READER_TYPE_ELEMENT:
             if (!skip) {
-                njptr = json_object_object_get(wrkptr, element_tag);
-                if (!njptr) {
+                if (!json_object_object_get_ex(wrkptr, element_tag, &njptr)) {
                     njptr = json_object_new_object();
                     if (NULL == njptr) {
                         cli_errmsg("ooxml_basic_json: no memory for json object.\n");
@@ -282,8 +281,7 @@ static int ooxml_parse_element(xmlTextReaderPtr reader, json_object *wrkptr, int
         case XML_READER_TYPE_TEXT:
             if (!skip) {
                 node_value = xmlTextReaderConstValue(reader);
-                njptr = json_object_object_get(wrkptr, element_tag);
-                if (njptr) {
+                if (json_object_object_get_ex(wrkptr, element_tag, &njptr)) {
                     cli_warnmsg("ooxml_parse_element: json object [%s] already exists\n", element_tag);
                 }
 
@@ -392,8 +390,8 @@ static int ooxml_basic_json(int fd, cli_ctx *ctx, const char *key)
                 if (rlvl > 2) { /* 0 is root xml object */
                     int i;
                     for (i = 1; i < rlvl-1; ++i) {
-                        json_object *newptr = json_object_object_get(wrkptr, stack[i]);
-                        if (!newptr) {
+                        json_object *newptr;
+                        if (!json_object_object_get_ex(wrkptr, stack[i], &newptr)) {
                             newptr = json_object_new_object();
                             if (NULL == newptr) {
                                 cli_errmsg("ooxml_basic_json: no memory for json object.\n");

@@ -2601,8 +2601,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
         }
         else {
             parent_property = ctx->wrkproperty;
-            arrobj = json_object_object_get(parent_property, "ContainedObjects");
-            if (NULL == arrobj) {
+            if (!json_object_object_get_ex(parent_property, "ContainedObjects", &arrobj)) {
                 arrobj = json_object_new_array();
                 if (NULL == arrobj) {
                     cli_errmsg("magic_scandesc: no memory for json properties object\n");
