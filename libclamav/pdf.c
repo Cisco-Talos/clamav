@@ -3257,50 +3257,38 @@ static void pdf_export_json(struct pdf_struct *pdf)
     if (!(pdf))
         return;
 
-    if (!(pdf->ctx))
-        return;
+    if (!(pdf->ctx)) {
+        goto cleanup;
+    }
 
-    if (!(pdf->ctx->options & CL_SCAN_FILE_PROPERTIES) || !(pdf->ctx->wrkproperty))
-        return;
+    if (!(pdf->ctx->options & CL_SCAN_FILE_PROPERTIES) || !(pdf->ctx->wrkproperty)) {
+        goto cleanup;
+    }
 
     pdfobj = json_object_new_object();
-    if (!(pdfobj))
-        return;
+    if (!(pdfobj)) {
+        goto cleanup;
+    }
 
     json_object_object_add(pdf->ctx->wrkproperty, "PDFStats", pdfobj);
     if (pdf->stats.author) {
         cli_jsonstr(pdfobj, "Author", pdf->stats.author);
-
-        free(pdf->stats.author);
-        pdf->stats.author = NULL;
     }
 
     if (pdf->stats.creator) {
         cli_jsonstr(pdfobj, "Creator", pdf->stats.creator);
-
-        free(pdf->stats.creator);
-        pdf->stats.creator = NULL;
     }
 
     if (pdf->stats.producer) {
         cli_jsonstr(pdfobj, "Producer", pdf->stats.producer);
-
-        free(pdf->stats.producer);
-        pdf->stats.producer = NULL;
     }
 
     if (pdf->stats.modificationdate) {
         cli_jsonstr(pdfobj, "ModificationDate", pdf->stats.modificationdate);
-
-        free(pdf->stats.modificationdate);
-        pdf->stats.modificationdate = NULL;
     }
 
     if (pdf->stats.creationdate) {
         cli_jsonstr(pdfobj, "CreationDate", pdf->stats.creationdate);
-
-        free(pdf->stats.creationdate);
-        pdf->stats.creationdate = NULL;
     }
 
     if (pdf->stats.ninvalidobjs)
@@ -3359,6 +3347,32 @@ static void pdf_export_json(struct pdf_struct *pdf)
         cli_jsonbool(pdfobj, "Encrypted", 1);
         if (pdf->flags & (1 << DECRYPTABLE_PDF))
             cli_jsonbool(pdfobj, "Decryptable", 1);
+    }
+
+cleanup:
+    if ((pdf->stats.author)) {
+        free(pdf->stats.author);
+        pdf->stats.author = NULL;
+    }
+
+    if (pdf->stats.creator) {
+        free(pdf->stats.creator);
+        pdf->stats.creator = NULL;
+    }
+
+    if (pdf->stats.producer) {
+        free(pdf->stats.producer);
+        pdf->stats.producer = NULL;
+    }
+
+    if (pdf->stats.modificationdate) {
+        free(pdf->stats.modificationdate);
+        pdf->stats.modificationdate = NULL;
+    }
+
+    if (pdf->stats.creationdate) {
+        free(pdf->stats.creationdate);
+        pdf->stats.creationdate = NULL;
     }
 #endif
 }
