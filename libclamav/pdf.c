@@ -71,13 +71,17 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.61 2007/02/12 20:46:09 njh Exp $";
  *Save the file being worked on in tmp */
 #endif
 
+#define PDF_EXTRACT_OBJ_NONE 0x0
+#define PDF_EXTRACT_OBJ_SCAN 0x1
+
 struct pdf_struct;
 
 static	int	asciihexdecode(const char *buf, off_t len, char *output);
 static	int	ascii85decode(const char *buf, off_t len, unsigned char *output);
 static	const	char	*pdf_nextlinestart(const char *ptr, size_t len);
 static	const	char	*pdf_nextobject(const char *ptr, size_t len);
-static char *pdf_parse_string(struct pdf_struct *pdf, const char *objstart, size_t objsize, const char *str);
+static char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *objstart, size_t objsize, const char *str);
+static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags);
 
 /* PDF statistics callbacks and related */
 struct pdf_action;
@@ -577,8 +581,8 @@ static int filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj, const
 
 static struct pdf_obj *find_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t objid)
 {
-    unsigned j;
-    unsigned i;
+    uint32_t j;
+    uint32_t i;
 
     /* search starting at previous obj (if exists) */
     i = (obj != pdf->objs) ? obj - pdf->objs : 0;
@@ -1003,7 +1007,7 @@ static char *pdf_readval(const char *q, int len, const char *key);
 static enum enc_method parse_enc_method(const char *dict, unsigned len, const char *key, enum enc_method def);
 static char *pdf_readstring(const char *q0, int len, const char *key, unsigned *slen, const char **qend, int noescape);
 
-static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
+static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
 {
     char fullname[NAME_MAX + 1];
     int fout;
@@ -1045,6 +1049,9 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 
         return CL_ETMPFILE;
     }
+
+    if (!(flags & PDF_EXTRACT_OBJ_SCAN))
+        obj->path = strdup(fullname);
 
     do {
         if (obj->flags & (1 << OBJ_STREAM)) {
@@ -1294,7 +1301,7 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
 
     cli_dbgmsg("cli_pdf: extracted %ld bytes %u %u obj to %s\n", sum, obj->id>>8, obj->id&0xff, fullname);
 
-    if (sum) {
+    if (flags & PDF_EXTRACT_OBJ_SCAN && sum) {
         int rc2;
 
         cli_updatelimits(pdf->ctx, sum);
@@ -1327,7 +1334,7 @@ static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj)
     free(ascii_decoded);
     free(decrypted);
 
-    if (!pdf->ctx->engine->keeptmp)
+    if (flags & PDF_EXTRACT_OBJ_SCAN && !pdf->ctx->engine->keeptmp)
         if (cli_unlink(fullname) && rc != CL_VIRUS)
             rc = CL_EUNLINK;
 
@@ -2551,7 +2558,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     /* extract PDF objs */
     for (i=0;!rc && i<pdf.nobjs;i++) {
         struct pdf_obj *obj = &pdf.objs[i];
-        rc = pdf_extract_obj(&pdf, obj);
+        rc = pdf_extract_obj(&pdf, obj, PDF_EXTRACT_OBJ_SCAN);
         switch (rc) {
             case CL_EFORMAT:
                 /* Don't halt on one bad object */
@@ -2808,7 +2815,7 @@ pdf_nextobject(const char *ptr, size_t len)
     return NULL;
 }
 
-static char *pdf_parse_string(struct pdf_struct *pdf, const char *objstart, size_t objsize, const char *str)
+static char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *objstart, size_t objsize, const char *str)
 {
     const char *q = objstart;
     char *p1, *p2;
@@ -2863,8 +2870,11 @@ static char *pdf_parse_string(struct pdf_struct *pdf, const char *objstart, size
     /* We should be at the start of the string, minus 1 */
 
     if (isdigit(p1[0])) {
-        unsigned long objnum, revnum;
+        unsigned long objnum;
+        struct pdf_obj *newobj;
         char *end;
+        STATBUF sb;
+        int fd;
 
         /*
          * This is kind of sketchy... This string says it points to another object.
@@ -2876,24 +2886,42 @@ static char *pdf_parse_string(struct pdf_struct *pdf, const char *objstart, size
         if ((end - p1) == 0)
             return NULL;
 
-        /* Skip whitespaces */
-        p1 = end;
-        while ((p1 - q) < objsize && isspace(p1[0]))
-            p1++;
-
-        if (p1 - q == objsize)
+        newobj = find_obj(pdf, obj, objnum);
+        if (!(newobj))
             return NULL;
 
-        /* Get revision number */
-        revnum = strtoul(p1, &end, 10);
-        if ((end - p1) == 0)
+        if (pdf_extract_obj(pdf, newobj, PDF_EXTRACT_OBJ_NONE) != CL_SUCCESS)
             return NULL;
 
-        if (objnum > pdf->nobjs)
+        if (!(newobj->path))
             return NULL;
 
-        /* TODO: Parse the object, decode it if necessary, and return the string */
-        res = NULL;
+        fd = open(newobj->path, O_RDONLY);
+        if (fd == -1) {
+            cli_unlink(newobj->path);
+            free(newobj->path);
+            return NULL;
+        }
+
+        if (FSTAT(fd, &sb)) {
+            close(fd);
+            cli_unlink(newobj->path);
+            free(newobj->path);
+        }
+
+        res = cli_calloc(1, sb.st_size);
+        if (!(res)) {
+            close(fd);
+            cli_unlink(newobj->path);
+            free(newobj->path);
+        }
+
+        read(fd, res, sb.st_size);
+
+        close(fd);
+        cli_unlink(newobj->path);
+        free(newobj->path);
+
         return res;
     }
 
@@ -3143,7 +3171,7 @@ static void Author_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_ac
         return;
 
     if (!(pdf->stats.author))
-        pdf->stats.author = pdf_parse_string(pdf, obj->start + pdf->map, obj_size(pdf, obj, 1), "/Author");
+        pdf->stats.author = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/Author");
 #endif
 }
 
@@ -3154,7 +3182,7 @@ static void Creator_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_a
         return;
 
     if (!(pdf->stats.creator))
-        pdf->stats.creator = pdf_parse_string(pdf, obj->start + pdf->map, obj_size(pdf, obj, 1), "/Creator");
+        pdf->stats.creator = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/Creator");
 #endif
 }
 
@@ -3165,7 +3193,7 @@ static void ModificationDate_cb(struct pdf_struct *pdf, struct pdf_obj *obj, str
         return;
 
     if (!(pdf->stats.modificationdate))
-        pdf->stats.modificationdate = pdf_parse_string(pdf, obj->start + pdf->map, obj_size(pdf, obj, 1), "/ModDate");
+        pdf->stats.modificationdate = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/ModDate");
 #endif
 }
 
@@ -3176,7 +3204,7 @@ static void CreationDate_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct 
         return;
 
     if (!(pdf->stats.creationdate))
-        pdf->stats.creationdate = pdf_parse_string(pdf, obj->start + pdf->map, obj_size(pdf, obj, 1), "/CreationDate");
+        pdf->stats.creationdate = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/CreationDate");
 #endif
 }
 
@@ -3187,7 +3215,7 @@ static void Producer_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_
         return;
 
     if (!(pdf->stats.producer))
-        pdf->stats.producer = pdf_parse_string(pdf, obj->start + pdf->map, obj_size(pdf, obj, 1), "/Producer");
+        pdf->stats.producer = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/Producer");
 #endif
 }
 
