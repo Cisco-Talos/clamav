@@ -82,6 +82,7 @@ static	const	char	*pdf_nextlinestart(const char *ptr, size_t len);
 static	const	char	*pdf_nextobject(const char *ptr, size_t len);
 static char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *objstart, size_t objsize, const char *str);
 static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags);
+static char *pdf_convert_utf(char *begin, size_t sz);
 
 /* PDF statistics callbacks and related */
 struct pdf_action;
@@ -2815,6 +2816,65 @@ pdf_nextobject(const char *ptr, size_t len)
     return NULL;
 }
 
+static char *pdf_convert_utf(char *begin, size_t sz)
+{
+    char *buf, *outbuf, *p1, *p2, *res=NULL;
+    size_t inlen, outlen, i;
+#if HAVE_ICONV
+    char *encodings[] = {
+        "UTF-8",
+        "UTF-16",
+        NULL
+    };
+    iconv_t cd;
+
+    buf = cli_calloc(1, sz);
+    if (!(buf))
+        return NULL;
+
+    memcpy(buf, begin, sz);
+    p1 = buf;
+
+    p2 = outbuf = cli_calloc(1, sz);
+    if (!(outbuf)) {
+        free(buf);
+        return NULL;
+    }
+
+    for (i=0; encodings[i] != NULL; i++) {
+        p1 = buf;
+        p2 = outbuf;
+        inlen = outlen = sz;
+
+        cd = iconv_open("ASCII", encodings[i]);
+        if (cd == (iconv_t)(-1)) {
+            cli_errmsg("Could not initialize iconv\n");
+            continue;
+        }
+
+        iconv(cd, &p1, &inlen, &p2, &outlen);
+
+        if (outlen == sz) {
+            /* Decoding unsuccessful right from the start */
+            iconv_close(cd);
+            continue;
+        }
+
+        outbuf[sz - outlen] = '\0';
+
+        res = strdup(outbuf);
+        iconv_close(cd);
+        break;
+    }
+
+    free(buf);
+    free(outbuf);
+
+#endif
+
+    return res;
+}
+
 static char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *objstart, size_t objsize, const char *str)
 {
     const char *q = objstart;
@@ -2823,14 +2883,6 @@ static char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const
     char *buf, *outbuf, *res;
     int likelyutf = 0;
     unsigned int i;
-#if HAVE_ICONV
-    char *encodings[] = {
-        "UTF-8",
-        "UTF-16",
-        NULL
-    };
-    iconv_t cd;
-#endif
 
     if (objsize < strlen(str) + 3)
         return NULL;
@@ -2872,7 +2924,7 @@ static char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const
     if (isdigit(p1[0])) {
         unsigned long objnum;
         struct pdf_obj *newobj;
-        char *end;
+        char *end, *begin;
         STATBUF sb;
         int fd;
 
@@ -2909,14 +2961,19 @@ static char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const
             free(newobj->path);
         }
 
-        res = cli_calloc(1, sb.st_size);
-        if (!(res)) {
+        begin = calloc(1, sb.st_size);
+        if (!(begin)) {
             close(fd);
             cli_unlink(newobj->path);
             free(newobj->path);
         }
 
         read(fd, res, sb.st_size);
+        res = pdf_convert_utf(buf, sb.st_size);
+        if (!(res))
+            res = begin;
+        else
+            free(begin);
 
         close(fd);
         cli_unlink(newobj->path);
@@ -2972,49 +3029,7 @@ static char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const
         return res;
     }
 
-#if HAVE_ICONV
-    /* We should be UTF-* from this point on, try to decode */
-    buf = cli_calloc(1, inlen);
-    if (!(buf))
-        return NULL;
-
-    memcpy(buf, p1, inlen);
-    p1 = buf;
-
-    p2 = outbuf = cli_calloc(1, outlen);
-    if (!(outbuf)) {
-        free(buf);
-        return NULL;
-    }
-
-    for (i=0; encodings[i] != NULL; i++) {
-        buf = p1;
-        outbuf = p2;
-
-        cd = iconv_open("ASCII", encodings[i]);
-        if (cd == (iconv_t)(-1)) {
-            cli_errmsg("Could not initialize iconv\n");
-            continue;
-        }
-
-        iconv(cd, &buf, &inlen, &outbuf, &outlen);
-
-        if (outlen == len) {
-            /* Decoding unsuccessful right from the start */
-            iconv_close(cd);
-            continue;
-        }
-
-        p2[len - outlen] = '\0';
-
-        res = strdup(p2);
-        iconv_close(cd);
-        break;
-    }
-
-    free(p1);
-    free(p2);
-#endif
+    res = pdf_convert_utf(p1, len);
 
     return res;
 }
