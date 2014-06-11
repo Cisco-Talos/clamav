@@ -2824,7 +2824,6 @@ static char *pdf_convert_utf(char *begin, size_t sz)
     char *buf, *outbuf, *p1, *p2, *res=NULL;
     size_t inlen, outlen, i;
     char *encodings[] = {
-        "UTF-8",
         "UTF-16",
         NULL
     };
@@ -2848,7 +2847,7 @@ static char *pdf_convert_utf(char *begin, size_t sz)
         p2 = outbuf;
         inlen = outlen = sz;
 
-        cd = iconv_open("ASCII", encodings[i]);
+        cd = iconv_open("UTF-8", encodings[i]);
         if (cd == (iconv_t)(-1)) {
             cli_errmsg("Could not initialize iconv\n");
             continue;
@@ -2948,6 +2947,10 @@ static char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const
         if (newobj == obj)
             return NULL;
 
+        /* 
+         * If pdf_handlename hasn't been called for this object,
+         * then parse the object prior to extracting it
+         */
         if (!(newobj->statsflags & OBJ_FLAG_PDFNAME_DONE))
             pdf_parseobj(pdf, newobj);
 
