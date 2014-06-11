@@ -1410,6 +1410,8 @@ static void handle_pdfname(struct pdf_struct *pdf, struct pdf_obj *obj, const ch
     struct pdfname_action *act = NULL;
     unsigned j;
 
+    obj->statsflags |= OBJ_FLAG_PDFNAME_DONE;
+
     for (j=0;j<sizeof(pdfname_actions)/sizeof(pdfname_actions[0]);j++) {
         if (!strcmp(pdfname, pdfname_actions[j].pdfname)) {
             act = &pdfname_actions[j];
@@ -2818,9 +2820,9 @@ pdf_nextobject(const char *ptr, size_t len)
 
 static char *pdf_convert_utf(char *begin, size_t sz)
 {
+#if HAVE_ICONV
     char *buf, *outbuf, *p1, *p2, *res=NULL;
     size_t inlen, outlen, i;
-#if HAVE_ICONV
     char *encodings[] = {
         "UTF-8",
         "UTF-16",
@@ -2870,9 +2872,10 @@ static char *pdf_convert_utf(char *begin, size_t sz)
     free(buf);
     free(outbuf);
 
-#endif
-
     return res;
+#else
+    return strdup(begin);
+#endif
 }
 
 static char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *objstart, size_t objsize, const char *str)
@@ -2942,6 +2945,12 @@ static char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const
         if (!(newobj))
             return NULL;
 
+        if (newobj == obj)
+            return NULL;
+
+        if (!(newobj->statsflags & OBJ_FLAG_PDFNAME_DONE))
+            pdf_parseobj(pdf, newobj);
+
         if (pdf_extract_obj(pdf, newobj, PDF_EXTRACT_OBJ_NONE) != CL_SUCCESS)
             return NULL;
 
@@ -2982,6 +2991,30 @@ static char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const
         return res;
     }
 
+    if (*p1 == '<') {
+        char *buf;
+        size_t sz;
+
+        /* Hex string */
+
+        p2 = p1+1;
+        while ((p2 - q) < objsize && *p2 != '>')
+            p2++;
+
+        if (p2 - q == objsize) {
+            cli_errmsg("Returning NULL here: %u\n", __LINE__);
+            return NULL;
+        }
+
+        buf = cli_calloc(1, (p2 - p1) + 2);
+        if (!(buf))
+            return NULL;
+
+        strncpy(buf, p1, (p2 - p1) + 1);
+
+        return buf;
+    }
+
     /* Make a best effort to find the end of the string and determine if UTF-* */
     p2 = ++p1;
     while (1) {
@@ -3002,7 +3035,7 @@ static char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const
             upperlimit = 3;
 
         for (i=0; i <= upperlimit && p2 - i > p1; i++) {
-            if (*(p2-i) == '\\') {
+            if (*(p2-i) == '\\' && *(p2 - i - 1) != '\\') {
                 shouldbreak=0;
                 p2++;
             }
