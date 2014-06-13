@@ -113,6 +113,9 @@ static void Creator_cb(struct pdf_struct *, struct pdf_obj *, struct pdf_action 
 static void Producer_cb(struct pdf_struct *, struct pdf_obj *, struct pdf_action *);
 static void CreationDate_cb(struct pdf_struct *, struct pdf_obj *, struct pdf_action *);
 static void ModificationDate_cb(struct pdf_struct *, struct pdf_obj *, struct pdf_action *);
+static void Title_cb(struct pdf_struct *, struct pdf_obj *, struct pdf_action *);
+static void Subject_cb(struct pdf_struct *, struct pdf_obj *, struct pdf_action *);
+static void Keywords_cb(struct pdf_struct *, struct pdf_obj *, struct pdf_action *);
 /* End PDF statistics callbacks and related */
 
 static int xrefCheck(const char *xref, const char *eof)
@@ -178,6 +181,9 @@ struct pdf_stats {
     char *producer;           /* Application used to produce the PDF */
     char *creationdate;       /* Date the PDF was created */
     char *modificationdate;   /* Date the PDF was modified */
+    char *title;              /* Title of the PDF */
+    char *subject;            /* Subject of the PDF */
+    char *keywords;           /* Keywords of the PDF */
 };
 
 struct pdf_struct {
@@ -1400,7 +1406,10 @@ static struct pdfname_action pdfname_actions[] = {
     {"Producer", OBJ_DICT, STATE_NONE, STATE_NONE, Producer_cb},
     {"CreationDate", OBJ_DICT, STATE_NONE, STATE_NONE, CreationDate_cb},
     {"ModDate", OBJ_DICT, STATE_NONE, STATE_NONE, ModificationDate_cb},
-    {"Creator", OBJ_DICT, STATE_NONE, STATE_NONE, Creator_cb}
+    {"Creator", OBJ_DICT, STATE_NONE, STATE_NONE, Creator_cb},
+    {"Title", OBJ_DICT, STATE_NONE, STATE_NONE, Title_cb},
+    {"Keywords", OBJ_DICT, STATE_NONE, STATE_NONE, Keywords_cb},
+    {"Subject", OBJ_DICT, STATE_NONE, STATE_NONE, Subject_cb}
 };
 
 #define KNOWN_FILTERS ((1 << OBJ_FILTER_AH) | (1 << OBJ_FILTER_RL) | (1 << OBJ_FILTER_A85) | (1 << OBJ_FILTER_FLATE) | (1 << OBJ_FILTER_LZW) | (1 << OBJ_FILTER_FAX) | (1 << OBJ_FILTER_DCT) | (1 << OBJ_FILTER_JPX) | (1 << OBJ_FILTER_CRYPT))
@@ -3270,6 +3279,39 @@ static void Producer_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_
 #endif
 }
 
+static void Title_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act)
+{
+#if HAVE_JSON
+    if (!(pdf))
+        return;
+
+    if (!(pdf->stats.title))
+        pdf->stats.title = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/Title");
+#endif
+}
+
+static void Keywords_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act)
+{
+#if HAVE_JSON
+    if (!(pdf))
+        return;
+
+    if (!(pdf->stats.keywords))
+        pdf->stats.keywords = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/Keywords");
+#endif
+}
+
+static void Subject_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act)
+{
+#if HAVE_JSON
+    if (!(pdf))
+        return;
+
+    if (!(pdf->stats.subject))
+        pdf->stats.subject = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/Subject");
+#endif
+}
+
 static void print_pdf_stats(struct pdf_struct *pdf)
 {
     if (!(pdf))
@@ -3322,26 +3364,23 @@ static void pdf_export_json(struct pdf_struct *pdf)
     }
 
     json_object_object_add(pdf->ctx->wrkproperty, "PDFStats", pdfobj);
-    if (pdf->stats.author) {
+
+    if (pdf->stats.author)
         cli_jsonstr(pdfobj, "Author", pdf->stats.author);
-    }
-
-    if (pdf->stats.creator) {
+    if (pdf->stats.creator)
         cli_jsonstr(pdfobj, "Creator", pdf->stats.creator);
-    }
-
-    if (pdf->stats.producer) {
+    if (pdf->stats.producer)
         cli_jsonstr(pdfobj, "Producer", pdf->stats.producer);
-    }
-
-    if (pdf->stats.modificationdate) {
+    if (pdf->stats.modificationdate)
         cli_jsonstr(pdfobj, "ModificationDate", pdf->stats.modificationdate);
-    }
-
-    if (pdf->stats.creationdate) {
+    if (pdf->stats.creationdate)
         cli_jsonstr(pdfobj, "CreationDate", pdf->stats.creationdate);
-    }
-
+    if (pdf->stats.title)
+        cli_jsonstr(pdfobj, "Title", pdf->stats.title);
+    if (pdf->stats.subject)
+        cli_jsonstr(pdfobj, "Subject", pdf->stats.subject);
+    if (pdf->stats.keywords)
+        cli_jsonstr(pdfobj, "Keywords", pdf->stats.keywords);
     if (pdf->stats.ninvalidobjs)
         cli_jsonint(pdfobj, "InvalidObjectCount", pdf->stats.ninvalidobjs);
     if (pdf->stats.njs)
@@ -3424,6 +3463,21 @@ cleanup:
     if (pdf->stats.creationdate) {
         free(pdf->stats.creationdate);
         pdf->stats.creationdate = NULL;
+    }
+
+    if (pdf->stats.title) {
+        free(pdf->stats.title);
+        pdf->stats.title = NULL;
+    }
+
+    if (pdf->stats.subject) {
+        free(pdf->stats.subject);
+        pdf->stats.subject = NULL;
+    }
+
+    if (pdf->stats.keywords) {
+        free(pdf->stats.keywords);
+        pdf->stats.keywords = NULL;
     }
 #endif
 }

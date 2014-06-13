@@ -3428,7 +3428,7 @@ static int scan_common(int desc, cl_fmap_t *map, const char **virname, unsigned 
                     if (cli_writen(fd, jstring, strlen(jstring)) < 0)
                         cli_dbgmsg("scan_common: cli_writen error writing json properties file.\n");
                     else
-                        cli_dbgmsg("json written to: %s\n", tmpname);
+                        cli_errmsg("json written to: %s\n", tmpname);
                 }
                 if (fd != -1)
                     close(fd);
