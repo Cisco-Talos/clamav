@@ -3374,6 +3374,22 @@ static int scan_common(int desc, cl_fmap_t *map, const char **virname, unsigned 
     }
     perf_init(&ctx);
 
+    if (ctx.options & CL_SCAN_FILE_PROPERTIES && ctx.engine->time_limit != 0) {
+        if (gettimeofday(&ctx.time_limit, NULL) == 0) {
+            uint32_t secs = ctx.engine->time_limit / 1000;
+            uint32_t usecs = (ctx.engine->time_limit % 1000) * 1000;
+            ctx.time_limit.tv_sec += secs;
+            ctx.time_limit.tv_usec += usecs;
+            if (ctx.time_limit.tv_usec >= 1000000) {
+                ctx.time_limit.tv_usec -= 1000000;
+                ctx.time_limit.tv_sec++;
+            }
+        } else {
+            char buf[64];
+            cli_dbgmsg("scan_common; gettimeofday error: %s\n", cli_strerror(errno, buf, 64));
+        }
+    }
+
 #ifdef HAVE__INTERNAL__SHA_COLLECT
     if(scanoptions & CL_SCAN_INTERNAL_COLLECT_SHA) {
 	char link[32];
@@ -3437,6 +3453,13 @@ static int scan_common(int desc, cl_fmap_t *map, const char **virname, unsigned 
             }
         }
         json_object_put(ctx.properties); /* frees all json memory */
+#if 0
+        // test code  - to be deleted
+        if (cli_checktimelimit(&ctx) != CL_SUCCESS) {
+            cli_errmsg("scan_common: timeout!\n");
+            rc = CL_ETIMEOUT;
+        }
+#endif
     }
 #endif
 

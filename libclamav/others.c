@@ -573,6 +573,9 @@ int cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field field, long
 	case CL_ENGINE_MAX_ICONSPE:
 	   engine->maxiconspe = (uint32_t)num;
 	   break;
+	case CL_ENGINE_TIME_LIMIT:
+            engine->time_limit = (uint32_t)num;
+            break;
 	default:
 	    cli_errmsg("cl_engine_set_num: Incorrect field number\n");
 	    return CL_EARG;
@@ -646,6 +649,8 @@ long long cl_engine_get_num(const struct cl_engine *engine, enum cl_engine_field
 	    return engine->maxpartitions;
 	case CL_ENGINE_MAX_ICONSPE:
 	    return engine->maxiconspe;
+	case CL_ENGINE_TIME_LIMIT:
+            return engine->time_limit;
 	default:
 	    cli_errmsg("cl_engine_get: Incorrect field number\n");
 	    if(err)
@@ -885,6 +890,20 @@ int cli_updatelimits(cli_ctx *ctx, unsigned long needed) {
     if(ctx->scansize > ctx->engine->maxscansize)
         ctx->scansize = ctx->engine->maxscansize;
     return CL_CLEAN;
+}
+
+int cli_checktimelimit(cli_ctx *ctx)
+{
+    if (ctx->time_limit.tv_sec != 0) {
+        struct timeval now;
+        if (gettimeofday(&now, NULL) == 0) {
+            if (now.tv_sec < ctx->time_limit.tv_sec)
+                return CL_SUCCESS;
+            if (now.tv_sec > ctx->time_limit.tv_sec || now.tv_usec > ctx->time_limit.tv_usec)
+                return CL_ETIMEOUT;
+        }
+    }
+    return CL_SUCCESS;
 }
 
 /*

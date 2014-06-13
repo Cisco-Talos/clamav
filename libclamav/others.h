@@ -148,6 +148,7 @@ typedef struct cli_ctx_tag {
     struct json_object *properties;
     struct json_object *wrkproperty;
 #endif
+    struct timeval time_limit;
 } cli_ctx;
 
 #define STATS_ANON_UUID "5b585e8f-3be5-11e3-bf0b-18037319526c"
@@ -344,6 +345,9 @@ struct cl_engine {
 
     /* Engine max settings */
     uint32_t maxiconspe; /* max number of icons to scan for PE */
+
+    /* millisecond time limit for preclassification scanning */
+    uint32_t time_limit;
 };
 
 struct cl_settings {
@@ -645,6 +649,7 @@ int cli_updatelimits(cli_ctx *, unsigned long);
 unsigned long cli_getsizelimit(cli_ctx *, unsigned long);
 int cli_matchregex(const char *str, const char *regex);
 void cli_qsort(void *a, size_t n, size_t es, int (*cmp)(const void *, const void *));
+int cli_checktimelimit(cli_ctx *ctx);
 
 /* symlink behaviour */
 #define CLI_FTW_FOLLOW_FILE_SYMLINK 0x01

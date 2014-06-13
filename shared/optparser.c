@@ -380,6 +380,8 @@ const struct clam_option __clam_options[] = {
 
     { "MaxIconsPE", "max-iconspe", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, CLI_DEFAULT_MAXICONSPE, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the maximum number of icons within a PE to be scanned.\nPE files with more icons than this value will have up to the value number icons scanned.\nNegative values are not allowed.\nWARNING: setting this limit too high may result in severe damage or impact performance.", "100" },
 
+    { "TimeLimit", "timelimit", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 0, NULL, 0, OPT_CLAMSCAN, "This clamscan option is currently for testing only. It sets the engine parameter CL_ENGINE_TIME_LIMIT. The value is in milliseconds.", "0" },
+
     /* OnAccess settings */
     { "ScanOnAccess", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_CLAMD, "This option enables on-access scanning (Linux only)", "no" },
 
