@@ -2895,13 +2895,6 @@ static char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const
     int likelyutf = 0;
     unsigned int i;
 
-    if (objsize < strlen(str) + 3)
-        return NULL;
-
-    res = NULL;
-
-    checklen = strlen(str);
-
     /* Yes, all of this is required to find the start and end of a potentially UTF-* string
      *
      * First, find the key of the key/value pair we're looking for in this object.
@@ -2911,21 +2904,29 @@ static char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const
      * Fourth, Attempt to decode from UTF-* to ASCII
      */
 
-    for (p1=(char *)q; (p1 - q) < objsize-checklen; p1++)
-        if (!strncmp(p1, str, checklen))
-            break;
+    res = NULL;
 
-    if (p1 - q > objsize - checklen || strncmp(p1, str, checklen))
-        return NULL;
+    if (str) {
+        checklen = strlen(str);
 
-    p1 += checklen;
+        if (objsize < strlen(str) + 3)
+            return NULL;
 
-    while ((p1 - q) < objsize && *p1 != '(') {
-        if (!isspace(p1[0]))
-            break;
 
-        p1++;
+        for (p1=(char *)q; (p1 - q) < objsize-checklen; p1++)
+            if (!strncmp(p1, str, checklen))
+                break;
+
+        if (p1 - q == objsize - checklen || strncmp(p1, str, checklen))
+            return NULL;
+
+        p1 += checklen;
+    } else {
+        p1 = q;
     }
+
+    while ((p1 - q) < objsize && isspace(p1[0]))
+        p1++;
 
     if ((p1 - q) == objsize)
         return NULL;
@@ -2933,10 +2934,11 @@ static char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const
     /* We should be at the start of the string, minus 1 */
 
     if (isdigit(p1[0])) {
-        unsigned long objnum;
+        unsigned long objnum, revnum;
         struct pdf_obj *newobj;
         char *end, *begin;
         STATBUF sb;
+        uint32_t objflags;
         int fd;
 
         /*
@@ -2949,7 +2951,17 @@ static char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const
         if ((end - p1) == 0)
             return NULL;
 
-        newobj = find_obj(pdf, obj, objnum);
+        /* Skip whitespace and get the revision number */
+        p1 = end+1;
+        while (p1 - q < objsize && isspace(p1[0]))
+            p1++;
+
+        if (p1 - q == objsize)
+            return NULL;
+
+        revnum = strtoul(p1, &end, 10);
+
+        newobj = find_obj(pdf, obj, (objnum<<8) | (revnum & 0xff));
         if (!(newobj))
             return NULL;
 
@@ -2963,8 +2975,14 @@ static char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const
         if (!(newobj->statsflags & OBJ_FLAG_PDFNAME_DONE))
             pdf_parseobj(pdf, newobj);
 
+        /* Extract the object. Force pdf_extract_obj() to dump this object. */
+        objflags = newobj->flags;
+        newobj->flags |= (1 << OBJ_FORCEDUMP);
+
         if (pdf_extract_obj(pdf, newobj, PDF_EXTRACT_OBJ_NONE) != CL_SUCCESS)
             return NULL;
+
+        newobj->flags = objflags;
 
         if (!(newobj->path))
             return NULL;
@@ -2982,23 +3000,35 @@ static char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const
             free(newobj->path);
         }
 
-        begin = calloc(1, sb.st_size);
-        if (!(begin)) {
-            close(fd);
-            cli_unlink(newobj->path);
-            free(newobj->path);
-        }
+        if (sb.st_size) {
+            begin = calloc(1, sb.st_size);
+            if (!(begin)) {
+                close(fd);
+                cli_unlink(newobj->path);
+                free(newobj->path);
+            }
 
-        read(fd, res, sb.st_size);
-        res = pdf_convert_utf(buf, sb.st_size);
-        if (!(res))
-            res = begin;
-        else
-            free(begin);
+            read(fd, begin, sb.st_size);
+
+            switch (begin[0]) {
+                case '(':
+                case '<':
+                    res = pdf_parse_string(pdf, obj, begin, sb.st_size, NULL);
+                    free(begin);
+                    break;
+                default:
+                    res = pdf_convert_utf(begin, sb.st_size);
+                    if (!(res))
+                        res = begin;
+                    else
+                        free(begin);
+            }
+        }
 
         close(fd);
         cli_unlink(newobj->path);
         free(newobj->path);
+        newobj->path = NULL;
 
         return res;
     }
@@ -3064,7 +3094,7 @@ static char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const
 
     len = inlen = outlen = (size_t)(p2 - p1) + 1;
 
-    if (likelyutf == 0) {
+    if (likelyutf == 0 && len) {
         /* We're not UTF-*, so just make a copy of the string and return that */
         res = cli_calloc(1, len);
         if (!(res))
@@ -3074,7 +3104,8 @@ static char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const
         return res;
     }
 
-    res = pdf_convert_utf(p1, len);
+    if (len)
+        res = pdf_convert_utf(p1, len);
 
     return res;
 }
@@ -3146,10 +3177,27 @@ static void CCITTFaxDecode_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struc
 
 static void JBIG2Decode_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act)
 {
-     if (!(pdf))
-         return;
+#if HAVE_JSON
+    struct json_object *pdfobj, *jbig2arr, *jbig2obj;
 
-     pdf->stats.njbig2decode++;
+    if (!(pdf))
+        return;
+
+    if (!(pdf->ctx->wrkproperty))
+        return;
+
+    pdfobj = cli_jsonobj(pdf->ctx->wrkproperty, "PDFStats");
+    if (!(pdfobj))
+        return;
+
+    jbig2arr = cli_jsonarray(pdfobj, "JBIG2Objects");
+    if (!(jbig2arr))
+        return;
+
+    cli_jsonint_array(jbig2arr, obj->id>>8);
+
+    pdf->stats.njbig2decode++;
+#endif
 }
 
 static void DCTDecode_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act)
@@ -3358,12 +3406,10 @@ static void pdf_export_json(struct pdf_struct *pdf)
         goto cleanup;
     }
 
-    pdfobj = json_object_new_object();
+    pdfobj = cli_jsonobj(pdf->ctx->wrkproperty, "PDFStats");
     if (!(pdfobj)) {
         goto cleanup;
     }
-
-    json_object_object_add(pdf->ctx->wrkproperty, "PDFStats", pdfobj);
 
     if (pdf->stats.author)
         cli_jsonstr(pdfobj, "Author", pdf->stats.author);
