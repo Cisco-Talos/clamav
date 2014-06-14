@@ -204,6 +204,70 @@ int cli_jsondouble(json_object *obj, const char* key, double d)
     return CL_SUCCESS;
 }
 
+json_object *cli_jsonarray(json_object *obj, const char *key)
+{
+    json_object *newobj;
+
+    if (!(key))
+        return NULL;
+
+    if (obj) {
+        /* First check to see if this key exists */
+        newobj = json_object_object_get(obj, key);
+        if (newobj)
+            return json_object_get_array(newobj) ? newobj : NULL;
+    }
+
+    newobj = json_object_new_array();
+    if (!(newobj))
+        return NULL;
+
+    if (obj) {
+        json_object_object_add(obj, key, newobj);
+        newobj = json_object_object_get(obj, key);
+    }
+
+    return newobj;
+}
+
+int cli_jsonint_array(json_object *obj, int32_t val)
+{
+    json_object *newobj;
+
+    if (!(obj))
+        return CL_ENULLARG;
+
+    if (json_object_get_array(newobj) == NULL)
+        return CL_ENULLARG;
+
+    newobj = json_object_new_int(val);
+    if (!(newobj))
+        return CL_EMEM;
+
+    json_object_array_add(obj, newobj);
+    return CL_SUCCESS;
+}
+
+json_object *cli_jsonobj(json_object *obj, const char *key)
+{
+    json_object *newobj;
+
+    if (obj && key) {
+        newobj = json_object_object_get(obj, key);
+        if (newobj)
+            return newobj;
+    }
+
+    newobj = json_object_new_object();
+    if (!(newobj))
+        return NULL;
+
+    if (obj && key)
+        json_object_object_add(obj, key, newobj);
+
+    return newobj;
+}
+
 #else
 
 int cli_json_nojson()
@@ -258,6 +322,17 @@ int cli_jsondouble_nojson(const char* key, double d)
 {
     nojson_func("nojson: %s: %f\n", key, d);
     return CL_SUCCESS;
+}
+
+void *cli_jsonarray_nojson(const char *key)
+{
+    nojson_func("nojson: %s\n", key);
+    return NULL;
+}
+
+int cli_jsonint_array_nojson(int32_t val)
+{
+    nojson_func("nojson: %d\n", val);
 }
 
 #endif

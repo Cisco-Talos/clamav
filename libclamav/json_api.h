@@ -41,6 +41,9 @@ int cli_jsonint(json_object *obj, const char* key, int32_t i);
 int cli_jsonint64(json_object *obj, const char* key, int64_t i);
 int cli_jsonbool(json_object *obj, const char* key, int i);
 int cli_jsondouble(json_object *obj, const char* key, double d);
+json_object *cli_jsonarray(json_object *obj, const char *key);
+int cli_jsonint_array(json_object *obj, int32_t val);
+json_object *cli_jsonobj(json_object *obj, const char *key);
 
 #define JSON_KEY_FILETYPE   "FileType"
 #define JSON_KEY_FILESIZE   "FileSize"
@@ -63,14 +66,18 @@ int cli_jsonint_nojson(const char* key, int32_t i);
 int cli_jsonint64_nojson(const char* key, int64_t i);
 int cli_jsonbool_nojson(const char* key, int i);
 int cli_jsondouble_nojson(const char* key, double d);
+void *cli_jsonarray_nojson(const char *key);
+int cli_jsonint_array_nojson(int32_t val);
 
 #define cli_jsonnull(o,n)          cli_jsonnull_nojson(n)
 #define cli_jsonstr(o,n,s)         cli_jsonstr_nojson(n,s)
-#define cli_jsonstrlen(o,n,s,len); cli_jsonstrlen_nojson(n,s,len)
+#define cli_jsonstrlen(o,n,s,len)  cli_jsonstrlen_nojson(n,s,len)
 #define cli_jsonint(o,n,i)         cli_jsonint_nojson(n,i)
 #define cli_jsonint64(o,n,i)       cli_jsonint64_nojson(n,i)
 #define cli_jsonbool(o,n,b)        cli_jsonbool_nojson(n,b)
 #define cli_jsondouble(o,n,d)      cli_jsondouble_nojson(n,d)
+#define cli_jsonarray(o,k)         cli_jsonarray_nojson(k)
+#define cli_jsonint_array(o,v)     cli_jsonint_array_nojson(v)
 #endif
 
 #endif /*__JSON_C_H__*/
