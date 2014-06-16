@@ -3006,6 +3006,7 @@ static char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const
                 close(fd);
                 cli_unlink(newobj->path);
                 free(newobj->path);
+                return NULL;
             }
 
             read(fd, begin, sb.st_size);
