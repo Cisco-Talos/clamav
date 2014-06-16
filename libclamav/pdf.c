@@ -2998,6 +2998,8 @@ static char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const
             close(fd);
             cli_unlink(newobj->path);
             free(newobj->path);
+            newobj->path = NULL;
+            return NULL;
         }
 
         if (sb.st_size) {
@@ -3006,10 +3008,18 @@ static char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const
                 close(fd);
                 cli_unlink(newobj->path);
                 free(newobj->path);
+                newobj->path = NULL;
                 return NULL;
             }
 
-            read(fd, begin, sb.st_size);
+            if (read(fd, begin, sb.st_size) != sb.st_size) {
+                close(fd);
+                cli_unlink(newobj->path);
+                free(newobj->path);
+                newobj->path = NULL;
+                free(begin);
+                return NULL;
+            }
 
             switch (begin[0]) {
                 case '(':
