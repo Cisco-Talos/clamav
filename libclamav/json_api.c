@@ -333,6 +333,7 @@ void *cli_jsonarray_nojson(const char *key)
 int cli_jsonint_array_nojson(int32_t val)
 {
     nojson_func("nojson: %d\n", val);
+    return CL_SUCCESS;
 }
 
 #endif
