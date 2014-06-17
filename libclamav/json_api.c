@@ -237,7 +237,7 @@ int cli_jsonint_array(json_object *obj, int32_t val)
     if (!(obj))
         return CL_ENULLARG;
 
-    if (json_object_get_array(newobj) == NULL)
+    if (json_object_get_array(obj) == NULL)
         return CL_ENULLARG;
 
     newobj = json_object_new_int(val);

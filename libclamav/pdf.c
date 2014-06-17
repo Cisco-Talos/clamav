@@ -2845,7 +2845,7 @@ static char *pdf_convert_utf(char *begin, size_t sz)
     memcpy(buf, begin, sz);
     p1 = buf;
 
-    p2 = outbuf = cli_calloc(1, sz);
+    p2 = outbuf = cli_calloc(1, sz+1);
     if (!(outbuf)) {
         free(buf);
         return NULL;
@@ -2991,6 +2991,7 @@ static char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const
         if (fd == -1) {
             cli_unlink(newobj->path);
             free(newobj->path);
+            newobj->path = NULL;
             return NULL;
         }
 
@@ -3107,11 +3108,12 @@ static char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const
 
     if (likelyutf == 0 && len) {
         /* We're not UTF-*, so just make a copy of the string and return that */
-        res = cli_calloc(1, len);
+        res = cli_calloc(1, len+1);
         if (!(res))
             return NULL;
 
         memcpy(res, p1, len);
+        res[len] = '\0';
         return res;
     }
 
@@ -3253,10 +3255,27 @@ static void Sig_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_actio
 
 static void JavaScript_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act)
 {
+#if HAVE_JSON
+    struct json_object *pdfobj, *jbig2arr, *jbig2obj;
+
     if (!(pdf))
         return;
 
+    if (!(pdf->ctx->wrkproperty))
+        return;
+
+    pdfobj = cli_jsonobj(pdf->ctx->wrkproperty, "PDFStats");
+    if (!(pdfobj))
+        return;
+
+    jbig2arr = cli_jsonarray(pdfobj, "JavascriptObjects");
+    if (!(jbig2arr))
+        return;
+
+    cli_jsonint_array(jbig2arr, obj->id>>8);
+
     pdf->stats.njs++;
+#endif
 }
 
 static void OpenAction_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act)
