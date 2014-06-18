@@ -2829,8 +2829,9 @@ pdf_nextobject(const char *ptr, size_t len)
 
 static char *pdf_convert_utf(char *begin, size_t sz)
 {
+    char *res=NULL;
 #if HAVE_ICONV
-    char *buf, *outbuf, *p1, *p2, *res=NULL;
+    char *buf, *outbuf, *p1, *p2;
     size_t inlen, outlen, i;
     char *encodings[] = {
         "UTF-16",
