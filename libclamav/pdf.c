@@ -2882,7 +2882,13 @@ static char *pdf_convert_utf(char *begin, size_t sz)
 
     return res;
 #else
-    return strdup(begin);
+    res = cli_calloc(begin, sz+1);
+    if ((res)) {
+        memcpy(res, begin, sz);
+        res[sz] = '\0';
+    }
+
+    return res;
 #endif
 }
 
@@ -2895,13 +2901,14 @@ static char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const
     int likelyutf = 0;
     unsigned int i;
 
-    /* Yes, all of this is required to find the start and end of a potentially UTF-* string
+    /*
+     * Yes, all of this is required to find the start and end of a potentially UTF-* string
      *
      * First, find the key of the key/value pair we're looking for in this object.
      * Second, determine whether the value points to another object (NOTE: this is sketchy behavior)
      * Third, attempt to determine if we're ASCII or UTF-*
      * If we're ASCII, just copy the ASCII string into a new heap-allocated string and return that
-     * Fourth, Attempt to decode from UTF-* to ASCII
+     * Fourth, Attempt to decode from UTF-* to UTF-8
      */
 
     res = NULL;
@@ -2912,12 +2919,11 @@ static char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const
         if (objsize < strlen(str) + 3)
             return NULL;
 
-
         for (p1=(char *)q; (p1 - q) < objsize-checklen; p1++)
             if (!strncmp(p1, str, checklen))
                 break;
 
-        if (p1 - q == objsize - checklen || strncmp(p1, str, checklen))
+        if (p1 - q == objsize - checklen)
             return NULL;
 
         p1 += checklen;
@@ -2943,7 +2949,7 @@ static char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const
 
         /*
          * This is kind of sketchy... This string says it points to another object.
-         * Try to get/parse the object and return the decoded value as an ASCII string.
+         * Try to get/parse the object and return the decoded value as an ASCII/UTF-8 string.
          */
 
         /* Get the object number */
@@ -3046,7 +3052,6 @@ static char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const
     }
 
     if (*p1 == '<') {
-        char *buf;
         size_t sz;
 
         /* Hex string */
@@ -3056,18 +3061,21 @@ static char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const
             p2++;
 
         if (p2 - q == objsize) {
-            cli_errmsg("Returning NULL here: %u\n", __LINE__);
             return NULL;
         }
 
-        buf = cli_calloc(1, (p2 - p1) + 2);
-        if (!(buf))
+        res = cli_calloc(1, (p2 - p1) + 2);
+        if (!(res))
             return NULL;
 
-        strncpy(buf, p1, (p2 - p1) + 1);
+        strncpy(res, p1, (p2 - p1) + 1);
 
-        return buf;
+        return res;
     }
+
+    /* We should be at the start of a string literal (...) here */
+    if (*p1 != '(')
+        return NULL;
 
     /* Make a best effort to find the end of the string and determine if UTF-* */
     p2 = ++p1;
@@ -3101,12 +3109,13 @@ static char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const
         }
     }
 
-    if (p2 - p1 == 0)
+    /* If we're an empty string (), p2 would be at the left paren and p1 would be at the right paren */
+    if (p2 < p1)
         return NULL;
 
-    len = inlen = outlen = (size_t)(p2 - p1) + 1;
+    len = (size_t)(p2 - p1) + 1;
 
-    if (likelyutf == 0 && len) {
+    if (likelyutf == 0) {
         /* We're not UTF-*, so just make a copy of the string and return that */
         res = cli_calloc(1, len+1);
         if (!(res))
@@ -3117,7 +3126,6 @@ static char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const
         return res;
     }
 
-    if (len)
         res = pdf_convert_utf(p1, len);
 
     return res;
