@@ -116,6 +116,8 @@ static void ModificationDate_cb(struct pdf_struct *, struct pdf_obj *, struct pd
 static void Title_cb(struct pdf_struct *, struct pdf_obj *, struct pdf_action *);
 static void Subject_cb(struct pdf_struct *, struct pdf_obj *, struct pdf_action *);
 static void Keywords_cb(struct pdf_struct *, struct pdf_obj *, struct pdf_action *);
+static void Pages_cb(struct pdf_struct *, struct pdf_obj *, struct pdf_action *);
+static void Colors_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act);
 /* End PDF statistics callbacks and related */
 
 static int xrefCheck(const char *xref, const char *eof)
@@ -1409,7 +1411,9 @@ static struct pdfname_action pdfname_actions[] = {
     {"Creator", OBJ_DICT, STATE_NONE, STATE_NONE, Creator_cb},
     {"Title", OBJ_DICT, STATE_NONE, STATE_NONE, Title_cb},
     {"Keywords", OBJ_DICT, STATE_NONE, STATE_NONE, Keywords_cb},
-    {"Subject", OBJ_DICT, STATE_NONE, STATE_NONE, Subject_cb}
+    {"Subject", OBJ_DICT, STATE_NONE, STATE_NONE, Subject_cb},
+    {"Pages", OBJ_DICT, STATE_NONE, STATE_NONE, Pages_cb},
+    {"Colors", OBJ_DICT, STATE_NONE, STATE_NONE, Colors_cb}
 };
 
 #define KNOWN_FILTERS ((1 << OBJ_FILTER_AH) | (1 << OBJ_FILTER_RL) | (1 << OBJ_FILTER_A85) | (1 << OBJ_FILTER_FLATE) | (1 << OBJ_FILTER_LZW) | (1 << OBJ_FILTER_FAX) | (1 << OBJ_FILTER_DCT) | (1 << OBJ_FILTER_JPX) | (1 << OBJ_FILTER_CRYPT))
@@ -3396,6 +3400,59 @@ static void Subject_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_a
 
     if (!(pdf->stats.subject))
         pdf->stats.subject = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/Subject");
+#endif
+}
+
+static void Pages_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act)
+{
+#if HAVE_JSON
+#endif
+}
+
+static void Colors_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act)
+{
+#if HAVE_JSON
+    json_object *colorsobj, *pdfobj;
+    unsigned long ncolors;
+    char *start, *p1;
+    size_t objsz = obj_size(pdf, obj, 1);
+
+    if (!(pdf) || !(pdf->ctx) || !(pdf->ctx->wrkproperty))
+        return;
+
+    start = obj->start + pdf->map;
+
+    p1 = cli_memstr(start, objsz, "/Colors", 7);
+    if (!(p1))
+        return;
+
+    p1 += 7;
+
+    /* Ensure that we have at least one whitespace character plus at least one number */
+    if (objsz - (p1 - start) < 2)
+        return;
+
+    while (p1 - start < objsz && isspace(p1[0]))
+        p1++;
+
+    if (p1 - start == objsz)
+        return;
+
+    ncolors = strtoul(p1, NULL, 10);
+
+    /* We only care if the number of colors > 2**24 */
+    if (ncolors < 1<<24)
+        return;
+
+    pdfobj = cli_jsonobj(pdf->ctx->wrkproperty, "PDFStats");
+    if (!(pdfobj))
+        return;
+
+    colorsobj = cli_jsonarray(pdfobj, "BigColors");
+    if (!(colorsobj))
+        return;
+
+    cli_jsonint_array(colorsobj, obj->id>>8);
 #endif
 }
 
