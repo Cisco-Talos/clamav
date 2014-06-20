@@ -76,7 +76,9 @@ AC_MSG_CHECKING([for supported LLVM version])
 if test "x$llvmconfig" = "x"; then
     dnl macro not available in older autotools
     AC_CONFIG_SUBDIRS([llvm])
-    llvmver=`$srcdir/llvm/configure --version | sed -n 1p | sed 's/llvm configure //'`
+    dnl llvmver=`$srcdir/llvm/configure --version | sed -n 1p | sed 's/llvm configure //'`
+    llvmver="2.8"
+    packaged_llvm=1
 fi
 
 llvmver_val=`echo "$llvmver" | sed -e 's/\.//' | sed -e 's/svn//g'`
@@ -86,9 +88,11 @@ if test "x$llvmver_minor" = "x"; then
    llvmver_minor=0
 fi
 
-if test $llvmver_major -lt 28; then
+if test $packaged_llvm -eq 1; then
+    AC_MSG_RESULT([ok ($llvmver)])
+elif test $llvmver_major -lt 29; then
     AC_MSG_RESULT([no ($llvmver)])
-    AC_MSG_ERROR([LLVM >= 2.8 required, but "$llvmver" found])
+    AC_MSG_ERROR([LLVM >= 2.9 required, but "$llvmver" found])
 elif test $llvmver_major -eq 34 && test $llvmver_minor -gt 1; then
     AC_MSG_RESULT([no ($llvmver)])
     AC_MSG_ERROR([LLVM <= 3.4.1 required, but "$llvmver" found])
@@ -96,7 +100,7 @@ elif test $llvmver_major -gt 34; then
     AC_MSG_RESULT([no ($llvmver)])
     AC_MSG_ERROR([LLVM <= 3.4.1 required, but "$llvmver" found])
 else
-AC_MSG_RESULT([ok ($llvmver)])
+    AC_MSG_RESULT([ok ($llvmver)])
 fi
 AC_SUBST([LLVM_VERSION], [$llvmver_major])
 
@@ -149,7 +153,7 @@ if test "$enable_llvm" = "auto"; then
     case "$target_cpu" in
 	i?86|amd64|x86_64|powerpc*)
 	    case "$target_os" in
-		darwin*|freebsd*|openbsd*|netbsd*|dragonfly*|linux*|solaris*|win32*|mingw*)
+		darwin*|freebsd*|kfreebsd*|openbsd*|netbsd*|dragonfly*|linux*|solaris*|win32*|mingw*)
 		    AC_MSG_RESULT([ok ($target_cpu-$target_os)])
 		    ;;
 		*)
