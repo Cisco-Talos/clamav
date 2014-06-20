@@ -174,6 +174,17 @@ typedef enum {
 struct cl_engine;
 struct cl_settings;
 
+/**
+ * Initialize the crypto system.
+ * @return Always returns 0
+ */
+int cl_initialize_crypto(void);
+
+/**
+ * Cleanup the crypto system prior to program exit
+ */
+void cl_cleanup_crypto(void);
+
 #define CL_INIT_DEFAULT	0x0
 extern int cl_init(unsigned int initoptions);
 

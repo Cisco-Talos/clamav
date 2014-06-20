@@ -43,16 +43,6 @@
 #define SHA1_HASH_SIZE 20
 #define SHA256_HASH_SIZE 32
 
-/**
- * Initialize the crypto system.
- * @return Always returns 0
- */
-int cl_initialize_crypto(void);
-
-/** Clean up the crypto system prior to program exit.
- */
-void cl_cleanup_crypto(void);
-
 /** Generate a hash of data.
  @param[in] alg The hashing algorithm to use
  @param[in] buf The data to be hashed
