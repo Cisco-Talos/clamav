@@ -222,6 +222,7 @@ AC_MSG_NOTICE([Summary of engine detection features])
 CL_MSG_STATUS([bzip2       ],[$bzip_check],[$want_bzip2])
 CL_MSG_STATUS([zlib        ],[$ZLIB_HOME],[yes])
 CL_MSG_STATUS([unrar       ],[$want_unrar],[$want_unrar])
+CL_MSG_STATUS([preclass    ],[$LIBJSON_HOME],[$have_json])
 if test "x$XML_LIBS" = "x"; then 
     CL_MSG_STATUS([dmg and xar ],[no],[])
 else

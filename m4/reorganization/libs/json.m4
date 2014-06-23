@@ -1,10 +1,10 @@
 dnl Check for libjson
-AC_MSG_CHECKING([for libjson installation])
 
 AC_ARG_WITH([libjson],
 [  --with-libjson=DIR   path to directory containing libjson (default=
     /usr/local or /usr if not found in /usr/local)],
 [
+AC_MSG_CHECKING([for libjson installation])
 if test "X$withval" != "Xyes"
 then
   LIBJSON_HOME="$withval"
@@ -28,7 +28,6 @@ else
     fi
   fi
 fi
-
 AC_MSG_RESULT([$LIBJSON_HOME])
 ],
 [
