@@ -81,6 +81,8 @@ static	int	ascii85decode(const char *buf, off_t len, unsigned char *output);
 static	const	char	*pdf_nextlinestart(const char *ptr, size_t len);
 static	const	char	*pdf_nextobject(const char *ptr, size_t len);
 static char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *objstart, size_t objsize, const char *str);
+static struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj *obj, size_t objsz, char *begin);
+static void pdf_free_array(struct pdf_array *array);
 static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags);
 static char *pdf_convert_utf(char *begin, size_t sz);
 
@@ -3136,6 +3138,161 @@ static char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const
     return res;
 }
 
+static struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj *obj, size_t objsz, char *begin)
+{
+    struct pdf_array *res=NULL;
+    struct pdf_array_node *node=NULL;
+    const char *objstart = obj->start + pdf->map;
+    char *end;
+    int in_string=0, ninner=0;
+
+    /* Sanity checking */
+    if (!(pdf) || !(obj) || !(begin))
+        return NULL;
+
+    if (begin < objstart || begin - objstart >= objsz)
+        return NULL;
+
+    if (begin[0] != '[')
+        return NULL;
+
+    /* Find the end of the array */
+    end = begin;
+    while (end - objstart < objsz) {
+        if (in_string) {
+            if (*end == ')')
+                in_string = 0;
+
+            end++;
+            continue;
+        }
+
+        switch (*end) {
+            case '(':
+                in_string=1;
+                break;
+            case '[':
+                ninner++;
+                break;
+            case ']':
+                ninner--;
+                break;
+            case '\\':
+                end += 2;
+                if (end - objstart >= objsz)
+                    return NULL;
+        }
+
+        if (*end == ']' && ninner == 0)
+            break;
+
+        end++;
+    }
+
+    /* More sanity checking */
+    if (end - objstart == objsz)
+        return NULL;
+
+    if (*end != ']')
+        return NULL;
+
+    res = cli_calloc(1, sizeof(struct pdf_array));
+    if (!(res))
+        return NULL;
+
+    begin++;
+    while (begin < end) {
+        char *val=NULL, *p1;
+        struct pdf_array *arr=NULL;
+
+        while (begin < end && isspace(begin[0]))
+            begin++;
+
+        if (begin == end)
+            break;
+
+        switch (begin[0]) {
+            case '<':
+            case '(':
+                val = pdf_parse_string(pdf, obj, begin, objsz, NULL);
+                break;
+            case '[':
+                /* XXX We should have a recursion counter here */
+                arr = pdf_parse_array(pdf, obj, objsz, begin);
+                break;
+            default:
+                /* This should just be a number or the letter R */
+                p1 = begin+1;
+                while (p1 < end && !isspace(p1[0]))
+                    p1++;
+
+                val = cli_calloc((p1 - begin) + 2, 1);
+                if (!(val))
+                    break;
+
+                strncpy(val, begin, p1 - begin);
+                val[p1 - begin] = '\0';
+                
+                break;
+        }
+
+        /* Parse error, just return what we could */
+        if (!(val) && !(arr))
+            break;
+
+        if (!(node)) {
+            res->nodes = node = calloc(1, sizeof(struct pdf_array_node));
+            if (!(node))
+                break;
+        } else {
+            node = calloc(1, sizeof(struct pdf_array_node));
+            if (!(node))
+                break;
+
+            node->next = res->nodes;
+            res->nodes->prev = node;
+            res->nodes = node;
+        }
+
+        if (val != NULL) {
+            node->type = PDF_ARR_STRING;
+            node->data = val;
+            node->datasz = strlen(val);
+        } else {
+            node->type = PDF_ARR_ARRAY;
+            node->data = arr;
+            node->datasz = sizeof(struct pdf_array);
+        }
+
+        begin++;
+    }
+
+    return res;
+}
+
+static void pdf_free_array(struct pdf_array *array)
+{
+    struct pdf_array *arr;
+    struct pdf_array_node *node, *next;
+
+    if (!(array))
+        return;
+
+    node = array->nodes;
+    while (node != NULL) {
+        if (node->type == PDF_ARR_ARRAY)
+            pdf_free_array((struct pdf_array *)(node->data));
+        else
+            free(node->data);
+
+        next = node->next;
+        free(node);
+        node = next;
+    }
+
+    free(array);
+}
+
 /* PDF statistics */
 static void ASCIIHexDecode_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act)
 {
@@ -3406,6 +3563,54 @@ static void Subject_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_a
 static void Pages_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_action *act)
 {
 #if HAVE_JSON
+    struct pdf_array *array;
+    const char *objstart = (const char *)(obj->start + pdf->map);
+    const char *begin;
+    unsigned int objsz = obj_size(pdf, obj, 1);
+    unsigned long npages=0, count;
+    struct pdf_array_node *node;
+    json_object *pdfobj;
+
+    if (!(pdf) || !(pdf->ctx->wrkproperty))
+        return;
+
+    pdfobj = cli_jsonobj(pdf->ctx->wrkproperty, "PDFStats");
+    if (!(pdfobj))
+        return;
+
+    begin = cli_memstr(objstart, objsz, "/Kids", 5);
+    if (!(begin))
+        return;
+
+    begin += 5;
+
+    array = pdf_parse_array(pdf, obj, objsz, begin);
+    if (array != NULL)
+        for (node = array->nodes; node != NULL; node = node->next)
+            if (node->datasz)
+                if (((char *)(node->data))[0] == 'R')
+                    npages++;
+
+    begin = cli_memstr(obj->start + pdf->map, objsz, "/Count", 6);
+    if (!(begin)) {
+        cli_jsonbool(pdfobj, "IncorrectPagesCount", 1);
+        goto cleanup;
+    }
+
+    begin += 6;
+    while (begin - objstart <  objsz && isspace(begin[0]))
+        begin++;
+
+    if (begin - objstart >= objsz) {
+        goto cleanup;
+    }
+
+    count = strtoul(begin, NULL, 10);
+    if (count != npages)
+        cli_jsonbool(pdfobj, "IncorrectPagesCount", 1);
+
+cleanup:
+    pdf_free_array(array);
 #endif
 }
 
