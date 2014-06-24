@@ -3213,6 +3213,12 @@ static struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj 
 
         switch (begin[0]) {
             case '<':
+                if (begin - objstart < objsz - 2 && begin[1] == '<') {
+                    /* Handle dictionaries later */
+                    break;
+                }
+
+                /* Not a dictionary. Intentially fall through. */
             case '(':
                 val = pdf_parse_string(pdf, obj, begin, objsz, NULL);
                 break;
@@ -3241,7 +3247,7 @@ static struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj 
             break;
 
         if (!(node)) {
-            res->nodes = node = calloc(1, sizeof(struct pdf_array_node));
+            res->nodes = res->tail = node = calloc(1, sizeof(struct pdf_array_node));
             if (!(node))
                 break;
         } else {
@@ -3249,9 +3255,10 @@ static struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj 
             if (!(node))
                 break;
 
-            node->next = res->nodes;
-            res->nodes->prev = node;
-            res->nodes = node;
+            node->prev = res->tail;
+            if (res->tail)
+                res->tail->next = node;
+            res->tail = node;
         }
 
         if (val != NULL) {
@@ -3291,6 +3298,19 @@ static void pdf_free_array(struct pdf_array *array)
     }
 
     free(array);
+}
+
+static void pdf_print_array(struct pdf_array *array, unsigned long depth)
+{
+    struct pdf_array_node *node;
+    unsigned long i;
+
+    for (i=0, node = array->nodes; node != NULL; node = node->next, i++) {
+        if (node->type == PDF_ARR_STRING)
+            cli_errmsg("array[%lu][%lu]: %s\n", depth, i, (char *)(node->data));
+        else
+            pdf_print_array((struct pdf_array *)(node->data), depth+1);
+    }
 }
 
 /* PDF statistics */
@@ -3585,11 +3605,15 @@ static void Pages_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_act
     begin += 5;
 
     array = pdf_parse_array(pdf, obj, objsz, begin);
-    if (array != NULL)
-        for (node = array->nodes; node != NULL; node = node->next)
-            if (node->datasz)
-                if (((char *)(node->data))[0] == 'R')
-                    npages++;
+    if (!(array))
+        return;
+
+    pdf_print_array(array, 0);
+
+    for (node = array->nodes; node != NULL; node = node->next)
+        if (node->datasz)
+            if (((char *)(node->data))[0] == 'R')
+                npages++;
 
     begin = cli_memstr(obj->start + pdf->map, objsz, "/Count", 6);
     if (!(begin)) {

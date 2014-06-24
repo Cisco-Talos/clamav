@@ -43,6 +43,7 @@ struct pdf_array_node {
 
 struct pdf_array {
     struct pdf_array_node *nodes;
+    struct pdf_array_node *tail;
 };
 
 #define OBJ_FLAG_PDFNAME_NONE 0x0
