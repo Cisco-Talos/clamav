@@ -78,31 +78,36 @@ if test "x$llvmconfig" = "x"; then
     AC_CONFIG_SUBDIRS([llvm])
     dnl llvmver=`$srcdir/llvm/configure --version | sed -n 1p | sed 's/llvm configure //'`
     llvmver="2.8"
-    packaged_llvm=1
+    packaged_llvm="yes"
 fi
 
-llvmver_val=`echo "$llvmver" | sed -e 's/\.//' | sed -e 's/svn//g'`
-llvmver_major=`echo "$llvmver_val" | sed 's/\..*//'`
-llvmver_minor=`echo "$llvmver_val" | sed 's/[^.]*\.//'` | sed -e 's/\.//p'
-if test "x$llvmver_minor" = "x"; then
-   llvmver_minor=0
+llvmver_val=`echo "$llvmver" | sed -e 's/svn//g'`
+llvmver_major=`echo "$llvmver_val" | sed -e 's/\([[0-9]]\).*/\1/'`
+llvmver_minor=`echo "$llvmver_val" | sed -e 's/[[0-9]]//' | sed -e 's/^\.//' | sed -e 's/\([[0-9]]\).*/\1/'`
+llvmver_patch=`echo "$llvmver_val" | sed -e 's/[[0-9]]\.[[0-9]]//' | sed -e 's/^\.//' | sed -e 's/\([[0-9]]\).*/\1/'`
+dnl suffix unused as of LLVM 3.4.1
+llvmver_suffix=
+if test "x$llvmver_patch" = "x"; then
+    llvmver_patch=0
 fi
 
-if test $packaged_llvm -eq 1; then
+llvmver_test=${llvmver_major}${llvmver_minor}${llvmver_patch}
+if test "x$packaged_llvm" = "xyes"; then
     AC_MSG_RESULT([ok ($llvmver)])
-elif test $llvmver_major -lt 29; then
+elif test $llvmver_test -lt 290; then
     AC_MSG_RESULT([no ($llvmver)])
-    AC_MSG_ERROR([LLVM >= 2.9 required, but "$llvmver" found])
-elif test $llvmver_major -eq 34 && test $llvmver_minor -gt 1; then
+    AC_MSG_ERROR([LLVM >= 2.9 required, but "$llvmver"($llvmver_test) found])
+elif test $llvmver_test -gt 341; then
     AC_MSG_RESULT([no ($llvmver)])
-    AC_MSG_ERROR([LLVM <= 3.4.1 required, but "$llvmver" found])
-elif test $llvmver_major -gt 34; then
-    AC_MSG_RESULT([no ($llvmver)])
-    AC_MSG_ERROR([LLVM <= 3.4.1 required, but "$llvmver" found])
+    AC_MSG_ERROR([LLVM <= 3.4.1 required, but "$llvmver"($llvmver_test) found])
 else
     AC_MSG_RESULT([ok ($llvmver)])
 fi
-AC_SUBST([LLVM_VERSION], [$llvmver_major])
+
+dnl patch does not affect clamav source (yet)
+llvmver_int=${llvmver_major}${llvmver_minor}
+
+AC_SUBST([LLVM_VERSION], [$llvmver_int])
 
 AC_ARG_ENABLE([llvm],AC_HELP_STRING([-enable-llvm],
 				    [Enable 'llvm' JIT/verifier support @<:@default=auto@:>@]),
