@@ -30,7 +30,8 @@ struct pdf_obj {
     char *path;
 };
 
-enum pdf_array_type { PDF_ARR_UNKNOWN=0, PDF_ARR_STRING, PDF_ARR_ARRAY };
+enum pdf_array_type { PDF_ARR_UNKNOWN=0, PDF_ARR_STRING, PDF_ARR_ARRAY, PDF_ARR_DICT };
+enum pdf_dict_type { PDF_DICT_UNKNOWN=0, PDF_DICT_STRING, PDF_DICT_ARRAY, PDF_DICT_DICT };
 
 struct pdf_array_node {
     void *data;
@@ -44,6 +45,21 @@ struct pdf_array_node {
 struct pdf_array {
     struct pdf_array_node *nodes;
     struct pdf_array_node *tail;
+};
+
+struct pdf_dict_node {
+    char *key;
+    void *value;
+    size_t valuesz;
+    enum pdf_dict_type type;
+
+    struct pdf_dict_node *prev;
+    struct pdf_dict_node *next;
+};
+
+struct pdf_dict {
+    struct pdf_dict_node *nodes;
+    struct pdf_dict_node *tail;
 };
 
 #define OBJ_FLAG_PDFNAME_NONE 0x0
