@@ -162,7 +162,7 @@ int is_object_reference(char *begin, char **endchar, uint32_t *id)
     if (p1 == end)
         return 0;
 
-    if (!isnumber(p1[0]))
+    if (!isdigit(p1[0]))
         return 0;
 
     /* Ensure strtoul() isn't going to go past our buffer */
@@ -187,7 +187,7 @@ int is_object_reference(char *begin, char **endchar, uint32_t *id)
     if (p1 == end)
         return 0;
 
-    if (!isnumber(p1[0]))
+    if (!isdigit(p1[0]))
         return 0;
 
     /* Ensure strtoul() is going to go past our buffer */
