@@ -3220,13 +3220,15 @@ static struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *o
 {
     struct pdf_dict *res=NULL;
     struct pdf_dict_node *node=NULL;
-    const char *objstart = obj->start + pdf->map;
+    const char *objstart;
     char *end;
     unsigned int in_string=0, ninner=0;
 
     /* Sanity checking */
     if (!(pdf) || !(obj) || !(begin))
         return NULL;
+
+    objstart = (const char *)(obj->start + pdf->map);
 
     if (begin < objstart || begin - objstart >= objsz - 2)
         return NULL;
@@ -3377,17 +3379,23 @@ static struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *o
                 break;
         }
 
-        if (!(val) && !(dict) && !(arr))
+        if (!(val) && !(dict) && !(arr)) {
+            free(key);
             break;
+        }
 
         if (!(res->nodes)) {
             res->nodes = res->tail = node = cli_calloc(1, sizeof(struct pdf_dict_node));
-            if (!(node))
+            if (!(node)) {
+                free(key);
                 break;
+            }
         } else {
             node = calloc(1, sizeof(struct pdf_dict_node));
-            if (!(node))
+            if (!(node)) {
+                free(key);
                 break;
+            }
 
             node->prev = res->tail;
             if (res->tail)
