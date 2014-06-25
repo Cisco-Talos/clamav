@@ -224,10 +224,7 @@ json_object *cli_jsonarray(json_object *obj, const char *key)
 {
     json_object *newobj;
 
-    if (!(key))
-        return NULL;
-
-    if (obj) {
+    if (obj && key) {
         /* First check to see if this key exists */
         newobj = json_object_object_get(obj, key);
         if (newobj)
@@ -238,7 +235,7 @@ json_object *cli_jsonarray(json_object *obj, const char *key)
     if (!(newobj))
         return NULL;
 
-    if (obj) {
+    if (obj && key) {
         json_object_object_add(obj, key, newobj);
         newobj = json_object_object_get(obj, key);
     }
@@ -278,8 +275,10 @@ json_object *cli_jsonobj(json_object *obj, const char *key)
     if (!(newobj))
         return NULL;
 
-    if (obj && key)
+    if (obj && key) {
         json_object_object_add(obj, key, newobj);
+        newobj = json_object_object_get(obj, key);
+    }
 
     return newobj;
 }
