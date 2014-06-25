@@ -187,12 +187,12 @@ static const char *ooxml_check_key(const char* key, size_t keylen)
     return NULL;
 }
 
-static int ooxml_parse_element(xmlTextReaderPtr reader, json_object *wrkptr, int rlvl, int skip)
+static int ooxml_parse_element(cli_ctx *ctx, xmlTextReaderPtr reader, json_object *wrkptr, int rlvl, int skip)
 {
     const char *element_tag = NULL, *end_tag = NULL;
     const xmlChar *node_name = NULL, *node_value = NULL;
     json_object *njptr;
-    int node_type, ret = CL_SUCCESS;
+    int node_type, ret = CL_SUCCESS, toval = 0;;
     int32_t val2;
 
     cli_dbgmsg("in ooxml_parse_element @ layer %d\n", rlvl);
@@ -230,31 +230,43 @@ static int ooxml_parse_element(xmlTextReaderPtr reader, json_object *wrkptr, int
 
     /* loop across all element contents */
     while (xmlTextReaderRead(reader) == 1) {
+        if (cli_json_timeout_cycle_check(ctx, &toval) != CL_SUCCESS) {
+            return CL_ETIMEOUT;
+        }
+
         node_type = xmlTextReaderNodeType(reader);
         switch (node_type) {
         case XML_READER_TYPE_ELEMENT:
             if (!skip) {
+                njptr = cli_jsonobj(wrkptr, element_tag);
+                if (!njptr) {
+                    cli_errmsg("ooxml_parse_element: failed to retrieve node for json object [%s]\n", element_tag);
+                    return CL_EFORMAT;
+                }
+                cli_dbgmsg("ooxml_parse_element: added json object [%s]\n", element_tag);
+                /*
                 if (!json_object_object_get_ex(wrkptr, element_tag, &njptr)) {
                     njptr = json_object_new_object();
                     if (NULL == njptr) {
-                        cli_errmsg("ooxml_basic_json: no memory for json object.\n");
+                        cli_errmsg("ooxml_parse_element: no memory for json object.\n");
                         return CL_EMEM;
                     }
-                    cli_dbgmsg("ooxml_basic_json: added json object [%s]\n", element_tag);
+
                     json_object_object_add(wrkptr, element_tag, njptr);
                 }
                 else {
                     if (!json_object_is_type(njptr, json_type_object)) {
-                        cli_warnmsg("ooxml_content_cb: json object [%s] already exists as not an object\n", element_tag);
+                        cli_warnmsg("ooxml_parse_element: json object [%s] already exists as not an object\n", element_tag);
                         return CL_EFORMAT;
                     }
                 }
+                */
             }
             else {
                 njptr = NULL;
             } 
 
-            ret = ooxml_parse_element(reader, njptr, rlvl+1, skip);
+            ret = ooxml_parse_element(ctx, reader, njptr, rlvl+1, skip);
             if (ret != CL_SUCCESS) {
                 return ret;
             }
@@ -281,9 +293,11 @@ static int ooxml_parse_element(xmlTextReaderPtr reader, json_object *wrkptr, int
         case XML_READER_TYPE_TEXT:
             if (!skip) {
                 node_value = xmlTextReaderConstValue(reader);
+                /*
                 if (json_object_object_get_ex(wrkptr, element_tag, &njptr)) {
                     cli_warnmsg("ooxml_parse_element: json object [%s] already exists\n", element_tag);
                 }
+                */
 
                 if (ooxml_is_int(node_value, xmlStrlen(node_value), &val2)) {
                     ret = cli_jsonint(wrkptr, element_tag, val2);
@@ -301,7 +315,7 @@ static int ooxml_parse_element(xmlTextReaderPtr reader, json_object *wrkptr, int
                 if (ret != CL_SUCCESS)
                     return ret;
 
-                cli_dbgmsg("ooxml_basic_json: added json value [%s: %s]\n", element_tag, node_value);
+                cli_dbgmsg("ooxml_parse_element: added json value [%s: %s]\n", element_tag, node_value);
             }
             else {
                 node_name = xmlTextReaderConstLocalName(reader);
@@ -340,13 +354,13 @@ static int ooxml_parse_document(int fd, cli_ctx *ctx)
         return CL_SUCCESS; /* libxml2 failed */
     }
 
-    ret = ooxml_parse_element(reader, ctx->wrkproperty, 0, 0);
+    ret = ooxml_parse_element(ctx, reader, ctx->wrkproperty, 0, 0);
 
     xmlTextReaderClose(reader);
     xmlFreeTextReader(reader);
     return ret;
 }
-
+/*
 static int ooxml_basic_json(int fd, cli_ctx *ctx, const char *key)
 {
     int ret = CL_SUCCESS;
@@ -392,7 +406,7 @@ static int ooxml_basic_json(int fd, cli_ctx *ctx, const char *key)
         case XML_READER_TYPE_TEXT:
             {
                 wrkptr = summary;
-                if (rlvl > 2) { /* 0 is root xml object */
+                if (rlvl > 2) { // 0 is root xml object
                     int i;
                     for (i = 1; i < rlvl-1; ++i) {
                         json_object *newptr;
@@ -406,7 +420,7 @@ static int ooxml_basic_json(int fd, cli_ctx *ctx, const char *key)
                             json_object_object_add(wrkptr, stack[i], newptr);
                         }
                         else {
-                            /* object already exists */
+                            // object already exists
                             if (!json_object_is_type(newptr, json_type_object)) {
                                 cli_warnmsg("ooxml_content_cb: json object already exists as not an object\n");
                                 ret = CL_EFORMAT;
@@ -449,7 +463,7 @@ static int ooxml_basic_json(int fd, cli_ctx *ctx, const char *key)
 
     if (rlvl != 0) {
         cli_warnmsg("ooxml_basic_json: office property file has unbalanced tags\n");
-        /* FAIL */
+        // FAIL
     }
 
  ooxml_basic_exit:
@@ -457,7 +471,7 @@ static int ooxml_basic_json(int fd, cli_ctx *ctx, const char *key)
     xmlFreeTextReader(reader);
     return ret;
 }
-
+*/
 static int ooxml_core_cb(int fd, cli_ctx *ctx)
 {
     cli_dbgmsg("in ooxml_core_cb\n");

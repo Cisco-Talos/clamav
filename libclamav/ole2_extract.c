@@ -904,6 +904,16 @@ handler_enum(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * 
     name = get_property_name2(prop->name, prop->name_size);
     if (name) {
         if (ctx->options & CL_SCAN_FILE_PROPERTIES && ctx->wrkproperty != NULL) {
+            arrobj = cli_jsonarray(ctx->wrkproperty, "Streams");
+            if (NULL == arrobj) {
+                cli_warnmsg("ole2: no memory for streams list or streams is not an array\n");
+            }
+            else {
+                strmobj = json_object_new_string(name);
+                json_object_array_add(arrobj, strmobj);
+            }
+
+            /*
             if (!json_object_object_get_ex(ctx->wrkproperty, "Streams", &arrobj)) {
                 arrobj = json_object_new_array();
                 if (NULL == arrobj) {
@@ -914,6 +924,7 @@ handler_enum(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * 
             }
             strmobj = json_object_new_string(name);
             json_object_array_add(arrobj, strmobj);
+            */
 
             if (!strcmp(name, "powerpoint document")) {
                 cli_jsonstr(ctx->wrkproperty, "FileType", "CL_TYPE_MSPPT");
@@ -924,6 +935,7 @@ handler_enum(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * 
             if (!strcmp(name, "workbook")) {
                 cli_jsonstr(ctx->wrkproperty, "FileType", "CL_TYPE_MSXL");
             }
+
         }
 
         if (!hdr->has_vba) {
@@ -1306,6 +1318,8 @@ abort:
 }
 
 /* Summary and Document Information Parsing to JSON */
+#if HAVE_JSON
+
 #define WINUNICODE 0x04B0
 #define PROPCNTLIMIT 25
 #define PROPSTRLIMIT 100
@@ -1407,9 +1421,7 @@ typedef struct propset_summary_entry {
 
 typedef struct summary_ctx {
     cli_ctx *ctx;
-#if HAVE_JSON
     json_object *summary;
-#endif
 
     uint16_t byte_order;
     uint16_t version;
@@ -1426,15 +1438,13 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, size_t buflen
     uint16_t proptype, padding;
     int ret = CL_SUCCESS;
 
-    if (offset+4 > buflen) {
-        return CL_EFORMAT;
-    }
-
-#if HAVE_JSON
     if (cli_json_timeout_cycle_check(sctx->ctx, &(sctx->toval)) != CL_SUCCESS) {
         return CL_ETIMEOUT;
     }
-#endif
+
+    if (offset+4 > buflen) {
+        return CL_EFORMAT;
+    }
 
     memcpy(&proptype, databuf+offset, sizeof(proptype));
     offset+=sizeof(proptype);
@@ -1961,10 +1971,12 @@ ole2_summary_propset_json(summary_ctx_t *sctx, fmap_t *sumfmap, propset_entry_t 
 
     return CL_SUCCESS;
 }
+#endif /* HAVE_JSON */
 
 int
 cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
 {
+#if HAVE_JSON
     summary_ctx_t sctx;
     fmap_t *sumfmap;
     summary_stub_t sumstub;
@@ -1973,9 +1985,7 @@ cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
     unsigned char *databuf;
     size_t maplen;
     int ret = CL_SUCCESS;
-#if HAVE_JSON
     struct json_object *check = NULL;
-#endif
 
     if (ctx == NULL) {
         return CL_ENULLARG;
@@ -2003,10 +2013,12 @@ cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
     cli_dbgmsg("ole2_summary_json: streamsize: %u\n", maplen);
     if (maplen < sizeof(summary_stub_t)) {
         cli_dbgmsg("ole2_summary_json: stream is too small to contain summary stub!");
+        funmap(sumfmap);
         return CL_EFORMAT;
     }
     databuf = (unsigned char*)fmap_need_off_once(sumfmap, 0, sizeof(summary_stub_t));
     if (!databuf) {
+        funmap(sumfmap);
         return CL_EREAD;
     }
 
@@ -2017,6 +2029,7 @@ cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
     sumstub.byte_order = le16_to_host(sumstub.byte_order);
     if (sumstub.byte_order != 0xfffe) {
         cli_dbgmsg("ole2_summary_json: byteorder 0x%x is invalid\n", sumstub.byte_order);
+        funmap(sumfmap);
         return CL_EFORMAT;
     }
     sumstub.version = sum16_endian_convert(sumstub.version);
@@ -2028,13 +2041,12 @@ cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
     /* summary context setup */
     sctx.byte_order = sumstub.byte_order;
     sctx.version = sumstub.version;
-#if HAVE_JSON
     sctx.summary = json_object_new_object();
     if (!sctx.summary) {
         cli_errmsg("ole2_summary_json: no memory for json object.\n");
+        funmap(sumfmap);
         return CL_EMEM;
     }
-#endif
 
     sctx.codepage = 0;
     sctx.writecp = 0;
@@ -2044,6 +2056,8 @@ cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
         databuf = (unsigned char*)fmap_need_off_once(sumfmap, sizeof(summary_stub_t),
                                                      sizeof(propset_entry_t));
         if (!databuf) {
+            json_object_put(sctx.summary);
+            funmap(sumfmap);
             return CL_EREAD;
         }
         memcpy(pentry, databuf, sizeof(propset_entry_t));
@@ -2051,26 +2065,26 @@ cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
         pentry[0].offset = sum32_endian_convert(pentry[0].offset);
 
         if (!mode) {
+            json_object_object_add(ctx->wrkproperty, "SummaryInfo", sctx.summary);
             if ((ret = ole2_summary_propset_json(&sctx, sumfmap, &pentry[0])) != CL_SUCCESS) {
+                funmap(sumfmap);
                 return ret;
             }
-#if HAVE_JSON
-            json_object_object_add(ctx->wrkproperty, "SummaryInfo", sctx.summary);
-#endif
         }
         else {
+            json_object_object_add(ctx->wrkproperty, "DocSummaryInfo", sctx.summary);
             if ((ret = ole2_docsum_propset_json(&sctx, sumfmap, &pentry[0])) != CL_SUCCESS) {
+                funmap(sumfmap);
                 return ret;
             }
-#if HAVE_JSON
-            json_object_object_add(ctx->wrkproperty, "DocSummaryInfo", sctx.summary);
-#endif			
         }
     }
     else if (sumstub.num_propsets == 2) {
         databuf = (unsigned char*)fmap_need_off_once(sumfmap, sizeof(summary_stub_t),
                                                      2*sizeof(propset_entry_t));
         if (!databuf) {
+            json_object_put(sctx.summary);
+            funmap(sumfmap);
             return CL_EREAD;
         }
         memcpy(pentry, databuf, 2*sizeof(propset_entry_t));
@@ -2083,27 +2097,31 @@ cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
 
         /* first propset is user-defined, ignored for now */
         if (!mode) {
+            json_object_object_add(ctx->wrkproperty, "SummaryInfo", sctx.summary);
             if ((ret = ole2_summary_propset_json(&sctx, sumfmap, &pentry[0])) != CL_SUCCESS) {
+                funmap(sumfmap);
                 return ret;
             }
-#if HAVE_JSON
-            json_object_object_add(ctx->wrkproperty, "SummaryInfo", sctx.summary);
-#endif
         }
         else {
+            json_object_object_add(ctx->wrkproperty, "DocSummaryInfo", sctx.summary);
             if ((ret = ole2_docsum_propset_json(&sctx, sumfmap, &pentry[0])) != CL_SUCCESS) {
+                funmap(sumfmap);
                 return ret;
             }
-#if HAVE_JSON
-            json_object_object_add(ctx->wrkproperty, "DocSummaryInfo", sctx.summary);
-#endif
         }
     }
     else {
         cli_dbgmsg("ole2_summary_json: invalid number of property sets\n");
+        funmap(sumfmap);
         return CL_EFORMAT;
     }
 
     funmap(sumfmap);
     return ret;
+#else
+    cli_dbgmsg("ole2_summary_json: libjson needs to enabled!");
+    return CL_SUCCESS;
+#endif
 }
+
