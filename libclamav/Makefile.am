@@ -261,6 +261,7 @@ libclamav_la_SOURCES = \
 	nsis/nsis_zutil.h \
 	pdf.c \
 	pdf.h \
+	pdfng.c \
 	spin.c \
 	spin.h \
 	yc.c \
