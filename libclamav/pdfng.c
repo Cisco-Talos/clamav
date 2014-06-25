@@ -204,6 +204,7 @@ int is_object_reference(char *begin, char **endchar, uint32_t *id)
 
     t |= (n&0xff);
 
+    /* Skip even more whitespace */
     p1 = p2;
     while (p1 < end && isspace(p1[0]))
         p1++;
@@ -268,7 +269,12 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
     if ((p1 - q) == objsize)
         return NULL;
 
-    /* We should be at the start of the string, minus 1 */
+    /*
+     * If str is non-null:
+     *     We should be at the start of the string, minus 1
+     * Else:
+     *     We should be at the start of the string
+     */
 
     p2 = q + objsize;
     if (is_object_reference(p1, &p2, &objid)) {

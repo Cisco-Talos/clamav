@@ -2408,6 +2408,10 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     if (q <= eofmap) {
         pdf.flags |= 1 << BAD_PDF_TRAILER;
         cli_dbgmsg("cli_pdf: %%%%EOF not found\n");
+#if HAVE_JSON
+        if (pdfobj)
+            cli_jsonbool(pdfobj, "NoEOF", 1);
+#endif
     } else {
         const char *t;
 
@@ -2421,6 +2425,10 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
         if (q <= eofmap) {
             pdf.flags |= 1 << BAD_PDF_TRAILER;
             cli_dbgmsg("cli_pdf: startxref not found\n");
+#if HAVE_JSON
+            if (pdfobj)
+                cli_jsonbool(pdfobj, "NoXREF", 1);
+#endif
         } else {
             for (t=q;t > eofmap; t--) {
                 if (memcmp(t,"trailer",7) == 0)
@@ -3067,8 +3075,6 @@ static void Pages_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname
 
     dict = pdf_parse_dict(pdf, obj, objsz, begin, NULL);
     if (dict) {
-        cli_errmsg("==== ==== ==== ====\n");
-        pdf_print_dict(dict, 0);
         pdf_free_dict(dict);
     }
 
@@ -3193,6 +3199,7 @@ static void pdf_export_json(struct pdf_struct *pdf)
 {
 #if HAVE_JSON
     json_object *pdfobj;
+    unsigned long i;
 
     if (!(pdf))
         return;
@@ -3282,6 +3289,18 @@ static void pdf_export_json(struct pdf_struct *pdf)
         cli_jsonbool(pdfobj, "Encrypted", 1);
         if (pdf->flags & (1 << DECRYPTABLE_PDF))
             cli_jsonbool(pdfobj, "Decryptable", 1);
+    }
+
+    for (i=0; i < pdf->nobjs; i++) {
+        if (pdf->objs[i].flags & (1<<OBJ_TRUNCATED)) {
+            json_object *truncobj;
+
+            truncobj = cli_jsonarray(pdfobj, "TruncatedObjects");
+            if (!(truncobj))
+                continue;
+
+            cli_jsonint_array(truncobj, pdf->objs[i].id>>8);
+        }
     }
 
 cleanup:
