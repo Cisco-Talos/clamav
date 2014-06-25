@@ -753,11 +753,12 @@ int cli_scanpe(cli_ctx *ctx)
 	int sha_collect = ctx->sha_collect;
 #endif
 	const char * virname = NULL;
-    const char *archtype=NULL, *subsystem=NULL;
+        const char *archtype=NULL, *subsystem=NULL;
 	uint32_t viruses_found = 0;
 #if HAVE_JSON
-    struct json_object *pe_json=NULL;
-    char jsonbuf[128];
+        int toval = 0;
+        struct json_object *pe_json=NULL;
+        char jsonbuf[128];
 #endif
 
     if(!ctx) {
@@ -766,8 +767,13 @@ int cli_scanpe(cli_ctx *ctx)
     }
 
 #if HAVE_JSON
-    if (ctx->options & CL_SCAN_FILE_PROPERTIES)
+    if (cli_json_timeout_cycle_check(ctx, &toval) != CL_SUCCESS) {
+        return CL_ETIMEOUT;
+    }
+
+    if (ctx->options & CL_SCAN_FILE_PROPERTIES) {
         pe_json = get_pe_property(ctx);
+    }
 #endif
     map = *ctx->fmap;
     if(fmap_readn(map, &e_magic, 0, sizeof(e_magic)) != sizeof(e_magic)) {
@@ -1245,7 +1251,13 @@ int cli_scanpe(cli_ctx *ctx)
 	exe_sections[i].ursz = EC32(section_hdr[i].SizeOfRawData);
 
 #if HAVE_JSON
-    add_section_info(ctx, &exe_sections[i]);
+        add_section_info(ctx, &exe_sections[i]);
+
+        if (cli_json_timeout_cycle_check(ctx, &toval) != CL_SUCCESS) {
+            free(section_hdr);
+            free(exe_sections);
+            return CL_ETIMEOUT;
+        }
 #endif
 
 	if (!exe_sections[i].vsz && exe_sections[i].rsz)
@@ -1373,6 +1385,10 @@ int cli_scanpe(cli_ctx *ctx)
 
 #if HAVE_JSON
     cli_jsonint(pe_json, "EntryPointOffset", ep);
+
+    if (cli_json_timeout_cycle_check(ctx, &toval) != CL_SUCCESS) {
+        return CL_ETIMEOUT;
+    }
 #endif
 
     cli_dbgmsg("EntryPoint offset: 0x%x (%d)\n", ep, ep);
@@ -2708,6 +2724,11 @@ int cli_scanpe(cli_ctx *ctx)
     }
 
     free(exe_sections);
+#if HAVE_JSON
+    if (cli_json_timeout_cycle_check(ctx, &toval) != CL_SUCCESS) {
+        return CL_ETIMEOUT;
+    }
+#endif
     if (SCAN_ALL && viruses_found)
 	return CL_VIRUS;
     return CL_CLEAN;

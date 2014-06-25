@@ -52,6 +52,7 @@
 #include "scanners.h"
 #include "matcher.h"
 #include "fmap.h"
+#include "json_api.h"
 
 #define UNZIP_PRIVATE
 #include "unzip.h"
@@ -498,6 +499,9 @@ int cli_unzip(cli_ctx *ctx) {
   char *tmpd;
   const char *ptr;
   int virus_found = 0;
+#if HAVE_JSON
+  int toval = 0;
+#endif
 
   cli_dbgmsg("in cli_unzip\n");
   fsize = (uint32_t)map->len;
@@ -537,6 +541,12 @@ int cli_unzip(cli_ctx *ctx) {
 	      cli_dbgmsg("cli_unzip: Files limit reached (max: %u)\n", ctx->engine->maxfiles);
 	      ret=CL_EMAXFILES;
 	  }
+#if HAVE_JSON
+          if (cli_json_timeout_cycle_check(ctx, &toval) != CL_SUCCESS) {
+              return CL_ETIMEOUT;
+          }
+#endif
+
       }
   } else cli_dbgmsg("cli_unzip: central not found, using localhdrs\n");
   if(fu<=(fc/4)) { /* FIXME: make up a sane ratio or remove the whole logic */
@@ -552,6 +562,12 @@ int cli_unzip(cli_ctx *ctx) {
 	cli_dbgmsg("cli_unzip: Files limit reached (max: %u)\n", ctx->engine->maxfiles);
 	ret=CL_EMAXFILES;
       }
+#if HAVE_JSON
+      if (cli_json_timeout_cycle_check(ctx, &toval) != CL_SUCCESS) {
+          return CL_ETIMEOUT;
+      }
+#endif
+
     }
   }
 
@@ -600,6 +616,9 @@ int unzip_search(cli_ctx *ctx, const char *name, size_t nlen, uint32_t *loff)
     const char *ptr;
     zip_request_t request; 
     int ret = CL_CLEAN;
+#if HAVE_JSON
+    uint32_t toval = 0;
+#endif
 
     cli_dbgmsg("in unzip_search\n");
     if (!ctx) {
@@ -645,6 +664,11 @@ int unzip_search(cli_ctx *ctx, const char *name, size_t nlen, uint32_t *loff)
                 cli_dbgmsg("cli_unzip: Files limit reached (max: %u)\n", ctx->engine->maxfiles);
                 ret=CL_EMAXFILES;
             }
+#if HAVE_JSON
+            if (cli_json_timeout_cycle_check(ctx, &toval) != CL_SUCCESS) {
+                return CL_ETIMEOUT;
+            }
+#endif
         }
     } else {
         cli_dbgmsg("unzip_search: cannot locate central directory\n");

@@ -32,6 +32,22 @@
 #include "json_api.h"
 
 #ifdef HAVE_JSON
+int cli_json_timeout_cycle_check(cli_ctx *ctx, int *toval)
+{
+    if (ctx->options & CL_SCAN_FILE_PROPERTIES &&
+        ((*toval < 0) || (*toval >= JSON_TIMEOUT_CYCLES))) {
+        if (cli_checktimelimit(ctx) != CL_SUCCESS) {
+            cli_errmsg("cli_json_timeout_cycle_check: timeout!\n");
+            return CL_ETIMEOUT;
+        }
+        *toval = 0;
+    }
+    else {
+        (*toval)++;
+    }
+    return CL_SUCCESS;
+}
+
 int cli_jsonnull(json_object *obj, const char* key)
 {
     json_object *fpobj = NULL;

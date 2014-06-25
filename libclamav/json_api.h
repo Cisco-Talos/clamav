@@ -34,6 +34,10 @@
 #include "others.h"
 
 #if HAVE_JSON
+#define JSON_TIMEOUT_CYCLES 4
+
+int cli_json_timeout_cycle_check(cli_ctx *ctx, int *toval);
+
 int cli_jsonnull(json_object *obj, const char* key);
 int cli_jsonstr(json_object *obj, const char* key, const char* s);
 int cli_jsonstrlen(json_object *obj, const char* key, const char* s, int len);

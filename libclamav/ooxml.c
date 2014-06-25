@@ -352,7 +352,7 @@ static int ooxml_basic_json(int fd, cli_ctx *ctx, const char *key)
     int ret = CL_SUCCESS;
     const xmlChar *stack[OOXML_JSON_RECLEVEL];
     json_object *summary, *wrkptr;
-    int type, rlvl = 0;
+    int type, rlvl = 0, toval = 0;
     int32_t val2;
     const xmlChar *name, *value;
     xmlTextReaderPtr reader = NULL;
@@ -373,6 +373,11 @@ static int ooxml_basic_json(int fd, cli_ctx *ctx, const char *key)
     }
 
     while (xmlTextReaderRead(reader) == 1) {
+        if (cli_json_timeout_cycle_check(ctx, &toval) != CL_SUCCESS) {
+            ret = CL_ETIMEOUT;
+            goto ooxml_basic_exit;
+        }
+
         name = xmlTextReaderConstLocalName(reader);
         value = xmlTextReaderConstValue(reader);
         type = xmlTextReaderNodeType(reader);
@@ -469,7 +474,7 @@ static int ooxml_extn_cb(int fd, cli_ctx *ctx)
 
 static int ooxml_content_cb(int fd, cli_ctx *ctx)
 {
-    int ret = CL_SUCCESS;
+    int ret = CL_SUCCESS, tmp, toval = 0;
     int core=0, extn=0, cust=0, dsig=0;
     const xmlChar *name, *value, *CT, *PN;
     xmlTextReaderPtr reader = NULL;
@@ -485,6 +490,11 @@ static int ooxml_content_cb(int fd, cli_ctx *ctx)
 
     /* locate core-properties, extended-properties, and custom-properties (optional)  */
     while (xmlTextReaderRead(reader) == 1) {
+        if (cli_json_timeout_cycle_check(ctx, &toval) != CL_SUCCESS) {
+            ret = CL_ETIMEOUT;
+            goto ooxml_content_exit;
+        }
+
         name = xmlTextReaderConstLocalName(reader);
         if (name == NULL) continue;
 
@@ -512,7 +522,11 @@ static int ooxml_content_cb(int fd, cli_ctx *ctx)
 
         if (!core && !xmlStrcmp(CT, "application/vnd.openxmlformats-package.core-properties+xml")) {
             /* default: /docProps/core.xml*/
-            if (unzip_search(ctx, PN+1, xmlStrlen(PN)-1, &loff) != CL_VIRUS) {
+            tmp = unzip_search(ctx, PN+1, xmlStrlen(PN)-1, &loff);
+            if (tmp == CL_ETIMEOUT) {
+                ret = tmp;
+            }
+            else if (tmp != CL_VIRUS) {
                 cli_dbgmsg("cli_process_ooxml: failed to find core properties file \"%s\"!\n", PN);
             }
             else {
@@ -523,7 +537,12 @@ static int ooxml_content_cb(int fd, cli_ctx *ctx)
         }
         else if (!extn && !xmlStrcmp(CT, "application/vnd.openxmlformats-officedocument.extended-properties+xml")) {
             /* default: /docProps/app.xml */
-            if (unzip_search(ctx, PN+1, xmlStrlen(PN)-1, &loff) != CL_VIRUS) {
+            tmp = unzip_search(ctx, PN+1, xmlStrlen(PN)-1, &loff);
+            if (tmp == CL_ETIMEOUT) {
+                ret = tmp;
+            }
+            else if (tmp != CL_VIRUS) {
+
                 cli_dbgmsg("cli_process_ooxml: failed to find extended properties file \"%s\"!\n", PN);
             }
             else {
@@ -534,7 +553,12 @@ static int ooxml_content_cb(int fd, cli_ctx *ctx)
         }
         else if (!cust && !xmlStrcmp(CT, "application/vnd.openxmlformats-officedocument.custom-properties+xml")) {
             /* default: /docProps/custom.xml */
-            if (unzip_search(ctx, PN+1, xmlStrlen(PN)-1, &loff) != CL_VIRUS) {
+            tmp = unzip_search(ctx, PN+1, xmlStrlen(PN)-1, &loff);
+            if (tmp == CL_ETIMEOUT) {
+                ret = tmp;
+            }
+            else if (tmp != CL_VIRUS) {
+
                 cli_dbgmsg("cli_process_ooxml: failed to find custom properties file \"%s\"!\n", PN);
             }
             else {
@@ -546,7 +570,12 @@ static int ooxml_content_cb(int fd, cli_ctx *ctx)
             cust = 1;
         }
         else if (!dsig && !xmlStrcmp(CT, "application/vnd.openxmlformats-package.digital-signature-xmlsignature+xml")) {
-            if (unzip_search(ctx, PN+1, xmlStrlen(PN)-1, &loff) != CL_VIRUS) {
+            tmp = unzip_search(ctx, PN+1, xmlStrlen(PN)-1, &loff);
+            if (tmp == CL_ETIMEOUT) {
+                ret = tmp;
+            }
+            else if (tmp != CL_VIRUS) {
+
                 cli_dbgmsg("cli_process_ooxml: failed to find digital signature file \"%s\"!\n", PN);
             }
             else {
@@ -577,12 +606,13 @@ static int ooxml_content_cb(int fd, cli_ctx *ctx)
     xmlFreeTextReader(reader);
     return ret;
 }
-#endif
+#endif /* HAVE_LIBXML2 && HAVE_JSON */
 
 int cli_process_ooxml(cli_ctx *ctx)
 {
 #if HAVE_LIBXML2 && HAVE_JSON
     uint32_t loff = 0;
+    int tmp = CL_SUCCESS;
 
     cli_dbgmsg("in cli_processooxml\n");
     if (!ctx) {
@@ -590,7 +620,11 @@ int cli_process_ooxml(cli_ctx *ctx)
     }
 
     /* find "[Content Types].xml" */
-    if (unzip_search(ctx, "[Content_Types].xml", 18, &loff) != CL_VIRUS) {
+    tmp = unzip_search(ctx, "[Content_Types].xml", 18, &loff);
+    if (tmp == CL_ETIMEOUT) {
+        return CL_ETIMEOUT;
+    }
+    else if (tmp != CL_VIRUS) {
         cli_dbgmsg("cli_process_ooxml: failed to find ""[Content_Types].xml""!\n");
         return CL_EFORMAT;
     }

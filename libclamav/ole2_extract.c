@@ -531,6 +531,9 @@ ole2_walk_property_tree(ole2_header_t * hdr, const char *dir, int32_t prop_index
     char           *name, *dirname;
     ole2_list_t     node_list;
     int             ret, func_ret;
+#if HAVE_JSON
+    int toval = 0;
+#endif
 
     ole2_listmsg("ole2_walk_property_tree() called\n");
     func_ret = CL_SUCCESS;
@@ -554,16 +557,23 @@ ole2_walk_property_tree(ole2_header_t * hdr, const char *dir, int32_t prop_index
 
     while (!ole2_list_is_empty(&node_list)) {
         ole2_listmsg("within working loop, worklist size: %d\n", ole2_list_size(&node_list));
+#if HAVE_JSON
+        if (cli_json_timeout_cycle_check(ctx, &toval) != CL_SUCCESS) {
+            ole2_list_delete(&node_list);
+            return CL_ETIMEOUT;
+        }
+#endif
+
         current_block = hdr->prop_start;
 
         //pop off a node to work on
-            curindex = ole2_list_pop(&node_list);
+        curindex = ole2_list_pop(&node_list);
         ole2_listmsg("current index: %d\n", curindex);
         if ((curindex < 0) || (curindex > (int32_t) hdr->max_block_no)) {
             continue;
         }
         //read in the sector referenced by the current index
-            idx = curindex / 4;
+        idx = curindex / 4;
         for (i = 0; i < idx; i++) {
             current_block = ole2_get_next_block_number(hdr, current_block);
             if (current_block < 0) {
@@ -1059,12 +1069,32 @@ handler_otf(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * c
             if (!strncmp(name, "_5_summaryinformation", 21)) {
                 cli_dbgmsg("OLE2: detected a '_5_summaryinformation' stream\n");
                 /* JSONOLE2 - what to do if something breaks? */
-                cli_ole2_summary_json(ctx, ofd, 0);
+                if (cli_ole2_summary_json(ctx, ofd, 0) == CL_ETIMEOUT) {
+                    free(name);
+                    close(ofd);
+                    if (ctx && !(ctx->engine->keeptmp))
+                        cli_unlink(tempfile);
+
+                    free(tempfile);
+                    free(buff);
+                    cli_bitset_free(blk_bitset);
+                    return CL_ETIMEOUT;
+                }
             }
             if (!strncmp(name, "_5_documentsummaryinformation", 29)) {
                 cli_dbgmsg("OLE2: detected a '_5_documentsummaryinformation' stream\n");
                 /* JSONOLE2 - what to do if something breaks? */
-                cli_ole2_summary_json(ctx, ofd, 1);
+                if (cli_ole2_summary_json(ctx, ofd, 1) == CL_ETIMEOUT) {
+                    free(name);
+                    close(ofd);
+                    if (ctx && !(ctx->engine->keeptmp))
+                        cli_unlink(tempfile);
+
+                    free(tempfile);
+                    free(buff);
+                    cli_bitset_free(blk_bitset);
+                    return CL_ETIMEOUT;
+                }
             }
         }
         free(name);
@@ -1384,6 +1414,7 @@ typedef struct summary_ctx {
     uint16_t byte_order;
     uint16_t version;
     int16_t codepage;
+    int toval;
 
     const char *propname;
     int writecp; /* used to trigger writing the codepage value */
@@ -1398,6 +1429,12 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, size_t buflen
     if (offset+4 > buflen) {
         return CL_EFORMAT;
     }
+
+#if HAVE_JSON
+    if (cli_json_timeout_cycle_check(sctx->ctx, &(sctx->toval)) != CL_SUCCESS) {
+        return CL_ETIMEOUT;
+    }
+#endif
 
     memcpy(&proptype, databuf+offset, sizeof(proptype));
     offset+=sizeof(proptype);

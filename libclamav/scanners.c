@@ -2756,8 +2756,11 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 #if HAVE_JSON
             if ((ctx->options & CL_SCAN_FILE_PROPERTIES) && (ctx->wrkproperty != NULL)) {
                 ret = cli_process_ooxml(ctx);
-                if (ret != CL_SUCCESS) {
-                    /* JSONOOXML - what to do if something fails? placeholder */
+                if (ret == CL_ETIMEOUT) {
+                    return magic_scandesc_cleanup(ctx, type, hash, hashed_size, cache_clean, ret, parent_property);
+                }
+                else if (ret != CL_SUCCESS) {
+                    /* JSONOOXML - what to do if something else fails? placeholder */
                     ret = CL_SUCCESS;
                 }
             }
