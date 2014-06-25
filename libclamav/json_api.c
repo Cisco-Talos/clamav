@@ -34,16 +34,17 @@
 #ifdef HAVE_JSON
 int cli_json_timeout_cycle_check(cli_ctx *ctx, int *toval)
 {
-    if (ctx->options & CL_SCAN_FILE_PROPERTIES &&
-        ((*toval < 0) || (*toval >= JSON_TIMEOUT_CYCLES))) {
-        if (cli_checktimelimit(ctx) != CL_SUCCESS) {
-            cli_errmsg("cli_json_timeout_cycle_check: timeout!\n");
-            return CL_ETIMEOUT;
+    if (ctx->options & CL_SCAN_FILE_PROPERTIES) {
+        if (*toval <= 0) {
+            if (cli_checktimelimit(ctx) != CL_SUCCESS) {
+                cli_errmsg("cli_json_timeout_cycle_check: timeout!\n");
+                return CL_ETIMEOUT;
+            }
+            (*toval)++;
         }
-        *toval = 0;
-    }
-    else {
-        (*toval)++;
+        if (*toval > JSON_TIMEOUT_SKIP_CYCLES) {
+            (*toval) = 0;
+        }
     }
     return CL_SUCCESS;
 }
@@ -224,11 +225,9 @@ json_object *cli_jsonarray(json_object *obj, const char *key)
 {
     json_object *newobj;
 
-    if (obj && key) {
-        /* First check to see if this key exists */
-        newobj = json_object_object_get(obj, key);
-        if (newobj)
-            return json_object_get_array(newobj) ? newobj : NULL;
+    /* First check to see if this key exists */
+    if (obj && key && !json_object_object_get_ex(obj, key, &newobj)) {
+        return json_object_is_type(newobj, json_type_array) ? newobj : NULL;
     }
 
     newobj = json_object_new_array();
@@ -237,7 +236,8 @@ json_object *cli_jsonarray(json_object *obj, const char *key)
 
     if (obj && key) {
         json_object_object_add(obj, key, newobj);
-        newobj = json_object_object_get(obj, key);
+        if (json_object_object_get_ex(obj, key, &newobj))
+            return NULL;
     }
 
     return newobj;
@@ -265,11 +265,8 @@ json_object *cli_jsonobj(json_object *obj, const char *key)
 {
     json_object *newobj;
 
-    if (obj && key) {
-        newobj = json_object_object_get(obj, key);
-        if (newobj)
-            return newobj;
-    }
+    if (obj && key && json_object_object_get_ex(obj, key, &newobj))
+        return json_object_is_type(newobj, json_type_object) ? newobj : NULL;
 
     newobj = json_object_new_object();
     if (!(newobj))
@@ -277,7 +274,8 @@ json_object *cli_jsonobj(json_object *obj, const char *key)
 
     if (obj && key) {
         json_object_object_add(obj, key, newobj);
-        newobj = json_object_object_get(obj, key);
+        if (json_object_object_get_ex(obj, key, &newobj))
+            return NULL;
     }
 
     return newobj;

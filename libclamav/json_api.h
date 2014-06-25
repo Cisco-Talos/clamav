@@ -34,7 +34,7 @@
 #include "others.h"
 
 #if HAVE_JSON
-#define JSON_TIMEOUT_CYCLES 4
+#define JSON_TIMEOUT_SKIP_CYCLES 3
 
 int cli_json_timeout_cycle_check(cli_ctx *ctx, int *toval);
 
