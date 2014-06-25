@@ -136,6 +136,7 @@ struct pdf_struct {
 #define PDF_EXTRACT_OBJ_SCAN 0x1
 
 int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset);
+void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj);
 int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags);
 int pdf_findobj(struct pdf_struct *pdf);
 struct pdf_obj *find_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t objid);
@@ -146,5 +147,7 @@ struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, siz
 int is_object_reference(char *begin, char **endchar, uint32_t *id);
 void pdf_free_dict(struct pdf_dict *dict);
 void pdf_free_array(struct pdf_array *array);
+void pdf_print_dict(struct pdf_dict *dict, unsigned long depth);
+void pdf_print_array(struct pdf_array *array, unsigned long depth);
 
 #endif
