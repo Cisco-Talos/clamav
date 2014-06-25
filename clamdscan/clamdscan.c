@@ -34,6 +34,8 @@
 #include <time.h>
 #include <signal.h>
 
+#include "clamav.h"
+
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include "libclamav/crypto.h"
