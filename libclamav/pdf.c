@@ -83,6 +83,7 @@ static	const	char	*pdf_nextobject(const char *ptr, size_t len);
 static char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *objstart, size_t objsize, const char *str, char **endchar);
 static struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj *obj, size_t objsz, char *begin, char **endchar);
 static struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, size_t objsz, char *begin, char **endchar);
+static int is_object_reference(char *begin, char **endchar, uint32_t *id);
 static void pdf_free_dict(struct pdf_dict *dict);
 static void pdf_free_array(struct pdf_array *array);
 static int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags);
@@ -2901,12 +2902,23 @@ static char *pdf_convert_utf(char *begin, size_t sz)
 #endif
 }
 
-static int is_object_reference(char *begin, char **endchar)
+static int is_object_reference(char *begin, char **endchar, uint32_t *id)
 {
     char *end = *endchar;
     char *p1=begin, *p2;
     unsigned long n;
+    uint32_t t=0;
 
+    /*
+     * Object references are always this format:
+     * XXXX YYYY R
+     * Where XXXX is the object ID and YYYY is the revision ID of the object.
+     * The letter R signifies that this is a reference.
+     *
+     * In between each item can be an arbitrary amount of whitespace.
+     */
+
+    /* Skip whitespace */
     while (p1 < end && isspace(p1[0]))
         p1++;
 
@@ -2916,6 +2928,7 @@ static int is_object_reference(char *begin, char **endchar)
     if (!isnumber(p1[0]))
         return 0;
 
+    /* Ensure strtoul() isn't going to go past our buffer */
     p2 = p1+1;
     while (p2 < end && !isspace(p2[0]))
         p2++;
@@ -2927,6 +2940,9 @@ static int is_object_reference(char *begin, char **endchar)
     if (n == ULONG_MAX && errno)
         return 0;
 
+    t = n<<8;
+
+    /* Skip more whitespace */
     p1 = p2;
     while (p1 < end && isspace(p1[0]))
         p1++;
@@ -2937,6 +2953,7 @@ static int is_object_reference(char *begin, char **endchar)
     if (!isnumber(p1[0]))
         return 0;
 
+    /* Ensure strtoul() is going to go past our buffer */
     p2 = p1+1;
     while (p2 < end && !isspace(p2[0]))
         p2++;
@@ -2947,6 +2964,8 @@ static int is_object_reference(char *begin, char **endchar)
     n = strtoul(p1, &p2, 10);
     if (n == ULONG_MAX && errno)
         return 0;
+
+    t |= (n&0xff);
 
     p1 = p2;
     while (p1 < end && isspace(p1[0]))
@@ -2957,6 +2976,9 @@ static int is_object_reference(char *begin, char **endchar)
 
     if (p1[0] == 'R') {
         *endchar = p1+1;
+        if (id)
+            *id = t;
+
         return 1;
     }
 
@@ -2971,6 +2993,7 @@ static char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const
     char *buf, *outbuf, *res;
     int likelyutf = 0;
     unsigned int i;
+    uint32_t objid;
 
     /*
      * Yes, all of this is required to find the start and end of a potentially UTF-* string
@@ -3011,45 +3034,14 @@ static char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const
     /* We should be at the start of the string, minus 1 */
 
     p2 = q + objsize;
-    if (is_object_reference(p1, &p2)) {
-        unsigned long objnum, revnum;
+    if (is_object_reference(p1, &p2, &objid)) {
         struct pdf_obj *newobj;
         char *end, *begin;
         STATBUF sb;
         uint32_t objflags;
         int fd;
 
-        /*
-         * This is kind of sketchy... This string says it points to another object.
-         * Try to get/parse the object and return the decoded value as an ASCII/UTF-8 string.
-         */
-
-        /* Get the object number */
-        objnum = strtoul(p1, &end, 10);
-        if ((end - p1) == 0)
-            return NULL;
-
-        /* Skip whitespace and get the revision number */
-        p1 = end+1;
-        while (p1 - q < objsize && isspace(p1[0]))
-            p1++;
-
-        if (p1 - q == objsize)
-            return NULL;
-
-        revnum = strtoul(p1, &end, 10);
-
-        p1 = end+1;
-        while (p1 - q < objsize && isspace(p1[0]))
-            p1++;
-
-        if (p1 - q == objsize)
-            return NULL;
-
-        if (p1[0] != 'R')
-            return NULL;
-
-        newobj = find_obj(pdf, obj, (objnum<<8) | (revnum & 0xff));
+        newobj = find_obj(pdf, obj, objid);
         if (!(newobj))
             return NULL;
 
@@ -3131,7 +3123,7 @@ static char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const
         newobj->path = NULL;
 
         if (endchar)
-            *endchar = p1;
+            *endchar = p2;
 
         return res;
     }
@@ -3368,7 +3360,7 @@ static struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *o
                     p1++;
                 }
 
-                is_object_reference(begin, &p1);
+                is_object_reference(begin, &p1, NULL);
 
                 val = cli_calloc((p1 - begin) + 2, 1);
                 if (!(val))
@@ -3517,7 +3509,7 @@ static struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj 
             default:
                 /* This should just be a number or the letter R */
                 p1 = end;
-                if (!is_object_reference(begin, &p1)) {
+                if (!is_object_reference(begin, &p1, NULL)) {
                     p1 = begin+1;
                     while (p1 < end && !isspace(p1[0]))
                         p1++;
@@ -3639,12 +3631,14 @@ static void pdf_print_dict(struct pdf_dict *dict, unsigned long depth)
     struct pdf_dict_node *node;
 
     for (node = dict->nodes; node != NULL; node = node->next) {
-        if (node->type == PDF_DICT_STRING)
+        if (node->type == PDF_DICT_STRING) {
             cli_errmsg("dict[%lu][%s]: %s\n", depth, node->key, (char *)(node->value));
-        else if (node->type == PDF_DICT_ARRAY)
+        } else if (node->type == PDF_DICT_ARRAY) {
+            cli_errmsg("dict[%lu][%s]: Array =>\n", depth, node->key);
             pdf_print_array((struct pdf_array *)(node->value), depth);
-        else if (node->type == PDF_DICT_DICT)
+        } else if (node->type == PDF_DICT_DICT) {
             pdf_print_dict((struct pdf_dict *)(node->value), depth+1);
+        }
     }
 }
 
@@ -3939,8 +3933,11 @@ static void Pages_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_act
         return;
 
     dict = pdf_parse_dict(pdf, obj, objsz, begin, NULL);
-    if (dict)
+    if (dict) {
+        cli_errmsg("==== ==== ==== ====\n");
+        pdf_print_dict(dict, 0);
         pdf_free_dict(dict);
+    }
 
     begin = cli_memstr(objstart, objsz, "/Kids", 5);
     if (!(begin))
