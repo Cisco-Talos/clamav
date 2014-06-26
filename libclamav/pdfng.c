@@ -631,12 +631,24 @@ struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, siz
             res->nodes = res->tail = node = cli_calloc(1, sizeof(struct pdf_dict_node));
             if (!(node)) {
                 free(key);
+                if (dict)
+                    pdf_free_dict(dict);
+                if (val)
+                    free(val);
+                if (arr)
+                    pdf_free_array(arr);
                 break;
             }
         } else {
             node = calloc(1, sizeof(struct pdf_dict_node));
             if (!(node)) {
                 free(key);
+                if (dict)
+                    pdf_free_dict(dict);
+                if (val)
+                    free(val);
+                if (arr)
+                    pdf_free_array(arr);
                 break;
             }
 
@@ -672,13 +684,15 @@ struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj *obj, s
 {
     struct pdf_array *res=NULL;
     struct pdf_array_node *node=NULL;
-    const char *objstart = obj->start + pdf->map;
+    const char *objstart;
     char *end, *tempend;
     int in_string=0, ninner=0;
 
     /* Sanity checking */
     if (!(pdf) || !(obj) || !(begin))
         return NULL;
+
+    objstart = obj->start + pdf->map;
 
     if (begin < objstart || begin - objstart >= objsz)
         return NULL;
@@ -783,12 +797,28 @@ struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj *obj, s
 
         if (!(node)) {
             res->nodes = res->tail = node = calloc(1, sizeof(struct pdf_array_node));
-            if (!(node))
+            if (!(node)) {
+                if (dict)
+                    pdf_free_dict(dict);
+                if (val)
+                    free(val);
+                if (arr)
+                    pdf_free_array(arr);
+
                 break;
+            }
         } else {
             node = calloc(1, sizeof(struct pdf_array_node));
-            if (!(node))
+            if (!(node)) {
+                if (dict)
+                    pdf_free_dict(dict);
+                if (val)
+                    free(val);
+                if (arr)
+                    pdf_free_array(arr);
+
                 break;
+            }
 
             node->prev = res->tail;
             if (res->tail)
