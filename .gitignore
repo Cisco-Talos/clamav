@@ -107,3 +107,16 @@ sigtool/Makefile.in
 stamp-h1
 test/Makefile.in
 unit_tests/Makefile.in
+config/config.guess
+config/config.sub
+config/ltmain.sh
+config/missing
+config/test-driver
+configure
+libclamav/c++/config/config.guess
+libclamav/c++/config/config.sub
+libclamav/c++/config/ltmain.sh
+libclamav/c++/config/missing
+libclamav/c++/configure
+libclamav/c++/m4/libtool.m4
+m4/libtool.m4
