@@ -151,6 +151,10 @@
    you don't. */
 #undef HAVE_DECL_CYGWIN_CONV_PATH
 
+/* Define to 1 if you have a deprecated version of the 'libjson' library
+   (-ljson). */
+#undef HAVE_DEPRECATED_JSON
+
 /* Define to 1 if you have the <dirent.h> header file. */
 #undef HAVE_DIRENT_H
 

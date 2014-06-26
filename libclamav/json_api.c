@@ -281,6 +281,30 @@ json_object *cli_jsonobj(json_object *obj, const char *key)
     return newobj;
 }
 
+#if HAVE_DEPRECATED_JSON
+int json_object_object_get_ex(struct json_object *obj, const char *key, struct json_object **value)
+{
+    struct json_object *res;
+
+    if (value != NULL)
+        *value = NULL;
+
+    if (obj == NULL)
+        return 0;
+
+    if (json_object_get_type(obj) != json_type_object)
+        return 0;
+
+    res = json_object_object_get(obj, key);
+    if (value != NULL) {
+        *value = res;
+        return (res != NULL);
+    }
+
+    return (res != NULL);
+}
+#endif
+
 #else
 
 int cli_json_nojson()

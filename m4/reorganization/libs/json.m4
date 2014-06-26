@@ -62,7 +62,15 @@ then
     CFLAGS="$CFLAGS $JSON_CPPFLAGS"
   fi
 
-  AC_SEARCH_LIBS([json_object_object_get_ex], [json-c json], [have_json="yes"], [have_json="no"])
+  AC_SEARCH_LIBS([json_object_object_get_ex], [json-c json], [
+have_json="yes"
+have_deprecated_json="no"], [
+have_json="no"
+AC_SEARCH_LIBS([json_object_object_get], [json-c json], [
+have_json="yes"
+have_deprecated_json="yes"
+])
+])
 
   CFLAGS="$save_CFLAGS"
   LDFLAGS="$save_LDFLAGS"
@@ -70,6 +78,9 @@ fi
 
 if test "X$have_json" = "Xyes"; then
   AC_DEFINE([HAVE_JSON],1,[Define to 1 if you have the 'libjson' library (-ljson).])
+  if test "X$have_deprecated_json" = "Xyes"; then
+    AC_DEFINE([HAVE_DEPRECATED_JSON],1,[Define to 1 if you have a deprecated version of the 'libjson' library (-ljson).])
+  fi
   JSON_LIBS="$LIBS"
 fi
 

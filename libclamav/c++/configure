@@ -16020,9 +16020,72 @@ $as_echo "$ac_cv_search_json_object_object_get_ex" >&6; }
 ac_res=$ac_cv_search_json_object_object_get_ex
 if test "$ac_res" != no; then :
   test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-  have_json="yes"
+
+have_json="yes"
+have_deprecated_json="no"
 else
-  have_json="no"
+
+have_json="no"
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing json_object_object_get" >&5
+$as_echo_n "checking for library containing json_object_object_get... " >&6; }
+if ${ac_cv_search_json_object_object_get+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char json_object_object_get ();
+int
+main ()
+{
+return json_object_object_get ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' json-c json; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_search_json_object_object_get=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_json_object_object_get+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_json_object_object_get+:} false; then :
+
+else
+  ac_cv_search_json_object_object_get=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_json_object_object_get" >&5
+$as_echo "$ac_cv_search_json_object_object_get" >&6; }
+ac_res=$ac_cv_search_json_object_object_get
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+have_json="yes"
+have_deprecated_json="yes"
+
+fi
+
+
 fi
 
 
@@ -16034,6 +16097,11 @@ if test "X$have_json" = "Xyes"; then
 
 $as_echo "#define HAVE_JSON 1" >>confdefs.h
 
+  if test "X$have_deprecated_json" = "Xyes"; then
+
+$as_echo "#define HAVE_DEPRECATED_JSON 1" >>confdefs.h
+
+  fi
   JSON_LIBS="$LIBS"
 fi
 

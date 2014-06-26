@@ -49,6 +49,10 @@ json_object *cli_jsonarray(json_object *obj, const char *key);
 int cli_jsonint_array(json_object *obj, int32_t val);
 json_object *cli_jsonobj(json_object *obj, const char *key);
 
+#if HAVE_DEPRECATED_JSON
+int json_object_object_get_ex(struct json_object *obj, const char *key, struct json_object **value);
+#endif
+
 #define JSON_KEY_FILETYPE   "FileType"
 #define JSON_KEY_FILESIZE   "FileSize"
 

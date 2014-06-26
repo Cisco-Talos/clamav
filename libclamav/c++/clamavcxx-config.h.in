@@ -3,6 +3,10 @@
 /* Define if building universal (internal helper macro) */
 #undef AC_APPLE_UNIVERSAL_BUILD
 
+/* Define to 1 if you have a deprecated version of the 'libjson' library
+   (-ljson). */
+#undef HAVE_DEPRECATED_JSON
+
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
 
