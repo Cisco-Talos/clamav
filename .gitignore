@@ -12,6 +12,7 @@ Makefile.in
 TAGS
 aclocal.m4
 autom4te.cache/*
+clamav-config
 clamav-config.h
 clamav-config.h.in
 clamav-milter/Makefile.in
