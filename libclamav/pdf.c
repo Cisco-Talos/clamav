@@ -112,6 +112,9 @@ static void Subject_cb(struct pdf_struct *, struct pdf_obj *, struct pdfname_act
 static void Keywords_cb(struct pdf_struct *, struct pdf_obj *, struct pdfname_action *);
 static void Pages_cb(struct pdf_struct *, struct pdf_obj *, struct pdfname_action *);
 static void Colors_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act);
+static void RichMedia_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act);
+static void AcroForm_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act);
+static void XFA_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act);
 /* End PDF statistics callbacks and related */
 
 static int xrefCheck(const char *xref, const char *eof)
@@ -1341,7 +1344,10 @@ static struct pdfname_action pdfname_actions[] = {
     {"Keywords", OBJ_DICT, STATE_NONE, STATE_NONE, Keywords_cb},
     {"Subject", OBJ_DICT, STATE_NONE, STATE_NONE, Subject_cb},
     {"Pages", OBJ_DICT, STATE_NONE, STATE_NONE, Pages_cb},
-    {"Colors", OBJ_DICT, STATE_NONE, STATE_NONE, Colors_cb}
+    {"Colors", OBJ_DICT, STATE_NONE, STATE_NONE, Colors_cb},
+    {"RichMedia", OBJ_DICT, STATE_NONE, STATE_NONE, RichMedia_cb},
+    {"AcroForm", OBJ_DICT, STATE_NONE, STATE_NONE, AcroForm_cb},
+    {"XFA", OBJ_DICT, STATE_NONE, STATE_NONE, XFA_cb}
 };
 
 #define KNOWN_FILTERS ((1 << OBJ_FILTER_AH) | (1 << OBJ_FILTER_RL) | (1 << OBJ_FILTER_A85) | (1 << OBJ_FILTER_FLATE) | (1 << OBJ_FILTER_LZW) | (1 << OBJ_FILTER_FAX) | (1 << OBJ_FILTER_DCT) | (1 << OBJ_FILTER_JPX) | (1 << OBJ_FILTER_CRYPT))
@@ -3050,6 +3056,30 @@ static void Subject_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfna
 #endif
 }
 
+static void RichMedia_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act)
+{
+    if (!(pdf))
+        return;
+
+    pdf->stats.nrichmedia++;
+}
+
+static void AcroForm_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act)
+{
+    if (!(pdf))
+        return;
+
+    pdf->stats.nacroform++;
+}
+
+static void XFA_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act)
+{
+    if (!(pdf))
+        return;
+
+    pdf->stats.nxfa++;
+}
+
 static void Pages_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act)
 {
 #if HAVE_JSON
@@ -3277,6 +3307,12 @@ static void pdf_export_json(struct pdf_struct *pdf)
         cli_jsonint(pdfobj, "LaunchCount", pdf->stats.nlaunch);
     if (pdf->stats.npage)
         cli_jsonint(pdfobj, "PageCount", pdf->stats.npage);
+    if (pdf->stats.nrichmedia)
+        cli_jsonint(pdfobj, "RichMediaCount", pdf->stats.nrichmedia);
+    if (pdf->stats.nacroform)
+        cli_jsonint(pdfobj, "AcroFormCount", pdf->stats.nacroform);
+    if (pdf->stats.nxfa)
+        cli_jsonint(pdfobj, "XFACount", pdf->stats.nxfa);
     if (pdf->flags & (1 << BAD_PDF_VERSION))
         cli_jsonbool(pdfobj, "BadVersion", 1);
     if (pdf->flags & (1 << BAD_PDF_HEADERPOS))

@@ -85,6 +85,9 @@ struct pdf_stats {
     int32_t nopenaction;      /* Number of OpenAction objects */
     int32_t nlaunch;          /* Number of Launch objects */
     int32_t npage;            /* Number of Page objects */
+    int32_t nrichmedia;       /* Number of RichMedia objects */
+    int32_t nacroform;        /* Number of AcroForm objects */
+    int32_t nxfa;             /* Number of XFA objects */
     char *author;             /* Author of the PDF */
     char *creator;            /* Application used to create the PDF */
     char *producer;           /* Application used to produce the PDF */
