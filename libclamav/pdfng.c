@@ -401,38 +401,30 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
 
     /* Make a best effort to find the end of the string and determine if UTF-* */
     p2 = ++p1;
-    while (1) {
-        int shouldbreak=1;
-        unsigned int upperlimit=1;
+    while (p2 < objstart + objsize) {
+        int shouldbreak=0;
 
-        while ((p2 - q) < objsize && *p2 != ')') {
-            if (!likelyutf && (*((unsigned char *)p2) > (unsigned char)0x7f || *p2 == '\0'))
-                likelyutf = 1;
+        if (!likelyutf && (*((unsigned char *)p2) > (unsigned char)0x7f || *p2 == '\0'))
+            likelyutf = 1;
 
-            p2++;
-        }
-
-        if ((p2 - q) == objsize || *p2 != ')')
-            return NULL;
-
-        if (likelyutf)
-            upperlimit = 3;
-
-        for (i=0; i <= upperlimit && p2 - i > p1; i++) {
-            if (*(p2-i) == '\\' && *(p2 - i - 1) != '\\') {
-                shouldbreak=0;
+        switch (*p2) {
+            case '\\':
                 p2++;
-            }
+                break;
+            case ')':
+                shouldbreak=1;
+                break;
         }
 
         if (shouldbreak) {
             p2--;
             break;
         }
+
+        p2++;
     }
 
-    /* If we're an empty string (), p2 would be at the left paren and p1 would be at the right paren */
-    if (p2 < p1)
+    if (p2 == objstart + objsize)
         return NULL;
 
     len = (size_t)(p2 - p1) + 1;
