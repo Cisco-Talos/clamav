@@ -474,7 +474,13 @@ struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, siz
     /* Find the end of the dictionary */
     end = begin;
     while (end - objstart < objsz) {
+        int increment=1;
         if (in_string) {
+            if (*end == '\\') {
+                end += 2;
+                continue;
+            }
+
             if (*end == ')')
                 in_string = 0;
 
@@ -489,26 +495,24 @@ struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, siz
             case '<':
                 if (end - objstart <= objsz - 2 && end[1] == '<')
                     ninner++;
+                increment=2;
                 break;
             case '>':
                 if (end - objstart <= objsz - 2 && end[1] == '>')
                     ninner--;
+                increment=2;
                 break;
-            case '\\':
-                end += 2;
-                if (end - objstart >= objsz)
-                    return NULL;
         }
 
         if (end - objstart <= objsz - 2)
             if (end[0] == '>' && end[1] == '>' && ninner == 0)
                 break;
 
-        end++;
+        end += increment;
     }
 
     /* More sanity checking */
-    if (end - objstart >= objsz - 1)
+    if (end - objstart >= objsz - 2)
         return NULL;
 
     if (end[0] != '>' || end[1] != '>')
@@ -534,8 +538,23 @@ struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, siz
 
         /* Get the key */
         p1 = begin+1;
-        while (p1 < end && isalpha(p1[0]))
+        while (p1 < end && !isspace(p1[0])) {
+            int breakout=0;
+
+            switch (*p1) {
+                case '<':
+                case '[':
+                case '(':
+                case '\\':
+                    breakout=1;
+                    break;
+            }
+            
+            if (breakout)
+                break;
+
             p1++;
+        }
 
         if (p1 == end)
             break;
@@ -696,6 +715,11 @@ struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj *obj, s
     end = begin;
     while (end - objstart < objsz) {
         if (in_string) {
+            if (*end == '\\') {
+                end += 2;
+                continue;
+            }
+
             if (*end == ')')
                 in_string = 0;
 
@@ -713,10 +737,6 @@ struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj *obj, s
             case ']':
                 ninner--;
                 break;
-            case '\\':
-                end += 2;
-                if (end - objstart >= objsz)
-                    return NULL;
         }
 
         if (*end == ']' && ninner == 0)
@@ -752,19 +772,21 @@ struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj *obj, s
             case '<':
                 if (begin - objstart < objsz - 2 && begin[1] == '<') {
                     dict = pdf_parse_dict(pdf, obj, objsz, begin, &begin);
+                    begin+=2;
                     break;
                 }
 
                 /* Not a dictionary. Intentially fall through. */
             case '(':
                 val = pdf_parse_string(pdf, obj, begin, objsz, NULL, &begin);
+                begin += 2;
                 break;
             case '[':
                 /* XXX We should have a recursion counter here */
                 arr = pdf_parse_array(pdf, obj, objsz, begin, &begin);
+                begin+=1;
                 break;
             default:
-                /* This should just be a number or the letter R */
                 p1 = end;
                 if (!is_object_reference(begin, &p1, NULL)) {
                     p1 = begin+1;
