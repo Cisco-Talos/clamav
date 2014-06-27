@@ -480,15 +480,15 @@ static unsigned int chdr(fmap_t *map, uint32_t coff, uint32_t zsize, unsigned in
       } else cli_dbgmsg("cli_unzip: ch - local hdr out of file\n");
   }
   else {
-      if (!last && !strncmp(request->name, name, 
-                            (request->namelen>=sizeof(name))?sizeof(name)-1:request->namelen)) {
+      size_t len = MIN(sizeof(name)-1, request->namelen);
+      if (!last && !strncmp(request->name, name, len)) {
           request->found = 1;
           request->loff = CH_off;
       }
   }
 
   fmap_unneed_ptr(map, ch, SIZEOF_CH);
-  return last?0:coff;
+  return (last?0:coff);
 }
 
 int cli_unzip(cli_ctx *ctx) {
