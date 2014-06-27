@@ -176,6 +176,7 @@ AM_CONDITIONAL([ENABLE_LLVM],
 	       [test "$subdirfailed" != "yes" && test "$enable_llvm" != "no"])
 no_recursion="yes";
 AC_OUTPUT([libclamav/Makefile])
+AC_OUTPUT([libclamunrar_iface/Makefile])
 
 # Print a summary of what features we enabled
 AC_MSG_NOTICE([Summary of detected features follows])
