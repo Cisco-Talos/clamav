@@ -198,7 +198,7 @@ static const char *ooxml_check_key(const char* key, size_t keylen)
     return NULL;
 }
 
-static int ooxml_parse_element(cli_ctx *ctx, xmlTextReaderPtr reader, json_object *wrkptr, int rlvl)
+static int ooxml_parse_element(cli_ctx *ctx, xmlTextReaderPtr reader, json_object *wrkptr, int rlvl, json_object *root)
 {
     const char *element_tag = NULL, *end_tag = NULL;
     const xmlChar *node_name = NULL, *node_value = NULL;
@@ -213,6 +213,7 @@ static int ooxml_parse_element(cli_ctx *ctx, xmlTextReaderPtr reader, json_objec
         /* skip it */
         xmlTextReaderNext(reader);
         //return CL_EMAXREC;
+        cli_jsonbool(root, "HitRecursiveLimit", 1);
         return CL_SUCCESS;
     }
 
@@ -258,7 +259,10 @@ static int ooxml_parse_element(cli_ctx *ctx, xmlTextReaderPtr reader, json_objec
             }
             cli_dbgmsg("ooxml_parse_element: retrieved json object [%s]\n", element_tag);
 
-            ret = ooxml_parse_element(ctx, reader, thisjobj, rlvl+1);
+            if (rlvl == 0)
+                root = thisjobj;
+
+            ret = ooxml_parse_element(ctx, reader, thisjobj, rlvl+1, root);
             if (ret != CL_SUCCESS) {
                 return ret;
             }
@@ -336,7 +340,7 @@ static int ooxml_parse_document(int fd, cli_ctx *ctx)
         return CL_SUCCESS; /* libxml2 failed */
     }
 
-    ret = ooxml_parse_element(ctx, reader, ctx->wrkproperty, 0);
+    ret = ooxml_parse_element(ctx, reader, ctx->wrkproperty, 0, NULL);
 
     xmlTextReaderClose(reader);
     xmlFreeTextReader(reader);
