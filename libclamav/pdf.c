@@ -1482,6 +1482,9 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
     unsigned i, filters=0;
     unsigned blockopens=0;
     enum objstate objstate = STATE_NONE;
+#if HAVE_JSON
+    json_object *pdfobj=NULL, *jsonobj=NULL;
+#endif
 
     if (objsize < 0)
         return;
@@ -1496,6 +1499,20 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 
         if (!nextobj || bytesleft < 0) {
             cli_dbgmsg("cli_pdf: %u %u obj: no dictionary\n", obj->id>>8, obj->id&0xff);
+#if HAVE_JSON
+            if (!(pdfobj) && pdf->ctx->wrkproperty != NULL) {
+                pdfobj = cli_jsonobj(pdf->ctx->wrkproperty, "PDFStats");
+                if (!(pdfobj))
+                    return;
+            }
+
+            if (pdfobj) {
+                if (!(jsonobj))
+                    jsonobj = cli_jsonarray(pdfobj, "ObjectsWithoutDictionaries");
+                if (jsonobj)
+                    cli_jsonint_array(jsonobj, obj->id>>8);
+            }
+#endif
             return;
         }
 
@@ -1513,6 +1530,20 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
     /* find end of dictionary block */
     if (bytesleft < 0) {
         cli_dbgmsg("cli_pdf: %u %u obj: broken dictionary\n", obj->id>>8, obj->id&0xff);
+#if HAVE_JSON
+        if (!(pdfobj) && pdf->ctx->wrkproperty != NULL) {
+            pdfobj = cli_jsonobj(pdf->ctx->wrkproperty, "PDFStats");
+            if (!(pdfobj))
+                return;
+        }
+
+        if (pdfobj) {
+            if (!(jsonobj))
+                jsonobj = cli_jsonarray(pdfobj, "ObjectsWithBrokenDictionaries");
+            if (jsonobj)
+                cli_jsonint_array(jsonobj, obj->id>>8);
+        }
+#endif
         return;
     }
 
@@ -1551,6 +1582,20 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
     if (blockopens) {
         /* probably truncated */
         cli_dbgmsg("cli_pdf: %u %u obj broken dictionary\n", obj->id>>8, obj->id&0xff);
+#if HAVE_JSON
+        if (!(pdfobj) && pdf->ctx->wrkproperty != NULL) {
+            pdfobj = cli_jsonobj(pdf->ctx->wrkproperty, "PDFStats");
+            if (!(pdfobj))
+                return;
+        }
+
+        if (pdfobj) {
+            if (!(jsonobj))
+                jsonobj = cli_jsonarray(pdfobj, "ObjectsWithBrokenDictionaries");
+            if (jsonobj)
+                cli_jsonint_array(jsonobj, obj->id>>8);
+        }
+#endif
         return;
     }
 
