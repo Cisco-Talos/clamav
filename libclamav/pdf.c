@@ -2339,6 +2339,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     unsigned i, alerts = 0;
 #if HAVE_JSON
     json_object *pdfobj=NULL;
+    char *begin, *end, *p1;
 #endif
 
     cli_dbgmsg("in cli_pdf(%s)\n", dir);
@@ -2377,6 +2378,21 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 #if HAVE_JSON
         if (pdfobj)
             cli_jsonbool(pdfobj, "BadVersion", 1);
+#endif
+    } else {
+#if HAVE_JSON
+        if (pdfobj) {
+            begin = (char *)(pdfver+5);
+            end = begin+2;
+            strtoul(end, &end, 10);
+            p1 = cli_calloc((end - begin) + 2, 1);
+            if (p1) {
+                strncpy(p1, begin, end - begin);
+                p1[end - begin] = '\0';
+                cli_jsonstr(pdfobj, "PDFVersion", p1);
+                free(p1);
+            }
+        }
 #endif
     }
 
@@ -3098,15 +3114,6 @@ static void Pages_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname
     pdfobj = cli_jsonobj(pdf->ctx->wrkproperty, "PDFStats");
     if (!(pdfobj))
         return;
-
-    begin = cli_memstr(objstart, objsz, "<<", 2);
-    if (!(begin))
-        return;
-
-    dict = pdf_parse_dict(pdf, obj, objsz, begin, NULL);
-    if (dict) {
-        pdf_free_dict(dict);
-    }
 
     begin = cli_memstr(objstart, objsz, "/Kids", 5);
     if (!(begin))
