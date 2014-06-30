@@ -913,19 +913,6 @@ handler_enum(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * 
                 json_object_array_add(arrobj, strmobj);
             }
 
-            /*
-            if (!json_object_object_get_ex(ctx->wrkproperty, "Streams", &arrobj)) {
-                arrobj = json_object_new_array();
-                if (NULL == arrobj) {
-                    cli_errmsg("ole2: no memory for streams list as json array\n");
-                    return CL_EMEM;
-                }
-                json_object_object_add(ctx->wrkproperty, "Streams", arrobj);
-            }
-            strmobj = json_object_new_string(name);
-            json_object_array_add(arrobj, strmobj);
-            */
-
             if (!strcmp(name, "powerpoint document")) {
                 cli_jsonstr(ctx->wrkproperty, "FileType", "CL_TYPE_MSPPT");
             }
