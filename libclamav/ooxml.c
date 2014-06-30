@@ -52,19 +52,39 @@
 #define OOXML_JSON_RECLEVEL_MAX 5
 #define OOXML_JSON_STRLEN_MAX 100
 
-static int ooxml_is_int(const char *value, size_t len, int32_t *val2)
+static int ooxml_is_int(const char *value, size_t len, int32_t *val)
 {
-    long val3;
+    long val2;
     char *endptr = NULL;
 
-    val3 = strtol(value, &endptr, 10);
+    val2 = strtol(value, &endptr, 10);
     if (endptr != value+len) {
         return 0;
     }
 
-    *val2 = (int32_t)(val3 & 0x0000ffff);
+    *val = (int32_t)(val2 & 0x0000ffff);
 
     return 1;
+}
+
+static int ooxml_parse_value(json_object *wrkptr, const char *element_tag, const xmlChar *node_value)
+{
+    int ret = CL_SUCCESS;
+    int val;
+
+    if (ooxml_is_int(node_value, xmlStrlen(node_value), &val)) {
+        ret = cli_jsonint(wrkptr, element_tag, val);
+    }
+    else if (!xmlStrcmp(node_value, "true")) {
+        ret = cli_jsonbool(wrkptr, element_tag, 1);
+    }
+    else if (!xmlStrcmp(node_value, "false")) {
+        ret = cli_jsonbool(wrkptr, element_tag, 0);
+    }
+    else {
+        ret = cli_jsonstr(wrkptr, element_tag, node_value);
+    }
+    return ret;
 }
 
 static const char *ooxml_keys[] = {
@@ -178,23 +198,22 @@ static const char *ooxml_check_key(const char* key, size_t keylen)
     return NULL;
 }
 
-static int ooxml_parse_element(cli_ctx *ctx, xmlTextReaderPtr reader, json_object *wrkptr, int rlvl, int skip)
+static int ooxml_parse_element(cli_ctx *ctx, xmlTextReaderPtr reader, json_object *wrkptr, int rlvl)
 {
     const char *element_tag = NULL, *end_tag = NULL;
     const xmlChar *node_name = NULL, *node_value = NULL;
-    json_object *njptr;
-    int node_type, ret = CL_SUCCESS, toval = 0;;
-    int32_t val2;
+    json_object *thisjobj;
+    int node_type, ret = CL_SUCCESS, endtag = 0, toval = 0;
 
     cli_dbgmsg("in ooxml_parse_element @ layer %d\n", rlvl);
 
     /* check recursion level */
     if (rlvl >= OOXML_JSON_RECLEVEL_MAX) {
-        return CL_EMAXREC;
-    }
-
-    if (wrkptr == NULL) {
-        skip = 1;
+        cli_dbgmsg("ooxml_parse_element: reached ooxml json recursion limit\n", node_name);
+        /* skip it */
+        xmlTextReaderNext(reader);
+        //return CL_EMAXREC;
+        return CL_SUCCESS;
     }
 
     /* acquire element type */
@@ -204,7 +223,6 @@ static int ooxml_parse_element(cli_ctx *ctx, xmlTextReaderPtr reader, json_objec
         return CL_EPARSE; /* first type is not an element */
     }
 
-    /* acquire element tag */
     node_name = xmlTextReaderConstLocalName(reader);
     if (!node_name) {
         cli_dbgmsg("ooxml_parse_element: element tag node nameless\n");
@@ -213,13 +231,19 @@ static int ooxml_parse_element(cli_ctx *ctx, xmlTextReaderPtr reader, json_objec
     element_tag = ooxml_check_key(node_name, xmlStrlen(node_name));
     if (!element_tag) {
         cli_dbgmsg("ooxml_parse_element: invalid element tag [%s]\n", node_name);
-        skip = 1; /* skipping element */
+        /* skip it */
+        xmlTextReaderNext(reader);
+        return CL_SUCCESS;
     }
 
     /* handle attributes if you want */
 
-    /* loop across all element contents */
-    while (xmlTextReaderRead(reader) == 1) {
+    /* advance to first content node */
+    if (xmlTextReaderRead(reader) != 1)
+        return CL_EPARSE;
+
+    /* parse until the end element tag */
+    while (!endtag) {
         if (cli_json_timeout_cycle_check(ctx, &toval) != CL_SUCCESS) {
             return CL_ETIMEOUT;
         }
@@ -227,23 +251,19 @@ static int ooxml_parse_element(cli_ctx *ctx, xmlTextReaderPtr reader, json_objec
         node_type = xmlTextReaderNodeType(reader);
         switch (node_type) {
         case XML_READER_TYPE_ELEMENT:
-            if (!skip) {
-                njptr = cli_jsonobj(wrkptr, element_tag);
-                if (!njptr) {
-                    cli_errmsg("ooxml_parse_element: failed to retrieve node for json object [%s]\n", element_tag);
-                    return CL_EFORMAT;
-                }
-                cli_dbgmsg("ooxml_parse_element: added json object [%s]\n", element_tag);
+            /* generate json object node */
+            thisjobj = cli_jsonobj(wrkptr, element_tag);
+            if (!thisjobj) {
+                return CL_EPARSE;
             }
-            else {
-                njptr = NULL;
-            } 
+            cli_dbgmsg("ooxml_parse_element: retrieved json object [%s]\n", element_tag);
 
-            ret = ooxml_parse_element(ctx, reader, njptr, rlvl+1, skip);
+            ret = ooxml_parse_element(ctx, reader, thisjobj, rlvl+1);
             if (ret != CL_SUCCESS) {
                 return ret;
             }
             break;
+
         case XML_READER_TYPE_END_ELEMENT:
             cli_dbgmsg("in ooxml_parse_element @ layer %d closed\n", rlvl);
             node_name = xmlTextReaderConstLocalName(reader);
@@ -251,49 +271,39 @@ static int ooxml_parse_element(cli_ctx *ctx, xmlTextReaderPtr reader, json_objec
                 cli_dbgmsg("ooxml_parse_element: element end tag node nameless\n");
                 return CL_EPARSE; /* no name, nameless */
             }
-            if (!skip) {
-                end_tag = ooxml_check_key(node_name, xmlStrlen(node_name));
-                if (!end_tag) {
-                    cli_dbgmsg("ooxml_parse_element: invalid element end tag [%s]\n", node_name);
-                    return CL_EFORMAT; /* unrecognized element tag */
-                }
-                if (strncmp(element_tag, end_tag, strlen(element_tag))) {
-                    cli_dbgmsg("ooxml_parse_element: element tag does not match end tag\n");
-                    return CL_EFORMAT;
-                }
+
+            end_tag = ooxml_check_key(node_name, xmlStrlen(node_name));
+            if (!end_tag) {
+                cli_dbgmsg("ooxml_parse_element: invalid element end tag [%s]\n", node_name);
+                return CL_EFORMAT; /* unrecognized element tag */
             }
-            return CL_SUCCESS;
-        case XML_READER_TYPE_TEXT:
-            if (!skip) {
-                node_value = xmlTextReaderConstValue(reader);
-
-                if (ooxml_is_int(node_value, xmlStrlen(node_value), &val2)) {
-                    ret = cli_jsonint(wrkptr, element_tag, val2);
-                }
-                else if (!xmlStrcmp(node_value, "true")) {
-                    ret = cli_jsonbool(wrkptr, element_tag, 1);
-                }
-                else if (!xmlStrcmp(node_value, "false")) {
-                    ret = cli_jsonbool(wrkptr, element_tag, 0);
-                }
-                else {
-                    ret = cli_jsonstr(wrkptr, element_tag, node_value);
-                }
-
-                if (ret != CL_SUCCESS)
-                    return ret;
-
-                cli_dbgmsg("ooxml_parse_element: added json value [%s: %s]\n", element_tag, node_value);
+            if (strncmp(element_tag, end_tag, strlen(element_tag))) {
+                cli_dbgmsg("ooxml_parse_element: element tag does not match end tag\n");
+                return CL_EFORMAT;
             }
-#if OOXML_DEBUG
-            else {
-                node_name = xmlTextReaderConstLocalName(reader);
-                node_value = xmlTextReaderConstValue(reader);
 
-                cli_dbgmsg("ooxml_parse_element: not adding xml node %s [%d]: %s\n", node_name, node_type, node_value);
-            }
-#endif
+            /* advance to next element tag */
+            if (xmlTextReaderRead(reader) != 1)
+                return CL_EPARSE;
+
+            endtag = 1;
             break;
+
+        case XML_READER_TYPE_TEXT:
+            node_value = xmlTextReaderConstValue(reader);
+
+            ret = ooxml_parse_value(wrkptr, element_tag, node_value);
+            if (ret != CL_SUCCESS)
+                return ret;
+
+            cli_dbgmsg("ooxml_parse_element: added json value [%s: %s]\n", element_tag, node_value);
+
+            /* advance to next element tag */
+            if (xmlTextReaderRead(reader) != 1)
+                return CL_EPARSE;
+
+            break;
+
         default:
 #if OOXML_DEBUG
             node_name = xmlTextReaderConstLocalName(reader);
@@ -326,7 +336,7 @@ static int ooxml_parse_document(int fd, cli_ctx *ctx)
         return CL_SUCCESS; /* libxml2 failed */
     }
 
-    ret = ooxml_parse_element(ctx, reader, ctx->wrkproperty, 0, 0);
+    ret = ooxml_parse_element(ctx, reader, ctx->wrkproperty, 0);
 
     xmlTextReaderClose(reader);
     xmlFreeTextReader(reader);
@@ -351,6 +361,7 @@ static int ooxml_content_cb(int fd, cli_ctx *ctx)
 {
     int ret = CL_SUCCESS, tmp, toval = 0;
     int core=0, extn=0, cust=0, dsig=0;
+    int mcore=0, mextn=0, mcust=0;
     const xmlChar *name, *value, *CT, *PN;
     xmlTextReaderPtr reader = NULL;
     uint32_t loff;
@@ -404,13 +415,14 @@ static int ooxml_content_cb(int fd, cli_ctx *ctx)
                 }
                 else if (tmp != CL_VIRUS) {
                     cli_dbgmsg("cli_process_ooxml: failed to find core properties file \"%s\"!\n", PN);
+                    mcore++;
                 }
                 else {
                     cli_dbgmsg("ooxml_content_cb: found core properties file \"%s\" @ %x\n", PN, loff);
                     ret = unzip_single_internal(ctx, loff, ooxml_core_cb);
+                    core++;
                 }
             }
-            core++;
         }
         else if (!xmlStrcmp(CT, "application/vnd.openxmlformats-officedocument.extended-properties+xml")) {
             if (!extn) {
@@ -421,13 +433,14 @@ static int ooxml_content_cb(int fd, cli_ctx *ctx)
                 }
                 else if (tmp != CL_VIRUS) {
                     cli_dbgmsg("cli_process_ooxml: failed to find extended properties file \"%s\"!\n", PN);
+                    mextn++;
                 }
                 else {
                     cli_dbgmsg("ooxml_content_cb: found extended properties file \"%s\" @ %x\n", PN, loff);
                     ret = unzip_single_internal(ctx, loff, ooxml_extn_cb);
+                    extn++;
                 }
             }
-            extn++;
         }
         else if (!xmlStrcmp(CT, "application/vnd.openxmlformats-officedocument.custom-properties+xml")) {
             if (!cust) {
@@ -438,13 +451,14 @@ static int ooxml_content_cb(int fd, cli_ctx *ctx)
                 }
                 else if (tmp != CL_VIRUS) {
                     cli_dbgmsg("cli_process_ooxml: failed to find custom properties file \"%s\"!\n", PN);
+                    mcust++;
                 }
                 else {
                     cli_dbgmsg("ooxml_content_cb: found custom properties file \"%s\" @ %x\n", PN, loff);
+                    cust++;
                     //ret = unzip_single_internal(ctx, loff, ooxml_cust_cb);
                 }
             }
-            cust++;
         }
         else if (!xmlStrcmp(CT, "application/vnd.openxmlformats-package.digital-signature-xmlsignature+xml")) {
             dsig++;
@@ -454,24 +468,27 @@ static int ooxml_content_cb(int fd, cli_ctx *ctx)
             goto ooxml_content_exit;
     }
 
-    if (core) {
+    if (core)
         cli_jsonint(ctx->wrkproperty, "CorePropertiesFileCount", core);
-    }
-    else {
+    else if (!mcore)
         cli_dbgmsg("cli_process_ooxml: file does not contain core properties file\n");
-    }
-    if (extn) {
+    if (mcore)
+        cli_jsonint(ctx->wrkproperty, "CorePropertiesMissingFileCount", core);
+
+    if (extn)
         cli_jsonint(ctx->wrkproperty, "ExtendedPropertiesFileCount", extn);
-    }
-    else {
+    else if (!mextn)
         cli_dbgmsg("cli_process_ooxml: file does not contain extended properties file\n");
-    }
-    if (cust) {
+    if (mextn)
+        cli_jsonint(ctx->wrkproperty, "ExtendedPropertiesMissingFileCount", extn);
+
+    if (cust)
         cli_jsonint(ctx->wrkproperty, "CustomPropertiesFileCount", cust);
-    }
-    else {
+    else if (!mcust)
         cli_dbgmsg("cli_process_ooxml: file does not contain custom properties file\n");
-    }
+    if (mcust)
+        cli_jsonint(ctx->wrkproperty, "CustomPropertiesMissingFileCount", cust);
+
     if (dsig) {
         cli_jsonint(ctx->wrkproperty, "DigitalSignaturesCount", dsig);
     }
