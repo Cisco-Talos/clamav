@@ -1482,6 +1482,9 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
     unsigned i, filters=0;
     unsigned blockopens=0;
     enum objstate objstate = STATE_NONE;
+#if HAVE_JSON
+    json_object *pdfobj=NULL, *jsonobj=NULL;
+#endif
 
     if (objsize < 0)
         return;
@@ -1496,6 +1499,20 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 
         if (!nextobj || bytesleft < 0) {
             cli_dbgmsg("cli_pdf: %u %u obj: no dictionary\n", obj->id>>8, obj->id&0xff);
+#if HAVE_JSON
+            if (!(pdfobj) && pdf->ctx->wrkproperty != NULL) {
+                pdfobj = cli_jsonobj(pdf->ctx->wrkproperty, "PDFStats");
+                if (!(pdfobj))
+                    return;
+            }
+
+            if (pdfobj) {
+                if (!(jsonobj))
+                    jsonobj = cli_jsonarray(pdfobj, "ObjectsWithoutDictionaries");
+                if (jsonobj)
+                    cli_jsonint_array(jsonobj, obj->id>>8);
+            }
+#endif
             return;
         }
 
@@ -1513,6 +1530,20 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
     /* find end of dictionary block */
     if (bytesleft < 0) {
         cli_dbgmsg("cli_pdf: %u %u obj: broken dictionary\n", obj->id>>8, obj->id&0xff);
+#if HAVE_JSON
+        if (!(pdfobj) && pdf->ctx->wrkproperty != NULL) {
+            pdfobj = cli_jsonobj(pdf->ctx->wrkproperty, "PDFStats");
+            if (!(pdfobj))
+                return;
+        }
+
+        if (pdfobj) {
+            if (!(jsonobj))
+                jsonobj = cli_jsonarray(pdfobj, "ObjectsWithBrokenDictionaries");
+            if (jsonobj)
+                cli_jsonint_array(jsonobj, obj->id>>8);
+        }
+#endif
         return;
     }
 
@@ -1551,6 +1582,20 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
     if (blockopens) {
         /* probably truncated */
         cli_dbgmsg("cli_pdf: %u %u obj broken dictionary\n", obj->id>>8, obj->id&0xff);
+#if HAVE_JSON
+        if (!(pdfobj) && pdf->ctx->wrkproperty != NULL) {
+            pdfobj = cli_jsonobj(pdf->ctx->wrkproperty, "PDFStats");
+            if (!(pdfobj))
+                return;
+        }
+
+        if (pdfobj) {
+            if (!(jsonobj))
+                jsonobj = cli_jsonarray(pdfobj, "ObjectsWithBrokenDictionaries");
+            if (jsonobj)
+                cli_jsonint_array(jsonobj, obj->id>>8);
+        }
+#endif
         return;
     }
 
@@ -2339,6 +2384,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     unsigned i, alerts = 0;
 #if HAVE_JSON
     json_object *pdfobj=NULL;
+    char *begin, *end, *p1;
 #endif
 
     cli_dbgmsg("in cli_pdf(%s)\n", dir);
@@ -2377,6 +2423,21 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 #if HAVE_JSON
         if (pdfobj)
             cli_jsonbool(pdfobj, "BadVersion", 1);
+#endif
+    } else {
+#if HAVE_JSON
+        if (pdfobj) {
+            begin = (char *)(pdfver+5);
+            end = begin+2;
+            strtoul(end, &end, 10);
+            p1 = cli_calloc((end - begin) + 2, 1);
+            if (p1) {
+                strncpy(p1, begin, end - begin);
+                p1[end - begin] = '\0';
+                cli_jsonstr(pdfobj, "PDFVersion", p1);
+                free(p1);
+            }
+        }
 #endif
     }
 
@@ -2497,6 +2558,18 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     /* must parse after finding all objs, so we can flag indirect objects */
     for (i=0;i<pdf.nobjs;i++) {
         struct pdf_obj *obj = &pdf.objs[i];
+
+        if (cli_checktimelimit(ctx) != CL_SUCCESS) {
+            cli_errmsg("Timeout reached in the PDF parser\n");
+            pdf_export_json(&pdf);
+            free(pdf.objs);
+            if (pdf.fileID)
+                free(pdf.fileID);
+            if (pdf.key)
+                free(pdf.key);
+            return CL_ETIMEOUT;
+        }
+
         pdf_parseobj(&pdf, obj);
     }
 
@@ -2532,6 +2605,18 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     /* extract PDF objs */
     for (i=0;!rc && i<pdf.nobjs;i++) {
         struct pdf_obj *obj = &pdf.objs[i];
+
+        if (cli_checktimelimit(ctx) != CL_SUCCESS) {
+            cli_errmsg("Timeout reached in the PDF parser\n");
+            pdf_export_json(&pdf);
+            free(pdf.objs);
+            if (pdf.fileID)
+                free(pdf.fileID);
+            if (pdf.key)
+                free(pdf.key);
+            return CL_ETIMEOUT;
+        }
+
         rc = pdf_extract_obj(&pdf, obj, PDF_EXTRACT_OBJ_SCAN);
         switch (rc) {
             case CL_EFORMAT:
@@ -3098,15 +3183,6 @@ static void Pages_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname
     pdfobj = cli_jsonobj(pdf->ctx->wrkproperty, "PDFStats");
     if (!(pdfobj))
         return;
-
-    begin = cli_memstr(objstart, objsz, "<<", 2);
-    if (!(begin))
-        return;
-
-    dict = pdf_parse_dict(pdf, obj, objsz, begin, NULL);
-    if (dict) {
-        pdf_free_dict(dict);
-    }
 
     begin = cli_memstr(objstart, objsz, "/Kids", 5);
     if (!(begin))

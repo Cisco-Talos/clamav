@@ -17,6 +17,10 @@
 #include <openssl/err.h>
 #include "libclamav/crypto.h"
 
+#if HAVE_LIBXML2
+#include <libxml/parser.h>
+#endif
+
 #include "../libclamav/clamav.h"
 #include "../libclamav/others.h"
 #include "../libclamav/matcher.h"
@@ -1018,6 +1022,9 @@ int main(void)
     nf = srunner_ntests_failed(sr);
     srunner_free(sr);
 
+#if HAVE_LIBXML2
+    xmlCleanupParser();
+#endif
     cl_cleanup_crypto();
 
     return (nf == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
