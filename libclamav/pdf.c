@@ -2513,6 +2513,18 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     /* must parse after finding all objs, so we can flag indirect objects */
     for (i=0;i<pdf.nobjs;i++) {
         struct pdf_obj *obj = &pdf.objs[i];
+
+        if (cli_checktimelimit(ctx) != CL_SUCCESS) {
+            cli_errmsg("Timeout reached in the PDF parser\n");
+            pdf_export_json(&pdf);
+            free(pdf.objs);
+            if (pdf.fileID)
+                free(pdf.fileID);
+            if (pdf.key)
+                free(pdf.key);
+            return CL_ETIMEOUT;
+        }
+
         pdf_parseobj(&pdf, obj);
     }
 
@@ -2548,6 +2560,18 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     /* extract PDF objs */
     for (i=0;!rc && i<pdf.nobjs;i++) {
         struct pdf_obj *obj = &pdf.objs[i];
+
+        if (cli_checktimelimit(ctx) != CL_SUCCESS) {
+            cli_errmsg("Timeout reached in the PDF parser\n");
+            pdf_export_json(&pdf);
+            free(pdf.objs);
+            if (pdf.fileID)
+                free(pdf.fileID);
+            if (pdf.key)
+                free(pdf.key);
+            return CL_ETIMEOUT;
+        }
+
         rc = pdf_extract_obj(&pdf, obj, PDF_EXTRACT_OBJ_SCAN);
         switch (rc) {
             case CL_EFORMAT:
