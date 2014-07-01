@@ -73,6 +73,9 @@ static int ooxml_parse_value(json_object *wrkptr, const char *arrname, const xml
     int val;
 
     arrobj = cli_jsonarray(wrkptr, arrname);
+    if (arrobj == NULL) {
+        return CL_EMEM;
+    }
 
     if (ooxml_is_int(node_value, xmlStrlen(node_value), &val)) {
         newobj = json_object_new_int(val);
@@ -253,12 +256,15 @@ static int ooxml_parse_element(cli_ctx *ctx, xmlTextReaderPtr reader, json_objec
     }
     cli_dbgmsg("ooxml_parse_element: generated json object [%s]\n", element_tag);
 
+    if (rlvl == 0)
+        root = thisjobj;
+
     /* handle attributes */
     if (xmlTextReaderHasAttributes(reader) == 1) {
         json_object *attributes;
 
         attributes = cli_jsonobj(thisjobj, "Attributes");
-        if (!thisjobj) {
+        if (!attributes) {
             return CL_EPARSE;
         }
         cli_dbgmsg("ooxml_parse_element: retrieved json object [Attributes]\n");
@@ -275,6 +281,11 @@ static int ooxml_parse_element(cli_ctx *ctx, xmlTextReaderPtr reader, json_objec
         }
     }
 
+    if (xmlTextReaderIsEmptyElement(reader)) {
+        xmlTextReaderNext(reader);
+        return CL_SUCCESS;
+    }
+
     /* advance to first content node */
     if (xmlTextReaderRead(reader) != 1)
         return CL_EPARSE;
@@ -288,9 +299,6 @@ static int ooxml_parse_element(cli_ctx *ctx, xmlTextReaderPtr reader, json_objec
         node_type = xmlTextReaderNodeType(reader);
         switch (node_type) {
         case XML_READER_TYPE_ELEMENT:
-            if (rlvl == 0)
-                root = thisjobj;
-
             ret = ooxml_parse_element(ctx, reader, thisjobj, rlvl+1, root);
             if (ret != CL_SUCCESS) {
                 return ret;
@@ -344,7 +352,8 @@ static int ooxml_parse_element(cli_ctx *ctx, xmlTextReaderPtr reader, json_objec
 
             cli_dbgmsg("ooxml_parse_element: unhandled xml node %s [%d]: %s\n", node_name, node_type, node_value);
 #endif
-            return CL_EPARSE;
+            xmlTextReaderNext(reader);
+            return CL_SUCCESS;
         }
     }
 
@@ -370,6 +379,9 @@ static int ooxml_parse_document(int fd, cli_ctx *ctx)
     }
 
     ret = ooxml_parse_element(ctx, reader, ctx->wrkproperty, 0, NULL);
+
+    if (ret != CL_SUCCESS && ret != CL_ETIMEOUT)
+        cli_jsonbool(ctx->wrkproperty, "ParseError", 1);
 
     xmlTextReaderClose(reader);
     xmlFreeTextReader(reader);

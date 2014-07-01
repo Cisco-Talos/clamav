@@ -714,7 +714,7 @@ ole2_walk_property_tree(ole2_header_t * hdr, const char *dir, int32_t prop_index
                         name = get_property_name2(prop_block[idx].name, prop_block[idx].name_size);
                         if (name) {
                             if (!strcmp(name, "_xmlsignatures") || !strcmp(name, "_signatures")) {
-                                cli_jsonbool(ctx->wrkproperty, "DigitalSignatures", 1);
+                                cli_jsonbool(ctx->wrkproperty, "HasDigitalSignatures", 1);
                             }
                             free(name);
                         }
@@ -897,7 +897,7 @@ handler_writefile(ole2_header_t * hdr, property_t * prop, const char *dir, cli_c
 static int
 handler_enum(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * ctx)
 {
-    char           *name;
+    char           *name = NULL;
 #if HAVE_JSON
     json_object *arrobj, *strmobj;
 
@@ -924,24 +924,19 @@ handler_enum(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * 
             }
 
         }
-
-        if (!hdr->has_vba) {
+    }
+#endif
+    if (!hdr->has_vba) {
+        if (!name)
+            name = get_property_name2(prop->name, prop->name_size);
+        if (name) {
             if (!strcmp(name, "_vba_project") || !strcmp(name, "powerpoint document") || !strcmp(name, "worddocument") || !strcmp(name, "_1_ole10native"))
                 hdr->has_vba = 1;
         }
-        free(name);
     }
-#else
-        if (!hdr->has_vba) {
-            name = get_property_name2(prop->name, prop->name_size);
-            if (name) {
-                if (!strcmp(name, "_vba_project") || !strcmp(name, "powerpoint document") || !strcmp(name, "worddocument") || !strcmp(name, "_1_ole10native"))
-                    hdr->has_vba = 1;
-                free(name);
-            }
-        }
-#endif
 
+    if (name)
+        free(name)
     return CL_SUCCESS;
 }
 
