@@ -101,7 +101,6 @@ static void JavaScript_cb(struct pdf_struct *, struct pdf_obj *, struct pdfname_
 static void OpenAction_cb(struct pdf_struct *, struct pdf_obj *, struct pdfname_action *);
 static void Launch_cb(struct pdf_struct *, struct pdf_obj *, struct pdfname_action *);
 static void Page_cb(struct pdf_struct *, struct pdf_obj *, struct pdfname_action *);
-static void print_pdf_stats(struct pdf_struct *);
 static void Author_cb(struct pdf_struct *, struct pdf_obj *, struct pdfname_action *);
 static void Creator_cb(struct pdf_struct *, struct pdf_obj *, struct pdfname_action *);
 static void Producer_cb(struct pdf_struct *, struct pdf_obj *, struct pdfname_action *);
@@ -2682,10 +2681,6 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 
     pdf_export_json(&pdf);
 
-#if 0
-    print_pdf_stats(&pdf);
-#endif
-
     cli_dbgmsg("cli_pdf: returning %d\n", rc);
     free(pdf.objs);
     free(pdf.fileID);
@@ -2947,6 +2942,9 @@ static void JBIG2Decode_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct p
     if (!(pdf))
         return;
 
+    if (!(pdf->ctx->options & CL_SCAN_FILE_PROPERTIES))
+        return;
+
     if (!(pdf->ctx->wrkproperty))
         return;
 
@@ -3012,6 +3010,9 @@ static void JavaScript_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pd
     if (!(pdf))
         return;
 
+    if (!(pdf->ctx->options & CL_SCAN_FILE_PROPERTIES))
+        return;
+
     if (!(pdf->ctx->wrkproperty))
         return;
 
@@ -3059,6 +3060,9 @@ static void Author_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfnam
     if (!(pdf))
         return;
 
+    if (!(pdf->ctx->options & CL_SCAN_FILE_PROPERTIES))
+        return;
+
     if (!(pdf->stats.author))
         pdf->stats.author = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/Author", NULL);
 #endif
@@ -3068,6 +3072,9 @@ static void Creator_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfna
 {
 #if HAVE_JSON
     if (!(pdf))
+        return;
+
+    if (!(pdf->ctx->options & CL_SCAN_FILE_PROPERTIES))
         return;
 
     if (!(pdf->stats.creator))
@@ -3081,6 +3088,9 @@ static void ModificationDate_cb(struct pdf_struct *pdf, struct pdf_obj *obj, str
     if (!(pdf))
         return;
 
+    if (!(pdf->ctx->options & CL_SCAN_FILE_PROPERTIES))
+        return;
+
     if (!(pdf->stats.modificationdate))
         pdf->stats.modificationdate = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/ModDate", NULL);
 #endif
@@ -3090,6 +3100,9 @@ static void CreationDate_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct 
 {
 #if HAVE_JSON
     if (!(pdf))
+        return;
+
+    if (!(pdf->ctx->options & CL_SCAN_FILE_PROPERTIES))
         return;
 
     if (!(pdf->stats.creationdate))
@@ -3103,6 +3116,9 @@ static void Producer_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfn
     if (!(pdf))
         return;
 
+    if (!(pdf->ctx->options & CL_SCAN_FILE_PROPERTIES))
+        return;
+
     if (!(pdf->stats.producer))
         pdf->stats.producer = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/Producer", NULL);
 #endif
@@ -3112,6 +3128,9 @@ static void Title_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname
 {
 #if HAVE_JSON
     if (!(pdf))
+        return;
+
+    if (!(pdf->ctx->options & CL_SCAN_FILE_PROPERTIES))
         return;
 
     if (!(pdf->stats.title))
@@ -3125,6 +3144,9 @@ static void Keywords_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfn
     if (!(pdf))
         return;
 
+    if (!(pdf->ctx->options & CL_SCAN_FILE_PROPERTIES))
+        return;
+
     if (!(pdf->stats.keywords))
         pdf->stats.keywords = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/Keywords", NULL);
 #endif
@@ -3134,6 +3156,9 @@ static void Subject_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfna
 {
 #if HAVE_JSON
     if (!(pdf))
+        return;
+
+    if (!(pdf->ctx->options & CL_SCAN_FILE_PROPERTIES))
         return;
 
     if (!(pdf->stats.subject))
@@ -3178,6 +3203,9 @@ static void Pages_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname
     json_object *pdfobj;
 
     if (!(pdf) || !(pdf->ctx->wrkproperty))
+        return;
+
+    if (!(pdf->ctx->options & CL_SCAN_FILE_PROPERTIES))
         return;
 
     pdfobj = cli_jsonobj(pdf->ctx->wrkproperty, "PDFStats");
@@ -3235,6 +3263,9 @@ static void Colors_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfnam
     if (!(pdf) || !(pdf->ctx) || !(pdf->ctx->wrkproperty))
         return;
 
+    if (!(pdf->ctx->options & CL_SCAN_FILE_PROPERTIES))
+        return;
+
     start = obj->start + pdf->map;
 
     p1 = cli_memstr(start, objsz, "/Colors", 7);
@@ -3269,36 +3300,6 @@ static void Colors_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfnam
 
     cli_jsonint_array(colorsobj, obj->id>>8);
 #endif
-}
-
-static void print_pdf_stats(struct pdf_struct *pdf)
-{
-    if (!(pdf))
-        return;
-
-    cli_dbgmsg("Statistics collected from PDF:\n");
-    cli_dbgmsg("    Invalid Objects:\t\t\t\t%u\n", pdf->stats.ninvalidobjs);
-    cli_dbgmsg("    Number of JavaScript Objects:\t\t%u\n", pdf->stats.njs);
-    cli_dbgmsg("    Number of Inflate-Encoded Objects:\t\t%u\n", pdf->stats.nflate);
-    cli_dbgmsg("    Number of ActiveX Objects:\t\t\t%u\n", pdf->stats.nactivex);
-    cli_dbgmsg("    Number of Flash Objects:\t\t\t%u\n", pdf->stats.nflash);
-    cli_dbgmsg("    Number of Declared Colors:\t\t\t%u\n", pdf->stats.ncolors);
-    cli_dbgmsg("    Number of ASCIIHexEncoded Objects:\t\t%u\n", pdf->stats.nasciihexdecode);
-    cli_dbgmsg("    Number of ASCII85Encoded Objects:\t\t%u\n", pdf->stats.nascii85decode);
-    cli_dbgmsg("    Number of Embedded Files:\t\t\t%u\n", pdf->stats.nembeddedfile);
-    cli_dbgmsg("    Number of Image Objects:\t\t\t%u\n", pdf->stats.nimage);
-    cli_dbgmsg("    Number of LZW-Encoded Objects:\t\t%u\n", pdf->stats.nlzw);
-    cli_dbgmsg("    Number of RunLengthEncoded Objects:\t%u\n", pdf->stats.nrunlengthdecode);
-    cli_dbgmsg("    Number of Fax-Encoded Objects:\t\t%u\n", pdf->stats.nfaxdecode);
-    cli_dbgmsg("    Number of JBIG2-Encoded Objects:\t\t%u\n", pdf->stats.njbig2decode);
-    cli_dbgmsg("    Number of DCT-Encoded Objects:\t\t%u\n", pdf->stats.ndctdecode);
-    cli_dbgmsg("    Number of JPX-Encoded Objects:\t\t%u\n", pdf->stats.njpxdecode);
-    cli_dbgmsg("    Number of Crypt-Encoded Objects:\t\t%u\n", pdf->stats.ncrypt);
-    cli_dbgmsg("    Number of Standard-Filtered Objects:\t%u\n", pdf->stats.nstandard);
-    cli_dbgmsg("    Number of Signed Objects:\t\t\t%u\n", pdf->stats.nsigned);
-    cli_dbgmsg("    Number of Open Actions:\t\t\t%u\n", pdf->stats.nopenaction);
-    cli_dbgmsg("    Number of Launch Objects:\t\t\t%u\n", pdf->stats.nlaunch);
-    cli_dbgmsg("    Number of Objects with /Pages:\t\t%u\n", pdf->stats.npage);
 }
 
 static void pdf_export_json(struct pdf_struct *pdf)
