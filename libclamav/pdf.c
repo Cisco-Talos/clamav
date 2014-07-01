@@ -101,7 +101,6 @@ static void JavaScript_cb(struct pdf_struct *, struct pdf_obj *, struct pdfname_
 static void OpenAction_cb(struct pdf_struct *, struct pdf_obj *, struct pdfname_action *);
 static void Launch_cb(struct pdf_struct *, struct pdf_obj *, struct pdfname_action *);
 static void Page_cb(struct pdf_struct *, struct pdf_obj *, struct pdfname_action *);
-static void print_pdf_stats(struct pdf_struct *);
 static void Author_cb(struct pdf_struct *, struct pdf_obj *, struct pdfname_action *);
 static void Creator_cb(struct pdf_struct *, struct pdf_obj *, struct pdfname_action *);
 static void Producer_cb(struct pdf_struct *, struct pdf_obj *, struct pdfname_action *);
@@ -2682,10 +2681,6 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 
     pdf_export_json(&pdf);
 
-#if 0
-    print_pdf_stats(&pdf);
-#endif
-
     cli_dbgmsg("cli_pdf: returning %d\n", rc);
     free(pdf.objs);
     free(pdf.fileID);
@@ -3305,36 +3300,6 @@ static void Colors_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfnam
 
     cli_jsonint_array(colorsobj, obj->id>>8);
 #endif
-}
-
-static void print_pdf_stats(struct pdf_struct *pdf)
-{
-    if (!(pdf))
-        return;
-
-    cli_dbgmsg("Statistics collected from PDF:\n");
-    cli_dbgmsg("    Invalid Objects:\t\t\t\t%u\n", pdf->stats.ninvalidobjs);
-    cli_dbgmsg("    Number of JavaScript Objects:\t\t%u\n", pdf->stats.njs);
-    cli_dbgmsg("    Number of Inflate-Encoded Objects:\t\t%u\n", pdf->stats.nflate);
-    cli_dbgmsg("    Number of ActiveX Objects:\t\t\t%u\n", pdf->stats.nactivex);
-    cli_dbgmsg("    Number of Flash Objects:\t\t\t%u\n", pdf->stats.nflash);
-    cli_dbgmsg("    Number of Declared Colors:\t\t\t%u\n", pdf->stats.ncolors);
-    cli_dbgmsg("    Number of ASCIIHexEncoded Objects:\t\t%u\n", pdf->stats.nasciihexdecode);
-    cli_dbgmsg("    Number of ASCII85Encoded Objects:\t\t%u\n", pdf->stats.nascii85decode);
-    cli_dbgmsg("    Number of Embedded Files:\t\t\t%u\n", pdf->stats.nembeddedfile);
-    cli_dbgmsg("    Number of Image Objects:\t\t\t%u\n", pdf->stats.nimage);
-    cli_dbgmsg("    Number of LZW-Encoded Objects:\t\t%u\n", pdf->stats.nlzw);
-    cli_dbgmsg("    Number of RunLengthEncoded Objects:\t%u\n", pdf->stats.nrunlengthdecode);
-    cli_dbgmsg("    Number of Fax-Encoded Objects:\t\t%u\n", pdf->stats.nfaxdecode);
-    cli_dbgmsg("    Number of JBIG2-Encoded Objects:\t\t%u\n", pdf->stats.njbig2decode);
-    cli_dbgmsg("    Number of DCT-Encoded Objects:\t\t%u\n", pdf->stats.ndctdecode);
-    cli_dbgmsg("    Number of JPX-Encoded Objects:\t\t%u\n", pdf->stats.njpxdecode);
-    cli_dbgmsg("    Number of Crypt-Encoded Objects:\t\t%u\n", pdf->stats.ncrypt);
-    cli_dbgmsg("    Number of Standard-Filtered Objects:\t%u\n", pdf->stats.nstandard);
-    cli_dbgmsg("    Number of Signed Objects:\t\t\t%u\n", pdf->stats.nsigned);
-    cli_dbgmsg("    Number of Open Actions:\t\t\t%u\n", pdf->stats.nopenaction);
-    cli_dbgmsg("    Number of Launch Objects:\t\t\t%u\n", pdf->stats.nlaunch);
-    cli_dbgmsg("    Number of Objects with /Pages:\t\t%u\n", pdf->stats.npage);
 }
 
 static void pdf_export_json(struct pdf_struct *pdf)
