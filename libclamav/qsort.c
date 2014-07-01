@@ -32,10 +32,7 @@
 
 #include <stdlib.h>
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
+#include "clamav.h"
 #include "platform.h"
 #include "cltypes.h"
 #include "others.h"

@@ -60,10 +60,6 @@
 #include <errno.h>
 #include <zlib.h>
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include "target.h"
 
 #include "freshclamcodes.h"

@@ -64,10 +64,7 @@ static	char	const	rcsid[] = "$Id: mbox.c,v 1.381 2007/02/15 12:26:44 njh Exp $";
 #include <pthread.h>
 #endif
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
+#include "clamav.h"
 #include "others.h"
 #include "str.h"
 #include "filetypes.h"

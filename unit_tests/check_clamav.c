@@ -13,10 +13,6 @@
 #include <dirent.h>
 #include <sys/mman.h>
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #if HAVE_LIBXML2
 #include <libxml/parser.h>
 #endif

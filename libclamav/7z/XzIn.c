@@ -8,10 +8,7 @@
 #include <Windows.h>
 #endif
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
+#include "clamav.h"
 #include "7zCrc.h"
 #include "CpuArch.h"
 #include "Xz.h"

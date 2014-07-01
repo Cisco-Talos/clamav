@@ -47,15 +47,12 @@ static	char	const	rcsid[] = "$Id: message.c,v 1.195 2007/02/12 20:46:09 njh Exp 
 #include <pthread.h>
 #endif
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include "others.h"
 #include "str.h"
 #include "filetypes.h"
 
 #include "mbox.h"
+#include "clamav.h"
 
 #ifndef isblank
 #define isblank(c)	(((c) == ' ') || ((c) == '\t'))

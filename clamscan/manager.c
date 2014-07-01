@@ -48,10 +48,6 @@
 #include <errno.h>
 #include <target.h>
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include "manager.h"
 #include "global.h"
 

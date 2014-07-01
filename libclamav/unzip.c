@@ -36,10 +36,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include <zlib.h>
 #include "inflate64.h"
 #if HAVE_BZLIB_H

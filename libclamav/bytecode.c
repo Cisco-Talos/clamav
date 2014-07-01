@@ -28,10 +28,6 @@
 #include <assert.h>
 #include <fcntl.h>
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include "dconf.h"
 #include "clamav.h"
 #include "others.h"

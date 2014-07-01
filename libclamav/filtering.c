@@ -23,10 +23,7 @@
 #include "clamav-config.h"
 #endif
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
+#include "clamav.h"
 #include "filtering.h"
 #include "matcher-ac.h"
 #include <string.h>

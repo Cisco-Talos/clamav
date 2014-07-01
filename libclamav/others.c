@@ -65,10 +65,6 @@
 #include <libxml/parser.h>
 #endif
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include "clamav.h"
 #include "others.h"
 #include "cltypes.h"

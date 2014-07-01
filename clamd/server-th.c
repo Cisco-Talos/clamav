@@ -40,10 +40,6 @@
 #include <unistd.h>
 #endif
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include <fcntl.h>
 #ifdef C_SOLARIS
 #include <stdio_ext.h>

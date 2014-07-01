@@ -50,10 +50,6 @@
 #include <syslog.h>
 #endif
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include "output.h"
 #include "libclamav/clamav.h"
 #include "libclamav/others.h"

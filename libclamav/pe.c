@@ -35,10 +35,6 @@
 #include <time.h>
 #include <stdarg.h>
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include "cltypes.h"
 #include "clamav.h"
 #include "others.h"

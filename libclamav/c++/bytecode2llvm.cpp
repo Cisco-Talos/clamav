@@ -128,13 +128,6 @@ void LLVMInitializePowerPCAsmPrinter();
 #include "clamav-config.h"
 #endif
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-
-extern "C" {
-#include "libclamav/crypto.h"
-}
-
 #include "dconf.h"
 #include "clamav.h"
 #include "clambc.h"

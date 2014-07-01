@@ -22,10 +22,7 @@
 #include "clamav-config.h"
 #endif
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
+#include "clamav.h"
 #include "7z/XzCrc64.h"
 #include "xz_iface.h"
 

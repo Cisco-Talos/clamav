@@ -23,10 +23,7 @@
 #include <Windows.h>
 #endif
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
+#include "clamav.h"
 #include "7z_iface.h"
 #include "lzma_iface.h"
 #include "scanners.h"

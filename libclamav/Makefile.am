@@ -76,7 +76,6 @@ libclamav_internal_utils_la_SOURCES=str.c\
 					conv.c \
 					conv.h \
 					crypto.c \
-					crypto.h \
 					clamav.h \
 				    iowrap.c \
 				    iowrap.h \
@@ -102,7 +101,6 @@ libclamav_internal_utils_nothreads_la_SOURCES=str.c\
 					conv.c \
 					conv.h \
 					crypto.c \
-					crypto.h \
 					clamav.h \
 				    str.h\
 				    iowrap.c \

@@ -45,10 +45,6 @@
 #include <time.h>
 #include <zlib.h>
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include "cltypes.h"
 #include "swf.h"
 #include "clamav.h"

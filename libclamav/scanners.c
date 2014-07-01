@@ -44,10 +44,6 @@
 #include <sys/times.h>
 #endif
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #define DCONF_ARCH  ctx->dconf->archive
 #define DCONF_DOC   ctx->dconf->doc
 #define DCONF_MAIL  ctx->dconf->mail
