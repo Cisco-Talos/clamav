@@ -2947,6 +2947,9 @@ static void JBIG2Decode_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct p
     if (!(pdf))
         return;
 
+    if (!(pdf->ctx->options & CL_SCAN_FILE_PROPERTIES))
+        return;
+
     if (!(pdf->ctx->wrkproperty))
         return;
 
@@ -3012,6 +3015,9 @@ static void JavaScript_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pd
     if (!(pdf))
         return;
 
+    if (!(pdf->ctx->options & CL_SCAN_FILE_PROPERTIES))
+        return;
+
     if (!(pdf->ctx->wrkproperty))
         return;
 
@@ -3059,6 +3065,9 @@ static void Author_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfnam
     if (!(pdf))
         return;
 
+    if (!(pdf->ctx->options & CL_SCAN_FILE_PROPERTIES))
+        return;
+
     if (!(pdf->stats.author))
         pdf->stats.author = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/Author", NULL);
 #endif
@@ -3068,6 +3077,9 @@ static void Creator_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfna
 {
 #if HAVE_JSON
     if (!(pdf))
+        return;
+
+    if (!(pdf->ctx->options & CL_SCAN_FILE_PROPERTIES))
         return;
 
     if (!(pdf->stats.creator))
@@ -3081,6 +3093,9 @@ static void ModificationDate_cb(struct pdf_struct *pdf, struct pdf_obj *obj, str
     if (!(pdf))
         return;
 
+    if (!(pdf->ctx->options & CL_SCAN_FILE_PROPERTIES))
+        return;
+
     if (!(pdf->stats.modificationdate))
         pdf->stats.modificationdate = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/ModDate", NULL);
 #endif
@@ -3090,6 +3105,9 @@ static void CreationDate_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct 
 {
 #if HAVE_JSON
     if (!(pdf))
+        return;
+
+    if (!(pdf->ctx->options & CL_SCAN_FILE_PROPERTIES))
         return;
 
     if (!(pdf->stats.creationdate))
@@ -3103,6 +3121,9 @@ static void Producer_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfn
     if (!(pdf))
         return;
 
+    if (!(pdf->ctx->options & CL_SCAN_FILE_PROPERTIES))
+        return;
+
     if (!(pdf->stats.producer))
         pdf->stats.producer = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/Producer", NULL);
 #endif
@@ -3112,6 +3133,9 @@ static void Title_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname
 {
 #if HAVE_JSON
     if (!(pdf))
+        return;
+
+    if (!(pdf->ctx->options & CL_SCAN_FILE_PROPERTIES))
         return;
 
     if (!(pdf->stats.title))
@@ -3125,6 +3149,9 @@ static void Keywords_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfn
     if (!(pdf))
         return;
 
+    if (!(pdf->ctx->options & CL_SCAN_FILE_PROPERTIES))
+        return;
+
     if (!(pdf->stats.keywords))
         pdf->stats.keywords = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/Keywords", NULL);
 #endif
@@ -3134,6 +3161,9 @@ static void Subject_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfna
 {
 #if HAVE_JSON
     if (!(pdf))
+        return;
+
+    if (!(pdf->ctx->options & CL_SCAN_FILE_PROPERTIES))
         return;
 
     if (!(pdf->stats.subject))
@@ -3178,6 +3208,9 @@ static void Pages_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname
     json_object *pdfobj;
 
     if (!(pdf) || !(pdf->ctx->wrkproperty))
+        return;
+
+    if (!(pdf->ctx->options & CL_SCAN_FILE_PROPERTIES))
         return;
 
     pdfobj = cli_jsonobj(pdf->ctx->wrkproperty, "PDFStats");
@@ -3233,6 +3266,9 @@ static void Colors_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfnam
     size_t objsz = obj_size(pdf, obj, 1);
 
     if (!(pdf) || !(pdf->ctx) || !(pdf->ctx->wrkproperty))
+        return;
+
+    if (!(pdf->ctx->options & CL_SCAN_FILE_PROPERTIES))
         return;
 
     start = obj->start + pdf->map;
