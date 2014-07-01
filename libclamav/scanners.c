@@ -2591,7 +2591,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
                     early_ret_from_magicscan(CL_EMEM);       
                 }
                 ctx->wrkproperty = ctx->properties;
-                ret = cli_jsonstr(ctx->properties, "Magic", "JSON");
+                ret = cli_jsonstr(ctx->properties, "Magic", "CLAMJSON");
                 if (ret != CL_SUCCESS) {
                     early_ret_from_magicscan(ret);
                 }
