@@ -64,24 +64,36 @@ static int ooxml_is_int(const char *value, size_t len, int32_t *val)
     return 1;
 }
 
-static int ooxml_parse_value(json_object *wrkptr, const char *element_tag, const xmlChar *node_value)
+static int ooxml_parse_value(json_object *wrkptr, const char *arrname, const xmlChar *node_value)
 {
-    int ret = CL_SUCCESS;
+    json_object *newobj, *arrobj;
     int val;
 
+    arrobj = cli_jsonarray(wrkptr, arrname);
+    if (arrobj == NULL) {
+        return CL_EMEM;
+    }
+
     if (ooxml_is_int(node_value, xmlStrlen(node_value), &val)) {
-        ret = cli_jsonint(wrkptr, element_tag, val);
+        newobj = json_object_new_int(val);
     }
     else if (!xmlStrcmp(node_value, "true")) {
-        ret = cli_jsonbool(wrkptr, element_tag, 1);
+        newobj = json_object_new_boolean(1);
     }
     else if (!xmlStrcmp(node_value, "false")) {
-        ret = cli_jsonbool(wrkptr, element_tag, 0);
+        newobj = json_object_new_boolean(0);
     }
     else {
-        ret = cli_jsonstr(wrkptr, element_tag, node_value);
+        newobj = json_object_new_string(node_value);
     }
-    return ret;
+
+    if (NULL == newobj) {
+        cli_errmsg("ooxml_parse_value: no memory for json value for [%s]\n", arrname);
+        return CL_EMEM;
+    }
+
+    json_object_array_add(arrobj, newobj);
+    return CL_SUCCESS;
 }
 
 static const char *ooxml_keys[] = {
@@ -199,7 +211,7 @@ static int ooxml_parse_element(cli_ctx *ctx, xmlTextReaderPtr reader, json_objec
 {
     const char *element_tag = NULL, *end_tag = NULL;
     const xmlChar *node_name = NULL, *node_value = NULL;
-    json_object *thisjobj;
+    json_object *thisjobj = NULL;
     int node_type, ret = CL_SUCCESS, endtag = 0, toval = 0;
 
     cli_dbgmsg("in ooxml_parse_element @ layer %d\n", rlvl);
@@ -234,7 +246,42 @@ static int ooxml_parse_element(cli_ctx *ctx, xmlTextReaderPtr reader, json_objec
         return CL_SUCCESS;
     }
 
-    /* handle attributes if you want */
+    /* generate json object */
+    thisjobj = cli_jsonobj(wrkptr, element_tag);
+    if (!thisjobj) {
+        return CL_EPARSE;
+    }
+    cli_dbgmsg("ooxml_parse_element: generated json object [%s]\n", element_tag);
+
+    if (rlvl == 0)
+        root = thisjobj;
+
+    /* handle attributes */
+    if (xmlTextReaderHasAttributes(reader) == 1) {
+        json_object *attributes;
+
+        attributes = cli_jsonobj(thisjobj, "Attributes");
+        if (!attributes) {
+            return CL_EPARSE;
+        }
+        cli_dbgmsg("ooxml_parse_element: retrieved json object [Attributes]\n");
+
+        while (xmlTextReaderMoveToNextAttribute(reader) == 1) {
+            const xmlChar *name, *value;
+            name = xmlTextReaderConstLocalName(reader);
+            value = xmlTextReaderConstValue(reader);
+            if (name == NULL || value == NULL) continue;
+
+            cli_dbgmsg("%s: %s\n", name, value);
+
+            cli_jsonstr(attributes, name, value);
+        }
+    }
+
+    if (xmlTextReaderIsEmptyElement(reader)) {
+        xmlTextReaderNext(reader);
+        return CL_SUCCESS;
+    }
 
     /* advance to first content node */
     if (xmlTextReaderRead(reader) != 1)
@@ -249,16 +296,6 @@ static int ooxml_parse_element(cli_ctx *ctx, xmlTextReaderPtr reader, json_objec
         node_type = xmlTextReaderNodeType(reader);
         switch (node_type) {
         case XML_READER_TYPE_ELEMENT:
-            /* generate json object node */
-            thisjobj = cli_jsonobj(wrkptr, element_tag);
-            if (!thisjobj) {
-                return CL_EPARSE;
-            }
-            cli_dbgmsg("ooxml_parse_element: retrieved json object [%s]\n", element_tag);
-
-            if (rlvl == 0)
-                root = thisjobj;
-
             ret = ooxml_parse_element(ctx, reader, thisjobj, rlvl+1, root);
             if (ret != CL_SUCCESS) {
                 return ret;
@@ -293,7 +330,7 @@ static int ooxml_parse_element(cli_ctx *ctx, xmlTextReaderPtr reader, json_objec
         case XML_READER_TYPE_TEXT:
             node_value = xmlTextReaderConstValue(reader);
 
-            ret = ooxml_parse_value(wrkptr, element_tag, node_value);
+            ret = ooxml_parse_value(thisjobj, "Value", node_value);
             if (ret != CL_SUCCESS)
                 return ret;
 
@@ -312,7 +349,8 @@ static int ooxml_parse_element(cli_ctx *ctx, xmlTextReaderPtr reader, json_objec
 
             cli_dbgmsg("ooxml_parse_element: unhandled xml node %s [%d]: %s\n", node_name, node_type, node_value);
 #endif
-            return CL_EPARSE;
+            xmlTextReaderNext(reader);
+            return CL_SUCCESS;
         }
     }
 
@@ -338,6 +376,9 @@ static int ooxml_parse_document(int fd, cli_ctx *ctx)
     }
 
     ret = ooxml_parse_element(ctx, reader, ctx->wrkproperty, 0, NULL);
+
+    if (ret != CL_SUCCESS && ret != CL_ETIMEOUT)
+        cli_jsonbool(ctx->wrkproperty, "ParseError", 1);
 
     xmlTextReaderClose(reader);
     xmlFreeTextReader(reader);
