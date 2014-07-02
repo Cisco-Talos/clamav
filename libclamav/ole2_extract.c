@@ -226,7 +226,7 @@ get_property_name2(char *name, int size)
     int             i, j;
     char           *newname;
 
-    if (*name == 0 || size <= 0 || size > 64) {
+    if (*name == 0 || size <= 0 || size > 128) {
         return NULL;
     }
     newname = (char *)cli_malloc(size * 7);
@@ -1304,11 +1304,11 @@ abort:
 
 #define WINUNICODE 0x04B0
 #define PROPCNTLIMIT 25
-#define PROPSTRLIMIT 100
+#define PROPSTRLIMIT 62
 
 #define sum16_endian_convert(v) le16_to_host((uint16_t)(v))
 #define sum32_endian_convert(v) le32_to_host((uint32_t)(v))
-#define sum64_endian_convert(v) le64_to_host((uint32_t)(v))
+#define sum64_endian_convert(v) le64_to_host((uint64_t)(v))
 
 enum summary_pidsi {
     SPID_CODEPAGE   = 0x00000001,
@@ -1402,13 +1402,16 @@ typedef struct propset_summary_entry {
 } propset_entry_t;
 
 /* metadata structures */
-#define OLE2_SUMMARY_ERROR_TOOSMALL 0x00000001
-#define OLE2_SUMMARY_ERROR_OOB      0x00000002
-#define OLE2_SUMMARY_ERROR_DATABUF  0x00000004
+#define OLE2_SUMMARY_ERROR_TOOSMALL      0x00000001
+#define OLE2_SUMMARY_ERROR_OOB           0x00000002
+#define OLE2_SUMMARY_ERROR_DATABUF       0x00000004
 #define OLE2_SUMMARY_ERROR_INVALID_ENTRY 0x00000008
-#define OLE2_SUMMARY_LIMIT_PROPS    0x00000010
-#define OLE2_SUMMARY_FLAG_TIMEOUT   0x00000020
-#define OLE2_SUMMARY_FLAG_CODEPAGE  0x00000040
+#define OLE2_SUMMARY_LIMIT_PROPS         0x00000010
+#define OLE2_SUMMARY_FLAG_TIMEOUT        0x00000020
+#define OLE2_SUMMARY_FLAG_CODEPAGE       0x00000040
+#define OLE2_SUMMARY_FLAG_UNKNOWN_PROPID 0x00000080
+#define OLE2_SUMMARY_FLAG_UNHANDLED_PROPTYPE 0x00000100
+#define OLE2_SUMMARY_FLAG_TRUNC_STR      0x00000200
 
 typedef struct summary_ctx {
     cli_ctx *ctx;
@@ -1455,14 +1458,13 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
 
     //cli_dbgmsg("proptype: 0x%04x\n", proptype);
     if (padding != 0) {
+        cli_dbgmsg("ole2_process_property: invalid padding value, non-zero\n");
         sctx->flags |= OLE2_SUMMARY_ERROR_INVALID_ENTRY;
         return CL_EFORMAT;
     }
 
     switch (proptype) {
     case PT_EMPTY:
-        ret = cli_jsonnull(sctx->summary, sctx->propname);
-        break;
     case PT_NULL:
         ret = cli_jsonnull(sctx->summary, sctx->propname);
         break;
@@ -1478,7 +1480,8 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
             /* endian conversion */
             dout = sum16_endian_convert(dout);
 
-            if (sctx->writecp) sctx->codepage = dout;
+            if (sctx->writecp)
+                sctx->codepage = dout;
 
             ret = cli_jsonint(sctx->summary, sctx->propname, dout);
             break;
@@ -1508,7 +1511,8 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
             }
             memcpy(&dout, databuf+offset, sizeof(dout));
             offset+=sizeof(dout);
-            /* TODO - endian conversion */
+            /* endian conversion */
+            dout = sum32_endian_convert(dout);
 
             ret = cli_jsondouble(sctx->summary, sctx->propname, dout);
             break;
@@ -1523,7 +1527,8 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
             }
             memcpy(&dout, databuf+offset, sizeof(dout));
             offset+=sizeof(dout);
-            /* TODO - endian conversion */
+            /* endian conversion */
+            dout = sum64_endian_convert(dout);
 
             ret = cli_jsondouble(sctx->summary, sctx->propname, dout);
             break;
@@ -1582,7 +1587,8 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
             /* endian conversion */
             dout = sum16_endian_convert(dout);
 
-            if (sctx->writecp) sctx->codepage = dout;
+            if (sctx->writecp)
+                sctx->codepage = dout;
 
             ret = cli_jsonint(sctx->summary, sctx->propname, dout);
             break;
@@ -1651,7 +1657,8 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
 
             memcpy(&strsize, databuf+offset, sizeof(strsize));
             offset+=sizeof(strsize);
-            /* no need for endian conversion */
+            /* endian conversion */
+            strsize = sum32_endian_convert(strsize);
 
             if (offset+strsize > sctx->pssize) {
                 sctx->flags |= OLE2_SUMMARY_ERROR_OOB;
@@ -1662,15 +1669,15 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
             if (strsize > PROPSTRLIMIT) {
                 cli_dbgmsg("ole2_process_property: property string sized %lu truncated to size %lu\n",
                            (unsigned long)strsize, (unsigned long)PROPSTRLIMIT);
+                sctx->flags |= OLE2_SUMMARY_FLAG_TRUNC_STR;
                 strsize = PROPSTRLIMIT;
             }
 
-            outstr = cli_malloc(strsize+1);
+            outstr = cli_calloc(strsize+1, 1); /* last char must be NULL */
             if (!outstr) {
                 return CL_EMEM;
             }
             strncpy(outstr, databuf+offset, strsize);
-            outstr[strsize] = '\0'; /* guarentee a NULL-termination */
             ret = cli_jsonstr(sctx->summary, sctx->propname, outstr);
             free(outstr);
             break;
@@ -1687,9 +1694,12 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
             }
             memcpy(&strsize, databuf+offset, sizeof(strsize));
             offset+=sizeof(strsize);
-            /* no need for endian conversion */
+            /* endian conversion */
+            strsize = sum32_endian_convert(strsize);
+            
             if (proptype == PT_LPSTR) { /* fall-through specifics */
                 if (strsize % 2) {
+                    cli_dbgmsg("ole2_process_property: LPSTR using wchar not sized a multiple of 2\n");
                     sctx->flags |= OLE2_SUMMARY_ERROR_INVALID_ENTRY;
                     return CL_EFORMAT;
                 }
@@ -1698,20 +1708,26 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
                 strsize*=2; /* Unicode strings are by length, not size */
             }
 
+            /* limitation on string length */
+            if (strsize > (2*PROPSTRLIMIT)) {
+                cli_dbgmsg("ole2_process_property: property string sized %lu truncated to size %lu\n",
+                           (unsigned long)strsize, (unsigned long)(2*PROPSTRLIMIT));
+                sctx->flags |= OLE2_SUMMARY_FLAG_TRUNC_STR;
+                strsize = (2*PROPSTRLIMIT);
+            }
+
             if (offset+strsize > sctx->pssize) {
                 sctx->flags |= OLE2_SUMMARY_ERROR_OOB;
                 return CL_EFORMAT;
             }
-            outstr = cli_malloc(strsize+2);
+            outstr = cli_calloc(strsize+2, 1); /* last two chars must be NULL */
             if (!outstr) {
                 return CL_EMEM;
             }
             strncpy(outstr, databuf+offset, strsize);
-            outstr[strsize] = '\0'; /* guarentee a UTF-16 NULL-termination */
-            outstr[strsize+1] = '\0';
             outstr2 = (char*)get_property_name2(outstr, strsize);
             if (outstr2) {
-                ret = cli_jsonstr(sctx->summary, sctx->propname, outstr);
+                ret = cli_jsonstr(sctx->summary, sctx->propname, outstr2);
                 free(outstr2);
             }
             free(outstr);
@@ -1747,14 +1763,12 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
             else {
                 ret = cli_jsonint(sctx->summary, sctx->propname, (uint32_t)(utime & 0xFFFFFFFF));
             }
-
-            /* human-readble string JSON output */
-            //ret = cli_jsonstr(sctx->summary, sctx->propname, ctime((timer_t*)&utime));
             break;
 	}
     default:
         cli_dbgmsg("ole2_process_property: unhandled property type 0x%04x for %s property\n", 
                    proptype, sctx->propname);
+        sctx->flags |= OLE2_SUMMARY_FLAG_UNHANDLED_PROPTYPE;
     }
 
     return ret;
@@ -1765,62 +1779,89 @@ static void ole2_translate_docsummary_propid(summary_ctx_t *sctx, uint32_t propi
     switch(propid) {
     case DSPID_CODEPAGE:
         sctx->writecp = 1; /* must be set ONLY for codepage */
-        if (!sctx->propname) sctx->propname = "CodePage";
+        sctx->propname = "CodePage";
+        break;
     case DSPID_CATEGORY:
-        if (!sctx->propname) sctx->propname = "Category";
+        sctx->propname = "Category";
+        break;
     case DSPID_PRESFORMAT:
-        if (!sctx->propname) sctx->propname = "PresentationTarget";
+        sctx->propname = "PresentationTarget";
+        break;
     case DSPID_BYTECOUNT:
-        if (!sctx->propname) sctx->propname = "Bytes";
+        sctx->propname = "Bytes";
+        break;
     case DSPID_LINECOUNT:
-        if (!sctx->propname) sctx->propname = "Lines";
+        sctx->propname = "Lines";
+        break;
     case DSPID_PARCOUNT:
-        if (!sctx->propname) sctx->propname = "Paragraphs";
+        sctx->propname = "Paragraphs";
+        break;
     case DSPID_SLIDECOUNT:
-        if (!sctx->propname) sctx->propname = "Slides";
+        sctx->propname = "Slides";
+        break;
     case DSPID_NOTECOUNT:
-        if (!sctx->propname) sctx->propname = "Notes";
+        sctx->propname = "Notes";
+        break;
     case DSPID_HIDDENCOUNT:
-        if (!sctx->propname) sctx->propname = "HiddenSlides";
+        sctx->propname = "HiddenSlides";
+        break;
     case DSPID_MMCLIPCOUNT:
-        if (!sctx->propname) sctx->propname = "MMClips";
+        sctx->propname = "MMClips";
+        break;
     case DSPID_SCALE:
-        if (!sctx->propname) sctx->propname = "Scale";
+        sctx->propname = "Scale";
+        break;
     case DSPID_HEADINGPAIR: /* VT_VARIANT | VT_VECTOR */
-        if (!sctx->propname) sctx->propname = "HeadingPairs";
+        sctx->propname = "HeadingPairs";
+        break;
     case DSPID_DOCPARTS:    /* VT_VECTOR | VT_LPSTR */
-        if (!sctx->propname) sctx->propname = "DocPartTitles";
+        sctx->propname = "DocPartTitles";
+        break;
     case DSPID_MANAGER:
-        if (!sctx->propname) sctx->propname = "Manager";
+        sctx->propname = "Manager";
+        break;
     case DSPID_COMPANY:
-        if (!sctx->propname) sctx->propname = "Company";
+        sctx->propname = "Company";
+        break;
     case DSPID_LINKSDIRTY:
-        if (!sctx->propname) sctx->propname = "LinksDirty";
+        sctx->propname = "LinksDirty";
+        break;
     case DSPID_CCHWITHSPACES:
-        if (!sctx->propname) sctx->propname = "Char&WSCount";
+        sctx->propname = "Char&WSCount";
+        break;
     case DSPID_SHAREDDOC:   /* SHOULD BE FALSE! */
-        if (!sctx->propname) sctx->propname = "SharedDoc";
+        sctx->propname = "SharedDoc";
+        break;
     case DSPID_LINKBASE:    /* moved to user-defined */
-        if (!sctx->propname) sctx->propname = "LinkBase";
+        sctx->propname = "LinkBase";
+        break;
     case DSPID_HLINKS:      /* moved to user-defined */
-        if (!sctx->propname) sctx->propname = "HyperLinks";
+        sctx->propname = "HyperLinks";
+        break;
     case DSPID_HYPERLINKSCHANGED:
-        if (!sctx->propname) sctx->propname = "HyperLinksChanged";
+        sctx->propname = "HyperLinksChanged";
+        break;
     case DSPID_VERSION:
-        if (!sctx->propname) sctx->propname = "Version";
+        sctx->propname = "Version";
+        break;
     case DSPID_DIGSIG:
-        if (!sctx->propname) sctx->propname = "DigitalSig";
+        sctx->propname = "DigitalSig";
+        break;
     case DSPID_CONTENTTYPE:
-        if (!sctx->propname) sctx->propname = "ContentType";
+        sctx->propname = "ContentType";
+        break;
     case DSPID_CONTENTSTATUS:
-        if (!sctx->propname) sctx->propname = "ContentStatus";
+        sctx->propname = "ContentStatus";
+        break;
     case DSPID_LANGUAGE:
-        if (!sctx->propname) sctx->propname = "Language";
+        sctx->propname = "Language";
+        break;
     case DSPID_DOCVERSION:
-        if (!sctx->propname) sctx->propname = "DocVersion";
+        sctx->propname = "DocVersion";
         break;
     default:
         cli_dbgmsg("ole2_docsum_propset_json: unrecognized propid!\n");
+        sctx->flags |= OLE2_SUMMARY_FLAG_UNKNOWN_PROPID;
     }
 }
 
@@ -1829,64 +1870,65 @@ static void ole2_translate_summary_propid(summary_ctx_t *sctx, uint32_t propid)
     switch(propid) {
     case SPID_CODEPAGE:
         sctx->writecp = 1; /* must be set ONLY for codepage */
-        if (!sctx->propname) sctx->propname = "CodePage";
+        sctx->propname = "CodePage";
         break;
     case SPID_TITLE:
-        if (!sctx->propname) sctx->propname = "Title";
+        sctx->propname = "Title";
         break;
     case SPID_SUBJECT:
-        if (!sctx->propname) sctx->propname = "Subject";
+        sctx->propname = "Subject";
         break;
     case SPID_AUTHOR:
-        if (!sctx->propname) sctx->propname = "Author";
+        sctx->propname = "Author";
         break;
     case SPID_KEYWORDS:
-        if (!sctx->propname) sctx->propname = "Keywords";
+        sctx->propname = "Keywords";
         break;
     case SPID_COMMENTS:
-        if (!sctx->propname) sctx->propname = "Comments";
+        sctx->propname = "Comments";
         break;
     case SPID_TEMPLATE:
-        if (!sctx->propname) sctx->propname = "Template";
+        sctx->propname = "Template";
         break;
     case SPID_LASTAUTHOR:
-        if (!sctx->propname) sctx->propname = "LastAuthor";
+        sctx->propname = "LastAuthor";
         break;
     case SPID_REVNUMBER:
-        if (!sctx->propname) sctx->propname = "RevNumber";
+        sctx->propname = "RevNumber";
         break;
     case SPID_EDITTIME:
-        if (!sctx->propname) sctx->propname = "EditTime";
+        sctx->propname = "EditTime";
         break;
     case SPID_LASTPRINTED:
-        if (!sctx->propname) sctx->propname = "LastPrinted";
+        sctx->propname = "LastPrinted";
         break;
     case SPID_CREATEDTIME:
-        if (!sctx->propname) sctx->propname = "CreatedTime";
+        sctx->propname = "CreatedTime";
         break;
     case SPID_MODIFIEDTIME:
-        if (!sctx->propname) sctx->propname = "ModifiedTime";
+        sctx->propname = "ModifiedTime";
         break;
     case SPID_PAGECOUNT:
-        if (!sctx->propname) sctx->propname = "PageCount";
+        sctx->propname = "PageCount";
         break;
     case SPID_WORDCOUNT:
-        if (!sctx->propname) sctx->propname = "WordCount";
+        sctx->propname = "WordCount";
         break;
     case SPID_CHARCOUNT:
-        if (!sctx->propname) sctx->propname = "CharCount";
+        sctx->propname = "CharCount";
         break;
     case SPID_THUMBNAIL:
-        if (!sctx->propname) sctx->propname = "Thumbnail";
+        sctx->propname = "Thumbnail";
         break;
     case SPID_APPNAME:
-        if (!sctx->propname) sctx->propname = "AppName";
+        sctx->propname = "AppName";
         break;
     case SPID_SECURITY:
-        if (!sctx->propname) sctx->propname = "Security";
+        sctx->propname = "Security";
         break;
     default:
         cli_dbgmsg("ole2_translate_summary_propid: unrecognized propid!\n");
+        sctx->flags |= OLE2_SUMMARY_FLAG_UNKNOWN_PROPID;
     }
 }
 
@@ -1972,6 +2014,9 @@ static int ole2_summary_propset_json(summary_ctx_t *sctx, off_t offset)
             if (ret != CL_SUCCESS)
                 return ret;
         }
+        else {
+            /* add unknown propid flag */
+        }
     }
 
     return CL_SUCCESS;
@@ -1987,36 +2032,50 @@ static int cli_ole2_summary_json_cleanup(summary_ctx_t *sctx, int retcode)
         funmap(sctx->sfmap);
     }
 
-    jarr = cli_jsonarray(sctx->summary, "ParseErrors");
+    if (sctx->flags) {
+        jarr = cli_jsonarray(sctx->summary, "ParseErrors");
 
-    /* check errors */
-    if (sctx->flags &= OLE2_SUMMARY_ERROR_TOOSMALL) {
-        jobj = json_object_new_string("OLE2_SUMMARY_ERROR_TOOSMALL");
-        json_object_array_add(jarr, jobj);
-    }
-    if (sctx->flags &= OLE2_SUMMARY_ERROR_OOB) {
-        jobj = json_object_new_string("OLE2_SUMMARY_ERROR_OOB");
-        json_object_array_add(jarr, jobj);
-    }
-    if (sctx->flags &= OLE2_SUMMARY_ERROR_DATABUF) {
-        jobj = json_object_new_string("OLE2_SUMMARY_ERROR_DATABUF");
-        json_object_array_add(jarr, jobj);
-    }
-    if (sctx->flags &= OLE2_SUMMARY_ERROR_INVALID_ENTRY) {
-        jobj = json_object_new_string("OLE2_SUMMARY_ERROR_INVALID_ENTRY");
-        json_object_array_add(jarr, jobj);
-    }
-    if (sctx->flags &= OLE2_SUMMARY_LIMIT_PROPS) {
-        jobj = json_object_new_string("OLE2_SUMMARY_LIMIT_PROPS");
-        json_object_array_add(jarr, jobj);
-    }
-    if (sctx->flags &= OLE2_SUMMARY_FLAG_TIMEOUT) {
-        jobj = json_object_new_string("OLE2_SUMMARY_FLAG_TIMEOUT");
-        json_object_array_add(jarr, jobj);
-    }
-    if (sctx->flags &= OLE2_SUMMARY_FLAG_CODEPAGE) {
-        jobj = json_object_new_string("OLE2_SUMMARY_FLAG_CODEPAGE");
-        json_object_array_add(jarr, jobj);
+        /* check errors */
+        if (sctx->flags & OLE2_SUMMARY_ERROR_TOOSMALL) {
+            jobj = json_object_new_string("OLE2_SUMMARY_ERROR_TOOSMALL");
+            json_object_array_add(jarr, jobj);
+        }
+        if (sctx->flags & OLE2_SUMMARY_ERROR_OOB) {
+            jobj = json_object_new_string("OLE2_SUMMARY_ERROR_OOB");
+            json_object_array_add(jarr, jobj);
+        }
+        if (sctx->flags & OLE2_SUMMARY_ERROR_DATABUF) {
+            jobj = json_object_new_string("OLE2_SUMMARY_ERROR_DATABUF");
+            json_object_array_add(jarr, jobj);
+        }
+        if (sctx->flags & OLE2_SUMMARY_ERROR_INVALID_ENTRY) {
+            jobj = json_object_new_string("OLE2_SUMMARY_ERROR_INVALID_ENTRY");
+            json_object_array_add(jarr, jobj);
+        }
+        if (sctx->flags & OLE2_SUMMARY_LIMIT_PROPS) {
+            jobj = json_object_new_string("OLE2_SUMMARY_LIMIT_PROPS");
+            json_object_array_add(jarr, jobj);
+        }
+        if (sctx->flags & OLE2_SUMMARY_FLAG_TIMEOUT) {
+            jobj = json_object_new_string("OLE2_SUMMARY_FLAG_TIMEOUT");
+            json_object_array_add(jarr, jobj);
+        }
+        if (sctx->flags & OLE2_SUMMARY_FLAG_CODEPAGE) {
+            jobj = json_object_new_string("OLE2_SUMMARY_FLAG_CODEPAGE");
+            json_object_array_add(jarr, jobj);
+        }
+        if (sctx->flags & OLE2_SUMMARY_FLAG_UNKNOWN_PROPID) {
+            jobj = json_object_new_string("OLE2_SUMMARY_FLAG_UNKNOWN_PROPID");
+            json_object_array_add(jarr, jobj);
+        }
+        if (sctx->flags & OLE2_SUMMARY_FLAG_UNHANDLED_PROPTYPE) {
+            jobj = json_object_new_string("OLE2_SUMMARY_FLAG_UNHANDLED_PROPTYPE");
+            json_object_array_add(jarr, jobj);
+        }
+        if (sctx->flags & OLE2_SUMMARY_FLAG_TRUNC_STR) {
+            jobj = json_object_new_string("OLE2_SUMMARY_FLAG_TRUNC_STR");
+            json_object_array_add(jarr, jobj);
+        }
     }
 
     return retcode;
@@ -2136,21 +2195,6 @@ int cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
 
     /* second property set (index=1) is always a custom property set (if present) */
     if (sumstub.num_propsets == 2) {
-        if ((sctx.maplen-foff) < sizeof(propset_entry_t)) {
-            sctx.flags |= OLE2_SUMMARY_ERROR_TOOSMALL;
-            return cli_ole2_summary_json_cleanup(&sctx, CL_EFORMAT);
-        }
-        databuf = (unsigned char*)fmap_need_off_once(sctx.sfmap, foff, sizeof(propset_entry_t));
-        if (!databuf) {
-            sctx.flags |= OLE2_SUMMARY_ERROR_DATABUF;
-            return cli_ole2_summary_json_cleanup(&sctx, CL_EREAD);
-        }
-        foff += sizeof(propset_entry_t);
-        memcpy(&pentry, databuf, sizeof(propset_entry_t));
-        /* endian conversion */
-        pentry.offset = sum32_endian_convert(pentry.offset);
-
-        /* not handling custom properties at this time */
         cli_jsonbool(ctx->wrkproperty, "HasUserDefined", 1);
     }
 
