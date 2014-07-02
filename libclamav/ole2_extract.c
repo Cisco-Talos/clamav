@@ -2192,7 +2192,7 @@ int cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
 
     /* second property set (index=1) is always a custom property set (if present) */
     if (sumstub.num_propsets == 2) {
-        cli_jsonbool(ctx->wrkproperty, "HasUserDefined", 1);
+        cli_jsonbool(ctx->wrkproperty, "HasUserDefinedProperties", 1);
     }
 
     return cli_ole2_summary_json_cleanup(&sctx, CL_SUCCESS);
