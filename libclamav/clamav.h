@@ -22,6 +22,12 @@
 #ifndef __CLAMAV_H
 #define __CLAMAV_H
 
+#ifdef _WIN32
+#ifndef OWN_WINSOCK
+#include <winsock2.h>
+#endif
+#endif
+
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 
