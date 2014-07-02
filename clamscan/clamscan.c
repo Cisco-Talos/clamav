@@ -38,10 +38,6 @@
 #include <sys/resource.h>
 #endif
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include "others.h"
 #include "global.h"
 #include "manager.h"

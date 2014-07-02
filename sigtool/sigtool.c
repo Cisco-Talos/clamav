@@ -52,10 +52,6 @@
 #include <termios.h>
 #endif
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include "vba.h"
 
 #include "shared/output.h"

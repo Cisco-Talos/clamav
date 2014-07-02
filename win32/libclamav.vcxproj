@@ -506,7 +506,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\libclamav\conv.h" />
-    <ClInclude Include="..\libclamav\crypto.h" />
     <ClInclude Include="..\libclamav\hostid.h" />
     <ClInclude Include="..\libclamav\stats_json.h" />
     <ClInclude Include="..\libclamav\stats.h" />

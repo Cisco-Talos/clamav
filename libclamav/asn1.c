@@ -24,10 +24,7 @@
 
 #include <time.h>
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
+#include "clamav.h"
 #include "asn1.h"
 #include "bignum.h"
 #include "matcher-hash.h"

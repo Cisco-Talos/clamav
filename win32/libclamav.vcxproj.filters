@@ -926,9 +926,6 @@
     <ClInclude Include="..\libclamav\conv.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\libclamav\crypto.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Library Include="libeay32.lib" />

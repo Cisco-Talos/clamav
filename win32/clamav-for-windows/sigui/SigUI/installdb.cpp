@@ -28,6 +28,9 @@
 #include <wx/dir.h>
 #include <wx/evtloop.h>
 
+#include <WinSock.h>
+#define OWN_WINSOCK
+
 #include "../../../../libclamav/clamav.h"
 #include "installdb.h"
 #include <errno.h>

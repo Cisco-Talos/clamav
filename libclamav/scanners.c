@@ -44,10 +44,6 @@
 #include <sys/times.h>
 #endif
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #define DCONF_ARCH  ctx->dconf->archive
 #define DCONF_DOC   ctx->dconf->doc
 #define DCONF_MAIL  ctx->dconf->mail
@@ -2591,7 +2587,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
                     early_ret_from_magicscan(CL_EMEM);       
                 }
                 ctx->wrkproperty = ctx->properties;
-                ret = cli_jsonstr(ctx->properties, "Magic", "CLAMJSON");
+                ret = cli_jsonstr(ctx->properties, "Magic", "CLAMJSONv0");
                 if (ret != CL_SUCCESS) {
                     early_ret_from_magicscan(ret);
                 }

@@ -48,10 +48,7 @@
 #include <netdb.h>
 #endif
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
+#include "libclamav/clamav.h"
 #include "libclamav/others.h"
 #include "shared/actions.h"
 #include "shared/output.h"

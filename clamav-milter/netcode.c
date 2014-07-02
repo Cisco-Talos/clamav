@@ -42,10 +42,7 @@
 #include <netdb.h>
 #include <sys/uio.h>
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
+#include "libclamav/clamav.h"
 #include "shared/output.h"
 #include "shared/optparser.h"
 #include "libclamav/others.h"

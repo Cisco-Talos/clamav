@@ -24,10 +24,7 @@
 #include "clamav-config.h"
 #endif
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
+#include "clamav.h"
 #include "lzma_iface.h"
 
 void *__lzma_wrap_alloc(void *unused, size_t size) { 

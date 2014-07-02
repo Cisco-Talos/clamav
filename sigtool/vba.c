@@ -33,10 +33,6 @@
 #include <dirent.h>
 #include <ctype.h>
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include "libclamav/clamav.h"
 #include "libclamav/vba_extract.h"
 #include "libclamav/cltypes.h"

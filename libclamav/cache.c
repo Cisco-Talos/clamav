@@ -27,10 +27,6 @@
 #include <pthread.h>
 #include <assert.h>
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include "mpool.h"
 #include "clamav.h"
 #include "cache.h"

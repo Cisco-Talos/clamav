@@ -28,14 +28,11 @@
 #include <string.h>
 #include <assert.h>
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include "others.h"
 
 #include "disasmpriv.h"
 #include "disasm.h"
+#include "clamav.h"
 
 enum ADDRS {
   ADDR_REG_EAX,

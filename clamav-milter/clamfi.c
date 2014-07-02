@@ -33,10 +33,7 @@
 
 #include <libmilter/mfapi.h>
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
+#include "libclamav/clamav.h"
 #include "shared/optparser.h"
 #include "shared/output.h"
 #include "libclamav/others.h"

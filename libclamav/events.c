@@ -24,10 +24,7 @@
 #include <sys/time.h>
 #endif
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
+#include "clamav.h"
 #include "events.h"
 #include "others.h"
 #include "7z/7zCrc.h"
