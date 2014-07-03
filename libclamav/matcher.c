@@ -911,6 +911,9 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
                     free(info.exeinfo.section);
 
                 cli_hashset_destroy(&info.exeinfo.vinfo);
+                cl_hash_destroy(md5ctx);
+                cl_hash_destroy(sha1ctx);
+                cl_hash_destroy(sha256ctx);
                 return ret;
             } else if((acmode & AC_SCAN_FT) && ret >= CL_TYPENO) {
                 if(ret > type)
