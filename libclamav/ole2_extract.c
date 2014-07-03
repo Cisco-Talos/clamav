@@ -2034,44 +2034,34 @@ static int cli_ole2_summary_json_cleanup(summary_ctx_t *sctx, int retcode)
 
         /* check errors */
         if (sctx->flags & OLE2_SUMMARY_ERROR_TOOSMALL) {
-            jobj = json_object_new_string("OLE2_SUMMARY_ERROR_TOOSMALL");
-            json_object_array_add(jarr, jobj);
+            cli_jsonstr(jarr, NULL, "OLE2_SUMMARY_ERROR_TOOSMALL");
         }
         if (sctx->flags & OLE2_SUMMARY_ERROR_OOB) {
-            jobj = json_object_new_string("OLE2_SUMMARY_ERROR_OOB");
-            json_object_array_add(jarr, jobj);
+            cli_jsonstr(jarr, NULL, "OLE2_SUMMARY_ERROR_OOB");
         }
         if (sctx->flags & OLE2_SUMMARY_ERROR_DATABUF) {
-            jobj = json_object_new_string("OLE2_SUMMARY_ERROR_DATABUF");
-            json_object_array_add(jarr, jobj);
+            cli_jsonstr(jarr, NULL, "OLE2_SUMMARY_ERROR_DATABUF");
         }
         if (sctx->flags & OLE2_SUMMARY_ERROR_INVALID_ENTRY) {
-            jobj = json_object_new_string("OLE2_SUMMARY_ERROR_INVALID_ENTRY");
-            json_object_array_add(jarr, jobj);
+            cli_jsonstr(jarr, NULL, "OLE2_SUMMARY_ERROR_INVALID_ENTRY");
         }
         if (sctx->flags & OLE2_SUMMARY_LIMIT_PROPS) {
-            jobj = json_object_new_string("OLE2_SUMMARY_LIMIT_PROPS");
-            json_object_array_add(jarr, jobj);
+            cli_jsonstr(jarr, NULL, "OLE2_SUMMARY_LIMIT_PROPS");
         }
         if (sctx->flags & OLE2_SUMMARY_FLAG_TIMEOUT) {
-            jobj = json_object_new_string("OLE2_SUMMARY_FLAG_TIMEOUT");
-            json_object_array_add(jarr, jobj);
+            cli_jsonstr(jarr, NULL, "OLE2_SUMMARY_FLAG_TIMEOUT");
         }
         if (sctx->flags & OLE2_SUMMARY_FLAG_CODEPAGE) {
-            jobj = json_object_new_string("OLE2_SUMMARY_FLAG_CODEPAGE");
-            json_object_array_add(jarr, jobj);
+            cli_jsonstr(jarr, NULL, "OLE2_SUMMARY_FLAG_CODEPAGE");
         }
         if (sctx->flags & OLE2_SUMMARY_FLAG_UNKNOWN_PROPID) {
-            jobj = json_object_new_string("OLE2_SUMMARY_FLAG_UNKNOWN_PROPID");
-            json_object_array_add(jarr, jobj);
+            cli_jsonstr(jarr, NULL, "OLE2_SUMMARY_FLAG_UNKNOWN_PROPID");
         }
         if (sctx->flags & OLE2_SUMMARY_FLAG_UNHANDLED_PROPTYPE) {
-            jobj = json_object_new_string("OLE2_SUMMARY_FLAG_UNHANDLED_PROPTYPE");
-            json_object_array_add(jarr, jobj);
+            cli_jsonstr(jarr, NULL, "OLE2_SUMMARY_FLAG_UNHANDLED_PROPTYPE");
         }
         if (sctx->flags & OLE2_SUMMARY_FLAG_TRUNC_STR) {
-            jobj = json_object_new_string("OLE2_SUMMARY_FLAG_TRUNC_STR");
-            json_object_array_add(jarr, jobj);
+            cli_jsonstr(jarr, NULL, "OLE2_SUMMARY_FLAG_TRUNC_STR");
         }
     }
 

@@ -2591,7 +2591,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
                 if (ret != CL_SUCCESS) {
                     early_ret_from_magicscan(ret);
                 }
-                cli_jsonstr(ctx->properties, "RootFileType", filetype);
+                ret = cli_jsonstr(ctx->properties, "RootFileType", filetype);
                 if (ret != CL_SUCCESS) {
                     early_ret_from_magicscan(ret);
                 }
