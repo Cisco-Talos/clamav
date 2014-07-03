@@ -48,31 +48,49 @@ int cli_json_timeout_cycle_check(cli_ctx *ctx, int *toval)
 
 int cli_jsonnull(json_object *obj, const char* key)
 {
+    json_type objty;
     json_object *fpobj = NULL;
     if (NULL == obj) {
         cli_dbgmsg("json: null 'obj' specified to cli_jsonnull\n");
         return CL_ENULLARG;
     }
-    if (NULL == key) {
-        cli_dbgmsg("json: null string specified as key to cli_jsonnull\n");
-        return CL_ENULLARG;
+    objty = json_object_get_type(obj);
+
+    if (objty == json_type_object) {
+        if (NULL == key) {
+            cli_dbgmsg("json: null string specified as key to cli_jsonnull\n");
+            return CL_ENULLARG;
+        }
+
+        json_object_object_add(obj, key, fpobj);
+    }
+    else if (objty == json_type_array) {
+        json_object_array_add(obj, fpobj);
     }
 
-    json_object_object_add(obj, key, fpobj);
     return CL_SUCCESS;
 }
 
 int cli_jsonstr(json_object *obj, const char* key, const char* s)
 {
+    json_type objty;
     json_object *fpobj;
     if (NULL == obj) {
         cli_dbgmsg("json: null 'obj' specified to cli_jsonstr\n");
         return CL_ENULLARG;
     }
-    if (NULL == key) {
-        cli_dbgmsg("json: null string specified as 'key' to cli_jsonstr\n");
-        return CL_ENULLARG;
+    objty = json_object_get_type(obj);
+
+    if (objty == json_type_object) {
+        if (NULL == key) {
+            cli_dbgmsg("json: null string specified as 'key' to cli_jsonstr\n");
+            return CL_ENULLARG;
+        }
     }
+    else if (objty != json_type_array) {
+        return CL_EARG;
+    }
+
     if (NULL == s) {
         cli_dbgmsg("json: null string specified as 's' to  cli_jsonstr\n");
         return CL_ENULLARG;
@@ -83,20 +101,33 @@ int cli_jsonstr(json_object *obj, const char* key, const char* s)
         cli_errmsg("json: no memory for json string object\n");
         return CL_EMEM;
     }
-    json_object_object_add(obj, key, fpobj);
+
+    if (objty == json_type_object)
+        json_object_object_add(obj, key, fpobj);
+    else if (objty == json_type_array)
+        json_object_array_add(obj, fpobj);
+
     return CL_SUCCESS;
 }
 
 int cli_jsonint(json_object *obj, const char* key, int32_t i)
 {
+    json_type objty;
     json_object *fpobj;
     if (NULL == obj) {
         cli_dbgmsg("json: no parent object specified to cli_jsonint\n");
         return CL_ENULLARG;
     }
-    if (NULL == key) {
-        cli_dbgmsg("json: null string specified as key to cli_jsonnull\n");
-        return CL_ENULLARG;
+    objty = json_object_get_type(obj);
+
+    if (objty == json_type_object) {    
+        if (NULL == key) {
+            cli_dbgmsg("json: null string specified as key to cli_jsonint\n");
+            return CL_ENULLARG;
+        }
+    }
+    else if (objty != json_type_array) {
+        return CL_EARG;
     }
 
     fpobj = json_object_new_int(i);
@@ -104,21 +135,34 @@ int cli_jsonint(json_object *obj, const char* key, int32_t i)
         cli_errmsg("json: no memory for json int object\n");
         return CL_EMEM;
     }
-    json_object_object_add(obj, key, fpobj);
+
+    if (objty == json_type_object)
+        json_object_object_add(obj, key, fpobj);
+    else if (objty == json_type_array)
+        json_object_array_add(obj, fpobj);
+
     return CL_SUCCESS;
 }
 
 #ifdef JSON10
 int cli_jsonint64(json_object *obj, const char* key, int64_t i)
 {
+    json_type objty;
     json_object *fpobj;
     if (NULL == obj) {
         cli_dbgmsg("json: no parent object specified to cli_jsonint64\n");
         return CL_ENULLARG;
     }
-    if (NULL == key) {
-        cli_dbgmsg("json: null string specified as key to cli_jsonint64\n");
-        return CL_ENULLARG;
+    objty = json_object_get_type(obj);
+
+    if (objty == json_type_object) {
+        if (NULL == key) {
+            cli_dbgmsg("json: null string specified as key to cli_jsonint64\n");
+            return CL_ENULLARG;
+        }
+    }
+    else if (objty != json_type_array) {
+        return CL_EARG;
     }
 
     fpobj = json_object_new_int64(i);
@@ -126,12 +170,18 @@ int cli_jsonint64(json_object *obj, const char* key, int64_t i)
         cli_errmsg("json: no memory for json int object.\n");
         return CL_EMEM;
     }
-    json_object_object_add(obj, key, fpobj);
+
+    if (objty == json_type_object)
+        json_object_object_add(obj, key, fpobj);
+    else if (objty == json_type_array)
+        json_object_array_add(obj, fpobj);
+
     return CL_SUCCESS;
 }
 #else
 int cli_jsonint64(json_object *obj, const char* key, int64_t i)
 {
+    json_type objty;
     int32_t li, hi;
     json_object *fpobj0, *fpobj1;
     json_object *fparr;
@@ -139,9 +189,16 @@ int cli_jsonint64(json_object *obj, const char* key, int64_t i)
         cli_dbgmsg("json: no parent object specified to cli_jsonint64\n");
         return CL_ENULLARG;
     }
-    if (NULL == key) {
-        cli_dbgmsg("json: null string specified as key to cli_jsonint64\n");
-        return CL_ENULLARG;
+    objty = json_object_get_type(obj);
+
+    if (objty == json_type_object) {
+        if (NULL == key) {
+            cli_dbgmsg("json: null string specified as key to cli_jsonint64\n");
+            return CL_ENULLARG;
+        }
+    }
+    else if (objty != json_type_array) {
+        return CL_EARG;
     }
 
     fparr = json_object_new_array();
@@ -170,7 +227,11 @@ int cli_jsonint64(json_object *obj, const char* key, int64_t i)
     /* little-endian array */
     json_object_array_add(fparr, fpobj0);
     json_object_array_add(fparr, fpobj1);
-    json_object_object_add(obj, key, fparr);
+    if (objty == json_type_object)
+        json_object_object_add(obj, key, fparr);
+    else if (objty == json_type_array)
+        json_object_array_add(obj, fparr);
+
     return CL_SUCCESS;
 }
 //#define cli_jsonint64(o,n,i) cli_dbgmsg("%s: %lld [%llx]\n", n, i, i)
@@ -178,14 +239,22 @@ int cli_jsonint64(json_object *obj, const char* key, int64_t i)
 
 int cli_jsonbool(json_object *obj, const char* key, int i)
 {
+    json_type objty;
     json_object *fpobj;
     if (NULL == obj) {
         cli_dbgmsg("json: no parent object specified to cli_jsonbool\n");
         return CL_ENULLARG;
     }
-    if (NULL == key) {
-        cli_dbgmsg("json: null string specified as key to cli_jsonbool\n");
-        return CL_ENULLARG;
+    objty = json_object_get_type(obj);
+
+    if (objty == json_type_object) {
+        if (NULL == key) {
+            cli_dbgmsg("json: null string specified as key to cli_jsonbool\n");
+            return CL_ENULLARG;
+        }
+    }
+    else if (objty != json_type_array) {
+        return CL_EARG;
     }
 
     fpobj = json_object_new_boolean(i);
@@ -193,20 +262,33 @@ int cli_jsonbool(json_object *obj, const char* key, int i)
         cli_errmsg("json: no memory for json boolean object.\n");
         return CL_EMEM;
     }
-    json_object_object_add(obj, key, fpobj);
+
+    if (objty == json_type_object)
+        json_object_object_add(obj, key, fpobj);
+    else if (objty == json_type_array)
+        json_object_array_add(obj, fpobj);
+
     return CL_SUCCESS;
 }
 
 int cli_jsondouble(json_object *obj, const char* key, double d)
 {
+    json_type objty;
     json_object *fpobj;
     if (NULL == obj) {
         cli_dbgmsg("json: no parent object specified to cli_jsondouble\n");
         return CL_ENULLARG;
     }
-    if (NULL == key) {
-        cli_dbgmsg("json: null string specified as key to cli_jsondouble\n");
-        return CL_ENULLARG;
+    objty = json_object_get_type(obj);
+
+    if (objty == json_type_object) {
+        if (NULL == key) {
+            cli_dbgmsg("json: null string specified as key to cli_jsondouble\n");
+            return CL_ENULLARG;
+        }
+    }
+    else if (objty != json_type_array) {
+        return CL_EARG;
     }
 
     fpobj = json_object_new_double(d);
@@ -214,7 +296,12 @@ int cli_jsondouble(json_object *obj, const char* key, double d)
         cli_errmsg("json: no memory for json double object.\n");
         return CL_EMEM;
     }
-    json_object_object_add(obj, key, fpobj);
+
+    if (objty == json_type_object)
+        json_object_object_add(obj, key, fpobj);
+    else if (objty == json_type_array)
+        json_object_array_add(obj, fpobj);
+
     return CL_SUCCESS;
 }
 
@@ -242,20 +329,7 @@ json_object *cli_jsonarray(json_object *obj, const char *key)
 
 int cli_jsonint_array(json_object *obj, int32_t val)
 {
-    json_object *newobj;
-
-    if (!(obj))
-        return CL_ENULLARG;
-
-    if (json_object_get_array(obj) == NULL)
-        return CL_ENULLARG;
-
-    newobj = json_object_new_int(val);
-    if (!(newobj))
-        return CL_EMEM;
-
-    json_object_array_add(obj, newobj);
-    return CL_SUCCESS;
+    return cli_jsonint(obj, NULL, val);
 }
 
 json_object *cli_jsonobj(json_object *obj, const char *key)
