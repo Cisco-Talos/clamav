@@ -110,6 +110,45 @@ int cli_jsonstr(json_object *obj, const char* key, const char* s)
     return CL_SUCCESS;
 }
 
+int cli_jsonstrlen(json_object *obj, const char* key, const char* s, int len)
+{
+    json_type objty;
+    json_object *fpobj;
+    if (NULL == obj) {
+        cli_dbgmsg("json: null 'obj' specified to cli_jsonstr\n");
+        return CL_ENULLARG;
+    }
+    objty = json_object_get_type(obj);
+
+    if (objty == json_type_object) {
+        if (NULL == key) {
+            cli_dbgmsg("json: null string specified as 'key' to cli_jsonstr\n");
+            return CL_ENULLARG;
+        }
+    }
+    else if (objty != json_type_array) {
+        return CL_EARG;
+    }
+
+    if (NULL == s) {
+        cli_dbgmsg("json: null string specified as 's' to  cli_jsonstr\n");
+        return CL_ENULLARG;
+    }
+
+    fpobj = json_object_new_string_len(s, len);
+    if (NULL == fpobj) {
+        cli_errmsg("json: no memory for json string object\n");
+        return CL_EMEM;
+    }
+
+    if (objty == json_type_object)
+        json_object_object_add(obj, key, fpobj);
+    else if (objty == json_type_array)
+        json_object_array_add(obj, fpobj);
+
+    return CL_SUCCESS;
+}
+
 int cli_jsonint(json_object *obj, const char* key, int32_t i)
 {
     json_type objty;
