@@ -521,9 +521,10 @@ struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, siz
     /* Loop through each element of the dictionary */
     begin += 2;
     while (begin < end) {
-        char *val=NULL, *key=NULL, *p1;
+        char *val=NULL, *key=NULL, *p1, *p2;
         struct pdf_dict *dict=NULL;
         struct pdf_array *arr=NULL;
+        unsigned int nhex=0, i;
 
         /* Skip any whitespaces */
         while (begin < end && isspace(begin[0]))
@@ -541,8 +542,20 @@ struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, siz
                 case '<':
                 case '[':
                 case '(':
-                case '\\':
+                case '/':
+                case '\r':
+                case '\n':
+                case ' ':
+                case '\t':
                     breakout=1;
+                    break;
+                case '#':
+                    /* Key name obfuscated with hex characters */
+                    nhex++;
+                    if (p1 > end-3) {
+                        return res;
+                    }
+
                     break;
             }
             
@@ -559,8 +572,20 @@ struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, siz
         if (!(key))
             break;
 
-        strncpy(key, begin, p1 - begin);
-        key[p1 - begin] = '\0';
+        if (nhex == 0) {
+            /* Key isn't obfuscated with hex. Just copy the string */
+            strncpy(key, begin, p1 - begin);
+            key[p1 - begin] = '\0';
+        } else {
+            for (i=0, p2 = begin; p2 < p1; p2++, i++) {
+                if (*p2 == '#') {
+                    cli_hex2str_to(p2+1, key+i, 2);
+                    p2 += 2;
+                } else {
+                    key[i] = *p2;
+                }
+            }
+        }
 
         /* Now for the value */
         begin = p1;
