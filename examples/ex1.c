@@ -45,9 +45,6 @@ int main(int argc, char **argv)
 	const char *virname;
 	struct cl_engine *engine;
 
-    cl_initialize_crypto();
-
-
     if(argc != 2) {
 	printf("Usage: %s file\n", argv[0]);
 	return 2;
