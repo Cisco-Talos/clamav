@@ -242,8 +242,6 @@ int main(int argc, char *argv[])
     int fd = -1;
     unsigned tracelevel;
 
-    cl_initialize_crypto();
-
     if(check_flevel())
 	exit(1);
 

@@ -298,8 +298,6 @@ main (int argc, char **argv)
     if (check_flevel ())
         exit (FCE_INIT);
 
-    cl_initialize_crypto();
-
     if ((retcl = cl_init (CL_INIT_DEFAULT)))
     {
         mprintf ("!Can't initialize libclamav: %s\n", cl_strerror (retcl));

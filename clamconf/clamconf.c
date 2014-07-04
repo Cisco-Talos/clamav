@@ -372,8 +372,6 @@ int main(int argc, char **argv)
 	unsigned int i, j;
 	struct cli_environment env;
 
-    cl_initialize_crypto();
-
     opts = optparse(NULL, argc, argv, 1, OPT_CLAMCONF, 0, NULL);
     if(!opts) {
 	printf("ERROR: Can't parse command line options\n");

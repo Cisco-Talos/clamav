@@ -286,6 +286,8 @@ int cl_init(unsigned int initoptions)
 	struct timeval tv;
 	unsigned int pid = (unsigned int) getpid();
 
+    cl_initialize_crypto();
+
     {
 	unrar_main_header_t x;
 	if (((char*)&x.flags - (char*)&x) != 3) {

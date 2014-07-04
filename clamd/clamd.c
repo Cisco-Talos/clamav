@@ -137,8 +137,6 @@ int main(int argc, char **argv)
     sigaction(SIGUSR2, &sa, NULL);
 #endif
 
-    cl_initialize_crypto();
-
     if((opts = optparse(NULL, argc, argv, 1, OPT_CLAMD, 0, NULL)) == NULL) {
         mprintf("!Can't parse command line options\n");
         return 1;
