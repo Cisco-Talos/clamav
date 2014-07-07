@@ -45,7 +45,6 @@ int main(int argc, char **argv)
 	const char *virname;
 	struct cl_engine *engine;
 
-
     if(argc != 2) {
 	printf("Usage: %s file\n", argv[0]);
 	return 2;

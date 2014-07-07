@@ -21,10 +21,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include "matcher.h"
 #include "others.h"
 #include "str.h"

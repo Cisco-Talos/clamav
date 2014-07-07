@@ -51,7 +51,7 @@ freshclam_SOURCES = \
 
 AM_CFLAGS=@WERR_CFLAGS@
 DEFS = @DEFS@ -DCL_NOTHREADS
-AM_CPPFLAGS = @SSL_CPPFLAGS@ -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @FRESHCLAM_CPPFLAGS@
+AM_CPPFLAGS = @SSL_CPPFLAGS@ -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @FRESHCLAM_CPPFLAGS@  @JSON_CPPFLAGS@
 LIBS = @SSL_LDFLAGS@ @SSL_LIBS@ $(top_builddir)/libclamav/libclamav.la @FRESHCLAM_LIBS@ @THREAD_LIBS@
 
 AM_INSTALLCHECK_STD_OPTIONS_EXEMPT=freshclam$(EXEEXT)

@@ -32,10 +32,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
+#include "clamav.h"
 #include "cltypes.h"
 #include "others.h"
 #include "cpio.h"

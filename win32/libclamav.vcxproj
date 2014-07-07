@@ -181,7 +181,8 @@
     <ClCompile Include="..\libclamav\crypto.c" />
     <ClCompile Include="..\libclamav\fpu.c" />
     <ClCompile Include="..\libclamav\hostid.c" />
-    <ClCompile Include="..\libclamav\json.c" />
+    <ClCompile Include="..\libclamav\pdfng.c" />
+    <ClCompile Include="..\libclamav\stats_json.c" />
     <ClCompile Include="..\libclamav\openioc.c" />
     <ClCompile Include="..\libclamav\sf_base64decode.c" />
     <ClCompile Include="..\libclamav\stats.c" />
@@ -341,6 +342,7 @@
     <ClCompile Include="..\libclamav\ishield.c" />
     <ClCompile Include="..\libclamav\is_tar.c" />
     <ClCompile Include="..\libclamav\jsparse\js-norm.c" />
+    <ClCompile Include="..\libclamav\json_api.c" />
     <ClCompile Include="..\libclamav\line.c" />
     <ClCompile Include="..\libclamav\lzma_iface.c" />
     <ClCompile Include="..\libclamav\macho.c" />
@@ -363,6 +365,7 @@
     <ClCompile Include="..\libclamav\nsis\infblock.c" />
     <ClCompile Include="..\libclamav\nsis\nulsft.c" />
     <ClCompile Include="..\libclamav\ole2_extract.c" />
+    <ClCompile Include="..\libclamav\ooxml.c" />
     <ClCompile Include="..\libclamav\others.c" />
     <ClCompile Include="..\libclamav\others_common.c" />
     <ClCompile Include="..\libclamav\packlibs.c" />
@@ -503,9 +506,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\libclamav\conv.h" />
-    <ClInclude Include="..\libclamav\crypto.h" />
     <ClInclude Include="..\libclamav\hostid.h" />
-    <ClInclude Include="..\libclamav\json.h" />
+    <ClInclude Include="..\libclamav\stats_json.h" />
     <ClInclude Include="..\libclamav\stats.h" />
     <ClInclude Include="..\libclamav\www.h" />
   </ItemGroup>

@@ -38,6 +38,6 @@ clamscan_SOURCES = \
 AM_CFLAGS=@WERR_CFLAGS@
 DEFS = @DEFS@ -DCL_NOTHREADS
 LIBS = $(top_builddir)/libclamav/libclamav.la @THREAD_LIBS@ @CLAMSCAN_LIBS@
-AM_CPPFLAGS = @SSL_CPPFLAGS@ -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @CLAMSCAN_CPPFLAGS@
+AM_CPPFLAGS = @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @CLAMSCAN_CPPFLAGS@
 
 CLEANFILES=*.gcda *.gcno

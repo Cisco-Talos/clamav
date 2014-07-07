@@ -40,6 +40,7 @@ AM_SILENT_RULES([yes])
 dnl we told automake to not define these, since we want to include
 dnl the date in the version
 AC_DEFINE([PACKAGE], PACKAGE_NAME, [Name of package])
+AC_USE_SYSTEM_EXTENSIONS
 
 m4_include([m4/reorganization/version.m4])
 
@@ -79,6 +80,7 @@ m4_include([m4/reorganization/code_checks/coverage.m4])
 dnl libclamav dependencies
 m4_include([m4/reorganization/libs/xml.m4])
 m4_include([m4/reorganization/libs/openssl.m4])
+m4_include([m4/reorganization/libs/json.m4])
 
 AM_MAINTAINER_MODE
 m4_include([m4/reorganization/libs/libz.m4])
@@ -220,6 +222,7 @@ AC_MSG_NOTICE([Summary of engine detection features])
 CL_MSG_STATUS([bzip2       ],[$bzip_check],[$want_bzip2])
 CL_MSG_STATUS([zlib        ],[$ZLIB_HOME],[yes])
 CL_MSG_STATUS([unrar       ],[$want_unrar],[$want_unrar])
+CL_MSG_STATUS([preclass    ],[$LIBJSON_HOME],[$have_json])
 if test "x$XML_LIBS" = "x"; then 
     CL_MSG_STATUS([dmg and xar ],[no],[])
 else

@@ -48,10 +48,6 @@
 #include <errno.h>
 #include <target.h>
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include "manager.h"
 #include "global.h"
 
@@ -851,6 +847,14 @@ int scanmanager(const struct optstruct *opts)
 	}
     }
 
+    if ((opt = optget(opts, "timelimit"))->active) {
+        if ((ret = cl_engine_set_num(engine, CL_ENGINE_TIME_LIMIT, opt->numarg))) {
+	    logg("!cli_engine_set_num(CL_ENGINE_TIME_LIMIT) failed: %s\n", cl_strerror(ret));
+	    cl_engine_free(engine);
+	    return 2;
+        }
+    }
+
     /* set scan options */
     if(optget(opts, "allmatch")->enabled)
 	options |= CL_SCAN_ALLMATCHES;
@@ -954,6 +958,11 @@ int scanmanager(const struct optstruct *opts)
     procdev = (dev_t) 0;
     if(CLAMSTAT("/proc", &sb) != -1 && !sb.st_size)
 	procdev = sb.st_dev;
+#endif
+
+#if HAVE_JSON
+    if (optget(opts, "gen-json")->enabled)
+        options |= CL_SCAN_FILE_PROPERTIES;
 #endif
 
     /* check filetype */

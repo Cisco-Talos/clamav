@@ -22,10 +22,6 @@
 #include "clamav-config.h"
 #endif
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include <errno.h>
 #include "xar.h"
 #include "fmap.h"
@@ -36,6 +32,7 @@
 #endif
 #endif
 #include <libxml/xmlreader.h>
+#include "clamav.h"
 #include "str.h"
 #include "scanners.h"
 #include "inflate64.h"

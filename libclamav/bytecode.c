@@ -28,10 +28,6 @@
 #include <assert.h>
 #include <fcntl.h>
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include "dconf.h"
 #include "clamav.h"
 #include "others.h"
@@ -44,6 +40,9 @@
 #include "bytecode_api.h"
 #include "bytecode_api_impl.h"
 #include "builtin_bytecodes.h"
+#if HAVE_JSON
+#include "json.h"
+#endif
 
 #define MAX_BC 64
 #define BC_EVENTS_PER_SIG 2
@@ -225,6 +224,12 @@ static int cli_bytecode_context_reset(struct cli_bc_ctx *ctx)
     free(ctx->maps);
     ctx->maps = NULL;
     ctx->nmaps = 0;
+
+#if HAVE_JSON
+    free((json_object**)(ctx->jsonobjs));
+    ctx->jsonobjs = NULL;
+    ctx->njsonobjs = 0;
+#endif
 
     ctx->containertype = CL_TYPE_ANY;
     return CL_SUCCESS;

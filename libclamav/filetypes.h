@@ -1,5 +1,6 @@
 /*
- *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *  Copyright (C) 2007-2013 Sourcefire, Inc.
+ *  Copyright (C) 2014 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: Tomasz Kojm
  *
@@ -83,6 +84,7 @@ typedef enum {
     CL_TYPE_OOXML_WORD,
     CL_TYPE_OOXML_PPT,
     CL_TYPE_OOXML_XL,
+    CL_TYPE_INTERNAL,
 
     /* Section for partition types */
     CL_TYPE_PART_ANY, /* unknown partition type */

@@ -23,11 +23,8 @@
 #include <fcntl.h>
 #include <string.h>
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include "checks.h"
+#include "../libclamav/clamav.h"
 #include "../libclamav/fmap.h"
 #include "../libclamav/dconf.h"
 #include "../libclamav/htmlnorm.h"

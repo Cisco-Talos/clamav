@@ -1,5 +1,6 @@
 /*
- *  Copyright (C) 2007-2010 Sourcefire, Inc.
+ *  Copyright (C) 2007-2013 Sourcefire, Inc.
+ *  Copyright (C) 2014 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: Tomasz Kojm
  *
@@ -49,6 +50,9 @@
 #include "bytecode_api.h"
 #include "events.h"
 #include "crtmgr.h"
+#ifdef HAVE_JSON
+#include "json.h"
+#endif
 
 /*
  * CL_FLEVEL is the signature f-level specific to the current code and
@@ -59,7 +63,7 @@
  * in re-enabling affected modules.
  */
 
-#define CL_FLEVEL 77
+#define CL_FLEVEL 78
 #define CL_FLEVEL_DCONF	CL_FLEVEL
 #define CL_FLEVEL_SIGTOOL CL_FLEVEL
 
@@ -140,6 +144,11 @@ typedef struct cli_ctx_tag {
     char entry_filename[2048];
     int sha_collect;
 #endif
+#ifdef HAVE_JSON
+    struct json_object *properties;
+    struct json_object *wrkproperty;
+#endif
+    struct timeval time_limit;
 } cli_ctx;
 
 #define STATS_ANON_UUID "5b585e8f-3be5-11e3-bf0b-18037319526c"
@@ -149,7 +158,7 @@ typedef struct cli_ctx_tag {
 typedef struct cli_flagged_sample {
     char **virus_name;
     char md5[16];
-    size_t size; /* A size of zero means size is unavailable (why would this ever happen?) */
+    uint32_t size; /* A size of zero means size is unavailable (why would this ever happen?) */
     uint32_t hits;
     stats_section_t *sections;
 
@@ -301,6 +310,8 @@ struct cl_engine {
     void *cb_sigload_ctx;
     clcb_hash cb_hash;
     clcb_meta cb_meta;
+    clcb_file_props cb_file_props;
+    void *cb_file_props_data;
 
     /* Used for bytecode */
     struct cli_all_bc bcs;
@@ -330,10 +341,13 @@ struct cl_engine {
     clcb_stats_get_hostid cb_stats_get_hostid;
 
     /* Raw disk image max settings */
-    uint32_t maxpartitions;
+    uint32_t maxpartitions; /* max number of partitions to scan in a disk image */
 
     /* Engine max settings */
     uint32_t maxiconspe; /* max number of icons to scan for PE */
+
+    /* millisecond time limit for preclassification scanning */
+    uint32_t time_limit;
 };
 
 struct cl_settings {
@@ -367,6 +381,8 @@ struct cl_settings {
     clcb_msg cb_msg;
     clcb_hash cb_hash;
     clcb_meta cb_meta;
+    clcb_file_props cb_file_props;
+    void *cb_file_props_data;
 
     /* Engine max settings */
     uint64_t maxembeddedpe;  /* max size to scan MSEXE for PE */
@@ -414,6 +430,7 @@ extern int have_rar;
 #define SCAN_STRUCTURED	    (ctx->options & CL_SCAN_STRUCTURED)
 #define SCAN_ALL            (ctx->options & CL_SCAN_ALLMATCHES)
 #define SCAN_SWF            (ctx->options & CL_SCAN_SWF)
+#define SCAN_PROPERTIES     (ctx->options & CL_SCAN_FILE_PROPERTIES)
 
 /* based on macros from A. Melnikoff */
 #define cbswap16(v) (((v & 0xff) << 8) | (((v) >> 8) & 0xff))
@@ -632,6 +649,7 @@ int cli_updatelimits(cli_ctx *, unsigned long);
 unsigned long cli_getsizelimit(cli_ctx *, unsigned long);
 int cli_matchregex(const char *str, const char *regex);
 void cli_qsort(void *a, size_t n, size_t es, int (*cmp)(const void *, const void *));
+int cli_checktimelimit(cli_ctx *ctx);
 
 /* symlink behaviour */
 #define CLI_FTW_FOLLOW_FILE_SYMLINK 0x01

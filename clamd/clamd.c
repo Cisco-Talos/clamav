@@ -53,10 +53,6 @@
 #include <sys/resource.h>
 #endif
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include "target.h"
 
 #include "libclamav/clamav.h"
@@ -139,8 +135,6 @@ int main(int argc, char **argv)
     sa.sa_handler = SIG_IGN;
     sigaction(SIGHUP, &sa, NULL);
     sigaction(SIGUSR2, &sa, NULL);
-#else
-    cl_initialize_crypto();
 #endif
 
     if((opts = optparse(NULL, argc, argv, 1, OPT_CLAMD, 0, NULL)) == NULL) {
@@ -743,6 +737,8 @@ int main(int argc, char **argv)
 
     logg_close();
     optfree(opts);
+
+    cl_cleanup_crypto();
 
     return ret;
 }

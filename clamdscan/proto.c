@@ -22,6 +22,10 @@
 #include "clamav-config.h"
 #endif
 
+#if defined(C_SOLARIS)
+#define __EXTENSIONS__
+#endif
+
 /* must be first because it may define _XOPEN_SOURCE */
 #include "shared/fdpassing.h"
 #include <stdio.h>
@@ -41,12 +45,10 @@
 #ifndef _WIN32
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <netdb.h>
 #endif
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
+#include "libclamav/clamav.h"
 #include "libclamav/others.h"
 #include "shared/actions.h"
 #include "shared/output.h"
@@ -72,6 +74,7 @@ int dconnect() {
     const struct optstruct *opt;
     struct addrinfo hints, *info, *p;
     char port[10];
+    char *ipaddr;
 
 #ifndef _WIN32
     opt = optget(clamdopts, "LocalSocket");
@@ -89,12 +92,18 @@ int dconnect() {
 
     opt = optget(clamdopts, "TCPAddr");
     while (opt) {
+        ipaddr = NULL;
+        if (opt->strarg)
+            ipaddr = (!strcmp(opt->strarg, "any") ? NULL : opt->strarg);
+
         memset(&hints, 0x00, sizeof(struct addrinfo));
         hints.ai_family = AF_UNSPEC;
         hints.ai_socktype = SOCK_STREAM;
         hints.ai_flags = AI_PASSIVE;
 
-        if ((res = getaddrinfo(opt->strarg, port, &hints, &info))) {
+        if ((res = getaddrinfo(ipaddr, port, &hints, &info))) {
+            logg("!Could not lookup %s: %s\n", opt->strarg, gai_strerror(res));
+            opt = opt->nextarg;
             continue;
         }
 
@@ -105,6 +114,7 @@ int dconnect() {
             }
 
             if(connect(sockd, p->ai_addr, p->ai_addrlen) < 0) {
+                logg("!Could not connect to clamd on %s: %s\n", opt->strarg, strerror(errno));
                 closesocket(sockd);
                 continue;
             }

@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Initialization</TITLE>
-<META NAME="description" CONTENT="Initialization">
+<TITLE>Archives and compressed files</TITLE>
+<META NAME="description" CONTENT="Archives and compressed files">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -20,63 +20,106 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="next" HREF="node46.html">
 <LINK REL="previous" HREF="node44.html">
-<LINK REL="up" HREF="node43.html">
+<LINK REL="up" HREF="node42.html">
 <LINK REL="next" HREF="node46.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html809"
+<A NAME="tex2html817"
   HREF="node46.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html805"
-  HREF="node43.html">
+<A NAME="tex2html813"
+  HREF="node42.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html799"
+<A NAME="tex2html807"
   HREF="node44.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html807"
+<A NAME="tex2html815"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html810"
-  HREF="node46.html">Database loading</A>
-<B> Up:</B> <A NAME="tex2html806"
-  HREF="node43.html">API</A>
-<B> Previous:</B> <A NAME="tex2html800"
-  HREF="node44.html">Header file</A>
- &nbsp; <B>  <A NAME="tex2html808"
+<B> Next:</B> <A NAME="tex2html818"
+  HREF="node46.html">Documents</A>
+<B> Up:</B> <A NAME="tex2html814"
+  HREF="node42.html">Supported formats and features</A>
+<B> Previous:</B> <A NAME="tex2html808"
+  HREF="node44.html">Mail files</A>
+ &nbsp; <B>  <A NAME="tex2html816"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00073200000000000000">
-Initialization</A>
+<H3><A NAME="SECTION00072300000000000000">
+Archives and compressed files</A>
 </H3>
-    Before using libclamav, you should call <code>cl_init()</code> to initialize
-    it. When it's done, you're ready to create a new scan engine by calling
-    <code>cl_engine_new()</code>. To free resources allocated by the engine use
-    <code>cl_engine_free()</code>. Function prototypes:
-    <PRE>
-	int cl_init(unsigned int options);
-	struct cl_engine *cl_engine_new(void);
-	int cl_engine_free(struct cl_engine *engine);
-</PRE>
-    At this time, <code>cl_init()</code> only supports the <code>CL_INIT_DEFAULT</code> option
-    which intializes libclamav with the default settings.
-
-    <code>cl_init()</code> and <code>cl_engine_free()</code> return <code>CL_SUCCESS</code>
-    on success or another code on error. <code>cl_engine_new()</code> return
-    a pointer or NULL if there's not enough memory to allocate a new
-    engine structure.
+    The following archive and compression formats are supported by internal
+    handlers:
+    
+<UL>
+<LI>Zip (+ SFX)
+</LI>
+<LI>RAR (+ SFX)
+</LI>
+<LI>7Zip
+</LI>
+<LI>Tar
+</LI>
+<LI>CPIO
+</LI>
+<LI>Gzip
+</LI>
+<LI>Bzip2
+</LI>
+<LI>DMG
+</LI>
+<LI>IMG
+</LI>
+<LI>ISO 9660
+</LI>
+<LI>PKG
+</LI>
+<LI>HFS+ partition
+</LI>
+<LI>HFSX partition
+</LI>
+<LI>APM disk image
+</LI>
+<LI>GPT disk image
+</LI>
+<LI>MBR disk image
+</LI>
+<LI>XAR
+</LI>
+<LI>XZ
+</LI>
+<LI>MS OLE2
+</LI>
+<LI>MS Cabinet Files (+ SFX)
+</LI>
+<LI>MS CHM (Compiled HTML)
+</LI>
+<LI>MS SZDD compression format
+</LI>
+<LI>BinHex
+</LI>
+<LI>SIS (SymbianOS packages)
+</LI>
+<LI>AutoIt
+</LI>
+<LI>NSIS
+</LI>
+<LI>InstallShield
+    
+</LI>
+</UL>
 
 <P>
 <BR><HR>
 <ADDRESS>
-Tomasz Kojm
-2010-08-12
+Cisco 2014-05-21
 </ADDRESS>
 </BODY>
 </HTML>

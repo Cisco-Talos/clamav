@@ -18,10 +18,6 @@
  *  MA 02110-1301, USA.
  */
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include "others.h"
 #include "fpu.h"
 

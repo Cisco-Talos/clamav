@@ -52,10 +52,6 @@
 #include <termios.h>
 #endif
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include "vba.h"
 
 #include "shared/output.h"
@@ -1530,12 +1526,12 @@ static int vbadump(const struct optstruct *opts)
 	return -1;
     }
     if(cli_ole2_extract(dir, ctx, &vba)) {
-	destroy_ctx(ctx);
+	destroy_ctx(-1, ctx);
 	cli_rmdirs(dir);
         free(dir);
         return -1;
     }
-    destroy_ctx(ctx);
+    destroy_ctx(-1, ctx);
     if (vba) 
       sigtool_vba_scandir(dir, hex_output, vba);
     cli_rmdirs(dir);
@@ -2995,10 +2991,6 @@ int main(int argc, char **argv)
     if(check_flevel())
 	exit(1);
 
-#if defined(_WIN32)
-    cl_initialize_crypto();
-#endif
-
     if((ret = cl_init(CL_INIT_DEFAULT)) != CL_SUCCESS) {
 	mprintf("!Can't initialize libclamav: %s\n", cl_strerror(ret));
 	return -1;
@@ -3091,5 +3083,6 @@ int main(int argc, char **argv)
 	help();
 
     optfree(opts);
+    cl_cleanup_crypto();
     return ret ? 1 : 0;
 }

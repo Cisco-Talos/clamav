@@ -6,10 +6,6 @@
 #include <Windows.h>
 #endif
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include "CpuArch.h"
 
 #ifdef MY_CPU_LE

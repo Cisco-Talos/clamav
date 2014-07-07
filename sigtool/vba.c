@@ -33,15 +33,13 @@
 #include <dirent.h>
 #include <ctype.h>
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include "libclamav/clamav.h"
 #include "libclamav/vba_extract.h"
 #include "libclamav/cltypes.h"
 #include "libclamav/ole2_extract.h"
 #include "shared/output.h"
+
+#include "vba.h"
 
 typedef struct mac_token_tag
 {
@@ -93,7 +91,8 @@ cli_ctx *convenience_ctx(int fd) {
 
 void destroy_ctx(int desc, cli_ctx *ctx) {
     funmap(*(ctx->fmap));
-    close(desc);
+    if (desc >= 0)
+        close(desc);
     free(ctx->fmap);
     cl_engine_free((struct cl_engine *)ctx->engine);
     free(ctx);

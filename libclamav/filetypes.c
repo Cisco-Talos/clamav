@@ -30,10 +30,6 @@
 #include <unistd.h>
 #endif
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include "clamav.h"
 #include "filetypes.h"
 #include "others.h"
@@ -120,6 +116,7 @@ static const struct ftmap_s {
     { "CL_TYPE_OOXML_WORD",	CL_TYPE_OOXML_WORD     	},
     { "CL_TYPE_OOXML_PPT",	CL_TYPE_OOXML_PPT     	},
     { "CL_TYPE_OOXML_XL",	CL_TYPE_OOXML_XL     	},
+    { "CL_TYPE_INTERNAL",	CL_TYPE_INTERNAL     	},
     { NULL,			CL_TYPE_IGNORED		}
 };
 
@@ -376,7 +373,7 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
 			    out_area.length = sizeof(decodedbuff);
 			    out_area.offset = 0;
 
-			    /* in htmlnorm we simply skip over \0 chars, and that allows to parse HTML in any unicode 
+			    /* in htmlnorm we simply skip over \0 chars, allowing HTML parsing in any unicode 
 			     * (multibyte characters will not be exactly handled, but that is not a problem).
 			     * However when detecting whether a file is HTML or not, we need exact conversion.
 			     * (just eliminating zeros and matching would introduce false positives */

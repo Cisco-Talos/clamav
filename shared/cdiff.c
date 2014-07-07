@@ -32,10 +32,7 @@
 #include <unistd.h>
 #endif
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
+#include "clamav.h"
 #include "shared/misc.h"
 #include "shared/output.h"
 #include "shared/cdiff.h"

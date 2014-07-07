@@ -31,10 +31,6 @@ static	char	const	rcsid[] = "$Id: tnef.c,v 1.41 2007/02/12 22:22:27 njh Exp $";
 #include <unistd.h>
 #endif
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include "cltypes.h"
 #include "clamav.h"
 #include "others.h"

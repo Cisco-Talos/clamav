@@ -28,10 +28,6 @@
 #endif
 #include <stdlib.h>
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include "bytecode.h"
 #include "bytecode_priv.h"
 #include "clamav.h"
@@ -443,5 +439,6 @@ int main(int argc, char *argv[])
 	close(fd);
     if (debug_flag)
 	printf("[clambc] Exiting\n");
+    cl_cleanup_crypto();
     return 0;
 }
