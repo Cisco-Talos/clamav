@@ -5086,7 +5086,7 @@ $as_echo "$ac_cv_safe_to_define___extensions__" >&6; }
 VERSION="devel-`date +%Y%m%d`"
 
 LC_CURRENT=7
-LC_REVISION=21
+LC_REVISION=22
 LC_AGE=1
 LIBCLAMAV_VERSION="$LC_CURRENT":"$LC_REVISION":"$LC_AGE"
 
