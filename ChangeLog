@@ -287,6 +287,22 @@ Tue, 08 Jul 11:30:00 EDT 2014 (morgan)
 ------------------------------------
 * 0.98.5 beta release
 
+Mon, 07 Jul 09:00:00 EDT 2014 (swebb)
+------------------------------------
+* 0.98.5-beta1 release engineering
+
+Thu, 03 Jul 22:14:40 EDT 2014 (swebb)
+------------------------------------
+* Call cl_initialize_crypto() in cl_init()
+
+Thu, 03 Jul 16:28:10 EDT 2014 (swebb)
+------------------------------------
+* Finalize PDF parsing code for the preclassification feature
+
+Wed, 25 Jun 16:26:33 EDT 2014 (swebb)
+------------------------------------
+* Finalize linking in libjson, a new optional dependency
+
 Fri, 13 Jun 2014 16:11:15 EDT (smorgan)
 ---------------------------------------
 * add timeout facility for file property scanning
