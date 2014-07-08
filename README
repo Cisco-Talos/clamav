@@ -2,6 +2,20 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
+0.98.5
+------
+
+Welcome to ClamAV 0.98.5! ClamAV 0.98.5 includes important new features
+for collecting and analyzing file properties. Software developers and
+analysts may collect file properties using the ClamAV API and then
+analyze them with ClamAV bytecode programs. Using the new features will
+require that libjson-c is installed, but otherwise libjson-c will be
+optional.
+
+Look for our upcoming series of blog posts to learn more about using the
+ClamAV API and bytecode facilities for collecting and analyzing file
+properties.
+
 0.98.4
 ------
 
