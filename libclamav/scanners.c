@@ -102,6 +102,7 @@
 #include "mbr.h"
 #include "gpt.h"
 #include "apm.h"
+#include "ooxml.h"
 #include "json_api.h"
 
 #ifdef HAVE_BZLIB_H
@@ -370,6 +371,8 @@ static int cli_scanarj(cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_check)
 	int ret = CL_CLEAN, rc, file = 0;
 	arj_metadata_t metadata;
 	char *dir;
+
+    UNUSEDPARAM(sfx_check);
 
     cli_dbgmsg("in cli_scanarj()\n");
 
@@ -726,15 +729,17 @@ static int cli_scanxz(cli_ctx *ctx)
     int ret = CL_CLEAN, fd, rc;
     unsigned long int size = 0;
     char *tmpname;
-    struct CLI_XZ strm = {{0}};
+    struct CLI_XZ strm;
     size_t off = 0;
     size_t avail;
-    unsigned char * buf = cli_malloc(CLI_XZ_OBUF_SIZE);
+    unsigned char *buf;
 
+    buf = cli_malloc(CLI_XZ_OBUF_SIZE);
     if (buf == NULL) {
 	cli_errmsg("cli_scanxz: nomemory for decompress buffer.\n");
         return CL_EMEM;
     }
+    memset(&strm, 0x00, sizeof(struct CLI_XZ));
     strm.next_out = buf;
     strm.avail_out = CLI_XZ_OBUF_SIZE;
     rc = cli_XzInit(&strm);
@@ -783,7 +788,7 @@ static int cli_scanxz(cli_ctx *ctx)
             //cli_dbgmsg("Writing %li bytes to XZ decompress temp file(%li byte total)\n",
             //           towrite, size);
 
-	    if(cli_writen(fd, buf, towrite) != towrite) {
+	    if((size_t)cli_writen(fd, buf, towrite) != towrite) {
 		cli_errmsg("cli_scanxz: Can't write to file.\n");
                 ret = CL_EWRITE;
                 goto xz_exit;
@@ -2164,12 +2169,12 @@ static inline void perf_nested_stop(cli_ctx* ctx, int id, int nestedid)
 
 
 #else
-static inline void perf_init(cli_ctx* ctx) {}
-static inline void perf_start(cli_ctx* ctx, int id){}
-static inline void perf_stop(cli_ctx* ctx, int id){}
-static inline void perf_nested_start(cli_ctx* ctx, int id, int nestedid){}
-static inline void perf_nested_stop(cli_ctx* ctx, int id, int nestedid){}
-static inline void perf_done(cli_ctx* ctx){}
+static inline void perf_init(cli_ctx* ctx) { UNUSEDPARAM(ctx); }
+static inline void perf_start(cli_ctx* ctx, int id){ UNUSEDPARAM(ctx); UNUSEDPARAM(id); }
+static inline void perf_stop(cli_ctx* ctx, int id){ UNUSEDPARAM(ctx); UNUSEDPARAM(id); }
+static inline void perf_nested_start(cli_ctx* ctx, int id, int nestedid){ UNUSEDPARAM(ctx); UNUSEDPARAM(id); UNUSEDPARAM(nestedid); }
+static inline void perf_nested_stop(cli_ctx* ctx, int id, int nestedid){ UNUSEDPARAM(ctx); UNUSEDPARAM(id); UNUSEDPARAM(nestedid); }
+static inline void perf_done(cli_ctx* ctx){ UNUSEDPARAM(ctx); }
 #endif
 
 
@@ -2452,7 +2457,12 @@ static int magic_scandesc_cleanup(cli_ctx *ctx, cli_file_t type, unsigned char *
 {
 #if HAVE_JSON
     ctx->wrkproperty = (struct json_object *)(parent_property);
+#else
+    UNUSEDPARAM(parent_property);
 #endif
+
+    UNUSEDPARAM(type);
+
     cli_dbgmsg("cli_magic_scandesc: returning %d %s\n", retcode, __AT__);
     if(ctx->engine->cb_post_scan) {
         perf_start(ctx, PERFT_POSTCB);
@@ -2486,6 +2496,10 @@ static int magic_scandesc_cleanup(cli_ctx *ctx, cli_file_t type, unsigned char *
 static int dispatch_prescan(clcb_pre_scan cb, cli_ctx *ctx, const char *filetype, bitset_t *old_hook_lsig_matches, void *parent_property, unsigned char *hash, size_t hashed_size, int *run_cleanup)
 {
     int res=CL_CLEAN;
+
+    UNUSEDPARAM(parent_property);
+    UNUSEDPARAM(hash);
+    UNUSEDPARAM(hashed_size);
 
     *run_cleanup = 0;
 
@@ -2572,7 +2586,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 
 #if HAVE_JSON
     if (ctx->options & CL_SCAN_FILE_PROPERTIES) {
-        json_object *arrobj, *ftobj, *fsobj;
+        json_object *arrobj;
 
         if (NULL == ctx->properties) {
             if (type == CL_TYPE_PDF ||   /* file types we collect properties about */
@@ -3205,7 +3219,7 @@ int cli_map_scan(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx, cli_
 
     cli_dbgmsg("cli_map_scan: [%ld, +%lu)\n",
 	       (long)offset, (unsigned long)length);
-    if (offset < 0 || offset >= old_len) {
+    if (offset < 0 || (size_t)offset >= old_len) {
 	cli_dbgmsg("Invalid offset: %ld\n", (long)offset);
 	return CL_CLEAN;
     }
@@ -3285,7 +3299,7 @@ int cli_map_scandesc(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx, 
     cli_dbgmsg("cli_map_scandesc: [%ld, +%lu), [%ld, +%lu)\n",
 	       (long)old_off, (unsigned long)old_len,
 	       (long)offset, (unsigned long)length);
-    if (offset < 0 || offset >= old_len) {
+    if (offset < 0 || (size_t)offset >= old_len) {
 	cli_dbgmsg("Invalid offset: %ld\n", (long)offset);
 	return CL_CLEAN;
     }
