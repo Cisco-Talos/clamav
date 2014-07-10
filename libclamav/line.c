@@ -53,8 +53,6 @@
  *
  */
 
-static	char	const	rcsid[] = "$Id: line.c,v 1.11 2007/02/12 20:46:08 njh Exp $";
-
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif

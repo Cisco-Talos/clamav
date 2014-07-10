@@ -31,6 +31,7 @@ typedef int (*zip_cb)(int fd, cli_ctx *ctx);
 #include "others.h"
 int cli_unzip(cli_ctx *);
 int cli_unzip_single_internal(cli_ctx *, off_t, zip_cb);
+int unzip_single_internal(cli_ctx *ctx, off_t lhoffl, zip_cb zcb);
 int cli_unzip_single(cli_ctx *, off_t);
 int unzip_search(cli_ctx *, const char *, size_t, uint32_t *);
 

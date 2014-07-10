@@ -206,7 +206,7 @@ static char *getsistring(fmap_t *map, uint32_t ptr, uint32_t len) {
     cli_dbgmsg("SIS: OOM\n");
     return NULL;
   }
-  if (fmap_readn(map, name, ptr, len) != len) {
+  if ((uint32_t)fmap_readn(map, name, ptr, len) != len) {
     cli_dbgmsg("SIS: Unable to read string\n");
     free(name);
     return NULL;
@@ -310,7 +310,7 @@ static int real_scansis(cli_ctx *ctx, const char *tmpd) {
     return CL_CLEAN;
   }
   for (i = 0; i< sis.langs; i++)
-    alangs[i]=EC16(llangs[i])<MAXLANG ? sislangs[EC16(llangs[i])] : sislangs[0];
+    alangs[i]=(size_t)EC16(llangs[i])<MAXLANG ? sislangs[EC16(llangs[i])] : sislangs[0];
 
   if (!sis.pnames) {
     cli_dbgmsg("SIS: Application without a name?\n");
@@ -376,7 +376,6 @@ static int real_scansis(cli_ctx *ctx, const char *tmpd) {
       const char *sftype;
       uint32_t *ptrs, *lens, *olens;
       char *fn;
-      long fpos;
 
       GETD(ftype);
       GETD(options);
@@ -717,7 +716,7 @@ static int real_scansis9x(cli_ctx *ctx, const char *tmpd) {
 	      if (!(src=cli_malloc(ALIGN4(s->fsize[s->level])))) break;
 
 	      len = ALIGN4(s->fsize[s->level]);
-	      if (fmap_readn(s->map, src, s->pos, len) != len) {
+	      if ((uint32_t)fmap_readn(s->map, src, s->pos, len) != len) {
 		free(src);
 		break;
 	      }

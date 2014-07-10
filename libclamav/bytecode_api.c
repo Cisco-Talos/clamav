@@ -63,11 +63,13 @@
 
 uint32_t cli_bcapi_test1(struct cli_bc_ctx *ctx, uint32_t a, uint32_t b)
 {
+    UNUSEDPARAM(ctx);
     return (a==0xf00dbeef && b==0xbeeff00d) ? 0x12345678 : 0x55;
 }
 
 uint32_t cli_bcapi_test2(struct cli_bc_ctx *ctx, uint32_t a)
 {
+    UNUSEDPARAM(ctx);
     return a == 0xf00d ? 0xd00f : 0x5555;
 }
 
@@ -131,6 +133,7 @@ int32_t cli_bcapi_seek(struct cli_bc_ctx* ctx, int32_t pos, uint32_t whence)
 
 uint32_t cli_bcapi_debug_print_str(struct cli_bc_ctx *ctx, const uint8_t *str, uint32_t len)
 {
+    UNUSEDPARAM(len);
     cli_event_fastdata(EV, BCEV_DBG_STR, str, strlen((const char*)str));
     cli_dbgmsg("bytecode debug: %s\n", str);
     return 0;
@@ -151,6 +154,7 @@ uint32_t cli_bcapi_debug_print_uint(struct cli_bc_ctx *ctx, uint32_t a)
  * executing */
 uint32_t cli_bcapi_setvirusname(struct cli_bc_ctx* ctx, const uint8_t *name, uint32_t len)
 {
+    UNUSEDPARAM(len);
     ctx->virname = (const char*)name;
     return 0;
 }
@@ -160,7 +164,8 @@ uint32_t cli_bcapi_disasm_x86(struct cli_bc_ctx *ctx, struct DISASM_RESULT *res,
     int n;
     const unsigned char *buf;
     const unsigned char* next;
-    if (!res || !ctx->fmap || ctx->off >= ctx->fmap->len) {
+    UNUSEDPARAM(len);
+    if (!res || !ctx->fmap || (size_t)(ctx->off) >= ctx->fmap->len) {
         API_MISUSE();
         return -1;
     }
@@ -255,6 +260,7 @@ uint32_t cli_bcapi_trace_scope(struct cli_bc_ctx *ctx, const uint8_t *scope, uin
 
 uint32_t cli_bcapi_trace_directory(struct cli_bc_ctx *ctx, const uint8_t* dir, uint32_t dummy)
 {
+    UNUSEDPARAM(dummy);
     if (LIKELY(!ctx->trace_level))
         return 0;
     ctx->directory = (const char*)dir ? (const char*)dir : "";
@@ -314,6 +320,7 @@ uint32_t cli_bcapi_trace_value(struct cli_bc_ctx *ctx, const uint8_t* name, uint
 
 uint32_t cli_bcapi_trace_ptr(struct cli_bc_ctx *ctx, const uint8_t* ptr, uint32_t dummy)
 {
+    UNUSEDPARAM(dummy);
     if (LIKELY(ctx->trace_level < trace_val))
         return 0;
     if (ctx->trace_level&0x80) {
@@ -395,7 +402,7 @@ int32_t cli_bcapi_file_find_limit(struct cli_bc_ctx *ctx , const uint8_t* data, 
     for (;;) {
         const char *p;
         int32_t readlen = sizeof(buf);
-        if (off + readlen > limit) {
+        if (off + readlen > (unsigned int)limit) {
             readlen = limit - off;
             if (readlen < 0)
                 return -1;
@@ -463,6 +470,7 @@ int32_t cli_bcapi_fill_buffer(struct cli_bc_ctx *ctx, uint8_t* buf,
                               uint32_t pos, uint32_t fill)
 {
     int32_t res, remaining, tofill;
+    UNUSEDPARAM(fill);
     if (!buf || !buflen || buflen > CLI_MAX_ALLOCATION || filled > buflen) {
         cli_dbgmsg("fill_buffer1\n");
         API_MISUSE();
@@ -586,7 +594,7 @@ int32_t cli_bcapi_hashset_new(struct cli_bc_ctx *ctx )
 
 static struct cli_hashset *get_hashset(struct cli_bc_ctx *ctx, int32_t id)
 {
-    if (id < 0 || id >= ctx->nhashsets || !ctx->hashsets) {
+    if (id < 0 || (unsigned int)id >= ctx->nhashsets || !ctx->hashsets) {
         API_MISUSE();
         return NULL;
     }
@@ -629,7 +637,7 @@ int32_t cli_bcapi_hashset_done(struct cli_bc_ctx *ctx , int32_t id)
     if (!s)
         return -1;
     cli_hashset_destroy(s);
-    if (id == ctx->nhashsets-1) {
+    if ((unsigned int)id == ctx->nhashsets-1) {
         ctx->nhashsets--;
         if (!ctx->nhashsets) {
             free(ctx->hashsets);
@@ -693,7 +701,7 @@ int32_t cli_bcapi_buffer_pipe_new_fromfile(struct cli_bc_ctx *ctx , uint32_t at)
 
 static struct bc_buffer *get_buffer(struct cli_bc_ctx *ctx, int32_t id)
 {
-    if (!ctx->buffers || id < 0 || id >= ctx->nbuffers) {
+    if (!ctx->buffers || id < 0 || (unsigned int)id >= ctx->nbuffers) {
         cli_dbgmsg("bytecode api: invalid buffer id %u\n", id);
         return NULL;
     }
@@ -839,7 +847,7 @@ int32_t cli_bcapi_inflate_init(struct cli_bc_ctx *ctx, int32_t from, int32_t to,
 
 static struct bc_inflate *get_inflate(struct cli_bc_ctx *ctx, int32_t id)
 {
-    if (id < 0 || id >= ctx->ninflates || !ctx->inflates)
+    if (id < 0 || (unsigned int)id >= ctx->ninflates || !ctx->inflates)
         return NULL;
     return &ctx->inflates[id];
 }
@@ -921,6 +929,7 @@ int32_t cli_bcapi_bytecode_rt_error(struct cli_bc_ctx *ctx , int32_t id)
 {
     int32_t line = id >> 8;
     int32_t col = id&0xff;
+    UNUSEDPARAM(ctx);
     cli_warnmsg("Bytecode runtime error at line %u, col %u\n", line, col);
     return 0;
 }
@@ -963,7 +972,7 @@ int32_t cli_bcapi_jsnorm_init(struct cli_bc_ctx *ctx, int32_t from)
 
 static struct bc_jsnorm *get_jsnorm(struct cli_bc_ctx *ctx, int32_t id)
 {
-    if (id < 0 || id >= ctx->njsnorms || !ctx->jsnorms)
+    if (id < 0 || (unsigned int)id >= ctx->njsnorms || !ctx->jsnorms)
         return NULL;
     return &ctx->jsnorms[id];
 }
@@ -1013,6 +1022,7 @@ static inline double myround(double a)
 int32_t cli_bcapi_ilog2(struct cli_bc_ctx *ctx, uint32_t a, uint32_t b)
 {
     double f;
+    UNUSEDPARAM(ctx);
     if (!b)
         return 0x7fffffff;
     /* log(a/b) is -32..32, so 2^26*32=2^31 covers the entire range of int32 */
@@ -1022,6 +1032,7 @@ int32_t cli_bcapi_ilog2(struct cli_bc_ctx *ctx, uint32_t a, uint32_t b)
 
 int32_t cli_bcapi_ipow(struct cli_bc_ctx *ctx, int32_t a, int32_t b, int32_t c)
 {
+    UNUSEDPARAM(ctx);
     if (!a && b < 0)
         return 0x7fffffff;
     return (int32_t)myround(c*pow(a,b));
@@ -1030,6 +1041,7 @@ int32_t cli_bcapi_ipow(struct cli_bc_ctx *ctx, int32_t a, int32_t b, int32_t c)
 uint32_t cli_bcapi_iexp(struct cli_bc_ctx *ctx, int32_t a, int32_t b, int32_t c)
 {
     double f;
+    UNUSEDPARAM(ctx);
     if (!b)
         return 0x7fffffff;
     f= c*exp((double)a/b);
@@ -1039,6 +1051,7 @@ uint32_t cli_bcapi_iexp(struct cli_bc_ctx *ctx, int32_t a, int32_t b, int32_t c)
 int32_t cli_bcapi_isin(struct cli_bc_ctx *ctx, int32_t a, int32_t b, int32_t c)
 {
     double f;
+    UNUSEDPARAM(ctx);
     if (!b)
         return 0x7fffffff;
     f = c*sin((double)a/b);
@@ -1048,6 +1061,7 @@ int32_t cli_bcapi_isin(struct cli_bc_ctx *ctx, int32_t a, int32_t b, int32_t c)
 int32_t cli_bcapi_icos(struct cli_bc_ctx *ctx, int32_t a, int32_t b, int32_t c)
 {
     double f;
+    UNUSEDPARAM(ctx);
     if (!b)
         return 0x7fffffff;
     f = c*cos((double)a/b);
@@ -1074,6 +1088,8 @@ int32_t cli_bcapi_hex2ui(struct cli_bc_ctx *ctx, uint32_t ah, uint32_t bh)
 {
     char result = 0;
     unsigned char in[2];
+    UNUSEDPARAM(ctx);
+
     in[0] = ah;
     in[1] = bh;
 
@@ -1086,6 +1102,8 @@ int32_t cli_bcapi_atoi(struct cli_bc_ctx *ctx, const uint8_t* str, int32_t len)
 {
     int32_t number = 0;
     const uint8_t *end = str + len;
+    UNUSEDPARAM(ctx);
+
     while (isspace(*str) && str < end) str++;
     if (str == end)
         return -1;/* all spaces */
@@ -1104,6 +1122,8 @@ int32_t cli_bcapi_atoi(struct cli_bc_ctx *ctx, const uint8_t* str, int32_t len)
 
 uint32_t cli_bcapi_debug_print_str_start(struct cli_bc_ctx *ctx , const uint8_t* s, uint32_t len)
 {
+    UNUSEDPARAM(ctx);
+
     if (!s || len <= 0)
         return -1;
     cli_event_fastdata(EV, BCEV_DBG_STR, s, len);
@@ -1113,6 +1133,8 @@ uint32_t cli_bcapi_debug_print_str_start(struct cli_bc_ctx *ctx , const uint8_t*
 
 uint32_t cli_bcapi_debug_print_str_nonl(struct cli_bc_ctx *ctx , const uint8_t* s, uint32_t len)
 {
+    UNUSEDPARAM(ctx);
+
     if (!s || len <= 0)
         return -1;
     if (!cli_debug_flag)
@@ -1123,14 +1145,16 @@ uint32_t cli_bcapi_debug_print_str_nonl(struct cli_bc_ctx *ctx , const uint8_t* 
 uint32_t cli_bcapi_entropy_buffer(struct cli_bc_ctx *ctx , uint8_t* s, int32_t len)
 {
     uint32_t probTable[256];
-    unsigned i;
+    unsigned int i;
     double entropy = 0;
     double log2 = log(2);
+
+    UNUSEDPARAM(ctx);
 
     if (!s || len <= 0)
         return -1;
     memset(probTable, 0, sizeof(probTable));
-    for (i=0;i<len;i++) {
+    for (i=0;i<(unsigned int)len;i++) {
         probTable[s[i]]++;
     }
     for (i=0;i<256;i++) {
@@ -1162,7 +1186,7 @@ int32_t cli_bcapi_map_new(struct cli_bc_ctx *ctx, int32_t keysize, int32_t value
 
 static struct cli_map *get_hashtab(struct cli_bc_ctx *ctx, int32_t id)
 {
-    if (id < 0 || id >= ctx->nmaps || !ctx->maps)
+    if (id < 0 || (unsigned int)id >= ctx->nmaps || !ctx->maps)
         return NULL;
     return &ctx->maps[id];
 }
@@ -1223,7 +1247,7 @@ int32_t cli_bcapi_map_done(struct cli_bc_ctx *ctx , int32_t id)
     if (!s)
         return -1;
     cli_map_delete(s);
-    if (id == ctx->nmaps-1) {
+    if ((unsigned int)id == ctx->nmaps-1) {
         ctx->nmaps--;
         if (!ctx->nmaps) {
             free(ctx->maps);
@@ -1239,11 +1263,13 @@ int32_t cli_bcapi_map_done(struct cli_bc_ctx *ctx , int32_t id)
 
 uint32_t cli_bcapi_engine_functionality_level(struct cli_bc_ctx *ctx)
 {
+    UNUSEDPARAM(ctx);
     return cl_retflevel();
 }
 
 uint32_t cli_bcapi_engine_dconf_level(struct cli_bc_ctx *ctx)
 {
+    UNUSEDPARAM(ctx);
     return CL_FLEVEL_DCONF;
 }
 
@@ -1270,7 +1296,7 @@ int32_t cli_bcapi_extract_set_container(struct cli_bc_ctx *ctx, uint32_t ftype)
 int32_t cli_bcapi_input_switch(struct cli_bc_ctx *ctx , int32_t extracted_file)
 {
     fmap_t *map;
-    if (ctx->extracted_file_input == extracted_file)
+    if (ctx->extracted_file_input == (unsigned int)extracted_file)
         return 0;
     if (!extracted_file) {
         cli_dbgmsg("bytecode api: input switched back to main file\n");
@@ -1304,6 +1330,7 @@ uint32_t cli_bcapi_get_environment(struct cli_bc_ctx *ctx , struct cli_environme
 
 uint32_t cli_bcapi_disable_bytecode_if(struct cli_bc_ctx *ctx , const int8_t* reason, uint32_t len, uint32_t cond)
 {
+    UNUSEDPARAM(len);
     if (ctx->bc->kind != BC_STARTUP) {
         cli_dbgmsg("Bytecode must be BC_STARTUP to call disable_bytecode_if\n");
         return -1;
@@ -1320,6 +1347,7 @@ uint32_t cli_bcapi_disable_bytecode_if(struct cli_bc_ctx *ctx , const int8_t* re
 
 uint32_t cli_bcapi_disable_jit_if(struct cli_bc_ctx *ctx , const int8_t* reason, uint32_t len, uint32_t cond)
 {
+    UNUSEDPARAM(len);
     if (ctx->bc->kind != BC_STARTUP) {
         cli_dbgmsg("Bytecode must be BC_STARTUP to call disable_jit_if\n");
         return -1;
@@ -1340,6 +1368,7 @@ int32_t cli_bcapi_version_compare(struct cli_bc_ctx *ctx , const uint8_t* lhs, u
 {
     unsigned i = 0, j = 0;
     unsigned long li=0, ri=0;
+    UNUSEDPARAM(ctx);
     do {
         while (i < lhs_len && j < rhs_len && lhs[i] == rhs[j] &&
                !isdigit(lhs[i]) && !isdigit(rhs[j])) {
@@ -1451,11 +1480,11 @@ int32_t cli_bcapi_pdf_lookupobj(struct cli_bc_ctx *ctx , uint32_t objid)
 uint32_t cli_bcapi_pdf_getobjsize(struct cli_bc_ctx *ctx , int32_t objidx)
 {
     if (!ctx->pdf_phase ||
-        objidx >= ctx->pdf_nobjs ||
+        (uint32_t)objidx >= ctx->pdf_nobjs ||
         ctx->pdf_phase == PDF_PHASE_POSTDUMP /* map is obj itself, no access to pdf anymore */
        )
         return 0;
-    if (objidx + 1 == ctx->pdf_nobjs)
+    if ((uint32_t)(objidx + 1) == ctx->pdf_nobjs)
         return ctx->pdf_size - ctx->pdf_objs[objidx].start;
     return ctx->pdf_objs[objidx+1].start - ctx->pdf_objs[objidx].start - 4;
 }
@@ -1471,7 +1500,7 @@ const uint8_t* cli_bcapi_pdf_getobj(struct cli_bc_ctx *ctx , int32_t objidx, uin
 int32_t cli_bcapi_pdf_getobjid(struct cli_bc_ctx *ctx , int32_t objidx)
 {
     if (!ctx->pdf_phase ||
-        objidx >= ctx->pdf_nobjs)
+        (uint32_t)objidx >= ctx->pdf_nobjs)
         return -1;
     return ctx->pdf_objs[objidx].id;
 }
@@ -1479,7 +1508,7 @@ int32_t cli_bcapi_pdf_getobjid(struct cli_bc_ctx *ctx , int32_t objidx)
 int32_t cli_bcapi_pdf_getobjflags(struct cli_bc_ctx *ctx , int32_t objidx)
 {
     if (!ctx->pdf_phase ||
-        objidx >= ctx->pdf_nobjs)
+        (uint32_t)objidx >= ctx->pdf_nobjs)
         return -1;
     return ctx->pdf_objs[objidx].flags;
 }
@@ -1487,7 +1516,7 @@ int32_t cli_bcapi_pdf_getobjflags(struct cli_bc_ctx *ctx , int32_t objidx)
 int32_t cli_bcapi_pdf_setobjflags(struct cli_bc_ctx *ctx , int32_t objidx, int32_t flags)
 {
     if (!ctx->pdf_phase ||
-        objidx >= ctx->pdf_nobjs)
+        (uint32_t)objidx >= ctx->pdf_nobjs)
         return -1;
     cli_dbgmsg("cli_pdf: bytecode setobjflags %08x -> %08x\n",
                ctx->pdf_objs[objidx].flags,
@@ -1499,7 +1528,7 @@ int32_t cli_bcapi_pdf_setobjflags(struct cli_bc_ctx *ctx , int32_t objidx, int32
 int32_t cli_bcapi_pdf_get_offset(struct cli_bc_ctx *ctx , int32_t objidx)
 {
     if (!ctx->pdf_phase ||
-        objidx >= ctx->pdf_nobjs)
+        (uint32_t)objidx >= ctx->pdf_nobjs)
         return -1;
     return ctx->pdf_startoff + ctx->pdf_objs[objidx].start;
 }
@@ -1536,6 +1565,7 @@ int32_t cli_bcapi_json_is_active(struct cli_bc_ctx *ctx )
         return 1;
     }
 #else
+    UNUSEDPARAM(ctx);
     cli_dbgmsg("bytecode api: libjson is not enabled!\n");
 #endif
     return 0;
@@ -1558,6 +1588,7 @@ static int32_t cli_bcapi_json_objs_init(struct cli_bc_ctx *ctx) {
 
     return 0;
 #else
+    UNUSEDPARAM(ctx);
     return -1;
 #endif
 }
@@ -1580,7 +1611,7 @@ int32_t cli_bcapi_json_get_object(struct cli_bc_ctx *ctx, const int8_t* name, in
 
     INIT_JSON_OBJS(ctx);
     jobjs = ((json_object **)(ctx->jsonobjs));
-    if (objid < 0 || objid >= ctx->njsonobjs) {
+    if (objid < 0 || (unsigned int)objid >= ctx->njsonobjs) {
         cli_dbgmsg("bytecode api[json_get_object]: invalid json objid requested\n");
         return -1;
     }
@@ -1619,6 +1650,10 @@ int32_t cli_bcapi_json_get_object(struct cli_bc_ctx *ctx, const int8_t* name, in
     free(namep);
     return n-1;
 #else
+    UNUSEDPARAM(ctx);
+    UNUSEDPARAM(name);
+    UNUSEDPARAM(name_len);
+    UNUSEDPARAM(objid);
     cli_dbgmsg("bytecode api: libjson is not enabled!\n");
     return -1;
 #endif
@@ -1632,7 +1667,7 @@ int32_t cli_bcapi_json_get_type(struct cli_bc_ctx *ctx, int32_t objid)
 
     INIT_JSON_OBJS(ctx);
     jobjs = ((json_object **)(ctx->jsonobjs));
-    if (objid < 0 || objid >= ctx->njsonobjs) {
+    if (objid < 0 || (unsigned int)objid >= ctx->njsonobjs) {
         cli_dbgmsg("bytecode api[json_get_type]: invalid json objid requested\n");
         return -1;
     }
@@ -1658,6 +1693,8 @@ int32_t cli_bcapi_json_get_type(struct cli_bc_ctx *ctx, int32_t objid)
     }
     
 #else
+    UNUSEDPARAM(ctx);
+    UNUSEDPARAM(objid);
     cli_dbgmsg("bytecode api: libjson is not enabled!\n");
 #endif
     return -1;
@@ -1671,7 +1708,7 @@ int32_t cli_bcapi_json_get_array_length(struct cli_bc_ctx *ctx, int32_t objid)
 
     INIT_JSON_OBJS(ctx);
     jobjs = (json_object **)(ctx->jsonobjs);
-    if (objid < 0 || objid >= ctx->njsonobjs) {
+    if (objid < 0 || (unsigned int)objid >= ctx->njsonobjs) {
         cli_dbgmsg("bytecode api[json_array_get_length]: invalid json objid requested\n");
         return -1;
     }
@@ -1683,6 +1720,8 @@ int32_t cli_bcapi_json_get_array_length(struct cli_bc_ctx *ctx, int32_t objid)
 
     return json_object_array_length(jobjs[objid]);
 #else
+    UNUSEDPARAM(ctx);
+    UNUSEDPARAM(objid);
     cli_dbgmsg("bytecode api: libjson is not enabled!\n");
     return -1;
 #endif
@@ -1698,7 +1737,7 @@ int32_t cli_bcapi_json_get_array_idx(struct cli_bc_ctx *ctx, int32_t idx, int32_
 
     INIT_JSON_OBJS(ctx);
     jobjs = (json_object **)(ctx->jsonobjs);
-    if (objid < 0 || objid >= ctx->njsonobjs) {
+    if (objid < 0 || (unsigned int)objid >= ctx->njsonobjs) {
         cli_dbgmsg("bytecode api[json_array_get_idx]: invalid json objid requested\n");
         return -1;
     }
@@ -1736,6 +1775,9 @@ int32_t cli_bcapi_json_get_array_idx(struct cli_bc_ctx *ctx, int32_t idx, int32_
 
     return 0;
 #else
+    UNUSEDPARAM(ctx);
+    UNUSEDPARAM(idx);
+    UNUSEDPARAM(objid);
     cli_dbgmsg("bytecode api: libjson is not enabled!\n");
     return -1;
 #endif
@@ -1751,7 +1793,7 @@ int32_t cli_bcapi_json_get_string_length(struct cli_bc_ctx *ctx, int32_t objid)
 
     INIT_JSON_OBJS(ctx);
     jobjs = (json_object **)(ctx->jsonobjs);
-    if (objid < 0 || objid >= ctx->njsonobjs) {
+    if (objid < 0 || (unsigned int)objid >= ctx->njsonobjs) {
         cli_dbgmsg("bytecode api[json_get_string_length]: invalid json objid requested\n");
         return -1;
     }
@@ -1771,6 +1813,8 @@ int32_t cli_bcapi_json_get_string_length(struct cli_bc_ctx *ctx, int32_t objid)
 
     return len;
 #else
+    UNUSEDPARAM(ctx);
+    UNUSEDPARAM(objid);
     cli_dbgmsg("bytecode api: libjson is not enabled!\n");
     return -1;
 #endif
@@ -1786,7 +1830,7 @@ int32_t cli_bcapi_json_get_string(struct cli_bc_ctx *ctx, int8_t* str, int32_t s
 
     INIT_JSON_OBJS(ctx);
     jobjs = (json_object **)(ctx->jsonobjs);
-    if (objid < 0 || objid >= ctx->njsonobjs) {
+    if (objid < 0 || (unsigned int)objid >= ctx->njsonobjs) {
         cli_dbgmsg("bytecode api[json_get_string]: invalid json objid requested\n");
         return -1;
     }
@@ -1806,17 +1850,21 @@ int32_t cli_bcapi_json_get_string(struct cli_bc_ctx *ctx, int8_t* str, int32_t s
 
     if (len+1 > str_len) {
         /* limit on str-len */
-        strncpy(str, jstr, str_len-1);
+        strncpy((char *)str, jstr, str_len-1);
         str[str_len-1] = '\0';
         return str_len;
     }
     else {
         /* limit on len+1 */
-        strncpy(str, jstr, len);
+        strncpy((char *)str, jstr, len);
         str[len] = '\0';
         return len+1;
     }
 #else
+    UNUSEDPARAM(ctx);
+    UNUSEDPARAM(str);
+    UNUSEDPARAM(str_len);
+    UNUSEDPARAM(objid);
     cli_dbgmsg("bytecode api: libjson is not enabled!\n");
     return -1;
 #endif
@@ -1829,7 +1877,7 @@ int32_t cli_bcapi_json_get_boolean(struct cli_bc_ctx *ctx, int32_t objid)
 
     INIT_JSON_OBJS(ctx);
     jobjs = (json_object **)(ctx->jsonobjs);
-    if (objid < 0 || objid >= ctx->njsonobjs) {
+    if (objid < 0 || (unsigned int)objid >= ctx->njsonobjs) {
         cli_dbgmsg("bytecode api[json_get_boolean]: invalid json objid requested\n");
         return -1;
     }
@@ -1837,6 +1885,8 @@ int32_t cli_bcapi_json_get_boolean(struct cli_bc_ctx *ctx, int32_t objid)
     jobj = jobjs[objid];
     return json_object_get_boolean(jobj);
 #else
+    UNUSEDPARAM(ctx);
+    UNUSEDPARAM(objid);
     cli_dbgmsg("bytecode api: libjson is not enabled!\n");
     return 0;
 #endif
@@ -1849,7 +1899,7 @@ int32_t cli_bcapi_json_get_int(struct cli_bc_ctx *ctx, int32_t objid)
 
     INIT_JSON_OBJS(ctx);
     jobjs = (json_object **)(ctx->jsonobjs);
-    if (objid < 0 || objid >= ctx->njsonobjs) {
+    if (objid < 0 || (unsigned int)objid >= ctx->njsonobjs) {
         cli_dbgmsg("bytecode api[json_get_int]: invalid json objid requested\n");
         return -1;
     }
@@ -1857,6 +1907,8 @@ int32_t cli_bcapi_json_get_int(struct cli_bc_ctx *ctx, int32_t objid)
     jobj = jobjs[objid];
     return json_object_get_int(jobj);
 #else
+    UNUSEDPARAM(ctx);
+    UNUSEDPARAM(objid);
     cli_dbgmsg("bytecode api: libjson is not enabled!\n");
     return 0;
 #endif

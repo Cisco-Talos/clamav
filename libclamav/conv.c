@@ -69,7 +69,7 @@ static size_t base64_len(const char *data, size_t len)
 void *cl_base64_decode(char *data, size_t len, void *obuf, size_t *olen)
 {
     BIO *bio, *b64;
-    void *buf, *ret;
+    void *buf;
 
     buf = (obuf) ? obuf : malloc(base64_len(data, len)+1);
     if (!(buf))

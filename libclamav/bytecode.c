@@ -363,6 +363,10 @@ int cli_bytecode_context_setparam_int(struct cli_bc_ctx *ctx, unsigned i, uint64
 
 int cli_bytecode_context_setparam_ptr(struct cli_bc_ctx *ctx, unsigned i, void *data, unsigned datalen)
 {
+    UNUSEDPARAM(ctx);
+    UNUSEDPARAM(i);
+    UNUSEDPARAM(data);
+    UNUSEDPARAM(datalen);
     cli_errmsg("Pointer parameters are not implemented yet!\n");
     return CL_EARG;
 }
@@ -2270,7 +2274,7 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 		    MAP(inst->u.three[1]);
 		    MAP(inst->u.three[2]);
                     inst->u.three[0] = get_geptypesize(bc, inst->u.three[0]);
-                    if (inst->u.three[0] == -1)
+                    if ((int)(inst->u.three[0]) == -1)
                       ret = CL_EBYTECODE;
                     break;
 		case OP_BC_GEPZ:
@@ -2644,7 +2648,7 @@ int cli_bytecode_prepare2(struct cl_engine *engine, struct cli_all_bc *bcs, unsi
 	rc = cli_bytecode_context_getresult_int(ctx);
 	/* check magic number, don't use 0 here because it is too easy for a
 	 * buggy bytecode to return 0 */
-	if (rc != 0xda7aba5e) {
+	if ((unsigned int)rc != (unsigned int)0xda7aba5e) {
 	    cli_warnmsg("Bytecode: selftest failed with code %08x. Please report to http://bugs.clamav.net\n",
 			rc);
 	    if (engine->bytecode_mode == CL_BYTECODE_MODE_TEST)
@@ -3012,7 +3016,7 @@ void cli_bytecode_describe(const struct cli_bc *bc)
 	    unsigned len = strlen(cli_apicalls[i].name);
 	    if (had)
 		printf(",");
-	    if (len > cols) {
+	    if (len > (unsigned int)cols) {
 		printf("\n\t");
 		cols = 72;
 	    }

@@ -286,6 +286,8 @@ int cl_init(unsigned int initoptions)
 	struct timeval tv;
 	unsigned int pid = (unsigned int) getpid();
 
+    UNUSEDPARAM(initoptions);
+
     cl_initialize_crypto();
 
     {
@@ -766,8 +768,6 @@ struct cl_settings *cl_engine_settings_copy(const struct cl_engine *engine)
 
 int cl_engine_settings_apply(struct cl_engine *engine, const struct cl_settings *settings)
 {
-    cli_intel_t *intel;
-
     engine->ac_only = settings->ac_only;
     engine->ac_mindepth = settings->ac_mindepth;
     engine->ac_maxdepth = settings->ac_maxdepth;
@@ -1163,7 +1163,7 @@ int cli_rmdirs(const char *dirname)
 		    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
 			path = cli_malloc(strlen(dirname) + strlen(dent->d_name) + 2);
 			if(!path) {
-                cli_errmsg("cli_rmdirs: Unable to allocate memory for path %u\n", strlen(dirname) + strlen(dent->d_name) + 2);
+                cli_errmsg("cli_rmdirs: Unable to allocate memory for path %lu\n", strlen(dirname) + strlen(dent->d_name) + 2);
 			    closedir(dd);
 			    return -1;
 			}

@@ -30,6 +30,7 @@
 #include "others.h"
 #include "clamav.h"
 #include "fmap.h"
+#include "binhex.h"
 
 
 static const uint8_t hqxtbl[] = {

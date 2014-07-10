@@ -26,10 +26,13 @@
 #include "7z/XzCrc64.h"
 #include "xz_iface.h"
 
-void *__xz_wrap_alloc(void *unused, size_t size) { 
+void *__xz_wrap_alloc(void *unused, size_t size);
+void __xz_wrap_free(void *unused, void *freeme);
+
+void *__xz_wrap_alloc(void *unused, size_t size) {
+    UNUSEDPARAM(unused);
     if(!size || size > CLI_MAX_ALLOCATION)
 	return NULL;
-    unused = unused;
     if(!size || size > CLI_MAX_ALLOCATION) {
 	cli_dbgmsg("xz_iface: Attempt to allocate %lu bytes exceeds CLI_MAX_ALLOCATION.\n",
                    (unsigned long int) size);
@@ -38,7 +41,7 @@ void *__xz_wrap_alloc(void *unused, size_t size) {
     return cli_malloc(size);
 }
 void __xz_wrap_free(void *unused, void *freeme) {
-    unused = unused;
+    UNUSEDPARAM(unused);
     free(freeme);
 }
 

@@ -18,8 +18,6 @@
  *  MA 02110-1301, USA.
  */
 
-static	char	const	rcsid[] = "$Id: untar.c,v 1.35 2007/02/12 20:46:09 njh Exp $";
-
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
@@ -316,7 +314,7 @@ cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx)
                         char err[128];
 
 			nbytes = size>512? 512:size;
-                        if (nread && nread < nbytes)
+                        if (nread && nread < (size_t)nbytes)
                             nbytes = nread;
 
 			if (limitnear > 0) {

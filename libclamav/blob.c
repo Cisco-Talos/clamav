@@ -18,8 +18,6 @@
  *  MA 02110-1301, USA.
  */
 
-static	char	const	rcsid[] = "$Id: blob.c,v 1.64 2007/02/12 22:25:14 njh Exp $";
-
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
@@ -143,6 +141,8 @@ blobSetFilename(blob *b, const char *dir, const char *filename)
 	assert(b != NULL);
 	assert(b->magic == BLOBCLASS);
 	assert(filename != NULL);
+
+    UNUSEDPARAM(dir);
 
 	cli_dbgmsg("blobSetFilename: %s\n", filename);
 
@@ -474,6 +474,8 @@ fileblobDestroy(fileblob *fb)
 void
 fileblobPartialSet(fileblob *fb, const char *fullname, const char *arg)
 {
+    UNUSEDPARAM(arg);
+
 	if(fb->b.name)
 		return;
 

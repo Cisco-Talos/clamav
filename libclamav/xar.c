@@ -417,11 +417,13 @@ int cli_scanxar(cli_ctx *ctx)
     fmap_t *map = *ctx->fmap;
     long length, offset, size, at;
     int encoding;
-    z_stream strm = {0};
+    z_stream strm;
     char *toc, *tmpname;
     xmlTextReaderPtr reader = NULL;
     int a_hash, e_hash;
     unsigned char *a_cksum = NULL, *e_cksum = NULL;
+
+    memset(&strm, 0x00, sizeof(z_stream));
 
     /* retrieve xar header */
     if (fmap_readn(*ctx->fmap, &hdr, 0, sizeof(hdr)) != sizeof(hdr)) {
@@ -572,7 +574,7 @@ int cli_scanxar(cli_ctx *ctx)
                 break;
             }
             
-            while (at < map->len && at < offset+hdr.toc_length_compressed+hdr.size+length) {
+            while ((size_t)at < map->len && (unsigned long)at < offset+hdr.toc_length_compressed+hdr.size+length) {
                 unsigned long avail_in;
                 void * next_in;
                 unsigned int bytes = MIN(map->len - at, map->pgsz);
@@ -672,7 +674,7 @@ int cli_scanxar(cli_ctx *ctx)
 
                 at += CLI_LZMA_HDR_SIZE;
                 in_remaining -= CLI_LZMA_HDR_SIZE;
-                while (at < map->len && at < offset+hdr.toc_length_compressed+hdr.size+length) {
+                while ((size_t)at < map->len && (unsigned long)at < offset+hdr.toc_length_compressed+hdr.size+length) {
                     SizeT avail_in;
                     SizeT avail_out;
                     void * next_in;
@@ -751,7 +753,7 @@ int cli_scanxar(cli_ctx *ctx)
                 unsigned long write_len;
                 
                 if (ctx->engine->maxfilesize)
-                    write_len = MIN(ctx->engine->maxfilesize, length);
+                    write_len = MIN((size_t)(ctx->engine->maxfilesize), (size_t)length);
                 else
                     write_len = length;
                     

@@ -146,8 +146,8 @@ static int scancws(cli_ctx *ctx, struct swf_file_hdr *hdr)
     }
 
     stream.avail_in = 0;
-    stream.next_in = inbuff;
-    stream.next_out = outbuff;
+    stream.next_in = (Bytef *)inbuff;
+    stream.next_out = (Bytef *)outbuff;
     stream.zalloc = (alloc_func) NULL;
     stream.zfree = (free_func) NULL;
     stream.opaque = (voidpf) 0;
@@ -167,7 +167,7 @@ static int scancws(cli_ctx *ctx, struct swf_file_hdr *hdr)
 
     do {
 	if(stream.avail_in == 0) {
-	    stream.next_in = inbuff;
+	    stream.next_in = (Bytef *)inbuff;
 	    ret = fmap_readn(map, inbuff, offset, FILEBUFF);
 	    if(ret < 0) {
 		cli_errmsg("scancws: Error reading SWF file\n");
@@ -201,7 +201,7 @@ static int scancws(cli_ctx *ctx, struct swf_file_hdr *hdr)
 	    }
 	    outsize += count;
 	}
-	stream.next_out = outbuff;
+	stream.next_out = (Bytef *)outbuff;
 	stream.avail_out = FILEBUFF;
     } while(zret == Z_OK);
 

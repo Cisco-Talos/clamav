@@ -95,10 +95,10 @@ static int dmg_handle_mish(cli_ctx *, unsigned int, char *, uint64_t, struct dmg
 int cli_scandmg(cli_ctx *ctx)
 {
     struct dmg_koly_block hdr;
-    int ret, namelen, ofd;
+    int ret;
     size_t maplen, nread;
     off_t pos = 0;
-    char *dirname, *tmpfile;
+    char *dirname;
     const char *outdata;
     unsigned int file = 0;
     struct dmg_mish_with_stripes *mish_list = NULL, *mish_list_tail = NULL;
@@ -255,7 +255,7 @@ int cli_scandmg(cli_ctx *ctx)
                 /* Reset state early, for continue cases */
                 stateDepth[DMG_FIND_KEY_DATA] = -1;
                 state--;
-                if (xmlStrcmp(nodeName, "data") != 0) {
+                if (xmlStrcmp(nodeName, (const xmlChar *)"data") != 0) {
                     cli_dbgmsg("cli_scandmg: Not blkx data element\n");
                     xmlFree(nodeName);
                     continue;
@@ -316,7 +316,7 @@ int cli_scandmg(cli_ctx *ctx)
             }
             if ((state == DMG_FIND_KEY_DATA)
                     && (depth > stateDepth[state-1])
-                    && (xmlStrcmp(nodeName, "key") == 0)) {
+                    && (xmlStrcmp(nodeName, (const xmlChar *)"key") == 0)) {
                 xmlChar * textValue;
                 dmg_parsemsg("read: Found key - checking for Data\n");
                 if (xmlTextReaderRead(reader) != 1) {
@@ -334,7 +334,7 @@ int cli_scandmg(cli_ctx *ctx)
                     xmlFree(nodeName);
                     continue;
                 }
-                if (xmlStrcmp(textValue, "Data") == 0) {
+                if (xmlStrcmp(textValue, (const xmlChar *)"Data") == 0) {
                     dmg_parsemsg("read: Matched data\n");
                     stateDepth[DMG_FIND_KEY_DATA] = depth;
                     state++;
@@ -346,12 +346,12 @@ int cli_scandmg(cli_ctx *ctx)
             }
             if ((state == DMG_FIND_BLKX_CONTAINER)
                     && (depth == stateDepth[state-1])) {
-                if (xmlStrcmp(nodeName, "array") == 0) {
+                if (xmlStrcmp(nodeName, (const xmlChar *)"array") == 0) {
                     dmg_parsemsg("read: Found array blkx\n");
                     stateDepth[DMG_FIND_BLKX_CONTAINER] = depth;
                     state++;
                 }
-                else if (xmlStrcmp(nodeName, "dict") == 0) {
+                else if (xmlStrcmp(nodeName, (const xmlChar *)"dict") == 0) {
                     dmg_parsemsg("read: Found dict blkx\n");
                     stateDepth[DMG_FIND_BLKX_CONTAINER] = depth;
                     state++;
@@ -364,7 +364,7 @@ int cli_scandmg(cli_ctx *ctx)
             }
             if ((state == DMG_FIND_KEY_BLKX)
                     && (depth == stateDepth[state-1] + 1)
-                    && (xmlStrcmp(nodeName, "key") == 0)) {
+                    && (xmlStrcmp(nodeName, (const xmlChar *)"key") == 0)) {
                 xmlChar * textValue;
                 dmg_parsemsg("read: Found key - checking for blkx\n");
                 if (xmlTextReaderRead(reader) != 1) {
@@ -382,7 +382,7 @@ int cli_scandmg(cli_ctx *ctx)
                     xmlFree(nodeName);
                     continue;
                 }
-                if (xmlStrcmp(textValue, "blkx") == 0) {
+                if (xmlStrcmp(textValue, (const xmlChar *)"blkx") == 0) {
                     cli_dbgmsg("cli_scandmg: Matched blkx\n");
                     stateDepth[DMG_FIND_KEY_BLKX] = depth;
                     state++;
@@ -394,7 +394,7 @@ int cli_scandmg(cli_ctx *ctx)
             }
             if ((state == DMG_FIND_DICT_RESOURCE_FORK)
                     && (depth == stateDepth[state-1])) {
-                if (xmlStrcmp(nodeName, "dict") == 0) {
+                if (xmlStrcmp(nodeName, (const xmlChar *)"dict") == 0) {
                     dmg_parsemsg("read: Found resource-fork dict\n");
                     stateDepth[DMG_FIND_DICT_RESOURCE_FORK] = depth;
                     state++;
@@ -407,19 +407,19 @@ int cli_scandmg(cli_ctx *ctx)
             }
             if ((state == DMG_FIND_KEY_RESOURCE_FORK)
                     && (depth == stateDepth[state-1] + 1)
-                    && (xmlStrcmp(nodeName, "key") == 0)) {
+                    && (xmlStrcmp(nodeName, (const xmlChar *)"key") == 0)) {
                 dmg_parsemsg("read: Found resource-fork key\n");
                 stateDepth[DMG_FIND_KEY_RESOURCE_FORK] = depth;
                 state++;
             }
             if ((state == DMG_FIND_BASE_DICT)
                     && (depth == stateDepth[state-1] + 1)
-                    && (xmlStrcmp(nodeName, "dict") == 0)) {
+                    && (xmlStrcmp(nodeName, (const xmlChar *)"dict") == 0)) {
                 dmg_parsemsg("read: Found dict start\n");
                 stateDepth[DMG_FIND_BASE_DICT] = depth;
                 state++;
             }
-            if ((state == DMG_FIND_BASE_PLIST) && (xmlStrcmp(nodeName, "plist") == 0)) {
+            if ((state == DMG_FIND_BASE_PLIST) && (xmlStrcmp(nodeName, (const xmlChar *)"plist") == 0)) {
                 dmg_parsemsg("read: Found plist start\n");
                 stateDepth[DMG_FIND_BASE_PLIST] = depth;
                 state++;
@@ -498,13 +498,14 @@ int cli_scandmg(cli_ctx *ctx)
 static int dmg_decode_mish(cli_ctx *ctx, unsigned int *mishblocknum, xmlChar *mish_base64,
         struct dmg_mish_with_stripes *mish_set)
 {
-    int ret = CL_CLEAN;
     size_t base64_len, buff_size, decoded_len;
     uint8_t *decoded;
     const uint8_t mish_magic[4] = { 0x6d, 0x69, 0x73, 0x68 };
 
+    UNUSEDPARAM(ctx);
+
     (*mishblocknum)++;
-    base64_len = strlen(mish_base64);
+    base64_len = strlen((const char *)mish_base64);
     dmg_parsemsg("dmg_decode_mish: len of encoded block %u is %lu\n", *mishblocknum, base64_len);
 
     /* speed vs memory, could walk the encoded data and skip whitespace in calculation */
@@ -652,6 +653,8 @@ static int dmg_stripe_zeroes(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mi
     ssize_t written;
     uint8_t obuf[BUFSIZ];
 
+    UNUSEDPARAM(ctx);
+
     cli_dbgmsg("dmg_stripe_zeroes: stripe " STDu32 "\n", index);
     if (len == 0)
         return CL_CLEAN;
@@ -659,7 +662,7 @@ static int dmg_stripe_zeroes(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mi
     memset(obuf, 0, sizeof(obuf));
     while (len > sizeof(obuf)) {
         written = cli_writen(fd, obuf, sizeof(obuf));
-        if (written != sizeof(obuf)) {
+        if ((size_t)written != sizeof(obuf)) {
             ret = CL_EWRITE;
             break;
         }
@@ -668,7 +671,7 @@ static int dmg_stripe_zeroes(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mi
 
     if ((ret == CL_CLEAN) && (len > 0)) {
         written = cli_writen(fd, obuf, len);
-        if (written != len) {
+        if ((size_t)written != len) {
             ret = CL_EWRITE;
         }
     }
@@ -684,7 +687,6 @@ static int dmg_stripe_zeroes(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mi
 static int dmg_stripe_store(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish_with_stripes *mish_set)
 {
     const void *obuf;
-    int ret;
     size_t off = mish_set->stripes[index].dataOffset;
     size_t len = mish_set->stripes[index].dataLength;
     ssize_t written;
@@ -703,7 +705,7 @@ static int dmg_stripe_store(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mis
         cli_errmsg("dmg_stripe_store: error writing bytes to file (out of disk space?)\n");
         return CL_EWRITE;
     }
-    else if (written != len) {
+    else if ((size_t)written != len) {
         cli_errmsg("dmg_stripe_store: error writing bytes to file (out of disk space?)\n");
         return CL_EWRITE;
     }
@@ -713,7 +715,7 @@ static int dmg_stripe_store(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mis
 /* Stripe handling: ADC block (type 0x80000004) */
 static int dmg_stripe_adc(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish_with_stripes *mish_set)
 {
-    int ret = CL_CLEAN, adcret;
+    int adcret;
     adc_stream strm;
     size_t off = mish_set->stripes[index].dataOffset;
     size_t len = mish_set->stripes[index].dataLength;
@@ -796,7 +798,7 @@ static int dmg_stripe_adc(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish_
 /* Stripe handling: deflate block (type 0x80000005) */
 static int dmg_stripe_inflate(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish_with_stripes *mish_set)
 {
-    int ret = CL_CLEAN, zstat;
+    int zstat;
     z_stream strm;
     size_t off = mish_set->stripes[index].dataOffset;
     size_t len = mish_set->stripes[index].dataLength;
@@ -905,7 +907,7 @@ static int dmg_stripe_bzip(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish
 
 #if HAVE_BZLIB_H
     memset(&strm, 0, sizeof(strm));
-    strm.next_out = obuf;
+    strm.next_out = (char *)obuf;
     strm.avail_out = sizeof(obuf);
     if (BZ2_bzDecompressInit(&strm, 0, 0) != BZ_OK) {
         cli_dbgmsg("dmg_stripe_bzip: bzDecompressInit failed\n");
@@ -960,13 +962,13 @@ static int dmg_stripe_bzip(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish
                     break;
                 }
 
-                if (cli_writen(fd, obuf, next_write) != next_write) {
+                if ((size_t)cli_writen(fd, obuf, next_write) != next_write) {
                     cli_dbgmsg("dmg_stripe_bzip: error writing to tmpfile\n");
                     ret = CL_EWRITE;
                     break;
                 }
 
-                strm.next_out = obuf;
+                strm.next_out = (char *)obuf;
                 strm.avail_out = sizeof(obuf);
 
                 if (rc == BZ_OK)
@@ -989,13 +991,13 @@ static int dmg_stripe_bzip(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish
                 break;
             }
 
-            if (cli_writen(fd, obuf, next_write) != next_write) {
+            if ((size_t)cli_writen(fd, obuf, next_write) != next_write) {
                 cli_dbgmsg("dmg_stripe_bzip: error writing to tmpfile\n");
                 ret = CL_EWRITE;
                 break;
             }
 
-            strm.next_out = obuf;
+            strm.next_out = (char *)obuf;
             strm.avail_out = sizeof(obuf);
         }
     } while ((rc == BZ_OK) && (len > 0));
@@ -1154,7 +1156,7 @@ static int dmg_extract_xml(cli_ctx *ctx, char *dir, struct dmg_koly_block *hdr)
         return CL_ETMPFILE;
     }
 
-    if (cli_writen(ofd, outdata, hdr->xmlLength) != hdr->xmlLength) {
+    if ((uint64_t)cli_writen(ofd, outdata, hdr->xmlLength) != hdr->xmlLength) {
         cli_errmsg("cli_scandmg: Not all bytes written!\n");
         close(ofd);
         free(xmlfile);

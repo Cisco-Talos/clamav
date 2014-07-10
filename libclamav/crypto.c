@@ -164,7 +164,7 @@ unsigned char *cl_hash_data(char *alg, const void *buf, size_t len, unsigned cha
 
     cur=0;
     while (cur < len) {
-        size_t todo = MIN(EVP_MD_block_size(md), len-cur);
+        size_t todo = MIN((unsigned long)EVP_MD_block_size(md), (unsigned long)(len-cur));
         if (!EVP_DigestUpdate(ctx, (void *)(((unsigned char *)buf)+cur), todo)) {
             if (!(obuf))
                 free(ret);
@@ -736,7 +736,7 @@ X509 *cl_get_x509_from_mem(void *data, unsigned int len)
 
 int cl_validate_certificate_chain_ts_dir(char *tsdir, char *certpath)
 {
-    char **authorities=NULL, **t, *fullpath;
+    char **authorities=NULL, **t;
     size_t nauths = 0;
     int res;
     DIR *dp;
@@ -964,7 +964,6 @@ struct tm *cl_ASN1_GetTimeT(ASN1_TIME *timeobj)
 {
     struct tm *t;
     char* str;
-    size_t i = 0;
     const char *fmt=NULL;
     time_t localt;
 #ifdef _WIN32
@@ -1032,7 +1031,6 @@ X509_CRL *cl_load_crl(const char *file)
     X509_CRL *x=NULL;
     FILE *fp;
     struct tm *tm;
-    time_t crltime;
 
     if (!(file))
         return NULL;

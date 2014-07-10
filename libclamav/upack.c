@@ -318,7 +318,7 @@ int unupack(int upack, char *dest, uint32_t dsize, char *buff, uint32_t vma, uin
 			save1 = cli_readint32(loc_esi); /* loc_eax = 0x400 */
 			loc_esi += 4;
 
-			for (j=0; j<count; j++, loc_edi+=4) /* checked above */
+			for (j=0; (uint32_t)j<count; j++, loc_edi+=4) /* checked above */
 				cli_writeint32(loc_edi, (save1));
 
 			if (!CLI_ISCONTAINED(dest, dsize, (loc_esi+0x10), 4))
@@ -363,7 +363,7 @@ int unupack(int upack, char *dest, uint32_t dsize, char *buff, uint32_t vma, uin
 			for (j=0; j<4; j++, loc_edi+=4)
 				cli_writeint32(loc_edi, (1));
 
-			for (j=0; j<count; j++, loc_edi+=4)
+			for (j=0; (uint32_t)j<count; j++, loc_edi+=4)
 				cli_writeint32(loc_edi, 0x400);
 			
 			loc_edi = dest + cli_readint32(loc_esi) - base; /* read checked above */

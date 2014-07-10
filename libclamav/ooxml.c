@@ -32,6 +32,8 @@
 #endif
 #include "json_api.h"
 
+#include "ooxml.h"
+
 #if HAVE_LIBXML2
 #ifdef _WIN32
 #ifndef LIBXML_WRITER_ENABLED
@@ -74,17 +76,17 @@ static int ooxml_parse_value(json_object *wrkptr, const char *arrname, const xml
         return CL_EMEM;
     }
 
-    if (ooxml_is_int(node_value, xmlStrlen(node_value), &val)) {
+    if (ooxml_is_int((const char *)node_value, xmlStrlen(node_value), &val)) {
         newobj = json_object_new_int(val);
     }
-    else if (!xmlStrcmp(node_value, "true")) {
+    else if (!xmlStrcmp(node_value, (const xmlChar *)"true")) {
         newobj = json_object_new_boolean(1);
     }
-    else if (!xmlStrcmp(node_value, "false")) {
+    else if (!xmlStrcmp(node_value, (const xmlChar *)"false")) {
         newobj = json_object_new_boolean(0);
     }
     else {
-        newobj = json_object_new_string(node_value);
+        newobj = json_object_new_string((const char *)node_value);
     }
 
     if (NULL == newobj) {
@@ -218,7 +220,7 @@ static int ooxml_parse_element(cli_ctx *ctx, xmlTextReaderPtr reader, json_objec
 
     /* check recursion level */
     if (rlvl >= OOXML_JSON_RECLEVEL_MAX) {
-        cli_dbgmsg("ooxml_parse_element: reached ooxml json recursion limit\n", node_name);
+        cli_dbgmsg("ooxml_parse_element: reached ooxml json recursion limit\n");
         /* skip it */
         xmlTextReaderNext(reader);
         //return CL_EMAXREC;
@@ -238,7 +240,7 @@ static int ooxml_parse_element(cli_ctx *ctx, xmlTextReaderPtr reader, json_objec
         cli_dbgmsg("ooxml_parse_element: element tag node nameless\n");
         return CL_EPARSE; /* no name, nameless */
     }
-    element_tag = ooxml_check_key(node_name, xmlStrlen(node_name));
+    element_tag = ooxml_check_key((const char *)node_name, xmlStrlen(node_name));
     if (!element_tag) {
         cli_dbgmsg("ooxml_parse_element: invalid element tag [%s]\n", node_name);
         /* skip it */
@@ -274,7 +276,7 @@ static int ooxml_parse_element(cli_ctx *ctx, xmlTextReaderPtr reader, json_objec
 
             cli_dbgmsg("%s: %s\n", name, value);
 
-            cli_jsonstr(attributes, name, value);
+            cli_jsonstr(attributes, name, (const char *)value);
         }
     }
 
@@ -310,7 +312,7 @@ static int ooxml_parse_element(cli_ctx *ctx, xmlTextReaderPtr reader, json_objec
                 return CL_EPARSE; /* no name, nameless */
             }
 
-            end_tag = ooxml_check_key(node_name, xmlStrlen(node_name));
+            end_tag = ooxml_check_key((const char *)node_name, xmlStrlen(node_name));
             if (!end_tag) {
                 cli_dbgmsg("ooxml_parse_element: invalid element end tag [%s]\n", node_name);
                 return CL_EFORMAT; /* unrecognized element tag */
@@ -426,7 +428,7 @@ static int ooxml_content_cb(int fd, cli_ctx *ctx)
         name = xmlTextReaderConstLocalName(reader);
         if (name == NULL) continue;
 
-        if (strcmp(name, "Override")) continue;
+        if (strcmp((const char *)name, "Override")) continue;
 
         if (!xmlTextReaderHasAttributes(reader)) continue;
 
@@ -436,10 +438,10 @@ static int ooxml_content_cb(int fd, cli_ctx *ctx)
             value = xmlTextReaderConstValue(reader);
             if (name == NULL || value == NULL) continue;
 
-            if (!xmlStrcmp(name, "ContentType")) {
+            if (!xmlStrcmp(name, (const xmlChar *)"ContentType")) {
                 CT = value;
             }
-            else if (!xmlStrcmp(name, "PartName")) {
+            else if (!xmlStrcmp(name, (const xmlChar *)"PartName")) {
                 PN = value;
             }
 
@@ -448,10 +450,10 @@ static int ooxml_content_cb(int fd, cli_ctx *ctx)
 
         if (!CT && !PN) continue;
 
-        if (!xmlStrcmp(CT, "application/vnd.openxmlformats-package.core-properties+xml")) {
+        if (!xmlStrcmp(CT, (const xmlChar *)"application/vnd.openxmlformats-package.core-properties+xml")) {
             if (!core) {
                 /* default: /docProps/core.xml*/
-                tmp = unzip_search(ctx, PN+1, xmlStrlen(PN)-1, &loff);
+                tmp = unzip_search(ctx, (const char *)(PN+1), xmlStrlen(PN)-1, &loff);
                 if (tmp == CL_ETIMEOUT) {
                     ret = tmp;
                 }
@@ -466,10 +468,10 @@ static int ooxml_content_cb(int fd, cli_ctx *ctx)
                 }
             }
         }
-        else if (!xmlStrcmp(CT, "application/vnd.openxmlformats-officedocument.extended-properties+xml")) {
+        else if (!xmlStrcmp(CT, (const xmlChar *)"application/vnd.openxmlformats-officedocument.extended-properties+xml")) {
             if (!extn) {
                 /* default: /docProps/app.xml */
-                tmp = unzip_search(ctx, PN+1, xmlStrlen(PN)-1, &loff);
+                tmp = unzip_search(ctx, (const char *)(PN+1), xmlStrlen(PN)-1, &loff);
                 if (tmp == CL_ETIMEOUT) {
                     ret = tmp;
                 }
@@ -484,10 +486,10 @@ static int ooxml_content_cb(int fd, cli_ctx *ctx)
                 }
             }
         }
-        else if (!xmlStrcmp(CT, "application/vnd.openxmlformats-officedocument.custom-properties+xml")) {
+        else if (!xmlStrcmp(CT, (const xmlChar *)"application/vnd.openxmlformats-officedocument.custom-properties+xml")) {
             if (!cust) {
                 /* default: /docProps/custom.xml */
-                tmp = unzip_search(ctx, PN+1, xmlStrlen(PN)-1, &loff);
+                tmp = unzip_search(ctx, (const char *)(PN+1), xmlStrlen(PN)-1, &loff);
                 if (tmp == CL_ETIMEOUT) {
                     ret = tmp;
                 }
@@ -502,7 +504,7 @@ static int ooxml_content_cb(int fd, cli_ctx *ctx)
                 }
             }
         }
-        else if (!xmlStrcmp(CT, "application/vnd.openxmlformats-package.digital-signature-xmlsignature+xml")) {
+        else if (!xmlStrcmp(CT, (const xmlChar *)"application/vnd.openxmlformats-package.digital-signature-xmlsignature+xml")) {
             dsig++;
         }
 
@@ -566,6 +568,7 @@ int cli_process_ooxml(cli_ctx *ctx)
 
     return unzip_single_internal(ctx, loff, ooxml_content_cb);
 #else
+    UNUSEDPARAM(ctx);
     cli_dbgmsg("in cli_processooxml\n");
 #if !HAVE_LIBXML2
     cli_dbgmsg("cli_process_ooxml: libxml2 needs to enabled!");

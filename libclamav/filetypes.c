@@ -120,6 +120,8 @@ static const struct ftmap_s {
     { NULL,			CL_TYPE_IGNORED		}
 };
 
+cli_file_t cli_partitiontype(const unsigned char *buf, size_t buflen, const struct cl_engine *engine);
+
 cli_file_t cli_ftcode(const char *name)
 {
 	unsigned int i;
@@ -266,7 +268,7 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
             int zi;
             
             for (zi=0; zi<32; zi++) {
-                znamep = cli_memstr(znamep, zlen, lhdr_magic, 4);
+                znamep = (const unsigned char *)cli_memstr((const char *)znamep, zlen, lhdr_magic, 4);
                 if (NULL != znamep) {
                     znamep += SIZEOF_LH;
                     zlen = zread - (znamep - zbuff);
