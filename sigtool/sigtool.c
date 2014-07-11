@@ -303,7 +303,7 @@ static char *getdsig(const char *host, const char *user, const unsigned char *da
 	    return NULL;
 	}
 #endif
-	if(scanf("%as", &pt) == EOF || !pt) {
+	if(scanf("%s", &pt) == EOF || !pt) {
 	    mprintf("!getdsig: Can't get password\n");
 #ifdef HAVE_TERMIOS_H
 	    tcsetattr(0, TCSAFLUSH, &old);
@@ -848,7 +848,7 @@ static int build(const struct optstruct *opts)
 	builder[sizeof(builder)-1]='\0';
     } else {
 	mprintf("Builder name: ");
-	if(scanf("%as", &pt) == EOF || !pt) {
+	if(scanf("%s", &pt) == EOF || !pt) {
 	    mprintf("!build: Can't get builder name\n");
 	    return -1;
 	}

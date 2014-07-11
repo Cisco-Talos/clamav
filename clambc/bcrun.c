@@ -112,16 +112,19 @@ static void tracehook(struct cli_bc_ctx *ctx, unsigned event)
 
 static void tracehook_op(struct cli_bc_ctx *ctx, const char *op)
 {
+    UNUSEDPARAM(ctx);
     fprintf(stderr, "[trace] %s\n", op);
 }
 
 static void tracehook_val(struct cli_bc_ctx *ctx, const char *name, uint32_t value)
 {
+    UNUSEDPARAM(ctx);
     fprintf(stderr, "[trace] %s = %u\n", name, value);
 }
 
 static void tracehook_ptr(struct cli_bc_ctx *ctx, const void *ptr)
 {
+    UNUSEDPARAM(ctx);
     fprintf(stderr, "[trace] %p\n", ptr);
 }
 
