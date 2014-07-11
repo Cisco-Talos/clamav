@@ -990,8 +990,8 @@ int bz_config_ok ( void )
 static
 void* default_bzalloc ( void* opaque, Int32 items, Int32 size )
 {
-    UNUSEDPARAM(opaque);
     void* v = cli_malloc ( items * size );
+    UNUSEDPARAM(opaque);
     return v;
 }
 

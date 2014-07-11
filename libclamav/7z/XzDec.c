@@ -305,9 +305,9 @@ static SRes Lzma2State_Code(void *pp, Byte *dest, SizeT *destLen, const Byte *sr
     int srcWasFinished, ECoderFinishMode finishMode, int *wasFinished)
 {
   ELzmaStatus status;
-  UNUSEDPARAM(srcWasFinished);
   /* ELzmaFinishMode fm = (finishMode == LZMA_FINISH_ANY) ? LZMA_FINISH_ANY : LZMA_FINISH_END; */
   SRes res = Lzma2Dec_DecodeToBuf((CLzma2Dec *)pp, dest, destLen, src, srcLen, finishMode, &status);
+  UNUSEDPARAM(srcWasFinished);
   *wasFinished = (status == LZMA_STATUS_FINISHED_WITH_MARK);
   return res;
 }
