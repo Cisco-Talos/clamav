@@ -1108,7 +1108,7 @@ static int sigtool_scandir (const char *dirname, int hex_output)
 
 int sigtool_vba_scandir (const char *dirname, int hex_output, struct uniq *U)
 {
-    int ret = CL_CLEAN, i, j, fd, data_len;
+    int ret = CL_CLEAN, i, fd, data_len;
     vba_project_t *vba_project;
     DIR *dd;
     struct dirent *dent;
@@ -1116,6 +1116,7 @@ int sigtool_vba_scandir (const char *dirname, int hex_output, struct uniq *U)
     char *fullname, vbaname[1024], *hash;
     unsigned char *data;
     uint32_t hashcnt;
+    unsigned int j;
 
     hashcnt = uniq_get(U, "_vba_project", 12, NULL);
     while(hashcnt--) {

@@ -532,10 +532,11 @@ ole2_walk_property_tree(ole2_header_t * hdr, const char *dir, int32_t prop_index
 {
     property_t      prop_block[4];
     int32_t         idx, current_block, i, curindex;
-    char           *name, *dirname;
+    char            *dirname;
     ole2_list_t     node_list;
     int             ret, func_ret;
 #if HAVE_JSON
+    char *name;
     int toval = 0;
 #endif
 
@@ -906,8 +907,6 @@ handler_enum(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * 
     char           *name = NULL;
 #if HAVE_JSON
     json_object *arrobj, *strmobj;
-    
-    UNUSEDPARAM(dir);
 
     name = get_property_name2(prop->name, prop->name_size);
     if (name) {
@@ -933,7 +932,11 @@ handler_enum(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * 
 
         }
     }
+#else
+    UNUSEDPARAM(ctx);
 #endif
+    UNUSEDPARAM(dir);
+
     if (!hdr->has_vba) {
         if (!name)
             name = get_property_name2(prop->name, prop->name_size);

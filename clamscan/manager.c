@@ -137,6 +137,7 @@ static cl_error_t pre(int fd, const char *type, void *context)
 {
     struct metachain *c = context;
     UNUSEDPARAM(fd);
+    UNUSEDPARAM(type);
 
     if (c) {
 	c->level++;
