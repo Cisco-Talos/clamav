@@ -1361,6 +1361,13 @@ static void handle_pdfname(struct pdf_struct *pdf, struct pdf_obj *obj, const ch
         }
     }
 
+    if (escapes) {
+        /* if a commonly used PDF name is escaped that is certainly
+           suspicious. */
+        cli_dbgmsg("cli_pdf: pdfname %s is escaped\n", pdfname);
+        pdfobj_flag(pdf, obj, ESCAPED_COMMON_PDFNAME);
+    }
+
     if (!act) {
         /* these are digital signature objects, filter doesn't matter,
          * we don't need them anyway */
@@ -1374,13 +1381,6 @@ static void handle_pdfname(struct pdf_struct *pdf, struct pdf_obj *obj, const ch
 
     if ((act->pdf_stats_cb))
         act->pdf_stats_cb(pdf, obj, act);
-
-    if (escapes) {
-        /* if a commonly used PDF name is escaped that is certainly
-           suspicious. */
-        cli_dbgmsg("cli_pdf: pdfname %s is escaped\n", pdfname);
-        pdfobj_flag(pdf, obj, ESCAPED_COMMON_PDFNAME);
-    }
 
     if (act->from_state == *state || act->from_state == STATE_ANY) {
         *state = act->to_state;
@@ -3203,6 +3203,8 @@ static void Pages_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname
 
     if (!(pdf->ctx->options & CL_SCAN_FILE_PROPERTIES))
         return;
+
+    objsz = obj_size(pdf, obj, 1);
 
     pdfobj = cli_jsonobj(pdf->ctx->wrkproperty, "PDFStats");
     if (!(pdfobj))
