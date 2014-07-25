@@ -97,9 +97,9 @@ if test "x$packaged_llvm" = "xyes"; then
 elif test $llvmver_test -lt 290; then
     AC_MSG_RESULT([no ($llvmver)])
     AC_MSG_ERROR([LLVM >= 2.9 required, but "$llvmver"($llvmver_test) found])
-elif test $llvmver_test -gt 341; then
+elif test $llvmver_test -gt 342; then
     AC_MSG_RESULT([no ($llvmver)])
-    AC_MSG_ERROR([LLVM <= 3.4.1 required, but "$llvmver"($llvmver_test) found])
+    AC_MSG_ERROR([LLVM <= 3.4.2 required, but "$llvmver"($llvmver_test) found])
 else
     AC_MSG_RESULT([ok ($llvmver)])
 fi
