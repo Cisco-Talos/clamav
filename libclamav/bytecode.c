@@ -3098,6 +3098,8 @@ extern unsigned cli_numapicalls;
 static void cli_bytetype_helper(const struct cli_bc *bc, unsigned tid)
 {
     unsigned i, j;
+    const struct cli_bc_type *ty = &bc->types[i];
+
 
     if (tid & 0x8000) {
         printf("alloc ");
@@ -3110,7 +3112,6 @@ static void cli_bytetype_helper(const struct cli_bc *bc, unsigned tid)
     }
 
     i = tid - 65;
-    const struct cli_bc_type *ty = &bc->types[i];
 
     switch (ty->kind) {
     case DFunctionType:
@@ -3218,6 +3219,7 @@ void cli_byteinst_describe(const struct cli_bc_inst *inst, unsigned *bbnum)
 {
     unsigned j;
     char inst_str[256];
+	const struct cli_apicall *api;
 
     if (inst->opcode > OP_BC_INVALID) {
         printf("opcode %u[%u] of type %u is not implemented yet!",
@@ -3355,7 +3357,7 @@ void cli_byteinst_describe(const struct cli_bc_inst *inst, unsigned *bbnum)
                 printf("apicall FID %d not yet implemented!\n", inst->u.ops.funcid);
                 break;
             }
-            const struct cli_apicall *api = &cli_apicalls[inst->u.ops.funcid];
+            api = &cli_apicalls[inst->u.ops.funcid];
             switch (api->kind) {
             case 0:
                 printf("%d = %s[%d] (%d, %d)", inst->dest, api->name,

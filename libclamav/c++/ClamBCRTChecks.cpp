@@ -82,11 +82,7 @@
 #include "llvm/InstVisitor.h"
 #endif
 
-#if LLVM_VERSION < 28
-#define DEFINEPASS(passname) passname() : FunctionPass(&ID)
-#else
 #define DEFINEPASS(passname) passname() : FunctionPass(ID)
-#endif
 
 using namespace llvm;
 #if LLVM_VERSION < 29
