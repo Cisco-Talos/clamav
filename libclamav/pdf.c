@@ -1288,61 +1288,65 @@ enum objstate {
     STATE_ANY /* for actions table below */
 };
 
+#define NAMEFLAG_NONE       0x0
+#define NAMEFLAG_HEURISTIC  0x1
+
 struct pdfname_action {
     const char *pdfname;
     enum pdf_objflags set_objflag;/* OBJ_DICT is noop */
     enum objstate from_state;/* STATE_NONE is noop */
     enum objstate to_state;
+    uint32_t nameflags;
     void (*pdf_stats_cb)(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act);
 };
 
 static struct pdfname_action pdfname_actions[] = {
-    {"ASCIIHexDecode", OBJ_FILTER_AH, STATE_FILTER, STATE_FILTER, ASCIIHexDecode_cb},
-    {"ASCII85Decode", OBJ_FILTER_A85, STATE_FILTER, STATE_FILTER, ASCII85Decode_cb},
-    {"A85", OBJ_FILTER_A85, STATE_FILTER, STATE_FILTER, ASCII85Decode_cb},
-    {"AHx", OBJ_FILTER_AH, STATE_FILTER, STATE_FILTER, ASCIIHexDecode_cb},
-    {"EmbeddedFile", OBJ_EMBEDDED_FILE, STATE_NONE, STATE_NONE, EmbeddedFile_cb},
-    {"FlateDecode", OBJ_FILTER_FLATE, STATE_FILTER, STATE_FILTER, FlateDecode_cb},
-    {"Fl", OBJ_FILTER_FLATE, STATE_FILTER, STATE_FILTER, FlateDecode_cb},
-    {"Image", OBJ_IMAGE, STATE_NONE, STATE_NONE, Image_cb},
-    {"LZWDecode", OBJ_FILTER_LZW, STATE_FILTER, STATE_FILTER, LZWDecode_cb},
-    {"LZW", OBJ_FILTER_LZW, STATE_FILTER, STATE_FILTER, LZWDecode_cb},
-    {"RunLengthDecode", OBJ_FILTER_RL, STATE_FILTER, STATE_FILTER, RunLengthDecode_cb},
-    {"RL", OBJ_FILTER_RL, STATE_FILTER, STATE_FILTER, RunLengthDecode_cb},
-    {"CCITTFaxDecode", OBJ_FILTER_FAX, STATE_FILTER, STATE_FILTER, CCITTFaxDecode_cb},
-    {"CCF", OBJ_FILTER_FAX, STATE_FILTER, STATE_FILTER, CCITTFaxDecode_cb},
-    {"JBIG2Decode", OBJ_FILTER_DCT, STATE_FILTER, STATE_FILTER, JBIG2Decode_cb},
-    {"DCTDecode", OBJ_FILTER_DCT, STATE_FILTER, STATE_FILTER, DCTDecode_cb},
-    {"DCT", OBJ_FILTER_DCT, STATE_FILTER, STATE_FILTER, DCTDecode_cb},
-    {"JPXDecode", OBJ_FILTER_JPX, STATE_FILTER, STATE_FILTER, JPXDecode_cb},
-    {"Crypt",  OBJ_FILTER_CRYPT, STATE_FILTER, STATE_NONE, Crypt_cb},
-    {"Standard", OBJ_FILTER_STANDARD, STATE_FILTER, STATE_FILTER, Standard_cb},
-    {"Sig",    OBJ_SIGNED, STATE_ANY, STATE_NONE, Sig_cb},
-    {"V",     OBJ_SIGNED, STATE_ANY, STATE_NONE, NULL},
-    {"R",     OBJ_SIGNED, STATE_ANY, STATE_NONE, NULL},
-    {"Linearized", OBJ_DICT, STATE_NONE, STATE_LINEARIZED, NULL},
-    {"Filter", OBJ_HASFILTERS, STATE_ANY, STATE_FILTER, NULL},
-    {"JavaScript", OBJ_JAVASCRIPT, STATE_S, STATE_JAVASCRIPT, JavaScript_cb},
-    {"Length", OBJ_DICT, STATE_FILTER, STATE_NONE, NULL},
-    {"S", OBJ_DICT, STATE_NONE, STATE_S, NULL},
-    {"Type", OBJ_DICT, STATE_NONE, STATE_NONE, NULL},
-    {"OpenAction", OBJ_OPENACTION, STATE_ANY, STATE_OPENACTION, OpenAction_cb},
-    {"Launch", OBJ_LAUNCHACTION, STATE_ANY, STATE_LAUNCHACTION, Launch_cb},
-    {"Page", OBJ_PAGE, STATE_NONE, STATE_NONE, Page_cb},
-    {"Contents", OBJ_CONTENTS, STATE_NONE, STATE_CONTENTS, NULL},
-    {"Author", OBJ_DICT, STATE_NONE, STATE_NONE, Author_cb},
-    {"Producer", OBJ_DICT, STATE_NONE, STATE_NONE, Producer_cb},
-    {"CreationDate", OBJ_DICT, STATE_NONE, STATE_NONE, CreationDate_cb},
-    {"ModDate", OBJ_DICT, STATE_NONE, STATE_NONE, ModificationDate_cb},
-    {"Creator", OBJ_DICT, STATE_NONE, STATE_NONE, Creator_cb},
-    {"Title", OBJ_DICT, STATE_NONE, STATE_NONE, Title_cb},
-    {"Keywords", OBJ_DICT, STATE_NONE, STATE_NONE, Keywords_cb},
-    {"Subject", OBJ_DICT, STATE_NONE, STATE_NONE, Subject_cb},
-    {"Pages", OBJ_DICT, STATE_NONE, STATE_NONE, Pages_cb},
-    {"Colors", OBJ_DICT, STATE_NONE, STATE_NONE, Colors_cb},
-    {"RichMedia", OBJ_DICT, STATE_NONE, STATE_NONE, RichMedia_cb},
-    {"AcroForm", OBJ_DICT, STATE_NONE, STATE_NONE, AcroForm_cb},
-    {"XFA", OBJ_DICT, STATE_NONE, STATE_NONE, XFA_cb}
+    {"ASCIIHexDecode", OBJ_FILTER_AH, STATE_FILTER, STATE_FILTER, NAMEFLAG_HEURISTIC, ASCIIHexDecode_cb},
+    {"ASCII85Decode", OBJ_FILTER_A85, STATE_FILTER, STATE_FILTER, NAMEFLAG_HEURISTIC, ASCII85Decode_cb},
+    {"A85", OBJ_FILTER_A85, STATE_FILTER, STATE_FILTER, NAMEFLAG_HEURISTIC, ASCII85Decode_cb},
+    {"AHx", OBJ_FILTER_AH, STATE_FILTER, STATE_FILTER, NAMEFLAG_HEURISTIC, ASCIIHexDecode_cb},
+    {"EmbeddedFile", OBJ_EMBEDDED_FILE, STATE_NONE, STATE_NONE, NAMEFLAG_HEURISTIC, EmbeddedFile_cb},
+    {"FlateDecode", OBJ_FILTER_FLATE, STATE_FILTER, STATE_FILTER, NAMEFLAG_HEURISTIC, FlateDecode_cb},
+    {"Fl", OBJ_FILTER_FLATE, STATE_FILTER, STATE_FILTER, NAMEFLAG_HEURISTIC, FlateDecode_cb},
+    {"Image", OBJ_IMAGE, STATE_NONE, STATE_NONE, NAMEFLAG_HEURISTIC, Image_cb},
+    {"LZWDecode", OBJ_FILTER_LZW, STATE_FILTER, STATE_FILTER, NAMEFLAG_HEURISTIC, LZWDecode_cb},
+    {"LZW", OBJ_FILTER_LZW, STATE_FILTER, STATE_FILTER, NAMEFLAG_HEURISTIC, LZWDecode_cb},
+    {"RunLengthDecode", OBJ_FILTER_RL, STATE_FILTER, STATE_FILTER, NAMEFLAG_HEURISTIC, RunLengthDecode_cb},
+    {"RL", OBJ_FILTER_RL, STATE_FILTER, STATE_FILTER, NAMEFLAG_HEURISTIC, RunLengthDecode_cb},
+    {"CCITTFaxDecode", OBJ_FILTER_FAX, STATE_FILTER, STATE_FILTER, NAMEFLAG_HEURISTIC, CCITTFaxDecode_cb},
+    {"CCF", OBJ_FILTER_FAX, STATE_FILTER, STATE_FILTER, NAMEFLAG_HEURISTIC, CCITTFaxDecode_cb},
+    {"JBIG2Decode", OBJ_FILTER_DCT, STATE_FILTER, STATE_FILTER, NAMEFLAG_HEURISTIC, JBIG2Decode_cb},
+    {"DCTDecode", OBJ_FILTER_DCT, STATE_FILTER, STATE_FILTER, NAMEFLAG_HEURISTIC, DCTDecode_cb},
+    {"DCT", OBJ_FILTER_DCT, STATE_FILTER, STATE_FILTER, NAMEFLAG_HEURISTIC, DCTDecode_cb},
+    {"JPXDecode", OBJ_FILTER_JPX, STATE_FILTER, STATE_FILTER, NAMEFLAG_HEURISTIC, JPXDecode_cb},
+    {"Crypt",  OBJ_FILTER_CRYPT, STATE_FILTER, STATE_NONE, NAMEFLAG_HEURISTIC, Crypt_cb},
+    {"Standard", OBJ_FILTER_STANDARD, STATE_FILTER, STATE_FILTER, NAMEFLAG_HEURISTIC, Standard_cb},
+    {"Sig",    OBJ_SIGNED, STATE_ANY, STATE_NONE, NAMEFLAG_HEURISTIC, Sig_cb},
+    {"V",     OBJ_SIGNED, STATE_ANY, STATE_NONE, NAMEFLAG_HEURISTIC, NULL},
+    {"R",     OBJ_SIGNED, STATE_ANY, STATE_NONE, NAMEFLAG_HEURISTIC, NULL},
+    {"Linearized", OBJ_DICT, STATE_NONE, STATE_LINEARIZED, NAMEFLAG_HEURISTIC, NULL},
+    {"Filter", OBJ_HASFILTERS, STATE_ANY, STATE_FILTER, NAMEFLAG_HEURISTIC, NULL},
+    {"JavaScript", OBJ_JAVASCRIPT, STATE_S, STATE_JAVASCRIPT, NAMEFLAG_HEURISTIC, JavaScript_cb},
+    {"Length", OBJ_DICT, STATE_FILTER, STATE_NONE, NAMEFLAG_HEURISTIC, NULL},
+    {"S", OBJ_DICT, STATE_NONE, STATE_S, NAMEFLAG_HEURISTIC, NULL},
+    {"Type", OBJ_DICT, STATE_NONE, STATE_NONE, NAMEFLAG_HEURISTIC, NULL},
+    {"OpenAction", OBJ_OPENACTION, STATE_ANY, STATE_OPENACTION, NAMEFLAG_HEURISTIC, OpenAction_cb},
+    {"Launch", OBJ_LAUNCHACTION, STATE_ANY, STATE_LAUNCHACTION, NAMEFLAG_HEURISTIC, Launch_cb},
+    {"Page", OBJ_PAGE, STATE_NONE, STATE_NONE, NAMEFLAG_HEURISTIC, Page_cb},
+    {"Contents", OBJ_CONTENTS, STATE_NONE, STATE_CONTENTS, NAMEFLAG_HEURISTIC, NULL},
+    {"Author", OBJ_DICT, STATE_NONE, STATE_NONE, NAMEFLAG_NONE, Author_cb},
+    {"Producer", OBJ_DICT, STATE_NONE, STATE_NONE, NAMEFLAG_NONE, Producer_cb},
+    {"CreationDate", OBJ_DICT, STATE_NONE, STATE_NONE, NAMEFLAG_NONE, CreationDate_cb},
+    {"ModDate", OBJ_DICT, STATE_NONE, STATE_NONE, NAMEFLAG_NONE, ModificationDate_cb},
+    {"Creator", OBJ_DICT, STATE_NONE, STATE_NONE, NAMEFLAG_NONE, Creator_cb},
+    {"Title", OBJ_DICT, STATE_NONE, STATE_NONE, NAMEFLAG_NONE, Title_cb},
+    {"Keywords", OBJ_DICT, STATE_NONE, STATE_NONE, NAMEFLAG_NONE, Keywords_cb},
+    {"Subject", OBJ_DICT, STATE_NONE, STATE_NONE, NAMEFLAG_NONE, Subject_cb},
+    {"Pages", OBJ_DICT, STATE_NONE, STATE_NONE, NAMEFLAG_NONE, Pages_cb},
+    {"Colors", OBJ_DICT, STATE_NONE, STATE_NONE, NAMEFLAG_NONE, Colors_cb},
+    {"RichMedia", OBJ_DICT, STATE_NONE, STATE_NONE, NAMEFLAG_NONE, RichMedia_cb},
+    {"AcroForm", OBJ_DICT, STATE_NONE, STATE_NONE, NAMEFLAG_NONE, AcroForm_cb},
+    {"XFA", OBJ_DICT, STATE_NONE, STATE_NONE, NAMEFLAG_NONE, XFA_cb}
 };
 
 #define KNOWN_FILTERS ((1 << OBJ_FILTER_AH) | (1 << OBJ_FILTER_RL) | (1 << OBJ_FILTER_A85) | (1 << OBJ_FILTER_FLATE) | (1 << OBJ_FILTER_LZW) | (1 << OBJ_FILTER_FAX) | (1 << OBJ_FILTER_DCT) | (1 << OBJ_FILTER_JPX) | (1 << OBJ_FILTER_CRYPT))
@@ -1361,13 +1365,6 @@ static void handle_pdfname(struct pdf_struct *pdf, struct pdf_obj *obj, const ch
         }
     }
 
-    if (escapes) {
-        /* if a commonly used PDF name is escaped that is certainly
-           suspicious. */
-        cli_dbgmsg("cli_pdf: pdfname %s is escaped\n", pdfname);
-        pdfobj_flag(pdf, obj, ESCAPED_COMMON_PDFNAME);
-    }
-
     if (!act) {
         /* these are digital signature objects, filter doesn't matter,
          * we don't need them anyway */
@@ -1377,6 +1374,13 @@ static void handle_pdfname(struct pdf_struct *pdf, struct pdf_obj *obj, const ch
         }
 
         return;
+    }
+
+    if ((act->nameflags & NAMEFLAG_HEURISTIC) && escapes) {
+        /* if a commonly used PDF name is escaped that is certainly
+           suspicious. */
+        cli_dbgmsg("cli_pdf: pdfname %s is escaped\n", pdfname);
+        pdfobj_flag(pdf, obj, ESCAPED_COMMON_PDFNAME);
     }
 
     if ((act->pdf_stats_cb))
