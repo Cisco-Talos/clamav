@@ -117,6 +117,7 @@ static const struct ftmap_s {
     { "CL_TYPE_OOXML_PPT",	CL_TYPE_OOXML_PPT     	},
     { "CL_TYPE_OOXML_XL",	CL_TYPE_OOXML_XL     	},
     { "CL_TYPE_INTERNAL",	CL_TYPE_INTERNAL     	},
+    { "CL_TYPE_XDP",        CL_TYPE_XDP             },
     { NULL,			CL_TYPE_IGNORED		}
 };
 

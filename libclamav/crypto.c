@@ -399,7 +399,7 @@ int cl_verify_signature(EVP_PKEY *pkey, char *alg, unsigned char *sig, unsigned 
         unsigned char *newsig;
         size_t newsiglen;
 
-        newsig = (unsigned char *)cl_base64_decode((char *)sig, siglen, NULL, &newsiglen);
+        newsig = (unsigned char *)cl_base64_decode((char *)sig, siglen, NULL, &newsiglen, 1);
         if (!(newsig))
             return -1;
 
