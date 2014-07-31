@@ -80,9 +80,12 @@ int cli_scanxdp(cli_ctx *ctx)
                 if (decoded) {
                     rc = cli_mem_scandesc(decoded, decodedlen, ctx);
                     free(decoded);
-                    if (rc != CL_SUCCESS || rc == CL_BREAK)
+                    if (rc != CL_SUCCESS || rc == CL_BREAK) {
+                        xmlFree(value);
                         break;
+                    }
                 }
+                xmlFree(value);
             }
         }
     }
