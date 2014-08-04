@@ -85,6 +85,8 @@ char *dump_xdp(cli_ctx *ctx, const char *start, size_t sz)
 
     cli_dbgmsg("dump_xdp: Dumped payload to %s\n", filename);
 
+    close(fd);
+
     return filename;
 }
 
@@ -105,8 +107,11 @@ int cli_scanxdp(cli_ctx *ctx)
     if (!(buf))
         return CL_EREAD;
 
-    if (ctx->engine->keeptmp)
-        dump_xdp(ctx, buf, map->len);
+    if (ctx->engine->keeptmp) {
+        dumpname = dump_xdp(ctx, buf, map->len);
+        if (dumpname)
+            free(dumpname);
+    }
 
     /*
      * Since a PDF file can contain embedded XDP documents,
