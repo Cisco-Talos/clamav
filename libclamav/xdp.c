@@ -36,6 +36,9 @@
 #include "clamav-config.h"
 #endif
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include <errno.h>
 #include "xar.h"
 #include "fmap.h"
@@ -52,6 +55,37 @@
 #include "conv.h"
 #include "xdp.h"
 
+char *dump_xdp(cli_ctx *ctx, const char *start, size_t sz)
+{
+    int fd;
+    char *filename;
+    size_t nwritten=0;
+    ssize_t writeret;
+
+    if (cli_gentempfd(ctx->engine->tmpdir, &filename, &fd) != CL_SUCCESS)
+        return NULL;
+
+    while (nwritten < sz) {
+        writeret = write(fd, start+nwritten, sz-nwritten);
+        if (writeret < 0) {
+            if (errno == EAGAIN)
+                continue;
+
+            close(fd);
+            cli_unlink(filename);
+            free(filename);
+
+            return NULL;
+        }
+
+        nwritten += writeret;
+    }
+
+    cli_dbgmsg("%s: Dumped payload to %s\n", __func__, filename);
+
+    return filename;
+}
+
 int cli_scanxdp(cli_ctx *ctx)
 {
 #if HAVE_LIBXML2
@@ -62,11 +96,26 @@ int cli_scanxdp(cli_ctx *ctx)
     char *decoded;
     size_t decodedlen;
     int rc = CL_SUCCESS;
+    int fd;
+    char *dumpname;
     
     buf = (const char *)fmap_need_off_once(map, map->offset, map->len);
-    reader = xmlReaderForMemory(buf, (int)(map->len), "noname.xml", NULL, 0);
+    if (!(buf))
+        return CL_EREAD;
+
+    if (ctx->engine->keeptmp)
+        dump_xdp(ctx, buf, map->len);
+
+    /*
+     * Since a PDF file can contain embedded XDP documents,
+     * it's possible that the filetyping code matched an embedded XDP document.
+     * If that's the case, then xmlReaderForMemory will throw an error. For now,
+     * silently ignore the error and return CL_SUCCESS so the filetyping code can
+     * continue on.
+     */
+    reader = xmlReaderForMemory(buf, (int)(map->len), "noname.xml", NULL, XML_PARSE_NOERROR);
     if (!(reader))
-        return CL_EMEM;
+        return CL_SUCCESS;
 
     while (xmlTextReaderRead(reader) == 1) {
         name = xmlTextReaderConstLocalName(reader);
