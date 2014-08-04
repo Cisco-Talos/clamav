@@ -38,7 +38,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#if !defined(_WIN32)
 #include <unistd.h>
+#endif
 #include <errno.h>
 #include "xar.h"
 #include "fmap.h"
@@ -81,7 +83,7 @@ char *dump_xdp(cli_ctx *ctx, const char *start, size_t sz)
         nwritten += writeret;
     }
 
-    cli_dbgmsg("%s: Dumped payload to %s\n", __func__, filename);
+    cli_dbgmsg("dump_xdp: Dumped payload to %s\n", filename);
 
     return filename;
 }
