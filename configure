@@ -14210,7 +14210,7 @@ esac
 
 
 
-for ac_header in stdint.h unistd.h sys/int_types.h dlfcn.h inttypes.h sys/inttypes.h sys/times.h memory.h ndir.h stdlib.h strings.h string.h sys/mman.h sys/param.h sys/stat.h sys/types.h malloc.h poll.h limits.h sys/filio.h sys/uio.h termios.h stdbool.h pwd.h grp.h sys/queue.h
+for ac_header in stdint.h unistd.h sys/int_types.h dlfcn.h inttypes.h sys/inttypes.h sys/times.h memory.h ndir.h stdlib.h strings.h string.h sys/mman.h sys/param.h sys/stat.h sys/types.h malloc.h poll.h limits.h sys/filio.h sys/uio.h termios.h stdbool.h pwd.h grp.h sys/queue.h sys/cdefs.h
 do :
   as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
 ac_fn_c_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
