@@ -1069,12 +1069,12 @@ ACLOCAL_AMFLAGS = -I m4
 libclamavcxx_la_SOURCES = bytecode2llvm.cpp ClamBCRTChecks.cpp \
 	ClamBCModule.h ClamBCDiagnostics.h detect.cpp llvm30_compat.h \
 	$(am__append_1)
-@BUILD_EXTERNAL_LLVM_FALSE@libclamavcxx_la_CXXFLAGS = $(LLVM_CXXFLAGS) -DLLVM_VERSION=${LLVM_VERSION} @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
+@BUILD_EXTERNAL_LLVM_FALSE@libclamavcxx_la_CXXFLAGS = $(LLVM_CXXFLAGS) -DLLVM_VERSION=${LLVM_VERSION} @JSON_CPPFLAGS@
 #$(LLVM_CONFIG): build-llvm
 # we know this will be built with GNU make, so its safe to use GNU make specific
 # $(shell ...)
 #LLVM_DEPS=$(shell $(LLVM_CONFIG) --libfiles jit nativecodegen)
-@BUILD_EXTERNAL_LLVM_TRUE@libclamavcxx_la_CXXFLAGS = $(AM_CPPFLAGS) @LLVMCONFIG_CXXFLAGS@ -fexceptions -DLLVM_VERSION=${LLVM_VERSION} @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
+@BUILD_EXTERNAL_LLVM_TRUE@libclamavcxx_la_CXXFLAGS = $(AM_CPPFLAGS) @LLVMCONFIG_CXXFLAGS@ -fexceptions -DLLVM_VERSION=${LLVM_VERSION} @JSON_CPPFLAGS@
 @BUILD_EXTERNAL_LLVM_FALSE@libclamavcxx_la_LDFLAGS = -no-undefined
 @BUILD_EXTERNAL_LLVM_TRUE@libclamavcxx_la_LDFLAGS = @LLVMCONFIG_LDFLAGS@ @LLVMCONFIG_LIBS@ @LLVMCONFIG_LDFLAGS@ @JSON_LDFLAGS@
 @BUILD_EXTERNAL_LLVM_FALSE@libclamavcxx_la_DEPENDENCIES =  \
@@ -1083,8 +1083,7 @@ libclamavcxx_la_SOURCES = bytecode2llvm.cpp ClamBCRTChecks.cpp \
 @BUILD_EXTERNAL_LLVM_FALSE@	$(am__append_7)
 @BUILD_EXTERNAL_LLVM_TRUE@libclamavcxx_la_DEPENDENCIES =  \
 @BUILD_EXTERNAL_LLVM_TRUE@	@LLVMCONFIG_LIBFILES@ @JSON_LIBS@ \
-@BUILD_EXTERNAL_LLVM_TRUE@	@PCRE_LIBS@ $(am__append_4) \
-@BUILD_EXTERNAL_LLVM_TRUE@	$(am__append_7)
+@BUILD_EXTERNAL_LLVM_TRUE@	$(am__append_4) $(am__append_7)
 @BUILD_EXTERNAL_LLVM_FALSE@noinst_LTLIBRARIES = libclamavcxx.la \
 @BUILD_EXTERNAL_LLVM_FALSE@	libllvmsystem.la libllvmcodegen.la \
 @BUILD_EXTERNAL_LLVM_FALSE@	libllvmjit.la $(am__append_5) \
@@ -5751,8 +5750,8 @@ maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
 	-test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
-@BUILD_EXTERNAL_LLVM_TRUE@clean-local:
 @BUILD_EXTERNAL_LLVM_TRUE@distclean-local:
+@BUILD_EXTERNAL_LLVM_TRUE@clean-local:
 clean: clean-am
 
 clean-am: clean-generic clean-libtool clean-local \
