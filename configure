@@ -649,6 +649,7 @@ JSON_LDFLAGS
 JSON_LIBS
 SSL_LDFLAGS
 SSL_LIBS
+PCRE_LIBS
 CLAMCONF_LIBS
 CLAMBC_LIBS
 CLAMDTOP_LIBS
@@ -661,6 +662,7 @@ CLAMAV_MILTER_LIBS
 CLAMMEM_LIBS
 CLAMD_LIBS
 LIBCLAMAV_LIBS
+PCRE_CPPFLAGS
 JSON_CPPFLAGS
 SSL_CPPFLAGS
 LIBCLAMSHARED_CPPFLAGS
@@ -884,6 +886,7 @@ enable_xml
 with_xml
 with_openssl
 with_libjson
+with_pcre
 enable_maintainer_mode
 with_zlib
 enable_zlib_vcheck
@@ -1611,6 +1614,8 @@ Optional Packages:
     /usr/local or /usr if not found in /usr/local)
   --with-libjson=DIR   path to directory containing libjson (default=
     /usr/local or /usr if not found in /usr/local)
+  --with-pcre=DIR        path to directory containing libpcre library (default=
+                          /usr/local or /usr if not found in /usr/local)
   --with-zlib=DIR	  path to directory containing zlib library (default=
 			  /usr/local or /usr if not found in /usr/local)
   --with-libbz2-prefix[=DIR]  search for libbz2 in DIR/include and DIR/lib
@@ -17307,6 +17312,148 @@ LIBS="$save_LIBS"
 
 
 
+PCRE_HOME=""
+
+# Check whether --with-pcre was given.
+if test "${with_pcre+set}" = set; then :
+  withval=$with_pcre;
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for libpcre installation" >&5
+$as_echo_n "checking for libpcre installation... " >&6; }
+  if test "X$withval" = "Xno"; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+  else
+    if test "X$withval" = "Xyes"; then
+      PCRE_HOME=/usr/local
+      if test ! -x "$PCRE_HOME/bin/pcre-config"; then
+        PCRE_HOME=/usr
+        if test ! -x "$PCRE_HOME/bin/pcre-config"; then
+          PCRE_HOME=""
+        fi
+      fi
+    elif test "$withval"; then
+      PCRE_HOME="$withval"
+      if test ! -x "$PCRE_HOME/bin/pcre-config"; then
+        PCRE_HOME=""
+        as_fn_error $? "cannot locate libpcre at $withval" "$LINENO" 5
+      fi
+    else
+      as_fn_error $? "cannot assign blank value to --with-pcre" "$LINENO" 5
+    fi
+
+    if test "x$PCRE_HOME" != "x"; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: result: using $PCRE_HOME" >&5
+$as_echo "using $PCRE_HOME" >&6; }
+    else
+      { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+$as_echo "not found" >&6; }
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot locate libpcre at /usr/local or /usr" >&5
+$as_echo "$as_me: WARNING: cannot locate libpcre at /usr/local or /usr" >&2;}
+    fi
+  fi
+
+else
+
+  PCRE_HOME=""
+
+fi
+
+
+found_pcre="no"
+PCRECONF_VERSION=""
+PCRE_CPPFLAGS=""
+PCRE_LIBS=""
+if test "x$PCRE_HOME" != "x"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking pcre-config version" >&5
+$as_echo_n "checking pcre-config version... " >&6; }
+  PCRECONF_VERSION="`$PCRE_HOME/bin/pcre-config --version`"
+  if test "x%PCRECONF_VERSION" != "x"; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $PCRECONF_VERSION\"" >&5
+$as_echo "$PCRECONF_VERSION\"" >&6; }
+    found_pcre="yes"
+    PCRE_CPPFLAGS="`$PCRE_HOME/bin/pcre-config --cflags`"
+    PCRE_LIBS="`$PCRE_HOME/bin/pcre-config --libs`"
+  else
+    as_fn_error $? "pcre-config failed" "$LINENO" 5
+  fi
+fi
+
+have_pcre="no"
+if test "x$found_pcre" != "xno"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for pcre.h in $PCRE_HOME" >&5
+$as_echo_n "checking for pcre.h in $PCRE_HOME... " >&6; }
+
+  if test ! -f "$XML_HOME/include/pcre.h"; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+$as_echo "not found" >&6; }
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
+$as_echo "found" >&6; }
+    save_LIBS="$LIBS"
+    save_CPPFLAGS="$CPPFLAGS"
+    CPPFLAGS="$CPPFLAGS $PCRE_CPPFLAGS"
+    save_LDFLAGS="$LDFLAGS"
+    LDFLAGS="$LDFLAGS $PCRE_LIBS"
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for pcre_compile in -lpcre" >&5
+$as_echo_n "checking for pcre_compile in -lpcre... " >&6; }
+if ${ac_cv_lib_pcre_pcre_compile+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lpcre  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char pcre_compile ();
+int
+main ()
+{
+return pcre_compile ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_pcre_pcre_compile=yes
+else
+  ac_cv_lib_pcre_pcre_compile=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_pcre_pcre_compile" >&5
+$as_echo "$ac_cv_lib_pcre_pcre_compile" >&6; }
+if test "x$ac_cv_lib_pcre_pcre_compile" = xyes; then :
+  have_pcre="yes"
+else
+  have_pcre="no"
+fi
+
+
+    CPPFLAGS="$save_CPPFLAGS"
+    LDFLAGS="$save_LDFLAGS"
+    LIBS="$save_LIBS"
+  fi
+fi
+
+if test "x$have_pcre" = "xyes"; then
+
+$as_echo "#define HAVE_PCRE 1" >>confdefs.h
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: Compiling and linking with libpcre from $PCRE_HOME" >&5
+$as_echo "$as_me: Compiling and linking with libpcre from $PCRE_HOME" >&6;}
+fi
+
+
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to enable maintainer-specific portions of Makefiles" >&5
 $as_echo_n "checking whether to enable maintainer-specific portions of Makefiles... " >&6; }
     # Check whether --enable-maintainer-mode was given.
@@ -22499,6 +22646,9 @@ fi
 
     LDFLAGS="$save_LDFLAGS"
 fi
+
+
+
 
 
 
@@ -28040,6 +28190,7 @@ else
   $as_echo "$want_unrar ($want_unrar)"
 fi
 
+if test "x$LIBJSON_HOME" != "x"; then
 
 
    $as_echo_n "              preclass    : "
@@ -28053,6 +28204,36 @@ else
   $as_echo "$LIBJSON_HOME ($have_json)"
 fi
 
+fi
+if test "x$PCRE_HOME" = "x"; then
+
+
+   $as_echo_n "              pcre        : "
+   if test "x$have_pcre" = "xno"; then :
+  $as_echo "no (disabled)"
+elif test "x$have_pcre" = "xyes"; then :
+  $as_echo "no"
+elif test "x$have_pcre" = "x"; then :
+  $as_echo "no"
+else
+  $as_echo "no ($have_pcre)"
+fi
+
+else
+
+
+   $as_echo_n "              pcre        : "
+   if test "x$have_pcre" = "xno"; then :
+  $as_echo "$PCRE_HOME (disabled)"
+elif test "x$have_pcre" = "xyes"; then :
+  $as_echo "$PCRE_HOME"
+elif test "x$have_pcre" = "x"; then :
+  $as_echo "$PCRE_HOME"
+else
+  $as_echo "$PCRE_HOME ($have_pcre)"
+fi
+
+fi
 if test "x$XML_LIBS" = "x"; then
 
 

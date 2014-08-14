@@ -282,6 +282,9 @@
 /* Define to 1 if you have the `opendir' function. */
 #undef HAVE_OPENDIR
 
+/* Define to 1 if you have the 'libpcre' library (-lpcre). */
+#undef HAVE_PCRE
+
 /* Define to 1 if you have the `poll' function. */
 #undef HAVE_POLL
 
