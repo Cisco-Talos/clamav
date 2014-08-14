@@ -49,7 +49,9 @@
 #define LIBXML_WRITER_ENABLED 1
 #endif
 #endif
+#if HAVE_LIBXML2
 #include <libxml/xmlreader.h>
+#endif
 #include "clamav.h"
 #include "fmap.h"
 #include "str.h"
