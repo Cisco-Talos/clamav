@@ -408,8 +408,6 @@ libclamav_la_SOURCES = \
 	prtn_intxn.h \
 	json_api.c\
 	json_api.h\
-	pcre_api.c\
-	pcre_api.h\
 	xz_iface.c \
 	xz_iface.h \
 	sf_base64decode.c \
