@@ -206,14 +206,21 @@ static int scancws(cli_ctx *ctx, struct swf_file_hdr *hdr)
     } while(zret == Z_OK);
 
     if((zret != Z_STREAM_END && zret != Z_OK) || (zret = inflateEnd(&stream)) != Z_OK) {
-	cli_infomsg(ctx, "scancws: Error decompressing SWF file\n");
-	close(fd);
-	if(cli_unlink(tmpname)) {
-	    free(tmpname);
-	    return CL_EUNLINK;
-	}
-	free(tmpname);
-	return CL_EUNPACK;
+        /*
+         * outsize is initialized to 8, it being 8 here means that we couldn't even read a single byte.
+         * If outsize > 8, then we have data. Let's scan what we have.
+         */
+        if (outsize == 8) {
+            cli_infomsg(ctx, "scancws: Error decompressing SWF file. No data decompressed.\n");
+            close(fd);
+            if(cli_unlink(tmpname)) {
+                free(tmpname);
+                return CL_EUNLINK;
+            }
+            free(tmpname);
+            return CL_EUNPACK;
+        }
+        cli_infomsg(ctx, "scancws: Error decompressing SWF file. Scanning what was decompressed.\n");
     }
     cli_dbgmsg("SWF: Decompressed to %s, size %d\n", tmpname, outsize);
 
