@@ -288,7 +288,7 @@ static int ooxml_parse_element(cli_ctx *ctx, xmlTextReaderPtr reader, json_objec
         return CL_EPARSE;
 
     /* parse until the end element tag */
-    while (!endtag) {
+    while (!endtag && (xmlTextReaderIsValid(reader) == 1)) {
         if (cli_json_timeout_cycle_check(ctx, &toval) != CL_SUCCESS) {
             return CL_ETIMEOUT;
         }
@@ -354,6 +354,8 @@ static int ooxml_parse_element(cli_ctx *ctx, xmlTextReaderPtr reader, json_objec
         }
     }
 
+    if (xmlTextReaderIsValid(reader) != 1)
+        return CL_EPARSE;
     return CL_SUCCESS;
 }
 
@@ -377,8 +379,10 @@ static int ooxml_parse_document(int fd, cli_ctx *ctx)
 
     ret = ooxml_parse_element(ctx, reader, ctx->wrkproperty, 0, NULL);
 
-    if (ret != CL_SUCCESS && ret != CL_ETIMEOUT)
+    if (ret != CL_SUCCESS && ret != CL_ETIMEOUT) {
+        cli_warnmsg("ooxml_parse_document: encountered issue in parsing properties document\n");
         cli_jsonbool(ctx->wrkproperty, "ParseError", 1);
+    }
 
     xmlTextReaderClose(reader);
     xmlFreeTextReader(reader);
