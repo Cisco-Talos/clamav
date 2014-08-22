@@ -42,7 +42,7 @@ struct cli_pcre_refentry {
 };
 
 int cli_pcre_addpatt(struct cli_matcher *root, const char *pattern, const uint32_t *lsigid, unsigned int options);
-int cli_pcre_scanbuf();
+int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct cli_matcher *root, struct cli_ac_data *mdata, cli_ctx *ctx);
 void cli_pcre_free(struct cli_matcher *root);
 
 #endif /*__MATCHER_PCRE_H*/

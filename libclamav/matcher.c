@@ -868,6 +868,49 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
         }
     }
 
+    /* **temporary** TODO - find way to save pcre state over separated buffers */
+    if((buff = fmap_need_off_once(map, offset, map->len))) {
+        if (!ftonly) {
+            ret = cli_pcre_scanbuf(buff, map->len, groot, &gdata, ctx);
+            if((ret == CL_VIRUS && !SCAN_ALL) || ret == CL_EMEM) {
+                cli_ac_freedata(&gdata);
+                cli_ac_freedata(&tdata);
+                if(bm_offmode)
+                    cli_bm_freeoff(&toff);
+
+                if(info.exeinfo.section)
+                    free(info.exeinfo.section);
+
+                cli_hashset_destroy(&info.exeinfo.vinfo);
+                cl_hash_destroy(md5ctx);
+                cl_hash_destroy(sha1ctx);
+                cl_hash_destroy(sha256ctx);
+                return ret;
+            }
+        }
+        if (troot) {
+            ret = cli_pcre_scanbuf(buff, map->len, troot, &tdata, ctx);
+            if((ret == CL_VIRUS && !SCAN_ALL) || ret == CL_EMEM) {
+                if(!ftonly)
+                    cli_ac_freedata(&gdata);
+
+                cli_ac_freedata(&tdata);
+                if(bm_offmode)
+                    cli_bm_freeoff(&toff);
+
+                if(info.exeinfo.section)
+                    free(info.exeinfo.section);
+
+                cli_hashset_destroy(&info.exeinfo.vinfo);
+                cl_hash_destroy(md5ctx);
+                cl_hash_destroy(sha1ctx);
+                cl_hash_destroy(sha256ctx);
+                return ret;
+            }
+        }
+    }
+    /* end experimental fragment */
+
     while(offset < map->len) {
         bytes = MIN(map->len - offset, SCANBUFF);
         if(!(buff = fmap_need_off_once(map, offset, bytes)))

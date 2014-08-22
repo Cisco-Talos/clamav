@@ -106,8 +106,38 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *pattern, const uint32
     return CL_SUCCESS;
 }
 
-int cli_pcre_scanbuf()
+int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct cli_matcher *root, struct cli_ac_data *mdata, cli_ctx *ctx)
 {
+    struct cli_pcre_data **data = root->all_pcres, *pd;
+    struct cli_pcre_refentry **reftable = root->pcre_reftable, *refe;
+    uint32_t cnt = root->num_pcres;
+    int i, rc;
+    int ovector[OVECCOUNT];
+
+    for (i = 0; i < cnt; ++i) {
+        pd = data[i];
+        refe = reftable[i];
+
+        cli_dbgmsg("cli_pcre_scanbuf: running regex /%s/\n", pd->expression);
+
+        rc = cli_pcre_match(pd, buffer, length, ovector, OVECCOUNT);
+
+        cli_dbgmsg("cli_pcre_scanbuf: running regex /%s/ returns %d\n", pd->expression, rc);
+        if (rc > 0) { /* matched at least once */
+            cli_dbgmsg("cli_pcre_scanbuf: assigning lsigcnt[%d][%d] to %d\n", refe->lsigid[0], refe->lsigid[1], rc);
+            (mdata->lsigcnt)[refe->lsigid[0]][refe->lsigid[1]] = rc;
+        }
+        else if (rc ==0 || rc == PCRE_ERROR_NOMATCH) { /* no match */
+            cli_dbgmsg("cli_pcre_scanbuf: no match\n");
+        }
+        else { /* error occurred */
+            cli_errmsg("cli_pcre_scanbuf: cli_pcre_match: pcre_exec: returned error %d\n", rc);
+            return CL_BREAK;
+        }
+    }
+
+    cli_dbgmsg("cli_pcre_scanbuf: successful return!\n");
+    return CL_SUCCESS;
 }
 
 void cli_pcre_free(struct cli_matcher *root)

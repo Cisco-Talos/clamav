@@ -441,7 +441,11 @@ libclamav_la_SOURCES = \
 	hostid.c \
 	hostid.h \
 	openioc.c \
-	openioc.h
+	openioc.h \
+	matcher-pcre.c \
+	matcher-pcre.h \
+	regex_pcre.c \
+	regex_pcre.h
 
 libclamav_la_SOURCES += bignum.h\
 	bignum_fast.h\
