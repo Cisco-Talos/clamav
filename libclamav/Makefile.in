@@ -282,6 +282,7 @@ am_libclamav_la_OBJECTS = libclamav_la-matcher-ac.lo \
 	libclamav_la-asn1.lo libclamav_la-fpu.lo libclamav_la-stats.lo \
 	libclamav_la-www.lo libclamav_la-stats_json.lo \
 	libclamav_la-hostid.lo libclamav_la-openioc.lo \
+	libclamav_la-matcher-pcre.lo libclamav_la-regex_pcre.lo \
 	libclamav_la-fp_add.lo libclamav_la-fp_add_d.lo \
 	libclamav_la-fp_addmod.lo libclamav_la-fp_cmp.lo \
 	libclamav_la-fp_cmp_d.lo libclamav_la-fp_cmp_mag.lo \
@@ -884,9 +885,11 @@ libclamav_la_SOURCES = matcher-ac.c matcher-ac.h matcher-bm.c \
 	iso9660.h arc4.c arc4.h rijndael.c rijndael.h crtmgr.c \
 	crtmgr.h asn1.c asn1.h fpu.c fpu.h stats.c stats.h www.c www.h \
 	stats_json.c stats_json.h hostid.c hostid.h openioc.c \
-	openioc.h bignum.h bignum_fast.h tomsfastmath/addsub/fp_add.c \
-	tomsfastmath/addsub/fp_add_d.c tomsfastmath/addsub/fp_addmod.c \
-	tomsfastmath/addsub/fp_cmp.c tomsfastmath/addsub/fp_cmp_d.c \
+	openioc.h matcher-pcre.c matcher-pcre.h regex_pcre.c \
+	regex_pcre.h bignum.h bignum_fast.h \
+	tomsfastmath/addsub/fp_add.c tomsfastmath/addsub/fp_add_d.c \
+	tomsfastmath/addsub/fp_addmod.c tomsfastmath/addsub/fp_cmp.c \
+	tomsfastmath/addsub/fp_cmp_d.c \
 	tomsfastmath/addsub/fp_cmp_mag.c tomsfastmath/addsub/fp_sub.c \
 	tomsfastmath/addsub/fp_sub_d.c tomsfastmath/addsub/fp_submod.c \
 	tomsfastmath/addsub/s_fp_add.c tomsfastmath/addsub/s_fp_sub.c \
@@ -1237,6 +1240,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-matcher-ac.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-matcher-bm.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-matcher-hash.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-matcher-pcre.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-matcher.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-mbox.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-mbr.Plo@am__quote@
@@ -1265,6 +1269,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-readdb.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-rebuildpe.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-regex_list.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-regex_pcre.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-regex_suffix.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-rijndael.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-rtf.Plo@am__quote@
@@ -2289,6 +2294,20 @@ libclamav_la-openioc.lo: openioc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='openioc.c' object='libclamav_la-openioc.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-openioc.lo `test -f 'openioc.c' || echo '$(srcdir)/'`openioc.c
+
+libclamav_la-matcher-pcre.lo: matcher-pcre.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-matcher-pcre.lo -MD -MP -MF $(DEPDIR)/libclamav_la-matcher-pcre.Tpo -c -o libclamav_la-matcher-pcre.lo `test -f 'matcher-pcre.c' || echo '$(srcdir)/'`matcher-pcre.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-matcher-pcre.Tpo $(DEPDIR)/libclamav_la-matcher-pcre.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='matcher-pcre.c' object='libclamav_la-matcher-pcre.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-matcher-pcre.lo `test -f 'matcher-pcre.c' || echo '$(srcdir)/'`matcher-pcre.c
+
+libclamav_la-regex_pcre.lo: regex_pcre.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-regex_pcre.lo -MD -MP -MF $(DEPDIR)/libclamav_la-regex_pcre.Tpo -c -o libclamav_la-regex_pcre.lo `test -f 'regex_pcre.c' || echo '$(srcdir)/'`regex_pcre.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-regex_pcre.Tpo $(DEPDIR)/libclamav_la-regex_pcre.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='regex_pcre.c' object='libclamav_la-regex_pcre.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-regex_pcre.lo `test -f 'regex_pcre.c' || echo '$(srcdir)/'`regex_pcre.c
 
 libclamav_la-fp_add.lo: tomsfastmath/addsub/fp_add.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_add.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_add.Tpo -c -o libclamav_la-fp_add.lo `test -f 'tomsfastmath/addsub/fp_add.c' || echo '$(srcdir)/'`tomsfastmath/addsub/fp_add.c
