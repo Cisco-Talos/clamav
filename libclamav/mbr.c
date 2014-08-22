@@ -454,7 +454,7 @@ static int mbr_check_mbr(struct mbr_boot_record *record, size_t maplen, size_t s
 
     /* check the maplen */
     if ((maplen / sectorsize) < 2) {
-        cli_dbgmsg("cli_scanmbr: file is too small to hold disk image\n");
+        cli_dbgmsg("cli_scanmbr: bootstrap code or file is too small to hold disk image\n");
         return CL_EFORMAT;
     }
 

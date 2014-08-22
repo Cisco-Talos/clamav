@@ -181,6 +181,7 @@ cli_file_t cli_partitiontype(const unsigned char *buf, size_t buflen, const stru
 	ptype = ptype->next;
     }
 
+    cli_dbgmsg("Partition type is potentially unsupported\n");
     return CL_TYPE_PART_ANY;
 }
 
