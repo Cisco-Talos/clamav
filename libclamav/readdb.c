@@ -109,6 +109,7 @@ char *cli_virname(char *virname, unsigned int official)
     return newname;
 }
 
+#define PCRE_BYPASS "7374756c747a676574737265676578"
 int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hexsig, uint16_t rtype, uint16_t type, const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options)
 {
 	struct cli_bm_patt *bm_new;
@@ -117,7 +118,6 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 	int ret, asterisk = 0, range;
 	unsigned int i, j, hexlen, parts = 0;
 	int mindist = 0, maxdist = 0, error = 0;
-
 
     hexlen = strlen(hexsig);
     if (hexsig[0] == '$') {
@@ -163,7 +163,52 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 	}
 	return CL_SUCCESS;
     }
-    if((wild = strchr(hexsig, '{'))) {
+    if ((wild = strchr(hexsig, '/'))) {
+	char *trigger, *regex;
+	size_t tlen = wild-hexsig;
+        size_t rlen = hexlen-tlen-2;
+
+	if (hexsig[hexlen-1] != '/') {
+	    cli_errmsg("cli_parseadd(): missing terminator /\n");
+	    return CL_EMALFDB;
+	}
+
+	if (!tlen) {
+	    cli_dbgmsg("cli_parseadd(): no trigger statement\n");
+	    /* kill sig on lack of trigger? */
+	}
+
+	/* TODO: get the trigger statement and parse */
+	trigger = cli_calloc(tlen+1, sizeof(char));
+	if (!trigger) {
+	    cli_errmsg("cli_parseadd(): cannot allocate memory\n");
+	    return CL_EMEM;
+	}
+	strncpy(trigger, hexsig, tlen);
+	trigger[tlen] = '\0';
+
+	if (strncmp(trigger, PCRE_BYPASS, tlen)) {
+	    cli_errmsg("cli_parseadd(): cannot handle trigger statement atm\n");
+	    return CL_EMALFDB;
+	}
+
+	cli_dbgmsg("pcre regex detected: %s on trigger: %s\n", wild, trigger);
+	free(trigger);
+
+	/* TODO: add the regex to the regex struct */
+	regex = cli_calloc(rlen+1, sizeof(char));
+	if (!regex) {
+	    cli_errmsg("cli_parseadd(): cannot allocate memory\n");
+	    return CL_EMEM;
+	}
+	strncpy(regex, hexsig+tlen+1, rlen);
+	regex[rlen] = '\0';
+
+	ret = cli_pcre_addpatt(root, regex, lsigid, 0);
+	free(regex);
+	return ret;
+    }
+    else if((wild = strchr(hexsig, '{'))) {
 	if(sscanf(wild, "%c%u%c", &l, &range, &r) == 3 && l == '{' && r == '}' && range > 0 && range < 128) {
 	    hexcpy = cli_calloc(hexlen + 2 * range, sizeof(char));
 	    if(!hexcpy)
@@ -3297,6 +3342,7 @@ int cl_engine_free(struct cl_engine *engine)
 		    }
 		    mpool_free(engine->mempool, root->ac_lsigtable);
 		}
+                cli_pcre_free(root);
 		mpool_free(engine->mempool, root);
 	    }
 	}
