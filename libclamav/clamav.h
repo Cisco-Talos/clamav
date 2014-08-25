@@ -233,7 +233,9 @@ enum cl_engine_field {
     CL_ENGINE_STATS_TIMEOUT,        /* uint32_t */
     CL_ENGINE_MAX_PARTITIONS,       /* uint32_t */
     CL_ENGINE_MAX_ICONSPE,          /* uint32_t */
-    CL_ENGINE_TIME_LIMIT            /* uint32_t */
+    CL_ENGINE_TIME_LIMIT,           /* uint32_t */
+    CL_ENGINE_PCRE_MATCH_LIMIT,     /* uint64_t */
+    CL_ENGINE_PCRE_RECMATCH_LIMIT   /* uint64_t */
 };
 
 enum bytecode_security {

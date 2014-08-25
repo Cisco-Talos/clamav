@@ -22,11 +22,11 @@
  *  MA 02110-1301, USA.
  */
 
-#if HAVE_PCRE
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
 
+#if HAVE_PCRE
 #include "clamav.h"
 #include "cltypes.h"
 #include "others.h"
@@ -36,7 +36,7 @@
 
 //int pcre_add_pattern(struct pcre_matcher *matcher, const char *pattern, int options)
 /* TODO - memory cleanup on error */
-int cli_pcre_addpatt(struct cli_matcher *root, const char *pattern, const uint32_t *lsigid, unsigned int options)
+int cli_pcre_addpatt(struct cli_matcher *root, const char *pattern, const uint32_t *lsigid)
 {
     struct cli_pcre_data **newdata, *pd;
     struct cli_pcre_refentry **newreftable, *refe;
@@ -62,13 +62,6 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *pattern, const uint32
     if (!refe) {
         cli_errmsg("cli_pcre_addpatt: failed to allocate space\n");
         return CL_EMEM;
-    }
-
-    cli_dbgmsg("cli_pcre_addpatt: Compiling regex: %s\n", pattern);
-    /* parse the regex - TODO: set start_offset  */
-    if ((ret = cli_pcre_parse(pd, pattern, options)) != CL_SUCCESS) {
-        cli_errmsg("cli_pcre_addpatt: failed to parse pcre regex\n");
-        return ret;
     }
 
     /* set the refentry */
@@ -101,6 +94,25 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *pattern, const uint32
     root->all_pcres = newdata;
 
     root->num_pcres = new_numpcres;
+
+    return CL_SUCCESS;
+}
+
+int cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, long long unsigned recmatch_limit, unsigned int options)
+{
+    int i, ret;
+    struct cli_pcre_data *pd;
+
+    for (i = 0; i < root->num_pcres; ++i) {
+        pd = root->all_pcres[i];
+
+        cli_dbgmsg("cli_pcre_build: Compiling regex: %s\n", pd->expression);
+        /* parse the regex - TODO: set start_offset  */
+        if ((ret = cli_pcre_compile(pd, match_limit, recmatch_limit, options)) != CL_SUCCESS) {
+            cli_errmsg("cli_pcre_build: failed to parse pcre regex\n");
+            return ret;
+        }
+    }
 
     return CL_SUCCESS;
 }

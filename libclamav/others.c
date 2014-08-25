@@ -428,6 +428,10 @@ struct cl_engine *cl_engine_new(void)
     /* Engine max settings */
     new->maxiconspe = CLI_DEFAULT_MAXICONSPE;
 
+    /* PCRE matching limitations */
+    new->pcre_match_limit = CLI_DEFAULT_PCRE_MATCH_LIMIT;
+    new->pcre_recmatch_limit = CLI_DEFAULT_PCRE_RECMATCH_LIMIT;
+
     cli_dbgmsg("Initialized %s engine\n", cl_retver());
     return new;
 }
@@ -571,11 +575,17 @@ int cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field field, long
 	    engine->maxpartitions = (uint32_t)num;
 	    break;
 	case CL_ENGINE_MAX_ICONSPE:
-	   engine->maxiconspe = (uint32_t)num;
-	   break;
+	    engine->maxiconspe = (uint32_t)num;
+	    break;
 	case CL_ENGINE_TIME_LIMIT:
             engine->time_limit = (uint32_t)num;
             break;
+	case CL_ENGINE_PCRE_MATCH_LIMIT:
+	    engine->pcre_match_limit = (uint64_t)num;
+	    break;
+	case CL_ENGINE_PCRE_RECMATCH_LIMIT:
+	    engine->pcre_recmatch_limit = (uint64_t)num;
+	    break;
 	default:
 	    cli_errmsg("cl_engine_set_num: Incorrect field number\n");
 	    return CL_EARG;
@@ -651,6 +661,10 @@ long long cl_engine_get_num(const struct cl_engine *engine, enum cl_engine_field
 	    return engine->maxiconspe;
 	case CL_ENGINE_TIME_LIMIT:
             return engine->time_limit;
+	case CL_ENGINE_PCRE_MATCH_LIMIT:
+	    return engine->pcre_match_limit;
+	case CL_ENGINE_PCRE_RECMATCH_LIMIT:
+	    return engine->pcre_recmatch_limit;
 	default:
 	    cli_errmsg("cl_engine_get: Incorrect field number\n");
 	    if(err)
@@ -763,6 +777,9 @@ struct cl_settings *cl_engine_settings_copy(const struct cl_engine *engine)
 
     settings->maxiconspe = engine->maxiconspe;
 
+    settings->pcre_match_limit = engine->pcre_match_limit;
+    settings->pcre_recmatch_limit = engine->pcre_recmatch_limit;
+
     return settings;
 }
 
@@ -830,6 +847,9 @@ int cl_engine_settings_apply(struct cl_engine *engine, const struct cl_settings 
     engine->maxpartitions = settings->maxpartitions;
 
     engine->maxiconspe = settings->maxiconspe;
+
+    engine->pcre_match_limit = settings->pcre_match_limit;
+    engine->pcre_recmatch_limit = settings->pcre_recmatch_limit;
 
     return CL_SUCCESS;
 }

@@ -207,7 +207,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 	strncpy(regex, hexsig+tlen+1, rlen);
 	regex[rlen] = '\0';
 
-	ret = cli_pcre_addpatt(root, regex, lsigid, 0);
+	ret = cli_pcre_addpatt(root, regex, lsigid);
 	free(regex);
 
 	return ret;
@@ -3477,7 +3477,6 @@ int cl_engine_compile(struct cl_engine *engine)
 	int ret;
 	struct cli_matcher *root;
 
-
     if(!engine)
 	return CL_ENULLARG;
 
@@ -3490,6 +3489,9 @@ int cl_engine_compile(struct cl_engine *engine)
 	    if((ret = cli_ac_buildtrie(root)))
 		return ret;
 #if HAVE_PCRE
+            if((ret = cli_pcre_build(root, engine->pcre_match_limit, engine->pcre_recmatch_limit, 0)))
+                return ret;
+
 	    cli_dbgmsg("Matcher[%u]: %s: AC sigs: %u (reloff: %u, absoff: %u) BM sigs: %u (reloff: %u, absoff: %u) maxpatlen %u PCREs: %u %s\n", i, cli_mtargets[i].name, root->ac_patterns, root->ac_reloff_num, root->ac_absoff_num, root->bm_patterns, root->bm_reloff_num, root->bm_absoff_num, root->maxpatlen, root->num_pcres, root->ac_only ? "(ac_only mode)" : "");
 #else
 	    cli_dbgmsg("Matcher[%u]: %s: AC sigs: %u (reloff: %u, absoff: %u) BM sigs: %u (reloff: %u, absoff: %u) maxpatlen %u PCREs: 0 (disabled) %s\n", i, cli_mtargets[i].name, root->ac_patterns, root->ac_reloff_num, root->ac_absoff_num, root->bm_patterns, root->bm_reloff_num, root->bm_absoff_num, root->maxpatlen, root->ac_only ? "(ac_only mode)" : "");

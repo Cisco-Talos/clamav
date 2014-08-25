@@ -22,11 +22,11 @@
  *  MA 02110-1301, USA.
  */
 
-#if HAVE_PCRE
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
 
+#if HAVE_PCRE
 #include <pcre.h>
 
 #include "clamav.h"
@@ -36,11 +36,8 @@
 
 /* TODO: redefine pcre_malloc and pcre_free */
 
-int cli_pcre_parse(struct cli_pcre_data *pd, const char *pattern, unsigned int options)
+int cli_pcre_parse(struct cli_pcre_data *pd, const char *pattern)
 {
-    const char *error;
-    int erroffset;
-
     if (!pd || !pattern) {
         cli_errmsg("cli_pcre_parse: NULL pd or NULL pattern\n");
         return CL_ENULLARG;
@@ -53,8 +50,21 @@ int cli_pcre_parse(struct cli_pcre_data *pd, const char *pattern, unsigned int o
         return CL_EMEM;
     }
 
+    return CL_SUCCESS;
+}
+
+int cli_pcre_compile(struct cli_pcre_data *pd, long long unsigned match_limit, long long unsigned match_limit_recursion, unsigned int options)
+{
+    const char *error;
+    int erroffset;
+
+    if (!pd || !pd->expression) {
+        cli_errmsg("cli_pcre_compile: NULL pd or NULL pd->expression\n");
+        return CL_ENULLARG;
+    }
+
     /* compile the pcre regex last arg is charset */
-    pd->re = pcre_compile(pattern, pd->options, &error, &erroffset, NULL); /* pd->re handled by libpcre -> call pcre_free() */
+    pd->re = pcre_compile(pd->expression, pd->options, &error, &erroffset, NULL); /* pd->re handled by libpcre -> call pcre_free() */
     if (pd->re == NULL) {
         cli_errmsg("cli_pcre_parse: PCRE compilation failed at offset %d: %s\n", erroffset, error);
         return CL_EPARSE; /* TODO - change ERRORCODE */
@@ -73,21 +83,21 @@ int cli_pcre_parse(struct cli_pcre_data *pd, const char *pattern, unsigned int o
 
     /* set the match limits -> TODO: engine options; hard coded for now */
     if (pd->ex->flags & PCRE_EXTRA_MATCH_LIMIT) {
-        pd->ex->match_limit = CLAMAV_PCRE_MATCH_LIMIT;
+        pd->ex->match_limit = match_limit;
     }
     else {
         pd->ex->flags |= PCRE_EXTRA_MATCH_LIMIT;
-        pd->ex->match_limit = CLAMAV_PCRE_MATCH_LIMIT;
+        pd->ex->match_limit = match_limit;
     }
 
     /* set the recursion match limits -> TODO: engine options; hard coded for now */
 #ifdef PCRE_EXTRA_MATCH_LIMIT_RECURSION
     if (pd->ex->flags & PCRE_EXTRA_MATCH_LIMIT_RECURSION) {
-        pd->ex->match_limit_recursion = CLAMAV_PCRE_REC_MATCH_LIMIT;
+        pd->ex->match_limit_recursion = match_limit_recursion;
     }
     else {
         pd->ex->flags |= PCRE_EXTRA_MATCH_LIMIT_RECURSION;
-        pd->ex->match_limit_recursion = CLAMAV_PCRE_REC_MATCH_LIMIT;
+        pd->ex->match_limit_recursion = match_limit_recursion;
     }
 #endif /* PCRE_EXTRA_MATCH_LIMIT_RECURSION */
 
