@@ -22,6 +22,7 @@
  *  MA 02110-1301, USA.
  */
 
+#if HAVE_PCRE
 #ifndef __MATCHER_PCRE_H
 #define __MATCHER_PCRE_H
 
@@ -29,7 +30,6 @@
 #include "clamav-config.h"
 #endif
 
-#include <pcre.h>
 #include <sys/types.h>
 
 #include "cltypes.h"
@@ -46,3 +46,4 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
 void cli_pcre_free(struct cli_matcher *root);
 
 #endif /*__MATCHER_PCRE_H*/
+#endif /* HAVE_PCRE */

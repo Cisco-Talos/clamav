@@ -22,11 +22,10 @@
  *  MA 02110-1301, USA.
  */
 
+#if HAVE_PCRE
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
-
-#include <pcre.h>
 
 #include "clamav.h"
 #include "cltypes.h"
@@ -167,3 +166,4 @@ void cli_pcre_free(struct cli_matcher *root)
     root->all_pcres = NULL;
     root->pcre_reftable = NULL;
 }
+#endif /* HAVE_PCRE */

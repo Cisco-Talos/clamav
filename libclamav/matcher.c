@@ -869,6 +869,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
     }
 
     /* **temporary** TODO - find way to save pcre state over separated buffers */
+#if HAVE_PCRE
     if((buff = fmap_need_off_once(map, offset, map->len))) {
         if (!ftonly) {
             ret = cli_pcre_scanbuf(buff, map->len, groot, &gdata, ctx);
@@ -909,6 +910,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
             }
         }
     }
+#endif /* HAVE_PCRE */
     /* end experimental fragment */
 
     while(offset < map->len) {

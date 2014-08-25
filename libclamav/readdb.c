@@ -109,7 +109,9 @@ char *cli_virname(char *virname, unsigned int official)
     return newname;
 }
 
+#if HAVE_PCRE
 #define PCRE_BYPASS "7374756c747a676574737265676578"
+#endif
 int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hexsig, uint16_t rtype, uint16_t type, const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options)
 {
 	struct cli_bm_patt *bm_new;
@@ -164,6 +166,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 	return CL_SUCCESS;
     }
     if ((wild = strchr(hexsig, '/'))) {
+#if HAVE_PCRE
 	char *trigger, *regex;
 	size_t tlen = wild-hexsig;
         size_t rlen = hexlen-tlen-2;
@@ -206,7 +209,12 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 
 	ret = cli_pcre_addpatt(root, regex, lsigid, 0);
 	free(regex);
+
 	return ret;
+#else
+        cli_errmsg("cli_parseadd(): cannot parse PCRE subsig ithout PCRE support\n");
+        return CL_EPARSE;
+#endif
     }
     else if((wild = strchr(hexsig, '{'))) {
 	if(sscanf(wild, "%c%u%c", &l, &range, &r) == 3 && l == '{' && r == '}' && range > 0 && range < 128) {
@@ -1337,6 +1345,17 @@ static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsig
 	cli_errmsg("cli_loadldb: The number of subsignatures (== %u) doesn't match the IDs in the logical expression (== %u)\n", tokens_count - 3, subsigs);
 	return CL_EMALFDB;
     }
+
+    /* Regex Usage and Support Check */
+#if !HAVE_PCRE
+    for (i = 0; i < subsigs; ++i) {
+        if (strchr(tokens[i+3], '/')) {
+            cli_dbgmsg("cli_loadldb: logical signature for %s uses PCREs but support is disabled, skipping\n", virname);
+            (*sigs)--;
+            return CL_SUCCESS;
+        }
+    }
+#endif
 
     /* TDB */
     memset(&tdb, 0, sizeof(tdb));
@@ -3342,7 +3361,9 @@ int cl_engine_free(struct cl_engine *engine)
 		    }
 		    mpool_free(engine->mempool, root->ac_lsigtable);
 		}
+#if HAVE_PCRE
                 cli_pcre_free(root);
+#endif /* HAVE_PCRE */
 		mpool_free(engine->mempool, root);
 	    }
 	}
@@ -3468,7 +3489,11 @@ int cl_engine_compile(struct cl_engine *engine)
 	if((root = engine->root[i])) {
 	    if((ret = cli_ac_buildtrie(root)))
 		return ret;
+#if HAVE_PCRE
 	    cli_dbgmsg("Matcher[%u]: %s: AC sigs: %u (reloff: %u, absoff: %u) BM sigs: %u (reloff: %u, absoff: %u) maxpatlen %u PCREs: %u %s\n", i, cli_mtargets[i].name, root->ac_patterns, root->ac_reloff_num, root->ac_absoff_num, root->bm_patterns, root->bm_reloff_num, root->bm_absoff_num, root->maxpatlen, root->num_pcres, root->ac_only ? "(ac_only mode)" : "");
+#else
+	    cli_dbgmsg("Matcher[%u]: %s: AC sigs: %u (reloff: %u, absoff: %u) BM sigs: %u (reloff: %u, absoff: %u) maxpatlen %u PCREs: 0 (disabled) %s\n", i, cli_mtargets[i].name, root->ac_patterns, root->ac_reloff_num, root->ac_absoff_num, root->bm_patterns, root->bm_reloff_num, root->bm_absoff_num, root->maxpatlen, root->ac_only ? "(ac_only mode)" : "");
+#endif
 	}
     }
     if(engine->hm_hdb)

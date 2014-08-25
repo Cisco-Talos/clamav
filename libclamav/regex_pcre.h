@@ -22,6 +22,7 @@
  *  MA 02110-1301, USA.
  */
 
+#if HAVE_PCRE
 #ifndef _REGEX_PCRE_H_
 #define _REGEX_PCRE_H_
 
@@ -54,3 +55,4 @@ int cli_pcre_match(struct cli_pcre_data *pd, const unsigned char *buffer, uint32
 void cli_pcre_free_single(struct cli_pcre_data *pd);
 
 #endif /*_REGEX_PCRE_H_*/
+#endif /* HAVE_PCRE */

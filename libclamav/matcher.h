@@ -111,9 +111,11 @@ struct cli_matcher {
     uint8_t ac_only;
 
     /* Perl-Compiled Regular Expressions */
+#if HAVE_PCRE
     uint32_t num_pcres;
     struct cli_pcre_data **all_pcres;
     struct cli_pcre_refentry **pcre_reftable;
+#endif
 
 #ifdef USE_MPOOL
     mpool_t *mempool;
