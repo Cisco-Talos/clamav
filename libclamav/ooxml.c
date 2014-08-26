@@ -368,7 +368,7 @@ static int ooxml_parse_document(int fd, cli_ctx *ctx)
 
     cli_dbgmsg("in ooxml_parse_document\n");
 
-    reader = xmlReaderForFd(fd, "properties.xml", NULL, 0);
+    reader = xmlReaderForFd(fd, "properties.xml", NULL, CLAMAV_MIN_XMLREADER_FLAGS);
     if (reader == NULL) {
         cli_dbgmsg("ooxml_parse_document: xmlReaderForFd error\n");
         return CL_SUCCESS; // internal error from libxml2
@@ -416,7 +416,7 @@ static int ooxml_content_cb(int fd, cli_ctx *ctx)
 
     cli_dbgmsg("in ooxml_content_cb\n");
 
-    reader = xmlReaderForFd(fd, "[Content_Types].xml", NULL, 0);
+    reader = xmlReaderForFd(fd, "[Content_Types].xml", NULL, CLAMAV_MIN_XMLREADER_FLAGS);
     if (reader == NULL) {
         cli_dbgmsg("ooxml_content_cb: xmlReaderForFd error for ""[Content_Types].xml""\n");
         return CL_SUCCESS; // libxml2 failed!

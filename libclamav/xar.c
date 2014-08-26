@@ -516,7 +516,7 @@ int cli_scanxar(cli_ctx *ctx)
             goto exit_toc;
     }
 
-    reader = xmlReaderForMemory(toc, hdr.toc_length_decompressed, "noname.xml", NULL, 0);
+    reader = xmlReaderForMemory(toc, hdr.toc_length_decompressed, "noname.xml", NULL, CLAMAV_MIN_XMLREADER_FLAGS);
     if (reader == NULL) {
         cli_dbgmsg("cli_scanxar: xmlReaderForMemory error for TOC\n");
         goto exit_toc;
