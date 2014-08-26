@@ -3098,7 +3098,7 @@ extern unsigned cli_numapicalls;
 static void cli_bytetype_helper(const struct cli_bc *bc, unsigned tid)
 {
     unsigned i, j;
-    const struct cli_bc_type *ty = &bc->types[i];
+    const struct cli_bc_type *ty;
 
 
     if (tid & 0x8000) {
@@ -3112,6 +3112,8 @@ static void cli_bytetype_helper(const struct cli_bc *bc, unsigned tid)
     }
 
     i = tid - 65;
+
+    ty = &bc->types[i];
 
     switch (ty->kind) {
     case DFunctionType:
