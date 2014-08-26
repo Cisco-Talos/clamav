@@ -48,7 +48,7 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *pattern, const uint32
         return CL_ENULLARG;
     }
 
-    /* TODO: regex checking */
+    /* TODO: regex checking (string length limitations) */
     //cli_pcre_free_single(pd);
 
     /* allocating entries */
@@ -57,6 +57,8 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *pattern, const uint32
         cli_errmsg("cli_pcre_addpatt: Unable to allocate memory\n");
         return CL_EMEM;
     }
+
+    pd->expression = strdup(pattern);
 
     refe = (struct cli_pcre_refentry *)cli_calloc(1, sizeof(struct cli_pcre_refentry));
     if (!refe) {
@@ -131,7 +133,7 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
 
         cli_dbgmsg("cli_pcre_scanbuf: running regex /%s/\n", pd->expression);
 
-        rc = cli_pcre_match(pd, buffer, length, ovector, OVECCOUNT);
+        rc = cli_pcre_match(pd, buffer, length, CLI_PCREMATCH_NOOVERRIDE, ovector, OVECCOUNT);
 
         cli_dbgmsg("cli_pcre_scanbuf: running regex /%s/ returns %d\n", pd->expression, rc);
         if (rc > 0) { /* matched at least once */

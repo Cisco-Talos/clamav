@@ -106,16 +106,20 @@ int cli_pcre_compile(struct cli_pcre_data *pd, long long unsigned match_limit, l
 }
 
 /* TODO: fix this function */
-int cli_pcre_match(struct cli_pcre_data *pd, const unsigned char *buffer, uint32_t buflen, int *ovector, size_t ovlen)
+int cli_pcre_match(struct cli_pcre_data *pd, const unsigned char *buffer, uint32_t buflen, int override_offset, int *ovector, size_t ovlen)
 {
-    int rc;
+    int rc, startoffset;
 
     if (ovlen % 3) {
         cli_dbgmsg("cli_pcre_match: ovector length is not a multiple of 3\n");
         return CL_EARG;
     }
 
-    rc = pcre_exec(pd->re, pd->ex, buffer, buflen, pd->search_offset, pd->options, ovector, ovlen);
+    startoffset = pd->search_offset;
+    if (override_offset >= 0)
+        startoffset = override_offset;
+
+    rc = pcre_exec(pd->re, pd->ex, buffer, buflen, startoffset, pd->options, ovector, ovlen);
 
     return rc;
 }

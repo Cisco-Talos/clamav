@@ -35,6 +35,8 @@
 #include "cltypes.h"
 #include "mpool.h"
 
+/* used for setting no override */
+#define CLI_PCREMATCH_NOOVERRIDE -1
 /* must be multiple of 3 */
 #define OVECCOUNT 300
 
@@ -48,7 +50,7 @@ struct cli_pcre_data {
 
 int cli_pcre_parse(struct cli_pcre_data *pd, const char *pattern);
 int cli_pcre_compile(struct cli_pcre_data *pd, long long unsigned match_limit, long long unsigned match_limit_recursion, unsigned int options);
-int cli_pcre_match(struct cli_pcre_data *pd, const unsigned char *buffer, uint32_t buflen, int *ovector, size_t ovlen);
+int cli_pcre_match(struct cli_pcre_data *pd, const unsigned char *buffer, uint32_t buflen, int override_offset, int *ovector, size_t ovlen);
 void cli_pcre_free_single(struct cli_pcre_data *pd);
 #endif /* HAVE_PCRE */
 #endif /*_REGEX_PCRE_H_*/
