@@ -197,7 +197,7 @@ int openioc_parse(const char * fname, int fd, struct cl_engine *engine, unsigned
 
     cli_dbgmsg("openioc_parse: XML parsing file %s\n", fname);
 
-    reader = xmlReaderForFd(fd, NULL, NULL, 0);
+    reader = xmlReaderForFd(fd, NULL, NULL, CLAMAV_MIN_XMLREADER_FLAGS);
     if (reader == NULL) {
         cli_dbgmsg("openioc_parse: xmlReaderForFd error\n");
         return CL_EOPEN;

@@ -122,7 +122,7 @@ int cli_scanxdp(cli_ctx *ctx)
      * silently ignore the error and return CL_SUCCESS so the filetyping code can
      * continue on.
      */
-    reader = xmlReaderForMemory(buf, (int)(map->len), "noname.xml", NULL, XML_PARSE_NOERROR);
+    reader = xmlReaderForMemory(buf, (int)(map->len), "noname.xml", NULL, CLAMAV_MIN_XMLREADER_FLAGS);
     if (!(reader))
         return CL_SUCCESS;
 
