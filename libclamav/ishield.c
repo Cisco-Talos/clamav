@@ -256,7 +256,7 @@ int cli_scanishield_msi(cli_ctx *ctx, off_t off) {
 	while(csize) {
 	    uint8_t buf2[BUFSIZ];
 	    z.avail_in = MIN(csize, sizeof(buf2));
-	    if(fmap_readn(map, buf2, off, z.avail_in) != z.avail_in) {
+	    if((uInt)fmap_readn(map, buf2, off, z.avail_in) != z.avail_in) {
 		cli_dbgmsg("ishield-msi: premature EOS or read fail\n");
 		break;
 	    }
@@ -373,7 +373,7 @@ int cli_scanishield(cli_ctx *ctx, off_t off, size_t sz) {
 	if(fsize < 0 || fsize == LONG_MAX ||
 	   !*strsz || !eostr || eostr == strsz || *eostr ||
 	   (unsigned long)fsize >= sz ||
-	   data - fname >= sz - fsize
+	   (size_t)(data - fname) >= sz - fsize
 	) break;
 
 	cli_dbgmsg("ishield: @%lx found file %s (%s) - version %s - size %lu\n", (unsigned long int) coff, fname, path, version, (unsigned long int) fsize);

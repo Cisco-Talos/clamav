@@ -162,7 +162,10 @@ EXPORTS cli_fmap_scandesc @44265 NONAME
 EXPORTS cli_hashset_destroy @44266 NONAME
 EXPORTS cli_detect_environment @44267 NONAME
 EXPORTS cli_filecopy @44268 NONAME
-EXPORTS cli_checkfp_pe @44353 NONAME
+EXPORTS cli_checkfp_pe @44369 NONAME
+EXPORTS cli_bytefunc_describe @44370 NONAME
+EXPORTS cli_bytetype_describe @44371 NONAME
+EXPORTS cli_bytevalue_describe @44372 NONAME
 
 ; compatibility layer, tommath, zlib
 EXPORTS w32_srand @44269 NONAME

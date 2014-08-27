@@ -1,3 +1,8 @@
+Thu, Jul 31 11:50:23 EDT 2014 (swebb)
+------------------------------------
+* bb#10731 - Allow to specificy a group for the socket of which the user is
+not a member
+
 Tue, 08 Jul 11:30:00 EDT 2014 (morgan)
 ------------------------------------
 * 0.98.5 beta release

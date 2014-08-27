@@ -214,8 +214,8 @@ const struct cli_bc_type cli_apicall_types[]={
 	{DArrayType, cli_tmp29, 3, 0, 0},
 	{DArrayType, cli_tmp30, 10, 0, 0}
 };
-
 const unsigned cli_apicall_maxtypes=sizeof(cli_apicall_types)/sizeof(cli_apicall_types[0]);
+
 const struct cli_apicall cli_apicalls[]={
 /* Bytecode APIcalls BEGIN */
 	{"test1", 10, 0, 0},
@@ -320,6 +320,8 @@ const struct cli_apicall cli_apicalls[]={
 	{"json_get_int", 8, 33, 2}
 /* Bytecode APIcalls END */
 };
+const unsigned cli_numapicalls=sizeof(cli_apicalls)/sizeof(cli_apicalls[0]);
+
 const cli_apicall_int2 cli_apicalls0[] = {
 	(cli_apicall_int2)cli_bcapi_test1,
 	(cli_apicall_int2)cli_bcapi_seek,

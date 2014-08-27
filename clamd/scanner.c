@@ -76,6 +76,8 @@ void msg_callback(enum cl_msg severity, const char *fullmsg, const char *msg, vo
     struct cb_context *c = ctx;
     const char *filename = (c && c->filename) ? c->filename : "";
 
+    UNUSEDPARAM(fullmsg);
+
     switch (severity) {
 	case CL_MSG_ERROR:
 	    logg("^[LibClamAV] %s: %s", filename, msg);
@@ -95,10 +97,13 @@ void msg_callback(enum cl_msg severity, const char *fullmsg, const char *msg, vo
 void hash_callback(int fd, unsigned long long size, const unsigned char *md5, const char *virname, void *ctx)
 {
     struct cb_context *c = ctx;
+    UNUSEDPARAM(fd);
+    UNUSEDPARAM(virname);
+
     if (!c)
 	return;
     c->virsize = size;
-    strncpy(c->virhash, md5, 32);
+    strncpy(c->virhash, (const char *)md5, 32);
     c->virhash[32] = '\0';
 }
 
@@ -345,6 +350,8 @@ int scanfd(const client_conn_t *conn, unsigned long int *scanned,
 	struct cb_context context;
 	char fdstr[32];
 	const char*reply_fdstr;
+
+    UNUSEDPARAM(odesc);
 
 	if (stream) {
 	    struct sockaddr_in sa;

@@ -22,8 +22,6 @@
 #include "clamav-config.h"
 #endif
 
-static	char	const	rcsid[] = "$Id: tnef.c,v 1.41 2007/02/12 22:22:27 njh Exp $";
-
 #include <stdio.h>
 #include <fcntl.h>
 
@@ -68,8 +66,6 @@ cli_tnef(const char *dir, cli_ctx *ctx)
 	fileblob *fb;
 	int ret, alldone;
 	off_t fsize, pos = 0;
-	STATBUF statb;
-
 
 	fsize = ctx->fmap[0]->len;
 
@@ -204,7 +200,6 @@ cli_tnef(const char *dir, cli_ctx *ctx)
 static int
 tnef_message(fmap_t *map, off_t *pos, uint16_t type, uint16_t tag, int32_t length, off_t fsize)
 {
-	uint16_t i16;
 	off_t offset;
 #ifdef	CL_DEBUG
 	uint32_t i32;
@@ -252,7 +247,7 @@ tnef_message(fmap_t *map, off_t *pos, uint16_t type, uint16_t tag, int32_t lengt
                 cli_errmsg("tnef_message: Unable to allocate memory for string\n");
 				return -1;
             }
-			if(fmap_readn(map, string, *pos, (uint32_t)length) != (uint32_t)length) {
+			if((uint32_t)fmap_readn(map, string, *pos, (uint32_t)length) != (uint32_t)length) {
 				free(string);
 				return -1;
 			}
@@ -285,7 +280,6 @@ static int
 tnef_attachment(fmap_t *map, off_t *pos, uint16_t type, uint16_t tag, int32_t length, const char *dir, fileblob **fbref, off_t fsize)
 {
 	uint32_t todo;
-	uint16_t i16;
 	off_t offset;
 	char *string;
 
@@ -303,7 +297,7 @@ tnef_attachment(fmap_t *map, off_t *pos, uint16_t type, uint16_t tag, int32_t le
                 cli_errmsg("tnef_attachment: Unable to allocate memory for string\n");
 				return -1;
             }
-			if(fmap_readn(map, string, *pos, (uint32_t)length) != (uint32_t)length) {
+			if((uint32_t)fmap_readn(map, string, *pos, (uint32_t)length) != (uint32_t)length) {
 				free(string);
 				return -1;
 			}

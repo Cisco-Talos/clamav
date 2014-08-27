@@ -572,4 +572,6 @@
 /* Define to "int" if <sys/socket.h> does not define. */
 /* #undef socklen_t */
 
+#define LLVM_VERSION 28
+
 #include "platform.h"

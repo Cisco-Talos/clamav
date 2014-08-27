@@ -931,7 +931,7 @@ int  cli_map_removekey(struct cli_map *m, const void *key, int32_t keysize)
 int  cli_map_setvalue(struct cli_map *m, const void* value, int32_t valuesize)
 {
     if ((m->valuesize && m->valuesize != valuesize)
-	|| m->last_insert >= m->nvalues || m->last_insert < 0)
+	|| (uint32_t)(m->last_insert) >= m->nvalues || m->last_insert < 0)
 	return -CL_EARG;
     if (m->valuesize) {
 	memcpy((char*)m->u.sized_values + m->last_insert * m->valuesize,
@@ -967,14 +967,14 @@ int  cli_map_getvalue_size(struct cli_map *m)
 {
     if (m->valuesize)
 	return m->valuesize;
-    if (m->last_find < 0 || m->last_find >= m->nvalues)
+    if (m->last_find < 0 || (uint32_t)(m->last_find) >= m->nvalues)
 	return -CL_EARG;
     return m->u.unsized_values[m->last_find].valuesize;
 }
 
 void* cli_map_getvalue(struct cli_map *m)
 {
-    if (m->last_find < 0 || m->last_find >= m->nvalues)
+    if (m->last_find < 0 || (uint32_t)(m->last_find) >= m->nvalues)
 	return NULL;
     if (m->valuesize)
 	return (char*)m->u.sized_values + m->last_find*m->valuesize;

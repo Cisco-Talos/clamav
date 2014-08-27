@@ -76,6 +76,7 @@ short foreground = 0;
 char hostid[37];
 
 char *get_hostid(void *cbdata);
+int is_valid_hostid(void);
 
 static void help(void)
 {
@@ -118,11 +119,12 @@ int main(int argc, char **argv)
     time_t currtime;
     const char *dbdir, *cfgfile;
     char *pua_cats = NULL, *pt;
-    int ret, tcpsock = 0, localsock = 0, i, min_port, max_port;
+    int ret, tcpsock = 0, localsock = 0, min_port, max_port;
     unsigned int sigs = 0;
     int *lsockets=NULL;
     unsigned int nlsockets = 0;
     unsigned int dboptions = 0;
+    unsigned int i;
 #ifdef C_LINUX
     STATBUF sb;
 #endif
@@ -576,8 +578,6 @@ int main(int argc, char **argv)
         }
 
         if(tcpsock) {
-            int *t;
-
             opt = optget(opts, "TCPAddr");
             if (opt->enabled) {
                 int breakout = 0;
@@ -670,7 +670,7 @@ int main(int argc, char **argv)
         if(!optget(opts, "Foreground")->enabled) {
 #ifdef C_BSD	    
             /* workaround for OpenBSD bug, see https://wwws.clamav.net/bugzilla/show_bug.cgi?id=885 */
-            for(ret=0;ret<nlsockets;ret++) {
+            for(ret=0;(unsigned int)ret<nlsockets;ret++) {
                 if (fcntl(lsockets[ret], F_SETFL, fcntl(lsockets[ret], F_GETFL) | O_NONBLOCK) == -1) {
                     logg("!fcntl for lsockets[] failed\n");
                     close(lsockets[ret]);
@@ -688,7 +688,7 @@ int main(int argc, char **argv)
             }
             gengine = NULL;
 #ifdef C_BSD
-            for(ret=0;ret<nlsockets;ret++) {
+            for(ret=0;(unsigned int)ret<nlsockets;ret++) {
                 if (fcntl(lsockets[ret], F_SETFL, fcntl(lsockets[ret], F_GETFL) & ~O_NONBLOCK) == -1) {
                     logg("!fcntl for lsockets[] failed\n");
                     close(lsockets[ret]);
@@ -766,6 +766,8 @@ int is_valid_hostid(void)
 
 char *get_hostid(void *cbdata)
 {
+    UNUSEDPARAM(cbdata);
+
     if (!strcmp(hostid, "none"))
         return NULL;
 

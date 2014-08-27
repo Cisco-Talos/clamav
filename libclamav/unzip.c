@@ -501,7 +501,7 @@ int cli_unzip(cli_ctx *ctx) {
 
   cli_dbgmsg("in cli_unzip\n");
   fsize = (uint32_t)map->len;
-  if(sizeof(off_t)!=sizeof(uint32_t) && (off_t)fsize!=map->len) {
+  if(sizeof(off_t)!=sizeof(uint32_t) && (size_t)fsize!=map->len) {
     cli_dbgmsg("cli_unzip: file too big\n");
     return CL_CLEAN;
   }
@@ -585,7 +585,7 @@ int unzip_single_internal(cli_ctx *ctx, off_t lhoffl, zip_cb zcb)
 
   cli_dbgmsg("in cli_unzip_single\n");
   fsize = (uint32_t)(map->len - lhoffl);
-  if (lhoffl<0 || lhoffl>map->len || (sizeof(off_t)!=sizeof(uint32_t) && (off_t)fsize!=map->len - lhoffl)) {
+  if (lhoffl<0 || (size_t)lhoffl>map->len || (sizeof(off_t)!=sizeof(uint32_t) && (size_t)fsize!=map->len - lhoffl)) {
     cli_dbgmsg("cli_unzip: bad offset\n");
     return CL_CLEAN;
   }
@@ -623,7 +623,7 @@ int unzip_search(cli_ctx *ctx, const char *name, size_t nlen, uint32_t *loff)
 
     map = *ctx->fmap;
     fsize = map->len;
-    if(sizeof(off_t)!=sizeof(uint32_t) && (off_t)fsize!=map->len) {
+    if(sizeof(off_t)!=sizeof(uint32_t) && fsize!=map->len) {
         cli_dbgmsg("unzip_search: file too big\n");
         return CL_CLEAN;
     }
@@ -661,7 +661,7 @@ int unzip_search(cli_ctx *ctx, const char *name, size_t nlen, uint32_t *loff)
                 ret=CL_EMAXFILES;
             }
 #if HAVE_JSON
-            if (cli_json_timeout_cycle_check(ctx, &toval) != CL_SUCCESS) {
+            if (cli_json_timeout_cycle_check(ctx, (int *)(&toval)) != CL_SUCCESS) {
                 return CL_ETIMEOUT;
             }
 #endif

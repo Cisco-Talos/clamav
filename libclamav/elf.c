@@ -815,11 +815,7 @@ int cli_scanelf(cli_ctx *ctx)
 int cli_elfheader(fmap_t *map, struct cli_exe_info *elfinfo)
 {
 	union elf_file_hdr file_hdr;
-	struct elf_section_hdr32 *section_hdr = NULL;
-	struct elf_program_hdr32 *program_hdr = NULL;
-	uint16_t shnum, phnum, shentsize, phentsize, i;
-	uint64_t entry, fentry = 0, shoff, phoff;
-	uint8_t conv = 0, err, is64 = 0;
+	uint8_t conv = 0, is64 = 0;
     int ret;
 
     cli_dbgmsg("in cli_elfheader\n");

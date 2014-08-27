@@ -56,6 +56,7 @@ static void help(void)
     printf("    --version              -V         Show version\n");
     printf("    --info                 -i         Print information about bytecode\n");
     printf("    --printsrc             -p         Print bytecode source\n");
+    printf("    --printbcir            -c         Print bytecode IR\n");
     printf("    --trace <level>                   Set bytecode trace level 0..7 (default 7)\n");
     printf("    --no-trace-showsource             Don't show source line during tracing\n");
     printf("    file                              file to test\n");
@@ -112,16 +113,19 @@ static void tracehook(struct cli_bc_ctx *ctx, unsigned event)
 
 static void tracehook_op(struct cli_bc_ctx *ctx, const char *op)
 {
+    UNUSEDPARAM(ctx);
     fprintf(stderr, "[trace] %s\n", op);
 }
 
 static void tracehook_val(struct cli_bc_ctx *ctx, const char *name, uint32_t value)
 {
+    UNUSEDPARAM(ctx);
     fprintf(stderr, "[trace] %s = %u\n", name, value);
 }
 
 static void tracehook_ptr(struct cli_bc_ctx *ctx, const void *ptr)
 {
+    UNUSEDPARAM(ctx);
     fprintf(stderr, "[trace] %p\n", ptr);
 }
 
@@ -325,6 +329,10 @@ int main(int argc, char *argv[])
 	cli_bytecode_describe(bc);
     } else if (optget(opts, "printsrc")->enabled) {
         print_src(opts->filename[0]);
+    } else if (optget(opts, "printbcir")->enabled) {
+        cli_bytetype_describe(bc);
+        cli_bytevalue_describe(bc, 0);
+        cli_bytefunc_describe(bc, 0);
     } else {
 	cli_ctx cctx;
 	struct cl_engine *engine = cl_engine_new();

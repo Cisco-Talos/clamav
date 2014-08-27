@@ -236,6 +236,7 @@ static int chkpath(const char *path)
 
 static int ftw_chkpath(const char *path, struct cli_ftw_cbdata *data)
 {
+    UNUSEDPARAM(data);
     return chkpath(path);
 }
 
@@ -377,6 +378,8 @@ static int serial_callback(STATBUF *sb, char *filename, const char *path, enum c
     struct client_serial_data *c = (struct client_serial_data *)data->data;
     int sockd, ret;
     const char *f = filename;
+
+    UNUSEDPARAM(sb);
 
     if(chkpath(path))
 	return CL_SUCCESS;
@@ -531,6 +534,8 @@ static int parallel_callback(STATBUF *sb, char *filename, const char *path, enum
     struct client_parallel_data *c = (struct client_parallel_data *)data->data;
     struct SCANID *cid;
     int res = CL_CLEAN;
+
+    UNUSEDPARAM(sb);
 
     if(chkpath(path))
 	return CL_SUCCESS;

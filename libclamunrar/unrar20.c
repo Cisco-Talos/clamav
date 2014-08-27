@@ -19,13 +19,14 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "libclamav/clamav.h"
 #include "libclamunrar/unrar.h"
 #include "libclamunrar/unrar20.h"
 
 #ifdef RAR_HIGH_DEBUG
 #define rar_dbgmsg printf
 #else
-static void rar_dbgmsg(const char* fmt,...){}
+static void rar_dbgmsg(const char* fmt,...){ UNUSEDPARAM(fmt); }
 #endif
 
 void unpack_init_data20(int solid, unpack_data_t *unpack_data)

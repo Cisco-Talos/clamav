@@ -56,6 +56,8 @@
 
 #endif
 
+#define UNUSEDPARAM(x) (void)(x)
+
 #include <sys/types.h>
 #include <sys/stat.h>
 

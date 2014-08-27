@@ -517,6 +517,8 @@ fds_poll_recv (struct fd_data *data, int timeout, int check_signals,
     int retval;
     time_t now, closest_timeout;
 
+    UNUSEDPARAM(event);
+
     /* we must have at least one fd, the control fd! */
     fds_cleanup (data);
 #ifndef _WIN32

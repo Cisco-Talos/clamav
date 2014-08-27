@@ -13,6 +13,8 @@
 #define OPTS "e:p:n:N:H:h?v"
 
 char *read_stream(void);
+void usage(char *name);
+void version(void);
 
 void usage(char *name)
 {
@@ -41,9 +43,7 @@ int main(int argc, char *argv[])
     int ch;
     struct curl_httppost *post=NULL, *last=NULL;
     struct curl_slist *slist = NULL;
-    char *type;
     char *name=NULL, *email=NULL, *filename=NULL;
-    struct cl_engine *engine;
     int setURL=0, fromStream=0;
 
     curl_global_init(CURL_GLOBAL_ALL);

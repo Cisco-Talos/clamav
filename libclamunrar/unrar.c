@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "libclamav/clamav.h"
 #include "libclamunrar/unrar.h"
 #include "libclamunrar/unrarppm.h"
 #include "libclamunrar/unrarvm.h"
@@ -43,7 +44,7 @@
 #ifdef RAR_HIGH_DEBUG
 #define rar_dbgmsg printf
 #else
-static void rar_dbgmsg(const char* fmt,...){}
+static void rar_dbgmsg(const char* fmt,...){ UNUSEDPARAM(fmt); }
 #endif
 
 static void insert_old_dist(unpack_data_t *unpack_data, unsigned int distance)
@@ -123,7 +124,7 @@ int rar_unp_read_buf(int fd, unpack_data_t *unpack_data)
 		data_size = unpack_data->read_top;
 	}
 	/* RAR2 depends on us only reading upto the end of the current compressed file */
-	if (unpack_data->pack_size < ((MAX_BUF_SIZE-data_size)&~0xf)) {
+	if (unpack_data->pack_size < (unsigned int)(((MAX_BUF_SIZE-data_size)&~0xf))) {
 		read_size = unpack_data->pack_size;
 	} else {
 		read_size = (MAX_BUF_SIZE-data_size)&~0xf;
@@ -218,7 +219,7 @@ static void unp_write_buf(unpack_data_t *unpack_data)
 	struct UnpackFilter *flt, *next_filter;
 	struct rarvm_prepared_program *prg, *next_prg;
 	uint8_t *filtered_data;
-	int i, j;
+	size_t i, j;
 	
 	rar_dbgmsg("in unp_write_buf\n");
 	written_border = unpack_data->wr_ptr;
@@ -395,8 +396,9 @@ static int read_tables(int fd, unpack_data_t *unpack_data)
 	uint8_t bit_length[BC];
 	unsigned char table[HUFF_TABLE_SIZE];
 	unsigned int bit_field;
-	int i, length, zero_count, number, n;
+	int length, zero_count, number, n;
 	const int table_size=HUFF_TABLE_SIZE;
+    unsigned int i;
 	
 	rar_dbgmsg("in read_tables Offset=%ld in_addr=%d read_top=%d\n", lseek(fd, 0, SEEK_CUR),
 				unpack_data->in_addr, unpack_data->read_top);
@@ -469,7 +471,8 @@ static int read_tables(int fd, unpack_data_t *unpack_data)
 				rar_addbits(unpack_data, 7);
 			}
 			while (n-- > 0 && i < table_size) {
-				table[i] = table[i-1];
+                if (i>0)
+                    table[i] = table[i-1];
 				i++;
 			}
 		} else {
@@ -539,10 +542,11 @@ static int add_vm_code(unpack_data_t *unpack_data, unsigned int first_byte,
 			unsigned char *vmcode, int code_size)
 {
 	rarvm_input_t rarvm_input;
-	unsigned int filter_pos, new_filter, block_start, init_mask, cur_size;
+	unsigned int filter_pos, new_filter, block_start, init_mask, cur_size, data_size;
 	struct UnpackFilter *filter, *stack_filter;
-	int i, empty_count, stack_pos, vm_codesize, static_size, data_size;
+	int empty_count, stack_pos, vm_codesize, static_size;
 	unsigned char *vm_code, *global_data;
+    size_t i;
 	
 	rar_dbgmsg("in add_vm_code first_byte=0x%x code_size=%d\n", first_byte, code_size);
 	rarvm_input.in_buf = vmcode;
@@ -562,7 +566,7 @@ static int add_vm_code(unpack_data_t *unpack_data, unsigned int first_byte,
 	}
 	rar_dbgmsg("filter_pos = %u\n", filter_pos);
 	if (filter_pos > unpack_data->Filters.num_items ||
-			filter_pos > unpack_data->old_filter_lengths_size) {
+			filter_pos > (unsigned int)(unpack_data->old_filter_lengths_size)) {
 		rar_dbgmsg("filter_pos check failed\n");
 		return FALSE;
 	}
@@ -625,7 +629,7 @@ static int add_vm_code(unpack_data_t *unpack_data, unsigned int first_byte,
 	if (first_byte & 0x20) {
 		stack_filter->block_length = rarvm_read_data(&rarvm_input);
 	} else {
-		stack_filter->block_length = filter_pos < unpack_data->old_filter_lengths_size ?
+		stack_filter->block_length = filter_pos < (unsigned int)(unpack_data->old_filter_lengths_size) ?
 				unpack_data->old_filter_lengths[filter_pos] : 0;
 	}
 	rar_dbgmsg("block_length=%u\n", stack_filter->block_length);
@@ -660,7 +664,7 @@ static int add_vm_code(unpack_data_t *unpack_data, unsigned int first_byte,
 		    rar_dbgmsg("unrar: add_vm_code: rar_malloc failed for vm_code\n");
 		    return FALSE;
 		}
-		for (i=0 ; i < vm_codesize ; i++) {
+		for (i=0 ; i < (size_t)vm_codesize ; i++) {
 			vm_code[i] = rarvm_getbits(&rarvm_input) >> 8;
 			rarvm_addbits(&rarvm_input, 8);
 		}

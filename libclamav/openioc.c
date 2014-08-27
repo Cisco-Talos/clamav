@@ -252,7 +252,7 @@ int openioc_parse(const char * fname, int fd, struct cl_engine *engine, unsigned
 
         elem = elems;
         elems = elems->next;
-        hash = elem->hash;
+        hash = (char *)(elem->hash);
         while (isspace(*hash))
             hash++;
         hashlen = strlen(hash);

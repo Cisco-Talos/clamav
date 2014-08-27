@@ -125,8 +125,8 @@ typedef struct property_tag {
     unsigned char   reserved[4];
 }               property_t;
 
-
 struct ole2_list_node;
+
 typedef struct ole2_list_node
 {
   uint32_t Val;
@@ -138,6 +138,13 @@ typedef struct ole2_list
   uint32_t Size;
   ole2_list_node_t *Head;
 } ole2_list_t;
+
+int ole2_list_init(ole2_list_t * list);
+int ole2_list_is_empty(ole2_list_t * list);
+uint32_t ole2_list_size(ole2_list_t * list);
+int ole2_list_push(ole2_list_t * list, uint32_t val);
+uint32_t ole2_list_pop(ole2_list_t * list);
+int ole2_list_delete(ole2_list_t * list);
 
 int
 ole2_list_init(ole2_list_t * list)
@@ -525,10 +532,11 @@ ole2_walk_property_tree(ole2_header_t * hdr, const char *dir, int32_t prop_index
 {
     property_t      prop_block[4];
     int32_t         idx, current_block, i, curindex;
-    char           *name, *dirname;
+    char            *dirname;
     ole2_list_t     node_list;
     int             ret, func_ret;
 #if HAVE_JSON
+    char *name;
     int toval = 0;
 #endif
 
@@ -627,7 +635,7 @@ ole2_walk_property_tree(ole2_header_t * hdr, const char *dir, int32_t prop_index
                 continue;
             }
             hdr->sbat_root_start = prop_block[idx].start_block;
-            if (prop_block[idx].child != -1) {
+            if ((int)(prop_block[idx].child) != -1) {
                 ret = ole2_walk_property_tree(hdr, dir, prop_block[idx].child, handler, rec_level + 1, file_count, ctx, scansize);
                 if (ret != CL_SUCCESS) {
                     if ((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS)) {
@@ -639,13 +647,13 @@ ole2_walk_property_tree(ole2_header_t * hdr, const char *dir, int32_t prop_index
                     }
                 }
             }
-            if (prop_block[idx].prev != -1) {
+            if ((int)(prop_block[idx].prev) != -1) {
 	        if ((ret=ole2_list_push(&node_list, prop_block[idx].prev)) != CL_SUCCESS) {
 		    ole2_list_delete(&node_list);
 		    return ret;
 		}
 	    }
-	    if (prop_block[idx].next != -1) {
+	    if ((int)(prop_block[idx].next) != -1) {
 	        if ((ret=ole2_list_push(&node_list, prop_block[idx].next)) != CL_SUCCESS) {
 		    ole2_list_delete(&node_list);
 		    return ret;
@@ -677,7 +685,7 @@ ole2_walk_property_tree(ole2_header_t * hdr, const char *dir, int32_t prop_index
             } else {
                 cli_dbgmsg("OLE2: filesize exceeded\n");
             }
-            if (prop_block[idx].child != -1) {
+            if ((int)(prop_block[idx].child) != -1) {
                 ret = ole2_walk_property_tree(hdr, dir, prop_block[idx].child, handler, rec_level, file_count, ctx, scansize);
                 if (ret != CL_SUCCESS) {
                     if ((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS)) {
@@ -689,13 +697,13 @@ ole2_walk_property_tree(ole2_header_t * hdr, const char *dir, int32_t prop_index
                     }
                 }
             }
-            if (prop_block[idx].prev != -1) {
+            if ((int)(prop_block[idx].prev) != -1) {
 	        if ((ret=ole2_list_push(&node_list, prop_block[idx].prev)) != CL_SUCCESS) {
 		    ole2_list_delete(&node_list);
 		    return ret;
 		}
             }
-            if (prop_block[idx].next != -1) {
+            if ((int)(prop_block[idx].next) != -1) {
                 if ((ret=ole2_list_push(&node_list, prop_block[idx].next)) != CL_SUCCESS) {
 		    ole2_list_delete(&node_list);
 		    return ret;
@@ -734,7 +742,7 @@ ole2_walk_property_tree(ole2_header_t * hdr, const char *dir, int32_t prop_index
                 cli_dbgmsg("OLE2 dir entry: %s\n", dirname);
             } else
                 dirname = NULL;
-            if (prop_block[idx].child != -1) {
+            if ((int)(prop_block[idx].child) != -1) {
                 ret = ole2_walk_property_tree(hdr, dirname, prop_block[idx].child, handler, rec_level + 1, file_count, ctx, scansize);
                 if (ret != CL_SUCCESS) {
                     if ((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS)) {
@@ -746,13 +754,13 @@ ole2_walk_property_tree(ole2_header_t * hdr, const char *dir, int32_t prop_index
                     }
                 }
             }
-            if (prop_block[idx].prev != -1) {
+            if ((int)(prop_block[idx].prev) != -1) {
 	        if ((ret=ole2_list_push(&node_list, prop_block[idx].prev)) != CL_SUCCESS) {
 		    ole2_list_delete(&node_list);
 		    return ret;
 		}
             }
-            if (prop_block[idx].next != -1) {
+            if ((int)(prop_block[idx].next) != -1) {
                 if ((ret=ole2_list_push(&node_list, prop_block[idx].next)) != CL_SUCCESS) {
 		    ole2_list_delete(&node_list);
 		    return ret;
@@ -781,6 +789,8 @@ handler_writefile(ole2_header_t * hdr, property_t * prop, const char *dir, cli_c
     bitset_t       *blk_bitset;
     char           *hash;
     uint32_t        cnt;
+
+    UNUSEDPARAM(ctx);
 
     if (prop->type != 2) {
         /* Not a file */
@@ -922,7 +932,11 @@ handler_enum(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * 
 
         }
     }
+#else
+    UNUSEDPARAM(ctx);
 #endif
+    UNUSEDPARAM(dir);
+
     if (!hdr->has_vba) {
         if (!name)
             name = get_property_name2(prop->name, prop->name_size);
@@ -946,6 +960,8 @@ handler_otf(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * c
     int32_t         current_block, len, offset;
     int             ofd, ret;
     bitset_t       *blk_bitset;
+
+    UNUSEDPARAM(dir);
 
     if (prop->type != 2) {
         /* Not a file */
@@ -1175,7 +1191,8 @@ int
 cli_ole2_extract(const char *dirname, cli_ctx * ctx, struct uniq **vba)
 {
     ole2_header_t   hdr;
-    int             hdr_size, ret = CL_CLEAN;
+    int             ret = CL_CLEAN;
+    size_t hdr_size;
     unsigned int    file_count = 0;
     unsigned long   scansize, scansize2;
     const void     *phdr;
@@ -1200,7 +1217,7 @@ cli_ole2_extract(const char *dirname, cli_ctx * ctx, struct uniq **vba)
         sizeof(off_t) - sizeof(bitset_t *) -
         sizeof(struct uniq *) - sizeof(int) - sizeof(fmap_t *);
 
-    if ((*ctx->fmap)->len < hdr_size) {
+    if ((size_t)((*ctx->fmap)->len) < (size_t)(hdr_size)) {
         return CL_CLEAN;
     }
     hdr.map = *ctx->fmap;
@@ -1674,7 +1691,7 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
             if (!outstr) {
                 return CL_EMEM;
             }
-            strncpy(outstr, databuf+offset, strsize);
+            strncpy(outstr, (const char *)(databuf+offset), strsize);
             ret = cli_jsonstr(sctx->summary, sctx->propname, outstr);
             free(outstr);
             break;
@@ -1721,7 +1738,7 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
             if (!outstr) {
                 return CL_EMEM;
             }
-            strncpy(outstr, databuf+offset, strsize);
+            strncpy(outstr, (const char *)(databuf+offset), strsize);
             outstr2 = (char*)get_property_name2(outstr, strsize);
             if (outstr2) {
                 ret = cli_jsonstr(sctx->summary, sctx->propname, outstr2);
@@ -1934,8 +1951,9 @@ static int ole2_summary_propset_json(summary_ctx_t *sctx, off_t offset)
     unsigned char *hdr, *ps;
     uint32_t numprops, limitprops;
     off_t foff = offset, psoff = 0;
-    uint32_t propid, poffset;
-    int i, ret;
+    uint32_t poffset;
+    int ret;
+    unsigned int i;
 
     cli_dbgmsg("in ole2_summary_propset_json\n");
 
@@ -1973,7 +1991,7 @@ static int ole2_summary_propset_json(summary_ctx_t *sctx, off_t offset)
                limitprops, numprops, PROPCNTLIMIT);
 
     /* extract remaining fragment of propset */
-    if (foff+(sctx->pssize) > sctx->maplen) {
+    if ((size_t)(foff+(sctx->pssize)) > (size_t)(sctx->maplen)) {
         sctx->flags |= OLE2_SUMMARY_ERROR_TOOSMALL;
         return CL_EFORMAT;
     }
@@ -2021,7 +2039,7 @@ static int ole2_summary_propset_json(summary_ctx_t *sctx, off_t offset)
 
 static int cli_ole2_summary_json_cleanup(summary_ctx_t *sctx, int retcode)
 {
-    json_object *jobj, *jarr;
+    json_object *jarr;
 
     cli_dbgmsg("in cli_ole2_summary_json_cleanup: %d[%x]\n", retcode, sctx->flags);
 
@@ -2071,9 +2089,9 @@ static int cli_ole2_summary_json_cleanup(summary_ctx_t *sctx, int retcode)
 
 #endif /* HAVE_JSON */
 
+#if HAVE_JSON
 int cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
 {
-#if HAVE_JSON
     summary_ctx_t sctx;
     STATBUF statbuf;
     off_t foff = 0;
@@ -2186,8 +2204,5 @@ int cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
     }
 
     return cli_ole2_summary_json_cleanup(&sctx, CL_SUCCESS);
-#else
-    cli_dbgmsg("ole2_summary_json: libjson needs to enabled!");
-    return CL_SUCCESS;
-#endif /* HAVE_JSON */
 }
+#endif /* HAVE_JSON */

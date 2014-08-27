@@ -65,7 +65,7 @@ int json_object_object_get_ex(struct json_object *obj, const char *key, struct j
 #define nojson_func cli_dbgmsg
 
 /* internal functions */
-int cli_json_nojson();
+int cli_json_nojson(void);
 
 int cli_jsonnull_nojson(const char* key);
 int cli_jsonstr_nojson(const char* key, const char* s);

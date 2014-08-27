@@ -881,6 +881,10 @@ getfile_mirman (const char *srcfile, const char *destfile,
     char *remotename = NULL, *authorization = NULL, *headerline;
     const char *rotation = "|/-\\", *fname;
 
+    UNUSEDPARAM(localip);
+    UNUSEDPARAM(port);
+    UNUSEDPARAM(ctimeout);
+    UNUSEDPARAM(can_whitelist);
 
     if (proxy)
     {
@@ -1113,6 +1117,8 @@ getfile (const char *srcfile, const char *destfile, const char *hostname,
 {
     int ret, sd;
     char ipaddr[46];
+
+    UNUSEDPARAM(opts);
 
     memset (ipaddr, 0, sizeof (ipaddr));
     if (ip && ip[0])            /* use ip to connect */

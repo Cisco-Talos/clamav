@@ -342,6 +342,7 @@ int cli_dconf_load(FILE *fs, struct cl_engine *engine, unsigned int options, str
     int ret = 0;
     uint32_t val;
 
+    UNUSEDPARAM(options);
 
     while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
         line++;

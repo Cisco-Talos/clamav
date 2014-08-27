@@ -578,6 +578,8 @@ char *clamav_stats_get_hostid(void *cbdata)
     size_t bufsz, i;
     char *buf;
 
+    UNUSEDPARAM(cbdata);
+
 #if HAVE_SYSCTLBYNAME
     /*
      * FreeBSD provides a handy-dandy sysctl for grabbing the system's HostID. In a jail that

@@ -13,12 +13,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "libclamav/clamav.h"
 #include "libclamunrar/unrarhlp.h"
 
 #ifdef RAR_HIGH_DEBUG
 #define rar_dbgmsg printf
 #else
-static void rar_dbgmsg(const char* fmt,...){}
+static void rar_dbgmsg(const char* fmt,...){ UNUSEDPARAM(fmt); }
 #endif
 
 #define RAR_MAX_ALLOCATION 184549376

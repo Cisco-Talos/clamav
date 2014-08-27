@@ -363,6 +363,10 @@ int cli_bytecode_context_setparam_int(struct cli_bc_ctx *ctx, unsigned i, uint64
 
 int cli_bytecode_context_setparam_ptr(struct cli_bc_ctx *ctx, unsigned i, void *data, unsigned datalen)
 {
+    UNUSEDPARAM(ctx);
+    UNUSEDPARAM(i);
+    UNUSEDPARAM(data);
+    UNUSEDPARAM(datalen);
     cli_errmsg("Pointer parameters are not implemented yet!\n");
     return CL_EARG;
 }
@@ -1401,7 +1405,7 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 	}
 	bcfunc->dbgnodes = cli_malloc(num*sizeof(*bcfunc->dbgnodes));
 	if (!bcfunc->dbgnodes) {
-        cli_errmsg("Unable to allocate memory for dbg nodes: %s\n", num*sizeof(*bcfunc->dbgnodes));
+        cli_errmsg("Unable to allocate memory for dbg nodes: %u\n", num*sizeof(*bcfunc->dbgnodes));
 	    return CL_EMEM;
     }
 	for (i=0;i<num;i++) {
@@ -2270,7 +2274,7 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 		    MAP(inst->u.three[1]);
 		    MAP(inst->u.three[2]);
                     inst->u.three[0] = get_geptypesize(bc, inst->u.three[0]);
-                    if (inst->u.three[0] == -1)
+                    if ((int)(inst->u.three[0]) == -1)
                       ret = CL_EBYTECODE;
                     break;
 		case OP_BC_GEPZ:
@@ -2644,7 +2648,7 @@ int cli_bytecode_prepare2(struct cl_engine *engine, struct cli_all_bc *bcs, unsi
 	rc = cli_bytecode_context_getresult_int(ctx);
 	/* check magic number, don't use 0 here because it is too easy for a
 	 * buggy bytecode to return 0 */
-	if (rc != 0xda7aba5e) {
+	if ((unsigned int)rc != (unsigned int)0xda7aba5e) {
 	    cli_warnmsg("Bytecode: selftest failed with code %08x. Please report to http://bugs.clamav.net\n",
 			rc);
 	    if (engine->bytecode_mode == CL_BYTECODE_MODE_TEST)
@@ -3012,7 +3016,7 @@ void cli_bytecode_describe(const struct cli_bc *bc)
 	    unsigned len = strlen(cli_apicalls[i].name);
 	    if (had)
 		printf(",");
-	    if (len > cols) {
+	    if (len > (unsigned int)cols) {
 		printf("\n\t");
 		cols = 72;
 	    }
@@ -3022,4 +3026,490 @@ void cli_bytecode_describe(const struct cli_bc *bc)
 	}
     }
     printf("\n");
+}
+
+const char *bc_tystr[] = {
+    "DFunctionType",
+    "DPointerType",
+    "DStructType",
+    "DPackedStructType",
+    "DArrayType"
+};
+
+const char *bc_opstr[] = {
+    "OP_BC_NULL",
+    "OP_BC_ADD", /* =1*/
+    "OP_BC_SUB",
+    "OP_BC_MUL",
+    "OP_BC_UDIV",
+    "OP_BC_SDIV",
+    "OP_BC_UREM",
+    "OP_BC_SREM",
+    "OP_BC_SHL",
+    "OP_BC_LSHR",
+    "OP_BC_ASHR",
+    "OP_BC_AND",
+    "OP_BC_OR",
+    "OP_BC_XOR",
+
+    "OP_BC_TRUNC",
+    "OP_BC_SEXT",
+    "OP_BC_ZEXT",
+
+    "OP_BC_BRANCH",
+    "OP_BC_JMP",
+    "OP_BC_RET",
+    "OP_BC_RET_VOID",
+
+    "OP_BC_ICMP_EQ",
+    "OP_BC_ICMP_NE",
+    "OP_BC_ICMP_UGT",
+    "OP_BC_ICMP_UGE",
+    "OP_BC_ICMP_ULT",
+    "OP_BC_ICMP_ULE",
+    "OP_BC_ICMP_SGT",
+    "OP_BC_ICMP_SGE",
+    "OP_BC_ICMP_SLE",
+    "OP_BC_ICMP_SLT",
+    "OP_BC_SELECT",
+    "OP_BC_CALL_DIRECT",
+    "OP_BC_CALL_API",
+    "OP_BC_COPY",
+    "OP_BC_GEP1",
+    "OP_BC_GEPZ",
+    "OP_BC_GEPN",
+    "OP_BC_STORE",
+    "OP_BC_LOAD",
+    "OP_BC_MEMSET",
+    "OP_BC_MEMCPY",
+    "OP_BC_MEMMOVE",
+    "OP_BC_MEMCMP",
+    "OP_BC_ISBIGENDIAN",
+    "OP_BC_ABORT",
+    "OP_BC_BSWAP16",
+    "OP_BC_BSWAP32",
+    "OP_BC_BSWAP64",
+    "OP_BC_PTRDIFF32",
+    "OP_BC_PTRTOINT64",
+    "OP_BC_INVALID" /* last */
+};
+
+extern unsigned cli_numapicalls;
+static void cli_bytetype_helper(const struct cli_bc *bc, unsigned tid)
+{
+    unsigned i, j;
+    const struct cli_bc_type *ty = &bc->types[i];
+
+
+    if (tid & 0x8000) {
+        printf("alloc ");
+        tid &= 0x7fff;
+    }
+
+    if (tid < 65) {
+        printf("i%d", tid);
+        return;
+    }
+
+    i = tid - 65;
+
+    switch (ty->kind) {
+    case DFunctionType:
+        cli_bytetype_helper(bc, ty->containedTypes[0]);
+        printf(" func ( ");
+        for (j = 1; j < ty->numElements; ++j) {
+            cli_bytetype_helper(bc, ty->containedTypes[0]);
+            printf(" ");
+        }
+        printf(")");
+        break;
+    case DPointerType:
+        cli_bytetype_helper(bc, ty->containedTypes[0]);
+        printf("*");
+        break;
+    case DStructType:
+    case DPackedStructType:
+        printf("{ ");
+        for (j = 0; j < ty->numElements; ++j) {
+            cli_bytetype_helper(bc, ty->containedTypes[0]);
+            printf(" ");
+        }
+        printf("}");
+        break;
+    case DArrayType:
+        printf("[");
+        printf("%d x ", ty->numElements);
+        cli_bytetype_helper(bc, ty->containedTypes[0]);
+        printf("]");
+        break;
+    default:
+        printf("unhandled type kind %d, cannot parse", ty->kind);
+        break;
+    }
+
+}
+
+void cli_bytetype_describe(const struct cli_bc *bc)
+{
+    unsigned i, tid;
+
+    printf("found %d extra types of %d total, starting at tid %d\n", 
+           bc->num_types, 64+bc->num_types, bc->start_tid);
+
+    printf("TID  KIND                INTERNAL\n");
+    printf("------------------------------------------------------------------------\n");
+    for (i = 0, tid = 65; i < bc->num_types-1; ++i, ++tid) {
+        printf("%3d: %-20s", tid, bc_tystr[bc->types[i].kind]);
+        cli_bytetype_helper(bc, tid);
+        printf("\n");
+    }
+    printf("------------------------------------------------------------------------\n");
+}
+
+void cli_bytevalue_describe(const struct cli_bc *bc, unsigned funcid)
+{
+    unsigned i, j, total = 0;
+    const struct cli_bc_func *func;
+
+    if (funcid >= bc->num_func) {
+        printf("bytecode diagnostic: funcid [%u] outside byecode numfuncs [%u]\n",
+               funcid, bc->num_func);
+        return;
+    }
+    // globals
+    printf("found a total of %d globals\n", bc->num_globals);
+    printf("GID  ID    VALUE\n");
+    printf("------------------------------------------------------------------------\n");
+    for (i = 0; i < bc->num_globals; ++i) {
+        printf("%3u [%3u]: ", i, i);
+        cli_bytetype_helper(bc, bc->globaltys[i]);
+        printf(" unknown\n");
+    }
+    printf("------------------------------------------------------------------------\n");
+
+    // arguments and local values
+    func = &bc->funcs[funcid];
+    printf("found %d values with %d arguments and %d locals\n",
+           func->numValues, func->numArgs, func->numLocals);
+    printf("VID  ID    VALUE\n");
+    printf("------------------------------------------------------------------------\n");
+    for (i = 0; i < func->numValues; ++i) {
+        printf("%3u [%3u]: ", i, total++);
+        cli_bytetype_helper(bc, func->types[i]);
+        if (i < func->numArgs)
+            printf("argument");
+        printf("\n");
+    }
+    printf("------------------------------------------------------------------------\n");
+    
+    // constants
+    printf("found a total of %d constants\n", func->numConstants);
+    printf("CID  ID    VALUE\n");
+    printf("------------------------------------------------------------------------\n");
+    for (i = 0; i < func->numConstants; ++i) {
+        printf("%3u [%3u]: %llu(0x%llx)\n", i, total++, func->constants[i], func->constants[i]);
+    }
+    printf("------------------------------------------------------------------------\n");
+    printf("found a total of %u total values\n", total);
+    printf("------------------------------------------------------------------------\n");
+    return;
+}
+
+void cli_byteinst_describe(const struct cli_bc_inst *inst, unsigned *bbnum)
+{
+    unsigned j;
+    char inst_str[256];
+	const struct cli_apicall *api;
+
+    if (inst->opcode > OP_BC_INVALID) {
+        printf("opcode %u[%u] of type %u is not implemented yet!",
+               inst->opcode, inst->interp_op/5, inst->interp_op%5);
+        return;
+    }
+
+    snprintf(inst_str, 256, "%-20s[%-3d/%3d/%3d]", bc_opstr[inst->opcode], 
+             inst->opcode, inst->interp_op, inst->interp_op%inst->opcode);
+    printf("%-35s", inst_str);
+    switch (inst->opcode) {
+        // binary operations
+    case OP_BC_ADD:
+        printf("%d = %d + %d", inst->dest, inst->u.binop[0], inst->u.binop[1]);
+        break;
+    case OP_BC_SUB:
+        printf("%d = %d - %d", inst->dest, inst->u.binop[0], inst->u.binop[1]);
+        break;
+    case OP_BC_MUL:
+        printf("%d = %d * %d", inst->dest, inst->u.binop[0], inst->u.binop[1]);
+        break;
+    case OP_BC_UDIV:
+        printf("%d = %d / %d", inst->dest, inst->u.binop[0], inst->u.binop[1]);
+        break;
+    case OP_BC_SDIV:
+        printf("%d = %d / %d", inst->dest, inst->u.binop[0], inst->u.binop[1]);
+        break;
+    case OP_BC_UREM:
+        printf("%d = %d %% %d", inst->dest, inst->u.binop[0], inst->u.binop[1]);
+        break;
+    case OP_BC_SREM:
+        printf("%d = %d %% %d", inst->dest, inst->u.binop[0], inst->u.binop[1]);
+        break;
+    case OP_BC_SHL:
+        printf("%d = %d << %d", inst->dest, inst->u.binop[0], inst->u.binop[1]);
+        break;
+    case OP_BC_LSHR:
+        printf("%d = %d >> %d", inst->dest, inst->u.binop[0], inst->u.binop[1]);
+        break;
+    case OP_BC_ASHR:
+        printf("%d = %d >> %d", inst->dest, inst->u.binop[0], inst->u.binop[1]);
+        break;
+    case OP_BC_AND:
+        printf("%d = %d & %d", inst->dest, inst->u.binop[0], inst->u.binop[1]);
+        break;
+    case OP_BC_OR:
+        printf("%d = %d | %d", inst->dest, inst->u.binop[0], inst->u.binop[1]);
+        break;
+    case OP_BC_XOR:
+        printf("%d = %d ^ %d", inst->dest, inst->u.binop[0], inst->u.binop[1]);
+        break;
+
+        // casting operations
+    case OP_BC_TRUNC:
+        printf("%d = %d trunc %llx", inst->dest, inst->u.cast.source, inst->u.cast.mask);
+        break;
+    case OP_BC_SEXT:
+        printf("%d = %d sext %llx", inst->dest, inst->u.cast.source, inst->u.cast.mask);
+        break;
+    case OP_BC_ZEXT:
+        printf("%d = %d zext %llx", inst->dest, inst->u.cast.source, inst->u.cast.mask);
+        break;
+        
+        // control operations (termination instructions)
+    case OP_BC_BRANCH:
+        printf("br %d ? bb.%d : bb.%d", inst->u.branch.condition,
+               inst->u.branch.br_true, inst->u.branch.br_false);
+        (*bbnum)++;
+        break;
+    case OP_BC_JMP:
+        printf("jmp bb.%d", inst->u.jump);
+        (*bbnum)++;
+        break;
+    case OP_BC_RET:
+        printf("ret %d", inst->u.unaryop);
+        (*bbnum)++;
+        break;
+    case OP_BC_RET_VOID:
+        printf("ret void");
+        (*bbnum)++;
+        break;
+
+        // comparison operations
+    case OP_BC_ICMP_EQ:
+        printf("%d = (%d == %d)", inst->dest, inst->u.binop[0], inst->u.binop[1]);
+        break;
+    case OP_BC_ICMP_NE:
+        printf("%d = (%d != %d)", inst->dest, inst->u.binop[0], inst->u.binop[1]);
+        break;
+    case OP_BC_ICMP_UGT:
+        printf("%d = (%d > %d)", inst->dest, inst->u.binop[0], inst->u.binop[1]);
+        break;
+    case OP_BC_ICMP_UGE:
+        printf("%d = (%d >= %d)", inst->dest, inst->u.binop[0], inst->u.binop[1]);
+        break;
+    case OP_BC_ICMP_ULT:
+        printf("%d = (%d > %d)", inst->dest, inst->u.binop[0], inst->u.binop[1]);
+        break;
+    case OP_BC_ICMP_ULE:
+        printf("%d = (%d >= %d)", inst->dest, inst->u.binop[0], inst->u.binop[1]);
+        break;
+    case OP_BC_ICMP_SGT:
+        printf("%d = (%d > %d)", inst->dest, inst->u.binop[0], inst->u.binop[1]);
+        break;
+    case OP_BC_ICMP_SGE:
+        printf("%d = (%d >= %d)", inst->dest, inst->u.binop[0], inst->u.binop[1]);
+        break;
+    case OP_BC_ICMP_SLE:
+        printf("%d = (%d <= %d)", inst->dest, inst->u.binop[0], inst->u.binop[1]);
+        break;
+    case OP_BC_ICMP_SLT:
+        printf("%d = (%d < %d)", inst->dest, inst->u.binop[0], inst->u.binop[1]);
+        break;
+    case OP_BC_SELECT:
+        printf("%d = %d ? %d : %d)", inst->dest, inst->u.three[0], 
+               inst->u.three[1], inst->u.three[2]);
+        break;
+
+        // function calling
+    case OP_BC_CALL_DIRECT:
+        printf("%d = call F.%d (", inst->dest, inst->u.ops.funcid);
+        for (j = 0; j < inst->u.ops.numOps; ++j) {
+            if (j == inst->u.ops.numOps-1) {
+                printf("%d", inst->u.ops.ops[j]);
+            }
+            else {
+                printf("%d, ", inst->u.ops.ops[j]);
+            }
+        }
+        printf(")");
+        break;
+    case OP_BC_CALL_API:
+        {
+            if (inst->u.ops.funcid > cli_numapicalls) {
+                printf("apicall FID %d not yet implemented!\n", inst->u.ops.funcid);
+                break;
+            }
+            api = &cli_apicalls[inst->u.ops.funcid];
+            switch (api->kind) {
+            case 0:
+                printf("%d = %s[%d] (%d, %d)", inst->dest, api->name,
+                       inst->u.ops.funcid, inst->u.ops.ops[0], inst->u.ops.ops[1]);
+                break;
+            case 1:
+                printf("%d = %s[%d] (p.%d, %d)", inst->dest, api->name,
+                       inst->u.ops.funcid, inst->u.ops.ops[0], inst->u.ops.ops[1]);
+                break;
+            case 2:
+                printf("%d = %s[%d] (%d)", inst->dest, api->name,
+                       inst->u.ops.funcid, inst->u.ops.ops[0]);
+                break;
+            case 3:
+                printf("p.%d = %s[%d] (%d)", inst->dest, api->name,
+                       inst->u.ops.funcid, inst->u.ops.ops[0]);
+                break;
+            case 4:
+                printf("%d = %s[%d] (p.%d, %d, %d, %d, %d)", inst->dest, api->name,
+                       inst->u.ops.funcid, inst->u.ops.ops[0], inst->u.ops.ops[1],
+                       inst->u.ops.ops[2], inst->u.ops.ops[3], inst->u.ops.ops[4]);
+                break;
+            case 5:
+                printf("%d = %s[%d] ()", inst->dest, api->name,
+                       inst->u.ops.funcid);
+                break;
+            case 6:
+                printf("p.%d = %s[%d] (%d, %d)", inst->dest, api->name,
+                       inst->u.ops.funcid, inst->u.ops.ops[0], inst->u.ops.ops[1]);
+                break;
+            case 7:
+                printf("%d = %s[%d] (%d, %d, %d)", inst->dest, api->name,
+                       inst->u.ops.funcid, inst->u.ops.ops[0], inst->u.ops.ops[1],
+                       inst->u.ops.ops[2]);
+                break;
+            case 8:
+                printf("%d = %s[%d] (p.%d, %d, p.%d, %d)", inst->dest, api->name,
+                       inst->u.ops.funcid, inst->u.ops.ops[0], inst->u.ops.ops[1],
+                       inst->u.ops.ops[2], inst->u.ops.ops[3]);
+                break;
+            case 9:
+                printf("%d = %s[%d] (p.%d, %d, %d)", inst->dest, api->name,
+                       inst->u.ops.funcid, inst->u.ops.ops[0], inst->u.ops.ops[1],
+                       inst->u.ops.ops[2]);
+                break;
+            default:
+                printf("type %u apicalls not yet implemented!\n", api->kind);
+                break;
+            }
+        }
+        break;
+
+        // memory operations
+    case OP_BC_COPY:
+        printf("cp %d -> %d", inst->u.binop[0], inst->u.binop[1]);
+        break;
+    case OP_BC_GEP1:
+        printf("%d = gep1 p.%d + (%d * %d)", inst->dest, inst->u.three[1],
+               inst->u.three[2], inst->u.three[0]);
+        break;
+    case OP_BC_GEPZ:
+        printf("%d = gepz p.%d + (%d)", inst->dest, 
+               inst->u.three[1], inst->u.three[2]);
+        break;
+    case OP_BC_GEPN:
+        printf("illegal opcode, impossible");
+        break;
+    case OP_BC_STORE:
+        printf("store %d -> p.%d", inst->u.binop[0], inst->u.binop[1]);
+        break;
+    case OP_BC_LOAD:
+        printf("load  %d <- p.%d", inst->dest, inst->u.unaryop);
+        break;
+
+        // llvm instrinsics
+    case OP_BC_MEMSET:
+        printf("%d = memset (p.%d, %d, %d)", inst->dest, inst->u.three[0],
+               inst->u.three[1], inst->u.three[2]);
+        break;
+    case OP_BC_MEMCPY:
+        printf("%d = memcpy (p.%d, p.%d, %d)", inst->dest, inst->u.three[0],
+               inst->u.three[1], inst->u.three[2]);
+        break;
+    case OP_BC_MEMMOVE:
+        printf("%d = memmove (p.%d, p.%d, %d)", inst->dest, inst->u.three[0],
+               inst->u.three[1], inst->u.three[2]);
+        break;
+    case OP_BC_MEMCMP:
+        printf("%d = memcmp (p.%d, p.%d, %d)", inst->dest, inst->u.three[0],
+               inst->u.three[1], inst->u.three[2]);
+        break;
+
+        // utility operations
+    case OP_BC_ISBIGENDIAN:
+        printf("%d = isbigendian()", inst->dest);
+        break;
+    case OP_BC_ABORT:
+        printf("ABORT!!");
+        break;
+    case OP_BC_BSWAP16:
+        printf("%d = bswap16 %d", inst->dest, inst->u.unaryop);
+        break;
+    case OP_BC_BSWAP32:
+        printf("%d = bswap32 %d", inst->dest, inst->u.unaryop);
+        break;
+    case OP_BC_BSWAP64:
+        printf("%d = bswap64 %d", inst->dest, inst->u.unaryop);
+        break;
+    case OP_BC_PTRDIFF32:
+        printf("%d = ptrdiff32 p.%d p.%d", inst->dest, inst->u.binop[0], inst->u.binop[1]);
+        break;
+    case OP_BC_PTRTOINT64:
+        printf("%d = ptrtoint64 p.%d", inst->dest, inst->u.unaryop);
+        break;
+    case OP_BC_INVALID:  /* last */
+        printf("INVALID!!");
+        break;
+
+    default:
+        // redundant check
+        printf("opcode %u[%u] of type %u is not implemented yet!",
+               inst->opcode, inst->interp_op/5, inst->interp_op%5);
+        break;
+    }
+}
+
+void cli_bytefunc_describe(const struct cli_bc *bc, unsigned funcid)
+{
+    unsigned i, bbnum, bbpre;
+    const struct cli_bc_func *func;
+
+    if (funcid >= bc->num_func) {
+        printf("bytecode diagnostic: funcid [%u] outside byecode numfuncs [%u]\n",
+               funcid, bc->num_func);
+        return;
+    }
+
+    func = &bc->funcs[funcid];
+
+    printf("FUNCTION ID: F.%d -> NUMINSTS %d\n", funcid, func->numInsts);
+    printf("BB   IDX  OPCODE              [ID /IID/MOD]  INST\n");
+    printf("------------------------------------------------------------------------\n");
+    bbpre = 0; bbnum = 0;
+    for (i = 0; i < func->numInsts; ++i) {
+        if (bbpre != bbnum) {
+            printf("\n");
+            bbpre = bbnum;
+        }
+
+        printf("%3d  %3d  ", bbnum, i);
+        cli_byteinst_describe(&func->allinsts[i], &bbnum);
+        printf("\n");
+    }
+    printf("------------------------------------------------------------------------\n");
 }

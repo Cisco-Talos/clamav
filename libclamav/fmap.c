@@ -62,12 +62,8 @@ static off_t pread_cb(void *handle, void *buf, size_t count, off_t offset)
 
 
 fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) {
-    unsigned int pages, mapsz, hdrsz;
-    unsigned short dumb = 1;
-    int pgsz = cli_getpagesize();
     STATBUF st;
     fmap_t *m;
-    void *handle = (void*)(ssize_t)fd;
 
     *empty = 0;
     if(FSTAT(fd, &st)) {
@@ -215,7 +211,7 @@ extern cl_fmap_t *cl_fmap_open_handle(void *handle, size_t offset, size_t len,
     cl_fmap_t *m;
     int pgsz = cli_getpagesize();
 
-    if(offset < 0 || offset != fmap_align_to(offset, pgsz)) {
+    if((off_t)offset < 0 || offset != fmap_align_to(offset, pgsz)) {
 	cli_warnmsg("fmap: attempted mapping with unaligned offset\n");
 	return NULL;
     }
@@ -651,8 +647,6 @@ static void mem_unneed_off(fmap_t *m, size_t at, size_t len);
 static const void *mem_need_offstr(fmap_t *m, size_t at, size_t len_hint);
 static const void *mem_gets(fmap_t *m, char *dst, size_t *at, size_t max_len);
 
-static void unmap_none(fmap_t *m) {}
-
 extern cl_fmap_t *cl_fmap_open_memory(const void *start, size_t len)
 {
     int pgsz = cli_getpagesize();
@@ -676,6 +670,7 @@ extern cl_fmap_t *cl_fmap_open_memory(const void *start, size_t len)
 
 
 static const void *mem_need(fmap_t *m, size_t at, size_t len, int lock) { /* WIN32 */
+    UNUSEDPARAM(lock);
     if(!len) {
 	return NULL;
     }
@@ -687,7 +682,12 @@ static const void *mem_need(fmap_t *m, size_t at, size_t len, int lock) { /* WIN
     return (void *)((char *)m->data + at);
 }
 
-static void mem_unneed_off(fmap_t *m, size_t at, size_t len) {}
+static void mem_unneed_off(fmap_t *m, size_t at, size_t len)
+{
+    UNUSEDPARAM(m);
+    UNUSEDPARAM(at);
+    UNUSEDPARAM(len);
+}
 
 static const void *mem_need_offstr(fmap_t *m, size_t at, size_t len_hint) {
     char *ptr = (char *)m->data + at;
@@ -759,7 +759,7 @@ int fmap_dump_to_file(fmap_t *map, const char *tmpdir, char **outname, int *outf
         b = fmap_need_off_once_len(map, pos, BUFSIZ, &len);
         pos += len;
         if(b && (len > 0)) {
-            if (cli_writen(tmpfd, b, len) != len) {
+            if ((size_t)cli_writen(tmpfd, b, len) != len) {
                 cli_warnmsg("fmap_dump_to_file: write failed to %s!\n", tmpname);
                 close(tmpfd);
                 unlink(tmpname);
@@ -780,7 +780,7 @@ int fmap_dump_to_file(fmap_t *map, const char *tmpdir, char **outname, int *outf
 
 int fmap_fd(fmap_t *m)
 {
-    int fd, ret;
+    int fd;
     if (!m->handle_is_fd)
 	return -1;
     fd = (int)(ssize_t)m->handle;
