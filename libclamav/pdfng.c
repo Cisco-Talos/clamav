@@ -229,6 +229,7 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
     char *res;
     int likelyutf = 0;
     uint32_t objid;
+    size_t i;
 
     /*
      * Yes, all of this is required to find the start and end of a potentially UTF-* string
@@ -349,7 +350,15 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
                     free(begin);
                     break;
                 default:
-                    res = pdf_convert_utf(begin, sb.st_size);
+                    for (i=0; i < sb.st_size; i++) {
+                        if (begin[i] >= 0x7f) {
+                            likelyutf=1;
+                            break;
+                        }
+                    }
+
+                    res = likelyutf ? pdf_convert_utf(begin, sb.st_size) : NULL;
+
                     if (!(res))
                         res = begin;
                     else
