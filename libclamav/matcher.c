@@ -868,11 +868,11 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
         }
     }
 
-    /* **temporary** TODO - find way to save pcre state over separated buffers */
+    /* cannot save pcre execution state without possible evasion; must scan entire buffer */
 #if HAVE_PCRE
     if((buff = fmap_need_off_once(map, offset, map->len))) {
         if (!ftonly) {
-            ret = cli_pcre_scanbuf(buff, map->len, groot, &gdata, ctx);
+            ret = cli_pcre_ucondscanbuf(buff, map->len, groot, &gdata, ctx);
             if((ret == CL_VIRUS && !SCAN_ALL) || ret == CL_EMEM) {
                 cli_ac_freedata(&gdata);
                 cli_ac_freedata(&tdata);
@@ -890,7 +890,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
             }
         }
         if (troot) {
-            ret = cli_pcre_scanbuf(buff, map->len, troot, &tdata, ctx);
+            ret = cli_pcre_ucondscanbuf(buff, map->len, troot, &tdata, ctx);
             if((ret == CL_VIRUS && !SCAN_ALL) || ret == CL_EMEM) {
                 if(!ftonly)
                     cli_ac_freedata(&gdata);

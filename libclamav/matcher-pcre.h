@@ -41,9 +41,9 @@ struct cli_pcre_refentry {
     struct cli_pcre_refentry *next;
 };
 
-int cli_pcre_addpatt(struct cli_matcher *root, const char *pattern, const uint32_t *lsigid);
-int cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, long long unsigned recmatch_limit, unsigned int options);
-int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct cli_matcher *root, struct cli_ac_data *mdata, cli_ctx *ctx);
-void cli_pcre_free(struct cli_matcher *root);
+int cli_pcre_adducondpatt(struct cli_matcher *root, const char *pattern, const uint32_t *lsigid);
+int cli_pcre_uncondbuild(struct cli_matcher *root, long long unsigned match_limit, long long unsigned recmatch_limit, unsigned int options);
+int cli_pcre_ucondscanbuf(const unsigned char *buffer, uint32_t length, const struct cli_matcher *root, struct cli_ac_data *mdata, cli_ctx *ctx);
+void cli_pcre_ucondfree(struct cli_matcher *root);
 #endif /* HAVE_PCRE */
 #endif /*__MATCHER_PCRE_H*/

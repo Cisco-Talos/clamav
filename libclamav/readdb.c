@@ -167,21 +167,24 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
     }
     if ((wild = strchr(hexsig, '/'))) {
 #if HAVE_PCRE
-	char *trigger, *regex;
-	size_t tlen = wild-hexsig;
-        size_t rlen = hexlen-tlen-2;
+        /* ^offset:content-match/regex/options$ */
+	char *trigger, *regex, *regex_end;
+	size_t tlen = wild-hexsig, rlen;
 
-	if (hexsig[hexlen-1] != '/') {
-	    cli_errmsg("cli_parseadd(): missing terminator /\n");
+        /* check for trigger */
+	if (!tlen) {
+	    cli_dbgmsg("cli_parseadd(): cannot add pcre without content match trigger\n");
 	    return CL_EMALFDB;
 	}
 
-	if (!tlen) {
-	    cli_dbgmsg("cli_parseadd(): no trigger statement\n");
-	    /* kill sig on lack of trigger? */
-	}
+        /* locate end of regex for options start, TODO: options */
+        if ((regex_end = strchr(wild+1, '/')) == NULL) {
+            cli_errmsg("cli_parseadd(): missing terminator /\n");
+            return CL_EMALFDB;
+        }
+        rlen = regex_end-wild-1;
 
-	/* TODO: get the trigger statement and parse */
+	/* get the trigger statement */
 	trigger = cli_calloc(tlen+1, sizeof(char));
 	if (!trigger) {
 	    cli_errmsg("cli_parseadd(): cannot allocate memory\n");
@@ -190,27 +193,29 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 	strncpy(trigger, hexsig, tlen);
 	trigger[tlen] = '\0';
 
-	if (strncmp(trigger, PCRE_BYPASS, tlen)) {
-	    cli_errmsg("cli_parseadd(): cannot handle trigger statement atm\n");
-	    return CL_EMALFDB;
+        /* if trigger is PCRE_BYPASS, add to unconditionally run pcres */
+	if (!strncmp(trigger, PCRE_BYPASS, tlen)) {
+            cli_dbgmsg("unconditional pcre regex detected: %s\n", wild);
+            free(trigger);
+
+            regex = cli_calloc(rlen+1, sizeof(char));
+            if (!regex) {
+                cli_errmsg("cli_parseadd(): cannot allocate memory\n");
+                return CL_EMEM;
+            }
+            strncpy(regex, hexsig+tlen+1, rlen);
+            regex[rlen] = '\0';
+
+            ret = cli_pcre_adducondpatt(root, regex, lsigid);
+            free(regex);
+
+            return ret;
 	}
 
+        /* normal trigger */
 	cli_dbgmsg("pcre regex detected: %s on trigger: %s\n", wild, trigger);
-	free(trigger);
 
-	/* TODO: add the regex to the regex struct */
-	regex = cli_calloc(rlen+1, sizeof(char));
-	if (!regex) {
-	    cli_errmsg("cli_parseadd(): cannot allocate memory\n");
-	    return CL_EMEM;
-	}
-	strncpy(regex, hexsig+tlen+1, rlen);
-	regex[rlen] = '\0';
-
-	ret = cli_pcre_addpatt(root, regex, lsigid);
-	free(regex);
-
-	return ret;
+        exit(0);
 #else
         cli_errmsg("cli_parseadd(): cannot parse PCRE subsig ithout PCRE support\n");
         return CL_EPARSE;
@@ -223,7 +228,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 		return CL_EMEM;
 	    strncpy(hexcpy, hexsig, wild - hexsig);
 	    for(i = 0; i < (unsigned int) range; i++)
-		strcat(hexcpy, "??");
+	strcat(hexcpy, "??");
 	    if(!(wild = strchr(wild, '}'))) {
 		cli_errmsg("cli_parse_add(): Problem adding signature: missing bracket\n");
 		free(hexcpy);
@@ -3362,7 +3367,7 @@ int cl_engine_free(struct cl_engine *engine)
 		    mpool_free(engine->mempool, root->ac_lsigtable);
 		}
 #if HAVE_PCRE
-                cli_pcre_free(root);
+                cli_pcre_ucondfree(root);
 #endif /* HAVE_PCRE */
 		mpool_free(engine->mempool, root);
 	    }
@@ -3489,7 +3494,7 @@ int cl_engine_compile(struct cl_engine *engine)
 	    if((ret = cli_ac_buildtrie(root)))
 		return ret;
 #if HAVE_PCRE
-            if((ret = cli_pcre_build(root, engine->pcre_match_limit, engine->pcre_recmatch_limit, 0)))
+            if((ret = cli_pcre_ucondbuild(root, engine->pcre_match_limit, engine->pcre_recmatch_limit, 0)))
                 return ret;
 
 	    cli_dbgmsg("Matcher[%u]: %s: AC sigs: %u (reloff: %u, absoff: %u) BM sigs: %u (reloff: %u, absoff: %u) maxpatlen %u PCREs: %u %s\n", i, cli_mtargets[i].name, root->ac_patterns, root->ac_reloff_num, root->ac_absoff_num, root->bm_patterns, root->bm_reloff_num, root->bm_absoff_num, root->maxpatlen, root->num_pcres, root->ac_only ? "(ac_only mode)" : "");

@@ -36,7 +36,7 @@
 
 //int pcre_add_pattern(struct pcre_matcher *matcher, const char *pattern, int options)
 /* TODO - memory cleanup on error */
-int cli_pcre_addpatt(struct cli_matcher *root, const char *pattern, const uint32_t *lsigid)
+int cli_pcre_adducondpatt(struct cli_matcher *root, const char *pattern, const uint32_t *lsigid)
 {
     struct cli_pcre_data **newdata, *pd;
     struct cli_pcre_refentry **newreftable, *refe;
@@ -44,7 +44,7 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *pattern, const uint32
     int ret = CL_SUCCESS;
 
     if (!root || !pattern) {
-        cli_errmsg("pcre_add_pattern: NULL root or NULL pattern\n");
+        cli_errmsg("pcre_adducondpatt: NULL root or NULL pattern\n");
         return CL_ENULLARG;
     }
 
@@ -54,7 +54,7 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *pattern, const uint32
     /* allocating entries */
     pd = (struct cli_pcre_data *)mpool_calloc(root->mempool, 1, sizeof(*pd));
     if (!pd) {
-        cli_errmsg("cli_pcre_addpatt: Unable to allocate memory\n");
+        cli_errmsg("cli_pcre_adducondpatt: Unable to allocate memory\n");
         return CL_EMEM;
     }
 
@@ -62,7 +62,7 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *pattern, const uint32
 
     refe = (struct cli_pcre_refentry *)cli_calloc(1, sizeof(struct cli_pcre_refentry));
     if (!refe) {
-        cli_errmsg("cli_pcre_addpatt: failed to allocate space\n");
+        cli_errmsg("cli_pcre_adducondpatt: failed to allocate space\n");
         return CL_EMEM;
     }
 
@@ -76,18 +76,18 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *pattern, const uint32
     newdata = (struct cli_pcre_data **)mpool_realloc(root->mempool, root->all_pcres,
                                          new_numpcres * sizeof(struct cli_pcre_data *));
     if (!newdata) {
-        cli_errmsg("cli_pcre_addpatt: Unable to allocate memory\n");
+        cli_errmsg("cli_pcre_adducondpatt: Unable to allocate memory\n");
         return CL_EMEM;
     }
 
     newreftable = (struct cli_pcre_refentry **)mpool_realloc(root->mempool, root->pcre_reftable,
                                                  new_numpcres * sizeof(struct cli_pcre_refentry *));
     if (!newreftable) {
-        cli_errmsg("cli_pcre_addpatt: Unable to allocate memory\n");
+        cli_errmsg("cli_pcre_adducondpatt: Unable to allocate memory\n");
         return CL_EMEM;
     }
 
-    cli_dbgmsg("cli_pcre_addpatt: Adding /%s/ for subsig %d on engine->root[%d]\n",
+    cli_dbgmsg("cli_pcre_adducondpatt: Adding /%s/ as subsig %d for lsigid %d\n",
                pattern, refe->lsigid[1], refe->lsigid[0]);
 
     newdata[new_numpcres-1] = pd;
@@ -100,7 +100,7 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *pattern, const uint32
     return CL_SUCCESS;
 }
 
-int cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, long long unsigned recmatch_limit, unsigned int options)
+int cli_pcre_ucondbuild(struct cli_matcher *root, long long unsigned match_limit, long long unsigned recmatch_limit, unsigned int options)
 {
     int i, ret;
     struct cli_pcre_data *pd;
@@ -108,10 +108,10 @@ int cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, lon
     for (i = 0; i < root->num_pcres; ++i) {
         pd = root->all_pcres[i];
 
-        cli_dbgmsg("cli_pcre_build: Compiling regex: %s\n", pd->expression);
+        cli_dbgmsg("cli_pcre_ucondbuild: Compiling regex: %s\n", pd->expression);
         /* parse the regex - TODO: set start_offset  */
         if ((ret = cli_pcre_compile(pd, match_limit, recmatch_limit, options)) != CL_SUCCESS) {
-            cli_errmsg("cli_pcre_build: failed to parse pcre regex\n");
+            cli_errmsg("cli_pcre_ucondbuild: failed to parse pcre regex\n");
             return ret;
         }
     }
@@ -168,7 +168,7 @@ static inline void lsig_sub_matched(const struct cli_matcher *root, struct cli_a
     }
 }
 
-int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct cli_matcher *root, struct cli_ac_data *mdata, cli_ctx *ctx)
+int cli_pcre_ucondscanbuf(const unsigned char *buffer, uint32_t length, const struct cli_matcher *root, struct cli_ac_data *mdata, cli_ctx *ctx)
 {
     struct cli_pcre_data **data = root->all_pcres, *pd;
     struct cli_pcre_refentry **reftable = root->pcre_reftable, *refe;
@@ -205,7 +205,7 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
     return CL_SUCCESS;
 }
 
-void cli_pcre_free(struct cli_matcher *root)
+void cli_pcre_ucondfree(struct cli_matcher *root)
 {
     uint32_t i;
     struct cli_pcre_data *pd;
