@@ -410,6 +410,7 @@
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">/D "LIBXML_STATIC" %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <ClCompile Include="..\libclamav\www.c" />
+    <ClCompile Include="..\libclamav\xdp.c" />
     <ClCompile Include="..\libclamav\xz_iface.c" />
     <ClCompile Include="..\libclamav\yc.c" />
     <ClCompile Include="..\shared\getopt.c" />
@@ -510,6 +511,7 @@
     <ClInclude Include="..\libclamav\stats_json.h" />
     <ClInclude Include="..\libclamav\stats.h" />
     <ClInclude Include="..\libclamav\www.h" />
+    <ClInclude Include="..\libclamav\xdp.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

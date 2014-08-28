@@ -909,6 +909,9 @@
     <ClCompile Include="..\libclamav\pdfng.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\libclamav\xdp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\libclamav\hostid.h">
@@ -924,6 +927,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="..\libclamav\conv.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libclamav\xdp.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

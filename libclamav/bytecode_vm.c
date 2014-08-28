@@ -555,13 +555,6 @@ static inline int64_t ptr_register_glob(struct ptr_infos *infos,
     return ptr_register_glob_fixedid(infos, values, size, infos->nglobs+1);
 }
 
-static inline int64_t ptr_index(int64_t ptr, uint32_t off)
-{
-    int32_t ptrid = ptr >> 32;
-    uint32_t ptroff = (uint32_t)ptr;
-    return ptr_compose(ptrid, ptroff+off);
-}
-
 static inline void* ptr_torealptr(const struct ptr_infos *infos, int64_t ptr,
                                   uint32_t read_size)
 {
@@ -575,14 +568,14 @@ static inline void* ptr_torealptr(const struct ptr_infos *infos, int64_t ptr,
     }
     if (ptrid < 0) {
         ptrid = -ptrid-1;
-        if (UNLIKELY(ptrid >= infos->nstacks)) {
+        if (UNLIKELY((const unsigned int)ptrid >= infos->nstacks)) {
             (void)bcfail("ptr", ptrid, infos->nstacks, __FILE__, __LINE__);
             return NULL;
         }
         info = &infos->stack_infos[ptrid];
     } else {
         ptrid--;
-        if (UNLIKELY(ptrid >= infos->nglobs)) {
+        if (UNLIKELY((const unsigned int)ptrid >= infos->nglobs)) {
             (void)bcfail("ptr", ptrid, infos->nglobs, __FILE__, __LINE__);
             return NULL;
         }

@@ -72,8 +72,19 @@ static inline int PERF_LOG_TRIES(int8_t acmode, int8_t bm_called, int32_t length
 }
 
 #else
-static inline void PERF_LOG_FILTER(int32_t pos, uint32_t length, int8_t trie) {}
-static inline int PERF_LOG_TRIES(int8_t acmode, int8_t bm_called, int32_t length) { return 0; }
+static inline void PERF_LOG_FILTER(int32_t pos, uint32_t length, int8_t trie) {
+    UNUSEDPARAM(pos);
+    UNUSEDPARAM(length);
+    UNUSEDPARAM(trie);
+}
+
+static inline int PERF_LOG_TRIES(int8_t acmode, int8_t bm_called, int32_t length) {
+    UNUSEDPARAM(acmode);
+    UNUSEDPARAM(bm_called);
+    UNUSEDPARAM(length);
+
+    return 0;
+}
 #endif
 
 static inline int matcher_run(const struct cli_matcher *root,
@@ -96,6 +107,8 @@ static inline int matcher_run(const struct cli_matcher *root,
     uint32_t orig_length, orig_offset;
     const unsigned char* orig_buffer;
     unsigned int viruses_found = 0;
+
+    UNUSEDPARAM(map);
 
     if (root->filter) {
 	if(filter_search_ext(root->filter, buffer, length, &info) == -1) {
@@ -529,7 +542,7 @@ int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx)
     }
 
     if (ctx->engine->cb_hash)
-        ctx->engine->cb_hash(fmap_fd(*ctx->fmap), size, md5, cli_get_last_virus(ctx), ctx->cb_ctx);
+        ctx->engine->cb_hash(fmap_fd(*ctx->fmap), size, (const unsigned char *)md5, cli_get_last_virus(ctx), ctx->cb_ctx);
 
     if (ctx->engine->cb_stats_add_sample)
         ctx->engine->cb_stats_add_sample(cli_get_last_virus(ctx), digest, size, &sections, ctx->engine->stats_data);
@@ -925,11 +938,11 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
                 uint32_t data_len = bytes - maxpatlen * (offset!=0);
 
                 if(compute_hash[CLI_HASH_MD5])
-                    cl_update_hash(md5ctx, data, data_len);
+                    cl_update_hash(md5ctx, (void *)data, data_len);
                 if(compute_hash[CLI_HASH_SHA1])
-                    cl_update_hash(sha1ctx, data, data_len);
+                    cl_update_hash(sha1ctx, (void *)data, data_len);
                 if(compute_hash[CLI_HASH_SHA256])
-                    cl_update_hash(sha256ctx, data, data_len);
+                    cl_update_hash(sha256ctx, (void *)data, data_len);
             }
         }
 
@@ -1023,7 +1036,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 
     if(troot) {
         if(ret != CL_VIRUS || SCAN_ALL)
-            ret = cli_lsig_eval(ctx, troot, &tdata, &info, refhash);
+            ret = cli_lsig_eval(ctx, troot, &tdata, &info, (const char *)refhash);
         if (ret == CL_VIRUS)
             viruses_found++;
 
@@ -1034,7 +1047,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 
     if(groot) {
         if(ret != CL_VIRUS || SCAN_ALL)
-            ret = cli_lsig_eval(ctx, groot, &gdata, &info, refhash);
+            ret = cli_lsig_eval(ctx, groot, &gdata, &info, (const char *)refhash);
         cli_ac_freedata(&gdata);
     }
 

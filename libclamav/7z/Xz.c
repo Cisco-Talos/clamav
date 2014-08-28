@@ -68,7 +68,7 @@ void XzCheck_Update(CXzCheck *p, const void *data, size_t size)
     case XZ_CHECK_CRC64: p->crc64 = Crc64Update(p->crc64, data, size); break;
     case XZ_CHECK_SHA256:
         if ((p->sha))
-            cl_update_hash(p->sha, (const Byte *)data, size);
+            cl_update_hash(p->sha, (void *)data, size);
         break;
   }
 }

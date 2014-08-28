@@ -62,6 +62,8 @@
 #include "hostid.h"
 #include "libclamav/others.h"
 
+struct device *get_device_entry(struct device *devices, size_t *ndevices, const char *name);
+
 struct device *get_device_entry(struct device *devices, size_t *ndevices, const char *name)
 {
     void *p;

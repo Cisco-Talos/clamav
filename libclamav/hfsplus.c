@@ -300,6 +300,8 @@ static int hfsplus_scanfile(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsHea
     uint32_t outputBlocks = 0;
     uint8_t ext;
 
+    UNUSEDPARAM(extHeader);
+
     /* bad record checks */
     if (!fork || (fork->logicalSize == 0) || (fork->totalBlocks == 0)) {
         cli_dbgmsg("hfsplus_dumpfile: Empty file.\n");
@@ -381,7 +383,7 @@ static int hfsplus_scanfile(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsHea
                 break;
             }
             written = cli_writen(ofd, mPtr, to_write);
-            if (written != to_write) {
+            if ((size_t)written != to_write) {
                 cli_errmsg("hfsplus_dumpfile: write error\n");
                 ret = CL_EWRITE;
                 break;
@@ -425,6 +427,8 @@ static int hfsplus_validate_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader
 {
     hfsPlusForkData *catFork;
 
+    UNUSEDPARAM(ctx);
+
     catFork = &(volHeader->catalogFile);
     if (catFork->totalBlocks >= volHeader->totalBlocks) {
         cli_dbgmsg("hfsplus_getnodelimit: catFork totalBlocks too large!\n");
@@ -446,12 +450,14 @@ static int hfsplus_validate_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader
 static int hfsplus_fetch_node (cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsHeaderRecord *catHeader,
     hfsHeaderRecord *extHeader, uint32_t node, uint8_t *buff)
 {
-    int foundBlock = 0, ret = CL_CLEAN;
+    int foundBlock = 0;
     uint64_t catalogOffset;
     uint32_t fetchBlock, fetchStart;
     uint32_t extentNum = 0, realFileBlock;
     size_t fileOffset = 0;
     hfsPlusForkData *catFork;
+
+    UNUSEDPARAM(extHeader);
 
     /* Make sure node is in range */
     if (node >= catHeader->totalNodes) {
@@ -532,15 +538,6 @@ static int hfsplus_fetch_node (cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfs
     }
 
     return CL_CLEAN;
-}
-
-/* Given the catalog and other details, scan all the volume contents */
-static int hfsplus_scan_node(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsHeaderRecord *catHeader,
-    hfsHeaderRecord *extHeader, const char *dirname, uint8_t *nodeBuf)
-{
-    int ret = CL_CLEAN;
-
-    return ret;
 }
 
 /* Given the catalog and other details, scan all the volume contents */

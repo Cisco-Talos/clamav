@@ -117,8 +117,11 @@ static const struct ftmap_s {
     { "CL_TYPE_OOXML_PPT",	CL_TYPE_OOXML_PPT     	},
     { "CL_TYPE_OOXML_XL",	CL_TYPE_OOXML_XL     	},
     { "CL_TYPE_INTERNAL",	CL_TYPE_INTERNAL     	},
+    { "CL_TYPE_XDP",        CL_TYPE_XDP             },
     { NULL,			CL_TYPE_IGNORED		}
 };
+
+cli_file_t cli_partitiontype(const unsigned char *buf, size_t buflen, const struct cl_engine *engine);
 
 cli_file_t cli_ftcode(const char *name)
 {
@@ -178,6 +181,7 @@ cli_file_t cli_partitiontype(const unsigned char *buf, size_t buflen, const stru
 	ptype = ptype->next;
     }
 
+    cli_dbgmsg("Partition type is potentially unsupported\n");
     return CL_TYPE_PART_ANY;
 }
 
@@ -266,7 +270,7 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
             int zi;
             
             for (zi=0; zi<32; zi++) {
-                znamep = cli_memstr(znamep, zlen, lhdr_magic, 4);
+                znamep = (const unsigned char *)cli_memstr((const char *)znamep, zlen, lhdr_magic, 4);
                 if (NULL != znamep) {
                     znamep += SIZEOF_LH;
                     zlen = zread - (znamep - zbuff);

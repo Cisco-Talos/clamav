@@ -1044,7 +1044,7 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
         break;
 
 	cl_update_hash(ctx, "\x31", 1);
-	cl_update_hash(ctx, attrs + 1, attrs_size - 1);
+	cl_update_hash(ctx, (void *)(attrs + 1), attrs_size - 1);
 	cl_finish_hash(ctx, sha1);
 
 	if(!fmap_need_ptr_once(map, asn1.content, asn1.size)) {
@@ -1288,7 +1288,7 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
             break;
 
         cl_update_hash(ctx, "\x31", 1);
-        cl_update_hash(ctx, attrs + 1, attrs_size - 1);
+        cl_update_hash(ctx, (void *)(attrs + 1), attrs_size - 1);
         cl_finish_hash(ctx, sha1);
 	} else {
         ctx = cl_hash_init("md5");
@@ -1296,7 +1296,7 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
             break;
 
         cl_update_hash(ctx, "\x31", 1);
-        cl_update_hash(ctx, attrs + 1, attrs_size - 1);
+        cl_update_hash(ctx, (void *)(attrs + 1), attrs_size - 1);
         cl_finish_hash(ctx, sha1);
 	}
 

@@ -21,11 +21,18 @@
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
+
+/*
 #define _XOPEN_SOURCE 500
+*/
+
 #include <stdio.h>
+#include <stdlib.h>
+
 #if HAVE_STRING_H
 #include <string.h>
 #endif
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -739,7 +746,6 @@ int cli_scanpe(cli_ctx *ctx)
 	size_t fsize;
 	uint32_t valign, falign, hdr_size, j;
 	struct cli_exe_section *exe_sections;
-	struct cli_matcher *mdb_sect;
 	char timestr[32];
 	struct pe_image_data_dir *dirs;
 	struct cli_bc_ctx *bc_ctx;
@@ -748,8 +754,7 @@ int cli_scanpe(cli_ctx *ctx)
 #ifdef HAVE__INTERNAL__SHA_COLLECT
 	int sha_collect = ctx->sha_collect;
 #endif
-	const char * virname = NULL;
-        const char *archtype=NULL, *subsystem=NULL;
+    const char *archtype=NULL, *subsystem=NULL;
 	uint32_t viruses_found = 0;
 #if HAVE_JSON
         int toval = 0;
@@ -1869,7 +1874,7 @@ int cli_scanpe(cli_ctx *ctx)
 		return CL_EMEM;
 	    }
 
-	    if(fmap_readn(map, dest, 0, ssize) != ssize) {
+	    if((unsigned int)fmap_readn(map, dest, 0, ssize) != ssize) {
 	        cli_dbgmsg("Upack: Can't read raw data of section 0\n");
 		free(dest);
 		break;
@@ -1877,7 +1882,7 @@ int cli_scanpe(cli_ctx *ctx)
 
 	    if(upack) memmove(dest + exe_sections[2].rva - exe_sections[0].rva, dest, ssize);
 
-	    if(fmap_readn(map, dest + exe_sections[1].rva - off, exe_sections[1].uraw, exe_sections[1].ursz) != exe_sections[1].ursz) {
+	    if((unsigned int)fmap_readn(map, dest + exe_sections[1].rva - off, exe_sections[1].uraw, exe_sections[1].ursz) != exe_sections[1].ursz) {
 		cli_dbgmsg("Upack: Can't read raw data of section 1\n");
 		free(dest);
 		break;
@@ -2052,7 +2057,7 @@ int cli_scanpe(cli_ctx *ctx)
 	}
 
 	if((sections = (struct cli_exe_section *) cli_malloc((sectcnt + 1) * sizeof(struct cli_exe_section))) == NULL) {
-        cli_errmsg("FSG: Unable to allocate memory for sections %u\n", (sectcnt + 1) * sizeof(struct cli_exe_section));
+        cli_errmsg("FSG: Unable to allocate memory for sections %lu\n", (sectcnt + 1) * sizeof(struct cli_exe_section));
 	    free(exe_sections);
 	    return CL_EMEM;
 	}
@@ -2156,7 +2161,7 @@ int cli_scanpe(cli_ctx *ctx)
 	}
 
 	if((sections = (struct cli_exe_section *) cli_malloc((sectcnt + 1) * sizeof(struct cli_exe_section))) == NULL) {
-        cli_errmsg("FSG: Unable to allocate memory for sections %u\n", (sectcnt + 1) * sizeof(struct cli_exe_section));
+        cli_errmsg("FSG: Unable to allocate memory for sections %lu\n", (sectcnt + 1) * sizeof(struct cli_exe_section));
 	    free(exe_sections);
 	    return CL_EMEM;
 	}
@@ -2239,7 +2244,7 @@ int cli_scanpe(cli_ctx *ctx)
 
 	    if(epbuff[1] != '\xbe' || skew <= 0 || skew > 0xfff) { /* FIXME: legit skews?? */
 		skew = 0; 
-	    } else if (skew > ssize) {
+	    } else if ((unsigned int)skew > ssize) {
 		/* Ignore suggested skew larger than section size */
 		skew = 0;
 	    } else {
@@ -2395,7 +2400,7 @@ int cli_scanpe(cli_ctx *ctx)
 
 	    for(i = 0 ; i < nsections; i++) {
 		if(exe_sections[i].raw) {
-		    if(!exe_sections[i].rsz || fmap_readn(map, dest + exe_sections[i].rva - min, exe_sections[i].raw, exe_sections[i].ursz) != exe_sections[i].ursz) {
+		    if(!exe_sections[i].rsz || (unsigned int)fmap_readn(map, dest + exe_sections[i].rva - min, exe_sections[i].raw, exe_sections[i].ursz) != exe_sections[i].ursz) {
 			free(exe_sections);
 			free(dest);
 			return CL_CLEAN;
@@ -2549,7 +2554,7 @@ int cli_scanpe(cli_ctx *ctx)
         for(i = 0 ; i < (unsigned int)nsections-1; i++) {
 	    if(!exe_sections[i].rsz) continue;
             if(!CLI_ISCONTAINED(src, ssize, src+exe_sections[i].rva, exe_sections[i].rsz)) break;
-            if(fmap_readn(map, src+exe_sections[i].rva, exe_sections[i].raw, exe_sections[i].rsz)!=exe_sections[i].rsz) break;
+            if((unsigned int)fmap_readn(map, src+exe_sections[i].rva, exe_sections[i].raw, exe_sections[i].rsz)!=exe_sections[i].rsz) break;
         }
         if(i+1!=nsections) {
             cli_dbgmsg("WWpack: Probably hacked/damaged file.\n");
@@ -2599,7 +2604,7 @@ int cli_scanpe(cli_ctx *ctx)
         for(i = 0 ; i < (unsigned int)nsections; i++) {
 	    if(!exe_sections[i].rsz) continue;
             if(!CLI_ISCONTAINED(src, ssize, src+exe_sections[i].rva, exe_sections[i].rsz)) break;
-            if(fmap_readn(map, src+exe_sections[i].rva, exe_sections[i].raw, exe_sections[i].rsz)!=exe_sections[i].rsz) break;
+            if((unsigned int)fmap_readn(map, src+exe_sections[i].rva, exe_sections[i].raw, exe_sections[i].rsz)!=exe_sections[i].rsz) break;
         }
         if(i!=nsections) {
             cli_dbgmsg("Aspack: Probably hacked/damaged Aspack file.\n");
@@ -2743,7 +2748,7 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo)
 	    struct pe_image_optional_hdr32 opt32;
 	} pe_opt;
 	struct pe_image_section_hdr *section_hdr;
-	int i;
+	unsigned int i;
 	unsigned int err, pe_plus = 0;
 	uint32_t valign, falign, hdr_size;
 	size_t fsize;
@@ -2939,7 +2944,7 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo)
 		if(vinfo_sz <= 6 + 0x20 + 2 + 0x34 ||
 		   vinfo_val_sz != 0x34 || 
 		   memcmp(vptr+6, "V\0S\0_\0V\0E\0R\0S\0I\0O\0N\0_\0I\0N\0F\0O\0\0\0", 0x20) ||
-		   cli_readint32(vptr + 0x28) != 0xfeef04bd) {
+		   (unsigned int)cli_readint32(vptr + 0x28) != 0xfeef04bd) {
 		    /* - there should be enough room for the header(6), the key "VS_VERSION_INFO"(20), the padding(2) and the value(34)
 		     * - the value should be sizeof(fixedfileinfo)
 		     * - the key should match
@@ -3162,7 +3167,7 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
     } else { /* PE+ */
         size_t readlen = sizeof(struct pe_image_optional_hdr64) - sizeof(struct pe_image_optional_hdr32);
         /* read the remaining part of the header */
-        if(fmap_readn(map, &optional_hdr32 + 1, at, readlen) != readlen)
+        if((size_t)fmap_readn(map, &optional_hdr32 + 1, at, readlen) != readlen)
             return CL_EFORMAT;
 
         at += sizeof(struct pe_image_optional_hdr64) - sizeof(struct pe_image_optional_hdr32);
@@ -3257,12 +3262,12 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
             return CL_EFORMAT; \
         } \
         if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE && hashctx) \
-            cl_update_hash(hashctx, hptr, size); \
+            cl_update_hash(hashctx, (void *)hptr, size); \
         if (isStatAble && flags & CL_CHECKFP_PE_FLAG_STATS) { \
             void *md5ctx; \
             md5ctx = cl_hash_init("md5"); \
             if (md5ctx) { \
-                cl_update_hash(md5ctx, hptr, size); \
+                cl_update_hash(md5ctx, (void *)hptr, size); \
                 cl_finish_hash(md5ctx, hashes->sections[section].md5); \
             } \
         } \
@@ -3314,7 +3319,7 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
     }
 
     while (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE) {
-        if(at < fsize) {
+        if((size_t)at < fsize) {
             hlen = fsize - at;
             if(dirs[4].Size > hlen) {
                 if (flags & CL_CHECKFP_PE_FLAG_STATS) {

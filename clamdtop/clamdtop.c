@@ -57,6 +57,7 @@
 #include <assert.h>
 #include <errno.h>
 
+#include "libclamav/clamav.h"
 #include "shared/optparser.h"
 #include "shared/misc.h"
 
@@ -101,6 +102,9 @@ static void cleanup(void);
 static int send_string_noreconn(conn_t *conn, const char *cmd);
 static void send_string(conn_t *conn, const char *cmd);
 static int read_version(conn_t *conn);
+char *get_ip(const char *ip);
+char *get_port(const char *ip);
+char *make_ip(const char *host, const char *port);
 
 enum exit_reason {
         FAIL_CMDLINE=1,
@@ -509,7 +513,7 @@ static void print_con_info(conn_t *conn, const char *fmt, ...)
 
 char *get_ip(const char *ip)
 {
-    char *dupip, *p1, *p2;
+    char *dupip, *p1;
     unsigned int i;
 
     /*
@@ -608,7 +612,7 @@ static int make_connection_real(const char *soname, conn_t *conn)
     int s;
     struct timeval tv;
     char *port=NULL;
-    char *name, *pt = strdup(soname);
+    char *pt = strdup(soname);
     const char *host = pt;
     struct addrinfo hints, *res=NULL, *p;
     int err;
@@ -1217,6 +1221,7 @@ static int read_version(conn_t *conn)
 
 static void sigint(int a)
 {
+    UNUSEDPARAM(a);
 	EXIT_PROGRAM(SIGINT_REASON);
 }
 

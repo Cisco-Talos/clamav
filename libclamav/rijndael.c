@@ -704,6 +704,9 @@ static const u32 rcon[] =
                          (ciphertext)[2] = (u8)((st) >>  8); \
                          (ciphertext)[3] = (u8)(st); }
 
+int rijndaelSetupEncrypt(u32 *rk, const u8 *key, int keybits);
+void rijndaelEncrypt(const u32 *rk, int nrounds, const u8 plaintext[16], u8 ciphertext[16]);
+
 /**
  * Expand the cipher key into the encryption key schedule.
  *

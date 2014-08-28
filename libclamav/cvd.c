@@ -47,6 +47,7 @@
 
 static void cli_untgz_cleanup(char *path, gzFile infile, FILE *outfile, int fdd)
 {
+    UNUSEDPARAM(fdd);
     cli_dbgmsg("in cli_untgz_cleanup()\n");
     if (path != NULL)
         free (path);
@@ -180,6 +181,7 @@ static int cli_untgz(int fd, const char *destdir)
 
 static void cli_tgzload_cleanup(int comp, struct cli_dbio *dbio, int fdd)
 {
+    UNUSEDPARAM(fdd);
     cli_dbgmsg("in cli_tgzload_cleanup()\n");
     if(comp) {
         gzclose(dbio->gzs);

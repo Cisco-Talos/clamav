@@ -146,8 +146,8 @@ static int scancws(cli_ctx *ctx, struct swf_file_hdr *hdr)
     }
 
     stream.avail_in = 0;
-    stream.next_in = inbuff;
-    stream.next_out = outbuff;
+    stream.next_in = (Bytef *)inbuff;
+    stream.next_out = (Bytef *)outbuff;
     stream.zalloc = (alloc_func) NULL;
     stream.zfree = (free_func) NULL;
     stream.opaque = (voidpf) 0;
@@ -167,7 +167,7 @@ static int scancws(cli_ctx *ctx, struct swf_file_hdr *hdr)
 
     do {
 	if(stream.avail_in == 0) {
-	    stream.next_in = inbuff;
+	    stream.next_in = (Bytef *)inbuff;
 	    ret = fmap_readn(map, inbuff, offset, FILEBUFF);
 	    if(ret < 0) {
 		cli_errmsg("scancws: Error reading SWF file\n");
@@ -201,19 +201,26 @@ static int scancws(cli_ctx *ctx, struct swf_file_hdr *hdr)
 	    }
 	    outsize += count;
 	}
-	stream.next_out = outbuff;
+	stream.next_out = (Bytef *)outbuff;
 	stream.avail_out = FILEBUFF;
     } while(zret == Z_OK);
 
     if((zret != Z_STREAM_END && zret != Z_OK) || (zret = inflateEnd(&stream)) != Z_OK) {
-	cli_infomsg(ctx, "scancws: Error decompressing SWF file\n");
-	close(fd);
-	if(cli_unlink(tmpname)) {
-	    free(tmpname);
-	    return CL_EUNLINK;
-	}
-	free(tmpname);
-	return CL_EUNPACK;
+        /*
+         * outsize is initialized to 8, it being 8 here means that we couldn't even read a single byte.
+         * If outsize > 8, then we have data. Let's scan what we have.
+         */
+        if (outsize == 8) {
+            cli_infomsg(ctx, "scancws: Error decompressing SWF file. No data decompressed.\n");
+            close(fd);
+            if(cli_unlink(tmpname)) {
+                free(tmpname);
+                return CL_EUNLINK;
+            }
+            free(tmpname);
+            return CL_EUNPACK;
+        }
+        cli_infomsg(ctx, "scancws: Error decompressing SWF file. Scanning what was decompressed.\n");
     }
     cli_dbgmsg("SWF: Decompressed to %s, size %d\n", tmpname, outsize);
 

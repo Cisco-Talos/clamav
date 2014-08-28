@@ -69,6 +69,7 @@ dev_t procdev;
 
 char hostid[37];
 
+int is_valid_hostid(void);
 char *get_hostid(void *cbdata);
 
 #ifdef _WIN32
@@ -135,6 +136,9 @@ struct metachain {
 static cl_error_t pre(int fd, const char *type, void *context)
 {
     struct metachain *c = context;
+    UNUSEDPARAM(fd);
+    UNUSEDPARAM(type);
+
     if (c) {
 	c->level++;
     }
@@ -162,9 +166,11 @@ static int print_chain(struct metachain *c, char *str, unsigned len)
 static cl_error_t post(int fd, int result, const char *virname, void *context)
 {
     struct metachain *c = context;
+    UNUSEDPARAM(fd);
+    UNUSEDPARAM(result);
     if (c && c->n) {
 	char str[128];
-	int toolong = print_chain(c, str, sizeof(str));
+	print_chain(c, str, sizeof(str));
 	if (c->level == c->lastadd && !virname)
 	    free(c->chains[--c->n]);
 	if (virname && !c->lastvir)
@@ -178,7 +184,6 @@ static cl_error_t post(int fd, int result, const char *virname, void *context)
 static cl_error_t meta(const char* container_type, unsigned long fsize_container, const char *filename,
 		       unsigned long fsize_real,  int is_encrypted, unsigned int filepos_container, void *context)
 {
-    int na = 0;
     char prev[128];
     struct metachain *c = context;
     const char *type = !strncmp(container_type,"CL_TYPE_",8) ? container_type + 8 : container_type;
@@ -186,6 +191,11 @@ static cl_error_t meta(const char* container_type, unsigned long fsize_container
     char *chain;
     char **chains;
     int toolong;
+
+    UNUSEDPARAM(fsize_container);
+    UNUSEDPARAM(fsize_real);
+    UNUSEDPARAM(is_encrypted);
+    UNUSEDPARAM(filepos_container);
 
     if (!c)
 	return CL_CLEAN;
@@ -1063,6 +1073,8 @@ int is_valid_hostid(void)
 
 char *get_hostid(void *cbdata)
 {
+    UNUSEDPARAM(cbdata);
+
     if (!strcmp(hostid, "none"))
         return NULL;
 

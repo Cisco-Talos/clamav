@@ -396,6 +396,8 @@ libclamav_la_SOURCES = \
 	dmg.h \
 	xar.c \
 	xar.h \
+	xdp.c \
+	xdp.h \
 	mbr.c \
 	mbr.h \
 	gpt.c \

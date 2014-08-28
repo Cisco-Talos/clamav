@@ -348,6 +348,7 @@ int cli_initroots(struct cl_engine *engine, unsigned int options)
 	int i, ret;
 	struct cli_matcher *root;
 
+    UNUSEDPARAM(options);
 
     for(i = 0; i < CLI_MTARGETS; i++) {
 	if(!engine->root[i]) {
@@ -546,6 +547,7 @@ static int cli_loaddb(FILE *fs, struct cl_engine *engine, unsigned int *signo, u
 	int ret = 0;
 	struct cli_matcher *root;
 
+    UNUSEDPARAM(dbname);
 
     if((ret = cli_initroots(engine, options)))
 	return ret;
@@ -900,6 +902,7 @@ static int cli_loadndb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	unsigned short target;
 	unsigned int phish = options & CL_DB_PHISHING;
 
+    UNUSEDPARAM(dbname);
 
     if((ret = cli_initroots(engine, options)))
 	return ret;
@@ -1242,6 +1245,8 @@ static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsig
     struct cli_lsig_tdb tdb;
     uint32_t lsigid[2];
     int ret;
+
+    UNUSEDPARAM(dbname);
 
     tokens_count = cli_strtokenize(buffer, ';', LDB_TOKENS + 1, (const char **) tokens);
     if(tokens_count < 4) {
@@ -1850,6 +1855,8 @@ static int cli_loadign(FILE *fs, struct cl_engine *engine, unsigned int options,
         struct cli_bm_patt *new;
 	int ret = CL_SUCCESS;
 
+    UNUSEDPARAM(options);
+
     if(!engine->ignored) {
 	engine->ignored = (struct cli_matcher *) mpool_calloc(engine->mempool, 1, sizeof(struct cli_matcher));
 	if(!engine->ignored)
@@ -2000,7 +2007,7 @@ static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo,
 		continue;
 	    if(tokens_count == MD5_TOKENS) {
 		int max_fl = atoi(tokens[MD5_TOKENS - 1]);
-		if(cl_retflevel() > max_fl)
+		if(cl_retflevel() > (unsigned int)max_fl)
 		    continue;
 	    }
 	}
@@ -2085,6 +2092,7 @@ static int cli_loadmd(FILE *fs, struct cl_engine *engine, unsigned int *signo, i
 	int ret = CL_SUCCESS;
 	struct cli_cdb *new;
 
+    UNUSEDPARAM(dbname);
 
     if(engine->ignored)
 	if(!(buffer_cpy = cli_malloc(FILEBUFF))) {
@@ -2418,12 +2426,11 @@ static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 static int cli_loadcrt(FILE *fs, struct cl_engine *engine, struct cli_dbio *dbio) {
     char buffer[FILEBUFF];
     char *tokens[CRT_TOKENS+1];
-    size_t line=0, tokens_count, i, j;
+    size_t line=0, tokens_count;
     cli_crt ca;
     int ret=CL_SUCCESS;
-    char *subject=NULL, *pubkey=NULL, *exponent=NULL, *serial=NULL;
+    char *subject=NULL, *pubkey=NULL, *serial=NULL;
     const uint8_t exp[] = "\x01\x00\x01";
-    char c;
 
     cli_crt_init(&ca);
     memset(ca.issuer, 0xca, sizeof(ca.issuer));
@@ -2512,7 +2519,7 @@ static int cli_loadcrt(FILE *fs, struct cl_engine *engine, struct cli_dbio *dbio
         }
 
         memcpy(ca.subject, subject, sizeof(ca.subject));
-        if (mp_read_unsigned_bin(&(ca.n), pubkey, strlen(tokens[4])/2) || mp_read_unsigned_bin(&(ca.e), exp, sizeof(exp)-1)) {
+        if (mp_read_unsigned_bin(&(ca.n), (const unsigned char *)pubkey, strlen(tokens[4])/2) || mp_read_unsigned_bin(&(ca.e), exp, sizeof(exp)-1)) {
             cli_errmsg("cli_loadcrt: line %u: Cannot convert exponent to binary data\n", (unsigned int)line);
             ret = CL_EMALFDB;
             goto end;
@@ -2586,6 +2593,9 @@ end:
 
 static int cli_loadmscat(FILE *fs, const char *dbname, struct cl_engine *engine, unsigned int options, struct cli_dbio *dbio) {
     fmap_t *map;
+
+    UNUSEDPARAM(options);
+    UNUSEDPARAM(dbio);
 
     if(!(map = fmap(fileno(fs), 0, 0))) {
 	cli_dbgmsg("Can't map cat: %s\n", dbname);

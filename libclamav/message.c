@@ -19,7 +19,6 @@
  *
  * TODO: Optimise messageExport, decodeLine, messageIsEncoding
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.195 2007/02/12 20:46:09 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"

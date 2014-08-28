@@ -178,6 +178,8 @@ static int cdiff_cmd_open(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf,
 	char *db;
 	unsigned int i;
 
+    UNUSEDPARAM(lbuf);
+    UNUSEDPARAM(lbuflen);
 
     if(!(db = cdiff_token(cmdstr, 1, 1))) {
 	logg("!cdiff_cmd_open: Can't get first argument\n");
@@ -207,6 +209,8 @@ static int cdiff_cmd_add(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf, 
 	char *sig;
 	struct cdiff_node *new;
 
+    UNUSEDPARAM(lbuf);
+    UNUSEDPARAM(lbuflen);
 
     if(!(sig = cdiff_token(cmdstr, 1, 1))) {
 	logg("!cdiff_cmd_add: Can't get first argument\n");
@@ -236,6 +240,9 @@ static int cdiff_cmd_del(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf, 
 	char *arg;
 	struct cdiff_node *pt, *last, *new;
 	unsigned int lineno;
+
+    UNUSEDPARAM(lbuf);
+    UNUSEDPARAM(lbuflen);
 
 
     if(!(arg = cdiff_token(cmdstr, 1, 0))) {
@@ -294,6 +301,9 @@ static int cdiff_cmd_xchg(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf,
 	struct cdiff_node *new;
 	unsigned int lineno;
 
+    UNUSEDPARAM(lbuf);
+    UNUSEDPARAM(lbuflen);
+
 
     if(!(arg = cdiff_token(cmdstr, 1, 0))) {
 	logg("!cdiff_cmd_xchg: Can't get first argument\n");
@@ -339,6 +349,8 @@ static int cdiff_cmd_close(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf
 	unsigned int lines = 0;
 	char *tmp;
 	FILE *fh, *tmpfh;
+
+    UNUSEDPARAM(cmdstr);
 
 
     if(!ctx->open_db) {
@@ -681,6 +693,8 @@ static int cdiff_cmd_unlink(const char *cmdstr, struct cdiff_ctx *ctx, char *lbu
 	char *db;
 	unsigned int i;
 
+    UNUSEDPARAM(lbuf);
+    UNUSEDPARAM(lbuflen);
 
     if(ctx->open_db) {
 	logg("!cdiff_cmd_unlink: Database %s is still open\n", ctx->open_db);

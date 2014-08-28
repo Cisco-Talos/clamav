@@ -30,6 +30,7 @@
 #include <unistd.h>
 #endif
 
+#include "libclamav/clamav.h"
 #include "libclamunrar/unrar.h"
 
 #include "unrar_iface.h"
@@ -52,7 +53,7 @@ static uint32_t unrar_endian_convert_32(uint32_t v)
 #ifdef RAR_DEBUG_MODE
 #define unrar_dbgmsg printf
 #else
-static void unrar_dbgmsg(const char* fmt,...){}
+static void unrar_dbgmsg(const char* fmt,...){ UNUSEDPARAM(fmt); }
 #endif
 
 static void *read_header(int fd, header_type hdr_type)
@@ -395,6 +396,7 @@ int unrar_extract_next_prepare(unrar_state_t *state, const char *dirname)
 	int ofd;
 	unrar_metadata_t *new_metadata;
 
+    UNUSEDPARAM(dirname);
 
     state->file_header = read_block(state->fd, FILE_HEAD);
     if(!state->file_header)

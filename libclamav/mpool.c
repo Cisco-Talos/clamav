@@ -58,7 +58,7 @@
 #ifdef DEBUGMPOOL
 #define spam(...) cli_warnmsg( __VA_ARGS__)
 #else
-static inline void spam(const char *fmt, ...) { fmt = fmt; } /* gcc STFU */
+static inline void spam(const char *fmt, ...) { UNUSEDPARAM(fmt); }
 #endif
 
 #include "mpool.h"

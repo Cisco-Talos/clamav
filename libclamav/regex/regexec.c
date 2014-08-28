@@ -157,7 +157,7 @@ cli_regexec(const regex_t *preg, const char *string, size_t nmatch,
 		return(REG_BADPAT);
 	eflags = GOODFLAGS(eflags);
 
-	if (g->nstates <= CHAR_BIT*sizeof(states1) && !(eflags&REG_LARGE))
+	if ((unsigned long)(g->nstates) <= CHAR_BIT*sizeof(states1) && !(eflags&REG_LARGE))
 		return(smatcher(g, (char *)string, nmatch, pmatch, eflags));
 	else
 		return(lmatcher(g, (char *)string, nmatch, pmatch, eflags));

@@ -28,9 +28,9 @@
 #include "lzma_iface.h"
 
 void *__lzma_wrap_alloc(void *unused, size_t size) { 
+    UNUSEDPARAM(unused);
     if(!size || size > CLI_MAX_ALLOCATION)
 	return NULL;
-    unused = unused;
     if(!size || size > CLI_MAX_ALLOCATION) {
 	cli_dbgmsg("lzma_wrap_alloc(): Attempt to allocate %lu bytes.\n", (unsigned long int) size);
 	return NULL;
@@ -39,7 +39,7 @@ void *__lzma_wrap_alloc(void *unused, size_t size) {
     return cli_malloc(size);
 }
 void __lzma_wrap_free(void *unused, void *freeme) {
-    unused = unused;
+    UNUSEDPARAM(unused);
     free(freeme);
 }
 static ISzAlloc g_Alloc = { __lzma_wrap_alloc, __lzma_wrap_free };

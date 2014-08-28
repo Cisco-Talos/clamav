@@ -293,9 +293,7 @@ static int ac_maketrans(struct cli_matcher *root)
 {
 	struct bfs_list *bfs = NULL, *bfs_last = NULL;
 	struct cli_ac_node *ac_root = root->ac_root, *child, *node, *fail;
-	struct cli_ac_patt *patt;
 	int i, ret;
-
 
     for(i = 0; i < 256; i++) {
 	node = ac_root->trans[i];
@@ -911,6 +909,7 @@ int cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t lsigs,
 {
 	unsigned int i, j;
 
+    UNUSEDPARAM(tracklen);
 
     if(!data) {
 	cli_errmsg("cli_ac_init: data == NULL\n");
@@ -1360,7 +1359,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 				    if(res) {
 					newres = (struct cli_ac_result *) malloc(sizeof(struct cli_ac_result));
 					if(!newres) {
-                        cli_errmsg("cli_ac_scanbuff: Can't allocate memory for newres %u\n", sizeof(struct cli_ac_result));
+                        cli_errmsg("cli_ac_scanbuff: Can't allocate memory for newres %lu\n", sizeof(struct cli_ac_result));
 					    return CL_EMEM;
                     }
 					newres->virname = pt->virname;
@@ -1413,7 +1412,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 				if(res) {
 				    newres = (struct cli_ac_result *) malloc(sizeof(struct cli_ac_result));
 				    if(!newres) {
-                        cli_errmsg("cli_ac_scanbuff: Can't allocate memory for newres %u\n", sizeof(struct cli_ac_result));
+                        cli_errmsg("cli_ac_scanbuff: Can't allocate memory for newres %lu\n", sizeof(struct cli_ac_result));
                         return CL_EMEM;
                     }
 				    newres->virname = pt->virname;

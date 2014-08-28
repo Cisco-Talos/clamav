@@ -18,6 +18,7 @@
  *  MA 02110-1301, USA.
  */
 
+#include "../libclamav/clamav.h"
 #include "../libclamav/fpu.h"
 
 /* Helper command line interface to determinine fpu endianess in unit test scripts.
@@ -30,5 +31,7 @@
 
 int main (int argc, char **argv)
 {
+    UNUSEDPARAM(argc);
+    UNUSEDPARAM(argv);
     return  get_fpu_endian();
 }

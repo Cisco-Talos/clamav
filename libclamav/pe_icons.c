@@ -67,7 +67,9 @@ int cli_groupiconscan(struct ICON_ENV *icon_env, uint32_t rva);
 static int groupicon_scan_cb(void *ptr, uint32_t type, uint32_t name, uint32_t lang, uint32_t rva) {
     struct ICON_ENV *icon_env = ptr;
     int ret = CL_CLEAN;
-    type = type; lang = lang; /* Prevent compiler warnings regarding unused variables */
+
+    UNUSEDPARAM(type);
+    UNUSEDPARAM(lang);
 
     cli_dbgmsg("groupicon_cb: scanning group %x\n", name);
     if(!icon_env->gcnt || icon_env->lastg == name) {
@@ -89,8 +91,10 @@ static int parseicon(struct ICON_ENV *icon_env, uint32_t rva);
 
 static int icon_scan_cb(void *ptr, uint32_t type, uint32_t name, uint32_t lang, uint32_t rva) {
     struct ICON_ENV *icon_env = ptr;
-    type = type; lang = lang; /* Prevent compiler warnings regarding unused variables */
-    //cli_dbgmsg("icon_cb: scanning icon %x\n", name);
+
+    UNUSEDPARAM(type);
+    UNUSEDPARAM(lang);
+    UNUSEDPARAM(name);
 
     /* scan icon */
     icon_env->result = parseicon(icon_env, rva);
@@ -164,7 +168,6 @@ int cli_scanicon(icon_groupset *set, uint32_t resdir_rva, cli_ctx *ctx, struct c
 int cli_groupiconscan(struct ICON_ENV *icon_env, uint32_t rva)
 {
     /* import environment */
-    icon_groupset *set = icon_env->set;
     uint32_t resdir_rva = icon_env->resdir_rva;
     cli_ctx *ctx = icon_env->ctx;
     struct cli_exe_section *exe_sections = icon_env->exe_sections;
@@ -173,7 +176,7 @@ int cli_groupiconscan(struct ICON_ENV *icon_env, uint32_t rva)
 
     int err = 0;
     fmap_t *map = *ctx->fmap;
-    const uint8_t *grp = fmap_need_off_once(map, cli_rawaddr(rva, exe_sections, nsections, &err, map->len, hdr_size), 16);
+    const uint8_t *grp = fmap_need_off_once(map, cli_rawaddr(rva, exe_sections, nsections, (unsigned int *)(&err), map->len, hdr_size), 16);
 
     if(grp && !err) {
         uint32_t gsz = cli_readint32(grp + 4);
@@ -191,7 +194,7 @@ int cli_groupiconscan(struct ICON_ENV *icon_env, uint32_t rva)
                 uint16_t id;
             } *dir;
 
-            raddr = cli_rawaddr(cli_readint32(grp), exe_sections, nsections, &err, map->len, hdr_size);
+            raddr = cli_rawaddr(cli_readint32(grp), exe_sections, nsections, (unsigned int *)(&err), map->len, hdr_size);
             cli_dbgmsg("cli_scanicon: icon group @%x\n", raddr);
             grp = fmap_need_off_once(map, raddr, gsz);
             if(grp && !err) {
@@ -776,7 +779,7 @@ static void makebmp(const char *step, const char *tempd, int w, int h, void *dat
 	return;
     }
 
-    for(y=h-1; y<h; y--)
+    for(y=h-1; y<(unsigned int)h; y--)
 #if WORDS_BIGENDIAN == 0
 	if(!fwrite(&((unsigned int *)data)[y*w], w*4, 1, f))
 	    break;
@@ -793,7 +796,7 @@ static void makebmp(const char *step, const char *tempd, int w, int h, void *dat
     }
 #endif
     fclose(f);
-    if(y<h)
+    if(y<(unsigned int)h)
 	cli_unlink(fname);
     else
 	cli_dbgmsg("makebmp: Image %s dumped to %s\n", step, fname);
@@ -1047,7 +1050,7 @@ static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr 
 #ifdef USE_FLOATS
     sobel = cli_malloc(side * side * sizeof(double));
     if(!sobel) {
-        cli_errmsg("getmetrics: Unable to allocate memory for edge detection %u\n", (side * side * sizeof(double)));
+        cli_errmsg("getmetrics: Unable to allocate memory for edge detection %lu\n", (side * side * sizeof(double)));
 	free(tmp);
 	return CL_EMEM;
     }
@@ -1341,7 +1344,7 @@ static int parseicon(struct ICON_ENV *icon_env, uint32_t rva) {
 	return CL_SUCCESS;
     }
 
-    if(READ32(bmphdr.sz) < sizeof(bmphdr)) {
+    if((size_t)READ32(bmphdr.sz) < sizeof(bmphdr)) {
 	icon_env->err_bhts++;
 	//cli_dbgmsg("parseicon: BMP header too small\n");
 	return CL_SUCCESS;

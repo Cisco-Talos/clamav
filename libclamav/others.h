@@ -54,6 +54,10 @@
 #include "json.h"
 #endif
 
+#if HAVE_LIBXML2
+#define CLAMAV_MIN_XMLREADER_FLAGS (XML_PARSE_NOERROR | XML_PARSE_NONET)
+#endif
+
 /*
  * CL_FLEVEL is the signature f-level specific to the current code and
  *	     should never be modified
@@ -63,7 +67,7 @@
  * in re-enabling affected modules.
  */
 
-#define CL_FLEVEL 78
+#define CL_FLEVEL 79
 #define CL_FLEVEL_DCONF	CL_FLEVEL
 #define CL_FLEVEL_SIGTOOL CL_FLEVEL
 

@@ -33,6 +33,11 @@
 
 #define CODER_BUF_SIZE (1 << 17)
 
+void BraState_Free(void *pp, ISzAlloc *alloc);
+SRes BraState_SetProps(void *pp, const Byte *props, size_t propSize, ISzAlloc *alloc);
+void BraState_Init(void *pp);
+SRes BraState_SetFromMethod(IStateCoder *p, UInt64 id, ISzAlloc *alloc);
+
 unsigned Xz_ReadVarInt(const Byte *p, size_t maxSize, UInt64 *value)
 {
   int i, limit;
@@ -77,7 +82,7 @@ void BraState_Free(void *pp, ISzAlloc *alloc)
 SRes BraState_SetProps(void *pp, const Byte *props, size_t propSize, ISzAlloc *alloc)
 {
   CBraState *p = ((CBraState *)pp);
-  alloc = alloc;
+  UNUSEDPARAM(alloc);
   p->encodeMode = 0;
   p->ip = 0;
   if (p->methodId == XZ_ID_Delta)
@@ -133,9 +138,9 @@ static SRes BraState_Code(void *pp, Byte *dest, SizeT *destLen, const Byte *src,
   CBraState *p = ((CBraState *)pp);
   SizeT destLenOrig = *destLen;
   SizeT srcLenOrig = *srcLen;
+  UNUSEDPARAM(finishMode);
   *destLen = 0;
   *srcLen = 0;
-  finishMode = finishMode;
   *wasFinished = 0;
   while (destLenOrig > 0)
   {
@@ -302,7 +307,7 @@ static SRes Lzma2State_Code(void *pp, Byte *dest, SizeT *destLen, const Byte *sr
   ELzmaStatus status;
   /* ELzmaFinishMode fm = (finishMode == LZMA_FINISH_ANY) ? LZMA_FINISH_ANY : LZMA_FINISH_END; */
   SRes res = Lzma2Dec_DecodeToBuf((CLzma2Dec *)pp, dest, destLen, src, srcLen, finishMode, &status);
-  srcWasFinished = srcWasFinished;
+  UNUSEDPARAM(srcWasFinished);
   *wasFinished = (status == LZMA_STATUS_FINISHED_WITH_MARK);
   return res;
 }
@@ -785,7 +790,7 @@ SRes XzUnpacker_Code(CXzUnpacker *p, Byte *dest, SizeT *destLen,
               srcRem = (SizeT)cur;
             p->crc = CrcUpdate(p->crc, src, srcRem);
             if ((p->sha))
-                cl_update_hash(p->sha, src, srcRem);
+                cl_update_hash(p->sha, (void *)src, srcRem);
             (*srcLen) += srcRem;
             src += srcRem;
             p->indexPos += srcRem;

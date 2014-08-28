@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "libclamav/clamav.h"
 #include "libclamunrar/unrar.h"
 #include "libclamunrar/unrarvm.h"
 #include "libclamunrar/unrarcmd.h"
@@ -29,7 +30,7 @@
 #ifdef RAR_HIGH_DEBUG
 #define rar_dbgmsg printf
 #else
-static void rar_dbgmsg(const char* fmt,...){}
+static void rar_dbgmsg(const char* fmt,...){ UNUSEDPARAM(fmt); }
 #endif
 
 #define VMCF_OP0             0
@@ -155,7 +156,7 @@ const uint32_t crc_tab[256]={
 uint32_t rar_crc(uint32_t start_crc, void *addr, uint32_t size)
 {
 	unsigned char *data;
-	int i;
+	uint32_t i;
 
 	data = addr;
 #if WORDS_BIGENDIAN == 0
@@ -264,7 +265,7 @@ unsigned int rarvm_read_data(rarvm_input_t *rarvm_input)
 static rarvm_standard_filters_t is_standard_filter(unsigned char *code, int code_size)
 {
 	uint32_t code_crc;
-	int i;
+	uint32_t i;
 
 	struct standard_filter_signature
 	{
@@ -340,11 +341,12 @@ static void filter_itanium_setbits(unsigned char *data, unsigned int bit_field, 
 static void execute_standard_filter(rarvm_data_t *rarvm_data, rarvm_standard_filters_t filter_type)
 {
 	unsigned char *data, cmp_byte2, cur_byte, *src_data, *dest_data;
-	int i, j, data_size, channels, src_pos, dest_pos, border, width, PosR;
+	int channels, border, width, PosR;
 	int op_type, cur_channel, byte_count, start_pos, pa, pb, pc;
-	unsigned int file_offset, cur_pos, predicted;
+	unsigned int file_offset, cur_pos, predicted, data_size, src_pos, dest_pos;
 	int32_t offset, addr;
 	const int file_size=0x1000000;
+    unsigned int i, j;
 
 	switch(filter_type) {
 	case VMSF_E8:
@@ -431,7 +433,7 @@ static void execute_standard_filter(rarvm_data_t *rarvm_data, rarvm_standard_fil
 		}
 		for (cur_channel=0 ; cur_channel < channels ; cur_channel++) {
 			unsigned char prev_byte = 0;
-			for (dest_pos=data_size+cur_channel ; dest_pos<border ; dest_pos+=channels) {
+			for (dest_pos=data_size+cur_channel ; dest_pos<(unsigned int)border ; dest_pos+=channels) {
 				rarvm_data->mem[dest_pos] = (prev_byte -= rarvm_data->mem[src_pos++]);
 			}
 		}
@@ -475,7 +477,7 @@ static void execute_standard_filter(rarvm_data_t *rarvm_data, rarvm_standard_fil
 				dest_data[i] = prev_byte = (unsigned char)(predicted-*(src_data++));
 			}
 		}
-		for (i=PosR,border=data_size-2 ; i < border ; i+=3) {
+		for (i=PosR,border=data_size-2 ; i < (unsigned int)border ; i+=3) {
 			unsigned char g=dest_data[i+1];
 			dest_data[i] += g;
 			dest_data[i+2] += g;
@@ -649,13 +651,13 @@ static int rarvm_execute_code(rarvm_data_t *rarvm_data,
 			break;
 		case VM_JZ:
 			if ((rarvm_data->Flags & VM_FZ) != 0) {
-				SET_IP(GET_VALUE(FALSE, op1));
+				SET_IP((int)GET_VALUE(FALSE, op1));
 				continue;
 			}
 			break;
 		case VM_JNZ:
 			if ((rarvm_data->Flags & VM_FZ) == 0) {
-				SET_IP(GET_VALUE(FALSE, op1));
+				SET_IP((int)GET_VALUE(FALSE, op1));
 				continue;
 			}
 			break;
@@ -682,7 +684,7 @@ static int rarvm_execute_code(rarvm_data_t *rarvm_data,
 			SET_VALUE(FALSE, op1, GET_VALUE(FALSE, op1)-1);
 			break;
 		case VM_JMP:
-			SET_IP(GET_VALUE(FALSE, op1));
+			SET_IP((int)GET_VALUE(FALSE, op1));
 			continue;
 		case VM_XOR:
 			result = UINT32(GET_VALUE(cmd->byte_mode, op1)^GET_VALUE(cmd->byte_mode, op2));
@@ -705,37 +707,37 @@ static int rarvm_execute_code(rarvm_data_t *rarvm_data,
 			break;
 		case VM_JS:
 			if ((rarvm_data->Flags & VM_FS) != 0) {
-				SET_IP(GET_VALUE(FALSE, op1));
+				SET_IP((int)GET_VALUE(FALSE, op1));
 				continue;
 			}
 			break;
 		case VM_JNS:
 			if ((rarvm_data->Flags & VM_FS) == 0) {
-				SET_IP(GET_VALUE(FALSE, op1));
+				SET_IP((int)GET_VALUE(FALSE, op1));
 				continue;
 			}
 			break;
 		case VM_JB:
 			if ((rarvm_data->Flags & VM_FC) != 0) {
-				SET_IP(GET_VALUE(FALSE, op1));
+				SET_IP((int)GET_VALUE(FALSE, op1));
 				continue;
 			}
 			break;
 		case VM_JBE:
 			if ((rarvm_data->Flags & (VM_FC|VM_FZ)) != 0) {
-				SET_IP(GET_VALUE(FALSE, op1));
+				SET_IP((int)GET_VALUE(FALSE, op1));
 				continue;
 			}
 			break;
 		case VM_JA:
 			if ((rarvm_data->Flags & (VM_FC|VM_FZ)) == 0) {
-				SET_IP(GET_VALUE(FALSE, op1));
+				SET_IP((int)GET_VALUE(FALSE, op1));
 				continue;
 			}
 			break;
 		case VM_JAE:
 			if ((rarvm_data->Flags & VM_FC) == 0) {
-				SET_IP(GET_VALUE(FALSE, op1));
+				SET_IP((int)GET_VALUE(FALSE, op1));
 				continue;
 			}
 			break;
@@ -753,7 +755,7 @@ static int rarvm_execute_code(rarvm_data_t *rarvm_data,
 			rarvm_data->R[7] -= 4;
 			SET_VALUE(FALSE, (unsigned int *)&rarvm_data->mem[rarvm_data->R[7] &
 					RARVM_MEMMASK], cmd-prepared_code+1);
-			SET_IP(GET_VALUE(FALSE, op1));
+			SET_IP((int)GET_VALUE(FALSE, op1));
 			continue;
 		case VM_NOT:
 			SET_VALUE(cmd->byte_mode, op1, ~GET_VALUE(cmd->byte_mode, op1));
@@ -860,7 +862,7 @@ static int rarvm_execute_code(rarvm_data_t *rarvm_data,
 			if (rarvm_data->R[7] >= RARVM_MEMSIZE) {
 				return TRUE;
 			}
-			SET_IP(GET_VALUE(FALSE, (unsigned int *)&rarvm_data->mem[rarvm_data->R[7] &
+			SET_IP((int)GET_VALUE(FALSE, (unsigned int *)&rarvm_data->mem[rarvm_data->R[7] &
 				RARVM_MEMMASK]));
 			rarvm_data->R[7] += 4;
 			continue;

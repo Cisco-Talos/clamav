@@ -640,8 +640,6 @@ LIBOBJS
 JSON_CPPFLAGS
 JSON_LDFLAGS
 JSON_LIBS
-BUILD_LLVM3_FALSE
-BUILD_LLVM3_TRUE
 BUILD_EXTERNAL_LLVM_FALSE
 BUILD_EXTERNAL_LLVM_TRUE
 NO_MISSING_FIELD_INITIALIZERS
@@ -653,6 +651,7 @@ BUILD_X86_TRUE
 THREAD_LIBS
 DEBUG_BUILD_FALSE
 DEBUG_BUILD_TRUE
+LLVM_VERSION
 subdirs
 LLVMCONFIG_LIBFILES
 LLVMCONFIG_LIBS
@@ -15613,10 +15612,7 @@ if test "${with_system_llvm+set}" = set; then :
   *)
     llvmconfig="$withval"
     llvmver=`$llvmconfig --version`
-    if test "$llvmver" != "2.9" && test "$llvmver" != "3.0svn" &&
-	test "$llvmver" != "3.0"; then
-	as_fn_error $? "LLVM 2.9 required, but \"$llvmver\" found" "$LINENO" 5
-    fi
+
     LLVMCONFIG_CXXFLAGS=`$llvmconfig --cxxflags`
 
     LLVMCONFIG_LDFLAGS=`$llvmconfig --ldflags`
@@ -15639,12 +15635,47 @@ $as_echo "$as_me: LIBS from llvm-config: $LLVMCONFIG_LIBS" >&6;}
 fi
 
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for supported LLVM version" >&5
+$as_echo_n "checking for supported LLVM version... " >&6; }
 if test "x$llvmconfig" = "x"; then
 
 
 subdirs="$subdirs llvm"
 
+        llvmver="2.8"
+    packaged_llvm="yes"
 fi
+
+llvmver_val=`echo "$llvmver" | sed -e 's/svn//g'`
+llvmver_major=`echo "$llvmver_val" | sed -e 's/\([0-9]\).*/\1/'`
+llvmver_minor=`echo "$llvmver_val" | sed -e 's/[0-9]//' | sed -e 's/^\.//' | sed -e 's/\([0-9]\).*/\1/'`
+llvmver_patch=`echo "$llvmver_val" | sed -e 's/[0-9]\.[0-9]//' | sed -e 's/^\.//' | sed -e 's/\([0-9]\).*/\1/'`
+llvmver_suffix=
+if test "x$llvmver_patch" = "x"; then
+    llvmver_patch=0
+fi
+
+llvmver_test=${llvmver_major}${llvmver_minor}${llvmver_patch}
+if test "x$packaged_llvm" = "xyes"; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: ok ($llvmver)" >&5
+$as_echo "ok ($llvmver)" >&6; }
+elif test $llvmver_test -lt 290; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no ($llvmver)" >&5
+$as_echo "no ($llvmver)" >&6; }
+    as_fn_error $? "LLVM >= 2.9 required, but \"$llvmver\"($llvmver_test) found" "$LINENO" 5
+elif test $llvmver_test -gt 342; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no ($llvmver)" >&5
+$as_echo "no ($llvmver)" >&6; }
+    as_fn_error $? "LLVM <= 3.4.2 required, but \"$llvmver\"($llvmver_test) found" "$LINENO" 5
+else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: ok ($llvmver)" >&5
+$as_echo "ok ($llvmver)" >&6; }
+fi
+
+llvmver_int=${llvmver_major}${llvmver_minor}
+
+LLVM_VERSION=$llvmver_int
+
 
 # Check whether --enable-llvm was given.
 if test "${enable_llvm+set}" = set; then :
@@ -15711,7 +15742,7 @@ $as_echo_n "checking for supported OS... " >&6; }
     case "$target_cpu" in
 	i?86|amd64|x86_64|powerpc*)
 	    case "$target_os" in
-		darwin*|freebsd*|openbsd*|netbsd*|dragonfly*|linux*|solaris*|win32*|mingw*)
+		darwin*|freebsd*|kfreebsd*|openbsd*|netbsd*|dragonfly*|linux*|solaris*|win32*|mingw*)
 		    { $as_echo "$as_me:${as_lineno-$LINENO}: result: ok ($target_cpu-$target_os)" >&5
 $as_echo "ok ($target_cpu-$target_os)" >&6; }
 		    ;;
@@ -15871,14 +15902,6 @@ $as_echo "$NO_VARIADIC_MACROS $NO_MISSING_FIELD_INITIALIZERS" >&6; }
 else
   BUILD_EXTERNAL_LLVM_TRUE='#'
   BUILD_EXTERNAL_LLVM_FALSE=
-fi
-
- if test -n "$llvmconfig" && test "$llvmver" != "2.9"; then
-  BUILD_LLVM3_TRUE=
-  BUILD_LLVM3_FALSE='#'
-else
-  BUILD_LLVM3_TRUE='#'
-  BUILD_LLVM3_FALSE=
 fi
 
 
@@ -16254,10 +16277,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_EXTERNAL_LLVM_TRUE}" && test -z "${BUILD_EXTERNAL_LLVM_FALSE}"; then
   as_fn_error $? "conditional \"BUILD_EXTERNAL_LLVM\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${BUILD_LLVM3_TRUE}" && test -z "${BUILD_LLVM3_FALSE}"; then
-  as_fn_error $? "conditional \"BUILD_LLVM3\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 

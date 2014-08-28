@@ -199,6 +199,10 @@ CLAMAV_PRIVATE {
     cli_bytecode_debug_printsrc;
     cli_bytecode_printversion;
     cli_bytecode_describe;
+    cli_bytetype_describe;
+    cli_bytevalue_describe;
+    cli_byteinst_describe;
+    cli_bytefunc_describe;
     cli_printcxxver;
     cli_detect_environment;
     cli_disasm_one;

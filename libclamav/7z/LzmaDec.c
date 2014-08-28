@@ -115,6 +115,8 @@ StopCompilingDueBUG
 
 #define LZMA_DIC_MIN (1 << 12)
 
+void LzmaDec_InitDicAndState(CLzmaDec *p, Bool initDic, Bool initState);
+
 /* First LZMA-symbol is always decoded.
 And it decodes new LZMA-symbols while (buf < bufLimit), but "buf" is without last normalization
 Out:

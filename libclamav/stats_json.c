@@ -40,6 +40,10 @@
 #define JSON_BUFSZ 512
 #define SAMPLE_PREFIX "sample_"
 
+char *hex_encode(char *buf, char *data, size_t len);
+char *ensure_bufsize(char *buf, size_t *oldsize, size_t used, size_t additional);
+char *export_stats_to_json(struct cl_engine *engine, cli_intel_t *intel);
+
 char *hex_encode(char *buf, char *data, size_t len)
 {
     size_t i;
@@ -78,7 +82,7 @@ char *ensure_bufsize(char *buf, size_t *oldsize, size_t used, size_t additional)
 
 char *export_stats_to_json(struct cl_engine *engine, cli_intel_t *intel)
 {
-    char *buf=NULL, *p, *hostid, md5[33];
+    char *buf=NULL, *hostid, md5[33];
     cli_flagged_sample_t *sample;
     size_t bufsz, curused, i, j;
 

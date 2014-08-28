@@ -59,10 +59,7 @@ AC_ARG_WITH([system-llvm], AC_HELP_STRING([-with-system-llvm],
   *)
     llvmconfig="$withval"
     llvmver=`$llvmconfig --version`
-    if test "$llvmver" != "2.9" && test "$llvmver" != "3.0svn" &&
-	test "$llvmver" != "3.0"; then
-	AC_MSG_ERROR([LLVM 2.9 required, but "$llvmver" found])
-    fi
+
     AC_SUBST(LLVMCONFIG_CXXFLAGS, [`$llvmconfig --cxxflags`])
     AC_SUBST(LLVMCONFIG_LDFLAGS, [`$llvmconfig --ldflags`])
     AC_SUBST(LLVMCONFIG_LIBS, [`$llvmconfig --libs jit nativecodegen scalaropts ipo`])
@@ -75,9 +72,42 @@ AC_ARG_WITH([system-llvm], AC_HELP_STRING([-with-system-llvm],
   esac
 ])
 
+AC_MSG_CHECKING([for supported LLVM version])
 if test "x$llvmconfig" = "x"; then
+    dnl macro not available in older autotools
     AC_CONFIG_SUBDIRS([llvm])
+    dnl llvmver=`$srcdir/llvm/configure --version | sed -n 1p | sed 's/llvm configure //'`
+    llvmver="2.8"
+    packaged_llvm="yes"
 fi
+
+llvmver_val=`echo "$llvmver" | sed -e 's/svn//g'`
+llvmver_major=`echo "$llvmver_val" | sed -e 's/\([[0-9]]\).*/\1/'`
+llvmver_minor=`echo "$llvmver_val" | sed -e 's/[[0-9]]//' | sed -e 's/^\.//' | sed -e 's/\([[0-9]]\).*/\1/'`
+llvmver_patch=`echo "$llvmver_val" | sed -e 's/[[0-9]]\.[[0-9]]//' | sed -e 's/^\.//' | sed -e 's/\([[0-9]]\).*/\1/'`
+dnl suffix unused as of LLVM 3.4.1
+llvmver_suffix=
+if test "x$llvmver_patch" = "x"; then
+    llvmver_patch=0
+fi
+
+llvmver_test=${llvmver_major}${llvmver_minor}${llvmver_patch}
+if test "x$packaged_llvm" = "xyes"; then
+    AC_MSG_RESULT([ok ($llvmver)])
+elif test $llvmver_test -lt 290; then
+    AC_MSG_RESULT([no ($llvmver)])
+    AC_MSG_ERROR([LLVM >= 2.9 required, but "$llvmver"($llvmver_test) found])
+elif test $llvmver_test -gt 342; then
+    AC_MSG_RESULT([no ($llvmver)])
+    AC_MSG_ERROR([LLVM <= 3.4.2 required, but "$llvmver"($llvmver_test) found])
+else
+    AC_MSG_RESULT([ok ($llvmver)])
+fi
+
+dnl patch does not affect clamav source (yet)
+llvmver_int=${llvmver_major}${llvmver_minor}
+
+AC_SUBST([LLVM_VERSION], [$llvmver_int])
 
 AC_ARG_ENABLE([llvm],AC_HELP_STRING([-enable-llvm],
 				    [Enable 'llvm' JIT/verifier support @<:@default=auto@:>@]),
@@ -128,7 +158,7 @@ if test "$enable_llvm" = "auto"; then
     case "$target_cpu" in
 	i?86|amd64|x86_64|powerpc*)
 	    case "$target_os" in
-		darwin*|freebsd*|openbsd*|netbsd*|dragonfly*|linux*|solaris*|win32*|mingw*)
+		darwin*|freebsd*|kfreebsd*|openbsd*|netbsd*|dragonfly*|linux*|solaris*|win32*|mingw*)
 		    AC_MSG_RESULT([ok ($target_cpu-$target_os)])
 		    ;;
 		*)
@@ -223,7 +253,6 @@ CXX_FLAG_CHECK(NO_MISSING_FIELD_INITIALIZERS, [-Wno-missing-field-initializers])
 AC_MSG_RESULT([$NO_VARIADIC_MACROS $NO_MISSING_FIELD_INITIALIZERS])
 
 AM_CONDITIONAL(BUILD_EXTERNAL_LLVM, [test -n "$llvmconfig"])
-AM_CONDITIONAL(BUILD_LLVM3, [test -n "$llvmconfig" && test "$llvmver" != "2.9"])
 
 m4_include([../../m4/reorganization/libs/json.m4])
 AC_SUBST([JSON_LIBS])

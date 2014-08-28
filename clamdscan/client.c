@@ -76,10 +76,11 @@ extern struct optstruct *clamdopts;
 static int isremote(const struct optstruct *opts) {
     int s, ret;
     const struct optstruct *opt;
-    static struct sockaddr_in testsock;
     char *ipaddr, port[10];
     struct addrinfo hints, *info, *p;
     int res;
+
+    UNUSEDPARAM(opts);
 
 #ifndef _WIN32
     if((opt = optget(clamdopts, "LocalSocket"))->enabled) {

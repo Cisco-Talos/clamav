@@ -18,8 +18,6 @@
  *  MA 02110-1301, USA.
  */
 
-static	char	const	rcsid[] = "$Id: uuencode.c,v 1.8 2006/12/11 11:55:11 njh Exp $";
-
 #include "clamav.h"
 
 #if	HAVE_CONFIG_H
