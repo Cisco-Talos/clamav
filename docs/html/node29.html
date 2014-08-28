@@ -1,4 +1,4 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 
 <!--Converted with LaTeX2HTML 2008 (1.71)
 original version by:  Nikos Drakos, CBLU, University of Leeds
@@ -25,8 +25,7 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 </HEAD>
 
 <BODY >
-
-<DIV CLASS="navigation"><!--Navigation Panel-->
+<!--Navigation Panel-->
 <A NAME="tex2html595"
   HREF="node30.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
@@ -49,14 +48,14 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
  &nbsp; <B>  <A NAME="tex2html594"
   HREF="node1.html">Contents</A></B> 
 <BR>
-<BR></DIV>
+<BR>
 <!--End of Navigation Panel-->
 
 <H2><A NAME="SECTION00061000000000000000"></A><A NAME="clamd"></A>
 <BR>
 Clam daemon
 </H2>
-    <code>clamd</code> is a multi-threaded daemon that uses <SPAN  CLASS="textit">libclamav</SPAN>
+    <code>clamd</code> is a multi-threaded daemon that uses <I>libclamav</I>
     to scan files for viruses. It may work in one or both modes listening on:
     
 <UL>
@@ -68,54 +67,54 @@ Clam daemon
 </UL>
     The daemon is fully configurable via the <code>clamd.conf</code> file
     <A NAME="tex2html21"
-  HREF="footnode.html#foot244"><SUP><SPAN CLASS="arabic">9</SPAN></SUP></A>. <code>clamd</code> recognizes the following commands:
+  HREF="footnode.html#foot244"><SUP>9</SUP></A>. <code>clamd</code> recognizes the following commands:
     
 <UL>
-<LI><SPAN  CLASS="textbf">PING</SPAN>
+<LI><B>PING</B>
 <BR>
 Check the daemon's state (should reply with "PONG").
 </LI>
-<LI><SPAN  CLASS="textbf">VERSION</SPAN>
+<LI><B>VERSION</B>
 <BR>
 Print program and database versions.
 </LI>
-<LI><SPAN  CLASS="textbf">RELOAD</SPAN>
+<LI><B>RELOAD</B>
 <BR>
 Reload the databases.
 </LI>
-<LI><SPAN  CLASS="textbf">SHUTDOWN</SPAN>
+<LI><B>SHUTDOWN</B>
 <BR>
 Perform a clean exit.
 </LI>
-<LI><SPAN  CLASS="textbf">SCAN file/directory</SPAN>
+<LI><B>SCAN file/directory</B>
 <BR>
 Scan file or directory (recursively) with archive support
 	    enabled (a full path is required).
 </LI>
-<LI><SPAN  CLASS="textbf">RAWSCAN file/directory</SPAN>
+<LI><B>RAWSCAN file/directory</B>
 <BR>
 Scan file or directory (recursively) with archive and special file
 	    support disabled (a full path is required).
 </LI>
-<LI><SPAN  CLASS="textbf">CONTSCAN file/directory</SPAN>
+<LI><B>CONTSCAN file/directory</B>
 <BR>
 Scan file or directory (recursively) with archive support
 	    enabled and don't stop the scanning when a virus is found.
 </LI>
-<LI><SPAN  CLASS="textbf">MULTISCAN file/directory</SPAN>
+<LI><B>MULTISCAN file/directory</B>
 <BR>
 Scan file in a standard way or scan directory (recursively) using
 	    multiple threads (to make the scanning faster on SMP machines).
 </LI>
-<LI><SPAN  CLASS="textbf">ALLMATCHSCAN file/directory</SPAN>
+<LI><B>ALLMATCHSCAN file/directory</B>
 <BR>
 ALLMATCHSCAN works just like SCAN except that it sets a mode
 	    where, after finding a virus within a file, continues scanning for
             additional viruses.
 </LI>
-<LI><SPAN  CLASS="textbf">INSTREAM</SPAN>
-<BR>	    <SPAN  CLASS="textit">It is mandatory to prefix this command with <SPAN  CLASS="textbf">n</SPAN> or
-	    <SPAN  CLASS="textbf">z</SPAN>.</SPAN>
+<LI><B>INSTREAM</B>
+<BR>	    <I>It is mandatory to prefix this command with <B>n</B> or
+	    <B>z</B>.</I>
 <BR>
 Scan a stream of data. The stream is sent to clamd in chunks,
 	    after INSTREAM, on the same socket on which the command
@@ -126,13 +125,13 @@ Scan a stream of data. The stream is sent to clamd in chunks,
 	    network byte order and <code>&lt;data&gt;</code> is the actual chunk. Streaming
 	    is terminated by sending a zero-length chunk. Note: do not exceed
 	    StreamMaxLength as defined in clamd.conf, otherwise clamd will
-	    reply with <SPAN  CLASS="textit">INSTREAM size limit exceeded</SPAN> and close the
+	    reply with <I>INSTREAM size limit exceeded</I> and close the
 	    connection.
 </LI>
-<LI><SPAN  CLASS="textbf">FILDES</SPAN>
-<BR>	    <SPAN  CLASS="textit">It is mandatory to newline terminate this command, or prefix
-	    with <SPAN  CLASS="textbf">n</SPAN> or <SPAN  CLASS="textbf">z</SPAN>. This command only works on UNIX
-	    domain sockets.</SPAN>
+<LI><B>FILDES</B>
+<BR>	    <I>It is mandatory to newline terminate this command, or prefix
+	    with <B>n</B> or <B>z</B>. This command only works on UNIX
+	    domain sockets.</I>
 <BR>
 Scan a file descriptor. After issuing a FILDES command a subsequent
 	    rfc2292/bsd4.4 style packet (with at least one dummy character) is
@@ -140,19 +139,19 @@ Scan a file descriptor. After issuing a FILDES command a subsequent
 	    ancillary data. Alternatively the file descriptor may be sent in
 	    the same packet, including the extra character.
 </LI>
-<LI><SPAN  CLASS="textbf">STATS</SPAN>
-<BR>	    <SPAN  CLASS="textit">It is mandatory to newline terminate this command, or prefix
-	    with <SPAN  CLASS="textbf">n</SPAN> or <SPAN  CLASS="textbf">z</SPAN>, it is recommended to only use the
-	    <SPAN  CLASS="textbf">z</SPAN> prefix.</SPAN>
+<LI><B>STATS</B>
+<BR>	    <I>It is mandatory to newline terminate this command, or prefix
+	    with <B>n</B> or <B>z</B>, it is recommended to only use the
+	    <B>z</B> prefix.</I>
 <BR>
 On this command clamd provides statistics about the scan queue,
 	    contents of scan queue, and memory usage. The exact reply format is
 	    subject to changes in future releases.
 </LI>
-<LI><SPAN  CLASS="textbf">IDSESSION, END</SPAN>
-<BR>	    <SPAN  CLASS="textit">It is mandatory to prefix this command with <SPAN  CLASS="textbf">n</SPAN> or
-	    <SPAN  CLASS="textbf">z</SPAN>, also all commands inside <SPAN  CLASS="textbf">IDSESSION</SPAN> must be
-	    prefixed.</SPAN>
+<LI><B>IDSESSION, END</B>
+<BR>	    <I>It is mandatory to prefix this command with <B>n</B> or
+	    <B>z</B>, also all commands inside <B>IDSESSION</B> must be
+	    prefixed.</I>
 <BR>
 Start/end a clamd session. Within a session multiple
 	    SCAN, INSTREAM, FILDES, VERSION, STATS commands can be sent on the
@@ -167,26 +166,26 @@ Start/end a clamd session. Within a session multiple
 	    way to implement a client that uses IDSESSION is with non-blocking
 	    sockets, and a select()/poll() loop: whenever send would block,
 	    sleep in select/poll until either you can write more data, or read
-	    more replies. <SPAN  CLASS="textit">Note that using non-blocking sockets without
+	    more replies. <I>Note that using non-blocking sockets without
 	    the select/poll loop and alternating recv()/send() doesn't comply
-	    with clamd's requirements.</SPAN> If clamd detects that a client has
+	    with clamd's requirements.</I> If clamd detects that a client has
 	    deadlocked, it will close the connection. Note that clamd may
 	    close an IDSESSION connection too if the client doesn't follow the
 	    protocol's requirements.
 </LI>
-<LI><SPAN  CLASS="textbf">STREAM</SPAN> (deprecated, use <SPAN  CLASS="textbf">INSTREAM</SPAN> instead)
+<LI><B>STREAM</B> (deprecated, use <B>INSTREAM</B> instead)
 <BR>
 Scan stream: clamd will return a new port number you should
 	    connect to and send data to scan.
     
 </LI>
 </UL>
-    It's recommended to prefix clamd commands with the letter <SPAN  CLASS="textbf">z</SPAN>
+    It's recommended to prefix clamd commands with the letter <B>z</B>
     (eg. zSCAN) to indicate that the command will be delimited by a NULL
     character and that clamd should continue reading command data until a NULL
     character is read. The null delimiter assures that the complete command
     and its entire argument will be processed as a single command. Alternatively
-    commands may be prefixed with the letter <SPAN  CLASS="textbf">n</SPAN> (e.g. nSCAN) to use
+    commands may be prefixed with the letter <B>n</B> (e.g. nSCAN) to use
     a newline character as the delimiter. Clamd replies will honour the
     requested terminator in turn. If clamd doesn't recognize the command, or
     the command doesn't follow the requirements specified below, it will reply
@@ -195,11 +194,11 @@ Scan stream: clamd will return a new port number you should
     Clamd can handle the following signals:
     
 <UL>
-<LI><SPAN  CLASS="textbf">SIGTERM</SPAN> - perform a clean exit
+<LI><B>SIGTERM</B> - perform a clean exit
 </LI>
-<LI><SPAN  CLASS="textbf">SIGHUP</SPAN> - reopen the log file
+<LI><B>SIGHUP</B> - reopen the log file
 </LI>
-<LI><SPAN  CLASS="textbf">SIGUSR2</SPAN> - reload the database
+<LI><B>SIGUSR2</B> - reload the database
     
 </LI>
 </UL>
@@ -209,8 +208,7 @@ Scan stream: clamd will return a new port number you should
     ready to accept connections and perform file scanning.
 
 <P>
-
-<DIV CLASS="navigation"><HR>
+<HR>
 <!--Navigation Panel-->
 <A NAME="tex2html595"
   HREF="node30.html">
@@ -232,10 +230,10 @@ Scan stream: clamd will return a new port number you should
 <B> Previous:</B> <A NAME="tex2html586"
   HREF="node28.html">Usage</A>
  &nbsp; <B>  <A NAME="tex2html594"
-  HREF="node1.html">Contents</A></B> </DIV>
+  HREF="node1.html">Contents</A></B> 
 <!--End of Navigation Panel-->
 <ADDRESS>
-Cisco 2014-07-07
+Cisco 2014-08-28
 </ADDRESS>
 </BODY>
 </HTML>
