@@ -119,6 +119,55 @@ int cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, lon
     return CL_SUCCESS;
 }
 
+static inline void lsig_sub_matched(const struct cli_matcher *root, struct cli_ac_data *mdata, uint32_t lsigid1, uint32_t lsigid2, uint32_t realoff, int partial)
+{
+	const struct cli_lsig_tdb *tdb = &root->ac_lsigtable[lsigid1]->tdb;
+
+    if(realoff != CLI_OFF_NONE) {
+	if(mdata->lsigsuboff_first[lsigid1][lsigid2] == CLI_OFF_NONE)
+	    mdata->lsigsuboff_first[lsigid1][lsigid2] = realoff;
+	if(mdata->lsigsuboff_last[lsigid1][lsigid2] != CLI_OFF_NONE && ((!partial && realoff <= mdata->lsigsuboff_last[lsigid1][lsigid2]) || (partial && realoff < mdata->lsigsuboff_last[lsigid1][lsigid2])))
+	    return;
+	mdata->lsigcnt[lsigid1][lsigid2]++;
+	if(mdata->lsigcnt[lsigid1][lsigid2] <= 1 || !tdb->macro_ptids || !tdb->macro_ptids[lsigid2])
+	    mdata->lsigsuboff_last[lsigid1][lsigid2] = realoff;
+    }
+
+    if (mdata->lsigcnt[lsigid1][lsigid2] > 1) {
+	/* Check that the previous match had a macro match following it at the 
+	 * correct distance. This check is only done after the 1st match.*/
+	const struct cli_ac_patt *macropt;
+	uint32_t id, last_macro_match, smin, smax, last_macroprev_match;
+	if (!tdb->macro_ptids)
+	    return;
+	id = tdb->macro_ptids[lsigid2];
+	if (!id)
+	    return;
+	macropt = root->ac_pattable[id];
+	smin = macropt->ch_mindist[0];
+	smax = macropt->ch_maxdist[0];
+	/* start of last macro match */
+	last_macro_match = mdata->macro_lastmatch[macropt->sigid];
+	/* start of previous lsig subsig match */
+	last_macroprev_match = mdata->lsigsuboff_last[lsigid1][lsigid2];
+	if (last_macro_match != CLI_OFF_NONE)
+	    cli_dbgmsg("Checking macro match: %u + (%u - %u) == %u\n",
+		       last_macroprev_match, smin, smax, last_macro_match);
+	if (last_macro_match == CLI_OFF_NONE ||
+	    last_macroprev_match + smin > last_macro_match ||
+	    last_macroprev_match + smax < last_macro_match) {
+	    cli_dbgmsg("Canceled false lsig macro match\n");
+	    /* Previous match was false - cancel it */
+	    mdata->lsigcnt[lsigid1][lsigid2]--;
+	    mdata->lsigsuboff_last[lsigid1][lsigid2] = realoff;
+	} else {
+	    /* mark the macro sig itself matched */
+	    mdata->lsigcnt[lsigid1][lsigid2+1]++;
+	    mdata->lsigsuboff_last[lsigid1][lsigid2+1] = last_macro_match;
+	}
+    }
+}
+
 int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct cli_matcher *root, struct cli_ac_data *mdata, cli_ctx *ctx)
 {
     struct cli_pcre_data **data = root->all_pcres, *pd;
@@ -137,8 +186,11 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
 
         cli_dbgmsg("cli_pcre_scanbuf: running regex /%s/ returns %d\n", pd->expression, rc);
         if (rc > 0) { /* matched at least once */
-            cli_dbgmsg("cli_pcre_scanbuf: assigning lsigcnt[%d][%d] to %d\n", refe->lsigid[0], refe->lsigid[1], rc);
-            (mdata->lsigcnt)[refe->lsigid[0]][refe->lsigid[1]] = rc;
+            cli_dbgmsg("cli_pcre_scanbuf: assigning lsigcnt[%d][%d] to %d, located @ %d\n",
+                       refe->lsigid[0], refe->lsigid[1], rc, ovector[0]);
+
+            lsig_sub_matched(root, mdata, refe->lsigid[0], refe->lsigid[1], ovector[0], 0);
+            //(mdata->lsigcnt)[refe->lsigid[0]][refe->lsigid[1]] = rc;
         }
         else if (rc ==0 || rc == PCRE_ERROR_NOMATCH) { /* no match */
             cli_dbgmsg("cli_pcre_scanbuf: no match\n");
