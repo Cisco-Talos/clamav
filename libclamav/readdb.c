@@ -109,9 +109,6 @@ char *cli_virname(char *virname, unsigned int official)
     return newname;
 }
 
-#if HAVE_PCRE
-#define PCRE_BYPASS "7374756c747a676574737265676578"
-#endif
 int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hexsig, uint16_t rtype, uint16_t type, const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options)
 {
 	struct cli_bm_patt *bm_new;
@@ -214,7 +211,6 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 
         /* normal trigger */
 	cli_dbgmsg("pcre regex detected: %s on trigger: %s\n", wild, trigger);
-
         exit(0);
 #else
         cli_errmsg("cli_parseadd(): cannot parse PCRE subsig ithout PCRE support\n");

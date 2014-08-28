@@ -36,6 +36,8 @@
 #include "mpool.h"
 #include "regex_pcre.h"
 
+#define PCRE_BYPASS "7374756c747a676574737265676578"
+
 struct cli_pcre_refentry {
     uint32_t lsigid[2];
     struct cli_pcre_refentry *next;
