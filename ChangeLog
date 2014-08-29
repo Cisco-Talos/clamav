@@ -4,8 +4,8 @@ Thu, 31 Jul 2014 19:11:22 EDT (swebb)
 
 Thu, Jul 31 11:50:23 EDT 2014 (swebb)
 ------------------------------------
-* bb#10731 - Allow to specify a group for the socket of which the user is
-not a member - patch submitted by Sebastian Andrzej Siewior
+* bb#10731 - Allow specification of a group for the milter socket of which
+the user is not a member - patch submitted by Sebastian Andrzej Siewior
 
 Fri, 25 Jul 2014 12:26:04 EDT (klin)
 ------------------------------------
