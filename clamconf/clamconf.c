@@ -200,7 +200,7 @@ static void help(void)
 {
     printf("\n");
     printf("           Clam AntiVirus: Configuration Tool %s\n", get_version());
-    printf("           By The ClamAV Team: http://www.clamav.net/team\n");
+    printf("           By The ClamAV Team: http://www.clamav.net/about.html#credits\n");
     printf("           (C) 2009 Sourcefire, Inc.\n\n");
 
     printf("    --help                 -h         Show help\n");
