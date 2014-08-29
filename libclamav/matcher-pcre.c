@@ -245,12 +245,13 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
 
     for (i = 0; i < root->pcre_metas; ++i) {
         pm = root->pcre_metatable[i];
+        pd = &(pm->pdata);
 
         /* check the evaluation of the trigger */
         if ((strcmp(pm->trigger, PCRE_BYPASS)) && (cli_ac_chklsig(pm->trigger, pm->trigger + strlen(pm->trigger), mdata->lsigcnt[pm->lsigid[0]], &evalcnt, &evalids, 0) != 1))
             continue;
 
-        cli_dbgmsg("cli_pcre_scanbuf: trigger %s running regex /%s/\n", pm->trigger, pd->expression);
+        cli_dbgmsg("cli_pcre_scanbuf: triggered %s; running regex /%s/\n", pm->trigger, pd->expression);
 
         rc = cli_pcre_match(pd, buffer, length, CLI_PCREMATCH_NOOVERRIDE, ovector, OVECCOUNT);
 
