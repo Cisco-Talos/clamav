@@ -12982,7 +12982,6 @@ Mon May  1 19:54:57 CEST 2006 (tk)
 ----------------------------------
   * freshclam/manager.c: fix possible buffer overflow
     Reported by Ulf Harnhammar <metaur*telia.com> and Peter <remllov_*gmx.de>
-    See http://www.clamav.net/security/0.88.2.html for details.
 
 Sun Apr 30 19:23:35 BST 2006 (njh)
 ----------------------------------
@@ -18609,8 +18608,7 @@ Tue Feb 10 17:05:31 GMT 2004 (njh)
 
 Tue Feb 10 14:38:35 GMT 2004 (njh)
 ----------------------------------
-  * contrib:	Removed mfc30d.dll. It can now be downloaded (if needed)
-	from http://www.clamav.net/w32/mfc30d.zip
+  * contrib:	Removed mfc30d.dll. 
 
 Tue Feb 10 14:35:07 CET 2004 (tk)
 ---------------------------------
