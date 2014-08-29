@@ -164,13 +164,13 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
     }
     if ((wild = strchr(hexsig, '/'))) {
 #if HAVE_PCRE
-        /* ^offset:content-match/regex/options$ */
+        /* ^offset:trigger-logic/regex/options$ */
 	char *trigger, *regex, *regex_end;
 	size_t tlen = wild-hexsig, rlen;
 
         /* check for trigger */
 	if (!tlen) {
-	    cli_dbgmsg("cli_parseadd(): cannot add pcre without content match trigger\n");
+	    cli_dbgmsg("cli_parseadd(): cannot add pcre without logical trigger\n");
 	    return CL_EMALFDB;
 	}
 
@@ -184,14 +184,25 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 	/* get the trigger statement */
 	trigger = cli_calloc(tlen+1, sizeof(char));
 	if (!trigger) {
-	    cli_errmsg("cli_parseadd(): cannot allocate memory\n");
+	    cli_errmsg("cli_parseadd(): cannot allocate memory for trigger string\n");
 	    return CL_EMEM;
 	}
 	strncpy(trigger, hexsig, tlen);
 	trigger[tlen] = '\0';
 
-        /* if trigger is PCRE_BYPASS, add to unconditionally run pcres */
-	if (!strncmp(trigger, PCRE_BYPASS, tlen)) {
+        /* get the regex expression */
+        regex = cli_calloc(rlen+1, sizeof(char));
+        if (!regex) {
+            cli_errmsg("cli_parseadd(): cannot allocate memory for regex expression\n");
+            return CL_EMEM;
+        }
+        strncpy(regex, hexsig+tlen+1, rlen);
+        regex[rlen] = '\0';
+
+        /* TODO: allow subsigs to be validated during the subsig counting phase; validation of trigger occurs in cli_pcre_addpatt */
+
+        /* if trigger is PCRE_BYPASS, add to unconditionally run pcres (move to cli_pcre_addpatt) */
+        /*	if (!strncmp(trigger, PCRE_BYPASS, tlen)) {
             cli_dbgmsg("unconditional pcre regex detected: %s\n", wild);
             free(trigger);
 
@@ -208,12 +219,16 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 
             return ret;
 	}
-
+        */
         /* normal trigger */
 	cli_dbgmsg("pcre regex detected: %s on trigger: %s\n", wild, trigger);
-        exit(0);
+        ret = cli_pcre_addpatt(root, trigger, regex, lsigid, 0);
+
+        free(trigger);
+        free(regex);
+        return CL_SUCCESS;
 #else
-        cli_errmsg("cli_parseadd(): cannot parse PCRE subsig ithout PCRE support\n");
+        cli_errmsg("cli_parseadd(): cannot parse PCRE subsig without PCRE support\n");
         return CL_EPARSE;
 #endif
     }
@@ -1321,7 +1336,7 @@ static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsig
     if(engine->cb_sigload && engine->cb_sigload("ldb", virname, ~options & CL_DB_OFFICIAL, engine->cb_sigload_ctx)) {
 	cli_dbgmsg("cli_loadldb: skipping %s due to callback\n", virname);
 	(*sigs)--;
-	return CL_SUCCESS;
+        return CL_SUCCESS;
     }
 
     subsigs = cli_ac_chklsig(logic, logic + strlen(logic), NULL, NULL, NULL, 1);
@@ -3363,7 +3378,7 @@ int cl_engine_free(struct cl_engine *engine)
 		    mpool_free(engine->mempool, root->ac_lsigtable);
 		}
 #if HAVE_PCRE
-                cli_pcre_ucondfree(root);
+                cli_pcre_freetable(root);
 #endif /* HAVE_PCRE */
 		mpool_free(engine->mempool, root);
 	    }
@@ -3490,10 +3505,10 @@ int cl_engine_compile(struct cl_engine *engine)
 	    if((ret = cli_ac_buildtrie(root)))
 		return ret;
 #if HAVE_PCRE
-            if((ret = cli_pcre_ucondbuild(root, engine->pcre_match_limit, engine->pcre_recmatch_limit, 0)))
+            if((ret = cli_pcre_build(root, engine->pcre_match_limit, engine->pcre_recmatch_limit, 0)))
                 return ret;
 
-	    cli_dbgmsg("Matcher[%u]: %s: AC sigs: %u (reloff: %u, absoff: %u) BM sigs: %u (reloff: %u, absoff: %u) maxpatlen %u PCREs: %u %s\n", i, cli_mtargets[i].name, root->ac_patterns, root->ac_reloff_num, root->ac_absoff_num, root->bm_patterns, root->bm_reloff_num, root->bm_absoff_num, root->maxpatlen, root->num_pcres, root->ac_only ? "(ac_only mode)" : "");
+	    cli_dbgmsg("Matcher[%u]: %s: AC sigs: %u (reloff: %u, absoff: %u) BM sigs: %u (reloff: %u, absoff: %u) maxpatlen %u PCREs: %u %s\n", i, cli_mtargets[i].name, root->ac_patterns, root->ac_reloff_num, root->ac_absoff_num, root->bm_patterns, root->bm_reloff_num, root->bm_absoff_num, root->maxpatlen, root->pcre_metas, root->ac_only ? "(ac_only mode)" : "");
 #else
 	    cli_dbgmsg("Matcher[%u]: %s: AC sigs: %u (reloff: %u, absoff: %u) BM sigs: %u (reloff: %u, absoff: %u) maxpatlen %u PCREs: 0 (disabled) %s\n", i, cli_mtargets[i].name, root->ac_patterns, root->ac_reloff_num, root->ac_absoff_num, root->bm_patterns, root->bm_reloff_num, root->bm_absoff_num, root->maxpatlen, root->ac_only ? "(ac_only mode)" : "");
 #endif
