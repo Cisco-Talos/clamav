@@ -201,7 +201,7 @@ DatabaseMirror database.clamav.net
 # the statistics of this clamd installation by logging into
 # http://www.stats.clamav.net with the same credentials you used to
 # generate the HostID. For more information refer to:
-# http://www.clamav.net/support/faq/faq-cctts/
+# http://www.clamav.net/documentation.html#cctts 
 # This feature requires SubmitDetectionStats to be enabled.
 # Default: disabled
 #DetectionStatsHostID unique-id
@@ -216,7 +216,7 @@ DatabaseMirror database.clamav.net
 # Freshclam uses the ClamAV's mirror infrastructure to distribute the
 # database and its updates but all the contents are provided under Google's
 # terms of use. See http://www.google.com/transparencyreport/safebrowsing
-# and https://github.com/vrtadmin/clamav-faq/blob/master/faq/faq-safebrowsing.md
+# and http://www.clamav.net/documentation.html#safebrowsing 
 # for more information.
 # Default: disabled
 #SafeBrowsing yes
@@ -227,8 +227,7 @@ DatabaseMirror database.clamav.net
 #Bytecode yes
 
 # Download an additional 3rd party signature database distributed through
-# the ClamAV mirrors. Here you can find a list of available databases:
-# http://www.clamav.net/download/cvd/3rdparty
+# the ClamAV mirrors. 
 # This option can be used multiple times.
 #ExtraDatabase dbname1
 #ExtraDatabase dbname2
