@@ -352,6 +352,8 @@ int unrar_open(int fd, const char *dirname, unrar_state_t *state)
 		    unpack_data->dest_unp_size = comment_header->unpack_size;
 		    unpack_data->pack_size = comment_header->head_size - SIZEOF_COMMHEAD;
                     retval = rar_unpack(fd, comment_header->unpack_ver, FALSE, unpack_data);
+		    if (!retval)
+			    unrar_dbgmsg("UNRAR: failed to unpack comment\n");
 		    unpack_free_data(unpack_data);
 		}
 		close(ofd);
