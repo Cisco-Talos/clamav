@@ -1,4 +1,4 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 
 <!--Converted with LaTeX2HTML 2008 (1.71)
 original version by:  Nikos Drakos, CBLU, University of Leeds
@@ -25,8 +25,7 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 </HEAD>
 
 <BODY >
-
-<DIV CLASS="navigation"><!--Navigation Panel-->
+<!--Navigation Panel-->
 <A NAME="tex2html971"
   HREF="node58.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
@@ -49,7 +48,7 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
  &nbsp; <B>  <A NAME="tex2html970"
   HREF="node1.html">Contents</A></B> 
 <BR>
-<BR></DIV>
+<BR>
 <!--End of Navigation Panel-->
 
 <H3><A NAME="SECTION00073800000000000000">
@@ -74,94 +73,94 @@ Data scan functions</A>
     the following flags (which can be combined using bit operators):
     
 <UL>
-<LI><SPAN  CLASS="textbf">CL_SCAN_STDOPT</SPAN>
+<LI><B>CL_SCAN_STDOPT</B>
 <BR>
 This is an alias for a recommended set of scan options. You
 	      should use it to make your software ready for new features
 	      in the future versions of libclamav.
 </LI>
-<LI><SPAN  CLASS="textbf">CL_SCAN_RAW</SPAN>
+<LI><B>CL_SCAN_RAW</B>
 <BR>
 Use it alone if you want to disable support for special files.
 </LI>
-<LI><SPAN  CLASS="textbf">CL_SCAN_ARCHIVE</SPAN>
+<LI><B>CL_SCAN_ARCHIVE</B>
 <BR>
 This flag enables transparent scanning of various archive formats.
 </LI>
-<LI><SPAN  CLASS="textbf">CL_SCAN_BLOCKENCRYPTED</SPAN>
+<LI><B>CL_SCAN_BLOCKENCRYPTED</B>
 <BR>
 With this flag the library will mark encrypted archives as viruses
 	      (Encrypted.Zip, Encrypted.RAR).
 </LI>
-<LI><SPAN  CLASS="textbf">CL_SCAN_MAIL</SPAN>
+<LI><B>CL_SCAN_MAIL</B>
 <BR>
 Enable support for mail files.
 </LI>
-<LI><SPAN  CLASS="textbf">CL_SCAN_OLE2</SPAN>
+<LI><B>CL_SCAN_OLE2</B>
 <BR>
 Enables support for OLE2 containers (used by MS Office and .msi
 	      files).
 </LI>
-<LI><SPAN  CLASS="textbf">CL_SCAN_PDF</SPAN>
+<LI><B>CL_SCAN_PDF</B>
 <BR>
 Enables scanning within PDF files.
 </LI>
-<LI><SPAN  CLASS="textbf">CL_SCAN_SWF</SPAN>
+<LI><B>CL_SCAN_SWF</B>
 <BR>
 Enables scanning within SWF files, notably compressed SWF.
 </LI>
-<LI><SPAN  CLASS="textbf">CL_SCAN_PE</SPAN>
+<LI><B>CL_SCAN_PE</B>
 <BR>
 This flag enables deep scanning of Portable Executable files and
 	      allows libclamav to unpack executables compressed with run-time
 	      unpackers.
 </LI>
-<LI><SPAN  CLASS="textbf">CL_SCAN_ELF</SPAN>
+<LI><B>CL_SCAN_ELF</B>
 <BR>
 Enable support for ELF files.
 </LI>
-<LI><SPAN  CLASS="textbf">CL_SCAN_BLOCKBROKEN</SPAN>
+<LI><B>CL_SCAN_BLOCKBROKEN</B>
 <BR>
 libclamav will try to detect broken executables and mark them as
 	      Broken.Executable.
 </LI>
-<LI><SPAN  CLASS="textbf">CL_SCAN_HTML</SPAN>
+<LI><B>CL_SCAN_HTML</B>
 <BR>
 This flag enables HTML normalisation (including ScrEnc
 	      decryption).
 </LI>
-<LI><SPAN  CLASS="textbf">CL_SCAN_ALGORITHMIC</SPAN>
+<LI><B>CL_SCAN_ALGORITHMIC</B>
 <BR>
 Enable algorithmic detection of viruses.
 </LI>
-<LI><SPAN  CLASS="textbf">CL_SCAN_PHISHING_BLOCKSSL</SPAN>
+<LI><B>CL_SCAN_PHISHING_BLOCKSSL</B>
 <BR>
 Phishing module: always block SSL mismatches in URLs.
 </LI>
-<LI><SPAN  CLASS="textbf">CL_SCAN_PHISHING_BLOCKCLOAK</SPAN>
+<LI><B>CL_SCAN_PHISHING_BLOCKCLOAK</B>
 <BR>
 Phishing module: always block cloaked URLs.
 </LI>
-<LI><SPAN  CLASS="textbf">CL_SCAN_STRUCTURED</SPAN>
+<LI><B>CL_SCAN_STRUCTURED</B>
 <BR>
 Enable the DLP module which scans for credit card and SSN
 	      numbers.
 </LI>
-<LI><SPAN  CLASS="textbf">CL_SCAN_STRUCTURED_SSN_NORMAL</SPAN>
+<LI><B>CL_SCAN_STRUCTURED_SSN_NORMAL</B>
 <BR>
 Search for SSNs formatted as xx-yy-zzzz.
 </LI>
-<LI><SPAN  CLASS="textbf">CL_SCAN_STRUCTURED_SSN_STRIPPED</SPAN>
+<LI><B>CL_SCAN_STRUCTURED_SSN_STRIPPED</B>
 <BR>
 Search for SSNs formatted as xxyyzzzz.
 </LI>
-<LI><SPAN  CLASS="textbf">CL_SCAN_PARTIAL_MESSAGE</SPAN>
+<LI><B>CL_SCAN_PARTIAL_MESSAGE</B>
 <BR>
 Scan RFC1341 messages split over many emails. You will need to
 	      periodically clean up <code>$TemporaryDirectory/clamav-partial</code>
 	      directory.
 </LI>
-<LI><SPAN  CLASS="textbf">CL_SCAN_HEURISTIC_PRECEDENCE</SPAN>
+<LI><B>CL_SCAN_HEURISTIC_PRECEDENCE</B>
 <BR>
 Allow heuristic match to take precedence. When enabled, if
 	      a heuristic scan (such as phishingScan) detects a possible
@@ -171,7 +170,7 @@ Allow heuristic match to take precedence. When enabled, if
 	      contains both a heuristically detected virus/phishing, and a real
 	      malware, the real malware will be reported.
 </LI>
-<LI><SPAN  CLASS="textbf">CL_SCAN_BLOCKMACROS</SPAN>
+<LI><B>CL_SCAN_BLOCKMACROS</B>
 <BR>
 OLE2 containers, which contain VBA macros will be marked infected
 	      (Heuristics.OLE2.ContainsMacros).
@@ -195,8 +194,7 @@ OLE2 containers, which contain VBA macros will be marked infected
 </PRE>
 
 <P>
-
-<DIV CLASS="navigation"><HR>
+<HR>
 <!--Navigation Panel-->
 <A NAME="tex2html971"
   HREF="node58.html">
@@ -218,10 +216,10 @@ OLE2 containers, which contain VBA macros will be marked infected
 <B> Previous:</B> <A NAME="tex2html962"
   HREF="node56.html">Database checks</A>
  &nbsp; <B>  <A NAME="tex2html970"
-  HREF="node1.html">Contents</A></B> </DIV>
+  HREF="node1.html">Contents</A></B> 
 <!--End of Navigation Panel-->
 <ADDRESS>
-Cisco 2014-07-07
+Cisco 2014-08-28
 </ADDRESS>
 </BODY>
 </HTML>
