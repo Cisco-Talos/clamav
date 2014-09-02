@@ -165,8 +165,8 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
     if ((wild = strchr(hexsig, '/'))) {
 #if HAVE_PCRE
         /* ^offset:trigger-logic/regex/options$ */
-	char *trigger, *regex, *regex_end;
-	size_t tlen = wild-hexsig, rlen;
+	char *trigger, *regex, *regex_end, *cflags;
+	size_t tlen = wild-hexsig, rlen, clen;
 
         /* check for trigger */
 	if (!tlen) {
@@ -174,12 +174,13 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 	    return CL_EMALFDB;
 	}
 
-        /* locate end of regex for options start, TODO: options */
+        /* locate end of regex for options start, locate options length */
         if ((regex_end = strchr(wild+1, '/')) == NULL) {
             cli_errmsg("cli_parseadd(): missing terminator /\n");
             return CL_EMALFDB;
         }
         rlen = regex_end-wild-1;
+        clen = hexlen-tlen-rlen-2; /* 2 from regex boundaries '/' */
 
 	/* get the trigger statement */
 	trigger = cli_calloc(tlen+1, sizeof(char));
@@ -198,6 +199,22 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
         }
         strncpy(regex, hexsig+tlen+1, rlen);
         regex[rlen] = '\0';
+
+        /* get the compile flags */
+        if (clen) {
+            cflags = cli_calloc(clen+1, sizeof(char));
+            if (!cflags) {
+                cli_errmsg("cli_parseadd(): cannot allocate memory for compile flags\n");
+                return CL_EMEM;
+            }
+            strncpy(cflags, hexsig+tlen+rlen+2, clen);
+            cflags[clen] = '\0';
+        }
+        else {
+            cflags = NULL;
+        }
+
+        cli_dbgmsg("trigger %s; regex %s; cflags %s\n", trigger, regex, cflags);
 
         /* TODO: allow subsigs to be validated during the subsig counting phase; validation of trigger occurs in cli_pcre_addpatt */
 
@@ -221,12 +238,14 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 	}
         */
         /* normal trigger */
-	cli_dbgmsg("pcre regex detected: %s on trigger: %s\n", wild, trigger);
-        ret = cli_pcre_addpatt(root, trigger, regex, lsigid, 0);
+	cli_dbgmsg("pcre regex detected: %s on trigger: %s with cflags: %s\n", regex, trigger, cflags);
+        ret = cli_pcre_addpatt(root, trigger, regex, cflags, lsigid);
 
         free(trigger);
         free(regex);
-        return CL_SUCCESS;
+        if (cflags)
+            free(cflags);
+        return ret;
 #else
         cli_errmsg("cli_parseadd(): cannot parse PCRE subsig without PCRE support\n");
         return CL_EPARSE;
@@ -3505,7 +3524,7 @@ int cl_engine_compile(struct cl_engine *engine)
 	    if((ret = cli_ac_buildtrie(root)))
 		return ret;
 #if HAVE_PCRE
-            if((ret = cli_pcre_build(root, engine->pcre_match_limit, engine->pcre_recmatch_limit, 0)))
+            if((ret = cli_pcre_build(root, engine->pcre_match_limit, engine->pcre_recmatch_limit)))
                 return ret;
 
 	    cli_dbgmsg("Matcher[%u]: %s: AC sigs: %u (reloff: %u, absoff: %u) BM sigs: %u (reloff: %u, absoff: %u) maxpatlen %u PCREs: %u %s\n", i, cli_mtargets[i].name, root->ac_patterns, root->ac_reloff_num, root->ac_absoff_num, root->bm_patterns, root->bm_reloff_num, root->bm_absoff_num, root->maxpatlen, root->pcre_metas, root->ac_only ? "(ac_only mode)" : "");

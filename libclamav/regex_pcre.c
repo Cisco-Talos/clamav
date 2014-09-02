@@ -53,7 +53,38 @@ int cli_pcre_parse(struct cli_pcre_data *pd, const char *pattern)
     return CL_SUCCESS;
 }
 
-int cli_pcre_compile(struct cli_pcre_data *pd, long long unsigned match_limit, long long unsigned match_limit_recursion, unsigned int options)
+int cli_pcre_addoptions(struct cli_pcre_data *pd, const char **opt, int errout)
+{
+    if (!pd || !opt || !(*opt))
+        return CL_ENULLARG;
+
+    while (**opt != '\0') {
+        switch(**opt) {
+        case 'i':  pd->options |= PCRE_CASELESS;            break;
+        case 's':  pd->options |= PCRE_DOTALL;              break;
+        case 'm':  pd->options |= PCRE_MULTILINE;           break;
+        case 'x':  pd->options |= PCRE_EXTENDED;            break;
+
+            /* these are pcre specific... don't work with perl */
+        case 'A':  pd->options |= PCRE_ANCHORED;            break;
+        case 'E':  pd->options |= PCRE_DOLLAR_ENDONLY;      break;
+        case 'G':  pd->options |= PCRE_UNGREEDY;            break;
+
+        default:
+            if (errout) {
+                cli_errmsg("cli_pcre_addoptions: unknown/extra pcre option encountered %c\n", **opt);
+                return CL_EMALFDB;
+            }
+            else
+                return CL_EPARSE; /* passed to caller to handle */
+        }
+        (*opt)++;
+    }
+
+    return CL_SUCCESS;
+}
+
+int cli_pcre_compile(struct cli_pcre_data *pd, long long unsigned match_limit, long long unsigned match_limit_recursion, unsigned int options, int opt_override)
 {
     const char *error;
     int erroffset;
@@ -63,8 +94,11 @@ int cli_pcre_compile(struct cli_pcre_data *pd, long long unsigned match_limit, l
         return CL_ENULLARG;
     }
 
-    /* compile the pcre regex last arg is charset */
-    pd->re = pcre_compile(pd->expression, pd->options, &error, &erroffset, NULL); /* pd->re handled by libpcre -> call pcre_free() */
+    /* compile the pcre regex last arg is charset, allow for options override */
+    if (opt_override)
+        pd->re = pcre_compile(pd->expression, options, &error, &erroffset, NULL); /* pd->re handled by libpcre -> call pcre_free() -> calls free() */
+    else
+        pd->re = pcre_compile(pd->expression, pd->options, &error, &erroffset, NULL); /* pd->re handled by libpcre -> call pcre_free() -> calls free() */
     if (pd->re == NULL) {
         cli_errmsg("cli_pcre_parse: PCRE compilation failed at offset %d: %s\n", erroffset, error);
         return CL_EPARSE; /* TODO - change ERRORCODE */
@@ -81,7 +115,7 @@ int cli_pcre_compile(struct cli_pcre_data *pd, long long unsigned match_limit, l
         }
     }
 
-    /* set the match limits -> TODO: engine options; hard coded for now */
+    /* set the match limits */
     if (pd->ex->flags & PCRE_EXTRA_MATCH_LIMIT) {
         pd->ex->match_limit = match_limit;
     }
@@ -90,7 +124,7 @@ int cli_pcre_compile(struct cli_pcre_data *pd, long long unsigned match_limit, l
         pd->ex->match_limit = match_limit;
     }
 
-    /* set the recursion match limits -> TODO: engine options; hard coded for now */
+    /* set the recursion match limits */
 #ifdef PCRE_EXTRA_MATCH_LIMIT_RECURSION
     if (pd->ex->flags & PCRE_EXTRA_MATCH_LIMIT_RECURSION) {
         pd->ex->match_limit_recursion = match_limit_recursion;
@@ -106,7 +140,7 @@ int cli_pcre_compile(struct cli_pcre_data *pd, long long unsigned match_limit, l
 }
 
 /* TODO: fix this function */
-int cli_pcre_match(struct cli_pcre_data *pd, const unsigned char *buffer, uint32_t buflen, int override_offset, int *ovector, size_t ovlen)
+int cli_pcre_match(struct cli_pcre_data *pd, const unsigned char *buffer, uint32_t buflen, int override_offset, int options, int *ovector, size_t ovlen)
 {
     int rc, startoffset;
 
@@ -119,7 +153,7 @@ int cli_pcre_match(struct cli_pcre_data *pd, const unsigned char *buffer, uint32
     if (override_offset >= 0)
         startoffset = override_offset;
 
-    rc = pcre_exec(pd->re, pd->ex, buffer, buflen, startoffset, pd->options, ovector, ovlen);
+    rc = pcre_exec(pd->re, pd->ex, buffer, buflen, startoffset, options, ovector, ovlen);
 
     return rc;
 }

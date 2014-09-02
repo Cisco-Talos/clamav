@@ -34,11 +34,12 @@
 #include "mpool.h"
 #include "regex_pcre.h"
 
-int cli_pcre_addpatt(struct cli_matcher *root, const char *trigger, const char *pattern, const uint32_t *lsigid, int options)
+int cli_pcre_addpatt(struct cli_matcher *root, const char *trigger, const char *pattern, const char *cflags, const uint32_t *lsigid)
 {
     struct cli_pcre_meta **newmetatable = NULL, *pm = NULL;
     uint32_t pcre_count;
-    int ret = CL_SUCCESS;
+    const char *opt;
+    int ret = CL_SUCCESS, options = 0;
 
     if (!root || !trigger || !pattern) {
         cli_errmsg("pcre_addpatt: NULL root or NULL trigger or NULL pattern\n");
@@ -73,7 +74,39 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *trigger, const char *
     pm->lsigid[0] = lsigid[0];
     pm->lsigid[1] = lsigid[1];
 
-    /* add pcre data and refentry to root after reallocation */
+    /* parse and add options, also totally not from snort */
+    if (cflags) {
+        cli_dbgmsg("cli_pcre_addpatt: parsing pcre compile flags: %s\n", cflags);
+        opt = cflags;
+
+        /* cli_pcre_addoptions handles pcre specific options */
+        while (cli_pcre_addoptions(&(pm->pdata), &opt, 0) != CL_SUCCESS) {
+            /* handle matcher specific options here */
+            switch (*opt) {
+                /* no matcher-specific options atm */
+            case 'g':  cli_dbgmsg("cli_pcre_addpatt: added option 'g' for finding all-matchs\n");            break;
+            default:
+                cli_errmsg("cli_pcre_addpatt: unknown/extra pcre option encountered %c\n", *opt);
+                cli_pcre_freemeta(pm);
+                mpool_free(root->mempool, pm);
+                return CL_EMALFDB;
+            }
+            opt++;
+        }
+
+        cli_dbgmsg("PCRE_CASELESS       %08x\n", PCRE_CASELESS);
+        cli_dbgmsg("PCRE_DOTALL         %08x\n", PCRE_DOTALL);
+        cli_dbgmsg("PCRE_MULTILINE      %08x\n", PCRE_MULTILINE);
+        cli_dbgmsg("PCRE_EXTENDED       %08x\n", PCRE_EXTENDED);
+
+        cli_dbgmsg("PCRE_ANCHORED       %08x\n", PCRE_ANCHORED);
+        cli_dbgmsg("PCRE_DOLLAR_ENDONLY %08x\n", PCRE_DOLLAR_ENDONLY);
+        cli_dbgmsg("PCRE_UNGREEDY       %08x\n", PCRE_UNGREEDY);
+
+        cli_dbgmsg("PCRE_OPTIONS        %08x\n", pm->pdata.options);
+    }
+
+    /* add pcre data to root after reallocation */
     pcre_count = root->pcre_metas+1;
     newmetatable = (struct cli_pcre_meta **)mpool_realloc(root->mempool, root->pcre_metatable,
                                          pcre_count * sizeof(struct cli_pcre_meta *));
@@ -159,7 +192,7 @@ int cli_pcre_adducondpatt(struct cli_matcher *root, const char *pattern, const u
     return CL_SUCCESS;
 }
 */
-int cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, long long unsigned recmatch_limit, int options)
+int cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, long long unsigned recmatch_limit)
 {
     unsigned int i;
     int ret;
@@ -171,11 +204,11 @@ int cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, lon
         if (!pm) {
             cli_errmsg("cli_pcre_build: metadata for pcre %d is missing\n", i);
             return CL_ENULLARG;
-        }    
+        }
 
         cli_dbgmsg("cli_pcre_build: Compiling regex: %s\n", pm->pdata.expression);
-        /* parse the regex - TODO: set start_offset (at the addpatt phase?) */
-        if ((ret = cli_pcre_compile(&(pm->pdata), match_limit, recmatch_limit, options)) != CL_SUCCESS) {
+        /* parse the regex - TODO: set start_offset (at the addpatt phase?), also no options override  */
+        if ((ret = cli_pcre_compile(&(pm->pdata), match_limit, recmatch_limit, 0, 0)) != CL_SUCCESS) {
             cli_errmsg("cli_pcre_build: failed to parse pcre regex\n");
             return ret;
         }
@@ -248,12 +281,13 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
         pd = &(pm->pdata);
 
         /* check the evaluation of the trigger */
+        cli_dbgmsg("cli_pcre_scanbuf: checking %s; running regex /%s/\n", pm->trigger, pd->expression);
         if ((strcmp(pm->trigger, PCRE_BYPASS)) && (cli_ac_chklsig(pm->trigger, pm->trigger + strlen(pm->trigger), mdata->lsigcnt[pm->lsigid[0]], &evalcnt, &evalids, 0) != 1))
             continue;
 
         cli_dbgmsg("cli_pcre_scanbuf: triggered %s; running regex /%s/\n", pm->trigger, pd->expression);
 
-        rc = cli_pcre_match(pd, buffer, length, CLI_PCREMATCH_NOOVERRIDE, ovector, OVECCOUNT);
+        rc = cli_pcre_match(pd, buffer, length, CLI_PCREMATCH_NOOVERRIDE, 0, ovector, OVECCOUNT);
 
         cli_dbgmsg("cli_pcre_scanbuf: running regex /%s/ returns %d\n", pd->expression, rc);
         if (rc > 0) { /* matched at least once */
@@ -289,7 +323,7 @@ int cli_pcre_ucondscanbuf(const unsigned char *buffer, uint32_t length, const st
 
         cli_dbgmsg("cli_pcre_ucondscanbuf: running regex /%s/\n", pd->expression);
 
-        rc = cli_pcre_match(pd, buffer, length, CLI_PCREMATCH_NOOVERRIDE, ovector, OVECCOUNT);
+        rc = cli_pcre_match(pd, buffer, length, CLI_PCREMATCH_NOOVERRIDE, 0, ovector, OVECCOUNT);
 
         cli_dbgmsg("cli_pcre_ucondscanbuf: running regex /%s/ returns %d\n", pd->expression, rc);
         if (rc > 0) { /* matched at least once */

@@ -46,8 +46,8 @@ struct cli_pcre_meta {
 };
 
 /* figure out where to handle the pcre options: matcher likes addpatt, but it's currently also in build */
-int cli_pcre_addpatt(struct cli_matcher *root, const char *trigger,  const char *pattern, const uint32_t *lsigid, int options);
-int cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, long long unsigned recmatch_limit, int options);
+int cli_pcre_addpatt(struct cli_matcher *root, const char *trigger,  const char *pattern, const char *cflags, const uint32_t *lsigid);
+int cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, long long unsigned recmatch_limit);
 int cli_pcre_ucondscanbuf(const unsigned char *buffer, uint32_t length, const struct cli_matcher *root, struct cli_ac_data *mdata, cli_ctx *ctx);
 void cli_pcre_freemeta(struct cli_pcre_meta *pm);
 void cli_pcre_freetable(struct cli_matcher *root);
