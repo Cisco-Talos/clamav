@@ -254,8 +254,9 @@ int unrar_open(int fd, const char *dirname, unrar_state_t *state)
 	int ofd, retval;
 	char filename[1024];
 	unpack_data_t *unpack_data;
-	unrar_main_header_t *main_hdr;
+	unrar_main_header_t *main_hdr = NULL;
 	off_t offset;
+	int ret = 0;
 
 
     if(!state)
@@ -274,34 +275,29 @@ int unrar_open(int fd, const char *dirname, unrar_state_t *state)
     unrar_dbgmsg("UNRAR: Head Size: %.4x\n", main_hdr->head_size);
 
     if(main_hdr->flags & MHD_PASSWORD) {
-	free(main_hdr);
-	return UNRAR_PASSWD;
+	ret = UNRAR_PASSWD;
+	goto err_mhdr;
     }
 
     snprintf(filename,1024,"%s"PATHSEP"comments", dirname);
     if(mkdir(filename,0700)) {
 	unrar_dbgmsg("UNRAR: Unable to create comment temporary directory\n");
-	free(main_hdr);
-	return UNRAR_ERR;
+	goto err_mhdr;
     }
     state->comment_dir = strdup(filename);
     if(!state->comment_dir) {
-	free(main_hdr);
-	return UNRAR_EMEM;
+	ret = UNRAR_EMEM;
+	goto err_mhdr;
     }
 
-    if(main_hdr->head_size < SIZEOF_NEWMHD) {
-	free(main_hdr);
-	free(state->comment_dir);
-	return UNRAR_ERR;
-    }
+    if(main_hdr->head_size < SIZEOF_NEWMHD)
+	goto err_cmt_dir;
 
     unpack_data = (unpack_data_t *) calloc(1, sizeof(unpack_data_t));
     if(!unpack_data) {
-	free(main_hdr);
-	free(state->comment_dir);
 	unrar_dbgmsg("UNRAR: malloc failed for unpack_data\n");
-	return UNRAR_EMEM;
+	ret = UNRAR_EMEM;
+	goto err_cmt_dir;
     }
     unpack_data->rarvm_data.mem = NULL;
     unpack_data->old_filter_lengths = NULL;
@@ -318,10 +314,7 @@ int unrar_open(int fd, const char *dirname, unrar_state_t *state)
 	offset = lseek(fd, 0, SEEK_CUR);
         if (offset == -1) {
             unrar_dbgmsg("UNRAR: seek: lseek() call failed in unrar_open\n");
-            free(main_hdr);
-            free(state->comment_dir);
-            free(unpack_data);
-            return UNRAR_ERR;
+	    goto err_unpack_data;
         }
 	unrar_dbgmsg("UNRAR: Offset: %x\n", offset);
 	comment_header = read_header(fd, COMM_HEAD);
@@ -336,13 +329,7 @@ int unrar_open(int fd, const char *dirname, unrar_state_t *state)
 	    if(ofd < 0) {
 		unrar_dbgmsg("UNRAR: ERROR: Failed to open output file\n");
 		free(comment_header);
-		free(main_hdr);
-		ppm_destructor(&unpack_data->ppm_data);
-		rar_init_filters(unpack_data);
-		unpack_free_data(unpack_data);
-		free(unpack_data);
-		free(state->comment_dir);
-		return UNRAR_ERR;
+		goto err_unpack_data;
 	    } else {
 		if(comment_header->method == 0x30) {
 		    unrar_dbgmsg("UNRAR: Copying stored comment (not packed)\n");
@@ -362,26 +349,13 @@ int unrar_open(int fd, const char *dirname, unrar_state_t *state)
 	}
         if (lseek(fd, offset, SEEK_SET) == -1) {
             unrar_dbgmsg("UNRAR: seek: call to lseek() failed in unrar_open: %ld\n", offset);
-            free(main_hdr);
-            ppm_destructor(&unpack_data->ppm_data);
-            rar_init_filters(unpack_data);
-            unpack_free_data(unpack_data);
-            free(unpack_data);
-            free(state->comment_dir);
-            return UNRAR_ERR;
+	    goto err_unpack_data;
         }
     }
 
     if(main_hdr->head_size > SIZEOF_NEWMHD) {
-	if(!lseek(fd, main_hdr->head_size - SIZEOF_NEWMHD, SEEK_CUR)) {
-	    free(main_hdr);
-	    ppm_destructor(&unpack_data->ppm_data);
-	    rar_init_filters(unpack_data);
-	    unpack_free_data(unpack_data);
-	    free(unpack_data);
-	    free(state->comment_dir);
-	    return UNRAR_ERR;
-	}
+	if (!lseek(fd, main_hdr->head_size - SIZEOF_NEWMHD, SEEK_CUR))
+	    goto err_unpack_data;
     }
 
     state->unpack_data = unpack_data;
@@ -391,6 +365,19 @@ int unrar_open(int fd, const char *dirname, unrar_state_t *state)
     state->fd = fd;
 
     return UNRAR_OK;
+
+err_unpack_data:
+    ppm_destructor(&unpack_data->ppm_data);
+    rar_init_filters(unpack_data);
+    unpack_free_data(unpack_data);
+    free(unpack_data);
+err_cmt_dir:
+    free(state->comment_dir);
+err_mhdr:
+    free(main_hdr);
+    if (!ret)
+	   return UNRAR_ERR;
+    return ret;
 }
 
 int unrar_extract_next_prepare(unrar_state_t *state, const char *dirname)
