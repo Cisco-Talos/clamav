@@ -56,6 +56,8 @@ int main(int argc, char **argv) {
     mode_t umsk;
     int ret;
 
+    cl_initialize_crypto();
+
     memset(&descr, 0, sizeof(struct smfiDesc));
     descr.xxfi_name = "ClamAV";			/* filter name */
     descr.xxfi_version = SMFI_VERSION;		/* milter version */
