@@ -216,8 +216,6 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 
         cli_dbgmsg("trigger %s; regex %s; cflags %s\n", trigger, regex, cflags);
 
-        /* TODO: validation of trigger occurs in cli_pcre_addpatt */
-
         /* normal trigger */
 	cli_dbgmsg("pcre regex detected: %s on trigger: %s with cflags: %s\n", regex, trigger, cflags);
         ret = cli_pcre_addpatt(root, trigger, regex, cflags, lsigid);
@@ -1345,47 +1343,7 @@ static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsig
     }
     subsigs++;
 
-#if HAVE_PCRE
-    /* Regex LSig Check */
-    for (i = 0; i < tokens_count-3; ++i) {
-        char *wild;
-        int rssigs;
-
-        if ((wild = strchr(tokens[i+3], '/'))) {
-            char *trigger;
-            size_t tlen = wild-tokens[i+3];
-
-            /* check for trigger */
-            if (!tlen) {
-                cli_errmsg("cli_loadldb: cannot add pcre without logical trigger\n");
-                return CL_EMALFDB;
-            }
-
-            /* get the trigger statement */
-            trigger = cli_calloc(tlen+1, sizeof(char));
-            if (!trigger) {
-                cli_errmsg("cli_loadldb: cannot allocate memory for trigger string\n");
-                return CL_EMEM;
-            }
-            strncpy(trigger, tokens[i+3], tlen);
-            trigger[tlen] = '\0';
-
-            /* validate the lsig */
-            rssigs = cli_ac_chklsig(trigger, trigger + strlen(trigger), NULL, NULL, NULL, 1);
-            if((strcmp(trigger, PCRE_BYPASS)) && (rssigs == -1)) {
-                cli_errmsg("cli_loadldb: regex subsig %d is missing a valid logical trigger\n", i);
-                return CL_EMALFDB;
-            }
-
-            /* overwrite the global subsig count if the local one is greater */
-            if (rssigs+1 > subsigs)
-                subsigs = rssigs+1; /* +1 is from the 'subsigs++;' above */
-
-            cli_dbgmsg("cli_loadldb: regex subsig %d uses %d(%d) highest ID\n", i, rssigs, rssigs+1);
-            free(trigger);
-        }
-    }
-#else
+#if !HAVE_PCRE
     /* Regex Usage and Support Check */
     for (i = 0; i < subsigs; ++i) {
         if (strchr(tokens[i+3], '/')) {

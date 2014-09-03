@@ -39,14 +39,29 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *trigger, const char *
     struct cli_pcre_meta **newmetatable = NULL, *pm = NULL;
     uint32_t pcre_count;
     const char *opt;
-    int ret = CL_SUCCESS, options = 0;
+    int ret = CL_SUCCESS, options = 0, rssigs;
 
     if (!root || !trigger || !pattern) {
         cli_errmsg("pcre_addpatt: NULL root or NULL trigger or NULL pattern\n");
         return CL_ENULLARG;
     }
 
-    /* TODO: trigger and regex checking (string length limitations, no self referencal or other pcre referential) */
+    /* TODO: trigger and regex checking (string length limitations?) */
+
+    /* validate the lsig trigger */
+    rssigs = cli_ac_chklsig(trigger, trigger + strlen(trigger), NULL, NULL, NULL, 1);
+    if((strcmp(trigger, PCRE_BYPASS)) && (rssigs == -1)) {
+        cli_errmsg("cli_pcre_addpatt: regex subsig %d is missing a valid logical trigger\n", lsigid[1]);
+        return CL_EMALFDB;
+    }
+    if (rssigs > lsigid[1]) {
+        cli_errmsg("cli_pcre_addpatt: regex subsig %d logical trigger refers to subsequent subsig %d\n", lsigid[1], rssigs);
+        return CL_EMALFDB;
+    }
+    if (rssigs == lsigid[1]) {
+        cli_errmsg("cli_pcre_addpatt: regex subsig %d logical trigger is self-referential\n", lsigid[1]);
+        return CL_EMALFDB;
+    }
 
     /* allocating entries */
     pm = (struct cli_pcre_meta *)mpool_calloc(root->mempool, 1, sizeof(*pm));
