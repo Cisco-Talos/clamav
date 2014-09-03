@@ -23,6 +23,7 @@ ClamAV 0.98.5 also includes these new features:
     - Enhancements to the clambc command line utility to assist
       ClamAV bytecode signature authors by providing introspection
       into compiled bytecode programs.
+    - Resolution of many of the warning messages from ClamAV compilation.
     - Bug fixes and other feature enhancements. See Changelog or
       git log for details.
 
