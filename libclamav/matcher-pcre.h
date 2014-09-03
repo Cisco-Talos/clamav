@@ -37,12 +37,14 @@
 #include "regex_pcre.h"
 
 #define PCRE_BYPASS "7374756c747a676574737265676578"
+#define CLI_PCRE_GLOBAL 0x00000001 /* g */
 
 struct cli_pcre_meta {
     char *trigger;
     uint32_t lsigid[2];
     struct cli_pcre_data pdata;
-    /* internal flags */
+    /* internal flags (bitfield?) */
+    uint32_t flags;
 };
 
 /* figure out where to handle the pcre options: matcher likes addpatt, but it's currently also in build */

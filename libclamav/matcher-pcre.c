@@ -84,7 +84,7 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *trigger, const char *
             /* handle matcher specific options here */
             switch (*opt) {
                 /* no matcher-specific options atm */
-            case 'g':  cli_dbgmsg("cli_pcre_addpatt: added option 'g' for finding all-matchs\n");            break;
+            case 'g':  pm->flags |= CLI_PCRE_GLOBAL;            break;
             default:
                 cli_errmsg("cli_pcre_addpatt: unknown/extra pcre option encountered %c\n", *opt);
                 cli_pcre_freemeta(pm);
@@ -127,71 +127,7 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *trigger, const char *
 
     return CL_SUCCESS;
 }
-/*
-int cli_pcre_adducondpatt(struct cli_matcher *root, const char *pattern, const uint32_t *lsigid)
-{
-    struct cli_pcre_data **newdata, *pd;
-    struct cli_pcre_refentry **newreftable, *refe;
-    uint32_t new_numpcres;
-    int ret = CL_SUCCESS;
 
-    if (!root || !pattern) {
-        cli_errmsg("pcre_adducondpatt: NULL root or NULL pattern\n");
-        return CL_ENULLARG;
-    }
-
-    // TODO: regex checking (string length limitations)
-    //cli_pcre_free_single(pd);
-
-    // allocating entries
-    pd = (struct cli_pcre_data *)mpool_calloc(root->mempool, 1, sizeof(*pd));
-    if (!pd) {
-        cli_errmsg("cli_pcre_adducondpatt: Unable to allocate memory\n");
-        return CL_EMEM;
-    }
-
-    pd->expression = strdup(pattern);
-
-    refe = (struct cli_pcre_refentry *)cli_calloc(1, sizeof(struct cli_pcre_refentry));
-    if (!refe) {
-        cli_errmsg("cli_pcre_adducondpatt: failed to allocate space\n");
-        return CL_EMEM;
-    }
-
-    // set the refentry
-    refe->lsigid[0] = lsigid[0];
-    refe->lsigid[1] = lsigid[1];
-    refe->next = NULL; // for now, all regex have single reference - TODO
-
-    // add pcre data and refentry to root after reallocation
-    new_numpcres = root->num_pcres+1;
-    newdata = (struct cli_pcre_data **)mpool_realloc(root->mempool, root->all_pcres,
-                                         new_numpcres * sizeof(struct cli_pcre_data *));
-    if (!newdata) {
-        cli_errmsg("cli_pcre_adducondpatt: Unable to allocate memory\n");
-        return CL_EMEM;
-    }
-
-    newreftable = (struct cli_pcre_refentry **)mpool_realloc(root->mempool, root->pcre_reftable,
-                                                 new_numpcres * sizeof(struct cli_pcre_refentry *));
-    if (!newreftable) {
-        cli_errmsg("cli_pcre_adducondpatt: Unable to allocate memory\n");
-        return CL_EMEM;
-    }
-
-    cli_dbgmsg("cli_pcre_adducondpatt: Adding /%s/ as subsig %d for lsigid %d\n",
-               pattern, refe->lsigid[1], refe->lsigid[0]);
-
-    newdata[new_numpcres-1] = pd;
-    newreftable[new_numpcres-1] = refe;
-    root->pcre_reftable = newreftable;
-    root->all_pcres = newdata;
-
-    root->num_pcres = new_numpcres;
-
-    return CL_SUCCESS;
-}
-*/
 int cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, long long unsigned recmatch_limit)
 {
     unsigned int i;
@@ -266,15 +202,15 @@ static inline void lsig_sub_matched(const struct cli_matcher *root, struct cli_a
     }
 }
 
-/* TODO - fix this function; currently only single match */
+#define DISABLE_PCRE_REPORT 0
 int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct cli_matcher *root, struct cli_ac_data *mdata, cli_ctx *ctx)
 {
     struct cli_pcre_meta **metatable = root->pcre_metatable, *pm = NULL;
     struct cli_pcre_data *pd;
     unsigned int i, evalcnt;
     uint64_t evalids;
-    int rc;
-    int ovector[OVECCOUNT];
+    uint32_t global;
+    int rc, offset, ovector[OVECCOUNT];
 
     for (i = 0; i < root->pcre_metas; ++i) {
         pm = root->pcre_metatable[i];
@@ -285,22 +221,52 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
         if ((strcmp(pm->trigger, PCRE_BYPASS)) && (cli_ac_chklsig(pm->trigger, pm->trigger + strlen(pm->trigger), mdata->lsigcnt[pm->lsigid[0]], &evalcnt, &evalids, 0) != 1))
             continue;
 
-        cli_dbgmsg("cli_pcre_scanbuf: triggered %s; running regex /%s/\n", pm->trigger, pd->expression);
+        global = (pm->flags & CLI_PCRE_GLOBAL);
+        offset = pd->search_offset;
 
-        rc = cli_pcre_match(pd, buffer, length, CLI_PCREMATCH_NOOVERRIDE, 0, ovector, OVECCOUNT);
+        cli_dbgmsg("cli_pcre_scanbuf: triggered %s; running regex /%s/%s\n", pm->trigger, pd->expression, global ? " (global)":"");
 
-        cli_dbgmsg("cli_pcre_scanbuf: running regex /%s/ returns %d\n", pd->expression, rc);
-        if (rc > 0) { /* matched at least once */
-            cli_dbgmsg("cli_pcre_scanbuf: assigning lsigcnt[%d][%d], located @ %d\n",
-                       pm->lsigid[0], pm->lsigid[1], ovector[0]);
+        /* if the global flag is set, loop through the scanning - TODO: how does this affect really big files? */
+        do {
+            rc = cli_pcre_match(pd, buffer, length, CLI_PCREMATCH_NOOVERRIDE, offset, ovector, OVECCOUNT);
+            cli_dbgmsg("cli_pcre_scanbuf: running regex /%s/ returns %d\n", pd->expression, rc);
 
-            lsig_sub_matched(root, mdata, pm->lsigid[0], pm->lsigid[1], ovector[0], 0);
-        }
-        else if (rc == 0 || rc == PCRE_ERROR_NOMATCH) { /* no match */
-            cli_dbgmsg("cli_pcre_scanbuf: no match\n");
-        }
-        else { /* error occurred */
+            /* matched, rc shouldn't be >0 unless a full match occurs */
+            if (rc > 0) {
+                cli_dbgmsg("cli_pcre_scanbuf: assigning lsigcnt[%d][%d], located @ %d\n",
+                           pm->lsigid[0], pm->lsigid[1], ovector[0]);
+
+                lsig_sub_matched(root, mdata, pm->lsigid[0], pm->lsigid[1], ovector[0], 0);
+            }
+
+            /* print out additional diagnostics if cli_debug_flag is set, TODO: is there a right way to reference the debug flag?  */
+            if (!DISABLE_PCRE_REPORT && cli_debug_flag) {
+                cli_dbgmsg("PCRE Execution Report:\n");
+                if (rc > 0) {
+                    /* TODO: handle results from full_info */
+                }
+                else if (rc == 0 || rc == PCRE_ERROR_NOMATCH) {
+                    cli_dbgmsg("no match found\n");
+                }
+                else {
+                    cli_dbgmsg("error occurred in pcre_match: %d\n", rc);
+                    /* error handled later */
+                }
+                cli_dbgmsg("PCRE Execution Report End\n");
+            }
+
+            /* move off to the end of the match for next match; 
+             * NOTE: misses matches starting within the last match */
+            offset = ovector[1];
+
+            /* clear the ovector results (they fall through the pcre_match) */
+            memset(ovector, 0, sizeof(ovector));
+        } while (global && rc > 0 && offset < length);
+
+        /* handle error codes */
+        if (rc < 0 && rc != PCRE_ERROR_NOMATCH) {
             cli_errmsg("cli_pcre_scanbuf: cli_pcre_match: pcre_exec: returned error %d\n", rc);
+            /* TODO: convert the pcre error codes to clamav error codes, handle match_limit and match_limit_recursion exceeded */
             return CL_BREAK;
         }
     }
@@ -308,40 +274,69 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
     return CL_SUCCESS;
 }
 
-/* TODO - fix this function; currently only single match */
 int cli_pcre_ucondscanbuf(const unsigned char *buffer, uint32_t length, const struct cli_matcher *root, struct cli_ac_data *mdata, cli_ctx *ctx)
 {
     struct cli_pcre_meta **metatable = root->pcre_metatable, *pm = NULL;
-    struct cli_pcre_data *pd = NULL;
-    unsigned int i;
-    int rc;
-    int ovector[OVECCOUNT];
+    struct cli_pcre_data *pd;
+    unsigned int i, evalcnt;
+    uint64_t evalids;
+    uint32_t global;
+    int rc, offset, ovector[OVECCOUNT];
 
     for (i = 0; i < root->pcre_metas; ++i) {
-        pm = metatable[i];
+        pm = root->pcre_metatable[i];
         pd = &(pm->pdata);
 
-        cli_dbgmsg("cli_pcre_ucondscanbuf: running regex /%s/\n", pd->expression);
+        global = (pm->flags & CLI_PCRE_GLOBAL);
+        offset = pd->search_offset;
 
-        rc = cli_pcre_match(pd, buffer, length, CLI_PCREMATCH_NOOVERRIDE, 0, ovector, OVECCOUNT);
+        cli_dbgmsg("cli_pcre_ucondscanbuf: unconditionally running regex /%s/\n", pd->expression);
 
-        cli_dbgmsg("cli_pcre_ucondscanbuf: running regex /%s/ returns %d\n", pd->expression, rc);
-        if (rc > 0) { /* matched at least once */
-            cli_dbgmsg("cli_pcre_ucondscanbuf: assigning lsigcnt[%d][%d], located @ %d\n",
-                       pm->lsigid[0], pm->lsigid[1], ovector[0]);
+        /* if the global flag is set, loop through the scanning - TODO: how does this affect really big files? */
+        do {
+            rc = cli_pcre_match(pd, buffer, length, CLI_PCREMATCH_NOOVERRIDE, offset, ovector, OVECCOUNT);
+            cli_dbgmsg("cli_pcre_ucondscanbuf: running regex /%s/ returns %d\n", pd->expression, rc);
 
-            lsig_sub_matched(root, mdata, pm->lsigid[0], pm->lsigid[1], ovector[0], 0);
-        }
-        else if (rc == 0 || rc == PCRE_ERROR_NOMATCH) { /* no match */
-            cli_dbgmsg("cli_pcre_ucondscanbuf: no match\n");
-        }
-        else { /* error occurred */
+            /* matched, rc shouldn't be >0 unless a full match occurs */
+            if (rc > 0) {
+                cli_dbgmsg("cli_pcre_ucondscanbuf: assigning lsigcnt[%d][%d], located @ %d\n",
+                           pm->lsigid[0], pm->lsigid[1], ovector[0]);
+
+                lsig_sub_matched(root, mdata, pm->lsigid[0], pm->lsigid[1], ovector[0], 0);
+            }
+
+            /* print out additional diagnostics if cli_debug_flag is set, TODO: is there a right way to reference the debug flag?  */
+            if (!DISABLE_PCRE_REPORT && cli_debug_flag) {
+                cli_dbgmsg("PCRE Execution Report:\n");
+                if (rc > 0) {
+                    /* TODO: handle results from full_info */
+                }
+                else if (rc == 0 || rc == PCRE_ERROR_NOMATCH) {
+                    cli_dbgmsg("no match found\n");
+                }
+                else {
+                    cli_dbgmsg("error occurred in pcre_match: %d\n", rc);
+                    /* error handled later */
+                }
+                cli_dbgmsg("PCRE Execution Report End\n");
+            }
+
+            /* move off to the end of the match for next match; 
+             * NOTE: misses matches starting within the last match */
+            offset = ovector[1];
+
+            /* clear the ovector results (they fall through the pcre_match) */
+            memset(ovector, 0, sizeof(ovector));
+        } while (global && rc > 0 && offset < length);
+
+        /* handle error codes */
+        if (rc < 0 && rc != PCRE_ERROR_NOMATCH) {
             cli_errmsg("cli_pcre_ucondscanbuf: cli_pcre_match: pcre_exec: returned error %d\n", rc);
+            /* TODO: convert the pcre error codes to clamav error codes, handle match_limit and match_limit_recursion exceeded */
             return CL_BREAK;
         }
     }
 
-    cli_dbgmsg("cli_pcre_ucondscanbuf: successful return!\n");
     return CL_SUCCESS;
 }
 
