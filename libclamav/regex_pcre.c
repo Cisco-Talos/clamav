@@ -183,8 +183,10 @@ static void named_substr_print(struct cli_pcre_data *pd, const unsigned char *bu
 
             cli_dbgmsg("named_substr:  (%d) %*s: %s%s\n", n, name_entry_size - 3, tabptr + 2,
                        outstr, trunc ? " (trunc)":"");
-            /*cli_dbgmsg("named_substr:  (%d) %*s: %.*s%s\n", n, name_entry_size - 3, tabptr + 2,
-                         ovector[2*n+1] - ovector[2*n], subject + ovector[2*n], trunc ? " (trunc)":"");*/
+            /*
+            cli_dbgmsg("named_substr:  (%d) %*s: %.*s%s\n", n, name_entry_size - 3, tabptr + 2,
+                       length, start, trunc ? " (trunc)":"");
+            */
             tabptr += name_entry_size;
         }
     }

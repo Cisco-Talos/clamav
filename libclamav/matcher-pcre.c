@@ -46,7 +46,7 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *trigger, const char *
         return CL_ENULLARG;
     }
 
-    /* TODO: trigger and regex checking (string length limitations) */
+    /* TODO: trigger and regex checking (string length limitations, no self referencal or other pcre referential) */
 
     /* allocating entries */
     pm = (struct cli_pcre_meta *)mpool_calloc(root->mempool, 1, sizeof(*pm));

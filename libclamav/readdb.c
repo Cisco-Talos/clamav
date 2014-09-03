@@ -170,7 +170,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 
         /* check for trigger */
 	if (!tlen) {
-	    cli_dbgmsg("cli_parseadd(): cannot add pcre without logical trigger\n");
+	    cli_errmsg("cli_parseadd(): cannot add pcre without logical trigger\n");
 	    return CL_EMALFDB;
 	}
 
@@ -216,27 +216,8 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 
         cli_dbgmsg("trigger %s; regex %s; cflags %s\n", trigger, regex, cflags);
 
-        /* TODO: allow subsigs to be validated during the subsig counting phase; validation of trigger occurs in cli_pcre_addpatt */
+        /* TODO: validation of trigger occurs in cli_pcre_addpatt */
 
-        /* if trigger is PCRE_BYPASS, add to unconditionally run pcres (move to cli_pcre_addpatt) */
-        /*	if (!strncmp(trigger, PCRE_BYPASS, tlen)) {
-            cli_dbgmsg("unconditional pcre regex detected: %s\n", wild);
-            free(trigger);
-
-            regex = cli_calloc(rlen+1, sizeof(char));
-            if (!regex) {
-                cli_errmsg("cli_parseadd(): cannot allocate memory\n");
-                return CL_EMEM;
-            }
-            strncpy(regex, hexsig+tlen+1, rlen);
-            regex[rlen] = '\0';
-
-            ret = cli_pcre_adducondpatt(root, regex, lsigid);
-            free(regex);
-
-            return ret;
-	}
-        */
         /* normal trigger */
 	cli_dbgmsg("pcre regex detected: %s on trigger: %s with cflags: %s\n", regex, trigger, cflags);
         ret = cli_pcre_addpatt(root, trigger, regex, cflags, lsigid);
@@ -1363,10 +1344,58 @@ static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsig
 	return CL_EMALFDB;
     }
     subsigs++;
-    if(subsigs > 64) {
-	cli_errmsg("cli_loadldb: Broken logical expression or too many subsignatures\n");
-	return CL_EMALFDB;
+
+#if HAVE_PCRE
+    /* Regex LSig Check */
+    for (i = 0; i < tokens_count-3; ++i) {
+        char *wild;
+        int rssigs;
+
+        if ((wild = strchr(tokens[i+3], '/'))) {
+            char *trigger;
+            size_t tlen = wild-tokens[i+3];
+
+            /* check for trigger */
+            if (!tlen) {
+                cli_errmsg("cli_loadldb: cannot add pcre without logical trigger\n");
+                return CL_EMALFDB;
+            }
+
+            /* get the trigger statement */
+            trigger = cli_calloc(tlen+1, sizeof(char));
+            if (!trigger) {
+                cli_errmsg("cli_loadldb: cannot allocate memory for trigger string\n");
+                return CL_EMEM;
+            }
+            strncpy(trigger, tokens[i+3], tlen);
+            trigger[tlen] = '\0';
+
+            /* validate the lsig */
+            rssigs = cli_ac_chklsig(trigger, trigger + strlen(trigger), NULL, NULL, NULL, 1);
+            if((strcmp(trigger, PCRE_BYPASS)) && (rssigs == -1)) {
+                cli_errmsg("cli_loadldb: regex subsig %d is missing a valid logical trigger\n", i);
+                return CL_EMALFDB;
+            }
+
+            /* overwrite the global subsig count if the local one is greater */
+            if (rssigs+1 > subsigs)
+                subsigs = rssigs+1; /* +1 is from the 'subsigs++;' above */
+
+            cli_dbgmsg("cli_loadldb: regex subsig %d uses %d(%d) highest ID\n", i, rssigs, rssigs+1);
+            free(trigger);
+        }
     }
+#else
+    /* Regex Usage and Support Check */
+    for (i = 0; i < subsigs; ++i) {
+        if (strchr(tokens[i+3], '/')) {
+            cli_dbgmsg("cli_loadldb: logical signature for %s uses PCREs but support is disabled, skipping\n", virname);
+            (*sigs)--;
+            return CL_SUCCESS;
+        }
+    }
+#endif
+
     if (!line) {
 	/* This is a logical signature from the bytecode, we need all
 	 * subsignatures, even if not referenced from the logical expression */
@@ -1381,16 +1410,11 @@ static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsig
 	return CL_EMALFDB;
     }
 
-    /* Regex Usage and Support Check */
-#if !HAVE_PCRE
-    for (i = 0; i < subsigs; ++i) {
-        if (strchr(tokens[i+3], '/')) {
-            cli_dbgmsg("cli_loadldb: logical signature for %s uses PCREs but support is disabled, skipping\n", virname);
-            (*sigs)--;
-            return CL_SUCCESS;
-        }
+    /* enforce 64 subsig cap */
+    if(subsigs > 64) {
+	cli_errmsg("cli_loadldb: Broken logical expression or too many subsignatures\n");
+	return CL_EMALFDB;
     }
-#endif
 
     /* TDB */
     memset(&tdb, 0, sizeof(tdb));
