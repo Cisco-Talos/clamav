@@ -202,7 +202,6 @@ static inline void lsig_sub_matched(const struct cli_matcher *root, struct cli_a
     }
 }
 
-#define DISABLE_PCRE_REPORT 0
 int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct cli_matcher *root, struct cli_ac_data *mdata, cli_ctx *ctx)
 {
     struct cli_pcre_meta **metatable = root->pcre_metatable, *pm = NULL;
@@ -237,22 +236,6 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
                            pm->lsigid[0], pm->lsigid[1], ovector[0]);
 
                 lsig_sub_matched(root, mdata, pm->lsigid[0], pm->lsigid[1], ovector[0], 0);
-            }
-
-            /* print out additional diagnostics if cli_debug_flag is set, TODO: is there a right way to reference the debug flag?  */
-            if (!DISABLE_PCRE_REPORT && cli_debug_flag) {
-                cli_dbgmsg("PCRE Execution Report:\n");
-                if (rc > 0) {
-                    /* TODO: handle results from full_info */
-                }
-                else if (rc == 0 || rc == PCRE_ERROR_NOMATCH) {
-                    cli_dbgmsg("no match found\n");
-                }
-                else {
-                    cli_dbgmsg("error occurred in pcre_match: %d\n", rc);
-                    /* error handled later */
-                }
-                cli_dbgmsg("PCRE Execution Report End\n");
             }
 
             /* move off to the end of the match for next match; 
@@ -303,22 +286,6 @@ int cli_pcre_ucondscanbuf(const unsigned char *buffer, uint32_t length, const st
                            pm->lsigid[0], pm->lsigid[1], ovector[0]);
 
                 lsig_sub_matched(root, mdata, pm->lsigid[0], pm->lsigid[1], ovector[0], 0);
-            }
-
-            /* print out additional diagnostics if cli_debug_flag is set, TODO: is there a right way to reference the debug flag?  */
-            if (!DISABLE_PCRE_REPORT && cli_debug_flag) {
-                cli_dbgmsg("PCRE Execution Report:\n");
-                if (rc > 0) {
-                    /* TODO: handle results from full_info */
-                }
-                else if (rc == 0 || rc == PCRE_ERROR_NOMATCH) {
-                    cli_dbgmsg("no match found\n");
-                }
-                else {
-                    cli_dbgmsg("error occurred in pcre_match: %d\n", rc);
-                    /* error handled later */
-                }
-                cli_dbgmsg("PCRE Execution Report End\n");
             }
 
             /* move off to the end of the match for next match; 
