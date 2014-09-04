@@ -107,7 +107,7 @@ char *pdf_convert_utf(char *begin, size_t sz)
             continue;
         }
 
-        iconv(cd, (const char **)(&p1), &inlen, &p2, &outlen);
+        iconv(cd, (char **)(&p1), &inlen, &p2, &outlen);
 
         if (outlen == sz) {
             /* Decoding unsuccessful right from the start */
@@ -325,7 +325,7 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
         }
 
         if (sb.st_size) {
-            begin = calloc(1, sb.st_size);
+            begin = calloc(1, sb.st_size+1);
             if (!(begin)) {
                 close(fd);
                 cli_unlink(newobj->path);
@@ -359,10 +359,12 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
 
                     res = likelyutf ? pdf_convert_utf(begin, sb.st_size) : NULL;
 
-                    if (!(res))
+                    if (!(res)) {
                         res = begin;
-                    else
+                        res[sb.st_size] = '\0';
+                    } else {
                         free(begin);
+                    }
             }
         }
 
