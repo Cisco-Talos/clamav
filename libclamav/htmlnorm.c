@@ -1811,10 +1811,11 @@ abort:
 		if(file_buff_text->fd != -1)
 			close(file_buff_text->fd);
 		free(file_buff_text);
+        file_buff_text=NULL;
 	}
 	if(file_tmp_o1) {
 		html_output_flush(file_tmp_o1);
-		if(file_buff_text->fd != -1)
+		if(file_buff_text && file_buff_text->fd != -1)
 			close(file_tmp_o1->fd);
 		free(file_tmp_o1);
 	}
