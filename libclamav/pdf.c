@@ -2183,6 +2183,7 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
             dbg_printhex("computed U (R>=3)", (const char *)result, 16);
             if (!memcmp(result, U, 16))
                 password_empty = 1;
+            free(d);
         } else {
             cli_dbgmsg("cli_pdf: invalid revision %d\n", R);
             noisy_warnmsg("cli_pdf: invalid revision %d\n", R);
