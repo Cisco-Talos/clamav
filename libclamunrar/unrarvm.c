@@ -448,10 +448,6 @@ static void execute_standard_filter(rarvm_data_t *rarvm_data, rarvm_standard_fil
 		if ((unsigned int)data_size >= VM_GLOBALMEMADDR/2) {
 			break;
 		}
-
-        if (data_size < 2)
-            break;
-
 		for (cur_channel=0 ; cur_channel < channels; cur_channel++) {
 			unsigned int prev_byte = 0;
 			for (i=cur_channel ; i<data_size ; i+=channels) {
