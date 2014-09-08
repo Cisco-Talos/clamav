@@ -471,8 +471,7 @@ static int read_tables(int fd, unpack_data_t *unpack_data)
 				rar_addbits(unpack_data, 7);
 			}
 			while (n-- > 0 && i < table_size) {
-                if (i>0)
-                    table[i] = table[i-1];
+				table[i] = table[i-1];
 				i++;
 			}
 		} else {
