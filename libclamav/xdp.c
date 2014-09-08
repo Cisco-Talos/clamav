@@ -140,27 +140,7 @@ int cli_scanxdp(cli_ctx *ctx)
             if (value) {
                 decoded = cl_base64_decode((char *)value, strlen((const char *)value), NULL, &decodedlen, 0);
                 if (decoded) {
-                    unsigned int shouldscan=0;
-
-                    if (decodedlen > 5) {
-                        for (i=0; i < MIN(MAGIC_BUFFER_SIZE, decodedlen-5); i++) {
-                            if (decoded[i] != '%')
-                                continue;
-
-                            if (decoded[i+1] == 'P' || decoded[i+1] == 'p') {
-                                if (decoded[i+2] == 'D' || decoded[i+2] == 'd') {
-                                    if (decoded[i+3] == 'F' || decoded[i+3] == 'f') {
-                                        if (decoded[i+4] == '-') {
-                                            shouldscan=1;
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    if (!shouldscan) {
+                    if (!cli_memstr(decoded, decodedlen, "PDF", 3)) {
                         free(decoded);
                         xmlFree((void *)value);
                         break;
