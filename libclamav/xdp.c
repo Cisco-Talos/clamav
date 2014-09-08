@@ -59,7 +59,9 @@
 #include "conv.h"
 #include "xdp.h"
 
-char *dump_xdp(cli_ctx *ctx, const char *start, size_t sz)
+static char *dump_xdp(cli_ctx *ctx, const char *start, size_t sz);
+
+static char *dump_xdp(cli_ctx *ctx, const char *start, size_t sz)
 {
     int fd;
     char *filename;
@@ -102,7 +104,6 @@ int cli_scanxdp(cli_ctx *ctx)
     char *decoded;
     size_t decodedlen;
     int rc = CL_SUCCESS;
-    int fd;
     char *dumpname;
     
     buf = (const char *)fmap_need_off_once(map, map->offset, map->len);
@@ -136,14 +137,21 @@ int cli_scanxdp(cli_ctx *ctx)
             if (value) {
                 decoded = cl_base64_decode((char *)value, strlen((const char *)value), NULL, &decodedlen, 0);
                 if (decoded) {
+                    if (!cli_memstr(decoded, decodedlen, "PDF", 3)) {
+                        free(decoded);
+                        xmlFree((void *)value);
+                        break;
+                    }
+
                     rc = cli_mem_scandesc(decoded, decodedlen, ctx);
                     free(decoded);
                     if (rc != CL_SUCCESS || rc == CL_BREAK) {
-                        xmlFree(value);
+                        xmlFree((void *)value);
                         break;
                     }
                 }
-                xmlFree(value);
+
+                xmlFree((void *)value);
             }
         }
     }
