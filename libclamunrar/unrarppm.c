@@ -21,14 +21,13 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "libclamav/clamav.h"
 #include "libclamunrar/unrar.h"
 #include "libclamunrar/unrarppm.h"
 
 #ifdef RAR_HIGH_DEBUG
 #define rar_dbgmsg printf
 #else
-static void rar_dbgmsg(const char* fmt,...){ UNUSEDPARAM(fmt); }
+static void rar_dbgmsg(const char* fmt,...){}
 #endif
 
 #define MAX_O 64
@@ -755,7 +754,7 @@ static void update1(ppm_data_t *ppm_data, struct state_tag *p, struct ppm_contex
 static int ppm_decode_symbol1(ppm_data_t *ppm_data, struct ppm_context *context)
 {
 	struct state_tag *p;
-	unsigned int i, hi_cnt, count;
+	int i, hi_cnt, count;
 	
 	rar_dbgmsg("in ppm_decode_symbol1\n");
 	ppm_data->coder.scale = context->con_ut.u.summ_freq;
@@ -868,7 +867,7 @@ static struct see2_context_tag *make_esc_freq(ppm_data_t *ppm_data,
 
 static int ppm_decode_symbol2(ppm_data_t *ppm_data, struct ppm_context *context)
 {
-	unsigned int count, hi_cnt, i;
+	int count, hi_cnt, i;
 	struct see2_context_tag *psee2c;
 	struct state_tag *ps[256], **pps, *p;
 	

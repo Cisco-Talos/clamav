@@ -33,7 +33,7 @@ void rar_filter_array_init(rar_filter_array_t *filter_a)
 
 void rar_filter_array_reset(rar_filter_array_t *filter_a)
 {
-	size_t i;
+	int i;
 	
 	if (!filter_a) {
 		return;
