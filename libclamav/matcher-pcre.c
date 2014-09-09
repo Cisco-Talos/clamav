@@ -194,7 +194,12 @@ int cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data, struc
     struct cli_pcre_meta *pm;
     uint32_t endoff;
 
-    if (!root || !root->pcre_metatable || !data || !info) {
+    if (!data) {
+        return CL_ENULLARG;
+    }
+    if (!root || !root->pcre_metatable || !info) {
+        data->shift = NULL;
+        data->offset = NULL;
         return CL_SUCCESS;
     }
 
@@ -260,10 +265,12 @@ int cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data, struc
 
 void cli_pcre_freeoff(struct cli_pcre_off *data)
 {
-    free(data->offset);
-    data->offset = NULL;
-    free(data->shift);
-    data->shift = NULL;
+    if (data) {
+        free(data->offset);
+        data->offset = NULL;
+        free(data->shift);
+        data->shift = NULL;
+    }
 }
 
 /* this fuction is static in matcher-ac.c; should we open it up to cli or maintain a copy here? */
