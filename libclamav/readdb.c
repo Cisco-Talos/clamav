@@ -214,11 +214,10 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
             cflags = NULL;
         }
 
-        cli_dbgmsg("trigger %s; regex %s; cflags %s\n", trigger, regex, cflags);
-
+        cli_dbgmsg("trigger %s; regex %s; cflags %s; offset %s\n", trigger, regex, cflags, offset);
         /* normal trigger */
-	cli_dbgmsg("pcre regex detected: %s on trigger: %s with cflags: %s\n", regex, trigger, cflags);
-        ret = cli_pcre_addpatt(root, trigger, regex, cflags, lsigid);
+	cli_dbgmsg("pcre regex detected: %s on trigger: %s with cflags: %s @offset: %s\n", regex, trigger, cflags, offset);
+        ret = cli_pcre_addpatt(root, trigger, regex, cflags, offset, lsigid);
 
         free(trigger);
         free(regex);
@@ -3509,7 +3508,7 @@ int cl_engine_compile(struct cl_engine *engine)
             if((ret = cli_pcre_build(root, engine->pcre_match_limit, engine->pcre_recmatch_limit)))
                 return ret;
 
-	    cli_dbgmsg("Matcher[%u]: %s: AC sigs: %u (reloff: %u, absoff: %u) BM sigs: %u (reloff: %u, absoff: %u) maxpatlen %u PCREs: %u %s\n", i, cli_mtargets[i].name, root->ac_patterns, root->ac_reloff_num, root->ac_absoff_num, root->bm_patterns, root->bm_reloff_num, root->bm_absoff_num, root->maxpatlen, root->pcre_metas, root->ac_only ? "(ac_only mode)" : "");
+	    cli_dbgmsg("Matcher[%u]: %s: AC sigs: %u (reloff: %u, absoff: %u) BM sigs: %u (reloff: %u, absoff: %u) PCREs: %u (reloff: %u, absoff: %u) maxpatlen %u %s\n", i, cli_mtargets[i].name, root->ac_patterns, root->ac_reloff_num, root->ac_absoff_num, root->bm_patterns, root->bm_reloff_num, root->bm_absoff_num, root->pcre_metas, root->pcre_reloff_num, root->pcre_absoff_num, root->maxpatlen, root->ac_only ? "(ac_only mode)" : "");
 #else
 	    cli_dbgmsg("Matcher[%u]: %s: AC sigs: %u (reloff: %u, absoff: %u) BM sigs: %u (reloff: %u, absoff: %u) maxpatlen %u PCREs: 0 (disabled) %s\n", i, cli_mtargets[i].name, root->ac_patterns, root->ac_reloff_num, root->ac_absoff_num, root->bm_patterns, root->bm_reloff_num, root->bm_absoff_num, root->maxpatlen, root->ac_only ? "(ac_only mode)" : "");
 #endif

@@ -868,53 +868,6 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
         }
     }
 
-    /*lsig '=' op does not work if pcre match occurs after AC matching */
-    /* cannot save pcre execution state without possible evasion; must scan entire buffer */
-    /*
-#if HAVE_PCRE
-    if((buff = fmap_need_off_once(map, offset, map->len))) {
-        if (!ftonly) {
-            ret = cli_pcre_ucondscanbuf(buff, map->len, groot, &gdata, ctx);
-            if((ret == CL_VIRUS && !SCAN_ALL) || ret == CL_EMEM) {
-                cli_ac_freedata(&gdata);
-                cli_ac_freedata(&tdata);
-                if(bm_offmode)
-                    cli_bm_freeoff(&toff);
-
-                if(info.exeinfo.section)
-                    free(info.exeinfo.section);
-
-                cli_hashset_destroy(&info.exeinfo.vinfo);
-                cl_hash_destroy(md5ctx);
-                cl_hash_destroy(sha1ctx);
-                cl_hash_destroy(sha256ctx);
-                return ret;
-            }
-        }
-        if (troot) {
-            ret = cli_pcre_ucondscanbuf(buff, map->len, troot, &tdata, ctx);
-            if((ret == CL_VIRUS && !SCAN_ALL) || ret == CL_EMEM) {
-                if(!ftonly)
-                    cli_ac_freedata(&gdata);
-
-                cli_ac_freedata(&tdata);
-                if(bm_offmode)
-                    cli_bm_freeoff(&toff);
-
-                if(info.exeinfo.section)
-                    free(info.exeinfo.section);
-
-                cli_hashset_destroy(&info.exeinfo.vinfo);
-                cl_hash_destroy(md5ctx);
-                cl_hash_destroy(sha1ctx);
-                cl_hash_destroy(sha256ctx);
-                return ret;
-            }
-        }
-    }
-#endif /* HAVE_PCRE */
-    /* end experimental fragment */
-
     while(offset < map->len) {
         bytes = MIN(map->len - offset, SCANBUFF);
         if(!(buff = fmap_need_off_once(map, offset, bytes)))
@@ -1004,13 +957,18 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
         offset += bytes - maxpatlen;
     }
 
-    /*lsig '=' op does not work if pcre match occurs after AC matching */
+    /* lsig '=' op does not work if pcre match occurs after AC matching */
     /* cannot save pcre execution state without possible evasion; must scan entire buffer */
+    /* however, scanning the whole buffer may require the whole buffer being loaded into memory */
+    /* this should also be part of matcher_run but it cannot as matcher_run is done on partial buffers */
 #if HAVE_PCRE
     if((buff = fmap_need_off_once(map, 0, map->len))) {
         if (!ftonly) {
-            ret = cli_pcre_scanbuf(buff, map->len, groot, &gdata, ctx);
-            if((ret == CL_VIRUS && !SCAN_ALL) || ret == CL_EMEM) {
+            struct cli_pcre_off poff;
+
+            /* calculate the relative offsets */
+            ret = cli_pcre_recaloff(groot, &poff, &info);
+            if (ret != CL_SUCCESS) {
                 cli_ac_freedata(&gdata);
                 cli_ac_freedata(&tdata);
                 if(bm_offmode)
@@ -1025,13 +983,35 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
                 cl_hash_destroy(sha256ctx);
                 return ret;
             }
+
+            /* scan the full buffer */
+            ret = cli_pcre_scanbuf(buff, map->len, groot, &gdata, &poff, ctx);
+            if((ret == CL_VIRUS && !SCAN_ALL) || ret == CL_EMEM) {
+                cli_ac_freedata(&gdata);
+                cli_ac_freedata(&tdata);
+                if(bm_offmode)
+                    cli_bm_freeoff(&toff);
+
+                if(info.exeinfo.section)
+                    free(info.exeinfo.section);
+
+                cli_pcre_freeoff(&poff);
+
+                cli_hashset_destroy(&info.exeinfo.vinfo);
+                cl_hash_destroy(md5ctx);
+                cl_hash_destroy(sha1ctx);
+                cl_hash_destroy(sha256ctx);
+                return ret;
+            }
+            cli_pcre_freeoff(&poff);
         }
         if (troot) {
-            ret = cli_pcre_scanbuf(buff, map->len, troot, &tdata, ctx);
-            if((ret == CL_VIRUS && !SCAN_ALL) || ret == CL_EMEM) {
-                if(!ftonly)
-                    cli_ac_freedata(&gdata);
+            struct cli_pcre_off poff;
 
+            /* calculate the relative offsets */
+            ret = cli_pcre_recaloff(troot, &poff, &info);
+            if (ret != CL_SUCCESS) {
+                cli_ac_freedata(&gdata);
                 cli_ac_freedata(&tdata);
                 if(bm_offmode)
                     cli_bm_freeoff(&toff);
@@ -1045,6 +1025,29 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
                 cl_hash_destroy(sha256ctx);
                 return ret;
             }
+
+            /* scan the full buffer */
+            ret = cli_pcre_scanbuf(buff, map->len, troot, &tdata, &poff, ctx);
+            if((ret == CL_VIRUS && !SCAN_ALL) || ret == CL_EMEM) {
+                if(!ftonly)
+                    cli_ac_freedata(&gdata);
+
+                cli_ac_freedata(&tdata);
+                if(bm_offmode)
+                    cli_bm_freeoff(&toff);
+
+                if(info.exeinfo.section)
+                    free(info.exeinfo.section);
+
+                cli_pcre_freeoff(&poff);
+
+                cli_hashset_destroy(&info.exeinfo.vinfo);
+                cl_hash_destroy(md5ctx);
+                cl_hash_destroy(sha1ctx);
+                cl_hash_destroy(sha256ctx);
+                return ret;
+            }
+            cli_pcre_freeoff(&poff);
         }
     }
 #endif /* HAVE_PCRE */

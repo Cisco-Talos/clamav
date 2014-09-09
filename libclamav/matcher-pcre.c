@@ -30,19 +30,20 @@
 #include "clamav.h"
 #include "cltypes.h"
 #include "others.h"
+#include "matcher.h"
 #include "matcher-pcre.h"
 #include "mpool.h"
 #include "regex_pcre.h"
 
-int cli_pcre_addpatt(struct cli_matcher *root, const char *trigger, const char *pattern, const char *cflags, const uint32_t *lsigid)
+int cli_pcre_addpatt(struct cli_matcher *root, const char *trigger, const char *pattern, const char *cflags, const char *offset, const uint32_t *lsigid)
 {
     struct cli_pcre_meta **newmetatable = NULL, *pm = NULL;
     uint32_t pcre_count;
     const char *opt;
     int ret = CL_SUCCESS, options = 0, rssigs;
 
-    if (!root || !trigger || !pattern) {
-        cli_errmsg("pcre_addpatt: NULL root or NULL trigger or NULL pattern\n");
+    if (!root || !trigger || !pattern || !offset) {
+        cli_errmsg("pcre_addpatt: NULL root or NULL trigger or NULL pattern or NULL offset\n");
         return CL_ENULLARG;
     }
 
@@ -89,6 +90,22 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *trigger, const char *
     pm->lsigid[0] = lsigid[0];
     pm->lsigid[1] = lsigid[1];
 
+    /* offset parsing and usage, similar to cli_ac_addsig */
+    /* type-specific offsets and type-specific scanning handled during scan (cli_target_info stuff?) */
+    ret = cli_caloff(offset, NULL, root->type, pm->offdata, &(pm->offset_min), &(pm->offset_max));
+    if (ret != CL_SUCCESS) {
+        cli_errmsg("cli_pcre_addpatt: cannot calculate offset data: %s for pattern: %s\n", offset, pattern);
+        cli_pcre_freemeta(pm);
+        mpool_free(root->mempool, pm);
+        return ret;
+    }
+    if(pm->offdata[0] != CLI_OFF_ANY) {
+        if(pm->offdata[0] == CLI_OFF_ABSOLUTE)
+            root->pcre_absoff_num++;
+        else
+            root->pcre_reloff_num++;
+    }
+
     /* parse and add options, also totally not from snort */
     if (cflags) {
         cli_dbgmsg("cli_pcre_addpatt: parsing pcre compile flags: %s\n", cflags);
@@ -100,6 +117,7 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *trigger, const char *
             switch (*opt) {
                 /* no matcher-specific options atm */
             case 'g':  pm->flags |= CLI_PCRE_GLOBAL;            break;
+            case 'e':  pm->flags |= CLI_PCRE_ENCOMPASS;         break;
             default:
                 cli_errmsg("cli_pcre_addpatt: unknown/extra pcre option encountered %c\n", *opt);
                 cli_pcre_freemeta(pm);
@@ -168,6 +186,87 @@ int cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, lon
     return CL_SUCCESS;
 }
 
+int cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data, struct cli_target_info *info)
+{
+    /* TODO: fix the relative offset data maintained in cli_ac_data (generate own data?) */
+    int ret;
+    unsigned int i;
+    struct cli_pcre_meta *pm;
+    uint32_t endoff;
+
+    if (!root || !root->pcre_metatable || !data || !info) {
+        return CL_SUCCESS;
+    }
+
+    /* allocate data structures */
+    data->shift = (uint32_t *) cli_calloc(root->pcre_metas, sizeof(uint32_t));
+    if (!data->shift) {
+        cli_errmsg("cli_pcre_initoff: cannot allocate memory for data->shift\n");
+        return CL_EMEM;
+    }
+    data->offset = (uint32_t *) cli_calloc(root->pcre_metas, sizeof(uint32_t));
+    if (!data->offset) {
+        cli_errmsg("cli_pcre_initoff: cannot allocate memory for data->offset\n");
+        free(data->shift);
+        return CL_EMEM;
+    }
+
+    /* iterate across all pcre metadata and recalc offsets */
+    for (i = 0; i < root->pcre_metas; ++i) {
+        pm = root->pcre_metatable[i];
+
+        if (pm->offdata[0] == CLI_OFF_ANY) {
+            data->offset[i] = 0;
+            data->shift[i] = 0;
+        }
+        else if (pm->offdata[0] == CLI_OFF_ABSOLUTE) {
+            data->offset[i] = pm->offdata[1];
+            data->shift[i] = pm->offdata[2];
+        }
+        else if (pm->offdata[0] == CLI_OFF_EOF_MINUS) {
+            data->offset[i] = pm->offdata[1];
+            data->shift[i] = pm->offdata[2];
+        }
+        else {
+            ret = cli_caloff(NULL, info, root->type, pm->offdata, &data->offset[i], &endoff);
+            if (ret != CL_SUCCESS) {
+                cli_errmsg("cli_pcre_recaloff: cannot calculate relative offset in signature for sig[%u,%u]\n", pm->lsigid[0], pm->lsigid[1]);
+                free(data->shift);
+                free(data->offset);
+                return ret;
+            }
+            data->shift[i] = endoff-(data->offset[i]);
+        }
+
+        cli_dbgmsg("info->fsize: %lu\n", (long unsigned)info->fsize);
+        if (pm->offdata[0]>9)
+            cli_dbgmsg("offdata[0] type:     %x\n", pm->offdata[0]);
+        else
+            cli_dbgmsg("offdata[0] type:     %u\n", pm->offdata[0]);
+        cli_dbgmsg("offdata[1] offset:   %u\n", pm->offdata[1]);
+        cli_dbgmsg("offdata[2] maxshift: %u\n", pm->offdata[2]);
+        cli_dbgmsg("offdata[3] section:  %u\n", pm->offdata[3]);
+        cli_dbgmsg("offset_min: %u\n", pm->offset_min);
+        cli_dbgmsg("offset_max: %u\n", pm->offset_max);
+
+    }
+
+    for (i = 0; i < root->pcre_metas; ++i) {
+        cli_dbgmsg("data[%u]: (%u, %u)\n", i, data->offset[i], data->shift[i]);
+    }
+
+    return CL_SUCCESS;
+}
+
+void cli_pcre_freeoff(struct cli_pcre_off *data)
+{
+    free(data->offset);
+    data->offset = NULL;
+    free(data->shift);
+    data->shift = NULL;
+}
+
+/* this fuction is static in matcher-ac.c; should we open it up to cli or maintain a copy here? */
 static inline void lsig_sub_matched(const struct cli_matcher *root, struct cli_ac_data *mdata, uint32_t lsigid1, uint32_t lsigid2, uint32_t realoff, int partial)
 {
 	const struct cli_lsig_tdb *tdb = &root->ac_lsigtable[lsigid1]->tdb;
@@ -217,14 +316,19 @@ static inline void lsig_sub_matched(const struct cli_matcher *root, struct cli_a
     }
 }
 
-int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct cli_matcher *root, struct cli_ac_data *mdata, cli_ctx *ctx)
+int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct cli_matcher *root, struct cli_ac_data *mdata, const struct cli_pcre_off *data, cli_ctx *ctx)
 {
     struct cli_pcre_meta **metatable = root->pcre_metatable, *pm = NULL;
     struct cli_pcre_data *pd;
+    uint32_t adjbuffer, adjshift, adjlength;
     unsigned int i, evalcnt;
     uint64_t evalids;
-    uint32_t global;
+    uint32_t global, encompass;
     int rc, offset, ovector[OVECCOUNT];
+
+    if (!root->pcre_metatable) {
+        return CL_SUCCESS;
+    }
 
     for (i = 0; i < root->pcre_metas; ++i) {
         pm = root->pcre_metatable[i];
@@ -235,31 +339,90 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
         if ((strcmp(pm->trigger, PCRE_BYPASS)) && (cli_ac_chklsig(pm->trigger, pm->trigger + strlen(pm->trigger), mdata->lsigcnt[pm->lsigid[0]], &evalcnt, &evalids, 0) != 1))
             continue;
 
-        global = (pm->flags & CLI_PCRE_GLOBAL);
-        offset = pd->search_offset;
+        global = (pm->flags & CLI_PCRE_GLOBAL);       /* search for all matches */
+        encompass = (pm->flags & CLI_PCRE_ENCOMPASS); /* encompass search to offset->offset+maxshift */
+        offset = pd->search_offset;                   /* this is usually 0 */
 
         cli_dbgmsg("cli_pcre_scanbuf: triggered %s; running regex /%s/%s\n", pm->trigger, pd->expression, global ? " (global)":"");
 
+        /* adjust the buffer sent to cli_pcre_match for offset and maxshift */
+        if (!data) {
+            /* default to scanning whole buffer but try to use existing offdata */
+            if (pm->offdata[0] == CLI_OFF_ABSOLUTE) {
+                adjbuffer = pm->offdata[1];
+                adjshift = pm->offdata[2];
+            }
+            else if (pm->offdata[0] == CLI_OFF_EOF_MINUS) {
+                if (length > pm->offdata[1]) {
+                    adjbuffer = length - pm->offdata[1];
+                    adjshift = pm->offdata[2];
+                }
+                else {
+                    /* EOF is invalid */
+                    continue;
+                }
+            }
+            else {
+                /* you could call cli_caloff here but you should call cli_pcre_recaloff before */
+                adjbuffer = 0;
+                adjshift = 0;
+            }
+        }
+        else {
+            adjbuffer = data->offset[i];
+            adjshift = data->shift[i];
+        }
+
+        /* check the offset bounds */
+        if (adjbuffer < length) {
+            /* handle encompass flag */
+            if (encompass && adjshift != 0 && adjshift != CLI_OFF_NONE) {
+                    if (adjbuffer+adjshift > length)
+                        adjlength = length - adjbuffer;
+                    else
+                        adjlength = adjshift;
+            }
+            else {
+                adjlength = length - adjbuffer;
+            }
+        }
+        else {
+            /* starting offset is outside bounds of file, skip pcre execution */
+            cli_dbgmsg("cli_pcre_scanbuf: starting offset is outside bounds of file %u >= %u\n", adjbuffer, length);
+            continue;
+        }
+
+        cli_dbgmsg("cli_pcre_scanbuf: passed buffer adjusted to %u +%u(%u)[%u]%s\n", adjbuffer, adjlength, adjbuffer+adjlength, adjshift, encompass ? " (encompass)":"");
+
         /* if the global flag is set, loop through the scanning - TODO: how does this affect really big files? */
         do {
-            rc = cli_pcre_match(pd, buffer, length, CLI_PCREMATCH_NOOVERRIDE, offset, ovector, OVECCOUNT);
+            rc = cli_pcre_match(pd, buffer+adjbuffer, adjlength, offset, 0, ovector, OVECCOUNT);
             cli_dbgmsg("cli_pcre_scanbuf: running regex /%s/ returns %d\n", pd->expression, rc);
 
             /* matched, rc shouldn't be >0 unless a full match occurs */
             if (rc > 0) {
-                cli_dbgmsg("cli_pcre_scanbuf: assigning lsigcnt[%d][%d], located @ %d\n",
-                           pm->lsigid[0], pm->lsigid[1], ovector[0]);
+                /* check if we've gone over offset+shift */
+                if (!encompass && adjshift) {
+                    if (ovector[0] > adjshift) {
+                        /* ignore matched offset (outside of maxshift) */
+                        cli_dbgmsg("cli_pcre_scanbuf: match found outside of maxshift @%u\n", adjbuffer+ovector[0]);
+                        break;
+                    }
+                }
 
-                lsig_sub_matched(root, mdata, pm->lsigid[0], pm->lsigid[1], ovector[0], 0);
+                cli_dbgmsg("cli_pcre_scanbuf: assigning lsigcnt[%d][%d], located @ %d\n",
+                           pm->lsigid[0], pm->lsigid[1], adjbuffer+ovector[0]);
+
+                lsig_sub_matched(root, mdata, pm->lsigid[0], pm->lsigid[1], adjbuffer+ovector[0], 0);
             }
 
-            /* move off to the end of the match for next match; 
+            /* move off to the end of the match for next match; offset is relative to adjbuffer
              * NOTE: misses matches starting within the last match */
             offset = ovector[1];
 
             /* clear the ovector results (they fall through the pcre_match) */
             memset(ovector, 0, sizeof(ovector));
-        } while (global && rc > 0 && offset < length);
+        } while (global && rc > 0 && offset < adjlength);
 
         /* handle error codes */
         if (rc < 0 && rc != PCRE_ERROR_NOMATCH) {
@@ -272,53 +435,9 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
     return CL_SUCCESS;
 }
 
-int cli_pcre_ucondscanbuf(const unsigned char *buffer, uint32_t length, const struct cli_matcher *root, struct cli_ac_data *mdata, cli_ctx *ctx)
+int cli_pcre_ucondscanbuf(const unsigned char *buffer, uint32_t length, const struct cli_matcher *root, struct cli_ac_data *mdata, struct cli_pcre_off *data, cli_ctx *ctx)
 {
-    struct cli_pcre_meta **metatable = root->pcre_metatable, *pm = NULL;
-    struct cli_pcre_data *pd;
-    unsigned int i, evalcnt;
-    uint64_t evalids;
-    uint32_t global;
-    int rc, offset, ovector[OVECCOUNT];
-
-    for (i = 0; i < root->pcre_metas; ++i) {
-        pm = root->pcre_metatable[i];
-        pd = &(pm->pdata);
-
-        global = (pm->flags & CLI_PCRE_GLOBAL);
-        offset = pd->search_offset;
-
-        cli_dbgmsg("cli_pcre_ucondscanbuf: unconditionally running regex /%s/\n", pd->expression);
-
-        /* if the global flag is set, loop through the scanning - TODO: how does this affect really big files? */
-        do {
-            rc = cli_pcre_match(pd, buffer, length, CLI_PCREMATCH_NOOVERRIDE, offset, ovector, OVECCOUNT);
-            cli_dbgmsg("cli_pcre_ucondscanbuf: running regex /%s/ returns %d\n", pd->expression, rc);
-
-            /* matched, rc shouldn't be >0 unless a full match occurs */
-            if (rc > 0) {
-                cli_dbgmsg("cli_pcre_ucondscanbuf: assigning lsigcnt[%d][%d], located @ %d\n",
-                           pm->lsigid[0], pm->lsigid[1], ovector[0]);
-
-                lsig_sub_matched(root, mdata, pm->lsigid[0], pm->lsigid[1], ovector[0], 0);
-            }
-
-            /* move off to the end of the match for next match; 
-             * NOTE: misses matches starting within the last match */
-            offset = ovector[1];
-
-            /* clear the ovector results (they fall through the pcre_match) */
-            memset(ovector, 0, sizeof(ovector));
-        } while (global && rc > 0 && offset < length);
-
-        /* handle error codes */
-        if (rc < 0 && rc != PCRE_ERROR_NOMATCH) {
-            cli_errmsg("cli_pcre_ucondscanbuf: cli_pcre_match: pcre_exec: returned error %d\n", rc);
-            /* TODO: convert the pcre error codes to clamav error codes, handle match_limit and match_limit_recursion exceeded */
-            return CL_BREAK;
-        }
-    }
-
+    /* TODO: copy cli_pcre_scanbuf - trigger */
     return CL_SUCCESS;
 }
 

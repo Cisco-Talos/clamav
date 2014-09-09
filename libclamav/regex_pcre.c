@@ -36,6 +36,7 @@
 
 /* TODO: redefine pcre_malloc and pcre_free */
 
+/* TODO: function is kinda pointless, remove? */
 int cli_pcre_parse(struct cli_pcre_data *pd, const char *pattern)
 {
     if (!pd || !pattern) {

@@ -114,6 +114,7 @@ struct cli_matcher {
 #if HAVE_PCRE
     uint32_t pcre_metas;
     struct cli_pcre_meta **pcre_metatable;
+    uint32_t pcre_reloff_num, pcre_absoff_num;
 #endif
 
 #ifdef USE_MPOOL

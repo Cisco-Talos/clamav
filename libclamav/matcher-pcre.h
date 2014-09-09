@@ -37,20 +37,31 @@
 #include "regex_pcre.h"
 
 #define PCRE_BYPASS "7374756c747a676574737265676578"
-#define CLI_PCRE_GLOBAL 0x00000001 /* g */
+#define CLI_PCRE_GLOBAL    0x00000001 /* g */
+#define CLI_PCRE_ENCOMPASS 0x00000002 /* e */
 
 struct cli_pcre_meta {
     char *trigger;
     uint32_t lsigid[2];
     struct cli_pcre_data pdata;
+    /* clamav offset data */
+    uint32_t offdata[4];
+    uint32_t offset_min, offset_max;
     /* internal flags (bitfield?) */
     uint32_t flags;
 };
 
-/* figure out where to handle the pcre options: matcher likes addpatt, but it's currently also in build */
-int cli_pcre_addpatt(struct cli_matcher *root, const char *trigger,  const char *pattern, const char *cflags, const uint32_t *lsigid);
+/* stores offset data */
+struct cli_pcre_off {
+    uint32_t *offset, *shift;
+};
+
+int cli_pcre_addpatt(struct cli_matcher *root, const char *trigger,  const char *pattern, const char *cflags, const char *offset, const uint32_t *lsigid);
 int cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, long long unsigned recmatch_limit);
-int cli_pcre_ucondscanbuf(const unsigned char *buffer, uint32_t length, const struct cli_matcher *root, struct cli_ac_data *mdata, cli_ctx *ctx);
+int cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data, struct cli_target_info *info);
+void cli_pcre_freeoff(struct cli_pcre_off *data);
+int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct cli_matcher *root, struct cli_ac_data *mdata, const struct cli_pcre_off *data, cli_ctx *ctx);
+int cli_pcre_ucondscanbuf(const unsigned char *buffer, uint32_t length, const struct cli_matcher *root, struct cli_ac_data *mdata,  struct cli_pcre_off *data, cli_ctx *ctx);
 void cli_pcre_freemeta(struct cli_pcre_meta *pm);
 void cli_pcre_freetable(struct cli_matcher *root);
 #endif /* HAVE_PCRE */
