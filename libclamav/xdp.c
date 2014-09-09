@@ -58,6 +58,8 @@
 #include "scanners.h"
 #include "conv.h"
 #include "xdp.h"
+#include "bignum_fast.h"
+#include "filetypes.h"
 
 static char *dump_xdp(cli_ctx *ctx, const char *start, size_t sz);
 
@@ -105,6 +107,7 @@ int cli_scanxdp(cli_ctx *ctx)
     size_t decodedlen;
     int rc = CL_SUCCESS;
     char *dumpname;
+    size_t i;
     
     buf = (const char *)fmap_need_off_once(map, map->offset, map->len);
     if (!(buf))
@@ -137,7 +140,27 @@ int cli_scanxdp(cli_ctx *ctx)
             if (value) {
                 decoded = cl_base64_decode((char *)value, strlen((const char *)value), NULL, &decodedlen, 0);
                 if (decoded) {
-                    if (!cli_memstr(decoded, decodedlen, "PDF", 3)) {
+                    unsigned int shouldscan=0;
+
+                    if (decodedlen > 5) {
+                        for (i=0; i < MIN(MAGIC_BUFFER_SIZE, decodedlen-5); i++) {
+                            if (decoded[i] != '%')
+                                continue;
+
+                            if (decoded[i+1] == 'P' || decoded[i+1] == 'p') {
+                                if (decoded[i+2] == 'D' || decoded[i+2] == 'd') {
+                                    if (decoded[i+3] == 'F' || decoded[i+3] == 'f') {
+                                        if (decoded[i+4] == '-') {
+                                            shouldscan=1;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (!shouldscan) {
                         free(decoded);
                         xmlFree((void *)value);
                         break;
