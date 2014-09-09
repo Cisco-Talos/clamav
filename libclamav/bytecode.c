@@ -1489,7 +1489,7 @@ void cli_sigperf_print()
     cli_infomsg (NULL, "%-*s %*s %*s %*s %*s\n", max_name_len, "=============",
 	    8, "=====", 8, "========", 12, "===========", 9, "=========");
     while (elem->run_count) {
-	cli_infomsg (NULL, "%-*s %*lu %*lu %*zu %*.2f\n", max_name_len, elem->bc_name,
+	cli_infomsg (NULL, "%-*s %*lu %*lu %*llu %*.2f\n", max_name_len, elem->bc_name,
 		     8, elem->run_count, 8, elem->match_count, 
 		12, elem->usecs, 9, (double)elem->usecs/elem->run_count);
 	elem++;
