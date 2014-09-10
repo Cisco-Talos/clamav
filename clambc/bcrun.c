@@ -133,7 +133,7 @@ static uint8_t debug_flag = 0;
 static void print_src(const char *file)
 {
   char buf[4096];
-  int nread, i, found = 0;
+  int nread, i, found = 0, lcnt = 0;
   FILE *f = fopen(file, "r");
   if (!f) {
     fprintf(stderr,"Unable to reopen %s\n", file);
@@ -142,7 +142,11 @@ static void print_src(const char *file)
   do {
     nread = fread(buf, 1, sizeof(buf), f);
     for (i=0;i<nread-1;i++) {
-      if (buf[i] == '\n' && buf[i+1] == 'S') {
+      if (buf[i] == '\n') {
+        lcnt++;
+      }
+      /* skip over the logical trigger */
+      if (lcnt >= 2 && buf[i] == '\n' && buf[i+1] == 'S') {
         found = 1;
         i+=2;
         break;
