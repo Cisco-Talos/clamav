@@ -50,7 +50,7 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *trigger, const char *
         return CL_ENULLARG;
     }
 
-    /* TODO: trigger and regex checking (string length limitations?) */
+    /* TODO: trigger and regex checking (string length limitations?)(backreference limitations?) */
 
     /* validate the lsig trigger */
     rssigs = cli_ac_chklsig(trigger, trigger + strlen(trigger), NULL, NULL, NULL, 1);
@@ -196,7 +196,7 @@ int cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, lon
         }
 
         cli_dbgmsg("cli_pcre_build: Compiling regex: %s\n", pm->pdata.expression);
-        /* parse the regex - TODO: set start_offset (at the addpatt phase?), also no options override  */
+        /* parse the regex, no options override  */
         if ((ret = cli_pcre_compile(&(pm->pdata), match_limit, recmatch_limit, 0, 0)) != CL_SUCCESS) {
             cli_errmsg("cli_pcre_build: failed to parse pcre regex\n");
             return ret;
@@ -208,7 +208,7 @@ int cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, lon
 
 int cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data, struct cli_target_info *info)
 {
-    /* TODO: fix the relative offset data maintained in cli_ac_data (generate own data?) */
+    /* TANGENT: maintain relative offset data in cli_ac_data? */
     int ret;
     unsigned int i;
     struct cli_pcre_meta *pm;
@@ -362,7 +362,7 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
         pm = root->pcre_metatable[i];
         pd = &(pm->pdata);
 
-        /* check the evaluation of the trigger - TODO: fix me */
+        /* check the evaluation of the trigger */
         if (pm->lsigid[0]) {
             cli_dbgmsg("cli_pcre_scanbuf: checking %s; running regex /%s/\n", pm->trigger, pd->expression);
             if ((strcmp(pm->trigger, PCRE_BYPASS)) && (cli_ac_chklsig(pm->trigger, pm->trigger + strlen(pm->trigger), mdata->lsigcnt[pm->lsigid[1]], &evalcnt, &evalids, 0) != 1))
@@ -370,6 +370,7 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
         }
         else {
             cli_dbgmsg("cli_pcre_scanbuf: skipping %s check due to unintialized lsigid\n", pm->trigger);
+            /* fall-through to unconditional execution for sigtool */
         }
 
         global = (pm->flags & CLI_PCRE_GLOBAL);       /* search for all matches */
@@ -479,18 +480,26 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
 
         /* handle error codes */
         if (rc < 0 && rc != PCRE_ERROR_NOMATCH) {
-            cli_errmsg("cli_pcre_scanbuf: cli_pcre_match: pcre_exec: returned error %d\n", rc);
-            /* TODO: convert the pcre error codes to clamav error codes, handle match_limit and match_limit_recursion exceeded */
-            return CL_BREAK;
+            switch (rc) {
+                /* for user-defined callback function error (unused) */
+            case PCRE_ERROR_CALLOUT:
+                break;
+            case PCRE_ERROR_NOMEMORY:
+                cli_errmsg("cli_pcre_scanbuf: cli_pcre_match: pcre_exec: out of memory\n");
+                return CL_EMEM;
+            case PCRE_ERROR_MATCHLIMIT:
+                cli_dbgmsg("cli_pcre_scanbuf: cli_pcre_match: pcre_exec: match limit exceeded\n");
+                break;
+            case PCRE_ERROR_RECURSIONLIMIT:
+                cli_dbgmsg("cli_pcre_scanbuf: cli_pcre_match: pcre_exec: recursive limit exceeded\n");
+                break;
+            default:
+                cli_errmsg("cli_pcre_scanbuf: cli_pcre_match: pcre_exec: returned error %d\n", rc);
+                return CL_BREAK;
+            }
         }
     }
 
-    return CL_SUCCESS;
-}
-
-int cli_pcre_ucondscanbuf(const unsigned char *buffer, uint32_t length, const struct cli_matcher *root, struct cli_ac_data *mdata, struct cli_ac_result **res, struct cli_pcre_off *data, cli_ctx *ctx)
-{
-    /* TODO: copy cli_pcre_scanbuf - trigger */
     return CL_SUCCESS;
 }
 

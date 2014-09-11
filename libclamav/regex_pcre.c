@@ -34,9 +34,7 @@
 #include "others.h"
 #include "regex_pcre.h"
 
-/* TODO: redefine pcre_malloc and pcre_free */
-
-/* TODO: function is kinda pointless, remove? */
+/* TODO: function is kinda pointless, remove or rework? */
 int cli_pcre_parse(struct cli_pcre_data *pd, const char *pattern)
 {
     if (!pd || !pattern) {
@@ -102,7 +100,7 @@ int cli_pcre_compile(struct cli_pcre_data *pd, long long unsigned match_limit, l
         pd->re = pcre_compile(pd->expression, pd->options, &error, &erroffset, NULL); /* pd->re handled by libpcre -> call pcre_free() -> calls free() */
     if (pd->re == NULL) {
         cli_errmsg("cli_pcre_parse: PCRE compilation failed at offset %d: %s\n", erroffset, error);
-        return CL_EPARSE; /* TODO - change ERRORCODE */
+        return CL_EMALFDB;
     }
 
     /* now study it... (section totally not from snort) */
@@ -143,7 +141,7 @@ int cli_pcre_compile(struct cli_pcre_data *pd, long long unsigned match_limit, l
 #define DISABLE_PCRE_REPORT 0
 #define MATCH_MAXLEN 1028 /*because lolz*/
 
-/* TODO: audit this function, how to handle the named substring name? */
+/* TODO: audit this function */
 static void named_substr_print(struct cli_pcre_data *pd, const unsigned char *buffer, int *ovector, size_t ovlen)
 {
     int i, j, length, namecount, trunc;
