@@ -35,6 +35,9 @@
 #include "mpool.h"
 #include "regex_pcre.h"
 
+cli_events_t *p_sigevents = NULL;
+unsigned int p_sigid;
+
 int cli_pcre_addpatt(struct cli_matcher *root, const char *trigger, const char *pattern, const char *cflags, const char *offset, const uint32_t *lsigid)
 {
     struct cli_pcre_meta **newmetatable = NULL, *pm = NULL;
@@ -52,16 +55,22 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *trigger, const char *
     /* validate the lsig trigger */
     rssigs = cli_ac_chklsig(trigger, trigger + strlen(trigger), NULL, NULL, NULL, 1);
     if((strcmp(trigger, PCRE_BYPASS)) && (rssigs == -1)) {
-        cli_errmsg("cli_pcre_addpatt: regex subsig %d is missing a valid logical trigger\n", lsigid[1]);
+        cli_errmsg("cli_pcre_addpatt: regex subsig /%s/ is missing a valid logical trigger\n", pattern);
         return CL_EMALFDB;
     }
-    if (rssigs > lsigid[1]) {
-        cli_errmsg("cli_pcre_addpatt: regex subsig %d logical trigger refers to subsequent subsig %d\n", lsigid[1], rssigs);
-        return CL_EMALFDB;
+
+    if (lsigid) {
+        if (rssigs > lsigid[1]) {
+            cli_errmsg("cli_pcre_addpatt: regex subsig %d logical trigger refers to subsequent subsig %d\n", lsigid[1], rssigs);
+            return CL_EMALFDB;
+        }
+        if (rssigs == lsigid[1]) {
+            cli_errmsg("cli_pcre_addpatt: regex subsig %d logical trigger is self-referential\n", lsigid[1]);
+            return CL_EMALFDB;
+        }
     }
-    if (rssigs == lsigid[1]) {
-        cli_errmsg("cli_pcre_addpatt: regex subsig %d logical trigger is self-referential\n", lsigid[1]);
-        return CL_EMALFDB;
+    else {
+        cli_dbgmsg("cli_pcre_addpatt: regex subsig is missing lsigid data\n");
     }
 
     /* allocating entries */
@@ -87,8 +96,15 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *trigger, const char *
         return CL_EMEM;
     }
 
-    pm->lsigid[0] = lsigid[0];
-    pm->lsigid[1] = lsigid[1];
+    if (lsigid) {
+        pm->lsigid[0] = 1;
+        pm->lsigid[1] = lsigid[0];
+        pm->lsigid[2] = lsigid[1];
+    }
+    else {
+        /* sigtool */
+        pm->lsigid[0] = 0;
+    }
 
     /* offset parsing and usage, similar to cli_ac_addsig */
     /* type-specific offsets and type-specific scanning handled during scan (cli_target_info stuff?) */
@@ -150,8 +166,12 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *trigger, const char *
         return CL_EMEM;
     }
 
-    cli_dbgmsg("cli_pcre_addpatt: Adding /%s/ triggered on (%s) as subsig %d for lsigid %d\n",
-               pm->pdata.expression, pm->trigger, pm->lsigid[1], pm->lsigid[0]);
+    if (pm->lsigid[0])
+        cli_dbgmsg("cli_pcre_addpatt: Adding /%s/ triggered on (%s) as subsig %d for lsigid %d\n",
+                   pm->pdata.expression, pm->trigger, pm->lsigid[2], pm->lsigid[1]);
+    else
+        cli_dbgmsg("cli_pcre_addpatt: Adding /%s/ triggered on (%s) [no lsigid]\n",
+                   pm->pdata.expression, pm->trigger);
 
     newmetatable[pcre_count-1] = pm;
     root->pcre_metatable = newmetatable;
@@ -235,7 +255,7 @@ int cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data, struc
         else {
             ret = cli_caloff(NULL, info, root->type, pm->offdata, &data->offset[i], &endoff);
             if (ret != CL_SUCCESS) {
-                cli_errmsg("cli_pcre_recaloff: cannot calculate relative offset in signature for sig[%u,%u]\n", pm->lsigid[0], pm->lsigid[1]);
+                cli_errmsg("cli_pcre_recaloff: cannot recalculate relative offset for signature\n");
                 free(data->shift);
                 free(data->offset);
                 return ret;
@@ -323,10 +343,11 @@ static inline void lsig_sub_matched(const struct cli_matcher *root, struct cli_a
     }
 }
 
-int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct cli_matcher *root, struct cli_ac_data *mdata, const struct cli_pcre_off *data, cli_ctx *ctx)
+int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct cli_matcher *root, struct cli_ac_data *mdata, struct cli_ac_result **res, const struct cli_pcre_off *data, cli_ctx *ctx)
 {
     struct cli_pcre_meta **metatable = root->pcre_metatable, *pm = NULL;
     struct cli_pcre_data *pd;
+    struct cli_ac_result *newres;
     uint32_t adjbuffer, adjshift, adjlength;
     unsigned int i, evalcnt;
     uint64_t evalids;
@@ -341,10 +362,15 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
         pm = root->pcre_metatable[i];
         pd = &(pm->pdata);
 
-        /* check the evaluation of the trigger */
-        cli_dbgmsg("cli_pcre_scanbuf: checking %s; running regex /%s/\n", pm->trigger, pd->expression);
-        if ((strcmp(pm->trigger, PCRE_BYPASS)) && (cli_ac_chklsig(pm->trigger, pm->trigger + strlen(pm->trigger), mdata->lsigcnt[pm->lsigid[0]], &evalcnt, &evalids, 0) != 1))
-            continue;
+        /* check the evaluation of the trigger - TODO: fix me */
+        if (pm->lsigid[0]) {
+            cli_dbgmsg("cli_pcre_scanbuf: checking %s; running regex /%s/\n", pm->trigger, pd->expression);
+            if ((strcmp(pm->trigger, PCRE_BYPASS)) && (cli_ac_chklsig(pm->trigger, pm->trigger + strlen(pm->trigger), mdata->lsigcnt[pm->lsigid[1]], &evalcnt, &evalids, 0) != 1))
+                continue;
+        }
+        else {
+            cli_dbgmsg("cli_pcre_scanbuf: skipping %s check due to unintialized lsigid\n", pm->trigger);
+        }
 
         global = (pm->flags & CLI_PCRE_GLOBAL);       /* search for all matches */
         encompass = (pm->flags & CLI_PCRE_ENCOMPASS); /* encompass search to offset->offset+maxshift */
@@ -403,6 +429,7 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
 
         /* if the global flag is set, loop through the scanning - TODO: how does this affect really big files? */
         do {
+            /* TODO: performance metrics */
             rc = cli_pcre_match(pd, buffer+adjbuffer, adjlength, offset, 0, ovector, OVECCOUNT);
             cli_dbgmsg("cli_pcre_scanbuf: running regex /%s/ returns %d\n", pd->expression, rc);
 
@@ -417,10 +444,29 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
                     }
                 }
 
-                cli_dbgmsg("cli_pcre_scanbuf: assigning lsigcnt[%d][%d], located @ %d\n",
-                           pm->lsigid[0], pm->lsigid[1], adjbuffer+ovector[0]);
+                /* for logical signature evaluation */
+                if (pm->lsigid[0]) {
+                    cli_dbgmsg("cli_pcre_scanbuf: assigning lsigcnt[%d][%d], located @ %d\n",
+                               pm->lsigid[1], pm->lsigid[2], adjbuffer+ovector[0]);
 
-                lsig_sub_matched(root, mdata, pm->lsigid[0], pm->lsigid[1], adjbuffer+ovector[0], 0);
+                    lsig_sub_matched(root, mdata, pm->lsigid[1], pm->lsigid[2], adjbuffer+ovector[0], 0);
+                }
+                else
+                    cli_dbgmsg("cli_pcre_scanbuf: located regex match @ %d\n", adjbuffer+ovector[0]);
+
+                /* for raw match data */
+                if(res) {
+                    newres = (struct cli_ac_result *) malloc(sizeof(struct cli_ac_result));
+                    if(!newres) {
+                        cli_errmsg("cli_pcre_scanbuff: Can't allocate memory for newres %u\n", sizeof(struct cli_ac_result));
+                        return CL_EMEM;
+                    }
+                    newres->virname = NULL;    /* get value? */
+                    newres->customdata = NULL; /* get value? */
+                    newres->next = *res;
+                    newres->offset = adjbuffer+ovector[0];
+                    *res = newres;
+                }
             }
 
             /* move off to the end of the match for next match; offset is relative to adjbuffer
@@ -442,7 +488,7 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
     return CL_SUCCESS;
 }
 
-int cli_pcre_ucondscanbuf(const unsigned char *buffer, uint32_t length, const struct cli_matcher *root, struct cli_ac_data *mdata, struct cli_pcre_off *data, cli_ctx *ctx)
+int cli_pcre_ucondscanbuf(const unsigned char *buffer, uint32_t length, const struct cli_matcher *root, struct cli_ac_data *mdata, struct cli_ac_result **res, struct cli_pcre_off *data, cli_ctx *ctx)
 {
     /* TODO: copy cli_pcre_scanbuf - trigger */
     return CL_SUCCESS;

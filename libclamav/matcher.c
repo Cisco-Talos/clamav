@@ -985,7 +985,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
             }
 
             /* scan the full buffer */
-            ret = cli_pcre_scanbuf(buff, map->len, groot, &gdata, &poff, ctx);
+            ret = cli_pcre_scanbuf(buff, map->len, groot, &gdata, acres, &poff, ctx);
             if((ret == CL_VIRUS && !SCAN_ALL) || ret == CL_EMEM) {
                 cli_ac_freedata(&gdata);
                 cli_ac_freedata(&tdata);
@@ -1027,7 +1027,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
             }
 
             /* scan the full buffer */
-            ret = cli_pcre_scanbuf(buff, map->len, troot, &tdata, &poff, ctx);
+            ret = cli_pcre_scanbuf(buff, map->len, troot, &tdata, acres, &poff, ctx);
             if((ret == CL_VIRUS && !SCAN_ALL) || ret == CL_EMEM) {
                 if(!ftonly)
                     cli_ac_freedata(&gdata);

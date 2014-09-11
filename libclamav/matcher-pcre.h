@@ -42,7 +42,7 @@
 
 struct cli_pcre_meta {
     char *trigger;
-    uint32_t lsigid[2];
+    uint32_t lsigid[3]; /* 0=valid, 1=lsigid, 2=subsigid */
     struct cli_pcre_data pdata;
     /* clamav offset data */
     uint32_t offdata[4];
@@ -60,8 +60,8 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *trigger,  const char 
 int cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, long long unsigned recmatch_limit);
 int cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data, struct cli_target_info *info);
 void cli_pcre_freeoff(struct cli_pcre_off *data);
-int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct cli_matcher *root, struct cli_ac_data *mdata, const struct cli_pcre_off *data, cli_ctx *ctx);
-int cli_pcre_ucondscanbuf(const unsigned char *buffer, uint32_t length, const struct cli_matcher *root, struct cli_ac_data *mdata,  struct cli_pcre_off *data, cli_ctx *ctx);
+int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct cli_matcher *root, struct cli_ac_data *mdata,  struct cli_ac_result **res, const struct cli_pcre_off *data, cli_ctx *ctx);
+int cli_pcre_ucondscanbuf(const unsigned char *buffer, uint32_t length, const struct cli_matcher *root, struct cli_ac_data *mdata,  struct cli_ac_result **res, struct cli_pcre_off *data, cli_ctx *ctx);
 void cli_pcre_freemeta(struct cli_pcre_meta *pm);
 void cli_pcre_freetable(struct cli_matcher *root);
 #endif /* HAVE_PCRE */
