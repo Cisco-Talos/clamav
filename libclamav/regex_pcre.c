@@ -34,6 +34,17 @@
 #include "others.h"
 #include "regex_pcre.h"
 
+/* TODO: cli_pcre_init: redefine pcre_malloc and pcre_free, setup callback function? */
+int cli_pcre_init()
+{
+    pcre_malloc = cli_malloc;
+    pcre_free = free;
+    pcre_stack_malloc = cli_malloc;
+    pcre_stack_free = free;
+
+    return CL_SUCCESS;
+}
+
 /* TODO: function is kinda pointless, remove or rework? */
 int cli_pcre_parse(struct cli_pcre_data *pd, const char *pattern)
 {

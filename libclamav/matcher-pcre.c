@@ -196,7 +196,13 @@ int cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, lon
         }
 
         cli_dbgmsg("cli_pcre_build: Compiling regex: %s\n", pm->pdata.expression);
-        /* parse the regex, no options override  */
+
+        /* options override through metadata manipulation */
+        //pm->pdata.options |= PCRE_NEVER_UTF; /* implemented in 8.33, disables (?UTF*) */
+        //pm->pdata.options |= PCRE_UCP;/* implemented in 8.20 */
+        //pm->pdata.options |= PCRE_AUTO_CALLOUT; /* used with CALLOUT(-BACK) function */
+
+        /* parse the regex, no options override *wink* */
         if ((ret = cli_pcre_compile(&(pm->pdata), match_limit, recmatch_limit, 0, 0)) != CL_SUCCESS) {
             cli_errmsg("cli_pcre_build: failed to parse pcre regex\n");
             return ret;
