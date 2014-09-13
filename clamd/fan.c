@@ -204,9 +204,9 @@ void *fan_th(void *arg)
 	    while(pt) {
 	        if(fanotify_mark(fan_fd, fan_mark_dir_flags, fan_mark_dir_mask, fan_fd, pt->strarg) != 0) {
                 if (errno == ENOTDIR) { /* FAN_MARK_ONLYDIR in the flags allows us to catch this */
-                    logg("!ScanOnAccess: Specified include directory '%ss' is not a directory\n", pt->strarg);
+                    logg("!ScanOnAccess: Specified include directory '%s' is not a directory\n", pt->strarg);
                 } else {
-		            logg("!ScanOnAccess: Cannot include directory '%s'\n", pt->strarg);
+                    logg("!ScanOnAccess: Cannot include directory '%s'\n", pt->strarg);
                 }
 		        return NULL;
 	        } else {
