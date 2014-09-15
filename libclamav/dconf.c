@@ -136,6 +136,8 @@ static struct dconf_module modules[] = {
     { "STATS",      "DISABLED",     DCONF_STATS_DISABLED,   0 },
     { "STATS",      "PESECTION DISABLED", DCONF_STATS_PE_SECTION_DISABLED, 0 },
 
+    { "PCRE",       "SUPPORT",      PCRE_CONF_SUPPORT,   1 },
+
     { NULL,     NULL,       0,              0 }
 };
 
@@ -189,6 +191,9 @@ struct cli_dconf *cli_dconf_init(void)
         } else if (!strcmp(modules[i].mname, "STATS")) {
             if (modules[i].state)
                 dconf->stats |= modules[i].bflag;
+        } else if (!strcmp(modules[i].mname, "PCRE")) {
+            if (modules[i].state)
+                dconf->pcre |= modules[i].bflag;
         }
     }
 
@@ -198,7 +203,7 @@ struct cli_dconf *cli_dconf_init(void)
 void cli_dconf_print(struct cli_dconf *dconf)
 {
     unsigned int pe = 0, elf = 0, macho = 0, arch = 0, doc = 0, mail = 0;
-    unsigned int other = 0, phishing = 0, i, bytecode=0, stats=0;
+    unsigned int other = 0, phishing = 0, i, bytecode=0, stats=0, pcre=0;
 
 
     cli_dbgmsg("Dynamic engine configuration settings:\n");
@@ -292,7 +297,17 @@ void cli_dconf_print(struct cli_dconf *dconf)
             }
 
             if (dconf->stats)
-                cli_dbgmsg("    * Submodule %10s:\t%s\n", modules[i].sname, (dconf->stats & modules[i].bflag) ? "On" : "** Off **");
+                cli_dbgmsg("   * Submodule %10s:\t%s\n", modules[i].sname, (dconf->stats & modules[i].bflag) ? "On" : "** Off **");
+            else
+                continue;
+        } else if (!strcmp(modules[i].mname, "PCRE")) {
+            if (!pcre) {
+                cli_dbgmsg("Module PCRE %s\n", dconf->pcre ? "On" : "Off");
+                stats = 1;
+            }
+
+            if (dconf->pcre)
+                cli_dbgmsg("   * Submodule %10s:\t%s\n", modules[i].sname, (dconf->pcre & modules[i].bflag) ? "On" : "** Off **");
             else
                 continue;
         }
@@ -432,6 +447,15 @@ int cli_dconf_load(FILE *fs, struct cl_engine *engine, unsigned int options, str
         if(!strncmp(buffer, "STATS:", 6) && chkflevel(buffer, 2)) {
             if(sscanf(buffer + 6, "0x%x", &val) == 1) {
                 engine->dconf->stats = val;
+            } else {
+                ret = CL_EMALFDB;
+                break;
+            }
+        }
+
+        if(!strncmp(buffer, "PCRE:", 5) && chkflevel(buffer, 2)) {
+            if(sscanf(buffer + 5, "0x%x", &val) == 1) {
+                engine->dconf->pcre = val;
             } else {
                 ret = CL_EMALFDB;
                 break;

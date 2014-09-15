@@ -29,6 +29,7 @@
 #if HAVE_PCRE
 #include "clamav.h"
 #include "cltypes.h"
+#include "dconf.h"
 #include "others.h"
 #include "matcher.h"
 #include "matcher-pcre.h"
@@ -142,7 +143,8 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *trigger, const char *
             }
             opt++;
         }
-
+        /* TODO - better debug? */
+        /*
         cli_dbgmsg("PCRE_CASELESS       %08x\n", PCRE_CASELESS);
         cli_dbgmsg("PCRE_DOTALL         %08x\n", PCRE_DOTALL);
         cli_dbgmsg("PCRE_MULTILINE      %08x\n", PCRE_MULTILINE);
@@ -153,6 +155,7 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *trigger, const char *
         cli_dbgmsg("PCRE_UNGREEDY       %08x\n", PCRE_UNGREEDY);
 
         cli_dbgmsg("PCRE_OPTIONS        %08x\n", pm->pdata.options);
+        */
     }
 
     /* add pcre data to root after reallocation */
@@ -181,14 +184,26 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *trigger, const char *
     return CL_SUCCESS;
 }
 
-int cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, long long unsigned recmatch_limit)
+ int cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, long long unsigned recmatch_limit, const struct cli_dconf *dconf)
 {
     unsigned int i;
     int ret;
     struct cli_pcre_meta *pm = NULL;
+    int disable_all = !(dconf->pcre & PCRE_CONF_SUPPORT);
 
     for (i = 0; i < root->pcre_metas; ++i) {
         pm = root->pcre_metatable[i];
+
+        /* for safety, disable all pcre */
+        if (disable_all) {
+            pm->flags |= CLI_PCRE_DISABLED;
+            continue;
+        }
+
+        if (pm->flags & CLI_PCRE_DISABLED) {
+            cli_dbgmsg("cli_pcre_build: Skip compiling regex: %s (disabled)\n", pm->pdata.expression);
+            continue;
+        }
 
         if (!pm) {
             cli_errmsg("cli_pcre_build: metadata for pcre %d is missing\n", i);
@@ -204,7 +219,8 @@ int cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, lon
 
         /* parse the regex, no options override *wink* */
         if ((ret = cli_pcre_compile(&(pm->pdata), match_limit, recmatch_limit, 0, 0)) != CL_SUCCESS) {
-            cli_errmsg("cli_pcre_build: failed to parse pcre regex\n");
+            cli_errmsg("cli_pcre_build: failed to build pcre regex\n");
+            pm->flags |= CLI_PCRE_DISABLED; /* disable the pcre */
             return ret;
         }
     }
@@ -212,7 +228,7 @@ int cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, lon
     return CL_SUCCESS;
 }
 
-int cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data, struct cli_target_info *info)
+int cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data, struct cli_target_info *info, cli_ctx *ctx)
 {
     /* TANGENT: maintain relative offset data in cli_ac_data? */
     int ret;
@@ -223,7 +239,8 @@ int cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data, struc
     if (!data) {
         return CL_ENULLARG;
     }
-    if (!root || !root->pcre_metatable || !info) {
+
+    if (!(ctx->dconf->pcre & PCRE_CONF_SUPPORT) || !root || !root->pcre_metatable || !info) {
         data->shift = NULL;
         data->offset = NULL;
         return CL_SUCCESS;
@@ -245,6 +262,13 @@ int cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data, struc
     /* iterate across all pcre metadata and recalc offsets */
     for (i = 0; i < root->pcre_metas; ++i) {
         pm = root->pcre_metatable[i];
+
+        /* skip broken pcres, not getting executed always */
+        if (pm->flags & CLI_PCRE_DISABLED) {
+            data->offset[i] = CLI_OFF_NONE;
+            data->shift[i] = CLI_OFF_NONE;
+            continue;
+        }
 
         if (pm->offdata[0] == CLI_OFF_ANY) {
             data->offset[i] = 0;
@@ -269,6 +293,8 @@ int cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data, struc
             data->shift[i] = endoff-(data->offset[i]);
         }
 
+        /* TODO: better debug? */
+        /*
         cli_dbgmsg("info->fsize: %lu\n", (long unsigned)info->fsize);
         if (pm->offdata[0]>9)
             cli_dbgmsg("offdata[0] type:     %x\n", pm->offdata[0]);
@@ -279,7 +305,7 @@ int cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data, struc
         cli_dbgmsg("offdata[3] section:  %u\n", pm->offdata[3]);
         cli_dbgmsg("offset_min: %u\n", pm->offset_min);
         cli_dbgmsg("offset_max: %u\n", pm->offset_max);
-
+        */
     }
 
     for (i = 0; i < root->pcre_metas; ++i) {
@@ -360,13 +386,19 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
     uint32_t global, encompass;
     int rc, offset, ovector[OVECCOUNT];
 
-    if (!root->pcre_metatable) {
+    if (!(ctx->dconf->pcre & PCRE_CONF_SUPPORT) || (!root->pcre_metatable)) {
         return CL_SUCCESS;
     }
 
     for (i = 0; i < root->pcre_metas; ++i) {
         pm = root->pcre_metatable[i];
         pd = &(pm->pdata);
+
+        /* skip checking and running disabled pcres */
+        if (pm->flags & CLI_PCRE_DISABLED) {
+            cli_dbgmsg("cli_pcre_scanbuf: skipping disabled regex /%s/\n", pd->expression);
+            continue;
+        }
 
         /* check the evaluation of the trigger */
         if (pm->lsigid[0]) {

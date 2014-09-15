@@ -967,7 +967,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
             struct cli_pcre_off poff;
 
             /* calculate the relative offsets */
-            ret = cli_pcre_recaloff(groot, &poff, &info);
+            ret = cli_pcre_recaloff(groot, &poff, &info, ctx);
             if (ret != CL_SUCCESS) {
                 cli_ac_freedata(&gdata);
                 cli_ac_freedata(&tdata);
@@ -1009,7 +1009,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
             struct cli_pcre_off poff;
 
             /* calculate the relative offsets */
-            ret = cli_pcre_recaloff(troot, &poff, &info);
+            ret = cli_pcre_recaloff(troot, &poff, &info, ctx);
             if (ret != CL_SUCCESS) {
                 cli_ac_freedata(&gdata);
                 cli_ac_freedata(&tdata);

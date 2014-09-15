@@ -3505,7 +3505,7 @@ int cl_engine_compile(struct cl_engine *engine)
 	    if((ret = cli_ac_buildtrie(root)))
 		return ret;
 #if HAVE_PCRE
-            if((ret = cli_pcre_build(root, engine->pcre_match_limit, engine->pcre_recmatch_limit)))
+            if((ret = cli_pcre_build(root, engine->pcre_match_limit, engine->pcre_recmatch_limit, engine->dconf)))
                 return ret;
 
 	    cli_dbgmsg("Matcher[%u]: %s: AC sigs: %u (reloff: %u, absoff: %u) BM sigs: %u (reloff: %u, absoff: %u) PCREs: %u (reloff: %u, absoff: %u) maxpatlen %u %s\n", i, cli_mtargets[i].name, root->ac_patterns, root->ac_reloff_num, root->ac_absoff_num, root->bm_patterns, root->bm_reloff_num, root->bm_absoff_num, root->pcre_metas, root->pcre_reloff_num, root->pcre_absoff_num, root->maxpatlen, root->ac_only ? "(ac_only mode)" : "");
