@@ -429,7 +429,9 @@ struct cl_engine *cl_engine_new(void)
     new->maxiconspe = CLI_DEFAULT_MAXICONSPE;
 
     /* PCRE matching limitations */
+#if HAVE_PCRE
     cli_pcre_init();
+#endif
     new->pcre_match_limit = CLI_DEFAULT_PCRE_MATCH_LIMIT;
     new->pcre_recmatch_limit = CLI_DEFAULT_PCRE_RECMATCH_LIMIT;
 
