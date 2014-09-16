@@ -49,6 +49,8 @@ struct cli_pcre_meta {
     uint32_t offset_min, offset_max;
     /* internal flags (bitfield?) */
     uint32_t flags;
+    /* performance tracking */
+    uint32_t sigtime_id, sigmatch_id;
 };
 
 /* stores offset data */
@@ -56,7 +58,12 @@ struct cli_pcre_off {
     uint32_t *offset, *shift;
 };
 
-int cli_pcre_addpatt(struct cli_matcher *root, const char *trigger,  const char *pattern, const char *cflags, const char *offset, const uint32_t *lsigid);
+/* PCRE PERFORMANCE DECLARATIONS */
+void cli_pcre_perf_print();
+void cli_pcre_perf_events_destroy();
+
+/* PCRE MATCHER DECLARATIONS */
+int cli_pcre_addpatt(struct cli_matcher *root, const char *trigger,  const char *pattern, const char *cflags, const char *offset, const uint32_t *lsigid, unsigned int options);
 int cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, long long unsigned recmatch_limit);
 int cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data, struct cli_target_info *info);
 void cli_pcre_freeoff(struct cli_pcre_off *data);

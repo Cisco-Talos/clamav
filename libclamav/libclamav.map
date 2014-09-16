@@ -62,6 +62,8 @@ CLAMAV_PRIVATE {
   global:
     cli_sigperf_print; 
     cli_sigperf_events_destroy; 
+    cli_pcre_perf_print;
+    cli_pcre_perf_events_destroy;
 
     cli_gettmpdir;
     cli_strtok;

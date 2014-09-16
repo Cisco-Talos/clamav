@@ -59,6 +59,7 @@
 #include "libclamav/clamav.h"
 #include "libclamav/others.h"
 #include "libclamav/matcher-ac.h"
+#include "libclamav/matcher-pcre.h"
 #include "libclamav/str.h"
 #include "libclamav/readdb.h"
 #include "libclamav/cltypes.h"
@@ -709,6 +710,9 @@ int scanmanager(const struct optstruct *opts)
 	    if (!strcasecmp(opt->strarg, "bytecode")) {
 		dboptions |= CL_DB_BYTECODE_STATS;
 	    }
+	    else if (!strcasecmp(opt->strarg, "pcre")) {
+		dboptions |= CL_DB_PCRE_STATS;
+	    }
 	    opt = opt->nextarg;
         }
     }
@@ -1061,6 +1065,12 @@ int scanmanager(const struct optstruct *opts)
 		cli_sigperf_print();
 		cli_sigperf_events_destroy();
 	    }
+#if HAVE_PCRE
+	    else if (!strcasecmp(opt->strarg, "pcre")) {
+		cli_pcre_perf_print();
+		cli_pcre_perf_events_destroy();
+	    }
+#endif
 	    opt = opt->nextarg;
         }
     }

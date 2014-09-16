@@ -1454,6 +1454,11 @@ void cli_sigperf_print()
     struct sigperf_elem stats[MAX_BC], *elem = stats;
     int i, elems = 0, max_name_len = 0, name_len;
 
+    if (!g_sigid || !g_sigevents) {
+        cli_warnmsg("cli_sigperf_print: statistics requested but no bytecodes were loaded!\n");
+        return;
+    }
+
     memset(stats, 0, sizeof(stats));
     for (i=0;i<MAX_BC;i++) {
 	union ev_val val;
