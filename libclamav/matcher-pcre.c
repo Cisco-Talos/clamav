@@ -30,21 +30,145 @@
 #include "clamav.h"
 #include "cltypes.h"
 #include "dconf.h"
+#include "events.h"
 #include "others.h"
 #include "matcher.h"
 #include "matcher-pcre.h"
 #include "mpool.h"
 #include "regex_pcre.h"
 
-cli_events_t *p_sigevents = NULL;
-unsigned int p_sigid;
+/* PERFORMANCE MACROS AND FUNCTIONS */
+#define MAX_TRACKED_PCRE 64
+#define PCRE_EVENTS_PER_SIG 2
+#define MAX_PCRE_SIGEVENT_ID MAX_TRACKED_PCRE*PCRE_EVENTS_PER_SIG
 
-int cli_pcre_addpatt(struct cli_matcher *root, const char *trigger, const char *pattern, const char *cflags, const char *offset, const uint32_t *lsigid)
+cli_events_t *p_sigevents = NULL;
+/* bytecode doesn't set this value, we don't either */
+unsigned int p_sigid = 0;
+
+static void pcre_perf_events_init(struct cli_pcre_meta *pm)
+{
+    int ret;
+    char *pcre_name = NULL;
+
+    if (!p_sigevents) {
+        p_sigevents = cli_events_new(MAX_PCRE_SIGEVENT_ID);
+        if (!p_sigevents) {
+            cli_errmsg("pcre_perf: no memory for events table\n");
+            return;
+        }
+    }
+
+    if (p_sigid > MAX_PCRE_SIGEVENT_ID - PCRE_EVENTS_PER_SIG - 1) {
+        cli_errmsg("pcre_perf: events table full. Increase MAX_TRACKED_PCRE\n");
+        return;
+    }
+
+    /* set the name */
+    pcre_name = pm->pdata.expression;
+
+    cli_dbgmsg("pcre_perf: adding sig ids starting %u for %s\n", p_sigid, pcre_name);
+
+    /* register time event */
+    pm->sigtime_id = p_sigid;
+    ret = cli_event_define(p_sigevents, p_sigid++, pcre_name, ev_time, multiple_sum);
+    if (ret) {
+        cli_errmsg("pcre_perf: cli_event_define() error for time event id %d\n", pm->sigtime_id);
+        pm->sigtime_id = MAX_PCRE_SIGEVENT_ID+1;
+        return;
+    }
+
+    /* register match count */
+    pm->sigmatch_id = p_sigid;
+    ret = cli_event_define(p_sigevents, p_sigid++, pcre_name, ev_int, multiple_sum);
+    if (ret) {
+        cli_errmsg("pcre_perf: cli_event_define() error for matches event id %d\n", pm->sigmatch_id);
+        pm->sigmatch_id = MAX_PCRE_SIGEVENT_ID+1;
+        return;
+    }
+}
+
+struct sigperf_elem {
+    const char * name;
+    uint64_t usecs;
+    unsigned long run_count;
+    unsigned long match_count;
+};
+
+static int sigelem_comp(const void * a, const void * b)
+{
+    const struct sigperf_elem *ela = a;
+    const struct sigperf_elem *elb = b;
+    return elb->usecs/elb->run_count - ela->usecs/ela->run_count;
+}
+
+void cli_pcre_perf_print()
+{
+    struct sigperf_elem stats[MAX_TRACKED_PCRE], *elem = stats;
+    int i, elems = 0, max_name_len = 0, name_len;
+
+    if (!p_sigid || !p_sigevents) {
+        cli_warnmsg("cli_pcre_perf_print: statistics requested but no PCREs were loaded!\n");
+        return;
+    }
+
+    memset(stats, 0, sizeof(stats));
+    for (i=0;i<MAX_TRACKED_PCRE;i++) {
+        union ev_val val;
+        uint32_t count;
+        const char * name = cli_event_get_name(p_sigevents, i*PCRE_EVENTS_PER_SIG);
+        cli_event_get(p_sigevents, i*PCRE_EVENTS_PER_SIG, &val, &count);
+        if (!count) {
+            if (name)
+                cli_dbgmsg("No event triggered for %s\n", name);
+            continue;
+        }
+        if (name)
+            name_len = strlen(name);
+        else
+            name_len = 0;
+        if (name_len > max_name_len)
+            max_name_len = name_len;
+        elem->name = name?name:"\"noname\"";
+        elem->usecs = val.v_int;
+        elem->run_count = count;
+        cli_event_get(p_sigevents, i*PCRE_EVENTS_PER_SIG+1, &val, &count);
+        elem->match_count = count;
+        elem++;
+        elems++;
+    }
+
+    cli_qsort(stats, elems, sizeof(struct sigperf_elem), sigelem_comp);
+
+    elem = stats;
+    /* name runs matches microsecs avg */
+    cli_infomsg (NULL, "%-*s %*s %*s %*s %*s\n", max_name_len, "PCRE Expression",
+                 8, "#runs", 8, "#matches", 12, "usecs total", 9, "usecs avg");
+    cli_infomsg (NULL, "%-*s %*s %*s %*s %*s\n", max_name_len, "===============",
+                 8, "=====", 8, "========", 12, "===========", 9, "=========");
+    while (elem->run_count) {
+        cli_infomsg (NULL, "%-*s %*lu %*lu %*llu %*.2f\n", max_name_len, elem->name,
+                     8, elem->run_count, 8, elem->match_count,
+                     12, elem->usecs, 9, (double)elem->usecs/elem->run_count);
+        elem++;
+    }
+}
+
+
+void cli_pcre_perf_events_destroy()
+{
+    cli_events_free(p_sigevents);
+    p_sigid = 0;
+}
+
+
+/* PCRE MATCHER FUNCTIONS */
+int cli_pcre_addpatt(struct cli_matcher *root, const char *trigger, const char *pattern, const char *cflags, const char *offset, const uint32_t *lsigid, unsigned int options)
 {
     struct cli_pcre_meta **newmetatable = NULL, *pm = NULL;
     uint32_t pcre_count;
     const char *opt;
-    int ret = CL_SUCCESS, options = 0, rssigs;
+    int ret = CL_SUCCESS, rssigs;
 
     if (!root || !trigger || !pattern || !offset) {
         cli_errmsg("pcre_addpatt: NULL root or NULL trigger or NULL pattern or NULL offset\n");
@@ -157,6 +281,11 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *trigger, const char *
         cli_dbgmsg("PCRE_OPTIONS        %08x\n", pm->pdata.options);
         */
     }
+
+    /* add metadata to the performance tracker */
+    cli_dbgmsg("options: %x == %x\n", options, CL_DB_PCRE_STATS);
+    if (options & CL_DB_PCRE_STATS)
+        pcre_perf_events_init(pm);
 
     /* add pcre data to root after reallocation */
     pcre_count = root->pcre_metas+1;
@@ -481,9 +610,13 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
 
         /* if the global flag is set, loop through the scanning - TODO: how does this affect really big files? */
         do {
-            /* TODO: performance metrics */
+            /* performance metrics */
+            cli_event_time_start(p_sigevents, pm->sigtime_id);
             rc = cli_pcre_match(pd, buffer+adjbuffer, adjlength, offset, 0, ovector, OVECCOUNT);
-            cli_dbgmsg("cli_pcre_scanbuf: running regex /%s/ returns %d\n", pd->expression, rc);
+            cli_event_time_stop(p_sigevents, pm->sigtime_id);
+            /* if debug, generate a match report */
+            if (cli_debug_flag)
+                cli_pcre_report(pd, buffer+adjbuffer, adjlength, rc, ovector, OVECCOUNT);
 
             /* matched, rc shouldn't be >0 unless a full match occurs */
             if (rc > 0) {
@@ -495,6 +628,9 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
                         break;
                     }
                 }
+
+                /* track the detection count */
+                cli_event_count(p_sigevents, pm->sigmatch_id);
 
                 /* for logical signature evaluation */
                 if (pm->lsigid[0]) {
@@ -582,4 +718,5 @@ void cli_pcre_freetable(struct cli_matcher *root)
     root->pcre_metatable = NULL;
     root->pcre_metas = 0;
 }
+
 #endif /* HAVE_PCRE */

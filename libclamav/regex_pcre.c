@@ -149,11 +149,29 @@ int cli_pcre_compile(struct cli_pcre_data *pd, long long unsigned match_limit, l
     return CL_SUCCESS;
 }
 
+int cli_pcre_match(struct cli_pcre_data *pd, const unsigned char *buffer, uint32_t buflen, int override_offset, int options, int *ovector, size_t ovlen)
+{
+    int startoffset;
+
+    if (ovlen % 3) {
+        cli_dbgmsg("cli_pcre_match: ovector length is not a multiple of 3\n");
+        return CL_EARG;
+    }
+
+    /* set the startoffset, override if a value is specified */
+    startoffset = pd->search_offset;
+    if (override_offset >= 0)
+        startoffset = override_offset;
+
+    /* execute the pcre and return */
+    return pcre_exec(pd->re, pd->ex, buffer, buflen, startoffset, options, ovector, ovlen);
+}
+
 #define DISABLE_PCRE_REPORT 0
 #define MATCH_MAXLEN 1028 /*because lolz*/
 
 /* TODO: audit this function */
-static void named_substr_print(struct cli_pcre_data *pd, const unsigned char *buffer, int *ovector, size_t ovlen)
+static void named_substr_print(const struct cli_pcre_data *pd, const unsigned char *buffer, int *ovector, size_t ovlen)
 {
     int i, j, length, namecount, trunc;
     unsigned char *tabptr;
@@ -165,10 +183,10 @@ static void named_substr_print(struct cli_pcre_data *pd, const unsigned char *bu
     /* determine if there are named substrings */
     (void)pcre_fullinfo(pd->re, pd->ex, PCRE_INFO_NAMECOUNT, &namecount);
     if (namecount <= 0) {
-        cli_dbgmsg("named_substr: no named substrings\n");
+        cli_dbgmsg("cli_pcre_report: no named substrings\n");
     }
     else {
-        cli_dbgmsg("named_substr: named substrings\n");
+        cli_dbgmsg("cli_pcre_report: named substrings\n");
 
         /* extract named substring translation table */
         (void)pcre_fullinfo(pd->re, pd->ex, PCRE_INFO_NAMETABLE, &name_table);
@@ -191,7 +209,7 @@ static void named_substr_print(struct cli_pcre_data *pd, const unsigned char *bu
             for (j = 0; j < length; ++j)
                 snprintf(outstr+(2*j), sizeof(outstr)-(2*j), "%02x", (unsigned int)*(start+j));
 
-            cli_dbgmsg("named_substr:  (%d) %*s: %s%s\n", n, name_entry_size - 3, tabptr + 2,
+            cli_dbgmsg("cli_pcre_report: (%d) %*s: %s%s\n", n, name_entry_size - 3, tabptr + 2,
                        outstr, trunc ? " (trunc)":"");
             /*
             cli_dbgmsg("named_substr:  (%d) %*s: %.*s%s\n", n, name_entry_size - 3, tabptr + 2,
@@ -203,34 +221,27 @@ static void named_substr_print(struct cli_pcre_data *pd, const unsigned char *bu
 }
 
 /* TODO: audit this function */
-int cli_pcre_match(struct cli_pcre_data *pd, const unsigned char *buffer, uint32_t buflen, int override_offset, int options, int *ovector, size_t ovlen)
+void cli_pcre_report(const struct cli_pcre_data *pd, const unsigned char *buffer, uint32_t buflen, int rc, int *ovector, size_t ovlen)
 {
-    int rc, startoffset, i, j, length, trunc;
+    int i, j, length, trunc;
     const char *start;
     char outstr[2*MATCH_MAXLEN+1];
 
-    if (ovlen % 3) {
-        cli_dbgmsg("cli_pcre_match: ovector length is not a multiple of 3\n");
-        return CL_EARG;
-    }
-
-    /* set the startoffset, override if a value is specified */
-    startoffset = pd->search_offset;
-    if (override_offset >= 0)
-        startoffset = override_offset;
-
-    /* execute the pcre */
-    rc = pcre_exec(pd->re, pd->ex, buffer, buflen, startoffset, options, ovector, ovlen);
-
     /* print out additional diagnostics if cli_debug_flag is set */
-    if (!DISABLE_PCRE_REPORT && cli_debug_flag) {
+    if (!DISABLE_PCRE_REPORT) {
         cli_dbgmsg("\n");
-        cli_dbgmsg("cli_pcre_match: PCRE Execution Report:\n");
+        cli_dbgmsg("cli_pcre_report: PCRE Execution Report:\n");
+        cli_dbgmsg("cli_pcre_report: running regex /%s/ returns %d\n", pd->expression, rc);
         if (rc > 0) {
             /* print out full-match and capture groups */
             for (i = 0; i < rc; ++i) {
                 start = buffer + ovector[2*i];
                 length = ovector[2*i+1] - ovector[2*i];
+
+                if (ovector[2*i+1] >= buflen) {
+                    cli_warnmsg("cli_pcre_report: reported match goes outside buffer\n");
+                    continue;
+                }
 
                 trunc = 0;
                 if (length > MATCH_MAXLEN) {
@@ -241,24 +252,22 @@ int cli_pcre_match(struct cli_pcre_data *pd, const unsigned char *buffer, uint32
                 for (j = 0; j < length; ++j) 
                     snprintf(outstr+(2*j), sizeof(outstr)-(2*j), "%02x", (unsigned int)*(start+j));
 
-                cli_dbgmsg("cli_pcre_match:  %d: %s%s\n", i, outstr, trunc ? " (trunc)":"");
-                //cli_dbgmsg("cli_pcre_match:  %d: %.*s%s\n", i, length, start, trunc ? " (trunc)":"");
+                cli_dbgmsg("cli_pcre_report:  %d: %s%s\n", i, outstr, trunc ? " (trunc)":"");
+                //cli_dbgmsg("cli_pcre_report:  %d: %.*s%s\n", i, length, start, trunc ? " (trunc)":"");
             }
 
             named_substr_print(pd, buffer, ovector, ovlen);
         }
         else if (rc == 0 || rc == PCRE_ERROR_NOMATCH) {
-            cli_dbgmsg("cli_pcre_match: no match found\n");
+            cli_dbgmsg("cli_pcre_report: no match found\n");
         }
         else {
-            cli_dbgmsg("cli_pcre_match: error occurred in pcre_match: %d\n", rc);
+            cli_dbgmsg("cli_pcre_report: error occurred in pcre_match: %d\n", rc);
             /* error handled by caller */
         }
-        cli_dbgmsg("cli_pcre_match: PCRE Execution Report End\n");
+        cli_dbgmsg("cli_pcre_report: PCRE Execution Report End\n");
         cli_dbgmsg("\n");
     }
-
-    return rc;
 }
 
 void cli_pcre_free_single(struct cli_pcre_data *pd)
