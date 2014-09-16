@@ -210,15 +210,28 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *trigger, const char *
             return CL_ENULLARG;
         }
 
-        cli_dbgmsg("cli_pcre_build: Compiling regex: %s\n", pm->pdata.expression);
+        /* disable global */
+        if ((pm->flags & CLI_PCRE_GLOBAL) & !(dconf->pcre & PCRE_CONF_GLOBAL)) {
+            cli_dbgmsg("cli_pcre_build: disabling global option for regex /%s/\n", pm->pdata.expression);
+            pm->flags &= ~(CLI_PCRE_GLOBAL);
+        }
 
         /* options override through metadata manipulation */
         //pm->pdata.options |= PCRE_NEVER_UTF; /* implemented in 8.33, disables (?UTF*) */
         //pm->pdata.options |= PCRE_UCP;/* implemented in 8.20 */
         //pm->pdata.options |= PCRE_AUTO_CALLOUT; /* used with CALLOUT(-BACK) function */
 
-        /* parse the regex, no options override *wink* */
-        if ((ret = cli_pcre_compile(&(pm->pdata), match_limit, recmatch_limit, 0, 0)) != CL_SUCCESS) {
+        if (dconf->pcre & PCRE_CONF_OPTIONS) {
+            /* compile the regex, no options override *wink* */
+            cli_dbgmsg("cli_pcre_build: Compiling regex: /%s/\n", pm->pdata.expression);
+            ret = cli_pcre_compile(&(pm->pdata), match_limit, recmatch_limit, 0, 0);
+        }
+        else {
+            /* compile the regex, options overrided and disabled */
+            cli_dbgmsg("cli_pcre_build: Compiling regex: /%s/ (without options)\n", pm->pdata.expression);
+            ret = cli_pcre_compile(&(pm->pdata), match_limit, recmatch_limit, 0, 1);
+        }
+        if (ret != CL_SUCCESS) {
             cli_errmsg("cli_pcre_build: failed to build pcre regex\n");
             pm->flags |= CLI_PCRE_DISABLED; /* disable the pcre */
             return ret;

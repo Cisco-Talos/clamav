@@ -137,6 +137,8 @@ static struct dconf_module modules[] = {
     { "STATS",      "PESECTION DISABLED", DCONF_STATS_PE_SECTION_DISABLED, 0 },
 
     { "PCRE",       "SUPPORT",      PCRE_CONF_SUPPORT,   1 },
+    { "PCRE",       "OPTIONS",      PCRE_CONF_OPTIONS,   1 },
+    { "PCRE",       "GLOBAL",       PCRE_CONF_GLOBAL,    1 },
 
     { NULL,     NULL,       0,              0 }
 };
@@ -303,7 +305,7 @@ void cli_dconf_print(struct cli_dconf *dconf)
         } else if (!strcmp(modules[i].mname, "PCRE")) {
             if (!pcre) {
                 cli_dbgmsg("Module PCRE %s\n", dconf->pcre ? "On" : "Off");
-                stats = 1;
+                pcre = 1;
             }
 
             if (dconf->pcre)
