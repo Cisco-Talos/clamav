@@ -438,7 +438,9 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
         do {
             /* TODO: performance metrics */
             rc = cli_pcre_match(pd, buffer+adjbuffer, adjlength, offset, 0, ovector, OVECCOUNT);
-            cli_dbgmsg("cli_pcre_scanbuf: running regex /%s/ returns %d\n", pd->expression, rc);
+            /* if debug, generate a match report */
+            if (cli_debug_flag)
+                cli_pcre_report(pd, buffer+adjbuffer, adjlength, rc, ovector, OVECCOUNT);
 
             /* matched, rc shouldn't be >0 unless a full match occurs */
             if (rc > 0) {
