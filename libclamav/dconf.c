@@ -303,6 +303,7 @@ void cli_dconf_print(struct cli_dconf *dconf)
             else
                 continue;
         } else if (!strcmp(modules[i].mname, "PCRE")) {
+#if HAVE_PCRE
             if (!pcre) {
                 cli_dbgmsg("Module PCRE %s\n", dconf->pcre ? "On" : "Off");
                 pcre = 1;
@@ -312,6 +313,14 @@ void cli_dconf_print(struct cli_dconf *dconf)
                 cli_dbgmsg("   * Submodule %10s:\t%s\n", modules[i].sname, (dconf->pcre & modules[i].bflag) ? "On" : "** Off **");
             else
                 continue;
+#else
+            if (!pcre) {
+                cli_dbgmsg("Module PCRE Off\n");
+                pcre = 1;
+            }
+
+            continue;
+#endif
         }
     }
 }
