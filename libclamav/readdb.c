@@ -214,9 +214,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
             cflags = NULL;
         }
 
-        cli_dbgmsg("trigger %s; regex %s; cflags %s; offset %s\n", trigger, regex, cflags, offset);
         /* normal trigger */
-	cli_dbgmsg("pcre regex detected: %s on trigger: %s with cflags: %s @offset: %s\n", regex, trigger, cflags, offset);
         ret = cli_pcre_addpatt(root, trigger, regex, cflags, offset, lsigid, options);
 
         free(trigger);

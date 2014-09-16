@@ -37,13 +37,21 @@
 #include "mpool.h"
 #include "regex_pcre.h"
 
+/* DEBUGGING */
+//#define MATCHER_PCRE_DEBUG
+#ifdef MATCHER_PCRE_DEBUG
+#  define pm_dbgmsg(...) cli_dbgmsg( __VA_ARGS__)
+#else
+#  define pm_dbgmsg(...)
+#endif
+#undef MATCHER_PCRE_DEBUG
+
 /* PERFORMANCE MACROS AND FUNCTIONS */
 #define MAX_TRACKED_PCRE 64
 #define PCRE_EVENTS_PER_SIG 2
 #define MAX_PCRE_SIGEVENT_ID MAX_TRACKED_PCRE*PCRE_EVENTS_PER_SIG
 
 cli_events_t *p_sigevents = NULL;
-/* bytecode doesn't set this value, we don't either */
 unsigned int p_sigid = 0;
 
 static void pcre_perf_events_init(struct cli_pcre_meta *pm)
@@ -67,7 +75,7 @@ static void pcre_perf_events_init(struct cli_pcre_meta *pm)
     /* set the name */
     pcre_name = pm->pdata.expression;
 
-    cli_dbgmsg("pcre_perf: adding sig ids starting %u for %s\n", p_sigid, pcre_name);
+    pm_dbgmsg("pcre_perf: adding sig ids starting %u for %s\n", p_sigid, pcre_name);
 
     /* register time event */
     pm->sigtime_id = p_sigid;
@@ -171,9 +179,16 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *trigger, const char *
     int ret = CL_SUCCESS, rssigs;
 
     if (!root || !trigger || !pattern || !offset) {
-        cli_errmsg("pcre_addpatt: NULL root or NULL trigger or NULL pattern or NULL offset\n");
+        cli_errmsg("cli_pcre_addpatt: NULL root or NULL trigger or NULL pattern or NULL offset\n");
         return CL_ENULLARG;
     }
+
+    if (lsigid)
+        pm_dbgmsg("cli_pcre_addpatt: Adding /%s/%s%s triggered on (%s) as subsig %d for lsigid %d\n",
+                  regex, cflags ? " with flags " : "", cflags ? cflags : "", trigger, lsigid[1], lsigid[0]);
+    else
+        pm_dbgmsg("cli_pcre_addpatt: Adding /%s/%s%s triggered on (%s) [no lsigid]\n",
+                  regex, cflags ? " with flags " : "", cflags ? cflags : "", trigger);
 
     /* TODO: trigger and regex checking (string length limitations?)(backreference limitations?) */
 
@@ -232,7 +247,7 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *trigger, const char *
     }
 
     /* offset parsing and usage, similar to cli_ac_addsig */
-    /* type-specific offsets and type-specific scanning handled during scan (cli_target_info stuff?) */
+    /* relative and type-specific offsets handled during scan */
     ret = cli_caloff(offset, NULL, root->type, pm->offdata, &(pm->offset_min), &(pm->offset_max));
     if (ret != CL_SUCCESS) {
         cli_errmsg("cli_pcre_addpatt: cannot calculate offset data: %s for pattern: %s\n", offset, pattern);
@@ -249,14 +264,12 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *trigger, const char *
 
     /* parse and add options, also totally not from snort */
     if (cflags) {
-        cli_dbgmsg("cli_pcre_addpatt: parsing pcre compile flags: %s\n", cflags);
         opt = cflags;
 
         /* cli_pcre_addoptions handles pcre specific options */
         while (cli_pcre_addoptions(&(pm->pdata), &opt, 0) != CL_SUCCESS) {
             /* handle matcher specific options here */
             switch (*opt) {
-                /* no matcher-specific options atm */
             case 'g':  pm->flags |= CLI_PCRE_GLOBAL;            break;
             case 'e':  pm->flags |= CLI_PCRE_ENCOMPASS;         break;
             default:
@@ -267,23 +280,31 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *trigger, const char *
             }
             opt++;
         }
-        /* TODO - better debug? */
-        /*
-        cli_dbgmsg("PCRE_CASELESS       %08x\n", PCRE_CASELESS);
-        cli_dbgmsg("PCRE_DOTALL         %08x\n", PCRE_DOTALL);
-        cli_dbgmsg("PCRE_MULTILINE      %08x\n", PCRE_MULTILINE);
-        cli_dbgmsg("PCRE_EXTENDED       %08x\n", PCRE_EXTENDED);
 
-        cli_dbgmsg("PCRE_ANCHORED       %08x\n", PCRE_ANCHORED);
-        cli_dbgmsg("PCRE_DOLLAR_ENDONLY %08x\n", PCRE_DOLLAR_ENDONLY);
-        cli_dbgmsg("PCRE_UNGREEDY       %08x\n", PCRE_UNGREEDY);
+        if (pm->flags) {
+            pm_dbgmsg("Matcher:  %s%s\n",
+                      pm->flags & CLI_PCRE_GLOBAL ? "CLAMAV_PCRE_GLOBAL " : "",
+                      pm->flags & CLI_PCRE_ENCOMPASS ? "CLAMAV_ENCOMPASS " : "");
+        }
+        else
+            pm_dbgmsg("Matcher:  NONE\n");
 
-        cli_dbgmsg("PCRE_OPTIONS        %08x\n", pm->pdata.options);
-        */
+        if (pm->pdata.options) {
+            pm_dbgmsg("Compiler: %s%s%s%s%s%s%s\n",
+                      pm->pdata.options & PCRE_CASELESS ? "PCRE_CASELESS " : "",
+                      pm->pdata.options & PCRE_DOTALL ? "PCRE_DOTALL " : "",
+                      pm->pdata.options & PCRE_MULTILINE ? "PCRE_MULTILINE " : "",
+                      pm->pdata.options & PCRE_EXTENDED ? "PCRE_EXTENDED " : "",
+
+                      pm->pdata.options & PCRE_ANCHORED ? "PCRE_ANCHORED " : "",
+                      pm->pdata.options & PCRE_DOLLAR_ENDONLY ? "PCRE_DOLLAR_ENDONLY " : "",
+                      pm->pdata.options & PCRE_UNGREEDY ? "PCRE_UNGREEDY " : "");
+        }
+        else
+            pm_dbgmsg("Compiler: NONE\n");
     }
 
     /* add metadata to the performance tracker */
-    cli_dbgmsg("options: %x == %x\n", options, CL_DB_PCRE_STATS);
     if (options & CL_DB_PCRE_STATS)
         pcre_perf_events_init(pm);
 
@@ -297,13 +318,6 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *trigger, const char *
         mpool_free(root->mempool, pm);
         return CL_EMEM;
     }
-
-    if (pm->lsigid[0])
-        cli_dbgmsg("cli_pcre_addpatt: Adding /%s/ triggered on (%s) as subsig %d for lsigid %d\n",
-                   pm->pdata.expression, pm->trigger, pm->lsigid[2], pm->lsigid[1]);
-    else
-        cli_dbgmsg("cli_pcre_addpatt: Adding /%s/ triggered on (%s) [no lsigid]\n",
-                   pm->pdata.expression, pm->trigger);
 
     newmetatable[pcre_count-1] = pm;
     root->pcre_metatable = newmetatable;
@@ -346,23 +360,25 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *trigger, const char *
         }
 
         /* options override through metadata manipulation */
-        //pm->pdata.options |= PCRE_NEVER_UTF; /* implemented in 8.33, disables (?UTF*) */
+#ifdef PCRE_NEVER_UTF
+        pm->pdata.options |= PCRE_NEVER_UTF; /* implemented in 8.33, disables (?UTF*) potential security vuln */
+#endif
         //pm->pdata.options |= PCRE_UCP;/* implemented in 8.20 */
         //pm->pdata.options |= PCRE_AUTO_CALLOUT; /* used with CALLOUT(-BACK) function */
 
         if (dconf->pcre & PCRE_CONF_OPTIONS) {
             /* compile the regex, no options override *wink* */
-            cli_dbgmsg("cli_pcre_build: Compiling regex: /%s/\n", pm->pdata.expression);
+            pm_dbgmsg("cli_pcre_build: Compiling regex: /%s/\n", pm->pdata.expression);
             ret = cli_pcre_compile(&(pm->pdata), match_limit, recmatch_limit, 0, 0);
         }
         else {
             /* compile the regex, options overrided and disabled */
-            cli_dbgmsg("cli_pcre_build: Compiling regex: /%s/ (without options)\n", pm->pdata.expression);
+            pm_dbgmsg("cli_pcre_build: Compiling regex: /%s/ (without options)\n", pm->pdata.expression);
             ret = cli_pcre_compile(&(pm->pdata), match_limit, recmatch_limit, 0, 1);
         }
         if (ret != CL_SUCCESS) {
             cli_errmsg("cli_pcre_build: failed to build pcre regex\n");
-            pm->flags |= CLI_PCRE_DISABLED; /* disable the pcre */
+            pm->flags |= CLI_PCRE_DISABLED; /* disable the pcre, currently will terminate execution */
             return ret;
         }
     }
@@ -405,7 +421,7 @@ int cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data, struc
     for (i = 0; i < root->pcre_metas; ++i) {
         pm = root->pcre_metatable[i];
 
-        /* skip broken pcres, not getting executed always */
+        /* skip broken pcres, not getting executed anyways */
         if (pm->flags & CLI_PCRE_DISABLED) {
             data->offset[i] = CLI_OFF_NONE;
             data->shift[i] = CLI_OFF_NONE;
@@ -434,24 +450,6 @@ int cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data, struc
             }
             data->shift[i] = endoff-(data->offset[i]);
         }
-
-        /* TODO: better debug? */
-        /*
-        cli_dbgmsg("info->fsize: %lu\n", (long unsigned)info->fsize);
-        if (pm->offdata[0]>9)
-            cli_dbgmsg("offdata[0] type:     %x\n", pm->offdata[0]);
-        else
-            cli_dbgmsg("offdata[0] type:     %u\n", pm->offdata[0]);
-        cli_dbgmsg("offdata[1] offset:   %u\n", pm->offdata[1]);
-        cli_dbgmsg("offdata[2] maxshift: %u\n", pm->offdata[2]);
-        cli_dbgmsg("offdata[3] section:  %u\n", pm->offdata[3]);
-        cli_dbgmsg("offset_min: %u\n", pm->offset_min);
-        cli_dbgmsg("offset_max: %u\n", pm->offset_max);
-        */
-    }
-
-    for (i = 0; i < root->pcre_metas; ++i) {
-        cli_dbgmsg("data[%u]: (%u, %u)\n", i, data->offset[i], data->shift[i]);
     }
 
     return CL_SUCCESS;
@@ -467,7 +465,7 @@ void cli_pcre_freeoff(struct cli_pcre_off *data)
     }
 }
 
-/* this fuction is static in matcher-ac.c; should we open it up to cli or maintain a copy here? */
+/* TODO: this fuction is static in matcher-ac.c; should we open it up to cli or maintain a copy here? */
 static inline void lsig_sub_matched(const struct cli_matcher *root, struct cli_ac_data *mdata, uint32_t lsigid1, uint32_t lsigid2, uint32_t realoff, int partial)
 {
 	const struct cli_lsig_tdb *tdb = &root->ac_lsigtable[lsigid1]->tdb;
@@ -542,7 +540,7 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
             continue;
         }
 
-        /* check the evaluation of the trigger */
+        /* evaluate trigger */
         if (pm->lsigid[0]) {
             cli_dbgmsg("cli_pcre_scanbuf: checking %s; running regex /%s/\n", pm->trigger, pd->expression);
             if ((strcmp(pm->trigger, PCRE_BYPASS)) && (cli_ac_chklsig(pm->trigger, pm->trigger + strlen(pm->trigger), mdata->lsigcnt[pm->lsigid[1]], &evalcnt, &evalids, 0) != 1))
@@ -550,7 +548,7 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
         }
         else {
             cli_dbgmsg("cli_pcre_scanbuf: skipping %s check due to unintialized lsigid\n", pm->trigger);
-            /* fall-through to unconditional execution for sigtool */
+            /* fall-through to unconditional execution - sigtool-only */
         }
 
         global = (pm->flags & CLI_PCRE_GLOBAL);       /* search for all matches */
@@ -577,7 +575,7 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
                 }
             }
             else {
-                /* you could call cli_caloff here but you should call cli_pcre_recaloff before */
+                /* you could call cli_caloff here but you should call cli_pcre_recaloff prior within the caller */
                 adjbuffer = 0;
                 adjshift = 0;
             }
@@ -606,7 +604,7 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
             continue;
         }
 
-        cli_dbgmsg("cli_pcre_scanbuf: passed buffer adjusted to %u +%u(%u)[%u]%s\n", adjbuffer, adjlength, adjbuffer+adjlength, adjshift, encompass ? " (encompass)":"");
+        pm_dbgmsg("cli_pcre_scanbuf: passed buffer adjusted to %u +%u(%u)[%u]%s\n", adjbuffer, adjlength, adjbuffer+adjlength, adjshift, encompass ? " (encompass)":"");
 
         /* if the global flag is set, loop through the scanning - TODO: how does this affect really big files? */
         do {
@@ -634,15 +632,15 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
 
                 /* for logical signature evaluation */
                 if (pm->lsigid[0]) {
-                    cli_dbgmsg("cli_pcre_scanbuf: assigning lsigcnt[%d][%d], located @ %d\n",
-                               pm->lsigid[1], pm->lsigid[2], adjbuffer+ovector[0]);
+                    pm_dbgmsg("cli_pcre_scanbuf: assigning lsigcnt[%d][%d], located @ %d\n",
+                              pm->lsigid[1], pm->lsigid[2], adjbuffer+ovector[0]);
 
                     lsig_sub_matched(root, mdata, pm->lsigid[1], pm->lsigid[2], adjbuffer+ovector[0], 0);
                 }
-                else
-                    cli_dbgmsg("cli_pcre_scanbuf: located regex match @ %d\n", adjbuffer+ovector[0]);
 
-                /* for raw match data */
+                cli_dbgmsg("cli_pcre_scanbuf: located regex match @ %d\n", adjbuffer+ovector[0]);
+
+                /* for raw match data - sigtool only */
                 if(res) {
                     newres = (struct cli_ac_result *) malloc(sizeof(struct cli_ac_result));
                     if(!newres) {
@@ -658,7 +656,7 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
             }
 
             /* move off to the end of the match for next match; offset is relative to adjbuffer
-             * NOTE: misses matches starting within the last match */
+             * NOTE: misses matches starting within the last match; TODO: start from start of last match? */
             offset = ovector[1];
 
             /* clear the ovector results (they fall through the pcre_match) */
@@ -668,7 +666,6 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
         /* handle error codes */
         if (rc < 0 && rc != PCRE_ERROR_NOMATCH) {
             switch (rc) {
-                /* for user-defined callback function error (unused) */
             case PCRE_ERROR_CALLOUT:
                 break;
             case PCRE_ERROR_NOMEMORY:
@@ -707,7 +704,7 @@ void cli_pcre_freetable(struct cli_matcher *root)
     struct cli_pcre_meta *pm = NULL;
 
     for (i = 0; i < root->pcre_metas; ++i) {
-        /* free pcre meta*/
+        /* free pcre meta */
         pm = root->pcre_metatable[i];
         cli_pcre_freemeta(pm);
         mpool_free(root->mempool, pm);

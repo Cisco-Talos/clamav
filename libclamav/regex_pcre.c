@@ -117,7 +117,6 @@ int cli_pcre_compile(struct cli_pcre_data *pd, long long unsigned match_limit, l
     /* now study it... (section totally not from snort) */
     pd->ex = pcre_study(pd->re, 0, &error);
     if (!(pd->ex)) {
-        /* TODO: this is complicated because pcre will use system malloc */
         pd->ex = (pcre_extra *)cli_calloc(1, sizeof(*(pd->ex)));
         if (!(pd->ex)) {
             cli_errmsg("cli_pcre_parse: Unable to allocate memory\n");
