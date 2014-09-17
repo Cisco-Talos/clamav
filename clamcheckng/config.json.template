@@ -1,0 +1,56 @@
+{
+    "version": 1,
+    "configure": [ "--disable-silent-rules" ],
+    "debug": true,
+    "compile": {
+        "make": "gmake",
+        "jobs": 7
+    },
+    "features": {
+        "json": {
+            "configure": [ "--with-libjson" ],
+            "libs": [ "libjson" ],
+            "clamscan": {
+                "database": "%CLAMBASE%/unit_tests/input/clamav.hdb",
+                "arguments": [
+                    {
+                        "argument": "--gen-json",
+                        "type": "flag",
+                        "files": [ "%CLAMBASE%/test/clam-upx.exe" ],
+                        "behavior": {
+                            "enabled": {
+                                "detections": [
+                                    {
+                                        "file": "%CLAMBASE%/test/clam-upx.exe",
+                                        "detect": "ClamAV-Test-File"
+                                    }
+                                ],
+                                "grep": {
+                                    "result": true,
+                                    "location": "temps",
+                                    "value": "CLAMJSONv0"
+                                }
+                            },
+                            "disabled": {
+                                "detections": [
+                                    {
+                                        "file": "%CLAMBASE%/test/clam-upx.exe",
+                                        "detect": "ClamAV-Test-File"
+                                    }
+                                ],
+                                "grep": {
+                                    "result": false,
+                                    "location": "temps",
+                                    "value": "CLAMJSONv0"
+                                }
+                            }
+                        },
+                        "temps": {
+                            "keep": true
+                        }
+                    }
+                ]
+            }
+        }
+    }
+}
