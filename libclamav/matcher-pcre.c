@@ -189,6 +189,9 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *trigger, const char *
         cli_errmsg("cli_pcre_addpatt: trigger or pattern cannot be an empty string\n");
         return CL_EMALFDB;
     }
+    if (cflags && *cflags == '\0') {
+        cflags = NULL;
+    }
 
     if (lsigid)
         pm_dbgmsg("cli_pcre_addpatt: Adding /%s/%s%s triggered on (%s) as subsig %d for lsigid %d\n",

@@ -166,24 +166,43 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
     if (strchr(hexsig, '/')) {
 #if HAVE_PCRE
         /* expected format => ^offset:trigger/regex/[cflags]$ */
-	const char *stokens[PCRE_TOKENS];
-	size_t stoken_count;
+	const char *trigger, *pattern, *cflags;
+        char *start, *end;
+
+        /* get checked */
+        if (hexsig[0] == '/') {
+            cli_errmsg("cli_parseadd(): PCRE subsig must contain logical trigger\n");
+            return CL_EMALFDB;
+        }
 
         /* get copied */
-        hexcpy = cli_calloc(hexlen, sizeof(char));
+        hexcpy = cli_calloc(hexlen+1, sizeof(char));
         if(!hexcpy)
             return CL_EMEM;
         strncpy(hexcpy, hexsig, hexlen);
 
-        /* get tokened */
-        stoken_count = cli_strtokenize(hexcpy, '/', PCRE_TOKENS, stokens);
-        if (stoken_count != 2 && stoken_count != 3) {
-            cli_errmsg("cli_parseadd(): invalid number of tokens for pcre subsig: %d\n", stoken_count);
+        /* get delimiters-ed */
+        start = strchr(hexcpy, '/');
+        end = strrchr(hexcpy, '/');
+        if (start == end) {
+            cli_errmsg("cli_parseadd(): PCRE expression must be delimited by '/'\n");
+            free(hexcpy);
             return CL_EMALFDB;
         }
 
+        /* get NULL-ed */
+        *start = '\0';
+        *end = '\0';
+
+        /* get tokens-ed */
+        trigger = hexcpy;
+        pattern = start+1;
+        cflags = end+1;
+        if (*cflags == '\0') /* get compat-ed */
+            cflags = NULL;
+
         /* normal trigger, get added */
-        ret = cli_pcre_addpatt(root, stokens[0], stokens[1], stokens[2], offset, lsigid, options);
+        ret = cli_pcre_addpatt(root, trigger, pattern, cflags, offset, lsigid, options);
         free(hexcpy);
         return ret;
 #else
