@@ -109,6 +109,7 @@ char *cli_virname(char *virname, unsigned int official)
     return newname;
 }
 
+#define PCRE_TOKENS 4
 int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hexsig, uint16_t rtype, uint16_t type, const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options)
 {
 	struct cli_bm_patt *bm_new;
@@ -162,65 +163,28 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 	}
 	return CL_SUCCESS;
     }
-    if ((wild = strchr(hexsig, '/'))) {
+    if (strchr(hexsig, '/')) {
 #if HAVE_PCRE
-        /* ^offset:trigger-logic/regex/options$ */
-	char *trigger, *regex, *regex_end, *cflags;
-	size_t tlen = wild-hexsig, rlen, clen;
+        /* expected format => ^offset:trigger/regex/[cflags]$ */
+	const char *stokens[PCRE_TOKENS];
+	size_t stoken_count;
 
-        /* check for trigger */
-	if (!tlen) {
-	    cli_errmsg("cli_parseadd(): cannot add pcre without logical trigger\n");
-	    return CL_EMALFDB;
-	}
+        /* get copied */
+        hexcpy = cli_calloc(hexlen, sizeof(char));
+        if(!hexcpy)
+            return CL_EMEM;
+        strncpy(hexcpy, hexsig, hexlen);
 
-        /* locate end of regex for options start, locate options length */
-        if ((regex_end = strchr(wild+1, '/')) == NULL) {
-            cli_errmsg("cli_parseadd(): missing terminator /\n");
+        /* get tokened */
+        stoken_count = cli_strtokenize(hexcpy, '/', PCRE_TOKENS, stokens);
+        if (stoken_count != 2 && stoken_count != 3) {
+            cli_errmsg("cli_parseadd(): invalid number of tokens for pcre subsig: %d\n", stoken_count);
             return CL_EMALFDB;
         }
-        rlen = regex_end-wild-1;
-        clen = hexlen-tlen-rlen-2; /* 2 from regex boundaries '/' */
 
-	/* get the trigger statement */
-	trigger = cli_calloc(tlen+1, sizeof(char));
-	if (!trigger) {
-	    cli_errmsg("cli_parseadd(): cannot allocate memory for trigger string\n");
-	    return CL_EMEM;
-	}
-	strncpy(trigger, hexsig, tlen);
-	trigger[tlen] = '\0';
-
-        /* get the regex expression */
-        regex = cli_calloc(rlen+1, sizeof(char));
-        if (!regex) {
-            cli_errmsg("cli_parseadd(): cannot allocate memory for regex expression\n");
-            return CL_EMEM;
-        }
-        strncpy(regex, hexsig+tlen+1, rlen);
-        regex[rlen] = '\0';
-
-        /* get the compile flags */
-        if (clen) {
-            cflags = cli_calloc(clen+1, sizeof(char));
-            if (!cflags) {
-                cli_errmsg("cli_parseadd(): cannot allocate memory for compile flags\n");
-                return CL_EMEM;
-            }
-            strncpy(cflags, hexsig+tlen+rlen+2, clen);
-            cflags[clen] = '\0';
-        }
-        else {
-            cflags = NULL;
-        }
-
-        /* normal trigger */
-        ret = cli_pcre_addpatt(root, trigger, regex, cflags, offset, lsigid, options);
-
-        free(trigger);
-        free(regex);
-        if (cflags)
-            free(cflags);
+        /* normal trigger, get added */
+        ret = cli_pcre_addpatt(root, stokens[0], stokens[1], stokens[2], offset, lsigid, options);
+        free(hexcpy);
         return ret;
 #else
         cli_errmsg("cli_parseadd(): cannot parse PCRE subsig without PCRE support\n");
