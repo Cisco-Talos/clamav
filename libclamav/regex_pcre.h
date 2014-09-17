@@ -35,8 +35,8 @@
 #include "cltypes.h"
 #include "mpool.h"
 
-/* used for setting no override */
-#define CLI_PCREMATCH_NOOVERRIDE -1
+/* used for setting overrides */
+#define CLI_PCREMATCH_NOOFFSETOVERRIDE -1
 /* must be multiple of 3 */
 #define OVECCOUNT 300
 
