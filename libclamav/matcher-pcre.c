@@ -26,7 +26,6 @@
 #include "clamav-config.h"
 #endif
 
-#if HAVE_PCRE
 #include "clamav.h"
 #include "cltypes.h"
 #include "dconf.h"
@@ -37,6 +36,7 @@
 #include "mpool.h"
 #include "regex_pcre.h"
 
+#if HAVE_PCRE
 /* DEBUGGING */
 //#define MATCHER_PCRE_DEBUG
 #ifdef MATCHER_PCRE_DEBUG
@@ -722,6 +722,26 @@ void cli_pcre_freetable(struct cli_matcher *root)
     mpool_free(root->mempool, root->pcre_metatable);
     root->pcre_metatable = NULL;
     root->pcre_metas = 0;
+}
+
+#else
+/* NO-PCRE FUNCTIONS */
+int cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data, struct cli_target_info *info, cli_ctx *ctx)
+{
+    UNUSEDPARAM(root);
+    UNUSEDPARAM(info);
+    UNUSEDPARAM(ctx);
+    if (data) {
+        data->offset = NULL;
+        data->shift = NULL;
+    }
+    return CL_SUCCESS;
+}
+
+void cli_pcre_freeoff(struct cli_pcre_off *data)
+{
+    UNUSEDPARAM(data);
+    return;
 }
 
 #endif /* HAVE_PCRE */

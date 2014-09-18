@@ -25,7 +25,6 @@
 #ifndef __MATCHER_PCRE_H
 #define __MATCHER_PCRE_H
 
-#if HAVE_PCRE
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
@@ -37,6 +36,12 @@
 #include "mpool.h"
 #include "regex_pcre.h"
 
+/* stores offset data */
+struct cli_pcre_off {
+    uint32_t *offset, *shift;
+};
+
+#if HAVE_PCRE
 #define PCRE_BYPASS "7374756c747a676574737265676578"
 #define CLI_PCRE_GLOBAL    0x00000001 /* g */
 #define CLI_PCRE_ENCOMPASS 0x00000002 /* e */
@@ -56,11 +61,6 @@ struct cli_pcre_meta {
     uint32_t sigtime_id, sigmatch_id;
 };
 
-/* stores offset data */
-struct cli_pcre_off {
-    uint32_t *offset, *shift;
-};
-
 /* PCRE PERFORMANCE DECLARATIONS */
 void cli_pcre_perf_print();
 void cli_pcre_perf_events_destroy();
@@ -73,5 +73,9 @@ void cli_pcre_freeoff(struct cli_pcre_off *data);
 int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct cli_matcher *root, struct cli_ac_data *mdata,  struct cli_ac_result **res, const struct cli_pcre_off *data, cli_ctx *ctx);
 void cli_pcre_freemeta(struct cli_pcre_meta *pm);
 void cli_pcre_freetable(struct cli_matcher *root);
+#else
+/* NO-PCRE DECLARATIONS - defined because encasing everything in '#if' is a pain */
+inline int cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data, struct cli_target_info *info, cli_ctx *ctx);
+inline void cli_pcre_freeoff(struct cli_pcre_off *data);
 #endif /* HAVE_PCRE */
 #endif /*__MATCHER_PCRE_H*/
