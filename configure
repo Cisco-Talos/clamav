@@ -28040,9 +28040,10 @@ else
   $as_echo "$want_unrar ($want_unrar)"
 fi
 
+if test "x$LIBJSON_HOME" != "x"; then
 
 
-   $as_echo_n "              preclass    : "
+   $as_echo_n "              libjson     : "
    if test "x$have_json" = "xno"; then :
   $as_echo "$LIBJSON_HOME (disabled)"
 elif test "x$have_json" = "xyes"; then :
@@ -28053,6 +28054,36 @@ else
   $as_echo "$LIBJSON_HOME ($have_json)"
 fi
 
+fi
+if test "x$PCRE_HOME" = "x"; then
+
+
+   $as_echo_n "              pcre        : "
+   if test "x$have_pcre" = "xno"; then :
+  $as_echo "no (disabled)"
+elif test "x$have_pcre" = "xyes"; then :
+  $as_echo "no"
+elif test "x$have_pcre" = "x"; then :
+  $as_echo "no"
+else
+  $as_echo "no ($have_pcre)"
+fi
+
+else
+
+
+   $as_echo_n "              pcre        : "
+   if test "x$have_pcre" = "xno"; then :
+  $as_echo "$PCRE_HOME (disabled)"
+elif test "x$have_pcre" = "xyes"; then :
+  $as_echo "$PCRE_HOME"
+elif test "x$have_pcre" = "x"; then :
+  $as_echo "$PCRE_HOME"
+else
+  $as_echo "$PCRE_HOME ($have_pcre)"
+fi
+
+fi
 if test "x$XML_LIBS" = "x"; then
 
 
