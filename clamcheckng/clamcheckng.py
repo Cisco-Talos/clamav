@@ -1,23 +1,23 @@
 #!/usr/bin/env python2.7
-
+#
 # Copyright (C) 2014 Cisco and/or its affiliates. All rights reserved.
-
+#
 # Author: Shawn Webb
-
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
 # published by the Free Software Foundation.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
-
+#
 # In addition, as a special exception, the copyright holders give
 # permission to link the code of portions of this program with the
 # OpenSSL library under certain conditions as described in each
@@ -51,41 +51,40 @@ def readConfig(path):
 def main():
     config = readConfig(clamutil.GetCodePath() + "/clamcheckng/config.json")
 
-    ###########################
-    #### Clean Environment ####
-    ###########################
-    if os.access("config.log", os.F_OK) == True:
-        print "[*] Existing build detected. Cleaning."
-        clamutil.CleanMe(config)
+    for featurename in config["features"]:
+        print "[*] Feature: " + featurename
 
-    for feature in config["features"]:
-        print "[*] Feature: " + feature
-        clamutil.CleanMe(config)
-        feature = config["features"][feature]
+        objdir = clamutil.GetObjectDir(config, featurename)
+        os.chdir(objdir)
+        feature = config["features"][featurename]
+        if "forceclean" in feature and feature["forceclean"] == True:
+            if os.access(objdir + "/config.log", os.F_OK) == True:
+                clamutil.CleanMe(config)
 
         #########################
         #### Configure stage ####
         #########################
 
-        args = []
-        args.append("./configure")
-        if "configure" in config:
-            for a in config["configure"]:
-                args.append(a)
-        if "configure" in feature:
-            for a in feature["configure"]:
-                args.append(a)
-        p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        (out, err) = p.communicate()
-        if p.returncode != 0:
-            filename=""
-            if config["debug"] == True:
-                f = tempfile.NamedTemporaryFile(delete=False)
-                f.write(out)
-                filename = " Log written to " + f.name
-                f.close()
-            print "   [-] Configure stage failed." + filename
-            return
+        if os.access(objdir + "/config.log", os.F_OK) == False:
+            args = []
+            args.append(clamutil.Resolve(config, "%CLAMBASE%/configure"))
+            if "configure" in config:
+                for a in config["configure"]:
+                    args.append(a)
+            if "configure" in feature:
+                for a in feature["configure"]:
+                    args.append(a)
+            p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            (out, err) = p.communicate()
+            if p.returncode != 0:
+                filename=""
+                if config["debug"] == True:
+                    f = tempfile.NamedTemporaryFile(delete=False)
+                    f.write(out)
+                    filename = " Log written to " + f.name
+                    f.close()
+                print "   [-] Configure stage failed." + filename
+                return
 
         ###########################
         #### Compilation Stage ####
@@ -118,8 +117,8 @@ def main():
 
         if "libs" in feature:
             env = os.environ
-            env["LD_LIBRARY_PATH"] = clamutil.GetCodePath() + "/libclamav/.libs"
-            p = subprocess.Popen(["ldd", clamutil.GetCodePath() + "/libclamav/.libs/libclamav.so"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=env)
+            env["LD_LIBRARY_PATH"] = objdir + "/libclamav/.libs"
+            p = subprocess.Popen(["ldd", objdir + "/libclamav/.libs/libclamav.so"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=env)
             (out, err) = p.communicate()
             for lib in feature["libs"]:
                 if out.find(lib) == -1:
@@ -136,7 +135,7 @@ def main():
         #### Clamscan Stage ####
         ########################
         if "clamscan" in feature:
-            runner = clamscan.Clamscan(config, feature, feature["clamscan"]["arguments"])
+            runner = clamscan.Clamscan(config, featurename, feature, feature["clamscan"]["arguments"])
             if runner.Run() == False:
                 feature["status"] = False
             else:

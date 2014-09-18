@@ -1,21 +1,21 @@
 # Copyright (C) 2014 Cisco and/or its affiliates. All rights reserved.
-
+#
 # Author: Shawn Webb
-
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
 # published by the Free Software Foundation.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
-
+#
 # In addition, as a special exception, the copyright holders give
 # permission to link the code of portions of this program with the
 # OpenSSL library under certain conditions as described in each
@@ -71,5 +71,69 @@ def CleanTempDir(config):
     if len(os.listdir(tempdir)) > 0:
         shutil.rmtree(tempdir, True)
 
-def Resolve(config, rawpath):
-    return rawpath.replace("%CLAMBASE%", GetCodePath())
+def Resolve(config, rawpath, feature=""):
+    path = rawpath.replace("%CLAMBASE%", GetCodePath())
+    if feature != "":
+        path = path.replace("%OBJDIR%", GetObjectDir(config, feature))
+    return path
+
+def ValidateArgument(argument):
+    if "argument" not in argument:
+        return False
+
+    validType = False
+    if argument["type"] == "flag":
+        validType = True
+
+    if validType == False:
+        return False
+
+    if "behavior" not in argument:
+        return False
+
+    if "enabled" in argument["behavior"]:
+        if argument["type"] != "flag":
+            return False
+
+        if "detections" in argument["behavior"]["enabled"]:
+            for d in argument["behavior"]["enabled"]["detections"]:
+                if "file" not in d:
+                    return False
+                if "detect" not in d:
+                    return False
+        if "grep" in argument["behavior"]["enabled"]:
+            if "result" not in argument["behavior"]["enabled"] or type(argument["behavior"]["enabled"]["grep"]["result"]) is not bool:
+                return False
+            if "location" not in argument["behavior"]["enabled"]["grep"]:
+                return False
+            if "temps" not in argument["behavior"]["enabled"]["grep"]["location"]:
+                return False
+
+    if "disabled" in argument["behavior"]:
+        if argument["type"] != "flag":
+            return False
+
+        if "detections" in argument["behavior"]["disabled"]:
+            for d in argument["behavior"]["disabled"]["detections"]:
+                if "file" not in d:
+                    return False
+                if "detect" not in d:
+                    return False
+        if "grep" in argument["behavior"]["disabled"]:
+            if "result" not in argument["behavior"]["disabled"] or type(argument["behavior"]["disabled"]["grep"]["result"]) is not bool:
+                return False
+            if "location" not in argument["behavior"]["disabled"]["grep"]:
+                return False
+            if "temps" not in argument["behavior"]["disabled"]["grep"]["location"]:
+                return False
+
+    return True
+
+def GetObjectDir(config, feature):
+    objdir = "%CLAMBASE%/obj/" + feature
+    if "objdir" in config:
+        objdir = config["objdir"]
+    objdir = Resolve(config, objdir + "/" + feature)
+    if os.path.isdir(objdir) == False:
+        os.makedirs(objdir)
+    return objdir

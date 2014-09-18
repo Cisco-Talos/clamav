@@ -1,21 +1,21 @@
 # Copyright (C) 2014 Cisco and/or its affiliates. All rights reserved.
-
+#
 # Author: Shawn Webb
-
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
 # published by the Free Software Foundation.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
-
+#
 # In addition, as a special exception, the copyright holders give
 # permission to link the code of portions of this program with the
 # OpenSSL library under certain conditions as described in each
@@ -34,10 +34,11 @@ import os, sys, subprocess
 import clamutil
 
 class Clamscan:
-    def __init__(self, config, feature, arguments):
+    def __init__(self, config, featurename, feature, arguments):
         self.config = config.copy()
         self.arguments = arguments[:]
         self.feature = feature.copy()
+        self.featurename = featurename
         self.database = "%CLAMBASE%/unit_tests/input/clamav.hdb"
         if "database" in self.feature:
             self.database = self.feature["database"]
@@ -54,7 +55,7 @@ class Clamscan:
         return False
 
     def GrepResult(self, argument, value):
-        p = subprocess.Popen(["grep", "-rqc", value, clamutil.GetTempDir(self.config)])
+        p = subprocess.Popen(["grep", "-rq", value, clamutil.GetTempDir(self.config)])
         (out, err) = p.communicate()
         if p.returncode == 0:
             return True
@@ -79,7 +80,7 @@ class Clamscan:
             if enabled == True:
                 if "detections" in argument["behavior"]["enabled"]:
                     for f in argument["behavior"]["enabled"]["detections"]:
-                        if self.IsDetected(output, clamutil.Resolve(self.config, f["file"]), f["detect"]) == False:
+                        if self.IsDetected(output, clamutil.Resolve(self.config, f["file"], self.featurename), f["detect"]) == False:
                             argument["status"] = "FAIL:DETECT:enabled"
                             return False
                 if "grep" in argument["behavior"]["enabled"]:
@@ -90,7 +91,7 @@ class Clamscan:
             else:
                 if "detections" in argument["behavior"]["disabled"]:
                     for f in argument["behavior"]["disabled"]["detections"]:
-                        if self.IsDetected(output, clamutil.Resolve(self.config, f["file"]), f["detect"]) == False:
+                        if self.IsDetected(output, clamutil.Resolve(self.config, f["file"], self.featurename), f["detect"]) == False:
                             argument["status"] = "FAIL:DETECT:disabled"
                             return False
                 if "grep" in argument["behavior"]["disabled"]:
@@ -102,13 +103,21 @@ class Clamscan:
 
     def Run(self):
         self.status = "RUN"
+        if 0 == 1:
+            for arg in self.arguments:
+                arg["status"] = "VALIDATING::"
+                if clamutil.ValidateArgument(arg) == False:
+                    self.status = "FAIL"
+                    arg["status"] = "FAIL:VALIDATION:"
+                    return False
+
         for arg in self.arguments:
             moreIterations = True
             arg["setting"] = None
             while moreIterations == True:
                 clamutil.CleanTempDir(self.config)
                 args = [
-                    clamutil.Resolve(self.config, "%CLAMBASE%/clamscan/clamscan"),
+                    clamutil.GetObjectDir(self.config, self.featurename) + "/clamscan/clamscan",
                     "-d",
                     clamutil.Resolve(self.config, self.database)
                 ]
@@ -116,10 +125,10 @@ class Clamscan:
                 if "temps" in arg and "keep" in arg["temps"] and arg["temps"]["keep"] == True:
                     args.append("--leave-temps")
                     args.append("--tempdir=" + clamutil.GetTempDir(self.config))
-                elif "behavior" in arg and "enabled" in arg["behavior"] and "grep" in arg["behavior"]["enabled"]:
+                elif "enabled" in arg["behavior"] and "grep" in arg["behavior"]["enabled"]:
                     args.append("--leave-temps")
                     args.append("--tempdir=" + clamutil.GetTempDir(self.config))
-                elif "behavior" in arg and "disabled" in arg["behavior"] and "grep" in arg["behavior"]["disabled"]:
+                elif "disabled" in arg["behavior"] and "grep" in arg["behavior"]["disabled"]:
                     args.append("--leave-temps")
                     args.append("--tempdir=" + clamutil.GetTempDir(self.config))
 
@@ -136,7 +145,7 @@ class Clamscan:
                         args.append(clamutil.Resolve(self.config, extra))
 
                 for f in arg["files"]:
-                    args.append(clamutil.Resolve(self.config, f))
+                    args.append(clamutil.Resolve(self.config, f, self.featurename))
 
                 p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                 (out, err) = p.communicate()
