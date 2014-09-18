@@ -183,7 +183,7 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *trigger, const char *
         return CL_ENULLARG;
     }
 
-    /* TODO: trigger and regex checking (string length limitations?)(backreference limitations?) */
+    /* TODO: trigger and regex checking (backreference limitations?) (control pattern limitations?) */
     /* cli_ac_chklsig will fail a empty trigger; empty patterns can cause an infinite loop */
     if (*trigger == '\0' || *pattern == '\0') {
         cli_errmsg("cli_pcre_addpatt: trigger or pattern cannot be an empty string\n");
