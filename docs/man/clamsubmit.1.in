@@ -19,13 +19,13 @@ Display help to stderr and exit.
 Required option for setting the email address for the submission.
 .TP 
 \fB\-n FILE\fR
-Submit a file that reports as a false negative (ClamAV reports CLEAN). FILE can be - to specify stdin. Mutually exclusive with -p.
+Submit a file that reports as a false negative (ClamAV reports CLEAN). FILE can be \- to specify stdin. Mutually exclusive with \-p.
 .TP 
 \fB\-N NAME\fR
 Required option for setting the name of the sender for the submission.
 .TP
 \fB-p FILE\fR
-Submit a file that reports as a false positive (ClamAV flags the file as virus). FILE can be - to specify stdin. Mutually exclusive with -n.
+Submit a file that reports as a false positive (ClamAV flags the file as virus). FILE can be \- to specify stdin. Mutually exclusive with \-n.
 .SH "CREDITS"
 The idea of this tool is based on Postfix's postconf. clamconf was created under pressure from Tomasz Papszun ;-)
 .SH "AUTHOR"
