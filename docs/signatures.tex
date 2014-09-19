@@ -209,12 +209,12 @@ attachment.exe: OK
     MD5 signature for \verb+test.exe+ use the \verb+--md5+ option of sigtool:
     \begin{verbatim}
 zolw@localhost:/tmp/test$ sigtool --md5 test.exe > test.hdb
-zolw@localhost:/tmp/test$ cat test.hdb 
+zolw@localhost:/tmp/test$ cat test.hdb
 48c4533230e1ae1c118c741c0db19dfb:17387:test.exe
     \end{verbatim}
     That's it! The signature is ready for use:
     \begin{verbatim}
-zolw@localhost:/tmp/test$ clamscan -d test.hdb test.exe 
+zolw@localhost:/tmp/test$ clamscan -d test.hdb test.exe
 test.exe: test.exe FOUND
 
 ----------- SCAN SUMMARY -----------
@@ -242,7 +242,7 @@ Time: 0.024 sec (0 m 0 s)
 
     \subsubsection{SHA1 and SHA256 hash-based signatures}
     ClamAV 0.98 has also added support for SHA1 and SHA256 file checksums.
-    The format is the same as for MD5 file checksum. 
+    The format is the same as for MD5 file checksum.
     It can differentiate between them based on the length of the hash string
     in the signature. For best backwards compatibility, these should be
     placed inside a \verb+*.hsb+ file. The format is:
@@ -482,7 +482,7 @@ Sig1;Target:0;(0&1&2&3)&(4|1);6b6f74656b;616c61;7a6f6c77;7374656
 6616e;deadbeef
 
 Sig2;Target:0;((0|1|2)>5,2)&(3|1);6b6f74656b;616c61;7a6f6c77;737
-46566616e  
+46566616e
 
 Sig3;Target:0;((0|1|2|3)=2)&(4|1);6b6f74656b;616c61;7a6f6c77;737
 46566616e;deadbeef
@@ -492,15 +492,56 @@ f2aef7d14951684cf04100e8110a00;S2+78:22??232c2d252229{-15}6e6573
 (63|64)61706528;S+50:68efa311c3b9963cb1ee8e586d32aeb9043e;f9c58d
 cf43987e4f519d629b103375;SL+550:6300680065005c0046006900
     \end{verbatim}
-    ClamAV 0.96 introduced support for special macro subsignatures in
-    the following format: \verb+${min-max}MACROID$+, where \verb+MACROID+
-    points to a group of signatures and \verb+{min-max}+ specifies the
-    offset range at which one of the group signatures should match.
-    The range is calculated against the match offset of the previous
-    subsignature. The macro subsignature makes its preceding subsignature
-    considered a match only if both of them get matched. For more
-    information and examples please see
-    \url{https://wwws.clamav.net/bugzilla/show_bug.cgi?id=164}.
+
+    \subsection{Special Subsignature Types}
+    Macro subsignatures(clamav-0.96): \verb+${min-max}MACROID$+:
+    \begin{itemize}
+	\item \verb+MACROID+ points to a group of signatures and \verb+{min-max}+
+	specifies the offset range at which one of the group signatures should match.
+	\item The range is calculated against the match offset of the previous subsignature.
+	\item The macro subsignature makes its preceding subsignature considered a match
+	only if both of them get matched.
+	\item For more information and examples please see \url{https://wwws.clamav.net/bugzilla/show_bug.cgi?id=164}.
+    \end{itemize}
+    PCRE subsignatures(clamav-0.99): \verb+Trigger/PCRE/[Flags]+
+    \begin{itemize}
+    \item \verb+Trigger+ is a required field that is a valid \verb+LogicalExpression+ and
+    may refer to any subsignatures that precede this subsignature. They cannot neither be
+    self-referential nor refer to subsequent subsignatures.
+    \item \verb+PCRE+ is the expression representing the regex to execute. \verb+PCRE+
+    must be delimited by '/', but does not need to be escaped within the expression.
+    \verb+PCRE+ cannot be empty and (?UTF*) control sequence is not allowed. Named substrings
+    can be used for an execution report displayed when debug is specified.
+    \item \verb+Flags+ are a series of characters which affect the compilation and execution
+    of \verb+PCRE+ within the PCRE compiler and the ClamAV engine. This field is optional.
+	\begin{itemize}
+	\item \verb+g [CLAMAV_GLOBAL]+ specifies to search for ALL matches of PCRE (default is to
+        search for first match). NOTE: INCREASES the time needed to run the PCRE
+	\item \verb+e [CLAMAV_ENCOMPASS]+ specifies to CONFINE matching between the specified offset
+	and maxshift. Note: DECREASES time needed to run the PCRE
+	\item \verb+i [PCRE_CASELESS]+
+	\item \verb+s [PCRE_DOTALL]+
+	\item \verb+m [PCRE_MULTILINE]+
+	\item \verb+x [PCRE_EXTENDED]+
+	\item \verb+A [PCRE_ANCHORED]+
+	\item \verb+E [PCRE_DOLLAR_ENODNLY]+
+	\item \verb+G [PCRE_UNGREEDY]+
+	\end{itemize}
+    \end{itemize}
+    Examples:
+    \begin{verbatim}
+Firefox.TreeRange.UseAfterFree;Target:0;0&1&2;2e766965772e73656c
+656374696f6e;2e696e76616c696461746553656c656374696f6e;0&1/\x2Evi
+ew\x2Eselection.*?\x2Etree\s*\x3D\s*null.*?\x2Einvalidate/smi
+
+Firefox.IDB.UseAfterFree;Target:0;0&1;4944424b657952616e6765;0/^
+\x2e(only|lowerBound|upperBound|bound)\x28.*?\x29.*?\x2e(lower|u
+pper|lowerOpen|upperOpen)/smi
+
+Firefox.boundElements;Target:0;0&1&2;6576656e742e626f756e64456c6
+56d656e7473;77696e646f772e636c6f7365;0&1/on(load|click)\s*=\s*\x
+22?window\.close\s*\x28/si
+    \end{verbatim}
 
     \subsection{Icon signatures for PE files}
     ClamAV 0.96 includes an approximate/fuzzy icon matcher to help
