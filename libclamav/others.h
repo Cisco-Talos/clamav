@@ -352,6 +352,7 @@ struct cl_engine {
     /* PCRE matching limitations */
     uint64_t pcre_match_limit;
     uint64_t pcre_recmatch_limit;
+    uint64_t pcre_max_filesize;
 };
 
 struct cl_settings {
@@ -415,6 +416,7 @@ struct cl_settings {
     /* PCRE matching limitations */
     uint64_t pcre_match_limit;
     uint64_t pcre_recmatch_limit;
+    uint64_t pcre_max_filesize;
 };
 
 extern int (*cli_unrar_open)(int fd, const char *dirname, unrar_state_t *state);

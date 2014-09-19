@@ -891,6 +891,14 @@ int scanmanager(const struct optstruct *opts)
         }
     }
 
+    if ((opt = optget(opts, "pcre-max-filesize"))->active) {
+        if ((ret = cl_engine_set_num(engine, CL_ENGINE_PCRE_MAX_FILESIZE, opt->numarg))) {
+            logg("!cli_engine_set_num(CL_ENGINE_PCRE_MAX_FILESIZE) failed: %s\n", cl_strerror(ret));
+            cl_engine_free(engine);
+            return 2;
+        }
+    }
+
     /* set scan options */
     if(optget(opts, "allmatch")->enabled)
 	options |= CL_SCAN_ALLMATCHES;

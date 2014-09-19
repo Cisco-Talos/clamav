@@ -530,12 +530,20 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
     struct cli_ac_result *newres;
     uint32_t adjbuffer, adjshift, adjlength;
     unsigned int i, evalcnt;
-    uint64_t evalids;
+    uint64_t evalids, maxfilesize;
     uint32_t global, encompass;
     int rc, offset, ovector[OVECCOUNT];
 
     if (!(ctx->dconf->pcre & PCRE_CONF_SUPPORT) || (!root->pcre_metatable)) {
         return CL_SUCCESS;
+    }
+
+    maxfilesize = (uint64_t)cl_engine_get_num(ctx->engine, CL_ENGINE_PCRE_MAX_FILESIZE, &rc);
+    if (rc != CL_SUCCESS)
+        return rc;
+    if (maxfilesize && (length > maxfilesize)) {
+        cli_dbgmsg("cli_pcre_scanbuf: pcre max filesize exceeded (limit: %llu, needed: %u)\n", maxfilesize, length);
+        return CL_EMAXSIZE;
     }
 
     for (i = 0; i < root->pcre_metas; ++i) {
