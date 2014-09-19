@@ -224,7 +224,7 @@ CL_MSG_STATUS([bzip2       ],[$bzip_check],[$want_bzip2])
 CL_MSG_STATUS([zlib        ],[$ZLIB_HOME],[yes])
 CL_MSG_STATUS([unrar       ],[$want_unrar],[$want_unrar])
 if test "x$LIBJSON_HOME" != "x"; then
-    CL_MSG_STATUS([preclass    ],[$LIBJSON_HOME],[$have_json])
+    CL_MSG_STATUS([libjson     ],[$LIBJSON_HOME],[$have_json])
 fi
 if test "x$PCRE_HOME" = "x"; then
     CL_MSG_STATUS([pcre        ],[no],[$have_pcre])
