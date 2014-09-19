@@ -194,11 +194,11 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *trigger, const char *
     }
 
     if (lsigid)
-        pm_dbgmsg("cli_pcre_addpatt: Adding /%s/%s%s triggered on (%s) as subsig %d for lsigid %d\n",
-                  regex, cflags ? " with flags " : "", cflags ? cflags : "", trigger, lsigid[1], lsigid[0]);
+        pm_dbgmsg("cli_pcre_addpatt: Adding /%s/%s%s triggered on (%s) as subsig %d for lsigid %d\n", 
+                  pattern, cflags ? " with flags " : "", cflags ? cflags : "", trigger, lsigid[1], lsigid[0]);
     else
         pm_dbgmsg("cli_pcre_addpatt: Adding /%s/%s%s triggered on (%s) [no lsigid]\n",
-                  regex, cflags ? " with flags " : "", cflags ? cflags : "", trigger);
+                  pattern, cflags ? " with flags " : "", cflags ? cflags : "", trigger);
 
     /* validate the lsig trigger */
     rssigs = cli_ac_chklsig(trigger, trigger + strlen(trigger), NULL, NULL, NULL, 1);
