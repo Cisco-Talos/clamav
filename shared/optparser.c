@@ -141,7 +141,7 @@ const struct clam_option __clam_options[] = {
     { NULL, "trust-bytecode", 't', CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMBC, "Trust loaded bytecode (default yes)", ""},
     { NULL, "info", 'i', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMBC, "Load and print bytecode information without executing", ""},
     { NULL, "printsrc", 'p', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMBC, "Print source code of bytecode", ""},
-    { NULL, "printbcir", 'c', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMBC, "Print bytecode representation of bytecode signature", ""},
+    { NULL, "printbcir", 'c', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMBC, "Print IR of bytecode signature", ""},
     { NULL, "input", 'r', CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMBC, "Input file to run the bytecode n", ""},
     { NULL, "trace", 'l', CLOPT_TYPE_NUMBER, MATCH_NUMBER, 7, NULL, 0, OPT_CLAMBC, "bytecode trace level",""},
     { NULL, "no-trace-showsource", 's', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMBC, "Don't show source line during tracing",""},
