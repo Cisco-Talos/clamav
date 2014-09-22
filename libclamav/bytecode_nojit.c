@@ -41,7 +41,7 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	    return CL_EBYTECODE;
 	}
     }
-    cli_dbgmsg("JIT not compiled in\n");
+    cli_dbgmsg("Cannot prepare for JIT, LLVM is not compiled or not linked\n");
     return CL_EBYTECODE;
 }
 
@@ -83,7 +83,7 @@ void cli_bytecode_debug_printsrc(const struct cli_bc_ctx *ctx) {
     UNUSEDPARAM(ctx);
 }
 void cli_bytecode_printversion(void) {
-  printf("LLVM not compiled in\n");
+  printf("LLVM is not compiled or not linked\n");
 }
 int have_clamjit=0;
 void cli_printcxxver()
