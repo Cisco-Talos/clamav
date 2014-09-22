@@ -215,7 +215,7 @@ have_jit="no"
 if test "$subdirfailed" = "no"; then
     have_jit="yes"
 fi
-CL_MSG_STATUS([jit         ],[$have_jit],[$enable_llvm])
+CL_MSG_STATUS([llvm        ],[$have_jit, from $system_llvm],[$enable_llvm])
 CL_MSG_STATUS([mempool     ],[$have_mempool],[$enable_mempool])
 
 AC_MSG_NOTICE([Summary of engine detection features])
