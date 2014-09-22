@@ -17319,37 +17319,39 @@ if test "${with_pcre+set}" = set; then :
   withval=$with_pcre;
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for libpcre installation" >&5
 $as_echo_n "checking for libpcre installation... " >&6; }
-  if test "X$withval" = "Xno"; then
+  case "$withval" in
+  no)
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
-  else
-    if test "X$withval" = "Xyes"; then
-      PCRE_HOME=/usr/local
-      if test ! -x "$PCRE_HOME/bin/pcre-config"; then
-        PCRE_HOME=/usr
-        if test ! -x "$PCRE_HOME/bin/pcre-config"; then
-          PCRE_HOME=""
-        fi
-      fi
-    elif test "$withval"; then
-      PCRE_HOME="$withval"
+    ;;
+  yes)
+    PCRE_HOME=/usr/local
+    if test ! -x "$PCRE_HOME/bin/pcre-config"; then
+      PCRE_HOME=/usr
       if test ! -x "$PCRE_HOME/bin/pcre-config"; then
         PCRE_HOME=""
-        as_fn_error $? "cannot locate libpcre at $withval" "$LINENO" 5
+        as_fn_error $? "cannot locate libpcre at /usr/local or /usr" "$LINENO" 5
       fi
-    else
-      as_fn_error $? "cannot assign blank value to --with-pcre" "$LINENO" 5
     fi
+    ;;
+  "")
+    as_fn_error $? "cannot assign blank value to --with-pcre" "$LINENO" 5
+    ;;
+  *)
+    PCRE_HOME="$withval"
+    if test ! -x "$PCRE_HOME/bin/pcre-config"; then
+      PCRE_HOME=""
+      as_fn_error $? "cannot locate libpcre at $withval" "$LINENO" 5
+    fi
+    ;;
+  esac
 
-    if test "x$PCRE_HOME" != "x"; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: result: using $PCRE_HOME" >&5
+  if test "x$PCRE_HOME" != "x"; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: using $PCRE_HOME" >&5
 $as_echo "using $PCRE_HOME" >&6; }
-    else
-      { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
 $as_echo "not found" >&6; }
-      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot locate libpcre at /usr/local or /usr" >&5
-$as_echo "$as_me: WARNING: cannot locate libpcre at /usr/local or /usr" >&2;}
-    fi
   fi
 
 else
