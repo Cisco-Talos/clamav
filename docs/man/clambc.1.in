@@ -12,6 +12,15 @@ Show help
 \fB\-\-version\fR              \fB\-V\fR
 Show version
 .TP
+\fB\-\-debug\fR
+Show debug
+.TP
+\fB\-\-force\-interpreter\fR   \fB\-f\fR
+Force using the interpreter instead of the JIT
+.TP
+\fB\-\-trust\-bytecode\fR      \fB\-t\fR
+Trust loaded bytecode (default yes)
+.TP
 \fB\-\-info\fR                 \fB\-i\fR
 Print information about bytecode
 .TP
@@ -19,13 +28,19 @@ Print information about bytecode
 Print bytecode source
 .TP
 \fB\-\-printbcir\fR            \fB\-c\fR
-Print bytecode IR
+Print IR of bytecode signature
 .TP
-\fB\-\-trace\fR <level>
+\fB\-\-input\fR                \fB\-r\fR
+Input file to run the bytecode on
+.TP
+\fB\-\-trace\fR <level>        \fB\-l\fR
 Set bytecode trace level 0..7 (default 7)
 .TP
 \fB\-\-no\-trace\-showsource\fR
 Don't show source line during tracing
+.TP
+\fB\-\-bytecode\-statistics\fR
+Collect and print bytecode execution statistics
 .TP
 file
 file to test
