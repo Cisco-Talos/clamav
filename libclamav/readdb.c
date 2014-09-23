@@ -80,6 +80,9 @@
 #  include <pthread.h>
 static pthread_mutex_t cli_ref_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
+#ifndef _WIN32
+#include "yara_clam.h"
+#endif
 
 char *cli_virname(char *virname, unsigned int official)
 {
@@ -2617,6 +2620,29 @@ static int cli_loadopenioc(FILE *fs, const char *dbname, struct cl_engine *engin
     return rc;
 }
 
+#ifndef _WIN32
+static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, unsigned int options, struct cli_dbio *dbio)
+{
+    char buffer[FILEBUFF];
+    char * current_rule = NULL;
+    char * current_meta = NULL;
+    char * current_string = NULL;
+    char * current_condition = NULL;
+    int rc = CL_SUCCESS;
+    uint32_t line = 0;
+    uint32_t rule = 0;
+    uint8_t is_comment;
+    uint8_t rule_state;
+    YR_COMPILER compiler;
+
+    cli_errmsg("Loading yara signatures\n");
+#if 0 /* for compilation */
+    yr_lex_parse_rules_file(fs, &compiler);
+#endif
+    return rc;
+}
+#endif
+
 static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned int *signo, unsigned int options);
 
 int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio)
@@ -2747,6 +2773,8 @@ int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo
 	ret = cli_loadmscat(fs, dbname, engine, options, dbio);
     } else if(cli_strbcasestr(dbname, ".ioc")) {
 	ret = cli_loadopenioc(fs, dbname, engine, options);
+    } else if(cli_strbcasestr(dbname, ".yar") || cli_strbcasestr(dbname, ".yara")) {
+        ret = cli_loadyara(fs, dbname, engine, options, dbio);
     } else {
 	cli_dbgmsg("cli_load: unknown extension - assuming old database format\n");
 	ret = cli_loaddb(fs, engine, signo, options, dbio, dbname);
