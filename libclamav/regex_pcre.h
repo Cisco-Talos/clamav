@@ -48,7 +48,7 @@ struct cli_pcre_data {
     uint32_t search_offset; /* start offset to search at for pcre_exec */
 };
 
-int cli_pcre_parse(struct cli_pcre_data *pd, const char *pattern);
+int cli_pcre_init();
 int cli_pcre_addoptions(struct cli_pcre_data *pd, const char **opt, int errout);
 int cli_pcre_compile(struct cli_pcre_data *pd, long long unsigned match_limit, long long unsigned match_limit_recursion, unsigned int options, int opt_override);
 int cli_pcre_match(struct cli_pcre_data *pd, const unsigned char *buffer, uint32_t buflen, int override_offset, int options, int *ovector, size_t ovlen);

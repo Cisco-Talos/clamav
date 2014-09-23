@@ -45,24 +45,6 @@ int cli_pcre_init()
     return CL_SUCCESS;
 }
 
-/* TODO: function is kinda pointless, remove or rework? */
-int cli_pcre_parse(struct cli_pcre_data *pd, const char *pattern)
-{
-    if (!pd || !pattern) {
-        cli_errmsg("cli_pcre_parse: NULL pd or NULL pattern\n");
-        return CL_ENULLARG;
-    }
-
-    /* copy expression to struct cli_pcre_data */
-    pd->expression = cli_strdup(pattern);
-    if (!(pd->expression)) {
-        cli_errmsg("cli_pcre_parse: Unable to allocate memory\n");
-        return CL_EMEM;
-    }
-
-    return CL_SUCCESS;
-}
-
 int cli_pcre_addoptions(struct cli_pcre_data *pd, const char **opt, int errout)
 {
     if (!pd || !opt || !(*opt))

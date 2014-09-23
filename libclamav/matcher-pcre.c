@@ -336,7 +336,7 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *trigger, const char *
     return CL_SUCCESS;
 }
 
- int cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, long long unsigned recmatch_limit, const struct cli_dconf *dconf)
+int cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, long long unsigned recmatch_limit, const struct cli_dconf *dconf)
 {
     unsigned int i;
     int ret;
