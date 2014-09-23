@@ -106,8 +106,8 @@ namespace llvm {
       CallGraphNode *rootNode;
   public:
       static char ID;
-      DEFINEPASS(PtrVerifier), rootNode(0), PT(), TD(), SE(), DT(),
-          AbrtBB(), Changed(false), valid(false), EP() {
+      DEFINEPASS(PtrVerifier), rootNode(0), PT(), TD(), SE(), expander(),
+          DT(), AbrtBB(), Changed(false), valid(false), EP() {
 #if LLVM_VERSION >= 30
           initializePtrVerifierPass(*PassRegistry::getPassRegistry());
 #endif
