@@ -32,6 +32,7 @@
 #include "events.h"
 #include "others.h"
 #include "matcher.h"
+#include "matcher-ac.h"
 #include "matcher-pcre.h"
 #include "mpool.h"
 #include "regex_pcre.h"
@@ -473,56 +474,6 @@ void cli_pcre_freeoff(struct cli_pcre_off *data)
     }
 }
 
-/* TODO: this fuction is static in matcher-ac.c; should we open it up to cli or maintain a copy here? */
-static inline void lsig_sub_matched(const struct cli_matcher *root, struct cli_ac_data *mdata, uint32_t lsigid1, uint32_t lsigid2, uint32_t realoff, int partial)
-{
-	const struct cli_lsig_tdb *tdb = &root->ac_lsigtable[lsigid1]->tdb;
-
-    if(realoff != CLI_OFF_NONE) {
-	if(mdata->lsigsuboff_first[lsigid1][lsigid2] == CLI_OFF_NONE)
-	    mdata->lsigsuboff_first[lsigid1][lsigid2] = realoff;
-	if(mdata->lsigsuboff_last[lsigid1][lsigid2] != CLI_OFF_NONE && ((!partial && realoff <= mdata->lsigsuboff_last[lsigid1][lsigid2]) || (partial && realoff < mdata->lsigsuboff_last[lsigid1][lsigid2])))
-	    return;
-	mdata->lsigcnt[lsigid1][lsigid2]++;
-	if(mdata->lsigcnt[lsigid1][lsigid2] <= 1 || !tdb->macro_ptids || !tdb->macro_ptids[lsigid2])
-	    mdata->lsigsuboff_last[lsigid1][lsigid2] = realoff;
-    }
-
-    if (mdata->lsigcnt[lsigid1][lsigid2] > 1) {
-	/* Check that the previous match had a macro match following it at the 
-	 * correct distance. This check is only done after the 1st match.*/
-	const struct cli_ac_patt *macropt;
-	uint32_t id, last_macro_match, smin, smax, last_macroprev_match;
-	if (!tdb->macro_ptids)
-	    return;
-	id = tdb->macro_ptids[lsigid2];
-	if (!id)
-	    return;
-	macropt = root->ac_pattable[id];
-	smin = macropt->ch_mindist[0];
-	smax = macropt->ch_maxdist[0];
-	/* start of last macro match */
-	last_macro_match = mdata->macro_lastmatch[macropt->sigid];
-	/* start of previous lsig subsig match */
-	last_macroprev_match = mdata->lsigsuboff_last[lsigid1][lsigid2];
-	if (last_macro_match != CLI_OFF_NONE)
-	    cli_dbgmsg("Checking macro match: %u + (%u - %u) == %u\n",
-		       last_macroprev_match, smin, smax, last_macro_match);
-	if (last_macro_match == CLI_OFF_NONE ||
-	    last_macroprev_match + smin > last_macro_match ||
-	    last_macroprev_match + smax < last_macro_match) {
-	    cli_dbgmsg("Canceled false lsig macro match\n");
-	    /* Previous match was false - cancel it */
-	    mdata->lsigcnt[lsigid1][lsigid2]--;
-	    mdata->lsigsuboff_last[lsigid1][lsigid2] = realoff;
-	} else {
-	    /* mark the macro sig itself matched */
-	    mdata->lsigcnt[lsigid1][lsigid2+1]++;
-	    mdata->lsigsuboff_last[lsigid1][lsigid2+1] = last_macro_match;
-	}
-    }
-}
-
 int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct cli_matcher *root, struct cli_ac_data *mdata, struct cli_ac_result **res, const struct cli_pcre_off *data, cli_ctx *ctx)
 {
     struct cli_pcre_meta **metatable = root->pcre_metatable, *pm = NULL;
@@ -538,6 +489,7 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
         return CL_SUCCESS;
     }
 
+    /* check that scanned buffer does not exceed pcre filesize limit */
     maxfilesize = (uint64_t)cl_engine_get_num(ctx->engine, CL_ENGINE_PCRE_MAX_FILESIZE, &rc);
     if (rc != CL_SUCCESS)
         return rc;
@@ -622,7 +574,7 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
 
         pm_dbgmsg("cli_pcre_scanbuf: passed buffer adjusted to %u +%u(%u)[%u]%s\n", adjbuffer, adjlength, adjbuffer+adjlength, adjshift, encompass ? " (encompass)":"");
 
-        /* if the global flag is set, loop through the scanning - TODO: how does this affect really big files? */
+        /* if the global flag is set, loop through the scanning */
         do {
             /* performance metrics */
             cli_event_time_start(p_sigevents, pm->sigtime_id);
