@@ -2773,8 +2773,10 @@ int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo
 	ret = cli_loadmscat(fs, dbname, engine, options, dbio);
     } else if(cli_strbcasestr(dbname, ".ioc")) {
 	ret = cli_loadopenioc(fs, dbname, engine, options);
+#ifndef _WIN32 /* FIXME: temp until clam yara for windows */
     } else if(cli_strbcasestr(dbname, ".yar") || cli_strbcasestr(dbname, ".yara")) {
         ret = cli_loadyara(fs, dbname, engine, options, dbio);
+#endif
     } else {
 	cli_dbgmsg("cli_load: unknown extension - assuming old database format\n");
 	ret = cli_loaddb(fs, engine, signo, options, dbio, dbname);
