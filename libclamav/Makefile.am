@@ -17,6 +17,7 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #  MA 02110-1301, USA.
 
+AM_YFLAGS = -d
 AM_CPPFLAGS = -I$(top_srcdir) -I@srcdir@/nsis $(LTDLINCL)
 AM_CFLAGS=@WERR_CFLAGS@
 lib_LTLIBRARIES =
@@ -442,6 +443,9 @@ libclamav_la_SOURCES = \
 	hostid.h \
 	openioc.c \
 	openioc.h \
+	yara_grammar.y \
+	yara_lexer.l \
+	yara_lexer.h \
 	yara_clam.h
 
 libclamav_la_SOURCES += bignum.h\

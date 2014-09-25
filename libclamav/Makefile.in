@@ -66,7 +66,8 @@ target_triplet = @target@
 @VERSIONSCRIPT_TRUE@am__append_6 = -Wl,@VERSIONSCRIPTFLAG@,@top_srcdir@/libclamav/libclamav.map
 subdir = libclamav
 DIST_COMMON = $(include_HEADERS) $(srcdir)/Makefile.am \
-	$(srcdir)/Makefile.in
+	$(srcdir)/Makefile.in yara_grammar.c yara_grammar.h \
+	yara_lexer.c
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
 	$(top_srcdir)/m4/argz.m4 \
@@ -238,6 +239,7 @@ am_libclamav_la_OBJECTS = libclamav_la-matcher-ac.lo \
 	libclamav_la-asn1.lo libclamav_la-fpu.lo libclamav_la-stats.lo \
 	libclamav_la-www.lo libclamav_la-stats_json.lo \
 	libclamav_la-hostid.lo libclamav_la-openioc.lo \
+	libclamav_la-yara_grammar.lo libclamav_la-yara_lexer.lo \
 	libclamav_la-fp_add.lo libclamav_la-fp_add_d.lo \
 	libclamav_la-fp_addmod.lo libclamav_la-fp_cmp.lo \
 	libclamav_la-fp_cmp_d.lo libclamav_la-fp_cmp_mag.lo \
@@ -396,6 +398,21 @@ LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD  " $@;
+@MAINTAINER_MODE_FALSE@am__skiplex = test -f $@ ||
+LEXCOMPILE = $(LEX) $(AM_LFLAGS) $(LFLAGS)
+LTLEXCOMPILE = $(LIBTOOL) $(AM_V_lt) $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=compile $(LEX) $(AM_LFLAGS) $(LFLAGS)
+AM_V_LEX = $(am__v_LEX_@AM_V@)
+am__v_LEX_ = $(am__v_LEX_@AM_DEFAULT_V@)
+am__v_LEX_0 = @echo "  LEX   " $@;
+YLWRAP = $(top_srcdir)/config/ylwrap
+@MAINTAINER_MODE_FALSE@am__skipyacc = test -f $@ ||
+YACCCOMPILE = $(YACC) $(AM_YFLAGS) $(YFLAGS)
+LTYACCCOMPILE = $(LIBTOOL) $(AM_V_lt) $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=compile $(YACC) $(AM_YFLAGS) $(YFLAGS)
+AM_V_YACC = $(am__v_YACC_@AM_V@)
+am__v_YACC_ = $(am__v_YACC_@AM_DEFAULT_V@)
+am__v_YACC_0 = @echo "  YACC  " $@;
 AM_V_GEN = $(am__v_GEN_@AM_V@)
 am__v_GEN_ = $(am__v_GEN_@AM_DEFAULT_V@)
 am__v_GEN_0 = @echo "  GEN   " $@;
@@ -651,6 +668,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
+AM_YFLAGS = -d
 AM_CPPFLAGS = -I$(top_srcdir) -I@srcdir@/nsis $(LTDLINCL) \
 	$(am__append_1)
 AM_CFLAGS = @WERR_CFLAGS@
@@ -810,10 +828,10 @@ libclamav_la_SOURCES = matcher-ac.c matcher-ac.h matcher-bm.c \
 	iso9660.h arc4.c arc4.h rijndael.c rijndael.h crtmgr.c \
 	crtmgr.h asn1.c asn1.h fpu.c fpu.h stats.c stats.h www.c www.h \
 	stats_json.c stats_json.h hostid.c hostid.h openioc.c \
-	openioc.h yara_clam.h bignum.h bignum_fast.h \
-	tomsfastmath/addsub/fp_add.c tomsfastmath/addsub/fp_add_d.c \
-	tomsfastmath/addsub/fp_addmod.c tomsfastmath/addsub/fp_cmp.c \
-	tomsfastmath/addsub/fp_cmp_d.c \
+	openioc.h yara_grammar.y yara_lexer.l yara_lexer.h yara_clam.h \
+	bignum.h bignum_fast.h tomsfastmath/addsub/fp_add.c \
+	tomsfastmath/addsub/fp_add_d.c tomsfastmath/addsub/fp_addmod.c \
+	tomsfastmath/addsub/fp_cmp.c tomsfastmath/addsub/fp_cmp_d.c \
 	tomsfastmath/addsub/fp_cmp_mag.c tomsfastmath/addsub/fp_sub.c \
 	tomsfastmath/addsub/fp_sub_d.c tomsfastmath/addsub/fp_submod.c \
 	tomsfastmath/addsub/s_fp_add.c tomsfastmath/addsub/s_fp_sub.c \
@@ -884,7 +902,7 @@ all: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 
 .SUFFIXES:
-.SUFFIXES: .c .lo .o .obj
+.SUFFIXES: .c .l .lo .o .obj .y
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -955,6 +973,9 @@ clean-noinstLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
+yara_grammar.h: yara_grammar.c
+	@if test ! -f $@; then rm -f yara_grammar.c; else :; fi
+	@if test ! -f $@; then $(MAKE) $(AM_MAKEFLAGS) yara_grammar.c; else :; fi
 libclamav.la: $(libclamav_la_OBJECTS) $(libclamav_la_DEPENDENCIES) $(EXTRA_libclamav_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(libclamav_la_LINK) -rpath $(libdir) $(libclamav_la_OBJECTS) $(libclamav_la_LIBADD) $(LIBS)
 libclamav_internal_utils.la: $(libclamav_internal_utils_la_OBJECTS) $(libclamav_internal_utils_la_DEPENDENCIES) $(EXTRA_libclamav_internal_utils_la_DEPENDENCIES) 
@@ -1213,6 +1234,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-xar.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-xdp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-xz_iface.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-yara_grammar.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-yara_lexer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-yc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_nocxx_la-bytecode_nojit.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unrar.Plo@am__quote@
@@ -2205,6 +2228,20 @@ libclamav_la-openioc.lo: openioc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-openioc.lo `test -f 'openioc.c' || echo '$(srcdir)/'`openioc.c
 
+libclamav_la-yara_grammar.lo: yara_grammar.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-yara_grammar.lo -MD -MP -MF $(DEPDIR)/libclamav_la-yara_grammar.Tpo -c -o libclamav_la-yara_grammar.lo `test -f 'yara_grammar.c' || echo '$(srcdir)/'`yara_grammar.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-yara_grammar.Tpo $(DEPDIR)/libclamav_la-yara_grammar.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='yara_grammar.c' object='libclamav_la-yara_grammar.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-yara_grammar.lo `test -f 'yara_grammar.c' || echo '$(srcdir)/'`yara_grammar.c
+
+libclamav_la-yara_lexer.lo: yara_lexer.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-yara_lexer.lo -MD -MP -MF $(DEPDIR)/libclamav_la-yara_lexer.Tpo -c -o libclamav_la-yara_lexer.lo `test -f 'yara_lexer.c' || echo '$(srcdir)/'`yara_lexer.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-yara_lexer.Tpo $(DEPDIR)/libclamav_la-yara_lexer.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='yara_lexer.c' object='libclamav_la-yara_lexer.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-yara_lexer.lo `test -f 'yara_lexer.c' || echo '$(srcdir)/'`yara_lexer.c
+
 libclamav_la-fp_add.lo: tomsfastmath/addsub/fp_add.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_add.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_add.Tpo -c -o libclamav_la-fp_add.lo `test -f 'tomsfastmath/addsub/fp_add.c' || echo '$(srcdir)/'`tomsfastmath/addsub/fp_add.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-fp_add.Tpo $(DEPDIR)/libclamav_la-fp_add.Plo
@@ -2996,6 +3033,12 @@ unrar_iface.lo: ../libclamunrar_iface/unrar_iface.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o unrar_iface.lo `test -f '../libclamunrar_iface/unrar_iface.c' || echo '$(srcdir)/'`../libclamunrar_iface/unrar_iface.c
 
+.l.c:
+	$(AM_V_LEX)$(am__skiplex) $(SHELL) $(YLWRAP) $< $(LEX_OUTPUT_ROOT).c $@ -- $(LEXCOMPILE)
+
+.y.c:
+	$(AM_V_YACC)$(am__skipyacc) $(SHELL) $(YLWRAP) $< y.tab.c $@ y.tab.h $*.h y.output $*.output -- $(YACCCOMPILE)
+
 mostlyclean-libtool:
 	-rm -f *.lo
 
@@ -3254,6 +3297,9 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
+	-rm -f yara_grammar.c
+	-rm -f yara_grammar.h
+	-rm -f yara_lexer.c
 	-test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
 clean: clean-recursive
 

@@ -75,7 +75,8 @@ DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(top_srcdir)/docs/man/sigtool.1.in AUTHORS COPYING ChangeLog \
 	INSTALL NEWS config/compile config/config.guess \
 	config/config.rpath config/config.sub config/depcomp \
-	config/install-sh config/ltmain.sh config/missing
+	config/install-sh config/ltmain.sh config/missing \
+	config/ylwrap
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
 	$(top_srcdir)/m4/argz.m4 \
