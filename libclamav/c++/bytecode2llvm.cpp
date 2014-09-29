@@ -1703,7 +1703,7 @@ public:
 			    Value *Val = convertOperand(func, Type::getInt8Ty(Context), inst->u.three[1]);
 			    //Value *Len = convertOperand(func, Type::getInt32Ty(Context), inst->u.three[2]);
                             Value *Len = convertOperand(func, Type::getInt64Ty(Context), inst->u.three[2]);
-#if LLVM_VERSION < 30
+#if LLVM_VERSION < 29
 			    CallInst *c = Builder.CreateCall4(CF->FMemset, Dst, Val, Len,
 								ConstantInt::get(Type::getInt32Ty(Context), 1));
 #else
@@ -1725,7 +1725,7 @@ public:
 			    Src = Builder.CreatePointerCast(Src, PointerType::getUnqual(Type::getInt8Ty(Context)));
 			    //Value *Len = convertOperand(func, Type::getInt32Ty(Context), inst->u.three[2]);
                             Value *Len = convertOperand(func, Type::getInt64Ty(Context), inst->u.three[2]);
-#if LLVM_VERSION < 30
+#if LLVM_VERSION < 29
 			    CallInst *c = Builder.CreateCall4(CF->FMemcpy, Dst, Src, Len,
 								ConstantInt::get(Type::getInt32Ty(Context), 1));
 #else
@@ -1747,7 +1747,7 @@ public:
 			    Src = Builder.CreatePointerCast(Src, PointerType::getUnqual(Type::getInt8Ty(Context)));
                             //Value *Len = convertOperand(func, Type::getInt32Ty(Context), inst->u.three[2]);
                             Value *Len = convertOperand(func, Type::getInt64Ty(Context), inst->u.three[2]);
-#if LLVM_VERSION < 30
+#if LLVM_VERSION < 29
 			    CallInst *c = Builder.CreateCall4(CF->FMemmove, Dst, Src, Len,
 								ConstantInt::get(Type::getInt32Ty(Context), 1));
 #else
@@ -2006,13 +2006,13 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
     //args.push_back(Type::getInt32Ty(Context));
     args.push_back(Type::getInt64Ty(Context));
     args.push_back(Type::getInt32Ty(Context));
-#if LLVM_VERSION >= 30
+#if LLVM_VERSION >= 29
     args.push_back(Type::getInt1Ty(Context));
 #endif
     FunctionType* FuncTy_3 = FunctionType::get(Type::getVoidTy(Context),
 					       args, false);
     CF->FMemset = Function::Create(FuncTy_3, GlobalValue::ExternalLinkage,
-#if LLVM_VERSION < 30
+#if LLVM_VERSION < 29
                                    //"llvm.memset.i32",
                                    "llvm.memset.i64",
 #else
@@ -2033,13 +2033,13 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
     //args.push_back(Type::getInt32Ty(Context));
     args.push_back(Type::getInt64Ty(Context));
     args.push_back(Type::getInt32Ty(Context));
-#if LLVM_VERSION >= 30
+#if LLVM_VERSION >= 29
     args.push_back(Type::getInt1Ty(Context));
 #endif
     FunctionType* FuncTy_4 = FunctionType::get(Type::getVoidTy(Context),
 					       args, false);
     CF->FMemmove = Function::Create(FuncTy_4, GlobalValue::ExternalLinkage,
-#if LLVM_VERSION < 30
+#if LLVM_VERSION < 29
                                     //"llvm.memmove.i32",
                                     "llvm.memcpy.i64",
 #else
@@ -2055,7 +2055,7 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
 #endif
 
     CF->FMemcpy = Function::Create(FuncTy_4, GlobalValue::ExternalLinkage,
-#if LLVM_VERSION < 30
+#if LLVM_VERSION < 29
                                    //"llvm.memcpy.i32",
                                    "llvm.memcpy.i64",
 #else

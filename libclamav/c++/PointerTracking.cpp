@@ -55,7 +55,7 @@ static Value *GetUnderlyingObject(Value *P, TargetData *TD)
 }
 #endif
 
-#if LLVM_VERSION >= 30
+#if LLVM_VERSION >= 29
 namespace llvm {
     void initializePointerTrackingPass(llvm::PassRegistry&);
 };
@@ -71,7 +71,7 @@ INITIALIZE_PASS_END(PointerTracking, "pointertracking",
 
 char PointerTracking::ID = 0;
 PointerTracking::PointerTracking() : FunctionPass(ID) {
-#if LLVM_VERSION >= 30
+#if LLVM_VERSION >= 29
     initializePointerTrackingPass(*PassRegistry::getPassRegistry());
 #endif
 }
