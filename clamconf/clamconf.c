@@ -456,6 +456,9 @@ int main(int argc, char **argv)
 #ifdef HAVE_BZLIB_H
 	printf("BZIP2 ");
 #endif
+#ifdef HAVE_PCRE
+	printf("PCRE ");
+#endif
     if(have_rar)
 	printf("RAR ");
     if (have_clamjit)
