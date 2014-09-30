@@ -59,7 +59,7 @@ namespace llvm {
     Unknown // it can sometimes be true, sometimes false, or it is undecided
   };
 
-#if LLVM_VERSION >= 30
+#if LLVM_VERSION >= 29
   void initializePointerTrackingPass(PassRegistry&);
 #endif
 
