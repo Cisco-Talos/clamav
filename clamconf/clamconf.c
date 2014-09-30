@@ -34,6 +34,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include <openssl/crypto.h>
+#include <openssl/opensslv.h>
 
 #include "shared/optparser.h"
 #include "shared/misc.h"
@@ -252,6 +254,11 @@ static void print_platform(struct cli_environment *env)
     printf("zlib version: %s (%s)\n",
 	   ZLIB_VERSION, zlibVersion());
 #endif
+    /* openssl version querying */
+    if (OPENSSL_VERSION_NUMBER != SSLeay())
+	printf("WARNING: openssl version mismatch: %ld (%ld)\n", OPENSSL_VERSION_NUMBER, SSLeay());
+    printf("openssl version: %s\n", SSLeay_version(SSLEAY_VERSION));
+
     if (env->triple[0])
     printf("Triple: %s\n", env->triple);
     if (env->cpu[0])
@@ -455,6 +462,12 @@ int main(int argc, char **argv)
 			printf("AUTOIT_EA06 ");
 #ifdef HAVE_BZLIB_H
 	printf("BZIP2 ");
+#endif
+#ifdef HAVE_LIBXML2
+	printf("LIBXML2 ");
+#endif
+#ifdef HAVE_JSON
+	printf("JSON ");
 #endif
     if(have_rar)
 	printf("RAR ");
