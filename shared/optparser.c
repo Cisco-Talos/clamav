@@ -48,7 +48,7 @@
 
 #include "getopt.h"
 
-#define MAXCMDOPTS  120
+#define MAXCMDOPTS  150
 
 #define MATCH_NUMBER "^[0-9]+$"
 #define MATCH_SIZE "^[0-9]+[KM]?$"
