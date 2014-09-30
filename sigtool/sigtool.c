@@ -2321,7 +2321,7 @@ static int decodehex(const char *hexsig)
 	if (clen) {
 	    cflags = cli_calloc(clen+1, sizeof(char));
 	    if (!cflags) {
-		cli_errmsg("!cannot allocate memory for compile flags\n");
+		mprintf("!cannot allocate memory for compile flags\n");
 		return -1;
 	    }
 	    strncpy(cflags, hexsig+tlen+rlen+2, clen);
