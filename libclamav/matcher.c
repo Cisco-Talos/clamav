@@ -36,6 +36,7 @@
 #include "others.h"
 #include "matcher-ac.h"
 #include "matcher-bm.h"
+#include "matcher-pcre.h"
 #include "filetypes.h"
 #include "matcher.h"
 #include "pe.h"

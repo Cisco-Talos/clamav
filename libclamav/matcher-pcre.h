@@ -75,7 +75,7 @@ void cli_pcre_freemeta(struct cli_pcre_meta *pm);
 void cli_pcre_freetable(struct cli_matcher *root);
 #else
 /* NO-PCRE DECLARATIONS - defined because encasing everything in '#if' is a pain */
-inline int cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data, struct cli_target_info *info, cli_ctx *ctx);
-inline void cli_pcre_freeoff(struct cli_pcre_off *data);
+int cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data, struct cli_target_info *info, cli_ctx *ctx);
+void cli_pcre_freeoff(struct cli_pcre_off *data);
 #endif /* HAVE_PCRE */
 #endif /*__MATCHER_PCRE_H*/
