@@ -331,6 +331,10 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
 
 
     if((ret = cl_scandesc_callback(fd, virpp, &info.blocks, engine, options, &chain)) == CL_VIRUS) {
+        if (options & CL_SCAN_ALLMATCHES) {
+            virpp = (const char **)*virpp; /* allmatch needs an extra dereference */
+            virname = virpp[0]; /* this is the first virus */
+        }
         if(optget(opts, "archive-verbose")->enabled) {
             if (chain.n > 1) {
                 char str[128];
@@ -344,9 +348,6 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
 
         if (options & CL_SCAN_ALLMATCHES) {
             int i = 0;
-
-            virpp = (const char **)*virpp; /* horrible */
-            virname = virpp[0];
             while (virpp[i])
                 logg("~%s: %s FOUND\n", filename, virpp[i++]);
 
