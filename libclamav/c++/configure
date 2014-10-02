@@ -1463,8 +1463,9 @@ Optional Packages:
   --with-gnu-ld           assume the C compiler uses GNU ld [default=no]
   --with-sysroot=DIR Search for dependent libraries within DIR
                         (or the compiler's sysroot if not specified).
-  -with-system-llvm       Use system llvm instead of built-in, requires full
-                          path to llvm-config
+  --with-system-llvm      Use system llvm instead of built-in, uses full path
+                          to llvm-config (default= search /usr/local or /usr
+                          if not found in /usr/local)
   --with-libjson=DIR   path to directory containing libjson (default=
     /usr/local or /usr if not found in /usr/local)
 
@@ -15606,31 +15607,43 @@ llvmconfig=
 if test "${with_system_llvm+set}" = set; then :
   withval=$with_system_llvm; case "$withval" in
   yes)
-    as_fn_error $? "--with-system-llvm needs full path to llvm-config" "$LINENO" 5
-    ;;
+     llvmconfig="/usr/local/bin/llvm-config"
+     if test ! -x "$llvmconfig"; then
+     llvmconfig="/usr/bin/llvm-config"
+       if test ! -x "$llvmconfig"; then
+         as_fn_error $? "llvm-config cannot be found within defaults" "$LINENO" 5
+       fi
+     fi
+     ;;
   no) ;;
   *)
-    llvmconfig="$withval"
-    llvmver=`$llvmconfig --version`
-
-    LLVMCONFIG_CXXFLAGS=`$llvmconfig --cxxflags`
-
-    LLVMCONFIG_LDFLAGS=`$llvmconfig --ldflags`
-
-    LLVMCONFIG_LIBS=`$llvmconfig --libs jit nativecodegen scalaropts ipo`
-
-    LLVMCONFIG_LIBFILES=`$llvmconfig --libfiles jit nativecodegen scalaropts ipo`
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: Using external LLVM" >&5
-$as_echo "$as_me: Using external LLVM" >&6;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: CXXFLAGS from llvm-config: $LLVMCONFIG_CXXFLAGS" >&5
-$as_echo "$as_me: CXXFLAGS from llvm-config: $LLVMCONFIG_CXXFLAGS" >&6;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: LDFLAGS from llvm-config: $LLVMCONFIG_LDFLAGS" >&5
-$as_echo "$as_me: LDFLAGS from llvm-config: $LLVMCONFIG_LDFLAGS" >&6;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: LIBS from llvm-config: $LLVMCONFIG_LIBS" >&5
-$as_echo "$as_me: LIBS from llvm-config: $LLVMCONFIG_LIBS" >&6;}
-    ;;
+     llvmconfig="$withval"
+     if test ! -x "$llvmconfig"; then
+       as_fn_error $? "llvm-config does not exist at $llvmconfig" "$LINENO" 5
+     fi
+     ;;
   esac
+
+ if test "x$llvmconfig" != "x"; then
+     llvmver=`$llvmconfig --version`
+
+     LLVMCONFIG_CXXFLAGS=`$llvmconfig --cxxflags`
+
+     LLVMCONFIG_LDFLAGS=`$llvmconfig --ldflags`
+
+     LLVMCONFIG_LIBS=`$llvmconfig --libs jit nativecodegen scalaropts ipo`
+
+     LLVMCONFIG_LIBFILES=`$llvmconfig --libfiles jit nativecodegen scalaropts ipo`
+
+     { $as_echo "$as_me:${as_lineno-$LINENO}: Using external LLVM" >&5
+$as_echo "$as_me: Using external LLVM" >&6;}
+     { $as_echo "$as_me:${as_lineno-$LINENO}: CXXFLAGS from llvm-config: $LLVMCONFIG_CXXFLAGS" >&5
+$as_echo "$as_me: CXXFLAGS from llvm-config: $LLVMCONFIG_CXXFLAGS" >&6;}
+     { $as_echo "$as_me:${as_lineno-$LINENO}: LDFLAGS from llvm-config: $LLVMCONFIG_LDFLAGS" >&5
+$as_echo "$as_me: LDFLAGS from llvm-config: $LLVMCONFIG_LDFLAGS" >&6;}
+     { $as_echo "$as_me:${as_lineno-$LINENO}: LIBS from llvm-config: $LLVMCONFIG_LIBS" >&5
+$as_echo "$as_me: LIBS from llvm-config: $LLVMCONFIG_LIBS" >&6;}
+ fi
 
 fi
 
