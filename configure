@@ -913,6 +913,7 @@ enable_clamdtop
 with_libncurses_prefix
 with_libpdcurses_prefix
 enable_distcheck_werror
+with_system_llvm
 enable_llvm
 enable_sha_collector_for_internal_use
 with_libcurl
@@ -1624,6 +1625,9 @@ Optional Packages:
   --without-libncurses-prefix     don't search for libncurses in includedir and libdir
   --with-libpdcurses-prefix[=DIR]  search for libpdcurses in DIR/include and DIR/lib
   --without-libpdcurses-prefix     don't search for libpdcurses in includedir and libdir
+  --with-system-llvm      Use system llvm instead of built-in, uses full path
+                          to llvm-config (default= /usr/local or /usr if not
+                          found in /usr/local)
   --with-libcurl=DIR   path to directory containing libcurl (default=
     /usr/local or /usr if not found in /usr/local)
 
@@ -22324,11 +22328,36 @@ fi
 
 
 
+
+# Check whether --with-system-llvm was given.
+if test "${with_system_llvm+set}" = set; then :
+  withval=$with_system_llvm; case "$withval" in
+  yes)
+    system_llvm="default"
+    ;;
+  no)
+    system_llvm="built-in"
+    ;;
+  *)
+    system_llvm=$withval
+ esac
+
+else
+  system_llvm="built-in"
+fi
+
+
 # Check whether --enable-llvm was given.
 if test "${enable_llvm+set}" = set; then :
   enableval=$enable_llvm; enable_llvm=$enableval
 else
-  enable_llvm="auto"
+
+if test "x$system_llvm" != "xbuilt-in"; then
+    enable_llvm="yes"
+else
+    enable_llvm="auto"
+fi
+
 fi
 
 
@@ -22344,6 +22373,8 @@ subdirs="$subdirs libclamav/c++"
 
 
 
+else
+    system_llvm="none"
 fi
 
 # Check whether --enable-sha-collector-for-internal-use was given.
@@ -27974,15 +28005,15 @@ if test "$subdirfailed" = "no"; then
 fi
 
 
-   $as_echo_n "              jit         : "
+   $as_echo_n "              llvm        : "
    if test "x$enable_llvm" = "xno"; then :
-  $as_echo "$have_jit (disabled)"
+  $as_echo "$have_jit, from $system_llvm (disabled)"
 elif test "x$enable_llvm" = "xyes"; then :
-  $as_echo "$have_jit"
+  $as_echo "$have_jit, from $system_llvm"
 elif test "x$enable_llvm" = "x"; then :
-  $as_echo "$have_jit"
+  $as_echo "$have_jit, from $system_llvm"
 else
-  $as_echo "$have_jit ($enable_llvm)"
+  $as_echo "$have_jit, from $system_llvm ($enable_llvm)"
 fi
 
 
