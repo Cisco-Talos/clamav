@@ -33,7 +33,7 @@ Print IR of bytecode signature
 \fB\-\-input\fR                \fB\-r\fR
 Input file to run the bytecode on
 .TP
-\fB\-\-trace\fR <level>        \fB\-l\fR
+\fB\-\-trace\fR <level>        \fB\-T\fR
 Set bytecode trace level 0..7 (default 7)
 .TP
 \fB\-\-no\-trace\-showsource\fR
