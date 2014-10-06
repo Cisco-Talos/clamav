@@ -158,6 +158,53 @@ typedef struct _SIZED_STRING
 
 } SIZED_STRING;
 
+
+/* From libyara/include/yara/error.h            */
+#ifndef ERROR_SUCCESS
+#define ERROR_SUCCESS                           0
+#endif
+
+#define ERROR_INSUFICIENT_MEMORY                1
+#define ERROR_COULD_NOT_ATTACH_TO_PROCESS       2
+#define ERROR_COULD_NOT_OPEN_FILE               3
+#define ERROR_COULD_NOT_MAP_FILE                4
+#define ERROR_INVALID_FILE                      6
+#define ERROR_CORRUPT_FILE                      7
+#define ERROR_UNSUPPORTED_FILE_VERSION          8
+#define ERROR_INVALID_REGULAR_EXPRESSION        9
+#define ERROR_INVALID_HEX_STRING                10
+#define ERROR_SYNTAX_ERROR                      11
+#define ERROR_LOOP_NESTING_LIMIT_EXCEEDED       12
+#define ERROR_DUPLICATE_LOOP_IDENTIFIER         13
+#define ERROR_DUPLICATE_IDENTIFIER              14
+#define ERROR_DUPLICATE_TAG_IDENTIFIER          15
+#define ERROR_DUPLICATE_META_IDENTIFIER         16
+#define ERROR_DUPLICATE_STRING_IDENTIFIER       17
+#define ERROR_UNREFERENCED_STRING               18
+#define ERROR_UNDEFINED_STRING                  19
+#define ERROR_UNDEFINED_IDENTIFIER              20
+#define ERROR_MISPLACED_ANONYMOUS_STRING        21
+#define ERROR_INCLUDES_CIRCULAR_REFERENCE       22
+#define ERROR_INCLUDE_DEPTH_EXCEEDED            23
+#define ERROR_WRONG_TYPE                        24
+#define ERROR_EXEC_STACK_OVERFLOW               25
+#define ERROR_SCAN_TIMEOUT                      26
+#define ERROR_TOO_MANY_SCAN_THREADS             27
+#define ERROR_CALLBACK_ERROR                    28
+#define ERROR_INVALID_ARGUMENT                  29
+#define ERROR_TOO_MANY_MATCHES                  30
+#define ERROR_INTERNAL_FATAL_ERROR              31
+#define ERROR_NESTED_FOR_OF_LOOP                32
+#define ERROR_INVALID_FIELD_NAME                33
+#define ERROR_UNKNOWN_MODULE                    34
+#define ERROR_NOT_A_STRUCTURE                   35
+#define ERROR_NOT_AN_ARRAY                      36
+#define ERROR_NOT_A_FUNCTION                    37
+#define ERROR_INVALID_FORMAT                    38
+#define ERROR_TOO_MANY_ARGUMENTS                39
+#define ERROR_WRONG_NUMBER_OF_ARGUMENTS         40
+
+
 /*
 typedef struct _YR_MATCH
 {
@@ -269,6 +316,7 @@ struct RE {
 #define yr_malloc cli_malloc
 #define yr_free free
 #define xtoi cli_hex2num
+#define strlcpy cli_strlcpy
 
 typedef struct _yc_compiler {
   char                lex_buf[LEX_BUF_SIZE];

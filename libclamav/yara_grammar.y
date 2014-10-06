@@ -259,6 +259,9 @@ rule
         yr_free($3);
 
         ERROR_IF(result != ERROR_SUCCESS);
+#else
+        cli_errmsg("parsing rule %s %s %s %s %s\n",
+                   $1,  $3, $4,  $6, $7 );
 #endif
       }
     ;
@@ -267,9 +270,9 @@ rule
 meta
     : /* empty */
       {
-#ifdef REAL_YARA
+          //#ifdef REAL_YARA
         $$ = NULL;
-#endif
+        //#endif
       }
     | _META_ ':' meta_declarations
       {
@@ -526,6 +529,8 @@ string_declaration
         yr_free($3);
 
         ERROR_IF($$ == NULL);
+#else
+        cli_errmsg("String delaration %s = %s, %s\n", $1, $3, $4);
 #endif
       }
     | _STRING_IDENTIFIER_ '='

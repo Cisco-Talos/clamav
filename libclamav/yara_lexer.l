@@ -300,7 +300,6 @@ include[ \t]+\"         {
 
 
 $({letter}|{digit}|_)*"*"  {
-#ifdef REAL_YARA
 
   yylval->c_string = yr_strdup(yytext);
 
@@ -310,13 +309,11 @@ $({letter}|{digit}|_)*"*"  {
     yyterminate();
   }
 
-#endif
   return _STRING_IDENTIFIER_WITH_WILDCARD_;
 }
 
 
 $({letter}|{digit}|_)*  {
-#ifdef REAL_YARA
 
   yylval->c_string = yr_strdup(yytext);
 
@@ -326,13 +323,11 @@ $({letter}|{digit}|_)*  {
     yyterminate();
   }
 
-#endif
   return _STRING_IDENTIFIER_;
 }
 
 
 #({letter}|{digit}|_)*  {
-#ifdef REAL_YARA
 
   yylval->c_string = yr_strdup(yytext);
 
@@ -343,13 +338,11 @@ $({letter}|{digit}|_)*  {
   }
 
   yylval->c_string[0] = '$'; /* replace # by $*/
-#endif
   return _STRING_COUNT_;
 }
 
 
 @({letter}|{digit}|_)*  {
-#ifdef REAL_YARA
 
   yylval->c_string = yr_strdup(yytext);
 
@@ -360,13 +353,11 @@ $({letter}|{digit}|_)*  {
   }
 
   yylval->c_string[0] = '$'; /* replace @ by $*/
-#endif
   return _STRING_OFFSET_;
 }
 
 
 ({letter}|_)({letter}|{digit}|_)*  {
-#ifdef REAL_YARA
 
   if (strlen(yytext) > 128)
   {
@@ -380,13 +371,11 @@ $({letter}|{digit}|_)*  {
     yyerror(yyscanner, compiler, "not enough memory");
     yyterminate();
   }
-#endif
   return _IDENTIFIER_;
 }
 
 
 {digit}+(MB|KB){0,1}  {
-#ifdef REAL_YARA
 
   yylval->integer = (size_t) atol(yytext);
 
@@ -398,22 +387,18 @@ $({letter}|{digit}|_)*  {
   {
      yylval->integer *= 1048576;
   }
-#endif
   return _NUMBER_;
 }
 
 
 0x{hexdigit}+  {
-#ifdef REAL_YARA
 
   yylval->integer = xtoi(yytext + 2);
   return _NUMBER_;
-#endif
 }
 
 
 <str>\"   {     /* saw closing quote - all done */
-#ifdef REAL_YARA
 
   SIZED_STRING* s;
 
@@ -433,53 +418,43 @@ $({letter}|{digit}|_)*  {
   memcpy(s->c_string, yyextra->lex_buf, yyextra->lex_buf_len + 1);
   yylval->sized_string = s;
 
-#endif
   return _TEXT_STRING_;
 }
 
 
 <str>\\t   {
-#ifdef REAL_YARA
 
   LEX_CHECK_SPACE_OK("\t", yyextra->lex_buf_len, LEX_BUF_SIZE);
   *yyextra->lex_buf_ptr++ = '\t';
   yyextra->lex_buf_len++;
-#endif
 }
 
 
 <str>\\n   {
-#ifdef REAL_YARA
 
   LEX_CHECK_SPACE_OK("\n", yyextra->lex_buf_len, LEX_BUF_SIZE);
   *yyextra->lex_buf_ptr++ = '\n';
   yyextra->lex_buf_len++;
-#endif
 }
 
 
 <str>\\\"   {
-#ifdef REAL_YARA
 
   LEX_CHECK_SPACE_OK("\"", yyextra->lex_buf_len, LEX_BUF_SIZE);
   *yyextra->lex_buf_ptr++ = '\"';
   yyextra->lex_buf_len++;
-#endif
 }
 
 
 <str>\\\\   {
-#ifdef REAL_YARA
 
   LEX_CHECK_SPACE_OK("\\", yyextra->lex_buf_len, LEX_BUF_SIZE);
   *yyextra->lex_buf_ptr++ = '\\';
   yyextra->lex_buf_len++;
-#endif
 }
 
 
 <str>\\x{hexdigit}{2} {
-#ifdef REAL_YARA
 
    int result;
 
@@ -487,7 +462,6 @@ $({letter}|{digit}|_)*  {
    LEX_CHECK_SPACE_OK("X", yyextra->lex_buf_len, LEX_BUF_SIZE);
    *yyextra->lex_buf_ptr++ = result;
    yyextra->lex_buf_len++;
-#endif
 }
 
 
@@ -495,23 +469,18 @@ $({letter}|{digit}|_)*  {
 
 
 <str>\n  {
-#ifdef REAL_YARA
 
   yyerror(yyscanner, compiler, "unterminated string");
   yyterminate();
-#endif
 }
 
 <str>\\(.|\n) {
-#ifdef REAL_YARA
 
   yyerror(yyscanner, compiler, "illegal escape sequence");
-#endif
 }
 
 
 <regexp>\/i?s?  {
-#ifdef REAL_YARA
 
   SIZED_STRING* s;
 
@@ -538,29 +507,24 @@ $({letter}|{digit}|_)*  {
 
   yylval->sized_string = s;
 
-#endif
   return _REGEXP_;
 }
 
 
 <regexp>\\\/  {
-#ifdef REAL_YARA
 
   LEX_CHECK_SPACE_OK("/", yyextra->lex_buf_len, LEX_BUF_SIZE);
   *yyextra->lex_buf_ptr++ = '/';
   yyextra->lex_buf_len++ ;
-#endif
 }
 
 
 <regexp>\\. {
-#ifdef REAL_YARA
 
   LEX_CHECK_SPACE_OK("\\.", yyextra->lex_buf_len, LEX_BUF_SIZE);
   *yyextra->lex_buf_ptr++ = yytext[0];
   *yyextra->lex_buf_ptr++ = yytext[1];
   yyextra->lex_buf_len += 2;
-#endif
 }
 
 
@@ -568,36 +532,29 @@ $({letter}|{digit}|_)*  {
 
 
 <regexp>\n  {
-#ifdef REAL_YARA
 
   yyerror(yyscanner, compiler, "unterminated regular expression");
   yyterminate();
-#endif
 }
 
 
 \"  {
-#ifdef REAL_YARA
 
   yyextra->lex_buf_ptr = yyextra->lex_buf;
   yyextra->lex_buf_len = 0;
   BEGIN(str);
-#endif
 }
 
 
 "/"  {
-#ifdef REAL_YARA
 
   yyextra->lex_buf_ptr = yyextra->lex_buf;
   yyextra->lex_buf_len = 0;
   BEGIN(regexp);
-#endif
 }
 
 
 \{({hexdigit}|[ \-|\?\[\]\(\)\n\t])+\}  {
-#ifdef REAL_YARA
 
   int len = strlen(yytext);
   SIZED_STRING* s = (SIZED_STRING*) yr_malloc(len + sizeof(SIZED_STRING));
@@ -609,7 +566,6 @@ $({letter}|{digit}|_)*  {
   yylval->sized_string = s;
 
   return _HEX_STRING_;
-#endif
 }
 
 
@@ -650,7 +606,10 @@ void yywarning(
       yyget_lineno(yyscanner),
       warning_message);
 #else
-  cli_errmsg("yara_lexer:yywarning() %s\n", warning_message);
+  if (warning_message != NULL)
+    cli_errmsg("yara_lexer:yywarning() %s\n", warning_message);
+  else
+    cli_errmsg("yara_lexer:yywarning() unknown warning\n");
 #endif
 }
 
@@ -665,7 +624,10 @@ void yyfatal(
   yyerror(yyscanner, compiler, error_message);
   longjmp(compiler->error_recovery, 1);
 #else
-  cli_errmsg("yara_lexer:yyfatal() %s\n", error_message);
+  if (error_message != NULL)
+    cli_errmsg("yara_lexer:yyfatal() %s\n", error_message);
+  else
+    cli_errmsg("yara_lexer:yyfatal() unknown error\n");
 #endif
 }
 
@@ -735,7 +697,10 @@ void yyerror(
 
   compiler->last_result = ERROR_SUCCESS;
 #else
-  cli_errmsg("yara_lexer:yyerror() %s\n", error_message);
+  if (error_message != NULL)
+    cli_errmsg("yara_lexer:yyerror() %s\n", error_message);
+  else
+    cli_errmsg("yara_lexer:yyerror() error unknown\n");
 #endif
 }
 
@@ -766,6 +731,7 @@ int yr_lex_parse_rules_string(
 
   return compiler->errors;
 #else
+  cli_errmsg("yara_lexer:yr_lex_parse_rules_string() disabled\n");
   return 0;
 #endif
 }
