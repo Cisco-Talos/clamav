@@ -31,7 +31,7 @@
 # files in the program, then also delete it here.
 
 import os, sys, subprocess
-import clamutil
+import clamutil, command
 
 class Clamscan:
     def __init__(self, config, featurename, feature, arguments):
@@ -55,9 +55,7 @@ class Clamscan:
         return False
 
     def GrepResult(self, argument, value):
-        p = subprocess.Popen(["grep", "-rq", value, clamutil.GetTempDir(self.config)])
-        (out, err) = p.communicate()
-        if p.returncode == 0:
+        if command.RunCommand(self.config, ["grep", "-rq", value, clamutil.GetTempDir(self.config)]) == 0:
             return True
         else:
             return False
@@ -149,6 +147,7 @@ class Clamscan:
 
                 p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                 (out, err) = p.communicate()
+                command.LogVerbose(self.config, out)
                 setting=None
                 if arg["type"] != "flag":
                     setting = arg["setting"]

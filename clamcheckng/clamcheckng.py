@@ -35,7 +35,7 @@
 import os, subprocess
 import shlex, json
 import tempfile
-import clamscan, clamutil
+import clamscan, clamutil, command
 
 apps = ["clamscan", "clamd"]
 codepath = ""
@@ -74,16 +74,8 @@ def main():
             if "configure" in feature:
                 for a in feature["configure"]:
                     args.append(a)
-            p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            (out, err) = p.communicate()
-            if p.returncode != 0:
-                filename=""
-                if config["debug"] == True:
-                    f = tempfile.NamedTemporaryFile(delete=False)
-                    f.write(out)
-                    filename = " Log written to " + f.name
-                    f.close()
-                print "   [-] Configure stage failed." + filename
+            if command.RunCommand(config, args) != 0:
+                print "   [-] Configure stage failed."
                 return
 
         ###########################
@@ -99,16 +91,8 @@ def main():
             if "jobs" in config["compile"]:
                 args.append("-j" + str(config["compile"]["jobs"]))
 
-        p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        (out, err) = p.communicate()
-        if p.returncode != 0:
-            filename=""
-            if config["debug"] == True:
-                f = tempfile.NamedTemporaryFile(delete=False)
-                f.write(out)
-                filename = " Log written to " + f.name
-                f.close()
-            print "    [-] Compilation stage failed." + filename
+        if command.RunCommand(config, args) != 0:
+            print "    [-] Compilation stage failed."
             return
 
         #############################
@@ -120,14 +104,9 @@ def main():
             env["LD_LIBRARY_PATH"] = objdir + "/libclamav/.libs"
             p = subprocess.Popen(["ldd", objdir + "/libclamav/.libs/libclamav.so"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=env)
             (out, err) = p.communicate()
+            command.LogVerbose(config, out)
             for lib in feature["libs"]:
-                if out.find(lib) == -1:
-                    filename=""
-                    if config["debug"] == True:
-                        f = tempfile.NamedTemporaryFile(delete=False)
-                        f.write(out)
-                        filename = " Log written to " + f.name
-                        f.close()
+                if lib not in out:
                     print "    [-] Could not find library " + lib + "." + filename
                     return
 
