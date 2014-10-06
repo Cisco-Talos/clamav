@@ -1133,6 +1133,11 @@ static int unpack(const struct optstruct *opts)
 	name[sizeof(name)-1]='\0';
     }
 
+    if (cl_cvdverify(name) != CL_SUCCESS) {
+        mprintf("!unpack: %s is not a valid CVD\n", name);
+        return -1;
+    }
+
     if(cli_cvdunpack(name, ".") == -1) {
 	mprintf("!unpack: Can't unpack file %s\n", name);
 	return -1;
