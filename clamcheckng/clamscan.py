@@ -75,28 +75,37 @@ class Clamscan:
                 argument["status"] = "SUCCESS::"
                 return True
 
-            if enabled == True:
-                if "detections" in argument["behavior"]["enabled"]:
-                    for f in argument["behavior"]["enabled"]["detections"]:
+            for btype in ("enabled", "disabled"):
+                if enabled == True and btype != "enabled":
+                    continue
+                elif enabled == False and btype != "disabled":
+                    continue
+                if "detections" in argument["behavior"][btype]:
+                    for f in argument["behavior"][btype]["detections"]:
                         if self.IsDetected(output, clamutil.Resolve(self.config, f["file"], self.featurename), f["detect"]) == False:
-                            argument["status"] = "FAIL:DETECT:enabled"
+                            argument["status"] = "FAIL:DETECT:" + btype
                             return False
-                if "grep" in argument["behavior"]["enabled"]:
-                    if argument["behavior"]["enabled"]["grep"]["location"] == "temps":
-                        if self.GrepResult(argument, argument["behavior"]["enabled"]["grep"]["value"]) != argument["behavior"]["enabled"]["grep"]["result"]:
-                            argument["status"] = "FAIL:GREP:enabled"
+                if "grep" in argument["behavior"][btype]:
+                    if argument["behavior"][btype]["grep"]["location"] == "temps":
+                        if self.GrepResult(argument, argument["behavior"][btype]["grep"]["value"]) != argument["behavior"][btype]["grep"]["result"]:
+                            argument["status"] = "FAIL:GREP:" + btype
                             return False
-            else:
-                if "detections" in argument["behavior"]["disabled"]:
-                    for f in argument["behavior"]["disabled"]["detections"]:
-                        if self.IsDetected(output, clamutil.Resolve(self.config, f["file"], self.featurename), f["detect"]) == False:
-                            argument["status"] = "FAIL:DETECT:disabled"
-                            return False
-                if "grep" in argument["behavior"]["disabled"]:
-                    if argument["behavior"]["disabled"]["grep"]["location"] == "temps":
-                        if self.GrepResult(argument, argument["behavior"]["disabled"]["grep"]["value"]) != argument["behavior"]["disabled"]["grep"]["result"]:
-                            argument["status"] = "FAIL:GREP:disabled"
-                            return False
+        elif argument["type"] == "int":
+            if argument["setting"] not in argument["behavior"]:
+                argument["status"] = "SUCCESS::"
+                return True
+            if "detections" in argument["behavior"][argument["setting"]]:
+                for f in argument["behavior"][argument["setting"]]["detections"]:
+                    if self.IsDetected(output, clamutil.Resolve(self.config, f["file"], self.featurename), f["detect"]) == False:
+                        argument["status"] = "FAIL:DETECT:" + argument["setting"]
+                        return False
+            if "grep" in argument["behavior"][argument["setting"]]:
+                if argument["behavior"][argument["setting"]]["grep"]["location"] == "temps":
+                    if self.GrepResult(argument, argument["behavior"][argument["setting"]]["grep"]["value"]) != argument["behavior"][argument["setting"]]["grep"]["result"]:
+                        argument["status"] = "FAIL:GREP:" + argument["setting"]
+                        return False
+
+        argument["status"] = "SUCCESS::"
         return True
 
     def Run(self):
@@ -137,6 +146,20 @@ class Clamscan:
                     else:
                         moreIterations = False
                         arg["setting"] = False
+                elif arg["type"] == "int":
+                    if arg["setting"] == None:
+                        args.append(arg["argument"] + "=" + str(arg["value"]))
+                        setting = arg["value"]
+                        arg["setting"] = "base"
+                    elif arg["setting"] == "base":
+                        setting = arg["value"] - arg["threshold"];
+                        args.append(arg["argument"] + "=" + str(setting))
+                        arg["setting"] = "lower"
+                    elif arg["setting"] == "lower":
+                        moreIterations = False
+                        setting = arg["value"] + arg["threshold"];
+                        args.append(arg["argument"] + "=" + str(setting))
+                        arg["setting"] = "upper"
 
                 if "extra_args" in arg:
                     for extra in arg["extra_args"]:

@@ -2,13 +2,18 @@
     "version": 1,
     "configure": [ "--disable-silent-rules" ],
     "debug": true,
+    "objdir": "%CLAMBASE%/obj",
     "compile": {
         "make": "gmake",
         "jobs": 7
     },
+    "logging": {
+        "verbose": 0
+    },
     "features": {
         "json": {
             "configure": [ "--with-libjson" ],
+            "forceclean": false,
             "libs": [ "libjson" ],
             "clamscan": {
                 "database": "%CLAMBASE%/unit_tests/input/clamav.hdb",
@@ -16,12 +21,12 @@
                     {
                         "argument": "--gen-json",
                         "type": "flag",
-                        "files": [ "%CLAMBASE%/test/clam-upx.exe" ],
+                        "files": [ "%OBJDIR%/test/clam-upx.exe" ],
                         "behavior": {
                             "enabled": {
                                 "detections": [
                                     {
-                                        "file": "%CLAMBASE%/test/clam-upx.exe",
+                                        "file": "%OBJDIR%/test/clam-upx.exe",
                                         "detect": "ClamAV-Test-File"
                                     }
                                 ],
@@ -34,7 +39,94 @@
                             "disabled": {
                                 "detections": [
                                     {
-                                        "file": "%CLAMBASE%/test/clam-upx.exe",
+                                        "file": "%OBJDIR%/test/clam-upx.exe",
+                                        "detect": "ClamAV-Test-File"
+                                    }
+                                ],
+                                "grep": {
+                                    "result": false,
+                                    "location": "temps",
+                                    "value": "CLAMJSONv0"
+                                }
+                            }
+                        },
+                        "temps": {
+                            "keep": true
+                        }
+                    }
+                ]
+            }
+        },
+        "filesize": {
+            "forceclean": false,
+            "libs": [ "libxml2" ],
+            "clamscan": {
+                "database": "%CLAMBASE%/unit_tests/input/clamav.hdb",
+                "arguments": [
+                    {
+                        "argument": "--max-filesize",
+                        "type": "int",
+                        "value": 10000,
+                        "threshold": 9900,
+                        "files": [ "%OBJDIR%/test/clam.exe" ],
+                        "behavior": {
+                            "lower": {
+                                "detections": [
+                                    {
+                                        "file": "%OBJDIR%/test/clam.exe",
+                                        "detect": "OK"
+                                    }
+                                ]
+                            },
+                            "base": {
+                                "detections": [
+                                    {
+                                        "file": "%OBJDIR%/test/clam.exe",
+                                        "detect": "ClamAV-Test-File"
+                                    }
+                                ],
+                                "grep": {
+                                    "result": false,
+                                    "location": "temps",
+                                    "value": "CLAMJSONv0"
+                                }
+                            }
+                        },
+                        "temps": {
+                            "keep": true
+                        }
+                    }
+                ]
+            }
+        },
+        "xdp": {
+            "forceclean": false,
+            "libs": [ "libxml2" ],
+            "clamscan": {
+                "database": "%CLAMBASE%/unit_tests/input/clamav.hdb",
+                "arguments": [
+                    {
+                        "argument": "--verbose",
+                        "type": "flag",
+                        "files": [ "%OBJDIR%/test/clam-xdp.xdp" ],
+                        "behavior": {
+                            "enabled": {
+                                "detections": [
+                                    {
+                                        "file": "%OBJDIR%/test/clam-xdp.xdp",
+                                        "detect": "ClamAV-Test-File"
+                                    }
+                                ],
+                                "grep": {
+                                    "result": true,
+                                    "location": "temps",
+                                    "value": "CLAMJSONv0"
+                                }
+                            },
+                            "disabled": {
+                                "detections": [
+                                    {
+                                        "file": "%OBJDIR%/test/clam-xdp.xdp",
                                         "detect": "ClamAV-Test-File"
                                     }
                                 ],
