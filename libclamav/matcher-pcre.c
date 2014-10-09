@@ -345,6 +345,10 @@ int cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, lon
 
     for (i = 0; i < root->pcre_metas; ++i) {
         pm = root->pcre_metatable[i];
+        if (!pm) {
+            cli_errmsg("cli_pcre_build: metadata for pcre %d is missing\n", i);
+            return CL_ENULLARG;
+        }
 
         /* for safety, disable all pcre */
         if (disable_all) {
@@ -355,11 +359,6 @@ int cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, lon
         if (pm->flags & CLI_PCRE_DISABLED) {
             cli_dbgmsg("cli_pcre_build: Skip compiling regex: %s (disabled)\n", pm->pdata.expression);
             continue;
-        }
-
-        if (!pm) {
-            cli_errmsg("cli_pcre_build: metadata for pcre %d is missing\n", i);
-            return CL_ENULLARG;
         }
 
         /* disable global */
