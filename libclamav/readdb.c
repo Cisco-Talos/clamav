@@ -81,7 +81,7 @@
 static pthread_mutex_t cli_ref_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
-char *cli_virname(char *virname, unsigned int official)
+char *cli_virname(const char *virname, unsigned int official)
 {
 	char *newname, *pt;
 
@@ -202,7 +202,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
             cflags = NULL;
 
         /* normal trigger, get added */
-        ret = cli_pcre_addpatt(root, trigger, pattern, cflags, offset, lsigid, options);
+        ret = cli_pcre_addpatt(root, virname, trigger, pattern, cflags, offset, lsigid, options);
         free(hexcpy);
         return ret;
 #else

@@ -172,7 +172,7 @@ void cli_pcre_perf_events_destroy()
 
 
 /* PCRE MATCHER FUNCTIONS */
-int cli_pcre_addpatt(struct cli_matcher *root, const char *trigger, const char *pattern, const char *cflags, const char *offset, const uint32_t *lsigid, unsigned int options)
+int cli_pcre_addpatt(struct cli_matcher *root, const char *virname, const char *trigger, const char *pattern, const char *cflags, const char *offset, const uint32_t *lsigid, unsigned int options)
 {
     struct cli_pcre_meta **newmetatable = NULL, *pm = NULL;
     uint32_t pcre_count;
@@ -244,15 +244,17 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *trigger, const char *
         return CL_EMEM;
     }
 
-    pm->pdata.expression = strdup(pattern);
-    if (!pm->pdata.expression) {
-        cli_errmsg("cli_pcre_addpatt: Unable to allocate memory for expression\n");
+    pm->virname = (char *)cli_virname(virname, options & CL_DB_OFFICIAL);
+    if(!pm->virname) {
+        cli_errmsg("cli_pcre_addpatt: Unable to allocate memory for virname or NULL virname\n");
         cli_pcre_freemeta(pm);
         mpool_free(root->mempool, pm);
         return CL_EMEM;
     }
 
     if (lsigid) {
+        root->ac_lsigtable[lsigid[0]]->virname = pm->virname;
+
         pm->lsigid[0] = 1;
         pm->lsigid[1] = lsigid[0];
         pm->lsigid[2] = lsigid[1];
@@ -260,6 +262,14 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *trigger, const char *
     else {
         /* sigtool */
         pm->lsigid[0] = 0;
+    }
+
+    pm->pdata.expression = strdup(pattern);
+    if (!pm->pdata.expression) {
+        cli_errmsg("cli_pcre_addpatt: Unable to allocate memory for expression\n");
+        cli_pcre_freemeta(pm);
+        mpool_free(root->mempool, pm);
+        return CL_EMEM;
     }
 
     /* offset parsing and usage, similar to cli_ac_addsig */
@@ -669,8 +679,15 @@ void cli_pcre_freemeta(struct cli_pcre_meta *pm)
     if (!pm)
         return;
 
-    if (pm->trigger)
+    if (pm->trigger) {
         free(pm->trigger);
+        pm->trigger = NULL;
+    }
+
+    if (pm->virname) {
+        free(pm->virname);
+        pm->virname = NULL;
+    }
 
     cli_pcre_free_single(&(pm->pdata));
 }

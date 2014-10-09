@@ -255,12 +255,15 @@ void cli_pcre_free_single(struct cli_pcre_data *pd)
 {
     if (pd->re) {
         pcre_free(pd->re);
+        pd->re = NULL;
     }
     if (pd->ex) {
         free(pd->ex);
+        pd->ex = NULL;
     }
     if (pd->expression) {
         free(pd->expression);
+        pd->expression = NULL;
     }
 }
 #endif /* HAVE_PCRE */
