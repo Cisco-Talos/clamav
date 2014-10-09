@@ -201,26 +201,33 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *trigger, const char *
         pm_dbgmsg("cli_pcre_addpatt: Adding /%s/%s%s triggered on (%s) [no lsigid]\n",
                   pattern, cflags ? " with flags " : "", cflags ? cflags : "", trigger);
 
-    /* validate the lsig trigger */
-    rssigs = cli_ac_chklsig(trigger, trigger + strlen(trigger), NULL, NULL, NULL, 1);
-    if((strcmp(trigger, PCRE_BYPASS)) && (rssigs == -1)) {
-        cli_errmsg("cli_pcre_addpatt: regex subsig /%s/ is missing a valid logical trigger\n", pattern);
-        return CL_EMALFDB;
-    }
+#ifdef PCRE_BYPASS
+    /* check for trigger bypass */
+    if (strcmp(trigger, PCRE_BYPASS)) {
+#endif
+        /* validate the lsig trigger */
+        rssigs = cli_ac_chklsig(trigger, trigger + strlen(trigger), NULL, NULL, NULL, 1);
+        if(rssigs == -1) {
+            cli_errmsg("cli_pcre_addpatt: regex subsig /%s/ is missing a valid logical trigger\n", pattern);
+            return CL_EMALFDB;
+        }
 
-    if (lsigid) {
-        if (rssigs > lsigid[1]) {
-            cli_errmsg("cli_pcre_addpatt: regex subsig %d logical trigger refers to subsequent subsig %d\n", lsigid[1], rssigs);
-            return CL_EMALFDB;
+        if (lsigid) {
+            if (rssigs > lsigid[1]) {
+                cli_errmsg("cli_pcre_addpatt: regex subsig %d logical trigger refers to subsequent subsig %d\n", lsigid[1], rssigs);
+                return CL_EMALFDB;
+            }
+            if (rssigs == lsigid[1]) {
+                cli_errmsg("cli_pcre_addpatt: regex subsig %d logical trigger is self-referential\n", lsigid[1]);
+                return CL_EMALFDB;
+            }
         }
-        if (rssigs == lsigid[1]) {
-            cli_errmsg("cli_pcre_addpatt: regex subsig %d logical trigger is self-referential\n", lsigid[1]);
-            return CL_EMALFDB;
+        else {
+            cli_dbgmsg("cli_pcre_addpatt: regex subsig is missing lsigid data\n");
         }
+#ifdef PCRE_BYPASS
     }
-    else {
-        cli_dbgmsg("cli_pcre_addpatt: regex subsig is missing lsigid data\n");
-    }
+#endif
 
     /* allocating entries */
     pm = (struct cli_pcre_meta *)mpool_calloc(root->mempool, 1, sizeof(*pm));
@@ -510,8 +517,11 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
         /* evaluate trigger */
         if (pm->lsigid[0]) {
             cli_dbgmsg("cli_pcre_scanbuf: checking %s; running regex /%s/\n", pm->trigger, pd->expression);
-            if ((strcmp(pm->trigger, PCRE_BYPASS)) && (cli_ac_chklsig(pm->trigger, pm->trigger + strlen(pm->trigger), mdata->lsigcnt[pm->lsigid[1]], &evalcnt, &evalids, 0) != 1))
-                continue;
+#ifdef PCRE_BYPASS
+            if (strcmp(pm->trigger, PCRE_BYPASS))
+#endif
+                if (cli_ac_chklsig(pm->trigger, pm->trigger + strlen(pm->trigger), mdata->lsigcnt[pm->lsigid[1]], &evalcnt, &evalids, 0) != 1)
+                    continue;
         }
         else {
             cli_dbgmsg("cli_pcre_scanbuf: skipping %s check due to unintialized lsigid\n", pm->trigger);
