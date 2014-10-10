@@ -105,7 +105,7 @@ static inline int matcher_run(const struct cli_matcher *root,
 			      uint32_t *viroffset,
 			      cli_ctx *ctx)
 {
-    int ret;
+    int ret, tmp;
     int32_t pos = 0;
     struct filter_match_info info;
     uint32_t orig_length, orig_offset;
@@ -167,13 +167,24 @@ static inline int matcher_run(const struct cli_matcher *root,
     /* cannot save pcre execution state without possible evasion; must scan entire buffer */
     /* however, scanning the whole buffer may require the whole buffer being loaded into memory */
 #if HAVE_PCRE
-    if (offset+length >= map->len && (buffer = fmap_need_off_once(map, 0, map->len))) {
-        cli_dbgmsg("%u+%u(%u) >= %zu: performing regex matching\n", offset, length, offset+length, map->len);
+    if (root->pcre_metas) {
+        if (map) {
+            cli_dbgmsg("matcher_run: performing regex matching on full map: %u+%u(%u) >= %zu\n", offset, length, offset+length, map->len);
 
-	/* scan the full buffer */
-	ret = cli_pcre_scanbuf(buffer, map->len, root, mdata, acres, poffdata, ctx);
-	if((ret == CL_VIRUS && !SCAN_ALL) || ret == CL_EMEM) {
-	    return ret;
+            buffer = fmap_need_off_once(map, 0, map->len);
+            if (!buffer)
+                return CL_EMEM;
+
+            length = (uint32_t)(map->len);
+        }
+        else {
+            cli_dbgmsg("matcher_run: performing regex matching on buffer with no map: %u+%u(%u)\n", offset, length, offset+length);
+        }
+
+	/* scan the full buffer; use tmp because ret may have filetype data */
+	tmp = cli_pcre_scanbuf(buffer, length, root, mdata, acres, poffdata, ctx);
+	if((tmp == CL_VIRUS && !SCAN_ALL) || tmp == CL_EMEM) {
+	    return tmp;
 	}
     }
 #endif /* HAVE_PCRE */
