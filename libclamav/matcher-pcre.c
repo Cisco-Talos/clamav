@@ -358,7 +358,10 @@ int cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, lon
     unsigned int i;
     int ret;
     struct cli_pcre_meta *pm = NULL;
-    int disable_all = !(dconf->pcre & PCRE_CONF_SUPPORT);
+    int disable_all = 0;
+
+    if (dconf && (dconf->pcre & PCRE_CONF_SUPPORT))
+        disable_all = 1;
 
     for (i = 0; i < root->pcre_metas; ++i) {
         pm = root->pcre_metatable[i];
@@ -379,7 +382,7 @@ int cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, lon
         }
 
         /* disable global */
-        if ((pm->flags & CLI_PCRE_GLOBAL) & !(dconf->pcre & PCRE_CONF_GLOBAL)) {
+        if (dconf && !(dconf->pcre & PCRE_CONF_GLOBAL)) {
             cli_dbgmsg("cli_pcre_build: disabling global option for regex /%s/\n", pm->pdata.expression);
             pm->flags &= ~(CLI_PCRE_GLOBAL);
         }
@@ -391,7 +394,7 @@ int cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, lon
         //pm->pdata.options |= PCRE_UCP;/* implemented in 8.20 */
         //pm->pdata.options |= PCRE_AUTO_CALLOUT; /* used with CALLOUT(-BACK) function */
 
-        if (dconf->pcre & PCRE_CONF_OPTIONS) {
+        if (dconf && (dconf->pcre & PCRE_CONF_OPTIONS)) {
             /* compile the regex, no options override *wink* */
             pm_dbgmsg("cli_pcre_build: Compiling regex: /%s/\n", pm->pdata.expression);
             ret = cli_pcre_compile(&(pm->pdata), match_limit, recmatch_limit, 0, 0);
@@ -423,7 +426,7 @@ int cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data, struc
         return CL_ENULLARG;
     }
 
-    if (!(ctx->dconf->pcre & PCRE_CONF_SUPPORT) || !root || !root->pcre_metatable || !info) {
+    if (!root || !root->pcre_metatable || !info || (ctx && ctx->dconf && !(ctx->dconf->pcre & PCRE_CONF_SUPPORT))) {
         data->shift = NULL;
         data->offset = NULL;
         return CL_SUCCESS;
@@ -501,7 +504,7 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
     uint32_t global, encompass;
     int rc, offset, ovector[OVECCOUNT];
 
-    if (!(ctx->dconf->pcre & PCRE_CONF_SUPPORT) || (!root->pcre_metatable)) {
+    if ((!root->pcre_metatable) || (ctx && ctx->dconf && !(ctx->dconf->pcre & PCRE_CONF_SUPPORT))) {
         return CL_SUCCESS;
     }
 
