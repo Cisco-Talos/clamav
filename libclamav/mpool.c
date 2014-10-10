@@ -40,10 +40,7 @@
 #endif
 #include <stddef.h>
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
+#include "clamav.h"
 #include "others.h"
 #include "str.h"
 #include "readdb.h"
@@ -61,7 +58,7 @@
 #ifdef DEBUGMPOOL
 #define spam(...) cli_warnmsg( __VA_ARGS__)
 #else
-static inline void spam(const char *fmt, ...) { fmt = fmt; } /* gcc STFU */
+static inline void spam(const char *fmt, ...) { UNUSEDPARAM(fmt); }
 #endif
 
 #include "mpool.h"

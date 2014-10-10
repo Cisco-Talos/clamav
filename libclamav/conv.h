@@ -21,7 +21,7 @@
 #if !defined(_CLAMAV_CONV_H)
 #define _CLAMAV_CONV_H
 
-void *cl_base64_decode(char *, size_t, void *, size_t *);
+void *cl_base64_decode(char *, size_t, void *, size_t *, int);
 char *cl_base64_encode(void *, size_t);
 
 #endif

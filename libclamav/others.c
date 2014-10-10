@@ -65,10 +65,6 @@
 #include <libxml/parser.h>
 #endif
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include "clamav.h"
 #include "others.h"
 #include "cltypes.h"
@@ -290,6 +286,10 @@ int cl_init(unsigned int initoptions)
 	struct timeval tv;
 	unsigned int pid = (unsigned int) getpid();
 
+    UNUSEDPARAM(initoptions);
+
+    cl_initialize_crypto();
+
     {
 	unrar_main_header_t x;
 	if (((char*)&x.flags - (char*)&x) != 3) {
@@ -390,24 +390,29 @@ struct cl_engine *cl_engine_new(void)
 
     /* Set up default stats/intel gathering callbacks */
     intel = cli_calloc(1, sizeof(cli_intel_t));
+    if ((intel)) {
 #ifdef CL_THREAD_SAFE
-    if (pthread_mutex_init(&(intel->mutex), NULL)) {
-        cli_errmsg("cli_engine_new: Cannot initialize stats gathering mutex\n");
-        mpool_free(new->mempool, new->dconf);
-        mpool_free(new->mempool, new->root);
+        if (pthread_mutex_init(&(intel->mutex), NULL)) {
+            cli_errmsg("cli_engine_new: Cannot initialize stats gathering mutex\n");
+            mpool_free(new->mempool, new->dconf);
+            mpool_free(new->mempool, new->root);
 #ifdef USE_MPOOL
-        mpool_destroy(new->mempool);
+            mpool_destroy(new->mempool);
 #endif
-        free(new);
-        free(intel);
-        return NULL;
+            free(new);
+            free(intel);
+            return NULL;
+        }
+#endif
+        intel->engine = new;
+        intel->maxsamples = STATS_MAX_SAMPLES;
+        intel->maxmem = STATS_MAX_MEM;
+        intel->timeout = 10;
+        new->stats_data = intel;
+    } else {
+        new->stats_data = NULL;
     }
-#endif
-    intel->engine = new;
-    intel->maxsamples = STATS_MAX_SAMPLES;
-    intel->maxmem = STATS_MAX_MEM;
-    intel->timeout = 10;
-    new->stats_data = intel;
+
     new->cb_stats_add_sample = NULL;
     new->cb_stats_submit = NULL;
     new->cb_stats_flush = clamav_stats_flush;
@@ -568,6 +573,9 @@ int cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field field, long
 	case CL_ENGINE_MAX_ICONSPE:
 	   engine->maxiconspe = (uint32_t)num;
 	   break;
+	case CL_ENGINE_TIME_LIMIT:
+            engine->time_limit = (uint32_t)num;
+            break;
 	default:
 	    cli_errmsg("cl_engine_set_num: Incorrect field number\n");
 	    return CL_EARG;
@@ -641,6 +649,8 @@ long long cl_engine_get_num(const struct cl_engine *engine, enum cl_engine_field
 	    return engine->maxpartitions;
 	case CL_ENGINE_MAX_ICONSPE:
 	    return engine->maxiconspe;
+	case CL_ENGINE_TIME_LIMIT:
+            return engine->time_limit;
 	default:
 	    cli_errmsg("cl_engine_get: Incorrect field number\n");
 	    if(err)
@@ -736,6 +746,8 @@ struct cl_settings *cl_engine_settings_copy(const struct cl_engine *engine)
     settings->cb_sigload_ctx = engine->cb_sigload_ctx;
     settings->cb_hash = engine->cb_hash;
     settings->cb_meta = engine->cb_meta;
+    settings->cb_file_props = engine->cb_file_props;
+    settings->cb_file_props_data = engine->cb_file_props_data;
     settings->engine_options = engine->engine_options;
 
     settings->cb_stats_add_sample = engine->cb_stats_add_sample;
@@ -756,8 +768,6 @@ struct cl_settings *cl_engine_settings_copy(const struct cl_engine *engine)
 
 int cl_engine_settings_apply(struct cl_engine *engine, const struct cl_settings *settings)
 {
-    cli_intel_t *intel;
-
     engine->ac_only = settings->ac_only;
     engine->ac_mindepth = settings->ac_mindepth;
     engine->ac_maxdepth = settings->ac_maxdepth;
@@ -805,13 +815,9 @@ int cl_engine_settings_apply(struct cl_engine *engine, const struct cl_settings 
     engine->cb_sigload_ctx = settings->cb_sigload_ctx;
     engine->cb_hash = settings->cb_hash;
     engine->cb_meta = settings->cb_meta;
+    engine->cb_file_props = settings->cb_file_props;
+    engine->cb_file_props_data = settings->cb_file_props_data;
 
-    intel = (cli_intel_t *)cli_calloc(1, sizeof(cli_intel_t));
-    intel->engine = engine;
-    intel->maxsamples = STATS_MAX_SAMPLES;
-    intel->maxmem = STATS_MAX_MEM;
-
-    engine->stats_data = (void *)intel;
     engine->cb_stats_add_sample = settings->cb_stats_add_sample;
     engine->cb_stats_remove_sample = settings->cb_stats_remove_sample;
     engine->cb_stats_decrement_count = settings->cb_stats_decrement_count;
@@ -882,6 +888,20 @@ int cli_updatelimits(cli_ctx *ctx, unsigned long needed) {
     if(ctx->scansize > ctx->engine->maxscansize)
         ctx->scansize = ctx->engine->maxscansize;
     return CL_CLEAN;
+}
+
+int cli_checktimelimit(cli_ctx *ctx)
+{
+    if (ctx->time_limit.tv_sec != 0) {
+        struct timeval now;
+        if (gettimeofday(&now, NULL) == 0) {
+            if (now.tv_sec < ctx->time_limit.tv_sec)
+                return CL_SUCCESS;
+            if (now.tv_sec > ctx->time_limit.tv_sec || now.tv_usec > ctx->time_limit.tv_usec)
+                return CL_ETIMEOUT;
+        }
+    }
+    return CL_SUCCESS;
 }
 
 /*
@@ -990,6 +1010,25 @@ void cli_append_virus(cli_ctx * ctx, const char * virname)
     }
     else
 	*ctx->virname = virname;
+#if HAVE_JSON
+    if (SCAN_PROPERTIES && ctx->wrkproperty) {
+        json_object *arrobj, *virobj;
+        if (!json_object_object_get_ex(ctx->wrkproperty, "Viruses", &arrobj)) {
+            arrobj = json_object_new_array();
+            if (NULL == arrobj) {
+                cli_errmsg("cli_append_virus: no memory for json virus array\n");
+                return;
+            }
+            json_object_object_add(ctx->wrkproperty, "Viruses", arrobj);
+        }
+        virobj = json_object_new_string(virname);
+        if (NULL == virobj) {
+            cli_errmsg("cli_append_virus: no memory for json virus name object\n");
+            return;
+        }
+        json_object_array_add(arrobj, virobj);
+    }
+#endif
 }
 
 const char * cli_get_last_virus(const cli_ctx * ctx)
@@ -1124,7 +1163,7 @@ int cli_rmdirs(const char *dirname)
 		    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
 			path = cli_malloc(strlen(dirname) + strlen(dent->d_name) + 2);
 			if(!path) {
-                cli_errmsg("cli_rmdirs: Unable to allocate memory for path %u\n", strlen(dirname) + strlen(dent->d_name) + 2);
+                cli_errmsg("cli_rmdirs: Unable to allocate memory for path %lu\n", strlen(dirname) + strlen(dent->d_name) + 2);
 			    closedir(dd);
 			    return -1;
 			}
@@ -1293,14 +1332,8 @@ void cl_engine_set_clcb_meta(struct cl_engine *engine, clcb_meta callback)
     engine->cb_meta = callback;
 }
 
-#if !defined(_WIN32)
-__attribute__((constructor)) void init(void)
+ void cl_engine_set_clcb_file_props(struct cl_engine *engine, clcb_file_props callback, void * cbdata)
 {
-    cl_initialize_crypto();
+    engine->cb_file_props = callback;
+    engine->cb_file_props_data = cbdata;
 }
-
-__attribute__((destructor)) void deinit(void)
-{
-    cl_cleanup_crypto();
-}
-#endif

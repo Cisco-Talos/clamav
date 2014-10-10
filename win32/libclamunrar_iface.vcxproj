@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -24,7 +23,7 @@
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>libclamunrar_iface</RootNamespace>
   </PropertyGroup>
-  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props"/>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
@@ -47,22 +46,22 @@
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
-  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props"/>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
-    <Import Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props"/>
+    <Import Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
-    <Import Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props"/>
+    <Import Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
-    <Import Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props"/>
+    <Import Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
-    <Import Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props"/>
+    <Import Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" />
   </ImportGroup>
-  <PropertyGroup Label="UserMacros"/>
+  <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <IntDir>$(SolutionDir)build\$(PlatformName)\$(ProjectName)\$(Configuration)\</IntDir>
@@ -89,7 +88,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;WIN32;_DEBUG;_WINDOWS;_USRDLL;LIBCLAMUNRAR_IFACE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>"$(SolutionDir)";"$(SolutionDir)compat";"$(SolutionDir)..";"$(SolutionDir)3rdparty\pthreads"</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)compat;$(SolutionDir)..;$(SolutionDir)3rdparty\pthreads;C:\clamdeps\win32\openssl\include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
       <CompileAs>CompileAsC</CompileAs>
     </ClCompile>
@@ -97,9 +96,10 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ModuleDefinitionFile>$(SolutionDir)libclamunrar_iface.def</ModuleDefinitionFile>
+      <AdditionalLibraryDirectories>C:\clamdeps\win32\openssl\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
-    <ProjectReference/>
-    <ProjectReference/>
+    <ProjectReference />
+    <ProjectReference />
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -107,7 +107,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;WIN32;_DEBUG;_WINDOWS;_USRDLL;LIBCLAMUNRAR_IFACE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>"$(SolutionDir)";"$(SolutionDir)compat";"$(SolutionDir)..";"$(SolutionDir)3rdparty\pthreads"</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)compat;$(SolutionDir)..;$(SolutionDir)3rdparty\pthreads;C:\clamdeps\win64\openssl\include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4996;4267</DisableSpecificWarnings>
       <CompileAs>CompileAsC</CompileAs>
     </ClCompile>
@@ -115,9 +115,10 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ModuleDefinitionFile>$(SolutionDir)libclamunrar_iface.def</ModuleDefinitionFile>
+      <AdditionalLibraryDirectories>C:\clamdeps\win64\openssl\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
-    <ProjectReference/>
-    <ProjectReference/>
+    <ProjectReference />
+    <ProjectReference />
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -127,7 +128,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;WIN32;NDEBUG;_WINDOWS;_USRDLL;LIBCLAMUNRAR_IFACE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>"$(SolutionDir)";"$(SolutionDir)compat";"$(SolutionDir)..";"$(SolutionDir)3rdparty\pthreads"</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)compat;$(SolutionDir)..;$(SolutionDir)3rdparty\pthreads;C:\clamdeps\win32\openssl\include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
       <CompileAs>CompileAsC</CompileAs>
     </ClCompile>
@@ -137,9 +138,10 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <ModuleDefinitionFile>$(SolutionDir)libclamunrar_iface.def</ModuleDefinitionFile>
+      <AdditionalLibraryDirectories>C:\clamdeps\win32\openssl\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
-    <ProjectReference/>
-    <ProjectReference/>
+    <ProjectReference />
+    <ProjectReference />
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -149,7 +151,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;WIN32;NDEBUG;_WINDOWS;_USRDLL;LIBCLAMUNRAR_IFACE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>"$(SolutionDir)";"$(SolutionDir)compat";"$(SolutionDir)..";"$(SolutionDir)3rdparty\pthreads"</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)compat;$(SolutionDir)..;$(SolutionDir)3rdparty\pthreads;C:\clamdeps\win64\openssl\include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4996;4267</DisableSpecificWarnings>
       <CompileAs>CompileAsC</CompileAs>
     </ClCompile>
@@ -159,26 +161,27 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <ModuleDefinitionFile>$(SolutionDir)libclamunrar_iface.def</ModuleDefinitionFile>
+      <AdditionalLibraryDirectories>C:\clamdeps\win64\openssl\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
-    <ProjectReference/>
-    <ProjectReference/>
+    <ProjectReference />
+    <ProjectReference />
   </ItemDefinitionGroup>
   <ItemGroup>
-    <None Include="libclamunrar_iface.def"/>
+    <None Include="libclamunrar_iface.def" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="res\libclamunrar_iface.rc"/>
+    <ResourceCompile Include="res\libclamunrar_iface.rc" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\libclamunrar_iface\unrar_iface.c"/>
-    <ClCompile Include="compat\snprintf.c"/>
+    <ClCompile Include="..\libclamunrar_iface\unrar_iface.c" />
+    <ClCompile Include="compat\snprintf.c" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="libclamunrar.vcxproj">
       <Project>{b1406d09-59ce-4eea-9f08-feccf3a7a4a7}</Project>
     </ProjectReference>
   </ItemGroup>
-  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets"/>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
 </Project>

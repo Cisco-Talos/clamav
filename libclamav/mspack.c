@@ -26,10 +26,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include "others.h"
 #include "clamav.h"
 #include "mspack.h"
@@ -131,7 +127,7 @@ static int mszip_read_input(struct mszip_stream *zip) {
   int nread = zip->read_cb(zip->file, zip->inbuf, (int)zip->inbuf_size);
   if (nread < 0) {
     if (zip->file->error == CL_BREAK) {
-      if (nread == zip->last) {
+      if ((unsigned int)nread == zip->last) {
         cli_dbgmsg("mszip_read_input: Two consecutive CL_BREAKs reached.\n");
         return CL_BREAK;
       }

@@ -33,10 +33,7 @@
 #endif
 #include <assert.h>
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
+#include "clamav.h"
 #include "table.h"
 #include "others.h"
 

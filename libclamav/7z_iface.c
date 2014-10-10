@@ -23,10 +23,7 @@
 #include <Windows.h>
 #endif
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
+#include "clamav.h"
 #include "7z_iface.h"
 #include "lzma_iface.h"
 #include "scanners.h"
@@ -149,7 +146,7 @@ int cli_7unz (cli_ctx *ctx, size_t offset) {
 	    }
 
 	    name = (char *)utf16name;
-	    for(j=0; j<newnamelen; j++) /* FIXME */
+	    for(j=0; j<(size_t)newnamelen; j++) /* FIXME */
 		name[j] = utf16name[j];
 	    name[j] = 0;
 	    cli_dbgmsg("cli_7unz: extracting %s\n", name);
@@ -180,7 +177,7 @@ int cli_7unz (cli_ctx *ctx, size_t offset) {
 		    break;
 		    
 		cli_dbgmsg("cli_7unz: Saving to %s\n", name);
-		if(cli_writen(fd, outBuffer + offset, outSizeProcessed) != outSizeProcessed)
+		if((size_t)cli_writen(fd, outBuffer + offset, outSizeProcessed) != outSizeProcessed)
 		    found = CL_EWRITE;
 		else
 		    if ((found = cli_magic_scandesc(fd, ctx)) == CL_VIRUS)

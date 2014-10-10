@@ -60,10 +60,6 @@
 #include <errno.h>
 #include <zlib.h>
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include "target.h"
 
 #include "freshclamcodes.h"
@@ -885,6 +881,10 @@ getfile_mirman (const char *srcfile, const char *destfile,
     char *remotename = NULL, *authorization = NULL, *headerline;
     const char *rotation = "|/-\\", *fname;
 
+    UNUSEDPARAM(localip);
+    UNUSEDPARAM(port);
+    UNUSEDPARAM(ctimeout);
+    UNUSEDPARAM(can_whitelist);
 
     if (proxy)
     {
@@ -1117,6 +1117,8 @@ getfile (const char *srcfile, const char *destfile, const char *hostname,
 {
     int ret, sd;
     char ipaddr[46];
+
+    UNUSEDPARAM(opts);
 
     memset (ipaddr, 0, sizeof (ipaddr));
     if (ip && ip[0])            /* use ip to connect */
@@ -2050,7 +2052,7 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
             logg ("^Current functionality level = %d, recommended = %d\n",
                   flevel, current->fl);
             logg ("Please check if ClamAV tools are linked against the proper version of libclamav\n");
-            logg ("DON'T PANIC! Read http://www.clamav.net/support/faq\n");
+            logg ("DON'T PANIC! Read http://www.clamav.net/documentation.html\n");
         }
 
         *signo += current->sigs;

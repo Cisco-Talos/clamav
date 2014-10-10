@@ -31,10 +31,7 @@
 #include <unistd.h>
 #endif
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
+#include "clamav.h"
 #include "others.h"
 #include "cltypes.h"
 #include "nsis_bzlib.h"
@@ -190,7 +187,7 @@ static int nsis_decomp(struct nsis_st *n) {
 static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx) {
   const unsigned char *ibuf;
   uint32_t size, loops;
-  int ret, gotsome=0, opened=0;
+  int ret, gotsome=0;
   unsigned char obuf[BUFSIZ];
 
   if (n->eof) {

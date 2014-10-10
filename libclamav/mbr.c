@@ -31,10 +31,7 @@
 #include <fcntl.h>
 #include <zlib.h>
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
+#include "clamav.h"
 #include "cltypes.h"
 #include "others.h"
 #include "mbr.h"
@@ -70,7 +67,6 @@ enum MBR_STATE {
 
 static int mbr_scanextprtn(cli_ctx *ctx, unsigned *prtncount, off_t extlba, 
                            size_t extlbasize, size_t sectorsize);
-static void mbr_printbr(struct mbr_boot_record *record);
 static int mbr_check_mbr(struct mbr_boot_record *record, size_t maplen, size_t sectorsize);
 static int mbr_check_ebr(struct mbr_boot_record *record);
 static int mbr_primary_prtn_intxn(cli_ctx *ctx, struct mbr_boot_record mbr, size_t sectorsize);
@@ -428,24 +424,6 @@ void mbr_convert_to_host(struct mbr_boot_record *record)
     record->signature = be16_to_host(record->signature);
 }
 
-static void mbr_printbr(struct mbr_boot_record *record)
-{
-    unsigned i;
-
-    cli_dbgmsg("signature: %x\n", record->signature);
-    for (i = 0; i < MBR_MAX_PARTITION_ENTRIES; ++i) {
-        cli_dbgmsg("entry %u:\n", i);
-        cli_dbgmsg("\tstatus: %x\n", record->entries[i].status);
-        cli_dbgmsg("\tfirstCHS: [%u, %u, %u]\n", record->entries[i].firstCHS[0],
-                   record->entries[i].firstCHS[1], record->entries[i].firstCHS[2]);
-        cli_dbgmsg("\ttype: %x\n", record->entries[i].type);
-        cli_dbgmsg("\tlastCHS: [%u, %u, %u]\n", record->entries[i].lastCHS[0],
-                   record->entries[i].lastCHS[1], record->entries[i].lastCHS[2]);
-        cli_dbgmsg("\tfirstLBA: %u\n", record->entries[i].firstLBA);
-        cli_dbgmsg("\tnumLBA: %u\n", record->entries[i].numLBA);
-    }
-}
-
 static int mbr_check_mbr(struct mbr_boot_record *record, size_t maplen, size_t sectorsize)
 {
     unsigned i = 0;
@@ -476,7 +454,7 @@ static int mbr_check_mbr(struct mbr_boot_record *record, size_t maplen, size_t s
 
     /* check the maplen */
     if ((maplen / sectorsize) < 2) {
-        cli_dbgmsg("cli_scanmbr: file is too small to hold disk image\n");
+        cli_dbgmsg("cli_scanmbr: bootstrap code or file is too small to hold disk image\n");
         return CL_EFORMAT;
     }
 

@@ -22,10 +22,7 @@
 #include "clamav-config.h"
 #endif
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
+#include "clamav.h"
 #include "cltypes.h"
 #include "others.h"
 #include "prtn_intxn.h"
@@ -54,13 +51,13 @@ int prtn_intxn_list_check(prtn_intxn_list_t* list, unsigned *pitxn, off_t start,
         (*pitxn)--;
 
         if (start > check_node->Start) {
-            if (check_node->Start+check_node->Size > start) {
+            if (check_node->Start+check_node->Size > (unsigned long)start) {
                 ret = CL_VIRUS;
                 break;
             }
         }
         else if (start < check_node->Start) {
-            if (start+size > check_node->Start) {
+            if (start+size > (unsigned long)(check_node->Start)) {
                 ret = CL_VIRUS;
                 break;
             }

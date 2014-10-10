@@ -52,10 +52,6 @@
 #include <termios.h>
 #endif
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include "vba.h"
 
 #include "shared/output.h"
@@ -307,16 +303,13 @@ static char *getdsig(const char *host, const char *user, const unsigned char *da
 	    return NULL;
 	}
 #endif
-	if(scanf("%as", &pt) == EOF || !pt) {
+	if(scanf("%30s", pass) == EOF || !pt) {
 	    mprintf("!getdsig: Can't get password\n");
 #ifdef HAVE_TERMIOS_H
 	    tcsetattr(0, TCSAFLUSH, &old);
 #endif
 	    return NULL;
 	}
-	strncpy(pass, pt, sizeof(pass));
-	pass[sizeof(pass)-1]='\0';
-	free(pt);
 
 #ifdef HAVE_TERMIOS_H
 	if(tcsetattr(0, TCSAFLUSH, &old)) {
@@ -380,7 +373,7 @@ static char *getdsig(const char *host, const char *user, const unsigned char *da
 	    closesocket(sockd);
 	    return NULL;
 	} else {
-	    mprintf("Signature received (length = %lu)\n", strlen(buff) - 10);
+	    mprintf("Signature received (length = %lu)\n", (unsigned long)strlen(buff) - 10);
 	}
     } else {
 	mprintf("!getdsig: Communication error with remote server\n");
@@ -719,6 +712,7 @@ static int build(const struct optstruct *opts)
 			dblist2 = (char **) realloc(dblist2, (dblist2cnt + 1) * sizeof(char *));
 			if(!dblist2) { /* dblist2 leaked but we don't really care */
 			    mprintf("!build: Memory allocation error\n");
+                            closedir(dd);
 			    return -1;
 			}
 			dblist2[dblist2cnt] = strdup(dent->d_name);
@@ -852,13 +846,11 @@ static int build(const struct optstruct *opts)
 	builder[sizeof(builder)-1]='\0';
     } else {
 	mprintf("Builder name: ");
-	if(scanf("%as", &pt) == EOF || !pt) {
+	if(scanf("%32s", builder) == EOF || !pt) {
 	    mprintf("!build: Can't get builder name\n");
+	    free(dblist2);
 	    return -1;
 	}
-	strncpy(builder, pt, sizeof(builder));
-	builder[sizeof(builder)-1]='\0';
-	free(pt);
     }
 
     /* add builder */
@@ -1535,12 +1527,12 @@ static int vbadump(const struct optstruct *opts)
 	return -1;
     }
     if(cli_ole2_extract(dir, ctx, &vba)) {
-	destroy_ctx(ctx);
+	destroy_ctx(-1, ctx);
 	cli_rmdirs(dir);
         free(dir);
         return -1;
     }
-    destroy_ctx(ctx);
+    destroy_ctx(-1, ctx);
     if (vba) 
       sigtool_vba_scandir(dir, hex_output, vba);
     cli_rmdirs(dir);
@@ -3000,10 +2992,6 @@ int main(int argc, char **argv)
     if(check_flevel())
 	exit(1);
 
-#if defined(_WIN32)
-    cl_initialize_crypto();
-#endif
-
     if((ret = cl_init(CL_INIT_DEFAULT)) != CL_SUCCESS) {
 	mprintf("!Can't initialize libclamav: %s\n", cl_strerror(ret));
 	return -1;
@@ -3096,5 +3084,6 @@ int main(int argc, char **argv)
 	help();
 
     optfree(opts);
+    cl_cleanup_crypto();
     return ret ? 1 : 0;
 }

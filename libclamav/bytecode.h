@@ -114,7 +114,14 @@ int cli_bytecode_prepare2(struct cl_engine *engine, struct cli_all_bc *allbc, un
 int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, struct cli_bc_ctx *ctx);
 void cli_bytecode_destroy(struct cli_bc *bc);
 int cli_bytecode_done(struct cli_all_bc *allbc);
+
+/* Bytecode IR descriptions */
 void cli_bytecode_describe(const struct cli_bc *bc);
+void cli_bytetype_describe(const struct cli_bc *bc);
+void cli_bytevalue_describe(const struct cli_bc *bc, unsigned funcid);
+void cli_byteinst_describe(const struct cli_bc_inst *inst, unsigned *bbnum);
+void cli_bytefunc_describe(const struct cli_bc *bc, unsigned funcid);
+
 
 /* Hooks */
 struct cli_exe_info;

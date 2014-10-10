@@ -18,6 +18,10 @@
  *  MA 02110-1301, USA.
  */
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -40,9 +44,7 @@
 #include <netdb.h>
 #endif
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
+#include "platform.h"
 
 #include "libclamav/others.h"
 #include "libclamav/clamav.h"
@@ -56,6 +58,15 @@ int connect_host(const char *host, const char *port, uint32_t timeout, int useAs
     socklen_t len;
     fd_set read_fds, write_fds;
     struct timeval tv;
+#ifdef _WIN32
+	int iResult;
+	WSADATA wsaData;
+
+	/* Force initialization of Windows sockets, even if it already happened elsewhere */
+	iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
+	if (iResult != 0)
+		return -1;
+#endif
 
     memset(&hints, 0x00, sizeof(struct addrinfo));
     hints.ai_family = AF_UNSPEC;
@@ -72,7 +83,7 @@ int connect_host(const char *host, const char *port, uint32_t timeout, int useAs
         if (useAsync) {
             flags = fcntl(sockfd, F_GETFL, 0);
             if (fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) < 0) {
-                close(sockfd);
+                closesocket(sockfd);
                 continue;
             }
         }
@@ -80,7 +91,7 @@ int connect_host(const char *host, const char *port, uint32_t timeout, int useAs
         if ((error = connect(sockfd, p->ai_addr, p->ai_addrlen))) {
             if (useAsync) {
                 if (errno != EINPROGRESS) {
-                    close(sockfd);
+                    closesocket(sockfd);
                     continue;
                 }
                 errno = 0;
@@ -94,22 +105,22 @@ int connect_host(const char *host, const char *port, uint32_t timeout, int useAs
                 tv.tv_sec = timeout;
                 tv.tv_usec = 0;
                 if (select(sockfd + 1, &read_fds, &write_fds, NULL, &tv) <= 0) {
-                    close(sockfd);
+                    closesocket(sockfd);
                     continue;
                 }
 
                 if (FD_ISSET(sockfd, &read_fds) || FD_ISSET(sockfd, &write_fds)) {
                     len = sizeof(error);
                     if (getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &error, &len) < 0) {
-                        close(sockfd);
+                        closesocket(sockfd);
                         continue;
                     }
                 } else {
-                    close(sockfd);
+                    closesocket(sockfd);
                     continue;
                 }
             } else {
-                close(sockfd);
+                closesocket(sockfd);
                 continue;
             }
         }
@@ -122,7 +133,7 @@ int connect_host(const char *host, const char *port, uint32_t timeout, int useAs
     if (!(p)) {
         freeaddrinfo(servinfo);
         if (sockfd >= 0)
-            close(sockfd);
+            closesocket(sockfd);
         return -1;
     }
 
@@ -131,7 +142,7 @@ int connect_host(const char *host, const char *port, uint32_t timeout, int useAs
     /* Return to using a synchronous socket to make Linux happy */
     if (useAsync) {
         if (fcntl(sockfd, F_SETFL, flags) < 0) {
-            close(sockfd);
+            closesocket(sockfd);
             return -1;
         }
     }
@@ -211,8 +222,11 @@ void submit_post(const char *host, const char *port, const char *method, const c
         encoded = encode_data(postdata);
         if (!(encoded))
             return;
-
+#if defined(_WIN32)
+		snprintf(chunkedlen, sizeof(chunkedlen), "%u", strlen(encoded));
+#else
         snprintf(chunkedlen, sizeof(chunkedlen), "%zu", strlen(encoded));
+#endif
         bufsz += sizeof("Content-Type: application/x-www-form-urlencoded\r\n");
         bufsz += sizeof("Content-Length: \r\n");
         bufsz += strlen(chunkedlen);
@@ -238,8 +252,11 @@ void submit_post(const char *host, const char *port, const char *method, const c
         snprintf(buf+strlen(buf), bufsz-strlen(buf), "%s", encoded);
         free(encoded);
     }
-
+#if defined(_WIN32)
+	sockfd = connect_host(host, port, timeout, 0);
+#else
     sockfd = connect_host(host, port, timeout, 1);
+#endif
     if (sockfd < 0) {
         free(buf);
         return;
@@ -247,8 +264,8 @@ void submit_post(const char *host, const char *port, const char *method, const c
 
     cli_dbgmsg("stats - Connected to %s:%s\n", host, port);
 
-    if (send(sockfd, buf, strlen(buf), 0) != strlen(buf)) {
-        close(sockfd);
+    if ((size_t)send(sockfd, buf, strlen(buf), 0) != (size_t)strlen(buf)) {
+        closesocket(sockfd);
         free(buf);
         return;
     }
@@ -276,6 +293,8 @@ void submit_post(const char *host, const char *port, const char *method, const c
 
             buf[bufsz-1] = '\0';
 
+            cli_dbgmsg("stats - received: %s\n", buf);
+
             if (strstr(buf, "STATOK")) {
                 cli_dbgmsg("stats - Data received okay\n");
                 break;
@@ -283,6 +302,6 @@ void submit_post(const char *host, const char *port, const char *method, const c
         }
     }
 
-    close(sockfd);
+    closesocket(sockfd);
     free(buf);
 }

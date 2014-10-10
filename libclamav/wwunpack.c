@@ -22,10 +22,7 @@
 #include "clamav-config.h"
 #endif
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
+#include "clamav.h"
 #include "cltypes.h"
 #include "others.h"
 #include "execs.h"
@@ -247,7 +244,7 @@ int wwunpack(uint8_t *exe, uint32_t exesz, uint8_t *wwsect, struct cli_exe_secti
 	}
 
     memset(structs, 0, 0x28);
-    error = cli_writen(desc, exe, exesz)!=exesz;
+    error = (uint32_t)cli_writen(desc, exe, exesz)!=exesz;
   }
   return error;
 }

@@ -34,7 +34,12 @@
 #if defined(C_SOLARIS)
 #include <sys/utsname.h>
 #else
+#if HAVE_SYS_PARAM_H
+#include <sys/param.h>
+#endif
+#if HAVE_SYSCTLBYNAME
 #include <sys/sysctl.h>
+#endif
 #endif
 #include <dlfcn.h>
 #else
@@ -48,14 +53,10 @@
 
 #include <errno.h>
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include "libclamav/others.h"
 #include "libclamav/clamav.h"
 #include "libclamav/dconf.h"
-#include "libclamav/json.h"
+#include "libclamav/stats_json.h"
 #include "libclamav/stats.h"
 #include "libclamav/hostid.h"
 #include "libclamav/www.h"
@@ -253,7 +254,7 @@ void clamav_stats_add_sample(const char *virname, const unsigned char *md5, size
         sample->virus_name[i+1] = NULL;
 
         memcpy(sample->md5, md5, sizeof(sample->md5));
-        sample->size = size;
+        sample->size = (uint32_t)size;
         intel->nsamples++;
 
         if (sections && sections->nsections && !(sample->sections)) {
@@ -471,7 +472,7 @@ void clamav_stats_decrement_count(const char *virname, const unsigned char *md5,
 
     sample = find_sample(intel, virname, md5, size, NULL);
     if (!(sample))
-        return;
+        goto clamav_stats_decrement_end;
 
     if (sample->hits == 1) {
         if ((intel->engine->cb_stats_remove_sample))
@@ -479,11 +480,12 @@ void clamav_stats_decrement_count(const char *virname, const unsigned char *md5,
         else
             clamav_stats_remove_sample(virname, md5, size, intel);
 
-        return;
+        goto clamav_stats_decrement_end;
     }
 
     sample->hits--;
 
+ clamav_stats_decrement_end:
 #ifdef CL_THREAD_SAFE
     err = pthread_mutex_unlock(&(intel->mutex));
     if (err) {
@@ -576,6 +578,8 @@ char *clamav_stats_get_hostid(void *cbdata)
     size_t bufsz, i;
     char *buf;
 
+    UNUSEDPARAM(cbdata);
+
 #if HAVE_SYSCTLBYNAME
     /*
      * FreeBSD provides a handy-dandy sysctl for grabbing the system's HostID. In a jail that
@@ -595,6 +599,8 @@ char *clamav_stats_get_hostid(void *cbdata)
 
         return buf;
     }
+
+    return strdup(STATS_ANON_UUID);
 #else
     buf = internal_get_host_id();
     if (!(buf))

@@ -34,10 +34,7 @@
 #include <string.h>
 #include <errno.h>
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
+#include "clamav.h"
 #include "fmap.h"
 #include "others.h"
 #include "mspack.h"
@@ -673,7 +670,6 @@ int cli_chm_prepare_file(chm_metadata_t *metadata)
 
 int cli_chm_open(const char *dirname, chm_metadata_t *metadata, cli_ctx *ctx)
 {
-	STATBUF statbuf;
 	int retval;
 
 	cli_dbgmsg("in cli_chm_open\n");

@@ -28,10 +28,7 @@
 #include <string.h>
 #include <assert.h>
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
+#include "clamav.h"
 #include "others.h"
 #include "jsparse/textbuf.h"
 #include "regex_suffix.h"

@@ -34,10 +34,6 @@
 #include <ctype.h>
 #include <zlib.h>
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include "clamav.h"
 
 #include "others.h"
@@ -47,6 +43,9 @@
 #include "mbox.h"
 #endif
 #include "blob.h"
+#ifdef HAVE_JSON
+#include "json.h"
+#endif
 
 #define PPT_LZW_BUFFSIZE 8192
 #define VBA_COMPRESSION_WINDOW 4096

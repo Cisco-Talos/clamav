@@ -25,15 +25,12 @@
 
 #include <string.h>
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include "scanners.h"
 #include "cltypes.h"
 #include "others.h"
 #include "clamav.h"
 #include "fmap.h"
+#include "binhex.h"
 
 
 static const uint8_t hqxtbl[] = {

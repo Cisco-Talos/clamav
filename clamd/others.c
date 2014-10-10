@@ -65,11 +65,8 @@
 #endif /* HAVE_POLL_H */
 #endif /* HAVE_POLL */
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include <limits.h>
+#include "libclamav/clamav.h"
 #include "shared/optparser.h"
 #include "shared/output.h"
 #include "shared/misc.h"
@@ -519,6 +516,8 @@ fds_poll_recv (struct fd_data *data, int timeout, int check_signals,
     size_t i;
     int retval;
     time_t now, closest_timeout;
+
+    UNUSEDPARAM(event);
 
     /* we must have at least one fd, the control fd! */
     fds_cleanup (data);

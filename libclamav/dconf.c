@@ -29,10 +29,6 @@
 #include <ctype.h>
 #include <zlib.h>
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include "clamav.h"
 #include "cltypes.h"
 #include "dconf.h"
@@ -346,6 +342,7 @@ int cli_dconf_load(FILE *fs, struct cl_engine *engine, unsigned int options, str
     int ret = 0;
     uint32_t val;
 
+    UNUSEDPARAM(options);
 
     while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
         line++;

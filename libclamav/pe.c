@@ -21,11 +21,18 @@
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
+
+/*
 #define _XOPEN_SOURCE 500
+*/
+
 #include <stdio.h>
+#include <stdlib.h>
+
 #if HAVE_STRING_H
 #include <string.h>
 #endif
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -34,10 +41,6 @@
 #endif
 #include <time.h>
 #include <stdarg.h>
-
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
 
 #include "cltypes.h"
 #include "clamav.h"
@@ -62,6 +65,8 @@
 #include "special.h"
 #include "ishield.h"
 #include "asn1.h"
+
+#include "json_api.h"
 
 #define DCONF ctx->dconf->pe
 
@@ -602,6 +607,119 @@ end:
     return ret;
 }
 
+#if HAVE_JSON
+static struct json_object *get_pe_property(cli_ctx *ctx)
+{
+    struct json_object *pe;
+
+    if (!(ctx) || !(ctx->wrkproperty))
+        return NULL;
+
+    if (!json_object_object_get_ex(ctx->wrkproperty, "PE", &pe)) {
+        pe = json_object_new_object();
+        if (!(pe))
+            return NULL;
+
+        json_object_object_add(ctx->wrkproperty, "PE", pe);
+    }
+
+    return pe;
+}
+
+static void pe_add_heuristic_property(cli_ctx *ctx, const char *key)
+{
+    struct json_object *heuristics;
+    struct json_object *pe;
+    struct json_object *str;
+
+    pe = get_pe_property(ctx);
+    if (!(pe))
+        return;
+
+    if (!json_object_object_get_ex(pe, "Heuristics", &heuristics)) {
+        heuristics = json_object_new_array();
+        if (!(heuristics))
+            return;
+
+        json_object_object_add(pe, "Heuristics", heuristics);
+    }
+
+    str = json_object_new_string(key);
+    if (!(str))
+        return;
+
+    json_object_array_add(heuristics, str);
+}
+
+static struct json_object *get_section_json(cli_ctx *ctx)
+{
+    struct json_object *pe;
+    struct json_object *section;
+
+    pe = get_pe_property(ctx);
+    if (!(pe))
+        return NULL;
+
+    if (!json_object_object_get_ex(pe, "Sections", &section)) {
+        section = json_object_new_array();
+        if (!(section))
+            return NULL;
+
+        json_object_object_add(pe, "Sections", section);
+    }
+
+    return section;
+}
+
+static void add_section_info(cli_ctx *ctx, struct cli_exe_section *s)
+{
+    struct json_object *sections, *section, *obj;
+    char address[16];
+
+    sections = get_section_json(ctx);
+    if (!(sections))
+        return;
+
+    section = json_object_new_object();
+    if (!(section))
+        return;
+
+    obj = json_object_new_int((int32_t)(s->rsz));
+    if (!(obj))
+        return;
+
+    json_object_object_add(section, "RawSize", obj);
+
+    obj = json_object_new_int((int32_t)(s->raw));
+    if (!(obj))
+        return;
+
+    json_object_object_add(section, "RawOffset", obj);
+
+    snprintf(address, sizeof(address), "0x%08x", s->rva);
+
+    obj = json_object_new_string(address);
+    if (!(obj))
+        return;
+
+    json_object_object_add(section, "VirtualAddress", obj);
+
+    obj = json_object_new_boolean((s->chr & 0x20000000) == 0x20000000);
+    if ((obj))
+        json_object_object_add(section, "Executable", obj);
+
+    obj = json_object_new_boolean((s->chr & 0x80000000) == 0x80000000);
+    if ((obj))
+        json_object_object_add(section, "Writable", obj);
+
+    obj = json_object_new_boolean(s->urva>>31 || s->uvsz>>31 || (s->rsz && s->uraw>>31) || s->ursz>>31);
+    if ((obj))
+        json_object_object_add(section, "Signed", obj);
+
+    json_object_array_add(sections, section);
+}
+#endif
+
 int cli_scanpe(cli_ctx *ctx)
 {
 	uint16_t e_magic; /* DOS signature ("MZ") */
@@ -628,7 +746,6 @@ int cli_scanpe(cli_ctx *ctx)
 	size_t fsize;
 	uint32_t valign, falign, hdr_size, j;
 	struct cli_exe_section *exe_sections;
-	struct cli_matcher *mdb_sect;
 	char timestr[32];
 	struct pe_image_data_dir *dirs;
 	struct cli_bc_ctx *bc_ctx;
@@ -637,13 +754,28 @@ int cli_scanpe(cli_ctx *ctx)
 #ifdef HAVE__INTERNAL__SHA_COLLECT
 	int sha_collect = ctx->sha_collect;
 #endif
-	const char * virname = NULL;
+    const char *archtype=NULL, *subsystem=NULL;
 	uint32_t viruses_found = 0;
+#if HAVE_JSON
+        int toval = 0;
+        struct json_object *pe_json=NULL;
+        char jsonbuf[128];
+#endif
 
     if(!ctx) {
 	cli_errmsg("cli_scanpe: ctx == NULL\n");
 	return CL_ENULLARG;
     }
+
+#if HAVE_JSON
+    if (cli_json_timeout_cycle_check(ctx, &toval) != CL_SUCCESS) {
+        return CL_ETIMEOUT;
+    }
+
+    if (ctx->options & CL_SCAN_FILE_PROPERTIES) {
+        pe_json = get_pe_property(ctx);
+    }
+#endif
     map = *ctx->fmap;
     if(fmap_readn(map, &e_magic, 0, sizeof(e_magic)) != sizeof(e_magic)) {
 	cli_dbgmsg("Can't read DOS signature\n");
@@ -684,109 +816,127 @@ int cli_scanpe(cli_ctx *ctx)
     }
 
     if(EC16(file_hdr.Characteristics) & 0x2000) {
+#if HAVE_JSON
+        if ((pe_json))
+            cli_jsonstr(pe_json, "Type", "DLL");
+#endif
 	cli_dbgmsg("File type: DLL\n");
 	dll = 1;
     } else if(EC16(file_hdr.Characteristics) & 0x01) {
+#if HAVE_JSON
+        if ((pe_json))
+            cli_jsonstr(pe_json, "Type", "EXE");
+#endif
 	cli_dbgmsg("File type: Executable\n");
     }
 
     switch(EC16(file_hdr.Machine)) {
 	case 0x0:
-	    cli_dbgmsg("Machine type: Unknown\n");
+        archtype = "Unknown";
 	    break;
 	case 0x14c:
-	    cli_dbgmsg("Machine type: 80386\n");
+        archtype = "80386";
 	    break;
 	case 0x14d:
-	    cli_dbgmsg("Machine type: 80486\n");
+        archtype = "80486";
 	    break;
 	case 0x14e:
-	    cli_dbgmsg("Machine type: 80586\n");
+        archtype = "80586";
 	    break;
 	case 0x160:
-	    cli_dbgmsg("Machine type: R30000 (big-endian)\n");
+        archtype = "R30000 (big-endian)";
 	    break;
 	case 0x162:
-	    cli_dbgmsg("Machine type: R3000\n");
+        archtype = "R3000";
 	    break;
 	case 0x166:
-	    cli_dbgmsg("Machine type: R4000\n");
+        archtype = "R4000";
 	    break;
 	case 0x168:
-	    cli_dbgmsg("Machine type: R10000\n");
+        archtype = "R10000";
 	    break;
 	case 0x184:
-	    cli_dbgmsg("Machine type: DEC Alpha AXP\n");
+        archtype = "DEC Alpha AXP";
 	    break;
 	case 0x284:
-	    cli_dbgmsg("Machine type: DEC Alpha AXP 64bit\n");
+        archtype = "DEC Alpha AXP 64bit";
 	    break;
 	case 0x1f0:
-	    cli_dbgmsg("Machine type: PowerPC\n");
+        archtype = "PowerPC";
 	    break;
 	case 0x200:
-	    cli_dbgmsg("Machine type: IA64\n");
+        archtype = "IA64";
 	    break;
 	case 0x268:
-	    cli_dbgmsg("Machine type: M68k\n");
+        archtype = "M68k";
 	    break;
 	case 0x266:
-	    cli_dbgmsg("Machine type: MIPS16\n");
+        archtype = "MIPS16";
 	    break;
 	case 0x366:
-	    cli_dbgmsg("Machine type: MIPS+FPU\n");
+        archtype = "MIPS+FPU";
 	    break;
 	case 0x466:
-	    cli_dbgmsg("Machine type: MIPS16+FPU\n");
+        archtype = "MIPS16+FPU";
 	    break;
 	case 0x1a2:
-	    cli_dbgmsg("Machine type: Hitachi SH3\n");
+        archtype = "Hitachi SH3";
 	    break;
 	case 0x1a3:
-	    cli_dbgmsg("Machine type: Hitachi SH3-DSP\n");
+        archtype = "Hitachi SH3-DSP";
 	    break;
 	case 0x1a4:
-	    cli_dbgmsg("Machine type: Hitachi SH3-E\n");
+        archtype = "Hitachi SH3-E";
 	    break;
 	case 0x1a6:
-	    cli_dbgmsg("Machine type: Hitachi SH4\n");
+        archtype = "Hitachi SH4";
 	    break;
 	case 0x1a8:
-	    cli_dbgmsg("Machine type: Hitachi SH5\n");
+        archtype = "Hitachi SH5";
 	    break;
 	case 0x1c0:
-	    cli_dbgmsg("Machine type: ARM\n");
+        archtype = "ARM";
 	    break;
 	case 0x1c2:
-	    cli_dbgmsg("Machine type: THUMB\n");
+        archtype = "THUMB";
 	    break;
 	case 0x1d3:
-	    cli_dbgmsg("Machine type: AM33\n");
+        archtype = "AM33";
 	    break;
 	case 0x520:
-	    cli_dbgmsg("Machine type: Infineon TriCore\n");
+        archtype = "Infineon TriCore";
 	    break;
 	case 0xcef:
-	    cli_dbgmsg("Machine type: CEF\n");
+        archtype = "CEF";
 	    break;
 	case 0xebc:
-	    cli_dbgmsg("Machine type: EFI Byte Code\n");
+        archtype = "EFI Byte Code";
 	    break;
 	case 0x9041:
-	    cli_dbgmsg("Machine type: M32R\n");
+        archtype = "M32R";
 	    break;
 	case 0xc0ee:
-	    cli_dbgmsg("Machine type: CEE\n");
+        archtype = "CEEE";
 	    break;
 	case 0x8664:
-	    cli_dbgmsg("Machine type: AMD64\n");
+        archtype = "AMD64";
 	    break;
 	default:
-	    cli_dbgmsg("Machine type: ** UNKNOWN ** (0x%x)\n", EC16(file_hdr.Machine));
+        archtype = "Unknown";
+    }
+
+    if ((archtype)) {
+        cli_dbgmsg("Machine type: %s\n", archtype);
+#if HAVE_JSON
+        cli_jsonstr(pe_json, "ArchType", archtype);
+#endif
     }
 
     nsections = EC16(file_hdr.NumberOfSections);
     if(nsections < 1 || nsections > 96) {
+#if HAVE_JSON
+        pe_add_heuristic_property(ctx, "BadNumberOfSections");
+#endif
 	if(DETECT_BROKEN_PE) {
 	    cli_append_virus(ctx,"Heuristics.Broken.Executable");
 	    return CL_VIRUS;
@@ -804,9 +954,20 @@ int cli_scanpe(cli_ctx *ctx)
     timestamp = (time_t) EC32(file_hdr.TimeDateStamp);
     cli_dbgmsg("TimeDateStamp: %s", cli_ctime(&timestamp, timestr, sizeof(timestr)));
 
+#if HAVE_JSON
+    cli_jsonstr(pe_json, "TimeDateStamp", cli_ctime(&timestamp, timestr, sizeof(timestr)));
+#endif
+
     cli_dbgmsg("SizeOfOptionalHeader: %x\n", EC16(file_hdr.SizeOfOptionalHeader));
 
+#if HAVE_JSON
+    cli_jsonint(pe_json, "SizeOfOptionalHeader", EC16(file_hdr.SizeOfOptionalHeader));
+#endif
+
     if (EC16(file_hdr.SizeOfOptionalHeader) < sizeof(struct pe_image_optional_hdr32)) {
+#if HAVE_JSON
+        pe_add_heuristic_property(ctx, "BadOptionalHeaderSize");
+#endif
         cli_dbgmsg("SizeOfOptionalHeader too small\n");
 	if(DETECT_BROKEN_PE) {
 	    cli_append_virus(ctx,"Heuristics.Broken.Executable");
@@ -828,6 +989,9 @@ int cli_scanpe(cli_ctx *ctx)
 
     /* This will be a chicken and egg problem until we drop 9x */
     if(EC16(optional_hdr64.Magic)==PE32P_SIGNATURE) {
+#if HAVE_JSON
+        pe_add_heuristic_property(ctx, "BadOptionalHeaderSizePE32Plus");
+#endif
         if(EC16(file_hdr.SizeOfOptionalHeader)!=sizeof(struct pe_image_optional_hdr64)) {
 	    /* FIXME: need to play around a bit more with xp64 */
 	    cli_dbgmsg("Incorrect SizeOfOptionalHeader for PE32+\n");
@@ -868,6 +1032,31 @@ int cli_scanpe(cli_ctx *ctx)
 	cli_dbgmsg("SizeOfHeaders: 0x%x\n", hdr_size);
 	cli_dbgmsg("NumberOfRvaAndSizes: %d\n", EC32(optional_hdr32.NumberOfRvaAndSizes));
 	dirs = optional_hdr32.DataDirectory;
+#if HAVE_JSON
+    cli_jsonint(pe_json, "MajorLinkerVersion", optional_hdr32.MajorLinkerVersion);
+    cli_jsonint(pe_json, "MinorLinkerVersion", optional_hdr32.MinorLinkerVersion);
+    cli_jsonint(pe_json, "SizeOfCode", EC32(optional_hdr32.SizeOfCode));
+    cli_jsonint(pe_json, "SizeOfInitializedData", EC32(optional_hdr32.SizeOfInitializedData));
+    cli_jsonint(pe_json, "SizeOfUninitializedData", EC32(optional_hdr32.SizeOfUninitializedData));
+    cli_jsonint(pe_json, "NumberOfRvaAndSizes", EC32(optional_hdr32.NumberOfRvaAndSizes));
+    cli_jsonint(pe_json, "MajorSubsystemVersion", EC16(optional_hdr32.MajorSubsystemVersion));
+    cli_jsonint(pe_json, "MinorSubsystemVersion", EC16(optional_hdr32.MinorSubsystemVersion));
+
+    snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", EC32(optional_hdr32.BaseOfCode));
+    cli_jsonstr(pe_json, "BaseOfCode", jsonbuf);
+
+    snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", EC32(optional_hdr32.SectionAlignment));
+    cli_jsonstr(pe_json, "SectionAlignment", jsonbuf);
+
+    snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", EC32(optional_hdr32.FileAlignment));
+    cli_jsonstr(pe_json, "FileAlignment", jsonbuf);
+
+    snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", EC32(optional_hdr32.SizeOfImage));
+    cli_jsonstr(pe_json, "SizeOfImage", jsonbuf);
+
+    snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", hdr_size);
+    cli_jsonstr(pe_json, "SizeOfHeaders", jsonbuf);
+#endif
 
     } else { /* PE+ */
         /* read the remaining part of the header */
@@ -899,56 +1088,94 @@ int cli_scanpe(cli_ctx *ctx)
 	cli_dbgmsg("SizeOfHeaders: 0x%x\n", hdr_size);
 	cli_dbgmsg("NumberOfRvaAndSizes: %d\n", EC32(optional_hdr64.NumberOfRvaAndSizes));
 	dirs = optional_hdr64.DataDirectory;
+#if HAVE_JSON
+    cli_jsonint(pe_json, "MajorLinkerVersion", optional_hdr64.MajorLinkerVersion);
+    cli_jsonint(pe_json, "MinorLinkerVersion", optional_hdr64.MinorLinkerVersion);
+    cli_jsonint(pe_json, "SizeOfCode", EC32(optional_hdr64.SizeOfCode));
+    cli_jsonint(pe_json, "SizeOfInitializedData", EC32(optional_hdr64.SizeOfInitializedData));
+    cli_jsonint(pe_json, "SizeOfUninitializedData", EC32(optional_hdr64.SizeOfUninitializedData));
+    cli_jsonint(pe_json, "NumberOfRvaAndSizes", EC32(optional_hdr64.NumberOfRvaAndSizes));
+    cli_jsonint(pe_json, "MajorSubsystemVersion", EC16(optional_hdr64.MajorSubsystemVersion));
+    cli_jsonint(pe_json, "MinorSubsystemVersion", EC16(optional_hdr64.MinorSubsystemVersion));
+
+    snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", EC32(optional_hdr64.BaseOfCode));
+    cli_jsonstr(pe_json, "BaseOfCode", jsonbuf);
+
+    snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", EC32(optional_hdr64.SectionAlignment));
+    cli_jsonstr(pe_json, "SectionAlignment", jsonbuf);
+
+    snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", EC32(optional_hdr64.FileAlignment));
+    cli_jsonstr(pe_json, "FileAlignment", jsonbuf);
+
+    snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", EC32(optional_hdr64.SizeOfImage));
+    cli_jsonstr(pe_json, "SizeOfImage", jsonbuf);
+
+    snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", hdr_size);
+    cli_jsonstr(pe_json, "SizeOfHeaders", jsonbuf);
+#endif
     }
+
+#if HAVE_JSON
+    if (ctx->options & CL_SCAN_FILE_PROPERTIES) {
+        snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", vep);
+        cli_jsonstr(pe_json, "EntryPoint", jsonbuf);
+    }
+#endif
 
 
     switch(pe_plus ? EC16(optional_hdr64.Subsystem) : EC16(optional_hdr32.Subsystem)) {
 	case 0:
-	    cli_dbgmsg("Subsystem: Unknown\n");
+        subsystem = "Unknown";
 	    break;
 	case 1:
-	    cli_dbgmsg("Subsystem: Native (svc)\n");
+        subsystem = "Native (svc)";
 	    native = 1;
 	    break;
 	case 2:
-	    cli_dbgmsg("Subsystem: Win32 GUI\n");
+        subsystem = "Win32 GUI";
 	    break;
 	case 3:
-	    cli_dbgmsg("Subsystem: Win32 console\n");
+        subsystem = "Win32 console";
 	    break;
 	case 5:
-	    cli_dbgmsg("Subsystem: OS/2 console\n");
+        subsystem = "OS/2 console";
 	    break;
 	case 7:
-	    cli_dbgmsg("Subsystem: POSIX console\n");
+        subsystem = "POSIX console";
 	    break;
 	case 8:
-	    cli_dbgmsg("Subsystem: Native Win9x driver\n");
+        subsystem = "Native Win9x driver";
 	    break;
 	case 9:
-	    cli_dbgmsg("Subsystem: WinCE GUI\n");
+        subsystem = "WinCE GUI";
 	    break;
 	case 10:
-	    cli_dbgmsg("Subsystem: EFI application\n");
+        subsystem = "EFI application";
 	    break;
 	case 11:
-	    cli_dbgmsg("Subsystem: EFI driver\n");
+        subsystem = "EFI driver";
 	    break;
 	case 12:
-	    cli_dbgmsg("Subsystem: EFI runtime driver\n");
+        subsystem = "EFI runtime driver";
 	    break;
 	case 13:
-	    cli_dbgmsg("Subsystem: EFI ROM image\n");
+        subsystem = "EFI ROM image";
 	    break;
 	case 14:
-	    cli_dbgmsg("Subsystem: Xbox\n");
+        subsystem = "Xbox";
 	    break;
 	case 16:
-	    cli_dbgmsg("Subsystem: Boot application\n");
+        subsystem = "Boot application";
 	    break;
 	default:
-	    cli_dbgmsg("Subsystem: ** UNKNOWN ** (0x%x)\n", pe_plus ? EC16(optional_hdr64.Subsystem) : EC16(optional_hdr32.Subsystem));
+        subsystem = "Unknown";
     }
+
+    cli_dbgmsg("Subsystem: %s\n", subsystem);
+
+#if HAVE_JSON
+    cli_jsonstr(pe_json, "Subsystem", subsystem);
+#endif
 
     cli_dbgmsg("------------------------------------\n");
 
@@ -1007,6 +1234,10 @@ int cli_scanpe(cli_ctx *ctx)
 
     hdr_size = PESALIGN(hdr_size, valign); /* Aligned headers virtual size */
 
+#if HAVE_JSON
+    cli_jsonint(pe_json, "NumberOfSections", nsections);
+#endif
+
     for(i = 0; i < nsections; i++) {
 	strncpy(sname, (char *) section_hdr[i].Name, 8);
 	sname[8] = 0;
@@ -1019,6 +1250,16 @@ int cli_scanpe(cli_ctx *ctx)
 	exe_sections[i].uvsz = EC32(section_hdr[i].VirtualSize);
 	exe_sections[i].uraw = EC32(section_hdr[i].PointerToRawData);
 	exe_sections[i].ursz = EC32(section_hdr[i].SizeOfRawData);
+
+#if HAVE_JSON
+        add_section_info(ctx, &exe_sections[i]);
+
+        if (cli_json_timeout_cycle_check(ctx, &toval) != CL_SUCCESS) {
+            free(section_hdr);
+            free(exe_sections);
+            return CL_ETIMEOUT;
+        }
+#endif
 
 	if (!exe_sections[i].vsz && exe_sections[i].rsz)
 	    exe_sections[i].vsz=PESALIGN(exe_sections[i].ursz, valign);
@@ -1142,6 +1383,14 @@ int cli_scanpe(cli_ctx *ctx)
 	}
 	return CL_CLEAN;
     }
+
+#if HAVE_JSON
+    cli_jsonint(pe_json, "EntryPointOffset", ep);
+
+    if (cli_json_timeout_cycle_check(ctx, &toval) != CL_SUCCESS) {
+        return CL_ETIMEOUT;
+    }
+#endif
 
     cli_dbgmsg("EntryPoint offset: 0x%x (%d)\n", ep, ep);
 
@@ -1454,6 +1703,9 @@ int cli_scanpe(cli_ctx *ctx)
 	    if(!exe_sections[i].rsz && exe_sections[i].vsz && exe_sections[i + 1].rsz && exe_sections[i + 1].vsz) {
 		found = 1;
 		cli_dbgmsg("UPX/FSG/MEW: empty section found - assuming compression\n");
+#if HAVE_JSON
+        cli_jsonbool(pe_json, "HasEmptySection", 1);
+#endif
 		break;
 	    }
 	}
@@ -1525,6 +1777,10 @@ int cli_scanpe(cli_ctx *ctx)
 	    } else {
 	        uselzma = 0;
 	    }
+
+#if HAVE_JSON
+        cli_jsonstr(pe_json, "Packer", "MEW");
+#endif
 
 	    CLI_UNPTEMP("MEW",(src,exe_sections,0));
 	    CLI_UNPRESULTS("MEW",(unmew11(src, offdiff, ssize, dsize, EC32(optional_hdr32.ImageBase), exe_sections[0].rva, uselzma, ndesc)),1,(src,0));
@@ -1618,7 +1874,7 @@ int cli_scanpe(cli_ctx *ctx)
 		return CL_EMEM;
 	    }
 
-	    if(fmap_readn(map, dest, 0, ssize) != ssize) {
+	    if((unsigned int)fmap_readn(map, dest, 0, ssize) != ssize) {
 	        cli_dbgmsg("Upack: Can't read raw data of section 0\n");
 		free(dest);
 		break;
@@ -1626,11 +1882,15 @@ int cli_scanpe(cli_ctx *ctx)
 
 	    if(upack) memmove(dest + exe_sections[2].rva - exe_sections[0].rva, dest, ssize);
 
-	    if(fmap_readn(map, dest + exe_sections[1].rva - off, exe_sections[1].uraw, exe_sections[1].ursz) != exe_sections[1].ursz) {
+	    if((unsigned int)fmap_readn(map, dest + exe_sections[1].rva - off, exe_sections[1].uraw, exe_sections[1].ursz) != exe_sections[1].ursz) {
 		cli_dbgmsg("Upack: Can't read raw data of section 1\n");
 		free(dest);
 		break;
 	    }
+
+#if HAVE_JSON
+        cli_jsonstr(pe_json, "Packer", "Upack");
+#endif
 
 	    CLI_UNPTEMP("Upack",(dest,exe_sections,0));
 	    CLI_UNPRESULTS("Upack",(unupack(upack, dest, dsize, epbuff, vma, ep, EC32(optional_hdr32.ImageBase), exe_sections[0].rva, ndesc)),1,(dest,0));
@@ -1715,6 +1975,10 @@ int cli_scanpe(cli_ctx *ctx)
 	    return CL_EMEM;
 	}
 
+#if HAVE_JSON
+    cli_jsonstr(pe_json, "Packer", "FSG");
+#endif
+
 	CLI_UNPTEMP("FSG",(dest,exe_sections,0));
 	CLI_UNPRESULTSFSG2("FSG",(unfsg_200(newesi - exe_sections[i + 1].rva + src, dest, ssize + exe_sections[i + 1].rva - newesi, dsize, newedi, EC32(optional_hdr32.ImageBase), newedx, ndesc)),1,(dest,0));
 	break;
@@ -1793,7 +2057,7 @@ int cli_scanpe(cli_ctx *ctx)
 	}
 
 	if((sections = (struct cli_exe_section *) cli_malloc((sectcnt + 1) * sizeof(struct cli_exe_section))) == NULL) {
-        cli_errmsg("FSG: Unable to allocate memory for sections %u\n", (sectcnt + 1) * sizeof(struct cli_exe_section));
+        cli_errmsg("FSG: Unable to allocate memory for sections %lu\n", (sectcnt + 1) * sizeof(struct cli_exe_section));
 	    free(exe_sections);
 	    return CL_EMEM;
 	}
@@ -1817,6 +2081,10 @@ int cli_scanpe(cli_ctx *ctx)
 
 	oldep = vep + 161 + 6 + cli_readint32(epbuff+163);
 	cli_dbgmsg("FSG: found old EP @%x\n", oldep);
+
+#if HAVE_JSON
+    cli_jsonstr(pe_json, "Packer", "FSG");
+#endif
 
 	CLI_UNPTEMP("FSG",(dest,sections,exe_sections,0));
 	CLI_UNPRESULTSFSG1("FSG",(unfsg_133(src + newesi - exe_sections[i + 1].rva, dest, ssize + exe_sections[i + 1].rva - newesi, dsize, sections, sectcnt, EC32(optional_hdr32.ImageBase), oldep, ndesc)),1,(dest,sections,0));
@@ -1893,7 +2161,7 @@ int cli_scanpe(cli_ctx *ctx)
 	}
 
 	if((sections = (struct cli_exe_section *) cli_malloc((sectcnt + 1) * sizeof(struct cli_exe_section))) == NULL) {
-        cli_errmsg("FSG: Unable to allocate memory for sections %u\n", (sectcnt + 1) * sizeof(struct cli_exe_section));
+        cli_errmsg("FSG: Unable to allocate memory for sections %lu\n", (sectcnt + 1) * sizeof(struct cli_exe_section));
 	    free(exe_sections);
 	    return CL_EMEM;
 	}
@@ -1919,6 +2187,10 @@ int cli_scanpe(cli_ctx *ctx)
 	gp = 0xda + 6*(epbuff[16]=='\xe8');
 	oldep = vep + gp + 6 + cli_readint32(src+gp+2+oldep);
 	cli_dbgmsg("FSG: found old EP @%x\n", oldep);
+
+#if HAVE_JSON
+    cli_jsonstr(pe_json, "Packer", "FSG");
+#endif
 
 	CLI_UNPTEMP("FSG",(dest,sections,exe_sections,0));
 	CLI_UNPRESULTSFSG1("FSG",(unfsg_133(src + newesi - exe_sections[i + 1].rva, dest, ssize + exe_sections[i + 1].rva - newesi, dsize, sections, sectcnt, EC32(optional_hdr32.ImageBase), oldep, ndesc)),1,(dest,sections,0));
@@ -1972,7 +2244,7 @@ int cli_scanpe(cli_ctx *ctx)
 
 	    if(epbuff[1] != '\xbe' || skew <= 0 || skew > 0xfff) { /* FIXME: legit skews?? */
 		skew = 0; 
-	    } else if (skew > ssize) {
+	    } else if ((unsigned int)skew > ssize) {
 		/* Ignore suggested skew larger than section size */
 		skew = 0;
 	    } else {
@@ -2051,6 +2323,9 @@ int cli_scanpe(cli_ctx *ctx)
 	free(exe_sections);
 
 	CLI_UNPTEMP("UPX/FSG",(dest,0));
+#if HAVE_JSON
+    cli_jsonstr(pe_json, "Packer", "UPX");
+#endif
 
 	if((unsigned int) write(ndesc, dest, dsize) != dsize) {
 	    cli_dbgmsg("UPX/FSG: Can't write %d bytes\n", dsize);
@@ -2125,13 +2400,17 @@ int cli_scanpe(cli_ctx *ctx)
 
 	    for(i = 0 ; i < nsections; i++) {
 		if(exe_sections[i].raw) {
-		    if(!exe_sections[i].rsz || fmap_readn(map, dest + exe_sections[i].rva - min, exe_sections[i].raw, exe_sections[i].ursz) != exe_sections[i].ursz) {
+		    if(!exe_sections[i].rsz || (unsigned int)fmap_readn(map, dest + exe_sections[i].rva - min, exe_sections[i].raw, exe_sections[i].ursz) != exe_sections[i].ursz) {
 			free(exe_sections);
 			free(dest);
 			return CL_CLEAN;
 		    }
 		}
 	    }
+
+#if HAVE_JSON
+        cli_jsonstr(pe_json, "Packer", "Petite");
+#endif
 
 	    CLI_UNPTEMP("Petite",(dest,exe_sections,0));
 	    CLI_UNPRESULTS("Petite",(petite_inflate2x_1to9(dest, min, max - min, exe_sections, nsections - (found == 1 ? 1 : 0), EC32(optional_hdr32.ImageBase),vep, ndesc, found, EC32(optional_hdr32.DataDirectory[2].VirtualAddress),EC32(optional_hdr32.DataDirectory[2].Size))),0,(dest,0));
@@ -2161,6 +2440,10 @@ int cli_scanpe(cli_ctx *ctx)
 	    free(exe_sections);
 	    return CL_EREAD;
 	}
+
+#if HAVE_JSON
+    cli_jsonstr(pe_json, "Packer", "PEspin");
+#endif
 
 	CLI_UNPTEMP("PESpin",(spinned,exe_sections,0));
 	CLI_UNPRESULTS_("PEspin",SPINCASE(),(unspin(spinned, fsize, exe_sections, nsections - 1, vep, ndesc, ctx)),0,(spinned,0));
@@ -2226,6 +2509,10 @@ int cli_scanpe(cli_ctx *ctx)
 	      return CL_EREAD;
 	    }
 
+#if HAVE_JSON
+        cli_jsonstr(pe_json, "Packer", "yC");
+#endif
+
 	    cli_dbgmsg("%d,%d,%d,%d\n", nsections-1, e_lfanew, ecx, offset);
 	    CLI_UNPTEMP("yC",(spinned,exe_sections,0));
 	    CLI_UNPRESULTS("yC",(yc_decrypt(spinned, fsize, exe_sections, nsections-1, e_lfanew, ndesc, ecx, offset)),0,(spinned,0));
@@ -2267,7 +2554,7 @@ int cli_scanpe(cli_ctx *ctx)
         for(i = 0 ; i < (unsigned int)nsections-1; i++) {
 	    if(!exe_sections[i].rsz) continue;
             if(!CLI_ISCONTAINED(src, ssize, src+exe_sections[i].rva, exe_sections[i].rsz)) break;
-            if(fmap_readn(map, src+exe_sections[i].rva, exe_sections[i].raw, exe_sections[i].rsz)!=exe_sections[i].rsz) break;
+            if((unsigned int)fmap_readn(map, src+exe_sections[i].rva, exe_sections[i].raw, exe_sections[i].rsz)!=exe_sections[i].rsz) break;
         }
         if(i+1!=nsections) {
             cli_dbgmsg("WWpack: Probably hacked/damaged file.\n");
@@ -2286,6 +2573,10 @@ int cli_scanpe(cli_ctx *ctx)
 	    free(exe_sections);
 	    return CL_EREAD;
 	}
+
+#if HAVE_JSON
+    cli_jsonstr(pe_json, "Packer", "WWPack");
+#endif
 
 	CLI_UNPTEMP("WWPack",(src,packer,exe_sections,0));
 	CLI_UNPRESULTS("WWPack",(wwunpack((uint8_t *)src, ssize, packer, exe_sections, nsections-1, e_lfanew, ndesc)),0,(src,packer,0));
@@ -2313,13 +2604,17 @@ int cli_scanpe(cli_ctx *ctx)
         for(i = 0 ; i < (unsigned int)nsections; i++) {
 	    if(!exe_sections[i].rsz) continue;
             if(!CLI_ISCONTAINED(src, ssize, src+exe_sections[i].rva, exe_sections[i].rsz)) break;
-            if(fmap_readn(map, src+exe_sections[i].rva, exe_sections[i].raw, exe_sections[i].rsz)!=exe_sections[i].rsz) break;
+            if((unsigned int)fmap_readn(map, src+exe_sections[i].rva, exe_sections[i].raw, exe_sections[i].rsz)!=exe_sections[i].rsz) break;
         }
         if(i!=nsections) {
             cli_dbgmsg("Aspack: Probably hacked/damaged Aspack file.\n");
             free(src);
             break;
         }
+
+#if HAVE_JSON
+        cli_jsonstr(pe_json, "Packer", "Aspack");
+#endif
 
 	CLI_UNPTEMP("Aspack",(src,exe_sections,0));
 	CLI_UNPRESULTS("Aspack",(unaspack212((uint8_t *)src, ssize, exe_sections, nsections, vep-1, EC32(optional_hdr32.ImageBase), ndesc)),1,(src,0));
@@ -2387,6 +2682,10 @@ int cli_scanpe(cli_ctx *ctx)
 	eprva=eprva+5+cli_readint32(nbuff+1);
 	cli_dbgmsg("NsPack: OEP = %08x\n", eprva);
 
+#if HAVE_JSON
+    cli_jsonstr(pe_json, "Packer", "NsPack");
+#endif
+
 	CLI_UNPTEMP("NsPack",(dest,exe_sections,0));
 	CLI_UNPRESULTS("NsPack",(unspack(src, dest, ctx, exe_sections[0].rva, EC32(optional_hdr32.ImageBase), eprva, ndesc)),0,(dest,0));
 	break;
@@ -2426,6 +2725,11 @@ int cli_scanpe(cli_ctx *ctx)
     }
 
     free(exe_sections);
+#if HAVE_JSON
+    if (cli_json_timeout_cycle_check(ctx, &toval) != CL_SUCCESS) {
+        return CL_ETIMEOUT;
+    }
+#endif
     if (SCAN_ALL && viruses_found)
 	return CL_VIRUS;
     return CL_CLEAN;
@@ -2444,7 +2748,7 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo)
 	    struct pe_image_optional_hdr32 opt32;
 	} pe_opt;
 	struct pe_image_section_hdr *section_hdr;
-	int i;
+	unsigned int i;
 	unsigned int err, pe_plus = 0;
 	uint32_t valign, falign, hdr_size;
 	size_t fsize;
@@ -2640,7 +2944,7 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo)
 		if(vinfo_sz <= 6 + 0x20 + 2 + 0x34 ||
 		   vinfo_val_sz != 0x34 || 
 		   memcmp(vptr+6, "V\0S\0_\0V\0E\0R\0S\0I\0O\0N\0_\0I\0N\0F\0O\0\0\0", 0x20) ||
-		   cli_readint32(vptr + 0x28) != 0xfeef04bd) {
+		   (unsigned int)cli_readint32(vptr + 0x28) != 0xfeef04bd) {
 		    /* - there should be enough room for the header(6), the key "VS_VERSION_INFO"(20), the padding(2) and the value(34)
 		     * - the value should be sizeof(fixedfileinfo)
 		     * - the key should match
@@ -2863,7 +3167,7 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
     } else { /* PE+ */
         size_t readlen = sizeof(struct pe_image_optional_hdr64) - sizeof(struct pe_image_optional_hdr32);
         /* read the remaining part of the header */
-        if(fmap_readn(map, &optional_hdr32 + 1, at, readlen) != readlen)
+        if((size_t)fmap_readn(map, &optional_hdr32 + 1, at, readlen) != readlen)
             return CL_EFORMAT;
 
         at += sizeof(struct pe_image_optional_hdr64) - sizeof(struct pe_image_optional_hdr32);
@@ -2958,12 +3262,12 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
             return CL_EFORMAT; \
         } \
         if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE && hashctx) \
-            cl_update_hash(hashctx, hptr, size); \
+            cl_update_hash(hashctx, (void *)hptr, size); \
         if (isStatAble && flags & CL_CHECKFP_PE_FLAG_STATS) { \
             void *md5ctx; \
             md5ctx = cl_hash_init("md5"); \
             if (md5ctx) { \
-                cl_update_hash(md5ctx, hptr, size); \
+                cl_update_hash(md5ctx, (void *)hptr, size); \
                 cl_finish_hash(md5ctx, hashes->sections[section].md5); \
             } \
         } \
@@ -3015,7 +3319,7 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
     }
 
     while (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE) {
-        if(at < fsize) {
+        if((size_t)at < fsize) {
             hlen = fsize - at;
             if(dirs[4].Size > hlen) {
                 if (flags & CL_CHECKFP_PE_FLAG_STATS) {

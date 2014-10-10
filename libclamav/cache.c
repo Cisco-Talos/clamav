@@ -27,10 +27,6 @@
 #include <pthread.h>
 #include <assert.h>
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include "mpool.h"
 #include "clamav.h"
 #include "cache.h"
@@ -936,7 +932,7 @@ int cache_check(unsigned char *hash, cli_ctx *ctx) {
         todo -= readme;
         at += readme;
 
-        if (cl_update_hash(hashctx, buf, readme)) {
+        if (cl_update_hash(hashctx, (void *)buf, readme)) {
             cl_hash_destroy(hashctx);
             cli_errmsg("cache_check: error reading while generating hash!\n");
             return CL_EREAD;

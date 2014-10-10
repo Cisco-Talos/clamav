@@ -35,10 +35,6 @@
 #include <time.h>
 #include <errno.h>
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include "clamav.h"
 #include "others.h"
 #include "dsig.h"
@@ -51,6 +47,7 @@
 
 static void cli_untgz_cleanup(char *path, gzFile infile, FILE *outfile, int fdd)
 {
+    UNUSEDPARAM(fdd);
     cli_dbgmsg("in cli_untgz_cleanup()\n");
     if (path != NULL)
         free (path);
@@ -184,6 +181,7 @@ static int cli_untgz(int fd, const char *destdir)
 
 static void cli_tgzload_cleanup(int comp, struct cli_dbio *dbio, int fdd)
 {
+    UNUSEDPARAM(fdd);
     cli_dbgmsg("in cli_tgzload_cleanup()\n");
     if(comp) {
         gzclose(dbio->gzs);
@@ -662,7 +660,7 @@ int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigne
     if(cvd.fl > cl_retflevel()) {
 	cli_warnmsg("***********************************************************\n");
 	cli_warnmsg("***  This version of the ClamAV engine is outdated.     ***\n");
-	cli_warnmsg("*** DON'T PANIC! Read http://www.clamav.net/support/faq ***\n");
+	cli_warnmsg("***   Read http://www.clamav.net/documentation.html     ***\n");
 	cli_warnmsg("***********************************************************\n");
     }
 

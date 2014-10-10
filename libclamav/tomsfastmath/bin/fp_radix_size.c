@@ -9,6 +9,8 @@
  */
 #include "bignum_fast.h"
 
+int fp_radix_size(fp_int *a, int radix, int *size);
+
 int fp_radix_size(fp_int *a, int radix, int *size)
 {
   int     digs;

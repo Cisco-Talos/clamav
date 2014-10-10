@@ -18,8 +18,6 @@
  *  MA 02110-1301, USA.
  */
 
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.381 2007/02/15 12:26:44 njh Exp $";
-
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
@@ -64,10 +62,7 @@ static	char	const	rcsid[] = "$Id: mbox.c,v 1.381 2007/02/15 12:26:44 njh Exp $";
 #include <pthread.h>
 #endif
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
+#include "clamav.h"
 #include "others.h"
 #include "str.h"
 #include "filetypes.h"
@@ -2147,13 +2142,13 @@ boundaryStart(const char *line, const char *boundary)
 
     newline = strdup(line);
     if (!(newline))
-        newline = line;
+        newline = (char *)line;
 
     if (newline != line && strlen(newline)) {
         char *p;
         /* Trim trailing spaces */
         p = newline + strlen(newline)-1;
-        while (*p == ' ')
+        while (p >= newline && *p == ' ')
             *(p--) = '\0';
     }
 
@@ -2269,13 +2264,14 @@ boundaryEnd(const char *line, const char *boundary)
 
     p = newline = strdup(line);
     if (!(newline)) {
-        p = newline = line;
+        p = (char *)line;
+        newline = (char *)line;
     }
 
     if (newline != line && strlen(newline)) {
         /* Trim trailing spaces */
         p2 = newline + strlen(newline)-1;
-        while (*p2 == ' ')
+        while (p2 >= newline && *p2 == ' ')
             *(p2--) = '\0';
     }
 
@@ -2511,7 +2507,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 
 				buf = cli_malloc(strlen(ptr) + 1);
 				if(buf == NULL) {
-                    cli_errmsg("parseMimeHeader: Unable to allocate memory for buf %u\n", strlen(ptr) + 1);
+                    cli_errmsg("parseMimeHeader: Unable to allocate memory for buf %lu\n", strlen(ptr) + 1);
 					if(copy)
 						free(copy);
 					return -1;
@@ -2620,7 +2616,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 		case CONTENT_DISPOSITION:
 			buf = cli_malloc(strlen(ptr) + 1);
 			if(buf == NULL) {
-                cli_errmsg("parseMimeHeader: Unable to allocate memory for buf %u\n", strlen(ptr) + 1);
+                cli_errmsg("parseMimeHeader: Unable to allocate memory for buf %lu\n", strlen(ptr) + 1);
 				if(copy)
 					free(copy);
 				return -1;
@@ -2698,7 +2694,7 @@ rfc822comments(const char *in, char *out)
 	if(out == NULL) {
 		out = cli_malloc(strlen(in) + 1);
 		if(out == NULL) {
-            cli_errmsg("rfc822comments: Unable to allocate memory for out %u\n", strlen(in) + 1);
+            cli_errmsg("rfc822comments: Unable to allocate memory for out %lu\n", strlen(in) + 1);
 			return NULL;
         }
 	}
@@ -2766,7 +2762,7 @@ rfc2047(const char *in)
 	out = cli_malloc(strlen(in) + 1);
 
 	if(out == NULL) {
-        cli_errmsg("rfc2047: Unable to allocate memory for out %u\n", strlen(in) + 1);
+        cli_errmsg("rfc2047: Unable to allocate memory for out %lu\n", strlen(in) + 1);
 		return NULL;
     }
 
@@ -3200,6 +3196,8 @@ checkURLs(message *mainMessage, mbox_ctx *mctx, mbox_status *rc, int is_html)
 	blob *b;
 	tag_arguments_t hrefs;
 
+    UNUSEDPARAM(is_html);
+
 	if(*rc == VIRUS)
 		return;
 
@@ -3317,7 +3315,7 @@ getline_from_mbox(char *buffer, size_t buffer_len, fmap_t *map, size_t *at)
 	return NULL;
     }
     if((buffer_len == 0) || (buffer == NULL)) {
-	cli_errmsg("Invalid call to getline_from_mbox(). Refer to http://www.clamav.net/bugs\n");
+	cli_errmsg("Invalid call to getline_from_mbox(). Refer to http://www.clamav.net/documentation.html\n");
 	return NULL;
     }
 

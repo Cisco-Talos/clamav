@@ -30,10 +30,6 @@
 #include <ctype.h>
 #include <fcntl.h>
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include "cltypes.h"
 #include "others.h"
 #include "apm.h"
@@ -56,7 +52,7 @@ int cli_scanapm(cli_ctx *ctx)
     struct apm_driver_desc_map ddm;
     struct apm_partition_info aptable, apentry;
     int ret = CL_CLEAN, detection = CL_CLEAN, old_school = 0;
-    size_t sectorsize, maplen, partsize, sectorcheck;
+    size_t sectorsize, maplen, partsize;
     off_t pos = 0, partoff = 0;
     unsigned i;
     uint32_t max_prtns = 0;

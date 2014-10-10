@@ -22,10 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
+#include "libclamav/clamav.h"
 #include "clupdate.h"
 #include "flog.h"
 

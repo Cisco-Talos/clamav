@@ -52,10 +52,6 @@
 #include <malloc.h>
 #endif
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include "clamav.h"
 #include "others.h"
 #include "cltypes.h"
@@ -125,6 +121,9 @@ uint8_t cli_always_gen_section_hash = 0;
 
 static void fputs_callback(enum cl_msg severity, const char *fullmsg, const char *msg, void *context)
 {
+    UNUSEDPARAM(severity);
+    UNUSEDPARAM(msg);
+    UNUSEDPARAM(context);
     fputs(fullmsg, stderr);
 }
 

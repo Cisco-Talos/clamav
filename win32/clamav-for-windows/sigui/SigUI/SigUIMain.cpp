@@ -31,6 +31,9 @@
 #define REPO_VERSION VERSION
 #endif
 
+#include <WinSock.h>
+#define OWN_WINSOCK
+
 #include "SigUIMain.h"
 #include "installdb.h"
 #include <wx/clipbrd.h>

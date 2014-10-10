@@ -29,10 +29,15 @@
 
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/Analysis/Dominators.h"
-#include "llvm/Instructions.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/PredIteratorCache.h"
 #include "llvm30_compat.h"
+
+#if LLVM_VERSION < 33
+#include "llvm/Instructions.h"
+#else
+#include "llvm/IR/Instructions.h"
+#endif
 
 namespace llvm {
   class DominatorTree;
@@ -40,7 +45,11 @@ namespace llvm {
   class SCEV;
   class Loop;
   class LoopInfo;
+#if LLVM_VERSION < 32
   class TargetData;
+#else
+  class DataLayout;
+#endif
 
   // Result from solver, assuming pointer is not NULL,
   // and it is not a use-after-free situation.
@@ -50,7 +59,7 @@ namespace llvm {
     Unknown // it can sometimes be true, sometimes false, or it is undecided
   };
 
-#ifdef LLVM30
+#if LLVM_VERSION >= 29
   void initializePointerTrackingPass(PassRegistry&);
 #endif
 
@@ -106,7 +115,11 @@ namespace llvm {
     Value *computeAllocationCountValue(Value *P, constType *&Ty) const;
   private:
     Function *FF;
+#if LLVM_VERSION < 32
     TargetData *TD;
+#else
+    DataLayout *TD;
+#endif
     ScalarEvolution *SE;
     LoopInfo *LI;
     DominatorTree *DT;

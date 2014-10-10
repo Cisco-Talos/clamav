@@ -20,10 +20,7 @@
 
 #include <string.h>
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
+#include "clamav.h"
 #include "scanners.h"
 #include "iso9660.h"
 #include "fmap.h"
@@ -73,7 +70,7 @@ static int iso_scan_file(const iso9660_t *iso, unsigned int block, unsigned int 
             ret = CL_EFORMAT;
             break;
         }
-        if(cli_writen(fd, buf, todo) != todo) {
+        if((unsigned int)cli_writen(fd, buf, todo) != todo) {
             cli_warnmsg("iso_scan_file: Can't write to file %s\n", tmpf);
             ret = CL_EWRITE;
             break;

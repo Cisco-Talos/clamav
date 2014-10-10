@@ -26,10 +26,8 @@
 #include <dirent.h>
 #include <errno.h>
 #include <string.h>
-#include <openssl/ssl.h>
-#include <openssl/err.h>
 
-#include "libclamav/crypto.h"
+#include "clamav.h"
 #include "others.h"
 #include "openioc.h"
 
@@ -199,7 +197,7 @@ int openioc_parse(const char * fname, int fd, struct cl_engine *engine, unsigned
 
     cli_dbgmsg("openioc_parse: XML parsing file %s\n", fname);
 
-    reader = xmlReaderForFd(fd, NULL, NULL, 0);
+    reader = xmlReaderForFd(fd, NULL, NULL, CLAMAV_MIN_XMLREADER_FLAGS);
     if (reader == NULL) {
         cli_dbgmsg("openioc_parse: xmlReaderForFd error\n");
         return CL_EOPEN;
@@ -254,7 +252,7 @@ int openioc_parse(const char * fname, int fd, struct cl_engine *engine, unsigned
 
         elem = elems;
         elems = elems->next;
-        hash = elem->hash;
+        hash = (char *)(elem->hash);
         while (isspace(*hash))
             hash++;
         hashlen = strlen(hash);

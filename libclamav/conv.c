@@ -34,11 +34,11 @@
 
 #include <sys/types.h>
 
+#include "clamav.h"
 #include <openssl/bio.h>
 #include <openssl/evp.h>
 
 #include "libclamav/conv.h"
-#include "libclamav/crypto.h"
 
 /** Get the expected decoded length of a base64-encoded string
  * @param[in] data Base64-encoded string
@@ -66,10 +66,10 @@ static size_t base64_len(const char *data, size_t len)
  * @param[out] olen The length of the decoded data
  * @return The base64-decoded data
  */
-void *cl_base64_decode(char *data, size_t len, void *obuf, size_t *olen)
+void *cl_base64_decode(char *data, size_t len, void *obuf, size_t *olen, int oneline)
 {
     BIO *bio, *b64;
-    void *buf, *ret;
+    void *buf;
 
     buf = (obuf) ? obuf : malloc(base64_len(data, len)+1);
     if (!(buf))
@@ -93,7 +93,8 @@ void *cl_base64_decode(char *data, size_t len, void *obuf, size_t *olen)
     }
 
     bio = BIO_push(b64, bio);
-    BIO_set_flags(bio, BIO_FLAGS_BASE64_NO_NL);
+    if (oneline)
+        BIO_set_flags(bio, BIO_FLAGS_BASE64_NO_NL);
 
     *olen = BIO_read(bio, buf, base64_len(data, len));
 

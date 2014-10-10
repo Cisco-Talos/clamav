@@ -156,6 +156,9 @@
     <ClCompile Include="..\libclamav\ishield.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\libclamav\json_api.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\libclamav\line.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -196,6 +199,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\libclamav\ole2_extract.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\ooxml.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\libclamav\others.c">
@@ -879,7 +885,7 @@
     <ClCompile Include="..\libclamav\hostid.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\libclamav\json.c">
+    <ClCompile Include="..\libclamav\stats_json.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\libclamav\stats.c">
@@ -900,12 +906,18 @@
     <ClCompile Include="..\libclamav\openioc.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\libclamav\pdfng.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\xdp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\libclamav\hostid.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\libclamav\json.h">
+    <ClInclude Include="..\libclamav\stats_json.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="..\libclamav\stats.h">
@@ -917,7 +929,7 @@
     <ClInclude Include="..\libclamav\conv.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\libclamav\crypto.h">
+    <ClInclude Include="..\libclamav\xdp.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

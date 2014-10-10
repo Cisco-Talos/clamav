@@ -40,10 +40,6 @@
 #include <unistd.h>
 #endif
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include <fcntl.h>
 #ifdef C_SOLARIS
 #include <stdio_ext.h>
@@ -71,6 +67,7 @@ int reload = 0;
 time_t reloaded_time = 0;
 pthread_mutex_t reload_mutex = PTHREAD_MUTEX_INITIALIZER;
 int sighup = 0;
+extern pthread_mutex_t logg_mutex;
 static struct cl_stat dbstat;
 
 void *event_wake_recv = NULL;
@@ -1392,7 +1389,9 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 #if defined(FANOTIFY) || defined(CLAMAUTH)
 	    if(optget(opts, "ScanOnAccess")->enabled && tharg) {
 		logg("Restarting on-access scan\n");
+		pthread_mutex_lock(&logg_mutex);
 		pthread_kill(fan_pid, SIGUSR1);
+		pthread_mutex_unlock(&logg_mutex);
 		pthread_join(fan_pid, NULL);
 	    }
 #endif
@@ -1438,7 +1437,9 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 #if defined(FANOTIFY) || defined(CLAMAUTH)
     if(optget(opts, "ScanOnAccess")->enabled && tharg) {
 	logg("Stopping on-access scan\n");
+	pthread_mutex_lock(&logg_mutex);
 	pthread_kill(fan_pid, SIGUSR1);
+	pthread_mutex_unlock(&logg_mutex);
 	pthread_join(fan_pid, NULL);
     }
 #endif

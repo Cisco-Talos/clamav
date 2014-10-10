@@ -1,5 +1,6 @@
 /*
  *  Copyright (C) 2011-2013 Sourcefire, Inc.
+ *  Copyright (C) 2014 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  The code is based on Flasm, command line assembler & disassembler of Flash
  *  ActionScript bytecode Copyright (c) 2001 Opaque Industries, (c) 2002-2007
@@ -43,10 +44,6 @@
 #endif
 #include <time.h>
 #include <zlib.h>
-
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
 
 #include "cltypes.h"
 #include "swf.h"
@@ -149,8 +146,8 @@ static int scancws(cli_ctx *ctx, struct swf_file_hdr *hdr)
     }
 
     stream.avail_in = 0;
-    stream.next_in = inbuff;
-    stream.next_out = outbuff;
+    stream.next_in = (Bytef *)inbuff;
+    stream.next_out = (Bytef *)outbuff;
     stream.zalloc = (alloc_func) NULL;
     stream.zfree = (free_func) NULL;
     stream.opaque = (voidpf) 0;
@@ -170,7 +167,7 @@ static int scancws(cli_ctx *ctx, struct swf_file_hdr *hdr)
 
     do {
 	if(stream.avail_in == 0) {
-	    stream.next_in = inbuff;
+	    stream.next_in = (Bytef *)inbuff;
 	    ret = fmap_readn(map, inbuff, offset, FILEBUFF);
 	    if(ret < 0) {
 		cli_errmsg("scancws: Error reading SWF file\n");
@@ -204,19 +201,26 @@ static int scancws(cli_ctx *ctx, struct swf_file_hdr *hdr)
 	    }
 	    outsize += count;
 	}
-	stream.next_out = outbuff;
+	stream.next_out = (Bytef *)outbuff;
 	stream.avail_out = FILEBUFF;
     } while(zret == Z_OK);
 
     if((zret != Z_STREAM_END && zret != Z_OK) || (zret = inflateEnd(&stream)) != Z_OK) {
-	cli_infomsg(ctx, "scancws: Error decompressing SWF file\n");
-	close(fd);
-	if(cli_unlink(tmpname)) {
-	    free(tmpname);
-	    return CL_EUNLINK;
-	}
-	free(tmpname);
-	return CL_EUNPACK;
+        /*
+         * outsize is initialized to 8, it being 8 here means that we couldn't even read a single byte.
+         * If outsize > 8, then we have data. Let's scan what we have.
+         */
+        if (outsize == 8) {
+            cli_infomsg(ctx, "scancws: Error decompressing SWF file. No data decompressed.\n");
+            close(fd);
+            if(cli_unlink(tmpname)) {
+                free(tmpname);
+                return CL_EUNLINK;
+            }
+            free(tmpname);
+            return CL_EUNPACK;
+        }
+        cli_infomsg(ctx, "scancws: Error decompressing SWF file. Scanning what was decompressed.\n");
     }
     cli_dbgmsg("SWF: Decompressed to %s, size %d\n", tmpname, outsize);
 
@@ -249,7 +253,7 @@ int cli_scanswf(cli_ctx *ctx)
     fmap_t *map = *ctx->fmap;
     unsigned int bitpos, bitbuf, getbits_n, nbits, getword_1, getword_2, getdword_1, getdword_2;
     const char *pt;
-    char get_c;
+    unsigned char get_c;
     size_t offset = 0;
     unsigned int val, foo, tag_hdr, tag_type, tag_len;
     unsigned long int bits;
@@ -278,14 +282,24 @@ int cli_scanswf(cli_ctx *ctx)
     INITBITS;
 
     GETBITS(nbits, 5);
-    GETBITS(foo, nbits); /* xMin */
-    GETBITS(foo, nbits); /* xMax */
-    GETBITS(foo, nbits); /* yMin */
-    GETBITS(foo, nbits); /* yMax */
+    cli_dbgmsg("SWF: FrameSize RECT size bits: %u\n", nbits);
+    {
+        uint32_t xMin = 0, xMax = 0, yMin = 0, yMax = 0;
+        GETBITS(xMin, nbits); /* Should be zero */
+        GETBITS(xMax, nbits);
+        GETBITS(yMin, nbits); /* Should be zero */
+        GETBITS(yMax, nbits);
+        cli_dbgmsg("SWF: FrameSize xMin %u xMax %u yMin %u yMax %u\n", xMin, xMax, yMin, yMax);
+    }
 
     GETWORD(foo);
     GETWORD(val);
     cli_dbgmsg("SWF: Frames total: %d\n", val);
+
+    /* Skip Flash tag walk unless debug mode */
+    if(!cli_debug_flag) {
+        return CL_CLEAN;
+    }
 
     while(offset < map->len) {
 	GETWORD(tag_hdr);

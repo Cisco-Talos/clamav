@@ -22,10 +22,11 @@ int g_allocCount = 0;
 int g_allocCountTemp = 0;
 
 #endif
+#include "clamav.h"
 
 void *SzAlloc(void *p, size_t size)
 {
-  p = p;
+    UNUSEDPARAM(p);
   if (size == 0)
     return 0;
   #ifdef _SZ_ALLOC_DEBUG
@@ -37,7 +38,7 @@ void *SzAlloc(void *p, size_t size)
 
 void SzFree(void *p, void *address)
 {
-  p = p;
+    UNUSEDPARAM(p);
   #ifdef _SZ_ALLOC_DEBUG
   if (address != 0)
   {
@@ -50,7 +51,7 @@ void SzFree(void *p, void *address)
 
 void *SzAllocTemp(void *p, size_t size)
 {
-  p = p;
+    UNUSEDPARAM(p);
   if (size == 0)
     return 0;
   #ifdef _SZ_ALLOC_DEBUG
@@ -65,7 +66,7 @@ void *SzAllocTemp(void *p, size_t size)
 
 void SzFreeTemp(void *p, void *address)
 {
-  p = p;
+    UNUSEDPARAM(p);
   #ifdef _SZ_ALLOC_DEBUG
   if (address != 0)
   {

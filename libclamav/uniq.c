@@ -29,10 +29,7 @@
 #include <string.h>
 #endif
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
+#include "clamav.h"
 #include "uniq.h"
 #include "others.h"
 

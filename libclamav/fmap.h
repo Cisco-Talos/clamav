@@ -66,7 +66,7 @@ struct cl_fmap {
      * maximum offset, length accessible via fmap API: len
      * offset in cached buffer: nested_offset + need_offset
      *
-     * This allows to scan a portion of an already mapped file without dumping
+     * This allows scanning a portion of an already mapped file without dumping
      * to disk and remapping (for uncompressed archives for example) */
 
     /* vtable for implementation */

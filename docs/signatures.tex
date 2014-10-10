@@ -332,7 +332,7 @@ How do I look in hex?
         (ClamAV$\ge$0.98.2)
 	\item \verb+HEXSIG[x-y]aa+ or \verb+aa[x-y]HEXSIG+\\
 	Match aa anchored to a hex-signature, see
-	\url{https://wwws.clamav.net/bugzilla/show_bug.cgi?id=776} for
+	\url{https://bugzilla.clamav.net/show_bug.cgi?id=776} for
 	discussion and examples.
 	\item \verb+(B)+\\
 	Match word boundary (including file boundaries).
@@ -450,6 +450,8 @@ Subsig1;Subsig2;...
 	\item \verb+EntryPoint+: Entry point offset (range in bytes; 0.96)
 	\item \verb+NumberOfSections+: Required number of sections in executable (range; 0.96)
 	\item \verb+Container:CL_TYPE_*+: File type of the container which stores the scanned file
+	\item \verb+IconGroup1+: Icon group name 1 from .idb signature Required engine functionality (range; 0.96)
+	\item \verb+IconGroup2+: Icon group name 2 from .idb signature Required engine functionality (range; 0.96)
     \end{itemize}
     Modifiers for subexpressions:
     \begin{itemize}
@@ -498,7 +500,7 @@ cf43987e4f519d629b103375;SL+550:6300680065005c0046006900
     subsignature. The macro subsignature makes its preceding subsignature
     considered a match only if both of them get matched. For more
     information and examples please see
-    \url{https://wwws.clamav.net/bugzilla/show_bug.cgi?id=164}.
+    \url{https://bugzilla.clamav.net/show_bug.cgi?id=164}.
 
     \subsection{Icon signatures for PE files}
     ClamAV 0.96 includes an approximate/fuzzy icon matcher to help

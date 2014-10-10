@@ -46,10 +46,6 @@
 #include <syslog.h>
 #endif
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include "target.h"
 #include "clamav.h"
 #include "freshclamcodes.h"
@@ -76,6 +72,7 @@ char hostid[37];
 
 void submit_host_info(struct optstruct *opts);
 char *get_hostid(void *cbdata);
+int is_valid_hostid(void);
 
 static void
 sighandler (int sig)
@@ -152,7 +149,7 @@ help (void)
     mprintf ("\n");
     mprintf ("                   Clam AntiVirus: freshclam  %s\n",
              get_version ());
-    printf ("           By The ClamAV Team: http://www.clamav.net/team\n");
+    printf ("           By The ClamAV Team: http://www.clamav.net/about.html#credits\n");
     printf ("           (C) 2007-2009 Sourcefire, Inc. et al.\n\n");
 
     mprintf ("    --help               -h              show help\n");
@@ -247,7 +244,7 @@ download (const struct optstruct *opts, const char *cfgfile)
                     opt = (struct optstruct *) opt->nextarg;
                     if (!opt)
                     {
-                        logg ("Update failed. Your network may be down or none of the mirrors listed in %s is working. Check http://www.clamav.net/support/mirror-problem for possible reasons.\n", cfgfile);
+                        logg ("Update failed. Your network may be down or none of the mirrors listed in %s is working. Check http://www.clamav.net/documentation.html for possible reasons.\n", cfgfile);
                     }
                 }
 
@@ -266,6 +263,9 @@ static void
 msg_callback (enum cl_msg severity, const char *fullmsg, const char *msg,
               void *ctx)
 {
+    UNUSEDPARAM(fullmsg);
+    UNUSEDPARAM(ctx);
+
     switch (severity)
     {
     case CL_MSG_ERROR:
@@ -301,10 +301,6 @@ main (int argc, char **argv)
 
     if (check_flevel ())
         exit (FCE_INIT);
-
-#if defined(_WIN32)
-    cl_initialize_crypto();
-#endif
 
     if ((retcl = cl_init (CL_INIT_DEFAULT)))
     {
@@ -743,12 +739,13 @@ main (int argc, char **argv)
 
     optfree (opts);
 
+    cl_cleanup_crypto();
+
     return (ret);
 }
 
 void submit_host_info(struct optstruct *opts)
 {
-    struct optstruct *opt;
     struct cl_engine *engine;
     cli_intel_t *intel;
 
@@ -758,6 +755,14 @@ void submit_host_info(struct optstruct *opts)
     engine = cl_engine_new();
     if (!(engine))
         return;
+
+    if (optget (opts, "Debug")->enabled || optget (opts, "debug")->enabled)
+        cl_debug ();
+
+    if (optget (opts, "verbose")->enabled)
+        mprintf_verbose = 1;
+
+    cl_engine_stats_enable(engine);
 
     intel = engine->stats_data;
     if (!(intel)) {
@@ -810,6 +815,8 @@ int is_valid_hostid(void)
 
 char *get_hostid(void *cbdata)
 {
+    UNUSEDPARAM(cbdata);
+
     if (!strcmp(hostid, "none"))
         return NULL;
 

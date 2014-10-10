@@ -34,10 +34,6 @@
 #include <string.h>
 #include <ctype.h>
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include "clamav.h"
 #include "cltypes.h"
 #include "others.h"
@@ -1197,6 +1193,8 @@ static int hash_match(const struct regex_matcher *rlist, const char *host, size_
 	s[hlen+plen] = '\0';
 	cli_dbgmsg("hash lookup for: %s\n",s);
 #endif
+    UNUSEDPARAM(prefix_matched);
+
 	if(rlist->sha256_hashes.bm_patterns) {
 	    const char hexchars[] = "0123456789ABCDEF";
 	    unsigned char h[65];
@@ -1208,8 +1206,8 @@ static int hash_match(const struct regex_matcher *rlist, const char *host, size_
         if (!(sha256))
             return CL_EMEM;
 
-        cl_update_hash(sha256, host, hlen);
-        cl_update_hash(sha256, path, plen);
+        cl_update_hash(sha256, (void *)host, hlen);
+        cl_update_hash(sha256, (void *)path, plen);
         cl_finish_hash(sha256, sha256_dig);
 
 	    for(i=0;i<32;i++) {

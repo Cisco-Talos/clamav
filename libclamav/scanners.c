@@ -1,5 +1,6 @@
 /*
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
+ *  Copyright (C) 2014 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: Tomasz Kojm
  *
@@ -42,10 +43,6 @@
 #ifdef HAVE_SYS_TIMES_H
 #include <sys/times.h>
 #endif
-
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
 
 #define DCONF_ARCH  ctx->dconf->archive
 #define DCONF_DOC   ctx->dconf->doc
@@ -105,6 +102,9 @@
 #include "mbr.h"
 #include "gpt.h"
 #include "apm.h"
+#include "ooxml.h"
+#include "xdp.h"
+#include "json_api.h"
 
 #ifdef HAVE_BZLIB_H
 #include <bzlib.h>
@@ -372,6 +372,8 @@ static int cli_scanarj(cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_check)
 	int ret = CL_CLEAN, rc, file = 0;
 	arj_metadata_t metadata;
 	char *dir;
+
+    UNUSEDPARAM(sfx_check);
 
     cli_dbgmsg("in cli_scanarj()\n");
 
@@ -728,15 +730,17 @@ static int cli_scanxz(cli_ctx *ctx)
     int ret = CL_CLEAN, fd, rc;
     unsigned long int size = 0;
     char *tmpname;
-    struct CLI_XZ strm = {{0}};
+    struct CLI_XZ strm;
     size_t off = 0;
     size_t avail;
-    unsigned char * buf = cli_malloc(CLI_XZ_OBUF_SIZE);
+    unsigned char *buf;
 
+    buf = cli_malloc(CLI_XZ_OBUF_SIZE);
     if (buf == NULL) {
 	cli_errmsg("cli_scanxz: nomemory for decompress buffer.\n");
         return CL_EMEM;
     }
+    memset(&strm, 0x00, sizeof(struct CLI_XZ));
     strm.next_out = buf;
     strm.avail_out = CLI_XZ_OBUF_SIZE;
     rc = cli_XzInit(&strm);
@@ -785,7 +789,7 @@ static int cli_scanxz(cli_ctx *ctx)
             //cli_dbgmsg("Writing %li bytes to XZ decompress temp file(%li byte total)\n",
             //           towrite, size);
 
-	    if(cli_writen(fd, buf, towrite) != towrite) {
+	    if((size_t)cli_writen(fd, buf, towrite) != towrite) {
 		cli_errmsg("cli_scanxz: Can't write to file.\n");
                 ret = CL_EWRITE;
                 goto xz_exit;
@@ -1101,6 +1105,39 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
     if(ret != CL_CLEAN && !(ret == CL_VIRUS && SCAN_ALL))
     	return ret;
 
+#if HAVE_JSON
+    /* JSON Output Summary Information */
+    if (ctx->options & CL_SCAN_FILE_PROPERTIES && ctx->wrkproperty != NULL) {
+        hashcnt = uniq_get(U, "_5_summaryinformation", 21, &hash);
+        while(hashcnt--) {
+            snprintf(vbaname, sizeof(vbaname), "%s"PATHSEP"%s_%u", dirname, hash, hashcnt);
+            vbaname[sizeof(vbaname)-1] = '\0';
+
+            fd = open(vbaname, O_RDONLY|O_BINARY);
+            if (fd >= 0) {
+                cli_dbgmsg("VBADir: detected a '_5_summaryinformation' stream\n");
+                /* JSONOLE2 - what to do if something breaks? */
+                cli_ole2_summary_json(ctx, fd, 0);
+                close(fd);
+            }
+        }
+
+        hashcnt = uniq_get(U, "_5_documentsummaryinformation", 29, &hash);
+        while(hashcnt--) {
+            snprintf(vbaname, sizeof(vbaname), "%s"PATHSEP"%s_%u", dirname, hash, hashcnt);
+            vbaname[sizeof(vbaname)-1] = '\0';
+
+            fd = open(vbaname, O_RDONLY|O_BINARY);
+            if (fd >= 0) {
+                cli_dbgmsg("VBADir: detected a '_5_documentsummaryinformation' stream\n");
+                /* JSONOLE2 - what to do if something breaks? */
+                cli_ole2_summary_json(ctx, fd, 1);
+                close(fd);
+            }
+        }
+    }
+#endif    
+
     /* Check directory for embedded OLE objects */
     hashcnt = uniq_get(U, "_1_ole10native", 14, &hash);
     while(hashcnt--) {
@@ -1164,6 +1201,10 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
     }
 
     closedir(dd);
+#if HAVE_JSON
+    if (hasmacros && ctx->options & CL_SCAN_FILE_PROPERTIES && ctx->wrkproperty != NULL)
+        cli_jsonbool(ctx->wrkproperty, "HasMacros", 1);
+#endif
     if(BLOCK_MACROS && hasmacros) {
 	cli_append_virus(ctx, "Heuristics.OLE2.ContainsMacros");
 	ret = CL_VIRUS;
@@ -2129,12 +2170,12 @@ static inline void perf_nested_stop(cli_ctx* ctx, int id, int nestedid)
 
 
 #else
-static inline void perf_init(cli_ctx* ctx) {}
-static inline void perf_start(cli_ctx* ctx, int id){}
-static inline void perf_stop(cli_ctx* ctx, int id){}
-static inline void perf_nested_start(cli_ctx* ctx, int id, int nestedid){}
-static inline void perf_nested_stop(cli_ctx* ctx, int id, int nestedid){}
-static inline void perf_done(cli_ctx* ctx){}
+static inline void perf_init(cli_ctx* ctx) { UNUSEDPARAM(ctx); }
+static inline void perf_start(cli_ctx* ctx, int id){ UNUSEDPARAM(ctx); UNUSEDPARAM(id); }
+static inline void perf_stop(cli_ctx* ctx, int id){ UNUSEDPARAM(ctx); UNUSEDPARAM(id); }
+static inline void perf_nested_start(cli_ctx* ctx, int id, int nestedid){ UNUSEDPARAM(ctx); UNUSEDPARAM(id); UNUSEDPARAM(nestedid); }
+static inline void perf_nested_stop(cli_ctx* ctx, int id, int nestedid){ UNUSEDPARAM(ctx); UNUSEDPARAM(id); UNUSEDPARAM(nestedid); }
+static inline void perf_done(cli_ctx* ctx){ UNUSEDPARAM(ctx); }
 #endif
 
 
@@ -2168,6 +2209,9 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
 
         while(fpt) {
             if(fpt->offset) switch(fpt->type) {
+                case CL_TYPE_XDP:
+                    ret = cli_scanxdp(ctx);
+                    break;
                 case CL_TYPE_RARSFX:
                     if(type != CL_TYPE_RAR && have_rar && SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_RAR)) {
                         char *tmpname = NULL;
@@ -2413,63 +2457,82 @@ static void emax_reached(cli_ctx *ctx) {
 	return retcode;							\
     } while(0)
 
-#define ret_from_magicscan(retcode)					\
-    do {								\
-	cli_dbgmsg("cli_magic_scandesc: returning %d %s\n", retcode, __AT__); \
-	if(ctx->engine->cb_post_scan) {					\
-	    perf_start(ctx, PERFT_POSTCB);				\
-	    switch(ctx->engine->cb_post_scan(fmap_fd(*ctx->fmap), retcode, retcode == CL_VIRUS ? cli_get_last_virus(ctx) : NULL, ctx->cb_ctx)) { \
-	    case CL_BREAK:									\
-		cli_dbgmsg("cli_magic_scandesc: file whitelisted by post_scan callback\n"); 	\
-		perf_stop(ctx, PERFT_POSTCB);							\
-		return CL_CLEAN;								\
-	    case CL_VIRUS:									\
-		cli_dbgmsg("cli_magic_scandesc: file blacklisted by post_scan callback\n");	\
-		cli_append_virus(ctx, "Detected.By.Callback");					\
-		perf_stop(ctx, PERFT_POSTCB);							\
-		if (retcode != CL_VIRUS)                                                        \
-		    return cli_checkfp(hash, hashed_size, ctx);                                 \
-		return CL_VIRUS;								\
-	    case CL_CLEAN:									\
-		break;										\
-	    default:										\
-		cli_warnmsg("cli_magic_scandesc: ignoring bad return code from post_scan callback\n");	\
-	    }											\
-	    perf_stop(ctx, PERFT_POSTCB);							\
-	}											\
-	if (retcode == CL_CLEAN && cache_clean) {                                               \
-	    perf_start(ctx, PERFT_CACHE);                                                       \
-	    cache_add(hash, hashed_size, ctx);                                                  \
-	    perf_stop(ctx, PERFT_CACHE);							\
-	}											\
-	return retcode;										\
-    } while(0)
+static int magic_scandesc_cleanup(cli_ctx *ctx, cli_file_t type, unsigned char *hash, size_t hashed_size, int cache_clean, int retcode, void *parent_property)
+{
+#if HAVE_JSON
+    ctx->wrkproperty = (struct json_object *)(parent_property);
+#else
+    UNUSEDPARAM(parent_property);
+#endif
 
+    UNUSEDPARAM(type);
 
-#define CALL_PRESCAN_CB(scanfn)	                                                     \
-    if(ctx->engine->scanfn) {				\
-	perf_start(ctx, PERFT_PRECB);                                                        \
-	switch(ctx->engine->scanfn(fmap_fd(*ctx->fmap), filetype, ctx->cb_ctx)) {            \
-	case CL_BREAK:                                                                       \
-	    cli_dbgmsg("cli_magic_scandesc: file whitelisted by "#scanfn" callback\n");                \
-	    perf_stop(ctx, PERFT_PRECB);                                                     \
-	    ctx->hook_lsig_matches = old_hook_lsig_matches;                                  \
-	    ret_from_magicscan(CL_CLEAN);                                                    \
-	case CL_VIRUS:                                                                       \
-	    cli_dbgmsg("cli_magic_scandesc: file blacklisted by "#scanfn" callback\n");                \
-	    cli_append_virus(ctx, "Detected.By.Callback");		                     \
-	    perf_stop(ctx, PERFT_PRECB);                                                     \
-	    ctx->hook_lsig_matches = old_hook_lsig_matches;                                  \
-	    ret_from_magicscan(cli_checkfp(hash, hashed_size, ctx));                         \
-	case CL_CLEAN:                                                                       \
-	    break;                                                                           \
-	default:                                                                             \
-	    cli_warnmsg("cli_magic_scandesc: ignoring bad return code from callback\n");     \
-	}                                                                                    \
-	perf_stop(ctx, PERFT_PRECB);                                                         \
+    cli_dbgmsg("cli_magic_scandesc: returning %d %s\n", retcode, __AT__);
+    if(ctx->engine->cb_post_scan) {
+        perf_start(ctx, PERFT_POSTCB);
+        switch(ctx->engine->cb_post_scan(fmap_fd(*ctx->fmap), retcode, retcode == CL_VIRUS ? cli_get_last_virus(ctx) : NULL, ctx->cb_ctx)) {
+        case CL_BREAK:
+            cli_dbgmsg("cli_magic_scandesc: file whitelisted by post_scan callback\n");
+            perf_stop(ctx, PERFT_POSTCB);
+            return CL_CLEAN;
+        case CL_VIRUS:
+            cli_dbgmsg("cli_magic_scandesc: file blacklisted by post_scan callback\n");
+            cli_append_virus(ctx, "Detected.By.Callback");
+            perf_stop(ctx, PERFT_POSTCB);
+            if (retcode != CL_VIRUS)
+                return cli_checkfp(hash, hashed_size, ctx);
+            return CL_VIRUS;
+        case CL_CLEAN:
+            break;
+        default:
+            cli_warnmsg("cli_magic_scandesc: ignoring bad return code from post_scan callback\n");
+        }
+        perf_stop(ctx, PERFT_POSTCB);
+    }
+    if (retcode == CL_CLEAN && cache_clean) {
+        perf_start(ctx, PERFT_CACHE);
+        cache_add(hash, hashed_size, ctx);
+        perf_stop(ctx, PERFT_CACHE);
+    }
+    return retcode;
+}
+
+static int dispatch_prescan(clcb_pre_scan cb, cli_ctx *ctx, const char *filetype, bitset_t *old_hook_lsig_matches, void *parent_property, unsigned char *hash, size_t hashed_size, int *run_cleanup)
+{
+    int res=CL_CLEAN;
+
+    UNUSEDPARAM(parent_property);
+    UNUSEDPARAM(hash);
+    UNUSEDPARAM(hashed_size);
+
+    *run_cleanup = 0;
+
+    if(cb) {
+        perf_start(ctx, PERFT_PRECB);
+        switch(cb(fmap_fd(*ctx->fmap), filetype, ctx->cb_ctx)) {
+        case CL_BREAK:
+            cli_dbgmsg("cli_magic_scandesc: file whitelisted by callback\n");
+            perf_stop(ctx, PERFT_PRECB);
+            ctx->hook_lsig_matches = old_hook_lsig_matches;
+            *run_cleanup = 1;
+        case CL_VIRUS:
+            cli_dbgmsg("cli_magic_scandesc: file blacklisted by callback\n");
+            cli_append_virus(ctx, "Detected.By.Callback");
+            perf_stop(ctx, PERFT_PRECB);
+            ctx->hook_lsig_matches = old_hook_lsig_matches;
+            *run_cleanup = 1;
+            res = CL_VIRUS;
+        case CL_CLEAN:
+            break;
+        default:
+            cli_warnmsg("cli_magic_scandesc: ignoring bad return code from callback\n");
+        }
+
+        perf_stop(ctx, PERFT_PRECB);
     }
 
-
+    return res;
+}
 
 static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 {
@@ -2482,6 +2545,12 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 	bitset_t *old_hook_lsig_matches;
 	const char *filetype;
 	int cache_clean = 0, res;
+    int run_cleanup = 0;
+#if HAVE_JSON
+	struct json_object *parent_property = NULL;
+#else
+    void *parent_property = NULL;
+#endif
 
     if(!ctx->engine) {
 	cli_errmsg("CRITICAL: engine == NULL\n");
@@ -2518,13 +2587,96 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 	early_ret_from_magicscan(CL_EREAD);
     }
     filetype = cli_ftname(type);
+
+#if HAVE_JSON
+    if (ctx->options & CL_SCAN_FILE_PROPERTIES) {
+        json_object *arrobj;
+
+        if (NULL == ctx->properties) {
+            if (type == CL_TYPE_PDF ||   /* file types we collect properties about */
+                type == CL_TYPE_MSOLE2 ||
+                type == CL_TYPE_MSEXE ||
+                type == CL_TYPE_OOXML_WORD ||
+                type == CL_TYPE_OOXML_PPT ||
+                type == CL_TYPE_OOXML_XL) { 
+                ctx->properties = json_object_new_object();
+                if (NULL == ctx->properties) {
+                    cli_errmsg("magic_scandesc: no memory for json properties object\n");
+                    early_ret_from_magicscan(CL_EMEM);       
+                }
+                ctx->wrkproperty = ctx->properties;
+                ret = cli_jsonstr(ctx->properties, "Magic", "CLAMJSONv0");
+                if (ret != CL_SUCCESS) {
+                    early_ret_from_magicscan(ret);
+                }
+                ret = cli_jsonstr(ctx->properties, "RootFileType", filetype);
+                if (ret != CL_SUCCESS) {
+                    early_ret_from_magicscan(ret);
+                }
+	    } else { /* turn off property collection flag for file types we don't care about */
+                ctx->options &= ~CL_SCAN_FILE_PROPERTIES;	
+            }
+        }
+        else {
+            parent_property = ctx->wrkproperty;
+            if (!json_object_object_get_ex(parent_property, "ContainedObjects", &arrobj)) {
+                arrobj = json_object_new_array();
+                if (NULL == arrobj) {
+                    cli_errmsg("magic_scandesc: no memory for json properties object\n");
+                    early_ret_from_magicscan(CL_EMEM);
+                }
+                json_object_object_add(parent_property, "ContainedObjects", arrobj);
+            }
+            ctx->wrkproperty = json_object_new_object();
+            if (NULL == ctx->wrkproperty) {
+                cli_errmsg("magic_scandesc: no memory for json properties object\n");
+                early_ret_from_magicscan(CL_EMEM);
+            }
+            json_object_array_add(arrobj, ctx->wrkproperty);
+        }
+    }
+
+    if (ctx->options & CL_SCAN_FILE_PROPERTIES) { /* separated for cases json is not tracked */
+        ret = cli_jsonstr(ctx->wrkproperty, "FileType", filetype);
+        if (ret != CL_SUCCESS) {
+            early_ret_from_magicscan(ret);
+        }
+        ret = cli_jsonint(ctx->wrkproperty, "FileSize", (*ctx->fmap)->len);
+        if (ret != CL_SUCCESS) {
+            early_ret_from_magicscan(ret);
+        }
+    }
+#endif
+
     hashed_size = 0;
-    CALL_PRESCAN_CB(cb_pre_cache);
+    ret = dispatch_prescan(ctx->engine->cb_pre_cache, ctx, filetype, old_hook_lsig_matches, parent_property, hash, hashed_size, &run_cleanup);
+    if (run_cleanup) {
+        if (ret == CL_VIRUS)
+            return magic_scandesc_cleanup(ctx, type, hash, hashed_size, cache_clean, cli_checkfp(hash, hashed_size, ctx), parent_property);
+        else
+            return magic_scandesc_cleanup(ctx, type, hash, hashed_size, cache_clean, CL_CLEAN, parent_property);
+    }
 
     perf_start(ctx, PERFT_CACHE);
     res = cache_check(hash, ctx);
+
+#if HAVE_JSON
+    if (SCAN_PROPERTIES /* ctx.options & CL_SCAN_FILE_PROPERTIES && ctx->wrkproperty != NULL */) {
+        char hashstr[33];
+        snprintf(hashstr, 33, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x", hash[0], hash[1], hash[2], hash[3], hash[4], hash[5], hash[6], hash[7], hash[8], hash[9], hash[10], hash[11], hash[12], hash[13], hash[14], hash[15]);
+
+        ret = cli_jsonstr(ctx->wrkproperty, "FileMD5", hashstr);
+        if (ret != CL_SUCCESS) {
+            early_ret_from_magicscan(ret);
+        }
+    }
+#endif
+
     if(res != CL_VIRUS) {
 	perf_stop(ctx, PERFT_CACHE);
+#if HAVE_JSON
+        ctx->wrkproperty = parent_property;
+#endif
 	early_ret_from_magicscan(res);
     }
 
@@ -2538,7 +2690,13 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 	else
 	    cli_dbgmsg("Raw mode: No support for special files\n");
 
-	CALL_PRESCAN_CB(cb_pre_scan);
+    ret = dispatch_prescan(ctx->engine->cb_pre_scan, ctx, filetype, old_hook_lsig_matches, parent_property, hash, hashed_size, &run_cleanup);
+    if (run_cleanup) {
+        if (ret == CL_VIRUS)
+            return magic_scandesc_cleanup(ctx, type, hash, hashed_size, cache_clean, cli_checkfp(hash, hashed_size, ctx), parent_property);
+        else
+            return magic_scandesc_cleanup(ctx, type, hash, hashed_size, cache_clean, ret, parent_property);
+    }
 	/* ret_from_magicscan can be used below here*/
 	if((ret = cli_fmap_scandesc(ctx, 0, 0, NULL, AC_SCAN_VIR, NULL, hash)) == CL_VIRUS)
 	    cli_dbgmsg("%s found in descriptor %d\n", cli_get_last_virus(ctx), fmap_fd(*ctx->fmap));
@@ -2550,10 +2708,16 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 	}
 
 	ctx->hook_lsig_matches = old_hook_lsig_matches;
-	ret_from_magicscan(ret);
+	return magic_scandesc_cleanup(ctx, type, hash, hashed_size, cache_clean, ret, parent_property);
     }
 
-    CALL_PRESCAN_CB(cb_pre_scan);
+    ret = dispatch_prescan(ctx->engine->cb_pre_scan, ctx, filetype, old_hook_lsig_matches, parent_property, hash, hashed_size, &run_cleanup);
+    if (run_cleanup) {
+        if (ret == CL_VIRUS)
+            return magic_scandesc_cleanup(ctx, type, hash, hashed_size, cache_clean, cli_checkfp(hash, hashed_size, ctx), parent_property);
+        else
+            return magic_scandesc_cleanup(ctx, type, hash, hashed_size, cache_clean, ret, parent_property);
+    }
     /* ret_from_magicscan can be used below here*/
 
 #ifdef HAVE__INTERNAL__SHA_COLLECT
@@ -2563,15 +2727,15 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
     ctx->hook_lsig_matches = cli_bitset_init();
     if (!ctx->hook_lsig_matches) {
 	ctx->hook_lsig_matches = old_hook_lsig_matches;
-	ret_from_magicscan(CL_EMEM);
+    return magic_scandesc_cleanup(ctx, type, hash, hashed_size, cache_clean, CL_EMEM, parent_property);
     }
 
     if(type != CL_TYPE_IGNORED && ctx->engine->sdb) {
-	if((ret = cli_scanraw(ctx, type, 0, &dettype, hash)) == CL_VIRUS) {
+	if((ret = cli_scanraw(ctx, type, 0, &dettype, (ctx->engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE) ? NULL : hash)) == CL_VIRUS) {
 	    ret = cli_checkfp(hash, hashed_size, ctx);
 	    cli_bitset_free(ctx->hook_lsig_matches);
 	    ctx->hook_lsig_matches = old_hook_lsig_matches;
-	    ret_from_magicscan(ret);
+        return magic_scandesc_cleanup(ctx, type, hash, hashed_size, cache_clean, ret, parent_property);
 	}
     }
 
@@ -2581,6 +2745,10 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
     switch(type) {
 	case CL_TYPE_IGNORED:
 	    break;
+
+    case CL_TYPE_XDP:
+        ret = cli_scanxdp(ctx);
+        break;
 
 	case CL_TYPE_RAR:
 	    ctx->container_type = CL_TYPE_RAR;
@@ -2607,6 +2775,18 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
         case CL_TYPE_OOXML_WORD:
         case CL_TYPE_OOXML_PPT:
         case CL_TYPE_OOXML_XL:
+#if HAVE_JSON
+            if ((ctx->options & CL_SCAN_FILE_PROPERTIES) && (ctx->wrkproperty != NULL)) {
+                ret = cli_process_ooxml(ctx);
+                if (ret == CL_ETIMEOUT) {
+                    return magic_scandesc_cleanup(ctx, type, hash, hashed_size, cache_clean, ret, parent_property);
+                }
+                else if (ret != CL_SUCCESS) {
+                    /* JSONOOXML - what to do if something else fails? placeholder */
+                    ret = CL_SUCCESS;
+                }
+            }
+#endif
 	case CL_TYPE_ZIP:
 	    ctx->container_type = CL_TYPE_ZIP;
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ZIP))
@@ -2860,7 +3040,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 	ret = cli_checkfp(hash, hashed_size, ctx);
 	cli_bitset_free(ctx->hook_lsig_matches);
 	ctx->hook_lsig_matches = old_hook_lsig_matches;
-	ret_from_magicscan(ret);
+    return magic_scandesc_cleanup(ctx, type, hash, hashed_size, cache_clean, ret, parent_property);
     }
 
     if(type == CL_TYPE_ZIP && SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ZIP)) {
@@ -2874,7 +3054,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 
     /* CL_TYPE_HTML: raw HTML files are not scanned, unless safety measure activated via DCONF */
     if(type != CL_TYPE_IGNORED && (type != CL_TYPE_HTML || !(DCONF_DOC & DOC_CONF_HTML_SKIPRAW)) && !ctx->engine->sdb) {
-	res = cli_scanraw(ctx, type, typercg, &dettype, hash);
+	res = cli_scanraw(ctx, type, typercg, &dettype, (ctx->engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE) ? NULL : hash);
 	if(res != CL_CLEAN) {
 	    switch(res) {
 		/* List of scan halts, runtime errors only! */
@@ -2890,7 +3070,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 		    cli_dbgmsg("Descriptor[%d]: cli_scanraw error %s\n", fmap_fd(*ctx->fmap), cl_strerror(res));
 		    cli_bitset_free(ctx->hook_lsig_matches);
 		    ctx->hook_lsig_matches = old_hook_lsig_matches;
-		    ret_from_magicscan(res);
+            return magic_scandesc_cleanup(ctx, type, hash, hashed_size, cache_clean, ret, parent_property);
 		/* CL_VIRUS = malware found, check FP and report */
 		case CL_VIRUS:
 		    ret = cli_checkfp(hash, hashed_size, ctx);
@@ -2898,7 +3078,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 			break;
 		    cli_bitset_free(ctx->hook_lsig_matches);
 		    ctx->hook_lsig_matches = old_hook_lsig_matches;
-		    ret_from_magicscan(ret);
+            return magic_scandesc_cleanup(ctx, type, hash, hashed_size, cache_clean, ret, parent_property);
 		/* "MAX" conditions should still fully scan the current file */
 		case CL_EMAXREC:
 		case CL_EMAXSIZE:
@@ -2967,12 +3147,18 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 	case CL_EMAXSIZE:
 	case CL_EMAXFILES:
 	    cli_dbgmsg("Descriptor[%d]: %s\n", fmap_fd(*ctx->fmap), cl_strerror(ret));
-	    ret_from_magicscan(CL_CLEAN);
+#if HAVE_JSON
+        ctx->wrkproperty = parent_property;
+#endif
+        return magic_scandesc_cleanup(ctx, type, hash, hashed_size, cache_clean, CL_CLEAN, parent_property);
 	case CL_CLEAN:
 	    cache_clean = 1;
-	    ret_from_magicscan(CL_CLEAN);
+#if HAVE_JSON
+        ctx->wrkproperty = parent_property;
+#endif
+        return magic_scandesc_cleanup(ctx, type, hash, hashed_size, cache_clean, CL_CLEAN, parent_property);
 	default:
-	    ret_from_magicscan(ret);
+        return magic_scandesc_cleanup(ctx, type, hash, hashed_size, cache_clean, ret, parent_property);
     }
 }
 
@@ -3041,7 +3227,7 @@ int cli_map_scan(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx, cli_
 
     cli_dbgmsg("cli_map_scan: [%ld, +%lu)\n",
 	       (long)offset, (unsigned long)length);
-    if (offset < 0 || offset >= old_len) {
+    if (offset < 0 || (size_t)offset >= old_len) {
 	cli_dbgmsg("Invalid offset: %ld\n", (long)offset);
 	return CL_CLEAN;
     }
@@ -3121,7 +3307,7 @@ int cli_map_scandesc(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx, 
     cli_dbgmsg("cli_map_scandesc: [%ld, +%lu), [%ld, +%lu)\n",
 	       (long)old_off, (unsigned long)old_len,
 	       (long)offset, (unsigned long)length);
-    if (offset < 0 || offset >= old_len) {
+    if (offset < 0 || (size_t)offset >= old_len) {
 	cli_dbgmsg("Invalid offset: %ld\n", (long)offset);
 	return CL_CLEAN;
     }
@@ -3197,7 +3383,7 @@ static int scan_common(int desc, cl_fmap_t *map, const char **virname, unsigned 
     ctx.scanned = scanned;
     ctx.options = scanoptions;
 #if 0 /* for development testing only */
-    ctx.options |= CL_SCAN_ALLMATCHES;
+    ctx.options |= CL_SCAN_FILE_PROPERTIES;
 #endif
     ctx.found_possibly_unwanted = 0;
     ctx.container_type = CL_TYPE_ANY;
@@ -3212,6 +3398,22 @@ static int scan_common(int desc, cl_fmap_t *map, const char **virname, unsigned 
 	return CL_EMEM;
     }
     perf_init(&ctx);
+
+    if (ctx.options & CL_SCAN_FILE_PROPERTIES && ctx.engine->time_limit != 0) {
+        if (gettimeofday(&ctx.time_limit, NULL) == 0) {
+            uint32_t secs = ctx.engine->time_limit / 1000;
+            uint32_t usecs = (ctx.engine->time_limit % 1000) * 1000;
+            ctx.time_limit.tv_sec += secs;
+            ctx.time_limit.tv_usec += usecs;
+            if (ctx.time_limit.tv_usec >= 1000000) {
+                ctx.time_limit.tv_usec -= 1000000;
+                ctx.time_limit.tv_sec++;
+            }
+        } else {
+            char buf[64];
+            cli_dbgmsg("scan_common; gettimeofday error: %s\n", cli_strerror(errno, buf, 64));
+        }
+    }
 
 #ifdef HAVE__INTERNAL__SHA_COLLECT
     if(scanoptions & CL_SCAN_INTERNAL_COLLECT_SHA) {
@@ -3231,6 +3433,75 @@ static int scan_common(int desc, cl_fmap_t *map, const char **virname, unsigned 
 
     cli_logg_setup(&ctx);
     rc = map ? cli_map_scandesc(map, 0, map->len, &ctx, CL_TYPE_ANY) : cli_magic_scandesc(desc, &ctx);
+
+#if HAVE_JSON
+    if (ctx.options & CL_SCAN_FILE_PROPERTIES && ctx.properties!=NULL) {
+        json_object *jobj;
+        const char *jstring;
+
+        /* set value of unique root object tag */
+        if (json_object_object_get_ex(ctx.properties, "FileType", &jobj)) {
+            enum json_type type;
+            const char *jstr;
+
+            type = json_object_get_type(jobj);
+            if (type == json_type_string) {
+                jstr = json_object_get_string(jobj);
+                cli_jsonstr(ctx.properties, "RootFileType", jstr);
+            }
+        }
+
+        /* serialize json properties to string */
+        jstring = json_object_to_json_string(ctx.properties);
+        if (NULL == jstring) {
+            cli_errmsg("scan_common: no memory for json serialization.\n");
+            rc = CL_EMEM;
+        }
+        else {
+            int ret = CL_SUCCESS;
+            cli_dbgmsg("%s\n", jstring);
+ 
+           /* Scan the json string unless a virus was detected */ 
+            if (rc != CL_VIRUS) {
+                ctx.options &= ~CL_SCAN_FILE_PROPERTIES;
+                rc = cli_mem_scandesc(jstring, strlen(jstring), &ctx);
+            }
+
+            /* Invoke file props callback */
+            if (ctx.engine->cb_file_props != NULL) {
+                ret = ctx.engine->cb_file_props(jstring, rc, ctx.engine->cb_file_props_data);
+                if (ret != CL_SUCCESS)
+                    rc = ret;
+            }
+
+            /* keeptmp file processing for file properties json string */
+            if (ctx.engine->keeptmp) {
+                int fd = -1;
+                char * tmpname = NULL;
+                if ((ret = cli_gentempfd(ctx.engine->tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
+                    cli_dbgmsg("scan_common: Can't create json properties file, ret = %i.\n", ret);
+                } else {
+                    if (cli_writen(fd, jstring, strlen(jstring)) < 0)
+                        cli_dbgmsg("scan_common: cli_writen error writing json properties file.\n");
+                    else
+                        cli_dbgmsg("json written to: %s\n", tmpname);
+                }
+                if (fd != -1)
+                    close(fd);
+                if (NULL != tmpname)
+                    free(tmpname);
+            }
+        }
+        json_object_put(ctx.properties); /* frees all json memory */
+#if 0
+        // test code  - to be deleted
+        if (cli_checktimelimit(&ctx) != CL_SUCCESS) {
+            cli_errmsg("scan_common: timeout!\n");
+            rc = CL_ETIMEOUT;
+        }
+#endif
+    }
+#endif
 
     if (ctx.options & CL_SCAN_ALLMATCHES) {
 	*virname = (char *)ctx.virname; /* temp hack for scanall mode until api augmentation */

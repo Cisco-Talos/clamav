@@ -34,12 +34,9 @@ if BUILD_EXTERNAL_LLVM
 # we know this will be built with GNU make, so its safe to use GNU make specific
 # $(shell ...)
 #LLVM_DEPS=$(shell $(LLVM_CONFIG) --libfiles jit nativecodegen)
-libclamavcxx_la_CXXFLAGS = $(AM_CPPFLAGS) @LLVMCONFIG_CXXFLAGS@ -fexceptions -DLLVM28 -DLLVM29
-if BUILD_LLVM3
-libclamavcxx_la_CXXFLAGS += -DLLVM30
-endif
-libclamavcxx_la_LDFLAGS = @LLVMCONFIG_LDFLAGS@ @LLVMCONFIG_LIBS@
-libclamavcxx_la_DEPENDENCIES = @LLVMCONFIG_LIBFILES@
+libclamavcxx_la_CXXFLAGS = $(AM_CPPFLAGS) @LLVMCONFIG_CXXFLAGS@ -fexceptions -DLLVM_VERSION=${LLVM_VERSION} @JSON_CPPFLAGS@
+libclamavcxx_la_LDFLAGS = @LLVMCONFIG_LDFLAGS@ @LLVMCONFIG_LIBS@ @LLVMCONFIG_LDFLAGS@ @JSON_LDFLAGS@
+libclamavcxx_la_DEPENDENCIES = @LLVMCONFIG_LIBFILES@ @JSON_LIBS@
 noinst_LTLIBRARIES = libclamavcxx.la
 libclamavcxx_la_SOURCES += PointerTracking.cpp
 libclamavcxx_la_SOURCES += PointerTracking.h
@@ -51,7 +48,7 @@ noinst_LTLIBRARIES = libclamavcxx.la libllvmsystem.la\
 libclamavcxx_la_LIBADD=libllvmjit.la
 libclamavcxx_la_DEPENDENCIES=libllvmjit.la libllvmcodegen.la libllvmsystem.la
 libclamavcxx_la_LDFLAGS=-no-undefined
-libclamavcxx_la_CXXFLAGS = $(LLVM_CXXFLAGS)
+libclamavcxx_la_CXXFLAGS = $(LLVM_CXXFLAGS) -DLLVM_VERSION=${LLVM_VERSION} @JSON_CPPFLAGS@
 
 
 if BUILD_X86

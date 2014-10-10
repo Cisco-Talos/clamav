@@ -36,10 +36,6 @@
 
 #include <sys/fanotify.h>
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
 #include "fan.h"
 
 #include "libclamav/clamav.h"
@@ -235,10 +231,6 @@ void *fan_th(void *arg)
 #include <pthread.h>
 #include <string.h>
 #include <errno.h>
-
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
 
 #include "libclamav/clamav.h"
 #include "libclamav/scanners.h"

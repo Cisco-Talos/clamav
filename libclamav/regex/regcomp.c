@@ -42,10 +42,7 @@
 #include <limits.h>
 #include <stdlib.h>
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include "libclamav/crypto.h"
-
+#include "clamav.h"
 #include "others.h"
 #include "regex.h"
 
@@ -556,7 +553,7 @@ p_simp_re(struct parse *p,
 		i = (c&~BACKSL) - '0';
 		assert(i < NPAREN);
 		if (p->pend[i] != 0) {
-			assert(i <= p->g->nsub);
+			assert((size_t)i <= p->g->nsub);
 			EMIT(OBACK_, i);
 			assert(p->pbegin[i] != 0);
 			assert(OP(p->strip[p->pbegin[i]]) == OLPAREN);
@@ -1199,6 +1196,7 @@ mcadd( struct parse *p, cset *cs, const char *cp)
 static void
 mcinvert(struct parse *p, cset *cs)
 {
+    UNUSEDPARAM(p);
 	assert(cs->multis == NULL);	/* xxx */
 }
 
@@ -1212,6 +1210,7 @@ mcinvert(struct parse *p, cset *cs)
 static void
 mccase(struct parse *p, cset *cs)
 {
+    UNUSEDPARAM(p);
 	assert(cs->multis == NULL);	/* xxx */
 }
 
