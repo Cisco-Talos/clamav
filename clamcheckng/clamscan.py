@@ -108,6 +108,42 @@ class Clamscan:
         argument["status"] = "SUCCESS::"
         return True
 
+    def ValgrindEnabled(self, argument):
+        if "valgrind" not in self.config:
+            return False
+        if "enable" not in self.config["valgrind"] or self.config["valgrind"]["enable"] == False:
+            return False
+        if "valgrind" in argument:
+            if "enable" in argument["valgrind"] and argument["valgrind"]["enable"] == False:
+                return False
+        return True
+
+    def GetValgrindArguments(self, argument):
+        args = []
+        if self.ValgrindEnabled(argument) == False:
+            return args
+
+        args = [ "valgrind" ]
+        if "supressions" in self.config["valgrind"]:
+            for supp in self.config["valgrind"]["suppressions"]:
+                args += [ "--suppressions=" + clamutil.Resolve(self.config, supp, self.feature) ]
+
+        if "arguments" in self.config["valgrind"]:
+            args += self.config["valgrind"]["arguments"]
+
+        return args
+
+    def ValgrindFailMode(self, argument):
+        if self.ValgrindEnabled(argument) == False:
+            return "softfail"
+        if "valgrind" in argument:
+            if "mode" in argument["valgrind"]:
+                return argument["valgrind"]["mode"]
+        elif "mode" in self.config["valgrind"]:
+            return self.config["valgrind"]["mode"]
+
+        return ""
+
     def Run(self):
         self.status = "RUN"
         if 0 == 1:
@@ -123,6 +159,7 @@ class Clamscan:
             arg["setting"] = None
             while moreIterations == True:
                 clamutil.CleanTempDir(self.config)
+
                 args = [
                     clamutil.GetObjectDir(self.config, self.featurename) + "/clamscan/clamscan",
                     "-d",
@@ -179,5 +216,18 @@ class Clamscan:
                     print "Behavior check failed: " + arg["status"]
                     self.status = "FAIL"
                     return False
+
+                if self.ValgrindEnabled(arg) == True:
+                    args = self.GetValgrindArguments(arg) + args
+                    failmode = self.ValgrindFailMode(arg)
+
+                    p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                    (out, err) = p.communicate()
+                    command.LogVerbose(self.config, out)
+                    if p.returncode != 0:
+                        if failmode != "softfail":
+                            self.status = "FAIL"
+                            print "Valgrind failed for argument " + arg["argument"]
+                            return False
 
         return True
