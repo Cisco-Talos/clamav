@@ -74,7 +74,7 @@ def main():
             if "configure" in feature:
                 for a in feature["configure"]:
                     args.append(a)
-            if command.RunCommand(config, args) != 0:
+            if command.RunCommand(config, args, "Configure stage:") != 0:
                 print "   [-] Configure stage failed."
                 return
 
@@ -91,7 +91,7 @@ def main():
             if "jobs" in config["compile"]:
                 args.append("-j" + str(config["compile"]["jobs"]))
 
-        if command.RunCommand(config, args) != 0:
+        if command.RunCommand(config, args, "Compile Stage:") != 0:
             print "    [-] Compilation stage failed."
             return
 
@@ -104,7 +104,7 @@ def main():
             env["LD_LIBRARY_PATH"] = objdir + "/libclamav/.libs"
             p = subprocess.Popen(["ldd", objdir + "/libclamav/.libs/libclamav.so"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=env)
             (out, err) = p.communicate()
-            command.LogVerbose(config, out)
+            command.LogVerbose(config, out, "Library check stage:")
             for lib in feature["libs"]:
                 if lib not in out:
                     print "    [-] Could not find library " + lib + "." + filename

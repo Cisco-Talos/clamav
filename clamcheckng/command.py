@@ -33,7 +33,7 @@
 import os, subprocess
 import tempfile
 
-def LogVerbose(config, out):
+def LogVerbose(config, out, message=""):
     if "logging" not in config:
         return
     if "verbose" not in config["logging"]:
@@ -43,7 +43,7 @@ def LogVerbose(config, out):
         # Log to file
         with tempfile.NamedTemporaryFile(delete=False) as f:
             f.write(out)
-            print "[*] LogVerbose(1): " + f.name
+            print "[*] " + message + " LogVerbose(1): " + f.name
     elif config["logging"]["verbose"] == 2:
         # Write to stdout
         print out
@@ -52,11 +52,11 @@ def LogVerbose(config, out):
         print out
         with tempfile.NamedTemporaryFile(delete=False) as f:
             f.write(out)
-            print "[*] LogVerbose(3): " + f.name
+            print "[*] " + message + " LogVerbose(3): " + f.name
         print out
 
-def RunCommand(config, args):
+def RunCommand(config, args, message=""):
     p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     (out, err) = p.communicate()
-    LogVerbose(config, out)
+    LogVerbose(config, out, message)
     return p.returncode

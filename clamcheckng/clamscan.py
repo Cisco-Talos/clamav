@@ -55,7 +55,7 @@ class Clamscan:
         return False
 
     def GrepResult(self, argument, value):
-        if command.RunCommand(self.config, ["grep", "-rq", value, clamutil.GetTempDir(self.config)]) == 0:
+        if command.RunCommand(self.config, ["grep", "-rq", value, clamutil.GetTempDir(self.config)], "Behavior check with grep:") == 0:
             return True
         else:
             return False
@@ -207,7 +207,7 @@ class Clamscan:
 
                 p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                 (out, err) = p.communicate()
-                command.LogVerbose(self.config, out)
+                command.LogVerbose(self.config, out, "Command output:")
                 setting=None
                 if arg["type"] != "flag":
                     setting = arg["setting"]
@@ -223,7 +223,7 @@ class Clamscan:
 
                     p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                     (out, err) = p.communicate()
-                    command.LogVerbose(self.config, out)
+                    command.LogVerbose(self.config, out, "Valgrind results:")
                     if p.returncode != 0:
                         if failmode != "softfail":
                             self.status = "FAIL"
