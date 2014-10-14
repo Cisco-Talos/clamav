@@ -482,7 +482,7 @@ static int ooxml_content_cb(int fd, cli_ctx *ctx)
         if (!xmlStrcmp(CT, (const xmlChar *)"application/vnd.openxmlformats-package.core-properties+xml")) {
             if (!core) {
                 /* default: /docProps/core.xml*/
-                tmp = unzip_search(ctx, (const char *)(PN+1), xmlStrlen(PN)-1, &loff);
+                tmp = unzip_search_single(ctx, (const char *)(PN+1), xmlStrlen(PN)-1, &loff);
                 if (tmp == CL_ETIMEOUT) {
                     ret = tmp;
                 }
@@ -500,7 +500,7 @@ static int ooxml_content_cb(int fd, cli_ctx *ctx)
         else if (!xmlStrcmp(CT, (const xmlChar *)"application/vnd.openxmlformats-officedocument.extended-properties+xml")) {
             if (!extn) {
                 /* default: /docProps/app.xml */
-                tmp = unzip_search(ctx, (const char *)(PN+1), xmlStrlen(PN)-1, &loff);
+                tmp = unzip_search_single(ctx, (const char *)(PN+1), xmlStrlen(PN)-1, &loff);
                 if (tmp == CL_ETIMEOUT) {
                     ret = tmp;
                 }
@@ -518,7 +518,7 @@ static int ooxml_content_cb(int fd, cli_ctx *ctx)
         else if (!xmlStrcmp(CT, (const xmlChar *)"application/vnd.openxmlformats-officedocument.custom-properties+xml")) {
             if (!cust) {
                 /* default: /docProps/custom.xml */
-                tmp = unzip_search(ctx, (const char *)(PN+1), xmlStrlen(PN)-1, &loff);
+                tmp = unzip_search_single(ctx, (const char *)(PN+1), xmlStrlen(PN)-1, &loff);
                 if (tmp == CL_ETIMEOUT) {
                     ret = tmp;
                 }
@@ -573,6 +573,39 @@ static int ooxml_content_cb(int fd, cli_ctx *ctx)
 }
 #endif /* HAVE_LIBXML2 && HAVE_JSON */
 
+int cli_ooxml_filetype(cli_ctx *ctx, fmap_t *map)
+{
+    struct zip_requests requests;
+    int ret;
+
+    memset(&requests, 0, sizeof(struct zip_requests));
+
+    if ((ret = unzip_search_add(&requests, "xl/", 3)) != CL_SUCCESS) {
+        return CL_SUCCESS;
+    }
+    if ((ret = unzip_search_add(&requests, "ppt/", 4)) != CL_SUCCESS) {
+        return CL_SUCCESS;
+    }
+    if ((ret = unzip_search_add(&requests, "word/", 5)) != CL_SUCCESS) {
+        return CL_SUCCESS;
+    }
+
+    if ((ret = unzip_search(ctx, map, &requests)) == CL_VIRUS) {
+        switch (requests.found) {
+        case 0:
+            return CL_TYPE_OOXML_XL;
+        case 1:
+            return CL_TYPE_OOXML_PPT;
+        case 2:
+            return CL_TYPE_OOXML_WORD;
+        default:
+            return CL_SUCCESS;
+        }
+    }
+
+    return CL_SUCCESS;
+}
+
 int cli_process_ooxml(cli_ctx *ctx)
 {
 #if HAVE_LIBXML2 && HAVE_JSON
@@ -585,7 +618,7 @@ int cli_process_ooxml(cli_ctx *ctx)
     }
 
     /* find "[Content Types].xml" */
-    tmp = unzip_search(ctx, "[Content_Types].xml", 18, &loff);
+    tmp = unzip_search_single(ctx, "[Content_Types].xml", 18, &loff);
     if (tmp == CL_ETIMEOUT) {
         return CL_ETIMEOUT;
     }
