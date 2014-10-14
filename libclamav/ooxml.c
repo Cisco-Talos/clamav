@@ -537,10 +537,11 @@ static int ooxml_content_cb(int fd, cli_ctx *ctx)
             dsig++;
         }
 
-        if (ret != CL_SUCCESS)
+        if (ret != CL_BREAK && ret != CL_SUCCESS)
             goto ooxml_content_exit;
     }
 
+ ooxml_content_exit:
     if (core)
         cli_jsonint(ctx->wrkproperty, "CorePropertiesFileCount", core);
     else if (!mcore)
@@ -566,7 +567,6 @@ static int ooxml_content_cb(int fd, cli_ctx *ctx)
         cli_jsonint(ctx->wrkproperty, "DigitalSignaturesCount", dsig);
     }
 
- ooxml_content_exit:
     xmlTextReaderClose(reader);
     xmlFreeTextReader(reader);
     return ret;
