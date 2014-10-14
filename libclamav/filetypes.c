@@ -267,7 +267,8 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
             const unsigned char * znamep = buff;
             int32_t zlen = bread;
             int lhc = 0;
-            int zi;
+            int zi, likely_ooxml = 0;
+            cli_file_t ret2;
             
             for (zi=0; zi<32; zi++) {
                 znamep = (const unsigned char *)cli_memstr((const char *)znamep, zlen, lhdr_magic, 4);
@@ -284,9 +285,34 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
                         } else if (0 == memcmp(znamep, "word/", 5)) {
                             cli_dbgmsg("Recognized OOXML Word file\n");
                             return CL_TYPE_OOXML_WORD;
+                        } else if (0 == memcmp(znamep, "docProps/", 5)) {
+                            likely_ooxml = 1;
                         }
-                        if (++lhc > 2)
-                            break; /* only check first three zip headers */
+
+                        if (++lhc > 2) {
+                            /* only check first three zip headers unless likely ooxml */
+                            if (likely_ooxml) {
+                                cli_dbgmsg("Likely OOXML, checking additional zip headers\n");
+                                if ((ret2 = cli_ooxml_filetype(NULL, map)) != CL_SUCCESS) {
+                                    /* either an error or retyping has occurred, return error or just CL_TYPE_ZIP? */
+                                    switch (ret2) {
+                                    case CL_TYPE_OOXML_XL:
+                                        cli_dbgmsg("Recognized OOXML XL file\n");
+                                        break;
+                                    case CL_TYPE_OOXML_PPT:
+                                        cli_dbgmsg("Recognized OOXML PPT file\n");
+                                        break;
+                                    case CL_TYPE_OOXML_WORD:
+                                        cli_dbgmsg("Recognized OOXML WORD file\n");
+                                        break;
+                                    default:
+                                        cli_dbgmsg("unexpected ooxml_filetype return: %i\n", ret2);
+                                    }
+                                    return ret2;
+                                }
+                            }
+                            break;
+                        }
                     }
                     else {
                         znamep = NULL; /* force to map more */
