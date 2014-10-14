@@ -59,6 +59,9 @@ limitations under the License.
 #define YYDEBUG 1 /* Set for development testing */
 #include "libclamav/yara_clam.h"
 #include "clamav-config.h"
+#include "libclamav/yara_grammar.h"
+#include "libclamav/yara_lexer.h"
+#include "libclamav/yara_parser.h"
 #endif
 
 #define YYERROR_VERBOSE
@@ -247,7 +250,6 @@ import
 rule
     : rule_modifiers _RULE_ _IDENTIFIER_ tags '{' meta strings condition '}'
       {
-#ifdef REAL_YARA
         int result = yr_parser_reduce_rule_declaration(
             yyscanner,
             $1,
@@ -259,10 +261,6 @@ rule
         yr_free($3);
 
         ERROR_IF(result != ERROR_SUCCESS);
-#else
-        cli_errmsg("parsing rule %s %s %s %s %s\n",
-                   $1,  $3, $4,  $6, $7 );
-#endif
       }
     ;
 
@@ -270,9 +268,7 @@ rule
 meta
     : /* empty */
       {
-          //#ifdef REAL_YARA
         $$ = NULL;
-        //#endif
       }
     | _META_ ':' meta_declarations
       {
@@ -518,7 +514,6 @@ string_declarations
 string_declaration
     : _STRING_IDENTIFIER_ '=' _TEXT_STRING_ string_modifiers
       {
-#ifdef REAL_YARA
         $$ = yr_parser_reduce_string_declaration(
             yyscanner,
             $4,
@@ -529,9 +524,6 @@ string_declaration
         yr_free($3);
 
         ERROR_IF($$ == NULL);
-#else
-        cli_errmsg("String delaration %s = %s, %s\n", $1, $3, $4);
-#endif
       }
     | _STRING_IDENTIFIER_ '='
       {
@@ -541,7 +533,6 @@ string_declaration
       }
       _REGEXP_ string_modifiers
       {
-#ifdef REAL_YARA
         $$ = yr_parser_reduce_string_declaration(
             yyscanner,
             $5 | STRING_GFLAGS_REGEXP,
@@ -552,11 +543,9 @@ string_declaration
         yr_free($4);
 
         ERROR_IF($$ == NULL);
-#endif
       }
     | _STRING_IDENTIFIER_ '=' _HEX_STRING_
       {
-#ifdef REAL_YARA
         $$ = yr_parser_reduce_string_declaration(
             yyscanner,
             STRING_GFLAGS_HEXADECIMAL,
@@ -567,7 +556,6 @@ string_declaration
         yr_free($3);
 
         ERROR_IF($$ == NULL);
-#endif
       }
     ;
 

@@ -296,6 +296,12 @@ include[ \t]+\"         {
     yyterminate();
   }
 #endif
+  yypop_buffer_state(yyscanner);
+
+  if (!YY_CURRENT_BUFFER)
+  {
+    yyterminate();
+  }
 }
 
 

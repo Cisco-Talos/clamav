@@ -2630,15 +2630,34 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
     char * current_condition = NULL;
     int rc = CL_SUCCESS;
     uint32_t line = 0;
-    uint32_t rule = 0;
     uint8_t is_comment;
     uint8_t rule_state;
     YR_COMPILER compiler;
+    YR_RULE * rule;
+    YR_STRING * string;
 
-    cli_errmsg("Loading yara signatures\n");
+    compiler.last_result = ERROR_SUCCESS;
+    STAILQ_INIT(&compiler.rules);
+    STAILQ_INIT(&compiler.current_rule_strings);
+
+    //    cli_errmsg("Loading yara signatures\n");
 #if 0 /* for compilation */
     yr_lex_parse_rules_file(fs, &compiler);
 #endif
+    while (!STAILQ_EMPTY(&compiler.rules)) {
+        rule = STAILQ_FIRST(&compiler.rules);
+        STAILQ_REMOVE(&compiler.rules, rule, _yc_rule, link);
+        printf ("rule: %s+++++++++\n", rule->id);
+        while (!STAILQ_EMPTY(&rule->strings)) {
+            string = STAILQ_FIRST(&rule->strings);
+            STAILQ_REMOVE(&rule->strings, string, _yc_string, link);
+            printf ("    %s = \"%s\"\n", string->id, string->string);
+            free(string->id);
+            free(string);            
+        }
+        free(rule->id);
+        free(rule);
+    }
     return rc;
 }
 #endif

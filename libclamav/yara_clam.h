@@ -40,6 +40,8 @@ limitations under the License.
 #ifndef _YARA_CLAM_H_
 #define _YARA_CLAM_H_
 
+#include "shared/queue.h"
+ 
 #define LEX_BUF_SIZE  1024
 
 #define EXTERNAL_VARIABLE_TYPE_NULL          0
@@ -241,6 +243,7 @@ typedef struct _YR_META
 
 } YR_META;
 
+#if REAL_YARA
 typedef struct _YR_STRING
 {
   int32_t g_flags;
@@ -257,6 +260,7 @@ typedef struct _YR_STRING
     //  YR_MATCHES unconfirmed_matches[MAX_THREADS];
 
 } YR_STRING;
+#endif
 
 typedef struct _YR_EXTERNAL_VARIABLE
 {
@@ -318,13 +322,34 @@ struct RE {
 #define xtoi cli_hex2num
 #define strlcpy cli_strlcpy
 
+struct _yc_rule {
+    STAILQ_ENTRY(_yc_rule) link;
+    STAILQ_HEAD(sq, _yc_string) strings;
+    char * id;
+};
+typedef struct _yc_rule yc_rule;
+typedef struct _yc_string {
+    STAILQ_ENTRY(_yc_string) link;
+    char * id;
+    int32_t g_flags;
+    int32_t length;
+    
+    char* identifier;
+    uint8_t* string;
+} yc_string;
+
 typedef struct _yc_compiler {
   char                lex_buf[LEX_BUF_SIZE];
   char*               lex_buf_ptr;
   unsigned short      lex_buf_len;
+  int last_result;
+  STAILQ_HEAD(rq, _yc_rule) rules;
+  STAILQ_HEAD(cs, _yc_string) current_rule_strings;
 } yc_compiler;
 
-#define YR_COMPILER yc_compiler
+typedef yc_compiler YR_COMPILER;
+typedef yc_rule YR_RULE;
+typedef yc_string YR_STRING;
 
 #endif
 

@@ -446,6 +446,8 @@ libclamav_la_SOURCES = \
 	yara_grammar.y \
 	yara_lexer.l \
 	yara_lexer.h \
+	yara_parser.c \
+	yara_parser.h \
 	yara_clam.h
 
 libclamav_la_SOURCES += bignum.h\
