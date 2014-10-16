@@ -168,8 +168,20 @@ static inline int matcher_run(const struct cli_matcher *root,
     /* however, scanning the whole buffer may require the whole buffer being loaded into memory */
 #if HAVE_PCRE
     if (root->pcre_metas) {
+        int rc;
+        uint64_t maxfilesize;
+
         if (map) {
             if (offset+length >= map->len) {
+                /* check that scanned map does not exceed pcre maxfilesize limit */
+                maxfilesize = (uint64_t)cl_engine_get_num(ctx->engine, CL_ENGINE_PCRE_MAX_FILESIZE, &rc);
+                if (rc != CL_SUCCESS)
+                    return rc;
+                if (maxfilesize && (map->len > maxfilesize)) {
+                    cli_dbgmsg("cli_pcre_scanbuf: pcre max filesize (map) exceeded (limit: %llu, needed: %llu)\n", maxfilesize, (long long unsigned)map->len);
+                    return CL_EMAXSIZE;
+                }
+
                 cli_dbgmsg("matcher_run: performing regex matching on full map: %u+%u(%u) >= %zu\n", offset, length, offset+length, map->len);
 
                 buffer = fmap_need_off_once(map, 0, map->len);
@@ -184,6 +196,15 @@ static inline int matcher_run(const struct cli_matcher *root,
             }
         }
         else {
+            /* check that scanned buffer does not exceed pcre maxfilesize limit */
+            maxfilesize = (uint64_t)cl_engine_get_num(ctx->engine, CL_ENGINE_PCRE_MAX_FILESIZE, &rc);
+            if (rc != CL_SUCCESS)
+                return rc;
+            if (maxfilesize && (length > maxfilesize)) {
+                cli_dbgmsg("cli_pcre_scanbuf: pcre max filesize (buf) exceeded (limit: %llu, needed: %u)\n", maxfilesize, length);
+                return CL_EMAXSIZE;
+            }
+
             cli_dbgmsg("matcher_run: performing regex matching on buffer with no map: %u+%u(%u)\n", offset, length, offset+length);
             /* scan the specified buffer */
             tmp = cli_pcre_scanbuf(buffer, length, root, mdata, acres, poffdata, ctx);

@@ -508,14 +508,7 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
         return CL_SUCCESS;
     }
 
-    /* check that scanned buffer does not exceed pcre filesize limit */
-    maxfilesize = (uint64_t)cl_engine_get_num(ctx->engine, CL_ENGINE_PCRE_MAX_FILESIZE, &rc);
-    if (rc != CL_SUCCESS)
-        return rc;
-    if (maxfilesize && (length > maxfilesize)) {
-        cli_dbgmsg("cli_pcre_scanbuf: pcre max filesize exceeded (limit: %llu, needed: %u)\n", maxfilesize, length);
-        return CL_EMAXSIZE;
-    }
+    /* NOTE: moved pcre maxfilesize limit check to caller [matcher_run] */
 
     for (i = 0; i < root->pcre_metas; ++i) {
         pm = root->pcre_metatable[i];
