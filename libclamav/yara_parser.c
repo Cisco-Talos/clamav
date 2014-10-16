@@ -499,6 +499,7 @@ YR_STRING* yr_parser_reduce_string_declaration(
 
 #if REAL_YARA
   RE_ERROR re_error;
+#endif
 
   if (str->flags & SIZED_STRING_FLAGS_NO_CASE)
     string_flags |= STRING_GFLAGS_NO_CASE;
@@ -514,7 +515,7 @@ YR_STRING* yr_parser_reduce_string_declaration(
 
   if (string_flags & STRING_GFLAGS_NO_CASE)
     re_flags |= RE_FLAGS_NO_CASE;
-#endif
+
   // The STRING_GFLAGS_SINGLE_MATCH flag indicates that finding
   // a single match for the string is enough. This is true in
   // most cases, except when the string count (#) and string offset (@)
@@ -656,6 +657,7 @@ YR_STRING* yr_parser_reduce_string_declaration(
           return NULL;
       } 
       memcpy(string->string, (char *)&str->c_string, str->length);
+      string->g_flags = string_flags;
   }
   STAILQ_INSERT_TAIL(&compiler->current_rule_strings, string, link);
 

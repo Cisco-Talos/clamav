@@ -2651,8 +2651,15 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
         while (!STAILQ_EMPTY(&rule->strings)) {
             string = STAILQ_FIRST(&rule->strings);
             STAILQ_REMOVE(&rule->strings, string, _yc_string, link);
-            printf ("    %s = \"%s\"\n", string->id, string->string);
-            free(string->id);
+            printf("    %s = \"%s\"", string->id, string->string);
+            if (STRING_IS_NO_CASE(string))
+                printf(" nocase");
+            if (STRING_IS_WIDE(string))
+                printf(" wide");
+            if (STRING_IS_ASCII(string))
+                printf(" ascii");
+            printf("\n");
+           free(string->id);
             free(string);            
         }
         free(rule->id);
