@@ -2621,6 +2621,7 @@ static int cli_loadopenioc(FILE *fs, const char *dbname, struct cl_engine *engin
 }
 
 #ifndef _WIN32
+#define YARATARGET "Target:0;"
 static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, unsigned int options, struct cli_dbio *dbio)
 {
     char buffer[FILEBUFF];
@@ -2635,29 +2636,101 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
     YR_COMPILER compiler;
     YR_RULE * rule;
     YR_STRING * string;
+    size_t nstrings, i, allstringsize, totsize;
+    char *rulestr, *ruledup;
+    unsigned int sigs;
+
+    printf("%s:%d called\n", __func__, __LINE__);
 
     compiler.last_result = ERROR_SUCCESS;
     STAILQ_INIT(&compiler.rules);
     STAILQ_INIT(&compiler.current_rule_strings);
 
     //    cli_errmsg("Loading yara signatures\n");
-#if 0 /* for compilation */
+#if 1 /* for compilation */
     yr_lex_parse_rules_file(fs, &compiler);
 #endif
     while (!STAILQ_EMPTY(&compiler.rules)) {
+        sigs=0;
+        printf("%s:%d called\n", __func__, __LINE__);
         rule = STAILQ_FIRST(&compiler.rules);
         STAILQ_REMOVE(&compiler.rules, rule, _yc_rule, link);
-        printf ("rule: %s+++++++++\n", rule->id);
+
+        /* First find out how long our dynamically-build ldb string should be */
+        allstringsize = 0;
+        totsize = strlen(rule->id) + 2 + strlen(YARATARGET);
+        STAILQ_FOREACH(string, &rule->strings, link) {
+            nstrings++;
+            allstringsize += strlen(string->string);
+        }
+
+        allstringsize *= 2; /* For converting to hex */
+        totsize += allstringsize;
+        totsize += (nstrings * 3); /* 3 for |; */
+        if (nstrings > 10)
+            totsize += (nstrings%10);
+
+        rulestr = cli_malloc(totsize);
+        if (!rulestr) {
+            free(rule->id);
+            free(rule);
+            rc = CL_EMEM;
+            break;
+        }
+
+        sprintf(rulestr, "%s;%s(", rule->id, YARATARGET);
+        for (i=0; i<nstrings; i++) {
+            size_t len=strlen(rulestr);
+            snprintf(rulestr+len, totsize-len, "%u%s", i, (i+1 == nstrings) ? "" : "|");
+        }
+
+        strcat(rulestr, ");");
+
         while (!STAILQ_EMPTY(&rule->strings)) {
             string = STAILQ_FIRST(&rule->strings);
             STAILQ_REMOVE(&rule->strings, string, _yc_string, link);
-            printf ("    %s = \"%s\"\n", string->id, string->string);
+
+            for (i=0; i < strlen(string->string); i++) {
+                size_t len = strlen(rulestr);
+                snprintf(rulestr+len, totsize-len, "%02x", string->string[i]);
+            }
+
+            if (!STAILQ_EMPTY(&rule->strings))
+                strcat(rulestr, ";");
+
             free(string->id);
-            free(string);            
+            free(string->string);
+            free(string);
         }
+
+        printf("[+] computed ldb: \"%s\"\n", rulestr);
+        ruledup = cli_malloc(strlen(rulestr)+1);
+        if (!ruledup) {
+            free(rulestr);
+            free(rule->id);
+            free(rule);
+            rc = CL_EMEM;
+            break;
+        }
+
+        strcpy(ruledup, rulestr);
+
+#if 0
+        rc = load_oneldb(rulestr,
+             engine->pua_cats && (options & CL_DB_PUA_MODE) && (options & (CL_DB_PUA_INCLUDE | CL_DB_PUA_EXCLUDE)),
+             engine, options, rule->id, line++, &sigs, 0, ruledup, NULL);
+#endif
+
+        printf("totsize: %zu\treal size: %zu\n", totsize, strlen(rulestr));
+        free(rulestr);
+        free(ruledup);
+
         free(rule->id);
         free(rule);
+        if (rc != CL_SUCCESS)
+            break;
     }
+
     return rc;
 }
 #endif
