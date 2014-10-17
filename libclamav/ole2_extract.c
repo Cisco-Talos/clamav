@@ -1323,7 +1323,7 @@ abort:
 
 #define WINUNICODE 0x04B0
 #define PROPCNTLIMIT 25
-#define PROPSTRLIMIT 128
+#define PROPSTRLIMIT 128 /* affects property strs, NOT sanitized strs (may result in a buffer allocating PROPSTRLIMIT*6) */
 
 #define sum16_endian_convert(v) le16_to_host((uint16_t)(v))
 #define sum32_endian_convert(v) le32_to_host((uint32_t)(v))
@@ -1436,6 +1436,7 @@ typedef struct propset_summary_entry {
 #define OLE2_CODEPAGE_ERROR_UNINITED     0x00000800
 #define OLE2_CODEPAGE_ERROR_INVALID      0x00001000
 #define OLE2_CODEPAGE_ERROR_INCOMPLETE   0x00002000
+#define OLE2_CODEPAGE_ERROR_OUTBUFTOOSMALL 0x00002000
 
 /* metadata structures */
 typedef struct summary_ctx {
@@ -1626,8 +1627,8 @@ ole2_convert_utf(summary_ctx_t *sctx, char *begin, size_t sz, const char *encodi
 #if HAVE_ICONV
     char *res=NULL;
     char *buf, *outbuf, *p1, *p2;
-    size_t inlen, outlen, nonrev;
-    int i;
+    size_t inlen, outlen, nonrev, sz2;
+    int i, try;
     iconv_t cd;
 
     buf = cli_calloc(1, sz);
@@ -1635,15 +1636,9 @@ ole2_convert_utf(summary_ctx_t *sctx, char *begin, size_t sz, const char *encodi
         return NULL;
 
     memcpy(buf, begin, sz);
-    p1 = buf;
 
-    p2 = outbuf = cli_calloc(1, sz+1);
-    if (!(outbuf)) {
-        free(buf);
-        return NULL;
-    }
-
-    inlen = outlen = sz;
+    outbuf = NULL;
+    inlen = sz;
 
     /* encoding lookup if not specified */
     if (!encoding) {
@@ -1660,7 +1655,6 @@ ole2_convert_utf(summary_ctx_t *sctx, char *begin, size_t sz, const char *encodi
             cli_warnmsg("ole2_convert_utf: could not locate codepage encoding for %d\n", sctx->codepage);
             sctx->flags |= OLE2_CODEPAGE_ERROR_NOTFOUND;
             free(buf);
-            free(outbuf);
             return NULL;
         }
     }
@@ -1671,26 +1665,42 @@ ole2_convert_utf(summary_ctx_t *sctx, char *begin, size_t sz, const char *encodi
         sctx->flags |= OLE2_CODEPAGE_ERROR_UNINITED;
     }
     else {
-        nonrev = iconv(cd, (char **)(&p1), &inlen, &p2, &outlen);
+        for (try = 1; try <= 3; ++try) {
+            p1 = buf;
 
-        if (errno == EILSEQ) {
-            /* input buffer contains invalid character for its encoding*/
-            sctx->flags |= OLE2_CODEPAGE_ERROR_INVALID;
-        }
-        else if (errno == EINVAL && nonrev == (size_t)-1) {
-            /* input buffer contains incomplete multibyte character */
-            sctx->flags |= OLE2_CODEPAGE_ERROR_INCOMPLETE;
-        }
-        else if (inlen != 0 || (errno == E2BIG && nonrev == (size_t)-1)) {
-            /*
-             * input buffer not fully translated or
-             * output buffer is not large enough to hold translation
-             * TODO - redefine buffer length?
-             *        currently just pass back what we have to caller
-             */
+            if (outbuf)
+                free(outbuf);
+            outlen = sz2 = (try*2) * sz;
+            p2 = outbuf = cli_calloc(1, sz2);
+            if (!outbuf) {
+                free(buf);
+                return NULL;
+            }
+
+            nonrev = iconv(cd, (char **)(&p1), &inlen, &p2, &outlen);
+
+            if (errno == EILSEQ) {
+                /* input buffer contains invalid character for its encoding*/
+                sctx->flags |= OLE2_CODEPAGE_ERROR_INVALID;
+                break;
+            }
+            else if (errno == EINVAL && nonrev == (size_t)-1) {
+                /* input buffer contains incomplete multibyte character */
+                sctx->flags |= OLE2_CODEPAGE_ERROR_INCOMPLETE;
+                break;
+            }
+            else if (inlen == 0) {
+                /* input buffer is fully translated */
+                break;
+            }
         }
 
-        outbuf[sz - outlen] = '\0';
+        if (inlen != 0 || (errno == E2BIG && nonrev == (size_t)-1)) {
+            /* buffer could not be fully translated */
+            sctx->flags |= OLE2_CODEPAGE_ERROR_OUTBUFTOOSMALL;
+        }
+
+        outbuf[sz2 - outlen] = '\0';
         res = strdup(outbuf);
     }
 
@@ -2386,6 +2396,9 @@ static int cli_ole2_summary_json_cleanup(summary_ctx_t *sctx, int retcode)
         }
         if (sctx->flags & OLE2_CODEPAGE_ERROR_INCOMPLETE) {
             cli_jsonstr(jarr, NULL, "OLE2_CODEPAGE_ERROR_INCOMPLETE");
+        }
+        if (sctx->flags & OLE2_CODEPAGE_ERROR_OUTBUFTOOSMALL) {
+            cli_jsonstr(jarr, NULL, "OLE2_CODEPAGE_ERROR_OUTBUFTOOSMALL");
         }
     }
 
