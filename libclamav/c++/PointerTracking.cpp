@@ -16,15 +16,19 @@
 #ifndef _WIN32
 
 #include "llvm/Analysis/ConstantFolding.h"
-#include "llvm/Analysis/Dominators.h"
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/Analysis/MemoryBuiltins.h"
 #include "llvm/Analysis/ValueTracking.h"
 #include "PointerTracking.h"
 #include "llvm/Analysis/ScalarEvolution.h"
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
+#if LLVM_VERSION < 35
 #include "llvm/Support/CallSite.h"
 #include "llvm/Support/InstIterator.h"
+#else
+#include "llvm/IR/CallSite.h"
+#include "llvm/IR/InstIterator.h"
+#endif
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Target/TargetLibraryInfo.h"
 
@@ -61,10 +65,18 @@ namespace llvm {
 };
 INITIALIZE_PASS_BEGIN(PointerTracking, "pointertracking",
                 "Track pointer bounds", false, true)
+#if LLVM_VERSION < 35
 INITIALIZE_PASS_DEPENDENCY(DominatorTree)
+#else
+INITIALIZE_PASS_DEPENDENCY(DominatorTreeWrapperPass)
+#endif
 INITIALIZE_PASS_DEPENDENCY(LoopInfo)
 INITIALIZE_PASS_DEPENDENCY(ScalarEvolution)
+#if LLVM_VERSION < 35
 INITIALIZE_PASS_DEPENDENCY(DominatorTree)
+#else
+INITIALIZE_PASS_DEPENDENCY(DominatorTreeWrapperPass)
+#endif
 INITIALIZE_PASS_END(PointerTracking, "pointertracking",
                 "Track pointer bounds", false, true)
 #endif
@@ -82,17 +94,28 @@ bool PointerTracking::runOnFunction(Function &F) {
   FF = &F;
 #if LLVM_VERSION < 32
   TD = getAnalysisIfAvailable<TargetData>();
-#else
+#elif LLVM_VERSION < 35
   TD = getAnalysisIfAvailable<DataLayout>();
+#else
+  DataLayoutPass *DLP = getAnalysisIfAvailable<DataLayoutPass>();
+  TD = DLP ? &DLP->getDataLayout() : 0;
 #endif
   SE = &getAnalysis<ScalarEvolution>();
   LI = &getAnalysis<LoopInfo>();
+#if LLVM_VERSION < 35
   DT = &getAnalysis<DominatorTree>();
+#else
+  DT = &getAnalysis<DominatorTreeWrapperPass>().getDomTree();
+#endif
   return false;
 }
 
 void PointerTracking::getAnalysisUsage(AnalysisUsage &AU) const {
+#if LLVM_VERSION < 35
   AU.addRequiredTransitive<DominatorTree>();
+#else
+  AU.addRequiredTransitive<DominatorTreeWrapperPass>();
+#endif
   AU.addRequiredTransitive<LoopInfo>();
   AU.addRequiredTransitive<ScalarEvolution>();
   AU.setPreservesAll();
