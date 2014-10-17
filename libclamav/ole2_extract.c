@@ -1661,7 +1661,7 @@ ole2_convert_utf(summary_ctx_t *sctx, char *begin, size_t sz, const char *encodi
 
     cd = iconv_open("UTF-8", encoding);
     if (cd == (iconv_t)(-1)) {
-        cli_errmsg("Could not initialize iconv\n");
+        cli_errmsg("ole2_convert_utf: could not initialize iconv\n");
         sctx->flags |= OLE2_CODEPAGE_ERROR_UNINITED;
     }
     else {
@@ -1680,23 +1680,26 @@ ole2_convert_utf(summary_ctx_t *sctx, char *begin, size_t sz, const char *encodi
             nonrev = iconv(cd, (char **)(&p1), &inlen, &p2, &outlen);
 
             if (errno == EILSEQ) {
-                /* input buffer contains invalid character for its encoding*/
+                cli_dbgmsg("ole2_convert_utf: input buffer contains invalid character for its encoding\n");
                 sctx->flags |= OLE2_CODEPAGE_ERROR_INVALID;
                 break;
             }
             else if (errno == EINVAL && nonrev == (size_t)-1) {
-                /* input buffer contains incomplete multibyte character */
+                cli_dbgmsg("ole2_convert_utf: input buffer contains incomplete multibyte character\n");
                 sctx->flags |= OLE2_CODEPAGE_ERROR_INCOMPLETE;
                 break;
             }
             else if (inlen == 0) {
-                /* input buffer is fully translated */
+                //cli_dbgmsg("ole2_convert_utf: input buffer is successfully translated\n");
                 break;
             }
+
+            cli_dbgmsg("ole2_convert_utf: outbuf is too small, resizing %llu -> %llu\n",
+                       (long long unsigned)((try*2) * sz), (long long unsigned)(((try+1)*2) * sz));
         }
 
         if (inlen != 0 || (errno == E2BIG && nonrev == (size_t)-1)) {
-            /* buffer could not be fully translated */
+            cli_dbgmsg("ole2_convert_utf: buffer could not be fully translated\n");
             sctx->flags |= OLE2_CODEPAGE_ERROR_OUTBUFTOOSMALL;
         }
 
