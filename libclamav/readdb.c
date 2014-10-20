@@ -2640,6 +2640,9 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
     char *rulestr, *ruledup;
     unsigned int sigs;
 
+    if((rc = cli_initroots(engine, options)))
+        return rc;
+
     printf("%s:%d called\n", __func__, __LINE__);
 
     compiler.last_result = ERROR_SUCCESS;
@@ -2669,6 +2672,7 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
         totsize += (nstrings * 3); /* 3 for |; */
         if (nstrings > 10)
             totsize += (nstrings%10);
+        totsize++;
 
         rulestr = cli_malloc(totsize);
         if (!rulestr) {
@@ -2715,7 +2719,7 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
 
         strcpy(ruledup, rulestr);
 
-#if 0
+#if 1
         rc = load_oneldb(rulestr,
              engine->pua_cats && (options & CL_DB_PUA_MODE) && (options & (CL_DB_PUA_INCLUDE | CL_DB_PUA_EXCLUDE)),
              engine, options, rule->id, line++, &sigs, 0, ruledup, NULL);
