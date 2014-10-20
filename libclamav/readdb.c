@@ -1030,194 +1030,208 @@ struct lsig_attrib {
 /* TODO: rework this */
 static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
 {
-	struct lsig_attrib attrtab[] = {
-#define ATTRIB_TOKENS	9
-	    { "Target",		    CLI_TDB_UINT,	(void **) &tdb->target	    },
-	    { "Engine",		    CLI_TDB_RANGE,	(void **) &tdb->engine	    },
+    struct lsig_attrib attrtab[] = {
+#define ATTRIB_TOKENS   9
+        { "Target",         CLI_TDB_UINT,   (void **) &tdb->target      },
+        { "Engine",         CLI_TDB_RANGE,  (void **) &tdb->engine      },
 
-	    { "FileSize",	    CLI_TDB_RANGE,	(void **) &tdb->filesize    },
-	    { "EntryPoint",	    CLI_TDB_RANGE,	(void **) &tdb->ep	    },
-	    { "NumberOfSections",   CLI_TDB_RANGE,	(void **) &tdb->nos	    },
+        { "FileSize",       CLI_TDB_RANGE,  (void **) &tdb->filesize    },
+        { "EntryPoint",     CLI_TDB_RANGE,  (void **) &tdb->ep      },
+        { "NumberOfSections",   CLI_TDB_RANGE,  (void **) &tdb->nos     },
 
-	    { "IconGroup1",	    CLI_TDB_STR,	(void **) &tdb->icongrp1    },
-	    { "IconGroup2",	    CLI_TDB_STR,	(void **) &tdb->icongrp2    },
+        { "IconGroup1",     CLI_TDB_STR,    (void **) &tdb->icongrp1    },
+        { "IconGroup2",     CLI_TDB_STR,    (void **) &tdb->icongrp2    },
 
-	    { "Container",	    CLI_TDB_FTYPE,	(void **) &tdb->container   },
-	    { "HandlerType",	    CLI_TDB_FTYPE,	(void **) &tdb->handlertype },
+        { "Container",      CLI_TDB_FTYPE,  (void **) &tdb->container   },
+        { "HandlerType",        CLI_TDB_FTYPE,  (void **) &tdb->handlertype },
 /*
-	    { "SectOff",    CLI_TDB_RANGE2,	(void **) &tdb->sectoff	    },
-	    { "SectRVA",    CLI_TDB_RANGE2,	(void **) &tdb->sectrva	    },
-	    { "SectVSZ",    CLI_TDB_RANGE2,	(void **) &tdb->sectvsz	    },
-	    { "SectRAW",    CLI_TDB_RANGE2,	(void **) &tdb->sectraw	    },
-	    { "SectRSZ",    CLI_TDB_RANGE2,	(void **) &tdb->sectrsz	    },
-	    { "SectURVA",   CLI_TDB_RANGE2,	(void **) &tdb->secturva    },
-	    { "SectUVSZ",   CLI_TDB_RANGE2,	(void **) &tdb->sectuvsz    },
-	    { "SectURAW",   CLI_TDB_RANGE2,	(void **) &tdb->secturaw    },
-	    { "SectURSZ",   CLI_TDB_RANGE2,	(void **) &tdb->sectursz    },
+        { "SectOff",    CLI_TDB_RANGE2, (void **) &tdb->sectoff     },
+        { "SectRVA",    CLI_TDB_RANGE2, (void **) &tdb->sectrva     },
+        { "SectVSZ",    CLI_TDB_RANGE2, (void **) &tdb->sectvsz     },
+        { "SectRAW",    CLI_TDB_RANGE2, (void **) &tdb->sectraw     },
+        { "SectRSZ",    CLI_TDB_RANGE2, (void **) &tdb->sectrsz     },
+        { "SectURVA",   CLI_TDB_RANGE2, (void **) &tdb->secturva    },
+        { "SectUVSZ",   CLI_TDB_RANGE2, (void **) &tdb->sectuvsz    },
+        { "SectURAW",   CLI_TDB_RANGE2, (void **) &tdb->secturaw    },
+        { "SectURSZ",   CLI_TDB_RANGE2, (void **) &tdb->sectursz    },
 */
-	    { NULL,	    0,			NULL,			    }
-	};
-	struct lsig_attrib *apt;
-	char *tokens[ATTRIB_TOKENS], *pt, *pt2;
-	unsigned int v1, v2, v3, i, j, tokens_count, have_newext = 0;
-	uint32_t cnt, off[ATTRIB_TOKENS];
+        { NULL,     0,          NULL,               }
+    };
+    struct lsig_attrib *apt;
+    char *tokens[ATTRIB_TOKENS], *pt, *pt2;
+    unsigned int v1, v2, v3, i, j, tokens_count, have_newext = 0;
+    uint32_t cnt, off[ATTRIB_TOKENS];
 
 
     tokens_count = cli_strtokenize(attribs, ',', ATTRIB_TOKENS, (const char **) tokens);
 
     for(i = 0; i < tokens_count; i++) {
-	if(!(pt = strchr(tokens[i], ':'))) {
-	    cli_errmsg("lsigattribs: Incorrect format of attribute '%s'\n", tokens[i]);
-	    return -1;
-	}
-	*pt++ = 0;
+        if(!(pt = strchr(tokens[i], ':'))) {
+            cli_errmsg("lsigattribs: Incorrect format of attribute '%s'\n", tokens[i]);
+            return -1;
+        }
+        *pt++ = 0;
 
-	apt = NULL;
-	for(j = 0; attrtab[j].name; j++) {
-	    if(!strcmp(attrtab[j].name, tokens[i])) {
-		apt = &attrtab[j];
-		break;
-	    }
-	}
+        apt = NULL;
+        for(j = 0; attrtab[j].name; j++) {
+            if(!strcmp(attrtab[j].name, tokens[i])) {
+                apt = &attrtab[j];
+                break;
+            }
+        }
 
-	if(!apt) {
-	    cli_dbgmsg("lsigattribs: Unknown attribute name '%s'\n", tokens[i]);
-	    return 1;
-	}
+        if(!apt) {
+            cli_dbgmsg("lsigattribs: Unknown attribute name '%s'\n", tokens[i]);
+            return 1;
+        }
 
-	if(!strcmp(apt->name, "Engine")) {
-	    if(i) {
-		cli_errmsg("lsigattribs: For backward compatibility the Engine attribute must be on the first position\n");
-		return -1;
-	    }
-	} else if(strcmp(apt->name, "Target"))
-	    have_newext = 1;
+        if(!strcmp(apt->name, "Engine")) {
+            if(i) {
+                cli_errmsg("lsigattribs: For backward compatibility the Engine attribute must be on the first position\n");
+                return -1;
+            }
+        } else if(strcmp(apt->name, "Target")) {
+            have_newext = 1;
+        }
 
-	switch(apt->type) {
-	    case CLI_TDB_UINT:
-		if(!cli_isnumber(pt)) {
-		    cli_errmsg("lsigattribs: Invalid argument for %s\n", tokens[i]);
-		    return -1;
-		}
-		off[i] = cnt = tdb->cnt[CLI_TDB_UINT]++;
-		tdb->val = (uint32_t *) mpool_realloc2(tdb->mempool, tdb->val, tdb->cnt[CLI_TDB_UINT] * sizeof(uint32_t));
-		if(!tdb->val) {
-		    tdb->cnt[CLI_TDB_UINT] = 0;
-		    return -1;
-		}
-		tdb->val[cnt] = atoi(pt);
-		break;
+        switch(apt->type) {
+        case CLI_TDB_UINT:
+            if(!cli_isnumber(pt)) {
+                cli_errmsg("lsigattribs: Invalid argument for %s\n", tokens[i]);
+                return -1;
+            }
 
-	    case CLI_TDB_FTYPE:
-		if((v1 = cli_ftcode(pt)) == CL_TYPE_ERROR) {
-		    cli_dbgmsg("lsigattribs: Unknown file type in %s\n", tokens[i]);
-		    return 1; /* skip */
-		}
-		off[i] = cnt = tdb->cnt[CLI_TDB_UINT]++;
-		tdb->val = (uint32_t *) mpool_realloc2(tdb->mempool, tdb->val, tdb->cnt[CLI_TDB_UINT] * sizeof(uint32_t));
-		if(!tdb->val) {
-		    tdb->cnt[CLI_TDB_UINT] = 0;
-		    return -1;
-		}
-		tdb->val[cnt] = v1;
-		break;
+            off[i] = cnt = tdb->cnt[CLI_TDB_UINT]++;
+            tdb->val = (uint32_t *) mpool_realloc2(tdb->mempool, tdb->val, tdb->cnt[CLI_TDB_UINT] * sizeof(uint32_t));
+            if(!tdb->val) {
+                tdb->cnt[CLI_TDB_UINT] = 0;
+                return -1;
+            }
 
-	    case CLI_TDB_RANGE:
-		if(!(pt2 = strchr(pt, '-'))) {
-		    cli_errmsg("lsigattribs: Incorrect parameters in '%s'\n", tokens[i]);
-		    return -1;
-		}
-		*pt2++ = 0;
-		off[i] = cnt = tdb->cnt[CLI_TDB_RANGE];
-		tdb->cnt[CLI_TDB_RANGE] += 2;
-		tdb->range = (uint32_t *) mpool_realloc2(tdb->mempool, tdb->range, tdb->cnt[CLI_TDB_RANGE] * sizeof(uint32_t));
-		if(!tdb->range) {
-		    tdb->cnt[CLI_TDB_RANGE] = 0;
-		    return -1;
-		}
-		if(!cli_isnumber(pt) || !cli_isnumber(pt2)) {
-		    cli_errmsg("lsigattribs: Invalid argument for %s\n", tokens[i]);
-		    return -1;
-		}
-		tdb->range[cnt] = atoi(pt);
-		tdb->range[cnt + 1] = atoi(pt2);
-		break;
+            tdb->val[cnt] = atoi(pt);
+            break;
 
-	    case CLI_TDB_RANGE2:
-		if(!strchr(pt, '-') || !strchr(pt, '.')) {
-		    cli_errmsg("lsigattribs: Incorrect parameters in '%s'\n", tokens[i]);
-		    return -1;
-		}
-		off[i] = cnt = tdb->cnt[CLI_TDB_RANGE];
-		tdb->cnt[CLI_TDB_RANGE] += 3;
-		tdb->range = (uint32_t *) mpool_realloc2(tdb->mempool, tdb->range, tdb->cnt[CLI_TDB_RANGE] * sizeof(uint32_t));
-		if(!tdb->range) {
-		    tdb->cnt[CLI_TDB_RANGE] = 0;
-		    return -1;
-		}
-		if(sscanf(pt, "%u.%u-%u", &v1, &v2, &v3) != 3) {
-		    cli_errmsg("lsigattribs: Can't parse parameters in '%s'\n", tokens[i]);
-		    return -1;
-		}
-		tdb->range[cnt] = (uint32_t) v1;
-		tdb->range[cnt + 1] = (uint32_t) v2;
-		tdb->range[cnt + 2] = (uint32_t) v3;
-		break;
+        case CLI_TDB_FTYPE:
+            if((v1 = cli_ftcode(pt)) == CL_TYPE_ERROR) {
+                cli_dbgmsg("lsigattribs: Unknown file type in %s\n", tokens[i]);
+                return 1; /* skip */
+            }
 
-	    case CLI_TDB_STR:
-		off[i] = cnt = tdb->cnt[CLI_TDB_STR];
-		tdb->cnt[CLI_TDB_STR] += strlen(pt) + 1;
-		tdb->str = (char *) mpool_realloc2(tdb->mempool, tdb->str, tdb->cnt[CLI_TDB_STR] * sizeof(char));
-		if(!tdb->str) {
-		    cli_errmsg("lsigattribs: Can't allocate memory for tdb->str\n");
-		    return -1;
-		}
-		memcpy(&tdb->str[cnt], pt, strlen(pt));
-		tdb->str[tdb->cnt[CLI_TDB_STR] - 1] = 0;
-		break;
+            off[i] = cnt = tdb->cnt[CLI_TDB_UINT]++;
+            tdb->val = (uint32_t *) mpool_realloc2(tdb->mempool, tdb->val, tdb->cnt[CLI_TDB_UINT] * sizeof(uint32_t));
+            if(!tdb->val) {
+                tdb->cnt[CLI_TDB_UINT] = 0;
+                return -1;
+            }
 
-	    default:
-		/* All known TDB types handled above, skip unknown */
-		cli_dbgmsg("lsigattribs: Unknown attribute type '%u'\n", apt->type);
-		return 1; /* +1 = skip */
-	}
+            tdb->val[cnt] = v1;
+            break;
+
+        case CLI_TDB_RANGE:
+            if(!(pt2 = strchr(pt, '-'))) {
+                cli_errmsg("lsigattribs: Incorrect parameters in '%s'\n", tokens[i]);
+                return -1;
+            }
+
+            *pt2++ = 0;
+            off[i] = cnt = tdb->cnt[CLI_TDB_RANGE];
+            tdb->cnt[CLI_TDB_RANGE] += 2;
+            tdb->range = (uint32_t *) mpool_realloc2(tdb->mempool, tdb->range, tdb->cnt[CLI_TDB_RANGE] * sizeof(uint32_t));
+            if(!tdb->range) {
+                tdb->cnt[CLI_TDB_RANGE] = 0;
+                return -1;
+            }
+
+            if(!cli_isnumber(pt) || !cli_isnumber(pt2)) {
+                cli_errmsg("lsigattribs: Invalid argument for %s\n", tokens[i]);
+                return -1;
+            }
+
+            tdb->range[cnt] = atoi(pt);
+            tdb->range[cnt + 1] = atoi(pt2);
+            break;
+
+        case CLI_TDB_RANGE2:
+            if(!strchr(pt, '-') || !strchr(pt, '.')) {
+                cli_errmsg("lsigattribs: Incorrect parameters in '%s'\n", tokens[i]);
+                return -1;
+            }
+
+            off[i] = cnt = tdb->cnt[CLI_TDB_RANGE];
+            tdb->cnt[CLI_TDB_RANGE] += 3;
+            tdb->range = (uint32_t *) mpool_realloc2(tdb->mempool, tdb->range, tdb->cnt[CLI_TDB_RANGE] * sizeof(uint32_t));
+            if(!tdb->range) {
+                tdb->cnt[CLI_TDB_RANGE] = 0;
+                return -1;
+            }
+
+            if(sscanf(pt, "%u.%u-%u", &v1, &v2, &v3) != 3) {
+                cli_errmsg("lsigattribs: Can't parse parameters in '%s'\n", tokens[i]);
+                return -1;
+            }
+
+            tdb->range[cnt] = (uint32_t) v1;
+            tdb->range[cnt + 1] = (uint32_t) v2;
+            tdb->range[cnt + 2] = (uint32_t) v3;
+            break;
+
+        case CLI_TDB_STR:
+            off[i] = cnt = tdb->cnt[CLI_TDB_STR];
+            tdb->cnt[CLI_TDB_STR] += strlen(pt) + 1;
+            tdb->str = (char *) mpool_realloc2(tdb->mempool, tdb->str, tdb->cnt[CLI_TDB_STR] * sizeof(char));
+            if(!tdb->str) {
+                cli_errmsg("lsigattribs: Can't allocate memory for tdb->str\n");
+                return -1;
+            }
+            memcpy(&tdb->str[cnt], pt, strlen(pt));
+            tdb->str[tdb->cnt[CLI_TDB_STR] - 1] = 0;
+            break;
+
+        default:
+            /* All known TDB types handled above, skip unknown */
+            cli_dbgmsg("lsigattribs: Unknown attribute type '%u'\n", apt->type);
+            return 1; /* +1 = skip */
+        }
     }
 
     if(!i) {
-	cli_errmsg("lsigattribs: Empty TDB\n");
-	return -1;
+        cli_errmsg("lsigattribs: Empty TDB\n");
+        return -1;
     }
 
     for(i = 0; i < tokens_count; i++) {
-	for(j = 0; attrtab[j].name; j++) {
-	    if(!strcmp(attrtab[j].name, tokens[i])) {
-		apt = &attrtab[j];
-		break;
-	    }
-	}
-	if(!apt)
-	    continue;
-	switch(apt->type) {
-	    case CLI_TDB_UINT:
-	    case CLI_TDB_FTYPE:
-		*apt->pt = (uint32_t *) &tdb->val[off[i]];
-		break;
+        for(j = 0; attrtab[j].name; j++) {
+            if(!strcmp(attrtab[j].name, tokens[i])) {
+                apt = &attrtab[j];
+                break;
+            }
+        }
 
-	    case CLI_TDB_RANGE:
-	    case CLI_TDB_RANGE2:
-		*apt->pt = (uint32_t *) &tdb->range[off[i]];
-		break;
+        if(!apt)
+            continue;
 
-	    case CLI_TDB_STR:
-		*apt->pt = (char *) &tdb->str[off[i]];
-		break;
-	}
+        switch(apt->type) {
+        case CLI_TDB_UINT:
+        case CLI_TDB_FTYPE:
+            *apt->pt = (uint32_t *) &tdb->val[off[i]];
+            break;
+
+        case CLI_TDB_RANGE:
+        case CLI_TDB_RANGE2:
+            *apt->pt = (uint32_t *) &tdb->range[off[i]];
+            break;
+
+        case CLI_TDB_STR:
+            *apt->pt = (char *) &tdb->str[off[i]];
+            break;
+        }
     }
 
     if(have_newext && (!tdb->engine || tdb->engine[0] < 51)) {
-	cli_errmsg("lsigattribs: For backward compatibility all signatures using new attributes must have the Engine attribute present and set to min_level of at least 51 (0.96)\n");
-	return -1;
+        cli_errmsg("lsigattribs: For backward compatibility all signatures using new attributes must have the Engine attribute present and set to min_level of at least 51 (0.96)\n");
+        return -1;
     }
+
     return 0;
 }
 
@@ -1419,49 +1433,53 @@ static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsig
 
 static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio, const char *dbname)
 {
-	char buffer[CLI_DEFAULT_LSIG_BUFSIZE + 1], *buffer_cpy = NULL;
-	unsigned int line = 0, sigs = 0;
-	int ret;
-
+    char buffer[CLI_DEFAULT_LSIG_BUFSIZE + 1], *buffer_cpy = NULL;
+    unsigned int line = 0, sigs = 0;
+    int ret;
 
     if((ret = cli_initroots(engine, options)))
-	return ret;
+        return ret;
 
-    if(engine->ignored)
-	if(!(buffer_cpy = cli_malloc(sizeof(buffer)))) {
-        cli_errmsg("cli_loadldb: Can't allocate memory for buffer_cpy\n");
-	    return CL_EMEM;
+    if(engine->ignored) {
+        if(!(buffer_cpy = cli_malloc(sizeof(buffer)))) {
+            cli_errmsg("cli_loadldb: Can't allocate memory for buffer_cpy\n");
+            return CL_EMEM;
+        }
     }
+
     while(cli_dbgets(buffer, sizeof(buffer), fs, dbio)) {
-	line++;
-	if(buffer[0] == '#')
-	    continue;
-	sigs++;
-	cli_chomp(buffer);
+        line++;
+        if(buffer[0] == '#')
+            continue;
 
-	if(engine->ignored)
-	    strcpy(buffer_cpy, buffer);
-	ret = load_oneldb(buffer,
-			  engine->pua_cats && (options & CL_DB_PUA_MODE) && (options & (CL_DB_PUA_INCLUDE | CL_DB_PUA_EXCLUDE)),
-			  engine, options, dbname, line, &sigs, 0, buffer_cpy, NULL);
-	if (ret)
-	    break;
+        sigs++;
+        cli_chomp(buffer);
+
+        if(engine->ignored)
+            strcpy(buffer_cpy, buffer);
+
+        ret = load_oneldb(buffer,
+                  engine->pua_cats && (options & CL_DB_PUA_MODE) && (options & (CL_DB_PUA_INCLUDE | CL_DB_PUA_EXCLUDE)),
+                  engine, options, dbname, line, &sigs, 0, buffer_cpy, NULL);
+        if (ret)
+            break;
     }
+
     if(engine->ignored)
-	free(buffer_cpy);
+        free(buffer_cpy);
 
     if(!line) {
-	cli_errmsg("Empty database file\n");
-	return CL_EMALFDB;
+        cli_errmsg("Empty database file\n");
+        return CL_EMALFDB;
     }
 
     if(ret) {
-	cli_errmsg("Problem parsing database at line %u\n", line);
-	return ret;
+        cli_errmsg("Problem parsing database at line %u\n", line);
+        return ret;
     }
 
     if(signo)
-	*signo += sigs;
+        *signo += sigs;
 
     return CL_SUCCESS;
 }
