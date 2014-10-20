@@ -2668,8 +2668,6 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
     if((rc = cli_initroots(engine, options)))
         return rc;
 
-    printf("%s:%d called\n", __func__, __LINE__);
-
     compiler.last_result = ERROR_SUCCESS;
     STAILQ_INIT(&compiler.rules);
     STAILQ_INIT(&compiler.current_rule_strings);
@@ -2680,7 +2678,7 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
 #endif
     while (!STAILQ_EMPTY(&compiler.rules)) {
         sigs=0;
-        printf("%s:%d called\n", __func__, __LINE__);
+        nstrings=0;
         rule = STAILQ_FIRST(&compiler.rules);
         STAILQ_REMOVE(&compiler.rules, rule, _yc_rule, link);
 
