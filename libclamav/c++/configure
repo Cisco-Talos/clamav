@@ -15670,10 +15670,10 @@ elif test $llvmver_test -lt 290; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: no ($llvmver)" >&5
 $as_echo "no ($llvmver)" >&6; }
     as_fn_error $? "LLVM >= 2.9 required, but \"$llvmver\"($llvmver_test) found" "$LINENO" 5
-elif test $llvmver_test -gt 342; then
+elif test $llvmver_test -ge 360; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: no ($llvmver)" >&5
 $as_echo "no ($llvmver)" >&6; }
-    as_fn_error $? "LLVM <= 3.4.2 required, but \"$llvmver\"($llvmver_test) found" "$LINENO" 5
+    as_fn_error $? "LLVM < 3.6 required, but \"$llvmver\"($llvmver_test) found" "$LINENO" 5
 else
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: ok ($llvmver)" >&5
 $as_echo "ok ($llvmver)" >&6; }
