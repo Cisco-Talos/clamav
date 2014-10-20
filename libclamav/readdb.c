@@ -1253,47 +1253,50 @@ static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsig
 
     tokens_count = cli_strtokenize(buffer, ';', LDB_TOKENS + 1, (const char **) tokens);
     if(tokens_count < 4) {
-	return CL_EMALFDB;
+        return CL_EMALFDB;
     }
+
     virname = tokens[0];
     logic = tokens[2];
 
     if (chkpua && cli_chkpua(virname, engine->pua_cats, options))
-	    return CL_SUCCESS;
+        return CL_SUCCESS;
 
     if (engine->ignored && cli_chkign(engine->ignored, virname, buffer_cpy ? buffer_cpy : virname)) {
-	if(skip)
-	    *skip = 1;
-	return CL_SUCCESS;
+        if(skip)
+            *skip = 1;
+        return CL_SUCCESS;
     }
 
     if(engine->cb_sigload && engine->cb_sigload("ldb", virname, ~options & CL_DB_OFFICIAL, engine->cb_sigload_ctx)) {
-	cli_dbgmsg("cli_loadldb: skipping %s due to callback\n", virname);
-	(*sigs)--;
-	return CL_SUCCESS;
+        cli_dbgmsg("cli_loadldb: skipping %s due to callback\n", virname);
+        (*sigs)--;
+        return CL_SUCCESS;
     }
 
     subsigs = cli_ac_chklsig(logic, logic + strlen(logic), NULL, NULL, NULL, 1);
     if(subsigs == -1) {
-	return CL_EMALFDB;
+        return CL_EMALFDB;
     }
+
     subsigs++;
     if(subsigs > 64) {
-	cli_errmsg("cli_loadldb: Broken logical expression or too many subsignatures\n");
-	return CL_EMALFDB;
+        cli_errmsg("cli_loadldb: Broken logical expression or too many subsignatures\n");
+        return CL_EMALFDB;
     }
+
     if (!line) {
-	/* This is a logical signature from the bytecode, we need all
-	 * subsignatures, even if not referenced from the logical expression */
-	if (subsigs > tokens_count-3) {
-	    cli_errmsg("load_oneldb: Too many subsignatures: %u (max %u)\n",
-		       subsigs, tokens_count-3);
-	    return CL_EMALFDB;
-	}
-	subsigs = tokens_count-3;
+        /* This is a logical signature from the bytecode, we need all
+         * subsignatures, even if not referenced from the logical expression */
+        if (subsigs > tokens_count-3) {
+            cli_errmsg("load_oneldb: Too many subsignatures: %u (max %u)\n",
+                   subsigs, tokens_count-3);
+            return CL_EMALFDB;
+        }
+        subsigs = tokens_count-3;
     } else if(subsigs != tokens_count - 3) {
-	cli_errmsg("cli_loadldb: The number of subsignatures (== %u) doesn't match the IDs in the logical expression (== %u)\n", tokens_count - 3, subsigs);
-	return CL_EMALFDB;
+        cli_errmsg("cli_loadldb: The number of subsignatures (== %u) doesn't match the IDs in the logical expression (== %u)\n", tokens_count - 3, subsigs);
+        return CL_EMALFDB;
     }
 
     /* TDB */
@@ -1302,66 +1305,66 @@ static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsig
     tdb.mempool = engine->mempool;
 #endif
     if((ret = lsigattribs(tokens[1], &tdb))) {
-	FREE_TDB(tdb);
-	if(ret == 1) {
-	    cli_dbgmsg("cli_loadldb: Not supported attribute(s) in logical signature for %s, skipping\n", virname);
-	    (*sigs)--;
-	    return CL_SUCCESS;
-	}
-	return CL_EMALFDB;
+        FREE_TDB(tdb);
+        if(ret == 1) {
+            cli_dbgmsg("cli_loadldb: Not supported attribute(s) in logical signature for %s, skipping\n", virname);
+            (*sigs)--;
+            return CL_SUCCESS;
+        }
+        return CL_EMALFDB;
     }
 
     if(tdb.engine) {
-	if(tdb.engine[0] > cl_retflevel()) {
-	    cli_dbgmsg("cli_loadldb: Signature for %s not loaded (required f-level: %u)\n", virname, tdb.engine[0]);
-	    FREE_TDB(tdb);
-	    (*sigs)--;
-	    return CL_SUCCESS;
-	} else if(tdb.engine[1] < cl_retflevel()) {
-	    FREE_TDB(tdb);
-	    (*sigs)--;
-	    return CL_SUCCESS;
-	}
+        if(tdb.engine[0] > cl_retflevel()) {
+            cli_dbgmsg("cli_loadldb: Signature for %s not loaded (required f-level: %u)\n", virname, tdb.engine[0]);
+            FREE_TDB(tdb);
+            (*sigs)--;
+            return CL_SUCCESS;
+        } else if(tdb.engine[1] < cl_retflevel()) {
+            FREE_TDB(tdb);
+            (*sigs)--;
+            return CL_SUCCESS;
+        }
     }
 
     if(!tdb.target) {
-	cli_errmsg("cli_loadldb: No target specified in TDB\n");
-	FREE_TDB(tdb);
-	return CL_EMALFDB;
+        cli_errmsg("cli_loadldb: No target specified in TDB\n");
+        FREE_TDB(tdb);
+        return CL_EMALFDB;
     } else if(tdb.target[0] >= CLI_MTARGETS) {
-	cli_dbgmsg("cli_loadldb: Not supported target type in logical signature for %s, skipping\n", virname);
-	FREE_TDB(tdb);
-	(*sigs)--;
-	return CL_SUCCESS;
+        cli_dbgmsg("cli_loadldb: Not supported target type in logical signature for %s, skipping\n", virname);
+        FREE_TDB(tdb);
+        (*sigs)--;
+        return CL_SUCCESS;
     }
 
     if((tdb.icongrp1 || tdb.icongrp2) && tdb.target[0] != 1) {
-	cli_errmsg("cli_loadldb: IconGroup is only supported in PE (target 1) signatures\n");
-	FREE_TDB(tdb);
-	return CL_EMALFDB;
+        cli_errmsg("cli_loadldb: IconGroup is only supported in PE (target 1) signatures\n");
+        FREE_TDB(tdb);
+        return CL_EMALFDB;
     }
 
     if((tdb.ep || tdb.nos) && tdb.target[0] != 1 && tdb.target[0] != 6 && tdb.target[0] != 9) {
-	cli_errmsg("cli_loadldb: EntryPoint/NumberOfSections is only supported in PE/ELF/Mach-O signatures\n");
-	FREE_TDB(tdb);
-	return CL_EMALFDB;
+        cli_errmsg("cli_loadldb: EntryPoint/NumberOfSections is only supported in PE/ELF/Mach-O signatures\n");
+        FREE_TDB(tdb);
+        return CL_EMALFDB;
     }
 
     root = engine->root[tdb.target[0]];
 
     lsig = (struct cli_ac_lsig *) mpool_calloc(engine->mempool, 1, sizeof(struct cli_ac_lsig));
     if(!lsig) {
-	cli_errmsg("cli_loadldb: Can't allocate memory for lsig\n");
-	FREE_TDB(tdb);
-	return CL_EMEM;
+        cli_errmsg("cli_loadldb: Can't allocate memory for lsig\n");
+        FREE_TDB(tdb);
+        return CL_EMEM;
     }
 
     lsig->logic = cli_mpool_strdup(engine->mempool, logic);
     if(!lsig->logic) {
-	cli_errmsg("cli_loadldb: Can't allocate memory for lsig->logic\n");
-	FREE_TDB(tdb);
-	mpool_free(engine->mempool, lsig);
-	return CL_EMEM;
+        cli_errmsg("cli_loadldb: Can't allocate memory for lsig->logic\n");
+        FREE_TDB(tdb);
+        mpool_free(engine->mempool, lsig);
+        return CL_EMEM;
     }
 
     lsigid[0] = lsig->id = root->ac_lsigs;
@@ -1369,12 +1372,13 @@ static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsig
     root->ac_lsigs++;
     newtable = (struct cli_ac_lsig **) mpool_realloc(engine->mempool, root->ac_lsigtable, root->ac_lsigs * sizeof(struct cli_ac_lsig *));
     if(!newtable) {
-	root->ac_lsigs--;
-	cli_errmsg("cli_loadldb: Can't realloc root->ac_lsigtable\n");
-	FREE_TDB(tdb);
-	mpool_free(engine->mempool, lsig);
-	return CL_EMEM;
+        root->ac_lsigs--;
+        cli_errmsg("cli_loadldb: Can't realloc root->ac_lsigtable\n");
+        FREE_TDB(tdb);
+        mpool_free(engine->mempool, lsig);
+        return CL_EMEM;
     }
+
     /* 0 marks no bc, we can't use a pointer to bc, since that is
      * realloced/moved during load */
     lsig->bc_idx = bc_idx;
@@ -1383,29 +1387,32 @@ static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsig
     tdb.subsigs = subsigs;
 
     for(i = 0; i < subsigs; i++) {
-	lsigid[1] = i;
-	sig = tokens[3 + i];
+        lsigid[1] = i;
+        sig = tokens[3 + i];
 
-	if((pt = strchr(tokens[3 + i], ':'))) {
-	    *pt = 0;
-	    sig = ++pt;
-	    offset = tokens[3 + i];
-	} else {
-	    offset = "*";
-	    sig = tokens[3 + i];
-	}
+        if((pt = strchr(tokens[3 + i], ':'))) {
+            *pt = 0;
+            sig = ++pt;
+            offset = tokens[3 + i];
+        } else {
+            offset = "*";
+            sig = tokens[3 + i];
+        }
 
-	if((ret = cli_parse_add(root, virname, sig, 0, 0, offset, target, lsigid, options)))
-	    return ret;
-	if(sig[0] == '$' && i) {
-	    /* allow mapping from lsig back to pattern for macros */
-	    if (!tdb.macro_ptids)
-		tdb.macro_ptids = mpool_calloc(root->mempool, subsigs, sizeof(*tdb.macro_ptids));
-	    if (!tdb.macro_ptids)
-		return CL_EMEM;
-	    tdb.macro_ptids[i-1] = root->ac_patterns-1;
-	}
+        if((ret = cli_parse_add(root, virname, sig, 0, 0, offset, target, lsigid, options)))
+            return ret;
+
+        if(sig[0] == '$' && i) {
+            /* allow mapping from lsig back to pattern for macros */
+            if (!tdb.macro_ptids)
+                tdb.macro_ptids = mpool_calloc(root->mempool, subsigs, sizeof(*tdb.macro_ptids));
+            if (!tdb.macro_ptids)
+                return CL_EMEM;
+
+            tdb.macro_ptids[i-1] = root->ac_patterns-1;
+        }
     }
+
     memcpy(&lsig->tdb, &tdb, sizeof(tdb));
     return CL_SUCCESS;
 }
