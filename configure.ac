@@ -20,7 +20,7 @@ dnl   MA 02110-1301, USA.
 AC_PREREQ([2.59])
 dnl For a release change [devel] to the real version [0.xy]
 dnl also change VERSION below
-AC_INIT([ClamAV], [0.98.5-rc1], [http://bugs.clamav.net/], [clamav], [http://www.clamav.net/])
+AC_INIT([ClamAV], [0.98.5-rc2], [http://bugs.clamav.net/], [clamav], [http://www.clamav.net/])
 
 AH_BOTTOM([#include "platform.h"])
 dnl put configure auxiliary into config
@@ -215,14 +215,21 @@ have_jit="no"
 if test "$subdirfailed" = "no"; then
     have_jit="yes"
 fi
-CL_MSG_STATUS([jit         ],[$have_jit],[$enable_llvm])
+CL_MSG_STATUS([llvm        ],[$have_jit, from $system_llvm],[$enable_llvm])
 CL_MSG_STATUS([mempool     ],[$have_mempool],[$enable_mempool])
 
 AC_MSG_NOTICE([Summary of engine detection features])
 CL_MSG_STATUS([bzip2       ],[$bzip_check],[$want_bzip2])
 CL_MSG_STATUS([zlib        ],[$ZLIB_HOME],[yes])
 CL_MSG_STATUS([unrar       ],[$want_unrar],[$want_unrar])
-CL_MSG_STATUS([preclass    ],[$LIBJSON_HOME],[$have_json])
+if test "x$LIBJSON_HOME" != "x"; then
+    CL_MSG_STATUS([libjson     ],[$LIBJSON_HOME],[$have_json])
+fi
+if test "x$PCRE_HOME" = "x"; then
+    CL_MSG_STATUS([pcre        ],[no],[$have_pcre])
+else
+    CL_MSG_STATUS([pcre        ],[$PCRE_HOME],[$have_pcre])
+fi
 if test "x$XML_LIBS" = "x"; then 
     CL_MSG_STATUS([dmg and xar ],[no],[])
 else

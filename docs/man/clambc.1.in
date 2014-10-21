@@ -1,6 +1,6 @@
-.TH CLAMBC "1" "April 2010" "ClamAV @VERSION@" "Clam AntiVirus"
+.TH CLAMBC "1" "September 2014" "ClamAV @VERSION@" "Clam AntiVirus"
 .SH NAME
-clambc \- Bytecode Testing Tool
+clambc \- Bytecode Analysis and Testing Tool
 .SH SYNOPSIS
 .PP
 clambc <file> [function] [param1 ...]
@@ -12,23 +12,44 @@ Show help
 \fB\-\-version\fR              \fB\-V\fR
 Show version
 .TP
+\fB\-\-debug\fR
+Show debug
+.TP
+\fB\-\-force\-interpreter\fR   \fB\-f\fR
+Force using the interpreter instead of the JIT
+.TP
+\fB\-\-trust\-bytecode\fR      \fB\-t\fR
+Trust loaded bytecode (default yes)
+.TP
 \fB\-\-info\fR                 \fB\-i\fR
 Print information about bytecode
 .TP
 \fB\-\-printsrc\fR             \fB\-p\fR
 Print bytecode source
 .TP
-\fB\-\-trace\fR <level>
+\fB\-\-printbcir\fR            \fB\-c\fR
+Print IR of bytecode signature
+.TP
+\fB\-\-input\fR                \fB\-r\fR
+Input file to run the bytecode on
+.TP
+\fB\-\-trace\fR <level>        \fB\-T\fR
 Set bytecode trace level 0..7 (default 7)
 .TP
 \fB\-\-no\-trace\-showsource\fR
 Don't show source line during tracing
+.TP
+\fB\-\-bytecode\-statistics\fR
+Collect and print bytecode execution statistics
 .TP
 file
 file to test
 .SH "CREDITS"
 Please check the full documentation for credits.
 .PP
-Clam AntiVirus Bytecode Testing Tool 0.96
-By The ClamAV Team: http://www.clamav.net/team
-(C) 2009 Sourcefire, Inc.
+Clam AntiVirus Bytecode Analysis and Testing Tool 0.98
+By The ClamAV Team: http://www.clamav.net/about.html#credits
+.LP
+(C) 2009-2013 Sourcefire, Inc.
+.LP
+(C) 2014 Cisco Systems, Inc. All Rights Reserved

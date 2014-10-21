@@ -28,12 +28,17 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <conv.h>
 #ifdef	HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#include <ctype.h>
-#include <stdlib.h>
-#include "clamav.h"
+
+#if HAVE_ICONV
+#include <iconv.h>
+#endif
 
 #include "clamav.h"
 #include "cltypes.h"
@@ -1318,7 +1323,7 @@ abort:
 
 #define WINUNICODE 0x04B0
 #define PROPCNTLIMIT 25
-#define PROPSTRLIMIT 62
+#define PROPSTRLIMIT 128 /* affects property strs, NOT sanitized strs (may result in a buffer allocating PROPSTRLIMIT*6) */
 
 #define sum16_endian_convert(v) le16_to_host((uint16_t)(v))
 #define sum32_endian_convert(v) le32_to_host((uint32_t)(v))
@@ -1415,7 +1420,7 @@ typedef struct propset_summary_entry {
     uint32_t offset;
 } propset_entry_t;
 
-/* metadata structures */
+/* error codes */
 #define OLE2_SUMMARY_ERROR_TOOSMALL      0x00000001
 #define OLE2_SUMMARY_ERROR_OOB           0x00000002
 #define OLE2_SUMMARY_ERROR_DATABUF       0x00000004
@@ -1427,6 +1432,13 @@ typedef struct propset_summary_entry {
 #define OLE2_SUMMARY_FLAG_UNHANDLED_PROPTYPE 0x00000100
 #define OLE2_SUMMARY_FLAG_TRUNC_STR      0x00000200
 
+#define OLE2_CODEPAGE_ERROR_NOTFOUND     0x00000400
+#define OLE2_CODEPAGE_ERROR_UNINITED     0x00000800
+#define OLE2_CODEPAGE_ERROR_INVALID      0x00001000
+#define OLE2_CODEPAGE_ERROR_INCOMPLETE   0x00002000
+#define OLE2_CODEPAGE_ERROR_OUTBUFTOOSMALL 0x00002000
+
+/* metadata structures */
 typedef struct summary_ctx {
     cli_ctx *ctx;
     int mode;
@@ -1446,6 +1458,264 @@ typedef struct summary_ctx {
     /* timeout meta */
     int toval;
 } summary_ctx_t;
+
+/* string conversion */
+struct codepage_entry {
+    int16_t codepage;
+    const char *encoding;
+};
+
+#define NUMCODEPAGES 152
+static const struct codepage_entry codepage_entries[NUMCODEPAGES] = {
+    { 37,    "IBM037" },      /* IBM EBCDIC US-Canada */
+    { 437,   "IBM437" },      /* OEM United States */
+    { 500,   "IBM500" },      /* IBM EBCDIC International */
+    { 708,   "ASMO-708" },    /* Arabic (ASMO 708) */
+    { 709,   NULL },          /* Arabic (ASMO-449+, BCON V4) */
+    { 710,   NULL },          /* Arabic - Transparent Arabic */
+    { 720,   NULL },          /* Arabic (Transparent ASMO); Arabic (DOS) */
+    { 737,   NULL },          /* OEM Greek (formerly 437G); Greek (DOS) */
+    { 775,   "IBM775" },      /* OEM Baltic; Baltic (DOS) */
+    { 850,   "IBM850" },      /* OEM Multilingual Latin 1; Western European (DOS) */
+    { 852,   "IBM852" },      /* OEM Latin 2; Central European (DOS) */
+    { 855,   "IBM855" },      /* OEM Cyrillic (primarily Russian) */
+    { 857,   "IBM857" },      /* OEM Turkish; Turkish (DOS) */
+    { 858,   NULL },          /* OEM Multilingual Latin 1 + Euro symbol */
+    { 860,   "IBM860" },      /* OEM Portuguese; Portuguese (DOS) */
+    { 861,   "IBM861" },      /* OEM Icelandic; Icelandic (DOS) */
+    { 862,   NULL },          /* OEM Hebrew; Hebrew (DOS) */
+    { 863,   "IBM863" },      /* OEM French Canadian; French Canadian (DOS) */
+    { 864,   "IBM864" },      /* OEM Arabic; Arabic (864) */
+    { 865,   "IBM865" },      /* OEM Nordic; Nordic (DOS) */
+    { 866,   "CP866" },       /* OEM Russian; Cyrillic (DOS) */
+    { 869,   "IBM869" },      /* OEM Modern Greek; Greek, Modern (DOS) */
+    { 870,   "IBM870" },      /* IBM EBCDIC Multilingual/ROECE (Latin 2); IBM EBCDIC Multilingual Latin 2 */
+    { 874,   "WINDOWS-874" }, /* ANSI/OEM Thai (ISO 8859-11); Thai (Windows) */
+    { 875,   "CP875" },       /* IBM EBCDIC Greek Modern */
+    { 932,   "SHIFT_JIS" },   /* ANSI/OEM Japanese; Japanese (Shift-JIS) */
+    { 936,   "GB2312" },      /* ANSI/OEM Simplified Chinese (PRC, Singapore); Chinese Simplified (GB2312) */
+    { 949,   NULL },          /* ANSI/OEM Korean (Unified Hangul Code) */
+    { 950,   "BIG5" },        /* ANSI/OEM Traditional Chinese (Taiwan; Hong Kong SAR, PRC); Chinese Traditional (Big5) */
+    { 1026,  "IBM1026" },     /* IBM EBCDIC Turkish (Latin 5) */
+    { 1047,  NULL },          /* IBM EBCDIC Latin 1/Open System */
+    { 1140,  NULL },          /* IBM EBCDIC US-Canada (037 + Euro symbol); IBM EBCDIC (US-Canada-Euro) */
+    { 1141,  NULL },          /* IBM EBCDIC Germany (20273 + Euro symbol); IBM EBCDIC (Germany-Euro) */
+    { 1142,  NULL },          /* IBM EBCDIC Denmark-Norway (20277 + Euro symbol); IBM EBCDIC (Denmark-Norway-Euro) */
+    { 1143,  NULL },          /* IBM EBCDIC Finland-Sweden (20278 + Euro symbol); IBM EBCDIC (Finland-Sweden-Euro) */
+    { 1144,  NULL },          /* IBM EBCDIC Italy (20280 + Euro symbol); IBM EBCDIC (Italy-Euro) */
+    { 1145,  NULL },          /* IBM EBCDIC Latin America-Spain (20284 + Euro symbol); IBM EBCDIC (Spain-Euro) */
+    { 1146,  NULL },          /* IBM EBCDIC United Kingdom (20285 + Euro symbol); IBM EBCDIC (UK-Euro) */
+    { 1147,  NULL },          /* IBM EBCDIC France (20297 + Euro symbol); IBM EBCDIC (France-Euro) */
+    { 1148,  NULL },          /* IBM EBCDIC International (500 + Euro symbol); IBM EBCDIC (International-Euro) */
+    { 1149,  NULL },          /* IBM EBCDIC Icelandic (20871 + Euro symbol); IBM EBCDIC (Icelandic-Euro) */
+    { 1200,  "UTF-16LE" },    /* Unicode UTF-16, little endian byte order (BMP of ISO 10646); available only to managed applications */
+    { 1201,  "UTF-16BE" },    /* Unicode UTF-16, big endian byte order; available only to managed applications */
+    { 1250,  "WINDOWS-1250" }, /* ANSI Central European; Central European (Windows) */
+    { 1251,  "WINDOWS-1251" }, /* ANSI Cyrillic; Cyrillic (Windows) */
+    { 1252,  "WINDOWS-1252" }, /* ANSI Latin 1; Western European (Windows) */
+    { 1253,  "WINDOWS-1253" }, /* ANSI Greek; Greek (Windows) */
+    { 1254,  "WINDOWS-1254" }, /* ANSI Turkish; Turkish (Windows) */
+    { 1255,  "WINDOWS-1255" }, /* ANSI Hebrew; Hebrew (Windows) */
+    { 1256,  "WINDOWS-1256" }, /* ANSI Arabic; Arabic (Windows) */
+    { 1257,  "WINDOWS-1257" }, /* ANSI Baltic; Baltic (Windows) */
+    { 1258,  "WINDOWS-1258" }, /* ANSI/OEM Vietnamese; Vietnamese (Windows) */
+    { 1361,  "JOHAB" },       /* Korean (Johab) */
+    { 10000, "MACINTOSH" },   /* MAC Roman; Western European (Mac) */
+    { 10001, NULL },          /* Japanese (Mac) */
+    { 10002, NULL },          /* MAC Traditional Chinese (Big5); Chinese Traditional (Mac) */
+    { 10003, NULL },          /* Korean (Mac) */
+    { 10004, NULL },          /* Arabic (Mac) */
+    { 10005, NULL },          /* Hebrew (Mac) */
+    { 10006, NULL },          /* Greek (Mac) */
+    { 10007, NULL },          /* Cyrillic (Mac) */
+    { 10008, NULL },          /* MAC Simplified Chinese (GB 2312); Chinese Simplified (Mac) */
+    { 10010, NULL },          /* Romanian (Mac) */
+    { 10017, NULL },          /* Ukrainian (Mac) */
+    { 10021, NULL },          /* Thai (Mac) */
+    { 10029, NULL },          /* MAC Latin 2; Central European (Mac) */
+    { 10079, NULL },          /* Icelandic (Mac) */
+    { 10081, NULL },          /* Turkish (Mac) */
+    { 10082, NULL },          /* Croatian (Mac) */
+    { 12000, "UTF-32LE" },    /* Unicode UTF-32, little endian byte order; available only to managed applications */
+    { 12001, "UTF-32BE" },    /* Unicode UTF-32, big endian byte order; available only to managed applications */
+    { 20000, NULL },          /* CNS Taiwan; Chinese Traditional (CNS) */
+    { 20001, NULL },          /* TCA Taiwan */
+    { 20002, NULL },          /* Eten Taiwan; Chinese Traditional (Eten) */
+    { 20003, NULL },          /* IBM5550 Taiwan */
+    { 20004, NULL },          /* TeleText Taiwan */
+    { 20005, NULL },          /* Wang Taiwan */
+    { 20105, NULL },          /* IA5 (IRV International Alphabet No. 5, 7-bit); Western European (IA5) */
+    { 20106, NULL },          /* IA5 German (7-bit) */
+    { 20107, NULL },          /* IA5 Swedish (7-bit) */
+    { 20108, NULL },          /* IA5 Norwegian (7-bit) */
+    { 20127, "US-ASCII" },    /* US-ASCII (7-bit) */
+    { 20261, NULL },          /* T.61 */
+    { 20269, NULL },          /* ISO 6937 Non-Spacing Accent */
+    { 20273, "IBM273" },      /* IBM EBCDIC Germany */
+    { 20277, "IBM277" },      /* IBM EBCDIC Denmark-Norway */
+    { 20278, "IBM278" },      /* IBM EBCDIC Finland-Sweden */
+    { 20280, "IBM280" },      /* IBM EBCDIC Italy */
+    { 20284, "IBM284" },      /* IBM EBCDIC Latin America-Spain */
+    { 20285, "IBM285" },      /* IBM EBCDIC United Kingdom */
+    { 20290, "IBM290" },      /* IBM EBCDIC Japanese Katakana Extended */
+    { 20297, "IBM297" },      /* IBM EBCDIC France */
+    { 20420, "IBM420" },      /* IBM EBCDIC Arabic */
+    { 20423, "IBM423" },      /* IBM EBCDIC Greek */
+    { 20424, "IBM424" },      /* IBM EBCDIC Hebrew */
+    { 20833, NULL },          /* IBM EBCDIC Korean Extended */
+    { 20838, NULL },          /* IBM EBCDIC Thai */
+    { 20866, "KOI8-R" },      /* Russian (KOI8-R); Cyrillic (KOI8-R) */
+    { 20871, "IBM871" },      /* IBM EBCDIC Icelandic */
+    { 20880, "IBM880" },      /* IBM EBCDIC Cyrillic Russian */
+    { 20905, "IBM905" },      /* IBM EBCDIC Turkish */
+    { 20924, NULL },          /* IBM EBCDIC Latin 1/Open System (1047 + Euro symbol) */
+    { 20932, "EUC-JP" },      /* Japanese (JIS 0208-1990 and 0212-1990) */
+    { 20936, NULL },          /* Simplified Chinese (GB2312); Chinese Simplified (GB2312-80) */
+    { 20949, NULL },          /* Korean Wansung */
+    { 21025, "CP1025" },      /* IBM EBCDIC Cyrillic Serbian-Bulgarian */
+    { 21027, NULL },          /* (deprecated) */
+    { 21866, "KOI8-U" },      /* Ukrainian (KOI8-U); Cyrillic (KOI8-U) */
+    { 28591, "ISO-8859-1" },  /* ISO 8859-1 Latin 1; Western European (ISO) */
+    { 28592, "ISO-8859-2" },  /* ISO 8859-2 Central European; Central European (ISO) */
+    { 28593, "ISO-8859-3" },  /* ISO 8859-3 Latin 3 */
+    { 28594, "ISO-8859-4" },  /* ISO 8859-4 Baltic */
+    { 28595, "ISO-8859-5" },  /* ISO 8859-5 Cyrillic */
+    { 28596, "ISO-8859-6" },  /* ISO 8859-6 Arabic */
+    { 28597, "ISO-8859-7" },  /* ISO 8859-7 Greek */
+    { 28598, "ISO-8859-8" },  /* ISO 8859-8 Hebrew; Hebrew (ISO-Visual) */
+    { 28599, "ISO-8859-9" },  /* ISO 8859-9 Turkish */
+    { 28603, "ISO-8859-13" }, /* ISO 8859-13 Estonian */
+    { 28605, "ISO-8859-15" }, /* ISO 8859-15 Latin 9 */
+    { 29001, NULL },          /* Europa 3 */
+    { 38598, NULL },          /* ISO 8859-8 Hebrew; Hebrew (ISO-Logical) */
+    { 50220, "ISO-2022-JP" },   /* ISO 2022 Japanese with no halfwidth Katakana; Japanese (JIS) (guess) */
+    { 50221, "ISO-2022-JP-2" }, /* ISO 2022 Japanese with halfwidth Katakana; Japanese (JIS-Allow 1 byte Kana) (guess) */
+    { 50222, "ISO-2022-JP-3" }, /* ISO 2022 Japanese JIS X 0201-1989; Japanese (JIS-Allow 1 byte Kana - SO/SI) (guess) */
+    { 50225, "ISO-2022-KR" }, /* ISO 2022 Korean */
+    { 50227, NULL },          /* ISO 2022 Simplified Chinese; Chinese Simplified (ISO 2022) */
+    { 50229, NULL },          /* ISO 2022 Traditional Chinese */
+    { 50930, NULL },          /* EBCDIC Japanese (Katakana) Extended */
+    { 50931, NULL },          /* EBCDIC US-Canada and Japanese */
+    { 50933, NULL },          /* EBCDIC Korean Extended and Korean */
+    { 50935, NULL },          /* EBCDIC Simplified Chinese Extended and Simplified Chinese */
+    { 50936, NULL },          /* EBCDIC Simplified Chinese */
+    { 50937, NULL },          /* EBCDIC US-Canada and Traditional Chinese */
+    { 50939, NULL },          /* EBCDIC Japanese (Latin) Extended and Japanese */
+    { 51932, "EUC-JP" },      /* EUC Japanese */
+    { 51936, "EUC-CN" },      /* EUC Simplified Chinese; Chinese Simplified (EUC) */
+    { 51949, "EUC-KR" },      /* EUC Korean */
+    { 51950, NULL },          /* EUC Traditional Chinese */
+    { 52936, NULL },          /* HZ-GB2312 Simplified Chinese; Chinese Simplified (HZ) */
+    { 54936, "GB18030" },     /* Windows XP and later: GB18030 Simplified Chinese (4 byte); Chinese Simplified (GB18030) */
+    { 57002, NULL },          /* ISCII Devanagari */
+    { 57003, NULL },          /* ISCII Bengali */
+    { 57004, NULL },          /* ISCII Tamil */
+    { 57005, NULL },          /* ISCII Telugu */
+    { 57006, NULL },          /* ISCII Assamese */
+    { 57007, NULL },          /* ISCII Oriya */
+    { 57008, NULL },          /* ISCII Kannada */
+    { 57009, NULL },          /* ISCII Malayalam */
+    { 57010, NULL },          /* ISCII Gujarati */
+    { 57011, NULL },          /* ISCII Punjabi */
+    { 65000, "UTF-7" },       /* Unicode (UTF-7) */
+    { 65001, "UTF-8" }        /* Unicode (UTF-8) */
+};
+
+static char *
+ole2_convert_utf(summary_ctx_t *sctx, char *begin, size_t sz, const char *encoding)
+{
+#if HAVE_ICONV
+    char *res=NULL;
+    char *buf, *outbuf, *p1, *p2;
+    size_t inlen, outlen, nonrev, sz2;
+    int i, try;
+    iconv_t cd;
+
+    buf = cli_calloc(1, sz);
+    if (!(buf))
+        return NULL;
+
+    memcpy(buf, begin, sz);
+
+    outbuf = NULL;
+    inlen = sz;
+
+    /* encoding lookup if not specified */
+    if (!encoding) {
+        for (i = 0; i < NUMCODEPAGES; ++i) {
+            if (sctx->codepage == codepage_entries[i].codepage)
+                encoding = codepage_entries[i].encoding;
+            else if (sctx->codepage < codepage_entries[i].codepage) {
+                /* assuming sorted array */
+                break;
+            }
+        }
+
+        if (!encoding) {
+            cli_warnmsg("ole2_convert_utf: could not locate codepage encoding for %d\n", sctx->codepage);
+            sctx->flags |= OLE2_CODEPAGE_ERROR_NOTFOUND;
+            free(buf);
+            return NULL;
+        }
+    }
+
+    cd = iconv_open("UTF-8", encoding);
+    if (cd == (iconv_t)(-1)) {
+        cli_errmsg("ole2_convert_utf: could not initialize iconv\n");
+        sctx->flags |= OLE2_CODEPAGE_ERROR_UNINITED;
+    }
+    else {
+        for (try = 1; try <= 3; ++try) {
+            p1 = buf;
+
+            if (outbuf)
+                free(outbuf);
+            outlen = sz2 = (try*2) * sz;
+            p2 = outbuf = cli_calloc(1, sz2);
+            if (!outbuf) {
+                free(buf);
+                return NULL;
+            }
+
+            nonrev = iconv(cd, (char **)(&p1), &inlen, &p2, &outlen);
+
+            if (errno == EILSEQ) {
+                cli_dbgmsg("ole2_convert_utf: input buffer contains invalid character for its encoding\n");
+                sctx->flags |= OLE2_CODEPAGE_ERROR_INVALID;
+                break;
+            }
+            else if (errno == EINVAL && nonrev == (size_t)-1) {
+                cli_dbgmsg("ole2_convert_utf: input buffer contains incomplete multibyte character\n");
+                sctx->flags |= OLE2_CODEPAGE_ERROR_INCOMPLETE;
+                break;
+            }
+            else if (inlen == 0) {
+                //cli_dbgmsg("ole2_convert_utf: input buffer is successfully translated\n");
+                break;
+            }
+
+            cli_dbgmsg("ole2_convert_utf: outbuf is too small, resizing %llu -> %llu\n",
+                       (long long unsigned)((try*2) * sz), (long long unsigned)(((try+1)*2) * sz));
+        }
+
+        if (inlen != 0 || (errno == E2BIG && nonrev == (size_t)-1)) {
+            cli_dbgmsg("ole2_convert_utf: buffer could not be fully translated\n");
+            sctx->flags |= OLE2_CODEPAGE_ERROR_OUTBUFTOOSMALL;
+        }
+
+        outbuf[sz2 - outlen] = '\0';
+        res = strdup(outbuf);
+    }
+
+    iconv_close(cd);
+    free(buf);
+    free(outbuf);
+    return res;
+#else
+    /* this should force base64 encoding */
+    return NULL;
+#endif
+}
 
 static int
 ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offset)
@@ -1662,7 +1932,7 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
         }
         else if (sctx->codepage != WINUNICODE) {
             uint32_t strsize;
-            char *outstr;
+            char *outstr, *outstr2;
 
             if (offset+sizeof(strsize) > sctx->pssize) {
                 sctx->flags |= OLE2_SUMMARY_ERROR_OOB;
@@ -1692,8 +1962,28 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
                 return CL_EMEM;
             }
             strncpy(outstr, (const char *)(databuf+offset), strsize);
-            ret = cli_jsonstr(sctx->summary, sctx->propname, outstr);
+
+            /* conversion of various encodings to UTF-8 */
+            outstr2 = ole2_convert_utf(sctx, outstr, strsize, NULL);
+            if (!outstr2) {
+                /* use base64 encoding when all else fails! */
+                char b64jstr[PROPSTRLIMIT];
+
+                outstr2 = cl_base64_encode(outstr, strsize);
+                if (!outstr2) {
+                    free(outstr);
+                    return CL_EMEM;
+                }
+
+                snprintf(b64jstr, PROPSTRLIMIT, "%s_base64", sctx->propname);
+                ret = cli_jsonbool(sctx->summary, b64jstr, 1);
+                if (ret != CL_SUCCESS)
+                    return ret;
+            }
+
+            ret = cli_jsonstr(sctx->summary, sctx->propname, outstr2);
             free(outstr);
+            free(outstr2);
             break;
         }
         /* fall-through for unicode strings */
@@ -1738,13 +2028,28 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
             if (!outstr) {
                 return CL_EMEM;
             }
-            strncpy(outstr, (const char *)(databuf+offset), strsize);
-            outstr2 = (char*)get_property_name2(outstr, strsize);
-            if (outstr2) {
-                ret = cli_jsonstr(sctx->summary, sctx->propname, outstr2);
-                free(outstr2);
+            memcpy(outstr, (const char *)(databuf+offset), strsize);
+            /* conversion of 16-width char strings to UTF-8 */
+            outstr2 = ole2_convert_utf(sctx, outstr, strsize, "UTF-16");
+            if (!outstr2) {
+                /* use base64 encoding when all else fails! */
+                char b64jstr[PROPSTRLIMIT];
+
+                outstr2 = cl_base64_encode(outstr, strsize);
+                if (!outstr2) {
+                    free(outstr);
+                    return CL_EMEM;
+                }
+
+                snprintf(b64jstr, PROPSTRLIMIT, "%s_base64", sctx->propname);
+                ret = cli_jsonbool(sctx->summary, b64jstr, 1);
+                if (ret != CL_SUCCESS)
+                    return ret;
             }
+
+            ret = cli_jsonstr(sctx->summary, sctx->propname, outstr2);
             free(outstr);
+            free(outstr2);
             break;
 	}
     case PT_FILETIME:
@@ -2050,7 +2355,7 @@ static int cli_ole2_summary_json_cleanup(summary_ctx_t *sctx, int retcode)
     if (sctx->flags) {
         jarr = cli_jsonarray(sctx->summary, "ParseErrors");
 
-        /* check errors */
+        /* summary errors */
         if (sctx->flags & OLE2_SUMMARY_ERROR_TOOSMALL) {
             cli_jsonstr(jarr, NULL, "OLE2_SUMMARY_ERROR_TOOSMALL");
         }
@@ -2080,6 +2385,23 @@ static int cli_ole2_summary_json_cleanup(summary_ctx_t *sctx, int retcode)
         }
         if (sctx->flags & OLE2_SUMMARY_FLAG_TRUNC_STR) {
             cli_jsonstr(jarr, NULL, "OLE2_SUMMARY_FLAG_TRUNC_STR");
+        }
+
+        /* codepage translation errors */
+        if (sctx->flags & OLE2_CODEPAGE_ERROR_NOTFOUND) {
+            cli_jsonstr(jarr, NULL, "OLE2_CODEPAGE_ERROR_NOTFOUND");
+        }
+        if (sctx->flags & OLE2_CODEPAGE_ERROR_UNINITED) {
+            cli_jsonstr(jarr, NULL, "OLE2_CODEPAGE_ERROR_UNINITED");
+        }
+        if (sctx->flags & OLE2_CODEPAGE_ERROR_INVALID) {
+            cli_jsonstr(jarr, NULL, "OLE2_CODEPAGE_ERROR_INVALID");
+        }
+        if (sctx->flags & OLE2_CODEPAGE_ERROR_INCOMPLETE) {
+            cli_jsonstr(jarr, NULL, "OLE2_CODEPAGE_ERROR_INCOMPLETE");
+        }
+        if (sctx->flags & OLE2_CODEPAGE_ERROR_OUTBUFTOOSMALL) {
+            cli_jsonstr(jarr, NULL, "OLE2_CODEPAGE_ERROR_OUTBUFTOOSMALL");
         }
     }
 

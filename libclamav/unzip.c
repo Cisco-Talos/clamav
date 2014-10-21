@@ -53,14 +53,6 @@
 #define UNZIP_PRIVATE
 #include "unzip.h"
 
-typedef struct zip_request {
-    const char *name;
-    size_t namelen;
-    uint32_t loff;
-
-    int found;
-} zip_request_t;
-
 static int wrap_inflateinit2(void *a, int b) {
   return inflateInit2(a, b);
 }
@@ -427,7 +419,7 @@ static unsigned int lhdr(fmap_t *map, uint32_t loff,uint32_t zsize, unsigned int
   return zip-lh;
 }
 
-static unsigned int chdr(fmap_t *map, uint32_t coff, uint32_t zsize, unsigned int *fu, unsigned int fc, int *ret, cli_ctx *ctx, char *tmpd, zip_request_t *request) {
+static unsigned int chdr(fmap_t *map, uint32_t coff, uint32_t zsize, unsigned int *fu, unsigned int fc, int *ret, cli_ctx *ctx, char *tmpd, struct zip_requests *requests) {
   char name[256];
   int last = 0;
   const uint8_t *ch;
@@ -447,7 +439,7 @@ static unsigned int chdr(fmap_t *map, uint32_t coff, uint32_t zsize, unsigned in
   }
 
   name[0]='\0';
-  if((cli_debug_flag && !last) || request) {
+  if((cli_debug_flag && !last) || requests) {
       unsigned int size = (CH_flen>=sizeof(name))?sizeof(name)-1:CH_flen;
       const char *src = fmap_need_off_once(map, coff, size);
       if(src) {
@@ -470,16 +462,26 @@ static unsigned int chdr(fmap_t *map, uint32_t coff, uint32_t zsize, unsigned in
   }
   coff+=CH_clen;
 
-  if (!request) {
+  if (!requests) {
       if(CH_off<zsize-SIZEOF_LH) {
           lhdr(map, CH_off, zsize-CH_off, fu, fc, ch, ret, ctx, tmpd, 1, zip_scan_cb);
       } else cli_dbgmsg("cli_unzip: ch - local hdr out of file\n");
   }
   else {
-      size_t len = MIN(sizeof(name)-1, request->namelen);
-      if (!last && !strncmp(request->name, name, len)) {
-          request->found = 1;
-          request->loff = CH_off;
+      int i;
+      size_t len;
+
+      if (!last) {
+          for (i = 0; i < requests->namecnt; ++i) {
+              cli_dbgmsg("checking for %i: %s\n", i, requests->names[i]);
+
+              len = MIN(sizeof(name)-1, requests->namelens[i]);      
+              if (!strncmp(requests->names[i], name, len)) {
+                  requests->match = 1;
+                  requests->found = i;
+                  requests->loff = CH_off;
+              }
+          }
       }
   }
 
@@ -603,27 +605,46 @@ int cli_unzip_single(cli_ctx *ctx, off_t lhoffl) {
     return unzip_single_internal(ctx, lhoffl, zip_scan_cb);
 }
 
-int unzip_search(cli_ctx *ctx, const char *name, size_t nlen, uint32_t *loff)
+int unzip_search_add(struct zip_requests *requests, const char *name, size_t nlen)
+{
+    cli_dbgmsg("in unzip_search_add\n");
+
+    if (requests->namecnt >= MAX_ZIP_REQUESTS) {
+        cli_dbgmsg("DEBUGGING MESSAGE GOES HERE!\n");
+        return CL_BREAK;
+    }
+
+    cli_dbgmsg("unzip_search_add: adding %s (len %llu)\n", name, (long long unsigned)nlen);
+
+    requests->names[requests->namecnt] = name;
+    requests->namelens[requests->namecnt] = nlen;
+    requests->namecnt++;
+
+    return CL_SUCCESS;
+}
+
+int unzip_search(cli_ctx *ctx, fmap_t *map, struct zip_requests *requests)
 {
     unsigned int fc = 0;
-    fmap_t *map;
+    fmap_t *zmap = map;
     size_t fsize;
     uint32_t coff = 0;
     const char *ptr;
-    zip_request_t request; 
     int ret = CL_CLEAN;
 #if HAVE_JSON
     uint32_t toval = 0;
 #endif
-
     cli_dbgmsg("in unzip_search\n");
-    if (!ctx) {
+
+    if ((!ctx && !map) || !requests) {
         return CL_ENULLARG;
     }
 
-    map = *ctx->fmap;
-    fsize = map->len;
-    if(sizeof(off_t)!=sizeof(uint32_t) && fsize!=map->len) {
+    /* get priority to given map over *ctx->fmap */
+    if (ctx && !map)
+        zmap = *ctx->fmap;
+    fsize = zmap->len;
+    if(sizeof(off_t)!=sizeof(uint32_t) && fsize!=zmap->len) {
         cli_dbgmsg("unzip_search: file too big\n");
         return CL_CLEAN;
     }
@@ -633,7 +654,7 @@ int unzip_search(cli_ctx *ctx, const char *name, size_t nlen, uint32_t *loff)
     }
 
     for(coff=fsize-22 ; coff>0 ; coff--) { /* sizeof(EOC)==22 */
-        if(!(ptr = fmap_need_off_once(map, coff, 20)))
+        if(!(ptr = fmap_need_off_once(zmap, coff, 20)))
             continue;
         if(cli_readint32(ptr)==0x06054b50) {
             uint32_t chptr = cli_readint32(&ptr[16]);
@@ -643,31 +664,49 @@ int unzip_search(cli_ctx *ctx, const char *name, size_t nlen, uint32_t *loff)
         }
     }
 
-    request.name = name;
-    request.namelen = nlen;
-    request.found = 0;
-
     if(coff) {
         cli_dbgmsg("unzip_search: central @%x\n", coff);
-        while(ret==CL_CLEAN && (coff=chdr(map, coff, fsize, NULL, fc+1, &ret, ctx, NULL, &request))) {
-            if (request.found) {
-                *loff = request.loff;
+        while(ret==CL_CLEAN && (coff=chdr(zmap, coff, fsize, NULL, fc+1, &ret, ctx, NULL, requests))) {
+            if (requests->match) {
                 return CL_VIRUS;
             }
 
             fc++;
-            if (ctx->engine->maxfiles && fc >= ctx->engine->maxfiles) {
+            if (ctx && ctx->engine->maxfiles && fc >= ctx->engine->maxfiles) {
                 cli_dbgmsg("cli_unzip: Files limit reached (max: %u)\n", ctx->engine->maxfiles);
                 ret=CL_EMAXFILES;
             }
 #if HAVE_JSON
-            if (cli_json_timeout_cycle_check(ctx, (int *)(&toval)) != CL_SUCCESS) {
+            if (ctx && cli_json_timeout_cycle_check(ctx, (int *)(&toval)) != CL_SUCCESS) {
                 return CL_ETIMEOUT;
             }
 #endif
         }
     } else {
         cli_dbgmsg("unzip_search: cannot locate central directory\n");
+    }
+
+    return ret;
+}
+
+int unzip_search_single(cli_ctx *ctx, const char *name, size_t nlen, uint32_t *loff)
+{
+    struct zip_requests requests;
+    int ret;
+
+    cli_dbgmsg("in unzip_search_single\n");
+    if (!ctx) {
+        return CL_ENULLARG;
+    }
+
+    memset(&requests, 0, sizeof(struct zip_requests));
+
+    if ((ret = unzip_search_add(&requests, name, nlen)) != CL_SUCCESS) {
+        return ret;
+    }
+
+    if ((ret = unzip_search(ctx, NULL, &requests)) == CL_VIRUS) {
+        *loff = requests.loff;
     }
 
     return ret;

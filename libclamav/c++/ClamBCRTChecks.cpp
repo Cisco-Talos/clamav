@@ -29,13 +29,20 @@
 #include "llvm/ADT/PostOrderIterator.h"
 #include "llvm/ADT/SCCIterator.h"
 #include "llvm/Analysis/CallGraph.h"
-#include "llvm/Analysis/Verifier.h"
 #if LLVM_VERSION < 32
 #include "llvm/Analysis/DebugInfo.h"
-#else
+#elif LLVM_VERSION < 35
 #include "llvm/DebugInfo.h"
+#else
+#include "llvm/IR/DebugInfo.h"
 #endif
+#if LLVM_VERSION < 35
 #include "llvm/Analysis/Dominators.h"
+#include "llvm/Analysis/Verifier.h"
+#else
+#include "llvm/IR/Dominators.h"
+#include "llvm/IR/Verifier.h"
+#endif
 #include "llvm/Analysis/ConstantFolding.h"
 #if LLVM_VERSION < 29
 //#include "llvm/Analysis/LiveValues.h" (unused)
@@ -50,9 +57,14 @@
 #include "llvm/Config/config.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/CommandLine.h"
+#if LLVM_VERSION < 35
 #include "llvm/Support/DataFlow.h"
 #include "llvm/Support/InstIterator.h"
 #include "llvm/Support/GetElementPtrTypeIterator.h"
+#else
+#include "llvm/IR/InstIterator.h"
+#include "llvm/IR/GetElementPtrTypeIterator.h"
+#endif
 #include "llvm/ADT/DepthFirstIterator.h"
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
@@ -71,7 +83,6 @@
 #include "llvm/Intrinsics.h"
 #include "llvm/LLVMContext.h"
 #include "llvm/Module.h"
-#include "llvm/Support/InstVisitor.h"
 #else
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/Instructions.h"
@@ -79,7 +90,14 @@
 #include "llvm/IR/Intrinsics.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
+#endif
+
+#if LLVM_VERSION < 33
+#include "llvm/Support/InstVisitor.h"
+#elif LLVM_VERSION < 35
 #include "llvm/InstVisitor.h"
+#else
+#include "llvm/IR/InstVisitor.h"
 #endif
 
 #define DEFINEPASS(passname) passname() : FunctionPass(ID)
@@ -95,7 +113,7 @@ static Value *GetUnderlyingObject(Value *P, TargetData *TD)
 
 namespace llvm {
   class PtrVerifier;
-#if LLVM_VERSION >= 30
+#if LLVM_VERSION >= 29
   void initializePtrVerifierPass(PassRegistry&);
 #endif
 
@@ -103,12 +121,20 @@ namespace llvm {
   private:
       DenseSet<Function*> badFunctions;
       std::vector<Instruction*> delInst;
+#if LLVM_VERSION < 35
       CallGraphNode *rootNode;
+#else
+      CallGraph *CG;
+#endif
   public:
       static char ID;
-      DEFINEPASS(PtrVerifier), rootNode(0), PT(), TD(), SE(), DT(),
-          AbrtBB(), Changed(false), valid(false), EP() {
-#if LLVM_VERSION >= 30
+#if LLVM_VERSION < 35
+      DEFINEPASS(PtrVerifier), rootNode(0), PT(), TD(), SE(), expander(),
+#else
+      DEFINEPASS(PtrVerifier), CG(0), PT(), TD(), SE(), expander(),
+#endif
+          DT(), AbrtBB(), Changed(false), valid(false), EP() {
+#if LLVM_VERSION >= 29
           initializePtrVerifierPass(*PassRegistry::getPassRegistry());
 #endif
       }
@@ -133,12 +159,21 @@ namespace llvm {
           AbrtBB = 0;
           valid = true;
 
+#if LLVM_VERSION < 35
           if (!rootNode) {
               rootNode = getAnalysis<CallGraph>().getRoot();
+#else
+          if (!CG) {
+              CG = &getAnalysis<CallGraphWrapperPass>().getCallGraph();
+#endif
               // No recursive functions for now.
               // In the future we may insert runtime checks for stack depth.
+#if LLVM_VERSION < 35
               for (scc_iterator<CallGraphNode*> SCCI = scc_begin(rootNode),
                        E = scc_end(rootNode); SCCI != E; ++SCCI) {
+#else
+              for (scc_iterator<CallGraph*> SCCI = scc_begin(CG); !SCCI.isAtEnd(); ++SCCI) {
+#endif
                   const std::vector<CallGraphNode*> &nextSCC = *SCCI;
                   if (nextSCC.size() > 1 || SCCI.hasLoop()) {
                       errs() << "INVALID: Recursion detected, callgraph SCC components: ";
@@ -164,12 +199,19 @@ namespace llvm {
           EP = &*It;
 #if LLVM_VERSION < 32
           TD = &getAnalysis<TargetData>();
-#else
+#elif LLVM_VERSION < 35
           TD = &getAnalysis<DataLayout>();
+#else
+          DataLayoutPass *DLP = getAnalysisIfAvailable<DataLayoutPass>();
+          TD = DLP ? &DLP->getDataLayout() : 0;
 #endif
           SE = &getAnalysis<ScalarEvolution>();
           PT = &getAnalysis<PointerTracking>();
+#if LLVM_VERSION < 35
           DT = &getAnalysis<DominatorTree>();
+#else
+          DT = &getAnalysis<DominatorTreeWrapperPass>().getDomTree();
+#endif
           expander = new SCEVExpander(*SE OPT("SCEVexpander"));
 
           std::vector<Instruction*> insns;
@@ -307,13 +349,23 @@ namespace llvm {
       virtual void getAnalysisUsage(AnalysisUsage &AU) const {
 #if LLVM_VERSION < 32
           AU.addRequired<TargetData>();
-#else
+#elif LLVM_VERSION < 35
           AU.addRequired<DataLayout>();
+#else
+          AU.addRequired<DataLayoutPass>();
 #endif
+#if LLVM_VERSION < 35
           AU.addRequired<DominatorTree>();
+#else
+          AU.addRequired<DominatorTreeWrapperPass>();
+#endif
           AU.addRequired<ScalarEvolution>();
           AU.addRequired<PointerTracking>();
+#if LLVM_VERSION < 35
           AU.addRequired<CallGraph>();
+#else
+          AU.addRequired<CallGraphWrapperPass>();
+#endif
       }
 
       bool isValid() const { return valid; }
@@ -321,8 +373,10 @@ namespace llvm {
       PointerTracking *PT;
 #if LLVM_VERSION < 32
       TargetData *TD;
-#else
+#elif LLVM_VERSION < 35
       DataLayout *TD;
+#else
+      const DataLayout *TD;
 #endif
       ScalarEvolution *SE;
       SCEVExpander *expander;
@@ -851,19 +905,27 @@ namespace llvm {
     char PtrVerifier::ID;
 
 } /* end namespace llvm */
-#if LLVM_VERSION >= 30
+#if LLVM_VERSION >= 29
 INITIALIZE_PASS_BEGIN(PtrVerifier, "", "", false, false)
 #if LLVM_VERSION < 32
 INITIALIZE_PASS_DEPENDENCY(TargetData)
-#else
+#elif LLVM_VERSION < 35
 INITIALIZE_PASS_DEPENDENCY(DataLayout)
+#else
+INITIALIZE_PASS_DEPENDENCY(DataLayoutPass)
 #endif
+#if LLVM_VERSION < 35
 INITIALIZE_PASS_DEPENDENCY(DominatorTree)
+#else
+INITIALIZE_PASS_DEPENDENCY(DominatorTreeWrapperPass)
+#endif
 INITIALIZE_PASS_DEPENDENCY(ScalarEvolution)
 #if LLVM_VERSION < 34
 INITIALIZE_AG_DEPENDENCY(CallGraph)
-#else
+#elif LLVM_VERSION < 35
 INITIALIZE_PASS_DEPENDENCY(CallGraph)
+#else
+INITIALIZE_PASS_DEPENDENCY(CallGraphWrapperPass)
 #endif
 INITIALIZE_PASS_DEPENDENCY(PointerTracking)
 INITIALIZE_PASS_END(PtrVerifier, "clambc-rtchecks", "ClamBC RTchecks", false, false)

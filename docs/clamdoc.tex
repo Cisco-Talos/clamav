@@ -72,7 +72,7 @@
     \vspace{3cm}
     \begin{flushright}
 	\rule[-1ex]{8cm}{3pt}\\
-	\huge Clam AntiVirus 0.98.2\\
+	\huge Clam AntiVirus 0.98.5\\
 	\huge \emph{User Manual}\\
     \end{flushright}
 
@@ -272,6 +272,9 @@
 	    \footnote{Note that several versions of GCC have bugs when compiling LLVM, see
 		\url{http://llvm.org/docs/GettingStarted.html#brokengcc} for a
 		    full list.}
+	\item OSX Xcode versions prior to 5.0 use a g++ compiler frontend (llvm-gcc) that is not 
+	    compatible with ClamAV JIT. It is recommended to either compile ClamAV JIT with 
+	    clang++ or to compile ClamAV without JIT.
 	\item A supported CPU for the JIT, either of: X86, X86-64, PowerPC, PowerPC64
     \end{itemize}
     The following packages are optional, but needed for the JIT unit tests:

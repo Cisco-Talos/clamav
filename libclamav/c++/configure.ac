@@ -49,27 +49,40 @@ GMAKE="$llvm_cv_gnu_make_command"
 AC_SUBST([GMAKE])
 
 llvmconfig=
-AC_ARG_WITH([system-llvm], AC_HELP_STRING([-with-system-llvm],
-[Use system llvm instead of built-in, requires full path to llvm-config]),
+AC_ARG_WITH([system-llvm], AC_HELP_STRING([--with-system-llvm],
+[Use system llvm instead of built-in, uses full path to llvm-config (default=
+    search /usr/local or /usr if not found in /usr/local)]),
 [case "$withval" in
   yes)
-    AC_MSG_ERROR([--with-system-llvm needs full path to llvm-config])
-    ;;
+     llvmconfig="/usr/local/bin/llvm-config"
+     if test ! -x "$llvmconfig"; then
+     llvmconfig="/usr/bin/llvm-config"
+       if test ! -x "$llvmconfig"; then
+         AC_MSG_ERROR([llvm-config cannot be found within defaults])
+       fi
+     fi
+     ;;
   no) ;;
   *)
-    llvmconfig="$withval"
-    llvmver=`$llvmconfig --version`
-
-    AC_SUBST(LLVMCONFIG_CXXFLAGS, [`$llvmconfig --cxxflags`])
-    AC_SUBST(LLVMCONFIG_LDFLAGS, [`$llvmconfig --ldflags`])
-    AC_SUBST(LLVMCONFIG_LIBS, [`$llvmconfig --libs jit nativecodegen scalaropts ipo`])
-    AC_SUBST(LLVMCONFIG_LIBFILES, [`$llvmconfig --libfiles jit nativecodegen scalaropts ipo`])
-    AC_MSG_NOTICE([Using external LLVM])
-    AC_MSG_NOTICE([CXXFLAGS from llvm-config: $LLVMCONFIG_CXXFLAGS])
-    AC_MSG_NOTICE([LDFLAGS from llvm-config: $LLVMCONFIG_LDFLAGS])
-    AC_MSG_NOTICE([LIBS from llvm-config: $LLVMCONFIG_LIBS])
-    ;;
+     llvmconfig="$withval"
+     if test ! -x "$llvmconfig"; then
+       AC_MSG_ERROR([llvm-config does not exist at $llvmconfig])
+     fi
+     ;;
   esac
+
+ if test "x$llvmconfig" != "x"; then
+     llvmver=`$llvmconfig --version`
+
+     AC_SUBST(LLVMCONFIG_CXXFLAGS, [`$llvmconfig --cxxflags`])
+     AC_SUBST(LLVMCONFIG_LDFLAGS, [`$llvmconfig --ldflags`])
+     AC_SUBST(LLVMCONFIG_LIBS, [`$llvmconfig --libs jit nativecodegen scalaropts ipo`])
+     AC_SUBST(LLVMCONFIG_LIBFILES, [`$llvmconfig --libfiles jit nativecodegen scalaropts ipo`])
+     AC_MSG_NOTICE([Using external LLVM])
+     AC_MSG_NOTICE([CXXFLAGS from llvm-config: $LLVMCONFIG_CXXFLAGS])
+     AC_MSG_NOTICE([LDFLAGS from llvm-config: $LLVMCONFIG_LDFLAGS])
+     AC_MSG_NOTICE([LIBS from llvm-config: $LLVMCONFIG_LIBS])
+ fi
 ])
 
 AC_MSG_CHECKING([for supported LLVM version])
@@ -97,9 +110,9 @@ if test "x$packaged_llvm" = "xyes"; then
 elif test $llvmver_test -lt 290; then
     AC_MSG_RESULT([no ($llvmver)])
     AC_MSG_ERROR([LLVM >= 2.9 required, but "$llvmver"($llvmver_test) found])
-elif test $llvmver_test -gt 342; then
+elif test $llvmver_test -ge 360; then
     AC_MSG_RESULT([no ($llvmver)])
-    AC_MSG_ERROR([LLVM <= 3.4.2 required, but "$llvmver"($llvmver_test) found])
+    AC_MSG_ERROR([LLVM < 3.6 required, but "$llvmver"($llvmver_test) found])
 else
     AC_MSG_RESULT([ok ($llvmver)])
 fi
@@ -253,11 +266,6 @@ CXX_FLAG_CHECK(NO_MISSING_FIELD_INITIALIZERS, [-Wno-missing-field-initializers])
 AC_MSG_RESULT([$NO_VARIADIC_MACROS $NO_MISSING_FIELD_INITIALIZERS])
 
 AM_CONDITIONAL(BUILD_EXTERNAL_LLVM, [test -n "$llvmconfig"])
-
-m4_include([../../m4/reorganization/libs/json.m4])
-AC_SUBST([JSON_LIBS])
-AC_SUBST([JSON_LDFLAGS])
-AC_SUBST([JSON_CPPFLAGS])
 
 AC_OUTPUT([
     Makefile
