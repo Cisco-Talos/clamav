@@ -2687,7 +2687,21 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
         totsize = strlen(rule->id) + 2 + strlen(YARATARGET);
         STAILQ_FOREACH(string, &rule->strings, link) {
             nstrings++;
-            allstringsize += strlen(string->string);
+            if (STRING_IS_HEX(string)) {
+                size_t len = strlen(string->string);
+                for (i=0; i < len; i++) {
+                    int ch = string->string[i];
+                    if (isalnum(ch))
+                        allstringsize++;
+                }
+            } else {
+                allstringsize += strlen(string->string);
+            }
+        }
+
+        if (!nstrings) {
+            cli_errmsg("Rule %s contains to readable strings\n", rule->id);
+            return CL_EMALFDB;
         }
 
         allstringsize *= 2; /* For converting to hex */
@@ -2717,9 +2731,21 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
             string = STAILQ_FIRST(&rule->strings);
             STAILQ_REMOVE(&rule->strings, string, _yc_string, link);
 
-            for (i=0; i < strlen(string->string); i++) {
-                size_t len = strlen(rulestr);
-                snprintf(rulestr+len, totsize-len, "%02x", string->string[i]);
+            if (STRING_IS_HEX(string)) {
+                size_t len = strlen(string->string);
+                size_t rulelen = strlen(rulestr);
+                size_t j;
+                for (j=0, i=0; i < len; i++) {
+                    int ch = string->string[i];
+                    if (isalnum(ch))
+                        rulestr[rulelen+(j++)] = string->string[i];
+                }
+                rulestr[rulelen + j] = '\0';
+            } else {
+                for (i=0; i < strlen(string->string); i++) {
+                    size_t len = strlen(rulestr);
+                    snprintf(rulestr+len, totsize-len, "%02x", string->string[i]);
+                }
             }
 
             if (!STAILQ_EMPTY(&rule->strings))
@@ -2729,6 +2755,9 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
             free(string->string);
             free(string);
         }
+
+        if (rulestr[strlen(rulestr)-1] == ';')
+            rulestr[strlen(rulestr)-1] = '\0';
 
         printf("[+] computed ldb: \"%s\"\n", rulestr);
         ruledup = cli_malloc(strlen(rulestr)+1);
@@ -2748,7 +2777,7 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
              engine, options, rule->id, line++, &sigs, 0, ruledup, NULL);
 #endif
 
-        printf("totsize: %zu\treal size: %zu\n", totsize, strlen(rulestr));
+        printf("totsize: %zu\treal size: %zu\n", totsize, strlen(ruledup));
         free(rulestr);
         free(ruledup);
 
