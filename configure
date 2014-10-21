@@ -883,7 +883,6 @@ enable_coverage
 enable_xml
 with_xml
 with_openssl
-with_libjson
 enable_maintainer_mode
 with_zlib
 enable_zlib_vcheck
@@ -1609,8 +1608,6 @@ Optional Packages:
   --with-xml=DIR	  path to directory containing libxml2 library (default=
 			  /usr/local or /usr if not found in /usr/local)
   --with-openssl=DIR   path to directory containing openssl (default=
-    /usr/local or /usr if not found in /usr/local)
-  --with-libjson=DIR   path to directory containing libjson (default=
     /usr/local or /usr if not found in /usr/local)
   --with-zlib=DIR	  path to directory containing zlib library (default=
 			  /usr/local or /usr if not found in /usr/local)
@@ -17101,10 +17098,6 @@ CFLAGS="$save_CFLAGS"
 LIBS="$save_LIBS"
 
 
-
-# Check whether --with-libjson was given.
-if test "${with_libjson+set}" = set; then :
-  withval=$with_libjson;
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for libjson installation" >&5
 $as_echo_n "checking for libjson installation... " >&6; }
 if test "X$withval" != "Xyes"
@@ -17132,13 +17125,6 @@ else
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $LIBJSON_HOME" >&5
 $as_echo "$LIBJSON_HOME" >&6; }
-
-else
-
-have_json_header="no"
-
-fi
-
 
 if test "X$have_json_header" = "Xyes"
 then
