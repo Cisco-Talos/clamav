@@ -178,7 +178,7 @@ static inline int matcher_run(const struct cli_matcher *root,
                 if (rc != CL_SUCCESS)
                     return rc;
                 if (maxfilesize && (map->len > maxfilesize)) {
-                    cli_dbgmsg("cli_pcre_scanbuf: pcre max filesize (map) exceeded (limit: %llu, needed: %llu)\n", maxfilesize, (long long unsigned)map->len);
+                    cli_dbgmsg("matcher_run: pcre max filesize (map) exceeded (limit: %llu, needed: %llu)\n", maxfilesize, (long long unsigned)map->len);
                     return CL_EMAXSIZE;
                 }
 
@@ -201,7 +201,7 @@ static inline int matcher_run(const struct cli_matcher *root,
             if (rc != CL_SUCCESS)
                 return rc;
             if (maxfilesize && (length > maxfilesize)) {
-                cli_dbgmsg("cli_pcre_scanbuf: pcre max filesize (buf) exceeded (limit: %llu, needed: %u)\n", maxfilesize, length);
+                cli_dbgmsg("matcher_run: pcre max filesize (buf) exceeded (limit: %llu, needed: %u)\n", maxfilesize, length);
                 return CL_EMAXSIZE;
             }
 
@@ -846,8 +846,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
     cli_targetinfo(&info, i, map);
 
     if(!ftonly) {
-        if((ret = cli_ac_initdata(&gdata, groot->ac_partsigs, groot->ac_lsigs, groot->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN)) || (ret = cli_ac_caloff(groot, &gdata, &info)) ||
-           (ret = cli_pcre_recaloff(groot, &gpoff, &info, ctx))) {
+        if((ret = cli_ac_initdata(&gdata, groot->ac_partsigs, groot->ac_lsigs, groot->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN)) || (ret = cli_ac_caloff(groot, &gdata, &info))) {
             if(info.exeinfo.section)
                 free(info.exeinfo.section);
 
@@ -857,11 +856,22 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
             cl_hash_destroy(sha256ctx);
             return ret;
         }
+        if((ret = cli_pcre_recaloff(groot, &gpoff, &info, ctx))) {
+            cli_ac_freedata(&gdata);
+            if(info.exeinfo.section)
+                free(info.exeinfo.section);
+
+            cli_hashset_destroy(&info.exeinfo.vinfo);
+            cl_hash_destroy(md5ctx);
+            cl_hash_destroy(sha1ctx);
+            cl_hash_destroy(sha256ctx);
+            return ret;
+
+        }
     }
 
     if(troot) {
-        if((ret = cli_ac_initdata(&tdata, troot->ac_partsigs, troot->ac_lsigs, troot->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN)) || (ret = cli_ac_caloff(troot, &tdata, &info)) ||
-           (ret = cli_pcre_recaloff(troot, &tpoff, &info, ctx))) {
+        if((ret = cli_ac_initdata(&tdata, troot->ac_partsigs, troot->ac_lsigs, troot->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN)) || (ret = cli_ac_caloff(troot, &tdata, &info))) {
             if(!ftonly) {
                 cli_ac_freedata(&gdata);
                 cli_pcre_freeoff(&gpoff);
@@ -884,7 +894,6 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
                     }
 
                     cli_ac_freedata(&tdata);
-                    cli_pcre_freeoff(&tpoff);
                     if(info.exeinfo.section)
                         free(info.exeinfo.section);
 
@@ -897,6 +906,24 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 
                 bm_offmode = 1;
             }
+        }
+        if ((ret = cli_pcre_recaloff(troot, &tpoff, &info, ctx))) {
+            if(!ftonly) {
+                cli_ac_freedata(&gdata);
+                cli_pcre_freeoff(&gpoff);
+            }
+
+            cli_ac_freedata(&tdata);
+            if(bm_offmode)
+                cli_bm_freeoff(&toff);
+            if(info.exeinfo.section)
+                free(info.exeinfo.section);
+
+            cli_hashset_destroy(&info.exeinfo.vinfo);
+            cl_hash_destroy(md5ctx);
+            cl_hash_destroy(sha1ctx);
+            cl_hash_destroy(sha256ctx);
+            return ret;
         }
     }
 
@@ -953,9 +980,9 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
                 }
 
                 cli_ac_freedata(&tdata);
-                cli_pcre_freeoff(&tpoff);
                 if(bm_offmode)
                     cli_bm_freeoff(&toff);
+                cli_pcre_freeoff(&tpoff);
 
                 if(info.exeinfo.section)
                     free(info.exeinfo.section);
@@ -982,9 +1009,9 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
                 cli_pcre_freeoff(&gpoff);
                 if(troot) {
                     cli_ac_freedata(&tdata);
-                    cli_pcre_freeoff(&tpoff);
                     if(bm_offmode)
                         cli_bm_freeoff(&toff);
+                    cli_pcre_freeoff(&tpoff);
                 }
 
                 if(info.exeinfo.section)
@@ -1108,9 +1135,9 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
             viruses_found++;
 
         cli_ac_freedata(&tdata);
-        cli_pcre_freeoff(&tpoff);
         if(bm_offmode)
             cli_bm_freeoff(&toff);
+        cli_pcre_freeoff(&tpoff);
     }
 
     if(groot) {

@@ -360,7 +360,7 @@ int cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, lon
     struct cli_pcre_meta *pm = NULL;
     int disable_all = 0;
 
-    if (dconf && (dconf->pcre & PCRE_CONF_SUPPORT))
+    if (dconf && !(dconf->pcre & PCRE_CONF_SUPPORT))
         disable_all = 1;
 
     for (i = 0; i < root->pcre_metas; ++i) {
