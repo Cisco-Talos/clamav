@@ -219,7 +219,7 @@ void cli_pcre_report(const struct cli_pcre_data *pd, const unsigned char *buffer
                 start = buffer + ovector[2*i];
                 length = ovector[2*i+1] - ovector[2*i];
 
-                if (ovector[2*i+1] >= buflen) {
+                if (ovector[2*i+1] > buflen) {
                     cli_warnmsg("cli_pcre_report: reported match goes outside buffer\n");
                     continue;
                 }
