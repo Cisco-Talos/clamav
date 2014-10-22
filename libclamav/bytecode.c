@@ -1484,6 +1484,8 @@ void cli_sigperf_print()
 	elem++;
 	elems++;
     }
+    if (max_name_len < strlen("Bytecode name"))
+        max_name_len = strlen("Bytecode name");
 
     cli_qsort(stats, elems, sizeof(struct sigperf_elem), sigelem_comp);
 

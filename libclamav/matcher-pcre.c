@@ -146,6 +146,8 @@ void cli_pcre_perf_print()
         elem++;
         elems++;
     }
+    if (max_name_len < strlen("PCRE Expression"))
+        max_name_len = strlen("PCRE Expression");
 
     cli_qsort(stats, elems, sizeof(struct sigperf_elem), sigelem_comp);
 
@@ -558,7 +560,6 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
                 }
             }
             else {
-                /* you could call cli_caloff here but you should call cli_pcre_recaloff prior within the caller */
                 adjbuffer = 0;
                 adjshift = 0;
             }
