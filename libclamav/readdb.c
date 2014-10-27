@@ -2654,7 +2654,7 @@ static char **parse_yara_hex_string(YR_STRING *string)
     char **res=NULL, **tres;
     size_t nres=1, tnres, slen, *ssizes=NULL, *tssizes;
     char *str, *p1, *p2, *p3;
-    size_t i;
+    size_t i, j;
     unsigned long m, n;
 
     if (!(string) || !(string->string))
@@ -2663,7 +2663,7 @@ static char **parse_yara_hex_string(YR_STRING *string)
     if (!STRING_IS_HEX(string))
         return NULL;
 
-    str = string->string;
+    str = (char *)(string->string);
     slen = strlen(str);
 
     /* First calculate how many strings we need and how long each string needs to be */
@@ -2721,7 +2721,7 @@ static char **parse_yara_hex_string(YR_STRING *string)
 
             if (n - m == 0) {
                 for (i=0; i < nres; i++)
-                    ssizes[nres] += m * 2;
+                    ssizes[nres]++; /* [n-n] behaves as a match-all wildcard (*) */
                 p1 = p3;
                 break;
             }
@@ -2768,9 +2768,73 @@ static char **parse_yara_hex_string(YR_STRING *string)
         p1++;
     }
 
+    /* Allocate the space needed for the strings */
+    res = cli_calloc(nres+1, sizeof(char **)); /* +1 for terminating NULL */
+    if (!(res))
+        goto err;
+
+    for (i=0; i<nres; i++) {
+        res[i] = cli_calloc(ssizes[i]+1, 1);
+        if (!(res[i]))
+            goto err;
+    }
+
+    /* Copy over the strings */
+    tnres=1;
+    p1 = strchr(str, '{')+1;
+    while ((size_t)(p1 - str) < slen-1) {
+        switch (*p1) {
+        case ' ':
+        case '\n':
+        case '\r':
+        case '\t':
+            break;
+        case '[':
+            p2 = p1+1;
+            for (p2 = p1+1; (size_t)(p2 - str) < slen; p2++)
+                if (*p2 == ']')
+                    break;
+
+            for (p3 = p1+1; p3 < p2; p3++)
+                if (*p3 == '-')
+                    break;
+
+            m = strtoul(p1+1, &p3, 10);
+            if (m == 0 && errno == ERANGE)
+                goto err;
+
+            n = strtoul(p3+1, &p3, 10);
+
+            if (m > n)
+                goto err;
+
+            if (n - m == 0) {
+                for (i=0; i < nres; i++)
+                    res[i][strlen(res[i])-1] = '*';
+                p1 = p3;
+                break;
+            }
+
+            tnres += n - m;
+            for (i=1; i <= tnres; i++) {
+                for (j=0; j<i; j++)
+                    sprintf(res[i-1]+strlen(res[i-1]), "??");
+            }
+
+            p1=p3;
+            break;
+        default:
+            for (i=0; i < nres; i++)
+                res[i][strlen(res[i])] = *p1;
+            break;
+        }
+
+        p1++;
+    }
+
     cli_errmsg("Yara string \"%s\" has %zu substrings\n", str, nres);
     for (i = 0; i < nres; i++) {
-        cli_errmsg("    len(substring[%zu]) = %zu\n", i, ssizes[i]);
+        cli_errmsg("    substring[%zu] (%zu:%zu): \"%s\"\n", i, ssizes[i], strlen(res[i]), res[i]);
     }
 
     return NULL;
