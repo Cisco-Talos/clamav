@@ -447,6 +447,9 @@ int cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data, struc
         return CL_EMEM;
     }
 
+    pm_dbgmsg("CLI_OFF_NONE: %u\n", CLI_OFF_NONE);
+    pm_dbgmsg("CLI_OFF_ANY: %u\n", CLI_OFF_ANY);
+
     /* iterate across all pcre metadata and recalc offsets */
     for (i = 0; i < root->pcre_metas; ++i) {
         pm = root->pcre_metatable[i];
@@ -454,7 +457,7 @@ int cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data, struc
         /* skip broken pcres, not getting executed anyways */
         if (pm->flags & CLI_PCRE_DISABLED) {
             data->offset[i] = CLI_OFF_NONE;
-            data->shift[i] = CLI_OFF_NONE;
+            data->shift[i] = 0;
             continue;
         }
 
@@ -462,11 +465,11 @@ int cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data, struc
             data->offset[i] = 0;
             data->shift[i] = 0;
         }
-        else if (pm->offdata[0] == CLI_OFF_ABSOLUTE) {
-            data->offset[i] = pm->offdata[1];
-            data->shift[i] = pm->offdata[2];
+        else if (pm->offdata[0] == CLI_OFF_NONE) {
+            data->offset[i] = CLI_OFF_NONE;
+            data->shift[i] = 0;
         }
-        else if (pm->offdata[0] == CLI_OFF_EOF_MINUS) {
+        else if (pm->offdata[0] == CLI_OFF_ABSOLUTE) {
             data->offset[i] = pm->offdata[1];
             data->shift[i] = pm->offdata[2];
         }
@@ -478,8 +481,18 @@ int cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data, struc
                 free(data->offset);
                 return ret;
             }
-            data->shift[i] = endoff-(data->offset[i]);
+            /* CLI_OFF_NONE gets passed down, CLI_OFF_ANY gets reinterpreted */
+            /* TODO - CLI_OFF_VERSION is interpreted as CLI_OFF_ANY(?) */
+            if (data->offset[i] == CLI_OFF_ANY) {
+                data->offset[i] = 0;
+                data->shift[i] = 0;
+            } else {
+                data->shift[i] = endoff-(data->offset[i]);
+            }
         }
+
+        pm_dbgmsg("%u: %u %u->%u(+%u)\n", i, pm->offdata[0], data->offset[i],
+                  data->offset[i]+data->shift[i], data->shift[i]);
     }
 
     return CL_SUCCESS;
@@ -493,6 +506,32 @@ void cli_pcre_freeoff(struct cli_pcre_off *data)
         free(data->shift);
         data->shift = NULL;
     }
+}
+
+int cli_pcre_qoff(struct cli_pcre_meta *pm, uint32_t length, uint32_t *adjbuffer, uint32_t *adjshift)
+{
+    if (!pm)
+        return CL_ENULLARG;
+
+    /* default to scanning whole buffer but try to use existing offdata */
+    if (pm->offdata[0] == CLI_OFF_NONE) {
+        return CL_BREAK;
+    }
+    else if (pm->offdata[0] == CLI_OFF_ABSOLUTE) {
+        *adjbuffer = pm->offdata[1];
+        *adjshift = pm->offdata[2];
+    }
+    else if (pm->offdata[0] == CLI_OFF_EOF_MINUS) {
+        *adjbuffer = length - pm->offdata[1];
+        *adjshift = pm->offdata[2];
+    }
+    else {
+        /* CLI_OFF_ANY and all relative offsets; TODO - check if relative offsets apply for normal hex substrs */
+        *adjbuffer = 0;
+        *adjshift = 0;
+    }
+
+    return CL_SUCCESS;
 }
 
 int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct cli_matcher *root, struct cli_ac_data *mdata, struct cli_ac_result **res, const struct cli_pcre_off *data, cli_ctx *ctx)
@@ -522,6 +561,12 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
             continue;
         }
 
+        /* skip checking and running CLI_OFF_NONE pcres */
+        if (data && data->offset[i] == CLI_OFF_NONE) {
+            pm_dbgmsg("cli_pcre_scanbuf: skipping CLI_OFF_NONE regex /%s/\n", pd->expression);
+            continue;
+        }
+
         /* evaluate trigger */
         if (pm->lsigid[0]) {
             cli_dbgmsg("cli_pcre_scanbuf: checking %s; running regex /%s/\n", pm->trigger, pd->expression);
@@ -544,25 +589,8 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
 
         /* adjust the buffer sent to cli_pcre_match for offset and maxshift */
         if (!data) {
-            /* default to scanning whole buffer but try to use existing offdata */
-            if (pm->offdata[0] == CLI_OFF_ABSOLUTE) {
-                adjbuffer = pm->offdata[1];
-                adjshift = pm->offdata[2];
-            }
-            else if (pm->offdata[0] == CLI_OFF_EOF_MINUS) {
-                if (length > pm->offdata[1]) {
-                    adjbuffer = length - pm->offdata[1];
-                    adjshift = pm->offdata[2];
-                }
-                else {
-                    /* EOF is invalid */
-                    continue;
-                }
-            }
-            else {
-                adjbuffer = 0;
-                adjshift = 0;
-            }
+            if (cli_pcre_qoff(pm, length, &adjbuffer, &adjshift) != CL_SUCCESS)
+                continue;
         }
         else {
             adjbuffer = data->offset[i];
@@ -579,6 +607,7 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
                         adjlength = adjshift;
             }
             else {
+                /* NOTE - if using non-encompass method 2, alter shift universally */
                 adjlength = length - adjbuffer;
             }
         }
