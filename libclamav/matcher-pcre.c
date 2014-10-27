@@ -318,7 +318,7 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *virname, const char *
         }
 
         if (pm->flags) {
-            pm_dbgmsg("Matcher:  %s%s\n",
+            pm_dbgmsg("Matcher:  %s%s%s\n",
                       pm->flags & CLI_PCRE_GLOBAL ? "CLAMAV_GLOBAL " : "",
                       pm->flags & CLI_PCRE_ROLLING ? "CLAMAV_ROLLING " : "",
                       pm->flags & CLI_PCRE_ENCOMPASS ? "CLAMAV_ENCOMPASS " : "");
