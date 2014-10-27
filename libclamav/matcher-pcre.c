@@ -55,10 +55,10 @@
 cli_events_t *p_sigevents = NULL;
 unsigned int p_sigid = 0;
 
-static void pcre_perf_events_init(struct cli_pcre_meta *pm)
+static void pcre_perf_events_init(struct cli_pcre_meta *pm, const char *virname)
 {
     int ret;
-    char *pcre_name = NULL;
+    size_t namelen = strlen(virname)+strlen(pm->pdata.expression)+3;
 
     if (!p_sigevents) {
         p_sigevents = cli_events_new(MAX_PCRE_SIGEVENT_ID);
@@ -73,14 +73,21 @@ static void pcre_perf_events_init(struct cli_pcre_meta *pm)
         return;
     }
 
-    /* set the name */
-    pcre_name = pm->pdata.expression;
+    if (!virname)
+        virname = "(null)";
 
-    pm_dbgmsg("pcre_perf: adding sig ids starting %u for %s\n", p_sigid, pcre_name);
+    /* set the name */
+    pm->statname = cli_calloc(1, namelen);
+    if (!pm->statname) {
+        return;
+    }
+    snprintf(pm->statname, namelen, "%s/%s/", virname, pm->pdata.expression);
+
+    pm_dbgmsg("pcre_perf: adding sig ids starting %u for %s\n", p_sigid, pm->statname);
 
     /* register time event */
     pm->sigtime_id = p_sigid;
-    ret = cli_event_define(p_sigevents, p_sigid++, pcre_name, ev_time, multiple_sum);
+    ret = cli_event_define(p_sigevents, p_sigid++, pm->statname, ev_time, multiple_sum);
     if (ret) {
         cli_errmsg("pcre_perf: cli_event_define() error for time event id %d\n", pm->sigtime_id);
         pm->sigtime_id = MAX_PCRE_SIGEVENT_ID+1;
@@ -89,7 +96,7 @@ static void pcre_perf_events_init(struct cli_pcre_meta *pm)
 
     /* register match count */
     pm->sigmatch_id = p_sigid;
-    ret = cli_event_define(p_sigevents, p_sigid++, pcre_name, ev_int, multiple_sum);
+    ret = cli_event_define(p_sigevents, p_sigid++, pm->statname, ev_int, multiple_sum);
     if (ret) {
         cli_errmsg("pcre_perf: cli_event_define() error for matches event id %d\n", pm->sigmatch_id);
         pm->sigmatch_id = MAX_PCRE_SIGEVENT_ID+1;
@@ -334,7 +341,7 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *virname, const char *
 
     /* add metadata to the performance tracker */
     if (options & CL_DB_PCRE_STATS)
-        pcre_perf_events_init(pm);
+        pcre_perf_events_init(pm, virname);
 
     /* add pcre data to root after reallocation */
     pcre_count = root->pcre_metas+1;
@@ -713,6 +720,11 @@ void cli_pcre_freemeta(struct cli_pcre_meta *pm)
     if (pm->virname) {
         free(pm->virname);
         pm->virname = NULL;
+    }
+
+    if (pm->statname) {
+        free(pm->statname);
+        pm->statname = NULL;
     }
 
     cli_pcre_free_single(&(pm->pdata));

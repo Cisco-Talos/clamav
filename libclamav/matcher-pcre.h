@@ -59,6 +59,7 @@ struct cli_pcre_meta {
     /* internal flags (bitfield?) */
     uint32_t flags;
     /* performance tracking */
+    char *statname; /* freed by us, not cli_events_free */
     uint32_t sigtime_id, sigmatch_id;
 };
 
