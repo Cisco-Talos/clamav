@@ -2647,15 +2647,12 @@ static int cli_loadopenioc(FILE *fs, const char *dbname, struct cl_engine *engin
 
 #ifndef _WIN32
 #define YARATARGET "Target:0;"
-static char **parse_yara_hex_string(YR_STRING *string);
+static char *parse_yara_hex_string(YR_STRING *string);
 
-static char **parse_yara_hex_string(YR_STRING *string)
+static char *parse_yara_hex_string(YR_STRING *string)
 {
-    char **res=NULL, **tres;
-    size_t nres=1, tnres, slen, *ssizes=NULL, *tssizes;
-    char *str, *p1, *p2, *p3;
-    size_t i, j;
-    unsigned long m, n;
+    char *res, *str;
+    size_t slen, reslen=0, i, j;
 
     if (!(string) || !(string->string))
         return NULL;
@@ -2664,184 +2661,59 @@ static char **parse_yara_hex_string(YR_STRING *string)
         return NULL;
 
     str = (char *)(string->string);
-    slen = strlen(str);
 
-    /* First calculate how many strings we need and how long each string needs to be */
-    p1 = strchr(str, '{')+1;
-    while ((size_t)(p1-str) < slen-1) {
-        switch (*p1) {
+    if ((slen = strlen(str)) == 0)
+        return NULL;
+
+    str = strchr(str, '{')+1;
+
+    for (i=0; i < slen-1; i++) {
+        switch (str[i]) {
         case ' ':
-        case '\n':
-        case '\r':
         case '\t':
-            break;
-        case '?':
+        case '\r':
+        case '\n':
             break;
         case '[':
-            /*
-             * Jump instruction
-             * Format: [m-n] where 0 <= m <= n
-             * There can be arbitrary whitespace between each token
-             * e.g.:
-             *     [5-10]
-             *     [ 5-10]
-             *     [ 5 -10]
-             *     [ 5 - 10]
-             *     [ 5 - 10 ]
-             *
-             * Most of the following code is just sanity checking
-             */
-            p2 = p1+1;
-            for (p2 = p1+1; (size_t)(p2 - str) < slen; p2++)
-                if (*p2 == ']')
-                    break;
-
-            if ((size_t)(p2 - str) == slen)
-                goto err;
-            if (*p2 != ']')
-                break;
-
-            for (p3 = p1+1; p3 < p2; p3++)
-                if (*p3 == '-')
-                    break;
-
-            if (p3 >= p2-1) {
-                /* We need at least a single digit between the - and the ] */
-                goto err;
-            }
-
-            m = strtoul(p1+1, &p3, 10);
-            if (m == 0 && errno == ERANGE)
-                goto err;
-
-            n = strtoul(p3+1, &p3, 10);
-
-            if (m > n)
-                goto err;
-
-            if (n - m == 0) {
-                for (i=0; i < nres; i++)
-                    ssizes[nres]++; /* [n-n] behaves as a match-all wildcard (*) */
-                p1 = p3;
-                break;
-            }
-
-            /* Now reallocate for the number of strings we need */
-
-            tnres = nres;
-            nres += n - m;
-
-            tssizes = cli_realloc(ssizes, sizeof(size_t) * nres);
-            if (!(tssizes))
-                goto err;
-
-            ssizes = tssizes;
-
-            /* Bump up the sizes */
-
-            for (i=0; i < (n - m); i++)
-                ssizes[tnres + i] = ssizes[i];
-
-            for (i=0; i <= (n - m); i++)
-                ssizes[(tnres + i) - 1] += m + (i*2);
-
-            p1 = p3;
+            /* ClamAV's Aho-Corasic algorithm requires at least two known bytes before {n,m} wildcard */
+            if (reslen < 4)
+                return NULL;
+            reslen += 2;
             break;
         default:
-            if ((*p1 >= 'a' && *p1 <= 'f') || (*p1 >= 'A' && *p1 <= 'F') || (*p1 >= '0' && *p1 <= '9')) {
-                if (!(ssizes)) {
-                    ssizes = cli_calloc(nres, sizeof(size_t));
-                    if (!(ssizes))
-                        goto err;
-                }
-
-                for (i=0; i < nres; i++)
-                    ssizes[i]++;
-
-                break;
-            }
-
-            cli_errmsg("Incorrect character ('%c') in Yara hex string \"%s\"\n", *p1, str);
-            goto err;
+            reslen++;
+            break;
         }
-
-        p1++;
     }
 
-    /* Allocate the space needed for the strings */
-    res = cli_calloc(nres+1, sizeof(char **)); /* +1 for terminating NULL */
+    reslen++;
+    res = cli_calloc(reslen, 1);
     if (!(res))
-        goto err;
+        return NULL;
 
-    for (i=0; i<nres; i++) {
-        res[i] = cli_calloc(ssizes[i]+1, 1);
-        if (!(res[i]))
-            goto err;
-    }
-
-    /* Copy over the strings */
-    tnres=1;
-    p1 = strchr(str, '{')+1;
-    while ((size_t)(p1 - str) < slen-1) {
-        switch (*p1) {
+    for (i=0, j=0; i < slen-1 && j < reslen; i++) {
+        switch (str[i]) {
         case ' ':
-        case '\n':
-        case '\r':
         case '\t':
+        case '\r':
+        case '\n':
+        case '}':
             break;
         case '[':
-            p2 = p1+1;
-            for (p2 = p1+1; (size_t)(p2 - str) < slen; p2++)
-                if (*p2 == ']')
-                    break;
-
-            for (p3 = p1+1; p3 < p2; p3++)
-                if (*p3 == '-')
-                    break;
-
-            m = strtoul(p1+1, &p3, 10);
-            if (m == 0 && errno == ERANGE)
-                goto err;
-
-            n = strtoul(p3+1, &p3, 10);
-
-            if (m > n)
-                goto err;
-
-            if (n - m == 0) {
-                for (i=0; i < nres; i++)
-                    res[i][strlen(res[i])-1] = '*';
-                p1 = p3;
-                break;
-            }
-
-            tnres += n - m;
-            for (i=1; i <= tnres; i++) {
-                for (j=0; j<i; j++)
-                    sprintf(res[i-1]+strlen(res[i-1]), "??");
-            }
-
-            p1=p3;
+            res[j++] = '?';
+            res[j++] = '?';
+            res[j++] = '{';
+            break;
+        case ']':
+            res[j++] = '}';
             break;
         default:
-            for (i=0; i < nres; i++)
-                res[i][strlen(res[i])] = *p1;
+            res[j++] = str[i];
             break;
         }
-
-        p1++;
     }
 
-    cli_errmsg("Yara string \"%s\" has %zu substrings\n", str, nres);
-    for (i = 0; i < nres; i++) {
-        cli_errmsg("    substring[%zu] (%zu:%zu): \"%s\"\n", i, ssizes[i], strlen(res[i]), res[i]);
-    }
-
-    return NULL;
-
-err:
-    /* TODO: Free all the things! */
-    return NULL;
+    return res;
 }
 
 static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, unsigned int options, struct cli_dbio *dbio)
@@ -2930,16 +2802,17 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
             STAILQ_REMOVE(&rule->strings, string, _yc_string, link);
 
             if (STRING_IS_HEX(string)) {
-                size_t len = strlen(string->string);
-                size_t rulelen = strlen(rulestr);
-                size_t j;
-                cli_errmsg("Yara hex string: \"%s\"\n", string->string);
-                for (j=0, i=0; i < len; i++) {
-                    int ch = string->string[i];
-                    if (isalnum(ch))
-                        rulestr[rulelen+(j++)] = string->string[i];
+                char *substr = parse_yara_hex_string(string);
+                size_t len = strlen(rulestr);
+
+                substr = parse_yara_hex_string(string);
+#if 1
+                cli_errmsg("Yara hex string: \"%s\"\n", substr);
+#endif
+                if (substr) {
+                    snprintf(rulestr+len, totsize-len, "%s", substr);
+                    free(substr);
                 }
-                rulestr[rulelen + j] = '\0';
             } else {
                 for (i=0; i < strlen(string->string); i++) {
                     size_t len = strlen(rulestr);
@@ -2958,7 +2831,9 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
         if (rulestr[strlen(rulestr)-1] == ';')
             rulestr[strlen(rulestr)-1] = '\0';
 
+#if 1
         printf("[+] computed ldb: \"%s\"\n", rulestr);
+#endif
         ruledup = cli_malloc(strlen(rulestr)+1);
         if (!ruledup) {
             free(rulestr);
