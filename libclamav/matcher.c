@@ -90,6 +90,7 @@ static inline int PERF_LOG_TRIES(int8_t acmode, int8_t bm_called, int32_t length
 }
 #endif
 
+/* TODO - add mode (map/buffer) trigger for pcre? */
 static inline int matcher_run(const struct cli_matcher *root,
 			      const unsigned char *buffer, uint32_t length,
 			      const char **virname, struct cli_ac_data *mdata,

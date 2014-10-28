@@ -425,6 +425,7 @@ int cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, lon
     return CL_SUCCESS;
 }
 
+/* TODO - handle VI and Macro offset types */
 int cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data, struct cli_target_info *info, cli_ctx *ctx)
 {
     /* TANGENT: maintain relative offset data in cli_ac_data? */
@@ -540,7 +541,8 @@ int cli_pcre_qoff(struct cli_pcre_meta *pm, uint32_t length, uint32_t *adjbuffer
         *adjshift = pm->offdata[2];
     }
     else {
-        /* all relative offsets; TODO - check if relative offsets apply for normal hex substrs */
+        /* all relative offsets */
+        /* TODO - check if relative offsets apply for normal hex substrs */
         *adjbuffer = 0;
         *adjshift = 0;
     }
@@ -633,6 +635,7 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
             }
             else {
                 /* NOTE - if using non-encompass method 2, alter shift universally */
+                /* TODO - limitations on non-encompassed buffers? */
                 adjlength = length - adjbuffer;
             }
         }
