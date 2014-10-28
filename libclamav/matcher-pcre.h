@@ -36,6 +36,10 @@
 #include "mpool.h"
 #include "regex_pcre.h"
 
+#define PNRE_SCAN_NONE 0
+#define PCRE_SCAN_BUFF 1
+#define PCRE_SCAN_FMAP 2
+
 /* stores offset data */
 struct cli_pcre_off {
     uint32_t *offset, *shift;

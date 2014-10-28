@@ -90,7 +90,6 @@ static inline int PERF_LOG_TRIES(int8_t acmode, int8_t bm_called, int32_t length
 }
 #endif
 
-/* TODO - add mode (map/buffer) trigger for pcre? */
 static inline int matcher_run(const struct cli_matcher *root,
 			      const unsigned char *buffer, uint32_t length,
 			      const char **virname, struct cli_ac_data *mdata,
@@ -99,6 +98,7 @@ static inline int matcher_run(const struct cli_matcher *root,
 			      cli_file_t ftype,
 			      struct cli_matched_type **ftoffset,
 			      unsigned int acmode,
+                              unsigned int pcremode,
 			      struct cli_ac_result **acres,
 			      fmap_t *map,
 			      struct cli_bm_off *offdata,
@@ -172,7 +172,7 @@ static inline int matcher_run(const struct cli_matcher *root,
         int rc;
         uint64_t maxfilesize;
 
-        if (map) {
+        if (map && (pcremode == PCRE_SCAN_FMAP)) {
             if (offset+length >= map->len) {
                 /* check that scanned map does not exceed pcre maxfilesize limit */
                 maxfilesize = (uint64_t)cl_engine_get_num(ctx->engine, CL_ENGINE_PCRE_MAX_FILESIZE, &rc);
@@ -196,7 +196,7 @@ static inline int matcher_run(const struct cli_matcher *root,
                 }
             }
         }
-        else {
+        else if (pcremode == PCRE_SCAN_BUFF) {
             /* check that scanned buffer does not exceed pcre maxfilesize limit */
             maxfilesize = (uint64_t)cl_engine_get_num(ctx->engine, CL_ENGINE_PCRE_MAX_FILESIZE, &rc);
             if (rc != CL_SUCCESS)
@@ -252,7 +252,7 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, 
 	if(!acdata && (ret = cli_ac_initdata(&mdata, troot->ac_partsigs, troot->ac_lsigs, troot->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN)))
 	    return ret;
 
-	ret = matcher_run(troot, buffer, length, &virname, acdata ? (acdata[0]): (&mdata), offset, NULL, ftype, NULL, AC_SCAN_VIR, NULL, *ctx->fmap, NULL, NULL, NULL, ctx);
+	ret = matcher_run(troot, buffer, length, &virname, acdata ? (acdata[0]): (&mdata), offset, NULL, ftype, NULL, AC_SCAN_VIR, PCRE_SCAN_BUFF, NULL, *ctx->fmap, NULL, NULL, NULL, ctx);
 
 	if(!acdata)
 	    cli_ac_freedata(&mdata);
@@ -272,7 +272,7 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, 
     if(!acdata && (ret = cli_ac_initdata(&mdata, groot->ac_partsigs, groot->ac_lsigs, groot->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN)))
 	return ret;
 
-    ret = matcher_run(groot, buffer, length, &virname, acdata ? (acdata[1]): (&mdata), offset, NULL, ftype, NULL, AC_SCAN_VIR, NULL, *ctx->fmap, NULL, NULL, NULL, ctx);
+    ret = matcher_run(groot, buffer, length, &virname, acdata ? (acdata[1]): (&mdata), offset, NULL, ftype, NULL, AC_SCAN_VIR, PCRE_SCAN_BUFF, NULL, *ctx->fmap, NULL, NULL, NULL, ctx);
 
     if(!acdata)
 	cli_ac_freedata(&mdata);
@@ -968,7 +968,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
         if(troot) {
                 virname = NULL;
                 viroffset = 0;
-                ret = matcher_run(troot, buff, bytes, &virname, &tdata, offset, &info, ftype, ftoffset, acmode, acres, map, bm_offmode ? &toff : NULL, &tpoff, &viroffset, ctx);
+                ret = matcher_run(troot, buff, bytes, &virname, &tdata, offset, &info, ftype, ftoffset, acmode, PCRE_SCAN_FMAP, acres, map, bm_offmode ? &toff : NULL, &tpoff, &viroffset, ctx);
 
             if (virname) {
                 /* virname already appended by matcher_run */
@@ -999,7 +999,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
         if(!ftonly) {
             virname = NULL;
             viroffset = 0;
-            ret = matcher_run(groot, buff, bytes, &virname, &gdata, offset, &info, ftype, ftoffset, acmode, acres, map, NULL, &gpoff, &viroffset, ctx);
+            ret = matcher_run(groot, buff, bytes, &virname, &gdata, offset, &info, ftype, ftoffset, acmode, PCRE_SCAN_FMAP, acres, map, NULL, &gpoff, &viroffset, ctx);
 
             if (virname) {
                 /* virname already appended by matcher_run */
