@@ -121,12 +121,10 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
     unsigned int i, j, hexlen, parts = 0;
     int mindist = 0, maxdist = 0, error = 0;
 
-    cli_errmsg("==== cli_parse add called with hexsig: \"%s\" ====\n", hexsig);
-
     hexlen = strlen(hexsig);
     if (hexsig[0] == '$') {
         /* macro */
-        unsigned smin, smax, tid;
+        unsigned int smin, smax, tid;
         struct cli_ac_patt *patt;
 
         if (hexsig[hexlen-1] != '$') {
@@ -139,8 +137,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
             return CL_EMALFDB;
         }
 
-        if (sscanf(hexsig,"${%u-%u}%u$",
-               &smin, &smax, &tid)  != 3) {
+        if (sscanf(hexsig,"${%u-%u}%u$", &smin, &smax, &tid)  != 3) {
             cli_errmsg("cli_parseadd(): invalid macro signature format\n");
             return CL_EMALFDB;
         }
@@ -174,8 +171,9 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
             return ret;
         }
 
-            return CL_SUCCESS;
+        return CL_SUCCESS;
     }
+
     if((wild = strchr(hexsig, '{'))) {
         if(sscanf(wild, "%c%u%c", &l, &range, &r) == 3 && l == '{' && r == '}' && range > 0 && range < 128) {
             hexcpy = cli_calloc(hexlen + 2 * range, sizeof(char));
