@@ -114,233 +114,249 @@ char *cli_virname(char *virname, unsigned int official)
 
 int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hexsig, uint16_t rtype, uint16_t type, const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options)
 {
-	struct cli_bm_patt *bm_new;
-	char *pt, *hexcpy, *start, *n, l, r;
-	const char *wild;
-	int ret, asterisk = 0, range;
-	unsigned int i, j, hexlen, parts = 0;
-	int mindist = 0, maxdist = 0, error = 0;
+    struct cli_bm_patt *bm_new;
+    char *pt, *hexcpy, *start, *n, l, r;
+    const char *wild;
+    int ret, asterisk = 0, range;
+    unsigned int i, j, hexlen, parts = 0;
+    int mindist = 0, maxdist = 0, error = 0;
 
+    cli_errmsg("==== cli_parse add called with hexsig: \"%s\" ====\n", hexsig);
 
     hexlen = strlen(hexsig);
     if (hexsig[0] == '$') {
-	/* macro */
-	unsigned smin, smax, tid;
-	struct cli_ac_patt *patt;
-	if (hexsig[hexlen-1] != '$') {
-	    cli_errmsg("cli_parseadd(): missing terminator $\n");
-	    return CL_EMALFDB;
-	}
-	if (!lsigid) {
-	    cli_errmsg("cli_parseadd(): macro signatures only valid inside logical signatures\n");
-	    return CL_EMALFDB;
-	}
-	if (sscanf(hexsig,"${%u-%u}%u$",
-		   &smin, &smax, &tid)  != 3) {
-	    cli_errmsg("cli_parseadd(): invalid macro signature format\n");
-	    return CL_EMALFDB;
-	}
-	if (tid >= 32) {
-	    cli_errmsg("cli_parseadd(): only 32 macro groups are supported\n");
-	    return CL_EMALFDB;
-	}
-	patt = mpool_calloc(root->mempool, 1, sizeof(*patt));
-	if (!patt)
-	    return CL_EMEM;
-	/* this is not a pattern that will be matched by AC itself, rather it is a
-	 * pattern checked by the lsig code */
-	patt->ch_mindist[0] = smin;
-	patt->ch_maxdist[0] = smax;
-	patt->sigid = tid;
-	patt->length = root->ac_mindepth;
-	/* dummy */
-	patt->pattern = mpool_calloc(root->mempool, patt->length, sizeof(*patt->pattern));
-	if (!patt->pattern) {
-	    free(patt);
-	    return CL_EMEM;
-	}
-	if ((ret = cli_ac_addpatt(root, patt))) {
-	    mpool_free(root->mempool, patt->pattern);
-	    free(patt);
-	    return ret;
-	}
-	return CL_SUCCESS;
+        /* macro */
+        unsigned smin, smax, tid;
+        struct cli_ac_patt *patt;
+
+        if (hexsig[hexlen-1] != '$') {
+            cli_errmsg("cli_parseadd(): missing terminator $\n");
+            return CL_EMALFDB;
+        }
+
+        if (!lsigid) {
+            cli_errmsg("cli_parseadd(): macro signatures only valid inside logical signatures\n");
+            return CL_EMALFDB;
+        }
+
+        if (sscanf(hexsig,"${%u-%u}%u$",
+               &smin, &smax, &tid)  != 3) {
+            cli_errmsg("cli_parseadd(): invalid macro signature format\n");
+            return CL_EMALFDB;
+        }
+
+        if (tid >= 32) {
+            cli_errmsg("cli_parseadd(): only 32 macro groups are supported\n");
+            return CL_EMALFDB;
+        }
+
+        patt = mpool_calloc(root->mempool, 1, sizeof(*patt));
+        if (!patt)
+            return CL_EMEM;
+
+        /* this is not a pattern that will be matched by AC itself, rather it is a
+         * pattern checked by the lsig code */
+        patt->ch_mindist[0] = smin;
+        patt->ch_maxdist[0] = smax;
+        patt->sigid = tid;
+        patt->length = root->ac_mindepth;
+
+        /* dummy */
+        patt->pattern = mpool_calloc(root->mempool, patt->length, sizeof(*patt->pattern));
+        if (!patt->pattern) {
+            free(patt);
+            return CL_EMEM;
+        }
+
+        if ((ret = cli_ac_addpatt(root, patt))) {
+            mpool_free(root->mempool, patt->pattern);
+            free(patt);
+            return ret;
+        }
+
+            return CL_SUCCESS;
     }
     if((wild = strchr(hexsig, '{'))) {
-	if(sscanf(wild, "%c%u%c", &l, &range, &r) == 3 && l == '{' && r == '}' && range > 0 && range < 128) {
-	    hexcpy = cli_calloc(hexlen + 2 * range, sizeof(char));
-	    if(!hexcpy)
-		return CL_EMEM;
-	    strncpy(hexcpy, hexsig, wild - hexsig);
-	    for(i = 0; i < (unsigned int) range; i++)
-		strcat(hexcpy, "??");
-	    if(!(wild = strchr(wild, '}'))) {
-		cli_errmsg("cli_parse_add(): Problem adding signature: missing bracket\n");
-		free(hexcpy);
-		return CL_EMALFDB;
-	    }
-	    strcat(hexcpy, ++wild);
-	    ret = cli_parse_add(root, virname, hexcpy, rtype, type, offset, target, lsigid, options);
-	    free(hexcpy);
-	    return ret;
-	}
+        if(sscanf(wild, "%c%u%c", &l, &range, &r) == 3 && l == '{' && r == '}' && range > 0 && range < 128) {
+            hexcpy = cli_calloc(hexlen + 2 * range, sizeof(char));
+            if(!hexcpy)
+                return CL_EMEM;
 
-	root->ac_partsigs++;
+            strncpy(hexcpy, hexsig, wild - hexsig);
+            for(i = 0; i < (unsigned int) range; i++)
+                strcat(hexcpy, "??");
 
-	if(!(hexcpy = cli_strdup(hexsig)))
-	    return CL_EMEM;
+            if(!(wild = strchr(wild, '}'))) {
+                cli_errmsg("cli_parse_add(): Problem adding signature: missing bracket\n");
+                free(hexcpy);
+                return CL_EMALFDB;
+            }
 
-	for(i = 0; i < hexlen; i++)
-	    if(hexsig[i] == '{' || hexsig[i] == '*')
-		parts++;
+            strcat(hexcpy, ++wild);
+            ret = cli_parse_add(root, virname, hexcpy, rtype, type, offset, target, lsigid, options);
+            free(hexcpy);
 
-	if(parts)
-	    parts++;
+            return ret;
+        }
 
-	start = pt = hexcpy;
-	for(i = 1; i <= parts; i++) {
+        root->ac_partsigs++;
 
-	    if(i != parts) {
-		for(j = 0; j < strlen(start); j++) {
-		    if(start[j] == '{') {
-			asterisk = 0;
-			pt = start + j;
-			break;
-		    }
-		    if(start[j] == '*') {
-			asterisk = 1;
-			pt = start + j;
-			break;
-		    }
-		}
-		*pt++ = 0;
-	    }
+        if(!(hexcpy = cli_strdup(hexsig)))
+            return CL_EMEM;
 
-	    if((ret = cli_ac_addsig(root, virname, start, root->ac_partsigs, parts, i, rtype, type, mindist, maxdist, offset, lsigid, options))) {
-		cli_errmsg("cli_parse_add(): Problem adding signature (1).\n");
-		error = 1;
-		break;
-	    }
+        for(i = 0; i < hexlen; i++)
+            if(hexsig[i] == '{' || hexsig[i] == '*')
+                parts++;
 
-	    if(i == parts)
-		break;
+        if(parts)
+            parts++;
 
-	    mindist = maxdist = 0;
+        start = pt = hexcpy;
+        for(i = 1; i <= parts; i++) {
+            if(i != parts) {
+                for(j = 0; j < strlen(start); j++) {
+                    if(start[j] == '{') {
+                        asterisk = 0;
+                        pt = start + j;
+                        break;
+                    }
 
-	    if(asterisk) {
-		start = pt;
-		continue;
-	    }
+                    if(start[j] == '*') {
+                        asterisk = 1;
+                        pt = start + j;
+                        break;
+                    }
+                }
 
-	    if(!(start = strchr(pt, '}'))) {
-		error = 1;
-		break;
-	    }
-	    *start++ = 0;
+                *pt++ = 0;
+            }
 
-	    if(!pt) {
-		error = 1;
-		break;
-	    }
+            if((ret = cli_ac_addsig(root, virname, start, root->ac_partsigs, parts, i, rtype, type, mindist, maxdist, offset, lsigid, options))) {
+                cli_errmsg("cli_parse_add(): Problem adding signature (1).\n");
+                error = 1;
+                break;
+            }
 
-	    if(!strchr(pt, '-')) {
-		if(!cli_isnumber(pt) || (mindist = maxdist = atoi(pt)) < 0) {
-		    error = 1;
-		    break;
-		}
-	    } else {
-		if((n = cli_strtok(pt, 0, "-"))) {
-		    if(!cli_isnumber(n) || (mindist = atoi(n)) < 0) {
-			error = 1;
-			free(n);
-			break;
-		    }
-		    free(n);
-		}
+            if(i == parts)
+                break;
 
-		if((n = cli_strtok(pt, 1, "-"))) {
-		    if(!cli_isnumber(n) || (maxdist = atoi(n)) < 0) {
-			error = 1;
-			free(n);
-			break;
-		    }
-		    free(n);
-		}
+            mindist = maxdist = 0;
 
-		if((n = cli_strtok(pt, 2, "-"))) { /* strict check */
-		    error = 1;
-		    free(n);
-		    break;
-		}
-	    }
-	}
+            if(asterisk) {
+                start = pt;
+                continue;
+            }
 
-	free(hexcpy);
-	if(error) {
-	    cli_errmsg("cli_parseadd(): Problem adding signature (1b).\n");
-	    return CL_EMALFDB;
-	}
+            if(!(start = strchr(pt, '}'))) {
+                error = 1;
+                break;
+            }
 
+            *start++ = 0;
+
+            if(!pt) {
+                error = 1;
+                break;
+            }
+
+            if(!strchr(pt, '-')) {
+                if(!cli_isnumber(pt) || (mindist = maxdist = atoi(pt)) < 0) {
+                    error = 1;
+                    break;
+                }
+            } else {
+                if((n = cli_strtok(pt, 0, "-"))) {
+                    if(!cli_isnumber(n) || (mindist = atoi(n)) < 0) {
+                        error = 1;
+                        free(n);
+                        break;
+                    }
+
+                    free(n);
+                }
+
+                if((n = cli_strtok(pt, 1, "-"))) {
+                    if(!cli_isnumber(n) || (maxdist = atoi(n)) < 0) {
+                        error = 1;
+                        free(n);
+                        break;
+                    }
+
+                    free(n);
+                }
+
+                if((n = cli_strtok(pt, 2, "-"))) { /* strict check */
+                    error = 1;
+                    free(n);
+                    break;
+                }
+            }
+        }
+
+        free(hexcpy);
+        if(error) {
+            cli_errmsg("cli_parseadd(): Problem adding signature (1b).\n");
+            return CL_EMALFDB;
+        }
     } else if(strchr(hexsig, '*')) {
-	root->ac_partsigs++;
+        root->ac_partsigs++;
 
-	for(i = 0; i < hexlen; i++)
-	    if(hexsig[i] == '*')
-		parts++;
+        for(i = 0; i < hexlen; i++)
+            if(hexsig[i] == '*')
+                parts++;
 
-	if(parts)
-	    parts++;
+        if(parts)
+            parts++;
 
-	for(i = 1; i <= parts; i++) {
-	    if((pt = cli_strtok(hexsig, i - 1, "*")) == NULL) {
-		cli_errmsg("Can't extract part %d of partial signature.\n", i);
-		return CL_EMALFDB;
-	    }
+        for(i = 1; i <= parts; i++) {
+            if((pt = cli_strtok(hexsig, i - 1, "*")) == NULL) {
+                cli_errmsg("Can't extract part %d of partial signature.\n", i);
+                return CL_EMALFDB;
+            }
 
-	    if((ret = cli_ac_addsig(root, virname, pt, root->ac_partsigs, parts, i, rtype, type, 0, 0, offset, lsigid, options))) {
-		cli_errmsg("cli_parse_add(): Problem adding signature (2).\n");
-		free(pt);
-		return ret;
-	    }
+            if((ret = cli_ac_addsig(root, virname, pt, root->ac_partsigs, parts, i, rtype, type, 0, 0, offset, lsigid, options))) {
+                cli_errmsg("cli_parse_add(): Problem adding signature (2).\n");
+                free(pt);
+                return ret;
+            }
 
-	    free(pt);
-	}
-
+            free(pt);
+        }
     } else if(root->ac_only || type || lsigid || strpbrk(hexsig, "?([") || (root->bm_offmode && (!strcmp(offset, "*") || strchr(offset, ','))) || strstr(offset, "VI") || strchr(offset, '$')) {
-	if((ret = cli_ac_addsig(root, virname, hexsig, 0, 0, 0, rtype, type, 0, 0, offset, lsigid, options))) {
-	    cli_errmsg("cli_parse_add(): Problem adding signature (3).\n");
-	    return ret;
-	}
-
+        if((ret = cli_ac_addsig(root, virname, hexsig, 0, 0, 0, rtype, type, 0, 0, offset, lsigid, options))) {
+            cli_errmsg("cli_parse_add(): Problem adding signature (3).\n");
+            return ret;
+        }
     } else {
-	bm_new = (struct cli_bm_patt *) mpool_calloc(root->mempool, 1, sizeof(struct cli_bm_patt));
-	if(!bm_new)
-	    return CL_EMEM;
+        bm_new = (struct cli_bm_patt *) mpool_calloc(root->mempool, 1, sizeof(struct cli_bm_patt));
+        if(!bm_new)
+            return CL_EMEM;
+
         bm_new->pattern = (unsigned char *) cli_mpool_hex2str(root->mempool, hexsig);
-	if(!bm_new->pattern) {
-	    mpool_free(root->mempool, bm_new);
-	    return CL_EMALFDB;
-	}
-	bm_new->length = hexlen / 2;
+        if(!bm_new->pattern) {
+            mpool_free(root->mempool, bm_new);
+            return CL_EMALFDB;
+        }
 
-	bm_new->virname = cli_mpool_virname(root->mempool, virname, options & CL_DB_OFFICIAL);
-	if(!bm_new->virname) {
-	    mpool_free(root->mempool, bm_new->pattern);
-	    mpool_free(root->mempool, bm_new);
-	    return CL_EMEM;
-	}
+        bm_new->length = hexlen / 2;
 
-	if(bm_new->length > root->maxpatlen) {
-	    root->maxpatlen = bm_new->length;
-	}
+        bm_new->virname = cli_mpool_virname(root->mempool, virname, options & CL_DB_OFFICIAL);
+        if(!bm_new->virname) {
+            mpool_free(root->mempool, bm_new->pattern);
+            mpool_free(root->mempool, bm_new);
+            return CL_EMEM;
+        }
 
-	if((ret = cli_bm_addpatt(root, bm_new, offset))) {
-	    cli_errmsg("cli_parse_add(): Problem adding signature (4).\n");
-	    mpool_free(root->mempool, bm_new->pattern);
-	    mpool_free(root->mempool, bm_new->virname);
-	    mpool_free(root->mempool, bm_new);
-	    return ret;
-	}
+        if(bm_new->length > root->maxpatlen)
+            root->maxpatlen = bm_new->length;
+
+        if((ret = cli_bm_addpatt(root, bm_new, offset))) {
+            cli_errmsg("cli_parse_add(): Problem adding signature (4).\n");
+            mpool_free(root->mempool, bm_new->pattern);
+            mpool_free(root->mempool, bm_new->virname);
+            mpool_free(root->mempool, bm_new);
+            return ret;
+        }
     }
 
     return CL_SUCCESS;
@@ -2758,7 +2774,6 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
             nstrings++;
             if (STRING_IS_HEX(string)) {
                 size_t len = strlen(string->string);
-                parse_yara_hex_string(string);
                 for (i=0; i < len; i++) {
                     int ch = string->string[i];
                     if (isalnum(ch))
