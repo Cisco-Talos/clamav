@@ -3105,8 +3105,7 @@ extern unsigned cli_numapicalls;
 static void cli_bytetype_helper(const struct cli_bc *bc, unsigned tid)
 {
     unsigned i, j;
-    const struct cli_bc_type *ty = &bc->types[i];
-
+    const struct cli_bc_type *ty;
 
     if (tid & 0x8000) {
         printf("alloc ");
@@ -3119,6 +3118,11 @@ static void cli_bytetype_helper(const struct cli_bc *bc, unsigned tid)
     }
 
     i = tid - 65;
+    if (i >= bc->num_types) {
+        printf("invaltype");
+        return;
+    }
+    ty = &bc->types[i];
 
     switch (ty->kind) {
     case DFunctionType:
@@ -3234,7 +3238,7 @@ void cli_byteinst_describe(const struct cli_bc_inst *inst, unsigned *bbnum)
         return;
     }
 
-    snprintf(inst_str, 256, "%-20s[%-3d/%3d/%3d]", bc_opstr[inst->opcode], 
+    snprintf(inst_str, sizeof(inst_str), "%-20s[%-3d/%3d/%3d]", bc_opstr[inst->opcode], 
              inst->opcode, inst->interp_op, inst->interp_op%inst->opcode);
     printf("%-35s", inst_str);
     switch (inst->opcode) {

@@ -373,7 +373,7 @@ static char *getdsig(const char *host, const char *user, const unsigned char *da
 	    closesocket(sockd);
 	    return NULL;
 	} else {
-	    mprintf("Signature received (length = %zu)\n", strlen(buff) - 10);
+	    mprintf("Signature received (length = %lu)\n", (unsigned long)strlen(buff) - 10);
 	}
     } else {
 	mprintf("!getdsig: Communication error with remote server\n");
@@ -712,6 +712,7 @@ static int build(const struct optstruct *opts)
 			dblist2 = (char **) realloc(dblist2, (dblist2cnt + 1) * sizeof(char *));
 			if(!dblist2) { /* dblist2 leaked but we don't really care */
 			    mprintf("!build: Memory allocation error\n");
+                            closedir(dd);
 			    return -1;
 			}
 			dblist2[dblist2cnt] = strdup(dent->d_name);
@@ -847,6 +848,7 @@ static int build(const struct optstruct *opts)
 	mprintf("Builder name: ");
 	if(scanf("%32s", builder) == EOF || !pt) {
 	    mprintf("!build: Can't get builder name\n");
+	    free(dblist2);
 	    return -1;
 	}
     }
@@ -1121,6 +1123,11 @@ static int unpack(const struct optstruct *opts)
     } else {
 	strncpy(name, optget(opts, "unpack")->strarg, sizeof(name));
 	name[sizeof(name)-1]='\0';
+    }
+
+    if (cl_cvdverify(name) != CL_SUCCESS) {
+        mprintf("!unpack: %s is not a valid CVD\n", name);
+        return -1;
     }
 
     if(cli_cvdunpack(name, ".") == -1) {

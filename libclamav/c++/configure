@@ -637,9 +637,6 @@ ac_subst_vars='am__EXEEXT_FALSE
 am__EXEEXT_TRUE
 LTLIBOBJS
 LIBOBJS
-JSON_CPPFLAGS
-JSON_LDFLAGS
-JSON_LIBS
 BUILD_EXTERNAL_LLVM_FALSE
 BUILD_EXTERNAL_LLVM_TRUE
 NO_MISSING_FIELD_INITIALIZERS
@@ -802,7 +799,6 @@ with_system_llvm
 enable_llvm
 enable_optimized
 enable_all_jit_targets
-with_libjson
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1463,10 +1459,9 @@ Optional Packages:
   --with-gnu-ld           assume the C compiler uses GNU ld [default=no]
   --with-sysroot=DIR Search for dependent libraries within DIR
                         (or the compiler's sysroot if not specified).
-  -with-system-llvm       Use system llvm instead of built-in, requires full
-                          path to llvm-config
-  --with-libjson=DIR   path to directory containing libjson (default=
-    /usr/local or /usr if not found in /usr/local)
+  --with-system-llvm      Use system llvm instead of built-in, uses full path
+                          to llvm-config (default= search /usr/local or /usr
+                          if not found in /usr/local)
 
 Some influential environment variables:
   CXX         C++ compiler command
@@ -15606,31 +15601,43 @@ llvmconfig=
 if test "${with_system_llvm+set}" = set; then :
   withval=$with_system_llvm; case "$withval" in
   yes)
-    as_fn_error $? "--with-system-llvm needs full path to llvm-config" "$LINENO" 5
-    ;;
+     llvmconfig="/usr/local/bin/llvm-config"
+     if test ! -x "$llvmconfig"; then
+     llvmconfig="/usr/bin/llvm-config"
+       if test ! -x "$llvmconfig"; then
+         as_fn_error $? "llvm-config cannot be found within defaults" "$LINENO" 5
+       fi
+     fi
+     ;;
   no) ;;
   *)
-    llvmconfig="$withval"
-    llvmver=`$llvmconfig --version`
-
-    LLVMCONFIG_CXXFLAGS=`$llvmconfig --cxxflags`
-
-    LLVMCONFIG_LDFLAGS=`$llvmconfig --ldflags`
-
-    LLVMCONFIG_LIBS=`$llvmconfig --libs jit nativecodegen scalaropts ipo`
-
-    LLVMCONFIG_LIBFILES=`$llvmconfig --libfiles jit nativecodegen scalaropts ipo`
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: Using external LLVM" >&5
-$as_echo "$as_me: Using external LLVM" >&6;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: CXXFLAGS from llvm-config: $LLVMCONFIG_CXXFLAGS" >&5
-$as_echo "$as_me: CXXFLAGS from llvm-config: $LLVMCONFIG_CXXFLAGS" >&6;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: LDFLAGS from llvm-config: $LLVMCONFIG_LDFLAGS" >&5
-$as_echo "$as_me: LDFLAGS from llvm-config: $LLVMCONFIG_LDFLAGS" >&6;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: LIBS from llvm-config: $LLVMCONFIG_LIBS" >&5
-$as_echo "$as_me: LIBS from llvm-config: $LLVMCONFIG_LIBS" >&6;}
-    ;;
+     llvmconfig="$withval"
+     if test ! -x "$llvmconfig"; then
+       as_fn_error $? "llvm-config does not exist at $llvmconfig" "$LINENO" 5
+     fi
+     ;;
   esac
+
+ if test "x$llvmconfig" != "x"; then
+     llvmver=`$llvmconfig --version`
+
+     LLVMCONFIG_CXXFLAGS=`$llvmconfig --cxxflags`
+
+     LLVMCONFIG_LDFLAGS=`$llvmconfig --ldflags`
+
+     LLVMCONFIG_LIBS=`$llvmconfig --libs jit nativecodegen scalaropts ipo`
+
+     LLVMCONFIG_LIBFILES=`$llvmconfig --libfiles jit nativecodegen scalaropts ipo`
+
+     { $as_echo "$as_me:${as_lineno-$LINENO}: Using external LLVM" >&5
+$as_echo "$as_me: Using external LLVM" >&6;}
+     { $as_echo "$as_me:${as_lineno-$LINENO}: CXXFLAGS from llvm-config: $LLVMCONFIG_CXXFLAGS" >&5
+$as_echo "$as_me: CXXFLAGS from llvm-config: $LLVMCONFIG_CXXFLAGS" >&6;}
+     { $as_echo "$as_me:${as_lineno-$LINENO}: LDFLAGS from llvm-config: $LLVMCONFIG_LDFLAGS" >&5
+$as_echo "$as_me: LDFLAGS from llvm-config: $LLVMCONFIG_LDFLAGS" >&6;}
+     { $as_echo "$as_me:${as_lineno-$LINENO}: LIBS from llvm-config: $LLVMCONFIG_LIBS" >&5
+$as_echo "$as_me: LIBS from llvm-config: $LLVMCONFIG_LIBS" >&6;}
+ fi
 
 fi
 
@@ -15663,10 +15670,10 @@ elif test $llvmver_test -lt 290; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: no ($llvmver)" >&5
 $as_echo "no ($llvmver)" >&6; }
     as_fn_error $? "LLVM >= 2.9 required, but \"$llvmver\"($llvmver_test) found" "$LINENO" 5
-elif test $llvmver_test -gt 342; then
+elif test $llvmver_test -ge 360; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: no ($llvmver)" >&5
 $as_echo "no ($llvmver)" >&6; }
-    as_fn_error $? "LLVM <= 3.4.2 required, but \"$llvmver\"($llvmver_test) found" "$LINENO" 5
+    as_fn_error $? "LLVM < 3.6 required, but \"$llvmver\"($llvmver_test) found" "$LINENO" 5
 else
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: ok ($llvmver)" >&5
 $as_echo "ok ($llvmver)" >&6; }
@@ -15903,220 +15910,6 @@ else
   BUILD_EXTERNAL_LLVM_TRUE='#'
   BUILD_EXTERNAL_LLVM_FALSE=
 fi
-
-
-
-
-# Check whether --with-libjson was given.
-if test "${with_libjson+set}" = set; then :
-  withval=$with_libjson;
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for libjson installation" >&5
-$as_echo_n "checking for libjson installation... " >&6; }
-if test "X$withval" != "Xyes"
-then
-  LIBJSON_HOME="$withval"
-  if test -f "$LIBJSON_HOME/include/json/json.h" -o -f "$LIBJSON_HOME/include/json-c/json.h"
-  then
-    have_json_header="yes"
-  fi
-else
-  LIBJSON_HOME=/usr/local
-  if test -f "$LIBJSON_HOME/include/json/json.h" -o -f "$LIBJSON_HOME/include/json-c/json.h"
-  then
-    have_json_header="yes"
-  else
-    LIBJSON_HOME=/usr
-    if test -f "$LIBJSON_HOME/include/json/json.h" -o -f "$LIBJSON_HOME/include/json-c/json.h"
-    then
-      have_json_header="yes"
-    else
-      have_json_header="no"
-      LIBJSON_HOME=""
-    fi
-  fi
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $LIBJSON_HOME" >&5
-$as_echo "$LIBJSON_HOME" >&6; }
-
-else
-
-have_json_header="no"
-
-fi
-
-
-if test "X$have_json_header" = "Xyes"
-then
-  if test -f "$LIBJSON_HOME/include/json/json.h"
-  then
-    JSON_INCLUDE="include/json"
-  fi
-  if test -f "$LIBJSON_HOME/include/json-c/json.h"
-  then
-    JSON_INCLUDE="include/json-c"
-  fi
-  if test -z $JSON_INCLUDE
-  then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: json header lost." >&5
-$as_echo "$as_me: WARNING: json header lost." >&2;}
-  fi
-
-  JSON_CPPFLAGS="-I$LIBJSON_HOME/$JSON_INCLUDE"
-  save_LDFLAGS="$LDFLAGS"
-  save_CFLAGS="$CFLAGS"
-  save_LIBS="$LIBS"
-  LIBS=""
-  JSON_LIBS=""
-  if test "$LIBJSON_HOME" != "/usr"
-  then
-    JSON_LDFLAGS="-L$LIBJSON_HOME/lib"
-    LDFLAGS="$LDFLAGS $JSON_LDFLAGS"
-    CFLAGS="$CFLAGS $JSON_CPPFLAGS"
-  fi
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing json_object_object_get_ex" >&5
-$as_echo_n "checking for library containing json_object_object_get_ex... " >&6; }
-if ${ac_cv_search_json_object_object_get_ex+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char json_object_object_get_ex ();
-int
-main ()
-{
-return json_object_object_get_ex ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' json-c json; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_search_json_object_object_get_ex=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_json_object_object_get_ex+:} false; then :
-  break
-fi
-done
-if ${ac_cv_search_json_object_object_get_ex+:} false; then :
-
-else
-  ac_cv_search_json_object_object_get_ex=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_json_object_object_get_ex" >&5
-$as_echo "$ac_cv_search_json_object_object_get_ex" >&6; }
-ac_res=$ac_cv_search_json_object_object_get_ex
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-
-have_json="yes"
-have_deprecated_json="no"
-else
-
-have_json="no"
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing json_object_object_get" >&5
-$as_echo_n "checking for library containing json_object_object_get... " >&6; }
-if ${ac_cv_search_json_object_object_get+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char json_object_object_get ();
-int
-main ()
-{
-return json_object_object_get ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' json-c json; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_search_json_object_object_get=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_json_object_object_get+:} false; then :
-  break
-fi
-done
-if ${ac_cv_search_json_object_object_get+:} false; then :
-
-else
-  ac_cv_search_json_object_object_get=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_json_object_object_get" >&5
-$as_echo "$ac_cv_search_json_object_object_get" >&6; }
-ac_res=$ac_cv_search_json_object_object_get
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-
-have_json="yes"
-have_deprecated_json="yes"
-
-fi
-
-
-fi
-
-
-  CFLAGS="$save_CFLAGS"
-  LDFLAGS="$save_LDFLAGS"
-fi
-
-if test "X$have_json" = "Xyes"; then
-
-$as_echo "#define HAVE_JSON 1" >>confdefs.h
-
-  if test "X$have_deprecated_json" = "Xyes"; then
-
-$as_echo "#define HAVE_DEPRECATED_JSON 1" >>confdefs.h
-
-  fi
-  JSON_LIBS="$LIBS"
-fi
-
-LIBS="$save_LIBS"
-
-
-
-
 
 
 ac_config_files="$ac_config_files Makefile"

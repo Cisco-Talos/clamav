@@ -200,7 +200,7 @@ static void help(void)
 {
     printf("\n");
     printf("           Clam AntiVirus: Configuration Tool %s\n", get_version());
-    printf("           By The ClamAV Team: http://www.clamav.net/team\n");
+    printf("           By The ClamAV Team: http://www.clamav.net/about.html#credits\n");
     printf("           (C) 2009 Sourcefire, Inc.\n\n");
 
     printf("    --help                 -h         Show help\n");
@@ -252,6 +252,7 @@ static void print_platform(struct cli_environment *env)
     printf("zlib version: %s (%s)\n",
 	   ZLIB_VERSION, zlibVersion());
 #endif
+
     if (env->triple[0])
     printf("Triple: %s\n", env->triple);
     if (env->cpu[0])
@@ -456,8 +457,15 @@ int main(int argc, char **argv)
 #ifdef HAVE_BZLIB_H
 	printf("BZIP2 ");
 #endif
+
+#ifdef HAVE_LIBXML2
+	printf("LIBXML2 ");
+#endif
 #ifdef HAVE_PCRE
 	printf("PCRE ");
+#endif
+#ifdef HAVE_JSON
+	printf("JSON ");
 #endif
     if(have_rar)
 	printf("RAR ");

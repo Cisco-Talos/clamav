@@ -422,6 +422,8 @@ int cli_scanxar(cli_ctx *ctx)
     xmlTextReaderPtr reader = NULL;
     int a_hash, e_hash;
     unsigned char *a_cksum = NULL, *e_cksum = NULL;
+    void *a_hash_ctx = NULL, *e_hash_ctx = NULL;
+    char result[SHA1_HASH_SIZE];
 
     memset(&strm, 0x00, sizeof(z_stream));
 
@@ -516,7 +518,7 @@ int cli_scanxar(cli_ctx *ctx)
             goto exit_toc;
     }
 
-    reader = xmlReaderForMemory(toc, hdr.toc_length_decompressed, "noname.xml", NULL, 0);
+    reader = xmlReaderForMemory(toc, hdr.toc_length_decompressed, "noname.xml", NULL, CLAMAV_MIN_XMLREADER_FLAGS);
     if (reader == NULL) {
         cli_dbgmsg("cli_scanxar: xmlReaderForMemory error for TOC\n");
         goto exit_toc;
@@ -537,8 +539,6 @@ int cli_scanxar(cli_ctx *ctx)
         unsigned char * blockp;
         void *a_sc, *e_sc;
         void *a_mc, *e_mc;
-        void *a_hash_ctx, *e_hash_ctx;
-        char result[SHA1_HASH_SIZE];
         char * expected;
 
         /* clean up temp file from previous loop iteration */
@@ -561,7 +561,11 @@ int cli_scanxar(cli_ctx *ctx)
 
 
         a_hash_ctx = xar_hash_init(a_hash, &a_sc, &a_mc);
+        if (a_hash_ctx == NULL)
+            goto exit_tmpfile;
         e_hash_ctx = xar_hash_init(e_hash, &e_sc, &e_mc);
+        if (e_hash_ctx == NULL)
+            goto exit_tmpfile;
 
         switch (encoding) {
         case CL_TYPE_GZ:
@@ -779,6 +783,7 @@ int cli_scanxar(cli_ctx *ctx)
 
         if (rc == CL_SUCCESS) {
             xar_hash_final(a_hash_ctx, result, a_hash);
+            a_hash_ctx = NULL;
             if (a_cksum != NULL) {
                 expected = cli_hex2str((char *)a_cksum);
                 if (xar_hash_check(a_hash, result, expected) != 0) {
@@ -789,9 +794,10 @@ int cli_scanxar(cli_ctx *ctx)
                 }
                 free(expected);
             }
+            xar_hash_final(e_hash_ctx, result, e_hash);
+            e_hash_ctx = NULL;
             if (e_cksum != NULL) {
                 if (do_extract_cksum) {
-                    xar_hash_final(e_hash_ctx, result, e_hash);
                     expected = cli_hex2str((char *)e_cksum);
                     if (xar_hash_check(e_hash, result, expected) != 0) {
                         cli_dbgmsg("cli_scanxar: extracted-checksum missing or mismatch.\n");
@@ -828,7 +834,11 @@ int cli_scanxar(cli_ctx *ctx)
 
  exit_tmpfile:
     xar_cleanup_temp_file(ctx, fd, tmpname);
-
+    if (a_hash_ctx != NULL)
+        xar_hash_final(a_hash_ctx, result, a_hash);
+    if (e_hash_ctx != NULL)
+        xar_hash_final(e_hash_ctx, result, e_hash);
+ 
  exit_reader:
     if (a_cksum != NULL)
         xmlFree(a_cksum);   

@@ -300,6 +300,9 @@ JSON_LIBS = @JSON_LIBS@
 LCOV = @LCOV@
 LD = @LD@
 LDFLAGS = @LDFLAGS@
+LEX = @LEX@
+LEXLIB = @LEXLIB@
+LEX_OUTPUT_ROOT = @LEX_OUTPUT_ROOT@
 LIBADD_DL = @LIBADD_DL@
 LIBADD_DLD_LINK = @LIBADD_DLD_LINK@
 LIBADD_DLOPEN = @LIBADD_DLOPEN@
@@ -362,6 +365,8 @@ WERR_CFLAGS = @WERR_CFLAGS@
 WERR_CFLAGS_MILTER = @WERR_CFLAGS_MILTER@
 XML_CPPFLAGS = @XML_CPPFLAGS@
 XML_LIBS = @XML_LIBS@
+YACC = @YACC@
+YFLAGS = @YFLAGS@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
@@ -422,7 +427,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-EXTRA_DIST = html $(top_srcdir)/docs/man/*.in clamdoc.pdf clamdoc.tex clamav-mirror-howto.pdf clamav-mirror-howto.tex phishsigs_howto.tex phishsigs_howto.pdf signatures.pdf signatures.tex clam.eps
+EXTRA_DIST = html $(top_srcdir)/docs/man/*.in clamdoc.pdf clamdoc.tex phishsigs_howto.tex phishsigs_howto.pdf signatures.pdf signatures.tex clam.eps
 man_MANS = man/clamscan.1 man/freshclam.1 man/sigtool.1 man/clamd.8 \
 	man/clamd.conf.5 man/clamdscan.1 man/clamav-milter.8 \
 	man/clamav-milter.conf.5 man/freshclam.conf.5 man/clamconf.1 \

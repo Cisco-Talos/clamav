@@ -58,8 +58,12 @@
 #include "scanners.h"
 #include "conv.h"
 #include "xdp.h"
+#include "bignum_fast.h"
+#include "filetypes.h"
 
-char *dump_xdp(cli_ctx *ctx, const char *start, size_t sz)
+static char *dump_xdp(cli_ctx *ctx, const char *start, size_t sz);
+
+static char *dump_xdp(cli_ctx *ctx, const char *start, size_t sz)
 {
     int fd;
     char *filename;
@@ -102,8 +106,8 @@ int cli_scanxdp(cli_ctx *ctx)
     char *decoded;
     size_t decodedlen;
     int rc = CL_SUCCESS;
-    int fd;
     char *dumpname;
+    size_t i;
     
     buf = (const char *)fmap_need_off_once(map, map->offset, map->len);
     if (!(buf))
@@ -122,7 +126,7 @@ int cli_scanxdp(cli_ctx *ctx)
      * silently ignore the error and return CL_SUCCESS so the filetyping code can
      * continue on.
      */
-    reader = xmlReaderForMemory(buf, (int)(map->len), "noname.xml", NULL, XML_PARSE_NOERROR);
+    reader = xmlReaderForMemory(buf, (int)(map->len), "noname.xml", NULL, CLAMAV_MIN_XMLREADER_FLAGS);
     if (!(reader))
         return CL_SUCCESS;
 
@@ -136,14 +140,41 @@ int cli_scanxdp(cli_ctx *ctx)
             if (value) {
                 decoded = cl_base64_decode((char *)value, strlen((const char *)value), NULL, &decodedlen, 0);
                 if (decoded) {
+                    unsigned int shouldscan=0;
+
+                    if (decodedlen > 5) {
+                        for (i=0; i < MIN(MAGIC_BUFFER_SIZE, decodedlen-5); i++) {
+                            if (decoded[i] != '%')
+                                continue;
+
+                            if (decoded[i+1] == 'P' || decoded[i+1] == 'p') {
+                                if (decoded[i+2] == 'D' || decoded[i+2] == 'd') {
+                                    if (decoded[i+3] == 'F' || decoded[i+3] == 'f') {
+                                        if (decoded[i+4] == '-') {
+                                            shouldscan=1;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (!shouldscan) {
+                        free(decoded);
+                        xmlFree((void *)value);
+                        break;
+                    }
+
                     rc = cli_mem_scandesc(decoded, decodedlen, ctx);
                     free(decoded);
                     if (rc != CL_SUCCESS || rc == CL_BREAK) {
-                        xmlFree(value);
+                        xmlFree((void *)value);
                         break;
                     }
                 }
-                xmlFree(value);
+
+                xmlFree((void *)value);
             }
         }
     }

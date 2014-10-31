@@ -49,16 +49,20 @@ static void help(void)
     printf("\n");
     printf("           Clam AntiVirus: Bytecode Testing Tool %s\n",
 	   get_version());
-    printf("           By The ClamAV Team: http://www.clamav.net/team\n");
+    printf("           By The ClamAV Team: http://www.clamav.net/about.html#credits\n");
     printf("           (C) 2009 Sourcefire, Inc.\n\n");
     printf("clambc <file> [function] [param1 ...]\n\n");
     printf("    --help                 -h         Show help\n");
     printf("    --version              -V         Show version\n");
+    printf("    --debug                           Show debug\n");
+    printf("    --force-interpreter    -f         Force using the interpreter instead of the JIT\n");
+    printf("    --trust-bytecode       -t         Trust loaded bytecode (default yes)\n");
     printf("    --info                 -i         Print information about bytecode\n");
     printf("    --printsrc             -p         Print bytecode source\n");
-    printf("    --printbcir            -c         Print bytecode IR\n");
-    printf("    --trace <level>                   Set bytecode trace level 0..7 (default 7)\n");
-    printf("    --no-trace-showsource             Don't show source line during tracing\n");
+    printf("    --printbcir            -c         Print IR of bytecode signature\n");
+    printf("    --trace <level>        -T         Set bytecode trace level 0..7 (default 7)\n");
+    printf("    --no-trace-showsource  -s         Don't show source line during tracing\n");
+    printf("    --bytecode-statistics             Collect and print bytecode execution statistics\n");
     printf("    file                              file to test\n");
     printf("\n");
     return;
@@ -133,7 +137,7 @@ static uint8_t debug_flag = 0;
 static void print_src(const char *file)
 {
   char buf[4096];
-  int nread, i, found = 0;
+  int nread, i, found = 0, lcnt = 0;
   FILE *f = fopen(file, "r");
   if (!f) {
     fprintf(stderr,"Unable to reopen %s\n", file);
@@ -142,7 +146,11 @@ static void print_src(const char *file)
   do {
     nread = fread(buf, 1, sizeof(buf), f);
     for (i=0;i<nread-1;i++) {
-      if (buf[i] == '\n' && buf[i+1] == 'S') {
+      if (buf[i] == '\n') {
+        lcnt++;
+      }
+      /* skip over the logical trigger */
+      if (lcnt >= 2 && buf[i] == '\n' && buf[i+1] == 'S') {
         found = 1;
         i+=2;
         break;
