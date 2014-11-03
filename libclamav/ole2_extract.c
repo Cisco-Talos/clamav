@@ -43,6 +43,9 @@
 #include "scanners.h"
 #include "fmap.h"
 #include "json_api.h"
+#if HAVE_JSON
+#include "msdoc.h"
+#endif
 
 #ifdef DEBUG_OLE2_LIST
 #define ole2_listmsg(...) cli_dbgmsg( __VA_ARGS__)
