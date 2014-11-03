@@ -172,6 +172,7 @@ static unrar_fileheader_t *read_block(int fd, header_type hdr_type)
 	unrar_dbgmsg("UNRAR: Head Size: %.4x\n", file_header->head_size);
 	if(lseek(fd, file_header->next_offset, SEEK_SET) != file_header->next_offset) {
 	    unrar_dbgmsg("seek: %ld\n", file_header->next_offset);
+            free(file_header);
 	    return NULL;
 	}
 
