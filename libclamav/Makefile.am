@@ -441,7 +441,9 @@ libclamav_la_SOURCES = \
 	hostid.c \
 	hostid.h \
 	openioc.c \
-	openioc.h
+	openioc.h \
+	msdoc.c \
+	msdoc.h
 
 libclamav_la_SOURCES += bignum.h\
 	bignum_fast.h\
