@@ -1209,17 +1209,21 @@ chdir_tmp (const char *dbname, const char *tmpdir)
 {
     char cvdfile[32];
 
-    if (strlen(dbname) > sizeof(cvdfile) - 4 - 1) { /* 4 is length of file extension, 1 is NULL terminator */ 
-            logg ("!chdir_tmp: dbname too long: %s\n", tmpdir);
-            return -1;
-    }
-
     if (access (tmpdir, R_OK | W_OK) == -1)
     {
-        snprintf (cvdfile, sizeof(cvdfile), "%s.cvd", dbname);
+        int ret;
+        ret = snprintf (cvdfile, sizeof(cvdfile), "%s.cvd", dbname);
+        if (ret >= sizeof(cvdfile) || ret == -1) {
+            logg ("!chdir_tmp: dbname parameter value too long to create cvd file name: %s\n", dbname);
+            return -1;
+        }
         if (access (cvdfile, R_OK) == -1)
         {
-            snprintf (cvdfile, sizeof(cvdfile), "%s.cld", dbname);
+            ret = snprintf (cvdfile, sizeof(cvdfile), "%s.cld", dbname);
+            if (ret >= sizeof(cvdfile) || ret == -1) {
+                logg ("!chdir_tmp: dbname parameter value too long to create cld file name: %s\n", dbname);
+                return -1;
+            }
             if (access (cvdfile, R_OK) == -1)
             {
                 logg ("!chdir_tmp: Can't access local %s database\n", dbname);
