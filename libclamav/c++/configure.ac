@@ -110,9 +110,9 @@ if test "x$packaged_llvm" = "xyes"; then
 elif test $llvmver_test -lt 290; then
     AC_MSG_RESULT([no ($llvmver)])
     AC_MSG_ERROR([LLVM >= 2.9 required, but "$llvmver"($llvmver_test) found])
-elif test $llvmver_test -gt 342; then
+elif test $llvmver_test -ge 360; then
     AC_MSG_RESULT([no ($llvmver)])
-    AC_MSG_ERROR([LLVM <= 3.4.2 required, but "$llvmver"($llvmver_test) found])
+    AC_MSG_ERROR([LLVM < 3.6 required, but "$llvmver"($llvmver_test) found])
 else
     AC_MSG_RESULT([ok ($llvmver)])
 fi
@@ -266,11 +266,6 @@ CXX_FLAG_CHECK(NO_MISSING_FIELD_INITIALIZERS, [-Wno-missing-field-initializers])
 AC_MSG_RESULT([$NO_VARIADIC_MACROS $NO_MISSING_FIELD_INITIALIZERS])
 
 AM_CONDITIONAL(BUILD_EXTERNAL_LLVM, [test -n "$llvmconfig"])
-
-m4_include([../../m4/reorganization/libs/json.m4])
-AC_SUBST([JSON_LIBS])
-AC_SUBST([JSON_LDFLAGS])
-AC_SUBST([JSON_CPPFLAGS])
 
 AC_OUTPUT([
     Makefile

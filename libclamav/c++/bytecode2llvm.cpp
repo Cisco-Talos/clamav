@@ -44,8 +44,15 @@
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/Analysis/ScalarEvolution.h"
+#if LLVM_VERSION < 35
 #include "llvm/Analysis/Verifier.h"
 #include "llvm/AutoUpgrade.h"
+#include "llvm/Support/TargetFolder.h"
+#else
+#include "llvm/IR/Verifier.h"
+#include "llvm/IR/AutoUpgrade.h"
+#include "llvm/Analysis/TargetFolder.h"
+#endif
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
 #include "llvm/ExecutionEngine/JIT.h"
 #include "llvm/ExecutionEngine/JITEventListener.h"
@@ -100,15 +107,16 @@ void LLVMInitializePowerPCAsmPrinter();
 #endif
 
 #include "llvm/Target/TargetOptions.h"
-#include "llvm/Support/TargetFolder.h"
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/IPO.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 
 #if LLVM_VERSION < 32
 #include "llvm/Analysis/DebugInfo.h"
-#else
+#elif LLVM_VERSION < 35
 #include "llvm/DebugInfo.h"
+#else
+#include "llvm/IR/DebugInfo.h"
 #endif
 
 #if LLVM_VERSION < 32
@@ -142,6 +150,10 @@ void LLVMInitializePowerPCAsmPrinter();
 #include "llvm/Support/CFG.h"
 #else
 #include "llvm/Analysis/CFG.h"
+#endif
+
+#if LLVM_VERSION >= 35
+#include "llvm/IR/Dominators.h"
 #endif
 
 //#define TIMING
@@ -657,7 +669,11 @@ public:
 	}
 	BBSetTy  needsTimeoutCheck;
 	BBMapTy BBMap;
+#if LLVM_VERSION < 35
 	DominatorTree &DT = getAnalysis<DominatorTree>();
+#else
+	DominatorTree &DT = getAnalysis<DominatorTreeWrapperPass>().getDomTree();
+#endif
 	for (Function::iterator I=F.begin(),E=F.end(); I != E; ++I) {
 	    BasicBlock *BB = &*I;
 	    unsigned apicalls = 0;
@@ -784,7 +800,11 @@ public:
       AU.setPreservesAll();
       AU.addRequired<LoopInfo>();
       AU.addRequired<ScalarEvolution>();
+#if LLVM_VERSION < 35
       AU.addRequired<DominatorTree>();
+#else
+      AU.addRequired<DominatorTreeWrapperPass>();
+#endif
     }
 };
 char RuntimeLimits::ID;
@@ -1701,8 +1721,7 @@ public:
 			    Value *Dst = convertOperand(func, inst, inst->u.three[0]);
 			    Dst = Builder.CreatePointerCast(Dst, PointerType::getUnqual(Type::getInt8Ty(Context)));
 			    Value *Val = convertOperand(func, Type::getInt8Ty(Context), inst->u.three[1]);
-			    //Value *Len = convertOperand(func, Type::getInt32Ty(Context), inst->u.three[2]);
-                            Value *Len = convertOperand(func, Type::getInt64Ty(Context), inst->u.three[2]);
+			    Value *Len = convertOperand(func, Type::getInt32Ty(Context), inst->u.three[2]);
 #if LLVM_VERSION < 29
 			    CallInst *c = Builder.CreateCall4(CF->FMemset, Dst, Val, Len,
 								ConstantInt::get(Type::getInt32Ty(Context), 1));
@@ -1723,8 +1742,7 @@ public:
 			    Dst = Builder.CreatePointerCast(Dst, PointerType::getUnqual(Type::getInt8Ty(Context)));
 			    Value *Src = convertOperand(func, inst, inst->u.three[1]);
 			    Src = Builder.CreatePointerCast(Src, PointerType::getUnqual(Type::getInt8Ty(Context)));
-			    //Value *Len = convertOperand(func, Type::getInt32Ty(Context), inst->u.three[2]);
-                            Value *Len = convertOperand(func, Type::getInt64Ty(Context), inst->u.three[2]);
+			    Value *Len = convertOperand(func, Type::getInt32Ty(Context), inst->u.three[2]);
 #if LLVM_VERSION < 29
 			    CallInst *c = Builder.CreateCall4(CF->FMemcpy, Dst, Src, Len,
 								ConstantInt::get(Type::getInt32Ty(Context), 1));
@@ -1745,8 +1763,7 @@ public:
 			    Dst = Builder.CreatePointerCast(Dst, PointerType::getUnqual(Type::getInt8Ty(Context)));
 			    Value *Src = convertOperand(func, inst, inst->u.three[1]);
 			    Src = Builder.CreatePointerCast(Src, PointerType::getUnqual(Type::getInt8Ty(Context)));
-                            //Value *Len = convertOperand(func, Type::getInt32Ty(Context), inst->u.three[2]);
-                            Value *Len = convertOperand(func, Type::getInt64Ty(Context), inst->u.three[2]);
+			    Value *Len = convertOperand(func, Type::getInt32Ty(Context), inst->u.three[2]);
 #if LLVM_VERSION < 29
 			    CallInst *c = Builder.CreateCall4(CF->FMemmove, Dst, Src, Len,
 								ConstantInt::get(Type::getInt32Ty(Context), 1));
@@ -1856,7 +1873,11 @@ public:
 
 	    // If successful so far, run verifyFunction
 	    if (!broken) {
+#if LLVM_VERSION < 35
 		if (verifyFunction(*F, PrintMessageAction)) {
+#else
+		if (verifyFunction(*F, &errs())) {
+#endif
 		    // verification failed
 		    broken = true;
 		    cli_warnmsg("[Bytecode JIT]: Verification failed\n");
@@ -1945,7 +1966,11 @@ public:
 	ReturnInst::Create(Context, CI, BB);
 
 	delete [] Functions;
+#if LLVM_VERSION < 35
 	if (verifyFunction(*F, PrintMessageAction))
+#else
+	if (verifyFunction(*F, &errs()))
+#endif
 	    return 0;
 
 /*			DEBUG(errs() << "Generating code\n");
@@ -2003,8 +2028,7 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
     std::vector<constType*> args;
     args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
     args.push_back(Type::getInt8Ty(Context));
-    //args.push_back(Type::getInt32Ty(Context));
-    args.push_back(Type::getInt64Ty(Context));
+    args.push_back(Type::getInt32Ty(Context));
     args.push_back(Type::getInt32Ty(Context));
 #if LLVM_VERSION >= 29
     args.push_back(Type::getInt1Ty(Context));
@@ -2013,11 +2037,9 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
 					       args, false);
     CF->FMemset = Function::Create(FuncTy_3, GlobalValue::ExternalLinkage,
 #if LLVM_VERSION < 29
-                                   //"llvm.memset.i32",
-                                   "llvm.memset.i64",
+                                   "llvm.memset.i32",
 #else
-                                   //"llvm.memset.p0i8.i32",
-                                   "llvm.memset.p0i8.i64",
+                                   "llvm.memset.p0i8.i32",
 #endif
                                    M);
     CF->FMemset->setDoesNotThrow();
@@ -2030,8 +2052,7 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
     args.clear();
     args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
     args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
-    //args.push_back(Type::getInt32Ty(Context));
-    args.push_back(Type::getInt64Ty(Context));
+    args.push_back(Type::getInt32Ty(Context));
     args.push_back(Type::getInt32Ty(Context));
 #if LLVM_VERSION >= 29
     args.push_back(Type::getInt1Ty(Context));
@@ -2040,11 +2061,9 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
 					       args, false);
     CF->FMemmove = Function::Create(FuncTy_4, GlobalValue::ExternalLinkage,
 #if LLVM_VERSION < 29
-                                    //"llvm.memmove.i32",
-                                    "llvm.memcpy.i64",
+                                    "llvm.memmove.i32",
 #else
-                                    //"llvm.memmove.p0i8.i32",
-                                    "llvm.memmove.p0i8.i64",
+                                    "llvm.memmove.p0i8.i32",
 #endif
                                     M);
     CF->FMemmove->setDoesNotThrow();
@@ -2056,11 +2075,9 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
 
     CF->FMemcpy = Function::Create(FuncTy_4, GlobalValue::ExternalLinkage,
 #if LLVM_VERSION < 29
-                                   //"llvm.memcpy.i32",
-                                   "llvm.memcpy.i64",
+                                   "llvm.memcpy.i32",
 #else
-                                   //"llvm.memcpy.p0i8.p0i8.i32",
-                                   "llvm.memcpy.p0i8.p0i8.i64",
+                                   "llvm.memcpy.p0i8.p0i8.i32",
 #endif
                                    M);
     CF->FMemcpy->setDoesNotThrow();
@@ -2125,7 +2142,11 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
 INITIALIZE_PASS_BEGIN(RuntimeLimits, "rl", "Runtime Limits", false, false)
 INITIALIZE_PASS_DEPENDENCY(LoopInfo)
 INITIALIZE_PASS_DEPENDENCY(ScalarEvolution)
+#if LLVM_VERSION < 35
 INITIALIZE_PASS_DEPENDENCY(DominatorTree)
+#else
+INITIALIZE_PASS_DEPENDENCY(DominatorTreeWrapperPass)
+#endif
 INITIALIZE_PASS_END(RuntimeLimits, "rl" ,"Runtime Limits", false, false)
 #endif
 
@@ -2341,16 +2362,20 @@ static void setGuard(unsigned char* guardbuf)
 }
 #if LLVM_VERSION < 32
 static void addFPasses(FunctionPassManager &FPM, bool trusted, const TargetData *TD)
-#else
+#elif LLVM_VERSION < 35
 static void addFPasses(FunctionPassManager &FPM, bool trusted, const DataLayout *TD)
+#else
+static void addFPasses(FunctionPassManager &FPM, bool trusted, const Module *M)
 #endif
 {
     // Set up the optimizer pipeline.  Start with registering info about how
     // the target lays out data structures.
 #if LLVM_VERSION < 32
     FPM.add(new TargetData(*TD));
-#else
+#elif LLVM_VERSION < 35
     FPM.add(new DataLayout(*TD));
+#else
+    FPM.add(new DataLayoutPass(M));
 #endif
     // Promote allocas to registers.
     FPM.add(createPromoteMemoryToRegisterPass());
@@ -2428,9 +2453,12 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 #if LLVM_VERSION < 32
 	addFPasses(OurFPM, true, EE->getTargetData());
 	addFPasses(OurFPMUnsigned, false, EE->getTargetData());
-#else
+#elif LLVM_VERSION < 35
 	addFPasses(OurFPM, true, EE->getDataLayout());
 	addFPasses(OurFPMUnsigned, false, EE->getDataLayout());
+#else
+	addFPasses(OurFPM, true, M);
+	addFPasses(OurFPMUnsigned, false, M);
 #endif
 
 
@@ -2541,8 +2569,10 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	PassManager PM;
 #if LLVM_VERSION < 32
 	PM.add(new TargetData(*EE->getTargetData()));
-#else
+#elif LLVM_VERSION < 35
 	PM.add(new DataLayout(*EE->getDataLayout()));
+#else
+	PM.add(new DataLayoutPass(M));
 #endif
 	// TODO: only run this on the untrusted bytecodes, not all of them...
 	if (has_untrusted)
@@ -2601,10 +2631,17 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 int bytecode_init(void)
 {
     // If already initialized return
+#if LLVM_VERSION < 35
     if (llvm_is_multithreaded()) {
 	cli_warnmsg("bytecode_init: already initialized\n");
 	return CL_EARG;
     }
+#else
+    if (!LLVMIsMultithreaded()) {
+        cli_warnmsg("bytecode_init: LLVM is compiled without multithreading support\n");
+    }
+#endif
+
     llvm_install_error_handler(llvm_error_handler);
 #ifdef CL_DEBUG
     sys::PrintStackTraceOnErrorSignal();
@@ -2628,7 +2665,11 @@ int bytecode_init(void)
 #endif
     llvm::DwarfExceptionHandling = false;
 #endif
+#if LLVM_VERSION < 33
     llvm_start_multithreaded();
+#else
+    // This is now deprecated/useless: Multi-threading can only be enabled/disabled with the compile time define LLVM_ENABLE_THREADS in LLVM.
+#endif
 
     // If we have a native target, initialize it to ensure it is linked in and
     // usable by the JIT.
@@ -2638,7 +2679,11 @@ int bytecode_init(void)
     InitializeAllTargets();
 #endif
 
+#if LLVM_VERSION < 35
     if (!llvm_is_multithreaded()) {
+#else
+    if (!LLVMIsMultithreaded()) {
+#endif
 	//TODO:cli_dbgmsg
 	DEBUG(errs() << "WARNING: ClamAV JIT built w/o atomic builtins\n"
 	      << "On x86 for best performance ClamAV should be built for i686, not i386!\n");
@@ -2710,7 +2755,7 @@ void cli_bytecode_debug_printsrc(const struct cli_bc_ctx *ctx)
 	std::string ErrorMessage;
 #if LLVM_VERSION < 29
 	lines->buffer = MemoryBuffer::getFile(path, &ErrorMessage);
-#else
+#elif LLVM_VERSION < 35
 	OwningPtr<MemoryBuffer> File;
 	error_code ec = MemoryBuffer::getFile(path, File);
 	if (ec) {
@@ -2718,6 +2763,15 @@ void cli_bytecode_debug_printsrc(const struct cli_bc_ctx *ctx)
 	    lines->buffer = 0;
 	} else
 	    lines->buffer = File.take();
+#else
+	ErrorOr<std::unique_ptr<MemoryBuffer>> FileOrErr = MemoryBuffer::getFile(path);
+	if (!FileOrErr) {
+		// TODO: How to handle ErrorMessage?
+		lines->buffer = 0;
+	}
+	else {
+		lines->buffer = FileOrErr.get().release();
+	}
 #endif
 	if (!lines->buffer) {
 	    errs() << "Unable to open file '" << path << "'\n";
@@ -2863,7 +2917,10 @@ static bool getLocationInfo(const Value *V, std::string &DisplayName,
   StringRef G;
   StringRef H;
 #endif
+#if LLVM_VERSION < 35
   DIType TypeD;
+#endif
+  StringRef T;
 
   if (GlobalVariable *GV = dyn_cast<GlobalVariable>(const_cast<Value*>(V))) {
     Value *DIGV = findDbgGlobalDeclare(GV);
@@ -2880,7 +2937,11 @@ static bool getLocationInfo(const Value *V, std::string &DisplayName,
     G = Var.getFilename();
     H = Var.getDirectory();
 #endif
+#if LLVM_VERSION < 35
     TypeD = Var.getType();
+#else
+    T = Var.getType().getName();
+#endif
   } else if (Function *F = dyn_cast<Function>(const_cast<Value*>(V))){
     Value *DIF = findDbgSubprogramDeclare(F);
     if (!DIF) return false;
@@ -2896,7 +2957,11 @@ static bool getLocationInfo(const Value *V, std::string &DisplayName,
     G = Var.getFilename();
     H = Var.getDirectory();
 #endif
+#if LLVM_VERSION < 35
     TypeD = Var.getType();
+#else
+    T = Var.getType().getName();
+#endif
   } else {
     const DbgDeclareInst *DDI = findDbgDeclare(V);
     if (!DDI) return false;
@@ -2913,10 +2978,16 @@ static bool getLocationInfo(const Value *V, std::string &DisplayName,
     G = StringRef();
     H = StringRef();
 #endif
+#if LLVM_VERSION < 35
     TypeD = Var.getType();
+#else
+    T = Var.getType().getName();
+#endif
   }
 
-  StringRef T = TypeD.getName();
+#if LLVM_VERSION < 35
+  T = TypeD.getName();
+#endif
   if (!T.empty())
     Type = T;
 #if LLVM_VERSION < 33

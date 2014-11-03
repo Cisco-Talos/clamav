@@ -28,9 +28,15 @@
 #define LLVM_ANALYSIS_POINTERTRACKING_H
 
 #include "llvm/ADT/SmallPtrSet.h"
+#if LLVM_VERSION < 35
 #include "llvm/Analysis/Dominators.h"
-#include "llvm/Pass.h"
 #include "llvm/Support/PredIteratorCache.h"
+#else
+#include "llvm/IR/Dominators.h"
+#include "llvm/IR/PredIteratorCache.h"
+#include "llvm/IR/DataLayout.h"
+#endif
+#include "llvm/Pass.h"
 #include "llvm30_compat.h"
 
 #if LLVM_VERSION < 33
@@ -117,8 +123,10 @@ namespace llvm {
     Function *FF;
 #if LLVM_VERSION < 32
     TargetData *TD;
-#else
+#elif LLVM_VERSION < 35
     DataLayout *TD;
+#else
+    const DataLayout *TD;
 #endif
     ScalarEvolution *SE;
     LoopInfo *LI;
