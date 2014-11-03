@@ -1216,10 +1216,10 @@ chdir_tmp (const char *dbname, const char *tmpdir)
 
     if (access (tmpdir, R_OK | W_OK) == -1)
     {
-        snprintf (cvdfile, sizeof(cvdfile)-1, "%s.cvd", dbname);
+        snprintf (cvdfile, sizeof(cvdfile), "%s.cvd", dbname);
         if (access (cvdfile, R_OK) == -1)
         {
-            snprintf (cvdfile, sizeof(cvdfile)-1, "%s.cld", dbname);
+            snprintf (cvdfile, sizeof(cvdfile), "%s.cld", dbname);
             if (access (cvdfile, R_OK) == -1)
             {
                 logg ("!chdir_tmp: Can't access local %s database\n", dbname);
