@@ -128,7 +128,10 @@ get_unicode_name(const char *name, int size, int big_endian)
 				*ret++ = '_';
 				*ret++ = (char)(name[i] + '0');
 			} else {
-				const uint16_t x = (uint16_t)((name[i] << 8) | name[i + 1]);
+				uint16_t x;
+				if ((i + 1) >= size)
+					break;
+				x = (uint16_t)((name[i] << 8) | name[i + 1]);
 
 				*ret++ = '_';
 				*ret++ = (char)('a'+((x&0xF)));
