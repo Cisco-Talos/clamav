@@ -836,8 +836,10 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
 		    break;
 		}
 	    }
-	    if(dsize)
-		break;
+	    if(dsize) {
+            crtmgr_free(&newcerts);
+            break;
+        }
 	    if(newcerts.crts) {
 		x509 = newcerts.crts;
 		cli_dbgmsg("asn1_parse_mscat: %u new certificates collected\n", newcerts.items);
@@ -877,8 +879,10 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
 		    }
 		    x509 = x509->next;
 		}
-		if(x509)
+		if(x509) {
+            crtmgr_free(&newcerts);
 		    break;
+        }
 		if(newcerts.items)
 		    cli_dbgmsg("asn1_parse_mscat: %u certificates did not verify\n", newcerts.items);
 		crtmgr_free(&newcerts);

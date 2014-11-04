@@ -1441,6 +1441,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	pthread_kill(fan_pid, SIGUSR1);
 	pthread_mutex_unlock(&logg_mutex);
 	pthread_join(fan_pid, NULL);
+    free(tharg);
     }
 #endif
     if(engine) {
