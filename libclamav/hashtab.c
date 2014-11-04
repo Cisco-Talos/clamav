@@ -776,7 +776,7 @@ static int cli_hashset_grow(struct cli_hashset *hs)
 		rc = cli_hashset_init_pool(&new_hs, hs->capacity << 1, hs->limit*100/hs->capacity, hs->mempool);
 	else
 		rc = cli_hashset_init(&new_hs, hs->capacity << 1, hs->limit*100/hs->capacity);
-	if(rc < 0)
+	if(rc != 0)
 		return rc;
 	/* and copy keys */
 	for(i=0;i < hs->capacity;i++) {

@@ -1323,7 +1323,8 @@ abort:
 
 #define WINUNICODE 0x04B0
 #define PROPCNTLIMIT 25
-#define PROPSTRLIMIT 128 /* affects property strs, NOT sanitized strs (may result in a buffer allocating PROPSTRLIMIT*6) */
+#define PROPSTRLIMIT 256 /* affects property strs, NOT sanitized strs (may result in a buffer allocating PROPSTRLIMIT*6) */
+#define UTF16_MS "UTF-16LE"
 
 #define sum16_endian_convert(v) le16_to_host((uint16_t)(v))
 #define sum32_endian_convert(v) le32_to_host((uint32_t)(v))
@@ -1449,7 +1450,7 @@ typedef struct summary_ctx {
 
     /* propset metadata */
     uint32_t pssize; /* track from propset start, not tail start */
-    int16_t codepage;
+    uint16_t codepage;
     int writecp;
 
     /* property metadata */
@@ -1465,8 +1466,9 @@ struct codepage_entry {
     const char *encoding;
 };
 
-#define NUMCODEPAGES 152
-static const struct codepage_entry codepage_entries[NUMCODEPAGES] = {
+#define NUMCODEPAGES sizeof(codepage_entries)/sizeof(struct codepage_entry)
+/* MAINTAIN - the array in codepage value sorted order */
+static const struct codepage_entry codepage_entries[] = {
     { 37,    "IBM037" },      /* IBM EBCDIC US-Canada */
     { 437,   "IBM437" },      /* OEM United States */
     { 500,   "IBM500" },      /* IBM EBCDIC International */
@@ -1624,20 +1626,26 @@ static const struct codepage_entry codepage_entries[NUMCODEPAGES] = {
 static char *
 ole2_convert_utf(summary_ctx_t *sctx, char *begin, size_t sz, const char *encoding)
 {
+    char *outbuf=NULL;
 #if HAVE_ICONV
-    char *res=NULL;
-    char *buf, *outbuf, *p1, *p2;
+    char *buf, *p1, *p2;
+    off_t offset;
     size_t inlen, outlen, nonrev, sz2;
     int i, try;
     iconv_t cd;
+#endif
+    /* applies in the both case */
+    if (sctx->codepage == 20127 || sctx->codepage == 65001) {
+        outbuf = cli_strdup(begin);
+        return outbuf;
+    }
 
-    buf = cli_calloc(1, sz);
+#if HAVE_ICONV
+    p1 = buf = cli_calloc(1, sz);
     if (!(buf))
         return NULL;
 
     memcpy(buf, begin, sz);
-
-    outbuf = NULL;
     inlen = sz;
 
     /* encoding lookup if not specified */
@@ -1665,19 +1673,22 @@ ole2_convert_utf(summary_ctx_t *sctx, char *begin, size_t sz, const char *encodi
         sctx->flags |= OLE2_CODEPAGE_ERROR_UNINITED;
     }
     else {
+        offset = 0;
         for (try = 1; try <= 3; ++try) {
-            p1 = buf;
-
-            if (outbuf)
-                free(outbuf);
-            outlen = sz2 = (try*2) * sz;
-            p2 = outbuf = cli_calloc(1, sz2);
+            /* charset to UTF-8 should never exceed sz*6 */
+            sz2 = (try*2) * sz;
+            /* use cli_realloc, reuse the buffer that has already been translated */
+            outbuf = (char *)cli_realloc(outbuf, sz2+1);
             if (!outbuf) {
                 free(buf);
                 return NULL;
             }
 
-            nonrev = iconv(cd, (char **)(&p1), &inlen, &p2, &outlen);
+            outlen = sz2 - offset;
+            p2 = outbuf + offset;
+
+            /* conversion */
+            nonrev = iconv(cd, &p1, &inlen, &p2, &outlen);
 
             if (errno == EILSEQ) {
                 cli_dbgmsg("ole2_convert_utf: input buffer contains invalid character for its encoding\n");
@@ -1694,27 +1705,28 @@ ole2_convert_utf(summary_ctx_t *sctx, char *begin, size_t sz, const char *encodi
                 break;
             }
 
-            cli_dbgmsg("ole2_convert_utf: outbuf is too small, resizing %llu -> %llu\n",
-                       (long long unsigned)((try*2) * sz), (long long unsigned)(((try+1)*2) * sz));
+            //outbuf[sz2 - outlen] = '\0';
+            //cli_dbgmsg("%u %s\n", inlen, outbuf);
+
+            offset = sz2 - outlen;
+            if (try < 3)
+                cli_dbgmsg("ole2_convert_utf: outbuf is too small, resizing %llu -> %llu\n",
+                           (long long unsigned)((try*2) * sz), (long long unsigned)(((try+1)*2) * sz));
         }
 
-        if (inlen != 0 || (errno == E2BIG && nonrev == (size_t)-1)) {
+        if (errno == E2BIG && nonrev == (size_t)-1) {
             cli_dbgmsg("ole2_convert_utf: buffer could not be fully translated\n");
             sctx->flags |= OLE2_CODEPAGE_ERROR_OUTBUFTOOSMALL;
         }
 
         outbuf[sz2 - outlen] = '\0';
-        res = strdup(outbuf);
     }
 
     iconv_close(cd);
     free(buf);
-    free(outbuf);
-    return res;
-#else
-    /* this should force base64 encoding */
-    return NULL;
 #endif
+    /* this should force base64 encoding if NULL */
+    return outbuf;
 }
 
 static int
@@ -1764,10 +1776,12 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
             /* endian conversion */
             dout = sum16_endian_convert(dout);
 
-            if (sctx->writecp)
-                sctx->codepage = dout;
-
-            ret = cli_jsonint(sctx->summary, sctx->propname, dout);
+            if (sctx->writecp) {
+                sctx->codepage = (uint16_t)dout;
+                ret = cli_jsonint(sctx->summary, sctx->propname, sctx->codepage);
+            }
+            else
+                ret = cli_jsonint(sctx->summary, sctx->propname, dout);
             break;
 	}
     case PT_INT32:
@@ -1928,9 +1942,8 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
         if (sctx->codepage == 0) {
             cli_dbgmsg("ole2_propset_json: current codepage is unknown, cannot parse char stream\n");
             sctx->flags |= OLE2_SUMMARY_FLAG_CODEPAGE;
-            break;
         }
-        else if (sctx->codepage != WINUNICODE) {
+        else {
             uint32_t strsize;
             char *outstr, *outstr2;
 
@@ -1941,7 +1954,7 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
 
             memcpy(&strsize, databuf+offset, sizeof(strsize));
             offset+=sizeof(strsize);
-            /* endian conversion */
+            /* endian conversion? */
             strsize = sum32_endian_convert(strsize);
 
             if (offset+strsize > sctx->pssize) {
@@ -1969,9 +1982,10 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
                 /* use base64 encoding when all else fails! */
                 char b64jstr[PROPSTRLIMIT];
 
+                /* outstr2 should be 4/3 times the original (rounded up) */
                 outstr2 = cl_base64_encode(outstr, strsize);
                 if (!outstr2) {
-                    free(outstr);
+                    cli_dbgmsg("ole2_process_property: failed to convert to base64 string\n");
                     return CL_EMEM;
                 }
 
@@ -1984,9 +1998,8 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
             ret = cli_jsonstr(sctx->summary, sctx->propname, outstr2);
             free(outstr);
             free(outstr2);
-            break;
         }
-        /* fall-through for unicode strings */
+        break;
     case PT_LPWSTR:
 	{
             uint32_t strsize;
@@ -1998,19 +2011,8 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
             }
             memcpy(&strsize, databuf+offset, sizeof(strsize));
             offset+=sizeof(strsize);
-            /* endian conversion */
-            strsize = sum32_endian_convert(strsize);
-            
-            if (proptype == PT_LPSTR) { /* fall-through specifics */
-                if (strsize % 2) {
-                    cli_dbgmsg("ole2_process_property: LPSTR using wchar not sized a multiple of 2\n");
-                    sctx->flags |= OLE2_SUMMARY_ERROR_INVALID_ENTRY;
-                    return CL_EFORMAT;
-                }
-            }
-            else {
-                strsize*=2; /* Unicode strings are by length, not size */
-            }
+            /* endian conversion; wide strings are by length, not size (x2) */
+            strsize = sum32_endian_convert(strsize)*2;
 
             /* limitation on string length */
             if (strsize > (2*PROPSTRLIMIT)) {
@@ -2029,8 +2031,8 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
                 return CL_EMEM;
             }
             memcpy(outstr, (const char *)(databuf+offset), strsize);
-            /* conversion of 16-width char strings to UTF-8 */
-            outstr2 = ole2_convert_utf(sctx, outstr, strsize, "UTF-16");
+            /* conversion of 16-width char strings (UTF-16 or UTF-16LE??) to UTF-8 */
+            outstr2 = ole2_convert_utf(sctx, outstr, strsize, UTF16_MS);
             if (!outstr2) {
                 /* use base64 encoding when all else fails! */
                 char b64jstr[PROPSTRLIMIT];
