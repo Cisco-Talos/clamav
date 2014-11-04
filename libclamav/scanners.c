@@ -3383,7 +3383,7 @@ static int scan_common(int desc, cl_fmap_t *map, const char **virname, unsigned 
     ctx.virname = virname;
     ctx.scanned = scanned;
     ctx.options = scanoptions;
-#if 0 /* for development testing only */
+#if 1 /* for development testing only */
     ctx.options |= CL_SCAN_FILE_PROPERTIES;
 #endif
     ctx.found_possibly_unwanted = 0;
