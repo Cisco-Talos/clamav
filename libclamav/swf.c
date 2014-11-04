@@ -124,7 +124,7 @@ static int scancws(cli_ctx *ctx, struct swf_file_hdr *hdr)
 	z_stream stream;
 	char inbuff[FILEBUFF], outbuff[FILEBUFF];
 	fmap_t *map = *ctx->fmap;
-	int offset = 8, ret, zret, outsize = 8, count;
+	int offset = 8, ret, zret, outsize = 8, count, zend;
 	char *tmpname;
 	int fd;
 
@@ -174,9 +174,11 @@ static int scancws(cli_ctx *ctx, struct swf_file_hdr *hdr)
 		close(fd);
 		if(cli_unlink(tmpname)) {
 		    free(tmpname);
+            inflateEnd(&stream);
 		    return CL_EUNLINK;
 		}
 		free(tmpname);
+        inflateEnd(&stream);
 		return CL_EUNPACK;
 	    }
 	    if(!ret)
@@ -205,7 +207,9 @@ static int scancws(cli_ctx *ctx, struct swf_file_hdr *hdr)
 	stream.avail_out = FILEBUFF;
     } while(zret == Z_OK);
 
-    if((zret != Z_STREAM_END && zret != Z_OK) || (zret = inflateEnd(&stream)) != Z_OK) {
+    zend = inflateEnd(&stream);
+
+    if((zret != Z_STREAM_END && zret != Z_OK) || zend != Z_OK) {
         /*
          * outsize is initialized to 8, it being 8 here means that we couldn't even read a single byte.
          * If outsize > 8, then we have data. Let's scan what we have.
