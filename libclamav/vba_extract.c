@@ -513,6 +513,7 @@ cli_vba_inflate(int fd, off_t offset, int *size)
 	if(b == NULL)
 		return NULL;
 
+	memset(buffer, 0, sizeof(buffer));
 	lseek(fd, offset+3, SEEK_SET); /* 1byte ?? , 2byte length ?? */
 	clean = TRUE;
 	pos = 0;
