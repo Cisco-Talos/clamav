@@ -49,6 +49,7 @@
 int tcpserver(int **lsockets, unsigned int *nlsockets, char *ipaddr, const struct optstruct *opts)
 {
     struct addrinfo hints, *info, *p;
+    char host[NI_MAXHOST], serv[NI_MAXSERV];
     int *sockets;
     int sockfd, backlog;
     int *t;
@@ -66,19 +67,12 @@ int tcpserver(int **lsockets, unsigned int *nlsockets, char *ipaddr, const struc
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
 
-#if C_LINUX
-    if (!(ipaddr)) {
-        /*
-         * By default, getaddrinfo() will return 0.0.0.0 if NULL is passed in as the first parameter.
-         * Binding to 0.0.0.0 will prevent us from also binding IPv6 ::0 (errno = EADDRINUSE). However,
-         * if we bind to ::0 (or shorthand, ::), then Linux will bind to both IPv4 and IPv6.
-         */
-        ipaddr = "::";
-    }
+#ifdef AI_ADDRCONFIG
+    hints.ai_flags |= AI_ADDRCONFIG;
 #endif
 
     if ((res = getaddrinfo(ipaddr, port, &hints, &info))) {
-        logg("!TCP: getaddrinfo: %s\n", gai_strerror(res));
+        logg("!TCP: getaddrinfo failed: %s\n", gai_strerror(res));
         return -1;
     }
 
@@ -102,26 +96,35 @@ int tcpserver(int **lsockets, unsigned int *nlsockets, char *ipaddr, const struc
             logg("!TCP: setsocktopt(SO_REUSEADDR) error: %s\n", strerror(errno));
         }
 
+#ifdef IPV6_V6ONLY
+        if (p->ai_family == AF_INET6 &&
+            setsockopt(sockfd, IPPROTO_IPV6, IPV6_V6ONLY, &yes, sizeof(yes)) == -1) {
+            estr = strerror(errno);
+            logg("!TCP: setsocktopt(IPV6_V6ONLY) error: %s\n", estr);
+        }
+#endif /* IPV6_V6ONLY */
+
+        if ((res = getnameinfo(p->ai_addr, p->ai_addrlen, host, sizeof(host),
+                               serv, sizeof(serv), NI_NUMERICHOST|NI_NUMERICSERV))) {
+            logg("!TCP: getnameinfo failed: %s\n", gai_strerror(res));
+            host[0] = '\0';
+            serv[0] = '\0';
+        }
         if(bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
             estr = strerror(errno);
-            if (ipaddr || i == 0)
-                logg("!TCP: bind() error when trying to listen on [%s]:%s: %s\n", ipaddr, port, estr);
+            logg("!TCP: Cannot bind to [%s]:%s: %s\n", host, serv, estr);
             closesocket(sockfd);
 
             continue;
-        } else {
-            if((ipaddr))
-                logg("#TCP: Bound to address %s on port %u\n", ipaddr, (unsigned int) optget(opts, "TCPSocket")->numarg);
-            else
-                logg("#TCP: Bound to port %u\n", (unsigned int) optget(opts, "TCPSocket")->numarg);
         }
+        logg("#TCP: Bound to [%s]:%s\n", host, serv);
 
         backlog = optget(opts, "MaxConnectionQueueLength")->numarg;
         logg("#TCP: Setting connection queue length to %d\n", backlog);
 
         if(listen(sockfd, backlog) == -1) {
             estr = strerror(errno);
-            logg("!TCP: listen() error: %s\n", estr);
+            logg("!TCP: Cannot listen on [%s]:%s: %s\n", host, serv, estr);
             closesocket(sockfd);
 
             continue;
