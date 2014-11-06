@@ -191,6 +191,9 @@
 /* have getaddrinfo() */
 #undef HAVE_GETADDRINFO
 
+/* Define to 1 if you have the `getnameinfo' function. */
+#undef HAVE_GETNAMEINFO
+
 /* Define to 1 if getpagesize() is available */
 #undef HAVE_GETPAGESIZE
 
