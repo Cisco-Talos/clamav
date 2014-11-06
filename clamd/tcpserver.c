@@ -104,12 +104,18 @@ int tcpserver(int **lsockets, unsigned int *nlsockets, char *ipaddr, const struc
         }
 #endif /* IPV6_V6ONLY */
 
+#ifdef HAVE_GETNAMEINFO
         if ((res = getnameinfo(p->ai_addr, p->ai_addrlen, host, sizeof(host),
                                serv, sizeof(serv), NI_NUMERICHOST|NI_NUMERICSERV))) {
             logg("!TCP: getnameinfo failed: %s\n", gai_strerror(res));
             host[0] = '\0';
             serv[0] = '\0';
         }
+#else
+        strncpy(host, ipaddr, sizeof(host));
+        host[sizeof(host)-1] = '\0';
+        snprintf(serv, sizeof(serv), "%u", (unsigned int)(optget(opts, "TCPSocket")->numarg));
+#endif
         if(bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
             estr = strerror(errno);
             logg("!TCP: Cannot bind to [%s]:%s: %s\n", host, serv, estr);

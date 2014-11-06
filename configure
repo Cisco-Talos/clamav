@@ -15702,7 +15702,7 @@ if test "$ac_res" != no; then :
 fi
 
 
-for ac_func in poll setsid memcpy snprintf vsnprintf strerror_r strlcpy strlcat strcasestr inet_ntop setgroups initgroups ctime_r mkstemp mallinfo madvise
+for ac_func in poll setsid memcpy snprintf vsnprintf strerror_r strlcpy strlcat strcasestr inet_ntop setgroups initgroups ctime_r mkstemp mallinfo madvise getnameinfo
 do :
   as_ac_var=`$as_echo "ac_cv_func_$ac_func" | $as_tr_sh`
 ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"
