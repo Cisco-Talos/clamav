@@ -74,14 +74,7 @@ AC_ARG_WITH([system-llvm], AC_HELP_STRING([--with-system-llvm],
  if test "x$llvmconfig" != "x"; then
      llvmver=`$llvmconfig --version`
 
-     AC_SUBST(LLVMCONFIG_CXXFLAGS, [`$llvmconfig --cxxflags`])
-     AC_SUBST(LLVMCONFIG_LDFLAGS, [`$llvmconfig --ldflags`])
-     AC_SUBST(LLVMCONFIG_LIBS, [`$llvmconfig --libs jit nativecodegen scalaropts ipo`])
-     AC_SUBST(LLVMCONFIG_LIBFILES, [`$llvmconfig --libfiles jit nativecodegen scalaropts ipo`])
      AC_MSG_NOTICE([Using external LLVM])
-     AC_MSG_NOTICE([CXXFLAGS from llvm-config: $LLVMCONFIG_CXXFLAGS])
-     AC_MSG_NOTICE([LDFLAGS from llvm-config: $LLVMCONFIG_LDFLAGS])
-     AC_MSG_NOTICE([LIBS from llvm-config: $LLVMCONFIG_LIBS])
  fi
 ])
 
@@ -117,6 +110,23 @@ else
     AC_MSG_RESULT([ok ($llvmver)])
 fi
 
+dnl aquire the required flags to properly link in external LLVM
+if test "x$llvmconfig" != "x"; then
+    AC_SUBST(LLVMCONFIG_CXXFLAGS, [`$llvmconfig --cxxflags`])
+    if test $llvmver_test -ge 350; then
+        dnl LLVM 3.5.0 and after splits linker flags into two sets
+        ldflags=`$llvmconfig --ldflags`
+        syslibs=`$llvmconfig --system-libs`
+        AC_SUBST(LLVMCONFIG_LDFLAGS, ["$ldflags $syslibs"])
+    else
+        AC_SUBST(LLVMCONFIG_LDFLAGS, [`$llvmconfig --ldflags`])
+    fi
+    AC_SUBST(LLVMCONFIG_LIBS, [`$llvmconfig --libs jit nativecodegen scalaropts ipo`])
+    AC_SUBST(LLVMCONFIG_LIBFILES, [`$llvmconfig --libfiles jit nativecodegen scalaropts ipo`])
+    AC_MSG_NOTICE([CXXFLAGS from llvm-config: $LLVMCONFIG_CXXFLAGS])
+    AC_MSG_NOTICE([LDFLAGS from llvm-config: $LLVMCONFIG_LDFLAGS])
+    AC_MSG_NOTICE([LIBS from llvm-config: $LLVMCONFIG_LIBS])
+fi
 dnl patch does not affect clamav source (yet)
 llvmver_int=${llvmver_major}${llvmver_minor}
 
