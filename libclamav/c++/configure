@@ -649,11 +649,11 @@ THREAD_LIBS
 DEBUG_BUILD_FALSE
 DEBUG_BUILD_TRUE
 LLVM_VERSION
-subdirs
 LLVMCONFIG_LIBFILES
 LLVMCONFIG_LIBS
 LLVMCONFIG_LDFLAGS
 LLVMCONFIG_CXXFLAGS
+subdirs
 GMAKE
 ifGNUmake
 CXXCPP
@@ -15621,22 +15621,8 @@ if test "${with_system_llvm+set}" = set; then :
  if test "x$llvmconfig" != "x"; then
      llvmver=`$llvmconfig --version`
 
-     LLVMCONFIG_CXXFLAGS=`$llvmconfig --cxxflags`
-
-     LLVMCONFIG_LDFLAGS=`$llvmconfig --ldflags`
-
-     LLVMCONFIG_LIBS=`$llvmconfig --libs jit nativecodegen scalaropts ipo`
-
-     LLVMCONFIG_LIBFILES=`$llvmconfig --libfiles jit nativecodegen scalaropts ipo`
-
      { $as_echo "$as_me:${as_lineno-$LINENO}: Using external LLVM" >&5
 $as_echo "$as_me: Using external LLVM" >&6;}
-     { $as_echo "$as_me:${as_lineno-$LINENO}: CXXFLAGS from llvm-config: $LLVMCONFIG_CXXFLAGS" >&5
-$as_echo "$as_me: CXXFLAGS from llvm-config: $LLVMCONFIG_CXXFLAGS" >&6;}
-     { $as_echo "$as_me:${as_lineno-$LINENO}: LDFLAGS from llvm-config: $LLVMCONFIG_LDFLAGS" >&5
-$as_echo "$as_me: LDFLAGS from llvm-config: $LLVMCONFIG_LDFLAGS" >&6;}
-     { $as_echo "$as_me:${as_lineno-$LINENO}: LIBS from llvm-config: $LLVMCONFIG_LIBS" >&5
-$as_echo "$as_me: LIBS from llvm-config: $LLVMCONFIG_LIBS" >&6;}
  fi
 
 fi
@@ -15679,6 +15665,29 @@ else
 $as_echo "ok ($llvmver)" >&6; }
 fi
 
+if test "x$llvmconfig" != "x"; then
+    LLVMCONFIG_CXXFLAGS=`$llvmconfig --cxxflags`
+
+    if test $llvmver_test -ge 350; then
+                ldflags=`$llvmconfig --ldflags`
+        syslibs=`$llvmconfig --system-libs`
+        LLVMCONFIG_LDFLAGS="$ldflags $syslibs"
+
+    else
+        LLVMCONFIG_LDFLAGS=`$llvmconfig --ldflags`
+
+    fi
+    LLVMCONFIG_LIBS=`$llvmconfig --libs jit nativecodegen scalaropts ipo`
+
+    LLVMCONFIG_LIBFILES=`$llvmconfig --libfiles jit nativecodegen scalaropts ipo`
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: CXXFLAGS from llvm-config: $LLVMCONFIG_CXXFLAGS" >&5
+$as_echo "$as_me: CXXFLAGS from llvm-config: $LLVMCONFIG_CXXFLAGS" >&6;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: LDFLAGS from llvm-config: $LLVMCONFIG_LDFLAGS" >&5
+$as_echo "$as_me: LDFLAGS from llvm-config: $LLVMCONFIG_LDFLAGS" >&6;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: LIBS from llvm-config: $LLVMCONFIG_LIBS" >&5
+$as_echo "$as_me: LIBS from llvm-config: $LLVMCONFIG_LIBS" >&6;}
+fi
 llvmver_int=${llvmver_major}${llvmver_minor}
 
 LLVM_VERSION=$llvmver_int
