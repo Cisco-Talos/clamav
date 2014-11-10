@@ -67,7 +67,7 @@
 	cli_strbcasestr(ext, ".yara")		\
     )
 
-char *cli_virname(char *virname, unsigned int official);
+char *cli_virname(const char *virname, unsigned int official);
 
 int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hexsig, uint16_t rtype, uint16_t type, const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options);
 

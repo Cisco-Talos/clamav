@@ -166,6 +166,8 @@ EXPORTS cli_checkfp_pe @44369 NONAME
 EXPORTS cli_bytefunc_describe @44370 NONAME
 EXPORTS cli_bytetype_describe @44371 NONAME
 EXPORTS cli_bytevalue_describe @44372 NONAME
+EXPORTS cli_pcre_freeoff @44373 NONAME
+EXPORTS cli_pcre_recaloff @44374 NONAME
 
 ; compatibility layer, tommath, zlib
 EXPORTS w32_srand @44269 NONAME

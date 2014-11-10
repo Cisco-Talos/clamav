@@ -84,7 +84,7 @@ static pthread_mutex_t cli_ref_mutex = PTHREAD_MUTEX_INITIALIZER;
 #include "yara_clam.h"
 #endif
 
-char *cli_virname(char *virname, unsigned int official)
+char *cli_virname(const char *virname, unsigned int official)
 {
 	char *newname, *pt;
 
@@ -112,6 +112,7 @@ char *cli_virname(char *virname, unsigned int official)
     return newname;
 }
 
+#define PCRE_TOKENS 4
 int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hexsig, uint16_t rtype, uint16_t type, const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options)
 {
     struct cli_bm_patt *bm_new;
@@ -173,8 +174,54 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 
         return CL_SUCCESS;
     }
+    if (strchr(hexsig, '/')) {
+#if HAVE_PCRE
+        /* expected format => ^offset:trigger/regex/[cflags]$ */
+	const char *trigger, *pattern, *cflags;
+        char *start, *end;
 
-    if((wild = strchr(hexsig, '{'))) {
+        /* get checked */
+        if (hexsig[0] == '/') {
+            cli_errmsg("cli_parseadd(): PCRE subsig must contain logical trigger\n");
+            return CL_EMALFDB;
+        }
+
+        /* get copied */
+        hexcpy = cli_calloc(hexlen+1, sizeof(char));
+        if(!hexcpy)
+            return CL_EMEM;
+        strncpy(hexcpy, hexsig, hexlen);
+
+        /* get delimiters-ed */
+        start = strchr(hexcpy, '/');
+        end = strrchr(hexcpy, '/');
+        if (start == end) {
+            cli_errmsg("cli_parseadd(): PCRE expression must be delimited by '/'\n");
+            free(hexcpy);
+            return CL_EMALFDB;
+        }
+
+        /* get NULL-ed */
+        *start = '\0';
+        *end = '\0';
+
+        /* get tokens-ed */
+        trigger = hexcpy;
+        pattern = start+1;
+        cflags = end+1;
+        if (*cflags == '\0') /* get compat-ed */
+            cflags = NULL;
+
+        /* normal trigger, get added */
+        ret = cli_pcre_addpatt(root, virname, trigger, pattern, cflags, offset, lsigid, options);
+        free(hexcpy);
+        return ret;
+#else
+        cli_errmsg("cli_parseadd(): cannot parse PCRE subsig without PCRE support\n");
+        return CL_EPARSE;
+#endif
+    }
+    else if((wild = strchr(hexsig, '{'))) {
         if(sscanf(wild, "%c%u%c", &l, &range, &r) == 3 && l == '{' && r == '}' && range > 0 && range < 128) {
             hexcpy = cli_calloc(hexlen + 2 * range, sizeof(char));
             if(!hexcpy)
@@ -1308,10 +1355,17 @@ static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsig
     }
 
     subsigs++;
-    if(subsigs > 64) {
-        cli_errmsg("cli_loadldb: Broken logical expression or too many subsignatures\n");
-        return CL_EMALFDB;
+
+#if !HAVE_PCRE
+    /* Regex Usage and Support Check */
+    for (i = 0; i < subsigs; ++i) {
+        if (strchr(tokens[i+3], '/')) {
+            cli_dbgmsg("cli_loadldb: logical signature for %s uses PCREs but support is disabled, skipping\n", virname);
+            (*sigs)--;
+            return CL_SUCCESS;
+        }
     }
+#endif
 
     if (!line) {
         /* This is a logical signature from the bytecode, we need all
@@ -1325,6 +1379,12 @@ static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsig
     } else if(subsigs != tokens_count - 3) {
         cli_errmsg("cli_loadldb: The number of subsignatures (== %u) doesn't match the IDs in the logical expression (== %u)\n", tokens_count - 3, subsigs);
         return CL_EMALFDB;
+    }
+
+    /* enforce 64 subsig cap */
+    if(subsigs > 64) {
+	cli_errmsg("cli_loadldb: Broken logical expression or too many subsignatures\n");
+	return CL_EMALFDB;
     }
 
     /* TDB */
@@ -3562,6 +3622,9 @@ int cl_engine_free(struct cl_engine *engine)
 		    }
 		    mpool_free(engine->mempool, root->ac_lsigtable);
 		}
+#if HAVE_PCRE
+                cli_pcre_freetable(root);
+#endif /* HAVE_PCRE */
 		mpool_free(engine->mempool, root);
 	    }
 	}
@@ -3675,7 +3738,6 @@ int cl_engine_compile(struct cl_engine *engine)
 	int ret;
 	struct cli_matcher *root;
 
-
     if(!engine)
 	return CL_ENULLARG;
 
@@ -3687,7 +3749,14 @@ int cl_engine_compile(struct cl_engine *engine)
 	if((root = engine->root[i])) {
 	    if((ret = cli_ac_buildtrie(root)))
 		return ret;
-	    cli_dbgmsg("Matcher[%u]: %s: AC sigs: %u (reloff: %u, absoff: %u) BM sigs: %u (reloff: %u, absoff: %u) maxpatlen %u %s\n", i, cli_mtargets[i].name, root->ac_patterns, root->ac_reloff_num, root->ac_absoff_num, root->bm_patterns, root->bm_reloff_num, root->bm_absoff_num, root->maxpatlen, root->ac_only ? "(ac_only mode)" : "");
+#if HAVE_PCRE
+            if((ret = cli_pcre_build(root, engine->pcre_match_limit, engine->pcre_recmatch_limit, engine->dconf)))
+                return ret;
+
+	    cli_dbgmsg("Matcher[%u]: %s: AC sigs: %u (reloff: %u, absoff: %u) BM sigs: %u (reloff: %u, absoff: %u) PCREs: %u (reloff: %u, absoff: %u) maxpatlen %u %s\n", i, cli_mtargets[i].name, root->ac_patterns, root->ac_reloff_num, root->ac_absoff_num, root->bm_patterns, root->bm_reloff_num, root->bm_absoff_num, root->pcre_metas, root->pcre_reloff_num, root->pcre_absoff_num, root->maxpatlen, root->ac_only ? "(ac_only mode)" : "");
+#else
+	    cli_dbgmsg("Matcher[%u]: %s: AC sigs: %u (reloff: %u, absoff: %u) BM sigs: %u (reloff: %u, absoff: %u) maxpatlen %u PCREs: 0 (disabled) %s\n", i, cli_mtargets[i].name, root->ac_patterns, root->ac_reloff_num, root->ac_absoff_num, root->bm_patterns, root->bm_reloff_num, root->bm_absoff_num, root->maxpatlen, root->ac_only ? "(ac_only mode)" : "");
+#endif
 	}
     }
     if(engine->hm_hdb)

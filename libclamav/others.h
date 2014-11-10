@@ -67,7 +67,7 @@
  * in re-enabling affected modules.
  */
 
-#define CL_FLEVEL 79
+#define CL_FLEVEL 80
 #define CL_FLEVEL_DCONF	CL_FLEVEL
 #define CL_FLEVEL_SIGTOOL CL_FLEVEL
 
@@ -352,6 +352,11 @@ struct cl_engine {
 
     /* millisecond time limit for preclassification scanning */
     uint32_t time_limit;
+
+    /* PCRE matching limitations */
+    uint64_t pcre_match_limit;
+    uint64_t pcre_recmatch_limit;
+    uint64_t pcre_max_filesize;
 };
 
 struct cl_settings {
@@ -411,6 +416,11 @@ struct cl_settings {
 
     /* Engine max settings */
     uint32_t maxiconspe; /* max number of icons to scan for PE */
+
+    /* PCRE matching limitations */
+    uint64_t pcre_match_limit;
+    uint64_t pcre_recmatch_limit;
+    uint64_t pcre_max_filesize;
 };
 
 extern int (*cli_unrar_open)(int fd, const char *dirname, unrar_state_t *state);

@@ -1104,7 +1104,7 @@ inline static int ac_addtype(struct cli_matched_type **list, cli_file_t type, of
     return CL_SUCCESS;
 }
 
-static inline void lsig_sub_matched(const struct cli_matcher *root, struct cli_ac_data *mdata, uint32_t lsigid1, uint32_t lsigid2, uint32_t realoff, int partial)
+void lsig_sub_matched(const struct cli_matcher *root, struct cli_ac_data *mdata, uint32_t lsigid1, uint32_t lsigid2, uint32_t realoff, int partial)
 {
 	const struct cli_lsig_tdb *tdb = &root->ac_lsigtable[lsigid1]->tdb;
 
@@ -1359,9 +1359,9 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 				    if(res) {
 					newres = (struct cli_ac_result *) malloc(sizeof(struct cli_ac_result));
 					if(!newres) {
-                        cli_errmsg("cli_ac_scanbuff: Can't allocate memory for newres %lu\n", sizeof(struct cli_ac_result));
+					    cli_errmsg("cli_ac_scanbuff: Can't allocate memory for newres %lu\n", (unsigned long)sizeof(struct cli_ac_result));
 					    return CL_EMEM;
-                    }
+					}
 					newres->virname = pt->virname;
 					newres->customdata = pt->customdata;
 					newres->next = *res;
@@ -1412,9 +1412,9 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 				if(res) {
 				    newres = (struct cli_ac_result *) malloc(sizeof(struct cli_ac_result));
 				    if(!newres) {
-                        cli_errmsg("cli_ac_scanbuff: Can't allocate memory for newres %lu\n", sizeof(struct cli_ac_result));
-                        return CL_EMEM;
-                    }
+					cli_errmsg("cli_ac_scanbuff: Can't allocate memory for newres %lu\n", (unsigned long)sizeof(struct cli_ac_result));
+					return CL_EMEM;
+				    }
 				    newres->virname = pt->virname;
 				    newres->customdata = pt->customdata;
 				    newres->offset = realoff;

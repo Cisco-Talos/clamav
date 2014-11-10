@@ -38,6 +38,8 @@ struct cli_target_info {
 #include "matcher-ac.h"
 #include "matcher-bm.h"
 #include "matcher-hash.h"
+#include "matcher-pcre.h"
+#include "regex_pcre.h"
 #include "fmap.h"
 #include "mpool.h"
 
@@ -107,6 +109,14 @@ struct cli_matcher {
 
     uint16_t maxpatlen;
     uint8_t ac_only;
+
+    /* Perl-Compiled Regular Expressions */
+#if HAVE_PCRE
+    uint32_t pcre_metas;
+    struct cli_pcre_meta **pcre_metatable;
+    uint32_t pcre_reloff_num, pcre_absoff_num;
+#endif
+
 #ifdef USE_MPOOL
     mpool_t *mempool;
 #endif

@@ -48,7 +48,7 @@
 
 #include "getopt.h"
 
-#define MAXCMDOPTS  120
+#define MAXCMDOPTS  150
 
 #define MATCH_NUMBER "^[0-9]+$"
 #define MATCH_SIZE "^[0-9]+[KM]?$"
@@ -297,7 +297,7 @@ const struct clam_option __clam_options[] = {
     { "BytecodeMode", "bytecode-mode", 0, CLOPT_TYPE_STRING, "^(Auto|ForceJIT|ForceInterpreter|Test)$", -1, "Auto", FLAG_REQUIRED, OPT_CLAMD | OPT_CLAMSCAN,
 	"Set bytecode execution mode.\nPossible values:\n\tAuto - automatically choose JIT if possible, fallback to interpreter\nForceJIT - always choose JIT, fail if not possible\nForceIntepreter - always choose interpreter\nTest - run with both JIT and interpreter and compare results. Make all failures fatal.","Auto"},
 
-    { "BytecodeStatistics", "bytecode-statistics", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_CLAMBC, "Collect and print bytecode execution statistics.", "no" },
+    { "Statistics", "statistics", 0, CLOPT_TYPE_STRING, "^(none|None|bytecode|Bytecode|pcre|PCRE)$", -1, NULL, FLAG_MULTIPLE, OPT_CLAMSCAN | OPT_CLAMBC, "Collect and print execution statistics.\nPossible values:\n\tBytecode - reports bytecode statistics\nPCRE - reports PCRE execution statistics\nNone - reports no statistics", "None" },
 
    { "DetectPUA", "detect-pua", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Detect Potentially Unwanted Applications.", "yes" },
 
@@ -379,6 +379,12 @@ const struct clam_option __clam_options[] = {
     { "MaxIconsPE", "max-iconspe", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, CLI_DEFAULT_MAXICONSPE, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the maximum number of icons within a PE to be scanned.\nPE files with more icons than this value will have up to the value number icons scanned.\nNegative values are not allowed.\nWARNING: setting this limit too high may result in severe damage or impact performance.", "100" },
 
     { "TimeLimit", "timelimit", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 0, NULL, 0, OPT_CLAMSCAN, "This clamscan option is currently for testing only. It sets the engine parameter CL_ENGINE_TIME_LIMIT. The value is in milliseconds.", "0" },
+
+    { "PCREMatchLimit", "pcre-match-limit", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, CLI_DEFAULT_PCRE_MATCH_LIMIT, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the maximum calls to the PCRE match function during an instance of regex matching.\nInstances using more than this limit will be terminated and alert the user but the scan will continue.\nFor more information on match_limit, see the PCRE documentation.\nNegative values are not allowed.\nWARNING: setting this limit too high may severely impact performance.", "10000" },
+
+    { "PCRERecMatchLimit", "pcre-recmatch-limit", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, CLI_DEFAULT_PCRE_RECMATCH_LIMIT, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the maximum recursive calls to the PCRE match function during an instance of regex matching.\nInstances using more than this limit will be terminated and alert the user but the scan will continue.\nFor more information on match_limit_recursion, see the PCRE documentation.\nNegative values are not allowed and values > PCREMatchLimit are superfluous.\nWARNING: setting this limit too high may severely impact performance.", "5000" },
+
+    { "PCREMaxFileSize", "pcre-max-filesize", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, CLI_DEFAULT_PCRE_MAX_FILESIZE, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the maximum filesize for which PCRE subsigs will be executed.\nFiles exceeding this limit will not have PCRE subsigs executed unless a subsig is encompassed to a smaller buffer.\nNegative values are not allowed.\nSetting this value to zero disables the limit.\nWARNING: setting this limit too high or disabling it may severely impact performance.", "25M" },
 
     /* OnAccess settings */
     { "ScanOnAccess", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_CLAMD, "This option enables on-access scanning (Linux only)", "no" },

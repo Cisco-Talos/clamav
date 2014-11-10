@@ -457,8 +457,12 @@ int main(int argc, char **argv)
 #ifdef HAVE_BZLIB_H
 	printf("BZIP2 ");
 #endif
+
 #ifdef HAVE_LIBXML2
 	printf("LIBXML2 ");
+#endif
+#ifdef HAVE_PCRE
+	printf("PCRE ");
 #endif
 #ifdef HAVE_JSON
 	printf("JSON ");

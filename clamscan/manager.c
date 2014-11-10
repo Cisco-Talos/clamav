@@ -59,6 +59,7 @@
 #include "libclamav/clamav.h"
 #include "libclamav/others.h"
 #include "libclamav/matcher-ac.h"
+#include "libclamav/matcher-pcre.h"
 #include "libclamav/str.h"
 #include "libclamav/readdb.h"
 #include "libclamav/cltypes.h"
@@ -764,9 +765,6 @@ int scanmanager(const struct optstruct *opts)
     if(optget(opts, "bytecode-unsigned")->enabled)
         dboptions |= CL_DB_BYTECODE_UNSIGNED;
 
-    if(optget(opts, "bytecode-statistics")->enabled)
-        dboptions |= CL_DB_BYTECODE_STATS;
-
     if((opt = optget(opts,"bytecode-timeout"))->enabled)
         cl_engine_set_num(engine, CL_ENGINE_BYTECODE_TIMEOUT, opt->numarg);
 
@@ -783,6 +781,18 @@ int scanmanager(const struct optstruct *opts)
             mode = CL_BYTECODE_MODE_AUTO;
 
         cl_engine_set_num(engine, CL_ENGINE_BYTECODE_MODE, mode);
+    }
+
+    if((opt = optget(opts, "statistics"))->enabled) {
+	while(opt) {
+	    if (!strcasecmp(opt->strarg, "bytecode")) {
+		dboptions |= CL_DB_BYTECODE_STATS;
+	    }
+	    else if (!strcasecmp(opt->strarg, "pcre")) {
+		dboptions |= CL_DB_PCRE_STATS;
+	    }
+	    opt = opt->nextarg;
+        }
     }
 
     if((opt = optget(opts, "tempdir"))->enabled) {
@@ -961,6 +971,30 @@ int scanmanager(const struct optstruct *opts)
         }
     }
 
+    if ((opt = optget(opts, "pcre-match-limit"))->active) {
+        if ((ret = cl_engine_set_num(engine, CL_ENGINE_PCRE_MATCH_LIMIT, opt->numarg))) {
+            logg("!cli_engine_set_num(CL_ENGINE_PCRE_MATCH_LIMIT) failed: %s\n", cl_strerror(ret));
+            cl_engine_free(engine);
+            return 2;
+        }
+    }
+
+    if ((opt = optget(opts, "pcre-recmatch-limit"))->active) {
+        if ((ret = cl_engine_set_num(engine, CL_ENGINE_PCRE_RECMATCH_LIMIT, opt->numarg))) {
+            logg("!cli_engine_set_num(CL_ENGINE_PCRE_RECMATCH_LIMIT) failed: %s\n", cl_strerror(ret));
+            cl_engine_free(engine);
+            return 2;
+        }
+    }
+
+    if ((opt = optget(opts, "pcre-max-filesize"))->active) {
+        if ((ret = cl_engine_set_num(engine, CL_ENGINE_PCRE_MAX_FILESIZE, opt->numarg))) {
+            logg("!cli_engine_set_num(CL_ENGINE_PCRE_MAX_FILESIZE) failed: %s\n", cl_strerror(ret));
+            cl_engine_free(engine);
+            return 2;
+        }
+    }
+
     /* set scan options */
     if(optget(opts, "allmatch")->enabled)
         options |= CL_SCAN_ALLMATCHES;
@@ -1129,9 +1163,20 @@ int scanmanager(const struct optstruct *opts)
         }
     }
 
-    if(optget(opts, "bytecode-statistics")->enabled) {
-        cli_sigperf_print();
-        cli_sigperf_events_destroy();
+    if((opt = optget(opts, "statistics"))->enabled) {
+	while(opt) {
+	    if (!strcasecmp(opt->strarg, "bytecode")) {
+		cli_sigperf_print();
+		cli_sigperf_events_destroy();
+	    }
+#if HAVE_PCRE
+	    else if (!strcasecmp(opt->strarg, "pcre")) {
+		cli_pcre_perf_print();
+		cli_pcre_perf_events_destroy();
+	    }
+#endif
+	    opt = opt->nextarg;
+        }
     }
 
     /* free the engine */

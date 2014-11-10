@@ -522,6 +522,31 @@ Example
 # Default: 100
 #MaxIconsPE 200
 
+# This option sets the maximum calls to the PCRE match function during an instance of regex matching.
+# Instances using more than this limit will be terminated and alert the user but the scan will continue.
+# For more information on match_limit, see the PCRE documentation.
+# Negative values are not allowed.
+# WARNING: setting this limit too high may severely impact performance.
+# Default: 10000
+#PCREMatchLimit 20000
+
+# This option sets the maximum recursive calls to the PCRE match function during an instance of regex matching.
+# Instances using more than this limit will be terminated and alert the user but the scan will continue.
+# For more information on match_limit_recursion, see the PCRE documentation.
+# Negative values are not allowed and values > PCREMatchLimit are superfluous.
+# WARNING: setting this limit too high may severely impact performance.
+# Default: 5000
+#PCRERecMatchLimit 10000
+
+# This option sets the maximum filesize for which PCRE subsigs will be executed.
+# Files exceeding this limit will not have PCRE subsigs executed unless a subsig is encompassed to a smaller buffer.
+# Negative values are not allowed.
+# Setting this value to zero disables the limit.
+# WARNING: setting this limit too high or disabling it may severely impact performance.
+# Default: 25M
+#PCREMaxFileSize 100M
+
+
 ##
 ## On-access Scan Settings
 ##

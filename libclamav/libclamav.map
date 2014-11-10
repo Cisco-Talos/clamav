@@ -57,11 +57,14 @@ CLAMAV_PUBLIC {
     cl_finish_hash;
     cl_hash_destroy;
     cl_engine_stats_enable;
+    lsig_sub_matched;
 };
 CLAMAV_PRIVATE {
   global:
     cli_sigperf_print; 
     cli_sigperf_events_destroy; 
+    cli_pcre_perf_print;
+    cli_pcre_perf_events_destroy;
 
     cli_gettmpdir;
     cli_strtok;
