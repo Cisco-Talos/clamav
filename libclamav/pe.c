@@ -1212,8 +1212,7 @@ int cli_scanpe(cli_ctx *ctx)
             exe_sections[i].ursz = EC32(section_hdr[i].SizeOfRawData);
 
             if (exe_sections[i].rsz) { /* Don't bother with virtual only sections */
-                if (!CLI_ISCONTAINED(0, fsize, exe_sections[i].uraw, exe_sections[i].ursz)
-                    || exe_sections[i].raw >= fsize) {
+                if (exe_sections[i].raw >= fsize || exe_sections[i].uraw > fsize) {
                     cli_dbgmsg("Broken PE file - Section %d starts or exists beyond the end of file (Offset@ %lu, Total filesize %lu)\n", i, (unsigned long)exe_sections[i].raw, (unsigned long)fsize);
                     if (nsections == 1) {
                         free(section_hdr);
@@ -1237,11 +1236,17 @@ int cli_scanpe(cli_ctx *ctx)
                     rescan=1;
                     break;
                 }
+
+                if (!CLI_ISCONTAINED(0, (uint32_t) fsize, exe_sections[i].raw, exe_sections[i].rsz))
+                    exe_sections[i].rsz = fsize - exe_sections[i].raw;
+
+                if (!CLI_ISCONTAINED(0, fsize, exe_sections[i].uraw, exe_sections[i].ursz))
+                    exe_sections[i].ursz = fsize - exe_sections[i].uraw;
             }
         }
     }
 
-        for(i = 0; i < nsections; i++) {
+    for(i = 0; i < nsections; i++) {
         strncpy(sname, (char *) section_hdr[i].Name, 8);
         sname[8] = 0;
 
@@ -1258,9 +1263,6 @@ int cli_scanpe(cli_ctx *ctx)
         if (!exe_sections[i].vsz && exe_sections[i].rsz)
             exe_sections[i].vsz=PESALIGN(exe_sections[i].ursz, valign);
 
-        if (exe_sections[i].rsz && fsize>exe_sections[i].raw && !CLI_ISCONTAINED(0, (uint32_t) fsize, exe_sections[i].raw, exe_sections[i].rsz))
-            exe_sections[i].rsz = fsize - exe_sections[i].raw;
-        
         cli_dbgmsg("Section %d\n", i);
         cli_dbgmsg("Section name: %s\n", sname);
         cli_dbgmsg("Section data (from headers - in memory)\n");
