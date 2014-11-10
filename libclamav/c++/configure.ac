@@ -74,14 +74,7 @@ AC_ARG_WITH([system-llvm], AC_HELP_STRING([--with-system-llvm],
  if test "x$llvmconfig" != "x"; then
      llvmver=`$llvmconfig --version`
 
-     AC_SUBST(LLVMCONFIG_CXXFLAGS, [`$llvmconfig --cxxflags`])
-     AC_SUBST(LLVMCONFIG_LDFLAGS, [`$llvmconfig --ldflags`])
-     AC_SUBST(LLVMCONFIG_LIBS, [`$llvmconfig --libs jit nativecodegen scalaropts ipo`])
-     AC_SUBST(LLVMCONFIG_LIBFILES, [`$llvmconfig --libfiles jit nativecodegen scalaropts ipo`])
      AC_MSG_NOTICE([Using external LLVM])
-     AC_MSG_NOTICE([CXXFLAGS from llvm-config: $LLVMCONFIG_CXXFLAGS])
-     AC_MSG_NOTICE([LDFLAGS from llvm-config: $LLVMCONFIG_LDFLAGS])
-     AC_MSG_NOTICE([LIBS from llvm-config: $LLVMCONFIG_LIBS])
  fi
 ])
 
@@ -110,13 +103,30 @@ if test "x$packaged_llvm" = "xyes"; then
 elif test $llvmver_test -lt 290; then
     AC_MSG_RESULT([no ($llvmver)])
     AC_MSG_ERROR([LLVM >= 2.9 required, but "$llvmver"($llvmver_test) found])
-elif test $llvmver_test -gt 342; then
+elif test $llvmver_test -ge 360; then
     AC_MSG_RESULT([no ($llvmver)])
-    AC_MSG_ERROR([LLVM <= 3.4.2 required, but "$llvmver"($llvmver_test) found])
+    AC_MSG_ERROR([LLVM < 3.6 required, but "$llvmver"($llvmver_test) found])
 else
     AC_MSG_RESULT([ok ($llvmver)])
 fi
 
+dnl aquire the required flags to properly link in external LLVM
+if test "x$llvmconfig" != "x"; then
+    AC_SUBST(LLVMCONFIG_CXXFLAGS, [`$llvmconfig --cxxflags`])
+    if test $llvmver_test -ge 350; then
+        dnl LLVM 3.5.0 and after splits linker flags into two sets
+        ldflags=`$llvmconfig --ldflags`
+        syslibs=`$llvmconfig --system-libs`
+        AC_SUBST(LLVMCONFIG_LDFLAGS, ["$ldflags $syslibs"])
+    else
+        AC_SUBST(LLVMCONFIG_LDFLAGS, [`$llvmconfig --ldflags`])
+    fi
+    AC_SUBST(LLVMCONFIG_LIBS, [`$llvmconfig --libs jit nativecodegen scalaropts ipo`])
+    AC_SUBST(LLVMCONFIG_LIBFILES, [`$llvmconfig --libfiles jit nativecodegen scalaropts ipo`])
+    AC_MSG_NOTICE([CXXFLAGS from llvm-config: $LLVMCONFIG_CXXFLAGS])
+    AC_MSG_NOTICE([LDFLAGS from llvm-config: $LLVMCONFIG_LDFLAGS])
+    AC_MSG_NOTICE([LIBS from llvm-config: $LLVMCONFIG_LIBS])
+fi
 dnl patch does not affect clamav source (yet)
 llvmver_int=${llvmver_major}${llvmver_minor}
 
@@ -266,11 +276,6 @@ CXX_FLAG_CHECK(NO_MISSING_FIELD_INITIALIZERS, [-Wno-missing-field-initializers])
 AC_MSG_RESULT([$NO_VARIADIC_MACROS $NO_MISSING_FIELD_INITIALIZERS])
 
 AM_CONDITIONAL(BUILD_EXTERNAL_LLVM, [test -n "$llvmconfig"])
-
-m4_include([../../m4/reorganization/libs/json.m4])
-AC_SUBST([JSON_LIBS])
-AC_SUBST([JSON_LDFLAGS])
-AC_SUBST([JSON_CPPFLAGS])
 
 AC_OUTPUT([
     Makefile
