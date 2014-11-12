@@ -151,6 +151,11 @@ unsigned char *cl_hash_data(char *alg, const void *buf, size_t len, unsigned cha
         return NULL;
     }
 
+#ifdef EVP_MD_CTX_FLAG_NON_FIPS_ALLOW
+    /* we will be using MD5, which is not allowed under FIPS */
+    EVP_MD_CTX_set_flags(ctx, EVP_MD_CTX_FLAG_NON_FIPS_ALLOW);
+#endif
+
     if (!EVP_DigestInit_ex(ctx, md, NULL)) {
         if (!(obuf))
             free(ret);
@@ -211,6 +216,11 @@ unsigned char *cl_hash_file_fd(int fd, char *alg, unsigned int *olen)
     ctx = EVP_MD_CTX_create();
     if (!(ctx))
         return NULL;
+
+#ifdef EVP_MD_CTX_FLAG_NON_FIPS_ALLOW
+    /* we will be using MD5, which is not allowed under FIPS */
+    EVP_MD_CTX_set_flags(ctx, EVP_MD_CTX_FLAG_NON_FIPS_ALLOW);
+#endif
 
     if (!EVP_DigestInit_ex(ctx, md, NULL)) {
         EVP_MD_CTX_destroy(ctx);
@@ -321,6 +331,11 @@ int cl_verify_signature_hash(EVP_PKEY *pkey, char *alg, unsigned char *sig, unsi
 
     mdsz = EVP_MD_size(md);
 
+#ifdef EVP_MD_CTX_FLAG_NON_FIPS_ALLOW
+    /* we will be using MD5, which is not allowed under FIPS */
+    EVP_MD_CTX_set_flags(ctx, EVP_MD_CTX_FLAG_NON_FIPS_ALLOW);
+#endif
+
     if (!EVP_VerifyInit_ex(ctx, md, NULL)) {
         EVP_MD_CTX_destroy(ctx);
         return -1;
@@ -364,6 +379,11 @@ int cl_verify_signature_fd(EVP_PKEY *pkey, char *alg, unsigned char *sig, unsign
         free(digest);
         return -1;
     }
+
+#ifdef EVP_MD_CTX_FLAG_NON_FIPS_ALLOW
+    /* we will be using MD5, which is not allowed under FIPS */
+    EVP_MD_CTX_set_flags(ctx, EVP_MD_CTX_FLAG_NON_FIPS_ALLOW);
+#endif
 
     if (!EVP_VerifyInit_ex(ctx, md, NULL)) {
         free(digest);
@@ -434,6 +454,11 @@ int cl_verify_signature(EVP_PKEY *pkey, char *alg, unsigned char *sig, unsigned 
 
         return -1;
     }
+
+#ifdef EVP_MD_CTX_FLAG_NON_FIPS_ALLOW
+    /* we will be using MD5, which is not allowed under FIPS */
+    EVP_MD_CTX_set_flags(ctx, EVP_MD_CTX_FLAG_NON_FIPS_ALLOW);
+#endif
 
     if (!EVP_VerifyInit_ex(ctx, md, NULL)) {
         free(digest);
@@ -642,6 +667,11 @@ unsigned char *cl_sign_data(EVP_PKEY *pkey, char *alg, unsigned char *hash, unsi
         EVP_MD_CTX_destroy(ctx);
         return NULL;
     }
+
+#ifdef EVP_MD_CTX_FLAG_NON_FIPS_ALLOW
+    /* we will be using MD5, which is not allowed under FIPS */
+    EVP_MD_CTX_set_flags(ctx, EVP_MD_CTX_FLAG_NON_FIPS_ALLOW);
+#endif
 
     if (!EVP_SignInit_ex(ctx, md, NULL)) {
         free(sig);
@@ -1077,6 +1107,11 @@ void *cl_hash_init(const char *alg)
     if (!(ctx)) {
         return NULL;
     }
+
+#ifdef EVP_MD_CTX_FLAG_NON_FIPS_ALLOW
+    /* we will be using MD5, which is not allowed under FIPS */
+    EVP_MD_CTX_set_flags(ctx, EVP_MD_CTX_FLAG_NON_FIPS_ALLOW);
+#endif
 
     if (!EVP_DigestInit_ex(ctx, md, NULL)) {
         EVP_MD_CTX_destroy(ctx);
