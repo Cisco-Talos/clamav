@@ -62,7 +62,35 @@ ole2_convert_utf(summary_ctx_t *sctx, char *begin, size_t sz, const char *encodi
 #endif
     /* applies in the both case */
     if (sctx->codepage == 20127 || sctx->codepage == 65001) {
-        outbuf = cli_strdup(begin);
+        char *track;
+        int bcnt, scnt;
+
+        outbuf = cli_calloc(1, sz);
+        if (!(outbuf))
+            return NULL;
+        memcpy(outbuf, begin, sz);
+
+        track = outbuf+sz-1;
+        if ((sctx->codepage == 65001) && (*track & 0x80)) { /* UTF-8 with a most significant bit */
+            /* locate the start of the last character */
+            for (bcnt = 1; (track != outbuf); track--, bcnt++) {
+                if (((uint8_t)*track & 0xC0) != 0x80)
+                    break;
+            }
+
+            /* count number of set (1) significant bits */
+            for (scnt = 0; scnt < sizeof(uint8_t)*8; scnt++) {
+                if (((uint8_t)*track & (0x80 >> scnt)) == 0)
+                    break;
+            }
+
+            if (bcnt != scnt) {
+                cli_dbgmsg("ole2_convert_utf: cleaning out %d bytes from incomplete "
+                           "utf-8 character length %d\n", bcnt, scnt);
+                for (; bcnt > 0; bcnt--, track++)
+                    *track = '\0';
+            }
+        }
         return outbuf;
     }
 
