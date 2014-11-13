@@ -65,7 +65,7 @@ ole2_convert_utf(summary_ctx_t *sctx, char *begin, size_t sz, const char *encodi
         char *track;
         int bcnt, scnt;
 
-        outbuf = cli_calloc(1, sz);
+        outbuf = cli_calloc(1, sz+1);
         if (!(outbuf))
             return NULL;
         memcpy(outbuf, begin, sz);
