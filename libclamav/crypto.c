@@ -60,9 +60,20 @@
 #include "others.h"
 #include "libclamav/conv.h"
 #include "libclamav/str.h"
+#include "iowrap.h"
 
 #if defined(_WIN32)
 char * strptime(const char *buf, const char *fmt, struct tm *tm);
+#endif
+
+#if defined(_WIN32)
+#define EXCEPTION_PREAMBLE __try {
+#define EXCEPTION_POSTAMBLE } __except (filter_memcpy(GetExceptionCode(), GetExceptionInformation())) { \
+    winres=1; \
+}
+#else
+#define EXCEPTION_PREAMBLE
+#define EXCEPTION_POSTAMBLE
 #endif
 
 #if !defined(MIN)
@@ -132,6 +143,7 @@ unsigned char *cl_hash_data(char *alg, const void *buf, size_t len, unsigned cha
     const EVP_MD *md;
     unsigned int i;
     size_t cur;
+    int winres=0;
 
     md = EVP_get_digestbyname(alg);
     if (!(md))
@@ -170,7 +182,21 @@ unsigned char *cl_hash_data(char *alg, const void *buf, size_t len, unsigned cha
     cur=0;
     while (cur < len) {
         size_t todo = MIN((unsigned long)EVP_MD_block_size(md), (unsigned long)(len-cur));
+
+        EXCEPTION_PREAMBLE
         if (!EVP_DigestUpdate(ctx, (void *)(((unsigned char *)buf)+cur), todo)) {
+            if (!(obuf))
+                free(ret);
+
+            if ((olen))
+                *olen = 0;
+
+            EVP_MD_CTX_destroy(ctx);
+            return NULL;
+        }
+        EXCEPTION_POSTAMBLE
+
+        if (winres) {
             if (!(obuf))
                 free(ret);
 
@@ -240,6 +266,7 @@ unsigned char *cl_hash_file_fd_ctx(EVP_MD_CTX *ctx, int fd, unsigned int *olen)
     int mdsz;
     unsigned int hashlen;
     STATBUF sb;
+    int winres=0;
 
 	unsigned int blocksize;
 
@@ -277,7 +304,16 @@ unsigned char *cl_hash_file_fd_ctx(EVP_MD_CTX *ctx, int fd, unsigned int *olen)
 #else
     while ((nread = read(fd, buf, blocksize)) > 0) {
 #endif
+        EXCEPTION_PREAMBLE
         if (!EVP_DigestUpdate(ctx, buf, nread)) {
+            free(buf);
+            free(hash);
+
+            return NULL;
+        }
+        EXCEPTION_POSTAMBLE
+
+        if (winres) {
             free(buf);
             free(hash);
 
@@ -1123,10 +1159,17 @@ void *cl_hash_init(const char *alg)
 
 int cl_update_hash(void *ctx, void *data, size_t sz)
 {
+    int winres=0;
+
     if (!(ctx) || !(data))
         return -1;
 
+    EXCEPTION_PREAMBLE
     if (!EVP_DigestUpdate((EVP_MD_CTX *)ctx, data, sz))
+        return -1;
+    EXCEPTION_POSTAMBLE
+
+    if (winres)
         return -1;
 
     return 0;

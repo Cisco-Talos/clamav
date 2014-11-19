@@ -33,7 +33,7 @@
 #endif
 
 #ifdef _WIN32
-static int filter_memcpy(unsigned int code, struct _EXCEPTION_POINTERS *ep) {
+int filter_memcpy(unsigned int code, struct _EXCEPTION_POINTERS *ep) {
     if ((code == EXCEPTION_IN_PAGE_ERROR) || (code == STATUS_DEVICE_DATA_ERROR)) {
         return EXCEPTION_EXECUTE_HANDLER;
     }
