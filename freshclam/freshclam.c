@@ -135,7 +135,7 @@ writepid (const char *pidfile)
     }
     else
     {
-        fprintf (fd, "%d", (int) getpid ());
+        fprintf (fd, "%d\n", (int) getpid ());
         fclose (fd);
     }
     umask (old_umask);
