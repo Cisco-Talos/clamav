@@ -381,7 +381,7 @@ int main(int argc, char **argv) {
 	if((fd = fopen(opt->strarg, "w")) == NULL) {
 	    logg("!Can't save PID in file %s\n", opt->strarg);
 	} else {
-	    if (fprintf(fd, "%u", (unsigned int)getpid())<0) {
+	    if (fprintf(fd, "%u\n", (unsigned int)getpid())<0) {
 	    	logg("!Can't save PID in file %s\n", opt->strarg);
 	    }
 	    fclose(fd);
