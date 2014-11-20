@@ -536,7 +536,11 @@ version.h: version.h.tmp
 		cp version.h.static version.h;\
 	elif ! diff $@ version.h.tmp >/dev/null 2>/dev/null; then\
 		cp version.h.tmp $@;\
-	fi
+	fi;\
+	if test -f $(top_srcdir)/libclamav/version.h &&\
+           ! diff $(top_srcdir)/libclamav/version.h version.h.tmp >/dev/null 2>/dev/null; then\
+                cp version.h.tmp $(top_srcdir)/libclamav/version.h;\
+        fi
 
 version.h.tmp:
 	$(AM_V_GEN) test -f version.h || touch version.h;\
