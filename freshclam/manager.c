@@ -2060,7 +2060,7 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
             logg ("^Current functionality level = %d, recommended = %d\n",
                   flevel, current->fl);
             logg ("Please check if ClamAV tools are linked against the proper version of libclamav\n");
-            logg ("DON'T PANIC! Read http://www.clamav.net/documentation.html\n");
+            logg ("DON'T PANIC! Read http://www.clamav.net/doc/install.html\n");
         }
 
         *signo += current->sigs;
