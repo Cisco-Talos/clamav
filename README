@@ -2,6 +2,17 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
+0.98.6
+------
+
+ClamAV 0.98.6 is a bug fix release correcting the following:
+
+     - library shared object revisions.
+     - installation issues on some Mac OS X and FreeBSD platforms.
+     - includes a patch from Sebastian Andrzej Siewior making
+       ClamAV pid files compatible with systemd.
+
+
 0.98.5
 ------
 
