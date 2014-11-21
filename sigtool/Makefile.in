@@ -456,7 +456,7 @@ sigtool_SOURCES = \
     sigtool.c
 
 AM_CFLAGS = @WERR_CFLAGS@
-AM_CPPFLAGS = @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @SIGTOOL_CPPFLAGS@
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @SIGTOOL_CPPFLAGS@
 CLEANFILES = *.gcda *.gcno
 all: all-am
 
