@@ -457,7 +457,7 @@ clamsubmit_SOURCES = \
 	clamsubmit.c
 
 AM_CFLAGS = @WERR_CFLAGS@ @CLAMSUBMIT_CFLAGS@
-AM_CPPFLAGS = @JSON_CPPFLAGS@ -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @JSON_CPPFLAGS@
 AM_INSTALLCHECK_STD_OPTIONS_EXEMPT = clamsubmit$(EXEEXT)
 CLEANFILES = *.gcda *.gcno
 all: all-am

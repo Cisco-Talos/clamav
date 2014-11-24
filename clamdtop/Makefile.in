@@ -473,7 +473,7 @@ top_srcdir = @top_srcdir@
 @HAVE_CURSES_TRUE@    clamdtop.c
 
 @HAVE_CURSES_TRUE@AM_CFLAGS = @WERR_CFLAGS@
-@HAVE_CURSES_TRUE@AM_CPPFLAGS = -I$(top_srcdir) @SSL_CPPFLAGS@ @CURSES_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
+@HAVE_CURSES_TRUE@AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @SSL_CPPFLAGS@ @CURSES_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
 @HAVE_CURSES_TRUE@clamdtop_LDADD = @SSL_LDFLAGS@ @SSL_LIBS@ @CURSES_LIBS@ $(top_builddir)/libclamav/libclamav_internal_utils_nothreads.la
 EXTRA_DIST = clamdtop.c
 all: all-am
