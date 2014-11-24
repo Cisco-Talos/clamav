@@ -41,6 +41,7 @@
 #include "iowrap.h"
 #include "mbr.h"
 #include "gpt.h"
+#include "ooxml.h"
 
 #include "htmlnorm.h"
 #include "entconv.h"
