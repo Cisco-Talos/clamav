@@ -541,7 +541,7 @@ int cli_unzip(cli_ctx *ctx) {
 	  }
 #if HAVE_JSON
           if (cli_json_timeout_cycle_check(ctx, &toval) != CL_SUCCESS) {
-              return CL_ETIMEOUT;
+              ret=CL_ETIMEOUT;
           }
 #endif
 
@@ -562,7 +562,7 @@ int cli_unzip(cli_ctx *ctx) {
       }
 #if HAVE_JSON
       if (cli_json_timeout_cycle_check(ctx, &toval) != CL_SUCCESS) {
-          return CL_ETIMEOUT;
+          ret=CL_ETIMEOUT;
       }
 #endif
 
@@ -668,7 +668,7 @@ int unzip_search(cli_ctx *ctx, fmap_t *map, struct zip_requests *requests)
         cli_dbgmsg("unzip_search: central @%x\n", coff);
         while(ret==CL_CLEAN && (coff=chdr(zmap, coff, fsize, NULL, fc+1, &ret, ctx, NULL, requests))) {
             if (requests->match) {
-                return CL_VIRUS;
+                ret=CL_VIRUS;
             }
 
             fc++;
@@ -678,7 +678,7 @@ int unzip_search(cli_ctx *ctx, fmap_t *map, struct zip_requests *requests)
             }
 #if HAVE_JSON
             if (ctx && cli_json_timeout_cycle_check(ctx, (int *)(&toval)) != CL_SUCCESS) {
-                return CL_ETIMEOUT;
+                ret=CL_ETIMEOUT;
             }
 #endif
         }
