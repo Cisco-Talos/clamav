@@ -2779,7 +2779,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 #if HAVE_JSON
             if ((ctx->options & CL_SCAN_FILE_PROPERTIES) && (ctx->wrkproperty != NULL)) {
                 ret = cli_process_ooxml(ctx);
-                if (ret == CL_ETIMEOUT) {
+                if (ret == CL_ETIMEOUT || ret == CL_EMEM || ret == CL_EMAXSIZE || ret == CL_EMAXFILES) {
                     return magic_scandesc_cleanup(ctx, type, hash, hashed_size, cache_clean, ret, parent_property);
                 }
                 else if (ret != CL_SUCCESS) {
