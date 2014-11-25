@@ -404,12 +404,28 @@ static int ooxml_parse_element(cli_ctx *ctx, xmlTextReaderPtr reader, json_objec
     return CL_SUCCESS;
 }
 
+static int ooxml_updatelimits(int fd, cli_ctx *ctx)
+{
+    STATBUF sb;
+    if (FSTAT(fd, &sb) == -1) {
+        cli_errmsg("ooxml_updatelimits: Can't fstat descriptor %d\n", fd);
+        return CL_ESTAT;
+    }
+
+    return cli_updatelimits(ctx, sb.st_size);
+}
+
 static int ooxml_parse_document(int fd, cli_ctx *ctx)
 {
     int ret = CL_SUCCESS;
     xmlTextReaderPtr reader = NULL;
 
     cli_dbgmsg("in ooxml_parse_document\n");
+
+    /* perform engine limit checks in temporary tracking session */
+    ret = ooxml_updatelimits(fd, ctx);
+    if (ret != CL_CLEAN)
+        return ret;
 
     reader = xmlReaderForFd(fd, "properties.xml", NULL, CLAMAV_MIN_XMLREADER_FLAGS);
     if (reader == NULL) {
@@ -469,12 +485,24 @@ static int ooxml_content_cb(int fd, cli_ctx *ctx)
     xmlTextReaderPtr reader = NULL;
     uint32_t loff;
 
+    unsigned long sav_scansize = ctx->scansize;
+    unsigned int sav_scannedfiles = ctx->scannedfiles;
+
     cli_dbgmsg("in ooxml_content_cb\n");
 
+    /* perform engine limit checks in temporary tracking session */
+    ret = ooxml_updatelimits(fd, ctx);
+    if (ret != CL_CLEAN)
+        return ret;
+
+    /* apply a reader to the document */
     reader = xmlReaderForFd(fd, "[Content_Types].xml", NULL, CLAMAV_MIN_XMLREADER_FLAGS);
     if (reader == NULL) {
         cli_dbgmsg("ooxml_content_cb: xmlReaderForFd error for ""[Content_Types].xml""\n");
         ooxml_add_parse_error(ctx->wrkproperty, "OOXML_ERROR_XML_READER_FD");
+
+        ctx->scansize = sav_scansize;
+        ctx->scannedfiles = sav_scannedfiles;
         return CL_SUCCESS; // libxml2 failed!
     }
 
@@ -617,6 +645,10 @@ static int ooxml_content_cb(int fd, cli_ctx *ctx)
         cli_jsonint(ctx->wrkproperty, "DigitalSignaturesCount", dsig);
     }
 
+    /* restore the engine tracking limits; resets session limit tracking */
+    ctx->scansize = sav_scansize;
+    ctx->scannedfiles = sav_scannedfiles;
+
     xmlTextReaderClose(reader);
     xmlFreeTextReader(reader);
     return ret;
@@ -685,6 +717,10 @@ int cli_process_ooxml(cli_ctx *ctx)
         ooxml_add_parse_error(ctx->wrkproperty, "OOXML_ERROR_TIMEOUT");
     else if (tmp == CL_EMEM)
         ooxml_add_parse_error(ctx->wrkproperty, "OOXML_ERROR_OUTOFMEM");
+    else if (tmp == CL_EMAXSIZE)
+        ooxml_add_parse_error(ctx->wrkproperty, "OOXML_ERROR_EMAXSIZE");
+    else if (tmp == CL_EMAXFILES)
+        ooxml_add_parse_error(ctx->wrkproperty, "OOXML_ERROR_EMAXFILES");
 
     return tmp;
 #else
