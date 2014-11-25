@@ -480,7 +480,7 @@ freshclam_SOURCES = \
     mirman.h
 
 AM_CFLAGS = @WERR_CFLAGS@
-AM_CPPFLAGS = @SSL_CPPFLAGS@ -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @FRESHCLAM_CPPFLAGS@  @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @SSL_CPPFLAGS@ @FRESHCLAM_CPPFLAGS@  @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
 AM_INSTALLCHECK_STD_OPTIONS_EXEMPT = freshclam$(EXEEXT)
 CLEANFILES = *.gcda *.gcno
 all: all-am

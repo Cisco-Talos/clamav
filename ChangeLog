@@ -1,3 +1,23 @@
+Wed, 12 Nov 2014 14:30:39 EDT (swebb)
+-------------------------------------
+* bb11176 - Instruct OpenSSL to allow MD5 when in FIPS-compliant mode.
+  Patch submitted by Reinhard Max.
+
+Mon, 10 Nov 2014 11:03:29 EDT (swebb)
+-------------------------------------
+* bb11155 - Adjust the logic surrounding adjusting the PE section sizes
+  This fixes a crash with maliciously crafted yoda's crypter files and
+  also improves virus detections for PE files. 
+
+Thu, 6 Nov 2014 14:51:26 EDT (swebb)
+-------------------------------------
+* bb11088 - Merge in fixes for clamscan -a crash bug
+
+Mon, 20 Oct 2014 11:33:18 EDT (swebb)
+-------------------------------------
+* Revert "bb#10731 - Allow to specificy a group for the socket of which
+  the user is not a member"
+
 Thu, 31 Jul 2014 19:11:22 EDT (swebb)
 -------------------------------------
 * Add support for XDP PDF file format
