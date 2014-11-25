@@ -2779,11 +2779,13 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 #if HAVE_JSON
             if ((ctx->options & CL_SCAN_FILE_PROPERTIES) && (ctx->wrkproperty != NULL)) {
                 ret = cli_process_ooxml(ctx);
-                if (ret == CL_ETIMEOUT || ret == CL_EMEM || ret == CL_EMAXSIZE || ret == CL_EMAXFILES) {
-                    return magic_scandesc_cleanup(ctx, type, hash, hashed_size, cache_clean, ret, parent_property);
+                if (ret == CL_EMEM || ret == CL_ENULLARG) {
+                    /* critical error */
+                    break;
                 }
                 else if (ret != CL_SUCCESS) {
-                    /* JSONOOXML - what to do if something else fails? placeholder */
+                    /* allow for the CL_TYPE_ZIP scan to occur; cli_process_ooxml other possible returns: */
+                    /* CL_ETIMEOUT, CL_EMAXSIZE, CL_EMAXFILES, CL_EPARSE, CL_EFORMAT, CL_BREAK, CL_ESTAT  */
                     ret = CL_SUCCESS;
                 }
             }
