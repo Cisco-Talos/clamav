@@ -99,10 +99,9 @@ int dconnect() {
         memset(&hints, 0x00, sizeof(struct addrinfo));
         hints.ai_family = AF_UNSPEC;
         hints.ai_socktype = SOCK_STREAM;
-        hints.ai_flags = AI_PASSIVE;
 
         if ((res = getaddrinfo(ipaddr, port, &hints, &info))) {
-            logg("!Could not lookup %s: %s\n", opt->strarg, gai_strerror(res));
+            logg("!Could not lookup %s: %s\n", ipaddr ? ipaddr : "", gai_strerror(res));
             opt = opt->nextarg;
             continue;
         }
