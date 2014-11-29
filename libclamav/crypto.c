@@ -1121,7 +1121,7 @@ void *cl_hash_init(const char *alg)
     return (void *)ctx;
 }
 
-int cl_update_hash(void *ctx, void *data, size_t sz)
+int cl_update_hash(void *ctx, const void *data, size_t sz)
 {
     if (!(ctx) || !(data))
         return -1;
