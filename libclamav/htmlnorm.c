@@ -758,7 +758,9 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 			ptr++;
 		}
 		while (*ptr) {
-			if (!binary && *ptr == '\n') {
+			/* allow the javascript normalization to handle newlines: *
+			 * for finding the end of single-line comments (bb#11217) */
+			if (!in_script && !binary && *ptr == '\n') {
 				/* Convert it to a space and re-process */
 				*ptr = ' ';
 				continue;
