@@ -2572,7 +2572,7 @@ int cli_scanpe(cli_ctx *ctx)
 
             cli_dbgmsg("%d,%d,%d,%d\n", nsections-1, e_lfanew, ecx, offset);
             CLI_UNPTEMP("yC",(spinned,exe_sections,0));
-            CLI_UNPRESULTS("yC",(yc_decrypt(spinned, fsize, exe_sections, nsections-1, e_lfanew, ndesc, ecx, offset)),0,(spinned,0));
+            CLI_UNPRESULTS("yC",(yc_decrypt(ctx, spinned, fsize, exe_sections, nsections-1, e_lfanew, ndesc, ecx, offset)),0,(spinned,0));
         }
     }
 
