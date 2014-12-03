@@ -670,6 +670,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 	/* dconf for phishing engine sets scanContents, so no need for a flag here */
 	struct parser_state *js_state = NULL;
 	const unsigned char *js_begin = NULL, *js_end = NULL;
+	unsigned char *js_reset_nl = NULL;
 	struct tag_contents contents;
         uint32_t mbchar = 0;
         uint32_t mbchar2 = 0;
@@ -758,12 +759,20 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 			ptr++;
 		}
 		while (*ptr) {
-			/* allow the javascript normalization to handle newlines: *
-			 * for finding the end of single-line comments (bb#11217) */
-			if (!in_script && !binary && *ptr == '\n') {
+			/* allows the javascript normalization to handle newline: *
+			 * for finding the end of single-line comments (bb#11217) *
+			 * NOTE: only works if no htmlnorm look-behind operations */
+			if (in_script && js_reset_nl && ptr != js_reset_nl) {
+				*js_reset_nl = '\n';
+				js_reset_nl = NULL;
+			}
+			if (!binary && *ptr == '\n') {
 				/* Convert it to a space and re-process */
 				*ptr = ' ';
-				continue;
+				/* track former newline to change back later */
+                                if (in_script)
+                                    js_reset_nl = ptr;
+                                continue;
 			}
 			if (!binary && *ptr == '\r') {
 				ptr++;
@@ -1166,6 +1175,11 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					next_state = HTML_NORM;
 					if (strcmp(tag, "/script") == 0) {
 						in_script = FALSE;
+						/* resets last change newline for javascript parsing */
+						if (js_reset_nl) {
+							*js_reset_nl = '\n';
+							js_reset_nl = NULL;
+						}
 						if(js_state) {
 							js_end = ptr;
 							js_process(js_state, js_begin, js_end, line, ptr, in_script, dirname);
