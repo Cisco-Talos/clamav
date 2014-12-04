@@ -239,7 +239,20 @@ static int pefromupx (const char *src, uint32_t ssize, char *dst, uint32_t *dsiz
   memcpy(newbuf+0xd0, pehdr,0xf8+0x28*sectcnt);
   sections = pehdr+0xf8;
   for (upd = 0; upd <sectcnt ; upd++) {
-    memcpy(newbuf+cli_readint32(sections+20), dst+cli_readint32(sections+12)-upx0, cli_readint32(sections+16));
+      int32_t offset1, offset2, offset3;
+      offset1 = cli_readint32(sections+20);
+      offset2 = cli_readint32(sections+16);
+      if (offset1 > foffset || offset2 > foffset || offset1 + offset2 > foffset) {
+          free(newbuf);
+          return 1;
+      }
+
+      offset3 = cli_readint32(sections+12);
+      if (offset3-upx0 > *dsize) {
+          free(newbuf);
+          return 1;
+      }
+    memcpy(newbuf+offset1, dst+offset3-upx0, offset2);
     sections+=0x28;
   }
 
