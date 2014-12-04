@@ -222,6 +222,10 @@ static int pefromupx (const char *src, uint32_t ssize, char *dst, uint32_t *dsiz
     cli_writeint32(sections+12, urva);
     cli_writeint32(sections+16, vsize);
     cli_writeint32(sections+20, foffset);
+    if (foffset + vsize < foffset) {
+        /* Integer overflow */
+        return 0;
+    }
     foffset+=vsize;
     
     sections+=0x28;
