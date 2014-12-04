@@ -44,7 +44,6 @@
 static int yc_bounds_check(cli_ctx *ctx, char *base, unsigned int filesize, char *offset, unsigned int bound)
 {
       if ((unsigned int)((offset+bound)-base) > filesize) {
-          cli_errmsg("yC: Attempted out of bounds. Bailing.\n");
 #if DO_HEURISTIC
           cli_append_virus(ctx, "Heuristics.BoundsCheck");
 #endif
