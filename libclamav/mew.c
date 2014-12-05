@@ -889,7 +889,7 @@ int unmew11(char *src, int off, int ssize, int dsize, uint32_t base, uint32_t va
 		section[0].raw = 0; section[0].rva = vadd;
 		section[0].rsz = section[0].vsz = dsize;
 	}
-	if (!cli_rebuildpe(src, section, i, base, entry_point - base, 0, 0, filedesc))
+	if (!cli_rebuildpe_align(src, section, i, base, entry_point - base, 0, 0, filedesc, 0x1000))
 	{
 		cli_dbgmsg("MEW: Rebuilding failed\n");
 		free(section);
