@@ -213,12 +213,17 @@ int unupack(int upack, char *dest, uint32_t dsize, char *buff, uint32_t vma, uin
 			loc_edi = dest+vma-base; /* XXX not enough samples provided to be sure of it! */
 
 		pushed_esi = loc_edi;
-		end_edi = dest + cli_readint32(loc_esi + 0x34) - vma;
 		if (upack_version == UPACK_0297729)
 		{
 			end_edi = dest + cli_readint32(loc_esi + 0x64) - vma;
 			save3 = cli_readint32(loc_esi + 0x40);
-		}
+		} else {
+                        end_edi = dest + cli_readint32(loc_esi + 0x34) - vma;
+                }
+                if (loc_edi > end_edi) {
+                        cli_debug("Upack: loc_edi > end_edi breaks cli_rebuildpe() bb#11216\n");
+                        return -1;
+                }
 		/* begin end */
 		cli_dbgmsg("Upack: data initialized, before upack lzma call!\n");
 		if ((ret = (uint32_t)unupack399(dest, dsize, 0, loc_ebx, 0, loc_edi, end_edi, shlsize, paddr)) == 0xffffffff)
@@ -376,6 +381,10 @@ int unupack(int upack, char *dest, uint32_t dsize, char *buff, uint32_t vma, uin
 			end_edi = dest + cli_readint32(loc_esi-0x28) - base; /* read checked above */
 			loc_esi = save_edi;
 		}
+                if (loc_edi > end_edi) {
+                        cli_debug("Upack(alt begin): loc_edi > end_edi breaks cli_rebuildpe() bb#11216\n");
+                        return -1;
+                }
 		cli_dbgmsg("Upack: data initialized, before upack lzma call!\n");
 		if ((ret = (uint32_t)unupack399(dest, dsize, loc_ecx, loc_ebx, loc_ecx, loc_edi, end_edi, shlsize, paddr)) == 0xffffffff)
 			return -1;
