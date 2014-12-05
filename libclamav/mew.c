@@ -827,7 +827,9 @@ int unmew11(char *src, int off, int ssize, int dsize, uint32_t base, uint32_t va
 
 		if (!uselzma)
 		{
-			uint32_t val = PESALIGN(f2 - src, 0x1000);
+			/* bb#11212 - DO NOT PEALIGN sections to cli_rebuildpe() *
+			 * data processed in src buffer is stored NOT pe-aligned */
+			uint32_t val = f2 - src;
 			void *newsect;
 
 			if (i && val < section[i].raw) {
