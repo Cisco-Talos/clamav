@@ -25,5 +25,6 @@
 #include "execs.h"
 
 int cli_rebuildpe(char *, struct cli_exe_section *, int, uint32_t, uint32_t, uint32_t, uint32_t, int);
+int cli_rebuildpe_align(char *, struct cli_exe_section *, int, uint32_t, uint32_t, uint32_t, uint32_t, int, uint32_t);
 
 #endif
