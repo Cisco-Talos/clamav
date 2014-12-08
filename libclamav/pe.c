@@ -2570,9 +2570,26 @@ int cli_scanpe(cli_ctx *ctx)
             cli_jsonstr(pe_json, "Packer", "yC");
 #endif
 
-            cli_dbgmsg("%d,%d,%d,%d\n", nsections-1, e_lfanew, ecx, offset);
-            CLI_UNPTEMP("yC",(spinned,exe_sections,0));
-            CLI_UNPRESULTS("yC",(yc_decrypt(ctx, spinned, fsize, exe_sections, nsections-1, e_lfanew, ndesc, ecx, offset)),0,(spinned,0));
+            do {
+                unsigned int yc_unp_num_viruses = ctx->num_viruses;
+                const char *yc_unp_virname = NULL;
+
+                if (ctx->virname)
+                    yc_unp_virname = ctx->virname[0];
+
+                cli_dbgmsg("%d,%d,%d,%d\n", nsections-1, e_lfanew, ecx, offset);
+                CLI_UNPTEMP("yC",(spinned,exe_sections,0));
+                CLI_UNPRESULTS("yC",(yc_decrypt(ctx, spinned, fsize, exe_sections, nsections-1, e_lfanew, ndesc, ecx, offset)),0,(spinned,0));
+
+                if (SCAN_ALL && yc_unp_num_viruses != ctx->num_viruses) {
+                    free(exe_sections);
+                    return CL_VIRUS;
+                }
+                else if (ctx->virname && yc_unp_virname != ctx->virname[0]) {
+                    free(exe_sections);
+                    return CL_VIRUS;
+                }
+            } while(0);
         }
     }
 
