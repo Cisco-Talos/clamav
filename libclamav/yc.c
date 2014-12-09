@@ -223,6 +223,7 @@ int yc_decrypt(cli_ctx *ctx, char *fbuf, unsigned int filesize, struct cli_exe_s
   struct pe_image_file_hdr *pe = (struct pe_image_file_hdr*) (fbuf + peoffset);
   char *sname = (char *)pe + EC16(pe->SizeOfOptionalHeader) + 0x18;
   uint32_t max_emu;
+  unsigned int ofilesize = filesize;
   /* 
 
   First layer (decryptor of the section decryptor) in last section 
@@ -274,7 +275,7 @@ int yc_decrypt(cli_ctx *ctx, char *fbuf, unsigned int filesize, struct cli_exe_s
       cli_dbgmsg("yC: bad emulation length limit %u\n", max_emu);
       return 1;
     }
-    switch (yc_poly_emulator(ctx, fbuf, filesize, fbuf + ycsect + (offset == -0x18 ? 0x3ea : 0x457), 
+    switch (yc_poly_emulator(ctx, fbuf, ofilesize, fbuf + ycsect + (offset == -0x18 ? 0x3ea : 0x457), 
 			 fbuf + sections[i].raw, 
 			 sections[i].ursz, 
 			 max_emu)) {
