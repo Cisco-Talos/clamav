@@ -525,8 +525,7 @@ static int replace_token_range(struct tokens *dst, size_t start, size_t end, con
 {
 	const size_t len = with ? with->cnt : 0;
 	size_t i;
-	cli_dbgmsg(MODULE "Replacing tokens %lu - %lu with %lu tokens\n", (long unsigned)start,
-                   (long unsigned)end, (long unsigned)len);
+	cli_dbgmsg(MODULE "Replacing tokens %lu - %lu with %lu tokens\n",start, end, len);
 	if(start >= dst->cnt || end > dst->cnt)
 		return -1;
 	for(i=start;i<end;i++) {
@@ -548,7 +547,7 @@ static int append_tokens(struct tokens *dst, const struct tokens *src)
 		return CL_ENULLARG;
 	if(tokens_ensure_capacity(dst, dst->cnt + src->cnt))
 		return CL_EMEM;
-	cli_dbgmsg(MODULE "Appending %lu tokens\n", (long unsigned)src->cnt);
+	cli_dbgmsg(MODULE "Appending %lu tokens\n", src->cnt);
 	memcpy(&dst->data[dst->cnt], src->data, src->cnt * sizeof(dst->data[0]));
 	dst->cnt += src->cnt;
 	return CL_SUCCESS;
@@ -1111,7 +1110,7 @@ void cli_js_process_buffer(struct parser_state *state, const char *buf, size_t n
 				TOKEN_SET(&val, scope, state->current);
 				break;
 			case TOK_StringLiteral:
-				if(state->tokens.cnt > 1 && state->tokens.data[state->tokens.cnt-1].type == TOK_PLUS) {
+				if(state->tokens.cnt > 0 && state->tokens.data[state->tokens.cnt-1].type == TOK_PLUS) {
 					/* see if can fold */
 					yystype *prev_string = &state->tokens.data[state->tokens.cnt-2];
 					if(prev_string->type == TOK_StringLiteral) {
@@ -1545,8 +1544,9 @@ static int yylex(YYSTYPE *lvalp, yyscan_t  scanner)
 				return parseNumber(lvalp, scanner);
 			case SinglelineComment:
 				while(scanner->pos < scanner->insize) {
-					/* htmlnorm no longer converts \n to space */
-					if(in[scanner->pos] == '\n')
+					/* htmlnorm converts \n to space, so
+					 * stop on space too */
+					if(in[scanner->pos] == '\n' || in[scanner->pos] == ' ')
 						break;
 					scanner->pos++;
 				}
