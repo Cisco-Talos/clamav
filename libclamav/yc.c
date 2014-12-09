@@ -44,7 +44,7 @@
 static int yc_bounds_check(cli_ctx *ctx, char *base, unsigned int filesize, char *offset, unsigned int bound)
 {
       if ((unsigned int)((offset+bound)-base) > filesize) {
-          cli_dbgmsg("%s: Bounds check assertion.\n", __func__);
+          cli_dbgmsg("yC: Bounds check assertion.\n");
 #if DO_HEURISTIC
           cli_append_virus(ctx, "Heuristics.BoundsCheck");
 #endif
