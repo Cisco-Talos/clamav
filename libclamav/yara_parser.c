@@ -63,17 +63,20 @@ limitations under the License.
                     ((uint8_t) (x - '0'))
 
 
-#ifdef REAL_YARA
 int yr_parser_emit(
     yyscan_t yyscanner,
     int8_t instruction,
     int8_t** instruction_address)
 {
+#ifdef REAL_YARA
   return yr_arena_write_data(
       yyget_extra(yyscanner)->code_arena,
       &instruction,
       sizeof(int8_t),
       (void**) instruction_address);
+#else
+  return ERROR_SUCCESS;
+#endif
 }
 
 
@@ -83,6 +86,7 @@ int yr_parser_emit_with_arg(
     int64_t argument,
     int8_t** instruction_address)
 {
+#ifdef REAL_YARA
   int result = yr_arena_write_data(
       yyget_extra(yyscanner)->code_arena,
       &instruction,
@@ -97,6 +101,9 @@ int yr_parser_emit_with_arg(
         NULL);
 
   return result;
+#else
+  return ERROR_SUCCESS;
+#endif
 }
 
 
@@ -108,6 +115,7 @@ int yr_parser_emit_with_arg_reloc(
 {
   void* ptr;
 
+#ifdef REAL_YARA
   int result = yr_arena_write_data(
       yyget_extra(yyscanner)->code_arena,
       &instruction,
@@ -129,6 +137,9 @@ int yr_parser_emit_with_arg_reloc(
         EOL);
 
   return result;
+#else
+  return ERROR_SUCCESS;
+#endif
 }
 
 
@@ -137,6 +148,7 @@ int yr_parser_emit_pushes_for_strings(
     const char* identifier)
 {
   YR_COMPILER* compiler = yyget_extra(yyscanner);
+#ifdef REAL_YARA
   YR_STRING* string = compiler->current_rule_strings;
 
   const char* string_identifier;
@@ -189,6 +201,9 @@ int yr_parser_emit_pushes_for_strings(
   }
 
   return compiler->last_result;
+#else
+  return ERROR_SUCCESS;
+#endif
 }
 
 
@@ -200,6 +215,7 @@ int yr_parser_check_types(
   int i;
 
   char message[MAX_COMPILER_ERROR_EXTRA_INFO];
+#ifdef REAL_YARA
 
   const char* expected = function->arguments_fmt;
   const char* actual = actual_args_fmt;
@@ -243,6 +259,9 @@ int yr_parser_check_types(
   }
 
   return compiler->last_result;
+#else
+  return ERROR_SUCCESS;
+#endif
 }
 
 
@@ -253,6 +272,7 @@ YR_STRING* yr_parser_lookup_string(
   YR_STRING* string;
   YR_COMPILER* compiler = yyget_extra(yyscanner);
 
+#ifdef REAL_YARA
   string = compiler->current_rule_strings;
 
   while(!STRING_IS_NULL(string))
@@ -278,6 +298,9 @@ YR_STRING* yr_parser_lookup_string(
   compiler->last_result = ERROR_UNDEFINED_STRING;
 
   return NULL;
+#else
+  return ERROR_SUCCESS;
+#endif
 }
 
 
@@ -288,6 +311,7 @@ int yr_parser_lookup_loop_variable(
   YR_COMPILER* compiler = yyget_extra(yyscanner);
   int i;
 
+#ifdef REAL_YARA
   for (i = 0; i < compiler->loop_depth; i++)
   {
     if (compiler->loop_identifier[i] != NULL &&
@@ -296,6 +320,9 @@ int yr_parser_lookup_loop_variable(
   }
 
   return -1;
+#else
+  return ERROR_SUCCESS;
+#endif
 }
 
 
@@ -308,6 +335,7 @@ int _yr_parser_write_string(
     YR_STRING** string,
     int* min_atom_length)
 {
+#ifdef REAL_YARA
   SIZED_STRING* literal_string;
   YR_AC_MATCH* new_match;
 
@@ -465,9 +493,11 @@ int _yr_parser_write_string(
     yr_atoms_list_destroy(atom_list);
 
   return result;
+#else
+  return ERROR_SUCCESS;
+#endif
 }
 
-#endif
 
 
 #include <stdint.h>
@@ -882,7 +912,6 @@ int yr_parser_reduce_string_identifier(
   return compiler->last_result;
 }
 
-#if 0
 YR_META* yr_parser_reduce_meta_declaration(
     yyscan_t yyscanner,
     int32_t type,
@@ -892,7 +921,7 @@ YR_META* yr_parser_reduce_meta_declaration(
 {
   YR_COMPILER* compiler = yyget_extra(yyscanner);
   YR_META* meta;
-
+#if REAL_YARA
   compiler->last_result = yr_arena_allocate_struct(
       compiler->metas_arena,
       sizeof(YR_META),
@@ -927,8 +956,40 @@ YR_META* yr_parser_reduce_meta_declaration(
   meta->type = type;
 
   return meta;
-}
+#else
+  meta = cli_calloc(1, sizeof(YR_META));
+  if (meta == NULL) {
+      cli_errmsg("yara_parser: no mem for YR_META.\n");
+      compiler->last_result = CL_EMEM;
+      return NULL;
+  }
 
+  if (identifier != NULL) {
+      meta->identifier = cli_strdup(identifier);
+      if (meta->identifier == NULL) {
+          cli_errmsg("yara_parser: no mem for meta->identifier.\n");
+          compiler->last_result = CL_EMEM;
+          return NULL;
+      }
+  }
+  if (string != NULL) {
+      meta->string = cli_strdup(string);
+      if (meta->string == NULL) {
+          cli_errmsg("yara_parser: no mem for meta->string.\n");
+          compiler->last_result = CL_EMEM;
+          return NULL;
+      }
+  }
+  meta->integer = integer;
+  meta->type = type;
+
+#if 0
+  STAILQ_INSERT_TAIL(&compiler->current_meta, meta, link);
+#endif
+  //compiler->error_msg = "meta not yet supported";
+  return meta;
+#endif
+}
 
 int yr_parser_reduce_import(
     yyscan_t yyscanner,
@@ -936,6 +997,7 @@ int yr_parser_reduce_import(
 {
   YR_COMPILER* compiler = yyget_extra(yyscanner);
   ///  YR_OBJECT* module_structure;
+#if REAL_YARA
 
   char* name;
 
@@ -986,5 +1048,7 @@ int yr_parser_reduce_import(
         NULL);
 
   return compiler->last_result;
-}
+#else
+  return ERROR_SUCCESS;
 #endif
+}

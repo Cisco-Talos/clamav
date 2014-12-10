@@ -41,20 +41,15 @@ limitations under the License.
 #define _YARA_CLAM_H_
 
 #include "shared/queue.h"
- 
-#define LEX_BUF_SIZE  1024
 
-#define EXTERNAL_VARIABLE_TYPE_NULL          0
-#define EXTERNAL_VARIABLE_TYPE_ANY           1
-#define EXTERNAL_VARIABLE_TYPE_INTEGER       2
-#define EXTERNAL_VARIABLE_TYPE_BOOLEAN       3
-#define EXTERNAL_VARIABLE_TYPE_FIXED_STRING  4
-#define EXTERNAL_VARIABLE_TYPE_MALLOC_STRING 5
+/* From libyara/include/yara/types.h            */
+#define DECLARE_REFERENCE(type, name) \
+    union { type name; int64_t name##_; }
 
-#define EXTERNAL_VARIABLE_IS_NULL(x) \
-    ((x) != NULL ? (x)->type == EXTERNAL_VARIABLE_TYPE_NULL : TRUE)
-
-#define STRING_TFLAGS_FOUND             0x01
+#define META_TYPE_NULL      0
+#define META_TYPE_INTEGER   1
+#define META_TYPE_STRING    2
+#define META_TYPE_BOOLEAN   3
 
 #define STRING_GFLAGS_REFERENCED        0x01
 #define STRING_GFLAGS_HEXADECIMAL       0x02
@@ -145,10 +140,43 @@ limitations under the License.
 #define RULE_MATCHES(x) \
     ((x)->t_flags[yr_get_tidx()] & RULE_TFLAGS_MATCH)
 
+#define EXTERNAL_VARIABLE_TYPE_NULL          0
+#define EXTERNAL_VARIABLE_TYPE_ANY           1
+#define EXTERNAL_VARIABLE_TYPE_INTEGER       2
+#define EXTERNAL_VARIABLE_TYPE_BOOLEAN       3
+#define EXTERNAL_VARIABLE_TYPE_FIXED_STRING  4
+#define EXTERNAL_VARIABLE_TYPE_MALLOC_STRING 5
 
-#define DECLARE_REFERENCE(type, name) \
-    union { type name; int64_t name##_; }
+#define EXTERNAL_VARIABLE_IS_NULL(x) \
+    ((x) != NULL ? (x)->type == EXTERNAL_VARIABLE_TYPE_NULL : TRUE)
 
+#define OBJECT_COMMON_FIELDS \
+    int8_t type; \
+    const char* identifier; \
+    void* data; \
+    struct _YR_OBJECT* parent;
+
+
+typedef struct _YR_OBJECT
+{
+  OBJECT_COMMON_FIELDS
+
+} YR_OBJECT;
+
+typedef struct _YR_OBJECT_FUNCTION
+{
+  OBJECT_COMMON_FIELDS
+
+  const char* arguments_fmt;
+
+  YR_OBJECT* return_obj;
+#if REAL_YARA
+  YR_MODULE_FUNC code;
+#endif
+
+} YR_OBJECT_FUNCTION;
+
+/* From libyara/include/yara/sizedstr.h            */
 #define SIZED_STRING_FLAGS_NO_CASE  1
 #define SIZED_STRING_FLAGS_DOT_ALL  2
 
@@ -216,6 +244,68 @@ typedef struct _SIZED_STRING
 #define RE_FLAGS_DOT_ALL                  0x80
 #define RE_FLAGS_NOT_AT_START            0x100
 
+/* From libyara/include/yara/exec.h            */
+
+#define UNDEFINED           0xFFFABADAFABADAFFLL
+#define IS_UNDEFINED(x)     ((x) == UNDEFINED)
+
+#define OP_HALT           255
+
+#define OP_AND            1
+#define OP_OR             2
+#define OP_XOR            3
+#define OP_NOT            4
+#define OP_LT             5
+#define OP_GT             6
+#define OP_LE             7
+#define OP_GE             8
+#define OP_EQ             9
+#define OP_NEQ            10
+#define OP_SZ_EQ          11
+#define OP_SZ_NEQ         12
+#define OP_SZ_TO_BOOL     13
+#define OP_ADD            14
+#define OP_SUB            15
+#define OP_MUL            16
+#define OP_DIV            17
+#define OP_MOD            18
+#define OP_NEG            19
+#define OP_SHL            20
+#define OP_SHR            21
+#define OP_PUSH           22
+#define OP_POP            23
+#define OP_CALL           24
+#define OP_OBJ_LOAD       25
+#define OP_OBJ_VALUE      26
+#define OP_OBJ_FIELD      27
+#define OP_INDEX_ARRAY    28
+#define OP_STR_COUNT      29
+#define OP_STR_FOUND      30
+#define OP_STR_FOUND_AT   31
+#define OP_STR_FOUND_IN   32
+#define OP_STR_OFFSET     33
+#define OP_OF             34
+#define OP_PUSH_RULE      35
+#define OP_MATCH_RULE     36
+#define OP_INCR_M         37
+#define OP_CLEAR_M        38
+#define OP_ADD_M          39
+#define OP_POP_M          40
+#define OP_PUSH_M         41
+#define OP_SWAPUNDEF      42
+#define OP_JNUNDEF        43
+#define OP_JLE            44
+#define OP_FILESIZE       45
+#define OP_ENTRYPOINT     46
+#define OP_INT8           47
+#define OP_INT16          48
+#define OP_INT32          49
+#define OP_UINT8          50
+#define OP_UINT16         51
+#define OP_UINT32         52
+#define OP_CONTAINS       53
+#define OP_MATCHES        54
+#define OP_IMPORT         55
 
 /*
 typedef struct _YR_MATCH
@@ -283,8 +373,7 @@ typedef struct _YR_EXTERNAL_VARIABLE
 } YR_EXTERNAL_VARIABLE;
 
 
-//from re.h:
-
+/* From libyara/include/yara/exec.h            */
 typedef struct RE RE;
 typedef struct RE_NODE RE_NODE;
 
@@ -324,14 +413,44 @@ struct RE {
   int error_code;
 };
 
-//misc
 
+/* From libyara/include/yara/compiler.h            */
+#define yr_compiler_set_error_extra_info(compiler, info) \
+    strlcpy( \
+        compiler->last_error_extra_info, \
+        info, \
+        sizeof(compiler->last_error_extra_info));
+
+/* From libyara/include/yara/limits.h            */
+#define MAX_COMPILER_ERROR_EXTRA_INFO   256
+#define MAX_FUNCTION_ARGS               128
+#define LOOP_LOCAL_VARS                      4
+#define LEX_BUF_SIZE                    1024
+
+
+/* From libyara/include/yara/object.h            */
+#define OBJECT_TYPE_INTEGER     1
+#define OBJECT_TYPE_STRING      2
+#define OBJECT_TYPE_STRUCTURE   3
+#define OBJECT_TYPE_ARRAY       4
+#define OBJECT_TYPE_FUNCTION    5
+#define OBJECT_TYPE_REGEXP      6
+
+/* From libyara/include/yara/utils.h */
+#define PTR_TO_UINT64(x)  ((uint64_t) (size_t) x)
+
+/* YARA to ClamAV function mappings */
 #define yr_strdup cli_strdup
 #define yr_malloc cli_malloc
 #define yr_free free
 #define xtoi cli_hex2num
 #define strlcpy cli_strlcpy
+#ifndef HAVE_STRLCAT
+/* below is danger-defeats the purpose of strlcat. we need a cli_strlcat for this ... */
+#define strlcat(d, s, l) strcat((d), (s))
+#endif
 
+/* YARA-defined structure replacements for ClamAV */
 struct _yc_rule {
     STAILQ_ENTRY(_yc_rule) link;
     STAILQ_HEAD(sq, _yc_string) strings;
@@ -349,12 +468,17 @@ typedef struct _yc_string {
 } yc_string;
 
 typedef struct _yc_compiler {
-  char                lex_buf[LEX_BUF_SIZE];
-  char*               lex_buf_ptr;
-  unsigned short      lex_buf_len;
-  int last_result;
-  STAILQ_HEAD(rq, _yc_rule) rules;
-  STAILQ_HEAD(cs, _yc_string) current_rule_strings;
+    char                lex_buf[LEX_BUF_SIZE];
+    char*               lex_buf_ptr;
+    unsigned short      lex_buf_len;
+    int                 last_result;
+    char                last_error_extra_info[MAX_COMPILER_ERROR_EXTRA_INFO];
+
+    int                 loop_depth;
+
+    char *              error_msg;   
+    STAILQ_HEAD(rq, _yc_rule) rules;
+    STAILQ_HEAD(cs, _yc_string) current_rule_strings;
 } yc_compiler;
 
 typedef yc_compiler YR_COMPILER;

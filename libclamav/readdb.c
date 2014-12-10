@@ -2802,7 +2802,7 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
     uint32_t line = 0;
     uint8_t is_comment;
     uint8_t rule_state;
-    YR_COMPILER compiler;
+    YR_COMPILER compiler = {0};
     YR_RULE * rule;
     YR_STRING * string;
     size_t nstrings, i, allstringsize, totsize;
