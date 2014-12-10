@@ -874,6 +874,36 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     val = cl_engine_get_num(engine, CL_ENGINE_MAX_ICONSPE, NULL);
     logg("Limits: MaxIconsPE limit set to %llu.\n", val);
 
+    if((opt = optget(opts, "PCREMatchLimit"))->active) {
+        if((ret = cl_engine_set_num(engine, CL_ENGINE_PCRE_MATCH_LIMIT, opt->numarg))) {
+            logg("!cli_engine_set_num(PCREMatchLimit) failed: %s\n", cl_strerror(ret));
+            cl_engine_free(engine);
+            return 1;
+        }
+    }
+    val = cl_engine_get_num(engine, CL_ENGINE_PCRE_MATCH_LIMIT, NULL);
+    logg("Limits: PCREMatchLimit limit set to %llu.\n", val);
+
+    if((opt = optget(opts, "PCRERecMatchLimit"))->active) {
+        if((ret = cl_engine_set_num(engine, CL_ENGINE_PCRE_RECMATCH_LIMIT, opt->numarg))) {
+            logg("!cli_engine_set_num(PCRERecMatchLimit) failed: %s\n", cl_strerror(ret));
+            cl_engine_free(engine);
+            return 1;
+        }
+    }
+    val = cl_engine_get_num(engine, CL_ENGINE_PCRE_RECMATCH_LIMIT, NULL);
+    logg("Limits: PCRERecMatchLimit limit set to %llu.\n", val);
+
+    if((opt = optget(opts, "PCREMaxFileSize"))->active) {
+        if((ret = cl_engine_set_num(engine, CL_ENGINE_PCRE_MAX_FILESIZE, opt->numarg))) {
+            logg("!cli_engine_set_num(PCREMaxFileSize) failed: %s\n", cl_strerror(ret));
+            cl_engine_free(engine);
+            return 1;
+        }
+    }
+    val = cl_engine_get_num(engine, CL_ENGINE_PCRE_MAX_FILESIZE, NULL);
+    logg("Limits: PCREMaxFileSize limit set to %llu.\n", val);
+
     if(optget(opts, "ScanArchive")->enabled) {
 	logg("Archive support enabled.\n");
 	options |= CL_SCAN_ARCHIVE;
@@ -1034,7 +1064,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	if((fd = fopen(opt->strarg, "w")) == NULL) {
 	    logg("!Can't save PID in file %s\n", opt->strarg);
 	} else {
-	    if (fprintf(fd, "%u", (unsigned int) mainpid)<0) {
+	    if (fprintf(fd, "%u\n", (unsigned int) mainpid)<0) {
 	    	logg("!Can't save PID in file %s\n", opt->strarg);
 	    }
 	    fclose(fd);
@@ -1441,6 +1471,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	pthread_kill(fan_pid, SIGUSR1);
 	pthread_mutex_unlock(&logg_mutex);
 	pthread_join(fan_pid, NULL);
+    free(tharg);
     }
 #endif
     if(engine) {

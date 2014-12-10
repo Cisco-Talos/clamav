@@ -7,37 +7,36 @@ AC_ARG_WITH([pcre],
                           /usr/local or /usr if not found in /usr/local)],
 [
   AC_MSG_CHECKING([for libpcre installation])
-dnl --with-pcre=no
-  if test "X$withval" = "Xno"; then
+  case "$withval" in
+  no)
     AC_MSG_RESULT([no])
-  else
-dnl --with-pcre=yes
-    if test "X$withval" = "Xyes"; then
-      PCRE_HOME=/usr/local
-      if test ! -x "$PCRE_HOME/bin/pcre-config"; then
-        PCRE_HOME=/usr
-        if test ! -x "$PCRE_HOME/bin/pcre-config"; then
-          PCRE_HOME=""
-        fi
-      fi
-dnl --with-pcre=something
-    elif test "$withval"; then
-      PCRE_HOME="$withval"
+    ;;
+  yes)
+    PCRE_HOME=/usr/local
+    if test ! -x "$PCRE_HOME/bin/pcre-config"; then
+      PCRE_HOME=/usr
       if test ! -x "$PCRE_HOME/bin/pcre-config"; then
         PCRE_HOME=""
-        AC_MSG_ERROR([cannot locate libpcre at $withval])
+        AC_MSG_ERROR([cannot locate libpcre at /usr/local or /usr])
       fi
-dnl --with-pcre=""
-    else
-      AC_MSG_ERROR([cannot assign blank value to --with-pcre])
     fi
+    ;;
+  "")
+    AC_MSG_ERROR([cannot assign blank value to --with-pcre])
+    ;;
+  *)
+    PCRE_HOME="$withval"
+    if test ! -x "$PCRE_HOME/bin/pcre-config"; then
+      PCRE_HOME=""
+      AC_MSG_ERROR([cannot locate libpcre at $withval])
+    fi
+    ;;
+  esac
 
-    if test "x$PCRE_HOME" != "x"; then
-      AC_MSG_RESULT([using $PCRE_HOME])
-    else
-      AC_MSG_RESULT([not found])
-      AC_MSG_WARN([cannot locate libpcre at /usr/local or /usr])
-    fi
+  if test "x$PCRE_HOME" != "x"; then
+    AC_MSG_RESULT([using $PCRE_HOME])
+  else
+    AC_MSG_RESULT([not found])
   fi
 ],[
 dnl --with-pcre not specified

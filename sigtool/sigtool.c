@@ -1125,6 +1125,11 @@ static int unpack(const struct optstruct *opts)
 	name[sizeof(name)-1]='\0';
     }
 
+    if (cl_cvdverify(name) != CL_SUCCESS) {
+        mprintf("!unpack: %s is not a valid CVD\n", name);
+        return -1;
+    }
+
     if(cli_cvdunpack(name, ".") == -1) {
 	mprintf("!unpack: Can't unpack file %s\n", name);
 	return -1;
@@ -1979,6 +1984,8 @@ static void matchsig(const char *sig, const char *offset, int fd)
 	cli_ctx ctx;
 	int ret;
 
+    mprintf("SUBSIG: %s\n", sig);
+
     if(!(engine = cl_engine_new())) {
 	mprintf("!matchsig: Can't create new engine\n");
 	return;
@@ -2273,14 +2280,81 @@ static char *decodehexspecial(const char *hex, unsigned int *dlen)
 
 static int decodehex(const char *hexsig)
 {
-	char *pt, *hexcpy, *start, *n, *decoded;
+	char *pt, *hexcpy, *start, *n, *decoded, *wild;
 	int asterisk = 0;
 	unsigned int i, j, hexlen, dlen, parts = 0, bw;
 	int mindist = 0, maxdist = 0, error = 0;
 
 
     hexlen = strlen(hexsig);
-    if(strchr(hexsig, '{') || strchr(hexsig, '[')) {
+    if ((wild = strchr(hexsig, '/'))) {
+	/* ^offset:trigger-logic/regex/options$ */
+	char *trigger, *regex, *regex_end, *cflags;
+	size_t tlen = wild-hexsig, rlen, clen;
+
+	/* check for trigger */
+	if (!tlen) {
+	    mprintf("!pcre without logical trigger\n");
+	    return -1;
+	}
+
+	/* locate end of regex for options start, locate options length */
+	if ((regex_end = strchr(wild+1, '/')) == NULL) {
+	    mprintf("!missing regex expression terminator /\n");
+	    return -1;
+	}
+	rlen = regex_end-wild-1;
+	clen = hexlen-tlen-rlen-2; /* 2 from regex boundaries '/' */
+
+	/* get the trigger statement */
+	trigger = cli_calloc(tlen+1, sizeof(char));
+	if (!trigger) {
+	    mprintf("!cannot allocate memory for trigger string\n");
+	    return -1;
+	}
+	strncpy(trigger, hexsig, tlen);
+	trigger[tlen] = '\0';
+
+	/* get the regex expression */
+	regex = cli_calloc(rlen+1, sizeof(char));
+	if (!regex) {
+	    mprintf("!cannot allocate memory for regex expression\n");
+	    return -1;
+	}
+	strncpy(regex, hexsig+tlen+1, rlen);
+	regex[rlen] = '\0';
+
+	/* get the compile flags */
+	if (clen) {
+	    cflags = cli_calloc(clen+1, sizeof(char));
+	    if (!cflags) {
+		mprintf("!cannot allocate memory for compile flags\n");
+		return -1;
+	    }
+	    strncpy(cflags, hexsig+tlen+rlen+2, clen);
+	    cflags[clen] = '\0';
+	}
+	else {
+	    cflags = NULL;
+	}
+
+	/* print components of regex subsig */
+	mprintf("     +-> TRIGGER: %s\n", trigger);
+	mprintf("     +-> REGEX: %s\n", regex);
+	mprintf("     +-> CFLAGS: %s\n", cflags);
+
+	free(trigger);
+	free(regex);
+	if (cflags)
+	    free(cflags);
+#if HAVE_PCRE
+	return 0;
+#else
+	mprintf("!PCRE subsig cannot be loaded without PCRE support\n");
+	return -1;
+#endif
+    }
+    else if(strchr(hexsig, '{') || strchr(hexsig, '[')) {
 	if(!(hexcpy = strdup(hexsig)))
 	    return -1;
 
@@ -2476,8 +2550,8 @@ static int decodesig(char *sig, int fd)
 		mprintf(" +-> OFFSET: ANY\n");
 	    }
 	    if(fd == -1) {
-		mprintf(" +-> DECODED SUBSIGNATURE:\n");
-		decodehex(pt ? pt : tokens[3 + i]);
+                mprintf(" +-> DECODED SUBSIGNATURE:\n");
+                decodehex(pt ? pt : tokens[3 + i]);
 	    } else {
 		mprintf(" +-> ");
 		matchsig(pt ? pt : tokens[3 + i], pt ? tokens[3 + i] : NULL, fd);

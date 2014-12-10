@@ -59,6 +59,7 @@
 #include "libclamav/clamav.h"
 #include "libclamav/others.h"
 #include "libclamav/matcher-ac.h"
+#include "libclamav/matcher-pcre.h"
 #include "libclamav/str.h"
 #include "libclamav/readdb.h"
 #include "libclamav/cltypes.h"
@@ -123,30 +124,36 @@ static int checkaccess(const char *path, const char *username, int mode)
 
 struct metachain {
     char **chains;
-    unsigned lastadd;
-    unsigned lastvir;
-    unsigned level;
-    unsigned n;
+    size_t lastadd;
+    size_t lastvir;
+    size_t level;
+    size_t nchains;
 };
 
 static cl_error_t pre(int fd, const char *type, void *context)
 {
-    struct metachain *c = context;
+    struct metachain *c;
+
     UNUSEDPARAM(fd);
     UNUSEDPARAM(type);
 
-    if (c) {
-        c->level++;
-    }
+    if (!(context))
+        return CL_CLEAN;
+
+    c = (struct metachain *)context;
+
+    c->level++;
+
     return CL_CLEAN;
 }
 
-static int print_chain(struct metachain *c, char *str, unsigned len)
+static int print_chain(struct metachain *c, char *str, size_t len)
 {
-    unsigned i;
-    unsigned na = 0;
-    for (i=0;i<c->n-1;i++) {
-        unsigned int n = strlen(c->chains[i]);
+    size_t i;
+    size_t na = 0;
+
+    for (i=0;i<c->nchains-1;i++) {
+        size_t n = strlen(c->chains[i]);
 
         if (na)
             str[na++] = '!';
@@ -161,21 +168,23 @@ static int print_chain(struct metachain *c, char *str, unsigned len)
     str[na] = '\0';
     str[len-1] = '\0';
 
-    return i == c->n-1 ? 0 : 1;
+    return i == c->nchains-1 ? 0 : 1;
 }
 
 static cl_error_t post(int fd, int result, const char *virname, void *context)
 {
     struct metachain *c = context;
+    char str[128];
 
     UNUSEDPARAM(fd);
     UNUSEDPARAM(result);
 
-    if (c && c->n) {
-        char str[128];
+    if (c && c->nchains) {
         print_chain(c, str, sizeof(str));
+
         if (c->level == c->lastadd && !virname)
-            free(c->chains[--c->n]);
+            free(c->chains[--c->nchains]);
+
         if (virname && !c->lastvir)
             c->lastvir = c->level;
     }
@@ -187,12 +196,12 @@ static cl_error_t post(int fd, int result, const char *virname, void *context)
 }
 
 static cl_error_t meta(const char* container_type, unsigned long fsize_container, const char *filename,
-		       unsigned long fsize_real,  int is_encrypted, unsigned int filepos_container, void *context)
+    unsigned long fsize_real,  int is_encrypted, unsigned int filepos_container, void *context)
 {
     char prev[128];
-    struct metachain *c = context;
-    const char *type = !strncmp(container_type,"CL_TYPE_",8) ? container_type + 8 : container_type;
-    unsigned n = strlen(type) + 1 + strlen(filename) + 1;
+    struct metachain *c;
+    const char *type;
+    size_t n;
     char *chain;
     char **chains;
     int toolong;
@@ -202,6 +211,10 @@ static cl_error_t meta(const char* container_type, unsigned long fsize_container
     UNUSEDPARAM(is_encrypted);
     UNUSEDPARAM(filepos_container);
 
+    c = (struct metachain *)context;
+    type = (strncmp(container_type, "CL_TYPE_", 8) == 0 ? container_type + 8 : container_type);
+    n = strlen(type) + strlen(filename) + 2;
+
     if (!c)
         return CL_CLEAN;
 
@@ -209,13 +222,14 @@ static cl_error_t meta(const char* container_type, unsigned long fsize_container
 
     if (!chain)
         return CL_CLEAN;
+
     if (!strcmp(type, "ANY"))
         snprintf(chain, n,"%s", filename);
     else
         snprintf(chain, n,"%s:%s", type, filename);
 
     if (c->lastadd != c->level) {
-        n = c->n + 1;
+        n = c->nchains + 1;
 
         chains = realloc(c->chains, n * sizeof(*chains));
         if (!chains) {
@@ -224,15 +238,20 @@ static cl_error_t meta(const char* container_type, unsigned long fsize_container
         }
 
         c->chains = chains;
-        c->n = n;
+        c->nchains = n;
         c->lastadd = c->level;
     } else {
-        free(c->chains[c->n-1]);
+        if (c->nchains > 0)
+            free(c->chains[c->nchains-1]);
     }
 
-    c->chains[c->n-1] = chain;
-    toolong = print_chain(c, prev, sizeof(prev));
-    logg("*Scanning %s%s!%s\n", prev,toolong ? "..." : "", chain);
+    if (c->nchains > 0) {
+        c->chains[c->nchains-1] = chain;
+        toolong = print_chain(c, prev, sizeof(prev));
+        logg("*Scanning %s%s!%s\n", prev,toolong ? "..." : "", chain);
+    } else {
+        free(chain);
+    }
 
     return CL_CLEAN;
 }
@@ -314,10 +333,10 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
 
     memset(&chain, 0, sizeof(chain));
     if(optget(opts, "archive-verbose")->enabled) {
-        chain.chains = malloc(sizeof(*chain.chains));
+        chain.chains = malloc(sizeof(char **));
         if (chain.chains) {
             chain.chains[0] = strdup(filename);
-            chain.n = 1;
+            chain.nchains = 1;
         }
     }
 
@@ -331,22 +350,23 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
 
 
     if((ret = cl_scandesc_callback(fd, virpp, &info.blocks, engine, options, &chain)) == CL_VIRUS) {
+        if (options & CL_SCAN_ALLMATCHES) {
+            virpp = (const char **)*virpp; /* allmatch needs an extra dereference */
+            virname = virpp[0]; /* this is the first virus */
+        }
         if(optget(opts, "archive-verbose")->enabled) {
-            if (chain.n > 1) {
+            if (chain.nchains > 1) {
                 char str[128];
                 int toolong = print_chain(&chain, str, sizeof(str));
 
-                logg("~%s%s!(%d)%s: %s FOUND\n", str, toolong ? "..." : "", chain.lastvir-1, chain.chains[chain.n-1], virname);
+                logg("~%s%s!(%u)%s: %s FOUND\n", str, toolong ? "..." : "", chain.lastvir-1, chain.chains[chain.nchains-1], virname);
             } else if (chain.lastvir) {
-                logg("~%s!(%d): %s FOUND\n", filename, chain.lastvir-1, virname);
+                logg("~%s!(%u): %s FOUND\n", filename, chain.lastvir-1, virname);
             }
         }
 
         if (options & CL_SCAN_ALLMATCHES) {
             int i = 0;
-
-            virpp = (const char **)*virpp; /* horrible */
-            virname = virpp[0];
             while (virpp[i])
                 logg("~%s: %s FOUND\n", filename, virpp[i++]);
 
@@ -372,7 +392,7 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
         info.errors++;
     }
 
-    for (i=0;i<chain.n;i++)
+    for (i=0;i<chain.nchains;i++)
         free(chain.chains[i]);
 
     free(chain.chains);
@@ -745,9 +765,6 @@ int scanmanager(const struct optstruct *opts)
     if(optget(opts, "bytecode-unsigned")->enabled)
         dboptions |= CL_DB_BYTECODE_UNSIGNED;
 
-    if(optget(opts, "bytecode-statistics")->enabled)
-        dboptions |= CL_DB_BYTECODE_STATS;
-
     if((opt = optget(opts,"bytecode-timeout"))->enabled)
         cl_engine_set_num(engine, CL_ENGINE_BYTECODE_TIMEOUT, opt->numarg);
 
@@ -764,6 +781,18 @@ int scanmanager(const struct optstruct *opts)
             mode = CL_BYTECODE_MODE_AUTO;
 
         cl_engine_set_num(engine, CL_ENGINE_BYTECODE_MODE, mode);
+    }
+
+    if((opt = optget(opts, "statistics"))->enabled) {
+	while(opt) {
+	    if (!strcasecmp(opt->strarg, "bytecode")) {
+		dboptions |= CL_DB_BYTECODE_STATS;
+	    }
+	    else if (!strcasecmp(opt->strarg, "pcre")) {
+		dboptions |= CL_DB_PCRE_STATS;
+	    }
+	    opt = opt->nextarg;
+        }
     }
 
     if((opt = optget(opts, "tempdir"))->enabled) {
@@ -942,6 +971,30 @@ int scanmanager(const struct optstruct *opts)
         }
     }
 
+    if ((opt = optget(opts, "pcre-match-limit"))->active) {
+        if ((ret = cl_engine_set_num(engine, CL_ENGINE_PCRE_MATCH_LIMIT, opt->numarg))) {
+            logg("!cli_engine_set_num(CL_ENGINE_PCRE_MATCH_LIMIT) failed: %s\n", cl_strerror(ret));
+            cl_engine_free(engine);
+            return 2;
+        }
+    }
+
+    if ((opt = optget(opts, "pcre-recmatch-limit"))->active) {
+        if ((ret = cl_engine_set_num(engine, CL_ENGINE_PCRE_RECMATCH_LIMIT, opt->numarg))) {
+            logg("!cli_engine_set_num(CL_ENGINE_PCRE_RECMATCH_LIMIT) failed: %s\n", cl_strerror(ret));
+            cl_engine_free(engine);
+            return 2;
+        }
+    }
+
+    if ((opt = optget(opts, "pcre-max-filesize"))->active) {
+        if ((ret = cl_engine_set_num(engine, CL_ENGINE_PCRE_MAX_FILESIZE, opt->numarg))) {
+            logg("!cli_engine_set_num(CL_ENGINE_PCRE_MAX_FILESIZE) failed: %s\n", cl_strerror(ret));
+            cl_engine_free(engine);
+            return 2;
+        }
+    }
+
     /* set scan options */
     if(optget(opts, "allmatch")->enabled)
         options |= CL_SCAN_ALLMATCHES;
@@ -1110,9 +1163,20 @@ int scanmanager(const struct optstruct *opts)
         }
     }
 
-    if(optget(opts, "bytecode-statistics")->enabled) {
-        cli_sigperf_print();
-        cli_sigperf_events_destroy();
+    if((opt = optget(opts, "statistics"))->enabled) {
+	while(opt) {
+	    if (!strcasecmp(opt->strarg, "bytecode")) {
+		cli_sigperf_print();
+		cli_sigperf_events_destroy();
+	    }
+#if HAVE_PCRE
+	    else if (!strcasecmp(opt->strarg, "pcre")) {
+		cli_pcre_perf_print();
+		cli_pcre_perf_events_destroy();
+	    }
+#endif
+	    opt = opt->nextarg;
+        }
     }
 
     /* free the engine */

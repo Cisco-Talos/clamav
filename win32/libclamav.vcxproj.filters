@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Source Files">
@@ -175,6 +175,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\libclamav\matcher-bm.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\matcher-pcre.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\libclamav\mbox.c">
@@ -355,6 +358,9 @@
       <Filter>Source Files\regex</Filter>
     </ClCompile>
     <ClCompile Include="..\libclamav\regex\regfree.c">
+      <Filter>Source Files\regex</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\regex_pcre.c">
       <Filter>Source Files\regex</Filter>
     </ClCompile>
     <ClCompile Include="..\libclamav\nsis\infblock.c">

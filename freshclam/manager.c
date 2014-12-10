@@ -1209,13 +1209,21 @@ chdir_tmp (const char *dbname, const char *tmpdir)
 {
     char cvdfile[32];
 
-
     if (access (tmpdir, R_OK | W_OK) == -1)
     {
-        sprintf (cvdfile, "%s.cvd", dbname);
+        int ret;
+        ret = snprintf (cvdfile, sizeof(cvdfile), "%s.cvd", dbname);
+        if (ret >= sizeof(cvdfile) || ret == -1) {
+            logg ("!chdir_tmp: dbname parameter value too long to create cvd file name: %s\n", dbname);
+            return -1;
+        }
         if (access (cvdfile, R_OK) == -1)
         {
-            sprintf (cvdfile, "%s.cld", dbname);
+            ret = snprintf (cvdfile, sizeof(cvdfile), "%s.cld", dbname);
+            if (ret >= sizeof(cvdfile) || ret == -1) {
+                logg ("!chdir_tmp: dbname parameter value too long to create cld file name: %s\n", dbname);
+                return -1;
+            }
             if (access (cvdfile, R_OK) == -1)
             {
                 logg ("!chdir_tmp: Can't access local %s database\n", dbname);
@@ -2052,7 +2060,7 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
             logg ("^Current functionality level = %d, recommended = %d\n",
                   flevel, current->fl);
             logg ("Please check if ClamAV tools are linked against the proper version of libclamav\n");
-            logg ("DON'T PANIC! Read http://www.clamav.net/documentation.html\n");
+            logg ("DON'T PANIC! Read http://www.clamav.net/doc/install.html\n");
         }
 
         *signo += current->sigs;

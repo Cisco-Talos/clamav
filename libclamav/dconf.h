@@ -42,6 +42,7 @@ struct cli_dconf {
     uint32_t phishing;
     uint32_t bytecode;
     uint32_t stats;
+    uint32_t pcre;
 };
 
 /* PE flags */
@@ -128,6 +129,11 @@ struct cli_dconf {
 /* Stats/Intel flags */
 #define DCONF_STATS_DISABLED            0x1
 #define DCONF_STATS_PE_SECTION_DISABLED 0x2
+
+/* PCRE flags */
+#define PCRE_CONF_SUPPORT 0x1
+#define PCRE_CONF_OPTIONS 0x2
+#define PCRE_CONF_GLOBAL  0x4
 
 #define BYTECODE_ENGINE_MASK (BYTECODE_INTERPRETER | BYTECODE_JIT_X86 | BYTECODE_JIT_PPC | BYTECODE_JIT_ARM)
 

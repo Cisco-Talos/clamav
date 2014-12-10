@@ -54,7 +54,7 @@ Scan a file descriptor. After issuing a FILDES command a subsequent rfc2292/bsd4
 Alternatively the file descriptor may be sent in the same packet, including the extra character.
 .TP
 \fBSTATS\fR
-IIt is mandatory to newline terminate this command, or prefix with \fBn\fR or \fBz\fR, it is recommended to only use the \fBz\fR prefix.
+It is mandatory to newline terminate this command, or prefix with \fBn\fR or \fBz\fR, it is recommended to only use the \fBz\fR prefix.
 
 Replies with statistics about the scan queue, contents of scan queue, and memory
 usage. The exact reply format is subject to change in future releases.

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -348,6 +348,7 @@
     <ClCompile Include="..\libclamav\macho.c" />
     <ClCompile Include="..\libclamav\matcher-ac.c" />
     <ClCompile Include="..\libclamav\matcher-bm.c" />
+    <ClCompile Include="..\libclamav\matcher-pcre.c" />
     <ClCompile Include="..\libclamav\matcher.c" />
     <ClCompile Include="..\libclamav\mbox.c" />
     <ClCompile Include="..\libclamav\mbr.c" />
@@ -383,6 +384,7 @@
     <ClCompile Include="..\libclamav\regex\regexec.c" />
     <ClCompile Include="..\libclamav\regex\regfree.c" />
     <ClCompile Include="..\libclamav\regex\strlcpy.c" />
+    <ClCompile Include="..\libclamav\regex_pcre.c" />
     <ClCompile Include="..\libclamav\sis.c" />
     <ClCompile Include="..\libclamav\special.c" />
     <ClCompile Include="..\libclamav\spin.c" />

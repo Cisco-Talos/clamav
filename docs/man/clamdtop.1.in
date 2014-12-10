@@ -21,6 +21,7 @@ Display help information and exit.
 .TP 
 \fB\-V, \-\-version\fR
 Print version number and exit.
+.TP
 \fB\-\-config\-file=FILE\fR
 Read clamd settings from FILE, to determine how to connect to it.
 .TP 

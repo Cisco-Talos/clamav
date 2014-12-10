@@ -448,7 +448,13 @@ libclamav_la_SOURCES = \
 	yara_lexer.h \
 	yara_parser.c \
 	yara_parser.h \
-	yara_clam.h
+	yara_clam.h \
+	msdoc.c \
+	msdoc.h \
+	matcher-pcre.c \
+	matcher-pcre.h \
+	regex_pcre.c \
+	regex_pcre.h
 
 libclamav_la_SOURCES += bignum.h\
 	bignum_fast.h\

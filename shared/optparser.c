@@ -48,7 +48,7 @@
 
 #include "getopt.h"
 
-#define MAXCMDOPTS  120
+#define MAXCMDOPTS  150
 
 #define MATCH_NUMBER "^[0-9]+$"
 #define MATCH_SIZE "^[0-9]+[KM]?$"
@@ -143,7 +143,7 @@ const struct clam_option __clam_options[] = {
     { NULL, "printsrc", 'p', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMBC, "Print source code of bytecode", ""},
     { NULL, "printbcir", 'c', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMBC, "Print IR of bytecode signature", ""},
     { NULL, "input", 'r', CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMBC, "Input file to run the bytecode n", ""},
-    { NULL, "trace", 'l', CLOPT_TYPE_NUMBER, MATCH_NUMBER, 7, NULL, 0, OPT_CLAMBC, "bytecode trace level",""},
+    { NULL, "trace", 'T', CLOPT_TYPE_NUMBER, MATCH_NUMBER, 7, NULL, 0, OPT_CLAMBC, "bytecode trace level",""},
     { NULL, "no-trace-showsource", 's', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMBC, "Don't show source line during tracing",""},
 
     { NULL, "archive-verbose", 'a', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN, "", ""},
@@ -297,11 +297,11 @@ const struct clam_option __clam_options[] = {
     { "BytecodeMode", "bytecode-mode", 0, CLOPT_TYPE_STRING, "^(Auto|ForceJIT|ForceInterpreter|Test)$", -1, "Auto", FLAG_REQUIRED, OPT_CLAMD | OPT_CLAMSCAN,
 	"Set bytecode execution mode.\nPossible values:\n\tAuto - automatically choose JIT if possible, fallback to interpreter\nForceJIT - always choose JIT, fail if not possible\nForceIntepreter - always choose interpreter\nTest - run with both JIT and interpreter and compare results. Make all failures fatal.","Auto"},
 
-    { "BytecodeStatistics", "bytecode-statistics", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_CLAMBC, "Collect and print bytecode execution statistics.", "no" },
+    { "Statistics", "statistics", 0, CLOPT_TYPE_STRING, "^(none|None|bytecode|Bytecode|pcre|PCRE)$", -1, NULL, FLAG_MULTIPLE, OPT_CLAMSCAN | OPT_CLAMBC, "Collect and print execution statistics.\nPossible values:\n\tBytecode - reports bytecode statistics\nPCRE - reports PCRE execution statistics\nNone - reports no statistics", "None" },
 
    { "DetectPUA", "detect-pua", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Detect Potentially Unwanted Applications.", "yes" },
 
-    { "ExcludePUA", "exclude-pua", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD | OPT_CLAMSCAN, "Exclude a specific PUA category. This directive can be used multiple times.\nSee http://www.clamav.net/documentation.html#pua for the complete list of PUA\ncategories.", "NetTool\nPWTool" },
+    { "ExcludePUA", "exclude-pua", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD | OPT_CLAMSCAN, "Exclude a specific PUA category. This directive can be used multiple times.\nSee http://www.clamav.net/doc/pua.html for the complete list of PUA\ncategories.", "NetTool\nPWTool" },
 
     { "IncludePUA", "include-pua", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD | OPT_CLAMSCAN, "Only include a specific PUA category. This directive can be used multiple\ntimes.", "Spy\nScanner\nRAT" },
 
@@ -379,6 +379,12 @@ const struct clam_option __clam_options[] = {
     { "MaxIconsPE", "max-iconspe", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, CLI_DEFAULT_MAXICONSPE, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the maximum number of icons within a PE to be scanned.\nPE files with more icons than this value will have up to the value number icons scanned.\nNegative values are not allowed.\nWARNING: setting this limit too high may result in severe damage or impact performance.", "100" },
 
     { "TimeLimit", "timelimit", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 0, NULL, 0, OPT_CLAMSCAN, "This clamscan option is currently for testing only. It sets the engine parameter CL_ENGINE_TIME_LIMIT. The value is in milliseconds.", "0" },
+
+    { "PCREMatchLimit", "pcre-match-limit", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, CLI_DEFAULT_PCRE_MATCH_LIMIT, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the maximum calls to the PCRE match function during an instance of regex matching.\nInstances using more than this limit will be terminated and alert the user but the scan will continue.\nFor more information on match_limit, see the PCRE documentation.\nNegative values are not allowed.\nWARNING: setting this limit too high may severely impact performance.", "10000" },
+
+    { "PCRERecMatchLimit", "pcre-recmatch-limit", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, CLI_DEFAULT_PCRE_RECMATCH_LIMIT, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the maximum recursive calls to the PCRE match function during an instance of regex matching.\nInstances using more than this limit will be terminated and alert the user but the scan will continue.\nFor more information on match_limit_recursion, see the PCRE documentation.\nNegative values are not allowed and values > PCREMatchLimit are superfluous.\nWARNING: setting this limit too high may severely impact performance.", "5000" },
+
+    { "PCREMaxFileSize", "pcre-max-filesize", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, CLI_DEFAULT_PCRE_MAX_FILESIZE, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the maximum filesize for which PCRE subsigs will be executed.\nFiles exceeding this limit will not have PCRE subsigs executed unless a subsig is encompassed to a smaller buffer.\nNegative values are not allowed.\nSetting this value to zero disables the limit.\nWARNING: setting this limit too high or disabling it may severely impact performance.", "25M" },
 
     /* OnAccess settings */
     { "ScanOnAccess", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_CLAMD, "This option enables on-access scanning (Linux only)", "no" },
@@ -458,9 +464,9 @@ const struct clam_option __clam_options[] = {
 
     { "DetectionStatsCountry", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "Country of origin of malware/detection statistics (for statistical\npurposes only). The statistics collector at ClamAV.net will look up\nyour IP address to determine the geographical origin of the malware\nreported by your installation. If this installation is mainly used to\nscan data which comes from a different location, please enable this\noption and enter a two-letter code (see http://www.iana.org/domains/root/db/)\nof the country of origin.", "country-code" },
 
-    { "DetectionStatsHostID", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "This option enables support for our \"Personal Statistics\" service.\nWhen this option is enabled, the information on malware detected by\nyour clamd installation is made available to you through our website.\nTo get your HostID, log on http://www.stats.clamav.net and add a new\nhost to your host list. Once you have the HostID, uncomment this option\nand paste the HostID here. As soon as your freshclam starts submitting\ninformation to our stats collecting service, you will be able to view\nthe statistics of this clamd installation by logging into\nhttp://www.stats.clamav.net with the same credentials you used to\ngenerate the HostID. For more information refer to:\nhttp://www.clamav.net/documentation.html#cctts\nThis feature requires SubmitDetectionStats to be enabled.", "unique-id" },
+    { "DetectionStatsHostID", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "This option enables support for our \"Personal Statistics\" service.\nWhen this option is enabled, the information on malware detected by\nyour clamd installation is made available to you through our website.\nTo get your HostID, log on http://www.stats.clamav.net and add a new\nhost to your host list. Once you have the HostID, uncomment this option\nand paste the HostID here. As soon as your freshclam starts submitting\ninformation to our stats collecting service, you will be able to view\nthe statistics of this clamd installation by logging into\nhttp://www.stats.clamav.net with the same credentials you used to\ngenerate the HostID. For more information refer to:\nhttp://www.clamav.net/doc/cctts.html\nThis feature requires SubmitDetectionStats to be enabled.", "unique-id" },
 
-    { "SafeBrowsing", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM, "This option enables support for Google Safe Browsing. When activated for\nthe first time, freshclam will download a new database file (safebrowsing.cvd)\nwhich will be automatically loaded by clamd and clamscan during the next\nreload, provided that the heuristic phishing detection is turned on. This\ndatabase includes information about websites that may be phishing sites or\npossible sources of malware. When using this option, it's mandatory to run\nfreshclam at least every 30 minutes.\nFreshclam uses the ClamAV's mirror infrastructure to distribute the\ndatabase and its updates but all the contents are provided under Google's\nterms of use. See http://www.google.com/transparencyreport/safebrowsing\nand http://www.clamav.net/documentation.html for more information.", "yes" },
+    { "SafeBrowsing", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM, "This option enables support for Google Safe Browsing. When activated for\nthe first time, freshclam will download a new database file (safebrowsing.cvd)\nwhich will be automatically loaded by clamd and clamscan during the next\nreload, provided that the heuristic phishing detection is turned on. This\ndatabase includes information about websites that may be phishing sites or\npossible sources of malware. When using this option, it's mandatory to run\nfreshclam at least every 30 minutes.\nFreshclam uses the ClamAV's mirror infrastructure to distribute the\ndatabase and its updates but all the contents are provided under Google's\nterms of use. See http://www.google.com/transparencyreport/safebrowsing\nand http://www.clamav.net/doc/safebrowsing.html for more information.", "yes" },
 
     { "Bytecode", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_FRESHCLAM, "This option enables downloading of bytecode.cvd, which includes additional\ndetection mechanisms and improvements to the ClamAV engine.", "yes" },
 
