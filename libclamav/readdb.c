@@ -46,6 +46,7 @@
 #endif
 #include "matcher-ac.h"
 #include "matcher-bm.h"
+#include "matcher-pcre.h"
 #include "matcher-hash.h"
 #include "matcher.h"
 #include "others.h"
@@ -2837,6 +2838,10 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
                     if (isalnum(ch))
                         allstringsize++;
                 }
+            } else if (STRING_IS_REGEXP(string)) {
+                char *trigger = PCRE_BYPASS;
+                allstringsize += strlen(trigger);
+                allstringsize += (strlen(string->string)+2); /* 2 from delimiters */
             } else {
                 allstringsize += strlen(string->string);
             }
@@ -2854,7 +2859,7 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
             totsize += (nstrings%10);
         totsize++;
 
-        rulestr = cli_malloc(totsize);
+        rulestr = cli_calloc(totsize, sizeof(char));
         if (!rulestr) {
             free(rule->id);
             free(rule);
@@ -2875,7 +2880,7 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
             STAILQ_REMOVE(&rule->strings, string, _yc_string, link);
 
             if (STRING_IS_HEX(string)) {
-                char *substr = parse_yara_hex_string(string);
+                char *substr;
                 size_t len = strlen(rulestr);
 
                 substr = parse_yara_hex_string(string);
@@ -2886,6 +2891,12 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
                     snprintf(rulestr+len, totsize-len, "%s", substr);
                     free(substr);
                 }
+            } else if (STRING_IS_REGEXP(string)) {
+                size_t len = strlen(rulestr);
+#if 1
+                cli_errmsg("Yara regex string: \"%s\"\n", string->string);
+#endif
+                snprintf(rulestr+len, totsize-len, "%s/%s/", PCRE_BYPASS, string->string);
             } else {
                 for (i=0; i < strlen(string->string); i++) {
                     size_t len = strlen(rulestr);
