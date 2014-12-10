@@ -2632,7 +2632,7 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
     uint32_t line = 0;
     uint8_t is_comment;
     uint8_t rule_state;
-    YR_COMPILER compiler;
+    YR_COMPILER compiler = {0};
     YR_RULE * rule;
     YR_STRING * string;
 
@@ -2641,7 +2641,7 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
     STAILQ_INIT(&compiler.current_rule_strings);
 
     //    cli_errmsg("Loading yara signatures\n");
-#if 0 /* for compilation */
+#if 1 /* for compilation */
     yr_lex_parse_rules_file(fs, &compiler);
 #endif
     while (!STAILQ_EMPTY(&compiler.rules)) {

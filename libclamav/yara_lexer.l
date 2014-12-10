@@ -705,8 +705,15 @@ void yyerror(
 #else
   if (error_message != NULL)
     cli_errmsg("yara_lexer:yyerror() %s\n", error_message);
+  else if (compiler->error_msg != NULL)
+    cli_errmsg("yara_lexer:yyerror() %s\n", compiler->error_msg);
+  else if (compiler->last_error_extra_info[0] != (char) 0)
+    cli_errmsg("yara_lexer:yyerror() %s\n", compiler->last_error_extra_info);
   else
     cli_errmsg("yara_lexer:yyerror() error unknown\n");
+  compiler->last_error_extra_info[0] = (char) 0;
+  compiler->error_msg = NULL;
+  compiler->last_result = ERROR_SUCCESS;
 #endif
 }
 

@@ -82,7 +82,6 @@ limitations under the License.
       YYERROR; \
     } \
 
-
 #define CHECK_TYPE_WITH_CLEANUP(actual_type, expected_type, op, cleanup) \
     if (actual_type != expected_type) \
     { \
@@ -218,7 +217,7 @@ limitations under the License.
   int64_t         integer;
   YR_STRING*      string;
   YR_META*        meta;
-    //  YR_OBJECT*      object;
+  YR_OBJECT*      object;
 }
 
 
@@ -236,13 +235,11 @@ rules
 import
     : _IMPORT_ _TEXT_STRING_
       {
-#ifdef REAL_YARA
         int result = yr_parser_reduce_import(yyscanner, $2);
 
         yr_free($2);
 
         ERROR_IF(result != ERROR_SUCCESS);
-#endif
       }
     ;
 
@@ -290,10 +287,10 @@ meta
             sizeof(YR_META),
             NULL);
 
+#endif
         $$ = $3;
 
         ERROR_IF(compiler->last_result != ERROR_SUCCESS);
-#endif
       }
     ;
 
@@ -301,8 +298,8 @@ meta
 strings
     : /* empty */
       {
-#ifdef REAL_YARA
         $$ = NULL;
+#ifdef REAL_YARA
         compiler->current_rule_strings = $$;
 #endif
       }
@@ -329,8 +326,8 @@ strings
         ERROR_IF(compiler->last_result != ERROR_SUCCESS);
 
         compiler->current_rule_strings = $3;
-        $$ = $3;
 #endif
+        $$ = $3;
       }
     ;
 
@@ -355,9 +352,7 @@ rule_modifier
 tags
     : /* empty */
       {
-#ifdef REAL_YARA
         $$ = NULL;
-#endif
       }
     | ':' tag_list
       {
@@ -371,9 +366,9 @@ tags
             yyget_extra(yyscanner)->sz_arena, "", NULL);
 
         ERROR_IF(compiler->last_result != ERROR_SUCCESS);
+#endif
 
         $$ = $2;
-#endif
       }
     ;
 
@@ -387,10 +382,12 @@ tag_list
         compiler->last_result = yr_arena_write_string(
             yyget_extra(yyscanner)->sz_arena, $1, &identifier);
 
+#endif
         yr_free($1);
 
         ERROR_IF(compiler->last_result != ERROR_SUCCESS);
 
+#ifdef REAL_YARA
         $$ = identifier;
 #endif
       }
@@ -421,12 +418,12 @@ tag_list
           compiler->last_result = yr_arena_write_string(
               yyget_extra(yyscanner)->sz_arena, $2, NULL);
 
+#endif
         yr_free($2);
 
         ERROR_IF(compiler->last_result != ERROR_SUCCESS);
 
         $$ = $1;
-#endif
       }
     ;
 
@@ -441,7 +438,6 @@ meta_declarations
 meta_declaration
     : _IDENTIFIER_ '=' _TEXT_STRING_
       {
-#ifdef REAL_YARA
         SIZED_STRING* sized_string = $3;
 
         $$ = yr_parser_reduce_meta_declaration(
@@ -455,11 +451,9 @@ meta_declaration
         yr_free($3);
 
         ERROR_IF($$ == NULL);
-#endif
       }
     | _IDENTIFIER_ '=' _NUMBER_
       {
-#ifdef REAL_YARA
         $$ = yr_parser_reduce_meta_declaration(
             yyscanner,
             META_TYPE_INTEGER,
@@ -470,11 +464,9 @@ meta_declaration
         yr_free($1);
 
         ERROR_IF($$ == NULL);
-#endif
       }
     | _IDENTIFIER_ '=' _TRUE_
       {
-#ifdef REAL_YARA
         $$ = yr_parser_reduce_meta_declaration(
             yyscanner,
             META_TYPE_BOOLEAN,
@@ -485,11 +477,9 @@ meta_declaration
         yr_free($1);
 
         ERROR_IF($$ == NULL);
-#endif
       }
     | _IDENTIFIER_ '=' _FALSE_
       {
-#ifdef REAL_YARA
         $$ = yr_parser_reduce_meta_declaration(
             yyscanner,
             META_TYPE_BOOLEAN,
@@ -500,7 +490,6 @@ meta_declaration
         yr_free($1);
 
         ERROR_IF($$ == NULL);
-#endif
       }
     ;
 
@@ -577,7 +566,7 @@ string_modifier
 identifier
     : _IDENTIFIER_
       {
-#ifdef REAL_YARA
+          //#ifdef REAL_YARA
         YR_OBJECT* object = NULL;
         YR_RULE* rule;
 
@@ -602,25 +591,28 @@ identifier
         {
           // Search for identifier within the global namespace, where the
           // externals variables reside.
-
+#if REAL_YARA
           object = (YR_OBJECT*) yr_hash_table_lookup(
                 compiler->objects_table,
                 $1,
                 NULL);
-
+#endif
           if (object == NULL)
           {
             // If not found, search within the current namespace.
 
+#if REAL_YARA
             ns = compiler->current_namespace->name;
             object = (YR_OBJECT*) yr_hash_table_lookup(
                 compiler->objects_table,
                 $1,
                 ns);
+#endif
           }
 
           if (object != NULL)
           {
+#if REAL_YARA
             compiler->last_result = yr_arena_write_string(
                 compiler->sz_arena,
                 $1,
@@ -632,12 +624,14 @@ identifier
                   OP_OBJ_LOAD,
                   PTR_TO_UINT64(id),
                   NULL);
+#endif
 
             $$ = object;
           }
           else
           {
-            rule = (YR_RULE*) yr_hash_table_lookup(
+ #if REAL_YARA
+           rule = (YR_RULE*) yr_hash_table_lookup(
                 compiler->rules_table,
                 $1,
                 compiler->current_namespace->name);
@@ -655,6 +649,7 @@ identifier
               yr_compiler_set_error_extra_info(compiler, $1);
               compiler->last_result = ERROR_UNDEFINED_IDENTIFIER;
             }
+#endif
 
             $$ = (YR_OBJECT*) -2;
           }
@@ -663,7 +658,7 @@ identifier
         yr_free($1);
 
         ERROR_IF(compiler->last_result != ERROR_SUCCESS);
-#endif
+        //#endif
       }
     | identifier '.' _IDENTIFIER_
       {
@@ -784,13 +779,10 @@ identifier
 arguments_list
     : /* empty */
       {
-#ifdef REAL_YARA
         $$ = yr_strdup("");
-#endif
       }
     | expression
       {
-#ifdef REAL_YARA
         $$ = yr_malloc(MAX_FUNCTION_ARGS + 1);
 
         switch($1)
@@ -810,11 +802,9 @@ arguments_list
         }
 
         ERROR_IF($$ == NULL);
-#endif
       }
     | arguments_list ',' expression
       {
-#ifdef REAL_YARA
         if (strlen($1) == MAX_FUNCTION_ARGS)
         {
           compiler->last_result = ERROR_TOO_MANY_ARGUMENTS;
@@ -841,7 +831,6 @@ arguments_list
         ERROR_IF(compiler->last_result != ERROR_SUCCESS);
 
         $$ = $1;
-#endif
       }
     ;
 
@@ -886,9 +875,9 @@ regexp
         yr_re_destroy(re);
 
         ERROR_IF(compiler->last_result != ERROR_SUCCESS);
+#endif
 
         $$ = EXPRESSION_TYPE_REGEXP;
-#endif
       }
     ;
 
@@ -896,7 +885,6 @@ regexp
 boolean_expression
     : expression
       {
-#ifdef REAL_YARA
         if ($1 == EXPRESSION_TYPE_STRING)
         {
           compiler->last_result = yr_parser_emit(
@@ -909,36 +897,30 @@ boolean_expression
 
 
         $$ = EXPRESSION_TYPE_BOOLEAN;
-#endif
       }
     ;
 
 expression
     : _TRUE_
       {
-#ifdef REAL_YARA
         compiler->last_result = yr_parser_emit_with_arg(
             yyscanner, OP_PUSH, 1, NULL);
 
         ERROR_IF(compiler->last_result != ERROR_SUCCESS);
 
         $$ = EXPRESSION_TYPE_BOOLEAN;
-#endif
       }
     | _FALSE_
       {
-#ifdef REAL_YARA
         compiler->last_result = yr_parser_emit_with_arg(
             yyscanner, OP_PUSH, 0, NULL);
 
         ERROR_IF(compiler->last_result != ERROR_SUCCESS);
 
         $$ = EXPRESSION_TYPE_BOOLEAN;
-#endif
       }
     | primary_expression _MATCHES_ regexp
       {
-#ifdef REAL_YARA
         CHECK_TYPE($1, EXPRESSION_TYPE_STRING, "matches");
         CHECK_TYPE($3, EXPRESSION_TYPE_REGEXP, "matches");
 
@@ -951,11 +933,9 @@ expression
         ERROR_IF(compiler->last_result != ERROR_SUCCESS);
 
         $$ = EXPRESSION_TYPE_BOOLEAN;
-#endif
       }
     | primary_expression _CONTAINS_ primary_expression
       {
-#ifdef REAL_YARA
         CHECK_TYPE($1, EXPRESSION_TYPE_STRING, "contains");
         CHECK_TYPE($3, EXPRESSION_TYPE_STRING, "contains");
 
@@ -967,11 +947,9 @@ expression
         ERROR_IF(compiler->last_result != ERROR_SUCCESS);
 
         $$ = EXPRESSION_TYPE_BOOLEAN;
-#endif
       }
     | _STRING_IDENTIFIER_
       {
-#ifdef REAL_YARA
         int result = yr_parser_reduce_string_identifier(
             yyscanner,
             $1,
@@ -982,11 +960,9 @@ expression
         ERROR_IF(result != ERROR_SUCCESS);
 
         $$ = EXPRESSION_TYPE_BOOLEAN;
-#endif
       }
     | _STRING_IDENTIFIER_ _AT_ primary_expression
       {
-#ifdef REAL_YARA
         CHECK_TYPE($3, EXPRESSION_TYPE_INTEGER, "at");
 
         compiler->last_result = yr_parser_reduce_string_identifier(
@@ -999,11 +975,9 @@ expression
         ERROR_IF(compiler->last_result != ERROR_SUCCESS);
 
         $$ = EXPRESSION_TYPE_BOOLEAN;
-#endif
       }
     | _STRING_IDENTIFIER_ _IN_ range
       {
-#ifdef REAL_YARA
         compiler->last_result = yr_parser_reduce_string_identifier(
             yyscanner,
             $1,
@@ -1014,7 +988,6 @@ expression
         ERROR_IF(compiler->last_result!= ERROR_SUCCESS);
 
         $$ = EXPRESSION_TYPE_BOOLEAN;
-#endif
       }
     | _FOR_ for_expression _IDENTIFIER_ _IN_
       {
@@ -1040,7 +1013,7 @@ expression
           compiler->last_result = \
               ERROR_DUPLICATE_LOOP_IDENTIFIER;
         }
-
+#endif
         ERROR_IF(compiler->last_result != ERROR_SUCCESS);
 
         // Push end-of-list marker
@@ -1055,6 +1028,7 @@ expression
       integer_set ':'
       {
         int mem_offset = LOOP_LOCAL_VARS * compiler->loop_depth;
+
         int8_t* addr;
 
         // Clear counter for number of expressions evaluating
@@ -1082,10 +1056,11 @@ expression
           yr_parser_emit_with_arg(
               yyscanner, OP_POP_M, mem_offset, NULL);
         }
-
+#ifdef REAL_YARA
         compiler->loop_address[compiler->loop_depth] = addr;
         compiler->loop_identifier[compiler->loop_depth] = $3;
         compiler->loop_depth++;
+#endif
       }
       '(' boolean_expression ')'
       {
@@ -1110,8 +1085,12 @@ expression
           yr_parser_emit_with_arg_reloc(
               yyscanner,
               OP_JNUNDEF,
+#ifdef REAL_YARA
               PTR_TO_UINT64(
                   compiler->loop_address[compiler->loop_depth]),
+#else
+              0,
+#endif
               NULL);
         }
         else // INTEGER_SET_RANGE
@@ -1128,6 +1107,7 @@ expression
           yr_parser_emit_with_arg(
               yyscanner, OP_PUSH_M, mem_offset + 3, NULL);
 
+#ifdef REAL_YARA
           // Compare higher bound with lower bound, do loop again
           // if lower bound is still lower or equal than higher bound
           yr_parser_emit_with_arg_reloc(
@@ -1136,6 +1116,7 @@ expression
               PTR_TO_UINT64(
                 compiler->loop_address[compiler->loop_depth]),
               NULL);
+#endif
 
           yr_parser_emit(yyscanner, OP_POP, NULL);
           yr_parser_emit(yyscanner, OP_POP, NULL);
@@ -1158,11 +1139,12 @@ expression
 
         yr_parser_emit(yyscanner, OP_LE, NULL);
 
+#ifdef REAL_YARA
         compiler->loop_identifier[compiler->loop_depth] = NULL;
+#endif
         yr_free($3);
 
         $$ = EXPRESSION_TYPE_BOOLEAN;
-#endif
       }
     | _FOR_ for_expression _OF_ string_set ':'
       {
@@ -1240,92 +1222,74 @@ expression
             yyscanner, OP_PUSH_M, mem_offset + 1, NULL);
 
         yr_parser_emit(yyscanner, OP_LE, NULL);
-
+#endif
         $$ = EXPRESSION_TYPE_BOOLEAN;
 
-#endif
       }
     | for_expression _OF_ string_set
       {
-#ifdef REAL_YARA
         yr_parser_emit(yyscanner, OP_OF, NULL);
 
         $$ = EXPRESSION_TYPE_BOOLEAN;
-#endif
       }
     | _NOT_ boolean_expression
       {
-#ifdef REAL_YARA
         yr_parser_emit(yyscanner, OP_NOT, NULL);
 
         $$ = EXPRESSION_TYPE_BOOLEAN;
-#endif
       }
     | boolean_expression _AND_ boolean_expression
       {
-#ifdef REAL_YARA
         yr_parser_emit(yyscanner, OP_AND, NULL);
 
         $$ = EXPRESSION_TYPE_BOOLEAN;
-#endif
       }
     | boolean_expression _OR_ boolean_expression
       {
-#ifdef REAL_YARA
         CHECK_TYPE($1, EXPRESSION_TYPE_BOOLEAN, "or");
 
         yr_parser_emit(yyscanner, OP_OR, NULL);
 
         $$ = EXPRESSION_TYPE_BOOLEAN;
-#endif
       }
     | primary_expression _LT_ primary_expression
       {
-#ifdef REAL_YARA
         CHECK_TYPE($1, EXPRESSION_TYPE_INTEGER, "<");
         CHECK_TYPE($3, EXPRESSION_TYPE_INTEGER, "<");
 
         yr_parser_emit(yyscanner, OP_LT, NULL);
 
         $$ = EXPRESSION_TYPE_BOOLEAN;
-#endif
       }
     | primary_expression _GT_ primary_expression
       {
-#ifdef REAL_YARA
         CHECK_TYPE($1, EXPRESSION_TYPE_INTEGER, ">");
         CHECK_TYPE($3, EXPRESSION_TYPE_INTEGER, ">");
 
         yr_parser_emit(yyscanner, OP_GT, NULL);
 
         $$ = EXPRESSION_TYPE_BOOLEAN;
-#endif
       }
     | primary_expression _LE_ primary_expression
       {
-#ifdef REAL_YARA
         CHECK_TYPE($1, EXPRESSION_TYPE_INTEGER, "<=");
         CHECK_TYPE($3, EXPRESSION_TYPE_INTEGER, "<=");
 
         yr_parser_emit(yyscanner, OP_LE, NULL);
 
         $$ = EXPRESSION_TYPE_BOOLEAN;
-#endif
       }
     | primary_expression _GE_ primary_expression
       {
-#ifdef REAL_YARA
         CHECK_TYPE($1, EXPRESSION_TYPE_INTEGER, ">=");
         CHECK_TYPE($3, EXPRESSION_TYPE_INTEGER, ">=");
 
         yr_parser_emit(yyscanner, OP_GE, NULL);
 
         $$ = EXPRESSION_TYPE_BOOLEAN;
-#endif
       }
     | primary_expression _EQ_ primary_expression
       {
-#ifdef REAL_YARA
         if ($1 != $3)
         {
           yr_compiler_set_error_extra_info(
@@ -1350,11 +1314,9 @@ expression
         ERROR_IF(compiler->last_result != ERROR_SUCCESS);
 
         $$ = EXPRESSION_TYPE_BOOLEAN;
-#endif
       }
     | primary_expression _IS_ primary_expression
       {
-#ifdef REAL_YARA
         if ($1 != $3)
         {
           yr_compiler_set_error_extra_info(
@@ -1379,11 +1341,9 @@ expression
         ERROR_IF(compiler->last_result != ERROR_SUCCESS);
 
         $$ = EXPRESSION_TYPE_BOOLEAN;
-#endif
       }
     | primary_expression _NEQ_ primary_expression
       {
-#ifdef REAL_YARA
         if ($1 != $3)
         {
           yr_compiler_set_error_extra_info(
@@ -1408,19 +1368,14 @@ expression
         ERROR_IF(compiler->last_result != ERROR_SUCCESS);
 
         $$ = EXPRESSION_TYPE_BOOLEAN;
-#endif
       }
     | primary_expression
       {
-#ifdef REAL_YARA
         $$ = $1;
-#endif
       }
     |'(' expression ')'
       {
-#ifdef REAL_YARA
         $$ = $2;
-#endif
       }
     ;
 
@@ -1434,7 +1389,6 @@ integer_set
 range
     : '(' primary_expression '.' '.'  primary_expression ')'
       {
-#ifdef REAL_YARA
         if ($2 != EXPRESSION_TYPE_INTEGER)
         {
           yr_compiler_set_error_extra_info(
@@ -1450,7 +1404,6 @@ range
         }
 
         ERROR_IF(compiler->last_result != ERROR_SUCCESS);
-#endif
       }
     ;
 
@@ -1458,7 +1411,6 @@ range
 integer_enumeration
     : primary_expression
       {
-#ifdef REAL_YARA
         if ($1 != EXPRESSION_TYPE_INTEGER)
         {
           yr_compiler_set_error_extra_info(
@@ -1468,11 +1420,9 @@ integer_enumeration
         }
 
         ERROR_IF(compiler->last_result != ERROR_SUCCESS);
-#endif
       }
     | integer_enumeration ',' primary_expression
       {
-#ifdef REAL_YARA
         if ($3 != EXPRESSION_TYPE_INTEGER)
         {
           yr_compiler_set_error_extra_info(
@@ -1481,7 +1431,6 @@ integer_enumeration
         }
 
         ERROR_IF(compiler->last_result != ERROR_SUCCESS);
-#endif
       }
     ;
 
@@ -1489,18 +1438,14 @@ integer_enumeration
 string_set
     : '('
       {
-#ifdef REAL_YARA
         // Push end-of-list marker
         yr_parser_emit_with_arg(yyscanner, OP_PUSH, UNDEFINED, NULL);
-#endif
       }
       string_enumeration ')'
     | _THEM_
       {
-#ifdef REAL_YARA
         yr_parser_emit_with_arg(yyscanner, OP_PUSH, UNDEFINED, NULL);
         yr_parser_emit_pushes_for_strings(yyscanner, "$*");
-#endif
       }
     ;
 
@@ -1514,17 +1459,13 @@ string_enumeration
 string_enumeration_item
     : _STRING_IDENTIFIER_
       {
-#ifdef REAL_YARA
         yr_parser_emit_pushes_for_strings(yyscanner, $1);
         yr_free($1);
-#endif
       }
     | _STRING_IDENTIFIER_WITH_WILDCARD_
       {
-#ifdef REAL_YARA
         yr_parser_emit_pushes_for_strings(yyscanner, $1);
         yr_free($1);
-#endif
       }
     ;
 
@@ -1533,15 +1474,11 @@ for_expression
     : primary_expression
     | _ALL_
       {
-#ifdef REAL_YARA
         yr_parser_emit_with_arg(yyscanner, OP_PUSH, UNDEFINED, NULL);
-#endif
       }
     | _ANY_
       {
-#ifdef REAL_YARA
         yr_parser_emit_with_arg(yyscanner, OP_PUSH, 1, NULL);
-#endif
       }
     ;
 
@@ -1549,24 +1486,19 @@ for_expression
 primary_expression
     : '(' primary_expression ')'
       {
-#ifdef REAL_YARA
         $$ = $2;
-#endif
       }
     | _FILESIZE_
       {
-#ifdef REAL_YARA
         compiler->last_result = yr_parser_emit(
             yyscanner, OP_FILESIZE, NULL);
 
         $$ = EXPRESSION_TYPE_INTEGER;
 
         ERROR_IF(compiler->last_result != ERROR_SUCCESS);
-#endif
       }
     | _ENTRYPOINT_
       {
-#ifdef REAL_YARA
         yywarning(yyscanner,
             "Using deprecated \"entrypoint\" keyword. Use the \"entry_point\" " "function from PE module instead.");
 
@@ -1576,11 +1508,9 @@ primary_expression
         ERROR_IF(compiler->last_result != ERROR_SUCCESS);
 
         $$ = EXPRESSION_TYPE_INTEGER;
-#endif
       }
     | _INT8_  '(' primary_expression ')'
       {
-#ifdef REAL_YARA
         CHECK_TYPE($3, EXPRESSION_TYPE_INTEGER, "int8");
 
         compiler->last_result = yr_parser_emit(
@@ -1589,11 +1519,9 @@ primary_expression
         ERROR_IF(compiler->last_result != ERROR_SUCCESS);
 
         $$ = EXPRESSION_TYPE_INTEGER;
-#endif
       }
     | _INT16_ '(' primary_expression ')'
       {
-#ifdef REAL_YARA
         CHECK_TYPE($3, EXPRESSION_TYPE_INTEGER, "int16");
 
         compiler->last_result = yr_parser_emit(
@@ -1602,11 +1530,9 @@ primary_expression
         ERROR_IF(compiler->last_result != ERROR_SUCCESS);
 
         $$ = EXPRESSION_TYPE_INTEGER;
-#endif
       }
     | _INT32_ '(' primary_expression ')'
       {
-#ifdef REAL_YARA
         CHECK_TYPE($3, EXPRESSION_TYPE_INTEGER, "int32");
 
         compiler->last_result = yr_parser_emit(
@@ -1615,11 +1541,9 @@ primary_expression
         ERROR_IF(compiler->last_result != ERROR_SUCCESS);
 
         $$ = EXPRESSION_TYPE_INTEGER;
-#endif
       }
     | _UINT8_ '(' primary_expression ')'
       {
-#ifdef REAL_YARA
         CHECK_TYPE($3, EXPRESSION_TYPE_INTEGER, "uint8");
 
         compiler->last_result = yr_parser_emit(
@@ -1628,11 +1552,9 @@ primary_expression
         ERROR_IF(compiler->last_result != ERROR_SUCCESS);
 
         $$ = EXPRESSION_TYPE_INTEGER;
-#endif
       }
     | _UINT16_ '(' primary_expression ')'
       {
-#ifdef REAL_YARA
         CHECK_TYPE($3, EXPRESSION_TYPE_INTEGER, "uint16");
 
         compiler->last_result = yr_parser_emit(
@@ -1641,11 +1563,9 @@ primary_expression
         ERROR_IF(compiler->last_result != ERROR_SUCCESS);
 
         $$ = EXPRESSION_TYPE_INTEGER;
-#endif
       }
     | _UINT32_ '(' primary_expression ')'
       {
-#ifdef REAL_YARA
         CHECK_TYPE($3, EXPRESSION_TYPE_INTEGER, "uint32");
 
         compiler->last_result = yr_parser_emit(
@@ -1654,29 +1574,27 @@ primary_expression
         ERROR_IF(compiler->last_result != ERROR_SUCCESS);
 
         $$ = EXPRESSION_TYPE_INTEGER;
-#endif
       }
     | _NUMBER_
       {
-#ifdef REAL_YARA
         compiler->last_result = yr_parser_emit_with_arg(
             yyscanner, OP_PUSH, $1, NULL);
 
         ERROR_IF(compiler->last_result != ERROR_SUCCESS);
 
         $$ = EXPRESSION_TYPE_INTEGER;
-#endif
       }
     | _TEXT_STRING_
       {
-#ifdef REAL_YARA
         SIZED_STRING* sized_string = $1;
         char* string;
 
+#if REAL_YARA
         compiler->last_result = yr_arena_write_string(
             compiler->sz_arena,
             sized_string->c_string,
             &string);
+#endif
 
         yr_free($1);
 
@@ -1690,11 +1608,9 @@ primary_expression
         ERROR_IF(compiler->last_result != ERROR_SUCCESS);
 
         $$ = EXPRESSION_TYPE_STRING;
-#endif
       }
     | _STRING_COUNT_
       {
-#ifdef REAL_YARA
         compiler->last_result = yr_parser_reduce_string_identifier(
             yyscanner,
             $1,
@@ -1705,11 +1621,9 @@ primary_expression
         ERROR_IF(compiler->last_result != ERROR_SUCCESS);
 
         $$ = EXPRESSION_TYPE_INTEGER;
-#endif
       }
     | _STRING_OFFSET_ '[' primary_expression ']'
       {
-#ifdef REAL_YARA
         compiler->last_result = yr_parser_reduce_string_identifier(
             yyscanner,
             $1,
@@ -1720,11 +1634,9 @@ primary_expression
         ERROR_IF(compiler->last_result != ERROR_SUCCESS);
 
         $$ = EXPRESSION_TYPE_INTEGER;
-#endif
       }
     | _STRING_OFFSET_
       {
-#ifdef REAL_YARA
         compiler->last_result = yr_parser_emit_with_arg(
             yyscanner,
             OP_PUSH,
@@ -1742,11 +1654,9 @@ primary_expression
         ERROR_IF(compiler->last_result != ERROR_SUCCESS);
 
         $$ = EXPRESSION_TYPE_INTEGER;
-#endif
       }
     | identifier
       {
-#ifdef REAL_YARA
         if ($1 == (YR_OBJECT*) -1)  // loop identifier
         {
           $$ = EXPRESSION_TYPE_INTEGER;
@@ -1779,133 +1689,108 @@ primary_expression
         }
 
         ERROR_IF(compiler->last_result != ERROR_SUCCESS);
-#endif
       }
     | primary_expression '+' primary_expression
       {
-#ifdef REAL_YARA
         CHECK_TYPE($1, EXPRESSION_TYPE_INTEGER, "+");
         CHECK_TYPE($3, EXPRESSION_TYPE_INTEGER, "+");
 
         yr_parser_emit(yyscanner, OP_ADD, NULL);
 
         $$ = EXPRESSION_TYPE_INTEGER;
-#endif
       }
     | primary_expression '-' primary_expression
       {
-#ifdef REAL_YARA
         CHECK_TYPE($1, EXPRESSION_TYPE_INTEGER, "-");
         CHECK_TYPE($3, EXPRESSION_TYPE_INTEGER, "-");
 
         yr_parser_emit(yyscanner, OP_SUB, NULL);
 
         $$ = EXPRESSION_TYPE_INTEGER;
-#endif
       }
     | primary_expression '*' primary_expression
       {
-#ifdef REAL_YARA
         CHECK_TYPE($1, EXPRESSION_TYPE_INTEGER, "*");
         CHECK_TYPE($3, EXPRESSION_TYPE_INTEGER, "*");
 
         yr_parser_emit(yyscanner, OP_MUL, NULL);
 
         $$ = EXPRESSION_TYPE_INTEGER;
-#endif
       }
     | primary_expression '\\' primary_expression
       {
-#ifdef REAL_YARA
         CHECK_TYPE($1, EXPRESSION_TYPE_INTEGER, "\\");
         CHECK_TYPE($3, EXPRESSION_TYPE_INTEGER, "\\");
 
         yr_parser_emit(yyscanner, OP_DIV, NULL);
 
         $$ = EXPRESSION_TYPE_INTEGER;
-#endif
       }
     | primary_expression '%' primary_expression
       {
-#ifdef REAL_YARA
         CHECK_TYPE($1, EXPRESSION_TYPE_INTEGER, "%");
         CHECK_TYPE($3, EXPRESSION_TYPE_INTEGER, "%");
 
         yr_parser_emit(yyscanner, OP_MOD, NULL);
 
         $$ = EXPRESSION_TYPE_INTEGER;
-#endif
       }
     | primary_expression '^' primary_expression
       {
-#ifdef REAL_YARA
         CHECK_TYPE($1, EXPRESSION_TYPE_INTEGER, "^");
         CHECK_TYPE($3, EXPRESSION_TYPE_INTEGER, "^");
 
         yr_parser_emit(yyscanner, OP_XOR, NULL);
 
         $$ = EXPRESSION_TYPE_INTEGER;
-#endif
       }
     | primary_expression '&' primary_expression
       {
-#ifdef REAL_YARA
         CHECK_TYPE($1, EXPRESSION_TYPE_INTEGER, "^");
         CHECK_TYPE($3, EXPRESSION_TYPE_INTEGER, "^");
 
         yr_parser_emit(yyscanner, OP_AND, NULL);
 
         $$ = EXPRESSION_TYPE_INTEGER;
-#endif
       }
     | primary_expression '|' primary_expression
       {
-#ifdef REAL_YARA
         CHECK_TYPE($1, EXPRESSION_TYPE_INTEGER, "|");
         CHECK_TYPE($3, EXPRESSION_TYPE_INTEGER, "|");
 
         yr_parser_emit(yyscanner, OP_OR, NULL);
 
         $$ = EXPRESSION_TYPE_INTEGER;
-#endif
       }
     | '~' primary_expression
       {
-#ifdef REAL_YARA
         CHECK_TYPE($2, EXPRESSION_TYPE_INTEGER, "~");
 
         yr_parser_emit(yyscanner, OP_NEG, NULL);
 
         $$ = EXPRESSION_TYPE_INTEGER;
-#endif
       }
     | primary_expression _SHIFT_LEFT_ primary_expression
       {
-#ifdef REAL_YARA
         CHECK_TYPE($1, EXPRESSION_TYPE_INTEGER, "<<");
         CHECK_TYPE($3, EXPRESSION_TYPE_INTEGER, "<<");
 
         yr_parser_emit(yyscanner, OP_SHL, NULL);
 
         $$ = EXPRESSION_TYPE_INTEGER;
-#endif
       }
     | primary_expression _SHIFT_RIGHT_ primary_expression
       {
-#ifdef REAL_YARA
         CHECK_TYPE($1, EXPRESSION_TYPE_INTEGER, ">>");
         CHECK_TYPE($3, EXPRESSION_TYPE_INTEGER, ">>");
 
         yr_parser_emit(yyscanner, OP_SHR, NULL);
 
         $$ = EXPRESSION_TYPE_INTEGER;
-#endif
       }
     | regexp
       {
-#ifdef REAL_YARA
         $$ = $1;
-#endif
       }
     ;
 
