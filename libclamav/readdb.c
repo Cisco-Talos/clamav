@@ -2808,6 +2808,7 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
     size_t nstrings, i, allstringsize, totsize;
     char *rulestr, *ruledup;
     unsigned int sigs;
+    uint8_t has_short_string;
 
     if((rc = cli_initroots(engine, options)))
         return rc;
@@ -2875,6 +2876,7 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
 
         strcat(rulestr, ");");
 
+        has_short_string = 0;
         while (!STAILQ_EMPTY(&rule->strings)) {
             string = STAILQ_FIRST(&rule->strings);
             STAILQ_REMOVE(&rule->strings, string, _yc_string, link);
@@ -2888,6 +2890,8 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
                 cli_errmsg("Yara hex string: \"%s\"\n", substr);
 #endif
                 if (substr) {
+                    if (strlen(substr)/2 <= CLI_DEFAULT_AC_MINDEPTH)  //FIXME: Yara has no length minimum
+                        has_short_string = 1;
                     snprintf(rulestr+len, totsize-len, "%s", substr);
                     free(substr);
                 }
@@ -2898,6 +2902,8 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
 #endif
                 snprintf(rulestr+len, totsize-len, "%s/%s/", PCRE_BYPASS, string->string);
             } else {
+                if (strlen(string->string) <= CLI_DEFAULT_AC_MINDEPTH) //FIXME: Yara has no length minimum
+                    has_short_string = 1;
                 for (i=0; i < strlen(string->string); i++) {
                     size_t len = strlen(rulestr);
                     snprintf(rulestr+len, totsize-len, "%02x", string->string[i]);
@@ -2929,16 +2935,21 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
 
         strcpy(ruledup, rulestr);
 
+        if (has_short_string == 0) {
 #if 1
-        rc = load_oneldb(rulestr,
-             engine->pua_cats && (options & CL_DB_PUA_MODE) && (options & (CL_DB_PUA_INCLUDE | CL_DB_PUA_EXCLUDE)),
-             engine, options, rule->id, line++, &sigs, 0, ruledup, NULL);
+            rc = load_oneldb(rulestr,
+                 engine->pua_cats && (options & CL_DB_PUA_MODE) && (options & (CL_DB_PUA_INCLUDE | CL_DB_PUA_EXCLUDE)),
+                 engine, options, rule->id, line++, &sigs, 0, ruledup, NULL);
 #endif
 
+        }
+        else {
+            cli_errmsg("cli_loadyara: has short strings, rule %s excluded\n", rulestr);
+        }
         printf("totsize: %zu\treal size: %zu\n", totsize, strlen(ruledup));
+
         free(rulestr);
         free(ruledup);
-
         free(rule->id);
         free(rule);
         if (rc != CL_SUCCESS)
