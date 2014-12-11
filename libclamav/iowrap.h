@@ -42,4 +42,8 @@
  */
 int cli_memcpy(void *target, const void *source, unsigned long size);
 
+#ifdef _WIN32
+int filter_memcpy(unsigned int code, struct _EXCEPTION_POINTERS *ep);
+#endif
+
 #endif

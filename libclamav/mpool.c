@@ -623,7 +623,11 @@ void *mpool_malloc(struct MP *mp, size_t size) {
     struct FRAG *fold = f;
     mp->avail[sbits] = f->u.next.ptr;
     /* we always have enough space for this, align_increase ensured that */
+#ifdef _WIN64
+    f = (struct FRAG*)(alignto((unsigned long long)f + FRAG_OVERHEAD, align)-FRAG_OVERHEAD);
+#else
     f = (struct FRAG*)(alignto((unsigned long)f + FRAG_OVERHEAD, align)-FRAG_OVERHEAD);
+#endif
     f->u.a.sbits = sbits;
     f->u.a.padding = (char*)f - (char*)fold;
 #ifdef CL_DEBUG

@@ -2,25 +2,36 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
+0.98.6
+------
+
+ClamAV 0.98.6 is a bug fix release correcting the following:
+
+     - library shared object revisions.
+     - installation issues on some Mac OS X and FreeBSD platforms.
+     - includes a patch from Sebastian Andrzej Siewior making
+       ClamAV pid files compatible with systemd.
+
+
 0.98.5
 ------
 
 Welcome to ClamAV 0.98.5! ClamAV 0.98.5 includes important new features
 for collecting and analyzing file properties. Software developers and
-analysts may collect file properties using the ClamAV API and then
-analyze them with ClamAV bytecode programs. Using the new features will
-require that libjson-c is installed, but otherwise libjson-c will be
-optional.
+analysts may collect file property meta data using the ClamAV API for
+subsequent analysis by ClamAV bytecode programs. Using these features
+will require that libjson-c is installed, but otherwise libjson-c is not
+needed.
 
 Look for our upcoming series of blog posts to learn more about using the
 ClamAV API and bytecode facilities for collecting and analyzing file
 properties.
 
-ClamAV 0.98.5 also includes these new features:
+ClamAV 0.98.5 also includes these new features and bug fixes:
 
     - Support for the XDP file format and extracting, decoding, and
       scanning PDF files within XDP files.
-    - Addition of shared library support for LLVM verions 3.1 - 3.4
+    - Addition of shared library support for LLVM versions 3.1 - 3.5
       for the purpose of just-in-time(JIT) compilation of ClamAV
       bytecode signatures. Andreas Cadhalpun submitted the patch
       implementing this support.
@@ -28,6 +39,15 @@ ClamAV 0.98.5 also includes these new features:
       ClamAV bytecode signature authors by providing introspection
       into compiled bytecode programs.
     - Resolution of many of the warning messages from ClamAV compilation.
+    - Improved detection of malicious PE files.
+    - Security fix for ClamAV crash when using 'clamscan -a'. This issue
+      was identified by Kurt Siefried of Red Hat.
+    - Security fix for ClamAV crash when scanning maliciously crafted
+      yoda's crypter files. This issue, as well as several other bugs
+      fixed in this release, were identified by Damien Millescamp of
+      Oppida.
+    - ClamAV 0.98.5 now works with OpenSSL in FIPS compliant mode.
+      Thanks to Reinhard Max for supplying the patch.
     - Bug fixes and other feature enhancements. See Changelog or
       git log for details.
 
@@ -36,6 +56,9 @@ and bug reporting included in ClamAV 0.98.5:
 
 Andreas Cadhalpun
 Sebastian Andrzej Siewior
+Damien Millescamp
+Reinhard Max
+Kurt Seifried
 
 0.98.4
 ------

@@ -78,10 +78,28 @@ static int ooxml_is_int(const char *value, size_t len, int32_t *val)
     return 1;
 }
 
+static int ooxml_add_parse_error(json_object *wrkptr, const xmlChar *errstr)
+{
+    json_object *perr;
+
+    if (!wrkptr)
+        return CL_ENULLARG;
+
+    perr = cli_jsonarray(wrkptr, "ParseErrors");
+    if (perr == NULL) {
+        return CL_EMEM;
+    }
+
+    return cli_jsonstr(perr, NULL, errstr);
+}
+
 static int ooxml_parse_value(json_object *wrkptr, const char *arrname, const xmlChar *node_value)
 {
     json_object *newobj, *arrobj;
     int val;
+
+    if (!wrkptr)
+        return CL_ENULLARG;
 
     arrobj = cli_jsonarray(wrkptr, arrname);
     if (arrobj == NULL) {
@@ -247,7 +265,7 @@ static int ooxml_parse_element(cli_ctx *ctx, xmlTextReaderPtr reader, json_objec
 
     if (node_type != XML_READER_TYPE_ELEMENT) {
         cli_dbgmsg("ooxml_parse_element: first node typed %d, not %d\n", node_type, XML_READER_TYPE_ELEMENT);
-        return CL_EPARSE; /* first type is not an element */
+        return CL_EFORMAT; /* first type is not an element */
     }
 
     node_name = xmlTextReaderConstLocalName(reader);
@@ -267,7 +285,7 @@ static int ooxml_parse_element(cli_ctx *ctx, xmlTextReaderPtr reader, json_objec
     /* generate json object */
     thisjobj = cli_jsonobj(wrkptr, element_tag);
     if (!thisjobj) {
-        return CL_EPARSE;
+        return CL_EMEM;
     }
     cli_dbgmsg("ooxml_parse_element: generated json object [%s]\n", element_tag);
 
@@ -386,12 +404,28 @@ static int ooxml_parse_element(cli_ctx *ctx, xmlTextReaderPtr reader, json_objec
     return CL_SUCCESS;
 }
 
+static int ooxml_updatelimits(int fd, cli_ctx *ctx)
+{
+    STATBUF sb;
+    if (FSTAT(fd, &sb) == -1) {
+        cli_errmsg("ooxml_updatelimits: Can't fstat descriptor %d\n", fd);
+        return CL_ESTAT;
+    }
+
+    return cli_updatelimits(ctx, sb.st_size);
+}
+
 static int ooxml_parse_document(int fd, cli_ctx *ctx)
 {
     int ret = CL_SUCCESS;
     xmlTextReaderPtr reader = NULL;
 
     cli_dbgmsg("in ooxml_parse_document\n");
+
+    /* perform engine limit checks in temporary tracking session */
+    ret = ooxml_updatelimits(fd, ctx);
+    if (ret != CL_CLEAN)
+        return ret;
 
     reader = xmlReaderForFd(fd, "properties.xml", NULL, CLAMAV_MIN_XMLREADER_FLAGS);
     if (reader == NULL) {
@@ -406,10 +440,8 @@ static int ooxml_parse_document(int fd, cli_ctx *ctx)
 
     ret = ooxml_parse_element(ctx, reader, ctx->wrkproperty, 0, NULL);
 
-    if (ret != CL_SUCCESS && ret != CL_ETIMEOUT && ret != CL_BREAK) {
+    if (ret != CL_SUCCESS && ret != CL_ETIMEOUT && ret != CL_BREAK)
         cli_warnmsg("ooxml_parse_document: encountered issue in parsing properties document\n");
-        cli_jsonbool(ctx->wrkproperty, "ParseError", 1);
-    }
 
     xmlTextReaderClose(reader);
     xmlFreeTextReader(reader);
@@ -418,37 +450,64 @@ static int ooxml_parse_document(int fd, cli_ctx *ctx)
 
 static int ooxml_core_cb(int fd, cli_ctx *ctx)
 {
+    int ret;
+
     cli_dbgmsg("in ooxml_core_cb\n");
-    return ooxml_parse_document(fd, ctx);
-    //return ooxml_basic_json(fd, ctx, "CoreProperties");
+    ret = ooxml_parse_document(fd, ctx);
+    if (ret == CL_EPARSE)
+        ooxml_add_parse_error(ctx->wrkproperty, "OOXML_ERROR_CORE_XMLPARSER");
+    else if (ret == CL_EFORMAT)
+        ooxml_add_parse_error(ctx->wrkproperty, "OOXML_ERROR_CORE_MALFORMED");
+
+    return ret;
 }
 
 static int ooxml_extn_cb(int fd, cli_ctx *ctx)
 {
+    int ret;
+
     cli_dbgmsg("in ooxml_extn_cb\n");
-    return ooxml_parse_document(fd, ctx);
-    //return ooxml_basic_json(fd, ctx, "ExtendedProperties");
+    ret = ooxml_parse_document(fd, ctx);
+    if (ret == CL_EPARSE)
+        ooxml_add_parse_error(ctx->wrkproperty, "OOXML_ERROR_EXTN_XMLPARSER");
+    else if (ret == CL_EFORMAT)
+        ooxml_add_parse_error(ctx->wrkproperty, "OOXML_ERROR_EXTN_MALFORMED");
+
+    return ret;
 }
 
 static int ooxml_content_cb(int fd, cli_ctx *ctx)
 {
-    int ret = CL_SUCCESS, tmp, toval = 0;
+    int ret = CL_SUCCESS, tmp, toval = 0, state;
     int core=0, extn=0, cust=0, dsig=0;
     int mcore=0, mextn=0, mcust=0;
     const xmlChar *name, *value, *CT, *PN;
     xmlTextReaderPtr reader = NULL;
     uint32_t loff;
 
+    unsigned long sav_scansize = ctx->scansize;
+    unsigned int sav_scannedfiles = ctx->scannedfiles;
+
     cli_dbgmsg("in ooxml_content_cb\n");
 
+    /* perform engine limit checks in temporary tracking session */
+    ret = ooxml_updatelimits(fd, ctx);
+    if (ret != CL_CLEAN)
+        return ret;
+
+    /* apply a reader to the document */
     reader = xmlReaderForFd(fd, "[Content_Types].xml", NULL, CLAMAV_MIN_XMLREADER_FLAGS);
     if (reader == NULL) {
         cli_dbgmsg("ooxml_content_cb: xmlReaderForFd error for ""[Content_Types].xml""\n");
+        ooxml_add_parse_error(ctx->wrkproperty, "OOXML_ERROR_XML_READER_FD");
+
+        ctx->scansize = sav_scansize;
+        ctx->scannedfiles = sav_scannedfiles;
         return CL_SUCCESS; // libxml2 failed!
     }
 
-    /* locate core-properties, extended-properties, and custom-properties (optional)  */
-    while (xmlTextReaderRead(reader) == 1) {
+    /* locate core-properties, extended-properties, and custom-properties (optional) */
+    while ((state = xmlTextReaderRead(reader)) == 1) {
         if (cli_json_timeout_cycle_check(ctx, &toval) != CL_SUCCESS) {
             ret = CL_ETIMEOUT;
             goto ooxml_content_exit;
@@ -480,92 +539,115 @@ static int ooxml_content_cb(int fd, cli_ctx *ctx)
         if (!CT && !PN) continue;
 
         if (!xmlStrcmp(CT, (const xmlChar *)"application/vnd.openxmlformats-package.core-properties+xml")) {
-            if (!core) {
-                /* default: /docProps/core.xml*/
-                tmp = unzip_search_single(ctx, (const char *)(PN+1), xmlStrlen(PN)-1, &loff);
-                if (tmp == CL_ETIMEOUT) {
-                    ret = tmp;
+            /* default: /docProps/core.xml*/
+            tmp = unzip_search_single(ctx, (const char *)(PN+1), xmlStrlen(PN)-1, &loff);
+            if (tmp == CL_ETIMEOUT) {
+                ret = tmp;
+            }
+            else if (tmp != CL_VIRUS) {
+                cli_dbgmsg("cli_process_ooxml: failed to find core properties file \"%s\"!\n", PN);
+                mcore++;
+            }
+            else {
+                cli_dbgmsg("ooxml_content_cb: found core properties file \"%s\" @ %x\n", PN, loff);
+                if (!core) {
+                    tmp = unzip_single_internal(ctx, loff, ooxml_core_cb);
+                    if (tmp == CL_ETIMEOUT || tmp == CL_EMEM) {
+                        ret = tmp;
+                    }
                 }
-                else if (tmp != CL_VIRUS) {
-                    cli_dbgmsg("cli_process_ooxml: failed to find core properties file \"%s\"!\n", PN);
-                    mcore++;
-                }
-                else {
-                    cli_dbgmsg("ooxml_content_cb: found core properties file \"%s\" @ %x\n", PN, loff);
-                    ret = unzip_single_internal(ctx, loff, ooxml_core_cb);
-                    core++;
-                }
+                core++;
             }
         }
         else if (!xmlStrcmp(CT, (const xmlChar *)"application/vnd.openxmlformats-officedocument.extended-properties+xml")) {
-            if (!extn) {
-                /* default: /docProps/app.xml */
-                tmp = unzip_search_single(ctx, (const char *)(PN+1), xmlStrlen(PN)-1, &loff);
-                if (tmp == CL_ETIMEOUT) {
-                    ret = tmp;
+            /* default: /docProps/app.xml */
+            tmp = unzip_search_single(ctx, (const char *)(PN+1), xmlStrlen(PN)-1, &loff);
+            if (tmp == CL_ETIMEOUT) {
+                ret = tmp;
+            }
+            else if (tmp != CL_VIRUS) {
+                cli_dbgmsg("cli_process_ooxml: failed to find extended properties file \"%s\"!\n", PN);
+                mextn++;
+            }
+            else {
+                cli_dbgmsg("ooxml_content_cb: found extended properties file \"%s\" @ %x\n", PN, loff);
+                if (!extn) {
+                    tmp = unzip_single_internal(ctx, loff, ooxml_extn_cb);
+                    if (tmp == CL_ETIMEOUT || tmp == CL_EMEM) {
+                        ret = tmp;
+                    }
                 }
-                else if (tmp != CL_VIRUS) {
-                    cli_dbgmsg("cli_process_ooxml: failed to find extended properties file \"%s\"!\n", PN);
-                    mextn++;
-                }
-                else {
-                    cli_dbgmsg("ooxml_content_cb: found extended properties file \"%s\" @ %x\n", PN, loff);
-                    ret = unzip_single_internal(ctx, loff, ooxml_extn_cb);
-                    extn++;
-                }
+                extn++;
             }
         }
         else if (!xmlStrcmp(CT, (const xmlChar *)"application/vnd.openxmlformats-officedocument.custom-properties+xml")) {
-            if (!cust) {
-                /* default: /docProps/custom.xml */
-                tmp = unzip_search_single(ctx, (const char *)(PN+1), xmlStrlen(PN)-1, &loff);
-                if (tmp == CL_ETIMEOUT) {
-                    ret = tmp;
-                }
-                else if (tmp != CL_VIRUS) {
-                    cli_dbgmsg("cli_process_ooxml: failed to find custom properties file \"%s\"!\n", PN);
-                    mcust++;
-                }
-                else {
-                    cli_dbgmsg("ooxml_content_cb: found custom properties file \"%s\" @ %x\n", PN, loff);
-                    cust++;
-                    //ret = unzip_single_internal(ctx, loff, ooxml_cust_cb);
-                }
+            /* default: /docProps/custom.xml */
+            tmp = unzip_search_single(ctx, (const char *)(PN+1), xmlStrlen(PN)-1, &loff);
+            if (tmp == CL_ETIMEOUT) {
+                ret = tmp;
+            }
+            else if (tmp != CL_VIRUS) {
+                cli_dbgmsg("cli_process_ooxml: failed to find custom properties file \"%s\"!\n", PN);
+                mcust++;
+            }
+            else {
+                cli_dbgmsg("ooxml_content_cb: found custom properties file \"%s\" @ %x\n", PN, loff);
+                /* custom properties are not parsed */
+                cust++;
             }
         }
         else if (!xmlStrcmp(CT, (const xmlChar *)"application/vnd.openxmlformats-package.digital-signature-xmlsignature+xml")) {
             dsig++;
         }
 
-        if (ret != CL_BREAK && ret != CL_SUCCESS)
+        if (ret != CL_SUCCESS)
             goto ooxml_content_exit;
     }
 
  ooxml_content_exit:
-    if (core)
+    if (core) {
         cli_jsonint(ctx->wrkproperty, "CorePropertiesFileCount", core);
+        if (core > 1)
+            ooxml_add_parse_error(ctx->wrkproperty, "OOXML_ERROR_MULTIPLE_CORE_PROPFILES");
+    }
     else if (!mcore)
         cli_dbgmsg("cli_process_ooxml: file does not contain core properties file\n");
-    if (mcore)
-        cli_jsonint(ctx->wrkproperty, "CorePropertiesMissingFileCount", core);
+    if (mcore) {
+        cli_jsonint(ctx->wrkproperty, "CorePropertiesMissingFileCount", mcore);
+        ooxml_add_parse_error(ctx->wrkproperty, "OOXML_ERROR_MISSING_CORE_PROPFILES");
+    }
 
-    if (extn)
+    if (extn) {
         cli_jsonint(ctx->wrkproperty, "ExtendedPropertiesFileCount", extn);
+        if (extn > 1)
+            ooxml_add_parse_error(ctx->wrkproperty, "OOXML_ERROR_MULTIPLE_EXTN_PROPFILES");
+    }
     else if (!mextn)
         cli_dbgmsg("cli_process_ooxml: file does not contain extended properties file\n");
-    if (mextn)
-        cli_jsonint(ctx->wrkproperty, "ExtendedPropertiesMissingFileCount", extn);
+    if (mextn) {
+        cli_jsonint(ctx->wrkproperty, "ExtendedPropertiesMissingFileCount", mextn);
+        ooxml_add_parse_error(ctx->wrkproperty, "OOXML_ERROR_MISSING_EXTN_PROPFILES");
+    }
 
-    if (cust)
+    if (cust) {
         cli_jsonint(ctx->wrkproperty, "CustomPropertiesFileCount", cust);
+        if (cust > 1)
+            ooxml_add_parse_error(ctx->wrkproperty, "OOXML_ERROR_MULTIPLE_CUSTOM_PROPFILES");
+    }
     else if (!mcust)
         cli_dbgmsg("cli_process_ooxml: file does not contain custom properties file\n");
-    if (mcust)
-        cli_jsonint(ctx->wrkproperty, "CustomPropertiesMissingFileCount", cust);
+    if (mcust) {
+        cli_jsonint(ctx->wrkproperty, "CustomPropertiesMissingFileCount", mcust);
+        ooxml_add_parse_error(ctx->wrkproperty, "OOXML_ERROR_MISSING_CUST_PROPFILES");
+    }
 
     if (dsig) {
         cli_jsonint(ctx->wrkproperty, "DigitalSignaturesCount", dsig);
     }
+
+    /* restore the engine tracking limits; resets session limit tracking */
+    ctx->scansize = sav_scansize;
+    ctx->scannedfiles = sav_scannedfiles;
 
     xmlTextReaderClose(reader);
     xmlFreeTextReader(reader);
@@ -620,15 +702,27 @@ int cli_process_ooxml(cli_ctx *ctx)
     /* find "[Content Types].xml" */
     tmp = unzip_search_single(ctx, "[Content_Types].xml", 18, &loff);
     if (tmp == CL_ETIMEOUT) {
+        ooxml_add_parse_error(ctx->wrkproperty, "OOXML_ERROR_TIMEOUT");
         return CL_ETIMEOUT;
     }
     else if (tmp != CL_VIRUS) {
         cli_dbgmsg("cli_process_ooxml: failed to find ""[Content_Types].xml""!\n");
+        ooxml_add_parse_error(ctx->wrkproperty, "OOXML_ERROR_NO_CONTENT_TYPES");
         return CL_EFORMAT;
     }
     cli_dbgmsg("cli_process_ooxml: found ""[Content_Types].xml"" @ %x\n", loff);
 
-    return unzip_single_internal(ctx, loff, ooxml_content_cb);
+    tmp = unzip_single_internal(ctx, loff, ooxml_content_cb);
+    if (tmp == CL_ETIMEOUT)
+        ooxml_add_parse_error(ctx->wrkproperty, "OOXML_ERROR_TIMEOUT");
+    else if (tmp == CL_EMEM)
+        ooxml_add_parse_error(ctx->wrkproperty, "OOXML_ERROR_OUTOFMEM");
+    else if (tmp == CL_EMAXSIZE)
+        ooxml_add_parse_error(ctx->wrkproperty, "OOXML_ERROR_EMAXSIZE");
+    else if (tmp == CL_EMAXFILES)
+        ooxml_add_parse_error(ctx->wrkproperty, "OOXML_ERROR_EMAXFILES");
+
+    return tmp;
 #else
     UNUSEDPARAM(ctx);
     cli_dbgmsg("in cli_processooxml\n");

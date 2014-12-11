@@ -3,6 +3,16 @@ ClamAV for Win32
 
 --- News ---
 
+In order to support more advanced features planned in future releases, 
+ClamAV has switched to using OpenSSL for hashing. The ClamAV Visual Studio 
+project included with ClamAV's source code requires the OpenSSL 
+distributables to be placed in a specific directory. This article will 
+teach you how to compile OpenSSL on a Microsoft Windows system and how 
+to link ClamAV against OpenSSL.
+
+Read More here:
+     http://blog.clamav.net/2014/07/compiling-openssl-for-windows.html
+
 Starting from version 0.98 the windows version of ClamAV requires all the
 input to be UTF-8 encoded.
 This affects:

@@ -127,7 +127,7 @@ char *pdf_convert_utf(char *begin, size_t sz)
 
     return res;
 #else
-    res = cli_calloc(begin, sz+1);
+    res = cli_calloc(sz+1, 1);
     if ((res)) {
         memcpy(res, begin, sz);
         res[sz] = '\0';

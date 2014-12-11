@@ -135,7 +135,7 @@ writepid (const char *pidfile)
     }
     else
     {
-        fprintf (fd, "%d", (int) getpid ());
+        fprintf (fd, "%d\n", (int) getpid ());
         fclose (fd);
     }
     umask (old_umask);
@@ -244,7 +244,7 @@ download (const struct optstruct *opts, const char *cfgfile)
                     opt = (struct optstruct *) opt->nextarg;
                     if (!opt)
                     {
-                        logg ("Update failed. Your network may be down or none of the mirrors listed in %s is working. Check http://www.clamav.net/documentation.html for possible reasons.\n", cfgfile);
+                        logg ("Update failed. Your network may be down or none of the mirrors listed in %s is working. Check http://www.clamav.net/doc/mirrors-faq.html for possible reasons.\n", cfgfile);
                     }
                 }
 
