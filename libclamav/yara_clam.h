@@ -439,6 +439,13 @@ struct RE {
 /* From libyara/include/yara/utils.h */
 #define PTR_TO_UINT64(x)  ((uint64_t) (size_t) x)
 
+#define YARA_PROTO
+#ifdef YARA_PROTO
+#define RULE_ANY 1
+#define RULE_ALL 2
+#define RULE_ONE 4
+#endif
+
 /* YARA to ClamAV function mappings */
 #define yr_strdup cli_strdup
 #define yr_malloc cli_malloc
@@ -455,6 +462,7 @@ struct _yc_rule {
     STAILQ_ENTRY(_yc_rule) link;
     STAILQ_HEAD(sq, _yc_string) strings;
     char * id;
+    int32_t r_flags;
 };
 typedef struct _yc_rule yc_rule;
 typedef struct _yc_string {
