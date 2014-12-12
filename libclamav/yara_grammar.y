@@ -1446,6 +1446,9 @@ string_set
       {
         yr_parser_emit_with_arg(yyscanner, OP_PUSH, UNDEFINED, NULL);
         yr_parser_emit_pushes_for_strings(yyscanner, "$*");
+#ifdef YARA_PROTO
+        compiler->current_rule_flags |= RULE_THEM;
+#endif
       }
     ;
 

@@ -2793,6 +2793,8 @@ static char *parse_yara_hex_string(YR_STRING *string)
     return res;
 }
 
+static unsigned int yara_total, yara_malform, yara_complex; 
+
 static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, unsigned int options, struct cli_dbio *dbio)
 {
     char buffer[FILEBUFF];
@@ -2807,9 +2809,9 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
     YR_COMPILER compiler = {0};
     YR_RULE * rule;
     YR_STRING * string;
-    size_t nstrings, i, allstringsize, totsize;
+    size_t nstrings, allstringsize, totsize;
     char *rulestr, *ruledup;
-    unsigned int sigs;
+    unsigned int sigs, i;
     uint8_t has_short_string;
     char * exp_op = "|";
 
@@ -2825,6 +2827,7 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
     yr_lex_parse_rules_file(fs, &compiler);
 #endif
     while (!STAILQ_EMPTY(&compiler.rules)) {
+        yara_total++;
         sigs=0;
         nstrings=0;
         rule = STAILQ_FIRST(&compiler.rules);
@@ -2839,7 +2842,7 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
                 size_t len = strlen(string->string);
                 for (i=0; i < len; i++) {
                     int ch = string->string[i];
-                    if (isalnum(ch))
+                    if (!isspace(ch))
                         allstringsize++;
                 }
             } else if (STRING_IS_REGEXP(string)) {
@@ -2853,12 +2856,20 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
 
         if (!nstrings) {
             cli_errmsg("Rule %s contains to readable strings\n", rule->id);
+#ifdef YARA_PROTO
+            yara_malform++;
+            free(rule->id);
+            free(rule);
+            continue;
+#else
             return CL_EMALFDB;
+#endif
         }
 
         /* ldb can only handle MAX_LDB_SUBSIGS(currently 64) substrings */
         if (nstrings > MAX_LDB_SUBSIGS) {
             cli_errmsg("cli_loadyara: rule %s exceeds MAX_LDB_SUBSIGS maximum strings - skipping.\n", rule->id);
+            free(rule->id);
             free(rule);
             continue;
         }
@@ -2879,10 +2890,13 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
         }
 
 #ifdef YARA_PROTO
-        if (rule->g_flags & RULE_ALL)
+        if (rule->g_flags & RULE_ALL && rule->g_flags & RULE_THEM)
             exp_op = "&";
-        else
+        else {
             exp_op = "|";
+            if (!(rule->g_flags & RULE_ANY && rule->g_flags & RULE_THEM) && nstrings > 1)
+                yara_complex++;
+        }
 #endif
         sprintf(rulestr, "%s;%s(", rule->id, YARATARGET);
         for (i=0; i<nstrings; i++) {
@@ -2898,7 +2912,7 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
             string = STAILQ_FIRST(&rule->strings);
             STAILQ_REMOVE(&rule->strings, string, _yc_string, link);
 
-#if 1
+#if 0
             cli_errmsg("%i:", ++dcount);
 #endif
 
@@ -2907,7 +2921,7 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
                 size_t len = strlen(rulestr);
 
                 substr = parse_yara_hex_string(string);
-#if 1
+#if 0
                 cli_errmsg("Yara hex string: \"%s\"\n", substr);
 #endif
                 if (substr) {
@@ -2918,12 +2932,12 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
                 }
             } else if (STRING_IS_REGEXP(string)) {
                 size_t len = strlen(rulestr);
-#if 1
+#if 0
                 cli_errmsg("Yara regex string: \"%s\"\n", string->string);
 #endif
                 snprintf(rulestr+len, totsize-len, "%s/%s/", PCRE_BYPASS, string->string);
             } else {
-#if 1
+#if 0
                 cli_errmsg("Yara literal string: \"%s\"\n", string->string);
 #endif
                 if (strlen(string->string) <= CLI_DEFAULT_AC_MINDEPTH) //FIXME: Yara has no length minimum
@@ -2945,7 +2959,7 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
         if (rulestr[strlen(rulestr)-1] == ';')
             rulestr[strlen(rulestr)-1] = '\0';
 
-#if 1
+#if 0
         printf("[+] computed ldb: \"%s\"\n", rulestr);
 #endif
         ruledup = cli_malloc(strlen(rulestr)+1);
@@ -2970,12 +2984,22 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
         else {
             cli_errmsg("cli_loadyara: has short strings, rule %s excluded\n", rulestr);
         }
+#if 0
         printf("totsize: %zu\treal size: %zu\n", totsize, strlen(ruledup));
+#endif
 
         free(rulestr);
         free(ruledup);
         free(rule->id);
         free(rule);
+#ifdef YARA_PROTO
+        if (rc == CL_EMALFDB) {
+            yara_malform++;
+            cli_errmsg("+++++++++++++ load_oneldb returns CL_EMALFORMDB +++++++++++++\n");
+            rc = CL_SUCCESS;
+            continue;
+        }
+#endif
         if (rc != CL_SUCCESS)
             break;
     }
@@ -3407,6 +3431,9 @@ int cl_load(const char *path, struct cl_engine *engine, unsigned int *signo, uns
 	    cli_errmsg("cl_load(%s): Not supported database file type\n", path);
 	    return CL_EOPEN;
     }
+#ifdef YARA_PROTO
+    cli_errmsg("$$$$$$$$$$$$ YARA $$$$$$$$$$$$ \n Total Rules: %u \n Complex conditions: %u \n Malformed strings: %u \n                $$$$$$$$$$$$ YARA $$$$$$$$$$$$ \n", yara_total, yara_complex, yara_malform);
+#endif
     return ret;
 }
 

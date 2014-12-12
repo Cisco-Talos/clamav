@@ -441,9 +441,10 @@ struct RE {
 
 #define YARA_PROTO
 #ifdef YARA_PROTO
-#define RULE_ANY 1
-#define RULE_ALL 2
-#define RULE_ONE 4
+#define RULE_ANY  1
+#define RULE_ALL  2
+#define RULE_ONE  4
+#define RULE_THEM 8
 #endif
 
 /* YARA to ClamAV function mappings */
