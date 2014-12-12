@@ -85,6 +85,8 @@ static pthread_mutex_t cli_ref_mutex = PTHREAD_MUTEX_INITIALIZER;
 #include "yara_clam.h"
 #endif
 
+#define MAX_LDB_SUBSIGS 64
+
 char *cli_virname(const char *virname, unsigned int official)
 {
 	char *newname, *pt;
@@ -1310,7 +1312,7 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
 
 /*     0         1        2      3        4        5    ... (max 66)
  * VirusName:Attributes:Logic:SubSig1[:SubSig2[:SubSig3 ... ]]
- * NOTE: Maximum of 64 subsignatures (last would be token 66)
+ * NOTE: Maximum of 64(see MAX_LDB_SUBSIGS) subsignatures (last would be token 66)
  */
 #define LDB_TOKENS 67
 static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsigned int options, const char *dbname, unsigned int line, unsigned int *sigs, unsigned bc_idx, const char *buffer_cpy, int *skip)
@@ -1382,8 +1384,8 @@ static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsig
         return CL_EMALFDB;
     }
 
-    /* enforce 64 subsig cap */
-    if(subsigs > 64) {
+    /* enforce MAX_LDB_SUBSIGS(currently 64) subsig cap */
+    if(subsigs > MAX_LDB_SUBSIGS) {
 	cli_errmsg("cli_loadldb: Broken logical expression or too many subsignatures\n");
 	return CL_EMALFDB;
     }
@@ -2809,6 +2811,7 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
     char *rulestr, *ruledup;
     unsigned int sigs;
     uint8_t has_short_string;
+    char * exp_op = "|";
 
     if((rc = cli_initroots(engine, options)))
         return rc;
@@ -2853,11 +2856,18 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
             return CL_EMALFDB;
         }
 
+        /* ldb can only handle MAX_LDB_SUBSIGS(currently 64) substrings */
+        if (nstrings > MAX_LDB_SUBSIGS) {
+            cli_errmsg("cli_loadyara: rule %s exceeds MAX_LDB_SUBSIGS maximum strings - skipping.\n", rule->id);
+            free(rule);
+            continue;
+        }
+
         allstringsize *= 2; /* For converting to hex */
         totsize += allstringsize;
         totsize += (nstrings * 3); /* 3 for |; */
         if (nstrings > 10)
-            totsize += (nstrings%10);
+            totsize += nstrings-10;
         totsize++;
 
         rulestr = cli_calloc(totsize, sizeof(char));
@@ -2868,18 +2878,29 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
             break;
         }
 
+#ifdef YARA_PROTO
+        if (rule->g_flags & RULE_ALL)
+            exp_op = "&";
+        else
+            exp_op = "|";
+#endif
         sprintf(rulestr, "%s;%s(", rule->id, YARATARGET);
         for (i=0; i<nstrings; i++) {
             size_t len=strlen(rulestr);
-            snprintf(rulestr+len, totsize-len, "%u%s", i, (i+1 == nstrings) ? "" : "|");
+            snprintf(rulestr+len, totsize-len, "%u%s", i, (i+1 == nstrings) ? "" : exp_op);
         }
 
         strcat(rulestr, ");");
 
         has_short_string = 0;
+        int dcount = 0;
         while (!STAILQ_EMPTY(&rule->strings)) {
             string = STAILQ_FIRST(&rule->strings);
             STAILQ_REMOVE(&rule->strings, string, _yc_string, link);
+
+#if 1
+            cli_errmsg("%i:", ++dcount);
+#endif
 
             if (STRING_IS_HEX(string)) {
                 char *substr;
@@ -2902,6 +2923,9 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
 #endif
                 snprintf(rulestr+len, totsize-len, "%s/%s/", PCRE_BYPASS, string->string);
             } else {
+#if 1
+                cli_errmsg("Yara literal string: \"%s\"\n", string->string);
+#endif
                 if (strlen(string->string) <= CLI_DEFAULT_AC_MINDEPTH) //FIXME: Yara has no length minimum
                     has_short_string = 1;
                 for (i=0; i < strlen(string->string); i++) {

@@ -462,7 +462,7 @@ struct _yc_rule {
     STAILQ_ENTRY(_yc_rule) link;
     STAILQ_HEAD(sq, _yc_string) strings;
     char * id;
-    int32_t r_flags;
+    uint32_t g_flags;
 };
 typedef struct _yc_rule yc_rule;
 typedef struct _yc_string {
@@ -483,7 +483,7 @@ typedef struct _yc_compiler {
     char                last_error_extra_info[MAX_COMPILER_ERROR_EXTRA_INFO];
 
     int                 loop_depth;
-
+    uint32_t            current_rule_flags;
     char *              error_msg;   
     STAILQ_HEAD(rq, _yc_rule) rules;
     STAILQ_HEAD(cs, _yc_string) current_rule_strings;

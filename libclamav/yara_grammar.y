@@ -1475,10 +1475,16 @@ for_expression
     | _ALL_
       {
         yr_parser_emit_with_arg(yyscanner, OP_PUSH, UNDEFINED, NULL);
+#ifdef YARA_PROTO
+        compiler->current_rule_flags |= RULE_ALL;
+#endif
       }
     | _ANY_
       {
         yr_parser_emit_with_arg(yyscanner, OP_PUSH, 1, NULL);
+#ifdef YARA_PROTO
+        compiler->current_rule_flags |= RULE_ANY;
+#endif
       }
     ;
 

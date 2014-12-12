@@ -809,11 +809,10 @@ int yr_parser_reduce_rule_declaration(
   STAILQ_CONCAT(&rule->strings, &compiler->current_rule_strings);
   STAILQ_INIT(&compiler->current_rule_strings);
   rule->id = cli_strdup(identifier);
-
 #endif
 
-#if REAL_YARA
   rule->g_flags = flags | compiler->current_rule_flags;
+#if REAL_YARA
   rule->tags = tags;
   rule->strings = strings;
   rule->metas = metas;
@@ -843,7 +842,8 @@ int yr_parser_reduce_rule_declaration(
   compiler->current_rule_flags = 0;
   compiler->current_rule_strings = NULL;
 #else
-  STAILQ_INSERT_TAIL(&compiler->rules, rule, link); 
+  compiler->current_rule_flags = 0;
+   STAILQ_INSERT_TAIL(&compiler->rules, rule, link); 
 #endif
   return compiler->last_result;
 }
