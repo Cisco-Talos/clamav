@@ -358,22 +358,21 @@ print_ole2_header(ole2_header_t * hdr)
     if (!hdr || !cli_debug_flag) {
         return;
     }
-    cli_dbgmsg("\nMagic:\t\t\t0x");
-    for (i = 0; i < 8; i++) {
-        cli_dbgmsg("%x", hdr->magic[i]);
-    }
     cli_dbgmsg("\n");
+    cli_dbgmsg("Magic:\t\t\t0x%x%x%x%x%x%x%x%x\n",
+               hdr->magic[0], hdr->magic[1], hdr->magic[2], hdr->magic[3],
+               hdr->magic[4], hdr->magic[5], hdr->magic[6], hdr->magic[7]);
 
-    cli_dbgmsg("CLSID:\t\t\t{");
-    for (i = 0; i < 16; i++) {
-        cli_dbgmsg("%x ", hdr->clsid[i]);
-    }
-    cli_dbgmsg("}\n");
+    cli_dbgmsg("CLSID:\t\t\t{%x%x%x%x-%x%x-%x%x-%x%x-%x%x%x%x%x%x}\n",
+               hdr->clsid[0],  hdr->clsid[1],  hdr->clsid[2],  hdr->clsid[3],
+               hdr->clsid[4],  hdr->clsid[5],  hdr->clsid[6],  hdr->clsid[7],
+               hdr->clsid[8],  hdr->clsid[9],  hdr->clsid[10], hdr->clsid[11],
+               hdr->clsid[12], hdr->clsid[13], hdr->clsid[14], hdr->clsid[15]);
 
     cli_dbgmsg("Minor version:\t\t0x%x\n", hdr->minor_version);
     cli_dbgmsg("DLL version:\t\t0x%x\n", hdr->dll_version);
     cli_dbgmsg("Byte Order:\t\t%d\n", hdr->byte_order);
-    cli_dbgmsg("Big Block Size:\t\t%i\n", hdr->log2_big_block_size);
+    cli_dbgmsg("Big Block Size:\t%i\n", hdr->log2_big_block_size);
     cli_dbgmsg("Small Block Size:\t%i\n", hdr->log2_small_block_size);
     cli_dbgmsg("BAT count:\t\t%d\n", hdr->bat_count);
     cli_dbgmsg("Prop start:\t\t%d\n", hdr->prop_start);
@@ -381,7 +380,8 @@ print_ole2_header(ole2_header_t * hdr)
     cli_dbgmsg("SBat start:\t\t%d\n", hdr->sbat_start);
     cli_dbgmsg("SBat block count:\t%d\n", hdr->sbat_block_count);
     cli_dbgmsg("XBat start:\t\t%d\n", hdr->xbat_start);
-    cli_dbgmsg("XBat block count:\t%d\n\n", hdr->xbat_count);
+    cli_dbgmsg("XBat block count:\t%d\n", hdr->xbat_count);
+    cli_dbgmsg("\n");
     return;
 }
 
