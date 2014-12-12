@@ -2514,7 +2514,9 @@ static int dispatch_prescan(clcb_pre_scan cb, cli_ctx *ctx, const char *filetype
             cli_dbgmsg("cli_magic_scandesc: file whitelisted by callback\n");
             perf_stop(ctx, PERFT_PRECB);
             ctx->hook_lsig_matches = old_hook_lsig_matches;
+            /* returns CL_CLEAN */
             *run_cleanup = 1;
+            break;
         case CL_VIRUS:
             cli_dbgmsg("cli_magic_scandesc: file blacklisted by callback\n");
             cli_append_virus(ctx, "Detected.By.Callback");
@@ -2522,6 +2524,7 @@ static int dispatch_prescan(clcb_pre_scan cb, cli_ctx *ctx, const char *filetype
             ctx->hook_lsig_matches = old_hook_lsig_matches;
             *run_cleanup = 1;
             res = CL_VIRUS;
+            break;
         case CL_CLEAN:
             break;
         default:
