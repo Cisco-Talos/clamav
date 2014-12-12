@@ -319,7 +319,7 @@ Possible values:
 .br
 \fBForceJIT\fR \- always choose JIT, fail if not possible
 .br
-\fBForceIntepreter\fR \- always choose interpreter
+\fBForceInterpreter\fR \- always choose interpreter
 .br
 \fBTest\fR \- run with both JIT and interpreter and compare results. Make all failures fatal.
 .RE
