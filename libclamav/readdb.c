@@ -2723,7 +2723,9 @@ static int cli_loadopenioc(FILE *fs, const char *dbname, struct cl_engine *engin
 }
 
 #ifndef _WIN32
-#define YARATARGET "Target:0;"
+#define YARATARGET0 "Target:0;"
+#define YARATARGET1 "Target:1;"
+#define EPSTR "EP+0:"
 static char *parse_yara_hex_string(YR_STRING *string);
 
 static char *parse_yara_hex_string(YR_STRING *string)
@@ -2835,7 +2837,7 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
 
         /* First find out how long our dynamically-build ldb string should be */
         allstringsize = 0;
-        totsize = strlen(rule->id) + 2 + strlen(YARATARGET);
+        totsize = strlen(rule->id) + 2 + strlen(YARATARGET0);
         STAILQ_FOREACH(string, &rule->strings, link) {
             nstrings++;
             if (STRING_IS_HEX(string)) {
@@ -2881,6 +2883,11 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
             totsize += nstrings-10;
         totsize++;
 
+#ifdef YARA_PROTO
+        if (rule->g_flags & RULE_EP && nstrings == 1)
+            totsize += strlen(EPSTR);
+#endif
+
         rulestr = cli_calloc(totsize, sizeof(char));
         if (!rulestr) {
             free(rule->id);
@@ -2894,11 +2901,15 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
             exp_op = "&";
         else {
             exp_op = "|";
-            if (!(rule->g_flags & RULE_ANY && rule->g_flags & RULE_THEM) && nstrings > 1)
+            if ((!(rule->g_flags & RULE_ANY && rule->g_flags & RULE_THEM) && nstrings > 1) &&
+                !(rule->g_flags & RULE_EP && nstrings == 1))
                 yara_complex++;
         }
+        if (rule->g_flags & RULE_EP)
+            sprintf(rulestr, "%s;%s(", rule->id, YARATARGET1);
+        else
 #endif
-        sprintf(rulestr, "%s;%s(", rule->id, YARATARGET);
+        sprintf(rulestr, "%s;%s(", rule->id, YARATARGET0);
         for (i=0; i<nstrings; i++) {
             size_t len=strlen(rulestr);
             snprintf(rulestr+len, totsize-len, "%u%s", i, (i+1 == nstrings) ? "" : exp_op);
@@ -2914,6 +2925,12 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
 
 #if 0
             cli_errmsg("%i:", ++dcount);
+#endif
+#ifdef YARA_PROTO
+            if (rule->g_flags & RULE_EP && nstrings == 1) {
+                size_t len = strlen(rulestr);
+                snprintf(rulestr+len, totsize-len, "%s", EPSTR);
+            }
 #endif
 
             if (STRING_IS_HEX(string)) {

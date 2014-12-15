@@ -445,6 +445,7 @@ struct RE {
 #define RULE_ALL  2
 #define RULE_ONE  4
 #define RULE_THEM 8
+#define RULE_EP   16
 #endif
 
 /* YARA to ClamAV function mappings */

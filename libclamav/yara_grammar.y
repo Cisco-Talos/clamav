@@ -1508,9 +1508,12 @@ primary_expression
       }
     | _ENTRYPOINT_
       {
+#ifndef YARA_PROTO
         yywarning(yyscanner,
             "Using deprecated \"entrypoint\" keyword. Use the \"entry_point\" " "function from PE module instead.");
-
+#else
+        compiler->current_rule_flags |= RULE_EP;
+#endif
         compiler->last_result = yr_parser_emit(
             yyscanner, OP_ENTRYPOINT, NULL);
 

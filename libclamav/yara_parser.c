@@ -608,7 +608,7 @@ YR_STRING* yr_parser_reduce_string_declaration(
       string->g_flags |= STRING_GFLAGS_CHAIN_TAIL | STRING_GFLAGS_CHAIN_PART;
       string->chain_gap_min = min_gap;
       string->chain_gap_max = max_gap;
-    }
+    
 
     // Use "aux_string" from now on, we want to keep the value of "string"
     // because it will returned.
