@@ -7,11 +7,34 @@ here may not be available in binary packages.
 
 ClamAV 0.98.6 is a bug fix release correcting the following:
 
-     - library shared object revisions.
-     - installation issues on some Mac OS X and FreeBSD platforms.
-     - includes a patch from Sebastian Andrzej Siewior making
-       ClamAV pid files compatible with systemd.
+    - library shared object revisions.
+    - installation issues on some Mac OS X and FreeBSD platforms.
+    - includes a patch from Sebastian Andrzej Siewior making
+      ClamAV pid files compatible with systemd.
+    - Fix a heap out of bounds condition with crafted Yoda's
+      crypter files. This issue was discovered by Felix Groebert
+      of the Google Security Team.
+    - Fix a heap out of bounds condition with crafted mew packer
+      files. This issue was discovered by Felix Groebert of the
+      Google Security Team.
+    - Fix a heap out of bounds condition with crafted upx packer
+      files. This issue was discovered by Kevin Szkudlapski of
+      Quarkslab.
+    - Fix a heap out of bounds condition with crafted upack packer
+      files. This issue was discovered by Sebastian Andrzej Siewior.
+      CVE-2014-9328.
+    - Compensate a crash due to incorrect compiler optimization when
+      handling crafted petite packer files. This issue was discovered
+      by Sebastian Andrzej Siewior.
+      
+Thanks to the following ClamAV community members for code submissions
+and bug reporting included in ClamAV 0.98.6:
 
+Sebastian Andrzej Siewior
+Felix Groebert
+Kevin Szkudlapski
+Mark Pizzolato
+Daniel J. Luke
 
 0.98.5
 ------
