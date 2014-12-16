@@ -108,7 +108,8 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
   while (1) {
     char *ssrc, *ddst;
     uint32_t size, srva;
-    int backbytes, oldback, backsize, addsize;
+    int backbytes, oldback, addsize;
+    unsigned int backsize;
     
     if ( ! CLI_ISCONTAINED(buf, bufsz, packed, 4)) {
       if (usects)
