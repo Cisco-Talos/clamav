@@ -697,12 +697,12 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
 						break;
 					}
 				} else if(line != NULL) {
-					fulllinelength += strlen(line);
+					fulllinelength += strlen(line) + 1;
 					ptr = cli_realloc(fullline, fulllinelength);
 					if(ptr == NULL)
 						continue;
 					fullline = ptr;
-					strcat(fullline, line);
+					cli_strlcat(fullline, line, fulllinelength);
 				}
 
 				assert(fullline != NULL);
@@ -902,12 +902,12 @@ parseEmailHeaders(message *m, const table_t *rfc821)
 					fullline = cli_strdup(line);
 					fulllinelength = strlen(line) + 1;
 				} else if(line) {
-					fulllinelength += strlen(line);
+					fulllinelength += strlen(line) + 1;
 					ptr = cli_realloc(fullline, fulllinelength);
 					if(ptr == NULL)
 						continue;
 					fullline = ptr;
-					strcat(fullline, line);
+					cli_strlcat(fullline, line, fulllinelength);
 				}
 				assert(fullline != NULL);
 
@@ -1456,6 +1456,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 						 */
 						while(t_line && next_is_folded_header(t_line)) {
 							const char *data;
+                            size_t datasz;
 
 							t_line = t_line->t_next;
 
@@ -1474,14 +1475,14 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 								break;
 							}
 
-							ptr = cli_realloc(fullline,
-								strlen(fullline) + strlen(data) + 1);
+                            datasz = strlen(fullline) + strlen(data) + 1;
+							ptr = cli_realloc(fullline, datasz);
 
 							if(ptr == NULL)
 								break;
 
 							fullline = ptr;
-							strcat(fullline, data);
+							cli_strlcat(fullline, data, datasz);
 
 							/*quotes = count_quotes(data);*/
 						}

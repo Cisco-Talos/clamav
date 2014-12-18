@@ -117,7 +117,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 	int ret, asterisk = 0, range;
 	unsigned int i, j, hexlen, parts = 0;
 	int mindist = 0, maxdist = 0, error = 0;
-
+    size_t hexcpysz;
 
     hexlen = strlen(hexsig);
     if (hexsig[0] == '$') {
@@ -165,18 +165,19 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
     }
     if((wild = strchr(hexsig, '{'))) {
 	if(sscanf(wild, "%c%u%c", &l, &range, &r) == 3 && l == '{' && r == '}' && range > 0 && range < 128) {
-	    hexcpy = cli_calloc(hexlen + 2 * range, sizeof(char));
+        hexcpysz = hexlen + 2 * range;
+	    hexcpy = cli_calloc(1, hexcpysz);
 	    if(!hexcpy)
 		return CL_EMEM;
 	    strncpy(hexcpy, hexsig, wild - hexsig);
 	    for(i = 0; i < (unsigned int) range; i++)
-		strcat(hexcpy, "??");
+		cli_strlcat(hexcpy, "??", hexcpysz);
 	    if(!(wild = strchr(wild, '}'))) {
 		cli_errmsg("cli_parse_add(): Problem adding signature: missing bracket\n");
 		free(hexcpy);
 		return CL_EMALFDB;
 	    }
-	    strcat(hexcpy, ++wild);
+	    cli_strlcat(hexcpy, ++wild, hexcpysz);
 	    ret = cli_parse_add(root, virname, hexcpy, rtype, type, offset, target, lsigid, options);
 	    free(hexcpy);
 	    return ret;

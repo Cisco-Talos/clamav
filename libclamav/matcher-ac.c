@@ -1577,6 +1577,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 
     if(strchr(hexsig, '(')) {
 	    char *hexnew, *start, *h, *c;
+        size_t hexnewsz;
 
 	if(hex) {
 	    hexcpy = hex;
@@ -1585,7 +1586,8 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 	    return CL_EMEM;
 	}
 
-	if(!(hexnew = (char *) cli_calloc(strlen(hexsig) + 1, 1))) {
+    hexnewsz = strlen(hexsig) + 1;
+	if(!(hexnew = (char *) cli_calloc(1, hexnewsz))) {
 	    free(new);
 	    free(hexcpy);
 	    return CL_EMEM;
@@ -1611,7 +1613,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 		    pt[-2] = 0;
 		}
 	    }
-	    strcat(hexnew, start);
+	    cli_strlcat(hexnew, start, hexnewsz);
 
 	    if(!(start = strchr(pt, ')'))) {
 		mpool_free(root->mempool, newspecial);
@@ -1654,7 +1656,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 		    continue;
 		}
 	    }
-	    strcat(hexnew, "()");
+	    cli_strlcat(hexnew, "()", hexnewsz);
 	    new->special++;
 	    newtable = (struct cli_ac_special **) mpool_realloc(root->mempool, new->special_table, new->special * sizeof(struct cli_ac_special *));
 	    if(!newtable) {
@@ -1746,7 +1748,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 	}
 
 	if(start)
-	    strcat(hexnew, start);
+	    cli_strlcat(hexnew, start, hexnewsz);
 
 	hex = hexnew;
 	free(hexcpy);
