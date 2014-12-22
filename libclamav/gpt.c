@@ -589,24 +589,9 @@ static void gpt_printName(uint16_t name[], const char* msg)
 
 static void gpt_printGUID(uint8_t GUID[], const char* msg)
 {
-    unsigned i;
-    char hexstr[64], tmpstr[64];
-
-    hexstr[0] = '\0';
-    tmpstr[0] = '\0';
-    for (i = 0; i < 16; ++i) {
-        gpt_printmsg("%x\n", GUID[i]);
-        if (i == 3 || i == 5 || i == 7 || i == 9) {
-            snprintf(hexstr, 64, "%s%02x-", tmpstr, GUID[i]);
-            gpt_printmsg("%s\n", hexstr);
-        }
-        else {
-            snprintf(hexstr, 64, "%s%02x", tmpstr, GUID[i]);
-            gpt_printmsg("%s\n", hexstr);
-        }
-        strncpy(tmpstr, hexstr, 64);
-    }
-    cli_dbgmsg("%s: %s\n", msg, hexstr);
+    cli_dbgmsg("%s: %02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x\n",
+               msg, GUID[0], GUID[1], GUID[2], GUID[3], GUID[4], GUID[5], GUID[6], GUID[7],
+               GUID[8], GUID[9], GUID[10], GUID[11], GUID[12], GUID[13], GUID[14], GUID[15]);
 }
 
 static int gpt_prtn_intxn(cli_ctx *ctx, struct gpt_header hdr, size_t sectorsize)
