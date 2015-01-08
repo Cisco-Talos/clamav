@@ -303,7 +303,7 @@ static char *getdsig(const char *host, const char *user, const unsigned char *da
 	    return NULL;
 	}
 #endif
-	if(scanf("%30s", pass) == EOF || !pt) {
+	if(scanf("%30s", pass) == EOF) {
 	    mprintf("!getdsig: Can't get password\n");
 #ifdef HAVE_TERMIOS_H
 	    tcsetattr(0, TCSAFLUSH, &old);
@@ -846,7 +846,7 @@ static int build(const struct optstruct *opts)
 	builder[sizeof(builder)-1]='\0';
     } else {
 	mprintf("Builder name: ");
-	if(scanf("%32s", builder) == EOF || !pt) {
+	if(scanf("%32s", builder) == EOF) {
 	    mprintf("!build: Can't get builder name\n");
 	    free(dblist2);
 	    return -1;
