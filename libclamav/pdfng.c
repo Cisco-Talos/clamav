@@ -76,7 +76,7 @@ char *pdf_convert_utf(char *begin, size_t sz)
     char *res=NULL;
 #if HAVE_ICONV
     char *buf, *outbuf, *p1, *p2;
-    size_t inlen, outlen, i;
+    size_t sz2, inlen, outlen, i;
     char *encodings[] = {
         "UTF-16",
         NULL
@@ -87,10 +87,63 @@ char *pdf_convert_utf(char *begin, size_t sz)
     if (!(buf))
         return NULL;
 
-    memcpy(buf, begin, sz);
+    /* convert PDF specific escape sequences, like octal sequences */
+    sz2 = 0;
+    for (i = 0; i < sz; ++i) {
+        if ((i+1 < sz) && begin[i] == '\\') {
+            if ((i+3 < sz) &&
+                (isdigit(begin[i+1]) && isdigit(begin[i+2]) && isdigit(begin[i+3]))) {
+                /* octal sequence */
+                char octal[4], *check;
+                unsigned long value;
+
+                memcpy(octal, &begin[i+1], 3);
+                octal[3] = '\0';
+
+                value = (char)strtoul(octal, &check, 8);
+                /* check if all characters were converted */
+                if (check == &octal[3])
+                    buf[sz2++] = value;
+                i += 3;
+            } else {
+                /* other sequences */
+                switch(begin[i+1]) {
+                case 'n':
+                    buf[sz2++] = 0x0a;
+                    break;
+                case 'r':
+                    buf[sz2++] = 0x0d;
+                    break;
+                case 't':
+                    buf[sz2++] = 0x09;
+                    break;
+                case 'b':
+                    buf[sz2++] = 0x08;
+                    break;
+                case 'f':
+                    buf[sz2++] = 0x0c;
+                    break;
+                case '(':
+                    buf[sz2++] = 0x28;
+                    break;
+                case ')':
+                    buf[sz2++] = 0x29;
+                    break;
+                case '\\':
+                    buf[sz2++] = 0x5c;
+                    break;
+                default:
+                    /* IGNORE THE REVERSE SOLIDUS - PDF3000-2008 */
+                    break;
+                }
+            }
+        } else
+            buf[sz2++] = begin[i]; 
+    }
+    //memcpy(buf, begin, sz);
     p1 = buf;
 
-    p2 = outbuf = cli_calloc(1, sz+1);
+    p2 = outbuf = cli_calloc(1, sz2+1);
     if (!(outbuf)) {
         free(buf);
         return NULL;
@@ -99,7 +152,7 @@ char *pdf_convert_utf(char *begin, size_t sz)
     for (i=0; encodings[i] != NULL; i++) {
         p1 = buf;
         p2 = outbuf;
-        inlen = outlen = sz;
+        inlen = outlen = sz2;
 
         cd = iconv_open("UTF-8", encodings[i]);
         if (cd == (iconv_t)(-1)) {
@@ -109,13 +162,13 @@ char *pdf_convert_utf(char *begin, size_t sz)
 
         iconv(cd, (char **)(&p1), &inlen, &p2, &outlen);
 
-        if (outlen == sz) {
+        if (outlen == sz2) {
             /* Decoding unsuccessful right from the start */
             iconv_close(cd);
             continue;
         }
 
-        outbuf[sz - outlen] = '\0';
+        outbuf[sz2 - outlen] = '\0';
 
         res = strdup(outbuf);
         iconv_close(cd);
@@ -277,10 +330,11 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
     p2 = (char *)(q + objsize);
     if (is_object_reference(p1, &p2, &objid)) {
         struct pdf_obj *newobj;
-        char *begin;
+        char *begin, *p3;
         STATBUF sb;
         uint32_t objflags;
         int fd;
+        size_t objsize2;
 
         newobj = find_obj(pdf, obj, objid);
         if (!(newobj))
@@ -343,25 +397,32 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
                 return NULL;
             }
 
-            switch (begin[0]) {
+            p3 = begin;
+            objsize2 = sb.st_size;
+            while ((size_t)(p3 - begin) < objsize2 && isspace(p3[0])) {
+                p3++;
+                objsize2--;
+            }
+
+            switch (*p3) {
                 case '(':
                 case '<':
-                    res = pdf_parse_string(pdf, obj, begin, sb.st_size, NULL, NULL);
+                    res = pdf_parse_string(pdf, obj, p3, objsize2, NULL, NULL);
                     free(begin);
                     break;
                 default:
-                    for (i=0; i < sb.st_size; i++) {
-                        if (begin[i] >= 0x7f) {
+                    for (i=0; i < objsize2; i++) {
+                        if (p3[i] >= 0x7f) {
                             likelyutf=1;
                             break;
                         }
                     }
 
-                    res = likelyutf ? pdf_convert_utf(begin, sb.st_size) : NULL;
+                    res = likelyutf ? pdf_convert_utf(p3, objsize2) : NULL;
 
                     if (!(res)) {
                         res = begin;
-                        res[sb.st_size] = '\0';
+                        res[objsize2] = '\0';
                     } else {
                         free(begin);
                     }
