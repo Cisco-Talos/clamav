@@ -1,7 +1,7 @@
 enable_check_ut=auto
 enable_ut_install=no
 AC_ARG_ENABLE(check,
-[  --enable-check           Enable 'check' unit tests (default=auto)], enable_check_ut=$enableval, enable_check_ut="auto" )
+[AS_HELP_STRING([--enable-check], [enable check unit tests @<:@default=auto@:>@])], enable_check_ut=$enableval, enable_check_ut="auto" )
 
 if test "$enable_check_ut" != "no" ; then
 case "$host_os" in

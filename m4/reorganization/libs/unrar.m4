@@ -1,10 +1,10 @@
 AC_ARG_ENABLE([unrar],
-[  --disable-unrar	  don't build libclamunrar and libclamunrar_iface ],
+[AS_HELP_STRING([--disable-unrar], [do not build libclamunrar and libclamunrar_iface])],
 want_unrar=$enableval, want_unrar="yes")
 AM_CONDITIONAL([ENABLE_UNRAR],[test "$want_unrar" = "yes"])
 
 AC_ARG_ENABLE([getaddrinfo],
-[  --disable-getaddrinfo          disable support for getaddrinfo],
+[AS_HELP_STRING([--disable-getaddrinfo], [do not include support for getaddrinfo])],
 want_getaddrinfo=$enableval, want_getaddrinfo="yes")
 
 if test "$want_getaddrinfo" = "yes"

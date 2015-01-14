@@ -1,6 +1,6 @@
 
 AC_ARG_ENABLE([bzip2],
-[  --disable-bzip2	  disable bzip2 support],
+[AS_HELP_STRING([--disable-bzip2], [do not include bzip2 support])],
 want_bzip2=$enableval, want_bzip2="yes")
 
 bzip_check="ok"

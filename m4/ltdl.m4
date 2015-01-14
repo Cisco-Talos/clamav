@@ -265,7 +265,7 @@ dnl eponymous directory:
 AC_PROVIDE_IFELSE([LT_CONFIG_LTDL_DIR], [], [_LT_CONFIG_LTDL_DIR([libltdl])])
 
 AC_ARG_WITH([ltdl_include],
-    [AS_HELP_STRING([--with-ltdl-include=DIR],
+    [AS_HELP_STRING([--with-ltdl-include@<:@=DIR@:>@],
                     [use the ltdl headers installed in DIR])])
 
 if test -n "$with_ltdl_include"; then
@@ -278,7 +278,7 @@ else
 fi
 
 AC_ARG_WITH([ltdl_lib],
-    [AS_HELP_STRING([--with-ltdl-lib=DIR],
+    [AS_HELP_STRING([--with-ltdl-lib@<:@=DIR@:>@],
                     [use the libltdl.la installed in DIR])])
 
 if test -n "$with_ltdl_lib"; then

@@ -29,7 +29,7 @@ if test -z "$ac_cv_readdir_args"; then
 fi
 
 AC_ARG_ENABLE([readdir_r],
-[  --enable-readdir_r		    enable support for readdir_r],
+[AS_HELP_STRING([--enable-readdir_r], [enable support for readdir_r])],
 enable_readdir_r=$enableval, enable_readdir_r="no")
 
 if test "$enable_readdir_r" = "no"; then

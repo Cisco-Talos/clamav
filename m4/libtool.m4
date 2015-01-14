@@ -1225,8 +1225,8 @@ _LT_DECL([], [ECHO], [1], [An echo program that protects backslashes])
 AC_DEFUN([_LT_WITH_SYSROOT],
 [AC_MSG_CHECKING([for sysroot])
 AC_ARG_WITH([sysroot],
-[  --with-sysroot[=DIR] Search for dependent libraries within DIR
-                        (or the compiler's sysroot if not specified).],
+[AS_HELP_STRING([--with-sysroot@<:@=DIR@:>@], [search for dependent libraries within DIR
+                                              (or the compiler's sysroot if not specified).])],
 [], [with_sysroot=no])
 
 dnl lt_sysroot will always be passed unquoted.  We quote it here

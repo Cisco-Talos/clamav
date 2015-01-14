@@ -2,8 +2,8 @@ dnl Check for OpenSSL
 AC_MSG_CHECKING([for OpenSSL installation])
 
 AC_ARG_WITH([openssl],
-[  --with-openssl=DIR   path to directory containing openssl (default=
-    /usr/local or /usr if not found in /usr/local)],
+[AS_HELP_STRING([--with-openssl@<:@=DIR@:>@], [path to directory containing openssl
+                @<:@default=/usr/local or /usr if not found in /usr/local@:>@])],
 [
 if test "$withval"; then
     LIBSSL_HOME="$withval"
