@@ -2,8 +2,8 @@
 dnl Check for zlib
 AC_MSG_CHECKING([for zlib installation])
 AC_ARG_WITH([zlib],
-[  --with-zlib=DIR	  path to directory containing zlib library (default=
-			  /usr/local or /usr if not found in /usr/local)],
+[AS_HELP_STRING([--with-zlib@<:@=DIR@:>@], [path to directory containing zlib library
+                @<:@default=/usr/local or /usr if not found in /usr/local@:>@])],
 [
 if test "$withval"; then
   ZLIB_HOME="$withval"
@@ -21,7 +21,7 @@ AC_MSG_RESULT([$ZLIB_HOME])
 CLAMDSCAN_LIBS="$FRESHCLAM_LIBS"
 
 AC_ARG_ENABLE([zlib-vcheck],
-[  --disable-zlib-vcheck	  do not check for buggy zlib version ],
+[AS_HELP_STRING([--disable-zlib-vcheck], [do not check for buggy zlib version])],
 zlib_check=$enableval, zlib_check="yes")
 
 if test ! -f "$ZLIB_HOME/include/zlib.h"

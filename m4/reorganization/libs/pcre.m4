@@ -3,8 +3,8 @@ dnl Check for PCRE
 dnl determine the home of pcre
 PCRE_HOME=""
 AC_ARG_WITH([pcre],
-[  --with-pcre=DIR        path to directory containing libpcre library (default=
-                          /usr/local or /usr if not found in /usr/local)],
+[AS_HELP_STRING([--with-pcre@<:@=DIR@:>@], [path to directory containing libpcre library
+                @<:@default=/usr/local or /usr if not found in /usr/local@:>@])],
 [
   AC_MSG_CHECKING([for libpcre installation])
 dnl --with-pcre=no

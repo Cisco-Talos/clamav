@@ -61,7 +61,7 @@ m4_include([m4/reorganization/compiler_checks.m4])
 m4_include([m4/reorganization/linker_checks.m4])
 
 AC_ARG_ENABLE([experimental],
-[  --enable-experimental	enable experimental code],
+[AS_HELP_STRING([--enable-experimental], [enable experimental code])],
 enable_experimental=$enableval, enable_experimental="no")
 
 if test "$enable_experimental" = "yes"; then

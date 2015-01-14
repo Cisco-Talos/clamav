@@ -1,8 +1,8 @@
 dnl Check for libjson
 
 AC_ARG_WITH([libjson],
-[  --with-libjson=DIR   path to directory containing libjson (default=
-    /usr/local or /usr if not found in /usr/local)],
+[AS_HELP_STRING([--with-libjson@<:@=DIR@:>@], [path to directory containing libjson
+                @<:@default=/usr/local or /usr if not found in /usr/local@:>@])],
 [
 AC_MSG_CHECKING([for libjson installation])
 if test "X$withval" != "Xyes"

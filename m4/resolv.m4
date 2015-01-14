@@ -9,7 +9,7 @@ dnl as symbols are often redefined in resolv.h
 AC_DEFUN([AC_C_DNS], [
 
 AC_ARG_ENABLE([dns],
-    AC_HELP_STRING([--disable-dns], [disable support for database verification through DNS]),
+    [AC_HELP_STRING([--disable-dns], [do not include support for database verification through DNS])],
     [want_dns=$enableval], [want_dns=yes]
 )
 if test $want_dns = yes; then
