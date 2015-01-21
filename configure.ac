@@ -186,7 +186,7 @@ cat <<EOF
               pthreads    : $have_pthreads ($THREAD_LIBS)
 EOF
 
-AC_MSG_NOTICE([Summary of miscellaneous  features])
+AC_MSG_NOTICE([Summary of miscellaneous features])
 if test "x$CHECK_LIBS" = "x"; then
     check_libs="no"
 else
@@ -206,7 +206,7 @@ CL_MSG_STATUS([clamdtop    ],[$CURSES_LIBS],[$enable_clamdtop])
 CL_MSG_STATUS([milter      ],[yes],[$have_milter])
 CL_MSG_STATUS([clamsubmit  ],[$have_curl],[$curl_msg])
 
-AC_MSG_NOTICE([Summary of engine performance features)])
+AC_MSG_NOTICE([Summary of engine performance features])
 if test "x$enable_debug" = "xyes"; then
     CL_MSG_STATUS([release mode],[no],[debug build])
 else
