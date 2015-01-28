@@ -751,7 +751,7 @@ int CLAMAPI Scan_GetLimit(int option, unsigned int *value) {
 	limit = CL_ENGINE_MAX_SCANSIZE;
 	break;
     case CLAM_LIMIT_RECURSION:
-	limit = CL_ENGINE_MAX_SCANSIZE;
+	limit = CL_ENGINE_MAX_RECURSION;
 	break;
     default:
 	unlock_engine();
@@ -793,7 +793,7 @@ int CLAMAPI Scan_SetLimit(int option, unsigned int value) {
 	break;
     case CLAM_LIMIT_RECURSION:
 	logg("CLAM_LIMIT_RECURSION: set to %u\n", value);
-	limit = CL_ENGINE_MAX_SCANSIZE;
+	limit = CL_ENGINE_MAX_RECURSION;
 	break;
     default:
 	unlock_engine();
