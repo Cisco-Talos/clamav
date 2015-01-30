@@ -468,6 +468,11 @@ int CLAMAPI Scan_Initialize(const wchar_t *pEnginesFolder, const wchar_t *pTempR
 	free_engine_and_unlock();
 	FAIL(CL_ETMPDIR, "Cannot create pTempRoot '%s': error %d", tmpdir, ret);
     }
+    /* callbacks require cli_map_scan to generate fds */
+    if((ret = cl_engine_set_num(engine, CL_ENGINE_FORCETODISK, 1))) {
+	free_engine_and_unlock();
+	FAIL(ret, "Failed to set engine forced-to-disk: %s", cl_strerror(ret));
+    }
     if((ret = cl_engine_set_str(engine, CL_ENGINE_TMPDIR, tmpdir))) {
 	free_engine_and_unlock();
 	FAIL(ret, "Failed to set engine tempdir to '%s': %s", tmpdir, cl_strerror(ret));
@@ -1167,51 +1172,59 @@ cl_error_t prescan_cb(int fd, const char *type, void *context) {
     si.pInnerObjectPath = NULL;
 
     if(si.scanPhase == SCAN_PHASE_PRESCAN) {
-	long fpos;
-	int rsz;
-	perf2 = GetTickCount();
-	while(1) {
-	    static int tmpn;
-	    snprintf(tmpf, sizeof(tmpf), "%s\\%08x.tmp", tmpdir, ++tmpn);
-	    tmpf[sizeof(tmpf)-1] = '\0';
-	    fdhdl = CreateFile(tmpf, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_DELETE, NULL, CREATE_NEW, FILE_ATTRIBUTE_TEMPORARY | FILE_FLAG_DELETE_ON_CLOSE, NULL);
-	    if(fdhdl != INVALID_HANDLE_VALUE) {
-		logg("*prescan_cb: dumping content to tempfile %s (handle %p)\n", tmpf, fdhdl);
-		break;
-	    }
-	    if((perf = GetLastError()) != ERROR_FILE_EXISTS) {
-		logg("!prescan_cb: failed to create tempfile %s - error %u\n", tmpf, perf);
-		return CL_CLEAN;
-	    }
-	}
-
-	fpos = lseek(fd, 0, SEEK_CUR);
-	lseek(fd, 0, SEEK_SET);
-	while((rsz = read(fd, tmpf, sizeof(tmpf))) > 0) {
-	    int wsz = 0;
-	    while(wsz != rsz) {
-		DWORD rwsz;
-		if(!WriteFile(fdhdl, &tmpf[wsz], rsz - wsz, &rwsz, NULL)) {
-		    logg("!prescan_cb: failed to write to tempfile %s - error %u\n", GetLastError());
-		    lseek(fd, fpos, SEEK_SET);
-		    CloseHandle(fdhdl);
+	/* Windows requires lseek fd to be valid */
+	if (fd < 0) {
+	    logg("!prescan_cb: failed to create tempfile - invalid fd %d\n", fd);
+	    logg("!prescan_cb: engine option (force-to-disk) is likely not set\n");
+	    si.object = INVALID_HANDLE_VALUE;
+	    si.objectId = INVALID_HANDLE_VALUE;
+	} else {
+	    long fpos;
+	    int rsz;
+	    perf2 = GetTickCount();
+	    while(1) {
+		static int tmpn;
+		snprintf(tmpf, sizeof(tmpf), "%s\\%08x.tmp", tmpdir, ++tmpn);
+		tmpf[sizeof(tmpf)-1] = '\0';
+		fdhdl = CreateFile(tmpf, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_DELETE, NULL, CREATE_NEW, FILE_ATTRIBUTE_TEMPORARY | FILE_FLAG_DELETE_ON_CLOSE, NULL);
+		if(fdhdl != INVALID_HANDLE_VALUE) {
+		    logg("*prescan_cb: dumping content to tempfile %s (handle %p)\n", tmpf, fdhdl);
+		    break;
+		}
+		if((perf = GetLastError()) != ERROR_FILE_EXISTS) {
+		    logg("!prescan_cb: failed to create tempfile %s - error %u\n", tmpf, perf);
 		    return CL_CLEAN;
 		}
-		wsz += rwsz;
 	    }
-	}
-	if(rsz) {
-	    logg("!prescan_cb: failed to read from clamav tempfile - errno = %d\n", errno);
+
+	    fpos = lseek(fd, 0, SEEK_CUR);
+	    lseek(fd, 0, SEEK_SET);
+	    while((rsz = read(fd, tmpf, sizeof(tmpf))) > 0) {
+		int wsz = 0;
+		while(wsz != rsz) {
+		    DWORD rwsz;
+		    if(!WriteFile(fdhdl, &tmpf[wsz], rsz - wsz, &rwsz, NULL)) {
+			logg("!prescan_cb: failed to write to tempfile %s - error %u\n", GetLastError());
+			lseek(fd, fpos, SEEK_SET);
+			CloseHandle(fdhdl);
+			return CL_CLEAN;
+		    }
+		    wsz += rwsz;
+		}
+	    }
+	    if(rsz) {
+		logg("!prescan_cb: failed to read from clamav tempfile - errno = %d\n", errno);
+		lseek(fd, fpos, SEEK_SET);
+		CloseHandle(fdhdl);
+		return CL_CLEAN;
+	    }
 	    lseek(fd, fpos, SEEK_SET);
-	    CloseHandle(fdhdl);
-	    return CL_CLEAN;
+	    SetFilePointer(fdhdl, 0, NULL, FILE_BEGIN);
+	    si.object = fdhdl;
+	    si.objectId = (HANDLE)_get_osfhandle(fd);
+	    perf2 = GetTickCount() - perf2;
+	    sctx->copy_times += perf2;
 	}
-	lseek(fd, fpos, SEEK_SET);
-	SetFilePointer(fdhdl, 0, NULL, FILE_BEGIN);
-	si.object = fdhdl;
-	si.objectId = (HANDLE)_get_osfhandle(fd);
-	perf2 = GetTickCount() - perf2;
-	sctx->copy_times += perf2;
     } else { /* SCAN_PHASE_INITIAL */
 	si.object = INVALID_HANDLE_VALUE;
 	si.objectId = INVALID_HANDLE_VALUE;
@@ -1270,7 +1283,12 @@ cl_error_t postscan_cb(int fd, int result, const char *virname, void *context) {
 	    si.pThreatName = NULL;
     logg("*in postscan_cb with clamav context %p, instance %p, fd %d, result %d, virusname %S)\n", context, inst, fd, result, si.pThreatName);
     si.pThreatType = threat_type(virname);
-    si.objectId = (HANDLE)_get_osfhandle(fd);
+    if (fd < 0) {
+	logg("!postscan_cb: invalid handle value - invalid fd %d\n", fd);
+	logg("!postscan_cb: engine option (force-to-disk) is likely not set\n");
+	si.objectId = INVALID_HANDLE_VALUE;
+    } else
+	si.objectId = (HANDLE)_get_osfhandle(fd);
     si.object = INVALID_HANDLE_VALUE;
     si.pInnerObjectPath = NULL;
     logg("*postscan_cb (clamav context %p, instance %p) invoking callback %p with context %p\n", context, inst, inst->scancb, inst->scancb_ctx);
