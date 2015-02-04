@@ -1,3 +1,44 @@
+
+Tue Dec 16 16:21:40 2014 EDT (swebb)
+-------------------------------------
+bb#11215 - Change a variable to be an unsigned int to compensate for
+	compiler optimization issue with crafted petite file. Fix
+	suggested by Sebastian Andrzej Siewior.
+
+Fri Dec 12 14:33:41 2014 EDT (klin)
+-----------------------------------
+Added missing break statements(FireAmp #12710) to correct handling of
+	prescan callback return code.
+
+Fri Dec 5 15:26:06 2014 EDT (smorgan)
+-------------------------------------
+bb#11216 - add boundary checks for fuzzed upack file. This issue
+	was reported by Sebastian Andrzej Siewior. CVE-2014-9328.
+
+Thu Dec 4 18:29:17 2014 EDT (klin)
+-----------------------------------
+bb#11212 - fixed section boundary mismatch in MEW unpacker. This issue
+	was identified by Felix Groebert of the Google Security Team.
+
+Thu Dec 4 08:43:43 2014 EDT (swebb)
+-------------------------------------
+bb#11213 - Enforce bounds checking before integer overflow in upx files.
+	This issue was reported by Kevin Szkudlapski of Quarkslab.
+
+Tue Dec 2 15:15:55 2014 EDT (swebb)
+-------------------------------------
+bb#11210: Apply a basic fix for y0da crafted file. This issue was
+	identified by Felix Groebert of the Google Security Team.
+
+Fri, 21 Nov 2014 15:55:12 EDT (swebb)
+-------------------------------------
+bb#11194: Include OpenSSL's headers after the local headers
+
+Thu, 20 Nov 2014 12:39:00 EDT (swebb)
+-------------------------------------
+bb#10907: Add trailing newline to the end of the pidfile
+	  (patch submitted by Sebastian Andrzej Siewior)
+
 Wed, 12 Nov 2014 14:30:39 EDT (swebb)
 -------------------------------------
 * bb11176 - Instruct OpenSSL to allow MD5 when in FIPS-compliant mode.

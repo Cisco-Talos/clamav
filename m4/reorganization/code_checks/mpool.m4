@@ -1,4 +1,4 @@
-AC_ARG_ENABLE([mempool],[  --disable-mempool       disable memory pools], enable_mempool=$enableval, enable_mempool="yes")
+AC_ARG_ENABLE([mempool],[AS_HELP_STRING([--disable-mempool], [do not use memory pools])], enable_mempool=$enableval, enable_mempool="yes")
 have_mempool="no"
 if test "$enable_mempool" = "yes"; then
 	if test "$ac_cv_c_mmap_private" != "yes"; then

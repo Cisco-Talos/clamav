@@ -86,3 +86,16 @@
     ...
     fun:SSL_library_init
 }
+{
+   y0da-cached-virname
+   Memcheck:Cond
+   fun:cli_scanpe
+   fun:magic_scandesc
+   fun:cli_base_scandesc
+   fun:cli_magic_scandesc
+   fun:scan_common
+   fun:cl_scandesc_callback
+   fun:scanfile
+   fun:scanmanager
+   fun:main
+}

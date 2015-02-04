@@ -112,8 +112,11 @@ int tcpserver(int **lsockets, unsigned int *nlsockets, char *ipaddr, const struc
             serv[0] = '\0';
         }
 #else
-        strncpy(host, ipaddr, sizeof(host));
-        host[sizeof(host)-1] = '\0';
+		if (ipaddr) {
+			strncpy(host, ipaddr, sizeof(host));
+			host[sizeof(host)-1] = '\0';
+		} else
+			host[0] = '\0';
         snprintf(serv, sizeof(serv), "%u", (unsigned int)(optget(opts, "TCPSocket")->numarg));
 #endif
         if(bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {

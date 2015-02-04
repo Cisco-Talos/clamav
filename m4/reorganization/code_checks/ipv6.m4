@@ -1,5 +1,5 @@
 AC_ARG_ENABLE([ipv6],
-[  --disable-ipv6          disable IPv6 support],
+[AS_HELP_STRING([--disable-ipv6], [do not include IPv6 support])],
 want_ipv6=$enableval, want_ipv6="yes")
 
 if test "$want_ipv6" = "yes"

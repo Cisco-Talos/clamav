@@ -2514,7 +2514,9 @@ static int dispatch_prescan(clcb_pre_scan cb, cli_ctx *ctx, const char *filetype
             cli_dbgmsg("cli_magic_scandesc: file whitelisted by callback\n");
             perf_stop(ctx, PERFT_PRECB);
             ctx->hook_lsig_matches = old_hook_lsig_matches;
+            /* returns CL_CLEAN */
             *run_cleanup = 1;
+            break;
         case CL_VIRUS:
             cli_dbgmsg("cli_magic_scandesc: file blacklisted by callback\n");
             cli_append_virus(ctx, "Detected.By.Callback");
@@ -2522,6 +2524,7 @@ static int dispatch_prescan(clcb_pre_scan cb, cli_ctx *ctx, const char *filetype
             ctx->hook_lsig_matches = old_hook_lsig_matches;
             *run_cleanup = 1;
             res = CL_VIRUS;
+            break;
         case CL_CLEAN:
             break;
         default:
@@ -3073,7 +3076,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 		    cli_dbgmsg("Descriptor[%d]: cli_scanraw error %s\n", fmap_fd(*ctx->fmap), cl_strerror(res));
 		    cli_bitset_free(ctx->hook_lsig_matches);
 		    ctx->hook_lsig_matches = old_hook_lsig_matches;
-            return magic_scandesc_cleanup(ctx, type, hash, hashed_size, cache_clean, ret, parent_property);
+            return magic_scandesc_cleanup(ctx, type, hash, hashed_size, cache_clean, res, parent_property);
 		/* CL_VIRUS = malware found, check FP and report */
 		case CL_VIRUS:
 		    ret = cli_checkfp(hash, hashed_size, ctx);
@@ -3463,8 +3466,8 @@ static int scan_common(int desc, cl_fmap_t *map, const char **virname, unsigned 
         else {
             int ret = CL_SUCCESS;
             cli_dbgmsg("%s\n", jstring);
- 
-           /* Scan the json string unless a virus was detected */ 
+
+           /* Scan the json string unless a virus was detected */
             if (rc != CL_VIRUS) {
                 ctx.options &= ~CL_SCAN_FILE_PROPERTIES;
                 rc = cli_mem_scandesc(jstring, strlen(jstring), &ctx);

@@ -1,15 +1,15 @@
 
 want_xml="auto"
 AC_ARG_ENABLE([xml],
-[  --disable-xml	  disable DMG and XAR support],
+[AS_HELP_STRING([--disable-xml], [do not include DMG and XAR support])],
 want_xml=$enableval, want_xml="auto")
 
 XML_HOME=""
 if test "X$want_xml" != "Xno"; then
   AC_MSG_CHECKING([for libxml2 installation])
   AC_ARG_WITH([xml],
-  [  --with-xml=DIR	  path to directory containing libxml2 library (default=
-			  /usr/local or /usr if not found in /usr/local)],
+  [AS_HELP_STRING([--with-xml@<:@=DIR@:>@], [path to directory containing libxml2 library
+                  @<:@default=/usr/local or /usr if not found in /usr/local@:>@])],
   [
   if test "$withval"
   then

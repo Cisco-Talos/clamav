@@ -389,6 +389,7 @@
     <ClCompile Include="..\libclamav\special.c" />
     <ClCompile Include="..\libclamav\spin.c" />
     <ClCompile Include="..\libclamav\str.c" />
+    <ClCompile Include="..\libclamav\strlcat.c" />
     <ClCompile Include="..\libclamav\table.c" />
     <ClCompile Include="..\libclamav\text.c" />
     <ClCompile Include="..\libclamav\textdet.c" />

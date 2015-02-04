@@ -69,6 +69,8 @@ CLAMAV_PRIVATE {
     cli_gettmpdir;
     cli_strtok;
     cli_strtokenize;
+    cli_strlcat;
+    cli_strlcpy;
     cli_cvdunpack;
     cli_regcomp;
     cli_regexec;

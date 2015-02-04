@@ -295,7 +295,7 @@ const struct clam_option __clam_options[] = {
 	"Allow loading bytecode from outside digitally signed .c[lv]d files.","no"},
 
     { "BytecodeMode", "bytecode-mode", 0, CLOPT_TYPE_STRING, "^(Auto|ForceJIT|ForceInterpreter|Test)$", -1, "Auto", FLAG_REQUIRED, OPT_CLAMD | OPT_CLAMSCAN,
-	"Set bytecode execution mode.\nPossible values:\n\tAuto - automatically choose JIT if possible, fallback to interpreter\nForceJIT - always choose JIT, fail if not possible\nForceIntepreter - always choose interpreter\nTest - run with both JIT and interpreter and compare results. Make all failures fatal.","Auto"},
+	"Set bytecode execution mode.\nPossible values:\n\tAuto - automatically choose JIT if possible, fallback to interpreter\nForceJIT - always choose JIT, fail if not possible\nForceInterpreter - always choose interpreter\nTest - run with both JIT and interpreter and compare results. Make all failures fatal.","Auto"},
 
     { "Statistics", "statistics", 0, CLOPT_TYPE_STRING, "^(none|None|bytecode|Bytecode|pcre|PCRE)$", -1, NULL, FLAG_MULTIPLE, OPT_CLAMSCAN | OPT_CLAMBC, "Collect and print execution statistics.\nPossible values:\n\tBytecode - reports bytecode statistics\nPCRE - reports PCRE execution statistics\nNone - reports no statistics", "None" },
 

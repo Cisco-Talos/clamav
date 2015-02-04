@@ -1,5 +1,5 @@
 AC_ARG_ENABLE([gcc-vcheck],
-[  --disable-gcc-vcheck	  do not check for buggy gcc version ],
+[AS_HELP_STRING([--disable-gcc-vcheck], [do not check for buggy gcc version])],
 gcc_check=$enableval, gcc_check="yes")
 
 msg_gcc_check="use --disable-gcc-vcheck to disable this check. Before reporting any bugs check with a supported version of gcc"

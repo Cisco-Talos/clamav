@@ -92,7 +92,8 @@ libclamav_internal_utils_la_SOURCES=str.c\
 				    regex/cname.h \
 				    regex/regex.h \
 				    regex/regex2.h \
-				    regex/utils.h
+				    regex/utils.h \
+					strlcat.c
 
 libclamav_internal_utils_la_LDFLAGS=-static @SSL_LDFLAGS@ @JSON_LDFLAGS@
 libclamav_internal_utils_la_CFLAGS=$(AM_CFLAGS)  -fPIC -DPIC @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
@@ -118,7 +119,8 @@ libclamav_internal_utils_nothreads_la_SOURCES=str.c\
 				    regex/cname.h \
 				    regex/regex.h \
 				    regex/regex2.h \
-				    regex/utils.h
+				    regex/utils.h \
+					strlcat.c
 
 libclamav_internal_utils_nothreads_la_LDFLAGS=-static @SSL_LDFLAGS@ @JSON_LDFLAGS@
 libclamav_internal_utils_nothreads_la_CFLAGS=$(AM_CFLAGS) -DCL_NOTHREADS @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@

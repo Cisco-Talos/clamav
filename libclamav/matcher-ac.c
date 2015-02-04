@@ -1653,203 +1653,191 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
     }
 
     if(strchr(hexsig, '(')) {
-        char *hexnew, *start, *h, *c;
+	    char *hexnew, *start, *h, *c;
+        size_t hexnewsz;
 
-        if(hex) {
-            hexcpy = hex;
-        } else if(!(hexcpy = cli_strdup(hexsig))) {
-            mpool_free(root->mempool, new);
-            return CL_EMEM;
-        }
+	if(hex) {
+	    hexcpy = hex;
+	} else if(!(hexcpy = cli_strdup(hexsig))) {
+	    mpool_free(root->mempool, new);
+	    return CL_EMEM;
+	}
 
-        if(!(hexnew = (char *) cli_calloc(strlen(hexsig) + 1, 1))) {
-            free(new);
-            free(hexcpy);
-            return CL_EMEM;
-        }
+    hexnewsz = strlen(hexsig) + 1;
+	if(!(hexnew = (char *) cli_calloc(1, hexnewsz))) {
+	    free(new);
+	    free(hexcpy);
+	    return CL_EMEM;
+	}
 
-        start = pt = hexcpy;
-        while((pt = strchr(start, '('))) {
-            *pt++ = 0;
+	start = pt = hexcpy;
+	while((pt = strchr(start, '('))) {
+	    *pt++ = 0;
 
-            if(!start) {
-                error = CL_EMALFDB;
-                break;
-            }
+	    if(!start) {
+		error = CL_EMALFDB;
+		break;
+	    }
+	    newspecial = (struct cli_ac_special *) mpool_calloc(root->mempool, 1, sizeof(struct cli_ac_special));
+	    if(!newspecial) {
+		cli_errmsg("cli_ac_addsig: Can't allocate newspecial\n");
+		error = CL_EMEM;
+		break;
+	    }
+	    if(pt >= hexcpy + 2) {
+		if(pt[-2] == '!') {
+		    newspecial->negative = 1;
+		    pt[-2] = 0;
+		}
+	    }
+	    cli_strlcat(hexnew, start, hexnewsz);
 
-            newspecial = (struct cli_ac_special *) mpool_calloc(root->mempool, 1, sizeof(struct cli_ac_special));
-            if(!newspecial) {
-                cli_errmsg("cli_ac_addsig: Can't allocate newspecial\n");
-                error = CL_EMEM;
-                break;
-            }
+	    if(!(start = strchr(pt, ')'))) {
+		mpool_free(root->mempool, newspecial);
+		error = CL_EMALFDB;
+		break;
+	    }
+	    *start++ = 0;
+	    if(!strlen(pt)) {
+		cli_errmsg("cli_ac_addsig: Empty block\n");
+		error = CL_EMALFDB;
+		break;
+	    }
 
-            if(pt >= hexcpy + 2) {
-                if(pt[-2] == '!') {
-                    newspecial->negative = 1;
-                    pt[-2] = 0;
-                }
-            }
+	    if(!strcmp(pt, "B")) {
+		if(!*start) {
+		    new->boundary |= AC_BOUNDARY_RIGHT;
+		    if(newspecial->negative)
+			new->boundary |= AC_BOUNDARY_RIGHT_NEGATIVE;
+		    mpool_free(root->mempool, newspecial);
+		    continue;
+		} else if(pt - 1 == hexcpy) {
+		    new->boundary |= AC_BOUNDARY_LEFT;
+		    if(newspecial->negative)
+			new->boundary |= AC_BOUNDARY_LEFT_NEGATIVE;
+		    mpool_free(root->mempool, newspecial);
+		    continue;
+		}
+	    } else if(!strcmp(pt, "L")) {
+		if(!*start) {
+		    new->boundary |= AC_LINE_MARKER_RIGHT;
+		    if(newspecial->negative)
+			new->boundary |= AC_LINE_MARKER_RIGHT_NEGATIVE;
+		    mpool_free(root->mempool, newspecial);
+		    continue;
+		} else if(pt - 1 == hexcpy) {
+		    new->boundary |= AC_LINE_MARKER_LEFT;
+		    if(newspecial->negative)
+			new->boundary |= AC_LINE_MARKER_LEFT_NEGATIVE;
+		    mpool_free(root->mempool, newspecial);
+		    continue;
+		}
+	    }
+	    cli_strlcat(hexnew, "()", hexnewsz);
+	    new->special++;
+	    newtable = (struct cli_ac_special **) mpool_realloc(root->mempool, new->special_table, new->special * sizeof(struct cli_ac_special *));
+	    if(!newtable) {
+		new->special--;
+		mpool_free(root->mempool, newspecial);
+		cli_errmsg("cli_ac_addsig: Can't realloc new->special_table\n");
+		error = CL_EMEM;
+		break;
+	    }
+	    newtable[new->special - 1] = newspecial;
+	    new->special_table = newtable;
 
-            strcat(hexnew, start);
+	    if(!strcmp(pt, "B")) {
+		newspecial->type = AC_SPECIAL_BOUNDARY;
+	    } else if(!strcmp(pt, "L")) {
+		newspecial->type = AC_SPECIAL_LINE_MARKER;
+	    /*
+	    } else if(strcmp(pt, "W")) {
+		newspecial->type = AC_SPECIAL_WHITE;
+	    */
+	    } else {
+		newspecial->num = 1;
+		for(i = 0; i < strlen(pt); i++)
+		    if(pt[i] == '|')
+			newspecial->num++;
 
-            if(!(start = strchr(pt, ')'))) {
-                mpool_free(root->mempool, newspecial);
-                error = CL_EMALFDB;
-                break;
-            }
+		if(3 * newspecial->num - 1 == (uint16_t) strlen(pt)) {
+		    newspecial->type = AC_SPECIAL_ALT_CHAR;
+		    newspecial->str = (unsigned char *) mpool_malloc(root->mempool, newspecial->num);
+		    if(!newspecial->str) {
+			cli_errmsg("cli_ac_addsig: Can't allocate newspecial->str\n");
+			error = CL_EMEM;
+			break;
+		    }
+		} else {
+		    newspecial->type = AC_SPECIAL_ALT_STR;
+		}
 
-            *start++ = 0;
-            if(!strlen(pt)) {
-                cli_errmsg("cli_ac_addsig: Empty block\n");
-                error = CL_EMALFDB;
-                break;
-            }
+		for(i = 0; i < newspecial->num; i++) {
+			unsigned int clen;
 
-            if(!strcmp(pt, "B")) {
-                if(!*start) {
-                    new->boundary |= AC_BOUNDARY_RIGHT;
-                    if(newspecial->negative)
-                        new->boundary |= AC_BOUNDARY_RIGHT_NEGATIVE;
+		    if(newspecial->num == 1) {
+			c = (char *) cli_mpool_hex2str(root->mempool, pt);
+			clen = strlen(pt) / 2;
+		    } else {
+			if(!(h = cli_strtok(pt, i, "|"))) {
+			    error = CL_EMEM;
+			    break;
+			}
+			c = (char *) cli_mpool_hex2str(root->mempool, h);
+			clen = strlen(h) / 2;
+			free(h);
+		    }
+		    if(!c) {
+			error = CL_EMALFDB;
+			break;
+		    }
 
-                    mpool_free(root->mempool, newspecial);
-                    continue;
-                } else if(pt - 1 == hexcpy) {
-                    new->boundary |= AC_BOUNDARY_LEFT;
-                    if(newspecial->negative)
-                        new->boundary |= AC_BOUNDARY_LEFT_NEGATIVE;
+		    if(newspecial->type == AC_SPECIAL_ALT_CHAR) {
+			newspecial->str[i] = *c;
+			mpool_free(root->mempool, c);
+		    } else {
+			if(i) {
+			    specialpt = newspecial;
+			    while(specialpt->next)
+				specialpt = specialpt->next;
 
-                    mpool_free(root->mempool, newspecial);
-                    continue;
-                }
-            } else if(!strcmp(pt, "L")) {
-                if(!*start) {
-                    new->boundary |= AC_LINE_MARKER_RIGHT;
-                    if(newspecial->negative)
-                        new->boundary |= AC_LINE_MARKER_RIGHT_NEGATIVE;
+			    specialpt->next = (struct cli_ac_special *) mpool_calloc(root->mempool, 1, sizeof(struct cli_ac_special));
+			    if(!specialpt->next) {
+				cli_errmsg("cli_ac_addsig: Can't allocate specialpt->next\n");
+				error = CL_EMEM;
+				free(c);
+				break;
+			    }
+			    specialpt->next->str = (unsigned char *) c;
+			    specialpt->next->len = clen;
+			} else {
+			    newspecial->str = (unsigned char *) c;
+			    newspecial->len = clen;
+			}
+		    }
+		}
+		if(newspecial->num > 1 && newspecial->type == AC_SPECIAL_ALT_CHAR)
+		    cli_qsort(newspecial->str, newspecial->num, sizeof(unsigned char), qcompare);
 
-                    mpool_free(root->mempool, newspecial);
-                    continue;
-                } else if(pt - 1 == hexcpy) {
-                    new->boundary |= AC_LINE_MARKER_LEFT;
-                    if(newspecial->negative)
-                        new->boundary |= AC_LINE_MARKER_LEFT_NEGATIVE;
+		if(error)
+		    break;
+	    }
+	}
 
-                    mpool_free(root->mempool, newspecial);
-                    continue;
-                }
-            }
+	if(start)
+	    cli_strlcat(hexnew, start, hexnewsz);
 
-            strcat(hexnew, "()");
-            new->special++;
-            newtable = (struct cli_ac_special **) mpool_realloc(root->mempool, new->special_table, new->special * sizeof(struct cli_ac_special *));
-            if(!newtable) {
-                new->special--;
-                mpool_free(root->mempool, newspecial);
-                cli_errmsg("cli_ac_addsig: Can't realloc new->special_table\n");
-                error = CL_EMEM;
-                break;
-            }
+	hex = hexnew;
+	free(hexcpy);
 
-            newtable[new->special - 1] = newspecial;
-            new->special_table = newtable;
-
-            if(!strcmp(pt, "B")) {
-                newspecial->type = AC_SPECIAL_BOUNDARY;
-            } else if(!strcmp(pt, "L")) {
-                newspecial->type = AC_SPECIAL_LINE_MARKER;
-#if 0
-            } else if(strcmp(pt, "W")) {
-                newspecial->type = AC_SPECIAL_WHITE;
-#endif
-            } else {
-                newspecial->num = 1;
-                for(i = 0; i < strlen(pt); i++)
-                    if(pt[i] == '|')
-                        newspecial->num++;
-
-                if(3 * newspecial->num - 1 == (uint16_t) strlen(pt)) {
-                    newspecial->type = AC_SPECIAL_ALT_CHAR;
-                    newspecial->str = (unsigned char *) mpool_malloc(root->mempool, newspecial->num);
-                    if(!newspecial->str) {
-                        cli_errmsg("cli_ac_addsig: Can't allocate newspecial->str\n");
-                        error = CL_EMEM;
-                        break;
-                    }
-                } else {
-                    newspecial->type = AC_SPECIAL_ALT_STR;
-                }
-
-                for(i = 0; i < newspecial->num; i++) {
-                    unsigned int clen;
-
-                    if(newspecial->num == 1) {
-                        c = (char *) cli_mpool_hex2str(root->mempool, pt);
-                        clen = strlen(pt) / 2;
-                    } else {
-                        if(!(h = cli_strtok(pt, i, "|"))) {
-                            error = CL_EMEM;
-                            break;
-                        }
-
-                        c = (char *) cli_mpool_hex2str(root->mempool, h);
-                        clen = strlen(h) / 2;
-                        free(h);
-                    }
-
-                    if(!c) {
-                        error = CL_EMALFDB;
-                        break;
-                    }
-
-                    if(newspecial->type == AC_SPECIAL_ALT_CHAR) {
-                        newspecial->str[i] = *c;
-                        mpool_free(root->mempool, c);
-                    } else {
-                        if(i) {
-                            specialpt = newspecial;
-                            while(specialpt->next)
-                                specialpt = specialpt->next;
-
-                            specialpt->next = (struct cli_ac_special *) mpool_calloc(root->mempool, 1, sizeof(struct cli_ac_special));
-                            if(!specialpt->next) {
-                                cli_errmsg("cli_ac_addsig: Can't allocate specialpt->next\n");
-                                error = CL_EMEM;
-                                free(c);
-                                break;
-                            }
-
-                            specialpt->next->str = (unsigned char *) c;
-                            specialpt->next->len = clen;
-                        } else {
-                            newspecial->str = (unsigned char *) c;
-                            newspecial->len = clen;
-                        }
-                    }
-                }
-
-                if(newspecial->num > 1 && newspecial->type == AC_SPECIAL_ALT_CHAR)
-                    cli_qsort(newspecial->str, newspecial->num, sizeof(unsigned char), qcompare);
-
-                if(error)
-                    break;
-            }
-        }
-
-        if(start)
-            strcat(hexnew, start);
-
-        hex = hexnew;
-        free(hexcpy);
-
-        if(error) {
-            free(hex);
-            if(new->special)
-                mpool_ac_free_special(root->mempool, new);
-
-            mpool_free(root->mempool, new);
-            return error;
-        }
+	if(error) {
+	    free(hex);
+	    if(new->special) {
+		mpool_ac_free_special(root->mempool, new);
+	    }
+	    mpool_free(root->mempool, new);
+	    return error;
+	}
     }
 
     new->pattern = cli_mpool_hex2ui(root->mempool, hex ? hex : hexsig);

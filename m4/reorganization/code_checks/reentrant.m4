@@ -1,3 +1,3 @@
 AC_ARG_ENABLE([cr],
-[  --disable-cr		  don't link with C reentrant library (BSD) ],
+[AS_HELP_STRING([--disable-cr], [do not link with C reentrant library (BSD)])],
 use_cr=$enableval,)

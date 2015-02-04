@@ -258,6 +258,9 @@
     <ClCompile Include="..\libclamav\str.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\libclamav\strlcat.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\libclamav\table.c">
       <Filter>Source Files</Filter>
     </ClCompile>

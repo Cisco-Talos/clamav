@@ -1,6 +1,5 @@
 AC_ARG_ENABLE(clamdtop,
-	      AC_HELP_STRING([--enable-clamdtop],
-			     [Enable 'clamdtop' tool @<:@default=auto@:>@]),
+	     [AC_HELP_STRING([--enable-clamdtop], [build clamdtop tool @<:@default=auto@:>@])],
 [enable_clamdtop=$enableval], [enable_clamdtop="auto"])
 
 if test "$enable_clamdtop" != "no"; then

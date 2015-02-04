@@ -124,6 +124,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
     int ret, asterisk = 0, range;
     unsigned int i, j, hexlen, parts = 0;
     int mindist = 0, maxdist = 0, error = 0;
+    size_t hexcpysz;
 
     hexlen = strlen(hexsig);
     if (hexsig[0] == '$') {
