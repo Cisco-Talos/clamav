@@ -598,7 +598,7 @@ WARNING: setting this limit too high may result in severe damage or impact perfo
 .br
 Default: 100
 .TP
-\fBPCREMatchLimit SIZE\fR
+\fBPCREMatchLimit NUMBER\fR
 This option sets the maximum calls to the PCRE match function during an instance of regex matching.
 .br
 Instances using more than this limit will be terminated and alert the user but the scan will continue.
@@ -624,7 +624,7 @@ WARNING: setting this limit too high may severely impact performance.
 .br
 Default: 5000
 .TP
-\fBPCREMaxFileSize NUMBER\fR
+\fBPCREMaxFileSize SIZE\fR
 This option sets the maximum filesize for which PCRE subsigs will be executed.
 .br
 Files exceeding this limit will not have PCRE subsigs executed unless a subsig is encompassed to a smaller buffer.
