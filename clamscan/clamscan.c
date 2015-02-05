@@ -279,15 +279,15 @@ void help(void)
     mprintf("    --max-ziptypercg=#n                  Maximum size zip to type reanalyze\n");
     mprintf("    --max-partitions=#n                  Maximum number of partitions in disk image to be scanned\n");
     mprintf("    --max-iconspe=#n                     Maximum number of icons in PE file to be scanned\n");
+#if HAVE_PCRE
+    mprintf("    --pcre-match-limit=#n                Maximum calls to the PCRE match function.\n");
+    mprintf("    --pcre-recmatch-limit=#n             Maximum recursive calls to the PCRE match function.\n");
+    mprintf("    --pcre-max-filesize=#n               Maximum size file to perform PCRE subsig matching.\n");
+#endif /* HAVE_PCRE */
     mprintf("    --enable-stats                       Enable statistical reporting of malware\n");
     mprintf("    --disable-pe-stats                   Disable submission of individual PE sections in stats submissions\n");
     mprintf("    --stats-timeout=#n                   Number of seconds to wait for waiting a response back from the stats server\n");
     mprintf("    --stats-host-id=UUID                 Set the Host ID used when submitting statistical info.\n");
-#if HAVE_PCRE
-    mprintf("    --pcre-match-limit=#n                Maximum calls to the PCRE match function.\n");
-    mprintf("    --pcre-recmatch-limit=#n             Maximum recursive calls to the PCRE match function.\n");
-    mprintf("    --pcre-max-filesize=#n               Maximum size file to perform PCRE sunsig matching.\n");
-#endif /* HAVE_PCRE */
     mprintf("\n");
     mprintf("(*) Default scan settings\n");
     mprintf("(**) Certain files (e.g. documents, archives, etc.) may in turn contain other\n");

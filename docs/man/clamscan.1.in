@@ -214,6 +214,15 @@ This option sets the maximum number of partitions of a raw disk image to be scan
 \fB\-\-max\-iconspe=#n\fR
 This option sets the maximum number of icons within a PE to be scanned. This must be a positive integer (default: 100).
 .TP
+\fB\-\-pcre-match-limit=#n\fR
+Maximum calls to the PCRE match function (default: 10000).
+.TP
+\fB\-\-pcre-recmatch-limit=#n\fR
+Maximum recursive calls to the PCRE match function (default: 5000).
+.TP
+\fB\-\-pcre-max-filesize=#n\fR
+Maximum size file to perform PCRE subsig matching (default: 25 MB, max: <4 GB).
+.TP
 \fB\-\-enable\-stats\fR
 This option enables submission of statistical data. (Default: stats submissions disabled)
 .TP
