@@ -16,7 +16,6 @@ dnl   MA 02110-1301, USA.
 AC_PREREQ([2.59])
 AC_INIT([libclamavc++],[devel],[http://bugs.clamav.net])
 AC_CONFIG_AUX_DIR([config])
-AC_CONFIG_SRCDIR([llvm/configure])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADER([clamavcxx-config.h])
 AC_CANONICAL_TARGET
