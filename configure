@@ -922,6 +922,7 @@ with_libncurses_prefix
 with_libpdcurses_prefix
 enable_distcheck_werror
 with_system_llvm
+with_llvm_linking
 enable_llvm
 enable_sha_collector_for_internal_use
 with_libcurl
@@ -1648,6 +1649,8 @@ Optional Packages:
   --with-system-llvm      use system llvm instead of built-in, uses full path
                           to llvm-config [default=/usr/local or /usr if not
                           found in /usr/local]
+  --with-llvm-linking     specifies method to linking llvm [static|dynamic],
+                          only valid with --with-system-llvm
   --with-libcurl[=DIR]    path to directory containing libcurl
                           [default=/usr/local or /usr if not found in
                           /usr/local]
@@ -22721,6 +22724,36 @@ else
 fi
 
 
+
+# Check whether --with-llvm-linking was given.
+if test "${with_llvm_linking+set}" = set; then :
+  withval=$with_llvm_linking;
+if test "x$system_llvm" = "xbuilt-in"; then
+   as_fn_error $? "Failed to configure LLVM, and LLVM linking was specified without specifying system-llvm" "$LINENO" 5
+else
+case "$withval" in
+  static)
+    llvm_linking="static"
+    ;;
+  dynamic)
+    llvm_linking="dynamic"
+    ;;
+  *)
+    as_fn_error $? "Invalid argument to --with-llvm-linking" "$LINENO" 5
+esac
+fi
+
+else
+
+if test "x$system_llvm" = "xbuilt-in"; then
+   llvm_linking=""
+else
+   llvm_linking="auto"
+fi
+
+fi
+
+
 # Check whether --enable-llvm was given.
 if test "${enable_llvm+set}" = set; then :
   enableval=$enable_llvm; enable_llvm=$enableval
@@ -22749,6 +22782,7 @@ subdirs="$subdirs libclamav/c++"
 
 else
     system_llvm="none"
+    llvm_linking=""
 fi
 
 # Check whether --enable-sha-collector-for-internal-use was given.
@@ -25579,6 +25613,11 @@ fi
 if test "$enable_llvm" = "yes" && test "$subdirfailed" != "no"; then
     as_fn_error $? "Failed to configure LLVM, and LLVM was explicitly requested" "$LINENO" 5
 fi
+if test "$enable_llvm" = "auto" && test "$subdirfailed" != "no"; then
+    system_llvm="MIA"
+    llvm_linking=""
+fi
+
  if test "$subdirfailed" != "yes" && test "$enable_llvm" != "no"; then
   ENABLE_LLVM_TRUE=
   ENABLE_LLVM_FALSE='#'
@@ -28227,8 +28266,8 @@ cat <<EOF
               pthreads    : $have_pthreads ($THREAD_LIBS)
 EOF
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: Summary of miscellaneous  features" >&5
-$as_echo "$as_me: Summary of miscellaneous  features" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Summary of miscellaneous features" >&5
+$as_echo "$as_me: Summary of miscellaneous features" >&6;}
 if test "x$CHECK_LIBS" = "x"; then
     check_libs="no"
 else
@@ -28345,8 +28384,8 @@ else
 fi
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: Summary of engine performance features)" >&5
-$as_echo "$as_me: Summary of engine performance features)" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Summary of engine performance features" >&5
+$as_echo "$as_me: Summary of engine performance features" >&6;}
 if test "x$enable_debug" = "xyes"; then
 
 
@@ -28380,6 +28419,7 @@ have_jit="no"
 if test "$subdirfailed" = "no"; then
     have_jit="yes"
 fi
+if test "x$llvm_linking" = "x"; then
 
 
    $as_echo_n "              llvm        : "
@@ -28393,6 +28433,21 @@ else
   $as_echo "$have_jit, from $system_llvm ($enable_llvm)"
 fi
 
+else
+
+
+   $as_echo_n "              llvm        : "
+   if test "x$enable_llvm" = "xno"; then :
+  $as_echo "$have_jit, from $system_llvm ($llvm_linking) (disabled)"
+elif test "x$enable_llvm" = "xyes"; then :
+  $as_echo "$have_jit, from $system_llvm ($llvm_linking)"
+elif test "x$enable_llvm" = "x"; then :
+  $as_echo "$have_jit, from $system_llvm ($llvm_linking)"
+else
+  $as_echo "$have_jit, from $system_llvm ($llvm_linking) ($enable_llvm)"
+fi
+
+fi
 
 
    $as_echo_n "              mempool     : "
