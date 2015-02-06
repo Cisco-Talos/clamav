@@ -110,7 +110,7 @@ struct cli_matcher {
     struct filter *filter;
 
     uint16_t maxpatlen;
-    uint8_t ac_nocase, ac_only;
+    uint8_t ac_opts, ac_only;
 
     /* Perl-Compiled Regular Expressions */
 #if HAVE_PCRE

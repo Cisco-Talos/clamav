@@ -111,7 +111,7 @@ int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
             }
         }
 
-        if (root->ac_nocase)
+        if (root->ac_opts & AC_OPTION_NOCASE)
             next = pt->trans[cli_nocase((unsigned char) (pattern->pattern[i] & 0xff))];
         else
             next = pt->trans[(unsigned char) (pattern->pattern[i] & 0xff)];
@@ -146,7 +146,10 @@ int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
             root->ac_nodetable = (struct cli_ac_node **) newtable;
             root->ac_nodetable[root->ac_nodes - 1] = next;
 
-            pt->trans[(unsigned char) (pattern->pattern[i] & 0xff)] = next;
+            if (root->ac_opts & AC_OPTION_NOCASE)
+                pt->trans[cli_nocase((unsigned char) (pattern->pattern[i] & 0xff))] = next;
+            else
+                pt->trans[(unsigned char) (pattern->pattern[i] & 0xff)] = next;
         }
 
         pt = next;
@@ -408,7 +411,7 @@ int cli_ac_buildtrie(struct cli_matcher *root)
     return ac_maketrans(root);
 }
 
-int cli_ac_init(struct cli_matcher *root, uint8_t mindepth, uint8_t maxdepth, uint8_t dconf_prefiltering)
+int cli_ac_init(struct cli_matcher *root, uint8_t mindepth, uint8_t maxdepth, uint8_t dconf_prefiltering, uint8_t ac_opts)
 {
 #ifdef USE_MPOOL
     assert(root->mempool && "mempool must be initialized");
@@ -429,6 +432,7 @@ int cli_ac_init(struct cli_matcher *root, uint8_t mindepth, uint8_t maxdepth, ui
 
     root->ac_mindepth = mindepth;
     root->ac_maxdepth = maxdepth;
+    root->ac_opts = ac_opts;
 
     if (cli_mtargets[root->type].enable_prefiltering && dconf_prefiltering) {
         root->filter = mpool_malloc(root->mempool, sizeof(*root->filter));
@@ -843,9 +847,9 @@ int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigne
 	    match = 0;									\
     }
 
-inline static int ac_findmatch(const unsigned char *buffer, uint32_t offset, uint32_t fileoffset, uint32_t length, const struct cli_ac_patt *pattern, uint32_t *end)
+inline static int ac_findmatch(const unsigned char *buffer, uint32_t offset, uint32_t fileoffset, uint32_t length, const struct cli_ac_patt *pattern, uint32_t *end, uint8_t ac_opts)
 {
-    uint32_t bp, match;
+    uint32_t bp, pstart, match;
     uint16_t wc, i, j, specialcnt = pattern->special_pattern;
     struct cli_ac_special *special;
 
@@ -853,10 +857,17 @@ inline static int ac_findmatch(const unsigned char *buffer, uint32_t offset, uin
     if((offset + pattern->length > length) || (pattern->prefix_length > offset))
         return 0;
 
-    bp = offset + pattern->depth;
+    if (!pattern->nocase && (ac_opts & AC_OPTION_NOCASE)) {
+        bp = offset;
+        pstart = 0;
+    }
+    else {
+        bp = offset + pattern->depth;
+        pstart = pattern->depth;
+    }
 
     match = 1;
-    for(i = pattern->depth; i < pattern->length && bp < length; i++) {
+    for(i = pstart; i < pattern->length && bp < length; i++) {
         AC_MATCH_CHAR(pattern->pattern[i],buffer[bp]);
         if(!match)
             return 0;
@@ -1257,7 +1268,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
     current = root->ac_root;
 
     for(i = 0; i < length; i++)  {
-        if (root->ac_nocase)
+        if (root->ac_opts & AC_OPTION_NOCASE)
             current = current->trans[cli_nocase(buffer[i])];
         else
             current = current->trans[buffer[i]];
@@ -1292,7 +1303,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
                 }
 
                 pt = patt;
-                if(ac_findmatch(buffer, bp, offset + bp - patt->prefix_length, length, patt, &matchend)) {
+                if(ac_findmatch(buffer, bp, offset + bp - patt->prefix_length, length, patt, &matchend, root->ac_opts)) {
                     while(pt) {
                         if(pt->partno > mdata->min_partno)
                             break;
@@ -1561,19 +1572,23 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
     }
 
     if (sigopts) {
-	i = 0;
-	while (sigopts[i] != '\0') {
-	    switch (sigopts[i]) {
-	    case 'i':
-		nocase = 1;
-		break;
-	    default:
-		cli_errmsg("cli_ac_addsig: Signature for %s uses invalid option: %02x\n", virname, sigopts[i]);
-		return CL_EMALFDB;
-	    }
+        i = 0;
+        while (sigopts[i] != '\0') {
+            switch (sigopts[i]) {
+            case 'i':
+                if (!(root->ac_opts & AC_OPTION_NOCASE)) {
+                    cli_errmsg("cli_ac_addsig: Signature for %s using nocase cannot be added to case-sensitive AC trie\n", virname);
+                    return CL_EMALFDB;
+                }
+                nocase = 1;
+                break;
+            default:
+                cli_errmsg("cli_ac_addsig: Signature for %s uses invalid option: %02x\n", virname, sigopts[i]);
+                return CL_EMALFDB;
+            }
 
-	    i++;
-	}
+            i++;
+        }
     }
 
     if((new = (struct cli_ac_patt *) mpool_calloc(root->mempool, 1, sizeof(struct cli_ac_patt))) == NULL)
@@ -1881,6 +1896,8 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 
     /* setting nocase match */
     if (nocase) {
+	new->nocase = 1;
+
 	for (i = 0; i < new->length; ++i)
 	    if ((new->pattern[i] & CLI_MATCH_METADATA) == CLI_MATCH_CHAR)
 		new->pattern[i] += CLI_MATCH_NOCASE;
