@@ -43,8 +43,10 @@ struct cli_target_info {
 #include "fmap.h"
 #include "mpool.h"
 
-#define CLI_MATCH_WILDCARD	0xff00
+#define CLI_MATCH_METADATA	0xff00
+#define CLI_MATCH_WILDCARD	0x0f00
 #define CLI_MATCH_CHAR		0x0000
+#define CLI_MATCH_NOCASE	0x1000
 #define CLI_MATCH_IGNORE	0x0100
 #define CLI_MATCH_SPECIAL	0x0200
 #define CLI_MATCH_NIBBLE_HIGH	0x0300
@@ -108,7 +110,7 @@ struct cli_matcher {
     struct filter *filter;
 
     uint16_t maxpatlen;
-    uint8_t ac_only;
+    uint8_t ac_nocase, ac_only;
 
     /* Perl-Compiled Regular Expressions */
 #if HAVE_PCRE

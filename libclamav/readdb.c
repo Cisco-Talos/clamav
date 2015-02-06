@@ -116,7 +116,7 @@ char *cli_virname(const char *virname, unsigned int official)
 }
 
 #define PCRE_TOKENS 4
-int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hexsig, uint16_t rtype, uint16_t type, const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options)
+int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hexsig, const char *sigopts, uint16_t rtype, uint16_t type, const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options)
 {
     struct cli_bm_patt *bm_new;
     char *pt, *hexcpy, *start, *n, l, r;
@@ -178,17 +178,8 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 
         return CL_SUCCESS;
     }
-    if (strchr(hexsig, '/')) {
-#if HAVE_PCRE
-        /* expected format => ^offset:trigger/regex/[cflags]$ */
-	const char *trigger, *pattern, *cflags;
+    if (strrchr(hexsig, '/')) {
         char *start, *end;
-
-        /* get checked */
-        if (hexsig[0] == '/') {
-            cli_errmsg("cli_parseadd(): PCRE subsig must contain logical trigger\n");
-            return CL_EMALFDB;
-        }
 
         /* get copied */
         hexcpy = cli_calloc(hexlen+1, sizeof(char));
@@ -199,31 +190,48 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
         /* get delimiters-ed */
         start = strchr(hexcpy, '/');
         end = strrchr(hexcpy, '/');
-        if (start == end) {
-            cli_errmsg("cli_parseadd(): PCRE expression must be delimited by '/'\n");
+
+        /* get pcre-ed */
+        if (start != end) {
+#if HAVE_PCRE
+            /* expected format => ^offset:trigger/regex/[cflags]$ */
+            const char *trigger, *pattern, *cflags;
+
+            /* get checked */
+            if (hexsig[0] == '/') {
+                cli_errmsg("cli_parseadd(): PCRE subsig must contain logical trigger\n");
+                return CL_EMALFDB;
+            }
+
+            /* get NULL-ed */
+            *start = '\0';
+            *end = '\0';
+
+            /* get tokens-ed */
+            trigger = hexcpy;
+            pattern = start+1;
+            cflags = end+1;
+            if (*cflags == '\0') /* get compat-ed */
+                cflags = NULL;
+
+            /* normal trigger, get added */
+            ret = cli_pcre_addpatt(root, virname, trigger, pattern, cflags, offset, lsigid, options);
             free(hexcpy);
-            return CL_EMALFDB;
-        }
-
-        /* get NULL-ed */
-        *start = '\0';
-        *end = '\0';
-
-        /* get tokens-ed */
-        trigger = hexcpy;
-        pattern = start+1;
-        cflags = end+1;
-        if (*cflags == '\0') /* get compat-ed */
-            cflags = NULL;
-
-        /* normal trigger, get added */
-        ret = cli_pcre_addpatt(root, virname, trigger, pattern, cflags, offset, lsigid, options);
-        free(hexcpy);
-        return ret;
+            return ret;
 #else
-        cli_errmsg("cli_parseadd(): cannot parse PCRE subsig without PCRE support\n");
-        return CL_EPARSE;
+            free(hexcpy);
+            cli_errmsg("cli_parseadd(): cannot parse PCRE subsig without PCRE support\n");
+            return CL_EPARSE;
 #endif
+        } else { /* get option-ed */
+            /* get NULL-ed */
+            *end = '\0';
+
+            /* get called */
+            ret = cli_parse_add(root, virname, hexcpy, end+1, rtype, type, offset, target, lsigid, options);
+            free(hexcpy);
+            return ret;
+        }
     }
     else if((wild = strchr(hexsig, '{'))) {
         if(sscanf(wild, "%c%u%c", &l, &range, &r) == 3 && l == '{' && r == '}' && range > 0 && range < 128) {
@@ -242,7 +250,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
             }
 
             strcat(hexcpy, ++wild);
-            ret = cli_parse_add(root, virname, hexcpy, rtype, type, offset, target, lsigid, options);
+            ret = cli_parse_add(root, virname, hexcpy, sigopts, rtype, type, offset, target, lsigid, options);
             free(hexcpy);
 
             return ret;
@@ -280,7 +288,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
                 *pt++ = 0;
             }
 
-            if((ret = cli_ac_addsig(root, virname, start, root->ac_partsigs, parts, i, rtype, type, mindist, maxdist, offset, lsigid, options))) {
+            if((ret = cli_ac_addsig(root, virname, start, sigopts, root->ac_partsigs, parts, i, rtype, type, mindist, maxdist, offset, lsigid, options))) {
                 cli_errmsg("cli_parse_add(): Problem adding signature (1).\n");
                 error = 1;
                 break;
@@ -363,7 +371,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
                 return CL_EMALFDB;
             }
 
-            if((ret = cli_ac_addsig(root, virname, pt, root->ac_partsigs, parts, i, rtype, type, 0, 0, offset, lsigid, options))) {
+            if((ret = cli_ac_addsig(root, virname, pt, sigopts, root->ac_partsigs, parts, i, rtype, type, 0, 0, offset, lsigid, options))) {
                 cli_errmsg("cli_parse_add(): Problem adding signature (2).\n");
                 free(pt);
                 return ret;
@@ -372,7 +380,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
             free(pt);
         }
     } else if(root->ac_only || type || lsigid || strpbrk(hexsig, "?([") || (root->bm_offmode && (!strcmp(offset, "*") || strchr(offset, ','))) || strstr(offset, "VI") || strchr(offset, '$')) {
-        if((ret = cli_ac_addsig(root, virname, hexsig, 0, 0, 0, rtype, type, 0, 0, offset, lsigid, options))) {
+        if((ret = cli_ac_addsig(root, virname, hexsig, sigopts, 0, 0, 0, rtype, type, 0, 0, offset, lsigid, options))) {
             cli_errmsg("cli_parse_add(): Problem adding signature (3).\n");
             return ret;
         }
@@ -656,7 +664,7 @@ static int cli_loaddb(FILE *fs, struct cl_engine *engine, unsigned int *signo, u
 
 	if(*pt == '=') continue;
 
-	if((ret = cli_parse_add(root, start, pt, 0, 0, "*", 0, NULL, options))) {
+	if((ret = cli_parse_add(root, start, pt, NULL, 0, 0, "*", 0, NULL, options))) {
 	    cli_dbgmsg("cli_loaddb: cli_parse_add failed on line %d\n", line);
 	    ret = CL_EMALFDB;
 	    break;
@@ -1056,7 +1064,7 @@ static int cli_loadndb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	offset = tokens[2];
 	sig = tokens[3];
 
-	if((ret = cli_parse_add(root, virname, sig, 0, 0, offset, target, NULL, options))) {
+	if((ret = cli_parse_add(root, virname, sig, NULL, 0, 0, offset, target, NULL, options))) {
 	    ret = CL_EMALFDB;
 	    break;
 	}
@@ -1491,7 +1499,7 @@ static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsig
             sig = tokens[3 + i];
         }
 
-        if((ret = cli_parse_add(root, virname, sig, 0, 0, offset, target, lsigid, options)))
+        if((ret = cli_parse_add(root, virname, sig, NULL, 0, 0, offset, target, lsigid, options)))
             return ret;
 
         if(sig[0] == '$' && i) {
@@ -1769,7 +1777,7 @@ static int cli_loadftm(FILE *fs, struct cl_engine *engine, unsigned int options,
 
         magictype = atoi(tokens[0]);
 	if(magictype == 1) { /* A-C */
-	    if((ret = cli_parse_add(engine->root[0], tokens[3], tokens[2], rtype, type, tokens[1], 0, NULL, options)))
+	    if((ret = cli_parse_add(engine->root[0], tokens[3], tokens[2], NULL, rtype, type, tokens[1], 0, NULL, options)))
 		break;
 
 	} else if ((magictype == 0) || (magictype == 4)) { /* memcmp() */

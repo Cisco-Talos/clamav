@@ -21,6 +21,7 @@
 #ifndef __STR_H
 #define __STR_H
 
+#include <ctype.h>
 #include <sys/types.h>
 
 #include "cltypes.h"
@@ -30,6 +31,9 @@
 #else
 const char *cli_strcasestr(const char *haystack, const char *needle);
 #endif
+
+#include <stdio.h>
+#define cli_nocase(val) tolower(val)
 
 int cli_strbcasestr(const char *haystack, const char *needle);
 int cli_chomp(char *string);

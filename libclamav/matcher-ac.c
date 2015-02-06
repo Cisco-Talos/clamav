@@ -111,7 +111,10 @@ int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
             }
         }
 
-        next = pt->trans[(unsigned char) (pattern->pattern[i] & 0xff)]; 
+        if (root->ac_nocase)
+            next = pt->trans[cli_nocase((unsigned char) (pattern->pattern[i] & 0xff))];
+        else
+            next = pt->trans[(unsigned char) (pattern->pattern[i] & 0xff)];
 
         if(!next) {
             next = (struct cli_ac_node *) mpool_calloc(root->mempool, 1, sizeof(struct cli_ac_node));
@@ -762,11 +765,15 @@ int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigne
  *        an alternative contains strings of different lengths and 
  *        more than one of them can match at the current position.
  */
-
 #define AC_MATCH_CHAR(p,b)								\
-    switch(wc = p & CLI_MATCH_WILDCARD) {						\
+    switch(wc = p & CLI_MATCH_METADATA) {						\
 	case CLI_MATCH_CHAR:								\
 	    if((unsigned char) p != b)							\
+		match = 0;								\
+	    break;									\
+											\
+	case CLI_MATCH_NOCASE:								\
+	    if(cli_nocase((unsigned char)(p & 0xff)) != cli_nocase(b))			\
 		match = 0;								\
 	    break;									\
 											\
@@ -1250,7 +1257,10 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
     current = root->ac_root;
 
     for(i = 0; i < length; i++)  {
-        current = current->trans[buffer[i]];
+        if (root->ac_nocase)
+            current = current->trans[cli_nocase(buffer[i])];
+        else
+            current = current->trans[buffer[i]];
 
         if(UNLIKELY(IS_FINAL(current))) {
             struct cli_ac_patt *faillist = current->fail->list;
@@ -1530,12 +1540,12 @@ static int qcompare(const void *a, const void *b)
 }
 
 /* FIXME: clean up the code */
-int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hexsig, uint32_t sigid, uint16_t parts, uint16_t partno, uint16_t rtype, uint16_t type, uint32_t mindist, uint32_t maxdist, const char *offset, const uint32_t *lsigid, unsigned int options)
+int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hexsig, const char *sigopts, uint32_t sigid, uint16_t parts, uint16_t partno, uint16_t rtype, uint16_t type, uint32_t mindist, uint32_t maxdist, const char *offset, const uint32_t *lsigid, unsigned int options)
 {
     struct cli_ac_patt *new;
     char *pt, *pt2, *hex = NULL, *hexcpy = NULL;
     uint16_t i, j, ppos = 0, pend, *dec, nzpos = 0;
-    uint8_t wprefix = 0, zprefix = 1, plen = 0, nzplen = 0;
+    uint8_t wprefix = 0, zprefix = 1, plen = 0, nzplen = 0, nocase = 0;
     struct cli_ac_special *newspecial, *specialpt, **newtable;
     int ret, error = CL_SUCCESS;
 
@@ -1548,6 +1558,22 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
     if(strlen(hexsig) / 2 < root->ac_mindepth) {
         cli_errmsg("cli_ac_addsig: Signature for %s is too short\n", virname);
         return CL_EMALFDB;
+    }
+
+    if (sigopts) {
+	i = 0;
+	while (sigopts[i] != '\0') {
+	    switch (sigopts[i]) {
+	    case 'i':
+		nocase = 1;
+		break;
+	    default:
+		cli_errmsg("cli_ac_addsig: Signature for %s uses invalid option: %02x\n", virname, sigopts[i]);
+		return CL_EMALFDB;
+	    }
+
+	    i++;
+	}
     }
 
     if((new = (struct cli_ac_patt *) mpool_calloc(root->mempool, 1, sizeof(struct cli_ac_patt))) == NULL)
@@ -1852,6 +1878,13 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 
     new->length = strlen(hex ? hex : hexsig) / 2;
     free(hex);
+
+    /* setting nocase match */
+    if (nocase) {
+	for (i = 0; i < new->length; ++i)
+	    if ((new->pattern[i] & CLI_MATCH_METADATA) == CLI_MATCH_CHAR)
+		new->pattern[i] += CLI_MATCH_NOCASE;
+    }
 
     if (root->filter) {
         /* so that we can show meaningful messages */

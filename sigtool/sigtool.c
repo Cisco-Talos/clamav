@@ -1998,7 +1998,7 @@ static void matchsig(const char *sig, const char *offset, int fd)
 	return;
     }
 
-    if(cli_parse_add(engine->root[0], "test", sig, 0, 0, "*", 0, NULL, 0) != CL_SUCCESS) {
+    if(cli_parse_add(engine->root[0], "test", sig, NULL, 0, 0, "*", 0, NULL, 0) != CL_SUCCESS) {
 	mprintf("!matchsig: Can't parse signature\n");
 	cl_engine_free(engine);
 	return;
@@ -2907,7 +2907,7 @@ static int dumpcerts(const struct optstruct *opts)
 	return -1;
     }
 
-    if(cli_parse_add(engine->root[0], "test", "deadbeef", 0, 0, "*", 0, NULL, 0) != CL_SUCCESS) {
+    if(cli_parse_add(engine->root[0], "test", "deadbeef", NULL, 0, 0, "*", 0, NULL, 0) != CL_SUCCESS) {
 	mprintf("!dumpcerts: Can't parse signature\n");
 	cl_engine_free(engine);
 	return -1;
