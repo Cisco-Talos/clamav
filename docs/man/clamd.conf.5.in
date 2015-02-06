@@ -598,6 +598,45 @@ WARNING: setting this limit too high may result in severe damage or impact perfo
 .br
 Default: 100
 .TP
+\fBPCREMatchLimit NUMBER\fR
+This option sets the maximum calls to the PCRE match function during an instance of regex matching.
+.br
+Instances using more than this limit will be terminated and alert the user but the scan will continue.
+.br
+For more information on match_limit, see the PCRE documentation.
+.br
+Negative values are not allowed.
+.br
+WARNING: setting this limit too high may severely impact performance.
+.br
+Default: 10000
+.TP
+\fBPCRERecMatchLimit NUMBER\fR
+This option sets the maximum recursive calls to the PCRE match function during an instance of regex matching.
+.br
+Instances using more than this limit will be terminated and alert the user but the scan will continue.
+.br
+For more information on match_limit_recursion, see the PCRE documentation.
+.br
+Negative values are not allowed and values > PCREMatchLimit are superfluous.
+.br
+WARNING: setting this limit too high may severely impact performance.
+.br
+Default: 5000
+.TP
+\fBPCREMaxFileSize SIZE\fR
+This option sets the maximum filesize for which PCRE subsigs will be executed.
+.br
+Files exceeding this limit will not have PCRE subsigs executed unless a subsig is encompassed to a smaller buffer.
+.br
+Negative values are not allowed.
+.br
+Setting this value to zero disables the limit.
+.br
+WARNING: setting this limit too high or disabling it may severely impact performance.
+.br
+Default: 25M
+.TP
 \fBClamukoScanOnAccess (OBSOLETE)\fR
 \fBWARNING:\fR This option is no longer accepted. See \fBScanOnAccess\fR.
 .TP 
