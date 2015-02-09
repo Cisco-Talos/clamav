@@ -262,9 +262,6 @@ struct cl_engine {
     /* Roots table */
     struct cli_matcher **root;
 
-    /* Yara table */
-    struct cli_matcher *yroot;
-
     /* hash matcher for standard MD5 sigs */
     struct cli_matcher *hm_hdb;
     /* hash matcher for MD5 sigs for PE sections */

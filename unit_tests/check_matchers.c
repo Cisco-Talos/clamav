@@ -94,7 +94,7 @@ START_TEST (test_ac_scanbuff) {
 #ifdef USE_MPOOL
     root->mempool = mpool_create();
 #endif
-    ret = cli_ac_init(root, CLI_DEFAULT_AC_MINDEPTH, CLI_DEFAULT_AC_MAXDEPTH, 1, 0);
+    ret = cli_ac_init(root, CLI_DEFAULT_AC_MINDEPTH, CLI_DEFAULT_AC_MAXDEPTH, 1);
     fail_unless(ret == CL_SUCCESS, "cli_ac_init() failed");
 
 
@@ -164,7 +164,7 @@ START_TEST (test_ac_scanbuff_allscan) {
 #ifdef USE_MPOOL
     root->mempool = mpool_create();
 #endif
-    ret = cli_ac_init(root, CLI_DEFAULT_AC_MINDEPTH, CLI_DEFAULT_AC_MAXDEPTH, 1, 0);
+    ret = cli_ac_init(root, CLI_DEFAULT_AC_MINDEPTH, CLI_DEFAULT_AC_MAXDEPTH, 1);
     fail_unless(ret == CL_SUCCESS, "cli_ac_init() failed");
 
 

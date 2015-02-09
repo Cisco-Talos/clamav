@@ -442,7 +442,7 @@ int cli_initroots(struct cl_engine *engine, unsigned int options)
 		root->ac_only = 1;
 
 	    cli_dbgmsg("Initialising AC pattern matcher of root[%d]\n", i);
-	    if((ret = cli_ac_init(root, engine->ac_mindepth, engine->ac_maxdepth, engine->dconf->other&OTHER_CONF_PREFILTERING, 0))) {
+	    if((ret = cli_ac_init(root, engine->ac_mindepth, engine->ac_maxdepth, engine->dconf->other&OTHER_CONF_PREFILTERING))) {
 		/* no need to free previously allocated memory here */
 		cli_errmsg("cli_initroots: Can't initialise AC pattern matcher\n");
 		return ret;

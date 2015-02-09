@@ -270,7 +270,7 @@ int init_regex_list(struct regex_matcher* matcher, uint8_t dconf_prefiltering)
 	matcher->suffixes.mempool = mp;
 	assert(mp && "mempool must be initialized");
 #endif
-	if((rc = cli_ac_init(&matcher->suffixes, 2, 32, dconf_prefiltering, 0))) {
+	if((rc = cli_ac_init(&matcher->suffixes, 2, 32, dconf_prefiltering))) {
 		return rc;
 	}
 #ifdef USE_MPOOL
