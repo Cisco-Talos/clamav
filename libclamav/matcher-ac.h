@@ -69,15 +69,20 @@ struct cli_ac_patt {
     uint16_t ch_maxdist[2];
     uint16_t parts, partno, special, special_pattern;
     struct cli_ac_special **special_table;
-    struct cli_ac_patt *next, *next_same;
     uint16_t rtype, type;
     uint32_t offdata[4], offset_min, offset_max;
     uint32_t boundary;
     uint8_t depth;
+    uint8_t nocase;
+};
+
+struct cli_ac_pattlist {
+    struct cli_ac_patt *me;
+    struct cli_ac_pattlist *next, *next_same;
 };
 
 struct cli_ac_node {
-    struct cli_ac_patt *list;
+    struct cli_ac_pattlist *list;
     struct cli_ac_node **trans, *fail;
 };
 

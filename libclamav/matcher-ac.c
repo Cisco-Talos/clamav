@@ -79,108 +79,37 @@ static char boundary[256] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
-int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
+static inline int insert_pattlist(mpool_t *mempool, struct cli_ac_patt *pattern, struct cli_ac_node *pt)
 {
-    struct cli_ac_node *pt, *next;
-    struct cli_ac_patt *ph, *ph_prev, *ph_add_after;
-    void *newtable;
+    struct cli_ac_pattlist *ph, *new, *ph_prev, *ph_add_after;
+    struct cli_ac_patt *php;
     struct cli_ac_special *a1, *a2;
     uint8_t i, match;
-    uint16_t len = MIN(root->ac_maxdepth, pattern->length);
 
-    for(i = 0; i < len; i++) {
-        if(pattern->pattern[i] & CLI_MATCH_WILDCARD) {
-            len = i;
-            break;
-        }
-    }
-
-    if(len < root->ac_mindepth) {
-        /* cli_errmsg("cli_ac_addpatt: Signature for %s is too short\n", pattern->virname); */
-        return CL_EMALFDB;
-    }
-
-    pt = root->ac_root;
-
-    for(i = 0; i < len; i++) {
-        if(!pt->trans) {
-            pt->trans = (struct cli_ac_node **) mpool_calloc(root->mempool, 256, sizeof(struct cli_ac_node *));
-            if(!pt->trans) {
-                cli_errmsg("cli_ac_addpatt: Can't allocate memory for pt->trans\n");
-                return CL_EMEM;
-            }
-        }
-
-        if (root->ac_opts & AC_OPTION_NOCASE)
-            next = pt->trans[cli_nocase((unsigned char) (pattern->pattern[i] & 0xff))];
-        else
-            next = pt->trans[(unsigned char) (pattern->pattern[i] & 0xff)];
-
-        if(!next) {
-            next = (struct cli_ac_node *) mpool_calloc(root->mempool, 1, sizeof(struct cli_ac_node));
-            if(!next) {
-                cli_errmsg("cli_ac_addpatt: Can't allocate memory for AC node\n");
-                return CL_EMEM;
-            }
-
-            if(i != len - 1) {
-                next->trans = (struct cli_ac_node **) mpool_calloc(root->mempool, 256, sizeof(struct cli_ac_node *));
-                if(!next->trans) {
-                    cli_errmsg("cli_ac_addpatt: Can't allocate memory for next->trans\n");
-                    mpool_free(root->mempool, next);
-                    return CL_EMEM;
-                }
-            }
-
-            root->ac_nodes++;
-            newtable = mpool_realloc(root->mempool, root->ac_nodetable, root->ac_nodes * sizeof(struct cli_ac_node *));
-            if(!newtable) {
-                root->ac_nodes--;
-                cli_errmsg("cli_ac_addpatt: Can't realloc ac_nodetable\n");
-                if(next->trans)
-                    mpool_free(root->mempool, next->trans);
-                mpool_free(root->mempool, next);
-                return CL_EMEM;
-            }
-
-            root->ac_nodetable = (struct cli_ac_node **) newtable;
-            root->ac_nodetable[root->ac_nodes - 1] = next;
-
-            if (root->ac_opts & AC_OPTION_NOCASE)
-                pt->trans[cli_nocase((unsigned char) (pattern->pattern[i] & 0xff))] = next;
-            else
-                pt->trans[(unsigned char) (pattern->pattern[i] & 0xff)] = next;
-        }
-
-        pt = next;
-    }
-
-    root->ac_patterns++;
-    newtable = mpool_realloc(root->mempool, root->ac_pattable, root->ac_patterns * sizeof(struct cli_ac_patt *));
-    if(!newtable) {
-        root->ac_patterns--;
-        cli_errmsg("cli_ac_addpatt: Can't realloc ac_pattable\n");
+    if (mempool)
+        new = (struct cli_ac_pattlist *)mpool_calloc(mempool, 1, sizeof(struct cli_ac_pattlist));
+    else
+        new = cli_calloc(1, sizeof(struct cli_ac_pattlist));
+    if (!new) {
+        cli_errmsg("cli_ac_addpatt: Can't allocate memory for pattlist node\n");
         return CL_EMEM;
     }
-
-    root->ac_pattable = (struct cli_ac_patt **) newtable;
-    root->ac_pattable[root->ac_patterns - 1] = pattern;
-
-    pattern->depth = i;
+    new->me = pattern;
 
     ph = pt->list;
     ph_add_after = ph_prev = NULL;
     while(ph) {
-        if(!ph_add_after && ph->partno <= pattern->partno && (!ph->next || ph->next->partno > pattern->partno))
+        php = ph->me;
+        if(!ph_add_after && php->partno <= pattern->partno && (!ph->next || ph->next->me->partno > pattern->partno))
             ph_add_after = ph;
-        if((ph->length == pattern->length) && (ph->prefix_length == pattern->prefix_length) && (ph->ch[0] == pattern->ch[0]) && (ph->ch[1] == pattern->ch[1])) {
-            if(!memcmp(ph->pattern, pattern->pattern, ph->length * sizeof(uint16_t)) && !memcmp(ph->prefix, pattern->prefix, ph->prefix_length * sizeof(uint16_t))) {
-                if(!ph->special && !pattern->special) {
+        if((php->length == pattern->length) && (php->prefix_length == pattern->prefix_length) && (php->ch[0] == pattern->ch[0]) && (php->ch[1] == pattern->ch[1])) {
+            if(!memcmp(php->pattern, pattern->pattern, php->length * sizeof(uint16_t)) && !memcmp(php->prefix, pattern->prefix, php->prefix_length * sizeof(uint16_t))) {
+                if(!php->special && !pattern->special) {
                     match = 1;
-                } else if(ph->special == pattern->special) {
+                } else if(php->special == pattern->special) {
                     match = 1;
-                    for(i = 0; i < ph->special; i++) {
-                        a1 = ph->special_table[i];
+                    for(i = 0; i < php->special; i++) {
+                        a1 = php->special_table[i];
                         a2 = pattern->special_table[i];
 
                         if(a1->num != a2->num) {
@@ -198,8 +127,8 @@ int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
                             break;
                         } else if(a1->type == AC_SPECIAL_ALT_CHAR) {
                             if(memcmp(a1->str, a2->str, a1->num)) {
-                            match = 0;
-                            break;
+                                match = 0;
+                                break;
                             }
                         } else if(a1->type == AC_SPECIAL_ALT_STR) {
                             while(a1 && a2) {
@@ -220,8 +149,8 @@ int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
                 }
 
                 if(match) {
-                    if(pattern->partno < ph->partno) {
-                        pattern->next_same = ph;
+                    if(pattern->partno < php->partno) {
+                        new->next_same = ph;
                         if(ph_prev)
                             ph_prev->next = ph->next;
                         else
@@ -230,11 +159,11 @@ int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
                         ph->next = NULL;
                         break;
                     } else {
-                        while(ph->next_same && ph->next_same->partno < pattern->partno)
+                        while(ph->next_same && ph->next_same->me->partno < pattern->partno)
                             ph = ph->next_same;
 
-                        pattern->next_same = ph->next_same;
-                        ph->next_same = pattern;
+                        new->next_same = ph->next_same;
+                        ph->next_same = new;
                         return CL_SUCCESS;
                     }
                 }
@@ -243,17 +172,138 @@ int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
 
         ph_prev = ph;
         ph = ph->next;
+
     }
 
     if(ph_add_after) {
-        pattern->next = ph_add_after->next;
-        ph_add_after->next = pattern;
+        new->next = ph_add_after->next;
+        ph_add_after->next = new;
     } else {
-        pattern->next = pt->list;
-        pt->list = pattern;
+        new->next = pt->list;
+        pt->list = new;
     }
 
     return CL_SUCCESS;
+}
+
+static inline struct cli_ac_node *add_new_node(struct cli_matcher *root, uint16_t i, uint16_t len)
+{
+    struct cli_ac_node *new;
+    struct cli_ac_node **newtable;
+
+    new = (struct cli_ac_node *) mpool_calloc(root->mempool, 1, sizeof(struct cli_ac_node));
+    if(!new) {
+        cli_errmsg("cli_ac_addpatt: Can't allocate memory for AC node\n");
+        return NULL;
+    }
+
+    if(i != len - 1) {
+        new->trans = (struct cli_ac_node **) mpool_calloc(root->mempool, 256, sizeof(struct cli_ac_node *));
+        if(!new->trans) {
+            cli_errmsg("cli_ac_addpatt: Can't allocate memory for new->trans\n");
+            mpool_free(root->mempool, new);
+            return NULL;
+        }
+    }
+
+    root->ac_nodes++;
+    newtable = mpool_realloc(root->mempool, root->ac_nodetable, root->ac_nodes * sizeof(struct cli_ac_node *));
+    if(!newtable) {
+        root->ac_nodes--;
+        cli_errmsg("cli_ac_addpatt: Can't realloc ac_nodetable\n");
+        if(new->trans)
+            mpool_free(root->mempool, new->trans);
+        mpool_free(root->mempool, new);
+        return NULL;
+    }
+
+    root->ac_nodetable = newtable;
+    root->ac_nodetable[root->ac_nodes - 1] = new;
+
+    return new;
+}
+
+static int cli_ac_addpatt_recursive(struct cli_matcher *root, struct cli_ac_patt *pattern, struct cli_ac_node *pt, uint16_t i, uint16_t len)
+{
+    struct cli_ac_node *next;
+    int ret;
+
+    /* last node, insert pattern here (base case)*/
+    if(i >= len) {
+        return insert_pattlist(root->mempool, pattern, pt);
+    }
+
+    /* if current node has no trans table, generate one */
+    if(!pt->trans) {
+        pt->trans = (struct cli_ac_node **) mpool_calloc(root->mempool, 256, sizeof(struct cli_ac_node *));
+        if(!pt->trans) {
+            cli_errmsg("cli_ac_addpatt: Can't allocate memory for pt->trans\n");
+            return CL_EMEM;
+        }
+    }
+
+    /* if pattern is nocase, we need to enumerate all the combinations if applicable
+     * it's why this function was re-written to be recursive
+     */
+    if(pattern->nocase && isalpha(pattern->pattern[i] & 0xff)) {
+        next = pt->trans[cli_nocasei((unsigned char) (pattern->pattern[i] & 0xff))];
+        if(!next)
+            next = add_new_node(root, i, len);
+        if(!next)
+            return CL_EMEM;
+        else
+            pt->trans[cli_nocasei((unsigned char) (pattern->pattern[i] & 0xff))] = next;
+
+        if ((ret = cli_ac_addpatt_recursive(root, pattern, next, i+1, len)) != CL_SUCCESS)
+            return ret;
+    }
+
+    /* normal transition, also enumerates the 'normal' nocase */
+    next = pt->trans[(unsigned char) (pattern->pattern[i] & 0xff)];
+    if(!next)
+        next = add_new_node(root, i, len);
+    if(!next)
+        return CL_EMEM;
+    else
+        pt->trans[(unsigned char) (pattern->pattern[i] & 0xff)] = next;
+
+    return cli_ac_addpatt_recursive(root, pattern, next, i+1, len);
+}
+
+int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
+{
+    struct cli_ac_node *pt;
+    struct cli_ac_patt **newtable;
+    uint16_t len = MIN(root->ac_maxdepth, pattern->length);
+    uint8_t i;
+
+    for(i = 0; i < len; i++) {
+        if(pattern->pattern[i] & CLI_MATCH_WILDCARD) {
+            len = i;
+            break;
+        }
+    }
+
+    if(len < root->ac_mindepth) {
+        /* cli_errmsg("cli_ac_addpatt: Signature for %s is too short\n", pattern->virname); */
+        return CL_EMALFDB;
+    }
+
+    /* pattern added to master list */
+    root->ac_patterns++;
+    newtable = mpool_realloc(root->mempool, root->ac_pattable, root->ac_patterns * sizeof(struct cli_ac_patt *));
+    if(!newtable) {
+        root->ac_patterns--;
+        cli_errmsg("cli_ac_addpatt: Can't realloc ac_pattable\n");
+        return CL_EMEM;
+    }
+
+    root->ac_pattable = newtable;
+    root->ac_pattable[root->ac_patterns - 1] = pattern;
+
+    pattern->depth = len;
+
+    return cli_ac_addpatt_recursive(root, pattern, root->ac_root, 0, len);
 }
 
 struct bfs_list {
@@ -372,7 +422,7 @@ static int ac_maketrans(struct cli_matcher *root)
                 failtarget = failtarget->trans[i];
                 node->trans[i] = failtarget;
             } else if (IS_FINAL(child) && IS_LEAF(child)) {
-                struct cli_ac_patt *list;
+                struct cli_ac_pattlist *list;
 
                 list = child->list;
                 if (list) {
@@ -776,7 +826,7 @@ int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigne
 	    break;									\
 											\
 	case CLI_MATCH_NOCASE:								\
-	    if(cli_nocase((unsigned char)(p & 0xff)) != cli_nocase(b))			\
+	    if((unsigned char)(p & 0xff) != cli_nocase(b))				\
 		match = 0;								\
 	    break;									\
 											\
@@ -1241,6 +1291,7 @@ void cli_ac_chkmacro(struct cli_matcher *root, struct cli_ac_data *data, unsigne
 int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, void **customdata, struct cli_ac_result **res, const struct cli_matcher *root, struct cli_ac_data *mdata, uint32_t offset, cli_file_t ftype, struct cli_matched_type **ftoffset, unsigned int mode, cli_ctx *ctx)
 {
     struct cli_ac_node *current;
+    struct cli_ac_pattlist *pattN, *ptN;
     struct cli_ac_patt *patt, *pt;
     uint32_t i, bp, realoff, matchend;
     uint16_t j;
@@ -1263,69 +1314,71 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
         current = current->trans[buffer[i]];
 
         if(UNLIKELY(IS_FINAL(current))) {
-            struct cli_ac_patt *faillist = current->fail->list;
-            patt = current->list;
-            while(patt) {
+            struct cli_ac_pattlist *faillist = current->fail->list;
+            pattN = current->list;
+            while(pattN) {
+                patt = pattN->me;
                 if(patt->partno > mdata->min_partno) {
-                    patt = faillist;
+                    pattN = faillist;
                     faillist = NULL;
                     continue;
                 }
                 bp = i + 1 - patt->depth;
-                if(patt->offdata[0] != CLI_OFF_VERSION && patt->offdata[0] != CLI_OFF_MACRO && !patt->next_same && (patt->offset_min != CLI_OFF_ANY) && (!patt->sigid || patt->partno == 1)) {
+                if(patt->offdata[0] != CLI_OFF_VERSION && patt->offdata[0] != CLI_OFF_MACRO && !pattN->next_same && (patt->offset_min != CLI_OFF_ANY) && (!patt->sigid || patt->partno == 1)) {
                     if(patt->offset_min == CLI_OFF_NONE) {
-                        patt = patt->next;
+                        pattN = pattN->next;
                         continue;
                     }
                     realoff = offset + bp - patt->prefix_length;
                     if(patt->offdata[0] == CLI_OFF_ABSOLUTE) {
                         if(patt->offset_max < realoff || patt->offset_min > realoff) {
-                            patt = patt->next;
+                            pattN = pattN->next;
                             continue;
                         }
                     } else {
                         if(mdata->offset[patt->offset_min] == CLI_OFF_NONE || mdata->offset[patt->offset_max] < realoff || mdata->offset[patt->offset_min] > realoff) {
-                            patt = patt->next;
+                            pattN = pattN->next;
                             continue;
                         }
                     }
                 }
 
-                pt = patt;
+                ptN = pattN;
                 if(ac_findmatch(buffer, bp, offset + bp - patt->prefix_length, length, patt, &matchend)) {
-                    while(pt) {
+                    while(ptN) {
+                        pt = ptN->me;
                         if(pt->partno > mdata->min_partno)
                             break;
 
                         if((pt->type && !(mode & AC_SCAN_FT)) || (!pt->type && !(mode & AC_SCAN_VIR))) {
-                            pt = pt->next_same;
+                            ptN = ptN->next_same;
                             continue;
                         }
 
                         realoff = offset + bp - pt->prefix_length;
                         if(pt->offdata[0] == CLI_OFF_VERSION) {
                             if(!cli_hashset_contains_maybe_noalloc(mdata->vinfo, realoff)) {
-                                pt = pt->next_same;
+                                ptN = ptN->next_same;
                                 continue;
                             }
                             cli_dbgmsg("cli_ac_scanbuff: VI match for offset %x\n", realoff);
                         } else if(pt->offdata[0] == CLI_OFF_MACRO) {
                             mdata->macro_lastmatch[patt->offdata[1]] = realoff;
-                            pt = pt->next_same;
+                            ptN = ptN->next_same;
                             continue;
                         } else if(pt->offset_min != CLI_OFF_ANY && (!pt->sigid || pt->partno == 1)) {
                             if(pt->offset_min == CLI_OFF_NONE) {
-                                pt = pt->next_same;
+                                ptN = ptN->next_same;
                                 continue;
                             }
                             if(pt->offdata[0] == CLI_OFF_ABSOLUTE) {
                                 if(pt->offset_max < realoff || pt->offset_min > realoff) {
-                                    pt = pt->next_same;
+                                    ptN = ptN->next_same;
                                     continue;
                                 }
                             } else {
                                 if(mdata->offset[pt->offset_min] == CLI_OFF_NONE || mdata->offset[pt->offset_max] < realoff || mdata->offset[pt->offset_min] > realoff) {
-                                    pt = pt->next_same;
+                                    ptN = ptN->next_same;
                                     continue;
                                 }
                             }
@@ -1335,7 +1388,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 
                             /* if 2nd or later part, confirm some prior part has matched */
                             if(pt->partno != 1 && (!mdata->offmatrix[pt->sigid - 1] || !mdata->offmatrix[pt->sigid - 1][pt->partno - 2][0])) {
-                                pt = pt->next_same;
+                                ptN = ptN->next_same;
                                 continue;
                             }
 
@@ -1429,7 +1482,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
                                 } else { /* !pt->type */
                                     if(pt->lsigid[0]) {
                                         lsig_sub_matched(root, mdata, pt->lsigid[1], pt->lsigid[2], offmatrix[pt->parts - 1][1], 1);
-                                        pt = pt->next_same;
+                                        ptN = ptN->next_same;
                                         continue;
                                     }
 
@@ -1445,7 +1498,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
                                         newres->offset = offmatrix[pt->parts - 1][1];
                                         *res = newres;
 
-                                        pt = pt->next_same;
+                                        ptN = ptN->next_same;
                                         continue;
                                     } else {
                                         if(ctx && SCAN_ALL) {
@@ -1458,7 +1511,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
                                             *customdata = pt->customdata;
                                         if (!ctx || !SCAN_ALL)
                                             return CL_VIRUS;
-                                        pt = pt->next_same;
+                                        ptN = ptN->next_same;
                                         continue;
                                     }
                                 }
@@ -1482,7 +1535,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
                             } else {
                             if(pt->lsigid[0]) {
                                     lsig_sub_matched(root, mdata, pt->lsigid[1], pt->lsigid[2], realoff, 0);
-                                    pt = pt->next_same;
+                                    ptN = ptN->next_same;
                                     continue;
                                 }
 
@@ -1498,7 +1551,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
                                     newres->next = *res;
                                     *res = newres;
 
-                                    pt = pt->next_same;
+                                    ptN = ptN->next_same;
                                     continue;
                                 } else {
                                     if(ctx && SCAN_ALL) {
@@ -1515,15 +1568,15 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
                                     if (!ctx || !SCAN_ALL)
                                         return CL_VIRUS;
 
-                                    pt = pt->next_same;
+                                    ptN = ptN->next_same;
                                     continue;
                                 }
                             }
                         }
-                        pt = pt->next_same;
+                        ptN = ptN->next_same;
                     }
                 }
-                patt = patt->next;
+                pattN = pattN->next;
             }
         }
     }
@@ -1879,14 +1932,17 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
     new->length = strlen(hex ? hex : hexsig) / 2;
     free(hex);
 
-    /* setting nocase match */
+    /* setting nocase match; TODO - move this to cli_realhex2ui and adjust for nocase, alter MATCH_CHAR too */
     if (nocase) {
+	new->nocase = 1;
 	for (i = 0; i < new->length; ++i)
-	    if ((new->pattern[i] & CLI_MATCH_METADATA) == CLI_MATCH_CHAR)
+	    if ((new->pattern[i] & CLI_MATCH_METADATA) == CLI_MATCH_CHAR) {
+		new->pattern[i] = cli_nocase(new->pattern[i] & 0xff);
 		new->pattern[i] += CLI_MATCH_NOCASE;
+	    }
     }
 
-    if (root->filter) {
+    if (root->filter) { //TODO - fix filters for nocase state, also fix for sigtool as well
         /* so that we can show meaningful messages */
         new->virname = (char*)virname;
         if (filter_add_acpatt(root->filter, new) == -1) {

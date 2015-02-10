@@ -34,6 +34,7 @@ const char *cli_strcasestr(const char *haystack, const char *needle);
 
 #include <stdio.h>
 #define cli_nocase(val) tolower(val)
+#define cli_nocasei(val) toupper(val)
 
 int cli_strbcasestr(const char *haystack, const char *needle);
 int cli_chomp(char *string);
