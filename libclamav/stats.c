@@ -282,6 +282,7 @@ end:
         cli_warnmsg("clamav_stats_add_sample: unlcoking mutex failed (err: %d): %s\n", err, strerror(err));
     }
 #endif
+    return;
 }
 
 void clamav_stats_flush(struct cl_engine *engine, void *cbdata)
@@ -492,6 +493,7 @@ void clamav_stats_decrement_count(const char *virname, const unsigned char *md5,
         cli_warnmsg("clamav_stats_decrement_count: unlocking mutex failed (err: %d): %s\n", err, strerror(err));
     }
 #endif
+    return;
 }
 
 size_t clamav_stats_get_num(void *cbdata)
