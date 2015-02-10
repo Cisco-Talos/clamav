@@ -555,6 +555,8 @@ void cli_ac_free(struct cli_matcher *root)
         }
     }
 
+    /* TODO - free the pattlists somewhere! */
+
     for(i = 0; i < root->ac_nodes; i++)
         mpool_free(root->mempool, root->ac_nodetable[i]);
 

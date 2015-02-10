@@ -2860,6 +2860,8 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
                 char *trigger = PCRE_BYPASS;
                 allstringsize += strlen(trigger);
                 allstringsize += (strlen(string->string)+2); /* 2 from delimiters */
+            } else if (STRING_IS_NO_CASE(string)) {
+                allstringsize += (strlen(string->string)+2); /* 2 from delimiter+option */
             } else {
                 allstringsize += strlen(string->string);
             }
