@@ -100,9 +100,10 @@ struct cli_matcher {
     struct cli_hash_wild hwild;
 
     /* Extended Aho-Corasick */
-    uint32_t ac_partsigs, ac_nodes, ac_patterns, ac_lsigs;
+    uint32_t ac_partsigs, ac_nodes, ac_lists, ac_patterns, ac_lsigs;
     struct cli_ac_lsig **ac_lsigtable;
     struct cli_ac_node *ac_root, **ac_nodetable;
+    struct cli_ac_list **ac_listtable;
     struct cli_ac_patt **ac_pattable;
     struct cli_ac_patt **ac_reloff;
     uint32_t ac_reloff_num, ac_absoff_num;

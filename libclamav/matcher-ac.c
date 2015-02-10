@@ -79,22 +79,32 @@ static char boundary[256] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
-static inline int insert_pattlist(mpool_t *mempool, struct cli_ac_patt *pattern, struct cli_ac_node *pt)
+static inline int insert_list(struct cli_matcher *root, struct cli_ac_patt *pattern, struct cli_ac_node *pt)
 {
-    struct cli_ac_pattlist *ph, *new, *ph_prev, *ph_add_after;
+    struct cli_ac_list *ph, *new, *ph_prev, *ph_add_after;
+    struct cli_ac_list **newtable;
     struct cli_ac_patt *php;
     struct cli_ac_special *a1, *a2;
     uint8_t i, match;
 
-    if (mempool)
-        new = (struct cli_ac_pattlist *)mpool_calloc(mempool, 1, sizeof(struct cli_ac_pattlist));
-    else
-        new = cli_calloc(1, sizeof(struct cli_ac_pattlist));
+    new = (struct cli_ac_list *)mpool_calloc(root->mempool, 1, sizeof(struct cli_ac_list));
     if (!new) {
-        cli_errmsg("cli_ac_addpatt: Can't allocate memory for pattlist node\n");
+        cli_errmsg("cli_ac_addpatt: Can't allocate memory for list node\n");
         return CL_EMEM;
     }
     new->me = pattern;
+
+    root->ac_lists++;
+    newtable = mpool_realloc(root->mempool, root->ac_listtable, root->ac_lists * sizeof(struct cli_ac_list *));
+    if(!newtable) {
+        root->ac_lists--;
+        cli_errmsg("cli_ac_addpatt: Can't realloc ac_listtable\n");
+        mpool_free(root->mempool, new);
+        return CL_EMEM;
+    }
+
+    root->ac_listtable = newtable;
+    root->ac_listtable[root->ac_lists - 1] = new;
 
     ph = pt->list;
     ph_add_after = ph_prev = NULL;
@@ -230,7 +240,7 @@ static int cli_ac_addpatt_recursive(struct cli_matcher *root, struct cli_ac_patt
 
     /* last node, insert pattern here (base case)*/
     if(i >= len) {
-        return insert_pattlist(root->mempool, pattern, pt);
+        return insert_list(root, pattern, pt);
     }
 
     /* if current node has no trans table, generate one */
@@ -422,7 +432,7 @@ static int ac_maketrans(struct cli_matcher *root)
                 failtarget = failtarget->trans[i];
                 node->trans[i] = failtarget;
             } else if (IS_FINAL(child) && IS_LEAF(child)) {
-                struct cli_ac_pattlist *list;
+                struct cli_ac_list *list;
 
                 list = child->list;
                 if (list) {
@@ -555,7 +565,11 @@ void cli_ac_free(struct cli_matcher *root)
         }
     }
 
-    /* TODO - free the pattlists somewhere! */
+    for(i = 0; i < root->ac_lists; i++)
+        mpool_free(root->mempool, root->ac_listtable[i]);
+
+    if(root->ac_listtable)
+        mpool_free(root->mempool, root->ac_listtable);
 
     for(i = 0; i < root->ac_nodes; i++)
         mpool_free(root->mempool, root->ac_nodetable[i]);
@@ -1293,7 +1307,7 @@ void cli_ac_chkmacro(struct cli_matcher *root, struct cli_ac_data *data, unsigne
 int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, void **customdata, struct cli_ac_result **res, const struct cli_matcher *root, struct cli_ac_data *mdata, uint32_t offset, cli_file_t ftype, struct cli_matched_type **ftoffset, unsigned int mode, cli_ctx *ctx)
 {
     struct cli_ac_node *current;
-    struct cli_ac_pattlist *pattN, *ptN;
+    struct cli_ac_list *pattN, *ptN;
     struct cli_ac_patt *patt, *pt;
     uint32_t i, bp, realoff, matchend;
     uint16_t j;
@@ -1316,7 +1330,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
         current = current->trans[buffer[i]];
 
         if(UNLIKELY(IS_FINAL(current))) {
-            struct cli_ac_pattlist *faillist = current->fail->list;
+            struct cli_ac_list *faillist = current->fail->list;
             pattN = current->list;
             while(pattN) {
                 patt = pattN->me;

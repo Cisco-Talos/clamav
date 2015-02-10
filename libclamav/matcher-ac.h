@@ -76,13 +76,13 @@ struct cli_ac_patt {
     uint8_t nocase;
 };
 
-struct cli_ac_pattlist {
+struct cli_ac_list {
     struct cli_ac_patt *me;
-    struct cli_ac_pattlist *next, *next_same;
+    struct cli_ac_list *next, *next_same;
 };
 
 struct cli_ac_node {
-    struct cli_ac_pattlist *list;
+    struct cli_ac_list *list;
     struct cli_ac_node **trans, *fail;
 };
 
