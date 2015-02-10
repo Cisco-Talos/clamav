@@ -2965,15 +2965,18 @@ static int cli_loadyara(FILE *fs, const char *dbname, struct cl_engine *engine, 
 #endif
                 snprintf(rulestr+len, totsize-len, "%s/%s/", PCRE_BYPASS, string->string);
             } else if (STRING_IS_NO_CASE(string)) {
-                size_t len = strlen(rulestr);
+                size_t len;
 #if 0
                 cli_errmsg("Yara nocase string: \"%s\"\n", string->string);
 #endif
                 if (strlen(string->string) <= CLI_DEFAULT_AC_MINDEPTH) //FIXME: Yara has no length minimum
                     has_short_string = 1;
                 for (i=0; i < strlen(string->string); i++) {
+                    len = strlen(rulestr);
                     snprintf(rulestr+len, totsize-len, "%02x", string->string[i]);
                 }
+
+                len = strlen(rulestr);
                 snprintf(rulestr+len, totsize-len, "/i");
             } else {
 #if 0
