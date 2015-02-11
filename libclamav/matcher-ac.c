@@ -1713,7 +1713,10 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
                     break;
                 }
 
-                new->ch[i] = *dec;
+                if(nocase && ((*dec & CLI_MATCH_METADATA) == CLI_MATCH_CHAR))
+                    new->ch[i] = cli_nocase(*dec) | CLI_MATCH_NOCASE;
+                else
+                    new->ch[i] = *dec;
                 free(dec);
                 new->ch_mindist[i] = n1;
                 new->ch_maxdist[i] = n2;
@@ -1726,7 +1729,10 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
                     break;
                 }
 
-                new->ch[i] = *dec;
+                if(nocase && ((*dec & CLI_MATCH_METADATA) == CLI_MATCH_CHAR))
+                    new->ch[i] = cli_nocase(*dec) | CLI_MATCH_NOCASE;
+                else
+                    new->ch[i] = *dec;
                 free(dec);
                 new->ch_mindist[i] = n1;
                 new->ch_maxdist[i] = n2;
