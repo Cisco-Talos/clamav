@@ -2733,10 +2733,10 @@ static int cli_loadopenioc(FILE *fs, const char *dbname, struct cl_engine *engin
 }
 
 #ifndef _WIN32
-#define YARA_DEBUG 1
-#if YARA_DEBUG == 2
+#define YARA_DEBUG 2
+#if (YARA_DEBUG == 2)
 #define cli_yaramsg(...) cli_errmsg(__VA_ARGS__)
-#elseif YARA_DEBUG == 1
+#elif (YARA_DEBUG == 1)
 #define cli_yaramsg(...) cli_dbgmsg(__VA_ARGS__)
 #else
 #define cli_yaramsg(...) 
@@ -2811,22 +2811,27 @@ static char *parse_yara_hex_string(YR_STRING *string)
     return res;
 }
 
-int ytable_add(char ***ytablep, uint32_t *ytbl_cntp)
-{
-}
+struct cli_ytable_entry {
+    char *offset;
+    char *hexstr;
+    char *sigopts;
+};
 
-uint32_t ytable_lookup(char **ytable, uint32_t ytbl_cnt)
-{
-}
+struct cli_ytable {
+    struct cli_ytable_entry **table;
+    uint32_t tbl_cnt;
+};
 
-void ytable_delete(char **ytable, uint32_t ytbl_cnt)
+void ytable_delete(struct cli_ytable *ytable)
 {
     uint32_t i;
+    if (!ytable)
+        return;
 
-    if (ytable) {
-        for (i = 0; i < ytbl_cnt; ++i)
-            free(ytable[i]);
-        free(ytable);
+    if (ytable->table) {
+        for (i = 0; i < ytable->tbl_cnt; ++i)
+            free(ytable->table[i]);
+        free(ytable->table);
     }
 }
 
@@ -2849,10 +2854,8 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
     size_t lsize;
     char *logic = NULL;
     char *exp_op = "|";
-    char *offset;
 
-    char **ytable = NULL;
-    uint32_t ytbl_cnt = 0;
+    struct cli_ytable ytable = { 0 };
 
     cli_yaramsg("called load_oneyara()\n");
 
@@ -2873,10 +2876,17 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
     */
 
     /*** rule specific checks ***/
-    if (RULE_IS_PRIVATE(rule) || RULE_IS_GLOBAL(rule) || RULE_IS_NULL(rule) ||
-        ((rule->g_flags) & RULE_GFLAGS_REQUIRE_FILE) || ((rule->g_flags) & RULE_GFLAGS_REQUIRE_EXECUTABLE)) {
+    if (RULE_IS_PRIVATE(rule) || !RULE_IS_GLOBAL(rule) || RULE_IS_NULL(rule) ||
+        !((rule->g_flags) & RULE_GFLAGS_REQUIRE_FILE) || ((rule->g_flags) & RULE_GFLAGS_REQUIRE_EXECUTABLE)) {
 
         cli_warnmsg("load_oneyara: skipping %s due to unsupported rule gflags\n", rule->id);
+
+        cli_yaramsg("RULE_IS_PRIVATE                %s\n", RULE_IS_PRIVATE(rule) ? "yes" : "no");
+        cli_yaramsg("RULE_IS_GLOBAL                 %s\n", RULE_IS_GLOBAL(rule) ? "yes" : "no");
+        cli_yaramsg("RULE_IS_NULL                   %s\n", RULE_IS_NULL(rule) ? "yes" : "no");
+        cli_yaramsg("RULE_GFLAGS_REQUIRE_FILE       %s\n", ((rule->g_flags) & RULE_GFLAGS_REQUIRE_FILE) ? "yes" : "no");
+        cli_yaramsg("RULE_GFLAGS_REQUIRE_EXECUTABLE %s\n", ((rule->g_flags) & RULE_GFLAGS_REQUIRE_EXECUTABLE) ? "yes" : "no");
+
         (*sigs)--;
         return CL_SUCCESS;
     }
@@ -2917,6 +2927,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
             continue;
         }
 
+
         /* modifier handler */
         if (STRING_IS_NO_CASE(string)) {
         }
@@ -2927,13 +2938,26 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
         if (STRING_IS_FULL_WORD(string)) {
         }
 
+
         /* special modifier handler */
-        if (STRING_IS_ANONYMOUS(string)) { /* empty */ }
+        if (STRING_IS_ANONYMOUS(string))
+            cli_yaramsg("STRING_IS_ANONYMOUS       %s\n", STRING_IS_SINGLE_MATCH(string) ? "yes" : "no");
 
         /* unsupported(?) modifier handler */
-        if (STRING_IS_REFERENCED(string) || STRING_IS_SINGLE_MATCH(string) || STRING_IS_FAST_HEX_REGEXP(string) ||
-            STRING_IS_CHAIN_PART(string) || STRING_IS_CHAIN_TAIL(string) || STRING_FITS_IN_ATOM(string)) {
+        if (STRING_IS_SINGLE_MATCH(string))
+            cli_yaramsg("STRING_IS_SINGLE_MATCH    %s\n", STRING_IS_SINGLE_MATCH(string) ? "yes" : "no");
+
+        if (STRING_IS_REFERENCED(string) || STRING_IS_FAST_HEX_REGEXP(string) || STRING_IS_CHAIN_PART(string) ||
+            STRING_IS_CHAIN_TAIL(string) || STRING_FITS_IN_ATOM(string)) {
+
             cli_warnmsg("load_oneyara: skipping unsupported string %s\n", rule->id);
+
+            cli_yaramsg("STRING_IS_REFERENCED      %s\n", STRING_IS_REFERENCED(string) ? "yes" : "no");
+            cli_yaramsg("STRING_IS_FAST_HEX_REGEXP %s\n", STRING_IS_FAST_HEX_REGEXP(string) ? "yes" : "no");
+            cli_yaramsg("STRING_IS_CHAIN_PART      %s\n", STRING_IS_CHAIN_PART(string) ? "yes" : "no");
+            cli_yaramsg("STRING_IS_CHAIN_TAIL      %s\n", STRING_IS_CHAIN_TAIL(string) ? "yes" : "no");
+            cli_yaramsg("STRING_FITS_IN_ATOM       %s\n", STRING_FITS_IN_ATOM(string) ? "yes" : "no");
+
             str_error++;
             free(substr);
             continue;
@@ -2941,13 +2965,13 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
     }
 
     if (str_error > 0) {
-        cli_errmsg("load_oneyara: clamav does not support %d input strings\n", str_error);
-        ytable_delete(ytable, ytbl_cnt);
+        cli_warnmsg("load_oneyara: clamav does not support %d input strings\n", str_error);
+        ytable_delete(&ytable);
         (*sigs)--;
         return CL_SUCCESS; /* TODO - kill signature instead? */
-    } else if (ytbl_cnt == 0) {
-        cli_errmsg("load_oneyara: yara contains no supported strings\n");
-        ytable_delete(ytable, ytbl_cnt);
+    } else if (ytable.tbl_cnt == 0) {
+        cli_warnmsg("load_oneyara: yara contains no supported strings\n");
+        ytable_delete(&ytable);
         (*sigs)--;
         return CL_SUCCESS; /* TODO - kill signature instead? */
     }
@@ -2955,11 +2979,11 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
     /*** conditional verification step (ex. do we define too many strings versus used?)  ***/
     /*** additional string table population (ex. offsets), second translation table pass ***/
 
-    lsize = 3*ytbl_cnt;
+    lsize = 3*ytable.tbl_cnt;
     logic = cli_calloc(lsize, sizeof(char));
     if (!logic) {
         cli_errmsg("load_oneyara: cannot allocate memory for logic statement\n");
-        ytable_delete(ytable, ytbl_cnt);
+        ytable_delete(&ytable);
         return CL_EMEM;
     }
 
@@ -2967,14 +2991,14 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
         exp_op = "&";
     else {
         exp_op = "|";
-        if ((!(rule->g_flags & RULE_ANY && rule->g_flags & RULE_THEM) && ytbl_cnt > 1) &&
-            !(rule->g_flags & RULE_EP && ytbl_cnt == 1))
+        if ((!(rule->g_flags & RULE_ANY && rule->g_flags & RULE_THEM) && ytable.tbl_cnt > 1) &&
+            !(rule->g_flags & RULE_EP && ytable.tbl_cnt == 1))
             yara_complex++;
     }
 
-    for (i=0; i<ytbl_cnt; i++) {
+    for (i=0; i<ytable.tbl_cnt; i++) {
         size_t len=strlen(logic);
-        snprintf(logic+len, lsize-len, "%u%s", i, (i+1 == ytbl_cnt) ? "" : exp_op);
+        snprintf(logic+len, lsize-len, "%u%s", i, (i+1 == ytable.tbl_cnt) ? "" : exp_op);
     }    
 
     /*** END CONDITIONAL HANDLING ***/
@@ -2988,7 +3012,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
         FREE_TDB(tdb);
         if(ret == 1) {
             cli_dbgmsg("load_oneyara: Not supported attribute(s) in logical signature for %s, skipping\n", rule->id);
-            ytable_delete(ytable, ytbl_cnt);
+            ytable_delete(&ytable);
             free(logic);
             (*sigs)--;
             return CL_SUCCESS;
@@ -3000,13 +3024,13 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
         if(tdb.engine[0] > cl_retflevel()) {
             cli_dbgmsg("load_oneyara: Signature for %s not loaded (required f-level: %u)\n", rule->id, tdb.engine[0]);
             FREE_TDB(tdb);
-            ytable_delete(ytable, ytbl_cnt);
+            ytable_delete(&ytable);
             free(logic);
             (*sigs)--;
             return CL_SUCCESS;
         } else if(tdb.engine[1] < cl_retflevel()) {
             FREE_TDB(tdb);
-            ytable_delete(ytable, ytbl_cnt);
+            ytable_delete(&ytable);
             free(logic);
             (*sigs)--;
             return CL_SUCCESS;
@@ -3016,13 +3040,13 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
     if(!tdb.target) {
         cli_errmsg("load_oneyara: No target specified in TDB\n");
         FREE_TDB(tdb);
-        ytable_delete(ytable, ytbl_cnt);
+        ytable_delete(&ytable);
         free(logic);
         return CL_EMALFDB;
     } else if(tdb.target[0] >= CLI_MTARGETS) {
         cli_dbgmsg("load_oneyara: Not supported target type in logical signature for %s, skipping\n", rule->id);
         FREE_TDB(tdb);
-        ytable_delete(ytable, ytbl_cnt);
+        ytable_delete(&ytable);
         free(logic);
         (*sigs)--;
         return CL_SUCCESS;
@@ -3031,7 +3055,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
     if((tdb.icongrp1 || tdb.icongrp2) && tdb.target[0] != 1) {
         cli_errmsg("load_oneyara: IconGroup is only supported in PE (target 1) signatures\n");
         FREE_TDB(tdb);
-        ytable_delete(ytable, ytbl_cnt);
+        ytable_delete(&ytable);
         free(logic);
         return CL_EMALFDB;
     }
@@ -3039,7 +3063,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
     if((tdb.ep || tdb.nos) && tdb.target[0] != 1 && tdb.target[0] != 6 && tdb.target[0] != 9) {
         cli_errmsg("load_oneyara: EntryPoint/NumberOfSections is only supported in PE/ELF/Mach-O signatures\n");
         FREE_TDB(tdb);
-        ytable_delete(ytable, ytbl_cnt);
+        ytable_delete(&ytable);
         free(logic);
         return CL_EMALFDB;
     }
@@ -3051,7 +3075,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
     if(!lsig) {
         cli_errmsg("load_oneyara: Can't allocate memory for lsig\n");
         FREE_TDB(tdb);
-        ytable_delete(ytable, ytbl_cnt);
+        ytable_delete(&ytable);
         free(logic);
         return CL_EMEM;
     }
@@ -3062,7 +3086,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
         if(!lsig->u.logic) {
             cli_errmsg("load_oneyara: Can't allocate memory for lsig->logic\n");
             FREE_TDB(tdb);
-            ytable_delete(ytable, ytbl_cnt);
+            ytable_delete(&ytable);
             free(logic);
             mpool_free(engine->mempool, lsig);
             return CL_EMEM;
@@ -3070,7 +3094,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
     } else {
             cli_errmsg("load_oneyara: Unsupported logic type\n");
             FREE_TDB(tdb);
-            ytable_delete(ytable, ytbl_cnt);
+            ytable_delete(&ytable);
             free(logic);
             mpool_free(engine->mempool, lsig);
             return CL_EMEM;
@@ -3085,30 +3109,27 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
         root->ac_lsigs--;
         cli_errmsg("cli_loadldb: Can't realloc root->ac_lsigtable\n");
         FREE_TDB(tdb);
-        ytable_delete(ytable, ytbl_cnt);
+        ytable_delete(&ytable);
         mpool_free(engine->mempool, lsig);
         return CL_EMEM;
     }
 
     newtable[root->ac_lsigs - 1] = lsig;
     root->ac_lsigtable = newtable;
-    tdb.subsigs = ytbl_cnt;
+    tdb.subsigs = ytable.tbl_cnt;
 
     /*** loading step - put things into the AC trie ***/
-    for (i = 0; i < ytbl_cnt; ++i) {
+    for (i = 0; i < ytable.tbl_cnt; ++i) {
         lsigid[1] = i;
-
-        /* TODO - offsets as separate table or integrated into ytable[i]? */
-        offset = "*";
 
         /* TODO - options as separate table or integrated into ytable[i]? */
 
-        if((ret = cli_parse_add(root, rule->id, ytable[i], NULL, 0, 0, offset, target, lsigid, options)))
+        if((ret = cli_parse_add(root, rule->id, ytable.table[i]->hexstr, ytable.table[i]->sigopts, 0, 0, ytable.table[i]->offset, target, lsigid, options)))
             return ret;
     }
 
     memcpy(&lsig->tdb, &tdb, sizeof(tdb));
-    ytable_delete(ytable, ytbl_cnt);
+    ytable_delete(&ytable);
     return CL_SUCCESS;
 }
 
@@ -3162,7 +3183,7 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
     if(signo)
         *signo += sigs;
 
-    cli_yaramsg("Successfully loaded %u of %u yara signatures from %s\n", sigs, rules, dbname);
+    cli_yaramsg("cli_loadyara: loaded %u of %u yara signatures from %s\n", sigs, rules, dbname);
 
     return CL_SUCCESS;
 }
