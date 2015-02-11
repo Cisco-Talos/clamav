@@ -1671,7 +1671,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 
         hex = hexcpy;
         for(i = 0; i < 2; i++) {
-            unsigned int n1, n2;
+            unsigned int n, n1, n2;
 
             if(!(pt = strchr(hex, '[')))
                 break;
@@ -1686,7 +1686,10 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 
             *pt2++ = 0;
 
-            if(sscanf(pt, "%u-%u", &n1, &n2) != 2) {
+            n = sscanf(pt, "%u-%u", &n1, &n2);
+            if(n == 1) {
+                n2 = n1;
+            } else if(n != 2) {
                 cli_dbgmsg("cli_ac_addsig: incorrect range inside square brackets\n");
                 error = CL_EMALFDB;
                 break;
