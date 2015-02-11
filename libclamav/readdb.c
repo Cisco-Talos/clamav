@@ -1459,8 +1459,9 @@ static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsig
         return CL_EMEM;
     }
 
-    lsig->logic = cli_mpool_strdup(engine->mempool, logic);
-    if(!lsig->logic) {
+    lsig->type = CLI_NORMAL_LSIG;
+    lsig->u.logic = cli_mpool_strdup(engine->mempool, logic);
+    if(!lsig->u.logic) {
         cli_errmsg("cli_loadldb: Can't allocate memory for lsig->logic\n");
         FREE_TDB(tdb);
         mpool_free(engine->mempool, lsig);
@@ -3731,7 +3732,8 @@ int cl_engine_free(struct cl_engine *engine)
 		cli_ac_free(root);
 		if(root->ac_lsigtable) {
 		    for(j = 0; j < root->ac_lsigs; j++) {
-			mpool_free(engine->mempool, root->ac_lsigtable[j]->logic);
+			if (root->ac_lsigtable[j]->type == CLI_NORMAL_LSIG)
+			    mpool_free(engine->mempool, root->ac_lsigtable[j]->u.logic);
 			FREE_TDB(root->ac_lsigtable[j]->tdb);
 			mpool_free(engine->mempool, root->ac_lsigtable[j]);
 		    }

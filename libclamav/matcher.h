@@ -79,9 +79,15 @@ struct cli_lsig_tdb {
 
 struct cli_bc;
 struct cli_ac_lsig {
+#define CLI_NORMAL_LSIG 0
+#define CLI_NORMAL_YARA 1
     uint32_t id;
     unsigned bc_idx;
-    char *logic;
+    uint8_t type;
+    union {
+        char *logic;
+        void *other;
+    } u;
     const char *virname;
     struct cli_lsig_tdb tdb;
 };

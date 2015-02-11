@@ -697,7 +697,8 @@ int cli_lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *ac
 	evalcnt = 0;
 	evalids = 0;
 	cli_ac_chkmacro(root, acdata, i);
-	if(cli_ac_chklsig(root->ac_lsigtable[i]->logic, root->ac_lsigtable[i]->logic + strlen(root->ac_lsigtable[i]->logic), acdata->lsigcnt[i], &evalcnt, &evalids, 0) == 1) {
+    //TODO - handle CLI_NORMAL_YARA lsigs here
+	if(cli_ac_chklsig(root->ac_lsigtable[i]->u.logic, root->ac_lsigtable[i]->u.logic + strlen(root->ac_lsigtable[i]->u.logic), acdata->lsigcnt[i], &evalcnt, &evalids, 0) == 1) {
 	    if(root->ac_lsigtable[i]->tdb.container && root->ac_lsigtable[i]->tdb.container[0] != ctx->container_type)
 		continue;
 	    if(root->ac_lsigtable[i]->tdb.filesize && (root->ac_lsigtable[i]->tdb.filesize[0] > map->len || root->ac_lsigtable[i]->tdb.filesize[1] < map->len))
