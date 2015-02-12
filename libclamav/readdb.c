@@ -3105,6 +3105,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
 
     if (str_error > 0) {
         cli_warnmsg("load_oneyara: clamav does not support %d input strings for %s, skipping\n", str_error, rule->id);
+        yara_malform++;
         ytable_delete(&ytable);
         (*sigs)--;
         return CL_SUCCESS; /* TODO - kill signature instead? */
