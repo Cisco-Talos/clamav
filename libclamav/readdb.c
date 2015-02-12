@@ -2874,6 +2874,23 @@ static char *parse_yara_hex_string(YR_STRING *string)
     return res;
 }
 
+void free_yararule(YR_RULE *rule)
+{
+    YR_STRING *string;
+
+    while (!STAILQ_EMPTY(&rule->strings)) {
+        string = STAILQ_FIRST(&rule->strings);
+        STAILQ_REMOVE(&rule->strings, string, _yc_string, link);
+
+        free(string->id);
+        free(string->string);
+        free(string);
+    }
+
+    free(rule->id);
+    free(rule);
+}
+
 struct cli_ytable_entry {
     char *offset;
     char *hexstr;
@@ -3290,10 +3307,10 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
 
         /* TODO - PUA and engine->ignored */
         rc = load_oneyara(rule, engine, options, &sigs);
+        free_yararule(rule);
+
         if (rc != CL_SUCCESS)
             break;
-
-        /* do we free the rules? and where? */
     }
 
     if(rc) {
