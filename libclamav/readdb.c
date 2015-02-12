@@ -2832,7 +2832,7 @@ static char *parse_yara_hex_string(YR_STRING *string)
     return res;
 }
 
-void free_yararule(YR_RULE *rule)
+static inline void free_yararule(YR_RULE *rule)
 {
     YR_STRING *string;
 
@@ -2860,60 +2860,13 @@ struct cli_ytable {
     int32_t tbl_cnt;
 };
 
-/* function is dumb - TODO - rewrite using hashtable */
-int ytable_add_string(struct cli_ytable *ytable, const char *hexsig)
-{
-    struct cli_ytable_entry *new;
-    struct cli_ytable_entry **newtable;
-    int ret;
-
-    if (!ytable || !hexsig)
-        return CL_ENULLARG;
-
-    new = cli_calloc(1, sizeof(struct cli_ytable_entry));
-    if (!new) {
-        cli_yaramsg("ytable_add_string: out of memory for new ytable entry\n");
-        return CL_EMEM;
-    }
-
-    new->hexstr = cli_strdup(hexsig);
-    if (!new->hexstr) {
-        cli_yaramsg("ytable_add_string: out of memory for hexsig copy\n");
-        free(new);
-        return CL_EMEM;
-    }
-
-    ytable->tbl_cnt++;
-    newtable = cli_realloc(ytable->table, ytable->tbl_cnt * sizeof(struct cli_ytable_entry *));
-    if (!newtable) {
-        cli_yaramsg("ytable_add_string: failed to reallocate new ytable table\n");
-        free(new->hexstr);
-        free(new);
-        ytable->tbl_cnt--;
-        return CL_EMEM;
-    }
-
-    newtable[ytable->tbl_cnt-1] = new;
-    ytable->table = newtable;
-
-    if ((ret = ytable_add_attrib(ytable, NULL, "*", 0)) != CL_SUCCESS) {
-        cli_yaramsg("ytable_add_string: failed to add default offset\n");
-        free(new->hexstr);
-        free(new);
-        ytable->tbl_cnt--;
-        return ret;
-    }
-
-    return CL_SUCCESS;
-}
-
-int32_t ytable_lookup(const char *hexsig)
+static int32_t ytable_lookup(const char *hexsig)
 {
     /* TODO - WRITE ME! */
     return -1;
 }
 
-int ytable_add_attrib(struct cli_ytable *ytable, const char *hexsig, const char *value, int type)
+static int ytable_add_attrib(struct cli_ytable *ytable, const char *hexsig, const char *value, int type)
 {
     int32_t lookup;
     char **attrib;
@@ -2966,7 +2919,54 @@ int ytable_add_attrib(struct cli_ytable *ytable, const char *hexsig, const char 
     return CL_SUCCESS;
 }
 
-void ytable_delete(struct cli_ytable *ytable)
+/* function is dumb - TODO - rewrite using hashtable */
+static int ytable_add_string(struct cli_ytable *ytable, const char *hexsig)
+{
+    struct cli_ytable_entry *new;
+    struct cli_ytable_entry **newtable;
+    int ret;
+
+    if (!ytable || !hexsig)
+        return CL_ENULLARG;
+
+    new = cli_calloc(1, sizeof(struct cli_ytable_entry));
+    if (!new) {
+        cli_yaramsg("ytable_add_string: out of memory for new ytable entry\n");
+        return CL_EMEM;
+    }
+
+    new->hexstr = cli_strdup(hexsig);
+    if (!new->hexstr) {
+        cli_yaramsg("ytable_add_string: out of memory for hexsig copy\n");
+        free(new);
+        return CL_EMEM;
+    }
+
+    ytable->tbl_cnt++;
+    newtable = cli_realloc(ytable->table, ytable->tbl_cnt * sizeof(struct cli_ytable_entry *));
+    if (!newtable) {
+        cli_yaramsg("ytable_add_string: failed to reallocate new ytable table\n");
+        free(new->hexstr);
+        free(new);
+        ytable->tbl_cnt--;
+        return CL_EMEM;
+    }
+
+    newtable[ytable->tbl_cnt-1] = new;
+    ytable->table = newtable;
+
+    if ((ret = ytable_add_attrib(ytable, NULL, "*", 0)) != CL_SUCCESS) {
+        cli_yaramsg("ytable_add_string: failed to add default offset\n");
+        free(new->hexstr);
+        free(new);
+        ytable->tbl_cnt--;
+        return ret;
+    }
+
+    return CL_SUCCESS;
+}
+
+static void ytable_delete(struct cli_ytable *ytable)
 {
     uint32_t i;
     if (!ytable)
