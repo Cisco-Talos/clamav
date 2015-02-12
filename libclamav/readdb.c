@@ -1330,7 +1330,7 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
     mpool_free(x->mempool, x->macro_ptids);\
   } while(0);
 
-static int init_tdb(struct cli_lsig_tdb *tdb, struct cl_engine *engine, char *target, const char *virname)
+static inline int init_tdb(struct cli_lsig_tdb *tdb, struct cl_engine *engine, char *target, const char *virname)
 {
     int ret;
 
@@ -1464,53 +1464,11 @@ static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsig
 
     /* TDB */
     memset(&tdb, 0, sizeof(tdb));
-#ifdef USE_MPOOL
-    tdb.mempool = engine->mempool;
-#endif
-    if((ret = lsigattribs(tokens[1], &tdb))) {
-        FREE_TDB(tdb);
-        if(ret == 1) {
-            cli_dbgmsg("cli_loadldb: Not supported attribute(s) in logical signature for %s, skipping\n", virname);
-            (*sigs)--;
-            return CL_SUCCESS;
-        }
-        return CL_EMALFDB;
-    }
-
-    if(tdb.engine) {
-        if(tdb.engine[0] > cl_retflevel()) {
-            cli_dbgmsg("cli_loadldb: Signature for %s not loaded (required f-level: %u)\n", virname, tdb.engine[0]);
-            FREE_TDB(tdb);
-            (*sigs)--;
-            return CL_SUCCESS;
-        } else if(tdb.engine[1] < cl_retflevel()) {
-            FREE_TDB(tdb);
-            (*sigs)--;
-            return CL_SUCCESS;
-        }
-    }
-
-    if(!tdb.target) {
-        cli_errmsg("cli_loadldb: No target specified in TDB\n");
-        FREE_TDB(tdb);
-        return CL_EMALFDB;
-    } else if(tdb.target[0] >= CLI_MTARGETS) {
-        cli_dbgmsg("cli_loadldb: Not supported target type in logical signature for %s, skipping\n", virname);
-        FREE_TDB(tdb);
+    if ((ret = init_tdb(&tdb, engine, tokens[1], virname)) != CL_SUCCESS) {
         (*sigs)--;
-        return CL_SUCCESS;
-    }
-
-    if((tdb.icongrp1 || tdb.icongrp2) && tdb.target[0] != 1) {
-        cli_errmsg("cli_loadldb: IconGroup is only supported in PE (target 1) signatures\n");
-        FREE_TDB(tdb);
-        return CL_EMALFDB;
-    }
-
-    if((tdb.ep || tdb.nos) && tdb.target[0] != 1 && tdb.target[0] != 6 && tdb.target[0] != 9) {
-        cli_errmsg("cli_loadldb: EntryPoint/NumberOfSections is only supported in PE/ELF/Mach-O signatures\n");
-        FREE_TDB(tdb);
-        return CL_EMALFDB;
+        if (ret == CL_BREAK)
+            return CL_SUCCESS;
+        return ret;
     }
 
     root = engine->root[tdb.target[0]];
