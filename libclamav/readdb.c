@@ -3137,11 +3137,11 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
     }
 
     if (str_error > 0) {
-        cli_warnmsg("load_oneyara: clamav cannot support %d input strings for %s, skipping\n", str_error, rule->id);
+        cli_warnmsg("load_oneyara: clamav cannot support %d input strings, skipping\n", str_error);
         yara_malform++;
         ytable_delete(&ytable);
         (*sigs)--;
-        return ret;
+        return ret; /* kill determined by ret */
     } else if (ytable.tbl_cnt == 0) {
         cli_warnmsg("load_oneyara: yara contains no supported strings, skipping\n");
         yara_malform++;
@@ -3296,20 +3296,28 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
         STAILQ_REMOVE(&compiler.rules, rule, _yc_rule, link);
 
         rules++;
-        sigs++;
+        sigs++; /* can be decremented by load_oneyara */
 
         /* TODO - PUA and engine->ignored */
         rc = load_oneyara(rule, engine, options, &sigs);
-        free_yararule(rule);
-
-        if (rc != CL_SUCCESS)
+        if (rc != CL_SUCCESS) {
+            cli_errmsg("cli_loadyara: problem parsing yara rule %s\n", rule->id);
+            free_yararule(rule);
             break;
+        }
+
+        free_yararule(rule);
     }
 
-    if(rc) {
-        cli_errmsg("cli_loadyara: problem parsing yara rule %s\n", rule->id);
-        return rc;
+    /* clean up rules queue on error */
+    while (!STAILQ_EMPTY(&compiler.rules)) {
+        rule = STAILQ_FIRST(&compiler.rules);
+        STAILQ_REMOVE(&compiler.rules, rule, _yc_rule, link);
+        free_yararule(rule);
     }
+
+    if(rc)
+        return rc;
 
     if(!rules) {
         cli_errmsg("cli_loadyara: empty database file\n");
