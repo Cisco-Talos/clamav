@@ -2982,6 +2982,7 @@ static unsigned int yara_total, yara_loaded, yara_malform, yara_complex;
 static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int options, unsigned int *sigs)
 {
     YR_STRING *string;
+    struct cli_ytable ytable;
     int str_error = 0, i = 0, ret = CL_SUCCESS;
     struct cli_lsig_tdb tdb;
     uint32_t lsigid[2];
@@ -2993,9 +2994,9 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
     uint8_t has_short_string;
     char *exp_op = "|";
 
-    struct cli_ytable ytable = { 0 };
-
     cli_yaramsg("load_oneyara: attempting to load %s\n", rule->id);
+
+    memset(&ytable, 0, sizeof(ytable));
 
     if (!rule) {
         cli_errmsg("load_oneyara: empty rule passed as argument\n");
