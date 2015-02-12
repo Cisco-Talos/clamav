@@ -2763,23 +2763,29 @@ static int cli_loadopenioc(FILE *fs, const char *dbname, struct cl_engine *engin
 #define cli_yaramsg(...) 
 #endif
 
-static char *parse_yara_hex_string(YR_STRING *string);
+static char *parse_yara_hex_string(YR_STRING *string, int *ret);
 
-static char *parse_yara_hex_string(YR_STRING *string)
+static char *parse_yara_hex_string(YR_STRING *string, int *ret)
 {
     char *res, *str;
     size_t slen, reslen=0, i, j;
 
-    if (!(string) || !(string->string))
+    if (!(string) || !(string->string)) {
+        if (ret) *ret = CL_ENULLARG;
         return NULL;
+    }
 
-    if (!STRING_IS_HEX(string))
+    if (!STRING_IS_HEX(string)) {
+        if (ret) *ret = CL_EARG;
         return NULL;
+    }
 
     str = (char *)(string->string);
 
-    if ((slen = strlen(str)) == 0)
+    if ((slen = strlen(str)) == 0) {
+        if (ret) *ret = CL_EARG;
         return NULL;
+    }
 
     str = strchr(str, '{')+1;
 
@@ -2792,8 +2798,10 @@ static char *parse_yara_hex_string(YR_STRING *string)
             break;
         case '[':
             /* ClamAV's Aho-Corasic algorithm requires at least two known bytes before {n,m} wildcard */
-            if (reslen < 4)
+            if (reslen < 4) {
+                if (ret) *ret = CL_EMALFDB;
                 return NULL;
+            }
             reslen += 2;
             break;
         default:
@@ -2804,8 +2812,10 @@ static char *parse_yara_hex_string(YR_STRING *string)
 
     reslen++;
     res = cli_calloc(reslen, 1);
-    if (!(res))
+    if (!(res)) {
+        if (ret) *ret = CL_EMEM;
         return NULL;
+    }
 
     for (i=0, j=0; i < slen-1 && j < reslen; i++) {
         switch (str[i]) {
@@ -2829,6 +2839,8 @@ static char *parse_yara_hex_string(YR_STRING *string)
         }
     }
 
+    if (ret)
+        *ret = CL_SUCCESS;
     return res;
 }
 
@@ -3050,7 +3062,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
     /*** verification step - can clamav load it?       ***/
     /*** initial population pass for the strings table ***/
     STAILQ_FOREACH(string, &rule->strings, link) {
-        char *substr;
+        char *substr = NULL;
 
         /* string type handler */
         if (STRING_IS_NULL(string)) {
@@ -3058,28 +3070,32 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
             //str_error++; /* kill the insertion? */
             continue;
         } else if (STRING_IS_HEX(string)) {
-            substr = parse_yara_hex_string(string);
+            substr = parse_yara_hex_string(string, &ret);
+            if (ret != CL_SUCCESS) {
+                cli_errmsg("load_oneyara: error in parsing yara hex string\n");
+                str_error++;
+                break;
+            }
+
+            if (strlen(substr)/2 <= CLI_DEFAULT_AC_MINDEPTH) {
+                cli_warnmsg("load_oneyara: string is too short %s\n", string->id);
+                str_error++;
+            }
+
             cli_yaramsg("load_oneyara: hex string: [%s] => [%s]\n", string->string, substr);
 
-            if (substr) {
-                if (strlen(substr)/2 <= CLI_DEFAULT_AC_MINDEPTH) {
-                    cli_warnmsg("load_oneyara: string is too short %s\n", string->id);
-                    str_error++;
-                }
-
-                ytable_add_string(&ytable, substr);
-                free(substr);
-            }
+            ytable_add_string(&ytable, substr);
+            free(substr);
         } else if (STRING_IS_LITERAL(string)) {
+            cli_yaramsg("load_oneyara: literal string: [%s] => [%s]\n", string->string, substr);
         } else if (STRING_IS_REGEXP(string)) {
+            cli_yaramsg("load_oneyara: regex string: [%s] => [%s]\n", string->string, substr);
         } else {
             /* TODO - extract the string length to handle NULL hex-escaped characters
              * For now, we'll just use the strlen we get which crudely finds the length
              */
             size_t length = strlen(string->string);
             size_t totsize = 2*length+1;
-
-            cli_yaramsg("load_oneyara: generic string: %d\n", string->length);
 
             if (length <= CLI_DEFAULT_AC_MINDEPTH) {
                 cli_warnmsg("load_oneyara: string is too short %s\n", string->id);
