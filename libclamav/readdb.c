@@ -3048,7 +3048,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
             continue;
         } else if (STRING_IS_HEX(string)) {
             substr = parse_yara_hex_string(string);
-            cli_yaramsg("Yara hex string: \"%s\"\n", substr);
+            cli_yaramsg("load_oneyara: hex string: [%s] => [%s]\n", string->string, substr);
 
             if (substr) {
                 if (strlen(substr)/2 <= CLI_DEFAULT_AC_MINDEPTH) {
@@ -3057,25 +3057,58 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
                 }
 
                 ytable_add_string(&ytable, substr);
-                free (substr);
+                free(substr);
             }
         } else if (STRING_IS_LITERAL(string)) {
+            /* WHAT IS THIS! */
         } else if (STRING_IS_REGEXP(string)) {
         } else {
-            cli_warnmsg("load_oneyara: skipping undefined typed string %s\n", rule->id);
-            //str_error++; /* kill the insertion? */
-            continue;
+            /* TODO - extract the string length to handle NULL hex-escaped characters
+             * For now, we'll just use the strlen we get which crudely finds the length
+             */
+            size_t length = strlen(string->string);
+            size_t totsize = 2*length+1;
+
+            cli_yaramsg("load_oneyara: generic string: %d\n", string->length);
+
+            if (length <= CLI_DEFAULT_AC_MINDEPTH) {
+                cli_warnmsg("load_oneyara: string is too short %s\n", string->id);
+                str_error++;
+                continue;
+            }
+
+            substr = cli_calloc(totsize, sizeof(char));
+            if (!substr) {
+                cli_errmsg("load_oneyara: cannot allocate memory for converted generic string\n");
+                str_error++;
+                ret = CL_EMEM;
+                break;
+            }
+
+            for (i=0; i < length; ++i) {
+                size_t len = strlen(substr);
+                snprintf(substr+len, totsize-len, "%02x", string->string[i]);
+            }
+
+            cli_yaramsg("load_oneyara: generic string: [%s] => [%s]\n", string->string, substr);
+
+            ytable_add_string(&ytable, substr);
+            free(substr);
         }
 
 
         /* modifier handler */
         if (STRING_IS_NO_CASE(string)) {
+            cli_yaramsg("STRING_IS_NO_CASE         %s\n", STRING_IS_SINGLE_MATCH(string) ? "yes" : "no");
         }
         if (STRING_IS_ASCII(string)) {
+            cli_yaramsg("STRING_IS_ASCII           %s\n", STRING_IS_SINGLE_MATCH(string) ? "yes" : "no");
         }
         if (STRING_IS_WIDE(string)) {
+            cli_yaramsg("STRING_IS_WIDE            %s\n", STRING_IS_SINGLE_MATCH(string) ? "yes" : "no");
         }
         if (STRING_IS_FULL_WORD(string)) {
+            cli_yaramsg("STRING_IS_FULL_WORD       %s\n", STRING_IS_SINGLE_MATCH(string) ? "yes" : "no");
         }
 
 
@@ -3104,11 +3137,11 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
     }
 
     if (str_error > 0) {
-        cli_warnmsg("load_oneyara: clamav does not support %d input strings for %s, skipping\n", str_error, rule->id);
+        cli_warnmsg("load_oneyara: clamav cannot support %d input strings for %s, skipping\n", str_error, rule->id);
         yara_malform++;
         ytable_delete(&ytable);
         (*sigs)--;
-        return CL_SUCCESS; /* TODO - kill signature instead? */
+        return ret;
     } else if (ytable.tbl_cnt == 0) {
         cli_warnmsg("load_oneyara: yara contains no supported strings, skipping\n");
         yara_malform++;
