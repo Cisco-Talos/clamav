@@ -3718,12 +3718,14 @@ int cl_load(const char *path, struct cl_engine *engine, unsigned int *signo, uns
 	    return CL_EOPEN;
     }
 #ifdef YARA_PROTO
-    cli_yaramsg("$$$$$$$$$$$$ YARA $$$$$$$$$$$$\n");
-    cli_yaramsg("\tTotal Rules: %u\n", yara_total);
-    cli_yaramsg("\tRules Loaded: %u\n", yara_loaded);
-    cli_yaramsg("\tComplex conditions: %u\n", yara_complex);
-    cli_yaramsg("\tMalformed strings: %u\n", yara_malform);
-    cli_yaramsg("$$$$$$$$$$$$ YARA $$$$$$$$$$$$\n");
+    if (yara_total) {
+        cli_yaramsg("$$$$$$$$$$$$ YARA $$$$$$$$$$$$\n");
+        cli_yaramsg("\tTotal Rules: %u\n", yara_total);
+        cli_yaramsg("\tRules Loaded: %u\n", yara_loaded);
+        cli_yaramsg("\tComplex conditions: %u\n", yara_complex);
+        cli_yaramsg("\tMalformed strings: %u\n", yara_malform);
+        cli_yaramsg("$$$$$$$$$$$$ YARA $$$$$$$$$$$$\n");
+    }
 #endif
     return ret;
 }
