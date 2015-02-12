@@ -2819,8 +2819,90 @@ struct cli_ytable_entry {
 
 struct cli_ytable {
     struct cli_ytable_entry **table;
-    uint32_t tbl_cnt;
+    int32_t tbl_cnt;
 };
+
+/* function is dumb - TODO - rewrite using hashtable */
+int ytable_add_string(struct cli_ytable *ytable, const char *hexsig)
+{
+    struct cli_ytable_entry *new;
+    struct cli_ytable_entry **newtable;
+
+    if (!ytable || !hexsig)
+        return CL_ENULLARG;
+
+    new = cli_calloc(1, sizeof(struct cli_ytable_entry));
+    if (!new) {
+        /* out of memory for new ytable entry */
+        return CL_EMEM;
+    }
+
+    new->hexstr = cli_strdup(hexsig);
+    if (!new->hexstr) {
+        /* out of memory for hexsig copy */
+        free(new);
+        return CL_EMEM;
+    }
+
+    ytable->tbl_cnt++;
+    newtable = cli_realloc(ytable->table, ytable->tbl_cnt * sizeof(struct cli_ytable_entry *));
+    if (!newtable) {
+        /* failed to reallocate new ytable table */
+        free(new->hexstr);
+        free(new);
+        ytable->tbl_cnt--;
+        return CL_EMEM;
+    }
+
+    newtable[ytable->tbl_cnt-1] = new;
+    ytable->table = newtable;
+
+    return CL_SUCCESS;
+}
+
+int32_t ytable_lookup(const char *hexsig)
+{
+    /* TODO - WRITE ME! */
+    return -1;
+}
+
+int ytable_add_attrib(struct cli_ytable *ytable, const char *hexsig, const char *value, int type)
+{
+    int32_t lookup;
+    char **attrib;
+
+    if (!ytable || !value)
+        return CL_ENULLARG;
+
+    if (!hexsig)
+        lookup = ytable->tbl_cnt-1; /* assuming to attach to current string */
+    else
+        lookup = ytable_lookup(hexsig);
+
+    if (lookup < 0) {
+        /* hexsig cannot be found */
+        return CL_EARG;
+    }
+
+    if (type)
+        attrib = &ytable->table[lookup]->sigopts;
+    else
+        attrib = &ytable->table[lookup]->offset;
+
+
+    if (*attrib) {
+        /* attribute already exists for hexsig */
+        return CL_EARG;
+    }
+
+    *attrib = cli_strdup(value);
+    if (*attrib) {
+        /* ran out of memory for attribute */
+        return CL_EMEM;
+    }
+
+    return CL_SUCCESS;
+}
 
 void ytable_delete(struct cli_ytable *ytable)
 {
@@ -2829,8 +2911,12 @@ void ytable_delete(struct cli_ytable *ytable)
         return;
 
     if (ytable->table) {
-        for (i = 0; i < ytable->tbl_cnt; ++i)
+        for (i = 0; i < ytable->tbl_cnt; ++i) {
+            free(ytable->table[i]->offset);
+            free(ytable->table[i]->hexstr);
+            free(ytable->table[i]->sigopts);
             free(ytable->table[i]);
+        }
         free(ytable->table);
     }
 }
@@ -2916,6 +3002,8 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
                 snprintf(rulestr+len, totsize-len, "%s", substr);
                 free(substr);
                 */
+                ytable_add_string(&ytable, substr);
+                free (substr);
             }
 
             cli_yaramsg("Yara hex string: \"%s\"\n", substr);
@@ -3004,6 +3092,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
     /*** END CONDITIONAL HANDLING ***/
 
     /* TDB */
+    /*
     memset(&tdb, 0, sizeof(tdb));
 #ifdef USE_MPOOL
     tdb.mempool = engine->mempool;
@@ -3069,7 +3158,8 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
     }
 
     /*** populating lsig ***/
-    root = engine->root[tdb.target[0]];
+    //root = engine->root[tdb.target[0]];
+    root = engine->root[0];
 
     lsig = (struct cli_ac_lsig *) mpool_calloc(engine->mempool, 1, sizeof(struct cli_ac_lsig));
     if(!lsig) {
@@ -3081,6 +3171,8 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
     }
 
     if (logic) {
+        cli_yaramsg("normal lsig triggered yara: %s\n", logic);
+
         lsig->type = CLI_NORMAL_LSIG;
         lsig->u.logic = cli_mpool_strdup(engine->mempool, logic);
         if(!lsig->u.logic) {
@@ -3124,8 +3216,10 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
 
         /* TODO - options as separate table or integrated into ytable[i]? */
 
-        if((ret = cli_parse_add(root, rule->id, ytable.table[i]->hexstr, ytable.table[i]->sigopts, 0, 0, ytable.table[i]->offset, target, lsigid, options)))
-            return ret;
+        cli_yaramsg("%i: %s %s %s\n", i, ytable.table[i]->hexstr, ytable.table[i]->offset, ytable.table[i]->sigopts);
+
+        //if((ret = cli_parse_add(root, rule->id, ytable.table[i]->hexstr, ytable.table[i]->sigopts, 0, 0, ytable.table[i]->offset, target, lsigid, options)))
+        //return ret;
     }
 
     memcpy(&lsig->tdb, &tdb, sizeof(tdb));
