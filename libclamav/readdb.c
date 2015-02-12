@@ -1334,7 +1334,6 @@ static int init_tdb(struct cli_lsig_tdb *tdb, struct cl_engine *engine, char *ta
 {
     int ret;
 
-    memset(tdb, 0, sizeof(tdb));
 #ifdef USE_MPOOL
     tdb->mempool = engine->mempool;
 #endif
@@ -2998,7 +2997,7 @@ void ytable_delete(struct cli_ytable *ytable)
     }
 }
 
-static unsigned int yara_total, yara_loaded, yara_malform, yara_complex; 
+static unsigned int yara_total, yara_loaded, yara_malform, yara_complex;
 #define YARATARGET0 "Target:0"
 #define YARATARGET1 "Target:1"
 #define EPSTR "EP+0:"
@@ -3174,6 +3173,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
     else
         target_str = cli_strdup(YARATARGET0);
 
+    memset(&tdb, 0, sizeof(tdb));
     if ((ret = init_tdb(&tdb, engine, target_str, rule->id)) != CL_SUCCESS) {
         ytable_delete(&ytable);
         free(logic);
