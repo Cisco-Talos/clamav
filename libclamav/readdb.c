@@ -1319,6 +1319,70 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
     mpool_free(x.mempool, x.macro_ptids);\
   } while(0);
 
+#define FREE_TDB_P(x) do {		\
+  if(x->cnt[CLI_TDB_UINT])		\
+    mpool_free(x->mempool, x->val);		\
+  if(x->cnt[CLI_TDB_RANGE])		\
+    mpool_free(x->mempool, x->range);	\
+  if(x->cnt[CLI_TDB_STR])		\
+    mpool_free(x->mempool, x->str);		\
+  if(x->macro_ptids)\
+    mpool_free(x->mempool, x->macro_ptids);\
+  } while(0);
+
+static int init_tdb(struct cli_lsig_tdb *tdb, struct cl_engine *engine, char *target, const char *virname)
+{
+    int ret;
+
+    memset(tdb, 0, sizeof(tdb));
+#ifdef USE_MPOOL
+    tdb->mempool = engine->mempool;
+#endif
+    if((ret = lsigattribs(target, tdb))) {
+        FREE_TDB_P(tdb);
+        if(ret == 1) {
+            cli_dbgmsg("init_tdb: Not supported attribute(s) in signature for %s, skipping\n", virname);
+            return CL_BREAK;
+        }
+        return CL_EMALFDB;
+    }
+
+    if(tdb->engine) {
+        if(tdb->engine[0] > cl_retflevel()) {
+            FREE_TDB_P(tdb);
+            cli_dbgmsg("init_tdb: Signature for %s not loaded (required f-level: %u)\n", virname, tdb->engine[0]);
+            return CL_BREAK;
+        } else if(tdb->engine[1] < cl_retflevel()) {
+            FREE_TDB_P(tdb);
+            return CL_BREAK;
+        }
+    }
+
+    if(!tdb->target) {
+        FREE_TDB_P(tdb);
+        cli_errmsg("init_tdb: No target specified in TDB\n");
+        return CL_EMALFDB;
+    } else if(tdb->target[0] >= CLI_MTARGETS) {
+        FREE_TDB_P(tdb);
+        cli_dbgmsg("init_tdb: Not supported target type in signature for %s, skipping\n", virname);
+        return CL_BREAK;
+    }
+
+    if((tdb->icongrp1 || tdb->icongrp2) && tdb->target[0] != 1) {
+        FREE_TDB_P(tdb);
+        cli_errmsg("init_tdb: IconGroup is only supported in PE (target 1) signatures\n");
+        return CL_EMALFDB;
+    }
+
+    if((tdb->ep || tdb->nos) && tdb->target[0] != 1 && tdb->target[0] != 6 && tdb->target[0] != 9) {
+        FREE_TDB_P(tdb);
+        cli_errmsg("init_tdb: EntryPoint/NumberOfSections is only supported in PE/ELF/Mach-O signatures\n");
+        return CL_EMALFDB;
+    }
+
+    return CL_SUCCESS;
+}
+
 /*     0         1        2      3        4        5    ... (max 66)
  * VirusName:Attributes:Logic:SubSig1[:SubSig2[:SubSig3 ... ]]
  * NOTE: Maximum of 64(see MAX_LDB_SUBSIGS) subsignatures (last would be token 66)
@@ -2827,19 +2891,20 @@ int ytable_add_string(struct cli_ytable *ytable, const char *hexsig)
 {
     struct cli_ytable_entry *new;
     struct cli_ytable_entry **newtable;
+    int ret;
 
     if (!ytable || !hexsig)
         return CL_ENULLARG;
 
     new = cli_calloc(1, sizeof(struct cli_ytable_entry));
     if (!new) {
-        /* out of memory for new ytable entry */
+        cli_yaramsg("ytable_add_string: out of memory for new ytable entry\n");
         return CL_EMEM;
     }
 
     new->hexstr = cli_strdup(hexsig);
     if (!new->hexstr) {
-        /* out of memory for hexsig copy */
+        cli_yaramsg("ytable_add_string: out of memory for hexsig copy\n");
         free(new);
         return CL_EMEM;
     }
@@ -2847,7 +2912,7 @@ int ytable_add_string(struct cli_ytable *ytable, const char *hexsig)
     ytable->tbl_cnt++;
     newtable = cli_realloc(ytable->table, ytable->tbl_cnt * sizeof(struct cli_ytable_entry *));
     if (!newtable) {
-        /* failed to reallocate new ytable table */
+        cli_yaramsg("ytable_add_string: failed to reallocate new ytable table\n");
         free(new->hexstr);
         free(new);
         ytable->tbl_cnt--;
@@ -2856,6 +2921,14 @@ int ytable_add_string(struct cli_ytable *ytable, const char *hexsig)
 
     newtable[ytable->tbl_cnt-1] = new;
     ytable->table = newtable;
+
+    if ((ret = ytable_add_attrib(ytable, NULL, "*", 0)) != CL_SUCCESS) {
+        cli_yaramsg("ytable_add_string: failed to add default offset\n");
+        free(new->hexstr);
+        free(new);
+        ytable->tbl_cnt--;
+        return ret;
+    }
 
     return CL_SUCCESS;
 }
@@ -2880,25 +2953,29 @@ int ytable_add_attrib(struct cli_ytable *ytable, const char *hexsig, const char 
         lookup = ytable_lookup(hexsig);
 
     if (lookup < 0) {
-        /* hexsig cannot be found */
+        cli_yaramsg("ytable_add_attrib: hexsig cannot be found\n");
         return CL_EARG;
     }
 
-    if (type)
+    if (type) {
+        /* TODO - finish segment */
         attrib = &ytable->table[lookup]->sigopts;
-    else
-        attrib = &ytable->table[lookup]->offset;
-
-
-    if (*attrib) {
-        /* attribute already exists for hexsig */
-        return CL_EARG;
+        if (*attrib) {
+            cli_yaramsg("ytable_add_attrib: attribute already exists for hexsig\n");
+            return CL_EARG;
+        }
     }
+    else {
+        /* overwrite the previous offset */
+        if (ytable->table[lookup]->offset)
+            free(ytable->table[lookup]->offset);
 
-    *attrib = cli_strdup(value);
-    if (*attrib) {
-        /* ran out of memory for attribute */
-        return CL_EMEM;
+        ytable->table[lookup]->offset = cli_strdup(value);
+
+        if (!ytable->table[lookup]->offset) {
+            cli_yaramsg("ytable_add_attrib: ran out of memory for offset\n");
+            return CL_EMEM;
+        }
     }
 
     return CL_SUCCESS;
@@ -2938,7 +3015,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
     struct cli_ac_lsig **newtable, *lsig;
     unsigned short target = 0;
     size_t lsize;
-    char *logic = NULL;
+    char *logic = NULL, *target_str = NULL;
     char *exp_op = "|";
 
     struct cli_ytable ytable = { 0 };
@@ -2995,6 +3072,8 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
             continue;
         } else if (STRING_IS_HEX(string)) {
             substr = parse_yara_hex_string(string);
+            cli_yaramsg("Yara hex string: \"%s\"\n", substr);
+
             if (substr) {
                 /*
                 if (strlen(substr)/2 <= CLI_DEFAULT_AC_MINDEPTH)  //FIXME: Yara has no length minimum
@@ -3002,11 +3081,10 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
                 snprintf(rulestr+len, totsize-len, "%s", substr);
                 free(substr);
                 */
+
                 ytable_add_string(&ytable, substr);
                 free (substr);
             }
-
-            cli_yaramsg("Yara hex string: \"%s\"\n", substr);
         } else if (STRING_IS_LITERAL(string)) {
         } else if (STRING_IS_REGEXP(string)) {
         } else {
@@ -3092,74 +3170,20 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
     /*** END CONDITIONAL HANDLING ***/
 
     /* TDB */
-    /*
-    memset(&tdb, 0, sizeof(tdb));
-#ifdef USE_MPOOL
-    tdb.mempool = engine->mempool;
-#endif
-    if((ret = lsigattribs(YARATARGET0, &tdb))) {
-        FREE_TDB(tdb);
-        if(ret == 1) {
-            cli_dbgmsg("load_oneyara: Not supported attribute(s) in logical signature for %s, skipping\n", rule->id);
-            ytable_delete(&ytable);
-            free(logic);
-            (*sigs)--;
-            return CL_SUCCESS;
-        }
-        return CL_EMALFDB;
-    }
-
-    if(tdb.engine) {
-        if(tdb.engine[0] > cl_retflevel()) {
-            cli_dbgmsg("load_oneyara: Signature for %s not loaded (required f-level: %u)\n", rule->id, tdb.engine[0]);
-            FREE_TDB(tdb);
-            ytable_delete(&ytable);
-            free(logic);
-            (*sigs)--;
-            return CL_SUCCESS;
-        } else if(tdb.engine[1] < cl_retflevel()) {
-            FREE_TDB(tdb);
-            ytable_delete(&ytable);
-            free(logic);
-            (*sigs)--;
-            return CL_SUCCESS;
-        }
-    }
-
-    if(!tdb.target) {
-        cli_errmsg("load_oneyara: No target specified in TDB\n");
-        FREE_TDB(tdb);
+    target_str = cli_strdup(YARATARGET0); /* adjust this for other targets */
+    if ((ret = init_tdb(&tdb, engine, target_str, rule->id)) != CL_SUCCESS) {
         ytable_delete(&ytable);
         free(logic);
-        return CL_EMALFDB;
-    } else if(tdb.target[0] >= CLI_MTARGETS) {
-        cli_dbgmsg("load_oneyara: Not supported target type in logical signature for %s, skipping\n", rule->id);
-        FREE_TDB(tdb);
-        ytable_delete(&ytable);
-        free(logic);
+        free(target_str);
         (*sigs)--;
-        return CL_SUCCESS;
+        if (ret == CL_BREAK)
+            return CL_SUCCESS;
+        return ret;
     }
-
-    if((tdb.icongrp1 || tdb.icongrp2) && tdb.target[0] != 1) {
-        cli_errmsg("load_oneyara: IconGroup is only supported in PE (target 1) signatures\n");
-        FREE_TDB(tdb);
-        ytable_delete(&ytable);
-        free(logic);
-        return CL_EMALFDB;
-    }
-
-    if((tdb.ep || tdb.nos) && tdb.target[0] != 1 && tdb.target[0] != 6 && tdb.target[0] != 9) {
-        cli_errmsg("load_oneyara: EntryPoint/NumberOfSections is only supported in PE/ELF/Mach-O signatures\n");
-        FREE_TDB(tdb);
-        ytable_delete(&ytable);
-        free(logic);
-        return CL_EMALFDB;
-    }
+    free(target_str);
 
     /*** populating lsig ***/
-    //root = engine->root[tdb.target[0]];
-    root = engine->root[0];
+    root = engine->root[tdb.target[0]];
 
     lsig = (struct cli_ac_lsig *) mpool_calloc(engine->mempool, 1, sizeof(struct cli_ac_lsig));
     if(!lsig) {
@@ -3214,12 +3238,10 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
     for (i = 0; i < ytable.tbl_cnt; ++i) {
         lsigid[1] = i;
 
-        /* TODO - options as separate table or integrated into ytable[i]? */
+        cli_yaramsg("%i: [%s] [%s] [%s]\n", i, ytable.table[i]->hexstr, ytable.table[i]->offset, ytable.table[i]->sigopts);
 
-        cli_yaramsg("%i: %s %s %s\n", i, ytable.table[i]->hexstr, ytable.table[i]->offset, ytable.table[i]->sigopts);
-
-        //if((ret = cli_parse_add(root, rule->id, ytable.table[i]->hexstr, ytable.table[i]->sigopts, 0, 0, ytable.table[i]->offset, target, lsigid, options)))
-        //return ret;
+        if((ret = cli_parse_add(root, rule->id, ytable.table[i]->hexstr, ytable.table[i]->sigopts, 0, 0, ytable.table[i]->offset, target, lsigid, options)))
+            return ret;
     }
 
     memcpy(&lsig->tdb, &tdb, sizeof(tdb));
