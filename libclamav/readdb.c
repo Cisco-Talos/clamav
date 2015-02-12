@@ -2932,11 +2932,22 @@ int ytable_add_attrib(struct cli_ytable *ytable, const char *hexsig, const char 
     }
 
     if (type) {
-        /* TODO - finish segment */
-        attrib = &ytable->table[lookup]->sigopts;
-        if (*attrib) {
-            cli_yaramsg("ytable_add_attrib: attribute already exists for hexsig\n");
-            return CL_EARG;
+        /* append to existing */
+        if (!ytable->table[lookup]->sigopts) {
+            ytable->table[lookup]->sigopts = cli_strdup(value);
+            if (!ytable->table[lookup]->sigopts) {
+                cli_yaramsg("ytable_add_attrib: ran out of memory for sigopts\n");
+                return CL_EMEM;
+            }
+        } else {
+            size_t len = strlen(ytable->table[lookup]->sigopts);
+            size_t newsize = strlen(value) + len + 1;
+            ytable->table[lookup]->sigopts = cli_realloc(ytable->table[lookup]->sigopts, newsize);
+            if (!ytable->table[lookup]->sigopts) {
+                cli_yaramsg("ytable_add_attrib: ran out of memory for sigopts\n");
+                return CL_EMEM;
+            }
+            snprintf(ytable->table[lookup]->sigopts+len, newsize-len, "%s", value);
         }
     }
     else {
@@ -3060,7 +3071,6 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
                 free(substr);
             }
         } else if (STRING_IS_LITERAL(string)) {
-            /* WHAT IS THIS! */
         } else if (STRING_IS_REGEXP(string)) {
         } else {
             /* TODO - extract the string length to handle NULL hex-escaped characters
@@ -3100,15 +3110,34 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
         /* modifier handler */
         if (STRING_IS_NO_CASE(string)) {
             cli_yaramsg("STRING_IS_NO_CASE         %s\n", STRING_IS_SINGLE_MATCH(string) ? "yes" : "no");
+            if ((ret = ytable_add_attrib(&ytable, NULL, "i", 1)) != CL_SUCCESS) {
+                cli_yaramsg("ytable_add_string: failed to add 'nocase' sigopt\n");
+                str_error++;
+                break;
+            }
         }
         if (STRING_IS_ASCII(string)) {
             cli_yaramsg("STRING_IS_ASCII           %s\n", STRING_IS_SINGLE_MATCH(string) ? "yes" : "no");
+            /* what is ascii, but another way to state the same?  */
         }
         if (STRING_IS_WIDE(string)) {
+            /* support is not implemented, caught by cli_ac_addsig() */
+            /* might want to redefine the string here or something   */
             cli_yaramsg("STRING_IS_WIDE            %s\n", STRING_IS_SINGLE_MATCH(string) ? "yes" : "no");
+            if ((ret = ytable_add_attrib(&ytable, NULL, "w", 1)) != CL_SUCCESS) {
+                cli_yaramsg("ytable_add_string: failed to add 'wide' sigopt\n");
+                str_error++;
+                break;
+            }
         }
         if (STRING_IS_FULL_WORD(string)) {
+            /* support is not implemented, caught by cli_ac_addsig() */
             cli_yaramsg("STRING_IS_FULL_WORD       %s\n", STRING_IS_SINGLE_MATCH(string) ? "yes" : "no");
+            if ((ret = ytable_add_attrib(&ytable, NULL, "f", 1)) != CL_SUCCESS) {
+                cli_yaramsg("ytable_add_string: failed to add 'fullword' sigopt\n");
+                str_error++;
+                break;
+            }
         }
 
 
