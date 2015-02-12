@@ -2998,7 +2998,7 @@ void ytable_delete(struct cli_ytable *ytable)
     }
 }
 
-static unsigned int yara_total, yara_malform, yara_complex; 
+static unsigned int yara_total, yara_loaded, yara_malform, yara_complex; 
 #define YARATARGET0 "Target:0"
 #define YARATARGET1 "Target:1"
 #define EPSTR "EP+0:"
@@ -3016,11 +3016,12 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
     unsigned short target = 0;
     size_t lsize;
     char *logic = NULL, *target_str = NULL;
+    uint8_t has_short_string;
     char *exp_op = "|";
 
     struct cli_ytable ytable = { 0 };
 
-    cli_yaramsg("called load_oneyara()\n");
+    cli_yaramsg("load_oneyara: attempting to load %s\n", rule->id);
 
     if (!rule) {
         cli_errmsg("load_oneyara: empty rule passed as argument\n");
@@ -3067,7 +3068,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
 
         /* string type handler */
         if (STRING_IS_NULL(string)) {
-            cli_warnmsg("load_oneyara: skipping NULL string %s\n", rule->id);
+            cli_warnmsg("load_oneyara: skipping NULL string %s\n", string->id);
             //str_error++; /* kill the insertion? */
             continue;
         } else if (STRING_IS_HEX(string)) {
@@ -3075,12 +3076,10 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
             cli_yaramsg("Yara hex string: \"%s\"\n", substr);
 
             if (substr) {
-                /*
-                if (strlen(substr)/2 <= CLI_DEFAULT_AC_MINDEPTH)  //FIXME: Yara has no length minimum
-                    has_short_string = 1;
-                snprintf(rulestr+len, totsize-len, "%s", substr);
-                free(substr);
-                */
+                if (strlen(substr)/2 <= CLI_DEFAULT_AC_MINDEPTH) {
+                    cli_warnmsg("load_oneyara: string is too short %s\n", string->id);
+                    str_error++;
+                }
 
                 ytable_add_string(&ytable, substr);
                 free (substr);
@@ -3125,18 +3124,18 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
             cli_yaramsg("STRING_FITS_IN_ATOM       %s\n", STRING_FITS_IN_ATOM(string) ? "yes" : "no");
 
             str_error++;
-            free(substr);
             continue;
         }
     }
 
     if (str_error > 0) {
-        cli_warnmsg("load_oneyara: clamav does not support %d input strings\n", str_error);
+        cli_warnmsg("load_oneyara: clamav does not support %d input strings for %s, skipping\n", str_error, rule->id);
         ytable_delete(&ytable);
         (*sigs)--;
         return CL_SUCCESS; /* TODO - kill signature instead? */
     } else if (ytable.tbl_cnt == 0) {
-        cli_warnmsg("load_oneyara: yara contains no supported strings\n");
+        cli_warnmsg("load_oneyara: yara contains no supported strings, skipping\n");
+        yara_malform++;
         ytable_delete(&ytable);
         (*sigs)--;
         return CL_SUCCESS; /* TODO - kill signature instead? */
@@ -3170,7 +3169,11 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
     /*** END CONDITIONAL HANDLING ***/
 
     /* TDB */
-    target_str = cli_strdup(YARATARGET0); /* adjust this for other targets */
+    if (rule->g_flags & RULE_EP && ytable.tbl_cnt == 1)
+        target_str = cli_strdup(YARATARGET1);
+    else
+        target_str = cli_strdup(YARATARGET0);
+
     if ((ret = init_tdb(&tdb, engine, target_str, rule->id)) != CL_SUCCESS) {
         ytable_delete(&ytable);
         free(logic);
@@ -3208,12 +3211,12 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
             return CL_EMEM;
         }
     } else {
-            cli_errmsg("load_oneyara: Unsupported logic type\n");
-            FREE_TDB(tdb);
-            ytable_delete(&ytable);
-            free(logic);
-            mpool_free(engine->mempool, lsig);
-            return CL_EMEM;
+        cli_errmsg("load_oneyara: Unsupported logic type\n");
+        FREE_TDB(tdb);
+        ytable_delete(&ytable);
+        free(logic);
+        mpool_free(engine->mempool, lsig);
+        return CL_EMEM;
     }
     free(logic);
 
@@ -3240,12 +3243,17 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
 
         cli_yaramsg("%i: [%s] [%s] [%s]\n", i, ytable.table[i]->hexstr, ytable.table[i]->offset, ytable.table[i]->sigopts);
 
-        if((ret = cli_parse_add(root, rule->id, ytable.table[i]->hexstr, ytable.table[i]->sigopts, 0, 0, ytable.table[i]->offset, target, lsigid, options)))
+        if((ret = cli_parse_add(root, rule->id, ytable.table[i]->hexstr, ytable.table[i]->sigopts, 0, 0, ytable.table[i]->offset, target, lsigid, options)) != CL_SUCCESS) {
+            yara_malform++;
             return ret;
+        }
     }
 
     memcpy(&lsig->tdb, &tdb, sizeof(tdb));
     ytable_delete(&ytable);
+
+    yara_loaded++;
+    cli_yaramsg("load_oneyara: successfully loaded %s\n", rule->id);
     return CL_SUCCESS;
 }
 
@@ -3284,6 +3292,8 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
         rc = load_oneyara(rule, engine, options, &sigs);
         if (rc != CL_SUCCESS)
             break;
+
+        /* do we free the rules? and where? */
     }
 
     if(rc) {
@@ -3295,6 +3305,9 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
         cli_errmsg("cli_loadyara: empty database file\n");
         return CL_EMALFDB;
     }
+
+    /* globals */
+    yara_total += rules;
 
     if(signo)
         *signo += sigs;
@@ -3730,7 +3743,12 @@ int cl_load(const char *path, struct cl_engine *engine, unsigned int *signo, uns
 	    return CL_EOPEN;
     }
 #ifdef YARA_PROTO
-    cli_errmsg("$$$$$$$$$$$$ YARA $$$$$$$$$$$$ \n Total Rules: %u \n Complex conditions: %u \n Malformed strings: %u \n                $$$$$$$$$$$$ YARA $$$$$$$$$$$$ \n", yara_total, yara_complex, yara_malform);
+    cli_yaramsg("$$$$$$$$$$$$ YARA $$$$$$$$$$$$\n");
+    cli_yaramsg("\tTotal Rules: %u\n", yara_total);
+    cli_yaramsg("\tRules Loaded: %u\n", yara_loaded);
+    cli_yaramsg("\tComplex conditions: %u\n", yara_complex);
+    cli_yaramsg("\tMalformed strings: %u\n", yara_malform);
+    cli_yaramsg("$$$$$$$$$$$$ YARA $$$$$$$$$$$$\n");
 #endif
     return ret;
 }
