@@ -3080,6 +3080,8 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
             if (strlen(substr)/2 <= CLI_DEFAULT_AC_MINDEPTH) {
                 cli_warnmsg("load_oneyara: string is too short %s\n", string->id);
                 str_error++;
+                free(substr);
+                continue;
             }
 
             cli_yaramsg("load_oneyara: hex string: [%s] => [%s]\n", string->string, substr);
@@ -3087,9 +3089,26 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
             ytable_add_string(&ytable, substr);
             free(substr);
         } else if (STRING_IS_LITERAL(string)) {
+            /* TODO - handle literal strings */
             cli_yaramsg("load_oneyara: literal string: [%s] => [%s]\n", string->string, substr);
         } else if (STRING_IS_REGEXP(string)) {
+            /* TODO - rewrite to NOT use PCRE_BYPASS */
+            size_t length = strlen(PCRE_BYPASS) + strlen(string->string) + 3;
+
+            substr = cli_calloc(length, sizeof(char));
+            if (!substr) {
+                cli_errmsg("load_oneyara: cannot allocate memory for converted regex string\n");
+                str_error++;
+                ret = CL_EMEM;
+                break;
+            }
+
+            snprintf(substr, length, "%s/%s/", PCRE_BYPASS, string->string);
+
             cli_yaramsg("load_oneyara: regex string: [%s] => [%s]\n", string->string, substr);
+
+            ytable_add_string(&ytable, substr);
+            free(substr);
         } else {
             /* TODO - extract the string length to handle NULL hex-escaped characters
              * For now, we'll just use the strlen we get which crudely finds the length
@@ -3296,7 +3315,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
     for (i = 0; i < ytable.tbl_cnt; ++i) {
         lsigid[1] = i;
 
-        cli_yaramsg("%i: [%s] [%s] [%s]\n", i, ytable.table[i]->hexstr, ytable.table[i]->offset, ytable.table[i]->sigopts);
+        cli_yaramsg("%d: [%s] [%s] [%s]\n", i, ytable.table[i]->hexstr, ytable.table[i]->offset, ytable.table[i]->sigopts);
 
         if((ret = cli_parse_add(root, rule->id, ytable.table[i]->hexstr, ytable.table[i]->sigopts, 0, 0, ytable.table[i]->offset, target, lsigid, options)) != CL_SUCCESS) {
             yara_malform++;
