@@ -3260,17 +3260,23 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
     }
 
     if (str_error > 0) {
-        cli_warnmsg("load_oneyara: clamav cannot support %d input strings, skipping\n", str_error);
+        cli_warnmsg("load_oneyara: clamav cannot support %d input strings, skipping %s\n", str_error, rule->id);
         yara_malform++;
         ytable_delete(&ytable);
         (*sigs)--;
-        return ret; /* kill determined by ret */
+        return ret;
     } else if (ytable.tbl_cnt == 0) {
-        cli_warnmsg("load_oneyara: yara contains no supported strings, skipping\n");
+        cli_warnmsg("load_oneyara: yara rule contains no supported strings, skipping %s\n", rule->id);
         yara_malform++;
         ytable_delete(&ytable);
         (*sigs)--;
         return CL_SUCCESS; /* TODO - kill signature instead? */
+    } else if (ytable.tbl_cnt > MAX_LDB_SUBSIGS) {
+        cli_warnmsg("load_oneyara: yara rule contains too many subsigs (%d, max: %d), skipping %s\n", ytable.tbl_cnt, MAX_LDB_SUBSIGS, rule->id);
+        yara_malform++;
+        ytable_delete(&ytable);
+        (*sigs)--;
+        return CL_SUCCESS;
     }
 
     /*** conditional verification step (ex. do we define too many strings versus used?)  ***/
@@ -3424,7 +3430,7 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
         /* TODO - PUA and engine->ignored */
         rc = load_oneyara(rule, engine, options, &sigs);
         if (rc != CL_SUCCESS) {
-            cli_errmsg("cli_loadyara: problem parsing yara rule %s\n", rule->id);
+            cli_warnmsg("cli_loadyara: problem parsing yara rule %s\n", rule->id);
 #ifdef YARA_FINISHED
             free_yararule(rule);
             break;
@@ -3441,15 +3447,18 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
         free_yararule(rule);
     }
 
+#ifdef YARA_FINISHED
     if(rc)
         return rc;
 
-#ifdef YARA_FINISHED
     if(!rules) {
         cli_errmsg("cli_loadyara: empty database file\n");
         return CL_EMALFDB;
     }
 #else
+    if(rc)
+        return CL_SUCCESS;
+
     if(!rules) {
         cli_warnmsg("cli_loadyara: empty database file\n");
         yara_empty++;
