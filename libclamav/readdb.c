@@ -3038,20 +3038,32 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
     */
 
     /*** rule specific checks ***/
-    if (RULE_IS_PRIVATE(rule) || !RULE_IS_GLOBAL(rule) || RULE_IS_NULL(rule) ||
-        !((rule->g_flags) & RULE_GFLAGS_REQUIRE_FILE) || ((rule->g_flags) & RULE_GFLAGS_REQUIRE_EXECUTABLE)) {
+#ifdef YARA_FINISHED
+    if (RULE_IS_PRIVATE(rule)) {
+        cli_warnmsg("load_oneyara: private modifier for yara rule is unsupported\n");
+        cli_yaramsg("RULE_IS_PRIVATE                yes\n");
+    }
+    if (RULE_IS_GLOBAL(rule)) {
+        cli_warnmsg("load_oneyara: global modifier for yara rule is unsupported\n");
+        cli_yaramsg("RULE_IS_GLOBAL                 yes\n");
+    }
+    if ((rule->g_flags) & RULE_GFLAGS_REQUIRE_FILE) {
+        cli_warnmsg("load_oneyara: RULE_GFLAGS_REQUIRE_FILE for yara rule is unsupported\n");
+        cli_yaramsg("RULE_GFLAGS_REQUIRE_FILE       yes\n");
+    }
+
+
+    if (RULE_IS_NULL(rule) || ((rule->g_flags) & RULE_GFLAGS_REQUIRE_EXECUTABLE)) {
 
         cli_warnmsg("load_oneyara: skipping %s due to unsupported rule gflags\n", rule->id);
 
-        cli_yaramsg("RULE_IS_PRIVATE                %s\n", RULE_IS_PRIVATE(rule) ? "yes" : "no");
-        cli_yaramsg("RULE_IS_GLOBAL                 %s\n", RULE_IS_GLOBAL(rule) ? "yes" : "no");
         cli_yaramsg("RULE_IS_NULL                   %s\n", RULE_IS_NULL(rule) ? "yes" : "no");
-        cli_yaramsg("RULE_GFLAGS_REQUIRE_FILE       %s\n", ((rule->g_flags) & RULE_GFLAGS_REQUIRE_FILE) ? "yes" : "no");
         cli_yaramsg("RULE_GFLAGS_REQUIRE_EXECUTABLE %s\n", ((rule->g_flags) & RULE_GFLAGS_REQUIRE_EXECUTABLE) ? "yes" : "no");
 
         (*sigs)--;
         return CL_SUCCESS;
     }
+#endif
 
     if(engine->cb_sigload && engine->cb_sigload("yara", rule->id, ~options & CL_DB_OFFICIAL, engine->cb_sigload_ctx)) {
         cli_dbgmsg("load_oneyara: skipping %s due to callback\n", rule->id);
@@ -3069,6 +3081,11 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
             cli_warnmsg("load_oneyara: skipping NULL string %s\n", string->id);
             //str_error++; /* kill the insertion? */
             continue;
+#ifdef YARA_FINISHED
+        } else if (STRING_IS_LITERAL(string)) {
+            /* TODO - handle literal strings, short-circuits other string type handling */
+            cli_yaramsg("load_oneyara: literal string: [%s] => [%s]\n", string->string, substr);
+#endif
         } else if (STRING_IS_HEX(string)) {
             substr = parse_yara_hex_string(string, &ret);
             if (ret != CL_SUCCESS) {
@@ -3088,9 +3105,6 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
 
             ytable_add_string(&ytable, substr);
             free(substr);
-        } else if (STRING_IS_LITERAL(string)) {
-            /* TODO - handle literal strings */
-            cli_yaramsg("load_oneyara: literal string: [%s] => [%s]\n", string->string, substr);
         } else if (STRING_IS_REGEXP(string)) {
             /* TODO - rewrite to NOT use PCRE_BYPASS */
             size_t length = strlen(PCRE_BYPASS) + strlen(string->string) + 3;
@@ -3175,7 +3189,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
             }
         }
 
-
+#ifdef YARA_FINISHED
         /* special modifier handler */
         if (STRING_IS_ANONYMOUS(string))
             cli_yaramsg("STRING_IS_ANONYMOUS       %s\n", STRING_IS_SINGLE_MATCH(string) ? "yes" : "no");
@@ -3198,6 +3212,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
             str_error++;
             continue;
         }
+#endif
     }
 
     if (str_error > 0) {
