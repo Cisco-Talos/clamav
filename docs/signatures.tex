@@ -585,6 +585,15 @@ Firefox.boundElements;Target:0;0&1&2;6576656e742e626f756e64456c6
 22?window\.close\s*\x28/si
     \end{verbatim}
 
+    \subsection{Subsignature Options}
+    ClamAV (clamav-0.99) supports a number of additional subsignature options
+    for logical signatures. This is done by specifying a single '/' followed
+    by a number of characters representing the option.
+    \begin{itemize}
+    \item \verb+i+\\
+    Match subsignature as case-insensitive. (ex. ..;42434445/i;..)
+    \end{itemize}
+
     \subsection{Icon signatures for PE files}
     ClamAV 0.96 includes an approximate/fuzzy icon matcher to help
     detecting malicious executables disguising themselves as innocent
