@@ -2754,7 +2754,7 @@ static int cli_loadopenioc(FILE *fs, const char *dbname, struct cl_engine *engin
 }
 
 #ifndef _WIN32
-#define YARA_DEBUG 2
+#define YARA_DEBUG 1
 #if (YARA_DEBUG == 2)
 #define cli_yaramsg(...) cli_errmsg(__VA_ARGS__)
 #elif (YARA_DEBUG == 1)
