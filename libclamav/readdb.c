@@ -3063,6 +3063,21 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
         (*sigs)--;
         return CL_SUCCESS;
     }
+#else
+    /*
+    cli_warnmsg("load_oneyara: yara support is incomplete, rule flags are ignored\n");
+
+    if (RULE_IS_PRIVATE(rule))
+        cli_yaramsg("RULE_IS_PRIVATE                yes\n");
+    if (RULE_IS_GLOBAL(rule))
+        cli_yaramsg("RULE_IS_GLOBAL                 yes\n");
+    if (RULE_IS_NULL(rule))
+        cli_yaramsg("RULE_IS_NULL                   yes\n");
+    if ((rule->g_flags) & RULE_GFLAGS_REQUIRE_FILE)
+        cli_yaramsg("RULE_GFLAGS_REQUIRE_FILE       yes\n");
+    if ((rule->g_flags) & RULE_GFLAGS_REQUIRE_EXECUTABLE)
+        cli_yaramsg("RULE_GFLAGS_REQUIRE_EXECUTABLE yes\n");
+    */
 #endif
 
     if(engine->cb_sigload && engine->cb_sigload("yara", rule->id, ~options & CL_DB_OFFICIAL, engine->cb_sigload_ctx)) {
@@ -3085,6 +3100,9 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
         } else if (STRING_IS_LITERAL(string)) {
             /* TODO - handle literal strings, short-circuits other string type handling */
             cli_yaramsg("load_oneyara: literal string: [%s] => [%s]\n", string->string, substr);
+#else
+        } else if (STRING_IS_LITERAL(string)) {
+            cli_errmsg("load_oneyara: literal strings are unsupported, reorganize existing code\n");
 #endif
         } else if (STRING_IS_HEX(string)) {
             substr = parse_yara_hex_string(string, &ret);
@@ -3094,7 +3112,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
                 break;
             }
 
-            if (strlen(substr)/2 <= CLI_DEFAULT_AC_MINDEPTH) {
+            if (strlen(substr)/2 < CLI_DEFAULT_AC_MINDEPTH) {
                 cli_warnmsg("load_oneyara: string is too short %s\n", string->id);
                 str_error++;
                 free(substr);
@@ -3130,7 +3148,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
             size_t length = strlen(string->string);
             size_t totsize = 2*length+1;
 
-            if (length <= CLI_DEFAULT_AC_MINDEPTH) {
+            if (length < CLI_DEFAULT_AC_MINDEPTH) {
                 cli_warnmsg("load_oneyara: string is too short %s\n", string->id);
                 str_error++;
                 continue;
@@ -3160,7 +3178,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
         if (STRING_IS_NO_CASE(string)) {
             cli_yaramsg("STRING_IS_NO_CASE         %s\n", STRING_IS_SINGLE_MATCH(string) ? "yes" : "no");
             if ((ret = ytable_add_attrib(&ytable, NULL, "i", 1)) != CL_SUCCESS) {
-                cli_yaramsg("ytable_add_string: failed to add 'nocase' sigopt\n");
+                cli_yaramsg("load_oneyara: failed to add 'nocase' sigopt\n");
                 str_error++;
                 break;
             }
@@ -3173,20 +3191,28 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
             /* support is not implemented, caught by cli_ac_addsig() */
             /* might want to redefine the string here or something   */
             cli_yaramsg("STRING_IS_WIDE            %s\n", STRING_IS_SINGLE_MATCH(string) ? "yes" : "no");
+#ifdef YARA_FINISHED
             if ((ret = ytable_add_attrib(&ytable, NULL, "w", 1)) != CL_SUCCESS) {
-                cli_yaramsg("ytable_add_string: failed to add 'wide' sigopt\n");
+                cli_yaramsg("load_oneyara: failed to add 'wide' sigopt\n");
                 str_error++;
                 break;
             }
+#else
+            cli_warnmsg("load_oneyara: yara support is incomplete, 'wide' keyword is unsupported\n");
+#endif
         }
         if (STRING_IS_FULL_WORD(string)) {
             /* support is not implemented, caught by cli_ac_addsig() */
             cli_yaramsg("STRING_IS_FULL_WORD       %s\n", STRING_IS_SINGLE_MATCH(string) ? "yes" : "no");
+#ifdef YARA_FINISHED
             if ((ret = ytable_add_attrib(&ytable, NULL, "f", 1)) != CL_SUCCESS) {
-                cli_yaramsg("ytable_add_string: failed to add 'fullword' sigopt\n");
+                cli_yaramsg("load_oneyara: failed to add 'fullword' sigopt\n");
                 str_error++;
                 break;
             }
+#else
+            cli_warnmsg("load_oneyara: yara support is incomplete, 'fullword' keyword is unsupported\n");
+#endif
         }
 
 #ifdef YARA_FINISHED
@@ -3212,6 +3238,24 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
             str_error++;
             continue;
         }
+#else
+        /*
+        cli_warnmsg("load_oneyara: yara support is incomplete, rule flags are ignored\n");
+        if (STRING_IS_ANONYMOUS(string))
+            cli_yaramsg("STRING_IS_ANONYMOUS       yes\n");
+        if (STRING_IS_SINGLE_MATCH(string))
+            cli_yaramsg("STRING_IS_SINGLE_MATCH    yes\n");
+        if (STRING_IS_REFERENCED(string))
+            cli_yaramsg("STRING_IS_REFERENCED      yes\n");
+        if (STRING_IS_FAST_HEX_REGEXP(string))
+            cli_yaramsg("STRING_IS_FAST_HEX_REGEXP yes\n");
+        if (STRING_IS_CHAIN_PART(string))
+            cli_yaramsg("STRING_IS_CHAIN_PART      yes\n");
+        if (STRING_IS_CHAIN_TAIL(string))
+            cli_yaramsg("STRING_IS_CHAIN_TAIL      yes\n");
+        if (STRING_FITS_IN_ATOM(string))
+            cli_yaramsg("STRING_FITS_IN_ATOM       yes\n");
+        */
 #endif
     }
 
@@ -3844,8 +3888,8 @@ int cl_load(const char *path, struct cl_engine *engine, unsigned int *signo, uns
         cli_yaramsg("$$$$$$$$$$$$ YARA $$$$$$$$$$$$\n");
         cli_yaramsg("\tTotal Rules: %u\n", yara_total);
         cli_yaramsg("\tRules Loaded: %u\n", yara_loaded);
-        cli_yaramsg("\tComplex conditions: %u\n", yara_complex);
-        cli_yaramsg("\tMalformed strings: %u\n", yara_malform);
+        cli_yaramsg("\tComplex Conditions: %u\n", yara_complex);
+        cli_yaramsg("\tMalformed/Unsupported Rules: %u\n", yara_malform);
         cli_yaramsg("$$$$$$$$$$$$ YARA $$$$$$$$$$$$\n");
     }
 #endif
