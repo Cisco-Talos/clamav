@@ -2995,7 +2995,7 @@ static void ytable_delete(struct cli_ytable *ytable)
     }
 }
 
-static unsigned int yara_total, yara_loaded, yara_malform, yara_complex;
+static unsigned int yara_total, yara_loaded, yara_malform, yara_empty, yara_complex;
 #define YARATARGET0 "Target:0"
 #define YARATARGET1 "Target:1"
 #define EPSTR "EP+0:"
@@ -3425,8 +3425,10 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
         rc = load_oneyara(rule, engine, options, &sigs);
         if (rc != CL_SUCCESS) {
             cli_errmsg("cli_loadyara: problem parsing yara rule %s\n", rule->id);
+#ifdef YARA_FINISHED
             free_yararule(rule);
             break;
+#endif
         }
 
         free_yararule(rule);
@@ -3442,10 +3444,17 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
     if(rc)
         return rc;
 
+#ifdef YARA_FINISHED
     if(!rules) {
         cli_errmsg("cli_loadyara: empty database file\n");
         return CL_EMALFDB;
     }
+#else
+    if(!rules) {
+        cli_warnmsg("cli_loadyara: empty database file\n");
+        yara_empty++;
+    }
+#endif
 
     /* globals */
     yara_total += rules;
@@ -3890,6 +3899,7 @@ int cl_load(const char *path, struct cl_engine *engine, unsigned int *signo, uns
         cli_yaramsg("\tRules Loaded: %u\n", yara_loaded);
         cli_yaramsg("\tComplex Conditions: %u\n", yara_complex);
         cli_yaramsg("\tMalformed/Unsupported Rules: %u\n", yara_malform);
+        cli_yaramsg("\tEmpty Rules: %u\n", yara_empty);
         cli_yaramsg("$$$$$$$$$$$$ YARA $$$$$$$$$$$$\n");
     }
 #endif
