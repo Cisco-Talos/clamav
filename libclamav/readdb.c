@@ -2995,7 +2995,7 @@ static void ytable_delete(struct cli_ytable *ytable)
     }
 }
 
-static unsigned int yara_total, yara_loaded, yara_malform, yara_complex;
+static unsigned int yara_total, yara_loaded, yara_malform, yara_empty, yara_complex;
 #define YARATARGET0 "Target:0"
 #define YARATARGET1 "Target:1"
 #define EPSTR "EP+0:"
@@ -3260,17 +3260,23 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
     }
 
     if (str_error > 0) {
-        cli_warnmsg("load_oneyara: clamav cannot support %d input strings, skipping\n", str_error);
+        cli_warnmsg("load_oneyara: clamav cannot support %d input strings, skipping %s\n", str_error, rule->id);
         yara_malform++;
         ytable_delete(&ytable);
         (*sigs)--;
-        return ret; /* kill determined by ret */
+        return ret;
     } else if (ytable.tbl_cnt == 0) {
-        cli_warnmsg("load_oneyara: yara contains no supported strings, skipping\n");
+        cli_warnmsg("load_oneyara: yara rule contains no supported strings, skipping %s\n", rule->id);
         yara_malform++;
         ytable_delete(&ytable);
         (*sigs)--;
         return CL_SUCCESS; /* TODO - kill signature instead? */
+    } else if (ytable.tbl_cnt > MAX_LDB_SUBSIGS) {
+        cli_warnmsg("load_oneyara: yara rule contains too many subsigs (%d, max: %d), skipping %s\n", ytable.tbl_cnt, MAX_LDB_SUBSIGS, rule->id);
+        yara_malform++;
+        ytable_delete(&ytable);
+        (*sigs)--;
+        return CL_SUCCESS;
     }
 
     /*** conditional verification step (ex. do we define too many strings versus used?)  ***/
@@ -3424,9 +3430,11 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
         /* TODO - PUA and engine->ignored */
         rc = load_oneyara(rule, engine, options, &sigs);
         if (rc != CL_SUCCESS) {
-            cli_errmsg("cli_loadyara: problem parsing yara rule %s\n", rule->id);
+            cli_warnmsg("cli_loadyara: problem parsing yara rule %s\n", rule->id);
+#ifdef YARA_FINISHED
             free_yararule(rule);
             break;
+#endif
         }
 
         free_yararule(rule);
@@ -3439,6 +3447,7 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
         free_yararule(rule);
     }
 
+#ifdef YARA_FINISHED
     if(rc)
         return rc;
 
@@ -3446,6 +3455,15 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
         cli_errmsg("cli_loadyara: empty database file\n");
         return CL_EMALFDB;
     }
+#else
+    if(rc)
+        return CL_SUCCESS;
+
+    if(!rules) {
+        cli_warnmsg("cli_loadyara: empty database file\n");
+        yara_empty++;
+    }
+#endif
 
     /* globals */
     yara_total += rules;
@@ -3890,6 +3908,7 @@ int cl_load(const char *path, struct cl_engine *engine, unsigned int *signo, uns
         cli_yaramsg("\tRules Loaded: %u\n", yara_loaded);
         cli_yaramsg("\tComplex Conditions: %u\n", yara_complex);
         cli_yaramsg("\tMalformed/Unsupported Rules: %u\n", yara_malform);
+        cli_yaramsg("\tEmpty Rules: %u\n", yara_empty);
         cli_yaramsg("$$$$$$$$$$$$ YARA $$$$$$$$$$$$\n");
     }
 #endif
