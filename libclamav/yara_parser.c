@@ -705,8 +705,10 @@ YR_STRING* yr_parser_reduce_string_declaration(
 
 _exit:
 
+#if  REAL_YARA
   if (re != NULL)
     yr_re_destroy(re);
+#endif
 
   if (compiler->last_result != ERROR_SUCCESS)
     return NULL;
