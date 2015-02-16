@@ -1435,7 +1435,7 @@ static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsig
     /* Regex Usage and Support Check */
     for (i = 0; i < subsigs; ++i) {
         if (strchr(tokens[i+3], '/')) {
-            cli_dbgmsg("cli_loadldb: logical signature for %s uses PCREs but support is disabled, skipping\n", virname);
+            cli_warnmsg("cli_loadldb: logical signature for %s uses PCREs but support is disabled, skipping\n", virname);
             (*sigs)--;
             return CL_SUCCESS;
         }
