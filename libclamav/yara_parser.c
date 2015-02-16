@@ -590,7 +590,7 @@ YR_STRING* yr_parser_reduce_string_declaration(
 
     if (compiler->last_result != ERROR_SUCCESS)
       goto _exit;
-
+#endif
     compiler->last_result = _yr_parser_write_string(
         identifier,
         string_flags,
@@ -602,7 +602,7 @@ YR_STRING* yr_parser_reduce_string_declaration(
 
     if (compiler->last_result != ERROR_SUCCESS)
       goto _exit;
-
+#if REAL_YARA
     if (remainder_re != NULL)
     {
       string->g_flags |= STRING_GFLAGS_CHAIN_TAIL | STRING_GFLAGS_CHAIN_PART;
@@ -655,7 +655,6 @@ YR_STRING* yr_parser_reduce_string_declaration(
   }
   else
   {
-#if REAL_YARA
     compiler->last_result = _yr_parser_write_string(
         identifier,
         string_flags,
@@ -667,7 +666,6 @@ YR_STRING* yr_parser_reduce_string_declaration(
 
     if (compiler->last_result != ERROR_SUCCESS)
       goto _exit;
-#endif
   }
 
 
@@ -703,9 +701,11 @@ YR_STRING* yr_parser_reduce_string_declaration(
 
     yywarning(yyscanner, message);
   }
+#endif
 
 _exit:
 
+#if  REAL_YARA
   if (re != NULL)
     yr_re_destroy(re);
 #endif
