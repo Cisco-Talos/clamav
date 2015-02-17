@@ -144,7 +144,7 @@ static inline int fmap_readn(fmap_t *m, void *dst, size_t at, size_t len)
     if(!src)
 	return -1;
     memcpy(dst, src, len);
-    return (len <= ((size_t)INT_MAX)) ? (int)len : -1;
+    return (len <= INT_MAX) ? (int)len : -1;
 }
 
 static inline const void *fmap_need_str(fmap_t *m, const void *ptr, size_t len_hint)
