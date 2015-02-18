@@ -173,6 +173,11 @@ AC_OUTPUT
 if test "$enable_llvm" = "yes" && test "$subdirfailed" != "no"; then
     AC_MSG_ERROR([Failed to configure LLVM, and LLVM was explicitly requested])
 fi
+if test "$enable_llvm" = "auto" && test "$subdirfailed" != "no"; then
+    system_llvm="MIA"
+    llvm_linking=""
+fi
+
 AM_CONDITIONAL([ENABLE_LLVM],
 	       [test "$subdirfailed" != "yes" && test "$enable_llvm" != "no"])
 no_recursion="yes";
@@ -216,7 +221,11 @@ have_jit="no"
 if test "$subdirfailed" = "no"; then
     have_jit="yes"
 fi
-CL_MSG_STATUS([llvm        ],[$have_jit, from $system_llvm],[$enable_llvm])
+if test "x$llvm_linking" = "x"; then
+   CL_MSG_STATUS([llvm        ],[$have_jit, from $system_llvm],[$enable_llvm])
+else
+   CL_MSG_STATUS([llvm        ],[$have_jit, from $system_llvm ($llvm_linking)],[$enable_llvm])
+fi
 CL_MSG_STATUS([mempool     ],[$have_mempool],[$enable_mempool])
 
 AC_MSG_NOTICE([Summary of engine detection features])
