@@ -848,6 +848,18 @@ int unmew11(char *src, int off, int ssize, int dsize, uint32_t base, uint32_t va
 			section[i+1].raw = val;
 			section[i+1].rva = val + vadd;
 			section[i].rsz = section[i].vsz = ((i)?(val - section[i].raw):val);
+
+            /*
+             * bb#11212 - alternate fix, buffer is aligned
+             * must validate that sections do not intersect with source
+             * or, in other words, exceed the specified size of destination
+             */
+            if (section[i].raw + section[i].rsz > dsize) {
+                cli_dbgmsg("MEW: Section %i [%d, %d] exceeds destination size %d\n",
+                           i, section[i].raw, section[i].raw+section[i].rsz, dsize);
+                free(section);
+                return -1;
+            }
 		}
 		i++;
 
