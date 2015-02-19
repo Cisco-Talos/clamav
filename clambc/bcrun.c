@@ -62,7 +62,7 @@ static void help(void)
     printf("    --printbcir            -c         Print IR of bytecode signature\n");
     printf("    --trace <level>        -T         Set bytecode trace level 0..7 (default 7)\n");
     printf("    --no-trace-showsource  -s         Don't show source line during tracing\n");
-    printf("    --bytecode-statistics             Collect and print bytecode execution statistics\n");
+    printf("    --statistics=bytecode             Collect and print bytecode execution statistics\n");
     printf("    file                              file to test\n");
     printf("\n");
     return;
