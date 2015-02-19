@@ -246,7 +246,7 @@ int main(int argc, char *argv[])
     FILE *f;
     struct cli_bc *bc;
     struct cli_bc_ctx *ctx;
-    int rc, dbgargc;
+    int rc, dbgargc, bc_stats=0;
     struct optstruct *opts;
     const struct optstruct *opt;
     unsigned funcid=0, i;
@@ -319,8 +319,15 @@ int main(int argc, char *argv[])
     bcs.all_bcs = bc;
     bcs.count = 1;
 
-    rc = cli_bytecode_load(bc, f, NULL, optget(opts, "trust-bytecode")->enabled, 
-			   optget(opts, "bytecode-statistics")->enabled);
+    if((opt = optget(opts, "statistics"))->enabled) {
+	while(opt) {
+	    if (!strcasecmp(opt->strarg, "bytecode"))
+		bc_stats=1;
+	    opt = opt->nextarg;
+        }
+    }
+
+    rc = cli_bytecode_load(bc, f, NULL, optget(opts, "trust-bytecode")->enabled, bc_stats);
     if (rc != CL_SUCCESS) {
 	fprintf(stderr,"Unable to load bytecode: %s\n", cl_strerror(rc));
 	optfree(opts);
