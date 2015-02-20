@@ -575,7 +575,6 @@ PACKAGE_STRING='libclamavc++ devel'
 PACKAGE_BUGREPORT='http://bugs.clamav.net'
 PACKAGE_URL=''
 
-ac_unique_file="llvm/configure"
 # Factoring default headers for most tests.
 ac_includes_default="\
 #include <stdio.h>
@@ -776,6 +775,7 @@ with_gnu_ld
 with_sysroot
 enable_libtool_lock
 with_system_llvm
+with_llvm_linking
 enable_llvm
 enable_optimized
 enable_all_jit_targets
@@ -1441,6 +1441,8 @@ Optional Packages:
   --with-system-llvm      Use system llvm instead of built-in, uses full path
                           to llvm-config (default= search /usr/local or /usr
                           if not found in /usr/local)
+  --with-llvm-linking     specifies method to linking llvm [static|dynamic],
+                          only valid with --with-system-llvm
 
 Some influential environment variables:
   CXX         C++ compiler command
@@ -2337,7 +2339,6 @@ fi
 ac_config_guess="$SHELL $ac_aux_dir/config.guess"  # Please don't use this var.
 ac_config_sub="$SHELL $ac_aux_dir/config.sub"  # Please don't use this var.
 ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
-
 
 
 
@@ -15445,6 +15446,29 @@ $as_echo "$as_me: Using external LLVM" >&6;}
 fi
 
 
+llvm_linking=
+
+# Check whether --with-llvm-linking was given.
+if test "${with_llvm_linking+set}" = set; then :
+  withval=$with_llvm_linking;
+if test "x$llvmconfig" = "x"; then
+   as_fn_error $? "Failed to configure LLVM, and LLVM linking was specified without valid llvm-config" "$LINENO" 5
+else
+case "$withval" in
+  static)
+    llvm_linking="static"
+    ;;
+  dynamic)
+    llvm_linking="dynamic"
+    ;;
+  *)
+    as_fn_error $? "Invalid argument to --with-llvm-linking" "$LINENO" 5
+esac
+fi
+
+fi
+
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for supported LLVM version" >&5
 $as_echo_n "checking for supported LLVM version... " >&6; }
 if test "x$llvmconfig" = "x"; then
@@ -15485,18 +15509,28 @@ fi
 if test "x$llvmconfig" != "x"; then
     LLVMCONFIG_CXXFLAGS=`$llvmconfig --cxxflags`
 
-    if test $llvmver_test -ge 350; then
-                ldflags=`$llvmconfig --ldflags`
-        syslibs=`$llvmconfig --system-libs`
-        LLVMCONFIG_LDFLAGS="$ldflags $syslibs"
 
-    else
+    if test "x$llvm_linking" = "xdynamic"; then
         LLVMCONFIG_LDFLAGS=`$llvmconfig --ldflags`
 
-    fi
-    LLVMCONFIG_LIBS=`$llvmconfig --libs jit nativecodegen scalaropts ipo`
+        LLVMCONFIG_LIBS=-lLLVM-$llvmver
 
-    LLVMCONFIG_LIBFILES=`$llvmconfig --libfiles jit nativecodegen scalaropts ipo`
+
+    else
+        if test $llvmver_test -ge 350; then
+                      ldflags=`$llvmconfig --ldflags`
+           syslibs=`$llvmconfig --system-libs`
+           LLVMCONFIG_LDFLAGS="$ldflags $syslibs"
+
+        else
+           LLVMCONFIG_LDFLAGS=`$llvmconfig --ldflags`
+
+        fi
+        LLVMCONFIG_LIBS=`$llvmconfig --libs jit nativecodegen scalaropts ipo`
+
+        LLVMCONFIG_LIBFILES=`$llvmconfig --libfiles jit nativecodegen scalaropts ipo`
+
+    fi
 
     { $as_echo "$as_me:${as_lineno-$LINENO}: CXXFLAGS from llvm-config: $LLVMCONFIG_CXXFLAGS" >&5
 $as_echo "$as_me: CXXFLAGS from llvm-config: $LLVMCONFIG_CXXFLAGS" >&6;}

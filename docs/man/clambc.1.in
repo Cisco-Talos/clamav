@@ -39,7 +39,7 @@ Set bytecode trace level 0..7 (default 7)
 \fB\-\-no\-trace\-showsource\fR
 Don't show source line during tracing
 .TP
-\fB\-\-bytecode\-statistics\fR
+\fB\-\-statistics=bytecode\fR
 Collect and print bytecode execution statistics
 .TP
 file

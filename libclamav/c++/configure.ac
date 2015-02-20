@@ -16,7 +16,6 @@ dnl   MA 02110-1301, USA.
 AC_PREREQ([2.59])
 AC_INIT([libclamavc++],[devel],[http://bugs.clamav.net])
 AC_CONFIG_AUX_DIR([config])
-AC_CONFIG_SRCDIR([llvm/configure])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADER([clamavcxx-config.h])
 AC_CANONICAL_TARGET
@@ -78,6 +77,26 @@ AC_ARG_WITH([system-llvm], AC_HELP_STRING([--with-system-llvm],
  fi
 ])
 
+llvm_linking=
+AC_ARG_WITH([llvm-linking], [AC_HELP_STRING([--with-llvm-linking],
+[specifies method to linking llvm @<:@static|dynamic@:>@, only valid with --with-system-llvm])],
+[
+if test "x$llvmconfig" = "x"; then
+   AC_MSG_ERROR([Failed to configure LLVM, and LLVM linking was specified without valid llvm-config])  
+else
+case "$withval" in
+  static)
+    llvm_linking="static"
+    ;;
+  dynamic)
+    llvm_linking="dynamic"
+    ;;
+  *)
+    AC_MSG_ERROR([Invalid argument to --with-llvm-linking])
+esac
+fi
+], [])
+
 AC_MSG_CHECKING([for supported LLVM version])
 if test "x$llvmconfig" = "x"; then
     dnl macro not available in older autotools
@@ -113,16 +132,24 @@ fi
 dnl aquire the required flags to properly link in external LLVM
 if test "x$llvmconfig" != "x"; then
     AC_SUBST(LLVMCONFIG_CXXFLAGS, [`$llvmconfig --cxxflags`])
-    if test $llvmver_test -ge 350; then
-        dnl LLVM 3.5.0 and after splits linker flags into two sets
-        ldflags=`$llvmconfig --ldflags`
-        syslibs=`$llvmconfig --system-libs`
-        AC_SUBST(LLVMCONFIG_LDFLAGS, ["$ldflags $syslibs"])
-    else
+
+    if test "x$llvm_linking" = "xdynamic"; then
         AC_SUBST(LLVMCONFIG_LDFLAGS, [`$llvmconfig --ldflags`])
+        AC_SUBST(LLVMCONFIG_LIBS, [-lLLVM-$llvmver])
+        AC_SUBST(LLVMCONFIG_LIBFILES, [])
+    else
+        if test $llvmver_test -ge 350; then
+           dnl LLVM 3.5.0 and after splits linker flags into two sets
+           ldflags=`$llvmconfig --ldflags`
+           syslibs=`$llvmconfig --system-libs`
+           AC_SUBST(LLVMCONFIG_LDFLAGS, ["$ldflags $syslibs"])
+        else
+           AC_SUBST(LLVMCONFIG_LDFLAGS, [`$llvmconfig --ldflags`])
+        fi
+        AC_SUBST(LLVMCONFIG_LIBS, [`$llvmconfig --libs jit nativecodegen scalaropts ipo`])
+        AC_SUBST(LLVMCONFIG_LIBFILES, [`$llvmconfig --libfiles jit nativecodegen scalaropts ipo`])
     fi
-    AC_SUBST(LLVMCONFIG_LIBS, [`$llvmconfig --libs jit nativecodegen scalaropts ipo`])
-    AC_SUBST(LLVMCONFIG_LIBFILES, [`$llvmconfig --libfiles jit nativecodegen scalaropts ipo`])
+
     AC_MSG_NOTICE([CXXFLAGS from llvm-config: $LLVMCONFIG_CXXFLAGS])
     AC_MSG_NOTICE([LDFLAGS from llvm-config: $LLVMCONFIG_LDFLAGS])
     AC_MSG_NOTICE([LIBS from llvm-config: $LLVMCONFIG_LIBS])

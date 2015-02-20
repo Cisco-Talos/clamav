@@ -379,7 +379,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 
             free(pt);
         }
-    } else if(root->ac_only || type || lsigid || strpbrk(hexsig, "?([") || (root->bm_offmode && (!strcmp(offset, "*") || strchr(offset, ','))) || strstr(offset, "VI") || strchr(offset, '$')) {
+    } else if(root->ac_only || type || lsigid || sigopts || strpbrk(hexsig, "?([") || (root->bm_offmode && (!strcmp(offset, "*") || strchr(offset, ','))) || strstr(offset, "VI") || strchr(offset, '$')) {
         if((ret = cli_ac_addsig(root, virname, hexsig, sigopts, 0, 0, 0, rtype, type, 0, 0, offset, lsigid, options))) {
             cli_errmsg("cli_parse_add(): Problem adding signature (3).\n");
             return ret;
@@ -1435,7 +1435,7 @@ static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsig
     /* Regex Usage and Support Check */
     for (i = 0; i < subsigs; ++i) {
         if (strchr(tokens[i+3], '/')) {
-            cli_dbgmsg("cli_loadldb: logical signature for %s uses PCREs but support is disabled, skipping\n", virname);
+            cli_warnmsg("cli_loadldb: logical signature for %s uses PCREs but support is disabled, skipping\n", virname);
             (*sigs)--;
             return CL_SUCCESS;
         }
