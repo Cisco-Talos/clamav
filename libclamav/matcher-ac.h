@@ -54,7 +54,7 @@ struct cli_ac_special {
     unsigned char *str;
     struct cli_ac_special *next;
     uint16_t len, num;
-    uint8_t type, negative;
+    uint16_t type, negative;
 };
 
 struct cli_ac_patt {
