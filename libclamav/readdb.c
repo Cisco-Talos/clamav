@@ -182,10 +182,9 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
         char *start, *end;
 
         /* get copied */
-        hexcpy = cli_calloc(hexlen+1, sizeof(char));
+        hexcpy = cli_strdup(hexsig);
         if(!hexcpy)
             return CL_EMEM;
-        strncpy(hexcpy, hexsig, hexlen);
 
         /* get delimiters-ed */
         start = strchr(hexcpy, '/');
