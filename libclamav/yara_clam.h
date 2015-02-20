@@ -41,6 +41,9 @@ limitations under the License.
 #define _YARA_CLAM_H_
 
 #include "shared/queue.h"
+#include "others.h"
+#include "yara_arena.h"
+#include "yara_hash.h"
 
 /* From libyara/include/yara/types.h            */
 #define DECLARE_REFERENCE(type, name) \
@@ -234,6 +237,12 @@ typedef struct _SIZED_STRING
 #define ERROR_TOO_MANY_ARGUMENTS                39
 #define ERROR_WRONG_NUMBER_OF_ARGUMENTS         40
 
+#define FAIL_ON_ERROR(x) { \
+  int result = (x); \
+  if (result != ERROR_SUCCESS) \
+    return result; \
+}
+
 /* From libyara/include/yara/re.h            */
 #define RE_FLAGS_FAST_HEX_REGEXP          0x02
 #define RE_FLAGS_BACKWARDS                0x04
@@ -423,8 +432,9 @@ struct RE {
 
 /* From libyara/include/yara/limits.h            */
 #define MAX_COMPILER_ERROR_EXTRA_INFO   256
+#define MAX_LOOP_NESTING                4
 #define MAX_FUNCTION_ARGS               128
-#define LOOP_LOCAL_VARS                      4
+#define LOOP_LOCAL_VARS                 4
 #define LEX_BUF_SIZE                    1024
 
 
@@ -451,6 +461,7 @@ struct RE {
 /* YARA to ClamAV function mappings */
 #define yr_strdup cli_strdup
 #define yr_malloc cli_malloc
+#define yr_realloc cli_realloc
 #define yr_free free
 #define xtoi cli_hex2num
 #define strlcpy cli_strlcpy
@@ -469,26 +480,44 @@ struct _yc_rule {
 typedef struct _yc_rule yc_rule;
 typedef struct _yc_string {
     STAILQ_ENTRY(_yc_string) link;
-    char * id;
     int32_t g_flags;
     int32_t length;
     
-    char* identifier;
-    uint8_t* string;
+    DECLARE_REFERENCE(char*, identifier);
+    DECLARE_REFERENCE(uint8_t*, string);
+    DECLARE_REFERENCE(struct _YR_STRING*, chained_to);
 } yc_string;
 
 typedef struct _yc_compiler {
+    int                 errors;
+    int                 error_line;
+    int                 last_error;
+    int                 last_error_line;
+    int                 last_result;
+
+    YR_ARENA*           sz_arena;
+    YR_ARENA*           strings_arena;
+    YR_ARENA*           code_arena;
+    YR_HASH_TABLE*      rules_table;
+
+    yc_string*          current_rule_strings;
+    uint32_t            current_rule_flags;
+
+    int8_t*             loop_address[MAX_LOOP_NESTING];
+    char*               loop_identifier[MAX_LOOP_NESTING];
+    int                 loop_depth;
+    int                 loop_for_of_mem_offset;
+
+    char                last_error_extra_info[MAX_COMPILER_ERROR_EXTRA_INFO];
+
     char                lex_buf[LEX_BUF_SIZE];
     char*               lex_buf_ptr;
     unsigned short      lex_buf_len;
-    int                 last_result;
-    char                last_error_extra_info[MAX_COMPILER_ERROR_EXTRA_INFO];
 
-    int                 loop_depth;
-    uint32_t            current_rule_flags;
     char *              error_msg;   
-    STAILQ_HEAD(rq, _yc_rule) rules;
-    STAILQ_HEAD(cs, _yc_string) current_rule_strings;
+
+    STAILQ_HEAD(rq, _yc_rule) rule_q;
+    STAILQ_HEAD(cs, _yc_string) current_rule_string_q;
 } yc_compiler;
 
 typedef yc_compiler YR_COMPILER;

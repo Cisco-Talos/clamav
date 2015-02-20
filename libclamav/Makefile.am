@@ -445,6 +445,10 @@ libclamav_la_SOURCES = \
 	hostid.h \
 	openioc.c \
 	openioc.h \
+	yara_arena.c \
+	yara_areana.h \
+	yara_hash.c \
+	yara_hash.h \
 	yara_grammar.y \
 	yara_lexer.l \
 	yara_lexer.h \

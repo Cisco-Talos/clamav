@@ -68,15 +68,11 @@ int yr_parser_emit(
     int8_t instruction,
     int8_t** instruction_address)
 {
-#ifdef REAL_YARA
   return yr_arena_write_data(
       yyget_extra(yyscanner)->code_arena,
       &instruction,
       sizeof(int8_t),
       (void**) instruction_address);
-#else
-  return ERROR_SUCCESS;
-#endif
 }
 
 
@@ -86,7 +82,6 @@ int yr_parser_emit_with_arg(
     int64_t argument,
     int8_t** instruction_address)
 {
-#ifdef REAL_YARA
   int result = yr_arena_write_data(
       yyget_extra(yyscanner)->code_arena,
       &instruction,
@@ -101,9 +96,6 @@ int yr_parser_emit_with_arg(
         NULL);
 
   return result;
-#else
-  return ERROR_SUCCESS;
-#endif
 }
 
 
@@ -115,7 +107,6 @@ int yr_parser_emit_with_arg_reloc(
 {
   void* ptr;
 
-#ifdef REAL_YARA
   int result = yr_arena_write_data(
       yyget_extra(yyscanner)->code_arena,
       &instruction,
@@ -137,9 +128,6 @@ int yr_parser_emit_with_arg_reloc(
         EOL);
 
   return result;
-#else
-  return ERROR_SUCCESS;
-#endif
 }
 
 
@@ -148,7 +136,7 @@ int yr_parser_emit_pushes_for_strings(
     const char* identifier)
 {
   YR_COMPILER* compiler = yyget_extra(yyscanner);
-#ifdef REAL_YARA
+#ifdef REAL_YARA  //crashes because string->identifier is NULL
   YR_STRING* string = compiler->current_rule_strings;
 
   const char* string_identifier;
@@ -272,7 +260,6 @@ YR_STRING* yr_parser_lookup_string(
   YR_STRING* string;
   YR_COMPILER* compiler = yyget_extra(yyscanner);
 
-#ifdef REAL_YARA
   string = compiler->current_rule_strings;
 
   while(!STRING_IS_NULL(string))
@@ -298,9 +285,6 @@ YR_STRING* yr_parser_lookup_string(
   compiler->last_result = ERROR_UNDEFINED_STRING;
 
   return NULL;
-#else
-  return ERROR_SUCCESS;
-#endif
 }
 
 
@@ -311,7 +295,6 @@ int yr_parser_lookup_loop_variable(
   YR_COMPILER* compiler = yyget_extra(yyscanner);
   int i;
 
-#ifdef REAL_YARA
   for (i = 0; i < compiler->loop_depth; i++)
   {
     if (compiler->loop_identifier[i] != NULL &&
@@ -320,9 +303,6 @@ int yr_parser_lookup_loop_variable(
   }
 
   return -1;
-#else
-  return ERROR_SUCCESS;
-#endif
 }
 
 
@@ -335,12 +315,13 @@ int _yr_parser_write_string(
     YR_STRING** string,
     int* min_atom_length)
 {
-#ifdef REAL_YARA
   SIZED_STRING* literal_string;
+#ifdef REAL_YARA
   YR_AC_MATCH* new_match;
 
   YR_ATOM_LIST_ITEM* atom;
   YR_ATOM_LIST_ITEM* atom_list = NULL;
+#endif
 
   int result;
   int max_string_len;
@@ -368,6 +349,7 @@ int _yr_parser_write_string(
   if (result != ERROR_SUCCESS)
     return result;
 
+#if REAL_YARA
   if (flags & STRING_GFLAGS_HEXADECIMAL ||
       flags & STRING_GFLAGS_REGEXP)
   {
@@ -384,6 +366,9 @@ int _yr_parser_write_string(
     literal_string = str;
     flags |= STRING_GFLAGS_LITERAL;
   }
+#else
+    literal_string = str;
+#endif
 
   (*string)->g_flags = flags;
   (*string)->chained_to = NULL;
@@ -392,6 +377,7 @@ int _yr_parser_write_string(
   (*string)->clock_ticks = 0;
   #endif
 
+#if REAL_YARA
   memset((*string)->matches, 0,
          sizeof((*string)->matches));
 
@@ -491,11 +477,17 @@ int _yr_parser_write_string(
 
   if (atom_list != NULL)
     yr_atoms_list_destroy(atom_list);
-
-  return result;
 #else
-  return ERROR_SUCCESS;
+  (*string)->length = literal_string->length;
+  
+  result = yr_arena_write_data(
+        compiler->sz_arena,
+        literal_string->c_string,
+        literal_string->length,
+        (void*) &(*string)->string);
+
 #endif
+  return result;
 }
 
 
@@ -554,10 +546,10 @@ YR_STRING* yr_parser_reduce_string_declaration(
 
   string_flags |= STRING_GFLAGS_SINGLE_MATCH;
 
+#if REAL_YARA
   if (string_flags & STRING_GFLAGS_HEXADECIMAL ||
       string_flags & STRING_GFLAGS_REGEXP)
   {
-#if REAL_YARA
     if (string_flags & STRING_GFLAGS_HEXADECIMAL)
       compiler->last_result = yr_re_parse_hex(
           str->c_string, re_flags, &re, &re_error);
@@ -590,7 +582,7 @@ YR_STRING* yr_parser_reduce_string_declaration(
 
     if (compiler->last_result != ERROR_SUCCESS)
       goto _exit;
-#endif
+
     compiler->last_result = _yr_parser_write_string(
         identifier,
         string_flags,
@@ -602,7 +594,7 @@ YR_STRING* yr_parser_reduce_string_declaration(
 
     if (compiler->last_result != ERROR_SUCCESS)
       goto _exit;
-#if REAL_YARA
+
     if (remainder_re != NULL)
     {
       string->g_flags |= STRING_GFLAGS_CHAIN_TAIL | STRING_GFLAGS_CHAIN_PART;
@@ -651,10 +643,10 @@ YR_STRING* yr_parser_reduce_string_declaration(
 
       prev_string->chained_to = aux_string;
     }
-#endif
   }
   else
   {
+#endif
     compiler->last_result = _yr_parser_write_string(
         identifier,
         string_flags,
@@ -666,28 +658,18 @@ YR_STRING* yr_parser_reduce_string_declaration(
 
     if (compiler->last_result != ERROR_SUCCESS)
       goto _exit;
+#if REAL_YARA
   }
+#endif
 
-
-  string = cli_calloc(1, sizeof(struct _yc_string));
+    //  string = cli_calloc(1, sizeof(struct _yc_string));
   if (string == NULL) {
       cli_errmsg("yara_parser: no mem for struct _yc_string.\n");
       compiler->last_result = CL_EMEM;
       return NULL;
   } 
 
-  string->id = cli_strdup(identifier);
-  if (str->length > 0) {
-      string->string = cli_calloc(1, str->length+1);
-      if (string->string == NULL) {
-          cli_errmsg("yara_parser: no mem for string->string.\n");
-          compiler->last_result = CL_EMEM;
-          return NULL;
-      } 
-      memcpy(string->string, (char *)&str->c_string, str->length);
-      string->g_flags = string_flags;
-  }
-  STAILQ_INSERT_TAIL(&compiler->current_rule_strings, string, link);
+  STAILQ_INSERT_TAIL(&compiler->current_rule_string_q, string, link);
 
 #if REAL_YARA
   if (min_atom_length < 2 && compiler->callback != NULL)
@@ -730,15 +712,18 @@ int yr_parser_reduce_rule_declaration(
   YR_RULE* rule;
   YR_STRING* string;
 
-#if REAL_YARA
   if (yr_hash_table_lookup(
         compiler->rules_table,
         identifier,
+#if REAL_YARA
         compiler->current_namespace->name) != NULL ||
       yr_hash_table_lookup(
         compiler->objects_table,
         identifier,
         compiler->current_namespace->name) != NULL)
+#else
+        NULL) != NULL)
+#endif
   {
     // A rule or variable with the same identifier already exists, return the
     // appropriate error.
@@ -747,17 +732,10 @@ int yr_parser_reduce_rule_declaration(
     compiler->last_result = ERROR_DUPLICATE_IDENTIFIER;
     return compiler->last_result;
   }
-#else
-  //TBD: Scan the queue for duplicate.
-#endif
 
   // Check for unreferenced (unused) strings.
 
-#if REAL_YARA
   string = compiler->current_rule_strings;
-#else
-  string = STAILQ_FIRST(&compiler->current_rule_strings);
-#endif
 
   while(!STRING_IS_NULL(string))
   {
@@ -765,7 +743,6 @@ int yr_parser_reduce_rule_declaration(
     // chained_to == NULL) must be referenced. All other fragments
     // are never marked as referenced.
 
-#if REAL_YARA
     if (!STRING_IS_REFERENCED(string) &&
         string->chained_to == NULL)
     {
@@ -778,11 +755,6 @@ int yr_parser_reduce_rule_declaration(
         compiler->strings_arena,
         string,
         sizeof(YR_STRING));
-#else
-  //TBD: String link.
-    //    STAILQ_REMOVE_HEAD(&compiler->current_rule_strings, link);
-    string = STAILQ_NEXT(string, link);
-#endif
   }
 
   if (compiler->last_result != ERROR_SUCCESS)
@@ -806,8 +778,8 @@ int yr_parser_reduce_rule_declaration(
       return CL_EMEM;
   }
   STAILQ_INIT(&rule->strings);
-  STAILQ_CONCAT(&rule->strings, &compiler->current_rule_strings);
-  STAILQ_INIT(&compiler->current_rule_strings);
+  STAILQ_CONCAT(&rule->strings, &compiler->current_rule_string_q);
+  STAILQ_INIT(&compiler->current_rule_string_q);
   rule->id = cli_strdup(identifier);
 #endif
 
@@ -843,7 +815,7 @@ int yr_parser_reduce_rule_declaration(
   compiler->current_rule_strings = NULL;
 #else
   compiler->current_rule_flags = 0;
-   STAILQ_INSERT_TAIL(&compiler->rules, rule, link); 
+   STAILQ_INSERT_TAIL(&compiler->rule_q, rule, link); 
 #endif
   return compiler->last_result;
 }
@@ -856,7 +828,6 @@ int yr_parser_reduce_string_identifier(
   YR_STRING* string;
   YR_COMPILER* compiler = yyget_extra(yyscanner);
 
-#if REAL_YARA
   if (strcmp(identifier, "$") == 0)
   {
     if (compiler->loop_for_of_mem_offset >= 0)
@@ -908,7 +879,6 @@ int yr_parser_reduce_string_identifier(
       string->g_flags |= STRING_GFLAGS_REFERENCED;
     }
   }
-#endif
   return compiler->last_result;
 }
 

@@ -2872,17 +2872,6 @@ static char *parse_yara_hex_string(YR_STRING *string, int *ret)
 
 static inline void free_yararule(YR_RULE *rule)
 {
-    YR_STRING *string;
-
-    while (!STAILQ_EMPTY(&rule->strings)) {
-        string = STAILQ_FIRST(&rule->strings);
-        STAILQ_REMOVE(&rule->strings, string, _yc_string, link);
-
-        free(string->id);
-        free(string->string);
-        free(string);
-    }
-
     free(rule->id);
     free(rule);
 }
@@ -3119,7 +3108,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
 
         /* string type handler */
         if (STRING_IS_NULL(string)) {
-            cli_warnmsg("load_oneyara: skipping NULL string %s\n", string->id);
+            cli_warnmsg("load_oneyara: skipping NULL string %s\n", string->identifier);
             //str_error++; /* kill the insertion? */
             continue;
 #ifdef YARA_FINISHED
@@ -3139,7 +3128,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
             }
 
             if (strlen(substr)/2 < CLI_DEFAULT_AC_MINDEPTH) {
-                cli_warnmsg("load_oneyara: string is too short %s\n", string->id);
+                cli_warnmsg("load_oneyara: string is too short %s\n", string->identifier);
                 str_error++;
                 free(substr);
                 continue;
@@ -3175,7 +3164,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
             size_t totsize = 2*length+1;
 
             if (length < CLI_DEFAULT_AC_MINDEPTH) {
-                cli_warnmsg("load_oneyara: string is too short %s\n", string->id);
+                cli_warnmsg("load_oneyara: string is too short %s\n", string->identifier);
                 str_error++;
                 continue;
             }
@@ -3429,19 +3418,34 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
         return rc;
 
     compiler.last_result = ERROR_SUCCESS;
-    STAILQ_INIT(&compiler.rules);
-    STAILQ_INIT(&compiler.current_rule_strings);
+    STAILQ_INIT(&compiler.rule_q);
+    STAILQ_INIT(&compiler.current_rule_string_q);
+
+    rc = yr_hash_table_create(10007, &compiler.rules_table);
+    if (rc == ERROR_SUCCESS)
+        rc = yr_arena_create(65536, 0, &compiler.sz_arena);
+    if (rc == ERROR_SUCCESS)
+        rc = yr_arena_create(65536, 0, &compiler.code_arena);
+    if (rc == ERROR_SUCCESS)
+        rc = yr_arena_create(65536, 0, &compiler.strings_arena);
+    if (rc != ERROR_SUCCESS)
+        return CL_EMEM;
+
 
     rc = yr_lex_parse_rules_file(fs, &compiler);
     if (rc > 0) { /* rc = number of errors */
         /* TODO - handle the various errors? */
         cli_errmsg("cli_loadyara: failed to parse rules file\n");
+        yr_hash_table_destroy(compiler.rules_table, NULL);
+        yr_arena_destroy(compiler.sz_arena);
+        yr_arena_destroy(compiler.code_arena);
+        yr_arena_destroy(compiler.strings_arena);
         return CL_EMALFDB;
     }
 
-    while (!STAILQ_EMPTY(&compiler.rules)) {
-        rule = STAILQ_FIRST(&compiler.rules);
-        STAILQ_REMOVE(&compiler.rules, rule, _yc_rule, link);
+    while (!STAILQ_EMPTY(&compiler.rule_q)) {
+        rule = STAILQ_FIRST(&compiler.rule_q);
+        STAILQ_REMOVE(&compiler.rule_q, rule, _yc_rule, link);
 
         rules++;
         sigs++; /* can be decremented by load_oneyara */
@@ -3451,20 +3455,16 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
         if (rc != CL_SUCCESS) {
             cli_warnmsg("cli_loadyara: problem parsing yara rule %s\n", rule->id);
 #ifdef YARA_FINISHED
-            free_yararule(rule);
             break;
 #endif
         }
-
-        free_yararule(rule);
     }
 
-    /* clean up rules queue on error */
-    while (!STAILQ_EMPTY(&compiler.rules)) {
-        rule = STAILQ_FIRST(&compiler.rules);
-        STAILQ_REMOVE(&compiler.rules, rule, _yc_rule, link);
-        free_yararule(rule);
-    }
+    yr_hash_table_destroy(compiler.rules_table, NULL);
+    yr_arena_destroy(compiler.sz_arena);
+    yr_arena_destroy(compiler.code_arena);
+    yr_arena_destroy(compiler.strings_arena);
+
 
 #ifdef YARA_FINISHED
     if(rc)

@@ -269,7 +269,7 @@ meta
       }
     | _META_ ':' meta_declarations
       {
-#ifdef REAL_YARA
+#if REAL_YARA //Meta not supported
         // Each rule have a list of meta-data info, consisting in a
         // sequence of YR_META structures. The last YR_META structure does
         // not represent a real meta-data, it's just a end-of-list marker
@@ -299,13 +299,10 @@ strings
     : /* empty */
       {
         $$ = NULL;
-#ifdef REAL_YARA
         compiler->current_rule_strings = $$;
-#endif
       }
     | _STRINGS_ ':' string_declarations
       {
-#ifdef REAL_YARA
         // Each rule have a list of strings, consisting in a sequence
         // of YR_STRING structures. The last YR_STRING structure does not
         // represent a real string, it's just a end-of-list marker
@@ -326,7 +323,6 @@ strings
         ERROR_IF(compiler->last_result != ERROR_SUCCESS);
 
         compiler->current_rule_strings = $3;
-#endif
         $$ = $3;
       }
     ;
@@ -356,7 +352,7 @@ tags
       }
     | ':' tag_list
       {
-#ifdef REAL_YARA
+#if REAL_YARA //tags not supported
         // Tags list is represented in the arena as a sequence
         // of null-terminated strings, the sequence ends with an
         // additional null character. Here we write the ending null
@@ -376,7 +372,7 @@ tags
 tag_list
     : _IDENTIFIER_
       {
-#ifdef REAL_YARA
+#if REAL_YARA //tags not supported
         char* identifier;
 
         compiler->last_result = yr_arena_write_string(
@@ -385,15 +381,15 @@ tag_list
 #endif
         yr_free($1);
 
+#if REAL_YARA //tags not supported
         ERROR_IF(compiler->last_result != ERROR_SUCCESS);
 
-#ifdef REAL_YARA
         $$ = identifier;
 #endif
       }
     | tag_list _IDENTIFIER_
       {
-#ifdef REAL_YARA
+#if REAL_YARA //tags not supported
         char* tag_name = $1;
         size_t tag_length = tag_name != NULL ? strlen(tag_name) : 0;
 
@@ -516,9 +512,7 @@ string_declaration
       }
     | _STRING_IDENTIFIER_ '='
       {
-#ifdef REAL_YARA
         compiler->error_line = yyget_lineno(yyscanner);
-#endif
       }
       _REGEXP_ string_modifiers
       {
@@ -566,7 +560,6 @@ string_modifier
 identifier
     : _IDENTIFIER_
       {
-          //#ifdef REAL_YARA
         YR_OBJECT* object = NULL;
         YR_RULE* rule;
 
@@ -591,7 +584,7 @@ identifier
         {
           // Search for identifier within the global namespace, where the
           // externals variables reside.
-#if REAL_YARA
+#if REAL_YARA //externals/objects/modules not supported
           object = (YR_OBJECT*) yr_hash_table_lookup(
                 compiler->objects_table,
                 $1,
@@ -601,7 +594,7 @@ identifier
           {
             // If not found, search within the current namespace.
 
-#if REAL_YARA
+#if REAL_YARA //externals/objects/modules not supported
             ns = compiler->current_namespace->name;
             object = (YR_OBJECT*) yr_hash_table_lookup(
                 compiler->objects_table,
@@ -612,7 +605,7 @@ identifier
 
           if (object != NULL)
           {
-#if REAL_YARA
+#if REAL_YARA //externals/objects/modules not supported
             compiler->last_result = yr_arena_write_string(
                 compiler->sz_arena,
                 $1,
@@ -630,12 +623,15 @@ identifier
           }
           else
           {
- #if REAL_YARA
+              //#if REAL_YARA
            rule = (YR_RULE*) yr_hash_table_lookup(
                 compiler->rules_table,
                 $1,
+#if REAL_YARA
                 compiler->current_namespace->name);
-
+#else
+                NULL);
+#endif
             if (rule != NULL)
             {
               compiler->last_result = yr_parser_emit_with_arg_reloc(
@@ -649,7 +645,7 @@ identifier
               yr_compiler_set_error_extra_info(compiler, $1);
               compiler->last_result = ERROR_UNDEFINED_IDENTIFIER;
             }
-#endif
+            //#endif
 
             $$ = (YR_OBJECT*) -2;
           }
@@ -658,11 +654,10 @@ identifier
         yr_free($1);
 
         ERROR_IF(compiler->last_result != ERROR_SUCCESS);
-        //#endif
       }
     | identifier '.' _IDENTIFIER_
       {
-#ifdef REAL_YARA
+#ifdef REAL_YARA //externals/objects/modules not supported
         YR_OBJECT* object = $1;
         YR_OBJECT* field = NULL;
 
@@ -713,7 +708,7 @@ identifier
       }
     | identifier '[' primary_expression ']'
       {
-#ifdef REAL_YARA
+#ifdef REAL_YARA //externals/objects/modules not supported
         if ($1 != NULL && $1->type == OBJECT_TYPE_ARRAY)
         {
           compiler->last_result = yr_parser_emit(
@@ -721,7 +716,7 @@ identifier
               OP_INDEX_ARRAY,
               NULL);
 
-          $$ = ((YR_OBJECT_ARRAY*) $1)->items->objects[0];
+X          $$ = ((YR_OBJECT_ARRAY*) $1)->items->objects[0];
         }
         else
         {
@@ -738,7 +733,7 @@ identifier
 
     | identifier '(' arguments_list ')'
       {
-#ifdef REAL_YARA
+#ifdef REAL_YARA //externals/objects/modules not supported
         int args_count;
 
         if ($1 != NULL && $1->type == OBJECT_TYPE_FUNCTION)
@@ -991,7 +986,6 @@ expression
       }
     | _FOR_ for_expression _IDENTIFIER_ _IN_
       {
-#ifdef REAL_YARA
         int var_index;
 
         if (compiler->loop_depth == MAX_LOOP_NESTING)
@@ -1013,7 +1007,6 @@ expression
           compiler->last_result = \
               ERROR_DUPLICATE_LOOP_IDENTIFIER;
         }
-#endif
         ERROR_IF(compiler->last_result != ERROR_SUCCESS);
 
         // Push end-of-list marker
@@ -1056,11 +1049,9 @@ expression
           yr_parser_emit_with_arg(
               yyscanner, OP_POP_M, mem_offset, NULL);
         }
-#ifdef REAL_YARA
         compiler->loop_address[compiler->loop_depth] = addr;
         compiler->loop_identifier[compiler->loop_depth] = $3;
         compiler->loop_depth++;
-#endif
       }
       '(' boolean_expression ')'
       {
@@ -1085,12 +1076,8 @@ expression
           yr_parser_emit_with_arg_reloc(
               yyscanner,
               OP_JNUNDEF,
-#ifdef REAL_YARA
               PTR_TO_UINT64(
                   compiler->loop_address[compiler->loop_depth]),
-#else
-              0,
-#endif
               NULL);
         }
         else // INTEGER_SET_RANGE
@@ -1107,7 +1094,6 @@ expression
           yr_parser_emit_with_arg(
               yyscanner, OP_PUSH_M, mem_offset + 3, NULL);
 
-#ifdef REAL_YARA
           // Compare higher bound with lower bound, do loop again
           // if lower bound is still lower or equal than higher bound
           yr_parser_emit_with_arg_reloc(
@@ -1116,7 +1102,6 @@ expression
               PTR_TO_UINT64(
                 compiler->loop_address[compiler->loop_depth]),
               NULL);
-#endif
 
           yr_parser_emit(yyscanner, OP_POP, NULL);
           yr_parser_emit(yyscanner, OP_POP, NULL);
@@ -1139,16 +1124,13 @@ expression
 
         yr_parser_emit(yyscanner, OP_LE, NULL);
 
-#ifdef REAL_YARA
         compiler->loop_identifier[compiler->loop_depth] = NULL;
-#endif
         yr_free($3);
 
         $$ = EXPRESSION_TYPE_BOOLEAN;
       }
     | _FOR_ for_expression _OF_ string_set ':'
       {
-#ifdef REAL_YARA
         int mem_offset = LOOP_LOCAL_VARS * compiler->loop_depth;
         int8_t* addr;
 
@@ -1176,11 +1158,9 @@ expression
         compiler->loop_address[compiler->loop_depth] = addr;
         compiler->loop_identifier[compiler->loop_depth] = NULL;
         compiler->loop_depth++;
-#endif
       }
       '(' boolean_expression ')'
       {
-#ifdef REAL_YARA
         int mem_offset;
 
         compiler->loop_depth--;
@@ -1222,7 +1202,6 @@ expression
             yyscanner, OP_PUSH_M, mem_offset + 1, NULL);
 
         yr_parser_emit(yyscanner, OP_LE, NULL);
-#endif
         $$ = EXPRESSION_TYPE_BOOLEAN;
 
       }
