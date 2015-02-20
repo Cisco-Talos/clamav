@@ -251,7 +251,20 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
                 opt++;
             }
 
-            /* TODO - other option handling */
+            /* FULLWORD sigopt handling - only happens once */
+            if (sigopts & ACPATT_OPTION_FULLWORD) {
+                char *hexover = cli_calloc(strlen(hexcpy)+7, sizeof(char));
+                if (!hexover)
+                    return CL_EMEM;
+
+                snprintf(hexover, strlen(hexcpy)+7, "(W)%s(W)", hexcpy);
+                free(hexcpy);
+                hexcpy = hexover;
+            }
+
+            /* TODO - other option handling; nocase is handled in cli_ac_addsig
+             * TODO - how does the other options interact with one another?
+             */
 
             /* get called */
             ret = cli_parse_add(root, virname, hexcpy, sigopts, rtype, type, offset, target, lsigid, options);
