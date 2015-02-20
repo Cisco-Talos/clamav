@@ -116,7 +116,7 @@ char *cli_virname(const char *virname, unsigned int official)
 }
 
 #define PCRE_TOKENS 4
-int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hexsig, const char *sigopts, uint16_t rtype, uint16_t type, const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options)
+int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hexsig, uint8_t sigopts, uint16_t rtype, uint16_t type, const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options)
 {
     struct cli_bm_patt *bm_new;
     char *pt, *hexcpy, *start, *n, l, r;
@@ -224,10 +224,37 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 #endif
         } else { /* get option-ed */
             /* get NULL-ed */
+            char *opt = end+1;
+            uint8_t sigopts = 0;
+
             *end = '\0';
 
+            while (*opt != '\0') {
+                switch (*opt) {
+                case 'i':
+                    sigopts |= ACPATT_OPTION_NOCASE;
+                    break;
+                case 'f':
+                    sigopts |= ACPATT_OPTION_FULLWORD;
+                    break;
+                case 'w':
+                    sigopts |= ACPATT_OPTION_WIDE;
+                    break;
+                case 'a':
+                    sigopts |= ACPATT_OPTION_ASCII;
+                    break;
+                default:
+                    cli_errmsg("cli_parse_add: Signature for %s uses invalid option: %02x\n", virname, *opt);
+                    return CL_EMALFDB;
+                }
+
+                opt++;
+            }
+
+            /* TODO - other option handling */
+
             /* get called */
-            ret = cli_parse_add(root, virname, hexcpy, end+1, rtype, type, offset, target, lsigid, options);
+            ret = cli_parse_add(root, virname, hexcpy, sigopts, rtype, type, offset, target, lsigid, options);
             free(hexcpy);
             return ret;
         }
@@ -663,7 +690,7 @@ static int cli_loaddb(FILE *fs, struct cl_engine *engine, unsigned int *signo, u
 
 	if(*pt == '=') continue;
 
-	if((ret = cli_parse_add(root, start, pt, NULL, 0, 0, "*", 0, NULL, options))) {
+	if((ret = cli_parse_add(root, start, pt, 0, 0, 0, "*", 0, NULL, options))) {
 	    cli_dbgmsg("cli_loaddb: cli_parse_add failed on line %d\n", line);
 	    ret = CL_EMALFDB;
 	    break;
@@ -1063,7 +1090,7 @@ static int cli_loadndb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	offset = tokens[2];
 	sig = tokens[3];
 
-	if((ret = cli_parse_add(root, virname, sig, NULL, 0, 0, offset, target, NULL, options))) {
+	if((ret = cli_parse_add(root, virname, sig, 0, 0, 0, offset, target, NULL, options))) {
 	    ret = CL_EMALFDB;
 	    break;
 	}
@@ -1520,7 +1547,7 @@ static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsig
             sig = tokens[3 + i];
         }
 
-        if((ret = cli_parse_add(root, virname, sig, NULL, 0, 0, offset, target, lsigid, options)))
+        if((ret = cli_parse_add(root, virname, sig, 0, 0, 0, offset, target, lsigid, options)))
             return ret;
 
         if(sig[0] == '$' && i) {
@@ -1798,7 +1825,7 @@ static int cli_loadftm(FILE *fs, struct cl_engine *engine, unsigned int options,
 
         magictype = atoi(tokens[0]);
 	if(magictype == 1) { /* A-C */
-	    if((ret = cli_parse_add(engine->root[0], tokens[3], tokens[2], NULL, rtype, type, tokens[1], 0, NULL, options)))
+	    if((ret = cli_parse_add(engine->root[0], tokens[3], tokens[2], 0, rtype, type, tokens[1], 0, NULL, options)))
 		break;
 
 	} else if ((magictype == 0) || (magictype == 4)) { /* memcmp() */
@@ -2863,7 +2890,7 @@ static inline void free_yararule(YR_RULE *rule)
 struct cli_ytable_entry {
     char *offset;
     char *hexstr;
-    char *sigopts;
+    uint8_t sigopts;
 };
 
 struct cli_ytable {
@@ -2896,22 +2923,23 @@ static int ytable_add_attrib(struct cli_ytable *ytable, const char *hexsig, cons
     }
 
     if (type) {
-        /* append to existing */
-        if (!ytable->table[lookup]->sigopts) {
-            ytable->table[lookup]->sigopts = cli_strdup(value);
-            if (!ytable->table[lookup]->sigopts) {
-                cli_yaramsg("ytable_add_attrib: ran out of memory for sigopts\n");
-                return CL_EMEM;
-            }
-        } else {
-            size_t len = strlen(ytable->table[lookup]->sigopts);
-            size_t newsize = strlen(value) + len + 1;
-            ytable->table[lookup]->sigopts = cli_realloc(ytable->table[lookup]->sigopts, newsize);
-            if (!ytable->table[lookup]->sigopts) {
-                cli_yaramsg("ytable_add_attrib: ran out of memory for sigopts\n");
-                return CL_EMEM;
-            }
-            snprintf(ytable->table[lookup]->sigopts+len, newsize-len, "%s", value);
+        /* add to sigopts */
+        switch (*value) {
+        case 'i':
+            ytable->table[lookup]->sigopts |= ACPATT_OPTION_NOCASE;
+            break;
+        case 'f':
+            ytable->table[lookup]->sigopts |= ACPATT_OPTION_FULLWORD;
+            break;
+        case 'w':
+            ytable->table[lookup]->sigopts |= ACPATT_OPTION_WIDE;
+            break;
+        case 'a':
+            ytable->table[lookup]->sigopts |= ACPATT_OPTION_ASCII;
+            break;
+        default:
+            cli_yaramsg("ytable_add_attrib: invalid sigopt %02x\n", *value);
+            return CL_EARG;
         }
     }
     else {
@@ -2987,7 +3015,6 @@ static void ytable_delete(struct cli_ytable *ytable)
         for (i = 0; i < ytable->tbl_cnt; ++i) {
             free(ytable->table[i]->offset);
             free(ytable->table[i]->hexstr);
-            free(ytable->table[i]->sigopts);
             free(ytable->table[i]);
         }
         free(ytable->table);
@@ -3184,34 +3211,27 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
         }
         if (STRING_IS_ASCII(string)) {
             cli_yaramsg("STRING_IS_ASCII           %s\n", STRING_IS_SINGLE_MATCH(string) ? "yes" : "no");
-            /* what is ascii, but another way to state the same?  */
+            if ((ret = ytable_add_attrib(&ytable, NULL, "a", 1)) != CL_SUCCESS) {
+                cli_yaramsg("load_oneyara: failed to add 'ascii' sigopt\n");
+                str_error++;
+                break;
+            }
         }
         if (STRING_IS_WIDE(string)) {
-            /* support is not implemented, caught by cli_ac_addsig() */
-            /* might want to redefine the string here or something   */
             cli_yaramsg("STRING_IS_WIDE            %s\n", STRING_IS_SINGLE_MATCH(string) ? "yes" : "no");
-#ifdef YARA_FINISHED
             if ((ret = ytable_add_attrib(&ytable, NULL, "w", 1)) != CL_SUCCESS) {
                 cli_yaramsg("load_oneyara: failed to add 'wide' sigopt\n");
                 str_error++;
                 break;
             }
-#else
-            cli_warnmsg("load_oneyara: yara support is incomplete, 'wide' keyword is unsupported\n");
-#endif
         }
         if (STRING_IS_FULL_WORD(string)) {
-            /* support is not implemented, caught by cli_ac_addsig() */
             cli_yaramsg("STRING_IS_FULL_WORD       %s\n", STRING_IS_SINGLE_MATCH(string) ? "yes" : "no");
-#ifdef YARA_FINISHED
             if ((ret = ytable_add_attrib(&ytable, NULL, "f", 1)) != CL_SUCCESS) {
                 cli_yaramsg("load_oneyara: failed to add 'fullword' sigopt\n");
                 str_error++;
                 break;
             }
-#else
-            cli_warnmsg("load_oneyara: yara support is incomplete, 'fullword' keyword is unsupported\n");
-#endif
         }
 
 #ifdef YARA_FINISHED
@@ -3379,7 +3399,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
     for (i = 0; i < ytable.tbl_cnt; ++i) {
         lsigid[1] = i;
 
-        cli_yaramsg("%d: [%s] [%s] [%s]\n", i, ytable.table[i]->hexstr, ytable.table[i]->offset, ytable.table[i]->sigopts);
+        cli_yaramsg("%d: [%s] [%s] [%x]\n", i, ytable.table[i]->hexstr, ytable.table[i]->offset, ytable.table[i]->sigopts);
 
         if((ret = cli_parse_add(root, rule->id, ytable.table[i]->hexstr, ytable.table[i]->sigopts, 0, 0, ytable.table[i]->offset, target, lsigid, options)) != CL_SUCCESS) {
             yara_malform++;

@@ -260,7 +260,7 @@ static int cli_ac_addpatt_recursive(struct cli_matcher *root, struct cli_ac_patt
     /* if pattern is nocase, we need to enumerate all the combinations if applicable
      * it's why this function was re-written to be recursive
      */
-    if(pattern->nocase && isalpha(pattern->pattern[i] & 0xff)) {
+    if((pattern->sigopts & ACPATT_OPTION_NOCASE) && isalpha(pattern->pattern[i] & 0xff)) {
         next = pt->trans[cli_nocasei((unsigned char) (pattern->pattern[i] & 0xff))];
         if(!next)
             next = add_new_node(root, i, len);
@@ -1637,12 +1637,12 @@ static int qcompare(const void *a, const void *b)
 }
 
 /* FIXME: clean up the code */
-int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hexsig, const char *sigopts, uint32_t sigid, uint16_t parts, uint16_t partno, uint16_t rtype, uint16_t type, uint32_t mindist, uint32_t maxdist, const char *offset, const uint32_t *lsigid, unsigned int options)
+int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hexsig, uint8_t sigopts, uint32_t sigid, uint16_t parts, uint16_t partno, uint16_t rtype, uint16_t type, uint32_t mindist, uint32_t maxdist, const char *offset, const uint32_t *lsigid, unsigned int options)
 {
     struct cli_ac_patt *new;
     char *pt, *pt2, *hex = NULL, *hexcpy = NULL;
     uint16_t i, j, ppos = 0, pend, *dec, nzpos = 0;
-    uint8_t wprefix = 0, zprefix = 1, plen = 0, nzplen = 0, nocase = 0;
+    uint8_t wprefix = 0, zprefix = 1, plen = 0, nzplen = 0;
     struct cli_ac_special *newspecial, *specialpt, **newtable;
     int ret, error = CL_SUCCESS;
 
@@ -1655,22 +1655,6 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
     if(strlen(hexsig) / 2 < root->ac_mindepth) {
         cli_errmsg("cli_ac_addsig: Signature for %s is too short\n", virname);
         return CL_EMALFDB;
-    }
-
-    if (sigopts) {
-        i = 0;
-        while (sigopts[i] != '\0') {
-            switch (sigopts[i]) {
-            case 'i':
-                nocase = 1;
-                break;
-            default:
-                cli_errmsg("cli_ac_addsig: Signature for %s uses invalid option: %02x\n", virname, sigopts[i]);
-                return CL_EMALFDB;
-            }
-
-            i++;
-        }
     }
 
     if((new = (struct cli_ac_patt *) mpool_calloc(root->mempool, 1, sizeof(struct cli_ac_patt))) == NULL)
@@ -1741,7 +1725,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
                     break;
                 }
 
-                if(nocase && ((*dec & CLI_MATCH_METADATA) == CLI_MATCH_CHAR))
+                if((sigopts & ACPATT_OPTION_NOCASE) && ((*dec & CLI_MATCH_METADATA) == CLI_MATCH_CHAR))
                     new->ch[i] = cli_nocase(*dec) | CLI_MATCH_NOCASE;
                 else
                     new->ch[i] = *dec;
@@ -1757,7 +1741,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
                     break;
                 }
 
-                if(nocase && ((*dec & CLI_MATCH_METADATA) == CLI_MATCH_CHAR))
+                if((sigopts & ACPATT_OPTION_NOCASE) && ((*dec & CLI_MATCH_METADATA) == CLI_MATCH_CHAR))
                     new->ch[i] = cli_nocase(*dec) | CLI_MATCH_NOCASE;
                 else
                     new->ch[i] = *dec;
@@ -1997,9 +1981,9 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
     new->length = strlen(hex ? hex : hexsig) / 2;
     free(hex);
 
-    /* setting nocase match; TODO - move this to cli_realhex2ui and adjust for nocase, alter MATCH_CHAR too */
-    if (nocase) {
-	new->nocase = 1;
+    new->sigopts = sigopts;
+    /* setting nocase match; TODO - move this to cli_realhex2ui and adjust for nocase */
+    if (sigopts & ACPATT_OPTION_NOCASE) {
 	for (i = 0; i < new->length; ++i)
 	    if ((new->pattern[i] & CLI_MATCH_METADATA) == CLI_MATCH_CHAR) {
 		new->pattern[i] = cli_nocase(new->pattern[i] & 0xff);

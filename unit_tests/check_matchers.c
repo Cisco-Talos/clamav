@@ -99,7 +99,7 @@ START_TEST (test_ac_scanbuff) {
 
 
     for(i = 0; ac_testdata[i].data; i++) {
-	ret = cli_parse_add(root, ac_testdata[i].virname, ac_testdata[i].hexsig, NULL, 0, 0, "*", 0, NULL, 0);
+	ret = cli_parse_add(root, ac_testdata[i].virname, ac_testdata[i].hexsig, 0, 0, 0, "*", 0, NULL, 0);
 	fail_unless(ret == CL_SUCCESS, "cli_parse_add() failed");
     }
 
@@ -138,11 +138,11 @@ START_TEST (test_bm_scanbuff) {
     ret = cli_bm_init(root);
     fail_unless(ret == CL_SUCCESS, "cli_bm_init() failed");
 
-    ret = cli_parse_add(root, "Sig1", "deadbabe", NULL, 0, 0, "*", 0, NULL, 0);
+    ret = cli_parse_add(root, "Sig1", "deadbabe", 0, 0, 0, "*", 0, NULL, 0);
     fail_unless(ret == CL_SUCCESS, "cli_parse_add() failed");
-    ret = cli_parse_add(root, "Sig2", "deadbeef", NULL, 0, 0, "*", 0, NULL, 0);
+    ret = cli_parse_add(root, "Sig2", "deadbeef", 0, 0, 0, "*", 0, NULL, 0);
     fail_unless(ret == CL_SUCCESS, "cli_parse_add() failed");
-    ret = cli_parse_add(root, "Sig3", "babedead", NULL, 0, 0, "*", 0, NULL, 0);
+    ret = cli_parse_add(root, "Sig3", "babedead", 0, 0, 0, "*", 0, NULL, 0);
     fail_unless(ret == CL_SUCCESS, "cli_parse_add() failed");
 
     ret = cli_bm_scanbuff((const unsigned char*)"blah\xde\xad\xbe\xef", 12, &virname, NULL, root, 0, NULL, NULL, NULL);
@@ -169,7 +169,7 @@ START_TEST (test_ac_scanbuff_allscan) {
 
 
     for(i = 0; ac_testdata[i].data; i++) {
-	ret = cli_parse_add(root, ac_testdata[i].virname, ac_testdata[i].hexsig, NULL, 0, 0, "*", 0, NULL, 0);
+	ret = cli_parse_add(root, ac_testdata[i].virname, ac_testdata[i].hexsig, 0, 0, 0, "*", 0, NULL, 0);
 	fail_unless(ret == CL_SUCCESS, "cli_parse_add() failed");
     }
 
@@ -214,11 +214,11 @@ START_TEST (test_bm_scanbuff_allscan) {
     ret = cli_bm_init(root);
     fail_unless(ret == CL_SUCCESS, "cli_bm_init() failed");
 
-    ret = cli_parse_add(root, "Sig1", "deadbabe", NULL, 0, 0, "*", 0, NULL, 0);
+    ret = cli_parse_add(root, "Sig1", "deadbabe", 0, 0, 0, "*", 0, NULL, 0);
     fail_unless(ret == CL_SUCCESS, "cli_parse_add() failed");
-    ret = cli_parse_add(root, "Sig2", "deadbeef", NULL, 0, 0, "*", 0, NULL, 0);
+    ret = cli_parse_add(root, "Sig2", "deadbeef", 0, 0, 0, "*", 0, NULL, 0);
     fail_unless(ret == CL_SUCCESS, "cli_parse_add() failed");
-    ret = cli_parse_add(root, "Sig3", "babedead", NULL, 0, 0, "*", 0, NULL, 0);
+    ret = cli_parse_add(root, "Sig3", "babedead", 0, 0, 0, "*", 0, NULL, 0);
     fail_unless(ret == CL_SUCCESS, "cli_parse_add() failed");
 
     ret = cli_bm_scanbuff((const unsigned char*)"blah\xde\xad\xbe\xef", 12, &virname, NULL, root, 0, NULL, NULL, NULL);

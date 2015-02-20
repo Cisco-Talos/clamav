@@ -34,9 +34,12 @@
 #define AC_SCAN_VIR 1
 #define AC_SCAN_FT  2
 
-/* AC trie options */
-#define AC_OPTION_NOOPTS 0x0
-#define AC_OPTION_NOCASE 0x1
+/* Pattern options */
+#define ACPATT_OPTION_NOOPTS   0x00
+#define ACPATT_OPTION_NOCASE   0x01
+#define ACPATT_OPTION_FULLWORD 0x02
+#define ACPATT_OPTION_WIDE     0x04
+#define ACPATT_OPTION_ASCII    0x08
 
 struct cli_ac_data {
     int32_t ***offmatrix;
@@ -73,7 +76,7 @@ struct cli_ac_patt {
     uint32_t offdata[4], offset_min, offset_max;
     uint32_t boundary;
     uint8_t depth;
-    uint8_t nocase;
+    uint8_t sigopts;
 };
 
 struct cli_ac_list {
@@ -109,6 +112,6 @@ int cli_ac_buildtrie(struct cli_matcher *root);
 int cli_ac_init(struct cli_matcher *root, uint8_t mindepth, uint8_t maxdepth, uint8_t dconf_prefiltering);
 int cli_ac_caloff(const struct cli_matcher *root, struct cli_ac_data *data, const struct cli_target_info *info);
 void cli_ac_free(struct cli_matcher *root);
-int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hexsig, const char *sigopts, uint32_t sigid, uint16_t parts, uint16_t partno, uint16_t rtype, uint16_t type, uint32_t mindist, uint32_t maxdist, const char *offset, const uint32_t *lsigid, unsigned int options);
+int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hexsig, uint8_t sigopts, uint32_t sigid, uint16_t parts, uint16_t partno, uint16_t rtype, uint16_t type, uint32_t mindist, uint32_t maxdist, const char *offset, const uint32_t *lsigid, unsigned int options);
 
 #endif
