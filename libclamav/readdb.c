@@ -253,20 +253,32 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 
             /* FULLWORD sigopt handling - only happens once */
             if (sigopts & ACPATT_OPTION_FULLWORD) {
-                char *hexover = cli_calloc(strlen(hexcpy)+7, sizeof(char));
-                if (!hexover)
+                char *rechar;
+                char *hexovr = cli_calloc(strlen(hexcpy)+7, sizeof(char));
+                if (!hexovr)
                     return CL_EMEM;
 
-                snprintf(hexover, strlen(hexcpy)+7, "(W)%s(W)", hexcpy);
+                snprintf(hexovr, strlen(hexcpy)+7, "(W)%s(W)", hexcpy);
+
+                /* change the '[' and ']' to '{' and '}' since there are now two bytes */
+                rechar = hexovr;
+                while ((rechar = strchr(rechar, '['))) {
+                    *rechar = '{';
+
+                    if (!(rechar = strchr(rechar, ']'))) {
+                        cli_errmsg("cli_parse_add: unmatched '[' in signature %s\n", virname);
+                        return CL_EMALFDB;
+                    }
+                    *rechar = '}';
+                }
+
                 free(hexcpy);
-                hexcpy = hexover;
+                hexcpy = hexovr;
             }
 
-            /* TODO - other option handling; nocase is handled in cli_ac_addsig
-             * TODO - how does the other options interact with one another?
-             */
+            /* WIDE sigopt handling - only happens once (after fullword) */
 
-            /* get called */
+            /* get called; NOCASE sigopt is handled in cli_ac_addsig */
             ret = cli_parse_add(root, virname, hexcpy, sigopts, rtype, type, offset, target, lsigid, options);
             free(hexcpy);
             return ret;
