@@ -3195,7 +3195,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
 #ifdef YARA_FINISHED
         } else if (STRING_IS_LITERAL(string)) {
             /* TODO - handle literal strings, short-circuits other string type handling */
-            cli_yaramsg("load_oneyara: literal string: [%s] => [%s]\n", string->string, substr);
+            cli_yaramsg("load_oneyara: literal string: [%.*s] => [%s]\n", string->length, string->string, substr);
 #else
         } else if (STRING_IS_LITERAL(string)) {
             cli_errmsg("load_oneyara: literal strings are unsupported, reorganize existing code\n");
@@ -3215,7 +3215,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
                 continue;
             }
 
-            cli_yaramsg("load_oneyara: hex string: [%s] => [%s]\n", string->string, substr);
+            cli_yaramsg("load_oneyara: hex string: [%.*s] => [%s]\n", string->length, string->string, substr);
 
             ytable_add_string(&ytable, substr);
             free(substr);
@@ -3231,9 +3231,9 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
                 break;
             }
 
-            snprintf(substr, length, "%s/%s/", PCRE_BYPASS, string->string);
+            snprintf(substr, length, "%s/%.*s/", PCRE_BYPASS, string->length, string->string);
 
-            cli_yaramsg("load_oneyara: regex string: [%s] => [%s]\n", string->string, substr);
+            cli_yaramsg("load_oneyara: regex string: [%.*s] => [%s]\n", string->length, string->string, substr);
 
             ytable_add_string(&ytable, substr);
             free(substr);
@@ -3263,7 +3263,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
                 snprintf(substr+len, totsize-len, "%02x", string->string[i]);
             }
 
-            cli_yaramsg("load_oneyara: generic string: [%s] => [%s]\n", string->string, substr);
+            cli_yaramsg("load_oneyara: generic string: [%.*s] => [%s]\n", string->length, string->string, substr);
 
             ytable_add_string(&ytable, substr);
             free(substr);
