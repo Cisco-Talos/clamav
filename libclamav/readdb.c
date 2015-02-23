@@ -2821,7 +2821,7 @@ static char *parse_yara_hex_string(YR_STRING *string, int *ret)
 
     str = (char *)(string->string);
 
-    if ((slen = strlen(str)) == 0) {
+    if ((slen = string->length) == 0) {
         if (ret) *ret = CL_EARG;
         return NULL;
     }
@@ -3153,7 +3153,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
             free(substr);
         } else if (STRING_IS_REGEXP(string)) {
             /* TODO - rewrite to NOT use PCRE_BYPASS */
-            size_t length = strlen(PCRE_BYPASS) + strlen(string->string) + 3;
+            size_t length = strlen(PCRE_BYPASS) + string->length + 3;
 
             substr = cli_calloc(length, sizeof(char));
             if (!substr) {
@@ -3173,7 +3173,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
             /* TODO - extract the string length to handle NULL hex-escaped characters
              * For now, we'll just use the strlen we get which crudely finds the length
              */
-            size_t length = strlen(string->string);
+            size_t length = string->length;
             size_t totsize = 2*length+1;
 
             if (length < CLI_DEFAULT_AC_MINDEPTH) {
