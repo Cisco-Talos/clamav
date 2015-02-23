@@ -199,7 +199,6 @@ int yr_parser_check_types(
   int i;
 
   char message[MAX_COMPILER_ERROR_EXTRA_INFO];
-#ifdef REAL_YARA
 
   const char* expected = function->arguments_fmt;
   const char* actual = actual_args_fmt;
@@ -243,9 +242,6 @@ int yr_parser_check_types(
   }
 
   return compiler->last_result;
-#else
-  return ERROR_SUCCESS;
-#endif
 }
 
 

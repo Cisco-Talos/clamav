@@ -3516,12 +3516,14 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
     rc = yr_lex_parse_rules_file(fs, &compiler);
     if (rc > 0) { /* rc = number of errors */
         /* TODO - handle the various errors? */
-        cli_errmsg("cli_loadyara: failed to parse rules file\n");
+        cli_errmsg("cli_loadyara: failed to parse rules file %s, error count %i\n", dbname, rc);
+#ifdef YARA_FINISHED
         yr_hash_table_destroy(compiler.rules_table, NULL);
         yr_arena_destroy(compiler.sz_arena);
         yr_arena_destroy(compiler.code_arena);
         yr_arena_destroy(compiler.strings_arena);
         return CL_EMALFDB;
+#endif
     }
 
     while (!STAILQ_EMPTY(&compiler.rule_q)) {
@@ -3534,7 +3536,7 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
         /* TODO - PUA and engine->ignored */
         rc = load_oneyara(rule, engine, options, &sigs);
         if (rc != CL_SUCCESS) {
-            cli_warnmsg("cli_loadyara: problem parsing yara rule %s\n", rule->id);
+            cli_warnmsg("cli_loadyara: problem parsing yara file %s, yara rule %s\n", dbname, rule->id);
 #ifdef YARA_FINISHED
             break;
 #endif

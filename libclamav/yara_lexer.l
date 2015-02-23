@@ -703,6 +703,7 @@ void yyerror(
 
   compiler->last_result = ERROR_SUCCESS;
 #else
+  compiler->errors++;
   if (error_message != NULL)
     cli_errmsg("yara_lexer:yyerror() %s\n", error_message);
   else if (compiler->error_msg != NULL)
@@ -711,9 +712,17 @@ void yyerror(
     cli_errmsg("yara_lexer:yyerror() %s\n", compiler->last_error_extra_info);
   else
     cli_errmsg("yara_lexer:yyerror() error unknown\n");
+  if (compiler->last_result != ERROR_SUCCESS)
+    cli_errmsg("yara_lexer:yyerror() last result is %i\n", compiler->last_result);
+  if (compiler->last_result != ERROR_SUCCESS)
+    cli_errmsg("yara_lexer:yyerror() last result is %i\n", compiler->last_result);
+  if (compiler->error_line != 0)
+    cli_errmsg("yara_lexer:yyerror() error line %i\n", compiler->error_line);
+
   compiler->last_error_extra_info[0] = (char) 0;
   compiler->error_msg = NULL;
   compiler->last_result = ERROR_SUCCESS;
+  compiler->error_line = 0;
 #endif
 }
 
@@ -776,9 +785,5 @@ int yr_lex_parse_rules_file(
   yyparse(yyscanner, compiler);
   yylex_destroy(yyscanner);
 
-#ifdef REAL_YARA
   return compiler->errors;
-#else
-  return 0;
-#endif
 }
