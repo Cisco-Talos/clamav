@@ -446,7 +446,7 @@ libclamav_la_SOURCES = \
 	openioc.c \
 	openioc.h \
 	yara_arena.c \
-	yara_areana.h \
+	yara_arena.h \
 	yara_hash.c \
 	yara_hash.h \
 	yara_grammar.y \
