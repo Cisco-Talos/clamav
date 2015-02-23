@@ -136,7 +136,6 @@ int yr_parser_emit_pushes_for_strings(
     const char* identifier)
 {
   YR_COMPILER* compiler = yyget_extra(yyscanner);
-#ifdef REAL_YARA  //crashes because string->identifier is NULL
   YR_STRING* string = compiler->current_rule_strings;
 
   const char* string_identifier;
@@ -189,9 +188,6 @@ int yr_parser_emit_pushes_for_strings(
   }
 
   return compiler->last_result;
-#else
-  return ERROR_SUCCESS;
-#endif
 }
 
 
