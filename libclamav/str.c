@@ -203,6 +203,30 @@ int cli_hex2num(const char *hex)
     return ret;
 }
 
+int cli_xtoi(const char *hex)
+{
+    int len, val, i;
+    char * hexbuf;
+
+    len = strlen(hex);
+
+    if(len % 2 == 0)
+        return cli_hex2num(hex);
+        
+    hexbuf = cli_calloc(len+2, sizeof(char));
+    if (hexbuf == NULL) {
+        cli_errmsg("cli_xtoi(): cli_malloc fails.\n");
+        return -1;
+    }
+    
+    for(i = 0; i < len; i++)
+        hexbuf[i+1] = hex[i];
+    val = cli_hex2num(hexbuf);
+    free(hexbuf);
+    return val;
+}
+
+
 char *cli_str2hex(const char *string, unsigned int len)
 {
 	char *hexstr;

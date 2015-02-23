@@ -463,12 +463,8 @@ struct RE {
 #define yr_malloc cli_malloc
 #define yr_realloc cli_realloc
 #define yr_free free
-#define xtoi cli_hex2num
+#define xtoi cli_xtoi
 #define strlcpy cli_strlcpy
-#ifndef HAVE_STRLCAT
-/* below is danger-defeats the purpose of strlcat. we need a cli_strlcat for this ... */
-#define strlcat(d, s, l) strcat((d), (s))
-#endif
 
 /* YARA-defined structure replacements for ClamAV */
 struct _yc_rule {

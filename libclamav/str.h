@@ -44,6 +44,7 @@ uint16_t *cli_hex2ui(const char *hex);
 int  cli_hex2str_to(const char *hex, char *ptr, size_t len);
 char *cli_hex2str(const char *hex);
 int cli_hex2num(const char *hex);
+int cli_xtoi(const char *hex);
 char *cli_str2hex(const char *string, unsigned int len);
 char *cli_utf16toascii(const char *str, unsigned int length);
 char *cli_strtokbuf(const char *input, int fieldno, const char *delim, char *output);
