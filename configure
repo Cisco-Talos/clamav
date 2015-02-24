@@ -914,6 +914,7 @@ with_libncurses_prefix
 with_libpdcurses_prefix
 enable_distcheck_werror
 with_system_llvm
+with_llvm_linking
 enable_llvm
 enable_sha_collector_for_internal_use
 with_libcurl
@@ -1559,37 +1560,39 @@ Optional Features:
                           optimize for fast installation [default=yes]
   --disable-libtool-lock  avoid locking (might break parallel builds)
   --enable-ltdl-install   install libltdl
-  --disable-gcc-vcheck	  do not check for buggy gcc version
-  --enable-experimental	enable experimental code
-  --disable-mempool       disable memory pools
-  --enable-check           Enable 'check' unit tests (default=auto)
+  --disable-gcc-vcheck    do not check for buggy gcc version
+  --enable-experimental   enable experimental code
+  --disable-mempool       do not use memory pools
+  --enable-check          enable check unit tests [default=auto]
   --disable-rpath         do not hardcode runtime library paths
   --enable-coverage       turn on test coverage [default=no]
-  --disable-xml	  disable DMG and XAR support
-  --enable-maintainer-mode enable make rules and dependencies not useful
-                          (and sometimes confusing) to the casual installer
-  --disable-zlib-vcheck	  do not check for buggy zlib version
-  --disable-bzip2	  disable bzip2 support
-  --disable-unrar	  don't build libclamunrar and libclamunrar_iface
-  --disable-getaddrinfo          disable support for getaddrinfo
-  --disable-ipv6          disable IPv6 support
-  --disable-dns           disable support for database verification through
-                          DNS
-  --disable-fanotify	  disable fanotify support (Linux only)
-  --enable-milter	  build clamav-milter
-  --disable-pthreads      disable POSIX threads support
-  --disable-cr		  don't link with C reentrant library (BSD)
-  --enable-id-check	  use id utility instead of /etc/passwd parsing
-  --enable-yp-check	  use ypmatch utility instead of /etc/passwd parsing
-  --enable-no-cache	  use "Cache-Control: no-cache" in freshclam
-  --enable-dns-fix	  enable workaround for broken DNS servers (as in SpeedTouch 510)
-  --enable-bigstack	  increase thread stack size
-  --enable-readdir_r		    enable support for readdir_r
-  --disable-fdpassing        don't build file descriptor passing support
-  --enable-clamdtop       Enable 'clamdtop' tool [default=auto]
+  --disable-xml           do not include DMG and XAR support
+  --enable-maintainer-mode
+                          make rules and dependencies not useful (and
+                          sometimes confusing) to the casual installer
+  --disable-zlib-vcheck   do not check for buggy zlib version
+  --disable-bzip2         do not include bzip2 support
+  --disable-unrar         do not build libclamunrar and libclamunrar_iface
+  --disable-getaddrinfo   do not include support for getaddrinfo
+  --disable-ipv6          do not include IPv6 support
+  --disable-dns           do not include support for database verification
+                          through DNS
+  --disable-fanotify      do not add fanotify support (Linux only)
+  --enable-milter         build clamav-milter
+  --disable-pthreads      do not include POSIX threads support
+  --disable-cr            do not link with C reentrant library (BSD)
+  --enable-id-check       use id utility instead of /etc/passwd parsing
+  --enable-yp-check       use ypmatch utility instead of /etc/passwd parsing
+  --enable-no-cache       use "Cache-Control: no-cache" in freshclam
+  --enable-dns-fix        enable workaround for broken DNS servers (as in
+                          SpeedTouch 510)
+  --enable-bigstack       increase thread stack size
+  --enable-readdir_r      enable support for readdir_r
+  --disable-fdpassing     do not build file descriptor passing support
+  --enable-clamdtop       build clamdtop tool [default=auto]
   --enable-distcheck-werror
                           enable warnings as error for distcheck [default=no]
-  --enable-llvm           Enable 'llvm' JIT/verifier support [default=auto]
+  --enable-llvm           enable 'llvm' JIT/verifier support [default=auto]
 
 
 Optional Packages:
@@ -1598,38 +1601,46 @@ Optional Packages:
   --with-pic[=PKGS]       try to use only PIC/non-PIC objects [default=use
                           both]
   --with-gnu-ld           assume the C compiler uses GNU ld [default=no]
-  --with-sysroot=DIR Search for dependent libraries within DIR
-                        (or the compiler's sysroot if not specified).
+  --with-sysroot[=DIR]    search for dependent libraries within DIR (or the
+                          compiler's sysroot if not specified).
   --with-included-ltdl    use the GNU ltdl sources included here
-  --with-ltdl-include=DIR use the ltdl headers installed in DIR
-  --with-ltdl-lib=DIR     use the libltdl.la installed in DIR
-  --with-gnu-ld           assume the C compiler uses GNU ld default=no
+  --with-ltdl-include[=DIR]
+                          use the ltdl headers installed in DIR
+  --with-ltdl-lib[=DIR]   use the libltdl.la installed in DIR
+  --with-gnu-ld           assume the C compiler uses GNU ld [default=no]
   --with-libcheck-prefix[=DIR]  search for libcheck in DIR/include and DIR/lib
   --without-libcheck-prefix     don't search for libcheck in includedir and libdir
-  --with-xml=DIR	  path to directory containing libxml2 library (default=
-			  /usr/local or /usr if not found in /usr/local)
-  --with-openssl=DIR   path to directory containing openssl (default=
-    /usr/local or /usr if not found in /usr/local)
-  --with-libjson=DIR   path to directory containing libjson (default=
-    /usr/local or /usr if not found in /usr/local)
-  --with-zlib=DIR	  path to directory containing zlib library (default=
-			  /usr/local or /usr if not found in /usr/local)
+  --with-xml[=DIR]        path to directory containing libxml2 library
+                          [default=/usr/local or /usr if not found in
+                          /usr/local]
+  --with-openssl[=DIR]    path to directory containing openssl
+                          [default=/usr/local or /usr if not found in
+                          /usr/local]
+  --with-libjson[=DIR]    path to directory containing libjson
+                          [default=/usr/local or /usr if not found in
+                          /usr/local]
+  --with-zlib[=DIR]       path to directory containing zlib library
+                          [default=/usr/local or /usr if not found in
+                          /usr/local]
   --with-libbz2-prefix[=DIR]  search for libbz2 in DIR/include and DIR/lib
   --without-libbz2-prefix     don't search for libbz2 in includedir and libdir
-  --with-iconv supports iconv() (default=auto)
-  --with-user=uid	  name of the clamav user (default=clamav)
-  --with-group=gid	  name of the clamav group (default=clamav)
-  --with-version=STR    use custom version string (dev only)
-  --with-dbdir=path	  path to virus database directory
+  --with-iconv            supports iconv() [default=auto]
+  --with-user[=uid]       name of the clamav user [default=clamav]
+  --with-group[=gid]      name of the clamav group [default=clamav]
+  --with-version[=STR]    use custom version string (dev only)
+  --with-dbdir[=path]     path to virus database directory
   --with-libncurses-prefix[=DIR]  search for libncurses in DIR/include and DIR/lib
   --without-libncurses-prefix     don't search for libncurses in includedir and libdir
   --with-libpdcurses-prefix[=DIR]  search for libpdcurses in DIR/include and DIR/lib
   --without-libpdcurses-prefix     don't search for libpdcurses in includedir and libdir
-  --with-system-llvm      Use system llvm instead of built-in, uses full path
-                          to llvm-config (default= /usr/local or /usr if not
-                          found in /usr/local)
-  --with-libcurl=DIR   path to directory containing libcurl (default=
-    /usr/local or /usr if not found in /usr/local)
+  --with-system-llvm      use system llvm instead of built-in, uses full path
+                          to llvm-config [default=/usr/local or /usr if not
+                          found in /usr/local]
+  --with-llvm-linking     specifies method to linking llvm [static|dynamic],
+                          only valid with --with-system-llvm
+  --with-libcurl[=DIR]    path to directory containing libcurl
+                          [default=/usr/local or /usr if not found in
+                          /usr/local]
 
 Some influential environment variables:
   CC          C compiler command
@@ -22347,6 +22358,36 @@ else
 fi
 
 
+
+# Check whether --with-llvm-linking was given.
+if test "${with_llvm_linking+set}" = set; then :
+  withval=$with_llvm_linking;
+if test "x$system_llvm" = "xbuilt-in"; then
+   as_fn_error $? "Failed to configure LLVM, and LLVM linking was specified without specifying system-llvm" "$LINENO" 5
+else
+case "$withval" in
+  static)
+    llvm_linking="static"
+    ;;
+  dynamic)
+    llvm_linking="dynamic"
+    ;;
+  *)
+    as_fn_error $? "Invalid argument to --with-llvm-linking" "$LINENO" 5
+esac
+fi
+
+else
+
+if test "x$system_llvm" = "xbuilt-in"; then
+   llvm_linking=""
+else
+   llvm_linking="auto"
+fi
+
+fi
+
+
 # Check whether --enable-llvm was given.
 if test "${enable_llvm+set}" = set; then :
   enableval=$enable_llvm; enable_llvm=$enableval
@@ -22375,6 +22416,7 @@ subdirs="$subdirs libclamav/c++"
 
 else
     system_llvm="none"
+    llvm_linking=""
 fi
 
 # Check whether --enable-sha-collector-for-internal-use was given.
@@ -25202,6 +25244,11 @@ fi
 if test "$enable_llvm" = "yes" && test "$subdirfailed" != "no"; then
     as_fn_error $? "Failed to configure LLVM, and LLVM was explicitly requested" "$LINENO" 5
 fi
+if test "$enable_llvm" = "auto" && test "$subdirfailed" != "no"; then
+    system_llvm="MIA"
+    llvm_linking=""
+fi
+
  if test "$subdirfailed" != "yes" && test "$enable_llvm" != "no"; then
   ENABLE_LLVM_TRUE=
   ENABLE_LLVM_FALSE='#'
@@ -27850,8 +27897,8 @@ cat <<EOF
               pthreads    : $have_pthreads ($THREAD_LIBS)
 EOF
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: Summary of miscellaneous  features" >&5
-$as_echo "$as_me: Summary of miscellaneous  features" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Summary of miscellaneous features" >&5
+$as_echo "$as_me: Summary of miscellaneous features" >&6;}
 if test "x$CHECK_LIBS" = "x"; then
     check_libs="no"
 else
@@ -27968,8 +28015,8 @@ else
 fi
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: Summary of engine performance features)" >&5
-$as_echo "$as_me: Summary of engine performance features)" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Summary of engine performance features" >&5
+$as_echo "$as_me: Summary of engine performance features" >&6;}
 if test "x$enable_debug" = "xyes"; then
 
 
@@ -28003,6 +28050,7 @@ have_jit="no"
 if test "$subdirfailed" = "no"; then
     have_jit="yes"
 fi
+if test "x$llvm_linking" = "x"; then
 
 
    $as_echo_n "              llvm        : "
@@ -28016,6 +28064,21 @@ else
   $as_echo "$have_jit, from $system_llvm ($enable_llvm)"
 fi
 
+else
+
+
+   $as_echo_n "              llvm        : "
+   if test "x$enable_llvm" = "xno"; then :
+  $as_echo "$have_jit, from $system_llvm ($llvm_linking) (disabled)"
+elif test "x$enable_llvm" = "xyes"; then :
+  $as_echo "$have_jit, from $system_llvm ($llvm_linking)"
+elif test "x$enable_llvm" = "x"; then :
+  $as_echo "$have_jit, from $system_llvm ($llvm_linking)"
+else
+  $as_echo "$have_jit, from $system_llvm ($llvm_linking) ($enable_llvm)"
+fi
+
+fi
 
 
    $as_echo_n "              mempool     : "
