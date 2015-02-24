@@ -655,8 +655,9 @@ identifier
             object != (YR_OBJECT*) -2 &&    // not a rule identifier
             object->type == OBJECT_TYPE_STRUCTURE)
         {
-          field = yr_object_lookup_field(object, $3);
-
+#if REAL_YARA 
+         field = yr_object_lookup_field(object, $3);
+#endif
           if (field != NULL)
           {
             compiler->last_result = yr_arena_write_string(
