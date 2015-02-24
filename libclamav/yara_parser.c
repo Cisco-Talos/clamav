@@ -883,7 +883,6 @@ YR_META* yr_parser_reduce_meta_declaration(
 {
   YR_COMPILER* compiler = yyget_extra(yyscanner);
   YR_META* meta;
-#if REAL_YARA
   compiler->last_result = yr_arena_allocate_struct(
       compiler->metas_arena,
       sizeof(YR_META),
@@ -918,7 +917,7 @@ YR_META* yr_parser_reduce_meta_declaration(
   meta->type = type;
 
   return meta;
-#else
+#if 0 //meta w.i.p.
   meta = cli_calloc(1, sizeof(YR_META));
   if (meta == NULL) {
       cli_errmsg("yara_parser: no mem for YR_META.\n");
@@ -945,9 +944,8 @@ YR_META* yr_parser_reduce_meta_declaration(
   meta->integer = integer;
   meta->type = type;
 
-#if 0
   STAILQ_INSERT_TAIL(&compiler->current_meta, meta, link);
-#endif
+
   //compiler->error_msg = "meta not yet supported";
   return meta;
 #endif

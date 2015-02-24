@@ -3512,6 +3512,8 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
         rc = yr_arena_create(65536, 0, &compiler.code_arena);
     if (rc == ERROR_SUCCESS)
         rc = yr_arena_create(65536, 0, &compiler.strings_arena);
+    if (rc == ERROR_SUCCESS)
+        rc = yr_arena_create(65536, 0, &compiler.metas_arena);
     if (rc != ERROR_SUCCESS)
         return CL_EMEM;
     compiler.loop_for_of_mem_offset = -1;
@@ -3528,6 +3530,7 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
         yr_arena_destroy(compiler.sz_arena);
         yr_arena_destroy(compiler.code_arena);
         yr_arena_destroy(compiler.strings_arena);
+        yr_arena_destroy(compiler.metas_arena);
         return CL_EMALFDB;
 #endif
     }
@@ -3544,9 +3547,11 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
         if (rc != CL_SUCCESS) {
             cli_warnmsg("cli_loadyara: problem parsing yara file %s, yara rule %s\n", dbname, rule->id);
 #ifdef YARA_FINISHED
+            free_yararule(rule);
             break;
 #endif
         }
+        free_yararule(rule);
     }
 
     yr_hash_table_destroy(compiler.rules_table, NULL);
@@ -3554,7 +3559,7 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
     yr_arena_destroy(compiler.sz_arena);
     yr_arena_destroy(compiler.code_arena);
     yr_arena_destroy(compiler.strings_arena);
-
+    yr_arena_destroy(compiler.metas_arena);
 
 #ifdef YARA_FINISHED
     if(rc)

@@ -515,6 +515,7 @@ typedef struct _yc_compiler {
     YR_ARENA*           sz_arena;
     YR_ARENA*           strings_arena;
     YR_ARENA*           code_arena;
+    YR_ARENA*           metas_arena;
     YR_HASH_TABLE*      rules_table;
     YR_HASH_TABLE*      objects_table;
     YR_NAMESPACE*       current_namespace;
