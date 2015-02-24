@@ -487,20 +487,43 @@ Sig2;Target:0;((0|1|2)>5,2)&(3|1);6b6f74656b;616c61;7a6f6c77;737
 Sig3;Target:0;((0|1|2|3)=2)&(4|1);6b6f74656b;616c61;7a6f6c77;737
 46566616e;deadbeef
 
-Sig4;Target:1,Engine:18-20;((0|1)&(2|3))&4;EP+123:33c06834f04100
+Sig4;Target:1;Engine:18-20;((0|1)&(2|3))&4;EP+123:33c06834f04100
 f2aef7d14951684cf04100e8110a00;S2+78:22??232c2d252229{-15}6e6573
-(63|64)61706528;S+50:68efa311c3b9963cb1ee8e586d32aeb9043e;f9c58d
-cf43987e4f519d629b103375;SL+550:6300680065005c0046006900
+(63|64)61706528;S3+50:68efa311c3b9963cb1ee8e586d32aeb9043e;f9c58
+dcf43987e4f519d629b103375;SL+550:6300680065005c0046006900
     \end{verbatim}
-    ClamAV 0.96 introduced support for special macro subsignatures in
-    the following format: \verb+${min-max}MACROID$+, where \verb+MACROID+
-    points to a group of signatures and \verb+{min-max}+ specifies the
-    offset range at which one of the group signatures should match.
-    The range is calculated against the match offset of the previous
-    subsignature. The macro subsignature makes its preceding subsignature
-    considered a match only if both of them get matched. For more
-    information and examples please see
-    \url{https://bugzilla.clamav.net/show_bug.cgi?id=164}.
+    Macro subsignatures(clamav-0.96): \verb+${min-max}MACROID$+:
+    \begin{itemize}
+      \item Macro subsignatures are used to combine a number of existing extended
+      signatures (\verb+.ndb+) into a on-the-fly generated alternate string logical
+      signature (\verb+.ldb+).
+    \end{itemize}
+    Example:
+    \begin{verbatim}
+      test.ldb:
+        TestMacro;Target:0;0&1;616161;${6-7}12$
+
+      test.ndb:
+        D1:0:$12:626262
+        D2:0:$12:636363
+        D3:0:$30:626264
+    \end{verbatim}
+    The example logical signature \verb+TestMacro+ is functionally equivalent to:\\
+    \verb+TestMacro;Target:0;0;616161{3-4}(626262|636363)+
+    \begin{itemize}
+	\item \verb+MACROID+ points to a group of signatures; there can be at most 32 macro groups.
+      \begin{itemize}
+      \item In the example, \verb+MACROID+ is \verb+12+ and both \verb+D1+ and \verb+D2+ are members 
+        of macro group \verb+12+. \verb+D3+ is a member of separate macro group \verb+30+.
+      \end{itemize}
+    \item \verb+{min-max}+ specifies the offset range at which one of the group signatures should match;
+      the offset range is relative to the starting offset of the preceding subsignature. This means a
+      macro subsignature cannot be the first subsignature.
+      \begin{itemize}
+      \item In the example, \verb+{min-max}+ is \verb+{6-7}+ and it is relative to the start of a \verb+616161+ match.
+      \end{itemize}
+	\item For more information and examples please see \url{https://wwws.clamav.net/bugzilla/show_bug.cgi?id=164}.
+    \end{itemize}
 
     \subsection{Icon signatures for PE files}
     ClamAV 0.96 includes an approximate/fuzzy icon matcher to help

@@ -1,5 +1,5 @@
 AC_ARG_WITH([dbdir], 
-[  --with-dbdir=path	  path to virus database directory],
+[AS_HELP_STRING([--with-dbdir@<:@=path@:>@], [path to virus database directory])],
 db_dir="$withval", db_dir="_default_")
 
 dnl I had problems with $pkgdatadir thus these funny checks

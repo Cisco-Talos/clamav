@@ -3076,7 +3076,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 		    cli_dbgmsg("Descriptor[%d]: cli_scanraw error %s\n", fmap_fd(*ctx->fmap), cl_strerror(res));
 		    cli_bitset_free(ctx->hook_lsig_matches);
 		    ctx->hook_lsig_matches = old_hook_lsig_matches;
-            return magic_scandesc_cleanup(ctx, type, hash, hashed_size, cache_clean, ret, parent_property);
+            return magic_scandesc_cleanup(ctx, type, hash, hashed_size, cache_clean, res, parent_property);
 		/* CL_VIRUS = malware found, check FP and report */
 		case CL_VIRUS:
 		    ret = cli_checkfp(hash, hashed_size, ctx);
@@ -3466,8 +3466,8 @@ static int scan_common(int desc, cl_fmap_t *map, const char **virname, unsigned 
         else {
             int ret = CL_SUCCESS;
             cli_dbgmsg("%s\n", jstring);
- 
-           /* Scan the json string unless a virus was detected */ 
+
+           /* Scan the json string unless a virus was detected */
             if (rc != CL_VIRUS) {
                 ctx.options &= ~CL_SCAN_FILE_PROPERTIES;
                 rc = cli_mem_scandesc(jstring, strlen(jstring), &ctx);

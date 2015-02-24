@@ -61,7 +61,7 @@ m4_include([m4/reorganization/compiler_checks.m4])
 m4_include([m4/reorganization/linker_checks.m4])
 
 AC_ARG_ENABLE([experimental],
-[  --enable-experimental	enable experimental code],
+[AS_HELP_STRING([--enable-experimental], [enable experimental code])],
 enable_experimental=$enableval, enable_experimental="no")
 
 if test "$enable_experimental" = "yes"; then
@@ -172,6 +172,11 @@ AC_OUTPUT
 if test "$enable_llvm" = "yes" && test "$subdirfailed" != "no"; then
     AC_MSG_ERROR([Failed to configure LLVM, and LLVM was explicitly requested])
 fi
+if test "$enable_llvm" = "auto" && test "$subdirfailed" != "no"; then
+    system_llvm="MIA"
+    llvm_linking=""
+fi
+
 AM_CONDITIONAL([ENABLE_LLVM],
 	       [test "$subdirfailed" != "yes" && test "$enable_llvm" != "no"])
 no_recursion="yes";
@@ -185,7 +190,7 @@ cat <<EOF
               pthreads    : $have_pthreads ($THREAD_LIBS)
 EOF
 
-AC_MSG_NOTICE([Summary of miscellaneous  features])
+AC_MSG_NOTICE([Summary of miscellaneous features])
 if test "x$CHECK_LIBS" = "x"; then
     check_libs="no"
 else
@@ -205,7 +210,7 @@ CL_MSG_STATUS([clamdtop    ],[$CURSES_LIBS],[$enable_clamdtop])
 CL_MSG_STATUS([milter      ],[yes],[$have_milter])
 CL_MSG_STATUS([clamsubmit  ],[$have_curl],[$curl_msg])
 
-AC_MSG_NOTICE([Summary of engine performance features)])
+AC_MSG_NOTICE([Summary of engine performance features])
 if test "x$enable_debug" = "xyes"; then
     CL_MSG_STATUS([release mode],[no],[debug build])
 else
@@ -215,7 +220,11 @@ have_jit="no"
 if test "$subdirfailed" = "no"; then
     have_jit="yes"
 fi
-CL_MSG_STATUS([llvm        ],[$have_jit, from $system_llvm],[$enable_llvm])
+if test "x$llvm_linking" = "x"; then
+   CL_MSG_STATUS([llvm        ],[$have_jit, from $system_llvm],[$enable_llvm])
+else
+   CL_MSG_STATUS([llvm        ],[$have_jit, from $system_llvm ($llvm_linking)],[$enable_llvm])
+fi
 CL_MSG_STATUS([mempool     ],[$have_mempool],[$enable_mempool])
 
 AC_MSG_NOTICE([Summary of engine detection features])

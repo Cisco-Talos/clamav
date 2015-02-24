@@ -460,6 +460,9 @@ int main(int argc, char **argv)
 #ifdef HAVE_LIBXML2
 	printf("LIBXML2 ");
 #endif
+#ifdef HAVE_ICONV
+	printf("ICONV ");
+#endif
 #ifdef HAVE_JSON
 	printf("JSON ");
 #endif

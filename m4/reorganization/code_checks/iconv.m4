@@ -1,7 +1,7 @@
 dnl we need to try to link with iconv, otherwise there could be a 
 dnl mismatch between a 32-bit and 64-bit lib. Detect this at configure time.
 dnl we need to check after zlib/bzip2, because they can change the include path
-AC_ARG_WITH([iconv], [  --with-iconv supports iconv() (default=auto)],
+AC_ARG_WITH([iconv], [AS_HELP_STRING([--with-iconv], [supports iconv() @<:@default=auto@:>@])],
 [
  case "$withval" in
 	 yes|no) wiconv="$withval";;

@@ -3,8 +3,8 @@ curl_msg="Please use the web interface for submitting FPs/FNs."
 AC_MSG_CHECKING([for libcurl installation])
 
 AC_ARG_WITH([libcurl],
-[  --with-libcurl=DIR   path to directory containing libcurl (default=
-    /usr/local or /usr if not found in /usr/local)],
+[AS_HELP_STRING([--with-libcurl@<:@=DIR@:>@], [path to directory containing libcurl
+                @<:@default=/usr/local or /usr if not found in /usr/local@:>@])],
 [
 if test "$withval"; then
     LIBCURL_HOME="$withval"
