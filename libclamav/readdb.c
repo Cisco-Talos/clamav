@@ -115,6 +115,110 @@ char *cli_virname(const char *virname, unsigned int official)
     return newname;
 }
 
+static int sigopts_handler(struct cli_matcher *root, const char *virname, const char *hexsig, uint8_t sigopts, uint16_t rtype, uint16_t type, const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options)
+{
+    char *hexcpy;
+    int i, ret = CL_SUCCESS;
+
+    cli_errmsg("%s: %s %02x\n", virname, hexsig, sigopts);
+
+    if (sigopts && !(sigopts & ACPATT_OPTION_ONCE)) {
+        hexcpy = cli_strdup(hexsig);
+        if (!hexcpy)
+            return CL_EMEM;
+
+        sigopts |= ACPATT_OPTION_ONCE;
+
+        /* FULLWORD sigopt handling - only happens once */
+        if (sigopts & ACPATT_OPTION_FULLWORD) {
+            char *rechar;
+            char *hexovr = cli_calloc(strlen(hexcpy)+7, sizeof(char));
+            if (!hexovr)
+                return CL_EMEM;
+
+            snprintf(hexovr, strlen(hexcpy)+7, "(W)%s(W)", hexcpy);
+
+            /* change the '[' and ']' to '{' and '}' since there are now two bytes */
+            rechar = hexovr;
+            while ((rechar = strchr(rechar, '['))) { //TEST TODO
+                *rechar = '{';
+
+                if (!(rechar = strchr(rechar, ']'))) {
+                    cli_errmsg("cli_parse_add: unmatched '[' in signature %s\n", virname);
+                    return CL_EMALFDB;
+                }
+                *rechar = '}';
+            }
+
+            free(hexcpy);
+            hexcpy = hexovr;
+        }
+
+        /* WIDE sigopt handling - only happens once (after fullword)
+         * TODO - consider handling in cli_ac_addpatt? (two pattern possibility)
+         */
+        if (sigopts & ACPATT_OPTION_WIDE) {
+            size_t ovrlen = 2*strlen(hexcpy)+1;
+            char *hexovr = cli_calloc(ovrlen, sizeof(char));
+            if (!hexovr)
+                return CL_EMEM;
+
+            /* clamav-specific wildcards need to be handled here! */
+            for (i = 0; i < strlen(hexcpy); ++i) {
+                size_t len = strlen(hexovr);
+
+                if (hexcpy[i] == '*' || hexcpy[i] == '|' || hexcpy[i] == ')') {
+                    hexovr[len] = hexcpy[i];
+                } else if (hexcpy[i] == '[') {
+                    /* change the '[' and ']' to '{' and '}' since there are now two bytes */
+                    hexovr[len++] = '{';
+                    ++i;
+                    while (i < strlen(hexcpy) && hexcpy[i] != ']')
+                        hexovr[len++] = hexcpy[i++];
+
+                    hexovr[len] = '}';
+                } else if (hexcpy[i] == '{') {
+                    while (i < strlen(hexcpy) && hexcpy[i] != '}')
+                        hexovr[len++] = hexcpy[i++];
+
+                    hexovr[len] = '}';
+                } else if (hexcpy[i] == '!' || hexcpy[i] == '(') {
+                    if (hexcpy[i] == '!')
+                        hexovr[len++] = hexcpy[i++];
+
+                    /* copies '(' */
+                    hexovr[len] = hexcpy[i];
+
+                    if (hexcpy[i+1] == 'B' || hexcpy[i+1] == 'L' || hexcpy[i+1] == 'W') {
+                        ++len; ++i;
+                        hexovr[len++] = hexcpy[i++];
+                        if (hexcpy[i] != ')') {
+                            return CL_EMALFDB;
+                        }
+                        hexovr[len] = hexcpy[i];
+                    }
+                } else {
+                    //snprintf(hexovr+len, ovrlen-len, "%02x%c%c", 0, hexcpy[i], hexcpy[i+1]);
+                    snprintf(hexovr+len, ovrlen-len, "%c%c%02x", hexcpy[i], hexcpy[i+1], 0);
+                    ++i;
+                }
+            }
+
+            /* NOCASE sigopt is handled in cli_ac_addsig */
+            ret = cli_parse_add(root, virname, hexovr, sigopts, rtype, type, offset, target, lsigid, options);
+            if (ret != CL_SUCCESS || !(sigopts & ACPATT_OPTION_ASCII)) {
+                free(hexcpy);
+                return ret;
+            }
+        }
+    }
+
+    /* NOCASE sigopt is handled in cli_ac_addsig */
+    ret = cli_parse_add(root, virname, hexcpy, sigopts, rtype, type, offset, target, lsigid, options);
+    free(hexcpy);
+    return ret;
+}
+
 #define PCRE_TOKENS 4
 int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hexsig, uint8_t sigopts, uint16_t rtype, uint16_t type, const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options)
 {
@@ -251,91 +355,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
                 opt++;
             }
 
-            /* FULLWORD sigopt handling - only happens once */
-            if (sigopts & ACPATT_OPTION_FULLWORD) {
-                char *rechar;
-                char *hexovr = cli_calloc(strlen(hexcpy)+7, sizeof(char));
-                if (!hexovr)
-                    return CL_EMEM;
-
-                snprintf(hexovr, strlen(hexcpy)+7, "(W)%s(W)", hexcpy);
-
-                /* change the '[' and ']' to '{' and '}' since there are now two bytes */
-                rechar = hexovr;
-                while ((rechar = strchr(rechar, '['))) { //TEST TODO
-                    *rechar = '{';
-
-                    if (!(rechar = strchr(rechar, ']'))) {
-                        cli_errmsg("cli_parse_add: unmatched '[' in signature %s\n", virname);
-                        return CL_EMALFDB;
-                    }
-                    *rechar = '}';
-                }
-
-                free(hexcpy);
-                hexcpy = hexovr;
-            }
-
-            /* WIDE sigopt handling - only happens once (after fullword)
-             * TODO - consider handling in cli_ac_addpatt? (two pattern possibility)
-             */
-            if (sigopts & ACPATT_OPTION_WIDE) {
-                size_t ovrlen = 2*strlen(hexcpy)+1;
-                char *hexovr = cli_calloc(ovrlen, sizeof(char));
-                if (!hexovr)
-                    return CL_EMEM;
-
-                /* clamav-specific wildcards need to be handled here! */
-                for (i = 0; i < strlen(hexcpy); ++i) {
-                    size_t len = strlen(hexovr);
-
-                    if (hexcpy[i] == '*' || hexcpy[i] == '|' || hexcpy[i] == ')') {
-                        hexovr[len] = hexcpy[i];
-                    } else if (hexcpy[i] == '[') {
-                        /* change the '[' and ']' to '{' and '}' since there are now two bytes */
-                        hexovr[len++] = '{';
-                        ++i;
-                        while (i < strlen(hexcpy) && hexcpy[i] != ']')
-                            hexovr[len++] = hexcpy[i++];
-
-                        hexovr[len] = '}';
-                    } else if (hexcpy[i] == '{') {
-                        while (i < strlen(hexcpy) && hexcpy[i] != '}')
-                            hexovr[len++] = hexcpy[i++];
-
-                        hexovr[len] = '}';
-                    } else if (hexcpy[i] == '!' || hexcpy[i] == '(') {
-                        if (hexcpy[i] == '!')
-                            hexovr[len++] = hexcpy[i++];
-
-                        /* copies '(' */
-                        hexovr[len] = hexcpy[i];
-
-                        if (hexcpy[i+1] == 'B' || hexcpy[i+1] == 'L' || hexcpy[i+1] == 'W') {
-                            ++len; ++i;
-                            hexovr[len++] = hexcpy[i++];
-                            if (hexcpy[i] != ')') {
-                                return CL_EMALFDB;
-                            }
-                            hexovr[len] = hexcpy[i];
-                        }
-                   } else {
-                        //snprintf(hexovr+len, ovrlen-len, "%02x%c%c", 0, hexcpy[i], hexcpy[i+1]);
-                        snprintf(hexovr+len, ovrlen-len, "%c%c%02x", hexcpy[i], hexcpy[i+1], 0);
-                        ++i;
-                    }
-                }
-
-                /* get called; NOCASE sigopt is handled in cli_ac_addsig */
-                ret = cli_parse_add(root, virname, hexovr, sigopts, rtype, type, offset, target, lsigid, options);
-                if (ret != CL_SUCCESS || !(sigopts & ACPATT_OPTION_ASCII)) {
-                    free(hexcpy);
-                    return ret;
-                }
-            }
-
-            /* get called; NOCASE sigopt is handled in cli_ac_addsig */
-            ret = cli_parse_add(root, virname, hexcpy, sigopts, rtype, type, offset, target, lsigid, options);
+            ret = sigopts_handler(root, virname, hexcpy, sigopts, rtype, type, offset, target, lsigid, options);
             free(hexcpy);
             return ret;
         }
@@ -3469,9 +3489,13 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
     for (i = 0; i < ytable.tbl_cnt; ++i) {
         lsigid[1] = i;
 
-        cli_yaramsg("%d: [%s] [%s] [%x]\n", i, ytable.table[i]->hexstr, ytable.table[i]->offset, ytable.table[i]->sigopts);
+        cli_yaramsg("%d: [%s] [%s] [%s%s%s%s]\n", i, ytable.table[i]->hexstr, ytable.table[i]->offset,
+                    (ytable.table[i]->sigopts & ACPATT_OPTION_NOCASE) ? "i" : "",
+                    (ytable.table[i]->sigopts & ACPATT_OPTION_FULLWORD) ? "f" : "",
+                    (ytable.table[i]->sigopts & ACPATT_OPTION_WIDE) ? "w" : "",
+                    (ytable.table[i]->sigopts & ACPATT_OPTION_ASCII) ? "a" : "");
 
-        if((ret = cli_parse_add(root, rule->id, ytable.table[i]->hexstr, ytable.table[i]->sigopts, 0, 0, ytable.table[i]->offset, target, lsigid, options)) != CL_SUCCESS) {
+        if((ret = sigopts_handler(root, rule->id, ytable.table[i]->hexstr, ytable.table[i]->sigopts, 0, 0, ytable.table[i]->offset, target, lsigid, options)) != CL_SUCCESS) {
             yara_malform++;
             return ret;
         }

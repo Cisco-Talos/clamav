@@ -41,6 +41,8 @@
 #define ACPATT_OPTION_WIDE     0x04
 #define ACPATT_OPTION_ASCII    0x08
 
+#define ACPATT_OPTION_ONCE     0x80
+
 struct cli_ac_data {
     int32_t ***offmatrix;
     uint32_t partsigs, lsigs, reloffsigs;
