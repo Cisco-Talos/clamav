@@ -465,7 +465,7 @@ struct RE {
 #define yr_free free
 #define xtoi cli_xtoi
 #define strlcpy cli_strlcpy
-#define strlcat cli_strlcpy
+#define strlcat cli_strlcat
 
 /* YARA-defined structure replacements for ClamAV */
 struct _yc_rule {
