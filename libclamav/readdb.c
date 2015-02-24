@@ -3489,6 +3489,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
 static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio, const char *dbname)
 {
     YR_COMPILER compiler = {0};
+    YR_NAMESPACE ns;
     YR_RULE *rule;
     unsigned int sigs = 0, rules = 0;
     int rc;
@@ -3504,6 +3505,8 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
 
     rc = yr_hash_table_create(10007, &compiler.rules_table);
     if (rc == ERROR_SUCCESS)
+        rc = yr_hash_table_create(10007, &compiler.objects_table);
+    if (rc == ERROR_SUCCESS)
         rc = yr_arena_create(65536, 0, &compiler.sz_arena);
     if (rc == ERROR_SUCCESS)
         rc = yr_arena_create(65536, 0, &compiler.code_arena);
@@ -3511,7 +3514,9 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
         rc = yr_arena_create(65536, 0, &compiler.strings_arena);
     if (rc != ERROR_SUCCESS)
         return CL_EMEM;
-
+    compiler.loop_for_of_mem_offset = -1;
+    ns.name = "default";
+    compiler.current_namespace = &ns;
 
     rc = yr_lex_parse_rules_file(fs, &compiler);
     if (rc > 0) { /* rc = number of errors */
@@ -3519,6 +3524,7 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
         cli_errmsg("cli_loadyara: failed to parse rules file %s, error count %i\n", dbname, rc);
 #ifdef YARA_FINISHED
         yr_hash_table_destroy(compiler.rules_table, NULL);
+        yr_hash_table_destroy(compiler.objects_table, NULL);
         yr_arena_destroy(compiler.sz_arena);
         yr_arena_destroy(compiler.code_arena);
         yr_arena_destroy(compiler.strings_arena);
@@ -3544,6 +3550,7 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
     }
 
     yr_hash_table_destroy(compiler.rules_table, NULL);
+    yr_hash_table_destroy(compiler.objects_table, NULL);
     yr_arena_destroy(compiler.sz_arena);
     yr_arena_destroy(compiler.code_arena);
     yr_arena_destroy(compiler.strings_arena);
