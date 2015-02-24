@@ -584,28 +584,23 @@ identifier
         {
           // Search for identifier within the global namespace, where the
           // externals variables reside.
-#if REAL_YARA //externals/objects/modules not supported
           object = (YR_OBJECT*) yr_hash_table_lookup(
                 compiler->objects_table,
                 $1,
                 NULL);
-#endif
           if (object == NULL)
           {
             // If not found, search within the current namespace.
 
-#if REAL_YARA //externals/objects/modules not supported
             ns = compiler->current_namespace->name;
             object = (YR_OBJECT*) yr_hash_table_lookup(
                 compiler->objects_table,
                 $1,
                 ns);
-#endif
           }
 
           if (object != NULL)
           {
-#if REAL_YARA //externals/objects/modules not supported
             compiler->last_result = yr_arena_write_string(
                 compiler->sz_arena,
                 $1,
@@ -617,21 +612,15 @@ identifier
                   OP_OBJ_LOAD,
                   PTR_TO_UINT64(id),
                   NULL);
-#endif
 
             $$ = object;
           }
           else
           {
-              //#if REAL_YARA
            rule = (YR_RULE*) yr_hash_table_lookup(
                 compiler->rules_table,
                 $1,
-#if REAL_YARA
                 compiler->current_namespace->name);
-#else
-                NULL);
-#endif
             if (rule != NULL)
             {
               compiler->last_result = yr_parser_emit_with_arg_reloc(
@@ -645,7 +634,6 @@ identifier
               yr_compiler_set_error_extra_info(compiler, $1);
               compiler->last_result = ERROR_UNDEFINED_IDENTIFIER;
             }
-            //#endif
 
             $$ = (YR_OBJECT*) -2;
           }
@@ -657,7 +645,6 @@ identifier
       }
     | identifier '.' _IDENTIFIER_
       {
-#ifdef REAL_YARA //externals/objects/modules not supported
         YR_OBJECT* object = $1;
         YR_OBJECT* field = NULL;
 
@@ -668,8 +655,9 @@ identifier
             object != (YR_OBJECT*) -2 &&    // not a rule identifier
             object->type == OBJECT_TYPE_STRUCTURE)
         {
-          field = yr_object_lookup_field(object, $3);
-
+#if REAL_YARA 
+         field = yr_object_lookup_field(object, $3);
+#endif
           if (field != NULL)
           {
             compiler->last_result = yr_arena_write_string(
@@ -704,11 +692,9 @@ identifier
         yr_free($3);
 
         ERROR_IF(compiler->last_result != ERROR_SUCCESS);
-#endif
       }
     | identifier '[' primary_expression ']'
       {
-#ifdef REAL_YARA //externals/objects/modules not supported
         if ($1 != NULL && $1->type == OBJECT_TYPE_ARRAY)
         {
           compiler->last_result = yr_parser_emit(
@@ -716,7 +702,7 @@ identifier
               OP_INDEX_ARRAY,
               NULL);
 
-X          $$ = ((YR_OBJECT_ARRAY*) $1)->items->objects[0];
+          $$ = ((YR_OBJECT_ARRAY*) $1)->items->objects[0];
         }
         else
         {
@@ -728,12 +714,10 @@ X          $$ = ((YR_OBJECT_ARRAY*) $1)->items->objects[0];
         }
 
         ERROR_IF(compiler->last_result != ERROR_SUCCESS);
-#endif
       }
 
     | identifier '(' arguments_list ')'
       {
-#ifdef REAL_YARA //externals/objects/modules not supported
         int args_count;
 
         if ($1 != NULL && $1->type == OBJECT_TYPE_FUNCTION)
@@ -766,7 +750,6 @@ X          $$ = ((YR_OBJECT_ARRAY*) $1)->items->objects[0];
         yr_free($3);
 
         ERROR_IF(compiler->last_result != ERROR_SUCCESS);
-#endif
       }
     ;
 

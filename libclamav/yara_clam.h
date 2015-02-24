@@ -166,6 +166,13 @@ typedef struct _YR_OBJECT
 
 } YR_OBJECT;
 
+typedef struct _YR_OBJECT_ARRAY
+{
+  OBJECT_COMMON_FIELDS
+  struct _YR_ARRAY_ITEMS* items;
+
+} YR_OBJECT_ARRAY;
+
 typedef struct _YR_OBJECT_FUNCTION
 {
   OBJECT_COMMON_FIELDS
@@ -178,6 +185,13 @@ typedef struct _YR_OBJECT_FUNCTION
 #endif
 
 } YR_OBJECT_FUNCTION;
+
+typedef struct _YR_ARRAY_ITEMS
+{
+  int count;
+  YR_OBJECT* objects[1];
+
+} YR_ARRAY_ITEMS;
 
 /* From libyara/include/yara/sizedstr.h            */
 #define SIZED_STRING_FLAGS_NO_CASE  1
@@ -381,6 +395,12 @@ typedef struct _YR_EXTERNAL_VARIABLE
 
 } YR_EXTERNAL_VARIABLE;
 
+typedef struct _YR_NAMESPACE
+{
+
+  DECLARE_REFERENCE(char*, name);
+
+} YR_NAMESPACE;
 
 /* From libyara/include/yara/exec.h            */
 typedef struct RE RE;
@@ -495,8 +515,10 @@ typedef struct _yc_compiler {
     YR_ARENA*           sz_arena;
     YR_ARENA*           strings_arena;
     YR_ARENA*           code_arena;
+    YR_ARENA*           metas_arena;
     YR_HASH_TABLE*      rules_table;
-
+    YR_HASH_TABLE*      objects_table;
+    YR_NAMESPACE*       current_namespace;
     yc_string*          current_rule_strings;
     uint32_t            current_rule_flags;
 
