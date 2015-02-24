@@ -120,9 +120,10 @@ static int sigopts_handler(struct cli_matcher *root, const char *virname, const 
     char *hexcpy;
     int i, ret = CL_SUCCESS;
 
-    cli_errmsg("%s: %s %02x\n", virname, hexsig, sigopts);
-
-    if (sigopts && !(sigopts & ACPATT_OPTION_ONCE)) {
+    /* prevent cyclic loops with cli_parse_add on same hexsig
+     * cyclic loops should be impossible though
+     */
+    if (!(sigopts & ACPATT_OPTION_ONCE)) {
         hexcpy = cli_strdup(hexsig);
         if (!hexcpy)
             return CL_EMEM;
@@ -211,12 +212,15 @@ static int sigopts_handler(struct cli_matcher *root, const char *virname, const 
                 return ret;
             }
         }
+
+        /* ASCII sigopt; NOCASE sigopt is handled in cli_ac_addsig */
+        ret = cli_parse_add(root, virname, hexcpy, sigopts, rtype, type, offset, target, lsigid, options);
+        free(hexcpy);
+        return ret;
     }
 
-    /* NOCASE sigopt is handled in cli_ac_addsig */
-    ret = cli_parse_add(root, virname, hexcpy, sigopts, rtype, type, offset, target, lsigid, options);
-    free(hexcpy);
-    return ret;
+    cli_errmsg("sigopts_handler: invalidly called multiple times!\n");
+    return CL_EPARSE;
 }
 
 #define PCRE_TOKENS 4
@@ -3496,6 +3500,11 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
                     (ytable.table[i]->sigopts & ACPATT_OPTION_ASCII) ? "a" : "");
 
         if((ret = sigopts_handler(root, rule->id, ytable.table[i]->hexstr, ytable.table[i]->sigopts, 0, 0, ytable.table[i]->offset, target, lsigid, options)) != CL_SUCCESS) {
+            root->ac_lsigs--;
+            FREE_TDB(tdb);
+            ytable_delete(&ytable);
+            mpool_free(engine->mempool, lsig);
+
             yara_malform++;
             return ret;
         }
