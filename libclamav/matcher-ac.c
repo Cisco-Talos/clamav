@@ -117,7 +117,7 @@ static inline int insert_list(struct cli_matcher *root, struct cli_ac_patt *patt
         php = ph->me;
         if(!ph_add_after && php->partno <= pattern->partno && (!ph->next || ph->next->me->partno > pattern->partno))
             ph_add_after = ph;
-        if((php->length == pattern->length) && (php->prefix_length == pattern->prefix_length) && (php->ch[0] == pattern->ch[0]) && (php->ch[1] == pattern->ch[1])) {
+        if((php->length == pattern->length) && (php->prefix_length == pattern->prefix_length) && (php->ch[0] == pattern->ch[0]) && (php->ch[1] == pattern->ch[1]) && (php->boundary == pattern->boundary)) {
             if(!memcmp(php->pattern, pattern->pattern, php->length * sizeof(uint16_t)) && !memcmp(php->prefix, pattern->prefix, php->prefix_length * sizeof(uint16_t))) {
                 if(!php->special && !pattern->special) {
                     match = 1;
@@ -927,7 +927,6 @@ inline static int ac_findmatch(const unsigned char *buffer, uint32_t offset, uin
     uint32_t bp, pstart, match;
     uint16_t wc, i, j, specialcnt = pattern->special_pattern;
     struct cli_ac_special *special;
-
 
     if((offset + pattern->length > length) || (pattern->prefix_length > offset))
         return 0;
