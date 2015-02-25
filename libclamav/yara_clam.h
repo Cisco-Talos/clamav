@@ -257,6 +257,12 @@ typedef struct _SIZED_STRING
     return result; \
 }
 
+#define FAIL_ON_COMPILER_ERROR(x) { \
+  compiler->last_result = (x); \
+  if (compiler->last_result != ERROR_SUCCESS) \
+    return compiler->last_result; \
+}
+
 /* From libyara/include/yara/re.h            */
 #define RE_FLAGS_FAST_HEX_REGEXP          0x02
 #define RE_FLAGS_BACKWARDS                0x04
@@ -491,7 +497,7 @@ struct RE {
 struct _yc_rule {
     STAILQ_ENTRY(_yc_rule) link;
     STAILQ_HEAD(sq, _yc_string) strings;
-    char * id;
+    char * identifier;
     uint32_t g_flags;
 };
 typedef struct _yc_rule yc_rule;

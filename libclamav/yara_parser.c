@@ -707,15 +707,11 @@ int yr_parser_reduce_rule_declaration(
   if (yr_hash_table_lookup(
         compiler->rules_table,
         identifier,
-#if REAL_YARA
         compiler->current_namespace->name) != NULL ||
       yr_hash_table_lookup(
         compiler->objects_table,
         identifier,
         compiler->current_namespace->name) != NULL)
-#else
-        NULL) != NULL)
-#endif
   {
     // A rule or variable with the same identifier already exists, return the
     // appropriate error.
@@ -772,7 +768,6 @@ int yr_parser_reduce_rule_declaration(
   STAILQ_INIT(&rule->strings);
   STAILQ_CONCAT(&rule->strings, &compiler->current_rule_string_q);
   STAILQ_INIT(&compiler->current_rule_string_q);
-  rule->id = cli_strdup(identifier);
 #endif
 
   rule->g_flags = flags | compiler->current_rule_flags;
@@ -785,7 +780,7 @@ int yr_parser_reduce_rule_declaration(
   #ifdef PROFILING_ENABLED
   rule->clock_ticks = 0;
   #endif
-
+#endif
   FAIL_ON_COMPILER_ERROR(yr_arena_write_string(
       compiler->sz_arena,
       identifier,
@@ -803,11 +798,12 @@ int yr_parser_reduce_rule_declaration(
       compiler->current_namespace->name,
       (void*) rule));
 
+#if REAL_YARA
   compiler->current_rule_flags = 0;
   compiler->current_rule_strings = NULL;
 #else
   compiler->current_rule_flags = 0;
-   STAILQ_INSERT_TAIL(&compiler->rule_q, rule, link); 
+  STAILQ_INSERT_TAIL(&compiler->rule_q, rule, link); 
 #endif
   return compiler->last_result;
 }

@@ -2977,7 +2977,6 @@ static char *parse_yara_hex_string(YR_STRING *string, int *ret)
 
 static inline void free_yararule(YR_RULE *rule)
 {
-    free(rule->id);
     free(rule);
 }
 
@@ -3137,7 +3136,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
     uint8_t has_short_string;
     char *exp_op = "|";
 
-    cli_yaramsg("load_oneyara: attempting to load %s\n", rule->id);
+    cli_yaramsg("load_oneyara: attempting to load %s\n", rule->identifier);
 
     memset(&ytable, 0, sizeof(ytable));
 
@@ -3175,7 +3174,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
 
     if (RULE_IS_NULL(rule) || ((rule->g_flags) & RULE_GFLAGS_REQUIRE_EXECUTABLE)) {
 
-        cli_warnmsg("load_oneyara: skipping %s due to unsupported rule gflags\n", rule->id);
+        cli_warnmsg("load_oneyara: skipping %s due to unsupported rule gflags\n", rule->identifier);
 
         cli_yaramsg("RULE_IS_NULL                   %s\n", RULE_IS_NULL(rule) ? "yes" : "no");
         cli_yaramsg("RULE_GFLAGS_REQUIRE_EXECUTABLE %s\n", ((rule->g_flags) & RULE_GFLAGS_REQUIRE_EXECUTABLE) ? "yes" : "no");
@@ -3200,8 +3199,8 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
     */
 #endif
 
-    if(engine->cb_sigload && engine->cb_sigload("yara", rule->id, ~options & CL_DB_OFFICIAL, engine->cb_sigload_ctx)) {
-        cli_dbgmsg("load_oneyara: skipping %s due to callback\n", rule->id);
+    if(engine->cb_sigload && engine->cb_sigload("yara", rule->identifier, ~options & CL_DB_OFFICIAL, engine->cb_sigload_ctx)) {
+        cli_dbgmsg("load_oneyara: skipping %s due to callback\n", rule->identifier);
         (*sigs)--;
         return CL_SUCCESS;
     }
@@ -3340,7 +3339,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
         if (STRING_IS_REFERENCED(string) || STRING_IS_FAST_HEX_REGEXP(string) || STRING_IS_CHAIN_PART(string) ||
             STRING_IS_CHAIN_TAIL(string) || STRING_FITS_IN_ATOM(string)) {
 
-            cli_warnmsg("load_oneyara: skipping unsupported string %s\n", rule->id);
+            cli_warnmsg("load_oneyara: skipping unsupported string %s\n", rule->identifier);
 
             cli_yaramsg("STRING_IS_REFERENCED      %s\n", STRING_IS_REFERENCED(string) ? "yes" : "no");
             cli_yaramsg("STRING_IS_FAST_HEX_REGEXP %s\n", STRING_IS_FAST_HEX_REGEXP(string) ? "yes" : "no");
@@ -3373,19 +3372,19 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
     }
 
     if (str_error > 0) {
-        cli_warnmsg("load_oneyara: clamav cannot support %d input strings, skipping %s\n", str_error, rule->id);
+        cli_warnmsg("load_oneyara: clamav cannot support %d input strings, skipping %s\n", str_error, rule->identifier);
         yara_malform++;
         ytable_delete(&ytable);
         (*sigs)--;
         return ret;
     } else if (ytable.tbl_cnt == 0) {
-        cli_warnmsg("load_oneyara: yara rule contains no supported strings, skipping %s\n", rule->id);
+        cli_warnmsg("load_oneyara: yara rule contains no supported strings, skipping %s\n", rule->identifier);
         yara_malform++;
         ytable_delete(&ytable);
         (*sigs)--;
         return CL_SUCCESS; /* TODO - kill signature instead? */
     } else if (ytable.tbl_cnt > MAX_LDB_SUBSIGS) {
-        cli_warnmsg("load_oneyara: yara rule contains too many subsigs (%d, max: %d), skipping %s\n", ytable.tbl_cnt, MAX_LDB_SUBSIGS, rule->id);
+        cli_warnmsg("load_oneyara: yara rule contains too many subsigs (%d, max: %d), skipping %s\n", ytable.tbl_cnt, MAX_LDB_SUBSIGS, rule->identifier);
         yara_malform++;
         ytable_delete(&ytable);
         (*sigs)--;
@@ -3426,7 +3425,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
         target_str = cli_strdup(YARATARGET0);
 
     memset(&tdb, 0, sizeof(tdb));
-    if ((ret = init_tdb(&tdb, engine, target_str, rule->id)) != CL_SUCCESS) {
+    if ((ret = init_tdb(&tdb, engine, target_str, rule->identifier)) != CL_SUCCESS) {
         ytable_delete(&ytable);
         free(logic);
         free(target_str);
@@ -3499,7 +3498,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
                     (ytable.table[i]->sigopts & ACPATT_OPTION_WIDE) ? "w" : "",
                     (ytable.table[i]->sigopts & ACPATT_OPTION_ASCII) ? "a" : "");
 
-        if((ret = sigopts_handler(root, rule->id, ytable.table[i]->hexstr, ytable.table[i]->sigopts, 0, 0, ytable.table[i]->offset, target, lsigid, options)) != CL_SUCCESS) {
+        if((ret = sigopts_handler(root, rule->identifier, ytable.table[i]->hexstr, ytable.table[i]->sigopts, 0, 0, ytable.table[i]->offset, target, lsigid, options)) != CL_SUCCESS) {
             root->ac_lsigs--;
             FREE_TDB(tdb);
             ytable_delete(&ytable);
@@ -3514,7 +3513,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
     ytable_delete(&ytable);
 
     yara_loaded++;
-    cli_yaramsg("load_oneyara: successfully loaded %s\n", rule->id);
+    cli_yaramsg("load_oneyara: successfully loaded %s\n", rule->identifier);
     return CL_SUCCESS;
 }
 
@@ -3578,7 +3577,7 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
         /* TODO - PUA and engine->ignored */
         rc = load_oneyara(rule, engine, options, &sigs);
         if (rc != CL_SUCCESS) {
-            cli_warnmsg("cli_loadyara: problem parsing yara file %s, yara rule %s\n", dbname, rule->id);
+            cli_warnmsg("cli_loadyara: problem parsing yara file %s, yara rule %s\n", dbname, rule->identifier);
 #ifdef YARA_FINISHED
             free_yararule(rule);
             break;
