@@ -393,6 +393,11 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
 	      free(usects);
 	      return 1;
 	    }
+	    if (backbytes >= INT_MAX / 2) {
+		    free(usects);
+		    cli_dbgmsg("Petite: probably invalid file\n");
+		    return 1;
+	    }
 	    backbytes = backbytes*2 + oob;
 	    if ( (oob = doubledl(&ssrc, &mydl, buf, bufsz)) == -1 ) {
 	      free(usects);
@@ -408,6 +413,11 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
 	      if ( (oob = doubledl(&ssrc, &mydl, buf, bufsz)) == -1 ) {
 		free(usects);
 		return 1;
+	      }
+	      if (backbytes >= INT_MAX / 2) {
+		      free(usects);
+		      cli_dbgmsg("Petite: probably invalid file\n");
+		      return 1;
 	      }
 	      backbytes = backbytes*2 + oob;
 	      backsize--;
