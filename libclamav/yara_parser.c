@@ -654,7 +654,6 @@ YR_STRING* yr_parser_reduce_string_declaration(
   }
 #endif
 
-    //  string = cli_calloc(1, sizeof(struct _yc_string));
   if (string == NULL) {
       cli_errmsg("yara_parser: no mem for struct _yc_string.\n");
       compiler->last_result = CL_EMEM;
@@ -748,19 +747,17 @@ int yr_parser_reduce_rule_declaration(
   if (compiler->last_result != ERROR_SUCCESS)
     return compiler->last_result;
 
-#if REAL_YARA
   FAIL_ON_COMPILER_ERROR(yr_arena_allocate_struct(
       compiler->rules_arena,
       sizeof(YR_RULE),
       (void**) &rule,
       offsetof(YR_RULE, identifier),
-      offsetof(YR_RULE, tags),
+      //      offsetof(YR_RULE, tags), ClamAV - later
       offsetof(YR_RULE, strings),
-      offsetof(YR_RULE, metas),
-      offsetof(YR_RULE, ns),
+      //      offsetof(YR_RULE, metas), ClamAV - later
+      //      offsetof(YR_RULE, ns), ClamAV - later
       EOL));
-#else
-  rule = cli_calloc(1, sizeof(struct _yc_rule));
+
   if (rule == NULL) {
       cli_errmsg("yara_parser: no mem for struct _yc_rule.\n");
       return CL_EMEM;
@@ -768,7 +765,6 @@ int yr_parser_reduce_rule_declaration(
   STAILQ_INIT(&rule->strings);
   STAILQ_CONCAT(&rule->strings, &compiler->current_rule_string_q);
   STAILQ_INIT(&compiler->current_rule_string_q);
-#endif
 
   rule->g_flags = flags | compiler->current_rule_flags;
 #if REAL_YARA

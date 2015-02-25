@@ -2985,11 +2985,6 @@ static char *parse_yara_hex_string(YR_STRING *string, int *ret)
     return res;
 }
 
-static inline void free_yararule(YR_RULE *rule)
-{
-    free(rule);
-}
-
 struct cli_ytable_entry {
     char *offset;
     char *hexstr;
@@ -3551,6 +3546,8 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
     if (rc == ERROR_SUCCESS)
         rc = yr_arena_create(65536, 0, &compiler.sz_arena);
     if (rc == ERROR_SUCCESS)
+        rc = yr_arena_create(65536, 0, &compiler.rules_arena);
+    if (rc == ERROR_SUCCESS)
         rc = yr_arena_create(65536, 0, &compiler.code_arena);
     if (rc == ERROR_SUCCESS)
         rc = yr_arena_create(65536, 0, &compiler.strings_arena);
@@ -3570,6 +3567,7 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
         yr_hash_table_destroy(compiler.rules_table, NULL);
         yr_hash_table_destroy(compiler.objects_table, NULL);
         yr_arena_destroy(compiler.sz_arena);
+        yr_arena_destroy(compiler.rules_arena);
         yr_arena_destroy(compiler.code_arena);
         yr_arena_destroy(compiler.strings_arena);
         yr_arena_destroy(compiler.metas_arena);
@@ -3589,16 +3587,15 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
         if (rc != CL_SUCCESS) {
             cli_warnmsg("cli_loadyara: problem parsing yara file %s, yara rule %s\n", dbname, rule->identifier);
 #ifdef YARA_FINISHED
-            free_yararule(rule);
             break;
 #endif
         }
-        free_yararule(rule);
     }
 
     yr_hash_table_destroy(compiler.rules_table, NULL);
     yr_hash_table_destroy(compiler.objects_table, NULL);
     yr_arena_destroy(compiler.sz_arena);
+    yr_arena_destroy(compiler.rules_arena);
     yr_arena_destroy(compiler.code_arena);
     yr_arena_destroy(compiler.strings_arena);
     yr_arena_destroy(compiler.metas_arena);

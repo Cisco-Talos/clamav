@@ -519,6 +519,7 @@ typedef struct _yc_compiler {
     int                 last_result;
 
     YR_ARENA*           sz_arena;
+    YR_ARENA*           rules_arena;
     YR_ARENA*           strings_arena;
     YR_ARENA*           code_arena;
     YR_ARENA*           metas_arena;
