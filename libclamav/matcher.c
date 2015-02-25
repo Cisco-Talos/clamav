@@ -933,7 +933,9 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
                     type = ret;
             }
 
-            if(hdb) {
+            /* if (bytes <= (maxpatlen * (offset!=0))), it means the last window finished the file hashing *
+             *   since the last window is responsible for adding intersection between windows (maxpatlen)  */
+            if(hdb && (bytes > (maxpatlen * (offset!=0)))) {
                 const void *data = buff + maxpatlen * (offset!=0);
                 uint32_t data_len = bytes - maxpatlen * (offset!=0);
 
