@@ -2935,6 +2935,7 @@ static char *parse_yara_hex_string(YR_STRING *string, int *ret)
         case '\t':
         case '\r':
         case '\n':
+        case '}':
             break;
         case '[':
             /* ClamAV's Aho-Corasic algorithm requires at least two known bytes before {n,m} wildcard */
@@ -2942,7 +2943,7 @@ static char *parse_yara_hex_string(YR_STRING *string, int *ret)
                 if (ret) *ret = CL_EMALFDB;
                 return NULL;
             }
-            reslen += 2;
+            reslen += 3;
             break;
         default:
             reslen++;
