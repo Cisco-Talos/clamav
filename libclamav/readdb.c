@@ -134,8 +134,10 @@ static int sigopts_handler(struct cli_matcher *root, const char *virname, const 
         if (sigopts & ACPATT_OPTION_FULLWORD) {
             char *rechar;
             char *hexovr = cli_calloc(strlen(hexcpy)+7, sizeof(char));
-            if (!hexovr)
+            if (!hexovr) {
+                free(hexcpy);
                 return CL_EMEM;
+            }
 
             snprintf(hexovr, strlen(hexcpy)+7, "(W)%s(W)", hexcpy);
 
@@ -146,6 +148,8 @@ static int sigopts_handler(struct cli_matcher *root, const char *virname, const 
 
                 if (!(rechar = strchr(rechar, ']'))) {
                     cli_errmsg("cli_parse_add: unmatched '[' in signature %s\n", virname);
+                    free(hexcpy);
+                    free(hexovr);
                     return CL_EMALFDB;
                 }
                 *rechar = '}';
@@ -161,8 +165,10 @@ static int sigopts_handler(struct cli_matcher *root, const char *virname, const 
         if (sigopts & ACPATT_OPTION_WIDE) {
             size_t ovrlen = 2*strlen(hexcpy)+1;
             char *hexovr = cli_calloc(ovrlen, sizeof(char));
-            if (!hexovr)
+            if (!hexovr) {
+                free(hexcpy);
                 return CL_EMEM;
+            }
 
             /* clamav-specific wildcards need to be handled here! */
             for (i = 0; i < strlen(hexcpy); ++i) {
@@ -194,6 +200,8 @@ static int sigopts_handler(struct cli_matcher *root, const char *virname, const 
                         ++len; ++i;
                         hexovr[len++] = hexcpy[i++];
                         if (hexcpy[i] != ')') {
+                            free(hexcpy);
+                            free(hexovr);
                             return CL_EMALFDB;
                         }
                         hexovr[len] = hexcpy[i];
@@ -207,6 +215,7 @@ static int sigopts_handler(struct cli_matcher *root, const char *virname, const 
 
             /* NOCASE sigopt is handled in cli_ac_addsig */
             ret = cli_parse_add(root, virname, hexovr, sigopts, rtype, type, offset, target, lsigid, options);
+            free(hexovr);
             if (ret != CL_SUCCESS || !(sigopts & ACPATT_OPTION_ASCII)) {
                 free(hexcpy);
                 return ret;
@@ -2926,6 +2935,7 @@ static char *parse_yara_hex_string(YR_STRING *string, int *ret)
         case '\t':
         case '\r':
         case '\n':
+        case '}':
             break;
         case '[':
             /* ClamAV's Aho-Corasic algorithm requires at least two known bytes before {n,m} wildcard */
@@ -2933,7 +2943,7 @@ static char *parse_yara_hex_string(YR_STRING *string, int *ret)
                 if (ret) *ret = CL_EMALFDB;
                 return NULL;
             }
-            reslen += 2;
+            reslen += 3;
             break;
         default:
             reslen++;
