@@ -219,6 +219,9 @@ static int sigopts_handler(struct cli_matcher *root, const char *virname, const 
             if (ret != CL_SUCCESS || !(sigopts & ACPATT_OPTION_ASCII)) {
                 free(hexcpy);
                 return ret;
+            } else {
+                /* disable wide sigopt for ascii variant */
+                sigopts &= ~ACPATT_OPTION_WIDE;
             }
         }
 

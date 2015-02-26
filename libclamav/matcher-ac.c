@@ -981,7 +981,19 @@ inline static int ac_findmatch(const unsigned char *buffer, uint32_t offset, uin
 
     if(pattern->boundary & AC_WORD_MARKER_LEFT) {
         match = !!(pattern->boundary & AC_WORD_MARKER_LEFT_NEGATIVE);
-        if(!fileoffset || (offset && !isalnum(buffer[offset - 1])))
+        /* absolute beginning of file */
+        if(!fileoffset)
+            match = !match;
+        /* 'wide' characters need a 'wider' check */
+        else if(pattern->sigopts & ACPATT_OPTION_WIDE) {
+            /* beginning of file has only one preceding character */
+            if(fileoffset-1 == 0)
+                match = !match;
+            if(offset - 1 && offset && !(isalnum(buffer[offset - 2]) && buffer[offset - 1] == '\0'))
+                match = !match;
+        }
+        /* 'normal' characters */
+        else if(offset && !isalnum(buffer[offset - 1]))
             match = !match;
 
         if(!match)
@@ -990,8 +1002,19 @@ inline static int ac_findmatch(const unsigned char *buffer, uint32_t offset, uin
 
     if(pattern->boundary & AC_WORD_MARKER_RIGHT) {
         match = !!(pattern->boundary & AC_WORD_MARKER_RIGHT_NEGATIVE);
-        if((length <= SCANBUFF) && (bp == length || !isalnum(buffer[offset - 1])))
-            match = !match;
+        if(length <= SCANBUFF) {
+            /* absolute end of file */
+            if(bp == length)
+                match = !match;
+            /* 'wide' characters need a 'wider' check */
+            else if(pattern->sigopts & ACPATT_OPTION_WIDE) {
+                if(!(isalnum(buffer[bp]) && buffer[bp + 1] == '\0'))
+                    match = !match;
+            }
+            /* 'normal' characters */
+            else if(!isalnum(buffer[offset - 1]))
+                match = !match;
+        }
 
         if(!match)
             return 0;
