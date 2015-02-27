@@ -379,9 +379,6 @@ Scan RFC1341 messages split over many emails. You will need to periodically clea
 .br
 Default: no
 .TP
-\fBMailMaxRecursion (OBSOLETE)\fR
-\fBWARNING:\fR This option is no longer accepted. See \fBMaxRecursion\fR.
-.TP 
 \fBPhishingSignatures BOOL\fR
 With this option enabled ClamAV will try to detect phishing attempts by using signatures.
 .br 
@@ -488,24 +485,6 @@ This option causes memory or nested map scans to dump the content to disk.
 If you turn on this option, more data is written to disk and is available when the leave-temps option is enabled at the cost of more disk writes.
 .br
 Default: no
-.TP 
-\fBArchiveMaxFileSize (OBSOLETE)\fR
-\fBWARNING:\fR This option is no longer accepted. See \fBMaxFileSize\fR and \fBMaxScanSize\fR.
-.TP 
-\fBArchiveMaxRecursion (OBSOLETE)\fR
-\fBWARNING:\fR This option is no longer accepted. See \fBMaxRecursion\fR.
-.TP 
-\fBArchiveMaxFiles (OBSOLETE)\fR
-\fBWARNING:\fR This option is no longer accepted. See \fBMaxFiles\fR.
-.TP 
-\fBArchiveMaxCompressionRatio (OBSOLETE)\fR
-\fBWARNING:\fR This option is no longer accepted.
-.TP 
-\fBArchiveBlockMax (OBSOLETE)\fR
-\fBWARNING:\fR This option is no longer accepted.
-.TP 
-\fBArchiveLimitMemoryUsage (OBSOLETE)\fR
-\fBWARNING:\fR This option is no longer accepted.
 .br 
 Default: no
 .TP 
@@ -597,33 +576,6 @@ Negative values are not allowed.
 WARNING: setting this limit too high may result in severe damage or impact performance.
 .br
 Default: 100
-.TP
-\fBClamukoScanOnAccess (OBSOLETE)\fR
-\fBWARNING:\fR This option is no longer accepted. See \fBScanOnAccess\fR.
-.TP 
-\fBClamukoScannerCount (OBSOLETE)\fR
-\fBWARNING:\fR This option is no longer accepted.
-.TP 
-\fBClamukoScanOnOpen (OBSOLETE)\fR
-\fBWARNING:\fR This option is no longer accepted.
-.TP 
-\fBClamukoScanOnClose (OBSOLETE)\fR
-\fBWARNING:\fR This option is no longer accepted.
-.TP 
-\fBClamukoScanOnExec (OBSOLETE)\fR
-\fBWARNING:\fR This option is no longer accepted.
-.TP 
-\fBClamukoIncludePath (OBSOLETE)\fR
-\fBWARNING:\fR This option is no longer accepted. See \fBOnAccessIncludePath\fR.
-.TP 
-\fBClamukoExcludePath (OBSOLETE)\fR
-\fBWARNING:\fR This option is no longer accepted. See \fBOnAccessExcludePath\fR.
-.TP
-\fBClamukoExcludeUID (OBSOLETE)\fR
-\fBWARNING:\fR This option is no longer accepted. See \fBOnAccessExcludeUID\fR.
-.TP 
-\fBClamukoMaxFileSize (OBSOLETE)\fR
-\fBWARNING:\fR This option is no longer accepted. See \fBOnAccessMaxFileSize\fR.
 .TP
 \fBScanOnAccess BOOL\fR
 This option enables on-access scanning (Linux only)
