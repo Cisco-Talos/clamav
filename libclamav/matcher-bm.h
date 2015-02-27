@@ -25,6 +25,7 @@
 #include "filetypes.h"
 #include "cltypes.h"
 #include "fmap.h"
+#include "others.h"
 
 #define BM_BOUNDARY_EOL	1
 
@@ -47,7 +48,7 @@ int cli_bm_addpatt(struct cli_matcher *root, struct cli_bm_patt *pattern, const 
 int cli_bm_init(struct cli_matcher *root);
 int cli_bm_initoff(const struct cli_matcher *root, struct cli_bm_off *data, const struct cli_target_info *info);
 void cli_bm_freeoff(struct cli_bm_off *data);
-int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cli_bm_patt **patt, const struct cli_matcher *root, uint32_t offset, const struct cli_target_info *info, struct cli_bm_off *offdata, uint32_t *viroffset);
+int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cli_bm_patt **patt, const struct cli_matcher *root, uint32_t offset, const struct cli_target_info *info, struct cli_bm_off *offdata, cli_ctx *ctx);
 void cli_bm_free(struct cli_matcher *root);
 
 #endif
