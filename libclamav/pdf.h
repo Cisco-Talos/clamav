@@ -89,13 +89,21 @@ struct pdf_stats {
     int32_t nacroform;        /* Number of AcroForm objects */
     int32_t nxfa;             /* Number of XFA objects */
     char *author;             /* Author of the PDF */
+    int8_t author_base64;     /* Author string is base64 encoded */
     char *creator;            /* Application used to create the PDF */
+    int8_t creator_base64;    /* Author string is base64 encoded */
     char *producer;           /* Application used to produce the PDF */
-    char *creationdate;       /* Date the PDF was created */
-    char *modificationdate;   /* Date the PDF was modified */
+    int8_t producer_base64;   /* Application string is base64 encoded */
+    char *creationdate;         /* Date the PDF was created */
+    int8_t creationdate_base64; /* Date of creation string is base64 encoded */
+    char *modificationdate;         /* Date the PDF was modified */
+    int8_t modificationdate_base64; /* Date of modification string is base64 encoded */
     char *title;              /* Title of the PDF */
+    int8_t title_base64;      /* Title string is base64 encoded */
     char *subject;            /* Subject of the PDF */
+    int8_t subject_base64;    /* Subject string is base64 encoded */
     char *keywords;           /* Keywords of the PDF */
+    int8_t keywords_base64;   /* Keywords string is base64 encoded */
 };
 
 
@@ -144,7 +152,7 @@ int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
 int pdf_findobj(struct pdf_struct *pdf);
 struct pdf_obj *find_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t objid);
 
-char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *objstart, size_t objsize, const char *str, char **endchar);
+char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *objstart, size_t objsize, const char *str, char **endchar, int8_t *base64);
 struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj *obj, size_t objsz, char *begin, char **endchar);
 struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, size_t objsz, char *begin, char **endchar);
 int is_object_reference(char *begin, char **endchar, uint32_t *id);

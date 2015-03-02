@@ -177,7 +177,6 @@ char *pdf_convert_utf(char *begin, size_t sz)
 
     free(buf);
     free(outbuf);
-
     return res;
 #else
     res = cli_calloc(sz+1, 1);
@@ -274,7 +273,7 @@ int is_object_reference(char *begin, char **endchar, uint32_t *id)
     return 0;
 }
 
-char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *objstart, size_t objsize, const char *str, char **endchar)
+char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *objstart, size_t objsize, const char *str, char **endchar, int8_t *base64)
 {
     const char *q = objstart;
     char *p1, *p2;
@@ -407,7 +406,7 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
             switch (*p3) {
                 case '(':
                 case '<':
-                    res = pdf_parse_string(pdf, obj, p3, objsize2, NULL, NULL);
+                    res = pdf_parse_string(pdf, obj, p3, objsize2, NULL, NULL, NULL);
                     free(begin);
                     break;
                 default:
@@ -421,8 +420,14 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
                     res = likelyutf ? pdf_convert_utf(p3, objsize2) : NULL;
 
                     if (!(res)) {
-                        res = begin;
-                        res[objsize2] = '\0';
+                        if (base64) {
+                            res = (char*)cl_base64_encode(p1, len);
+                            if (res)
+                                *base64 = 1;
+                        } else {
+                            res = begin;
+                            res[objsize2] = '\0';
+                        }
                     } else {
                         free(begin);
                     }
@@ -511,6 +516,11 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
     }
 
     res = pdf_convert_utf(p1, len);
+    if (!res && base64) {
+        res = (char*)cl_base64_encode(p1, len);
+        if (res)
+            *base64 = 1;
+    }
 
     if (res && endchar)
         *endchar = p2;
@@ -672,7 +682,7 @@ struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, siz
 
         switch (begin[0]) {
             case '(':
-                val = pdf_parse_string(pdf, obj, begin, objsz, NULL, &p1);
+                val = pdf_parse_string(pdf, obj, begin, objsz, NULL, &p1, NULL);
                 begin = p1+2;
                 break;
             case '[':
@@ -688,7 +698,7 @@ struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, siz
                     }
                 }
 
-                val = pdf_parse_string(pdf, obj, begin, objsz, NULL, &p1);
+                val = pdf_parse_string(pdf, obj, begin, objsz, NULL, &p1, NULL);
                 begin = p1+2;
                 break;
             default:
@@ -870,7 +880,7 @@ struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj *obj, s
 
                 /* Not a dictionary. Intentially fall through. */
             case '(':
-                val = pdf_parse_string(pdf, obj, begin, objsz, NULL, &begin);
+                val = pdf_parse_string(pdf, obj, begin, objsz, NULL, &begin, NULL);
                 begin += 2;
                 break;
             case '[':
