@@ -74,14 +74,17 @@ char *pdf_convert_utf(char *begin, size_t sz);
 char *pdf_convert_utf(char *begin, size_t sz)
 {
     char *res=NULL;
+    char *buf, *outbuf;
+    size_t sz2, i;
 #if HAVE_ICONV
-    char *buf, *outbuf, *p1, *p2;
-    size_t sz2, inlen, outlen, i;
+    char *p1, *p2;
+    size_t inlen, outlen;
     char *encodings[] = {
         "UTF-16",
         NULL
     };
     iconv_t cd;
+#endif
 
     buf = cli_calloc(1, sz);
     if (!(buf))
@@ -139,7 +142,9 @@ char *pdf_convert_utf(char *begin, size_t sz)
             }
         } else
             buf[sz2++] = begin[i]; 
+        cli_dbgmsg("%c\n", buf[sz2-1]);
     }
+#if HAVE_ICONV
     //memcpy(buf, begin, sz);
     p1 = buf;
 
@@ -174,19 +179,16 @@ char *pdf_convert_utf(char *begin, size_t sz)
         iconv_close(cd);
         break;
     }
+#else
+    outbuf = cli_utf16_to_utf8(buf, sz2, UTF16_BOM);
+    if (!outbuf)
+        return NULL;
 
+    res = strdup(outbuf);
+#endif
     free(buf);
     free(outbuf);
     return res;
-#else
-    res = cli_calloc(sz+1, 1);
-    if ((res)) {
-        memcpy(res, begin, sz);
-        res[sz] = '\0';
-    }
-
-    return res;
-#endif
 }
 
 int is_object_reference(char *begin, char **endchar, uint32_t *id)
