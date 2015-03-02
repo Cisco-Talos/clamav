@@ -1,4 +1,4 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 
 <!--Converted with LaTeX2HTML 2008 (1.71)
 original version by:  Nikos Drakos, CBLU, University of Leeds
@@ -25,7 +25,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 </HEAD>
 
 <BODY >
-<!--Navigation Panel-->
+
+<DIV CLASS="navigation"><!--Navigation Panel-->
 <A NAME="tex2html539"
   HREF="node26.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
@@ -48,7 +49,7 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
  &nbsp; <B>  <A NAME="tex2html538"
   HREF="node1.html">Contents</A></B> 
 <BR>
-<BR>
+<BR></DIV>
 <!--End of Navigation Panel-->
 
 <H2><A NAME="SECTION00054000000000000000"></A><A NAME="conf:freshclam"></A>
@@ -70,29 +71,29 @@ Setting up auto-updating
     differences between the latest and the current database via a special
     script), database version checks through DNS, proxy servers (with
     authentication), digital signatures and various error scenarios.
-    <B>Quick test: run freshclam (as superuser) with no parameters
-    and check the output.</B> If everything is OK you may create the log file in
-    /var/log (owned by <I>clamav</I> or another user <code>freshclam</code> will be
+    <SPAN  CLASS="textbf">Quick test: run freshclam (as superuser) with no parameters
+    and check the output.</SPAN> If everything is OK you may create the log file in
+    /var/log (owned by <SPAN  CLASS="textit">clamav</SPAN> or another user <code>freshclam</code> will be
     running as):
     <PRE>
 	# touch /var/log/freshclam.log
 	# chmod 600 /var/log/freshclam.log
 	# chown clamav /var/log/freshclam.log
 </PRE>
-    Now you <I>should</I> edit the configuration file <code>freshclam.conf</code>
-    and point the <I>UpdateLogFile</I> directive to the log file. Finally, to
+    Now you <SPAN  CLASS="textit">should</SPAN> edit the configuration file <code>freshclam.conf</code>
+    and point the <SPAN  CLASS="textit">UpdateLogFile</SPAN> directive to the log file. Finally, to
     run <code>freshclam</code> in the daemon mode, execute:
     <PRE>
 	# freshclam -d
 </PRE>
-    The other way is to use the <I>cron</I> daemon. You have to add the
-    following line to the crontab of <B>root</B> or <B>clamav</B> user:
-    <FONT SIZE="-1">    </FONT><PRE>
+    The other way is to use the <SPAN  CLASS="textit">cron</SPAN> daemon. You have to add the
+    following line to the crontab of <SPAN  CLASS="textbf">root</SPAN> or <SPAN  CLASS="textbf">clamav</SPAN> user:
+    <SMALL CLASS="SMALL">    </SMALL><PRE>
 N * * * *	/usr/local/bin/freshclam --quiet
 </PRE>
-    to check for a new database every hour. <B>N should be a
+    to check for a new database every hour. <SPAN  CLASS="textbf">N should be a
     number between 3 and 57 of your choice. Please don't choose any multiple
-    of 10, because there are already too many clients using those time slots.</B>
+    of 10, because there are already too many clients using those time slots.</SPAN>
     Proxy settings are only configurable via the configuration file and
     <code>freshclam</code> will require strict permission settings for the config
     file when <code>HTTPProxyPassword</code> is turned on.
@@ -108,12 +109,13 @@ N * * * *	/usr/local/bin/freshclam --quiet
 <!--Table of Child-Links-->
 <A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
 
-<UL>
+<UL CLASS="ChildLinks">
 <LI><A NAME="tex2html541"
   HREF="node26.html">Closest mirrors</A>
 </UL>
 <!--End of Table of Child-Links-->
-<HR>
+
+<DIV CLASS="navigation"><HR>
 <!--Navigation Panel-->
 <A NAME="tex2html539"
   HREF="node26.html">
@@ -135,10 +137,10 @@ N * * * *	/usr/local/bin/freshclam --quiet
 <B> Previous:</B> <A NAME="tex2html530"
   HREF="node24.html">Testing</A>
  &nbsp; <B>  <A NAME="tex2html538"
-  HREF="node1.html">Contents</A></B> 
+  HREF="node1.html">Contents</A></B> </DIV>
 <!--End of Navigation Panel-->
 <ADDRESS>
-Cisco 2014-08-28
+Cisco 2015-03-02
 </ADDRESS>
 </BODY>
 </HTML>
