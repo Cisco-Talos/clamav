@@ -2963,7 +2963,13 @@ void cli_bytecode_describe(const struct cli_bc *bc)
 	    puts("logical only");
 	    break;
 	case BC_PE_UNPACKER:
-	    puts("PE hook");
+	    puts("PE unpacker hook");
+	    break;
+    case BC_PE_ALL:
+        puts("all PE hook");
+        break;
+    case BC_PRECLASS:
+        puts("preclass hook");
 	    break;
 	default:
 	    printf("Unknown (type %u)", bc->kind);
