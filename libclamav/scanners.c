@@ -3469,8 +3469,19 @@ static int scan_common(int desc, cl_fmap_t *map, const char **virname, unsigned 
 
            /* Scan the json string unless a virus was detected */
             if (rc != CL_VIRUS) {
-                ctx.options &= ~CL_SCAN_FILE_PROPERTIES;
-                rc = cli_mem_scandesc(jstring, strlen(jstring), &ctx);
+                /* CONSTRUCTION */
+                struct cli_bc_ctx *bc_ctx = cli_bytecode_context_alloc();
+                if (!bc_ctx) {
+                    cli_errmsg("scan_common: can't allocate memory for bc_ctx\n");
+                    rc = CL_EMEM;
+                }
+                else {
+                    cli_bytecode_context_setctx(bc_ctx, &ctx);
+                    rc = cli_bytecode_runhook(&ctx, ctx.engine, bc_ctx, BC_PRECLASS, map);
+                    cli_bytecode_context_destroy(bc_ctx);
+                }
+                //ctx.options &= ~CL_SCAN_FILE_PROPERTIES;
+                //rc = cli_mem_scandesc(jstring, strlen(jstring), &ctx);
             }
 
             /* Invoke file props callback */

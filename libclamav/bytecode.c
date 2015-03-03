@@ -3000,6 +3000,12 @@ void cli_bytecode_describe(const struct cli_bc *bc)
 	    else
 		puts("all PE files!");
 	    break;
+	case BC_PRECLASS:
+	    if (bc->lsig)
+		puts("PRECLASS files matching logical signature");
+	    else
+		puts("all PRECLASS files!");
+	    break;
 	default:
 	    puts("N/A (unknown type)\n");
 	    break;
