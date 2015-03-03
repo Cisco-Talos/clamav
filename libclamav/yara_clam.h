@@ -166,12 +166,51 @@ typedef struct _YR_OBJECT
 
 } YR_OBJECT;
 
+typedef struct _YR_OBJECT_INTEGER
+{
+  OBJECT_COMMON_FIELDS
+  int64_t value;
+
+} YR_OBJECT_INTEGER;
+
+
+typedef struct _YR_OBJECT_STRING
+{
+  OBJECT_COMMON_FIELDS
+  char* value;
+
+} YR_OBJECT_STRING;
+
 typedef struct _YR_OBJECT_ARRAY
 {
   OBJECT_COMMON_FIELDS
   struct _YR_ARRAY_ITEMS* items;
 
 } YR_OBJECT_ARRAY;
+
+#if 1
+//TDB TEMP for exec.c compile
+typedef struct _YR_SCAN_CONTEXT
+{
+  uint64_t  file_size;
+  uint64_t  entry_point;
+
+  int flags;
+  void* user_data;
+
+    //YR_MEMORY_BLOCK*  mem_block;
+  YR_HASH_TABLE*  objects_table;
+    //YR_CALLBACK_FUNC  callback;
+
+} YR_SCAN_CONTEXT;
+#endif
+
+struct _YR_OBJECT_FUNCTION;
+
+typedef int (*YR_MODULE_FUNC)(
+    void* args,
+    YR_SCAN_CONTEXT* context,
+    struct _YR_OBJECT_FUNCTION* function_obj);
 
 typedef struct _YR_OBJECT_FUNCTION
 {
@@ -180,9 +219,9 @@ typedef struct _YR_OBJECT_FUNCTION
   const char* arguments_fmt;
 
   YR_OBJECT* return_obj;
-#if REAL_YARA
+    //#if REAL_YARA
   YR_MODULE_FUNC code;
-#endif
+    //#endif
 
 } YR_OBJECT_FUNCTION;
 
@@ -473,6 +512,7 @@ struct RE {
 #define OBJECT_TYPE_REGEXP      6
 
 /* From libyara/include/yara/utils.h */
+#define UINT64_TO_PTR(type, x)  ((type)(size_t) x)
 #define PTR_TO_UINT64(x)  ((uint64_t) (size_t) x)
 
 #define YARA_PROTO
