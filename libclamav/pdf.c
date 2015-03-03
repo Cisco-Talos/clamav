@@ -3215,7 +3215,7 @@ static void Author_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfnam
         return;
 
     if (!(pdf->stats.author))
-        pdf->stats.author = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/Author", NULL, &pdf->stats.author_base64);
+        pdf->stats.author = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/Author", NULL);
 }
 #endif
 
@@ -3231,7 +3231,7 @@ static void Creator_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfna
         return;
 
     if (!(pdf->stats.creator))
-        pdf->stats.creator = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/Creator", NULL, &pdf->stats.creator_base64);
+        pdf->stats.creator = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/Creator", NULL);
 }
 #endif
 
@@ -3247,7 +3247,7 @@ static void ModificationDate_cb(struct pdf_struct *pdf, struct pdf_obj *obj, str
         return;
 
     if (!(pdf->stats.modificationdate))
-        pdf->stats.modificationdate = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/ModDate", NULL, &pdf->stats.modificationdate_base64);
+        pdf->stats.modificationdate = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/ModDate", NULL);
 }
 #endif
 
@@ -3263,7 +3263,7 @@ static void CreationDate_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct 
         return;
 
     if (!(pdf->stats.creationdate))
-        pdf->stats.creationdate = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/CreationDate", NULL, &pdf->stats.creationdate_base64);
+        pdf->stats.creationdate = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/CreationDate", NULL);
 }
 #endif
 
@@ -3279,7 +3279,7 @@ static void Producer_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfn
         return;
 
     if (!(pdf->stats.producer))
-        pdf->stats.producer = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/Producer", NULL, &pdf->stats.producer_base64);
+        pdf->stats.producer = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/Producer", NULL);
 }
 #endif
 
@@ -3295,7 +3295,7 @@ static void Title_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname
         return;
 
     if (!(pdf->stats.title))
-        pdf->stats.title = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/Title", NULL, &pdf->stats.title_base64);
+        pdf->stats.title = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/Title", NULL);
 }
 #endif
 
@@ -3311,7 +3311,7 @@ static void Keywords_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfn
         return;
 
     if (!(pdf->stats.keywords))
-        pdf->stats.keywords = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/Keywords", NULL, &pdf->stats.keywords_base64);
+        pdf->stats.keywords = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/Keywords", NULL);
 }
 #endif
 
@@ -3327,7 +3327,7 @@ static void Subject_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfna
         return;
 
     if (!(pdf->stats.subject))
-        pdf->stats.subject = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/Subject", NULL, &pdf->stats.subject_base64);
+        pdf->stats.subject = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/Subject", NULL);
 }
 #endif
 
@@ -3511,46 +3511,22 @@ static void pdf_export_json(struct pdf_struct *pdf)
         goto cleanup;
     }
 
-    if (pdf->stats.author) {
+    if (pdf->stats.author)
         cli_jsonstr(pdfobj, "Author", pdf->stats.author);
-        if (pdf->stats.author_base64)
-            cli_jsonbool(pdfobj, "Author_base64", 1);
-    }
-    if (pdf->stats.creator) {
+    if (pdf->stats.creator)
         cli_jsonstr(pdfobj, "Creator", pdf->stats.creator);
-        if (pdf->stats.creator_base64)
-            cli_jsonbool(pdfobj, "Creator_base64", 1);
-    }
-    if (pdf->stats.producer) {
+    if (pdf->stats.producer)
         cli_jsonstr(pdfobj, "Producer", pdf->stats.producer);
-        if (pdf->stats.producer_base64)
-            cli_jsonbool(pdfobj, "Producer_base64", 1);
-    }
-    if (pdf->stats.modificationdate) {
+    if (pdf->stats.modificationdate)
         cli_jsonstr(pdfobj, "ModificationDate", pdf->stats.modificationdate);
-        if (pdf->stats.modificationdate_base64)
-            cli_jsonbool(pdfobj, "ModificationDate_base64", 1);
-    }
-    if (pdf->stats.creationdate) {
+    if (pdf->stats.creationdate)
         cli_jsonstr(pdfobj, "CreationDate", pdf->stats.creationdate);
-        if (pdf->stats.creationdate_base64)
-            cli_jsonbool(pdfobj, "CreationDate_base64", 1);
-    }
-    if (pdf->stats.title) {
+    if (pdf->stats.title)
         cli_jsonstr(pdfobj, "Title", pdf->stats.title);
-        if (pdf->stats.title_base64)
-            cli_jsonbool(pdfobj, "Title_base64", 1);
-    }
-    if (pdf->stats.subject) {
+    if (pdf->stats.subject)
         cli_jsonstr(pdfobj, "Subject", pdf->stats.subject);
-        if (pdf->stats.subject_base64)
-            cli_jsonbool(pdfobj, "Subject_base64", 1);
-    }
-    if (pdf->stats.keywords) {
+    if (pdf->stats.keywords)
         cli_jsonstr(pdfobj, "Keywords", pdf->stats.keywords);
-        if (pdf->stats.keywords_base64)
-            cli_jsonbool(pdfobj, "Keywords_base64", 1);
-    }
     if (pdf->stats.ninvalidobjs)
         cli_jsonint(pdfobj, "InvalidObjectCount", pdf->stats.ninvalidobjs);
     if (pdf->stats.njs)
