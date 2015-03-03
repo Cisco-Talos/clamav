@@ -58,4 +58,5 @@ typedef enum {
 } utf16_type;
 char *cli_utf16_to_utf8(const char *utf16, size_t length, utf16_type type);
 
+int cli_isutf8(const unsigned char *buf, unsigned int len);
 #endif
