@@ -61,6 +61,9 @@ enum BytecodeKind {
     /** specifies a PE hook, executes at a predetermined point in PE parsing for PE files,
       * both packed and unpacked files */
     BC_PE_ALL,
+    /** specifies a PRECLASS hook, executes at the end of file property collection and
+      * operates on the original file targeted for property collection */
+    BC_PRECLASS,
     _BC_LAST_HOOK
 };
 
@@ -97,12 +100,13 @@ enum FunctionalityLevels {
     FUNC_LEVEL_097_6     = 67, /**< LibClamAV release 0.97.6 */
     FUNC_LEVEL_097_7     = 68, /**< LibClamAV release 0.97.7 */
     FUNC_LEVEL_097_8     = 69, /**< LibClamAV release 0.97.8 */
-    FUNC_LEVEL_098_1     = 76, /**< LibClamAV release 0.98.2 */ /*last syncing to clamav*/
+    FUNC_LEVEL_098_1     = 76, /**< LibClamAV release 0.98.1 */ /*last syncing to clamav*/
     FUNC_LEVEL_098_2     = 77, /**< LibClamAV release 0.98.2 */
     FUNC_LEVEL_098_3     = 77, /**< LibClamAV release 0.98.3 */
     FUNC_LEVEL_098_4     = 77, /**< LibClamAV release 0.98.4 */
     FUNC_LEVEL_098_5     = 79, /**< LibClamAV release 0.98.5: JSON reading API requires this minimum level */
     FUNC_LEVEL_098_6     = 79, /**< LibClamAV release 0.98.6 */
+    FUNC_LEVEL_098_7     = 80, /**< LibClamAV release 0.98.7: BC_PRECLASS bytecodes require minimum level */
     FUNC_LEVEL_100       = 100 /*future release candidate*/
 };
 
@@ -111,7 +115,7 @@ enum FunctionalityLevels {
  * Phase of PDF parsing used for PDF Hooks
  */
 enum pdf_phase {
-    PDF_PHASE_NONE,     /* not a PDF */
+    PDF_PHASE_NONE,     /**< not a PDF */
     PDF_PHASE_PARSED,   /**< after parsing a PDF, object flags can be set etc. */
     PDF_PHASE_POSTDUMP, /**< after an obj was dumped and scanned */
     PDF_PHASE_END,      /**< after the pdf scan finished */
@@ -1123,14 +1127,14 @@ int32_t get_file_reliability(void);
 /* ----------------- END 0.96.4 APIs ---------------------------------- */
 /* ----------------- BEGIN 0.98.4 APIs -------------------------------- */
 /* ----------------- JSON Parsing APIs -------------------------------- */
-/*
+/**
 \group_json
  * @return 0 - json is disabled or option not specified
  * @return 1 - json is active and properties are available
  */
 int32_t json_is_active(void);
 
-/*
+/**
 \group_json
  * @return objid of json object with specified name
  * @return 0 if json object of specified name cannot be found
@@ -1142,7 +1146,7 @@ int32_t json_is_active(void);
  */
 int32_t json_get_object(const int8_t* name, int32_t name_len, int32_t objid);
 
-/*
+/**
 \group_json
  * @return type (json_type) of json object specified
  * @return -1 if type unknown or invalid id
@@ -1150,7 +1154,7 @@ int32_t json_get_object(const int8_t* name, int32_t name_len, int32_t objid);
  */
 int32_t json_get_type(int32_t objid);
 
-/*
+/**
 \group_json
  * @return number of elements in the json array of objid
  * @return -1 if an error has occurred
@@ -1159,7 +1163,7 @@ int32_t json_get_type(int32_t objid);
  */
 int32_t json_get_array_length(int32_t objid);
 
-/*
+/**
 \group_json
  * @return objid of json object at idx of json array of objid
  * @return 0 if invalid idx
@@ -1170,7 +1174,7 @@ int32_t json_get_array_length(int32_t objid);
  */
 int32_t json_get_array_idx(int32_t idx, int32_t objid);
 
-/*
+/**
 \group_json
  * @return length of json string of objid, not including terminating null-character
  * @return -1 if an error has occurred
@@ -1179,7 +1183,7 @@ int32_t json_get_array_idx(int32_t idx, int32_t objid);
  */
 int32_t json_get_string_length(int32_t objid);
 
-/*
+/**
 \group_json
  * @return number of characters transferred (capped by str_len), 
  *         including terminating null-character
@@ -1192,20 +1196,21 @@ int32_t json_get_string_length(int32_t objid);
  */
 int32_t json_get_string(int8_t* str, int32_t str_len, int32_t objid);
 
-/*
+/**
 \group_json
  * @return boolean value of queried objid; will force other types to boolean
  * @param[in] objid - id value of json object to query
  */
 int32_t json_get_boolean(int32_t objid);
 
-/*
+/**
 \group_json
  * @return integer value of queried objid; will force other types to integer
  * @param[in] objid - id value of json object to query
  */
 int32_t json_get_int(int32_t objid);
 
+//int64_t json_get_int64(int32_t objid);
 /* bytecode does not support double type */
 //double json_get_double(int32_t objid);
 
