@@ -3467,9 +3467,8 @@ static int scan_common(int desc, cl_fmap_t *map, const char **virname, unsigned 
             int ret = CL_SUCCESS;
             cli_dbgmsg("%s\n", jstring);
 
-           /* Scan the json string unless a virus was detected */
             if (rc != CL_VIRUS) {
-                /* CONSTRUCTION */
+                /* run bytecode preclass hook; generate fmap if needed for running hook */
                 struct cli_bc_ctx *bc_ctx = cli_bytecode_context_alloc();
                 if (!bc_ctx) {
                     cli_errmsg("scan_common: can't allocate memory for bc_ctx\n");
@@ -3496,8 +3495,13 @@ static int scan_common(int desc, cl_fmap_t *map, const char **virname, unsigned 
                             funmap(pc_map);
                     }
                 }
-                //ctx.options &= ~CL_SCAN_FILE_PROPERTIES;
-                //rc = cli_mem_scandesc(jstring, strlen(jstring), &ctx);
+
+                /* backwards compatibility: scan the json string unless a virus was detected */
+                if (rc != CL_VIRUS && ctx.engine->root[13]->ac_lsigs) {
+                    cli_warnmsg("scan_common: running depeciated preclass bytecodes for target type 13\n");
+                    ctx.options &= ~CL_SCAN_FILE_PROPERTIES;
+                    rc = cli_mem_scandesc(jstring, strlen(jstring), &ctx);
+                }
             }
 
             /* Invoke file props callback */
