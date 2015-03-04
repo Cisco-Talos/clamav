@@ -1,15 +1,29 @@
 VIRUSNAME_PREFIX("SUBMIT.PE")
 VIRUSNAMES("Root", "Embedded", "RootEmbedded")
 
-/* Target type is 0, all relevant files */
-TARGET(0)
-
-/* Declares to run bytecode only for preclassification (affecting only preclass files) */
-PRECLASS_HOOK_DECLARE
+/* Target type is 13, internal JSON properties */
+TARGET(13)
 
 /* JSON API call will require FUNC_LEVEL_098_5 = 78 */
-/* PRECLASS_HOOK_DECLARE will require FUNC_LEVEL_098_7 = 80 */
-FUNCTIONALITY_LEVEL_MIN(FUNC_LEVEL_098_7)
+FUNCTIONALITY_LEVEL_MIN(FUNC_LEVEL_098_5)
+
+SIGNATURES_DECL_BEGIN
+DECLARE_SIGNATURE(sig1)
+DECLARE_SIGNATURE(sig2)
+SIGNATURES_DECL_END
+
+SIGNATURES_DEF_BEGIN
+/* search @offset 0 : '{ "Magic": "CLAMJSON' */
+/* this can be readjusted for specific filetypes */
+DEFINE_SIGNATURE(sig1, "0:7b20224d61676963223a2022434c414d4a534f4e")
+/* search '"FileType": "CL_TYPE_MSEXE"' */
+DEFINE_SIGNATURE(sig2, "2246696c6554797065223a2022434c5f545950455f4d5345584522")
+SIGNATURES_END
+
+bool logical_trigger(void)
+{
+    return matches(Signatures.sig1) && matches(Signatures.sig2);
+}
 
 #define STR_MAXLEN 256
 

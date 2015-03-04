@@ -3467,10 +3467,41 @@ static int scan_common(int desc, cl_fmap_t *map, const char **virname, unsigned 
             int ret = CL_SUCCESS;
             cli_dbgmsg("%s\n", jstring);
 
-           /* Scan the json string unless a virus was detected */
             if (rc != CL_VIRUS) {
-                ctx.options &= ~CL_SCAN_FILE_PROPERTIES;
-                rc = cli_mem_scandesc(jstring, strlen(jstring), &ctx);
+                /* run bytecode preclass hook; generate fmap if needed for running hook */
+                struct cli_bc_ctx *bc_ctx = cli_bytecode_context_alloc();
+                if (!bc_ctx) {
+                    cli_errmsg("scan_common: can't allocate memory for bc_ctx\n");
+                    rc = CL_EMEM;
+                }
+                else {
+                    fmap_t *pc_map = map;
+
+                    if (!pc_map) {
+                        perf_start(&ctx, PERFT_MAP);
+                        if(!(pc_map = fmap(desc, 0, sb.st_size))) {
+                            perf_stop(&ctx, PERFT_MAP);
+                            rc = CL_EMEM;
+                        }
+                        perf_stop(&ctx, PERFT_MAP);
+                    }
+
+                    if (pc_map) {
+                        cli_bytecode_context_setctx(bc_ctx, &ctx);
+                        rc = cli_bytecode_runhook(&ctx, ctx.engine, bc_ctx, BC_PRECLASS, pc_map);
+                        cli_bytecode_context_destroy(bc_ctx);
+
+                        if (!map)
+                            funmap(pc_map);
+                    }
+                }
+
+                /* backwards compatibility: scan the json string unless a virus was detected */
+                if (rc != CL_VIRUS && ctx.engine->root[13]->ac_lsigs) {
+                    cli_warnmsg("scan_common: running depeciated preclass bytecodes for target type 13\n");
+                    ctx.options &= ~CL_SCAN_FILE_PROPERTIES;
+                    rc = cli_mem_scandesc(jstring, strlen(jstring), &ctx);
+                }
             }
 
             /* Invoke file props callback */
