@@ -686,89 +686,93 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
     return ret;
 }
 
-int cli_lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *acdata, struct cli_target_info *target_info, const char *hash)
+static int lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *acdata, struct cli_target_info *target_info, const char *hash, uint32_t lsid)
 {
-	unsigned int i, evalcnt;
-	uint64_t evalids;
-	fmap_t *map = *ctx->fmap;
-	unsigned int viruses_found = 0;
+    unsigned evalcnt = 0;
+    uint64_t evalids = 0;
+    fmap_t *map = *ctx->fmap;
+    struct cli_ac_lsig *ac_lsig = root->ac_lsigtable[lsid];
+    char * exp = ac_lsig->u.logic;
+    char* exp_end = exp + strlen(exp);
+
+    cli_ac_chkmacro(root, acdata, lsid);
+    if (cli_ac_chklsig(exp, exp_end, acdata->lsigcnt[lsid], &evalcnt, &evalids, 0) == 1) {
+        if(ac_lsig->tdb.container && ac_lsig->tdb.container[0] != ctx->container_type)
+            return CL_CLEAN;
+        if(ac_lsig->tdb.filesize && (ac_lsig->tdb.filesize[0] > map->len || ac_lsig->tdb.filesize[1] < map->len))
+            return CL_CLEAN;
+
+        if(ac_lsig->tdb.ep || ac_lsig->tdb.nos) {
+            if(!target_info || target_info->status != 1)
+                return CL_CLEAN;
+            if(ac_lsig->tdb.ep && (ac_lsig->tdb.ep[0] > target_info->exeinfo.ep || ac_lsig->tdb.ep[1] < target_info->exeinfo.ep))
+                return CL_CLEAN;
+            if(ac_lsig->tdb.nos && (ac_lsig->tdb.nos[0] > target_info->exeinfo.nsections || ac_lsig->tdb.nos[1] < target_info->exeinfo.nsections))
+                return CL_CLEAN;
+        }
+
+        if(hash && ac_lsig->tdb.handlertype) {
+            if(memcmp(ctx->handlertype_hash, hash, 16)) {
+                ctx->recursion++;
+                memcpy(ctx->handlertype_hash, hash, 16);
+                if(cli_magic_scandesc_type(ctx, ac_lsig->tdb.handlertype[0]) == CL_VIRUS) {
+                    ctx->recursion--;
+                    return CL_VIRUS;
+                }
+                ctx->recursion--;
+                return CL_CLEAN;
+            }
+        }
+        
+        if(ac_lsig->tdb.icongrp1 || ac_lsig->tdb.icongrp2) {
+            if(!target_info || target_info->status != 1)
+                return CL_CLEAN;
+            if(matchicon(ctx, &target_info->exeinfo, ac_lsig->tdb.icongrp1, ac_lsig->tdb.icongrp2) == CL_VIRUS) {
+                if(!ac_lsig->bc_idx) {
+                    cli_append_virus(ctx, ac_lsig->virname);
+                    return CL_VIRUS;
+                } else if(cli_bytecode_runlsig(ctx, target_info, &ctx->engine->bcs, ac_lsig->bc_idx, acdata->lsigcnt[lsid], acdata->lsigsuboff_first[lsid], map) == CL_VIRUS) {
+                    return CL_VIRUS;
+                }
+            }
+            return CL_CLEAN;
+        }
+        if(!ac_lsig->bc_idx) {
+            cli_append_virus(ctx, ac_lsig->virname);
+            return CL_VIRUS;
+        }
+        if(cli_bytecode_runlsig(ctx, target_info, &ctx->engine->bcs, ac_lsig->bc_idx, acdata->lsigcnt[lsid], acdata->lsigsuboff_first[lsid], map) == CL_VIRUS) {
+            return CL_VIRUS;
+        }
+    }
+    
+    return CL_CLEAN;
+}
+
+static int yara_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *acdata, struct cli_target_info *target_info, const char *hash, uint32_t lsid)
+{
+    return CL_CLEAN;
+}
+
+int cli_exp_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *acdata, struct cli_target_info *target_info, const char *hash)
+{
+    uint8_t viruses_found = 0;
+    uint32_t i;
+    int32_t rc;
 
     for(i = 0; i < root->ac_lsigs; i++) {
-	evalcnt = 0;
-	evalids = 0;
-	cli_ac_chkmacro(root, acdata, i);
-    //TODO - handle CLI_NORMAL_YARA lsigs here
-	if(cli_ac_chklsig(root->ac_lsigtable[i]->u.logic, root->ac_lsigtable[i]->u.logic + strlen(root->ac_lsigtable[i]->u.logic), acdata->lsigcnt[i], &evalcnt, &evalids, 0) == 1) {
-	    if(root->ac_lsigtable[i]->tdb.container && root->ac_lsigtable[i]->tdb.container[0] != ctx->container_type)
-		continue;
-	    if(root->ac_lsigtable[i]->tdb.filesize && (root->ac_lsigtable[i]->tdb.filesize[0] > map->len || root->ac_lsigtable[i]->tdb.filesize[1] < map->len))
-		continue;
-
-	    if(root->ac_lsigtable[i]->tdb.ep || root->ac_lsigtable[i]->tdb.nos) {
-		if(!target_info || target_info->status != 1)
-		    continue;
-		if(root->ac_lsigtable[i]->tdb.ep && (root->ac_lsigtable[i]->tdb.ep[0] > target_info->exeinfo.ep || root->ac_lsigtable[i]->tdb.ep[1] < target_info->exeinfo.ep))
-		    continue;
-		if(root->ac_lsigtable[i]->tdb.nos && (root->ac_lsigtable[i]->tdb.nos[0] > target_info->exeinfo.nsections || root->ac_lsigtable[i]->tdb.nos[1] < target_info->exeinfo.nsections))
-		    continue;
-	    }
-
-	    if(hash && root->ac_lsigtable[i]->tdb.handlertype) {
-		if(memcmp(ctx->handlertype_hash, hash, 16)) {
-		    ctx->recursion++;
-		    memcpy(ctx->handlertype_hash, hash, 16);
-		    if(cli_magic_scandesc_type(ctx, root->ac_lsigtable[i]->tdb.handlertype[0]) == CL_VIRUS) {
-			ctx->recursion--;
-			if (SCAN_ALL) {
-			    viruses_found++;
-			    continue;
-			}
-			return CL_VIRUS;
-		    }
-		    ctx->recursion--;
-		    continue;
-		}
-	    }
-
-	    if(root->ac_lsigtable[i]->tdb.icongrp1 || root->ac_lsigtable[i]->tdb.icongrp2) {
-		if(!target_info || target_info->status != 1)
-		    continue;
-		if(matchicon(ctx, &target_info->exeinfo, root->ac_lsigtable[i]->tdb.icongrp1, root->ac_lsigtable[i]->tdb.icongrp2) == CL_VIRUS) {
-		    if(!root->ac_lsigtable[i]->bc_idx) {
-			cli_append_virus(ctx, root->ac_lsigtable[i]->virname);
-			if (SCAN_ALL) {
-                            viruses_found++;
-                            continue;
-                        }
-			return CL_VIRUS;
-		    } else if(cli_bytecode_runlsig(ctx, target_info, &ctx->engine->bcs, root->ac_lsigtable[i]->bc_idx, acdata->lsigcnt[i], acdata->lsigsuboff_first[i], map) == CL_VIRUS) {
-			if (SCAN_ALL) {
-                            viruses_found++;
-                            continue;
-                        }
-			return CL_VIRUS;
-		    }
-		}
-		continue;
-	    }
-	    if(!root->ac_lsigtable[i]->bc_idx) {
-		cli_append_virus(ctx, root->ac_lsigtable[i]->virname);
-		if (SCAN_ALL) {
-		    viruses_found++;
-		    continue;
-		}
- 		return CL_VIRUS;
-	    }
-	    if(cli_bytecode_runlsig(ctx, target_info, &ctx->engine->bcs, root->ac_lsigtable[i]->bc_idx, acdata->lsigcnt[i], acdata->lsigsuboff_first[i], map) == CL_VIRUS) {
-		if (SCAN_ALL) {
-		    viruses_found++;
-		    continue;
-		}
- 		return CL_VIRUS;
-	    }
-	}
+        if (root->ac_lsigtable[i]->type == CLI_NORMAL_LSIG)
+            rc = lsig_eval(ctx, root, acdata, target_info, hash, i);
+        else if (root->ac_lsigtable[i]->type == CLI_NORMAL_YARA)
+            rc = yara_eval(ctx, root, acdata, target_info, hash, i);
+        if (rc == CL_VIRUS) {
+            viruses_found = 1;
+            if (SCAN_ALL)
+                continue;
+            break;
+        }
     }
-    if (SCAN_ALL && viruses_found)
+    if (viruses_found)
 	return CL_VIRUS;
     return CL_CLEAN;
 }
@@ -1132,7 +1136,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 
     if(troot) {
         if(ret != CL_VIRUS || SCAN_ALL)
-            ret = cli_lsig_eval(ctx, troot, &tdata, &info, (const char *)refhash);
+            ret = cli_exp_eval(ctx, troot, &tdata, &info, (const char *)refhash);
         if (ret == CL_VIRUS)
             viruses_found++;
 
@@ -1144,7 +1148,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 
     if(groot) {
         if(ret != CL_VIRUS || SCAN_ALL)
-            ret = cli_lsig_eval(ctx, groot, &gdata, &info, (const char *)refhash);
+            ret = cli_exp_eval(ctx, groot, &gdata, &info, (const char *)refhash);
         cli_ac_freedata(&gdata);
         cli_pcre_freeoff(&gpoff);
     }

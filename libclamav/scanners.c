@@ -953,12 +953,12 @@ static int vba_scandata(const unsigned char *data, unsigned int len, cli_ctx *ct
 	viruses_found++;
 
     if (ret == CL_CLEAN || (ret == CL_VIRUS && SCAN_ALL)) {
-	ret = cli_lsig_eval(ctx, troot, &tmdata, NULL, NULL);
+	ret = cli_exp_eval(ctx, troot, &tmdata, NULL, NULL);
 	if (ret == CL_VIRUS)
 	    viruses_found++;
 
 	if (ret == CL_CLEAN || (ret == CL_VIRUS && SCAN_ALL))
-	    ret = cli_lsig_eval(ctx, groot, &gmdata, NULL, NULL);
+	    ret = cli_exp_eval(ctx, groot, &gmdata, NULL, NULL);
     }
     cli_ac_freedata(&tmdata);
     cli_ac_freedata(&gmdata);
@@ -1417,10 +1417,10 @@ static int cli_scanscript(cli_ctx *ctx)
 	}
 	free(normalized);
 	if(ret != CL_VIRUS || SCAN_ALL)  {
-	    if ((ret = cli_lsig_eval(ctx, troot, &tmdata, NULL, NULL)) == CL_VIRUS)
+	    if ((ret = cli_exp_eval(ctx, troot, &tmdata, NULL, NULL)) == CL_VIRUS)
 		viruses_found++;
 	    if(ret != CL_VIRUS || SCAN_ALL)
-		if ((ret = cli_lsig_eval(ctx, groot, &gmdata, NULL, NULL)) == CL_VIRUS)
+		if ((ret = cli_exp_eval(ctx, groot, &gmdata, NULL, NULL)) == CL_VIRUS)
 		    viruses_found++;
 	}
 	cli_ac_freedata(&tmdata);
