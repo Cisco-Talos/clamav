@@ -1577,7 +1577,8 @@ static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsig
 #if !HAVE_PCRE
     /* Regex Usage and Support Check */
     for (i = 0; i < subsigs; ++i) {
-        if (strchr(tokens[i+3], '/')) {
+        char *slash = strchr(tokens[i+3], '/');
+        if (slash && strchr(slash+1, '/')) {
             cli_warnmsg("cli_loadldb: logical signature for %s uses PCREs but support is disabled, skipping\n", virname);
             (*sigs)--;
             return CL_SUCCESS;
@@ -2910,8 +2911,9 @@ static char *parse_yara_hex_string(YR_STRING *string, int *ret);
 
 static char *parse_yara_hex_string(YR_STRING *string, int *ret)
 {
-    char *res, *str;
+    char *res, *str, *ovr;
     size_t slen, reslen=0, i, j;
+    int sqr = 0;
 
     if (!(string) || !(string->string)) {
         if (ret) *ret = CL_ENULLARG;
@@ -2938,15 +2940,7 @@ static char *parse_yara_hex_string(YR_STRING *string, int *ret)
         case '\t':
         case '\r':
         case '\n':
-        case '}':
-            break;
-        case '[':
-            /* ClamAV's Aho-Corasic algorithm requires at least two known bytes before {n,m} wildcard */
-            if (reslen < 4) {
-                if (ret) *ret = CL_EMALFDB;
-                return NULL;
-            }
-            reslen += 3;
+        case '}': /* end of hex string */
             break;
         default:
             reslen++;
@@ -2970,8 +2964,6 @@ static char *parse_yara_hex_string(YR_STRING *string, int *ret)
         case '}':
             break;
         case '[':
-            res[j++] = '?';
-            res[j++] = '?';
             res[j++] = '{';
             break;
         case ']':
@@ -2980,6 +2972,27 @@ static char *parse_yara_hex_string(YR_STRING *string, int *ret)
         default:
             res[j++] = str[i];
             break;
+        }
+    }
+
+    /* backward anchor overwrite, 2 (hex chars in one byte) */
+    if ((ovr = strchr(res, '{')) && ((ovr - res) == 2)) {
+        *ovr = '[';
+        if ((ovr = strchr(ovr, '}')))
+            *ovr = ']';
+        else {
+            if (ret) *ret = CL_EMALFDB;
+            return NULL;
+        }
+    }
+    /* forward anchor overwrite, 2 (hex chars in one byte) +1 (NULL char) */
+    if ((ovr = strrchr(res, '}')) && ((res+j - ovr) == 3)) {
+        *ovr = ']';
+        if ((ovr = strrchr(res, '{')))
+            *ovr = '[';
+        else {
+            if (ret) *ret = CL_EMALFDB;
+            return NULL;
         }
     }
 
@@ -3162,6 +3175,12 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
             *skip = 1;
         return CL_SUCCESS;
     }
+
+    if(engine->cb_sigload && engine->cb_sigload("yara", virname, ~options & CL_DB_OFFICIAL, engine->cb_sigload_ctx)) {
+        cli_dbgmsg("cli_loadyara: skipping %s due to callback\n", virname);
+        (*sigs)--;
+        return CL_SUCCESS;
+    }
     */
 
     /*** rule specific checks ***/
@@ -3252,6 +3271,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
             free(substr);
         } else if (STRING_IS_REGEXP(string)) {
             /* TODO - rewrite to NOT use PCRE_BYPASS */
+#if HAVE_PCRE
             size_t length = strlen(PCRE_BYPASS) + string->length + 3;
 
             substr = cli_calloc(length, sizeof(char));
@@ -3268,6 +3288,12 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
 
             ytable_add_string(&ytable, substr);
             free(substr);
+#else
+            cli_warnmsg("cli_loadyara: %s uses PCREs but support is disabled\n", rule->identifier);
+            str_error++;
+            ret = CL_SUCCESS;
+            break;
+#endif
         } else {
             /* TODO - extract the string length to handle NULL hex-escaped characters
              * For now, we'll just use the strlen we get which crudely finds the length
@@ -3570,7 +3596,6 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
     if (rc > 0) { /* rc = number of errors */
         /* TODO - handle the various errors? */
         cli_errmsg("cli_loadyara: failed to parse rules file %s, error count %i\n", dbname, rc);
-#ifdef YARA_FINISHED
         yr_hash_table_destroy(compiler.rules_table, NULL);
         yr_hash_table_destroy(compiler.objects_table, NULL);
         yr_arena_destroy(compiler.sz_arena);
@@ -3578,7 +3603,10 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
         yr_arena_destroy(compiler.code_arena);
         yr_arena_destroy(compiler.strings_arena);
         yr_arena_destroy(compiler.metas_arena);
+#ifdef YARA_FINISHED
         return CL_EMALFDB;
+#else
+        return CL_SUCCESS;
 #endif
     }
 
@@ -3593,9 +3621,7 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
         rc = load_oneyara(rule, engine, options, &sigs);
         if (rc != CL_SUCCESS) {
             cli_warnmsg("cli_loadyara: problem parsing yara file %s, yara rule %s\n", dbname, rule->identifier);
-#ifdef YARA_FINISHED
             break;
-#endif
         }
     }
 
@@ -3607,18 +3633,15 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
     yr_arena_destroy(compiler.strings_arena);
     yr_arena_destroy(compiler.metas_arena);
 
-#ifdef YARA_FINISHED
     if(rc)
         return rc;
 
+#ifdef YARA_FINISHED
     if(!rules) {
         cli_errmsg("cli_loadyara: empty database file\n");
         return CL_EMALFDB;
     }
 #else
-    if(rc)
-        return CL_SUCCESS;
-
     if(!rules) {
         cli_warnmsg("cli_loadyara: empty database file\n");
         yara_empty++;
