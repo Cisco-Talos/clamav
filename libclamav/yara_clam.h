@@ -539,6 +539,7 @@ struct _yc_rule {
     STAILQ_HEAD(sq, _yc_string) strings;
     char * identifier;
     uint32_t g_flags;
+    uint8_t * code_start;
 };
 typedef struct _yc_rule yc_rule;
 typedef struct _yc_string {

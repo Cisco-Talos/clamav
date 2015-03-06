@@ -702,6 +702,7 @@ int yr_parser_reduce_rule_declaration(
 
   YR_RULE* rule;
   YR_STRING* string;
+  int8_t halt = OP_HALT;
 
   if (yr_hash_table_lookup(
         compiler->rules_table,
@@ -799,6 +800,19 @@ int yr_parser_reduce_rule_declaration(
   compiler->current_rule_strings = NULL;
 #else
   compiler->current_rule_flags = 0;
+  // Write halt instruction at the end of code.
+  yr_arena_write_data(
+      compiler->code_arena,
+      &halt,
+      sizeof(int8_t),
+      NULL);
+  //TBD: seems like we will need the following yr_arena_coalesce, but it is not working.
+  //Yara condition code will work OK as long as it is less than 64K.
+  //FAIL_ON_COMPILER_ERROR(yr_arena_coalesce(compiler->code_arena));
+  rule->code_start = yr_arena_base_address(compiler->code_arena);
+  compiler->code_arena->page_list_head->address = NULL;
+  yr_arena_destroy(compiler->code_arena);
+  FAIL_ON_COMPILER_ERROR(yr_arena_create(65536, 0, &compiler->code_arena));
   STAILQ_INSERT_TAIL(&compiler->rule_q, rule, link); 
 #endif
   return compiler->last_result;

@@ -86,7 +86,7 @@ struct cli_ac_lsig {
     uint8_t type;
     union {
         char *logic;
-        void *other;
+        uint8_t *code_start;
     } u;
     const char *virname;
     struct cli_lsig_tdb tdb;

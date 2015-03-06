@@ -3402,30 +3402,31 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
     /*** conditional verification step (ex. do we define too many strings versus used?)  ***/
     /*** additional string table population (ex. offsets), second translation table pass ***/
 
-    lsize = 3*ytable.tbl_cnt;
-    logic = cli_calloc(lsize, sizeof(char));
-    if (!logic) {
-        cli_errmsg("load_oneyara: cannot allocate memory for logic statement\n");
-        ytable_delete(&ytable);
-        return CL_EMEM;
+    if (rule->g_flags & RULE_ALL ||  rule->g_flags & RULE_ANY) {
+        lsize = 3*ytable.tbl_cnt;
+        logic = cli_calloc(lsize, sizeof(char));
+        if (!logic) {
+            cli_errmsg("load_oneyara: cannot allocate memory for logic statement\n");
+            ytable_delete(&ytable);
+            return CL_EMEM;
+        }
+        
+        if (rule->g_flags & RULE_ALL && rule->g_flags & RULE_THEM)
+            exp_op = "&";
+        else {
+            exp_op = "|";
+            if ((!(rule->g_flags & RULE_ANY && rule->g_flags & RULE_THEM) && ytable.tbl_cnt > 1) &&
+                !(rule->g_flags & RULE_EP && ytable.tbl_cnt == 1))
+                yara_complex++;
+        }
+        
+        for (i=0; i<ytable.tbl_cnt; i++) {
+            size_t len=strlen(logic);
+            snprintf(logic+len, lsize-len, "%u%s", i, (i+1 == ytable.tbl_cnt) ? "" : exp_op);
+        }    
+        
+        /*** END CONDITIONAL HANDLING ***/
     }
-
-    if (rule->g_flags & RULE_ALL && rule->g_flags & RULE_THEM)
-        exp_op = "&";
-    else {
-        exp_op = "|";
-        if ((!(rule->g_flags & RULE_ANY && rule->g_flags & RULE_THEM) && ytable.tbl_cnt > 1) &&
-            !(rule->g_flags & RULE_EP && ytable.tbl_cnt == 1))
-            yara_complex++;
-    }
-
-    for (i=0; i<ytable.tbl_cnt; i++) {
-        size_t len=strlen(logic);
-        snprintf(logic+len, lsize-len, "%u%s", i, (i+1 == ytable.tbl_cnt) ? "" : exp_op);
-    }    
-
-    /*** END CONDITIONAL HANDLING ***/
-
     /* TDB */
     if (rule->g_flags & RULE_EP && ytable.tbl_cnt == 1)
         target_str = cli_strdup(YARATARGET1);
@@ -3461,23 +3462,26 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
 
         lsig->type = CLI_NORMAL_LSIG;
         lsig->u.logic = cli_mpool_strdup(engine->mempool, logic);
+        free(logic);
         if(!lsig->u.logic) {
             cli_errmsg("load_oneyara: Can't allocate memory for lsig->logic\n");
             FREE_TDB(tdb);
             ytable_delete(&ytable);
-            free(logic);
             mpool_free(engine->mempool, lsig);
             return CL_EMEM;
         }
     } else {
-        cli_errmsg("load_oneyara: Unsupported logic type\n");
-        FREE_TDB(tdb);
-        ytable_delete(&ytable);
-        free(logic);
-        mpool_free(engine->mempool, lsig);
-        return CL_EMEM;
+        if (NULL != (lsig->u.code_start = rule->code_start)) {
+        lsig->type = CLI_NORMAL_YARA;
+        } else {
+            cli_errmsg("load_oneyara: code start is NULL\n");
+            FREE_TDB(tdb);
+            ytable_delete(&ytable);
+            mpool_free(engine->mempool, lsig);
+            return CL_EMEM;
+        }
     }
-    free(logic);
+
 
     lsigid[0] = lsig->id = root->ac_lsigs;
 
@@ -4325,6 +4329,8 @@ int cl_engine_free(struct cl_engine *engine)
 		    for(j = 0; j < root->ac_lsigs; j++) {
 			if (root->ac_lsigtable[j]->type == CLI_NORMAL_LSIG)
 			    mpool_free(engine->mempool, root->ac_lsigtable[j]->u.logic);
+			else if (root->ac_lsigtable[j]->type == CLI_NORMAL_YARA)
+			    free(root->ac_lsigtable[j]->u.code_start);
 			FREE_TDB(root->ac_lsigtable[j]->tdb);
 			mpool_free(engine->mempool, root->ac_lsigtable[j]);
 		    }

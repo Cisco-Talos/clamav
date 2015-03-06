@@ -295,7 +295,7 @@ void yr_arena_destroy(
   yr_free(arena);
 }
 
-#if REAL_YARA
+
 //
 // yr_arena_base_address
 //
@@ -333,7 +333,6 @@ void* yr_arena_base_address(
 // Returns:
 //    A pointer
 //
-#endif
 
 void* yr_arena_next_address(
   YR_ARENA* arena,
@@ -384,7 +383,7 @@ void* yr_arena_next_address(
   return NULL;
 }
 
-#if REAL_YARA
+
 //
 // yr_arena_coalesce
 //
@@ -488,7 +487,6 @@ int yr_arena_coalesce(
 
   return ERROR_SUCCESS;
 }
-#endif
 
 //
 // yr_arena_reserve_memory
