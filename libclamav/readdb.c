@@ -2910,8 +2910,9 @@ static char *parse_yara_hex_string(YR_STRING *string, int *ret);
 
 static char *parse_yara_hex_string(YR_STRING *string, int *ret)
 {
-    char *res, *str;
+    char *res, *str, *ovr;
     size_t slen, reslen=0, i, j;
+    int sqr = 0;
 
     if (!(string) || !(string->string)) {
         if (ret) *ret = CL_ENULLARG;
@@ -2938,15 +2939,7 @@ static char *parse_yara_hex_string(YR_STRING *string, int *ret)
         case '\t':
         case '\r':
         case '\n':
-        case '}':
-            break;
-        case '[':
-            /* ClamAV's Aho-Corasic algorithm requires at least two known bytes before {n,m} wildcard */
-            if (reslen < 4) {
-                if (ret) *ret = CL_EMALFDB;
-                return NULL;
-            }
-            reslen += 3;
+        case '}': /* end of hex string */
             break;
         default:
             reslen++;
@@ -2970,8 +2963,6 @@ static char *parse_yara_hex_string(YR_STRING *string, int *ret)
         case '}':
             break;
         case '[':
-            res[j++] = '?';
-            res[j++] = '?';
             res[j++] = '{';
             break;
         case ']':
@@ -2980,6 +2971,27 @@ static char *parse_yara_hex_string(YR_STRING *string, int *ret)
         default:
             res[j++] = str[i];
             break;
+        }
+    }
+
+    /* backward anchor overwrite, 2 (hex chars in one byte) */
+    if ((ovr = strchr(res, '{')) && ((ovr - res) == 2)) {
+        *ovr = '[';
+        if ((ovr = strchr(ovr, '}')))
+            *ovr = ']';
+        else {
+            if (ret) *ret = CL_EMALFDB;
+            return NULL;
+        }
+    }
+    /* forward anchor overwrite, 2 (hex chars in one byte) +1 (NULL char) */
+    if ((ovr = strrchr(res, '}')) && ((res+j - ovr) == 3)) {
+        *ovr = ']';
+        if ((ovr = strrchr(res, '{')))
+            *ovr = '[';
+        else {
+            if (ret) *ret = CL_EMALFDB;
+            return NULL;
         }
     }
 
