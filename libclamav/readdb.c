@@ -3498,7 +3498,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
         }
     } else {
         if (NULL != (lsig->u.code_start = rule->code_start)) {
-        lsig->type = CLI_NORMAL_YARA;
+            lsig->type = CLI_NORMAL_YARA;
         } else {
             cli_errmsg("load_oneyara: code start is NULL\n");
             FREE_TDB(tdb);
@@ -3507,7 +3507,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
             return CL_EMEM;
         }
     }
-
+    
 
     lsigid[0] = lsig->id = root->ac_lsigs;
 
@@ -3621,7 +3621,9 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
         rc = load_oneyara(rule, engine, options, &sigs);
         if (rc != CL_SUCCESS) {
             cli_warnmsg("cli_loadyara: problem parsing yara file %s, yara rule %s\n", dbname, rule->identifier);
+#ifdef YARA_FINISHED
             break;
+#endif
         }
     }
 
@@ -3634,7 +3636,12 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
     yr_arena_destroy(compiler.metas_arena);
 
     if(rc)
+#ifdef YARA_FINISHED
         return rc;
+#else
+        return CL_SUCCESS;
+#endif
+
 
 #ifdef YARA_FINISHED
     if(!rules) {
