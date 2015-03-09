@@ -60,7 +60,7 @@ int cli_pcre_addoptions(struct cli_pcre_data *pd, const char **opt, int errout)
             /* these are pcre specific... don't work with perl */
         case 'A':  pd->options |= PCRE_ANCHORED;            break;
         case 'E':  pd->options |= PCRE_DOLLAR_ENDONLY;      break;
-        case 'G':  pd->options |= PCRE_UNGREEDY;            break;
+        case 'U':  pd->options |= PCRE_UNGREEDY;            break;
 
         default:
             if (errout) {
