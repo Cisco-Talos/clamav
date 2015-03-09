@@ -141,7 +141,7 @@ static int sigopts_handler(struct cli_matcher *root, const char *virname, const 
     if (start != end) {
         /* FULLWORD regex sigopt handling */
         if (sigopts & ACPATT_OPTION_FULLWORD) {
-            size_t ovrlen = strlen(hexcpy)+5;
+            size_t ovrlen = strlen(hexcpy)+21;
             char *hexovr = cli_calloc(ovrlen, sizeof(char));
             if (!hexovr) {
                 free(hexcpy);
@@ -151,7 +151,7 @@ static int sigopts_handler(struct cli_matcher *root, const char *virname, const 
             *start++ = '\0';
             *end++ = '\0';
 
-            snprintf(hexovr, ovrlen, "%s/\\W%s\\W/%s", hexcpy, start, end);
+            snprintf(hexovr, ovrlen, "%s/([\\W_]|\\A)%s([\\W_]|\\Z)/%s", hexcpy, start, end);
 
             free(hexcpy);
             hexcpy = hexovr;
