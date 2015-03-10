@@ -23,8 +23,12 @@
 #ifndef __MSXML_H
 #define __MSXML_H
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
 #include "others.h"
 
-int scan_msxml(cli_ctx *ctx);
+int cli_scanmsxml(cli_ctx *ctx);
 
 #endif /* __MSXML_H */
