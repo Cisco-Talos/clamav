@@ -43,7 +43,7 @@
 #include <libxml/xmlreader.h>
 #endif
 
-#define OOXML_DEBUG 0
+
 
 #if HAVE_LIBXML2 && HAVE_JSON
 
@@ -54,11 +54,11 @@
 #define check_state(state)                                              \
     do {                                                                \
         if (state == -1) {                                              \
-            cli_warnmsg("check_state: CL_EPARSE @ ln%d\n", __LINE__);   \
+            cli_warnmsg("check_state[ooxml]: CL_EPARSE @ ln%d\n", __LINE__); \
             return CL_EPARSE;                                           \
         }                                                               \
         else if (state == 0) {                                          \
-            cli_dbgmsg("check_state: CL_BREAK @ ln%d\n", __LINE__);     \
+            cli_dbgmsg("check_state[ooxml]: CL_BREAK @ ln%d\n", __LINE__); \
             return CL_BREAK;                                            \
         }                                                               \
     } while(0)
@@ -694,7 +694,7 @@ int cli_process_ooxml(cli_ctx *ctx)
     uint32_t loff = 0;
     int tmp = CL_SUCCESS;
 
-    cli_dbgmsg("in cli_processooxml\n");
+    cli_dbgmsg("in cli_process_ooxml\n");
     if (!ctx) {
         return CL_ENULLARG;
     }
@@ -725,7 +725,7 @@ int cli_process_ooxml(cli_ctx *ctx)
     return tmp;
 #else
     UNUSEDPARAM(ctx);
-    cli_dbgmsg("in cli_processooxml\n");
+    cli_dbgmsg("in cli_process_ooxml\n");
 #if !HAVE_LIBXML2
     cli_dbgmsg("cli_process_ooxml: libxml2 needs to enabled!");
 #endif

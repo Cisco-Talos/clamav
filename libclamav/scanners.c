@@ -105,6 +105,7 @@
 #include "ooxml.h"
 #include "xdp.h"
 #include "json_api.h"
+#include "msxml.h"
 
 #ifdef HAVE_BZLIB_H
 #include <bzlib.h>
@@ -2212,6 +2213,12 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
                 case CL_TYPE_XDP:
                     ret = cli_scanxdp(ctx);
                     break;
+                case CL_TYPE_XML_WORD:
+                    ret = cli_scanmsxml(ctx);
+                    break;
+                case CL_TYPE_XML_XL:
+                    ret = cli_scanmsxml(ctx);
+                    break;
                 case CL_TYPE_RARSFX:
                     if(type != CL_TYPE_RAR && have_rar && SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_RAR)) {
                         char *tmpname = NULL;
@@ -2749,6 +2756,14 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
     switch(type) {
 	case CL_TYPE_IGNORED:
 	    break;
+
+    case CL_TYPE_XML_WORD:
+        ret = cli_scanmsxml(ctx);
+        break;
+
+    case CL_TYPE_XML_XL:
+        ret = cli_scanmsxml(ctx);
+        break;
 
     case CL_TYPE_XDP:
         ret = cli_scanxdp(ctx);
