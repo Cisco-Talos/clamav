@@ -37,6 +37,8 @@
 #include <libxml/xmlreader.h>
 #endif
 
+#define MSXML_READBUFF SCANBUFF
+
 #define check_state(state)                                              \
     do {                                                                \
         if (state == -1) {                                              \
@@ -50,24 +52,121 @@
     } while(0)
 
 
+struct msxml_cbdata {
+    fmap_t *map;
+    const unsigned char *window;
+    off_t winpos, mappos;
+    size_t winsize;
+};
+
+inline size_t msxml_read_cb_new_window(struct msxml_cbdata *cbdata)
+{
+    const unsigned char *new_window = NULL;
+    off_t new_mappos;
+    size_t bytes;
+
+    if (cbdata->mappos == cbdata->map->len) {
+        cli_dbgmsg("msxml_read_cb: fmap REALLY EOF\n");
+        return 0;
+    }
+
+    new_mappos = cbdata->mappos + cbdata->winsize;
+    bytes = MIN(cbdata->map->len - new_mappos, MSXML_READBUFF);
+    if (!bytes) {
+        cbdata->window = NULL;
+        cbdata->winpos = 0;
+        cbdata->mappos = cbdata->map->len;
+        cbdata->winsize = 0;
+
+        cli_dbgmsg("msxml_read_cb: fmap EOF\n");
+        return 0;
+    }
+
+    new_window = fmap_need_off_once(cbdata->map, new_mappos, bytes);
+    if (!new_window) {
+        cli_errmsg("msxml_read_cb: cannot acquire new window for fmap\n");
+        return -1;
+    }
+
+    cbdata->window = new_window;
+    cbdata->winpos = 0;
+    cbdata->mappos = new_mappos;
+    cbdata->winsize = bytes;
+
+    cli_dbgmsg("msxml_read_cb: acquired new window @ [%llu(+%llu)(max:%llu)]\n",
+               (long long unsigned)cbdata->mappos, (long long unsigned)(cbdata->mappos + cbdata->winsize),
+               (long long unsigned)cbdata->map->len);
+
+    return bytes;
+}
+
+int msxml_read_cb(void *ctx, char *buffer, int len)
+{
+    struct msxml_cbdata *cbdata = (struct msxml_cbdata *)ctx;
+    size_t wbytes, rbytes, winret;
+
+    cli_dbgmsg("msxml_read_cb called\n");
+
+    /* initial iteration */
+    if (!cbdata->window) {
+        if ((winret = msxml_read_cb_new_window(cbdata)) <= 0)
+            return winret;
+    }
+
+    cli_dbgmsg("msxml_read_cb: requested %d bytes from offset %llu\n", len, (long long unsigned)(cbdata->mappos+cbdata->winpos));
+
+    wbytes = 0;
+    rbytes = cbdata->winsize - cbdata->winpos;
+
+    while (wbytes < len) {
+        size_t written = MIN(rbytes, len);
+
+        if (!rbytes) {
+            if ((winret = msxml_read_cb_new_window(cbdata)) < 0)
+                return winret;
+            if (winret == 0) {
+                cli_dbgmsg("msxml_read_cb: propagating fmap EOF [%llu]\n", (long long unsigned)wbytes);
+                return (int)wbytes;
+            }
+
+            rbytes = cbdata->winsize;
+        }
+
+        written = MIN(rbytes, len - wbytes);
+
+        cli_dbgmsg("msxml_read_cb: copying from window [%llu(+%llu)] %llu->%llu\n",
+                   (long long unsigned)(cbdata->winsize - rbytes), (long long unsigned)cbdata->winsize,
+                   (long long unsigned)cbdata->winpos, (long long unsigned)(cbdata->winpos + written));
+
+        memcpy(buffer + wbytes, cbdata->window + cbdata->winpos, written);
+
+        wbytes += written;
+        rbytes -= written;
+    }
+
+    cbdata->winpos = cbdata->winsize - rbytes;
+    return (int)wbytes;
+}
+
 int cli_scanmsxml(cli_ctx *ctx)
 {
 #if HAVE_LIBXML2
-    const unsigned char *buffer;
+    struct msxml_cbdata cbdata;
     xmlTextReaderPtr reader = NULL;
+    const xmlChar *node_name = NULL, *node_value = NULL;
     int state, ret = CL_SUCCESS;
 
     cli_dbgmsg("in cli_scanmsxml()\n");
 
-    buffer = (unsigned char *)fmap_need_off_once(*ctx->fmap, 0, (*ctx->fmap)->len);
-    if (!buffer) {
-        cli_errmsg("cli_scanmsxml: cannot read in input file for buffer\n");
-        return CL_EREAD;
-    }
+    if (!ctx)
+        return CL_ENULLARG;
 
-    reader = xmlReaderForMemory(buffer, (*ctx->fmap)->len, "msxml.xml", NULL, CLAMAV_MIN_XMLREADER_FLAGS);
+    memset(&cbdata, 0, sizeof(cbdata));
+    cbdata.map = *ctx->fmap;
+
+    reader = xmlReaderForIO(msxml_read_cb, NULL, &cbdata, "msxml.xml", NULL, CLAMAV_MIN_XMLREADER_FLAGS);
     if (!reader) {
-        cli_dbgmsg("cli_scanmsxml: cannot intialize xmlReaderForMemory\n");
+        cli_dbgmsg("cli_scanmsxml: cannot intialize xmlReader\n");
         return CL_SUCCESS; // libxml2 failed!
     }
 
