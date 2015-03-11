@@ -118,6 +118,7 @@ static char *iso_string(iso9660_t *iso, const void *src, unsigned int len) {
 static int iso_parse_dir(iso9660_t *iso, unsigned int block, unsigned int len) {
     cli_ctx *ctx = iso->ctx;
     int ret = CL_CLEAN;
+    int found_virus = 0;
 
     if(len < 34) {
 	cli_dbgmsg("iso_parse_dir: Directory too small, skipping\n");
@@ -184,7 +185,9 @@ static int iso_parse_dir(iso9660_t *iso, unsigned int block, unsigned int len) {
 	    cli_dbgmsg("iso_parse_dir: %s '%s': off %x - size %x - flags %x - unit size %x - gap size %x - volume %u\n", (dir[25] & 2) ? "Directory" : "File", iso->buf, fileoff, filesz, dir[25], dir[26], dir[27], cli_readint32(&dir[28]) & 0xffff);
 	    if(cli_matchmeta(ctx, iso->buf, filesz, filesz, 0, 0, 0, NULL) == CL_VIRUS) {
 		ret = CL_VIRUS;
-		break;
+		found_virus = 1;
+		if(!SCAN_ALL)
+		    break;
 	    }
 
 	    if(dir[26] || dir[27])
@@ -199,6 +202,11 @@ static int iso_parse_dir(iso9660_t *iso, unsigned int block, unsigned int len) {
 		    else
 			ret = iso_scan_file(iso, fileoff, filesz);
 		}
+		if(ret == CL_VIRUS) {
+		    found_virus = 1;
+		    if(!SCAN_ALL)
+			break;
+		}
 	    }
 	    dirsz -= entrysz;
 	    dir += entrysz;
@@ -206,6 +214,8 @@ static int iso_parse_dir(iso9660_t *iso, unsigned int block, unsigned int len) {
 
 	fmap_unneed_ptr(*ctx->fmap, dir_orig, iso->blocksz);
     }
+    if(found_virus)
+        ret = CL_VIRUS;
     return ret;
 }
 
