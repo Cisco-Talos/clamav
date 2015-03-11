@@ -435,6 +435,8 @@ static int ooxml_parse_document(int fd, cli_ctx *ctx)
 
     /* move reader to first element */
     if (xmlTextReaderRead(reader) != 1) {
+        xmlTextReaderClose(reader);
+        xmlFreeTextReader(reader);
         return CL_SUCCESS; /* libxml2 failed */
     }
 
