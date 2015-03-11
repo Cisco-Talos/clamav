@@ -37,6 +37,13 @@
 #include <libxml/xmlreader.h>
 #endif
 
+#define MSXML_VERBIOSE 1
+#if MSXML_VERBIOSE
+#define cli_msxmlmsg(...) cli_dbgmsg(__VA_ARGS__)
+#else
+#define cli_msxmlmsg(...)
+#endif
+
 #define MSXML_READBUFF SCANBUFF
 
 #define check_state(state)                                              \
@@ -66,7 +73,7 @@ inline size_t msxml_read_cb_new_window(struct msxml_cbdata *cbdata)
     size_t bytes;
 
     if (cbdata->mappos == cbdata->map->len) {
-        cli_dbgmsg("msxml_read_cb: fmap REALLY EOF\n");
+        cli_msxmlmsg("msxml_read_cb: fmap REALLY EOF\n");
         return 0;
     }
 
@@ -78,7 +85,7 @@ inline size_t msxml_read_cb_new_window(struct msxml_cbdata *cbdata)
         cbdata->mappos = cbdata->map->len;
         cbdata->winsize = 0;
 
-        cli_dbgmsg("msxml_read_cb: fmap EOF\n");
+        cli_msxmlmsg("msxml_read_cb: fmap EOF\n");
         return 0;
     }
 
@@ -93,9 +100,9 @@ inline size_t msxml_read_cb_new_window(struct msxml_cbdata *cbdata)
     cbdata->mappos = new_mappos;
     cbdata->winsize = bytes;
 
-    cli_dbgmsg("msxml_read_cb: acquired new window @ [%llu(+%llu)(max:%llu)]\n",
-               (long long unsigned)cbdata->mappos, (long long unsigned)(cbdata->mappos + cbdata->winsize),
-               (long long unsigned)cbdata->map->len);
+    cli_msxmlmsg("msxml_read_cb: acquired new window @ [%llu(+%llu)(max:%llu)]\n",
+                 (long long unsigned)cbdata->mappos, (long long unsigned)(cbdata->mappos + cbdata->winsize),
+                 (long long unsigned)cbdata->map->len);
 
     return bytes;
 }
@@ -105,7 +112,7 @@ int msxml_read_cb(void *ctx, char *buffer, int len)
     struct msxml_cbdata *cbdata = (struct msxml_cbdata *)ctx;
     size_t wbytes, rbytes, winret;
 
-    cli_dbgmsg("msxml_read_cb called\n");
+    cli_msxmlmsg("msxml_read_cb called\n");
 
     /* initial iteration */
     if (!cbdata->window) {
@@ -113,7 +120,7 @@ int msxml_read_cb(void *ctx, char *buffer, int len)
             return winret;
     }
 
-    cli_dbgmsg("msxml_read_cb: requested %d bytes from offset %llu\n", len, (long long unsigned)(cbdata->mappos+cbdata->winpos));
+    cli_msxmlmsg("msxml_read_cb: requested %d bytes from offset %llu\n", len, (long long unsigned)(cbdata->mappos+cbdata->winpos));
 
     wbytes = 0;
     rbytes = cbdata->winsize - cbdata->winpos;
@@ -125,7 +132,7 @@ int msxml_read_cb(void *ctx, char *buffer, int len)
             if ((winret = msxml_read_cb_new_window(cbdata)) < 0)
                 return winret;
             if (winret == 0) {
-                cli_dbgmsg("msxml_read_cb: propagating fmap EOF [%llu]\n", (long long unsigned)wbytes);
+                cli_msxmlmsg("msxml_read_cb: propagating fmap EOF [%llu]\n", (long long unsigned)wbytes);
                 return (int)wbytes;
             }
 
@@ -134,9 +141,9 @@ int msxml_read_cb(void *ctx, char *buffer, int len)
 
         written = MIN(rbytes, len - wbytes);
 
-        cli_dbgmsg("msxml_read_cb: copying from window [%llu(+%llu)] %llu->%llu\n",
-                   (long long unsigned)(cbdata->winsize - rbytes), (long long unsigned)cbdata->winsize,
-                   (long long unsigned)cbdata->winpos, (long long unsigned)(cbdata->winpos + written));
+        cli_msxmlmsg("msxml_read_cb: copying from window [%llu(+%llu)] %llu->%llu\n",
+                     (long long unsigned)(cbdata->winsize - rbytes), (long long unsigned)cbdata->winsize,
+                     (long long unsigned)cbdata->winpos, (long long unsigned)(cbdata->winpos + written));
 
         memcpy(buffer + wbytes, cbdata->window + cbdata->winpos, written);
 
@@ -179,7 +186,7 @@ int cli_scanmsxml(cli_ctx *ctx)
 #else
     UNUSEDPARAM(ctx);
     cli_dbgmsg("in cli_scanmsxml()\n");
-    cli_dbgmsg("cli_scanmsxml: libxml2 needs to enabled!");
+    cli_dbgmsg("cli_scanmsxml: scanning msxml documents requires libxml2!");
 
     return CL_SUCCESS;
 #endif
