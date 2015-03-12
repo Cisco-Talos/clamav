@@ -404,6 +404,10 @@ int cli_scanmsxml(cli_ctx *ctx)
         }
     }
 
+    /* non-critical return supression */
+    if (ret == CL_ETIMEOUT || ret == CL_BREAK)
+        ret = CL_SUCCESS;
+
     if (state == -1)
         ret = CL_EPARSE;
 
