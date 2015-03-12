@@ -23,8 +23,13 @@
 #include "clamav-config.h"
 #endif
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
 #include "clamav.h"
 #include "others.h"
+#include "conv.h"
 #include "json_api.h"
 #include "msxml.h"
 
@@ -244,11 +249,57 @@ static int msxml_parse_element(cli_ctx *ctx, xmlTextReaderPtr reader, int rlvl)
             case XML_READER_TYPE_TEXT:
                 node_value = xmlTextReaderConstValue(reader);
 
-                if (!strncmp(element_name, "binData", strlen(element_name))) {
-                    cli_dbgmsg("BINARY DATA!\n");
-                }
-
                 cli_dbgmsg("TEXT: %s\n", node_value);
+
+                if (!strncmp(element_name, "binData", strlen(element_name))) {
+                    char name[1024];
+                    char *decoded, *tempfile = name;
+                    size_t decodedlen;
+                    int of;
+
+                    cli_dbgmsg("BINARY DATA!\n");
+
+                    decoded = cl_base64_decode((char *)node_value, strlen((const char *)node_value), NULL, &decodedlen, 0);
+                    if (!decoded) {
+                        cli_dbgmsg("msxml_parse_element: failed to decode base64-encoded binary data\n");
+                        state = xmlTextReaderRead(reader);
+                        check_state(state);
+                        break;
+                    }
+
+                    if(!(tempfile = cli_gentemp(ctx->engine->tmpdir))) {
+                        free(decoded);
+                        return CL_EMEM;
+                    }
+
+                    if((of = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRUSR|S_IWUSR))==-1) {
+                        cli_warnmsg("msxml_parse_element: failed to create temporary file %s\n", tempfile);
+                        free(decoded);
+                        return CL_ECREAT;
+                    }
+
+                    if(cli_writen(of, decoded, decodedlen) != (int)decodedlen) {
+                        free(decoded);
+                        close(of);
+                        return CL_EWRITE;
+                    }
+                    free(decoded);
+
+                    cli_dbgmsg("msxml_parse_element: extracted binary data to %s\n", tempfile);
+
+                    ret = cli_magic_scandesc(of, ctx);
+                    close(of);
+                    if (ret != CL_SUCCESS || (!SCAN_ALL && ret == CL_VIRUS)) {
+                        return ret;
+                    }
+
+                    /*
+                    ret = cli_mem_scandesc(decoded, decodedlen, ctx);
+                    free(decoded);
+                    if (ret != CL_SUCCESS) {
+                        return ret;
+                        }*/
+                }
 
                 /*
                   ret = ooxml_parse_value(thisjobj, "Value", node_value);
