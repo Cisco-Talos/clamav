@@ -241,9 +241,9 @@ else
     CL_MSG_STATUS([pcre        ],[$PCRE_HOME],[$have_pcre])
 fi
 if test "x$XML_LIBS" = "x"; then 
-    CL_MSG_STATUS([dmg and xar ],[no],[])
+    CL_MSG_STATUS([libxml2     ],[no],[])
 else
-    CL_MSG_STATUS([dmg and xar ],[yes, from $XML_HOME],[])
+    CL_MSG_STATUS([libxml2     ],[yes, from $XML_HOME],[])
 fi
 
 # Yep, downgrading the compiler avoids the bug too:
