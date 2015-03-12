@@ -445,7 +445,9 @@ libclamav_la_SOURCES = \
 	msdoc.c \
 	msdoc.h \
 	msxml.c \
-	msxml.h
+	msxml.h \
+	msxml_parser.c \
+	msxml_parser.h
 
 libclamav_la_SOURCES += bignum.h\
 	bignum_fast.h\
