@@ -48,8 +48,8 @@
 #define cli_msxmlmsg(...)
 #endif
 
-#define MSXML_RECLEVEL 16
-#define MSXML_RECLEVEL_MAX 5
+//#define MSXML_RECLEVEL 16
+#define MSXML_RECLEVEL_MAX 20
 #define MSXML_JSON_STRLEN_MAX 100
 
 #define MSXML_READBUFF SCANBUFF
@@ -417,7 +417,7 @@ int cli_scanmsxml(cli_ctx *ctx)
 #else
     UNUSEDPARAM(ctx);
     cli_dbgmsg("in cli_scanmsxml()\n");
-    cli_dbgmsg("cli_scanmsxml: scanning msxml documents requires libxml2!");
+    cli_dbgmsg("cli_scanmsxml: scanning msxml documents requires libxml2!\n");
 
     return CL_SUCCESS;
 #endif
