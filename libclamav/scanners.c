@@ -2609,7 +2609,9 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
                 //type == CL_TYPE_ZIP ||
                 type == CL_TYPE_OOXML_WORD ||
                 type == CL_TYPE_OOXML_PPT ||
-                type == CL_TYPE_OOXML_XL) { 
+                type == CL_TYPE_OOXML_XL ||
+                type == CL_TYPE_XML_WORD ||
+                type == CL_TYPE_XML_XL) {
                 ctx->properties = json_object_new_object();
                 if (NULL == ctx->properties) {
                     cli_errmsg("magic_scandesc: no memory for json properties object\n");
