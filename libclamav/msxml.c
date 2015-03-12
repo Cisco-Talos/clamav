@@ -315,6 +315,12 @@ static int msxml_parse_element(cli_ctx *ctx, xmlTextReaderPtr reader, int rlvl)
                 check_state(state);
                 break;
 
+            case XML_READER_TYPE_SIGNIFICANT_WHITESPACE:
+                /* advance to next node */
+                state = xmlTextReaderRead(reader);
+                check_state(state);
+                break;
+
             case XML_READER_TYPE_END_ELEMENT:
                 cli_msxmlmsg("in msxml_parse_element @ layer %d closed\n", rlvl);
                 node_name = xmlTextReaderConstLocalName(reader);
@@ -351,10 +357,12 @@ static int msxml_parse_element(cli_ctx *ctx, xmlTextReaderPtr reader, int rlvl)
     case XML_READER_TYPE_PROCESSING_INSTRUCTION:
         cli_msxmlmsg("msxml_parse_element: PROCESSING INSTRUCTION %s [%d]: %s\n", node_name, node_type, node_value);
         break;
+    case XML_READER_TYPE_SIGNIFICANT_WHITESPACE:
+        cli_msxmlmsg("msxml_parse_element: SIGNIFICANT WHITESPACE %s [%d]: %s\n", node_name, node_type, node_value);
+        break;
     case XML_READER_TYPE_END_ELEMENT:
         cli_msxmlmsg("msxml_parse_element: END ELEMENT %s [%d]: %s\n", node_name, node_type, node_value);
         return CL_SUCCESS;
-        break;
     default:
         cli_dbgmsg("msxml_parse_element: unhandled xml primary node %s [%d]: %s\n", node_name, node_type, node_value);
     }
