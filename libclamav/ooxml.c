@@ -729,10 +729,10 @@ int cli_process_ooxml(cli_ctx *ctx)
     UNUSEDPARAM(ctx);
     cli_dbgmsg("in cli_process_ooxml\n");
 #if !HAVE_LIBXML2
-    cli_dbgmsg("cli_process_ooxml: libxml2 needs to enabled!");
+    cli_dbgmsg("cli_process_ooxml: libxml2 needs to enabled!\n");
 #endif
 #if !HAVE_JSON
-    cli_dbgmsg("cli_process_ooxml: libjson needs to enabled!");
+    cli_dbgmsg("cli_process_ooxml: libjson needs to enabled!\n");
 #endif
     return CL_SUCCESS;
 #endif
