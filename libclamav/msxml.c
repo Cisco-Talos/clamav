@@ -169,7 +169,7 @@ static int msxml_parse_element(cli_ctx *ctx, xmlTextReaderPtr reader, int rlvl)
     const xmlChar *node_name = NULL, *node_value = NULL;
     int ret, state, node_type, endtag = 0;
 
-    cli_dbgmsg("in msxml_parse_element @ layer %d\n", rlvl);
+    cli_msxmlmsg("in msxml_parse_element @ layer %d\n", rlvl);
 
     /* check recursion level */
     if (rlvl >= MSXML_RECLEVEL_MAX) {
@@ -192,7 +192,7 @@ static int msxml_parse_element(cli_ctx *ctx, xmlTextReaderPtr reader, int rlvl)
     /* branch on node type */
     switch (node_type) {
     case XML_READER_TYPE_ELEMENT:
-        cli_dbgmsg("msxml_parse_element: ELEMENT %s [%d]: %s\n", node_name, node_type, node_value);
+        cli_msxmlmsg("msxml_parse_element: ELEMENT %s [%d]: %s\n", node_name, node_type, node_value);
 
         /* storing the element name for verification/collection */
         element_name = xmlTextReaderConstLocalName(reader);
@@ -209,7 +209,7 @@ static int msxml_parse_element(cli_ctx *ctx, xmlTextReaderPtr reader, int rlvl)
                 name = xmlTextReaderConstLocalName(reader);
                 value = xmlTextReaderConstValue(reader);
 
-                cli_dbgmsg("\t%s: %s\n", name, value);
+                cli_msxmlmsg("\t%s: %s\n", name, value);
             }
         }
         else if (state == -1)
@@ -217,11 +217,12 @@ static int msxml_parse_element(cli_ctx *ctx, xmlTextReaderPtr reader, int rlvl)
 
         /* check self-containment */
         state = xmlTextReaderMoveToElement(reader);
-        check_state(state);
+        if (state == -1)
+            return CL_EPARSE;
 
         state = xmlTextReaderIsEmptyElement(reader);
         if (state == 1) {
-            cli_dbgmsg("msxml_parse_element: SELF-CLOSING\n");
+            cli_msxmlmsg("msxml_parse_element: SELF-CLOSING\n");
 
             state = xmlTextReaderNext(reader);
             check_state(state);
@@ -249,7 +250,7 @@ static int msxml_parse_element(cli_ctx *ctx, xmlTextReaderPtr reader, int rlvl)
             case XML_READER_TYPE_TEXT:
                 node_value = xmlTextReaderConstValue(reader);
 
-                cli_dbgmsg("TEXT: %s\n", node_value);
+                cli_msxmlmsg("TEXT: %s\n", node_value);
 
                 if (!strncmp(element_name, "binData", strlen(element_name))) {
                     char name[1024];
@@ -257,11 +258,11 @@ static int msxml_parse_element(cli_ctx *ctx, xmlTextReaderPtr reader, int rlvl)
                     size_t decodedlen;
                     int of;
 
-                    cli_dbgmsg("BINARY DATA!\n");
+                    cli_msxmlmsg("BINARY DATA!\n");
 
                     decoded = cl_base64_decode((char *)node_value, strlen((const char *)node_value), NULL, &decodedlen, 0);
                     if (!decoded) {
-                        cli_dbgmsg("msxml_parse_element: failed to decode base64-encoded binary data\n");
+                        cli_warnmsg("msxml_parse_element: failed to decode base64-encoded binary data\n");
                         state = xmlTextReaderRead(reader);
                         check_state(state);
                         break;
@@ -315,7 +316,7 @@ static int msxml_parse_element(cli_ctx *ctx, xmlTextReaderPtr reader, int rlvl)
                 break;
 
             case XML_READER_TYPE_END_ELEMENT:
-                cli_dbgmsg("in msxml_parse_element @ layer %d closed\n", rlvl);
+                cli_msxmlmsg("in msxml_parse_element @ layer %d closed\n", rlvl);
                 node_name = xmlTextReaderConstLocalName(reader);
                 if (!node_name) {
                     cli_dbgmsg("msxml_parse_element: element end tag node nameless\n");
@@ -348,10 +349,10 @@ static int msxml_parse_element(cli_ctx *ctx, xmlTextReaderPtr reader, int rlvl)
 
         break;
     case XML_READER_TYPE_PROCESSING_INSTRUCTION:
-        cli_dbgmsg("msxml_parse_element: PROCESSING INSTRUCTION %s [%d]: %s\n", node_name, node_type, node_value);
+        cli_msxmlmsg("msxml_parse_element: PROCESSING INSTRUCTION %s [%d]: %s\n", node_name, node_type, node_value);
         break;
     case XML_READER_TYPE_END_ELEMENT:
-        cli_dbgmsg("msxml_parse_element: END ELEMENT %s [%d]: %s\n", node_name, node_type, node_value);
+        cli_msxmlmsg("msxml_parse_element: END ELEMENT %s [%d]: %s\n", node_name, node_type, node_value);
         return CL_SUCCESS;
         break;
     default:
