@@ -82,6 +82,58 @@ static const struct key_entry *msxml_check_key(struct msxml_ctx *mxctx, const ch
     return &blank_key;
 }
 
+#if HAVE_JSON
+static int msxml_is_int(const char *value, size_t len, int32_t *val)
+{
+    long val2;
+    char *endptr = NULL;
+
+    val2 = strtol(value, &endptr, 10);
+    if (endptr != value+len) {
+        return 0;
+    }
+
+    *val = (int32_t)(val2 & 0x0000ffff);
+
+    return 1;
+}
+
+static int msxml_parse_value(json_object *wrkptr, const char *arrname, const xmlChar *node_value)
+{
+    json_object *newobj, *arrobj;
+    int val;
+
+    if (!wrkptr)
+        return CL_ENULLARG;
+
+    arrobj = cli_jsonarray(wrkptr, arrname);
+    if (arrobj == NULL) {
+        return CL_EMEM;
+    }
+
+    if (msxml_is_int((const char *)node_value, xmlStrlen(node_value), &val)) {
+        newobj = json_object_new_int(val);
+    }
+    else if (!xmlStrcmp(node_value, (const xmlChar *)"true")) {
+        newobj = json_object_new_boolean(1);
+    }
+    else if (!xmlStrcmp(node_value, (const xmlChar *)"false")) {
+        newobj = json_object_new_boolean(0);
+    }
+    else {
+        newobj = json_object_new_string((const char *)node_value);
+    }
+
+    if (NULL == newobj) {
+        cli_errmsg("msxml_parse_value: no memory for json value for [%s]\n", arrname);
+        return CL_EMEM;
+    }
+
+    json_object_array_add(arrobj, newobj);
+    return CL_SUCCESS;
+}
+#endif /* HAVE_JSON */
+
 static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader, int rlvl, void *jptr)
 {
     const xmlChar *element_name = NULL;
@@ -240,13 +292,13 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
 
 #if HAVE_JSON
                 if (thisjobj && (keyinfo->type & MSXML_JSON_VALUE)) {
-                    /*
-                      ret = ooxml_parse_value(thisjobj, "Value", node_value);
-                      if (ret != CL_SUCCESS)
-                      return ret;
-                    */
-                    cli_jsonstr(thisjobj, "Value", (const char *)node_value);
-                    cli_dbgmsg("ooxml_parse_element: added json value [%s: %s]\n", keyinfo->name, (const char *)node_value);
+
+                    ret = msxml_parse_value(thisjobj, "Value", node_value);
+                    if (ret != CL_SUCCESS)
+                        return ret;
+
+                    //cli_jsonstr(thisjobj, "Value", (const char *)node_value);
+                    cli_dbgmsg("msxml_parse_element: added json value [%s: %s]\n", keyinfo->name, (const char *)node_value);
                 }
 #endif
 
