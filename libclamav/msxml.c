@@ -53,7 +53,7 @@
 
 static const struct key_entry msxml_keys[] = {
     { "documentproperties", "DocumentProperties", MSXML_JSON_ROOT },
-    { "worddocument",       "WordDocument",       MSXML_JSON_ROOT },
+    { "worddocument",       "WordDocument",       MSXML_JSON_ROOT | MSXML_JSON_ATTRIB},
     { "bindata",            "BinaryData",         MSXML_SCAN_B64 | MSXML_JSON_COUNT | MSXML_JSON_ROOT }
 };
 static size_t num_msxml_keys = sizeof(msxml_keys) / sizeof(struct key_entry);

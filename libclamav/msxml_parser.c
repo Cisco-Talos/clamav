@@ -146,7 +146,7 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
             cli_dbgmsg("msxml_parse_element: generated json object [%s]\n", keyinfo->name);
 
             /* count this element */
-            if (thisjobj && keyinfo->type & MSXML_JSON_COUNT) {
+            if (thisjobj && (keyinfo->type & MSXML_JSON_COUNT)) {
                 json_object *counter;
 
                 if (!json_object_object_get_ex(thisjobj, "Count", &counter)) { /* object not found */
@@ -162,27 +162,29 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
             }
 
             /* handle attributes */
-            state = xmlTextReaderHasAttributes(reader);
-            if (state == 1) {
-                json_object *attributes;
+            if (thisjobj && (keyinfo->type & MSXML_JSON_ATTRIB)) {
+                state = xmlTextReaderHasAttributes(reader);
+                if (state == 1) {
+                    json_object *attributes;
 
-                attributes = cli_jsonobj(thisjobj, "Attributes");
-                if (!attributes) {
+                    attributes = cli_jsonobj(thisjobj, "Attributes");
+                    if (!attributes) {
+                        return CL_EPARSE;
+                    }
+                    cli_dbgmsg("msxml_parse_element: retrieved json object [Attributes]\n");
+
+                    while (xmlTextReaderMoveToNextAttribute(reader) == 1) {
+                        const xmlChar *name, *value;
+                        name = xmlTextReaderConstLocalName(reader);
+                        value = xmlTextReaderConstValue(reader);
+
+                        cli_dbgmsg("\t%s: %s\n", name, value);
+                        cli_jsonstr(attributes, name, (const char *)value);
+                    }
+                }
+                else if (state == -1)
                     return CL_EPARSE;
-                }
-                cli_dbgmsg("msxml_parse_element: retrieved json object [Attributes]\n");
-
-                while (xmlTextReaderMoveToNextAttribute(reader) == 1) {
-                    const xmlChar *name, *value;
-                    name = xmlTextReaderConstLocalName(reader);
-                    value = xmlTextReaderConstValue(reader);
-
-                    cli_dbgmsg("\t%s: %s\n", name, value);
-                    cli_jsonstr(attributes, name, (const char *)value);
-                }
             }
-            else if (state == -1)
-                return CL_EPARSE;
         }
 #endif
 
