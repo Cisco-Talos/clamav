@@ -52,9 +52,29 @@
 #define MSXML_READBUFF SCANBUFF
 
 static const struct key_entry msxml_keys[] = {
+    { "worddocument",       "WordDocument",       MSXML_JSON_ROOT | MSXML_JSON_ATTRIB },
+    { "workbook",           "Workbook",           MSXML_JSON_ROOT | MSXML_JSON_ATTRIB },
+
+    { "bindata",            "BinaryData",         MSXML_SCAN_B64 | MSXML_JSON_COUNT | MSXML_JSON_ROOT },
     { "documentproperties", "DocumentProperties", MSXML_JSON_ROOT },
-    { "worddocument",       "WordDocument",       MSXML_JSON_ROOT | MSXML_JSON_ATTRIB},
-    { "bindata",            "BinaryData",         MSXML_SCAN_B64 | MSXML_JSON_COUNT | MSXML_JSON_ROOT }
+    { "author",             "Author",             MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "lastauthor",         "LastAuthor",         MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "revision",           "Revision",           MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "totaltime",          "TotalTime",          MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "created",            "Created",            MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "lastsaved",          "LastSaved",          MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "pages",              "Pages",              MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "words",              "Words",              MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "characters",         "Characters",         MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "lines",              "Lines",              MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "paragraph",          "Paragraph",          MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "characterswithspaces", "CharactersWithSpaces", MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "version",            "Version",            MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+
+    { "allowpng",           "AllowPNG",           MSXML_JSON_WRKPTR },
+
+    { "fonts",              "Fonts",              MSXML_IGNORE_ELEM },
+    { "styles",             "Styles",             MSXML_IGNORE_ELEM }
 };
 static size_t num_msxml_keys = sizeof(msxml_keys) / sizeof(struct key_entry);
 
