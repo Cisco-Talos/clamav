@@ -42,7 +42,7 @@
 #endif
 #include <libxml/xmlreader.h>
 
-#define MSXML_VERBIOSE 1
+#define MSXML_VERBIOSE 0
 #if MSXML_VERBIOSE
 #define cli_msxmlmsg(...) cli_dbgmsg(__VA_ARGS__)
 #else

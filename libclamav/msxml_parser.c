@@ -41,7 +41,7 @@
 #endif
 #include <libxml/xmlreader.h>
 
-#define MSXML_VERBIOSE 1
+#define MSXML_VERBIOSE 0
 #if MSXML_VERBIOSE
 #define cli_msxmlmsg(...) cli_dbgmsg(__VA_ARGS__)
 #else
@@ -73,7 +73,6 @@ static const struct key_entry *msxml_check_key(struct msxml_ctx *mxctx, const ch
     }
 
     for (i = 0; i < mxctx->num_keys; ++i) {
-        //cli_dbgmsg("%d %d %s %s %s %s\n", keylen, strlen(ooxml_keys[i]), key, keycmp, ooxml_keys[i], ooxml_json_keys[i]);
         if (keylen == strlen(mxctx->keys[i].key) && !strncasecmp(key, mxctx->keys[i].key, keylen)) {
             return &mxctx->keys[i];
         }
@@ -182,8 +181,8 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
         cli_msxmlmsg("msxml_parse_element: ELEMENT %s [%d]: %s\n", node_name, node_type, node_value);
 
         /* storing the element name for verification/collection */
-        element_name = xmlTextReaderConstLocalName(reader);
-        if (!node_name) {
+        element_name = node_name;
+        if (!element_name) {
             cli_dbgmsg("msxml_parse_element: element tag node nameless\n");
 #if HAVE_JSON
             if (mxctx->mode) {
@@ -212,7 +211,7 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
         }
 
 #if HAVE_JSON
-        if (keyinfo->type & MSXML_JSON_TRACK) {
+        if (mxctx->mode && (keyinfo->type & MSXML_JSON_TRACK)) {
             if (keyinfo->type & MSXML_JSON_ROOT)
                 thisjobj = cli_jsonobj(mxctx->root, keyinfo->name);
             else if (keyinfo->type & MSXML_JSON_WRKPTR)
@@ -221,7 +220,7 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
             if (!thisjobj) {
                 return CL_EMEM;
             }
-            cli_dbgmsg("msxml_parse_element: generated json object [%s]\n", keyinfo->name);
+            cli_msxmlmsg("msxml_parse_element: generated json object [%s]\n", keyinfo->name);
 
             /* count this element */
             if (thisjobj && (keyinfo->type & MSXML_JSON_COUNT)) {
@@ -233,7 +232,7 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
                     int value = json_object_get_int(counter);
                     cli_jsonint(thisjobj, "Count", value+1);
                 }
-                cli_dbgmsg("msxml_parse_element: retrieved json object [Count]\n");
+                cli_msxmlmsg("msxml_parse_element: retrieved json object [Count]\n");
             }
 
             /* handle attributes */
@@ -241,19 +240,19 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
                 state = xmlTextReaderHasAttributes(reader);
                 if (state == 1) {
                     json_object *attributes;
+                    const xmlChar *name, *value;
 
                     attributes = cli_jsonobj(thisjobj, "Attributes");
                     if (!attributes) {
                         return CL_EPARSE;
                     }
-                    cli_dbgmsg("msxml_parse_element: retrieved json object [Attributes]\n");
+                    cli_msxmlmsg("msxml_parse_element: retrieved json object [Attributes]\n");
 
                     while (xmlTextReaderMoveToNextAttribute(reader) == 1) {
-                        const xmlChar *name, *value;
                         name = xmlTextReaderConstLocalName(reader);
                         value = xmlTextReaderConstValue(reader);
 
-                        cli_dbgmsg("\t%s: %s\n", name, value);
+                        cli_msxmlmsg("\t%s: %s\n", name, value);
                         cli_jsonstr(attributes, name, (const char *)value);
                     }
                 }
@@ -312,8 +311,7 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
                     if (ret != CL_SUCCESS)
                         return ret;
 
-                    //cli_jsonstr(thisjobj, "Value", (const char *)node_value);
-                    cli_dbgmsg("msxml_parse_element: added json value [%s: %s]\n", keyinfo->name, (const char *)node_value);
+                    cli_msxmlmsg("msxml_parse_element: added json value [%s: %s]\n", keyinfo->name, (const char *)node_value);
                 }
 #endif
 
@@ -359,13 +357,6 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
                     if (ret != CL_SUCCESS || (!SCAN_ALL && ret == CL_VIRUS)) {
                         return ret;
                     }
-
-                    /*
-                    ret = cli_mem_scandesc(decoded, decodedlen, ctx);
-                    free(decoded);
-                    if (ret != CL_SUCCESS) {
-                        return ret;
-                        }*/
                 }
 
                 /* advance to next node */
