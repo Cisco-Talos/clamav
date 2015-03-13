@@ -158,13 +158,10 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
 
             /* count this element */
             if (thisjobj && (keyinfo->type & MSXML_JSON_COUNT)) {
-                json_object *counter;
+                json_object *counter = NULL;
 
                 if (!json_object_object_get_ex(thisjobj, "Count", &counter)) { /* object not found */
                     cli_jsonint(thisjobj, "Count", 1);
-                    if (!counter) {
-                        return CL_EPARSE;
-                    }
                 } else {
                     int value = json_object_get_int(counter);
                     cli_jsonint(thisjobj, "Count", value+1);
