@@ -237,7 +237,8 @@ am_libclamav_la_OBJECTS = libclamav_la-matcher-ac.lo \
 	libclamav_la-asn1.lo libclamav_la-fpu.lo libclamav_la-stats.lo \
 	libclamav_la-www.lo libclamav_la-stats_json.lo \
 	libclamav_la-hostid.lo libclamav_la-openioc.lo \
-	libclamav_la-msdoc.lo libclamav_la-fp_add.lo \
+	libclamav_la-msdoc.lo libclamav_la-msxml.lo \
+	libclamav_la-msxml_parser.lo libclamav_la-fp_add.lo \
 	libclamav_la-fp_add_d.lo libclamav_la-fp_addmod.lo \
 	libclamav_la-fp_cmp.lo libclamav_la-fp_cmp_d.lo \
 	libclamav_la-fp_cmp_mag.lo libclamav_la-fp_sub.lo \
@@ -802,7 +803,8 @@ libclamav_la_SOURCES = matcher-ac.c matcher-ac.h matcher-bm.c \
 	iso9660.h arc4.c arc4.h rijndael.c rijndael.h crtmgr.c \
 	crtmgr.h asn1.c asn1.h fpu.c fpu.h stats.c stats.h www.c www.h \
 	stats_json.c stats_json.h hostid.c hostid.h openioc.c \
-	openioc.h msdoc.c msdoc.h bignum.h bignum_fast.h \
+	openioc.h msdoc.c msdoc.h msxml.c msxml.h msxml_parser.c \
+	msxml_parser.h bignum.h bignum_fast.h \
 	tomsfastmath/addsub/fp_add.c tomsfastmath/addsub/fp_add_d.c \
 	tomsfastmath/addsub/fp_addmod.c tomsfastmath/addsub/fp_cmp.c \
 	tomsfastmath/addsub/fp_cmp_d.c \
@@ -1153,6 +1155,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-msdoc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-msexpand.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-mspack.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-msxml.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-msxml_parser.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-nulsft.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-ole2_extract.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-ooxml.Plo@am__quote@
@@ -2204,6 +2208,20 @@ libclamav_la-msdoc.lo: msdoc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='msdoc.c' object='libclamav_la-msdoc.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-msdoc.lo `test -f 'msdoc.c' || echo '$(srcdir)/'`msdoc.c
+
+libclamav_la-msxml.lo: msxml.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-msxml.lo -MD -MP -MF $(DEPDIR)/libclamav_la-msxml.Tpo -c -o libclamav_la-msxml.lo `test -f 'msxml.c' || echo '$(srcdir)/'`msxml.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-msxml.Tpo $(DEPDIR)/libclamav_la-msxml.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='msxml.c' object='libclamav_la-msxml.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-msxml.lo `test -f 'msxml.c' || echo '$(srcdir)/'`msxml.c
+
+libclamav_la-msxml_parser.lo: msxml_parser.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-msxml_parser.lo -MD -MP -MF $(DEPDIR)/libclamav_la-msxml_parser.Tpo -c -o libclamav_la-msxml_parser.lo `test -f 'msxml_parser.c' || echo '$(srcdir)/'`msxml_parser.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-msxml_parser.Tpo $(DEPDIR)/libclamav_la-msxml_parser.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='msxml_parser.c' object='libclamav_la-msxml_parser.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-msxml_parser.lo `test -f 'msxml_parser.c' || echo '$(srcdir)/'`msxml_parser.c
 
 libclamav_la-fp_add.lo: tomsfastmath/addsub/fp_add.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-fp_add.lo -MD -MP -MF $(DEPDIR)/libclamav_la-fp_add.Tpo -c -o libclamav_la-fp_add.lo `test -f 'tomsfastmath/addsub/fp_add.c' || echo '$(srcdir)/'`tomsfastmath/addsub/fp_add.c
