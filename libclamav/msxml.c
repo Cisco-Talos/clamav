@@ -193,9 +193,11 @@ int cli_scanmsxml(cli_ctx *ctx)
     reader = xmlReaderForIO(msxml_read_cb, NULL, &cbdata, "msxml.xml", NULL, CLAMAV_MIN_XMLREADER_FLAGS);
     if (!reader) {
         cli_dbgmsg("cli_scanmsxml: cannot intialize xmlReader\n");
-        xmlTextReaderClose(reader);
-        xmlFreeTextReader(reader);
-        return CL_SUCCESS; // libxml2 failed!
+
+#if HAVE_JSON
+        ret = cli_json_parse_error(ctx->wrkproperty, "OOXML_ERROR_XML_READER_IO");
+#endif
+        return ret; // libxml2 failed!
     }
 
     ret = cli_msxml_parse_document(ctx, reader, msxml_keys, num_msxml_keys, 1);
