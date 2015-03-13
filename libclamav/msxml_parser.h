@@ -69,7 +69,6 @@ struct msxml_ctx {
 
 #if HAVE_JSON
     json_object *root;
-    json_object *wrkptr;
 #endif
 };
 
