@@ -216,6 +216,11 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
         check_state(state);
 
         while (!endtag) {
+#if HAVE_JSON
+            if (mxctx->mode && (cli_json_timeout_cycle_check(mxctx->ctx, &(mxctx->toval)) != CL_SUCCESS))
+                return CL_ETIMEOUT;
+#endif
+
             node_type = xmlTextReaderNodeType(reader);
             if (node_type == -1)
                 return CL_EPARSE;
@@ -366,13 +371,19 @@ int cli_msxml_parse_document(cli_ctx *ctx, xmlTextReaderPtr reader, const struct
     mxctx.keys = keys;
     mxctx.num_keys = num_keys;
 #if HAVE_JSON
-    if (mode)
+    mxctx.mode = mode;
+    if (mode) {
         mxctx.root = ctx->wrkproperty;
+        mxctx.toval = 0;
+    }
 #endif
 
     /* Main Processing Loop */
     while ((state = xmlTextReaderRead(reader)) == 1) {
 #if HAVE_JSON
+        if (mxctx.mode && (cli_json_timeout_cycle_check(mxctx.ctx, &(mxctx.toval)) != CL_SUCCESS))
+            return CL_ETIMEOUT;
+
         ret = msxml_parse_element(&mxctx, reader, 0, mxctx.root);
 #else
         ret = msxml_parse_element(&mxctx, reader, 0, NULL);
