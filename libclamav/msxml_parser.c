@@ -153,7 +153,15 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
     /* check recursion level */
     if (rlvl >= MSXML_RECLEVEL_MAX) {
         cli_dbgmsg("msxml_parse_element: reached msxml json recursion limit\n");
-        //cli_jsonbool(root, "HitRecursiveLimit", 1);
+
+#if HAVE_JSON
+        if (mxctx->mode) {
+            int tmp = cli_json_parse_error(mxctx->root, "MSXML_RECURSIVE_LIMIT");
+            if (tmp != CL_SUCCESS)
+                return tmp;
+        }
+#endif
+
         /* skip it */
         state = xmlTextReaderNext(reader);
         check_state(state);
@@ -177,6 +185,13 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
         element_name = xmlTextReaderConstLocalName(reader);
         if (!node_name) {
             cli_dbgmsg("msxml_parse_element: element tag node nameless\n");
+#if HAVE_JSON
+            if (mxctx->mode) {
+                int tmp = cli_json_parse_error(mxctx->root, "MSXML_NAMELESS_ELEMENT");
+                if (tmp != CL_SUCCESS)
+                    return tmp;
+            }
+#endif
             return CL_EPARSE; /* no name, nameless */
         }
 
@@ -448,6 +463,40 @@ int cli_msxml_parse_document(cli_ctx *ctx, xmlTextReaderPtr reader, const struct
 
     if (state == -1)
         return CL_EPARSE;
+
+#if HAVE_JSON
+    /* Parse General Error Handler */
+    if (mxctx.mode) {
+        int tmp = CL_SUCCESS;
+
+        switch(ret) {
+        case CL_SUCCESS:
+        case CL_BREAK: /* OK */
+            break;
+        case CL_VIRUS:
+            tmp = cli_json_parse_error(mxctx.root, "MSXML_INTR_VIRUS");
+            break;
+        case CL_ETIMEOUT:
+            tmp = cli_json_parse_error(mxctx.root, "MSXML_INTR_TIMEOUT");
+            break;
+        case CL_EPARSE:
+            tmp = cli_json_parse_error(mxctx.root, "MSXML_ERROR_XMLPARSER");
+            break;
+        case CL_EMEM:
+            tmp = cli_json_parse_error(mxctx.root, "MSXML_ERROR_OUTOFMEM");
+            break;
+        case CL_EFORMAT:
+            tmp = cli_json_parse_error(mxctx.root, "MSXML_ERROR_MALFORMED");
+            break;
+        default:
+            tmp = cli_json_parse_error(mxctx.root, "MSXML_ERROR_OTHER");
+            break;
+        }
+
+        if (tmp)
+            return tmp;
+    }
+#endif
 
     /* non-critical return supression */
     if (ret == CL_ETIMEOUT || ret == CL_BREAK)

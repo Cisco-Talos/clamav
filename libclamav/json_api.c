@@ -46,6 +46,21 @@ int cli_json_timeout_cycle_check(cli_ctx *ctx, int *toval)
     return CL_SUCCESS;
 }
 
+int cli_json_parse_error(json_object *root, const char *errstr)
+{
+    json_object *perr;
+
+    if (!root)
+        return CL_SUCCESS; /* CL_ENULLARG? */
+
+    perr = cli_jsonarray(root, "ParseErrors");
+    if (perr == NULL) {
+        return CL_EMEM;
+    }
+
+    return cli_jsonstr(perr, NULL, errstr);
+}
+
 int cli_jsonnull(json_object *obj, const char* key)
 {
     json_type objty;
