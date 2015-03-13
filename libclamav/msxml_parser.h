@@ -43,15 +43,19 @@
 #define MSXML_JSON_STRLEN_MAX 128
 
 struct key_entry {
+/* how */
 #define MSXML_IGNORE       0x00
 #define MSXML_IGNORE_ELEM  0x01
 #define MSXML_SCAN_B64     0x02
+/* where */
 #define MSXML_JSON_ROOT    0x04
 #define MSXML_JSON_WRKPTR  0x08
-#define MSXML_JSON_COUNT   0x10
-#define MSXML_JSON_VALUE   0x20
 
 #define MSXML_JSON_TRACK (MSXML_JSON_ROOT | MSXML_JSON_WRKPTR)
+/* what */
+#define MSXML_JSON_COUNT   0x10
+#define MSXML_JSON_VALUE   0x20
+#define MSXML_JSON_ATTRIB  0x40
 
     const char *key;
     const char *name;
