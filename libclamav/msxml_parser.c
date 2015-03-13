@@ -82,7 +82,7 @@ static const struct key_entry *msxml_check_key(struct msxml_ctx *mxctx, const ch
     return &blank_key;
 }
 
-static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader, int rlvl)
+static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader, int rlvl, void *jptr)
 {
     const xmlChar *element_name = NULL;
     const xmlChar *node_name = NULL, *node_value = NULL;
@@ -90,8 +90,10 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
     int ret, state, node_type, endtag = 0;
     cli_ctx *ctx = mxctx->ctx;
 #if HAVE_JSON
-    json_object *parent = mxctx->wrkptr;
+    json_object *parent = (json_object *)jptr;
     json_object *thisjobj = NULL;
+#else
+    void *thisjobj = NULL;
 #endif
 
     cli_msxmlmsg("in msxml_parse_element @ layer %d\n", rlvl);
@@ -131,13 +133,22 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
 
         cli_msxmlmsg("key:  %s\n", keyinfo->key);
         cli_msxmlmsg("name: %s\n", keyinfo->name);
-        cli_msxmlmsg("type: %d\n", keyinfo->type);
+        cli_msxmlmsg("type: 0x%x\n", keyinfo->type);
+
+        /* element and contents are ignored */
+        if (keyinfo->type & MSXML_IGNORE_ELEM) {
+            cli_msxmlmsg("msxml_parse_element: IGNORING ELEMENT %s\n", keyinfo->name);
+
+            state = xmlTextReaderNext(reader);
+            check_state(state);
+            return CL_SUCCESS;
+        }
 
 #if HAVE_JSON
         if (keyinfo->type & MSXML_JSON_TRACK) {
-            if (MSXML_JSON_ROOT)
+            if (keyinfo->type & MSXML_JSON_ROOT)
                 thisjobj = cli_jsonobj(mxctx->root, keyinfo->name);
-            else if (MSXML_JSON_WRKPTR)
+            else if (keyinfo->type & MSXML_JSON_WRKPTR)
                 thisjobj = cli_jsonobj(parent, keyinfo->name);
 
             if (!thisjobj) {
@@ -214,7 +225,7 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
 
             switch (node_type) {
             case XML_READER_TYPE_ELEMENT:
-                ret = msxml_parse_element(mxctx, reader, rlvl+1);
+                ret = msxml_parse_element(mxctx, reader, rlvl+1, thisjobj);
                 if (ret != CL_SUCCESS) {
                     return ret;
                 }
@@ -225,14 +236,17 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
 
                 cli_msxmlmsg("TEXT: %s\n", node_value);
 
-                /*
-                  ret = ooxml_parse_value(thisjobj, "Value", node_value);
-                  if (ret != CL_SUCCESS)
-                  return ret;
-
-                  cli_dbgmsg("ooxml_parse_element: added json value [%s: %s]\n", element_tag, node_value);
-                */
-
+#if HAVE_JSON
+                if (thisjobj && (keyinfo->type & MSXML_JSON_VALUE)) {
+                    /*
+                      ret = ooxml_parse_value(thisjobj, "Value", node_value);
+                      if (ret != CL_SUCCESS)
+                      return ret;
+                    */
+                    cli_jsonstr(thisjobj, "Value", (const char *)node_value);
+                    cli_dbgmsg("ooxml_parse_element: added json value [%s: %s]\n", keyinfo->name, (const char *)node_value);
+                }
+#endif
 
                 /* scanning protocol for embedded objects encoded in base64 */
                 if (keyinfo->type & MSXML_SCAN_B64) {
@@ -355,15 +369,17 @@ int cli_msxml_parse_document(cli_ctx *ctx, xmlTextReaderPtr reader, const struct
     mxctx.keys = keys;
     mxctx.num_keys = num_keys;
 #if HAVE_JSON
-    if (mode) {
+    if (mode)
         mxctx.root = ctx->wrkproperty;
-        mxctx.wrkptr = ctx->wrkproperty;
-    }
 #endif
 
     /* Main Processing Loop */
     while ((state = xmlTextReaderRead(reader)) == 1) {
-        msxml_parse_element(&mxctx, reader, 0);
+#if HAVE_JSON
+        ret = msxml_parse_element(&mxctx, reader, 0, mxctx.root);
+#else
+        ret = msxml_parse_element(&mxctx, reader, 0, NULL);
+#endif
         if (ret != CL_SUCCESS && ret != CL_ETIMEOUT && ret != CL_BREAK) {
             cli_warnmsg("cli_msxml_parse_document: encountered issue in parsing xml document\n");
             break;
