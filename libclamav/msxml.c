@@ -129,7 +129,8 @@ inline size_t msxml_read_cb_new_window(struct msxml_cbdata *cbdata)
 int msxml_read_cb(void *ctx, char *buffer, int len)
 {
     struct msxml_cbdata *cbdata = (struct msxml_cbdata *)ctx;
-    size_t wbytes, rbytes, winret;
+    size_t wbytes, rbytes;
+    int winret;
 
     cli_msxmlmsg("msxml_read_cb called\n");
 
