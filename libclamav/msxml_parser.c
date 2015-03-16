@@ -30,6 +30,7 @@
 #include "clamav.h"
 #include "others.h"
 #include "conv.h"
+#include "scanners.h"
 #include "json_api.h"
 #include "msxml_parser.h"
 
@@ -63,7 +64,7 @@
 
 struct key_entry blank_key = { NULL, NULL, 0 };
 
-static const struct key_entry *msxml_check_key(struct msxml_ctx *mxctx, const char *key, size_t keylen)
+static const struct key_entry *msxml_check_key(struct msxml_ctx *mxctx, const xmlChar *key, size_t keylen)
 {
     unsigned i;
 
@@ -73,7 +74,7 @@ static const struct key_entry *msxml_check_key(struct msxml_ctx *mxctx, const ch
     }
 
     for (i = 0; i < mxctx->num_keys; ++i) {
-        if (keylen == strlen(mxctx->keys[i].key) && !strncasecmp(key, mxctx->keys[i].key, keylen)) {
+        if (keylen == strlen(mxctx->keys[i].key) && !strncasecmp((char *)key, mxctx->keys[i].key, keylen)) {
             return &mxctx->keys[i];
         }
     }
@@ -195,7 +196,7 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
         }
 
         /* determine if the element is interesting */
-        keyinfo = msxml_check_key(mxctx, element_name, strlen(element_name));
+        keyinfo = msxml_check_key(mxctx, element_name, xmlStrlen(element_name));
 
         cli_msxmlmsg("key:  %s\n", keyinfo->key);
         cli_msxmlmsg("name: %s\n", keyinfo->name);
@@ -324,7 +325,7 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
 
                     cli_msxmlmsg("BINARY DATA!\n");
 
-                    decoded = cl_base64_decode((char *)node_value, strlen((const char *)node_value), NULL, &decodedlen, 0);
+                    decoded = (char *)cl_base64_decode((char *)node_value, strlen((const char *)node_value), NULL, &decodedlen, 0);
                     if (!decoded) {
                         cli_warnmsg("msxml_parse_element: failed to decode base64-encoded binary data\n");
                         state = xmlTextReaderRead(reader);
@@ -378,7 +379,7 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
                     return CL_EPARSE; /* no name, nameless */
                 }
 
-                if (strncmp(element_name, node_name, strlen(element_name))) {
+                if (xmlStrcmp(element_name, node_name)) {
                     cli_dbgmsg("msxml_parse_element: element tag does not match end tag %s != %s\n", element_name, node_name);
                     return CL_EFORMAT;
                 }

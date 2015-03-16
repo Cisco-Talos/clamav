@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Source Files">
@@ -196,6 +196,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\libclamav\mspack.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\msxml.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\msxml_parser.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\libclamav\ole2_extract.c">
