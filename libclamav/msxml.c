@@ -71,7 +71,7 @@ static const struct key_entry msxml_keys[] = {
     { "characterswithspaces", "CharactersWithSpaces", MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
     { "version",            "Version",            MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
 
-    { "allowpng",           "AllowPNG",           MSXML_JSON_WRKPTR },
+    { "allowpng",           "AllowPNG",           MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
 
     { "fonts",              "Fonts",              MSXML_IGNORE_ELEM },
     { "styles",             "Styles",             MSXML_IGNORE_ELEM }
