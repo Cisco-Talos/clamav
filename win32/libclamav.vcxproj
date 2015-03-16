@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -356,6 +356,8 @@
     <ClCompile Include="..\libclamav\mpool.c" />
     <ClCompile Include="..\libclamav\msexpand.c" />
     <ClCompile Include="..\libclamav\mspack.c" />
+    <ClCompile Include="..\libclamav\msxml.c" />
+    <ClCompile Include="..\libclamav\msxml_parser.c" />
     <ClCompile Include="..\libclamav\nsis\bzlib.c">
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)\nsis_bzlib</ObjectFileName>
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)\nsis_bzlib</ObjectFileName>
