@@ -181,8 +181,10 @@ char *pdf_convert_utf(char *begin, size_t sz)
     }
 #else
     outbuf = cli_utf16_to_utf8(buf, sz2, UTF16_BOM);
-    if (!outbuf)
+    if (!outbuf) {
+        free(buf);
         return NULL;
+    }
 
     res = strdup(outbuf);
 #endif
