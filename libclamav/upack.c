@@ -302,7 +302,7 @@ int unupack(int upack, char *dest, uint32_t dsize, char *buff, uint32_t vma, uin
 			loc_esi += 4;
 			cli_dbgmsg("Upack: ecx counter: %08x\n", j);
 
-			if (!CLI_ISCONTAINED(dest, (dsize/4), loc_esi, j) || !CLI_ISCONTAINED(dest, (dsize/4), loc_edi, (j+count)))
+			if (!CLI_ISCONTAINED(dest, dsize, loc_esi, (j*4)) || !CLI_ISCONTAINED(dest, dsize, loc_edi, ((j+count)*4)))
 				return -1;
 			for (;j--; loc_edi+=4, loc_esi+=4)
 				cli_writeint32(loc_edi, cli_readint32(loc_esi));
@@ -359,7 +359,7 @@ int unupack(int upack, char *dest, uint32_t dsize, char *buff, uint32_t vma, uin
 			loc_edi += 4;
 			loc_ebx = loc_edi;
 		
-			if (!CLI_ISCONTAINED(dest, (dsize/4), loc_edi, (6+count)))
+			if (!CLI_ISCONTAINED(dest, dsize, loc_edi, ((6+count)*4)))
 				return -1;
 			cli_writeint32(loc_edi, 0xffffffff);
 			loc_edi += 4;
