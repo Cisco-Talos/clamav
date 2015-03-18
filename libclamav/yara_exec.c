@@ -48,6 +48,7 @@ typedef struct _YR_MATCH
 } YR_MATCH;
 
 // End of temp for clamAV
+#include "matcher.h"
 #include "yara_clam.h"
 #include "yara_exec.h"
 #endif
@@ -103,7 +104,8 @@ int yr_execute_code(
 #if REAL_YARA
     YR_RULES* rules,
 #else
-    uint8_t* ip,
+    struct cli_ac_lsig * aclsig,
+    struct cli_ac_data * acdata,
 #endif
     YR_SCAN_CONTEXT* context,
     int timeout,
@@ -118,6 +120,10 @@ int yr_execute_code(
   int32_t sp = 0;
 #if REAL_YARA
   uint8_t* ip = rules->code_start;
+#else
+  uint8_t* ip = aclsig->u.code_start;
+  uint32_t lsig_id;
+  uint32_t rule_matches = 0;
 #endif
 
   YR_RULE* rule;
@@ -143,13 +149,20 @@ int yr_execute_code(
 
   while(1)
   {
+    cli_errmsg("yara_exec: executing %i\n", *ip);
     switch(*ip)
     {
       case OP_HALT:
         // When the halt instruction is reached the stack
         // should be empty.
         assert(sp == 0);
+#if REAL_YARA
         return ERROR_SUCCESS;
+#else
+        if (rule_matches != 0)
+            return CL_VIRUS;
+        return CL_SUCCESS;
+#endif
 
       case OP_PUSH:
         r1 = *(uint64_t*)(ip + 1);
@@ -407,8 +420,7 @@ int yr_execute_code(
 #if REAL_YARA
           rule->t_flags[tidx] |= RULE_TFLAGS_MATCH;
 #else
-        //tbd clamav
-          rule->g_flags |= RULE_TFLAGS_MATCH;
+        rule_matches++;
 #endif
 
         #ifdef PROFILING_ENABLED
@@ -674,18 +686,28 @@ int yr_execute_code(
         count = 0;
         pop(r1);
 
+#if REAL_YARA
         while (r1 != UNDEFINED)
         {
           string = UINT64_TO_PTR(YR_STRING*, r1);
-#if REAL_YARA
           if (string->matches[tidx].tail != NULL)
             found++;
-#else
-        //TBD: clamav
-#endif
           count++;
           pop(r1);
         }
+#else
+        lsig_id = aclsig->id;
+        for (i = 0; i < aclsig->tdb.subsigs; i++) {
+            if (acdata->lsigsuboff_first[lsig_id][i] != CLI_OFF_NONE) {
+                found++;
+            }
+        }
+        while (r1 != UNDEFINED)
+        {
+          count++;
+          pop(r1);
+        }
+#endif
 
         pop(r2);
 

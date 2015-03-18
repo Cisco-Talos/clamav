@@ -54,6 +54,7 @@ limitations under the License.
 #define META_TYPE_STRING    2
 #define META_TYPE_BOOLEAN   3
 
+
 #define STRING_GFLAGS_REFERENCED        0x01
 #define STRING_GFLAGS_HEXADECIMAL       0x02
 #define STRING_GFLAGS_NO_CASE           0x04
@@ -546,10 +547,12 @@ typedef struct _yc_string {
     STAILQ_ENTRY(_yc_string) link;
     int32_t g_flags;
     int32_t length;
-    
+
     DECLARE_REFERENCE(char*, identifier);
     DECLARE_REFERENCE(uint8_t*, string);
     DECLARE_REFERENCE(struct _YR_STRING*, chained_to);
+
+    int32_t subsig_id;
 } yc_string;
 
 typedef struct _yc_compiler {

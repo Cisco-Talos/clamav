@@ -90,7 +90,8 @@ int yr_execute_code(
 #if REAL_YARA
     YR_RULES* rules,
 #else
-    uint8_t* ip,
+    struct cli_ac_lsig * aclsig,
+    struct cli_ac_data * acdata,
 #endif
     YR_SCAN_CONTEXT* context,
     int timeout,

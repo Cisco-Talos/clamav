@@ -55,6 +55,7 @@
 #include "perflogging.h"
 #include "bytecode_priv.h"
 #include "bytecode_api_impl.h"
+#include "yara_clam.h"
 
 #ifdef CLI_PERF_LOGGING
 
@@ -751,7 +752,17 @@ static int lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data 
 
 static int yara_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *acdata, struct cli_target_info *target_info, const char *hash, uint32_t lsid)
 {
-    return CL_CLEAN;
+    struct cli_ac_lsig *ac_lsig = root->ac_lsigtable[lsid];
+    uint8_t * code_start = ac_lsig->u.code_start;
+    int rc = 0;
+    YR_SCAN_CONTEXT context = {0}; //FIXME (populate from ldb)
+  
+    rc = yr_execute_code(ac_lsig, acdata, &context, 0, 0);
+
+    if (rc == CL_VIRUS)
+        cli_append_virus(ctx, ac_lsig->virname);
+
+    return rc;
 }
 
 int cli_exp_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *acdata, struct cli_target_info *target_info, const char *hash)

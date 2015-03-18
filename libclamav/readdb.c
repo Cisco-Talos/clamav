@@ -3456,6 +3456,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
             cli_yaramsg("STRING_FITS_IN_ATOM       yes\n");
         */
 #endif
+        string->subsig_id = ytable.tbl_cnt;
     }
 
     if (str_error > 0) {
@@ -3651,10 +3652,10 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
         cli_errmsg("cli_loadyara: failed to parse rules file %s, error count %i\n", dbname, rc);
         yr_hash_table_destroy(compiler.rules_table, NULL);
         yr_hash_table_destroy(compiler.objects_table, NULL);
-        yr_arena_destroy(compiler.sz_arena);
-        yr_arena_destroy(compiler.rules_arena);
+        //        yr_arena_destroy(compiler.sz_arena);
+        //        yr_arena_destroy(compiler.rules_arena);
         yr_arena_destroy(compiler.code_arena);
-        yr_arena_destroy(compiler.strings_arena);
+        //        yr_arena_destroy(compiler.strings_arena);
         yr_arena_destroy(compiler.metas_arena);
 #ifdef YARA_FINISHED
         return CL_EMALFDB;
@@ -3680,10 +3681,10 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
 
     yr_hash_table_destroy(compiler.rules_table, NULL);
     yr_hash_table_destroy(compiler.objects_table, NULL);
-    yr_arena_destroy(compiler.sz_arena);
-    yr_arena_destroy(compiler.rules_arena);
+    //    yr_arena_destroy(compiler.sz_arena);
+    //    yr_arena_destroy(compiler.rules_arena);
     yr_arena_destroy(compiler.code_arena);
-    yr_arena_destroy(compiler.strings_arena);
+    //    yr_arena_destroy(compiler.strings_arena);
     yr_arena_destroy(compiler.metas_arena);
 
     if(rc)
