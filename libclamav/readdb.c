@@ -3456,7 +3456,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
             cli_yaramsg("STRING_FITS_IN_ATOM       yes\n");
         */
 #endif
-        string->subsig_id = ytable.tbl_cnt;
+        string->subsig_id = ytable.tbl_cnt-1;
     }
 
     if (str_error > 0) {
@@ -3481,7 +3481,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
 
     /*** conditional verification step (ex. do we define too many strings versus used?)  ***/
     /*** additional string table population (ex. offsets), second translation table pass ***/
-
+#if 0
     if (rule->g_flags & RULE_ALL ||  rule->g_flags & RULE_ANY) {
         lsize = 3*ytable.tbl_cnt;
         logic = cli_calloc(lsize, sizeof(char));
@@ -3507,6 +3507,8 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
         
         /*** END CONDITIONAL HANDLING ***/
     }
+#endif
+
     /* TDB */
     if (rule->g_flags & RULE_EP && ytable.tbl_cnt == 1)
         target_str = cli_strdup(YARATARGET1);

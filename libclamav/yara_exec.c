@@ -420,7 +420,7 @@ int yr_execute_code(
 #if REAL_YARA
           rule->t_flags[tidx] |= RULE_TFLAGS_MATCH;
 #else
-        rule_matches++;
+          rule_matches++;
 #endif
 
         #ifdef PROFILING_ENABLED
@@ -548,8 +548,7 @@ int yr_execute_code(
 #if REAL_YARA
         push(string->matches[tidx].tail != NULL ? 1 : 0);
 #else
-        //TBD: find clamav matches
-        push(1); //TEMP
+        push(acdata->lsigsuboff_first[aclsig->id][string->subsig_id] != CLI_OFF_NONE ? 1 : 0);
 #endif
         break;
 
