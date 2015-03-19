@@ -142,7 +142,6 @@ char *pdf_convert_utf(char *begin, size_t sz)
             }
         } else
             buf[sz2++] = begin[i]; 
-        cli_dbgmsg("%c\n", buf[sz2-1]);
     }
 #if HAVE_ICONV
     //memcpy(buf, begin, sz);
