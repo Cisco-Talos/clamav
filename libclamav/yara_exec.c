@@ -638,8 +638,7 @@ int yr_execute_code(
 #if REAL_YARA
         push(string->matches[tidx].count);
 #else
-        //TBD: find #clamav matches
-        push(0); //TEMP
+        push(acdata->lsigcnt[aclsig->id][string->subsig_id]);
 #endif
         break;
 
