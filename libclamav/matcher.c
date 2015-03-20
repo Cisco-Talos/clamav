@@ -755,8 +755,14 @@ static int yara_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data 
     struct cli_ac_lsig *ac_lsig = root->ac_lsigtable[lsid];
     uint8_t * code_start = ac_lsig->u.code_start;
     int rc = 0;
-    YR_SCAN_CONTEXT context = {0}; //FIXME (populate from ldb)
-  
+    YR_SCAN_CONTEXT context = {0};
+ 
+    if (target_info != NULL) {
+        context.file_size = target_info->fsize;
+        if (target_info->status == 1)   
+            context.entry_point = target_info->exeinfo.ep;
+    }
+
     rc = yr_execute_code(ac_lsig, acdata, &context, 0, 0);
 
     if (rc == CL_VIRUS)
