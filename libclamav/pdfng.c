@@ -334,6 +334,7 @@ static char *pdf_finalize_string(struct pdf_struct *pdf, struct pdf_obj *obj, co
                 return NULL;
             }
             memcpy(wrkstr, output, outlen);
+            free(output);
             wrklen = outlen;
         } else {
             return NULL;
