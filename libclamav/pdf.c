@@ -3695,6 +3695,8 @@ static void pdf_export_json(struct pdf_struct *pdf)
         cli_jsonbool(pdfobj, "Encrypted", 1);
         if (pdf->flags & (1 << DECRYPTABLE_PDF))
             cli_jsonbool(pdfobj, "Decryptable", 1);
+        else
+            cli_jsonbool(pdfobj, "Decryptable", 0);
     }
 
     for (i=0; i < pdf->nobjs; i++) {
