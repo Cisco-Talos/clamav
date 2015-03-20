@@ -328,7 +328,12 @@ static char *pdf_finalize_string(struct pdf_struct *pdf, struct pdf_obj *obj, co
         outlen = (size_t)tmpsz;
         free(wrkstr);
         if (output) {
-            wrkstr = output;
+            wrkstr = cli_calloc(outlen+1, sizeof(char));
+            if (!wrkstr) {
+                free(output);
+                return NULL;
+            }
+            memcpy(wrkstr, output, outlen);
             wrklen = outlen;
         } else {
             return NULL;
