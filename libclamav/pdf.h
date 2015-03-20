@@ -89,13 +89,21 @@ struct pdf_stats {
     int32_t nacroform;        /* Number of AcroForm objects */
     int32_t nxfa;             /* Number of XFA objects */
     char *author;             /* Author of the PDF */
+    int8_t author_b64;
     char *creator;            /* Application used to create the PDF */
+    int8_t creator_b64;
     char *producer;           /* Application used to produce the PDF */
+    int8_t producer_b64;
     char *creationdate;       /* Date the PDF was created */
+    int8_t creationdate_b64;
     char *modificationdate;   /* Date the PDF was modified */
+    int8_t modificationdate_b64;
     char *title;              /* Title of the PDF */
+    int8_t title_b64;
     char *subject;            /* Subject of the PDF */
+    int8_t subject_b64;
     char *keywords;           /* Keywords of the PDF */
+    int8_t keywords_b64;
 };
 
 
@@ -148,7 +156,7 @@ void pdf_handle_enc(struct pdf_struct *pdf);
 char *decrypt_any(struct pdf_struct *pdf, uint32_t id, const char *in, off_t *length, enum enc_method enc_method);
 enum enc_method get_enc_method(struct pdf_struct *pdf, struct pdf_obj *obj);
 
-char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *objstart, size_t objsize, const char *str, char **endchar);
+char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *objstart, size_t objsize, const char *str, char **endchar, int8_t *b64);
 struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj *obj, size_t objsz, char *begin, char **endchar);
 struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, size_t objsz, char *begin, char **endchar);
 int is_object_reference(char *begin, char **endchar, uint32_t *id);
