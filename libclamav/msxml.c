@@ -85,7 +85,7 @@ struct msxml_cbdata {
     size_t winsize;
 };
 
-inline size_t msxml_read_cb_new_window(struct msxml_cbdata *cbdata)
+static inline size_t msxml_read_cb_new_window(struct msxml_cbdata *cbdata)
 {
     const unsigned char *new_window = NULL;
     off_t new_mappos;
