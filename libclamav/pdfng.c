@@ -248,7 +248,7 @@ static char *pdf_finalize_string(struct pdf_struct *pdf, struct pdf_obj *obj, co
         return NULL;
     memcpy(wrkstr, in, len);
 
-    cli_errmsg("pdf_final: start(%d):   %s\n", wrklen, wrkstr);
+    //cli_errmsg("pdf_final: start(%d):   %s\n", wrklen, wrkstr);
 
     /* convert PDF specific escape sequences, like octal sequences */
     /* TODO: replace the escape sequences directly in the wrkstr   */
@@ -318,7 +318,7 @@ static char *pdf_finalize_string(struct pdf_struct *pdf, struct pdf_obj *obj, co
         wrklen = outlen;
     }
 
-    cli_errmsg("pdf_final: escaped(%d): %s\n", wrklen, wrkstr);
+    //cli_errmsg("pdf_final: escaped(%d): %s\n", wrklen, wrkstr);
 
     /* check for encryption and decrypt */
     if (pdf->flags & (1 << ENCRYPTED_PDF))
@@ -340,7 +340,7 @@ static char *pdf_finalize_string(struct pdf_struct *pdf, struct pdf_obj *obj, co
         }
     }
 
-    cli_errmsg("pdf_final: decrypt(%d): %s\n", wrklen, wrkstr);
+    //cli_errmsg("pdf_final: decrypt(%d): %s\n", wrklen, wrkstr);
 
     /* check for UTF-* and convert to UTF-8 */
     for (i = 0; i < wrklen; ++i) {
@@ -356,7 +356,7 @@ static char *pdf_finalize_string(struct pdf_struct *pdf, struct pdf_obj *obj, co
         wrkstr = output;
     }
 
-    cli_errmsg("pdf_final: postutf(%d): %s\n", wrklen, wrkstr);
+    //cli_errmsg("pdf_final: postutf(%d): %s\n", wrklen, wrkstr);
 
     return wrkstr;
 }
