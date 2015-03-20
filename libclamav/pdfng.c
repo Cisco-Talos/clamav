@@ -68,6 +68,7 @@
 #include "rijndael.h"
 #include "textnorm.h"
 #include "json_api.h"
+#include "conv.h"
 
 char *pdf_convert_utf(char *begin, size_t sz);
 
@@ -75,9 +76,10 @@ char *pdf_convert_utf(char *begin, size_t sz)
 {
     char *res=NULL;
     char *buf, *outbuf;
+    size_t sz2;
 #if HAVE_ICONV
     char *p1, *p2;
-    size_t inlen, outlen, i, sz2;
+    size_t inlen, outlen, i;
     char *encodings[] = {
         "UTF-16",
         NULL
