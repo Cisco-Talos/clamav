@@ -746,7 +746,7 @@ static void aes_decrypt(const unsigned char *in, off_t *length, unsigned char *q
 }
 
 
-static char *decrypt_any(struct pdf_struct *pdf, uint32_t id, const char *in, off_t *length, enum enc_method enc_method)
+char *decrypt_any(struct pdf_struct *pdf, uint32_t id, const char *in, off_t *length, enum enc_method enc_method)
 {
     unsigned char *key, *q, result[16];
     unsigned n;
@@ -846,7 +846,7 @@ static char *decrypt_any(struct pdf_struct *pdf, uint32_t id, const char *in, of
     return (char *)q;
 }
 
-static enum enc_method get_enc_method(struct pdf_struct *pdf, struct pdf_obj *obj)
+enum enc_method get_enc_method(struct pdf_struct *pdf, struct pdf_obj *obj)
 {
     if (obj->flags & (1 << OBJ_EMBEDDED_FILE))
         return pdf->enc_method_embeddedfile;
@@ -2244,7 +2244,7 @@ static enum enc_method parse_enc_method(const char *dict, unsigned len, const ch
     return ret;
 }
 
-static void pdf_handle_enc(struct pdf_struct *pdf)
+void pdf_handle_enc(struct pdf_struct *pdf)
 {
     struct pdf_obj *obj;
     uint32_t len, n, R, P, length, EM = 1, i, oulen;
@@ -2612,6 +2612,9 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     if (rc == -1)
         pdf.flags |= 1 << BAD_PDF_TOOMANYOBJS;
 
+    /* needs to be here for JSON output decryption */
+    pdf_handle_enc(&pdf);
+
     /* must parse after finding all objs, so we can flag indirect objects */
     for (i=0;i<pdf.nobjs;i++) {
         struct pdf_obj *obj = &pdf.objs[i];
@@ -2632,7 +2635,6 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
         pdf_parseobj(&pdf, obj);
     }
 
-    pdf_handle_enc(&pdf);
     if (pdf.flags & (1 << ENCRYPTED_PDF))
         cli_dbgmsg("cli_pdf: encrypted pdf found, %s!\n",
                (pdf.flags & (1 << DECRYPTABLE_PDF)) ?
