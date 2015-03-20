@@ -746,7 +746,7 @@ static void aes_decrypt(const unsigned char *in, off_t *length, unsigned char *q
 }
 
 
-static char *decrypt_any(struct pdf_struct *pdf, uint32_t id, const char *in, off_t *length, enum enc_method enc_method)
+char *decrypt_any(struct pdf_struct *pdf, uint32_t id, const char *in, off_t *length, enum enc_method enc_method)
 {
     unsigned char *key, *q, result[16];
     unsigned n;
@@ -846,7 +846,7 @@ static char *decrypt_any(struct pdf_struct *pdf, uint32_t id, const char *in, of
     return (char *)q;
 }
 
-static enum enc_method get_enc_method(struct pdf_struct *pdf, struct pdf_obj *obj)
+enum enc_method get_enc_method(struct pdf_struct *pdf, struct pdf_obj *obj)
 {
     if (obj->flags & (1 << OBJ_EMBEDDED_FILE))
         return pdf->enc_method_embeddedfile;
@@ -2244,7 +2244,7 @@ static enum enc_method parse_enc_method(const char *dict, unsigned len, const ch
     return ret;
 }
 
-static void pdf_handle_enc(struct pdf_struct *pdf)
+void pdf_handle_enc(struct pdf_struct *pdf)
 {
     struct pdf_obj *obj;
     uint32_t len, n, R, P, length, EM = 1, i, oulen;
@@ -2612,6 +2612,9 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     if (rc == -1)
         pdf.flags |= 1 << BAD_PDF_TOOMANYOBJS;
 
+    /* needs to be here for JSON output decryption */
+    pdf_handle_enc(&pdf);
+
     /* must parse after finding all objs, so we can flag indirect objects */
     for (i=0;i<pdf.nobjs;i++) {
         struct pdf_obj *obj = &pdf.objs[i];
@@ -2632,7 +2635,6 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
         pdf_parseobj(&pdf, obj);
     }
 
-    pdf_handle_enc(&pdf);
     if (pdf.flags & (1 << ENCRYPTED_PDF))
         cli_dbgmsg("cli_pdf: encrypted pdf found, %s!\n",
                (pdf.flags & (1 << DECRYPTABLE_PDF)) ?
@@ -3215,7 +3217,7 @@ static void Author_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfnam
         return;
 
     if (!(pdf->stats.author))
-        pdf->stats.author = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/Author", NULL);
+        pdf->stats.author = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/Author", NULL, &(pdf->stats.author_b64));
 }
 #endif
 
@@ -3231,7 +3233,7 @@ static void Creator_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfna
         return;
 
     if (!(pdf->stats.creator))
-        pdf->stats.creator = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/Creator", NULL);
+        pdf->stats.creator = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/Creator", NULL, &(pdf->stats.creator_b64));
 }
 #endif
 
@@ -3247,7 +3249,7 @@ static void ModificationDate_cb(struct pdf_struct *pdf, struct pdf_obj *obj, str
         return;
 
     if (!(pdf->stats.modificationdate))
-        pdf->stats.modificationdate = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/ModDate", NULL);
+        pdf->stats.modificationdate = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/ModDate", NULL, &(pdf->stats.modificationdate_b64));
 }
 #endif
 
@@ -3263,7 +3265,7 @@ static void CreationDate_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct 
         return;
 
     if (!(pdf->stats.creationdate))
-        pdf->stats.creationdate = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/CreationDate", NULL);
+        pdf->stats.creationdate = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/CreationDate", NULL, &(pdf->stats.creationdate_b64));
 }
 #endif
 
@@ -3279,7 +3281,7 @@ static void Producer_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfn
         return;
 
     if (!(pdf->stats.producer))
-        pdf->stats.producer = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/Producer", NULL);
+        pdf->stats.producer = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/Producer", NULL, &(pdf->stats.producer_b64));
 }
 #endif
 
@@ -3295,7 +3297,7 @@ static void Title_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname
         return;
 
     if (!(pdf->stats.title))
-        pdf->stats.title = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/Title", NULL);
+        pdf->stats.title = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/Title", NULL, &(pdf->stats.title_b64));
 }
 #endif
 
@@ -3311,7 +3313,7 @@ static void Keywords_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfn
         return;
 
     if (!(pdf->stats.keywords))
-        pdf->stats.keywords = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/Keywords", NULL);
+        pdf->stats.keywords = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/Keywords", NULL, &(pdf->stats.keywords_b64));
 }
 #endif
 
@@ -3327,7 +3329,7 @@ static void Subject_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfna
         return;
 
     if (!(pdf->stats.subject))
-        pdf->stats.subject = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/Subject", NULL);
+        pdf->stats.subject = pdf_parse_string(pdf, obj, obj->start + pdf->map, obj_size(pdf, obj, 1), "/Subject", NULL, &(pdf->stats.subject_b64));
 }
 #endif
 
@@ -3512,83 +3514,123 @@ static void pdf_export_json(struct pdf_struct *pdf)
     }
 
     if (pdf->stats.author) {
-        if (cli_isutf8(pdf->stats.author, strlen(pdf->stats.author)))
+        if (pdf->stats.author_b64) {
             cli_jsonstr(pdfobj, "Author", pdf->stats.author);
-        else {
-            char *b64 = (char *)cl_base64_encode(pdf->stats.author, strlen(pdf->stats.author));
-            cli_jsonstr(pdfobj, "Author", b64);
             cli_jsonbool(pdfobj, "Author_base64", 1);
-            free(b64);
+        } else {
+            if (cli_isutf8(pdf->stats.author, strlen(pdf->stats.author)))
+                cli_jsonstr(pdfobj, "Author", pdf->stats.author);
+            else {
+                char *b64 = (char *)cl_base64_encode(pdf->stats.author, strlen(pdf->stats.author));
+                cli_jsonstr(pdfobj, "Author", b64);
+                cli_jsonbool(pdfobj, "Author_base64", 1);
+                free(b64);
+            }
         }
     }
     if (pdf->stats.creator) {
-        if (cli_isutf8(pdf->stats.creator, strlen(pdf->stats.creator)))
+        if (pdf->stats.creator_b64) {
             cli_jsonstr(pdfobj, "Creator", pdf->stats.creator);
-        else {
-            char *b64 = (char *)cl_base64_encode(pdf->stats.creator, strlen(pdf->stats.creator));
-            cli_jsonstr(pdfobj, "Creator", b64);
             cli_jsonbool(pdfobj, "Creator_base64", 1);
-            free(b64);
+        } else {
+            if (cli_isutf8(pdf->stats.creator, strlen(pdf->stats.creator)))
+                cli_jsonstr(pdfobj, "Creator", pdf->stats.creator);
+            else {
+                char *b64 = (char *)cl_base64_encode(pdf->stats.creator, strlen(pdf->stats.creator));
+                cli_jsonstr(pdfobj, "Creator", b64);
+                cli_jsonbool(pdfobj, "Creator_base64", 1);
+                free(b64);
+            }
         }
     }
     if (pdf->stats.producer) {
-        if (cli_isutf8(pdf->stats.producer, strlen(pdf->stats.producer)))
+        if (pdf->stats.producer_b64) {
             cli_jsonstr(pdfobj, "Producer", pdf->stats.producer);
-        else {
-            char *b64 = (char *)cl_base64_encode(pdf->stats.producer, strlen(pdf->stats.producer));
-            cli_jsonstr(pdfobj, "Producer", b64);
             cli_jsonbool(pdfobj, "Producer_base64", 1);
-            free(b64);
+        } else {
+            if (cli_isutf8(pdf->stats.producer, strlen(pdf->stats.producer)))
+                cli_jsonstr(pdfobj, "Producer", pdf->stats.producer);
+            else {
+                char *b64 = (char *)cl_base64_encode(pdf->stats.producer, strlen(pdf->stats.producer));
+                cli_jsonstr(pdfobj, "Producer", b64);
+                cli_jsonbool(pdfobj, "Producer_base64", 1);
+                free(b64);
+            }
         }
     }
     if (pdf->stats.modificationdate) {
-        if (cli_isutf8(pdf->stats.modificationdate, strlen(pdf->stats.modificationdate)))
+        if (pdf->stats.modificationdate_b64) {
             cli_jsonstr(pdfobj, "ModificationDate", pdf->stats.modificationdate);
-        else {
-            char *b64 = (char *)cl_base64_encode(pdf->stats.modificationdate, strlen(pdf->stats.modificationdate));
-            cli_jsonstr(pdfobj, "ModificationDate", b64);
             cli_jsonbool(pdfobj, "ModificationDate_base64", 1);
-            free(b64);
+        } else {
+            if (cli_isutf8(pdf->stats.modificationdate, strlen(pdf->stats.modificationdate)))
+                cli_jsonstr(pdfobj, "ModificationDate", pdf->stats.modificationdate);
+            else {
+                char *b64 = (char *)cl_base64_encode(pdf->stats.modificationdate, strlen(pdf->stats.modificationdate));
+                cli_jsonstr(pdfobj, "ModificationDate", b64);
+                cli_jsonbool(pdfobj, "ModificationDate_base64", 1);
+                free(b64);
+            }
         }
     }
     if (pdf->stats.creationdate) {
-        if (cli_isutf8(pdf->stats.creationdate, strlen(pdf->stats.creationdate)))
+        if (pdf->stats.creationdate_b64) {
             cli_jsonstr(pdfobj, "CreationDate", pdf->stats.creationdate);
-        else {
-            char *b64 = (char *)cl_base64_encode(pdf->stats.creationdate, strlen(pdf->stats.creationdate));
-            cli_jsonstr(pdfobj, "CreationDate", b64);
             cli_jsonbool(pdfobj, "CreationDate_base64", 1);
-            free(b64);
+        } else {
+            if (cli_isutf8(pdf->stats.creationdate, strlen(pdf->stats.creationdate)))
+                cli_jsonstr(pdfobj, "CreationDate", pdf->stats.creationdate);
+            else {
+                char *b64 = (char *)cl_base64_encode(pdf->stats.creationdate, strlen(pdf->stats.creationdate));
+                cli_jsonstr(pdfobj, "CreationDate", b64);
+                cli_jsonbool(pdfobj, "CreationDate_base64", 1);
+                free(b64);
+            }
         }
     }
     if (pdf->stats.title) {
-        if (cli_isutf8(pdf->stats.title, strlen(pdf->stats.title)))
+        if (pdf->stats.title_b64) {
             cli_jsonstr(pdfobj, "Title", pdf->stats.title);
-        else {
-            char *b64 = (char *)cl_base64_encode(pdf->stats.title, strlen(pdf->stats.title));
-            cli_jsonstr(pdfobj, "Title", b64);
             cli_jsonbool(pdfobj, "Title_base64", 1);
-            free(b64);
+        } else {
+            if (cli_isutf8(pdf->stats.title, strlen(pdf->stats.title)))
+                cli_jsonstr(pdfobj, "Title", pdf->stats.title);
+            else {
+                char *b64 = (char *)cl_base64_encode(pdf->stats.title, strlen(pdf->stats.title));
+                cli_jsonstr(pdfobj, "Title", b64);
+                cli_jsonbool(pdfobj, "Title_base64", 1);
+                free(b64);
+            }
         }
     }
     if (pdf->stats.subject) {
-        if (cli_isutf8(pdf->stats.subject, strlen(pdf->stats.subject)))
+        if (pdf->stats.subject_b64) {
             cli_jsonstr(pdfobj, "Subject", pdf->stats.subject);
-        else {
-            char *b64 = (char *)cl_base64_encode(pdf->stats.subject, strlen(pdf->stats.subject));
-            cli_jsonstr(pdfobj, "Subject", b64);
             cli_jsonbool(pdfobj, "Subject_base64", 1);
-            free(b64);
+        } else {
+            if (cli_isutf8(pdf->stats.subject, strlen(pdf->stats.subject)))
+                cli_jsonstr(pdfobj, "Subject", pdf->stats.subject);
+            else {
+                char *b64 = (char *)cl_base64_encode(pdf->stats.subject, strlen(pdf->stats.subject));
+                cli_jsonstr(pdfobj, "Subject", b64);
+                cli_jsonbool(pdfobj, "Subject_base64", 1);
+                free(b64);
+            }
         }
     }
     if (pdf->stats.keywords) {
-        if (cli_isutf8(pdf->stats.keywords, strlen(pdf->stats.keywords)))
+        if (pdf->stats.keywords_b64) {
             cli_jsonstr(pdfobj, "Keywords", pdf->stats.keywords);
-        else {
-            char *b64 = (char *)cl_base64_encode(pdf->stats.keywords, strlen(pdf->stats.keywords));
-            cli_jsonstr(pdfobj, "Keywords", b64);
             cli_jsonbool(pdfobj, "Keywords_base64", 1);
-            free(b64);
+        } else {
+            if (cli_isutf8(pdf->stats.keywords, strlen(pdf->stats.keywords)))
+                cli_jsonstr(pdfobj, "Keywords", pdf->stats.keywords);
+            else {
+                char *b64 = (char *)cl_base64_encode(pdf->stats.keywords, strlen(pdf->stats.keywords));
+                cli_jsonstr(pdfobj, "Keywords", b64);
+                cli_jsonbool(pdfobj, "Keywords_base64", 1);
+                free(b64);
+            }
         }
     }
     if (pdf->stats.ninvalidobjs)
@@ -3653,6 +3695,8 @@ static void pdf_export_json(struct pdf_struct *pdf)
         cli_jsonbool(pdfobj, "Encrypted", 1);
         if (pdf->flags & (1 << DECRYPTABLE_PDF))
             cli_jsonbool(pdfobj, "Decryptable", 1);
+        else
+            cli_jsonbool(pdfobj, "Decryptable", 0);
     }
 
     for (i=0; i < pdf->nobjs; i++) {
