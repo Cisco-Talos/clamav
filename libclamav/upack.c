@@ -432,6 +432,13 @@ int unupack(int upack, char *dest, uint32_t dsize, char *buff, uint32_t vma, uin
 	section.rsz = end_edi-loc_edi;
 	section.vsz = end_edi-loc_edi;
 
+	/* bb#11282 - prevent dest+va/dest from passing an invalid dereference to cli_rebuildpe */
+	/* check should trigger on broken PE files where the section exists outside of the file */
+	if ((!upack && ((va + section.rsz) > dsize)) || (upack && (section.rsz > dsize))) {
+		cli_dbgmsg("Upack: Rebuilt section exceeds allocated buffer; breaks cli_rebuildpe() bb#11282\n");
+		return 0;
+	}
+
 	if (!cli_rebuildpe(dest + (upack?0:va), &section, 1, base, original_ep, 0, 0, file)) {
 		cli_dbgmsg("Upack: Rebuilding failed\n");
 		return 0;
