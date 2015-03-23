@@ -1642,7 +1642,7 @@ int cli_scanpe(cli_ctx *ctx)
 
         if(exe_sections[0].rsz > CLI_MAX_ALLOCATION)
             break;
-        if(!exe_sections[0].rsz)
+        if(exe_sections[0].rsz < 5)
             break;
         if(!(code=fmap_need_off_once(map, exe_sections[0].raw, exe_sections[0].rsz)))
             break;
