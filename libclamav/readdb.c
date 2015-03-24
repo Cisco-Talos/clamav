@@ -3238,8 +3238,42 @@ static int yara_subhex_verify(const char *hexstr)
 
 static int yara_altstr_verify(const char *hexstr)
 {
-    cli_warnmsg("load_oneyara[verify]: string has alternating sequence\n");
-    return 1;
+    char *hexcpy, *track, *alt;
+    int ret = CL_SUCCESS;
+
+    hexcpy = cli_strdup(hexstr);
+    if (!hexcpy)
+        return CL_EMEM;
+    track = hexcpy;
+
+    while ((alt = strchr(track, '|'))) {
+        *alt = '\0';
+        if (strlen(track) != 2) {
+            cli_warnmsg("load_oneyara[verify]: string has unsupported alternating sequence (alt length)\n");
+            ret = CL_EMALFDB;
+            break;
+        }
+        if (track[0] == '?' || track[1] == '?') {
+            cli_warnmsg("load_oneyara[verify]: string has unsupported alternating sequence (wildcard)\n");
+            ret = CL_EMALFDB;
+            break;
+        }
+
+        track = alt+1;
+    }
+    if (ret == CL_SUCCESS) {
+        if (strlen(track) != 2) {
+            cli_warnmsg("load_oneyara[verify]: string has unsupported alternating sequence (alt length)\n");
+            ret = CL_EMALFDB;
+        }
+        if (track[0] == '?' || track[1] == '?') {
+            cli_warnmsg("load_oneyara[verify]: string has unsupported alternating sequence (wildcard)\n");
+            ret = CL_EMALFDB;
+        }
+    }
+
+    free(hexcpy);
+    return ret;
 }
 
 /* should only operate on HEX STRINGS */
@@ -3247,7 +3281,6 @@ static int yara_hexstr_verify(YR_STRING *string, const char *hexstr)
 {
     int ret = CL_SUCCESS;
     char *hexcpy, *track, *alt;
-
 
     /* Quick Check 1: NULL String */
     if (!hexstr || !string) {
@@ -3263,6 +3296,8 @@ static int yara_hexstr_verify(YR_STRING *string, const char *hexstr)
 
     /* Long Check: No Alternating Strings, Subhex must be Length 2 */
     hexcpy = cli_strdup(hexstr);
+    if (!hexcpy)
+        return CL_EMEM;
     track = hexcpy;
     while ((alt = strchr(track, '('))) {
         char *start = alt+1;
