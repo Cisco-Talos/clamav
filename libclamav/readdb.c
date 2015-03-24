@@ -3188,6 +3188,109 @@ static void ytable_delete(struct cli_ytable *ytable)
     }
 }
 
+static int yara_subhex_verify(const char *hexstr)
+{
+    size_t max_sublen = 0;
+    const char *track = hexstr;
+    int in = 0;
+
+    /* REQUIRES - subpatterns must be at least length 2 */
+    while (*track != '\0' && max_sublen < 4) {
+        switch(*track) {
+        case '*':
+        case '?':
+            max_sublen = 0;
+            break;
+        case '[':
+        case '{':
+            if (in) {
+                cli_warnmsg("load_oneyara[verify]: string has invalid nesting\n");
+                return CL_EMALFDB;
+            }
+            in = 1;
+            break;
+        case ']':
+        case '}':
+            if (!in) {
+                cli_warnmsg("load_oneyara[verify]: string has invalid sequence close\n");
+                return CL_EMALFDB;
+            }
+            in = 0;
+            break;
+        default:
+            max_sublen++;
+            break;
+        }
+
+        track++;
+    }
+    if (in) {
+        cli_warnmsg("load_oneyara[verify]: string has unterminated sequence\n");
+        return CL_EMALFDB;
+    }
+    if (max_sublen < 4) {
+        cli_warnmsg("load_oneyara[verify]: cannot find a static subpattern of length 2\n");
+        return CL_EMALFDB;
+    }
+
+    return CL_SUCCESS;
+}
+
+static int yara_altstr_verify(const char *hexstr)
+{
+    cli_warnmsg("load_oneyara[verify]: string has alternating sequence\n");
+    return 1;
+}
+
+/* should only operate on HEX STRINGS */
+static int yara_hexstr_verify(YR_STRING *string, const char *hexstr)
+{
+    int ret = CL_SUCCESS;
+    char *hexcpy, *track, *alt;
+
+
+    /* Quick Check 1: NULL String */
+    if (!hexstr || !string) {
+        cli_warnmsg("load_oneyara[verify]: string is empty\n");
+        return CL_ENULLARG;
+    }
+
+    /* Quick Check 2: String Too Short */
+    if (strlen(hexstr)/2 < CLI_DEFAULT_AC_MINDEPTH) {
+        cli_warnmsg("load_oneyara[verify]: string is too short %s\n", string->identifier);
+        return CL_EMALFDB;
+    }
+
+    /* Long Check: No Alternating Strings, Subhex must be Length 2 */
+    hexcpy = cli_strdup(hexstr);
+    track = hexcpy;
+    while ((alt = strchr(track, '('))) {
+        char *start = alt+1;
+        *alt = '\0';
+
+        alt = strchr(start, ')');
+        *alt = '\0';
+
+        ret = yara_subhex_verify(track);
+        if (ret != CL_SUCCESS) {
+            free(hexcpy);
+            return ret;
+        }
+
+        ret = yara_altstr_verify(start);
+        if (ret != CL_SUCCESS) {
+            free(hexcpy);
+            return ret;
+        }
+
+        track = alt+1;
+    }
+    ret = yara_subhex_verify(track);
+    free(hexcpy);
+
+    return ret;
+}
+
 static unsigned int yara_total, yara_loaded, yara_malform, yara_empty, yara_complex;
 #define YARATARGET0 "Target:0"
 #define YARATARGET1 "Target:1"
@@ -3311,11 +3414,14 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
                 break;
             }
 
-            if (strlen(substr)/2 < CLI_DEFAULT_AC_MINDEPTH) {
-                cli_warnmsg("load_oneyara: string is too short %s\n", string->identifier);
+            /* handle lack of hexstr support here in order to suppress */
+            ret = yara_hexstr_verify(string, substr);
+            if (ret != CL_SUCCESS) {
                 str_error++;
                 free(substr);
-                continue;
+                /* suppress the error */
+                ret = CL_SUCCESS;
+                break;
             }
 
             cli_yaramsg("load_oneyara: hex string: [%.*s] => [%s]\n", string->length, string->string, substr);
@@ -3384,7 +3490,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
         if (STRING_IS_NO_CASE(string)) {
             cli_yaramsg("STRING_IS_NO_CASE         %s\n", STRING_IS_SINGLE_MATCH(string) ? "yes" : "no");
             if ((ret = ytable_add_attrib(&ytable, NULL, "i", 1)) != CL_SUCCESS) {
-                cli_yaramsg("load_oneyara: failed to add 'nocase' sigopt\n");
+                cli_warnmsg("load_oneyara: failed to add 'nocase' sigopt\n");
                 str_error++;
                 break;
             }
@@ -3392,15 +3498,21 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
         if (STRING_IS_ASCII(string)) {
             cli_yaramsg("STRING_IS_ASCII           %s\n", STRING_IS_SINGLE_MATCH(string) ? "yes" : "no");
             if ((ret = ytable_add_attrib(&ytable, NULL, "a", 1)) != CL_SUCCESS) {
-                cli_yaramsg("load_oneyara: failed to add 'ascii' sigopt\n");
+                cli_warnmsg("load_oneyara: failed to add 'ascii' sigopt\n");
                 str_error++;
                 break;
             }
         }
         if (STRING_IS_WIDE(string)) {
             cli_yaramsg("STRING_IS_WIDE            %s\n", STRING_IS_SINGLE_MATCH(string) ? "yes" : "no");
+            /* handle lack of 'wide' support for regex here in order to suppress */
+            if (STRING_IS_REGEXP(string)) {
+                cli_warnmsg("load_oneyara[verify]: wide modifier [w] is not supported for regex subsigs\n");
+                str_error++;
+                break;
+            }
             if ((ret = ytable_add_attrib(&ytable, NULL, "w", 1)) != CL_SUCCESS) {
-                cli_yaramsg("load_oneyara: failed to add 'wide' sigopt\n");
+                cli_warnmsg("load_oneyara: failed to add 'wide' sigopt\n");
                 str_error++;
                 break;
             }
@@ -3408,7 +3520,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
         if (STRING_IS_FULL_WORD(string)) {
             cli_yaramsg("STRING_IS_FULL_WORD       %s\n", STRING_IS_SINGLE_MATCH(string) ? "yes" : "no");
             if ((ret = ytable_add_attrib(&ytable, NULL, "f", 1)) != CL_SUCCESS) {
-                cli_yaramsg("load_oneyara: failed to add 'fullword' sigopt\n");
+                cli_warnmsg("load_oneyara: failed to add 'fullword' sigopt\n");
                 str_error++;
                 break;
             }
