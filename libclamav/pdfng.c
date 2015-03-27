@@ -76,7 +76,6 @@ char *pdf_convert_utf(char *begin, size_t sz)
 {
     char *res=NULL;
     char *buf, *outbuf;
-    size_t sz2;
 #if HAVE_ICONV
     char *p1, *p2;
     size_t inlen, outlen, i;
@@ -87,15 +86,15 @@ char *pdf_convert_utf(char *begin, size_t sz)
     iconv_t cd;
 #endif
 
-    buf = cli_calloc(1, sz);
+    buf = cli_calloc(1, sz+1);
     if (!(buf))
         return NULL;
+    memcpy(buf, begin, sz);
 
 #if HAVE_ICONV
-    //memcpy(buf, begin, sz);
     p1 = buf;
 
-    p2 = outbuf = cli_calloc(1, sz2+1);
+    p2 = outbuf = cli_calloc(1, sz+1);
     if (!(outbuf)) {
         free(buf);
         return NULL;
@@ -104,7 +103,7 @@ char *pdf_convert_utf(char *begin, size_t sz)
     for (i=0; encodings[i] != NULL; i++) {
         p1 = buf;
         p2 = outbuf;
-        inlen = outlen = sz2;
+        inlen = outlen = sz;
 
         cd = iconv_open("UTF-8", encodings[i]);
         if (cd == (iconv_t)(-1)) {
@@ -114,20 +113,20 @@ char *pdf_convert_utf(char *begin, size_t sz)
 
         iconv(cd, (char **)(&p1), &inlen, &p2, &outlen);
 
-        if (outlen == sz2) {
+        if (outlen == sz) {
             /* Decoding unsuccessful right from the start */
             iconv_close(cd);
             continue;
         }
 
-        outbuf[sz2 - outlen] = '\0';
+        outbuf[sz - outlen] = '\0';
 
         res = strdup(outbuf);
         iconv_close(cd);
         break;
     }
 #else
-    outbuf = cli_utf16_to_utf8(buf, sz2, UTF16_BOM);
+    outbuf = cli_utf16_to_utf8(buf, sz, UTF16_BOM);
     if (!outbuf) {
         free(buf);
         return NULL;
