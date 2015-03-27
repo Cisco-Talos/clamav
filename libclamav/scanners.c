@@ -3523,7 +3523,7 @@ static int scan_common(int desc, cl_fmap_t *map, const char **virname, unsigned 
 
             /* Invoke file props callback */
             if (ctx.engine->cb_file_props != NULL) {
-                ret = ctx.engine->cb_file_props(jstring, rc, ctx.engine->cb_file_props_data);
+                ret = ctx.engine->cb_file_props(jstring, rc, ctx.cb_ctx);
                 if (ret != CL_SUCCESS)
                     rc = ret;
             }
