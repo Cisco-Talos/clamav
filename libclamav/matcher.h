@@ -79,8 +79,9 @@ struct cli_lsig_tdb {
 
 struct cli_bc;
 struct cli_ac_lsig {
-#define CLI_NORMAL_LSIG 0
-#define CLI_NORMAL_YARA 1
+#define CLI_LSIG_NORMAL 0
+#define CLI_YARA_NORMAL 1
+#define CLI_YARA_OFFSET 2
     uint32_t id;
     unsigned bc_idx;
     uint8_t type;

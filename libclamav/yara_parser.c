@@ -795,11 +795,12 @@ int yr_parser_reduce_rule_declaration(
       compiler->current_namespace->name,
       (void*) rule));
 
-#if REAL_YARA
   compiler->current_rule_flags = 0;
+#if REAL_YARA
   compiler->current_rule_strings = NULL;
 #else
-  compiler->current_rule_flags = 0;
+  rule->cl_flags = compiler->current_rule_clflags;
+  compiler->current_rule_clflags = 0;
   // Write halt instruction at the end of code.
   yr_arena_write_data(
       compiler->code_arena,

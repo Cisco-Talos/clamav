@@ -695,8 +695,11 @@ static int lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data 
     struct cli_ac_lsig *ac_lsig = root->ac_lsigtable[lsid];
     char * exp = ac_lsig->u.logic;
     char* exp_end = exp + strlen(exp);
+    int rc;
 
-    cli_ac_chkmacro(root, acdata, lsid);
+    rc = cli_ac_chkmacro(root, acdata, lsid);
+    if (rc != CL_SUCCESS)
+        return rc;
     if (cli_ac_chklsig(exp, exp_end, acdata->lsigcnt[lsid], &evalcnt, &evalids, 0) == 1) {
         if(ac_lsig->tdb.container && ac_lsig->tdb.container[0] != ctx->container_type)
             return CL_CLEAN;
@@ -778,9 +781,9 @@ int cli_exp_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *acd
     int32_t rc;
 
     for(i = 0; i < root->ac_lsigs; i++) {
-        if (root->ac_lsigtable[i]->type == CLI_NORMAL_LSIG)
+        if (root->ac_lsigtable[i]->type == CLI_LSIG_NORMAL)
             rc = lsig_eval(ctx, root, acdata, target_info, hash, i);
-        else if (root->ac_lsigtable[i]->type == CLI_NORMAL_YARA)
+        else if (root->ac_lsigtable[i]->type == CLI_YARA_NORMAL || root->ac_lsigtable[i]->type == CLI_YARA_OFFSET)
             rc = yara_eval(ctx, root, acdata, target_info, hash, i);
         if (rc == CL_VIRUS) {
             viruses_found = 1;

@@ -1142,9 +1142,23 @@ int cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t lsigs,
             data->lsigcnt[i] = data->lsigcnt[0] + 64 * i;
 
         /* subsig offsets */
+        data->lsig_matches = (struct cli_lsig_matches **) cli_calloc(lsigs * sizeof(struct cli_lsig_matches *), sizeof(struct cli_lsig_matches *));
+        if(!data->lsig_matches) {
+            free(data->lsigcnt[0]);
+            free(data->lsigcnt);
+            if(partsigs)
+                free(data->offmatrix);
+
+            if(reloffsigs)
+                free(data->offset);
+
+            cli_errmsg("cli_ac_init: Can't allocate memory for data->lsig_matches\n");
+            return CL_EMEM;
+        }
         data->lsigsuboff_last = (uint32_t **) cli_malloc(lsigs * sizeof(uint32_t *));
         data->lsigsuboff_first = (uint32_t **) cli_malloc(lsigs * sizeof(uint32_t *));
         if(!data->lsigsuboff_last || !data->lsigsuboff_first) {
+            free(data->lsig_matches);
             free(data->lsigsuboff_last);
             free(data->lsigsuboff_first);
             free(data->lsigcnt[0]);
@@ -1161,6 +1175,7 @@ int cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t lsigs,
         data->lsigsuboff_last[0] = (uint32_t *) cli_calloc(lsigs * 64, sizeof(uint32_t));
         data->lsigsuboff_first[0] = (uint32_t *) cli_calloc(lsigs * 64, sizeof(uint32_t));
         if(!data->lsigsuboff_last[0] || !data->lsigsuboff_first[0]) {
+            free(data->lsig_matches);
             free(data->lsigsuboff_last[0]);
             free(data->lsigsuboff_first[0]);
             free(data->lsigsuboff_last);
@@ -1225,7 +1240,10 @@ void cli_ac_freedata(struct cli_ac_data *data)
 {
     uint32_t i;
 
-    if(data && data->partsigs) {
+    if (!data)
+        return;
+
+    if(data->partsigs) {
         for(i = 0; i < data->partsigs; i++) {
             if(data->offmatrix[i]) {
                 free(data->offmatrix[i][0]);
@@ -1237,7 +1255,25 @@ void cli_ac_freedata(struct cli_ac_data *data)
         data->partsigs = 0;
     }
 
-    if(data && data->lsigs) {
+    if(data->lsigs) {
+        if (data->lsig_matches) {
+            for (i = 0; i < data->lsigs; i++) {
+                struct cli_lsig_matches * ls_matches;
+                if ((ls_matches = data->lsig_matches[i])) {
+                    uint32_t j;
+                    for (j = 0; j < ls_matches->subsigs; j++) {
+                        if (ls_matches->matches[j]) {
+                            free(ls_matches->matches[j]);
+                            ls_matches->matches[j] = 0;
+                        }
+                    }
+                    free(data->lsig_matches[i]);
+                    data->lsig_matches[i] = 0;
+                }
+            }
+            free(data->lsig_matches);
+            data->lsig_matches = 0;
+        }
         free(data->lsigcnt[0]);
         free(data->lsigcnt);
         free(data->lsigsuboff_last[0]);
@@ -1247,7 +1283,7 @@ void cli_ac_freedata(struct cli_ac_data *data)
         data->lsigs = 0;
     }
 
-    if(data && data->reloffsigs) {
+    if(data->reloffsigs) {
         free(data->offset);
         data->reloffsigs = 0;
     }
@@ -1287,20 +1323,60 @@ inline static int ac_addtype(struct cli_matched_type **list, cli_file_t type, of
     return CL_SUCCESS;
 }
 
-void lsig_sub_matched(const struct cli_matcher *root, struct cli_ac_data *mdata, uint32_t lsigid1, uint32_t lsigid2, uint32_t realoff, int partial)
+int lsig_sub_matched(const struct cli_matcher *root, struct cli_ac_data *mdata, uint32_t lsigid1, uint32_t lsigid2, uint32_t realoff, int partial)
 {
-    const struct cli_lsig_tdb *tdb = &root->ac_lsigtable[lsigid1]->tdb;
+    const struct cli_ac_lsig *ac_lsig = root->ac_lsigtable[lsigid1];
+    const struct cli_lsig_tdb *tdb = &ac_lsig->tdb;
 
     if(realoff != CLI_OFF_NONE) {
         if(mdata->lsigsuboff_first[lsigid1][lsigid2] == CLI_OFF_NONE)
             mdata->lsigsuboff_first[lsigid1][lsigid2] = realoff;
 
         if(mdata->lsigsuboff_last[lsigid1][lsigid2] != CLI_OFF_NONE && ((!partial && realoff <= mdata->lsigsuboff_last[lsigid1][lsigid2]) || (partial && realoff < mdata->lsigsuboff_last[lsigid1][lsigid2])))
-            return;
+            return CL_SUCCESS;
 
         mdata->lsigcnt[lsigid1][lsigid2]++;
         if(mdata->lsigcnt[lsigid1][lsigid2] <= 1 || !tdb->macro_ptids || !tdb->macro_ptids[lsigid2])
             mdata->lsigsuboff_last[lsigid1][lsigid2] = realoff;
+    }
+
+    if (ac_lsig->type & CLI_YARA_OFFSET && realoff != CLI_OFF_NONE) {
+        uint32_t * offs;
+        struct cli_subsig_matches * ss_matches;
+        struct cli_lsig_matches * ls_matches;
+        cli_dbgmsg("lsig_sub_matched lsig %u:%u at %u\n", lsigid1, lsigid2, realoff);
+
+        ls_matches = mdata->lsig_matches[lsigid1];
+        if (ls_matches == NULL) { /* allocate cli_lsig_matches */
+            ls_matches = mdata->lsig_matches[lsigid1] = (struct cli_lsig_matches *)cli_calloc(1, sizeof(struct cli_lsig_matches) +
+                                                                                              (ac_lsig->tdb.subsigs - 1) * sizeof(struct cli_subsig_matches *));
+            if (ls_matches == NULL) {
+                cli_errmsg("lsig_sub_matched: cli_calloc failed for cli_lsig_matches\n");
+                return CL_EMEM;
+            }
+            ls_matches->subsigs = ac_lsig->tdb.subsigs;
+        }
+        ss_matches = ls_matches->matches[lsigid2];
+        if (ss_matches == NULL) { /*  allocate cli_subsig_matches */
+            ss_matches = ls_matches->matches[lsigid2] = cli_malloc(sizeof(struct cli_subsig_matches));
+            if (ss_matches == NULL) {
+                cli_errmsg("lsig_sub_matched: cli_malloc failed for cli_subsig_matches struct\n");
+                return CL_EMEM;
+            }
+            ss_matches->next = 0;
+            ss_matches->last = sizeof(ss_matches->offsets) / sizeof(uint32_t) - 1; 
+        }
+        if (ss_matches->next > ss_matches->last) {  /* cli_matches out of space? realloc */
+            ss_matches = ls_matches->matches[lsigid2] = cli_realloc(ss_matches, sizeof(struct cli_subsig_matches) + sizeof(uint32_t) * ss_matches->last * 2);
+            if (ss_matches == NULL) {
+                cli_errmsg("lsig_sub_matched: cli_realloc failed for cli_subsig_matches struct\n");
+                return CL_EMEM;
+            }
+            ss_matches->last = sizeof(ss_matches->offsets)/ sizeof(uint32_t) + ss_matches->last * 2 - 1;
+        }
+        
+        ss_matches->offsets[ss_matches->next] = realoff; /* finally, store the offset */
+        ss_matches->next++;
     }
 
     if (mdata->lsigcnt[lsigid1][lsigid2] > 1) {
@@ -1310,11 +1386,11 @@ void lsig_sub_matched(const struct cli_matcher *root, struct cli_ac_data *mdata,
         uint32_t id, last_macro_match, smin, smax, last_macroprev_match;
 
         if (!tdb->macro_ptids)
-            return;
+            return CL_SUCCESS;
 
         id = tdb->macro_ptids[lsigid2];
         if (!id)
-            return;
+            return CL_SUCCESS;
 
         macropt = root->ac_pattable[id];
         smin = macropt->ch_mindist[0];
@@ -1340,17 +1416,23 @@ void lsig_sub_matched(const struct cli_matcher *root, struct cli_ac_data *mdata,
             mdata->lsigsuboff_last[lsigid1][lsigid2+1] = last_macro_match;
         }
     }
+    return CL_SUCCESS;
 }
 
-void cli_ac_chkmacro(struct cli_matcher *root, struct cli_ac_data *data, unsigned lsigid1)
+int cli_ac_chkmacro(struct cli_matcher *root, struct cli_ac_data *data, unsigned lsigid1)
 {
     const struct cli_lsig_tdb *tdb = &root->ac_lsigtable[lsigid1]->tdb;
     unsigned i;
+    int rc;
+
     /* Loop through all subsigs, and if they are tied to macros check that the
      * macro matched at a correct distance */
     for (i=0;i<tdb->subsigs;i++) {
-        lsig_sub_matched(root, data, lsigid1, i, CLI_OFF_NONE, 0);
+        rc = lsig_sub_matched(root, data, lsigid1, i, CLI_OFF_NONE, 0);
+        if (rc != CL_SUCCESS)
+            return rc;
     }
+    return CL_SUCCESS;
 }
 
 
@@ -1365,6 +1447,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
     int32_t **offmatrix, swp;
     int type = CL_CLEAN;
     struct cli_ac_result *newres;
+    int rc;
 
     if(!root->ac_root)
         return CL_CLEAN;
@@ -1547,7 +1630,9 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 
                                 } else { /* !pt->type */
                                     if(pt->lsigid[0]) {
-                                        lsig_sub_matched(root, mdata, pt->lsigid[1], pt->lsigid[2], offmatrix[pt->parts - 1][1], 1);
+                                        rc = lsig_sub_matched(root, mdata, pt->lsigid[1], pt->lsigid[2], offmatrix[pt->parts - 1][1], 1);
+                                        if (rc != CL_SUCCESS)
+                                            return rc;
                                         ptN = ptN->next_same;
                                         continue;
                                     }
@@ -1599,8 +1684,10 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
                                     }
                                 }
                             } else {
-                            if(pt->lsigid[0]) {
-                                    lsig_sub_matched(root, mdata, pt->lsigid[1], pt->lsigid[2], realoff, 0);
+                                if(pt->lsigid[0]) {
+                                    rc = lsig_sub_matched(root, mdata, pt->lsigid[1], pt->lsigid[2], realoff, 0);
+                                    if (rc != CL_SUCCESS)
+                                        return rc;
                                     ptN = ptN->next_same;
                                     continue;
                                 }

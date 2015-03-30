@@ -1677,7 +1677,7 @@ static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsig
         return CL_EMEM;
     }
 
-    lsig->type = CLI_NORMAL_LSIG;
+    lsig->type = CLI_LSIG_NORMAL;
     lsig->u.logic = cli_mpool_strdup(engine->mempool, logic);
     if(!lsig->u.logic) {
         cli_errmsg("cli_loadldb: Can't allocate memory for lsig->logic\n");
@@ -3482,7 +3482,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
     /*** conditional verification step (ex. do we define too many strings versus used?)  ***/
     /*** additional string table population (ex. offsets), second translation table pass ***/
 #if 0
-    if (rule->g_flags & RULE_ALL ||  rule->g_flags & RULE_ANY) {
+    if (rule->cl_flags & RULE_ALL ||  rule->cl_flags & RULE_ANY) {
         lsize = 3*ytable.tbl_cnt;
         logic = cli_calloc(lsize, sizeof(char));
         if (!logic) {
@@ -3491,12 +3491,12 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
             return CL_EMEM;
         }
         
-        if (rule->g_flags & RULE_ALL && rule->g_flags & RULE_THEM)
+        if (rule->cl_flags & RULE_ALL && rule->cl_flags & RULE_THEM)
             exp_op = "&";
         else {
             exp_op = "|";
-            if ((!(rule->g_flags & RULE_ANY && rule->g_flags & RULE_THEM) && ytable.tbl_cnt > 1) &&
-                !(rule->g_flags & RULE_EP && ytable.tbl_cnt == 1))
+            if ((!(rule->cl_flags & RULE_ANY && rule->cl_flags & RULE_THEM) && ytable.tbl_cnt > 1) &&
+                !(rule->cl_flags & RULE_EP && ytable.tbl_cnt == 1))
                 yara_complex++;
         }
         
@@ -3507,12 +3507,12 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
         
         /*** END CONDITIONAL HANDLING ***/
     }
-#endif
 
     /* TDB */
-    if (rule->g_flags & RULE_EP && ytable.tbl_cnt == 1)
+    if (rule->cl_flags & RULE_EP && ytable.tbl_cnt == 1)
         target_str = cli_strdup(YARATARGET1);
     else
+#endif
         target_str = cli_strdup(YARATARGET0);
 
     memset(&tdb, 0, sizeof(tdb));
@@ -3542,7 +3542,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
     if (logic) {
         cli_yaramsg("normal lsig triggered yara: %s\n", logic);
 
-        lsig->type = CLI_NORMAL_LSIG;
+        lsig->type = CLI_LSIG_NORMAL;
         lsig->u.logic = cli_mpool_strdup(engine->mempool, logic);
         free(logic);
         if(!lsig->u.logic) {
@@ -3554,7 +3554,7 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
         }
     } else {
         if (NULL != (lsig->u.code_start = rule->code_start)) {
-        lsig->type = CLI_NORMAL_YARA;
+            lsig->type = (rule->cl_flags & RULE_OFFSETS) ? CLI_YARA_OFFSET : CLI_YARA_NORMAL;
         } else {
             cli_errmsg("load_oneyara: code start is NULL\n");
             FREE_TDB(tdb);
@@ -4406,9 +4406,10 @@ int cl_engine_free(struct cl_engine *engine)
 		cli_ac_free(root);
 		if(root->ac_lsigtable) {
 		    for(j = 0; j < root->ac_lsigs; j++) {
-			if (root->ac_lsigtable[j]->type == CLI_NORMAL_LSIG)
+			if (root->ac_lsigtable[j]->type == CLI_LSIG_NORMAL)
 			    mpool_free(engine->mempool, root->ac_lsigtable[j]->u.logic);
-			else if (root->ac_lsigtable[j]->type == CLI_NORMAL_YARA)
+			else if (root->ac_lsigtable[j]->type == CLI_YARA_NORMAL ||
+                                 root->ac_lsigtable[j]->type == CLI_YARA_NORMAL)
 			    free(root->ac_lsigtable[j]->u.code_start);
 			FREE_TDB(root->ac_lsigtable[j]->tdb);
 			mpool_free(engine->mempool, root->ac_lsigtable[j]);

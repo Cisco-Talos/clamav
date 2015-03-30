@@ -518,11 +518,12 @@ struct RE {
 
 #define YARA_PROTO
 #ifdef YARA_PROTO
-#define RULE_ANY  1
-#define RULE_ALL  2
-#define RULE_ONE  4
-#define RULE_THEM 8
-#define RULE_EP   16
+#define RULE_ANY        1
+#define RULE_ALL        2
+#define RULE_ONE        4
+#define RULE_THEM       8
+#define RULE_EP         16
+#define RULE_OFFSETS    32
 #endif
 
 /* YARA to ClamAV function mappings */
@@ -540,6 +541,7 @@ struct _yc_rule {
     STAILQ_HEAD(sq, _yc_string) strings;
     char * identifier;
     uint32_t g_flags;
+    uint32_t cl_flags;
     uint8_t * code_start;
 };
 typedef struct _yc_rule yc_rule;
@@ -572,6 +574,7 @@ typedef struct _yc_compiler {
     YR_NAMESPACE*       current_namespace;
     yc_string*          current_rule_strings;
     uint32_t            current_rule_flags;
+    uint32_t            current_rule_clflags;
 
     int8_t*             loop_address[MAX_LOOP_NESTING];
     char*               loop_identifier[MAX_LOOP_NESTING];

@@ -49,6 +49,7 @@ typedef struct _YR_MATCH
 
 // End of temp for clamAV
 #include "matcher.h"
+#include "matcher-ac.h"
 #include "yara_clam.h"
 #include "yara_exec.h"
 #endif
@@ -124,6 +125,9 @@ int yr_execute_code(
   uint8_t* ip = aclsig->u.code_start;
   uint32_t lsig_id;
   uint32_t rule_matches = 0;
+  struct cli_lsig_matches * ls_matches;
+  struct cli_subsig_matches * ss_matches;
+  uint32_t * offs;
 #endif
 
   YR_RULE* rule;
@@ -572,6 +576,7 @@ int yr_execute_code(
 
         found = 0;
 
+#if REAL_YARA
         while (match != NULL)
         {
           if (r1 == match->base + match->offset)
@@ -586,7 +591,22 @@ int yr_execute_code(
 
           match = match->next;
         }
-
+#else
+        ls_matches = acdata->lsig_matches[aclsig->id];
+        if (ls_matches != NULL) {
+            ss_matches = ls_matches->matches[string->subsig_id];
+            if (ss_matches != NULL) {
+                offs = ss_matches->offsets;
+                for (i = 0; i < ss_matches->next; i++) {
+                    if (offs[i] == r1) {
+                        push(1);
+                        found = 1;
+                        break;
+                    }
+                }
+            }
+        }
+#endif
         if (!found)
           push(0);
 

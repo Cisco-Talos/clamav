@@ -943,6 +943,8 @@ expression
       {
         CHECK_TYPE($3, EXPRESSION_TYPE_INTEGER, "at");
 
+        compiler->current_rule_clflags |= RULE_OFFSETS;
+
         compiler->last_result = yr_parser_reduce_string_identifier(
             yyscanner,
             $1,
@@ -1409,7 +1411,7 @@ string_set
         yr_parser_emit_with_arg(yyscanner, OP_PUSH, UNDEFINED, NULL);
         yr_parser_emit_pushes_for_strings(yyscanner, "$*");
 #ifdef YARA_PROTO
-        compiler->current_rule_flags |= RULE_THEM;
+        compiler->current_rule_clflags |= RULE_THEM;
 #endif
       }
     ;
@@ -1441,14 +1443,14 @@ for_expression
       {
         yr_parser_emit_with_arg(yyscanner, OP_PUSH, UNDEFINED, NULL);
 #ifdef YARA_PROTO
-        compiler->current_rule_flags |= RULE_ALL;
+        compiler->current_rule_clflags |= RULE_ALL;
 #endif
       }
     | _ANY_
       {
         yr_parser_emit_with_arg(yyscanner, OP_PUSH, 1, NULL);
 #ifdef YARA_PROTO
-        compiler->current_rule_flags |= RULE_ANY;
+        compiler->current_rule_clflags |= RULE_ANY;
 #endif
       }
     ;
@@ -1474,7 +1476,7 @@ primary_expression
         yywarning(yyscanner,
             "Using deprecated \"entrypoint\" keyword. Use the \"entry_point\" " "function from PE module instead.");
 #else
-        compiler->current_rule_flags |= RULE_EP;
+        compiler->current_rule_clflags |= RULE_EP;
 #endif
         compiler->last_result = yr_parser_emit(
             yyscanner, OP_ENTRYPOINT, NULL);

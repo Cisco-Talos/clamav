@@ -43,11 +43,23 @@
 
 #define ACPATT_OPTION_ONCE     0x80
 
+struct cli_subsig_matches {
+    uint32_t last;
+    uint32_t next;
+    uint32_t offsets[16]; /* offsets[] is variable length */
+};
+
+struct cli_lsig_matches {
+    uint32_t subsigs;
+    struct cli_subsig_matches * matches[1]; /* matches[] is variable length */ 
+};
+
 struct cli_ac_data {
     int32_t ***offmatrix;
     uint32_t partsigs, lsigs, reloffsigs;
     uint32_t **lsigcnt;
     uint32_t **lsigsuboff_last, **lsigsuboff_first;
+    struct cli_lsig_matches **lsig_matches;
     uint32_t *offset;
     uint32_t macro_lastmatch[32];
     /** Hashset for versioninfo matching */
@@ -105,8 +117,8 @@ struct cli_ac_result {
 
 int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern);
 int cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t lsigs, uint32_t reloffsigs, uint8_t tracklen);
-void lsig_sub_matched(const struct cli_matcher *root, struct cli_ac_data *mdata, uint32_t lsigid1, uint32_t lsigid2, uint32_t realoff, int partial);
-void cli_ac_chkmacro(struct cli_matcher *root, struct cli_ac_data *data, unsigned lsigid1);
+int lsig_sub_matched(const struct cli_matcher *root, struct cli_ac_data *mdata, uint32_t lsigid1, uint32_t lsigid2, uint32_t realoff, int partial);
+int cli_ac_chkmacro(struct cli_matcher *root, struct cli_ac_data *data, unsigned lsigid1);
 int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigned int *cnt, uint64_t *ids, unsigned int parse_only);
 void cli_ac_freedata(struct cli_ac_data *data);
 int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, void **customdata, struct cli_ac_result **res, const struct cli_matcher *root, struct cli_ac_data *mdata, uint32_t offset, cli_file_t ftype, struct cli_matched_type **ftoffset, unsigned int mode, cli_ctx *ctx);
