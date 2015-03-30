@@ -659,13 +659,13 @@ static const yytype_uint16 yyrline[] =
      373,   390,   429,   430,   435,   451,   464,   477,   494,   495,
      500,   514,   513,   530,   547,   548,   553,   554,   555,   556,
      561,   646,   696,   719,   759,   762,   784,   817,   864,   882,
-     891,   900,   915,   929,   942,   959,   973,  1007,   972,  1118,
-    1117,  1193,  1199,  1205,  1211,  1219,  1228,  1237,  1246,  1255,
-    1282,  1309,  1336,  1340,  1348,  1349,  1354,  1376,  1388,  1404,
-    1403,  1409,  1421,  1422,  1427,  1432,  1441,  1442,  1449,  1460,
-    1464,  1473,  1488,  1499,  1510,  1521,  1532,  1543,  1554,  1563,
-    1588,  1601,  1614,  1634,  1669,  1678,  1687,  1696,  1705,  1714,
-    1723,  1732,  1741,  1749,  1758,  1767
+     891,   900,   915,   929,   942,   959,   975,  1009,   974,  1120,
+    1119,  1195,  1201,  1207,  1213,  1221,  1230,  1239,  1248,  1257,
+    1284,  1311,  1338,  1342,  1350,  1351,  1356,  1378,  1390,  1406,
+    1405,  1411,  1423,  1424,  1429,  1434,  1443,  1444,  1451,  1462,
+    1466,  1475,  1490,  1501,  1512,  1523,  1534,  1545,  1556,  1565,
+    1590,  1603,  1616,  1636,  1671,  1680,  1689,  1698,  1707,  1716,
+    1725,  1734,  1743,  1751,  1760,  1769
 };
 #endif
 
@@ -2771,6 +2771,8 @@ yyreduce:
 /* Line 1806 of yacc.c  */
 #line 960 "yara_grammar.y"
     {
+        compiler->current_rule_clflags |= RULE_OFFSETS;
+
         compiler->last_result = yr_parser_reduce_string_identifier(
             yyscanner,
             (yyvsp[(1) - (3)].c_string),
@@ -2787,7 +2789,7 @@ yyreduce:
   case 56:
 
 /* Line 1806 of yacc.c  */
-#line 973 "yara_grammar.y"
+#line 975 "yara_grammar.y"
     {
         int var_index;
 
@@ -2826,7 +2828,7 @@ yyreduce:
   case 57:
 
 /* Line 1806 of yacc.c  */
-#line 1007 "yara_grammar.y"
+#line 1009 "yara_grammar.y"
     {
         int mem_offset = LOOP_LOCAL_VARS * compiler->loop_depth;
 
@@ -2866,7 +2868,7 @@ yyreduce:
   case 58:
 
 /* Line 1806 of yacc.c  */
-#line 1042 "yara_grammar.y"
+#line 1044 "yara_grammar.y"
     {
         int mem_offset;
 
@@ -2947,7 +2949,7 @@ yyreduce:
   case 59:
 
 /* Line 1806 of yacc.c  */
-#line 1118 "yara_grammar.y"
+#line 1120 "yara_grammar.y"
     {
         int mem_offset = LOOP_LOCAL_VARS * compiler->loop_depth;
         int8_t* addr;
@@ -2982,7 +2984,7 @@ yyreduce:
   case 60:
 
 /* Line 1806 of yacc.c  */
-#line 1148 "yara_grammar.y"
+#line 1150 "yara_grammar.y"
     {
         int mem_offset;
 
@@ -3033,7 +3035,7 @@ yyreduce:
   case 61:
 
 /* Line 1806 of yacc.c  */
-#line 1194 "yara_grammar.y"
+#line 1196 "yara_grammar.y"
     {
         yr_parser_emit(yyscanner, OP_OF, NULL);
 
@@ -3044,7 +3046,7 @@ yyreduce:
   case 62:
 
 /* Line 1806 of yacc.c  */
-#line 1200 "yara_grammar.y"
+#line 1202 "yara_grammar.y"
     {
         yr_parser_emit(yyscanner, OP_NOT, NULL);
 
@@ -3055,7 +3057,7 @@ yyreduce:
   case 63:
 
 /* Line 1806 of yacc.c  */
-#line 1206 "yara_grammar.y"
+#line 1208 "yara_grammar.y"
     {
         yr_parser_emit(yyscanner, OP_AND, NULL);
 
@@ -3066,7 +3068,7 @@ yyreduce:
   case 64:
 
 /* Line 1806 of yacc.c  */
-#line 1212 "yara_grammar.y"
+#line 1214 "yara_grammar.y"
     {
         CHECK_TYPE((yyvsp[(1) - (3)].expression_type), EXPRESSION_TYPE_BOOLEAN, "or");
 
@@ -3079,7 +3081,7 @@ yyreduce:
   case 65:
 
 /* Line 1806 of yacc.c  */
-#line 1220 "yara_grammar.y"
+#line 1222 "yara_grammar.y"
     {
         CHECK_TYPE((yyvsp[(1) - (3)].expression_type), EXPRESSION_TYPE_INTEGER, "<");
         CHECK_TYPE((yyvsp[(3) - (3)].expression_type), EXPRESSION_TYPE_INTEGER, "<");
@@ -3093,7 +3095,7 @@ yyreduce:
   case 66:
 
 /* Line 1806 of yacc.c  */
-#line 1229 "yara_grammar.y"
+#line 1231 "yara_grammar.y"
     {
         CHECK_TYPE((yyvsp[(1) - (3)].expression_type), EXPRESSION_TYPE_INTEGER, ">");
         CHECK_TYPE((yyvsp[(3) - (3)].expression_type), EXPRESSION_TYPE_INTEGER, ">");
@@ -3107,7 +3109,7 @@ yyreduce:
   case 67:
 
 /* Line 1806 of yacc.c  */
-#line 1238 "yara_grammar.y"
+#line 1240 "yara_grammar.y"
     {
         CHECK_TYPE((yyvsp[(1) - (3)].expression_type), EXPRESSION_TYPE_INTEGER, "<=");
         CHECK_TYPE((yyvsp[(3) - (3)].expression_type), EXPRESSION_TYPE_INTEGER, "<=");
@@ -3121,7 +3123,7 @@ yyreduce:
   case 68:
 
 /* Line 1806 of yacc.c  */
-#line 1247 "yara_grammar.y"
+#line 1249 "yara_grammar.y"
     {
         CHECK_TYPE((yyvsp[(1) - (3)].expression_type), EXPRESSION_TYPE_INTEGER, ">=");
         CHECK_TYPE((yyvsp[(3) - (3)].expression_type), EXPRESSION_TYPE_INTEGER, ">=");
@@ -3135,7 +3137,7 @@ yyreduce:
   case 69:
 
 /* Line 1806 of yacc.c  */
-#line 1256 "yara_grammar.y"
+#line 1258 "yara_grammar.y"
     {
         if ((yyvsp[(1) - (3)].expression_type) != (yyvsp[(3) - (3)].expression_type))
         {
@@ -3167,7 +3169,7 @@ yyreduce:
   case 70:
 
 /* Line 1806 of yacc.c  */
-#line 1283 "yara_grammar.y"
+#line 1285 "yara_grammar.y"
     {
         if ((yyvsp[(1) - (3)].expression_type) != (yyvsp[(3) - (3)].expression_type))
         {
@@ -3199,7 +3201,7 @@ yyreduce:
   case 71:
 
 /* Line 1806 of yacc.c  */
-#line 1310 "yara_grammar.y"
+#line 1312 "yara_grammar.y"
     {
         if ((yyvsp[(1) - (3)].expression_type) != (yyvsp[(3) - (3)].expression_type))
         {
@@ -3231,7 +3233,7 @@ yyreduce:
   case 72:
 
 /* Line 1806 of yacc.c  */
-#line 1337 "yara_grammar.y"
+#line 1339 "yara_grammar.y"
     {
         (yyval.expression_type) = (yyvsp[(1) - (1)].expression_type);
       }
@@ -3240,7 +3242,7 @@ yyreduce:
   case 73:
 
 /* Line 1806 of yacc.c  */
-#line 1341 "yara_grammar.y"
+#line 1343 "yara_grammar.y"
     {
         (yyval.expression_type) = (yyvsp[(2) - (3)].expression_type);
       }
@@ -3249,21 +3251,21 @@ yyreduce:
   case 74:
 
 /* Line 1806 of yacc.c  */
-#line 1348 "yara_grammar.y"
+#line 1350 "yara_grammar.y"
     { (yyval.integer) = INTEGER_SET_ENUMERATION; }
     break;
 
   case 75:
 
 /* Line 1806 of yacc.c  */
-#line 1349 "yara_grammar.y"
+#line 1351 "yara_grammar.y"
     { (yyval.integer) = INTEGER_SET_RANGE; }
     break;
 
   case 76:
 
 /* Line 1806 of yacc.c  */
-#line 1355 "yara_grammar.y"
+#line 1357 "yara_grammar.y"
     {
         if ((yyvsp[(2) - (6)].expression_type) != EXPRESSION_TYPE_INTEGER)
         {
@@ -3286,7 +3288,7 @@ yyreduce:
   case 77:
 
 /* Line 1806 of yacc.c  */
-#line 1377 "yara_grammar.y"
+#line 1379 "yara_grammar.y"
     {
         if ((yyvsp[(1) - (1)].expression_type) != EXPRESSION_TYPE_INTEGER)
         {
@@ -3303,7 +3305,7 @@ yyreduce:
   case 78:
 
 /* Line 1806 of yacc.c  */
-#line 1389 "yara_grammar.y"
+#line 1391 "yara_grammar.y"
     {
         if ((yyvsp[(3) - (3)].expression_type) != EXPRESSION_TYPE_INTEGER)
         {
@@ -3319,7 +3321,7 @@ yyreduce:
   case 79:
 
 /* Line 1806 of yacc.c  */
-#line 1404 "yara_grammar.y"
+#line 1406 "yara_grammar.y"
     {
         // Push end-of-list marker
         yr_parser_emit_with_arg(yyscanner, OP_PUSH, UNDEFINED, NULL);
@@ -3329,7 +3331,7 @@ yyreduce:
   case 81:
 
 /* Line 1806 of yacc.c  */
-#line 1410 "yara_grammar.y"
+#line 1412 "yara_grammar.y"
     {
         yr_parser_emit_with_arg(yyscanner, OP_PUSH, UNDEFINED, NULL);
         yr_parser_emit_pushes_for_strings(yyscanner, "$*");
@@ -3342,7 +3344,7 @@ yyreduce:
   case 84:
 
 /* Line 1806 of yacc.c  */
-#line 1428 "yara_grammar.y"
+#line 1430 "yara_grammar.y"
     {
         yr_parser_emit_pushes_for_strings(yyscanner, (yyvsp[(1) - (1)].c_string));
         yr_free((yyvsp[(1) - (1)].c_string));
@@ -3352,7 +3354,7 @@ yyreduce:
   case 85:
 
 /* Line 1806 of yacc.c  */
-#line 1433 "yara_grammar.y"
+#line 1435 "yara_grammar.y"
     {
         yr_parser_emit_pushes_for_strings(yyscanner, (yyvsp[(1) - (1)].c_string));
         yr_free((yyvsp[(1) - (1)].c_string));
@@ -3362,7 +3364,7 @@ yyreduce:
   case 87:
 
 /* Line 1806 of yacc.c  */
-#line 1443 "yara_grammar.y"
+#line 1445 "yara_grammar.y"
     {
         yr_parser_emit_with_arg(yyscanner, OP_PUSH, UNDEFINED, NULL);
 #ifdef YARA_PROTO
@@ -3374,7 +3376,7 @@ yyreduce:
   case 88:
 
 /* Line 1806 of yacc.c  */
-#line 1450 "yara_grammar.y"
+#line 1452 "yara_grammar.y"
     {
         yr_parser_emit_with_arg(yyscanner, OP_PUSH, 1, NULL);
 #ifdef YARA_PROTO
@@ -3386,7 +3388,7 @@ yyreduce:
   case 89:
 
 /* Line 1806 of yacc.c  */
-#line 1461 "yara_grammar.y"
+#line 1463 "yara_grammar.y"
     {
         (yyval.expression_type) = (yyvsp[(2) - (3)].expression_type);
       }
@@ -3395,7 +3397,7 @@ yyreduce:
   case 90:
 
 /* Line 1806 of yacc.c  */
-#line 1465 "yara_grammar.y"
+#line 1467 "yara_grammar.y"
     {
         compiler->last_result = yr_parser_emit(
             yyscanner, OP_FILESIZE, NULL);
@@ -3409,7 +3411,7 @@ yyreduce:
   case 91:
 
 /* Line 1806 of yacc.c  */
-#line 1474 "yara_grammar.y"
+#line 1476 "yara_grammar.y"
     {
 #ifndef YARA_PROTO
         yywarning(yyscanner,
@@ -3429,7 +3431,7 @@ yyreduce:
   case 92:
 
 /* Line 1806 of yacc.c  */
-#line 1489 "yara_grammar.y"
+#line 1491 "yara_grammar.y"
     {
         CHECK_TYPE((yyvsp[(3) - (4)].expression_type), EXPRESSION_TYPE_INTEGER, "int8");
 
@@ -3445,7 +3447,7 @@ yyreduce:
   case 93:
 
 /* Line 1806 of yacc.c  */
-#line 1500 "yara_grammar.y"
+#line 1502 "yara_grammar.y"
     {
         CHECK_TYPE((yyvsp[(3) - (4)].expression_type), EXPRESSION_TYPE_INTEGER, "int16");
 
@@ -3461,7 +3463,7 @@ yyreduce:
   case 94:
 
 /* Line 1806 of yacc.c  */
-#line 1511 "yara_grammar.y"
+#line 1513 "yara_grammar.y"
     {
         CHECK_TYPE((yyvsp[(3) - (4)].expression_type), EXPRESSION_TYPE_INTEGER, "int32");
 
@@ -3477,7 +3479,7 @@ yyreduce:
   case 95:
 
 /* Line 1806 of yacc.c  */
-#line 1522 "yara_grammar.y"
+#line 1524 "yara_grammar.y"
     {
         CHECK_TYPE((yyvsp[(3) - (4)].expression_type), EXPRESSION_TYPE_INTEGER, "uint8");
 
@@ -3493,7 +3495,7 @@ yyreduce:
   case 96:
 
 /* Line 1806 of yacc.c  */
-#line 1533 "yara_grammar.y"
+#line 1535 "yara_grammar.y"
     {
         CHECK_TYPE((yyvsp[(3) - (4)].expression_type), EXPRESSION_TYPE_INTEGER, "uint16");
 
@@ -3509,7 +3511,7 @@ yyreduce:
   case 97:
 
 /* Line 1806 of yacc.c  */
-#line 1544 "yara_grammar.y"
+#line 1546 "yara_grammar.y"
     {
         CHECK_TYPE((yyvsp[(3) - (4)].expression_type), EXPRESSION_TYPE_INTEGER, "uint32");
 
@@ -3525,7 +3527,7 @@ yyreduce:
   case 98:
 
 /* Line 1806 of yacc.c  */
-#line 1555 "yara_grammar.y"
+#line 1557 "yara_grammar.y"
     {
         compiler->last_result = yr_parser_emit_with_arg(
             yyscanner, OP_PUSH, (yyvsp[(1) - (1)].integer), NULL);
@@ -3539,7 +3541,7 @@ yyreduce:
   case 99:
 
 /* Line 1806 of yacc.c  */
-#line 1564 "yara_grammar.y"
+#line 1566 "yara_grammar.y"
     {
         SIZED_STRING* sized_string = (yyvsp[(1) - (1)].sized_string);
         char* string;
@@ -3569,7 +3571,7 @@ yyreduce:
   case 100:
 
 /* Line 1806 of yacc.c  */
-#line 1589 "yara_grammar.y"
+#line 1591 "yara_grammar.y"
     {
         compiler->last_result = yr_parser_reduce_string_identifier(
             yyscanner,
@@ -3587,7 +3589,7 @@ yyreduce:
   case 101:
 
 /* Line 1806 of yacc.c  */
-#line 1602 "yara_grammar.y"
+#line 1604 "yara_grammar.y"
     {
         compiler->last_result = yr_parser_reduce_string_identifier(
             yyscanner,
@@ -3605,7 +3607,7 @@ yyreduce:
   case 102:
 
 /* Line 1806 of yacc.c  */
-#line 1615 "yara_grammar.y"
+#line 1617 "yara_grammar.y"
     {
         compiler->last_result = yr_parser_emit_with_arg(
             yyscanner,
@@ -3630,7 +3632,7 @@ yyreduce:
   case 103:
 
 /* Line 1806 of yacc.c  */
-#line 1635 "yara_grammar.y"
+#line 1637 "yara_grammar.y"
     {
         if ((yyvsp[(1) - (1)].object) == (YR_OBJECT*) -1)  // loop identifier
         {
@@ -3670,7 +3672,7 @@ yyreduce:
   case 104:
 
 /* Line 1806 of yacc.c  */
-#line 1670 "yara_grammar.y"
+#line 1672 "yara_grammar.y"
     {
         CHECK_TYPE((yyvsp[(1) - (3)].expression_type), EXPRESSION_TYPE_INTEGER, "+");
         CHECK_TYPE((yyvsp[(3) - (3)].expression_type), EXPRESSION_TYPE_INTEGER, "+");
@@ -3684,7 +3686,7 @@ yyreduce:
   case 105:
 
 /* Line 1806 of yacc.c  */
-#line 1679 "yara_grammar.y"
+#line 1681 "yara_grammar.y"
     {
         CHECK_TYPE((yyvsp[(1) - (3)].expression_type), EXPRESSION_TYPE_INTEGER, "-");
         CHECK_TYPE((yyvsp[(3) - (3)].expression_type), EXPRESSION_TYPE_INTEGER, "-");
@@ -3698,7 +3700,7 @@ yyreduce:
   case 106:
 
 /* Line 1806 of yacc.c  */
-#line 1688 "yara_grammar.y"
+#line 1690 "yara_grammar.y"
     {
         CHECK_TYPE((yyvsp[(1) - (3)].expression_type), EXPRESSION_TYPE_INTEGER, "*");
         CHECK_TYPE((yyvsp[(3) - (3)].expression_type), EXPRESSION_TYPE_INTEGER, "*");
@@ -3712,7 +3714,7 @@ yyreduce:
   case 107:
 
 /* Line 1806 of yacc.c  */
-#line 1697 "yara_grammar.y"
+#line 1699 "yara_grammar.y"
     {
         CHECK_TYPE((yyvsp[(1) - (3)].expression_type), EXPRESSION_TYPE_INTEGER, "\\");
         CHECK_TYPE((yyvsp[(3) - (3)].expression_type), EXPRESSION_TYPE_INTEGER, "\\");
@@ -3726,7 +3728,7 @@ yyreduce:
   case 108:
 
 /* Line 1806 of yacc.c  */
-#line 1706 "yara_grammar.y"
+#line 1708 "yara_grammar.y"
     {
         CHECK_TYPE((yyvsp[(1) - (3)].expression_type), EXPRESSION_TYPE_INTEGER, "%");
         CHECK_TYPE((yyvsp[(3) - (3)].expression_type), EXPRESSION_TYPE_INTEGER, "%");
@@ -3740,7 +3742,7 @@ yyreduce:
   case 109:
 
 /* Line 1806 of yacc.c  */
-#line 1715 "yara_grammar.y"
+#line 1717 "yara_grammar.y"
     {
         CHECK_TYPE((yyvsp[(1) - (3)].expression_type), EXPRESSION_TYPE_INTEGER, "^");
         CHECK_TYPE((yyvsp[(3) - (3)].expression_type), EXPRESSION_TYPE_INTEGER, "^");
@@ -3754,7 +3756,7 @@ yyreduce:
   case 110:
 
 /* Line 1806 of yacc.c  */
-#line 1724 "yara_grammar.y"
+#line 1726 "yara_grammar.y"
     {
         CHECK_TYPE((yyvsp[(1) - (3)].expression_type), EXPRESSION_TYPE_INTEGER, "^");
         CHECK_TYPE((yyvsp[(3) - (3)].expression_type), EXPRESSION_TYPE_INTEGER, "^");
@@ -3768,7 +3770,7 @@ yyreduce:
   case 111:
 
 /* Line 1806 of yacc.c  */
-#line 1733 "yara_grammar.y"
+#line 1735 "yara_grammar.y"
     {
         CHECK_TYPE((yyvsp[(1) - (3)].expression_type), EXPRESSION_TYPE_INTEGER, "|");
         CHECK_TYPE((yyvsp[(3) - (3)].expression_type), EXPRESSION_TYPE_INTEGER, "|");
@@ -3782,7 +3784,7 @@ yyreduce:
   case 112:
 
 /* Line 1806 of yacc.c  */
-#line 1742 "yara_grammar.y"
+#line 1744 "yara_grammar.y"
     {
         CHECK_TYPE((yyvsp[(2) - (2)].expression_type), EXPRESSION_TYPE_INTEGER, "~");
 
@@ -3795,7 +3797,7 @@ yyreduce:
   case 113:
 
 /* Line 1806 of yacc.c  */
-#line 1750 "yara_grammar.y"
+#line 1752 "yara_grammar.y"
     {
         CHECK_TYPE((yyvsp[(1) - (3)].expression_type), EXPRESSION_TYPE_INTEGER, "<<");
         CHECK_TYPE((yyvsp[(3) - (3)].expression_type), EXPRESSION_TYPE_INTEGER, "<<");
@@ -3809,7 +3811,7 @@ yyreduce:
   case 114:
 
 /* Line 1806 of yacc.c  */
-#line 1759 "yara_grammar.y"
+#line 1761 "yara_grammar.y"
     {
         CHECK_TYPE((yyvsp[(1) - (3)].expression_type), EXPRESSION_TYPE_INTEGER, ">>");
         CHECK_TYPE((yyvsp[(3) - (3)].expression_type), EXPRESSION_TYPE_INTEGER, ">>");
@@ -3823,7 +3825,7 @@ yyreduce:
   case 115:
 
 /* Line 1806 of yacc.c  */
-#line 1768 "yara_grammar.y"
+#line 1770 "yara_grammar.y"
     {
         (yyval.expression_type) = (yyvsp[(1) - (1)].expression_type);
       }
@@ -3832,7 +3834,7 @@ yyreduce:
 
 
 /* Line 1806 of yacc.c  */
-#line 3836 "yara_grammar.c"
+#line 3838 "yara_grammar.c"
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires
@@ -4063,6 +4065,6 @@ yyreturn:
 
 
 /* Line 2067 of yacc.c  */
-#line 1773 "yara_grammar.y"
+#line 1775 "yara_grammar.y"
 
 

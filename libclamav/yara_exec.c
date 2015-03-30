@@ -569,14 +569,8 @@ int yr_execute_code(
         string = UINT64_TO_PTR(YR_STRING*, r2);
 #if REAL_YARA
         match = string->matches[tidx].head;
-#else
-        //TBD: find clamav matches
-        match = NULL; //TEMP
-#endif
-
         found = 0;
 
-#if REAL_YARA
         while (match != NULL)
         {
           if (r1 == match->base + match->offset)
@@ -592,6 +586,7 @@ int yr_execute_code(
           match = match->next;
         }
 #else
+        found = 0;
         ls_matches = acdata->lsig_matches[aclsig->id];
         if (ls_matches != NULL) {
             ss_matches = ls_matches->matches[string->subsig_id];
@@ -603,6 +598,8 @@ int yr_execute_code(
                         found = 1;
                         break;
                     }
+                    if (r1 < offs[i])
+                        break;
                 }
             }
         }
@@ -626,10 +623,6 @@ int yr_execute_code(
         string = UINT64_TO_PTR(YR_STRING*, r3);
 #if REAL_YARA
         match = string->matches[tidx].head;
-#else
-        //TBD: find clamav matches
-        match = NULL; //TEMP
-#endif
         found = FALSE;
 
         while (match != NULL && !found)
@@ -646,6 +639,26 @@ int yr_execute_code(
 
           match = match->next;
         }
+#else
+        found = FALSE;
+        ls_matches = acdata->lsig_matches[aclsig->id];
+        if (ls_matches != NULL) {
+            ss_matches = ls_matches->matches[string->subsig_id];
+            if (ss_matches != NULL) {
+                offs = ss_matches->offsets;
+                for (i = 0; i < ss_matches->next; i++) {
+                    if (offs[i] >= r1 &&
+                        offs[i] <= r2) {
+                        push(1);
+                        found = TRUE;
+                        break;
+                    }
+                    if (r2 < offs[i])
+                        break;
+                }
+            }
+        }        
+#endif
 
         if (!found)
           push(0);

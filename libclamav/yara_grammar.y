@@ -958,6 +958,8 @@ expression
       }
     | _STRING_IDENTIFIER_ _IN_ range
       {
+        compiler->current_rule_clflags |= RULE_OFFSETS;
+
         compiler->last_result = yr_parser_reduce_string_identifier(
             yyscanner,
             $1,
