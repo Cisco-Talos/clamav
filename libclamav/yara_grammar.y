@@ -943,8 +943,6 @@ expression
       {
         CHECK_TYPE($3, EXPRESSION_TYPE_INTEGER, "at");
 
-        compiler->current_rule_clflags |= RULE_OFFSETS;
-
         compiler->last_result = yr_parser_reduce_string_identifier(
             yyscanner,
             $1,
@@ -954,12 +952,12 @@ expression
 
         ERROR_IF(compiler->last_result != ERROR_SUCCESS);
 
+        compiler->current_rule_clflags |= RULE_OFFSETS;
+
         $$ = EXPRESSION_TYPE_BOOLEAN;
       }
     | _STRING_IDENTIFIER_ _IN_ range
       {
-        compiler->current_rule_clflags |= RULE_OFFSETS;
-
         compiler->last_result = yr_parser_reduce_string_identifier(
             yyscanner,
             $1,
@@ -968,6 +966,8 @@ expression
         yr_free($1);
 
         ERROR_IF(compiler->last_result!= ERROR_SUCCESS);
+
+        compiler->current_rule_clflags |= RULE_OFFSETS;
 
         $$ = EXPRESSION_TYPE_BOOLEAN;
       }
@@ -1611,6 +1611,8 @@ primary_expression
 
         ERROR_IF(compiler->last_result != ERROR_SUCCESS);
 
+        compiler->current_rule_clflags |= RULE_OFFSETS;
+
         $$ = EXPRESSION_TYPE_INTEGER;
       }
     | _STRING_OFFSET_
@@ -1630,6 +1632,8 @@ primary_expression
         yr_free($1);
 
         ERROR_IF(compiler->last_result != ERROR_SUCCESS);
+
+        compiler->current_rule_clflags |= RULE_OFFSETS;
 
         $$ = EXPRESSION_TYPE_INTEGER;
       }

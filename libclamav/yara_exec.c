@@ -688,10 +688,6 @@ int yr_execute_code(
         string = UINT64_TO_PTR(YR_STRING*, r2);
 #if REAL_YARA
         match = string->matches[tidx].head;
-#else
-        //TBD: find clamav matches
-        match = NULL; //TEMP
-#endif
         i = 1;
         found = FALSE;
 
@@ -706,6 +702,20 @@ int yr_execute_code(
           i++;
           match = match->next;
         }
+#else
+        i = r1 - 1;
+        found = FALSE;
+        ls_matches = acdata->lsig_matches[aclsig->id];
+        if (ls_matches != NULL && i >= 0) {
+            ss_matches = ls_matches->matches[string->subsig_id];
+            if (ss_matches != NULL) {
+                if (i < ss_matches->next) {
+                    push(ss_matches->offsets[i]);
+                    found = TRUE;
+                }
+            }
+        }
+#endif
 
         if (!found)
           push(UNDEFINED);
