@@ -765,6 +765,7 @@ static int yara_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data 
         if (target_info->status == 1)   
             context.entry_point = target_info->exeinfo.ep;
     }
+    context.fmap = *ctx->fmap;
 
     rc = yr_execute_code(ac_lsig, acdata, &context, 0, 0);
 

@@ -199,10 +199,10 @@ typedef struct _YR_SCAN_CONTEXT
   int flags;
   void* user_data;
 
-    //YR_MEMORY_BLOCK*  mem_block;
+  //YR_MEMORY_BLOCK*  mem_block;
   YR_HASH_TABLE*  objects_table;
-    //YR_CALLBACK_FUNC  callback;
-
+  //YR_CALLBACK_FUNC  callback;
+  fmap_t * fmap;
 } YR_SCAN_CONTEXT;
 #endif
 

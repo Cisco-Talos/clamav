@@ -92,6 +92,19 @@ typedef struct _YR_MATCH
       } \
       return UNDEFINED; \
     };
+#else
+#define function_read(type) \
+    int64_t read_##type(fmap_t * fmap, size_t offset) \
+    { \
+      const void *data;                                         \
+      if (offset + sizeof(type) >= fmap->len)                   \
+          return UNDEFINED;                                     \
+      data = fmap_need_off_once(fmap, offset, sizeof(type));    \
+      if (!data)                                                \
+          return UNDEFINED;                                     \
+      return *((type *) data);                                  \
+    };
+#endif
 
 function_read(uint8_t)
 function_read(uint16_t)
@@ -99,7 +112,6 @@ function_read(uint32_t)
 function_read(int8_t)
 function_read(int16_t)
 function_read(int32_t)
-#endif
 
 int yr_execute_code(
 #if REAL_YARA
@@ -796,6 +808,36 @@ int yr_execute_code(
       case OP_UINT32:
         pop(r1);
         push(read_uint32_t(context->mem_block, r1));
+        break;
+#else
+      case OP_INT8:
+        pop(r1);
+        push(read_int8_t(context->fmap, r1));
+        break;
+
+      case OP_INT16:
+        pop(r1);
+        push(read_int16_t(context->fmap, r1));
+        break;
+
+      case OP_INT32:
+        pop(r1);
+        push(read_int32_t(context->fmap, r1));
+        break;
+
+      case OP_UINT8:
+        pop(r1);
+        push(read_uint8_t(context->fmap, r1));
+        break;
+
+      case OP_UINT16:
+        pop(r1);
+        push(read_uint16_t(context->fmap, r1));
+        break;
+
+      case OP_UINT32:
+        pop(r1);
+        push(read_uint32_t(context->fmap, r1));
         break;
 #endif
 
