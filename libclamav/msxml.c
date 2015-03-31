@@ -78,7 +78,18 @@ static const struct key_entry msxml_keys[] = {
 };
 static size_t num_msxml_keys = sizeof(msxml_keys) / sizeof(struct key_entry);
 
+enum msxml_state {
+    MSXML_STATE_NORMAL = 0,
+    MSXML_STATE_ENTITY_START_1,
+    MSXML_STATE_ENTITY_START_2,
+    MSXML_STATE_ENTITY_HEX,
+    MSXML_STATE_ENTITY_DEC,
+    MSXML_STATE_ENTITY_CLOSE,
+    MSXML_STATE_ENTITY_NONE
+};
+
 struct msxml_cbdata {
+    enum msxml_state state;
     fmap_t *map;
     const unsigned char *window;
     off_t winpos, mappos;
@@ -145,8 +156,14 @@ int msxml_read_cb(void *ctx, char *buffer, int len)
     wbytes = 0;
     rbytes = cbdata->winsize - cbdata->winpos;
 
+    /* copying loop with preprocessing */
     while (wbytes < len) {
-        size_t written = MIN(rbytes, len);
+        const unsigned char *read_from;
+        char *write_to = buffer + wbytes;
+        enum msxml_state *state;
+#if MSXML_VERBIOSE
+        size_t written;
+#endif
 
         if (!rbytes) {
             if ((winret = msxml_read_cb_new_window(cbdata)) < 0)
@@ -159,16 +176,68 @@ int msxml_read_cb(void *ctx, char *buffer, int len)
             rbytes = cbdata->winsize;
         }
 
+#if MSXML_VERBIOSE
         written = MIN(rbytes, len - wbytes);
-
-        cli_msxmlmsg("msxml_read_cb: copying from window [%llu(+%llu)] %llu->%llu\n",
+        cli_msxmlmsg("msxml_read_cb: copying from window [%llu(+%llu)] %llu->~%llu\n",
                      (long long unsigned)(cbdata->winsize - rbytes), (long long unsigned)cbdata->winsize,
                      (long long unsigned)cbdata->winpos, (long long unsigned)(cbdata->winpos + written));
+#endif
 
-        memcpy(buffer + wbytes, cbdata->window + cbdata->winpos, written);
+        read_from = cbdata->window + cbdata->winpos;
+        state = &(cbdata->state);
 
-        wbytes += written;
-        rbytes -= written;
+        while (rbytes > 0 && wbytes < len) {
+            switch (*state) {
+            case MSXML_STATE_NORMAL:
+                if ((*read_from) == '&')
+                    *state = MSXML_STATE_ENTITY_START_1;
+                break;
+            case MSXML_STATE_ENTITY_START_1:
+                if ((*read_from) == '#')
+                    *state = MSXML_STATE_ENTITY_START_2;
+                else
+                    *state = MSXML_STATE_NORMAL;
+                break;
+            case MSXML_STATE_ENTITY_START_2:
+                if ((*read_from) == 'x')
+                    *state = MSXML_STATE_ENTITY_HEX;
+                else if (((*read_from) >= '0') && ((*read_from) <= '9'))
+                    *state = MSXML_STATE_ENTITY_DEC;
+                else
+                    *state = MSXML_STATE_NORMAL;
+                break;
+            case MSXML_STATE_ENTITY_HEX:
+                if ((((*read_from) >= '0') && ((*read_from) <= '9')) ||
+                    (((*read_from) >= 'a') && ((*read_from) <= 'f')) ||
+                    (((*read_from) >= 'A') && ((*read_from) <= 'F'))) {}
+                else
+                    *state = MSXML_STATE_ENTITY_CLOSE;
+                break;
+            case MSXML_STATE_ENTITY_DEC:
+                if (((*read_from) >= '0') && ((*read_from) <= '9')) {}
+                else
+                    *state = MSXML_STATE_ENTITY_CLOSE;
+                break;
+            default:
+                cli_errmsg("unknown *state: %d\n", *state);
+            }
+
+            if (*state == MSXML_STATE_ENTITY_CLOSE) {
+                if ((*read_from) != ';') {
+                    cli_msxmlmsg("msxml_read_cb: detected unterminated character entity @ winoff %d\n",
+                                 (int)(read_from - cbdata->window));
+                    (*write_to++) = ';';
+                    wbytes++;
+                }
+                *state = MSXML_STATE_NORMAL;
+                if (wbytes >= len)
+                    break;
+            }
+
+            *(write_to++) = *(read_from++);
+            rbytes--;
+            wbytes++;
+        }
     }
 
     cbdata->winpos = cbdata->winsize - rbytes;
