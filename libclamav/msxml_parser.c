@@ -458,6 +458,7 @@ int cli_msxml_parse_document(cli_ctx *ctx, xmlTextReaderPtr reader, const struct
 #endif
 
     /* Error Handler */
+    //xmlTextReaderSetErrorHandler(reader, NULL, NULL); /* xml default handler */
     xmlTextReaderSetErrorHandler(reader, msxml_error_handler, NULL);
 
     /* Main Processing Loop */
@@ -516,6 +517,12 @@ int cli_msxml_parse_document(cli_ctx *ctx, xmlTextReaderPtr reader, const struct
     /* non-critical return supression */
     if (ret == CL_ETIMEOUT || ret == CL_BREAK)
         return CL_SUCCESS;
+
+    /* important but non-critical suppression */
+    if (ret == CL_EPARSE) {
+        cli_dbgmsg("cli_msxml_parse_document: suppressing parsing error to continue scan\n");
+        return CL_SUCCESS;
+    }
 
     return ret;
 }
