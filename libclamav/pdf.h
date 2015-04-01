@@ -62,6 +62,17 @@ struct pdf_dict {
     struct pdf_dict_node *tail;
 };
 
+struct pdf_stats_entry {
+    char *data;
+
+    /* populated by pdf_parse_string */
+    struct pdf_stats_metadata {
+        int length;
+        struct pdf_obj *obj;
+        int success; /* if finalize succeeds */
+    } meta;
+};
+
 struct pdf_stats {
     int32_t ninvalidobjs;     /* Number of invalid objects */
     int32_t njs;              /* Number of javascript objects */
@@ -88,22 +99,14 @@ struct pdf_stats {
     int32_t nrichmedia;       /* Number of RichMedia objects */
     int32_t nacroform;        /* Number of AcroForm objects */
     int32_t nxfa;             /* Number of XFA objects */
-    char *author;             /* Author of the PDF */
-    int8_t author_b64;
-    char *creator;            /* Application used to create the PDF */
-    int8_t creator_b64;
-    char *producer;           /* Application used to produce the PDF */
-    int8_t producer_b64;
-    char *creationdate;       /* Date the PDF was created */
-    int8_t creationdate_b64;
-    char *modificationdate;   /* Date the PDF was modified */
-    int8_t modificationdate_b64;
-    char *title;              /* Title of the PDF */
-    int8_t title_b64;
-    char *subject;            /* Subject of the PDF */
-    int8_t subject_b64;
-    char *keywords;           /* Keywords of the PDF */
-    int8_t keywords_b64;
+    struct pdf_stats_entry *author;             /* Author of the PDF */
+    struct pdf_stats_entry *creator;            /* Application used to create the PDF */
+    struct pdf_stats_entry *producer;           /* Application used to produce the PDF */
+    struct pdf_stats_entry *creationdate;       /* Date the PDF was created */
+    struct pdf_stats_entry *modificationdate;   /* Date the PDF was modified */
+    struct pdf_stats_entry *title;              /* Title of the PDF */
+    struct pdf_stats_entry *subject;            /* Subject of the PDF */
+    struct pdf_stats_entry *keywords;           /* Keywords of the PDF */
 };
 
 
@@ -156,7 +159,8 @@ void pdf_handle_enc(struct pdf_struct *pdf);
 char *decrypt_any(struct pdf_struct *pdf, uint32_t id, const char *in, off_t *length, enum enc_method enc_method);
 enum enc_method get_enc_method(struct pdf_struct *pdf, struct pdf_obj *obj);
 
-char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *objstart, size_t objsize, const char *str, char **endchar, int8_t *b64);
+char *pdf_finalize_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *in, size_t len);
+char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *objstart, size_t objsize, const char *str, char **endchar, struct pdf_stats_metadata *stats);
 struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj *obj, size_t objsz, char *begin, char **endchar);
 struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, size_t objsz, char *begin, char **endchar);
 int is_object_reference(char *begin, char **endchar, uint32_t *id);
