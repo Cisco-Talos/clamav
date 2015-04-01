@@ -82,6 +82,26 @@ static const struct key_entry *msxml_check_key(struct msxml_ctx *mxctx, const xm
     return &blank_key;
 }
 
+static void msxml_error_handler(void* arg, const char* msg, xmlParserSeverities severity, xmlTextReaderLocatorPtr locator)
+{
+    int line = xmlTextReaderLocatorLineNumber(locator);
+    xmlChar *URI = xmlTextReaderLocatorBaseURI(locator);
+
+    switch (severity) {
+    case XML_PARSER_SEVERITY_WARNING:
+    case XML_PARSER_SEVERITY_VALIDITY_WARNING:
+        cli_warnmsg("%s:%d: parser warning : %s", (char*)URI, line, msg);
+        break;
+    case XML_PARSER_SEVERITY_ERROR:
+    case XML_PARSER_SEVERITY_VALIDITY_ERROR:
+        cli_warnmsg("%s:%d: parser error : %s", (char*)URI, line, msg);
+        break;
+    default:
+        cli_dbgmsg("%s:%d: unknown severity : %s", (char*)URI, line, msg);
+        break;
+    }
+}
+
 #if HAVE_JSON
 static int msxml_is_int(const char *value, size_t len, int32_t *val)
 {
@@ -436,6 +456,9 @@ int cli_msxml_parse_document(cli_ctx *ctx, xmlTextReaderPtr reader, const struct
         mxctx.toval = 0;
     }
 #endif
+
+    /* Error Handler */
+    xmlTextReaderSetErrorHandler(reader, msxml_error_handler, NULL);
 
     /* Main Processing Loop */
     while ((state = xmlTextReaderRead(reader)) == 1) {
