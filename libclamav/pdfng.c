@@ -237,11 +237,14 @@ static char *pdf_decrypt_string(struct pdf_struct *pdf, struct pdf_obj *obj, con
     return NULL;
 }
 
-static char *pdf_finalize_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *in, size_t len)
+char *pdf_finalize_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *in, size_t len)
 {
     char *wrkstr, *output = NULL;
     size_t wrklen = len, outlen;
     unsigned int i, likelyutf = 0;
+
+    if (!in)
+        return NULL;
 
     /* get a working copy */
     wrkstr = cli_calloc(len+1, sizeof(char));
@@ -363,7 +366,7 @@ static char *pdf_finalize_string(struct pdf_struct *pdf, struct pdf_obj *obj, co
     return wrkstr;
 }
 
-char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *objstart, size_t objsize, const char *str, char **endchar, int8_t *b64)
+char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *objstart, size_t objsize, const char *str, char **endchar, struct pdf_stats_metadata *meta)
 {
     const char *q = objstart;
     char *p1, *p2;
@@ -493,14 +496,27 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
             switch (*p3) {
                 case '(':
                 case '<':
-                    res = pdf_parse_string(pdf, obj, p3, objsize2, NULL, NULL, b64);
+                    res = pdf_parse_string(pdf, obj, p3, objsize2, NULL, NULL, meta);
                     break;
                 default:
                     res = pdf_finalize_string(pdf, obj, begin, objsize2);
                     if (!res) {
-                        res = (char *)cl_base64_encode(begin, objsize2);
-                        if (b64) *b64 = 1;
-                    } 
+                        res = cli_calloc(1, objsize2+1);
+                        if (!(res))
+                            return NULL;
+                        memcpy(res, begin, objsize2);
+                        res[objsize2] = '\0';
+
+                        if (meta) {
+                            meta->length = objsize2;
+                            meta->obj = obj;
+                            meta->success = 0;
+                        }
+                    } else if (meta) {
+                        meta->length = strlen(res);
+                        meta->obj = obj;
+                        meta->success = 1;
+                    }
             }
             free(begin);
         }
@@ -571,8 +587,21 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
 
     res = pdf_finalize_string(pdf, obj, p1, len);
     if (!res) {
-        res = (char *)cl_base64_encode(p1, len);
-        if (b64) *b64 = 1;
+        res = cli_calloc(1, len+1);
+        if (!(res))
+            return NULL;
+        memcpy(res, p1, len);
+        res[len] = '\0';
+
+        if (meta) {
+            meta->length = len;
+            meta->obj = obj;
+            meta->success = 0;
+        }
+    } else if (meta) {
+        meta->length = strlen(res);
+        meta->obj = obj;
+        meta->success = 1;
     }
 
     if (res && endchar)
