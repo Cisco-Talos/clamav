@@ -2,6 +2,26 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
+0.98.7
+------
+
+ClamAV 0.98.7 is here! This release contains new scanning features
+and bug fixes. 
+
+    - Improvement to PDF processing: encryption handling, escape
+      sequence handling, file property collection.
+    - fix infinite loop on crafted y0da cryptor file. Identified and patch
+      suggested by Sebastian Andrzej Siewior. CVE-2015-2221.
+    - fix crash on crafted petite packed file. Reported and patch
+      supplied by Sebastian Andrzej Siewior. CVE-2015-2222.
+    - fix false negatives on files within iso9660 containers. This issue
+      was reported by Minzhuan Gong.
+    - fix a couple crashes on crafted upack packed file. Identified and
+      patches supplied by Sebastian Andrzej Siewior.
+    - fix a crash during algorithimic detection on crafted PE file.
+      Identified and patch supplied by Sebastian Andrzej Siewior.
+
+
 0.98.6
 ------
 
