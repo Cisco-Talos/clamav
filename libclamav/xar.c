@@ -186,7 +186,8 @@ static int xar_get_toc_data_values(xmlTextReaderPtr reader, long *length, long *
                 cli_dbgmsg("cli_scanxar: <archived-checksum>:\n");
                 xar_get_checksum_values(reader, a_cksum, a_hash);
                 
-            } else if (xmlStrEqual(name, (const xmlChar *)"extracted-checksum") &&
+            } else if ((xmlStrEqual(name, (const xmlChar *)"extracted-checksum") ||
+                        xmlStrEqual(name, (const xmlChar *)"unarchived-checksum")) &&
                        xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT) {
                 cli_dbgmsg("cli_scanxar: <extracted-checksum>:\n");
                 xar_get_checksum_values(reader, e_cksum, e_hash);
@@ -561,11 +562,7 @@ int cli_scanxar(cli_ctx *ctx)
 
 
         a_hash_ctx = xar_hash_init(a_hash, &a_sc, &a_mc);
-        if (a_hash_ctx == NULL)
-            goto exit_tmpfile;
         e_hash_ctx = xar_hash_init(e_hash, &e_sc, &e_mc);
-        if (e_hash_ctx == NULL)
-            goto exit_tmpfile;
 
         switch (encoding) {
         case CL_TYPE_GZ:
@@ -606,7 +603,8 @@ int cli_scanxar(cli_ctx *ctx)
 
                     bytes = sizeof(buff) - strm.avail_out;
 
-                    xar_hash_update(e_hash_ctx, buff, bytes, e_hash);
+                    if (e_hash_ctx != NULL)
+                        xar_hash_update(e_hash_ctx, buff, bytes, e_hash);
                    
                     if (cli_writen(fd, buff, bytes) < 0) {
                         cli_dbgmsg("cli_scanxar: cli_writen error file %s.\n", tmpname);
@@ -627,7 +625,8 @@ int cli_scanxar(cli_ctx *ctx)
                     break;
 
                 avail_in -= strm.avail_in;
-                xar_hash_update(a_hash_ctx, next_in, avail_in, a_hash);
+                if (a_hash_ctx != NULL)
+                    xar_hash_update(a_hash_ctx, next_in, avail_in, a_hash);
             }
 
             inflateEnd(&strm);
@@ -665,7 +664,8 @@ int cli_scanxar(cli_ctx *ctx)
                 lz.next_in = blockp;
                 lz.avail_in = CLI_LZMA_HDR_SIZE;
 
-                xar_hash_update(a_hash_ctx, blockp, CLI_LZMA_HDR_SIZE, a_hash);
+                if (a_hash_ctx != NULL)
+                    xar_hash_update(a_hash_ctx, blockp, CLI_LZMA_HDR_SIZE, a_hash);
 
                 lret = cli_LzmaInit(&lz, 0);
                 if (lret != LZMA_RESULT_OK) {
@@ -716,8 +716,10 @@ int cli_scanxar(cli_ctx *ctx)
                         cli_dbgmsg("cli_scanxar: cli_LzmaDecode() produces no output for "
                                    "avail_in %lu, avail_out %lu.\n", avail_in, avail_out);
 
-                    xar_hash_update(a_hash_ctx, next_in, in_consumed, a_hash);                    
-                    xar_hash_update(e_hash_ctx, buff, avail_out, e_hash);
+                    if (a_hash_ctx != NULL)
+                        xar_hash_update(a_hash_ctx, next_in, in_consumed, a_hash);                    
+                    if (e_hash_ctx != NULL)
+                        xar_hash_update(e_hash_ctx, buff, avail_out, e_hash);
 
                     /* Write a decompressed block. */
                     /* cli_dbgmsg("Writing %li bytes to LZMA decompress temp file, " */
@@ -770,7 +772,8 @@ int cli_scanxar(cli_ctx *ctx)
                     goto exit_tmpfile;
                 }
                 
-                xar_hash_update(a_hash_ctx, blockp, length, a_hash);
+                if (a_hash_ctx != NULL)
+                    xar_hash_update(a_hash_ctx, blockp, length, a_hash);
                 
                 if (cli_writen(fd, blockp, write_len) < 0) {
                     cli_dbgmsg("cli_scanxar: cli_writen error %li bytes @ %li.\n", length, at);
@@ -782,25 +785,36 @@ int cli_scanxar(cli_ctx *ctx)
         }
 
         if (rc == CL_SUCCESS) {
-            xar_hash_final(a_hash_ctx, result, a_hash);
-            a_hash_ctx = NULL;
+            if (a_hash_ctx != NULL) {
+                xar_hash_final(a_hash_ctx, result, a_hash);
+                a_hash_ctx = NULL;
+            } else {
+                cli_dbgmsg("cli_scanxar: archived-checksum missing.\n");
+                cksum_fails++;
+            }
             if (a_cksum != NULL) {
                 expected = cli_hex2str((char *)a_cksum);
                 if (xar_hash_check(a_hash, result, expected) != 0) {
-                    cli_dbgmsg("cli_scanxar: archived-checksum missing or mismatch.\n");
+                    cli_dbgmsg("cli_scanxar: archived-checksum mismatch.\n");
                     cksum_fails++;
                 } else {
                     cli_dbgmsg("cli_scanxar: archived-checksum matched.\n");                
                 }
                 free(expected);
             }
-            xar_hash_final(e_hash_ctx, result, e_hash);
-            e_hash_ctx = NULL;
+
+            if (e_hash_ctx != NULL) {
+                xar_hash_final(e_hash_ctx, result, e_hash);
+                e_hash_ctx = NULL;
+            } else {
+                cli_dbgmsg("cli_scanxar: extracted-checksum(unarchived-checksum) missing.\n");
+                cksum_fails++;
+            }
             if (e_cksum != NULL) {
                 if (do_extract_cksum) {
                     expected = cli_hex2str((char *)e_cksum);
                     if (xar_hash_check(e_hash, result, expected) != 0) {
-                        cli_dbgmsg("cli_scanxar: extracted-checksum missing or mismatch.\n");
+                        cli_dbgmsg("cli_scanxar: extracted-checksum mismatch.\n");
                         cksum_fails++;
                     } else {
                         cli_dbgmsg("cli_scanxar: extracted-checksum matched.\n");                
