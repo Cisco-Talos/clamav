@@ -3717,7 +3717,7 @@ static void pdf_export_json(struct pdf_struct *pdf)
             cli_jsonbool(pdfobj, "Keywords_base64", 1);
             free(b64);
         } else {
-            cli_jsonbool(pdfobj, "Keywords", "");
+            cli_jsonstr(pdfobj, "Keywords", "");
         }
     }
     if (pdf->stats.ninvalidobjs)
