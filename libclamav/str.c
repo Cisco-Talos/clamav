@@ -667,7 +667,7 @@ char *cli_utf16_to_utf8(const char *utf16, size_t length, utf16_type type)
     return s2;
 }
 
-int cli_isutf8(const unsigned char *buf, unsigned int len)
+int cli_isutf8(const char *buf, unsigned int len)
 {
 	unsigned int i, j;
 
