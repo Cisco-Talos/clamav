@@ -100,6 +100,7 @@ static void msxml_error_handler(void* arg, const char* msg, xmlParserSeverities 
         cli_dbgmsg("%s:%d: unknown severity : %s", (char*)URI, line, msg);
         break;
     }
+    free(URI);
 }
 
 #if HAVE_JSON
@@ -453,6 +454,9 @@ int cli_msxml_parse_document(cli_ctx *ctx, xmlTextReaderPtr reader, const struct
     mxctx.mode = mode;
     if (mode) {
         mxctx.root = ctx->wrkproperty;
+        /* JSON Sanity Check */
+        if (!mxctx.root)
+            mxctx.mode = 0;
         mxctx.toval = 0;
     }
 #endif
