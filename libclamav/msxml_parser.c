@@ -376,6 +376,9 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
 
                     ret = cli_magic_scandesc(of, ctx);
                     close(of);
+                    if (ctx && !(ctx->engine->keeptmp))
+                        cli_unlink(tempfile);
+                    free(tempfile);
                     if (ret != CL_SUCCESS || (!SCAN_ALL && ret == CL_VIRUS)) {
                         return ret;
                     }
@@ -462,8 +465,8 @@ int cli_msxml_parse_document(cli_ctx *ctx, xmlTextReaderPtr reader, const struct
 #endif
 
     /* Error Handler */
-    //xmlTextReaderSetErrorHandler(reader, NULL, NULL); /* xml default handler */
-    xmlTextReaderSetErrorHandler(reader, msxml_error_handler, NULL);
+    xmlTextReaderSetErrorHandler(reader, NULL, NULL); /* xml default handler */
+    //xmlTextReaderSetErrorHandler(reader, msxml_error_handler, NULL);
 
     /* Main Processing Loop */
     while ((state = xmlTextReaderRead(reader)) == 1) {
