@@ -2,6 +2,48 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
+0.98.7
+------
+
+ClamAV 0.98.7 is here! This release contains new scanning features
+and bug fixes. 
+
+    - Improvements to PDF processing: decryption, escape sequence
+      handling, and file property collection.
+    - Scanning/analysis of additional Microsoft Office 2003 XML format.
+    - Fix infinite loop condition on crafted y0da cryptor file. Identified
+      and patch suggested by Sebastian Andrzej Siewior. CVE-2015-2221.
+    - Fix crash on crafted petite packed file. Reported and patch
+      supplied by Sebastian Andrzej Siewior. CVE-2015-2222.
+    - Fix false negatives on files within iso9660 containers. This issue
+      was reported by Minzhuan Gong.
+    - Fix a couple crashes on crafted upack packed file. Identified and
+      patches supplied by Sebastian Andrzej Siewior.
+    - Fix a crash during algorithmic detection on crafted PE file.
+      Identified and patch supplied by Sebastian Andrzej Siewior.
+    - Fix an infinite loop condition on a crafted "xz" archive file.
+      This was reported by Dimitri Kirchner and Goulven Guiheux.
+      CVE-2015-2668.
+    - Fix compilation error after ./configure --disable-pthreads.
+      Reported and fix suggested by John E. Krokes.
+    - Apply upstream patch for possible heap overflow in Henry Spencer's 
+      regex library. CVE-2015-2305.
+    - Fix crash in upx decoder with crafted file. Discovered and patch
+      supplied by Sebastian Andrzej Siewior. CVE-2015-2170.
+    - Fix segfault scanning certain HTML files. Reported with sample by
+      Kai Risku.
+    - Improve detections within xar/pkg files.
+
+As always, we appreciate contributions of bug reports, code fixes,
+and sample submission from the ClamAV community members:
+
+Sebastian Andrzej Siewior
+Minzhaun Gong
+Dimitri Kirchner
+Goulven Guiheux
+John E. Krokes
+Kai Risku
+
 0.98.6
 ------
 
