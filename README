@@ -10,7 +10,7 @@ and bug fixes.
 
     - Improvements to PDF processing: decryption, escape sequence
       handling, and file property collection.
-    - Scanning/analysis of additional Microsoft Office XML based formats.
+    - Scanning/analysis of additional Microsoft Office 2003 XML format.
     - Fix infinite loop condition on crafted y0da cryptor file. Identified
       and patch suggested by Sebastian Andrzej Siewior. CVE-2015-2221.
     - Fix crash on crafted petite packed file. Reported and patch
@@ -31,14 +31,15 @@ and bug fixes.
     - Fix crash in upx decoder with crafted file. Discovered and patch
       supplied by Sebastian Andrzej Siewior. CVE-2015-2170.
     - Fix segfault scanning certain HTML files. Reported with sample by
-      Kai Risku. 
+      Kai Risku.
+    - Improve detections within xar/pkg files.
 
-As always, we appreciate the contibutions of the ClamAV community members
-for their code and sample submissions!
+As always, we appreciate contributions of bug reports, code fixes,
+and sample submission from the ClamAV community members:
 
 Sebastian Andrzej Siewior
 Minzhaun Gong
-Dimitri Kirchne
+Dimitri Kirchner
 Goulven Guiheux
 John E. Krokes
 Kai Risku

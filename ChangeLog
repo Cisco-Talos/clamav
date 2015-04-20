@@ -1,3 +1,206 @@
+Mon, 27 Apr 12:00:00 EDT
+-----------------------------------
+ * 0.98.7 Release.
+
+Tue, 14 Apr 2015 15:53:17 EDT (klin)
+-----------------------------------
+ * bb#11296 - various fixes to pdf string base64 string conversion 
+
+Mon, 13 Apr 2015 12:14:41 EDT (smorgan)
+-----------------------------------
+ * bb11298 - look for TOC element name <unarchived-checksum> 
+   (as a synonynm for <extracted-checksum>). Continue processing rather
+    than exit in the event of missing or error in TOC checksum specification.
+
+Wed, 8 Apr 2015 15:51:04 EDT (smorgan)
+-----------------------------------
+ * iso9660: remove unnecessaty parameter on iso_parse_dir() and reset return
+   code when scanall is in effect. 
+
+Wed, 1 Apr 2015 17:41:59 EDT (klin)
+-----------------------------------
+ * pdf: correctly handle decoding, decryption, character set conversions,
+   and file properties collection(base64 encoded as needed).
+
+Fri, 27 Mar 2015 13:21:49 EDT (klin)
+-----------------------------------
+ * converted cb_file_props from using engine-based ctx to file-based ctx 
+
+Thu, 26 Mar 2015 12:24:02 EDT (smorgan)
+-----------------------------------
+ * bb11281 - Reworked reverted upack.c crash patch to fix regression
+   false negatives. 
+
+Tue, 24 Mar 2015 12:06:57 EDT (klin)
+-----------------------------------
+ * make check: added env check 'T' to set timeout 
+
+Mon, 23 Mar 2015 17:58:35 EDT (klin)
+-----------------------------------
+ * bb#11282 - patch for code clean up in rebuildpe. Patch
+   supplied by Sebastian Andrzej Siewior.
+
+Mon, 23 Mar 2015 13:04:54 EDT (klin)
+-----------------------------------
+ * bb#11284 - fixed integer underflow in detecting W32.Polipos.A method.
+   Patch supplied by Sebastian Andrzej Siewior.
+
+Mon, 16 Mar 2015 18:35:14 EDT (klin)
+-----------------------------------
+ * updated documentation on document property collection 
+
+Mon, 16 Mar 2015 18:26:07 EDT (klin)
+-----------------------------------
+ * added support for MS Office 2003 XML(msxml) document types and msxml
+   file properties collection. 
+
+Mon, 16 Mar 2015 13:11:56 EDT (klin)
+-----------------------------------
+ * fixed converity issue ID 12109 buffer was not freed on rare error case 
+
+Mon, 16 Mar 2015 13:08:03 EDT (klin)
+-----------------------------------
+ * fixed coverity ID 12110 12111 changed a the type of a value from unsigned
+  to signed due to possible negative values 
+
+Thu, 12 Mar 2015 19:06:23 EDT (smorgan)
+-----------------------------------
+ * Fix for infinite loop on crafted xz file. 
+
+Wed, 11 Mar 2015 15:03:43 EDT (smorgan)
+-----------------------------------
+ * bb11278 - was not detecting viruses on files inside iso9660.
+   Also fix up all-match logic. 
+
+Mon, 9 Mar 2015 13:02:25 EDT (smorgan)
+-----------------------------------
+ * bb11274 - adds out of bounds check for petite packed files.
+   Patch from Sebastian Andrzej Siewior. 
+
+Wed, 4 Mar 2015 14:04:24 EDT (klin)
+-----------------------------------
+ * updated example fileprop analysis bytecodes moved old example bytecodes
+   to examples/fileprop_analysis/old/ 
+
+Wed, 4 Mar 2015 12:08:34 EDT (klin)
+-----------------------------------
+ * backwards compatibility for target type 13 json scanning 
+
+Tue, 3 Mar 2015 17:47:55 EDT (klin)
+-----------------------------------
+ * generates fmap from desc if no map is NULL 
+
+Tue, 3 Mar 2015 16:37:08 EDT (smorgan)
+-----------------------------------
+ * Apply y0da cryptor patch sent in by Sebastian Andrzej Siewior. 
+
+Tue, 3 Mar 2015 16:12:48 EDT (klin)
+-----------------------------------
+ * flevel updated to 80 (new bytecode hook type) 
+
+Tue, 3 Mar 2015 16:12:22 EDT (klin)
+-----------------------------------
+ * clambc info option updated for new hook type 
+
+Tue, 3 Mar 2015 15:00:41 EDT (klin)
+-----------------------------------
+ * added BC_PRECLASS hook support; replaces target type 13 
+
+Mon, 2 Mar 2015 19:06:23 EDT (klin)
+-----------------------------------
+ * pdf string UTF-16 conversion no longer solely depends on ICONV reason:
+   no ICONV meant no conversion even though conversion function existed 
+
+Fri, 27 Feb 2015 15:23:51 EDT (klin)
+-----------------------------------
+ * bb#11269 - bm matcher no longer sets scanning window offset reason:
+   certain segments could be hashed multiple times 
+
+Wed, 25 Feb 2015 14:55:21 EDT (klin)
+-----------------------------------
+ * bb#11269 - hash does not compute on segments smaller than the maxpatlen 
+
+Tue, 24 Feb 2015 16:21:09 EDT (klin)
+-----------------------------------
+ * bb#11267 - libclamav upx cover against hand crafted section ove patch
+   supplied bySebastian Andrzej Siewior.
+
+Fri, 27 Feb 2015 16:57:19 EDT (smorgan)
+-----------------------------------
+ * Patch for integer overflow checks for petite unpack code supplied by
+   Sebastian Andrzej Siewior. 
+
+Fri, 27 Feb 2015 16:54:55 EDT (smorgan)
+-----------------------------------
+ * remove obsolete parameters from the clamd.conf man page: MailMaxRecursion,
+   ArchiveMaxFileSize, ArchiveMaxRecursion, ArchiveMaxFiles,
+   ArchiveMaxCompressionRatio, ArchiveBlockMax, ArchiveLimitMemoryUsage, Clamuko*. 
+
+Wed, 18 Feb 2015 15:23:54 EDT (klin)
+-----------------------------------
+ * bb#11212 - fix MEW unpacker 
+
+Mon, 16 Feb 2015 11:46:21 EDT (smorgan)
+-----------------------------------
+ * bb11264 - patch for 'possible' heap overflow submitted by the Debian team. 
+
+Tue, 10 Feb 2015 15:16:48 EDT (smorgan)
+-----------------------------------
+ * bb11260: fix compile error when './configure --disable-pthreads' is specified. 
+
+Fri, 6 Feb 2015 14:59:43 EDT (klin)
+-----------------------------------
+ * bb#11254 - removed built-in llvm configure check and added
+   --with-llvm-linking option to specify system-llvm linking method 
+
+Fri, 6 Feb 2015 13:22:35 EDT (klin)
+-----------------------------------
+ * improved documentation on macro subsignatures 
+
+Wed, 4 Feb 2015 18:52:01 EDT (smorgan)
+-----------------------------------
+ * fix documentation errors in example logical signature. 
+
+Fri, 30 Jan 2015 12:15:07 EDT (klin)
+-----------------------------------
+ * bb#12887 - fixed an issue regarding (fd==-1) in WinAPI 
+
+Wed, 28 Jan 2015 11:20:35 EDT (klin)
+-----------------------------------
+ * fixed Windows API SetOption/GetOption CLAM_LIMIT_RECURSION 
+
+Wed, 21 Jan 2015 11:41:07 EDT (klin)
+-----------------------------------
+ * added ICONV to clamconf optional features report 
+
+Thu, 15 Jan 2015 15:15:01 EDT (klin)
+-----------------------------------
+ * fixed an incorrect return value for magic_scandesc 
+
+Wed, 14 Jan 2015 09:25:47 EDT (klin)
+-----------------------------------
+ * cleaned up configure help strings by using AS_HELP_STRING 
+
+Mon, 12 Jan 2015 13:45:36 EDT (klin)
+-----------------------------------
+ * bb#11238 - added missing PDF preclass operations
+   > added whitespace fix for indirect references strings
+   > added PDF escape sequence handling (including octal) 
+
+Thu, 8 Jan 2015 09:48:20 EDT (klin)
+-----------------------------------
+ * bb#11237 - fixed bug in building CUD file 
+
+Wed, 7 Jan 2015 04:46:15 EDT (smorgan)
+-----------------------------------
+ * bb11233 - fix a strange bus error on Mac OS X PPC when using debug mode. 
+
+Mon, 22 Dec 2014 12:13:38 EDT (klin)
+-----------------------------------
+ * bb#11226 - fixed gpt GUID debugging message 
+
+ *** End of 0.98.6, Start of 0.98.7
+
 
 Tue Dec 16 16:21:40 2014 EDT (swebb)
 -------------------------------------
