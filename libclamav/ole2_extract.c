@@ -32,6 +32,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <conv.h>
+#include <zlib.h>
 #ifdef	HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -67,6 +68,8 @@
 #ifdef HAVE_PRAGMA_PACK_HPPA
 #pragma pack 1
 #endif
+
+#define MSO_CHUNKSIZE 32768
 
 typedef struct ole2_header_tag {
     unsigned char   magic[8];   /* should be: 0xd0cf11e0a1b11ae1 */
@@ -955,6 +958,163 @@ handler_enum(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * 
     return CL_SUCCESS;
 }
 
+static int
+scan_mso_stream(int fd, cli_ctx *ctx)
+{
+    int zret, ofd, ret = CL_SUCCESS;
+    fmap_t *input;
+    off_t off_in = 0;
+    z_stream zstrm;
+    char *tempfile;
+    uint32_t prefix;
+    unsigned char outbuf[MSO_CHUNKSIZE];
+
+    /* fmap the input file for easier manipulation */
+    if (fd < 0) {
+        cli_dbgmsg("scan_mso_stream: Invalid file descriptor argument\n");
+        return CL_ENULLARG;
+    } else {
+        STATBUF statbuf;
+
+        if (FSTAT(fd, &statbuf) == -1) {
+            cli_dbgmsg("scan_mso_stream: Can't stat file descriptor\n");
+            return CL_ESTAT;
+        }
+
+        input = fmap(fd, 0, statbuf.st_size);
+        if (!input) {
+            cli_dbgmsg("scan_mso_stream: Failed to get fmap for input stream\n");
+            return CL_EMAP;
+        }
+    }
+
+    /* initialize zlib inflation stream */
+    memset(&zstrm, 0, sizeof(zstrm));
+    zstrm.zalloc = Z_NULL;
+    zstrm.zfree = Z_NULL;
+    zstrm.opaque = Z_NULL;
+    zstrm.avail_in = 0;
+    zstrm.next_in = Z_NULL;
+    zret = inflateInit(&zstrm);
+    if (zret != Z_OK) {
+        cli_dbgmsg("scan_mso_stream: Can't initialize zlib inflation stream\n");
+        funmap(input);
+        return CL_EUNPACK;
+    }
+
+    /* reserve tempfile for output and scanning */
+    if (!(tempfile = cli_gentemp(ctx ? ctx->engine->tmpdir : NULL))) {
+        inflateEnd(&zstrm);
+        funmap(input);
+        return CL_EMEM;
+    }
+
+    if ((ofd = open(tempfile, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, S_IRWXU)) < 0) {
+        cli_dbgmsg("scan_mso_stream: Can't create file %s\n", tempfile);
+        inflateEnd(&zstrm);
+        funmap(input);
+        free(tempfile);
+        return CL_ECREAT;
+    }
+
+    /* extract 32-bit prefix */
+    if (fmap_readn(input, &prefix, off_in, sizeof(prefix)) != sizeof(prefix)) {
+        cli_dbgmsg("scan_mso_stream: Can't extract 4-byte prefix\n");
+        return -1;
+    }
+    off_in += sizeof(uint32_t);
+    cli_dbgmsg("scan_mso_stream: stream prefix = %08x(%d)\n", prefix, prefix);
+
+    /* inflation loop */
+    while (off_in < input->len) {
+        size_t bytes = MIN(input->len - off_in, MSO_CHUNKSIZE);
+
+        zstrm.next_in = (void*)fmap_need_off_once(input, off_in, bytes);
+        if (!zstrm.next_in) {
+            cli_warnmsg("scan_mso_stream: fmap need failed on on bytes %llu->%llu\n",
+                        (long long unsigned)off_in, (long long unsigned)(off_in + bytes));
+            return CL_EMAP;
+        }
+        zstrm.avail_in = bytes;
+        zstrm.next_out = outbuf;
+        zstrm.avail_out = sizeof(outbuf);
+
+        /* conversion loop */
+        while (zstrm.avail_in) {
+            int written;
+            zret = inflate(&zstrm, Z_NO_FLUSH);
+            switch(zret) {
+            case Z_OK:
+                if(zstrm.avail_out == 0) {
+                    if ((written=cli_writen(ofd, outbuf, sizeof(outbuf)))!=sizeof(outbuf)) {
+                        cli_errmsg("scan_mso_stream: failed write to output file\n");
+                        ret = CL_EWRITE;
+                        goto mso_end;
+                    }
+                    //size_so_far += written;
+                    zstrm.next_out = outbuf;
+                    zstrm.avail_out = sizeof(outbuf);
+                }
+                continue;
+            case Z_STREAM_END:
+            default:
+                written = sizeof(outbuf) - zstrm.avail_out;
+                if (written) {
+                    if ((cli_writen(ofd, outbuf, written))!=written) {
+                        cli_errmsg("scan_mso_stream: failed write to output file\n");
+                        ret = CL_EWRITE;
+                        goto mso_end;
+                    }
+                    //size_so_far += written;
+                    zstrm.next_out = outbuf;
+                    zstrm.avail_out = sizeof(outbuf);
+                    if (zret == Z_STREAM_END)
+                        break;
+                }
+                if(zstrm.msg)
+                    cli_dbgmsg("scan_mso_stream: zlib inflating error \"%s\"\n", zstrm.msg);
+                else
+                    cli_dbgmsg("scan_mso_stream: zlib inflating error %d\n", zret);
+                ret = CL_EFORMAT;
+                goto mso_end;
+            }
+            break;
+        }
+
+        off_in += bytes;
+    }
+
+    if (ofd >= 0) {
+        STATBUF statbuf;
+
+        if (FSTAT(ofd, &statbuf) == -1) {
+            cli_dbgmsg("scan_mso_stream: Can't stat file descriptor\n");
+            ret = CL_ESTAT;
+            goto mso_end;
+        }
+
+        if (prefix != statbuf.st_size)
+            cli_warnmsg("scan_mso_stream: declared prefix != inflated stream size, %llu != %llu\n",
+                        (long long unsigned)prefix, (long long unsigned)statbuf.st_size);
+        else
+            cli_dbgmsg("scan_mso_stream: declared prefix == inflated stream size, %llu == %llu\n",
+                       (long long unsigned)prefix, (long long unsigned)statbuf.st_size);
+    }
+
+    /* scanning inflated stream */
+    ret = cli_magic_scandesc(ofd, ctx);
+
+    /* clean-up */
+ mso_end:
+    inflateEnd(&zstrm);
+    funmap(input);
+    close(ofd);
+    if(ctx && !ctx->engine->keeptmp)
+        if (cli_unlink(tempfile))
+            ret = CL_EUNLINK;
+    free(tempfile);
+    return ret;
+}
 
 static int
 handler_otf(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * ctx)
@@ -1112,6 +1272,9 @@ handler_otf(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * c
     }
 #endif
 
+
+    /* MSO Stream Scan */
+    //ret = scan_mso_stream(ofd, ctx);
     /* Normal File Scan */
     ret = cli_magic_scandesc(ofd, ctx);
     close(ofd);
