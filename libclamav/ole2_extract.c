@@ -959,6 +959,36 @@ handler_enum(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * 
 }
 
 static int
+likely_mso_stream(int fd)
+{
+    off_t fsize;
+    unsigned char check[2];
+
+    fsize = lseek(fd, 0, SEEK_END);
+    if (fsize == -1) {
+        cli_dbgmsg("likely_mso_stream: call to lseek() failed\n");
+        return 0;
+    } else if (fsize < 6) {
+        return 0;
+    }
+
+    if (lseek(fd, 4, SEEK_SET) == -1) {
+        cli_dbgmsg("likely_mso_stream: call to lseek() failed\n");
+        return 0;
+    }
+
+    if (cli_readn(fd, check, 2) != 2) {
+        cli_dbgmsg("likely_mso_stream: reading from fd failed\n");
+        return 0;
+    }
+
+    if (check[0] == 0x78 && check[1] == 0x9C)
+        return 1;
+
+    return 0;
+}
+
+static int
 scan_mso_stream(int fd, cli_ctx *ctx)
 {
     int zret, ofd, ret = CL_SUCCESS;
@@ -1122,7 +1152,7 @@ handler_otf(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * c
     char           *tempfile;
     unsigned char  *buff;
     int32_t         current_block, len, offset;
-    int             ofd, ret;
+    int             ofd, is_mso, ret;
     bitset_t       *blk_bitset;
 
     UNUSEDPARAM(dir);
@@ -1221,6 +1251,7 @@ handler_otf(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * c
         }
     }
 
+    is_mso = likely_mso_stream(ofd);
     if (lseek(ofd, 0, SEEK_SET) == -1) {
         close(ofd);
         if (ctx && !(ctx->engine->keeptmp))
@@ -1272,11 +1303,18 @@ handler_otf(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * c
     }
 #endif
 
-
-    /* MSO Stream Scan */
-    //ret = scan_mso_stream(ofd, ctx);
-    /* Normal File Scan */
-    ret = cli_magic_scandesc(ofd, ctx);
+    if (is_mso < 0) {
+        ret = CL_ESEEK;
+    } else if (is_mso) {
+        /* MSO Stream Scan */
+        ret = scan_mso_stream(ofd, ctx);
+        /* CONSIDER: running cli_magic_scandesc in the chance of MSO fp? */
+        //if (ret != CL_SUCCESS || ret != CL_VIRUS)
+        //ret = cli_magic_scandesc(ofd, ctx);
+    } else {
+        /* Normal File Scan */
+        ret = cli_magic_scandesc(ofd, ctx);
+    }
     close(ofd);
     free(buff);
     cli_bitset_free(blk_bitset);
