@@ -184,43 +184,7 @@
         "Entry"
         {
         "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_29583B2B37A44A71864FFD88DFED2C8F"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_32F4158C158142089DB13F5F29F91589"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_4053CC7DC75C48E98893BCEA2D692E55"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_42222ACB125B4398B7BF9C030F7DF8FB"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_64B5C4E9452F43349FB4D53DEE15C87D"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_86FBE3D4BB5F42609082FB54D8079705"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_AA48472048A74261A786515933650C63"
+        "OwnerKey" = "8:_E6AAF8DB843A4CDCBD12F62B44F0D947"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
@@ -232,7 +196,43 @@
         "Entry"
         {
         "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_E6AAF8DB843A4CDCBD12F62B44F0D947"
+        "OwnerKey" = "8:_AA48472048A74261A786515933650C63"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_UNDEFINED"
+        "OwnerKey" = "8:_86FBE3D4BB5F42609082FB54D8079705"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_UNDEFINED"
+        "OwnerKey" = "8:_64B5C4E9452F43349FB4D53DEE15C87D"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_UNDEFINED"
+        "OwnerKey" = "8:_42222ACB125B4398B7BF9C030F7DF8FB"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_UNDEFINED"
+        "OwnerKey" = "8:_4053CC7DC75C48E98893BCEA2D692E55"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_UNDEFINED"
+        "OwnerKey" = "8:_32F4158C158142089DB13F5F29F91589"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_UNDEFINED"
+        "OwnerKey" = "8:_29583B2B37A44A71864FFD88DFED2C8F"
         "MsmSig" = "8:_UNDEFINED"
         }
     }
@@ -736,15 +736,15 @@
         {
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:ClamAV"
-        "ProductCode" = "8:{57DFADF9-B1DF-4914-A2EC-1F823CBE8CDE}"
-        "PackageCode" = "8:{0F7D90CF-AC09-4DAD-B8E0-6C0309E124C5}"
+        "ProductCode" = "8:{63D2ED8E-E2FA-42D0-A7F2-A930F235DEE4}"
+        "PackageCode" = "8:{9586B04A-41FC-4292-828C-CB486A59BBD0}"
         "UpgradeCode" = "8:{B65ED295-87F7-4870-8017-E3A594DDADF8}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"
         "RemovePreviousVersions" = "11:TRUE"
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:TRUE"
-        "ProductVersion" = "8:0.98.5"
+        "ProductVersion" = "8:0.98.7"
         "Manufacturer" = "8:Sourcefire Inc"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:http://www.clamav.net"
