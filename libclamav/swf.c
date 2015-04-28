@@ -49,6 +49,7 @@
 #include "swf.h"
 #include "clamav.h"
 #include "scanners.h"
+#include "lzma_iface.h"
 
 #define EC16(v)	le16_to_host(v)
 #define EC32(v)	le32_to_host(v)
@@ -119,6 +120,124 @@ struct swf_file_hdr {
     uint32_t filesize;
 };
 
+static int scanzws(cli_ctx *ctx, struct swf_file_hdr *hdr)
+{
+	struct CLI_LZMA lz;
+	unsigned char inbuff[FILEBUFF], outbuff[FILEBUFF];
+	fmap_t *map = *ctx->fmap;
+	off_t offset = 8;
+	size_t outsize = 8;
+	int ret, lret, count;
+	char *tmpname;
+	int fd;
+
+    if((ret = cli_gentempfd(ctx->engine->tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
+	cli_errmsg("scanzws: Can't generate temporary file\n");
+	return ret;
+    }
+
+    hdr->signature[0] = 'F';
+    if(cli_writen(fd, hdr, sizeof(struct swf_file_hdr)) != sizeof(struct swf_file_hdr)) {
+	cli_errmsg("scanzws: Can't write to file %s\n", tmpname);
+        close(fd);
+	if(cli_unlink(tmpname)) {
+	    free(tmpname);
+	    return CL_EUNLINK;
+	}
+	free(tmpname);
+	return CL_EWRITE;
+    }
+
+    lz.avail_in = 0;
+    lz.next_in = inbuff;
+    lz.next_out = outbuff;
+
+    lret = cli_LzmaInit(&lz, 0);
+    if (lret != LZMA_RESULT_OK) {
+	cli_errmsg("scanzws: LzmaInit() failed\n");
+	close(fd);
+	if (cli_unlink(tmpname)) {
+	    free(tmpname);
+	    return CL_EUNLINK;
+	}
+	free(tmpname);
+	return CL_EUNPACK;
+    }
+
+    do {
+	if (lz.avail_in == 0) {
+	    lz.next_in = inbuff;
+	    ret = fmap_readn(map, inbuff, offset, FILEBUFF);
+	    if (ret < 0) {
+		cli_errmsg("scanzws: Error reading SWF file\n");
+		cli_LzmaShutdown(&lz);
+		close(fd);
+		if (cli_unlink(tmpname)) {
+		    free(tmpname);
+		    return CL_EUNLINK;
+		}
+		free(tmpname);
+		return CL_EUNPACK;
+	    }
+	    if (!ret)
+		break;
+	    lz.avail_in = ret;
+	    offset += ret;
+	}
+	lret = cli_LzmaDecode(&lz);
+	count = FILEBUFF - lz.avail_out;
+	if (count) {
+	    if (cli_checklimits("SWF", ctx, outsize + count, 0, 0) != CL_SUCCESS)
+		break;
+	    if (cli_writen(fd, outbuff, count) != count) {
+		cli_errmsg("scanzws: Can't write to file %s\n", tmpname);
+		cli_LzmaShutdown(&lz);
+		close(fd);
+		if (cli_unlink(tmpname)) {
+		    free(tmpname);
+		    return CL_EUNLINK;
+		}
+		free(tmpname);
+		return CL_EWRITE;
+	    }
+	    outsize += count;
+	}
+	lz.next_out = outbuff;
+	lz.avail_out = FILEBUFF;
+    } while(lret == LZMA_RESULT_OK);
+
+    cli_LzmaShutdown(&lz);
+
+    if (lret != LZMA_STREAM_END || lret != LZMA_RESULT_OK) {
+	/* outsize starts at 8, therefore, if its still 8, nothing was decompressed */
+	if (outsize == 8) {
+	    cli_infomsg(ctx, "scanzws: Error decompressing SWF file. No data decompressed.\n");
+	    close(fd);
+	    if (cli_unlink(tmpname)) {
+		free(tmpname);
+		return CL_EUNLINK;
+	    }
+	    free(tmpname);
+	    return CL_EUNPACK;
+	}
+	cli_infomsg(ctx, "scanzws: Error decompressing SWF file. Scanning what was decompressed.\n");
+    }
+
+    cli_dbgmsg("SWF: Decompressed[LZMA] to %s, size %d\n", tmpname, outsize);
+
+    ret = cli_magic_scandesc(fd, ctx);
+
+    close(fd);
+    if (!(ctx->engine->keeptmp)) {
+	if (cli_unlink(tmpname)) {
+	    free(tmpname);
+	    return CL_EUNLINK;
+	}
+    }
+    free(tmpname);
+    return ret;
+}
+
 static int scancws(cli_ctx *ctx, struct swf_file_hdr *hdr)
 {
 	z_stream stream;
@@ -172,13 +291,12 @@ static int scancws(cli_ctx *ctx, struct swf_file_hdr *hdr)
 	    if(ret < 0) {
 		cli_errmsg("scancws: Error reading SWF file\n");
 		close(fd);
+		inflateEnd(&stream);
 		if(cli_unlink(tmpname)) {
 		    free(tmpname);
-            inflateEnd(&stream);
 		    return CL_EUNLINK;
 		}
 		free(tmpname);
-        inflateEnd(&stream);
 		return CL_EUNPACK;
 	    }
 	    if(!ret)
@@ -193,6 +311,7 @@ static int scancws(cli_ctx *ctx, struct swf_file_hdr *hdr)
 		break;
 	    if(cli_writen(fd, outbuff, count) != count) {
 		cli_errmsg("scancws: Can't write to file %s\n", tmpname);
+		inflateEnd(&stream);
 		close(fd);
 		if(cli_unlink(tmpname)) {
 		    free(tmpname);
@@ -226,7 +345,7 @@ static int scancws(cli_ctx *ctx, struct swf_file_hdr *hdr)
         }
         cli_infomsg(ctx, "scancws: Error decompressing SWF file. Scanning what was decompressed.\n");
     }
-    cli_dbgmsg("SWF: Decompressed to %s, size %d\n", tmpname, outsize);
+    cli_dbgmsg("SWF: Decompressed[zlib] to %s, size %d\n", tmpname, outsize);
 
     ret = cli_magic_scandesc(fd, ctx);
 
@@ -271,8 +390,11 @@ int cli_scanswf(cli_ctx *ctx)
     offset += sizeof(file_hdr);
 
     if(!strncmp(file_hdr.signature, "CWS", 3)) {
-	cli_dbgmsg("SWF: Compressed file\n");
+	cli_dbgmsg("SWF: zlib compressed file\n");
 	return scancws(ctx, &file_hdr);
+    } else if(!strncmp(file_hdr.signature, "ZWS", 3)) {
+	cli_dbgmsg("SWF: LZMA compressed file\n");
+	return scanzws(ctx, &file_hdr);
     } else if(!strncmp(file_hdr.signature, "FWS", 3)) {
 	cli_dbgmsg("SWF: Uncompressed file\n");
     } else {
