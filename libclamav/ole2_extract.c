@@ -69,8 +69,6 @@
 #pragma pack 1
 #endif
 
-#define MSO_CHUNKSIZE 32768
-
 typedef struct ole2_header_tag {
     unsigned char   magic[8];   /* should be: 0xd0cf11e0a1b11ae1 */
     unsigned char   clsid[16];
@@ -994,10 +992,11 @@ scan_mso_stream(int fd, cli_ctx *ctx)
     int zret, ofd, ret = CL_SUCCESS;
     fmap_t *input;
     off_t off_in = 0;
+    size_t count, outsize = 0;
     z_stream zstrm;
-    char *tempfile;
+    char *tmpname;
     uint32_t prefix;
-    unsigned char outbuf[MSO_CHUNKSIZE];
+    unsigned char inbuf[FILEBUFF], outbuf[FILEBUFF];
 
     /* fmap the input file for easier manipulation */
     if (fd < 0) {
@@ -1018,117 +1017,89 @@ scan_mso_stream(int fd, cli_ctx *ctx)
         }
     }
 
+    /* reserve tempfile for output and scanning */
+    if ((ret = cli_gentempfd(ctx->engine->tmpdir, &tmpname, &ofd)) != CL_SUCCESS) {
+        cli_errmsg("scan_mso_stream: Can't generate temporary file\n");
+        funmap(input);
+        return ret;
+    }
+
     /* initialize zlib inflation stream */
     memset(&zstrm, 0, sizeof(zstrm));
     zstrm.zalloc = Z_NULL;
     zstrm.zfree = Z_NULL;
     zstrm.opaque = Z_NULL;
+    zstrm.next_in = inbuf;
+    zstrm.next_out = outbuf;
     zstrm.avail_in = 0;
-    zstrm.next_in = Z_NULL;
+    zstrm.avail_out = FILEBUFF;
+
     zret = inflateInit(&zstrm);
     if (zret != Z_OK) {
         cli_dbgmsg("scan_mso_stream: Can't initialize zlib inflation stream\n");
-        funmap(input);
-        return CL_EUNPACK;
-    }
-
-    /* reserve tempfile for output and scanning */
-    if (!(tempfile = cli_gentemp(ctx ? ctx->engine->tmpdir : NULL))) {
-        inflateEnd(&zstrm);
-        funmap(input);
-        return CL_EMEM;
-    }
-
-    if ((ofd = open(tempfile, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, S_IRWXU)) < 0) {
-        cli_dbgmsg("scan_mso_stream: Can't create file %s\n", tempfile);
-        inflateEnd(&zstrm);
-        funmap(input);
-        free(tempfile);
-        return CL_ECREAT;
+        ret = CL_EUNPACK;
+        goto mso_end;
     }
 
     /* extract 32-bit prefix */
     if (fmap_readn(input, &prefix, off_in, sizeof(prefix)) != sizeof(prefix)) {
         cli_dbgmsg("scan_mso_stream: Can't extract 4-byte prefix\n");
-        return -1;
+        ret = CL_EREAD;
+        goto mso_end;
     }
     off_in += sizeof(uint32_t);
     cli_dbgmsg("scan_mso_stream: stream prefix = %08x(%d)\n", prefix, prefix);
 
     /* inflation loop */
-    while (off_in < input->len) {
-        size_t bytes = MIN(input->len - off_in, MSO_CHUNKSIZE);
-
-        zstrm.next_in = (void*)fmap_need_off_once(input, off_in, bytes);
-        if (!zstrm.next_in) {
-            cli_warnmsg("scan_mso_stream: fmap need failed on on bytes %llu->%llu\n",
-                        (long long unsigned)off_in, (long long unsigned)(off_in + bytes));
-            return CL_EMAP;
-        }
-        zstrm.avail_in = bytes;
-        zstrm.next_out = outbuf;
-        zstrm.avail_out = sizeof(outbuf);
-
-        /* conversion loop */
-        while (zstrm.avail_in) {
-            int written;
-            zret = inflate(&zstrm, Z_NO_FLUSH);
-            switch(zret) {
-            case Z_OK:
-                if(zstrm.avail_out == 0) {
-                    if ((written=cli_writen(ofd, outbuf, sizeof(outbuf)))!=sizeof(outbuf)) {
-                        cli_errmsg("scan_mso_stream: failed write to output file\n");
-                        ret = CL_EWRITE;
-                        goto mso_end;
-                    }
-                    //size_so_far += written;
-                    zstrm.next_out = outbuf;
-                    zstrm.avail_out = sizeof(outbuf);
-                }
-                continue;
-            case Z_STREAM_END:
-            default:
-                written = sizeof(outbuf) - zstrm.avail_out;
-                if (written) {
-                    if ((cli_writen(ofd, outbuf, written))!=written) {
-                        cli_errmsg("scan_mso_stream: failed write to output file\n");
-                        ret = CL_EWRITE;
-                        goto mso_end;
-                    }
-                    //size_so_far += written;
-                    zstrm.next_out = outbuf;
-                    zstrm.avail_out = sizeof(outbuf);
-                    if (zret == Z_STREAM_END)
-                        break;
-                }
-                if(zstrm.msg)
-                    cli_dbgmsg("scan_mso_stream: zlib inflating error \"%s\"\n", zstrm.msg);
-                else
-                    cli_dbgmsg("scan_mso_stream: zlib inflating error %d\n", zret);
-                ret = CL_EFORMAT;
+    do {
+        if (zstrm.avail_in == 0) {
+            zstrm.next_in = inbuf;
+            ret = fmap_readn(input, inbuf, off_in, FILEBUFF);
+            if (ret < 0) {
+                cli_errmsg("scan_mso_stream: Error reading MSO file\n");
+                ret = CL_EUNPACK;
                 goto mso_end;
             }
-            break;
+            if (!ret)
+                break;
+
+            zstrm.avail_in = ret;
+            off_in += ret;
         }
+        zret = inflate(&zstrm, Z_SYNC_FLUSH);
+        count = FILEBUFF - zstrm.avail_out;
+        if (count) {
+            if (cli_checklimits("MSO", ctx, outsize + count, 0, 0) != CL_SUCCESS)
+                break;
+            if (cli_writen(ofd, outbuf, count) != count) {
+                cli_errmsg("scan_mso_stream: Can't write to file %s\n", tmpname);
+                ret = CL_EWRITE;
+                goto mso_end;
+            }
+            outsize += count;
+        }
+        zstrm.next_out = outbuf;
+        zstrm.avail_out = FILEBUFF;
+    } while(zret == Z_OK);
 
-        off_in += bytes;
-    }
-
-    if (ofd >= 0) {
-        STATBUF statbuf;
-
-        if (FSTAT(ofd, &statbuf) == -1) {
-            cli_dbgmsg("scan_mso_stream: Can't stat file descriptor\n");
-            ret = CL_ESTAT;
+    /* post inflation checks */
+    if (zret != Z_STREAM_END && zret != Z_OK) {
+        if (outsize == 0) {
+            cli_infomsg(ctx, "scan_mso_stream: Error decompressing MSO file. No data decompressed.\n");
+            ret = CL_EUNPACK;
             goto mso_end;
         }
 
-        if (prefix != statbuf.st_size)
-            cli_warnmsg("scan_mso_stream: declared prefix != inflated stream size, %llu != %llu\n",
-                        (long long unsigned)prefix, (long long unsigned)statbuf.st_size);
-        else
-            cli_dbgmsg("scan_mso_stream: declared prefix == inflated stream size, %llu == %llu\n",
-                       (long long unsigned)prefix, (long long unsigned)statbuf.st_size);
+        cli_infomsg(ctx, "scan_mso_stream: Error decompressing MSO file. Scanning what was decompressed.\n");
+    }
+    cli_dbgmsg("scan_mso_stream: Decompressed to %s, size %d\n", tmpname, outsize);
+
+    if (outsize != prefix) {
+        cli_warnmsg("scan_mso_stream: declared prefix != inflated stream size, %llu != %llu\n",
+                    (long long unsigned)prefix, (long long unsigned)outsize);
+    } else {
+        cli_dbgmsg("scan_mso_stream: declared prefix == inflated stream size, %llu == %llu\n",
+                   (long long unsigned)prefix, (long long unsigned)outsize);
     }
 
     /* scanning inflated stream */
@@ -1136,13 +1107,15 @@ scan_mso_stream(int fd, cli_ctx *ctx)
 
     /* clean-up */
  mso_end:
-    inflateEnd(&zstrm);
-    funmap(input);
+    zret = inflateEnd(&zstrm);
+    if (zret != Z_OK)
+        ret = CL_EUNPACK;
     close(ofd);
     if(ctx && !ctx->engine->keeptmp)
-        if (cli_unlink(tempfile))
+        if (cli_unlink(tmpname))
             ret = CL_EUNLINK;
-    free(tempfile);
+    free(tmpname);
+    funmap(input);
     return ret;
 }
 
