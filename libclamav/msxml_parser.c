@@ -160,7 +160,7 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
     const xmlChar *element_name = NULL;
     const xmlChar *node_name = NULL, *node_value = NULL;
     const struct key_entry *keyinfo;
-    int ret, state, node_type, endtag = 0;
+    int ret, virus = 0, state, node_type, endtag = 0;
     cli_ctx *ctx = mxctx->ctx;
 #if HAVE_JSON
     json_object *parent = (json_object *)jptr;
@@ -316,8 +316,10 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
             switch (node_type) {
             case XML_READER_TYPE_ELEMENT:
                 ret = msxml_parse_element(mxctx, reader, rlvl+1, thisjobj);
-                if (ret != CL_SUCCESS) {
+                if (ret != CL_SUCCESS || (!SCAN_ALL && ret == CL_VIRUS)) {
                     return ret;
+                } else if (SCAN_ALL && ret == CL_VIRUS) {
+                    virus = 1;
                 }
                 break;
 
@@ -354,15 +356,10 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
                         break;
                     }
 
-                    if(!(tempfile = cli_gentemp(ctx->engine->tmpdir))) {
-                        free(decoded);
-                        return CL_EMEM;
-                    }
-
-                    if((of = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRUSR|S_IWUSR))==-1) {
+                    if ((ret = cli_gentempfd(ctx->engine->tmpdir, &tempfile, &of)) != CL_SUCCESS) {
                         cli_warnmsg("msxml_parse_element: failed to create temporary file %s\n", tempfile);
                         free(decoded);
-                        return CL_ECREAT;
+                        return ret;
                     }
 
                     if(cli_writen(of, decoded, decodedlen) != (int)decodedlen) {
@@ -381,6 +378,8 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
                     free(tempfile);
                     if (ret != CL_SUCCESS || (!SCAN_ALL && ret == CL_VIRUS)) {
                         return ret;
+                    } else if (SCAN_ALL && ret == CL_VIRUS) {
+                        virus = 1;
                     }
                 }
 
@@ -423,7 +422,7 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
 
                 state = xmlTextReaderNext(reader);
                 check_state(state);
-                return CL_SUCCESS;
+                return (virus ? CL_VIRUS : CL_SUCCESS);
             }
         }
 
@@ -436,19 +435,19 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
         break;
     case XML_READER_TYPE_END_ELEMENT:
         cli_msxmlmsg("msxml_parse_element: END ELEMENT %s [%d]: %s\n", node_name, node_type, node_value);
-        return CL_SUCCESS;
+        return (virus ? CL_VIRUS : CL_SUCCESS);
     default:
         cli_dbgmsg("msxml_parse_element: unhandled xml primary node %s [%d]: %s\n", node_name, node_type, node_value);
     }
 
-    return CL_SUCCESS;
+    return (virus ? CL_VIRUS : CL_SUCCESS);
 }
 
 /* reader intialization and closing handled by caller */
 int cli_msxml_parse_document(cli_ctx *ctx, xmlTextReaderPtr reader, const struct key_entry *keys, const size_t num_keys, int mode)
 {
     struct msxml_ctx mxctx;
-    int state, ret = CL_SUCCESS;
+    int state, virus = 0, ret = CL_SUCCESS;
 
     mxctx.ctx = ctx;
     mxctx.keys = keys;
@@ -478,14 +477,21 @@ int cli_msxml_parse_document(cli_ctx *ctx, xmlTextReaderPtr reader, const struct
 #else
         ret = msxml_parse_element(&mxctx, reader, 0, NULL);
 #endif
-        if (ret != CL_SUCCESS && ret != CL_ETIMEOUT && ret != CL_BREAK) {
+        if (ret == CL_SUCCESS);
+        else if (SCAN_ALL && ret == CL_VIRUS) {
+            /* non-allmatch simply propagates it down to return through ret */
+            virus = 1;
+        } else if (ret == CL_VIRUS || ret == CL_ETIMEOUT || ret == CL_BREAK) {
+            cli_dbgmsg("cli_msxml_parse_document: encountered halt event in parsing xml document\n");
+            break;
+        } else {
             cli_warnmsg("cli_msxml_parse_document: encountered issue in parsing xml document\n");
             break;
         }
     }
 
     if (state == -1)
-        return CL_EPARSE;
+        ret = CL_EPARSE;
 
 #if HAVE_JSON
     /* Parse General Error Handler */
@@ -523,15 +529,15 @@ int cli_msxml_parse_document(cli_ctx *ctx, xmlTextReaderPtr reader, const struct
 
     /* non-critical return supression */
     if (ret == CL_ETIMEOUT || ret == CL_BREAK)
-        return CL_SUCCESS;
+        ret = CL_SUCCESS;
 
     /* important but non-critical suppression */
     if (ret == CL_EPARSE) {
         cli_dbgmsg("cli_msxml_parse_document: suppressing parsing error to continue scan\n");
-        return CL_SUCCESS;
+        ret = CL_SUCCESS;
     }
 
-    return ret;
+    return (virus ? CL_VIRUS : ret);
 }
 
 #endif /* HAVE_LIBXML2 */
