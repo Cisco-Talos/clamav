@@ -165,7 +165,7 @@ int yr_execute_code(
 
   while(1)
   {
-    cli_errmsg("yara_exec: executing %i\n", *ip);
+      //    cli_errmsg("yara_exec: executing %i\n", *ip);
     switch(*ip)
     {
       case OP_HALT:
