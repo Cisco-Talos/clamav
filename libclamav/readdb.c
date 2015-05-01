@@ -3454,8 +3454,6 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
             if (ret != CL_SUCCESS) {
                 str_error++;
                 free(substr);
-                /* suppress the error */
-                ret = CL_SUCCESS;
                 break;
             }
 
@@ -3824,7 +3822,7 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
         rc = load_oneyara(rule, engine, options, &sigs);
         if (rc != CL_SUCCESS) {
             cli_warnmsg("cli_loadyara: problem parsing yara file %s, yara rule %s\n", dbname, rule->identifier);
-            break;
+            continue;
         }
     }
 
