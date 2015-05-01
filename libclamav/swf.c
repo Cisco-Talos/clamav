@@ -125,7 +125,9 @@ static int scanzws(cli_ctx *ctx, struct swf_file_hdr *hdr)
 	struct CLI_LZMA lz;
 	unsigned char inbuff[FILEBUFF], outbuff[FILEBUFF];
 	fmap_t *map = *ctx->fmap;
+	/* strip off header */
 	off_t offset = 8;
+	uint32_t d_insize;
 	size_t outsize = 8;
 	int ret, lret, count;
 	char *tmpname;
@@ -148,11 +150,52 @@ static int scanzws(cli_ctx *ctx, struct swf_file_hdr *hdr)
 	return CL_EWRITE;
     }
 
-    lz.avail_in = 0;
+    /* read 4 bytes (for compressed 32-bit filesize) [not used for LZMA] */
+    if (fmap_readn(map, &d_insize, offset, sizeof(d_insize)) != sizeof(d_insize)) {
+	cli_errmsg("scanzws: Error reading SWF file\n");
+        close(fd);
+        if (cli_unlink(tmpname)) {
+            free(tmpname);
+            return CL_EUNLINK;
+        }
+        free(tmpname);
+        return CL_EREAD;
+    }
+    offset += sizeof(d_insize);
+
+    /* check if declared input size matches actual output size */
+    /* map->len = header (8 bytes) + d_insize (4 bytes) + flags (5 bytes) + compressed stream */
+    if (d_insize != (map->len - 17)) {
+        cli_warnmsg("SWF: declared input length != compressed stream size, %u != %llu\n",
+                    d_insize, (long long unsigned)(map->len - 17));
+    } else {
+        cli_dbgmsg("SWF: declared input length == compressed stream size, %u == %llu\n",
+                   d_insize, (long long unsigned)(map->len - 17));
+    }
+
+    /* first buffer required for initializing LZMA */
+    ret = fmap_readn(map, inbuff, offset, FILEBUFF);
+    if (ret < 0) {
+	cli_errmsg("scanzws: Error reading SWF file\n");
+	close(fd);
+	if (cli_unlink(tmpname)) {
+	    free(tmpname);
+	    return CL_EUNLINK;
+	}
+	free(tmpname);
+	return CL_EUNPACK;
+    }
+    if (!ret)
+	return CL_EFORMAT; /* likely truncated */
+    offset += ret;
+
+    memset(&lz, 0, sizeof(lz));
     lz.next_in = inbuff;
     lz.next_out = outbuff;
+    lz.avail_in = ret;
+    lz.avail_out = FILEBUFF;
 
-    lret = cli_LzmaInit(&lz, 0);
+    lret = cli_LzmaInit(&lz, hdr->filesize);
     if (lret != LZMA_RESULT_OK) {
 	cli_errmsg("scanzws: LzmaInit() failed\n");
 	close(fd);
@@ -164,9 +207,10 @@ static int scanzws(cli_ctx *ctx, struct swf_file_hdr *hdr)
 	return CL_EUNPACK;
     }
 
-    do {
+    while (lret == LZMA_RESULT_OK) {
 	if (lz.avail_in == 0) {
 	    lz.next_in = inbuff;
+
 	    ret = fmap_readn(map, inbuff, offset, FILEBUFF);
 	    if (ret < 0) {
 		cli_errmsg("scanzws: Error reading SWF file\n");
@@ -204,11 +248,11 @@ static int scanzws(cli_ctx *ctx, struct swf_file_hdr *hdr)
 	}
 	lz.next_out = outbuff;
 	lz.avail_out = FILEBUFF;
-    } while(lret == LZMA_RESULT_OK);
+    }
 
     cli_LzmaShutdown(&lz);
 
-    if (lret != LZMA_STREAM_END || lret != LZMA_RESULT_OK) {
+    if (lret != LZMA_STREAM_END && lret != LZMA_RESULT_OK) {
 	/* outsize starts at 8, therefore, if its still 8, nothing was decompressed */
 	if (outsize == 8) {
 	    cli_infomsg(ctx, "scanzws: Error decompressing SWF file. No data decompressed.\n");
@@ -222,8 +266,16 @@ static int scanzws(cli_ctx *ctx, struct swf_file_hdr *hdr)
 	}
 	cli_infomsg(ctx, "scanzws: Error decompressing SWF file. Scanning what was decompressed.\n");
     }
-
     cli_dbgmsg("SWF: Decompressed[LZMA] to %s, size %d\n", tmpname, outsize);
+
+    /* check if declared output size matches actual output size */
+    if (hdr->filesize != outsize) {
+        cli_warnmsg("SWF: declared output length != inflated stream size, %u != %llu\n",
+                    hdr->filesize, (long long unsigned)outsize);
+    } else {
+        cli_dbgmsg("SWF: declared output length == inflated stream size, %u == %llu\n",
+                   hdr->filesize, (long long unsigned)outsize);
+    }
 
     ret = cli_magic_scandesc(fd, ctx);
 
@@ -346,6 +398,15 @@ static int scancws(cli_ctx *ctx, struct swf_file_hdr *hdr)
         cli_infomsg(ctx, "scancws: Error decompressing SWF file. Scanning what was decompressed.\n");
     }
     cli_dbgmsg("SWF: Decompressed[zlib] to %s, size %d\n", tmpname, outsize);
+
+    /* check if declared output size matches actual output size */
+    if (hdr->filesize != outsize) {
+        cli_warnmsg("SWF: declared output length != inflated stream size, %u != %llu\n",
+                    hdr->filesize, (long long unsigned)outsize);
+    } else {
+        cli_dbgmsg("SWF: declared output length == inflated stream size, %u == %llu\n",
+                   hdr->filesize, (long long unsigned)outsize);
+    }
 
     ret = cli_magic_scandesc(fd, ctx);
 
