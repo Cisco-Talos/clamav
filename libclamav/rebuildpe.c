@@ -146,63 +146,63 @@ int cli_rebuildpe_align(char *buffer, struct cli_exe_section *sections, int sect
   if(datasize > CLI_MAX_ALLOCATION)
     return 0;
 
-  if((pefile = (char *) cli_calloc(rawbase+datasize, 1))) {
-    memcpy(pefile, HEADERS, 0x148);
+  pefile = (char *) cli_calloc(rawbase+datasize, 1);
+  if(!pefile)
+      return 0;
 
-    datasize = PESALIGN(rawbase, 0x1000);
+  memcpy(pefile, HEADERS, 0x148);
 
-    fakepe = (struct IMAGE_PE_HEADER *)(pefile+0xd0);
-    fakepe->NumberOfSections = EC16(sects+gotghost);
-    fakepe->AddressOfEntryPoint = EC32(ep);
-    fakepe->ImageBase = EC32(base);
-    fakepe->SizeOfHeaders = EC32(rawbase);
-    memset(pefile+0x148, 0, 0x80);
-    cli_writeint32(pefile+0x148+0x10, ResRva);
-    cli_writeint32(pefile+0x148+0x14, ResSize);
-    curpe = pefile+0x148+0x80;
+  datasize = PESALIGN(rawbase, 0x1000);
 
-    if (gotghost) {
+  fakepe = (struct IMAGE_PE_HEADER *)(pefile+0xd0);
+  fakepe->NumberOfSections = EC16(sects+gotghost);
+  fakepe->AddressOfEntryPoint = EC32(ep);
+  fakepe->ImageBase = EC32(base);
+  fakepe->SizeOfHeaders = EC32(rawbase);
+  memset(pefile+0x148, 0, 0x80);
+  cli_writeint32(pefile+0x148+0x10, ResRva);
+  cli_writeint32(pefile+0x148+0x14, ResSize);
+  curpe = pefile+0x148+0x80;
+
+  if (gotghost) {
       snprintf(curpe, 8, "empty");
       cli_writeint32(curpe+8, sections[0].rva-datasize); /* vsize */
       cli_writeint32(curpe+12, datasize); /* rva */
       cli_writeint32(curpe+0x24, 0xffffffff);
       curpe+=40;
       datasize+=PESALIGN(sections[0].rva-datasize, 0x1000);
-    }
+  }
 
-    for (i=0; i < sects; i++) {
+  for (i=0; i < sects; i++) {
       snprintf(curpe, 8, ".clam%.2d", i+1);
       if (!align) {
-        cli_writeint32(curpe+8, sections[i].vsz);
-        cli_writeint32(curpe+12, sections[i].rva);
-        cli_writeint32(curpe+16, sections[i].rsz);
-        cli_writeint32(curpe+20, rawbase);
+          cli_writeint32(curpe+8, sections[i].vsz);
+          cli_writeint32(curpe+12, sections[i].rva);
+          cli_writeint32(curpe+16, sections[i].rsz);
+          cli_writeint32(curpe+20, rawbase);
       } else {
-        cli_writeint32(curpe+8, PESALIGN(sections[i].vsz, align));
-        cli_writeint32(curpe+12, PESALIGN(sections[i].rva, align));
-        cli_writeint32(curpe+16, PESALIGN(sections[i].rsz, align));
-        cli_writeint32(curpe+20, rawbase);
+          cli_writeint32(curpe+8, PESALIGN(sections[i].vsz, align));
+          cli_writeint32(curpe+12, PESALIGN(sections[i].rva, align));
+          cli_writeint32(curpe+16, PESALIGN(sections[i].rsz, align));
+          cli_writeint32(curpe+20, rawbase);
       }
       /* already zeroed
-      cli_writeint32(curpe+24, 0);
-      cli_writeint32(curpe+28, 0);
-      cli_writeint32(curpe+32, 0);
+         cli_writeint32(curpe+24, 0);
+         cli_writeint32(curpe+28, 0);
+         cli_writeint32(curpe+32, 0);
       */
       cli_writeint32(curpe+0x24, 0xffffffff);
       memcpy(pefile+rawbase, buffer+sections[i].raw, sections[i].rsz);
       curpe+=40;
       if (!align) {
-        rawbase+=PESALIGN(sections[i].rsz, 0x200);
-        datasize+=PESALIGN(sections[i].vsz, 0x1000);
+          rawbase+=PESALIGN(sections[i].rsz, 0x200);
+          datasize+=PESALIGN(sections[i].vsz, 0x1000);
       } else {
-        rawbase+=PESALIGN(PESALIGN(sections[i].rsz, align), 0x200);
-        datasize+=PESALIGN(PESALIGN(sections[i].vsz, align), 0x1000);
+          rawbase+=PESALIGN(PESALIGN(sections[i].rsz, align), 0x200);
+          datasize+=PESALIGN(PESALIGN(sections[i].vsz, align), 0x1000);
       }
-    }
-    fakepe->SizeOfImage = EC32(datasize);
-  } else {
-    return 0;
   }
+  fakepe->SizeOfImage = EC32(datasize);
 
   i = (cli_writen(file, pefile, rawbase)!=-1);
   free(pefile);

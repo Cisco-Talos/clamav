@@ -115,7 +115,13 @@ char *cl_base64_encode(void *data, size_t len)
     size_t elen;
 
     b64 = BIO_new(BIO_f_base64());
+    if (!(b64))
+        return NULL;
     bio = BIO_new(BIO_s_mem());
+    if (!(bio)) {
+        BIO_free(b64);
+        return NULL;
+    }
 
     bio = BIO_push(b64, bio);
     BIO_write(bio, data, len);

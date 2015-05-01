@@ -623,6 +623,7 @@ static Suite *test_cl_suite(void)
     Suite *s = suite_create("cl_api");
     TCase *tc_cl = tcase_create("cl_dup");
     TCase *tc_cl_scan = tcase_create("cl_scan");
+    char *user_timeout = NULL;
     int expect = expected_testfiles;
     suite_add_tcase (s, tc_cl);
     tcase_add_test(tc_cl, test_cl_free);
@@ -661,6 +662,12 @@ static Suite *test_cl_suite(void)
     tcase_add_loop_test(tc_cl_scan, test_cl_scanmap_callback_handle_allscan, 0, expect);
     tcase_add_loop_test(tc_cl_scan, test_cl_scanmap_callback_mem, 0, expect);
     tcase_add_loop_test(tc_cl_scan, test_cl_scanmap_callback_mem_allscan, 0, expect);
+
+    user_timeout = getenv("T");
+    if (user_timeout) {
+        int timeout = atoi(user_timeout);
+        tcase_set_timeout(tc_cl_scan, timeout);
+    }
 #endif
     return s;
 }

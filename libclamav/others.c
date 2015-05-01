@@ -770,7 +770,6 @@ struct cl_settings *cl_engine_settings_copy(const struct cl_engine *engine)
     settings->cb_hash = engine->cb_hash;
     settings->cb_meta = engine->cb_meta;
     settings->cb_file_props = engine->cb_file_props;
-    settings->cb_file_props_data = engine->cb_file_props_data;
     settings->engine_options = engine->engine_options;
 
     settings->cb_stats_add_sample = engine->cb_stats_add_sample;
@@ -843,7 +842,6 @@ int cl_engine_settings_apply(struct cl_engine *engine, const struct cl_settings 
     engine->cb_hash = settings->cb_hash;
     engine->cb_meta = settings->cb_meta;
     engine->cb_file_props = settings->cb_file_props;
-    engine->cb_file_props_data = settings->cb_file_props_data;
 
     engine->cb_stats_add_sample = settings->cb_stats_add_sample;
     engine->cb_stats_remove_sample = settings->cb_stats_remove_sample;
@@ -1363,8 +1361,7 @@ void cl_engine_set_clcb_meta(struct cl_engine *engine, clcb_meta callback)
     engine->cb_meta = callback;
 }
 
- void cl_engine_set_clcb_file_props(struct cl_engine *engine, clcb_file_props callback, void * cbdata)
+void cl_engine_set_clcb_file_props(struct cl_engine *engine, clcb_file_props callback)
 {
     engine->cb_file_props = callback;
-    engine->cb_file_props_data = cbdata;
 }

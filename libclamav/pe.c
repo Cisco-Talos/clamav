@@ -1642,7 +1642,7 @@ int cli_scanpe(cli_ctx *ctx)
 
         if(exe_sections[0].rsz > CLI_MAX_ALLOCATION)
             break;
-        if(!exe_sections[0].rsz)
+        if(exe_sections[0].rsz < 5)
             break;
         if(!(code=fmap_need_off_once(map, exe_sections[0].raw, exe_sections[0].rsz)))
             break;
@@ -2457,7 +2457,21 @@ int cli_scanpe(cli_ctx *ctx)
 
             for(i = 0 ; i < nsections; i++) {
                 if(exe_sections[i].raw) {
-                    if(!exe_sections[i].rsz || (unsigned int)fmap_readn(map, dest + exe_sections[i].rva - min, exe_sections[i].raw, exe_sections[i].ursz) != exe_sections[i].ursz) {
+			unsigned int r_ret;
+
+			if (!exe_sections[i].rsz)
+				goto out_no_petite;
+
+			if (!CLI_ISCONTAINED(dest, dsize,
+					     dest + exe_sections[i].rva - min,
+					     exe_sections[i].ursz))
+				goto out_no_petite;
+
+			r_ret = fmap_readn(map, dest + exe_sections[i].rva - min,
+					exe_sections[i].raw,
+					exe_sections[i].ursz);
+		    if (r_ret != exe_sections[i].ursz) {
+out_no_petite:
                         free(exe_sections);
                         free(dest);
                         return CL_CLEAN;

@@ -75,7 +75,7 @@ int cli_XzDecode(struct CLI_XZ *XZ) {
         return XZ_STREAM_END;
     if (XZ->status == CODER_STATUS_NOT_FINISHED && XZ->avail_out == 0)
         return XZ_RESULT_OK;
-    if (res != SZ_OK)
+    if (((inbytes == 0) && (outbytes == 0)) || res != SZ_OK)
 	return XZ_RESULT_DATA_ERROR;
     return XZ_RESULT_OK;
 }

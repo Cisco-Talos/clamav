@@ -68,82 +68,33 @@
 #include "rijndael.h"
 #include "textnorm.h"
 #include "json_api.h"
+#include "conv.h"
 
 char *pdf_convert_utf(char *begin, size_t sz);
 
 char *pdf_convert_utf(char *begin, size_t sz)
 {
     char *res=NULL;
+    char *buf, *outbuf;
 #if HAVE_ICONV
-    char *buf, *outbuf, *p1, *p2;
-    size_t sz2, inlen, outlen, i;
+    char *p1, *p2;
+    size_t inlen, outlen, i;
     char *encodings[] = {
         "UTF-16",
         NULL
     };
     iconv_t cd;
+#endif
 
-    buf = cli_calloc(1, sz);
+    buf = cli_calloc(1, sz+1);
     if (!(buf))
         return NULL;
+    memcpy(buf, begin, sz);
 
-    /* convert PDF specific escape sequences, like octal sequences */
-    sz2 = 0;
-    for (i = 0; i < sz; ++i) {
-        if ((i+1 < sz) && begin[i] == '\\') {
-            if ((i+3 < sz) &&
-                (isdigit(begin[i+1]) && isdigit(begin[i+2]) && isdigit(begin[i+3]))) {
-                /* octal sequence */
-                char octal[4], *check;
-                unsigned long value;
-
-                memcpy(octal, &begin[i+1], 3);
-                octal[3] = '\0';
-
-                value = (char)strtoul(octal, &check, 8);
-                /* check if all characters were converted */
-                if (check == &octal[3])
-                    buf[sz2++] = value;
-                i += 3;
-            } else {
-                /* other sequences */
-                switch(begin[i+1]) {
-                case 'n':
-                    buf[sz2++] = 0x0a;
-                    break;
-                case 'r':
-                    buf[sz2++] = 0x0d;
-                    break;
-                case 't':
-                    buf[sz2++] = 0x09;
-                    break;
-                case 'b':
-                    buf[sz2++] = 0x08;
-                    break;
-                case 'f':
-                    buf[sz2++] = 0x0c;
-                    break;
-                case '(':
-                    buf[sz2++] = 0x28;
-                    break;
-                case ')':
-                    buf[sz2++] = 0x29;
-                    break;
-                case '\\':
-                    buf[sz2++] = 0x5c;
-                    break;
-                default:
-                    /* IGNORE THE REVERSE SOLIDUS - PDF3000-2008 */
-                    break;
-                }
-            }
-        } else
-            buf[sz2++] = begin[i]; 
-    }
-    //memcpy(buf, begin, sz);
+#if HAVE_ICONV
     p1 = buf;
 
-    p2 = outbuf = cli_calloc(1, sz2+1);
+    p2 = outbuf = cli_calloc(1, sz+1);
     if (!(outbuf)) {
         free(buf);
         return NULL;
@@ -152,7 +103,7 @@ char *pdf_convert_utf(char *begin, size_t sz)
     for (i=0; encodings[i] != NULL; i++) {
         p1 = buf;
         p2 = outbuf;
-        inlen = outlen = sz2;
+        inlen = outlen = sz;
 
         cd = iconv_open("UTF-8", encodings[i]);
         if (cd == (iconv_t)(-1)) {
@@ -162,32 +113,31 @@ char *pdf_convert_utf(char *begin, size_t sz)
 
         iconv(cd, (char **)(&p1), &inlen, &p2, &outlen);
 
-        if (outlen == sz2) {
+        if (outlen == sz) {
             /* Decoding unsuccessful right from the start */
             iconv_close(cd);
             continue;
         }
 
-        outbuf[sz2 - outlen] = '\0';
+        outbuf[sz - outlen] = '\0';
 
         res = strdup(outbuf);
         iconv_close(cd);
         break;
     }
+#else
+    outbuf = cli_utf16_to_utf8(buf, sz, UTF16_BOM);
+    if (!outbuf) {
+        free(buf);
+        return NULL;
+    }
 
+    res = strdup(outbuf);
+#endif
     free(buf);
     free(outbuf);
 
     return res;
-#else
-    res = cli_calloc(sz+1, 1);
-    if ((res)) {
-        memcpy(res, begin, sz);
-        res[sz] = '\0';
-    }
-
-    return res;
-#endif
 }
 
 int is_object_reference(char *begin, char **endchar, uint32_t *id)
@@ -274,13 +224,154 @@ int is_object_reference(char *begin, char **endchar, uint32_t *id)
     return 0;
 }
 
-char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *objstart, size_t objsize, const char *str, char **endchar)
+static char *pdf_decrypt_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *in, off_t *length)
+{
+    enum enc_method enc;
+
+    /* handled only once in cli_pdf() */
+    //pdf_handle_enc(pdf);
+    if (pdf->flags & (1 << DECRYPTABLE_PDF)) {
+        enc = get_enc_method(pdf, obj);
+        return decrypt_any(pdf, obj->id, in, length, enc);
+    }
+    return NULL;
+}
+
+char *pdf_finalize_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *in, size_t len)
+{
+    char *wrkstr, *output = NULL;
+    size_t wrklen = len, outlen;
+    unsigned int i, likelyutf = 0;
+
+    if (!in)
+        return NULL;
+
+    /* get a working copy */
+    wrkstr = cli_calloc(len+1, sizeof(char));
+    if (!wrkstr)
+        return NULL;
+    memcpy(wrkstr, in, len);
+
+    //cli_errmsg("pdf_final: start(%d):   %s\n", wrklen, wrkstr);
+
+    /* convert PDF specific escape sequences, like octal sequences */
+    /* TODO: replace the escape sequences directly in the wrkstr   */
+    if (strchr(wrkstr, '\\')) {
+        output = cli_calloc(wrklen+1, sizeof(char));
+        if (!output)
+            return NULL;
+
+        outlen = 0;
+        for (i = 0; i < wrklen; ++i) {
+            if ((i+1 < wrklen) && wrkstr[i] == '\\') {
+                if ((i+3 < wrklen) &&
+                    (isdigit(wrkstr[i+1]) && isdigit(wrkstr[i+2]) && isdigit(wrkstr[i+3]))) {
+                    /* octal sequence */
+                    char octal[4], *check;
+                    unsigned long value;
+
+                    memcpy(octal, &wrkstr[i+1], 3);
+                    octal[3] = '\0';
+
+                    value = (char)strtoul(octal, &check, 8);
+                    /* check if all characters were converted */
+                    if (check == &octal[3])
+                        output[outlen++] = value;
+                    i += 3; /* 4 with for loop [\ddd] */
+                } else {
+                    /* other sequences */
+                    switch(wrkstr[i+1]) {
+                    case 'n':
+                        output[outlen++] = 0x0a;
+                        break;
+                    case 'r':
+                        output[outlen++] = 0x0d;
+                        break;
+                    case 't':
+                        output[outlen++] = 0x09;
+                        break;
+                    case 'b':
+                        output[outlen++] = 0x08;
+                        break;
+                    case 'f':
+                        output[outlen++] = 0x0c;
+                        break;
+                    case '(':
+                        output[outlen++] = 0x28;
+                        break;
+                    case ')':
+                        output[outlen++] = 0x29;
+                        break;
+                    case '\\':
+                        output[outlen++] = 0x5c;
+                        break;
+                    default:
+                        /* IGNORE THE REVERSE SOLIDUS - PDF3000-2008 */
+                        break;
+                    }
+                    i += 1; /* 2 with for loop [\c] */
+                }
+            } else {
+                output[outlen++] = wrkstr[i];
+            }
+        }
+
+        free(wrkstr);
+        wrkstr = cli_strdup(output);
+        free(output);
+        wrklen = outlen;
+    }
+
+    //cli_errmsg("pdf_final: escaped(%d): %s\n", wrklen, wrkstr);
+
+    /* check for encryption and decrypt */
+    if (pdf->flags & (1 << ENCRYPTED_PDF))
+    {
+        off_t tmpsz = (off_t)wrklen;
+        output = pdf_decrypt_string(pdf, obj, wrkstr, &tmpsz);
+        outlen = (size_t)tmpsz;
+        free(wrkstr);
+        if (output) {
+            wrkstr = cli_calloc(outlen+1, sizeof(char));
+            if (!wrkstr) {
+                free(output);
+                return NULL;
+            }
+            memcpy(wrkstr, output, outlen);
+            free(output);
+            wrklen = outlen;
+        } else {
+            return NULL;
+        }
+    }
+
+    //cli_errmsg("pdf_final: decrypt(%d): %s\n", wrklen, wrkstr);
+
+    /* check for UTF-* and convert to UTF-8 */
+    for (i = 0; i < wrklen; ++i) {
+        if (((unsigned char)wrkstr[i] > (unsigned char)0x7f) || (wrkstr[i] == '\0')) {
+            likelyutf = 1;
+            break;
+        }
+    }
+
+    if (likelyutf) {
+        output = pdf_convert_utf(wrkstr, wrklen);
+        free(wrkstr);
+        wrkstr = output;
+    }
+
+    //cli_errmsg("pdf_final: postutf(%d): %s\n", wrklen, wrkstr);
+
+    return wrkstr;
+}
+
+char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *objstart, size_t objsize, const char *str, char **endchar, struct pdf_stats_metadata *meta)
 {
     const char *q = objstart;
     char *p1, *p2;
     size_t len, checklen;
-    char *res;
-    int likelyutf = 0;
+    char *res = NULL;
     uint32_t objid;
     size_t i;
 
@@ -293,8 +384,6 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
      * If we're ASCII, just copy the ASCII string into a new heap-allocated string and return that
      * Fourth, Attempt to decode from UTF-* to UTF-8
      */
-
-    res = NULL;
 
     if (str) {
         checklen = strlen(str);
@@ -407,26 +496,29 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
             switch (*p3) {
                 case '(':
                 case '<':
-                    res = pdf_parse_string(pdf, obj, p3, objsize2, NULL, NULL);
-                    free(begin);
+                    res = pdf_parse_string(pdf, obj, p3, objsize2, NULL, NULL, meta);
                     break;
                 default:
-                    for (i=0; i < objsize2; i++) {
-                        if (p3[i] >= 0x7f) {
-                            likelyutf=1;
-                            break;
-                        }
-                    }
-
-                    res = likelyutf ? pdf_convert_utf(p3, objsize2) : NULL;
-
-                    if (!(res)) {
-                        res = begin;
+                    res = pdf_finalize_string(pdf, obj, begin, objsize2);
+                    if (!res) {
+                        res = cli_calloc(1, objsize2+1);
+                        if (!(res))
+                            return NULL;
+                        memcpy(res, begin, objsize2);
                         res[objsize2] = '\0';
-                    } else {
-                        free(begin);
+
+                        if (meta) {
+                            meta->length = objsize2;
+                            meta->obj = obj;
+                            meta->success = 0;
+                        }
+                    } else if (meta) {
+                        meta->length = strlen(res);
+                        meta->obj = obj;
+                        meta->success = 1;
                     }
             }
+            free(begin);
         }
 
         close(fd);
@@ -471,9 +563,6 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
     while (p2 < objstart + objsize) {
         int shouldbreak=0;
 
-        if (!likelyutf && (*((unsigned char *)p2) > (unsigned char)0x7f || *p2 == '\0'))
-            likelyutf = 1;
-
         switch (*p2) {
             case '\\':
                 p2++;
@@ -496,21 +585,24 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
 
     len = (size_t)(p2 - p1) + 1;
 
-    if (likelyutf == 0) {
-        /* We're not UTF-*, so just make a copy of the string and return that */
+    res = pdf_finalize_string(pdf, obj, p1, len);
+    if (!res) {
         res = cli_calloc(1, len+1);
         if (!(res))
             return NULL;
-
         memcpy(res, p1, len);
         res[len] = '\0';
-        if (endchar)
-            *endchar = p2;
 
-        return res;
+        if (meta) {
+            meta->length = len;
+            meta->obj = obj;
+            meta->success = 0;
+        }
+    } else if (meta) {
+        meta->length = strlen(res);
+        meta->obj = obj;
+        meta->success = 1;
     }
-
-    res = pdf_convert_utf(p1, len);
 
     if (res && endchar)
         *endchar = p2;
@@ -672,7 +764,7 @@ struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, siz
 
         switch (begin[0]) {
             case '(':
-                val = pdf_parse_string(pdf, obj, begin, objsz, NULL, &p1);
+                val = pdf_parse_string(pdf, obj, begin, objsz, NULL, &p1, NULL);
                 begin = p1+2;
                 break;
             case '[':
@@ -688,7 +780,7 @@ struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, siz
                     }
                 }
 
-                val = pdf_parse_string(pdf, obj, begin, objsz, NULL, &p1);
+                val = pdf_parse_string(pdf, obj, begin, objsz, NULL, &p1, NULL);
                 begin = p1+2;
                 break;
             default:
@@ -870,7 +962,7 @@ struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj *obj, s
 
                 /* Not a dictionary. Intentially fall through. */
             case '(':
-                val = pdf_parse_string(pdf, obj, begin, objsz, NULL, &begin);
+                val = pdf_parse_string(pdf, obj, begin, objsz, NULL, &begin, NULL);
                 begin += 2;
                 break;
             case '[':

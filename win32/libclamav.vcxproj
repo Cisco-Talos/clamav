@@ -357,6 +357,8 @@
     <ClCompile Include="..\libclamav\mpool.c" />
     <ClCompile Include="..\libclamav\msexpand.c" />
     <ClCompile Include="..\libclamav\mspack.c" />
+    <ClCompile Include="..\libclamav\msxml.c" />
+    <ClCompile Include="..\libclamav\msxml_parser.c" />
     <ClCompile Include="..\libclamav\nsis\bzlib.c">
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)\nsis_bzlib</ObjectFileName>
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)\nsis_bzlib</ObjectFileName>

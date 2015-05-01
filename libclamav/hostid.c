@@ -47,7 +47,7 @@
 #include <ifaddrs.h>
 #endif
 
-#if defined(SIOCGIFHWADDR)
+#if defined(SIOCGIFHWADDR) && !defined(__GNU__)
 #if defined(_AIX)
 #include <sys/ndd_var.h>
 #include <sys/kinfo.h>
@@ -116,7 +116,7 @@ struct device *get_devices(void)
     uint8_t *mac;
     int sock;
 
-#if defined(SIOCGIFHWADDR)
+#if defined(SIOCGIFHWADDR) && !defined(__GNU__)
     struct ifreq ifr;
 #else
     struct sockaddr_dl *sdl;
@@ -155,7 +155,7 @@ struct device *get_devices(void)
          * Instead, Linux uses its own ioctl. This code only runs if we're not Linux,
          * Windows, or FreeBSD.
          */
-#if !defined(SIOCGIFHWADDR)
+#if !defined(SIOCGIFHWADDR) || defined(__GNU__)
         for (i=0; i < ndevices; i++) {
             if (!(strcmp(devices[i].name, addr->ifa_name))) {
                 sdl = (struct sockaddr_dl *)(addr->ifa_addr);
@@ -180,7 +180,7 @@ struct device *get_devices(void)
     }
 
     /* This is the Linux version of getting the MAC addresses */
-#if defined(SIOCGIFHWADDR)
+#if defined(SIOCGIFHWADDR) && !defined(__GNU__)
     for (i=0; i < ndevices; i++) {
         if (!(devices[i].name))
             continue;

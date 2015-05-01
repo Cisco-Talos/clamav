@@ -28291,7 +28291,7 @@ fi
 if test "x$XML_LIBS" = "x"; then
 
 
-   $as_echo_n "              dmg and xar : "
+   $as_echo_n "              libxml2     : "
    if test "x" = "xno"; then :
   $as_echo "no (disabled)"
 elif test "x" = "xyes"; then :
@@ -28305,7 +28305,7 @@ fi
 else
 
 
-   $as_echo_n "              dmg and xar : "
+   $as_echo_n "              libxml2     : "
    if test "x" = "xno"; then :
   $as_echo "yes, from $XML_HOME (disabled)"
 elif test "x" = "xyes"; then :

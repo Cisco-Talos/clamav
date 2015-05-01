@@ -2970,7 +2970,13 @@ void cli_bytecode_describe(const struct cli_bc *bc)
 	    puts("logical only");
 	    break;
 	case BC_PE_UNPACKER:
-	    puts("PE hook");
+	    puts("PE unpacker hook");
+	    break;
+    case BC_PE_ALL:
+        puts("all PE hook");
+        break;
+    case BC_PRECLASS:
+        puts("preclass hook");
 	    break;
 	default:
 	    printf("Unknown (type %u)", bc->kind);
@@ -3006,6 +3012,12 @@ void cli_bytecode_describe(const struct cli_bc *bc)
 		puts("PE files matching logical signature");
 	    else
 		puts("all PE files!");
+	    break;
+	case BC_PRECLASS:
+	    if (bc->lsig)
+		puts("PRECLASS files matching logical signature");
+	    else
+		puts("all PRECLASS files!");
 	    break;
 	default:
 	    puts("N/A (unknown type)\n");

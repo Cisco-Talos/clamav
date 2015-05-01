@@ -67,7 +67,7 @@
  * in re-enabling affected modules.
  */
 
-#define CL_FLEVEL 80
+#define CL_FLEVEL 81
 #define CL_FLEVEL_DCONF	CL_FLEVEL
 #define CL_FLEVEL_SIGTOOL CL_FLEVEL
 
@@ -315,7 +315,6 @@ struct cl_engine {
     clcb_hash cb_hash;
     clcb_meta cb_meta;
     clcb_file_props cb_file_props;
-    void *cb_file_props_data;
 
     /* Used for bytecode */
     struct cli_all_bc bcs;
@@ -391,7 +390,6 @@ struct cl_settings {
     clcb_hash cb_hash;
     clcb_meta cb_meta;
     clcb_file_props cb_file_props;
-    void *cb_file_props_data;
 
     /* Engine max settings */
     uint64_t maxembeddedpe;  /* max size to scan MSEXE for PE */

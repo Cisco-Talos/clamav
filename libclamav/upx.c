@@ -128,13 +128,13 @@ static int pefromupx (const char *src, uint32_t ssize, char *dst, uint32_t *dsiz
     return 0;
 
   while ((valign=magic[sectcnt++])) {
-    if ( ep - upx1 + valign <= ssize-5  &&    /* Wondering how we got so far?! */
+    if (CLI_ISCONTAINED(src, ssize - 5, src + ep - upx1 + valign - 2, 2) &&
 	 src[ep - upx1 + valign - 2] == '\x8d' && /* lea edi, ...                  */
 	 src[ep - upx1 + valign - 1] == '\xbe' )  /* ... [esi + offset]          */
       break;
   }
 
-  if (!valign && ep - upx1 + 0x80 < ssize-8) {
+  if (!valign && CLI_ISCONTAINED(src, ssize - 8, src + ep - upx1 + 0x80, 8)) {
     const char *pt = &src[ep - upx1 + 0x80];
     cli_dbgmsg("UPX: bad magic - scanning for imports\n");
     

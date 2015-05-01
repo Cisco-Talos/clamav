@@ -245,7 +245,7 @@ void cli_bm_free(struct cli_matcher *root)
     }
 }
 
-int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cli_bm_patt **patt, const struct cli_matcher *root, uint32_t offset, const struct cli_target_info *info, struct cli_bm_off *offdata, uint32_t *viroffset)
+int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cli_bm_patt **patt, const struct cli_matcher *root, uint32_t offset, const struct cli_target_info *info, struct cli_bm_off *offdata, cli_ctx *ctx)
 {
 	uint32_t i, j, off, off_min, off_max;
 	uint8_t found, pchain, shift;
@@ -253,7 +253,7 @@ int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 	struct cli_bm_patt *p;
 	const unsigned char *bp, *pt;
 	unsigned char prefix;
-        int ret;
+        int ret, viruses_found = 0;
 
     if(!root || !root->bm_shift)
 	return CL_CLEAN;
@@ -285,8 +285,11 @@ int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 		if(offdata) {
 		    off = offset + i - BM_MIN_LENGTH + BM_BLOCK_SIZE;
 		    for(; offdata->pos < offdata->cnt && off >= offdata->offtab[offdata->pos]; offdata->pos++);
-		    if(offdata->pos == offdata->cnt || off >= offdata->offtab[offdata->pos])
+		    if(offdata->pos == offdata->cnt || off >= offdata->offtab[offdata->pos]) {
+			if (viruses_found)
+			    return CL_VIRUS;
 			return CL_CLEAN;
+		    }
 		    i += offdata->offtab[offdata->pos] - off;
 		} else {
 		    i++;
@@ -377,12 +380,18 @@ int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 		    }
 		    if(virname) {
 			*virname = p->virname;
-			if(viroffset)
-			    *viroffset = offset + i + j - BM_MIN_LENGTH + BM_BLOCK_SIZE;
+			if(ctx != NULL && SCAN_ALL) {
+			    cli_append_virus(ctx, *virname);
+			    //*viroffset = offset + i + j - BM_MIN_LENGTH + BM_BLOCK_SIZE;
+			}
 		    }
 		    if(patt)
 			*patt = p;
-		    return CL_VIRUS;
+
+		    viruses_found = 1;
+
+		    if(ctx != NULL && !SCAN_ALL)
+			return CL_VIRUS;
 		}
 		p = p->next;
 	    }
@@ -392,8 +401,11 @@ int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 	if(offdata) {
 	    off = offset + i - BM_MIN_LENGTH + BM_BLOCK_SIZE;
 	    for(; offdata->pos < offdata->cnt && off >= offdata->offtab[offdata->pos]; offdata->pos++);
-	    if(offdata->pos == offdata->cnt || off >= offdata->offtab[offdata->pos])
+	    if(offdata->pos == offdata->cnt || off >= offdata->offtab[offdata->pos]) {
+		if (viruses_found)
+		    return CL_VIRUS;
 		return CL_CLEAN;
+	    }
 	    i += offdata->offtab[offdata->pos] - off;
 	} else {
 	    i += shift;
@@ -401,5 +413,7 @@ int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 
     }
 
+    if (viruses_found)
+	return CL_VIRUS;
     return CL_CLEAN;
 }

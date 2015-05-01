@@ -105,6 +105,7 @@
 #include "ooxml.h"
 #include "xdp.h"
 #include "json_api.h"
+#include "msxml.h"
 
 #ifdef HAVE_BZLIB_H
 #include <bzlib.h>
@@ -2212,6 +2213,12 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
                 case CL_TYPE_XDP:
                     ret = cli_scanxdp(ctx);
                     break;
+                case CL_TYPE_XML_WORD:
+                    ret = cli_scanmsxml(ctx);
+                    break;
+                case CL_TYPE_XML_XL:
+                    ret = cli_scanmsxml(ctx);
+                    break;
                 case CL_TYPE_RARSFX:
                     if(type != CL_TYPE_RAR && have_rar && SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_RAR)) {
                         char *tmpname = NULL;
@@ -2602,7 +2609,9 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
                 //type == CL_TYPE_ZIP ||
                 type == CL_TYPE_OOXML_WORD ||
                 type == CL_TYPE_OOXML_PPT ||
-                type == CL_TYPE_OOXML_XL) { 
+                type == CL_TYPE_OOXML_XL ||
+                type == CL_TYPE_XML_WORD ||
+                type == CL_TYPE_XML_XL) {
                 ctx->properties = json_object_new_object();
                 if (NULL == ctx->properties) {
                     cli_errmsg("magic_scandesc: no memory for json properties object\n");
@@ -2749,6 +2758,14 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
     switch(type) {
 	case CL_TYPE_IGNORED:
 	    break;
+
+    case CL_TYPE_XML_WORD:
+        ret = cli_scanmsxml(ctx);
+        break;
+
+    case CL_TYPE_XML_XL:
+        ret = cli_scanmsxml(ctx);
+        break;
 
     case CL_TYPE_XDP:
         ret = cli_scanxdp(ctx);
@@ -3467,15 +3484,46 @@ static int scan_common(int desc, cl_fmap_t *map, const char **virname, unsigned 
             int ret = CL_SUCCESS;
             cli_dbgmsg("%s\n", jstring);
 
-           /* Scan the json string unless a virus was detected */
             if (rc != CL_VIRUS) {
-                ctx.options &= ~CL_SCAN_FILE_PROPERTIES;
-                rc = cli_mem_scandesc(jstring, strlen(jstring), &ctx);
+                /* run bytecode preclass hook; generate fmap if needed for running hook */
+                struct cli_bc_ctx *bc_ctx = cli_bytecode_context_alloc();
+                if (!bc_ctx) {
+                    cli_errmsg("scan_common: can't allocate memory for bc_ctx\n");
+                    rc = CL_EMEM;
+                }
+                else {
+                    fmap_t *pc_map = map;
+
+                    if (!pc_map) {
+                        perf_start(&ctx, PERFT_MAP);
+                        if(!(pc_map = fmap(desc, 0, sb.st_size))) {
+                            perf_stop(&ctx, PERFT_MAP);
+                            rc = CL_EMEM;
+                        }
+                        perf_stop(&ctx, PERFT_MAP);
+                    }
+
+                    if (pc_map) {
+                        cli_bytecode_context_setctx(bc_ctx, &ctx);
+                        rc = cli_bytecode_runhook(&ctx, ctx.engine, bc_ctx, BC_PRECLASS, pc_map);
+                        cli_bytecode_context_destroy(bc_ctx);
+
+                        if (!map)
+                            funmap(pc_map);
+                    }
+                }
+
+                /* backwards compatibility: scan the json string unless a virus was detected */
+                if (rc != CL_VIRUS && ctx.engine->root[13]->ac_lsigs) {
+                    cli_warnmsg("scan_common: running depeciated preclass bytecodes for target type 13\n");
+                    ctx.options &= ~CL_SCAN_FILE_PROPERTIES;
+                    rc = cli_mem_scandesc(jstring, strlen(jstring), &ctx);
+                }
             }
 
             /* Invoke file props callback */
             if (ctx.engine->cb_file_props != NULL) {
-                ret = ctx.engine->cb_file_props(jstring, rc, ctx.engine->cb_file_props_data);
+                ret = ctx.engine->cb_file_props(jstring, rc, ctx.cb_ctx);
                 if (ret != CL_SUCCESS)
                     rc = ret;
             }

@@ -32,6 +32,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <conv.h>
+#include <zlib.h>
 #ifdef	HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -955,6 +956,168 @@ handler_enum(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * 
     return CL_SUCCESS;
 }
 
+static int
+likely_mso_stream(int fd)
+{
+    off_t fsize;
+    unsigned char check[2];
+
+    fsize = lseek(fd, 0, SEEK_END);
+    if (fsize == -1) {
+        cli_dbgmsg("likely_mso_stream: call to lseek() failed\n");
+        return 0;
+    } else if (fsize < 6) {
+        return 0;
+    }
+
+    if (lseek(fd, 4, SEEK_SET) == -1) {
+        cli_dbgmsg("likely_mso_stream: call to lseek() failed\n");
+        return 0;
+    }
+
+    if (cli_readn(fd, check, 2) != 2) {
+        cli_dbgmsg("likely_mso_stream: reading from fd failed\n");
+        return 0;
+    }
+
+    if (check[0] == 0x78 && check[1] == 0x9C)
+        return 1;
+
+    return 0;
+}
+
+static int
+scan_mso_stream(int fd, cli_ctx *ctx)
+{
+    int zret, ofd, ret = CL_SUCCESS;
+    fmap_t *input;
+    off_t off_in = 0;
+    size_t count, outsize = 0;
+    z_stream zstrm;
+    char *tmpname;
+    uint32_t prefix;
+    unsigned char inbuf[FILEBUFF], outbuf[FILEBUFF];
+
+    /* fmap the input file for easier manipulation */
+    if (fd < 0) {
+        cli_dbgmsg("scan_mso_stream: Invalid file descriptor argument\n");
+        return CL_ENULLARG;
+    } else {
+        STATBUF statbuf;
+
+        if (FSTAT(fd, &statbuf) == -1) {
+            cli_dbgmsg("scan_mso_stream: Can't stat file descriptor\n");
+            return CL_ESTAT;
+        }
+
+        input = fmap(fd, 0, statbuf.st_size);
+        if (!input) {
+            cli_dbgmsg("scan_mso_stream: Failed to get fmap for input stream\n");
+            return CL_EMAP;
+        }
+    }
+
+    /* reserve tempfile for output and scanning */
+    if ((ret = cli_gentempfd(ctx->engine->tmpdir, &tmpname, &ofd)) != CL_SUCCESS) {
+        cli_errmsg("scan_mso_stream: Can't generate temporary file\n");
+        funmap(input);
+        return ret;
+    }
+
+    /* initialize zlib inflation stream */
+    memset(&zstrm, 0, sizeof(zstrm));
+    zstrm.zalloc = Z_NULL;
+    zstrm.zfree = Z_NULL;
+    zstrm.opaque = Z_NULL;
+    zstrm.next_in = inbuf;
+    zstrm.next_out = outbuf;
+    zstrm.avail_in = 0;
+    zstrm.avail_out = FILEBUFF;
+
+    zret = inflateInit(&zstrm);
+    if (zret != Z_OK) {
+        cli_dbgmsg("scan_mso_stream: Can't initialize zlib inflation stream\n");
+        ret = CL_EUNPACK;
+        goto mso_end;
+    }
+
+    /* extract 32-bit prefix */
+    if (fmap_readn(input, &prefix, off_in, sizeof(prefix)) != sizeof(prefix)) {
+        cli_dbgmsg("scan_mso_stream: Can't extract 4-byte prefix\n");
+        ret = CL_EREAD;
+        goto mso_end;
+    }
+    off_in += sizeof(uint32_t);
+    cli_dbgmsg("scan_mso_stream: stream prefix = %08x(%d)\n", prefix, prefix);
+
+    /* inflation loop */
+    do {
+        if (zstrm.avail_in == 0) {
+            zstrm.next_in = inbuf;
+            ret = fmap_readn(input, inbuf, off_in, FILEBUFF);
+            if (ret < 0) {
+                cli_errmsg("scan_mso_stream: Error reading MSO file\n");
+                ret = CL_EUNPACK;
+                goto mso_end;
+            }
+            if (!ret)
+                break;
+
+            zstrm.avail_in = ret;
+            off_in += ret;
+        }
+        zret = inflate(&zstrm, Z_SYNC_FLUSH);
+        count = FILEBUFF - zstrm.avail_out;
+        if (count) {
+            if (cli_checklimits("MSO", ctx, outsize + count, 0, 0) != CL_SUCCESS)
+                break;
+            if (cli_writen(ofd, outbuf, count) != count) {
+                cli_errmsg("scan_mso_stream: Can't write to file %s\n", tmpname);
+                ret = CL_EWRITE;
+                goto mso_end;
+            }
+            outsize += count;
+        }
+        zstrm.next_out = outbuf;
+        zstrm.avail_out = FILEBUFF;
+    } while(zret == Z_OK);
+
+    /* post inflation checks */
+    if (zret != Z_STREAM_END && zret != Z_OK) {
+        if (outsize == 0) {
+            cli_infomsg(ctx, "scan_mso_stream: Error decompressing MSO file. No data decompressed.\n");
+            ret = CL_EUNPACK;
+            goto mso_end;
+        }
+
+        cli_infomsg(ctx, "scan_mso_stream: Error decompressing MSO file. Scanning what was decompressed.\n");
+    }
+    cli_dbgmsg("scan_mso_stream: Decompressed to %s, size %d\n", tmpname, outsize);
+
+    if (outsize != prefix) {
+        cli_warnmsg("scan_mso_stream: declared prefix != inflated stream size, %llu != %llu\n",
+                    (long long unsigned)prefix, (long long unsigned)outsize);
+    } else {
+        cli_dbgmsg("scan_mso_stream: declared prefix == inflated stream size, %llu == %llu\n",
+                   (long long unsigned)prefix, (long long unsigned)outsize);
+    }
+
+    /* scanning inflated stream */
+    ret = cli_magic_scandesc(ofd, ctx);
+
+    /* clean-up */
+ mso_end:
+    zret = inflateEnd(&zstrm);
+    if (zret != Z_OK)
+        ret = CL_EUNPACK;
+    close(ofd);
+    if(ctx && !ctx->engine->keeptmp)
+        if (cli_unlink(tmpname))
+            ret = CL_EUNLINK;
+    free(tmpname);
+    funmap(input);
+    return ret;
+}
 
 static int
 handler_otf(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * ctx)
@@ -962,7 +1125,7 @@ handler_otf(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * c
     char           *tempfile;
     unsigned char  *buff;
     int32_t         current_block, len, offset;
-    int             ofd, ret;
+    int             ofd, is_mso, ret;
     bitset_t       *blk_bitset;
 
     UNUSEDPARAM(dir);
@@ -1061,6 +1224,7 @@ handler_otf(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * c
         }
     }
 
+    is_mso = likely_mso_stream(ofd);
     if (lseek(ofd, 0, SEEK_SET) == -1) {
         close(ofd);
         if (ctx && !(ctx->engine->keeptmp))
@@ -1112,8 +1276,18 @@ handler_otf(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * c
     }
 #endif
 
-    /* Normal File Scan */
-    ret = cli_magic_scandesc(ofd, ctx);
+    if (is_mso < 0) {
+        ret = CL_ESEEK;
+    } else if (is_mso) {
+        /* MSO Stream Scan */
+        ret = scan_mso_stream(ofd, ctx);
+        /* CONSIDER: running cli_magic_scandesc in the chance of MSO fp? */
+        //if (ret != CL_SUCCESS || ret != CL_VIRUS)
+        //ret = cli_magic_scandesc(ofd, ctx);
+    } else {
+        /* Normal File Scan */
+        ret = cli_magic_scandesc(ofd, ctx);
+    }
     close(ofd);
     free(buff);
     cli_bitset_free(blk_bitset);

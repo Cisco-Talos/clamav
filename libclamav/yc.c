@@ -81,6 +81,7 @@ static int yc_poly_emulator(cli_ctx *ctx, char *base, unsigned int filesize, cha
   unsigned char al;
   unsigned char cl = ecx & 0xff;
   unsigned int j,i;
+  unsigned int max_jmp_loop = 100000000;
 
   for(i=0;i<ecx&&i<max_emu;i++) /* Byte looper - Decrypts every byte and write it back */
     {
@@ -103,6 +104,9 @@ static int yc_poly_emulator(cli_ctx *ctx, char *base, unsigned int filesize, cha
             if (yc_bounds_check(ctx, base, filesize, decryptor_offset, j)) {
                 return 2;
             }
+	      if (!max_jmp_loop)
+	          return 2;
+	      max_jmp_loop--;
 	      j = j + decryptor_offset[j];
 	      break;
 
