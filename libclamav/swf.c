@@ -39,7 +39,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/stat.h>
-#ifdef	HAVE_UNISTD_H
+#ifdef        HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 #include <time.h>
@@ -51,67 +51,67 @@
 #include "scanners.h"
 #include "lzma_iface.h"
 
-#define EC16(v)	le16_to_host(v)
-#define EC32(v)	le32_to_host(v)
+#define EC16(v)        le16_to_host(v)
+#define EC32(v)        le32_to_host(v)
 
-#define INITBITS								\
-{										\
-    if(fmap_readn(map, &get_c, offset, sizeof(get_c)) == sizeof(get_c)) {	\
-	bitpos = 8;								\
-	bitbuf = (unsigned int) get_c;						\
-	offset += sizeof(get_c);						\
-    } else {									\
-	cli_warnmsg("cli_scanswf: INITBITS: Can't read file or file truncated\n");	\
-	return CL_EFORMAT;							\
-    }										\
+#define INITBITS                                                                \
+{                                                                               \
+    if(fmap_readn(map, &get_c, offset, sizeof(get_c)) == sizeof(get_c)) {       \
+        bitpos = 8;                                                             \
+        bitbuf = (unsigned int) get_c;                                          \
+        offset += sizeof(get_c);                                                \
+    } else {                                                                    \
+        cli_warnmsg("cli_scanswf: INITBITS: Can't read file or file truncated\n"); \
+        return CL_EFORMAT;                                                      \
+    }                                                                           \
 }
 
-#define GETBITS(v, n)								\
-{										\
-    getbits_n = n;								\
-    bits = 0;									\
-    while(getbits_n > bitpos) {							\
-	getbits_n -= bitpos;							\
-	bits |= bitbuf << getbits_n;						\
-	if(fmap_readn(map, &get_c, offset, sizeof(get_c)) == sizeof(get_c)) {	\
-	    bitbuf = (unsigned int) get_c;					\
-	    bitpos = 8;								\
-	    offset += sizeof(get_c);						\
-	} else {								\
-	    cli_warnmsg("cli_scanswf: GETBITS: Can't read file or file truncated\n");	\
-	    return CL_EFORMAT;							\
-	}									\
-    }										\
-    bitpos -= getbits_n;							\
-    bits |= bitbuf >> bitpos;							\
-    bitbuf &= 0xff >> (8 - bitpos);						\
-    v = bits & 0xffff;								\
+#define GETBITS(v, n)                                                           \
+{                                                                               \
+    getbits_n = n;                                                              \
+    bits = 0;                                                                   \
+    while(getbits_n > bitpos) {                                                 \
+        getbits_n -= bitpos;                                                    \
+        bits |= bitbuf << getbits_n;                                            \
+        if(fmap_readn(map, &get_c, offset, sizeof(get_c)) == sizeof(get_c)) {   \
+            bitbuf = (unsigned int) get_c;                                      \
+            bitpos = 8;                                                         \
+            offset += sizeof(get_c);                                            \
+        } else {                                                                \
+            cli_warnmsg("cli_scanswf: GETBITS: Can't read file or file truncated\n"); \
+            return CL_EFORMAT;                                                  \
+        }                                                                       \
+    }                                                                           \
+    bitpos -= getbits_n;                                                        \
+    bits |= bitbuf >> bitpos;                                                   \
+    bitbuf &= 0xff >> (8 - bitpos);                                             \
+    v = bits & 0xffff;                                                          \
 }
 
-#define GETWORD(v)								\
-{										\
-    if(fmap_readn(map, &get_c, offset, sizeof(get_c)) == sizeof(get_c)) {	\
-	getword_1 = (unsigned int) get_c;					\
-	offset += sizeof(get_c);						\
-    } else {									\
-	cli_warnmsg("cli_scanswf: GETWORD: Can't read file or file truncated\n");	\
-	return CL_EFORMAT;							\
-    }										\
-    if(fmap_readn(map, &get_c, offset, sizeof(get_c)) == sizeof(get_c)) {	\
-	getword_2 = (unsigned int) get_c;					\
-	offset += sizeof(get_c);						\
-    } else {									\
-	cli_warnmsg("cli_scanswf: GETWORD: Can't read file or file truncated\n");	\
-	return CL_EFORMAT;							\
-    }										\
-    v = (uint16_t)(getword_1 & 0xff) | ((getword_2 & 0xff) << 8);		\
+#define GETWORD(v)                                                              \
+{                                                                               \
+    if(fmap_readn(map, &get_c, offset, sizeof(get_c)) == sizeof(get_c)) {       \
+        getword_1 = (unsigned int) get_c;                                       \
+        offset += sizeof(get_c);                                                \
+    } else {                                                                    \
+        cli_warnmsg("cli_scanswf: GETWORD: Can't read file or file truncated\n"); \
+        return CL_EFORMAT;                                                      \
+    }                                                                           \
+    if(fmap_readn(map, &get_c, offset, sizeof(get_c)) == sizeof(get_c)) {       \
+        getword_2 = (unsigned int) get_c;                                       \
+        offset += sizeof(get_c);                                                \
+    } else {                                                                    \
+        cli_warnmsg("cli_scanswf: GETWORD: Can't read file or file truncated\n"); \
+        return CL_EFORMAT;                                                      \
+    }                                                                           \
+    v = (uint16_t)(getword_1 & 0xff) | ((getword_2 & 0xff) << 8);               \
 }
 
-#define GETDWORD(v)								\
-{										\
-    GETWORD(getdword_1);							\
-    GETWORD(getdword_2);							\
-    v = (uint32_t)(getdword_1 | (getdword_2 << 16));				\
+#define GETDWORD(v)                                                             \
+{                                                                               \
+    GETWORD(getdword_1);                                                        \
+    GETWORD(getdword_2);                                                        \
+    v = (uint32_t)(getdword_1 | (getdword_2 << 16));                            \
 }
 
 struct swf_file_hdr {
@@ -122,37 +122,37 @@ struct swf_file_hdr {
 
 static int scanzws(cli_ctx *ctx, struct swf_file_hdr *hdr)
 {
-	struct CLI_LZMA lz;
-	unsigned char inbuff[FILEBUFF], outbuff[FILEBUFF];
-	fmap_t *map = *ctx->fmap;
-	/* strip off header */
-	off_t offset = 8;
-	uint32_t d_insize;
-	size_t outsize = 8;
-	int ret, lret, count;
-	char *tmpname;
-	int fd;
+        struct CLI_LZMA lz;
+        unsigned char inbuff[FILEBUFF], outbuff[FILEBUFF];
+        fmap_t *map = *ctx->fmap;
+        /* strip off header */
+        off_t offset = 8;
+        uint32_t d_insize;
+        size_t outsize = 8;
+        int ret, lret, count;
+        char *tmpname;
+        int fd;
 
     if((ret = cli_gentempfd(ctx->engine->tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
-	cli_errmsg("scanzws: Can't generate temporary file\n");
-	return ret;
+        cli_errmsg("scanzws: Can't generate temporary file\n");
+        return ret;
     }
 
     hdr->signature[0] = 'F';
     if(cli_writen(fd, hdr, sizeof(struct swf_file_hdr)) != sizeof(struct swf_file_hdr)) {
-	cli_errmsg("scanzws: Can't write to file %s\n", tmpname);
+        cli_errmsg("scanzws: Can't write to file %s\n", tmpname);
         close(fd);
-	if(cli_unlink(tmpname)) {
-	    free(tmpname);
-	    return CL_EUNLINK;
-	}
-	free(tmpname);
-	return CL_EWRITE;
+        if(cli_unlink(tmpname)) {
+            free(tmpname);
+            return CL_EUNLINK;
+        }
+        free(tmpname);
+        return CL_EWRITE;
     }
 
     /* read 4 bytes (for compressed 32-bit filesize) [not used for LZMA] */
     if (fmap_readn(map, &d_insize, offset, sizeof(d_insize)) != sizeof(d_insize)) {
-	cli_errmsg("scanzws: Error reading SWF file\n");
+        cli_errmsg("scanzws: Error reading SWF file\n");
         close(fd);
         if (cli_unlink(tmpname)) {
             free(tmpname);
@@ -170,23 +170,23 @@ static int scanzws(cli_ctx *ctx, struct swf_file_hdr *hdr)
                     d_insize, (long long unsigned)(map->len - 17));
     } else {
         cli_dbgmsg("SWF: declared input length == compressed stream size, %u == %llu\n",
-                   d_insize, (long long unsigned)(map->len - 17));
+                    d_insize, (long long unsigned)(map->len - 17));
     }
 
     /* first buffer required for initializing LZMA */
     ret = fmap_readn(map, inbuff, offset, FILEBUFF);
     if (ret < 0) {
-	cli_errmsg("scanzws: Error reading SWF file\n");
-	close(fd);
-	if (cli_unlink(tmpname)) {
-	    free(tmpname);
-	    return CL_EUNLINK;
-	}
-	free(tmpname);
-	return CL_EUNPACK;
+        cli_errmsg("scanzws: Error reading SWF file\n");
+        close(fd);
+        if (cli_unlink(tmpname)) {
+            free(tmpname);
+            return CL_EUNLINK;
+        }
+        free(tmpname);
+        return CL_EUNPACK;
     }
     if (!ret)
-	return CL_EFORMAT; /* likely truncated */
+        return CL_EFORMAT; /* likely truncated */
     offset += ret;
 
     memset(&lz, 0, sizeof(lz));
@@ -197,74 +197,74 @@ static int scanzws(cli_ctx *ctx, struct swf_file_hdr *hdr)
 
     lret = cli_LzmaInit(&lz, hdr->filesize);
     if (lret != LZMA_RESULT_OK) {
-	cli_errmsg("scanzws: LzmaInit() failed\n");
-	close(fd);
-	if (cli_unlink(tmpname)) {
-	    free(tmpname);
-	    return CL_EUNLINK;
-	}
-	free(tmpname);
-	return CL_EUNPACK;
+        cli_errmsg("scanzws: LzmaInit() failed\n");
+        close(fd);
+        if (cli_unlink(tmpname)) {
+            free(tmpname);
+            return CL_EUNLINK;
+        }
+        free(tmpname);
+        return CL_EUNPACK;
     }
 
     while (lret == LZMA_RESULT_OK) {
-	if (lz.avail_in == 0) {
-	    lz.next_in = inbuff;
+        if (lz.avail_in == 0) {
+            lz.next_in = inbuff;
 
-	    ret = fmap_readn(map, inbuff, offset, FILEBUFF);
-	    if (ret < 0) {
-		cli_errmsg("scanzws: Error reading SWF file\n");
-		cli_LzmaShutdown(&lz);
-		close(fd);
-		if (cli_unlink(tmpname)) {
-		    free(tmpname);
-		    return CL_EUNLINK;
-		}
-		free(tmpname);
-		return CL_EUNPACK;
-	    }
-	    if (!ret)
-		break;
-	    lz.avail_in = ret;
-	    offset += ret;
-	}
-	lret = cli_LzmaDecode(&lz);
-	count = FILEBUFF - lz.avail_out;
-	if (count) {
-	    if (cli_checklimits("SWF", ctx, outsize + count, 0, 0) != CL_SUCCESS)
-		break;
-	    if (cli_writen(fd, outbuff, count) != count) {
-		cli_errmsg("scanzws: Can't write to file %s\n", tmpname);
-		cli_LzmaShutdown(&lz);
-		close(fd);
-		if (cli_unlink(tmpname)) {
-		    free(tmpname);
-		    return CL_EUNLINK;
-		}
-		free(tmpname);
-		return CL_EWRITE;
-	    }
-	    outsize += count;
-	}
-	lz.next_out = outbuff;
-	lz.avail_out = FILEBUFF;
+            ret = fmap_readn(map, inbuff, offset, FILEBUFF);
+            if (ret < 0) {
+                cli_errmsg("scanzws: Error reading SWF file\n");
+                cli_LzmaShutdown(&lz);
+                close(fd);
+                if (cli_unlink(tmpname)) {
+                    free(tmpname);
+                    return CL_EUNLINK;
+                }
+                free(tmpname);
+                return CL_EUNPACK;
+            }
+            if (!ret)
+                break;
+            lz.avail_in = ret;
+            offset += ret;
+        }
+        lret = cli_LzmaDecode(&lz);
+        count = FILEBUFF - lz.avail_out;
+        if (count) {
+            if (cli_checklimits("SWF", ctx, outsize + count, 0, 0) != CL_SUCCESS)
+                break;
+            if (cli_writen(fd, outbuff, count) != count) {
+                cli_errmsg("scanzws: Can't write to file %s\n", tmpname);
+                cli_LzmaShutdown(&lz);
+                close(fd);
+                if (cli_unlink(tmpname)) {
+                    free(tmpname);
+                    return CL_EUNLINK;
+                }
+                free(tmpname);
+                return CL_EWRITE;
+            }
+            outsize += count;
+        }
+        lz.next_out = outbuff;
+        lz.avail_out = FILEBUFF;
     }
 
     cli_LzmaShutdown(&lz);
 
     if (lret != LZMA_STREAM_END && lret != LZMA_RESULT_OK) {
-	/* outsize starts at 8, therefore, if its still 8, nothing was decompressed */
-	if (outsize == 8) {
-	    cli_infomsg(ctx, "scanzws: Error decompressing SWF file. No data decompressed.\n");
-	    close(fd);
-	    if (cli_unlink(tmpname)) {
-		free(tmpname);
-		return CL_EUNLINK;
-	    }
-	    free(tmpname);
-	    return CL_EUNPACK;
-	}
-	cli_infomsg(ctx, "scanzws: Error decompressing SWF file. Scanning what was decompressed.\n");
+        /* outsize starts at 8, therefore, if its still 8, nothing was decompressed */
+        if (outsize == 8) {
+            cli_infomsg(ctx, "scanzws: Error decompressing SWF file. No data decompressed.\n");
+            close(fd);
+            if (cli_unlink(tmpname)) {
+                free(tmpname);
+                return CL_EUNLINK;
+            }
+            free(tmpname);
+            return CL_EUNPACK;
+        }
+        cli_infomsg(ctx, "scanzws: Error decompressing SWF file. Scanning what was decompressed.\n");
     }
     cli_dbgmsg("SWF: Decompressed[LZMA] to %s, size %d\n", tmpname, outsize);
 
@@ -281,10 +281,10 @@ static int scanzws(cli_ctx *ctx, struct swf_file_hdr *hdr)
 
     close(fd);
     if (!(ctx->engine->keeptmp)) {
-	if (cli_unlink(tmpname)) {
-	    free(tmpname);
-	    return CL_EUNLINK;
-	}
+        if (cli_unlink(tmpname)) {
+            free(tmpname);
+            return CL_EUNLINK;
+        }
     }
     free(tmpname);
     return ret;
@@ -292,28 +292,28 @@ static int scanzws(cli_ctx *ctx, struct swf_file_hdr *hdr)
 
 static int scancws(cli_ctx *ctx, struct swf_file_hdr *hdr)
 {
-	z_stream stream;
-	char inbuff[FILEBUFF], outbuff[FILEBUFF];
-	fmap_t *map = *ctx->fmap;
-	int offset = 8, ret, zret, outsize = 8, count, zend;
-	char *tmpname;
-	int fd;
+        z_stream stream;
+        char inbuff[FILEBUFF], outbuff[FILEBUFF];
+        fmap_t *map = *ctx->fmap;
+        int offset = 8, ret, zret, outsize = 8, count, zend;
+        char *tmpname;
+        int fd;
 
     if((ret = cli_gentempfd(ctx->engine->tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
-	cli_errmsg("scancws: Can't generate temporary file\n");
-	return ret;
+        cli_errmsg("scancws: Can't generate temporary file\n");
+        return ret;
     }
 
     hdr->signature[0] = 'F';
     if(cli_writen(fd, hdr, sizeof(struct swf_file_hdr)) != sizeof(struct swf_file_hdr)) {
-	cli_errmsg("scancws: Can't write to file %s\n", tmpname);
+        cli_errmsg("scancws: Can't write to file %s\n", tmpname);
         close(fd);
-	if(cli_unlink(tmpname)) {
-	    free(tmpname);
-	    return CL_EUNLINK;
-	}
-	free(tmpname);
-	return CL_EWRITE;
+        if(cli_unlink(tmpname)) {
+            free(tmpname);
+            return CL_EUNLINK;
+        }
+        free(tmpname);
+        return CL_EWRITE;
     }
 
     stream.avail_in = 0;
@@ -326,56 +326,56 @@ static int scancws(cli_ctx *ctx, struct swf_file_hdr *hdr)
 
     zret = inflateInit(&stream);
     if(zret != Z_OK) {
-	cli_errmsg("scancws: inflateInit() failed\n");
+        cli_errmsg("scancws: inflateInit() failed\n");
         close(fd);
-	if(cli_unlink(tmpname)) {
-	    free(tmpname);
-	    return CL_EUNLINK;
-	}
-	free(tmpname);
-	return CL_EUNPACK;
+        if(cli_unlink(tmpname)) {
+            free(tmpname);
+            return CL_EUNLINK;
+        }
+        free(tmpname);
+        return CL_EUNPACK;
     }
 
     do {
-	if(stream.avail_in == 0) {
-	    stream.next_in = (Bytef *)inbuff;
-	    ret = fmap_readn(map, inbuff, offset, FILEBUFF);
-	    if(ret < 0) {
-		cli_errmsg("scancws: Error reading SWF file\n");
-		close(fd);
-		inflateEnd(&stream);
-		if(cli_unlink(tmpname)) {
-		    free(tmpname);
-		    return CL_EUNLINK;
-		}
-		free(tmpname);
-		return CL_EUNPACK;
-	    }
-	    if(!ret)
-		break;
-	    stream.avail_in = ret;
-	    offset += ret;
-	}
-	zret = inflate(&stream, Z_SYNC_FLUSH);
-	count = FILEBUFF - stream.avail_out;
-	if(count) {
-	    if(cli_checklimits("SWF", ctx, outsize + count, 0, 0) != CL_SUCCESS)
-		break;
-	    if(cli_writen(fd, outbuff, count) != count) {
-		cli_errmsg("scancws: Can't write to file %s\n", tmpname);
-		inflateEnd(&stream);
-		close(fd);
-		if(cli_unlink(tmpname)) {
-		    free(tmpname);
-		    return CL_EUNLINK;
-		}
-		free(tmpname);
-		return CL_EWRITE;
-	    }
-	    outsize += count;
-	}
-	stream.next_out = (Bytef *)outbuff;
-	stream.avail_out = FILEBUFF;
+        if(stream.avail_in == 0) {
+            stream.next_in = (Bytef *)inbuff;
+            ret = fmap_readn(map, inbuff, offset, FILEBUFF);
+            if(ret < 0) {
+                cli_errmsg("scancws: Error reading SWF file\n");
+                close(fd);
+                inflateEnd(&stream);
+                if(cli_unlink(tmpname)) {
+                    free(tmpname);
+                    return CL_EUNLINK;
+                }
+                free(tmpname);
+                return CL_EUNPACK;
+            }
+            if(!ret)
+                break;
+            stream.avail_in = ret;
+            offset += ret;
+        }
+        zret = inflate(&stream, Z_SYNC_FLUSH);
+        count = FILEBUFF - stream.avail_out;
+        if(count) {
+            if(cli_checklimits("SWF", ctx, outsize + count, 0, 0) != CL_SUCCESS)
+                break;
+            if(cli_writen(fd, outbuff, count) != count) {
+                cli_errmsg("scancws: Can't write to file %s\n", tmpname);
+                inflateEnd(&stream);
+                close(fd);
+                if(cli_unlink(tmpname)) {
+                    free(tmpname);
+                    return CL_EUNLINK;
+                }
+                free(tmpname);
+                return CL_EWRITE;
+            }
+            outsize += count;
+        }
+        stream.next_out = (Bytef *)outbuff;
+        stream.avail_out = FILEBUFF;
     } while(zret == Z_OK);
 
     zend = inflateEnd(&stream);
@@ -412,10 +412,10 @@ static int scancws(cli_ctx *ctx, struct swf_file_hdr *hdr)
 
     close(fd);
     if(!ctx->engine->keeptmp) {
-	if(cli_unlink(tmpname)) {
-	    free(tmpname);
-	    return CL_EUNLINK;
-	}
+        if(cli_unlink(tmpname)) {
+            free(tmpname);
+            return CL_EUNLINK;
+        }
     }
     free(tmpname);
     return ret;
@@ -423,11 +423,11 @@ static int scancws(cli_ctx *ctx, struct swf_file_hdr *hdr)
 
 static const char *tagname(tag_id id)
 {
-	unsigned int i;
+        unsigned int i;
 
     for(i = 0; tag_names[i].name; i++)
-	if(tag_names[i].id == id)
-	    return tag_names[i].name;
+        if(tag_names[i].id == id)
+            return tag_names[i].name;
     return NULL;
 }
 
@@ -445,22 +445,22 @@ int cli_scanswf(cli_ctx *ctx)
     cli_dbgmsg("in cli_scanswf()\n");
 
     if(fmap_readn(map, &file_hdr, offset, sizeof(file_hdr)) != sizeof(file_hdr)) {
-	cli_dbgmsg("SWF: Can't read file header\n");
-	return CL_CLEAN;
+        cli_dbgmsg("SWF: Can't read file header\n");
+        return CL_CLEAN;
     }
     offset += sizeof(file_hdr);
 
     if(!strncmp(file_hdr.signature, "CWS", 3)) {
-	cli_dbgmsg("SWF: zlib compressed file\n");
-	return scancws(ctx, &file_hdr);
+        cli_dbgmsg("SWF: zlib compressed file\n");
+        return scancws(ctx, &file_hdr);
     } else if(!strncmp(file_hdr.signature, "ZWS", 3)) {
-	cli_dbgmsg("SWF: LZMA compressed file\n");
-	return scanzws(ctx, &file_hdr);
+        cli_dbgmsg("SWF: LZMA compressed file\n");
+        return scanzws(ctx, &file_hdr);
     } else if(!strncmp(file_hdr.signature, "FWS", 3)) {
-	cli_dbgmsg("SWF: Uncompressed file\n");
+        cli_dbgmsg("SWF: Uncompressed file\n");
     } else {
-	cli_dbgmsg("SWF: Not a SWF file\n");
-	return CL_CLEAN;
+        cli_dbgmsg("SWF: Not a SWF file\n");
+        return CL_CLEAN;
     }
 
     cli_dbgmsg("SWF: Version: %u\n", file_hdr.version);
@@ -489,62 +489,62 @@ int cli_scanswf(cli_ctx *ctx)
     }
 
     while(offset < map->len) {
-	GETWORD(tag_hdr);
-	tag_type = tag_hdr >> 6;
-	if(tag_type == 0)
-	    break;
-	tag_len = tag_hdr & 0x3f;
-	if(tag_len == 0x3f)
-	    GETDWORD(tag_len);
+        GETWORD(tag_hdr);
+        tag_type = tag_hdr >> 6;
+        if(tag_type == 0)
+            break;
+        tag_len = tag_hdr & 0x3f;
+        if(tag_len == 0x3f)
+            GETDWORD(tag_len);
 
-	pt = tagname(tag_type);
-	cli_dbgmsg("SWF: %s\n", pt ? pt : "UNKNOWN TAG");
-	cli_dbgmsg("SWF: Tag length: %u\n", tag_len);
-	if (tag_len > map->len) {
-	    cli_dbgmsg("SWF: Invalid tag length.\n");
-	    return CL_EFORMAT;
-	}
-	if ((offset + tag_len) < offset) {
-	    cli_warnmsg("SWF: Tag length too large.\n");
-	    break;
-	}
-	if(!pt) {
-	    offset += tag_len;
-	    continue;
-	}
+        pt = tagname(tag_type);
+        cli_dbgmsg("SWF: %s\n", pt ? pt : "UNKNOWN TAG");
+        cli_dbgmsg("SWF: Tag length: %u\n", tag_len);
+        if (tag_len > map->len) {
+            cli_dbgmsg("SWF: Invalid tag length.\n");
+            return CL_EFORMAT;
+        }
+        if ((offset + tag_len) < offset) {
+            cli_warnmsg("SWF: Tag length too large.\n");
+            break;
+        }
+        if(!pt) {
+            offset += tag_len;
+            continue;
+        }
 
-	switch(tag_type) {
-	    case TAG_SCRIPTLIMITS: {
-		unsigned int recursion, timeout;
-		GETWORD(recursion);
-		GETWORD(timeout);
-		cli_dbgmsg("SWF: scriptLimits recursion %u timeout %u\n", recursion, timeout);
-		break;
-	    }
+        switch(tag_type) {
+            case TAG_SCRIPTLIMITS: {
+                unsigned int recursion, timeout;
+                GETWORD(recursion);
+                GETWORD(timeout);
+                cli_dbgmsg("SWF: scriptLimits recursion %u timeout %u\n", recursion, timeout);
+                break;
+            }
 
-	    case TAG_FILEATTRIBUTES:
-		GETDWORD(val);
-		cli_dbgmsg("SWF: File attributes:\n");
-		if(val & SWF_ATTR_USENETWORK)
-		    cli_dbgmsg("    * Use network\n");
-		if(val & SWF_ATTR_RELATIVEURLS)
-		    cli_dbgmsg("    * Relative URLs\n");
-		if(val & SWF_ATTR_SUPPRESSCROSSDOMAINCACHE)
-		    cli_dbgmsg("    * Suppress cross domain cache\n");
-		if(val & SWF_ATTR_ACTIONSCRIPT3)
-		    cli_dbgmsg("    * ActionScript 3.0\n");
-		if(val & SWF_ATTR_HASMETADATA)
-		    cli_dbgmsg("    * Has metadata\n");
-		if(val & SWF_ATTR_USEDIRECTBLIT)
-		    cli_dbgmsg("    * Use hardware acceleration\n");
-		if(val & SWF_ATTR_USEGPU)
-		    cli_dbgmsg("    * Use GPU\n");
-		break;
+            case TAG_FILEATTRIBUTES:
+                GETDWORD(val);
+                cli_dbgmsg("SWF: File attributes:\n");
+                if(val & SWF_ATTR_USENETWORK)
+                    cli_dbgmsg("    * Use network\n");
+                if(val & SWF_ATTR_RELATIVEURLS)
+                    cli_dbgmsg("    * Relative URLs\n");
+                if(val & SWF_ATTR_SUPPRESSCROSSDOMAINCACHE)
+                    cli_dbgmsg("    * Suppress cross domain cache\n");
+                if(val & SWF_ATTR_ACTIONSCRIPT3)
+                    cli_dbgmsg("    * ActionScript 3.0\n");
+                if(val & SWF_ATTR_HASMETADATA)
+                    cli_dbgmsg("    * Has metadata\n");
+                if(val & SWF_ATTR_USEDIRECTBLIT)
+                    cli_dbgmsg("    * Use hardware acceleration\n");
+                if(val & SWF_ATTR_USEGPU)
+                    cli_dbgmsg("    * Use GPU\n");
+                break;
 
-	    default:
-		offset += tag_len;
-		continue;
-	}
+            default:
+                offset += tag_len;
+                continue;
+        }
     }
 
     return CL_CLEAN;
