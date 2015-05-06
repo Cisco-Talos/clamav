@@ -832,117 +832,128 @@ int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigne
     }
 }
 
-/* 
- * FIXME: the current support for string alternatives uses a brute-force
- *        approach and doesn't perform any kind of verification and
- *        backtracking. This may easily lead to false negatives, eg. when
- *        an alternative contains strings of different lengths and 
- *        more than one of them can match at the current position.
- */
-#define AC_MATCH_CHAR(p,b)								\
-    switch(wc = p & CLI_MATCH_METADATA) {						\
-	case CLI_MATCH_CHAR:								\
-	    if((unsigned char) p != b)							\
-		match = 0;								\
-	    break;									\
-											\
-	case CLI_MATCH_NOCASE:								\
-	    if((unsigned char)(p & 0xff) != cli_nocase(b))				\
-		match = 0;								\
-	    break;									\
-											\
-	case CLI_MATCH_IGNORE:								\
-	    break;									\
-											\
-	case CLI_MATCH_SPECIAL:								\
-	    special = pattern->special_table[specialcnt];				\
-	    match = special->negative;							\
-	    switch(special->type) {							\
-		case AC_SPECIAL_ALT_CHAR:						\
-		    for(j = 0; j < special->num; j++) {					\
-			if(special->str[j] == b) {					\
-			    match = !special->negative;					\
-			    break;							\
-			} else if(special->str[j] > b)					\
-			    break;							\
-		    }									\
-		    break;								\
-											\
-		case AC_SPECIAL_ALT_STR:						\
-		    while(special) {							\
-			if(bp + special->len <= length) {				\
-			    if(!memcmp(&buffer[bp], special->str, special->len)) {	\
-				match = !special->negative;				\
-				bp += special->len - 1;					\
-				break;							\
-			    }								\
-			}								\
-			special = special->next;					\
-		    }									\
-		    break;								\
-											\
-		case AC_SPECIAL_LINE_MARKER:						\
-		    if(b == '\n') {							\
-			match = !special->negative;					\
-		    } else if(b == '\r' && (bp + 1 < length && buffer[bp + 1] == '\n')) {   \
-			bp++;								\
-			match = !special->negative;					\
-		    }									\
-		    break;								\
-											\
-		case AC_SPECIAL_BOUNDARY:						\
-		    if(boundary[b])							\
-			match = !special->negative;					\
-		    break;								\
-											\
-		case AC_SPECIAL_WORD_MARKER:						\
-		    if(!isalnum(b))							\
-			match = !special->negative;					\
-		    break;								\
-											\
-		default:								\
-		    cli_errmsg("ac_findmatch: Unknown special\n");			\
-		    match = 0;								\
-	    }										\
-	    specialcnt++;								\
-	    break;									\
-											\
-	case CLI_MATCH_NIBBLE_HIGH:							\
-	    if((unsigned char) (p & 0x00f0) != (b & 0xf0))				\
-		match = 0;								\
-	    break;									\
-											\
-	case CLI_MATCH_NIBBLE_LOW:							\
-	    if((unsigned char) (p & 0x000f) != (b & 0x0f))				\
-		match = 0;								\
-	    break;									\
-											\
-	default:									\
-	    cli_errmsg("ac_findmatch: Unknown wildcard 0x%x\n", wc);			\
-	    match = 0;									\
+static int ac_findmatch_branch(const unsigned char *buffer, uint32_t offset, uint32_t length, uint32_t fileoffset, const struct cli_ac_patt *pattern, uint32_t pattoffset, uint16_t specialcnt, uint32_t *end);
+
+/* special handler */
+inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t offset, uint32_t fileoffset, uint32_t length, const struct cli_ac_patt *pattern, uint32_t pattoffset, uint16_t specialcnt, uint32_t *end)
+{
+    int match;
+    uint16_t j, b = buffer[offset];
+    struct cli_ac_special *special = pattern->special_table[specialcnt];
+
+    match = special->negative;
+
+    switch(special->type) {
+    case AC_SPECIAL_ALT_CHAR:
+        for(j = 0; j < special->num; j++) {
+			if(special->str[j] == b) {
+			    match = !special->negative;
+			    break;
+			} else if(special->str[j] > b)
+			    break;
+        }
+        break;
+
+    case AC_SPECIAL_ALT_STR:
+        /* branch for backtracking */
+        while(special) {
+            if(offset + special->len <= length) {
+                if((!special->negative && !memcmp(&buffer[offset], special->str, special->len)) || special->negative) {
+                    match = ac_findmatch_branch(buffer, offset+special->len, fileoffset, length, pattern, pattoffset+1, specialcnt+1, end);
+                    if (match)
+                        return -1; /* contrary to popular belief, this is good */
+                }
+            }
+            special = special->next;
+        }
+        break;
+
+    case AC_SPECIAL_LINE_MARKER:
+        if(b == '\n')
+            match = !special->negative;
+        else if(b == '\r' && (offset + 1 < length && buffer[offset + 1] == '\n'))
+            match = 2 * (!special->negative);
+        break;
+
+    case AC_SPECIAL_BOUNDARY:
+        if(boundary[b])
+            match = !special->negative;
+        break;
+
+    case AC_SPECIAL_WORD_MARKER:
+        if(!isalnum(b))
+            match = !special->negative;
+        break;
+
+    default:
+        cli_errmsg("ac_findmatch: Unknown special\n");
+        match = 0;
     }
 
-inline static int ac_findmatch(const unsigned char *buffer, uint32_t offset, uint32_t fileoffset, uint32_t length, const struct cli_ac_patt *pattern, uint32_t *end)
+    return match;
+}
+
+/* call only by ac_findmatch_branch! */
+#define AC_MATCH_CHAR(p,b)								\
+    switch(wc = p & CLI_MATCH_METADATA) {						\
+    case CLI_MATCH_CHAR:								\
+	if((unsigned char) p != b)							\
+	    match = 0;									\
+	break;										\
+											\
+    case CLI_MATCH_NOCASE:								\
+	if((unsigned char)(p & 0xff) != cli_nocase(b))					\
+	    match = 0;									\
+	break;										\
+											\
+    case CLI_MATCH_IGNORE:								\
+	break;										\
+											\
+    case CLI_MATCH_SPECIAL:								\
+	/* >1 = movement, 0 = fail, <1 = resolved in branch */				\
+	if ((match = ac_findmatch_special(buffer, bp, fileoffset, length, pattern, i,	\
+	    specialcnt, end)) <= 0)							\
+	    return match;								\
+	bp += match;									\
+	specialcnt++;									\
+	continue; /* match value includes bp++ */					\
+											\
+    case CLI_MATCH_NIBBLE_HIGH:								\
+	if((unsigned char) (p & 0x00f0) != (b & 0xf0))					\
+	    match = 0;									\
+	break;										\
+											\
+    case CLI_MATCH_NIBBLE_LOW:								\
+	if((unsigned char) (p & 0x000f) != (b & 0x0f))					\
+	    match = 0;									\
+	break;										\
+											\
+    default:										\
+	cli_errmsg("ac_findmatch: Unknown wildcard 0x%x\n", wc);			\
+	match = 0;									\
+    }
+
+
+/* state should reset on call, recursion depth = number of alternate specials */
+static int ac_findmatch_branch(const unsigned char *buffer, uint32_t offset, uint32_t fileoffset, uint32_t length, const struct cli_ac_patt *pattern, uint32_t pattoffset, uint16_t specialcnt, uint32_t *end)
 {
-    uint32_t bp, pstart, match;
-    uint16_t wc, i, j, specialcnt = pattern->special_pattern;
-    struct cli_ac_special *special;
+    int match;
+    uint32_t bp;
+    uint16_t wc, i;
 
-    if((offset + pattern->length > length) || (pattern->prefix_length > offset))
-        return 0;
-
-    bp = offset + pattern->depth;
+    bp = offset;
 
     match = 1;
-    for(i = pattern->depth; i < pattern->length && bp < length; i++) {
-        AC_MATCH_CHAR(pattern->pattern[i],buffer[bp]);
-        if(!match)
-            return 0;
+    for(i = pattoffset; i < pattern->length && bp < length; i++) {
+	AC_MATCH_CHAR(pattern->pattern[i],buffer[bp]);
+	if (!match)
+	    return 0;
 
         bp++;
     }
     *end = bp;
 
+    /* special boundary checks */
     if(pattern->boundary & AC_BOUNDARY_LEFT) {
         match = !!(pattern->boundary & AC_BOUNDARY_LEFT_NEGATIVE);
         if(!fileoffset || (offset && (boundary[buffer[offset - 1]] == 1 || boundary[buffer[offset - 1]] == 3)))
@@ -1020,6 +1031,7 @@ inline static int ac_findmatch(const unsigned char *buffer, uint32_t offset, uin
             return 0;
     }
 
+    /* single-byte anchors */
     if(!(pattern->ch[1] & CLI_MATCH_IGNORE)) {
         bp += pattern->ch_mindist[1];
 
@@ -1075,6 +1087,20 @@ inline static int ac_findmatch(const unsigned char *buffer, uint32_t offset, uin
     }
 
     return 1;
+}
+
+inline static int ac_findmatch(const unsigned char *buffer, uint32_t offset, uint32_t fileoffset, uint32_t length, const struct cli_ac_patt *pattern, uint32_t *end)
+{
+    int match;
+    uint16_t specialcnt = pattern->special_pattern;
+
+    if((offset + pattern->length > length) || (pattern->prefix_length > offset))
+        return 0;
+
+    match = ac_findmatch_branch(buffer, offset+pattern->depth, fileoffset, length, pattern, pattern->depth, specialcnt, end);
+    if(match)
+	return 1;
+    return 0;
 }
 
 int cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t lsigs, uint32_t reloffsigs, uint8_t tracklen)
