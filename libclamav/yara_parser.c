@@ -813,8 +813,6 @@ int yr_parser_reduce_rule_declaration(
   //FAIL_ON_COMPILER_ERROR(yr_arena_coalesce(compiler->code_arena));
   rule->code_start = yr_arena_base_address(compiler->code_arena);
   yr_arena_append(compiler->the_arena, compiler->code_arena);
-  //  compiler->code_arena->page_list_head->address = NULL;
-  //  yr_arena_destroy(compiler->code_arena);
   FAIL_ON_COMPILER_ERROR(yr_arena_create(65536, 0, &compiler->code_arena));
   STAILQ_INSERT_TAIL(&compiler->rule_q, rule, link); 
 #endif
