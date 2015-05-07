@@ -41,9 +41,9 @@ limitations under the License.
 #define _YARA_CLAM_H_
 
 #include "shared/queue.h"
-#include "others.h"
 #include "yara_arena.h"
 #include "yara_hash.h"
+#include "others.h"
 
 /* From libyara/include/yara/types.h            */
 #define DECLARE_REFERENCE(type, name) \
@@ -313,95 +313,6 @@ typedef struct _SIZED_STRING
 #define RE_FLAGS_DOT_ALL                  0x80
 #define RE_FLAGS_NOT_AT_START            0x100
 
-/* From libyara/include/yara/exec.h            */
-
-#define UNDEFINED           0xFFFABADAFABADAFFLL
-#define IS_UNDEFINED(x)     ((x) == UNDEFINED)
-
-#define OP_HALT           255
-
-#define OP_AND            1
-#define OP_OR             2
-#define OP_XOR            3
-#define OP_NOT            4
-#define OP_LT             5
-#define OP_GT             6
-#define OP_LE             7
-#define OP_GE             8
-#define OP_EQ             9
-#define OP_NEQ            10
-#define OP_SZ_EQ          11
-#define OP_SZ_NEQ         12
-#define OP_SZ_TO_BOOL     13
-#define OP_ADD            14
-#define OP_SUB            15
-#define OP_MUL            16
-#define OP_DIV            17
-#define OP_MOD            18
-#define OP_NEG            19
-#define OP_SHL            20
-#define OP_SHR            21
-#define OP_PUSH           22
-#define OP_POP            23
-#define OP_CALL           24
-#define OP_OBJ_LOAD       25
-#define OP_OBJ_VALUE      26
-#define OP_OBJ_FIELD      27
-#define OP_INDEX_ARRAY    28
-#define OP_STR_COUNT      29
-#define OP_STR_FOUND      30
-#define OP_STR_FOUND_AT   31
-#define OP_STR_FOUND_IN   32
-#define OP_STR_OFFSET     33
-#define OP_OF             34
-#define OP_PUSH_RULE      35
-#define OP_MATCH_RULE     36
-#define OP_INCR_M         37
-#define OP_CLEAR_M        38
-#define OP_ADD_M          39
-#define OP_POP_M          40
-#define OP_PUSH_M         41
-#define OP_SWAPUNDEF      42
-#define OP_JNUNDEF        43
-#define OP_JLE            44
-#define OP_FILESIZE       45
-#define OP_ENTRYPOINT     46
-#define OP_INT8           47
-#define OP_INT16          48
-#define OP_INT32          49
-#define OP_UINT8          50
-#define OP_UINT16         51
-#define OP_UINT32         52
-#define OP_CONTAINS       53
-#define OP_MATCHES        54
-#define OP_IMPORT         55
-
-/*
-typedef struct _YR_MATCH
-{
-  int64_t offset;
-  int32_t length;
-
-  union {
-    uint8_t* data;            // Confirmed matches use "data",
-    int32_t chain_length;    // unconfirmed ones use "chain_length"
-  };
-
-  struct _YR_MATCH*  prev;
-  struct _YR_MATCH*  next;
-
-} YR_MATCH;
-
-typedef struct _YR_MATCHES
-{
-  int32_t count;
-
-  DECLARE_REFERENCE(YR_MATCH*, head);
-  DECLARE_REFERENCE(YR_MATCH*, tail);
-
-} YR_MATCHES;
-*/
-
 typedef struct _YR_META
 {
   int32_t type;
@@ -564,30 +475,31 @@ typedef struct _yc_compiler {
     int                 last_error_line;
     int                 last_result;
 
-    YR_ARENA*           sz_arena;
-    YR_ARENA*           rules_arena;
-    YR_ARENA*           strings_arena;
-    YR_ARENA*           code_arena;
-    YR_ARENA*           metas_arena;
-    YR_HASH_TABLE*      rules_table;
-    YR_HASH_TABLE*      objects_table;
-    YR_NAMESPACE*       current_namespace;
-    yc_string*          current_rule_strings;
+    YR_ARENA            *sz_arena;
+    YR_ARENA            *rules_arena;
+    YR_ARENA            *strings_arena;
+    YR_ARENA            *code_arena;
+    YR_ARENA            *metas_arena;
+    YR_ARENA            *the_arena;
+    YR_HASH_TABLE       *rules_table;
+    YR_HASH_TABLE       *objects_table;
+    YR_NAMESPACE        *current_namespace;
+    yc_string           *current_rule_strings;
     uint32_t            current_rule_flags;
     uint32_t            current_rule_clflags;
 
-    int8_t*             loop_address[MAX_LOOP_NESTING];
-    char*               loop_identifier[MAX_LOOP_NESTING];
+    int8_t              *loop_address[MAX_LOOP_NESTING];
+    char                *loop_identifier[MAX_LOOP_NESTING];
     int                 loop_depth;
     int                 loop_for_of_mem_offset;
 
     char                last_error_extra_info[MAX_COMPILER_ERROR_EXTRA_INFO];
 
     char                lex_buf[LEX_BUF_SIZE];
-    char*               lex_buf_ptr;
+    char                *lex_buf_ptr;
     unsigned short      lex_buf_len;
 
-    char *              error_msg;   
+    char                *error_msg;   
 
     STAILQ_HEAD(rq, _yc_rule) rule_q;
     STAILQ_HEAD(cs, _yc_string) current_rule_string_q;

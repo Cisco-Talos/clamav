@@ -17,8 +17,8 @@ limitations under the License.
 #include <stdint.h>
 #include <string.h>
 
-#include "yara_clam.h"
 #include <yara_hash.h>
+#include "yara_clam.h"
 #if REAL_YARA
 #include <yara/mem.h>
 #include <yara/error.h>

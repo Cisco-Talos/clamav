@@ -31,8 +31,8 @@ from files.
 #include <time.h>
 #include <stdint.h>
 
-#include "yara_clam.h"
 #include <yara_arena.h>
+#include "yara_clam.h"
 #if REAL_YARA
 #include <yara/mem.h>
 #include <yara/error.h>
@@ -750,7 +750,7 @@ int yr_arena_write_string(
       (void**) written_string);
 }
 
-#if REAL_YARA
+
 //
 // yr_arena_append
 //
@@ -777,7 +777,7 @@ int yr_arena_append(
 
   return ERROR_SUCCESS;
 }
-#endif
+
 
 #if REAL_YARA
 //

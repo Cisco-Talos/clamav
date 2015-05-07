@@ -53,6 +53,7 @@
 #ifdef HAVE_JSON
 #include "json.h"
 #endif
+#include "yara_clam.h"
 
 #if HAVE_LIBXML2
 #define CLAMAV_MIN_XMLREADER_FLAGS (XML_PARSE_NOERROR | XML_PARSE_NONET)
@@ -356,6 +357,11 @@ struct cl_engine {
     uint64_t pcre_match_limit;
     uint64_t pcre_recmatch_limit;
     uint64_t pcre_max_filesize;
+
+    /* YARA */
+    YR_ARENA      * the_arena;
+    YR_HASH_TABLE * rules_table;
+    YR_HASH_TABLE * objects_table;
 };
 
 struct cl_settings {

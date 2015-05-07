@@ -55,6 +55,7 @@ limitations under the License.
 #include "yara_clam.h"
 #include "yara_grammar.h"
 #include "yara_lexer.h"
+#include "yara_exec.h"
 #include "others.h"
 #endif
 
@@ -811,8 +812,9 @@ int yr_parser_reduce_rule_declaration(
   //Yara condition code will work OK as long as it is less than 64K.
   //FAIL_ON_COMPILER_ERROR(yr_arena_coalesce(compiler->code_arena));
   rule->code_start = yr_arena_base_address(compiler->code_arena);
-  compiler->code_arena->page_list_head->address = NULL;
-  yr_arena_destroy(compiler->code_arena);
+  yr_arena_append(compiler->the_arena, compiler->code_arena);
+  //  compiler->code_arena->page_list_head->address = NULL;
+  //  yr_arena_destroy(compiler->code_arena);
   FAIL_ON_COMPILER_ERROR(yr_arena_create(65536, 0, &compiler->code_arena));
   STAILQ_INSERT_TAIL(&compiler->rule_q, rule, link); 
 #endif
