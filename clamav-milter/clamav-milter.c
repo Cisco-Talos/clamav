@@ -116,6 +116,131 @@ int main(int argc, char **argv) {
 	}
     }
 
+    pt = optget(opts, "AddHeader")->strarg;
+    if (strcasecmp(pt, "No")) {
+	char myname[255];
+
+	if (((opt = optget(opts, "ReportHostname"))->enabled &&
+	     strncpy(myname, opt->strarg, sizeof(myname))) ||
+	    !gethostname(myname, sizeof(myname))) {
+
+	    myname[sizeof(myname)-1] = '\0';
+	    snprintf(xvirushdr, sizeof(xvirushdr), "clamav-milter %s at %s",
+		     get_version(), myname);
+	} else {
+	    snprintf(xvirushdr, sizeof(xvirushdr), "clamav-milter %s",
+		     get_version());
+	}
+	xvirushdr[sizeof(xvirushdr)-1] = '\0';
+
+	descr.xxfi_flags |= SMFIF_ADDHDRS;
+
+	if (strcasecmp(pt, "Add")) { /* Replace or Yes */
+	    descr.xxfi_flags |= SMFIF_CHGHDRS;
+	    addxvirus = 1;
+	} else { /* Add */
+	    addxvirus = 2;
+	}
+    }
+
+    if(!(my_socket = optget(opts, "MilterSocket")->strarg)) {
+	logg("!Please configure the MilterSocket directive\n");
+	logg_close();
+	optfree(opts);
+	return 1;
+    }
+
+    if(smfi_setconn(my_socket) == MI_FAILURE) {
+	logg("!smfi_setconn failed\n");
+	logg_close();
+	optfree(opts);
+	return 1;
+    }
+    if(smfi_register(descr) == MI_FAILURE) {
+	logg("!smfi_register failed\n");
+	logg_close();
+	optfree(opts);
+	return 1;
+    }
+    opt = optget(opts, "FixStaleSocket");
+    umsk = umask(0777); /* socket is created with 000 to avoid races */
+    if(smfi_opensocket(opt->enabled) == MI_FAILURE) {
+	logg("!Failed to create socket %s\n", my_socket);
+	logg_close();
+	optfree(opts);
+	return 1;
+    }
+    umask(umsk); /* restore umask */
+    if(strncmp(my_socket, "inet:", 5) && strncmp(my_socket, "inet6:", 6)) {
+	/* set group ownership and perms on the local socket */
+	char *sock_name = my_socket;
+	mode_t sock_mode;
+	if(!strncmp(my_socket, "unix:", 5))
+	    sock_name += 5;
+	if(!strncmp(my_socket, "local:", 6))
+	    sock_name += 6;
+	if(*my_socket == ':')
+	    sock_name ++;
+
+	if(optget(opts, "MilterSocketGroup")->enabled) {
+	    char *gname = optget(opts, "MilterSocketGroup")->strarg, *end;
+	    gid_t sock_gid = strtol(gname, &end, 10);
+	    if(*end) {
+		struct group *pgrp = getgrnam(gname);
+		if(!pgrp) {
+		    logg("!Unknown group %s\n", gname);
+		    logg_close();
+		    optfree(opts);
+		    return 1;
+		}
+		sock_gid = pgrp->gr_gid;
+	    }
+	    if(chown(sock_name, -1, sock_gid)) {
+		logg("!Failed to change socket ownership to group %s\n", gname);
+		logg_close();
+		optfree(opts);
+		return 1;
+	    }
+	}
+
+	if ((opt = optget(opts, "User"))->enabled) {
+	    struct passwd *user;
+	    if ((user = getpwnam(opt->strarg)) == NULL) {
+		logg("ERROR: Can't get information about user %s.\n",
+			opt->strarg);
+		logg_close();
+		optfree(opts);
+		return 1;
+	    }
+
+	    if(chown(sock_name, user->pw_uid, -1)) {
+		logg("!Failed to change socket ownership to user %s\n", user->pw_name);
+		optfree(opts);
+		logg_close();
+		return 1;
+	    }
+	}
+
+	if(optget(opts, "MilterSocketMode")->enabled) {
+	    char *end;
+	    sock_mode = strtol(optget(opts, "MilterSocketMode")->strarg, &end, 8);
+	    if(*end) {
+		logg("!Invalid MilterSocketMode %s\n", optget(opts, "MilterSocketMode")->strarg);
+		logg_close();
+		optfree(opts);
+		return 1;
+	    }
+	} else
+	    sock_mode = 0777 & ~umsk;
+
+	if(chmod(sock_name, sock_mode & 0666)) {
+	    logg("!Cannot set milter socket permission to %s\n", optget(opts, "MilterSocketMode")->strarg);
+	    logg_close();
+	    optfree(opts);
+	    return 1;
+	}
+    }
+
     if(geteuid() == 0 && (opt = optget(opts, "User"))->enabled) {
         struct passwd *user = NULL;
 	if((user = getpwnam(opt->strarg)) == NULL) {
@@ -225,38 +350,8 @@ int main(int argc, char **argv) {
 	return 1;
     }
 
-    pt = optget(opts, "AddHeader")->strarg;
-    if(strcasecmp(pt, "No")) {
-	char myname[255];
-
-	if(((opt = optget(opts, "ReportHostname"))->enabled && strncpy(myname, opt->strarg, sizeof(myname))) || !gethostname(myname, sizeof(myname))) {
-	    myname[sizeof(myname)-1] = '\0';
-	    snprintf(xvirushdr, sizeof(xvirushdr), "clamav-milter %s at %s", get_version(), myname);
-	} else
-	    snprintf(xvirushdr, sizeof(xvirushdr), "clamav-milter %s", get_version());
-	xvirushdr[sizeof(xvirushdr)-1] = '\0';
-
-	descr.xxfi_flags |= SMFIF_ADDHDRS;
-
-	if(strcasecmp(pt, "Add")) { /* Replace or Yes */
-	    descr.xxfi_flags |= SMFIF_CHGHDRS;
-	    addxvirus = 1;
-	} else { /* Add */
-	    addxvirus = 2;
-	}
-    }
-
     multircpt = optget(opts, "SupportMultipleRecipients")->enabled;
     
-    if(!(my_socket = optget(opts, "MilterSocket")->strarg)) {
-	logg("!Please configure the MilterSocket directive\n");
-	localnets_free();
-	whitelist_free();
-	logg_close();
-	optfree(opts);
-	return 1;
-    }
-
     if(!optget(opts, "Foreground")->enabled) {
 	if(daemonize() == -1) {
 	    logg("!daemonize() failed\n");
@@ -269,92 +364,6 @@ int main(int argc, char **argv) {
 	}
 	if(chdir("/") == -1)
 	    logg("^Can't change current working directory to root\n");
-    }
-
-    if(smfi_setconn(my_socket) == MI_FAILURE) {
-	logg("!smfi_setconn failed\n");
-	localnets_free();
-	whitelist_free();
-	logg_close();
-	optfree(opts);
-	return 1;
-    }
-    if(smfi_register(descr) == MI_FAILURE) {
-	logg("!smfi_register failed\n");
-	localnets_free();
-	whitelist_free();
-	logg_close();
-	optfree(opts);
-	return 1;
-    }
-    opt = optget(opts, "FixStaleSocket");
-    umsk = umask(0777); /* socket is created with 000 to avoid races */ 
-    if(smfi_opensocket(opt->enabled) == MI_FAILURE) {
-	logg("!Failed to create socket %s\n", my_socket);
-	localnets_free();
-	whitelist_free();
-	logg_close();
-	optfree(opts);
-	return 1;
-    }
-    umask(umsk); /* restore umask */
-    if(strncmp(my_socket, "inet:", 5) && strncmp(my_socket, "inet6:", 6)) {
-	/* set group ownership and perms on the local socket */
-	char *sock_name = my_socket;
-	mode_t sock_mode;
-	if(!strncmp(my_socket, "unix:", 5))
-	    sock_name += 5;
-	if(!strncmp(my_socket, "local:", 6))
-	    sock_name += 6;
-	if(*my_socket == ':')
-	    sock_name ++;
-
-	if(optget(opts, "MilterSocketGroup")->enabled) {
-	    char *gname = optget(opts, "MilterSocketGroup")->strarg, *end;
-	    gid_t sock_gid = strtol(gname, &end, 10);
-	    if(*end) {
-		struct group *pgrp = getgrnam(gname);
-		if(!pgrp) {
-		    logg("!Unknown group %s\n", gname);
-		    localnets_free();
-		    whitelist_free();
-		    logg_close();
-		    optfree(opts);
-		    return 1;
-		}
-		sock_gid = pgrp->gr_gid;
-	    }
-	    if(chown(sock_name, -1, sock_gid)) {
-		logg("!Failed to change socket ownership to group %s\n", gname);
-		localnets_free();
-		whitelist_free();
-		logg_close();
-		optfree(opts);
-		return 1;
-	    }
-	}
-	if(optget(opts, "MilterSocketMode")->enabled) {
-	    char *end;
-	    sock_mode = strtol(optget(opts, "MilterSocketMode")->strarg, &end, 8);
-	    if(*end) {
-		logg("!Invalid MilterSocketMode %s\n", optget(opts, "MilterSocketMode")->strarg);
-		localnets_free();
-		whitelist_free();
-		logg_close();
-		optfree(opts);
-		return 1;
-	    }
-	} else
-	    sock_mode = 0777 & ~umsk;
-
-	if(chmod(sock_name, sock_mode & 0666)) {
-	    logg("!Cannot set milter socket permission to %s\n", optget(opts, "MilterSocketMode")->strarg);
-	    localnets_free();
-	    whitelist_free();
-	    logg_close();
-	    optfree(opts);
-	    return 1;
-	}
     }
 
     maxfilesize = optget(opts, "MaxFileSize")->numarg;
