@@ -34,6 +34,7 @@
 #include <ctype.h>
 #include <assert.h>
 
+#include "shared/misc.h"
 #include "clamav.h"
 #include "cltypes.h"
 #include "jsparse/lexglobal.h"
@@ -525,8 +526,8 @@ static int replace_token_range(struct tokens *dst, size_t start, size_t end, con
 {
 	const size_t len = with ? with->cnt : 0;
 	size_t i;
-	cli_dbgmsg(MODULE "Replacing tokens %lu - %lu with %lu tokens\n", (unsigned long)start,
-                   (unsigned long)end, (unsigned long)len);
+	cli_dbgmsg(MODULE "Replacing tokens %" _sizet " - %" _sizet " with %"
+			_sizet " tokens\n", start, end, len);
 	if(start >= dst->cnt || end > dst->cnt)
 		return -1;
 	for(i=start;i<end;i++) {
@@ -548,7 +549,7 @@ static int append_tokens(struct tokens *dst, const struct tokens *src)
 		return CL_ENULLARG;
 	if(tokens_ensure_capacity(dst, dst->cnt + src->cnt))
 		return CL_EMEM;
-	cli_dbgmsg(MODULE "Appending %lu tokens\n", (unsigned long)(src->cnt));
+	cli_dbgmsg(MODULE "Appending %" _sizet " tokens\n", src->cnt);
 	memcpy(&dst->data[dst->cnt], src->data, src->cnt * sizeof(dst->data[0]));
 	dst->cnt += src->cnt;
 	return CL_SUCCESS;

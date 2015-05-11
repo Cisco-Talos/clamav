@@ -43,6 +43,10 @@
 #define PATH_MAX 1024
 #endif
 
+#include <inttypes.h>
+#define _sizet	"zu"
+#define _ssizet	"zd"
+
 char *freshdbdir(void);
 void print_version(const char *dbdir);
 int check_flevel(void);

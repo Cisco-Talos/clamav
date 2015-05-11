@@ -24,6 +24,7 @@
 
 #include <time.h>
 
+#include "shared/misc.h"
 #include "clamav.h"
 #include "asn1.h"
 #include "bignum.h"
@@ -1481,7 +1482,7 @@ int asn1_check_mscat(struct cl_engine *engine, fmap_t *map, size_t offset, unsig
     if (engine->dconf->pe & PE_CONF_DISABLECERT)
         return CL_VIRUS;
 
-    cli_dbgmsg("in asn1_check_mscat (offset: %lu)\n", offset);
+    cli_dbgmsg("in asn1_check_mscat (offset: %" _sizet ")\n", offset);
     crtmgr_init(&certs);
     if(crtmgr_add_roots(engine, &certs)) {
 	crtmgr_free(&certs);

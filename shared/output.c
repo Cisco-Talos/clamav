@@ -214,7 +214,8 @@ static int rename_logg(STATBUF *sb)
 
     if (!logg_rotate) {
         if (logg_fp) {
-            fprintf(logg_fp, "Log size = %zu, max = %zu\n", sb->st_size, logg_size);
+            fprintf(logg_fp, "Log size = %" PRId64 ", max = %" PRId64 "\n",
+			    sb->st_size, logg_size);
             fprintf(logg_fp, "WARNING: Log size limit met but log file rotation turned off. Forcing log file rotation anyways.\n");
         }
 

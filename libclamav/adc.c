@@ -28,6 +28,7 @@
 #include <string.h>
 #endif
 
+#include "shared/misc.h"
 #include "clamav.h"
 #include "cltypes.h"
 #include "others.h"
@@ -86,8 +87,8 @@ int adc_decompress(adc_stream *strm)
         return ADC_DATA_ERROR;
     }
 
-    cli_dbgmsg("adc_decompress: avail_in %lu avail_out %lu state %u\n", strm->avail_in, strm->avail_out, strm->state);
-
+    cli_dbgmsg("adc_decompress: avail_in %" _sizet " avail_out %" _sizet " state %u\n",
+		    strm->avail_in, strm->avail_out, strm->state);
     while (strm->avail_out) {
         /* Exit if needs more in bytes and none available */
         int needsInput;

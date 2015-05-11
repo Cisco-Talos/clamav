@@ -52,6 +52,7 @@
 #include "perflogging.h"
 #include "bytecode_priv.h"
 #include "bytecode_api_impl.h"
+#include "shared/misc.h"
 
 #ifdef CLI_PERF_LOGGING
 
@@ -1065,8 +1066,9 @@ int cli_matchmeta(cli_ctx *ctx, const char *fname, size_t fsizec, size_t fsizer,
 	const struct cli_cdb *cdb;
 	unsigned int viruses_found = 0;
 
-    cli_dbgmsg("CDBNAME:%s:%lu:%s:%lu:%lu:%d:%u:%u:%p\n",
-	       cli_ftname(ctx->container_type), fsizec, fname, fsizec, fsizer, encrypted, filepos, res1, res2);
+    cli_dbgmsg("CDBNAME:%s:%" _sizet ":%s:%" _sizet ":%" _sizet ":%d:%u:%u:%p\n",
+	       cli_ftname(ctx->container_type), fsizec, fname, fsizec, fsizer,
+	       encrypted, filepos, res1, res2);
 
     if (ctx->engine && ctx->engine->cb_meta)
 	if (ctx->engine->cb_meta(cli_ftname(ctx->container_type), fsizec, fname, fsizer, encrypted, filepos, ctx->cb_ctx) == CL_VIRUS) {
