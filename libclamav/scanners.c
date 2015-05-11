@@ -49,7 +49,6 @@
 #define DCONF_MAIL  ctx->dconf->mail
 #define DCONF_OTHER ctx->dconf->other
 
-#include "shared/misc.h"
 #include "clamav.h"
 #include "others.h"
 #include "dconf.h"
@@ -3338,8 +3337,8 @@ int cli_map_scandesc(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx, 
 
     if (!length) length = old_len - offset;
     if (length > old_len - offset) {
-	cli_dbgmsg("Data truncated: %" _sizet" -> %" PRIu64" \n", length,
-			old_len - offset);
+	cli_dbgmsg("Data truncated: %lu -> %lu\n",
+		   (unsigned long)length, old_len - offset);
 	length = old_len - offset;
     }
 

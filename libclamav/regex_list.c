@@ -41,7 +41,6 @@
 #include <assert.h>
 
 #include "regex/regex.h"
-#include "shared/misc.h"
 
 #include "clamav.h"
 #include "others.h"
@@ -85,9 +84,7 @@ static inline size_t get_char_at_pos_with_skip(const struct pre_fixup_info* info
 		return (pos <= strlen(buffer)) ? buffer[pos>0 ? pos-1:0] : '\0';
 	}
 	str = info->pre_displayLink.data;
-	cli_dbgmsg("calc_pos_with_skip: skip: %" _sizet ", %" _sizet " - %"
-			_sizet " \"%s\",\"%s\"\n", pos, info->host_start,
-			info->host_end, str, buffer);
+	cli_dbgmsg("calc_pos_with_skip: skip:%lu, %lu - %lu \"%s\",\"%s\"\n", pos, info->host_start, info->host_end, str, buffer);
 	pos += info->host_start;
 	while(str[realpos] && !isalnum(str[realpos])) realpos++;
 	for(; str[realpos] && (pos>0); pos--) {

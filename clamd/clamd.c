@@ -328,7 +328,7 @@ int main(int argc, char **argv)
 
 
         if(logg_size)
-            logg("#Log file size limited to %" PRId64 "bytes.\n", logg_size);
+            logg("#Log file size limited to %u bytes.\n", logg_size);
         else
             logg("#Log file size limit disabled.\n");
 

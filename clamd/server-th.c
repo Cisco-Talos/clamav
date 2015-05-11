@@ -58,7 +58,6 @@
 #include "libclamav/others.h"
 #include "libclamav/readdb.h"
 #include "libclamav/cltypes.h"
-#include "misc.h"
 
 #define BUFFSIZE 1024
 
@@ -683,8 +682,7 @@ static int handle_stream(client_conn_t *conn, struct fd_buf *buf, const struct o
 	    logg("!INSTREAM: Can't write to temporary file.\n");
 	    *error = 1;
 	}
-	logg("$Processed %" _sizet " bytes of chunkdata, pos %" _sizet "\n",
-			cmdlen, pos);
+	logg("$Processed %lu bytes of chunkdata, pos %lu\n", cmdlen, pos);
 	pos += cmdlen;
 	if (pos == buf->off) {
 	    buf->off = 0;

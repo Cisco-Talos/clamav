@@ -61,7 +61,6 @@
 #include "textnorm.h"
 #include "conv.h"
 #include "json_api.h"
-#include "shared/misc.h"
 
 #ifdef	CL_DEBUG
 /*#define	SAVE_TMP	
@@ -1021,12 +1020,10 @@ int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
 
                 orig_length = length;
                 if (length > pdf->size || obj->start + p_stream + length > pdf->size) {
-                    cli_dbgmsg("cli_pdf: length out of file: %" PRId64 " + %"
-				    PRId64 " > % " PRId64 "\n", p_stream,
-				    length, pdf->size);
-                    noisy_warnmsg("length out of file, truncated: %" PRId64
-				    " + %" PRId64 " > %" PRId64 "\n",
-				    p_stream, length, pdf->size);
+                    cli_dbgmsg("cli_pdf: length out of file: %ld + %ld > %ld\n",
+                           p_stream, length, pdf->size);
+                    noisy_warnmsg("length out of file, truncated: %ld + %ld > %ld\n",
+                           p_stream, length, pdf->size);
                     length = pdf->size - (obj->start + p_stream);
                 }
 
@@ -1048,21 +1045,17 @@ int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
                     if (length < 0)
                         length = 0;
 
-                    cli_dbgmsg("cli_pdf: calculated length %" PRId64 "\n",
-				    length);
+                    cli_dbgmsg("cli_pdf: calculated length %ld\n", length);
                 } else {
                     if (size > (size_t)length+2) {
-                        cli_dbgmsg("cli_pdf: calculated length %" PRId64 " < %"
-					_ssizet "\n",
+                        cli_dbgmsg("cli_pdf: calculated length %ld < %ld\n",
                                length, size);
                         length = size;
                     }
                 }
 
                 if (orig_length && size > (size_t)orig_length + 20) {
-                    cli_dbgmsg("cli_pdf: orig length: %" PRId64 ", length: %"
-				    PRId64", size: %" _ssizet "\n", orig_length,
-				    length, size);
+                    cli_dbgmsg("cli_pdf: orig length: %ld, length: %ld, size: %ld\n", orig_length, length, size);
                     pdfobj_flag(pdf, obj, BAD_STREAMLEN);
                 }
 
@@ -1248,7 +1241,7 @@ int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
         }
     } while (0);
 
-    cli_dbgmsg("cli_pdf: extracted %" PRId64 " bytes %u %u obj\n", sum, obj->id>>8, obj->id&0xff);
+    cli_dbgmsg("cli_pdf: extracted %ld bytes %u %u obj\n", sum, obj->id>>8, obj->id&0xff);
     cli_dbgmsg("         ... to %s\n", fullname);
 
     if (flags & PDF_EXTRACT_OBJ_SCAN && sum) {
@@ -2502,8 +2495,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 
     if (pdfver != start || offset) {
         pdf.flags |= 1 << BAD_PDF_HEADERPOS;
-        cli_dbgmsg("cli_pdf: PDF header is not at position 0: %" PRId64 "\n",
-			pdfver - start + offset);
+        cli_dbgmsg("cli_pdf: PDF header is not at position 0: %ld\n",pdfver-start+offset);
 #if HAVE_JSON
         if (pdfobj)
             cli_jsonbool(pdfobj, "BadVersionLocation", 1);
@@ -2612,8 +2604,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     while ((rc = pdf_findobj(&pdf)) > 0) {
         struct pdf_obj *obj = &pdf.objs[pdf.nobjs-1];
 
-        cli_dbgmsg("cli_pdf: found %d %d obj @%" PRId64 "\n", obj->id >> 8,
-			obj->id & 0xff, obj->start + offset);
+        cli_dbgmsg("cli_pdf: found %d %d obj @%ld\n", obj->id >> 8, obj->id&0xff, obj->start + offset);
     }
 
     if (pdf.nobjs)
