@@ -67,9 +67,21 @@ struct cli_ac_data {
     uint32_t min_partno;
 };
 
-struct cli_ac_special {
+struct cli_alt_node {
+    //uint16_t *str;
     unsigned char *str;
-    struct cli_ac_special *next;
+    uint16_t len;
+    struct cli_alt_node *next;
+};
+
+struct cli_ac_special {
+    union {
+        //uint16_t *byte;
+        //uint16_t **f_str;
+        unsigned char *byte;
+        unsigned char **f_str;
+        struct cli_alt_node *v_str;
+    } alt;
     uint16_t len, num;
     uint16_t type, negative;
 };

@@ -91,7 +91,8 @@ static inline int insert_list(struct cli_matcher *root, struct cli_ac_patt *patt
     struct cli_ac_list **newtable;
     struct cli_ac_patt *php;
     struct cli_ac_special *a1, *a2;
-    uint8_t i, match;
+    struct cli_alt_node *b1, *b2;
+    uint8_t i, j, match;
 
     new = (struct cli_ac_list *)mpool_calloc(root->mempool, 1, sizeof(struct cli_ac_list));
     if (!new) {
@@ -142,23 +143,40 @@ static inline int insert_list(struct cli_matcher *root, struct cli_ac_patt *patt
                             match = 0;
                             break;
                         } else if(a1->type == AC_SPECIAL_ALT_CHAR) {
-                            if(memcmp(a1->str, a2->str, a1->num)) {
+                            if(memcmp((a1->alt).byte, (a2->alt).byte, a1->num)) {
                                 match = 0;
                                 break;
                             }
-                        } else if(a1->type == AC_SPECIAL_ALT_STR) {
-                            while(a1 && a2) {
-                                if((a1->len != a2->len) || memcmp(a1->str, a2->str, a1->len))
-                                    break;
-                                a1 = a1->next;
-                                a2 = a2->next;
-                            }
+                        } else if(a1->type == AC_SPECIAL_ALT_STR_FIXED) {
+			    if(a1->len != a2->len) {
+				match = 0;
+				break;
+			    }
 
-                            if(a1 || a2) {
-                                match = 0;
-                                break;
-                            }
-                        }
+			    for(j = 0; j < a1->num; j++) {
+				if(memcmp((a1->alt).f_str[j], (a2->alt).f_str[j], a1->len))
+				    break;
+			    }
+
+			    if(j < a1->num) {
+				match = 0;
+				break;
+			    }
+                        } else if(a1->type == AC_SPECIAL_ALT_STR) {
+			    b1 = (a1->alt).v_str;
+			    b2 = (a2->alt).v_str;
+			    while(b1 && b2) {
+				if((b1->len != b2->len) || memcmp(b1->str, b2->str, b1->len))
+				    break;
+				b1 = b1->next;
+				b2 = b2->next;
+			    }
+
+			    if(b1 || b2) {
+				match = 0;
+				break;
+			    }
+			}
                     }
                 } else {
                     match = 0;
@@ -521,8 +539,9 @@ static void ac_free_special(mpool_t *mempool, struct cli_ac_patt *p)
 static void ac_free_special(struct cli_ac_patt *p)
 #endif
 {
-    unsigned int i;
-    struct cli_ac_special *a1, *a2;
+    unsigned int i, j;
+    struct cli_ac_special *a1;
+    struct cli_alt_node *b1, *b2;
 
 
     if(!p->special)
@@ -530,14 +549,22 @@ static void ac_free_special(struct cli_ac_patt *p)
 
     for(i = 0; i < p->special; i++) {
         a1 = p->special_table[i];
-        while(a1) {
-            a2 = a1;
-            a1 = a1->next;
-
-            if(a2->str)
-                mpool_free(mempool, a2->str);
-            mpool_free(mempool, a2);
-        }
+	if (a1->type == AC_SPECIAL_ALT_CHAR) {
+	    mpool_free(mempool, (a1->alt).byte);
+	} else if (a1->type == AC_SPECIAL_ALT_STR_FIXED) {
+	    for (j = 0; j < a1->num; j++)
+		mpool_free(mempool, (a1->alt).f_str[j]);
+	    mpool_free(mempool, (a1->alt).f_str);
+	} else if (a1->type == AC_SPECIAL_ALT_STR) {
+	    b1 = (a1->alt).v_str;
+	    while (b1) {
+		b2 = b1->next;
+		mpool_free(mempool, b1->str);
+		mpool_free(mempool, b1);
+		b1 = b2;
+	    }
+	}
+	mpool_free(mempool, a1);
     }
     mpool_free(mempool, p->special_table);
 }
@@ -838,50 +865,58 @@ static int ac_findmatch_branch(const unsigned char *buffer, uint32_t offset, uin
 /* special handler */
 inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t offset, uint32_t fileoffset, uint32_t length, const struct cli_ac_patt *pattern, uint32_t pattoffset, uint16_t specialcnt, uint32_t *end)
 {
-    int match;
+    int match, cmp;
     uint16_t j, b = buffer[offset];
     struct cli_ac_special *special = pattern->special_table[specialcnt];
+    struct cli_alt_node *alt = NULL;
 
     match = special->negative;
 
     switch(special->type) {
-    case AC_SPECIAL_ALT_CHAR:
-        for(j = 0; j < special->num; j++) {
-			if(special->str[j] == b) {
-			    match = !special->negative;
-			    break;
-			} else if(special->str[j] > b)
-			    break;
+    case AC_SPECIAL_ALT_CHAR: /* single-byte */
+        for (j = 0; j < special->num; j++) {
+	    if ((special->alt).byte[j] == b) {
+		match = !special->negative;
+		break;
+	    } else if ((special->alt).byte[j] > b)
+		break;
         }
         break;
 
-    case AC_SPECIAL_ALT_STR_FIXED: /* old */
-	/*
-        while(special) {
-            if(bp + special->len <= length) {
-                if(!memcmp(&buffer[bp], special->str, special->len)) {
-                    match = (!special->negative) * special->len;
-                    break;
-                }
-            }
-            special = special->next;
-        }
-	*/
+    case AC_SPECIAL_ALT_STR_FIXED: /* fixed length multi-byte */
+	if (offset + special->len > length)
+	    break;
+
+	for (j = 0; j < special->num; j++) {
+	    if (!memcmp(&buffer[offset], (special->alt).f_str[j], special->len)) {
+		match = (!special->negative) * special->len;
+		break;
+	    } /* TODO - handle sorting case */
+	}
         break;
 
     case AC_SPECIAL_ALT_STR: /* generic */
         /* branch for backtracking */
-        while(special) {
-            if(offset + special->len <= length) {
-                if((!special->negative && !memcmp(&buffer[offset], special->str, special->len)) || special->negative) {
-                    match = ac_findmatch_branch(buffer, offset+special->len, fileoffset, length, pattern, pattoffset+1, specialcnt+1, end);
-                    if (match)
-                        return -1; /* contrary to popular belief, this is good */
-                }
-            }
-            special = special->next;
-        }
-        break;
+	alt = (special->alt).v_str;
+	while (alt) {
+	    if (offset + alt->len > length) {
+		alt = alt->next;
+		continue;
+	    }
+
+	    /* note that generic alternates CANNOT be negated */
+	    /* generic alternates are sorted alphabetically   */
+	    cmp = memcmp(&buffer[offset], alt->str, alt->len);
+	    if (!cmp) {
+		match = ac_findmatch_branch(buffer, offset+alt->len, fileoffset, length, pattern, pattoffset+1, specialcnt+1, end);
+		if (match)
+		    return -1; /* alerts caller that match has been resolved in child callee */
+	    } else if (cmp < 0)
+		break;
+
+	    alt = alt->next;
+	}
+	break;
 
     case AC_SPECIAL_LINE_MARKER:
         if(b == '\n')
@@ -1781,6 +1816,16 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
     return (mode & AC_SCAN_FT) ? type : CL_CLEAN;
 }
 
+/* TODO - remove debugging on production */
+#define ALTN_DEBUG 0
+#if ALTN_DEBUG == 1
+#define cli_altnmsg(...) cli_dbgmsg(__VA_ARGS__)
+#elif ALTN_DEBUG == 2
+#define cli_altnmsg(...) cli_errmsg(__VA_ARGS__)
+#else
+#define cli_altnmsg(...)
+#endif
+
 static int qcompare(const void *a, const void *b)
 {
     return *(const unsigned char *)a - *(const unsigned char *)b;
@@ -1808,181 +1853,344 @@ inline static int find_paren_end(char *hexstr, char **end)
     return nest;
 }
 
-/* analyzes expr, returns number of subexpr, if fixed length subexpr and longest subexpr len  */
-inline static int ac_analyze_expr(char *hexstr, int *fixed_len, int *slen)
+/* analyzes expr, returns number of subexpr, if fixed length subexpr and longest subexpr len *
+ * goes to either end of string or to closing parenthesis; allowed to be unbalanced          *
+ * counts applied to start of expr (not end, i.e. numexpr starts at 1 for the first expr     */
+inline static int ac_analyze_expr(char *hexstr, int *fixed_len, int *sub_len)
 {
-    /* len calc is off */
     int i, level = 0, len = 0, numexpr = 1;
+    int flen, slen;
 
-    *fixed_len = 1;
-    *slen = 0;
+    flen = 1;
+    slen = 0;
     for (i = 0; i < strlen(hexstr); i++) {
 	if (hexstr[i] == '(') {
-	    *fixed_len = 0;
+	    flen = 0;
 	    level++;
 	} else if (hexstr[i] == ')') {
 	    if (!level) {
-		if (!(*slen)) {
-		    *slen = len;
-		} else if (len != *slen) {
-		    *fixed_len = 0;
-		    if (len > *slen)
-			*slen = len;
+		if (!slen) {
+		    slen = len;
+		} else if (len != slen) {
+		    flen = 0;
+		    if (len > slen)
+			slen = len;
 		}
-
-		numexpr++;
 		break;
 	    }
 	    level--;
 	}
 	if (!level && hexstr[i] == '|') {
-	    if (!(*slen)) {
-		*slen = len;
-	    } else if (len != *slen) {
-		*fixed_len = 0;
-		if (len > *slen)
-		    *slen = len;
+	    if (!slen) {
+		slen = len;
+	    } else if (len != slen) {
+		flen = 0;
+		if (len > slen)
+		    slen = len;
 	    }
 	    len = 0;
 	    numexpr++;
 	} else {
 	    len++;
 	}
-	//cli_errmsg("%c, %d\n", hexstr[i], len);
+	//cli_altnmsg("%c, %d\n", hexstr[i], len);
     }
-    if (len > *slen)
-	*slen = len;
+    if (len > slen)
+	slen = len;
+
+    if (sub_len)
+	*sub_len = slen;
+    if (fixed_len)
+	*fixed_len = flen;
 
     return numexpr;
 }
 
-/* recursive special handler for alternate string specials (so many specials!) */
-static int ac_addspecial_alt(const char *hexpr, int neg)
+/* add new generic alternate node to special */
+inline static int ac_addspecial_add_alt_node(const char *subexpr, struct cli_ac_special *special, struct cli_matcher *root)
 {
-    char *hexprcpy;
-    int ret, num, fixed, slen, len;
+    struct cli_alt_node *newnode, **prev, *ins;
+    char *c;
+    int cmp;
 
-    cli_errmsg("called ac_addspecial_alt\n");
+    newnode = (struct cli_alt_node *)mpool_calloc(root->mempool, 1, sizeof(struct cli_alt_node));
+    if (!newnode) {
+	cli_errmsg("ac_addspecial_add_alt_node: Can't allocate new alternate node\n");
+	return CL_EMEM;
+    }
+
+    c = (char *)cli_mpool_hex2str(root->mempool, subexpr);
+    if (!c) {
+	free(newnode);
+	return CL_EMALFDB;
+    }
+
+    newnode->str = c;
+    newnode->len = strlen(subexpr)/2;
+
+    /* search for location to insert node (alphabetically through memcmp) */
+    prev = &((special->alt).v_str);
+    ins = (special->alt).v_str;
+    while (ins) {
+	if (ins->len == newnode->len) {
+	    cmp = memcmp(newnode->str, ins->str, ins->len); /* TODO - change when uint16_t is used */
+	    if (cmp == 0) { /* duplicate */
+		free(newnode);
+		return CL_SUCCESS;
+	    } else if (cmp < 0) {
+		break;
+	    }
+	}
+
+	prev = &(ins->next);
+	ins = ins->next;
+    }
+
+    *prev = newnode;
+    newnode->next = ins;
+    special->num++;
+    return CL_SUCCESS;
+}
+
+/* recursive special handler for expanding and adding generic alternates */
+static int ac_special_altexpand(char *hexpr, char *subexpr, uint16_t maxlen, int lvl, int maxlvl, int rec, struct cli_ac_special *special, struct cli_matcher *root)
+{
+    int ret, scnt = 0, numexpr;
+    char *ept, *sexpr, *end, term;
+    char *fp;
+
+    ept = sexpr = hexpr;
+    fp = subexpr + strlen(subexpr);
+
+    numexpr = ac_analyze_expr(hexpr, NULL, NULL);
+    //cli_altnmsg("hexpr: %s\n", hexpr);
+    //cli_altnmsg("numexpr: %d [%d,%d]\n", numexpr, lvl, maxlvl);
+
+    /* while there are expressions to resolve */
+    while (scnt < numexpr) {
+	scnt++;
+	while ((*ept != '(') && (*ept != '|') && (*ept != ')') && (*ept != '\0'))
+	    ept++;
+
+	/* check for invalid negation */
+	term = *ept;
+	if ((*ept == '(') && (ept >= hexpr+1)) {
+	    if (ept[-1] == '!') {
+		cli_errmsg("ac_special_altexpand: Generic alternates cannot contain negations\n");
+		return CL_EMALFDB;
+	    }
+	}
+
+	/* appended token */
+	*ept = 0;
+	if (cli_strlcat(subexpr, sexpr, maxlen) >= maxlen) {
+	    cli_errmsg("ac_special_altexpand: Unexpected expression larger than expected\n");
+	    return CL_EMEM;
+	}
+	*ept++ = term;
+
+	sexpr = ept;
+	//cli_altnmsg("ac_special_altexpand: %s\n", subexpr);
+
+	if (term == '|') {
+	    //cli_altnmsg("ept: %s\n", ept);
+	    if (lvl == 0) {
+		cli_altnmsg("export: %s\n", subexpr);
+		if ((ret = ac_addspecial_add_alt_node(subexpr, special, root)) != CL_SUCCESS)
+		    return ret;
+	    } else {
+		find_paren_end(ept, &end);
+		if (!end) {
+		    cli_errmsg("ac_special_altexpand: Missing closing parenthesis\n");
+		    return CL_EMALFDB;
+		}
+		end++;
+
+		//cli_altnmsg("descending recursive call on %s\n", end);
+                if ((ret = ac_special_altexpand(end, subexpr, maxlen, lvl-1, lvl, special, root)) != CL_SUCCESS)
+		    return ret;
+                //cli_altnmsg("return descending recursive call\n");
+	    }
+
+	    *fp = 0;
+	} else if (term == ')') {
+	    //cli_altnmsg("ept: %s\n", ept);
+	    if (lvl == 0) {
+		cli_errmsg("ac_special_altexpand: Unexpected closing parenthesis\n");
+		return CL_EPARSE;
+	    }
+
+	    //cli_altnmsg("descending recursive call\n");
+	    if ((ret = ac_special_altexpand(ept, subexpr, maxlen, lvl-1, lvl, special, root)) != CL_SUCCESS)
+		return ret;
+	    //cli_altnmsg("return descending recursive call\n");
+	    break;
+	} else if (term == '(') {
+	    int inner, found;
+	    find_paren_end(ept, &end);
+	    if (!end) {
+		cli_errmsg("ac_special_altexpand: Missing closing parenthesis\n");
+		return CL_EMALFDB;
+	    }
+	    end++;
+
+	    //cli_altnmsg("ascending recursive call\n");
+	    if ((ret = ac_special_altexpand(ept, subexpr, maxlen, lvl+1, lvl+1, special, root)) != CL_SUCCESS)
+		return ret;
+	    //cli_altnmsg("return ascending recursive call\n");
+
+	    /* move ept to end of current alternate expression */
+	    ept = end;
+	    inner = 0;
+	    found = 0;
+	    while (!found && *ept != '\0') {
+		switch(*ept) {
+		case '|':
+		    if (!inner)
+			found = 1;
+		    break;
+		case '(':
+		    inner++;
+		    break;
+		case ')':
+		    inner--;
+		    break;
+		}
+		ept++;
+	    }
+	    if (*ept == '|')
+		ept++;
+
+	    sexpr = ept;
+	    *fp = 0;
+	} else if (term == '\0') {
+	    cli_altnmsg("export: %s\n", subexpr);
+	    if ((ret = ac_addspecial_add_alt_node(subexpr, special, root)) != CL_SUCCESS)
+		return ret;
+	    break;
+	}
+
+	//cli_altnmsg("%d %d\n", lvl, maxlvl);
+	if (lvl != maxlvl)
+	    return CL_SUCCESS;
+    }
+    if (scnt != numexpr) {
+	//cli_altnmsg("scnt %d numexpr %d\n", scnt, numexpr);
+	cli_errmsg("ac_addspecial: Mismatch in parsed and expected signature\n");
+	return CL_EMALFDB;
+    }
+#if ALTN_DEBUG
+    else
+	cli_altnmsg("subexpr cnt OK\n");
+#endif
+
+    return CL_SUCCESS;
+}
+
+/* alternate string specials (so many specials!) */
+inline static int ac_special_altstr(const char *hexpr, struct cli_ac_special *special, struct cli_matcher *root)
+{
+    char *hexprcpy, *h, *c;
+    int i, ret, num, fixed, slen, len;
+
+    //cli_errmsg("called ac_special_altstr\n");
 
     if (!(hexprcpy = cli_strdup(hexpr))) {
-	cli_errmsg("ac_addspecial_alt: Can't duplicate alternate expression\n");
+	cli_errmsg("ac_special_altstr: Can't duplicate alternate expression\n");
 	return CL_EDUP;
     }
 
     len = strlen(hexpr);
     num = ac_analyze_expr(hexprcpy, &fixed, &slen);
 
-    cli_errmsg("-----------------------------------\n");
-    cli_errmsg("hexpr: %s\n", hexprcpy);
-    cli_errmsg("%d strings of %d len %s\n", num, slen, fixed ? "(fixed)" : "(max)");
-    cli_errmsg("-----------------------------------\n");
+    cli_altnmsg("-----------------------------------\n");
+    cli_altnmsg("hexpr: %s\n", hexprcpy);
+    cli_altnmsg("%d strings of %d len %s\n", num, slen, fixed ? "(fixed)" : "(max)");
+    cli_altnmsg("-----------------------------------\n");
 
     if (fixed) {
-	if (slen == 2) /* single-bytes are len 2 in hex */
-	    cli_errmsg("ac_addspecial_alt: discovered AC_SPECIAL_ALT_CHAR\n");
-	else
-	    cli_errmsg("ac_addspecial_alt: discovered AC_SPECIAL_ALT_STR_FIXED\n");
-	/* just use the tokenizer here */
-    } else { /* generic alternate string */
-	/* ------------------(----------)--------(------)--------- */
-	/* ^                 ^   */
-	/* expr             npt  */
+	special->num = 0;
+	special->len = slen / 2;
+	/* single-bytes are len 2 in hex */
+	if (slen == 2) {
+	    cli_altnmsg("ac_special_altstr: discovered AC_SPECIAL_ALT_CHAR\n");
+	    special->type = AC_SPECIAL_ALT_CHAR;
+	    (special->alt).byte = (unsigned char *) mpool_malloc(root->mempool, num);
+	    if (!((special->alt).byte)) {
+		cli_errmsg("cli_ac_special_altstr: Can't allocate newspecial->str\n");
+		free(hexprcpy);
+		return CL_EMEM;
+	    }
+	} else {
+	    cli_altnmsg("ac_special_altstr: discovered AC_SPECIAL_ALT_STR_FIXED\n");
+	    special->type = AC_SPECIAL_ALT_STR_FIXED;
+	    (special->alt).f_str = (unsigned char **) mpool_malloc(root->mempool, num);
+	    if (!((special->alt).f_str)) {
+		cli_errmsg("cli_ac_special_altstr: Can't allocate newspecial->str\n");
+		free(hexprcpy);
+		return CL_EMEM;
+	    }
+	}
 
-	/* things get complicated */
-	/* utilize similar string method as normal parents */
-	/* reconstruct the final string, the ac_analyze_expr determines that slen is longest possible length */
+	for (i = 0; i < num; i++) {
+	    if (num == 1) {
+		c = (char *) cli_mpool_hex2str(root->mempool, hexprcpy);
+	    } else {
+		if(!(h = cli_strtok(hexprcpy, i, "|"))) {
+		    free(hexprcpy);
+		    return CL_EMEM;
+		}
+		c = (char *) cli_mpool_hex2str(root->mempool, h);
+		free(h);
+	    }
+	    if (!c) {
+		free(hexprcpy);
+		return CL_EMALFDB;
+	    }
 
-	char *sexpr, *sexpr_new, *spt, term;
-	int sexpr_len = slen+1, subneg, scnt = 0;
-
-	cli_errmsg("ac_addspecial_alt: discovered AC_SPECIAL_ALT_STR\n");
-	if (neg) {
-	    cli_errmsg("ac_addspecial_alt: Can't apply negation operation to generic alternate strings\n");
+	    if (special->type == AC_SPECIAL_ALT_CHAR) {
+		(special->alt).byte[i] = *c;
+		mpool_free(root->mempool, c);
+	    } else {
+		(special->alt).f_str[i] = c;
+	    }
+	    special->num++;
+	}
+	/* sorting byte alternates */
+	if (special->num > 1 && special->type == AC_SPECIAL_ALT_CHAR)
+	    cli_qsort((special->alt).byte, special->num, sizeof(unsigned char), qcompare);
+	/* TODO - sorting str alternates */
+    } else { /* generic alternates */
+	char *subexpr;
+	cli_altnmsg("ac_special_altstr: discovered AC_SPECIAL_ALT_STR\n");
+	if (special->negative) {
+	    cli_errmsg("ac_special_altstr: Can't apply negation operation to generic alternate strings\n");
 	    free(hexprcpy);
 	    return CL_EMALFDB;
 	}
 
-	if (!(sexpr_new = cli_calloc(sexpr_len, sizeof(char)))) {
-	    cli_errmsg("ac_addspecial_alt: Can't allocate space for reconstructed string\n");
-	    free(hexprcpy);
+	special->type = AC_SPECIAL_ALT_STR;
+
+	/* allocate reusable subexpr */
+	if (!(subexpr = cli_calloc(slen+1, sizeof(char)))) {
+	    cli_errmsg("ac_special_altstr: Can't allocate subexpr container\n");
 	    return CL_EMEM;
 	}
 
-	spt = sexpr = hexprcpy;
-	/* loop starts here */
-	while (scnt < num) {
-	    //cli_errmsg("cycling\n");
-	    while ((*spt != '(') && (*spt != '|') && (*spt != ')') && (*spt != '\0'))
-		spt++;
+	// static int ac_special_altexpand(char *hexpr, char *subexpr, uint16_t maxlen, int lvl, int maxlvl, struct cli_ac_special *special, struct cli_matcher *root)
+	ret = ac_special_altexpand(hexprcpy, subexpr, slen+1, 0, 0, special, root);
 
-	    term = *spt;
-	    subneg = 0;
-	    if ((term == '(') && (spt >= sexpr+1)) {
-		if (spt[-1] == '!') {
-		    subneg = 1;
-		    spt[-1] = 0;
-		}
-	    }
-	    *spt++ = 0;
-
-	    //cli_errmsg("sexpr_new: %s\n", sexpr_new);
-	    //cli_errmsg("sexpr: %s\n", sexpr);
-	    //cli_errmsg("sexpr_len: %d\n", sexpr_len);
-
-	    /* consume token */
-	    if ((ret = cli_strlcat(sexpr_new, sexpr, sexpr_len)) >= sexpr_len) {
-		//cli_errmsg("sexpr_new: %s\n", sexpr_new);
-		//cli_errmsg("cli_strlcat_ret: %d\n", ret);
-
-		cli_errmsg("ac_addspecial_alt: Unexpected expression larger than expected\n");
-		free(sexpr_new);
-		free(hexprcpy);
-		/* TODO - clean up */
-		return CL_EPARSE;
-	    }
-
-	    if (term == '(') {
-		/* recursive call */
-		cli_errmsg("encountered '(': %s\n", sexpr_new);
-		sexpr = spt;
-		find_paren_end(spt, &spt);
-		*spt++ = 0;
-
-		if ((ret = ac_addspecial_alt(sexpr, subneg)) != CL_SUCCESS) {
-		    cli_errmsg("returned ac_addspecial_alt %d\n", ret);
-		    free(sexpr_new);
-		    free(hexprcpy);
-		    /* TODO - clean up */
-		    return CL_EPARSE;
-		}
-		cli_strlcat(sexpr_new, "()", sexpr_len);
-		cli_errmsg("returned ac_addspecial_alt %d\n", ret);
-	    } else if (term == '|') {
-		/* push special */
-		cli_errmsg("encountered '|': %s\n", sexpr_new);
-		memset(sexpr_new, 0, sexpr_len);
-		scnt++;
-	    } else if (term == '\0') {
-		/* push special and break */
-		cli_errmsg("encountered FOE: %s\n", sexpr_new);
-		scnt++;
-		break;
-	    } else {
-		cli_errmsg("ac_addspecial_alt: Unexpected end of expression: %s\n", sexpr);
-		/* TODO - clean up */
-	    }
-
-	    sexpr = spt;
+#if ALTN_DEBUG
+	struct cli_alt_node *node = (special->alt).v_str;
+	while (node) {
+	    cli_errmsg("%d: %s\n", node->len, node->str);
+	    node = node->next;
 	}
+#endif
 
-	free(sexpr_new);
-	if ((scnt != num) || (spt - hexprcpy - 1 != len)) {
-	    //cli_errmsg("scnt %d num %d, parsed %d len %d\n", scnt, num, spt - hexprcpy, len);
-	    cli_errmsg("ac_addspecial: Mismatch in parsed and expected signature\n");
-	    free(hexprcpy);
-	    return CL_EPARSE;
-	} else
-	    cli_errmsg("subexpr cnt OK\n");
+	free(subexpr);
+	free(hexprcpy);
+	return ret;
     }
 
     free(hexprcpy);
@@ -1990,73 +2198,6 @@ static int ac_addspecial_alt(const char *hexpr, int neg)
 }
 
 #define ARBITRARY_NEST_LIMIT 100 /* 0 = NO nesting (sorry birds...) */
-/* special block '(', ')' handler */
-inline static int ac_addspecial(const char *hexsig)
-{
-    struct cli_ac_special *newspecial;
-    char *start, *pt, *hexcpy;
-    int nest, ret;
-
-    if (!(hexcpy = cli_strdup(hexsig))) {
-	cli_errmsg("ac_addspecial: Can't duplicate hexsig\n");
-	return CL_EDUP;
-    }
-
-    start = pt = hexcpy;
-    /* search for parenthesis sequence */
-    while((pt = strchr(start, '('))) {
-	int neg = 0;
-	*pt++ = 0;
-
-	/* check for negation */
-	if(pt >= hexcpy + 2) {
-	    if(pt[-2] == '!') {
-		neg = 1;
-		pt[-2] = 0;
-	    }
-	}
-
-	/* determine if nesting is occuring */
-	nest = find_paren_end(pt, &start);
-	if (!start) {
-	    cli_errmsg("ac_addspecial: Missing closing parenthesis\n");
-	    return CL_EMALFDB;
-	}
-	*start++ = 0;
-	if (!strlen(pt)) {
-	    cli_errmsg("ac_addspecial: Empty block\n");
-	    free(hexcpy);
-	    return CL_EMALFDB;
-	}
-
-	cli_errmsg("nest %d\n", nest);
-
-	if (nest > ARBITRARY_NEST_LIMIT) {
-	    cli_errmsg("ac_addspecial: We've gone too deep!\n");
-	    free(hexcpy);
-	    return CL_EMALFDB;
-	}
-
-	/* character class handling */
-	if(!strcmp(hexpr, "B")) {
-	    cli_errmsg("encountered 'B': ()\n");
-	} else if(!strcmp(hexpr, "L")) {
-	    cli_errmsg("encountered 'L': ()\n");
-	} else if(!strcmp(hexpr, "W")) {
-	    cli_errmsg("encountered 'W': ()\n");
-	} else {
-	    if ((ret = ac_addspecial_alt(pt, neg)) != CL_SUCCESS) {
-		cli_errmsg("returned ac_addspecial_alt %d\n", ret);
-		free(hexcpy);
-		return ret;
-	    }
-	}
-    }
-
-    free(hexcpy);
-    return CL_SUCCESS;
-}
-
 /* FIXME: clean up the code */
 int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hexsig, uint8_t sigopts, uint32_t sigid, uint16_t parts, uint16_t partno, uint16_t rtype, uint16_t type, uint32_t mindist, uint32_t maxdist, const char *offset, const uint32_t *lsigid, unsigned int options)
 {
@@ -2190,7 +2331,8 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
     }
 
     if(strchr(hexsig, '(')) {
-	    char *hexnew, *start, *h, *c;
+	    char *hexnew, *start;
+	    uint8_t nest;
 	    size_t hexnewsz;
 
 	if(hex) {
@@ -2199,8 +2341,6 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 	    mpool_free(root->mempool, new);
 	    return CL_EMEM;
 	}
-
-	ac_addspecial(hexcpy);
 
 	hexnewsz = strlen(hexsig) + 1;
 	if(!(hexnew = (char *) cli_calloc(1, hexnewsz))) {
@@ -2231,7 +2371,9 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 	    }
 	    cli_strlcat(hexnew, start, hexnewsz);
 
-	    if(!(start = strchr(pt, ')'))) {
+	    nest = find_paren_end(pt, &start);
+	    if(!start) {
+		cli_errmsg("cli_ac_addsig: Missing closing parenthesis\n");
 		mpool_free(root->mempool, newspecial);
 		error = CL_EMALFDB;
 		break;
@@ -2239,8 +2381,15 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 	    *start++ = 0;
 	    if(!strlen(pt)) {
 		cli_errmsg("cli_ac_addsig: Empty block\n");
+		mpool_free(root->mempool, newspecial);
 		error = CL_EMALFDB;
 		break;
+	    }
+
+	    if (nest > ARBITRARY_NEST_LIMIT) {
+		cli_errmsg("ac_addspecial: We've gone too deep!\n");
+		free(hexcpy);
+		return CL_EMALFDB;
 	    }
 
 	    if(!strcmp(pt, "B")) {
@@ -2306,72 +2455,11 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 	    } else if(!strcmp(pt, "W")) {
 		newspecial->type = AC_SPECIAL_WORD_MARKER;
 	    } else {
-		newspecial->num = 1;
-		for(i = 0; i < strlen(pt); i++)
-		    if(pt[i] == '|')
-			newspecial->num++;
-
-		if(3 * newspecial->num - 1 == (uint16_t) strlen(pt)) {
-		    newspecial->type = AC_SPECIAL_ALT_CHAR;
-		    newspecial->str = (unsigned char *) mpool_malloc(root->mempool, newspecial->num);
-		    if(!newspecial->str) {
-			cli_errmsg("cli_ac_addsig: Can't allocate newspecial->str\n");
-			error = CL_EMEM;
-			break;
-		    }
-		} else {
-		    newspecial->type = AC_SPECIAL_ALT_STR;
-		}
-
-		for(i = 0; i < newspecial->num; i++) {
-			unsigned int clen;
-
-		    if(newspecial->num == 1) {
-			c = (char *) cli_mpool_hex2str(root->mempool, pt);
-			clen = strlen(pt) / 2;
-		    } else {
-			if(!(h = cli_strtok(pt, i, "|"))) {
-			    error = CL_EMEM;
-			    break;
-			}
-			c = (char *) cli_mpool_hex2str(root->mempool, h);
-			clen = strlen(h) / 2;
-			free(h);
-		    }
-		    if(!c) {
-			error = CL_EMALFDB;
-			break;
-		    }
-
-		    if(newspecial->type == AC_SPECIAL_ALT_CHAR) {
-			newspecial->str[i] = *c;
-			mpool_free(root->mempool, c);
-		    } else {
-			if(i) {
-			    specialpt = newspecial;
-			    while(specialpt->next)
-				specialpt = specialpt->next;
-
-			    specialpt->next = (struct cli_ac_special *) mpool_calloc(root->mempool, 1, sizeof(struct cli_ac_special));
-			    if(!specialpt->next) {
-				cli_errmsg("cli_ac_addsig: Can't allocate specialpt->next\n");
-				error = CL_EMEM;
-				free(c);
-				break;
-			    }
-			    specialpt->next->str = (unsigned char *) c;
-			    specialpt->next->len = clen;
-			} else {
-			    newspecial->str = (unsigned char *) c;
-			    newspecial->len = clen;
-			}
-		    }
-		}
-		if(newspecial->num > 1 && newspecial->type == AC_SPECIAL_ALT_CHAR)
-		    cli_qsort(newspecial->str, newspecial->num, sizeof(unsigned char), qcompare);
-
-		if(error)
+		if ((ret = ac_special_altstr(pt, newspecial, root)) != CL_SUCCESS) {
+		    //cli_altnmsg("returned ac_special_altstr %d\n", ret);
+		    error = ret;
 		    break;
+		}
 	    }
 	}
 
