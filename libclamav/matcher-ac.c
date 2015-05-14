@@ -974,9 +974,9 @@ inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t off
         if((match = ac_findmatch_special(buffer, bp, fileoffset, length, pattern, i,    \
                                           specialcnt, end)) <= 0)                       \
             return match;                                                               \
-        bp += match;                                                                    \
+        bp += match - 1; /* -1 is for bp++ in parent loop */                            \
         specialcnt++;                                                                   \
-        continue; /* match value includes bp++ */                                       \
+        break;                                                                          \
                                                                                         \
     case CLI_MATCH_NIBBLE_HIGH:                                                         \
         if((unsigned char) (p & 0x00f0) != (b & 0xf0))                                  \
@@ -2503,7 +2503,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
     free(hex);
 
     new->sigopts = sigopts;
-    /* setting nocase match; TODO - move nocase to the pattern and verifier */
+    /* setting nocase match */
     if (sigopts & ACPATT_OPTION_NOCASE) {
         for (i = 0; i < new->length; ++i)
             if ((new->pattern[i] & CLI_MATCH_METADATA) == CLI_MATCH_CHAR) {
