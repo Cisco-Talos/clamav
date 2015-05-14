@@ -118,9 +118,9 @@ static int ssn_max_group[MAX_AREA+1] = { 0,
 
 
 /*
- *  The function below was re-written to check the longest
- *  credit/debit card numbers to the shortest, and most specific
- *  credit/debit number matches to least specific number matches.
+ *  The function below was re-written to check common case
+ *  credit/debit card numbers Visa, Mastercard, Amex, Discover
+ *  first within respective length groups.
  *
  *  The following credit/debit card formats are checked in this
  *  function:
@@ -200,122 +200,69 @@ int dlp_is_valid_cc(const unsigned char *buffer, int length)
     if(sum % 10)
 	return 0;
 
-    if (digits > 16 && digits <= 19)
+    if (digits == 13)	/* VISA Original Card */
     {
-        /* Laser Debit Card (Ireland), 16 to 19 digits in length, Luhn Algorithm in use */
-
-        if (cc_digits[0] == '6' && cc_digits[1] == '3' && cc_digits[2] == '0' && cc_digits[3] == '4')
+        if (cc_digits[0] == '4')
         {
-            cli_dbgmsg("dlp_is_valid_dc: Laser Debit Card (%s)\n", cc_digits);
-            return 1;   /* first four digits are 6304, valid */
-        }
-        else if (cc_digits[0] == '6' && cc_digits[1] == '7' && cc_digits[2] == '0' && cc_digits[3] == '6')
-        {
-            cli_dbgmsg("dlp_is_valid_dc: Laser Debit Card (%s)\n", cc_digits);
-            return 1;   /* first four digits are 6706, valid */
-        }
-        else if (cc_digits[0] == '6' && cc_digits[1] == '7' && cc_digits[2] == '7' && cc_digits[3] == '1')
-        {
-            cli_dbgmsg("dlp_is_valid_dc: Laser Debit Card (%s)\n", cc_digits);
-            return 1;   /* first four digits are 6771, valid */
-        }
-        else if (cc_digits[0] == '6' && cc_digits[1] == '7' && cc_digits[2] == '0' && cc_digits[3] == '9')
-        {
-            cli_dbgmsg("dlp_is_valid_dc: Laser Debit Card (%s)\n", cc_digits);
-            return 1;   /* first four digits are 6709, valid */
-        }
-
-        /* Solo Credit/Debit Card, 16 to 19 digits in length, Luhn algorithm in use */
-
-        else if (cc_digits[0] == '6' && cc_digits[1] == '3' && cc_digits[2] == '3' && cc_digits[3] == '4')
-        {
-            cli_dbgmsg("dlp_is_valid_dc: Solo Credit Card (%s)\n", cc_digits);
-            return 1;   /* First four digits are 6334, valid */
-        }
-        else if (cc_digits[0] == '6' && cc_digits[1] == '7' && cc_digits[2] == '6' && cc_digits[3] == '7')
-        {
-            cli_dbgmsg("dlp_is_valid_dc: Solo Credit Card (%s)\n", cc_digits);
-            return 1;   /* First four digits are 6767, valid */
-        }
-
-        /* China Union Pay Credit Card, 16 to 19 digits in length, unsure of Luhn */
-
-        else if (cc_digits[0] == '6' && cc_digits[1] == '2')
-        {
-            val = cc_digits[2] - '0';
-            if (val >= 0 && val <= 5)
-            {
-                cli_dbgmsg("dlp_is_valid_dc: China Union Pay Credit Card (%s)\n", cc_digits);
-                return 1;   /* first two digits 62, 3rd digit is 0 to 5, valid */
-            }
-        }
-    }       /* end if digits > 16 and <= 19 */
+            cli_dbgmsg("dlp_is_valid_cc: VISA Original (13 digits) (%s)\n", cc_digits);
+            return 1;   /* first digit is 4, valid */
+	}
+    }	    /* end if digits == 13  */
     else if (digits == 16)
     {
-        /* Visa Electron Debit Card (16 digits in length, Luhn Algorithm in use) */
+        if (cli_debug_flag) {  /* Only need the following checks if debug is on */
+            /* Visa Electron Debit Card (16 digits in length, Luhn Algorithm in use) */
+            
+            if (cc_digits[0] == '4' && cc_digits[1] == '0' && cc_digits[2] == '2' && cc_digits[3] == '6')
+            {
+                cli_dbgmsg("dlp_is_valid_dc: Visa Electron Debit Card (%s)\n", cc_digits);
+                return 1;   /* first four digits are 4026, valid */
+            }
+            else if (!strncmp(cc_digits, "417500", 6))
+            {
+                cli_dbgmsg("dlp_is_valid_dc: Visa Electron Debit Card (%s)\n", cc_digits);
+                return 1;   /* first six digits are 417500, valid */
+            }
+            else if (cc_digits[0] == '4' && cc_digits[1] == '5' && cc_digits[2] == '0' && cc_digits[3] == '8')
+            {
+                cli_dbgmsg("dlp_is_valid_dc: Visa Electron Debit Card (%s)\n", cc_digits);
+                return 1;   /* first four digits are 4508, valid */
+            }
+            else if (cc_digits[0] == '4' && cc_digits[1] == '8' && cc_digits[2] == '4' && cc_digits[3] == '4')
+            {
+                cli_dbgmsg("dlp_is_valid_dc: Visa Electron Debit Card (%s)\n", cc_digits);
+                return 1;   /* first four digits are 4844, valid */
+            }
+            else if (cc_digits[0] == '4' && cc_digits[1] == '9' && cc_digits[2] == '1' && cc_digits[3] == '3')
+            {
+                cli_dbgmsg("dlp_is_valid_dc: Visa Electron Debit Card (%s)\n", cc_digits);
+                return 1;   /* first four digits are 4913, valid */
+            }
+            else if (cc_digits[0] == '4' && cc_digits[1] == '9' && cc_digits[2] == '1' && cc_digits[3] == '7')
+            {
+                cli_dbgmsg("dlp_is_valid_dc: Visa Electron Debit Card (%s)\n", cc_digits);
+                return 1;   /* first four digits are 4917, valid */
+            }
+        }
 
-        if (cc_digits[0] == '4' && cc_digits[1] == '0' && cc_digits[2] == '2' && cc_digits[3] == '6')
+        if (cc_digits[0] == '4') /* Regular VISA Card (16 digits) */
         {
-            cli_dbgmsg("dlp_is_valid_dc: Visa Electron Debit Card (%s)\n", cc_digits);
-            return 1;   /* first four digits are 4026, valid */
-        }
-        else if (!strncmp(cc_digits, "417500", 6))
-        {
-            cli_dbgmsg("dlp_is_valid_dc: Visa Electron Debit Card (%s)\n", cc_digits);
-            return 1;   /* first six digits are 417500, valid */
-        }
-        else if (cc_digits[0] == '4' && cc_digits[1] == '5' && cc_digits[2] == '0' && cc_digits[3] == '8')
-        {
-            cli_dbgmsg("dlp_is_valid_dc: Visa Electron Debit Card (%s)\n", cc_digits);
-            return 1;   /* first four digits are 4508, valid */
-        }
-        else if (cc_digits[0] == '4' && cc_digits[1] == '8' && cc_digits[2] == '4' && cc_digits[3] == '4')
-        {
-            cli_dbgmsg("dlp_is_valid_dc: Visa Electron Debit Card (%s)\n", cc_digits);
-            return 1;   /* first four digits are 4844, valid */
-        }
-        else if (cc_digits[0] == '4' && cc_digits[1] == '9' && cc_digits[2] == '1' && cc_digits[3] == '3')
-        {
-            cli_dbgmsg("dlp_is_valid_dc: Visa Electron Debit Card (%s)\n", cc_digits);
-            return 1;   /* first four digits are 4913, valid */
-        }
-        else if (cc_digits[0] == '4' && cc_digits[1] == '9' && cc_digits[2] == '1' && cc_digits[3] == '7')
-        {
-            cli_dbgmsg("dlp_is_valid_dc: Visa Electron Debit Card (%s)\n", cc_digits);
-            return 1;   /* first four digits are 4917, valid */
+            cli_dbgmsg("dlp_is_valid_cc: VISA Card (16 digits) (%s)\n", cc_digits);
+            return 1;   /* first digit is 4, valid */
         }
         else if (cc_digits[0] == '5' && cc_digits[1] == '0' && cc_digits[2] == '1' && cc_digits[3] == '9')
         {   /* Dankort credit/debit card (16 digits), unsure of Luhn algorithm  */
             cli_dbgmsg("dlp_is_valid_cc: Dankort (%s)\n", cc_digits);
             return 1;   /* first four digits are 5019, valid */
         }
-
-        /* Laser Debit Card (Ireland), 16 digits in length, Luhn Algorithm in use */
-
-        else if (cc_digits[0] == '6' && cc_digits[1] == '3' && cc_digits[2] == '0' && cc_digits[3] == '4')
+        else if (cc_digits[0] == '5') /* MASTERCARD */
         {
-            cli_dbgmsg("dlp_is_valid_dc: Laser Debit Card (%s)\n", cc_digits);
-            return 1;   /* first four digits are 6304, valid */
-        }
-        else if (cc_digits[0] == '6' && cc_digits[1] == '7' && cc_digits[2] == '0' && cc_digits[3] == '6')
-        {
-            cli_dbgmsg("dlp_is_valid_dc: Laser Debit Card (%s)\n", cc_digits);
-            return 1;   /* first four digits are 6706, valid */
-        }
-        else if (cc_digits[0] == '6' && cc_digits[1] == '7' && cc_digits[2] == '7' && cc_digits[3] == '1')
-        {
-            cli_dbgmsg("dlp_is_valid_dc: Laser Debit Card (%s)\n", cc_digits);
-            return 1;   /* first four digits are 6771, valid */
-        }
-        else if (cc_digits[0] == '6' && cc_digits[1] == '3' && cc_digits[2] == '3' && cc_digits[3] == '4')
-        {
-            cli_dbgmsg("dlp_is_valid_dc: Solo Credit Card (%s)\n", cc_digits);
-            return 1;   /* first four digits are 6334, valid */
-        }
-        else if (cc_digits[0] == '6' && cc_digits[1] == '7' && cc_digits[2] == '6' && cc_digits[3] == '7')
-        {
-            cli_dbgmsg("dlp_is_valid_dc: Solo Credit Card (%s)\n", cc_digits);
-            return 1;   /* First four digits are 6767, valid */
+            val = cc_digits[1] - '0';
+            if (val >= 1 && val <= 5)
+            {
+                cli_dbgmsg("dlp_is_valid_cc: MASTERCARD (%s)\n", cc_digits);
+                return 1;   /* first digit is 5, 2nd digit is 1 to 5, valid */
+            }
         }
         else if (!strncmp(cc_digits, "6011", 4)) /* Discover Card */
         {
@@ -343,6 +290,18 @@ int dlp_is_valid_cc(const unsigned char *buffer, int length)
             {
                 cli_dbgmsg("dlp_is_valid_cc: Discover Card (%s)\n", cc_digits);
                 return 1;   /* first three digits are 622, 4th digit is 1 to 9, valid */
+            }
+        }
+        
+        /* Japan Credit Bureau, 16 digits, Luhn Algorithm in Use */
+        
+        else if (cc_digits[0] == '3' && cc_digits[1] == '5') /* Japan Credit Bureau */
+        {
+            val = cc_digits[2] - '0';
+            if (val >= 2 && val <= 8)
+            {
+                cli_dbgmsg("dlp_is_valid_cc: Japan Credit Bureau [2] (%s)\n", cc_digits);
+                return 1;   /* first two digits are 35, 3rd digit is 2 to 8, valid */
             }
         }
 
@@ -388,31 +347,33 @@ int dlp_is_valid_cc(const unsigned char *buffer, int length)
             cli_dbgmsg("dlp_is_valid_cc: Diner's Club (US and Canada) (%s)\n", cc_digits);
             return 1;   /* first two digits are 54 or 55, valid */
         }
-        
-        /* Japan Credit Bureau, 16 digits, Luhn Algorithm in Use */
-        
-        else if (cc_digits[0] == '3' && cc_digits[1] == '5') /* Japan Credit Bureau */
+
+        /* Laser Debit Card (Ireland), 16 digits in length, Luhn Algorithm in use */
+
+        else if (cc_digits[0] == '6' && cc_digits[1] == '3' && cc_digits[2] == '0' && cc_digits[3] == '4')
         {
-            val = cc_digits[2] - '0';
-            if (val >= 2 && val <= 8)
-            {
-                cli_dbgmsg("dlp_is_valid_cc: Japan Credit Bureau [2] (%s)\n", cc_digits);
-                return 1;   /* first two digits are 35, 3rd digit is 2 to 8, valid */
-            }
+            cli_dbgmsg("dlp_is_valid_dc: Laser Debit Card (%s)\n", cc_digits);
+            return 1;   /* first four digits are 6304, valid */
         }
-        else if (cc_digits[0] == '5') /* MASTERCARD */
+        else if (cc_digits[0] == '6' && cc_digits[1] == '7' && cc_digits[2] == '0' && cc_digits[3] == '6')
         {
-            val = cc_digits[1] - '0';
-            if (val >= 1 && val <= 5)
-            {
-                cli_dbgmsg("dlp_is_valid_cc: MASTERCARD (%s)\n", cc_digits);
-                return 1;   /* first digit is 5, 2nd digit is 1 to 5, valid */
-            }
+            cli_dbgmsg("dlp_is_valid_dc: Laser Debit Card (%s)\n", cc_digits);
+            return 1;   /* first four digits are 6706, valid */
         }
-        else if (cc_digits[0] == '4') /* Regular VISA Card (16 digits) */
+        else if (cc_digits[0] == '6' && cc_digits[1] == '7' && cc_digits[2] == '7' && cc_digits[3] == '1')
         {
-            cli_dbgmsg("dlp_is_valid_cc: VISA Card (16 digits) (%s)\n", cc_digits);
-            return 1;   /* first digit is 4, valid */
+            cli_dbgmsg("dlp_is_valid_dc: Laser Debit Card (%s)\n", cc_digits);
+            return 1;   /* first four digits are 6771, valid */
+        }
+        else if (cc_digits[0] == '6' && cc_digits[1] == '3' && cc_digits[2] == '3' && cc_digits[3] == '4')
+        {
+            cli_dbgmsg("dlp_is_valid_dc: Solo Credit Card (%s)\n", cc_digits);
+            return 1;   /* first four digits are 6334, valid */
+        }
+        else if (cc_digits[0] == '6' && cc_digits[1] == '7' && cc_digits[2] == '6' && cc_digits[3] == '7')
+        {
+            cli_dbgmsg("dlp_is_valid_dc: Solo Credit Card (%s)\n", cc_digits);
+            return 1;   /* First four digits are 6767, valid */
         }
     }       /* end else if digits == 16 */
     else if (digits == 15)
@@ -441,6 +402,56 @@ int dlp_is_valid_cc(const unsigned char *buffer, int length)
             return 1;   /* first four digits are 2149, valid */
         }
     }	    /* end else if digits == 15	*/
+    else if (digits > 16 && digits <= 19)
+    {
+        /* China Union Pay Credit Card, 16 to 19 digits in length, unsure of Luhn */
+
+        if (cc_digits[0] == '6' && cc_digits[1] == '2')
+        {
+            val = cc_digits[2] - '0';
+            if (val >= 0 && val <= 5)
+            {
+                cli_dbgmsg("dlp_is_valid_dc: China Union Pay Credit Card (%s)\n", cc_digits);
+                return 1;   /* first two digits 62, 3rd digit is 0 to 5, valid */
+            }
+        }
+
+        /* Solo Credit/Debit Card, 16 to 19 digits in length, Luhn algorithm in use */
+
+        else if (cc_digits[0] == '6' && cc_digits[1] == '3' && cc_digits[2] == '3' && cc_digits[3] == '4')
+        {
+            cli_dbgmsg("dlp_is_valid_dc: Solo Credit Card (%s)\n", cc_digits);
+            return 1;   /* First four digits are 6334, valid */
+        }
+        else if (cc_digits[0] == '6' && cc_digits[1] == '7' && cc_digits[2] == '6' && cc_digits[3] == '7')
+        {
+            cli_dbgmsg("dlp_is_valid_dc: Solo Credit Card (%s)\n", cc_digits);
+            return 1;   /* First four digits are 6767, valid */
+        }
+
+        /* Laser Debit Card (Ireland), 16 to 19 digits in length, Luhn Algorithm in use */
+
+        else if (cc_digits[0] == '6' && cc_digits[1] == '3' && cc_digits[2] == '0' && cc_digits[3] == '4')
+        {
+            cli_dbgmsg("dlp_is_valid_dc: Laser Debit Card (%s)\n", cc_digits);
+            return 1;   /* first four digits are 6304, valid */
+        }
+        else if (cc_digits[0] == '6' && cc_digits[1] == '7' && cc_digits[2] == '0' && cc_digits[3] == '6')
+        {
+            cli_dbgmsg("dlp_is_valid_dc: Laser Debit Card (%s)\n", cc_digits);
+            return 1;   /* first four digits are 6706, valid */
+        }
+        else if (cc_digits[0] == '6' && cc_digits[1] == '7' && cc_digits[2] == '7' && cc_digits[3] == '1')
+        {
+            cli_dbgmsg("dlp_is_valid_dc: Laser Debit Card (%s)\n", cc_digits);
+            return 1;   /* first four digits are 6771, valid */
+        }
+        else if (cc_digits[0] == '6' && cc_digits[1] == '7' && cc_digits[2] == '0' && cc_digits[3] == '9')
+        {
+            cli_dbgmsg("dlp_is_valid_dc: Laser Debit Card (%s)\n", cc_digits);
+            return 1;   /* first four digits are 6709, valid */
+        }
+    }       /* end if digits > 16 and <= 19 */
     else if (digits == 14) /* Diners Club */
     {
 	if (cc_digits[0] == '3' && (cc_digits[1] == '6' || cc_digits[1] == '8'))
@@ -457,14 +468,6 @@ int dlp_is_valid_cc(const unsigned char *buffer, int length)
             }
         }
     }       /* end else if digits == 14 */
-    else if (digits == 13)	/* VISA Original Card */
-    {
-        if (cc_digits[0] == '4')
-        {
-            cli_dbgmsg("dlp_is_valid_cc: VISA Original (13 digits) (%s)\n", cc_digits);
-            return 1;   /* first digit is 4, valid */
-	}
-    }	    /* end if digits == 13  */
  
     return 0;   /* credit card or debit card number is not valid */
 }
