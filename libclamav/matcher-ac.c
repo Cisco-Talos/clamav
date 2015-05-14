@@ -943,6 +943,16 @@ inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t off
     return match;
 }
 
+/* using verifier for nocase instead of preprocessing pattern
+    case CLI_MATCH_CHAR:                                                                \
+        if((unsigned char) p != b)                                                      \
+            if(!(o & ACPATT_OPTION_NOCASE))                                             \
+                match = 0;                                                              \
+            else if((unsigned char)(p & 0xff) != cli_nocase(b))                         \
+                match = 0;                                                              \
+        break;                                                                          \
+*/
+
 /* call only by ac_findmatch_branch! */
 #define AC_MATCH_CHAR(p,b)                                                              \
     switch(wc = p & CLI_MATCH_METADATA) {                                               \
@@ -961,7 +971,7 @@ inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t off
                                                                                         \
     case CLI_MATCH_SPECIAL:                                                             \
         /* >1 = movement, 0 = fail, <1 = resolved in branch */                          \
-        if ((match = ac_findmatch_special(buffer, bp, fileoffset, length, pattern, i,   \
+        if((match = ac_findmatch_special(buffer, bp, fileoffset, length, pattern, i,    \
                                           specialcnt, end)) <= 0)                       \
             return match;                                                               \
         bp += match;                                                                    \
