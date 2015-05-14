@@ -692,3 +692,202 @@ int dlp_has_normal_ssn(const unsigned char *buffer, int length)
                         SSN_FORMAT_HYPHENS, 
                         DETECT_MODE_DETECT);
 }
+
+/*  The program below checks for the instances of where a   */
+/*  Canadian Bank Routing Number or EFT is found, or if a   */
+/*  U.S. MICR Bank Routing Number is encountered.           */
+
+/*  Author: Bill Parker                                     */
+/*  Date:   February 17, 2013                               */
+/*  Last Modified: February 25, 2013                        */
+
+/*  Purpose: To provide Snort and ClamAV the ability to     */
+/*  detect canadian and U.S. bank routing transaction       */
+/*  numbers via the DLP module in ClamAV or the SDF pre-    */
+/*  processor in the Snort IDS.                             */
+
+/*  This function checks if the supplied string is a valid  */
+/*  canadian transit number, the format is as follows:      */
+
+/*  XXXXX-YYY where XXXXX is a branch number, and YYY is    */
+/*  the institutional number.                               */
+
+/*  note: it does NOT appear that the canadian RTN or EFT   */
+/*  number formats contain any type of checksum algorithm   */
+/*  or a check digit.                                       */
+
+int cdn_ctn_is_valid(const char *buffer, int length)
+{
+#if 0
+    int mult = 0;
+    int sum = 0;
+    int val = 0;
+#endif
+    int i = 0;
+    int digits = 0;
+    char cdn_ctn_digits[21] = "\0";
+
+    if (buffer == NULL || length < 9)   /* if the buffer is empty or  */
+        return 0;                       /* the length is less than 9, it's not valid    */
+
+    if (buffer[5] != '-') return 0;     /* if the 6th char isn't a '-', not a valid RTN */
+
+    if (length > 9) length = 9;         /* set length to 9, if it's greater then 9      */
+
+    for (i = 0; i < length; i++)
+    {
+        if (isdigit(buffer[i]) == 0)
+        {
+            if (buffer[i] == '-')
+                continue;
+            else
+                break;
+        }   /* end if isdigit(buffer[i] == 0    */
+        cdn_ctn_digits[digits] = buffer[i];
+        digits++;
+
+        if (buffer[i] == '-')
+            continue;
+        else
+            break;
+    }   /*  end for loop    */
+    cdn_ctn_digits[digits] = '0';
+    return 1;   /* is valid */
+}
+
+/*  If the string is a canadian EFT (Electronic Fund        */
+/*  Transaction), the format is as follows:                 */
+
+/*  0YYYXXXX, where a leading zero is required, XXXXX is a  */
+/*  branch number, and YYY is the institution number.       */
+
+/*  note: it does NOT appear that the canadian RTN or EFT   */
+/*  number formats contain any type of checksum algorithm   */
+/*  or a check digit.                                       */
+
+int cdn_eft_is_valid(const char *buffer, int length)
+{
+#if 0
+    int mult = 0;
+    int sum = 0;
+    int val = 0;
+#endif
+    int i = 0;
+    int digits = 0;
+    char cdn_eft_digits[21] = "\0";
+
+    if (buffer == NULL || length < 9)   /* if the buffer is empty or  */
+        return 0;                       /* the length is less than 9, it's not valid    */
+
+    if (buffer[0] != '0') return 0;     /* if the 1st char isn't a '0', not a valid EFT */
+
+    if (length > 9) length = 9;         /* set length to 9, if it's greater then 9      */
+
+    for (i = 0; i < length; i++)
+    {
+        if (isdigit(buffer[i]) != 0) 
+        {
+            cdn_eft_digits[digits] = buffer[i];
+            digits++;
+        }   
+        else    /* isn't a digit, don't check the rest */
+            return 0;
+    }   /*  end for loop    */
+    cdn_eft_digits[digits] = '0';
+
+    return 1;   /* is valid */
+}
+
+/*  If the string is a U.S. MICR (Magnetic Ink Character        */
+/*  Recognition) number, the format is as follows: XXXXYYYYC    */
+
+/*  where XXXX is the Federal Reserve Routing Symbol        */
+/*        YYYY is the ABA Institution Indentifier and       */
+/*        C is the check digit.                             */
+
+/*  the two leftmost digits of the MICR number must be one  */
+/*  of the following values:                                */
+
+/*  00 - U.S. Government                                                    */
+/*  01 to 12 - Federal Reserve Banks                                        */
+/*  21 to 32 - thrift institutions (e.g. - credit unions and savings banks) */
+/*  61 to 72 - special purpose routing numbers (e.g. - ETI's)               */
+/*  80 - Traveler's Cheques                                                 */
+
+int us_micr_is_valid(const char *buffer, int length)
+{
+#if 0
+    int mult = 0;
+#endif
+    int result, sum = 0, sum1 = 0, sum2 = 0, sum3 = 0;
+    int i = 0;
+    int val = 0;
+    int digits = 0;
+    char micr_digits[21] = "\0";
+
+    if (buffer == NULL || length < 9)   /* if the buffer is empty or    */
+        return 0;                       /* the length is < 9, it's not valid    */
+
+    if (length > 9) length = 9;
+
+    /* loop and make sure all the characters are actually digits    */
+
+    for (i = 0; i < length; i++)
+    {
+        if (isdigit(buffer[i]) != 0)
+        {
+            micr_digits[digits] = buffer[i];
+            digits++;
+        }
+        else    /* isn't a digit, don't check the rest and go home  */
+            return 0;
+    }   /* end for loop */
+
+    /*  check first two digits for valid number codes as follows:   */
+
+    /*  00 - U.S. Government    */
+    /*  01 to 12 - Federal Reserve Banks    */
+    /*  21 to 32 - thrift institutions (e.g. - credit unions and savings banks) */
+    /*  61 to 72 - special purpose routing numbers (e.g. - ETI's)   */
+    /*  80 - Traveler's Cheques                                     */
+
+    /*  for ease of processing, convert micr_digits[0] and [1] to a */
+    /*  numeric value   */
+
+    /*  added parens around micr_digits[1] - '0' on 02/25/2013 as a */
+    /*  precaution against improper evaluation.                     */
+
+    val = ((micr_digits[0] - '0') * 10) + (micr_digits[1] - '0');
+
+    if  (((micr_digits[0] == '0' && micr_digits[1] == '0') ||
+        (micr_digits[0] == '0' && (val >= 1 && val <= 9)) ||
+        (val == 11 || val == 12) ||
+        (val >= 21 && val <= 32) ||
+        (val >= 61 && val <= 72) ||
+        (val == 80)) == 0) /* first two digits are invalid   */
+        {
+            return 0;   /* go home  */
+        }   /* end if test of first two digits  */
+
+    /*  see if we have a valid MICR number via the following formula */
+
+    /*  7 * (micr_digits[0] + micr_digits[3] + micr_digits[6]) +    */
+    /*  3 * (micr_digits[1] + micr_digits[4] + micr_digits[7]) +    */
+    /*  9 * (micr_digits[2] + micr_digits[5]) (the check digit is   */
+    /*  computed by the sum above modulus 10 and compared against   */
+    /*  the value in micr_digits[8] (if it's the same, it's valid)  */
+
+    sum1 = 7 * ((micr_digits[0] - '0') + (micr_digits[3] - '0') + (micr_digits[6] - '0'));
+    sum2 = 3 * ((micr_digits[1] - '0') + (micr_digits[4] - '0') + (micr_digits[7] - '0'));
+    sum3 = 9 * ((micr_digits[2] - '0') + (micr_digits[5] - '0'));
+
+    sum = sum1 + sum2 + sum3;
+    result = sum % 10;
+
+    if (result == (micr_digits[8] - '0'))
+        return 1;   /* last digit of MICR matches result    */
+    else
+        return 0;   /* check digit doesn't match, MICR number isn't valid   */
+
+}
+     
