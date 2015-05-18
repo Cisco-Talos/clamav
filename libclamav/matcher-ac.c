@@ -862,11 +862,44 @@ int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigne
 
 static int ac_findmatch_branch(const unsigned char *buffer, uint32_t offset, uint32_t length, uint32_t fileoffset, const struct cli_ac_patt *pattern, uint32_t pattoffset, uint16_t specialcnt, uint32_t *end);
 
+/* call only by ac_findmatch_special! Does not handle recursive specials */
+#define AC_MATCH_CHAR2(p,b)                                                             \
+    switch(wc = p & CLI_MATCH_METADATA) {                                               \
+    case CLI_MATCH_CHAR:                                                                \
+        if((unsigned char) p != b)                                                      \
+            match = 0;                                                                  \
+        break;                                                                          \
+                                                                                        \
+    case CLI_MATCH_NOCASE:                                                              \
+        if((unsigned char)(p & 0xff) != cli_nocase(b))                                  \
+            match = 0;                                                                  \
+        break;                                                                          \
+                                                                                        \
+    case CLI_MATCH_IGNORE:                                                              \
+        break;                                                                          \
+                                                                                        \
+    case CLI_MATCH_NIBBLE_HIGH:                                                         \
+        if((unsigned char) (p & 0x00f0) != (b & 0xf0))                                  \
+            match = 0;                                                                  \
+        break;                                                                          \
+                                                                                        \
+    case CLI_MATCH_NIBBLE_LOW:                                                          \
+        if((unsigned char) (p & 0x000f) != (b & 0x0f))                                  \
+            match = 0;                                                                  \
+        break;                                                                          \
+                                                                                        \
+    default:                                                                            \
+        cli_errmsg("ac_findmatch: Unknown metatype 0x%x\n", wc);                        \
+        match = 0;                                                                      \
+    }
+
+
 /* special handler */
 inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t offset, uint32_t fileoffset, uint32_t length, const struct cli_ac_patt *pattern, uint32_t pattoffset, uint16_t specialcnt, uint32_t *end)
 {
     int match, cmp;
     uint16_t j, b = buffer[offset];
+    uint16_t wc;
     struct cli_ac_special *special = pattern->special_table[specialcnt];
     struct cli_alt_node *alt = NULL;
 
@@ -905,14 +938,18 @@ inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t off
             }
 
             /* note that generic alternates CANNOT be negated */
-            /* generic alternates are sorted alphabetically   */
-            cmp = memcmp(&buffer[offset], alt->str, alt->len);
-            if (!cmp) {
+            match = 1;
+            for (j = 0; j < alt->len; j++) {
+                AC_MATCH_CHAR2(alt->str[j],buffer[offset+j]);
+                if (!match)
+                    break;
+            }
+            if (match) {
+                /* TODO - if match is unique, we can pass it directly back */
                 match = ac_findmatch_branch(buffer, offset+alt->len, fileoffset, length, pattern, pattoffset+1, specialcnt+1, end);
                 if (match)
                     return -1; /* alerts caller that match has been resolved in child callee */
-            } else if (cmp < 0)
-                break;
+            }
 
             alt = alt->next;
         }
@@ -942,16 +979,6 @@ inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t off
 
     return match;
 }
-
-/* using verifier for nocase instead of preprocessing pattern
-    case CLI_MATCH_CHAR:                                                                \
-        if((unsigned char) p != b)                                                      \
-            if(!(o & ACPATT_OPTION_NOCASE))                                             \
-                match = 0;                                                              \
-            else if((unsigned char)(p & 0xff) != cli_nocase(b))                         \
-                match = 0;                                                              \
-        break;                                                                          \
-*/
 
 /* call only by ac_findmatch_branch! */
 #define AC_MATCH_CHAR(p,b)                                                              \
@@ -989,7 +1016,7 @@ inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t off
         break;                                                                          \
                                                                                         \
     default:                                                                            \
-        cli_errmsg("ac_findmatch: Unknown wildcard 0x%x\n", wc);                        \
+        cli_errmsg("ac_findmatch: Unknown metatype 0x%x\n", wc);                        \
         match = 0;                                                                      \
     }
 
@@ -1901,6 +1928,8 @@ inline static int ac_analyze_expr(char *hexstr, int *fixed_len, int *sub_len)
             len = 0;
             numexpr++;
         } else {
+            if (hexstr[i] == '?')
+                flen = 0;
             len++;
         }
         //cli_altnmsg("%c, %d\n", hexstr[i], len);
@@ -1920,7 +1949,7 @@ inline static int ac_analyze_expr(char *hexstr, int *fixed_len, int *sub_len)
 inline static int ac_addspecial_add_alt_node(const char *subexpr, struct cli_ac_special *special, struct cli_matcher *root)
 {
     struct cli_alt_node *newnode, **prev, *ins;
-    char *c;
+    uint16_t *s;
     int cmp;
 
     newnode = (struct cli_alt_node *)mpool_calloc(root->mempool, 1, sizeof(struct cli_alt_node));
@@ -1929,29 +1958,30 @@ inline static int ac_addspecial_add_alt_node(const char *subexpr, struct cli_ac_
         return CL_EMEM;
     }
 
-    c = (char *)cli_mpool_hex2str(root->mempool, subexpr);
-    if (!c) {
+    s = cli_mpool_hex2ui(root->mempool, subexpr);
+    if (!s) {
         free(newnode);
         return CL_EMALFDB;
     }
 
-    newnode->str = c;
+    newnode->str = s;
     newnode->len = strlen(subexpr)/2;
 
     /* search for location to insert node (alphabetically through memcmp) */
     prev = &((special->alt).v_str);
     ins = (special->alt).v_str;
     while (ins) {
+        /*
         if (ins->len == newnode->len) {
-            cmp = memcmp(newnode->str, ins->str, ins->len); /* TODO - change when uint16_t is used */
-            if (cmp == 0) { /* duplicate */
+            cmp = memcmp(newnode->str, ins->str, ins->len); // TODO - change when uint16_t is used
+            if (cmp == 0) { // duplicate
                 free(newnode);
                 return CL_SUCCESS;
             } else if (cmp < 0) {
                 break;
             }
         }
-
+        */
         prev = &(ins->next);
         ins = ins->next;
     }

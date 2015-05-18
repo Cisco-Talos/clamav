@@ -68,8 +68,8 @@ struct cli_ac_data {
 };
 
 struct cli_alt_node {
-    //uint16_t *str;
-    unsigned char *str;
+    uint16_t *str;
+    //unsigned char *str;
     uint16_t len;
     struct cli_alt_node *next;
 };
