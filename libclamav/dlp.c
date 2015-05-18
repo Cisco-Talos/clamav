@@ -710,84 +710,46 @@ int dlp_has_normal_ssn(const unsigned char *buffer, int length)
 /*  Are first three or last three digits a valid bank code  */
 int is_bank_code_valid(int bank_code)
 {
-    int bank_code_valid = 0;
-
     switch (bank_code) {
-        case 1:     bank_code_valid = 1;    /*  Bank of Montreal    */
-                    break;
-        case 2:     bank_code_valid = 1;    /*  Bank of Nova Scotia */
-                    break;
-        case 3:     bank_code_valid = 1;    /*  Royal Bank of Canada    */
-                    break;
-        case 4:     bank_code_valid = 1;    /*  Toronto-Dominion Bank   */
-                    break;
-        case 6:     bank_code_valid = 1;    /*  National Bank of Canada */
-                    break;
-        case 10:    bank_code_valid = 1;    /*  Canadian Imperial Bank of Commerce  */
-                    break;
-        case 16:    bank_code_valid = 1;    /*  HSBC Canada */
-                    break;
-        case 30:    bank_code_valid = 1;    /*  Canadian Western Bank   */
-                    break;
-        case 39:    bank_code_valid = 1;    /*  Laurentian Bank of Canada   */
-                    break;
-        case 117:   bank_code_valid = 1;    /*  Government of Canada    */
-                    break;
-        case 127:   bank_code_valid = 1;    /*  Canada Post (Money Orders)  */
-                    break;
-        case 177:   bank_code_valid = 1;    /*  Bank of Canada  */
-                    break;
-        case 219:   bank_code_valid = 1;    /*  ATB Financial   */
-                    break;
-        case 260:   bank_code_valid = 1;    /*  Citibank Canada */
-                    break;
-        case 290:   bank_code_valid = 1;    /*  UBS Bank (Canada)   */
-                    break;
-        case 308:   bank_code_valid = 1;    /*  Bank of China (Canada)  */
-                    break;
-        case 309:   bank_code_valid = 1;    /*  Citizens Bank of Canada */
-                    break;
-        case 326:   bank_code_valid = 1;    /*  President’s Choice Financial    */
-                    break;
-        case 338:   bank_code_valid = 1;    /*  Canadian Tire Bank  */
-                    break;
-        case 340:   bank_code_valid = 1;    /*  ICICI Bank Canada   */
-                    break;
-        case 509:   bank_code_valid = 1;    /*  Canada Trust    */
-                    break;
-        case 540:   bank_code_valid = 1;    /*  Manulife Bank   */
-                    break;
-        case 614:   bank_code_valid = 1;    /*  ING Direct Canada   */
-                    break;
-        case 809:   bank_code_valid = 1;    /*  Central 1 [Credit Union] – BC Region    */
-                    break;
-        case 815:   bank_code_valid = 1;    /*  Caisses Desjardins du Québec    */
-                    break;
-        case 819:   bank_code_valid = 1;    /*  Caisses populaires Desjardins du Manitoba   */
-                    break;
-        case 828:   bank_code_valid = 1;    /*  Central 1 [Credit Union] – ON Region    */
-                    break;
-        case 829:   bank_code_valid = 1;    /*  Caisses populaires Desjardins de l’Ontario  */
-                    break;
-        case 837:   bank_code_valid = 1;    /*  Meridian Credit Union   */
-                    break;
-        case 839:   bank_code_valid = 1;    /*  Credit Union Heritage (Nova Scotia) */
-                    break;
-        case 865:   bank_code_valid = 1;    /*  Caisses populaires Desjardins acadiennes */
-                    break;
-        case 879:   bank_code_valid = 1;    /*  Credit Union Central of Manitoba    */
-                    break;
-        case 889:   bank_code_valid = 1;    /*  Credit Union Central of Saskatchewan    */
-                    break;
-        case 899:   bank_code_valid = 1;    /*  Credit Union Central Alberta    */
-                    break;
-        case 900:   bank_code_valid = 1;    /*  Unknown???  */
-                    break;
-        default:    bank_code_valid = 0;    /*  NO MATCH...FAIL */
-                    break;
+        case 1:     return 1;    /*  Bank of Montreal    */
+        case 2:     return 1;    /*  Bank of Nova Scotia */
+        case 3:     return 1;    /*  Royal Bank of Canada    */
+        case 4:     return 1;    /*  Toronto-Dominion Bank   */
+        case 6:     return 1;    /*  National Bank of Canada */
+        case 10:    return 1;    /*  Canadian Imperial Bank of Commerce  */
+        case 16:    return 1;    /*  HSBC Canada */
+        case 30:    return 1;    /*  Canadian Western Bank   */
+        case 39:    return 1;    /*  Laurentian Bank of Canada   */
+        case 117:   return 1;    /*  Government of Canada    */
+        case 127:   return 1;    /*  Canada Post (Money Orders)  */
+        case 177:   return 1;    /*  Bank of Canada  */
+        case 219:   return 1;    /*  ATB Financial   */
+        case 260:   return 1;    /*  Citibank Canada */
+        case 290:   return 1;    /*  UBS Bank (Canada)   */
+        case 308:   return 1;    /*  Bank of China (Canada)  */
+        case 309:   return 1;    /*  Citizens Bank of Canada */
+        case 326:   return 1;    /*  President’s Choice Financial    */
+        case 338:   return 1;    /*  Canadian Tire Bank  */
+        case 340:   return 1;    /*  ICICI Bank Canada   */
+        case 509:   return 1;    /*  Canada Trust    */
+        case 540:   return 1;    /*  Manulife Bank   */
+        case 614:   return 1;    /*  ING Direct Canada   */
+        case 809:   return 1;    /*  Central 1 [Credit Union] – BC Region    */
+        case 815:   return 1;    /*  Caisses Desjardins du Québec    */
+        case 819:   return 1;    /*  Caisses populaires Desjardins du Manitoba   */
+        case 828:   return 1;    /*  Central 1 [Credit Union] – ON Region    */
+        case 829:   return 1;    /*  Caisses populaires Desjardins de l’Ontario  */
+        case 837:   return 1;    /*  Meridian Credit Union   */
+        case 839:   return 1;    /*  Credit Union Heritage (Nova Scotia) */
+        case 865:   return 1;    /*  Caisses populaires Desjardins acadiennes */
+        case 879:   return 1;    /*  Credit Union Central of Manitoba    */
+        case 889:   return 1;    /*  Credit Union Central of Saskatchewan    */
+        case 899:   return 1;    /*  Credit Union Central Alberta    */
+        case 900:   return 1;    /*  Unknown???  */
+        default:    return 0;    /*  NO MATCH...FAIL */
     }   /*  end if switch(bank_code)    */
 
-    return(bank_code_valid);
+    return 0;
 }       /*  end function is_bank_code_valid()   */
 
 /*  This function checks if the supplied string is a valid  */
@@ -801,60 +763,31 @@ int is_bank_code_valid(int bank_code)
 /*  or a check digit.                                       */
 int cdn_ctn_is_valid(const char *buffer, int length)
 {
-//    int mult = 0;
-//    int sum = 0;
-    int i = 0;
-//    int val = 0;
-    int digits = 0;
+    int i;
     int bank_code = 0;          /*  last three digits of Canada RTN/MICR is Bank I.D.   */
-    int bank_code_valid = 0;    /*  for use in switch   */
-    unsigned char cdn_ctn_digits[21];
 
     if (buffer == NULL || length < 9)   /* if the buffer is empty or  */
         return 0;                       /* the length is less than 9, it's not valid    */
 
     if (buffer[5] != '-') return 0;     /* if the 6th char isn't a '-', not a valid RTN */
 
-    if (length > 9) length = 9;         /* set length to 9, if it's greater then 9      */
-
-    for (i = 0; i < length; i++)
-    {
+    for (i = 0; i < 5; i++)
         if (isdigit(buffer[i]) == 0)
-        {
-            if (buffer[i] == '-')
-                continue;
-            else
-                break;
-        }   /* end if isdigit(buffer[i] == 0    */
-        cdn_ctn_digits[digits] = buffer[i];
-        digits++;
+            return 0;
 
-        if (buffer[i] == '-')
-            continue;
-        else
-            break;
-    }   /*  end for loop    */
-    cdn_ctn_digits[digits] = 0;
-
-/*  Check the various branch codes which are listed, but there  */
-/*  may be more valid codes which could be added as well...     */
+    /*  Check the various branch codes which are listed, but there  */
+    /*  may be more valid codes which could be added as well...     */
 
     /*  convert last three elements in buffer to a numeric value    */
 
-    for (i = 6; i < length; i++) {
-#if 0
-        printf("value of buffer[%d] is %c\n", i, buffer[i]);
-#endif
+    for (i = 6; i < 9; i++) {
+        if (isdigit(buffer[i]) == 0)
+            return 0;
         bank_code = (bank_code * 10) + (buffer[i] - '0');
     }
-#if 0
-    printf("Value of bank_code (last three elements is) %d\n", bank_code);
-#endif // 0
 
     /* now have a switch sandwich for bank codes    */
-
     return(is_bank_code_valid(bank_code));  /*  return 1 if valid, 0 if not */
-
 }
 
 /*  If the string is a canadian EFT (Electronic Fund        */
@@ -869,82 +802,50 @@ int cdn_ctn_is_valid(const char *buffer, int length)
 
 int cdn_eft_is_valid(const char *buffer, int length)
 {
-//    int mult = 0;
     int bank_code = 0;
-    int i = 0;
-//    int val = 0;
-    int digits = 0;
-    unsigned char cdn_eft_digits[21];
+    int i;
 
     if (buffer == NULL || length < 9)   /* if the buffer is empty or  */
         return 0;                       /* the length is less than 9, it's not valid    */
 
     if (buffer[0] != '0') return 0;     /* if the 1st char isn't a '0', not a valid EFT */
 
-    if (length > 9) length = 9;         /* set length to 9, if it's greater then 9      */
-
-    for (i = 0; i < length; i++)
+    for (i = 1; i < 4; i++)
     {
-        if (isdigit(buffer[i]) != 0)
-        {
-            cdn_eft_digits[digits] = buffer[i];
-            digits++;
-        }
-        else    /* isn't a digit, don't check the rest */
+        if (isdigit(buffer[i]) == 0)
             return 0;
-    }   /*  end for loop    */
-    cdn_eft_digits[digits] = 0;
-
-/*  Check the various branch codes which are listed, but there  */
-/*  may be more valid codes which could be added as well...     */
-
-    for(i = 1; i < 4; i++) {
-#if 0
-        printf("value of buffer[%d] is %c\n", i, buffer[i]);
-#endif
         bank_code = (bank_code * 10) + (buffer[i] - '0');
     }
-#if 0
-    printf("Value of bank_code (last three elements is) %d\n", bank_code);
-#endif // 0
 
-    return(is_bank_code_valid(bank_code));   /* return 1 if valid, 0 if not */
+    /*  Check the various branch codes which are listed, but there  */
+    /*  may be more valid codes which could be added as well...     */
+    if (!is_bank_code_valid(bank_code))
+        return 0;
+
+    for(i = 4; i < 9; i++)
+        if (isdigit(buffer[i]) == 0)
+            return 0;
+
+    return 1;
 }
 
 int us_micr_is_valid(const char *buffer, int length)
 {
-//    int mult = 0;
-    int result, sum = 0, sum1 = 0, sum2 = 0, sum3 = 0;
-    int i = 0;
-//    int val = 0;
-    int digits = 0;
-    unsigned char micr_digits[21];
+    int result, sum, sum1, sum2, sum3;
+    int i;
+    unsigned char micr_digits[9];
 
     if (buffer == NULL || length < 9)   /* if the buffer is empty or    */
         return 0;                       /* the length is < 9, it's not valid    */
 
-#if 0
-    printf(" past NULL and LEN < 9\n");
-#endif
-
-    if (length > 9) length = 9;
-
     /* loop and make sure all the characters are actually digits    */
 
-    for (i = 0; i < length; i++)
+    for (i = 0; i < 9; i++)
     {
-        if (isdigit(buffer[i]) != 0)
-        {
-            micr_digits[digits] = buffer[i];
-            digits++;
-        }
-        else    /* isn't a digit, don't check the rest and go home  */
+        if (isdigit(buffer[i]) == 0)
             return 0;
-    }   /* end for loop */
-
-#if 0
-    printf(" past all the values are digits\n");
-#endif
+        micr_digits[i] = buffer[i];
+    }
 
     /*  see if we have a valid MICR number via the following formula */
 
@@ -954,25 +855,12 @@ int us_micr_is_valid(const char *buffer, int length)
     /*  computed by the sum above modulus 10                        */
 
     sum1 = 7 * ((micr_digits[0] - '0') + (micr_digits[3] - '0') + (micr_digits[6] - '0'));
-#if 0
-    printf("value of sum1 is %d\n", sum1);
-#endif
     sum2 = 3 * ((micr_digits[1] - '0') + (micr_digits[4] - '0') + (micr_digits[7] - '0'));
-#if 0
-    printf("value of sum2 is %d\n", sum2);
-#endif
     sum3 = 9 * ((micr_digits[2] - '0') + (micr_digits[5] - '0'));
-#if 0
-    printf("value of sum3 is %d\n", sum3);
-#endif
     sum = sum1 + sum2 + sum3;
     result = sum % 10;
 
-    printf("value of result is %d and value of check digit is %d\n", result, micr_digits[8] - '0');
-
     if (result == (micr_digits[8] - '0'))
         return 1;   /* last digit of MICR matches result    */
-    else
-        return 0;   /* MICR number isn't valid  */
-
+    return 0;       /* MICR number isn't valid  */
 }
