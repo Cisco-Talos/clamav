@@ -3333,7 +3333,7 @@ static unsigned int yara_total, yara_loaded, yara_malform, yara_empty, yara_comp
 
 /* yara has no apparent cap on the number of strings; TODO - should we have one? */
 /* function base off load_oneldb */
-static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int options, unsigned int *sigs)
+static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, unsigned int options, unsigned int *sigs)
 {
     YR_STRING *string;
     struct cli_ytable ytable;
@@ -3350,29 +3350,26 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
 
     cli_yaramsg("load_oneyara: attempting to load %s\n", rule->identifier);
 
-    memset(&ytable, 0, sizeof(ytable));
-
     if (!rule) {
         cli_errmsg("load_oneyara: empty rule passed as argument\n");
         return CL_ENULLARG;
     }
 
-    /* PUA stuff, for the future
-    if (chkpua && cli_chkpua(rule->id, engine->pua_cats, options))
+    /* PUA and IGN checks */
+    if (chkpua && cli_chkpua(rule->identifier, engine->pua_cats, options))
         return CL_SUCCESS;
 
-    if (engine->ignored && cli_chkign(engine->ignored, rule->id, buffer_cpy ? buffer_cpy : rule->id)) {
-        if(skip)
-            *skip = 1;
+    if (engine->ignored && cli_chkign(engine->ignored, rule->identifier, rule->identifier)) {
         return CL_SUCCESS;
     }
 
-    if(engine->cb_sigload && engine->cb_sigload("yara", virname, ~options & CL_DB_OFFICIAL, engine->cb_sigload_ctx)) {
-        cli_dbgmsg("cli_loadyara: skipping %s due to callback\n", virname);
+    if(engine->cb_sigload && engine->cb_sigload("yara", rule->identifier, ~options & CL_DB_OFFICIAL, engine->cb_sigload_ctx)) {
+        cli_dbgmsg("cli_loadyara: skipping %s due to callback\n", rule->identifier);
         (*sigs)--;
         return CL_SUCCESS;
     }
-    */
+
+    memset(&ytable, 0, sizeof(ytable));
 
     /*** rule specific checks ***/
 #ifdef YARA_FINISHED
@@ -3815,8 +3812,9 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
         rules++;
         sigs++; /* can be decremented by load_oneyara */
 
-        /* TODO - PUA and engine->ignored */
-        rc = load_oneyara(rule, engine, options, &sigs);
+        rc = load_oneyara(rule,
+                          engine->pua_cats && (options & CL_DB_PUA_MODE) && (options & (CL_DB_PUA_INCLUDE | CL_DB_PUA_EXCLUDE)),
+                          engine, options, &sigs);
         if (rc != CL_SUCCESS) {
             cli_warnmsg("cli_loadyara: problem parsing yara file %s, yara rule %s\n", dbname, rule->identifier);
             continue;
