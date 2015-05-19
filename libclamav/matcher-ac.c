@@ -1946,11 +1946,11 @@ inline static int ac_analyze_expr(char *hexstr, int *fixed_len, int *sub_len)
 }
 
 /* add new generic alternate node to special */
-inline static int ac_addspecial_add_alt_node(const char *subexpr, struct cli_ac_special *special, struct cli_matcher *root)
+inline static int ac_addspecial_add_alt_node(const char *subexpr, uint8_t sigopts, struct cli_ac_special *special, struct cli_matcher *root)
 {
     struct cli_alt_node *newnode, **prev, *ins;
     uint16_t *s;
-    int cmp;
+    int i, cmp;
 
     newnode = (struct cli_alt_node *)mpool_calloc(root->mempool, 1, sizeof(struct cli_alt_node));
     if (!newnode) {
@@ -1966,6 +1966,15 @@ inline static int ac_addspecial_add_alt_node(const char *subexpr, struct cli_ac_
 
     newnode->str = s;
     newnode->len = strlen(subexpr)/2;
+
+    /* setting nocase match */
+    if (sigopts & ACPATT_OPTION_NOCASE) {
+        for (i = 0; i < newnode->len; ++i)
+            if ((newnode->str[i] & CLI_MATCH_METADATA) == CLI_MATCH_CHAR) {
+                newnode->str[i] = cli_nocase(newnode->str[i] & 0xff);
+                newnode->str[i] += CLI_MATCH_NOCASE;
+            }
+    }
 
     /* search for location to insert node (alphabetically through memcmp) */
     prev = &((special->alt).v_str);
@@ -1993,7 +2002,7 @@ inline static int ac_addspecial_add_alt_node(const char *subexpr, struct cli_ac_
 }
 
 /* recursive special handler for expanding and adding generic alternates */
-static int ac_special_altexpand(char *hexpr, char *subexpr, uint16_t maxlen, int lvl, int maxlvl, struct cli_ac_special *special, struct cli_matcher *root)
+static int ac_special_altexpand(char *hexpr, char *subexpr, uint16_t maxlen, int lvl, int maxlvl, uint8_t sigopts, struct cli_ac_special *special, struct cli_matcher *root)
 {
     int ret, scnt = 0, numexpr;
     char *ept, *sexpr, *end, term;
@@ -2036,7 +2045,7 @@ static int ac_special_altexpand(char *hexpr, char *subexpr, uint16_t maxlen, int
             //cli_altnmsg("ept: %s\n", ept);
             if (lvl == 0) {
                 cli_altnmsg("export: %s\n", subexpr);
-                if ((ret = ac_addspecial_add_alt_node(subexpr, special, root)) != CL_SUCCESS)
+                if ((ret = ac_addspecial_add_alt_node(subexpr, sigopts, special, root)) != CL_SUCCESS)
                     return ret;
             } else {
                 find_paren_end(ept, &end);
@@ -2047,7 +2056,7 @@ static int ac_special_altexpand(char *hexpr, char *subexpr, uint16_t maxlen, int
                 end++;
 
                 //cli_altnmsg("descending recursive call on %s\n", end);
-                if ((ret = ac_special_altexpand(end, subexpr, maxlen, lvl-1, lvl, special, root)) != CL_SUCCESS)
+                if ((ret = ac_special_altexpand(end, subexpr, maxlen, lvl-1, lvl, sigopts, special, root)) != CL_SUCCESS)
                     return ret;
                 //cli_altnmsg("return descending recursive call\n");
             }
@@ -2061,7 +2070,7 @@ static int ac_special_altexpand(char *hexpr, char *subexpr, uint16_t maxlen, int
             }
 
             //cli_altnmsg("descending recursive call\n");
-            if ((ret = ac_special_altexpand(ept, subexpr, maxlen, lvl-1, lvl, special, root)) != CL_SUCCESS)
+            if ((ret = ac_special_altexpand(ept, subexpr, maxlen, lvl-1, lvl, sigopts, special, root)) != CL_SUCCESS)
                 return ret;
             //cli_altnmsg("return descending recursive call\n");
             break;
@@ -2075,7 +2084,7 @@ static int ac_special_altexpand(char *hexpr, char *subexpr, uint16_t maxlen, int
             end++;
 
             //cli_altnmsg("ascending recursive call\n");
-            if ((ret = ac_special_altexpand(ept, subexpr, maxlen, lvl+1, lvl+1, special, root)) != CL_SUCCESS)
+            if ((ret = ac_special_altexpand(ept, subexpr, maxlen, lvl+1, lvl+1, sigopts, special, root)) != CL_SUCCESS)
                 return ret;
             //cli_altnmsg("return ascending recursive call\n");
 
@@ -2105,7 +2114,7 @@ static int ac_special_altexpand(char *hexpr, char *subexpr, uint16_t maxlen, int
             *fp = 0;
         } else if (term == '\0') {
             cli_altnmsg("export: %s\n", subexpr);
-            if ((ret = ac_addspecial_add_alt_node(subexpr, special, root)) != CL_SUCCESS)
+            if ((ret = ac_addspecial_add_alt_node(subexpr, sigopts, special, root)) != CL_SUCCESS)
                 return ret;
             break;
         }
@@ -2128,7 +2137,7 @@ static int ac_special_altexpand(char *hexpr, char *subexpr, uint16_t maxlen, int
 }
 
 /* alternate string specials (so many specials!) */
-inline static int ac_special_altstr(const char *hexpr, struct cli_ac_special *special, struct cli_matcher *root)
+inline static int ac_special_altstr(const char *hexpr, uint8_t sigopts, struct cli_ac_special *special, struct cli_matcher *root)
 {
     char *hexprcpy, *h, *c;
     int i, ret, num, fixed, slen, len;
@@ -2148,7 +2157,7 @@ inline static int ac_special_altstr(const char *hexpr, struct cli_ac_special *sp
     cli_altnmsg("%d strings of %d len %s\n", num, slen, fixed ? "(fixed)" : "(max)");
     cli_altnmsg("-----------------------------------\n");
 
-    if (fixed) {
+    if (!sigopts && fixed) {
         special->num = 0;
         special->len = slen / 2;
         /* single-bytes are len 2 in hex */
@@ -2218,7 +2227,7 @@ inline static int ac_special_altstr(const char *hexpr, struct cli_ac_special *sp
         }
 
         // static int ac_special_altexpand(char *hexpr, char *subexpr, uint16_t maxlen, int lvl, int maxlvl, struct cli_ac_special *special, struct cli_matcher *root)
-        ret = ac_special_altexpand(hexprcpy, subexpr, slen+1, 0, 0, special, root);
+        ret = ac_special_altexpand(hexprcpy, subexpr, slen+1, 0, 0, sigopts, special, root);
 
 #if ALTN_DEBUG
         struct cli_alt_node *node = (special->alt).v_str;
@@ -2495,7 +2504,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
             } else if(!strcmp(pt, "W")) {
                 newspecial->type = AC_SPECIAL_WORD_MARKER;
             } else {
-                if ((ret = ac_special_altstr(pt, newspecial, root)) != CL_SUCCESS) {
+                if ((ret = ac_special_altstr(pt, sigopts, newspecial, root)) != CL_SUCCESS) {
                     //cli_altnmsg("returned ac_special_altstr %d\n", ret);
                     error = ret;
                     break;
