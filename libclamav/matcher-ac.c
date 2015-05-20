@@ -920,6 +920,7 @@ inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t off
         if (offset + special->len > length)
             break;
 
+        match *= special->len;
         for (j = 0; j < special->num; j++) {
             if (!memcmp(&buffer[offset], (special->alt).f_str[j], special->len)) {
                 match = (!special->negative) * special->len;
