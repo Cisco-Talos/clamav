@@ -2173,7 +2173,7 @@ inline static int ac_special_altstr(const char *hexpr, uint8_t sigopts, struct c
         } else {
             cli_altnmsg("ac_special_altstr: discovered AC_SPECIAL_ALT_STR_FIXED\n");
             special->type = AC_SPECIAL_ALT_STR_FIXED;
-            (special->alt).f_str = (unsigned char **) mpool_malloc(root->mempool, num);
+            (special->alt).f_str = (unsigned char **) mpool_malloc(root->mempool, num * sizeof(unsigned char *));
             if (!((special->alt).f_str)) {
                 cli_errmsg("cli_ac_special_altstr: Can't allocate newspecial->str\n");
                 free(hexprcpy);
