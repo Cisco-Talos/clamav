@@ -949,7 +949,11 @@ inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t off
                     break;
             }
             if (match) {
-                /* TODO - if match is unique, we can pass it directly back */
+                /* if match is unique (has no derivatives), we can pass it directly back */
+                if (alt->unique) {
+                    match = alt->len;
+                    break;
+                }
                 match = ac_findmatch_branch(buffer, offset+alt->len, fileoffset, length, pattern, pattoffset+1, specialcnt+1, end);
                 if (match)
                     return -1; /* alerts caller that match has been resolved in child callee */
@@ -1955,12 +1959,113 @@ inline static int ac_analyze_expr(char *hexstr, int *fixed_len, int *sub_len)
     return numexpr;
 }
 
+inline static int ac_uicmp(uint16_t *a, size_t alen, uint16_t *b, size_t blen, int *wild)
+{
+    uint16_t cmp, awild, bwild, side_wild;
+    size_t i, minlen = MIN(alen, blen);
+
+    side_wild = 0;
+
+    for (i = 0; i < minlen; i++) {
+        awild = a[i] & CLI_MATCH_WILDCARD;
+        bwild = b[i] & CLI_MATCH_WILDCARD;
+
+        if (awild == bwild) {
+            switch (awild) {
+            case CLI_MATCH_CHAR:
+                if ((a[i] & 0xff) != (b[i] & 0xff)) {
+                    return (b[i] & 0xff) - (a[i] & 0xff);
+                }
+                break;
+            case CLI_MATCH_IGNORE:
+                break;
+            case CLI_MATCH_NIBBLE_HIGH:
+                if ((a[i] & 0xf0) != (b[i] & 0xf0)) {
+                    return (b[i] & 0xf0) - (a[i] & 0xf0);
+                }
+                break;
+            case CLI_MATCH_NIBBLE_LOW:
+                if ((a[i] & 0x0f) != (b[i] & 0x0f)) {
+                    return (b[i] & 0x0f) - (a[i] & 0x0f);
+                }
+                break;
+            default:
+                cli_errmsg("ac_uicmp: unhandled wildcard type\n");
+                return 1;
+            }
+        } else { /* not identical wildcard types */
+            if (awild == CLI_MATCH_CHAR) { /* b is only wild */
+                switch (bwild) {
+                case CLI_MATCH_IGNORE:
+                    side_wild |= 2;
+                    break;
+                case CLI_MATCH_NIBBLE_HIGH:
+                    if ((a[i] & 0xf0) != (b[i] & 0xf0)) {
+                        return (b[i] & 0xf0) - (a[i] & 0xff);
+                    }
+                    side_wild |= 2;
+                    break;
+                case CLI_MATCH_NIBBLE_LOW:
+                    if ((a[i] & 0x0f) != (b[i] & 0x0f)) {
+                        return (b[i] & 0x0f) - (a[i] & 0xff);
+                    }
+                    side_wild |= 2;
+                    break;
+                default:
+                    cli_errmsg("ac_uicmp: unhandled wildcard type\n");
+                    return -1;
+                }
+            } else if (bwild == CLI_MATCH_CHAR) { /* a is only wild */
+                switch (awild) {
+                case CLI_MATCH_IGNORE:
+                    side_wild |= 1;
+                    break;
+                case CLI_MATCH_NIBBLE_HIGH:
+                    if ((a[i] & 0xf0) != (b[i] & 0xf0)) {
+                        return (b[i] & 0xff) - (a[i] & 0xf0);
+                    }
+                    side_wild |= 1;
+                case CLI_MATCH_NIBBLE_LOW:
+                    if ((a[i] & 0x0f) != (b[i] & 0x0f)) {
+                        return (b[i] & 0xff) - (a[i] & 0x0f);
+                    }
+                    side_wild |= 1;
+                    break;
+                default:
+                    cli_errmsg("ac_uicmp: unhandled wild typing\n");
+                    return 1;
+                }
+            } else { /* not identical, both wildcards */
+                if (awild == CLI_MATCH_IGNORE || bwild == CLI_MATCH_IGNORE) {
+                    if (awild == CLI_MATCH_IGNORE) {
+                        side_wild |= 1;
+                    }
+                    else if (bwild == CLI_MATCH_IGNORE) {
+                        side_wild |= 2;
+                    }
+                } else {
+                    /* only high and low nibbles should be left here */
+                    side_wild |= 3;
+                }
+            }
+        }
+
+        /* both sides contain a wildcard that contains the other, therefore unique by wildcards */
+        if (side_wild == 3)
+            return 1;
+    }
+
+    if (wild)
+        *wild = side_wild;
+    return 0;
+}
+
 /* add new generic alternate node to special */
 inline static int ac_addspecial_add_alt_node(const char *subexpr, uint8_t sigopts, struct cli_ac_special *special, struct cli_matcher *root)
 {
     struct cli_alt_node *newnode, **prev, *ins;
     uint16_t *s;
-    int i, cmp;
+    int i, cmp, wild;
 
     newnode = (struct cli_alt_node *)mpool_calloc(root->mempool, 1, sizeof(struct cli_alt_node));
     if (!newnode) {
@@ -1976,6 +2081,7 @@ inline static int ac_addspecial_add_alt_node(const char *subexpr, uint8_t sigopt
 
     newnode->str = s;
     newnode->len = strlen(subexpr)/2;
+    newnode->unique = 1;
 
     /* setting nocase match */
     if (sigopts & ACPATT_OPTION_NOCASE) {
@@ -1986,21 +2092,28 @@ inline static int ac_addspecial_add_alt_node(const char *subexpr, uint8_t sigopt
             }
     }
 
-    /* search for location to insert node (alphabetically through memcmp) */
+    /* search for uniqueness, TODO: directed acyclic word graph */
     prev = &((special->alt).v_str);
     ins = (special->alt).v_str;
     while (ins) {
-        /*
-        if (ins->len == newnode->len) {
-            cmp = memcmp(newnode->str, ins->str, ins->len); // TODO - change when uint16_t is used
-            if (cmp == 0) { // duplicate
-                free(newnode);
+        cmp = ac_uicmp(ins->str, ins->len, newnode->str, newnode->len, &wild);
+        if (cmp == 0) { // duplicate or derivative
+
+            cli_altnmsg("duplicate or derivative: [%d] [%d]\n", ins->len,
+                       newnode->len);
+
+            if (newnode->len != ins->len) { // derivative
+                cli_altnmsg("derivative\n");
+                newnode->unique = 0;
+                ins->unique = 0;
+                /* insert like normal */
+            } else if (wild == 0) { // duplicates
+                cli_altnmsg("duplicate\n");
+                mpool_free(root->mempool, newnode);
                 return CL_SUCCESS;
-            } else if (cmp < 0) {
-                break;
             }
-        }
-        */
+        } /* TODO - possible sorting of altstr uniques and derivative groups? */
+
         prev = &(ins->next);
         ins = ins->next;
     }
@@ -2244,7 +2357,10 @@ inline static int ac_special_altstr(const char *hexpr, uint8_t sigopts, struct c
 #if ALTN_DEBUG
         struct cli_alt_node *node = (special->alt).v_str;
         while (node) {
-            cli_errmsg("%d: %s\n", node->len, node->str);
+            int lol;
+            cli_errmsg("%d [%d]:\n", node->len, node->unique);
+            for (lol = 0; lol < node->len; lol++)
+                cli_errmsg("%04x\n", node->str[lol]);
             node = node->next;
         }
 #endif

@@ -71,6 +71,7 @@ struct cli_alt_node {
     uint16_t *str;
     //unsigned char *str;
     uint16_t len;
+    uint8_t unique;
     struct cli_alt_node *next;
 };
 
