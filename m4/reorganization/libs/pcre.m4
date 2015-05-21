@@ -65,7 +65,7 @@ have_pcre="no"
 if test "x$found_pcre" != "xno"; then
   AC_MSG_CHECKING([for pcre.h in $PCRE_HOME])
 
-  if test ! -f "$XML_HOME/include/pcre.h"; then
+  if test ! -f "$PCRE_HOME/include/pcre.h"; then
     AC_MSG_RESULT([not found])
   else
     AC_MSG_RESULT([found])
