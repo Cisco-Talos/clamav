@@ -908,10 +908,11 @@ inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t off
     switch(special->type) {
     case AC_SPECIAL_ALT_CHAR: /* single-byte */
         for (j = 0; j < special->num; j++) {
-            if ((special->alt).byte[j] == b) {
+            cmp = (special->alt).byte[j] - b;
+            if (cmp == 0) {
                 match = !special->negative;
                 break;
-            } else if ((special->alt).byte[j] > b)
+            } else if (cmp > 0)
                 break;
         }
         break;
@@ -922,10 +923,12 @@ inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t off
 
         match *= special->len;
         for (j = 0; j < special->num; j++) {
-            if (!memcmp(&buffer[offset], (special->alt).f_str[j], special->len)) {
+            cmp = memcmp(&buffer[offset], (special->alt).f_str[j], special->len);
+            if (cmp == 0) {
                 match = (!special->negative) * special->len;
                 break;
-            } /* TODO - handle sorting case */
+            } else if (cmp > 0)
+                break;
         }
         break;
 
@@ -1864,9 +1867,15 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 #define cli_altnmsg(...)
 #endif
 
-static int qcompare(const void *a, const void *b)
+static int qcompare_byte(const void *a, const void *b)
 {
     return *(const unsigned char *)a - *(const unsigned char *)b;
+}
+
+static int qcompare_fstr(const void *arg, const void *a, const void *b)
+{
+    uint16_t len = *(uint16_t *)arg;
+    return memcmp(*(const unsigned char **)a, *(const unsigned char **)b, len);
 }
 
 /* returns if level of nesting, end set to MATCHING paren, start AFTER staring paren */
@@ -2208,8 +2217,10 @@ inline static int ac_special_altstr(const char *hexpr, uint8_t sigopts, struct c
         }
         /* sorting byte alternates */
         if (special->num > 1 && special->type == AC_SPECIAL_ALT_CHAR)
-            cli_qsort((special->alt).byte, special->num, sizeof(unsigned char), qcompare);
-        /* TODO - sorting str alternates */
+            cli_qsort((special->alt).byte, special->num, sizeof(unsigned char), qcompare_byte);
+        /* sorting str alternates */
+        if (special->num > 1 && special->type == AC_SPECIAL_ALT_STR_FIXED)
+            cli_qsort_r((special->alt).f_str, special->num, sizeof(unsigned char *), qcompare_fstr, &(special->len));
     } else { /* generic alternates */
         char *subexpr;
         cli_altnmsg("ac_special_altstr: discovered AC_SPECIAL_ALT_STR\n");
