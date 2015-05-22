@@ -291,7 +291,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
     char *pt, *hexcpy, *start, *n, l, r;
     const char *wild;
     int ret, asterisk = 0, range;
-    unsigned int i, j, hexlen, parts = 0;
+    unsigned int i, j, hexlen, nest, parts = 0;
     int mindist = 0, maxdist = 0, error = 0;
     size_t hexcpysz;
 
@@ -457,9 +457,26 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
         if(!(hexcpy = cli_strdup(hexsig)))
             return CL_EMEM;
 
-        for(i = 0; i < hexlen; i++)
-            if(hexsig[i] == '{' || hexsig[i] == '*')
+        nest = 0;
+        for(i = 0; i < hexlen; i++) {
+            if(hexsig[i] == '(')
+                nest++;
+            else if(hexsig[i] == ')')
+                nest--;
+            else if(hexsig[i] == '{') {
+                if (nest) {
+                    cli_errmsg("cli_parse_add(): Alternative match contains unsupported ranged wildcard\n");
+                    return CL_EMALFDB;
+                }
                 parts++;
+            } else if(hexsig[i] == '*') {
+                if (nest) {
+                    cli_errmsg("cli_parse_add(): Alternative match cannot contain unbounded wildcards\n");
+                    return CL_EMALFDB;
+                }
+                parts++;
+            }
+        }
 
         if(parts)
             parts++;
@@ -554,16 +571,27 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
     } else if(strchr(hexsig, '*')) {
         root->ac_partsigs++;
 
-        for(i = 0; i < hexlen; i++)
-            if(hexsig[i] == '*')
+        nest = 0;
+        for(i = 0; i < hexlen; i++) {
+            if(hexsig[i] == '(')
+                nest++;
+            else if(hexsig[i] == ')')
+                nest--;
+            else if(hexsig[i] == '*') {
+                if (nest) {
+                    cli_errmsg("cli_parse_add(): Alternative match cannot contain unbounded wildcards\n");
+                    return CL_EMALFDB;
+                }
                 parts++;
+            }
+        }
 
         if(parts)
             parts++;
 
         for(i = 1; i <= parts; i++) {
             if((pt = cli_strtok(hexsig, i - 1, "*")) == NULL) {
-                cli_errmsg("Can't extract part %d of partial signature.\n", i);
+                cli_errmsg("cli_parse_add():Can't extract part %d of partial signature.\n", i);
                 return CL_EMALFDB;
             }
 
