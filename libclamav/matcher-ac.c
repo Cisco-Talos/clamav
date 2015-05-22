@@ -860,6 +860,7 @@ int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigne
     }
 }
 
+inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t offset, uint32_t fileoffset, uint32_t length, const struct cli_ac_patt *pattern, uint32_t pattoffset, uint16_t specialcnt, uint32_t *end);
 static int ac_findmatch_branch(const unsigned char *buffer, uint32_t offset, uint32_t length, uint32_t fileoffset, const struct cli_ac_patt *pattern, uint32_t pattoffset, uint16_t specialcnt, uint32_t *end);
 
 /* call only by ac_findmatch_special! Does not handle recursive specials */
@@ -876,6 +877,46 @@ static int ac_findmatch_branch(const unsigned char *buffer, uint32_t offset, uin
         break;                                                                          \
                                                                                         \
     case CLI_MATCH_IGNORE:                                                              \
+        break;                                                                          \
+                                                                                        \
+    case CLI_MATCH_NIBBLE_HIGH:                                                         \
+        if((unsigned char) (p & 0x00f0) != (b & 0xf0))                                  \
+            match = 0;                                                                  \
+        break;                                                                          \
+                                                                                        \
+    case CLI_MATCH_NIBBLE_LOW:                                                          \
+        if((unsigned char) (p & 0x000f) != (b & 0x0f))                                  \
+            match = 0;                                                                  \
+        break;                                                                          \
+                                                                                        \
+    default:                                                                            \
+        cli_errmsg("ac_findmatch: Unknown metatype 0x%x\n", wc);                        \
+        match = 0;                                                                      \
+    }
+
+/* call only by ac_findmatch_branch! */
+#define AC_MATCH_CHAR(p,b)                                                              \
+    switch(wc = p & CLI_MATCH_METADATA) {                                               \
+    case CLI_MATCH_CHAR:                                                                \
+        if((unsigned char) p != b)                                                      \
+            match = 0;                                                                  \
+        break;                                                                          \
+                                                                                        \
+    case CLI_MATCH_NOCASE:                                                              \
+        if((unsigned char)(p & 0xff) != cli_nocase(b))                                  \
+            match = 0;                                                                  \
+        break;                                                                          \
+                                                                                        \
+    case CLI_MATCH_IGNORE:                                                              \
+        break;                                                                          \
+                                                                                        \
+    case CLI_MATCH_SPECIAL:                                                             \
+        /* >1 = movement, 0 = fail, <1 = resolved in branch */                          \
+        if((match = ac_findmatch_special(buffer, bp, fileoffset, length, pattern, i,    \
+                                          specialcnt, end)) <= 0)                       \
+            return match;                                                               \
+        bp += match - 1; /* -1 is for bp++ in parent loop */                            \
+        specialcnt++;                                                                   \
         break;                                                                          \
                                                                                         \
     case CLI_MATCH_NIBBLE_HIGH:                                                         \
@@ -933,7 +974,6 @@ inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t off
         break;
 
     case AC_SPECIAL_ALT_STR: /* generic */
-        /* branch for backtracking */
         alt = (special->alt).v_str;
         while (alt) {
             if (offset + alt->len > length) {
@@ -954,6 +994,7 @@ inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t off
                     match = alt->len;
                     break;
                 }
+                /* branch for backtracking */
                 match = ac_findmatch_branch(buffer, offset+alt->len, fileoffset, length, pattern, pattoffset+1, specialcnt+1, end);
                 if (match)
                     return -1; /* alerts caller that match has been resolved in child callee */
@@ -987,47 +1028,6 @@ inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t off
 
     return match;
 }
-
-/* call only by ac_findmatch_branch! */
-#define AC_MATCH_CHAR(p,b)                                                              \
-    switch(wc = p & CLI_MATCH_METADATA) {                                               \
-    case CLI_MATCH_CHAR:                                                                \
-        if((unsigned char) p != b)                                                      \
-            match = 0;                                                                  \
-        break;                                                                          \
-                                                                                        \
-    case CLI_MATCH_NOCASE:                                                              \
-        if((unsigned char)(p & 0xff) != cli_nocase(b))                                  \
-            match = 0;                                                                  \
-        break;                                                                          \
-                                                                                        \
-    case CLI_MATCH_IGNORE:                                                              \
-        break;                                                                          \
-                                                                                        \
-    case CLI_MATCH_SPECIAL:                                                             \
-        /* >1 = movement, 0 = fail, <1 = resolved in branch */                          \
-        if((match = ac_findmatch_special(buffer, bp, fileoffset, length, pattern, i,    \
-                                          specialcnt, end)) <= 0)                       \
-            return match;                                                               \
-        bp += match - 1; /* -1 is for bp++ in parent loop */                            \
-        specialcnt++;                                                                   \
-        break;                                                                          \
-                                                                                        \
-    case CLI_MATCH_NIBBLE_HIGH:                                                         \
-        if((unsigned char) (p & 0x00f0) != (b & 0xf0))                                  \
-            match = 0;                                                                  \
-        break;                                                                          \
-                                                                                        \
-    case CLI_MATCH_NIBBLE_LOW:                                                          \
-        if((unsigned char) (p & 0x000f) != (b & 0x0f))                                  \
-            match = 0;                                                                  \
-        break;                                                                          \
-                                                                                        \
-    default:                                                                            \
-        cli_errmsg("ac_findmatch: Unknown metatype 0x%x\n", wc);                        \
-        match = 0;                                                                      \
-    }
-
 
 /* state should reset on call, recursion depth = number of alternate specials */
 static int ac_findmatch_branch(const unsigned char *buffer, uint32_t offset, uint32_t fileoffset, uint32_t length, const struct cli_ac_patt *pattern, uint32_t pattoffset, uint16_t specialcnt, uint32_t *end)
@@ -1861,16 +1861,6 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
     return (mode & AC_SCAN_FT) ? type : CL_CLEAN;
 }
 
-/* TODO - remove debugging on production */
-#define ALTN_DEBUG 0
-#if ALTN_DEBUG == 1
-#define cli_altnmsg(...) cli_dbgmsg(__VA_ARGS__)
-#elif ALTN_DEBUG == 2
-#define cli_altnmsg(...) cli_errmsg(__VA_ARGS__)
-#else
-#define cli_altnmsg(...)
-#endif
-
 static int qcompare_byte(const void *a, const void *b)
 {
     return *(const unsigned char *)a - *(const unsigned char *)b;
@@ -1946,7 +1936,6 @@ inline static int ac_analyze_expr(char *hexstr, int *fixed_len, int *sub_len)
                 flen = 0;
             len++;
         }
-        //cli_altnmsg("%c, %d\n", hexstr[i], len);
     }
     if (len > slen)
         slen = len;
@@ -2097,18 +2086,11 @@ inline static int ac_addspecial_add_alt_node(const char *subexpr, uint8_t sigopt
     ins = (special->alt).v_str;
     while (ins) {
         cmp = ac_uicmp(ins->str, ins->len, newnode->str, newnode->len, &wild);
-        if (cmp == 0) { // duplicate or derivative
-
-            cli_altnmsg("duplicate or derivative: [%d] [%d]\n", ins->len,
-                       newnode->len);
-
-            if (newnode->len != ins->len) { // derivative
-                cli_altnmsg("derivative\n");
+        if (cmp == 0) {
+            if (newnode->len != ins->len) { /* derivative */
                 newnode->unique = 0;
                 ins->unique = 0;
-                /* insert like normal */
-            } else if (wild == 0) { // duplicates
-                cli_altnmsg("duplicate\n");
+            } else if (wild == 0) { /* duplicate */
                 mpool_free(root->mempool, newnode);
                 return CL_SUCCESS;
             }
@@ -2135,8 +2117,6 @@ static int ac_special_altexpand(char *hexpr, char *subexpr, uint16_t maxlen, int
     fp = subexpr + strlen(subexpr);
 
     numexpr = ac_analyze_expr(hexpr, NULL, NULL);
-    //cli_altnmsg("hexpr: %s\n", hexpr);
-    //cli_altnmsg("numexpr: %d [%d,%d]\n", numexpr, lvl, maxlvl);
 
     /* while there are expressions to resolve */
     while (scnt < numexpr) {
@@ -2159,15 +2139,12 @@ static int ac_special_altexpand(char *hexpr, char *subexpr, uint16_t maxlen, int
             cli_errmsg("ac_special_altexpand: Unexpected expression larger than expected\n");
             return CL_EMEM;
         }
-        *ept++ = term;
 
+        *ept++ = term;
         sexpr = ept;
-        //cli_altnmsg("ac_special_altexpand: %s\n", subexpr);
 
         if (term == '|') {
-            //cli_altnmsg("ept: %s\n", ept);
             if (lvl == 0) {
-                cli_altnmsg("export: %s\n", subexpr);
                 if ((ret = ac_addspecial_add_alt_node(subexpr, sigopts, special, root)) != CL_SUCCESS)
                     return ret;
             } else {
@@ -2178,24 +2155,19 @@ static int ac_special_altexpand(char *hexpr, char *subexpr, uint16_t maxlen, int
                 }
                 end++;
 
-                //cli_altnmsg("descending recursive call on %s\n", end);
                 if ((ret = ac_special_altexpand(end, subexpr, maxlen, lvl-1, lvl, sigopts, special, root)) != CL_SUCCESS)
                     return ret;
-                //cli_altnmsg("return descending recursive call\n");
             }
 
             *fp = 0;
         } else if (term == ')') {
-            //cli_altnmsg("ept: %s\n", ept);
             if (lvl == 0) {
                 cli_errmsg("ac_special_altexpand: Unexpected closing parenthesis\n");
                 return CL_EPARSE;
             }
 
-            //cli_altnmsg("descending recursive call\n");
             if ((ret = ac_special_altexpand(ept, subexpr, maxlen, lvl-1, lvl, sigopts, special, root)) != CL_SUCCESS)
                 return ret;
-            //cli_altnmsg("return descending recursive call\n");
             break;
         } else if (term == '(') {
             int inner, found;
@@ -2206,12 +2178,10 @@ static int ac_special_altexpand(char *hexpr, char *subexpr, uint16_t maxlen, int
             }
             end++;
 
-            //cli_altnmsg("ascending recursive call\n");
             if ((ret = ac_special_altexpand(ept, subexpr, maxlen, lvl+1, lvl+1, sigopts, special, root)) != CL_SUCCESS)
                 return ret;
-            //cli_altnmsg("return ascending recursive call\n");
 
-            /* move ept to end of current alternate expression */
+            /* move ept to end of current alternate expression (recursive call already populates them) */
             ept = end;
             inner = 0;
             found = 0;
@@ -2236,25 +2206,18 @@ static int ac_special_altexpand(char *hexpr, char *subexpr, uint16_t maxlen, int
             sexpr = ept;
             *fp = 0;
         } else if (term == '\0') {
-            cli_altnmsg("export: %s\n", subexpr);
             if ((ret = ac_addspecial_add_alt_node(subexpr, sigopts, special, root)) != CL_SUCCESS)
                 return ret;
             break;
         }
 
-        //cli_altnmsg("%d %d\n", lvl, maxlvl);
         if (lvl != maxlvl)
             return CL_SUCCESS;
     }
     if (scnt != numexpr) {
-        //cli_altnmsg("scnt %d numexpr %d\n", scnt, numexpr);
         cli_errmsg("ac_addspecial: Mismatch in parsed and expected signature\n");
         return CL_EMALFDB;
     }
-#if ALTN_DEBUG
-    else
-        cli_altnmsg("subexpr cnt OK\n");
-#endif
 
     return CL_SUCCESS;
 }
@@ -2265,8 +2228,6 @@ inline static int ac_special_altstr(const char *hexpr, uint8_t sigopts, struct c
     char *hexprcpy, *h, *c;
     int i, ret, num, fixed, slen, len;
 
-    //cli_errmsg("called ac_special_altstr\n");
-
     if (!(hexprcpy = cli_strdup(hexpr))) {
         cli_errmsg("ac_special_altstr: Can't duplicate alternate expression\n");
         return CL_EDUP;
@@ -2275,17 +2236,11 @@ inline static int ac_special_altstr(const char *hexpr, uint8_t sigopts, struct c
     len = strlen(hexpr);
     num = ac_analyze_expr(hexprcpy, &fixed, &slen);
 
-    cli_altnmsg("-----------------------------------\n");
-    cli_altnmsg("hexpr: %s\n", hexprcpy);
-    cli_altnmsg("%d strings of %d len %s\n", num, slen, fixed ? "(fixed)" : "(max)");
-    cli_altnmsg("-----------------------------------\n");
-
     if (!sigopts && fixed) {
         special->num = 0;
         special->len = slen / 2;
         /* single-bytes are len 2 in hex */
         if (slen == 2) {
-            cli_altnmsg("ac_special_altstr: discovered AC_SPECIAL_ALT_CHAR\n");
             special->type = AC_SPECIAL_ALT_CHAR;
             (special->alt).byte = (unsigned char *) mpool_malloc(root->mempool, num);
             if (!((special->alt).byte)) {
@@ -2294,7 +2249,6 @@ inline static int ac_special_altstr(const char *hexpr, uint8_t sigopts, struct c
                 return CL_EMEM;
             }
         } else {
-            cli_altnmsg("ac_special_altstr: discovered AC_SPECIAL_ALT_STR_FIXED\n");
             special->type = AC_SPECIAL_ALT_STR_FIXED;
             (special->alt).f_str = (unsigned char **) mpool_malloc(root->mempool, num * sizeof(unsigned char *));
             if (!((special->alt).f_str)) {
@@ -2336,7 +2290,6 @@ inline static int ac_special_altstr(const char *hexpr, uint8_t sigopts, struct c
             cli_qsort_r((special->alt).f_str, special->num, sizeof(unsigned char *), qcompare_fstr, &(special->len));
     } else { /* generic alternates */
         char *subexpr;
-        cli_altnmsg("ac_special_altstr: discovered AC_SPECIAL_ALT_STR\n");
         if (special->negative) {
             cli_errmsg("ac_special_altstr: Can't apply negation operation to generic alternate strings\n");
             free(hexprcpy);
@@ -2351,19 +2304,7 @@ inline static int ac_special_altstr(const char *hexpr, uint8_t sigopts, struct c
             return CL_EMEM;
         }
 
-        // static int ac_special_altexpand(char *hexpr, char *subexpr, uint16_t maxlen, int lvl, int maxlvl, struct cli_ac_special *special, struct cli_matcher *root)
         ret = ac_special_altexpand(hexprcpy, subexpr, slen+1, 0, 0, sigopts, special, root);
-
-#if ALTN_DEBUG
-        struct cli_alt_node *node = (special->alt).v_str;
-        while (node) {
-            int lol;
-            cli_errmsg("%d [%d]:\n", node->len, node->unique);
-            for (lol = 0; lol < node->len; lol++)
-                cli_errmsg("%04x\n", node->str[lol]);
-            node = node->next;
-        }
-#endif
 
         free(subexpr);
         free(hexprcpy);
@@ -2374,7 +2315,6 @@ inline static int ac_special_altstr(const char *hexpr, uint8_t sigopts, struct c
     return CL_SUCCESS;
 }
 
-#define ARBITRARY_NEST_LIMIT 100 /* 0 = NO nesting (sorry birds...) */
 /* FIXME: clean up the code */
 int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hexsig, uint8_t sigopts, uint32_t sigid, uint16_t parts, uint16_t partno, uint16_t rtype, uint16_t type, uint32_t mindist, uint32_t maxdist, const char *offset, const uint32_t *lsigid, unsigned int options)
 {
@@ -2563,8 +2503,8 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
                 break;
             }
 
-            if (nest > ARBITRARY_NEST_LIMIT) {
-                cli_errmsg("ac_addspecial: We've gone too deep!\n");
+            if (nest > ACPATT_ALTN_MAXNEST) {
+                cli_errmsg("ac_addspecial: Expression exceeds maximum alternate nesting limit\n");
                 free(hexcpy);
                 return CL_EMALFDB;
             }
@@ -2633,7 +2573,6 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
                 newspecial->type = AC_SPECIAL_WORD_MARKER;
             } else {
                 if ((ret = ac_special_altstr(pt, sigopts, newspecial, root)) != CL_SUCCESS) {
-                    //cli_altnmsg("returned ac_special_altstr %d\n", ret);
                     error = ret;
                     break;
                 }
@@ -2679,7 +2618,8 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
             }
     }
 
-    if (root->filter) { //TODO - fix filters for nocase state, also fix for sigtool as well
+    /* TODO - sigopts affect on filters? */
+    if (root->filter) {
         /* so that we can show meaningful messages */
         new->virname = (char*)virname;
         if (filter_add_acpatt(root->filter, new) == -1) {

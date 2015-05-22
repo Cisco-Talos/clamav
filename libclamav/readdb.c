@@ -3244,7 +3244,7 @@ static int yara_altstr_verify(const char *hexstr)
     for (i = 0; i < strlen(hexstr); i++) {
         if (hexstr[i] == '(') {
             lvl++;
-            if (lvl > /*ARBITRARY_NEST_LIMIT*/100) {
+            if (lvl > ACPATT_ALTN_MAXNEST) {
                 cli_warnmsg("load_oneyara[verify]: string has unsupported alternating sequence (nest level)\n");
                 return CL_EMALFDB;
             }

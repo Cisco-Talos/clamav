@@ -29,6 +29,7 @@
 #include "hashtab.h"
 
 #define AC_CH_MAXDIST 32
+#define ACPATT_ALTN_MAXNEST 15
 
 /* AC scanning modes */
 #define AC_SCAN_VIR 1
