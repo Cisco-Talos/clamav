@@ -3362,7 +3362,7 @@ static unsigned int yara_total, yara_loaded, yara_malform, yara_empty, yara_comp
 
 /* yara has no apparent cap on the number of strings; TODO - should we have one? */
 /* function base off load_oneldb */
-static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int options, unsigned int *sigs)
+static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, unsigned int options, unsigned int *sigs)
 {
     YR_STRING *string;
     struct cli_ytable ytable;
@@ -3379,29 +3379,26 @@ static int load_oneyara(YR_RULE *rule, struct cl_engine *engine, unsigned int op
 
     cli_yaramsg("load_oneyara: attempting to load %s\n", rule->identifier);
 
-    memset(&ytable, 0, sizeof(ytable));
-
     if (!rule) {
         cli_errmsg("load_oneyara: empty rule passed as argument\n");
         return CL_ENULLARG;
     }
 
-    /* PUA stuff, for the future
-    if (chkpua && cli_chkpua(rule->id, engine->pua_cats, options))
+    /* PUA and IGN checks */
+    if (chkpua && cli_chkpua(rule->identifier, engine->pua_cats, options))
         return CL_SUCCESS;
 
-    if (engine->ignored && cli_chkign(engine->ignored, rule->id, buffer_cpy ? buffer_cpy : rule->id)) {
-        if(skip)
-            *skip = 1;
+    if (engine->ignored && cli_chkign(engine->ignored, rule->identifier, rule->identifier)) {
         return CL_SUCCESS;
     }
 
-    if(engine->cb_sigload && engine->cb_sigload("yara", virname, ~options & CL_DB_OFFICIAL, engine->cb_sigload_ctx)) {
-        cli_dbgmsg("cli_loadyara: skipping %s due to callback\n", virname);
+    if(engine->cb_sigload && engine->cb_sigload("yara", rule->identifier, ~options & CL_DB_OFFICIAL, engine->cb_sigload_ctx)) {
+        cli_dbgmsg("cli_loadyara: skipping %s due to callback\n", rule->identifier);
         (*sigs)--;
         return CL_SUCCESS;
     }
-    */
+
+    memset(&ytable, 0, sizeof(ytable));
 
     /*** rule specific checks ***/
 #ifdef YARA_FINISHED
@@ -3803,11 +3800,7 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
     STAILQ_INIT(&compiler.rule_q);
     STAILQ_INIT(&compiler.current_rule_string_q);
 
-    rc = yr_hash_table_create(10007, &compiler.rules_table);
-    if (rc == ERROR_SUCCESS)
-        rc = yr_hash_table_create(10007, &compiler.objects_table);
-    if (rc == ERROR_SUCCESS)
-        rc = yr_arena_create(65536, 0, &compiler.sz_arena);
+    rc = yr_arena_create(65536, 0, &compiler.sz_arena);
     if (rc == ERROR_SUCCESS)
         rc = yr_arena_create(65536, 0, &compiler.rules_arena);
     if (rc == ERROR_SUCCESS)
@@ -3821,17 +3814,18 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
     compiler.loop_for_of_mem_offset = -1;
     ns.name = "default";
     compiler.current_namespace = &ns;
+    compiler.the_arena = engine->the_arena;
+    compiler.rules_table = engine->rules_table;
+    compiler.objects_table = engine->objects_table;
 
     rc = yr_lex_parse_rules_file(fs, &compiler);
     if (rc > 0) { /* rc = number of errors */
         /* TODO - handle the various errors? */
         cli_errmsg("cli_loadyara: failed to parse rules file %s, error count %i\n", dbname, rc);
-        yr_hash_table_destroy(compiler.rules_table, NULL);
-        yr_hash_table_destroy(compiler.objects_table, NULL);
-        //        yr_arena_destroy(compiler.sz_arena);
-        //        yr_arena_destroy(compiler.rules_arena);
+        yr_arena_destroy(compiler.sz_arena);
+        yr_arena_destroy(compiler.rules_arena);
         yr_arena_destroy(compiler.code_arena);
-        //        yr_arena_destroy(compiler.strings_arena);
+        yr_arena_destroy(compiler.strings_arena);
         yr_arena_destroy(compiler.metas_arena);
 #ifdef YARA_FINISHED
         return CL_EMALFDB;
@@ -3847,20 +3841,19 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
         rules++;
         sigs++; /* can be decremented by load_oneyara */
 
-        /* TODO - PUA and engine->ignored */
-        rc = load_oneyara(rule, engine, options, &sigs);
+        rc = load_oneyara(rule,
+                          engine->pua_cats && (options & CL_DB_PUA_MODE) && (options & (CL_DB_PUA_INCLUDE | CL_DB_PUA_EXCLUDE)),
+                          engine, options, &sigs);
         if (rc != CL_SUCCESS) {
             cli_warnmsg("cli_loadyara: problem parsing yara file %s, yara rule %s\n", dbname, rule->identifier);
             continue;
         }
     }
 
-    yr_hash_table_destroy(compiler.rules_table, NULL);
-    yr_hash_table_destroy(compiler.objects_table, NULL);
-    //    yr_arena_destroy(compiler.sz_arena);
-    //    yr_arena_destroy(compiler.rules_arena);
+    yr_arena_append(engine->the_arena, compiler.sz_arena);
+    yr_arena_append(engine->the_arena, compiler.rules_arena);
+    yr_arena_append(engine->the_arena, compiler.strings_arena);
     yr_arena_destroy(compiler.code_arena);
-    //    yr_arena_destroy(compiler.strings_arena);
     yr_arena_destroy(compiler.metas_arena);
 
     if(rc)
@@ -4314,6 +4307,7 @@ int cl_load(const char *path, struct cl_engine *engine, unsigned int *signo, uns
 	    cli_errmsg("cl_load(%s): Not supported database file type\n", path);
 	    return CL_EOPEN;
     }
+
 #ifdef YARA_PROTO
     if (yara_total) {
         cli_yaramsg("$$$$$$$$$$$$ YARA $$$$$$$$$$$$\n");
@@ -4582,9 +4576,6 @@ int cl_engine_free(struct cl_engine *engine)
 		    for(j = 0; j < root->ac_lsigs; j++) {
 			if (root->ac_lsigtable[j]->type == CLI_LSIG_NORMAL)
 			    mpool_free(engine->mempool, root->ac_lsigtable[j]->u.logic);
-			else if (root->ac_lsigtable[j]->type == CLI_YARA_NORMAL ||
-                                 root->ac_lsigtable[j]->type == CLI_YARA_NORMAL)
-			    free(root->ac_lsigtable[j]->u.code_start);
 			FREE_TDB(root->ac_lsigtable[j]->tdb);
 			mpool_free(engine->mempool, root->ac_lsigtable[j]);
 		    }
@@ -4696,6 +4687,16 @@ int cl_engine_free(struct cl_engine *engine)
 #ifdef USE_MPOOL
     if(engine->mempool) mpool_destroy(engine->mempool);
 #endif
+
+    if (engine->rules_table)
+        yr_hash_table_destroy(engine->rules_table, NULL);
+
+    if (engine->objects_table)
+        yr_hash_table_destroy(engine->objects_table, NULL);
+
+    if (engine->the_arena)
+        yr_arena_destroy(engine->the_arena);
+
     free(engine);
     return CL_SUCCESS;
 }
@@ -4708,6 +4709,13 @@ int cl_engine_compile(struct cl_engine *engine)
 
     if(!engine)
 	return CL_ENULLARG;
+
+    /* Free YARA hash tables - only needed for parse and load */
+    if (engine->rules_table)
+        yr_hash_table_destroy(engine->rules_table, NULL);
+    if (engine->objects_table)
+        yr_hash_table_destroy(engine->objects_table, NULL);
+    engine->rules_table = engine->objects_table = NULL;
 
     if(!engine->ftypes)
 	if((ret = cli_loadftm(NULL, engine, 0, 1, NULL)))

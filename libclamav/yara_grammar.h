@@ -151,7 +151,7 @@ typedef union YYSTYPE
 {
 
 /* Line 2068 of yacc.c  */
-#line 213 "yara_grammar.y"
+#line 214 "yara_grammar.y"
 
   SIZED_STRING*   sized_string;
   char*           c_string;

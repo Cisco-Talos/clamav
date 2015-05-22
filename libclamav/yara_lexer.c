@@ -3039,15 +3039,11 @@ void yyerror(
 #else
   compiler->errors++;
   if (error_message != NULL)
-    cli_errmsg("yara_lexer:yyerror() %s\n", error_message);
-  else if (compiler->error_msg != NULL)
-    cli_errmsg("yara_lexer:yyerror() %s\n", compiler->error_msg);
-  else if (compiler->last_error_extra_info[0] != (char) 0)
-    cli_errmsg("yara_lexer:yyerror() %s\n", compiler->last_error_extra_info);
-  else
-    cli_errmsg("yara_lexer:yyerror() error unknown\n");
-  if (compiler->last_result != ERROR_SUCCESS)
-    cli_errmsg("yara_lexer:yyerror() last result is %i\n", compiler->last_result);
+    cli_errmsg("yara_lexer:yyerror() error message: %s\n", error_message);
+  if (compiler->error_msg != NULL)
+    cli_errmsg("yara_lexer:yyerror() compiler error message: %s\n", compiler->error_msg);
+  if (compiler->last_error_extra_info[0] != (char) 0)
+    cli_errmsg("yara_lexer:yyerror() error extra info: %s\n", compiler->last_error_extra_info);
   if (compiler->last_result != ERROR_SUCCESS)
     cli_errmsg("yara_lexer:yyerror() last result is %i\n", compiler->last_result);
   if (compiler->error_line != 0)

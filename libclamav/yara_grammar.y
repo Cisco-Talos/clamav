@@ -62,6 +62,7 @@ limitations under the License.
 #include "libclamav/yara_grammar.h"
 #include "libclamav/yara_lexer.h"
 #include "libclamav/yara_parser.h"
+#include "libclamav/yara_exec.h"
 #endif
 
 #define YYERROR_VERBOSE
