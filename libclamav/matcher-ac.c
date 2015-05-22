@@ -860,8 +860,8 @@ int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigne
     }
 }
 
-inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t offset, uint32_t fileoffset, uint32_t length, const struct cli_ac_patt *pattern, uint32_t pattoffset, uint16_t specialcnt, uint32_t *end);
-static int ac_findmatch_branch(const unsigned char *buffer, uint32_t offset, uint32_t length, uint32_t fileoffset, const struct cli_ac_patt *pattern, uint32_t pattoffset, uint16_t specialcnt, uint32_t *end);
+inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t offset, uint32_t bp, uint32_t fileoffset, uint32_t length, const struct cli_ac_patt *pattern, uint32_t pattoffset, uint16_t specialcnt, uint32_t *end);
+static int ac_findmatch_branch(const unsigned char *buffer, uint32_t offset, uint32_t bp, uint32_t length, uint32_t fileoffset, const struct cli_ac_patt *pattern, uint32_t pattoffset, uint16_t specialcnt, uint32_t *end);
 
 /* call only by ac_findmatch_special! Does not handle recursive specials */
 #define AC_MATCH_CHAR2(p,b)                                                             \
@@ -912,8 +912,8 @@ static int ac_findmatch_branch(const unsigned char *buffer, uint32_t offset, uin
                                                                                         \
     case CLI_MATCH_SPECIAL:                                                             \
         /* >1 = movement, 0 = fail, <1 = resolved in branch */                          \
-        if((match = ac_findmatch_special(buffer, bp, fileoffset, length, pattern, i,    \
-                                          specialcnt, end)) <= 0)                       \
+        if((match = ac_findmatch_special(buffer, offset, bp, fileoffset, length,        \
+                                         pattern, i, specialcnt, end)) <= 0)            \
             return match;                                                               \
         bp += match - 1; /* -1 is for bp++ in parent loop */                            \
         specialcnt++;                                                                   \
@@ -936,10 +936,10 @@ static int ac_findmatch_branch(const unsigned char *buffer, uint32_t offset, uin
 
 
 /* special handler */
-inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t offset, uint32_t fileoffset, uint32_t length, const struct cli_ac_patt *pattern, uint32_t pattoffset, uint16_t specialcnt, uint32_t *end)
+inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t offset, uint32_t bp, uint32_t fileoffset, uint32_t length, const struct cli_ac_patt *pattern, uint32_t pattoffset, uint16_t specialcnt, uint32_t *end)
 {
     int match, cmp;
-    uint16_t j, b = buffer[offset];
+    uint16_t j, b = buffer[bp];
     uint16_t wc;
     struct cli_ac_special *special = pattern->special_table[specialcnt];
     struct cli_alt_node *alt = NULL;
@@ -959,12 +959,12 @@ inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t off
         break;
 
     case AC_SPECIAL_ALT_STR_FIXED: /* fixed length multi-byte */
-        if (offset + special->len > length)
+        if (bp + special->len > length)
             break;
 
         match *= special->len;
         for (j = 0; j < special->num; j++) {
-            cmp = memcmp(&buffer[offset], (special->alt).f_str[j], special->len);
+            cmp = memcmp(&buffer[bp], (special->alt).f_str[j], special->len);
             if (cmp == 0) {
                 match = (!special->negative) * special->len;
                 break;
@@ -976,7 +976,7 @@ inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t off
     case AC_SPECIAL_ALT_STR: /* generic */
         alt = (special->alt).v_str;
         while (alt) {
-            if (offset + alt->len > length) {
+            if (bp + alt->len > length) {
                 alt = alt->next;
                 continue;
             }
@@ -984,7 +984,7 @@ inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t off
             /* note that generic alternates CANNOT be negated */
             match = 1;
             for (j = 0; j < alt->len; j++) {
-                AC_MATCH_CHAR2(alt->str[j],buffer[offset+j]);
+                AC_MATCH_CHAR2(alt->str[j],buffer[bp+j]);
                 if (!match)
                     break;
             }
@@ -995,7 +995,7 @@ inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t off
                     break;
                 }
                 /* branch for backtracking */
-                match = ac_findmatch_branch(buffer, offset+alt->len, fileoffset, length, pattern, pattoffset+1, specialcnt+1, end);
+                match = ac_findmatch_branch(buffer, offset, bp+alt->len, fileoffset, length, pattern, pattoffset+1, specialcnt+1, end);
                 if (match)
                     return -1; /* alerts caller that match has been resolved in child callee */
             }
@@ -1007,7 +1007,7 @@ inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t off
     case AC_SPECIAL_LINE_MARKER:
         if(b == '\n')
             match = !special->negative;
-        else if(b == '\r' && (offset + 1 < length && buffer[offset + 1] == '\n'))
+        else if(b == '\r' && (bp + 1 < length && buffer[bp + 1] == '\n'))
             match = (!special->negative) * 2;
         break;
 
@@ -1030,13 +1030,10 @@ inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t off
 }
 
 /* state should reset on call, recursion depth = number of alternate specials */
-static int ac_findmatch_branch(const unsigned char *buffer, uint32_t offset, uint32_t fileoffset, uint32_t length, const struct cli_ac_patt *pattern, uint32_t pattoffset, uint16_t specialcnt, uint32_t *end)
+static int ac_findmatch_branch(const unsigned char *buffer, uint32_t offset, uint32_t bp, uint32_t fileoffset, uint32_t length, const struct cli_ac_patt *pattern, uint32_t pattoffset, uint16_t specialcnt, uint32_t *end)
 {
     int match;
-    uint32_t bp;
     uint16_t wc, i;
-
-    bp = offset;
 
     match = 1;
     for(i = pattoffset; i < pattern->length && bp < length; i++) {
@@ -1192,7 +1189,7 @@ inline static int ac_findmatch(const unsigned char *buffer, uint32_t offset, uin
     if((offset + pattern->length > length) || (pattern->prefix_length > offset))
         return 0;
 
-    match = ac_findmatch_branch(buffer, offset+pattern->depth, fileoffset, length, pattern, pattern->depth, specialcnt, end);
+    match = ac_findmatch_branch(buffer, offset, offset+pattern->depth, fileoffset, length, pattern, pattern->depth, specialcnt, end);
     if(match)
         return 1;
     return 0;
