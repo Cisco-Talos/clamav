@@ -949,11 +949,11 @@ inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t off
     switch(special->type) {
     case AC_SPECIAL_ALT_CHAR: /* single-byte */
         for (j = 0; j < special->num; j++) {
-            cmp = (special->alt).byte[j] - b;
+            cmp = b - (special->alt).byte[j];
             if (cmp == 0) {
                 match = !special->negative;
                 break;
-            } else if (cmp > 0)
+            } else if (cmp < 0)
                 break;
         }
         break;
@@ -968,7 +968,7 @@ inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t off
             if (cmp == 0) {
                 match = (!special->negative) * special->len;
                 break;
-            } else if (cmp > 0)
+            } else if (cmp < 0)
                 break;
         }
         break;
