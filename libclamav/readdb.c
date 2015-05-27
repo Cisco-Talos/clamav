@@ -3905,6 +3905,7 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
         yr_arena_destroy(compiler.code_arena);
         yr_arena_destroy(compiler.strings_arena);
         yr_arena_destroy(compiler.metas_arena);
+        _yr_compiler_pop_file_name(&compiler);
 #ifdef YARA_FINISHED
         return CL_EMALFDB;
 #else
@@ -3933,6 +3934,7 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
     yr_arena_append(the_arena, compiler.strings_arena);
     yr_arena_destroy(compiler.code_arena);
     yr_arena_destroy(compiler.metas_arena);
+    _yr_compiler_pop_file_name(&compiler);
 
     if(rc)
         return rc;
