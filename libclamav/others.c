@@ -436,34 +436,8 @@ struct cl_engine *cl_engine_new(void)
     new->pcre_recmatch_limit = CLI_DEFAULT_PCRE_RECMATCH_LIMIT;
     new->pcre_max_filesize = CLI_DEFAULT_PCRE_MAX_FILESIZE;
 
-    /* Initialize YARA */
-    if (ERROR_SUCCESS != yr_arena_create(1024, 0, &new->the_arena)) {
-        cli_errmsg("cli_engine_new: failed to create the YARA arena\n");
-        mpool_free(new->mempool, new->dconf);
-        mpool_free(new->mempool, new->root);
-#ifdef USE_MPOOL
-        mpool_destroy(new->mempool);
-#endif
-        free(new);
-        free(intel);
-        return NULL;
-    }    
-    if (ERROR_SUCCESS != yr_hash_table_create(10007, &new->rules_table)) {
-        cli_errmsg("cli_engine_new: failed to create the YARA rules table\n");
-        yr_arena_destroy(new->the_arena);
-        mpool_free(new->mempool, new->dconf);
-        mpool_free(new->mempool, new->root);
-#ifdef USE_MPOOL
-        mpool_destroy(new->mempool);
-#endif
-        free(new);
-        free(intel);
-        return NULL;
-    }
-    if (ERROR_SUCCESS != yr_hash_table_create(10007, &new->objects_table)) {
-        cli_errmsg("cli_engine_new: failed to create the YARA objects table\n");
-        yr_hash_table_destroy(new->rules_table, NULL);
-        yr_arena_destroy(new->the_arena);
+    if (cli_yara_init() != CL_SUCCESS) {
+        cli_errmsg("cli_engine_new: failed to initialize YARA\n");
         mpool_free(new->mempool, new->dconf);
         mpool_free(new->mempool, new->root);
 #ifdef USE_MPOOL

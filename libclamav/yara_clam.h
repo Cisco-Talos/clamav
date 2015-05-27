@@ -41,7 +41,6 @@ limitations under the License.
 #define _YARA_CLAM_H_
 
 #include "shared/queue.h"
-#include "yara_arena.h"
 #include "yara_hash.h"
 #include "others.h"
 
@@ -413,7 +412,10 @@ struct RE {
 #define MAX_FUNCTION_ARGS               128
 #define LOOP_LOCAL_VARS                 4
 #define LEX_BUF_SIZE                    1024
-
+#define MAX_INCLUDE_DEPTH               16
+#ifndef MAX_PATH
+#define MAX_PATH 1024
+#endif
 
 /* From libyara/include/yara/object.h            */
 #define OBJECT_TYPE_INTEGER     1
@@ -468,44 +470,6 @@ typedef struct _yc_string {
     int32_t subsig_id;
 } yc_string;
 
-typedef struct _yc_compiler {
-    int                 errors;
-    int                 error_line;
-    int                 last_error;
-    int                 last_error_line;
-    int                 last_result;
-
-    YR_ARENA            *sz_arena;
-    YR_ARENA            *rules_arena;
-    YR_ARENA            *strings_arena;
-    YR_ARENA            *code_arena;
-    YR_ARENA            *metas_arena;
-    YR_ARENA            *the_arena;
-    YR_HASH_TABLE       *rules_table;
-    YR_HASH_TABLE       *objects_table;
-    YR_NAMESPACE        *current_namespace;
-    yc_string           *current_rule_strings;
-    uint32_t            current_rule_flags;
-    uint32_t            current_rule_clflags;
-
-    int8_t              *loop_address[MAX_LOOP_NESTING];
-    char                *loop_identifier[MAX_LOOP_NESTING];
-    int                 loop_depth;
-    int                 loop_for_of_mem_offset;
-
-    char                last_error_extra_info[MAX_COMPILER_ERROR_EXTRA_INFO];
-
-    char                lex_buf[LEX_BUF_SIZE];
-    char                *lex_buf_ptr;
-    unsigned short      lex_buf_len;
-
-    char                *error_msg;   
-
-    STAILQ_HEAD(rq, _yc_rule) rule_q;
-    STAILQ_HEAD(cs, _yc_string) current_rule_string_q;
-} yc_compiler;
-
-typedef yc_compiler YR_COMPILER;
 typedef yc_rule YR_RULE;
 typedef yc_string YR_STRING;
 

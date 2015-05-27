@@ -18,7 +18,8 @@ limitations under the License.
 #include <yara/compiler.h>
 #include <grammar.h>
 #else
-#include "libclamav/yara_clam.h"
+#include "yara_compiler.h"
+#include "yara_clam.h"
 #endif
 
 #undef yyparse

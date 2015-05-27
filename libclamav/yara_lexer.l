@@ -171,7 +171,6 @@ include[ \t]+\"         {
 
 
 <include>\"             {
-#ifdef REAL_YARA
 
   char            buffer[1024];
   char            *current_file_name;
@@ -270,15 +269,10 @@ include[ \t]+\"         {
   }
 
   BEGIN(INITIAL);
-#else
-  yyerror(yyscanner, compiler, "includes are disabled");
-  yyterminate();
-#endif
 }
 
 
 <<EOF>> {
-#ifdef REAL_YARA
 
   YR_COMPILER* compiler = yyget_extra(yyscanner);
   FILE* file = _yr_compiler_pop_file(compiler);
@@ -295,7 +289,7 @@ include[ \t]+\"         {
   {
     yyterminate();
   }
-#endif
+
   yypop_buffer_state(yyscanner);
 
   if (!YY_CURRENT_BUFFER)
@@ -597,7 +591,6 @@ void yywarning(
     yyscan_t yyscanner,
     const char *warning_message)
 {
-#ifdef REAL_YARA
   YR_COMPILER* compiler = yyget_extra(yyscanner);
   char* file_name;
 
@@ -606,16 +599,14 @@ void yywarning(
   else
     file_name = NULL;
 
+#ifdef REAL_YARA
   compiler->callback(
       YARA_ERROR_LEVEL_WARNING,
       file_name,
       yyget_lineno(yyscanner),
       warning_message);
 #else
-  if (warning_message != NULL)
-    cli_errmsg("yara_lexer:yywarning() %s\n", warning_message);
-  else
-    cli_errmsg("yara_lexer:yywarning() unknown warning\n");
+    cli_warnmsg("yywarning(): %s line %d %s\n", file_name?file_name:"(file name missing)", compiler->last_error_line, warning_message);
 #endif
 }
 
@@ -624,17 +615,10 @@ void yyfatal(
     yyscan_t yyscanner,
     const char *error_message)
 {
-#ifdef REAL_YARA
   YR_COMPILER* compiler = yyget_extra(yyscanner);
 
   yyerror(yyscanner, compiler, error_message);
   longjmp(compiler->error_recovery, 1);
-#else
-  if (error_message != NULL)
-    cli_errmsg("yara_lexer:yyfatal() %s\n", error_message);
-  else
-    cli_errmsg("yara_lexer:yyfatal() unknown error\n");
-#endif
 }
 
 
@@ -643,7 +627,6 @@ void yyerror(
     YR_COMPILER* compiler,
     const char *error_message)
 {
-#ifdef REAL_YARA
   char message[512] = {'\0'};
   char* file_name = NULL;
 
@@ -676,6 +659,7 @@ void yyerror(
     yr_compiler_set_error_extra_info(compiler, error_message);
     compiler->last_error = ERROR_SYNTAX_ERROR;
 
+#ifdef REAL_YARA
     if (compiler->callback != NULL)
     {
       compiler->callback(
@@ -684,11 +668,15 @@ void yyerror(
           compiler->last_error_line,
           error_message);
     }
+#else
+    cli_errmsg("yyerror(): %s line %d %s\n", file_name?file_name:"(file name missing)", compiler->last_error_line, error_message);
+#endif
   }
   else
   {
     compiler->last_error = compiler->last_result;
 
+#ifdef REAL_YARA
     if (compiler->callback != NULL)
     {
       yr_compiler_get_error_message(compiler, message, sizeof(message));
@@ -699,27 +687,13 @@ void yyerror(
         compiler->last_error_line,
         message);
     }
+#else
+    yr_compiler_get_error_message(compiler, message, sizeof(message));
+    cli_errmsg("yyerror(): %s line %d %s\n", file_name?file_name:"NULL filename", compiler->last_error_line, message);
+#endif
   }
 
   compiler->last_result = ERROR_SUCCESS;
-#else
-  compiler->errors++;
-  if (error_message != NULL)
-    cli_errmsg("yara_lexer:yyerror() error message: %s\n", error_message);
-  if (compiler->error_msg != NULL)
-    cli_errmsg("yara_lexer:yyerror() compiler error message: %s\n", compiler->error_msg);
-  if (compiler->last_error_extra_info[0] != (char) 0)
-    cli_errmsg("yara_lexer:yyerror() error extra info: %s\n", compiler->last_error_extra_info);
-  if (compiler->last_result != ERROR_SUCCESS)
-    cli_errmsg("yara_lexer:yyerror() last result is %i\n", compiler->last_result);
-  if (compiler->error_line != 0)
-    cli_errmsg("yara_lexer:yyerror() error line %i\n", compiler->error_line);
-
-  compiler->last_error_extra_info[0] = (char) 0;
-  compiler->error_msg = NULL;
-  compiler->last_result = ERROR_SUCCESS;
-  compiler->error_line = 0;
-#endif
 }
 
 
@@ -761,12 +735,10 @@ int yr_lex_parse_rules_file(
 {
   yyscan_t yyscanner;
 
-#ifdef REAL_YARA
   compiler->errors = 0;
 
   if (setjmp(compiler->error_recovery) != 0)
     return compiler->errors;
-#endif
 
   yylex_init(&yyscanner);
 

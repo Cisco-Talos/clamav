@@ -77,4 +77,8 @@ char *cli_dbgets(char *buff, unsigned int size, FILE *fs, struct cli_dbio *dbio)
 
 int cli_initroots(struct cl_engine *engine, unsigned int options);
 
+int cli_yara_init();
+
+void cli_yara_free();
+
 #endif
