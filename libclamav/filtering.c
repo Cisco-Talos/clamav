@@ -279,7 +279,7 @@ static inline unsigned char spec_ith_char(const struct char_spec *spec, unsigned
 	if (alt) {
 		assert (alt->type == 1);
 		assert (i < alt->num);
-		return alt->str[i];
+		return (alt->alt).byte[i];
 	}
 	return i;
 }

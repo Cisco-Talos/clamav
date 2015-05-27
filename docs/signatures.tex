@@ -299,7 +299,7 @@ How do I look in hex?
     \end{verbatim}
 
     \subsubsection{Wildcards}
-    ClamAV supports the following extensions for hex-signatures:
+    ClamAV supports the following wildcards for hex-signatures:
     \begin{itemize}
 	\item \verb+??+\\
 	Match any byte.
@@ -321,29 +321,59 @@ How do I look in hex?
 	Match $n$ or more bytes.
 	\item \verb+{n-m}+\\
 	Match between $n$ and $m$ bytes ($m > n$).
-	\item \verb+(aa|bb|cc|..)+\\
-	Match aa or bb or cc..
-	\item \verb+!(aa|bb|cc|..)+\\
-	Match any byte except aa and bb and cc.. (ClamAV$\ge$0.96)
-	\item \verb+(aaaa|bbbb|cccc|..)+\\
-	Match alternative strings aaaa or bbbb or cccc. Alternative strings must have identical lengths.
-	\item \verb+!(aaaa|bbbb|cccc|..)+\\
-	Match any string except aaaa and bbbb and cccc. Alternative strings must have identical lengths.
-        (ClamAV$\ge$0.98.2)
 	\item \verb+HEXSIG[x-y]aa+ or \verb+aa[x-y]HEXSIG+\\
 	Match aa anchored to a hex-signature, see
 	\url{https://bugzilla.clamav.net/show_bug.cgi?id=776} for
 	discussion and examples.
-	\item \verb+(B)+\\
-	Match word boundary (including file boundaries).
-	\item \verb+(L)+\\
-	Match CR, CRLF or file boundaries.
     \end{itemize}
     The range signatures \verb+*+ and \verb+{}+ virtually separate
     a hex-signature into two parts, eg. \verb+aabbcc*bbaacc+ is treated
     as two sub-signatures \verb+aabbcc+ and \verb+bbaacc+ with any number
     of bytes between them. It's a requirement that each sub-signature
     includes a block of two static characters somewhere in its body.
+    
+
+    \subsubsection{Character classes}
+    ClamAV supports the following character classes for hex-signatures:
+    \begin{itemize}
+	\item \verb+(B)+\\
+	Match word boundary (including file boundaries).
+	\item \verb+(L)+\\
+	Match CR, CRLF or file boundaries.
+	\item \verb+(W)+\\
+	Match a non-alphanumeric character.
+    \end{itemize}
+
+    \subsubsection{Alternate strings}
+    \begin{itemize}
+    \item Single-byte alternates (clamav-0.96)\\
+      \verb+(aa|bb|cc|...)+ or \verb+!(aa|bb|cc|...)+\\
+      Match a member from a set of bytes [aa, bb, cc, ...].
+      \begin{itemize}
+        \item Negation operation can be applied to match any non-member, assumed to be one-byte in length.
+        \item Signature modifiers and wildcards cannot be applied.
+      \end{itemize}
+    \item Multi-byte fixed length alternates\\
+      \verb+(aaaa|bbbb|cccc|...)+ or \verb+!(aaaa|bbbb|cccc|...)+\\
+      Match a member from a set of multi-byte alternates [aaaa, bbbb, cccc, ...] of n-length.
+      \begin{itemize}
+        \item All set members must be the same length.
+        \item Negation operation can be applied to match any non-member, assumed to be n-bytes in length (clamav-0.98.2).
+        \item Signature modifiers and wildcards cannot be applied.
+      \end{itemize}
+    \item Generic alternates (clamav-0.99)\\
+      \verb+(alt1|alt2|alt3|...)+\\
+      Match a member from a set of alternates [alt1, alt2, alt3, ...] that can be of variable lengths.
+      \begin{itemize}
+        \item Negation operation cannot be applied.
+        \item Signature modifiers and nibble wildcards [\verb+??, a?, ?a+] can be applied.
+        \item Ranged wildcards [\verb+{n-m}+] are limited to a fixed range of less than 128 bytes [\verb+{1} -> {127}+].
+      \end{itemize}
+    \end{itemize}
+    Note that using signature modifiers and wildcards classifies the alternate type to be a generic
+    alternate. Thus single-byte alternates and multi-byte fixed length alternates can use signature
+    modifiers and wildcards but will be classified as generic alternate. This means that negation
+    cannot be applied in this situation and there is a slight performance impact.
 
     \subsubsection{Basic signature format}
     The simplest (and now deprecated) signature format is:
@@ -532,7 +562,7 @@ clamav-wide-C0;Target:0;0&1;414141;68656c6c6f/iwfa
     \end{verbatim}
 
     \subsection{Special Subsignature Types}
-    Macro subsignatures(clamav-0.96): \verb+${min-max}MACROID$+:
+    \subsubsection{Macro subsignatures (clamav-0.96) : \textnormal{\texttt{\$\{min-max\}MACROID\$}}}
     \begin{itemize}
       \item Macro subsignatures are used to combine a number of existing extended
       signatures (\verb+.ndb+) into a on-the-fly generated alternate string logical
@@ -564,7 +594,7 @@ clamav-wide-C0;Target:0;0&1;414141;68656c6c6f/iwfa
       \end{itemize}
 	\item For more information and examples please see \url{https://wwws.clamav.net/bugzilla/show_bug.cgi?id=164}.
     \end{itemize}
-    PCRE subsignatures(clamav-0.99): \verb+Trigger/PCRE/[Flags]+
+    \subsubsection{PCRE subsignatures (clamav-0.99) : \textnormal{\texttt{Trigger/PCRE/[Flags]}}}
     \begin{itemize}
     \item \verb+Trigger+ is a required field that is a valid \verb+LogicalExpression+ and
     may refer to any subsignatures that precede this subsignature. Triggers cannot be

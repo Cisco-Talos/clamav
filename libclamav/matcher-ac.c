@@ -29,7 +29,7 @@
 #include <sys/stat.h>
 
 #include <assert.h>
-#ifdef	HAVE_UNISTD_H
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 
@@ -46,24 +46,25 @@
 
 #include "mpool.h"
 
-#define AC_SPECIAL_ALT_CHAR	1
-#define AC_SPECIAL_ALT_STR	2
-#define AC_SPECIAL_LINE_MARKER	3
-#define AC_SPECIAL_BOUNDARY	4
-#define AC_SPECIAL_WORD_MARKER	5
+#define AC_SPECIAL_ALT_CHAR             1
+#define AC_SPECIAL_ALT_STR_FIXED        2
+#define AC_SPECIAL_ALT_STR              3
+#define AC_SPECIAL_LINE_MARKER          4
+#define AC_SPECIAL_BOUNDARY             5
+#define AC_SPECIAL_WORD_MARKER          6
 
-#define AC_BOUNDARY_LEFT		0x0001
-#define AC_BOUNDARY_LEFT_NEGATIVE	0x0002
-#define AC_BOUNDARY_RIGHT		0x0004
-#define AC_BOUNDARY_RIGHT_NEGATIVE	0x0008
-#define AC_LINE_MARKER_LEFT		0x0010
-#define AC_LINE_MARKER_LEFT_NEGATIVE	0x0020
-#define AC_LINE_MARKER_RIGHT		0x0040
-#define AC_LINE_MARKER_RIGHT_NEGATIVE	0x0080
-#define AC_WORD_MARKER_LEFT		0x0100
-#define AC_WORD_MARKER_LEFT_NEGATIVE	0x0200
-#define AC_WORD_MARKER_RIGHT		0x0400
-#define AC_WORD_MARKER_RIGHT_NEGATIVE	0x0800
+#define AC_BOUNDARY_LEFT                0x0001
+#define AC_BOUNDARY_LEFT_NEGATIVE       0x0002
+#define AC_BOUNDARY_RIGHT               0x0004
+#define AC_BOUNDARY_RIGHT_NEGATIVE      0x0008
+#define AC_LINE_MARKER_LEFT             0x0010
+#define AC_LINE_MARKER_LEFT_NEGATIVE    0x0020
+#define AC_LINE_MARKER_RIGHT            0x0040
+#define AC_LINE_MARKER_RIGHT_NEGATIVE   0x0080
+#define AC_WORD_MARKER_LEFT             0x0100
+#define AC_WORD_MARKER_LEFT_NEGATIVE    0x0200
+#define AC_WORD_MARKER_RIGHT            0x0400
+#define AC_WORD_MARKER_RIGHT_NEGATIVE   0x0800
 
 static char boundary[256] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 2, 0, 0, 
@@ -90,7 +91,8 @@ static inline int insert_list(struct cli_matcher *root, struct cli_ac_patt *patt
     struct cli_ac_list **newtable;
     struct cli_ac_patt *php;
     struct cli_ac_special *a1, *a2;
-    uint8_t i, match;
+    struct cli_alt_node *b1, *b2;
+    uint8_t i, j, match;
 
     new = (struct cli_ac_list *)mpool_calloc(root->mempool, 1, sizeof(struct cli_ac_list));
     if (!new) {
@@ -141,19 +143,36 @@ static inline int insert_list(struct cli_matcher *root, struct cli_ac_patt *patt
                             match = 0;
                             break;
                         } else if(a1->type == AC_SPECIAL_ALT_CHAR) {
-                            if(memcmp(a1->str, a2->str, a1->num)) {
+                            if(memcmp((a1->alt).byte, (a2->alt).byte, a1->num)) {
+                                match = 0;
+                                break;
+                            }
+                        } else if(a1->type == AC_SPECIAL_ALT_STR_FIXED) {
+                            if(a1->len != a2->len) {
+                                match = 0;
+                                break;
+                            }
+
+                            for(j = 0; j < a1->num; j++) {
+                                if(memcmp((a1->alt).f_str[j], (a2->alt).f_str[j], a1->len))
+                                    break;
+                            }
+
+                            if(j < a1->num) {
                                 match = 0;
                                 break;
                             }
                         } else if(a1->type == AC_SPECIAL_ALT_STR) {
-                            while(a1 && a2) {
-                                if((a1->len != a2->len) || memcmp(a1->str, a2->str, a1->len))
+                            b1 = (a1->alt).v_str;
+                            b2 = (a2->alt).v_str;
+                            while(b1 && b2) {
+                                if((b1->len != b2->len) || memcmp(b1->str, b2->str, b1->len))
                                     break;
-                                a1 = a1->next;
-                                a2 = a2->next;
+                                b1 = b1->next;
+                                b2 = b2->next;
                             }
 
-                            if(a1 || a2) {
+                            if(b1 || b2) {
                                 match = 0;
                                 break;
                             }
@@ -419,7 +438,7 @@ static int ac_maketrans(struct cli_matcher *root)
         node = ac_root->trans[i];
         if(node != ac_root) {
             if((ret = bfs_enqueue(&bfs, &bfs_last, node)))
-            return ret;
+                return ret;
         }
     }
 
@@ -520,8 +539,9 @@ static void ac_free_special(mpool_t *mempool, struct cli_ac_patt *p)
 static void ac_free_special(struct cli_ac_patt *p)
 #endif
 {
-    unsigned int i;
-    struct cli_ac_special *a1, *a2;
+    unsigned int i, j;
+    struct cli_ac_special *a1;
+    struct cli_alt_node *b1, *b2;
 
 
     if(!p->special)
@@ -529,14 +549,22 @@ static void ac_free_special(struct cli_ac_patt *p)
 
     for(i = 0; i < p->special; i++) {
         a1 = p->special_table[i];
-        while(a1) {
-            a2 = a1;
-            a1 = a1->next;
-
-            if(a2->str)
-                mpool_free(mempool, a2->str);
-            mpool_free(mempool, a2);
+        if (a1->type == AC_SPECIAL_ALT_CHAR) {
+            mpool_free(mempool, (a1->alt).byte);
+        } else if (a1->type == AC_SPECIAL_ALT_STR_FIXED) {
+            for (j = 0; j < a1->num; j++)
+                mpool_free(mempool, (a1->alt).f_str[j]);
+            mpool_free(mempool, (a1->alt).f_str);
+        } else if (a1->type == AC_SPECIAL_ALT_STR) {
+            b1 = (a1->alt).v_str;
+            while (b1) {
+                b2 = b1->next;
+                mpool_free(mempool, b1->str);
+                mpool_free(mempool, b1);
+                b1 = b2;
+            }
         }
+        mpool_free(mempool, a1);
     }
     mpool_free(mempool, p->special_table);
 }
@@ -832,117 +860,192 @@ int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigne
     }
 }
 
-/* 
- * FIXME: the current support for string alternatives uses a brute-force
- *        approach and doesn't perform any kind of verification and
- *        backtracking. This may easily lead to false negatives, eg. when
- *        an alternative contains strings of different lengths and 
- *        more than one of them can match at the current position.
- */
-#define AC_MATCH_CHAR(p,b)								\
-    switch(wc = p & CLI_MATCH_METADATA) {						\
-	case CLI_MATCH_CHAR:								\
-	    if((unsigned char) p != b)							\
-		match = 0;								\
-	    break;									\
-											\
-	case CLI_MATCH_NOCASE:								\
-	    if((unsigned char)(p & 0xff) != cli_nocase(b))				\
-		match = 0;								\
-	    break;									\
-											\
-	case CLI_MATCH_IGNORE:								\
-	    break;									\
-											\
-	case CLI_MATCH_SPECIAL:								\
-	    special = pattern->special_table[specialcnt];				\
-	    match = special->negative;							\
-	    switch(special->type) {							\
-		case AC_SPECIAL_ALT_CHAR:						\
-		    for(j = 0; j < special->num; j++) {					\
-			if(special->str[j] == b) {					\
-			    match = !special->negative;					\
-			    break;							\
-			} else if(special->str[j] > b)					\
-			    break;							\
-		    }									\
-		    break;								\
-											\
-		case AC_SPECIAL_ALT_STR:						\
-		    while(special) {							\
-			if(bp + special->len <= length) {				\
-			    if(!memcmp(&buffer[bp], special->str, special->len)) {	\
-				match = !special->negative;				\
-				bp += special->len - 1;					\
-				break;							\
-			    }								\
-			}								\
-			special = special->next;					\
-		    }									\
-		    break;								\
-											\
-		case AC_SPECIAL_LINE_MARKER:						\
-		    if(b == '\n') {							\
-			match = !special->negative;					\
-		    } else if(b == '\r' && (bp + 1 < length && buffer[bp + 1] == '\n')) {   \
-			bp++;								\
-			match = !special->negative;					\
-		    }									\
-		    break;								\
-											\
-		case AC_SPECIAL_BOUNDARY:						\
-		    if(boundary[b])							\
-			match = !special->negative;					\
-		    break;								\
-											\
-		case AC_SPECIAL_WORD_MARKER:						\
-		    if(!isalnum(b))							\
-			match = !special->negative;					\
-		    break;								\
-											\
-		default:								\
-		    cli_errmsg("ac_findmatch: Unknown special\n");			\
-		    match = 0;								\
-	    }										\
-	    specialcnt++;								\
-	    break;									\
-											\
-	case CLI_MATCH_NIBBLE_HIGH:							\
-	    if((unsigned char) (p & 0x00f0) != (b & 0xf0))				\
-		match = 0;								\
-	    break;									\
-											\
-	case CLI_MATCH_NIBBLE_LOW:							\
-	    if((unsigned char) (p & 0x000f) != (b & 0x0f))				\
-		match = 0;								\
-	    break;									\
-											\
-	default:									\
-	    cli_errmsg("ac_findmatch: Unknown wildcard 0x%x\n", wc);			\
-	    match = 0;									\
+inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t offset, uint32_t bp, uint32_t fileoffset, uint32_t length, const struct cli_ac_patt *pattern, uint32_t pattoffset, uint16_t specialcnt, uint32_t *end);
+static int ac_findmatch_branch(const unsigned char *buffer, uint32_t offset, uint32_t bp, uint32_t length, uint32_t fileoffset, const struct cli_ac_patt *pattern, uint32_t pattoffset, uint16_t specialcnt, uint32_t *end);
+
+/* call only by ac_findmatch_special! Does not handle recursive specials */
+#define AC_MATCH_CHAR2(p,b)                                                             \
+    switch(wc = p & CLI_MATCH_METADATA) {                                               \
+    case CLI_MATCH_CHAR:                                                                \
+        if((unsigned char) p != b)                                                      \
+            match = 0;                                                                  \
+        break;                                                                          \
+                                                                                        \
+    case CLI_MATCH_NOCASE:                                                              \
+        if((unsigned char)(p & 0xff) != cli_nocase(b))                                  \
+            match = 0;                                                                  \
+        break;                                                                          \
+                                                                                        \
+    case CLI_MATCH_IGNORE:                                                              \
+        break;                                                                          \
+                                                                                        \
+    case CLI_MATCH_NIBBLE_HIGH:                                                         \
+        if((unsigned char) (p & 0x00f0) != (b & 0xf0))                                  \
+            match = 0;                                                                  \
+        break;                                                                          \
+                                                                                        \
+    case CLI_MATCH_NIBBLE_LOW:                                                          \
+        if((unsigned char) (p & 0x000f) != (b & 0x0f))                                  \
+            match = 0;                                                                  \
+        break;                                                                          \
+                                                                                        \
+    default:                                                                            \
+        cli_errmsg("ac_findmatch: Unknown metatype 0x%x\n", wc);                        \
+        match = 0;                                                                      \
     }
 
-inline static int ac_findmatch(const unsigned char *buffer, uint32_t offset, uint32_t fileoffset, uint32_t length, const struct cli_ac_patt *pattern, uint32_t *end)
+/* call only by ac_findmatch_branch! */
+#define AC_MATCH_CHAR(p,b)                                                              \
+    switch(wc = p & CLI_MATCH_METADATA) {                                               \
+    case CLI_MATCH_CHAR:                                                                \
+        if((unsigned char) p != b)                                                      \
+            match = 0;                                                                  \
+        break;                                                                          \
+                                                                                        \
+    case CLI_MATCH_NOCASE:                                                              \
+        if((unsigned char)(p & 0xff) != cli_nocase(b))                                  \
+            match = 0;                                                                  \
+        break;                                                                          \
+                                                                                        \
+    case CLI_MATCH_IGNORE:                                                              \
+        break;                                                                          \
+                                                                                        \
+    case CLI_MATCH_SPECIAL:                                                             \
+        /* >1 = movement, 0 = fail, <1 = resolved in branch */                          \
+        if((match = ac_findmatch_special(buffer, offset, bp, fileoffset, length,        \
+                                         pattern, i, specialcnt, end)) <= 0)            \
+            return match;                                                               \
+        bp += match - 1; /* -1 is for bp++ in parent loop */                            \
+        specialcnt++;                                                                   \
+        break;                                                                          \
+                                                                                        \
+    case CLI_MATCH_NIBBLE_HIGH:                                                         \
+        if((unsigned char) (p & 0x00f0) != (b & 0xf0))                                  \
+            match = 0;                                                                  \
+        break;                                                                          \
+                                                                                        \
+    case CLI_MATCH_NIBBLE_LOW:                                                          \
+        if((unsigned char) (p & 0x000f) != (b & 0x0f))                                  \
+            match = 0;                                                                  \
+        break;                                                                          \
+                                                                                        \
+    default:                                                                            \
+        cli_errmsg("ac_findmatch: Unknown metatype 0x%x\n", wc);                        \
+        match = 0;                                                                      \
+    }
+
+
+/* special handler */
+inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t offset, uint32_t bp, uint32_t fileoffset, uint32_t length, const struct cli_ac_patt *pattern, uint32_t pattoffset, uint16_t specialcnt, uint32_t *end)
 {
-    uint32_t bp, pstart, match;
-    uint16_t wc, i, j, specialcnt = pattern->special_pattern;
-    struct cli_ac_special *special;
+    int match, cmp;
+    uint16_t j, b = buffer[bp];
+    uint16_t wc;
+    struct cli_ac_special *special = pattern->special_table[specialcnt];
+    struct cli_alt_node *alt = NULL;
 
-    if((offset + pattern->length > length) || (pattern->prefix_length > offset))
-        return 0;
+    match = special->negative;
 
-    bp = offset + pattern->depth;
+    switch(special->type) {
+    case AC_SPECIAL_ALT_CHAR: /* single-byte */
+        for (j = 0; j < special->num; j++) {
+            cmp = b - (special->alt).byte[j];
+            if (cmp == 0) {
+                match = !special->negative;
+                break;
+            } else if (cmp < 0)
+                break;
+        }
+        break;
+
+    case AC_SPECIAL_ALT_STR_FIXED: /* fixed length multi-byte */
+        if (bp + special->len > length)
+            break;
+
+        match *= special->len;
+        for (j = 0; j < special->num; j++) {
+            cmp = memcmp(&buffer[bp], (special->alt).f_str[j], special->len);
+            if (cmp == 0) {
+                match = (!special->negative) * special->len;
+                break;
+            } else if (cmp < 0)
+                break;
+        }
+        break;
+
+    case AC_SPECIAL_ALT_STR: /* generic */
+        alt = (special->alt).v_str;
+        while (alt) {
+            if (bp + alt->len > length) {
+                alt = alt->next;
+                continue;
+            }
+
+            /* note that generic alternates CANNOT be negated */
+            match = 1;
+            for (j = 0; j < alt->len; j++) {
+                AC_MATCH_CHAR2(alt->str[j],buffer[bp+j]);
+                if (!match)
+                    break;
+            }
+            if (match) {
+                /* if match is unique (has no derivatives), we can pass it directly back */
+                if (alt->unique) {
+                    match = alt->len;
+                    break;
+                }
+                /* branch for backtracking */
+                match = ac_findmatch_branch(buffer, offset, bp+alt->len, fileoffset, length, pattern, pattoffset+1, specialcnt+1, end);
+                if (match)
+                    return -1; /* alerts caller that match has been resolved in child callee */
+            }
+
+            alt = alt->next;
+        }
+        break;
+
+    case AC_SPECIAL_LINE_MARKER:
+        if(b == '\n')
+            match = !special->negative;
+        else if(b == '\r' && (bp + 1 < length && buffer[bp + 1] == '\n'))
+            match = (!special->negative) * 2;
+        break;
+
+    case AC_SPECIAL_BOUNDARY:
+        if(boundary[b])
+            match = !special->negative;
+        break;
+
+    case AC_SPECIAL_WORD_MARKER:
+        if(!isalnum(b))
+            match = !special->negative;
+        break;
+
+    default:
+        cli_errmsg("ac_findmatch: Unknown special\n");
+        match = 0;
+    }
+
+    return match;
+}
+
+/* state should reset on call, recursion depth = number of alternate specials */
+static int ac_findmatch_branch(const unsigned char *buffer, uint32_t offset, uint32_t bp, uint32_t fileoffset, uint32_t length, const struct cli_ac_patt *pattern, uint32_t pattoffset, uint16_t specialcnt, uint32_t *end)
+{
+    int match;
+    uint16_t wc, i;
 
     match = 1;
-    for(i = pattern->depth; i < pattern->length && bp < length; i++) {
+    for(i = pattoffset; i < pattern->length && bp < length; i++) {
         AC_MATCH_CHAR(pattern->pattern[i],buffer[bp]);
-        if(!match)
+        if (!match)
             return 0;
 
         bp++;
     }
     *end = bp;
 
+    /* special boundary checks */
     if(pattern->boundary & AC_BOUNDARY_LEFT) {
         match = !!(pattern->boundary & AC_BOUNDARY_LEFT_NEGATIVE);
         if(!fileoffset || (offset && (boundary[buffer[offset - 1]] == 1 || boundary[buffer[offset - 1]] == 3)))
@@ -1020,6 +1123,7 @@ inline static int ac_findmatch(const unsigned char *buffer, uint32_t offset, uin
             return 0;
     }
 
+    /* single-byte anchors */
     if(!(pattern->ch[1] & CLI_MATCH_IGNORE)) {
         bp += pattern->ch_mindist[1];
 
@@ -1075,6 +1179,20 @@ inline static int ac_findmatch(const unsigned char *buffer, uint32_t offset, uin
     }
 
     return 1;
+}
+
+inline static int ac_findmatch(const unsigned char *buffer, uint32_t offset, uint32_t fileoffset, uint32_t length, const struct cli_ac_patt *pattern, uint32_t *end)
+{
+    int match;
+    uint16_t specialcnt = pattern->special_pattern;
+
+    if((offset + pattern->length > length) || (pattern->prefix_length > offset))
+        return 0;
+
+    match = ac_findmatch_branch(buffer, offset, offset+pattern->depth, fileoffset, length, pattern, pattern->depth, specialcnt, end);
+    if(match)
+        return 1;
+    return 0;
 }
 
 int cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t lsigs, uint32_t reloffsigs, uint8_t tracklen)
@@ -1401,7 +1519,7 @@ int lsig_sub_matched(const struct cli_matcher *root, struct cli_ac_data *mdata, 
         last_macroprev_match = mdata->lsigsuboff_last[lsigid1][lsigid2];
         if (last_macro_match != CLI_OFF_NONE)
             cli_dbgmsg("Checking macro match: %u + (%u - %u) == %u\n",
-                   last_macroprev_match, smin, smax, last_macro_match);
+                       last_macroprev_match, smin, smax, last_macro_match);
 
         if (last_macro_match == CLI_OFF_NONE ||
             last_macroprev_match + smin > last_macro_match ||
@@ -1740,9 +1858,458 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
     return (mode & AC_SCAN_FT) ? type : CL_CLEAN;
 }
 
-static int qcompare(const void *a, const void *b)
+static int qcompare_byte(const void *a, const void *b)
 {
     return *(const unsigned char *)a - *(const unsigned char *)b;
+}
+
+static int qcompare_fstr(const void *arg, const void *a, const void *b)
+{
+    uint16_t len = *(uint16_t *)arg;
+    return memcmp(*(const unsigned char **)a, *(const unsigned char **)b, len);
+}
+
+/* returns if level of nesting, end set to MATCHING paren, start AFTER staring paren */
+inline static int find_paren_end(char *hexstr, char **end)
+{
+    int i, nest = 0, level = 0;
+
+    *end = NULL;
+    for (i = 0; i < strlen(hexstr); i++) {
+        if (hexstr[i] == '(') {
+            nest++;
+            level++;
+        } else if (hexstr[i] == ')') {
+            if (!level) {
+                *end = &hexstr[i];
+                break;
+            }
+            level--;
+        }
+    }
+
+    return nest;
+}
+
+/* analyzes expr, returns number of subexpr, if fixed length subexpr and longest subexpr len *
+ * goes to either end of string or to closing parenthesis; allowed to be unbalanced          *
+ * counts applied to start of expr (not end, i.e. numexpr starts at 1 for the first expr     */
+inline static int ac_analyze_expr(char *hexstr, int *fixed_len, int *sub_len)
+{
+    int i, level = 0, len = 0, numexpr = 1;
+    int flen, slen;
+
+    flen = 1;
+    slen = 0;
+    for (i = 0; i < strlen(hexstr); i++) {
+        if (hexstr[i] == '(') {
+            flen = 0;
+            level++;
+        } else if (hexstr[i] == ')') {
+            if (!level) {
+                if (!slen) {
+                    slen = len;
+                } else if (len != slen) {
+                    flen = 0;
+                    if (len > slen)
+                        slen = len;
+                }
+                break;
+            }
+            level--;
+        }
+        if (!level && hexstr[i] == '|') {
+            if (!slen) {
+                slen = len;
+            } else if (len != slen) {
+                flen = 0;
+                if (len > slen)
+                    slen = len;
+            }
+            len = 0;
+            numexpr++;
+        } else {
+            if (hexstr[i] == '?')
+                flen = 0;
+            len++;
+        }
+    }
+    if (len > slen)
+        slen = len;
+
+    if (sub_len)
+        *sub_len = slen;
+    if (fixed_len)
+        *fixed_len = flen;
+
+    return numexpr;
+}
+
+inline static int ac_uicmp(uint16_t *a, size_t alen, uint16_t *b, size_t blen, int *wild)
+{
+    uint16_t cmp, awild, bwild, side_wild;
+    size_t i, minlen = MIN(alen, blen);
+
+    side_wild = 0;
+
+    for (i = 0; i < minlen; i++) {
+        awild = a[i] & CLI_MATCH_WILDCARD;
+        bwild = b[i] & CLI_MATCH_WILDCARD;
+
+        if (awild == bwild) {
+            switch (awild) {
+            case CLI_MATCH_CHAR:
+                if ((a[i] & 0xff) != (b[i] & 0xff)) {
+                    return (b[i] & 0xff) - (a[i] & 0xff);
+                }
+                break;
+            case CLI_MATCH_IGNORE:
+                break;
+            case CLI_MATCH_NIBBLE_HIGH:
+                if ((a[i] & 0xf0) != (b[i] & 0xf0)) {
+                    return (b[i] & 0xf0) - (a[i] & 0xf0);
+                }
+                break;
+            case CLI_MATCH_NIBBLE_LOW:
+                if ((a[i] & 0x0f) != (b[i] & 0x0f)) {
+                    return (b[i] & 0x0f) - (a[i] & 0x0f);
+                }
+                break;
+            default:
+                cli_errmsg("ac_uicmp: unhandled wildcard type\n");
+                return 1;
+            }
+        } else { /* not identical wildcard types */
+            if (awild == CLI_MATCH_CHAR) { /* b is only wild */
+                switch (bwild) {
+                case CLI_MATCH_IGNORE:
+                    side_wild |= 2;
+                    break;
+                case CLI_MATCH_NIBBLE_HIGH:
+                    if ((a[i] & 0xf0) != (b[i] & 0xf0)) {
+                        return (b[i] & 0xf0) - (a[i] & 0xff);
+                    }
+                    side_wild |= 2;
+                    break;
+                case CLI_MATCH_NIBBLE_LOW:
+                    if ((a[i] & 0x0f) != (b[i] & 0x0f)) {
+                        return (b[i] & 0x0f) - (a[i] & 0xff);
+                    }
+                    side_wild |= 2;
+                    break;
+                default:
+                    cli_errmsg("ac_uicmp: unhandled wildcard type\n");
+                    return -1;
+                }
+            } else if (bwild == CLI_MATCH_CHAR) { /* a is only wild */
+                switch (awild) {
+                case CLI_MATCH_IGNORE:
+                    side_wild |= 1;
+                    break;
+                case CLI_MATCH_NIBBLE_HIGH:
+                    if ((a[i] & 0xf0) != (b[i] & 0xf0)) {
+                        return (b[i] & 0xff) - (a[i] & 0xf0);
+                    }
+                    side_wild |= 1;
+                case CLI_MATCH_NIBBLE_LOW:
+                    if ((a[i] & 0x0f) != (b[i] & 0x0f)) {
+                        return (b[i] & 0xff) - (a[i] & 0x0f);
+                    }
+                    side_wild |= 1;
+                    break;
+                default:
+                    cli_errmsg("ac_uicmp: unhandled wild typing\n");
+                    return 1;
+                }
+            } else { /* not identical, both wildcards */
+                if (awild == CLI_MATCH_IGNORE || bwild == CLI_MATCH_IGNORE) {
+                    if (awild == CLI_MATCH_IGNORE) {
+                        side_wild |= 1;
+                    }
+                    else if (bwild == CLI_MATCH_IGNORE) {
+                        side_wild |= 2;
+                    }
+                } else {
+                    /* only high and low nibbles should be left here */
+                    side_wild |= 3;
+                }
+            }
+        }
+
+        /* both sides contain a wildcard that contains the other, therefore unique by wildcards */
+        if (side_wild == 3)
+            return 1;
+    }
+
+    if (wild)
+        *wild = side_wild;
+    return 0;
+}
+
+/* add new generic alternate node to special */
+inline static int ac_addspecial_add_alt_node(const char *subexpr, uint8_t sigopts, struct cli_ac_special *special, struct cli_matcher *root)
+{
+    struct cli_alt_node *newnode, **prev, *ins;
+    uint16_t *s;
+    int i, cmp, wild;
+
+    newnode = (struct cli_alt_node *)mpool_calloc(root->mempool, 1, sizeof(struct cli_alt_node));
+    if (!newnode) {
+        cli_errmsg("ac_addspecial_add_alt_node: Can't allocate new alternate node\n");
+        return CL_EMEM;
+    }
+
+    s = cli_mpool_hex2ui(root->mempool, subexpr);
+    if (!s) {
+        free(newnode);
+        return CL_EMALFDB;
+    }
+
+    newnode->str = s;
+    newnode->len = strlen(subexpr)/2;
+    newnode->unique = 1;
+
+    /* setting nocase match */
+    if (sigopts & ACPATT_OPTION_NOCASE) {
+        for (i = 0; i < newnode->len; ++i)
+            if ((newnode->str[i] & CLI_MATCH_METADATA) == CLI_MATCH_CHAR) {
+                newnode->str[i] = cli_nocase(newnode->str[i] & 0xff);
+                newnode->str[i] += CLI_MATCH_NOCASE;
+            }
+    }
+
+    /* search for uniqueness, TODO: directed acyclic word graph */
+    prev = &((special->alt).v_str);
+    ins = (special->alt).v_str;
+    while (ins) {
+        cmp = ac_uicmp(ins->str, ins->len, newnode->str, newnode->len, &wild);
+        if (cmp == 0) {
+            if (newnode->len != ins->len) { /* derivative */
+                newnode->unique = 0;
+                ins->unique = 0;
+            } else if (wild == 0) { /* duplicate */
+                mpool_free(root->mempool, newnode);
+                return CL_SUCCESS;
+            }
+        } /* TODO - possible sorting of altstr uniques and derivative groups? */
+
+        prev = &(ins->next);
+        ins = ins->next;
+    }
+
+    *prev = newnode;
+    newnode->next = ins;
+    special->num++;
+    return CL_SUCCESS;
+}
+
+/* recursive special handler for expanding and adding generic alternates */
+static int ac_special_altexpand(char *hexpr, char *subexpr, uint16_t maxlen, int lvl, int maxlvl, uint8_t sigopts, struct cli_ac_special *special, struct cli_matcher *root)
+{
+    int ret, scnt = 0, numexpr;
+    char *ept, *sexpr, *end, term;
+    char *fp;
+
+    ept = sexpr = hexpr;
+    fp = subexpr + strlen(subexpr);
+
+    numexpr = ac_analyze_expr(hexpr, NULL, NULL);
+
+    /* while there are expressions to resolve */
+    while (scnt < numexpr) {
+        scnt++;
+        while ((*ept != '(') && (*ept != '|') && (*ept != ')') && (*ept != '\0'))
+            ept++;
+
+        /* check for invalid negation */
+        term = *ept;
+        if ((*ept == '(') && (ept >= hexpr+1)) {
+            if (ept[-1] == '!') {
+                cli_errmsg("ac_special_altexpand: Generic alternates cannot contain negations\n");
+                return CL_EMALFDB;
+            }
+        }
+
+        /* appended token */
+        *ept = 0;
+        if (cli_strlcat(subexpr, sexpr, maxlen) >= maxlen) {
+            cli_errmsg("ac_special_altexpand: Unexpected expression larger than expected\n");
+            return CL_EMEM;
+        }
+
+        *ept++ = term;
+        sexpr = ept;
+
+        if (term == '|') {
+            if (lvl == 0) {
+                if ((ret = ac_addspecial_add_alt_node(subexpr, sigopts, special, root)) != CL_SUCCESS)
+                    return ret;
+            } else {
+                find_paren_end(ept, &end);
+                if (!end) {
+                    cli_errmsg("ac_special_altexpand: Missing closing parenthesis\n");
+                    return CL_EMALFDB;
+                }
+                end++;
+
+                if ((ret = ac_special_altexpand(end, subexpr, maxlen, lvl-1, lvl, sigopts, special, root)) != CL_SUCCESS)
+                    return ret;
+            }
+
+            *fp = 0;
+        } else if (term == ')') {
+            if (lvl == 0) {
+                cli_errmsg("ac_special_altexpand: Unexpected closing parenthesis\n");
+                return CL_EPARSE;
+            }
+
+            if ((ret = ac_special_altexpand(ept, subexpr, maxlen, lvl-1, lvl, sigopts, special, root)) != CL_SUCCESS)
+                return ret;
+            break;
+        } else if (term == '(') {
+            int inner, found;
+            find_paren_end(ept, &end);
+            if (!end) {
+                cli_errmsg("ac_special_altexpand: Missing closing parenthesis\n");
+                return CL_EMALFDB;
+            }
+            end++;
+
+            if ((ret = ac_special_altexpand(ept, subexpr, maxlen, lvl+1, lvl+1, sigopts, special, root)) != CL_SUCCESS)
+                return ret;
+
+            /* move ept to end of current alternate expression (recursive call already populates them) */
+            ept = end;
+            inner = 0;
+            found = 0;
+            while (!found && *ept != '\0') {
+                switch(*ept) {
+                case '|':
+                    if (!inner)
+                        found = 1;
+                    break;
+                case '(':
+                    inner++;
+                    break;
+                case ')':
+                    inner--;
+                    break;
+                }
+                ept++;
+            }
+            if (*ept == '|')
+                ept++;
+
+            sexpr = ept;
+            *fp = 0;
+        } else if (term == '\0') {
+            if ((ret = ac_addspecial_add_alt_node(subexpr, sigopts, special, root)) != CL_SUCCESS)
+                return ret;
+            break;
+        }
+
+        if (lvl != maxlvl)
+            return CL_SUCCESS;
+    }
+    if (scnt != numexpr) {
+        cli_errmsg("ac_addspecial: Mismatch in parsed and expected signature\n");
+        return CL_EMALFDB;
+    }
+
+    return CL_SUCCESS;
+}
+
+/* alternate string specials (so many specials!) */
+inline static int ac_special_altstr(const char *hexpr, uint8_t sigopts, struct cli_ac_special *special, struct cli_matcher *root)
+{
+    char *hexprcpy, *h, *c;
+    int i, ret, num, fixed, slen, len;
+
+    if (!(hexprcpy = cli_strdup(hexpr))) {
+        cli_errmsg("ac_special_altstr: Can't duplicate alternate expression\n");
+        return CL_EDUP;
+    }
+
+    len = strlen(hexpr);
+    num = ac_analyze_expr(hexprcpy, &fixed, &slen);
+
+    if (!sigopts && fixed) {
+        special->num = 0;
+        special->len = slen / 2;
+        /* single-bytes are len 2 in hex */
+        if (slen == 2) {
+            special->type = AC_SPECIAL_ALT_CHAR;
+            (special->alt).byte = (unsigned char *) mpool_malloc(root->mempool, num);
+            if (!((special->alt).byte)) {
+                cli_errmsg("cli_ac_special_altstr: Can't allocate newspecial->str\n");
+                free(hexprcpy);
+                return CL_EMEM;
+            }
+        } else {
+            special->type = AC_SPECIAL_ALT_STR_FIXED;
+            (special->alt).f_str = (unsigned char **) mpool_malloc(root->mempool, num * sizeof(unsigned char *));
+            if (!((special->alt).f_str)) {
+                cli_errmsg("cli_ac_special_altstr: Can't allocate newspecial->str\n");
+                free(hexprcpy);
+                return CL_EMEM;
+            }
+        }
+
+        for (i = 0; i < num; i++) {
+            if (num == 1) {
+                c = (char *) cli_mpool_hex2str(root->mempool, hexprcpy);
+            } else {
+                if(!(h = cli_strtok(hexprcpy, i, "|"))) {
+                    free(hexprcpy);
+                    return CL_EMEM;
+                }
+                c = (char *) cli_mpool_hex2str(root->mempool, h);
+                free(h);
+            }
+            if (!c) {
+                free(hexprcpy);
+                return CL_EMALFDB;
+            }
+
+            if (special->type == AC_SPECIAL_ALT_CHAR) {
+                (special->alt).byte[i] = *c;
+                mpool_free(root->mempool, c);
+            } else {
+                (special->alt).f_str[i] = c;
+            }
+            special->num++;
+        }
+        /* sorting byte alternates */
+        if (special->num > 1 && special->type == AC_SPECIAL_ALT_CHAR)
+            cli_qsort((special->alt).byte, special->num, sizeof(unsigned char), qcompare_byte);
+        /* sorting str alternates */
+        if (special->num > 1 && special->type == AC_SPECIAL_ALT_STR_FIXED)
+            cli_qsort_r((special->alt).f_str, special->num, sizeof(unsigned char *), qcompare_fstr, &(special->len));
+    } else { /* generic alternates */
+        char *subexpr;
+        if (special->negative) {
+            cli_errmsg("ac_special_altstr: Can't apply negation operation to generic alternate strings\n");
+            free(hexprcpy);
+            return CL_EMALFDB;
+        }
+
+        special->type = AC_SPECIAL_ALT_STR;
+
+        /* allocate reusable subexpr */
+        if (!(subexpr = cli_calloc(slen+1, sizeof(char)))) {
+            cli_errmsg("ac_special_altstr: Can't allocate subexpr container\n");
+            return CL_EMEM;
+        }
+
+        ret = ac_special_altexpand(hexprcpy, subexpr, slen+1, 0, 0, sigopts, special, root);
+
+        free(subexpr);
+        free(hexprcpy);
+        return ret;
+    }
+
+    free(hexprcpy);
+    return CL_SUCCESS;
 }
 
 /* FIXME: clean up the code */
@@ -1878,203 +2445,151 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
     }
 
     if(strchr(hexsig, '(')) {
-	    char *hexnew, *start, *h, *c;
+        char *hexnew, *start;
+        uint8_t nest;
         size_t hexnewsz;
 
-	if(hex) {
-	    hexcpy = hex;
-	} else if(!(hexcpy = cli_strdup(hexsig))) {
-	    mpool_free(root->mempool, new);
-	    return CL_EMEM;
-	}
+        if(hex) {
+            hexcpy = hex;
+        } else if(!(hexcpy = cli_strdup(hexsig))) {
+            mpool_free(root->mempool, new);
+            return CL_EMEM;
+        }
 
-    hexnewsz = strlen(hexsig) + 1;
-	if(!(hexnew = (char *) cli_calloc(1, hexnewsz))) {
-	    free(new);
-	    free(hexcpy);
-	    return CL_EMEM;
-	}
+        hexnewsz = strlen(hexsig) + 1;
+        if(!(hexnew = (char *) cli_calloc(1, hexnewsz))) {
+            free(new);
+            free(hexcpy);
+            return CL_EMEM;
+        }
 
-	start = pt = hexcpy;
-	while((pt = strchr(start, '('))) {
-	    *pt++ = 0;
+        start = pt = hexcpy;
+        while((pt = strchr(start, '('))) {
+            *pt++ = 0;
 
-	    if(!start) {
-		error = CL_EMALFDB;
-		break;
-	    }
-	    newspecial = (struct cli_ac_special *) mpool_calloc(root->mempool, 1, sizeof(struct cli_ac_special));
-	    if(!newspecial) {
-		cli_errmsg("cli_ac_addsig: Can't allocate newspecial\n");
-		error = CL_EMEM;
-		break;
-	    }
-	    if(pt >= hexcpy + 2) {
-		if(pt[-2] == '!') {
-		    newspecial->negative = 1;
-		    pt[-2] = 0;
-		}
-	    }
-	    cli_strlcat(hexnew, start, hexnewsz);
+            if(!start) {
+                error = CL_EMALFDB;
+                break;
+            }
+            newspecial = (struct cli_ac_special *) mpool_calloc(root->mempool, 1, sizeof(struct cli_ac_special));
+            if(!newspecial) {
+                cli_errmsg("cli_ac_addsig: Can't allocate newspecial\n");
+                error = CL_EMEM;
+                break;
+            }
+            if(pt >= hexcpy + 2) {
+                if(pt[-2] == '!') {
+                    newspecial->negative = 1;
+                    pt[-2] = 0;
+                }
+            }
+            cli_strlcat(hexnew, start, hexnewsz);
 
-	    if(!(start = strchr(pt, ')'))) {
-		mpool_free(root->mempool, newspecial);
-		error = CL_EMALFDB;
-		break;
-	    }
-	    *start++ = 0;
-	    if(!strlen(pt)) {
-		cli_errmsg("cli_ac_addsig: Empty block\n");
-		error = CL_EMALFDB;
-		break;
-	    }
+            nest = find_paren_end(pt, &start);
+            if(!start) {
+                cli_errmsg("cli_ac_addsig: Missing closing parenthesis\n");
+                mpool_free(root->mempool, newspecial);
+                error = CL_EMALFDB;
+                break;
+            }
+            *start++ = 0;
+            if(!strlen(pt)) {
+                cli_errmsg("cli_ac_addsig: Empty block\n");
+                mpool_free(root->mempool, newspecial);
+                error = CL_EMALFDB;
+                break;
+            }
 
-	    if(!strcmp(pt, "B")) {
-		if(!*start) {
-		    new->boundary |= AC_BOUNDARY_RIGHT;
-		    if(newspecial->negative)
-			new->boundary |= AC_BOUNDARY_RIGHT_NEGATIVE;
-		    mpool_free(root->mempool, newspecial);
-		    continue;
-		} else if(pt - 1 == hexcpy) {
-		    new->boundary |= AC_BOUNDARY_LEFT;
-		    if(newspecial->negative)
-			new->boundary |= AC_BOUNDARY_LEFT_NEGATIVE;
-		    mpool_free(root->mempool, newspecial);
-		    continue;
-		}
-	    } else if(!strcmp(pt, "L")) {
-		if(!*start) {
-		    new->boundary |= AC_LINE_MARKER_RIGHT;
-		    if(newspecial->negative)
-			new->boundary |= AC_LINE_MARKER_RIGHT_NEGATIVE;
-		    mpool_free(root->mempool, newspecial);
-		    continue;
-		} else if(pt - 1 == hexcpy) {
-		    new->boundary |= AC_LINE_MARKER_LEFT;
-		    if(newspecial->negative)
-			new->boundary |= AC_LINE_MARKER_LEFT_NEGATIVE;
-		    mpool_free(root->mempool, newspecial);
-		    continue;
-		}
-	    } else if(!strcmp(pt, "W")) {
-		if(!*start) {
-		    new->boundary |= AC_WORD_MARKER_RIGHT;
-		    if(newspecial->negative)
-			new->boundary |= AC_WORD_MARKER_RIGHT_NEGATIVE;
-		    mpool_free(root->mempool, newspecial);
-		    continue;
-		} else if(pt - 1 == hexcpy) {
-		    new->boundary |= AC_WORD_MARKER_LEFT;
-		    if(newspecial->negative)
-			new->boundary |= AC_WORD_MARKER_LEFT_NEGATIVE;
-		    mpool_free(root->mempool, newspecial);
-		    continue;
-		}
-	    }
-	    cli_strlcat(hexnew, "()", hexnewsz);
-	    new->special++;
-	    newtable = (struct cli_ac_special **) mpool_realloc(root->mempool, new->special_table, new->special * sizeof(struct cli_ac_special *));
-	    if(!newtable) {
-		new->special--;
-		mpool_free(root->mempool, newspecial);
-		cli_errmsg("cli_ac_addsig: Can't realloc new->special_table\n");
-		error = CL_EMEM;
-		break;
-	    }
-	    newtable[new->special - 1] = newspecial;
-	    new->special_table = newtable;
+            if (nest > ACPATT_ALTN_MAXNEST) {
+                cli_errmsg("ac_addspecial: Expression exceeds maximum alternate nesting limit\n");
+                free(hexcpy);
+                return CL_EMALFDB;
+            }
 
-	    if(!strcmp(pt, "B")) {
-		newspecial->type = AC_SPECIAL_BOUNDARY;
-	    } else if(!strcmp(pt, "L")) {
-		newspecial->type = AC_SPECIAL_LINE_MARKER;
-	    } else if(!strcmp(pt, "W")) {
-		newspecial->type = AC_SPECIAL_WORD_MARKER;
-	    } else {
-		newspecial->num = 1;
-		for(i = 0; i < strlen(pt); i++)
-		    if(pt[i] == '|')
-			newspecial->num++;
+            if(!strcmp(pt, "B")) {
+                if(!*start) {
+                    new->boundary |= AC_BOUNDARY_RIGHT;
+                    if(newspecial->negative)
+                        new->boundary |= AC_BOUNDARY_RIGHT_NEGATIVE;
+                    mpool_free(root->mempool, newspecial);
+                    continue;
+                } else if(pt - 1 == hexcpy) {
+                    new->boundary |= AC_BOUNDARY_LEFT;
+                    if(newspecial->negative)
+                        new->boundary |= AC_BOUNDARY_LEFT_NEGATIVE;
+                    mpool_free(root->mempool, newspecial);
+                    continue;
+                }
+            } else if(!strcmp(pt, "L")) {
+                if(!*start) {
+                    new->boundary |= AC_LINE_MARKER_RIGHT;
+                    if(newspecial->negative)
+                        new->boundary |= AC_LINE_MARKER_RIGHT_NEGATIVE;
+                    mpool_free(root->mempool, newspecial);
+                    continue;
+                } else if(pt - 1 == hexcpy) {
+                    new->boundary |= AC_LINE_MARKER_LEFT;
+                    if(newspecial->negative)
+                        new->boundary |= AC_LINE_MARKER_LEFT_NEGATIVE;
+                    mpool_free(root->mempool, newspecial);
+                    continue;
+                }
+            } else if(!strcmp(pt, "W")) {
+                if(!*start) {
+                    new->boundary |= AC_WORD_MARKER_RIGHT;
+                    if(newspecial->negative)
+                        new->boundary |= AC_WORD_MARKER_RIGHT_NEGATIVE;
+                    mpool_free(root->mempool, newspecial);
+                    continue;
+                } else if(pt - 1 == hexcpy) {
+                    new->boundary |= AC_WORD_MARKER_LEFT;
+                    if(newspecial->negative)
+                        new->boundary |= AC_WORD_MARKER_LEFT_NEGATIVE;
+                    mpool_free(root->mempool, newspecial);
+                    continue;
+                }
+            }
+            cli_strlcat(hexnew, "()", hexnewsz);
+            new->special++;
+            newtable = (struct cli_ac_special **) mpool_realloc(root->mempool, new->special_table, new->special * sizeof(struct cli_ac_special *));
+            if(!newtable) {
+                new->special--;
+                mpool_free(root->mempool, newspecial);
+                cli_errmsg("cli_ac_addsig: Can't realloc new->special_table\n");
+                error = CL_EMEM;
+                break;
+            }
+            newtable[new->special - 1] = newspecial;
+            new->special_table = newtable;
 
-		if(3 * newspecial->num - 1 == (uint16_t) strlen(pt)) {
-		    newspecial->type = AC_SPECIAL_ALT_CHAR;
-		    newspecial->str = (unsigned char *) mpool_malloc(root->mempool, newspecial->num);
-		    if(!newspecial->str) {
-			cli_errmsg("cli_ac_addsig: Can't allocate newspecial->str\n");
-			error = CL_EMEM;
-			break;
-		    }
-		} else {
-		    newspecial->type = AC_SPECIAL_ALT_STR;
-		}
+            if(!strcmp(pt, "B")) {
+                newspecial->type = AC_SPECIAL_BOUNDARY;
+            } else if(!strcmp(pt, "L")) {
+                newspecial->type = AC_SPECIAL_LINE_MARKER;
+            } else if(!strcmp(pt, "W")) {
+                newspecial->type = AC_SPECIAL_WORD_MARKER;
+            } else {
+                if ((ret = ac_special_altstr(pt, sigopts, newspecial, root)) != CL_SUCCESS) {
+                    error = ret;
+                    break;
+                }
+            }
+        }
 
-		for(i = 0; i < newspecial->num; i++) {
-			unsigned int clen;
+        if(start)
+            cli_strlcat(hexnew, start, hexnewsz);
 
-		    if(newspecial->num == 1) {
-			c = (char *) cli_mpool_hex2str(root->mempool, pt);
-			clen = strlen(pt) / 2;
-		    } else {
-			if(!(h = cli_strtok(pt, i, "|"))) {
-			    error = CL_EMEM;
-			    break;
-			}
-			c = (char *) cli_mpool_hex2str(root->mempool, h);
-			clen = strlen(h) / 2;
-			free(h);
-		    }
-		    if(!c) {
-			error = CL_EMALFDB;
-			break;
-		    }
+        hex = hexnew;
+        free(hexcpy);
 
-		    if(newspecial->type == AC_SPECIAL_ALT_CHAR) {
-			newspecial->str[i] = *c;
-			mpool_free(root->mempool, c);
-		    } else {
-			if(i) {
-			    specialpt = newspecial;
-			    while(specialpt->next)
-				specialpt = specialpt->next;
-
-			    specialpt->next = (struct cli_ac_special *) mpool_calloc(root->mempool, 1, sizeof(struct cli_ac_special));
-			    if(!specialpt->next) {
-				cli_errmsg("cli_ac_addsig: Can't allocate specialpt->next\n");
-				error = CL_EMEM;
-				free(c);
-				break;
-			    }
-			    specialpt->next->str = (unsigned char *) c;
-			    specialpt->next->len = clen;
-			} else {
-			    newspecial->str = (unsigned char *) c;
-			    newspecial->len = clen;
-			}
-		    }
-		}
-		if(newspecial->num > 1 && newspecial->type == AC_SPECIAL_ALT_CHAR)
-		    cli_qsort(newspecial->str, newspecial->num, sizeof(unsigned char), qcompare);
-
-		if(error)
-		    break;
-	    }
-	}
-
-	if(start)
-	    cli_strlcat(hexnew, start, hexnewsz);
-
-	hex = hexnew;
-	free(hexcpy);
-
-	if(error) {
-	    free(hex);
-	    if(new->special) {
-		mpool_ac_free_special(root->mempool, new);
-	    }
-	    mpool_free(root->mempool, new);
-	    return error;
-	}
+        if(error) {
+            free(hex);
+            if(new->special) {
+                mpool_ac_free_special(root->mempool, new);
+            }
+            mpool_free(root->mempool, new);
+            return error;
+        }
     }
 
     new->pattern = cli_mpool_hex2ui(root->mempool, hex ? hex : hexsig);
@@ -2091,16 +2606,17 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
     free(hex);
 
     new->sigopts = sigopts;
-    /* setting nocase match; TODO - move this to cli_realhex2ui and adjust for nocase */
+    /* setting nocase match */
     if (sigopts & ACPATT_OPTION_NOCASE) {
-	for (i = 0; i < new->length; ++i)
-	    if ((new->pattern[i] & CLI_MATCH_METADATA) == CLI_MATCH_CHAR) {
-		new->pattern[i] = cli_nocase(new->pattern[i] & 0xff);
-		new->pattern[i] += CLI_MATCH_NOCASE;
-	    }
+        for (i = 0; i < new->length; ++i)
+            if ((new->pattern[i] & CLI_MATCH_METADATA) == CLI_MATCH_CHAR) {
+                new->pattern[i] = cli_nocase(new->pattern[i] & 0xff);
+                new->pattern[i] += CLI_MATCH_NOCASE;
+            }
     }
 
-    if (root->filter) { //TODO - fix filters for nocase state, also fix for sigtool as well
+    /* TODO - sigopts affect on filters? */
+    if (root->filter) {
         /* so that we can show meaningful messages */
         new->virname = (char*)virname;
         if (filter_add_acpatt(root->filter, new) == -1) {

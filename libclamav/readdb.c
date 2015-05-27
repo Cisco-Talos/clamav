@@ -292,7 +292,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
     char *pt, *hexcpy, *start, *n, l, r;
     const char *wild;
     int ret, asterisk = 0, range;
-    unsigned int i, j, hexlen, parts = 0;
+    unsigned int i, j, hexlen, nest, parts = 0;
     int mindist = 0, maxdist = 0, error = 0;
     size_t hexcpysz;
 
@@ -458,9 +458,26 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
         if(!(hexcpy = cli_strdup(hexsig)))
             return CL_EMEM;
 
-        for(i = 0; i < hexlen; i++)
-            if(hexsig[i] == '{' || hexsig[i] == '*')
+        nest = 0;
+        for(i = 0; i < hexlen; i++) {
+            if(hexsig[i] == '(')
+                nest++;
+            else if(hexsig[i] == ')')
+                nest--;
+            else if(hexsig[i] == '{') {
+                if (nest) {
+                    cli_errmsg("cli_parse_add(): Alternative match contains unsupported ranged wildcard\n");
+                    return CL_EMALFDB;
+                }
                 parts++;
+            } else if(hexsig[i] == '*') {
+                if (nest) {
+                    cli_errmsg("cli_parse_add(): Alternative match cannot contain unbounded wildcards\n");
+                    return CL_EMALFDB;
+                }
+                parts++;
+            }
+        }
 
         if(parts)
             parts++;
@@ -555,16 +572,27 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
     } else if(strchr(hexsig, '*')) {
         root->ac_partsigs++;
 
-        for(i = 0; i < hexlen; i++)
-            if(hexsig[i] == '*')
+        nest = 0;
+        for(i = 0; i < hexlen; i++) {
+            if(hexsig[i] == '(')
+                nest++;
+            else if(hexsig[i] == ')')
+                nest--;
+            else if(hexsig[i] == '*') {
+                if (nest) {
+                    cli_errmsg("cli_parse_add(): Alternative match cannot contain unbounded wildcards\n");
+                    return CL_EMALFDB;
+                }
                 parts++;
+            }
+        }
 
         if(parts)
             parts++;
 
         for(i = 1; i <= parts; i++) {
             if((pt = cli_strtok(hexsig, i - 1, "*")) == NULL) {
-                cli_errmsg("Can't extract part %d of partial signature.\n", i);
+                cli_errmsg("cli_parse_add():Can't extract part %d of partial signature.\n", i);
                 return CL_EMALFDB;
             }
 
@@ -3239,42 +3267,43 @@ static int yara_subhex_verify(const char *hexstr)
 
 static int yara_altstr_verify(const char *hexstr)
 {
-    char *hexcpy, *track, *alt;
-    int ret = CL_SUCCESS;
+    const char *end;
+    int i, range, lvl = 0;
 
-    hexcpy = cli_strdup(hexstr);
-    if (!hexcpy)
-        return CL_EMEM;
-    track = hexcpy;
+    for (i = 0; i < strlen(hexstr); i++) {
+        if (hexstr[i] == '(') {
+            lvl++;
+            if (lvl > ACPATT_ALTN_MAXNEST) {
+                cli_warnmsg("load_oneyara[verify]: string has unsupported alternating sequence (nest level)\n");
+                return CL_EMALFDB;
+            }
+        } else if (hexstr[i] == ')') {
+            if (!lvl) {
+                break;
+            }
+        } else if (hexstr[i] == '{') { /* clamav converted '[' */
+            end = &hexstr[i];
+            while (*end != '}' && *end != '-' && *end != '\0')
+                end++;
 
-    while ((alt = strchr(track, '|'))) {
-        *alt = '\0';
-        if (strlen(track) != 2) {
-            cli_warnmsg("load_oneyara[verify]: string has unsupported alternating sequence (alt length)\n");
-            ret = CL_EMALFDB;
-            break;
+            switch (*end) {
+            case '\0':
+                cli_warnmsg("load_oneyara[verify]: string has unsupported alternating sequence (unterminated ranged wildcard)\n");
+                return CL_EMALFDB;
+            case '-':
+                cli_warnmsg("load_oneyara[verify]: string has unsupported alternating sequence (variable ranged wildcard)\n");
+                return CL_EMALFDB;
+            case '}':
+                sscanf(&hexstr[i], "{%d}", &range);
+                if (range >= 128) {
+                    cli_warnmsg("load_oneyara[verify]: string has unsupported alternating sequence (128+ ranged wildcard)\n");
+                    return CL_EMALFDB;
+                }
+            }
         }
-        if (track[0] == '?' || track[1] == '?') {
-            cli_warnmsg("load_oneyara[verify]: string has unsupported alternating sequence (wildcard)\n");
-            ret = CL_EMALFDB;
-            break;
-        }
-
-        track = alt+1;
     }
-    if (ret == CL_SUCCESS) {
-        if (strlen(track) != 2) {
-            cli_warnmsg("load_oneyara[verify]: string has unsupported alternating sequence (alt length)\n");
-            ret = CL_EMALFDB;
-        }
-        if (track[0] == '?' || track[1] == '?') {
-            cli_warnmsg("load_oneyara[verify]: string has unsupported alternating sequence (wildcard)\n");
-            ret = CL_EMALFDB;
-        }
-    }
 
-    free(hexcpy);
-    return ret;
+    return CL_SUCCESS;
 }
 
 /* should only operate on HEX STRINGS */
