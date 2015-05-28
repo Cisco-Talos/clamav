@@ -436,7 +436,7 @@ struct cl_engine *cl_engine_new(void)
     new->pcre_recmatch_limit = CLI_DEFAULT_PCRE_RECMATCH_LIMIT;
     new->pcre_max_filesize = CLI_DEFAULT_PCRE_MAX_FILESIZE;
 
-    if (cli_yara_init() != CL_SUCCESS) {
+    if (cli_yara_init(new) != CL_SUCCESS) {
         cli_errmsg("cli_engine_new: failed to initialize YARA\n");
         mpool_free(new->mempool, new->dconf);
         mpool_free(new->mempool, new->root);

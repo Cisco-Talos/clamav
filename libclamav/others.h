@@ -357,6 +357,9 @@ struct cl_engine {
     uint64_t pcre_match_limit;
     uint64_t pcre_recmatch_limit;
     uint64_t pcre_max_filesize;
+
+    /* YARA */
+    struct _yara_global * yara_global;
 };
 
 struct cl_settings {

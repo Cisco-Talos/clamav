@@ -3783,57 +3783,83 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
     return CL_SUCCESS;
 }
 
-static YR_ARENA      * the_arena;
-static YR_HASH_TABLE * rules_table;
-static YR_HASH_TABLE * objects_table;
-static YR_HASH_TABLE * db_table;
+struct _yara_global {
+    YR_ARENA      * the_arena;
+    YR_HASH_TABLE * rules_table;
+    YR_HASH_TABLE * objects_table;
+    YR_HASH_TABLE * db_table;
+};
 
-int cli_yara_init()
+int cli_yara_init(struct cl_engine * engine)
 {
     /* Initialize YARA */
-    if (ERROR_SUCCESS != yr_arena_create(1024, 0, &the_arena)) {
-        cli_errmsg("cli_loadyara: failed to create the YARA arena\n");
-        return CL_EMEM;
-    }    
-    if (ERROR_SUCCESS != yr_hash_table_create(10007, &rules_table)) {
-        cli_errmsg("cli_loadyara: failed to create the YARA rules table\n");
-        yr_arena_destroy(the_arena);
+    engine->yara_global = cli_calloc(1, sizeof(struct _yara_global));
+    if (NULL == engine->yara_global) {
+        cli_errmsg("cli_yara_init: failed to create YARA global\n");
         return CL_EMEM;
     }
-    if (ERROR_SUCCESS != yr_hash_table_create(10007, &objects_table)) {
-        cli_errmsg("cli_loadyara: failed to create the YARA objects table\n");
-        yr_hash_table_destroy(rules_table, NULL);
-        yr_arena_destroy(the_arena);
+    if (ERROR_SUCCESS != yr_arena_create(1024, 0, &engine->yara_global->the_arena)) {
+        cli_errmsg("cli_yara_init: failed to create the YARA arena\n");
+        free(engine->yara_global);
+        engine->yara_global = NULL;
         return CL_EMEM;
     }
-    if (ERROR_SUCCESS != yr_hash_table_create(10007, &db_table)) {
-        cli_errmsg("cli_loadyara: failed to create the YARA objects table\n");
-        yr_hash_table_destroy(objects_table, NULL);
-        yr_hash_table_destroy(rules_table, NULL);
-        yr_arena_destroy(the_arena);
+    if (ERROR_SUCCESS != yr_hash_table_create(10007, &engine->yara_global->rules_table)) {
+        cli_errmsg("cli_yara_init: failed to create the YARA rules table\n");
+        yr_arena_destroy(engine->yara_global->the_arena);
+        engine->yara_global->the_arena = NULL;
+        free(engine->yara_global);
+        engine->yara_global = NULL;
+        return CL_EMEM;
+    }
+    if (ERROR_SUCCESS != yr_hash_table_create(10007, &engine->yara_global->objects_table)) {
+        cli_errmsg("cli_yara_init: failed to create the YARA objects table\n");
+        yr_hash_table_destroy(engine->yara_global->rules_table, NULL);
+        yr_arena_destroy(engine->yara_global->the_arena);
+        engine->yara_global->rules_table = NULL;
+        engine->yara_global->the_arena = NULL; 
+        free(engine->yara_global);
+        engine->yara_global = NULL;
+        engine->yara_global = NULL;
+        return CL_EMEM;
+    }
+    if (ERROR_SUCCESS != yr_hash_table_create(10007, &engine->yara_global->db_table)) {
+        cli_errmsg("cli_yara_init: failed to create the YARA objects table\n");
+        yr_hash_table_destroy(engine->yara_global->objects_table, NULL);
+        yr_hash_table_destroy(engine->yara_global->rules_table, NULL);
+        yr_arena_destroy(engine->yara_global->the_arena);
+        engine->yara_global->objects_table = NULL;
+        engine->yara_global->rules_table = NULL;
+        engine->yara_global->the_arena = NULL; 
+        free(engine->yara_global);
+        engine->yara_global = NULL;
         return CL_EMEM;
     }
     return CL_SUCCESS;
 }
 
-void cli_yara_free()
+void cli_yara_free(struct cl_engine * engine)
 {
-    if (db_table != NULL) {
-        yr_hash_table_destroy(db_table, NULL);
-        db_table = NULL;
-    }
-    if (rules_table != NULL) {
-        yr_hash_table_destroy(rules_table, NULL);
-        rules_table = NULL;
-    }
-    if (objects_table != NULL) {
-        yr_hash_table_destroy(objects_table, NULL);
-        objects_table = NULL;
-    }    
-    if (the_arena != NULL) {
-        yr_arena_destroy(the_arena);
-        the_arena = NULL;
-    }
+    if (engine->yara_global != NULL) {
+        if (engine->yara_global->db_table != NULL) {
+            yr_hash_table_destroy(engine->yara_global->db_table, NULL);
+            engine->yara_global->db_table = NULL;
+        }
+        if (engine->yara_global->rules_table != NULL) {
+            yr_hash_table_destroy(engine->yara_global->rules_table, NULL);
+            engine->yara_global->rules_table = NULL;
+        }
+        if (engine->yara_global->objects_table != NULL) {
+            yr_hash_table_destroy(engine->yara_global->objects_table, NULL);
+            engine->yara_global->objects_table = NULL;
+        }    
+        if (engine->yara_global->the_arena != NULL) {
+            yr_arena_destroy(engine->yara_global->the_arena);
+            engine->yara_global->the_arena = NULL;
+        }
+        free(engine->yara_global);
+        engine->yara_global = NULL;
+    }        
 }
 
 #if 0
@@ -3890,9 +3916,9 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
     compiler.loop_for_of_mem_offset = -1;
     ns.name = "default";
     compiler.current_namespace = &ns;
-    compiler.the_arena = the_arena;
-    compiler.rules_table = rules_table;
-    compiler.objects_table = objects_table;
+    compiler.the_arena = engine->yara_global->the_arena;
+    compiler.rules_table = engine->yara_global->rules_table;
+    compiler.objects_table = engine->yara_global->objects_table;
     compiler.allow_includes = 1;
     _yr_compiler_push_file_name(&compiler, dbname);
 
@@ -3929,9 +3955,9 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
         }
     }
 
-    yr_arena_append(the_arena, compiler.sz_arena);
-    yr_arena_append(the_arena, compiler.rules_arena);
-    yr_arena_append(the_arena, compiler.strings_arena);
+    yr_arena_append(engine->yara_global->the_arena, compiler.sz_arena);
+    yr_arena_append(engine->yara_global->the_arena, compiler.rules_arena);
+    yr_arena_append(engine->yara_global->the_arena, compiler.strings_arena);
     yr_arena_destroy(compiler.code_arena);
     yr_arena_destroy(compiler.metas_arena);
     _yr_compiler_pop_file_name(&compiler);
@@ -4769,7 +4795,7 @@ int cl_engine_free(struct cl_engine *engine)
 #endif
 
  
-    cli_yara_free();
+    cli_yara_free(engine);
 
     free(engine);
     return CL_SUCCESS;
@@ -4785,11 +4811,13 @@ int cl_engine_compile(struct cl_engine *engine)
 	return CL_ENULLARG;
 
     /* Free YARA hash tables - only needed for parse and load */
-    if (rules_table)
-        yr_hash_table_destroy(rules_table, NULL);
-    if (objects_table)
-        yr_hash_table_destroy(objects_table, NULL);
-    rules_table = objects_table = NULL;
+    if (engine->yara_global != NULL) {
+        if (engine->yara_global->rules_table)
+            yr_hash_table_destroy(engine->yara_global->rules_table, NULL);
+        if (engine->yara_global->objects_table)
+            yr_hash_table_destroy(engine->yara_global->objects_table, NULL);
+        engine->yara_global->rules_table = engine->yara_global->objects_table = NULL;
+    }
 
     if(!engine->ftypes)
 	if((ret = cli_loadftm(NULL, engine, 0, 1, NULL)))
