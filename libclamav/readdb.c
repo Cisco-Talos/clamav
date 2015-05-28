@@ -81,10 +81,9 @@
 #  include <pthread.h>
 static pthread_mutex_t cli_ref_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
-#ifndef _WIN32
 #include "yara_clam.h"
 #include "yara_compiler.h"
-#endif
+
 
 #define MAX_LDB_SUBSIGS 64
 
@@ -2979,7 +2978,6 @@ static int cli_loadopenioc(FILE *fs, const char *dbname, struct cl_engine *engin
     return rc;
 }
 
-#ifndef _WIN32
 #define YARA_DEBUG 1
 #if (YARA_DEBUG == 2)
 #define cli_yaramsg(...) cli_errmsg(__VA_ARGS__)
@@ -3988,8 +3986,6 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
     return CL_SUCCESS;
 }
 
-#endif
-
 static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned int *signo, unsigned int options);
 
 int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio)
@@ -4120,10 +4116,8 @@ int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo
 	ret = cli_loadmscat(fs, dbname, engine, options, dbio);
     } else if(cli_strbcasestr(dbname, ".ioc")) {
 	ret = cli_loadopenioc(fs, dbname, engine, options);
-#ifndef _WIN32 /* FIXME: temp until clam yara for windows */
     } else if(cli_strbcasestr(dbname, ".yar") || cli_strbcasestr(dbname, ".yara")) {
         ret = cli_loadyara(fs, engine, signo, options, dbio, dbname);
-#endif
     } else {
 	cli_dbgmsg("cli_load: unknown extension - assuming old database format\n");
 	ret = cli_loaddb(fs, engine, signo, options, dbio, dbname);
