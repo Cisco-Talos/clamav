@@ -1,9 +1,9 @@
 dnl change this on a release
-VERSION="devel-`date +%Y%m%d`"
-dnl VERSION="1.0rc1"
+dnl VERSION="devel-`date +%Y%m%d`"
+VERSION="0.99-beta1"
 
 LC_CURRENT=7
-LC_REVISION=26
+LC_REVISION=27
 LC_AGE=1
 LIBCLAMAV_VERSION="$LC_CURRENT":"$LC_REVISION":"$LC_AGE"
 AC_SUBST([LIBCLAMAV_VERSION])
