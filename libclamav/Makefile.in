@@ -284,18 +284,19 @@ am_libclamav_la_OBJECTS = libclamav_la-matcher-ac.lo \
 	libclamav_la-asn1.lo libclamav_la-fpu.lo libclamav_la-stats.lo \
 	libclamav_la-www.lo libclamav_la-stats_json.lo \
 	libclamav_la-hostid.lo libclamav_la-openioc.lo \
-	libclamav_la-yara_arena.lo libclamav_la-yara_exec.lo \
-	libclamav_la-yara_hash.lo libclamav_la-yara_grammar.lo \
-	libclamav_la-yara_lexer.lo libclamav_la-yara_parser.lo \
-	libclamav_la-msdoc.lo libclamav_la-matcher-pcre.lo \
-	libclamav_la-regex_pcre.lo libclamav_la-msxml.lo \
-	libclamav_la-msxml_parser.lo libclamav_la-fp_add.lo \
-	libclamav_la-fp_add_d.lo libclamav_la-fp_addmod.lo \
-	libclamav_la-fp_cmp.lo libclamav_la-fp_cmp_d.lo \
-	libclamav_la-fp_cmp_mag.lo libclamav_la-fp_sub.lo \
-	libclamav_la-fp_sub_d.lo libclamav_la-fp_submod.lo \
-	libclamav_la-s_fp_add.lo libclamav_la-s_fp_sub.lo \
-	libclamav_la-fp_radix_size.lo libclamav_la-fp_read_radix.lo \
+	libclamav_la-yara_arena.lo libclamav_la-yara_compiler.lo \
+	libclamav_la-yara_exec.lo libclamav_la-yara_hash.lo \
+	libclamav_la-yara_grammar.lo libclamav_la-yara_lexer.lo \
+	libclamav_la-yara_parser.lo libclamav_la-msdoc.lo \
+	libclamav_la-matcher-pcre.lo libclamav_la-regex_pcre.lo \
+	libclamav_la-msxml.lo libclamav_la-msxml_parser.lo \
+	libclamav_la-fp_add.lo libclamav_la-fp_add_d.lo \
+	libclamav_la-fp_addmod.lo libclamav_la-fp_cmp.lo \
+	libclamav_la-fp_cmp_d.lo libclamav_la-fp_cmp_mag.lo \
+	libclamav_la-fp_sub.lo libclamav_la-fp_sub_d.lo \
+	libclamav_la-fp_submod.lo libclamav_la-s_fp_add.lo \
+	libclamav_la-s_fp_sub.lo libclamav_la-fp_radix_size.lo \
+	libclamav_la-fp_read_radix.lo \
 	libclamav_la-fp_read_signed_bin.lo \
 	libclamav_la-fp_read_unsigned_bin.lo \
 	libclamav_la-fp_reverse.lo libclamav_la-fp_s_rmap.lo \
@@ -920,12 +921,13 @@ libclamav_la_SOURCES = matcher-ac.c matcher-ac.h matcher-bm.c \
 	iso9660.h arc4.c arc4.h rijndael.c rijndael.h crtmgr.c \
 	crtmgr.h asn1.c asn1.h fpu.c fpu.h stats.c stats.h www.c www.h \
 	stats_json.c stats_json.h hostid.c hostid.h openioc.c \
-	openioc.h yara_arena.c yara_arena.h yara_exec.c yara_exec.h \
-	yara_hash.c yara_hash.h yara_grammar.y yara_lexer.l \
-	yara_lexer.h yara_parser.c yara_parser.h yara_clam.h msdoc.c \
-	msdoc.h matcher-pcre.c matcher-pcre.h regex_pcre.c \
-	regex_pcre.h msxml.c msxml.h msxml_parser.c msxml_parser.h \
-	bignum.h bignum_fast.h tomsfastmath/addsub/fp_add.c \
+	openioc.h yara_arena.c yara_arena.h yara_compiler.c \
+	yara_compiler.h yara_exec.c yara_exec.h yara_hash.c \
+	yara_hash.h yara_grammar.y yara_lexer.l yara_lexer.h \
+	yara_parser.c yara_parser.h yara_clam.h msdoc.c msdoc.h \
+	matcher-pcre.c matcher-pcre.h regex_pcre.c regex_pcre.h \
+	msxml.c msxml.h msxml_parser.c msxml_parser.h bignum.h \
+	bignum_fast.h tomsfastmath/addsub/fp_add.c \
 	tomsfastmath/addsub/fp_add_d.c tomsfastmath/addsub/fp_addmod.c \
 	tomsfastmath/addsub/fp_cmp.c tomsfastmath/addsub/fp_cmp_d.c \
 	tomsfastmath/addsub/fp_cmp_mag.c tomsfastmath/addsub/fp_sub.c \
@@ -1350,6 +1352,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-xdp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-xz_iface.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-yara_arena.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-yara_compiler.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-yara_exec.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-yara_grammar.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-yara_hash.Plo@am__quote@
@@ -2353,6 +2356,13 @@ libclamav_la-yara_arena.lo: yara_arena.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='yara_arena.c' object='libclamav_la-yara_arena.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-yara_arena.lo `test -f 'yara_arena.c' || echo '$(srcdir)/'`yara_arena.c
+
+libclamav_la-yara_compiler.lo: yara_compiler.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-yara_compiler.lo -MD -MP -MF $(DEPDIR)/libclamav_la-yara_compiler.Tpo -c -o libclamav_la-yara_compiler.lo `test -f 'yara_compiler.c' || echo '$(srcdir)/'`yara_compiler.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-yara_compiler.Tpo $(DEPDIR)/libclamav_la-yara_compiler.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='yara_compiler.c' object='libclamav_la-yara_compiler.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-yara_compiler.lo `test -f 'yara_compiler.c' || echo '$(srcdir)/'`yara_compiler.c
 
 libclamav_la-yara_exec.lo: yara_exec.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-yara_exec.lo -MD -MP -MF $(DEPDIR)/libclamav_la-yara_exec.Tpo -c -o libclamav_la-yara_exec.lo `test -f 'yara_exec.c' || echo '$(srcdir)/'`yara_exec.c

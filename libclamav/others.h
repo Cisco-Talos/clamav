@@ -359,9 +359,7 @@ struct cl_engine {
     uint64_t pcre_max_filesize;
 
     /* YARA */
-    YR_ARENA      * the_arena;
-    YR_HASH_TABLE * rules_table;
-    YR_HASH_TABLE * objects_table;
+    struct _yara_global * yara_global;
 };
 
 struct cl_settings {
