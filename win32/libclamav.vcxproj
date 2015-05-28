@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -417,6 +417,12 @@
     <ClCompile Include="..\libclamav\www.c" />
     <ClCompile Include="..\libclamav\xdp.c" />
     <ClCompile Include="..\libclamav\xz_iface.c" />
+    <ClCompile Include="..\libclamav\yara_arena.c" />
+    <ClCompile Include="..\libclamav\yara_exec.c" />
+    <ClCompile Include="..\libclamav\yara_grammar.c" />
+    <ClCompile Include="..\libclamav\yara_hash.c" />
+    <ClCompile Include="..\libclamav\yara_lexer.c" />
+    <ClCompile Include="..\libclamav\yara_parser.c" />
     <ClCompile Include="..\libclamav\yc.c" />
     <ClCompile Include="..\shared\getopt.c" />
     <ClCompile Include="..\shared\misc.c" />
@@ -517,6 +523,12 @@
     <ClInclude Include="..\libclamav\stats.h" />
     <ClInclude Include="..\libclamav\www.h" />
     <ClInclude Include="..\libclamav\xdp.h" />
+    <ClInclude Include="..\libclamav\yara_arena.h" />
+    <ClInclude Include="..\libclamav\yara_exec.h" />
+    <ClInclude Include="..\libclamav\yara_grammar.h" />
+    <ClInclude Include="..\libclamav\yara_hash.h" />
+    <ClInclude Include="..\libclamav\yara_lexer.h" />
+    <ClInclude Include="..\libclamav\yara_parser.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
