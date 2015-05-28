@@ -945,6 +945,9 @@
     <ClCompile Include="..\libclamav\yara_parser.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\libclamav\yara_compiler.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\libclamav\hostid.h">
@@ -983,6 +986,7 @@
     <ClInclude Include="..\libclamav\yara_parser.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\libclamav\yara_compiler.h" />
   </ItemGroup>
   <ItemGroup>
     <Library Include="libeay32.lib" />
