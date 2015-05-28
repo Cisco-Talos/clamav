@@ -800,8 +800,6 @@ int yr_parser_reduce_rule_declaration(
 #if REAL_YARA
   compiler->current_rule_strings = NULL;
 #else
-  rule->cl_flags = compiler->current_rule_clflags;
-  compiler->current_rule_clflags = 0;
   // Write halt instruction at the end of code.
   yr_arena_write_data(
       compiler->code_arena,
@@ -953,7 +951,6 @@ YR_META* yr_parser_reduce_meta_declaration(
 
   STAILQ_INSERT_TAIL(&compiler->current_meta, meta, link);
 
-  //compiler->error_msg = "meta not yet supported";
   return meta;
 #endif
 }

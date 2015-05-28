@@ -17551,49 +17551,56 @@ PCRE_HOME=""
 # Check whether --with-pcre was given.
 if test "${with_pcre+set}" = set; then :
   withval=$with_pcre;
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for libpcre installation" >&5
-$as_echo_n "checking for libpcre installation... " >&6; }
-  case "$withval" in
-  no)
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-    ;;
-  yes)
-    PCRE_HOME=/usr/local
-    if test ! -x "$PCRE_HOME/bin/pcre-config"; then
-      PCRE_HOME=/usr
-      if test ! -x "$PCRE_HOME/bin/pcre-config"; then
-        PCRE_HOME=""
-        as_fn_error $? "cannot locate libpcre at /usr/local or /usr" "$LINENO" 5
-      fi
-    fi
-    ;;
-  "")
-    as_fn_error $? "cannot assign blank value to --with-pcre" "$LINENO" 5
-    ;;
-  *)
-    PCRE_HOME="$withval"
-    if test ! -x "$PCRE_HOME/bin/pcre-config"; then
-      PCRE_HOME=""
-      as_fn_error $? "cannot locate libpcre at $withval" "$LINENO" 5
-    fi
-    ;;
-  esac
-
-  if test "x$PCRE_HOME" != "x"; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: using $PCRE_HOME" >&5
-$as_echo "using $PCRE_HOME" >&6; }
-  else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
-$as_echo "not found" >&6; }
-  fi
+  PCRE_HOME=$withval
 
 else
 
-  PCRE_HOME=""
+  PCRE_HOME="yes"
 
 fi
 
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for libpcre installation" >&5
+$as_echo_n "checking for libpcre installation... " >&6; }
+case "$PCRE_HOME" in
+no)
+  PCRE_HOME=""
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+  ;;
+yes)
+  PCRE_HOME=/usr/local
+  if test ! -x "$PCRE_HOME/bin/pcre-config"; then
+    PCRE_HOME=/usr
+    if test ! -x "$PCRE_HOME/bin/pcre-config"; then
+      PCRE_HOME=""
+      { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+      { $as_echo "$as_me:${as_lineno-$LINENO}: cannot locate libpcre at /usr/local or /usr" >&5
+$as_echo "$as_me: cannot locate libpcre at /usr/local or /usr" >&6;}
+    fi
+  fi
+  ;;
+"")
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: " >&5
+$as_echo "" >&6; }
+  as_fn_error $? "cannot assign blank value to --with-pcre" "$LINENO" 5
+  ;;
+*)
+  PCRE_HOME="$withval"
+  if test ! -x "$PCRE_HOME/bin/pcre-config"; then
+    PCRE_HOME=""
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+$as_echo "not found" >&6; }
+    as_fn_error $? "cannot locate libpcre at $withval" "$LINENO" 5
+  fi
+  ;;
+esac
+
+if test "x$PCRE_HOME" != "x"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: using $PCRE_HOME" >&5
+$as_echo "using $PCRE_HOME" >&6; }
+fi
 
 found_pcre="no"
 PCRECONF_VERSION=""
@@ -17604,8 +17611,8 @@ if test "x$PCRE_HOME" != "x"; then
 $as_echo_n "checking pcre-config version... " >&6; }
   PCRECONF_VERSION="`$PCRE_HOME/bin/pcre-config --version`"
   if test "x%PCRECONF_VERSION" != "x"; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $PCRECONF_VERSION\"" >&5
-$as_echo "$PCRECONF_VERSION\"" >&6; }
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $PCRECONF_VERSION" >&5
+$as_echo "$PCRECONF_VERSION" >&6; }
     found_pcre="yes"
     PCRE_CPPFLAGS="`$PCRE_HOME/bin/pcre-config --cflags`"
     PCRE_LIBS="`$PCRE_HOME/bin/pcre-config --libs`"

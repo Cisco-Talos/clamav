@@ -1301,7 +1301,6 @@ case 48:
 YY_RULE_SETUP
 #line 173 "yara_lexer.l"
 {
-#ifdef REAL_YARA
 
   char            buffer[1024];
   char            *current_file_name;
@@ -1399,10 +1398,6 @@ YY_RULE_SETUP
   }
 
   BEGIN(INITIAL);
-#else
-  yyerror(yyscanner, compiler, "includes are disabled");
-  yyterminate();
-#endif
 }
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
@@ -1410,9 +1405,8 @@ case YY_STATE_EOF(str):
 case YY_STATE_EOF(regexp):
 case YY_STATE_EOF(include):
 case YY_STATE_EOF(comment):
-#line 280 "yara_lexer.l"
+#line 275 "yara_lexer.l"
 {
-#ifdef REAL_YARA
 
   YR_COMPILER* compiler = yara_yyget_extra(yyscanner);
   FILE* file = _yr_compiler_pop_file(compiler);
@@ -1429,7 +1423,7 @@ case YY_STATE_EOF(comment):
   {
     yyterminate();
   }
-#endif
+
   yara_yypop_buffer_state(yyscanner);
 
   if (!YY_CURRENT_BUFFER)
@@ -1440,7 +1434,7 @@ case YY_STATE_EOF(comment):
 	YY_BREAK
 case 49:
 YY_RULE_SETUP
-#line 308 "yara_lexer.l"
+#line 302 "yara_lexer.l"
 {
 
   yylval->c_string = yr_strdup(yytext);
@@ -1456,7 +1450,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 50:
 YY_RULE_SETUP
-#line 322 "yara_lexer.l"
+#line 316 "yara_lexer.l"
 {
 
   yylval->c_string = yr_strdup(yytext);
@@ -1472,7 +1466,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 51:
 YY_RULE_SETUP
-#line 336 "yara_lexer.l"
+#line 330 "yara_lexer.l"
 {
 
   yylval->c_string = yr_strdup(yytext);
@@ -1489,7 +1483,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 52:
 YY_RULE_SETUP
-#line 351 "yara_lexer.l"
+#line 345 "yara_lexer.l"
 {
 
   yylval->c_string = yr_strdup(yytext);
@@ -1506,7 +1500,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 53:
 YY_RULE_SETUP
-#line 366 "yara_lexer.l"
+#line 360 "yara_lexer.l"
 {
 
   if (strlen(yytext) > 128)
@@ -1526,7 +1520,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 54:
 YY_RULE_SETUP
-#line 384 "yara_lexer.l"
+#line 378 "yara_lexer.l"
 {
 
   yylval->integer = (size_t) atol(yytext);
@@ -1544,7 +1538,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 55:
 YY_RULE_SETUP
-#line 400 "yara_lexer.l"
+#line 394 "yara_lexer.l"
 {
 
   yylval->integer = xtoi(yytext + 2);
@@ -1553,7 +1547,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 56:
 YY_RULE_SETUP
-#line 407 "yara_lexer.l"
+#line 401 "yara_lexer.l"
 {     /* saw closing quote - all done */
 
   SIZED_STRING* s;
@@ -1579,7 +1573,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 57:
 YY_RULE_SETUP
-#line 431 "yara_lexer.l"
+#line 425 "yara_lexer.l"
 {
 
   LEX_CHECK_SPACE_OK("\t", yyextra->lex_buf_len, LEX_BUF_SIZE);
@@ -1589,7 +1583,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 58:
 YY_RULE_SETUP
-#line 439 "yara_lexer.l"
+#line 433 "yara_lexer.l"
 {
 
   LEX_CHECK_SPACE_OK("\n", yyextra->lex_buf_len, LEX_BUF_SIZE);
@@ -1599,7 +1593,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 59:
 YY_RULE_SETUP
-#line 447 "yara_lexer.l"
+#line 441 "yara_lexer.l"
 {
 
   LEX_CHECK_SPACE_OK("\"", yyextra->lex_buf_len, LEX_BUF_SIZE);
@@ -1609,7 +1603,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 60:
 YY_RULE_SETUP
-#line 455 "yara_lexer.l"
+#line 449 "yara_lexer.l"
 {
 
   LEX_CHECK_SPACE_OK("\\", yyextra->lex_buf_len, LEX_BUF_SIZE);
@@ -1619,7 +1613,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 61:
 YY_RULE_SETUP
-#line 463 "yara_lexer.l"
+#line 457 "yara_lexer.l"
 {
 
    int result;
@@ -1632,13 +1626,13 @@ YY_RULE_SETUP
 	YY_BREAK
 case 62:
 YY_RULE_SETUP
-#line 474 "yara_lexer.l"
+#line 468 "yara_lexer.l"
 { YYTEXT_TO_BUFFER; }
 	YY_BREAK
 case 63:
 /* rule 63 can match eol */
 YY_RULE_SETUP
-#line 477 "yara_lexer.l"
+#line 471 "yara_lexer.l"
 {
 
   yyerror(yyscanner, compiler, "unterminated string");
@@ -1648,7 +1642,7 @@ YY_RULE_SETUP
 case 64:
 /* rule 64 can match eol */
 YY_RULE_SETUP
-#line 483 "yara_lexer.l"
+#line 477 "yara_lexer.l"
 {
 
   yyerror(yyscanner, compiler, "illegal escape sequence");
@@ -1656,7 +1650,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 65:
 YY_RULE_SETUP
-#line 489 "yara_lexer.l"
+#line 483 "yara_lexer.l"
 {
 
   SIZED_STRING* s;
@@ -1689,7 +1683,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 66:
 YY_RULE_SETUP
-#line 520 "yara_lexer.l"
+#line 514 "yara_lexer.l"
 {
 
   LEX_CHECK_SPACE_OK("/", yyextra->lex_buf_len, LEX_BUF_SIZE);
@@ -1699,7 +1693,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 67:
 YY_RULE_SETUP
-#line 528 "yara_lexer.l"
+#line 522 "yara_lexer.l"
 {
 
   LEX_CHECK_SPACE_OK("\\.", yyextra->lex_buf_len, LEX_BUF_SIZE);
@@ -1710,13 +1704,13 @@ YY_RULE_SETUP
 	YY_BREAK
 case 68:
 YY_RULE_SETUP
-#line 537 "yara_lexer.l"
+#line 531 "yara_lexer.l"
 { YYTEXT_TO_BUFFER; }
 	YY_BREAK
 case 69:
 /* rule 69 can match eol */
 YY_RULE_SETUP
-#line 540 "yara_lexer.l"
+#line 534 "yara_lexer.l"
 {
 
   yyerror(yyscanner, compiler, "unterminated regular expression");
@@ -1725,7 +1719,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 70:
 YY_RULE_SETUP
-#line 547 "yara_lexer.l"
+#line 541 "yara_lexer.l"
 {
 
   yyextra->lex_buf_ptr = yyextra->lex_buf;
@@ -1735,7 +1729,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 71:
 YY_RULE_SETUP
-#line 555 "yara_lexer.l"
+#line 549 "yara_lexer.l"
 {
 
   yyextra->lex_buf_ptr = yyextra->lex_buf;
@@ -1746,7 +1740,7 @@ YY_RULE_SETUP
 case 72:
 /* rule 72 can match eol */
 YY_RULE_SETUP
-#line 563 "yara_lexer.l"
+#line 557 "yara_lexer.l"
 {
 
   int len = strlen(yytext);
@@ -1764,12 +1758,12 @@ YY_RULE_SETUP
 case 73:
 /* rule 73 can match eol */
 YY_RULE_SETUP
-#line 578 "yara_lexer.l"
+#line 572 "yara_lexer.l"
 /* skip whitespace */
 	YY_BREAK
 case 74:
 YY_RULE_SETUP
-#line 580 "yara_lexer.l"
+#line 574 "yara_lexer.l"
 {
 
   if (yytext[0] >= 32 && yytext[0] < 127)
@@ -1785,10 +1779,10 @@ YY_RULE_SETUP
 	YY_BREAK
 case 75:
 YY_RULE_SETUP
-#line 593 "yara_lexer.l"
+#line 587 "yara_lexer.l"
 ECHO;
 	YY_BREAK
-#line 1792 "yara_lexer.c"
+#line 1786 "yara_lexer.c"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -2922,7 +2916,7 @@ void yara_yyfree (void * ptr , yyscan_t yyscanner)
 
 #define YYTABLES_NAME "yytables"
 
-#line 593 "yara_lexer.l"
+#line 587 "yara_lexer.l"
 
 
 
@@ -2931,7 +2925,6 @@ void yywarning(
     yyscan_t yyscanner,
     const char *warning_message)
 {
-#ifdef REAL_YARA
   YR_COMPILER* compiler = yara_yyget_extra(yyscanner);
   char* file_name;
 
@@ -2940,16 +2933,14 @@ void yywarning(
   else
     file_name = NULL;
 
+#ifdef REAL_YARA
   compiler->callback(
       YARA_ERROR_LEVEL_WARNING,
       file_name,
       yara_yyget_lineno(yyscanner),
       warning_message);
 #else
-  if (warning_message != NULL)
-    cli_errmsg("yara_lexer:yywarning() %s\n", warning_message);
-  else
-    cli_errmsg("yara_lexer:yywarning() unknown warning\n");
+    cli_warnmsg("yywarning(): %s line %d %s\n", file_name?file_name:"(file name missing)", compiler->last_error_line, warning_message);
 #endif
 }
 
@@ -2958,17 +2949,10 @@ void yyfatal(
     yyscan_t yyscanner,
     const char *error_message)
 {
-#ifdef REAL_YARA
   YR_COMPILER* compiler = yara_yyget_extra(yyscanner);
 
   yyerror(yyscanner, compiler, error_message);
   longjmp(compiler->error_recovery, 1);
-#else
-  if (error_message != NULL)
-    cli_errmsg("yara_lexer:yyfatal() %s\n", error_message);
-  else
-    cli_errmsg("yara_lexer:yyfatal() unknown error\n");
-#endif
 }
 
 
@@ -2977,7 +2961,6 @@ void yyerror(
     YR_COMPILER* compiler,
     const char *error_message)
 {
-#ifdef REAL_YARA
   char message[512] = {'\0'};
   char* file_name = NULL;
 
@@ -3010,6 +2993,7 @@ void yyerror(
     yr_compiler_set_error_extra_info(compiler, error_message);
     compiler->last_error = ERROR_SYNTAX_ERROR;
 
+#ifdef REAL_YARA
     if (compiler->callback != NULL)
     {
       compiler->callback(
@@ -3018,11 +3002,15 @@ void yyerror(
           compiler->last_error_line,
           error_message);
     }
+#else
+    cli_errmsg("yyerror(): %s line %d %s\n", file_name?file_name:"(file name missing)", compiler->last_error_line, error_message);
+#endif
   }
   else
   {
     compiler->last_error = compiler->last_result;
 
+#ifdef REAL_YARA
     if (compiler->callback != NULL)
     {
       yr_compiler_get_error_message(compiler, message, sizeof(message));
@@ -3033,27 +3021,13 @@ void yyerror(
         compiler->last_error_line,
         message);
     }
+#else
+    yr_compiler_get_error_message(compiler, message, sizeof(message));
+    cli_errmsg("yyerror(): %s line %d %s\n", file_name?file_name:"NULL filename", compiler->last_error_line, message);
+#endif
   }
 
   compiler->last_result = ERROR_SUCCESS;
-#else
-  compiler->errors++;
-  if (error_message != NULL)
-    cli_errmsg("yara_lexer:yyerror() error message: %s\n", error_message);
-  if (compiler->error_msg != NULL)
-    cli_errmsg("yara_lexer:yyerror() compiler error message: %s\n", compiler->error_msg);
-  if (compiler->last_error_extra_info[0] != (char) 0)
-    cli_errmsg("yara_lexer:yyerror() error extra info: %s\n", compiler->last_error_extra_info);
-  if (compiler->last_result != ERROR_SUCCESS)
-    cli_errmsg("yara_lexer:yyerror() last result is %i\n", compiler->last_result);
-  if (compiler->error_line != 0)
-    cli_errmsg("yara_lexer:yyerror() error line %i\n", compiler->error_line);
-
-  compiler->last_error_extra_info[0] = (char) 0;
-  compiler->error_msg = NULL;
-  compiler->last_result = ERROR_SUCCESS;
-  compiler->error_line = 0;
-#endif
 }
 
 
@@ -3095,12 +3069,10 @@ int yr_lex_parse_rules_file(
 {
   yyscan_t yyscanner;
 
-#ifdef REAL_YARA
   compiler->errors = 0;
 
   if (setjmp(compiler->error_recovery) != 0)
     return compiler->errors;
-#endif
 
   yara_yylex_init(&yyscanner);
 
