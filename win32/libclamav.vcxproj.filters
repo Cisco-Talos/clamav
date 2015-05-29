@@ -36,6 +36,9 @@
     <Filter Include="Source Files\libxml2">
       <UniqueIdentifier>{8f0b6856-1d86-4ab3-b519-14a403a3058a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\pcre">
+      <UniqueIdentifier>{21226063-d886-46c0-b786-a5a5254e0dca}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="libclamav.def">
@@ -367,9 +370,6 @@
       <Filter>Source Files\regex</Filter>
     </ClCompile>
     <ClCompile Include="..\libclamav\regex\regfree.c">
-      <Filter>Source Files\regex</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libclamav\regex_pcre.c">
       <Filter>Source Files\regex</Filter>
     </ClCompile>
     <ClCompile Include="..\libclamav\nsis\infblock.c">
@@ -948,12 +948,72 @@
     <ClCompile Include="..\libclamav\yara_compiler.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\libclamav\regex_pcre.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre\pcre_compile.c">
+      <Filter>Source Files\pcre</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre\pcre_config.c">
+      <Filter>Source Files\pcre</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre\pcre_dfa_exec.c">
+      <Filter>Source Files\pcre</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre\pcre_exec.c">
+      <Filter>Source Files\pcre</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre\pcre_fullinfo.c">
+      <Filter>Source Files\pcre</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre\pcre_get.c">
+      <Filter>Source Files\pcre</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre\pcre_globals.c">
+      <Filter>Source Files\pcre</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre\pcre_info.c">
+      <Filter>Source Files\pcre</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre\pcre_maketables.c">
+      <Filter>Source Files\pcre</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre\pcre_newline.c">
+      <Filter>Source Files\pcre</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre\pcre_ord2utf8.c">
+      <Filter>Source Files\pcre</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre\pcre_refcount.c">
+      <Filter>Source Files\pcre</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre\pcre_study.c">
+      <Filter>Source Files\pcre</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre\pcre_tables.c">
+      <Filter>Source Files\pcre</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre\pcre_try_flipped.c">
+      <Filter>Source Files\pcre</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre\pcre_ucp_searchfuncs.c">
+      <Filter>Source Files\pcre</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre\pcre_valid_utf8.c">
+      <Filter>Source Files\pcre</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre\pcre_version.c">
+      <Filter>Source Files\pcre</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre\pcre_xclass.c">
+      <Filter>Source Files\pcre</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre\pcre_chartables.c">
+      <Filter>Source Files\pcre</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\libclamav\hostid.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libclamav\stats_json.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="..\libclamav\stats.h">
@@ -962,31 +1022,9 @@
     <ClInclude Include="..\libclamav\www.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\libclamav\conv.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\libclamav\xdp.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\libclamav\yara_arena.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libclamav\yara_exec.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libclamav\yara_grammar.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libclamav\yara_hash.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libclamav\yara_lexer.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libclamav\yara_parser.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libclamav\yara_compiler.h" />
   </ItemGroup>
   <ItemGroup>
     <Library Include="libeay32.lib" />

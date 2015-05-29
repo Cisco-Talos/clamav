@@ -228,6 +228,9 @@
 /* Define to '1' if you have the curses.h library */
 /* #undef HAVE_LIBPDCURSES */
 
+/* Define to 1 if you have the 'pcre' library (-lpcre). */
+#define HAVE_PCRE 1
+
 /* Define to 1 if you have the 'libxml2' library (-lxml2). */
 #define HAVE_LIBXML2 1
 

@@ -88,7 +88,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;PTW32_STATIC_LIB;THIS_IS_LIBCLAMAV;WIN32;_DEBUG;_WINDOWS;_USRDLL;LIBCLAMAV_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\libxml2;$(SolutionDir)3rdparty\libxml2\include;$(SolutionDir)..;C:\clamdeps\win32\openssl\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\libxml2;$(SolutionDir)3rdparty\libxml2\include;$(SolutionDir)3rdparty\pcre;$(SolutionDir)..;C:\clamdeps\win32\openssl\include</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4996;4090;4244;4018;4101;4333;4146</DisableSpecificWarnings>
     </ClCompile>
@@ -126,7 +126,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;PTW32_STATIC_LIB;THIS_IS_LIBCLAMAV;WIN32;NDEBUG;_WINDOWS;_USRDLL;LIBCLAMAV_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\libxml2;$(SolutionDir)3rdparty\libxml2\include;$(SolutionDir)..;C:\clamdeps\win32\openssl\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\libxml2;$(SolutionDir)3rdparty\libxml2\include;$(SolutionDir)3rdparty\pcre;$(SolutionDir)..;C:\clamdeps\win32\openssl\include</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4996;4090;4244;4018;4101;4333;4146</DisableSpecificWarnings>
     </ClCompile>
@@ -466,6 +466,26 @@
     <ClCompile Include="3rdparty\libxml2\xmlreader.c" />
     <ClCompile Include="3rdparty\libxml2\xmlsave.c" />
     <ClCompile Include="3rdparty\libxml2\xmlstring.c" />
+    <ClCompile Include="3rdparty\pcre\pcre_chartables.c" />
+    <ClCompile Include="3rdparty\pcre\pcre_compile.c" />
+    <ClCompile Include="3rdparty\pcre\pcre_config.c" />
+    <ClCompile Include="3rdparty\pcre\pcre_dfa_exec.c" />
+    <ClCompile Include="3rdparty\pcre\pcre_exec.c" />
+    <ClCompile Include="3rdparty\pcre\pcre_fullinfo.c" />
+    <ClCompile Include="3rdparty\pcre\pcre_get.c" />
+    <ClCompile Include="3rdparty\pcre\pcre_globals.c" />
+    <ClCompile Include="3rdparty\pcre\pcre_info.c" />
+    <ClCompile Include="3rdparty\pcre\pcre_maketables.c" />
+    <ClCompile Include="3rdparty\pcre\pcre_newline.c" />
+    <ClCompile Include="3rdparty\pcre\pcre_ord2utf8.c" />
+    <ClCompile Include="3rdparty\pcre\pcre_refcount.c" />
+    <ClCompile Include="3rdparty\pcre\pcre_study.c" />
+    <ClCompile Include="3rdparty\pcre\pcre_tables.c" />
+    <ClCompile Include="3rdparty\pcre\pcre_try_flipped.c" />
+    <ClCompile Include="3rdparty\pcre\pcre_ucp_searchfuncs.c" />
+    <ClCompile Include="3rdparty\pcre\pcre_valid_utf8.c" />
+    <ClCompile Include="3rdparty\pcre\pcre_version.c" />
+    <ClCompile Include="3rdparty\pcre\pcre_xclass.c" />
     <ClCompile Include="3rdparty\pthreads\pthread.c" />
     <ClCompile Include="3rdparty\zlib\adler32.c" />
     <ClCompile Include="3rdparty\zlib\compress.c">
@@ -518,19 +538,10 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\libclamav\conv.h" />
     <ClInclude Include="..\libclamav\hostid.h" />
-    <ClInclude Include="..\libclamav\stats_json.h" />
     <ClInclude Include="..\libclamav\stats.h" />
     <ClInclude Include="..\libclamav\www.h" />
     <ClInclude Include="..\libclamav\xdp.h" />
-    <ClInclude Include="..\libclamav\yara_arena.h" />
-    <ClInclude Include="..\libclamav\yara_compiler.h" />
-    <ClInclude Include="..\libclamav\yara_exec.h" />
-    <ClInclude Include="..\libclamav\yara_grammar.h" />
-    <ClInclude Include="..\libclamav\yara_hash.h" />
-    <ClInclude Include="..\libclamav\yara_lexer.h" />
-    <ClInclude Include="..\libclamav\yara_parser.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -25,10 +25,10 @@
 #ifndef _REGEX_PCRE_H_
 #define _REGEX_PCRE_H_
 
-#if HAVE_PCRE
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
+#if HAVE_PCRE
 
 #include <pcre.h>
 
