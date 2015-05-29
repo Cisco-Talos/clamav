@@ -2,6 +2,18 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
+0.99-beta1
+------
+
+This is a preview release of some upcoming ClamAV 0.99 features:
+
+    - Process YARA rules(with limitations) as ClamAV signatures.
+    - Support in ClamAV logical signatures many of the features
+      added for YARA, such as Perl Compatible Regular Expressions.
+
+For more details about ClamAV 0.99-beta1, please see the blog post
+on blog.clamav.net.
+
 0.98.7
 ------
 
