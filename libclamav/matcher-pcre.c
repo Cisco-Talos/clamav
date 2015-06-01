@@ -35,6 +35,7 @@
 #include "matcher-ac.h"
 #include "matcher-pcre.h"
 #include "mpool.h"
+#include "readdb.h"
 #include "regex_pcre.h"
 
 #if HAVE_PCRE
@@ -77,7 +78,7 @@ static void pcre_perf_events_init(struct cli_pcre_meta *pm, const char *virname)
         virname = "(null)";
 
     /* set the name */
-    pm->statname = cli_calloc(1, namelen);
+    pm->statname = (char*)cli_calloc(1, namelen);
     if (!pm->statname) {
         return;
     }
@@ -113,8 +114,8 @@ struct sigperf_elem {
 
 static int sigelem_comp(const void * a, const void * b)
 {
-    const struct sigperf_elem *ela = a;
-    const struct sigperf_elem *elb = b;
+    const struct sigperf_elem *ela = (const struct sigperf_elem *)a;
+    const struct sigperf_elem *elb = (const struct sigperf_elem *)b;
     return elb->usecs/elb->run_count - ela->usecs/ela->run_count;
 }
 

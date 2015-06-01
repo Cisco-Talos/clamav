@@ -23,6 +23,7 @@
 #endif
 
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -83,6 +84,8 @@ static pthread_mutex_t cli_ref_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 #include "yara_clam.h"
 #include "yara_compiler.h"
+#include "yara_grammar.h"
+#include "yara_lexer.h"
 
 
 #define MAX_LDB_SUBSIGS 64

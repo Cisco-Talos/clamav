@@ -55,6 +55,8 @@ typedef unsigned char flex_uint8_t;
 typedef unsigned short int flex_uint16_t;
 typedef unsigned int flex_uint32_t;
 
+/* Windows' <stdint.h> does not wrap its macro definitions */
+#ifndef _WIN32
 /* Limits of integral types. */
 #ifndef INT8_MIN
 #define INT8_MIN               (-128)
@@ -83,6 +85,8 @@ typedef unsigned int flex_uint32_t;
 #ifndef UINT32_MAX
 #define UINT32_MAX             (4294967295U)
 #endif
+
+#endif /* ! _WIN32 */
 
 #endif /* ! C99 */
 

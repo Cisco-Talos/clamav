@@ -56,6 +56,7 @@
 #include "bytecode_priv.h"
 #include "bytecode_api_impl.h"
 #include "yara_clam.h"
+#include "yara_exec.h"
 
 #ifdef CLI_PERF_LOGGING
 

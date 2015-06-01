@@ -18,6 +18,10 @@ limitations under the License.
 #include <stdio.h>
 #include <string.h>
 
+#ifdef _WIN32
+#include <stdint.h>
+#endif
+
 #ifdef REAL_YARA
 #include <yara/utils.h>
 #include <yara/compiler.h>

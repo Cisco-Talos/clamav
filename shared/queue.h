@@ -145,6 +145,9 @@ struct qm_trace {
 #define	TRASHIT(x)
 #endif	/* QUEUE_MACRO_DEBUG */
 
+/* SLIST_ENTRY macro collides with winnt.h definition */
+#ifndef _WIN32
+
 /*
  * Singly-linked List declarations.
  */
@@ -237,6 +240,8 @@ struct {								\
 	SLIST_FIRST(head1) = SLIST_FIRST(head2);			\
 	SLIST_FIRST(head2) = swap_first;				\
 } while (0)
+
+#endif /* ! _WIN32 */
 
 /*
  * Singly-linked Tail queue declarations.

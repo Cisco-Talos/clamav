@@ -76,6 +76,7 @@
 #include "bytecode.h"
 #include "bytecode_api_impl.h"
 #include "cache.h"
+#include "readdb.h"
 #include "stats.h"
 
 int (*cli_unrar_open)(int fd, const char *dirname, unrar_state_t *state);
