@@ -87,7 +87,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;PTW32_STATIC_LIB;THIS_IS_LIBCLAMAV;WIN32;_DEBUG;_WINDOWS;_USRDLL;LIBCLAMAV_EXPORTS;PCRE_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;PTW32_STATIC_LIB;THIS_IS_LIBCLAMAV;WIN32;PCRE_STATIC;_DEBUG;_WINDOWS;_USRDLL;LIBCLAMAV_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\libxml2;$(SolutionDir)3rdparty\libxml2\include;$(SolutionDir)3rdparty\pcre;$(SolutionDir)..;C:\clamdeps\win32\openssl\include</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4996;4090;4244;4018;4101;4333;4146</DisableSpecificWarnings>
@@ -105,8 +105,8 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;PTW32_STATIC_LIB;THIS_IS_LIBCLAMAV;WIN32;_DEBUG;_WINDOWS;_USRDLL;LIBCLAMAV_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\libxml2;$(SolutionDir)3rdparty\libxml2\include;$(SolutionDir)..;C:\clamdeps\win64\openssl\include</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;PTW32_STATIC_LIB;THIS_IS_LIBCLAMAV;WIN32;PCRE_STATIC;_DEBUG;_WINDOWS;_USRDLL;LIBCLAMAV_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\libxml2;$(SolutionDir)3rdparty\libxml2\include;$(SolutionDir)3rdparty\pcre;$(SolutionDir)..;C:\clamdeps\win64\openssl\include</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4996;4090;4244;4018;4101;4333;4146;4267;4334</DisableSpecificWarnings>
     </ClCompile>
@@ -125,7 +125,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;PTW32_STATIC_LIB;THIS_IS_LIBCLAMAV;WIN32;NDEBUG;_WINDOWS;_USRDLL;LIBCLAMAV_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;PTW32_STATIC_LIB;THIS_IS_LIBCLAMAV;WIN32;PCRE_STATIC;NDEBUG;_WINDOWS;_USRDLL;LIBCLAMAV_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\libxml2;$(SolutionDir)3rdparty\libxml2\include;$(SolutionDir)3rdparty\pcre;$(SolutionDir)..;C:\clamdeps\win32\openssl\include</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4996;4090;4244;4018;4101;4333;4146</DisableSpecificWarnings>
@@ -147,8 +147,8 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;PTW32_STATIC_LIB;THIS_IS_LIBCLAMAV;WIN32;NDEBUG;_WINDOWS;_USRDLL;LIBCLAMAV_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\libxml2;$(SolutionDir)3rdparty\libxml2\include;$(SolutionDir)..;C:\clamdeps\win64\openssl\include</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;PTW32_STATIC_LIB;THIS_IS_LIBCLAMAV;WIN32;PCRE_STATIC;NDEBUG;_WINDOWS;_USRDLL;LIBCLAMAV_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\libxml2;$(SolutionDir)3rdparty\libxml2\include;$(SolutionDir)3rdparty\pcre;$(SolutionDir)..;C:\clamdeps\win64\openssl\include</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4996;4090;4244;4018;4101;4333;4146;4267;4334</DisableSpecificWarnings>
     </ClCompile>
