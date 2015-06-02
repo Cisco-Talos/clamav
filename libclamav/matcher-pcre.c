@@ -689,7 +689,7 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
                         cli_errmsg("cli_pcre_scanbuff: Can't allocate memory for newres %u\n", sizeof(struct cli_ac_result));
                         return CL_EMEM;
                     }
-                    newres->virname = NULL;    /* get value? */
+                    newres->virname = pm->virname;
                     newres->customdata = NULL; /* get value? */
                     newres->next = *res;
                     newres->offset = adjbuffer+ovector[0];
