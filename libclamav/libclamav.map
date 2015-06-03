@@ -65,6 +65,11 @@ CLAMAV_PRIVATE {
     cli_sigperf_events_destroy; 
     cli_pcre_perf_print;
     cli_pcre_perf_events_destroy;
+    cli_pcre_init;
+    cli_pcre_build;
+    cli_pcre_scanbuf;
+    cli_pcre_recaloff;
+    cli_pcre_freeoff;
 
     cli_gettmpdir;
     cli_strtok;

@@ -30,6 +30,8 @@
 #include "../libclamav/matcher.h"
 #include "../libclamav/matcher-ac.h"
 #include "../libclamav/matcher-bm.h"
+#include "../libclamav/matcher-pcre.h"
+#include "../libclamav/regex_pcre.h"
 #include "../libclamav/others.h"
 #include "../libclamav/default.h"
 #include "checks.h"
@@ -40,20 +42,34 @@ static const struct ac_testdata_s {
     const char *virname;
 } ac_testdata[] = {
     /* IMPORTANT: ac_testdata[i].hexsig should only match ac_testdata[i].data */
-    { "daaaaaaaaddbbbbbcce", "64[4-4]61616161{2}6262[3-6]65", "Test_1" },
-    { "ebbbbbbbbeecccccddf", "6262(6162|6364|6265|6465){2}6363", "Test_2" },
-    { "aaaabbbbcccccdddddeeee", "616161*63636363*6565", "Test_3" },
-    { "oprstuwxy","6f??727374????7879", "Test_4" },
-    { "abdcabcddabccadbbdbacb", "6463{2-3}64646162(63|64|65)6361*6462????6261{-1}6362", "Test_5" },
-    { "abcdefghijkabcdefghijk", "62????65666768*696a6b6162{2-3}656667[1-3]6b", "Test_6" },
-    { "abcadbabcadbabcacb", "6?6164?26?62{3}?26162?361", "Test_7" },
+    { "daaaaaaaaddbbbbbcce", "64[4-4]61616161{2}6262[3-6]65", "Test_1: anchored and ranged wildcard" },
+    { "ebbbbbbbbeecccccddf", "6262(6162|6364|6265|6465){2}6363", "Test_2: multi-byte fixed alternate w/ ranged wild" },
+    { "aaaabbbbcccccdddddeeee", "616161*63636363*6565", "Test_3: unbounded wildcards" },
+    { "oprstuwxy","6f??727374????7879", "Test_4: nibble wildcards" },
+    { "abdcabcddabccadbbdbacb", "6463{2-3}64646162(63|64|65)6361*6462????6261{-1}6362", "Test_5: various wildcard combinations w/ alternate" },
+    { "abcdefghijkabcdefghijk", "62????65666768*696a6b6162{2-3}656667[1-3]6b", "Test_6: various wildcard combinations" },
+    { "abcadbabcadbabcacb", "6?6164?26?62{3}?26162?361", "Test_7: nibble and ranged wildcards" },
     /* testcase for filter bug: it was checking only first 32 chars, and last
      * maxpatlen */
-    { "\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1dddddddddddddddddddd5\1\1\1\1\1\1\1\1\1\1\1\1\1","6464646464646464646464646464646464646464(35|36)","Test_8"},
+    { "\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1dddddddddddddddddddd5\1\1\1\1\1\1\1\1\1\1\1\1\1","6464646464646464646464646464646464646464(35|36)","Test_8: filter bug"},
 
-    { NULL, NULL, NULL}
+    { NULL, NULL, NULL }
 };
 
+#if HAVE_PCRE
+
+static const struct pcre_testdata_s {
+    const char *data;
+    const char *hexsig;
+    const char *offset;
+    const char *virname;
+    const uint8_t expected_result;
+} pcre_testdata[] = {
+    { "clamav", "/clamav/", "*", "Test_1: simple string", CL_VIRUS },
+    { NULL, NULL, NULL, NULL, CL_CLEAN }
+};
+
+#endif /* HAVE_PCRE */
 
 static cli_ctx ctx;
 static fmap_t *thefmap = NULL;
@@ -227,6 +243,121 @@ START_TEST (test_bm_scanbuff_allscan) {
 }
 END_TEST
 
+#if HAVE_PCRE
+
+START_TEST (test_pcre_scanbuff) {
+	struct cli_ac_data mdata;
+	struct cli_matcher *root;
+	char *hexsig;
+	unsigned int i, hexlen;
+	int ret;
+
+    root = ctx.engine->root[0];
+    fail_unless(root != NULL, "root == NULL");
+
+#ifdef USE_MPOOL
+    root->mempool = mpool_create();
+#endif
+    ret = cli_pcre_init();
+    fail_unless(ret == CL_SUCCESS, "[pcre] cli_pcre_init() failed");
+
+    for(i = 0; pcre_testdata[i].data; i++) {
+	hexlen = strlen(PCRE_BYPASS) + strlen(pcre_testdata[i].hexsig) + 1;
+
+	hexsig = cli_calloc(hexlen, sizeof(char));
+	fail_unless(hexsig != NULL, "[pcre] failed to prepend bypass (out-of-memory)");
+
+	strncat(hexsig, PCRE_BYPASS, hexlen);
+	strncat(hexsig, pcre_testdata[i].hexsig, hexlen);
+
+	ret = cli_parse_add(root, pcre_testdata[i].virname, hexsig, 0, 0, 0, pcre_testdata[i].offset, 0, NULL, 0);
+	fail_unless(ret == CL_SUCCESS, "[pcre] cli_parse_add() failed");
+	free(hexsig);
+    }
+
+    ret = cli_pcre_build(root, CLI_DEFAULT_PCRE_MATCH_LIMIT, CLI_DEFAULT_PCRE_RECMATCH_LIMIT, NULL);
+    fail_unless(ret == CL_SUCCESS, "[pcre] cli_pcre_build() failed");
+
+    // recomputate offsets
+
+    ret = cli_ac_initdata(&mdata, root->ac_partsigs, root->ac_lsigs, root->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN);
+    fail_unless(ret == CL_SUCCESS, "[pcre] cli_ac_initdata() failed");
+
+    for(i = 0; pcre_testdata[i].data; i++) {
+	ret = cli_pcre_scanbuf((const unsigned char*)pcre_testdata[i].data, strlen(pcre_testdata[i].data), &virname, NULL, root, NULL, NULL, NULL);
+	fail_unless_fmt(ret == pcre_testdata[i].expected_result, "[pcre] cli_pcre_scanbuff() failed for %s (%d != %d)", pcre_testdata[i].virname, ret, pcre_testdata[i].expected_result);
+	if (pcre_testdata[i].expected_result == CL_VIRUS)
+	    fail_unless_fmt(!strncmp(virname, pcre_testdata[i].virname, strlen(pcre_testdata[i].virname)), "[pcre] Dataset %u matched with %s", i, virname);
+
+	ret = cli_scanbuff((const unsigned char*)pcre_testdata[i].data, strlen(pcre_testdata[i].data), 0, &ctx, 0, NULL);
+	fail_unless_fmt(ret == pcre_testdata[i].expected_result, "[pcre] cli_scanbuff() failed for %s", pcre_testdata[i].virname);
+    }
+
+    cli_ac_freedata(&mdata);
+}
+END_TEST
+
+START_TEST (test_pcre_scanbuff_allscan) {
+	struct cli_ac_data mdata;
+	struct cli_matcher *root;
+	char *hexsig;
+	unsigned int i, hexlen;
+	int ret;
+
+    root = ctx.engine->root[0];
+    fail_unless(root != NULL, "root == NULL");
+
+#ifdef USE_MPOOL
+    root->mempool = mpool_create();
+#endif
+    ret = cli_pcre_init();
+    fail_unless(ret == CL_SUCCESS, "[pcre] cli_pcre_init() failed");
+
+    for(i = 0; pcre_testdata[i].data; i++) {
+	hexlen = strlen(PCRE_BYPASS) + strlen(pcre_testdata[i].hexsig) + 1;
+
+	hexsig = cli_calloc(hexlen, sizeof(char));
+	fail_unless(hexsig != NULL, "[pcre] failed to prepend bypass (out-of-memory)");
+
+	strncat(hexsig, PCRE_BYPASS, hexlen);
+	strncat(hexsig, pcre_testdata[i].hexsig, hexlen);
+
+	ret = cli_parse_add(root, pcre_testdata[i].virname, hexsig, 0, 0, 0, pcre_testdata[i].offset, 0, NULL, 0);
+	fail_unless(ret == CL_SUCCESS, "[pcre] cli_parse_add() failed");
+	free(hexsig);
+    }
+
+    ret = cli_pcre_build(root, CLI_DEFAULT_PCRE_MATCH_LIMIT, CLI_DEFAULT_PCRE_RECMATCH_LIMIT, NULL);
+    fail_unless(ret == CL_SUCCESS, "[pcre] cli_pcre_build() failed");
+
+    // recomputate offsets
+
+    ret = cli_ac_initdata(&mdata, root->ac_partsigs, root->ac_lsigs, root->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN);
+    fail_unless(ret == CL_SUCCESS, "[pcre] cli_ac_initdata() failed");
+
+    ctx.options |= CL_SCAN_ALLMATCHES;
+    for(i = 0; pcre_testdata[i].data; i++) {
+	ret = cli_pcre_scanbuf((const unsigned char*)pcre_testdata[i].data, strlen(pcre_testdata[i].data), &virname, NULL, root, NULL, NULL, NULL);
+	fail_unless_fmt(ret == pcre_testdata[i].expected_result, "[pcre] cli_pcre_scanbuff() failed for %s (%d != %d)", pcre_testdata[i].virname, ret, pcre_testdata[i].expected_result);
+	if (pcre_testdata[i].expected_result == CL_VIRUS)
+	    fail_unless_fmt(!strncmp(virname, pcre_testdata[i].virname, strlen(pcre_testdata[i].virname)), "[pcre] Dataset %u matched with %s", i, virname);
+
+	ret = cli_scanbuff((const unsigned char*)pcre_testdata[i].data, strlen(pcre_testdata[i].data), 0, &ctx, 0, NULL);
+	fail_unless_fmt(ret == pcre_testdata[i].expected_result, "[pcre] cli_scanbuff() failed for %s", pcre_testdata[i].virname);
+	/* num_virus field add to test case struct */
+	if (ctx.num_viruses) {
+	    free((void *)ctx.virname);
+	    ctx.num_viruses = 0;
+	    ctx.size_viruses = 0;
+	}
+    }
+
+    cli_ac_freedata(&mdata);
+}
+END_TEST
+
+#endif /* HAVE_PCRE */
+
 Suite *test_matchers_suite(void)
 {
     Suite *s = suite_create("matchers");
@@ -236,8 +367,14 @@ Suite *test_matchers_suite(void)
     tcase_add_checked_fixture (tc_matchers, setup, teardown);
     tcase_add_test(tc_matchers, test_ac_scanbuff);
     tcase_add_test(tc_matchers, test_bm_scanbuff);
+#if HAVE_PCRE
+    tcase_add_test(tc_matchers, test_pcre_scanbuff);
+#endif
     tcase_add_test(tc_matchers, test_ac_scanbuff_allscan);
     tcase_add_test(tc_matchers, test_bm_scanbuff_allscan);
+#if HAVE_PCRE
+    tcase_add_test(tc_matchers, test_pcre_scanbuff_allscan);
+#endif
     return s;
 }
 
