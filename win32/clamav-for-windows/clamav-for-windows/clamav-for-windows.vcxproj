@@ -92,7 +92,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;CLAMAPI= __declspec(dllexport);WIN32;_DEBUG;_WINDOWS;_USRDLL;CLAMAVFORWINDOWS_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)..;$(SolutionDir)..\..\libclamav;$(SolutionDir)..\compat;$(SolutionDir)..\3rdparty\zlib;$(SolutionDir)..\3rdparty\pthreads;$(SolutionDir)..\..;C:\clamdeps\win32\openssl\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..;$(SolutionDir)..\..\libclamav;$(SolutionDir)..\compat;$(SolutionDir)..\3rdparty\zlib;$(SolutionDir)..\3rdparty\pthreads;$(SolutionDir)..\3rdparty\pcre;$(SolutionDir)..\..;C:\clamdeps\win32\openssl\include</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
     </ClCompile>
@@ -113,7 +113,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;CLAMAPI= __declspec(dllexport);WIN32;_DEBUG;_WINDOWS;_USRDLL;CLAMAVFORWINDOWS_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)..;$(SolutionDir)..\..\libclamav;$(SolutionDir)..\compat;$(SolutionDir)..\3rdparty\zlib;$(SolutionDir)..\3rdparty\pthreads;$(SolutionDir)..\..;C:\clamdeps\win64\openssl\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..;$(SolutionDir)..\..\libclamav;$(SolutionDir)..\compat;$(SolutionDir)..\3rdparty\zlib;$(SolutionDir)..\3rdparty\pthreads;$(SolutionDir)..\3rdparty\pcre;$(SolutionDir)..\..;C:\clamdeps\win64\openssl\include</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4996;4267</DisableSpecificWarnings>
     </ClCompile>
@@ -136,7 +136,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;CLAMAPI= __declspec(dllexport);WIN32;NDEBUG;_WINDOWS;_USRDLL;CLAMAVFORWINDOWS_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)..;$(SolutionDir)..\..\libclamav;$(SolutionDir)..\compat;$(SolutionDir)..\3rdparty\zlib;$(SolutionDir)..\3rdparty\pthreads;$(SolutionDir)..\..;C:\clamdeps\win32\openssl\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..;$(SolutionDir)..\..\libclamav;$(SolutionDir)..\compat;$(SolutionDir)..\3rdparty\zlib;$(SolutionDir)..\3rdparty\pthreads;$(SolutionDir)..\3rdparty\pcre;$(SolutionDir)..\..;C:\clamdeps\win32\openssl\include</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
     </ClCompile>
@@ -161,7 +161,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;CLAMAPI= __declspec(dllexport);WIN32;NDEBUG;_WINDOWS;_USRDLL;CLAMAVFORWINDOWS_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)..;$(SolutionDir)..\..\libclamav;$(SolutionDir)..\compat;$(SolutionDir)..\3rdparty\zlib;$(SolutionDir)..\3rdparty\pthreads;$(SolutionDir)..\..;C:\clamdeps\win64\openssl\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..;$(SolutionDir)..\..\libclamav;$(SolutionDir)..\compat;$(SolutionDir)..\3rdparty\zlib;$(SolutionDir)..\3rdparty\pthreads;$(SolutionDir)..\3rdparty\pcre;$(SolutionDir)..\..;C:\clamdeps\win64\openssl\include</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4996;4267</DisableSpecificWarnings>
     </ClCompile>
