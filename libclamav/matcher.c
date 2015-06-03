@@ -107,7 +107,7 @@ static inline int matcher_run(const struct cli_matcher *root,
 			      struct cli_pcre_off *poffdata,
 			      cli_ctx *ctx)
 {
-    int ret, tmp;
+    int ret;
     int32_t pos = 0;
     struct filter_match_info info;
     uint32_t orig_length, orig_offset;
@@ -162,11 +162,18 @@ static inline int matcher_run(const struct cli_matcher *root,
     }
     PERF_LOG_TRIES(acmode, 0, length);
     ret = cli_ac_scanbuff(buffer, length, virname, NULL, acres, root, mdata, offset, ftype, ftoffset, acmode, ctx);
+	if (ret != CL_CLEAN) {
+	    if (ret != CL_VIRUS)
+		return ret;
 
-    if (ctx && !SCAN_ALL && ret == CL_VIRUS)
-	cli_append_virus(ctx, *virname);
-    if (ctx && SCAN_ALL && viruses_found)
-	return CL_VIRUS;
+	    /* else (ret == CL_VIRUS) */
+	    if (SCAN_ALL)
+		viruses_found = 1;
+	    else {
+		cli_append_virus(ctx, *virname);
+		return ret;
+	    }
+	}
 
     /* due to logical triggered, pcres cannot be evaluated until after full subsig matching */
     /* cannot save pcre execution state without possible evasion; must scan entire buffer */
@@ -194,10 +201,7 @@ static inline int matcher_run(const struct cli_matcher *root,
                     return CL_EMEM;
 
                 /* scan the full buffer */
-                tmp = cli_pcre_scanbuf(buffer, map->len, root, mdata, acres, poffdata, ctx);
-                if((tmp == CL_VIRUS && !SCAN_ALL) || tmp == CL_EMEM) {
-                    return tmp;
-                }
+                ret = cli_pcre_scanbuf(buffer, map->len, virname, acres, root, mdata, poffdata, ctx);
             }
         }
         else if (pcremode == PCRE_SCAN_BUFF) {
@@ -212,14 +216,17 @@ static inline int matcher_run(const struct cli_matcher *root,
 
             cli_dbgmsg("matcher_run: performing regex matching on buffer with no map: %u+%u(%u)\n", offset, length, offset+length);
             /* scan the specified buffer */
-            tmp = cli_pcre_scanbuf(buffer, length, root, mdata, acres, poffdata, ctx);
-            if((tmp == CL_VIRUS && !SCAN_ALL) || tmp == CL_EMEM) {
-                return tmp;
-            }
+            ret = cli_pcre_scanbuf(buffer, length, virname, acres, root, mdata, poffdata, ctx);
         }
     }
 #endif /* HAVE_PCRE */
     /* end experimental fragment */
+
+    if (ctx && !SCAN_ALL && ret == CL_VIRUS)
+        cli_append_virus(ctx, *virname);
+    if (ctx && SCAN_ALL && viruses_found)
+        return CL_VIRUS;
+
     return ret;
 }
 

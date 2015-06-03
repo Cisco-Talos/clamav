@@ -551,7 +551,7 @@ int cli_pcre_qoff(struct cli_pcre_meta *pm, uint32_t length, uint32_t *adjbuffer
     return CL_SUCCESS;
 }
 
-int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct cli_matcher *root, struct cli_ac_data *mdata, struct cli_ac_result **res, const struct cli_pcre_off *data, cli_ctx *ctx)
+int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const char **virname, struct cli_ac_result **res, const struct cli_matcher *root, struct cli_ac_data *mdata, const struct cli_pcre_off *data, cli_ctx *ctx)
 {
     struct cli_pcre_meta **metatable = root->pcre_metatable, *pm = NULL;
     struct cli_pcre_data *pd;
@@ -560,7 +560,8 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
     unsigned int i, evalcnt;
     uint64_t evalids, maxfilesize;
     uint32_t global, encompass, rolling;
-    int rc, offset, options=0, ovector[OVECCOUNT];
+    int rc, lrc, offset, options=0, ovector[OVECCOUNT];
+    uint8_t viruses_found = 0;
 
     if ((!root->pcre_metatable) || (ctx && ctx->dconf && !(ctx->dconf->pcre & PCRE_CONF_SUPPORT))) {
         return CL_SUCCESS;
@@ -660,6 +661,8 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
 
             /* matched, rc shouldn't be >0 unless a full match occurs */
             if (rc > 0) {
+                cli_dbgmsg("cli_pcre_scanbuf: located regex match @ %d\n", adjbuffer+ovector[0]);
+
                 /* check if we've gone over offset+shift */
                 if (!encompass && adjshift) {
                     if (ovector[0] > adjshift) {
@@ -677,23 +680,32 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
                     pm_dbgmsg("cli_pcre_scanbuf: assigning lsigcnt[%d][%d], located @ %d\n",
                               pm->lsigid[1], pm->lsigid[2], adjbuffer+ovector[0]);
 
-                    lsig_sub_matched(root, mdata, pm->lsigid[1], pm->lsigid[2], adjbuffer+ovector[0], 0);
-                }
-
-                cli_dbgmsg("cli_pcre_scanbuf: located regex match @ %d\n", adjbuffer+ovector[0]);
-
-                /* for raw match data - sigtool only */
-                if(res) {
-                    newres = (struct cli_ac_result *) malloc(sizeof(struct cli_ac_result));
-                    if(!newres) {
-                        cli_errmsg("cli_pcre_scanbuff: Can't allocate memory for newres %u\n", sizeof(struct cli_ac_result));
-                        return CL_EMEM;
+                    lrc = lsig_sub_matched(root, mdata, pm->lsigid[1], pm->lsigid[2], adjbuffer+ovector[0], 0);
+                    if (lrc != CL_SUCCESS)
+                        return lrc;
+                } else {
+                    /* for raw match data - sigtool only */
+                    if(res) {
+                        newres = (struct cli_ac_result *)cli_calloc(1, sizeof(struct cli_ac_result));
+                        if(!newres) {
+                            cli_errmsg("cli_pcre_scanbuff: Can't allocate memory for newres %u\n", sizeof(struct cli_ac_result));
+                            return CL_EMEM;
+                        }
+                        newres->virname = pm->virname;
+                        newres->customdata = NULL; /* get value? */
+                        newres->next = *res;
+                        newres->offset = adjbuffer+ovector[0];
+                        *res = newres;
+                    } else {
+                        if (ctx && SCAN_ALL) {
+                            viruses_found = 1;
+                            cli_append_virus(ctx, (const char *)pm->virname);
+                        }
+                        if (virname)
+                            *virname = pm->virname;
+                        if (!ctx || !SCAN_ALL)
+                            return CL_VIRUS;
                     }
-                    newres->virname = pm->virname;
-                    newres->customdata = NULL; /* get value? */
-                    newres->next = *res;
-                    newres->offset = adjbuffer+ovector[0];
-                    *res = newres;
                 }
             }
 
@@ -726,6 +738,8 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const struct 
         }
     }
 
+    if (viruses_found)
+        return CL_VIRUS;
     return CL_SUCCESS;
 }
 
