@@ -2209,7 +2209,7 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
         fpt = ftoffset;
 
         while(fpt) {
-            switch(fpt->type) {
+            if(fpt->offset) switch(fpt->type) {
                 case CL_TYPE_XDP:
                     ret = cli_scanxdp(ctx);
                     break;
