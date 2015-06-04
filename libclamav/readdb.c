@@ -1741,7 +1741,8 @@ static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsig
         sig = tokens[3 + i];
 
         pt2 = strchr(tokens[3 + i], '/');
-        if((pt = strchr(tokens[3 + i], ':')) && (pt < pt2)) {
+        pt = strchr(tokens[3 + i], ':');
+        if(pt && (!pt2 || (pt < pt2))) {
             *pt = 0;
             sig = ++pt;
             offset = tokens[3 + i];
@@ -1749,6 +1750,7 @@ static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsig
             offset = "*";
             sig = tokens[3 + i];
         }
+
 
         if((ret = cli_parse_add(root, virname, sig, 0, 0, 0, offset, target, lsigid, options)))
             return ret;
