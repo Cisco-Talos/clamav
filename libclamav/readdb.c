@@ -1618,7 +1618,7 @@ static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsig
 {
     const char *sig, *virname, *offset, *logic;
     struct cli_ac_lsig **newtable, *lsig;
-    char *tokens[LDB_TOKENS+1], *pt;
+    char *tokens[LDB_TOKENS+1], *pt, *pt2;
     int i, subsigs, tokens_count;
     unsigned short target = 0;
     struct cli_matcher *root;
@@ -1740,7 +1740,8 @@ static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsig
         lsigid[1] = i;
         sig = tokens[3 + i];
 
-        if((pt = strchr(tokens[3 + i], ':'))) {
+        pt2 = strchr(tokens[3 + i], '/');
+        if((pt = strchr(tokens[3 + i], ':')) && (pt < pt2)) {
             *pt = 0;
             sig = ++pt;
             offset = tokens[3 + i];
