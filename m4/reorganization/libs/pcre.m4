@@ -57,14 +57,29 @@ PCRE_LIBS=""
 if test "x$PCRE_HOME" != "x"; then
   AC_MSG_CHECKING([pcre-config version])
   PCRECONF_VERSION="`$PCRE_HOME/bin/pcre-config --version`"
-  if test "x%PCRECONF_VERSION" != "x"; then
-    AC_MSG_RESULT([$PCRECONF_VERSION])
-    found_pcre="yes"
-    PCRE_CPPFLAGS="`$PCRE_HOME/bin/pcre-config --cflags`"
-    PCRE_LIBS="`$PCRE_HOME/bin/pcre-config --libs`"
-  else
+
+  if test "x$PCRECONF_VERSION" == "x"; then
     AC_MSG_ERROR([pcre-config failed])
   fi
+
+  AC_MSG_RESULT([$PCRECONF_VERSION])
+  AC_MSG_CHECKING([for CVE-2015-3210])
+  pcrever_major=`echo "$PCRECONF_VERSION" | sed -e 's/\([[0-9]]\).*/\1/'`
+  pcrever_minor=`echo "$PCRECONF_VERSION" | sed -e 's/[[0-9]]\.\(.*\)/\1/'`
+  if test $pcrever_major -eq 8; then
+    if test $pcrever_minor -gt 33 && test $pcrever_minor -lt 38; then
+       AC_MSG_RESULT([yes])
+       AC_MSG_WARN([The installed pcre version may contain a security bug. Please upgrade to 8.38 or later: http://www.pcre.org.])
+    else
+       AC_MSG_RESULT([ok])
+    fi
+  else
+    AC_MSG_RESULT([ok]);
+  fi
+  found_pcre="yes"
+  PCRE_CPPFLAGS="`$PCRE_HOME/bin/pcre-config --cflags`"
+  PCRE_LIBS="`$PCRE_HOME/bin/pcre-config --libs`"
+  
 fi
 
 have_pcre="no"
