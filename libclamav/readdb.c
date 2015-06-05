@@ -351,8 +351,10 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 
         return CL_SUCCESS;
     }
+    /* expected format => ^offset:trigger/regex/[cflags]$ */
     if (strrchr(hexsig, '/')) {
         char *start, *end;
+        const char *trigger, *pattern, *cflags;
 
         /* get copied */
         hexcpy = cli_strdup(hexsig);
@@ -369,9 +371,6 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
             return CL_EMALFDB;
         }
 #if HAVE_PCRE
-        /* expected format => ^offset:trigger/regex/[cflags]$ */
-        const char *trigger, *pattern, *cflags;
-
         /* get checked */
         if (hexsig[0] == '/') {
             cli_errmsg("cli_parseadd(): PCRE subsig must contain logical trigger\n");
