@@ -123,8 +123,9 @@ static int sigopts_handler(struct cli_matcher *root, const char *virname, const 
     char *hexcpy, *start, *end;
     int i, ret = CL_SUCCESS;
 
-    /* prevent cyclic loops with cli_parse_add on same hexsig
-     * cyclic loops should be impossible though
+    /*
+     * cyclic loops with cli_parse_add are impossible now as cli_parse_add 
+     * no longer calls sigopts_handler; leaving here for safety
      */
     if (sigopts & ACPATT_OPTION_ONCE) {
         cli_errmsg("sigopts_handler: invalidly called multiple times!\n");
@@ -351,7 +352,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
         return CL_SUCCESS;
     }
     if (strrchr(hexsig, '/')) {
-        char *start, *end, *sub;
+        char *start, *end;
 
         /* get copied */
         hexcpy = cli_strdup(hexsig);
@@ -362,75 +363,41 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
         start = strchr(hexcpy, '/');
         end = strrchr(hexcpy, '/');
 
-        /* get plus-ed (modifiers) */
-        sub = strchr(end, '+');
-        if (sub && start == end)
-            *end = '\0';
-
         /* get pcre-ed */
-        if (!sub && start != end) {
-#if HAVE_PCRE
-            /* expected format => ^offset:trigger/regex/[cflags]$ */
-            const char *trigger, *pattern, *cflags;
-
-            /* get checked */
-            if (hexsig[0] == '/') {
-                cli_errmsg("cli_parseadd(): PCRE subsig must contain logical trigger\n");
-                return CL_EMALFDB;
-            }
-
-            /* get NULL-ed */
-            *start = '\0';
-            *end = '\0';
-
-            /* get tokens-ed */
-            trigger = hexcpy;
-            pattern = start+1;
-            cflags = end+1;
-            if (*cflags == '\0') /* get compat-ed */
-                cflags = NULL;
-
-            /* normal trigger, get added */
-            ret = cli_pcre_addpatt(root, virname, trigger, pattern, cflags, offset, lsigid, options);
-            free(hexcpy);
-            return ret;
-#else
-            free(hexcpy);
-            cli_errmsg("cli_parseadd(): cannot parse PCRE subsig without PCRE support\n");
-            return CL_EPARSE;
-#endif
-        } else { /* get option-ed */
-            /* get NULL-ed */
-            char *opt = sub ? sub : end;
-            uint8_t sigopts = 0;
-
-            *opt++ = '\0';
-            while (*opt != '\0') {
-                switch (*opt) {
-                case 'i':
-                    sigopts |= ACPATT_OPTION_NOCASE;
-                    break;
-                case 'f':
-                    sigopts |= ACPATT_OPTION_FULLWORD;
-                    break;
-                case 'w':
-                    sigopts |= ACPATT_OPTION_WIDE;
-                    break;
-                case 'a':
-                    sigopts |= ACPATT_OPTION_ASCII;
-                    break;
-                default:
-                    cli_errmsg("cli_parse_add: Signature for %s uses invalid option: %02x\n", virname, *opt);
-                    return CL_EMALFDB;
-                }
-
-                opt++;
-            }
-
-            ret = sigopts_handler(root, virname, hexcpy, sigopts, rtype, type, offset, target, lsigid, options);
-            free(hexcpy);
-            return ret;
+        if (start == end) {
+            cli_errmsg("cli_parseadd(): PCRE subsig mismatched '/' delimiter\n");
+            return CL_EMALFDB;
         }
+#if HAVE_PCRE
+        /* expected format => ^offset:trigger/regex/[cflags]$ */
+        const char *trigger, *pattern, *cflags;
+
+        /* get checked */
+        if (hexsig[0] == '/') {
+            cli_errmsg("cli_parseadd(): PCRE subsig must contain logical trigger\n");
+            return CL_EMALFDB;
+        }
+
+        /* get NULL-ed */
+        *start = '\0';
+        *end = '\0';
+
+        /* get tokens-ed */
+        trigger = hexcpy;
+        pattern = start+1;
+        cflags = end+1;
+        if (*cflags == '\0') /* get compat-ed */
+            cflags = NULL;
+
+        /* normal trigger, get added */
+        ret = cli_pcre_addpatt(root, virname, trigger, pattern, cflags, offset, lsigid, options);
+        free(hexcpy);
+        return ret;
+#else
+        free(hexcpy);
+        cli_errmsg("cli_parseadd(): cannot parse PCRE subsig without PCRE support\n");
+        return CL_EPARSE;
+#endif
     }
     else if((wild = strchr(hexsig, '{'))) {
         if(sscanf(wild, "%c%u%c", &l, &range, &r) == 3 && l == '{' && r == '}' && range > 0 && range < 128) {
@@ -1610,25 +1577,55 @@ static inline int init_tdb(struct cli_lsig_tdb *tdb, struct cl_engine *engine, c
 }
 
 /*     0         1        2      3        4        5    ... (max 66)
- * VirusName:Attributes:Logic:SubSig1[:SubSig2[:SubSig3 ... ]]
+ * VirusName;Attributes;Logic;SubSig1[;SubSig2[;SubSig3 ... ]]
  * NOTE: Maximum of 64(see MAX_LDB_SUBSIGS) subsignatures (last would be token 66)
  */
 #define LDB_TOKENS 67
+static int ldb_tokenize(char *buffer, const char **tokens)
+{
+    const size_t token_count = LDB_TOKENS + 1;
+    size_t tokens_found, i;
+    int within_pcre = 0;
+
+    for(tokens_found = 0; tokens_found < token_count; ) {
+        tokens[tokens_found++] = buffer;
+
+        while (*buffer != '\0') {
+            if (!within_pcre && (*buffer == ';'))
+                break;
+            else if ((tokens_found > 2) && (*buffer == '/'))
+                within_pcre = !within_pcre;
+            buffer++;
+        }
+
+        if(*buffer != '\0') {
+            *buffer++ = '\0';
+        } else {
+            i = tokens_found;
+            while(i < token_count)
+                tokens[i++] = NULL;
+            return tokens_found;
+        }
+    }
+    return tokens_found;
+}
+
 static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsigned int options, const char *dbname, unsigned int line, unsigned int *sigs, unsigned bc_idx, const char *buffer_cpy, int *skip)
 {
     const char *sig, *virname, *offset, *logic;
     struct cli_ac_lsig **newtable, *lsig;
-    char *tokens[LDB_TOKENS+1], *pt, *pt2;
+    char *tokens[LDB_TOKENS+1], *pt, *lsl, *rsl;
     int i, subsigs, tokens_count;
     unsigned short target = 0;
     struct cli_matcher *root;
     struct cli_lsig_tdb tdb;
     uint32_t lsigid[2];
+    uint8_t subsig_opts;
     int ret;
 
     UNUSEDPARAM(dbname);
 
-    tokens_count = cli_strtokenize(buffer, ';', LDB_TOKENS + 1, (const char **) tokens);
+    tokens_count = ldb_tokenize(buffer, (const char **) tokens);
     if(tokens_count < 4) {
         return CL_EMALFDB;
     }
@@ -1737,22 +1734,59 @@ static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsig
     tdb.subsigs = subsigs;
 
     for(i = 0; i < subsigs; i++) {
+        subsig_opts = 0;
+
         lsigid[1] = i;
+        offset = "*";
         sig = tokens[3 + i];
 
-        pt2 = strchr(tokens[3 + i], '/');
-        pt = strchr(tokens[3 + i], ':');
-        if(pt && (!pt2 || (pt < pt2))) {
-            *pt = 0;
-            sig = ++pt;
-            offset = tokens[3 + i];
-        } else {
-            offset = "*";
-            sig = tokens[3 + i];
+        /* check for offset and subsig modifiers */
+        pt = tokens[3 + i];
+        lsl = strchr(tokens[3 + i], '/');
+        rsl = strrchr(tokens[3 + i], '/');
+        while((pt = strchr(pt, ':'))) {
+            /* pcre subsig expression */
+            if((lsl && rsl) && (lsl < pt) && (pt <  rsl)) {
+                pt++;
+                continue;
+            }
+
+            *pt++ = 0;
+            if(*pt == ':') { /* signature modifiers */
+                *pt++ = 0;
+                while(*pt != '\0') {
+                    switch(*pt) {
+                    case 'i':
+                        subsig_opts |= ACPATT_OPTION_NOCASE;
+                        break;
+                    case 'f':
+                        subsig_opts |= ACPATT_OPTION_FULLWORD;
+                        break;
+                    case 'w':
+                        subsig_opts |= ACPATT_OPTION_WIDE;
+                        break;
+                    case 'a':
+                        subsig_opts |= ACPATT_OPTION_ASCII;
+                        break;
+                    default:
+                        cli_errmsg("cli_loadldb: Signature for %s uses invalid option: %02x\n", virname, *pt);
+                        return CL_EMALFDB;
+                    }
+
+                    pt++;
+                }
+            } else {
+                sig = pt;
+                offset = tokens[3 + i];
+            }
         }
 
+        if(subsig_opts)
+            ret = sigopts_handler(root, virname, sig, subsig_opts, 0, 0, offset, target, lsigid, options);
+        else
+            ret = cli_parse_add(root, virname, sig, 0, 0, 0, offset, target, lsigid, options);
 
-        if((ret = cli_parse_add(root, virname, sig, 0, 0, 0, offset, target, lsigid, options)))
+        if(ret)
             return ret;
 
         if(sig[0] == '$' && i) {
