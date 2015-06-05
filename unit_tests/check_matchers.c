@@ -66,6 +66,18 @@ static const struct pcre_testdata_s {
     const uint8_t expected_result;
 } pcre_testdata[] = {
     { "clamav", "/clamav/", "*", "Test_1: simple string", CL_VIRUS },
+    { "cla:mav", "/cla:mav/", "*", "Test_2: embedded colon", CL_VIRUS },
+
+    { "notbasic", "/basic/r", "0", "Test_3: rolling option", CL_VIRUS },
+    { "nottrue", "/true/", "0", "Test4: rolling(off) option", CL_SUCCESS },
+
+    { "not12345678truly", "/12345678/e", "3,8", "Test_5: encompass option", CL_VIRUS },
+    { "not23456789truly", "/23456789/e", "4,8", "Test6: encompass option (low end)", CL_SUCCESS },
+    { "not34567890truly", "/34567890/e", "3,7", "Test7: encompass option (high end)", CL_SUCCESS },
+
+    { "notapietruly", "/apie/re", "0,10", "Test8: rolling encompass", CL_VIRUS },
+    //{ "notafigtruly", "/afig/e", "0,10", "Test9: rolling(off) encompass", CL_SUCCESS },
+
     { NULL, NULL, NULL, NULL, CL_CLEAN }
 };
 
