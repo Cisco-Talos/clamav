@@ -1593,7 +1593,7 @@ static int ldb_tokenize(char *buffer, const char **tokens)
         while (*buffer != '\0') {
             if (!within_pcre && (*buffer == ';'))
                 break;
-            else if ((tokens_found > 2) && (*buffer == '/'))
+            else if ((tokens_found > 2) && (*(buffer-1) != '\\') && (*buffer == '/'))
                 within_pcre = !within_pcre;
             buffer++;
         }
