@@ -1110,12 +1110,12 @@ static int ac_findmatch_branch(const unsigned char *buffer, uint32_t offset, uin
             if(bp == length)
                 match = !match;
             /* 'wide' characters need a 'wider' check */
-            else if(pattern->sigopts & ACPATT_OPTION_WIDE) {
+            else if((pattern->sigopts & ACPATT_OPTION_WIDE) && (bp+1 < length)) {
                 if(!(isalnum(buffer[bp]) && buffer[bp + 1] == '\0'))
                     match = !match;
             }
             /* 'normal' characters */
-            else if(!isalnum(buffer[offset - 1]))
+            else if(!isalnum(buffer[bp]))
                 match = !match;
         }
 
