@@ -56,29 +56,79 @@ static const struct ac_testdata_s {
     { NULL, NULL, NULL }
 };
 
+static const struct ac_sigopts_testdata_s {
+    const char *data;
+    uint32_t dlength;
+    const char *hexsig;
+    const char *offset;
+    const uint16_t sigopts;
+    const char *virname;
+    const uint8_t expected_result;
+} ac_sigopts_testdata[] = {
+    /* nocase */
+    { "aaaaa", 5, "6161616161", "*", ACPATT_OPTION_NOOPTS, "AC_Sigopts_Test_1", CL_VIRUS }, /* control */
+    { "bBbBb", 5, "6262626262", "*", ACPATT_OPTION_NOOPTS, "AC_Sigopts_Test_2", CL_CLEAN }, /* nocase control */
+    { "cCcCc", 5, "6363636363", "*", ACPATT_OPTION_NOCASE, "AC_Sigopts_Test_3", CL_VIRUS }, /* nocase test */
+
+    /* fullword */
+    { "ddddd&e", 7, "6464646464", "*", ACPATT_OPTION_FULLWORD, "AC_Sigopts_Test_4", CL_VIRUS }, /* fullword start */
+    { "s&eeeee&e", 9, "6565656565", "*", ACPATT_OPTION_FULLWORD, "AC_Sigopts_Test_5", CL_VIRUS }, /* fullword middle */
+    { "s&fffff", 7, "6666666666", "*", ACPATT_OPTION_FULLWORD, "AC_Sigopts_Test_6", CL_VIRUS }, /* fullword end */
+    { "sggggg", 6, "6767676767", "*", ACPATT_OPTION_FULLWORD, "AC_Sigopts_Test_7", CL_CLEAN }, /* fullword fail start */
+    { "hhhhhe", 6, "6868686868", "*", ACPATT_OPTION_FULLWORD, "AC_Sigopts_Test_8", CL_CLEAN }, /* fullword fail end */
+
+    { "iiiii", 5, "(W)6969696969", "*", ACPATT_OPTION_NOOPTS, "AC_Sigopts_Test_9", CL_VIRUS }, /* fullword class start */
+    { "jjj&jj", 6, "6a6a6a(W)6a6a", "*", ACPATT_OPTION_NOOPTS, "AC_Sigopts_Test_10", CL_VIRUS }, /* fullword class middle */
+    { "kkkkk", 5, "6b6b6b6b6b(W)", "*", ACPATT_OPTION_NOOPTS, "AC_Sigopts_Test_11", CL_VIRUS }, /* fullword class end */
+    { "slllll", 6, "(W)6c6c6c6c6c", "*", ACPATT_OPTION_NOOPTS, "AC_Sigopts_Test_12", CL_CLEAN }, /* fullword fail start */
+    { "mmmmme", 6, "6d6d6d6d6d(W)", "*", ACPATT_OPTION_NOOPTS, "AC_Sigopts_Test_13", CL_CLEAN }, /* fullword class end */
+
+    { "nNnNn", 5, "6e6e6e6e6e", "*", ACPATT_OPTION_NOCASE | ACPATT_OPTION_FULLWORD, "AC_Sigopts_Test_14", CL_VIRUS }, /* nocase fullword */
+    { "soOoOo", 6, "6f6f6f6f6f", "*", ACPATT_OPTION_NOCASE | ACPATT_OPTION_FULLWORD, "AC_Sigopts_Test_15", CL_CLEAN }, /* nocase fullword start fail */
+    { "pPpPpe", 6, "7070707070", "*", ACPATT_OPTION_NOCASE | ACPATT_OPTION_FULLWORD, "AC_Sigopts_Test_16", CL_CLEAN }, /* nocase fullword end fail */
+
+    /* wide */
+    { "q\0q\0q\0q\0q\0", 10, "7171717171", "*", ACPATT_OPTION_WIDE, "AC_Sigopts_Test_17", CL_VIRUS }, /* control */
+    { "r\0R\0r\0R\0r\0", 10, "7272727272", "*", ACPATT_OPTION_WIDE | ACPATT_OPTION_NOCASE, "AC_Sigopts_Test_18", CL_VIRUS }, /* control */
+    { "s\0s\0s\0s\0s\0", 10, "7373737373", "*", ACPATT_OPTION_WIDE | ACPATT_OPTION_FULLWORD, "AC_Sigopts_Test_19", CL_VIRUS }, /* control */
+
+    { "t\0t\0t\0t\0t\0", 10, "7474747474", "*", ACPATT_OPTION_WIDE | ACPATT_OPTION_ASCII, "AC_Sigopts_Test_20", CL_VIRUS }, /* control */
+
+    { "u\0u\0u\0u\0u\0", 10, "7575757575", "*", ACPATT_OPTION_WIDE | ACPATT_OPTION_NOCASE | ACPATT_OPTION_FULLWORD, "AC_Sigopts_Test_21", CL_VIRUS }, /* control */
+    { "v\0v\0v\0v\0v\0", 10, "7676767676", "*", ACPATT_OPTION_WIDE | ACPATT_OPTION_NOCASE | ACPATT_OPTION_ASCII, "AC_Sigopts_Test_22", CL_VIRUS }, /* control */
+
+    { "w\0w\0w\0w\0w\0", 10, "7777777777", "*", ACPATT_OPTION_WIDE | ACPATT_OPTION_FULLWORD | ACPATT_OPTION_ASCII, "AC_Sigopts_Test_23", CL_VIRUS }, /* control */
+    { "x\0x\0x\0x\0x\0", 10, "7878787878", "*", ACPATT_OPTION_WIDE | ACPATT_OPTION_NOCASE | ACPATT_OPTION_FULLWORD | ACPATT_OPTION_ASCII, "AC_Sigopts_Test_24", CL_VIRUS }, /* control */
+
+    { NULL, 0, NULL, NULL, ACPATT_OPTION_NOOPTS, NULL, CL_CLEAN }
+};
+
 #if HAVE_PCRE
 
 static const struct pcre_testdata_s {
     const char *data;
     const char *hexsig;
     const char *offset;
+    const uint16_t sigopts;
     const char *virname;
     const uint8_t expected_result;
 } pcre_testdata[] = {
-    { "clamav", "/clamav/", "*", "Test_1: simple string", CL_VIRUS },
-    { "cla:mav", "/cla:mav/", "*", "Test_2: embedded colon", CL_VIRUS },
+    { "clamav", "/clamav/", "*", ACPATT_OPTION_NOOPTS, "Test_1: simple string", CL_VIRUS },
+    { "cla:mav", "/cla:mav/", "*", ACPATT_OPTION_NOOPTS, "Test_2: embedded colon", CL_VIRUS },
 
-    { "notbasic", "/basic/r", "0", "Test_3: rolling option", CL_VIRUS },
-    { "nottrue", "/true/", "0", "Test4: rolling(off) option", CL_SUCCESS },
+    { "notbasic", "/basic/r", "0", ACPATT_OPTION_NOOPTS, "Test_3: rolling option", CL_VIRUS },
+    { "nottrue", "/true/", "0", ACPATT_OPTION_NOOPTS, "Test4: rolling(off) option", CL_SUCCESS },
 
-    { "not12345678truly", "/12345678/e", "3,8", "Test_5: encompass option", CL_VIRUS },
-    { "not23456789truly", "/23456789/e", "4,8", "Test6: encompass option (low end)", CL_SUCCESS },
-    { "not34567890truly", "/34567890/e", "3,7", "Test7: encompass option (high end)", CL_SUCCESS },
+    { "not12345678truly", "/12345678/e", "3,8", ACPATT_OPTION_NOOPTS, "Test_5: encompass option", CL_VIRUS },
+    { "not23456789truly", "/23456789/e", "4,8", ACPATT_OPTION_NOOPTS, "Test6: encompass option (low end)", CL_SUCCESS },
+    { "not34567890truly", "/34567890/e", "3,7", ACPATT_OPTION_NOOPTS, "Test7: encompass option (high end)", CL_SUCCESS },
 
-    { "notapietruly", "/apie/re", "0,10", "Test8: rolling encompass", CL_VIRUS },
-    //{ "notafigtruly", "/afig/e", "0,10", "Test9: rolling(off) encompass", CL_SUCCESS },
+    { "notapietruly", "/apie/re", "2,2", ACPATT_OPTION_NOOPTS, "Test8: rolling encompass", CL_SUCCESS },
+    { "notafigtruly", "/afig/e", "2,2", ACPATT_OPTION_NOOPTS, "Test9: rolling(off) encompass", CL_SUCCESS },
+    { "notatretruly", "/atre/re", "2,6", ACPATT_OPTION_NOOPTS, "Test10: rolling encompass", CL_VIRUS },
+    { "notasadtruly", "/asad/e", "2,6", ACPATT_OPTION_NOOPTS, "Test11: rolling(off) encompass", CL_VIRUS },
 
-    { NULL, NULL, NULL, NULL, CL_CLEAN }
+    { NULL, NULL, NULL, ACPATT_OPTION_NOOPTS, NULL, CL_CLEAN }
 };
 
 #endif /* HAVE_PCRE */
@@ -151,34 +201,6 @@ START_TEST (test_ac_scanbuff) {
 }
 END_TEST
 
-START_TEST (test_bm_scanbuff) {
-	struct cli_matcher *root;
-	const char *virname = NULL;
-	int ret;
-
-
-    root = ctx.engine->root[0];
-    fail_unless(root != NULL, "root == NULL");
-
-#ifdef USE_MPOOL
-    root->mempool = mpool_create();
-#endif
-    ret = cli_bm_init(root);
-    fail_unless(ret == CL_SUCCESS, "cli_bm_init() failed");
-
-    ret = cli_parse_add(root, "Sig1", "deadbabe", 0, 0, 0, "*", 0, NULL, 0);
-    fail_unless(ret == CL_SUCCESS, "cli_parse_add() failed");
-    ret = cli_parse_add(root, "Sig2", "deadbeef", 0, 0, 0, "*", 0, NULL, 0);
-    fail_unless(ret == CL_SUCCESS, "cli_parse_add() failed");
-    ret = cli_parse_add(root, "Sig3", "babedead", 0, 0, 0, "*", 0, NULL, 0);
-    fail_unless(ret == CL_SUCCESS, "cli_parse_add() failed");
-
-    ret = cli_bm_scanbuff((const unsigned char*)"blah\xde\xad\xbe\xef", 12, &virname, NULL, root, 0, NULL, NULL, NULL);
-    fail_unless(ret == CL_VIRUS, "cli_bm_scanbuff() failed");
-    fail_unless(!strncmp(virname, "Sig2", 4), "Incorrect signature matched in cli_bm_scanbuff()\n");
-}
-END_TEST
-
 START_TEST (test_ac_scanbuff_allscan) {
 	struct cli_ac_data mdata;
 	struct cli_matcher *root;
@@ -224,6 +246,122 @@ START_TEST (test_ac_scanbuff_allscan) {
      }
 
     cli_ac_freedata(&mdata);
+}
+END_TEST
+
+START_TEST (test_ac_scanbuff_ex) {
+	struct cli_ac_data mdata;
+	struct cli_matcher *root;
+	unsigned int i;
+	int ret;
+
+    root = ctx.engine->root[0];
+    fail_unless(root != NULL, "root == NULL");
+    root->ac_only = 1;
+
+#ifdef USE_MPOOL
+    root->mempool = mpool_create();
+#endif
+    ret = cli_ac_init(root, CLI_DEFAULT_AC_MINDEPTH, CLI_DEFAULT_AC_MAXDEPTH, 1);
+    fail_unless(ret == CL_SUCCESS, "[ac_ex] cli_ac_init() failed");
+
+    for(i = 0; ac_sigopts_testdata[i].data; i++) {
+	ret = cli_sigopts_handler(root, ac_sigopts_testdata[i].virname, ac_sigopts_testdata[i].hexsig, ac_sigopts_testdata[i].sigopts, 0, 0, ac_sigopts_testdata[i].offset, 0, NULL, 0);
+	fail_unless(ret == CL_SUCCESS, "[ac_ex] cli_sigopts_handler() failed");
+    }
+
+    ret = cli_ac_buildtrie(root);
+    fail_unless(ret == CL_SUCCESS, "[ac_ex] cli_ac_buildtrie() failed");
+
+    ret = cli_ac_initdata(&mdata, root->ac_partsigs, 0, 0, CLI_DEFAULT_AC_TRACKLEN);
+    fail_unless(ret == CL_SUCCESS, "[ac_ex] cli_ac_initdata() failed");
+
+    for(i = 0; ac_sigopts_testdata[i].data; i++) {
+	ret = cli_ac_scanbuff((const unsigned char*)ac_sigopts_testdata[i].data, ac_sigopts_testdata[i].dlength, &virname, NULL, NULL, root, &mdata, 0, 0, NULL, AC_SCAN_VIR, NULL);
+	fail_unless_fmt(ret == ac_sigopts_testdata[i].expected_result, "[ac_ex] cli_ac_scanbuff() failed for %s (%d != %d)", ac_sigopts_testdata[i].virname, ret, ac_sigopts_testdata[i].expected_result);
+	if (ac_sigopts_testdata[i].expected_result == CL_VIRUS)
+	    fail_unless_fmt(!strncmp(virname, ac_sigopts_testdata[i].virname, strlen(ac_sigopts_testdata[i].virname)), "[ac_ex] Dataset %u matched with %s", i, virname);
+
+	ret = cli_scanbuff((const unsigned char*)ac_sigopts_testdata[i].data, ac_sigopts_testdata[i].dlength, 0, &ctx, 0, NULL);
+	fail_unless_fmt(ret == ac_sigopts_testdata[i].expected_result, "[ac_ex] cli_ac_scanbuff() failed for %s (%d != %d)", ac_sigopts_testdata[i].virname, ret, ac_sigopts_testdata[i].expected_result);
+    }
+
+    cli_ac_freedata(&mdata);
+}
+END_TEST
+
+START_TEST (test_ac_scanbuff_allscan_ex) {
+	struct cli_ac_data mdata;
+	struct cli_matcher *root;
+	unsigned int i;
+	int ret;
+
+    root = ctx.engine->root[0];
+    fail_unless(root != NULL, "root == NULL");
+    root->ac_only = 1;
+
+#ifdef USE_MPOOL
+    root->mempool = mpool_create();
+#endif
+    ret = cli_ac_init(root, CLI_DEFAULT_AC_MINDEPTH, CLI_DEFAULT_AC_MAXDEPTH, 1);
+    fail_unless(ret == CL_SUCCESS, "[ac_ex] cli_ac_init() failed");
+
+    for(i = 0; ac_sigopts_testdata[i].data; i++) {
+	ret = cli_sigopts_handler(root, ac_sigopts_testdata[i].virname, ac_sigopts_testdata[i].hexsig, ac_sigopts_testdata[i].sigopts, 0, 0, ac_sigopts_testdata[i].offset, 0, NULL, 0);
+	fail_unless(ret == CL_SUCCESS, "[ac_ex] cli_sigopts_handler() failed");
+    }
+
+    ret = cli_ac_buildtrie(root);
+    fail_unless(ret == CL_SUCCESS, "[ac_ex] cli_ac_buildtrie() failed");
+
+    ret = cli_ac_initdata(&mdata, root->ac_partsigs, 0, 0, CLI_DEFAULT_AC_TRACKLEN);
+    fail_unless(ret == CL_SUCCESS, "[ac_ex] cli_ac_initdata() failed");
+
+    ctx.options |= CL_SCAN_ALLMATCHES;
+    for(i = 0; ac_sigopts_testdata[i].data; i++) {
+	ret = cli_ac_scanbuff((const unsigned char*)ac_sigopts_testdata[i].data, ac_sigopts_testdata[i].dlength, &virname, NULL, NULL, root, &mdata, 0, 0, NULL, AC_SCAN_VIR, NULL);
+	fail_unless_fmt(ret == ac_sigopts_testdata[i].expected_result, "[ac_ex] cli_ac_scanbuff() failed for %s (%d != %d)", ac_sigopts_testdata[i].virname, ret, ac_sigopts_testdata[i].expected_result);
+	if (ac_sigopts_testdata[i].expected_result == CL_VIRUS)
+	    fail_unless_fmt(!strncmp(virname, ac_sigopts_testdata[i].virname, strlen(ac_sigopts_testdata[i].virname)), "[ac_ex] Dataset %u matched with %s", i, virname);
+
+	ret = cli_scanbuff((const unsigned char*)ac_sigopts_testdata[i].data, ac_sigopts_testdata[i].dlength, 0, &ctx, 0, NULL);
+	fail_unless_fmt(ret == ac_sigopts_testdata[i].expected_result, "[ac_ex] cli_ac_scanbuff() failed for %s (%d != %d)", ac_sigopts_testdata[i].virname, ret, ac_sigopts_testdata[i].expected_result);
+	if (ctx.num_viruses) {
+	    free((void *)ctx.virname);
+	    ctx.num_viruses = 0;
+	    ctx.size_viruses = 0;
+	}
+    }
+
+    cli_ac_freedata(&mdata);
+}
+END_TEST
+
+START_TEST (test_bm_scanbuff) {
+	struct cli_matcher *root;
+	const char *virname = NULL;
+	int ret;
+
+
+    root = ctx.engine->root[0];
+    fail_unless(root != NULL, "root == NULL");
+
+#ifdef USE_MPOOL
+    root->mempool = mpool_create();
+#endif
+    ret = cli_bm_init(root);
+    fail_unless(ret == CL_SUCCESS, "cli_bm_init() failed");
+
+    ret = cli_parse_add(root, "Sig1", "deadbabe", 0, 0, 0, "*", 0, NULL, 0);
+    fail_unless(ret == CL_SUCCESS, "cli_parse_add() failed");
+    ret = cli_parse_add(root, "Sig2", "deadbeef", 0, 0, 0, "*", 0, NULL, 0);
+    fail_unless(ret == CL_SUCCESS, "cli_parse_add() failed");
+    ret = cli_parse_add(root, "Sig3", "babedead", 0, 0, 0, "*", 0, NULL, 0);
+    fail_unless(ret == CL_SUCCESS, "cli_parse_add() failed");
+
+    ret = cli_bm_scanbuff((const unsigned char*)"blah\xde\xad\xbe\xef", 12, &virname, NULL, root, 0, NULL, NULL, NULL);
+    fail_unless(ret == CL_VIRUS, "cli_bm_scanbuff() failed");
+    fail_unless(!strncmp(virname, "Sig2", 4), "Incorrect signature matched in cli_bm_scanbuff()\n");
 }
 END_TEST
 
@@ -282,7 +420,7 @@ START_TEST (test_pcre_scanbuff) {
 	strncat(hexsig, PCRE_BYPASS, hexlen);
 	strncat(hexsig, pcre_testdata[i].hexsig, hexlen);
 
-	ret = cli_parse_add(root, pcre_testdata[i].virname, hexsig, 0, 0, 0, pcre_testdata[i].offset, 0, NULL, 0);
+	ret = cli_parse_add(root, pcre_testdata[i].virname, hexsig, pcre_testdata[i].sigopts, 0, 0, pcre_testdata[i].offset, 0, NULL, 0);
 	fail_unless(ret == CL_SUCCESS, "[pcre] cli_parse_add() failed");
 	free(hexsig);
     }
@@ -378,11 +516,13 @@ Suite *test_matchers_suite(void)
     suite_add_tcase(s, tc_matchers);
     tcase_add_checked_fixture (tc_matchers, setup, teardown);
     tcase_add_test(tc_matchers, test_ac_scanbuff);
+    tcase_add_test(tc_matchers, test_ac_scanbuff_ex);
     tcase_add_test(tc_matchers, test_bm_scanbuff);
 #if HAVE_PCRE
     tcase_add_test(tc_matchers, test_pcre_scanbuff);
 #endif
     tcase_add_test(tc_matchers, test_ac_scanbuff_allscan);
+    tcase_add_test(tc_matchers, test_ac_scanbuff_allscan_ex);
     tcase_add_test(tc_matchers, test_bm_scanbuff_allscan);
 #if HAVE_PCRE
     tcase_add_test(tc_matchers, test_pcre_scanbuff_allscan);

@@ -118,17 +118,17 @@ char *cli_virname(const char *virname, unsigned int official)
     return newname;
 }
 
-static int sigopts_handler(struct cli_matcher *root, const char *virname, const char *hexsig, uint8_t sigopts, uint16_t rtype, uint16_t type, const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options)
+int cli_sigopts_handler(struct cli_matcher *root, const char *virname, const char *hexsig, uint8_t sigopts, uint16_t rtype, uint16_t type, const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options)
 {
     char *hexcpy, *start, *end;
     int i, ret = CL_SUCCESS;
 
     /*
      * cyclic loops with cli_parse_add are impossible now as cli_parse_add 
-     * no longer calls sigopts_handler; leaving here for safety
+     * no longer calls cli_sigopts_handler; leaving here for safety
      */
     if (sigopts & ACPATT_OPTION_ONCE) {
-        cli_errmsg("sigopts_handler: invalidly called multiple times!\n");
+        cli_errmsg("cli_sigopts_handler: invalidly called multiple times!\n");
         return CL_EPARSE;
     }
 
@@ -1781,7 +1781,7 @@ static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsig
         }
 
         if(subsig_opts)
-            ret = sigopts_handler(root, virname, sig, subsig_opts, 0, 0, offset, target, lsigid, options);
+            ret = cli_sigopts_handler(root, virname, sig, subsig_opts, 0, 0, offset, target, lsigid, options);
         else
             ret = cli_parse_add(root, virname, sig, 0, 0, 0, offset, target, lsigid, options);
 
@@ -3801,7 +3801,7 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
                     (ytable.table[i]->sigopts & ACPATT_OPTION_WIDE) ? "w" : "",
                     (ytable.table[i]->sigopts & ACPATT_OPTION_ASCII) ? "a" : "");
 
-        if((ret = sigopts_handler(root, rule->identifier, ytable.table[i]->hexstr, ytable.table[i]->sigopts, 0, 0, ytable.table[i]->offset, target, lsigid, options)) != CL_SUCCESS) {
+        if((ret = cli_sigopts_handler(root, rule->identifier, ytable.table[i]->hexstr, ytable.table[i]->sigopts, 0, 0, ytable.table[i]->offset, target, lsigid, options)) != CL_SUCCESS) {
             root->ac_lsigs--;
             FREE_TDB(tdb);
             ytable_delete(&ytable);
