@@ -1,6 +1,6 @@
 dnl change this on a release
-dnl VERSION="devel-`date +%Y%m%d`"
-VERSION="0.99-beta1"
+VERSION="devel-`date +%Y%m%d`"
+dnl VERSION="0.99"
 
 LC_CURRENT=7
 LC_REVISION=27
