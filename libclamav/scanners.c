@@ -681,10 +681,8 @@ static int cli_scanbzip(cli_ctx *ctx)
 	}
 
 	if (!strm.avail_out || BZ_STREAM_END == rc) {
-	    size += sizeof(buf) - strm.avail_out;
 
-	    if(cli_checklimits("Bzip", ctx, size + FILEBUFF, 0, 0)!=CL_CLEAN)
-		break;
+	    size += sizeof(buf) - strm.avail_out;
 
 	    if(cli_writen(fd, buf, sizeof(buf) - strm.avail_out) != sizeof(buf) - strm.avail_out) {
 		cli_dbgmsg("Bzip: Can't write to file.\n");
@@ -699,6 +697,10 @@ static int cli_scanbzip(cli_ctx *ctx)
 		free(tmpname);
 		return CL_EWRITE;
 	    }
+
+	    if(cli_checklimits("Bzip", ctx, size, 0, 0) != CL_CLEAN)
+		break;
+
 	    strm.next_out = buf;
 	    strm.avail_out = sizeof(buf);
 	}
@@ -706,16 +708,18 @@ static int cli_scanbzip(cli_ctx *ctx)
 
     BZ2_bzDecompressEnd(&strm);
 
-    if(ret == CL_VIRUS) {
-	close(fd);
-	if(!ctx->engine->keeptmp)
-	    if (cli_unlink(tmpname)) ret = CL_EUNLINK;
-	free(tmpname);
-	return ret;
-    }
-
     if((ret = cli_magic_scandesc(fd, ctx)) == CL_VIRUS ) {
 	cli_dbgmsg("Bzip: Infected with %s\n", cli_get_last_virus(ctx));
+	close(fd);
+	if(!ctx->engine->keeptmp) {
+	    if (cli_unlink(tmpname)) {
+		ret = CL_EUNLINK;
+		free(tmpname);
+		return ret;
+	    }
+	}
+	free(tmpname);
+	return CL_VIRUS;
     }
     close(fd);
     if(!ctx->engine->keeptmp)
