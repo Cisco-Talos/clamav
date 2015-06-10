@@ -222,6 +222,32 @@ EOF
 	scan_failed clamscan4.log "clamscan has detected spurious VI's"
     fi
 
+cat <<EOF >test-db/test.yara
+rule yara_at_offset {strings: \$tar_magic = { 75 73 74 61 72 } condition: \$tar_magic at 257}
+EOF
+    if test_run 1 $CLAMSCAN --gen-json --quiet -dtest-db/test.yara $TESTFILES --log=clamscan6.log; then
+	scan_failed clamscan6.log "clamscan YARA at-offset test failed"
+    fi
+    grep "clam.tar.gz: yara_at_offset.UNOFFICIAL FOUND" clamscan6.log || die "YARA at-offset test1 failed"
+    grep "clam_cache_emax.tgz: yara_at_offset.UNOFFICIAL FOUND" clamscan6.log || die "YARA at-offset test2 failed"
+    NINFECTED=`grep "Infected files" clamscan6.log | cut -f2 -d: | sed -e 's/ //g'`
+    if test "x$NINFECTED" != x2; then
+	scan_failed clamscan7.log "clamscan: unexpected YARA offset match."
+    fi
+
+cat <<EOF >test-db/test.yara
+rule yara_in_range {strings: \$tar_magic = { 75 73 74 61 72 } condition: \$tar_magic in (200..300)}
+EOF
+    if test_run 1 $CLAMSCAN --gen-json --quiet -dtest-db/test.yara $TESTFILES --log=clamscan7.log; then
+	scan_failed clamscan7.log "clamscan YARA in-range test failed"
+    fi
+    grep "clam.tar.gz: yara_in_range.UNOFFICIAL FOUND" clamscan7.log || die "YARA in-range test1 failed"
+    grep "clam_cache_emax.tgz: yara_in_range.UNOFFICIAL FOUND" clamscan7.log || die "YARA in-range test2 failed"
+    NINFECTED=`grep "Infected files" clamscan7.log | cut -f2 -d: | sed -e 's/ //g'`
+    if test "x$NINFECTED" != x2; then
+	scan_failed clamscan7.log "clamscan: unexpected YARA range match."
+    fi
+
     test_end $1
 }
 
