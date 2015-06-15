@@ -3916,7 +3916,7 @@ int cli_yara_hash_db_file(char * fname)
 #endif
 
 //TODO - pua? dbio?
-static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio, const char *dbname)
+static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio, const char *filename)
 {
     YR_COMPILER compiler = {0};
     YR_NAMESPACE ns;
@@ -3957,12 +3957,12 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
     compiler.rules_table = engine->yara_global->rules_table;
     compiler.objects_table = engine->yara_global->objects_table;
     compiler.allow_includes = 1;
-    _yr_compiler_push_file_name(&compiler, dbname);
+    _yr_compiler_push_file_name(&compiler, filename);
 
     rc = yr_lex_parse_rules_file(fs, &compiler);
     if (rc > 0) { /* rc = number of errors */
         /* TODO - handle the various errors? */
-        cli_errmsg("cli_loadyara: failed to parse rules file %s, error count %i\n", dbname, rc);
+        cli_errmsg("cli_loadyara: failed to parse rules file %s, error count %i\n", filename, rc);
         yr_arena_destroy(compiler.sz_arena);
         yr_arena_destroy(compiler.rules_arena);
         yr_arena_destroy(compiler.code_arena);
@@ -3987,7 +3987,7 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
                           engine->pua_cats && (options & CL_DB_PUA_MODE) && (options & (CL_DB_PUA_INCLUDE | CL_DB_PUA_EXCLUDE)),
                           engine, options, &sigs);
         if (rc != CL_SUCCESS) {
-            cli_warnmsg("cli_loadyara: problem parsing yara file %s, yara rule %s\n", dbname, rule->identifier);
+            cli_warnmsg("cli_loadyara: problem parsing yara file %s, yara rule %s\n", filename, rule->identifier);
             continue;
         }
     }
@@ -4020,7 +4020,7 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
     if(signo)
         *signo += sigs;
 
-    cli_yaramsg("cli_loadyara: loaded %u of %u yara signatures from %s\n", sigs, rules, dbname);
+    cli_yaramsg("cli_loadyara: loaded %u of %u yara signatures from %s\n", sigs, rules, filename);
 
     return CL_SUCCESS;
 }
@@ -4156,7 +4156,7 @@ int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo
     } else if(cli_strbcasestr(dbname, ".ioc")) {
 	ret = cli_loadopenioc(fs, dbname, engine, options);
     } else if(cli_strbcasestr(dbname, ".yar") || cli_strbcasestr(dbname, ".yara")) {
-        ret = cli_loadyara(fs, engine, signo, options, dbio, dbname);
+        ret = cli_loadyara(fs, engine, signo, options, dbio, filename);
     } else {
 	cli_dbgmsg("cli_load: unknown extension - assuming old database format\n");
 	ret = cli_loaddb(fs, engine, signo, options, dbio, dbname);

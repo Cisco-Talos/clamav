@@ -289,13 +289,6 @@ include[ \t]+\"         {
   {
     yyterminate();
   }
-
-  yypop_buffer_state(yyscanner);
-
-  if (!YY_CURRENT_BUFFER)
-  {
-    yyterminate();
-  }
 }
 
 
