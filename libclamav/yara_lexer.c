@@ -55,8 +55,6 @@ typedef unsigned char flex_uint8_t;
 typedef unsigned short int flex_uint16_t;
 typedef unsigned int flex_uint32_t;
 
-/* Windows' <stdint.h> does not wrap its macro definitions */
-#ifndef _WIN32
 /* Limits of integral types. */
 #ifndef INT8_MIN
 #define INT8_MIN               (-128)
@@ -85,8 +83,6 @@ typedef unsigned int flex_uint32_t;
 #ifndef UINT32_MAX
 #define UINT32_MAX             (4294967295U)
 #endif
-
-#endif /* ! _WIN32 */
 
 #endif /* ! C99 */
 
@@ -1427,18 +1423,11 @@ case YY_STATE_EOF(comment):
   {
     yyterminate();
   }
-
-  yara_yypop_buffer_state(yyscanner);
-
-  if (!YY_CURRENT_BUFFER)
-  {
-    yyterminate();
-  }
 }
 	YY_BREAK
 case 49:
 YY_RULE_SETUP
-#line 302 "yara_lexer.l"
+#line 295 "yara_lexer.l"
 {
 
   yylval->c_string = yr_strdup(yytext);
@@ -1454,7 +1443,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 50:
 YY_RULE_SETUP
-#line 316 "yara_lexer.l"
+#line 309 "yara_lexer.l"
 {
 
   yylval->c_string = yr_strdup(yytext);
@@ -1470,7 +1459,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 51:
 YY_RULE_SETUP
-#line 330 "yara_lexer.l"
+#line 323 "yara_lexer.l"
 {
 
   yylval->c_string = yr_strdup(yytext);
@@ -1487,7 +1476,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 52:
 YY_RULE_SETUP
-#line 345 "yara_lexer.l"
+#line 338 "yara_lexer.l"
 {
 
   yylval->c_string = yr_strdup(yytext);
@@ -1504,7 +1493,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 53:
 YY_RULE_SETUP
-#line 360 "yara_lexer.l"
+#line 353 "yara_lexer.l"
 {
 
   if (strlen(yytext) > 128)
@@ -1524,7 +1513,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 54:
 YY_RULE_SETUP
-#line 378 "yara_lexer.l"
+#line 371 "yara_lexer.l"
 {
 
   yylval->integer = (size_t) atol(yytext);
@@ -1542,7 +1531,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 55:
 YY_RULE_SETUP
-#line 394 "yara_lexer.l"
+#line 387 "yara_lexer.l"
 {
 
   yylval->integer = xtoi(yytext + 2);
@@ -1551,7 +1540,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 56:
 YY_RULE_SETUP
-#line 401 "yara_lexer.l"
+#line 394 "yara_lexer.l"
 {     /* saw closing quote - all done */
 
   SIZED_STRING* s;
@@ -1577,7 +1566,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 57:
 YY_RULE_SETUP
-#line 425 "yara_lexer.l"
+#line 418 "yara_lexer.l"
 {
 
   LEX_CHECK_SPACE_OK("\t", yyextra->lex_buf_len, LEX_BUF_SIZE);
@@ -1587,7 +1576,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 58:
 YY_RULE_SETUP
-#line 433 "yara_lexer.l"
+#line 426 "yara_lexer.l"
 {
 
   LEX_CHECK_SPACE_OK("\n", yyextra->lex_buf_len, LEX_BUF_SIZE);
@@ -1597,7 +1586,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 59:
 YY_RULE_SETUP
-#line 441 "yara_lexer.l"
+#line 434 "yara_lexer.l"
 {
 
   LEX_CHECK_SPACE_OK("\"", yyextra->lex_buf_len, LEX_BUF_SIZE);
@@ -1607,7 +1596,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 60:
 YY_RULE_SETUP
-#line 449 "yara_lexer.l"
+#line 442 "yara_lexer.l"
 {
 
   LEX_CHECK_SPACE_OK("\\", yyextra->lex_buf_len, LEX_BUF_SIZE);
@@ -1617,7 +1606,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 61:
 YY_RULE_SETUP
-#line 457 "yara_lexer.l"
+#line 450 "yara_lexer.l"
 {
 
    int result;
@@ -1630,13 +1619,13 @@ YY_RULE_SETUP
 	YY_BREAK
 case 62:
 YY_RULE_SETUP
-#line 468 "yara_lexer.l"
+#line 461 "yara_lexer.l"
 { YYTEXT_TO_BUFFER; }
 	YY_BREAK
 case 63:
 /* rule 63 can match eol */
 YY_RULE_SETUP
-#line 471 "yara_lexer.l"
+#line 464 "yara_lexer.l"
 {
 
   yyerror(yyscanner, compiler, "unterminated string");
@@ -1646,7 +1635,7 @@ YY_RULE_SETUP
 case 64:
 /* rule 64 can match eol */
 YY_RULE_SETUP
-#line 477 "yara_lexer.l"
+#line 470 "yara_lexer.l"
 {
 
   yyerror(yyscanner, compiler, "illegal escape sequence");
@@ -1654,7 +1643,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 65:
 YY_RULE_SETUP
-#line 483 "yara_lexer.l"
+#line 476 "yara_lexer.l"
 {
 
   SIZED_STRING* s;
@@ -1687,7 +1676,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 66:
 YY_RULE_SETUP
-#line 514 "yara_lexer.l"
+#line 507 "yara_lexer.l"
 {
 
   LEX_CHECK_SPACE_OK("/", yyextra->lex_buf_len, LEX_BUF_SIZE);
@@ -1697,7 +1686,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 67:
 YY_RULE_SETUP
-#line 522 "yara_lexer.l"
+#line 515 "yara_lexer.l"
 {
 
   LEX_CHECK_SPACE_OK("\\.", yyextra->lex_buf_len, LEX_BUF_SIZE);
@@ -1708,13 +1697,13 @@ YY_RULE_SETUP
 	YY_BREAK
 case 68:
 YY_RULE_SETUP
-#line 531 "yara_lexer.l"
+#line 524 "yara_lexer.l"
 { YYTEXT_TO_BUFFER; }
 	YY_BREAK
 case 69:
 /* rule 69 can match eol */
 YY_RULE_SETUP
-#line 534 "yara_lexer.l"
+#line 527 "yara_lexer.l"
 {
 
   yyerror(yyscanner, compiler, "unterminated regular expression");
@@ -1723,7 +1712,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 70:
 YY_RULE_SETUP
-#line 541 "yara_lexer.l"
+#line 534 "yara_lexer.l"
 {
 
   yyextra->lex_buf_ptr = yyextra->lex_buf;
@@ -1733,7 +1722,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 71:
 YY_RULE_SETUP
-#line 549 "yara_lexer.l"
+#line 542 "yara_lexer.l"
 {
 
   yyextra->lex_buf_ptr = yyextra->lex_buf;
@@ -1744,7 +1733,7 @@ YY_RULE_SETUP
 case 72:
 /* rule 72 can match eol */
 YY_RULE_SETUP
-#line 557 "yara_lexer.l"
+#line 550 "yara_lexer.l"
 {
 
   int len = strlen(yytext);
@@ -1762,12 +1751,12 @@ YY_RULE_SETUP
 case 73:
 /* rule 73 can match eol */
 YY_RULE_SETUP
-#line 572 "yara_lexer.l"
+#line 565 "yara_lexer.l"
 /* skip whitespace */
 	YY_BREAK
 case 74:
 YY_RULE_SETUP
-#line 574 "yara_lexer.l"
+#line 567 "yara_lexer.l"
 {
 
   if (yytext[0] >= 32 && yytext[0] < 127)
@@ -1783,10 +1772,10 @@ YY_RULE_SETUP
 	YY_BREAK
 case 75:
 YY_RULE_SETUP
-#line 587 "yara_lexer.l"
+#line 580 "yara_lexer.l"
 ECHO;
 	YY_BREAK
-#line 1786 "yara_lexer.c"
+#line 1779 "yara_lexer.c"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -2920,7 +2909,7 @@ void yara_yyfree (void * ptr , yyscan_t yyscanner)
 
 #define YYTABLES_NAME "yytables"
 
-#line 587 "yara_lexer.l"
+#line 580 "yara_lexer.l"
 
 
 
