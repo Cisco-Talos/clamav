@@ -42,7 +42,9 @@ limitations under the License.
 
 #include <math.h>
 #include <stdio.h>
+#ifdef REAL_YARA
 #include <stdint.h>
+#endif
 #include <string.h>
 #include <setjmp.h>
 
