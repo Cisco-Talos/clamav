@@ -296,6 +296,15 @@ static const char *get_cmd(struct fd_buf *buf, size_t off, size_t *len, char *te
     }
 }
 
+int statinidir_th(const char* dirname)
+{
+   if (!dbstat.entries) {
+      memset(&dbstat, 0, sizeof(dbstat));
+   }
+
+   return cl_statinidir(dirname, &dbstat);
+}
+
 struct acceptdata {
     struct fd_data fds;
     struct fd_data recv_fds;
@@ -1054,7 +1063,6 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     } else {
 	logg("Self checking every %u seconds.\n", selfchk);
     }
-    memset(&dbstat, 0, sizeof(dbstat));
 
     /* save the PID */
     mainpid = getpid();
@@ -1507,4 +1515,4 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     logg("--- Stopped at %s", cli_ctime(&current_time, timestr, sizeof(timestr)));
 
     return ret;
-}
+} 

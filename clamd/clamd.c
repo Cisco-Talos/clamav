@@ -566,6 +566,12 @@ int main(int argc, char **argv)
             break;
         }
 
+        if((ret = statinidir_th(dbdir))) {
+            logg("!%s\n", cl_strerror(ret));
+            ret = 1;
+            break;
+        }
+
         if (optget(opts, "DisableCertCheck")->enabled)
             engine->dconf->pe |= PE_CONF_DISABLECERT;
 
