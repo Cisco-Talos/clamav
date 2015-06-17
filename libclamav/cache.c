@@ -85,9 +85,9 @@ static void cacheset_lru_remove(struct cache_set *map, size_t howmany)
     while (howmany--) {
 	struct cache_key *old;
 	assert(map->lru_head);
-	assert(!old->lru_prev);
 	/* Remove a key from the head of the list */
 	old = map->lru_head;
+	assert(!old->lru_prev);
 	map->lru_head = old->lru_next;
 	old->size = CACHE_KEY_DELETED;
 	/* This slot is now deleted, it is not empty,
