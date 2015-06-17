@@ -42,7 +42,9 @@ limitations under the License.
 
 #include <math.h>
 #include <stdio.h>
+#ifdef REAL_YARA
 #include <stdint.h>
+#endif
 #include <string.h>
 #include <setjmp.h>
 
@@ -283,13 +285,6 @@ include[ \t]+\"         {
   }
 
   _yr_compiler_pop_file_name(compiler);
-  yypop_buffer_state(yyscanner);
-
-  if (!YY_CURRENT_BUFFER)
-  {
-    yyterminate();
-  }
-
   yypop_buffer_state(yyscanner);
 
   if (!YY_CURRENT_BUFFER)
