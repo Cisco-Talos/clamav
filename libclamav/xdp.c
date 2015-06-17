@@ -53,7 +53,6 @@
 #include <libxml/xmlreader.h>
 #endif
 #include "clamav.h"
-#include "fmap.h"
 #include "str.h"
 #include "scanners.h"
 #include "conv.h"
