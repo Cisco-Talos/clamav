@@ -107,7 +107,9 @@ char *pdf_convert_utf(char *begin, size_t sz)
 
         cd = iconv_open("UTF-8", encodings[i]);
         if (cd == (iconv_t)(-1)) {
-            cli_errmsg("Could not initialize iconv\n");
+            char errbuf[128];
+            cli_strerror(errno, errbuf, sizeof(errbuf)); 
+            cli_errmsg("pdf_convert_utf: could not initialize iconv for encoding %s: %s\n", encodings[i], errbuf);
             continue;
         }
 
