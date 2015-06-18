@@ -56,6 +56,14 @@ Example
 # Default: no
 #LogRotate yes
 
+# Enable Prelude output.
+# Default: no
+#PreludeEnable yes
+#
+# Set the name of the analyzer used by prelude-admin.
+# Default: ClamAV
+#PreludeAnalyzerName ClamAV
+
 # Log additional information about the infected file, such as its
 # size and hash, together with the virus name.
 #ExtendedDetectionInfo yes

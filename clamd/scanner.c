@@ -57,6 +57,8 @@
 #include "shared/output.h"
 #include "shared/misc.h"
 
+#include "shared/idmef_logging.h"
+
 #include "others.h"
 #include "scanner.h"
 #include "shared.h"
@@ -272,6 +274,11 @@ int scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_ftw_rea
 		    return CL_ETIMEOUT;
 		}
 	}
+
+	if(optget(scandata->opts, "PreludeEnable")->enabled){
+	    prelude_logging(filename, virname, context.virhash, context.virsize);
+	}
+
 	if(context.virsize && optget(scandata->opts, "ExtendedDetectionInfo")->enabled)
 	    logg("~%s: %s(%s:%llu) FOUND\n", filename, virname, context.virhash, context.virsize);
 	else
