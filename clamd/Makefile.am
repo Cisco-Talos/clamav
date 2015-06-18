@@ -23,6 +23,8 @@ sbin_PROGRAMS = clamd
 clamd_SOURCES = \
     $(top_srcdir)/shared/output.c \
     $(top_srcdir)/shared/output.h \
+    $(top_srcdir)/shared/idmef_logging.c \
+    $(top_srcdir)/shared/idmef_logging.h \
     $(top_srcdir)/shared/optparser.c \
     $(top_srcdir)/shared/optparser.h \
     $(top_srcdir)/shared/getopt.c \
