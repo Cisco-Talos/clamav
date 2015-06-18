@@ -185,6 +185,10 @@ const struct clam_option __clam_options[] = {
     { NULL, "deb", 0, CLOPT_TYPE_STRING, NULL, -1, "foo", 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", "" },
 
     /* config file/cmdline options */
+    { "PreludeEnable", "prelude-enable", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Enable prelude"},
+
+    { "PreludeAnalyzerName", "prelude-analyzer-name", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD, "Name of the analyzer as seen in prewikka"},
+
     { "LogFile", "log", 'l', CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD | OPT_MILTER | OPT_CLAMSCAN | OPT_CLAMDSCAN, "Save all reports to a log file.", "/tmp/clamav.log" },
 
     { "StatsHostID", "stats-host-id", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM | OPT_CLAMD | OPT_CLAMSCAN, "HostID in the form of an UUID to use when submitting statistical information. See the clamscan manpage for more information.", "default" },

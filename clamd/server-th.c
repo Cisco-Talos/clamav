@@ -51,6 +51,8 @@
 #include "shared/optparser.h"
 #include "shared/misc.h"
 
+#include "shared/idmef_logging.h"
+
 #include "onaccess_fan.h"
 #include "server.h"
 #include "thrmgr.h"

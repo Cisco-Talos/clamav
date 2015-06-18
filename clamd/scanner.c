@@ -58,6 +58,8 @@
 #include "shared/output.h"
 #include "shared/misc.h"
 
+#include "shared/idmef_logging.h"
+
 #include "others.h"
 #include "scanner.h"
 #include "shared.h"
@@ -274,20 +276,38 @@ int scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_ftw_rea
     }
 
     if (ret == CL_VIRUS) {
-        scandata->infected++;
-        if (scandata->options & CL_SCAN_ALLMATCHES) {
-            virusaction(filename, virname, scandata->opts);
-        } else {
-            if (conn_reply_virus(scandata->conn, filename, virname) == -1) {
-                free(filename);
-                return CL_ETIMEOUT;
-            }
-            if(context.virsize && optget(scandata->opts, "ExtendedDetectionInfo")->enabled)
-                logg("~%s: %s(%s:%llu) FOUND\n", filename, virname, context.virhash, context.virsize);
-            else
-                logg("~%s: %s FOUND\n", filename, virname);
-            virusaction(filename, virname, scandata->opts);
-        }
+	scandata->infected++;
+	if (conn_reply_virus(scandata->conn, filename, virname) == -1) {
+	    free(filename);
+	    if((scandata->options & CL_SCAN_ALLMATCHES) && (virpp != &virname))
+		free((void *)virpp);
+	    return CL_ETIMEOUT;
+	}
+	if (scandata->options & CL_SCAN_ALLMATCHES && virpp[1] != NULL) {
+	    int i = 1;
+	    while (NULL != virpp[i])
+		if (conn_reply_virus(scandata->conn, filename, virpp[i++]) == -1) {
+		    free(filename);
+		    if (virpp != &virname)
+			free((void *)virpp);
+		    return CL_ETIMEOUT;
+		}
+	}
+
+	if(optget(scandata->opts, "PreludeEnable")->enabled){
+	    prelude_logging(filename, virname, context.virhash, context.virsize);
+	}
+
+	if(context.virsize && optget(scandata->opts, "ExtendedDetectionInfo")->enabled)
+	    logg("~%s: %s(%s:%llu) FOUND\n", filename, virname, context.virhash, context.virsize);
+	else
+	    logg("~%s: %s FOUND\n", filename, virname);
+	virusaction(filename, virname, scandata->opts);
+	if (scandata->options & CL_SCAN_ALLMATCHES && virpp[1] != NULL) {
+	    int i = 1;
+	    while (NULL != virpp[i])
+                logg("~%s: %s FOUND\n", filename, virpp[i++]);
+	}
     } else if (ret != CL_CLEAN) {
 	scandata->errors++;
 	if (conn_reply(scandata->conn, filename, cl_strerror(ret), "ERROR") == -1) {
