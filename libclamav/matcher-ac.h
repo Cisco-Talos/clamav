@@ -61,6 +61,7 @@ struct cli_ac_data {
     uint32_t **lsigcnt;
     uint32_t **lsigsuboff_last, **lsigsuboff_first;
     struct cli_lsig_matches **lsig_matches;
+    uint8_t *yr_matches;
     uint32_t *offset;
     uint32_t macro_lastmatch[32];
     /** Hashset for versioninfo matching */

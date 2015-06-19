@@ -1258,10 +1258,22 @@ int cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t lsigs,
         }
         for(i = 1; i < lsigs; i++)
             data->lsigcnt[i] = data->lsigcnt[0] + 64 * i;
+        data->yr_matches = (uint8_t *) cli_calloc(lsigs, sizeof(uint8_t));
+        if (data->yr_matches == NULL) {
+            free(data->lsigcnt[0]);
+            free(data->lsigcnt);
+            if(partsigs)
+                free(data->offmatrix);
+            
+            if(reloffsigs)
+                free(data->offset);
+            return CL_EMEM;
+        }
 
         /* subsig offsets */
-        data->lsig_matches = (struct cli_lsig_matches **) cli_calloc(lsigs * sizeof(struct cli_lsig_matches *), sizeof(struct cli_lsig_matches *));
+        data->lsig_matches = (struct cli_lsig_matches **) cli_calloc(lsigs, sizeof(struct cli_lsig_matches *));
         if(!data->lsig_matches) {
+            free(data->yr_matches);
             free(data->lsigcnt[0]);
             free(data->lsigcnt);
             if(partsigs)
@@ -1279,6 +1291,7 @@ int cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t lsigs,
             free(data->lsig_matches);
             free(data->lsigsuboff_last);
             free(data->lsigsuboff_first);
+            free(data->yr_matches);
             free(data->lsigcnt[0]);
             free(data->lsigcnt);
             if(partsigs)
@@ -1298,6 +1311,7 @@ int cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t lsigs,
             free(data->lsigsuboff_first[0]);
             free(data->lsigsuboff_last);
             free(data->lsigsuboff_first);
+            free(data->yr_matches);
             free(data->lsigcnt[0]);
             free(data->lsigcnt);
             if(partsigs)
@@ -1392,6 +1406,7 @@ void cli_ac_freedata(struct cli_ac_data *data)
             free(data->lsig_matches);
             data->lsig_matches = 0;
         }
+        free(data->yr_matches);
         free(data->lsigcnt[0]);
         free(data->lsigcnt);
         free(data->lsigsuboff_last[0]);

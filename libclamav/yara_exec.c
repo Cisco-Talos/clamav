@@ -157,6 +157,9 @@ int yr_execute_code(
   int cycle = 0;
 #if REAL_YARA
   int tidx = yr_get_tidx();
+#else
+
+  cli_dbgmsg("yara_exec: beginning execution for lsig %i\n", aclsig->id);
 #endif
 
   #ifdef PROFILING_ENABLED
@@ -422,8 +425,7 @@ int yr_execute_code(
 #if REAL_YARA
         push(rule->t_flags[tidx] & RULE_TFLAGS_MATCH ? 1 : 0);
 #else
-        //tbd clamav
-        push(rule->g_flags & RULE_TFLAGS_MATCH ? 1 : 0);
+        push(acdata->yr_matches[rule->lsigid]);
 #endif
         break;
 
@@ -436,7 +438,10 @@ int yr_execute_code(
 #if REAL_YARA
           rule->t_flags[tidx] |= RULE_TFLAGS_MATCH;
 #else
-          rule_matches++;
+        {
+            rule_matches++;
+            acdata->yr_matches[aclsig->id] = 1;
+        }
 #endif
 
         #ifdef PROFILING_ENABLED
