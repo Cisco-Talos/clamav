@@ -766,8 +766,7 @@ static int lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data 
 static int yara_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *acdata, struct cli_target_info *target_info, const char *hash, uint32_t lsid)
 {
     struct cli_ac_lsig *ac_lsig = root->ac_lsigtable[lsid];
-    uint8_t * code_start = ac_lsig->u.code_start;
-    int rc = 0;
+    int rc;
     YR_SCAN_CONTEXT context = {0};
  
     if (target_info != NULL) {
@@ -779,9 +778,13 @@ static int yara_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data 
 
     rc = yr_execute_code(ac_lsig, acdata, &context, 0, 0);
 
-    if (rc == CL_VIRUS)
-        cli_append_virus(ctx, ac_lsig->virname);
-
+    if (rc == CL_VIRUS) {
+        if (ac_lsig->flag & CLI_LSIG_FLAG_PRIVATE) {
+            rc = CL_CLEAN;
+        } else {
+            cli_append_virus(ctx, ac_lsig->virname);
+        }
+    }
     return rc;
 }
 

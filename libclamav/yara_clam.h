@@ -456,6 +456,7 @@ struct _yc_rule {
     uint32_t g_flags;
     uint32_t cl_flags;
     uint8_t * code_start;
+    uint32_t lsigid;
 };
 typedef struct _yc_rule yc_rule;
 typedef struct _yc_string {

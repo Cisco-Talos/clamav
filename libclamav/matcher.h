@@ -77,6 +77,8 @@ struct cli_lsig_tdb {
 #endif
 };
 
+#define CLI_LSIG_FLAG_PRIVATE 0x01
+
 struct cli_bc;
 struct cli_ac_lsig {
 #define CLI_LSIG_NORMAL 0
@@ -85,6 +87,7 @@ struct cli_ac_lsig {
     uint32_t id;
     unsigned bc_idx;
     uint8_t type;
+    uint8_t flag;
     union {
         char *logic;
         uint8_t *code_start;
