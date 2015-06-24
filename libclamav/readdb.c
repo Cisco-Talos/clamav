@@ -229,7 +229,7 @@ int cli_sigopts_handler(struct cli_matcher *root, const char *virname, const cha
 
         /* clamav-specific wildcards need to be handled here! */
         for (i = 0; i < strlen(hexcpy); ++i) {
-            size_t len = strlen(hexovr);
+           size_t len = strlen(hexovr);
 
             if (hexcpy[i] == '*' || hexcpy[i] == '|' || hexcpy[i] == ')') {
                 hexovr[len] = hexcpy[i];
@@ -3254,18 +3254,28 @@ static void ytable_delete(struct cli_ytable *ytable)
     }
 }
 
-static int yara_subhex_verify(const char *hexstr)
+static int yara_subhex_verify(const char *hexstr, const char *end, size_t *maxsublen)
 {
-    size_t max_sublen = 0;
-    const char *track = hexstr;
-    int in = 0;
+    size_t sublen = 0;
+    const char *track;
+    char in = 0;
+    int hexbyte = 0;
 
-    /* REQUIRES - subpatterns must be at least length 2 */
-    while (*track != '\0' && max_sublen < 4) {
-        switch(*track) {
+    if (hexstr == end) {
+        cli_warnmsg("load_oneyara[verify]: string has empty sequence\n");
+        return CL_EMALFDB;
+    }
+
+    track = hexstr;
+    while (track != end) {
+        switch (*track) {
         case '*':
         case '?':
-            max_sublen = 0;
+            if (*track == '?')
+                hexbyte = !hexbyte;
+            if (maxsublen && (sublen > *maxsublen))
+                *maxsublen = sublen;
+            sublen = 0;
             break;
         case '[':
         case '{':
@@ -3273,71 +3283,120 @@ static int yara_subhex_verify(const char *hexstr)
                 cli_warnmsg("load_oneyara[verify]: string has invalid nesting\n");
                 return CL_EMALFDB;
             }
-            in = 1;
+            if (hexbyte) {
+                cli_warnmsg("load_oneyara[verify]: string has invalid hex sequence\n");
+                return CL_EMALFDB;
+            }
+            if (maxsublen && (sublen > *maxsublen))
+                *maxsublen = sublen;
+            sublen = 0;
+            in = *track;
             break;
         case ']':
+            if (in != '[') {
+                cli_warnmsg("load_oneyara[verify]: string has invalid ranged anchored\n");
+                return CL_EMALFDB;
+            }
+            in = 0;
+            break;
         case '}':
-            if (!in) {
-                cli_warnmsg("load_oneyara[verify]: string has invalid sequence close\n");
+            if (in != '{') {
+                cli_warnmsg("load_oneyara[verify]: string has invalid ranged wildcard\n");
                 return CL_EMALFDB;
             }
             in = 0;
             break;
         default:
-            max_sublen++;
+            if (!in) {
+                if ((*track >= 'A' && *track <= 'F') ||
+                    (*track >= 'a' && *track <= 'f') ||
+                    (*track >= '0' && *track <= '9')) {
+
+                    hexbyte = !hexbyte;
+                    sublen++;
+                } else {
+                    cli_warnmsg("load_oneyara[verify]: unknown character: %x\n", *track);
+                    return CL_EMALFDB;
+                }
+            }
             break;
         }
 
         track++;
     }
+
     if (in) {
-        cli_warnmsg("load_oneyara[verify]: string has unterminated sequence\n");
+        cli_warnmsg("load_oneyara[verify]: string has unterminated wildcard sequence\n");
         return CL_EMALFDB;
     }
-    if (max_sublen < 4) {
-        cli_warnmsg("load_oneyara[verify]: cannot find a static subpattern of length 2\n");
+    if (hexbyte) {
+        cli_warnmsg("load_oneyara[verify]: string has invalid hex sequence\n");
         return CL_EMALFDB;
     }
+    if (maxsublen && (sublen > *maxsublen))
+        *maxsublen = sublen;
 
     return CL_SUCCESS;
 }
 
-static int yara_altstr_verify(const char *hexstr)
+static int yara_altstr_verify(const char *hexstr, int lvl, const char **end)
 {
-    const char *end;
-    int i, range, lvl = 0;
+    const char *track, *sub;
+    int ret, range;
+    size_t offset;
 
-    for (i = 0; i < strlen(hexstr); i++) {
-        if (hexstr[i] == '(') {
-            lvl++;
-            if (lvl > ACPATT_ALTN_MAXNEST) {
-                cli_warnmsg("load_oneyara[verify]: string has unsupported alternating sequence (nest level)\n");
-                return CL_EMALFDB;
-            }
-        } else if (hexstr[i] == ')') {
-            if (!lvl) {
-                break;
-            }
-        } else if (hexstr[i] == '{') { /* clamav converted '[' */
-            end = &hexstr[i];
-            while (*end != '}' && *end != '-' && *end != '\0')
-                end++;
+    if (lvl > ACPATT_ALTN_MAXNEST) {
+        cli_warnmsg("load_oneyara[verify]: string has unsupported alternate sequence (nest level)\n");
+        return CL_EMALFDB;
+    }
 
-            switch (*end) {
-            case '\0':
+    track = hexstr;
+    while ((offset = strcspn(track, "(|){}"))) {
+        sub = track + offset;
+        if (*sub == '\0') {
+            cli_warnmsg("load_oneyara[verify]: string has unterminated alternate sequence\n");
+            return CL_EMALFDB;
+        }
+
+        /* verify subhex */
+        if ((ret = yara_subhex_verify(track, sub, NULL)) != CL_SUCCESS)
+            return ret;
+
+        track = sub;
+        if (*track == '(') {
+            if ((ret = yara_altstr_verify(track+1, lvl+1, &sub)) != CL_SUCCESS)
+                return ret;
+        } else if (*track == ')') {
+            if (end)
+                *end = track;
+            break;
+        } else if (*track == '{') { /* clamav converted '[' */
+            if ((offset = strcspn(track, "}-"))) {
+                sub = track + offset;
+                switch (*sub) {
+                case '\0':
+                    cli_warnmsg("load_oneyara[verify]: string has unsupported alternating sequence (unterminated ranged wildcard)\n");
+                    return CL_EMALFDB;
+                case '-':
+                    cli_warnmsg("load_oneyara[verify]: string has unsupported alternating sequence (variable ranged wildcard)\n");
+                    return CL_EMALFDB;
+                case '}':
+                    sscanf(track, "{%d}", &range);
+                    if (range >= 128) {
+                        cli_warnmsg("load_oneyara[verify]: string has unsupported alternating sequence (128+ ranged wildcard)\n");
+                        return CL_EMALFDB;
+                    }
+                }
+            } else {
                 cli_warnmsg("load_oneyara[verify]: string has unsupported alternating sequence (unterminated ranged wildcard)\n");
                 return CL_EMALFDB;
-            case '-':
-                cli_warnmsg("load_oneyara[verify]: string has unsupported alternating sequence (variable ranged wildcard)\n");
-                return CL_EMALFDB;
-            case '}':
-                sscanf(&hexstr[i], "{%d}", &range);
-                if (range >= 128) {
-                    cli_warnmsg("load_oneyara[verify]: string has unsupported alternating sequence (128+ ranged wildcard)\n");
-                    return CL_EMALFDB;
-                }
             }
+        } else if (*track != '|') {
+            cli_warnmsg("load_oneyara[verify]: string has unsupported alternating sequence (invalid sequence)\n");
+            return CL_EMALFDB;
         }
+
+        track = ++sub;
     }
 
     return CL_SUCCESS;
@@ -3347,7 +3406,8 @@ static int yara_altstr_verify(const char *hexstr)
 static int yara_hexstr_verify(YR_STRING *string, const char *hexstr)
 {
     int ret = CL_SUCCESS;
-    char *hexcpy, *track, *alt;
+    const char *track, *end;
+    size_t maxsublen = 0, length;
 
     /* Quick Check 1: NULL String */
     if (!hexstr || !string) {
@@ -3362,35 +3422,33 @@ static int yara_hexstr_verify(YR_STRING *string, const char *hexstr)
     }
 
     /* Long Check: No Alternating Strings, Subhex must be Length 2 */
-    hexcpy = cli_strdup(hexstr);
-    if (!hexcpy)
-        return CL_EMEM;
-    track = hexcpy;
-    while ((alt = strchr(track, '('))) {
-        char *start = alt+1;
-        *alt = '\0';
-
-        alt = strchr(start, ')');
-        *alt = '\0';
-
-        ret = yara_subhex_verify(track);
-        if (ret != CL_SUCCESS) {
-            free(hexcpy);
-            return ret;
+    track = hexstr;
+    while ((end = strchr(track, '('))) {
+        if (track != end) {
+            if ((ret = yara_subhex_verify(track, end, &maxsublen)) != CL_SUCCESS)
+                return ret;
         }
 
-        ret = yara_altstr_verify(start);
-        if (ret != CL_SUCCESS) {
-            free(hexcpy);
+        track = end + 1;
+        if ((ret = yara_altstr_verify(track, 0, &end)) != CL_SUCCESS)
             return ret;
-        }
 
-        track = alt+1;
+        track = end + 1;
     }
-    ret = yara_subhex_verify(track);
-    free(hexcpy);
 
-    return ret;
+    /* Check: Suffix (or Non-Alt Hex) */
+    length = strlen(track);
+    if (length > 0)
+        if ((ret = yara_subhex_verify(track, track + length, &maxsublen)) != CL_SUCCESS)
+            return ret;
+
+    /* REQUIRES - Subpatterns must be at least length 2 */
+    if (maxsublen < 2) {
+        cli_warnmsg("load_oneyara[verify]: cannot find a static subpattern of length 2\n");
+        return CL_EMALFDB;
+    }
+
+    return CL_SUCCESS;
 }
 
 static unsigned int yara_total, yara_loaded, yara_malform, yara_empty, yara_complex;
