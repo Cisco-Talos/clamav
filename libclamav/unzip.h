@@ -26,8 +26,29 @@
 #endif
 
 #include "others.h"
+
+typedef int (*zip_cb)(int fd, cli_ctx *ctx);
+#define zip_scan_cb cli_magic_scandesc
+
+#define MAX_ZIP_REQUESTS 10
+struct zip_requests {
+    const char *names[MAX_ZIP_REQUESTS];
+    size_t namelens[MAX_ZIP_REQUESTS];
+    int namecnt;
+
+    uint32_t loff;
+    int found, match;
+};
+
 int cli_unzip(cli_ctx *);
+int cli_unzip_single_internal(cli_ctx *, off_t, zip_cb);
+int unzip_single_internal(cli_ctx *, off_t, zip_cb);
 int cli_unzip_single(cli_ctx *, off_t);
+
+int unzip_search_add(struct zip_requests *, const char *, size_t);
+int unzip_search(cli_ctx *, fmap_t *, struct zip_requests *);
+int unzip_search_single(cli_ctx *, const char *, size_t, uint32_t *);
+
 
 #ifdef UNZIP_PRIVATE
 #define F_ENCR  (1<<0)

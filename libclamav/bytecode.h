@@ -1,7 +1,7 @@
 /*
  *  Load, verify and execute ClamAV bytecode.
  *
- *  Copyright (C) 2009-2010 Sourcefire, Inc.
+ *  Copyright (C) 2009-2012 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
  *
@@ -47,29 +47,31 @@ enum bc_state {
 };
 
 struct cli_bc {
-  struct bytecode_metadata metadata;
-  unsigned id;
-  unsigned kind;
-  unsigned num_types;
-  unsigned num_func;
-  struct cli_bc_func *funcs;
-  struct cli_bc_type *types;
-  uint64_t **globals;
-  uint16_t *globaltys;
-  size_t num_globals;
-  enum bc_state state;
-  struct bitset_tag *uses_apis;
-  char *lsig;
-  char *vnameprefix;
-  char **vnames;
-  unsigned vnames_cnt;
-  uint16_t start_tid;
-  struct cli_bc_dbgnode *dbgnodes;
-  unsigned dbgnode_cnt;
-  unsigned hook_lsig_id;
-  unsigned trusted;
-  uint32_t numGlobalBytes;
-  uint8_t *globalBytes;
+    struct bytecode_metadata metadata;
+    unsigned id;
+    unsigned kind;
+    unsigned num_types;
+    unsigned num_func;
+    struct cli_bc_func *funcs;
+    struct cli_bc_type *types;
+    uint64_t **globals;
+    uint16_t *globaltys;
+    size_t num_globals;
+    enum bc_state state;
+    struct bitset_tag *uses_apis;
+    char *lsig;
+    char *vnameprefix;
+    char **vnames;
+    unsigned vnames_cnt;
+    uint16_t start_tid;
+    struct cli_bc_dbgnode *dbgnodes;
+    unsigned dbgnode_cnt;
+    unsigned hook_lsig_id;
+    unsigned trusted;
+    uint32_t numGlobalBytes;
+    uint8_t *globalBytes;
+    uint32_t sigtime_id, sigmatch_id;
+    char * hook_name;
 };
 
 struct cli_all_bc {
@@ -107,12 +109,19 @@ extern int have_clamjit;
 }
 #endif
 int cli_bytecode_init(struct cli_all_bc *allbc);
-int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio, int security);
+int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio, int security, int sigperf);
 int cli_bytecode_prepare2(struct cl_engine *engine, struct cli_all_bc *allbc, unsigned dconfmask);
 int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, struct cli_bc_ctx *ctx);
 void cli_bytecode_destroy(struct cli_bc *bc);
 int cli_bytecode_done(struct cli_all_bc *allbc);
+
+/* Bytecode IR descriptions */
 void cli_bytecode_describe(const struct cli_bc *bc);
+void cli_bytetype_describe(const struct cli_bc *bc);
+void cli_bytevalue_describe(const struct cli_bc *bc, unsigned funcid);
+void cli_byteinst_describe(const struct cli_bc_inst *inst, unsigned *bbnum);
+void cli_bytefunc_describe(const struct cli_bc *bc, unsigned funcid);
+
 
 /* Hooks */
 struct cli_exe_info;
@@ -141,7 +150,8 @@ void cli_bytecode_context_set_trace(struct cli_bc_ctx*, unsigned level,
 				    bc_dbg_callback_trace_op,
 				    bc_dbg_callback_trace_val,
 				    bc_dbg_callback_trace_ptr);
-
+void cli_sigperf_print(void);
+void cli_sigperf_events_destroy(void);
 #ifdef __cplusplus
 }
 #endif

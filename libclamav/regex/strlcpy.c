@@ -16,6 +16,10 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
 #include <sys/types.h>
 #include <string.h>
 
@@ -28,6 +32,9 @@
 size_t
 cli_strlcpy(char *dst, const char *src, size_t siz)
 {
+#if HAVE_STRLCPY
+    return strlcpy(dst, src, siz);
+#else
 	char *d = dst;
 	const char *s = src;
 	size_t n = siz;
@@ -49,4 +56,5 @@ cli_strlcpy(char *dst, const char *src, size_t siz)
 	}
 
 	return(s - src - 1);	/* count does not include NUL */
+#endif
 }

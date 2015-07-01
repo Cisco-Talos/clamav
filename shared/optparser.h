@@ -33,10 +33,10 @@
 #define OPT_CLAMBC      256
 #define OPT_DEPRECATED	512
 
-#define TYPE_STRING  1	/* quoted/regular string */
-#define TYPE_NUMBER  2	/* raw number */
-#define TYPE_SIZE    3	/* number possibly followed by modifers (M/m or K/k) */
-#define TYPE_BOOL    4	/* boolean */
+#define CLOPT_TYPE_STRING  1	/* quoted/regular string */
+#define CLOPT_TYPE_NUMBER  2	/* raw number */
+#define CLOPT_TYPE_SIZE    3	/* number possibly followed by modifers (M/m or K/k) */
+#define CLOPT_TYPE_BOOL    4	/* boolean */
 
 struct optstruct {
     char *name;
@@ -72,5 +72,6 @@ const struct optstruct *optget(const struct optstruct *opts, const char *name);
 void optfree(struct optstruct *opts);
 
 struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbose, int toolmask, int ignore, struct optstruct *oldopts);
+struct optstruct *optadditem(const char *name, const char *arg, int verbose, int toolmask, int ignore, struct optstruct *oldopts);
 
 #endif

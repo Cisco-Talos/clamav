@@ -37,5 +37,8 @@
     <ClCompile Include="..\shared\misc.c">
       <Filter>Source Files\shared</Filter>
     </ClCompile>
+    <ClCompile Include="..\shared\clamdcom.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

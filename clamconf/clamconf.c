@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2009 Sourcefire, Inc.
+ *  Copyright (C) 2009-2013 Sourcefire, Inc.
  *  Author: Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -45,6 +45,7 @@
 #include "libclamav/bytecode.h"
 #include "libclamav/bytecode_detect.h"
 #include "target.h"
+#include "fpu.h"
 
 #ifndef _WIN32
 extern const struct clam_option *clam_options;
@@ -84,7 +85,7 @@ static void printopts(struct optstruct *opts, int nondef)
 	if(!opts->enabled) 
 	    printf("%s disabled\n", opts->name);
 	else switch(clam_options[opts->idx].argtype) {
-	    case TYPE_STRING:
+	    case CLOPT_TYPE_STRING:
 		printf("%s = \"%s\"", opts->name, opts->strarg);
 		opt = opts;
 		while((opt = opt->nextarg))
@@ -92,8 +93,8 @@ static void printopts(struct optstruct *opts, int nondef)
 		printf("\n");
 		break;
 
-	    case TYPE_NUMBER:
-	    case TYPE_SIZE:
+	    case CLOPT_TYPE_NUMBER:
+	    case CLOPT_TYPE_SIZE:
 		printf("%s = \"%lld\"", opts->name, opts->numarg);
 		opt = opts;
 		while((opt = opt->nextarg))
@@ -101,7 +102,7 @@ static void printopts(struct optstruct *opts, int nondef)
 		printf("\n");
 		break;
 
-	    case TYPE_BOOL:
+	    case CLOPT_TYPE_BOOL:
 		printf("%s = \"yes\"\n", opts->name);
 		break;
 
@@ -139,29 +140,29 @@ static int printconf(const char *name)
     for(i = 0; clam_options[i].owner; i++) {
 	cpt = &clam_options[i];
 	if(cpt->name && (cpt->owner & tool) && !(cpt->owner & OPT_DEPRECATED) && !(cpt->flags & 4)) {
-	    strncpy(buffer, cpt->description, 1024);
-	    buffer[1024] = 0;
+	    strncpy(buffer, cpt->description, sizeof(buffer)-1);
+	    buffer[sizeof(buffer)-1] = 0;
 	    tokens_count = cli_strtokenize(buffer, '\n', 128, tokens);
 	    printf("\n");
 	    for(j = 0; j < tokens_count; j++)
 		printf("# %s\n", tokens[j]);
 
 	    switch(cpt->argtype) {
-		case TYPE_STRING:
+		case CLOPT_TYPE_STRING:
 		    if(cpt->strarg)
 			printf("# Default: %s\n", cpt->strarg);
 		    else
 			printf("# Default: disabled\n");
 		    break;
 
-		case TYPE_NUMBER:
+		case CLOPT_TYPE_NUMBER:
 		    if(cpt->numarg != -1)
 			printf("# Default: %lld\n", cpt->numarg);
 		    else
 			printf("# Default: disabled\n");
 		    break;
 
-		case TYPE_SIZE:
+		case CLOPT_TYPE_SIZE:
 		    printf("# You may use 'M' or 'm' for megabytes (1M = 1m = 1048576 bytes)\n# and 'K' or 'k' for kilobytes (1K = 1k = 1024 bytes). To specify the size\n# in bytes just don't use modifiers.\n");
 		    if(cpt->numarg != -1)
 			printf("# Default: %lld\n", cpt->numarg);
@@ -169,7 +170,7 @@ static int printconf(const char *name)
 			printf("# Default: disabled\n");
 		    break;
 
-		case TYPE_BOOL:
+		case CLOPT_TYPE_BOOL:
 		    if(cpt->numarg != -1)
 			printf("# Default: %s\n", cpt->numarg ? "yes" : "no");
 		    else
@@ -181,8 +182,8 @@ static int printconf(const char *name)
 	    }
 
 	    if(cpt->suggested && strchr(cpt->suggested, '\n')) {
-		strncpy(buffer, cpt->suggested, 1024);
-		buffer[1024] = 0;
+		strncpy(buffer, cpt->suggested, sizeof(buffer)-1);
+		buffer[sizeof(buffer)-1] = 0;
 		tokens_count = cli_strtokenize(buffer, '\n', 128, tokens);
 		for(j = 0; j < tokens_count; j++)
 		    printf("#%s %s\n", cpt->name, tokens[j]);
@@ -199,7 +200,7 @@ static void help(void)
 {
     printf("\n");
     printf("           Clam AntiVirus: Configuration Tool %s\n", get_version());
-    printf("           By The ClamAV Team: http://www.clamav.net/team\n");
+    printf("           By The ClamAV Team: http://www.clamav.net/about.html#credits\n");
     printf("           (C) 2009 Sourcefire, Inc.\n\n");
 
     printf("    --help                 -h         Show help\n");
@@ -251,6 +252,7 @@ static void print_platform(struct cli_environment *env)
     printf("zlib version: %s (%s)\n",
 	   ZLIB_VERSION, zlibVersion());
 #endif
+
     if (env->triple[0])
     printf("Triple: %s\n", env->triple);
     if (env->cpu[0])
@@ -330,6 +332,7 @@ static void print_dbs(const char *dir)
 		dbfile = (char *) malloc(strlen(dent->d_name) + strlen(dir) + 2);
 		if(!dbfile) {
 		    printf("print_dbs: Can't allocate memory for dbfile\n");
+		    closedir(dd);
 		    return;
 		}
 		sprintf(dbfile, "%s"PATHSEP"%s", dir, dent->d_name);
@@ -370,7 +373,6 @@ int main(int argc, char **argv)
 	unsigned int i, j;
 	struct cli_environment env;
 
-
     opts = optparse(NULL, argc, argv, 1, OPT_CLAMCONF, 0, NULL);
     if(!opts) {
 	printf("ERROR: Can't parse command line options\n");
@@ -396,6 +398,7 @@ int main(int argc, char **argv)
     }
 
     dbdir[0] = 0;
+    clamd_dbdir[0] = 0;
     dir = optget(opts, "config-dir")->strarg;
     printf("Checking configuration files in %s\n", dir);
     for(i = 0; cfgfile[i].name; i++) {
@@ -447,11 +450,25 @@ int main(int argc, char **argv)
 #ifdef FRESHCLAM_DNS_FIX
 	printf("FRESHCLAM_DNS_FIX ");
 #endif
-#ifdef FPU_WORDS_BIGENDIAN
-	printf("AUTOIT_EA06 ");
+#ifndef _WIN32
+        if (get_fpu_endian() != FPU_ENDIAN_UNKNOWN)
 #endif
+			printf("AUTOIT_EA06 ");
 #ifdef HAVE_BZLIB_H
 	printf("BZIP2 ");
+#endif
+
+#ifdef HAVE_LIBXML2
+	printf("LIBXML2 ");
+#endif
+#ifdef HAVE_PCRE
+	printf("PCRE ");
+#endif
+#ifdef HAVE_ICONV
+	printf("ICONV ");
+#endif
+#ifdef HAVE_JSON
+	printf("JSON ");
 #endif
     if(have_rar)
 	printf("RAR ");
@@ -479,5 +496,6 @@ int main(int argc, char **argv)
     cli_detect_environment(&env);
     print_platform(&env);
     print_build(&env);
+    cl_cleanup_crypto();
     return 0;
 }

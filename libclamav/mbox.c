@@ -18,8 +18,6 @@
  *  MA 02110-1301, USA.
  */
 
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.381 2007/02/15 12:26:44 njh Exp $";
-
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
@@ -29,8 +27,6 @@ static	char	const	rcsid[] = "$Id: mbox.c,v 1.381 2007/02/15 12:26:44 njh Exp $";
 #define	_REENTRANT	/* for Solaris 2.8 */
 #endif
 #endif
-
-#define _GNU_SOURCE
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -66,12 +62,12 @@ static	char	const	rcsid[] = "$Id: mbox.c,v 1.381 2007/02/15 12:26:44 njh Exp $";
 #include <pthread.h>
 #endif
 
+#include "clamav.h"
 #include "others.h"
 #include "str.h"
 #include "filetypes.h"
 #include "mbox.h"
 #include "dconf.h"
-#include "md5.h"
 #include "fmap.h"
 
 #define DCONF_PHISHING mctx->ctx->dconf->phishing
@@ -701,12 +697,12 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
 						break;
 					}
 				} else if(line != NULL) {
-					fulllinelength += strlen(line);
+					fulllinelength += strlen(line) + 1;
 					ptr = cli_realloc(fullline, fulllinelength);
 					if(ptr == NULL)
 						continue;
 					fullline = ptr;
-					strcat(fullline, line);
+					cli_strlcat(fullline, line, fulllinelength);
 				}
 
 				assert(fullline != NULL);
@@ -906,12 +902,12 @@ parseEmailHeaders(message *m, const table_t *rfc821)
 					fullline = cli_strdup(line);
 					fulllinelength = strlen(line) + 1;
 				} else if(line) {
-					fulllinelength += strlen(line);
+					fulllinelength += strlen(line) + 1;
 					ptr = cli_realloc(fullline, fulllinelength);
 					if(ptr == NULL)
 						continue;
 					fullline = ptr;
-					strcat(fullline, line);
+					cli_strlcat(fullline, line, fulllinelength);
 				}
 				assert(fullline != NULL);
 
@@ -1178,6 +1174,8 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 				 */
 				break;
 			}
+
+            cli_chomp(boundary);
 
 			/* Perhaps it should assume mixed? */
 			if(mimeSubtype[0] == '\0') {
@@ -1458,6 +1456,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 						 */
 						while(t_line && next_is_folded_header(t_line)) {
 							const char *data;
+                            size_t datasz;
 
 							t_line = t_line->t_next;
 
@@ -1476,14 +1475,14 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 								break;
 							}
 
-							ptr = cli_realloc(fullline,
-								strlen(fullline) + strlen(data) + 1);
+                            datasz = strlen(fullline) + strlen(data) + 1;
+							ptr = cli_realloc(fullline, datasz);
 
 							if(ptr == NULL)
 								break;
 
 							fullline = ptr;
-							strcat(fullline, data);
+							cli_strlcat(fullline, data, datasz);
 
 							/*quotes = count_quotes(data);*/
 						}
@@ -2135,32 +2134,57 @@ boundaryStart(const char *line, const char *boundary)
 	char *out;
 	int rc;
 	char buf[RFC2821LENGTH + 1];
+    char *newline;
 
 	if(line == NULL)
 		return 0;	/* empty line */
 	if(boundary == NULL)
 		return 0;
 
-	/*cli_dbgmsg("boundaryStart: line = '%s' boundary = '%s'\n", line, boundary);*/
+    newline = strdup(line);
+    if (!(newline))
+        newline = (char *)line;
 
-	if((*line != '-') && (*line != '('))
+    if (newline != line && strlen(newline)) {
+        char *p;
+        /* Trim trailing spaces */
+        p = newline + strlen(newline)-1;
+        while (p >= newline && *p == ' ')
+            *(p--) = '\0';
+    }
+
+    if (newline != line)
+        cli_chomp(newline);
+
+	/* cli_dbgmsg("boundaryStart: line = '%s' boundary = '%s'\n", line, boundary); */
+
+	if((*newline != '-') && (*newline != '(')) {
+        if (newline != line)
+            free(newline);
 		return 0;
+    }
 
-	if(strchr(line, '-') == NULL)
+	if(strchr(newline, '-') == NULL) {
+        if (newline != line)
+            free(newline);
 		return 0;
+    }
 
-	if(strlen(line) <= sizeof(buf)) {
+	if(strlen(newline) <= sizeof(buf)) {
 		out = NULL;
-		ptr = rfc822comments(line, buf);
+		ptr = rfc822comments(newline, buf);
 	} else
-		ptr = out = rfc822comments(line, NULL);
+		ptr = out = rfc822comments(newline, NULL);
 
 	if(ptr == NULL)
-		ptr = line;
+		ptr = newline;
 
 	if((*ptr++ != '-') || (*ptr == '\0')) {
 		if(out)
 			free(out);
+        if (newline != line)
+            free(newline);
+
 		return 0;
 	}
 
@@ -2184,7 +2208,7 @@ boundaryStart(const char *line, const char *boundary)
 	 * they're not. Irrespective of whatever RFC2822 says, we need to find
 	 * viruses in both types of mails.
 	 */
-	if((strstr(&ptr[1], boundary) != NULL) || (strstr(line, boundary) != NULL)) {
+	if((strstr(&ptr[1], boundary) != NULL) || (strstr(newline, boundary) != NULL)) {
 		const char *k = ptr;
 
 		/*
@@ -2219,6 +2243,9 @@ boundaryStart(const char *line, const char *boundary)
 	if(rc == 1)
 		cli_dbgmsg("boundaryStart: found %s in %s\n", boundary, line);
 
+    if (newline != line)
+        free(newline);
+
 	return rc;
 }
 
@@ -2231,32 +2258,76 @@ static int
 boundaryEnd(const char *line, const char *boundary)
 {
 	size_t len;
+    char *newline, *p, *p2;
 
 	if(line == NULL)
 		return 0;
 
-	/*cli_dbgmsg("boundaryEnd: line = '%s' boundary = '%s'\n", line, boundary);*/
+    p = newline = strdup(line);
+    if (!(newline)) {
+        p = (char *)line;
+        newline = (char *)line;
+    }
 
-	if(*line++ != '-')
+    if (newline != line && strlen(newline)) {
+        /* Trim trailing spaces */
+        p2 = newline + strlen(newline)-1;
+        while (p2 >= newline && *p2 == ' ')
+            *(p2--) = '\0';
+    }
+
+	/* cli_dbgmsg("boundaryEnd: line = '%s' boundary = '%s'\n", newline, boundary); */
+
+	if(*p++ != '-') {
+        if (newline != line)
+            free(newline);
 		return 0;
-	if(*line++ != '-')
+    }
+
+	if(*p++ != '-') {
+        if (newline != line)
+            free(newline);
+
 		return 0;
+    }
+
 	len = strlen(boundary);
-	if(strncasecmp(line, boundary, len) != 0)
+	if(strncasecmp(p, boundary, len) != 0) {
+        if (newline != line)
+            free(newline);
+
 		return 0;
+    }
 	/*
 	 * Use < rather than == because some broken mails have white
 	 * space after the boundary
 	 */
-	if(strlen(line) < (len + 2))
+	if(strlen(p) < (len + 2)) {
+        if (newline != line)
+            free(newline);
+
 		return 0;
-	line = &line[len];
-	if(*line++ != '-')
+    }
+
+	p = &p[len];
+	if(*p++ != '-') {
+        if (newline != line)
+            free(newline);
+
 		return 0;
-	if(*line == '-') {
-		cli_dbgmsg("boundaryEnd: found %s in %s\n", boundary, line);
+    }
+
+	if(*p == '-') {
+		/* cli_dbgmsg("boundaryEnd: found %s in %s\n", boundary, p); */
+        if (newline != line)
+            free(newline);
+
 		return 1;
 	}
+
+    if (newline != line)
+        free(newline);
+
 	return 0;
 }
 
@@ -2437,6 +2508,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 
 				buf = cli_malloc(strlen(ptr) + 1);
 				if(buf == NULL) {
+                    cli_errmsg("parseMimeHeader: Unable to allocate memory for buf %lu\n", strlen(ptr) + 1);
 					if(copy)
 						free(copy);
 					return -1;
@@ -2545,6 +2617,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 		case CONTENT_DISPOSITION:
 			buf = cli_malloc(strlen(ptr) + 1);
 			if(buf == NULL) {
+                cli_errmsg("parseMimeHeader: Unable to allocate memory for buf %lu\n", strlen(ptr) + 1);
 				if(copy)
 					free(copy);
 				return -1;
@@ -2621,8 +2694,10 @@ rfc822comments(const char *in, char *out)
 
 	if(out == NULL) {
 		out = cli_malloc(strlen(in) + 1);
-		if(out == NULL)
+		if(out == NULL) {
+            cli_errmsg("rfc822comments: Unable to allocate memory for out %lu\n", strlen(in) + 1);
 			return NULL;
+        }
 	}
 
 	backslash = commentlevel = inquote = 0;
@@ -2687,8 +2762,10 @@ rfc2047(const char *in)
 	cli_dbgmsg("rfc2047 '%s'\n", in);
 	out = cli_malloc(strlen(in) + 1);
 
-	if(out == NULL)
+	if(out == NULL) {
+        cli_errmsg("rfc2047: Unable to allocate memory for out %lu\n", strlen(in) + 1);
 		return NULL;
+    }
 
 	pout = out;
 
@@ -2789,7 +2866,6 @@ rfc1341(message *m, const char *dir)
 	int n;
 	char pdir[NAME_MAX + 1];
 	unsigned char md5_val[16];
-	cli_md5_ctx md5;
 	char *md5_hex;
 
 	id = (char *)messageFindArgument(m, "id");
@@ -2807,7 +2883,7 @@ rfc1341(message *m, const char *dir)
 	} else if(errno == EEXIST) {
 		STATBUF statb;
 
-		if(STAT(pdir, &statb) < 0) {
+		if(CLAMSTAT(pdir, &statb) < 0) {
 			char err[128];
 			cli_errmsg("Partial directory %s: %s\n", pdir,
 				cli_strerror(errno, err, sizeof(err)));
@@ -2846,9 +2922,7 @@ rfc1341(message *m, const char *dir)
 	}
 
 	n = atoi(number);
-	cli_md5_init(&md5);
-	cli_md5_update(&md5, id, strlen(id));
-	cli_md5_final(md5_val, &md5);
+    cl_hash_data("md5", id, strlen(id), md5_val, NULL);
 	md5_hex = cli_str2hex((const char*)md5_val, 16);
 
 	if(!md5_hex) {
@@ -3123,6 +3197,8 @@ checkURLs(message *mainMessage, mbox_ctx *mctx, mbox_status *rc, int is_html)
 	blob *b;
 	tag_arguments_t hrefs;
 
+    UNUSEDPARAM(is_html);
+
 	if(*rc == VIRUS)
 		return;
 
@@ -3240,7 +3316,7 @@ getline_from_mbox(char *buffer, size_t buffer_len, fmap_t *map, size_t *at)
 	return NULL;
     }
     if((buffer_len == 0) || (buffer == NULL)) {
-	cli_errmsg("Invalid call to getline_from_mbox(). Refer to http://www.clamav.net/bugs\n");
+	cli_errmsg("Invalid call to getline_from_mbox(). Refer to http://www.clamav.net/doc/install.html\n");
 	return NULL;
     }
 

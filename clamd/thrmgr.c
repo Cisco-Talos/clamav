@@ -31,6 +31,7 @@
 
 #include "shared/output.h"
 
+#include "libclamav/clamav.h"
 #include "thrmgr.h"
 #include "others.h"
 #include "mpool.h"

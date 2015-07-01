@@ -24,7 +24,7 @@ with_gnu_ld=$acl_cv_prog_gnu_ld
 dnl From libtool-1.4. Sets the variable LD.
 AC_DEFUN([AC_LIB_PROG_LD],
 [AC_ARG_WITH(gnu-ld,
-[  --with-gnu-ld           assume the C compiler uses GNU ld [default=no]],
+[AS_HELP_STRING([--with-gnu-ld], [assume the C compiler uses GNU ld @<:@default=no@:>@])],
 test "$withval" = no || with_gnu_ld=yes, with_gnu_ld=no)
 AC_REQUIRE([AC_PROG_CC])dnl
 AC_REQUIRE([AC_CANONICAL_HOST])dnl

@@ -24,6 +24,7 @@
 #include <fcntl.h>
 #include <io.h>
 
+#include "clamav.h"
 #include "others.h"
 #include "shared/misc.h"
 

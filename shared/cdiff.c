@@ -32,10 +32,10 @@
 #include <unistd.h>
 #endif
 
+#include "clamav.h"
 #include "shared/misc.h"
 #include "shared/output.h"
 #include "shared/cdiff.h"
-#include "libclamav/sha256.h"
 
 #include "libclamav/str.h"
 #include "libclamav/others.h"
@@ -178,6 +178,8 @@ static int cdiff_cmd_open(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf,
 	char *db;
 	unsigned int i;
 
+    UNUSEDPARAM(lbuf);
+    UNUSEDPARAM(lbuflen);
 
     if(!(db = cdiff_token(cmdstr, 1, 1))) {
 	logg("!cdiff_cmd_open: Can't get first argument\n");
@@ -207,6 +209,8 @@ static int cdiff_cmd_add(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf, 
 	char *sig;
 	struct cdiff_node *new;
 
+    UNUSEDPARAM(lbuf);
+    UNUSEDPARAM(lbuflen);
 
     if(!(sig = cdiff_token(cmdstr, 1, 1))) {
 	logg("!cdiff_cmd_add: Can't get first argument\n");
@@ -236,6 +240,9 @@ static int cdiff_cmd_del(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf, 
 	char *arg;
 	struct cdiff_node *pt, *last, *new;
 	unsigned int lineno;
+
+    UNUSEDPARAM(lbuf);
+    UNUSEDPARAM(lbuflen);
 
 
     if(!(arg = cdiff_token(cmdstr, 1, 0))) {
@@ -294,6 +301,9 @@ static int cdiff_cmd_xchg(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf,
 	struct cdiff_node *new;
 	unsigned int lineno;
 
+    UNUSEDPARAM(lbuf);
+    UNUSEDPARAM(lbuflen);
+
 
     if(!(arg = cdiff_token(cmdstr, 1, 0))) {
 	logg("!cdiff_cmd_xchg: Can't get first argument\n");
@@ -339,6 +349,8 @@ static int cdiff_cmd_close(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf
 	unsigned int lines = 0;
 	char *tmp;
 	FILE *fh, *tmpfh;
+
+    UNUSEDPARAM(cmdstr);
 
 
     if(!ctx->open_db) {
@@ -681,6 +693,8 @@ static int cdiff_cmd_unlink(const char *cmdstr, struct cdiff_ctx *ctx, char *lbu
 	char *db;
 	unsigned int i;
 
+    UNUSEDPARAM(lbuf);
+    UNUSEDPARAM(lbuflen);
 
     if(ctx->open_db) {
 	logg("!cdiff_cmd_unlink: Database %s is still open\n", ctx->open_db);
@@ -764,7 +778,7 @@ int cdiff_apply(int fd, unsigned short mode)
 	int end, i, n;
 	struct stat sb;
 	int desc;
-	SHA256_CTX sha256ctx;
+	EVP_MD_CTX *sha256ctx;
 	unsigned char digest[32];
 	int sum, bread;
 #define DSIGBUFF 350
@@ -848,18 +862,27 @@ int cdiff_apply(int fd, unsigned short mode)
 	    return -1;
 	}
 
-	sha256_init(&sha256ctx);
+    sha256ctx = EVP_MD_CTX_create();
+    if (!(sha256ctx)) {
+        close(desc);
+        free(line);
+        free(lbuf);
+        return -1;
+    }
+
+	EVP_DigestInit_ex(sha256ctx, EVP_sha256(), NULL);
 	sum = 0;
 	while((bread = read(desc, buff, FILEBUFF)) > 0) {
 	    if(sum + bread >= end) {
-		sha256_update(&sha256ctx, (unsigned char *) buff, end - sum);
+		EVP_DigestUpdate(sha256ctx, (unsigned char *) buff, end - sum);
 		break;
 	    } else {
-		sha256_update(&sha256ctx, (unsigned char *) buff, bread);
+		EVP_DigestUpdate(sha256ctx, (unsigned char *) buff, bread);
 	    }
 	    sum += bread;
 	}
-	sha256_final(&sha256ctx, digest);
+	EVP_DigestFinal_ex(sha256ctx, digest, NULL);
+    EVP_MD_CTX_destroy(sha256ctx);
 
 	if(cli_versig2(digest, dsig, PSS_NSTR, PSS_ESTR) != CL_SUCCESS) {
 	    logg("!cdiff_apply: Incorrect digital signature\n");
@@ -910,7 +933,6 @@ int cdiff_apply(int fd, unsigned short mode)
 		logg("!cdiff_apply: Premature EOF at line %d\n", lines + 1);
 		cdiff_ctx_free(&ctx);
 		gzclose(gzh);
-		close(desc);
 		free(line);
 		free(lbuf);
 		return -1;

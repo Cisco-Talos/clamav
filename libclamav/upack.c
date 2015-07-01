@@ -39,6 +39,7 @@
 #include <string.h>
 #endif
 
+#include "clamav.h"
 #include "cltypes.h"
 #include "pe.h"
 #include "rebuildpe.h"
@@ -212,12 +213,17 @@ int unupack(int upack, char *dest, uint32_t dsize, char *buff, uint32_t vma, uin
 			loc_edi = dest+vma-base; /* XXX not enough samples provided to be sure of it! */
 
 		pushed_esi = loc_edi;
-		end_edi = dest + cli_readint32(loc_esi + 0x34) - vma;
 		if (upack_version == UPACK_0297729)
 		{
 			end_edi = dest + cli_readint32(loc_esi + 0x64) - vma;
 			save3 = cli_readint32(loc_esi + 0x40);
-		}
+		} else {
+                        end_edi = dest + cli_readint32(loc_esi + 0x34) - vma;
+                }
+                if (loc_edi > end_edi) {
+                        cli_dbgmsg("Upack: loc_edi > end_edi breaks cli_rebuildpe() bb#11216\n");
+                        return -1;
+                }
 		/* begin end */
 		cli_dbgmsg("Upack: data initialized, before upack lzma call!\n");
 		if ((ret = (uint32_t)unupack399(dest, dsize, 0, loc_ebx, 0, loc_edi, end_edi, shlsize, paddr)) == 0xffffffff)
@@ -296,6 +302,8 @@ int unupack(int upack, char *dest, uint32_t dsize, char *buff, uint32_t vma, uin
 			loc_esi += 4;
 			cli_dbgmsg("Upack: ecx counter: %08x\n", j);
 
+			if (((uint64_t)count+j) * 4 > UINT_MAX)
+				return -1;
 			if (!CLI_ISCONTAINED(dest, dsize, loc_esi, (j*4)) || !CLI_ISCONTAINED(dest, dsize, loc_edi, ((j+count)*4)))
 				return -1;
 			for (;j--; loc_edi+=4, loc_esi+=4)
@@ -317,7 +325,7 @@ int unupack(int upack, char *dest, uint32_t dsize, char *buff, uint32_t vma, uin
 			save1 = cli_readint32(loc_esi); /* loc_eax = 0x400 */
 			loc_esi += 4;
 
-			for (j=0; j<count; j++, loc_edi+=4) /* checked above */
+			for (j=0; (uint32_t)j<count; j++, loc_edi+=4) /* checked above */
 				cli_writeint32(loc_edi, (save1));
 
 			if (!CLI_ISCONTAINED(dest, dsize, (loc_esi+0x10), 4))
@@ -353,6 +361,8 @@ int unupack(int upack, char *dest, uint32_t dsize, char *buff, uint32_t vma, uin
 			loc_edi += 4;
 			loc_ebx = loc_edi;
 		
+			if (((uint64_t)count+6) * 4 > UINT_MAX)
+				return -1;
 			if (!CLI_ISCONTAINED(dest, dsize, loc_edi, ((6+count)*4)))
 				return -1;
 			cli_writeint32(loc_edi, 0xffffffff);
@@ -362,7 +372,7 @@ int unupack(int upack, char *dest, uint32_t dsize, char *buff, uint32_t vma, uin
 			for (j=0; j<4; j++, loc_edi+=4)
 				cli_writeint32(loc_edi, (1));
 
-			for (j=0; j<count; j++, loc_edi+=4)
+			for (j=0; (uint32_t)j<count; j++, loc_edi+=4)
 				cli_writeint32(loc_edi, 0x400);
 			
 			loc_edi = dest + cli_readint32(loc_esi) - base; /* read checked above */
@@ -375,6 +385,10 @@ int unupack(int upack, char *dest, uint32_t dsize, char *buff, uint32_t vma, uin
 			end_edi = dest + cli_readint32(loc_esi-0x28) - base; /* read checked above */
 			loc_esi = save_edi;
 		}
+                if (loc_edi > end_edi) {
+                        cli_dbgmsg("Upack(alt begin): loc_edi > end_edi breaks cli_rebuildpe() bb#11216\n");
+                        return -1;
+                }
 		cli_dbgmsg("Upack: data initialized, before upack lzma call!\n");
 		if ((ret = (uint32_t)unupack399(dest, dsize, loc_ecx, loc_ebx, loc_ecx, loc_edi, end_edi, shlsize, paddr)) == 0xffffffff)
 			return -1;
@@ -421,6 +435,13 @@ int unupack(int upack, char *dest, uint32_t dsize, char *buff, uint32_t vma, uin
 	section.rva = va;
 	section.rsz = end_edi-loc_edi;
 	section.vsz = end_edi-loc_edi;
+
+	/* bb#11282 - prevent dest+va/dest from passing an invalid dereference to cli_rebuildpe */
+	/* check should trigger on broken PE files where the section exists outside of the file */
+	if ((!upack && ((va + section.rsz) > dsize)) || (upack && (section.rsz > dsize))) {
+		cli_dbgmsg("Upack: Rebuilt section exceeds allocated buffer; breaks cli_rebuildpe() bb#11282\n");
+		return 0;
+	}
 
 	if (!cli_rebuildpe(dest + (upack?0:va), &section, 1, base, original_ep, 0, 0, file)) {
 		cli_dbgmsg("Upack: Rebuilding failed\n");

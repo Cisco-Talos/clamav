@@ -30,6 +30,8 @@
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
+
+#include "clamav.h"
 #include "cltypes.h"
 #include "pe.h"
 #include "others.h"
@@ -37,10 +39,26 @@
 
 #define EC16(x) le16_to_host(x) /* Convert little endian to host */
 
+#define DO_HEURISTIC 1
+
+static int yc_bounds_check(cli_ctx *ctx, char *base, unsigned int filesize, char *offset, unsigned int bound)
+{
+      if ((unsigned int)((offset+bound)-base) > filesize) {
+          cli_dbgmsg("yC: Bounds check assertion.\n");
+#if DO_HEURISTIC
+          cli_append_virus(ctx, "Heuristics.BoundsCheck");
+#endif
+          return 1;
+      }
+
+      return 0;
+}
+
+
 /* ========================================================================== */
 /* "Emulates" the poly decryptors */
 
-static int yc_poly_emulator(char* decryptor_offset, char* code, unsigned int ecx)
+static int yc_poly_emulator(cli_ctx *ctx, char *base, unsigned int filesize, char* decryptor_offset, char* code, unsigned int ecx, uint32_t max_emu)
 {
 
   /* 
@@ -63,18 +81,32 @@ static int yc_poly_emulator(char* decryptor_offset, char* code, unsigned int ecx
   unsigned char al;
   unsigned char cl = ecx & 0xff;
   unsigned int j,i;
+  unsigned int max_jmp_loop = 100000000;
 
-  for(i=0;i<ecx;i++) /* Byte looper - Decrypts every byte and write it back */
+  for(i=0;i<ecx&&i<max_emu;i++) /* Byte looper - Decrypts every byte and write it back */
     {
+        if (yc_bounds_check(ctx, base, filesize, code, i)) {
+            return 2;
+        }
       al = code[i];
 
       for(j=0;j<0x30;j++)   /* Poly Decryptor "Emulator" */
 	{
+        if (yc_bounds_check(ctx, base, filesize, decryptor_offset, j)) {
+            return 2;
+        }
+
 	  switch(decryptor_offset[j])
 	    {
 
 	    case '\xEB':	/* JMP short */
 	      j++;
+            if (yc_bounds_check(ctx, base, filesize, decryptor_offset, j)) {
+                return 2;
+            }
+	      if (!max_jmp_loop)
+	          return 2;
+	      max_jmp_loop--;
 	      j = j + decryptor_offset[j];
 	      break;
 
@@ -100,36 +132,57 @@ static int yc_poly_emulator(char* decryptor_offset, char* code, unsigned int ecx
 	      ;
 	    case '\x04':	/* ADD AL,num */
 	      j++;
+            if (yc_bounds_check(ctx, base, filesize, decryptor_offset, j)) {
+                return 2;
+            }
 	      al = al + decryptor_offset[j];
 	      break;
 	      ;
 	    case '\x34':	/* XOR AL,num */
 	      j++;
+            if (yc_bounds_check(ctx, base, filesize, decryptor_offset, j)) {
+                return 2;
+            }
 	      al = al ^ decryptor_offset[j];
 	      break;
 
 	    case '\x2C':	/* SUB AL,num */
 	      j++;
+            if (yc_bounds_check(ctx, base, filesize, decryptor_offset, j)) {
+                return 2;
+            }
 	      al = al - decryptor_offset[j];
 	      break;
 
 			
 	    case '\xC0':
 	      j++;
+            if (yc_bounds_check(ctx, base, filesize, decryptor_offset, j)) {
+                return 2;
+            }
 	      if(decryptor_offset[j]=='\xC0') /* ROL AL,num */
 		{
 		  j++;
+            if (yc_bounds_check(ctx, base, filesize, decryptor_offset, j)) {
+                return 2;
+            }
 		  CLI_ROL(al,decryptor_offset[j]);
 		}
 	      else			/* ROR AL,num */
 		{
 		  j++;
+            if (yc_bounds_check(ctx, base, filesize, decryptor_offset, j)) {
+                return 2;
+            }
 		  CLI_ROR(al,decryptor_offset[j]);
 		}
 	      break;
 
 	    case '\xD2':
 	      j++;
+            if (yc_bounds_check(ctx, base, filesize, decryptor_offset, j)) {
+                return 2;
+            }
 	      if(decryptor_offset[j]=='\xC8') /* ROR AL,CL */
 		{
 		  j++;
@@ -148,11 +201,16 @@ static int yc_poly_emulator(char* decryptor_offset, char* code, unsigned int ecx
 	      break;
 
 	    default:
+            if (yc_bounds_check(ctx, base, filesize, decryptor_offset, j)) {
+                return 2;
+            }
 	      cli_dbgmsg("yC: Unhandled opcode %x\n", (unsigned char)decryptor_offset[j]);
 	      return 1;
 	    }
 	}
       cl--;
+            if (yc_bounds_check(ctx, base, filesize, code, i))
+                return 2;
       code[i] = al;
     }
   return 0;
@@ -163,12 +221,13 @@ static int yc_poly_emulator(char* decryptor_offset, char* code, unsigned int ecx
 /* ========================================================================== */
 /* Main routine which calls all others */
 
-int yc_decrypt(char *fbuf, unsigned int filesize, struct cli_exe_section *sections, unsigned int sectcount, uint32_t peoffset, int desc, uint32_t ecx,int16_t offset) {
+int yc_decrypt(cli_ctx *ctx, char *fbuf, unsigned int filesize, struct cli_exe_section *sections, unsigned int sectcount, uint32_t peoffset, int desc, uint32_t ecx,int16_t offset) {
   uint32_t ycsect = sections[sectcount].raw+offset;
   unsigned int i;
   struct pe_image_file_hdr *pe = (struct pe_image_file_hdr*) (fbuf + peoffset);
   char *sname = (char *)pe + EC16(pe->SizeOfOptionalHeader) + 0x18;
-
+  uint32_t max_emu;
+  unsigned int ofilesize = filesize;
   /* 
 
   First layer (decryptor of the section decryptor) in last section 
@@ -180,8 +239,12 @@ int yc_decrypt(char *fbuf, unsigned int filesize, struct cli_exe_section *sectio
   */
   cli_dbgmsg("yC: offset: %x, length: %x\n", offset, ecx);
   cli_dbgmsg("yC: decrypting decryptor on sect %d\n", sectcount);
-  if (yc_poly_emulator(fbuf + ycsect + 0x93, fbuf + ycsect + 0xc6, ecx))
-    return 1;
+  switch (yc_poly_emulator(ctx, fbuf, filesize, fbuf + ycsect + 0x93, fbuf + ycsect + 0xc6, ecx, ecx)) {
+  case 2:
+      return CL_VIRUS;
+  case 1:
+      return CL_EUNPACK;
+  }
   filesize-=sections[sectcount].ursz;
 
   /* 
@@ -190,31 +253,42 @@ int yc_decrypt(char *fbuf, unsigned int filesize, struct cli_exe_section *sectio
 
   Start offset for analyze: Start of yC Section + 0x457
   End offset for analyze: Start of yC Section + 0x487
-  Lenght to decrypt - ECX = Raw Size of Section
+  Length to decrypt - ECX = Raw Size of Section
 
   */
 
 
   /* Loop through all sections and decrypt them... */
-  for(i=0;i<sectcount;i++)
-    {
-      uint32_t name = (uint32_t) cli_readint32(sname+i*0x28);
-      if (!sections[i].raw ||
-	  !sections[i].rsz ||
-	   name == 0x63727372 || /* rsrc */
-	   name == 0x7273722E || /* .rsr */
-	   name == 0x6F6C6572 || /* relo */
-	   name == 0x6C65722E || /* .rel */
-	   name == 0x6164652E || /* .eda */
-	   name == 0x6164722E || /* .rda */
-	   name == 0x6164692E || /* .ida */
-	   name == 0x736C742E || /* .tls */
-	   (name&0xffff) == 0x4379  /* yC */
+  for(i=0;i<sectcount;i++) {
+    uint32_t name = (uint32_t) cli_readint32(sname+i*0x28);
+    if (!sections[i].raw ||
+	!sections[i].rsz ||
+	name == 0x63727372 || /* rsrc */
+	name == 0x7273722E || /* .rsr */
+	name == 0x6F6C6572 || /* relo */
+	name == 0x6C65722E || /* .rel */
+	name == 0x6164652E || /* .eda */
+	name == 0x6164722E || /* .rda */
+	name == 0x6164692E || /* .ida */
+	name == 0x736C742E || /* .tls */
+	(name&0xffff) == 0x4379  /* yC */
 	) continue;
-      cli_dbgmsg("yC: decrypting sect%d\n",i);
-      if (yc_poly_emulator(fbuf + ycsect + (offset == -0x18 ? 0x3ea : 0x457), fbuf + sections[i].raw, sections[i].ursz))
-	  return 1;
+    cli_dbgmsg("yC: decrypting sect%d\n",i);
+    max_emu = filesize - sections[i].raw;
+    if (max_emu > filesize) {
+      cli_dbgmsg("yC: bad emulation length limit %u\n", max_emu);
+      return 1;
     }
+    switch (yc_poly_emulator(ctx, fbuf, ofilesize, fbuf + ycsect + (offset == -0x18 ? 0x3ea : 0x457), 
+			 fbuf + sections[i].raw, 
+			 sections[i].ursz, 
+			 max_emu)) {
+    case 2:
+        return CL_VIRUS;
+    case 1:
+        return CL_EUNPACK;
+    }
+  }
 
   /* Remove yC section */
   pe->NumberOfSections=EC16(sectcount);
@@ -231,7 +305,7 @@ int yc_decrypt(char *fbuf, unsigned int filesize, struct cli_exe_section *sectio
 
   if (cli_writen(desc, fbuf, filesize)==-1) {
     cli_dbgmsg("yC: Cannot write unpacked file\n");
-    return 1;
+    return CL_EUNPACK;
   }
-  return 0;
+  return CL_SUCCESS;
 }

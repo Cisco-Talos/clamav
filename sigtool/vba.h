@@ -25,6 +25,6 @@
 
 int sigtool_vba_scandir(const char *dirname, int hex_output, struct uniq *U);
 cli_ctx *convenience_ctx(int fd);
-void destroy_ctx(cli_ctx *ctx);
+void destroy_ctx(int desc, cli_ctx *ctx);
 
 #endif

@@ -19,6 +19,8 @@
  */
 
 #include <string.h>
+
+#include "clamav.h"
 #include "scanners.h"
 #include "iso9660.h"
 #include "fmap.h"
@@ -44,7 +46,7 @@ static const void *needblock(const iso9660_t *iso, unsigned int block, int temp)
     if(block > (((*ctx->fmap)->len - iso->base_offset) / iso->sectsz) * blocks_per_sect)
 	return NULL; /* Block is out of file */
     loff = (block / blocks_per_sect) * iso->sectsz;   /* logical sector */
-    loff += (block % blocks_per_sect) * iso->blocksz; /* logical block within the secotor */
+    loff += (block % blocks_per_sect) * iso->blocksz; /* logical block within the sector */
     if(temp)
 	return fmap_need_off_once(*ctx->fmap, iso->base_offset + loff, iso->blocksz);
     return fmap_need_off(*ctx->fmap, iso->base_offset + loff, iso->blocksz);
@@ -53,34 +55,37 @@ static const void *needblock(const iso9660_t *iso, unsigned int block, int temp)
 
 static int iso_scan_file(const iso9660_t *iso, unsigned int block, unsigned int len) {
     char *tmpf;
-    int fd, ret;
+    int fd, ret = CL_SUCCESS;
+
     if(cli_gentempfd(iso->ctx->engine->tmpdir, &tmpf, &fd) != CL_SUCCESS)
-	return CL_ETMPFILE;
+        return CL_ETMPFILE;
 
     cli_dbgmsg("iso_scan_file: dumping to %s\n", tmpf);
     while(len) {
-	const void *buf = needblock(iso, block, 1);
-	unsigned int todo = MIN(len, iso->blocksz);
-	if(cli_writen(fd, buf, todo) != todo) {
-	    close(fd);
-	    ret = cli_unlink(tmpf);
-	    free(tmpf);
-	    if(ret)
-		return CL_EUNLINK;
-	    return CL_EWRITE;
-	}
-	len -= todo;
-	block++;
+        const void *buf = needblock(iso, block, 1);
+        unsigned int todo = MIN(len, iso->blocksz);
+        if(!buf) {
+            /* Block outside file */
+            cli_dbgmsg("iso_scan_file: cannot dump block outside file, ISO may be truncated\n");
+            ret = CL_EFORMAT;
+            break;
+        }
+        if((unsigned int)cli_writen(fd, buf, todo) != todo) {
+            cli_warnmsg("iso_scan_file: Can't write to file %s\n", tmpf);
+            ret = CL_EWRITE;
+            break;
+        }
+        len -= todo;
+        block++;
     }
 
-    ret = cli_magic_scandesc(fd, iso->ctx);
+    if (!len)
+        ret = cli_magic_scandesc(fd, iso->ctx);
 
     close(fd);
-
     if(!iso->ctx->engine->keeptmp) {
 	if(cli_unlink(tmpf)) {
-	    free(tmpf);
-	    return CL_EUNLINK;
+	    ret = CL_EUNLINK;
 	}
     }
 
@@ -113,6 +118,7 @@ static char *iso_string(iso9660_t *iso, const void *src, unsigned int len) {
 static int iso_parse_dir(iso9660_t *iso, unsigned int block, unsigned int len) {
     cli_ctx *ctx = iso->ctx;
     int ret = CL_CLEAN;
+    int viruses_found = 0;
 
     if(len < 34) {
 	cli_dbgmsg("iso_parse_dir: Directory too small, skipping\n");
@@ -177,10 +183,13 @@ static int iso_parse_dir(iso9660_t *iso, unsigned int block, unsigned int len) {
 	    filesz = cli_readint32(dir+10);
 
 	    cli_dbgmsg("iso_parse_dir: %s '%s': off %x - size %x - flags %x - unit size %x - gap size %x - volume %u\n", (dir[25] & 2) ? "Directory" : "File", iso->buf, fileoff, filesz, dir[25], dir[26], dir[27], cli_readint32(&dir[28]) & 0xffff);
-	    if(cli_matchmeta(ctx, iso->buf, filesz, filesz, 0, 0, 0, NULL) == CL_VIRUS) {
-		ret = CL_VIRUS;
-		break;
-	    }
+            ret = cli_matchmeta(ctx, iso->buf, filesz, filesz, 0, 0, 0, NULL);
+            if (ret == CL_VIRUS) {
+                viruses_found = 1;
+                if (!SCAN_ALL)
+                    break;
+                ret = CL_CLEAN;
+            }
 
 	    if(dir[26] || dir[27])
 		cli_dbgmsg("iso_parse_dir: Skipping interleaved file\n");
@@ -194,6 +203,12 @@ static int iso_parse_dir(iso9660_t *iso, unsigned int block, unsigned int len) {
 		    else
 			ret = iso_scan_file(iso, fileoff, filesz);
 		}
+                if (ret == CL_VIRUS) {
+                    viruses_found = 1;
+                    if (!SCAN_ALL)
+                        break;
+                    ret = CL_CLEAN;
+                }
 	    }
 	    dirsz -= entrysz;
 	    dir += entrysz;
@@ -201,6 +216,8 @@ static int iso_parse_dir(iso9660_t *iso, unsigned int block, unsigned int len) {
 
 	fmap_unneed_ptr(*ctx->fmap, dir_orig, iso->blocksz);
     }
+    if (viruses_found == 1)
+        return CL_VIRUS;
     return ret;
 }
 

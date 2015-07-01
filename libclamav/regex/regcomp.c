@@ -41,6 +41,8 @@
 #include <ctype.h>
 #include <limits.h>
 #include <stdlib.h>
+
+#include "clamav.h"
 #include "others.h"
 #include "regex.h"
 
@@ -155,6 +157,7 @@ cli_regcomp_real(regex_t *preg, const char *pattern, int cflags)
 	struct parse *p = &pa;
 	int i;
 	size_t len;
+	size_t maxlen;
 #ifdef REDEBUG
 #	define	GOODFLAGS(f)	(f)
 #else
@@ -177,7 +180,24 @@ cli_regcomp_real(regex_t *preg, const char *pattern, int cflags)
 							(NC-1)*sizeof(cat_t));
 	if (g == NULL)
 		return(REG_ESPACE);
+	/* Patch for bb11264 submitted by the Debian team:                */
+	/*
+	 * Limit the pattern space to avoid a 32-bit overflow on buffer
+	 * extension.  Also avoid any signed overflow in case of conversion
+	 * so make the real limit based on a 31-bit overflow.
+	 *
+	 * Likely not applicable on 64-bit systems but handle the case
+	 * generically (who are we to stop people from using ~715MB+
+	 * patterns?).
+	 */
+	maxlen = ((size_t)-1 >> 1) / sizeof(sop) * 2 / 3;
+	if (len >= maxlen) {
+		free((char *)g);
+		return(REG_ESPACE);
+	}
 	p->ssize = len/(size_t)2*(size_t)3 + (size_t)1;	/* ugh */
+	assert(p->ssize >= len);
+
 	p->strip = (sop *)cli_calloc(p->ssize, sizeof(sop));
 	p->slen = 0;
 	if (p->strip == NULL) {
@@ -551,7 +571,7 @@ p_simp_re(struct parse *p,
 		i = (c&~BACKSL) - '0';
 		assert(i < NPAREN);
 		if (p->pend[i] != 0) {
-			assert(i <= p->g->nsub);
+			assert((size_t)i <= p->g->nsub);
 			EMIT(OBACK_, i);
 			assert(p->pbegin[i] != 0);
 			assert(OP(p->strip[p->pbegin[i]]) == OLPAREN);
@@ -1194,6 +1214,7 @@ mcadd( struct parse *p, cset *cs, const char *cp)
 static void
 mcinvert(struct parse *p, cset *cs)
 {
+    UNUSEDPARAM(p);
 	assert(cs->multis == NULL);	/* xxx */
 }
 
@@ -1207,6 +1228,7 @@ mcinvert(struct parse *p, cset *cs)
 static void
 mccase(struct parse *p, cset *cs)
 {
+    UNUSEDPARAM(p);
 	assert(cs->multis == NULL);	/* xxx */
 }
 
@@ -1414,8 +1436,8 @@ static void
 findmust(struct parse *p, struct re_guts *g)
 {
 	sop *scan;
-	sop *start;    /* start initialized in the default case, after that */
-	sop *newstart; /* newstart was initialized in the OCHAR case */
+	sop *start = NULL;    /* start initialized in the default case, after that */
+	sop *newstart = NULL; /* newstart was initialized in the OCHAR case */
 	sopno newlen;
 	sop s;
 	char *cp;
@@ -1466,6 +1488,10 @@ findmust(struct parse *p, struct re_guts *g)
 
 	if (g->mlen == 0)		/* there isn't one */
 		return;
+	if (start == NULL) {		/* something went wrong */
+		g->mlen = 0;
+		return;
+	}
 
 	/* turn it into a character string */
 	g->must = cli_malloc((size_t)g->mlen + 1);

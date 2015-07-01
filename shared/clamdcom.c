@@ -32,6 +32,10 @@
 #include <fcntl.h>
 #include <errno.h>
 
+#if !defined(_WIN32)
+#include <sys/socket.h>
+#endif
+
 #include "shared/output.h"
 #include "shared/clamdcom.h"
 

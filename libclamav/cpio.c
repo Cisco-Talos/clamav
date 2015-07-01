@@ -32,6 +32,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+#include "clamav.h"
 #include "cltypes.h"
 #include "others.h"
 #include "cpio.h"
@@ -123,7 +124,7 @@ int cli_scancpio_old(cli_ctx *ctx)
 	if(hdr_old.namesize) {
 	    hdr_namesize = EC16(hdr_old.namesize, conv);
 	    namesize = MIN(sizeof(name), hdr_namesize);
-	    if (fmap_readn(*ctx->fmap, &name, pos, namesize) != namesize) {
+	    if ((uint32_t)fmap_readn(*ctx->fmap, &name, pos, namesize) != namesize) {
 		cli_dbgmsg("cli_scancpio_old: Can't read file name\n");
 		return CL_EFORMAT;
 	    }
@@ -157,7 +158,7 @@ int cli_scancpio_old(cli_ctx *ctx)
 	    if(ret == CL_EMAXFILES) {
 		return ret;
 	    } else if(ret == CL_SUCCESS) {
-		ret = cli_map_scandesc(*ctx->fmap, pos, filesize, ctx);
+		ret = cli_map_scan(*ctx->fmap, pos, filesize, ctx, CL_TYPE_ANY);
 		if(ret == CL_VIRUS)
 		    return ret;
 	    }
@@ -201,7 +202,7 @@ int cli_scancpio_odc(cli_ctx *ctx)
 	}
 	if(hdr_namesize) {
 	    namesize = MIN(sizeof(name), hdr_namesize);
-	    if (fmap_readn(*ctx->fmap, &name, pos, namesize) != namesize) {
+	    if ((uint32_t)fmap_readn(*ctx->fmap, &name, pos, namesize) != namesize) {
 		cli_dbgmsg("cli_scancpio_odc: Can't read file name\n");
 		return CL_EFORMAT;
 	    }
@@ -234,7 +235,7 @@ int cli_scancpio_odc(cli_ctx *ctx)
 	if(ret == CL_EMAXFILES) {
 	    return ret;
 	} else if(ret == CL_SUCCESS) {
-	    ret = cli_map_scandesc(*ctx->fmap, pos, filesize, ctx);
+	    ret = cli_map_scan(*ctx->fmap, pos, filesize, ctx, CL_TYPE_ANY);
 	    if(ret == CL_VIRUS)
 		return ret;
 	}
@@ -275,7 +276,7 @@ int cli_scancpio_newc(cli_ctx *ctx, int crc)
 	}
 	if(hdr_namesize) {
 	    namesize = MIN(sizeof(name), hdr_namesize);
-	    if (fmap_readn(*ctx->fmap, &name, pos, namesize) != namesize) {
+	    if ((uint32_t)fmap_readn(*ctx->fmap, &name, pos, namesize) != namesize) {
 		cli_dbgmsg("cli_scancpio_newc: Can't read file name\n");
 		return CL_EFORMAT;
 	    }
@@ -313,7 +314,7 @@ int cli_scancpio_newc(cli_ctx *ctx, int crc)
 	if(ret == CL_EMAXFILES) {
 	    return ret;
 	} else if(ret == CL_SUCCESS) {
-	    ret = cli_map_scandesc(*ctx->fmap, pos, filesize, ctx);
+	    ret = cli_map_scan(*ctx->fmap, pos, filesize, ctx, CL_TYPE_ANY);
 	    if(ret == CL_VIRUS)
 		return ret;
 	}

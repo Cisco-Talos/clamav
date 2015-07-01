@@ -47,6 +47,7 @@ struct thrwarg {
 };
 
 int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigned int dboptions, const struct optstruct *opts);
+int statinidir_th(const char* dirname);
 void sighandler(int sig);
 void sighandler_th(int sig);
 void sigsegv(int sig);

@@ -22,6 +22,10 @@
 #include "clamav-config.h"
 #endif
 
+#if defined(C_SOLARIS)
+#define __EXTENSIONS__
+#endif
+
 /* must be first because it may define _XOPEN_SOURCE */
 #include "shared/fdpassing.h"
 #include <stdio.h>
@@ -41,8 +45,10 @@
 #ifndef _WIN32
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <netdb.h>
 #endif
 
+#include "libclamav/clamav.h"
 #include "libclamav/others.h"
 #include "shared/actions.h"
 #include "shared/output.h"
@@ -52,30 +58,76 @@
 #include "proto.h"
 #include "client.h"
 
-extern struct sockaddr *mainsa;
-extern int mainsasz;
 extern unsigned long int maxstream;
 int printinfected;
 extern struct optstruct *clamdopts;
+#ifndef _WIN32
+extern struct sockaddr_un nixsock;
+#endif
 
 static const char *scancmd[] = { "CONTSCAN", "MULTISCAN", "INSTREAM", "FILDES", "ALLMATCHSCAN" };
 
 /* Connects to clamd 
  * Returns a FD or -1 on error */
 int dconnect() {
-    int sockd;
+    int sockd, res;
+    const struct optstruct *opt;
+    struct addrinfo hints, *info, *p;
+    char port[10];
+    char *ipaddr;
 
-    if((sockd = socket(mainsa->sa_family, SOCK_STREAM, 0)) < 0) {
-	logg("!Can't create the socket: %s\n", strerror(errno));
-	return -1;
+#ifndef _WIN32
+    opt = optget(clamdopts, "LocalSocket");
+    if (opt->enabled) {
+        if ((sockd = socket(AF_UNIX, SOCK_STREAM, 0)) >= 0) {
+            if (connect(sockd, (struct sockaddr *)&nixsock, sizeof(nixsock)) == 0)
+                return sockd;
+            else
+                close(sockd);
+        }
+    }
+#endif
+
+    snprintf(port, sizeof(port), "%lld", optget(clamdopts, "TCPSocket")->numarg);
+
+    opt = optget(clamdopts, "TCPAddr");
+    while (opt) {
+        ipaddr = NULL;
+        if (opt->strarg)
+            ipaddr = (!strcmp(opt->strarg, "any") ? NULL : opt->strarg);
+
+        memset(&hints, 0x00, sizeof(struct addrinfo));
+        hints.ai_family = AF_UNSPEC;
+        hints.ai_socktype = SOCK_STREAM;
+
+        if ((res = getaddrinfo(ipaddr, port, &hints, &info))) {
+            logg("!Could not lookup %s: %s\n", ipaddr ? ipaddr : "", gai_strerror(res));
+            opt = opt->nextarg;
+            continue;
+        }
+
+        for (p = info; p != NULL; p = p->ai_next) {
+            if((sockd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) < 0) {
+                logg("!Can't create the socket: %s\n", strerror(errno));
+                continue;
+            }
+
+            if(connect(sockd, p->ai_addr, p->ai_addrlen) < 0) {
+                logg("!Could not connect to clamd on %s: %s\n", opt->strarg, strerror(errno));
+                closesocket(sockd);
+                continue;
+            }
+
+            freeaddrinfo(info);
+            return sockd;
+        }
+
+        freeaddrinfo(info);
+
+        opt = opt->nextarg;
     }
 
-    if(connect(sockd, (struct sockaddr *)mainsa, mainsasz) < 0) {
-	closesocket(sockd);
-	logg("!Can't connect to clamd: %s\n", strerror(errno));
-	return -1;
-    }
-    return sockd;
+    return -1;
 }
 
 /* Issues an INSTREAM command to clamd and streams the given file
@@ -183,6 +235,7 @@ static int chkpath(const char *path)
 
 static int ftw_chkpath(const char *path, struct cli_ftw_cbdata *data)
 {
+    UNUSEDPARAM(data);
     return chkpath(path);
 }
 
@@ -296,7 +349,7 @@ int dsresult(int sockd, int scantype, const char *filename, int *printok, int *e
 	    logg("STDIN: noreply from clamd\n.");
 	    return -1;
 	}
-        if(STAT(filename, &sb) == -1) {
+        if(CLAMSTAT(filename, &sb) == -1) {
 	    logg("~%s: stat() failed with %s, clamd may not be responding\n",
 		 filename, strerror(errno));
 	    return -1;
@@ -324,6 +377,8 @@ static int serial_callback(STATBUF *sb, char *filename, const char *path, enum c
     struct client_serial_data *c = (struct client_serial_data *)data->data;
     int sockd, ret;
     const char *f = filename;
+
+    UNUSEDPARAM(sb);
 
     if(chkpath(path))
 	return CL_SUCCESS;
@@ -478,6 +533,8 @@ static int parallel_callback(STATBUF *sb, char *filename, const char *path, enum
     struct client_parallel_data *c = (struct client_parallel_data *)data->data;
     struct SCANID *cid;
     int res = CL_CLEAN;
+
+    UNUSEDPARAM(sb);
 
     if(chkpath(path))
 	return CL_SUCCESS;

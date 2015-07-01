@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <io.h>
 
+#include "libclamav/clamav.h"
 #include "flog.h"
 
 static HANDLE logh = INVALID_HANDLE_VALUE;

@@ -201,18 +201,20 @@ attachment.exe: OK
 
     \section{Signature formats}
 
-    \subsection{MD5}
-    The easiest way to create signatures for ClamAV is to use MD5 checksums,
-    however this method can be only used against static malware. To create
-    a signature for \verb+test.exe+ use the \verb+--md5+ option of sigtool:
+    \subsection{Hash-based signatures}
+    The easiest way to create signatures for ClamAV is to use filehash checksums,
+    however this method can be only used against static malware.
+    \subsubsection{MD5 hash-based signatures}
+    To create a
+    MD5 signature for \verb+test.exe+ use the \verb+--md5+ option of sigtool:
     \begin{verbatim}
 zolw@localhost:/tmp/test$ sigtool --md5 test.exe > test.hdb
-zolw@localhost:/tmp/test$ cat test.hdb 
+zolw@localhost:/tmp/test$ cat test.hdb
 48c4533230e1ae1c118c741c0db19dfb:17387:test.exe
     \end{verbatim}
     That's it! The signature is ready for use:
     \begin{verbatim}
-zolw@localhost:/tmp/test$ clamscan -d test.hdb test.exe 
+zolw@localhost:/tmp/test$ clamscan -d test.hdb test.exe
 test.exe: test.exe FOUND
 
 ----------- SCAN SUMMARY -----------
@@ -238,16 +240,49 @@ Time: 0.024 sec (0 m 0 s)
     left in /tmp. Please keep in mind that a hash signature will stop
     matching as soon as a single byte changes in the target file.}
 
-    \subsection{MD5, PE section based}
-    You can create a MD5 signature for a specific section in a PE file.
+    \subsubsection{SHA1 and SHA256 hash-based signatures}
+    ClamAV 0.98 has also added support for SHA1 and SHA256 file checksums.
+    The format is the same as for MD5 file checksum.
+    It can differentiate between them based on the length of the hash string
+    in the signature. For best backwards compatibility, these should be
+    placed inside a \verb+*.hsb+ file. The format is:
+    \begin{verbatim}
+HashString:FileSize:MalwareName
+    \end{verbatim}
+
+    \subsubsection{PE section based hash signatures}
+    You can create a hash signature for a specific section in a PE file.
     Such signatures shall be stored inside \verb+.mdb+ files in the
     following format:
     \begin{verbatim}
-PESectionSize:MD5:MalwareName
+PESectionSize:PESectionHash:MalwareName
     \end{verbatim}
     The easiest way to generate MD5 based section signatures is to extract
     target PE sections into separate files and then run sigtool with the
     option \verb+--mdb+
+
+    ClamAV 0.98 has also added support for SHA1 and SHA256 section based
+    signatures. The format is the same as for MD5 PE section based signatures.
+    It can differentiate between them based on the length of the hash string
+    in the signature. For best backwards compatibility, these should be
+    placed inside a \verb+*.msb+ file.
+
+    \subsubsection{Hash signatures with unknown size}
+    ClamAV 0.98 has also added support for hash signatures where the size
+    is not known but the hash is. It is much more performance-efficient to
+    use signatures with specific sizes, so be cautious when using this
+    feature. For these cases, the '*' character can be used in the size
+    field. To ensure proper backwards compatibility with older versions of
+    ClamAV, these signatures must have a minimum functional level of 73 or
+    higher. Signatures that use the wildcard size without this level set
+    will be rejected as malformed.
+    \begin{verbatim}
+Sample .hsb signature matching any size
+HashString:*:MalwareName:73
+
+Sample .msb signature matching any size
+*:PESectionHash:MalwareName:73
+    \end{verbatim}
 
     \subsection{Body-based signatures}
     ClamAV stores all body-based signatures in a hexadecimal format. In this
@@ -264,7 +299,7 @@ How do I look in hex?
     \end{verbatim}
 
     \subsubsection{Wildcards}
-    ClamAV supports the following extensions for hex-signatures:
+    ClamAV supports the following wildcards for hex-signatures:
     \begin{itemize}
 	\item \verb+??+\\
 	Match any byte.
@@ -286,24 +321,59 @@ How do I look in hex?
 	Match $n$ or more bytes.
 	\item \verb+{n-m}+\\
 	Match between $n$ and $m$ bytes ($m > n$).
-	\item \verb+(aa|bb|cc|..)+\\
-	Match aa or bb or cc..
-	\item \verb+!(aa|bb|cc|..)+\\
-	Match any byte except aa and bb and cc.. (ClamAV$\ge$0.96)
 	\item \verb+HEXSIG[x-y]aa+ or \verb+aa[x-y]HEXSIG+\\
 	Match aa anchored to a hex-signature, see
-	\url{https://wwws.clamav.net/bugzilla/show_bug.cgi?id=776} for
+	\url{https://bugzilla.clamav.net/show_bug.cgi?id=776} for
 	discussion and examples.
-	\item \verb+(B)+\\
-	Match word boundary (including file boundaries).
-	\item \verb+(L)+\\
-	Match CR, CRLF or file boundaries.
     \end{itemize}
     The range signatures \verb+*+ and \verb+{}+ virtually separate
     a hex-signature into two parts, eg. \verb+aabbcc*bbaacc+ is treated
     as two sub-signatures \verb+aabbcc+ and \verb+bbaacc+ with any number
     of bytes between them. It's a requirement that each sub-signature
     includes a block of two static characters somewhere in its body.
+    
+
+    \subsubsection{Character classes}
+    ClamAV supports the following character classes for hex-signatures:
+    \begin{itemize}
+	\item \verb+(B)+\\
+	Match word boundary (including file boundaries).
+	\item \verb+(L)+\\
+	Match CR, CRLF or file boundaries.
+	\item \verb+(W)+\\
+	Match a non-alphanumeric character.
+    \end{itemize}
+
+    \subsubsection{Alternate strings}
+    \begin{itemize}
+    \item Single-byte alternates (clamav-0.96)\\
+      \verb+(aa|bb|cc|...)+ or \verb+!(aa|bb|cc|...)+\\
+      Match a member from a set of bytes [aa, bb, cc, ...].
+      \begin{itemize}
+        \item Negation operation can be applied to match any non-member, assumed to be one-byte in length.
+        \item Signature modifiers and wildcards cannot be applied.
+      \end{itemize}
+    \item Multi-byte fixed length alternates\\
+      \verb+(aaaa|bbbb|cccc|...)+ or \verb+!(aaaa|bbbb|cccc|...)+\\
+      Match a member from a set of multi-byte alternates [aaaa, bbbb, cccc, ...] of n-length.
+      \begin{itemize}
+        \item All set members must be the same length.
+        \item Negation operation can be applied to match any non-member, assumed to be n-bytes in length (clamav-0.98.2).
+        \item Signature modifiers and wildcards cannot be applied.
+      \end{itemize}
+    \item Generic alternates (clamav-0.99)\\
+      \verb+(alt1|alt2|alt3|...)+\\
+      Match a member from a set of alternates [alt1, alt2, alt3, ...] that can be of variable lengths.
+      \begin{itemize}
+        \item Negation operation cannot be applied.
+        \item Signature modifiers and nibble wildcards [\verb+??, a?, ?a+] can be applied.
+        \item Ranged wildcards [\verb+{n-m}+] are limited to a fixed range of less than 128 bytes [\verb+{1} -> {127}+].
+      \end{itemize}
+    \end{itemize}
+    Note that using signature modifiers and wildcards classifies the alternate type to be a generic
+    alternate. Thus single-byte alternates and multi-byte fixed length alternates can use signature
+    modifiers and wildcards but will be classified as generic alternate. This means that negation
+    cannot be applied in this situation and there is a slight performance impact.
 
     \subsubsection{Basic signature format}
     The simplest (and now deprecated) signature format is:
@@ -342,6 +412,8 @@ MalwareName:TargetType:Offset:HexSignature[:MinFL:[MaxFL]]
 	\item 8 = Unused
 	\item 9 = Mach-O files
 	\item 10 = PDF files
+	\item 11 = Flash files
+	\item 12 = Java class files
     \end{itemize}
     And	\verb+Offset+ is an asterisk or a decimal number \verb+n+ possibly
     combined with a special modifier:
@@ -356,11 +428,9 @@ MalwareName:TargetType:Offset:HexSignature[:MinFL:[MaxFL]]
 	\item \verb#EP-n# = entry point minus n bytes
 	\item \verb#Sx+n# = start of section \verb+x+'s (counted from 0)
 	data plus \verb+n+ bytes
-	\item \verb#Sx-n# = start of section \verb+x+'s data minus \verb+n+ bytes
 	\item \verb#SEx# = entire section \verb+x+ (offset must lie within section
 	boundaries)
 	\item \verb#SL+n# = start of last section plus \verb+n+ bytes
-	\item \verb#SL-n# = start of last section minus \verb+n+ bytes
     \end{itemize}
     All the above offsets except \verb+*+ can be turned into
     \textbf{floating offsets} and represented as \verb+Offset,MaxShift+ where
@@ -410,6 +480,8 @@ Subsig1;Subsig2;...
 	\item \verb+EntryPoint+: Entry point offset (range in bytes; 0.96)
 	\item \verb+NumberOfSections+: Required number of sections in executable (range; 0.96)
 	\item \verb+Container:CL_TYPE_*+: File type of the container which stores the scanned file
+	\item \verb+IconGroup1+: Icon group name 1 from .idb signature Required engine functionality (range; 0.96)
+	\item \verb+IconGroup2+: Icon group name 2 from .idb signature Required engine functionality (range; 0.96)
     \end{itemize}
     Modifiers for subexpressions:
     \begin{itemize}
@@ -440,25 +512,146 @@ Sig1;Target:0;(0&1&2&3)&(4|1);6b6f74656b;616c61;7a6f6c77;7374656
 6616e;deadbeef
 
 Sig2;Target:0;((0|1|2)>5,2)&(3|1);6b6f74656b;616c61;7a6f6c77;737
-46566616e  
+46566616e
 
 Sig3;Target:0;((0|1|2|3)=2)&(4|1);6b6f74656b;616c61;7a6f6c77;737
 46566616e;deadbeef
 
-Sig4;Target:1,Engine:18-20;((0|1)&(2|3))&4;EP+123:33c06834f04100
+Sig4;Target:1;Engine:18-20;((0|1)&(2|3))&4;EP+123:33c06834f04100
 f2aef7d14951684cf04100e8110a00;S2+78:22??232c2d252229{-15}6e6573
-(63|64)61706528;S+50:68efa311c3b9963cb1ee8e586d32aeb9043e;f9c58d
-cf43987e4f519d629b103375;SL+550:6300680065005c0046006900
+(63|64)61706528;S3+50:68efa311c3b9963cb1ee8e586d32aeb9043e;f9c58
+dcf43987e4f519d629b103375;SL+550:6300680065005c0046006900
     \end{verbatim}
-    ClamAV 0.96 introduced support for special macro subsignatures in
-    the following format: \verb+${min-max}MACROID$+, where \verb+MACROID+
-    points to a group of signatures and \verb+{min-max}+ specifies the
-    offset range at which one of the group signatures should match.
-    The range is calculated against the match offset of the previous
-    subsignature. The macro subsignature makes its preceding subsignature
-    considered a match only if both of them get matched. For more
-    information and examples please see
-    \url{https://wwws.clamav.net/bugzilla/show_bug.cgi?id=164}.
+
+    \subsubsection{Subsignature Modifiers}
+    ClamAV (clamav-0.99) supports a number of additional subsignature modifiers
+    for logical signatures. This is done by specifying '::' followed by a number
+    of characters representing the desired options.
+    \begin{itemize}
+    \item Case-Insensitive [\verb+i+]\\
+      Specifying the \verb+i+ modifier causes ClamAV to match all alphabetic
+      hex bytes as case-insensitive. All patterns in ClamAV are case-sensitive
+      by default.
+    \item Wide [\verb+w+]\\
+      Specifying the \verb+w+ causes ClamAV to match all hex bytes encoded with
+      two bytes per character. Note this simply interweaves each character with
+      NULL characters and does not truly support UTF-16 characters. Wildcards for
+      'wide' subsignatures are not treated as wide (i.e. there can be an odd number
+      of intermittent characters). This can be combined with \verb+a+ to search for
+      patterns in both wide and ascii.
+    \item Fullword [\verb+f+]\\
+      Match subsignature as a fullword (delimited by non-alphanumeric characters).
+    \item Ascii [\verb+a+]\\
+      Match subsignature as ascii characters. This can be combined with \verb+w+
+      to search for patterns in both ascii and wide.
+    \end{itemize}
+    Examples:
+    \begin{verbatim}
+clamav-nocase-A;Target:0;0&1;41414141/i;424242424242/i
+    -matches 'AAAA'(nocase) and 'BBBBBB'(nocase)
+
+clamav-fullword-A;Target:0;0&1;414141;68656c6c6f/f
+    -matches 'AAA' and 'hello'(fullword)
+clamav-fullword-B;Target:0;0&1;414141;68656c6c6f/fi
+    -matches 'AAA' and 'hello'(fullword nocase)
+
+clamav-wide-B2;Target:0;0&1;414141;68656c6c6f/wa
+    -matches 'AAA' and 'hello'(wide ascii)
+clamav-wide-C0;Target:0;0&1;414141;68656c6c6f/iwfa
+    -matches 'AAA' and 'hello'(nocase wide fullword ascii)
+    \end{verbatim}
+
+    \subsection{Special Subsignature Types}
+    \subsubsection{Macro subsignatures (clamav-0.96) : \textnormal{\texttt{\$\{min-max\}MACROID\$}}}
+    \begin{itemize}
+      \item Macro subsignatures are used to combine a number of existing extended
+      signatures (\verb+.ndb+) into a on-the-fly generated alternate string logical
+      signature (\verb+.ldb+).
+    \end{itemize}
+    Example:
+    \begin{verbatim}
+      test.ldb:
+        TestMacro;Target:0;0&1;616161;${6-7}12$
+
+      test.ndb:
+        D1:0:$12:626262
+        D2:0:$12:636363
+        D3:0:$30:626264
+    \end{verbatim}
+    The example logical signature \verb+TestMacro+ is functionally equivalent to:\\
+    \verb+TestMacro;Target:0;0;616161{3-4}(626262|636363)+
+    \begin{itemize}
+	\item \verb+MACROID+ points to a group of signatures; there can be at most 32 macro groups.
+      \begin{itemize}
+      \item In the example, \verb+MACROID+ is \verb+12+ and both \verb+D1+ and \verb+D2+ are members 
+        of macro group \verb+12+. \verb+D3+ is a member of separate macro group \verb+30+.
+      \end{itemize}
+    \item \verb+{min-max}+ specifies the offset range at which one of the group signatures should match;
+      the offset range is relative to the starting offset of the preceding subsignature. This means a
+      macro subsignature cannot be the first subsignature.
+      \begin{itemize}
+      \item In the example, \verb+{min-max}+ is \verb+{6-7}+ and it is relative to the start of a \verb+616161+ match.
+      \end{itemize}
+	\item For more information and examples please see \url{https://wwws.clamav.net/bugzilla/show_bug.cgi?id=164}.
+    \end{itemize}
+    \subsubsection{PCRE subsignatures (clamav-0.99) : \textnormal{\texttt{Trigger/PCRE/[Flags]}}}
+    \begin{itemize}
+    \item \verb+Trigger+ is a required field that is a valid \verb+LogicalExpression+ and
+    may refer to any subsignatures that precede this subsignature. Triggers cannot be
+    self-referential and cannot refer to subsequent subsignatures.
+    \item \verb+PCRE+ is the expression representing the regex to execute. \verb+PCRE+
+    must be delimited by '/' and usage of '/' within the expression need to be escaped.
+    \verb+PCRE+ cannot be empty and (?UTF*) control sequence is not allowed. If debug is specified,
+    named capture groups are displayed in a post-execution report.
+    \item \verb+Flags+ are a series of characters which affect the compilation and execution
+    of \verb+PCRE+ within the PCRE compiler and the ClamAV engine. This field is optional.
+	\begin{itemize}
+	\item \verb+g [CLAMAV_GLOBAL]+ specifies to search for ALL matches of PCRE (default is to
+        search for first match). NOTE: INCREASES the time needed to run the PCRE.
+        \item \verb+r [CLAMAV_ROLLING]+ specifies to use the given offset as the starting location
+        to search for a match as opposed to the only location; applies to subsigs without maxshifts.
+        By default, in order to facilatate normal ClamAV offset behavior, PCREs are auto-anchored
+        (only attempt match on first offset); using the rolling option disables the auto-anchoring.
+	\item \verb+e [CLAMAV_ENCOMPASS]+ specifies to CONFINE matching between the specified offset
+	and maxshift; applies only when maxshift is specified. Note: DECREASES time needed to run the PCRE.
+	\item \verb+i [PCRE_CASELESS]+
+	\item \verb+s [PCRE_DOTALL]+
+	\item \verb+m [PCRE_MULTILINE]+
+	\item \verb+x [PCRE_EXTENDED]+
+	\item \verb+A [PCRE_ANCHORED]+
+	\item \verb+E [PCRE_DOLLAR_ENODNLY]+
+	\item \verb+U [PCRE_UNGREEDY]+
+	\end{itemize}
+    \end{itemize}
+    Examples:
+    \begin{verbatim}
+Find.All.ClamAV;Target:0;1;6265676c6164697427736e6f7462797465636
+f6465;0/clamav/g
+
+Find.ClamAV.OnlyAt.299;Target:0;2;7374756c747a67657473;706372657
+2656765786c6f6c;299:0&1/clamav/
+
+Find.ClamAV.StartAt.300;Target:0;3;616c61696e;62756731393238;636
+c6f736564;300:0&1&2/clamav/r
+
+Find.All.Encompassed.ClamAV;Target:0;3;7768796172656e2774;796f75
+7573696e67;79617261;200,300:0&1&2/clamav/ge
+
+Named.CapGroup.Pcre;Target:0;3;636f75727479617264;616c62756d;746
+57272696572;50:0&1&2/variable=(?<nilshell>.{16})end/gr
+
+Firefox.TreeRange.UseAfterFree;Target:0;0&1&2;2e766965772e73656c
+656374696f6e;2e696e76616c696461746553656c656374696f6e;0&1/\x2Evi
+ew\x2Eselection.*?\x2Etree\s*\x3D\s*null.*?\x2Einvalidate/smi
+
+Firefox.IDB.UseAfterFree;Target:0;0&1;4944424b657952616e6765;0/^
+\x2e(only|lowerBound|upperBound|bound)\x28.*?\x29.*?\x2e(lower|u
+pper|lowerOpen|upperOpen)/smi
+
+Firefox.boundElements;Target:0;0&1&2;6576656e742e626f756e64456c6
+56d656e7473;77696e646f772e636c6f7365;0&1/on(load|click)\s*=\s*\x
+22?window\.close\s*\x28/si
+    \end{verbatim}
 
     \subsection{Icon signatures for PE files}
     ClamAV 0.96 includes an approximate/fuzzy icon matcher to help
@@ -585,8 +778,8 @@ Entertainment Pack FreeCell Game
     certificate in the chain against a database of trusted and revoked
     certificates. The sinagure format is
 \begin{verbatim}
-Name;Trusted;Subject;Pubkey;Exponent;CodeSign;TimeSign;NotBefore;Comment
-[;minFL[;maxFL]]
+Name;Trusted;Subject;Serial;Pubkey;Exponent;CodeSign;TimeSign;CertSign;
+NotBefore;Comment[;minFL[;maxFL]]
 \end{verbatim}
     where the corresponding fields are:
     \begin{itemize}
@@ -594,17 +787,21 @@ Name;Trusted;Subject;Pubkey;Exponent;CodeSign;TimeSign;NotBefore;Comment
         \item \verb+Trusted:+ bit field, specifying whether the cert is
             trusted. 1 for trusted. 0 for revoked
         \item \verb+Subject:+ sha1 of the Subject field in hex
+        \item \verb+Serial:+ the serial number as clamscan --debug --verbose
+            reports
         \item \verb+Pubkey:+ the public key in hex
         \item \verb+Exponent:+ the exponent in hex. Currently ignored and
             hardcoded to 010001 (in hex)
         \item \verb+CodeSign:+ bit field, specifying whether this cert
             can sign code. 1 for true, 0 for false
         \item \verb+TimeSign:+ bit field. 1 for true, 0 for false
+        \item \verb+CertSign:+ bit field, specifying whether this cert
+            can sign other certs. 1 for true, 0 for false
         \item \verb+NotBefore:+ integer, cert should not be added before
             this variable. Defaults to 0 if left empty
         \item \verb+Comment:+ comments for this entry
     \end{itemize}
-    The signatures for certs are stored inside \verb+.crt+ files.
+    The signatures for certs are stored inside \verb+.crb+ files.
 
     \subsection{Signatures based on container metadata}
     ClamAV 0.96 allows creating generic signatures matching files stored
@@ -665,7 +862,10 @@ fileno:max depth
 
     \subsection{Whitelist databases}
     To whitelist a specific file use the MD5 signature format and place
-    it inside a database file with the extension of \verb+.fp+.\\
+    it inside a database file with the extension of \verb+.fp+.
+    To whitelist a specific file with the SHA1 or SHA256 file hash signature
+    format, place the signature inside a database file with the extension
+    of \verb+.sfp+.\\
 
     \noindent
     To whitelist a specific signature from the database you just add

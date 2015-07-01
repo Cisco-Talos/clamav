@@ -1,5 +1,6 @@
 /*
- *  Copyright (C) 2007-2009 Sourcefire, Inc.
+ *  Copyright (C) 2007-2013 Sourcefire, Inc.
+ *  Copyright (C) 2014 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: Tomasz Kojm
  *
@@ -21,22 +22,31 @@
 #ifndef __CLAMAV_H
 #define __CLAMAV_H
 
+#ifdef _WIN32
+#ifndef OWN_WINSOCK
+#include <winsock2.h>
+#endif
+#endif
+
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+
 /* Certain OSs already use 64bit variables in their stat struct */
-#define STAT64_BLACKLIST !defined(__FreeBSD__)
+#define STAT64_BLACKLIST !defined(__FreeBSD__) && !defined(__APPLE__)
 
 #if defined(HAVE_STAT64) && STAT64_BLACKLIST
 
 #include <unistd.h>
 
 #define STATBUF struct stat64
-#define STAT stat64
+#define CLAMSTAT stat64
 #define LSTAT lstat64
 #define FSTAT fstat64
 #define safe_open(a, b) open(a, b|O_LARGEFILE)
 #else
 
 #define STATBUF struct stat
-#define STAT stat
+#define CLAMSTAT stat
 #define LSTAT lstat
 #define FSTAT fstat
 /* Nothing is safe in windows, not even open, safe_open defined under /win32 */
@@ -45,6 +55,8 @@
 #endif
 
 #endif
+
+#define UNUSEDPARAM(x) (void)(x)
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -120,6 +132,9 @@ typedef enum {
 #define CL_DB_SIGNED	    0x4000  /* internal */
 #define CL_DB_BYTECODE_UNSIGNED	0x8000
 #define CL_DB_UNSIGNED	    0x10000 /* internal */
+#define CL_DB_BYTECODE_STATS 0x20000
+#define CL_DB_ENHANCED      0x40000
+#define CL_DB_PCRE_STATS    0x80000
 
 /* recommended db settings */
 #define CL_DB_STDOPT	    (CL_DB_PHISHING | CL_DB_PHISHING_URLS | CL_DB_BYTECODE)
@@ -147,25 +162,47 @@ typedef enum {
 #define CL_SCAN_HEURISTIC_PRECEDENCE    0x80000
 #define CL_SCAN_BLOCKMACROS		0x100000
 #define CL_SCAN_ALLMATCHES		0x200000
-
+#define CL_SCAN_SWF			0x400000
+#define CL_SCAN_PARTITION_INTXN         0x800000
+#define CL_SCAN_FILE_PROPERTIES         0x10000000
+//#define UNUSED                        0x20000000
 #define CL_SCAN_PERFORMANCE_INFO        0x40000000 /* collect performance timings */
 #define CL_SCAN_INTERNAL_COLLECT_SHA    0x80000000 /* Enables hash output in sha-collect builds - for internal use only */
 
 /* recommended scan settings */
-#define CL_SCAN_STDOPT		(CL_SCAN_ARCHIVE | CL_SCAN_MAIL | CL_SCAN_OLE2 | CL_SCAN_PDF | CL_SCAN_HTML | CL_SCAN_PE | CL_SCAN_ALGORITHMIC | CL_SCAN_ELF)
+#define CL_SCAN_STDOPT		(CL_SCAN_ARCHIVE | CL_SCAN_MAIL | CL_SCAN_OLE2 | CL_SCAN_PDF | CL_SCAN_HTML | CL_SCAN_PE | CL_SCAN_ALGORITHMIC | CL_SCAN_ELF | CL_SCAN_SWF)
 
 /* cl_countsigs options */
 #define CL_COUNTSIGS_OFFICIAL	    0x1
 #define CL_COUNTSIGS_UNOFFICIAL	    0x2
 #define CL_COUNTSIGS_ALL	    (CL_COUNTSIGS_OFFICIAL | CL_COUNTSIGS_UNOFFICIAL)
 
+/* For the new engine_options bit field in the engine */
+#define ENGINE_OPTIONS_NONE             0x0
+#define ENGINE_OPTIONS_DISABLE_CACHE    0x1
+#define ENGINE_OPTIONS_FORCE_TO_DISK    0x2
+#define ENGINE_OPTIONS_DISABLE_PE_STATS 0x4
+
 struct cl_engine;
 struct cl_settings;
+
+/**
+ * Initialize the crypto system.
+ * @return Always returns 0
+ */
+int cl_initialize_crypto(void);
+
+/**
+ * Cleanup the crypto system prior to program exit
+ */
+void cl_cleanup_crypto(void);
 
 #define CL_INIT_DEFAULT	0x0
 extern int cl_init(unsigned int initoptions);
 
 extern struct cl_engine *cl_engine_new(void);
+
+extern void cl_always_gen_section_hash(void);
 
 enum cl_engine_field {
     CL_ENGINE_MAX_SCANSIZE,	    /* uint64_t */
@@ -185,7 +222,22 @@ enum cl_engine_field {
     CL_ENGINE_KEEPTMP,		    /* uint32_t */
     CL_ENGINE_BYTECODE_SECURITY,    /* uint32_t */
     CL_ENGINE_BYTECODE_TIMEOUT,     /* uint32_t */
-    CL_ENGINE_BYTECODE_MODE         /* uint32_t */
+    CL_ENGINE_BYTECODE_MODE,        /* uint32_t */
+    CL_ENGINE_MAX_EMBEDDEDPE,       /* uint64_t */
+    CL_ENGINE_MAX_HTMLNORMALIZE,    /* uint64_t */
+    CL_ENGINE_MAX_HTMLNOTAGS,       /* uint64_t */
+    CL_ENGINE_MAX_SCRIPTNORMALIZE,  /* uint64_t */
+    CL_ENGINE_MAX_ZIPTYPERCG,       /* uint64_t */
+    CL_ENGINE_FORCETODISK,          /* uint32_t */
+    CL_ENGINE_DISABLE_CACHE,        /* uint32_t */
+    CL_ENGINE_DISABLE_PE_STATS,     /* uint32_t */
+    CL_ENGINE_STATS_TIMEOUT,        /* uint32_t */
+    CL_ENGINE_MAX_PARTITIONS,       /* uint32_t */
+    CL_ENGINE_MAX_ICONSPE,          /* uint32_t */
+    CL_ENGINE_TIME_LIMIT,           /* uint32_t */
+    CL_ENGINE_PCRE_MATCH_LIMIT,     /* uint64_t */
+    CL_ENGINE_PCRE_RECMATCH_LIMIT,  /* uint64_t */
+    CL_ENGINE_PCRE_MAX_FILESIZE     /* uint64_t */
 };
 
 enum bytecode_security {
@@ -202,6 +254,16 @@ enum bytecode_mode {
 			      all failures are fatal */
     CL_BYTECODE_MODE_OFF /* for query only, not settable */
 };
+
+struct cli_section_hash {
+    unsigned char md5[16];
+    size_t len;
+};
+
+typedef struct cli_stats_sections {
+    size_t nsections;
+    struct cli_section_hash *sections;
+} stats_section_t;
 
 extern int cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field field, long long num);
 
@@ -223,6 +285,9 @@ extern int cl_engine_addref(struct cl_engine *engine);
 
 extern int cl_engine_free(struct cl_engine *engine);
 
+extern void cli_cache_disable(void);
+
+extern int cli_cache_enable(struct cl_engine *engine);
 
 /* CALLBACKS */
 
@@ -335,6 +400,39 @@ typedef cl_error_t (*clcb_meta)(const char* container_type, unsigned long fsize_
 			  unsigned long fsize_real,  int is_encrypted, unsigned int filepos_container, void *context);
 extern void cl_engine_set_clcb_meta(struct cl_engine *engine, clcb_meta callback);
 
+/* File properties callback */
+typedef int (*clcb_file_props)(const char *j_propstr, int rc, void *cbdata);
+extern void cl_engine_set_clcb_file_props(struct cl_engine *engine, clcb_file_props callback);
+
+/* Statistics/intelligence gathering callbacks */
+extern void cl_engine_set_stats_set_cbdata(struct cl_engine *engine, void *cbdata);
+
+typedef void (*clcb_stats_add_sample)(const char *virname, const unsigned char *md5, size_t size, stats_section_t *sections, void *cbdata);
+extern void cl_engine_set_clcb_stats_add_sample(struct cl_engine *engine, clcb_stats_add_sample callback);
+
+typedef void (*clcb_stats_remove_sample)(const char *virname, const unsigned char *md5, size_t size, void *cbdata);
+extern void cl_engine_set_clcb_stats_remove_sample(struct cl_engine *engine, clcb_stats_remove_sample callback);
+
+typedef void (*clcb_stats_decrement_count)(const char *virname, const unsigned char *md5, size_t size, void *cbdata);
+extern void cl_engine_set_clcb_stats_decrement_count(struct cl_engine *engine, clcb_stats_decrement_count callback);
+
+typedef void (*clcb_stats_submit)(struct cl_engine *engine, void *cbdata);
+extern void cl_engine_set_clcb_stats_submit(struct cl_engine *engine, clcb_stats_submit callback);
+
+typedef void (*clcb_stats_flush)(struct cl_engine *engine, void *cbdata);
+extern void cl_engine_set_clcb_stats_flush(struct cl_engine *engine, clcb_stats_flush callback);
+
+typedef size_t (*clcb_stats_get_num)(void *cbdata);
+extern void cl_engine_set_clcb_stats_get_num(struct cl_engine *engine, clcb_stats_get_num callback);
+
+typedef size_t (*clcb_stats_get_size)(void *cbdata);
+extern void cl_engine_set_clcb_stats_get_size(struct cl_engine *engine, clcb_stats_get_size callback);
+
+typedef char * (*clcb_stats_get_hostid)(void *cbdata);
+extern void cl_engine_set_clcb_stats_get_hostid(struct cl_engine *engine, clcb_stats_get_hostid callback);
+
+extern void cl_engine_stats_enable(struct cl_engine *engine);
+
 struct cl_stat {
     char *dir;
     STATBUF *stattab;
@@ -426,6 +524,247 @@ extern void cl_fmap_close(cl_fmap_t*);
 
 /* Scan custom data */
 extern int cl_scanmap_callback(cl_fmap_t *map, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions, void *context);
+
+/* Crypto/hashing functions */
+#define SHA1_HASH_SIZE 20
+#define SHA256_HASH_SIZE 32
+
+/** Generate a hash of data.
+ @param[in] alg The hashing algorithm to use
+ @param[in] buf The data to be hashed
+ @param[in] len The length of the to-be-hashed data
+ @param[out] obuf An optional buffer to store the generated hash. Use NULL to dynamically allocate buffer.
+ @param[out] olen An optional pointer that stores how long the generated hash is.
+ @return A pointer to the generated hash or obuf if obuf is not NULL.
+ */
+unsigned char *cl_hash_data(char *alg, const void *buf, size_t len, unsigned char *obuf, unsigned int *olen);
+
+/** Generate a hash of a file.
+ @param[in] ctx A pointer to the OpenSSL EVP_MD_CTX object
+ @param[in] fd The file descriptor
+ @param[out] olen An optional pointer that stores how long the generated hash is
+ @return A pointer to a dynamically-created buffer that holds the generated hash
+ */
+unsigned char *cl_hash_file_fd_ctx(EVP_MD_CTX *ctx, int fd, unsigned int *olen);
+
+/** Generate a hash of a file.
+ @param[in] fd The file descriptor
+ @param[in] alg The hashing algorithm to use
+ @param[out] olen An optional pointer that stores how long the generated hash is
+ @return A pointer to a dynamically-created buffer that holds the generated hash
+ */
+unsigned char *cl_hash_file_fd(int fd, char *alg, unsigned int *olen);
+
+/** Generate a hash of a file.
+ @param[in] fp A pointer to a FILE object
+ @param[in] alg The hashing algorithm to use
+ @param[out] olen An optional pointer that stores how long the generated hash is
+ @return A pointer to a dynamically-created buffer that holds the generated hash
+ */
+unsigned char *cl_hash_file_fp(FILE *fp, char *alg, unsigned int *olen);
+
+/** Generate a sha256 hash of data
+ @param[in] buf The data to hash
+ @param[in] len The length of the to-be-hashed data
+ @param[out] obuf An optional pointer to store the generated hash. Use NULL to dynamically allocate buffer.
+ @param[out] olen An optional pointer that stores how long the generated hash is.
+ @return A pointer to the buffer that holds the generated hash
+ */
+unsigned char *cl_sha256(const void *buf, size_t len, unsigned char *obuf, unsigned int *olen);
+
+/** Generate a sha1 hash of data
+ @param[in] buf The data to hash
+ @param[in] len The length of the to-be-hashed data
+ @param[out] obuf An optional pointer to store the generated hash. Use NULL to dynamically allocate buffer.
+ @param[out] olen An optional pointer that stores how long the generated hash is.
+ @return A pointer to the buffer that holds the generated hash or obuf if obuf is not NULL
+ */
+unsigned char *cl_sha1(const void *buf, size_t len, unsigned char *obuf, unsigned int *olen);
+
+/** Verify validity of signed data
+ @param[in] pkey The public key of the keypair that signed the data
+ @param[in] alg The algorithm used to hash the data
+ @param[in] sig The signature block
+ @param[in] siglen The length of the signature
+ @param[in] data The data that was signed
+ @param[in] datalen The length of the data
+ @param[in] decode Whether or not to base64-decode the signature prior to verification. 1 for yes, 0 for no.
+ @return 0 for success, -1 for error or invalid signature
+ */
+int cl_verify_signature(EVP_PKEY *pkey, char *alg, unsigned char *sig, unsigned int siglen, unsigned char *data, size_t datalen, int decode);
+
+/** Verify validity of signed data
+ @param[in] pkey The public key of the keypair that signed the data
+ @param[in] alg The algorithm used to hash the data
+ @param[in] sig The signature block
+ @param[in] siglen The length of the signature
+ @param[in] digest The hash of the signed data
+ @return 0 for success, -1 for error or invalid signature
+ */
+int cl_verify_signature_hash(EVP_PKEY *pkey, char *alg, unsigned char *sig, unsigned int siglen, unsigned char *digest);
+
+/** Verify validity of signed data
+ @param[in] pkey The public key of the keypair that signed the data
+ @param[in] alg The algorithm used to hash the data
+ @param[in] sig The signature block
+ @param[in] siglen The length of the signature
+ @param[in] fd The file descriptor
+ @return 0 for success, -1 for error or invalid signature
+ */
+int cl_verify_signature_fd(EVP_PKEY *pkey, char *alg, unsigned char *sig, unsigned int siglen, int fd);
+
+/** Verify validity of signed data
+ @param[in] x509path The path to the public key of the keypair that signed the data
+ @param[in] alg The algorithm used to hash the data
+ @param[in] sig The signature block
+ @param[in] siglen The length of the signature
+ @param[in] digest The hash of the signed data
+ @return 0 for success, -1 for error or invalid signature
+ */
+int cl_verify_signature_hash_x509_keyfile(char *x509path, char *alg, unsigned char *sig, unsigned int siglen, unsigned char *digest);
+
+/** Verify validity of signed data
+ @param[in] x509path The path to the public key of the keypair that signed the data
+ @param[in] alg The algorithm used to hash the data
+ @param[in] sig The signature block
+ @param[in] siglen The length of the signature
+ @param[in] fd The file descriptor
+ @return 0 for success, -1 for error or invalid signature
+ */
+int cl_verify_signature_fd_x509_keyfile(char *x509path, char *alg, unsigned char *sig, unsigned int siglen, int fd);
+
+/** Verify validity of signed data
+ @param[in] x509path The path to the public key of the keypair that signed the data
+ @param[in] alg The algorithm used to hash the data
+ @param[in] sig The signature block
+ @param[in] siglen The length of the signature
+ @param[in] data The data that was signed
+ @param[in] datalen The length of the data
+ @param[in] decode Whether or not to base64-decode the signature prior to verification. 1 for yes, 0 for no.
+ @return 0 for success, -1 for error or invalid signature
+ */
+int cl_verify_signature_x509_keyfile(char *x509path, char *alg, unsigned char *sig, unsigned int siglen, unsigned char *data, size_t datalen, int decode);
+
+/** Verify validity of signed data
+ @param[in] x509 The X509 object of the public key of the keypair that signed the data
+ @param[in] alg The algorithm used to hash the data
+ @param[in] sig The signature block
+ @param[in] siglen The length of the signature
+ @param[in] digest The hash of the signed data
+ @return 0 for success, -1 for error or invalid signature
+ */
+int cl_verify_signature_hash_x509(X509 *x509, char *alg, unsigned char *sig, unsigned int siglen, unsigned char *digest);
+
+/** Verify validity of signed data
+ @param[in] x509 The X509 object of the public key of the keypair that signed the data
+ @param[in] alg The algorithm used to hash the data
+ @param[in] sig The signature block
+ @param[in] siglen The length of the signature
+ @param[in] fd The file descriptor
+ @return 0 for success, -1 for error or invalid signature
+ */
+int cl_verify_signature_fd_x509(X509 *x509, char *alg, unsigned char *sig, unsigned int siglen, int fd);
+
+/** Verify validity of signed data
+ @param[in] x509 The X509 object of the public key of the keypair that signed the data
+ @param[in] alg The algorithm used to hash the data
+ @param[in] sig The signature block
+ @param[in] siglen The length of the signature
+ @param[in] data The data that was signed
+ @param[in] datalen The length of the data
+ @param[in] decode Whether or not to base64-decode the signature prior to verification. 1 for yes, 0 for no.
+ @return 0 for success, -1 for error or invalid signature
+ */
+int cl_verify_signature_x509(X509 *x509, char *alg, unsigned char *sig, unsigned int siglen, unsigned char *data, size_t datalen, int decode);
+
+/** Get an X509 object from memory
+ * @param[in] data A pointer to a spot in memory that contains the PEM X509 cert
+ * @param[in] len The length of the data
+ * @return a pointer to the X509 object on success, NULL on error
+ */
+X509 *cl_get_x509_from_mem(void *data, unsigned int len);
+
+/** Validate an X509 certificate chain, with the chain being located in a directory
+ @param[in] tsdir The path to the trust store directory
+ @param[in] certpath The path to the X509 certificate to be validated.
+ @return 0 for success, -1 for error or invalid certificate.
+ */
+int cl_validate_certificate_chain_ts_dir(char *tsdir, char *certpath);
+
+/** Validate an X509 certificate chain with support for a CRL
+ @param[in] authorities A NULL-terminated array of strings that hold the path of the CA's X509 certificate
+ @param[in] crlpath An optional path to the CRL file. NULL if no CRL.
+ @param[in] certpath The path to the X509 certificate to be validated.
+ @return 0 for success, -1 for error or invalid certificate.
+ */
+int cl_validate_certificate_chain(char **authorities, char *crlpath, char *certpath);
+
+/** Load an X509 certificate from a file
+ @param[in] certpath The path to the X509 certificate
+ */
+X509 *cl_load_cert(const char *certpath);
+
+/** Parse an ASN1_TIME object
+ @param[in] timeobj The ASN1_TIME object
+ @return A pointer to a (struct tm). Adjusted for time zone and daylight savings time.
+ */
+struct tm *cl_ASN1_GetTimeT(ASN1_TIME *timeobj);
+
+/** Load a CRL file into an X509_CRL object
+ @param[in] file The path to the CRL
+ @return A pointer to an X509_CRL object or NULL on error.
+ */
+X509_CRL *cl_load_crl(const char *timeobj);
+
+/** Sign data with a key stored on disk
+ @param[in] keypath The path to the RSA private key
+ @param[in] alg The hash/signature algorithm to use
+ @param[in] hash The hash to sign
+ @param[out] olen A pointer that stores the size of the signature
+ @param[in] Whether or not to base64-encode the signature. 1 for yes, 0 for no.
+ @return The generated signature
+ */
+unsigned char *cl_sign_data_keyfile(char *keypath, char *alg, unsigned char *hash, unsigned int *olen, int encode);
+
+/** Sign data with an RSA private key object
+ @param[in] pkey The RSA private key object
+ @param[in] alg The hash/signature algorithm to use
+ @param[in] hash The hash to sign
+ @param[out] olen A pointer that stores the size of the signature
+ @param[in] Whether or not to base64-encode the signature. 1 for yes, 0 for no.
+ @return The generated signature
+ */
+unsigned char *cl_sign_data(EVP_PKEY *pkey, char *alg, unsigned char *hash, unsigned int *olen, int encode);
+
+/** Sign a file with an RSA private key object
+ @param[in] fd The file descriptor
+ @param[in] pkey The RSA private key object
+ @param[in] alg The hash/signature algorithm to use
+ @param[out] olen A pointer that stores the size of the signature
+ @param[in] encode Whether or not to base64-encode the signature. 1 for yes, 0 for no.
+ */
+unsigned char *cl_sign_file_fd(int fd, EVP_PKEY *pkey, char *alg, unsigned int *olen, int encode);
+
+/** Sign a file with an RSA private key object
+ @param[in] fp A pointer to a FILE object
+ @param[in] pkey The RSA private key object
+ @param[in] alg The hash/signature algorithm to use
+ @param[out] olen A pointer that stores the size of the signature
+ @param[in] encode Whether or not to base64-encode the signature. 1 for yes, 0 for no.
+ */
+unsigned char *cl_sign_file_fp(FILE *fp, EVP_PKEY *pkey, char *alg, unsigned int *olen, int encode);
+
+/** Get the Private Key stored on disk
+ * @param[in] keypath The path on disk where the private key is stored
+ * @return A pointer to the EVP_PKEY object that contains the private key in memory
+ */
+EVP_PKEY *cl_get_pkey_file(char *keypath);
+
+void *cl_hash_init(const char *alg);
+int cl_update_hash(void *ctx, void *data, size_t sz);
+int cl_finish_hash(void *ctx, void *buf);
+void cl_hash_destroy(void *ctx);
+/* End of crypto/hashing functions */
 
 #ifdef __cplusplus
 }

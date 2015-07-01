@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2009 Sourcefire, Inc.
+ *  Copyright (C) 2007-2012 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
  *
@@ -76,6 +76,8 @@ int main(int argc, char **argv)
     sigprocmask(SIG_SETMASK, &sigset, NULL);
 #endif
 
+    cl_initialize_crypto();
+
 
     if((opts = optparse(NULL, argc, argv, 1, OPT_CLAMSCAN, 0, NULL)) == NULL) {
 	mprintf("!Can't parse command line options\n");
@@ -104,6 +106,10 @@ int main(int argc, char **argv)
 	    perror("setrlimit");
 #endif
 	cl_debug(); /* enable debug messages */
+    }
+
+    if (optget(opts, "gen-mdb")->enabled) {
+        cl_always_gen_section_hash();
     }
 
     if(optget(opts, "version")->enabled) {
@@ -183,6 +189,8 @@ int main(int argc, char **argv)
 
     optfree(opts);
 
+    cl_cleanup_crypto();
+
     return ret;
 }
 
@@ -193,7 +201,7 @@ void help(void)
 
     mprintf("\n");
     mprintf("                       Clam AntiVirus Scanner %s\n", get_version());
-    printf("           By The ClamAV Team: http://www.clamav.net/team\n");
+    printf("           By The ClamAV Team: http://www.clamav.net/about.html#credits\n");
     printf("           (C) 2007-2009 Sourcefire, Inc.\n\n");
 
     mprintf("    --help                -h             Print this help screen\n");
@@ -215,6 +223,7 @@ void help(void)
     mprintf("    --official-db-only[=yes/no(*)]       Only load official signatures\n");
     mprintf("    --log=FILE            -l FILE        Save scan report to FILE\n");
     mprintf("    --recursive[=yes/no(*)]  -r          Scan subdirectories recursively\n");
+    mprintf("    --allmatch[=yes/no(*)]   -z          Continue scanning within file after finding a match\n");
     mprintf("    --cross-fs[=yes(*)/no]               Scan files and directories on other filesystems\n");
     mprintf("    --follow-dir-symlinks[=0/1(*)/2]     Follow directory symlinks (0 = never, 1 = direct, 2 = always)\n");
     mprintf("    --follow-file-symlinks[=0/1(*)/2]    Follow file symlinks (0 = never, 1 = direct, 2 = always)\n");
@@ -230,6 +239,7 @@ void help(void)
     mprintf("    --bytecode[=yes(*)/no]               Load bytecode from the database\n");
     mprintf("    --bytecode-unsigned[=yes/no(*)]      Load unsigned bytecode\n");
     mprintf("    --bytecode-timeout=N                 Set bytecode timeout (in milliseconds)\n");
+    mprintf("    --statistics[=none(*)/bytecode/pcre] Collect and print execution statistics\n");
     mprintf("    --detect-pua[=yes/no(*)]             Detect Possibly Unwanted Applications\n");
     mprintf("    --exclude-pua=CAT                    Skip PUA sigs of category CAT\n");
     mprintf("    --include-pua=CAT                    Load PUA sigs of category CAT\n");
@@ -243,22 +253,41 @@ void help(void)
     mprintf("    --heuristic-scan-precedence[=yes/no(*)] Stop scanning as soon as a heuristic match is found\n");
     mprintf("    --phishing-ssl[=yes/no(*)]           Always block SSL mismatches in URLs (phishing module)\n");
     mprintf("    --phishing-cloak[=yes/no(*)]         Always block cloaked URLs (phishing module)\n");
+    mprintf("    --partition-intersection[=yes/no(*)] Detect partition intersections in raw disk images using heuristics.\n");
     mprintf("    --algorithmic-detection[=yes(*)/no]  Algorithmic detection\n");
     mprintf("    --scan-pe[=yes(*)/no]                Scan PE files\n");
     mprintf("    --scan-elf[=yes(*)/no]               Scan ELF files\n");
     mprintf("    --scan-ole2[=yes(*)/no]              Scan OLE2 containers\n");
     mprintf("    --scan-pdf[=yes(*)/no]               Scan PDF files\n");
+    mprintf("    --scan-swf[=yes(*)/no]               Scan SWF files\n");
     mprintf("    --scan-html[=yes(*)/no]              Scan HTML files\n");
     mprintf("    --scan-archive[=yes(*)/no]           Scan archive files (supported by libclamav)\n");
     mprintf("    --detect-broken[=yes/no(*)]          Try to detect broken executable files\n");
     mprintf("    --block-encrypted[=yes/no(*)]        Block encrypted archives\n");
+    mprintf("    --nocerts                            Disable authenticode certificate chain verification in PE files\n");
+    mprintf("    --dumpcerts                          Dump authenticode certificate chain in PE files\n");
     mprintf("\n");
     mprintf("    --max-filesize=#n                    Files larger than this will be skipped and assumed clean\n");
     mprintf("    --max-scansize=#n                    The maximum amount of data to scan for each container file (**)\n");
     mprintf("    --max-files=#n                       The maximum number of files to scan for each container file (**)\n");
     mprintf("    --max-recursion=#n                   Maximum archive recursion level for container file (**)\n");
     mprintf("    --max-dir-recursion=#n               Maximum directory recursion level\n");
-
+    mprintf("    --max-embeddedpe=#n                  Maximum size file to check for embedded PE\n");
+    mprintf("    --max-htmlnormalize=#n               Maximum size of HTML file to normalize\n");
+    mprintf("    --max-htmlnotags=#n                  Maximum size of normalized HTML file to scan\n");
+    mprintf("    --max-scriptnormalize=#n             Maximum size of script file to normalize\n");
+    mprintf("    --max-ziptypercg=#n                  Maximum size zip to type reanalyze\n");
+    mprintf("    --max-partitions=#n                  Maximum number of partitions in disk image to be scanned\n");
+    mprintf("    --max-iconspe=#n                     Maximum number of icons in PE file to be scanned\n");
+#if HAVE_PCRE
+    mprintf("    --pcre-match-limit=#n                Maximum calls to the PCRE match function.\n");
+    mprintf("    --pcre-recmatch-limit=#n             Maximum recursive calls to the PCRE match function.\n");
+    mprintf("    --pcre-max-filesize=#n               Maximum size file to perform PCRE subsig matching.\n");
+#endif /* HAVE_PCRE */
+    mprintf("    --enable-stats                       Enable statistical reporting of malware\n");
+    mprintf("    --disable-pe-stats                   Disable submission of individual PE sections in stats submissions\n");
+    mprintf("    --stats-timeout=#n                   Number of seconds to wait for waiting a response back from the stats server\n");
+    mprintf("    --stats-host-id=UUID                 Set the Host ID used when submitting statistical info.\n");
     mprintf("\n");
     mprintf("(*) Default scan settings\n");
     mprintf("(**) Certain files (e.g. documents, archives, etc.) may in turn contain other\n");

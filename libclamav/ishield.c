@@ -42,6 +42,7 @@
 #endif
 #include <zlib.h>
 
+#include "clamav.h"
 #include "scanners.h"
 #include "cltypes.h"
 #include "others.h"
@@ -255,7 +256,7 @@ int cli_scanishield_msi(cli_ctx *ctx, off_t off) {
 	while(csize) {
 	    uint8_t buf2[BUFSIZ];
 	    z.avail_in = MIN(csize, sizeof(buf2));
-	    if(fmap_readn(map, buf2, off, z.avail_in) != z.avail_in) {
+	    if((uInt)fmap_readn(map, buf2, off, z.avail_in) != z.avail_in) {
 		cli_dbgmsg("ishield-msi: premature EOS or read fail\n");
 		break;
 	    }
@@ -298,7 +299,10 @@ int cli_scanishield_msi(cli_ctx *ctx, off_t off) {
 	if (ret == CL_SUCCESS) {
 	    cli_dbgmsg("ishield-msi: extracted to %s\n", tempfile);
 
-	    lseek(ofd, 0, SEEK_SET);
+	    if (lseek(ofd, 0, SEEK_SET) == -1) {
+            cli_dbgmsg("ishield-msi: call to lseek() failed\n");
+            ret = CL_ESEEK;
+        }
 	    ret = cli_magic_scandesc(ofd, ctx);
 	}
 	close(ofd);
@@ -369,7 +373,7 @@ int cli_scanishield(cli_ctx *ctx, off_t off, size_t sz) {
 	if(fsize < 0 || fsize == LONG_MAX ||
 	   !*strsz || !eostr || eostr == strsz || *eostr ||
 	   (unsigned long)fsize >= sz ||
-	   data - fname >= sz - fsize
+	   (size_t)(data - fname) >= sz - fsize
 	) break;
 
 	cli_dbgmsg("ishield: @%lx found file %s (%s) - version %s - size %lu\n", (unsigned long int) coff, fname, path, version, (unsigned long int) fsize);
@@ -470,7 +474,10 @@ static int is_dump_and_scan(cli_ctx *ctx, off_t off, size_t fsize) {
     }
     if(!fsize) {
 	cli_dbgmsg("ishield: extracted to %s\n", fname);
-	lseek(ofd, 0, SEEK_SET);
+	if (lseek(ofd, 0, SEEK_SET) == -1) {
+        cli_dbgmsg("ishield: call to lseek() failed\n");
+        ret = CL_ESEEK;
+    }
 	ret = cli_magic_scandesc(ofd, ctx);
     }
     close(ofd);
@@ -686,8 +693,10 @@ static int is_extract_cab(cli_ctx *ctx, uint64_t off, uint64_t size, uint64_t cs
     int success = 0;
     fmap_t *map = *ctx->fmap;
 
-    if(!(outbuf = cli_malloc(IS_CABBUFSZ)))
-	return CL_EMEM;
+    if(!(outbuf = cli_malloc(IS_CABBUFSZ))) {
+        cli_errmsg("is_extract_cab: Unable to allocate memory for outbuf\n");
+        return CL_EMEM;
+    }
 
     if(!(tempfile = cli_gentemp(ctx->engine->tmpdir))) {
 	free(outbuf);
@@ -766,7 +775,8 @@ static int is_extract_cab(cli_ctx *ctx, uint64_t off, uint64_t size, uint64_t cs
 	    cli_dbgmsg("is_extract_cab: extracted %llu bytes to %s, expected %llu, scanning anyway.\n", (long long)outsz, tempfile, (long long)size);
 	else
 	    cli_dbgmsg("is_extract_cab: extracted to %s\n", tempfile);
-	lseek(ofd, 0, SEEK_SET);
+	if (lseek(ofd, 0, SEEK_SET) == -1)
+        cli_dbgmsg("is_extract_cab: call to lseek() failed\n");
 	ret = cli_magic_scandesc(ofd, ctx);
     }
 

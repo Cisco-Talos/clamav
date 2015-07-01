@@ -68,7 +68,7 @@ static void conn_setup_mayfail(int may)
 	return;
     fail_unless_fmt(sockd != -1, "Unable to create socket: %s\n", strerror(errno));
 
-    rc = connect(sockd, (struct sockaddr *)&nixsock, sizeof(nixsock));
+    rc = connect(sockd, (struct sockaddr *)&nixsock, (socklen_t)sizeof(nixsock));
     fail_unless_fmt(rc != -1, "Unable to connect(): %s\n", strerror(errno));
 
     signal(SIGPIPE, SIG_IGN);
@@ -91,7 +91,7 @@ static int conn_tcp(int port)
     server.sin_port = htons(port);
     server.sin_addr.s_addr = inet_addr("127.0.0.1");
 
-    rc = connect(sd, (struct sockaddr *)&server, sizeof(server));
+    rc = connect(sd, (struct sockaddr *)&server, (socklen_t)sizeof(server));
     fail_unless_fmt(rc != -1, "Unable to connect(): %s\n", strerror(errno));
     return sd;
 }
@@ -152,7 +152,7 @@ static void commands_teardown(void)
 
 #define VERSION_REPLY "ClamAV "REPO_VERSION""VERSION_SUFFIX
 
-#define VCMDS_REPLY VERSION_REPLY"| COMMANDS: SCAN QUIT RELOAD PING CONTSCAN VERSIONCOMMANDS VERSION STREAM END SHUTDOWN MULTISCAN FILDES STATS IDSESSION INSTREAM DETSTATSCLEAR DETSTATS"
+#define VCMDS_REPLY VERSION_REPLY"| COMMANDS: SCAN QUIT RELOAD PING CONTSCAN VERSIONCOMMANDS VERSION STREAM END SHUTDOWN MULTISCAN FILDES STATS IDSESSION INSTREAM DETSTATSCLEAR DETSTATS ALLMATCHSCAN"
 
 enum idsession_support {
     IDS_OK, /* accepted */
@@ -350,7 +350,7 @@ static size_t prepare_instream(char *buf, size_t off, size_t buflen)
     STATBUF stbuf;
     int fd, nread;
     uint32_t chunk;
-    fail_unless_fmt(STAT(SCANFILE, &stbuf) != -1, "stat failed for %s: %s", SCANFILE, strerror(errno));
+    fail_unless_fmt(CLAMSTAT(SCANFILE, &stbuf) != -1, "stat failed for %s: %s", SCANFILE, strerror(errno));
 
     fd = open(SCANFILE, O_RDONLY);
     fail_unless_fmt(fd != -1, "open failed: %s\n", strerror(errno));

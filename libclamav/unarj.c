@@ -273,7 +273,7 @@ static int make_table(arj_decode_t *decode_data, int nchar, unsigned char *bitle
 	if (i != (unsigned short) (1 << 16)) {
 		k = 1 << tablebits;
 		while (i != k) {
-			if (i >= tablesize) {
+			if (i >= (unsigned int)tablesize) {
 				cli_dbgmsg("UNARJ: bounds exceeded\n");
 				decode_data->status = CL_EUNPACK;
 				return CL_EUNPACK;
@@ -588,7 +588,7 @@ static int decode(arj_metadata_t *metadata)
 				cli_dbgmsg("UNARJ: bounds exceeded - probably a corrupted file.\n");
 				break;
 			}
-			if (out_ptr > i && out_ptr < DDICSIZ - MAXMATCH - 1) {
+			if (out_ptr > (uint32_t)i && out_ptr < DDICSIZ - MAXMATCH - 1) {
 				while ((--j >= 0) && (i < DDICSIZ) && (out_ptr < DDICSIZ)) {
 					decode_data.text[out_ptr++] = decode_data.text[i++];
 				}
@@ -761,7 +761,7 @@ static int decode_f(arj_metadata_t *metadata)
 	return CL_SUCCESS;
 }
 
-static uint32_t arj_unstore(arj_metadata_t *metadata, int ofd, uint32_t len)
+static int arj_unstore(arj_metadata_t *metadata, int ofd, uint32_t len)
 {
 	const unsigned char *data;
 	uint32_t rem;
@@ -774,15 +774,18 @@ static uint32_t arj_unstore(arj_metadata_t *metadata, int ofd, uint32_t len)
 	while (rem > 0) {
 		todo = (unsigned int) MIN(8192, rem);
 		data = fmap_need_off_once_len(metadata->map, metadata->offset, todo, &count);
-		if (!data || !count)
-		    return len - rem;
+		if (!data || !count) {
+			/* Truncated file, not enough bytes available */
+			return CL_EFORMAT;
+                }
 		metadata->offset += count;
-		if (cli_writen(ofd, data, count) != count) {
-			return len-rem-count;
+		if ((size_t)cli_writen(ofd, data, count) != count) {
+			/* File writing problem */
+			return CL_EWRITE;
 		}
 		rem -= count;
 	}
-	return len;
+	return CL_SUCCESS;
 }
 
 static int is_arj_archive(arj_metadata_t *metadata)
@@ -804,7 +807,6 @@ static int is_arj_archive(arj_metadata_t *metadata)
 static int arj_read_main_header(arj_metadata_t *metadata)
 {
 	uint16_t header_size, count;
-	uint32_t crc;
 	arj_main_hdr_t main_hdr;
 	const char *filename, *comment;
 	off_t header_offset;
@@ -846,13 +848,17 @@ static int arj_read_main_header(arj_metadata_t *metadata)
 	}
 
 	filename = fmap_need_offstr(metadata->map, metadata->offset, header_size);
-	if (!filename)
+	if (!filename) {
+        cli_dbgmsg("UNARJ: Unable to allocate memory for filename\n");
 		return FALSE;
+    }
 	metadata->offset += strlen(filename) + 1;
 
 	comment = fmap_need_offstr(metadata->map, metadata->offset, header_size);
-	if (!comment)
+	if (!comment) {
+        cli_dbgmsg("UNARJ: Unable to allocate memory for comment\n");
 		return FALSE;
+    }
 	metadata->offset += strlen(comment) + 1;
 	cli_dbgmsg("Filename: %s\n", filename);
 	cli_dbgmsg("Comment: %s\n", comment);
@@ -926,13 +932,17 @@ static int arj_read_file_header(arj_metadata_t *metadata)
 	}
 
 	filename = fmap_need_offstr(metadata->map, metadata->offset, header_size);
-	if (!filename)
+	if (!filename) {
+        cli_dbgmsg("UNARJ: Unable to allocate memory for filename\n");
 		return FALSE;
+    }
 	metadata->offset += strlen(filename) + 1;
 
 	comment = fmap_need_offstr(metadata->map, metadata->offset, header_size);
-	if (!comment)
+	if (!comment) {
+        cli_dbgmsg("UNARJ: Unable to allocate memory for comment\n");
 		return FALSE;
+    }
 	metadata->offset += strlen(comment) + 1;
 	cli_dbgmsg("Filename: %s\n", filename);
 	cli_dbgmsg("Comment: %s\n", comment);
@@ -973,6 +983,7 @@ static int arj_read_file_header(arj_metadata_t *metadata)
 
 int cli_unarj_open(fmap_t *map, const char *dirname, arj_metadata_t *metadata, size_t off)
 {
+    UNUSEDPARAM(dirname);
 	cli_dbgmsg("in cli_unarj_open\n");
 	metadata->map = map;
 	metadata->offset = off;
@@ -1003,7 +1014,6 @@ int cli_unarj_prepare_file(const char *dirname, arj_metadata_t *metadata)
 
 int cli_unarj_extract_file(const char *dirname, arj_metadata_t *metadata)
 {
-	off_t offset;
 	int ret = CL_SUCCESS;
 	char filename[1024];
 
@@ -1028,11 +1038,6 @@ int cli_unarj_extract_file(const char *dirname, arj_metadata_t *metadata)
 	switch (metadata->method) {
 		case 0:
 			ret = arj_unstore(metadata, metadata->ofd, metadata->comp_size);
-			if (ret != metadata->comp_size) {
-				ret = CL_EWRITE;
-			} else {
-				ret = CL_SUCCESS;
-			}
 			break;
 		case 1:
 		case 2:

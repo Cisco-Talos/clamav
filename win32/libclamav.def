@@ -41,7 +41,40 @@ EXPORTS cl_set_clcb_msg @33
 EXPORTS cl_engine_set_clcb_hash @34
 EXPORTS cl_engine_set_clcb_pre_cache @35
 EXPORTS cl_engine_set_clcb_meta @36
-
+EXPORTS cl_always_gen_section_hash @37
+EXPORTS cl_engine_set_stats_set_cbdata @38
+EXPORTS cl_engine_set_clcb_stats_add_sample @39
+EXPORTS cl_engine_set_clcb_stats_remove_sample @40
+EXPORTS cl_engine_set_clcb_stats_decrement_count @41
+EXPORTS cl_engine_set_clcb_stats_submit @42
+EXPORTS cl_engine_set_clcb_stats_flush @43
+EXPORTS cl_engine_set_clcb_stats_get_num @44
+EXPORTS cl_engine_set_clcb_stats_get_size @45
+EXPORTS cl_engine_set_clcb_stats_get_hostid @46
+EXPORTS cl_hash_data @47
+EXPORTS cl_initialize_crypto @48
+EXPORTS cl_cleanup_crypto @49
+EXPORTS cl_hash_file_fd @50
+EXPORTS cl_hash_file_fp @51
+EXPORTS cl_sha256 @52
+EXPORTS cl_sha1 @53
+EXPORTS cl_verify_signature @54
+EXPORTS cl_verify_signature_x509_keyfile @55
+EXPORTS cl_verify_signature_x509 @56
+EXPORTS cl_sign_data_keyfile @57
+EXPORTS cl_sign_data @58
+EXPORTS cl_sign_file_fd @59
+EXPORTS cl_sign_file_fp @60
+EXPORTS cl_get_x509_from_mem @61
+EXPORTS cl_validate_certificate_chain @62
+EXPORTS cl_load_cert @63
+EXPORTS cl_ASN1_GetTimeT @64
+EXPORTS cl_load_crl @65
+EXPORTS cl_hash_init @66
+EXPORTS cl_update_hash @67
+EXPORTS cl_finish_hash @68
+EXPORTS cl_hash_destroy @69
+EXPORTS cl_engine_stats_enable @70
 
 ; path variables
 ; --------------
@@ -129,6 +162,14 @@ EXPORTS cli_fmap_scandesc @44265 NONAME
 EXPORTS cli_hashset_destroy @44266 NONAME
 EXPORTS cli_detect_environment @44267 NONAME
 EXPORTS cli_filecopy @44268 NONAME
+EXPORTS cli_checkfp_pe @44369 NONAME
+EXPORTS cli_bytefunc_describe @44370 NONAME
+EXPORTS cli_bytetype_describe @44371 NONAME
+EXPORTS cli_bytevalue_describe @44372 NONAME
+EXPORTS cli_pcre_freeoff @44373 NONAME
+EXPORTS cli_pcre_recaloff @44374 NONAME
+EXPORTS cli_pcre_perf_events_destroy @44375 NONAME
+EXPORTS cli_pcre_perf_print @44376 NONAME
 
 ; compatibility layer, tommath, zlib
 EXPORTS w32_srand @44269 NONAME
@@ -139,12 +180,6 @@ EXPORTS readdir @44273 NONAME
 EXPORTS closedir @44274 NONAME
 EXPORTS safe_open @44275 NONAME
 EXPORTS snprintf @44276 NONAME
-;EXPORTS mp_init @44277 NONAME
-;EXPORTS mp_read_radix @44278 NONAME
-;EXPORTS mp_clear @44279 NONAME
-EXPORTS sha256_init @44280 NONAME
-EXPORTS sha256_update @44281 NONAME
-EXPORTS sha256_final @44282 NONAME
 EXPORTS optget @44283 NONAME
 EXPORTS optparse @44284 NONAME
 EXPORTS optfree @44285 NONAME
@@ -217,3 +252,7 @@ EXPORTS cli_to_utf8_maybe_alloc @44345 NONAME
 EXPORTS cli_strdup_to_utf8 @44346 NONAME
 EXPORTS w32_inet_ntoa @44347 NONAME
 EXPORTS w32_getpeername @44348 NONAME
+EXPORTS cli_sigperf_print @44349 NONAME
+EXPORTS cli_sigperf_events_destroy @44350 NONAME
+EXPORTS cli_cache_init @44351 NONAME
+EXPORTS cli_cache_destroy @44352 NONAME

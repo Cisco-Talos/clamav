@@ -33,6 +33,7 @@
 
 #include <libmilter/mfapi.h>
 
+#include "libclamav/clamav.h"
 #include "shared/optparser.h"
 #include "shared/output.h"
 #include "libclamav/others.h"
@@ -148,7 +149,6 @@ static void nullify(SMFICTX *ctx, struct CLAMFI *cf, enum CFWHAT closewhat) {
 	free(cf->recipients);
     }
     smfi_setpriv(ctx, NULL);
-    free(cf);
 }
 
 
@@ -225,6 +225,7 @@ sfsistat clamfi_header(SMFICTX *ctx, char *headerf, char *headerv) {
     if(!cf->totsz && cf->all_whitelisted) {
 	logg("*Skipping scan (all destinations whitelisted)\n");
 	nullify(ctx, cf, CF_NONE);
+	free(cf);
 	return SMFIS_ACCEPT;
     }
 
@@ -244,38 +245,55 @@ sfsistat clamfi_header(SMFICTX *ctx, char *headerf, char *headerv) {
 	if(!strcasecmp(headerf, "X-Virus-Status")) cf->status_count++;
     }
 
-    if((ret = sendchunk(cf, (unsigned char *)headerf, strlen(headerf), ctx)) != SMFIS_CONTINUE)
-	return ret;
-    if((ret = sendchunk(cf, (unsigned char *)": ", 2, ctx)) != SMFIS_CONTINUE)
-	return ret;
-    if(headerv && (ret = sendchunk(cf, (unsigned char *)headerv, strlen(headerv), ctx)) != SMFIS_CONTINUE)
-	return ret;
-    return sendchunk(cf, (unsigned char *)"\r\n", 2, ctx);
+    if((ret = sendchunk(cf, (unsigned char *)headerf, strlen(headerf), ctx)) != SMFIS_CONTINUE) {
+        free(cf);
+        return ret;
+    }
+    if((ret = sendchunk(cf, (unsigned char *)": ", 2, ctx)) != SMFIS_CONTINUE) {
+        free(cf);
+        return ret;
+    }
+    if(headerv && (ret = sendchunk(cf, (unsigned char *)headerv, strlen(headerv), ctx)) != SMFIS_CONTINUE) {
+        free(cf);
+        return ret;
+    }
+    ret = sendchunk(cf, (unsigned char *)"\r\n", 2, ctx);
+    if(ret != SMFIS_CONTINUE)
+        free(cf);
+    return ret;
 }
 
 
 sfsistat clamfi_body(SMFICTX *ctx, unsigned char *bodyp, size_t len) {
     struct CLAMFI *cf;
+    sfsistat ret;
 
     if(!(cf = (struct CLAMFI *)smfi_getpriv(ctx)))
 	return SMFIS_CONTINUE; /* whatever */
 
     if(!cf->gotbody) {
-	sfsistat ret = sendchunk(cf, (unsigned char *)"\r\n", 2, ctx);
-	if(ret != SMFIS_CONTINUE)
+	ret = sendchunk(cf, (unsigned char *)"\r\n", 2, ctx);
+	if(ret != SMFIS_CONTINUE) {
+	    free(cf);
 	    return ret;
+        }
 	cf->gotbody = 1;
     }
 
-    return sendchunk(cf, bodyp, len, ctx);
+    ret = sendchunk(cf, bodyp, len, ctx);
+    if(ret != SMFIS_CONTINUE)
+	free(cf);
+    return ret;
 }
 
 
 sfsistat clamfi_abort(SMFICTX *ctx) {
     struct CLAMFI *cf;
 
-    if((cf = (struct CLAMFI *)smfi_getpriv(ctx)))
+    if((cf = (struct CLAMFI *)smfi_getpriv(ctx))) {
 	nullify(ctx, cf, CF_ANY);
+	free(cf);
+    }
     return SMFIS_CONTINUE;
 }
 
@@ -293,6 +311,7 @@ sfsistat clamfi_eom(SMFICTX *ctx) {
 	logg("*Not scanning an empty message\n");
 	ret = CleanAction(ctx);
 	nullify(ctx, cf, CF_NONE);
+	free(cf);
 	return ret;
     }
 
@@ -302,6 +321,7 @@ sfsistat clamfi_eom(SMFICTX *ctx) {
 	if(nc_sendmsg(cf->main, cf->alt) == -1) {
 	    logg("!FD send failed\n");
 	    nullify(ctx, cf, CF_ALT);
+	    free(cf);
 	    return FailAction;
 	}
     } else {
@@ -310,6 +330,7 @@ sfsistat clamfi_eom(SMFICTX *ctx) {
 	if((cf->bufsz && nc_send(cf->main, &cf->sendme, cf->bufsz + 4)) || nc_send(cf->main, &sendmetoo, 4))  {
 	    logg("!Failed to flush STREAM\n");
 	    nullify(ctx, cf, CF_NONE);
+	    free(cf);
 	    return FailAction;
 	}
     }
@@ -324,6 +345,7 @@ sfsistat clamfi_eom(SMFICTX *ctx) {
     if(!reply) {
 	logg("!No reply from clamd\n");
 	nullify(ctx, cf, CF_NONE);
+	free(cf);
 	return FailAction;
     }
 
@@ -458,7 +480,7 @@ sfsistat clamfi_eom(SMFICTX *ctx) {
     }
 
     nullify(ctx, cf, CF_MAIN);
-
+    free(cf);
     free(reply);
     return ret;
 }
@@ -719,6 +741,7 @@ sfsistat clamfi_envrcpt(SMFICTX *ctx, char **argv) {
 	if(!new_rcpt) {
 	    logg("!Failed to allocate array for new recipient\n");
 	    nullify(ctx, cf, CF_ANY);
+	    free(cf);
 	    return FailAction;
 	}
 	cf->recipients = new_rcpt;
@@ -726,6 +749,7 @@ sfsistat clamfi_envrcpt(SMFICTX *ctx, char **argv) {
 	if(!(cf->recipients[rcpt_cnt] = strdup(argv[0]))) {
 	    logg("!Failed to allocate space for new recipient\n");
 	    nullify(ctx, cf, CF_ANY);
+	    free(cf);
 	    return FailAction;
 	}
     }

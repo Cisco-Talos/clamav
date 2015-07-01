@@ -19,6 +19,8 @@
  */
 
 #include <errno.h>
+
+#include "clamav.h"
 #include "others.h"
 #include "dirent.h"
 #include "w32_stat.h"

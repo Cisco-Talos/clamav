@@ -19,6 +19,8 @@
  */
 
 #include <string.h>
+
+#include "clamav.h"
 #include "cltypes.h"
 #include "execs.h"
 #include "others.h"

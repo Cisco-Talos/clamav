@@ -56,11 +56,6 @@ typedef unsigned long  ulg;
 #define CRITICAL(chunkID)   (!ANCILLARY(chunkID))
 #define PUBLIC(chunkID)     (!PRIVATE(chunkID))
 
-/* what the PNG, MNG and JNG magic numbers should be */
-static const uch good_PNG_magic[8] = {137, 80, 78, 71, 13, 10, 26, 10};
-static const uch good_MNG_magic[8] = {138, 77, 78, 71, 13, 10, 26, 10};
-static const uch good_JNG_magic[8] = {139, 74, 78, 71, 13, 10, 26, 10};
-
 /* GRR FIXME:  could merge all three of these into single table (bit fields) */
 
 /* GRR 20061203:  for "isalpha()" that works even on EBCDIC machines */

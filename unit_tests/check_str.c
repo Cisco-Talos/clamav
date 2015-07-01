@@ -29,6 +29,7 @@
 #include <limits.h>
 #include <string.h>
 #include <check.h>
+
 #include "../libclamav/clamav.h"
 #include "../libclamav/others.h"
 #include "../libclamav/str.h"

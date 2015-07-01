@@ -42,12 +42,12 @@
 #include "cvd.h"
 #include "readdb.h"
 #include "default.h"
-#include "sha256.h"
 
 #define TAR_BLOCKSIZE 512
 
 static void cli_untgz_cleanup(char *path, gzFile infile, FILE *outfile, int fdd)
 {
+    UNUSEDPARAM(fdd);
     cli_dbgmsg("in cli_untgz_cleanup()\n");
     if (path != NULL)
         free (path);
@@ -137,6 +137,7 @@ static int cli_untgz(int fd, const char *destdir)
 	    if(outfile) {
 		if(fclose(outfile)) {
 		    cli_errmsg("cli_untgz: Cannot close file %s\n", path);
+		    outfile = NULL;
 		    cli_untgz_cleanup(path, infile, outfile, fdd);
 		    return -1;
 		}
@@ -180,6 +181,7 @@ static int cli_untgz(int fd, const char *destdir)
 
 static void cli_tgzload_cleanup(int comp, struct cli_dbio *dbio, int fdd)
 {
+    UNUSEDPARAM(fdd);
     cli_dbgmsg("in cli_tgzload_cleanup()\n");
     if(comp) {
         gzclose(dbio->gzs);
@@ -192,6 +194,11 @@ static void cli_tgzload_cleanup(int comp, struct cli_dbio *dbio, int fdd)
     if(dbio->buf != NULL) {
         free(dbio->buf);
         dbio->buf = NULL;
+    }
+
+    if (dbio->hashctx) {
+        cl_hash_destroy(dbio->hashctx);
+        dbio->hashctx = NULL;
     }
 }
 
@@ -207,14 +214,19 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
 
     cli_dbgmsg("in cli_tgzload()\n");
 
-    lseek(fd, 512, SEEK_SET);
+    if(lseek(fd, 512, SEEK_SET) < 0) {
+        return CL_ESEEK;
+    }
+
     if(cli_readn(fd, block, 7) != 7)
 	return CL_EFORMAT; /* truncated file? */
 
     if(!strncmp(block, "COPYING", 7))
 	compr = 0;
 
-    lseek(fd, 512, SEEK_SET);
+    if(lseek(fd, 512, SEEK_SET) < 0) {
+        return CL_ESEEK;
+    }
 
     if((fdd = dup(fd)) == -1) {
 	cli_errmsg("cli_tgzload: Can't duplicate descriptor %d\n", fd);
@@ -306,7 +318,13 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
 	dbio->readsize = dbio->size < dbio->bufsize ? dbio->size : dbio->bufsize - 1;
 	dbio->bufpt = NULL;
 	dbio->readpt = dbio->buf;
-	sha256_init(&dbio->sha256ctx);
+    if (!(dbio->hashctx)) {
+        dbio->hashctx = cl_hash_init("sha256");
+        if (!(dbio->hashctx)) {
+            cli_tgzload_cleanup(compr, dbio, fdd);
+            return CL_EMALFDB;
+        }
+    }
 	dbio->bread = 0;
 
 	/* cli_dbgmsg("cli_tgzload: Loading %s, size: %u\n", name, size); */
@@ -340,7 +358,12 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
 			cli_tgzload_cleanup(compr, dbio, fdd);
 			return CL_EMALFDB;
 		    }
-		    sha256_final(&dbio->sha256ctx, hash);
+            cl_finish_hash(dbio->hashctx, hash);
+            dbio->hashctx = cl_hash_init("sha256");
+            if (!(dbio->hashctx)) {
+                cli_tgzload_cleanup(compr, dbio, fdd);
+                return CL_EMALFDB;
+            }
 		    if(memcmp(db->hash, hash, 32)) {
 			cli_errmsg("cli_tgzload: Invalid checksum for file %s\n", name);
 			cli_tgzload_cleanup(compr, dbio, fdd);
@@ -518,6 +541,11 @@ static int cli_cvdverify(FILE *fs, struct cl_cvd *cvdpt, unsigned int skipsig)
     }
 
     md5 = cli_hashstream(fs, NULL, 1);
+    if (md5 == NULL) {
+	cli_dbgmsg("cli_cvdverify: Cannot generate hash, out of memory\n");
+	cl_cvdfree(cvd);
+	return CL_EMEM;
+    }
     cli_dbgmsg("MD5(.tar.gz) = %s\n", md5);
 
     if(strncmp(md5, cvd->md5, 32)) {
@@ -556,6 +584,7 @@ int cl_cvdverify(const char *file)
 	fclose(fs);
 	return CL_EMEM;
     }
+    engine->cb_stats_submit = NULL; /* Don't submit stats if we're just verifying a CVD */
 
     ret = cli_cvdload(fs, engine, NULL, CL_DB_STDOPT | CL_DB_PUA, !!cli_strbcasestr(file, ".cld"), file, 1);
 
@@ -574,6 +603,8 @@ int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigne
 	struct cli_dbio dbio;
 	struct cli_dbinfo *dbinfo = NULL;
 	char *dupname;
+
+    dbio.hashctx = NULL;
 
     cli_dbgmsg("in cli_cvdload()\n");
 
@@ -629,7 +660,7 @@ int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigne
     if(cvd.fl > cl_retflevel()) {
 	cli_warnmsg("***********************************************************\n");
 	cli_warnmsg("***  This version of the ClamAV engine is outdated.     ***\n");
-	cli_warnmsg("*** DON'T PANIC! Read http://www.clamav.net/support/faq ***\n");
+	cli_warnmsg("***   Read http://www.clamav.net/doc/install.html       ***\n");
 	cli_warnmsg("***********************************************************\n");
     }
 

@@ -95,9 +95,6 @@
 /* file i/o buffer size */
 #define FILEBUFF 8192
 
-/* FPU byte ordering matches CPU */
-#define FPU_WORDS_BIGENDIAN 0
-
 /* enable workaround for broken DNS servers */
 /* #undef FRESHCLAM_DNS_FIX */
 
@@ -230,6 +227,12 @@
 
 /* Define to '1' if you have the curses.h library */
 /* #undef HAVE_LIBPDCURSES */
+
+/* Define to 1 if you have the 'pcre' library (-lpcre). */
+#define HAVE_PCRE 1
+
+/* Define to 1 if you have the 'libxml2' library (-lxml2). */
+#define HAVE_LIBXML2 1
 
 /* Define to 1 if you have the `z' library (-lz). */
 #define HAVE_LIBZ 1
@@ -571,5 +574,7 @@
 
 /* Define to "int" if <sys/socket.h> does not define. */
 /* #undef socklen_t */
+
+#define LLVM_VERSION 28
 
 #include "platform.h"

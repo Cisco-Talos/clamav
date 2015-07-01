@@ -51,8 +51,10 @@ int init_domainlist(struct cl_engine* engine)
 {
 	if(engine) {
 		engine->domainlist_matcher = (struct regex_matcher *) cli_malloc(sizeof(struct regex_matcher));
-		if(!engine->domainlist_matcher)
+		if(!engine->domainlist_matcher) {
+            cli_errmsg("Phishcheck: Unable to allocate memory for init_domainlist\n");
 			return CL_EMEM;
+        }
 #ifdef USE_MPOOL
 		((struct regex_matcher*)engine->domainlist_matcher)->mempool = engine->mempool;
 #endif

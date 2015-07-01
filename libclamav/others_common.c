@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm, Trog
  *
@@ -54,12 +54,10 @@
 
 #include "clamav.h"
 #include "others.h"
-#include "md5.h"
 #include "cltypes.h"
 #include "regex/regex.h"
 #include "ltdl.h"
 #include "matcher-ac.h"
-#include "md5.h"
 
 static unsigned char name_salt[16] = { 16, 38, 97, 12, 8, 4, 72, 196, 217, 144, 33, 124, 18, 11, 17, 253 };
 
@@ -119,9 +117,13 @@ void cli_logg_unsetup(void)
 }
 #endif
 uint8_t cli_debug_flag = 0;
+uint8_t cli_always_gen_section_hash = 0;
 
 static void fputs_callback(enum cl_msg severity, const char *fullmsg, const char *msg, void *context)
 {
+    UNUSEDPARAM(severity);
+    UNUSEDPARAM(msg);
+    UNUSEDPARAM(context);
     fputs(fullmsg, stderr);
 }
 
@@ -134,7 +136,7 @@ void cl_set_clcb_msg(clcb_msg callback)
 
 #define MSGCODE(buff, len, x)				    \
 	va_list args;					    \
-	int len = sizeof(x) - 1;			    \
+	size_t len = sizeof(x) - 1;			    \
 	char buff[BUFSIZ];				    \
     strncpy(buff, x, len);				    \
     va_start(args, str);				    \
@@ -194,8 +196,8 @@ void *cli_malloc(size_t size)
     alloc = malloc(size);
 
     if(!alloc) {
-	cli_errmsg("cli_malloc(): Can't allocate memory (%lu bytes).\n", (unsigned long int) size);
 	perror("malloc_problem");
+	cli_errmsg("cli_malloc(): Can't allocate memory (%lu bytes).\n", (unsigned long int) size);
 	return NULL;
     } else return alloc;
 }
@@ -214,8 +216,8 @@ void *cli_calloc(size_t nmemb, size_t size)
     alloc = calloc(nmemb, size);
 
     if(!alloc) {
-	cli_errmsg("cli_calloc(): Can't allocate memory (%lu bytes).\n", (unsigned long int) (nmemb * size));
 	perror("calloc_problem");
+	cli_errmsg("cli_calloc(): Can't allocate memory (%lu bytes).\n", (unsigned long int) (nmemb * size));
 	return NULL;
     } else return alloc;
 }
@@ -233,8 +235,8 @@ void *cli_realloc(void *ptr, size_t size)
     alloc = realloc(ptr, size);
 
     if(!alloc) {
-	cli_errmsg("cli_realloc(): Can't re-allocate memory to %lu bytes.\n", (unsigned long int) size);
 	perror("realloc_problem");
+	cli_errmsg("cli_realloc(): Can't re-allocate memory to %lu bytes.\n", (unsigned long int) size);
 	return NULL;
     } else return alloc;
 }
@@ -252,8 +254,8 @@ void *cli_realloc2(void *ptr, size_t size)
     alloc = realloc(ptr, size);
 
     if(!alloc) {
-	cli_errmsg("cli_realloc2(): Can't re-allocate memory to %lu bytes.\n", (unsigned long int) size);
 	perror("realloc_problem");
+	cli_errmsg("cli_realloc2(): Can't re-allocate memory to %lu bytes.\n", (unsigned long int) size);
 	if(ptr)
 	    free(ptr);
 	return NULL;
@@ -273,8 +275,8 @@ char *cli_strdup(const char *s)
     alloc = strdup(s);
 
     if(!alloc) {
-        cli_errmsg("cli_strdup(): Can't allocate memory (%u bytes).\n", (unsigned int) strlen(s));
         perror("strdup_problem");
+        cli_errmsg("cli_strdup(): Can't allocate memory (%u bytes).\n", (unsigned int) strlen(s));
         return NULL;
     }
 
@@ -520,7 +522,7 @@ static int get_filetype(const char *fname, int flags, int need_stat,
     }
 
     if (need_stat) {
-	if (STAT(fname, statbuf) == -1)
+	if (CLAMSTAT(fname, statbuf) == -1)
 	    return -1;
 	stated = 1;
     }
@@ -688,6 +690,7 @@ static int cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb 
 		ret = callback(NULL, NULL, dirname, error_mem, data);
 		if (ret != CL_SUCCESS)
 		    break;
+		continue; /* have to skip this one if continuing after error */
 	    }
             if(!strcmp(dirname, PATHSEP))
 		sprintf(fname, PATHSEP"%s", dent->d_name);
@@ -810,6 +813,7 @@ const char* cli_strerror(int errnum, char *buf, size_t len)
 #endif
     err = strerror(errnum);
     strncpy(buf, err, len);
+    buf[len-1] = '\0'; /* just in case */
 # ifdef CL_THREAD_SAFE
     pthread_mutex_unlock(&cli_strerror_mutex);
 #endif
@@ -820,13 +824,9 @@ static char *cli_md5buff(const unsigned char *buffer, unsigned int len, unsigned
 {
 	unsigned char digest[16];
 	char *md5str, *pt;
-	cli_md5_ctx ctx;
 	int i;
 
-
-    cli_md5_init(&ctx);
-    cli_md5_update(&ctx, buffer, len);
-    cli_md5_final(digest, &ctx);
+    cl_hash_data("md5", buffer, len, digest, NULL);
 
     if(dig)
 	memcpy(dig, digest, 16);
@@ -900,7 +900,6 @@ char *cli_gentemp(const char *dir)
 
 int cli_gentempfd(const char *dir, char **name, int *fd)
 {
-
     *name = cli_gentemp(dir);
     if(!*name)
 	return CL_EMEM;
@@ -910,10 +909,11 @@ int cli_gentempfd(const char *dir, char **name, int *fd)
      * EEXIST is almost impossible to occur, so we just treat it as other
      * errors
      */
-   if(*fd == -1) {
-	cli_errmsg("cli_gentempfd: Can't create temporary file %s: %s\n", *name, strerror(errno));
-	free(*name);
-	return CL_ECREAT;
+    if(*fd == -1) {
+        cli_errmsg("cli_gentempfd: Can't create temporary file %s: %s\n", *name, strerror(errno));
+        free(*name);
+        *name = NULL;
+        return CL_ECREAT;
     }
 
     return CL_SUCCESS;

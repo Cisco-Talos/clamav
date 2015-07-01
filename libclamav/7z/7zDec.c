@@ -3,6 +3,11 @@
 
 #include <string.h>
 
+#if defined(_WIN32)
+#include <WinSock2.h>
+#include <Windows.h>
+#endif
+
 #define _7ZIP_PPMD_SUPPPORT
 
 #include "7z.h"

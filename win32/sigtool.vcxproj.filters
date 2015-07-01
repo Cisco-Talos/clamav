@@ -38,4 +38,8 @@
       <Filter>Source Files\shared</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+	<Library Include="libeay32.lib" />
+	<Library Include="ssleay32.lib" />
+  </ItemGroup>
 </Project>

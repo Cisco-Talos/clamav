@@ -35,6 +35,7 @@ freshclam_SOURCES = \
     $(top_srcdir)/shared/clamdcom.c \
     $(top_srcdir)/shared/clamdcom.h \
     freshclam.c \
+    freshclamcodes.h \
     manager.c \
     manager.h \
     notify.c \
@@ -50,8 +51,8 @@ freshclam_SOURCES = \
 
 AM_CFLAGS=@WERR_CFLAGS@
 DEFS = @DEFS@ -DCL_NOTHREADS
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
-LIBS = $(top_builddir)/libclamav/libclamav.la @FRESHCLAM_LIBS@ @THREAD_LIBS@
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @SSL_CPPFLAGS@ @FRESHCLAM_CPPFLAGS@  @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
+LIBS = @SSL_LDFLAGS@ @SSL_LIBS@ $(top_builddir)/libclamav/libclamav.la @FRESHCLAM_LIBS@ @THREAD_LIBS@
 
 AM_INSTALLCHECK_STD_OPTIONS_EXEMPT=freshclam$(EXEEXT)
 CLEANFILES=*.gcda *.gcno

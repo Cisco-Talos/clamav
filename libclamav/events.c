@@ -1,7 +1,7 @@
 /*
  *  (bytecode) events
  *
- *  Copyright (C) 2010 Sourcefire, Inc.
+ *  Copyright (C) 2010-2012 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
  *
@@ -19,14 +19,17 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
+
+#ifndef _WIN32
+#include <sys/time.h>
+#endif
+
+#include "clamav.h"
 #include "events.h"
 #include "others.h"
 #include "7z/7zCrc.h"
 #include "str.h"
 #include <string.h>
-#ifndef _WIN32
-#include <sys/time.h>
-#endif
 
 struct cli_event {
     const char *name;
@@ -136,6 +139,14 @@ static inline void ev_chain(cli_events_t *ctx, struct cli_event *ev, union ev_va
     ev->u.v_chain = chain;
     ev->u.v_chain[ev->count] = *val;
     ev->count++;
+}
+
+const char * cli_event_get_name(cli_events_t *ctx, unsigned id)
+{
+    struct cli_event *ev = get_event(ctx, id);
+    if (!ev)
+	return NULL;
+    return ev->name;
 }
 
 void cli_event_int(cli_events_t *ctx, unsigned id, uint64_t arg)

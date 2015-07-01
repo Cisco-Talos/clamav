@@ -1,5 +1,6 @@
 #
 #  Copyright (C) 2002 - 2007 Tomasz Kojm <tkojm@clamav.net>
+#  Copyright (C) 2008 - 2013 Sourcefire, Inc.
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -16,6 +17,7 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #  MA 02110-1301, USA.
 
+AM_YFLAGS = -d
 AM_CPPFLAGS = -I$(top_srcdir) -I@srcdir@/nsis $(LTDLINCL)
 AM_CFLAGS=@WERR_CFLAGS@
 lib_LTLIBRARIES =
@@ -72,10 +74,12 @@ endif
 
 libclamav_internal_utils_la_SOURCES=str.c\
 				    str.h\
+					conv.c \
+					conv.h \
+					crypto.c \
+					clamav.h \
 				    iowrap.c \
 				    iowrap.h \
-				    md5.c\
-				    md5.h\
 				    others_common.c \
 				    others.h \
 				    qsort.c \
@@ -88,17 +92,21 @@ libclamav_internal_utils_la_SOURCES=str.c\
 				    regex/cname.h \
 				    regex/regex.h \
 				    regex/regex2.h \
-				    regex/utils.h
+				    regex/utils.h \
+					strlcat.c
 
-libclamav_internal_utils_la_LDFLAGS=-static
-libclamav_internal_utils_la_CFLAGS=$(AM_CFLAGS)  -fPIC -DPIC
+libclamav_internal_utils_la_LDFLAGS=-static @SSL_LDFLAGS@ @JSON_LDFLAGS@
+libclamav_internal_utils_la_CFLAGS=$(AM_CFLAGS)  -fPIC -DPIC @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
+libclamav_internal_utils_la_LIBADD=@SSL_LIBS@ @JSON_LIBS@ @PCRE_LIBS@
 
 libclamav_internal_utils_nothreads_la_SOURCES=str.c\
+					conv.c \
+					conv.h \
+					crypto.c \
+					clamav.h \
 				    str.h\
 				    iowrap.c \
 				    iowrap.h \
-				    md5.c\
-				    md5.h\
 				    others_common.c \
 				    others.h \
 				    qsort.c \
@@ -111,10 +119,12 @@ libclamav_internal_utils_nothreads_la_SOURCES=str.c\
 				    regex/cname.h \
 				    regex/regex.h \
 				    regex/regex2.h \
-				    regex/utils.h
+				    regex/utils.h \
+					strlcat.c
 
-libclamav_internal_utils_nothreads_la_LDFLAGS=-static
-libclamav_internal_utils_nothreads_la_CFLAGS=$(AM_CFLAGS) -DCL_NOTHREADS
+libclamav_internal_utils_nothreads_la_LDFLAGS=-static @SSL_LDFLAGS@ @JSON_LDFLAGS@
+libclamav_internal_utils_nothreads_la_CFLAGS=$(AM_CFLAGS) -DCL_NOTHREADS @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
+libclamav_internal_utils_nothreads_la_LIBADD=@SSL_LIBS@ @JSON_LIBS@ @PCRE_LIBS@
 
 if ENABLE_LLVM
 LLVMLIBADD=c++/libclamavcxx.la -lstdc++ -lm
@@ -129,11 +139,12 @@ distclean-recursive distdir maintainer-clean-recursive: c++/Makefile
 endif
 
 libclamav_nocxx_la_SOURCES = bytecode_nojit.c
+libclamav_nocxx_la_CFLAGS=$(AM_CFLAGS) @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
 
-libclamav_la_LIBADD = @LIBLTDL@ $(IFACELIBADD) $(LLVMLIBADD) libclamav_internal_utils.la @LIBCLAMAV_LIBS@ @THREAD_LIBS@ @LIBM@
+libclamav_la_LIBADD = @SSL_LIBS@ @JSON_LIBS@ @PCRE_LIBS@ @LIBCLAMAV_LIBS@ @LIBLTDL@ $(IFACELIBADD) $(LLVMLIBADD) libclamav_internal_utils.la @THREAD_LIBS@ @LIBM@
 libclamav_la_DEPENDENCIES =  @LTDLDEPS@ $(IFACEDEP) $(LLVMDEP) libclamav_internal_utils.la
-libclamav_la_CFLAGS =$(AM_CFLAGS) -DSEARCH_LIBDIR=\"$(libdir)\"
-libclamav_la_LDFLAGS = @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@ -no-undefined
+libclamav_la_CFLAGS =$(AM_CFLAGS) $(XML_CPPFLAGS) -DSEARCH_LIBDIR=\"$(libdir)\" @LIBCLAMAV_CPPFLAGS@ @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
+libclamav_la_LDFLAGS = @SSL_LDFLAGS@ @TH_SAFE@ @JSON_LDFLAGS@ $(XML_LIBS) -version-info @LIBCLAMAV_VERSION@ -no-undefined
 
 if VERSIONSCRIPT
 libclamav_la_LDFLAGS += -Wl,@VERSIONSCRIPTFLAG@,@top_srcdir@/libclamav/libclamav.map
@@ -142,7 +153,6 @@ endif
 include_HEADERS = clamav.h
 
 libclamav_la_SOURCES = \
-	clamav.h \
         matcher-ac.c \
         matcher-ac.h \
         matcher-bm.c \
@@ -223,6 +233,8 @@ libclamav_la_SOURCES = \
 	untar.h \
 	unzip.c \
 	unzip.h \
+	ooxml.c \
+	ooxml.h \
 	inflate64.c \
 	inflate64.h \
 	inffixed64.h \
@@ -250,6 +262,7 @@ libclamav_la_SOURCES = \
 	nsis/nsis_zutil.h \
 	pdf.c \
 	pdf.h \
+	pdfng.c \
 	spin.c \
 	spin.h \
 	yc.c \
@@ -318,6 +331,20 @@ libclamav_la_SOURCES = \
 	7z/Ppmd7.h \
 	7z/Ppmd7Dec.c \
 	7z/Types.h \
+	7z/Xz.c \
+	7z/Xz.h \
+	7z/XzCrc64.c \
+	7z/XzCrc64.h \
+	7z/XzDec.c \
+	7z/XzIn.c \
+	7z/Delta.c \
+	7z/Delta.h \
+	7z/Alloc.h \
+	7z/BraIA64.c \
+	7z/CpuArch.c \
+	7z/CpuArch.h \
+	7z/7zCrcOpt.c \
+	7z/RotateDefs.h \
 	explode.c \
 	explode.h \
 	textnorm.c \
@@ -341,10 +368,6 @@ libclamav_la_SOURCES = \
 	perflogging.c\
 	perflogging.h\
 	default.h\
-	sha256.c\
-	sha256.h\
-	sha1.c\
-	sha1.h\
 	bytecode.c\
 	bytecode.h\
 	bytecode_vm.c\
@@ -370,6 +393,30 @@ libclamav_la_SOURCES = \
 	builtin_bytecodes.h\
 	events.c\
 	events.h \
+	adc.c \
+	adc.h \
+	dmg.c \
+	dmg.h \
+	xar.c \
+	xar.h \
+	xdp.c \
+	xdp.h \
+	mbr.c \
+	mbr.h \
+	gpt.c \
+	gpt.h \
+	apm.c \
+	apm.h \
+	prtn_intxn.c \
+	prtn_intxn.h \
+	json_api.c\
+	json_api.h\
+	xz_iface.c \
+	xz_iface.h \
+	sf_base64decode.c \
+	sf_base64decode.h \
+	hfsplus.c \
+	hfsplus.h \
 	swf.c \
 	swf.h \
 	jpeg.c \
@@ -385,7 +432,43 @@ libclamav_la_SOURCES = \
 	crtmgr.c \
 	crtmgr.h \
 	asn1.c \
-	asn1.h
+	asn1.h \
+	fpu.c \
+	fpu.h \
+	stats.c \
+	stats.h \
+	www.c \
+	www.h \
+	stats_json.c \
+	stats_json.h \
+	hostid.c \
+	hostid.h \
+	openioc.c \
+	openioc.h \
+	yara_arena.c \
+	yara_arena.h \
+	yara_compiler.c \
+	yara_compiler.h \
+	yara_exec.c \
+	yara_exec.h \
+	yara_hash.c \
+	yara_hash.h \
+	yara_grammar.y \
+	yara_lexer.l \
+	yara_lexer.h \
+	yara_parser.c \
+	yara_parser.h \
+	yara_clam.h \
+	msdoc.c \
+	msdoc.h \
+	matcher-pcre.c \
+	matcher-pcre.h \
+	regex_pcre.c \
+	regex_pcre.h \
+	msxml.c \
+	msxml.h \
+	msxml_parser.c \
+	msxml_parser.h
 
 libclamav_la_SOURCES += bignum.h\
 	bignum_fast.h\

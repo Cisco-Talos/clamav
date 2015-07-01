@@ -3,6 +3,11 @@
 
 #include <string.h>
 
+#if defined(_WIN32)
+#include <WinSock2.h>
+#include <Windows.h>
+#endif
+
 #include "7z.h"
 #include "7zCrc.h"
 #include "CpuArch.h"
@@ -13,6 +18,9 @@ Byte k7zSignature[k7zSignatureSize] = {'7', 'z', 0xBC, 0xAF, 0x27, 0x1C};
 
 #define NUM_FOLDER_CODERS_MAX 32
 #define NUM_CODER_STREAMS_MAX 32
+
+void SzFolder_Free(CSzFolder *p, ISzAlloc *alloc);
+int SzFolder_FindBindPairForOutStream(CSzFolder *p, UInt32 outStreamIndex);
 
 void SzCoderInfo_Init(CSzCoderInfo *p)
 {

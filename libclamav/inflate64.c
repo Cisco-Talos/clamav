@@ -46,13 +46,12 @@ const char inflate64_copyright[] =
   copyright string in the executable of your product.
  */
 
-
-
 #include "inflate64_priv.h"
 
 #include <stdlib.h> /* calloc/free */
 #include <string.h> /* memcpy */
 
+#include "clamav.h"
 #include "others.h"
 
 /* function prototypes */

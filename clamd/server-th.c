@@ -67,6 +67,7 @@ int reload = 0;
 time_t reloaded_time = 0;
 pthread_mutex_t reload_mutex = PTHREAD_MUTEX_INITIALIZER;
 int sighup = 0;
+extern pthread_mutex_t logg_mutex;
 static struct cl_stat dbstat;
 
 void *event_wake_recv = NULL;
@@ -293,6 +294,15 @@ static const char *get_cmd(struct fd_buf *buf, size_t off, size_t *len, char *te
 	    *oldstyle = 1;
 	    return buf->buffer;
     }
+}
+
+int statinidir_th(const char* dirname)
+{
+   if (!dbstat.entries) {
+      memset(&dbstat, 0, sizeof(dbstat));
+   }
+
+   return cl_statinidir(dirname, &dbstat);
 }
 
 struct acceptdata {
@@ -599,6 +609,8 @@ static const char* parse_dispatch_cmd(client_conn_t *conn, struct fd_buf *buf, s
 	    logg("$Moved partial command: %lu\n", (unsigned long)buf->off);
 	else
 	    logg("$Consumed entire command\n");
+	/* adjust pos to account for the buffer shuffle */
+	pos = 0;
     }
     *ppos = pos;
     return cmd;
@@ -610,75 +622,84 @@ static int handle_stream(client_conn_t *conn, struct fd_buf *buf, const struct o
     int rc;
     size_t pos = *ppos;
     size_t cmdlen;
-
+    
     logg("$mode == MODE_STREAM\n");
-    /* we received a chunk, set readtimeout */
+    /* we received some data, set readtimeout */
     time(&buf->timeout_at);
     buf->timeout_at += readtimeout;
-    if (!buf->chunksize) {
-	/* read chunksize */
-	if (buf->off >= 4) {
-	    uint32_t cs = *(uint32_t*)buf->buffer;
-	    buf->chunksize = ntohl(cs);
-	    logg("$Got chunksize: %u\n", buf->chunksize);
-	    if (!buf->chunksize) {
-		/* chunksize 0 marks end of stream */
-		conn->scanfd = buf->dumpfd;
-		conn->term = buf->term;
-		buf->dumpfd = -1;
-		buf->mode = buf->group ? MODE_COMMAND : MODE_WAITREPLY;
-		if (buf->mode == MODE_WAITREPLY)
-		    buf->fd = -1;
-		logg("$Chunks complete\n");
-		buf->dumpname = NULL;
-		if ((rc = execute_or_dispatch_command(conn, COMMAND_INSTREAMSCAN, NULL)) < 0) {
-		    logg("!Command dispatch failed\n");
-		    if(rc == -1 && optget(opts, "ExitOnOOM")->enabled) {
-			pthread_mutex_lock(&exit_mutex);
-			progexit = 1;
-			pthread_mutex_unlock(&exit_mutex);
-		    }
-		    *error = 1;
-		    return -1;
-		} else {
-		    pos = 4;
-		    memmove (buf->buffer, &buf->buffer[pos], buf->off - pos);
-		    buf->off -= pos;
-		    *ppos = 0;
-		    buf->id++;
-		    return 0;
+    while (pos <= buf->off) {
+	if (!buf->chunksize) {
+	    /* read chunksize */
+	    if (buf->off-pos >= 4) {
+		uint32_t cs;
+		memmove(&cs, buf->buffer + pos, 4);
+		pos += 4;
+		buf->chunksize = ntohl(cs);
+		logg("$Got chunksize: %u\n", buf->chunksize);
+		if (!buf->chunksize) {
+		    /* chunksize 0 marks end of stream */
+		    conn->scanfd = buf->dumpfd;
+		    conn->term = buf->term;
+		    buf->dumpfd = -1;
+		    buf->mode = buf->group ? MODE_COMMAND : MODE_WAITREPLY;
+		    if (buf->mode == MODE_WAITREPLY)
+			buf->fd = -1;
+		    logg("$Chunks complete\n");
+		    buf->dumpname = NULL;
+		    if ((rc = execute_or_dispatch_command(conn, COMMAND_INSTREAMSCAN, NULL)) < 0) {
+			logg("!Command dispatch failed\n");
+			if(rc == -1 && optget(opts, "ExitOnOOM")->enabled) {
+			    pthread_mutex_lock(&exit_mutex);
+			    progexit = 1;
+			    pthread_mutex_unlock(&exit_mutex);
+			}
+			*error = 1;
+		    } else {
+			memmove (buf->buffer, &buf->buffer[pos], buf->off - pos);
+			buf->off -= pos;
+			*ppos = 0;
+			buf->id++;
+			return 0;
+                    }
 		}
-	    }
-	    if (buf->chunksize > buf->quota) {
-		logg("^INSTREAM: Size limit reached, (requested: %lu, max: %lu)\n", 
-		     (unsigned long)buf->chunksize, (unsigned long)buf->quota);
-		conn_reply_error(conn, "INSTREAM size limit exceeded.");
-		*error = 1;
-		*ppos = pos;
-		return -1;
+		if (buf->chunksize > buf->quota) {
+		    logg("^INSTREAM: Size limit reached, (requested: %lu, max: %lu)\n",
+			 (unsigned long)buf->chunksize, (unsigned long)buf->quota);
+		    conn_reply_error(conn, "INSTREAM size limit exceeded.");
+                    *error = 1;
+		    *ppos = pos;
+		    return -1;
+                } else {
+		    buf->quota -= buf->chunksize;
+                }
+		logg("$Quota Remaining: %lu\n", buf->quota);
 	    } else {
-		buf->quota -= buf->chunksize;
-	    }
-	    logg("$Quota: %lu\n", buf->quota);
-	    pos = 4;
-	} else
-	    return -1;
-    } else
-	pos = 0;
-    if (pos + buf->chunksize < buf->off)
-	cmdlen = buf->chunksize;
-    else
-	cmdlen = buf->off - pos;
-    buf->chunksize -= cmdlen;
-    if (cli_writen(buf->dumpfd, buf->buffer + pos, cmdlen) < 0) {
-	conn_reply_error(conn, "Error writing to temporary file");
-	logg("!INSTREAM: Can't write to temporary file.\n");
-	*error = 1;
-    }
-    logg("$Processed %lu bytes of chunkdata\n", cmdlen);
-    pos += cmdlen;
-    if (pos == buf->off) {
-	buf->off = 0;
+		/* need more data, so return and wait for some */
+		memmove (buf->buffer, &buf->buffer[pos], buf->off - pos);
+		buf->off -= pos;
+		*ppos = 0;
+                return -1;
+            }
+	}
+	if (pos + buf->chunksize < buf->off)
+	    cmdlen = buf->chunksize;
+	else
+	    cmdlen = buf->off - pos;
+	buf->chunksize -= cmdlen;
+	if (cli_writen(buf->dumpfd, buf->buffer + pos, cmdlen) < 0) {
+	    conn_reply_error(conn, "Error writing to temporary file");
+	    logg("!INSTREAM: Can't write to temporary file.\n");
+	    *error = 1;
+	}
+	logg("$Processed %lu bytes of chunkdata, pos %lu\n", cmdlen, pos);
+	pos += cmdlen;
+	if (pos == buf->off) {
+	    buf->off = 0;
+	    pos = 0;
+	    /* need more data, so return and wait for some */
+	    *ppos = pos;
+            return -1;
+	}
     }
     *ppos = pos;
     return 0;
@@ -790,6 +811,108 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     }
 #endif
 
+    /* Engine max sizes */
+
+    if((opt = optget(opts, "MaxEmbeddedPE"))->active) {
+        if((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_EMBEDDEDPE, opt->numarg))) {
+            logg("!cli_engine_set_num(CL_ENGINE_MAX_EMBEDDEDPE) failed: %s\n", cl_strerror(ret));
+            cl_engine_free(engine);
+            return 1;
+        }
+    }
+    val = cl_engine_get_num(engine, CL_ENGINE_MAX_EMBEDDEDPE, NULL);
+    logg("Limits: MaxEmbeddedPE limit set to %llu bytes.\n", val);
+
+    if((opt = optget(opts, "MaxHTMLNormalize"))->active) {
+        if((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_HTMLNORMALIZE, opt->numarg))) {
+            logg("!cli_engine_set_num(CL_ENGINE_MAX_HTMLNORMALIZE) failed: %s\n", cl_strerror(ret));
+            cl_engine_free(engine);
+            return 1;
+        }
+    }
+    val = cl_engine_get_num(engine, CL_ENGINE_MAX_HTMLNORMALIZE, NULL);
+    logg("Limits: MaxHTMLNormalize limit set to %llu bytes.\n", val);
+
+    if((opt = optget(opts, "MaxHTMLNoTags"))->active) {
+        if((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_HTMLNOTAGS, opt->numarg))) {
+            logg("!cli_engine_set_num(CL_ENGINE_MAX_HTMLNOTAGS) failed: %s\n", cl_strerror(ret));
+            cl_engine_free(engine);
+            return 1;
+        }
+    }
+    val = cl_engine_get_num(engine, CL_ENGINE_MAX_HTMLNOTAGS, NULL);
+    logg("Limits: MaxHTMLNoTags limit set to %llu bytes.\n", val);
+
+    if((opt = optget(opts, "MaxScriptNormalize"))->active) {
+        if((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_SCRIPTNORMALIZE, opt->numarg))) {
+            logg("!cli_engine_set_num(CL_ENGINE_MAX_SCRIPTNORMALIZE) failed: %s\n", cl_strerror(ret));
+            cl_engine_free(engine);
+            return 1;
+        }
+    }
+    val = cl_engine_get_num(engine, CL_ENGINE_MAX_SCRIPTNORMALIZE, NULL);
+    logg("Limits: MaxScriptNormalize limit set to %llu bytes.\n", val);
+
+    if((opt = optget(opts, "MaxZipTypeRcg"))->active) {
+        if((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_ZIPTYPERCG, opt->numarg))) {
+            logg("!cli_engine_set_num(CL_ENGINE_MAX_ZIPTYPERCG) failed: %s\n", cl_strerror(ret));
+            cl_engine_free(engine);
+            return 1;
+        }
+    }
+    val = cl_engine_get_num(engine, CL_ENGINE_MAX_ZIPTYPERCG, NULL);
+    logg("Limits: MaxZipTypeRcg limit set to %llu bytes.\n", val);
+
+    if((opt = optget(opts, "MaxPartitions"))->active) {
+        if((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_PARTITIONS, opt->numarg))) {
+            logg("!cli_engine_set_num(MaxPartitions) failed: %s\n", cl_strerror(ret));
+            cl_engine_free(engine);
+            return 1;
+        }
+    }
+    val = cl_engine_get_num(engine, CL_ENGINE_MAX_PARTITIONS, NULL);
+    logg("Limits: MaxPartitions limit set to %llu.\n", val);
+
+    if((opt = optget(opts, "MaxIconsPE"))->active) {
+        if((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_ICONSPE, opt->numarg))) {
+            logg("!cli_engine_set_num(MaxIconsPE) failed: %s\n", cl_strerror(ret));
+            cl_engine_free(engine);
+            return 1;
+        }
+    }
+    val = cl_engine_get_num(engine, CL_ENGINE_MAX_ICONSPE, NULL);
+    logg("Limits: MaxIconsPE limit set to %llu.\n", val);
+
+    if((opt = optget(opts, "PCREMatchLimit"))->active) {
+        if((ret = cl_engine_set_num(engine, CL_ENGINE_PCRE_MATCH_LIMIT, opt->numarg))) {
+            logg("!cli_engine_set_num(PCREMatchLimit) failed: %s\n", cl_strerror(ret));
+            cl_engine_free(engine);
+            return 1;
+        }
+    }
+    val = cl_engine_get_num(engine, CL_ENGINE_PCRE_MATCH_LIMIT, NULL);
+    logg("Limits: PCREMatchLimit limit set to %llu.\n", val);
+
+    if((opt = optget(opts, "PCRERecMatchLimit"))->active) {
+        if((ret = cl_engine_set_num(engine, CL_ENGINE_PCRE_RECMATCH_LIMIT, opt->numarg))) {
+            logg("!cli_engine_set_num(PCRERecMatchLimit) failed: %s\n", cl_strerror(ret));
+            cl_engine_free(engine);
+            return 1;
+        }
+    }
+    val = cl_engine_get_num(engine, CL_ENGINE_PCRE_RECMATCH_LIMIT, NULL);
+    logg("Limits: PCRERecMatchLimit limit set to %llu.\n", val);
+
+    if((opt = optget(opts, "PCREMaxFileSize"))->active) {
+        if((ret = cl_engine_set_num(engine, CL_ENGINE_PCRE_MAX_FILESIZE, opt->numarg))) {
+            logg("!cli_engine_set_num(PCREMaxFileSize) failed: %s\n", cl_strerror(ret));
+            cl_engine_free(engine);
+            return 1;
+        }
+    }
+    val = cl_engine_get_num(engine, CL_ENGINE_PCRE_MAX_FILESIZE, NULL);
+    logg("Limits: PCREMaxFileSize limit set to %llu.\n", val);
+
     if(optget(opts, "ScanArchive")->enabled) {
 	logg("Archive support enabled.\n");
 	options |= CL_SCAN_ARCHIVE;
@@ -862,6 +985,13 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	logg("PDF support disabled.\n");
     }
 
+    if(optget(opts, "ScanSWF")->enabled) {
+	logg("SWF support enabled.\n");
+	options |= CL_SCAN_SWF;
+    } else {
+	logg("SWF support disabled.\n");
+    }
+
     if(optget(opts, "ScanHTML")->enabled) {
 	logg("HTML support enabled.\n");
 	options |= CL_SCAN_HTML;
@@ -880,6 +1010,11 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	    options |= CL_SCAN_PHISHING_BLOCKSSL;
 	    logg("Phishing: Always checking for ssl mismatches\n");
 	}
+    }
+
+    if(optget(opts,"PartitionIntersection")->enabled) {
+        options |= CL_SCAN_PARTITION_INTXN;
+        logg("Raw DMG: Always checking for partitons intersections\n");
     }
 
     if(optget(opts,"HeuristicScanPrecedence")->enabled) {
@@ -928,7 +1063,6 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     } else {
 	logg("Self checking every %u seconds.\n", selfchk);
     }
-    memset(&dbstat, 0, sizeof(dbstat));
 
     /* save the PID */
     mainpid = getpid();
@@ -938,7 +1072,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	if((fd = fopen(opt->strarg, "w")) == NULL) {
 	    logg("!Can't save PID in file %s\n", opt->strarg);
 	} else {
-	    if (fprintf(fd, "%u", (unsigned int) mainpid)<0) {
+	    if (fprintf(fd, "%u\n", (unsigned int) mainpid)<0) {
 	    	logg("!Can't save PID in file %s\n", opt->strarg);
 	    }
 	    fclose(fd);
@@ -1228,9 +1362,14 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		}
 		thrmgr_group_terminate(buf->group);
 		if (thrmgr_group_finished(buf->group, EXIT_ERROR)) {
-		    logg("$Shutting down socket after error (FD %d)\n", buf->fd);
-		    shutdown(buf->fd, 2);
-		    closesocket(buf->fd);
+		    if (buf->fd < 0) {
+			logg("$Skipping shutdown of bad socket after error (FD %d)\n", buf->fd);
+		    }
+		    else {
+			logg("$Shutting down socket after error (FD %d)\n", buf->fd);
+			shutdown(buf->fd, 2);
+			closesocket(buf->fd);
+		    }
 		} else
 		    logg("$Socket not shut down due to active tasks\n");
 		buf->fd = -1;
@@ -1288,7 +1427,9 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 #if defined(FANOTIFY) || defined(CLAMAUTH)
 	    if(optget(opts, "ScanOnAccess")->enabled && tharg) {
 		logg("Restarting on-access scan\n");
+		pthread_mutex_lock(&logg_mutex);
 		pthread_kill(fan_pid, SIGUSR1);
+		pthread_mutex_unlock(&logg_mutex);
 		pthread_join(fan_pid, NULL);
 	    }
 #endif
@@ -1332,10 +1473,13 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     logg("*Waiting for all threads to finish\n");
     thrmgr_destroy(thr_pool);
 #if defined(FANOTIFY) || defined(CLAMAUTH)
-    if(optget(opts, "ScanOnAccess")->enabled) {
+    if(optget(opts, "ScanOnAccess")->enabled && tharg) {
 	logg("Stopping on-access scan\n");
+	pthread_mutex_lock(&logg_mutex);
 	pthread_kill(fan_pid, SIGUSR1);
+	pthread_mutex_unlock(&logg_mutex);
 	pthread_join(fan_pid, NULL);
+    free(tharg);
     }
 #endif
     if(engine) {
@@ -1371,4 +1515,4 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     logg("--- Stopped at %s", cli_ctime(&current_time, timestr, sizeof(timestr)));
 
     return ret;
-}
+} 

@@ -23,6 +23,8 @@
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
+
+#include "clamav.h"
 #include "target.h"
 #include "cltypes.h"
 

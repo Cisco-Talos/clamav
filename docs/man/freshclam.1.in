@@ -1,4 +1,4 @@
-.TH "freshclam" "1" "February 12, 2007" "ClamAV @VERSION@" "Clam AntiVirus"
+.TH "freshclam" "1" "December 4, 2013" "ClamAV @VERSION@" "Clam AntiVirus"
 .SH "NAME"
 .LP 
 freshclam \- update virus databases
@@ -21,49 +21,53 @@ Print version number and exit.
 \fB\-v, \-\-verbose\fR
 Be verbose. This option causes freshclam to print much additional information.
 .TP 
+\fB\-\-debug\fR
+Enable debug messages from LibClamAV.
+.TP
 \fB\-\-quiet\fR
 Be quiet \- output only error messages.
 .TP 
 \fB\-\-no\-warnings\fR
 Don't print and log warnings.
-.TP 
-\fB\-v, \-\-debug\fR
-Enable debug messages from LibClamAV.
-.TP 
+.TP  
 \fB\-\-stdout\fR
 Write all messages to stdout.
 .TP 
+\fB\-\-config\-file=FILE
+Read configuration from FILE.
+.TP
 \fB\-l FILE, \-\-log=FILE\fR
-Write download report to FILE.
-.TP 
-\fB\-\-datadir=DIRECTORY\fR
-Install new database in DIRECTORY. The directory must be writable for the '@CLAMAVUSER@' user or unprivileged user running freshclam.
+Log report to FILE.
+.TP
+\fB\-d, \-\-daemon\fR
+Run in a daemon mode. Defaults to 12 checks per day unless otherwise specified by \-\-checks or freshclam.conf.
+.TP
+\fB\-p FILE, \-\-pid=FILE\fR
+Write daemon's pid to FILE.
 .TP 
 \fB\-u USER, \-\-user USER\fR
 Run as USER. By default (when started by root) freshclam drops privileges and operates as the '@CLAMAVUSER@' user.
-.TP 
-\fB\-d, \-\-daemon\fR
-Run in a daemon mode. This option requires \-\-checks.
-\fB\-p FILE, \-\-pid=FILE\fR
-Write daemon's pid to FILE.
 .TP 
 \fB\-\-no\-dns\fR
 This option forces old non\-DNS verification method (without a TTL delay).
 .TP 
 \fB\-c #n, \-\-checks=#n\fR
 Check #n times per day for a new database. #n must be between 1 and 50.
+.TP
+\fB\-\-datadir=DIRECTORY\fR
+Install new database in DIRECTORY. The directory must be writable for the '@CLAMAVUSER@' user or unprivileged user running freshclam.
 .TP 
 \fB\-\-daemon\-notify=/path/to/clamd.conf\fR
 Notify the daemon about the new database. By default it reads a hardcoded config file but you can use a different one. Both local and TCP sockets are supported.
 .TP 
 \fB\-a IP, \-\-local\-address=IP\fR
 Use (local) IP for HTTP downloads. Useful for multi\-homed systems. If binding fails for whatever reason, a warning is issued and freshclam behaves like without this flag.
+.TP
+\fB\-\-on\-update\-execute=COMMAND\fR
+Execute COMMAND after successful update.
 .TP 
 \fB\-\-on\-error\-execute=COMMAND\fR
 Execute COMMAND if error occurred. Remember, that virus database freshness is the most important thing in anti\-virus system. With this option freshclam can alert you (eg. send SMS) when something is going wrong.
-.TP 
-\fB\-\-on\-update\-execute=COMMAND\fR
-Execute COMMAND after successful update.
 .TP 
 \fB\-\-on\-outdated\-execute=COMMAND\fR
 Execute COMMAND when freshclam reports outdated version. In the command string %v will be replaced by the new version number.
@@ -76,6 +80,12 @@ Upload detection statistics to the ClamAV Project (see freshclam.conf(5):SubmitD
 .TP
 \fB\-\-update\-db=DBNAME\fR
 With this option you can limit updates to a subset of database files. The DBNAME should be "main", "daily", "bytecode", "safebrowsing" or one of the 3rd party database names. This option can be used multiple times and only works with the official and 3rd party databases distrubuted through the ClamAV mirrors, your custom databases (specified with DatabaseCustomURL in freshclam.conf) will not be ignored.
+.TP
+\fB\-\-enable\-stats\fR
+Enable submission of statistical data.
+.TP
+\fB\-\-stats\-host\-id=UUID\fR
+HostID in the form of an UUID to use when submitting statistical information.
 .SH "EXAMPLES"
 .LP 
 .TP 
@@ -129,7 +139,7 @@ Some return codes of freshclam can be overwritten with a built-in command EXIT_n
 Please check the full documentation for credits.
 .SH "AUTHOR"
 .LP 
-Tomasz Kojm <tkojm@clamav.net>
+Tomasz Kojm <tkojm@clamav.net>, Kevin Lin <klin@sourcefire.com>
 .SH "SEE ALSO"
 .LP 
 freshclam.conf(5), clamd(8), clamd.conf(5), clamscan(1)

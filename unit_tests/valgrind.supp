@@ -10,3 +10,92 @@
        fun:inflateReset2
        fun:inflateInit2_
 }
+{
+    llvm-01
+    Memcheck:Leak
+    fun:_Znwj
+    fun:*
+}
+{
+    llvm-02
+    Memcheck:Leak
+    fun:malloc
+    fun:_ZN4llvm12PassRegistry12registerPassERKNS_8PassInfoE
+    fun:*
+}
+{
+    llvm-03
+    Memcheck:Leak
+    fun:_Znwm
+    ...
+    fun:_ZN4llvm12PassRegistry12registerPassERKNS_8PassInfoE
+    ...
+}
+{
+    dl_catch_error-leak-1
+    Memcheck:Leak
+    ...
+    fun:dl_open_worker
+    fun:_dl_catch_error
+    ...
+}
+{
+    dl_catch_error-leak-2
+    Memcheck:Leak
+    ...
+    fun:_dl_close_worker
+    fun:_dl_close
+    fun:_dl_catch_error
+    ...
+}
+{
+    mbox-leak-01
+    Memcheck:Leak
+    ...
+    fun:tableInsert
+    fun:messageSetMimeType
+    fun:parseEmailHeader
+    ...
+}
+{
+    mbox-leak-02
+    Memcheck:Leak
+    ...
+    fun:tableInsert
+    fun:cli_parse_mbox
+    fun:cli_scanmail
+    ...
+}
+{
+    ubuntu-libc-getaddrinfo-01
+    Memcheck:Param
+    sendmsg(mmsg[0].msg_hdr)
+    fun:sendmmsg
+    ...
+}
+{
+    openssl-globals-01
+    Memcheck:Leak
+    ...
+    fun:cl_initialize_crypto
+    ...
+}
+{
+    openssl-globals-02
+    Memcheck:Leak
+    ...
+    fun:SSL_library_init
+}
+{
+   y0da-cached-virname
+   Memcheck:Cond
+   fun:cli_scanpe
+   fun:magic_scandesc
+   fun:cli_base_scandesc
+   fun:cli_magic_scandesc
+   fun:scan_common
+   fun:cl_scandesc_callback
+   fun:scanfile
+   fun:scanmanager
+   fun:main
+}

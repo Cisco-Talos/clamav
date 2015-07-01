@@ -36,6 +36,9 @@ Scan file or directory (recursively) with archive support enabled and don't stop
 .TP 
 \fBMULTISCAN file/directory\fR
 Scan file in a standard way or scan directory (recursively) using multiple threads (to make the scanning faster on SMP machines).
+.TP 
+\fBALLMATCHSCAN file/directory\fR
+ALLMATCHSCAN works just like SCAN except that it sets a mode where scanning continues after finding a match within a file.
 .TP
 \fBINSTREAM\fR
 It is mandatory to prefix this command with \fBn\fR or \fBz\fR.
@@ -51,7 +54,7 @@ Scan a file descriptor. After issuing a FILDES command a subsequent rfc2292/bsd4
 Alternatively the file descriptor may be sent in the same packet, including the extra character.
 .TP
 \fBSTATS\fR
-IIt is mandatory to newline terminate this command, or prefix with \fBn\fR or \fBz\fR, it is recommended to only use the \fBz\fR prefix.
+It is mandatory to newline terminate this command, or prefix with \fBn\fR or \fBz\fR, it is recommended to only use the \fBz\fR prefix.
 
 Replies with statistics about the scan queue, contents of scan queue, and memory
 usage. The exact reply format is subject to change in future releases.

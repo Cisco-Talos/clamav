@@ -34,6 +34,9 @@
 #include <time.h>
 #include <signal.h>
 
+#include "clamav.h"
+
+#include "libclamav/clamav.h"
 #include "shared/output.h"
 #include "shared/misc.h"
 #include "shared/optparser.h"
@@ -169,6 +172,7 @@ int main(int argc, char **argv)
 
     logg_close();
     optfree(opts);
+    cl_cleanup_crypto();
     exit(ret);
 }
 
@@ -179,7 +183,7 @@ void help(void)
 
     mprintf("\n");
     mprintf("                       ClamAV Daemon Client %s\n", get_version());
-    printf("           By The ClamAV Team: http://www.clamav.net/team\n");
+    printf("           By The ClamAV Team: http://www.clamav.net/about.html#credits\n");
     printf("           (C) 2007-2009 Sourcefire, Inc.\n\n");
 
     mprintf("    --help              -h             Show help\n");
@@ -194,6 +198,7 @@ void help(void)
     mprintf("    --move=DIRECTORY                   Move infected files into DIRECTORY\n");
     mprintf("    --copy=DIRECTORY                   Copy infected files into DIRECTORY\n");
     mprintf("    --config-file=FILE                 Read configuration from FILE.\n");
+    mprintf("    --allmatch            -z           Continue scanning within file after finding a match.\n");
     mprintf("    --multiscan           -m           Force MULTISCAN mode\n");
     mprintf("    --infected            -i           Only print infected files\n");
     mprintf("    --no-summary                       Disable summary at end of scanning\n");

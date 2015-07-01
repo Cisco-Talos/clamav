@@ -133,4 +133,8 @@ int dlp_has_stripped_ssn(const unsigned char *buffer, int length);
  */
 int dlp_has_normal_ssn(const unsigned char *buffer, int length);
 
+int cdn_ctn_is_valid(const char *, int);
+int cdn_eft_is_valid(const char *, int);
+int us_micr_is_valid(const char *, int);
+
 #endif  /* __DLP_H_ */

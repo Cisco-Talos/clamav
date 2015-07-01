@@ -25,9 +25,9 @@
 #include <string.h>
 #include <math.h>
 
+#include "clamav.h"
 #include "pe_icons.h"
 #include "others.h"
-
 
 #define READ32(x) cli_readint32(&(x))
 #define READ16(x) cli_readint16(&(x))
@@ -38,95 +38,206 @@
 #define LABDIFF(x) labdiff2(x)
 #endif
 
-struct GICONS {
-    unsigned int cnt;
+/* #define LOGPARSEICONDETAILS */
+
+struct ICON_ENV {
+    cli_ctx *ctx;
+    unsigned int gcnt, hcnt; /* gcnt -> number of icon groups parsed, hcnt -> "actual" image count */
     uint32_t lastg;
-    uint32_t rvas[100];
+    int result;
+
+    icon_groupset *set;
+    uint32_t resdir_rva;
+    struct cli_exe_section *exe_sections;
+    uint16_t nsections;
+    uint32_t hdr_size;
+
+    uint32_t icnt; /* number of icon entries parsed, declared images */
+    uint32_t max_icons;
+
+    uint32_t err_oof;   /* parseicon: offset to icon is out of file */
+    uint32_t err_bhoof; /* parseicon: bmp header is out of file */
+    uint32_t err_bhts;  /* parseicon: BMP header too small */
+    uint32_t err_tstl;  /* parseicon: Image too small or too big */
+    uint32_t err_insl;  /* parseicon: Image not square enough */
 };
 
-static int groupicon_cb(void *ptr, uint32_t type, uint32_t name, uint32_t lang, uint32_t rva) {
-    struct GICONS *gicons = ptr;
-    type = type; lang = lang;
-    cli_dbgmsg("groupicon_cb: got group %x\n", name);
-    if(!gicons->cnt || gicons->lastg == name) {
-	gicons->rvas[gicons->cnt] = rva;
-	gicons->cnt++;
-	gicons->lastg = name;
-	if(gicons->cnt < 100)
-	    return 0;
+int cli_groupiconscan(struct ICON_ENV *icon_env, uint32_t rva);
+
+static int groupicon_scan_cb(void *ptr, uint32_t type, uint32_t name, uint32_t lang, uint32_t rva) {
+    struct ICON_ENV *icon_env = ptr;
+    int ret = CL_CLEAN;
+
+    UNUSEDPARAM(type);
+    UNUSEDPARAM(lang);
+
+    cli_dbgmsg("groupicon_cb: scanning group %x\n", name);
+    if(!icon_env->gcnt || icon_env->lastg == name) {
+        icon_env->gcnt++;
+        icon_env->lastg = name;
+
+        /* scan icon group */
+        ret = cli_groupiconscan(icon_env, rva);
+        if (ret != CL_CLEAN)
+            return 1;
+
+        return 0;
     }
+
     return 1;
 }
 
-struct ICONS {
-    unsigned int cnt;
-    uint32_t rvas[100];
-};
+static int parseicon(struct ICON_ENV *icon_env, uint32_t rva);
 
-static int icon_cb(void *ptr, uint32_t type, uint32_t name, uint32_t lang, uint32_t rva) {
-    struct ICONS *icons = ptr;
-    type = type; lang = lang;
-    cli_dbgmsg("icon_cb: got icon %x\n", name);
-    if(icons->cnt >= 100)
-	return 1;
-    icons->rvas[icons->cnt] = rva;
-    icons->cnt++;
+static int icon_scan_cb(void *ptr, uint32_t type, uint32_t name, uint32_t lang, uint32_t rva) {
+    struct ICON_ENV *icon_env = ptr;
+
+    UNUSEDPARAM(type);
+    UNUSEDPARAM(lang);
+    UNUSEDPARAM(name);
+
+    /* scan icon */
+    icon_env->result = parseicon(icon_env, rva);
+    icon_env->hcnt++;
+
+    if (icon_env->result != CL_CLEAN)
+        return 1;
+
     return 0;
 }
 
-
-static int parseicon(icon_groupset *set, uint32_t rva, cli_ctx *ctx, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size);
-
 int cli_scanicon(icon_groupset *set, uint32_t resdir_rva, cli_ctx *ctx, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size) {
-    struct GICONS gicons;
-    struct ICONS icons;
-    unsigned int curicon, err;
+    struct ICON_ENV icon_env;
     fmap_t *map = *ctx->fmap;
+    uint32_t err_total = 0;
 
-    gicons.cnt = 0;
-    icons.cnt = 0;
-    findres(14, 0xffffffff, resdir_rva, map, exe_sections, nsections, hdr_size, groupicon_cb, &gicons);
-	
-    for(curicon=0; curicon<gicons.cnt; curicon++) {
-	const uint8_t *grp = fmap_need_off_once(map, cli_rawaddr(gicons.rvas[curicon], exe_sections, nsections, &err, map->len, hdr_size), 16);
-	if(grp && !err) {
-	    uint32_t gsz = cli_readint32(grp + 4);
-	    if(gsz>6) {
-		uint32_t icnt;
-		struct icondir {
-		    uint8_t w;
-		    uint8_t h;
-		    uint8_t palcnt;
-		    uint8_t rsvd;
-		    uint16_t planes;
-		    uint16_t depth;
-		    uint32_t sz;
-		    uint16_t id;
-		} *dir;
+    icon_env.ctx = ctx;
+    icon_env.gcnt = 0;
+    icon_env.hcnt = 0;
+    icon_env.icnt = 0;
+    icon_env.lastg = 0;
+    icon_env.result = CL_CLEAN;
 
-		grp = fmap_need_off_once(map, cli_rawaddr(cli_readint32(grp), exe_sections, nsections, &err, map->len, hdr_size), gsz);
-		if(grp && !err) {
-		    icnt = cli_readint32(grp+2) >> 16;
-		    grp+=6;
-		    gsz-=6;
+    icon_env.set = set;
+    icon_env.resdir_rva = resdir_rva;
+    icon_env.exe_sections = exe_sections;
+    icon_env.nsections = nsections;
+    icon_env.hdr_size = hdr_size;
 
-		    while(icnt && gsz >= 14) {
-			dir = (struct icondir *)grp;
-			cli_dbgmsg("cli_scanicon: Icongrp @%x - %ux%ux%u - (id=%x, rsvd=%u, planes=%u, palcnt=%u, sz=%x)\n", gicons.rvas[curicon], dir->w, dir->h, cli_readint16(&dir->depth), cli_readint16(&dir->id), cli_readint16(&dir->planes), dir->palcnt, dir->rsvd, cli_readint32(&dir->sz));
-			findres(3, cli_readint16(&dir->id), resdir_rva, map, exe_sections, nsections, hdr_size, icon_cb, &icons);
-			grp += 14;
-			gsz -= 14;
-		    }
-		}
-	    }
-	}
+    icon_env.max_icons = ctx->engine->maxiconspe;
+
+    icon_env.err_oof = 0;
+    icon_env.err_bhoof = 0;
+    icon_env.err_bhts = 0;
+    icon_env.err_tstl = 0;
+    icon_env.err_insl = 0;
+
+    /* icon group scan callback --> groupicon_scan_cb() */
+    findres(14, 0xffffffff, resdir_rva, map, exe_sections, nsections, hdr_size, groupicon_scan_cb, &icon_env);
+
+    /* CL_EMAXSIZE is used to track the icon limit */
+    if (icon_env.result == CL_EMAXSIZE)
+        cli_dbgmsg("cli_scanicon: max icon count reached\n");
+
+    cli_dbgmsg("cli_scanicon: scanned a total of %u[%u actual] icons across %u groups\n", icon_env.icnt, icon_env.hcnt, icon_env.gcnt);
+    if (icon_env.hcnt < icon_env.icnt)
+        cli_warnmsg("cli_scanicon: found %u invalid icon entries of %u total\n", icon_env.icnt-icon_env.hcnt, icon_env.icnt);
+
+    err_total = icon_env.err_oof + icon_env.err_bhoof + icon_env.err_bhts + icon_env.err_tstl + icon_env.err_insl;
+    if (err_total > 0) {
+        cli_dbgmsg("cli_scanicon: detected %u total image parsing issues\n", err_total);
+        if (icon_env.err_oof > 0)
+            cli_dbgmsg("cli_scanicon: detected %u cases of 'parseicon: offset to icon is out of file'\n", icon_env.err_oof);
+        if (icon_env.err_bhoof > 0)
+            cli_dbgmsg("cli_scanicon: detected %u cases of 'parseicon: bmp header is out of file'\n", icon_env.err_bhoof);
+        if (icon_env.err_bhts > 0)
+            cli_dbgmsg("cli_scanicon: detected %u cases of 'parseicon: BMP header too small'\n", icon_env.err_bhts);
+        if (icon_env.err_tstl > 0)
+            cli_dbgmsg("cli_scanicon: detected %u cases of 'parseicon: Image too small or too big'\n", icon_env.err_tstl);
+        if (icon_env.err_insl > 0)
+            cli_dbgmsg("cli_scanicon: detected %u cases of 'parseicon: Image not square enough'\n", icon_env.err_insl);
     }
 
-    for(curicon=0; curicon<icons.cnt; curicon++) {
-	if(parseicon(set, icons.rvas[curicon], ctx, exe_sections, nsections, hdr_size) == CL_VIRUS)
-	    return CL_VIRUS;
+    /* ignore all error returns (previous behavior) */
+    if (icon_env.result == CL_VIRUS)
+        return CL_VIRUS;
+
+    return CL_CLEAN;
+}
+
+int cli_groupiconscan(struct ICON_ENV *icon_env, uint32_t rva)
+{
+    /* import environment */
+    uint32_t resdir_rva = icon_env->resdir_rva;
+    cli_ctx *ctx = icon_env->ctx;
+    struct cli_exe_section *exe_sections = icon_env->exe_sections;
+    uint16_t nsections = icon_env->nsections;
+    uint32_t hdr_size = icon_env->hdr_size;
+
+    int err = 0;
+    fmap_t *map = *ctx->fmap;
+    const uint8_t *grp = fmap_need_off_once(map, cli_rawaddr(rva, exe_sections, nsections, (unsigned int *)(&err), map->len, hdr_size), 16);
+
+    if(grp && !err) {
+        uint32_t gsz = cli_readint32(grp + 4);
+        if(gsz>6) {
+            uint32_t icnt, raddr;
+            unsigned int piconcnt;
+            struct icondir {
+                uint8_t w;
+                uint8_t h;
+                uint8_t palcnt;
+                uint8_t rsvd;
+                uint16_t planes;
+                uint16_t depth;
+                uint32_t sz;
+                uint16_t id;
+            } *dir;
+
+            raddr = cli_rawaddr(cli_readint32(grp), exe_sections, nsections, (unsigned int *)(&err), map->len, hdr_size);
+            cli_dbgmsg("cli_scanicon: icon group @%x\n", raddr);
+            grp = fmap_need_off_once(map, raddr, gsz);
+            if(grp && !err) {
+                icnt = cli_readint32(grp+2) >> 16;
+
+                grp += 6;
+                gsz -= 6;
+
+                while(icnt && gsz >= 14 /* && (remaining amount of icons) */) {
+                    piconcnt = icon_env->hcnt;
+
+                    dir = (struct icondir *)grp;
+                    cli_dbgmsg("cli_scanicon: Icongrp @%x - %ux%ux%u - (id=%x, rsvd=%u, planes=%u, palcnt=%u, sz=%x)\n", rva, dir->w, dir->h, cli_readint16(&dir->depth), cli_readint16(&dir->id), cli_readint16(&dir->planes), dir->palcnt, dir->rsvd, cli_readint32(&dir->sz));
+
+                    /* icon scan callback --> icon_scan_cb() */
+                    findres(3, cli_readint16(&dir->id), resdir_rva, map, exe_sections, nsections, hdr_size, icon_scan_cb, icon_env);
+                    if (icon_env->result != CL_CLEAN)
+                        return icon_env->result;
+
+                    if (piconcnt == icon_env->hcnt)
+                        cli_dbgmsg("cli_scanicon: invalid icon entry %u in group @%x\n", dir->id, rva);
+
+                    icon_env->icnt++;
+                    icnt--;
+
+                    if (icon_env->icnt >= icon_env->max_icons) {
+                        icon_env->result = CL_EMAXSIZE;
+                        return icon_env->result;
+                    }
+
+                    grp += 14;
+                    gsz -= 14;
+                }
+
+                if (icnt != 0)
+                    cli_dbgmsg("cli_scanicon: could not find %u icons\n", icnt);
+                if (gsz != 0)
+                    cli_dbgmsg("cli_scanicon: could not parse %u bytes of icon entries\n", gsz);
+            }
+        }
     }
-    return 0;
+
+    return icon_env->result;
 }
 
 
@@ -636,7 +747,7 @@ static uint32_t labdiff2(unsigned int b) {
 #endif
 
 static void makebmp(const char *step, const char *tempd, int w, int h, void *data) {
-    unsigned int tmp1, tmp2, tmp3, tmp4, y;
+    unsigned int tmp1=0, tmp2=0, tmp3=0, tmp4=0, y;
     char *fname;
     FILE *f;
 
@@ -668,7 +779,7 @@ static void makebmp(const char *step, const char *tempd, int w, int h, void *dat
 	return;
     }
 
-    for(y=h-1; y<h; y--)
+    for(y=h-1; y<(unsigned int)h; y--)
 #if WORDS_BIGENDIAN == 0
 	if(!fwrite(&((unsigned int *)data)[y*w], w*4, 1, f))
 	    break;
@@ -685,7 +796,7 @@ static void makebmp(const char *step, const char *tempd, int w, int h, void *dat
     }
 #endif
     fclose(f);
-    if(y<h)
+    if(y<(unsigned int)h)
 	cli_unlink(fname);
     else
 	cli_dbgmsg("makebmp: Image %s dumped to %s\n", step, fname);
@@ -774,8 +885,10 @@ static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr 
     unsigned int edge_avg[6], edge_x[6]={0,0,0,0,0,0}, edge_y[6]={0,0,0,0,0,0}, noedge_avg[6], noedge_x[6]={0,0,0,0,0,0}, noedge_y[6]={0,0,0,0,0,0};
     double *sobel;
 
-    if(!(tmp = cli_malloc(side*side*4*2)))
-	return CL_EMEM;
+    if(!(tmp = cli_malloc(side*side*4*2))) {
+        cli_errmsg("getmetrics: Unable to allocate memory for tmp %u\n", (side*side*4*2));
+        return CL_EMEM;
+    }
 
     memset(res, 0, sizeof(*res));
 
@@ -937,6 +1050,7 @@ static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr 
 #ifdef USE_FLOATS
     sobel = cli_malloc(side * side * sizeof(double));
     if(!sobel) {
+        cli_errmsg("getmetrics: Unable to allocate memory for edge detection %lu\n", (side * side * sizeof(double)));
 	free(tmp);
 	return CL_EMEM;
     }
@@ -1176,8 +1290,13 @@ static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr 
     return CL_CLEAN;
 }
 
+static int parseicon(struct ICON_ENV *icon_env, uint32_t rva) {
+    icon_groupset *set = icon_env->set;
+    cli_ctx *ctx = icon_env->ctx;
+    struct cli_exe_section *exe_sections = icon_env->exe_sections;
+    uint16_t nsections = icon_env->nsections;
+    uint32_t hdr_size = icon_env->hdr_size;
 
-static int parseicon(icon_groupset *set, uint32_t rva, cli_ctx *ctx, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size) {
     struct {
 	unsigned int sz;
 	unsigned int w;
@@ -1212,19 +1331,22 @@ static int parseicon(icon_groupset *set, uint32_t rva, cli_ctx *ctx, struct cli_
 
     /* read the bitmap header */
     if(err || !(rawimage = fmap_need_off_once(map, icoff, 4))) {
-	cli_dbgmsg("parseicon: offset to icon is out of file\n");
+	icon_env->err_oof++;
+	//cli_dbgmsg("parseicon: offset to icon is out of file\n");
 	return CL_SUCCESS;
     }
 
     rva = cli_readint32(rawimage);
     icoff = cli_rawaddr(rva, exe_sections, nsections, &err, map->len, hdr_size);
     if(err || fmap_readn(map, &bmphdr, icoff, sizeof(bmphdr)) != sizeof(bmphdr)) {
-	cli_dbgmsg("parseicon: bmp header is out of file\n");
+	icon_env->err_bhoof++;
+	//cli_dbgmsg("parseicon: bmp header is out of file\n");
 	return CL_SUCCESS;
     }
 
-    if(READ32(bmphdr.sz) < sizeof(bmphdr)) {
-	cli_dbgmsg("parseicon: BMP header too small\n");
+    if((size_t)READ32(bmphdr.sz) < sizeof(bmphdr)) {
+	icon_env->err_bhts++;
+	//cli_dbgmsg("parseicon: BMP header too small\n");
 	return CL_SUCCESS;
     }
 
@@ -1235,11 +1357,13 @@ static int parseicon(icon_groupset *set, uint32_t rva, cli_ctx *ctx, struct cli_
     height = READ32(bmphdr.h) / 2;
     depth = READ16(bmphdr.depth);
     if(width > 256 || height > 256 || width < 16 || height < 16) {
-	cli_dbgmsg("parseicon: Image too small or too big (%ux%u)\n", width, height);
+	icon_env->err_tstl++;
+	//cli_dbgmsg("parseicon: Image too small or too big (%ux%u)\n", width, height);
 	return CL_SUCCESS;
     }
     if(width < height * 3 / 4 || height < width * 3 / 4) {
-	cli_dbgmsg("parseicon: Image not square enough (%ux%u)\n", width, height);
+	icon_env->err_insl++;
+        //cli_dbgmsg("parseicon: Image not square enough (%ux%u)\n", width, height);
 	return CL_SUCCESS;
     }	
 
@@ -1499,6 +1623,7 @@ static int parseicon(icon_groupset *set, uint32_t rva, cli_ctx *ctx, struct cli_
 	} else
 	    confidence = (color + (gray + bright + noedge)*2/3 + dark + edge + colors) / 6;
 
+#ifdef LOGPARSEICONDETAILS
 	cli_dbgmsg("parseicon: edge confidence: %u%%\n", edge);
 	cli_dbgmsg("parseicon: noedge confidence: %u%%\n", noedge);
 	if(!bwmatch) {
@@ -1509,11 +1634,10 @@ static int parseicon(icon_groupset *set, uint32_t rva, cli_ctx *ctx, struct cli_
 	cli_dbgmsg("parseicon: dark confidence: %u%%\n", dark);
 	if(!bwmatch)
 	    cli_dbgmsg("parseicon: spread confidence: red %u%%, green %u%%, blue %u%% - colors %u%%\n", reds, greens, blues, ccount);
+#endif
 
 	if(confidence >= positivematch) {
 	    cli_dbgmsg("confidence: %u\n", confidence);
-
-	    cli_append_virus(ctx,matcher->icons[enginesize][x].name);
 	    return CL_VIRUS;
 	}
     }

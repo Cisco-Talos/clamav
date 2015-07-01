@@ -23,7 +23,9 @@
 #endif
 
 /* for Solaris, so that both FDPassing and IPV6 work */
+#if !defined(__EXTENSIONS__)
 #define __EXTENSIONS__
+#endif
 /* must be first because it may define _XOPEN_SOURCE */
 #include "shared/fdpassing.h"
 #include <stdio.h>
@@ -40,6 +42,7 @@
 #include <netdb.h>
 #include <sys/uio.h>
 
+#include "libclamav/clamav.h"
 #include "shared/output.h"
 #include "shared/optparser.h"
 #include "libclamav/others.h"
@@ -129,7 +132,7 @@ static int nc_connect(int s, struct CP_ENTRY *cpe) {
 	    close(s);
 	    return -1;
 	}
-	if(getsockopt(s, SOL_SOCKET, SO_ERROR, &s_err, &s_len) || s_err) {
+	if(getsockopt(s, SOL_SOCKET, SO_ERROR, &s_err, (socklen_t *)&s_len) || s_err) {
 	    logg("*Failed to establish a connection to clamd\n");
 	    close(s);
 	    return -1;

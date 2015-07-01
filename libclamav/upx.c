@@ -52,6 +52,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "clamav.h"
 #include "cltypes.h"
 #include "others.h"
 #include "upx.h"
@@ -127,13 +128,13 @@ static int pefromupx (const char *src, uint32_t ssize, char *dst, uint32_t *dsiz
     return 0;
 
   while ((valign=magic[sectcnt++])) {
-    if ( ep - upx1 + valign <= ssize-5  &&    /* Wondering how we got so far?! */
+    if (CLI_ISCONTAINED(src, ssize - 5, src + ep - upx1 + valign - 2, 2) &&
 	 src[ep - upx1 + valign - 2] == '\x8d' && /* lea edi, ...                  */
 	 src[ep - upx1 + valign - 1] == '\xbe' )  /* ... [esi + offset]          */
       break;
   }
 
-  if (!valign && ep - upx1 + 0x80 < ssize-8) {
+  if (!valign && CLI_ISCONTAINED(src, ssize - 8, src + ep - upx1 + 0x80, 8)) {
     const char *pt = &src[ep - upx1 + 0x80];
     cli_dbgmsg("UPX: bad magic - scanning for imports\n");
     
@@ -202,7 +203,9 @@ static int pefromupx (const char *src, uint32_t ssize, char *dst, uint32_t *dsiz
     cli_dbgmsg("UPX: PE structure added to uncompressed data\n");
     return 1;
   }
-  
+
+  if (!sections)
+    sectcnt = 0;
   foffset = PESALIGN(foffset+0x28*sectcnt, valign);
   
   for (upd = 0; upd <sectcnt ; upd++) {
@@ -219,6 +222,10 @@ static int pefromupx (const char *src, uint32_t ssize, char *dst, uint32_t *dsiz
     cli_writeint32(sections+12, urva);
     cli_writeint32(sections+16, vsize);
     cli_writeint32(sections+20, foffset);
+    if (foffset + vsize < foffset) {
+        /* Integer overflow */
+        return 0;
+    }
     foffset+=vsize;
     
     sections+=0x28;
@@ -236,7 +243,20 @@ static int pefromupx (const char *src, uint32_t ssize, char *dst, uint32_t *dsiz
   memcpy(newbuf+0xd0, pehdr,0xf8+0x28*sectcnt);
   sections = pehdr+0xf8;
   for (upd = 0; upd <sectcnt ; upd++) {
-    memcpy(newbuf+cli_readint32(sections+20), dst+cli_readint32(sections+12)-upx0, cli_readint32(sections+16));
+      uint32_t offset1, offset2, offset3;
+      offset1 = (uint32_t)cli_readint32(sections+20);
+      offset2 = (uint32_t)cli_readint32(sections+16);
+      if (offset1 > foffset || offset2 > foffset || offset1 + offset2 > foffset) {
+          free(newbuf);
+          return 1;
+      }
+
+      offset3 = (uint32_t)cli_readint32(sections+12);
+      if (offset3-upx0 > *dsize) {
+          free(newbuf);
+          return 1;
+      }
+    memcpy(newbuf+offset1, dst+offset3-upx0, offset2);
     sections+=0x28;
   }
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C)2008 Sourcefire, Inc.
+ *  Copyright (C)2008-2013 Sourcefire, Inc.
  *
  *  Author: aCaB <acab@clamav.net>
  *
@@ -151,6 +151,7 @@ int smtpauth_init(const char *r) {
 		regex = realloc(regex, rxsize + 2048);
 		if(!regex) {
 		    logg("!Cannot allocate memory for SkipAuthenticated file\n");
+		    fclose(f);
 		    return 1;
 		}
 		rxavail = 2048;
@@ -182,6 +183,7 @@ int smtpauth_init(const char *r) {
 	}
 	if(rxavail < 4 && !(regex = realloc(regex, rxsize + 4))) {
 	    logg("!Cannot allocate memory for SkipAuthenticated file\n");
+	    fclose(f);
 	    return 1;
 	}
 	regex[rxused-1] = ')';

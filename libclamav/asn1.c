@@ -24,9 +24,8 @@
 
 #include <time.h>
 
+#include "clamav.h"
 #include "asn1.h"
-#include "sha1.h"
-#include "md5.h"
 #include "bignum.h"
 #include "matcher-hash.h"
 
@@ -40,11 +39,20 @@
 #define OID_1_2_840_113549_1_1_1 "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x01"
 #define OID_rsaEncryption OID_1_2_840_113549_1_1_1
 
+#define OID_1_2_840_113549_1_1_2 "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x02"
+#define OID_md2WithRSAEncryption OID_1_2_840_113549_1_1_2
+
 #define OID_1_2_840_113549_1_1_4 "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x04"
 #define OID_md5WithRSAEncryption OID_1_2_840_113549_1_1_4
 
 #define OID_1_2_840_113549_1_1_5 "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x05"
 #define OID_sha1WithRSAEncryption OID_1_2_840_113549_1_1_5
+
+#define OID_1_2_840_113549_1_1_11 "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x0b"
+#define OID_sha256WithRSAEncryption OID_1_2_840_113549_1_1_11
+
+#define OID_1_2_840_113549_1_1_13 "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x0d"
+#define OID_sha512WithRSAEncryption OID_1_2_840_113549_1_1_13
 
 #define OID_1_2_840_113549_1_7_1 "\x2a\x86\x48\x86\xf7\x0d\x01\x07\x01"
 #define OID_pkcs7_data OID_1_2_840_113549_1_7_1
@@ -97,37 +105,19 @@ struct cli_asn1 {
 };
 
 static int map_sha1(fmap_t *map, const void *data, unsigned int len, uint8_t sha1[SHA1_HASH_SIZE]) {
-    SHA1Context ctx;
     if(!fmap_need_ptr_once(map, data, len)) {
 	cli_dbgmsg("map_sha1: failed to read hash data\n");
 	return 1;
     }
-    SHA1Init(&ctx);
-    while(len) {
-	unsigned int todo = MIN(len, map->pgsz);
-	SHA1Update(&ctx, data, todo);
-	data = (uint8_t *)data + todo;
-	len -= todo;
-    }
-    SHA1Final(&ctx, sha1);
-    return 0;
+    return (cl_sha1(data, len, sha1, NULL) == NULL);
 }
 
 static int map_md5(fmap_t *map, const void *data, unsigned int len, uint8_t *md5) {
-    cli_md5_ctx ctx;
     if(!fmap_need_ptr_once(map, data, len)) {
 	cli_dbgmsg("map_md5: failed to read hash data\n");
 	return 1;
     }
-    cli_md5_init(&ctx);
-    while(len) {
-	unsigned int todo = MIN(len, map->pgsz);
-	cli_md5_update(&ctx, data, len);
-	data = (uint8_t *)data + todo;
-	len -= todo;
-    }
-    cli_md5_final(md5, &ctx);
-    return 0;
+    return (cl_hash_data("md5", data, len, md5, NULL) == NULL);
 }
 
 
@@ -264,8 +254,20 @@ static int asn1_expect_rsa(fmap_t *map, const void **asn1data, unsigned int *asn
 	*hashtype = CLI_SHA1RSA; /* sha1withRSAEncryption 1.2.840.113549.1.1.5 */
     else if(obj.size == lenof(OID_md5WithRSAEncryption) && !memcmp(obj.content, OID_md5WithRSAEncryption, lenof(OID_md5WithRSAEncryption)))
 	*hashtype = CLI_MD5RSA; /* md5withRSAEncryption 1.2.840.113549.1.1.4 */
+    else if(obj.size == lenof(OID_md2WithRSAEncryption) && !memcmp(obj.content, OID_md2WithRSAEncryption, lenof(OID_md2WithRSAEncryption))) {
+	cli_dbgmsg("asn1_expect_rsa: MD2 with RSA (not yet supported)\n");
+	return 1;
+    }
+    else if(obj.size == lenof(OID_sha256WithRSAEncryption) && !memcmp(obj.content, OID_sha256WithRSAEncryption, lenof(OID_sha256WithRSAEncryption))) {
+	cli_dbgmsg("asn1_expect_rsa: SHA256 with RSA (not yet supported)\n");
+	return 1;
+    }
+    else if(obj.size == lenof(OID_sha512WithRSAEncryption) && !memcmp(obj.content, OID_sha512WithRSAEncryption, lenof(OID_sha512WithRSAEncryption))) {
+	cli_dbgmsg("asn1_expect_rsa: SHA512 with RSA (not yet supported)\n");
+	return 1;
+    }
     else {
-	cli_dbgmsg("asn1_expect_rsa: OID mismatch\n");
+	cli_dbgmsg("asn1_expect_rsa: OID mismatch (size %u)\n", obj.size);
 	return 1;
     }
     if((ret = asn1_expect_obj(map, &obj.next, &avail, 0x05, 0, NULL))) /* NULL */
@@ -740,14 +742,14 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
     return 1;
 }
 
-static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmgr *cmgr, int embedded, const void **hashes, unsigned int *hashes_size) {
+static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmgr *cmgr, int embedded, const void **hashes, unsigned int *hashes_size, struct cl_engine *engine) {
     struct cli_asn1 asn1, deep, deeper;
     uint8_t sha1[SHA1_HASH_SIZE], issuer[SHA1_HASH_SIZE], md[SHA1_HASH_SIZE], serial[SHA1_HASH_SIZE];
     const uint8_t *message, *attrs;
     unsigned int dsize, message_size, attrs_size;
     cli_crt_hashtype hashtype;
-    SHA1Context ctx;
     cli_crt *x509;
+    void *ctx;
     int result;
     int isBlacklisted = 0;
 
@@ -834,16 +836,38 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
 		    break;
 		}
 	    }
-	    if(dsize)
-		break;
+	    if(dsize) {
+            crtmgr_free(&newcerts);
+            break;
+        }
 	    if(newcerts.crts) {
 		x509 = newcerts.crts;
 		cli_dbgmsg("asn1_parse_mscat: %u new certificates collected\n", newcerts.items);
 		while(x509) {
 		    cli_crt *parent = crtmgr_verify_crt(cmgr, x509);
+
+            /* Dump the cert if requested before anything happens to it */
+            if (engine->dconf->pe & PE_CONF_DUMPCERT) {
+                char issuer[SHA1_HASH_SIZE*2+1], subject[SHA1_HASH_SIZE*2+1], serial[SHA1_HASH_SIZE*2+1];
+                char mod[1024], exp[1024];
+                int j=1024;
+
+                fp_toradix_n(&x509->n, mod, 16, j);
+                fp_toradix_n(&x509->e, exp, 16, j);
+                for (j=0; j < SHA1_HASH_SIZE; j++) {
+                    sprintf(&issuer[j*2], "%02x", x509->issuer[j]);
+                    sprintf(&subject[j*2], "%02x", x509->subject[j]);
+                    sprintf(&serial[j*2], "%02x", x509->serial[j]);
+                }
+
+                cli_dbgmsg_internal("cert subject:%s serial:%s pubkey:%s i:%s %lu->%lu %s %s %s\n", subject, serial, mod, issuer, (unsigned long)x509->not_before, (unsigned long)x509->not_after, x509->certSign ? "cert" : "", x509->codeSign ? "code" : "", x509->timeSign ? "time" : "");
+            }
+
 		    if(parent) {
-                if (parent->isBlacklisted)
+                if (parent->isBlacklisted) {
                     isBlacklisted = 1;
+                    cli_dbgmsg("asn1_parse_mscat: Authenticode certificate %s is revoked. Flagging sample as virus.\n", (parent->name ? parent->name : "(no name)"));
+                }
 
 			x509->codeSign &= parent->codeSign;
 			x509->timeSign &= parent->timeSign;
@@ -855,8 +879,10 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
 		    }
 		    x509 = x509->next;
 		}
-		if(x509)
+		if(x509) {
+            crtmgr_free(&newcerts);
 		    break;
+        }
 		if(newcerts.items)
 		    cli_dbgmsg("asn1_parse_mscat: %u certificates did not verify\n", newcerts.items);
 		crtmgr_free(&newcerts);
@@ -1017,10 +1043,13 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
 	    break;
 	}
 
-	SHA1Init(&ctx);
-	SHA1Update(&ctx, "\x31", 1);
-	SHA1Update(&ctx, attrs + 1, attrs_size - 1);
-	SHA1Final(&ctx, sha1);
+    ctx = cl_hash_init("sha1");
+    if (!(ctx))
+        break;
+
+	cl_update_hash(ctx, "\x31", 1);
+	cl_update_hash(ctx, (void *)(attrs + 1), attrs_size - 1);
+	cl_finish_hash(ctx, sha1);
 
 	if(!fmap_need_ptr_once(map, asn1.content, asn1.size)) {
 	    cli_dbgmsg("asn1_parse_mscat: failed to read encryptedDigest\n");
@@ -1258,16 +1287,21 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
 	}
 
 	if(hashtype == CLI_SHA1RSA) {
-	    SHA1Init(&ctx);
-	    SHA1Update(&ctx, "\x31", 1);
-	    SHA1Update(&ctx, attrs + 1, attrs_size - 1);
-	    SHA1Final(&ctx, sha1);
+        ctx = cl_hash_init("sha1");
+        if (!(ctx))
+            break;
+
+        cl_update_hash(ctx, "\x31", 1);
+        cl_update_hash(ctx, (void *)(attrs + 1), attrs_size - 1);
+        cl_finish_hash(ctx, sha1);
 	} else {
-	    cli_md5_ctx ctx;
-	    cli_md5_init(&ctx);
-	    cli_md5_update(&ctx, "\x31", 1);
-	    cli_md5_update(&ctx, attrs + 1, attrs_size - 1);
-	    cli_md5_final(sha1, &ctx);
+        ctx = cl_hash_init("md5");
+        if (!(ctx))
+            break;
+
+        cl_update_hash(ctx, "\x31", 1);
+        cl_update_hash(ctx, (void *)(attrs + 1), attrs_size - 1);
+        cl_finish_hash(ctx, sha1);
 	}
 
 	if(!fmap_need_ptr_once(map, asn1.content, asn1.size)) {
@@ -1279,9 +1313,8 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
 	    break;
 	}
 
-	cli_dbgmsg("asn1_parse_mscat: catalog succesfully parsed\n");
+	cli_dbgmsg("asn1_parse_mscat: catalog successfully parsed\n");
     if (isBlacklisted) {
-        cli_dbgmsg("asn1_parse_mscat: executable containes revoked cert.\n");
         return 1;
     }
 	return 0;
@@ -1297,7 +1330,7 @@ int asn1_load_mscat(fmap_t *map, struct cl_engine *engine) {
     struct cli_matcher *db;
     int i;
 
-    if(asn1_parse_mscat(map, 0, map->len, &engine->cmgr, 0, &c.next, &size))
+    if(asn1_parse_mscat(map, 0, map->len, &engine->cmgr, 0, &c.next, &size, engine))
         return 1;
 
     if(asn1_expect_objtype(map, c.next, &size, &c, 0x30))
@@ -1445,13 +1478,16 @@ int asn1_check_mscat(struct cl_engine *engine, fmap_t *map, size_t offset, unsig
     crtmgr certs;
     int ret;
 
+    if (engine->dconf->pe & PE_CONF_DISABLECERT)
+        return CL_VIRUS;
+
     cli_dbgmsg("in asn1_check_mscat (offset: %lu)\n", offset);
     crtmgr_init(&certs);
     if(crtmgr_add_roots(engine, &certs)) {
 	crtmgr_free(&certs);
 	return CL_VIRUS;
     }
-    ret = asn1_parse_mscat(map, offset, size, &certs, 1, &content, &content_size);
+    ret = asn1_parse_mscat(map, offset, size, &certs, 1, &content, &content_size, engine);
     crtmgr_free(&certs);
     if(ret)
 	return CL_VIRUS;

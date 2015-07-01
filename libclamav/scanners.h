@@ -1,5 +1,6 @@
 /*
- *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *  Copyright (C) 2007-2013 Sourcefire, Inc.
+ *  Copyright (C) 2014 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: Tomasz Kojm
  *
@@ -26,8 +27,10 @@
 #include "filetypes.h"
 
 int cli_magic_scandesc(int desc, cli_ctx *ctx);
+int cli_partition_scandesc(int desc, cli_ctx *ctx);
 int cli_magic_scandesc_type(cli_ctx *ctx, cli_file_t type);
-int cli_map_scandesc(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx);
+int cli_map_scandesc(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx, cli_file_t type);
+int cli_map_scan(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx, cli_file_t type);
 int cli_mem_scandesc(const void *buffer, size_t length, cli_ctx *ctx);
 int cli_found_possibly_unwanted(cli_ctx* ctx);
 

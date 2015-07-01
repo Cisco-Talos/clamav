@@ -48,6 +48,7 @@
 
 #include "target.h"
 #include "clamav.h"
+#include "freshclamcodes.h"
 
 #include "libclamav/others.h"
 #include "libclamav/str.h"
@@ -67,6 +68,11 @@ static short foreground = 1;
 char updtmpdir[512], dbdir[512];
 int sigchld_wait = 1;
 const char *pidfile = NULL;
+char hostid[37];
+
+void submit_host_info(struct optstruct *opts);
+char *get_hostid(void *cbdata);
+int is_valid_hostid(void);
 
 static void
 sighandler (int sig)
@@ -129,7 +135,7 @@ writepid (const char *pidfile)
     }
     else
     {
-        fprintf (fd, "%d", (int) getpid ());
+        fprintf (fd, "%d\n", (int) getpid ());
         fclose (fd);
     }
     umask (old_umask);
@@ -143,7 +149,7 @@ help (void)
     mprintf ("\n");
     mprintf ("                   Clam AntiVirus: freshclam  %s\n",
              get_version ());
-    printf ("           By The ClamAV Team: http://www.clamav.net/team\n");
+    printf ("           By The ClamAV Team: http://www.clamav.net/about.html#credits\n");
     printf ("           (C) 2007-2009 Sourcefire, Inc. et al.\n\n");
 
     mprintf ("    --help               -h              show help\n");
@@ -189,7 +195,9 @@ help (void)
     mprintf
         ("    --list-mirrors                       print mirrors from mirrors.dat\n");
     mprintf
-        ("    --submit-stats[=/path/clamd.conf]    only submit detection statistics\n");
+        ("    --enable-stats                       enable statistical information reporting\n");
+    mprintf
+        ("    --stats-host-id=UUID                 HostID in the form of an UUID to use when submitting statistical information\n");
     mprintf
         ("    --update-db=DBNAME                   only update database DBNAME\n");
 
@@ -210,7 +218,7 @@ download (const struct optstruct *opts, const char *cfgfile)
     {
         logg ("^You must specify at least one database mirror in %s\n",
               cfgfile);
-        return 56;
+        return FCE_CONFIG;
     }
     else
     {
@@ -220,7 +228,8 @@ download (const struct optstruct *opts, const char *cfgfile)
 #ifndef _WIN32
             alarm (0);
 #endif
-            if (ret == 52 || ret == 54 || ret == 58 || ret == 59)
+            if (ret == FCE_CONNECTION || ret == FCE_BADCVD
+                || ret == FCE_FAILEDGET || ret == FCE_MIRRORNOTSYNC)
             {
                 if (try < maxattempts)
                 {
@@ -235,7 +244,7 @@ download (const struct optstruct *opts, const char *cfgfile)
                     opt = (struct optstruct *) opt->nextarg;
                     if (!opt)
                     {
-                        logg ("Update failed. Your network may be down or none of the mirrors listed in %s is working. Check http://www.clamav.net/support/mirror-problem for possible reasons.\n", cfgfile);
+                        logg ("Update failed. Your network may be down or none of the mirrors listed in %s is working. Check http://www.clamav.net/doc/mirrors-faq.html for possible reasons.\n", cfgfile);
                     }
                 }
 
@@ -254,6 +263,9 @@ static void
 msg_callback (enum cl_msg severity, const char *fullmsg, const char *msg,
               void *ctx)
 {
+    UNUSEDPARAM(fullmsg);
+    UNUSEDPARAM(ctx);
+
     switch (severity)
     {
     case CL_MSG_ERROR:
@@ -261,6 +273,7 @@ msg_callback (enum cl_msg severity, const char *fullmsg, const char *msg,
         break;
     case CL_MSG_WARN:
         logg ("~[LibClamAV] %s", msg);
+	break;
     default:
         logg ("*[LibClamAV] %s", msg);
         break;
@@ -270,7 +283,7 @@ msg_callback (enum cl_msg severity, const char *fullmsg, const char *msg,
 int
 main (int argc, char **argv)
 {
-    int ret = 52, retcl;
+    int ret = FCE_CONNECTION, retcl;
     const char *cfgfile, *arg = NULL;
     char *pt;
     struct optstruct *opts;
@@ -287,19 +300,19 @@ main (int argc, char **argv)
     struct mirdat mdat;
 
     if (check_flevel ())
-        exit (40);
+        exit (FCE_INIT);
 
     if ((retcl = cl_init (CL_INIT_DEFAULT)))
     {
         mprintf ("!Can't initialize libclamav: %s\n", cl_strerror (retcl));
-        return 40;
+        return FCE_INIT;
     }
 
     if ((opts =
          optparse (NULL, argc, argv, 1, OPT_FRESHCLAM, 0, NULL)) == NULL)
     {
         mprintf ("!Can't parse command line options\n");
-        return 40;
+        return FCE_INIT;
     }
 
     if (optget (opts, "help")->enabled)
@@ -317,7 +330,7 @@ main (int argc, char **argv)
     {
         fprintf (stderr, "ERROR: Can't open/parse the config file %s\n", pt);
         free (pt);
-        return 40;
+        return FCE_INIT;
     }
     free (pt);
 
@@ -328,13 +341,35 @@ main (int argc, char **argv)
         return 0;
     }
 
+    /* Stats/intelligence gathering  */
+    if (optget(opts, "stats-host-id")->enabled) {
+        char *p = optget(opts, "stats-host-id")->strarg;
+
+        if (strcmp(p, "default")) {
+            if (!strcmp(p, "anonymous")) {
+                strcpy(hostid, STATS_ANON_UUID);
+            } else {
+                if (strlen(p) > 36) {
+                    logg("!Invalid HostID\n");
+                    optfree(opts);
+                    return FCE_INIT;
+                }
+
+                strcpy(hostid, p);
+            }
+        } else {
+            strcpy(hostid, "default");
+        }
+    }
+    submit_host_info(opts);
+
     if (optget (opts, "HTTPProxyPassword")->enabled)
     {
-        if (STAT (cfgfile, &statbuf) == -1)
+        if (CLAMSTAT (cfgfile, &statbuf) == -1)
         {
             logg ("^Can't stat %s (critical error)\n", cfgfile);
             optfree (opts);
-            return 56;
+            return FCE_CONFIG;
         }
 
 #ifndef _WIN32
@@ -344,7 +379,7 @@ main (int argc, char **argv)
         {
             logg ("^Insecure permissions (for HTTPProxyPassword): %s must have no more than 0700 permissions.\n", cfgfile);
             optfree (opts);
-            return 56;
+            return FCE_CONFIG;
         }
 #endif
     }
@@ -359,7 +394,7 @@ main (int argc, char **argv)
         {
             logg ("^Can't get information about user %s.\n", dbowner);
             optfree (opts);
-            return 60;
+            return FCE_USERINFO;
         }
 
         if (optget (opts, "AllowSupplementaryGroups")->enabled)
@@ -369,7 +404,7 @@ main (int argc, char **argv)
             {
                 logg ("^initgroups() failed.\n");
                 optfree (opts);
-                return 61;
+                return FCE_USERORGROUP;
             }
 #endif
         }
@@ -380,7 +415,7 @@ main (int argc, char **argv)
             {
                 logg ("^setgroups() failed.\n");
                 optfree (opts);
-                return 61;
+                return FCE_USERORGROUP;
             }
 #endif
         }
@@ -389,14 +424,14 @@ main (int argc, char **argv)
         {
             logg ("^setgid(%d) failed.\n", (int) user->pw_gid);
             optfree (opts);
-            return 61;
+            return FCE_USERORGROUP;
         }
 
         if (setuid (user->pw_uid))
         {
             logg ("^setuid(%d) failed.\n", (int) user->pw_uid);
             optfree (opts);
-            return 61;
+            return FCE_USERORGROUP;
         }
     }
 #endif /* HAVE_PWD_H */
@@ -436,7 +471,7 @@ main (int argc, char **argv)
             mprintf ("!Problem with internal logger (UpdateLogFile = %s).\n",
                      logg_file);
             optfree (opts);
-            return 62;
+            return FCE_LOGGING;
         }
     }
     else
@@ -454,7 +489,7 @@ main (int argc, char **argv)
                 mprintf ("!LogFacility: %s: No such facility.\n",
                          opt->strarg);
                 optfree (opts);
-                return 62;
+                return FCE_LOGGING;
             }
         }
 
@@ -470,7 +505,7 @@ main (int argc, char **argv)
         logg ("!Can't change dir to %s\n",
               optget (opts, "DatabaseDirectory")->strarg);
         optfree (opts);
-        return 50;
+        return FCE_DIRECTORY;
     }
     else
     {
@@ -478,7 +513,7 @@ main (int argc, char **argv)
         {
             logg ("!getcwd() failed\n");
             optfree (opts);
-            return 50;
+            return FCE_DIRECTORY;
         }
         logg ("*Current working dir is %s\n", dbdir);
     }
@@ -490,7 +525,7 @@ main (int argc, char **argv)
         {
             printf ("Can't read mirrors.dat\n");
             optfree (opts);
-            return 55;
+            return FCE_FILE;
         }
         mirman_list (&mdat);
         mirman_free (&mdat);
@@ -510,7 +545,7 @@ main (int argc, char **argv)
             {
                 logg ("!PrivateMirror: *.clamav.net is not allowed in this mode\n");
                 optfree (opts);
-                return 45;
+                return FCE_PRIVATEMIRROR;
             }
 
             if (dbm->strarg)
@@ -520,7 +555,7 @@ main (int argc, char **argv)
             {
                 logg ("!strdup() failed\n");
                 optfree (opts);
-                return 75;
+                return FCE_MEM;
             }
             if (!dbm->nextarg)
             {
@@ -531,7 +566,7 @@ main (int argc, char **argv)
                 {
                     logg ("!calloc() failed\n");
                     optfree (opts);
-                    return 75;
+                    return FCE_MEM;
                 }
             }
             opth = dbm;
@@ -586,7 +621,7 @@ main (int argc, char **argv)
         {
             logg ("^Number of checks must be a positive integer.\n");
             optfree (opts);
-            return 41;
+            return FCE_CHECKS;
         }
 
         if (!optget (opts, "DNSDatabaseInfo")->enabled
@@ -596,7 +631,7 @@ main (int argc, char **argv)
             {
                 logg ("^Number of checks must be between 1 and 50.\n");
                 optfree (opts);
-                return 41;
+                return FCE_CHECKS;
             }
         }
 
@@ -609,7 +644,7 @@ main (int argc, char **argv)
             {
                 logg ("!daemonize() failed\n");
                 optfree (opts);
-                return 70;      /* FIXME */
+                return FCE_FAILEDUPDATE;
             }
             foreground = 0;
             mprintf_disabled = 1;
@@ -632,12 +667,7 @@ main (int argc, char **argv)
         {
             ret = download (opts, cfgfile);
 
-            if (ret <= 1)
-            {
-                if ((opt = optget (opts, "SubmitDetectionStats"))->enabled)
-                    submitstats (opt->strarg, opts);
-            }
-            else
+            if (ret > 1)
             {
                 if ((opt = optget (opts, "OnErrorExecute"))->enabled)
                     arg = opt->strarg;
@@ -693,19 +723,7 @@ main (int argc, char **argv)
     }
     else
     {
-        if ((opt = optget (opts, "submit-stats"))->active)
-        {
-            if (!optget (opts, "no-warnings")->enabled)
-                logg (" *** Virus databases are not updated in this mode ***\n");
-            ret = submitstats (opt->strarg, opts);
-        }
-        else
-        {
-            ret = download (opts, cfgfile);
-
-            if ((opt = optget (opts, "SubmitDetectionStats"))->enabled)
-                submitstats (opt->strarg, opts);
-        }
+        ret = download (opts, cfgfile);
     }
 
     if (ret > 1)
@@ -721,5 +739,91 @@ main (int argc, char **argv)
 
     optfree (opts);
 
+    cl_cleanup_crypto();
+
     return (ret);
+}
+
+void submit_host_info(struct optstruct *opts)
+{
+    struct cl_engine *engine;
+    cli_intel_t *intel;
+
+    if (!optget(opts, "enable-stats")->enabled)
+        return;
+
+    engine = cl_engine_new();
+    if (!(engine))
+        return;
+
+    if (optget (opts, "Debug")->enabled || optget (opts, "debug")->enabled)
+        cl_debug ();
+
+    if (optget (opts, "verbose")->enabled)
+        mprintf_verbose = 1;
+
+    cl_engine_stats_enable(engine);
+
+    intel = engine->stats_data;
+    if (!(intel)) {
+        engine->cb_stats_submit = NULL;
+        cl_engine_free(engine);
+        return;
+    }
+
+    intel->host_info = calloc(1, strlen(TARGET_OS_TYPE) + strlen(TARGET_ARCH_TYPE) + 2);
+    if (!(intel->host_info)) {
+        engine->cb_stats_submit = NULL;
+        cl_engine_free(engine);
+        return;
+    }
+
+    sprintf(intel->host_info, "%s %s", TARGET_OS_TYPE, TARGET_ARCH_TYPE);
+
+    if (!strcmp(hostid, "none"))
+        cl_engine_set_clcb_stats_get_hostid(engine, NULL);
+    else if (strcmp(hostid, "default"))
+        cl_engine_set_clcb_stats_get_hostid(engine, get_hostid);
+
+    if (optget(opts, "stats-timeout")->enabled) {
+        cl_engine_set_num(engine, CL_ENGINE_STATS_TIMEOUT, optget(opts, "StatsTimeout")->numarg);
+    }
+
+    cl_engine_free(engine);
+}
+
+int is_valid_hostid(void)
+{
+    int count, i;
+
+    if (strlen(hostid) != 36)
+        return 0;
+
+    count=0;
+    for (i=0; i < 36; i++)
+        if (hostid[i] == '-')
+            count++;
+
+    if (count != 4)
+        return 0;
+
+    if (hostid[8] != '-' || hostid[13] != '-' || hostid[18] != '-' || hostid[23] != '-')
+        return 0;
+
+    return 1;
+}
+
+char *get_hostid(void *cbdata)
+{
+    UNUSEDPARAM(cbdata);
+
+    if (!strcmp(hostid, "none"))
+        return NULL;
+
+    if (!is_valid_hostid())
+        return strdup(STATS_ANON_UUID);
+
+    logg("HostID is valid: %s\n", hostid);
+
+    return strdup(hostid);
 }

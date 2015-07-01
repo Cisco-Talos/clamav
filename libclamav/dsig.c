@@ -32,7 +32,6 @@
 #include "dsig.h"
 #include "str.h"
 #include "bignum.h"
-#include "sha256.h"
 
 #define CLI_NSTR "118640995551645342603070001658453189751527774412027743746599405743243142607464144767361060640655844749760788890022283424922762488917565551002467771109669598189410434699034532232228621591089508178591428456220796841621637175567590476666928698770143328137383952820383197532047771780196576957695822641224262693037"
 
@@ -108,7 +107,6 @@ int cli_versig(const char *md5, const char *dsig)
 	mp_int n, e;
 	char *pt, *pt2;
 
-
     if(strlen(md5) != 32 || !isalnum(md5[0])) {
 	/* someone is trying to fool us with empty/malformed MD5 ? */
 	cli_errmsg("SECURITY WARNING: MD5 basic test failure.\n");
@@ -156,7 +154,7 @@ int cli_versig2(const unsigned char *sha256, const char *dsig_str, const char *n
 	unsigned char *decoded, digest1[HASH_LEN], digest2[HASH_LEN], digest3[HASH_LEN], *salt;
 	unsigned char mask[BLK_LEN], data[BLK_LEN], final[8 + 2 * HASH_LEN], c[4];
 	unsigned int i, rounds;
-	SHA256_CTX ctx;
+    void *ctx;
 	mp_int n, e;
 
     mp_init(&e);
@@ -184,10 +182,14 @@ int cli_versig2(const unsigned char *sha256, const char *dsig_str, const char *n
     for(i = 0; i < rounds; i++) {
 	c[2] = (unsigned char) (i / 256);
 	c[3] = (unsigned char) i;
-	sha256_init(&ctx);
-	sha256_update(&ctx, digest2, HASH_LEN);
-	sha256_update(&ctx, c, 4);
-	sha256_final(&ctx, digest3);
+
+    ctx = cl_hash_init("sha256");
+    if (!(ctx))
+        return CL_EMEM;
+
+	cl_update_hash(ctx, digest2, HASH_LEN);
+	cl_update_hash(ctx, c, 4);
+	cl_finish_hash(ctx, digest3);
 	if(i + 1 == rounds)
             memcpy(&data[i * 32], digest3, BLK_LEN - i * HASH_LEN);
 	else
@@ -209,9 +211,12 @@ int cli_versig2(const unsigned char *sha256, const char *dsig_str, const char *n
     memcpy(&final[8], sha256, HASH_LEN);
     memcpy(&final[8 + HASH_LEN], salt, SALT_LEN);
 
-    sha256_init(&ctx);
-    sha256_update(&ctx, final, sizeof(final));
-    sha256_final(&ctx, digest1);
+    ctx = cl_hash_init("sha256");
+    if (!(ctx))
+        return CL_EMEM;
+
+	cl_update_hash(ctx, final, sizeof(final));
+	cl_finish_hash(ctx, digest1);
 
     return memcmp(digest1, digest2, HASH_LEN) ? CL_EVERIFY : CL_SUCCESS;
 }

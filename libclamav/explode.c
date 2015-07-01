@@ -38,6 +38,7 @@
 #include <string.h>
 #endif
 
+#include "clamav.h"
 #include "explode.h"
 #include "others.h"
 

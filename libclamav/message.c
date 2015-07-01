@@ -19,7 +19,6 @@
  *
  * TODO: Optimise messageExport, decodeLine, messageIsEncoding
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.195 2007/02/12 20:46:09 njh Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -52,6 +51,7 @@ static	char	const	rcsid[] = "$Id: message.c,v 1.195 2007/02/12 20:46:09 njh Exp 
 #include "filetypes.h"
 
 #include "mbox.h"
+#include "clamav.h"
 
 #ifndef isblank
 #define isblank(c)	(((c) == ' ') || ((c) == '\t'))
@@ -480,6 +480,7 @@ messageAddArguments(message *m, const char *s)
 	while(*string) {
 		const char *key, *cptr;
 		char *data, *field;
+        size_t datasz=0;
 
 		if(isspace(*string & 0xff) || (*string == ';')) {
 			string++;
@@ -548,6 +549,7 @@ messageAddArguments(message *m, const char *s)
 				ptr = strchr(kcopy, ':');
                 if (ptr == NULL) {
                     cli_dbgmsg("Can't parse header \"%s\"\n", s);
+                    free(kcopy);
                     return;
                 }
             }
@@ -591,12 +593,14 @@ messageAddArguments(message *m, const char *s)
 
 			*ptr = '\0';
 
+            datasz = strlen(kcopy) + strlen(data) + 2;
 			field = cli_realloc(kcopy, strlen(kcopy) + strlen(data) + 2);
 			if(field) {
-				strcat(field, "=");
-				strcat(field, data);
-			} else
+                cli_strlcat(field, "=", datasz);
+                cli_strlcat(field, data, datasz);
+			} else {
 				free(kcopy);
+            }
 			free(data);
 		} else {
 			size_t len;
@@ -888,8 +892,10 @@ messageAddLine(message *m, line_t *line)
 		m->body_last = m->body_last->t_next;
 	}
 
-	if(m->body_last == NULL)
+	if(m->body_last == NULL) {
+        cli_errmsg("messageAddLine: out of memory for m->body_last\n");
 		return -1;
+    }
 
 	m->body_last->t_next = NULL;
 
@@ -2292,8 +2298,10 @@ rfc2231(const char *in)
 
 		/* Don't handle continuations, decode what we can */
 		p = ret = cli_malloc(strlen(in) + 16);
-		if(ret == NULL)
+		if(ret == NULL) {
+            cli_errmsg("rfc2331: out of memory, unable to proceed\n");
 			return NULL;
+        }
 
 		do {
 			switch(*in) {
@@ -2346,8 +2354,10 @@ rfc2231(const char *in)
 
 	ret = cli_malloc(strlen(in) + 1);
 
-	if(ret == NULL)
+	if(ret == NULL) {
+        cli_errmsg("rfc2331: out of memory for ret\n");
 		return NULL;
+    }
 
 	/*
 	 * memcpy(out, in, (ptr - in));

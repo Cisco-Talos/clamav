@@ -52,6 +52,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "clamav.h"
 #include "cltypes.h"
 #include "rebuildpe.h"
 #include "execs.h"
@@ -107,7 +108,8 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
   while (1) {
     char *ssrc, *ddst;
     uint32_t size, srva;
-    int backbytes, oldback, backsize, addsize;
+    int backbytes, oldback, addsize;
+    unsigned int backsize;
     
     if ( ! CLI_ISCONTAINED(buf, bufsz, packed, 4)) {
       if (usects)
@@ -391,6 +393,11 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
 	      free(usects);
 	      return 1;
 	    }
+	    if (backbytes >= INT_MAX / 2) {
+		    free(usects);
+		    cli_dbgmsg("Petite: probably invalid file\n");
+		    return 1;
+	    }
 	    backbytes = backbytes*2 + oob;
 	    if ( (oob = doubledl(&ssrc, &mydl, buf, bufsz)) == -1 ) {
 	      free(usects);
@@ -406,6 +413,11 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
 	      if ( (oob = doubledl(&ssrc, &mydl, buf, bufsz)) == -1 ) {
 		free(usects);
 		return 1;
+	      }
+	      if (backbytes >= INT_MAX / 2) {
+		      free(usects);
+		      cli_dbgmsg("Petite: probably invalid file\n");
+		      return 1;
 	      }
 	      backbytes = backbytes*2 + oob;
 	      backsize--;

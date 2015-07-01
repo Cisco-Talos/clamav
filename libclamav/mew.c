@@ -48,6 +48,7 @@
 #include <string.h>
 #endif
 
+#include "clamav.h"
 #include "cltypes.h"
 #include "pe.h"
 #include "others.h"
@@ -847,6 +848,18 @@ int unmew11(char *src, int off, int ssize, int dsize, uint32_t base, uint32_t va
 			section[i+1].raw = val;
 			section[i+1].rva = val + vadd;
 			section[i].rsz = section[i].vsz = ((i)?(val - section[i].raw):val);
+
+            /*
+             * bb#11212 - alternate fix, buffer is aligned
+             * must validate that sections do not intersect with source
+             * or, in other words, exceed the specified size of destination
+             */
+            if (section[i].raw + section[i].rsz > dsize) {
+                cli_dbgmsg("MEW: Section %i [%d, %d] exceeds destination size %d\n",
+                           i, section[i].raw, section[i].raw+section[i].rsz, dsize);
+                free(section);
+                return -1;
+            }
 		}
 		i++;
 
@@ -888,7 +901,7 @@ int unmew11(char *src, int off, int ssize, int dsize, uint32_t base, uint32_t va
 		section[0].raw = 0; section[0].rva = vadd;
 		section[0].rsz = section[0].vsz = dsize;
 	}
-	if (!cli_rebuildpe(src, section, i, base, entry_point - base, 0, 0, filedesc))
+	if (!cli_rebuildpe_align(src, section, i, base, entry_point - base, 0, 0, filedesc, 0x1000))
 	{
 		cli_dbgmsg("MEW: Rebuilding failed\n");
 		free(section);

@@ -22,7 +22,9 @@
 #include <check.h>
 #include <fcntl.h>
 #include <string.h>
+
 #include "checks.h"
+#include "../libclamav/clamav.h"
 #include "../libclamav/fmap.h"
 #include "../libclamav/dconf.h"
 #include "../libclamav/htmlnorm.h"

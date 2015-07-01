@@ -22,6 +22,7 @@
 #include "clamav-config.h"
 #endif
 
+#include "clamav.h"
 #include "others.h"
 #include "execs.h"
 #include "pe.h"

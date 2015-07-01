@@ -96,9 +96,6 @@
 /* file i/o buffer size */
 #undef FILEBUFF
 
-/* FPU byte ordering matches CPU */
-#undef FPU_WORDS_BIGENDIAN
-
 /* enable workaround for broken DNS servers */
 #undef FRESHCLAM_DNS_FIX
 
@@ -154,6 +151,10 @@
    you don't. */
 #undef HAVE_DECL_CYGWIN_CONV_PATH
 
+/* Define to 1 if you have a deprecated version of the 'libjson' library
+   (-ljson). */
+#undef HAVE_DEPRECATED_JSON
+
 /* Define to 1 if you have the <dirent.h> header file. */
 #undef HAVE_DIRENT_H
 
@@ -190,6 +191,9 @@
 /* have getaddrinfo() */
 #undef HAVE_GETADDRINFO
 
+/* Define to 1 if you have the `getnameinfo' function. */
+#undef HAVE_GETNAMEINFO
+
 /* Define to 1 if getpagesize() is available */
 #undef HAVE_GETPAGESIZE
 
@@ -214,6 +218,9 @@
 /* in_port_t is defined */
 #undef HAVE_IN_PORT_T
 
+/* Define to 1 if you have the 'libjson' library (-ljson). */
+#undef HAVE_JSON
+
 /* Define to '1' if you have the check.h library */
 #undef HAVE_LIBCHECK
 
@@ -231,6 +238,12 @@
 
 /* Define to '1' if you have the curses.h library */
 #undef HAVE_LIBPDCURSES
+
+/* Define to 1 if you have the `ssl' library (-lssl). */
+#undef HAVE_LIBSSL
+
+/* Define to 1 if you have the 'libxml2' library (-lxml2). */
+#undef HAVE_LIBXML2
 
 /* Define to 1 if you have the `z' library (-lz). */
 #undef HAVE_LIBZ
@@ -272,6 +285,9 @@
 /* Define to 1 if you have the `opendir' function. */
 #undef HAVE_OPENDIR
 
+/* Define to 1 if you have the 'libpcre' library (-lpcre). */
+#undef HAVE_PCRE
+
 /* Define to 1 if you have the `poll' function. */
 #undef HAVE_POLL
 
@@ -286,6 +302,9 @@
 
 /* Define if libtool can extract symbol lists from object files. */
 #undef HAVE_PRELOADED_SYMBOLS
+
+/* Define to 1 if you have the <pthread.h> header file */
+#undef HAVE_PTHREAD_H
 
 /* Define to 1 if you have the `pthread_yield' function. */
 #undef HAVE_PTHREAD_YIELD
@@ -362,6 +381,12 @@
 /* Define to 1 if sysconf(_SC_PAGESIZE) is available */
 #undef HAVE_SYSCONF_SC_PAGESIZE
 
+/* Define to 1 if you have the `sysctlbyname' function. */
+#undef HAVE_SYSCTLBYNAME
+
+/* Define to 1 if you have the <sys/cdefs.h> header file. */
+#undef HAVE_SYS_CDEFS_H
+
 /* Define to 1 if you have the <sys/dl.h> header file. */
 #undef HAVE_SYS_DL_H
 
@@ -380,6 +405,9 @@
 /* Define to 1 if you have the <sys/param.h> header file. */
 #undef HAVE_SYS_PARAM_H
 
+/* Define to 1 if you have the <sys/queue.h> header file. */
+#undef HAVE_SYS_QUEUE_H
+
 /* "have <sys/select.h>" */
 #undef HAVE_SYS_SELECT_H
 
@@ -397,6 +425,9 @@
 
 /* Define to 1 if you have the <termios.h> header file. */
 #undef HAVE_TERMIOS_H
+
+/* Define to 1 if you have the `timegm' function. */
+#undef HAVE_TIMEGM
 
 /* Define this if uname(2) is POSIX */
 #undef HAVE_UNAME_SYSCALL
@@ -511,6 +542,28 @@
 /* use syslog */
 #undef USE_SYSLOG
 
+/* Enable extensions on AIX 3, Interix.  */
+#ifndef _ALL_SOURCE
+# undef _ALL_SOURCE
+#endif
+/* Enable GNU extensions on systems that have them.  */
+#ifndef _GNU_SOURCE
+# undef _GNU_SOURCE
+#endif
+/* Enable threading extensions on Solaris.  */
+#ifndef _POSIX_PTHREAD_SEMANTICS
+# undef _POSIX_PTHREAD_SEMANTICS
+#endif
+/* Enable extensions on HP NonStop.  */
+#ifndef _TANDEM_SOURCE
+# undef _TANDEM_SOURCE
+#endif
+/* Enable general extensions on Solaris.  */
+#ifndef __EXTENSIONS__
+# undef __EXTENSIONS__
+#endif
+
+
 /* Version number of package */
 #undef VERSION
 
@@ -529,11 +582,25 @@
 # endif
 #endif
 
+/* Define to 1 if `lex' declares `yytext' as a `char *' by default, not a
+   `char[]'. */
+#undef YYTEXT_POINTER
+
 /* Define to 1 to make fseeko visible on some hosts (e.g. glibc 2.2). */
 #undef _LARGEFILE_SOURCE
 
+/* Define to 1 if on MINIX. */
+#undef _MINIX
+
+/* Define to 2 if the system does not provide POSIX.1 features except with
+   this defined. */
+#undef _POSIX_1_SOURCE
+
 /* POSIX compatibility */
 #undef _POSIX_PII_SOCKET
+
+/* Define to 1 if you need to in order for `stat' and other things to work. */
+#undef _POSIX_SOURCE
 
 /* thread safe */
 #undef _REENTRANT

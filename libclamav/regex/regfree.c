@@ -38,6 +38,8 @@
 #include <sys/types.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "clamav.h"
 #include "others.h"
 #include "regex.h"
 

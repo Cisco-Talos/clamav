@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2009 Sourcefire, Inc.
+ *  Copyright (C) 2009-2013 Sourcefire, Inc.
  *
  *  Authors: aCaB <acab@clamav.net>
  *
@@ -41,6 +41,7 @@
 #include <pthread.h>
 #endif
 
+#include "clamav.h"
 #include "others.h"
 #include "cltypes.h"
 
@@ -61,12 +62,8 @@ static off_t pread_cb(void *handle, void *buf, size_t count, off_t offset)
 
 
 fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) {
-    unsigned int pages, mapsz, hdrsz;
-    unsigned short dumb = 1;
-    int pgsz = cli_getpagesize();
     STATBUF st;
     fmap_t *m;
-    void *handle = (void*)(ssize_t)fd;
 
     *empty = 0;
     if(FSTAT(fd, &st)) {
@@ -214,7 +211,7 @@ extern cl_fmap_t *cl_fmap_open_handle(void *handle, size_t offset, size_t len,
     cl_fmap_t *m;
     int pgsz = cli_getpagesize();
 
-    if(offset < 0 || offset != fmap_align_to(offset, pgsz)) {
+    if((off_t)offset < 0 || offset != fmap_align_to(offset, pgsz)) {
 	cli_warnmsg("fmap: attempted mapping with unaligned offset\n");
 	return NULL;
     }
@@ -251,6 +248,10 @@ extern cl_fmap_t *cl_fmap_open_handle(void *handle, size_t offset, size_t len,
 #endif /* ANONYMOUS_MAP */
     if (!use_aging) {
 	m = (fmap_t *)cli_malloc(mapsz);
+    if (!(m)) {
+        cli_warnmsg("fmap: map allocation failed\n");
+        return NULL;
+    }
 	memset(m, 0, hdrsz);
     }
     if(!m) {
@@ -261,6 +262,7 @@ extern cl_fmap_t *cl_fmap_open_handle(void *handle, size_t offset, size_t len,
     m->pread_cb = pread_cb;
     m->aging = use_aging;
     m->offset = offset;
+    m->nested_offset = 0;
     m->len = len;/* m->nested_offset + m->len = m->real_len */
     m->real_len = len;
     m->pages = pages;
@@ -346,7 +348,7 @@ static void fmap_aging(fmap_t *m) {
 
 static int fmap_readpage(fmap_t *m, unsigned int first_page, unsigned int count, unsigned int lock_count) {
     size_t readsz = 0, eintr_off;
-    char *pptr = NULL, err[256];
+    char *pptr = NULL, errtxt[256];
     uint32_t s;
     unsigned int i, page = first_page, force_read = 0;
 
@@ -403,9 +405,9 @@ static int fmap_readpage(fmap_t *m, unsigned int first_page, unsigned int count,
 		    if(fmap_bitmap[j] & FM_MASK_SEEN) {
 			/* page we've seen before: check mtime */
 			STATBUF st;
-			char err[256];
 			if(FSTAT(_fd, &st)) {
-			    cli_warnmsg("fmap_readpage: fstat failed: %s\n", cli_strerror(errno, err, sizeof(err)));
+			    cli_strerror(errno, errtxt, sizeof(errtxt));
+			    cli_warnmsg("fmap_readpage: fstat failed: %s\n", errtxt);
 			    return 1;
 			}
 			if(m->mtime != st.st_mtime) {
@@ -420,7 +422,8 @@ static int fmap_readpage(fmap_t *m, unsigned int first_page, unsigned int count,
 	    eintr_off = 0;
 	    while(readsz) {
 		ssize_t got;
-		got=m->pread_cb(m->handle, pptr, readsz, eintr_off + m->offset + first_page * m->pgsz);
+		off_t target_offset = eintr_off + m->offset + (first_page * m->pgsz);
+		got=m->pread_cb(m->handle, pptr, readsz, target_offset);
 
 		if(got < 0 && errno == EINTR)
 		    continue;
@@ -432,10 +435,13 @@ static int fmap_readpage(fmap_t *m, unsigned int first_page, unsigned int count,
 		    continue;
 		}
 
-		if(got <0)
-		    cli_errmsg("fmap_readpage: pread error: %s\n", cli_strerror(errno, err, sizeof(err)));
-		else
-		    cli_warnmsg("fmap_readpage: pread fail: asked for %lu bytes @ offset %lu, got %lu\n", (long unsigned int)readsz, (long unsigned int)(eintr_off + m->offset + first_page * m->pgsz), (long unsigned int)got);
+		if(got < 0) {
+		    cli_strerror(errno, errtxt, sizeof(errtxt));
+		    cli_errmsg("fmap_readpage: pread error: %s\n", errtxt);
+		}
+		else {
+		    cli_warnmsg("fmap_readpage: pread fail: asked for %lu bytes @ offset %lu, got %lu\n", (long unsigned int)readsz, (long unsigned int)target_offset, (long unsigned int)got);
+		}
 		return 1;
 	    }
 
@@ -520,6 +526,7 @@ static void handle_unneed_off(fmap_t *m, size_t at, size_t len) {
 	return;
     }
 
+    at += m->nested_offset;
     if(!CLI_ISCONTAINED(0, m->real_len, at, len)) {
 	cli_warnmsg("fmap: attempted oof unneed\n");
 	return;
@@ -538,7 +545,8 @@ static void unmap_mmap(fmap_t *m)
 #ifdef ANONYMOUS_MAP
     size_t len = m->pages * m->pgsz + m->hdrsz;
     fmap_lock;
-    munmap((void *)m, len);
+    if (munmap((void *)m, len) == -1) /* munmap() failed */
+        cli_warnmsg("funmap: unable to unmap memory segment at address: %p with length: %d\n", (void *)m, len);
     fmap_unlock;
 #endif
 }
@@ -639,8 +647,6 @@ static void mem_unneed_off(fmap_t *m, size_t at, size_t len);
 static const void *mem_need_offstr(fmap_t *m, size_t at, size_t len_hint);
 static const void *mem_gets(fmap_t *m, char *dst, size_t *at, size_t max_len);
 
-static void unmap_none(fmap_t *m) {}
-
 extern cl_fmap_t *cl_fmap_open_memory(const void *start, size_t len)
 {
     int pgsz = cli_getpagesize();
@@ -664,6 +670,7 @@ extern cl_fmap_t *cl_fmap_open_memory(const void *start, size_t len)
 
 
 static const void *mem_need(fmap_t *m, size_t at, size_t len, int lock) { /* WIN32 */
+    UNUSEDPARAM(lock);
     if(!len) {
 	return NULL;
     }
@@ -675,7 +682,12 @@ static const void *mem_need(fmap_t *m, size_t at, size_t len, int lock) { /* WIN
     return (void *)((char *)m->data + at);
 }
 
-static void mem_unneed_off(fmap_t *m, size_t at, size_t len) {}
+static void mem_unneed_off(fmap_t *m, size_t at, size_t len)
+{
+    UNUSEDPARAM(m);
+    UNUSEDPARAM(at);
+    UNUSEDPARAM(len);
+}
 
 static const void *mem_need_offstr(fmap_t *m, size_t at, size_t len_hint) {
     char *ptr = (char *)m->data + at;
@@ -728,9 +740,47 @@ static inline unsigned int fmap_which_page(fmap_t *m, size_t at) {
     return at / m->pgsz;
 }
 
+int fmap_dump_to_file(fmap_t *map, const char *tmpdir, char **outname, int *outfd)
+{
+    char *tmpname;
+    int tmpfd, ret;
+    size_t pos = 0, len;
+
+    cli_dbgmsg("fmap_dump_to_file: dumping fmap not backed by file...\n");
+    ret = cli_gentempfd(tmpdir, &tmpname, &tmpfd);
+    if(ret != CL_SUCCESS) {
+        cli_dbgmsg("fmap_dump_to_file: failed to generate temporary file.\n");
+        return ret;
+    }
+
+    do {
+        const char *b;
+        len = 0;
+        b = fmap_need_off_once_len(map, pos, BUFSIZ, &len);
+        pos += len;
+        if(b && (len > 0)) {
+            if ((size_t)cli_writen(tmpfd, b, len) != len) {
+                cli_warnmsg("fmap_dump_to_file: write failed to %s!\n", tmpname);
+                close(tmpfd);
+                unlink(tmpname);
+                free(tmpname);
+                return CL_EWRITE;
+            }
+        }
+    } while (len > 0);
+
+    if(lseek(tmpfd, 0, SEEK_SET) == -1) {
+        cli_dbgmsg("fmap_dump_to_file: lseek failed\n");
+    }
+
+    *outname = tmpname;
+    *outfd = tmpfd;
+    return CL_SUCCESS;
+}
+
 int fmap_fd(fmap_t *m)
 {
-    int fd, ret;
+    int fd;
     if (!m->handle_is_fd)
 	return -1;
     fd = (int)(ssize_t)m->handle;

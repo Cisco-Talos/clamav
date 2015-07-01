@@ -65,7 +65,8 @@ enum CLAM_SCAN_OPTIONS {
     CLAM_OPTION_SCAN_PE,	/* Enable/disable scanning of archive PE (aka windows) executables */
     CLAM_OPTION_SCAN_ALGORITHMIC, /* Enable/disable scanning for certain viruses and exploits */
     CLAM_OPTION_SCAN_ELF,	/* Enable/disable scanning of archive ELF (aka linux) executables */ /* FIXME: is this needed */
-    CLAM_OPTION_SCAN_PDF	/* Enable/disable scanning of Adobe PDF files */
+    CLAM_OPTION_SCAN_PDF,	/* Enable/disable scanning of Adobe PDF files */
+    CLAM_OPTION_SCAN_SWF	/* Enable/disable scanning of Adobe Flash files */
 };
 /* NOTE: by default (i.e. before calling Scan_SetOption) ALL the options are ENABLED! */
 
@@ -331,6 +332,12 @@ CLAMAPI const wchar_t * Scan_GetErrorMsg(int errorCode);
  * INPUT @param bLoadMinDefs : full or minimal defininition selector
  */
 CLAMAPI void Scan_ReloadDatabase(BOOL bLoadMinDefs);
+
+/*
+ * Flush internal whitelist cache
+ * Returns TRUE on success and FALSE on failure to re-initialize cache
+ */
+CLAMAPI BOOL Scan_FlushCache();
 
 #ifdef __cplusplus
 }; /* extern "C" */

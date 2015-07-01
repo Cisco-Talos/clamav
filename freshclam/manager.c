@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2006 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2013 Tomasz Kojm <tkojm@clamav.net>
  *  HTTP/1.1 compliance by Arkadiusz Miskiewicz <misiek@pld.org.pl>
  *  Proxy support by Nigel Horne <njh@bandsman.co.uk>
  *  Proxy authorization support by Gernot Tenchio <g.tenchio@telco-tech.de>
@@ -30,7 +30,6 @@
  * fails on Solaris because it would require a c99 compiler,
  * 500 fails completely on Solaris, and FreeBSD, and w/o _XOPEN_SOURCE
  * strptime is not defined on Linux */
-#define _GNU_SOURCE
 #define __EXTENSIONS
 
 #include <stdio.h>
@@ -63,6 +62,7 @@
 
 #include "target.h"
 
+#include "freshclamcodes.h"
 #include "manager.h"
 #include "notify.h"
 #include "dns.h"
@@ -115,6 +115,28 @@ ghbn_err (int err)              /* hstrerror() */
 #endif
 
 static int
+textrecordfield (const char * dbname)
+{
+    if (!strcmp (dbname, "main"))
+    {
+        return 1;
+    }
+    else if (!strcmp (dbname, "daily"))
+    {
+        return 2;
+    }
+    else if (!strcmp (dbname, "bytecode"))
+    {
+        return 7;
+    }
+    else if (!strcmp (dbname, "safebrowsing"))
+    {
+        return 6;
+    }
+    return 0;
+}
+
+static int
 getclientsock (const char *localip, int prot)
 {
     int socketfd = -1;
@@ -127,7 +149,7 @@ getclientsock (const char *localip, int prot)
         socketfd = socket (AF_INET, SOCK_STREAM, 0);
     if (socketfd < 0)
     {
-        logg ("!Can't create new socket\n");
+        logg ("!Can't create new socket: %s\n", strerror(errno));
         return -1;
     }
 
@@ -148,7 +170,7 @@ getclientsock (const char *localip, int prot)
         {
             char ipaddr[46];
 
-            if (bind (socketfd, res->ai_addr, res->ai_addrlen) != 0)
+            if (bind (socketfd, res->ai_addr, (socklen_t)res->ai_addrlen) != 0)
             {
                 logg ("!Could not bind to local ip address '%s': %s\n",
                       localip, strerror (errno));
@@ -191,7 +213,7 @@ getclientsock (const char *localip, int prot)
             client.sin_addr = *(struct in_addr *) he->h_addr_list[0];
             if (bind
                 (socketfd, (struct sockaddr *) &client,
-                 sizeof (struct sockaddr_in)) != 0)
+                 (socklen_t)sizeof (struct sockaddr_in)) != 0)
             {
                 logg ("!Could not bind to local ip address '%s': %s\n",
                       localip, strerror (errno));
@@ -606,238 +628,6 @@ proxyauth (const char *user, const char *pass)
     return auth;
 }
 
-#if BUILD_CLAMD
-int
-submitstats (const char *clamdcfg, const struct optstruct *opts)
-{
-    int sd, clamsockd, bread, cnt, ret;
-    char post[SUBMIT_MIN_ENTRIES * 256 + 512];
-    char query[SUBMIT_MIN_ENTRIES * 256];
-    char uastr[128], *line;
-    char *pt, *auth = NULL;
-    const char *country = NULL, *user, *proxy = NULL, *hostid = NULL;
-    const struct optstruct *opt;
-    unsigned int qcnt, entries, submitted = 0, permfail = 0, port = 0;
-    struct RCVLN rcv;
-    const char *tokens[5];
-
-
-    if ((opt = optget (opts, "DetectionStatsCountry"))->enabled)
-    {
-        if (strlen (opt->strarg) != 2 || !isalpha (opt->strarg[0])
-            || !isalpha (opt->strarg[1]))
-        {
-            logg ("!SubmitDetectionStats: DetectionStatsCountry requires a two-letter country code\n");
-            return 56;
-        }
-        country = opt->strarg;
-    }
-
-    if ((opt = optget (opts, "DetectionStatsHostID"))->enabled)
-    {
-        if (strlen (opt->strarg) != 32)
-        {
-            logg ("!SubmitDetectionStats: The unique ID must be 32 characters long\n");
-            return 56;
-        }
-        hostid = opt->strarg;
-    }
-
-    if ((opt = optget (opts, "HTTPUserAgent"))->enabled)
-        strncpy (uastr, opt->strarg, sizeof (uastr));
-    else
-        snprintf (uastr, sizeof (uastr),
-                  PACKAGE "/%s (OS: " TARGET_OS_TYPE ", ARCH: "
-                  TARGET_ARCH_TYPE ", CPU: " TARGET_CPU_TYPE "):%s:%s",
-                  get_version (), country ? country : "",
-                  hostid ? hostid : "");
-    uastr[sizeof (uastr) - 1] = 0;
-
-    if ((opt = optget (opts, "HTTPProxyServer"))->enabled)
-    {
-        proxy = opt->strarg;
-        if (!strncasecmp (proxy, "http://", 7))
-            proxy += 7;
-
-        if ((opt = optget (opts, "HTTPProxyUsername"))->enabled)
-        {
-            user = opt->strarg;
-            if (!(opt = optget (opts, "HTTPProxyPassword"))->enabled)
-            {
-                logg ("!SubmitDetectionStats: HTTPProxyUsername requires HTTPProxyPassword\n");
-                return 56;
-            }
-            auth = proxyauth (user, opt->strarg);
-            if (!auth)
-                return 56;
-        }
-
-        if ((opt = optget (opts, "HTTPProxyPort"))->enabled)
-            port = opt->numarg;
-
-        logg ("*Connecting via %s\n", proxy);
-    }
-
-    if ((clamsockd = clamd_connect (clamdcfg, "SubmitDetectionStats")) < 0)
-        return 52;
-
-    recvlninit (&rcv, clamsockd);
-    if (sendln (clamsockd, "zDETSTATS", 10))
-    {
-        closesocket (clamsockd);
-        return 52;
-    }
-
-    ret = 0;
-    memset (query, 0, sizeof (query));
-    qcnt = 0;
-    entries = 0;
-    while (recvln (&rcv, &line, NULL) > 0)
-    {
-        if (cli_strtokenize (line, ':', 5, tokens) != 5)
-        {
-            logg ("!SubmitDetectionStats: Invalid data format\n");
-            ret = 52;
-            break;
-        }
-
-        qcnt +=
-            snprintf (&query[qcnt], sizeof (query) - qcnt,
-                      "ts[]=%s&fname[]=%s&virus[]=%s(%s:%s)&", tokens[0],
-                      tokens[4], tokens[3], tokens[1], tokens[2]);
-        entries++;
-
-        if (entries == SUBMIT_MIN_ENTRIES)
-        {
-            sd = wwwconnect ("stats.clamav.net", proxy, port, NULL,
-                             optget (opts, "LocalIPAddress")->strarg,
-                             optget (opts, "ConnectTimeout")->numarg, NULL, 0,
-                             0, 1);
-            if (sd < 0)
-            {
-                logg ("!SubmitDetectionStats: Can't connect to server\n");
-                ret = 52;
-                break;
-            }
-            query[sizeof (query) - 1] = 0;
-            if (mdprintf (sd,
-                          "POST http://stats.clamav.net/submit.php HTTP/1.0\r\n"
-                          "Host: stats.clamav.net\r\n%s%s%s%s"
-                          "Content-Type: application/x-www-form-urlencoded\r\n"
-                          "User-Agent: %s\r\n"
-                          "Content-Length: %u\r\n\r\n"
-                          "%s",
-                          auth ? auth : "", hostid ? "X-HostID: " : "",
-                          hostid ? hostid : "", hostid ? "\r\n" : "", uastr,
-                          (unsigned int) strlen (query), query) < 0)
-            {
-                logg ("!SubmitDetectionStats: Can't write to socket\n");
-                ret = 52;
-                closesocket (sd);
-                break;
-            }
-
-            pt = post;
-            cnt = sizeof (post) - 1;
-#ifdef SO_ERROR
-            while ((bread =
-                    wait_recv (sd, pt, cnt, 0,
-                               optget (opts, "ReceiveTimeout")->numarg)) > 0)
-            {
-#else
-            while ((bread = recv (sd, pt, cnt, 0)) > 0)
-            {
-#endif
-                pt += bread;
-                cnt -= bread;
-                if (cnt <= 0)
-                    break;
-            }
-            *pt = 0;
-            closesocket (sd);
-
-            if (bread < 0)
-            {
-                logg ("!SubmitDetectionStats: Can't read from socket\n");
-                ret = 52;
-                break;
-            }
-
-            if (strstr (post, "SUBMIT_OK"))
-            {
-                submitted += entries;
-                if (submitted + SUBMIT_MIN_ENTRIES > SUBMIT_MAX_ENTRIES)
-                    break;
-                qcnt = 0;
-                entries = 0;
-                memset (query, 0, sizeof (query));
-                continue;
-            }
-
-            ret = 52;
-            if ((pt = strstr (post, "SUBMIT_PERMANENT_FAILURE")))
-            {
-                if (!submitted)
-                {
-                    permfail = 1;
-                    if ((pt + 32 <= post + sizeof (post)) && pt[24] == ':')
-                        logg ("!SubmitDetectionStats: Remote server reported permanent failure: %s\n", &pt[25]);
-                    else
-                        logg ("!SubmitDetectionStats: Remote server reported permanent failure\n");
-                }
-            }
-            else if ((pt = strstr (post, "SUBMIT_TEMPORARY_FAILURE")))
-            {
-                if (!submitted)
-                {
-                    if ((pt + 32 <= post + sizeof (post)) && pt[24] == ':')
-                        logg ("!SubmitDetectionStats: Remote server reported temporary failure: %s\n", &pt[25]);
-                    else
-                        logg ("!SubmitDetectionStats: Remote server reported temporary failure\n");
-                }
-            }
-            else
-            {
-                if (!submitted)
-                    logg ("!SubmitDetectionStats: Incorrect answer from server\n");
-            }
-
-            break;
-        }
-    }
-    closesocket (clamsockd);
-    if (auth)
-        free (auth);
-
-    if (ret == 0)
-    {
-        if (!submitted)
-        {
-            logg ("SubmitDetectionStats: Not enough recent data for submission\n");
-        }
-        else
-        {
-            logg ("SubmitDetectionStats: Submitted %u records\n", submitted);
-            if ((clamsockd =
-                 clamd_connect (clamdcfg, "SubmitDetectionStats")) != -1)
-            {
-                sendln (clamsockd, "DETSTATSCLEAR", 14);
-                recv (clamsockd, query, sizeof (query), 0);
-                closesocket (clamsockd);
-            }
-        }
-    }
-    return ret;
-}
-#else
-int
-submitstats (const char *clamdcfg, const struct optstruct *opts)
-{
-    logg ("clamd not built, no statistics");
-    return 52;
-}
-#endif
-
 static int
 Rfc2822DateTime (char *buf, time_t mtime)
 {
@@ -1091,6 +881,10 @@ getfile_mirman (const char *srcfile, const char *destfile,
     char *remotename = NULL, *authorization = NULL, *headerline;
     const char *rotation = "|/-\\", *fname;
 
+    UNUSEDPARAM(localip);
+    UNUSEDPARAM(port);
+    UNUSEDPARAM(ctimeout);
+    UNUSEDPARAM(can_whitelist);
 
     if (proxy)
     {
@@ -1098,7 +892,7 @@ getfile_mirman (const char *srcfile, const char *destfile,
         if (!remotename)
         {
             logg ("!getfile: Can't allocate memory for 'remotename'\n");
-            return 75;          /* FIXME */
+            return FCE_MEM;
         }
         sprintf (remotename, "http://%s", hostname);
 
@@ -1108,7 +902,7 @@ getfile_mirman (const char *srcfile, const char *destfile,
             if (!authorization)
             {
                 free (remotename);
-                return 75;      /* FIXME */
+                return FCE_MEM;
             }
         }
     }
@@ -1152,7 +946,7 @@ getfile_mirman (const char *srcfile, const char *destfile,
     if (send (sd, cmd, strlen (cmd), 0) < 0)
     {
         logg ("%cgetfile: Can't write to socket\n", logerr ? '!' : '^');
-        return 52;
+        return FCE_CONNECTION;
     }
 
     /* read http headers */
@@ -1172,7 +966,7 @@ getfile_mirman (const char *srcfile, const char *destfile,
             logg ("%cgetfile: Error while reading database from %s (IP: %s): %s\n", logerr ? '!' : '^', hostname, ipaddr, strerror (errno));
             if (mdat)
                 mirman_update (mdat->currip, mdat->af, mdat, 1);
-            return 52;
+            return FCE_CONNECTION;
         }
 
         if (i > 2 && *ch == '\n' && *(ch - 1) == '\r' && *(ch - 2) == '\n'
@@ -1195,7 +989,7 @@ getfile_mirman (const char *srcfile, const char *destfile,
               ipaddr);
         if (mdat)
             mirman_update (mdat->currip, mdat->af, mdat, 2);
-        return 58;
+        return FCE_FAILEDGET;
     }
 
     /* If-Modified-Since */
@@ -1203,7 +997,7 @@ getfile_mirman (const char *srcfile, const char *destfile,
     {
         if (mdat)
             mirman_update (mdat->currip, mdat->af, mdat, 0);
-        return 1;
+        return FC_UPTODATE;
     }
 
     if (!strstr (buffer, "HTTP/1.1 200") && !strstr (buffer, "HTTP/1.0 200")
@@ -1214,7 +1008,7 @@ getfile_mirman (const char *srcfile, const char *destfile,
               logerr ? '!' : '^', ipaddr);
         if (mdat)
             mirman_update (mdat->currip, mdat->af, mdat, 1);
-        return 58;
+        return FCE_FAILEDGET;
     }
 
     /* get size of resource */
@@ -1247,7 +1041,7 @@ getfile_mirman (const char *srcfile, const char *destfile,
             logg ("!getfile: Can't create new file %s in the current directory\n", destfile);
 
         logg ("Hint: The database directory must be writable for UID %d or GID %d\n", getuid (), getgid ());
-        return 57;
+        return FCE_DBDIRACCESS;
     }
 
     if ((fname = strrchr (srcfile, '/')))
@@ -1267,14 +1061,18 @@ getfile_mirman (const char *srcfile, const char *destfile,
             logg ("getfile: Can't write %d bytes to %s\n", bread, destfile);
             close (fd);
             unlink (destfile);
-            return 57;          /* FIXME */
+            return FCE_DBDIRACCESS;
         }
 
         totaldownloaded += bread;
         if (totalsize > 0)
             percentage = (int) (100 * (float) totaldownloaded / totalsize);
 
+#ifdef HAVE_UNISTD_H
+        if (!mprintf_quiet && isatty(fileno(stdout)))
+#else
         if (!mprintf_quiet)
+#endif
         {
             if (totalsize > 0)
             {
@@ -1297,11 +1095,11 @@ getfile_mirman (const char *srcfile, const char *destfile,
               logerr ? '!' : '^', strerror (errno), ipaddr);
         if (mdat)
             mirman_update (mdat->currip, mdat->af, mdat, 2);
-        return 52;
+        return FCE_CONNECTION;
     }
 
     if (!totaldownloaded)
-        return 53;
+        return FCE_EMPTYFILE;
 
     if (totalsize > 0)
         logg ("Downloading %s [100%%]\n", fname);
@@ -1324,6 +1122,8 @@ getfile (const char *srcfile, const char *destfile, const char *hostname,
     int ret, sd;
     char ipaddr[46];
 
+    UNUSEDPARAM(opts);
+
     memset (ipaddr, 0, sizeof (ipaddr));
     if (ip && ip[0])            /* use ip to connect */
         sd = wwwconnect (ip, proxy, port, ipaddr, localip, ctimeout, mdat,
@@ -1333,7 +1133,7 @@ getfile (const char *srcfile, const char *destfile, const char *hostname,
                          mdat, logerr, can_whitelist, attempt);
 
     if (sd < 0)
-        return 52;
+        return FCE_CONNECTION;
 
     if (mdat)
     {
@@ -1385,14 +1185,14 @@ getcvd (const char *cvdfile, const char *newfile, const char *hostname,
     {
         logg ("!Verification: %s\n", cl_strerror (ret));
         unlink (newfile);
-        return 54;
+        return FCE_BADCVD;
     }
 
     if (!(cvd = cl_cvdhead (newfile)))
     {
         logg ("!Can't read CVD header of new %s database.\n", cvdfile);
         unlink (newfile);
-        return 54;
+        return FCE_BADCVD;
     }
 
     if (cvd->version < newver)
@@ -1401,7 +1201,7 @@ getcvd (const char *cvdfile, const char *newfile, const char *hostname,
         mirman_update (mdat->currip, mdat->af, mdat, 2);
         cl_cvdfree (cvd);
         unlink (newfile);
-        return 59;
+        return FCE_MIRRORNOTSYNC;
     }
 
     cl_cvdfree (cvd);
@@ -1413,13 +1213,21 @@ chdir_tmp (const char *dbname, const char *tmpdir)
 {
     char cvdfile[32];
 
-
     if (access (tmpdir, R_OK | W_OK) == -1)
     {
-        sprintf (cvdfile, "%s.cvd", dbname);
+        int ret;
+        ret = snprintf (cvdfile, sizeof(cvdfile), "%s.cvd", dbname);
+        if (ret >= sizeof(cvdfile) || ret == -1) {
+            logg ("!chdir_tmp: dbname parameter value too long to create cvd file name: %s\n", dbname);
+            return -1;
+        }
         if (access (cvdfile, R_OK) == -1)
         {
-            sprintf (cvdfile, "%s.cld", dbname);
+            ret = snprintf (cvdfile, sizeof(cvdfile), "%s.cld", dbname);
+            if (ret >= sizeof(cvdfile) || ret == -1) {
+                logg ("!chdir_tmp: dbname parameter value too long to create cld file name: %s\n", dbname);
+                return -1;
+            }
             if (access (cvdfile, R_OK) == -1)
             {
                 logg ("!chdir_tmp: Can't access local %s database\n", dbname);
@@ -1465,13 +1273,17 @@ getpatch (const char *dbname, const char *tmpdir, int version,
     if (!getcwd (olddir, sizeof (olddir)))
     {
         logg ("!getpatch: Can't get path of current working directory\n");
-        return 50;              /* FIXME */
+        return FCE_DIRECTORY;
     }
 
     if (chdir_tmp (dbname, tmpdir) == -1)
-        return 50;
+        return FCE_DIRECTORY;
 
     tempname = cli_gentemp (".");
+    if(!tempname) {
+        CHDIR_ERR (olddir);
+        return FCE_MEM;
+    }
     snprintf (patch, sizeof (patch), "%s-%d.cdiff", dbname, version);
 
     logg ("*Retrieving http://%s/%s\n", hostname, patch);
@@ -1480,7 +1292,7 @@ getpatch (const char *dbname, const char *tmpdir, int version,
                   pass, uas, ctimeout, rtimeout, mdat, logerr, can_whitelist,
                   NULL, opts, attempt)))
     {
-        if (ret == 53)
+        if (ret == FCE_EMPTYFILE)
             logg ("Empty script %s, need to download entire database\n",
                   patch);
         else
@@ -1498,7 +1310,7 @@ getpatch (const char *dbname, const char *tmpdir, int version,
         unlink (tempname);
         free (tempname);
         CHDIR_ERR (olddir);
-        return 55;
+        return FCE_FILE;
     }
 
     if (cdiff_apply (fd, 1) == -1)
@@ -1508,7 +1320,7 @@ getpatch (const char *dbname, const char *tmpdir, int version,
         unlink (tempname);
         free (tempname);
         CHDIR_ERR (olddir);
-        return 70;              /* FIXME */
+        return FCE_FAILEDUPDATE;
     }
 
     close (fd);
@@ -1517,7 +1329,7 @@ getpatch (const char *dbname, const char *tmpdir, int version,
     if (chdir (olddir) == -1)
     {
         logg ("!getpatch: Can't chdir to %s\n", olddir);
-        return 50;              /* FIXME */
+        return FCE_DIRECTORY;
     }
     return 0;
 }
@@ -1747,17 +1559,18 @@ test_database (const char *newfile, const char *newdb, int bytecode)
     logg ("*Loading signatures from %s\n", newdb);
     if (!(engine = cl_engine_new ()))
     {
-        return 55;
+        return FCE_TESTFAIL;
     }
+    cl_engine_set_clcb_stats_submit(engine, NULL);
 
     if ((ret =
          cl_load (newfile, engine, &newsigs,
                   CL_DB_PHISHING | CL_DB_PHISHING_URLS | CL_DB_BYTECODE |
-                  CL_DB_PUA)) != CL_SUCCESS)
+                  CL_DB_PUA | CL_DB_ENHANCED)) != CL_SUCCESS)
     {
         logg ("!Failed to load new database: %s\n", cl_strerror (ret));
         cl_engine_free (engine);
-        return 55;
+        return FCE_TESTFAIL;
     }
     if (bytecode
         && (ret =
@@ -1768,7 +1581,7 @@ test_database (const char *newfile, const char *newdb, int bytecode)
     {
         logg ("!Failed to compile/load bytecode: %s\n", cl_strerror (ret));
         cl_engine_free (engine);
-        return 55;
+        return FCE_TESTFAIL;
     }
     logg ("*Properly loaded %u signatures from new %s\n", newsigs, newdb);
     if (engine->domainlist_matcher
@@ -1799,7 +1612,8 @@ test_database_wrap (const char *file, const char *newdb, int bytecode)
     {
     case 0:
         close (pipefd[0]);
-        dup2 (pipefd[1], 2);
+        if (dup2 (pipefd[1], 2) == -1)
+            logg("^dup2() failed: %s\n", strerror(errno));
         exit (test_database (file, newdb, bytecode));
     case -1:
         close (pipefd[0]);
@@ -1853,17 +1667,17 @@ test_database_wrap (const char *file, const char *newdb, int bytecode)
         if (WIFSIGNALED (status))
         {
             logg ("!Database load killed by signal %d\n", WTERMSIG (status));
-            return 55;
+            return FCE_TESTFAIL;
         }
         logg ("^Unknown status from wait: %d\n", status);
-        return 55;
+        return FCE_TESTFAIL;
     }
 }
 #else
 static int
 test_database_wrap (const char *file, const char *newdb, int bytecode)
 {
-    int ret = 55;
+    int ret = FCE_TESTFAIL;
     __try
     {
         ret = test_database (file, newdb, bytecode);
@@ -2019,7 +1833,7 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
     struct cl_cvd *current, *remote;
     const struct optstruct *opt;
     unsigned int nodb = 0, currver = 0, newver = 0, port = 0, i, j;
-    int ret, ims = -1, hascld = 0;
+    int ret, ims = -1, hascld = 0, field = 0;
     char *pt, cvdfile[32], cldfile[32], localname[32], *tmpdir =
         NULL, *newfile, *newfile2, newdb[32];
     char extradbinfo[256], *extradnsreply = NULL, squery[256];
@@ -2040,6 +1854,11 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
     snprintf (cvdfile, sizeof (cvdfile), "%s.cvd", dbname);
     snprintf (cldfile, sizeof (cldfile), "%s.cld", dbname);
 
+    if (!extra)
+    {
+        field = textrecordfield(dbname);
+    }
+
     if (!(current = currentdb (dbname, localname)))
     {
         nodb = 1;
@@ -2051,32 +1870,14 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
 
     if (!nodb && !extra && dnsreply)
     {
-        int field = 0;
-
-        if (!strcmp (dbname, "main"))
-        {
-            field = 1;
-        }
-        else if (!strcmp (dbname, "daily"))
-        {
-            field = 2;
-        }
-        else if (!strcmp (dbname, "safebrowsing"))
-        {
-            field = 6;
-        }
-        else if (!strcmp (dbname, "bytecode"))
-        {
-            field = 7;
-        }
-        else
+        if (!field)
         {
             logg ("!updatedb: Unknown database name (%s) passed.\n", dbname);
             cl_cvdfree (current);
-            return 70;
+            return FCE_FAILEDUPDATE;
         }
 
-        if (field && (pt = cli_strtok (dnsreply, field, ":")))
+        if ((pt = cli_strtok (dnsreply, field, ":")))
         {
             if (!cli_isnumber (pt))
             {
@@ -2174,7 +1975,7 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
                 logg ("HTTPProxyUsername requires HTTPProxyPassword\n");
                 if (current)
                     cl_cvdfree (current);
-                return 56;
+                return FCE_CONFIG;
             }
         }
 
@@ -2229,7 +2030,7 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
             }
 #endif
             cl_cvdfree (current);
-            return 1;
+            return FC_UPTODATE;
         }
 
         if (!remote)
@@ -2246,7 +2047,7 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
             }
 #endif
             cl_cvdfree (current);
-            return 58;
+            return FCE_FAILEDGET;
         }
 
         newver = remote->version;
@@ -2263,12 +2064,12 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
             logg ("^Current functionality level = %d, recommended = %d\n",
                   flevel, current->fl);
             logg ("Please check if ClamAV tools are linked against the proper version of libclamav\n");
-            logg ("DON'T PANIC! Read http://www.clamav.net/support/faq\n");
+            logg ("DON'T PANIC! Read http://www.clamav.net/doc/install.html\n");
         }
 
         *signo += current->sigs;
         cl_cvdfree (current);
-        return 1;
+        return FC_UPTODATE;
     }
 
     if (current)
@@ -2281,6 +2082,9 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
         nodb = 1;
 
     newfile = cli_gentemp (updtmpdir);
+    if(!newfile)
+        return FCE_MEM;
+
     if (nodb)
     {
         if (optget (opts, "PrivateMirror")->enabled)
@@ -2298,10 +2102,12 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
                             mdat, logerr, can_whitelist, opts, attempt);
         }
         else
+        {
             ret =
                 getcvd (cvdfile, newfile, hostname, ip, localip, proxy, port,
                         user, pass, uas, newver, ctimeout, rtimeout, mdat,
                         logerr, can_whitelist, opts, attempt);
+        }
 
         if (ret)
         {
@@ -2326,6 +2132,11 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
         ret = 0;
 
         tmpdir = cli_gentemp (updtmpdir);
+	if(!tmpdir){
+	    free(newfile);
+	    return FCE_MEM;
+	}    
+
         maxattempts = optget (opts, "MaxAttempts")->numarg;
         for (i = currver + 1; i <= newver; i++)
         {
@@ -2339,7 +2150,7 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
                               port, user, pass, uas, ctimeout, rtimeout, mdat,
                               llogerr, can_whitelist, opts,
                               attempt == 1 ? j : attempt);
-                if (ret == 52 || ret == 58)
+                if (ret == FCE_CONNECTION || ret == FCE_FAILEDGET)
                 {
 #ifdef HAVE_RESOLV_H
                     if (mirror_stats && strlen (ip))
@@ -2366,7 +2177,7 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
         {
             cli_rmdirs (tmpdir);
             free (tmpdir);
-            if (ret != 53)
+            if (ret != FCE_EMPTYFILE)
                 logg ("^Incremental update failed, trying to download %s\n",
                       cvdfile);
             mirman_whitelist (mdat, 2);
@@ -2400,7 +2211,7 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
                 cli_rmdirs (tmpdir);
                 free (tmpdir);
                 free (newfile);
-                return 70;      /* FIXME */
+                return FCE_FAILEDUPDATE;
             }
             snprintf (newdb, sizeof (newdb), "%s.cld", dbname);
             cli_rmdirs (tmpdir);
@@ -2413,7 +2224,7 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
         logg ("!Can't parse new database %s\n", newfile);
         unlink (newfile);
         free (newfile);
-        return 55;              /* FIXME */
+        return FCE_FILE;
     }
 
     if (optget (opts, "TestDatabases")->enabled && strlen (newfile) > 4)
@@ -2424,7 +2235,8 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
             logg ("!Can't allocate memory for filename!\n");
             unlink (newfile);
             free (newfile);
-            return 55;
+            cl_cvdfree(current);
+            return FCE_TESTFAIL;
         }
         newfile2[strlen (newfile2) - 4] = '.';
         newfile2[strlen (newfile2) - 3] = 'c';
@@ -2437,7 +2249,8 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
             unlink (newfile);
             free (newfile);
             free (newfile2);
-            return 57;
+            cl_cvdfree(current);
+            return FCE_DBDIRACCESS;
         }
         free (newfile);
         newfile = newfile2;
@@ -2448,7 +2261,8 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
             logg ("!Failed to load new database\n");
             unlink (newfile);
             free (newfile);
-            return 55;
+            cl_cvdfree(current);
+            return FCE_TESTFAIL;
         }
         sigchld_wait = 1;
     }
@@ -2460,7 +2274,7 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
         unlink (newfile);
         free (newfile);
         cl_cvdfree (current);
-        return 53;
+        return FCE_EMPTYFILE;
     }
 #endif
 
@@ -2471,7 +2285,7 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
         unlink (newfile);
         free (newfile);
         cl_cvdfree (current);
-        return 57;
+        return FCE_DBDIRACCESS;
     }
     free (newfile);
 
@@ -2531,17 +2345,18 @@ updatecustomdb (const char *url, int *signo, const struct optstruct *opts,
     {
         logg ("!DatabaseCustomURL: URL must be shorter than %lu\n",
               sizeof (urlcpy));
-        return 70;
+        return FCE_FAILEDUPDATE;
     }
 
     if (!strncasecmp (url, "http://", 7))
     {
         strncpy (urlcpy, url, sizeof (urlcpy));
+        urlcpy[sizeof(urlcpy)-1] = '\0';
         host = &urlcpy[7];
         if (!(pt = strchr (host, '/')))
         {
             logg ("!DatabaseCustomURL: Incorrect URL\n");
-            return 70;
+            return FCE_FAILEDUPDATE;
         }
         *pt = 0;
         rpath = &url[pt - urlcpy + 1];
@@ -2549,7 +2364,7 @@ updatecustomdb (const char *url, int *signo, const struct optstruct *opts,
         if (!dbname || strlen (dbname) < 4)
         {
             logg ("DatabaseCustomURL: Incorrect URL\n");
-            return 70;
+            return FCE_FAILEDUPDATE;
         }
 
         /* Initialize proxy settings */
@@ -2569,7 +2384,7 @@ updatecustomdb (const char *url, int *signo, const struct optstruct *opts,
                 else
                 {
                     logg ("HTTPProxyUsername requires HTTPProxyPassword\n");
-                    return 56;
+                    return FCE_CONFIG;
                 }
             }
             if ((opt = optget (opts, "HTTPProxyPort"))->enabled)
@@ -2584,7 +2399,7 @@ updatecustomdb (const char *url, int *signo, const struct optstruct *opts,
         rtimeout = optget (opts, "ReceiveTimeout")->numarg;
 
         *mtime = 0;
-        if (STAT (dbname, &sb) != -1)
+        if (CLAMSTAT (dbname, &sb) != -1)
             Rfc2822DateTime (mtime, sb.st_mtime);
 
         newfile = cli_gentemp (updtmpdir);
@@ -2597,7 +2412,7 @@ updatecustomdb (const char *url, int *signo, const struct optstruct *opts,
             logg ("%s is up to date (version: custom database)\n", dbname);
             unlink (newfile);
             free (newfile);
-            return 1;
+            return FC_UPTODATE;
         }
         else if (ret > 1)
         {
@@ -2620,12 +2435,12 @@ updatecustomdb (const char *url, int *signo, const struct optstruct *opts,
         if (!dbname || strlen (dbname++) < 5)
         {
             logg ("DatabaseCustomURL: Incorrect URL\n");
-            return 70;
+            return FCE_FAILEDUPDATE;
         }
 
         newfile = cli_gentemp (updtmpdir);
         if (!newfile)
-            return 70;
+            return FCE_FAILEDUPDATE;
 
         /* FIXME: preserve file permissions, calculate % */
         logg ("Downloading %s [  0%%]\r", dbname);
@@ -2633,14 +2448,14 @@ updatecustomdb (const char *url, int *signo, const struct optstruct *opts,
         {
             logg ("DatabaseCustomURL: Can't copy file %s into database directory\n", rpath);
             free (newfile);
-            return 70;
+            return FCE_FAILEDUPDATE;
         }
         logg ("Downloading %s [100%%]\n", dbname);
     }
     else
     {
         logg ("!DatabaseCustomURL: Not supported protocol\n");
-        return 70;
+        return FCE_FAILEDUPDATE;
     }
 
     if (optget (opts, "TestDatabases")->enabled && strlen (newfile) > 4)
@@ -2650,7 +2465,7 @@ updatecustomdb (const char *url, int *signo, const struct optstruct *opts,
         {
             unlink (newfile);
             free (newfile);
-            return 55;
+            return FCE_TESTFAIL;
         }
         sprintf (newfile2, "%s%s", newfile, dbname);
         newfile2[strlen (newfile) + strlen (dbname)] = 0;
@@ -2661,7 +2476,7 @@ updatecustomdb (const char *url, int *signo, const struct optstruct *opts,
             unlink (newfile);
             free (newfile);
             free (newfile2);
-            return 57;
+            return FCE_DBDIRACCESS;
         }
         free (newfile);
         newfile = newfile2;
@@ -2672,7 +2487,7 @@ updatecustomdb (const char *url, int *signo, const struct optstruct *opts,
             logg ("!Failed to load new database\n");
             unlink (newfile);
             free (newfile);
-            return 55;
+            return FCE_TESTFAIL;
         }
         sigchld_wait = 1;
     }
@@ -2683,7 +2498,7 @@ updatecustomdb (const char *url, int *signo, const struct optstruct *opts,
         logg ("!Can't unlink %s. Please fix the problem manually and try again.\n", dbname);
         unlink (newfile);
         free (newfile);
-        return 53;
+        return FCE_EMPTYFILE;
     }
 #endif
 
@@ -2693,7 +2508,7 @@ updatecustomdb (const char *url, int *signo, const struct optstruct *opts,
               strerror (errno));
         unlink (newfile);
         free (newfile);
-        return 57;
+        return FCE_DBDIRACCESS;
     }
     free (newfile);
 
@@ -2737,7 +2552,7 @@ downloadmanager (const struct optstruct *opts, const char *hostname,
 
     pt = cli_gentemp (dbdir);
     if (!pt)
-        return 57;
+        return FCE_DBDIRACCESS;
     strncpy (updtmpdir, pt, sizeof (updtmpdir));
     updtmpdir[sizeof (updtmpdir) - 1] = '\0';
     free (pt);
@@ -2745,7 +2560,7 @@ downloadmanager (const struct optstruct *opts, const char *hostname,
     {
         logg ("!Can't create temporary directory %s\n", updtmpdir);
         logg ("Hint: The database directory must be writable for UID %d or GID %d\n", getuid (), getgid ());
-        return 57;
+        return FCE_DBDIRACCESS;
     }
 
     time (&currtime);
@@ -2868,7 +2683,7 @@ downloadmanager (const struct optstruct *opts, const char *hostname,
                 if (!optget (opts, "DatabaseCustomURL")->enabled)
                 {
                     logg ("!--update-db=custom requires DatabaseCustomURL\n");
-                    custret = 56;
+                    custret = FCE_CONFIG;
                 }
                 free (dnsreply);
                 free (newver);
@@ -3054,7 +2869,7 @@ downloadmanager (const struct optstruct *opts, const char *hostname,
     {
         if (newver)
             free (newver);
-        return 54;
+        return FCE_BADCVD;
     }
 
     if (updated)
@@ -3111,7 +2926,7 @@ downloadmanager (const struct optstruct *opts, const char *hostname,
                     free (cmd);
                     if (newver)
                         free (newver);
-                    return 75;
+                    return FCE_MEM;
                 }
 
                 *pt = 0;

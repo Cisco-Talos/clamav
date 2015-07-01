@@ -12,13 +12,23 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <sys/mman.h>
+
+#if HAVE_LIBXML2
+#include <libxml/parser.h>
+#endif
+
 #include "../libclamav/clamav.h"
 #include "../libclamav/others.h"
 #include "../libclamav/matcher.h"
 #include "../libclamav/version.h"
 #include "../libclamav/dsig.h"
-#include "../libclamav/sha256.h"
+#include "../libclamav/fpu.h"
 #include "checks.h"
+
+static int fpu_words  = FPU_ENDIAN_INITME;
+#define NO_FPU_ENDIAN (fpu_words == FPU_ENDIAN_UNKNOWN)
+#define EA06_SCAN strstr(file, "clam.ea06.exe")
+#define FALSE_NEGATIVE (EA06_SCAN && NO_FPU_ENDIAN)
 
 /* extern void cl_free(struct cl_engine *engine); */
 START_TEST (test_cl_free)
@@ -164,8 +174,10 @@ START_TEST (test_cl_scandesc)
     ret = cl_scandesc(fd, &virname, &scanned, g_engine, CL_SCAN_STDOPT);
     cli_dbgmsg("scan end (scandesc) %s\n", file);
 
-    fail_unless_fmt(ret == CL_VIRUS, "cl_scandesc failed for %s: %s", file, cl_strerror(ret));
-    fail_unless_fmt(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", virname);
+    if (!FALSE_NEGATIVE) {
+      fail_unless_fmt(ret == CL_VIRUS, "cl_scandesc failed for %s: %s", file, cl_strerror(ret));
+      fail_unless_fmt(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", virname);
+    }
     close(fd);
 }
 END_TEST
@@ -182,12 +194,15 @@ START_TEST (test_cl_scandesc_allscan)
     int fd = get_test_file(_i, file, sizeof(file), &size);
     cli_dbgmsg("scanning (scandesc) %s\n", file);
     ret = cl_scandesc(fd, virpp, &scanned, g_engine, CL_SCAN_ALLMATCHES+CL_SCAN_STDOPT);
-    virpp = (const char **)*virpp; /* allscan api hack */
+
     cli_dbgmsg("scan end (scandesc) %s\n", file);
 
-    fail_unless_fmt(ret == CL_VIRUS, "cl_scandesc_allscan failed for %s: %s", file, cl_strerror(ret));
-    fail_unless_fmt(*virpp && !strcmp(*virpp, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", *virpp);
-    free((void *)virpp);
+    if (!FALSE_NEGATIVE) {
+      fail_unless_fmt(ret == CL_VIRUS, "cl_scandesc_allscan failed for %s: %s", file, cl_strerror(ret));
+      virpp = (const char **)*virpp; /* allscan api hack */
+      fail_unless_fmt(*virpp && !strcmp(*virpp, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", *virpp);
+      free((void *)virpp);
+    }
     close(fd);
 }
 END_TEST
@@ -208,8 +223,10 @@ START_TEST (test_cl_scanfile)
     ret = cl_scanfile(file, &virname, &scanned, g_engine, CL_SCAN_STDOPT);
     cli_dbgmsg("scan end (scanfile) %s\n", file);
 
-    fail_unless_fmt(ret == CL_VIRUS, "cl_scanfile failed for %s: %s", file, cl_strerror(ret));
-    fail_unless_fmt(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", virname);
+    if (!FALSE_NEGATIVE) {
+      fail_unless_fmt(ret == CL_VIRUS , "cl_scanfile failed for %s: %s", file, cl_strerror(ret));
+      fail_unless_fmt(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", virname);
+    }
 }
 END_TEST
 
@@ -227,12 +244,14 @@ START_TEST (test_cl_scanfile_allscan)
 
     cli_dbgmsg("scanning (scanfile_allscan) %s\n", file);
     ret = cl_scanfile(file, virpp, &scanned, g_engine, CL_SCAN_ALLMATCHES+CL_SCAN_STDOPT);
-    virpp = (const char **)*virpp; /* allscan api hack */
     cli_dbgmsg("scan end (scanfile_allscan) %s\n", file);
 
-    fail_unless_fmt(ret == CL_VIRUS, "cl_scanfile_allscan failed for %s: %s", file, cl_strerror(ret));
-    fail_unless_fmt(*virpp && !strcmp(*virpp, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", *virpp);
-    free((void *)virpp);
+    if (!FALSE_NEGATIVE) {
+      fail_unless_fmt(ret == CL_VIRUS, "cl_scanfile_allscan failed for %s: %s", file, cl_strerror(ret));
+      virpp = (const char **)*virpp; /* allscan api hack */
+      fail_unless_fmt(*virpp && !strcmp(*virpp, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", *virpp);
+      free((void *)virpp);
+    }
 }
 END_TEST
 
@@ -252,8 +271,10 @@ START_TEST (test_cl_scanfile_callback)
     ret = cl_scanfile_callback(file, &virname, &scanned, g_engine, CL_SCAN_STDOPT, NULL);
     cli_dbgmsg("scan end (scanfile_cb) %s\n", file);
 
-    fail_unless_fmt(ret == CL_VIRUS, "cl_scanfile_cb failed for %s: %s", file, cl_strerror(ret));
-    fail_unless_fmt(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", virname);
+    if (!FALSE_NEGATIVE) {
+      fail_unless_fmt(ret == CL_VIRUS, "cl_scanfile_cb failed for %s: %s", file, cl_strerror(ret));
+      fail_unless_fmt(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", virname);
+    }
 }
 END_TEST
 
@@ -272,12 +293,14 @@ START_TEST (test_cl_scanfile_callback_allscan)
     cli_dbgmsg("scanning (scanfile_cb_allscan) %s\n", file);
     /* TODO: test callbacks */
     ret = cl_scanfile_callback(file, virpp, &scanned, g_engine, CL_SCAN_ALLMATCHES+CL_SCAN_STDOPT, NULL);
-    virpp = (const char **)*virpp; /* allscan api hack */
     cli_dbgmsg("scan end (scanfile_cb_allscan) %s\n", file);
 
-    fail_unless_fmt(ret == CL_VIRUS, "cl_scanfile_cb_allscan failed for %s: %s", file, cl_strerror(ret));
-    fail_unless_fmt(*virpp && !strcmp(*virpp, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", *virpp);
-    free((void *)virpp);
+    if (!FALSE_NEGATIVE) {
+      fail_unless_fmt(ret == CL_VIRUS, "cl_scanfile_cb_allscan failed for %s: %s", file, cl_strerror(ret));
+      virpp = (const char **)*virpp; /* allscan api hack */
+      fail_unless_fmt(*virpp && !strcmp(*virpp, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", *virpp);
+      free((void *)virpp);
+    }
 }
 END_TEST
 
@@ -296,8 +319,10 @@ START_TEST (test_cl_scandesc_callback)
     ret = cl_scandesc_callback(fd, &virname, &scanned, g_engine, CL_SCAN_STDOPT, NULL);
     cli_dbgmsg("scan end (scandesc_cb) %s\n", file);
 
-    fail_unless_fmt(ret == CL_VIRUS, "cl_scanfile failed for %s: %s", file, cl_strerror(ret));
-    fail_unless_fmt(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", virname);
+    if (!FALSE_NEGATIVE) {
+      fail_unless_fmt(ret == CL_VIRUS, "cl_scanfile failed for %s: %s", file, cl_strerror(ret));
+      fail_unless_fmt(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", virname);
+    }
     close(fd);
 }
 END_TEST
@@ -316,12 +341,14 @@ START_TEST (test_cl_scandesc_callback_allscan)
     cli_dbgmsg("scanning (scandesc_cb_allscan) %s\n", file);
     /* TODO: test callbacks */
     ret = cl_scandesc_callback(fd, virpp, &scanned, g_engine, CL_SCAN_ALLMATCHES+CL_SCAN_STDOPT, NULL);
-    virpp = (const char **)*virpp; /* allscan api hack */
     cli_dbgmsg("scan end (scandesc_cb_allscan) %s\n", file);
 
-    fail_unless_fmt(ret == CL_VIRUS, "cl_scanfile_allscan failed for %s: %s", file, cl_strerror(ret));
-    fail_unless_fmt(*virpp && !strcmp(*virpp, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", *virpp);
-    free((void *)virpp);
+    if (!FALSE_NEGATIVE) {
+      fail_unless_fmt(ret == CL_VIRUS, "cl_scanfile_allscan failed for %s: %s", file, cl_strerror(ret));
+      virpp = (const char **)*virpp; /* allscan api hack */
+      fail_unless_fmt(*virpp && !strcmp(*virpp, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", *virpp);
+      free((void *)virpp);
+    }
     close(fd);
 }
 END_TEST
@@ -354,12 +381,39 @@ END_TEST
 
 static char **testfiles = NULL;
 static unsigned testfiles_n = 0;
+
 static const int expected_testfiles = 48;
+
+static unsigned skip_files(void)
+{
+    unsigned skipped = 0;
+
+    /* skip .rar files if unrar is disabled */
+    const char *s = getenv("unrar_disabled");
+    if (s && !strcmp(s, "1")) {
+        skipped += 2;
+    }
+
+    /* skip .bz2 files if bzip is disabled */
+#if HAVE_BZLIB_H
+#else
+    skipped += 2;
+#endif
+
+    /* skip [placeholder] files if xml is disabled */
+#if HAVE_LIBXML2
+#else
+    skipped += 0;
+#endif
+
+    return skipped;
+}
 
 static void init_testfiles(void)
 {
     struct dirent *dirent;
     unsigned i = 0;
+    int expect = expected_testfiles;
 
     DIR *d = opendir(OBJDIR"/../test");
     fail_unless(!!d, "opendir");
@@ -370,13 +424,16 @@ static void init_testfiles(void)
     while ((dirent = readdir(d))) {
 	if (strncmp(dirent->d_name, "clam", 4))
 	    continue;
-	i++;
+        i++;
 	testfiles = cli_realloc(testfiles, i*sizeof(*testfiles));
 	fail_unless(!!testfiles, "cli_realloc");
 	testfiles[i-1] = strdup(dirent->d_name);
     }
     testfiles_n = i;
-    fail_unless_fmt(testfiles_n == expected_testfiles, "testfiles: %d != %d", testfiles_n, expected_testfiles);
+    if (get_fpu_endian() == FPU_ENDIAN_UNKNOWN)
+        expect--;
+    expect -= skip_files();
+    fail_unless_fmt(testfiles_n == expect, "testfiles: %d != %d", testfiles_n, expect);
 
     closedir(d);
 }
@@ -421,7 +478,7 @@ static int get_test_file(int i, char *file, unsigned fsize, unsigned long *size)
     int fd;
     STATBUF st;
 
-    fail_unless(i < testfiles_n);
+    fail_unless(i < testfiles_n, "%i < %i %s", i, testfiles_n, file);
     snprintf(file, fsize, OBJDIR"/../test/%s", testfiles[i]);
 
     fd = open(file, O_RDONLY);
@@ -455,8 +512,10 @@ START_TEST (test_cl_scanmap_callback_handle)
     ret = cl_scanmap_callback(map, &virname, &scanned, g_engine, CL_SCAN_STDOPT, NULL);
     cli_dbgmsg("scan end (handle) %s\n", file);
 
-    fail_unless_fmt(ret == CL_VIRUS, "cl_scanmap_callback failed for %s: %s", file, cl_strerror(ret));
-    fail_unless_fmt(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", virname);
+    if (!FALSE_NEGATIVE) {
+      fail_unless_fmt(ret == CL_VIRUS, "cl_scanmap_callback failed for %s: %s", file, cl_strerror(ret));
+      fail_unless_fmt(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", virname);
+    }
     close(fd);
 }
 END_TEST
@@ -474,16 +533,18 @@ START_TEST (test_cl_scanmap_callback_handle_allscan)
     int fd = get_test_file(_i, file, sizeof(file), &size);
     /* intentionally use different way than scanners.c for testing */
     map = cl_fmap_open_handle(&fd, 0, size, pread_cb, 1);
-    fail_unless(!!map, "cl_fmap_open_handle");
+    fail_unless(!!map, "cl_fmap_open_handle %s");
 
     cli_dbgmsg("scanning (handle) allscan %s\n", file);
     ret = cl_scanmap_callback(map, virpp, &scanned, g_engine, CL_SCAN_ALLMATCHES+CL_SCAN_STDOPT, NULL);
-    virpp = (const char **)*virpp; /* allscan api hack */
     cli_dbgmsg("scan end (handle) allscan %s\n", file);
 
-    fail_unless_fmt(ret == CL_VIRUS, "cl_scanmap_callback_allscan failed for %s: %s", file, cl_strerror(ret));
-    fail_unless_fmt(*virpp && !strcmp(*virpp, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", *virpp);
-    free((void *)virpp);
+    if (!FALSE_NEGATIVE) {
+      fail_unless_fmt(ret == CL_VIRUS, "cl_scanmap_callback_allscan failed for %s: %s", file, cl_strerror(ret));
+      virpp = (const char **)*virpp; /* allscan api hack */
+      fail_unless_fmt(*virpp && !strcmp(*virpp, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", *virpp);
+      free((void *)virpp);
+    }
     close(fd);
 }
 END_TEST
@@ -510,8 +571,10 @@ START_TEST (test_cl_scanmap_callback_mem)
     cli_dbgmsg("scanning (mem) %s\n", file);
     ret = cl_scanmap_callback(map, &virname, &scanned, g_engine, CL_SCAN_STDOPT, NULL);
     cli_dbgmsg("scan end (mem) %s\n", file);
-    fail_unless_fmt(ret == CL_VIRUS, "cl_scanmap_callback failed for %s: %s", file, cl_strerror(ret));
-    fail_unless_fmt(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s for %s", virname, file);
+    if (!FALSE_NEGATIVE) {
+      fail_unless_fmt(ret == CL_VIRUS, "cl_scanmap_callback failed for %s: %s", file, cl_strerror(ret));
+      fail_unless_fmt(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s for %s", virname, file);
+    }
     close(fd);
     cl_fmap_close(map);
 
@@ -537,17 +600,19 @@ START_TEST (test_cl_scanmap_callback_mem_allscan)
 
     /* intentionally use different way than scanners.c for testing */
     map = cl_fmap_open_memory(mem, size);
-    fail_unless(!!map, "cl_fmap_open_mem");
+    fail_unless(!!map, "cl_fmap_open_mem %s");
 
     cli_dbgmsg("scanning (mem) allscan %s\n", file);
     ret = cl_scanmap_callback(map, virpp, &scanned, g_engine, CL_SCAN_ALLMATCHES+CL_SCAN_STDOPT, NULL);
-    virpp = (const char **)*virpp; /* allscan api hack */
     cli_dbgmsg("scan end (mem) allscan %s\n", file);
-    fail_unless_fmt(ret == CL_VIRUS, "cl_scanmap_callback failed for %s: %s", file, cl_strerror(ret));
-    fail_unless_fmt(*virpp && !strcmp(*virpp, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s for %s", *virpp, file);
+    if (!FALSE_NEGATIVE) {
+      fail_unless_fmt(ret == CL_VIRUS, "cl_scanmap_callback failed for %s: %s", file, cl_strerror(ret));
+      virpp = (const char **)*virpp; /* allscan api hack */
+      fail_unless_fmt(*virpp && !strcmp(*virpp, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s for %s", *virpp, file);
+      free((void *)virpp);
+    }
     close(fd);
     cl_fmap_close(map);
-    free((void *)virpp);
     munmap(mem, size);
 }
 END_TEST
@@ -558,6 +623,8 @@ static Suite *test_cl_suite(void)
     Suite *s = suite_create("cl_api");
     TCase *tc_cl = tcase_create("cl_dup");
     TCase *tc_cl_scan = tcase_create("cl_scan");
+    char *user_timeout = NULL;
+    int expect = expected_testfiles;
     suite_add_tcase (s, tc_cl);
     tcase_add_test(tc_cl, test_cl_free);
     tcase_add_test(tc_cl, test_cl_dup);
@@ -580,18 +647,27 @@ static Suite *test_cl_suite(void)
     suite_add_tcase(s, tc_cl_scan);
     tcase_add_checked_fixture (tc_cl_scan, engine_setup, engine_teardown);
 #ifdef CHECK_HAVE_LOOPS
-    tcase_add_loop_test(tc_cl_scan, test_cl_scandesc, 0, expected_testfiles);
-    tcase_add_loop_test(tc_cl_scan, test_cl_scandesc_allscan, 0, expected_testfiles);
-    tcase_add_loop_test(tc_cl_scan, test_cl_scanfile, 0, expected_testfiles);
-    tcase_add_loop_test(tc_cl_scan, test_cl_scanfile_allscan, 0, expected_testfiles);
-    tcase_add_loop_test(tc_cl_scan, test_cl_scandesc_callback, 0, expected_testfiles);
-    tcase_add_loop_test(tc_cl_scan, test_cl_scandesc_callback_allscan, 0, expected_testfiles);
-    tcase_add_loop_test(tc_cl_scan, test_cl_scanfile_callback, 0, expected_testfiles);
-    tcase_add_loop_test(tc_cl_scan, test_cl_scanfile_callback_allscan, 0, expected_testfiles);
-    tcase_add_loop_test(tc_cl_scan, test_cl_scanmap_callback_handle, 0, expected_testfiles);
-    tcase_add_loop_test(tc_cl_scan, test_cl_scanmap_callback_handle_allscan, 0, expected_testfiles);
-    tcase_add_loop_test(tc_cl_scan, test_cl_scanmap_callback_mem, 0, expected_testfiles);
-    tcase_add_loop_test(tc_cl_scan, test_cl_scanmap_callback_mem_allscan, 0, expected_testfiles);
+    if (get_fpu_endian() == FPU_ENDIAN_UNKNOWN)
+        expect--;
+    expect -= skip_files();
+    tcase_add_loop_test(tc_cl_scan, test_cl_scandesc, 0, expect);
+    tcase_add_loop_test(tc_cl_scan, test_cl_scandesc_allscan, 0, expect);
+    tcase_add_loop_test(tc_cl_scan, test_cl_scanfile, 0, expect);
+    tcase_add_loop_test(tc_cl_scan, test_cl_scanfile_allscan, 0, expect);
+    tcase_add_loop_test(tc_cl_scan, test_cl_scandesc_callback, 0, expect);
+    tcase_add_loop_test(tc_cl_scan, test_cl_scandesc_callback_allscan, 0, expect);
+    tcase_add_loop_test(tc_cl_scan, test_cl_scanfile_callback, 0, expect);
+    tcase_add_loop_test(tc_cl_scan, test_cl_scanfile_callback_allscan, 0, expect);
+    tcase_add_loop_test(tc_cl_scan, test_cl_scanmap_callback_handle, 0, expect);
+    tcase_add_loop_test(tc_cl_scan, test_cl_scanmap_callback_handle_allscan, 0, expect);
+    tcase_add_loop_test(tc_cl_scan, test_cl_scanmap_callback_mem, 0, expect);
+    tcase_add_loop_test(tc_cl_scan, test_cl_scanmap_callback_mem_allscan, 0, expect);
+
+    user_timeout = getenv("T");
+    if (user_timeout) {
+        int timeout = atoi(user_timeout);
+        tcase_set_timeout(tc_cl_scan, timeout);
+    }
 #endif
     return s;
 }
@@ -748,27 +824,25 @@ static uint8_t res256[3][SHA256_HASH_SIZE] = {
 
 START_TEST (test_sha256)
 {
-    SHA256_CTX sha256;
+    void *sha256;
     uint8_t hsha256[SHA256_HASH_SIZE];
     uint8_t buf[1000];
     int i;
 
     memset (buf, 0x61, sizeof (buf));
 
-    sha256_init (&sha256);
-    sha256_update (&sha256, tv1, sizeof (tv1));
-    sha256_final (&sha256, hsha256);
+    cl_sha256(tv1, sizeof(tv1), hsha256, NULL);
     fail_unless(!memcmp (hsha256, res256[0], sizeof (hsha256)), "sha256 test vector #1 failed");
 
-    sha256_init (&sha256);
-    sha256_update (&sha256, tv2, sizeof (tv2));
-    sha256_final (&sha256, hsha256);
+    cl_sha256(tv2, sizeof(tv2), hsha256, NULL);
     fail_unless(!memcmp (hsha256, res256[1], sizeof (hsha256)), "sha256 test vector #2 failed");
 
-    sha256_init (&sha256);
+    sha256 = cl_hash_init("sha256");
+    fail_unless(sha256 != NULL, "Could not create EVP_MD_CTX for sha256");
+
     for (i = 0; i < 1000; i++)
-	sha256_update (&sha256, buf, sizeof (buf));
-    sha256_final (&sha256, hsha256);
+        cl_update_hash (sha256, buf, sizeof (buf));
+    cl_finish_hash(sha256, hsha256);
     fail_unless(!memcmp (hsha256, res256[2], sizeof (hsha256)), "sha256 test vector #3 failed");
 }
 END_TEST
@@ -919,6 +993,10 @@ int main(void)
     Suite *s;
     SRunner *sr;
 
+    cl_initialize_crypto();
+
+    fpu_words  = get_fpu_endian();
+  
     check_version_compatible();
     s = test_cl_suite();
     sr = srunner_create(s);
@@ -946,6 +1024,11 @@ int main(void)
     srunner_run_all(sr, CK_NORMAL);
     nf = srunner_ntests_failed(sr);
     srunner_free(sr);
+
+#if HAVE_LIBXML2
+    xmlCleanupParser();
+#endif
+    cl_cleanup_crypto();
 
     return (nf == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }

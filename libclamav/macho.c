@@ -347,6 +347,7 @@ int cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
 		at += sizeof(segment_cmd64);
 		nsects = EC32(segment_cmd64.nsects, conv);
 		strncpy(name, segment_cmd64.segname, sizeof(name));
+		name[sizeof(name)-1] = '\0';
 	    } else {
 		if(fmap_readn(map, &segment_cmd, at, sizeof(segment_cmd)) != sizeof(segment_cmd)) {
 		    cli_dbgmsg("cli_scanmacho: Can't read segment command\n");
@@ -356,9 +357,9 @@ int cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
 		at += sizeof(segment_cmd);
 		nsects = EC32(segment_cmd.nsects, conv);
 		strncpy(name, segment_cmd.segname, sizeof(name));
+		name[sizeof(name)-1] = '\0';
 	    }
 	    if(!matcher) {
-		name[sizeof(name)-1] = '\0';
 		cli_dbgmsg("MACHO: Segment name: %s\n", name);
 		cli_dbgmsg("MACHO: Number of sections: %u\n", nsects);
 	    }
@@ -392,6 +393,7 @@ int cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
 		    section64.align = 1 << EC32(section64.align, conv);
 		    sections[sect].rsz = sections[sect].vsz + (section64.align - (sections[sect].vsz % section64.align)) % section64.align; /* most likely we can assume it's the same as .vsz */
 		    strncpy(name, section64.sectname, sizeof(name));
+		    name[sizeof(name)-1] = '\0';
 		} else {
 		    if(fmap_readn(map, &section, at, sizeof(section)) != sizeof(section)) {
 			cli_dbgmsg("cli_scanmacho: Can't read section\n");
@@ -405,9 +407,9 @@ int cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
 		    section.align = 1 << EC32(section.align, conv);
 		    sections[sect].rsz = sections[sect].vsz + (section.align - (sections[sect].vsz % section.align)) % section.align;
 		    strncpy(name, section.sectname, sizeof(name));
+		    name[sizeof(name)-1] = '\0';
 		}
 		if(!matcher) {
-		    name[sizeof(name)-1] = '\0';
 		    cli_dbgmsg("MACHO: --- Section %u ---\n", sect);
 		    cli_dbgmsg("MACHO: Name: %s\n", name);
 		    cli_dbgmsg("MACHO: Virtual address: 0x%x\n", (unsigned int) sections[sect].rva);
@@ -552,7 +554,7 @@ int cli_scanmacho_unibin(cli_ctx *ctx)
 	cli_dbgmsg("UNIBIN: Binary %u of %u\n", i + 1, fat_header.nfats);
 	cli_dbgmsg("UNIBIN: File offset: %u\n", fat_arch.offset);
 	cli_dbgmsg("UNIBIN: File size: %u\n", fat_arch.size);
-	ret = cli_map_scandesc(map, fat_arch.offset, fat_arch.size, ctx);
+	ret = cli_map_scan(map, fat_arch.offset, fat_arch.size, ctx, CL_TYPE_ANY);
 	if(ret == CL_VIRUS)
 	    break;
     }

@@ -43,6 +43,7 @@
 #include <unistd.h>
 #endif
 
+#include "clamav.h"
 #include "filetypes.h"
 #include "textdet.h"
 #include "others.h"
@@ -142,7 +143,7 @@ static int td_isutf8(const unsigned char *buf, unsigned int len)
 
 static int td_isutf16(const unsigned char *buf, unsigned int len)
 {
-	unsigned int be = 1, nobom = 0, i, c, bad = 0;
+	unsigned int be = 1, nobom = 0, i, c, bad = 0, high = 0;
 
 
     if(len < 2)
@@ -169,8 +170,13 @@ static int td_isutf16(const unsigned char *buf, unsigned int len)
 		return 0;
 	    else
 		bad++;
-	}
+	} else if (c >= 128) {
+        high++;
     }
+    }
+
+    //   if (nobom && high >= len / 4)
+    //        return 0;
 
     if(!nobom && bad >= len / 2)
 	return 0;

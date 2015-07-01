@@ -20,6 +20,7 @@
 #include <sys/types.h>
 #include "is_tar.h"
 
+#include "clamav.h"
 #include "others.h"
 
 #define	isodigit(c)	( ((c) >= '0') && ((c) <= '7') )

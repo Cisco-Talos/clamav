@@ -448,12 +448,12 @@ dissect(struct match *m, char *start, char *stop, sopno startst, sopno stopst)
 			break;
 		case OLPAREN:
 			i = OPND(m->g->strip[ss]);
-			assert(0 < i && i <= m->g->nsub);
+			assert(0 < i && (size_t)i <= m->g->nsub);
 			m->pmatch[i].rm_so = sp - m->offp;
 			break;
 		case ORPAREN:
 			i = OPND(m->g->strip[ss]);
-			assert(0 < i && i <= m->g->nsub);
+			assert(0 < i && (size_t)i <= m->g->nsub);
 			m->pmatch[i].rm_eo = sp - m->offp;
 			break;
 		default:		/* uh oh */
@@ -572,14 +572,14 @@ backref(struct match *m, char *start, char *stop, sopno startst, sopno stopst,
 	switch (OP(s)) {
 	case OBACK_:		/* the vilest depths */
 		i = OPND(s);
-		assert(0 < i && i <= m->g->nsub);
+		assert(0 < i && (size_t)i <= m->g->nsub);
 		if (m->pmatch[i].rm_eo == -1)
 			return(NULL);
 		assert(m->pmatch[i].rm_so != -1);
 		len = m->pmatch[i].rm_eo - m->pmatch[i].rm_so;
 		if (len == 0 && rec++ > MAX_RECURSION)
 			return(NULL);
-		assert(stop - m->beginp >= len);
+		assert((size_t)(stop - m->beginp) >= len);
 		if (sp > stop - len)
 			return(NULL);	/* not enough left to match */
 		ssp = m->offp + m->pmatch[i].rm_so;
@@ -635,7 +635,7 @@ backref(struct match *m, char *start, char *stop, sopno startst, sopno stopst,
 		break;
 	case OLPAREN:		/* must undo assignment if rest fails */
 		i = OPND(s);
-		assert(0 < i && i <= m->g->nsub);
+		assert(0 < i && (size_t)i <= m->g->nsub);
 		offsave = m->pmatch[i].rm_so;
 		m->pmatch[i].rm_so = sp - m->offp;
 		dp = backref(m, sp, stop, ss+1, stopst, lev, rec);
@@ -646,7 +646,7 @@ backref(struct match *m, char *start, char *stop, sopno startst, sopno stopst,
 		break;
 	case ORPAREN:		/* must undo assignment if rest fails */
 		i = OPND(s);
-		assert(0 < i && i <= m->g->nsub);
+		assert(0 < i && (size_t)i <= m->g->nsub);
 		offsave = m->pmatch[i].rm_eo;
 		m->pmatch[i].rm_eo = sp - m->offp;
 		dp = backref(m, sp, stop, ss+1, stopst, lev, rec);

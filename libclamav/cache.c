@@ -27,7 +27,6 @@
 #include <pthread.h>
 #include <assert.h>
 
-#include "md5.h"
 #include "mpool.h"
 #include "clamav.h"
 #include "cache.h"
@@ -86,9 +85,9 @@ static void cacheset_lru_remove(struct cache_set *map, size_t howmany)
     while (howmany--) {
 	struct cache_key *old;
 	assert(map->lru_head);
-	assert(!old->lru_prev);
 	/* Remove a key from the head of the list */
 	old = map->lru_head;
+	assert(!old->lru_prev);
 	map->lru_head = old->lru_next;
 	old->size = CACHE_KEY_DELETED;
 	/* This slot is now deleted, it is not empty,
@@ -225,6 +224,27 @@ static void cacheset_add(struct cache_set *map, unsigned char *md5, size_t size,
     assert(pos < map->maxelements);
 }
 
+static void cacheset_remove(struct cache_set *map, unsigned char *md5, size_t size, mpool_t *mempool)
+{
+    int ret;
+    uint32_t pos;
+    struct cache_key *newkey;
+    ret = cacheset_lookup_internal(map, md5, size, &pos, 1);
+    newkey = &map->data[pos];
+    if (!ret || (newkey->size == CACHE_KEY_DELETED)) {
+        /* already deleted */
+        return;
+    }
+    /* remove from list */
+    lru_remove(map, newkey);
+    newkey->size = CACHE_KEY_DELETED;
+    map->deleted++;
+    map->elements--;
+    if (map->deleted >= map->maxdeleted) {
+        cacheset_rehash(map, mempool);
+    }
+}
+
 static int cacheset_lookup(struct cache_set *map, unsigned char *md5, size_t size)
 {
     struct cache_key *newkey;
@@ -331,7 +351,7 @@ static inline int cmp(int64_t *a, ssize_t sa, int64_t *b, ssize_t sb) {
 static int printtree(struct cache_set *cs, struct node *n, int d) {
     int i;
     int ab = 0;
-    if (n == NULL) return 0;
+    if ((n == NULL) || (cs == NULL) || (cs->data == NULL)) return 0;
     if(n == cs->root) { ptree("--------------------------\n"); }
     ab |= printtree(cs, n->right, d+1);
     if(n->right) {
@@ -352,17 +372,17 @@ static int printtree(struct cache_set *cs, struct node *n, int d) {
     }
     if(d){
 	if(!n->up) {
-	    ptree("no parent!\n");
+	    printf("no parent, [node %02u]!\n", n - cs->data);
 	    ab = 1;
 	} else {
 	    if(n->up->left != n && n->up->right != n) {
-		ptree("broken parent\n");
+		printf("broken parent [node %02u, parent node %02u]\n", n - cs->data, n->up - cs->data);
 		ab = 1;
 	    }
 	}
     } else {
 	if(n->up) {
-	    ptree("root with a parent!\n");
+	    printf("root with a parent, [node %02u]!\n", n - cs->data);
 	    ab = 1;
 	}
     }
@@ -371,6 +391,81 @@ static int printtree(struct cache_set *cs, struct node *n, int d) {
 }
 #else
 #define printtree(a,b,c) (0)
+#endif
+
+/* For troubleshooting only; prints out one specific node */
+/* #define PRINT_NODE */
+#ifdef PRINT_NODE
+static void printnode(const char *prefix, struct cache_set *cs, struct node *n) {
+    if (!prefix || !cs || !cs->data) {
+        printf("bad args!\n");
+        return;
+    }
+    if (!n) {
+        printf("no node!\n");
+        return;
+    }
+    printf("%s node [%02u]:", prefix, n - cs->data);
+    printf(" size=%lu digest=%llx,%llx\n", (unsigned long)(n->size), n->digest[0], n->digest[1]);
+    printf("\tleft=");
+    if(n->left)
+        printf("%02u ", n->left - cs->data);
+    else
+        printf("NULL ");
+    printf("right=");
+    if(n->right)
+        printf("%02u ", n->right - cs->data);
+    else
+        printf("NULL ");
+    printf("up=");
+    if(n->up)
+        printf("%02u ", n->up - cs->data);
+    else
+        printf("NULL ");
+
+    printf("\tprev=");
+    if(n->prev)
+        printf("%02u ", n->prev - cs->data);
+    else
+        printf("NULL ");
+    printf("next=");
+    if(n->next)
+        printf("%02u\n", n->next - cs->data);
+    else
+        printf("NULL\n");
+}
+#else
+#define printnode(a,b,c) (0)
+#endif
+
+/* #define PRINT_CHAINS */
+#ifdef PRINT_CHAINS
+/* For troubleshooting only, print the chain forwards and back */
+static inline void printchain(const char *prefix, struct cache_set *cs) {
+    if (!cs || !cs->data) return;
+    if (prefix) printf("%s: ", prefix);
+    printf("chain by next: ");
+    {
+        unsigned int i = 0;
+        struct node *x = cs->first;
+        while(x) {
+            printf("%02d,", x - cs->data);
+            x=x->next;
+            i++;
+        }
+        printf(" [count=%u]\nchain by prev: ", i);
+        x=cs->last;
+        i=0;
+        while(x) {
+            printf("%02d,", x - cs->data);
+            x=x->prev;
+            i++;
+        }
+        printf(" [count=%u]\n", i);
+    }
+}
+#else
+#define printchain(a,b) (0)
 #endif
 
 /* Looks up a node and splays it up to the root of the tree */
@@ -442,21 +537,7 @@ static inline int cacheset_lookup(struct cache_set *cs, unsigned char *md5, size
 	struct node *o = cs->root->prev, *p = cs->root, *q = cs->root->next;
 #ifdef PRINT_CHAINS
 	printf("promoting %02d\n", p - cs->data);
-	{
-	    struct node *x = cs->first;
-	    printf("before: ");
-	    while(x) {
-		printf("%02d,", x - cs->data);
-		x=x->next;
-	    }
-	    printf(" --- ");
-	    x=cs->last;
-	    while(x) {
-		printf("%02d,", x - cs->data);
-		x=x->prev;
-	    }
-	    printf("\n");
-	}
+	printchain("before", cs);
 #endif
     	if(q) {
 	    if(o)
@@ -470,21 +551,7 @@ static inline int cacheset_lookup(struct cache_set *cs, unsigned char *md5, size
 	    cs->last = p;
 	}
 #ifdef PRINT_CHAINS
-	{
-	    struct node *x = cs->first;
-	    printf("after : ");
-	    while(x) {
-		printf("%02d,", x - cs->data);
-		x=x->next;
-	    }
-	    printf(" --- ");
-	    x=cs->last;
-	    while(x) {
-		printf("%02d,", x - cs->data);
-		x=x->prev;
-	    }
-	    printf("\n");
-	}
+	printchain("after", cs);
 #endif
 	if(reclevel >= p->minrec)
 	    return 1;
@@ -514,9 +581,19 @@ static inline void cacheset_add(struct cache_set *cs, unsigned char *md5, size_t
 
     newnode = cs->first;
     while(newnode) {
-    	if(!newnode->right && !newnode->left)
-    	    break;
-    	newnode = newnode->next;
+        if(!newnode->right && !newnode->left)
+            break;
+        if(newnode->next) {
+            if(newnode == newnode->next) {
+                cli_errmsg("cacheset_add: cache chain in a bad state\n");
+                return;
+            }
+            newnode = newnode->next;
+        }
+        else {
+	    cli_warnmsg("cacheset_add: end of chain reached\n");
+	    return;
+        }
     }
     if(!newnode) {
 	cli_errmsg("cacheset_add: tree has got no end nodes\n");
@@ -574,6 +651,79 @@ static inline void cacheset_add(struct cache_set *cs, unsigned char *md5, size_t
 	cli_errmsg("cacheset_add: inconsistent tree after adding newnode, good luck\n");
 	return;
     }
+    printnode("newnode", cs, newnode);
+}
+
+/* If the hash is not present nothing happens other than splaying the tree.
+   Otherwise the identified node is removed from the tree and then placed back at 
+   the front of the chain. */
+static inline void cacheset_remove(struct cache_set *cs, unsigned char *md5, size_t size) {
+    struct node *targetnode;
+    struct node *reattachnode;
+    int64_t hash[2];
+
+    memcpy(hash, md5, 16);
+    if(splay(hash, size, cs) != 1) {
+	cli_dbgmsg("cacheset_remove: node not found in tree\n");
+	return; /* No op */
+    }
+
+    ptree("cacheset_remove: node found and splayed to root\n");
+    targetnode = cs->root;
+    printnode("targetnode", cs, targetnode);
+
+    /* First fix the tree */
+    if(targetnode->left == NULL) {
+        /* At left edge so prune */
+        cs->root = targetnode->right;
+        if(cs->root)
+            cs->root->up = NULL;
+    }
+    else {
+        /* new root will come from leftside tree */
+        cs->root = targetnode->left;
+        cs->root->up = NULL;
+        /* splay tree, expecting not found, bringing rightmost member to root */
+        splay(hash, size, cs);
+
+        if (targetnode->right) {
+            /* reattach right tree to clean right-side attach point */
+            reattachnode = cs->root;
+            while (reattachnode->right) 
+                reattachnode = reattachnode->right; /* shouldn't happen, but safer in case of dupe */
+            reattachnode->right = targetnode->right;
+            targetnode->right->up = reattachnode;
+        }
+    }
+    targetnode->size = (size_t)0;
+    targetnode->digest[0] = 0;
+    targetnode->digest[1] = 0;
+    targetnode->up = NULL;
+    targetnode->left = NULL;
+    targetnode->right = NULL;
+
+    /* Tree is fixed, so now fix chain around targetnode */
+    if(targetnode->prev) 
+        targetnode->prev->next = targetnode->next;
+    if(targetnode->next) 
+        targetnode->next->prev = targetnode->prev;
+    if(cs->last == targetnode)
+        cs->last = targetnode->prev;
+
+    /* Put targetnode at front of chain, if not there already */
+    if(cs->first != targetnode) {
+        targetnode->next = cs->first;
+        if(cs->first)
+            cs->first->prev = targetnode;
+        cs->first = targetnode;
+    }
+    targetnode->prev = NULL;
+
+    printnode("root", cs, cs->root);
+    printnode("first", cs, cs->first);
+    printnode("last", cs, cs->last);
+
+    printchain("remove (after)", cs);
 }
 #endif /* USE_SPLAY */
 
@@ -595,6 +745,11 @@ int cli_cache_init(struct cl_engine *engine) {
     if(!engine) {
 	cli_errmsg("cli_cache_init: mpool malloc fail\n");
 	return 1;
+    }
+
+    if (engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE) {
+        cli_dbgmsg("cli_cache_init: Caching disabled.\n");
+        return 0;
     }
 
     if(!(cache = mpool_malloc(engine->mempool, sizeof(struct CACHE) * TREES))) {
@@ -629,6 +784,10 @@ void cli_cache_destroy(struct cl_engine *engine) {
     if(!engine || !(cache = engine->cache))
 	return;
 
+    if (engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE) {
+        return;
+    }
+
     for(i=0; i<TREES; i++) {
 	cacheset_destroy(&cache[i].cacheset, engine->mempool);
 	pthread_mutex_destroy(&cache[i].mutex);
@@ -648,6 +807,8 @@ static int cache_lookup_hash(unsigned char *md5, size_t len, struct CACHE *cache
 	return ret;
     }
 
+    /* cli_warnmsg("cache_lookup_hash: key is %u\n", key); */
+
     ret = (cacheset_lookup(&c->cacheset, md5, len, reclevel)) ? CL_CLEAN : CL_VIRUS;
     pthread_mutex_unlock(&c->mutex);
     /* if(ret == CL_CLEAN) cli_warnmsg("cached\n"); */
@@ -663,14 +824,25 @@ void cache_add(unsigned char *md5, size_t size, cli_ctx *ctx) {
     if(!ctx || !ctx->engine || !ctx->engine->cache)
        return;
 
+    if (ctx->engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE) {
+        cli_dbgmsg("cache_add: Caching disabled. Not adding sample to cache.\n");
+        return;
+    }
+
     level =  (*ctx->fmap && (*ctx->fmap)->dont_cache_flag) ? ctx->recursion : 0;
     if (ctx->found_possibly_unwanted && (level || !ctx->recursion))
 	return;
+    if (SCAN_ALL && (ctx->num_viruses > 0)) {
+	cli_dbgmsg("cache_add: alert found within same topfile, skipping cache\n");
+	return;
+    }
     c = &ctx->engine->cache[key];
     if(pthread_mutex_lock(&c->mutex)) {
 	cli_errmsg("cli_add: mutex lock fail\n");
 	return;
     }
+
+    /* cli_warnmsg("cache_add: key is %u\n", key); */
 
 #ifdef USE_LRUHASHCACHE
     cacheset_add(&c->cacheset, md5, size, ctx->engine->mempool);
@@ -687,35 +859,88 @@ void cache_add(unsigned char *md5, size_t size, cli_ctx *ctx) {
     return;
 }
 
+/* Removes a hash from the cache */
+void cache_remove(unsigned char *md5, size_t size, const struct cl_engine *engine) {
+    unsigned int key = getkey(md5);
+    struct CACHE *c;
+
+    if(!engine || !engine->cache)
+       return;
+
+    if (engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE) {
+        cli_dbgmsg("cache_remove: Caching disabled.\n");
+        return;
+    }
+
+    /* cli_warnmsg("cache_remove: key is %u\n", key); */
+
+    c = &engine->cache[key];
+    if(pthread_mutex_lock(&c->mutex)) {
+	cli_errmsg("cli_add: mutex lock fail\n");
+	return;
+    }
+
+#ifdef USE_LRUHASHCACHE
+    cacheset_remove(&c->cacheset, md5, size, engine->mempool);
+#else
+#ifdef USE_SPLAY
+    cacheset_remove(&c->cacheset, md5, size);
+#else
+#error #define USE_SPLAY or USE_LRUHASHCACHE
+#endif
+#endif
+
+    pthread_mutex_unlock(&c->mutex);
+    cli_dbgmsg("cache_remove: %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\n", md5[0], md5[1], md5[2], md5[3], md5[4], md5[5], md5[6], md5[7], md5[8], md5[9], md5[10], md5[11], md5[12], md5[13], md5[14], md5[15]);
+    return;
+}
+
 /* Hashes a file onto the provided buffer and looks it up the cache.
    Returns CL_VIRUS if found, CL_CLEAN if not FIXME or a recoverable error,
    and returns CL_EREAD if unrecoverable */
 int cache_check(unsigned char *hash, cli_ctx *ctx) {
     fmap_t *map;
     size_t todo, at = 0;
-    cli_md5_ctx md5;
+    void *hashctx;
     int ret;
 
     if(!ctx || !ctx->engine || !ctx->engine->cache)
        return CL_VIRUS;
 
+    if (ctx->engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE) {
+        cli_dbgmsg("cache_check: Caching disabled. Returning CL_VIRUS.\n");
+        return CL_VIRUS;
+    }
+
     map = *ctx->fmap;
     todo = map->len;
 
-    cli_md5_init(&md5);
+    hashctx = cl_hash_init("md5");
+    if (!(hashctx))
+        return CL_VIRUS;
+
+
     while(todo) {
-	const void *buf;
-	size_t readme = todo < FILEBUFF ? todo : FILEBUFF;
-	if(!(buf = fmap_need_off_once(map, at, readme)))
-	    return CL_EREAD;
-	todo -= readme;
-	at += readme;
-	if (cli_md5_update(&md5, buf, readme)) {
-	    cli_errmsg("cache_check: error reading while generating hash!\n");
-	    return CL_EREAD;
-	}
+        const void *buf;
+        size_t readme = todo < FILEBUFF ? todo : FILEBUFF;
+
+        if(!(buf = fmap_need_off_once(map, at, readme))) {
+            cl_hash_destroy(hashctx);
+            return CL_EREAD;
+        }
+
+        todo -= readme;
+        at += readme;
+
+        if (cl_update_hash(hashctx, (void *)buf, readme)) {
+            cl_hash_destroy(hashctx);
+            cli_errmsg("cache_check: error reading while generating hash!\n");
+            return CL_EREAD;
+        }
     }
-    cli_md5_final(hash, &md5);
+
+    cl_finish_hash(hashctx, hash);
+
     ret = cache_lookup_hash(hash, map->len, ctx->engine->cache, ctx->recursion);
     cli_dbgmsg("cache_check: %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x is %s\n", hash[0], hash[1], hash[2], hash[3], hash[4], hash[5], hash[6], hash[7], hash[8], hash[9], hash[10], hash[11], hash[12], hash[13], hash[14], hash[15], (ret == CL_VIRUS) ? "negative" : "positive");
     return ret;

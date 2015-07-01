@@ -22,6 +22,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+
 #include "cltypes.h"
 #include "bytecode.h"
 #include "bytecode_priv.h"
@@ -40,27 +41,36 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	    return CL_EBYTECODE;
 	}
     }
-    cli_dbgmsg("JIT not compiled in\n");
+    cli_dbgmsg("Cannot prepare for JIT, LLVM is not compiled or not linked\n");
     return CL_EBYTECODE;
 }
 
 int cli_vm_execute_jit(const struct cli_all_bc *bcs, struct cli_bc_ctx *ctx, const struct cli_bc_func *func)
 {
+    UNUSEDPARAM(bcs);
+    UNUSEDPARAM(ctx);
+    UNUSEDPARAM(func);
     return CL_EBYTECODE;
 }
 
 int cli_bytecode_init_jit(struct cli_all_bc *allbc, unsigned dconfmask)
 {
+    UNUSEDPARAM(allbc);
+    UNUSEDPARAM(dconfmask);
     return CL_SUCCESS;
 }
 
 int cli_bytecode_done_jit(struct cli_all_bc *allbc, int partial)
 {
+    UNUSEDPARAM(allbc);
+    UNUSEDPARAM(partial);
     return CL_SUCCESS;
 }
 
 void cli_bytecode_debug(int argc, char **argv) {
   /* Empty */
+    UNUSEDPARAM(argc);
+    UNUSEDPARAM(argv);
 }
 
 int bytecode_init(void)
@@ -70,9 +80,10 @@ int bytecode_init(void)
 
 void cli_bytecode_debug_printsrc(const struct cli_bc_ctx *ctx) {
     /* Empty */
+    UNUSEDPARAM(ctx);
 }
 void cli_bytecode_printversion(void) {
-  printf("LLVM not compiled in\n");
+  printf("LLVM is not compiled or not linked\n");
 }
 int have_clamjit=0;
 void cli_printcxxver()
@@ -82,4 +93,5 @@ void cli_printcxxver()
 void cli_detect_env_jit(struct cli_environment *env)
 {
     /* Empty */
+    UNUSEDPARAM(env);
 }

@@ -74,7 +74,7 @@ const char *fp_ident(void)
 
    if (sizeof(fp_digit) == sizeof(fp_word)) {
       strncat(buf, "WARNING: sizeof(fp_digit) == sizeof(fp_word), this build is likely to not work properly.\n", 
-              sizeof(buf)-1);
+              sizeof(buf)-strlen(buf)-1);
    }
    return buf;
 }

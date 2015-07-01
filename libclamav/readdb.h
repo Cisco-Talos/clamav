@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2009 Sourcefire, Inc.
+ *  Copyright (C) 2007-2014 Cisco Systems, Inc.
  *
  *  Authors: Tomasz Kojm
  *
@@ -60,18 +60,27 @@
 	cli_strbcasestr(ext, ".cud")   ||	\
 	cli_strbcasestr(ext, ".cdb")   ||	\
 	cli_strbcasestr(ext, ".cat")   ||	\
-	cli_strbcasestr(ext, ".crt")   ||	\
-	cli_strbcasestr(ext, ".idb")		\
+	cli_strbcasestr(ext, ".crb")   ||	\
+	cli_strbcasestr(ext, ".idb")   ||	\
+	cli_strbcasestr(ext, ".ioc")   ||	\
+	cli_strbcasestr(ext, ".yar")   ||	\
+	cli_strbcasestr(ext, ".yara")		\
     )
 
-char *cli_virname(char *virname, unsigned int official);
+char *cli_virname(const char *virname, unsigned int official);
 
-int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hexsig, uint16_t rtype, uint16_t type, const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options);
+int cli_sigopts_handler(struct cli_matcher *root, const char *virname, const char *hexsig, uint8_t sigopts, uint16_t rtype, uint16_t type, const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options);
+
+int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hexsig, uint8_t sigopts, uint16_t rtype, uint16_t type, const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options);
 
 int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio);
 
 char *cli_dbgets(char *buff, unsigned int size, FILE *fs, struct cli_dbio *dbio);
 
 int cli_initroots(struct cl_engine *engine, unsigned int options);
+
+int cli_yara_init(struct cl_engine *engine);
+
+void cli_yara_free(struct cl_engine *engine);
 
 #endif
