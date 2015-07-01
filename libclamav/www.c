@@ -39,7 +39,11 @@
 
 #if !defined(_WIN32)
 #include <sys/socket.h>
+#if HAVE_SYS_SELECT_H
 #include <sys/select.h>
+#else
+#include <sys/time.h>
+#endif
 #include <netinet/in.h>
 #include <netdb.h>
 #endif
