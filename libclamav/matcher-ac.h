@@ -71,7 +71,6 @@ struct cli_ac_data {
 
 struct cli_alt_node {
     uint16_t *str;
-    //unsigned char *str;
     uint16_t len;
     uint8_t unique;
     struct cli_alt_node *next;
@@ -79,13 +78,11 @@ struct cli_alt_node {
 
 struct cli_ac_special {
     union {
-        //uint16_t *byte;
-        //uint16_t **f_str;
         unsigned char *byte;
         unsigned char **f_str;
         struct cli_alt_node *v_str;
     } alt;
-    uint16_t len, num;
+    uint16_t len[2], num; /* 0=MIN, 1=MAX */
     uint16_t type, negative;
 };
 
