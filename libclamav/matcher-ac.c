@@ -154,7 +154,7 @@ static inline int insert_list(struct cli_matcher *root, struct cli_ac_patt *patt
                             }
 
                             for(j = 0; j < a1->num; j++) {
-                                if(memcmp((a1->alt).f_str[j], (a2->alt).f_str[j], a1->len))
+                                if(memcmp((a1->alt).f_str[j], (a2->alt).f_str[j], a1->len[0]))
                                     break;
                             }
 
@@ -959,14 +959,14 @@ inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t off
         break;
 
     case AC_SPECIAL_ALT_STR_FIXED: /* fixed length multi-byte */
-        if (bp + special->len > length)
+        if (bp + special->len[0] > length)
             break;
 
-        match *= special->len;
+        match *= special->len[0];
         for (j = 0; j < special->num; j++) {
-            cmp = memcmp(&buffer[bp], (special->alt).f_str[j], special->len);
+            cmp = memcmp(&buffer[bp], (special->alt).f_str[j], special->len[0]);
             if (cmp == 0) {
-                match = (!special->negative) * special->len;
+                match = (!special->negative) * special->len[0];
                 break;
             } else if (cmp < 0)
                 break;
@@ -2114,6 +2114,10 @@ inline static int ac_addspecial_add_alt_node(const char *subexpr, uint8_t sigopt
 
     *prev = newnode;
     newnode->next = ins;
+    if ((special->num == 0) || (newnode->len < special->len[0]))
+        special->len[0] = newnode->len;
+    if ((special->num == 0) || (newnode->len > special->len[1]))
+        special->len[1] = newnode->len;
     special->num++;
     return CL_SUCCESS;
 }
@@ -2250,7 +2254,7 @@ inline static int ac_special_altstr(const char *hexpr, uint8_t sigopts, struct c
 
     if (!sigopts && fixed) {
         special->num = 0;
-        special->len = slen / 2;
+        special->len[0] = special->len[1] = slen / 2;
         /* single-bytes are len 2 in hex */
         if (slen == 2) {
             special->type = AC_SPECIAL_ALT_CHAR;
