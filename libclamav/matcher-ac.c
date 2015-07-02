@@ -1145,7 +1145,7 @@ static int ac_findmatch_branch(const unsigned char *buffer, uint32_t offset, uin
 
     if(pattern->prefix) {
         specialcnt = 0;
-        bp = offset - pattern->prefix_length[0];
+        bp = offset - pattern->prefix_length[1];
         match = 1;
 
         for(i = 0; i < pattern->prefix_length[0]; i++) {
@@ -1158,7 +1158,7 @@ static int ac_findmatch_branch(const unsigned char *buffer, uint32_t offset, uin
     }
 
     if(!(pattern->ch[0] & CLI_MATCH_IGNORE)) {
-        bp = offset - pattern->prefix_length[0];
+        bp = offset - pattern->prefix_length[1];
         if(pattern->ch_mindist[0] + (uint32_t) 1 > bp)
             return 0;
 
@@ -1186,7 +1186,7 @@ inline static int ac_findmatch(const unsigned char *buffer, uint32_t offset, uin
     int match;
     uint16_t specialcnt = pattern->special_pattern;
 
-    if((offset + pattern->length[0] > length) || (pattern->prefix_length[0] > offset))
+    if((offset + pattern->length[1] > length) || (pattern->prefix_length[1] > offset))
         return 0;
 
     match = ac_findmatch_branch(buffer, offset, offset+pattern->depth, fileoffset, length, pattern, pattern->depth, specialcnt, end);
@@ -1360,7 +1360,7 @@ int cli_ac_caloff(const struct cli_matcher *root, struct cli_ac_data *data, cons
         } else if((ret = cli_caloff(NULL, info, root->type, patt->offdata, &data->offset[patt->offset_min], &data->offset[patt->offset_max]))) {
             cli_errmsg("cli_ac_caloff: Can't calculate relative offset in signature for %s\n", patt->virname);
             return ret;
-        } else if((data->offset[patt->offset_min] != CLI_OFF_NONE) && (data->offset[patt->offset_min] + patt->length[0] > info->fsize)) {
+        } else if((data->offset[patt->offset_min] != CLI_OFF_NONE) && (data->offset[patt->offset_min] + patt->length[1] > info->fsize)) {
             data->offset[patt->offset_min] = CLI_OFF_NONE;
         }
     }
@@ -1611,7 +1611,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
                         pattN = pattN->next;
                         continue;
                     }
-                    realoff = offset + bp - patt->prefix_length[0];
+                    realoff = offset + bp - patt->prefix_length[1];
                     if(patt->offdata[0] == CLI_OFF_ABSOLUTE) {
                         if(patt->offset_max < realoff || patt->offset_min > realoff) {
                             pattN = pattN->next;
@@ -1626,7 +1626,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
                 }
 
                 ptN = pattN;
-                if(ac_findmatch(buffer, bp, offset + bp - patt->prefix_length[0], length, patt, &matchend)) {
+                if(ac_findmatch(buffer, bp, offset + bp - patt->prefix_length[1], length, patt, &matchend)) {
                     while(ptN) {
                         pt = ptN->me;
                         if(pt->partno > mdata->min_partno)
@@ -1637,7 +1637,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
                             continue;
                         }
 
-                        realoff = offset + bp - pt->prefix_length[0];
+                        realoff = offset + bp - pt->prefix_length[1];
                         if(pt->offdata[0] == CLI_OFF_VERSION) {
                             if(!cli_hashset_contains_maybe_noalloc(mdata->vinfo, realoff)) {
                                 ptN = ptN->next_same;
@@ -2730,8 +2730,8 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
         new->length[2] -= new->prefix_length[2];
     }
 
-    if(new->length[0] + new->prefix_length[0] > root->maxpatlen)
-        root->maxpatlen = new->length[0] + new->prefix_length[0];
+    if(new->length[2] + new->prefix_length[2] > root->maxpatlen)
+        root->maxpatlen = new->length[2] + new->prefix_length[2];
 
     new->virname = cli_mpool_virname(root->mempool, virname, options & CL_DB_OFFICIAL);
     if(!new->virname) {
