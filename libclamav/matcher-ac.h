@@ -87,7 +87,7 @@ struct cli_ac_special {
 };
 
 struct cli_ac_patt {
-    uint16_t *pattern, *prefix, length, prefix_length;
+    uint16_t *pattern, *prefix, length[1], prefix_length[1];
     uint32_t mindist, maxdist;
     uint32_t sigid;
     uint32_t lsigid[3];

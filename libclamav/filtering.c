@@ -433,10 +433,10 @@ int  filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
 
 	struct choice choices[MAX_CHOICES];
 	unsigned choices_cnt = 0;
-	unsigned prefix_len = pat->prefix_length;
+	unsigned prefix_len = pat->prefix_length[0];
 	unsigned speci;
 
-	j = MIN(prefix_len + pat->length, MAXPATLEN);
+	j = MIN(prefix_len + pat->length[0], MAXPATLEN);
 	for(i=0;i<j;i++) {
 		const uint16_t p = i < prefix_len ? pat->prefix[i] : pat->pattern[i - prefix_len];
 		if ((p&CLI_MATCH_WILDCARD) != CLI_MATCH_CHAR)
