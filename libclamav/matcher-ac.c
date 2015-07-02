@@ -2622,12 +2622,23 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
     }
 
     new->length[0] = strlen(hex ? hex : hexsig) / 2;
+    for(i = 0, j = 0; i < new->length[0]; i++) {
+        if((new->pattern[i] & CLI_MATCH_METADATA) == CLI_MATCH_SPECIAL) {
+            new->length[1] += new->special_table[j]->len[0];
+            new->length[2] += new->special_table[j]->len[1];
+            j++;
+        } else {
+            new->length[1]++;
+            new->length[2]++;
+        }
+    }
+
     free(hex);
 
     new->sigopts = sigopts;
     /* setting nocase match */
     if (sigopts & ACPATT_OPTION_NOCASE) {
-        for (i = 0; i < new->length[0]; ++i)
+        for (i = 0; i < new->length[0]; i++)
             if ((new->pattern[i] & CLI_MATCH_METADATA) == CLI_MATCH_CHAR) {
                 new->pattern[i] = cli_nocase(new->pattern[i] & 0xff);
                 new->pattern[i] += CLI_MATCH_NOCASE;
@@ -2699,12 +2710,24 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 
         new->prefix = new->pattern;
         new->prefix_length[0] = ppos;
-        new->pattern = &new->prefix[ppos];
-        new->length[0] -= ppos;
-
-        for(i = 0; i < new->prefix_length[0]; i++)
+        for(i = 0, j = 0; i < new->prefix_length[0]; i++) {
             if((new->prefix[i] & CLI_MATCH_WILDCARD) == CLI_MATCH_SPECIAL)
                 new->special_pattern++;
+
+            if((new->prefix[i] & CLI_MATCH_METADATA) == CLI_MATCH_SPECIAL) {
+                new->prefix_length[1] += new->special_table[j]->len[0];
+                new->prefix_length[2] += new->special_table[j]->len[1];
+                j++;
+            } else {
+                new->prefix_length[1]++;
+                new->prefix_length[2]++;
+            }
+        }
+
+        new->pattern = &new->prefix[ppos];
+        new->length[0] -= new->prefix_length[0];
+        new->length[1] -= new->prefix_length[1];
+        new->length[2] -= new->prefix_length[2];
     }
 
     if(new->length[0] + new->prefix_length[0] > root->maxpatlen)
