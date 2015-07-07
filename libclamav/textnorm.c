@@ -29,6 +29,7 @@
 #include <ctype.h>
 #include "clamav.h"
 #include "textnorm.h"
+#include "bignum_fast.h"
 
 int text_normalize_init(struct text_norm_state *state, unsigned char *out, size_t out_len)
 {
@@ -54,6 +55,7 @@ enum normalize_action {
 	NORMALIZE_AS_WHITESPACE,
 	NORMALIZE_ADD_32
 };
+
 
 /* use shorter names in the table */
 #define IGN NORMALIZE_SKIP
@@ -119,5 +121,40 @@ size_t text_normalize_buffer(struct text_norm_state *state, const unsigned char 
 	}
 	state->out_pos = p - state->out;
 	return i;
+}
+
+/* Normalizes the text in @fmap and stores the result in @state's buffer.
+ * Returns number of characters written to buffer. */
+size_t text_normalize_map(struct text_norm_state *state, fmap_t *map, size_t offset)
+{
+	const unsigned char *map_loc;
+	unsigned int map_pgsz;
+	uint64_t map_len;
+	size_t buff_len;
+	size_t acc;
+	size_t acc_total;
+	size_t acc_len;
+
+	map_len = map->len;
+	map_pgsz = map->pgsz;
+	buff_len = state->out_len;
+
+	acc_total = 0;
+	acc = 0;
+
+	while (1) {
+		/* Break out if we've reached the end of the map or our buffer. */
+		if(!(acc_len = MIN_3(map_pgsz, map_len - offset, buff_len - acc_total))) break;
+
+		/* If map_loc is NULL, then there's nothing left to do but recover. */
+		if(!(map_loc = fmap_need_off_once(map, offset, acc_len))) break;
+		offset += acc_len;
+
+		/* If we didn't normalize anything, no need to update values, just break out. */
+		if(!(acc = text_normalize_buffer(state, map_loc, acc_len))) break;
+		acc_total += acc;
+	}
+
+	return acc_total;
 }
 

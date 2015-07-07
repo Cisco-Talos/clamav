@@ -170,6 +170,9 @@ EXPORTS cli_pcre_freeoff @44373 NONAME
 EXPORTS cli_pcre_recaloff @44374 NONAME
 EXPORTS cli_pcre_perf_events_destroy @44375 NONAME
 EXPORTS cli_pcre_perf_print @44376 NONAME
+EXPORTS text_normalize_init @44377 NONAME
+EXPORTS text_normalize_reset @44378 NONAME
+EXPORTS text_normalize_map @44379 NONAME
 
 ; compatibility layer, tommath, zlib
 EXPORTS w32_srand @44269 NONAME

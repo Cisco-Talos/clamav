@@ -43,6 +43,8 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/wait.h>
+#else
+#include "w32_stat.h"
 #endif
 #include <dirent.h>
 #include <ctype.h>
@@ -66,6 +68,7 @@
 #include "libclamav/str.h"
 #include "libclamav/ole2_extract.h"
 #include "libclamav/htmlnorm.h"
+#include "libclamav/textnorm.h"
 #include "libclamav/default.h"
 #include "libclamav/fmap.h"
 #include "libclamav/readdb.h"
@@ -220,6 +223,79 @@ static int htmlnorm(const struct optstruct *opts)
 	
     close(fd);
 
+    return 0;
+}
+
+static int asciinorm(const struct optstruct *opts)
+{
+    const char *fname;
+    unsigned char *norm_buff;
+    struct text_norm_state state;
+    size_t map_off;
+    fmap_t *map; 
+    int fd, ofd;
+
+    fname = optget(opts, "ascii-normalise")->strarg;
+    fd = open(fname, O_RDONLY);
+
+    if (fd == -1) {
+	mprintf("!asciinorm: Can't open file %s\n", fname);
+	return -1;
+    }
+
+    if(!(norm_buff = malloc(ASCII_FILE_BUFF_LENGTH))) {
+	mprintf("!asciinorm: Can't allocate memory\n");
+	close(fd);
+	return -1;
+    }
+
+    if (!(map = fmap(fd, 0, 0))) {
+	mprintf("!fmap: Could not map fd %d\n", fd);
+	close(fd);
+	free(norm_buff);
+	return -1;
+    }
+
+    if (map->len > MAX_ASCII_FILE_SIZE) {
+	mprintf("!asciinorm: File size of %zu too large\n", map->len);
+	close(fd);
+	free(norm_buff);
+	funmap(map);
+	return -1;
+    }
+
+    ofd = open("./normalised_text", O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+    if (ofd == -1) {
+	mprintf("!asciinorm: Can't open file ./normalised_text\n");
+	close(fd);
+	free(norm_buff);
+	funmap(map);
+	return -1;
+    }
+
+    text_normalize_init(&state, norm_buff, ASCII_FILE_BUFF_LENGTH);
+
+    map_off = 0;
+    while(map_off != map->len) {
+	    size_t written;
+	    if (!(written = text_normalize_map(&state, map, map_off))) break;
+	    map_off += written;
+ 
+	    if (write(ofd, norm_buff, state.out_pos) == -1) {
+		    mprintf("!asciinorm: Can't write to file ./normalised_text\n");
+		    close(fd);
+		    close(ofd);
+		    free(norm_buff);
+		    funmap(map);
+		    return -1;
+	    }
+	    text_normalize_reset(&state);
+    }
+
+    close(fd);
+    close(ofd);
+    free(norm_buff);
+    funmap(map);
     return 0;
 }
 
@@ -3012,6 +3088,7 @@ static void help(void)
     mprintf("                                           or SHA256 sigs for FILES\n");
     mprintf("    --mdb [FILES]                          generate .mdb sigs\n");
     mprintf("    --html-normalise=FILE                  create normalised parts of HTML file\n");
+    mprintf("    --ascii-normalise=FILE                 create normalised text file from ascii source\n");
     mprintf("    --utf16-decode=FILE                    decode UTF16 encoded files\n");
     mprintf("    --info=FILE            -i FILE         print database information\n");
     mprintf("    --build=NAME [cvd] -b NAME             build a CVD file\n");
@@ -3106,6 +3183,8 @@ int main(int argc, char **argv)
 	ret = hashsig(opts, 1, 1);
     else if(optget(opts, "html-normalise")->enabled)
 	ret = htmlnorm(opts);
+    else if(optget(opts, "ascii-normalise")->enabled)
+	ret = asciinorm(opts);
     else if(optget(opts, "utf16-decode")->enabled)
 	ret = utf16decode(opts);
     else if(optget(opts, "build")->enabled)
