@@ -584,11 +584,11 @@ static int add_newsuffix(struct regex_matcher *matcher, struct regex_list *info,
 	new->mindist = 0;
 	new->maxdist = 0;
 	new->offset_min = CLI_OFF_ANY;
-	new->length = len;
+	new->length[0] = len;
 
 	new->ch[0] = new->ch[1] |= CLI_MATCH_IGNORE;
-	if(new->length > root->maxpatlen)
-		root->maxpatlen = new->length;
+	if(new->length[0] > root->maxpatlen)
+		root->maxpatlen = new->length[0];
 
 	new->pattern = mpool_malloc(matcher->mempool, sizeof(new->pattern[0])*len);
 	if(!new->pattern) {

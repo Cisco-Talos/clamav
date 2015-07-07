@@ -119,8 +119,8 @@ static inline int insert_list(struct cli_matcher *root, struct cli_ac_patt *patt
         php = ph->me;
         if(!ph_add_after && php->partno <= pattern->partno && (!ph->next || ph->next->me->partno > pattern->partno))
             ph_add_after = ph;
-        if((php->length == pattern->length) && (php->prefix_length == pattern->prefix_length) && (php->ch[0] == pattern->ch[0]) && (php->ch[1] == pattern->ch[1]) && (php->boundary == pattern->boundary)) {
-            if(!memcmp(php->pattern, pattern->pattern, php->length * sizeof(uint16_t)) && !memcmp(php->prefix, pattern->prefix, php->prefix_length * sizeof(uint16_t))) {
+        if((php->length[0] == pattern->length[0]) && (php->prefix_length[0] == pattern->prefix_length[0]) && (php->ch[0] == pattern->ch[0]) && (php->ch[1] == pattern->ch[1]) && (php->boundary == pattern->boundary)) {
+            if(!memcmp(php->pattern, pattern->pattern, php->length[0] * sizeof(uint16_t)) && !memcmp(php->prefix, pattern->prefix, php->prefix_length[0] * sizeof(uint16_t))) {
                 if(!php->special && !pattern->special) {
                     match = 1;
                 } else if(php->special == pattern->special) {
@@ -154,7 +154,7 @@ static inline int insert_list(struct cli_matcher *root, struct cli_ac_patt *patt
                             }
 
                             for(j = 0; j < a1->num; j++) {
-                                if(memcmp((a1->alt).f_str[j], (a2->alt).f_str[j], a1->len))
+                                if(memcmp((a1->alt).f_str[j], (a2->alt).f_str[j], a1->len[0]))
                                     break;
                             }
 
@@ -308,7 +308,7 @@ int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
 {
     struct cli_ac_node *pt;
     struct cli_ac_patt **newtable;
-    uint16_t len = MIN(root->ac_maxdepth, pattern->length);
+    uint16_t len = MIN(root->ac_maxdepth, pattern->length[0]);
     uint8_t i;
 
     for(i = 0; i < len; i++) {
@@ -860,8 +860,12 @@ int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigne
     }
 }
 
-inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t offset, uint32_t bp, uint32_t fileoffset, uint32_t length, const struct cli_ac_patt *pattern, uint32_t pattoffset, uint16_t specialcnt, uint32_t *end);
-static int ac_findmatch_branch(const unsigned char *buffer, uint32_t offset, uint32_t bp, uint32_t length, uint32_t fileoffset, const struct cli_ac_patt *pattern, uint32_t pattoffset, uint16_t specialcnt, uint32_t *end);
+inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t offset, uint32_t bp, uint32_t fileoffset, uint32_t length,
+                                       const struct cli_ac_patt *pattern, uint32_t pp, uint16_t specialcnt, uint32_t *start, uint32_t *end, int rev);
+static int ac_backward_match_branch(const unsigned char *buffer, uint32_t bp, uint32_t offset, uint32_t length, uint32_t fileoffset,
+                                    const struct cli_ac_patt *pattern, uint32_t pp, uint16_t specialcnt, uint32_t *start, uint32_t *end);
+static int ac_forward_match_branch(const unsigned char *buffer, uint32_t bp, uint32_t offset, uint32_t length, uint32_t fileoffset,
+                                   const struct cli_ac_patt *pattern, uint32_t pp, uint16_t specialcnt, uint32_t *start, uint32_t *end);
 
 /* call only by ac_findmatch_special! Does not handle recursive specials */
 #define AC_MATCH_CHAR2(p,b)                                                             \
@@ -894,8 +898,8 @@ static int ac_findmatch_branch(const unsigned char *buffer, uint32_t offset, uin
         match = 0;                                                                      \
     }
 
-/* call only by ac_findmatch_branch! */
-#define AC_MATCH_CHAR(p,b)                                                              \
+/* call only by ac_XX_match_branch! */
+#define AC_MATCH_CHAR(p,b,rev)                                                          \
     switch(wc = p & CLI_MATCH_METADATA) {                                               \
     case CLI_MATCH_CHAR:                                                                \
         if((unsigned char) p != b)                                                      \
@@ -913,10 +917,17 @@ static int ac_findmatch_branch(const unsigned char *buffer, uint32_t offset, uin
     case CLI_MATCH_SPECIAL:                                                             \
         /* >1 = movement, 0 = fail, <1 = resolved in branch */                          \
         if((match = ac_findmatch_special(buffer, offset, bp, fileoffset, length,        \
-                                         pattern, i, specialcnt, end)) <= 0)            \
+                                        pattern, i, specialcnt, start, end, rev)) <= 0) \
             return match;                                                               \
-        bp += match - 1; /* -1 is for bp++ in parent loop */                            \
-        specialcnt++;                                                                   \
+                                                                                        \
+        if (!rev) {                                                                     \
+            bp += (match - 1); /* -1 is for bp++ in parent loop */                      \
+            specialcnt++;                                                               \
+        } else {                                                                        \
+            bp = bp + 1 - match; /* +1 is for bp-- in parent loop */                    \
+            specialcnt--;                                                               \
+        }                                                                               \
+                                                                                        \
         break;                                                                          \
                                                                                         \
     case CLI_MATCH_NIBBLE_HIGH:                                                         \
@@ -936,11 +947,13 @@ static int ac_findmatch_branch(const unsigned char *buffer, uint32_t offset, uin
 
 
 /* special handler */
-inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t offset, uint32_t bp, uint32_t fileoffset, uint32_t length, const struct cli_ac_patt *pattern, uint32_t pattoffset, uint16_t specialcnt, uint32_t *end)
+inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t offset, uint32_t bp, uint32_t fileoffset, uint32_t length,
+                                       const struct cli_ac_patt *pattern, uint32_t pp, uint16_t specialcnt, uint32_t *start, uint32_t *end, int rev)
 {
     int match, cmp;
     uint16_t j, b = buffer[bp];
     uint16_t wc;
+    uint32_t subbp;
     struct cli_ac_special *special = pattern->special_table[specialcnt];
     struct cli_alt_node *alt = NULL;
 
@@ -959,14 +972,21 @@ inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t off
         break;
 
     case AC_SPECIAL_ALT_STR_FIXED: /* fixed length multi-byte */
-        if (bp + special->len > length)
-            break;
+        if (!rev) {
+            if (bp + special->len[0] > length)
+                break;
+            subbp = bp;
+        } else {
+            if (bp < (special->len[0] - 1))
+                break;
+            subbp = bp - (special->len[0] - 1);
+        }
 
-        match *= special->len;
+        match *= special->len[0];
         for (j = 0; j < special->num; j++) {
-            cmp = memcmp(&buffer[bp], (special->alt).f_str[j], special->len);
+            cmp = memcmp(&buffer[subbp], (special->alt).f_str[j], special->len[0]);
             if (cmp == 0) {
-                match = (!special->negative) * special->len;
+                match = (!special->negative) * special->len[0];
                 break;
             } else if (cmp < 0)
                 break;
@@ -976,15 +996,24 @@ inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t off
     case AC_SPECIAL_ALT_STR: /* generic */
         alt = (special->alt).v_str;
         while (alt) {
-            if (bp + alt->len > length) {
-                alt = alt->next;
-                continue;
+            if (!rev) {
+                if (bp + alt->len > length) {
+                    alt = alt->next;
+                    continue;
+                }
+                subbp = bp;
+            } else {
+                if (bp < (alt->len - 1)) {
+                    alt = alt->next;
+                    continue;
+                }
+                subbp = bp - (alt->len - 1);
             }
 
             /* note that generic alternates CANNOT be negated */
             match = 1;
             for (j = 0; j < alt->len; j++) {
-                AC_MATCH_CHAR2(alt->str[j],buffer[bp+j]);
+                AC_MATCH_CHAR2(alt->str[j],buffer[subbp+j]);
                 if (!match)
                     break;
             }
@@ -995,7 +1024,10 @@ inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t off
                     break;
                 }
                 /* branch for backtracking */
-                match = ac_findmatch_branch(buffer, offset, bp+alt->len, fileoffset, length, pattern, pattoffset+1, specialcnt+1, end);
+                if (!rev)
+                    match = ac_forward_match_branch(buffer, subbp+alt->len, offset, fileoffset, length, pattern, pp+1, specialcnt+1, start, end);
+                else
+                    match = ac_backward_match_branch(buffer, subbp-1, offset, fileoffset, length, pattern, pp-1, specialcnt-1, start, end);
                 if (match)
                     return -1; /* alerts caller that match has been resolved in child callee */
             }
@@ -1030,34 +1062,42 @@ inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t off
 }
 
 /* state should reset on call, recursion depth = number of alternate specials */
-static int ac_findmatch_branch(const unsigned char *buffer, uint32_t offset, uint32_t bp, uint32_t fileoffset, uint32_t length, const struct cli_ac_patt *pattern, uint32_t pattoffset, uint16_t specialcnt, uint32_t *end)
+/* each loop iteration starts on the NEXT sequence to be validated */
+static int ac_backward_match_branch(const unsigned char *buffer, uint32_t bp, uint32_t offset, uint32_t fileoffset, uint32_t length,
+                                    const struct cli_ac_patt *pattern, uint32_t pp, uint16_t specialcnt, uint32_t *start, uint32_t *end)
 {
     int match;
     uint16_t wc, i;
+    uint32_t filestart;
 
-    match = 1;
-    for(i = pattoffset; i < pattern->length && bp < length; i++) {
-        AC_MATCH_CHAR(pattern->pattern[i],buffer[bp]);
-        if (!match)
-            return 0;
+    /* backwards (prefix) validation, determines start */
+    if(pattern->prefix) {
+        match = 1;
 
-        bp++;
+        for (i = pp; 1; i--) {
+            AC_MATCH_CHAR(pattern->prefix[i],buffer[bp],1);
+            if(!match)
+                return 0;
+
+            /* needs to perform check before decrement due to unsignedness */
+            if (i == 0 || bp == 0)
+                break;
+
+            bp--;
+        }
+
+        *start = bp;
+        filestart = fileoffset - offset + bp;
+    } else {
+        /* bp is set to buffer offset */
+        *start = bp = offset;
+        filestart = fileoffset;
     }
-    *end = bp;
 
-    /* special boundary checks */
+    /* left-side special checks, bp = start */
     if(pattern->boundary & AC_BOUNDARY_LEFT) {
         match = !!(pattern->boundary & AC_BOUNDARY_LEFT_NEGATIVE);
-        if(!fileoffset || (offset && (boundary[buffer[offset - 1]] == 1 || boundary[buffer[offset - 1]] == 3)))
-            match = !match;
-
-        if(!match)
-            return 0;
-    }
-
-    if(pattern->boundary & AC_BOUNDARY_RIGHT) {
-        match = !!(pattern->boundary & AC_BOUNDARY_RIGHT_NEGATIVE);
-        if((length <= SCANBUFF) && (bp == length || boundary[buffer[bp]] >= 2))
+        if(!filestart || (bp && (boundary[buffer[bp - 1]] == 1 || boundary[buffer[bp - 1]] == 3)))
             match = !match;
 
         if(!match)
@@ -1066,106 +1106,40 @@ static int ac_findmatch_branch(const unsigned char *buffer, uint32_t offset, uin
 
     if(pattern->boundary & AC_LINE_MARKER_LEFT) {
         match = !!(pattern->boundary & AC_LINE_MARKER_LEFT_NEGATIVE);
-        if(!fileoffset || (offset && (buffer[offset - 1] == '\n')))
+        if(!filestart || (bp && (buffer[bp - 1] == '\n')))
             match = !match;
 
         if(!match)
             return 0;
     }
 
-    if(pattern->boundary & AC_LINE_MARKER_RIGHT) {
-        match = !!(pattern->boundary & AC_LINE_MARKER_RIGHT_NEGATIVE);
-        if((length <= SCANBUFF) && (bp == length || buffer[bp] == '\n' || (buffer[bp] == '\r' && bp + 1 < length && buffer[bp + 1] == '\n')))
-            match = !match;
-
-        if(!match)
-            return 0;
-    }
 
     if(pattern->boundary & AC_WORD_MARKER_LEFT) {
         match = !!(pattern->boundary & AC_WORD_MARKER_LEFT_NEGATIVE);
-        /* absolute beginning of file */
-        if(!fileoffset)
+        if(!filestart)
             match = !match;
-        /* 'wide' characters need a 'wider' check */
         else if(pattern->sigopts & ACPATT_OPTION_WIDE) {
-            /* beginning of file has only one preceding character */
-            if(fileoffset-1 == 0)
+            if(filestart-1 == 0)
                 match = !match;
-            if(offset - 1 && offset && !(isalnum(buffer[offset - 2]) && buffer[offset - 1] == '\0'))
+            if(bp - 1 && bp && !(isalnum(buffer[bp - 2]) && buffer[bp - 1] == '\0'))
                 match = !match;
         }
-        /* 'normal' characters */
-        else if(offset && !isalnum(buffer[offset - 1]))
+        else if(bp && !isalnum(buffer[bp - 1]))
             match = !match;
 
         if(!match)
             return 0;
     }
 
-    if(pattern->boundary & AC_WORD_MARKER_RIGHT) {
-        match = !!(pattern->boundary & AC_WORD_MARKER_RIGHT_NEGATIVE);
-        if(length <= SCANBUFF) {
-            /* absolute end of file */
-            if(bp == length)
-                match = !match;
-            /* 'wide' characters need a 'wider' check */
-            else if((pattern->sigopts & ACPATT_OPTION_WIDE) && (bp+1 < length)) {
-                if(!(isalnum(buffer[bp]) && buffer[bp + 1] == '\0'))
-                    match = !match;
-            }
-            /* 'normal' characters */
-            else if(!isalnum(buffer[bp]))
-                match = !match;
-        }
-
-        if(!match)
-            return 0;
-    }
-
-    /* single-byte anchors */
-    if(!(pattern->ch[1] & CLI_MATCH_IGNORE)) {
-        bp += pattern->ch_mindist[1];
-
-        for(i = pattern->ch_mindist[1]; i <= pattern->ch_maxdist[1]; i++) {
-            if(bp >= length)
-                return 0;
-
-            match = 1;
-            AC_MATCH_CHAR(pattern->ch[1],buffer[bp]);
-            if(match)
-                break;
-
-            bp++;
-        }
-
-        if(!match)
-            return 0;
-    }
-
-    if(pattern->prefix) {
-        specialcnt = 0;
-        bp = offset - pattern->prefix_length;
-        match = 1;
-
-        for(i = 0; i < pattern->prefix_length; i++) {
-            AC_MATCH_CHAR(pattern->prefix[i],buffer[bp]);
-            if(!match)
-                return 0;
-
-            bp++;
-        }
-    }
-
+    /* bp is shifted for left anchor check, thus invalidated as pattern start */
     if(!(pattern->ch[0] & CLI_MATCH_IGNORE)) {
-        bp = offset - pattern->prefix_length;
         if(pattern->ch_mindist[0] + (uint32_t) 1 > bp)
             return 0;
 
         bp -= pattern->ch_mindist[0] + 1;
         for(i = pattern->ch_mindist[0]; i <= pattern->ch_maxdist[0]; i++) {
             match = 1;
-            AC_MATCH_CHAR(pattern->ch[0],buffer[bp]);
+            AC_MATCH_CHAR(pattern->ch[0],buffer[bp],1);
             if(match)
                 break;
 
@@ -1181,15 +1155,95 @@ static int ac_findmatch_branch(const unsigned char *buffer, uint32_t offset, uin
     return 1;
 }
 
-inline static int ac_findmatch(const unsigned char *buffer, uint32_t offset, uint32_t fileoffset, uint32_t length, const struct cli_ac_patt *pattern, uint32_t *end)
+/* state should reset on call, recursion depth = number of alternate specials */
+/* each loop iteration starts on the NEXT sequence to validate */
+static int ac_forward_match_branch(const unsigned char *buffer, uint32_t bp, uint32_t offset, uint32_t fileoffset, uint32_t length,
+                                   const struct cli_ac_patt *pattern, uint32_t pp, uint16_t specialcnt, uint32_t *start, uint32_t *end)
+{
+    int match;
+    uint16_t wc, i;
+
+    match = 1;
+
+    /* forward (pattern) validation; determines end */
+    for(i = pp; i < pattern->length[0] && bp < length; i++) {
+        AC_MATCH_CHAR(pattern->pattern[i],buffer[bp],0);
+        if (!match)
+            return 0;
+
+        bp++;
+    }
+    *end = bp;
+
+    /* right-side special checks, bp = end */
+    if(pattern->boundary & AC_BOUNDARY_RIGHT) {
+        match = !!(pattern->boundary & AC_BOUNDARY_RIGHT_NEGATIVE);
+        if((length <= SCANBUFF) && (bp == length || boundary[buffer[bp]] >= 2))
+            match = !match;
+
+        if(!match)
+            return 0;
+    }
+
+    if(pattern->boundary & AC_LINE_MARKER_RIGHT) {
+        match = !!(pattern->boundary & AC_LINE_MARKER_RIGHT_NEGATIVE);
+        if((length <= SCANBUFF) && (bp == length || buffer[bp] == '\n' || (buffer[bp] == '\r' && bp + 1 < length && buffer[bp + 1] == '\n')))
+            match = !match;
+
+        if(!match)
+            return 0;
+    }
+
+    if(pattern->boundary & AC_WORD_MARKER_RIGHT) {
+        match = !!(pattern->boundary & AC_WORD_MARKER_RIGHT_NEGATIVE);
+        if(length <= SCANBUFF) {
+            if(bp == length)
+                match = !match;
+            else if((pattern->sigopts & ACPATT_OPTION_WIDE) && (bp+1 < length)) {
+                if(!(isalnum(buffer[bp]) && buffer[bp + 1] == '\0'))
+                    match = !match;
+            }
+            else if(!isalnum(buffer[bp]))
+                match = !match;
+        }
+
+        if(!match)
+            return 0;
+    }
+
+    /* bp is shifted for right anchor check, thus invalidated as pattern right-side */
+    if(!(pattern->ch[1] & CLI_MATCH_IGNORE)) {
+        bp += pattern->ch_mindist[1];
+
+        for(i = pattern->ch_mindist[1]; i <= pattern->ch_maxdist[1]; i++) {
+            if(bp >= length)
+                return 0;
+
+            match = 1;
+            AC_MATCH_CHAR(pattern->ch[1],buffer[bp],0);
+            if(match)
+                break;
+
+            bp++;
+        }
+
+        if(!match)
+            return 0;
+    }
+
+    return ac_backward_match_branch(buffer, offset-1, offset, fileoffset, length, pattern, pattern->prefix_length[0]-1, pattern->special_pattern-1, start, end);
+}
+
+inline static int ac_findmatch(const unsigned char *buffer, uint32_t offset, uint32_t fileoffset, uint32_t length, const struct cli_ac_patt *pattern, uint32_t *start, uint32_t *end)
 {
     int match;
     uint16_t specialcnt = pattern->special_pattern;
 
-    if((offset + pattern->length > length) || (pattern->prefix_length > offset))
+    /* minimal check as the maximum variable length may exceed the buffer */
+    if((offset + pattern->length[1] > length) || (pattern->prefix_length[1] > offset))
         return 0;
 
-    match = ac_findmatch_branch(buffer, offset, offset+pattern->depth, fileoffset, length, pattern, pattern->depth, specialcnt, end);
+    match = ac_forward_match_branch(buffer, offset+pattern->depth, offset, fileoffset, length, pattern, pattern->depth, specialcnt, start, end);
     if(match)
         return 1;
     return 0;
@@ -1360,7 +1414,7 @@ int cli_ac_caloff(const struct cli_matcher *root, struct cli_ac_data *data, cons
         } else if((ret = cli_caloff(NULL, info, root->type, patt->offdata, &data->offset[patt->offset_min], &data->offset[patt->offset_max]))) {
             cli_errmsg("cli_ac_caloff: Can't calculate relative offset in signature for %s\n", patt->virname);
             return ret;
-        } else if((data->offset[patt->offset_min] != CLI_OFF_NONE) && (data->offset[patt->offset_min] + patt->length > info->fsize)) {
+        } else if((data->offset[patt->offset_min] != CLI_OFF_NONE) && (data->offset[patt->offset_min] + patt->length[1] > info->fsize)) {
             data->offset[patt->offset_min] = CLI_OFF_NONE;
         }
     }
@@ -1574,7 +1628,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
     struct cli_ac_node *current;
     struct cli_ac_list *pattN, *ptN;
     struct cli_ac_patt *patt, *pt;
-    uint32_t i, bp, realoff, matchend;
+    uint32_t i, bp, exptoff[2], realoff, matchstart, matchend;
     uint16_t j;
     uint8_t found, viruses_found = 0;
     int32_t **offmatrix, swp;
@@ -1611,14 +1665,15 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
                         pattN = pattN->next;
                         continue;
                     }
-                    realoff = offset + bp - patt->prefix_length;
+                    exptoff[0] = offset + bp - patt->prefix_length[2]; /* lower offset end */
+                    exptoff[1] = offset + bp - patt->prefix_length[1]; /* higher offset end */
                     if(patt->offdata[0] == CLI_OFF_ABSOLUTE) {
-                        if(patt->offset_max < realoff || patt->offset_min > realoff) {
+                        if(patt->offset_max < exptoff[0] || patt->offset_min > exptoff[1]) {
                             pattN = pattN->next;
                             continue;
                         }
                     } else {
-                        if(mdata->offset[patt->offset_min] == CLI_OFF_NONE || mdata->offset[patt->offset_max] < realoff || mdata->offset[patt->offset_min] > realoff) {
+                        if(mdata->offset[patt->offset_min] == CLI_OFF_NONE || mdata->offset[patt->offset_max] < exptoff[0] || mdata->offset[patt->offset_min] > exptoff[1]) {
                             pattN = pattN->next;
                             continue;
                         }
@@ -1626,7 +1681,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
                 }
 
                 ptN = pattN;
-                if(ac_findmatch(buffer, bp, offset + bp - patt->prefix_length, length, patt, &matchend)) {
+                if(ac_findmatch(buffer, bp, offset + bp, length, patt, &matchstart, &matchend)) {
                     while(ptN) {
                         pt = ptN->me;
                         if(pt->partno > mdata->min_partno)
@@ -1637,7 +1692,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
                             continue;
                         }
 
-                        realoff = offset + bp - pt->prefix_length;
+                        realoff = offset + matchstart;
                         if(pt->offdata[0] == CLI_OFF_VERSION) {
                             if(!cli_hashset_contains_maybe_noalloc(mdata->vinfo, realoff)) {
                                 ptN = ptN->next_same;
@@ -2114,6 +2169,10 @@ inline static int ac_addspecial_add_alt_node(const char *subexpr, uint8_t sigopt
 
     *prev = newnode;
     newnode->next = ins;
+    if ((special->num == 0) || (newnode->len < special->len[0]))
+        special->len[0] = newnode->len;
+    if ((special->num == 0) || (newnode->len > special->len[1]))
+        special->len[1] = newnode->len;
     special->num++;
     return CL_SUCCESS;
 }
@@ -2250,7 +2309,7 @@ inline static int ac_special_altstr(const char *hexpr, uint8_t sigopts, struct c
 
     if (!sigopts && fixed) {
         special->num = 0;
-        special->len = slen / 2;
+        special->len[0] = special->len[1] = slen / 2;
         /* single-bytes are len 2 in hex */
         if (slen == 2) {
             special->type = AC_SPECIAL_ALT_CHAR;
@@ -2617,13 +2676,24 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
         return CL_EMALFDB;
     }
 
-    new->length = strlen(hex ? hex : hexsig) / 2;
+    new->length[0] = strlen(hex ? hex : hexsig) / 2;
+    for(i = 0, j = 0; i < new->length[0]; i++) {
+        if((new->pattern[i] & CLI_MATCH_METADATA) == CLI_MATCH_SPECIAL) {
+            new->length[1] += new->special_table[j]->len[0];
+            new->length[2] += new->special_table[j]->len[1];
+            j++;
+        } else {
+            new->length[1]++;
+            new->length[2]++;
+        }
+    }
+
     free(hex);
 
     new->sigopts = sigopts;
     /* setting nocase match */
     if (sigopts & ACPATT_OPTION_NOCASE) {
-        for (i = 0; i < new->length; ++i)
+        for (i = 0; i < new->length[0]; i++)
             if ((new->pattern[i] & CLI_MATCH_METADATA) == CLI_MATCH_CHAR) {
                 new->pattern[i] = cli_nocase(new->pattern[i] & 0xff);
                 new->pattern[i] += CLI_MATCH_NOCASE;
@@ -2643,7 +2713,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
         /* TODO: should this affect maxpatlen? */
     }
 
-    for(i = 0; i < root->ac_maxdepth && i < new->length; i++) {
+    for(i = 0; i < root->ac_maxdepth && i < new->length[0]; i++) {
         if(new->pattern[i] & CLI_MATCH_WILDCARD) {
             wprefix = 1;
             break;
@@ -2654,9 +2724,9 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
     }
 
     if(wprefix || zprefix) {
-        pend = new->length - root->ac_mindepth + 1;
+        pend = new->length[0] - root->ac_mindepth + 1;
         for(i = 0; i < pend; i++) {
-            for(j = i; j < i + root->ac_maxdepth && j < new->length; j++) {
+            for(j = i; j < i + root->ac_maxdepth && j < new->length[0]; j++) {
                 if(new->pattern[j] & CLI_MATCH_WILDCARD) {
                     break;
                 } else {
@@ -2694,17 +2764,29 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
         }
 
         new->prefix = new->pattern;
-        new->prefix_length = ppos;
-        new->pattern = &new->prefix[ppos];
-        new->length -= ppos;
-
-        for(i = 0; i < new->prefix_length; i++)
+        new->prefix_length[0] = ppos;
+        for(i = 0, j = 0; i < new->prefix_length[0]; i++) {
             if((new->prefix[i] & CLI_MATCH_WILDCARD) == CLI_MATCH_SPECIAL)
                 new->special_pattern++;
+
+            if((new->prefix[i] & CLI_MATCH_METADATA) == CLI_MATCH_SPECIAL) {
+                new->prefix_length[1] += new->special_table[j]->len[0];
+                new->prefix_length[2] += new->special_table[j]->len[1];
+                j++;
+            } else {
+                new->prefix_length[1]++;
+                new->prefix_length[2]++;
+            }
+        }
+
+        new->pattern = &new->prefix[ppos];
+        new->length[0] -= new->prefix_length[0];
+        new->length[1] -= new->prefix_length[1];
+        new->length[2] -= new->prefix_length[2];
     }
 
-    if(new->length + new->prefix_length > root->maxpatlen)
-        root->maxpatlen = new->length + new->prefix_length;
+    if(new->length[2] + new->prefix_length[2] > root->maxpatlen)
+        root->maxpatlen = new->length[2] + new->prefix_length[2];
 
     new->virname = cli_mpool_virname(root->mempool, virname, options & CL_DB_OFFICIAL);
     if(!new->virname) {

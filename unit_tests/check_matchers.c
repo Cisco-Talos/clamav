@@ -53,6 +53,27 @@ static const struct ac_testdata_s {
      * maxpatlen */
     { "\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1\1dddddddddddddddddddd5\1\1\1\1\1\1\1\1\1\1\1\1\1","6464646464646464646464646464646464646464(35|36)","Test_8: filter bug"},
 
+    /* altbyte */
+    { "aabaa", "6161(62|63|64)6161", "Ac_Altstr_Test_1" }, /* control */
+    { "aacaa", "6161(62|63|64)6161", "Ac_Altstr_Test_1" }, /* control */
+    { "aadaa", "6161(62|63|64)6161", "Ac_Altstr_Test_1" }, /* control */
+
+    /* alt-fstr */
+    { "aabbbaa", "6161(626262|636363|646464)6161", "Ac_Altstr_Test_2" }, /* control */
+    { "aacccaa", "6161(626262|636363|646464)6161", "Ac_Altstr_Test_2" }, /* control */
+    { "aadddaa", "6161(626262|636363|646464)6161", "Ac_Altstr_Test_2" }, /* control */
+
+    /* alt-vstr */
+    { "aabbaa", "6161(6262|63636363|6464646464)6161", "Ac_Altstr_Test_3" }, /* control */
+    { "aaccccaa", "6161(6262|63636363|6464646464)6161", "Ac_Altstr_Test_3" }, /* control */
+    { "aadddddaa", "6161(6262|63636363|6464646464)6161", "Ac_Altstr_Test_3" }, /* control */
+
+    /* alt-embed */
+    { "aajjaa", "6161(6a6a|66(6767|6868)66|6969)6161", "Ac_Altstr_Test_4" }, /* control */
+    { "aafggfaa", "6161(6a6a|66(6767|6868)66|6969)6161", "Ac_Altstr_Test_4" }, /* control */
+    { "aafhhfaa", "6161(6a6a|66(6767|6868)66|6969)6161", "Ac_Altstr_Test_4" }, /* control */
+    { "aaiiaa", "6161(6a6a|66(6767|6868)66|6969)6161", "Ac_Altstr_Test_4" }, /* control */
+
     { NULL, NULL, NULL }
 };
 

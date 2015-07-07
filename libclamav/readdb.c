@@ -334,10 +334,10 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
         patt->ch_mindist[0] = smin;
         patt->ch_maxdist[0] = smax;
         patt->sigid = tid;
-        patt->length = root->ac_mindepth;
+        patt->length[0] = root->ac_mindepth;
 
         /* dummy */
-        patt->pattern = mpool_calloc(root->mempool, patt->length, sizeof(*patt->pattern));
+        patt->pattern = mpool_calloc(root->mempool, patt->length[0], sizeof(*patt->pattern));
         if (!patt->pattern) {
             free(patt);
             return CL_EMEM;
