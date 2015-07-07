@@ -1071,7 +1071,7 @@ static int ac_backward_match_branch(const unsigned char *buffer, uint32_t bp, ui
     uint32_t filestart;
 
     /* backwards (prefix) validation, determines start */
-    if(pattern->prefix) {
+    if(pattern->prefix && pattern->prefix_length[0]) {
         match = 1;
 
         for (i = pp; 1; i--) {
