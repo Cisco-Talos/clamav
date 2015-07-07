@@ -103,6 +103,9 @@ CLAMAV_PRIVATE {
     cli_str2hex;
     cli_hashfile;
     cli_hashstream;
+    text_normalize_init;
+    text_normalize_reset;
+    text_normalize_map;
     html_normalise_map;
     cli_utf16toascii;
 
