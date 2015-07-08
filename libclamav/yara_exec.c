@@ -754,14 +754,12 @@ int yr_execute_code(
           pop(r1);
         }
 #else
-        lsig_id = aclsig->id;
-        for (i = 0; i < aclsig->tdb.subsigs; i++) {
-            if (acdata->lsigsuboff_first[lsig_id][i] != CLI_OFF_NONE) {
-                found++;
-            }
-        }
         while (r1 != UNDEFINED)
         {
+          string = UINT64_TO_PTR(YR_STRING*, r1);
+          lsig_id = string->subsig_id;
+          if (acdata->lsigsuboff_first[aclsig->id][lsig_id] != CLI_OFF_NONE)
+            found++;
           count++;
           pop(r1);
         }
