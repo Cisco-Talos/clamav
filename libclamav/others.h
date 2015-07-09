@@ -230,6 +230,13 @@ struct cli_dbinfo {
     struct cli_dbinfo *next;
 };
 
+struct cli_pwdict {
+    unsigned char *passwd;
+    uint16_t length;
+    cli_file_t container;
+    struct cli_pwdict *next;
+};
+
 struct cl_engine {
     uint32_t refcount; /* reference counter */
     uint32_t sdb;
@@ -285,6 +292,9 @@ struct cl_engine {
     /* Filetype definitions */
     struct cli_ftype *ftypes;
     struct cli_ftype *ptypes;
+
+    /* Container password storage */
+    struct cli_pwdict *pw_dict;
 
     /* Ignored signatures */
     struct cli_matcher *ignored;

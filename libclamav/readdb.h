@@ -64,7 +64,8 @@
 	cli_strbcasestr(ext, ".idb")   ||	\
 	cli_strbcasestr(ext, ".ioc")   ||	\
 	cli_strbcasestr(ext, ".yar")   ||	\
-	cli_strbcasestr(ext, ".yara")		\
+	cli_strbcasestr(ext, ".yara")  ||	\
+	cli_strbcasestr(ext, ".pwdb")		\
     )
 
 char *cli_virname(const char *virname, unsigned int official);

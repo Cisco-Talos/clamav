@@ -4086,6 +4086,150 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
     return CL_SUCCESS;
 }
 
+/*      0            1           2          3
+ * PasswordName;Attributes;PWStorageType;Password
+ */
+#define PWDB_TOKENS 4
+static int cli_loadpwdb(FILE *fs, struct cl_engine *engine, unsigned int options, unsigned int internal, struct cli_dbio *dbio)
+{
+    const char *tokens[PWDB_TOKENS + 1], *pt, *passname;
+    char *attribs;
+    char buffer[FILEBUFF];
+    unsigned int line = 0, skip = 0, pwcnt = 0, tokens_count;
+    struct cli_pwdict *new, *ins;
+    struct cli_lsig_tdb tdb;
+    int ret = CL_SUCCESS, pwstype;
+
+    while(1) {
+        if(internal){
+            options |= CL_DB_OFFICIAL;
+            /* TODO - read default passwords */
+            return CL_SUCCESS;
+        } else {
+            if(!cli_dbgets(buffer, FILEBUFF, fs, dbio))
+                break;
+            if(buffer[0] == '#')
+                continue;
+            cli_chomp(buffer);
+        }
+        line++;
+        tokens_count = cli_strtokenize(buffer, ';', PWDB_TOKENS, tokens);
+
+        if(tokens_count != PWDB_TOKENS) {
+            ret = CL_EMALFDB;
+            break;
+        }
+
+        passname = tokens[0];
+
+        /* check if password is ignored, note that name is not stored */
+        if (engine->ignored && cli_chkign(engine->ignored, passname, passname)) {
+            skip++;
+            continue;
+        }
+
+        if(engine->cb_sigload && engine->cb_sigload("pwdb", passname, ~options & CL_DB_OFFICIAL, engine->cb_sigload_ctx)) {
+            cli_dbgmsg("cli_loadpwdb: skipping %s due to callback\n", passname);
+            skip++;
+            continue;
+        }
+
+        /* use the tdb to track filetypes and check flevels */
+        attribs = cli_strdup(tokens[1]);
+        if(!attribs) {
+            cli_errmsg("cli_loadpwdb: Can't allocate duplicate of attributes\n");
+            ret = CL_EMEM;
+            break;
+        }
+
+        memset(&tdb, 0, sizeof(tdb));
+        ret = init_tdb(&tdb, engine, attribs, passname);
+        free(attribs);
+        if(ret != CL_SUCCESS) {
+            if (ret == CL_BREAK)
+                continue;
+            else
+                break;
+        }
+
+        /* check the PWStorageType */
+        if(!cli_isnumber(tokens[2])) {
+            cli_errmsg("cli_loadpwdb: Invalid value for PWStorageType (third entry)\n");
+            ret = CL_EMALFDB;
+            FREE_TDB(tdb);
+            break;
+        }
+
+        pwstype = atoi(tokens[2]);
+        if((pwstype == 0) || (pwstype == 1)) {
+            new = (struct cli_pwdict *) mpool_calloc(engine->mempool, 1, sizeof(struct cli_pwdict));
+            if(!new) {
+                ret = CL_EMEM;
+                FREE_TDB(tdb);
+                break;
+            }
+            if(pwstype == 0) { /* cleartext */
+                new->passwd = cli_mpool_strdup(engine->mempool, tokens[3]);
+                new->length = strlen(tokens[3]);
+            } else { /* 1 => hex-encoded */
+                new->passwd = cli_mpool_hex2str(engine->mempool, tokens[3]);
+                new->length = strlen(tokens[3]) / 2;
+            }
+            if(!new->passwd) {
+                cli_errmsg("cli_loadpwdb: Can't decode or add new password entry\n");
+                if(pwstype == 0)
+                    ret = CL_EMEM;
+                else
+                    ret = CL_EMALFDB;
+                FREE_TDB(tdb);
+                mpool_free(engine->mempool, new);
+                break;
+            }
+
+            /* TODO: copy containers in the tdb */
+            if (!tdb.container) {
+                new->container = CL_TYPE_ANY;
+            } else {
+                new->container = *(tdb.container);
+            }
+            FREE_TDB(tdb);
+
+            /* add to the engine list, sorted by target type */
+            if(!engine->pw_dict) {
+                engine->pw_dict = new;
+            } else if(new->container < engine->pw_dict->container) {
+                new->next = engine->pw_dict;
+                engine->pw_dict = new;
+            } else {
+                ins = engine->pw_dict;
+                while(ins->next && (ins->next->container < new->container))
+                    ins = ins->next;
+                new->next = ins->next;
+                ins->next = new;
+            }
+        } else {
+            cli_dbgmsg("cli_loadpwdb: Unsupported PWStorageType %u\n", pwstype);
+            continue;
+        }
+
+        pwcnt++;
+    }
+
+    /* error reporting */
+    if(ret) {
+        cli_errmsg("Problem processing %s password database at line %u\n", internal ? "built-in" : "external", line);
+        return ret;
+    }
+
+    if(!pwcnt) {
+        cli_errmsg("Empty %s password database\n", internal ? "built-in" : "external");
+        return CL_EMALFDB;
+    }
+
+    cli_dbgmsg("Loaded %u (%u skipped) password entries\n", pwcnt, skip);
+    return CL_SUCCESS;
+}
+
 static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned int *signo, unsigned int options);
 
 int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio)
@@ -4218,6 +4362,8 @@ int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo
 	ret = cli_loadopenioc(fs, dbname, engine, options);
     } else if(cli_strbcasestr(dbname, ".yar") || cli_strbcasestr(dbname, ".yara")) {
         ret = cli_loadyara(fs, engine, signo, options, dbio, filename);
+    } else if(cli_strbcasestr(dbname, ".pwdb")) {
+        ret = cli_loadpwdb(fs, engine, options, 0, dbio);
     } else {
 	cli_dbgmsg("cli_load: unknown extension - assuming old database format\n");
 	ret = cli_loaddb(fs, engine, signo, options, dbio, dbname);
@@ -4689,6 +4835,18 @@ int cl_statchkdir(const struct cl_stat *dbstat)
     return CL_SUCCESS;
 }
 
+void cli_pwfree(const struct cl_engine *engine)
+{
+    struct cli_pwdict *pw = engine->pw_dict, *pt;
+
+    while(pw) {
+	pt = pw;
+	pw = pw->next;
+	mpool_free(engine->mempool, pt->passwd);
+	mpool_free(engine->mempool, pt);
+    }
+}
+
 int cl_statfree(struct cl_stat *dbstat)
 {
 
@@ -4884,11 +5042,12 @@ int cl_engine_free(struct cl_engine *engine)
 	mpool_free(engine->mempool, engine->ignored);
     }
 
+   cli_pwfree(engine);
+
 #ifdef USE_MPOOL
     if(engine->mempool) mpool_destroy(engine->mempool);
 #endif
 
- 
     cli_yara_free(engine);
 
     free(engine);
@@ -4915,6 +5074,11 @@ int cl_engine_compile(struct cl_engine *engine)
 
     if(!engine->ftypes)
 	if((ret = cli_loadftm(NULL, engine, 0, 1, NULL)))
+	    return ret;
+
+    /* handle default passwords */
+    if(!engine->pw_dict)
+	if((ret = cli_loadpwdb(NULL, engine, 0, 1, NULL)))
 	    return ret;
 
     for(i = 0; i < CLI_MTARGETS; i++) {
