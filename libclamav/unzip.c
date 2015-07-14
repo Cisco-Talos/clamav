@@ -64,128 +64,6 @@ static int wrap_inflateinit2(void *a, int b) {
   return inflateInit2(a, b);
 }
 
-/* zip update keys, taken from zip specification */
-static inline void zupdatekey(uint32_t key[3], unsigned char input)
-{
-    unsigned char tmp[1];
-    unsigned long crctmp;
-
-    tmp[0] = input;
-    ZIP_CRC32(key[0], key[0], tmp, 1);
-
-    key[1] = key[1] + (key[0] & 0xff);
-    key[1] = key[1] * 134775813 + 1;
-
-    tmp[0] = key[1] >> 24;
-    ZIP_CRC32(key[2], key[2], tmp, 1);
-}
-
-/* zip init keys */
-static inline void zinitkey(uint32_t key[3], struct cli_pwdict *password)
-{
-    int i;
-
-    /* intialize keys, these are specified but the zip specification */
-    key[0] = 305419896L;
-    key[1] = 591751049L;
-    key[2] = 878082192L;
-
-    /* update keys with password  */
-    for (i = 0; i < password->length; i++)
-	zupdatekey(key, password->passwd[i]);
-}
-
-/* zip decrypt byte */
-static inline unsigned char zdecryptbyte(uint32_t key[3])
-{
-    unsigned short temp;
-    temp = key[2] | 2;
-    return ((temp * (temp ^ 1)) >> 8);
-}
-
-/* zip decrypt, CL_EPARSE = could not apply a password, csize includes the decryption header */
-/* TODO - search for strong encryption header (0x0017) and handle them */
-static inline int zdecrypt(const uint8_t *src, uint32_t csize, uint32_t usize, const uint8_t *lh, unsigned int *fu, cli_ctx *ctx, char *tmpd, zip_cb zcb)
-{
-    int i, ret, v = 0;
-    uint32_t key[3];
-    uint8_t eh[12]; /* encryption header buffer */
-    struct cli_pwdict *password;
-
-    if (!ctx || !ctx->engine)
-	return CL_ENULLARG;
-
-    /* TODO - dconf going here */
-
-    password = ctx->engine->pw_dict;
-
-    while (password) {
-	if ((password->container != CL_TYPE_ANY) && (password->container != CL_TYPE_ZIP)) {
-	    if ((password->container > CL_TYPE_ZIP) && (password->container > CL_TYPE_ANY))
-		break;
-	    password = password->next;
-	    continue;
-	}
-
-	zinitkey(key, password);
-
-	/* decrypting the encryption header */
-	memcpy(eh, src, SIZEOF_EH);
-
-	for (i = 0; i < SIZEOF_EH; i++) {
-	    eh[i] ^= zdecryptbyte(key);
-	    zupdatekey(key, eh[i]);
-	}
-
-	/* verify that the password is correct */
-	if (LH_version > 20) { /* higher than 2.0 */
-	    uint16_t a = eh[SIZEOF_EH-1];
-
-	    if (LH_flags & F_USEDD) {
-		cli_dbgmsg("verify(%u): 0x%02x 0x%x (moddate)\n", LH_version, a, LH_mtime);
-		if (a == ((LH_mtime >> 8) & 0xff))
-		    v = 1;
-	    } else {
-		cli_dbgmsg("verify(%u): 0x%02x 0x%x (crc32)\n", LH_version, a, LH_crc32);
-		if (a == ((LH_crc32 >> 24) & 0xff))
-		    v = 1;
-	    }
-	} else {
-	    uint16_t a = eh[SIZEOF_EH-1], b = eh[SIZEOF_EH-2];
-
-	    if (LH_flags & F_USEDD) {
-		cli_dbgmsg("verify(%u): 0x0000%02x%02x 0x%x (moddate)\n", LH_version, a, b, LH_mtime);
-		if ((b | (a << 8)) == (LH_mtime & 0xffff))
-		    v = 1;
-	    } else {
-		cli_dbgmsg("verify(%u): 0x0000%02x%02x 0x%x (crc32)\n", LH_version, eh[SIZEOF_EH-1], eh[SIZEOF_EH-2], LH_crc32);
-		if ((b | (a << 8)) == ((LH_crc32 >> 16) & 0xffff))
-		    v = 1;
-	    }
-	}
-
-	if (v) {
-	    cli_dbgmsg("zdecrypt: password [%s] matches\n", password->name);
-#if 0
-	    /* decrypt data to new fmap -> buffer */
-	    
-	    /* call unz on decrypted output */
-	    ret = unz();
-
-	    /* clean-up and return */
-	    return ret;
-#else
-	    v = 0;
-#endif
-	}
-
-	password = password->next;
-    }
-
-    cli_dbgmsg("cli_unzip: lh - skipping encrypted file, no valid passwords\n");
-    return CL_SUCCESS;
-}
-
 static int unz(const uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, uint16_t flags, unsigned int *fu, cli_ctx *ctx, char *tmpd, zip_cb zcb) {
   char name[1024], obuf[BUFSIZ];
   char *tempfile = name;
@@ -431,6 +309,188 @@ static int unz(const uint8_t *src, uint32_t csize, uint32_t usize, uint16_t meth
   if(!tmpd) free(tempfile);
   cli_dbgmsg("cli_unzip: extraction failed\n");
   return ret;
+}
+
+/* zip update keys, taken from zip specification */
+static inline void zupdatekey(uint32_t key[3], unsigned char input)
+{
+    unsigned char tmp[1];
+    unsigned long crctmp;
+
+    tmp[0] = input;
+    ZIP_CRC32(key[0], key[0], tmp, 1);
+
+    key[1] = key[1] + (key[0] & 0xff);
+    key[1] = key[1] * 134775813 + 1;
+
+    tmp[0] = key[1] >> 24;
+    ZIP_CRC32(key[2], key[2], tmp, 1);
+}
+
+/* zip init keys */
+static inline void zinitkey(uint32_t key[3], struct cli_pwdict *password)
+{
+    int i;
+
+    /* intialize keys, these are specified but the zip specification */
+    key[0] = 305419896L;
+    key[1] = 591751049L;
+    key[2] = 878082192L;
+
+    /* update keys with password  */
+    for (i = 0; i < password->length; i++)
+	zupdatekey(key, password->passwd[i]);
+}
+
+/* zip decrypt byte */
+static inline unsigned char zdecryptbyte(uint32_t key[3])
+{
+    unsigned short temp;
+    temp = key[2] | 2;
+    return ((temp * (temp ^ 1)) >> 8);
+}
+
+/* zip decrypt, CL_EPARSE = could not apply a password, csize includes the decryption header */
+/* TODO - search for strong encryption header (0x0017) and handle them */
+static inline int zdecrypt(const uint8_t *src, uint32_t csize, uint32_t usize, const uint8_t *lh, unsigned int *fu, cli_ctx *ctx, char *tmpd, zip_cb zcb)
+{
+    int i, ret, v = 0;
+    uint32_t key[3];
+    uint8_t eh[12]; /* encryption header buffer */
+    struct cli_pwdict *password;
+
+    if (!ctx || !ctx->engine)
+	return CL_ENULLARG;
+
+    /* TODO - dconf going here */
+
+    password = ctx->engine->pw_dict;
+
+    while (password) {
+	if ((password->container != CL_TYPE_ANY) && (password->container != CL_TYPE_ZIP)) {
+	    if ((password->container > CL_TYPE_ZIP) && (password->container > CL_TYPE_ANY))
+		break;
+	    password = password->next;
+	    continue;
+	}
+
+	zinitkey(key, password);
+
+	/* decrypting the encryption header */
+	memcpy(eh, src, SIZEOF_EH);
+
+	for (i = 0; i < SIZEOF_EH; i++) {
+	    eh[i] ^= zdecryptbyte(key);
+	    zupdatekey(key, eh[i]);
+	}
+
+	/* verify that the password is correct */
+	if (LH_version > 20) { /* higher than 2.0 */
+	    uint16_t a = eh[SIZEOF_EH-1];
+
+	    if (LH_flags & F_USEDD) {
+		cli_dbgmsg("verify(%u): 0x%02x 0x%x (moddate)\n", LH_version, a, LH_mtime);
+		if (a == ((LH_mtime >> 8) & 0xff))
+		    v = 1;
+	    } else {
+		cli_dbgmsg("verify(%u): 0x%02x 0x%x (crc32)\n", LH_version, a, LH_crc32);
+		if (a == ((LH_crc32 >> 24) & 0xff))
+		    v = 1;
+	    }
+	} else {
+	    uint16_t a = eh[SIZEOF_EH-1], b = eh[SIZEOF_EH-2];
+
+	    if (LH_flags & F_USEDD) {
+		cli_dbgmsg("verify(%u): 0x0000%02x%02x 0x%x (moddate)\n", LH_version, a, b, LH_mtime);
+		if ((b | (a << 8)) == (LH_mtime & 0xffff))
+		    v = 1;
+	    } else {
+		cli_dbgmsg("verify(%u): 0x0000%02x%02x 0x%x (crc32)\n", LH_version, eh[SIZEOF_EH-1], eh[SIZEOF_EH-2], LH_crc32);
+		if ((b | (a << 8)) == ((LH_crc32 >> 16) & 0xffff))
+		    v = 1;
+	    }
+	}
+
+	if (v) {
+	    char name[1024], obuf[BUFSIZ];
+	    char *tempfile = name;
+	    unsigned int written = 0, total = 0;
+	    fmap_t *dcypt_map;
+	    const uint8_t *dcypt_zip;
+	    int of;
+
+	    cli_dbgmsg("zdecrypt: password [%s] matches\n", password->name);
+
+	    /* output decrypted data to tempfile */
+	    if(tmpd) {
+		snprintf(name, sizeof(name), "%s"PATHSEP"zip.decrypt.%03u", tmpd, *fu);
+		name[sizeof(name)-1]='\0';
+	    } else {
+		if(!(tempfile = cli_gentemp(ctx->engine->tmpdir))) return CL_EMEM;
+	    }
+	    if((of = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRUSR|S_IWUSR))==-1) {
+		cli_warnmsg("zdecrypt: failed to create temporary file %s\n", tempfile);
+		if(!tmpd) free(tempfile);
+		return CL_ECREAT;
+	    }
+
+	    for (i = 12; i < csize; i++) {
+		obuf[written] = src[i] ^ zdecryptbyte(key);
+		zupdatekey(key, obuf[written]);
+
+		written++;
+		if (written >= BUFSIZ) {
+		    if (cli_writen(of, obuf, written)!=(int)written) {
+			ret = CL_EWRITE;
+			goto zd_clean;
+		    }
+		    total += written;
+		    written = 0;
+		}
+	    }
+	    if (written) {
+		if (cli_writen(of, obuf, written)!=(int)written) {
+		    ret = CL_EWRITE;
+		    goto zd_clean;
+		}
+		total += written;
+		written = 0;
+	    }
+
+	    cli_dbgmsg("zdecrypt: decrypted %u bytes to %s\n", total, tempfile);
+
+	    /* decrypt data to new fmap -> buffer */
+	    if (!(dcypt_map = fmap(of, 0, total))) {
+		cli_warnmsg("zdecrypt: failed to create fmap on decrypted file %s\n", tempfile);
+		ret = CL_EMAP;
+		goto zd_clean;
+	    }
+
+	    if (!(dcypt_zip = fmap_need_off_once(dcypt_map, 0, total))) {
+		cli_warnmsg("zdecrypt: failed to acquire buffer on decrypted file %s\n", tempfile);
+		funmap(dcypt_map);
+		ret = CL_EREAD;
+		goto zd_clean;
+	    }
+
+	    /* call unz on decrypted output */
+	    ret = unz(dcypt_zip, csize - SIZEOF_EH, usize, LH_method, LH_flags, fu, ctx, tmpd, zcb);
+
+	    /* clean-up and return */
+	    funmap(dcypt_map);
+	zd_clean:
+	    close(of);
+	    if (!ctx->engine->keeptmp)
+                if (cli_unlink(tempfile)) return CL_EUNLINK;
+            if (!tmpd) free(tempfile);
+	    return ret;
+	}
+
+	password = password->next;
+    }
+
+    cli_dbgmsg("cli_unzip: lh - skipping encrypted file, no valid passwords\n");
+    return CL_SUCCESS;
 }
 
 static unsigned int lhdr(fmap_t *map, uint32_t loff,uint32_t zsize, unsigned int *fu, unsigned int fc, const uint8_t *ch, int *ret, cli_ctx *ctx, char *tmpd, int detect_encrypted, zip_cb zcb) {
