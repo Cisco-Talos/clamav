@@ -4168,6 +4168,16 @@ static int cli_loadpwdb(FILE *fs, struct cl_engine *engine, unsigned int options
                 FREE_TDB(tdb);
                 break;
             }
+
+            /* copy passwd name */
+            new->name = cli_mpool_strdup(engine->mempool, tokens[0]);
+            if (!new->name) {
+                ret = CL_EMEM;
+                FREE_TDB(tdb);
+                mpool_free(engine->mempool, new);
+                break;
+            }
+
             if(pwstype == 0) { /* cleartext */
                 new->passwd = cli_mpool_strdup(engine->mempool, tokens[3]);
                 new->length = strlen(tokens[3]);
@@ -4183,6 +4193,7 @@ static int cli_loadpwdb(FILE *fs, struct cl_engine *engine, unsigned int options
                     ret = CL_EMALFDB;
                 FREE_TDB(tdb);
                 mpool_free(engine->mempool, new);
+                mpool_free(engine->mempool, new->name);
                 break;
             }
 

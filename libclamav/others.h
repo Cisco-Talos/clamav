@@ -231,6 +231,7 @@ struct cli_dbinfo {
 };
 
 struct cli_pwdict {
+    char *name;
     unsigned char *passwd;
     uint16_t length;
     cli_file_t container;
