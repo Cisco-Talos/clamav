@@ -39,7 +39,7 @@
 
 #undef PTW32_PROGCTR
 
-#if defined(_M_IX86) || defined(_X86_)
+#if defined(_M_IX86) || (defined(_X86_) && !defined(__amd64__))
 #define PTW32_PROGCTR(Context)  ((Context).Eip)
 #endif
 

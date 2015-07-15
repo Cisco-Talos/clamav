@@ -101,7 +101,7 @@ sem_post_multiple (sem_t * sem, int count)
 	  s->value += count;
 	  if (waiters > 0)
 	    {
-#ifdef NEED_SEM
+#if defined(NEED_SEM)
 	      if (SetEvent(s->sem))
 		{
 		  waiters--;

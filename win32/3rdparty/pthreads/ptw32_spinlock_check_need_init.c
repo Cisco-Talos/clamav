@@ -42,16 +42,13 @@ INLINE int
 ptw32_spinlock_check_need_init (pthread_spinlock_t * lock)
 {
   int result = 0;
+  ptw32_mcs_local_node_t node;
 
   /*
    * The following guarded test is specifically for statically
    * initialised spinlocks (via PTHREAD_SPINLOCK_INITIALIZER).
-   *
-   * Note that by not providing this synchronisation we risk
-   * introducing race conditions into applications which are
-   * correctly written.
    */
-  EnterCriticalSection (&ptw32_spinlock_test_init_lock);
+  ptw32_mcs_lock_acquire(&ptw32_spinlock_test_init_lock, &node);
 
   /*
    * We got here possibly under race
@@ -75,7 +72,7 @@ ptw32_spinlock_check_need_init (pthread_spinlock_t * lock)
       result = EINVAL;
     }
 
-  LeaveCriticalSection (&ptw32_spinlock_test_init_lock);
+  ptw32_mcs_lock_release(&node);
 
   return (result);
 }

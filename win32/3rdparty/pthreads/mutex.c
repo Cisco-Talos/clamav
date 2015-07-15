@@ -37,7 +37,7 @@
 #if ! defined(_UWIN) && ! defined(WINCE)
 #   include <process.h>
 #endif
-#ifndef NEED_FTIME
+#if !defined(NEED_FTIME)
 #include <sys/timeb.h>
 #endif
 #include "pthread.h"
@@ -53,7 +53,10 @@
 #include "pthread_mutexattr_setpshared.c"
 #include "pthread_mutexattr_settype.c"
 #include "pthread_mutexattr_gettype.c"
+#include "pthread_mutexattr_setrobust.c"
+#include "pthread_mutexattr_getrobust.c"
 #include "pthread_mutex_lock.c"
 #include "pthread_mutex_timedlock.c"
 #include "pthread_mutex_unlock.c"
 #include "pthread_mutex_trylock.c"
+#include "pthread_mutex_consistent.c"

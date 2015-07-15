@@ -6,7 +6,7 @@
  *
  *      Pthreads-win32 - POSIX Threads Library for Win32
  *      Copyright(C) 1998 John E. Bossom
- *      Copyright(C) 1999,2003 Pthreads-win32 contributors
+ *      Copyright(C) 1999,2005 Pthreads-win32 contributors
  * 
  *      Contact Email: rpj@callisto.canberra.edu.au
  * 
@@ -33,25 +33,26 @@
  *
  * --------------------------------------------------------------------------
  *
- * Test Synopsis: Test passing NULL as thread id arg to pthread_create.
+ * Test Synopsis:
+ * - Test passing arg to thread function.
  *
  * Test Method (Validation or Falsification):
- * - 
+ * - Statistical, not absolute (depends on sample size).
  *
  * Requirements Tested:
  * -
  *
  * Features Tested:
- * - 
+ * -
  *
  * Cases Tested:
- * - 
+ * -
  *
  * Description:
- * - 
+ * -
  *
  * Environment:
- * - 
+ * -
  *
  * Input:
  * - None.
@@ -61,7 +62,7 @@
  * - No output on success.
  *
  * Assumptions:
- * - 
+ * -
  *
  * Pass Criteria:
  * - Process returns zero exit status.
@@ -70,53 +71,39 @@
  * - Process returns non-zero exit status.
  */
 
-
-#ifdef __GNUC__
-#include <stdlib.h>
-#endif
-
 #include "test.h"
 
-/*
- * Create NUMTHREADS threads in addition to the Main thread.
- */
 enum {
-  NUMTHREADS = 1
+  NUMTHREADS = 10000
 };
 
+static int washere = 0;
 
-void *
-threadFunc(void * arg)
+void * func(void * arg)
 {
-  return (void *) 0;
+  washere = (int)(size_t)arg;
+  return (void *) 0; 
 }
-
+ 
 int
-main(int argc, char * argv[])
+main()
 {
+  pthread_t t;
+  pthread_attr_t attr;
+  void * result = NULL;
   int i;
-  pthread_t mt;
 
-  if (argc <= 1)
-    {
-      int result;
-
-      printf("You should see an application memory write error message\n");
-      fflush(stdout);
-      result = system("create3.exe die");
-      exit(0);
-    }
-
-  assert((mt = pthread_self()).p != NULL);
+  pthread_attr_init(&attr);
+  pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
   for (i = 0; i < NUMTHREADS; i++)
     {
-      assert(pthread_create(NULL, NULL, threadFunc, NULL) == 0);
+      washere = 0;
+      assert(pthread_create(&t, &attr, func, (void *)(size_t)1) == 0);
+      assert(pthread_join(t, &result) == 0);
+      assert((int)(size_t)result == 0);
+      assert(washere == 1);
     }
 
-  /*
-   * Success.
-   */
   return 0;
 }
-

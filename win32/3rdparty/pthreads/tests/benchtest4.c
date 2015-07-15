@@ -54,23 +54,23 @@
 pthread_mutex_t mx;
 old_mutex_t ox;
 pthread_mutexattr_t ma;
-struct _timeb currSysTimeStart;
-struct _timeb currSysTimeStop;
+PTW32_STRUCT_TIMEB currSysTimeStart;
+PTW32_STRUCT_TIMEB currSysTimeStop;
 long durationMilliSecs;
 long overHeadMilliSecs = 0;
 
-#define GetDurationMilliSecs(_TStart, _TStop) ((_TStop.time*1000+_TStop.millitm) \
-                                               - (_TStart.time*1000+_TStart.millitm))
+#define GetDurationMilliSecs(_TStart, _TStop) ((long)((_TStop.time*1000+_TStop.millitm) \
+                                               - (_TStart.time*1000+_TStart.millitm)))
 
 /*
  * Dummy use of j, otherwise the loop may be removed by the optimiser
  * when doing the overhead timing with an empty loop.
  */
 #define TESTSTART \
-  { int i, j = 0, k = 0; _ftime(&currSysTimeStart); for (i = 0; i < ITERATIONS; i++) { j++;
+  { int i, j = 0, k = 0; PTW32_FTIME(&currSysTimeStart); for (i = 0; i < ITERATIONS; i++) { j++;
 
 #define TESTSTOP \
-  }; _ftime(&currSysTimeStop); if (j + k == i) j++; }
+  }; PTW32_FTIME(&currSysTimeStop); if (j + k == i) j++; }
 
 
 void
@@ -159,13 +159,29 @@ main (int argc, char *argv[])
    * Now we can start the actual tests
    */
 #ifdef PTW32_MUTEX_TYPES
-  runTest("PTHREAD_MUTEX_DEFAULT (W9x,WNT)", PTHREAD_MUTEX_DEFAULT);
+  runTest("PTHREAD_MUTEX_DEFAULT", PTHREAD_MUTEX_DEFAULT);
 
-  runTest("PTHREAD_MUTEX_NORMAL (W9x,WNT)", PTHREAD_MUTEX_NORMAL);
+  runTest("PTHREAD_MUTEX_NORMAL", PTHREAD_MUTEX_NORMAL);
 
-  runTest("PTHREAD_MUTEX_ERRORCHECK (W9x,WNT)", PTHREAD_MUTEX_ERRORCHECK);
+  runTest("PTHREAD_MUTEX_ERRORCHECK", PTHREAD_MUTEX_ERRORCHECK);
 
-  runTest("PTHREAD_MUTEX_RECURSIVE (W9x,WNT)", PTHREAD_MUTEX_RECURSIVE);
+  runTest("PTHREAD_MUTEX_RECURSIVE", PTHREAD_MUTEX_RECURSIVE);
+#else
+  runTest("Non-blocking lock", 0);
+#endif
+
+  printf( ".............................................................................\n");
+
+  pthread_mutexattr_setrobust(&ma, PTHREAD_MUTEX_ROBUST);
+
+#ifdef PTW32_MUTEX_TYPES
+  runTest("PTHREAD_MUTEX_DEFAULT (Robust)", PTHREAD_MUTEX_DEFAULT);
+
+  runTest("PTHREAD_MUTEX_NORMAL (Robust)", PTHREAD_MUTEX_NORMAL);
+
+  runTest("PTHREAD_MUTEX_ERRORCHECK (Robust)", PTHREAD_MUTEX_ERRORCHECK);
+
+  runTest("PTHREAD_MUTEX_RECURSIVE (Robust)", PTHREAD_MUTEX_RECURSIVE);
 #else
   runTest("Non-blocking lock", 0);
 #endif

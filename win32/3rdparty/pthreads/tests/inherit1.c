@@ -89,7 +89,7 @@ void * func(void * arg)
   struct sched_param param;
 
   assert(pthread_getschedparam(pthread_self(), &policy, &param) == 0);
-  return (void *) param.sched_priority;
+  return (void *) (size_t)param.sched_priority;
 }
 
 
@@ -169,7 +169,7 @@ main()
           assert(pthread_attr_setschedparam(&attr, &param) == 0);
           assert(pthread_create(&t, &attr, func, NULL) == 0);
           pthread_join(t, &result);
-          assert((int) result == mainParam.sched_priority);
+          assert((int)(size_t) result == mainParam.sched_priority);
         }
     }
 

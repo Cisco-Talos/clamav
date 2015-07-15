@@ -110,21 +110,22 @@ ptw32_cancelable_wait (HANDLE waitHandle, DWORD timeout)
 
       if (sp != NULL)
 	{
+          ptw32_mcs_local_node_t stateLock;
 	  /*
 	   * Should handle POSIX and implicit POSIX threads..
 	   * Make sure we haven't been async-canceled in the meantime.
 	   */
-	  (void) pthread_mutex_lock (&sp->cancelLock);
+	  ptw32_mcs_lock_acquire (&sp->stateLock, &stateLock);
 	  if (sp->state < PThreadStateCanceling)
 	    {
 	      sp->state = PThreadStateCanceling;
 	      sp->cancelState = PTHREAD_CANCEL_DISABLE;
-	      (void) pthread_mutex_unlock (&sp->cancelLock);
+	      ptw32_mcs_lock_release (&stateLock);
 	      ptw32_throw (PTW32_EPS_CANCEL);
 
 	      /* Never reached */
 	    }
-	  (void) pthread_mutex_unlock (&sp->cancelLock);
+	  ptw32_mcs_lock_release (&stateLock);
 	}
 
       /* Should never get to here. */

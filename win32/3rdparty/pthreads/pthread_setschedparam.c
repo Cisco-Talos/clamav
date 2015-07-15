@@ -71,7 +71,8 @@ int
 ptw32_setthreadpriority (pthread_t thread, int policy, int priority)
 {
   int prio;
-  int result;
+  ptw32_mcs_local_node_t threadLock;
+  int result = 0;
   ptw32_thread_t * tp = (ptw32_thread_t *) thread.p;
 
   prio = priority;
@@ -100,26 +101,23 @@ ptw32_setthreadpriority (pthread_t thread, int policy, int priority)
 
 #endif
 
-  result = pthread_mutex_lock (&tp->threadLock);
+  ptw32_mcs_lock_acquire (&tp->threadLock, &threadLock);
 
-  if (0 == result)
+  /* If this fails, the current priority is unchanged. */
+  if (0 == SetThreadPriority (tp->threadH, prio))
     {
-      /* If this fails, the current priority is unchanged. */
-      if (0 == SetThreadPriority (tp->threadH, prio))
-	{
-	  result = EINVAL;
-	}
-      else
-	{
-	  /*
-	   * Must record the thread's sched_priority as given,
-	   * not as finally adjusted.
-	   */
-	  tp->sched_priority = priority;
-	}
-
-      (void) pthread_mutex_unlock (&tp->threadLock);
+      result = EINVAL;
     }
+  else
+    {
+      /*
+       * Must record the thread's sched_priority as given,
+       * not as finally adjusted.
+       */
+      tp->sched_priority = priority;
+    }
+
+  ptw32_mcs_lock_release (&threadLock);
 
   return result;
 }

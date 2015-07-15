@@ -68,7 +68,10 @@ LFLAGS=
 INCLUDES= -i=.
 BUILD_DIR=..
 
-COPYFILES	= $(CPHDR) $(CPLIB) $(CPDLL)
+# The next path is relative to $BUILD_DIR
+QAPC	= # ..\QueueUserAPCEx\User\quserex.dll
+
+COPYFILES	= $(CPHDR) $(CPLIB) $(CPDLL) $(QAPC)
 
 TEST		=
 EHFLAGS	=
@@ -84,13 +87,14 @@ PASSES	= sizes.pass  loadfree.pass &
 	  mutex2r.pass  mutex2e.pass  mutex3r.pass  mutex3e.pass  &
 	  condvar1.pass  condvar1_1.pass  condvar1_2.pass  condvar2.pass  condvar2_1.pass  &
 	  exit1.pass  create1.pass  create2.pass  reuse1.pass  reuse2.pass  equal1.pass  &
-	  kill1.pass  valid1.pass  valid2.pass  &
+	  sequence1.pass  kill1.pass  valid1.pass  valid2.pass  &
 	  exit2.pass  exit3.pass  exit4  exit5  &
 	  join0.pass  join1.pass  detach1.pass  join2.pass join3.pass  &
 	  mutex4.pass  mutex6.pass  mutex6n.pass  mutex6e.pass  mutex6r.pass  &
 	  mutex6s.pass  mutex6es.pass  mutex6rs.pass  &
 	  mutex7.pass  mutex7n.pass  mutex7e.pass  mutex7r.pass  &
 	  mutex8.pass  mutex8n.pass  mutex8e.pass  mutex8r.pass  &
+	  robust1.pass  robust2.pass  robust3.pass  robust4.pass  robust5.pass  &
 	  count1.pass  &
 	  once1.pass  once2.pass  once3.pass  once4.pass  tsd1.pass  &
 	  self2.pass  &
@@ -112,7 +116,7 @@ PASSES	= sizes.pass  loadfree.pass &
 	  spin1.pass  spin2.pass  spin3.pass  spin4.pass  &
 	  barrier1.pass  barrier2.pass  barrier3.pass  barrier4.pass  barrier5.pass  &
 	  exception1.pass  exception2.pass  exception3.pass  &
-	  cancel9.pass  create3.pass  stress1.pass
+	  cancel9.pass  stress1.pass
 
 BENCHRESULTS = &
 	  benchtest1.bench benchtest2.bench benchtest3.bench benchtest4.bench benchtest5.bench
@@ -188,7 +192,7 @@ sizes.pass: sizes.exe
 	@ $(CC) /P $(EHFLAGS) $(CFLAGS) $(INCLUDES) $<
 
 $(COPYFILES): .SYMBOLIC
-	@ $(ECHO) Copying $@
+	@ $(ECHO) Copying $(BUILD_DIR)\$@
 	@ $(CP) $(BUILD_DIR)\$@ .
 
 pthread.dll:
@@ -252,11 +256,10 @@ condvar6.pass: condvar5.pass
 condvar7.pass: condvar6.pass cleanup1.pass
 condvar8.pass: condvar7.pass
 condvar9.pass: condvar8.pass
-context1.pass: cancel2.pass
+context1.pass: cancel1.pass
 count1.pass: join1.pass
 create1.pass: mutex2.pass
 create2.pass: create1.pass
-create3.pass:
 delay1.pass:
 delay2.pass: delay1.pass
 detach1.pass: join0.pass
@@ -313,9 +316,14 @@ priority1.pass: join1.pass
 priority2.pass: priority1.pass barrier3.pass
 reuse1.pass: create2.pass
 reuse2.pass: reuse1.pass
+robust1.pass: mutex8r.pass
+robust2.pass: mutex8r.pass
+robust3.pass: robust2.pass
+robust4.pass: robust3.pass
+robust5.pass: robust4.pass
 rwlock1.pass: condvar6.pass
 rwlock2.pass: rwlock1.pass
-rwlock3.pass: rwlock2.pass
+rwlock3.pass: rwlock2.pass join2.pass
 rwlock4.pass: rwlock3.pass
 rwlock5.pass: rwlock4.pass
 rwlock6.pass: rwlock5.pass
@@ -334,6 +342,7 @@ semaphore3.pass: semaphore2.pass
 semaphore4.pass: semaphore3.pass cancel1.pass
 semaphore4t.pass: semaphore4.pass
 semaphore5.pass: semaphore4.pass
+sequence1.pass: reuse2.pass
 sizes.pass:
 spin1.pass:
 spin2.pass: spin1.pass

@@ -57,7 +57,7 @@ void * locker(void * arg)
   assert(pthread_mutex_trylock(&mutex) == EBUSY);
   lockCount++;
   assert(pthread_mutex_unlock(&mutex) == 0);
-  assert(pthread_mutex_unlock(&mutex) == EPERM);
+  assert(pthread_mutex_unlock(&mutex) == 0);
 
   return 0;
 }

@@ -100,7 +100,8 @@ main()
     {
       washere = 0;
       assert(pthread_create(&t, &attr, func, NULL) == 0);
-      pthread_join(t, &result);
+      assert(pthread_join(t, &result) == 0);
+      assert((int)(size_t)result == 0);
       assert(washere == 1);
     }
 

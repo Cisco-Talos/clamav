@@ -34,7 +34,7 @@
  *      59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
  */
 
-#ifndef _UWIN
+#if !defined(_UWIN)
 /*#   include <process.h> */
 #endif
 #include "pthread.h"
@@ -96,7 +96,7 @@ ptw32_semwait (sem_t * sem)
               /* Must wait */
               if (WaitForSingleObject (s->sem, INFINITE) == WAIT_OBJECT_0)
 		{
-#ifdef NEED_SEM
+#if defined(NEED_SEM)
 		  if (pthread_mutex_lock (&s->lock) == 0)
 		    {
         	      if (*sem == NULL)

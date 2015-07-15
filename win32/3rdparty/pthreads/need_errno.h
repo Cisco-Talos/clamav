@@ -17,16 +17,16 @@
 #pragma once
 #endif
 
-#ifndef _INC_ERRNO
+#if !defined(_INC_ERRNO)
 #define _INC_ERRNO
 
-#if     !defined(_WIN32) && !defined(_MAC)
-#error ERROR: Only Mac or Win32 targets supported!
+#if !defined(_WIN32)
+#error ERROR: Only Win32 targets supported!
 #endif
 
 #include <winsock.h>
 
-#ifdef  __cplusplus
+#if defined(__cplusplus)
 extern "C" {
 #endif
 
@@ -35,7 +35,7 @@ extern "C" {
 /* Define _CRTIMP */
 
 #ifndef _CRTIMP
-#ifdef  _DLL
+#if defined(_DLL)
 #define _CRTIMP __declspec(dllimport)
 #else   /* ndef _DLL */
 #define _CRTIMP
@@ -45,13 +45,13 @@ extern "C" {
 
 /* Define __cdecl for non-Microsoft compilers */
 
-#if     ( !defined(_MSC_VER) && !defined(__cdecl) )
+#if ( !defined(_MSC_VER) && !defined(__cdecl) )
 #define __cdecl
 #endif
 
 /* Define _CRTAPI1 (for compatibility with the NT SDK) */
 
-#ifndef _CRTAPI1
+#if !defined(_CRTAPI1)
 #if	_MSC_VER >= 800 && _M_IX86 >= 300
 #define _CRTAPI1 __cdecl
 #else
@@ -59,9 +59,8 @@ extern "C" {
 #endif
 #endif
 
-/* declare reference to errno */
-#ifndef PTW32_STATIC_LIB
-#  ifdef PTW32_BUILD
+#if !defined(PTW32_STATIC_LIB)
+#  if defined(PTW32_BUILD)
 #    define PTW32_DLLPORT __declspec (dllexport)
 #  else
 #    define PTW32_DLLPORT __declspec (dllimport)
@@ -72,7 +71,7 @@ extern "C" {
 
 /* declare reference to errno */
 
-#if     (defined(_MT) || defined(_MD) || defined(_DLL)) && !defined(_MAC)
+#if (defined(_MT) || defined(_MD) || defined(_DLL)) && !defined(_MAC)
 PTW32_DLLPORT int * __cdecl _errno(void);
 #define errno   (*_errno())
 #else   /* ndef _MT && ndef _MD && ndef _DLL */
@@ -116,7 +115,7 @@ _CRTIMP extern int errno;
 #define EDEADLK         36
 
 /* defined differently in winsock.h on WinCE */
-#ifndef ENAMETOOLONG
+#if !defined(ENAMETOOLONG)
 #define ENAMETOOLONG    38
 #endif
 
@@ -124,18 +123,22 @@ _CRTIMP extern int errno;
 #define ENOSYS          40
 
 /* defined differently in winsock.h on WinCE */
-#ifndef ENOTEMPTY
+#if !defined(ENOTEMPTY)
 #define ENOTEMPTY       41
 #endif
 
 #define EILSEQ          42
+
+/* POSIX 2008 - robust mutexes */
+#define EOWNERDEAD	43
+#define ENOTRECOVERABLE	44
 
 /*
  * Support EDEADLOCK for compatibiity with older MS-C versions.
  */
 #define EDEADLOCK       EDEADLK
 
-#ifdef  __cplusplus
+#if defined(__cplusplus)
 }
 #endif
 

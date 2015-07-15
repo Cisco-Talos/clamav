@@ -87,16 +87,6 @@ ptw32_processInitialize (void)
       ptw32_processTerminate ();
     }
 
-  /* 
-   * Set up the global locks.
-   */
-  InitializeCriticalSection (&ptw32_thread_reuse_lock);
-  InitializeCriticalSection (&ptw32_mutex_test_init_lock);
-  InitializeCriticalSection (&ptw32_cond_list_lock);
-  InitializeCriticalSection (&ptw32_cond_test_init_lock);
-  InitializeCriticalSection (&ptw32_rwlock_test_init_lock);
-  InitializeCriticalSection (&ptw32_spinlock_test_init_lock);
-
   return (ptw32_processInitialized);
 
 }				/* processInitialize */

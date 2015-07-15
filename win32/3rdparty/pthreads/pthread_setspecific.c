@@ -109,6 +109,9 @@ pthread_setspecific (pthread_key_t key, const void *value)
     {
       if (self.p != NULL && key->destructor != NULL && value != NULL)
 	{
+          ptw32_mcs_local_node_t keyLock;
+          ptw32_mcs_local_node_t threadLock;
+	  ptw32_thread_t * sp = (ptw32_thread_t *) self.p;
 	  /*
 	   * Only require associations if we have to
 	   * call user destroy routine.
@@ -120,39 +123,35 @@ pthread_setspecific (pthread_key_t key, const void *value)
 	   */
 	  ThreadKeyAssoc *assoc;
 
-	  if (pthread_mutex_lock(&(key->keyLock)) == 0)
+	  ptw32_mcs_lock_acquire(&(key->keyLock), &keyLock);
+	  ptw32_mcs_lock_acquire(&(sp->threadLock), &threadLock);
+
+	  assoc = (ThreadKeyAssoc *) sp->keys;
+	  /*
+	   * Locate existing association
+	   */
+	  while (assoc != NULL)
 	    {
-	      ptw32_thread_t * sp = (ptw32_thread_t *) self.p;
-
-	      (void) pthread_mutex_lock(&(sp->threadLock));
-
-	      assoc = (ThreadKeyAssoc *) sp->keys;
-	      /*
-	       * Locate existing association
-	       */
-	      while (assoc != NULL)
+	      if (assoc->key == key)
 		{
-		  if (assoc->key == key)
-		    {
-		      /*
-		       * Association already exists
-		       */
-		      break;
-		    }
-		  assoc = assoc->nextKey;
+		  /*
+		   * Association already exists
+		   */
+		  break;
 		}
-
-	      /*
-	       * create an association if not found
-	       */
-	      if (assoc == NULL)
-		{
-		  result = ptw32_tkAssocCreate (sp, key);
-		}
-
-	      (void) pthread_mutex_unlock(&(sp->threadLock));
+		assoc = assoc->nextKey;
 	    }
-	  (void) pthread_mutex_unlock(&(key->keyLock));
+
+	  /*
+	   * create an association if not found
+	   */
+	  if (assoc == NULL)
+	    {
+	      result = ptw32_tkAssocCreate (sp, key);
+	    }
+
+	  ptw32_mcs_lock_release(&threadLock);
+	  ptw32_mcs_lock_release(&keyLock);
 	}
 
       if (result == 0)

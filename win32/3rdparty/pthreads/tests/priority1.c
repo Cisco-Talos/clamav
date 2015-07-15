@@ -91,7 +91,7 @@ func(void * arg)
 
   assert(pthread_getschedparam(threadID, &policy, &param) == 0);
   assert(policy == SCHED_OTHER);
-  return (void *) (param.sched_priority);
+  return (void *) (size_t)(param.sched_priority);
 }
 
 void *
@@ -164,8 +164,8 @@ main()
 
       assert(pthread_join(t, &result) == 0);
 
-      assert(param.sched_priority == (int) result);
-      printf("%10d %10d %10d\n", param.sched_priority, (int) result, prio);
+      assert(param.sched_priority == (int)(size_t) result);
+      printf("%10d %10d %10d\n", param.sched_priority, (int)(size_t) result, prio);
     }
 
   return 0;

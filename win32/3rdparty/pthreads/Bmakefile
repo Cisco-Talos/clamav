@@ -21,7 +21,7 @@ OPTIM	= /O2
 RC	= brcc32
 RCFLAGS	= -i.
 
-CFLAGS	= /q /I. /D_WIN32_WINNT=0x400 /DHAVE_CONFIG_H=1 /4 /tWD /tWM \
+CFLAGS	= /q /I. /D_WIN32_WINNT=0x400 /DHAVE_PTW32_CONFIG_H=1 /4 /tWD /tWM \
 	  /w-aus /w-asc /w-par
 
 #C cleanup code
@@ -116,10 +116,13 @@ MUTEX_SRCS	= \
 		pthread_mutexattr_setpshared.c \
 		pthread_mutexattr_settype.c \
 		pthread_mutexattr_gettype.c \
+		pthread_mutexattr_setrobust.c \
+		pthread_mutexattr_getrobust.c \
 		pthread_mutex_lock.c \
 		pthread_mutex_timedlock.c \
 		pthread_mutex_unlock.c \
-		pthread_mutex_trylock.c
+		pthread_mutex_trylock.c \
+		pthread_mutex_consistent.c
 
 NONPORTABLE_SRCS = \
 		pthread_mutexattr_setkind_np.c \
@@ -142,7 +145,6 @@ PRIVATE_SRCS	= \
 		ptw32_timespec.c \
 		ptw32_relmillisecs.c \
 		ptw32_throw.c \
-		ptw32_InterlockedCompareExchange.c \
 		ptw32_getprocessors.c
 
 RWLOCK_SRCS	= \

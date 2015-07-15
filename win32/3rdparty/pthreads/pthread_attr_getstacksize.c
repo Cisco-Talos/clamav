@@ -38,7 +38,7 @@
 #include "implement.h"
 
 /* ignore warning "unreferenced formal parameter" */
-#ifdef _MSC_VER
+#if defined(_MSC_VER)
 #pragma warning( disable : 4100 )
 #endif
 
@@ -80,7 +80,7 @@ pthread_attr_getstacksize (const pthread_attr_t * attr, size_t * stacksize)
       * ------------------------------------------------------
       */
 {
-#ifdef _POSIX_THREAD_ATTR_STACKSIZE
+#if defined(_POSIX_THREAD_ATTR_STACKSIZE)
 
   if (ptw32_is_attr (attr) != 0)
     {

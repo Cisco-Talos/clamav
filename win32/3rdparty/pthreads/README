@@ -31,6 +31,10 @@ MSVC or GNU C (MinGW32 MSys development kit)
 	To build from source.
 
 QueueUserAPCEx by Panagiotis E. Hadjidoukas
+	To support any thread cancelation in C++ library builds or
+	to support cancelation of blocked threads in any build.
+	This library is not required otherwise.
+
 	For true async cancelation of threads (including blocked threads).
 	This is a DLL and Windows driver that provides pre-emptive APC
 	by forcing threads into an alertable state when the APC is queued.
@@ -46,6 +50,10 @@ QueueUserAPCEx by Panagiotis E. Hadjidoukas
 	cancelation, which means that it can async cancel only threads that
 	are runnable. The simulated async cancellation cannot cancel blocked
 	threads.
+
+        [FOR SECURITY] To be found Quserex.dll MUST be installed in the
+	Windows System Folder. This is not an unreasonable constraint given a
+	driver must also be installed and loaded at system startup.
 
 
 Library naming
@@ -79,8 +87,8 @@ can differentiate between binary incompatible versions of the
 libs and dlls.
 
 In general:
-	pthread[VG]{SE,CE,C}c.dll
-	pthread[VG]{SE,CE,C}c.lib
+	pthread[VG]{SE,CE,C}[c].dll
+	pthread[VG]{SE,CE,C}[c].lib
 
 where:
 	[VG] indicates the compiler
@@ -94,7 +102,7 @@ where:
 
 	c	- DLL compatibility number indicating ABI and API
 		  compatibility with applications built against
-		  any snapshot with the same compatibility number.
+		  a snapshot with the same compatibility number.
 		  See 'Version numbering' below.
 
 The name may also be suffixed by a 'd' to indicate a debugging version
@@ -102,7 +110,7 @@ of the library. E.g. pthreadVC2d.lib. Debugging versions contain
 additional information for debugging (symbols etc) and are often not
 optimised in any way (compiled with optimisation turned off).
 
-For example:
+Examples:
 	pthreadVSE.dll	(MSVC/SEH)
 	pthreadGCE.dll	(GNUC/C++ EH)
 	pthreadGC.dll	(GNUC/not dependent on exceptions)

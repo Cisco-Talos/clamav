@@ -66,15 +66,15 @@ pthread_key_delete (pthread_key_t key)
       * ------------------------------------------------------
       */
 {
+  ptw32_mcs_local_node_t keyLock;
   int result = 0;
 
   if (key != NULL)
     {
-      if (key->threads != NULL &&
-	  key->destructor != NULL &&
-	  pthread_mutex_lock (&(key->keyLock)) == 0)
+      if (key->threads != NULL && key->destructor != NULL)
 	{
 	  ThreadKeyAssoc *assoc;
+	  ptw32_mcs_lock_acquire (&(key->keyLock), &keyLock);
 	  /*
 	   * Run through all Thread<-->Key associations
 	   * for this key.
@@ -85,6 +85,7 @@ pthread_key_delete (pthread_key_t key)
 	   */
 	  while ((assoc = (ThreadKeyAssoc *) key->threads) != NULL)
 	    {
+              ptw32_mcs_local_node_t threadLock;
 	      ptw32_thread_t * thread = assoc->thread;
 
 	      if (assoc == NULL)
@@ -93,34 +94,25 @@ pthread_key_delete (pthread_key_t key)
 		  break;
 		}
 
-	      if (pthread_mutex_lock (&(thread->threadLock)) == 0)
-		{
-		  /*
-		   * Since we are starting at the head of the key's threads
-		   * chain, this will also point key->threads at the next assoc.
-		   * While we hold key->keyLock, no other thread can insert
-		   * a new assoc via pthread_setspecific.
-		   */
-		  ptw32_tkAssocDestroy (assoc);
-		  (void) pthread_mutex_unlock (&(thread->threadLock));
-		}
-	      else
-		{
-		  /* Thread or lock is no longer valid? */
-		  ptw32_tkAssocDestroy (assoc);
-		}
+	      ptw32_mcs_lock_acquire (&(thread->threadLock), &threadLock);
+	      /*
+	       * Since we are starting at the head of the key's threads
+	       * chain, this will also point key->threads at the next assoc.
+	       * While we hold key->keyLock, no other thread can insert
+	       * a new assoc via pthread_setspecific.
+	       */
+	      ptw32_tkAssocDestroy (assoc);
+	      ptw32_mcs_lock_release (&threadLock);
+	      ptw32_mcs_lock_release (&keyLock);
 	    }
-	  pthread_mutex_unlock (&(key->keyLock));
 	}
 
       TlsFree (key->key);
       if (key->destructor != NULL)
 	{
 	  /* A thread could be holding the keyLock */
-	  while (EBUSY == pthread_mutex_destroy (&(key->keyLock)))
-	    {
-	      Sleep(0); /* Ugly */
-	    }
+	  ptw32_mcs_lock_acquire (&(key->keyLock), &keyLock);
+	  ptw32_mcs_lock_release (&keyLock);
 	}
 
 #if defined( _DEBUG )

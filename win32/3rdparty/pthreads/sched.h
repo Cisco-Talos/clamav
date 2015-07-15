@@ -36,48 +36,48 @@
  *      if not, write to the Free Software Foundation, Inc.,
  *      59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
  */
-#ifndef _SCHED_H
+#if !defined(_SCHED_H)
 #define _SCHED_H
 
-#undef PTW32_LEVEL
+#undef PTW32_SCHED_LEVEL
 
 #if defined(_POSIX_SOURCE)
-#define PTW32_LEVEL 0
+#define PTW32_SCHED_LEVEL 0
 /* Early POSIX */
 #endif
 
 #if defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 199309
-#undef PTW32_LEVEL
-#define PTW32_LEVEL 1
+#undef PTW32_SCHED_LEVEL
+#define PTW32_SCHED_LEVEL 1
 /* Include 1b, 1c and 1d */
 #endif
 
 #if defined(INCLUDE_NP)
-#undef PTW32_LEVEL
-#define PTW32_LEVEL 2
+#undef PTW32_SCHED_LEVEL
+#define PTW32_SCHED_LEVEL 2
 /* Include Non-Portable extensions */
 #endif
 
-#define PTW32_LEVEL_MAX 3
+#define PTW32_SCHED_LEVEL_MAX 3
 
-#if ( defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200112 )  || !defined(PTW32_LEVEL)
-#define PTW32_LEVEL PTW32_LEVEL_MAX
+#if ( defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200112 )  || !defined(PTW32_SCHED_LEVEL)
+#define PTW32_SCHED_LEVEL PTW32_SCHED_LEVEL_MAX
 /* Include everything */
 #endif
 
 
-#if __GNUC__ && ! defined (__declspec)
+#if defined(__GNUC__) && !defined(__declspec)
 # error Please upgrade your GNU compiler to one that supports __declspec.
 #endif
 
 /*
- * When building the DLL code, you should define PTW32_BUILD so that
- * the variables/functions are exported correctly. When using the DLL,
+ * When building the library, you should define PTW32_BUILD so that
+ * the variables/functions are exported correctly. When using the library,
  * do NOT define PTW32_BUILD, and then the variables/functions will
  * be imported correctly.
  */
-#ifndef PTW32_STATIC_LIB
-#  ifdef PTW32_BUILD
+#if !defined(PTW32_STATIC_LIB)
+#  if defined(PTW32_BUILD)
 #    define PTW32_DLLPORT __declspec (dllexport)
 #  else
 #    define PTW32_DLLPORT __declspec (dllimport)
@@ -91,12 +91,15 @@
  * which is only used when building the pthread-win32 libraries.
  */
 
-#ifndef PTW32_CONFIG_H
+#if !defined(PTW32_CONFIG_H)
 #  if defined(WINCE)
 #    define NEED_ERRNO
 #    define NEED_SEM
 #  endif
-#  if defined(_UWIN) || defined(__MINGW32__)
+#  if defined(__MINGW64__)
+#    define HAVE_STRUCT_TIMESPEC
+#    define HAVE_MODE_T
+#  elif defined(_UWIN) || defined(__MINGW32__)
 #    define HAVE_MODE_T
 #  endif
 #endif
@@ -105,25 +108,25 @@
  *
  */
 
-#if PTW32_LEVEL >= PTW32_LEVEL_MAX
-#ifdef NEED_ERRNO
+#if PTW32_SCHED_LEVEL >= PTW32_SCHED_LEVEL_MAX
+#if defined(NEED_ERRNO)
 #include "need_errno.h"
 #else
 #include <errno.h>
 #endif
-#endif /* PTW32_LEVEL >= PTW32_LEVEL_MAX */
+#endif /* PTW32_SCHED_LEVEL >= PTW32_SCHED_LEVEL_MAX */
 
-#if defined(__MINGW32__) || defined(_UWIN)
-# if PTW32_LEVEL >= PTW32_LEVEL_MAX
+#if (defined(__MINGW64__) || defined(__MINGW32__)) || defined(_UWIN)
+# if PTW32_SCHED_LEVEL >= PTW32_SCHED_LEVEL_MAX
 /* For pid_t */
 #  include <sys/types.h>
 /* Required by Unix 98 */
 #  include <time.h>
 # else
-  typedef int pid_t;
+   typedef int pid_t;
 # endif
 #else
-typedef int pid_t;
+ typedef int pid_t;
 #endif
 
 /* Thread scheduling policies */
@@ -140,7 +143,7 @@ struct sched_param {
   int sched_priority;
 };
 
-#ifdef __cplusplus
+#if defined(__cplusplus)
 extern "C"
 {
 #endif                          /* __cplusplus */
@@ -169,12 +172,12 @@ PTW32_DLLPORT int __cdecl sched_getscheduler (pid_t pid);
   ( errno = ENOTSUP, (int) -1 )
 
 
-#ifdef __cplusplus
+#if defined(__cplusplus)
 }                               /* End of extern "C" */
 #endif                          /* __cplusplus */
 
-#undef PTW32_LEVEL
-#undef PTW32_LEVEL_MAX
+#undef PTW32_SCHED_LEVEL
+#undef PTW32_SCHED_LEVEL_MAX
 
 #endif                          /* !_SCHED_H */
 

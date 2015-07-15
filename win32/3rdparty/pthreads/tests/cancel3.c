@@ -96,7 +96,7 @@ static bag_t threadbag[NUMTHREADS + 1];
 void *
 mythread (void *arg)
 {
-  int result = ((int) PTHREAD_CANCELED + 1);
+  void* result = (void*)((int)(size_t)PTHREAD_CANCELED + 1);
   bag_t *bag = (bag_t *) arg;
 
   assert (bag == &threadbag[bag->threadnum]);
@@ -116,7 +116,7 @@ mythread (void *arg)
   for (bag->count = 0; bag->count < 100; bag->count++)
     Sleep (100);
 
-  return (void *) result;
+  return result;
 }
 
 int
@@ -139,7 +139,7 @@ main ()
   /*
    * Code to control or munipulate child threads should probably go here.
    */
-  Sleep (500);
+  Sleep (NUMTHREADS * 100);
 
   for (i = 1; i <= NUMTHREADS; i++)
     {
@@ -147,7 +147,7 @@ main ()
     }
 
   /*
-   * Give threads time to run.
+   * Give threads time to complete.
    */
   Sleep (NUMTHREADS * 100);
 
@@ -173,16 +173,16 @@ main ()
   for (i = 1; i <= NUMTHREADS; i++)
     {
       int fail = 0;
-      int result = 0;
+      void* result = (void*)0;
 
       /*
        * The thread does not contain any cancelation points, so
        * a return value of PTHREAD_CANCELED confirms that async
        * cancelation succeeded.
        */
-      assert (pthread_join (t[i], (void **) &result) == 0);
+      assert (pthread_join (t[i], &result) == 0);
 
-      fail = (result != (int) PTHREAD_CANCELED);
+      fail = (result != PTHREAD_CANCELED);
 
       if (fail)
 	{

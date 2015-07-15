@@ -94,7 +94,6 @@ main()
 
 	assert(sem_init(&s, PTHREAD_PROCESS_PRIVATE, 0) == 0);
 	assert(sem_getvalue(&s, &value) == 0);
-//	printf("Value = %d\n", value);	fflush(stdout);
 	assert(value == 0);
 
 	for (i = 1; i <= MAX_COUNT; i++)
@@ -104,7 +103,6 @@ main()
 			  sched_yield();
 			  assert(sem_getvalue(&s, &value) == 0);
 			} while (value != -i);
-//			printf("Value = %d\n", value); fflush(stdout);
 			assert(-value == i);
 		}
 
@@ -119,7 +117,6 @@ main()
 		{
 			assert(sem_post(&s) == 0);
 			assert(sem_getvalue(&s, &value) == 0);
-//			printf("Value = %d\n", value);	fflush(stdout);
 			assert(-value == i);
 		}
 

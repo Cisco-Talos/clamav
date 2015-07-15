@@ -27,9 +27,9 @@ statically linking the library.</P>
 <P><B>BOOL pthread_win32_thread_attach_np (void);</B></P>
 <P><B>BOOL pthread_win32_thread_detach_np (void);</B></P>
 <H2><A HREF="#toc2" NAME="sect2">Description</A></H2>
-<P>These functions contain the code normally run via <B>dllMain</B>
+<P>These functions contain the code normally run via <b>dllMain</b>
 when the library is used as a dll but which need to be called
-explicitly by an application when the library is statically linked.</P>
+explicitly by an application when the library is statically linked. As of version 2.9.0,  the  static library built using either MSC or GCC includes RT hooks which will call the pthread_win32_process_*_np routines automatically on  start/exit of the application.</P>
 <P>You will need to call <B>pthread_win32_process_attach_np</B>
 before you can call any pthread routines when statically linking. You
 should call <B>pthread_win32_process_detach_np</B> before exiting

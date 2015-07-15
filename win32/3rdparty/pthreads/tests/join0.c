@@ -53,14 +53,14 @@ int
 main(int argc, char * argv[])
 {
   pthread_t id;
-  int result;
+  void* result = (void*)0;
 
   /* Create a single thread and wait for it to exit. */
   assert(pthread_create(&id, NULL, func, (void *) 123) == 0);
 
-  assert(pthread_join(id, (void **) &result) == 0);
+  assert(pthread_join(id, &result) == 0);
 
-  assert(result == 123);
+  assert((int)(size_t)result == 123);
 
   /* Success. */
   return 0;

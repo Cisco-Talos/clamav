@@ -1,3 +1,293 @@
+2012-03-18  Ross Johnson <ross dot johnson at homemail dot com dot au>
+
+	* create.c (pthread_create): add __cdecl attribute to thread routine
+	arg
+	* implement.h (pthread_key_t): add __cdecl attribute to destructor
+	element
+	(ThreadParms): likewise for start element
+	* pthread.h (pthread_create): add __cdecl to prototype start arg
+	(pthread_once): likewise for init_routine arg
+	(pthread_key_create): likewise for destructor arg
+	(ptw32_cleanup_push): replace type of routine arg with previously
+	defined ptw32_cleanup_callback_t
+	* pthread_key_create.c: add __cdecl attribute to destructor arg
+	* pthread_once.c: add __cdecl attribute to init_routine arg
+	* ptw32_threadStart.c (start): add __cdecl to start variable type
+
+
+2011-07-06  Ross Johnson <ross dot johnson at homemail dot com dot au>
+
+	* pthread_cond_wait.c (pragma inline_depth): this is almost redundant
+	now nevertheless fixed thei controlling MSC_VER from "< 800" to
+	"< 1400" (i.e. any prior to VC++ 8.0).
+	* pthread_once.ci (pragma inline_depth): Likewise.
+	* pthread_rwlock_timedwrlock.ci (pragma inline_depth): Likewise.
+	* pthread_rwlock_wrlock.ci (pragma inline_depth): Likewise.
+	* sem_timedwait.ci (pragma inline_depth): Likewise.
+	* sem_wait.ci (pragma inline_depth): Likewise.
+
+2011-07-05  Ross Johnson <ross dot johnson at homemail dot com dot au>
+
+	* pthread_win32_attach_detach_np.c: Use strncat_s if available
+	to removei a compile warning; MingW supports this routine but we
+	continue to use strncat anyway there because it is secure if
+	given the correct parameters; fix strncat param 3 to avoid
+	buffer overrun exploitation potential.
+
+2011-07-03  Ross Johnson <ross dot johnson at homemail dot com dot au>
+
+	* pthread_spin_unlock.c (EPERM): Return success if unlocking a lock
+	that is not locked, because single CPU machines wrap a
+	PTHREAD_MUTEX_NORMAL mutex, which returns success in this case.
+	* pthread_win32_attach_detach_np.c (QUSEREX.DLL): Load from an
+	absolute path only which must be the Windows System folder.
+
+2011-07-03 Daniel Richard G. <skunk at iskunk dot org>
+
+	* Makefile (_WIN32_WINNT): Removed; duplicate definition in
+	implement.h; more cleanup and enhancements.
+
+2011-07-02 Daniel Richard G. <skunk at iskunk dot org>
+
+	* Makefile: Cleanups and implovements.
+	* ptw32_MCS_locks.c: Casting fixes.
+	* implement.h: Interlocked call and argument casting macro fixes
+	to support older and newer build environments.
+
+2011-07-01  Ross Johnson <ross dot johnson at homemail dot com dot au>
+
+	* *.[ch] (PTW32_INTERLOCKED_*): Redo 23 and 64 bit versions of these
+	macros and re-apply in code to undo the incorrect changes from
+	2011-06-29; remove some size_t casts which should not be required
+	and may be problematic.a
+	There are now two sets of macros:
+	PTW32_INTERLOCKED_*_LONG which work only on 32 bit integer variables;
+	PTW32_INTERLOCKED_*_SIZE which work on size_t integer variables, i.e.
+	LONG for 32 bit systems and LONGLONG for 64 bit systems.
+	* implement.h (MCS locks): nextFlag and waitFlag are now HANDLE type.
+	* ptw32_MCS_locks.c: Likewise.
+	* pthread.h (#include <setjmp.h>): Removed.
+	* ptw32_throw.c (#include <setjmp.h>): Added.
+	* ptw32_threadStart.c (#include <setjmp.h>): Added.
+	* implement.h (#include <setjmp.h>): Added.
+
+2011-06-30  Ross Johnson <ross dot johnson at homemail dot com dot au>
+
+	* pthread_once.c: Tighten 'if' statement casting; fix interlocked
+	pointer cast for 64 bit compatibility (missed yesterday); remove
+	the superfluous static cleanup routine and call the release routine
+	directly if popped.
+	* create.c (stackSize): Now type size_t.
+	* pthread.h (struct ptw32_thread_t_): Rearrange to fix element alignments.
+
+2011-06-29 Daniel Richard G. <skunk at iskunk dot org>
+
+	* ptw32_relmillisecs.c (ftime):
+	  _ftime64_s() is only available in MSVC 2005 or later;
+	  _ftime64() is available in MinGW or MSVC 2002 or later;
+	  _ftime() is always available.
+	* pthread.h (long long): Not defined in older MSVC 6.
+	* implement.h (long long): Likewise.
+	* pthread_getunique_np.c (long long): Likewise.
+
+2011-06-29  Ross Johnson <ross dot johnson at homemail dot com dot au>
+
+	* *.[ch] (PTW32_INTERLOCKED_*): These macros should now work for
+	both 32 and 64 bit builds. The MingW versions are all inlined asm
+	while the MSVC versions expand to their Interlocked* or Interlocked*64
+	counterparts appropriately. The argument type have also been changed
+	to cast to the appropriate value or pointer size for the architecture.
+
+2011-05-29  Ross Johnson <ross dot johnson at homemail dot com dot au>
+
+	* *.[ch] (#ifdef): Extended cleanup to whole project.
+
+2011-05-29 Daniel Richard G. <skunk at iskunk dot org>
+
+	* Makefile (CC): Define  CC to allow use of other compatible
+	compilers such as the Intel compilter icl.
+	* implement.h (#if): Fix forms like #if HAVE_SOMETHING.
+	* pthread.h: Likewise.
+	* sched.h: Likewise; PTW32_LEVEL_* becomes PTW32_SCHED_LEVEL_*.
+	* semaphore.h: Likewise.
+
+2011-05-11  Ross Johnson <ross.johnson at homemail.com.au>
+
+	* ptw32_callUserDestroyRoutines.c (terminate): Altered includes
+	to match ptw32_threadStart.c.
+	* GNUmakefile (GCE-inlined-debug, DOPT): Fixed.
+
+2011-04-31  Ross Johnson <ross.johnson at homemail.com.au>
+
+	* (robust mutexes): Added this API. The API is not
+	mandatory for implementations that don't support PROCESS_SHARED
+	mutexes, nevertheless it was considered useful both functionally
+	and for source-level compatibility.
+	
+2011-03-26  Ross Johnson <ross.johnson at homemail.com.au>
+
+	* pthread_getunique_np.c: New non-POSIX interface for compatibility
+	with some other implementations; returns a 64 bit sequence number
+	that is unique to each thread in the process.
+	* pthread.h (pthread_getunique_np): Added.
+	* global.c: Add global sequence counter for above.
+	* implement.h: Likewise.
+
+2011-03-25  Ross Johnson <ross.johnson at homemail.com.au>
+
+	* (cancelLock): Convert to an MCS lock and rename to stateLock.
+	* (threadLock): Likewise.
+	* (keyLock): Likewise.
+	* pthread_mutex*.c: First working robust mutexes.
+
+2011-03-11  Ross Johnson <ross.johnson at homemail.com.au>
+
+	* implement.h (PTW32_INTERLOCKED_*CREMENT macros): increment/decrement
+	using ++/-- instead of add/subtract 1.
+	* ptw32_MCS_lock.c: Make casts consistent.
+
+2011-03-09  Ross Johnson <ross.johnson at homemail.com.au>
+
+	* implement.h (ptw32_thread_t_): Add process unique sequence number.
+	* global.c: Replace global Critical Section objects with MCS
+	queue locks.
+	* implement.h: Likewise.
+	* pthread_cond_destroy.c: Likewise.
+	* pthread_cond_init.c: Likewise.
+	* pthread_detach.c: Likewise.
+	* pthread_join.c: Likewise.
+	* pthread_kill.c: Likewise.
+	* pthread_mutex_destroy.c: Likewise.
+	* pthread_rwlock_destroy.c: Likewise.
+	* pthread_spin_destroy.c: Likewise.
+	* pthread_timechange_handler_np.c: Likewise.
+	* ptw32_cond_check_need_init.c: Likewise.
+	* ptw32_mutex_check_need_init.c: Likewise.
+	* ptw32_processInitialize.c: Likewise.
+	* ptw32_processTerminate.c: Likewise.
+	* ptw32_reuse.c: Likewise.
+	* ptw32_rwlock_check_need_init.c: Likewise.
+	* ptw32_spinlock_check_need_init.c: Likewise.
+
+2011-03-06  Ross Johnson <ross.johnson at homemail.com.au>
+
+	* several (MINGW64): Cast and call fixups for 64 bit compatibility;
+	clean build via x86_64-w64-mingw32 cross toolchain on Linux i686
+	targeting x86_64 win64.
+	* ptw32_threadStart.c (ptw32_threadStart): Routine no longer attempts
+	to pass [unexpected C++] exceptions out of scope but ends the thread
+	normally setting EINTR as the exit status.
+	* ptw32_throw.c: Fix C++ exception throwing warnings; ignore
+	informational warning.
+	* implement.h: Likewise with the corresponding header definition.
+
+2011-03-04  Ross Johnson <ross.johnson at homemail.com.au>
+
+	* implement.h (PTW32_INTERLOCKED_*): Mingw32 does not provide
+	the __sync_* intrinsics so implemented them here as macro
+	assembler routines. MSVS Interlocked* are emmitted as intrinsics
+	wherever possible, so we want mingw to match it; Extended to
+	include all interlocked routines used by the library; implemented
+	x86_64 versions also.
+	* ptw32_InterlockedCompareExchange.c: No code remaining here.
+	* ptw32_MCS_lock.c: Converted interlocked calls to use new macros.
+	* pthread_barrier_wait.c: Likewise.
+	* pthread_once.c: Likewise.
+	* ptw32_MCS_lock.c (ptw32_mcs_node_substitute): Name changed to
+	ptw32_mcs_node_transfer.
+
+2011-02-28  Ross Johnson <ross.johnson at homemail.com.au>
+
+	* ptw32_relmillisecs.c: If possible, use _ftime64_s or _ftime64
+	before resorting to _ftime.
+
+2011-02-27  Ross Johnson <ross.johnson at homemail.com.au>
+
+	* sched_setscheduler.c: Ensure the handle is closed after use.
+	* sched_getscheduler.c: Likewise.
+	* pthread.h: Remove POSIX compatibility macros; don't define
+	timespec if already defined.
+	* context.h: Changes for 64 bit.
+	* pthread_cancel.c: Likewise.
+	* pthread_exit.c: Likewise.
+	* pthread_spin_destroy.c: Likewise.
+	* pthread_timechange_handler_np.c: Likewise.
+	* ptw32_MCS_lock.c: Likewise; some of these changes may
+	not be compatible with pre Windows 2000 systems; reverse the order of
+	the includes.
+	* ptw32_threadStart.c: Likewise.
+	* ptw32_throw.c: Likewise.
+
+2011-02-13  Ross Johnson <ross.johnson at homemail.com.au>
+
+	* pthread_self: Add comment re returning 'nil' value to
+	indicate failure only to win32 threads that call us.
+	* pthread_attr_setstackaddr: Fix comments; note this
+	function and it's compliment are now removed from SUSv4.
+
+2011-02-12  Ross Johnson <ross.johnson at homemail.com.au>
+
+	README.NONPORTABLE: Record a description of an obvious
+	method for nulling/comparing/hashing pthread_t using a
+	union; plus and investigation of a change of type for
+	pthread_t (to a union) to neutralise any padding bits and
+	bytes if they occur in pthread_t (the current pthread_t struct
+	does not contain padding AFAIK, but porting the library to a
+	future architecture may introduce them). Padding affects
+	byte-by-byte copies and compare operations.
+
+2010-11-16  Ross Johnson <ross.johnson at homemail.com.au>
+
+	* ChangeLog: Add this entry ;-)
+	Restore entries from 2007 through 2009 that went missing
+	at the last update.
+
+2010-06-19  Ross Johnson <ross.johnson at homemail.com.au>
+
+	* ptw32_MCS_lock.c (ptw32_mcs_node_substitute): Fix variable
+	names to avoid using C++ keyword ("new").
+	* implement.h (ptw32_mcs_node_substitute): Likewise.
+	* pthread_barrier_wait.c: Fix signed/unsigned comparison warning.
+
+2010-06-18  Ramiro Polla  <ramiro.polla at gmail.com >
+
+	* autostatic.c: New file; call pthread_win32_process_*()
+	libary init/cleanup routines automatically on application start
+	when statically linked.
+	* pthread.c (autostatic.c): Included.
+	* pthread.h (declspec): Remove import/export defines if compiler
+	is MINGW.
+	* sched.h (declspec): Likewise.
+	* semaphore.h (declspec): Likewise.
+	* need_errno.h (declspec): Likewise.
+	* Makefile (autostatic.obj): Add for small static builds.
+	* GNUmakefile (autostatic.o): Likewise.
+	* NEWS (Version 2.9.0): Add changes.
+	* README.NONPORTABLE (pthread_win32_process_*): Update
+	description.
+
+2010-06-15  Ramiro Polla  <ramiro.polla at gmail.com >
+
+	* Makefile: Remove linkage with the winsock library by default.
+	* GNUmakefile: Likewise.
+	* pthread_getspecific.c: Likewise by removing calls to WSA
+	functions.
+	* config.h (RETAIN_WSALASTERROR): Can be defined if necessary.
+
+2010-01-26  Ross Johnson <ross.johnson at homemail.com.au>
+
+	* ptw32_MCS_lock.c (ptw32_mcs_node_substitute): New routine
+	to allow relocating the lock owners thread-local node to somewhere
+	else, e.g. to global space so that another thread can release the
+	lock. Used in pthread_barrier_wait.
+	(ptw32_mcs_lock_try_acquire): New routine.
+	* pthread_barrier_init: Only one semaphore is used now.
+	* pthread_barrier_wait: Added an MCS guard lock with the last thread
+	to leave the barrier releasing the lock. This removes a deadlock bug
+	observed when there are greater than barrier-count threads
+	attempting to cross.
+	* pthread_barrier_destroy: Added an MCS guard lock.
+        
 2009-03-03  Stephan O'Farrill <stephan dot ofarrill at gmail dot com>
 
 	* pthread_attr_getschedpolicy.c: Add "const" to function parameter
@@ -5,114 +295,113 @@
 	* pthread_attr_getinheritsched.c: Likewise.
 	* pthread_mutexattr_gettype.c: Likewise.
 
-
 2008-06-06  Robert Kindred  <RKindred at SwRI dot edu>
 
-        * ptw32_throw.c (ptw32_throw): Remove possible reference to NULL
-        pointer. (At the same time made the switch block conditionally
-        included only if exitCode is needed - RPJ.)
-        * pthread_testcancel.c (pthread_testcancel): Remove duplicate and
-        misplaced pthread_mutex_unlock().
+	* ptw32_throw.c (ptw32_throw): Remove possible reference to NULL
+	pointer. (At the same time made the switch block conditionally
+	included only if exitCode is needed - RPJ.)
+	* pthread_testcancel.c (pthread_testcancel): Remove duplicate and
+	misplaced pthread_mutex_unlock().
 
 2008-02-21  Sebastian Gottschalk  <seppig_relay at gmx dot de>
 
-        * pthread_attr_getdetachstate.c (pthread_attr_getdetachstate):
-        Remove potential and superfluous null pointer assignment.
+	* pthread_attr_getdetachstate.c (pthread_attr_getdetachstate):
+	Remove potential and superfluous null pointer assignment.
 
 2007-11-22  Ivan Pizhenko  <ivanp4 at ua dot fm>
 
-        * pthread.h (gmtime_r): gmtime returns 0 if tm represents a time
-        prior to 1/1/1970. Notice this to prevent raising an exception.
-        * pthread.h (localtime_r): Likewise for localtime.
+	* pthread.h (gmtime_r): gmtime returns 0 if tm represents a time
+	prior to 1/1/1970. Notice this to prevent raising an exception.
+	* pthread.h (localtime_r): Likewise for localtime.
 
 2007-07-14  Marcel Ruff  <mr at marcelruff dot info>
 
-        * errno.c (_errno): Fix test for pthread_self() success.
-        * need_errno.h: Remove unintentional line wrap from #if line.
+	* errno.c (_errno): Fix test for pthread_self() success.
+	* need_errno.h: Remove unintentional line wrap from #if line.
 
 2007-07-14  Mike Romanchuk  <mromanchuk at empirix dot com>
 
-        * pthread.h (timespec): Fix tv_sec type.
+	* pthread.h (timespec): Fix tv_sec type.
 
 2007-01-07  Sinan Kaya <sinan.kaya at siemens dot com>
 
-        * need_errno.h: Fix declaration of _errno - the local version of
-        _errno() is used, e.g. by WinCE.
+	* need_errno.h: Fix declaration of _errno - the local version of
+	_errno() is used, e.g. by WinCE.
 
 2007-01-06  Ross Johnson <ross.johnson at homemail dot com dot au>
 
-        * ptw32_semwait.c: Add check for invalid sem_t after acquiring the
-        sem_t state guard mutex and before affecting changes to sema state.
+	* ptw32_semwait.c: Add check for invalid sem_t after acquiring the
+	sem_t state guard mutex and before affecting changes to sema state.
                 
 2007-01-06  Marcel Ruff <mr at marcelruff dot info>
 
-        * error.c: Fix reference to pthread handle exitStatus member for
-        builds that use NEED_ERRNO (i.e. WINCE).
-        * context.h: Add support for ARM processor (WinCE).
-        * mutex.c (process.h): Exclude for WINCE.
-        * create.c: Likewise.
-        * exit.c: Likewise.
-        * implement.h: Likewise.
-        * pthread_detach.c (signal.h): Exclude for WINCE.
-        * pthread_join.c: Likewise.
-        * pthread_kill.c: Likewise.
-        * pthread_rwlock_init.c (errno.h): Remove - included by pthread.h.
-        * pthread_rwlock_destroy.c: Likewise.
-        * pthread_rwlock_rdlock.c: Likewise.
-        * pthread_rwlock_timedrdlock.c: Likewise.
-        * pthread_rwlock_timedwrlock.c: Likewise.
-        * pthread_rwlock_tryrdlock.c: Likewise.
-        * pthread_rwlock_trywrlock.c: likewise.
-        * pthread_rwlock_unlock.c: Likewise.
-        * pthread_rwlock_wrlock.c: Likewise.
-        * pthread_rwlockattr_destroy.c: Likewise.
-        * pthread_rwlockattr_getpshared.c: Likewise.
-        * pthread_rwlockattr_init.c: Likewise.
-        * pthread_rwlockattr_setpshared.c: Likewise.
+	* error.c: Fix reference to pthread handle exitStatus member for
+	builds that use NEED_ERRNO (i.e. WINCE).
+	* context.h: Add support for ARM processor (WinCE).
+	* mutex.c (process.h): Exclude for WINCE.
+	* create.c: Likewise.
+	* exit.c: Likewise.
+	* implement.h: Likewise.
+	* pthread_detach.c (signal.h): Exclude for WINCE.
+	* pthread_join.c: Likewise.
+	* pthread_kill.c: Likewise.
+	* pthread_rwlock_init.c (errno.h): Remove - included by pthread.h.
+	* pthread_rwlock_destroy.c: Likewise.
+	* pthread_rwlock_rdlock.c: Likewise.
+	* pthread_rwlock_timedrdlock.c: Likewise.
+	* pthread_rwlock_timedwrlock.c: Likewise.
+	* pthread_rwlock_tryrdlock.c: Likewise.
+	* pthread_rwlock_trywrlock.c: likewise.
+	* pthread_rwlock_unlock.c: Likewise.
+	* pthread_rwlock_wrlock.c: Likewise.
+	* pthread_rwlockattr_destroy.c: Likewise.
+	* pthread_rwlockattr_getpshared.c: Likewise.
+	* pthread_rwlockattr_init.c: Likewise.
+	* pthread_rwlockattr_setpshared.c: Likewise.
 
 2007-01-06  Romano Paolo Tenca <rotenca at telvia dot it>
 
-        * pthread_cond_destroy.c: Replace sem_wait() with non-cancelable
-        ptw32_semwait() since pthread_cond_destroy() is not a cancelation
-        point.
-        * implement.h (ptw32_spinlock_check_need_init): Add prototype.
-        * ptw32_MCS_lock.c: Reverse order of includes.
+	* pthread_cond_destroy.c: Replace sem_wait() with non-cancelable
+	ptw32_semwait() since pthread_cond_destroy() is not a cancelation
+	point.
+	* implement.h (ptw32_spinlock_check_need_init): Add prototype.
+	* ptw32_MCS_lock.c: Reverse order of includes.
 
 2007-01-06  Eric Berge <eric dot berge at quantum dot com>
 
-        * pthread_cond_destroy.c: Add LeaveCriticalSection before returning
-        after errors.
+	* pthread_cond_destroy.c: Add LeaveCriticalSection before returning
+	after errors.
 
 2007-01-04  Ross Johnson <ross.johnson at homemail dot com dot au>
 
-        * ptw32_InterlockedCompareExchange.c: Conditionally skip for
-        Win64 as not required.
-        * pthread_win32_attach_detach_np.c (pthread_win32_process_attach_np):
-        Test for InterlockedCompareExchange is not required for Win64.
-        * context.h: New file. Included by pthread_cancel.h and any tests
-        that need it (e.g. context1.c).
-        * pthread_cancel.c: Architecture-dependent context macros moved
-        to context.h.
+	* ptw32_InterlockedCompareExchange.c: Conditionally skip for
+	Win64 as not required.
+	* pthread_win32_attach_detach_np.c (pthread_win32_process_attach_np):
+	Test for InterlockedCompareExchange is not required for Win64.
+	* context.h: New file. Included by pthread_cancel.h and any tests
+	that need it (e.g. context1.c).
+	* pthread_cancel.c: Architecture-dependent context macros moved
+	to context.h.
 
 2007-01-04  Kip Streithorst <KSTREITH at ball dot com>
 
-        * implement.h (PTW32_INTERLOCKED_COMPARE_EXCHANGE): Add Win64
-        support.
-        
-2006-12-20  Ross Johnson <ross.johnson at homemail dot com dot au>
+	* implement.h (PTW32_INTERLOCKED_COMPARE_EXCHANGE): Add Win64
+	support.
 
-        * sem_destroy.c: Fix the race involving invalidation of the sema;
-        fix incorrect return of EBUSY resulting from the mutex trylock
-        on the private mutex guard.
-        * sem_wait.c: Add check for invalid sem_t after acquiring the
-        sem_t state guard mutex and before affecting changes to sema state.
-        * sem_trywait.c: Likewise.
-        * sem_timedwait.c: Likewise.
-        * sem_getvalue.c: Likewise.
-        * sem_post.c: Similar.
-        * sem_post_multiple.c: Likewise.
-        * sem_init.c: Set max Win32 semaphore count to SEM_VALUE_MAX (was
-        _POSIX_SEM_VALUE_MAX, which is a lower value - the minimum).
+2006-12-20  Ross Johnson <ross.johnson at homemail.com.au>
+
+	* sem_destroy.c: Fix the race involving invalidation of the sema;
+	fix incorrect return of EBUSY resulting from the mutex trylock
+	on the private mutex guard.
+	* sem_wait.c: Add check for invalid sem_t after acquiring the
+	sem_t state guard mutex and before affecting changes to sema state.
+	* sem_trywait.c: Likewise.
+	* sem_timedwait.c: Likewise.
+	* sem_getvalue.c: Likewise.
+	* sem_post.c: Similar.
+	* sem_post_multiple.c: Likewise.
+	* sem_init.c: Set max Win32 semaphore count to SEM_VALUE_MAX (was
+	_POSIX_SEM_VALUE_MAX, which is a lower value - the minimum).
 
 	* pthread_win32_attach_detach_np.c (pthread_win32_process_attach_np):
 	Load COREDLL.DLL under WINCE to check existence of

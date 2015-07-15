@@ -138,7 +138,9 @@ FAIL0:
 DONE:
   if (0 == result)
     {
-      EnterCriticalSection (&ptw32_cond_list_lock);
+      ptw32_mcs_local_node_t node;
+
+      ptw32_mcs_lock_acquire(&ptw32_cond_list_lock, &node);
 
       cv->next = NULL;
       cv->prev = ptw32_cond_list_tail;
@@ -155,7 +157,7 @@ DONE:
 	  ptw32_cond_list_head = cv;
 	}
 
-      LeaveCriticalSection (&ptw32_cond_list_lock);
+      ptw32_mcs_lock_release(&node);
     }
 
   *cond = cv;

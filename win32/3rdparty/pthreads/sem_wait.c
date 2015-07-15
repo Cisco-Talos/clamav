@@ -63,7 +63,7 @@ ptw32_sem_wait_cleanup(void * sem)
       if (*((sem_t *)sem) != NULL && !(WaitForSingleObject(s->sem, 0) == WAIT_OBJECT_0))
 	{
 	  ++s->value;
-#ifdef NEED_SEM
+#if defined(NEED_SEM)
 	  if (s->value > 0)
 	    {
 	      s->leftToUnblock = 0;
@@ -139,7 +139,7 @@ sem_wait (sem_t * sem)
 
 	  if (v < 0)
 	    {
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && _MSC_VER < 1400
 #pragma inline_depth(0)
 #endif
 	      /* Must wait */
@@ -147,11 +147,11 @@ sem_wait (sem_t * sem)
 	      result = pthreadCancelableWait (s->sem);
 	      /* Cleanup if we're canceled or on any other error */
 	      pthread_cleanup_pop(result);
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && _MSC_VER < 1400
 #pragma inline_depth()
 #endif
 	    }
-#ifdef NEED_SEM
+#if defined(NEED_SEM)
 
 	  if (!result && pthread_mutex_lock (&s->lock) == 0)
 	    {

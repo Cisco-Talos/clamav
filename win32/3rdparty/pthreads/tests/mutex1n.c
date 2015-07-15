@@ -54,6 +54,8 @@ main()
 {
   assert(pthread_mutexattr_init(&mxAttr) == 0);
 
+  BEGIN_MUTEX_STALLED_ROBUST(mxAttr)
+
   assert(pthread_mutexattr_settype(&mxAttr, PTHREAD_MUTEX_NORMAL) == 0);
 
   assert(mutex == NULL);
@@ -69,6 +71,8 @@ main()
   assert(pthread_mutex_destroy(&mutex) == 0);
 
   assert(mutex == NULL);
+
+  END_MUTEX_STALLED_ROBUST(mxAttr)
 
   return 0;
 }

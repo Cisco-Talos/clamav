@@ -53,25 +53,27 @@
 
 pthread_mutex_t mx;
 pthread_mutexattr_t ma;
-struct _timeb currSysTimeStart;
-struct _timeb currSysTimeStop;
+PTW32_STRUCT_TIMEB currSysTimeStart;
+PTW32_STRUCT_TIMEB currSysTimeStop;
 long durationMilliSecs;
 long overHeadMilliSecs = 0;
+int two = 2;
 int one = 1;
 int zero = 0;
+int iter;
 
-#define GetDurationMilliSecs(_TStart, _TStop) ((_TStop.time*1000+_TStop.millitm) \
-                                               - (_TStart.time*1000+_TStart.millitm))
+#define GetDurationMilliSecs(_TStart, _TStop) ((long)((_TStop.time*1000+_TStop.millitm) \
+                                               - (_TStart.time*1000+_TStart.millitm)))
 
 /*
  * Dummy use of j, otherwise the loop may be removed by the optimiser
  * when doing the overhead timing with an empty loop.
  */
 #define TESTSTART \
-  { int i, j = 0, k = 0; _ftime(&currSysTimeStart); for (i = 0; i < ITERATIONS; i++) { j++;
+  { int i, j = 0, k = 0; PTW32_FTIME(&currSysTimeStart); for (i = 0; i < ITERATIONS; i++) { j++;
 
 #define TESTSTOP \
-  }; _ftime(&currSysTimeStop); if (j + k == i) j++; }
+  }; PTW32_FTIME(&currSysTimeStop); if (j + k == i) j++; }
 
 
 void
@@ -83,8 +85,8 @@ runTest (char * testNameString, int mType)
   assert(pthread_mutex_init(&mx, &ma) == 0);
 
   TESTSTART
-  assert(pthread_mutex_lock(&mx) == zero);
-  assert(pthread_mutex_unlock(&mx) == zero);
+  assert((pthread_mutex_lock(&mx),1) == one);
+  assert((pthread_mutex_unlock(&mx),2) == two);
   TESTSTOP
 
   assert(pthread_mutex_destroy(&mx) == 0);
@@ -118,10 +120,9 @@ main (int argc, char *argv[])
   /*
    * Time the loop overhead so we can subtract it from the actual test times.
    */
-
   TESTSTART
   assert(1 == one);
-  assert(1 == one);
+  assert(2 == two);
   TESTSTOP
 
   durationMilliSecs = GetDurationMilliSecs(currSysTimeStart, currSysTimeStop) - overHeadMilliSecs;
@@ -130,7 +131,7 @@ main (int argc, char *argv[])
 
   TESTSTART
   assert((dummy_call(&i), 1) == one);
-  assert((dummy_call(&i), 1) == one);
+  assert((dummy_call(&i), 2) == two);
   TESTSTOP
 
   durationMilliSecs = GetDurationMilliSecs(currSysTimeStart, currSysTimeStop) - overHeadMilliSecs;
@@ -138,12 +139,12 @@ main (int argc, char *argv[])
   printf( "%-45s %15ld %15.3f\n",
 	    "Dummy call x 2",
           durationMilliSecs,
-          (float) durationMilliSecs * 1E3 / ITERATIONS);
+          (float) (durationMilliSecs * 1E3 / ITERATIONS));
 
 
   TESTSTART
   assert((interlocked_inc_with_conditionals(&i), 1) == one);
-  assert((interlocked_dec_with_conditionals(&i), 1) == one);
+  assert((interlocked_dec_with_conditionals(&i), 2) == two);
   TESTSTOP
 
   durationMilliSecs = GetDurationMilliSecs(currSysTimeStart, currSysTimeStop) - overHeadMilliSecs;
@@ -156,7 +157,7 @@ main (int argc, char *argv[])
 
   TESTSTART
   assert((InterlockedIncrement((LPLONG)&i), 1) == (LONG)one);
-  assert((InterlockedDecrement((LPLONG)&i), 1) == (LONG)one);
+  assert((InterlockedDecrement((LPLONG)&i), 2) == (LONG)two);
   TESTSTOP
 
   durationMilliSecs = GetDurationMilliSecs(currSysTimeStart, currSysTimeStop) - overHeadMilliSecs;
@@ -171,7 +172,7 @@ main (int argc, char *argv[])
 
   TESTSTART
   assert((EnterCriticalSection(&cs), 1) == one);
-  assert((LeaveCriticalSection(&cs), 1) == one);
+  assert((LeaveCriticalSection(&cs), 2) == two);
   TESTSTOP
 
   DeleteCriticalSection(&cs);
@@ -225,13 +226,29 @@ main (int argc, char *argv[])
    * Now we can start the actual tests
    */
 #ifdef PTW32_MUTEX_TYPES
-  runTest("PTHREAD_MUTEX_DEFAULT (W9x,WNT)", PTHREAD_MUTEX_DEFAULT);
+  runTest("PTHREAD_MUTEX_DEFAULT", PTHREAD_MUTEX_DEFAULT);
 
-  runTest("PTHREAD_MUTEX_NORMAL (W9x,WNT)", PTHREAD_MUTEX_NORMAL);
+  runTest("PTHREAD_MUTEX_NORMAL", PTHREAD_MUTEX_NORMAL);
 
-  runTest("PTHREAD_MUTEX_ERRORCHECK (W9x,WNT)", PTHREAD_MUTEX_ERRORCHECK);
+  runTest("PTHREAD_MUTEX_ERRORCHECK", PTHREAD_MUTEX_ERRORCHECK);
 
-  runTest("PTHREAD_MUTEX_RECURSIVE (W9x,WNT)", PTHREAD_MUTEX_RECURSIVE);
+  runTest("PTHREAD_MUTEX_RECURSIVE", PTHREAD_MUTEX_RECURSIVE);
+#else
+  runTest("Non-blocking lock", 0);
+#endif
+
+  printf( ".............................................................................\n");
+
+  pthread_mutexattr_setrobust(&ma, PTHREAD_MUTEX_ROBUST);
+
+#ifdef PTW32_MUTEX_TYPES
+  runTest("PTHREAD_MUTEX_DEFAULT (Robust)", PTHREAD_MUTEX_DEFAULT);
+
+  runTest("PTHREAD_MUTEX_NORMAL (Robust)", PTHREAD_MUTEX_NORMAL);
+
+  runTest("PTHREAD_MUTEX_ERRORCHECK (Robust)", PTHREAD_MUTEX_ERRORCHECK);
+
+  runTest("PTHREAD_MUTEX_RECURSIVE (Robust)", PTHREAD_MUTEX_RECURSIVE);
 #else
   runTest("Non-blocking lock", 0);
 #endif

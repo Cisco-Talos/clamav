@@ -100,16 +100,16 @@ main()
   washere = 0;
   assert(pthread_create(&t, &attr, func, NULL) == 0);
   assert(pthread_join(t, &result) == 0);;
-  assert(result == 0);
+  assert((int)(size_t)result == 0);
   assert(washere == 1);
   last_t = t;
 
   for (i = 1; i < NUMTHREADS; i++)
     {
       washere = 0;
-      assert(pthread_create(&t, &attr, func, (void *) i) == 0);
+      assert(pthread_create(&t, &attr, func, (void *)(size_t)i) == 0);
       pthread_join(t, &result);
-      assert((int) result == i);
+      assert((int)(size_t) result == i);
       assert(washere == 1);
       /* thread IDs should be unique */
       assert(!pthread_equal(t, last_t));

@@ -63,7 +63,7 @@ pthread_self (void)
   pthread_t nil = {NULL, 0};
   ptw32_thread_t * sp;
 
-#ifdef _UWIN
+#if defined(_UWIN)
   if (!ptw32_selfThreadKey)
     return nil;
 #endif
@@ -95,7 +95,7 @@ pthread_self (void)
 	  sp->detachState = PTHREAD_CREATE_DETACHED;
 	  sp->thread = GetCurrentThreadId ();
 
-#ifdef NEED_DUPLICATEHANDLE
+#if defined(NEED_DUPLICATEHANDLE)
 	  /*
 	   * DuplicateHandle does not exist on WinCE.
 	   *
@@ -119,6 +119,10 @@ pthread_self (void)
 	       * Thread structs are never freed.
 	       */
 	      ptw32_threadReusePush (self);
+	      /*
+	       * As this is a win32 thread calling us and we have failed,
+	       * return a value that makes sense to win32.
+	       */
 	      return nil;
 	    }
 #endif
@@ -128,8 +132,7 @@ pthread_self (void)
 	   * because the new handle is not yet public.
 	   */
 	  sp->sched_priority = GetThreadPriority (sp->threadH);
-
-          pthread_setspecific (ptw32_selfThreadKey, (void *) sp);
+	  pthread_setspecific (ptw32_selfThreadKey, (void *) sp);
 	}
     }
 

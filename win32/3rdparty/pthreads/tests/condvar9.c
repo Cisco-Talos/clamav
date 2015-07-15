@@ -163,7 +163,7 @@ main()
   int canceledThreads = 0;
   pthread_t t[NUMTHREADS + 1];
 
-  struct _timeb currSysTime;
+  PTW32_STRUCT_TIMEB currSysTime;
   const DWORD NANOSEC_PER_MILLISEC = 1000000;
 
   assert((t[0] = pthread_self()).p != NULL);
@@ -172,9 +172,9 @@ main()
 
   assert(cvthing.lock == PTHREAD_MUTEX_INITIALIZER);
 
-  _ftime(&currSysTime);
+  PTW32_FTIME(&currSysTime);
 
-  abstime.tv_sec = currSysTime.time;
+  abstime.tv_sec = (long)currSysTime.time;
   abstime.tv_nsec = NANOSEC_PER_MILLISEC * currSysTime.millitm;
 
   abstime.tv_sec += 5;

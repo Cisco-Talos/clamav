@@ -78,7 +78,7 @@ ptw32_tkAssocCreate (ptw32_thread_t * sp, pthread_key_t key)
    * Have to create an association and add it
    * to both the key and the thread.
    *
-   * Both key->keyLock and thread->threadLock are locked on
+   * Both key->keyLock and thread->threadLock are locked before
    * entry to this routine.
    */
   assoc = (ThreadKeyAssoc *) calloc (1, sizeof (*assoc));

@@ -7,7 +7,7 @@ Ben Elliston		bje at cygnus dot com
 					Initiated the project;
 					setup the project infrastructure (CVS, web page, etc.);
 					early prototype routines.
-Ross Johnson		rpj at callisto dot canberra dot edu dot au
+Ross Johnson		Ross dot Johnson at  dot homemail dot com dot au
 					early prototype routines;
 					ongoing project coordination/maintenance;
 					implementation of spin locks and barriers;
@@ -128,3 +128,13 @@ Vladimir Kliatchko	vladimir at kliatchko dot com
 					reimplemented pthread_once with the same form
 					as described by A.Terekhov (later version 2);
 					implementation of MCS (Mellor-Crummey/Scott) locks.
+Ramiro Polla		ramiro.polla at gmail dot com
+					static library auto init/cleanup on application
+					start/exit via RT hooks (MSC and GCC compilers only).
+Daniel Richard G.			skunk at iSKUNK dot org
+					Patches and cleanups for x86 and x64, particularly
+					across a range of MS build environments.
+John Kamp		john dot kamp at globalgraphics dot com
+					Patches to fix various problems on x64; brutal testing
+					particularly using high memory run environments.
+

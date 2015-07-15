@@ -108,8 +108,8 @@ main (int argc, char *argv[])
   int data_updates = 0;
   int seed = 1;
 
-  struct _timeb currSysTime1;
-  struct _timeb currSysTime2;
+  PTW32_STRUCT_TIMEB currSysTime1;
+  PTW32_STRUCT_TIMEB currSysTime2;
 
   /*
    * Initialize the shared data.
@@ -122,7 +122,7 @@ main (int argc, char *argv[])
       assert(pthread_rwlock_init (&data[data_count].lock, NULL) == 0);
     }
 
-  _ftime(&currSysTime1);
+  PTW32_FTIME(&currSysTime1);
 
   /*
    * Create THREADS threads to access shared data.
@@ -135,7 +135,7 @@ main (int argc, char *argv[])
       threads[count].seed = 1 + rand_r (&seed) % 71;
 
       assert(pthread_create (&threads[count].thread_id,
-                             NULL, thread_routine, (void*)&threads[count]) == 0);
+                             NULL, thread_routine, (void*)(size_t)&threads[count]) == 0);
     }
 
   /*
@@ -187,13 +187,13 @@ main (int argc, char *argv[])
   printf ("%d thread updates, %d data updates\n",
           thread_updates, data_updates);
 
-  _ftime(&currSysTime2);
+  PTW32_FTIME(&currSysTime2);
 
   printf( "\nstart: %ld/%d, stop: %ld/%d, duration:%ld\n",
-          currSysTime1.time,currSysTime1.millitm,
-          currSysTime2.time,currSysTime2.millitm,
-          (currSysTime2.time*1000+currSysTime2.millitm) -
-          (currSysTime1.time*1000+currSysTime1.millitm));
+          (long)currSysTime1.time,currSysTime1.millitm,
+          (long)currSysTime2.time,currSysTime2.millitm,
+          ((long)((currSysTime2.time*1000+currSysTime2.millitm) -
+          (currSysTime1.time*1000+currSysTime1.millitm))));
 
   return 0;
 }

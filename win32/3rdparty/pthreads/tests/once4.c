@@ -166,7 +166,9 @@ main()
 	  bag_t * bag = &threadbag[i][j];
 	  bag->threadnum = i;
 	  bag->oncenum = j;
-          assert(pthread_create(&t[i][j], NULL, mythread, (void *) bag) == 0);
+          /* GCC build: create was failing with EAGAIN after 790 threads */
+          while (0 != pthread_create(&t[i][j], NULL, mythread, (void *)bag))
+            sched_yield();
         }
     }
 

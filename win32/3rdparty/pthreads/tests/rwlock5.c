@@ -37,6 +37,8 @@
  * and then unlock it again.
  *
  * Depends on API functions: 
+ *      pthread_create()
+ *      pthread_join()
  *	pthread_rwlock_rdlock()
  *	pthread_rwlock_tryrdlock()
  *	pthread_rwlock_unlock()
@@ -68,7 +70,7 @@ main()
 
   assert(pthread_create(&t, NULL, func, NULL) == 0);
 
-  Sleep(2000);
+  assert(pthread_join(t, NULL) == 0);
 
   assert(pthread_rwlock_unlock(&rwlock1) == 0);
 

@@ -43,29 +43,13 @@ INLINE int
 ptw32_cond_check_need_init (pthread_cond_t * cond)
 {
   int result = 0;
+  ptw32_mcs_local_node_t node;
 
   /*
    * The following guarded test is specifically for statically
    * initialised condition variables (via PTHREAD_OBJECT_INITIALIZER).
-   *
-   * Note that by not providing this synchronisation we risk
-   * introducing race conditions into applications which are
-   * correctly written.
-   *
-   * Approach
-   * --------
-   * We know that static condition variables will not be PROCESS_SHARED
-   * so we can serialise access to internal state using
-   * Win32 Critical Sections rather than Win32 Mutexes.
-   *
-   * If using a single global lock slows applications down too much,
-   * multiple global locks could be created and hashed on some random
-   * value associated with each mutex, the pointer perhaps. At a guess,
-   * a good value for the optimal number of global locks might be
-   * the number of processors + 1.
-   *
    */
-  EnterCriticalSection (&ptw32_cond_test_init_lock);
+  ptw32_mcs_lock_acquire(&ptw32_cond_test_init_lock, &node);
 
   /*
    * We got here possibly under race
@@ -88,7 +72,7 @@ ptw32_cond_check_need_init (pthread_cond_t * cond)
       result = EINVAL;
     }
 
-  LeaveCriticalSection (&ptw32_cond_test_init_lock);
+  ptw32_mcs_lock_release(&node);
 
   return result;
 }

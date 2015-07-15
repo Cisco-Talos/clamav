@@ -34,7 +34,7 @@
  * --------------------------------------------------------------------------
  *
  * Create several pthread_once objects and channel several threads
- * through each. Make the init_routine cancelable and cancel them
+ * through each. Make the init_routine cancelable and cancel them with
  * waiters waiting.
  *
  * Depends on API functions:
@@ -45,13 +45,15 @@
  *      pthread_once()
  */
 
+/* #define ASSERT_TRACE */
+
 #include "test.h"
 
 #define NUM_THREADS 100 /* Targeting each once control */
 #define NUM_ONCE    10
 
-pthread_once_t o = PTHREAD_ONCE_INIT;
-pthread_once_t once[NUM_ONCE];
+static pthread_once_t o = PTHREAD_ONCE_INIT;
+static pthread_once_t once[NUM_ONCE];
 
 typedef struct {
   int i;
@@ -66,6 +68,7 @@ myfunc(void)
 {
   EnterCriticalSection(&numOnce.cs);
   numOnce.i++;
+  assert(numOnce.i > 0);
   LeaveCriticalSection(&numOnce.cs);
   /* Simulate slow once routine so that following threads pile up behind it */
   Sleep(10);
@@ -78,16 +81,16 @@ mythread(void * arg)
 {
   /*
    * Cancel every thread. These threads are deferred cancelable only, so
-   * only the thread performing the init_routine will see it (there are
+   * only the thread performing the once routine (my_func) will see it (there are
    * no other cancelation points here). The result will be that every thread
-   * eventually cancels only when it becomes the new initter.
+   * eventually cancels only when it becomes the new 'once' thread.
    */
-  pthread_cancel(pthread_self());
-  assert(pthread_once(&once[(int) arg], myfunc) == 0);
+  assert(pthread_cancel(pthread_self()) == 0);
+  assert(pthread_once(&once[(int)(size_t)arg], myfunc) == 0);
   EnterCriticalSection(&numThreads.cs);
   numThreads.i++;
   LeaveCriticalSection(&numThreads.cs);
-  return 0;
+  return (void*)(size_t)0;
 }
 
 int
@@ -105,7 +108,9 @@ main()
 
       for (i = 0; i < NUM_THREADS; i++)
         {
-          assert(pthread_create(&t[i][j], NULL, mythread, (void *) j) == 0);
+          /* GCC build: create was failing with EAGAIN after 790 threads */
+          while (0 != pthread_create(&t[i][j], NULL, mythread, (void *)(size_t)j))
+            sched_yield();
         }
     }
 

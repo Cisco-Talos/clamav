@@ -94,7 +94,6 @@ main()
 
 	assert(sem_init(&s, PTHREAD_PROCESS_PRIVATE, 0) == 0);
 	assert(sem_getvalue(&s, &value) == 0);
-//	printf("Value = %d\n", value);	fflush(stdout);
 	assert(value == 0);
 
 	for (i = 1; i <= MAX_COUNT; i++)
@@ -104,28 +103,23 @@ main()
 			  sched_yield();
 			  assert(sem_getvalue(&s, &value) == 0);
 			} while (value != -i);
-//			printf("Value = %d\n", value); fflush(stdout);
 			assert(-value == i);
 		}
 
 	assert(sem_getvalue(&s, &value) == 0);
 	assert(-value == MAX_COUNT);
-//printf("value = %d\n", -value); fflush(stdout);
 	assert(pthread_cancel(t[50]) == 0);
 	  {
-	    int result;
-	    assert(pthread_join(t[50], (void **) &result) == 0);
-//	    printf("result = %d\n", result); fflush(stdout);
+	    void* result;
+	    assert(pthread_join(t[50], &result) == 0);
 	  }
 	assert(sem_getvalue(&s, &value) == 0);
-//printf("value = %d\n", -value); fflush(stdout);
 	assert(-value == (MAX_COUNT - 1));
 
 	for (i = MAX_COUNT - 2; i >= 0; i--)
 		{
 			assert(sem_post(&s) == 0);
 			assert(sem_getvalue(&s, &value) == 0);
-//			printf("Value = %d\n", value);	fflush(stdout);
 			assert(-value == i);
 		}
 

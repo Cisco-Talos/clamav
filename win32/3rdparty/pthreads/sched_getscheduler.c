@@ -62,6 +62,8 @@ sched_getscheduler (pid_t pid)
 		 (0xFF & ERROR_ACCESS_DENIED)) ? EPERM : ESRCH;
 	      return -1;
 	    }
+	  else
+	    CloseHandle(h);
 	}
     }
 

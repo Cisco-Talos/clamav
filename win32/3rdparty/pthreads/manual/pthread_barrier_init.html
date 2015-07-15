@@ -32,8 +32,7 @@ barrier referenced by <I>barrier</I> and release any resources used
 by the barrier. The effect of subsequent use of the barrier is
 undefined until the barrier is reinitialized by another call to
 <B>pthread_barrier_init</B> . An implementation may use this function
-to set <I>barrier</I> to an invalid value. The results are undefined
-if <B>pthread_barrier_destroy</B> is called when any thread is
+to set <I>barrier</I> to an invalid value. An error code is returned if <B>pthread_barrier_destroy</B> is called when any thread is
 blocked on the barrier, or if this function is called with an
 uninitialized barrier. 
 </P>
@@ -139,10 +138,8 @@ that these routines are implemented and may be used.</P>
 <DL>
 	<DD STYLE="margin-left: 0cm; margin-bottom: 0.5cm">In
 	<B><SPAN LANG="en-GB"><SPAN LANG="en-GB">pthreads-win32</SPAN></SPAN></B>,
-	<A HREF="pthread_barrier_wait.html"></A><A HREF="pthread_barrier_wait.html"><B>pthread_barrier_wait</B>(3)</A><A HREF="pthread_barrier_wait.html"></A>
-	may deadlock if the number of running threads able to wait on the
-	barrier object exceeds the value given as the <I><SPAN LANG="en-GB"><SPAN LANG="en-GB">count</SPAN></SPAN></I>
-	parameter in <B>pthread_barrier_init</B>. 
+	the behaviour of threads which enter <A HREF="pthread_barrier_wait.html"><B>pthread_barrier_wait</B>(3)</A>
+	while the barrier is being destroyed is undefined. 
 	</DD></DL>
 <H2>
 <A HREF="#toc9" NAME="sect9">See Also</A></H2>

@@ -112,7 +112,7 @@ sem_init (sem_t * sem, int pshared, unsigned int value)
 	  if (pthread_mutex_init(&s->lock, NULL) == 0)
 	    {
 
-#ifdef NEED_SEM
+#if defined(NEED_SEM)
 
 	  s->sem = CreateEvent (NULL,
 				PTW32_FALSE,	/* auto (not manual) reset */
