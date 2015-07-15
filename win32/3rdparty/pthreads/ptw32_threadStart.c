@@ -37,8 +37,13 @@
 
 #include "pthread.h"
 #include "implement.h"
+#include <stdio.h>
 
-#ifdef __CLEANUP_SEH
+#if defined(__CLEANUP_C)
+# include <setjmp.h>
+#endif
+
+#if defined(__CLEANUP_SEH)
 
 static DWORD
 ExceptionFilter (EXCEPTION_POINTERS * ep, DWORD * ei)
@@ -69,7 +74,6 @@ ExceptionFilter (EXCEPTION_POINTERS * ep, DWORD * ei)
 	 */
 	pthread_t self = pthread_self ();
 
-	(void) pthread_mutex_destroy (&((ptw32_thread_t *)self.p)->cancelLock);
 	ptw32_callUserDestroyRoutines (self);
 
 	return EXCEPTION_CONTINUE_SEARCH;
@@ -116,7 +120,7 @@ ptw32_terminate ()
 
 #endif
 
-#if ! defined (__MINGW32__) || (defined (__MSVCRT__) && ! defined (__DMC__))
+#if ! (defined(__MINGW64__) || defined(__MINGW32__)) || (defined (__MSVCRT__) && ! defined (__DMC__))
 unsigned
   __stdcall
 #else
@@ -127,18 +131,19 @@ ptw32_threadStart (void *vthreadParms)
   ThreadParms * threadParms = (ThreadParms *) vthreadParms;
   pthread_t self;
   ptw32_thread_t * sp;
-  void *(*start) (void *);
+  void * (PTW32_CDECL *start) (void *);
   void * arg;
 
-#ifdef __CLEANUP_SEH
+#if defined(__CLEANUP_SEH)
   DWORD
   ei[] = { 0, 0, 0 };
 #endif
 
-#ifdef __CLEANUP_C
+#if defined(__CLEANUP_C)
   int setjmp_rc;
 #endif
 
+  ptw32_mcs_local_node_t stateLock;
   void * status = (void *) 0;
 
   self = threadParms->tid;
@@ -148,28 +153,28 @@ ptw32_threadStart (void *vthreadParms)
 
   free (threadParms);
 
-#if defined (__MINGW32__) && ! defined (__MSVCRT__)
+#if (defined(__MINGW64__) || defined(__MINGW32__)) && ! defined (__MSVCRT__)
   /*
    * beginthread does not return the thread id and is running
    * before it returns us the thread handle, and so we do it here.
    */
   sp->thread = GetCurrentThreadId ();
   /*
-   * Here we're using cancelLock as a general-purpose lock
+   * Here we're using stateLock as a general-purpose lock
    * to make the new thread wait until the creating thread
    * has the new handle.
    */
-  if (pthread_mutex_lock (&sp->cancelLock) == 0)
-    {
-      (void) pthread_mutex_unlock (&sp->cancelLock);
-    }
+  ptw32_mcs_lock_acquire (&sp->stateLock, &stateLock);
+  pthread_setspecific (ptw32_selfThreadKey, sp);
+#else
+  pthread_setspecific (ptw32_selfThreadKey, sp);
+  ptw32_mcs_lock_acquire (&sp->stateLock, &stateLock);
 #endif
 
-  pthread_setspecific (ptw32_selfThreadKey, sp);
-
   sp->state = PThreadStateRunning;
+  ptw32_mcs_lock_release (&stateLock);
 
-#ifdef __CLEANUP_SEH
+#if defined(__CLEANUP_SEH)
 
   __try
   {
@@ -177,8 +182,9 @@ ptw32_threadStart (void *vthreadParms)
      * Run the caller's routine;
      */
     status = sp->exitStatus = (*start) (arg);
+    sp->state = PThreadStateExiting;
 
-#ifdef _UWIN
+#if defined(_UWIN)
     if (--pthread_count <= 0)
       exit (0);
 #endif
@@ -190,7 +196,7 @@ ptw32_threadStart (void *vthreadParms)
       {
       case PTW32_EPS_CANCEL:
 	status = sp->exitStatus = PTHREAD_CANCELED;
-#ifdef _UWIN
+#if defined(_UWIN)
 	if (--pthread_count <= 0)
 	  exit (0);
 #endif
@@ -206,7 +212,7 @@ ptw32_threadStart (void *vthreadParms)
 
 #else /* __CLEANUP_SEH */
 
-#ifdef __CLEANUP_C
+#if defined(__CLEANUP_C)
 
   setjmp_rc = setjmp (sp->start_mark);
 
@@ -217,6 +223,7 @@ ptw32_threadStart (void *vthreadParms)
        * Run the caller's routine;
        */
       status = sp->exitStatus = (*start) (arg);
+      sp->state = PThreadStateExiting;
     }
   else
     {
@@ -236,7 +243,7 @@ ptw32_threadStart (void *vthreadParms)
 
 #else /* __CLEANUP_C */
 
-#ifdef __CLEANUP_CXX
+#if defined(__CLEANUP_CXX)
 
   ptw32_oldTerminate = set_terminate (&ptw32_terminate);
 
@@ -250,6 +257,7 @@ ptw32_threadStart (void *vthreadParms)
     try
     {
       status = sp->exitStatus = (*start) (arg);
+      sp->state = PThreadStateExiting;
     }
     catch (ptw32_exception &)
     {
@@ -268,7 +276,6 @@ ptw32_threadStart (void *vthreadParms)
        * ptw32_terminate() will be called if there is no user
        * supplied function.
        */
-
       terminate_function
 	term_func = set_terminate (0);
       set_terminate (term_func);
@@ -277,7 +284,6 @@ ptw32_threadStart (void *vthreadParms)
 	{
 	  term_func ();
 	}
-
       throw;
     }
   }
@@ -299,20 +305,11 @@ ptw32_threadStart (void *vthreadParms)
   {
     /*
      * A system unexpected exception has occurred running the user's
-     * terminate routine. We get control back within this block - cleanup
-     * and release the exception out of thread scope.
+     * terminate routine. We get control back within this block
+     * and exit with a substitute status. If the thread was not
+     * cancelled then this indicates the unhandled exception.
      */
     status = sp->exitStatus = PTHREAD_CANCELED;
-    (void) pthread_mutex_lock (&sp->cancelLock);
-    sp->state = PThreadStateException;
-    (void) pthread_mutex_unlock (&sp->cancelLock);
-    (void) pthread_win32_thread_detach_np ();
-    (void) set_terminate (ptw32_oldTerminate);
-    throw;
-
-    /*
-     * Never reached.
-     */
   }
 
   (void) set_terminate (ptw32_oldTerminate);
@@ -343,8 +340,8 @@ ptw32_threadStart (void *vthreadParms)
   (void) pthread_win32_thread_detach_np ();
 #endif
 
-#if ! defined (__MINGW32__) || defined (__MSVCRT__) || defined (__DMC__)
-  _endthreadex ((unsigned) status);
+#if ! (defined(__MINGW64__) || defined(__MINGW32__)) || defined (__MSVCRT__) || defined (__DMC__)
+  _endthreadex ((unsigned)(size_t) status);
 #else
   _endthread ();
 #endif
@@ -353,8 +350,8 @@ ptw32_threadStart (void *vthreadParms)
    * Never reached.
    */
 
-#if ! defined (__MINGW32__) || defined (__MSVCRT__) || defined (__DMC__)
-  return (unsigned) status;
+#if ! (defined(__MINGW64__) || defined(__MINGW32__)) || defined (__MSVCRT__) || defined (__DMC__)
+  return (unsigned)(size_t) status;
 #endif
 
 }				/* ptw32_threadStart */

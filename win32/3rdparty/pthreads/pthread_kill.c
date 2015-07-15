@@ -41,7 +41,7 @@
  * Not needed yet, but defining it should indicate clashes with build target
  * environment that should be fixed.
  */
-#ifndef WINCE
+#if !defined(WINCE)
 #  include <signal.h>
 #endif
 
@@ -77,8 +77,9 @@ pthread_kill (pthread_t thread, int sig)
 {
   int result = 0;
   ptw32_thread_t * tp;
+  ptw32_mcs_local_node_t node;
 
-  EnterCriticalSection (&ptw32_thread_reuse_lock);
+  ptw32_mcs_lock_acquire(&ptw32_thread_reuse_lock, &node);
 
   tp = (ptw32_thread_t *) thread.p;
 
@@ -89,7 +90,7 @@ pthread_kill (pthread_t thread, int sig)
       result = ESRCH;
     }
 
-  LeaveCriticalSection (&ptw32_thread_reuse_lock);
+  ptw32_mcs_lock_release(&node);
 
   if (0 == result && 0 != sig)
     {

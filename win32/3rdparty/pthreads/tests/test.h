@@ -47,6 +47,12 @@
 
 #define PTW32_THREAD_NULL_ID {NULL,0}
 
+/*
+ * Some non-thread POSIX API substitutes
+ */
+#define rand_r( _seed ) \
+        ( _seed == _seed? rand() : rand() )
+
 #if defined(__MINGW32__)
 #include <stdint.h>
 #elif defined(__BORLANDC__)
@@ -55,8 +61,20 @@
 #define int64_t _int64
 #endif
 
+#if defined(_MSC_VER) && _MSC_VER >= 1400
+#  define PTW32_FTIME(x) _ftime64_s(x)
+#  define PTW32_STRUCT_TIMEB struct __timeb64
+#elif ( defined(_MSC_VER) && _MSC_VER >= 1300 ) || \
+      ( defined(__MINGW32__) && __MSVCRT_VERSION__ >= 0x0601 )
+#  define PTW32_FTIME(x) _ftime64(x)
+#  define PTW32_STRUCT_TIMEB struct __timeb64
+#else
+#  define PTW32_FTIME(x) _ftime(x)
+#  define PTW32_STRUCT_TIMEB struct _timeb
+#endif
 
-char * error_string[] = {
+
+const char * error_string[] = {
   "ZERO_or_EOK",
   "EPERM",
   "ENOFILE_or_ENOENT",
@@ -100,6 +118,8 @@ char * error_string[] = {
   "ENOSYS",
   "ENOTEMPTY",
   "EILSEQ",
+  "EOWNERDEAD",
+  "ENOTRECOVERABLE"
 };
 
 /*
@@ -138,3 +158,25 @@ int assertE;
                    #e,#o,#r, __FILE__, (int) __LINE__, error_string[assertE]), exit(1), 0))
 
 #endif
+
+# define BEGIN_MUTEX_STALLED_ROBUST(mxAttr) \
+  for(;;) \
+    { \
+      static int _i=0; \
+      static int _robust; \
+      pthread_mutexattr_getrobust(&(mxAttr), &_robust);
+
+# define END_MUTEX_STALLED_ROBUST(mxAttr) \
+      printf("Pass %s\n", _robust==PTHREAD_MUTEX_ROBUST?"Robust":"Non-robust"); \
+      if (++_i > 1) \
+        break; \
+      else \
+        { \
+          pthread_mutexattr_t *pma, *pmaEnd; \
+          for(pma = &(mxAttr), pmaEnd = pma + sizeof(mxAttr)/sizeof(pthread_mutexattr_t); \
+              pma < pmaEnd; \
+              pthread_mutexattr_setrobust(pma++, PTHREAD_MUTEX_ROBUST)); \
+        } \
+    }
+
+# define IS_ROBUST (_robust==PTHREAD_MUTEX_ROBUST)

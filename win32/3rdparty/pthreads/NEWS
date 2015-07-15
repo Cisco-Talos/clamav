@@ -1,30 +1,63 @@
 RELEASE 2.9.0
 -------------
-(2008-??-??)
+(2012-05-25)
 
 General
 -------
 New bug fixes in this release since 2.8.0 have NOT been applied to the
 1.x.x series.
 
-Version 1 no longer maintained
-------------------------------
-The 1.x.x series is no longer maintained. However, if you really need a
-version 1, the differences between 1.11.0 and 2.7.0 are very small, mainly
-revolving around the pthread_once_t_ struct. Those differences applied
-as a patch to the current 2.x.x should work. Don't forget to change
-the version numbering in pthread.h before building. If you distribute
-such a version 1.x.x please bear in mind that your numbers may clash
-with those of others doing the same thing. Please consider also making
-identifying changes in version.rc to differentiate your build.
+Some changes post 2011-02-26 in CVS may not be compatible with pre
+Windows 2000 systems.
+
+Use of other than the "C" version of the library is now discouraged.
+That is, the "C++" version fails some tests and does not provide any
+additional functionality.
 
 Testing and verification
 ------------------------
-This release has been tested on UP and SMP architectures. Thanks to Tim
-Theisen for running the Win32 SMP tests.
+This version has been tested on SMP architecture (Intel x64 Hex Core)
+by completing the included test suite, stress and bench tests.
+
+New Features
+------------
+DLL properties now properly includes the target architecture, i.e.
+right-click on the file pthreadVC2.dll in explorer and choose the Detail
+tab will show the compiler and architecture in the description field, e.g.
+"MS C x64" or "MS C x86".
+- Ross Johnson
+
+(MSC and GNU builds) The statically linked library now automatically
+initialises and cleans up on program start/exit, i.e. statically linked
+applications need not call the routines pthread_win32_process_attach_np()
+and pthread_win32_process_detach_np() explicitly. The per-thread routine
+pthread_win32_thread_detach_np() is also called at program exit to cleanup
+POSIX resources acquired by the primary Windows native thread, if I (RJ)
+understand the process correctly. Other Windows native threads that call
+POSIX API routines may need to call the thread detach routine on thread
+exit if the application depends on reclaimed POSIX resources or running
+POSIX TSD (TLS) destructors.
+See README.NONPORTABLE for descriptions of these routines.
+- Ramiro Polla
+
+Robust mutexes are implemented within the PROCESS_PRIVATE scope. NOTE that
+pthread_mutex_* functions may return different error codes for robust
+mutexes than they otherwise do in normal usage, e.g.  pthread_mutex_unlock
+is required to check ownership for all mutex types when the mutex is
+robust, whereas this does not occur for the "normal" non-robust mutex type.
+- Ross Johnson
+
+pthread_getunique_np is implemented for source level compatibility
+with some other implementations. This routine returns a 64 bit
+sequence number that is uniquely associated with a thread. It can be
+used by applications to order or hash POSIX thread handles.
+- Ross Johnson
 
 Bug fixes
 ---------
+Many more changes for 64 bit systems.
+- Kai Tietz
+
 Various modifications and fixes to build and test for WinCE.
 - Marcel Ruff, Sinan Kaya
 
@@ -39,11 +72,61 @@ Various modifications to build and test for Win64.
 - Kip Streithorst
 
 Various fixes to the QueueUserAPCEx async cancellation helper DLL
-and pthreads code cleanups.
+(this is a separate download) and pthreads code cleanups.
 - Sebastian Gottschalk
 
 Removed potential NULL pointer reference.
 - Robert Kindred
+
+Removed the requirement that applications restrict the number of threads
+calling pthread_barrier_wait to just the barrier count. Also reduced the
+contention between barrier_wait and barrier_destroy. This change will have
+slowed barriers down slightly but halves the number of semaphores consumed
+per barrier to one.
+- Ross Johnson
+
+Fixed a handle leak in sched_[gs]etscheduler.
+- Mark Pizzolato
+
+Removed all of the POSIX re-entrant function compatibility macros from pthread.h.
+Some were simply not semanticly correct.
+- Igor Lubashev
+
+Threads no longer attempt to pass uncaught exceptions out of thread scope (C++
+and SEH builds only). Uncaught exceptions now cause the thread to exit with
+the return code PTHREAD_CANCELED.
+- Ross Johnson
+
+Lots of casting fixes particularly for x64, Interlocked fixes and reworking
+for x64.
+- Daniel Richard G., John Kamp
+
+Other changes
+-------------
+Dependence on the winsock library is now discretionary via
+#define RETAIN_WSALASTERROR in config.h. It is undefined by default unless
+WINCE is defined (because RJ is unsure of the dependency there).
+- Ramiro Polla
+
+Several static POSIX mutexes used for internal management were replaced by
+MCS queue-based locks to reduce resource consumption, in particular use of Win32
+objects.
+- Ross Johnson
+
+For security, the QuserEx.dll if used must now be installed in the Windows System
+folder.
+- Ross Johnson
+
+New tests
+---------
+robust[1-5].c - Robust mutexes
+sequence1.c - per-thread unique sequence numbers
+
+Modified tests and benchtests
+-----------------------------
+All mutex*.c tests wherever appropriate have been modified to also test
+robust mutexes under the same conditions.
+Added robust mutex benchtests to benchtest*.c wherever appropriate.
 
 
 RELEASE 2.8.0

@@ -38,10 +38,20 @@
 #include "pthread.h"
 #include "implement.h"
 
-#ifdef __cplusplus
-# if ! defined (_MSC_VER) && ! (defined(__GNUC__) && __GNUC__ < 3) && ! defined(__WATCOMC__)
-using
-  std::terminate;
+#if defined(__CLEANUP_CXX)
+# if defined(_MSC_VER)
+#  include <eh.h>
+# elif defined(__WATCOMC__)
+#  include <eh.h>
+#  include <exceptio.h>
+# else
+#  if defined(__GNUC__) && __GNUC__ < 3
+#    include <new.h>
+#  else
+#    include <new>
+     using
+       std::terminate;
+#  endif
 # endif
 #endif
 
@@ -68,6 +78,8 @@ ptw32_callUserDestroyRoutines (pthread_t thread)
 
   if (thread.p != NULL)
     {
+      ptw32_mcs_local_node_t threadLock;
+      ptw32_mcs_local_node_t keyLock;
       int assocsRemaining;
       int iterations = 0;
       ptw32_thread_t * sp = (ptw32_thread_t *) thread.p;
@@ -83,7 +95,7 @@ ptw32_callUserDestroyRoutines (pthread_t thread)
 	  assocsRemaining = 0;
 	  iterations++;
 
-	  (void) pthread_mutex_lock(&(sp->threadLock));
+	  ptw32_mcs_lock_acquire(&(sp->threadLock), &threadLock);
 	  /*
 	   * The pointer to the next assoc is stored in the thread struct so that
 	   * the assoc destructor in pthread_key_delete can adjust it
@@ -93,7 +105,7 @@ ptw32_callUserDestroyRoutines (pthread_t thread)
 	   * before us.
 	   */
 	  sp->nextAssoc = sp->keys;
-	  (void) pthread_mutex_unlock(&(sp->threadLock));
+	  ptw32_mcs_lock_release(&threadLock);
 
 	  for (;;)
 	    {
@@ -106,12 +118,12 @@ ptw32_callUserDestroyRoutines (pthread_t thread)
 	       * both assoc guards, but in the reverse order to our convention,
 	       * so we must be careful to avoid deadlock.
 	       */
-	      (void) pthread_mutex_lock(&(sp->threadLock));
+	      ptw32_mcs_lock_acquire(&(sp->threadLock), &threadLock);
 
 	      if ((assoc = (ThreadKeyAssoc *)sp->nextAssoc) == NULL)
 		{
 		  /* Finished */
-		  pthread_mutex_unlock(&(sp->threadLock));
+		  ptw32_mcs_lock_release(&threadLock);
 		  break;
 		}
 	      else
@@ -126,10 +138,10 @@ ptw32_callUserDestroyRoutines (pthread_t thread)
 		   * If we fail, we need to relinquish the first lock and the
 		   * processor and then try to acquire them all again.
 		   */
-		  if (pthread_mutex_trylock(&(assoc->key->keyLock)) == EBUSY)
+		  if (ptw32_mcs_lock_try_acquire(&(assoc->key->keyLock), &keyLock) == EBUSY)
 		    {
-		      pthread_mutex_unlock(&(sp->threadLock));
-		      Sleep(1); // Ugly but necessary to avoid priority effects.
+		      ptw32_mcs_lock_release(&threadLock);
+		      Sleep(0);
 		      /*
 		       * Go around again.
 		       * If pthread_key_delete has removed this assoc in the meantime,
@@ -165,12 +177,12 @@ ptw32_callUserDestroyRoutines (pthread_t thread)
 		   * pthread_setspecific can also be run from destructors and
 		   * also needs to be able to access the assocs.
 		   */
-		  (void) pthread_mutex_unlock(&(sp->threadLock));
-		  (void) pthread_mutex_unlock(&(k->keyLock));
+		  ptw32_mcs_lock_release(&threadLock);
+		  ptw32_mcs_lock_release(&keyLock);
 
 		  assocsRemaining++;
 
-#ifdef __cplusplus
+#if defined(__cplusplus)
 
 		  try
 		    {
@@ -210,8 +222,8 @@ ptw32_callUserDestroyRoutines (pthread_t thread)
 		   * and reclaim it's memory resources.
 		   */
 		  ptw32_tkAssocDestroy (assoc);
-		  (void) pthread_mutex_unlock(&(sp->threadLock));
-		  (void) pthread_mutex_unlock(&(k->keyLock));
+		  ptw32_mcs_lock_release(&threadLock);
+		  ptw32_mcs_lock_release(&keyLock);
 		}
 	    }
 	}

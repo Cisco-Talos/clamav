@@ -73,14 +73,14 @@ int
 main()
 {
   pthread_t t;
-  int result = 0;
+  void* result = (void*)0;
 
   assert(mutex == PTHREAD_ERRORCHECK_MUTEX_INITIALIZER);
 
   assert(pthread_create(&t, NULL, locker, NULL) == 0);
 
-  assert(pthread_join(t, (void **) &result) == 0);
-  assert(result == 555);
+  assert(pthread_join(t, &result) == 0);
+  assert((int)(size_t)result == 555);
 
   assert(lockCount == 2);
 

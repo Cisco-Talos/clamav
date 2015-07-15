@@ -44,7 +44,7 @@ pthread_equal (pthread_t t1, pthread_t t2)
       * ------------------------------------------------------
       * DOCPUBLIC
       *      This function returns nonzero if t1 and t2 are equal, else
-      *      returns nonzero
+      *      returns zero
       *
       * PARAMETERS
       *      t1,

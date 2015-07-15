@@ -95,7 +95,7 @@ void * func(void * arg)
   assert(policy == SCHED_OTHER);
   result = pthread_barrier_wait(&endBarrier);
   assert(result == 0 || result == PTHREAD_BARRIER_SERIAL_THREAD);
-  return (void *) param.sched_priority;
+  return (void *) (size_t)param.sched_priority;
 }
 
 
@@ -162,7 +162,7 @@ main()
       assert(GetThreadPriority(pthread_getw32threadhandle_np(t)) ==
 	  validPriorities[param.sched_priority+(PTW32TEST_MAXPRIORITIES/2)]);
       pthread_join(t, &result);
-      assert(param.sched_priority == (int)result);
+      assert(param.sched_priority == (int)(size_t)result);
     }
 
   return 0;

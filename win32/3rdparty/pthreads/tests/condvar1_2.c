@@ -89,7 +89,7 @@ int
 main()
 {
   int i, j, k;
-  int result = -1;
+  void* result = (void*)-1;
   pthread_t t;
 
   for (k = 0; k < NUM_LOOPS; k++)
@@ -116,8 +116,8 @@ main()
         }
       while (j > 0);
 
-      assert(pthread_join(t, (void **) &result) == 0);
-      assert (result == 0);
+      assert(pthread_join(t, &result) == 0);
+      assert ((int)(size_t)result == 0);
     }
 
   return 0;

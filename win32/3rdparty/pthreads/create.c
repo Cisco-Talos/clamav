@@ -44,7 +44,7 @@
 int
 pthread_create (pthread_t * tid,
 		const pthread_attr_t * attr,
-		void *(*start) (void *), void *arg)
+		void *(PTW32_CDECL *start) (void *), void *arg)
      /*
       * ------------------------------------------------------
       * DOCPUBLIC
@@ -90,7 +90,7 @@ pthread_create (pthread_t * tid,
   int result = EAGAIN;
   int run = PTW32_TRUE;
   ThreadParms *parms = NULL;
-  long stackSize;
+  unsigned int stackSize;
   int priority;
   pthread_t self;
 
@@ -142,7 +142,7 @@ pthread_create (pthread_t * tid,
 
   if (a != NULL)
     {
-      stackSize = a->stacksize;
+      stackSize = (unsigned int)a->stacksize;
       tp->detachState = a->detachstate;
       priority = a->param.sched_priority;
 
@@ -200,12 +200,12 @@ pthread_create (pthread_t * tid,
    * finished with it here.
    */
 
-#if ! defined (__MINGW32__) || defined (__MSVCRT__) || defined (__DMC__) 
+#if ! (defined (__MINGW64__) || defined(__MINGW32__)) || defined (__MSVCRT__) || defined (__DMC__) 
 
   tp->threadH =
     threadH =
     (HANDLE) _beginthreadex ((void *) NULL,	/* No security info             */
-			     (unsigned) stackSize,	/* default stack size   */
+			     stackSize,		/* default stack size   */
 			     ptw32_threadStart,
 			     parms,
 			     (unsigned)
@@ -225,47 +225,50 @@ pthread_create (pthread_t * tid,
 	}
     }
 
-#else /* __MINGW32__ && ! __MSVCRT__ */
+#else
 
-  /*
-   * This lock will force pthread_threadStart() to wait until we have
-   * the thread handle and have set the priority.
-   */
-  (void) pthread_mutex_lock (&tp->cancelLock);
+  {
+    ptw32_mcs_local_node_t stateLock;
 
-  tp->threadH =
-    threadH =
-    (HANDLE) _beginthread (ptw32_threadStart, (unsigned) stackSize,	/* default stack size   */
-			   parms);
+    /*
+     * This lock will force pthread_threadStart() to wait until we have
+     * the thread handle and have set the priority.
+     */
+    ptw32_mcs_lock_acquire(&tp->stateLock, &stateLock);
 
-  /*
-   * Make the return code match _beginthreadex's.
-   */
-  if (threadH == (HANDLE) - 1L)
-    {
-      tp->threadH = threadH = 0;
-    }
-  else
-    {
-      if (!run)
-	{
-	  /* 
-	   * beginthread does not allow for create flags, so we do it now.
-	   * Note that beginthread itself creates the thread in SUSPENDED
-	   * mode, and then calls ResumeThread to start it.
-	   */
-	  SuspendThread (threadH);
-	}
+    tp->threadH =
+      threadH =
+      (HANDLE) _beginthread (ptw32_threadStart, stackSize,	/* default stack size   */
+			     parms);
 
-      if (a != NULL)
-	{
-	  (void) ptw32_setthreadpriority (thread, SCHED_OTHER, priority);
-	}
-    }
+    /*
+     * Make the return code match _beginthreadex's.
+     */
+    if (threadH == (HANDLE) - 1L)
+      {
+        tp->threadH = threadH = 0;
+      }
+    else
+      {
+        if (!run)
+	  {
+	    /* 
+	     * beginthread does not allow for create flags, so we do it now.
+	     * Note that beginthread itself creates the thread in SUSPENDED
+	     * mode, and then calls ResumeThread to start it.
+	     */
+	    SuspendThread (threadH);
+	  }
+  
+        if (a != NULL)
+	  {
+	    (void) ptw32_setthreadpriority (thread, SCHED_OTHER, priority);
+	  }
+      }
 
-  (void) pthread_mutex_unlock (&tp->cancelLock);
-
-#endif /* __MINGW32__ && ! __MSVCRT__ */
+    ptw32_mcs_lock_release (&stateLock);
+  }
+#endif
 
   result = (threadH != 0) ? 0 : EAGAIN;
 
@@ -296,7 +299,7 @@ FAIL0:
       *tid = thread;
     }
 
-#ifdef _UWIN
+#if defined(_UWIN)
   if (result == 0)
     pthread_count++;
 #endif

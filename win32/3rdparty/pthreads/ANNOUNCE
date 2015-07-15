@@ -1,8 +1,8 @@
-	     PTHREADS-WIN32 RELEASE 2.9.0 (2007-??-??)
-	     -----------------------------------------
-	 Web Site: http://sources.redhat.com/pthreads-win32/
-	FTP Site: ftp://sources.redhat.com/pub/pthreads-win32
-	 Maintainer: Ross Johnson <rpj@callisto.canberra.edu.au>
+PTHREADS-WIN32 RELEASE 2.9.0 (2012-05-25)
+-----------------------------------------
+Web Site: http://sourceware.org/pthreads-win32/
+FTP Site: ftp://sourceware.org/pub/pthreads-win32
+Maintainer: Ross Johnson <ross.johnson@loungebythelake.net>
 
 
 We are pleased to announce the availability of a new release of
@@ -23,7 +23,7 @@ General Public License (LGPL).
 Acknowledgements
 ----------------
 This library is based originally on a Win32 pthreads
-implementation contributed by John Bossom <John.Bossom@cognos.com>.
+implementation contributed by John Bossom.
 
 The implementation of Condition Variables uses algorithms developed
 by Alexander Terekhov and Louis Thomas.
@@ -50,7 +50,7 @@ were extracted from it.
 There is also a separate CONTRIBUTORS file. This file and others are
 on the web site:
 
-	http://sources.redhat.com/pthreads-win32
+	http://sourceware.org/pthreads-win32
 
 As much as possible, the ChangeLog file acknowledges contributions to the
 code base in more detail.
@@ -154,12 +154,16 @@ The following functions are implemented:
 					PTHREAD_MUTEX_NORMAL
 					PTHREAD_MUTEX_ERRORCHECK
 					PTHREAD_MUTEX_RECURSIVE  )
+      pthread_mutexattr_getrobust
+      pthread_mutexattr_setrobust (values: PTHREAD_MUTEX_STALLED
+                                           PTHREAD_MUTEX_ROBUST)
       pthread_mutex_init
       pthread_mutex_destroy
       pthread_mutex_lock
       pthread_mutex_trylock
       pthread_mutex_timedlock
       pthread_mutex_unlock
+      pthread_mutex_consistent
 
       ---------------------------
       Condition Variables
@@ -262,6 +266,7 @@ The following functions are implemented:
       pthread_getw32threadhandle_np
       pthread_timechange_handler_np
       pthread_delay_np
+      pthread_getunique_np
       pthread_mutexattr_getkind_np
       pthread_mutexattr_setkind_np	(types: PTHREAD_MUTEX_FAST_NP,
 						PTHREAD_MUTEX_ERRORCHECK_NP,
@@ -269,14 +274,15 @@ The following functions are implemented:
 						PTHREAD_MUTEX_ADAPTIVE_NP,
 						PTHREAD_MUTEX_TIMED_NP)
       pthread_num_processors_np
-      pthread_win32_process_attach_np	(Required when statically linking
-                                         the library)
-      pthread_win32_process_detach_np	(Required when statically linking
-                                         the library)
-      pthread_win32_thread_attach_np	(Required when statically linking
-                                         the library)
-      pthread_win32_thread_detach_np	(Required when statically linking
-                                         the library)
+      (The following four routines may be required when linking statically.
+       The process_* routines should not be needed for MSVC or GCC.)
+      pthread_win32_process_attach_np
+      pthread_win32_process_detach_np
+      (The following routines should only be needed to manage implicit
+       POSIX handles i.e. when Win native threads call POSIX thread routines
+       (other than pthread_create))
+      pthread_win32_thread_attach_np
+      pthread_win32_thread_detach_np
 
       ---------------------------
       Static Initializers
@@ -291,19 +297,16 @@ The following functions are implemented:
       PTHREAD_RWLOCK_INITIALIZER
       PTHREAD_SPINLOCK_INITIALIZER
 
-      ---------------------------
-      Thread-Safe C Runtime Library (macros)
-      ---------------------------
-      strtok_r
-      asctime_r
-      ctime_r
-      gmtime_r
-      localtime_r
-      rand_r
 
-
-The following functions are not implemented:
+The library includes two non-API functions for creating cancellation
+points in applications and libraries:
       
+      pthreadCancelableWait
+      pthreadCancelableTimedWait
+
+      
+The following functions are not implemented:
+
       ---------------------------
       RealTime Scheduling
       ---------------------------
@@ -351,13 +354,17 @@ The following functions are not implemented:
       ---------------------------
       sysconf      
 
-The library includes two non-API functions for creating cancellation
-points in applications and libraries:
-      
-      pthreadCancelableWait
-      pthreadCancelableTimedWait
+      ---------------------------
+      Thread-Safe C Runtime Library (macros)
+      ---------------------------
+      strtok_r
+      asctime_r
+      ctime_r
+      gmtime_r
+      localtime_r
+      rand_r
 
-      
+
 Availability
 ------------ 
 
@@ -407,7 +414,7 @@ Mingw using C setjmp/longjmp works. Distribute pthreadGC.dll with your applicati
 
 
 Cygwin: (http://sourceware.cygnus.com/cygwin/)
-Developers using Cygwin will not need pthreads-win32 since it has POSIX threads
+Developers using Cygwin do not need pthreads-win32 since it has POSIX threads
 support. Refer to its documentation for details and extent.
 
 
@@ -420,9 +427,9 @@ Generally:
 For convenience, the following pre-built files are available on the FTP site
 (see Availability above):
 
-	pthread.h	- for POSIX 1c threads
-	semaphore.h	- for POSIX 1b semaphores
-	sched.h 	- for POSIX 1b scheduling
+	pthread.h	- for POSIX threads
+	semaphore.h	- for POSIX semaphores
+	sched.h 	- for POSIX scheduling
 	pthreadVCE.dll	- built with MSVC++ compiler using C++ EH
 	pthreadVCE.lib
 	pthreadVC.dll	- built with MSVC compiler using C setjmp/longjmp

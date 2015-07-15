@@ -22,8 +22,16 @@ Known bugs
    Workaround: avoid using pthread_exit() in C++ applications. Exit
    threads by dropping through the end of the thread routine.
 
-2. Cancellation problems in optimised code
+2. Cancellation problems in C++ builds
    - Milan Gardian
+
+   [Note: It's not clear if this problem isn't simply due to the context
+   switch in pthread_cancel() which occurs unless the QueueUserAPCEx
+   library and driver are installed and used. Just like setjmp/longjmp,
+   this is probably not going to work well in C++. In any case, unless for
+   some very unusual reason you really must use the C++ build then please
+   use the C build pthreadVC2.dll or pthreadGC2.dll, i.e. for C++
+   applications.]
 
    This is suspected to be a compiler bug in VC6.0, and also seen in
    VC7.0 and VS .NET 2003. The GNU C++ compiler does not have a problem

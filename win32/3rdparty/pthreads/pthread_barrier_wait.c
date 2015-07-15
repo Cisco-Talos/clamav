@@ -42,57 +42,62 @@ int
 pthread_barrier_wait (pthread_barrier_t * barrier)
 {
   int result;
-  int step;
   pthread_barrier_t b;
+
+  ptw32_mcs_local_node_t node;
 
   if (barrier == NULL || *barrier == (pthread_barrier_t) PTW32_OBJECT_INVALID)
     {
       return EINVAL;
     }
 
-  b = *barrier;
-  step = b->iStep;
+  ptw32_mcs_lock_acquire(&(*barrier)->lock, &node);
 
-  if (0 == InterlockedDecrement ((long *) &(b->nCurrentBarrierHeight)))
+  b = *barrier;
+  if (--b->nCurrentBarrierHeight == 0)
     {
-      /* Must be done before posting the semaphore. */
-      b->nCurrentBarrierHeight = b->nInitialBarrierHeight;
+      /*
+       * We are the last thread to arrive at the barrier before it releases us.
+       * Move our MCS local node to the global scope barrier handle so that the
+       * last thread out (not necessarily us) can release the lock.
+       */
+      ptw32_mcs_node_transfer(&b->proxynode, &node);
 
       /*
-       * There is no race condition between the semaphore wait and post
-       * because we are using two alternating semas and all threads have
-       * entered barrier_wait and checked nCurrentBarrierHeight before this
-       * barrier's sema can be posted. Any threads that have not quite
-       * entered sem_wait below when the multiple_post has completed
-       * will nevertheless continue through the semaphore (barrier)
-       * and will not be left stranded.
+       * Any threads that have not quite entered sem_wait below when the
+       * multiple_post has completed will nevertheless continue through
+       * the semaphore (barrier).
        */
       result = (b->nInitialBarrierHeight > 1
-		? sem_post_multiple (&(b->semBarrierBreeched[step]),
+                ? sem_post_multiple (&(b->semBarrierBreeched),
 				     b->nInitialBarrierHeight - 1) : 0);
     }
   else
     {
+      ptw32_mcs_lock_release(&node);
       /*
        * Use the non-cancelable version of sem_wait().
+       *
+       * It is possible that all nInitialBarrierHeight-1 threads are
+       * at this point when the last thread enters the barrier, resets
+       * nCurrentBarrierHeight = nInitialBarrierHeight and leaves.
+       * If pthread_barrier_destroy is called at that moment then the
+       * barrier will be destroyed along with the semas.
        */
-      result = ptw32_semwait (&(b->semBarrierBreeched[step]));
+      result = ptw32_semwait (&(b->semBarrierBreeched));
     }
 
-  /*
-   * The first thread across will be the PTHREAD_BARRIER_SERIAL_THREAD.
-   * This also sets up the alternate semaphore as the next barrier.
-   */
-  if (0 == result)
+  if ((PTW32_INTERLOCKED_LONG)PTW32_INTERLOCKED_INCREMENT_LONG((PTW32_INTERLOCKED_LONGPTR)&b->nCurrentBarrierHeight)
+		  == (PTW32_INTERLOCKED_LONG)b->nInitialBarrierHeight)
     {
-      result = ((PTW32_INTERLOCKED_LONG) step ==
-		PTW32_INTERLOCKED_COMPARE_EXCHANGE ((PTW32_INTERLOCKED_LPLONG)
-						    & (b->iStep),
-						    (PTW32_INTERLOCKED_LONG)
-						    (1L - step),
-						    (PTW32_INTERLOCKED_LONG)
-						    step) ?
-		PTHREAD_BARRIER_SERIAL_THREAD : 0);
+      /*
+       * We are the last thread to cross this barrier
+       */
+      ptw32_mcs_lock_release(&b->proxynode);
+      if (0 == result)
+        {
+          result = PTHREAD_BARRIER_SERIAL_THREAD;
+        }
     }
 
   return (result);

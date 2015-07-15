@@ -63,7 +63,7 @@
  *
  * Assumptions:
  * - have working pthread_create, pthread_self, pthread_mutex_lock/unlock
- *   pthread_testcancel, pthread_cancel, pthread_join
+ *   pthread_testcancel, pthread_cancel
  *
  * Pass Criteria:
  * - Process returns zero exit status.
@@ -118,7 +118,9 @@ Win32thread(void * arg)
       pthread_testcancel();
     }
 
+#if ! defined (__MINGW32__) || defined (__MSVCRT__)
   return 0;
+#endif
 }
 
 int
@@ -188,13 +190,13 @@ main()
       /*
        * Can't get a result code.
        */
-      result = (int) PTHREAD_CANCELED;
+      result = (int)(size_t)PTHREAD_CANCELED;
 #endif
 
       assert(threadbag[i].self.p != NULL);
       assert(pthread_kill(threadbag[i].self, 0) == ESRCH);
 
-      fail = (result != (int) PTHREAD_CANCELED);
+      fail = (result != (int)(size_t)PTHREAD_CANCELED);
 
       if (fail)
 	{

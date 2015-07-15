@@ -42,7 +42,7 @@
  * Not needed yet, but defining it should indicate clashes with build target
  * environment that should be fixed.
  */
-#ifndef WINCE
+#if !defined(WINCE)
 #  include <signal.h>
 #endif
 
@@ -77,8 +77,9 @@ pthread_detach (pthread_t thread)
   int result;
   BOOL destroyIt = PTW32_FALSE;
   ptw32_thread_t * tp = (ptw32_thread_t *) thread.p;
+  ptw32_mcs_local_node_t node;
 
-  EnterCriticalSection (&ptw32_thread_reuse_lock);
+  ptw32_mcs_lock_acquire(&ptw32_thread_reuse_lock, &node);
 
   if (NULL == tp
       || thread.x != tp->ptHandle.x)
@@ -91,6 +92,7 @@ pthread_detach (pthread_t thread)
     }
   else
     {
+      ptw32_mcs_local_node_t stateLock;
       /*
        * Joinable ptw32_thread_t structs are not scavenged until
        * a join or detach is done. The thread may have exited already,
@@ -98,29 +100,22 @@ pthread_detach (pthread_t thread)
        */
       result = 0;
 
-      if (pthread_mutex_lock (&tp->cancelLock) == 0)
-	{
-	  if (tp->state != PThreadStateLast)
-	    {
-	      tp->detachState = PTHREAD_CREATE_DETACHED;
-	    }
-	  else if (tp->detachState != PTHREAD_CREATE_DETACHED)
-	    {
-	      /*
-	       * Thread is joinable and has exited or is exiting.
-	       */
-	      destroyIt = PTW32_TRUE;
-	    }
-	  (void) pthread_mutex_unlock (&tp->cancelLock);
-	}
-      else
-	{
-	  /* cancelLock shouldn't fail, but if it does ... */
-	  result = ESRCH;
-	}
+      ptw32_mcs_lock_acquire (&tp->stateLock, &stateLock);
+      if (tp->state != PThreadStateLast)
+        {
+          tp->detachState = PTHREAD_CREATE_DETACHED;
+        }
+      else if (tp->detachState != PTHREAD_CREATE_DETACHED)
+        {
+          /*
+           * Thread is joinable and has exited or is exiting.
+           */
+          destroyIt = PTW32_TRUE;
+        }
+      ptw32_mcs_lock_release (&stateLock);
     }
 
-  LeaveCriticalSection (&ptw32_thread_reuse_lock);
+  ptw32_mcs_lock_release(&node);
 
   if (result == 0)
     {

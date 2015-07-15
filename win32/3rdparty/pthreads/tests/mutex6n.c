@@ -49,7 +49,7 @@
 
 #include "test.h"
 
-static int lockCount = 0;
+static int lockCount;
 
 static pthread_mutex_t mutex;
 static pthread_mutexattr_t mxAttr;
@@ -61,6 +61,7 @@ void * locker(void * arg)
 
   /* Should wait here (deadlocked) */
   assert(pthread_mutex_lock(&mutex) == 0);
+
   lockCount++;
   assert(pthread_mutex_unlock(&mutex) == 0);
 
@@ -74,6 +75,10 @@ main()
   int mxType = -1;
 
   assert(pthread_mutexattr_init(&mxAttr) == 0);
+
+  BEGIN_MUTEX_STALLED_ROBUST(mxAttr)
+
+  lockCount = 0;
   assert(pthread_mutexattr_settype(&mxAttr, PTHREAD_MUTEX_NORMAL) == 0);
   assert(pthread_mutexattr_gettype(&mxAttr, &mxType) == 0);
   assert(mxType == PTHREAD_MUTEX_NORMAL);
@@ -82,19 +87,17 @@ main()
 
   assert(pthread_create(&t, NULL, locker, NULL) == 0);
 
-  Sleep(1000);
+  Sleep(100);
 
   assert(lockCount == 1);
 
-  /*
-   * Should succeed even though we don't own the lock
-   * because FAST mutexes don't check ownership.
-   */
-  assert(pthread_mutex_unlock(&mutex) == 0);
+  assert(pthread_mutex_unlock(&mutex) == IS_ROBUST?EPERM:0);
 
-  Sleep (1000);
+  Sleep (100);
 
-  assert(lockCount == 2);
+  assert(lockCount == IS_ROBUST?1:2);
+
+  END_MUTEX_STALLED_ROBUST(mxAttr)
 
   exit(0);
 

@@ -34,17 +34,17 @@
  *      59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
  */
 
-#ifndef _UWIN
-/*#include <process.h> */
-#endif
 #include "pthread.h"
 #include "implement.h"
-#ifndef NEED_FTIME
+#if !defined(NEED_FTIME)
 #include <sys/timeb.h>
 #endif
 
 
-INLINE DWORD
+#if defined(PTW32_BUILD_INLINED)
+INLINE 
+#endif /* PTW32_BUILD_INLINED */
+DWORD
 ptw32_relmillisecs (const struct timespec * abstime)
 {
   const int64_t NANOSEC_PER_MILLISEC = 1000000;
@@ -52,12 +52,17 @@ ptw32_relmillisecs (const struct timespec * abstime)
   DWORD milliseconds;
   int64_t tmpAbsMilliseconds;
   int64_t tmpCurrMilliseconds;
-#ifdef NEED_FTIME
+#if defined(NEED_FTIME)
   struct timespec currSysTime;
   FILETIME ft;
   SYSTEMTIME st;
 #else /* ! NEED_FTIME */
+#if ( defined(_MSC_VER) && _MSC_VER >= 1300 ) || \
+    ( (defined(__MINGW64__) || defined(__MINGW32__)) && __MSVCRT_VERSION__ >= 0x0601 )
+  struct __timeb64 currSysTime;
+#else
   struct _timeb currSysTime;
+#endif
 #endif /* NEED_FTIME */
 
 
@@ -77,7 +82,7 @@ ptw32_relmillisecs (const struct timespec * abstime)
 
   /* get current system time */
 
-#ifdef NEED_FTIME
+#if defined(NEED_FTIME)
 
   GetSystemTime(&st);
   SystemTimeToFileTime(&st, &ft);
@@ -94,7 +99,14 @@ ptw32_relmillisecs (const struct timespec * abstime)
 
 #else /* ! NEED_FTIME */
 
+#if defined(_MSC_VER) && _MSC_VER >= 1400
+  _ftime64_s(&currSysTime);
+#elif ( defined(_MSC_VER) && _MSC_VER >= 1300 ) || \
+      ( (defined(__MINGW64__) || defined(__MINGW32__)) && __MSVCRT_VERSION__ >= 0x0601 )
+  _ftime64(&currSysTime);
+#else
   _ftime(&currSysTime);
+#endif
 
   tmpCurrMilliseconds = (int64_t) currSysTime.time * MILLISEC_PER_SEC;
   tmpCurrMilliseconds += (int64_t) currSysTime.millitm;

@@ -80,7 +80,7 @@ pthread_attr_init (pthread_attr_t * attr)
       return ENOMEM;
     }
 
-#ifdef _POSIX_THREAD_ATTR_STACKSIZE
+#if defined(_POSIX_THREAD_ATTR_STACKSIZE)
   /*
    * Default to zero size. Unless changed explicitly this
    * will allow Win32 to set the size to that of the
@@ -89,14 +89,14 @@ pthread_attr_init (pthread_attr_t * attr)
   attr_result->stacksize = 0;
 #endif
 
-#ifdef _POSIX_THREAD_ATTR_STACKADDR
+#if defined(_POSIX_THREAD_ATTR_STACKADDR)
   /* FIXME: Set this to something sensible when we support it. */
   attr_result->stackaddr = NULL;
 #endif
 
   attr_result->detachstate = PTHREAD_CREATE_JOINABLE;
 
-#if HAVE_SIGSET_T
+#if defined(HAVE_SIGSET_T)
   memset (&(attr_result->sigmask), 0, sizeof (sigset_t));
 #endif /* HAVE_SIGSET_T */
 

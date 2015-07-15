@@ -46,7 +46,7 @@ static pthread_spinlock_t spin;
  
 void * unlocker(void * arg)
 {
-  int expectedResult = (int) arg;
+  int expectedResult = (int)(size_t)arg;
 
   wasHere++;
   assert(pthread_spin_unlock(&spin) == expectedResult);
@@ -62,9 +62,13 @@ main()
   wasHere = 0;
   assert(pthread_spin_init(&spin, PTHREAD_PROCESS_PRIVATE) == 0);
   assert(pthread_spin_lock(&spin) == 0);
-  assert(pthread_create(&t, NULL, unlocker, (void *) 0) == 0);
+  assert(pthread_create(&t, NULL, unlocker, (void*)0) == 0);
   assert(pthread_join(t, NULL) == 0);
-  assert(pthread_spin_unlock(&spin) == EPERM);
+  /*
+   * Our spinlocks don't record the owner thread so any thread can unlock the spinlock,
+   * but nor is it an error for any thread to unlock a spinlock that is not locked.
+   */
+  assert(pthread_spin_unlock(&spin) == 0);
   assert(pthread_spin_destroy(&spin) == 0);
   assert(wasHere == 2);
 

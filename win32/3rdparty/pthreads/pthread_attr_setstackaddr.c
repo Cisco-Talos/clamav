@@ -51,8 +51,8 @@ pthread_attr_setstackaddr (pthread_attr_t * attr, void *stackaddr)
       *      attr
       *              pointer to an instance of pthread_attr_t
       *
-      *      stacksize
-      *              stack size, in bytes.
+      *      stackaddr
+      *              the address of the stack to use
       *
       *
       * DESCRIPTION

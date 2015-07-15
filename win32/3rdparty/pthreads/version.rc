@@ -42,46 +42,57 @@
  * as __CLEANUP_C.
  */
 
-#ifdef PTW32_RC_MSC
+#if defined(__MINGW64__)
+#  define PTW32_ARCH "x64 (mingw64)"
+#elif defined (__MINGW32__)
+#  define PTW32_ARCH "x86 (mingw32)"
+#endif
+#if defined(PTW32_ARCHx64)
+#  define PTW32_ARCH "x64"
+#elif defined(PTW32_ARCHx86)
+#  define PTW32_ARCH "x86"
+#endif
+
+#if defined(PTW32_RC_MSC)
 #  if defined(__CLEANUP_C)
-#    define PTW32_VERSIONINFO_NAME "pthreadVC\0"
-#    define PTW32_VERSIONINFO_COMMENT "MS C build -- longjmp thread exiting\0"
+#    define PTW32_VERSIONINFO_NAME "pthreadVC2.DLL\0"
+#    define PTW32_VERSIONINFO_DESCRIPTION "MS C " PTW32_ARCH "\0"
 #  elif defined(__CLEANUP_CXX)
-#    define PTW32_VERSIONINFO_NAME "pthreadVCE\0"
-#    define PTW32_VERSIONINFO_COMMENT "MS C++ build -- C++ exception thread exiting\0"
+#    define PTW32_VERSIONINFO_NAME "pthreadVCE2.DLL\0"
+#    define PTW32_VERSIONINFO_DESCRIPTION "MS C++ " PTW32_ARCH "\0"
 #  elif defined(__CLEANUP_SEH)
-#    define PTW32_VERSIONINFO_NAME "pthreadVSE\0"
-#    define PTW32_VERSIONINFO_COMMENT "MS C build -- structured exception thread exiting\0"
+#    define PTW32_VERSIONINFO_NAME "pthreadVSE2.DLL\0"
+#    define PTW32_VERSIONINFO_DESCRIPTION "MS C SEH " PTW32_ARCH "\0"
 #  else
 #    error Resource compiler doesn't know which cleanup style you're using - see version.rc
 #  endif
 #elif defined(__GNUC__)
 #  if defined(__CLEANUP_C)
-#    define PTW32_VERSIONINFO_NAME "pthreadGC\0"
-#    define PTW32_VERSIONINFO_COMMENT "GNU C build -- longjmp thread exiting\0"
+#    define PTW32_VERSIONINFO_NAME "pthreadGC2.DLL\0"
+#    define PTW32_VERSIONINFO_DESCRIPTION "GNU C " PTW32_ARCH "\0"
 #  elif defined(__CLEANUP_CXX)
-#    define PTW32_VERSIONINFO_NAME "pthreadGCE\0"
-#    define PTW32_VERSIONINFO_COMMENT "GNU C++ build -- C++ exception thread exiting\0"
+#    define PTW32_VERSIONINFO_NAME "pthreadGCE2.DLL\0"
+#    define PTW32_VERSIONINFO_DESCRIPTION "GNU C++ " PTW32_ARCH "\0"
 #  else
 #    error Resource compiler doesn't know which cleanup style you're using - see version.rc
 #  endif
 #elif defined(__BORLANDC__)
 #  if defined(__CLEANUP_C)
-#    define PTW32_VERSIONINFO_NAME "pthreadBC\0"
-#    define PTW32_VERSIONINFO_COMMENT "BORLAND C build -- longjmp thread exiting\0"
+#    define PTW32_VERSIONINFO_NAME "pthreadBC2.DLL\0"
+#    define PTW32_VERSIONINFO_DESCRIPTION "BORLAND C " PTW32_ARCH "\0"
 #  elif defined(__CLEANUP_CXX)
-#    define PTW32_VERSIONINFO_NAME "pthreadBCE\0"
-#    define PTW32_VERSIONINFO_COMMENT "BORLAND C++ build -- C++ exception thread exiting\0"
+#    define PTW32_VERSIONINFO_NAME "pthreadBCE2.DLL\0"
+#    define PTW32_VERSIONINFO_DESCRIPTION "BORLAND C++ " PTW32_ARCH "\0"
 #  else
 #    error Resource compiler doesn't know which cleanup style you're using - see version.rc
 #  endif
 #elif defined(__WATCOMC__)
 #  if defined(__CLEANUP_C)
-#    define PTW32_VERSIONINFO_NAME "pthreadWC\0"
-#    define PTW32_VERSIONINFO_COMMENT "WATCOM C build -- longjmp thread exiting\0"
+#    define PTW32_VERSIONINFO_NAME "pthreadWC2.DLL\0"
+#    define PTW32_VERSIONINFO_DESCRIPTION "WATCOM C " PTW32_ARCH "\0"
 #  elif defined(__CLEANUP_CXX)
-#    define PTW32_VERSIONINFO_NAME "pthreadWCE\0"
-#    define PTW32_VERSIONINFO_COMMENT "WATCOM C++ build -- C++ exception thread exiting\0"
+#    define PTW32_VERSIONINFO_NAME "pthreadWCE2.DLL\0"
+#    define PTW32_VERSIONINFO_DESCRIPTION "WATCOM C++ " PTW32_ARCH "\0"
 #  else
 #    error Resource compiler doesn't know which cleanup style you're using - see version.rc
 #  endif
@@ -102,16 +113,15 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "FileDescription", "POSIX Threads for Windows32 Library\0"
+            VALUE "ProductName", "POSIX Threads for Windows LPGL\0"
             VALUE "ProductVersion", PTW32_VERSION_STRING
             VALUE "FileVersion", PTW32_VERSION_STRING
+            VALUE "FileDescription", PTW32_VERSIONINFO_DESCRIPTION
             VALUE "InternalName", PTW32_VERSIONINFO_NAME
             VALUE "OriginalFilename", PTW32_VERSIONINFO_NAME
-            VALUE "CompanyName", "Open Source Software community project\0"
-            VALUE "LegalCopyright", "Copyright (C) Project contributors 1998-2004\0"
-            VALUE "Licence", "LGPL\0"
-            VALUE "Info", "http://sources.redhat.com/pthreads-win32/\0"
-	    VALUE "Comment", PTW32_VERSIONINFO_COMMENT
+            VALUE "CompanyName", "Open Source Software community LGPL\0"
+            VALUE "LegalCopyright", "Copyright (C) Project contributors 2012\0"
+            VALUE "Comments", "http://sourceware.org/pthreads-win32/\0"
         END
     END
     BLOCK "VarFileInfo"

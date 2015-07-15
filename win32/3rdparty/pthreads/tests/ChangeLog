@@ -1,3 +1,104 @@
+2011-07-03  Ross Johnson <ross dot johnson at homemail dot com dot au>
+
+	* create3.c: Removed; testing a condition that is not in the library's
+	scope and was more trouble than it was worth.
+	* cancel2.c: Ensure this test only runs for Structured or C++ EH.
+	* exit2.c: Shorten Sleep() time.
+	* exit3.c: Likewise.
+	* cancel1.c: Likewise.
+	* cancel3.c: Likewise.
+	* exception3.c: Likewise; make terminate routine consistent for all
+	build environments.
+
+2011-07-02  Ross Johnson <ross dot johnson at homemail dot com dot au>
+
+	* spin3.c: Unlock the unlocked spinlock now returns success.
+	* rwlock3.c: Join the thread to ensure it's completed.
+	* rwlock4.c: Likewise.
+	* rwlock5.c: Likewise.
+	* Makefile: Adjust prerequisites.
+	* GNUmakefile: Likewise.
+	* Bmakefile: Likewise.
+	* Wmakefile: Likewise.
+
+2011-07-02 Daniel Richard G. <skunk at iskunk dot org>
+
+	* *.[ch]: Cleanups around timeb struct, mainly centralising
+	macro definitions in test.h.
+	* Makefile: Fix annoying nmake warning.
+
+2011-06-30  Ross Johnson <ross.johnson at homemail.com.au>
+
+	* sequence1.c: Fix loop overrun.
+
+2011-05-11  Ross Johnson <ross.johnson at homemail.com.au>
+
+	* GNUmakefile (GCE-debug): New target; expects pthreadGCE2d.dll.
+	
+2011-05-05  Ross Johnson <ross.johnson at homemail.com.au>
+
+	* openmp1.c: Add missing test; used to comfirm that this
+	library works with libgomp; if this test produces a segfault
+	then try upgrading your version of libgomp/gcc; gcc version
+	4.5.2 passes this test.
+
+2011-03-26  Ross Johnson <ross.johnson at homemail.com.au>
+
+	* sequence1.c: New test for new pthread_getsequence_np().
+
+2011-03-24  Ross Johnson <ross.johnson at homemail.com.au>
+
+	* mutex*.c: Include tests for robust mutexes wherever
+	appropriate.
+	* benchtest*.c: Include comparisons for robust mutexes.
+	* robust1.c: New test for robust mutex handling.
+	* robust2.c: Likewise.
+	* robust3.c: Likewise.
+	* robust4.c: Likewise.
+	* robust5.c: Likewise.
+	* GNUmakefile: Include new tests.
+	* Makefile: Likewise.
+	* Bmakefile: Likewise (not tested).
+	* Wmakefile: Likewise (not tested).
+
+2011-03-06  Ross Johnson <ross.johnson at homemail.com.au>
+
+	* several (MINGW64): Cast and call fixups for 64 bit compatibility;
+	clean build via x86_64-w64-mingw32 cross toolchain on Linux
+	i686 targeting x86_64 win64.
+
+2011-03-04  Ross Johnson <Ross dot Johnson at homemail dot com dot au>
+
+	* condvar3_2.c: abstime.tv_sec operation warning fixed.
+	* several: Use correct casting on pthread_join result arg
+	and associated declaration and usage; assumed that 64 bit
+	gcc gave some warnings for it.
+
+2011-02-28  Ross Johnson <Ross dot Johnson at homemail dot com dot au>
+
+	* test.h: Define FTIME to be _ftime64_s or _ftime64 or _ftime
+	in that order of preference where supported.
+	* several: Replace calls to _ftime with the FTIME macro.
+
+2010-06-19  Ross Johnson <Ross dot Johnson at homemail dot com dot au>
+
+	* Makefile (STATICRESULTS): Add all tests into suite for static
+	library.
+	* GNUmakefile (STATICTESTS): Likewise, except for openmp1.c which
+	has a DLL dependency.
+
+2010-02-04  Ross Johnson <Ross dot Johnson at homemail dot com dot au>
+
+	* openmp1.c: New; for libgomp compatibility (OpenMP).
+	* barrier5.c: Rewrite after changes to barriers.
+	* barrier6.c: New.
+	* benchtest6.c: New; timing barriers.
+	* GNUMakefile: Update for new tests.
+	* Makefile: Ditto.
+	* BMakefile: Ditto.
+	* once3.c: Improve cancelation testing.
+	* stress1.c: Fix comment.
+
 2007-01-04  Ross Johnson <Ross dot Johnson at homemail dot com dot au>
 
         * context1.c: Include context.h from library sources and remove

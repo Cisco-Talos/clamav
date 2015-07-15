@@ -90,8 +90,9 @@ pthread_timechange_handler_np (void *arg)
 {
   int result = 0;
   pthread_cond_t cv;
+  ptw32_mcs_local_node_t node;
 
-  EnterCriticalSection (&ptw32_cond_list_lock);
+  ptw32_mcs_lock_acquire(&ptw32_cond_list_lock, &node);
 
   cv = ptw32_cond_list_head;
 
@@ -101,7 +102,7 @@ pthread_timechange_handler_np (void *arg)
       cv = cv->next;
     }
 
-  LeaveCriticalSection (&ptw32_cond_list_lock);
+  ptw32_mcs_lock_release(&node);
 
-  return (void *) (result != 0 ? EAGAIN : 0);
+  return (void *) (size_t) (result != 0 ? EAGAIN : 0);
 }

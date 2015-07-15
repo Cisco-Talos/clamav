@@ -62,7 +62,7 @@
  *
  * Assumptions:
  * - have working pthread_create, pthread_self, pthread_mutex_lock/unlock
- *   pthread_testcancel, pthread_cancel, pthread_join
+ *   pthread_testcancel, pthread_cancel
  *
  * Pass Criteria:
  * - Process returns zero exit status.
@@ -101,7 +101,7 @@ terminateFunction ()
 {
   assert(pthread_mutex_lock(&caughtLock) == 0);
   caught++;
-#if 1
+#if 0
   {
      FILE * fp = fopen("pthread.log", "a");
      fprintf(fp, "Caught = %d\n", caught);
@@ -110,18 +110,6 @@ terminateFunction ()
 #endif
   assert(pthread_mutex_unlock(&caughtLock) == 0);
 
-#if defined(__MINGW32__)
-  /*
-   * Seems to work. That is, threads exit and the process
-   * continues. Note: need to check correct POSIX behaviour.
-   * My guess is: this is because of the
-   * eh incompatibility between g++ and MSVC++. That is,
-   * an exception thrown in g++ code doesn't propogate
-   * through or to MSVC++ code, and vice versa.
-   * Applications should probably not depend on this.
-   */
-  pthread_exit((void *) 0);
-#else
   /*
    * Notes from the MSVC++ manual:
    *       1) A term_func() should call exit(), otherwise
@@ -129,13 +117,12 @@ terminateFunction ()
    *          abort() raises SIGABRT. The default signal handler
    *          for all signals terminates the calling program with
    *          exit code 3.
-   *       2) A term_func() must not throw an exception. Therefore
+   *       2) A term_func() must not throw an exception. Dev: Therefore
    *          term_func() should not call pthread_exit() if an
-   *          an exception-using version of pthreads-win32 library
+   *          exception-using version of pthreads-win32 library
    *          is being used (i.e. either pthreadVCE or pthreadVSE).
    */
   exit(0);
-#endif
 }
 
 void *
@@ -172,7 +159,7 @@ main()
       assert(pthread_create(&et[i], NULL, exceptionedThread, NULL) == 0);
     }
 
-  Sleep(5000);
+  Sleep(NUMTHREADS * 100);
 
   assert(caught == NUMTHREADS);
 

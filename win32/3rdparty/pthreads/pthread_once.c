@@ -37,24 +37,17 @@
 #include "pthread.h"
 #include "implement.h"
 
-
-static void PTW32_CDECL
-ptw32_once_on_init_cancel (void * arg)
-{
-  /* when the initting thread is cancelled we have to release the lock */
-  ptw32_mcs_local_node_t *node = (ptw32_mcs_local_node_t *)arg;
-  ptw32_mcs_lock_release(node);
-}
-
 int
-pthread_once (pthread_once_t * once_control, void (*init_routine) (void))
+pthread_once (pthread_once_t * once_control, void (PTW32_CDECL *init_routine) (void))
 {
   if (once_control == NULL || init_routine == NULL)
     {
       return EINVAL;
     }
   
-  if (!InterlockedExchangeAdd((LPLONG)&once_control->done, 0)) /* MBR fence */
+  if ((PTW32_INTERLOCKED_LONG)PTW32_FALSE ==
+      (PTW32_INTERLOCKED_LONG)PTW32_INTERLOCKED_EXCHANGE_ADD_LONG((PTW32_INTERLOCKED_LONGPTR)&once_control->done,
+                                                                  (PTW32_INTERLOCKED_LONG)0)) /* MBR fence */
     {
       ptw32_mcs_local_node_t node;
 
@@ -63,15 +56,15 @@ pthread_once (pthread_once_t * once_control, void (*init_routine) (void))
       if (!once_control->done)
 	{
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && _MSC_VER < 1400
 #pragma inline_depth(0)
 #endif
 
-	  pthread_cleanup_push(ptw32_once_on_init_cancel, (void *)&node);
+	  pthread_cleanup_push(ptw32_mcs_lock_release, &node);
 	  (*init_routine)();
 	  pthread_cleanup_pop(0);
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && _MSC_VER < 1400
 #pragma inline_depth()
 #endif
 

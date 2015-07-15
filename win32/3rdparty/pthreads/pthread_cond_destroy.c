@@ -126,7 +126,8 @@ pthread_cond_destroy (pthread_cond_t * cond)
 
   if (*cond != PTHREAD_COND_INITIALIZER)
     {
-      EnterCriticalSection (&ptw32_cond_list_lock);
+      ptw32_mcs_local_node_t node;
+      ptw32_mcs_lock_acquire(&ptw32_cond_list_lock, &node);
 
       cv = *cond;
 
@@ -154,7 +155,7 @@ pthread_cond_destroy (pthread_cond_t * cond)
 	
       if (result != 0)
         {
-          LeaveCriticalSection (&ptw32_cond_list_lock);
+          ptw32_mcs_lock_release(&node);
           return result;
         }
 
@@ -213,14 +214,15 @@ pthread_cond_destroy (pthread_cond_t * cond)
 	  (void) free (cv);
 	}
 
-      LeaveCriticalSection (&ptw32_cond_list_lock);
+      ptw32_mcs_lock_release(&node);
     }
   else
     {
+      ptw32_mcs_local_node_t node;
       /*
        * See notes in ptw32_cond_check_need_init() above also.
        */
-      EnterCriticalSection (&ptw32_cond_test_init_lock);
+      ptw32_mcs_lock_acquire(&ptw32_cond_test_init_lock, &node);
 
       /*
        * Check again.
@@ -244,7 +246,7 @@ pthread_cond_destroy (pthread_cond_t * cond)
 	  result = EBUSY;
 	}
 
-      LeaveCriticalSection (&ptw32_cond_test_init_lock);
+      ptw32_mcs_lock_release(&node);
     }
 
   return ((result != 0) ? result : ((result1 != 0) ? result1 : result2));

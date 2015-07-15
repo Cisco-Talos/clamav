@@ -54,21 +54,21 @@ void * wrfunc(void * arg)
   int result;
 
   result = pthread_rwlock_timedwrlock(&rwlock1, &abstime);
-  if ((int) arg == 1)
+  if ((int) (size_t)arg == 1)
     {
       assert(result == 0);
       Sleep(2000);
       bankAccount += 10;
       assert(pthread_rwlock_unlock(&rwlock1) == 0);
-      return ((void *) bankAccount);
+      return ((void *)(size_t)bankAccount);
     }
-  else if ((int) arg == 2)
+  else if ((int) (size_t)arg == 2)
     {
       assert(result == ETIMEDOUT);
       return ((void *) 100);
     }
 
-  return ((void *) -1);
+  return ((void *)(size_t)-1);
 }
 
 void * rdfunc(void * arg)
@@ -77,7 +77,7 @@ void * rdfunc(void * arg)
 
   assert(pthread_rwlock_timedrdlock(&rwlock1, &abstime) == ETIMEDOUT);
 
-  return ((void *) ba);
+  return ((void *)(size_t)ba);
 }
 
 int
@@ -86,34 +86,34 @@ main()
   pthread_t wrt1;
   pthread_t wrt2;
   pthread_t rdt;
-  int wr1Result = 0;
-  int wr2Result = 0;
-  int rdResult = 0;
-  struct _timeb currSysTime;
+  void* wr1Result = (void*)0;
+  void* wr2Result = (void*)0;
+  void* rdResult = (void*)0;
+  PTW32_STRUCT_TIMEB currSysTime;
   const DWORD NANOSEC_PER_MILLISEC = 1000000;
 
-  _ftime(&currSysTime);
+  PTW32_FTIME(&currSysTime);
 
-  abstime.tv_sec = currSysTime.time;
+  abstime.tv_sec = (long)currSysTime.time;
   abstime.tv_nsec = NANOSEC_PER_MILLISEC * currSysTime.millitm;
 
   abstime.tv_sec += 1;
 
   bankAccount = 0;
 
-  assert(pthread_create(&wrt1, NULL, wrfunc, (void *) 1) == 0);
+  assert(pthread_create(&wrt1, NULL, wrfunc, (void *)(size_t)1) == 0);
   Sleep(100);
   assert(pthread_create(&rdt, NULL, rdfunc, NULL) == 0);
   Sleep(100);
-  assert(pthread_create(&wrt2, NULL, wrfunc, (void *) 2) == 0);
+  assert(pthread_create(&wrt2, NULL, wrfunc, (void *)(size_t)2) == 0);
 
-  assert(pthread_join(wrt1, (void **) &wr1Result) == 0);
-  assert(pthread_join(rdt, (void **) &rdResult) == 0);
-  assert(pthread_join(wrt2, (void **) &wr2Result) == 0);
+  assert(pthread_join(wrt1, &wr1Result) == 0);
+  assert(pthread_join(rdt, &rdResult) == 0);
+  assert(pthread_join(wrt2, &wr2Result) == 0);
 
-  assert(wr1Result == 10);
-  assert(rdResult == 0);
-  assert(wr2Result == 100);
+  assert((int)(size_t)wr1Result == 10);
+  assert((int)(size_t)rdResult == 0);
+  assert((int)(size_t)wr2Result == 100);
 
   return 0;
 }

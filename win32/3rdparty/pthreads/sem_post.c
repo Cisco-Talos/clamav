@@ -93,7 +93,7 @@ sem_post (sem_t * sem)
 
       if (s->value < SEM_VALUE_MAX)
 	{
-#ifdef NEED_SEM
+#if defined(NEED_SEM)
 	  if (++s->value <= 0
 	      && !SetEvent(s->sem))
 	    {

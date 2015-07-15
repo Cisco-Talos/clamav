@@ -34,12 +34,12 @@
  *      59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
  */
 
-#ifndef PTW32_STATIC_LIB
+#if !defined(PTW32_STATIC_LIB)
 
 #include "pthread.h"
 #include "implement.h"
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER)
 /* 
  * lpvReserved yields an unreferenced formal parameter;
  * ignore it
@@ -47,7 +47,7 @@
 #pragma warning( disable : 4100 )
 #endif
 
-#ifdef __cplusplus
+#if defined(__cplusplus)
 /*
  * Dear c++: Please don't mangle this name. -thanks
  */

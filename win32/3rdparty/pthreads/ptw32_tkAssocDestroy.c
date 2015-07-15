@@ -57,7 +57,7 @@ ptw32_tkAssocDestroy (ThreadKeyAssoc * assoc)
 {
 
   /*
-   * Both key->keyLock and thread->threadLock are locked on
+   * Both key->keyLock and thread->threadLock are locked before
    * entry to this routine.
    */
   if (assoc != NULL)

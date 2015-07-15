@@ -72,7 +72,10 @@
  * - Process returns non-zero exit status.
  */
 
-#if defined(_MSC_VER) || defined(__cplusplus)
+/*
+ * Don't know how to identify if we are using SEH so it's only C++ for now
+ */
+#if defined(__cplusplus)
 
 #include "test.h"
 
@@ -80,7 +83,7 @@
  * Create NUMTHREADS threads in addition to the Main thread.
  */
 enum {
-  NUMTHREADS = 1
+  NUMTHREADS = 4
 };
 
 typedef struct bag_t_ bag_t;
@@ -120,7 +123,7 @@ mythread(void * arg)
       break;
     }
 
-#if defined(_MSC_VER) && !defined(__cplusplus)
+#if !defined(__cplusplus)
   __try
 #else
   try
@@ -136,7 +139,7 @@ mythread(void * arg)
 	  pthread_testcancel();
 	}
     }
-#if defined(_MSC_VER) && !defined(__cplusplus)
+#if !defined(__cplusplus)
   __except(EXCEPTION_EXECUTE_HANDLER)
 #else
 #if defined(PtW32CatchAll)
@@ -157,7 +160,7 @@ mythread(void * arg)
    */
   result += 1000;
 
-  return (void *) result;
+  return (void *) (size_t)result;
 }
 
 int
@@ -217,17 +220,17 @@ main()
   for (i = 1; i <= NUMTHREADS; i++)
     {
       int fail = 0;
-      int result = 0;
+      void* result = (void*)0;
 
-      assert(pthread_join(t[i], (void **) &result) == 0);
-      fail = (result != (int) PTHREAD_CANCELED);
+      assert(pthread_join(t[i], &result) == 0);
+      fail = ((int)(size_t)result != (int) PTHREAD_CANCELED);
       if (fail)
 	{
 	  fprintf(stderr, "Thread %d: started %d: location %d: cancel type %s\n",
 		  i,
 		  threadbag[i].started,
-		  result,
-		  ((result % 2) == 0) ? "ASYNCHRONOUS" : "DEFERRED");
+		  (int)(size_t)result,
+		  (((int)(size_t)result % 2) == 0) ? "ASYNCHRONOUS" : "DEFERRED");
 	}
       failed |= fail;
     }
@@ -240,12 +243,16 @@ main()
   return 0;
 }
 
-#else /* defined(_MSC_VER) || defined(__cplusplus) */
+#else /* defined(__cplusplus) */
+
+#include <stdio.h>
 
 int
 main()
 {
+  fprintf(stderr, "Test N/A for this compiler environment.\n");
   return 0;
 }
 
-#endif /* defined(_MSC_VER) || defined(__cplusplus) */
+#endif /* defined(__cplusplus) */
+

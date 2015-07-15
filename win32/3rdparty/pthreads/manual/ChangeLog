@@ -1,6 +1,14 @@
+2011-03-26  Ross Johnson  <ross at homemail dot com dot au>
+
+	* pthread_nutex_init.html (robust mutexes): Added
+	descriptions for newly implemented interface.
+	* pthread_mutexattr_init.html (robust mutexes): Likewise.
+	* pthread_getsequence_np.html: New.
+	* index.html: Updated.
+
 2008-06-30  Ross Johnson  <ross at callisto.canberra.edu.au>
 
-	pthread_setschedparam.html: Fix "see also" links.
+	* pthread_setschedparam.html: Fix "see also" links.
 
 2005-05-06  Ross Johnson  <ross at callisto.canberra.edu.au>
 

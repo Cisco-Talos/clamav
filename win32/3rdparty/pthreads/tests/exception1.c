@@ -86,7 +86,7 @@ void *
 exceptionedThread(void * arg)
 {
   int dummy = 0;
-  int result = ((int)PTHREAD_CANCELED + 1);
+  void* result = (void*)((int)(size_t)PTHREAD_CANCELED + 1);
   /* Set to async cancelable */
 
   assert(pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL) == 0);
@@ -98,7 +98,7 @@ exceptionedThread(void * arg)
 #if defined(_MSC_VER) && !defined(__cplusplus)
   __try
   {
-    int zero = (int) arg; /* Passed in from arg to avoid compiler error */
+    int zero = (int) (size_t)arg; /* Passed in from arg to avoid compiler error */
     int one = 1;
     /*
      * The deliberate exception condition (zero divide) is
@@ -110,7 +110,7 @@ exceptionedThread(void * arg)
   __except (EXCEPTION_EXECUTE_HANDLER)
   {
     /* Should get into here. */
-    result = ((int)PTHREAD_CANCELED + 2);
+    result = (void*)((int)(size_t)PTHREAD_CANCELED + 2);
   }
 #elif defined(__cplusplus)
   try
@@ -129,17 +129,17 @@ exceptionedThread(void * arg)
 #endif
   {
     /* Should get into here. */
-    result = ((int)PTHREAD_CANCELED + 2);
+    result = (void*)((int)(size_t)PTHREAD_CANCELED + 2);
   }
 #endif
 
-  return (void *) result;
+  return (void *) (size_t)result;
 }
 
 void *
 canceledThread(void * arg)
 {
-  int result = ((int)PTHREAD_CANCELED + 1);
+  void* result = (void*)((int)(size_t)PTHREAD_CANCELED + 1);
   int count;
 
   /* Set to async cancelable */
@@ -161,7 +161,7 @@ canceledThread(void * arg)
   __except (EXCEPTION_EXECUTE_HANDLER)
   {
     /* Should NOT get into here. */
-    result = ((int)PTHREAD_CANCELED + 2);
+    result = (void*)((int)(size_t)PTHREAD_CANCELED + 2);
   }
 #elif defined(__cplusplus)
   try
@@ -180,11 +180,11 @@ canceledThread(void * arg)
 #endif
   {
     /* Should NOT get into here. */
-    result = ((int)PTHREAD_CANCELED + 2);
+    result = (void*)((int)(size_t)PTHREAD_CANCELED + 2);
   }
 #endif
 
-  return (void *) result;
+  return (void *) (size_t)result;
 }
 
 int
@@ -226,17 +226,17 @@ main()
   for (i = 0; i < NUMTHREADS; i++)
     {
       int fail = 0;
-      int result = 0;
+      void* result = (void*)0;
 
 	/* Canceled thread */
-      assert(pthread_join(ct[i], (void **) &result) == 0);
-      assert(!(fail = (result != (int) PTHREAD_CANCELED)));
+      assert(pthread_join(ct[i], &result) == 0);
+      assert(!(fail = (result != PTHREAD_CANCELED)));
 
       failed = (failed || fail);
 
       /* Exceptioned thread */
-      assert(pthread_join(et[i], (void **) &result) == 0);
-      assert(!(fail = (result != ((int) PTHREAD_CANCELED + 2))));
+      assert(pthread_join(et[i], &result) == 0);
+      assert(!(fail = (result != (void*)((int)(size_t)PTHREAD_CANCELED + 2))));
 
       failed = (failed || fail);
     }

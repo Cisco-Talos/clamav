@@ -58,14 +58,14 @@ func(void * arg)
 #pragma inline_depth()
 #endif
 
-  return (void *) 1;
+  return (void *)(size_t)1;
 }
 
 int
 main(int argc, char * argv[])
 {
   pthread_t t;
-  int result = 0;
+  void* result = (void*)0;
 
   assert(pthread_mutex_lock(&mx) == 0);
 
@@ -74,8 +74,8 @@ main(int argc, char * argv[])
 
   assert(pthread_mutex_unlock(&mx) == 0);
 
-  assert(pthread_join(t, (void **) &result) == 0);
-  assert(result == (int) PTHREAD_CANCELED);
+  assert(pthread_join(t, &result) == 0);
+  assert(result == (void*)PTHREAD_CANCELED);
 
   return 0;
 }

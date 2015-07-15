@@ -46,11 +46,25 @@
 /* Do we know about type mode_t? */
 #undef HAVE_MODE_T
 
+/* 
+ * Define if GCC has atomic builtins, i.e. __sync_* intrinsics
+ * __sync_lock_* is implemented in mingw32 gcc 4.5.2 at least
+ * so this define does not turn those on or off. If you get an
+ * error from __sync_lock* then consider upgrading your gcc.
+ */
+#undef HAVE_GCC_ATOMIC_BUILTINS
+
 /* Define if you have the timespec struct */
 #undef HAVE_STRUCT_TIMESPEC
 
 /* Define if you don't have the GetProcessAffinityMask() */
 #undef NEED_PROCESS_AFFINITY_MASK
+
+/* Define if your version of Windows TLSGetValue() clears WSALastError
+ * and calling SetLastError() isn't enough restore it. You'll also need to
+ * link against wsock32.lib (or libwsock32.a for MinGW).
+ */
+#undef RETAIN_WSALASTERROR
 
 /*
 # ----------------------------------------------------------------------
@@ -94,7 +108,7 @@
  * If you find that these are incorrect or incomplete please report it
  * to the pthreads-win32 maintainer. Thanks.
  *********************************************************************/
-#ifdef WINCE
+#if defined(WINCE)
 #define NEED_DUPLICATEHANDLE
 #define NEED_CREATETHREAD
 #define NEED_ERRNO
@@ -103,28 +117,33 @@
 /* #define NEED_SEM */
 #define NEED_UNICODE_CONSTS
 #define NEED_PROCESS_AFFINITY_MASK
+/* This may not be needed */
+#define RETAIN_WSALASTERROR
 #endif
 
-#ifdef _UWIN
+#if defined(_UWIN)
 #define HAVE_MODE_T
 #define HAVE_STRUCT_TIMESPEC
 #endif
 
-#ifdef __GNUC__
+#if defined(__GNUC__)
 #define HAVE_C_INLINE
 #endif
 
-#ifdef __MINGW32__
+#if defined(__MINGW64__)
+#define HAVE_MODE_T
+#define HAVE_STRUCT_TIMESPEC
+#elif defined(__MINGW32__)
 #define HAVE_MODE_T
 #endif
 
-#ifdef __BORLANDC__
+#if defined(__BORLANDC__)
 #endif
 
-#ifdef __WATCOMC__
+#if defined(__WATCOMC__)
 #endif
 
-#ifdef __DMC__
+#if defined(__DMC__)
 #define HAVE_SIGNAL_H
 #define HAVE_C_INLINE
 #endif
