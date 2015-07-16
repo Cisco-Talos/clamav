@@ -601,6 +601,7 @@ clamav-wide-C0;Target:0;0&1;414141;68656c6c6f/iwfa
     self-referential and cannot refer to subsequent subsignatures.
     \item \verb+PCRE+ is the expression representing the regex to execute. \verb+PCRE+
     must be delimited by '/' and usage of '/' within the expression need to be escaped.
+    For backward compatibility, ';' within the expression must be expressed as '\verb+\x3B+'.
     \verb+PCRE+ cannot be empty and (?UTF*) control sequence is not allowed. If debug is specified,
     named capture groups are displayed in a post-execution report.
     \item \verb+Flags+ are a series of characters which affect the compilation and execution
