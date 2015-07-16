@@ -362,7 +362,11 @@ static inline int zdecrypt(const uint8_t *src, uint32_t csize, uint32_t usize, c
     if (!ctx || !ctx->engine)
 	return CL_ENULLARG;
 
-    /* TODO - dconf going here */
+    /* dconf */
+    if (ctx->dconf && !(ctx->dconf->archive & ARCH_CONF_PASSWD)) {
+	cli_dbgmsg("cli_unzip: decrypt - skipping encrypted file\n");
+	return CL_SUCCESS;
+    }
 
     password = ctx->engine->pw_dict;
 
