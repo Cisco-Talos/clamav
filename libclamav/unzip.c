@@ -389,11 +389,11 @@ static inline int zdecrypt(const uint8_t *src, uint32_t csize, uint32_t usize, c
 	    uint16_t a = eh[SIZEOF_EH-1];
 
 	    if (LH_flags & F_USEDD) {
-		cli_dbgmsg("verify(%u): 0x%02x 0x%x (moddate)\n", LH_version, a, LH_mtime);
+		cli_dbgmsg("cli_unzip: decrypt - (v%u) >> 0x%02x 0x%x (moddate)\n", LH_version, a, LH_mtime);
 		if (a == ((LH_mtime >> 8) & 0xff))
 		    v = 1;
 	    } else {
-		cli_dbgmsg("verify(%u): 0x%02x 0x%x (crc32)\n", LH_version, a, LH_crc32);
+		cli_dbgmsg("cli_unzip: decrypt - (v%u) >> 0x%02x 0x%x (crc32)\n", LH_version, a, LH_crc32);
 		if (a == ((LH_crc32 >> 24) & 0xff))
 		    v = 1;
 	    }
@@ -401,11 +401,11 @@ static inline int zdecrypt(const uint8_t *src, uint32_t csize, uint32_t usize, c
 	    uint16_t a = eh[SIZEOF_EH-1], b = eh[SIZEOF_EH-2];
 
 	    if (LH_flags & F_USEDD) {
-		cli_dbgmsg("verify(%u): 0x0000%02x%02x 0x%x (moddate)\n", LH_version, a, b, LH_mtime);
+		cli_dbgmsg("cli_unzip: decrypt - (v%u) >> 0x0000%02x%02x 0x%x (moddate)\n", LH_version, a, b, LH_mtime);
 		if ((b | (a << 8)) == (LH_mtime & 0xffff))
 		    v = 1;
 	    } else {
-		cli_dbgmsg("verify(%u): 0x0000%02x%02x 0x%x (crc32)\n", LH_version, eh[SIZEOF_EH-1], eh[SIZEOF_EH-2], LH_crc32);
+		cli_dbgmsg("cli_unzip: decrypt - (v%u) >> 0x0000%02x%02x 0x%x (crc32)\n", LH_version, eh[SIZEOF_EH-1], eh[SIZEOF_EH-2], LH_crc32);
 		if ((b | (a << 8)) == ((LH_crc32 >> 16) & 0xffff))
 		    v = 1;
 	    }
@@ -419,7 +419,7 @@ static inline int zdecrypt(const uint8_t *src, uint32_t csize, uint32_t usize, c
 	    const uint8_t *dcypt_zip;
 	    int of;
 
-	    cli_dbgmsg("zdecrypt: password [%s] matches\n", password->name);
+	    cli_dbgmsg("cli_unzip: decrypt - password [%s] matches\n", password->name);
 
 	    /* output decrypted data to tempfile */
 	    if(tmpd) {
@@ -429,7 +429,7 @@ static inline int zdecrypt(const uint8_t *src, uint32_t csize, uint32_t usize, c
 		if(!(tempfile = cli_gentemp(ctx->engine->tmpdir))) return CL_EMEM;
 	    }
 	    if((of = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRUSR|S_IWUSR))==-1) {
-		cli_warnmsg("zdecrypt: failed to create temporary file %s\n", tempfile);
+		cli_warnmsg("cli_unzip: decrypt - failed to create temporary file %s\n", tempfile);
 		if(!tmpd) free(tempfile);
 		return CL_ECREAT;
 	    }
@@ -457,17 +457,17 @@ static inline int zdecrypt(const uint8_t *src, uint32_t csize, uint32_t usize, c
 		written = 0;
 	    }
 
-	    cli_dbgmsg("zdecrypt: decrypted %u bytes to %s\n", total, tempfile);
+	    cli_dbgmsg("cli_unzip: decrypt - decrypted %u bytes to %s\n", total, tempfile);
 
 	    /* decrypt data to new fmap -> buffer */
 	    if (!(dcypt_map = fmap(of, 0, total))) {
-		cli_warnmsg("zdecrypt: failed to create fmap on decrypted file %s\n", tempfile);
+		cli_warnmsg("cli_unzip: decrypt - failed to create fmap on decrypted file %s\n", tempfile);
 		ret = CL_EMAP;
 		goto zd_clean;
 	    }
 
 	    if (!(dcypt_zip = fmap_need_off_once(dcypt_map, 0, total))) {
-		cli_warnmsg("zdecrypt: failed to acquire buffer on decrypted file %s\n", tempfile);
+		cli_warnmsg("cli_unzip: decrypt - failed to acquire buffer on decrypted file %s\n", tempfile);
 		funmap(dcypt_map);
 		ret = CL_EREAD;
 		goto zd_clean;
@@ -489,7 +489,7 @@ static inline int zdecrypt(const uint8_t *src, uint32_t csize, uint32_t usize, c
 	password = password->next;
     }
 
-    cli_dbgmsg("cli_unzip: lh - skipping encrypted file, no valid passwords\n");
+    cli_dbgmsg("cli_unzip: decrypt - skipping encrypted file, no valid passwords\n");
     return CL_SUCCESS;
 }
 
