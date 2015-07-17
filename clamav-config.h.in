@@ -509,6 +509,12 @@
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION
 
+/* Libprelude support enabled */
+#undef PRELUDE
+
+/* Define whether application use libtool >= 2.0 */
+#undef PRELUDE_APPLICATION_USE_LIBTOOL2
+
 /* scan buffer size */
 #undef SCANBUFF
 

@@ -124,6 +124,8 @@ m4_include([m4/reorganization/distcheck.m4])
 m4_include([m4/reorganization/llvm.m4])
 m4_include([m4/reorganization/sha_collect.m4])
 
+m4_include([m4/reorganization/prelude.m4])
+
 m4_include([m4/reorganization/bsd.m4])
 
 dnl Freshclam dependencies

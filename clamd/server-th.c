@@ -49,6 +49,8 @@
 #include "shared/output.h"
 #include "shared/optparser.h"
 
+#include "shared/idmef_logging.h"
+
 #include "fan.h"
 #include "server.h"
 #include "thrmgr.h"

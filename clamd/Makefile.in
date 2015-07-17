@@ -107,10 +107,10 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
 	$(top_srcdir)/m4/ax_check_uname_syscall.m4 \
 	$(top_srcdir)/m4/fdpassing.m4 $(top_srcdir)/m4/lib-ld.m4 \
 	$(top_srcdir)/m4/lib-link.m4 $(top_srcdir)/m4/lib-prefix.m4 \
-	$(top_srcdir)/m4/libtool.m4 $(top_srcdir)/m4/llvm.m4 \
-	$(top_srcdir)/m4/ltdl.m4 $(top_srcdir)/m4/ltoptions.m4 \
-	$(top_srcdir)/m4/ltsugar.m4 $(top_srcdir)/m4/ltversion.m4 \
-	$(top_srcdir)/m4/lt~obsolete.m4 \
+	$(top_srcdir)/m4/lib-prelude.m4 $(top_srcdir)/m4/libtool.m4 \
+	$(top_srcdir)/m4/llvm.m4 $(top_srcdir)/m4/ltdl.m4 \
+	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
+	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
 	$(top_srcdir)/m4/mmap_private.m4 $(top_srcdir)/m4/resolv.m4 \
 	$(top_srcdir)/m4/reorganization/version.m4 \
 	$(top_srcdir)/m4/reorganization/build_tools.m4 \
@@ -165,6 +165,7 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
 	$(top_srcdir)/m4/reorganization/distcheck.m4 \
 	$(top_srcdir)/m4/reorganization/llvm.m4 \
 	$(top_srcdir)/m4/reorganization/sha_collect.m4 \
+	$(top_srcdir)/m4/reorganization/prelude.m4 \
 	$(top_srcdir)/m4/reorganization/bsd.m4 \
 	$(top_srcdir)/m4/reorganization/libs/curl.m4 \
 	$(top_srcdir)/m4/reorganization/substitutions.m4 \
@@ -178,7 +179,10 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(sbindir)"
 PROGRAMS = $(sbin_PROGRAMS)
 am__clamd_SOURCES_DIST = $(top_srcdir)/shared/output.c \
-	$(top_srcdir)/shared/output.h $(top_srcdir)/shared/optparser.c \
+	$(top_srcdir)/shared/output.h \
+	$(top_srcdir)/shared/idmef_logging.c \
+	$(top_srcdir)/shared/idmef_logging.h \
+	$(top_srcdir)/shared/optparser.c \
 	$(top_srcdir)/shared/optparser.h $(top_srcdir)/shared/getopt.c \
 	$(top_srcdir)/shared/getopt.h $(top_srcdir)/shared/misc.c \
 	$(top_srcdir)/shared/misc.h clamd.c tcpserver.c tcpserver.h \
@@ -186,12 +190,13 @@ am__clamd_SOURCES_DIST = $(top_srcdir)/shared/output.c \
 	thrmgr.h server-th.c server.h scanner.c scanner.h others.c \
 	others.h shared.h fan.c fan.h
 @BUILD_CLAMD_TRUE@am_clamd_OBJECTS = output.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	optparser.$(OBJEXT) getopt.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	misc.$(OBJEXT) clamd.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	tcpserver.$(OBJEXT) localserver.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	session.$(OBJEXT) thrmgr.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	server-th.$(OBJEXT) scanner.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	others.$(OBJEXT) fan.$(OBJEXT)
+@BUILD_CLAMD_TRUE@	idmef_logging.$(OBJEXT) optparser.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	getopt.$(OBJEXT) misc.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	clamd.$(OBJEXT) tcpserver.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	localserver.$(OBJEXT) session.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	thrmgr.$(OBJEXT) server-th.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	scanner.$(OBJEXT) others.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	fan.$(OBJEXT)
 clamd_OBJECTS = $(am_clamd_OBJECTS)
 clamd_LDADD = $(LDADD)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -347,6 +352,13 @@ LIBCLAMSHARED_CPPFLAGS = @LIBCLAMSHARED_CPPFLAGS@
 LIBLTDL = @LIBLTDL@
 LIBM = @LIBM@
 LIBOBJS = @LIBOBJS@
+LIBPRELUDE_CFLAGS = @LIBPRELUDE_CFLAGS@
+LIBPRELUDE_CONFIG = @LIBPRELUDE_CONFIG@
+LIBPRELUDE_CONFIG_PREFIX = @LIBPRELUDE_CONFIG_PREFIX@
+LIBPRELUDE_LDFLAGS = @LIBPRELUDE_LDFLAGS@
+LIBPRELUDE_LIBS = @LIBPRELUDE_LIBS@
+LIBPRELUDE_PREFIX = @LIBPRELUDE_PREFIX@
+LIBPRELUDE_PTHREAD_CFLAGS = @LIBPRELUDE_PTHREAD_CFLAGS@
 LIBS = $(top_builddir)/libclamav/libclamav.la @CLAMD_LIBS@ @THREAD_LIBS@
 LIBTOOL = @LIBTOOL@
 LIPO = @LIPO@
@@ -461,6 +473,8 @@ top_srcdir = @top_srcdir@
 @BUILD_CLAMD_TRUE@clamd_SOURCES = \
 @BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/output.c \
 @BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/output.h \
+@BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/idmef_logging.c \
+@BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/idmef_logging.h \
 @BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/optparser.c \
 @BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/optparser.h \
 @BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/getopt.c \
@@ -606,6 +620,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clamd.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fan.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getopt.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/idmef_logging.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/localserver.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/misc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/optparser.Po@am__quote@
@@ -651,6 +666,20 @@ output.obj: $(top_srcdir)/shared/output.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_srcdir)/shared/output.c' object='output.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o output.obj `if test -f '$(top_srcdir)/shared/output.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/output.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/output.c'; fi`
+
+idmef_logging.o: $(top_srcdir)/shared/idmef_logging.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT idmef_logging.o -MD -MP -MF $(DEPDIR)/idmef_logging.Tpo -c -o idmef_logging.o `test -f '$(top_srcdir)/shared/idmef_logging.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/idmef_logging.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/idmef_logging.Tpo $(DEPDIR)/idmef_logging.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_srcdir)/shared/idmef_logging.c' object='idmef_logging.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o idmef_logging.o `test -f '$(top_srcdir)/shared/idmef_logging.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/idmef_logging.c
+
+idmef_logging.obj: $(top_srcdir)/shared/idmef_logging.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT idmef_logging.obj -MD -MP -MF $(DEPDIR)/idmef_logging.Tpo -c -o idmef_logging.obj `if test -f '$(top_srcdir)/shared/idmef_logging.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/idmef_logging.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/idmef_logging.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/idmef_logging.Tpo $(DEPDIR)/idmef_logging.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_srcdir)/shared/idmef_logging.c' object='idmef_logging.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o idmef_logging.obj `if test -f '$(top_srcdir)/shared/idmef_logging.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/idmef_logging.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/idmef_logging.c'; fi`
 
 optparser.o: $(top_srcdir)/shared/optparser.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT optparser.o -MD -MP -MF $(DEPDIR)/optparser.Tpo -c -o optparser.o `test -f '$(top_srcdir)/shared/optparser.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/optparser.c

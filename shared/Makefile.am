@@ -4,6 +4,7 @@ libshared_la_SOURCES=actions.c\
 	       cdiff.c\
 	       clamdcom.c\
 	       getopt.c\
+	       idmef_logging.c\
 	       misc.c\
 	       optparser.c\
 	       tar.c
