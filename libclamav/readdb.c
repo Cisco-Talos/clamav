@@ -4096,7 +4096,8 @@ static int cli_loadpwdb(FILE *fs, struct cl_engine *engine, unsigned int options
     char *attribs;
     char buffer[FILEBUFF];
     unsigned int line = 0, skip = 0, pwcnt = 0, tokens_count;
-    struct cli_pwdict *new, *ins;
+    struct cli_pwdb *new, *ins;
+    cl_pwdb_t container;
     struct cli_lsig_tdb tdb;
     int ret = CL_SUCCESS, pwstype;
 
@@ -4152,20 +4153,39 @@ static int cli_loadpwdb(FILE *fs, struct cl_engine *engine, unsigned int options
                 break;
         }
 
+	/* check container type */
+	if (!tdb.container) {
+	    container = CLI_PWDB_ANY;
+	} else {
+	    switch (*(tdb.container)) {
+	    case CL_TYPE_ANY:
+		container = CLI_PWDB_ANY;
+		break;
+	    case CL_TYPE_ZIP:
+		container = CLI_PWDB_ZIP;
+		break;
+	    case CL_TYPE_RAR:
+		container = CLI_PWDB_RAR;
+		break;
+	    default:
+		cli_errmsg("cli_loadpwdb: Invalid conatiner specified to .pwdb signature\n");
+		return CL_EMALFDB;
+	    }
+	}
+	FREE_TDB(tdb);
+
         /* check the PWStorageType */
         if(!cli_isnumber(tokens[2])) {
             cli_errmsg("cli_loadpwdb: Invalid value for PWStorageType (third entry)\n");
             ret = CL_EMALFDB;
-            FREE_TDB(tdb);
             break;
         }
 
         pwstype = atoi(tokens[2]);
         if((pwstype == 0) || (pwstype == 1)) {
-            new = (struct cli_pwdict *) mpool_calloc(engine->mempool, 1, sizeof(struct cli_pwdict));
+            new = (struct cli_pwdb *) mpool_calloc(engine->mempool, 1, sizeof(struct cli_pwdb));
             if(!new) {
                 ret = CL_EMEM;
-                FREE_TDB(tdb);
                 break;
             }
 
@@ -4173,7 +4193,6 @@ static int cli_loadpwdb(FILE *fs, struct cl_engine *engine, unsigned int options
             new->name = cli_mpool_strdup(engine->mempool, tokens[0]);
             if (!new->name) {
                 ret = CL_EMEM;
-                FREE_TDB(tdb);
                 mpool_free(engine->mempool, new);
                 break;
             }
@@ -4191,33 +4210,14 @@ static int cli_loadpwdb(FILE *fs, struct cl_engine *engine, unsigned int options
                     ret = CL_EMEM;
                 else
                     ret = CL_EMALFDB;
-                FREE_TDB(tdb);
-                mpool_free(engine->mempool, new);
                 mpool_free(engine->mempool, new->name);
+                mpool_free(engine->mempool, new);
                 break;
             }
 
-            /* TODO: copy containers in the tdb */
-            if (!tdb.container) {
-                new->container = CL_TYPE_ANY;
-            } else {
-                new->container = *(tdb.container);
-            }
-            FREE_TDB(tdb);
-
             /* add to the engine list, sorted by target type */
-            if(!engine->pw_dict) {
-                engine->pw_dict = new;
-            } else if(new->container < engine->pw_dict->container) {
-                new->next = engine->pw_dict;
-                engine->pw_dict = new;
-            } else {
-                ins = engine->pw_dict;
-                while(ins->next && (ins->next->container < new->container))
-                    ins = ins->next;
-                new->next = ins->next;
-                ins->next = new;
-            }
+	    new->next = engine->pwdbs[container];
+	    engine->pwdbs[container] = new;
         } else {
             cli_dbgmsg("cli_loadpwdb: Unsupported PWStorageType %u\n", pwstype);
             continue;
@@ -4846,15 +4846,19 @@ int cl_statchkdir(const struct cl_stat *dbstat)
     return CL_SUCCESS;
 }
 
-void cli_pwfree(const struct cl_engine *engine)
+void cli_pwdb_list_free(struct cl_engine *engine, struct cli_pwdb *pwdb)
 {
-    struct cli_pwdict *pw = engine->pw_dict, *pt;
+    struct cli_pwdb *thiz, *that;
 
-    while(pw) {
-	pt = pw;
-	pw = pw->next;
-	mpool_free(engine->mempool, pt->passwd);
-	mpool_free(engine->mempool, pt);
+    thiz = pwdb;
+    while (thiz) {
+	that = thiz->next;
+
+	mpool_free(engine->mempool, thiz->name);
+	mpool_free(engine->mempool, thiz->passwd);
+	mpool_free(engine->mempool, thiz);
+
+	thiz = that;
     }
 }
 
@@ -5014,6 +5018,13 @@ int cl_engine_free(struct cl_engine *engine)
         mpool_free(engine->mempool, engine->dconf);
     }
 
+    if(engine->pwdbs) {
+        for(i = 0; i < CLI_PWDB_COUNT; i++)
+            if(engine->pwdbs[i])
+                cli_pwdb_list_free(engine, engine->pwdbs[i]);
+	mpool_free(engine->mempool, engine->pwdbs);
+    }
+
     if(engine->pua_cats)
 	mpool_free(engine->mempool, engine->pua_cats);
 
@@ -5053,8 +5064,6 @@ int cl_engine_free(struct cl_engine *engine)
 	mpool_free(engine->mempool, engine->ignored);
     }
 
-   cli_pwfree(engine);
-
 #ifdef USE_MPOOL
     if(engine->mempool) mpool_destroy(engine->mempool);
 #endif
@@ -5088,7 +5097,7 @@ int cl_engine_compile(struct cl_engine *engine)
 	    return ret;
 
     /* handle default passwords */
-    if(!engine->pw_dict)
+    if(!engine->pwdbs[0] && !engine->pwdbs[1] && !engine->pwdbs[2])
 	if((ret = cli_loadpwdb(NULL, engine, 0, 1, NULL)))
 	    return ret;
 
