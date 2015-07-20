@@ -377,9 +377,21 @@ struct cl_engine *cl_engine_new(void)
 	return NULL;
     }
 
+    new->pwdbs = mpool_calloc(new->mempool, CLI_PWDB_COUNT, sizeof(struct cli_pwdb *));
+    if (!new->pwdbs) {
+	cli_errmsg("cl_engine_new: Can't initialize password databases\n");
+	mpool_free(new->mempool, new->dconf);
+	mpool_free(new->mempool, new->root);
+#ifdef USE_MPOOL
+        mpool_destroy(new->mempool);
+#endif
+	free(new);
+    }
+
     crtmgr_init(&(new->cmgr));
     if(crtmgr_add_roots(new, &(new->cmgr)))  {
 	cli_errmsg("cl_engine_new: Can't initialize root certificates\n");
+	mpool_free(new->mempool, new->pwdbs);
 	mpool_free(new->mempool, new->dconf);
 	mpool_free(new->mempool, new->root);
 #ifdef USE_MPOOL
@@ -395,6 +407,7 @@ struct cl_engine *cl_engine_new(void)
 #ifdef CL_THREAD_SAFE
         if (pthread_mutex_init(&(intel->mutex), NULL)) {
             cli_errmsg("cli_engine_new: Cannot initialize stats gathering mutex\n");
+	    mpool_free(new->mempool, new->pwdbs);
             mpool_free(new->mempool, new->dconf);
             mpool_free(new->mempool, new->root);
 #ifdef USE_MPOOL
@@ -440,6 +453,7 @@ struct cl_engine *cl_engine_new(void)
     /* YARA */
     if (cli_yara_init(new) != CL_SUCCESS) {
         cli_errmsg("cli_engine_new: failed to initialize YARA\n");
+	mpool_free(new->mempool, new->pwdbs);
         mpool_free(new->mempool, new->dconf);
         mpool_free(new->mempool, new->root);
 #ifdef USE_MPOOL

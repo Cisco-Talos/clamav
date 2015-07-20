@@ -230,12 +230,18 @@ struct cli_dbinfo {
     struct cli_dbinfo *next;
 };
 
-struct cli_pwdict {
+#define CLI_PWDB_COUNT 3
+typedef enum {
+    CLI_PWDB_ANY = 0,
+    CLI_PWDB_ZIP = 1,
+    CLI_PWDB_RAR = 2
+} cl_pwdb_t;
+
+struct cli_pwdb {
     char *name;
     unsigned char *passwd;
     uint16_t length;
-    cli_file_t container;
-    struct cli_pwdict *next;
+    struct cli_pwdb *next;
 };
 
 struct cl_engine {
@@ -295,7 +301,7 @@ struct cl_engine {
     struct cli_ftype *ptypes;
 
     /* Container password storage */
-    struct cli_pwdict *pw_dict;
+    struct cli_pwdb **pwdbs;
 
     /* Ignored signatures */
     struct cli_matcher *ignored;

@@ -328,7 +328,7 @@ static inline void zupdatekey(uint32_t key[3], unsigned char input)
 }
 
 /* zip init keys */
-static inline void zinitkey(uint32_t key[3], struct cli_pwdict *password)
+static inline void zinitkey(uint32_t key[3], struct cli_pwdb *password)
 {
     int i;
 
@@ -357,7 +357,7 @@ static inline int zdecrypt(const uint8_t *src, uint32_t csize, uint32_t usize, c
     int i, ret, v = 0;
     uint32_t key[3];
     uint8_t eh[12]; /* encryption header buffer */
-    struct cli_pwdict *password;
+    struct cli_pwdb *password, *pass_any, *pass_zip;
 
     if (!ctx || !ctx->engine)
 	return CL_ENULLARG;
@@ -368,15 +368,11 @@ static inline int zdecrypt(const uint8_t *src, uint32_t csize, uint32_t usize, c
 	return CL_SUCCESS;
     }
 
-    password = ctx->engine->pw_dict;
+    pass_any = ctx->engine->pwdbs[CLI_PWDB_ANY];
+    pass_zip = ctx->engine->pwdbs[CLI_PWDB_ZIP];
 
-    while (password) {
-	if ((password->container != CL_TYPE_ANY) && (password->container != CL_TYPE_ZIP)) {
-	    if ((password->container > CL_TYPE_ZIP) && (password->container > CL_TYPE_ANY))
-		break;
-	    password = password->next;
-	    continue;
-	}
+    while (pass_any || pass_zip) {
+	password = pass_zip ? pass_zip : pass_any;
 
 	zinitkey(key, password);
 
@@ -490,7 +486,10 @@ static inline int zdecrypt(const uint8_t *src, uint32_t csize, uint32_t usize, c
 	    return ret;
 	}
 
-	password = password->next;
+	if (pass_zip)
+	    pass_zip = pass_zip->next;
+	else
+	    pass_any = pass_any->next;	    
     }
 
     cli_dbgmsg("cli_unzip: decrypt - skipping encrypted file, no valid passwords\n");
