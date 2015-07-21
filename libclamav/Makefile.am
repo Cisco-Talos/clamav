@@ -138,12 +138,16 @@ c++/Makefile: c++/Makefile.nollvm.in
 distclean-recursive distdir maintainer-clean-recursive: c++/Makefile
 endif
 
+if ENABLE_YARA
+YARA_CFLAGS=-DHAVE_YARA
+endif
+
 libclamav_nocxx_la_SOURCES = bytecode_nojit.c
 libclamav_nocxx_la_CFLAGS=$(AM_CFLAGS) @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
 
 libclamav_la_LIBADD = @SSL_LIBS@ @JSON_LIBS@ @PCRE_LIBS@ @LIBCLAMAV_LIBS@ @LIBLTDL@ $(IFACELIBADD) $(LLVMLIBADD) libclamav_internal_utils.la @THREAD_LIBS@ @LIBM@
 libclamav_la_DEPENDENCIES =  @LTDLDEPS@ $(IFACEDEP) $(LLVMDEP) libclamav_internal_utils.la
-libclamav_la_CFLAGS =$(AM_CFLAGS) $(XML_CPPFLAGS) -DSEARCH_LIBDIR=\"$(libdir)\" @LIBCLAMAV_CPPFLAGS@ @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
+libclamav_la_CFLAGS =$(AM_CFLAGS) $(XML_CPPFLAGS) $(YARA_CFLAGS) -DSEARCH_LIBDIR=\"$(libdir)\" @LIBCLAMAV_CPPFLAGS@ @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
 libclamav_la_LDFLAGS = @SSL_LDFLAGS@ @TH_SAFE@ @JSON_LDFLAGS@ $(XML_LIBS) -version-info @LIBCLAMAV_VERSION@ -no-undefined
 
 if VERSIONSCRIPT
@@ -445,7 +449,19 @@ libclamav_la_SOURCES = \
 	hostid.h \
 	openioc.c \
 	openioc.h \
-	yara_arena.c \
+	msdoc.c \
+	msdoc.h \
+	matcher-pcre.c \
+	matcher-pcre.h \
+	regex_pcre.c \
+	regex_pcre.h \
+	msxml.c \
+	msxml.h \
+	msxml_parser.c \
+	msxml_parser.h
+
+if ENABLE_YARA
+libclamav_la_SOURCES += yara_arena.c \
 	yara_arena.h \
 	yara_compiler.c \
 	yara_compiler.h \
@@ -458,17 +474,8 @@ libclamav_la_SOURCES = \
 	yara_lexer.h \
 	yara_parser.c \
 	yara_parser.h \
-	yara_clam.h \
-	msdoc.c \
-	msdoc.h \
-	matcher-pcre.c \
-	matcher-pcre.h \
-	regex_pcre.c \
-	regex_pcre.h \
-	msxml.c \
-	msxml.h \
-	msxml_parser.c \
-	msxml_parser.h
+	yara_clam.h
+endif
 
 libclamav_la_SOURCES += bignum.h\
 	bignum_fast.h\

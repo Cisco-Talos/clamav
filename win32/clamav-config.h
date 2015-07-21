@@ -577,4 +577,7 @@
 
 #define LLVM_VERSION 28
 
+/* YARA */
+#define HAVE_YARA 1
+
 #include "platform.h"

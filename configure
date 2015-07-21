@@ -635,7 +635,9 @@ ac_includes_default="\
 #endif"
 
 enable_option_checking=no
-ac_subst_vars='ENABLE_LLVM_FALSE
+ac_subst_vars='ENABLE_YARA_FALSE
+ENABLE_YARA_TRUE
+ENABLE_LLVM_FALSE
 ENABLE_LLVM_TRUE
 ltdl_LTLIBOBJS
 ltdl_LIBOBJS
@@ -679,6 +681,7 @@ CLAMSCAN_CPPFLAGS
 FRESHCLAM_CPPFLAGS
 CLAMSUBMIT_CFLAGS
 CLAMSUBMIT_LIBS
+HAVE_YARA
 subdirs
 WERR_CFLAGS_MILTER
 WERR_CFLAGS
@@ -925,6 +928,7 @@ with_system_llvm
 with_llvm_linking
 enable_llvm
 enable_sha_collector_for_internal_use
+enable_yara
 with_libcurl
 '
       ac_precious_vars='build_alias
@@ -1604,6 +1608,7 @@ Optional Features:
                           enable warnings as error for distcheck [default=no]
   --enable-llvm           enable 'llvm' JIT/verifier support [default=auto]
 
+  --disable-yara          do not include yara support
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -22828,6 +22833,24 @@ $as_echo "#define HAVE__INTERNAL__SHA_COLLECT 1" >>confdefs.h
 fi
 
 
+# Check whether --enable-yara was given.
+if test "${enable_yara+set}" = set; then :
+  enableval=$enable_yara; enable_yara=$enableval
+else
+  enable_yara="yes"
+fi
+
+
+if test "$enable_yara" = "yes"; then
+
+$as_echo "#define HAVE_YARA 1" >>confdefs.h
+]
+
+fi
+
+
+
+
 case "$host_os" in
 freebsd*)
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for kinfo_getvmmap in -lutil" >&5
@@ -25655,7 +25678,16 @@ else
   ENABLE_LLVM_FALSE=
 fi
 
+ if test "$enable_yara" != "no"; then
+  ENABLE_YARA_TRUE=
+  ENABLE_YARA_FALSE='#'
+else
+  ENABLE_YARA_TRUE='#'
+  ENABLE_YARA_FALSE=
+fi
+
 no_recursion="yes";
+
 ac_config_files="$ac_config_files libclamav/Makefile"
 
 cat >confcache <<\_ACEOF
@@ -25871,6 +25903,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${ENABLE_LLVM_TRUE}" && test -z "${ENABLE_LLVM_FALSE}"; then
   as_fn_error $? "conditional \"ENABLE_LLVM\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${ENABLE_YARA_TRUE}" && test -z "${ENABLE_YARA_FALSE}"; then
+  as_fn_error $? "conditional \"ENABLE_YARA\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 
@@ -28605,6 +28641,19 @@ else
 fi
 
 fi
+
+
+   $as_echo_n "              yara        : "
+   if test "x$enable_yara" = "xno"; then :
+  $as_echo "$enable_yara (disabled)"
+elif test "x$enable_yara" = "xyes"; then :
+  $as_echo "$enable_yara"
+elif test "x$enable_yara" = "x"; then :
+  $as_echo "$enable_yara"
+else
+  $as_echo "$enable_yara ($enable_yara)"
+fi
+
 
 # Yep, downgrading the compiler avoids the bug too:
 # 4.0.x, and 4.1.0 are the known buggy versions

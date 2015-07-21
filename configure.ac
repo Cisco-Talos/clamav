@@ -123,6 +123,7 @@ m4_include([m4/reorganization/clamdtop.m4])
 m4_include([m4/reorganization/distcheck.m4])
 m4_include([m4/reorganization/llvm.m4])
 m4_include([m4/reorganization/sha_collect.m4])
+m4_include([m4/reorganization/yara.m4])
 
 m4_include([m4/reorganization/bsd.m4])
 
@@ -180,7 +181,10 @@ fi
 
 AM_CONDITIONAL([ENABLE_LLVM],
 	       [test "$subdirfailed" != "yes" && test "$enable_llvm" != "no"])
+AM_CONDITIONAL([ENABLE_YARA],
+	       [test "$enable_yara" != "no"])
 no_recursion="yes";
+
 AC_OUTPUT([libclamav/Makefile])
 
 # Print a summary of what features we enabled
@@ -245,6 +249,7 @@ if test "x$XML_LIBS" = "x"; then
 else
     CL_MSG_STATUS([libxml2     ],[yes, from $XML_HOME],[])
 fi
+CL_MSG_STATUS([yara        ],[$enable_yara],[$enable_yara])
 
 # Yep, downgrading the compiler avoids the bug too:
 # 4.0.x, and 4.1.0 are the known buggy versions
