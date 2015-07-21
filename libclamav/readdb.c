@@ -1580,41 +1580,13 @@ static inline int init_tdb(struct cli_lsig_tdb *tdb, struct cl_engine *engine, c
  * NOTE: Maximum of 64(see MAX_LDB_SUBSIGS) subsignatures (last would be token 66)
  */
 #define LDB_TOKENS 67
-static int ldb_tokenize(char *buffer, const char **tokens)
-{
-    const size_t token_count = LDB_TOKENS + 1;
-    size_t tokens_found, i;
-    int within_pcre = 0;
-
-    for(tokens_found = 0; tokens_found < token_count; ) {
-        tokens[tokens_found++] = buffer;
-
-        while (*buffer != '\0') {
-            if (!within_pcre && (*buffer == ';'))
-                break;
-            else if ((tokens_found > 2) && (*(buffer-1) != '\\') && (*buffer == '/'))
-                within_pcre = !within_pcre;
-            buffer++;
-        }
-
-        if(*buffer != '\0') {
-            *buffer++ = '\0';
-        } else {
-            i = tokens_found;
-            while(i < token_count)
-                tokens[i++] = NULL;
-            return tokens_found;
-        }
-    }
-    return tokens_found;
-}
-
+#define SUB_TOKENS 4
 static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsigned int options, const char *dbname, unsigned int line, unsigned int *sigs, unsigned bc_idx, const char *buffer_cpy, int *skip)
 {
-    const char *sig, *virname, *offset, *logic;
+    const char *sig, *virname, *offset, *logic, *sigopts;
     struct cli_ac_lsig **newtable, *lsig;
-    char *tokens[LDB_TOKENS+1], *pt, *lsl, *rsl;
-    int i, subsigs, tokens_count;
+    char *tokens[LDB_TOKENS+1], *subtokens[SUB_TOKENS+1];
+    int i, j, subsigs, tokens_count, subtokens_count;
     unsigned short target = 0;
     struct cli_matcher *root;
     struct cli_lsig_tdb tdb;
@@ -1624,8 +1596,9 @@ static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsig
 
     UNUSEDPARAM(dbname);
 
-    tokens_count = ldb_tokenize(buffer, (const char **) tokens);
+    tokens_count = cli_ldbtokenize(buffer, ';', LDB_TOKENS + 1, (const char **) tokens, 2);
     if(tokens_count < 4) {
+        cli_errmsg("Invalid or unsupported ldb signature format\n");
         return CL_EMALFDB;
     }
 
@@ -1649,9 +1622,9 @@ static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsig
 
     subsigs = cli_ac_chklsig(logic, logic + strlen(logic), NULL, NULL, NULL, 1);
     if(subsigs == -1) {
+        cli_errmsg("Invalid or unsupported ldb logic\n");
         return CL_EMALFDB;
     }
-
     subsigs++;
 
 #if !HAVE_PCRE
@@ -1682,8 +1655,8 @@ static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsig
 
     /* enforce MAX_LDB_SUBSIGS(currently 64) subsig cap */
     if(subsigs > MAX_LDB_SUBSIGS) {
-	cli_errmsg("cli_loadldb: Broken logical expression or too many subsignatures\n");
-	return CL_EMALFDB;
+        cli_errmsg("cli_loadldb: Broken logical expression or too many subsignatures\n");
+        return CL_EMALFDB;
     }
 
     /* TDB */
@@ -1733,52 +1706,48 @@ static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsig
     tdb.subsigs = subsigs;
 
     for(i = 0; i < subsigs; i++) {
-        subsig_opts = 0;
-
         lsigid[1] = i;
         offset = "*";
-        sig = tokens[3 + i];
 
-        /* check for offset and subsig modifiers */
-        pt = tokens[3 + i];
-        lsl = strchr(tokens[3 + i], '/');
-        rsl = strrchr(tokens[3 + i], '/');
-        while((pt = strchr(pt, ':'))) {
-            /* pcre subsig expression */
-            if((lsl && rsl) && (lsl < pt) && (pt <  rsl)) {
-                pt++;
-                continue;
-            }
+        sigopts = NULL;
+        subsig_opts = 0;
 
-            *pt++ = 0;
-            if(*pt == ':') { /* signature modifiers */
-                *pt++ = 0;
-                while(*pt != '\0') {
-                    switch(*pt) {
-                    case 'i':
-                        subsig_opts |= ACPATT_OPTION_NOCASE;
-                        break;
-                    case 'f':
-                        subsig_opts |= ACPATT_OPTION_FULLWORD;
-                        break;
-                    case 'w':
-                        subsig_opts |= ACPATT_OPTION_WIDE;
-                        break;
-                    case 'a':
-                        subsig_opts |= ACPATT_OPTION_ASCII;
-                        break;
-                    default:
-                        cli_errmsg("cli_loadldb: Signature for %s uses invalid option: %02x\n", virname, *pt);
-                        return CL_EMALFDB;
-                    }
-
-                    pt++;
-                }
-            } else {
-                sig = pt;
-                offset = tokens[3 + i];
-            }
+        subtokens_count = cli_ldbtokenize(tokens[3 + i], ':', SUB_TOKENS + 1, (const char **) subtokens, 0);
+	    if(!subtokens_count) {
+            cli_errmsg("Invalid or unsupported ldb subsignature format\n");
+            return CL_EMALFDB;
         }
+
+	    if((subtokens_count % 2) == 0)
+            offset = subtokens[0];
+
+	    if(subtokens_count == 3)
+            sigopts = subtokens[2];
+        else if(subtokens_count == 4)
+            sigopts = subtokens[3];
+
+        if(sigopts) { /* signature modifiers */
+            for(j = 0; j < strlen(sigopts); j++)
+                switch(sigopts[j]) {
+                case 'i':
+                    subsig_opts |= ACPATT_OPTION_NOCASE;
+                    break;
+                case 'f':
+                    subsig_opts |= ACPATT_OPTION_FULLWORD;
+                    break;
+                case 'w':
+                    subsig_opts |= ACPATT_OPTION_WIDE;
+                    break;
+                case 'a':
+                    subsig_opts |= ACPATT_OPTION_ASCII;
+                    break;
+                default:
+                    cli_errmsg("cli_loadldb: Signature for %s uses invalid option: %02x\n", virname, sigopts[j]);
+                    return CL_EMALFDB;
+                }
+        }
+
+        sig = (subtokens_count % 2) ? subtokens[0] : subtokens[1];
 
         if(subsig_opts)
             ret = cli_sigopts_handler(root, virname, sig, subsig_opts, 0, 0, offset, target, lsigid, options);

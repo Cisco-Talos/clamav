@@ -51,6 +51,7 @@ char *cli_strtokbuf(const char *input, int fieldno, const char *delim, char *out
 const char *cli_memstr(const char *haystack, unsigned int hs, const char *needle, unsigned int ns);
 char *cli_strrcpy(char *dest, const char *source);
 size_t cli_strtokenize(char *buffer, const char delim, const size_t token_count, const char **tokens);
+size_t cli_ldbtokenize(char *buffer, const char delim, const size_t token_count, const char **tokens, int token_skip);
 int cli_isnumber(const char *str);
 char *cli_unescape(const char *str);
 struct text_buffer;

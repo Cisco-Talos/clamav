@@ -480,6 +480,34 @@ size_t cli_strtokenize(char *buffer, const char delim, const size_t token_count,
     return tokens_found;
 }
 
+size_t cli_ldbtokenize(char *buffer, const char delim, const size_t token_count, const char **tokens, int token_skip)
+{
+    size_t tokens_found, i;
+    int within_pcre = 0;
+
+    for(tokens_found = 0; tokens_found < token_count; ) {
+        tokens[tokens_found++] = buffer;
+
+        while (*buffer != '\0') {
+            if (!within_pcre && (*buffer == delim))
+                break;
+            else if ((tokens_found > token_skip) && (*(buffer-1) != '\\') && (*buffer == '/'))
+                within_pcre = !within_pcre;
+            buffer++;
+        }
+
+        if(*buffer != '\0') {
+            *buffer++ = '\0';
+        } else {
+            i = tokens_found;
+            while(i < token_count)
+                tokens[i++] = NULL;
+            return tokens_found;
+        }
+    }
+    return tokens_found;
+}
+
 int cli_isnumber(const char *str)
 {
     while(*str)
