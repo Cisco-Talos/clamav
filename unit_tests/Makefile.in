@@ -148,6 +148,7 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
 	$(top_srcdir)/m4/reorganization/distcheck.m4 \
 	$(top_srcdir)/m4/reorganization/llvm.m4 \
 	$(top_srcdir)/m4/reorganization/sha_collect.m4 \
+	$(top_srcdir)/m4/reorganization/yara.m4 \
 	$(top_srcdir)/m4/reorganization/bsd.m4 \
 	$(top_srcdir)/m4/reorganization/libs/curl.m4 \
 	$(top_srcdir)/m4/reorganization/substitutions.m4 \
@@ -527,6 +528,7 @@ GENHTML = @GENHTML@
 GETENT = @GETENT@
 GPERF = @GPERF@
 GREP = @GREP@
+HAVE_YARA = @HAVE_YARA@
 INCLTDL = @INCLTDL@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@

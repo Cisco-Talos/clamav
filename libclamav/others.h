@@ -50,10 +50,14 @@
 #include "bytecode_api.h"
 #include "events.h"
 #include "crtmgr.h"
+
 #ifdef HAVE_JSON
 #include "json.h"
 #endif
+
+#ifdef HAVE_YARA
 #include "yara_clam.h"
+#endif
 
 #if HAVE_LIBXML2
 #define CLAMAV_MIN_XMLREADER_FLAGS (XML_PARSE_NOERROR | XML_PARSE_NONET)
@@ -375,8 +379,10 @@ struct cl_engine {
     uint64_t pcre_recmatch_limit;
     uint64_t pcre_max_filesize;
 
+#ifdef HAVE_YARA
     /* YARA */
     struct _yara_global * yara_global;
+#endif
 };
 
 struct cl_settings {

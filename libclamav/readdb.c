@@ -78,14 +78,18 @@
 #include "bytecode_priv.h"
 #include "cache.h"
 #include "openioc.h"
+
 #ifdef CL_THREAD_SAFE
 #  include <pthread.h>
 static pthread_mutex_t cli_ref_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
+
+#ifdef HAVE_YARA
 #include "yara_clam.h"
 #include "yara_compiler.h"
 #include "yara_grammar.h"
 #include "yara_lexer.h"
+#endif
 
 
 #define MAX_LDB_SUBSIGS 64
@@ -2986,6 +2990,7 @@ static int cli_loadopenioc(FILE *fs, const char *dbname, struct cl_engine *engin
     return rc;
 }
 
+#ifdef HAVE_YARA
 #define YARA_DEBUG 1
 #if (YARA_DEBUG == 2)
 #define cli_yaramsg(...) cli_errmsg(__VA_ARGS__)
@@ -4054,6 +4059,7 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
 
     return CL_SUCCESS;
 }
+#endif
 
 /*      0            1           2          3
  * PasswordName;Attributes;PWStorageType;Password
@@ -4352,8 +4358,10 @@ int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo
 	ret = cli_loadmscat(fs, dbname, engine, options, dbio);
     } else if(cli_strbcasestr(dbname, ".ioc")) {
 	ret = cli_loadopenioc(fs, dbname, engine, options);
+#ifdef HAVE_YARA
     } else if(cli_strbcasestr(dbname, ".yar") || cli_strbcasestr(dbname, ".yara")) {
         ret = cli_loadyara(fs, engine, signo, options, dbio, filename);
+#endif
     } else if(cli_strbcasestr(dbname, ".pwdb")) {
         ret = cli_loadpwdb(fs, engine, options, 0, dbio);
     } else {
@@ -5049,7 +5057,9 @@ int cl_engine_free(struct cl_engine *engine)
     if(engine->mempool) mpool_destroy(engine->mempool);
 #endif
 
+#ifdef HAVE_YARA
     cli_yara_free(engine);
+#endif
 
     free(engine);
     return CL_SUCCESS;
@@ -5063,7 +5073,7 @@ int cl_engine_compile(struct cl_engine *engine)
 
     if(!engine)
 	return CL_ENULLARG;
-
+#ifdef HAVE_YARA
     /* Free YARA hash tables - only needed for parse and load */
     if (engine->yara_global != NULL) {
         if (engine->yara_global->rules_table)
@@ -5072,6 +5082,7 @@ int cl_engine_compile(struct cl_engine *engine)
             yr_hash_table_destroy(engine->yara_global->objects_table, NULL);
         engine->yara_global->rules_table = engine->yara_global->objects_table = NULL;
     }
+#endif
 
     if(!engine->ftypes)
 	if((ret = cli_loadftm(NULL, engine, 0, 1, NULL)))
