@@ -4143,7 +4143,19 @@ static int cli_loadpwdb(FILE *fs, struct cl_engine *engine, unsigned int options
             break;
         }
 
+	/* preprocess tdb with target type 0 */
         memset(&tdb, 0, sizeof(tdb));
+	tdb.mempool = engine->mempool;
+	tdb.cnt[CLI_TDB_UINT]++;
+	tdb.val = (uint32_t *) mpool_realloc2(tdb.mempool, tdb.val, tdb.cnt[CLI_TDB_UINT] * sizeof(uint32_t));
+	if(!tdb.val) {
+	    tdb.cnt[CLI_TDB_UINT] = 0;
+	    ret = CL_EMEM;
+	    break;
+	}
+	tdb.val[0] = 0;
+	tdb.target = &(tdb.val[0]);
+
         ret = init_tdb(&tdb, engine, attribs, passname);
         free(attribs);
         if(ret != CL_SUCCESS) {
