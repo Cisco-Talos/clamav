@@ -2278,13 +2278,27 @@ static char *decodehexspecial(const char *hex, unsigned int *dlen)
 			len += sprintf(buff + len, "{LINE_MARKER_LEFT}");
 		    continue;
 		}
+	    } else if(!strcmp(pt, "W")) {
+		if(!*start) {
+		    if(negative)
+			len += sprintf(buff + len, "{NOT_WORD_MARKER_RIGHT}");
+		    else
+			len += sprintf(buff + len, "{WORD_MARKER_RIGHT}");
+		    continue;
+		} else if(pt - 1 == hexcpy) {
+		    if(negative)
+			len += sprintf(buff + len, "{NOT_WORD_MARKER_LEFT}");
+		    else
+			len += sprintf(buff + len, "{WORD_MARKER_LEFT}");
+		    continue;
+		}
 	    } else {
 		altnum = 0;
 		for(i = 0; i < strlen(pt); i++)
 		    if(pt[i] == '|')
 			altnum++;
 
-		if(!altnum) {
+		if(!altnum && (strlen(pt) == 0)) {
 		    mprintf("!decodehexspecial: Empty block\n");
 		    free(hexcpy);
 		    free(buff);
@@ -2575,11 +2589,41 @@ static int decodehex(const char *hexsig)
     return 0;
 }
 
+static int decodesigmod(const char *sigmod)
+{
+	int i;
+
+    for(i = 0; i < strlen(sigmod); i++) {
+	mprintf(" ");
+
+	switch(sigmod[i]) {
+	case 'i':
+	    mprintf("NOCASE");
+	    break;
+	case 'f':
+	    mprintf("FULLWORD");
+	    break;
+	case 'w':
+	    mprintf("WIDE");
+	    break;
+	case 'a':
+	    mprintf("ASCII");
+	    break;
+	default:
+	    mprintf("UNKNOWN");
+	    return -1;
+	}
+    }
+
+    mprintf("\n");
+    return 0;
+}
+
 static int decodesig(char *sig, int fd)
 {
 	char *pt;
-	const char *tokens[68];
-	int tokens_count, subsigs, i, bc = 0;
+	char *tokens[68], *subtokens[4], *subhex;
+	int tokens_count, subtokens_count, subsigs, i, bc = 0;
 
     if(*sig == '[') {
 	if(!(pt = strchr(sig, ']'))) {
@@ -2590,7 +2634,7 @@ static int decodesig(char *sig, int fd)
     }
 
     if(strchr(sig, ';')) { /* lsig */
-        tokens_count = cli_strtokenize(sig, ';', 67 + 1, (const char **) tokens);
+	    tokens_count = cli_ldbtokenize(sig, ';', 67 + 1, (const char **) tokens, 2);
 	if(tokens_count < 4) {
 	    mprintf("!decodesig: Invalid or not supported signature format\n");
 	    return -1;
@@ -2619,22 +2663,38 @@ static int decodesig(char *sig, int fd)
 		mprintf(" * BYTECODE SUBSIG\n");
 	    else
 		mprintf(" * SUBSIG ID %d\n", i);
-	    if((pt = strchr(tokens[3 + i], ':'))) {
-		*pt++ = 0;
-		mprintf(" +-> OFFSET: %s\n", tokens[3 + i]);
-	    } else {
-		mprintf(" +-> OFFSET: ANY\n");
+
+	    subtokens_count = cli_ldbtokenize(tokens[3 + i], ':', 4, (const char **) subtokens, 0);
+	    if(!subtokens_count) {
+		mprintf("!decodesig: Invalid or not supported subsignature format\n");
+		return -1;
 	    }
+	    if((subtokens_count % 2) == 0)
+		mprintf(" +-> OFFSET: %s\n", subtokens[0]);
+	    else
+		mprintf(" +-> OFFSET: ANY\n");
+
+	    if(subtokens_count == 3) {
+		mprintf(" +-> SIGMOD:");
+		decodesigmod(subtokens[2]);
+	    } else if(subtokens_count == 4) {
+		mprintf(" +-> SIGMOD:");
+		decodesigmod(subtokens[3]);
+	    } else {
+		mprintf(" +-> SIGMOD: NONE\n");
+	    }
+
+	    subhex = (subtokens_count % 2) ? subtokens[0] : subtokens[1];
 	    if(fd == -1) {
                 mprintf(" +-> DECODED SUBSIGNATURE:\n");
-                decodehex(pt ? pt : tokens[3 + i]);
+                decodehex(subhex);
 	    } else {
 		mprintf(" +-> ");
-		matchsig(pt ? pt : tokens[3 + i], pt ? tokens[3 + i] : NULL, fd);
+		matchsig(subhex, subhex, fd);
 	    }
 	}
     } else if(strchr(sig, ':')) { /* ndb */
-	tokens_count = cli_strtokenize(sig, ':', 6 + 1, tokens);
+	tokens_count = cli_strtokenize(sig, ':', 6 + 1, (const char **) tokens);
 	if(tokens_count < 4 || tokens_count > 6) {
 	    mprintf("!decodesig: Invalid or not supported signature format\n");
 	    mprintf("TOKENS COUNT: %u\n", tokens_count);
