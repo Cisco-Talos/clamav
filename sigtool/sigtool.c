@@ -2183,13 +2183,31 @@ static char *decodehexstr(const char *hex, unsigned int *dlen)
     return decoded;
 }
 
+inline static char *get_paren_end(char *hexstr)
+{
+    char *pt;
+    int level = 0;
+
+    pt = hexstr;
+    while(*pt != '\0') {
+	if(*pt == '(') {
+	    level++;
+	} else if(*pt == ')') {
+	    if(!level)
+		return pt;
+	    level--;
+	}
+	pt++;
+    }
+    return NULL;
+}
+
 static char *decodehexspecial(const char *hex, unsigned int *dlen)
 {
-	char *pt, *start, *hexcpy, *decoded, *h, *c;
-	unsigned int i, len = 0, hlen, negative, altnum, alttype;
+    char *pt, *start, *hexcpy, *decoded, *h, *e, *c, op, lop;
+	unsigned int i, len = 0, hlen, negative, level;
 	char *buff;
 
-    
     hexcpy = NULL;
     buff = NULL;
 
@@ -2235,7 +2253,7 @@ static char *decodehexspecial(const char *hex, unsigned int *dlen)
 	    len += hlen;
 	    free(decoded);
 
-	    if(!(start = strchr(pt, ')'))) {
+	    if(!(start = get_paren_end(pt))) {
 		mprintf("!decodehexspecial: Missing closing parethesis\n");
 		free(hexcpy);
 		free(buff);
@@ -2293,60 +2311,94 @@ static char *decodehexspecial(const char *hex, unsigned int *dlen)
 		    continue;
 		}
 	    } else {
-		altnum = 0;
-		for(i = 0; i < strlen(pt); i++)
-		    if(pt[i] == '|')
-			altnum++;
-
-		if(!altnum && (strlen(pt) == 0)) {
+		if(!strlen(pt)) {
 		    mprintf("!decodehexspecial: Empty block\n");
 		    free(hexcpy);
 		    free(buff);
 		    return NULL;
 		}
-		altnum++;
 
-		if(3 * altnum - 1 == (uint16_t) strlen(pt)) {
-		    alttype = 1; /* char */
-		    if(negative)
-			len += sprintf(buff + len, "{EXCLUDING_CHAR_ALTERNATIVE:");
-		    else
-			len += sprintf(buff + len, "{CHAR_ALTERNATIVE:");
-		} else {
-		    alttype = 2; /* str */
-		    if(negative)
-			len += sprintf(buff + len, "{EXCLUDING_STRING_ALTERNATIVE:");
-		    else
-			len += sprintf(buff + len, "{STRING_ALTERNATIVE:");
-		}
+		/* TODO: analyze string alternative for typing */
+		if(negative)
+		    len += sprintf(buff + len, "{EXCLUDING_STRING_ALTERNATIVE:");
+		else
+		    len += sprintf(buff + len, "{STRING_ALTERNATIVE:");
 
-		for(i = 0; i < altnum; i++) {
-		    if(!(h = cli_strtok(pt, i, "|"))) {
+		level = 0;
+		h = e = pt;
+		op = '\0';
+		while((level >= 0) && (e = strpbrk(h, "()|"))) {
+		    lop = op;
+		    op = *e;
+
+		    *e++ = 0;
+		    if(op != '(' && lop != ')' && !strlen(h)) {
+			mprintf("!decodehexspecial: Empty string alternative block\n");
 			free(hexcpy);
 			free(buff);
 			return NULL;
 		    }
 
+		    //mprintf("decodehexspecial: %s\n", h);
 		    if(!(c = cli_hex2str(h))) {
-			free(h);
+			mprintf("!Decoding failed (3): %s\n", h);
 			free(hexcpy);
 			free(buff);
 			return NULL;
 		    }
+		    memcpy(&buff[len], c, strlen(h) / 2);
+		    len += strlen(h) / 2;
+		    free(c);
 
-		    if(alttype == 1) {
-			buff[len++] = *c;
-		    } else {
-			memcpy(&buff[len], c, strlen(h) / 2);
-			len += strlen(h) / 2;
-		    }
-		    if(i + 1 != altnum)
+		    switch(op) {
+		    case '(':
+			level++;
+			negative = 0;
+			if(e >= pt + 2) {
+			    if(e[-2] == '!') {
+				negative = 1;
+				e[-2] = 0;
+			    }
+			}
+
+			if(negative)
+			    len += sprintf(buff + len, "{EXCLUDING_STRING_ALTERNATIVE:");
+			else
+			    len += sprintf(buff + len, "{STRING_ALTERNATIVE:");
+
+			break;
+		    case ')':
+			level--;
+			buff[len++] = '}';
+
+			break;
+		    case '|':
 			buff[len++] = '|';
 
-		    free(h);
-		    free(c);	
+			break;
+		    default:
+			;
+		    }
+
+		    h = e;
 		}
+		if(!(c = cli_hex2str(h))) {
+		    mprintf("!Decoding failed (4): %s\n", h);
+		    free(hexcpy);
+		    free(buff);
+		    return NULL;
+		}
+		memcpy(&buff[len], c, strlen(h) / 2);
+		len += strlen(h) / 2;
+		free(c);
+
 		buff[len++] = '}';
+		if(level != 0) {
+		    mprintf("!decodehexspecial: Invalid string alternative nesting\n");
+		    free(hexcpy);
+		    free(buff);
+		    return NULL;
+		}
 	    }
 	} while((pt = strchr(start, '(')));
 
