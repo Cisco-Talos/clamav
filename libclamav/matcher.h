@@ -163,7 +163,7 @@ struct cli_mtarget {
     uint8_t target_count; /* must be synced with non-zero values in the target array */
 };
 
-#define CLI_MTARGETS 14
+#define CLI_MTARGETS 15
 static const struct cli_mtarget cli_mtargets[CLI_MTARGETS] =  {
     { {0, 0},                                   "GENERIC",      0,  0, 1, 1 },
     { {CL_TYPE_MSEXE, 0},                       "PE",           1,  0, 1, 1 },
@@ -178,7 +178,8 @@ static const struct cli_mtarget cli_mtargets[CLI_MTARGETS] =  {
     { {CL_TYPE_PDF, 0},                         "PDF",         10,  1, 0, 1 },
     { {CL_TYPE_SWF, 0},                         "FLASH",       11,  1, 0, 1 },
     { {CL_TYPE_JAVA, 0},                        "JAVA",        12,  1, 0, 1 },
-    { {CL_TYPE_INTERNAL, 0},                    "INTERNAL",    13,  1, 0, 1 }
+    { {CL_TYPE_INTERNAL, 0},                    "INTERNAL",    13,  1, 0, 1 },
+    { {CL_TYPE_OTHER, 0},                       "OTHER",       14,  1, 0, 1 }
 };
 
 #define CLI_OFF_ANY         0xffffffff
