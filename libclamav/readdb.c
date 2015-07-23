@@ -4262,6 +4262,14 @@ int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo
     else
 	dbname = filename;
 
+#ifdef HAVE_YARA
+    if(options & CL_DB_YARA_ONLY) {
+        if(cli_strbcasestr(dbname, ".yar") || cli_strbcasestr(dbname, ".yara"))
+	    ret = cli_loadyara(fs, engine, signo, options, dbio, filename);
+	else
+	    skipped = 1;
+    } else
+#endif
     if(cli_strbcasestr(dbname, ".db")) {
 	ret = cli_loaddb(fs, engine, signo, options, dbio, dbname);
 
@@ -4360,7 +4368,10 @@ int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo
 	ret = cli_loadopenioc(fs, dbname, engine, options);
 #ifdef HAVE_YARA
     } else if(cli_strbcasestr(dbname, ".yar") || cli_strbcasestr(dbname, ".yara")) {
-        ret = cli_loadyara(fs, engine, signo, options, dbio, filename);
+	if(!(options & CL_DB_YARA_EXCLUDE))
+	    ret = cli_loadyara(fs, engine, signo, options, dbio, filename);
+	else
+	    skipped = 1;
 #endif
     } else if(cli_strbcasestr(dbname, ".pwdb")) {
         ret = cli_loadpwdb(fs, engine, options, 0, dbio);
