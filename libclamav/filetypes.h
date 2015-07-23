@@ -110,6 +110,8 @@ typedef enum {
     CL_TYPE_XDP,
     CL_TYPE_XML_WORD,
     CL_TYPE_XML_XL,
+
+    CL_TYPE_OTHER, /* on-the-fly, used for target 14 (OTHER) */
     CL_TYPE_IGNORED /* please don't add anything below */
 } cli_file_t;
 
