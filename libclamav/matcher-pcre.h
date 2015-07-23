@@ -78,7 +78,7 @@ int cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, lon
 int cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data, struct cli_target_info *info, cli_ctx *ctx);
 void cli_pcre_freeoff(struct cli_pcre_off *data);
 int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const char **virname, struct cli_ac_result **res, const struct cli_matcher *root, struct cli_ac_data *mdata, const struct cli_pcre_off *data, cli_ctx *ctx);
-void cli_pcre_freemeta(struct cli_pcre_meta *pm);
+void cli_pcre_freemeta(struct cli_matcher *root, struct cli_pcre_meta *pm);
 void cli_pcre_freetable(struct cli_matcher *root);
 #else
 /* NO-PCRE DECLARATIONS - defined because encasing everything in '#if' is a pain */
