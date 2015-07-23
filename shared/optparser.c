@@ -218,6 +218,8 @@ const struct clam_option __clam_options[] = {
 
     { "OfficialDatabaseOnly", "official-db-only", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Only load the official signatures published by the ClamAV project.", "no" },
 
+    { "YaraRules", "yara-rules", 0, CLOPT_TYPE_STRING, NULL, 0, NULL, 0, OPT_CLAMSCAN, "By default, yara rules will be loaded. This option allows you to exclude yara rules when scanning and also to scan only using yara rules. Valid options are yes|no|only", "yes"},
+
     { "LocalSocket", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD, "Path to a local socket file the daemon will listen on.", "/tmp/clamd.socket" },
 
     { "LocalSocketGroup", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD, "Sets the group ownership on the unix socket.", "virusgroup" },

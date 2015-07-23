@@ -624,6 +624,17 @@ int scanmanager(const struct optstruct *opts)
         return 2;
     }
 
+    if(optget(opts, "yara-rules")->enabled) {
+	char *p = optget(opts, "yara-rules")->strarg;
+	if(strcmp(p, "yes")) {
+	    if(!strcmp(p, "only"))
+		dboptions |= CL_DB_YARA_ONLY;
+	    else if (!strcmp(p, "no"))
+		dboptions |= CL_DB_YARA_EXCLUDE;
+	}
+
+    }
+
     if(optget(opts, "phishing-sigs")->enabled)
         dboptions |= CL_DB_PHISHING;
 
