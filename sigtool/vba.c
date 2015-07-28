@@ -58,22 +58,22 @@ cli_ctx *convenience_ctx(int fd) {
     cli_ctx *ctx;
     struct cl_engine *engine;
 
-    ctx = malloc(sizeof(*ctx));
+    ctx = cli_calloc(1, sizeof(cli_ctx));
     if(!ctx){
-	printf("ctx malloc failed\n");
+	printf("ctx allocation failed\n");
         return NULL;
     }
 
     ctx->engine = engine = cl_engine_new();
     if(!(ctx->engine)){	    
-	printf("engine malloc failed\n");
+	printf("engine initialization failed\n");
         free(ctx);
 	return NULL;
     }	
 
-    ctx->fmap = cli_malloc(sizeof(struct F_MAP *));
+    ctx->fmap = cli_calloc(1, sizeof(struct F_MAP *));
     if(!(ctx->fmap)){
-	printf("fmap malloc failed\n");
+	printf("fmap initialization failed\n");
         free(engine);
         free(ctx);
 	return NULL;
