@@ -4034,7 +4034,7 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
 #ifdef YARA_FINISHED
         return CL_EMALFDB;
 #else
-        if (rc == ERROR_INSUFICIENT_MEMORY)
+        if (compiler.last_result == ERROR_INSUFICIENT_MEMORY)
             return CL_EMEM;
         return CL_SUCCESS;
 #endif
