@@ -4020,15 +4020,22 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
     if (rc > 0) { /* rc = number of errors */
         /* TODO - handle the various errors? */
         cli_errmsg("cli_loadyara: failed to parse rules file %s, error count %i\n", filename, rc);
-        yr_arena_destroy(compiler.sz_arena);
-        yr_arena_destroy(compiler.rules_arena);
-        yr_arena_destroy(compiler.code_arena);
-        yr_arena_destroy(compiler.strings_arena);
-        yr_arena_destroy(compiler.metas_arena);
+        if (compiler.sz_arena != NULL)
+            yr_arena_destroy(compiler.sz_arena);
+        if (compiler.rules_arena != NULL)
+            yr_arena_destroy(compiler.rules_arena);
+        if (compiler.code_arena != NULL)
+            yr_arena_destroy(compiler.code_arena);
+        if (compiler.strings_arena != NULL)
+            yr_arena_destroy(compiler.strings_arena);
+        if (compiler.metas_arena != NULL)
+            yr_arena_destroy(compiler.metas_arena);
         _yr_compiler_pop_file_name(&compiler);
 #ifdef YARA_FINISHED
         return CL_EMALFDB;
 #else
+        if (rc == ERROR_INSUFICIENT_MEMORY)
+            return CL_EMEM;
         return CL_SUCCESS;
 #endif
     }
