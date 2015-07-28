@@ -667,6 +667,9 @@ static Suite *test_cl_suite(void)
     if (user_timeout) {
         int timeout = atoi(user_timeout);
         tcase_set_timeout(tc_cl_scan, timeout);
+	printf("Using test case timeout of %d seconds set by user\n", timeout);
+    } else {
+	printf("Using default test timeout; alter by setting 'T' env var (in seconds)\n");
     }
 #endif
     return s;
@@ -1023,6 +1026,8 @@ int main(void)
 
     srunner_run_all(sr, CK_NORMAL);
     nf = srunner_ntests_failed(sr);
+    if (nf)
+	printf("NOTICE: Use the 'T' environment variable to adjust testcase timeout\n");
     srunner_free(sr);
 
 #if HAVE_LIBXML2
