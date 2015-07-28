@@ -188,8 +188,6 @@ typedef struct _YR_OBJECT_ARRAY
 
 } YR_OBJECT_ARRAY;
 
-#if 1
-//TDB TEMP for exec.c compile
 typedef struct _YR_SCAN_CONTEXT
 {
   uint64_t  file_size;
@@ -203,7 +201,6 @@ typedef struct _YR_SCAN_CONTEXT
   //YR_CALLBACK_FUNC  callback;
   fmap_t * fmap;
 } YR_SCAN_CONTEXT;
-#endif
 
 struct _YR_OBJECT_FUNCTION;
 
@@ -219,9 +216,7 @@ typedef struct _YR_OBJECT_FUNCTION
   const char* arguments_fmt;
 
   YR_OBJECT* return_obj;
-    //#if REAL_YARA
   YR_MODULE_FUNC code;
-    //#endif
 
 } YR_OBJECT_FUNCTION;
 
@@ -298,8 +293,11 @@ typedef struct _SIZED_STRING
 
 #define FAIL_ON_COMPILER_ERROR(x) { \
   compiler->last_result = (x); \
-  if (compiler->last_result != ERROR_SUCCESS) \
+  if (compiler->last_result != ERROR_SUCCESS) { \
+    if (compiler->last_result == ERROR_INSUFICIENT_MEMORY) \
+      yyfatal(yyscanner, "YARA fatal error: terminating rule parse\n"); \
     return compiler->last_result; \
+  } \
 }
 
 /* From libyara/include/yara/re.h            */
