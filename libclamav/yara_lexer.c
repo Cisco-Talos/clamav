@@ -2945,8 +2945,10 @@ void yyfatal(
     const char *error_message)
 {
   YR_COMPILER* compiler = yara_yyget_extra(yyscanner);
+  int last_result = compiler->last_result;
 
   yyerror(yyscanner, compiler, error_message);
+  compiler->last_result = last_result;
   longjmp(compiler->error_recovery, 1);
 }
 
