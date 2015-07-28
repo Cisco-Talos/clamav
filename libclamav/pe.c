@@ -764,14 +764,14 @@ int cli_scanpe(cli_ctx *ctx)
 
     if(EC16(file_hdr.Characteristics) & 0x2000) {
 #if HAVE_JSON
-        if ((pe_json))
+        if (pe_json != NULL)
             cli_jsonstr(pe_json, "Type", "DLL");
 #endif
         cli_dbgmsg("File type: DLL\n");
         dll = 1;
     } else if(EC16(file_hdr.Characteristics) & 0x01) {
 #if HAVE_JSON
-        if ((pe_json))
+        if (pe_json != NULL)
             cli_jsonstr(pe_json, "Type", "EXE");
 #endif
         cli_dbgmsg("File type: Executable\n");
@@ -875,7 +875,8 @@ int cli_scanpe(cli_ctx *ctx)
     if ((archtype)) {
         cli_dbgmsg("Machine type: %s\n", archtype);
 #if HAVE_JSON
-        cli_jsonstr(pe_json, "ArchType", archtype);
+        if (pe_json != NULL)
+            cli_jsonstr(pe_json, "ArchType", archtype);
 #endif
     }
 
@@ -905,13 +906,15 @@ int cli_scanpe(cli_ctx *ctx)
     cli_dbgmsg("TimeDateStamp: %s", cli_ctime(&timestamp, timestr, sizeof(timestr)));
 
 #if HAVE_JSON
-    cli_jsonstr(pe_json, "TimeDateStamp", cli_ctime(&timestamp, timestr, sizeof(timestr)));
+    if (pe_json != NULL)
+        cli_jsonstr(pe_json, "TimeDateStamp", cli_ctime(&timestamp, timestr, sizeof(timestr)));
 #endif
 
     cli_dbgmsg("SizeOfOptionalHeader: %x\n", EC16(file_hdr.SizeOfOptionalHeader));
 
 #if HAVE_JSON
-    cli_jsonint(pe_json, "SizeOfOptionalHeader", EC16(file_hdr.SizeOfOptionalHeader));
+    if (pe_json != NULL)
+        cli_jsonint(pe_json, "SizeOfOptionalHeader", EC16(file_hdr.SizeOfOptionalHeader));
 #endif
 
     if (EC16(file_hdr.SizeOfOptionalHeader) < sizeof(struct pe_image_optional_hdr32)) {
@@ -987,29 +990,31 @@ int cli_scanpe(cli_ctx *ctx)
         cli_dbgmsg("NumberOfRvaAndSizes: %d\n", EC32(optional_hdr32.NumberOfRvaAndSizes));
         dirs = optional_hdr32.DataDirectory;
 #if HAVE_JSON
-        cli_jsonint(pe_json, "MajorLinkerVersion", optional_hdr32.MajorLinkerVersion);
-        cli_jsonint(pe_json, "MinorLinkerVersion", optional_hdr32.MinorLinkerVersion);
-        cli_jsonint(pe_json, "SizeOfCode", EC32(optional_hdr32.SizeOfCode));
-        cli_jsonint(pe_json, "SizeOfInitializedData", EC32(optional_hdr32.SizeOfInitializedData));
-        cli_jsonint(pe_json, "SizeOfUninitializedData", EC32(optional_hdr32.SizeOfUninitializedData));
-        cli_jsonint(pe_json, "NumberOfRvaAndSizes", EC32(optional_hdr32.NumberOfRvaAndSizes));
-        cli_jsonint(pe_json, "MajorSubsystemVersion", EC16(optional_hdr32.MajorSubsystemVersion));
-        cli_jsonint(pe_json, "MinorSubsystemVersion", EC16(optional_hdr32.MinorSubsystemVersion));
+        if (pe_json != NULL) {
+            cli_jsonint(pe_json, "MajorLinkerVersion", optional_hdr32.MajorLinkerVersion);
+            cli_jsonint(pe_json, "MinorLinkerVersion", optional_hdr32.MinorLinkerVersion);
+            cli_jsonint(pe_json, "SizeOfCode", EC32(optional_hdr32.SizeOfCode));
+            cli_jsonint(pe_json, "SizeOfInitializedData", EC32(optional_hdr32.SizeOfInitializedData));
+            cli_jsonint(pe_json, "SizeOfUninitializedData", EC32(optional_hdr32.SizeOfUninitializedData));
+            cli_jsonint(pe_json, "NumberOfRvaAndSizes", EC32(optional_hdr32.NumberOfRvaAndSizes));
+            cli_jsonint(pe_json, "MajorSubsystemVersion", EC16(optional_hdr32.MajorSubsystemVersion));
+            cli_jsonint(pe_json, "MinorSubsystemVersion", EC16(optional_hdr32.MinorSubsystemVersion));
 
-        snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", EC32(optional_hdr32.BaseOfCode));
-        cli_jsonstr(pe_json, "BaseOfCode", jsonbuf);
+            snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", EC32(optional_hdr32.BaseOfCode));
+            cli_jsonstr(pe_json, "BaseOfCode", jsonbuf);
 
-        snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", EC32(optional_hdr32.SectionAlignment));
-        cli_jsonstr(pe_json, "SectionAlignment", jsonbuf);
+            snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", EC32(optional_hdr32.SectionAlignment));
+            cli_jsonstr(pe_json, "SectionAlignment", jsonbuf);
 
-        snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", EC32(optional_hdr32.FileAlignment));
-        cli_jsonstr(pe_json, "FileAlignment", jsonbuf);
+            snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", EC32(optional_hdr32.FileAlignment));
+            cli_jsonstr(pe_json, "FileAlignment", jsonbuf);
 
-        snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", EC32(optional_hdr32.SizeOfImage));
-        cli_jsonstr(pe_json, "SizeOfImage", jsonbuf);
+            snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", EC32(optional_hdr32.SizeOfImage));
+            cli_jsonstr(pe_json, "SizeOfImage", jsonbuf);
 
-        snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", hdr_size);
-        cli_jsonstr(pe_json, "SizeOfHeaders", jsonbuf);
+            snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", hdr_size);
+            cli_jsonstr(pe_json, "SizeOfHeaders", jsonbuf);
+        }
 #endif
 
     } else { /* PE+ */
@@ -1045,36 +1050,39 @@ int cli_scanpe(cli_ctx *ctx)
         cli_dbgmsg("NumberOfRvaAndSizes: %d\n", EC32(optional_hdr64.NumberOfRvaAndSizes));
         dirs = optional_hdr64.DataDirectory;
 #if HAVE_JSON
-        cli_jsonint(pe_json, "MajorLinkerVersion", optional_hdr64.MajorLinkerVersion);
-        cli_jsonint(pe_json, "MinorLinkerVersion", optional_hdr64.MinorLinkerVersion);
-        cli_jsonint(pe_json, "SizeOfCode", EC32(optional_hdr64.SizeOfCode));
-        cli_jsonint(pe_json, "SizeOfInitializedData", EC32(optional_hdr64.SizeOfInitializedData));
-        cli_jsonint(pe_json, "SizeOfUninitializedData", EC32(optional_hdr64.SizeOfUninitializedData));
-        cli_jsonint(pe_json, "NumberOfRvaAndSizes", EC32(optional_hdr64.NumberOfRvaAndSizes));
-        cli_jsonint(pe_json, "MajorSubsystemVersion", EC16(optional_hdr64.MajorSubsystemVersion));
-        cli_jsonint(pe_json, "MinorSubsystemVersion", EC16(optional_hdr64.MinorSubsystemVersion));
+        if (pe_json != NULL) {
+            cli_jsonint(pe_json, "MajorLinkerVersion", optional_hdr64.MajorLinkerVersion);
+            cli_jsonint(pe_json, "MinorLinkerVersion", optional_hdr64.MinorLinkerVersion);
+            cli_jsonint(pe_json, "SizeOfCode", EC32(optional_hdr64.SizeOfCode));
+            cli_jsonint(pe_json, "SizeOfInitializedData", EC32(optional_hdr64.SizeOfInitializedData));
+            cli_jsonint(pe_json, "SizeOfUninitializedData", EC32(optional_hdr64.SizeOfUninitializedData));
+            cli_jsonint(pe_json, "NumberOfRvaAndSizes", EC32(optional_hdr64.NumberOfRvaAndSizes));
+            cli_jsonint(pe_json, "MajorSubsystemVersion", EC16(optional_hdr64.MajorSubsystemVersion));
+            cli_jsonint(pe_json, "MinorSubsystemVersion", EC16(optional_hdr64.MinorSubsystemVersion));
 
-        snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", EC32(optional_hdr64.BaseOfCode));
-        cli_jsonstr(pe_json, "BaseOfCode", jsonbuf);
+            snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", EC32(optional_hdr64.BaseOfCode));
+            cli_jsonstr(pe_json, "BaseOfCode", jsonbuf);
 
-        snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", EC32(optional_hdr64.SectionAlignment));
-        cli_jsonstr(pe_json, "SectionAlignment", jsonbuf);
+            snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", EC32(optional_hdr64.SectionAlignment));
+            cli_jsonstr(pe_json, "SectionAlignment", jsonbuf);
 
-        snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", EC32(optional_hdr64.FileAlignment));
-        cli_jsonstr(pe_json, "FileAlignment", jsonbuf);
+            snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", EC32(optional_hdr64.FileAlignment));
+            cli_jsonstr(pe_json, "FileAlignment", jsonbuf);
 
-        snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", EC32(optional_hdr64.SizeOfImage));
-        cli_jsonstr(pe_json, "SizeOfImage", jsonbuf);
+            snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", EC32(optional_hdr64.SizeOfImage));
+            cli_jsonstr(pe_json, "SizeOfImage", jsonbuf);
 
-        snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", hdr_size);
-        cli_jsonstr(pe_json, "SizeOfHeaders", jsonbuf);
+            snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", hdr_size);
+            cli_jsonstr(pe_json, "SizeOfHeaders", jsonbuf);
+        }
 #endif
     }
 
 #if HAVE_JSON
     if (ctx->options & CL_SCAN_FILE_PROPERTIES) {
         snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", vep);
-        cli_jsonstr(pe_json, "EntryPoint", jsonbuf);
+        if (pe_json != NULL)
+            cli_jsonstr(pe_json, "EntryPoint", jsonbuf);
     }
 #endif
 
@@ -1130,7 +1138,8 @@ int cli_scanpe(cli_ctx *ctx)
     cli_dbgmsg("Subsystem: %s\n", subsystem);
 
 #if HAVE_JSON
-    cli_jsonstr(pe_json, "Subsystem", subsystem);
+    if (pe_json != NULL)
+        cli_jsonstr(pe_json, "Subsystem", subsystem);
 #endif
 
     cli_dbgmsg("------------------------------------\n");
@@ -1195,7 +1204,8 @@ int cli_scanpe(cli_ctx *ctx)
     hdr_size = PESALIGN(hdr_size, valign); /* Aligned headers virtual size */
 
 #if HAVE_JSON
-    cli_jsonint(pe_json, "NumberOfSections", nsections);
+    if (pe_json != NULL)
+        cli_jsonint(pe_json, "NumberOfSections", nsections);
 #endif
 
     while (rescan==1) {
@@ -1374,7 +1384,8 @@ int cli_scanpe(cli_ctx *ctx)
     }
 
 #if HAVE_JSON
-    cli_jsonint(pe_json, "EntryPointOffset", ep);
+    if (pe_json != NULL)
+        cli_jsonint(pe_json, "EntryPointOffset", ep);
 
     if (cli_json_timeout_cycle_check(ctx, &toval) != CL_SUCCESS) {
         return CL_ETIMEOUT;
@@ -1750,7 +1761,8 @@ int cli_scanpe(cli_ctx *ctx)
                 found = 1;
                 cli_dbgmsg("UPX/FSG/MEW: empty section found - assuming compression\n");
 #if HAVE_JSON
-                cli_jsonbool(pe_json, "HasEmptySection", 1);
+                if (pe_json != NULL)
+                    cli_jsonbool(pe_json, "HasEmptySection", 1);
 #endif
                 break;
             }
@@ -1832,7 +1844,8 @@ int cli_scanpe(cli_ctx *ctx)
             }
 
 #if HAVE_JSON
-            cli_jsonstr(pe_json, "Packer", "MEW");
+            if (pe_json != NULL)
+                cli_jsonstr(pe_json, "Packer", "MEW");
 #endif
 
             CLI_UNPTEMP("MEW",(src,exe_sections,0));
@@ -1944,7 +1957,8 @@ int cli_scanpe(cli_ctx *ctx)
             }
 
 #if HAVE_JSON
-            cli_jsonstr(pe_json, "Packer", "Upack");
+            if (pe_json != NULL)
+                cli_jsonstr(pe_json, "Packer", "Upack");
 #endif
 
             CLI_UNPTEMP("Upack",(dest,exe_sections,0));
@@ -2030,7 +2044,8 @@ int cli_scanpe(cli_ctx *ctx)
         }
 
 #if HAVE_JSON
-        cli_jsonstr(pe_json, "Packer", "FSG");
+        if (pe_json != NULL)
+            cli_jsonstr(pe_json, "Packer", "FSG");
 #endif
 
         CLI_UNPTEMP("FSG",(dest,exe_sections,0));
@@ -2137,7 +2152,8 @@ int cli_scanpe(cli_ctx *ctx)
         cli_dbgmsg("FSG: found old EP @%x\n", oldep);
 
 #if HAVE_JSON
-        cli_jsonstr(pe_json, "Packer", "FSG");
+        if (pe_json != NULL)
+            cli_jsonstr(pe_json, "Packer", "FSG");
 #endif
 
         CLI_UNPTEMP("FSG",(dest,sections,exe_sections,0));
@@ -2239,7 +2255,8 @@ int cli_scanpe(cli_ctx *ctx)
         cli_dbgmsg("FSG: found old EP @%x\n", oldep);
 
 #if HAVE_JSON
-        cli_jsonstr(pe_json, "Packer", "FSG");
+        if (pe_json != NULL)
+            cli_jsonstr(pe_json, "Packer", "FSG");
 #endif
 
         CLI_UNPTEMP("FSG",(dest,sections,exe_sections,0));
@@ -2381,7 +2398,8 @@ int cli_scanpe(cli_ctx *ctx)
 
         CLI_UNPTEMP("UPX/FSG",(dest,0));
 #if HAVE_JSON
-        cli_jsonstr(pe_json, "Packer", "UPX");
+        if (pe_json != NULL)
+            cli_jsonstr(pe_json, "Packer", "UPX");
 #endif
 
         if((unsigned int) write(ndesc, dest, dsize) != dsize) {
@@ -2480,7 +2498,8 @@ out_no_petite:
             }
 
 #if HAVE_JSON
-            cli_jsonstr(pe_json, "Packer", "Petite");
+            if (pe_json != NULL)
+                cli_jsonstr(pe_json, "Packer", "Petite");
 #endif
 
             CLI_UNPTEMP("Petite",(dest,exe_sections,0));
@@ -2513,7 +2532,8 @@ out_no_petite:
         }
 
 #if HAVE_JSON
-        cli_jsonstr(pe_json, "Packer", "PEspin");
+        if (pe_json != NULL)
+            cli_jsonstr(pe_json, "Packer", "PEspin");
 #endif
 
         CLI_UNPTEMP("PESpin",(spinned,exe_sections,0));
@@ -2581,7 +2601,8 @@ out_no_petite:
             }
 
 #if HAVE_JSON
-            cli_jsonstr(pe_json, "Packer", "yC");
+            if (pe_json != NULL)
+                cli_jsonstr(pe_json, "Packer", "yC");
 #endif
 
             do {
@@ -2678,7 +2699,8 @@ out_no_petite:
         }
 
 #if HAVE_JSON
-        cli_jsonstr(pe_json, "Packer", "WWPack");
+        if (pe_json != NULL)
+            cli_jsonstr(pe_json, "Packer", "WWPack");
 #endif
 
         CLI_UNPTEMP("WWPack",(src,packer,exe_sections,0));
@@ -2725,7 +2747,8 @@ out_no_petite:
         }
 
 #if HAVE_JSON
-        cli_jsonstr(pe_json, "Packer", "Aspack");
+        if (pe_json != NULL)
+            cli_jsonstr(pe_json, "Packer", "Aspack");
 #endif
 
         CLI_UNPTEMP("Aspack",(src,exe_sections,0));
@@ -2808,7 +2831,8 @@ out_no_petite:
         cli_dbgmsg("NsPack: OEP = %08x\n", eprva);
 
 #if HAVE_JSON
-        cli_jsonstr(pe_json, "Packer", "NsPack");
+        if (pe_json != NULL)
+            cli_jsonstr(pe_json, "Packer", "NsPack");
 #endif
 
         CLI_UNPTEMP("NsPack",(dest,exe_sections,0));
