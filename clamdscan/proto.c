@@ -224,7 +224,8 @@ static int chkpath(const char *path)
    if((opt = optget(clamdopts, "ExcludePath"))->enabled) {
 	while(opt) {
 	    if(match_regex(path, opt->strarg) == 1) {
-		logg("~%s: Excluded\n", path);
+                if (printinfected != 1)
+                    logg("~%s: Excluded\n", path);
 		return 1;
 	    }
 	    opt = opt->nextarg;
