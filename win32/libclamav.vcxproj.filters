@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Source Files">
@@ -954,6 +954,12 @@
     <ClCompile Include="..\libclamav\tiff.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="3rdparty\pcre\pcre_byte_order.c">
+      <Filter>Source Files\pcre</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre\pcre_chartables.c">
+      <Filter>Source Files\pcre</Filter>
+    </ClCompile>
     <ClCompile Include="3rdparty\pcre\pcre_compile.c">
       <Filter>Source Files\pcre</Filter>
     </ClCompile>
@@ -975,7 +981,7 @@
     <ClCompile Include="3rdparty\pcre\pcre_globals.c">
       <Filter>Source Files\pcre</Filter>
     </ClCompile>
-    <ClCompile Include="3rdparty\pcre\pcre_info.c">
+    <ClCompile Include="3rdparty\pcre\pcre_jit_compile.c">
       <Filter>Source Files\pcre</Filter>
     </ClCompile>
     <ClCompile Include="3rdparty\pcre\pcre_maketables.c">
@@ -990,16 +996,16 @@
     <ClCompile Include="3rdparty\pcre\pcre_refcount.c">
       <Filter>Source Files\pcre</Filter>
     </ClCompile>
+    <ClCompile Include="3rdparty\pcre\pcre_string_utils.c">
+      <Filter>Source Files\pcre</Filter>
+    </ClCompile>
     <ClCompile Include="3rdparty\pcre\pcre_study.c">
       <Filter>Source Files\pcre</Filter>
     </ClCompile>
     <ClCompile Include="3rdparty\pcre\pcre_tables.c">
       <Filter>Source Files\pcre</Filter>
     </ClCompile>
-    <ClCompile Include="3rdparty\pcre\pcre_try_flipped.c">
-      <Filter>Source Files\pcre</Filter>
-    </ClCompile>
-    <ClCompile Include="3rdparty\pcre\pcre_ucp_searchfuncs.c">
+    <ClCompile Include="3rdparty\pcre\pcre_ucd.c">
       <Filter>Source Files\pcre</Filter>
     </ClCompile>
     <ClCompile Include="3rdparty\pcre\pcre_valid_utf8.c">
@@ -1009,9 +1015,6 @@
       <Filter>Source Files\pcre</Filter>
     </ClCompile>
     <ClCompile Include="3rdparty\pcre\pcre_xclass.c">
-      <Filter>Source Files\pcre</Filter>
-    </ClCompile>
-    <ClCompile Include="3rdparty\pcre\pcre_chartables.c">
       <Filter>Source Files\pcre</Filter>
     </ClCompile>
   </ItemGroup>
