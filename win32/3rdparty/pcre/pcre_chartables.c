@@ -2,24 +2,31 @@
 *      Perl-Compatible Regular Expressions       *
 *************************************************/
 
-/* This file is automatically written by the dftables auxiliary 
-program. If you edit it by hand, you might like to edit the Makefile to 
-prevent its ever being regenerated.
+/* This file contains character tables that are used when no external tables
+are passed to PCRE by the application that calls it. The tables are used only
+for characters whose code values are less than 256.
 
-This file contains the default tables for characters with codes less than
-128 (ASCII characters). These tables are used when no external tables are
-passed to PCRE.
+This is a default version of the tables that assumes ASCII encoding. A program
+called dftables (which is distributed with PCRE) can be used to build
+alternative versions of this file. This is necessary if you are running in an
+EBCDIC environment, or if you want to default to a different encoding, for
+example ISO-8859-1. When dftables is run, it creates these tables in the
+current locale. If PCRE is configured with --enable-rebuild-chartables, this
+happens automatically.
 
-The following #include is present because without it gcc 4.x may remove
-the array definition from the final binary if PCRE is built into a static
-library and dead code stripping is activated. This leads to link errors.
-Pulling in the header ensures that the array gets flagged as "someone
-outside this compilation unit might reference this" and so it will always
-be supplied to the linker. */
+The following #includes are present because without them gcc 4.x may remove the
+array definition from the final binary if PCRE is built into a static library
+and dead code stripping is activated. This leads to link errors. Pulling in the
+header ensures that the array gets flagged as "someone outside this compilation
+unit might reference this" and so it will always be supplied to the linker. */
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include "pcre_internal.h"
 
-const unsigned char _pcre_default_tables[] = {
+const pcre_uint8 PRIV(default_tables)[] = {
 
 /* This table is a lower casing table. */
 
@@ -91,11 +98,10 @@ const unsigned char _pcre_default_tables[] = {
   240,241,242,243,244,245,246,247,
   248,249,250,251,252,253,254,255,
 
-/* This table contains bit maps for various character classes.
-Each map is 32 bytes long and the bits run from the least
-significant end of each byte. The classes that have their own
-maps are: space, xdigit, digit, upper, lower, word, graph
-print, punct, and cntrl. Other classes are built from combinations. */
+/* This table contains bit maps for various character classes. Each map is 32
+bytes long and the bits run from the least significant end of each byte. The
+classes that have their own maps are: space, xdigit, digit, upper, lower, word,
+graph, print, punct, and cntrl. Other classes are built from combinations. */
 
   0x00,0x3e,0x00,0x00,0x01,0x00,0x00,0x00,
   0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
@@ -157,7 +163,7 @@ print, punct, and cntrl. Other classes are built from combinations. */
 */
 
   0x80,0x00,0x00,0x00,0x00,0x00,0x00,0x00, /*   0-  7 */
-  0x00,0x01,0x01,0x00,0x01,0x01,0x00,0x00, /*   8- 15 */
+  0x00,0x01,0x01,0x01,0x01,0x01,0x00,0x00, /*   8- 15 */
   0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00, /*  16- 23 */
   0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00, /*  24- 31 */
   0x01,0x00,0x00,0x00,0x80,0x00,0x00,0x00, /*    - '  */
@@ -189,4 +195,4 @@ print, punct, and cntrl. Other classes are built from combinations. */
   0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00, /* 240-247 */
   0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};/* 248-255 */
 
-/* End of chartables.c */
+/* End of pcre_chartables.c */

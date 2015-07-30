@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -467,6 +467,7 @@
     <ClCompile Include="3rdparty\libxml2\xmlreader.c" />
     <ClCompile Include="3rdparty\libxml2\xmlsave.c" />
     <ClCompile Include="3rdparty\libxml2\xmlstring.c" />
+    <ClCompile Include="3rdparty\pcre\pcre_byte_order.c" />
     <ClCompile Include="3rdparty\pcre\pcre_chartables.c" />
     <ClCompile Include="3rdparty\pcre\pcre_compile.c" />
     <ClCompile Include="3rdparty\pcre\pcre_config.c" />
@@ -475,15 +476,15 @@
     <ClCompile Include="3rdparty\pcre\pcre_fullinfo.c" />
     <ClCompile Include="3rdparty\pcre\pcre_get.c" />
     <ClCompile Include="3rdparty\pcre\pcre_globals.c" />
-    <ClCompile Include="3rdparty\pcre\pcre_info.c" />
+    <ClCompile Include="3rdparty\pcre\pcre_jit_compile.c" />
     <ClCompile Include="3rdparty\pcre\pcre_maketables.c" />
     <ClCompile Include="3rdparty\pcre\pcre_newline.c" />
     <ClCompile Include="3rdparty\pcre\pcre_ord2utf8.c" />
     <ClCompile Include="3rdparty\pcre\pcre_refcount.c" />
+    <ClCompile Include="3rdparty\pcre\pcre_string_utils.c" />
     <ClCompile Include="3rdparty\pcre\pcre_study.c" />
     <ClCompile Include="3rdparty\pcre\pcre_tables.c" />
-    <ClCompile Include="3rdparty\pcre\pcre_try_flipped.c" />
-    <ClCompile Include="3rdparty\pcre\pcre_ucp_searchfuncs.c" />
+    <ClCompile Include="3rdparty\pcre\pcre_ucd.c" />
     <ClCompile Include="3rdparty\pcre\pcre_valid_utf8.c" />
     <ClCompile Include="3rdparty\pcre\pcre_version.c" />
     <ClCompile Include="3rdparty\pcre\pcre_xclass.c" />

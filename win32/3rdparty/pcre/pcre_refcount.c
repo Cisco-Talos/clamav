@@ -6,7 +6,7 @@
 and semantics are as close as possible to those of the Perl 5 language.
 
                        Written by Philip Hazel
-           Copyright (c) 1997-2006 University of Cambridge
+           Copyright (c) 1997-2012 University of Cambridge
 
 -----------------------------------------------------------------------------
 Redistribution and use in source and binary forms, with or without
@@ -43,6 +43,11 @@ auxiliary function that can be used to maintain a reference count in a compiled
 pattern data block. This might be helpful in applications where the block is
 shared by different users. */
 
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "pcre_internal.h"
 
 
@@ -63,11 +68,21 @@ Returns:        the (possibly updated) count value (a non-negative number), or
                 a negative error number
 */
 
-PCRE_DATA_SCOPE int
+#if defined COMPILE_PCRE8
+PCRE_EXP_DEFN int PCRE_CALL_CONVENTION
 pcre_refcount(pcre *argument_re, int adjust)
+#elif defined COMPILE_PCRE16
+PCRE_EXP_DEFN int PCRE_CALL_CONVENTION
+pcre16_refcount(pcre16 *argument_re, int adjust)
+#elif defined COMPILE_PCRE32
+PCRE_EXP_DEFN int PCRE_CALL_CONVENTION
+pcre32_refcount(pcre32 *argument_re, int adjust)
+#endif
 {
-real_pcre *re = (real_pcre *)argument_re;
+REAL_PCRE *re = (REAL_PCRE *)argument_re;
 if (re == NULL) return PCRE_ERROR_NULL;
+if (re->magic_number != MAGIC_NUMBER) return PCRE_ERROR_BADMAGIC;
+if ((re->flags & PCRE_MODE) == 0) return PCRE_ERROR_BADMODE;
 re->ref_count = (-adjust > re->ref_count)? 0 :
                 (adjust + re->ref_count > 65535)? 65535 :
                 re->ref_count + adjust;
