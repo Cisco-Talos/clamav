@@ -106,6 +106,7 @@
 #include "xdp.h"
 #include "json_api.h"
 #include "msxml.h"
+#include "tiff.h"
 
 #ifdef HAVE_BZLIB_H
 #include <bzlib.h>
@@ -3048,9 +3049,13 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 
 	    if(ctx->img_validate && SCAN_ALGO && ret != CL_VIRUS && ret != CL_EPARSE)
 		ret = cli_parsegif(ctx);
+
+	    if(ctx->img_validate && SCAN_ALGO && ret != CL_VIRUS && ret != CL_EPARSE)
+		ret = cli_parsetiff(ctx);
+
 	    break;
 
-        case CL_TYPE_PDF: /* FIXMELIMITS: pdf should be an archive! */
+	case CL_TYPE_PDF: /* FIXMELIMITS: pdf should be an archive! */
 	    ctx->container_type = CL_TYPE_PDF;
 	    if(SCAN_PDF && (DCONF_DOC & DOC_CONF_PDF))
 		ret = cli_scanpdf(ctx, 0);
