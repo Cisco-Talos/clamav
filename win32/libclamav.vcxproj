@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -186,6 +186,7 @@
     <ClCompile Include="..\libclamav\openioc.c" />
     <ClCompile Include="..\libclamav\sf_base64decode.c" />
     <ClCompile Include="..\libclamav\stats.c" />
+    <ClCompile Include="..\libclamav\tiff.c" />
     <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba_small_set.c" />
     <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba_9.c" />
     <ClCompile Include="..\libclamav\tomsfastmath\mul\fp_mul_comba_64.c" />
