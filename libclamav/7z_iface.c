@@ -105,7 +105,14 @@ int cli_7unz (cli_ctx *ctx, size_t offset) {
 
     SzArEx_Init(&db);
     res = SzArEx_Open(&db, &lookStream.s, &allocImp, &allocTempImp);
-    if(res == SZ_OK) {
+    if(res == SZ_ERROR_ENCRYPTED && DETECT_ENCRYPTED) {
+	cli_dbgmsg("cli_7unz: Encrypted header found in archive.\n");
+	cli_append_virus(ctx, "Heuristics.Encrypted.7Zip");
+	viruses_found++;
+	if(!SCAN_ALL) {
+	    found = CL_VIRUS;
+	}
+    } else if(res == SZ_OK) {
 	UInt32 i, blockIndex = 0xFFFFFFFF;
 	Byte *outBuffer = 0;
 	size_t outBufferSize = 0;
@@ -206,6 +213,8 @@ int cli_7unz (cli_ctx *ctx, size_t offset) {
 	cli_dbgmsg("cli_7unz: oom\n");
     else if (res == SZ_ERROR_CRC)
 	cli_dbgmsg("cli_7unz: crc mismatch\n");
+    else if (res == SZ_ERROR_ENCRYPTED)
+	cli_dbgmsg("cli_7unz: encrypted\n");
     else
 	cli_dbgmsg("cli_7unz: error %d\n", res);
 
