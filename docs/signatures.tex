@@ -777,7 +777,7 @@ Entertainment Pack FreeCell Game
     \subsection{Trusted and Revoked Certificates}
     Clamav 0.98 checks signed PE files for certificates and verifies each
     certificate in the chain against a database of trusted and revoked
-    certificates. The sinagure format is
+    certificates. The signature format is
 \begin{verbatim}
 Name;Trusted;Subject;Serial;Pubkey;Exponent;CodeSign;TimeSign;CertSign;
 NotBefore;Comment[;minFL[;maxFL]]
@@ -913,6 +913,24 @@ Eicar-Test-Signature:bc356bae4c42f19a3de16e333ba3569c
 	      of type rmd,
 	\item only use alphanumeric characters, dash (-), dot (.), underscores
 	      (\_) in malware names, never use space, apostrophe or quote mark.
+    \end{itemize}
+
+    \subsection{Using YARA rules in ClamAV}
+    ClamAV version 0.99 and above can process YARA rules. ClamAV virus database file names ending
+    with ``.yar'' or ``.yara'' are parsed as yara rule files. The link to the YARA rule grammar
+    documentation may be found at http://plusvic.github.io/yara/. There are currently a few 
+    limitations on using YARA rules within ClamAV:
+    \begin{itemize}
+        \item YARA modules are not yet supported by ClamAV. This includes the ``import''
+        keyword and any YARA module-specific keywords.
+        \item Global rules(``global'' keyword) are not supported by ClamAV.
+        \item External variables(``contains'' and ``matches'' keywords) are not supported.
+        \item YARA rules pre-compiled with the \emph{yarac} command are not supported.
+        \item As in the ClamAV logical and extended signature formats, YARA strings and segments
+        of strings separated by wild cards must represent at least two octets of data.
+        \item There is a maximum of 64 strings per YARA rule.
+        \item YARA rules in ClamAV must contain at least one literal, hexadecimal, or
+        regular expression string.
     \end{itemize}
 
     \section{Special files}
