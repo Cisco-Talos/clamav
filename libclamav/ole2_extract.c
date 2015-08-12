@@ -399,8 +399,12 @@ ole2_read_block(ole2_header_t * hdr, void *buff, unsigned int size, int32_t bloc
     offset = (blockno << hdr->log2_big_block_size) + MAX(512, 1 << hdr->log2_big_block_size);   /* 512 is header size */
 
     offend = offset + size;
-    if ((offend <= 0) || (offend > hdr->m_length)) {
+    if ((offend <= 0) || (offset < 0) || (offset >= hdr->m_length)) {
         return FALSE;
+    } else if (offend > hdr->m_length) {
+        /* bb#11369 - ole2 files may not be a block multiple in size */
+        bzero(buff, size);
+        size = hdr->m_length - offset;
     }
     if (!(pblock = fmap_need_off_once(hdr->map, offset, size))) {
         return FALSE;
@@ -1092,7 +1096,7 @@ scan_mso_stream(int fd, cli_ctx *ctx)
 
         cli_infomsg(ctx, "scan_mso_stream: Error decompressing MSO file. Scanning what was decompressed.\n");
     }
-    cli_dbgmsg("scan_mso_stream: Decompressed to %s, size %d\n", tmpname, outsize);
+    cli_dbgmsg("scan_mso_stream: Decompressed %llu bytes to %s\n", (long long unsigned)outsize, tmpname);
 
     if (outsize != prefix) {
         cli_warnmsg("scan_mso_stream: declared prefix != inflated stream size, %llu != %llu\n",
@@ -1281,9 +1285,6 @@ handler_otf(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * c
     } else if (is_mso) {
         /* MSO Stream Scan */
         ret = scan_mso_stream(ofd, ctx);
-        /* CONSIDER: running cli_magic_scandesc in the chance of MSO fp? */
-        //if (ret != CL_SUCCESS || ret != CL_VIRUS)
-        //ret = cli_magic_scandesc(ofd, ctx);
     } else {
         /* Normal File Scan */
         ret = cli_magic_scandesc(ofd, ctx);
