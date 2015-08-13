@@ -450,7 +450,8 @@ wwwconnect (const char *server, const char *proxy, int pport, char *ip,
             }
             else
                 i++;
-            mirman_update (addr, rp->ai_family, mdat, 2);
+            if (mdat)
+                mirman_update (addr, rp->ai_family, mdat, 2);
             continue;
         }
         else
