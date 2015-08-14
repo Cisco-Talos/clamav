@@ -545,12 +545,27 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
             return NULL;
         }
 
-        res = cli_calloc(1, (p2 - p1) + 2);
-        if (!(res))
-            return NULL;
 
-        strncpy(res, p1, (p2 - p1) + 1);
-        if (endchar)
+        res = pdf_finalize_string(pdf, obj, p1, (p2 - p1) + 1);
+        if (!res) {
+            res = cli_calloc(1, (p2 - p1) + 2);
+            if (!(res))
+                return NULL;
+            memcpy(res, p1, (p2 - p1) + 1);
+            res[(p2 - p1) + 1] = '\0';
+
+            if (meta) {
+                meta->length = (p2 - p1) + 1;
+                meta->obj = obj;
+                meta->success = 0;
+            }
+        } else if (meta) {
+            meta->length = strlen(res);
+            meta->obj = obj;
+            meta->success = 1;
+        }
+
+        if (res && endchar)
             *endchar = p2;
 
         return res;
