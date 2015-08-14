@@ -2511,6 +2511,7 @@ out_no_petite:
 
     if((DCONF & PE_CONF_PESPIN) && nsections > 1 &&
        vep >= exe_sections[nsections - 1].rva &&
+       0x3217 - 4 <= exe_sections[nsections - 1].rva + exe_sections[nsections - 1].rsz &&
        vep < exe_sections[nsections - 1].rva + exe_sections[nsections - 1].rsz - 0x3217 - 4 &&
        memcmp(epbuff+4, "\xe8\x00\x00\x00\x00\x8b\x1c\x24\x83\xc3", 10) == 0)  {
 
