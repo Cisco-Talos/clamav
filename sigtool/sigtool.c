@@ -2204,8 +2204,9 @@ inline static char *get_paren_end(char *hexstr)
 
 static char *decodehexspecial(const char *hex, unsigned int *dlen)
 {
-    char *pt, *start, *hexcpy, *decoded, *h, *e, *c, op, lop;
-	unsigned int i, len = 0, hlen, negative, level;
+	char *pt, *start, *hexcpy, *decoded, *h, *e, *c, op, lop;
+	unsigned int i, len = 0, hlen, negative;
+	int level;
 	char *buff;
 
     hexcpy = NULL;

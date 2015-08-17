@@ -3468,11 +3468,11 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
 
     newident = cli_malloc(strlen(rule->identifier) + 5 + 1);
     if(!newident) {
-	cli_errmsg("cli_loadyara(): newident == NULL\n");
-	return CL_EMEM;
+        cli_errmsg("cli_loadyara(): newident == NULL\n");
+        return CL_EMEM;
     }
 
-    sprintf(newident, "YARA.%s", rule->identifier);
+    snprintf(newident, strlen(rule->identifier) + 5 + 1, "YARA.%s", rule->identifier);
 
     if(engine->cb_sigload && engine->cb_sigload("yara", newident, ~options & CL_DB_OFFICIAL, engine->cb_sigload_ctx)) {
         cli_dbgmsg("cli_loadyara: skipping %s due to callback\n", newident);
