@@ -1115,7 +1115,7 @@ scan_mso_stream(int fd, cli_ctx *ctx)
     if (zret != Z_OK)
         ret = CL_EUNPACK;
     close(ofd);
-    if(ctx && !ctx->engine->keeptmp)
+    if (!ctx->engine->keeptmp)
         if (cli_unlink(tmpname))
             ret = CL_EUNLINK;
     free(tmpname);
