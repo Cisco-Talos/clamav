@@ -59,7 +59,7 @@ unsigned int p_sigid = 0;
 static void pcre_perf_events_init(struct cli_pcre_meta *pm, const char *virname)
 {
     int ret;
-    size_t namelen = strlen(virname)+strlen(pm->pdata.expression)+3;
+    size_t namelen;
 
     if (!p_sigevents) {
         p_sigevents = cli_events_new(MAX_PCRE_SIGEVENT_ID);
@@ -74,8 +74,12 @@ static void pcre_perf_events_init(struct cli_pcre_meta *pm, const char *virname)
         return;
     }
 
-    if (!virname)
+    if (!virname) {
         virname = "(null)";
+        namelen = 7;
+    } else {
+        namelen = strlen(virname)+strlen(pm->pdata.expression)+3;
+    }
 
     /* set the name */
     pm->statname = (char*)cli_calloc(1, namelen);
