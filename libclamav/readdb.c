@@ -181,6 +181,7 @@ int cli_sigopts_handler(struct cli_matcher *root, const char *virname, const cha
         /* WIDE sigopt is unsupported */
         if (sigopts & ACPATT_OPTION_WIDE) {
             cli_errmsg("cli_parse_add: wide modifier [w] is not supported for regex subsigs\n");
+            free(hexcpy);
             return CL_EMALFDB;
         }
 
