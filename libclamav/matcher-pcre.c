@@ -692,7 +692,7 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const char **
                     if(res) {
                         newres = (struct cli_ac_result *)cli_calloc(1, sizeof(struct cli_ac_result));
                         if(!newres) {
-                            cli_errmsg("cli_pcre_scanbuff: Can't allocate memory for newres %u\n", sizeof(struct cli_ac_result));
+                            cli_errmsg("cli_pcre_scanbuff: Can't allocate memory for new result\n");
                             return CL_EMEM;
                         }
                         newres->virname = pm->virname;
