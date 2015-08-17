@@ -185,8 +185,17 @@ static int scanzws(cli_ctx *ctx, struct swf_file_hdr *hdr)
         free(tmpname);
         return CL_EUNPACK;
     }
-    if (!ret)
-        return CL_EFORMAT; /* likely truncated */
+    /* nothing written, likely truncated */
+    if (!ret) {
+        cli_errmsg("scanzws: possibly truncated file\n");
+        close(fd);
+        if (cli_unlink(tmpname)) {
+            free(tmpname);
+            return CL_EUNLINK;
+        }
+        free(tmpname);
+        return CL_EFORMAT;
+    }
     offset += ret;
 
     memset(&lz, 0, sizeof(lz));
