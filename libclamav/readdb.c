@@ -357,7 +357,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
         return CL_SUCCESS;
     }
     /* expected format => ^offset:trigger/regex/[cflags]$ */
-    if (strrchr(hexsig, '/')) {
+    if (strchr(hexsig, '/')) {
         char *start, *end;
         const char *trigger, *pattern, *cflags;
 
