@@ -4139,6 +4139,19 @@ static int cli_loadpwdb(FILE *fs, struct cl_engine *engine, unsigned int options
             continue;
         }
 
+        /* preprocess tdb with target type 0 */
+        memset(&tdb, 0, sizeof(tdb));
+        tdb.mempool = engine->mempool;
+        tdb.cnt[CLI_TDB_UINT]++;
+        tdb.val = (uint32_t *) mpool_realloc2(tdb.mempool, tdb.val, tdb.cnt[CLI_TDB_UINT] * sizeof(uint32_t));
+        if(!tdb.val) {
+            tdb.cnt[CLI_TDB_UINT] = 0;
+            ret = CL_EMEM;
+            break;
+        }
+        tdb.val[0] = 0;
+        tdb.target = &(tdb.val[0]);
+
         /* use the tdb to track filetypes and check flevels */
         attribs = cli_strdup(tokens[1]);
         if(!attribs) {
@@ -4146,19 +4159,6 @@ static int cli_loadpwdb(FILE *fs, struct cl_engine *engine, unsigned int options
             ret = CL_EMEM;
             break;
         }
-
-	/* preprocess tdb with target type 0 */
-        memset(&tdb, 0, sizeof(tdb));
-	tdb.mempool = engine->mempool;
-	tdb.cnt[CLI_TDB_UINT]++;
-	tdb.val = (uint32_t *) mpool_realloc2(tdb.mempool, tdb.val, tdb.cnt[CLI_TDB_UINT] * sizeof(uint32_t));
-	if(!tdb.val) {
-	    tdb.cnt[CLI_TDB_UINT] = 0;
-	    ret = CL_EMEM;
-	    break;
-	}
-	tdb.val[0] = 0;
-	tdb.target = &(tdb.val[0]);
 
         ret = init_tdb(&tdb, engine, attribs, passname);
         free(attribs);
@@ -4169,26 +4169,26 @@ static int cli_loadpwdb(FILE *fs, struct cl_engine *engine, unsigned int options
                 break;
         }
 
-	/* check container type */
-	if (!tdb.container) {
-	    container = CLI_PWDB_ANY;
-	} else {
-	    switch (*(tdb.container)) {
-	    case CL_TYPE_ANY:
-		container = CLI_PWDB_ANY;
-		break;
-	    case CL_TYPE_ZIP:
-		container = CLI_PWDB_ZIP;
-		break;
-	    case CL_TYPE_RAR:
-		container = CLI_PWDB_RAR;
-		break;
-	    default:
-		cli_errmsg("cli_loadpwdb: Invalid conatiner specified to .pwdb signature\n");
-		return CL_EMALFDB;
-	    }
-	}
-	FREE_TDB(tdb);
+        /* check container type */
+        if (!tdb.container) {
+            container = CLI_PWDB_ANY;
+        } else {
+            switch (*(tdb.container)) {
+            case CL_TYPE_ANY:
+                container = CLI_PWDB_ANY;
+                break;
+            case CL_TYPE_ZIP:
+                container = CLI_PWDB_ZIP;
+                break;
+            case CL_TYPE_RAR:
+                container = CLI_PWDB_RAR;
+                break;
+            default:
+                cli_errmsg("cli_loadpwdb: Invalid conatiner specified to .pwdb signature\n");
+                return CL_EMALFDB;
+            }
+        }
+        FREE_TDB(tdb);
 
         /* check the PWStorageType */
         if(!cli_isnumber(tokens[2])) {
