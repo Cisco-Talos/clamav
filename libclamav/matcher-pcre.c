@@ -557,8 +557,8 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const char **
     struct cli_pcre_data *pd;
     struct cli_ac_result *newres;
     uint32_t adjbuffer, adjshift, adjlength;
-    unsigned int i, evalcnt;
-    uint64_t evalids, maxfilesize;
+    unsigned int i, evalcnt = 0;
+    uint64_t maxfilesize, evalids = 0;
     uint32_t global, encompass, rolling;
     int rc, lrc, offset, options=0, ovector[OVECCOUNT];
     uint8_t viruses_found = 0;
