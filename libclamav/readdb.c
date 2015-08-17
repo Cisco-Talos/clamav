@@ -3358,7 +3358,10 @@ static int yara_altstr_verify(const char *hexstr, int lvl, const char **end)
                     cli_warnmsg("load_oneyara[verify]: string has unsupported alternating sequence (variable ranged wildcard)\n");
                     return CL_EMALFDB;
                 case '}':
-                    sscanf(track, "{%d}", &range);
+                    if (sscanf(track, "{%3d}", &range) != 1) {
+                        cli_warnmsg("load_oneyara[verify]: string has unsupported alternating sequence (invalid wildcard)\n");
+                        return CL_EMALFDB;
+                    }
                     if (range >= 128) {
                         cli_warnmsg("load_oneyara[verify]: string has unsupported alternating sequence (128+ ranged wildcard)\n");
                         return CL_EMALFDB;
