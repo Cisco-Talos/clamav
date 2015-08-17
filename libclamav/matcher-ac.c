@@ -2372,6 +2372,7 @@ inline static int ac_special_altstr(const char *hexpr, uint8_t sigopts, struct c
         /* allocate reusable subexpr */
         if (!(subexpr = cli_calloc(slen+1, sizeof(char)))) {
             cli_errmsg("ac_special_altstr: Can't allocate subexpr container\n");
+            free(hexprcpy);
             return CL_EMEM;
         }
 
