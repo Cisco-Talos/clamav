@@ -481,7 +481,10 @@ static inline int zdecrypt(const uint8_t *src, uint32_t csize, uint32_t usize, c
 	zd_clean:
 	    close(of);
 	    if (!ctx->engine->keeptmp)
-                if (cli_unlink(tempfile)) return CL_EUNLINK;
+                if (cli_unlink(tempfile)) {
+		    if (!tmpd) free(tempfile);
+		    return CL_EUNLINK;
+		}
             if (!tmpd) free(tempfile);
 	    return ret;
 	}
