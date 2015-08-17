@@ -796,7 +796,7 @@ int cli_exp_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *acd
 {
     uint8_t viruses_found = 0;
     uint32_t i;
-    int32_t rc;
+    int32_t rc = CL_SUCCESS;
 
     for(i = 0; i < root->ac_lsigs; i++) {
         if (root->ac_lsigtable[i]->type == CLI_LSIG_NORMAL)
