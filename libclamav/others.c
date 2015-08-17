@@ -383,9 +383,10 @@ struct cl_engine *cl_engine_new(void)
 	mpool_free(new->mempool, new->dconf);
 	mpool_free(new->mempool, new->root);
 #ifdef USE_MPOOL
-        mpool_destroy(new->mempool);
+	mpool_destroy(new->mempool);
 #endif
 	free(new);
+	return NULL;
     }
 
     crtmgr_init(&(new->cmgr));
