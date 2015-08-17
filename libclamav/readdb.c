@@ -3077,6 +3077,7 @@ static char *parse_yara_hex_string(YR_STRING *string, int *ret)
         if ((ovr = strchr(ovr, '}')))
             *ovr = ']';
         else {
+            free(res);
             if (ret) *ret = CL_EMALFDB;
             return NULL;
         }
@@ -3087,6 +3088,7 @@ static char *parse_yara_hex_string(YR_STRING *string, int *ret)
         if ((ovr = strrchr(res, '{')))
             *ovr = '[';
         else {
+            free(res);
             if (ret) *ret = CL_EMALFDB;
             return NULL;
         }
