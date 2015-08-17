@@ -440,12 +440,14 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
             else if(hexsig[i] == '{') {
                 if (nest) {
                     cli_errmsg("cli_parse_add(): Alternative match contains unsupported ranged wildcard\n");
+                    free(hexcpy);
                     return CL_EMALFDB;
                 }
                 parts++;
             } else if(hexsig[i] == '*') {
                 if (nest) {
                     cli_errmsg("cli_parse_add(): Alternative match cannot contain unbounded wildcards\n");
+                    free(hexcpy);
                     return CL_EMALFDB;
                 }
                 parts++;
