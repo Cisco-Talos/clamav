@@ -2081,6 +2081,7 @@ inline static int ac_uicmp(uint16_t *a, size_t alen, uint16_t *b, size_t blen, i
                         return (b[i] & 0xff) - (a[i] & 0xf0);
                     }
                     side_wild |= 1;
+                    break;
                 case CLI_MATCH_NIBBLE_LOW:
                     if ((a[i] & 0x0f) != (b[i] & 0x0f)) {
                         return (b[i] & 0xff) - (a[i] & 0x0f);
