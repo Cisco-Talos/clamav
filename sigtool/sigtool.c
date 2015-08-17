@@ -2462,6 +2462,7 @@ static int decodehex(const char *hexsig)
 	regex = cli_calloc(rlen+1, sizeof(char));
 	if (!regex) {
 	    mprintf("!cannot allocate memory for regex expression\n");
+	    free(trigger);
 	    return -1;
 	}
 	strncpy(regex, hexsig+tlen+1, rlen);
@@ -2472,6 +2473,8 @@ static int decodehex(const char *hexsig)
 	    cflags = cli_calloc(clen+1, sizeof(char));
 	    if (!cflags) {
 		mprintf("!cannot allocate memory for compile flags\n");
+		free(trigger);
+		free(regex);
 		return -1;
 	    }
 	    strncpy(cflags, hexsig+tlen+rlen+2, clen);
