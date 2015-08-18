@@ -260,8 +260,10 @@ char *pdf_finalize_string(struct pdf_struct *pdf, struct pdf_obj *obj, const cha
     /* TODO: replace the escape sequences directly in the wrkstr   */
     if (strchr(wrkstr, '\\')) {
         output = cli_calloc(wrklen+1, sizeof(char));
-        if (!output)
+        if (!output) {
+            free(wrkstr);
             return NULL;
+        }
 
         outlen = 0;
         for (i = 0; i < wrklen; ++i) {
