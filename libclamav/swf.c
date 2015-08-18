@@ -275,7 +275,7 @@ static int scanzws(cli_ctx *ctx, struct swf_file_hdr *hdr)
         }
         cli_infomsg(ctx, "scanzws: Error decompressing SWF file. Scanning what was decompressed.\n");
     }
-    cli_dbgmsg("SWF: Decompressed[LZMA] to %s, size %d\n", tmpname, outsize);
+    cli_dbgmsg("SWF: Decompressed[LZMA] to %s, size %llu\n", tmpname, (long long unsigned)outsize);
 
     /* check if declared output size matches actual output size */
     if (hdr->filesize != outsize) {
