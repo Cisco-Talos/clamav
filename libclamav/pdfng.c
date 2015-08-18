@@ -504,8 +504,14 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
                     res = pdf_finalize_string(pdf, obj, begin, objsize2);
                     if (!res) {
                         res = cli_calloc(1, objsize2+1);
-                        if (!(res))
+                        if (!(res)) {
+                            close(fd);
+                            cli_unlink(newobj->path);
+                            free(newobj->path);
+                            newobj->path = NULL;
+                            free(begin);
                             return NULL;
+                        }
                         memcpy(res, begin, objsize2);
                         res[objsize2] = '\0';
 
