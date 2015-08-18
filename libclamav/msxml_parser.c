@@ -376,7 +376,7 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
                     if (ctx && !(ctx->engine->keeptmp))
                         cli_unlink(tempfile);
                     free(tempfile);
-                    if (ret != CL_SUCCESS || (!SCAN_ALL && ret == CL_VIRUS)) {
+                    if (ret != CL_SUCCESS && (SCAN_ALL || ret != CL_VIRUS)) {
                         return ret;
                     } else if (SCAN_ALL && ret == CL_VIRUS) {
                         virus = 1;
