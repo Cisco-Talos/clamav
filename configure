@@ -17651,18 +17651,31 @@ if test "x$found_pcre" != "xno"; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for pcre.h in $PCRE_HOME" >&5
 $as_echo_n "checking for pcre.h in $PCRE_HOME... " >&6; }
 
-  if test ! -f "$PCRE_HOME/include/pcre.h"; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
-$as_echo "not found" >&6; }
-  else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
-$as_echo "found" >&6; }
-    save_LIBS="$LIBS"
     save_CPPFLAGS="$CPPFLAGS"
-    CPPFLAGS="$CPPFLAGS $PCRE_CPPFLAGS"
-    save_LDFLAGS="$LDFLAGS"
-    LDFLAGS="$LDFLAGS $PCRE_LIBS"
+  CPPFLAGS="$CPPFLAGS $PCRE_CPPFLAGS"
+  save_LDFLAGS="$LDFLAGS"
+  LDFLAGS="$LDFLAGS $PCRE_LIBS"
 
+  ac_fn_c_check_header_mongrel "$LINENO" "pcre.h" "ac_cv_header_pcre_h" "$ac_includes_default"
+if test "x$ac_cv_header_pcre_h" = xyes; then :
+  have_pcre="yes"
+else
+  have_pcre="no"
+fi
+
+
+  if test "x$have_pcre" = "xno"; then
+    ac_fn_c_check_header_mongrel "$LINENO" "pcre/pcre.h" "ac_cv_header_pcre_pcre_h" "$ac_includes_default"
+if test "x$ac_cv_header_pcre_pcre_h" = xyes; then :
+  have_pcre="yes"
+else
+  have_pcre="no"
+fi
+
+
+  fi
+
+  if test "x$have_pcre" = "xyes"; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for pcre_compile in -lpcre" >&5
 $as_echo_n "checking for pcre_compile in -lpcre... " >&6; }
 if ${ac_cv_lib_pcre_pcre_compile+:} false; then :
@@ -17705,10 +17718,11 @@ else
   have_pcre="no"
 fi
 
+  fi
 
-    CPPFLAGS="$save_CPPFLAGS"
+  if test "x$have_pcre" = "xno"; then
+        CPPFLAGS="$save_CPPFLAGS"
     LDFLAGS="$save_LDFLAGS"
-    LIBS="$save_LIBS"
   fi
 fi
 
