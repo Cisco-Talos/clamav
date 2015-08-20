@@ -397,13 +397,6 @@ struct RE {
 };
 
 
-/* From libyara/include/yara/compiler.h            */
-#define yr_compiler_set_error_extra_info(compiler, info) \
-    strlcpy( \
-        compiler->last_error_extra_info, \
-        info, \
-        sizeof(compiler->last_error_extra_info));
-
 /* From libyara/include/yara/limits.h            */
 #define MAX_COMPILER_ERROR_EXTRA_INFO   256
 #define MAX_LOOP_NESTING                4
