@@ -86,21 +86,25 @@ have_pcre="no"
 if test "x$found_pcre" != "xno"; then
   AC_MSG_CHECKING([for pcre.h in $PCRE_HOME])
 
-  if test ! -f "$PCRE_HOME/include/pcre.h"; then
-    AC_MSG_RESULT([not found])
-  else
-    AC_MSG_RESULT([found])
-    save_LIBS="$LIBS"
-    save_CPPFLAGS="$CPPFLAGS"
-    CPPFLAGS="$CPPFLAGS $PCRE_CPPFLAGS"
-    save_LDFLAGS="$LDFLAGS"
-    LDFLAGS="$LDFLAGS $PCRE_LIBS"
+  dnl save_LIBS="$LIBS"
+  save_CPPFLAGS="$CPPFLAGS"
+  CPPFLAGS="$CPPFLAGS $PCRE_CPPFLAGS"
+  save_LDFLAGS="$LDFLAGS"
+  LDFLAGS="$LDFLAGS $PCRE_LIBS"
 
+  AC_CHECK_HEADER(pcre.h, [have_pcre="yes"], [have_pcre="no"])
+  if test "x$have_pcre" = "xno"; then
+    AC_CHECK_HEADER(pcre/pcre.h, [have_pcre="yes"], [have_pcre="no"])
+  fi
+
+  if test "x$have_pcre" = "xyes"; then
     AC_CHECK_LIB([pcre], [pcre_compile], [have_pcre="yes"], [have_pcre="no"])
+  fi
 
+  if test "x$have_pcre" = "xno"; then
+    dnl LIBS="$save_LIBS"
     CPPFLAGS="$save_CPPFLAGS"
     LDFLAGS="$save_LDFLAGS"
-    LIBS="$save_LIBS"
   fi
 fi
 
