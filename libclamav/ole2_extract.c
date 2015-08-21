@@ -403,7 +403,7 @@ ole2_read_block(ole2_header_t * hdr, void *buff, unsigned int size, int32_t bloc
         return FALSE;
     } else if (offend > hdr->m_length) {
         /* bb#11369 - ole2 files may not be a block multiple in size */
-        bzero(buff, size);
+        memset(buff, 0, size);
         size = hdr->m_length - offset;
     }
     if (!(pblock = fmap_need_off_once(hdr->map, offset, size))) {
