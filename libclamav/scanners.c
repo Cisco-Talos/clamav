@@ -2535,7 +2535,7 @@ static int magic_scandesc_cleanup(cli_ctx *ctx, cli_file_t type, unsigned char *
     cli_dbgmsg("cli_magic_scandesc: returning %d %s\n", retcode, __AT__);
     if(ctx->engine->cb_post_scan) {
         perf_start(ctx, PERFT_POSTCB);
-        switch(ctx->engine->cb_post_scan(fmap_fd(*ctx->fmap), retcode, retcode == CL_VIRUS ? cli_get_last_virus(ctx) : NULL, ctx->cb_ctx)) {
+        switch(ctx->engine->cb_post_scan(fmap_fd(*ctx->fmap), retcode, (retcode == CL_VIRUS || retcode == CL_CLEAN && ctx->found_possibly_unwanted) ? cli_get_last_virus(ctx) : NULL, ctx->cb_ctx)) {
         case CL_BREAK:
             cli_dbgmsg("cli_magic_scandesc: file whitelisted by post_scan callback\n");
             perf_stop(ctx, PERFT_POSTCB);
