@@ -23,7 +23,9 @@
 #endif
 
 #if defined(C_SOLARIS)
+#ifndef __EXTENSIONS__
 #define __EXTENSIONS__
+#endif
 #endif
 
 /* must be first because it may define _XOPEN_SOURCE */
