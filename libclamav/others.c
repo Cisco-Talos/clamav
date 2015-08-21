@@ -71,6 +71,7 @@
 #include "regex/regex.h"
 #include "ltdl.h"
 #include "matcher-ac.h"
+#include "matcher-pcre.h"
 #include "default.h"
 #include "scanners.h"
 #include "bytecode.h"

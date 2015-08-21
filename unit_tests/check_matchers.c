@@ -31,7 +31,6 @@
 #include "../libclamav/matcher-ac.h"
 #include "../libclamav/matcher-bm.h"
 #include "../libclamav/matcher-pcre.h"
-#include "../libclamav/regex_pcre.h"
 #include "../libclamav/others.h"
 #include "../libclamav/default.h"
 #include "checks.h"

@@ -186,6 +186,11 @@ void cli_pcre_perf_events_destroy()
 
 
 /* PCRE MATCHER FUNCTIONS */
+int cli_pcre_init()
+{
+    return cli_pcre_init_internal();
+}
+
 int cli_pcre_addpatt(struct cli_matcher *root, const char *virname, const char *trigger, const char *pattern, const char *cflags, const char *offset, const uint32_t *lsigid, unsigned int options)
 {
     struct cli_pcre_meta **newmetatable = NULL, *pm = NULL;
@@ -790,6 +795,50 @@ void cli_pcre_freetable(struct cli_matcher *root)
 
 #else
 /* NO-PCRE FUNCTIONS */
+void cli_pcre_perf_print()
+{
+    cli_errmsg("cli_pcre_perf_print: Cannot print PCRE performance results without PCRE support\n");
+    return;
+}
+
+void cli_pcre_perf_events_destroy()
+{
+    cli_errmsg("cli_pcre_perf_events_destroy: Cannot destroy PCRE performance results without PCRE support\n");
+    return;
+}
+
+int cli_pcre_init()
+{
+    cli_errmsg("cli_pcre_init: Cannot initialize PCRE without PCRE support\n");
+    return CL_SUCCESS;
+}
+
+int cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, long long unsigned recmatch_limit, const struct cli_dconf *dconf)
+{
+    UNUSEDPARAM(root);
+    UNUSEDPARAM(match_limit);
+    UNUSEDPARAM(recmatch_limit);
+    UNUSEDPARAM(dconf);
+
+    cli_errmsg("cli_pcre_build: Cannot build PCRE expression without PCRE support\n");
+    return CL_SUCCESS;
+}
+
+int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const char **virname, struct cli_ac_result **res, const struct cli_matcher *root, struct cli_ac_data *mdata, const struct cli_pcre_off *data, cli_ctx *ctx)
+{
+    UNUSEDPARAM(buffer);
+    UNUSEDPARAM(length);
+    UNUSEDPARAM(virname);
+    UNUSEDPARAM(res);
+    UNUSEDPARAM(root);
+    UNUSEDPARAM(mdata);
+    UNUSEDPARAM(data);
+    UNUSEDPARAM(ctx);
+
+    cli_errmsg("cli_pcre_scanbuf: Cannot scan buffer with PCRE expression without PCRE support\n");
+    return CL_SUCCESS;
+}
+
 int cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data, struct cli_target_info *info, cli_ctx *ctx)
 {
     UNUSEDPARAM(root);

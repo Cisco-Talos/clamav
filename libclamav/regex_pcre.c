@@ -34,8 +34,8 @@
 #include "others.h"
 #include "regex_pcre.h"
 
-/* TODO: cli_pcre_init: redefine pcre_malloc and pcre_free, setup callback function? */
-int cli_pcre_init()
+/* TODO: cli_pcre_init_internal: redefine pcre_malloc and pcre_free, setup callback function? */
+int cli_pcre_init_internal()
 {
     pcre_malloc = cli_malloc;
     pcre_free = free;
