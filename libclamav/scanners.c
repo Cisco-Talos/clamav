@@ -2532,10 +2532,19 @@ static int magic_scandesc_cleanup(cli_ctx *ctx, cli_file_t type, unsigned char *
 
     UNUSEDPARAM(type);
 
+    int cb_retcode;
+    if (retcode == CL_CLEAN && ctx->found_possibly_unwanted)
+        cb_retcode = CL_VIRUS;
+    else
+        cb_retcode = retcode;
+
     cli_dbgmsg("cli_magic_scandesc: returning %d %s\n", retcode, __AT__);
     if(ctx->engine->cb_post_scan) {
+        const char * virusname = NULL;
         perf_start(ctx, PERFT_POSTCB);
-        switch(ctx->engine->cb_post_scan(fmap_fd(*ctx->fmap), retcode, (retcode == CL_VIRUS || retcode == CL_CLEAN && ctx->found_possibly_unwanted) ? cli_get_last_virus(ctx) : NULL, ctx->cb_ctx)) {
+        if (cb_retcode == CL_VIRUS)
+            virusname = cli_get_last_virus(ctx);
+        switch(ctx->engine->cb_post_scan(fmap_fd(*ctx->fmap), cb_retcode, virusname, ctx->cb_ctx)) {
         case CL_BREAK:
             cli_dbgmsg("cli_magic_scandesc: file whitelisted by post_scan callback\n");
             perf_stop(ctx, PERFT_POSTCB);
@@ -2554,7 +2563,7 @@ static int magic_scandesc_cleanup(cli_ctx *ctx, cli_file_t type, unsigned char *
         }
         perf_stop(ctx, PERFT_POSTCB);
     }
-    if (retcode == CL_CLEAN && cache_clean) {
+    if (cb_retcode == CL_CLEAN && cache_clean) {
         perf_start(ctx, PERFT_CACHE);
         cache_add(hash, hashed_size, ctx);
         perf_stop(ctx, PERFT_CACHE);
