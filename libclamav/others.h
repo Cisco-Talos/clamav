@@ -541,30 +541,30 @@ struct unaligned_ptr {
 #define be32_to_host(v)	(v)
 #define be64_to_host(v)	(v)
 
-static inline int32_t cli_readint32(const char *buff)
+static inline int32_t cli_readint32(const void *buff)
 {
 	int32_t ret;
-    ret = buff[0] & 0xff;
-    ret |= (buff[1] & 0xff) << 8;
-    ret |= (buff[2] & 0xff) << 16;
-    ret |= (buff[3] & 0xff) << 24;
+    ret = ((const char *)buff)[0] & 0xff;
+    ret |= (((const char *)buff)[1] & 0xff) << 8;
+    ret |= (((const char *)buff)[2] & 0xff) << 16;
+    ret |= (((const char *)buff)[3] & 0xff) << 24;
     return ret;
 }
 
-static inline int16_t cli_readint16(const char *buff)
+static inline int16_t cli_readint16(const void *buff)
 {
 	int16_t ret;
-    ret = buff[0] & 0xff;
-    ret |= (buff[1] & 0xff) << 8;
+    ret = ((const char *)buff)[0] & 0xff;
+    ret |= (((const char *)buff)[1] & 0xff) << 8;
     return ret;
 }
 
-static inline void cli_writeint32(char *offset, uint32_t value)
+static inline void cli_writeint32(void *offset, uint32_t value)
 {
-    offset[0] = value & 0xff;
-    offset[1] = (value & 0xff00) >> 8;
-    offset[2] = (value & 0xff0000) >> 16;
-    offset[3] = (value & 0xff000000) >> 24;
+    ((char *)offset)[0] = value & 0xff;
+    ((char *)offset)[1] = (value & 0xff00) >> 8;
+    ((char *)offset)[2] = (value & 0xff0000) >> 16;
+    ((char *)offset)[3] = (value & 0xff000000) >> 24;
 }
 #endif
 
