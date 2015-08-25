@@ -47,6 +47,7 @@
 #ifndef _WIN32
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <sys/un.h>
 #include <netdb.h>
 #endif
 
