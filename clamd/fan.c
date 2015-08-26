@@ -35,6 +35,7 @@
 #include <errno.h>
 
 #include <sys/fanotify.h>
+#include <stdbool.h>
 
 #include "fan.h"
 
@@ -89,20 +90,44 @@ void *fan_th(void *arg)
 {
 	struct thrarg *tharg = (struct thrarg *) arg;
 	sigset_t sigset;
-        struct sigaction act;
+    struct sigaction act;
 	const struct optstruct *pt;
 	short int scan;
 	int sizelimit = 0, extinfo;
 	STATBUF sb;
-        uint64_t fan_mask = FAN_ACCESS | FAN_EVENT_ON_CHILD;
+
+    /* file descriptfor for all fanotify actions */
 	int fan_fd;
-        fd_set rfds;
+
+    /* flags/mask for fanotify_init() */
+    unsigned int fan_init_flags = FAN_CLASS_CONTENT;
+    unsigned int fan_init_mask = O_RDONLY;
+
+    /* flags/mask for fanotify_mark() on a mount point
+     * specified by OnAccessIncludeMount.
+     * The mask values will be determined by the user
+     * config setting for OnAccessPrevent Access.
+     */
+    unsigned int fan_mark_mnt_flags = FAN_MARK_ADD | FAN_MARK_MOUNT;
+    uint64_t fan_mark_mnt_mask;
+    
+    /* flags/mask for fanotify_mark() on a single directory
+     * specified by OnAccessIncludeDirectory.
+     * The mask values will be determined by the user
+     * config setting for OnAccessPrevent Access.
+     */
+    unsigned int fan_mark_dir_flags = FAN_MARK_ADD | FAN_MARK_ONLYDIR;
+    uint64_t fan_mark_dir_mask;
+    
+    fd_set rfds;
 	char buf[4096];
 	ssize_t bread;
 	struct fanotify_event_metadata *fmd;
 	char fname[1024];
 	int ret, len;
 	char err[128];
+    bool inclmnt = false;
+    bool incldir = false;
 
     /* ignore all signals except SIGUSR1 */
     sigfillset(&sigset);
@@ -122,38 +147,89 @@ void *fan_th(void *arg)
     sigaction(SIGUSR1, &act, NULL);
     sigaction(SIGSEGV, &act, NULL);
 
-    fan_fd = fanotify_init(0, O_RDONLY);
+    fan_fd = fanotify_init(fan_init_flags, fan_init_mask);
     if(fan_fd < 0) {
-	logg("!ScanOnAccess: fanotify_init failed: %s\n", cli_strerror(errno, err, sizeof(err)));
-	if(errno == EPERM)
-	    logg("ScanOnAccess: clamd must be started by root\n");
-	return NULL;
+	    logg("!ScanOnAccess: fanotify_init failed: %s\n", cli_strerror(errno, err, sizeof(err)));
+	    if(errno == EPERM) {
+	        logg("ScanOnAccess: clamd must be started by root\n");
+        }
+	    return NULL;
     }
 
-    if((pt = optget(tharg->opts, "OnAccessIncludePath"))->enabled) {
-	while(pt) {
-	    if(fanotify_mark(fan_fd, FAN_MARK_ADD, fan_mask, fan_fd, pt->strarg) != 0) {
-		logg("!ScanOnAccess: Can't include path '%s'\n", pt->strarg);
-		return NULL;
-	    } else
-		logg("ScanOnAccess: Protecting directory '%s'\n", pt->strarg);
-	    pt = (struct optstruct *) pt->nextarg;
-	}
+    /*
+     * OnAccessPreventAccess is a bool in clamd.conf
+     *      on: If on-access scanning indicates a suspect file, then
+     *      user access to that file will be prevented.  This can be
+     *      mildly annoying to dangerous if you're getting a lot of
+     *      false positives.  So the default is 'off' which will not
+     *      prevent access to the file but will still allow notifications
+     *      to be passed through to the VirusEvent handler.
+     */
+    if (optget(tharg->opts, "OnAccessPreventAccess")->enabled) {
+        /* user config enabled access prevention based on scan result */
+        fan_mark_mnt_mask = FAN_ACCESS_PERM;
+        fan_mark_dir_mask = FAN_ACCESS_PERM | FAN_EVENT_ON_CHILD;
     } else {
-	logg("!ScanOnAccess: Please specify at least one path with OnAccessIncludePath\n");
-	return NULL;
+        /*
+         * default: do not prevent access to files based on scan result,
+         * but do still allow for notification to go through.
+         */
+        fan_mark_mnt_mask = FAN_ACCESS;
+        fan_mark_dir_mask = FAN_ACCESS | FAN_EVENT_ON_CHILD;
     }
 
-    if((pt = optget(tharg->opts, "OnAccessExcludePath"))->enabled) {
-	while(pt) {
-            if(fanotify_mark(fan_fd, FAN_MARK_REMOVE, fan_mask, fan_fd, pt->strarg) != 0) {
-		logg("!ScanOnAccess: Can't exclude path %s\n", pt->strarg);
-		return NULL;
-	    } else
-		logg("ScanOnAccess: Excluded path %s\n", pt->strarg);
-	    pt = (struct optstruct *) pt->nextarg;
-	}
+    /*
+     * Establish a mark for zero or more configuration-specified
+     * mount points.
+     */
+    if((pt = optget(tharg->opts, "OnAccessIncludeMount"))->enabled) {
+	    while(pt) {
+	        if(fanotify_mark(fan_fd, fan_mark_mnt_flags, fan_mark_mnt_mask, AT_FDCWD, pt->strarg) != 0) {
+		        logg("!ScanOnAccess: Cannot include mount point for '%s'\n", pt->strarg);
+		        return NULL;
+	        } else {
+		        logg("ScanOnAccess: Protecting mount point for '%s'\n", pt->strarg);
+                inclmnt = true;
+            }
+	        pt = (struct optstruct *) pt->nextarg;
+	    }
     }
+
+    /*
+     * Establish a mark for zero or more configuration-specified
+     * directories.  Files under a directory are included, but
+     * subdirectories are not.
+     */
+    if((pt = optget(tharg->opts, "OnAccessIncludeDirectory"))->enabled) {
+	    while(pt) {
+	        if(fanotify_mark(fan_fd, fan_mark_dir_flags, fan_mark_dir_mask, fan_fd, pt->strarg) != 0) {
+                if (errno == ENOTDIR) { /* FAN_MARK_ONLYDIR in the flags allows us to catch this */
+                    logg("!ScanOnAccess: Specified include directory '%s' is not a directory\n", pt->strarg);
+                } else {
+                    logg("!ScanOnAccess: Cannot include directory '%s'\n", pt->strarg);
+                }
+		        return NULL;
+	        } else {
+		        logg("ScanOnAccess: Protecting directory '%s'\n", pt->strarg);
+                incldir = true;
+            }
+	        pt = (struct optstruct *) pt->nextarg;
+	    }
+    }
+    
+    if (!(inclmnt || incldir)) {
+        /* config file specified no mounts or directories to protect */
+	    logg("!ScanOnAccess: Please specify at least one path with OnAccessIncludeMount or OnAccessIncludeDirectoryh\n");
+	    return NULL;
+    }
+
+    /*
+     * There is no handler for OnAccessExcludePath simply because
+     * fanotify does not work that way.  It is possible to ignore
+     * specified events for a previously established mark but that
+     * ignore feature does not allow the ignoring of directories
+     * under a previous mark.
+     */
 
     sizelimit = optget(tharg->opts, "OnAccessMaxFileSize")->numarg;
     if(sizelimit)
