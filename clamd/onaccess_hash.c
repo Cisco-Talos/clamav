@@ -22,9 +22,6 @@
 #include "clamav-config.h"
 #endif
 
-#define PROTOTYPING 1
-#if PROTOTYPING
-
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -94,7 +91,6 @@ int onas_ht_init(struct onas_ht **ht, uint32_t size) {
 		.htable = NULL,
 		.size = size,
 		.nbckts = 0,
-		.col = 0
 	};
 
 	if (!((*ht)->htable = (struct onas_bucket **) cli_calloc(size, sizeof(struct onas_bucket *)))) {
@@ -204,8 +200,6 @@ int onas_ht_insert(struct onas_ht *ht, struct onas_element *elem) {
 	if (bckt == NULL) {
 		ht->htable[idx] = onas_bucket_init();
 		bckt = ht->htable[idx];
-	} else {
-		ht->col++;
 	}
 
 	bsize = bckt->size;
@@ -478,43 +472,6 @@ int onas_rm_listnode(struct onas_lnode *head, const char *dirname) {
 	return -1;
 }
 
-/* PROTO STUFF */
-static void onas_print_ht(struct onas_ht *ht, const char *pathname, int level) {
-
-	if (!ht || !pathname) return;
-
-	struct onas_hnode *hnode = NULL;
-	struct onas_element *elem = NULL;
-	size_t len = strlen(pathname);
-
-	if(onas_ht_get(ht, pathname, len, &elem)) return;
-
-	hnode = elem->data;
-
-	printf("%s\twd:%d\n", hnode->pathname, hnode->wd);
-
-	
-	struct onas_lnode *curr = hnode->childhead;
-	while (curr->next != hnode->childtail) {
-		curr = curr->next;
-		int i = 0;
-		for(i = 0; i < level; i++) {
-			printf("\t");
-		}
-		printf("\t|____");
-		size_t size = len + strlen(curr->dirname) + 2;
-		char *child_path = (char *) cli_malloc(size);
-		if (hnode->pathname[len-1] == '/')
-			snprintf(child_path, size, "%s%s", hnode->pathname, curr->dirname);
-		else
-			snprintf(child_path, size, "%s/%s", hnode->pathname, curr->dirname);
-		onas_print_ht(ht, child_path, level + 1);
-		free(child_path);
-	}
-
-	return;
-}
-
 /*** Dealing with parent/child relationships in the table. ***/
 
 /* Determines parent and returns a copy based on full pathname. */
@@ -683,7 +640,3 @@ int onas_ht_rm_hierarchy(struct onas_ht *ht, const char* pathname, size_t len, i
 
 	return CL_SUCCESS;
 }
-
-
-
-#endif
