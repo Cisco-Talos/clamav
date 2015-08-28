@@ -22,6 +22,7 @@
 #include "clamav-config.h"
 #endif
 
+#if defined(FANOTIFY)
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -640,3 +641,4 @@ int onas_ht_rm_hierarchy(struct onas_ht *ht, const char* pathname, size_t len, i
 
 	return CL_SUCCESS;
 }
+#endif
