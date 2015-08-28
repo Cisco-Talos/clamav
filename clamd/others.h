@@ -83,7 +83,7 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals, void *ev
 void fds_free(struct fd_data *data);
 
 #ifdef FANOTIFY
-int fan_checkowner(int pid, const struct optstruct *opts);
+int onas_fan_checkowner(int pid, const struct optstruct *opts);
 #endif
 
 #endif

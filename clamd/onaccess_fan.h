@@ -21,6 +21,10 @@
 #ifndef __FAN_H
 #define __FAN_H
 
-void *fan_th(void *arg);
+void *onas_fan_th(void *arg);
+
+// PROTOTYPING
+
+void *print_tree(struct optstruct *opt);
 
 #endif

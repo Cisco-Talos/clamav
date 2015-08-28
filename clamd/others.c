@@ -802,7 +802,7 @@ fds_free (struct fd_data *data)
 
 #ifdef FANOTIFY
 int
-fan_checkowner (int pid, const struct optstruct *opts)
+onas_fan_checkowner (int pid, const struct optstruct *opts)
 {
     char path[32];
     STATBUF sb;
