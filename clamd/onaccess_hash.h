@@ -27,7 +27,6 @@
 
 #define ONAS_DEFAULT_HT_SIZE 1 << 18
 
-// PROTOTYPING
 struct onas_element {
 
 	const char* key;
@@ -53,9 +52,6 @@ struct onas_ht {
 	/* Must be a sufficiently high power of two--will not grow. */
 	uint32_t size;
 	uint32_t nbckts;
-
-	/* For testing purposes */
-	uint32_t col;
 };
 
 /* Directory node struct for lists */
@@ -70,12 +66,11 @@ struct onas_lnode {
 /* Directory node struct for hash tables */
 struct onas_hnode {
 
-	/* Path stuffs */
+	/* Path info */
 	int pathlen;
 	char *pathname;
 
-	/* Parent stuffs */
-	// This might not be necessary...keep for nao
+	/* Parent info */
 	int prnt_pathlen;
 	char *prnt_pathname;
 
@@ -83,7 +78,7 @@ struct onas_hnode {
 	struct onas_lnode *childhead;
 	struct onas_lnode *childtail;
 
-	/* Inotify watch descriptor. */
+	/* Inotify watch descriptor */
 	int wd;
 
 	/* Watched stuffs */
@@ -119,8 +114,5 @@ int onas_add_listnode(struct onas_lnode *tail, struct onas_lnode *node);
 int onas_rm_listnode(struct onas_lnode *head, const char *dirname);
 
 void onas_free_dirlist(struct onas_lnode *head);
-
-/* PROTO STUFF */
-static void onas_print_ht(struct onas_ht *ht, const char *pathname, int level);
 
 #endif

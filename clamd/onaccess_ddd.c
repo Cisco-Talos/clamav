@@ -22,9 +22,6 @@
 #include "clamav-config.h"
 #endif
 
-#define PROTOTYPING 1
-#if PROTOTYPING
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -347,8 +344,6 @@ void *onas_ddd_th(void *arg) {
 					return NULL;
 				}
 			}
-
-			/*onas_print_ht(ddd_ht, pt->strarg, 0);*/
 			pt = (struct optstruct *) pt->nextarg;
 		}
 	}
@@ -420,5 +415,3 @@ static void onas_ddd_exit(int sig) {
 	pthread_exit(NULL);
 	logg("ScanOnAccess: stopped\n");
 }
-
-#endif
