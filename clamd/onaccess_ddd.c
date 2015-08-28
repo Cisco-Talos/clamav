@@ -22,6 +22,8 @@
 #include "clamav-config.h"
 #endif
 
+#if defined(FANOTIFY)
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -415,3 +417,4 @@ static void onas_ddd_exit(int sig) {
 	pthread_exit(NULL);
 	logg("ScanOnAccess: stopped\n");
 }
+#endif
