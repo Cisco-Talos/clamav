@@ -23,8 +23,4 @@
 
 void *onas_fan_th(void *arg);
 
-// PROTOTYPING
-
-void *print_tree(struct optstruct *opt);
-
 #endif
