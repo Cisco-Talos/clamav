@@ -49,7 +49,7 @@
 #include "shared/output.h"
 #include "shared/optparser.h"
 
-#include "fan.h"
+#include "onaccess_fan.h"
 #include "server.h"
 #include "thrmgr.h"
 #include "session.h"
@@ -1140,6 +1140,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     acceptdata.max_queue = max_queue;
 
     if(optget(opts, "ScanOnAccess")->enabled)
+
 #if defined(FANOTIFY) || defined(CLAMAUTH)
     {
         do {
@@ -1149,7 +1150,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	    tharg->opts = opts;
 	    tharg->engine = engine;
 	    tharg->options = options;
-	    if(!pthread_create(&fan_pid, &fan_attr, fan_th, tharg)) break;
+	    if(!pthread_create(&fan_pid, &fan_attr, onas_fan_th, tharg)) break;
 	    free(tharg);
 	    tharg=NULL;
 	} while(0);
@@ -1158,6 +1159,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 #else
 	logg("!On-access scan is not available\n");
 #endif
+
 
 #ifndef	_WIN32
     /* set up signal handling */
@@ -1445,10 +1447,11 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	    reload = 0;
 	    time(&reloaded_time);
 	    pthread_mutex_unlock(&reload_mutex);
+
 #if defined(FANOTIFY) || defined(CLAMAUTH)
 	    if(optget(opts, "ScanOnAccess")->enabled && tharg) {
 		tharg->engine = engine;
-		pthread_create(&fan_pid, &fan_attr, fan_th, tharg);
+		pthread_create(&fan_pid, &fan_attr, onas_fan_th, tharg);
 	    }
 #endif
 	    time(&start_time);

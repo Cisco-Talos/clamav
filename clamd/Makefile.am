@@ -45,8 +45,12 @@ clamd_SOURCES = \
     others.c \
     others.h \
     shared.h \
-    fan.c \
-    fan.h
+    onaccess_fan.c \
+    onaccess_fan.h \
+    onaccess_ddd.c \
+    onaccess_ddd.h \
+    onaccess_hash.c \
+    onaccess_hash.h
 
 AM_CFLAGS=@WERR_CFLAGS@
 

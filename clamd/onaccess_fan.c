@@ -1,7 +1,7 @@
 /*
  *  Copyright (C) 2011 Sourcefire, Inc.
  *
- *  Authors: Tomasz Kojm
+ *  Authors: Tomasz Kojm, Mickey Sola
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -22,7 +22,7 @@
 #include "clamav-config.h"
 #endif
 
-#ifdef FANOTIFY
+#if defined(FANOTIFY)
 
 #include <stdio.h>
 #include <unistd.h>
@@ -36,8 +36,6 @@
 
 #include <sys/fanotify.h>
 
-#include "fan.h"
-
 #include "libclamav/clamav.h"
 #include "libclamav/scanners.h"
 
@@ -48,20 +46,31 @@
 #include "others.h"
 #include "scanner.h"
 
-static void fan_exit(int sig)
+#include "onaccess_fan.h"
+#include "onaccess_hash.h"
+#include "onaccess_ddd.h"
+
+static pthread_t ddd_pid;
+
+static void onas_fan_exit(int sig)
 {
 
-    logg("*ScanOnAccess: fan_exit(), signal %d\n", sig);
-    pthread_exit(NULL);
-    logg("ScanOnAccess: stopped\n");
+	logg("*ScanOnAccess: onas_fan_exit(), signal %d\n", sig);
+	
+	pthread_kill(ddd_pid, SIGUSR1);
+	pthread_join(ddd_pid, NULL);
+
+	pthread_exit(NULL);
+	logg("ScanOnAccess: stopped\n");
 }
 
-static int fan_scanfile(int fan_fd, const char *fname, struct fanotify_event_metadata *fmd, int scan, int extinfo, struct thrarg *tharg)
+static int onas_fan_scanfile(int fan_fd, const char *fname, struct fanotify_event_metadata *fmd, int scan, int extinfo, struct thrarg *tharg)
 {
 	struct fanotify_response res;
 	struct cb_context context;
 	const char *virname;
 	int ret = 0;
+	struct thrarg *dummy = tharg;
 
     res.fd = fmd->fd;
     res.response = FAN_ALLOW;
@@ -85,7 +94,7 @@ static int fan_scanfile(int fan_fd, const char *fname, struct fanotify_event_met
     return ret;
 }
 
-void *fan_th(void *arg)
+void *onas_fan_th(void *arg)
 {
 	struct thrarg *tharg = (struct thrarg *) arg;
 	sigset_t sigset;
@@ -94,7 +103,7 @@ void *fan_th(void *arg)
 	short int scan;
 	int sizelimit = 0, extinfo;
 	STATBUF sb;
-        uint64_t fan_mask = FAN_ACCESS | FAN_EVENT_ON_CHILD;
+        uint64_t fan_mask = FAN_OPEN_PERM | FAN_ACCESS_PERM | FAN_EVENT_ON_CHILD;
 	int fan_fd;
         fd_set rfds;
 	char buf[4096];
@@ -103,6 +112,9 @@ void *fan_th(void *arg)
 	char fname[1024];
 	int ret, len;
 	char err[128];
+
+	pthread_attr_t ddd_attr;
+	struct ddd_thrarg *ddd_tharg = NULL;
 
     /* ignore all signals except SIGUSR1 */
     sigfillset(&sigset);
@@ -117,12 +129,13 @@ void *fan_th(void *arg)
 #endif
     pthread_sigmask(SIG_SETMASK, &sigset, NULL);
     memset(&act, 0, sizeof(struct sigaction));
-    act.sa_handler = fan_exit;
+    act.sa_handler = onas_fan_exit;
     sigfillset(&(act.sa_mask));
     sigaction(SIGUSR1, &act, NULL);
     sigaction(SIGSEGV, &act, NULL);
 
-    fan_fd = fanotify_init(0, O_RDONLY);
+    /* Initialize fanotify */
+    fan_fd = fanotify_init(FAN_CLASS_CONTENT | FAN_UNLIMITED_QUEUE | FAN_UNLIMITED_MARKS, O_RDONLY);
     if(fan_fd < 0) {
 	logg("!ScanOnAccess: fanotify_init failed: %s\n", cli_strerror(errno, err, sizeof(err)));
 	if(errno == EPERM)
@@ -130,31 +143,26 @@ void *fan_th(void *arg)
 	return NULL;
     }
 
-    if((pt = optget(tharg->opts, "OnAccessIncludePath"))->enabled) {
-	while(pt) {
-	    if(fanotify_mark(fan_fd, FAN_MARK_ADD, fan_mask, fan_fd, pt->strarg) != 0) {
-		logg("!ScanOnAccess: Can't include path '%s'\n", pt->strarg);
-		return NULL;
-	    } else
-		logg("ScanOnAccess: Protecting directory '%s'\n", pt->strarg);
-	    pt = (struct optstruct *) pt->nextarg;
-	}
-    } else {
-	logg("!ScanOnAccess: Please specify at least one path with OnAccessIncludePath\n");
-	return NULL;
-    }
+    do {
+	    if(pthread_attr_init(&ddd_attr)) break;
+	    pthread_attr_setdetachstate(&ddd_attr, PTHREAD_CREATE_JOINABLE);
 
-    if((pt = optget(tharg->opts, "OnAccessExcludePath"))->enabled) {
-	while(pt) {
-            if(fanotify_mark(fan_fd, FAN_MARK_REMOVE, fan_mask, fan_fd, pt->strarg) != 0) {
-		logg("!ScanOnAccess: Can't exclude path %s\n", pt->strarg);
-		return NULL;
-	    } else
-		logg("ScanOnAccess: Excluded path %s\n", pt->strarg);
-	    pt = (struct optstruct *) pt->nextarg;
-	}
-    }
+	    if(!(ddd_tharg = (struct ddd_thrarg *) malloc(sizeof(struct ddd_thrarg)))) break;
 
+	    ddd_tharg->fan_fd = fan_fd;
+	    ddd_tharg->fan_mask = fan_mask;
+	    ddd_tharg->opts = tharg->opts;
+	    ddd_tharg->engine = tharg->engine;
+	    ddd_tharg->options = tharg->options;
+
+	    if(!pthread_create(&ddd_pid, &ddd_attr, onas_ddd_th, ddd_tharg)) break;
+
+	    free(ddd_tharg);
+	    ddd_tharg=NULL;
+    } while(0);
+    if (!tharg) logg("!Unable to start dynamic directory determination.\n");
+
+    /* Load other options. */
     sizelimit = optget(tharg->opts, "OnAccessMaxFileSize")->numarg;
     if(sizelimit)
 	logg("ScanOnAccess: Max file size limited to %d bytes\n", sizelimit);
@@ -183,7 +191,7 @@ void *fan_th(void *arg)
 		}
 		fname[len] = 0;
 
-		if(fan_checkowner(fmd->pid, tharg->opts)) {
+		if(onas_fan_checkowner(fmd->pid, tharg->opts)) {
 		    scan = 0;
 		    logg("*ScanOnAccess: %s skipped (excluded UID)\n", fname);
 		}
@@ -195,7 +203,7 @@ void *fan_th(void *arg)
 		    }
 		}
 
-		if(fan_scanfile(fan_fd, fname, fmd, scan, extinfo, tharg) == -1) {
+		if(onas_fan_scanfile(fan_fd, fname, fmd, scan, extinfo, tharg) == -1) {
 		    close(fmd->fd);
 		    return NULL;
 		}
@@ -285,7 +293,7 @@ static int cauth_scanfile(const char *fname, int extinfo, struct thrarg *tharg)
     return ret;
 }
 
-void *fan_th(void *arg)
+void *onas_fan_th(void *arg)
 {
 	struct thrarg *tharg = (struct thrarg *) arg;
 	sigset_t sigset;
