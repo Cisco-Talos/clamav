@@ -442,7 +442,7 @@ int onas_add_listnode(struct onas_lnode *tail, struct onas_lnode *node) {
 	struct onas_lnode *tmp = tail->prev;
 
 	tmp->next = node;
-	node->prev = tmp->prev;
+	node->prev = tail->prev;
 
 	node->next = tail;
 	tail->prev = node;
@@ -514,7 +514,7 @@ int onas_ht_rm_child(struct onas_ht *ht, const char *prntpath, size_t prntlen, c
 
 	if(idx <= 0) return CL_SUCCESS;
 
-	if(onas_ht_get(ht, prntpath, prntlen, &elem)) return CL_EARG;
+	if(onas_ht_get(ht, prntpath, prntlen, &elem) != CL_SUCCESS) return CL_EARG;
 	hnode = elem->data;
 
 	return onas_rm_listnode(hnode->childhead, &(childpath[idx]));
@@ -618,7 +618,7 @@ int onas_ht_rm_hierarchy(struct onas_ht *ht, const char* pathname, size_t len, i
 
 	if(level == 0) {
 		if(!(prntname = onas_get_parent(pathname, len))) return CL_EARG;
-		prntlen = sizeof(prntname);
+		prntlen = strlen(prntname);
 		onas_ht_rm_child(ht, prntname, prntlen, pathname, len);
 		free(prntname);
 	}
