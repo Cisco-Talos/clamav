@@ -321,7 +321,12 @@ char *pdf_finalize_string(struct pdf_struct *pdf, struct pdf_obj *obj, const cha
         }
 
         free(wrkstr);
-        wrkstr = cli_strdup(output);
+        wrkstr = cli_calloc(outlen+1, sizeof(char));
+        if (!wrkstr) {
+            free(output);
+            return NULL;
+        }
+        memcpy(wrkstr, output, outlen);
         free(output);
         wrklen = outlen;
     }
