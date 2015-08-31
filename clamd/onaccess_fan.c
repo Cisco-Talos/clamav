@@ -54,7 +54,6 @@ static pthread_t ddd_pid;
 
 static void onas_fan_exit(int sig)
 {
-
 	logg("*ScanOnAccess: onas_fan_exit(), signal %d\n", sig);
 	
 	pthread_kill(ddd_pid, SIGUSR1);

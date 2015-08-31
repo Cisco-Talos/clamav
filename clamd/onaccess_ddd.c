@@ -414,6 +414,8 @@ void *onas_ddd_th(void *arg) {
 
 static void onas_ddd_exit(int sig) {
 	logg("*ScanOnAccess: onas_ddd_exit(), signal %d\n", sig);
+	onas_free_ht(ddd_ht);
+	free(wdlt);
 	pthread_exit(NULL);
 	logg("ScanOnAccess: stopped\n");
 }
