@@ -3964,22 +3964,6 @@ void cli_yara_free(struct cl_engine * engine)
     }        
 }
 
-#if 0
-int cli_yara_hash_db_file(char * fname)
-{
-    if (yr_hash_table_lookup(db_table, fname, NULL) == NULL) {
-        cli_errmsg("***** ADDING %s\n", fbname);
-        if ((rc = yr_hash_table_add(db_table, fname, NULL, (void*) 1)) != ERROR_SUCCESS) {
-            cli_errmsg("****** Could not add %s to db_table\n", dbname);
-        }
-    } else {
-        cli_warnmsg("cli_loadyara: db file %s already included\n", dbname);
-        return 1;
-    }
-    return 0;
-}
-#endif
-
 //TODO - pua? dbio?
 static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio, const char *filename)
 {
@@ -3993,12 +3977,6 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
 
     if((rc = cli_initroots(engine, options)))
         return rc;
-
-#if 0
-    /* eliminate duplicate files */ 
-    if (cli_yara_hash_db_file(dbname))
-        return CL_SUCCESS;
-#endif
 
     compiler.last_result = ERROR_SUCCESS;
     STAILQ_INIT(&compiler.rule_q);
