@@ -2004,8 +2004,13 @@ inline static int ac_analyze_expr(char *hexstr, int *fixed_len, int *sub_len)
             len++;
         }
     }
-    if (len > slen)
+    if (!slen) {
         slen = len;
+    } else if (len != slen) {
+        flen = 0;
+        if (len > slen)
+            slen = len;
+    }
 
     if (sub_len)
         *sub_len = slen;
