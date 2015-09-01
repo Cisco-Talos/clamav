@@ -49,7 +49,7 @@
     <ClCompile Include="..\shared\misc.c">
       <Filter>Source Files\shared</Filter>
     </ClCompile>
-    <ClCompile Include="..\clamd\fan.c">
+    <ClCompile Include="..\clamd\onaccess_fan.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
