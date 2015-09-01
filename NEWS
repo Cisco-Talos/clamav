@@ -1,14 +1,19 @@
-0.99-beta1
+0.99-beta2
 ------
 
-This is a preview release of some upcoming ClamAV 0.99 features:
-
-    - Process YARA rules(with limitations) as ClamAV signatures.
-    - Support in ClamAV logical signatures many of the features
-      added for YARA, such as Perl Compatible Regular Expressions.
-
-For more details about ClamAV 0.99-beta1, please see the blog post
-on blog.clamav.net.
+*Highlights* for the second beta of ClamAV 0.99 include:
+    - New and improved on-access scanning for Linux. See the recent
+      blog post for more details on the new on-access capabilities.
+    - Improved support for YARA rules including private rules,
+      referencing other rules, and YARA "include" files.
+    - Configurable default password list to attempt zip file
+      decryption.
+    - TIFF support.
+    - ./configure options for YARA.
+    - upgrade Windows pthread library to 2.9.1.
+    - a new signature target type for uncategorized files.
+    - Improved fidelity of the "data loss prevention" heuristic
+      algorithm. Code supplied by Bill Parker.
 
 --
 The ClamAV team (http://www.clamav.net/about.html#credits)
