@@ -2524,6 +2524,7 @@ static void emax_reached(cli_ctx *ctx) {
 
 static int magic_scandesc_cleanup(cli_ctx *ctx, cli_file_t type, unsigned char *hash, size_t hashed_size, int cache_clean, int retcode, void *parent_property)
 {
+    int cb_retcode;
 #if HAVE_JSON
     ctx->wrkproperty = (struct json_object *)(parent_property);
 #else
@@ -2532,7 +2533,6 @@ static int magic_scandesc_cleanup(cli_ctx *ctx, cli_file_t type, unsigned char *
 
     UNUSEDPARAM(type);
 
-    int cb_retcode;
     if (retcode == CL_CLEAN && ctx->found_possibly_unwanted)
         cb_retcode = CL_VIRUS;
     else
