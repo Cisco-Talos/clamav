@@ -37,6 +37,9 @@
 #define DETECT_MODE_DETECT  0
 #define DETECT_MODE_COUNT   1
 
+#define IIN_SIZE 6
+#define MAX_CC_BREAKS 8
+
 /* group number mapping is here */
 /* http://www.socialsecurity.gov/employer/highgroup.txt */
 /* here's a perl script to convert the raw data from the highgroup.txt
@@ -116,37 +119,57 @@ static int ssn_max_group[MAX_AREA+1] = { 0,
 */
 
 
-
 /*
- *  The function below was re-written to check common case
- *  credit/debit card numbers Visa, Mastercard, Amex, Discover
- *  first within respective length groups.
- *
- *  The following credit/debit card formats are checked in this
- *  function:
- *
- *  Credit/Debit Card           # of digits     Luhn Algorithm in Use?
- *  -----------------           -----------     ----------------------
- *  
- *  Laser Debit (UK/Ireland)        16-19               Yes
- *  Solo Credit/Debit               16-19               Yes
- *  China Union Pay                 16-19               Unknown
- *  VISA Electron Debit             16                  Yes
- *  Dankort                         16                  Unknown
- *  Discover                        16                  Yes
- *  Instapay                        16                  Yes
- *  Maestro                         16                  Unknown
- *  Diner's Club (US and Canada)    16                  Yes
- *  Japan Credit Bureau (JCB)       15 or 16            Yes
- *  Mastercard                      16                  Yes
- *  VISA (regular)                  16                  Yes
- *  AMEX                            15                  Yes
- *  Enroute Credit/Debit            15                  Yes
- *  Diner's Club International      14                  Yes
- *  Diner's Club Carte Blanche      14                  Yes
- *  VISA (Original Card)            13                  Yes
- *
- */
+  Following is a table of payment card "issuer identification number" ranges
+  and additional info such as card number length.
+*/
+
+struct iin_map_struct {
+    uint32_t iin_start;
+    uint32_t iin_end;
+    uint8_t card_len;
+    uint8_t luhn;
+    const char* iin_name;
+};
+
+/* Maestro card range, 550000-699999, encompasses ranges
+   of several other cards including Discover and UnionPay.
+*/
+
+static struct iin_map_struct iin_map[] = {
+    {100000, 199999, 15, 1, "UATP"},
+    {300000, 305999, 14, 1, "Diner's Club - Carte Blanche"},
+    {309500, 309599, 14, 1, "Diner's Club International"},
+    {340000, 349999, 15, 1, "American Express"},
+    {352800, 358999, 16, 1, "JCB"},
+    {360000, 369999, 14, 1, "Diner's Club International"},
+    {370000, 379999, 15, 1, "American Express"},
+    {380000, 399999, 16, 1, "Diner's Club International"},
+    {400000, 499999, 16, 1, "Visa"},
+    {500000, 509999, 16, 1, "Maestro"},
+    {510000, 559999, 16, 1, "Master Card"},
+    {560000, 699999, 16, 1, "Maestro/Discover/UnionPay/etc."},
+    {0}
+};
+
+/* Fixme: some card ranges can have lengths other than 16 */
+
+static const struct iin_map_struct * get_iin(char * digits)
+{
+    int iin = atoi(digits);
+    int i = 0;
+
+    while (iin_map[i].iin_start != 0) {
+        if (iin < iin_map[i].iin_start)
+            break;
+        if (iin <= iin_map[i].iin_end) {
+            return &iin_map[i];
+        }
+        i++;
+    }
+
+    return NULL;
+}
 
 int dlp_is_valid_cc(const unsigned char *buffer, int length)
 {
@@ -156,6 +179,9 @@ int dlp_is_valid_cc(const unsigned char *buffer, int length)
     int val = 0;
     int digits = 0;
     char cc_digits[20];
+    int pad_allowance = MAX_CC_BREAKS;
+    const struct iin_map_struct * iin;
+    int need;
     
     if(buffer == NULL || length < 13)
         return 0;
@@ -163,29 +189,55 @@ int dlp_is_valid_cc(const unsigned char *buffer, int length)
      * credit cards
      * reference => http://www.beachnet.com/~hstiles/cardtype.html
      */
-    if(!isdigit(buffer[0]) || buffer[0] > '6')
+    if(!isdigit(buffer[0]) || buffer[0] > '6' || buffer[0] == 2)
         return 0;
 
-    if(length > 19)     /* if card digits length is > 19, make it 19    */
-        length = 19;
+    if(length > 19 + pad_allowance)     /* max credit card length is 19, with allowance for punctuation */
+        length = 19 + pad_allowance;
 
-    for(i = 0; i < length; i++)
-    {
-	if(isdigit(buffer[i]) == 0)
-	{
-	    if(buffer[i] == ' ' || buffer[i] == '-')
-		continue;
-	    else
-		break;
+    cli_dbgmsg("dlp_is_valid_cc entry\n");
+
+    /* Look for possible 6 digit IIN */
+    for(i = 0; i < length && digits < IIN_SIZE; i++) {
+	if(isdigit(buffer[i]) == 0) {
+            if(buffer[i] == ' ' || buffer[i] == '-')
+                if (pad_allowance-- > 0)
+                    continue;
+            break;
 	}
 	cc_digits[digits] = buffer[i];
 	digits++;
     }
-    cc_digits[digits] = 0;
 
+    if (digits == IIN_SIZE)
+        cc_digits[digits] = 0;
+    else 
+        return 0;
+
+    /* See if it is a valid IIN. */ 
+    iin = get_iin(cc_digits);
+    if (iin == NULL) {
+        cli_dbgmsg("dlp_is_valid_cc did not match IIN for %s\n", cc_digits);
+        return 0;
+    }
+
+    /* Look for the remaining needed digits. */
+    for (/*same 'i' from previous for-loop*/; i < length && digits < iin->card_len; i++) {
+	if(isdigit(buffer[i]) == 0) {
+            if(buffer[i] == ' ' || buffer[i] == '-')
+                if (pad_allowance-- > 0)
+                    continue;
+            break;
+	}
+	cc_digits[digits] = buffer[i];
+        digits++;
+    }
+
+    // should be !isdigit(buffer[i]) ?
     if(digits < 13 || (i < length && isdigit(buffer[i])))
 	return 0;
 
+    //figure out luhn digits 
     for(i = digits - 1; i >= 0; i--)
     {
 	val = cc_digits[i] - '0';
@@ -200,276 +252,9 @@ int dlp_is_valid_cc(const unsigned char *buffer, int length)
     if(sum % 10)
 	return 0;
 
-    if (digits == 13)	/* VISA Original Card */
-    {
-        if (cc_digits[0] == '4')
-        {
-            cli_dbgmsg("dlp_is_valid_cc: VISA Original (13 digits) (%s)\n", cc_digits);
-            return 1;   /* first digit is 4, valid */
-	}
-    }	    /* end if digits == 13  */
-    else if (digits == 16)
-    {
-        if (cli_debug_flag) {  /* Only need the following checks if debug is on */
-            /* Visa Electron Debit Card (16 digits in length, Luhn Algorithm in use) */
-            
-            if (cc_digits[0] == '4' && cc_digits[1] == '0' && cc_digits[2] == '2' && cc_digits[3] == '6')
-            {
-                cli_dbgmsg("dlp_is_valid_dc: Visa Electron Debit Card (%s)\n", cc_digits);
-                return 1;   /* first four digits are 4026, valid */
-            }
-            else if (!strncmp(cc_digits, "417500", 6))
-            {
-                cli_dbgmsg("dlp_is_valid_dc: Visa Electron Debit Card (%s)\n", cc_digits);
-                return 1;   /* first six digits are 417500, valid */
-            }
-            else if (cc_digits[0] == '4' && cc_digits[1] == '5' && cc_digits[2] == '0' && cc_digits[3] == '8')
-            {
-                cli_dbgmsg("dlp_is_valid_dc: Visa Electron Debit Card (%s)\n", cc_digits);
-                return 1;   /* first four digits are 4508, valid */
-            }
-            else if (cc_digits[0] == '4' && cc_digits[1] == '8' && cc_digits[2] == '4' && cc_digits[3] == '4')
-            {
-                cli_dbgmsg("dlp_is_valid_dc: Visa Electron Debit Card (%s)\n", cc_digits);
-                return 1;   /* first four digits are 4844, valid */
-            }
-            else if (cc_digits[0] == '4' && cc_digits[1] == '9' && cc_digits[2] == '1' && cc_digits[3] == '3')
-            {
-                cli_dbgmsg("dlp_is_valid_dc: Visa Electron Debit Card (%s)\n", cc_digits);
-                return 1;   /* first four digits are 4913, valid */
-            }
-            else if (cc_digits[0] == '4' && cc_digits[1] == '9' && cc_digits[2] == '1' && cc_digits[3] == '7')
-            {
-                cli_dbgmsg("dlp_is_valid_dc: Visa Electron Debit Card (%s)\n", cc_digits);
-                return 1;   /* first four digits are 4917, valid */
-            }
-        }
+    cli_dbgmsg("DLP matched within IIN range for %s\n", iin->iin_name);
 
-        if (cc_digits[0] == '4') /* Regular VISA Card (16 digits) */
-        {
-            cli_dbgmsg("dlp_is_valid_cc: VISA Card (16 digits) (%s)\n", cc_digits);
-            return 1;   /* first digit is 4, valid */
-        }
-        else if (cc_digits[0] == '5' && cc_digits[1] == '0' && cc_digits[2] == '1' && cc_digits[3] == '9')
-        {   /* Dankort credit/debit card (16 digits), unsure of Luhn algorithm  */
-            cli_dbgmsg("dlp_is_valid_cc: Dankort (%s)\n", cc_digits);
-            return 1;   /* first four digits are 5019, valid */
-        }
-        else if (cc_digits[0] == '5') /* MASTERCARD */
-        {
-            val = cc_digits[1] - '0';
-            if (val >= 1 && val <= 5)
-            {
-                cli_dbgmsg("dlp_is_valid_cc: MASTERCARD (%s)\n", cc_digits);
-                return 1;   /* first digit is 5, 2nd digit is 1 to 5, valid */
-            }
-        }
-        else if (!strncmp(cc_digits, "6011", 4)) /* Discover Card */
-        {
-            cli_dbgmsg("dlp_is_valid_cc: Discover Card (%s)\n", cc_digits);
-            return 1;   /* first four digits are 6011, valid */
-        }
-        else if (!strncmp(cc_digits, "65", 2)) /* Also Discover Card */
-        {
-            cli_dbgmsg("dlp_is_valid_cc: Discover Card (%s)\n", cc_digits);
-            return 1;   /* first two digits are 65, valid */
-        }
-        else if (!strncmp(cc_digits, "64", 2)) /* Also Discover Card */
-        {
-            val = cc_digits[2] - '0';
-            if (val >= 4 && val <= 9)
-            {
-                cli_dbgmsg("dlp_is_valid_cc: Discover Card (%s)\n", cc_digits);
-                return 1;   /* first two digits are 64, 3rd digit is 4 to 9, valid */
-            }
-        }
-        else if (!strncmp(cc_digits, "622", 3)) /* Also Discover Card */
-        {
-            val = cc_digits[3] - '0';
-            if (val >= 1 && val <= 9)
-            {
-                cli_dbgmsg("dlp_is_valid_cc: Discover Card (%s)\n", cc_digits);
-                return 1;   /* first three digits are 622, 4th digit is 1 to 9, valid */
-            }
-        }
-        
-        /* Japan Credit Bureau, 16 digits, Luhn Algorithm in Use */
-        
-        else if (cc_digits[0] == '3' && cc_digits[1] == '5') /* Japan Credit Bureau */
-        {
-            val = cc_digits[2] - '0';
-            if (val >= 2 && val <= 8)
-            {
-                cli_dbgmsg("dlp_is_valid_cc: Japan Credit Bureau [2] (%s)\n", cc_digits);
-                return 1;   /* first two digits are 35, 3rd digit is 2 to 8, valid */
-            }
-        }
-
-        /* InstaPay Credit Card (637x-639x, 16 digits, Luhn Algorithm)  */
-
-        else if (cc_digits[0] == '6' && cc_digits[1] == '3')
-        {
-            val = cc_digits[2] - '0';
-            if (val >= 7 && val <= 9)
-            {
-                cli_dbgmsg("dlp_is_valid_cc: InstaPay Card (%s)\n", cc_digits);
-                return 1;   /* first two digits are 63, 3rd digit 7 to 9, valid */
-            }
-        }
-        else if (cc_digits[0] == '5' && cc_digits[1] == '6') /* Maestro */
-        {
-            val = cc_digits[2] - '0';
-            if (val >= 0 && val <= '5')
-            {
-                cli_dbgmsg("dlp_is_valid_cc: Maestro (%s)\n", cc_digits);
-                return 1;   /* first two digits is 56, 3rd digit is 0 to 5, valid */
-            }
-        }
-        
-        /* China Union Pay Credit Card, at least 16 digits in length, unsure of Luhn */
-
-        else if (cc_digits[0] == '6' && cc_digits[1] == '2')
-        {
-            val = cc_digits[2] - '0';
-            if (val >= 0 && val <= 1)
-            {
-                cli_dbgmsg("dlp_is_valid_dc: China Union Pay Credit Card (%s)\n", cc_digits);
-                return 1;
-            }
-        }
-        else if (cc_digits[0] == '6' && cc_digits[1] == '2' && cc_digits[2] == '5')
-        {
-            cli_dbgmsg("dlp_is_valid_dc: China Union Pay Credit Card (%s)\n", cc_digits);
-            return 1;
-        }
-        else if (cc_digits[0] == '5' && (cc_digits[1] == '4' || cc_digits[1] == '5'))
-        {
-            cli_dbgmsg("dlp_is_valid_cc: Diner's Club (US and Canada) (%s)\n", cc_digits);
-            return 1;   /* first two digits are 54 or 55, valid */
-        }
-
-        /* Laser Debit Card (Ireland), 16 digits in length, Luhn Algorithm in use */
-
-        else if (cc_digits[0] == '6' && cc_digits[1] == '3' && cc_digits[2] == '0' && cc_digits[3] == '4')
-        {
-            cli_dbgmsg("dlp_is_valid_dc: Laser Debit Card (%s)\n", cc_digits);
-            return 1;   /* first four digits are 6304, valid */
-        }
-        else if (cc_digits[0] == '6' && cc_digits[1] == '7' && cc_digits[2] == '0' && cc_digits[3] == '6')
-        {
-            cli_dbgmsg("dlp_is_valid_dc: Laser Debit Card (%s)\n", cc_digits);
-            return 1;   /* first four digits are 6706, valid */
-        }
-        else if (cc_digits[0] == '6' && cc_digits[1] == '7' && cc_digits[2] == '7' && cc_digits[3] == '1')
-        {
-            cli_dbgmsg("dlp_is_valid_dc: Laser Debit Card (%s)\n", cc_digits);
-            return 1;   /* first four digits are 6771, valid */
-        }
-        else if (cc_digits[0] == '6' && cc_digits[1] == '3' && cc_digits[2] == '3' && cc_digits[3] == '4')
-        {
-            cli_dbgmsg("dlp_is_valid_dc: Solo Credit Card (%s)\n", cc_digits);
-            return 1;   /* first four digits are 6334, valid */
-        }
-        else if (cc_digits[0] == '6' && cc_digits[1] == '7' && cc_digits[2] == '6' && cc_digits[3] == '7')
-        {
-            cli_dbgmsg("dlp_is_valid_dc: Solo Credit Card (%s)\n", cc_digits);
-            return 1;   /* First four digits are 6767, valid */
-        }
-    }       /* end else if digits == 16 */
-    else if (digits == 15)
-    {
-        if (cc_digits[0] == '3' && (cc_digits[1] == '4' || cc_digits[1] == '7')) /*AMEX*/
-	{
-            cli_dbgmsg("dlp_is_valid_cc: AMEX (%s)\n", cc_digits);
-            return 1;   /* first two digits are 34 or 37, valid */
-        }
-	else if (!strncmp(cc_digits, "2131", 4) || !strncmp(cc_digits, "1800", 4))
-        { /* Japan Credit Bureau  */
-            cli_dbgmsg("dlp_is_valid_cc: Japan Credit Bureau [1] (%s)\n", cc_digits);
-            return 1;   /* first four digits are 2131 or 1800, valid */
-	}
-
-	/* Enroute credit/debit card, 15 digits, starts with 2014 or 2149, Luhn Algorithm */
-
-	else if (cc_digits[0] == '2' && cc_digits[1] == '0' && cc_digits[2] == '1' && cc_digits[3] == '4')
-	{
-            cli_dbgmsg("dlp_is_valid_cc: Enroute Card (%s)\n", cc_digits);
-            return 1;   /* first four digits are 2014, valid */
-	}
-	else if (cc_digits[0] == '2' && cc_digits[1] == '1' && cc_digits[2] == '4' && cc_digits[3] == '9')
-	{
-            cli_dbgmsg("dlp_is_valid_cc: Enroute Card (%s)\n", cc_digits);
-            return 1;   /* first four digits are 2149, valid */
-        }
-    }	    /* end else if digits == 15	*/
-    else if (digits > 16 && digits <= 19)
-    {
-        /* China Union Pay Credit Card, 16 to 19 digits in length, unsure of Luhn */
-
-        if (cc_digits[0] == '6' && cc_digits[1] == '2')
-        {
-            val = cc_digits[2] - '0';
-            if (val >= 0 && val <= 5)
-            {
-                cli_dbgmsg("dlp_is_valid_dc: China Union Pay Credit Card (%s)\n", cc_digits);
-                return 1;   /* first two digits 62, 3rd digit is 0 to 5, valid */
-            }
-        }
-
-        /* Solo Credit/Debit Card, 16 to 19 digits in length, Luhn algorithm in use */
-
-        else if (cc_digits[0] == '6' && cc_digits[1] == '3' && cc_digits[2] == '3' && cc_digits[3] == '4')
-        {
-            cli_dbgmsg("dlp_is_valid_dc: Solo Credit Card (%s)\n", cc_digits);
-            return 1;   /* First four digits are 6334, valid */
-        }
-        else if (cc_digits[0] == '6' && cc_digits[1] == '7' && cc_digits[2] == '6' && cc_digits[3] == '7')
-        {
-            cli_dbgmsg("dlp_is_valid_dc: Solo Credit Card (%s)\n", cc_digits);
-            return 1;   /* First four digits are 6767, valid */
-        }
-
-        /* Laser Debit Card (Ireland), 16 to 19 digits in length, Luhn Algorithm in use */
-
-        else if (cc_digits[0] == '6' && cc_digits[1] == '3' && cc_digits[2] == '0' && cc_digits[3] == '4')
-        {
-            cli_dbgmsg("dlp_is_valid_dc: Laser Debit Card (%s)\n", cc_digits);
-            return 1;   /* first four digits are 6304, valid */
-        }
-        else if (cc_digits[0] == '6' && cc_digits[1] == '7' && cc_digits[2] == '0' && cc_digits[3] == '6')
-        {
-            cli_dbgmsg("dlp_is_valid_dc: Laser Debit Card (%s)\n", cc_digits);
-            return 1;   /* first four digits are 6706, valid */
-        }
-        else if (cc_digits[0] == '6' && cc_digits[1] == '7' && cc_digits[2] == '7' && cc_digits[3] == '1')
-        {
-            cli_dbgmsg("dlp_is_valid_dc: Laser Debit Card (%s)\n", cc_digits);
-            return 1;   /* first four digits are 6771, valid */
-        }
-        else if (cc_digits[0] == '6' && cc_digits[1] == '7' && cc_digits[2] == '0' && cc_digits[3] == '9')
-        {
-            cli_dbgmsg("dlp_is_valid_dc: Laser Debit Card (%s)\n", cc_digits);
-            return 1;   /* first four digits are 6709, valid */
-        }
-    }       /* end if digits > 16 and <= 19 */
-    else if (digits == 14) /* Diners Club */
-    {
-	if (cc_digits[0] == '3' && (cc_digits[1] == '6' || cc_digits[1] == '8'))
-	{
-            cli_dbgmsg("dlp_is_valid_cc: Diners Club International (%s)\n", cc_digits);
-            return 1;   /* first two digits are 36 or 38, valid */
-        }
-	else if (cc_digits[0] == '3' && cc_digits[1] == '0')
-        {
-            val = cc_digits[2] - '0';
-            if (val >= 0 && val <= 5) {
-                cli_dbgmsg("dlp_is_valid_cc: Diners Club Carte Blanche (%s)\n", cc_digits);
-                return 1;   /* first two digits are 35, 3rd digit is 0 to 5, valid */
-            }
-        }
-    }       /* end else if digits == 14 */
- 
-    return 0;   /* credit card or debit card number is not valid */
+    return 1;
 }
 
 static int contains_cc(const unsigned char *buffer, int length, int detmode)
