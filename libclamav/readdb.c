@@ -3060,7 +3060,13 @@ static char *parse_yara_hex_string(YR_STRING *string, int *ret)
         case '}':
             break;
         case '[':
-            res[j++] = '{';
+            /* unbounded range check */
+            if ((i+2 < slen-1) && (str[i+1] == '-') && (str[i+2] == ']')) {
+                res[j++] = '*';
+                i += 2;
+            } else {
+                res[j++] = '{';
+            }
             break;
         case ']':
             res[j++] = '}';
@@ -3249,6 +3255,12 @@ static int yara_subhex_verify(const char *hexstr, const char *end, size_t *maxsu
     while (track != end) {
         switch (*track) {
         case '*':
+            if (sublen <= 2) {
+                if (maxsublen)
+                    *maxsublen = sublen;
+                cli_warnmsg("load_oneyara[verify]: string has unbounded wildcard on single byte subsequence\n");
+                return CL_EMALFDB;
+            }
         case '?':
             if (*track == '?')
                 hexbyte = !hexbyte;
