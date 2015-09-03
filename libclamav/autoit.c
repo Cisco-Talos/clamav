@@ -183,7 +183,7 @@ static uint32_t getbits(struct UNP *UNP, uint32_t size) {
 static int ea05(cli_ctx *ctx, const uint8_t *base, char *tmpd) {
   uint8_t b[300], comp;
   uint32_t s, m4sum=0;
-  int i, ret;
+  int i, ret, det = 0;
   unsigned int files=0;
   char tempfile[1024];
   struct UNP UNP;
@@ -197,21 +197,21 @@ static int ea05(cli_ctx *ctx, const uint8_t *base, char *tmpd) {
 
   while((ret=cli_checklimits("autoit", ctx, 0, 0, 0))==CL_CLEAN) {
     if(!fmap_need_ptr_once(map, base, 8))
-      return CL_CLEAN;
+      return (det ? CL_VIRUS : CL_CLEAN);
 
     /*     MT_decrypt(buf,4,0x16fa);  waste of time */
     if((uint32_t)cli_readint32(base) != 0xceb06dff) {
       cli_dbgmsg("autoit: no FILE magic found, extraction complete\n");
-      return CL_CLEAN;
+      return (det ? CL_VIRUS : CL_CLEAN);
     }
 
     s = cli_readint32(base+4) ^ 0x29bc;
     if ((int32_t)s<0)
-      return CL_CLEAN; /* the original code wouldn't seek back here */
+      return (det ? CL_VIRUS : CL_CLEAN); /* the original code wouldn't seek back here */
     base += 8;
     if(cli_debug_flag && s<sizeof(b)) {
       if (!fmap_need_ptr_once(map, base, s))
-	return CL_CLEAN;
+	return (det ? CL_VIRUS : CL_CLEAN);
       memcpy(b, base, s);
       MT_decrypt(b,s,s+0xa25e);
       b[s]='\0';
@@ -220,14 +220,14 @@ static int ea05(cli_ctx *ctx, const uint8_t *base, char *tmpd) {
     base += s;
 
     if (!fmap_need_ptr_once(map, base, 4))
-      return CL_CLEAN;
+      return (det ? CL_VIRUS : CL_CLEAN);
     s = cli_readint32(base) ^ 0x29ac;
     if ((int32_t)s<0)
-      return CL_CLEAN; /* the original code wouldn't seek back here */
+      return (det ? CL_VIRUS : CL_CLEAN); /* the original code wouldn't seek back here */
     base += 4;
     if (cli_debug_flag && s<sizeof(b)) {
       if (!fmap_need_ptr_once(map, base, s))
-	return CL_CLEAN;
+	return (det ? CL_VIRUS : CL_CLEAN);
       memcpy(b, base, s);
       MT_decrypt(b,s,s+0xf25e);
       b[s]='\0';
@@ -236,12 +236,12 @@ static int ea05(cli_ctx *ctx, const uint8_t *base, char *tmpd) {
     base += s;
 
     if (!fmap_need_ptr_once(map, base, 13))
-      return CL_CLEAN;
+      return (det ? CL_VIRUS : CL_CLEAN);
     comp = *base;
     UNP.csize = cli_readint32(base+1) ^ 0x45aa;
     if ((int32_t)UNP.csize<0) {
       cli_dbgmsg("autoit: bad file size - giving up\n");
-      return CL_CLEAN;
+      return (det ? CL_VIRUS : CL_CLEAN);
     }
 
     if(!UNP.csize) {
@@ -265,7 +265,7 @@ static int ea05(cli_ctx *ctx, const uint8_t *base, char *tmpd) {
     if (!fmap_need_ptr_once(map, base, UNP.csize)) {
       cli_dbgmsg("autoit: failed to read compressed stream. broken/truncated file?\n");
       free(UNP.inputbuf);
-      return CL_CLEAN;
+      return (det ? CL_VIRUS : CL_CLEAN);
     }
     memcpy(UNP.inputbuf, base, UNP.csize);
     base += UNP.csize;
@@ -388,16 +388,19 @@ static int ea05(cli_ctx *ctx, const uint8_t *base, char *tmpd) {
         return CL_ESEEK;
     }
     if(cli_magic_scandesc(i, ctx) == CL_VIRUS) {
-      close(i);
-      if(!ctx->engine->keeptmp)
-        if(cli_unlink(tempfile)) return CL_EUNLINK;
-      return CL_VIRUS;
+      if (!SCAN_ALL) {
+	close(i);
+	if(!ctx->engine->keeptmp)
+	  if(cli_unlink(tempfile)) return CL_EUNLINK;
+	return CL_VIRUS;
+      }
+      det = 1;
     }
     close(i);
     if(!ctx->engine->keeptmp)
       if (cli_unlink(tempfile)) return CL_EUNLINK;
   }
-  return ret;
+  return (det ? CL_VIRUS : ret);
 }
 
 
@@ -508,22 +511,22 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd) {
 
   while((ret=cli_checklimits("cli_autoit", ctx, 0, 0, 0))==CL_CLEAN) {
     if(!fmap_need_ptr_once(map, base, 8))
-      return CL_CLEAN;
+      return (det ? CL_VIRUS : CL_CLEAN);
     /*     LAME_decrypt(buf, 4, 0x18ee); waste of time */
     if(cli_readint32(base) != 0x52ca436b) {
       cli_dbgmsg("autoit: no FILE magic found, giving up\n");
-      return CL_CLEAN;
+      return (det ? CL_VIRUS : CL_CLEAN);
     }
 
     script = 0;
 
     s = cli_readint32(base+4) ^ 0xadbc;
     if ((int32_t)(s*2)<0)
-      return CL_CLEAN; /* the original code wouldn't seek back here */
+      return (det ? CL_VIRUS : CL_CLEAN); /* the original code wouldn't seek back here */
     base += 8;
     if(s < sizeof(b) / 2) {
       if(!fmap_need_ptr_once(map, base, s*2))
-	return CL_CLEAN;
+	return (det ? CL_VIRUS : CL_CLEAN);
       memcpy(b, base, s*2);
       LAME_decrypt(b,s*2,s+0xb33f);
       u2a(b,s*2);
@@ -536,14 +539,14 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd) {
     base += s*2;
 
     if (!fmap_need_ptr_once(map, base, 4))
-      return CL_CLEAN;
+      return (det ? CL_VIRUS : CL_CLEAN);
     s = cli_readint32(base) ^ 0xf820;
     if ((int32_t)(s*2)<0)
-      return CL_CLEAN; /* the original code wouldn't seek back here */
+      return (det ? CL_VIRUS : CL_CLEAN); /* the original code wouldn't seek back here */
     base += 4;
     if(cli_debug_flag && s<sizeof(b) / 2) {
       if(!fmap_need_ptr_once(map, base, s*2))
-	return CL_CLEAN;
+	return (det ? CL_VIRUS : CL_CLEAN);
       memcpy(b, base, s*2);
       LAME_decrypt(b,s*2,s+0xf479);
       b[s*2]='\0'; b[s*2+1]='\0';
@@ -553,12 +556,12 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd) {
     base += s*2;
 
     if(!fmap_need_ptr_once(map, base, 13))
-      return CL_CLEAN;
+      return (det ? CL_VIRUS : CL_CLEAN);
     comp = *base;
     UNP.csize = cli_readint32(base+1) ^ 0x87bc;
     if ((int32_t)UNP.csize<0) {
       cli_dbgmsg("autoit: bad file size - giving up\n");
-      return CL_CLEAN;
+      return (det ? CL_VIRUS : CL_CLEAN);
     }
 
     if(!UNP.csize) {
@@ -583,7 +586,7 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd) {
     if (!fmap_need_ptr_once(map, base, UNP.csize)) {
       cli_dbgmsg("autoit: failed to read compressed stream. broken/truncated file?\n");
       free(UNP.inputbuf);
-      return CL_CLEAN;
+      return (det ? CL_VIRUS : CL_CLEAN);
     }
     memcpy(UNP.inputbuf, base, UNP.csize);
     base += UNP.csize;
@@ -619,7 +622,7 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd) {
 	if (!getbits(&UNP, 1)) {
 	  uint32_t bb, bs, addme=0;
 	  bb = getbits(&UNP, 15);
-      
+
 	  if ((bs = getbits(&UNP, 2))==3) {
 	    addme = 3;
 	    if((bs = getbits(&UNP, 3))==7) {
@@ -908,10 +911,10 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd) {
     }
     if(cli_magic_scandesc(i, ctx) == CL_VIRUS) {
       if (!SCAN_ALL) {
-        close(i);
-        if(!ctx->engine->keeptmp)
-          if (cli_unlink(tempfile)) return CL_EUNLINK;
-        return CL_VIRUS;
+	close(i);
+	if(!ctx->engine->keeptmp)
+	  if (cli_unlink(tempfile)) return CL_EUNLINK;
+	return CL_VIRUS;
       }
       det = 1;
     }
@@ -919,9 +922,7 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd) {
     if(!ctx->engine->keeptmp)
       if (cli_unlink(tempfile)) return CL_EUNLINK;
   }
-  if (det)
-    return CL_VIRUS;
-  return ret;
+  return (det ? CL_VIRUS : ret);
 }
 
 /*********************
