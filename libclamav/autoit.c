@@ -394,7 +394,7 @@ static int ea05(cli_ctx *ctx, const uint8_t *base, char *tmpd) {
       return CL_VIRUS;
     }
     close(i);
-    if(!ctx->engine->keeptmp) 
+    if(!ctx->engine->keeptmp)
       if (cli_unlink(tempfile)) return CL_EUNLINK;
   }
   return ret;
@@ -490,7 +490,7 @@ static void LAME_decrypt (uint8_t *cypher, uint32_t size, uint16_t seed) {
 static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd) {
   uint8_t b[600], comp, script, *buf;
   uint32_t s;
-  int i, ret;
+  int i, ret, det = 0;
   unsigned int files=0;
   char tempfile[1024];
   const char prefixes[] = { '\0', '\0', '@', '$', '\0', '.', '"', '#' };
@@ -907,15 +907,20 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd) {
         return CL_ESEEK;
     }
     if(cli_magic_scandesc(i, ctx) == CL_VIRUS) {
-      close(i);
-      if(!ctx->engine->keeptmp) 
-        if (cli_unlink(tempfile)) return CL_EUNLINK;
-      return CL_VIRUS;
+      if (!SCAN_ALL) {
+        close(i);
+        if(!ctx->engine->keeptmp)
+          if (cli_unlink(tempfile)) return CL_EUNLINK;
+        return CL_VIRUS;
+      }
+      det = 1;
     }
     close(i);
     if(!ctx->engine->keeptmp)
       if (cli_unlink(tempfile)) return CL_EUNLINK;
   }
+  if (det)
+    return CL_VIRUS;
   return ret;
 }
 
