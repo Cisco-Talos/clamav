@@ -373,12 +373,14 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
         /* get pcre-ed */
         if (start == end) {
             cli_errmsg("cli_parseadd(): PCRE subsig mismatched '/' delimiter\n");
+            free(hexcpy);
             return CL_EMALFDB;
         }
 #if HAVE_PCRE
         /* get checked */
         if (hexsig[0] == '/') {
             cli_errmsg("cli_parseadd(): PCRE subsig must contain logical trigger\n");
+            free(hexcpy);
             return CL_EMALFDB;
         }
 
@@ -3261,11 +3263,14 @@ static int yara_subhex_verify(const char *hexstr, const char *end, size_t *maxsu
                 cli_warnmsg("load_oneyara[verify]: string has unbounded wildcard on single byte subsequence\n");
                 return CL_EMALFDB;
             }
-        case '?':
-            if (*track == '?')
-                hexbyte = !hexbyte;
             if (maxsublen && (sublen > *maxsublen))
                 *maxsublen = sublen;
+            sublen = 0;
+            break;
+        case '?':
+            if (maxsublen && (sublen > *maxsublen))
+                *maxsublen = sublen;
+            hexbyte = !hexbyte;
             sublen = 0;
             break;
         case '[':
