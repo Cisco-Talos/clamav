@@ -58,6 +58,7 @@
 static struct onas_ht *ddd_ht;
 static char **wdlt;
 static uint32_t wdlt_len;
+static int onas_in_fd;
 
 static int onas_ddd_init_ht(uint32_t ht_size) {
 
@@ -266,7 +267,6 @@ void *onas_ddd_th(void *arg) {
 	int sizelimit = 0, extinfo;
 	STATBUF sb;
 	uint64_t in_mask = IN_ONLYDIR | IN_MOVE | IN_DELETE | IN_CREATE;
-	int in_fd;
 	fd_set rfds;
 	char buf[4096];
 	ssize_t bread;
@@ -291,9 +291,8 @@ void *onas_ddd_th(void *arg) {
 	sigaction(SIGUSR1, &act, NULL);
 	sigaction(SIGSEGV, &act, NULL);
 
-	in_fd = inotify_init1(IN_NONBLOCK);
-	//in_fd = inotify_init();
-	if (in_fd == -1) {
+	onas_in_fd = inotify_init1(IN_NONBLOCK);
+	if (onas_in_fd == -1) {
 		logg("!ScanOnAccess: Could not init inotify.");
 		return NULL;
 	}
@@ -341,7 +340,7 @@ void *onas_ddd_th(void *arg) {
 		while(pt) {
 			size_t ptlen = strlen(pt->strarg);
 			if(onas_ht_get(ddd_ht, pt->strarg, ptlen, NULL) == CL_SUCCESS) {
-				if(onas_ddd_watch(pt->strarg, tharg->fan_fd, tharg->fan_mask, in_fd, in_mask)) {
+				if(onas_ddd_watch(pt->strarg, tharg->fan_fd, tharg->fan_mask, onas_in_fd, in_mask)) {
 					logg("!ScanOnAccess: Could not watch path '%s', %s\n", pt->strarg, strerror(errno));
 					return NULL;
 				}
@@ -352,14 +351,14 @@ void *onas_ddd_th(void *arg) {
 
 
 	FD_ZERO(&rfds);
-	FD_SET(in_fd, &rfds);
+	FD_SET(onas_in_fd, &rfds);
 
 	while (1) {
 		do {
-			ret = select(in_fd + 1, &rfds, NULL, NULL, NULL);
+			ret = select(onas_in_fd + 1, &rfds, NULL, NULL, NULL);
 		} while(ret == -1 && errno == EINTR);
 
-		while((bread = read(in_fd, buf, sizeof(buf))) > 0) {
+		while((bread = read(onas_in_fd, buf, sizeof(buf))) > 0) {
 
 			/* Handle events. */
 			int wd;
@@ -387,23 +386,23 @@ void *onas_ddd_th(void *arg) {
 
 				if (event->mask & IN_DELETE) {
 					logg("*ddd: DELETE - Removing %s from %s with wd:%d\n", child_path, path, wd);
-					onas_ddd_unwatch(child_path, tharg->fan_fd, in_fd);
+					onas_ddd_unwatch(child_path, tharg->fan_fd, onas_in_fd);
 					onas_ht_rm_hierarchy(ddd_ht, child_path, strlen(child_path), 0);
 
 				} else if (event->mask & IN_MOVED_FROM) {
 					logg("*ddd: MOVED_FROM - Removing %s from %s with wd:%d\n", child_path, path, wd);
-					onas_ddd_unwatch(child_path, tharg->fan_fd, in_fd);
+					onas_ddd_unwatch(child_path, tharg->fan_fd, onas_in_fd);
 					onas_ht_rm_hierarchy(ddd_ht, child_path, strlen(child_path), 0);
 
 				} else if (event->mask & IN_CREATE) {
 					logg("*ddd: CREATE - Adding %s to %s with wd:%d\n", child_path, path, wd);
 					onas_ht_add_hierarchy(ddd_ht, child_path);
-					onas_ddd_watch(child_path, tharg->fan_fd, tharg->fan_mask, in_fd, in_mask);
+					onas_ddd_watch(child_path, tharg->fan_fd, tharg->fan_mask, onas_in_fd, in_mask);
 
 				} else if (event->mask & IN_MOVED_TO) {
 					logg("*ddd: MOVED_TO - Adding %s to %s with wd:%d\n", child_path, path, wd);
 					onas_ht_add_hierarchy(ddd_ht, child_path);
-					onas_ddd_watch(child_path, tharg->fan_fd, tharg->fan_mask, in_fd, in_mask);
+					onas_ddd_watch(child_path, tharg->fan_fd, tharg->fan_mask, onas_in_fd, in_mask);
 				}
 			}
 		}
@@ -414,8 +413,12 @@ void *onas_ddd_th(void *arg) {
 
 static void onas_ddd_exit(int sig) {
 	logg("*ScanOnAccess: onas_ddd_exit(), signal %d\n", sig);
+
+	close(onas_in_fd);
+
 	onas_free_ht(ddd_ht);
 	free(wdlt);
+	
 	pthread_exit(NULL);
 	logg("ScanOnAccess: stopped\n");
 }
