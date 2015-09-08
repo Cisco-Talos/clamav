@@ -51,10 +51,13 @@
 #include "onaccess_ddd.h"
 
 static pthread_t ddd_pid;
+static int onas_fan_fd;
 
 static void onas_fan_exit(int sig)
 {
 	logg("*ScanOnAccess: onas_fan_exit(), signal %d\n", sig);
+
+	close(onas_fan_fd);
 	
 	pthread_kill(ddd_pid, SIGUSR1);
 	pthread_join(ddd_pid, NULL);
@@ -103,7 +106,6 @@ void *onas_fan_th(void *arg)
 	int sizelimit = 0, extinfo;
 	STATBUF sb;
         uint64_t fan_mask = FAN_OPEN_PERM | FAN_ACCESS_PERM | FAN_EVENT_ON_CHILD;
-	int fan_fd;
         fd_set rfds;
 	char buf[4096];
 	ssize_t bread;
@@ -134,8 +136,8 @@ void *onas_fan_th(void *arg)
     sigaction(SIGSEGV, &act, NULL);
 
     /* Initialize fanotify */
-    fan_fd = fanotify_init(FAN_CLASS_CONTENT | FAN_UNLIMITED_QUEUE | FAN_UNLIMITED_MARKS, O_RDONLY);
-    if(fan_fd < 0) {
+    onas_fan_fd = fanotify_init(FAN_CLASS_CONTENT | FAN_UNLIMITED_QUEUE | FAN_UNLIMITED_MARKS, O_RDONLY);
+    if(onas_fan_fd < 0) {
 	logg("!ScanOnAccess: fanotify_init failed: %s\n", cli_strerror(errno, err, sizeof(err)));
 	if(errno == EPERM)
 	    logg("ScanOnAccess: clamd must be started by root\n");
@@ -148,7 +150,7 @@ void *onas_fan_th(void *arg)
 
 	    if(!(ddd_tharg = (struct ddd_thrarg *) malloc(sizeof(struct ddd_thrarg)))) break;
 
-	    ddd_tharg->fan_fd = fan_fd;
+	    ddd_tharg->fan_fd = onas_fan_fd;
 	    ddd_tharg->fan_mask = fan_mask;
 	    ddd_tharg->opts = tharg->opts;
 	    ddd_tharg->engine = tharg->engine;
@@ -171,12 +173,12 @@ void *onas_fan_th(void *arg)
     extinfo = optget(tharg->opts, "ExtendedDetectionInfo")->enabled;
 
     FD_ZERO(&rfds);
-    FD_SET(fan_fd, &rfds);
+    FD_SET(onas_fan_fd, &rfds);
     do {
-        ret = select(fan_fd + 1, &rfds, NULL, NULL, NULL);
+        ret = select(onas_fan_fd + 1, &rfds, NULL, NULL, NULL);
     } while(ret == -1 && errno == EINTR);
 
-    while((bread = read(fan_fd, buf, sizeof(buf))) > 0) {
+    while((bread = read(onas_fan_fd, buf, sizeof(buf))) > 0) {
 	fmd = (struct fanotify_event_metadata *) buf;
 	while(FAN_EVENT_OK(fmd, bread)) {
 	    scan = 1;
@@ -202,7 +204,7 @@ void *onas_fan_th(void *arg)
 		    }
 		}
 
-		if(onas_fan_scanfile(fan_fd, fname, fmd, scan, extinfo, tharg) == -1) {
+		if(onas_fan_scanfile(onas_fan_fd, fname, fmd, scan, extinfo, tharg) == -1) {
 		    close(fmd->fd);
 		    return NULL;
 		}
@@ -216,7 +218,7 @@ void *onas_fan_th(void *arg)
 	    fmd = FAN_EVENT_NEXT(fmd, bread);
 	}
 	do {
-	    ret = select(fan_fd + 1, &rfds, NULL, NULL, NULL);
+	    ret = select(onas_fan_fd + 1, &rfds, NULL, NULL, NULL);
 	} while(ret == -1 && errno == EINTR);
     }
 

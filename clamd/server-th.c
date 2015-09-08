@@ -1426,15 +1426,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	pthread_mutex_lock(&reload_mutex);
 	if(reload) {
 	    pthread_mutex_unlock(&reload_mutex);
-#if defined(FANOTIFY) || defined(CLAMAUTH)
-	    if(optget(opts, "ScanOnAccess")->enabled && tharg) {
-		logg("Restarting on-access scan\n");
-		pthread_mutex_lock(&logg_mutex);
-		pthread_kill(fan_pid, SIGUSR1);
-		pthread_mutex_unlock(&logg_mutex);
-		pthread_join(fan_pid, NULL);
-	    }
-#endif
+
 	    engine = reload_db(engine, dboptions, opts, FALSE, &ret);
 	    if(ret) {
 		logg("Terminating because of a fatal error.\n");
@@ -1451,7 +1443,6 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 #if defined(FANOTIFY) || defined(CLAMAUTH)
 	    if(optget(opts, "ScanOnAccess")->enabled && tharg) {
 		tharg->engine = engine;
-		pthread_create(&fan_pid, &fan_attr, onas_fan_th, tharg);
 	    }
 #endif
 	    time(&start_time);
