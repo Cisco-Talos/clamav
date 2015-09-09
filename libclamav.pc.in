@@ -6,6 +6,7 @@ includedir=@includedir@
 Name: libclamav
 Description: A GPL virus scanner
 Version: @PACKAGE_VERSION@
-Libs: -L${libdir} -lclamav @LIBCLAMAV_LIBS@
-Cflags: -I${includedir} @CFLAGS@
+Libs: -L${libdir} -lclamav
+Libs.private: @LIBCLAMAV_LIBS@
+Cflags: -I${includedir}
 
