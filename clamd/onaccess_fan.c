@@ -176,7 +176,7 @@ void *onas_fan_th(void *arg)
     FD_SET(onas_fan_fd, &rfds);
     do {
         ret = select(onas_fan_fd + 1, &rfds, NULL, NULL, NULL);
-    } while(ret == -1 && errno == EINTR);
+    } while((ret == -1 && errno == EINTR) || reload);
 
     while((bread = read(onas_fan_fd, buf, sizeof(buf))) > 0) {
 	fmd = (struct fanotify_event_metadata *) buf;
@@ -219,7 +219,7 @@ void *onas_fan_th(void *arg)
 	}
 	do {
 	    ret = select(onas_fan_fd + 1, &rfds, NULL, NULL, NULL);
-	} while(ret == -1 && errno == EINTR);
+	} while((ret == -1 && errno == EINTR) || reload);
     }
 
     if(bread < 0)
