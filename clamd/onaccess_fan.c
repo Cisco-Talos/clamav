@@ -175,6 +175,7 @@ void *onas_fan_th(void *arg)
     FD_ZERO(&rfds);
     FD_SET(onas_fan_fd, &rfds);
     do {
+	if (reload) sleep(1);
         ret = select(onas_fan_fd + 1, &rfds, NULL, NULL, NULL);
     } while((ret == -1 && errno == EINTR) || reload);
 
@@ -218,6 +219,7 @@ void *onas_fan_th(void *arg)
 	    fmd = FAN_EVENT_NEXT(fmd, bread);
 	}
 	do {
+	    if (reload) sleep(1);
 	    ret = select(onas_fan_fd + 1, &rfds, NULL, NULL, NULL);
 	} while((ret == -1 && errno == EINTR) || reload);
     }
