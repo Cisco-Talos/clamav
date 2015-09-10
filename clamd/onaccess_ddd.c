@@ -310,7 +310,8 @@ void *onas_ddd_th(void *arg) {
 				if(onas_ht_add_hierarchy(ddd_ht, pt->strarg)) {
 					logg("!ScanOnAccess: Can't include path '%s'\n", pt->strarg);
 					return NULL;
-				}
+				} else
+					logg("ScanOnAccess: Protecting directory '%s' (and all sub-directories)\n", pt->strarg);
 			}
 
 			pt = (struct optstruct *) pt->nextarg;
@@ -328,7 +329,8 @@ void *onas_ddd_th(void *arg) {
 				if(onas_ht_rm_hierarchy(ddd_ht, pt->strarg, ptlen, 0)) {
 					logg("!ScanOnAccess: Can't exclude path '%s'\n", pt->strarg);
 					return NULL;
-				}
+				} else
+					logg("ScanOnAccess: Excluding  directory '%s' (and all sub-directories)\n", pt->strarg);
 			}
 
 			pt = (struct optstruct *) pt->nextarg;

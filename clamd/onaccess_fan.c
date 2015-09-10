@@ -144,24 +144,41 @@ void *onas_fan_th(void *arg)
 	return NULL;
     }
 
-    do {
-	    if(pthread_attr_init(&ddd_attr)) break;
-	    pthread_attr_setdetachstate(&ddd_attr, PTHREAD_CREATE_JOINABLE);
+    if (!optget(tharg->opts, "OnAccessDisableDDD")->enabled) {
+	    do {
+		    if(pthread_attr_init(&ddd_attr)) break;
+		    pthread_attr_setdetachstate(&ddd_attr, PTHREAD_CREATE_JOINABLE);
 
-	    if(!(ddd_tharg = (struct ddd_thrarg *) malloc(sizeof(struct ddd_thrarg)))) break;
+		    if(!(ddd_tharg = (struct ddd_thrarg *) malloc(sizeof(struct ddd_thrarg)))) break;
 
-	    ddd_tharg->fan_fd = onas_fan_fd;
-	    ddd_tharg->fan_mask = fan_mask;
-	    ddd_tharg->opts = tharg->opts;
-	    ddd_tharg->engine = tharg->engine;
-	    ddd_tharg->options = tharg->options;
+		    ddd_tharg->fan_fd = onas_fan_fd;
+		    ddd_tharg->fan_mask = fan_mask;
+		    ddd_tharg->opts = tharg->opts;
+		    ddd_tharg->engine = tharg->engine;
+		    ddd_tharg->options = tharg->options;
 
-	    if(!pthread_create(&ddd_pid, &ddd_attr, onas_ddd_th, ddd_tharg)) break;
+		    if(!pthread_create(&ddd_pid, &ddd_attr, onas_ddd_th, ddd_tharg)) break;
 
-	    free(ddd_tharg);
-	    ddd_tharg=NULL;
-    } while(0);
-    if (!tharg) logg("!Unable to start dynamic directory determination.\n");
+		    free(ddd_tharg);
+		    ddd_tharg=NULL;
+	    } while(0);
+	    if (!tharg) logg("!Unable to start dynamic directory determination.\n");
+
+    } else {
+	    if((pt = optget(tharg->opts, "OnAccessIncludePath"))->enabled) {
+		    while(pt) {
+			    if(fanotify_mark(onas_fan_fd, FAN_MARK_ADD, fan_mask, onas_fan_fd, pt->strarg) != 0) {
+				    logg("!ScanOnAccess: Can't include path '%s'\n", pt->strarg);
+				    return NULL;
+			    } else
+				    logg("ScanOnAccess: Protecting directory '%s'\n", pt->strarg);
+			    pt = (struct optstruct *) pt->nextarg;
+		    }
+	    } else {
+		    logg("!ScanOnAccess: Please specify at least one path with OnAccessIncludePath\n");
+		    return NULL;
+	    }
+    }
 
     /* Load other options. */
     sizelimit = optget(tharg->opts, "OnAccessMaxFileSize")->numarg;
