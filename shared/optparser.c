@@ -400,6 +400,8 @@ const struct clam_option __clam_options[] = {
 
     { "OnAccessMaxFileSize", NULL, 0, CLOPT_TYPE_SIZE, MATCH_SIZE, 5242880, NULL, 0, OPT_CLAMD, "Files larger than this value will not be scanned in on access.", "5M" },
 
+    { "OnAccessDisableDDD", "disable-ddd", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "This option toggles the dynamic directory determination system for on-access scanning (Linux only)", "no" },
+
     /* FIXME: mark these as private and don't output into clamd.conf/man */
     { "DevACOnly", "dev-ac-only", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, -1, NULL, FLAG_HIDDEN, OPT_CLAMD | OPT_CLAMSCAN, "", "" },
 
