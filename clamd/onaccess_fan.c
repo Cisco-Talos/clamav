@@ -84,7 +84,14 @@ static int onas_fan_scanfile(int fan_fd, const char *fname, struct fanotify_even
 	else
 	    logg("ScanOnAccess: %s: %s FOUND\n", fname, virname);
 	virusaction(fname, virname, tharg->opts);
-	res.response = FAN_DENY;
+
+	if(!optget(tharg->opts, "OnAccessPreventRead")->enabled && fmd->mask & FAN_ACCESS_PERM) {
+		res.response = FAN_ALLOW;
+	} else if(!optget(tharg->opts, "OnAccessPreventOpen")->enabled && fmd->mask & FAN_OPEN_PERM) {
+		res.response = FAN_ALLOW;
+	} else {
+		res.response = FAN_DENY;
+	}
     }
 
     if(fmd->mask & FAN_ALL_PERM_EVENTS) {
@@ -142,6 +149,22 @@ void *onas_fan_th(void *arg)
 	if(errno == EPERM)
 	    logg("ScanOnAccess: clamd must be started by root\n");
 	return NULL;
+    }
+
+    if (optget(tharg->opts, "OnAccessPreventRead")->enabled) {
+	    logg("ScanOnAccess: preventing read attempts on malicious files.\n");
+	    fan_mask |= FAN_ACCESS_PERM;
+    } else {
+	    logg("ScanOnAccess: notifying for read attempts.\n");
+	    fan_mask |= FAN_ACCESS;
+    }
+
+    if (optget(tharg->opts, "OnAccessPreventOpen")->enabled) {
+	    logg("ScanOnAccess: preventing open attempts on malicious files.\n");
+	    fan_mask |= FAN_OPEN_PERM; 
+    } else {
+	    logg("ScanOnAccess: notifying for open attempts.\n");
+	    fan_mask |= FAN_OPEN; 
     }
 
     if (!optget(tharg->opts, "OnAccessDisableDDD")->enabled) {

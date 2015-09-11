@@ -584,6 +584,17 @@ Example
 # Default: no
 #OnAccessDisableDDD yes
 
+# Modifies fanotify blocking behaviour when handling read permission events.
+# If turned on, fanotify will prevent any read attempt if the file is a virus.
+# (On-access scan only)
+# Default: yes
+#OnAccessPreventRead no
+
+# Modifies fanotify blocking behaviour when handling open permission events.
+# If turned on, fanotify will prevent any open attempt if the file is a virus.
+# (On-access scan only)
+# Default: yes
+#OnAccessPreventOpen no
 
 ##
 ## Bytecode
