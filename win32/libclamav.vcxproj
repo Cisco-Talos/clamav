@@ -81,7 +81,6 @@
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(SolutionDir)build\$(PlatformName)\$(ProjectName)\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)$(PlatformName)\$(Configuration)\</OutDir>
-    <TargetExt>.dll</TargetExt>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -162,7 +161,6 @@
       <ModuleDefinitionFile>$(SolutionDir)libclamav.def</ModuleDefinitionFile>
       <AdditionalLibraryDirectories>C:\clamdeps\win64\openssl\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
-    <Lib />
   </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="libclamav.def" />
