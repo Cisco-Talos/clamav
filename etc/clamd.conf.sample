@@ -556,6 +556,14 @@ Example
 # Default: no
 #ScanOnAccess yes
 
+# Set the  mount point to be scanned. The mount point specified, or the mount point 
+# containing the specified directory will be watched. If any directories are specified, 
+# this option will preempt the DDD system. This will notify only. It can be used multiple times.
+# (On-access scan only)
+# Default: disabled
+#OnAccessMountPath /
+#OnAccessMountPath /home/user
+
 # Don't scan files larger than OnAccessMaxFileSize
 # Value of 0 disables the limit.
 # Default: 5M
