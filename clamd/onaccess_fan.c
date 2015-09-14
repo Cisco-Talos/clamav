@@ -85,13 +85,7 @@ static int onas_fan_scanfile(int fan_fd, const char *fname, struct fanotify_even
 	    logg("ScanOnAccess: %s: %s FOUND\n", fname, virname);
 	virusaction(fname, virname, tharg->opts);
 
-	if(!optget(tharg->opts, "OnAccessPreventRead")->enabled && fmd->mask & FAN_ACCESS_PERM) {
-		res.response = FAN_ALLOW;
-	} else if(!optget(tharg->opts, "OnAccessPreventOpen")->enabled && fmd->mask & FAN_OPEN_PERM) {
-		res.response = FAN_ALLOW;
-	} else {
-		res.response = FAN_DENY;
-	}
+	res.response = FAN_DENY;
     }
 
     if(fmd->mask & FAN_ALL_PERM_EVENTS) {
@@ -112,7 +106,7 @@ void *onas_fan_th(void *arg)
 	short int scan;
 	int sizelimit = 0, extinfo;
 	STATBUF sb;
-        uint64_t fan_mask = FAN_OPEN_PERM | FAN_ACCESS_PERM | FAN_EVENT_ON_CHILD;
+        uint64_t fan_mask = FAN_ACCESS_PERM | FAN_OPEN_PERM | FAN_EVENT_ON_CHILD;
         fd_set rfds;
 	char buf[4096];
 	ssize_t bread;
@@ -167,7 +161,18 @@ void *onas_fan_th(void *arg)
 	    fan_mask |= FAN_OPEN; 
     }
 
-    if (!optget(tharg->opts, "OnAccessDisableDDD")->enabled) {
+    if ((pt = optget(tharg->opts, "OnAccessMountPath"))->enabled) {
+	    while(pt) {
+		    if(fanotify_mark(onas_fan_fd, FAN_MARK_ADD | FAN_MARK_MOUNT,
+					    FAN_OPEN | FAN_ACCESS | FAN_EVENT_ON_CHILD, onas_fan_fd, pt->strarg) != 0) {
+			    logg("!ScanOnAccess: Can't include mountpoint '%s'\n", pt->strarg);
+			    return NULL;
+		    } else
+			    logg("ScanOnAccess: Protecting '%s' and rest of mount.\n", pt->strarg);
+		    pt = (struct optstruct *) pt->nextarg;
+	    }
+
+    } else if (!optget(tharg->opts, "OnAccessDisableDDD")->enabled) {
 	    do {
 		    if(pthread_attr_init(&ddd_attr)) break;
 		    pthread_attr_setdetachstate(&ddd_attr, PTHREAD_CREATE_JOINABLE);
