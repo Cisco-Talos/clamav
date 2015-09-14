@@ -106,7 +106,7 @@ void *onas_fan_th(void *arg)
 	short int scan;
 	int sizelimit = 0, extinfo;
 	STATBUF sb;
-        uint64_t fan_mask = FAN_ACCESS_PERM | FAN_OPEN_PERM | FAN_EVENT_ON_CHILD;
+        uint64_t fan_mask = FAN_EVENT_ON_CHILD;
         fd_set rfds;
 	char buf[4096];
 	ssize_t bread;
@@ -145,26 +145,17 @@ void *onas_fan_th(void *arg)
 	return NULL;
     }
 
-    if (optget(tharg->opts, "OnAccessPreventRead")->enabled) {
-	    logg("ScanOnAccess: preventing read attempts on malicious files.\n");
-	    fan_mask |= FAN_ACCESS_PERM;
+    if (!optget(tharg->opts, "OnAccessNotifyOnly")->enabled && !optget(tharg->opts, "OnAccessMountPath")->enabled) {
+	    logg("ScanOnAccess: preventing access attempts on malicious files.\n");
+	    fan_mask |= FAN_ACCESS_PERM | FAN_OPEN_PERM;
     } else {
-	    logg("ScanOnAccess: notifying for read attempts.\n");
-	    fan_mask |= FAN_ACCESS;
-    }
-
-    if (optget(tharg->opts, "OnAccessPreventOpen")->enabled) {
-	    logg("ScanOnAccess: preventing open attempts on malicious files.\n");
-	    fan_mask |= FAN_OPEN_PERM; 
-    } else {
-	    logg("ScanOnAccess: notifying for open attempts.\n");
-	    fan_mask |= FAN_OPEN; 
+	    logg("ScanOnAccess: notifying only for access attempts.\n");
+	    fan_mask |= FAN_ACCESS | FAN_OPEN;
     }
 
     if ((pt = optget(tharg->opts, "OnAccessMountPath"))->enabled) {
 	    while(pt) {
-		    if(fanotify_mark(onas_fan_fd, FAN_MARK_ADD | FAN_MARK_MOUNT,
-					    FAN_OPEN | FAN_ACCESS | FAN_EVENT_ON_CHILD, onas_fan_fd, pt->strarg) != 0) {
+		    if(fanotify_mark(onas_fan_fd, FAN_MARK_ADD | FAN_MARK_MOUNT, fan_mask, onas_fan_fd, pt->strarg) != 0) {
 			    logg("!ScanOnAccess: Can't include mountpoint '%s'\n", pt->strarg);
 			    return NULL;
 		    } else

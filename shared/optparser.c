@@ -404,9 +404,7 @@ const struct clam_option __clam_options[] = {
 
     { "OnAccessDisableDDD", "disable-ddd", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "This option toggles the dynamic directory determination system for on-access scanning (Linux only).", "no" },
 
-    { "OnAccessPreventRead", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD, "This option specifies is fanotify will prevent read attempts on malicious files (Linux only)", "yes" },
-
-    { "OnAccessPreventOpen", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD, "This option specifies if fanotify will prevent open attempts for malicious files (Linux only)", "yes" },
+    { "OnAccessNotifyOnly", "notify-only", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "This option changes fanotify behavior to not prevent access attempts on malicious files and simply notify the user instead (On Access scan only).", "no" },
 
     /* FIXME: mark these as private and don't output into clamd.conf/man */
     { "DevACOnly", "dev-ac-only", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, -1, NULL, FLAG_HIDDEN, OPT_CLAMD | OPT_CLAMSCAN, "", "" },
