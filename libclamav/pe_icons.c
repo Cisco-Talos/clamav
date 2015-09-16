@@ -1555,7 +1555,8 @@ static int parseicon(struct ICON_ENV *icon_env, uint32_t rva) {
 	    scalex = (double)width / newsize;
 	    scaley = (double)height / newsize;
 	    if(!(newdata = cli_malloc(newsize * newsize * sizeof(*newdata)))) {
-		return CL_SUCCESS;
+		cli_errmsg("parseicon: Unable to allocate memory for scaling image\n");
+		return CL_EMEM;
 	    }
 	    cli_dbgmsg("parseicon: Slow scaling to %ux%u (%f, %f)\n", newsize, newsize, scalex, scaley);
 	    for(y = 0; y<newsize; y++) {
