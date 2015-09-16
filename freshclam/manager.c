@@ -90,29 +90,6 @@ char g_label[33];
 	if(chdir(x) == -1)			\
 	    logg("!Can't chdir to %s\n", x);
 
-#ifndef HAVE_GETADDRINFO
-static const char *
-ghbn_err (int err)              /* hstrerror() */
-{
-    switch (err)
-    {
-    case HOST_NOT_FOUND:
-        return "Host not found";
-
-    case NO_DATA:
-        return "No IP address";
-
-    case NO_RECOVERY:
-        return "Unrecoverable DNS error";
-
-    case TRY_AGAIN:
-        return "Temporary DNS error";
-
-    default:
-        return "Unknown error";
-    }
-}
-#endif
 
 static int
 textrecordfield (const char * dbname)
@@ -155,7 +132,6 @@ getclientsock (const char *localip, int prot)
 
     if (localip)
     {
-#ifdef HAVE_GETADDRINFO
         struct addrinfo *res;
         int ret;
 
@@ -193,53 +169,17 @@ getclientsock (const char *localip, int prot)
             freeaddrinfo (res);
         }
 
-#else /* IPv4 */
-        struct hostent *he;
-
-        if (!(he = gethostbyname (localip)))
-        {
-            logg ("!Could not resolve local ip address '%s': %s\n", localip,
-                  ghbn_err (h_errno));
-            logg ("^Using standard local ip address and port for fetching.\n");
-        }
-        else
-        {
-            struct sockaddr_in client;
-            unsigned char *ia;
-            char ipaddr[16];
-
-            memset ((char *) &client, 0, sizeof (client));
-            client.sin_family = AF_INET;
-            client.sin_addr = *(struct in_addr *) he->h_addr_list[0];
-            if (bind
-                (socketfd, (struct sockaddr *) &client,
-                 (socklen_t)sizeof (struct sockaddr_in)) != 0)
-            {
-                logg ("!Could not bind to local ip address '%s': %s\n",
-                      localip, strerror (errno));
-                logg ("^Using default client ip.\n");
-            }
-            else
-            {
-                ia = (unsigned char *) he->h_addr_list[0];
-                sprintf (ipaddr, "%u.%u.%u.%u", ia[0], ia[1], ia[2], ia[3]);
-                logg ("*Using ip '%s' for fetching.\n", ipaddr);
-            }
-        }
-#endif
     }
 
     return socketfd;
 }
 
-#ifdef HAVE_GETADDRINFO
 static int
 qcompare (const void *a, const void *b)
 {
     return (*(const struct addrinfo **) a)->ai_flags -
         (*(const struct addrinfo **) b)->ai_flags;
 }
-#endif
 
 static int
 wwwconnect (const char *server, const char *proxy, int pport, char *ip,
@@ -248,18 +188,12 @@ wwwconnect (const char *server, const char *proxy, int pport, char *ip,
 {
     int socketfd, port, ret;
     unsigned int ips = 0, ignored = 0, i;
-#ifdef HAVE_GETADDRINFO
     struct addrinfo hints, *res = NULL, *rp, *loadbal_rp = NULL, *addrs[128];
     char port_s[6], loadbal_ipaddr[46];
     uint32_t loadbal = 1, minsucc = 0xffffffff, minfail =
         0xffffffff, addrnum = 0;
     int ipv4start = -1, ipv4end = -1;
     struct mirdat_ip *md;
-#else
-    struct sockaddr_in name;
-    struct hostent *host;
-    unsigned char *ia;
-#endif
     char ipaddr[46];
     const char *hostpt;
 
@@ -290,7 +224,6 @@ wwwconnect (const char *server, const char *proxy, int pport, char *ip,
         port = 80;
     }
 
-#ifdef HAVE_GETADDRINFO
     memset (&hints, 0, sizeof (hints));
 #ifdef SUPPORT_IPv6
     hints.ai_family = AF_UNSPEC;
@@ -470,79 +403,6 @@ wwwconnect (const char *server, const char *proxy, int pport, char *ip,
         i++;
     }
     freeaddrinfo (res);
-
-#else /* IPv4 */
-
-    if ((host = gethostbyname (hostpt)) == NULL)
-    {
-        logg ("%cCan't get information about %s: %s\n", logerr ? '!' : '^',
-              hostpt, ghbn_err (h_errno));
-        return -1;
-    }
-
-    for (i = 0; host->h_addr_list[i] != 0; i++)
-    {
-        /* this dirty hack comes from pink - Nosuid TCP/IP ping 1.6 */
-        ia = (unsigned char *) host->h_addr_list[i];
-        sprintf (ipaddr, "%u.%u.%u.%u", ia[0], ia[1], ia[2], ia[3]);
-
-        ips++;
-        if (mdat
-            && (ret =
-                mirman_check (&((struct in_addr *) ia)->s_addr, AF_INET, mdat,
-                              NULL)))
-        {
-            if (ret == 1)
-                logg ("*Ignoring mirror %s (due to previous errors)\n",
-                      ipaddr);
-            else
-                logg ("*Ignoring mirror %s (has connected too many times with an outdated version)\n", ipaddr);
-            ignored++;
-            continue;
-        }
-
-        if (ip)
-            strcpy (ip, ipaddr);
-
-        if (i > 0)
-            logg ("Trying host %s (%s)...\n", hostpt, ipaddr);
-
-        memset ((char *) &name, 0, sizeof (name));
-        name.sin_family = AF_INET;
-        name.sin_addr = *((struct in_addr *) host->h_addr_list[i]);
-        name.sin_port = htons (port);
-
-        socketfd = getclientsock (localip, AF_INET);
-        if (socketfd < 0)
-            return -1;
-
-#ifdef SO_ERROR
-        if (wait_connect
-            (socketfd, (struct sockaddr *) &name, sizeof (struct sockaddr_in),
-             ctimeout) == -1)
-        {
-#else
-        if (connect
-            (socketfd, (struct sockaddr *) &name,
-             sizeof (struct sockaddr_in)) == -1)
-        {
-#endif
-            logg ("Can't connect to port %d of host %s (IP: %s)\n", port,
-                  hostpt, ipaddr);
-            closesocket (socketfd);
-            continue;
-        }
-        else
-        {
-            if (mdat)
-            {
-                mdat->currip[0] = ((struct in_addr *) ia)->s_addr;
-                mdat->af = AF_INET;
-            }
-            return socketfd;
-        }
-    }
-#endif
 
     if (mdat && can_whitelist && ips && (ips == ignored))
         mirman_whitelist (mdat, 1);
@@ -2566,9 +2426,7 @@ downloadmanager (const struct optstruct *opts, const char *hostname,
 
     time (&currtime);
     logg ("ClamAV update process started at %s", ctime (&currtime));
-#ifdef HAVE_GETADDRINFO
     logg ("*Using IPv6 aware code\n");
-#endif
 
 #ifdef HAVE_RESOLV_H
     dnsdbinfo = optget (opts, "DNSDatabaseInfo")->strarg;
