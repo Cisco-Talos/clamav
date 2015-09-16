@@ -41,7 +41,6 @@ struct servent *w32_getservbyname(const char *name, const char *proto);
 int w32_getaddrinfo(const char *node, const char *service, const struct addrinfo *hints, struct addrinfo **res);
 void w32_freeaddrinfo(struct addrinfo *res);
 const char *w32_inet_ntop(int af, const void *src, char *dst, socklen_t size);
-struct hostent *w32_gethostbyname(const char *name);
 int w32_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout);
 int poll_with_event(struct pollfd *fds, int nfds, int timeout, HANDLE event);
 int w32_accept(SOCKET sockfd, const struct sockaddr *addr, socklen_t *addrlen);
