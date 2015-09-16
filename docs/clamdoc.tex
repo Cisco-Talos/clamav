@@ -68,7 +68,7 @@
     \setcounter{page}{0}
 
     \pagestyle{empty}
-    \includegraphics[width=353pt]{clam}
+    \includegraphics[width=353pt]{html/clam.png}
     \vspace{3cm}
     \begin{flushright}
 	\rule[-1ex]{8cm}{3pt}\\
@@ -730,14 +730,33 @@ N * * * *	/usr/local/bin/freshclam --quiet
 	      files will be automatically blocked and the scanner (including
 	      \verb+clamd+!) will not be able to detect any viruses. In the
 	      result \textbf{all infected mails may be delivered.}
+	\item Watch your entire filesystem only using the \verb+clamd.conf+
+	      OnAccessMountPath option. While this will put the on-access scanner
+	      into NotifyOnly mode, it will prevent potential system lockups caused
+	      by fanotify's blocking functionality.
     \end{itemize}
-    For example, to protect the whole system add the following lines to
+    The default configuration utilizes inotify to recursively keep track of
+    directories. If you need to protect more than 8192 directories it will
+    be necessary to change inotify's \verb+max_user_watches+ value.
+    \\\\
+    This can be done temporarily with:
+    \begin{verbatim}
+    $ sysctl fs.inotify.max_user_watches=<n>
+    \end{verbatim}
+    Where \verb+<n>+ is the new maximum desired.
+    \\\\
+    To watch your entire filesystem add the following lines to
     \verb+clamd.conf+:
     \begin{verbatim}
 	ScanOnAccess yes
-	OnAccessIncludePath /
-	OnAccessExcludePath /proc
-	OnAccessExcludePath /temporary/dir/of/your/mail/scanning/software
+	OnAccessMountPath /
+    \end{verbatim}
+    Similarly, to protect your home directory add the following lines to
+    \verb+clamd.conf+:
+    \begin{verbatim}
+	ScanOnAccess yes
+	OnAccessIncludePath /home
+	OnAccessExcludePath /home/user/temp/dir/of/your/mail/scanning/software
     \end{verbatim}
     For more configuration options, type 'man clamd.conf' or reference the
     example clamd.conf.
