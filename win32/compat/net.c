@@ -331,10 +331,6 @@ const char *w32_inet_ntop(int af, const void *src, char *dst, socklen_t size) {
     return ret;
 }
 
-struct hostent *w32_gethostbyname(const char *name) {
-    return gethostbyname(name);
-}
-
 int w32_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout) {
     int ret = select(nfds, readfds, writefds, exceptfds, timeout);
     if(ret == SOCKET_ERROR) {

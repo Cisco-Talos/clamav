@@ -68,7 +68,6 @@ char *strptime(const char *s, const char *format, struct tm *tm);
 #define inet_ntop w32_inet_ntop
 #define inet_ntoa w32_inet_ntoa
 #define getpeername w32_getpeername
-#define gethostbyname w32_gethostbyname
 #define select w32_select
 #define poll w32_poll
 #define strerror w32_strerror
