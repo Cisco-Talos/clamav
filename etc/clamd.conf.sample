@@ -593,11 +593,11 @@ Example
 #OnAccessDisableDDD yes
 
 # Modifies fanotify blocking behaviour when handling permission events.
-# If turned on, fanotify will only notify if the file scanned is a virus,
+# If off, fanotify will only notify if the file scanned is a virus,
 # and not perform any blocking.
 # (On-access scan only)
 # Default: no
-#OnAccessNotifyOnly yes
+#OnAccessPrevention yes
 
 ##
 ## Bytecode

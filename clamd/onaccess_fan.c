@@ -146,7 +146,7 @@ void *onas_fan_th(void *arg)
 	return NULL;
     }
 
-    if (!optget(tharg->opts, "OnAccessNotifyOnly")->enabled && !optget(tharg->opts, "OnAccessMountPath")->enabled) {
+    if (optget(tharg->opts, "OnAccessPrevention")->enabled && !optget(tharg->opts, "OnAccessMountPath")->enabled) {
 	    logg("ScanOnAccess: preventing access attempts on malicious files.\n");
 	    fan_mask |= FAN_ACCESS_PERM | FAN_OPEN_PERM;
     } else {
