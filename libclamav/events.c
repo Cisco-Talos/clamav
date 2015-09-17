@@ -1,6 +1,7 @@
 /*
  *  (bytecode) events
  *
+ *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2010-2012 Sourcefire, Inc.
  *
  *  Authors: Török Edvin

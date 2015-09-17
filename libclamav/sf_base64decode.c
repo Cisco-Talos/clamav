@@ -1,4 +1,5 @@
 /*
+ ** Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  ** Copyright (C) 1998-2013 Sourcefire, Inc.
  **
  ** Written by Patrick Mullen <pmullen@sourcefire.com>

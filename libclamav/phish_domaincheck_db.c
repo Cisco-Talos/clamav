@@ -1,6 +1,7 @@
 /*
  *  Phishing module: domain list implementation.
  *
+ *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2008 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
