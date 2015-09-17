@@ -5,6 +5,7 @@
  *                          Greg Roelofs <newt@pobox.com>,
  *                          John Bowler <jbowler@acm.org>,
  *                          Tom Lane <tgl@sss.pgh.pa.us>
+ *   Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *   Copyright (C) 2011 Sourcefire, Inc.
  *   Maintainer: Tomasz Kojm <tkojm@clamav.net>
  *

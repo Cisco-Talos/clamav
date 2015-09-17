@@ -1,6 +1,7 @@
 /*
  *  ClamdTOP
  *
+ *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2008 - 2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin

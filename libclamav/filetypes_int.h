@@ -1,6 +1,7 @@
 /*
  *  Static filetype data for use when daily.ftm is not available.
  *
+ *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
