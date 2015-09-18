@@ -28,14 +28,14 @@ VS_VERSION_INFO VERSIONINFO
 BEGIN
     BLOCK "StringFileInfo" {
 	BLOCK "040904B0" {
-	    VALUE "CompanyName", "SourceFire, Inc."
+	    VALUE "CompanyName", "Cisco Systems, Inc."
 	    VALUE "FileDescription", RES_FDESC
 	    VALUE "FileVersion", REPO_VERSION
 	    VALUE "InternalName", RES_NAME
 	    VALUE "OriginalFilename", RES_FNAME
 	    VALUE "ProductName", "ClamAV"
 	    VALUE "ProductVersion", RES_VER_S " ("  REPO_VERSION ")"
-	    VALUE "LegalCopyright", "(C) 2009 Sourcefire, Inc."
+	    VALUE "LegalCopyright", "(C) 2015 Cisco Systems, Inc."
 	    VALUE "LegalTrademarks", "License: GNU GPL, Version 2"
 	    VALUE "Comments", REPO_VERSION
 	}
