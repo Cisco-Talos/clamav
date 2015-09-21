@@ -3587,7 +3587,7 @@ static int scan_common(int desc, cl_fmap_t *map, const char **virname, unsigned 
 
                 /* backwards compatibility: scan the json string unless a virus was detected */
                 if (rc != CL_VIRUS && ctx.engine->root[13]->ac_lsigs) {
-                    cli_warnmsg("scan_common: running depeciated preclass bytecodes for target type 13\n");
+                    cli_dbgmsg("scan_common: running deprecated preclass bytecodes for target type 13\n");
                     ctx.options &= ~CL_SCAN_FILE_PROPERTIES;
                     rc = cli_mem_scandesc(jstring, strlen(jstring), &ctx);
                 }
