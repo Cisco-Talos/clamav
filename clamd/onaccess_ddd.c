@@ -360,6 +360,11 @@ void *onas_ddd_th(void *arg) {
 			if(onas_ht_get(ddd_ht, pt->strarg, ptlen, NULL) == CL_SUCCESS) {
 				if(onas_ddd_watch(pt->strarg, tharg->fan_fd, tharg->fan_mask, onas_in_fd, in_mask)) {
 					logg("!ScanOnAccess: Could not watch path '%s', %s\n", pt->strarg, strerror(errno));
+					if(errno == EINVAL && optget(tharg->opts, "OnAccessPrevention")->enabled) {
+						logg("!ScanOnAccess: When using the OnAccessPrevention option, please ensure your kernel\n\t\t\twas compiled with CONFIG_FANOTIFY_ACCESS_PERMISSIONS set to Y\n");
+
+						kill(getpid(), SIGTERM);
+					}
 					return NULL;
 				}
 			}
