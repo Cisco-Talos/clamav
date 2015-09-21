@@ -79,6 +79,10 @@ char *freshdbdir(void)
 	if((opt = optget(opts, "DatabaseDirectory"))->enabled) {
 	    if(strcmp(dbdir, opt->strarg)) {
 		    char *daily = (char *) malloc(strlen(opt->strarg) + strlen(dbdir) + 30);
+		    if (daily == NULL) {
+			fprintf(stderr, "Unable to allocate memory for db directory...\n");
+			return NULL;
+		    }
 		sprintf(daily, "%s"PATHSEP"daily.cvd", opt->strarg);
 		if(access(daily, R_OK))
 		    sprintf(daily, "%s"PATHSEP"daily.cld", opt->strarg);

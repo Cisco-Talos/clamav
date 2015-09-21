@@ -164,6 +164,10 @@ int main(int argc, char **argv)
     /* parse the config file */
     cfgfile = optget(opts, "config-file")->strarg;
     pt = strdup(cfgfile);
+    if (pt == NULL) {
+	fprintf(stderr, "ERROR: Unable to allocate memory for config file\n");
+	return 1;
+    }
     if((opts = optparse(cfgfile, 0, NULL, 1, OPT_CLAMD, 0, opts)) == NULL) {
         fprintf(stderr, "ERROR: Can't open/parse the config file %s\n", pt);
         free(pt);

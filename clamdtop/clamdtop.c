@@ -618,6 +618,7 @@ static int make_connection_real(const char *soname, conn_t *conn)
     struct addrinfo hints, *res=NULL, *p;
     int err;
 
+    OOM_CHECK(pt);
     conn->tcp = 0;
 
 #ifndef _WIN32
@@ -1088,11 +1089,13 @@ static void parse_stats(conn_t *conn, struct stats *stats, unsigned idx)
 
 	if (!conn->version) {
 		stats->engine_version = strdup("???");
+		OOM_CHECK(stats->engine_version);
 		return;
 	}
 	p = pstart = vstart = strchr(conn->version, ' ');
 	if (!vstart) {
 	    stats->engine_version = strdup("???");
+	    OOM_CHECK(stats->engine_version);
 	    return;
 	}
 	/* find digit in version */
@@ -1116,6 +1119,7 @@ static void parse_stats(conn_t *conn, struct stats *stats, unsigned idx)
 	pstart = strchr(p, '/');
 	if (!pstart)
 		stats->db_version = strdup("????");
+		OOM_CHECK(stats->db_version);
 	else {
 		pstart++;
 		p = strchr(pstart, '/');
