@@ -182,6 +182,8 @@ static int onas_ddd_watch_hierarchy(const char* pathname, size_t len, int fd, ui
 
 		size_t size = len + strlen(curr->dirname) + 2;
 		char *child_path = (char *) cli_malloc(size);
+		if (child_path == NULL)
+			return CL_EMEM;
 		if (hnode->pathname[len-1] == '/')
 			snprintf(child_path, --size, "%s%s", hnode->pathname, curr->dirname);
 		else
@@ -247,6 +249,8 @@ static int onas_ddd_unwatch_hierarchy(const char* pathname, size_t len, int fd, 
 
 		size_t size = len + strlen(curr->dirname) + 2;
 		char *child_path = (char *) cli_malloc(size);
+		if (child_path == NULL)
+			return CL_EMEM;
 		if (hnode->pathname[len-1] == '/')
 			snprintf(child_path, --size, "%s%s", hnode->pathname, curr->dirname);
 		else
@@ -378,6 +382,8 @@ void *onas_ddd_th(void *arg) {
 				len = strlen(path);
 				size_t size = strlen(child) + len + 2;
 				char *child_path = (char *) cli_malloc(size);
+				if (child_path == NULL)
+					return CL_EMEM;
 				if (path[len-1] == '/')
 					snprintf(child_path, --size, "%s%s", path, child);
 				else

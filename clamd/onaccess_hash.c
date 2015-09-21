@@ -629,6 +629,8 @@ int onas_ht_rm_hierarchy(struct onas_ht *ht, const char* pathname, size_t len, i
 
 		size_t size = len + strlen(curr->dirname) + 2;
 		char *child_path = (char *) cli_malloc(size);
+		if (child_path == NULL)
+			return CL_EMEM;
 		if (hnode->pathname[len-1] == '/')
 			snprintf(child_path, size, "%s%s", hnode->pathname, curr->dirname);
 		else

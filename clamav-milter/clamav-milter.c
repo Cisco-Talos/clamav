@@ -99,6 +99,10 @@ int main(int argc, char **argv) {
     }
 
     pt = strdup(optget(opts, "config-file")->strarg);
+    if (pt == NULL) {
+	printf("Unable to allocate memory for config file\n");
+	return 1;
+    }
     if((opts = optparse(pt, 0, NULL, 1, OPT_MILTER, 0, opts)) == NULL) {
 	printf("%s: cannot parse config file %s\n", argv[0], pt);
 	free(pt);
