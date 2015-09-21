@@ -719,7 +719,9 @@ N * * * *	/usr/local/bin/freshclam --quiet
     \subsection{On-access Scanning}\label{On-access}
     There is a special thread in \verb+clamd+ that performs on-access
     scanning under Linux and shares internal virus database
-    with the daemon. \textbf{You must follow some important rules when
+    with the daemon. By default, this thread will only notify you when
+    potential threats are discovered. If you turn on prevention via
+    \verb+clamd.conf+ then \textbf{you must follow some important rules when
     using it:}
     \begin{itemize}
 	\item Always stop the daemon cleanly - using the SHUTDOWN command or
@@ -731,9 +733,9 @@ N * * * *	/usr/local/bin/freshclam --quiet
 	      \verb+clamd+!) will not be able to detect any viruses. In the
 	      result \textbf{all infected mails may be delivered.}
 	\item Watch your entire filesystem only using the \verb+clamd.conf+
-	      OnAccessMountPath option. While this will put the on-access scanner
-	      into NotifyOnly mode, it will prevent potential system lockups caused
-	      by fanotify's blocking functionality.
+	      OnAccessMountPath option. While this will disable on-access prevention,
+	      it will avoid potential system lockups caused by fanotify's blocking
+	      functionality.
     \end{itemize}
     The default configuration utilizes inotify to recursively keep track of
     directories. If you need to protect more than 8192 directories it will
@@ -757,6 +759,7 @@ N * * * *	/usr/local/bin/freshclam --quiet
 	ScanOnAccess yes
 	OnAccessIncludePath /home
 	OnAccessExcludePath /home/user/temp/dir/of/your/mail/scanning/software
+	OnAccessPrevention yes
     \end{verbatim}
     For more configuration options, type 'man clamd.conf' or reference the
     example clamd.conf.
