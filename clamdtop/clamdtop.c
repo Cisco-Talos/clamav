@@ -1117,10 +1117,10 @@ static void parse_stats(conn_t *conn, struct stats *stats, unsigned idx)
 	stats->engine_version[p-pstart] = '\0';
 
 	pstart = strchr(p, '/');
-	if (!pstart)
+	if (!pstart) {
 		stats->db_version = strdup("????");
 		OOM_CHECK(stats->db_version);
-	else {
+	} else {
 		pstart++;
 		p = strchr(pstart, '/');
 		if (!p)
