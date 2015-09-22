@@ -455,13 +455,24 @@ int CLAMAPI Scan_Initialize(const wchar_t *pEnginesFolder, const wchar_t *pTempR
 	if(!(engine = cl_engine_new())) {
 	unlock_engine();
 	FAIL(CL_EMEM, "Not enough memory for a new engine");
+    }
+    cl_engine_set_clcb_pre_cache(engine, filetype_cb);
+    cl_engine_set_clcb_pre_scan(engine, prescan_cb);
+    cl_engine_set_clcb_post_scan(engine, postscan_cb);
+
+	/* In mindefs mode disable the cache
+	 * In this mode, no standard clamav signatures are loaded and it is used as an unpacking engine.
+	 * Turn off caching, so that files can always be unpacked/unarchived.
+	*/
+	if (bLoadMinDefs) {
+		if ((ret = cl_engine_set_num(engine, CL_ENGINE_DISABLE_CACHE, 1) != CL_SUCCESS)) {
+		free_engine_and_unlock();
+		FAIL(ret, "Failed to set disable engine cache: %s", cl_strerror(ret));
+		}
 	}
-	cl_engine_set_clcb_pre_cache(engine, filetype_cb);
-	cl_engine_set_clcb_pre_scan(engine, prescan_cb);
-	cl_engine_set_clcb_post_scan(engine, postscan_cb);
-	
-	minimal_definitions = bLoadMinDefs;
-	if(bLoadMinDefs)
+
+    minimal_definitions = bLoadMinDefs;
+    if(bLoadMinDefs)
 	logg("^MINIMAL DEFINITIONS MODE ON!\n");
 
 	if(!WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, pTempRoot, -1, tmpdir, sizeof(tmpdir), NULL, &cant_convert) || cant_convert) {
