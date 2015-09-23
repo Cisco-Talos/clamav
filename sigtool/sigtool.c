@@ -608,6 +608,10 @@ static int script2cdiff(const char *script, const char *builder, const struct op
     osize = (unsigned int) sb.st_size;
 
     cdiff = strdup(script);
+    if (NULL == cdiff) {
+       mprintf("!script2cdiff: Unable to allocate memory for file name\n");
+       return -1;
+    }
     pt = strstr(cdiff, ".script");
     if(!pt) {
 	mprintf("!script2cdiff: Incorrect file name (no .script extension)\n");
