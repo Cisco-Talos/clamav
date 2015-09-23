@@ -59,9 +59,11 @@ static void onas_fan_exit(int sig)
 	logg("*ScanOnAccess: onas_fan_exit(), signal %d\n", sig);
 
 	close(onas_fan_fd);
-	
-	pthread_kill(ddd_pid, SIGUSR1);
-	pthread_join(ddd_pid, NULL);
+
+	if (ddd_pid > 0) {
+		pthread_kill(ddd_pid, SIGUSR1);
+		pthread_join(ddd_pid, NULL);
+	}
 
 	pthread_exit(NULL);
 	logg("ScanOnAccess: stopped\n");
@@ -118,6 +120,8 @@ void *onas_fan_th(void *arg)
 
 	pthread_attr_t ddd_attr;
 	struct ddd_thrarg *ddd_tharg = NULL;
+
+	ddd_pid = 0;
 
     /* ignore all signals except SIGUSR1 */
     sigfillset(&sigset);
