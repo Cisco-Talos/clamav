@@ -69,7 +69,9 @@ static int onas_ddd_init_ht(uint32_t ht_size) {
 	return onas_ht_init(&ddd_ht, ht_size);
 }
 
-static int onas_ddd_init_wdlt(uint32_t nwatches) {
+static int onas_ddd_init_wdlt(uint64_t nwatches) {
+
+	if (nwatches <= 0) return CL_EARG;
 
 	wdlt = (char **) cli_calloc(nwatches << 1, sizeof(char*));
 	if (!wdlt) return CL_EMEM;
@@ -98,7 +100,7 @@ static int onas_ddd_grow_wdlt() {
 
 
 /* TODO: Support configuration for changing/setting number of inotify watches. */
-int onas_ddd_init(uint32_t nwatches, size_t ht_size) {
+int onas_ddd_init(uint64_t nwatches, size_t ht_size) {
 
 	const char* nwatch_file = "/proc/sys/fs/inotify/max_user_watches";
 	int nwfd = 0;
