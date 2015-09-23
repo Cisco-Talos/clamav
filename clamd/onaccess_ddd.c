@@ -84,12 +84,12 @@ static int onas_ddd_grow_wdlt() {
 	char **ptr = NULL;
 
 	ptr = (char **) cli_realloc(wdlt, wdlt_len << 1);
-	if (!ptr) return CL_EMEM;
-
-	if (ptr == wdlt)
+	if (ptr) {
+		wdlt = ptr;
 		memset(&ptr[wdlt_len], 0, sizeof(char *) * (wdlt_len - 1));
-	else
+	} else {
 		return CL_EMEM;
+	}
 
 	wdlt_len <<= 1;
 
