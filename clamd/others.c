@@ -809,7 +809,7 @@ onas_fan_checkowner (int pid, const struct optstruct *opts)
     STATBUF sb;
     const struct optstruct *opt;
 
-    if (!(opt = optget (opts, "OnAccessExcludeUID"))->enabled)
+    if (!(opt = optget (opts, "OnAccessExcludeUID"))->name)
         return 0;
 
     snprintf (path, sizeof (path), "/proc/%u", pid);
