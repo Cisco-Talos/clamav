@@ -84,7 +84,7 @@ static void help(void)
     printf("\n");
     printf("                      Clam AntiVirus Daemon %s\n", get_version());
     printf("           By The ClamAV Team: http://www.clamav.net/about.html#credits\n");
-    printf("           (C) 2007-2009 Sourcefire, Inc.\n\n");
+    printf("           (C) 2007-2015 Sourcefire, Inc.\n\n");
 
     printf("    --help                   -h             Show this help.\n");
     printf("    --version                -V             Show version number.\n");
