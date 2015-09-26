@@ -2303,7 +2303,8 @@ static int ac_special_altexpand(char *hexpr, char *subexpr, uint16_t maxlen, int
 /* alternate string specials (so many specials!) */
 inline static int ac_special_altstr(const char *hexpr, uint8_t sigopts, struct cli_ac_special *special, struct cli_matcher *root)
 {
-    char *hexprcpy, *h, *c;
+    char *hexprcpy, *h;
+    unsigned char *c;
     int i, ret, num, fixed, slen, len;
 
     if (!(hexprcpy = cli_strdup(hexpr))) {
@@ -2338,13 +2339,13 @@ inline static int ac_special_altstr(const char *hexpr, uint8_t sigopts, struct c
 
         for (i = 0; i < num; i++) {
             if (num == 1) {
-                c = (char *) cli_mpool_hex2str(root->mempool, hexprcpy);
+                c = (unsigned char *) cli_mpool_hex2str(root->mempool, hexprcpy);
             } else {
                 if(!(h = cli_strtok(hexprcpy, i, "|"))) {
                     free(hexprcpy);
                     return CL_EMEM;
                 }
-                c = (char *) cli_mpool_hex2str(root->mempool, h);
+                c = (unsigned char *) cli_mpool_hex2str(root->mempool, h);
                 free(h);
             }
             if (!c) {
