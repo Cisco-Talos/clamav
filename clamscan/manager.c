@@ -360,9 +360,9 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
                 char str[128];
                 int toolong = print_chain(&chain, str, sizeof(str));
 
-                logg("~%s%s!(%u)%s: %s FOUND\n", str, toolong ? "..." : "", chain.lastvir-1, chain.chains[chain.nchains-1], virname);
+                logg("~%s%s!(%lu)%s: %s FOUND\n", str, toolong ? "..." : "", chain.lastvir-1, chain.chains[chain.nchains-1], virname);
             } else if (chain.lastvir) {
-                logg("~%s!(%u): %s FOUND\n", filename, chain.lastvir-1, virname);
+                logg("~%s!(%lu): %s FOUND\n", filename, chain.lastvir-1, virname);
             }
         }
 
