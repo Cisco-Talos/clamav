@@ -179,7 +179,7 @@ char *export_stats_to_json(struct cl_engine *engine, cli_intel_t *intel)
                 if (!(buf))
                     return NULL;
 
-                snprintf(buf+curused, bufsz-curused, "\t\t\t\t\t\"size\": %u\n", sample->sections->sections[i].len);
+                snprintf(buf+curused, bufsz-curused, "\t\t\t\t\t\"size\": %zu\n", sample->sections->sections[i].len);
                 curused += strlen(buf+curused);
 
                 buf = ensure_bufsize(buf, &bufsz, curused, 30);
