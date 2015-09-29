@@ -313,6 +313,12 @@ void *onas_ddd_th(void *arg) {
 	/* Add provided paths recursively. */
 	if((pt = optget(tharg->opts, "OnAccessIncludePath"))->enabled) {
 		while(pt) {
+			if (!strcmp(pt->strarg, "/")) {
+				logg("!ScanOnAcess: Not inlcuding path '%s'\n", pt->strarg);
+				logg("!ScanOnAcess: Please use the OnAccessMountPath option to watch '%s'\n", pt->strarg);
+				pt = (struct optstruct *) pt->nextarg;
+				continue;
+			}
 			if(onas_ht_get(ddd_ht, pt->strarg, strlen(pt->strarg), NULL) != CL_SUCCESS) {
 				if(onas_ht_add_hierarchy(ddd_ht, pt->strarg)) {
 					logg("!ScanOnAccess: Can't include path '%s'\n", pt->strarg);
