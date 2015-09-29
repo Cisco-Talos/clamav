@@ -109,7 +109,7 @@ void *onas_fan_th(void *arg)
 	short int scan;
 	int sizelimit = 0, extinfo;
 	STATBUF sb;
-        uint64_t fan_mask = FAN_EVENT_ON_CHILD;
+        uint64_t fan_mask = FAN_EVENT_ON_CHILD | FAN_CLOSE;
         fd_set rfds;
 	char buf[4096];
 	ssize_t bread;
