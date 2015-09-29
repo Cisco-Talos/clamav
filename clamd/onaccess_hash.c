@@ -249,7 +249,7 @@ int onas_ht_get(struct onas_ht *ht, const char *key, size_t klen, struct onas_el
 
 	struct onas_element *curr = bckt->head;
 
-	while (curr && strncmp(curr->key, key, klen)) {
+	while (curr && strcmp(curr->key, key)) {
 		curr = curr->next;
 	}
 	
@@ -481,12 +481,23 @@ inline static char *onas_get_parent(const char *pathname, size_t len) {
 	if (!pathname || len <= 1) return NULL;
 
 	int idx = len - 2;
+	char *ret = NULL;
 
 	while(idx >= 0 && pathname[idx] != '/') {
 		idx--;
 	}
 
-	return strndup(pathname, idx);
+	if (idx == 0) {
+		idx++;
+	}
+
+	ret = strndup(pathname, idx);
+	if (!ret) {
+		errno = ENOMEM;
+		return NULL;
+	}
+
+	return ret;
 }
 
 /* Gets the index at which the name of directory begins from the full pathname. */
@@ -507,18 +518,23 @@ inline static int onas_get_dirname_idx(const char *pathname, size_t len) {
 
 /* Emancipates the specified child from the specified parent. */
 int onas_ht_rm_child(struct onas_ht *ht, const char *prntpath, size_t prntlen, const char *childpath, size_t childlen) {
+
 	if (!ht || !prntpath || prntlen <= 0 || !childpath || childlen <= 1) return CL_ENULLARG;
 
 	struct onas_element *elem = NULL;
 	struct onas_hnode *hnode = NULL;
 	int idx = onas_get_dirname_idx(childpath, childlen);
+	int ret = 0;
 
 	if(idx <= 0) return CL_SUCCESS;
 
 	if(onas_ht_get(ht, prntpath, prntlen, &elem) != CL_SUCCESS) return CL_EARG;
+
 	hnode = elem->data;
 
-	return onas_rm_listnode(hnode->childhead, &(childpath[idx]));
+	if (ret = onas_rm_listnode(hnode->childhead, &(childpath[idx]))) return CL_EARG;
+
+	return CL_SUCCESS;
 }
 
 /* The specified parent adds the specified child to its list. */
@@ -545,7 +561,7 @@ int onas_ht_add_hierarchy(struct onas_ht *ht, const char *pathname) {
 	if (!ht || !pathname) return CL_ENULLARG;
 
 	FTS *ftsp = NULL;
-	int ftspopts = FTS_COMFOLLOW | FTS_LOGICAL | FTS_NOCHDIR | FTS_NOSTAT | FTS_XDEV;
+	int ftspopts = FTS_PHYSICAL | FTS_XDEV;
 	FTSENT *curr = NULL;
 	FTSENT *childlist = NULL;
 
@@ -585,9 +601,12 @@ int onas_ht_add_hierarchy(struct onas_ht *ht, const char *pathname) {
 
 		if(childlist = fts_children(ftsp, 0)) {
 			do {
-				if (childlist->fts_info == FTS_D)
+				if (childlist->fts_info & FTS_D &&
+				    !(childlist->fts_info & FTS_DNR) &&
+				    !(childlist->fts_info & FTS_SL)) {
 					if(CL_EMEM == onas_add_hashnode_child(hnode, childlist->fts_name))
 						return CL_EMEM;
+				}
 
 			} while (childlist = childlist->fts_link);
 		}
@@ -619,8 +638,10 @@ int onas_ht_rm_hierarchy(struct onas_ht *ht, const char* pathname, size_t len, i
 
 	if(level == 0) {
 		if(!(prntname = onas_get_parent(pathname, len))) return CL_EARG;
+
 		prntlen = strlen(prntname);
-		onas_ht_rm_child(ht, prntname, prntlen, pathname, len);
+		if(onas_ht_rm_child(ht, prntname, prntlen, pathname, len)) return CL_EARG;
+
 		free(prntname);
 	}
 

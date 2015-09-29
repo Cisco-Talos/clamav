@@ -189,7 +189,9 @@ static int onas_ddd_watch_hierarchy(const char* pathname, size_t len, int fd, ui
 		else
 			snprintf(child_path, size, "%s/%s", hnode->pathname, curr->dirname);
 
-		if(onas_ddd_watch_hierarchy(child_path, strlen(child_path), fd, mask, type)) return CL_EARG;
+		if(onas_ddd_watch_hierarchy(child_path, strlen(child_path), fd, mask, type)) {
+			return CL_EARG;
+		}
 		free(child_path);
 	}
 
