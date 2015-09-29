@@ -150,6 +150,12 @@ void *onas_fan_th(void *arg)
 	return NULL;
     }
 
+    if (!tharg) {
+	logg("!Unable to start on-access scanner. Bad thread args.\n");
+	return NULL;
+    }
+
+
     if (optget(tharg->opts, "OnAccessPrevention")->enabled && !optget(tharg->opts, "OnAccessMountPath")->enabled) {
 	    logg("ScanOnAccess: preventing access attempts on malicious files.\n");
 	    fan_mask |= FAN_ACCESS_PERM | FAN_OPEN_PERM;
@@ -186,7 +192,7 @@ void *onas_fan_th(void *arg)
 		    free(ddd_tharg);
 		    ddd_tharg=NULL;
 	    } while(0);
-	    if (!tharg) logg("!Unable to start dynamic directory determination.\n");
+	    if (!ddd_tharg) logg("!Unable to start dynamic directory determination.\n");
 
     } else {
 	    if((pt = optget(tharg->opts, "OnAccessIncludePath"))->enabled) {
