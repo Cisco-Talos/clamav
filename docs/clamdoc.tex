@@ -736,6 +736,8 @@ N * * * *	/usr/local/bin/freshclam --quiet
 	      OnAccessMountPath option. While this will disable on-access prevention,
 	      it will avoid potential system lockups caused by fanotify's blocking
 	      functionality.
+	\item Using the On-Access Scanner to watch a virtual filesytem will result
+	      in undefined behaviour.
     \end{itemize}
     The default configuration utilizes inotify to recursively keep track of
     directories. If you need to protect more than 8192 directories it will
