@@ -164,11 +164,12 @@ static const struct iin_map_struct * get_iin(char * digits)
         if (iin < iin_map[i].iin_start)
             break;
         if (iin <= iin_map[i].iin_end) {
+            cli_dbgmsg("Credit card IIN %s matched range for %s\n", digits, iin_map[i].iin_name);
             return &iin_map[i];
         }
         i++;
     }
-
+    cli_dbgmsg("Credit card %s did not match an IIN range\n", digits);
     return NULL;
 }
 
@@ -196,8 +197,6 @@ int dlp_is_valid_cc(const unsigned char *buffer, int length)
     if(length > 19 + pad_allowance)     /* max credit card length is 19, with allowance for punctuation */
         length = 19 + pad_allowance;
 
-    cli_dbgmsg("dlp_is_valid_cc entry\n");
-
     /* Look for possible 6 digit IIN */
     for(i = 0; i < length && digits < IIN_SIZE; i++) {
 	if(isdigit(buffer[i]) == 0) {
@@ -217,10 +216,8 @@ int dlp_is_valid_cc(const unsigned char *buffer, int length)
 
     /* See if it is a valid IIN. */ 
     iin = get_iin(cc_digits);
-    if (iin == NULL) {
-        cli_dbgmsg("dlp_is_valid_cc did not match IIN for %s\n", cc_digits);
-        return 0;
-    }
+    if (iin == NULL)
+         return 0;
 
     /* Look for the remaining needed digits. */
     for (/*same 'i' from previous for-loop*/; i < length && digits < iin->card_len; i++) {
@@ -253,7 +250,7 @@ int dlp_is_valid_cc(const unsigned char *buffer, int length)
     if(sum % 10)
 	return 0;
 
-    cli_dbgmsg("DLP matched within IIN range for %s\n", iin->iin_name);
+    cli_dbgmsg("Luhn algorithm successful for %s\n", cc_digits);
 
     return 1;
 }
