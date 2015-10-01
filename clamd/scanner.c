@@ -108,12 +108,36 @@ void hash_callback(int fd, unsigned long long size, const unsigned char *md5, co
     c->virhash[32] = '\0';
 }
 
+void clamd_virus_found_cb(int fd, const char *virname, void *ctx)
+{
+    struct cb_context *c = ctx;
+    struct scan_cb_data *d = c->scandata;
+    const char *fname;
+    
+    if (d == NULL)
+        return;
+    if (!(d->options & CL_SCAN_ALLMATCHES))
+        return;
+    if (virname == NULL)
+        return;
+
+    fname = (c && c->filename) ? c->filename : "(filename not set)";
+
+    if (virname) {
+        conn_reply_virus(d->conn, fname, virname);
+        if(c->virsize > 0 && optget(d->opts, "ExtendedDetectionInfo")->enabled)
+            logg("~%s: %s(%s:%llu) FOUND\n", fname, virname, c->virhash, c->virsize);
+        logg("~%s: %s FOUND\n", fname, virname);
+    }
+
+    return;
+}
+
 #define BUFFSIZE 1024
 int scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data)
 {
     struct scan_cb_data *scandata = data->data;
     const char *virname = NULL;
-    const char **virpp = &virname;
     int ret;
     int type = scandata->type;
     struct cb_context context;
@@ -234,18 +258,12 @@ int scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_ftw_rea
     thrmgr_setactivetask(filename, NULL);
     context.filename = filename;
     context.virsize = 0;
-    ret = cl_scanfile_callback(filename, virpp, &scandata->scanned, scandata->engine, scandata->options, &context);
+    context.scandata = scandata;
+    ret = cl_scanfile_callback(filename, &virname, &scandata->scanned, scandata->engine, scandata->options, &context);
     thrmgr_setactivetask(NULL, NULL);
-
-    if (scandata->options & CL_SCAN_ALLMATCHES) {
-	virpp = (const char **)*virpp; /* temp hack for scanall mode until api augmentation */
-	if (virpp) virname = virpp[0];
-    }
 
     if (thrmgr_group_need_terminate(scandata->conn->group)) {
 	free(filename);
-	if ((scandata->options & CL_SCAN_ALLMATCHES) && (virpp != &virname))
-	    free((void *)virpp);
 	logg("*Client disconnected while scanjob was active\n");
 	return ret == CL_ETIMEOUT ? ret : CL_BREAK;
     }
@@ -256,38 +274,23 @@ int scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_ftw_rea
     }
 
     if (ret == CL_VIRUS) {
-	scandata->infected++;
-	if (conn_reply_virus(scandata->conn, filename, virname) == -1) {
-	    free(filename);
-	    if((scandata->options & CL_SCAN_ALLMATCHES) && (virpp != &virname))
-		free((void *)virpp);
-	    return CL_ETIMEOUT;
-	}
-	if (scandata->options & CL_SCAN_ALLMATCHES && virpp[1] != NULL) {
-	    int i = 1;
-	    while (NULL != virpp[i])
-		if (conn_reply_virus(scandata->conn, filename, virpp[i++]) == -1) {
-		    free(filename);
-		    if (virpp != &virname)
-			free((void *)virpp);
-		    return CL_ETIMEOUT;
-		}
-	}
-	if(context.virsize && optget(scandata->opts, "ExtendedDetectionInfo")->enabled)
-	    logg("~%s: %s(%s:%llu) FOUND\n", filename, virname, context.virhash, context.virsize);
-	else
-	    logg("~%s: %s FOUND\n", filename, virname);
-	virusaction(filename, virname, scandata->opts);
-	if (scandata->options & CL_SCAN_ALLMATCHES && virpp[1] != NULL) {
-	    int i = 1;
-	    while (NULL != virpp[i])
-                logg("~%s: %s FOUND\n", filename, virpp[i++]);
-	}
+        scandata->infected++;
+        if (scandata->options & CL_SCAN_ALLMATCHES) {
+            virusaction(filename, virname, scandata->opts);
+        } else {
+            if (conn_reply_virus(scandata->conn, filename, virname) == -1) {
+                free(filename);
+                return CL_ETIMEOUT;
+            }
+            if(context.virsize && optget(scandata->opts, "ExtendedDetectionInfo")->enabled)
+                logg("~%s: %s(%s:%llu) FOUND\n", filename, virname, context.virhash, context.virsize);
+            else
+                logg("~%s: %s FOUND\n", filename, virname);
+            virusaction(filename, virname, scandata->opts);
+        }
     } else if (ret != CL_CLEAN) {
 	scandata->errors++;
 	if (conn_reply(scandata->conn, filename, cl_strerror(ret), "ERROR") == -1) {
-	    if((scandata->options & CL_SCAN_ALLMATCHES) && (virpp != &virname))
-		free((void *)virpp);
 	    free(filename);
 	    return CL_ETIMEOUT;
 	}
@@ -297,8 +300,7 @@ int scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_ftw_rea
     }
 
     free(filename);
-    if((scandata->options & CL_SCAN_ALLMATCHES) && (virpp != &virname))
-	free((void *)virpp);
+
     if(ret == CL_EMEM) /* stop scanning */
 	return ret;
 
@@ -376,6 +378,7 @@ int scanfd(const client_conn_t *conn, unsigned long int *scanned,
 	thrmgr_setactivetask(fdstr, NULL);
 	context.filename = fdstr;
 	context.virsize = 0;
+        context.scandata = NULL;
 	ret = cl_scandesc_callback(fd, &virname, scanned, engine, options, &context);
 	thrmgr_setactivetask(NULL, NULL);
 
@@ -543,6 +546,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
 	thrmgr_setactivetask(peer_addr, NULL);
 	context.filename = peer_addr;
 	context.virsize = 0;
+        context.scandata = NULL;
 	ret = cl_scandesc_callback(tmpd, &virname, scanned, engine, options, &context);
 	thrmgr_setactivetask(NULL, NULL);
     } else {

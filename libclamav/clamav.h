@@ -353,6 +353,19 @@ CL_VIRUS = Blacklisted by callback - scan result is set to CL_VIRUS
 */
 extern void cl_engine_set_clcb_post_scan(struct cl_engine *engine, clcb_post_scan callback);
 
+typedef void (*clcb_virus_found)(int fd, const char *virname, void *context);
+/* VIRUS FOUND
+   Called for each virus found.
+
+Input:
+fd      = File descriptor which is was scanned
+virname = Virus name 
+context = Opaque application provided data
+
+Output:
+none
+*/
+extern void cl_engine_set_clcb_virus_found(struct cl_engine *engine, clcb_virus_found callback);
 
 typedef int (*clcb_sigload)(const char *type, const char *name, unsigned int custom, void *context);
 /* SIGNATURE LOAD

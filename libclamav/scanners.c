@@ -2533,7 +2533,7 @@ static int magic_scandesc_cleanup(cli_ctx *ctx, cli_file_t type, unsigned char *
 
     UNUSEDPARAM(type);
 
-    if (retcode == CL_CLEAN && ctx->found_possibly_unwanted)
+    if (retcode == CL_CLEAN && (ctx->found_possibly_unwanted || ctx->num_viruses != 0))
         cb_retcode = CL_VIRUS;
     else
         cb_retcode = retcode;
@@ -3629,16 +3629,13 @@ static int scan_common(int desc, cl_fmap_t *map, const char **virname, unsigned 
     }
 #endif
 
-    if (ctx.options & CL_SCAN_ALLMATCHES) {
-	*virname = (char *)ctx.virname; /* temp hack for scanall mode until api augmentation */
-	if (rc == CL_CLEAN && ctx.num_viruses)
-	    rc = CL_VIRUS;
-    }
-
     cli_bitset_free(ctx.hook_lsig_matches);
     free(ctx.fmap);
-    if(rc == CL_CLEAN && ctx.found_possibly_unwanted)
-	rc = CL_VIRUS;
+    if (rc == CL_CLEAN) {
+        if ((ctx.num_viruses != 0 && ctx.options & CL_SCAN_ALLMATCHES) ||
+            ctx.found_possibly_unwanted)
+                rc = CL_VIRUS;
+    }
     cli_logg_unsetup();
     perf_done(&ctx);
     return rc;

@@ -800,6 +800,7 @@ struct cl_settings *cl_engine_settings_copy(const struct cl_engine *engine)
     settings->cb_pre_cache = engine->cb_pre_cache;
     settings->cb_pre_scan = engine->cb_pre_scan;
     settings->cb_post_scan = engine->cb_post_scan;
+    settings->cb_virus_found = engine->cb_virus_found;
     settings->cb_sigload = engine->cb_sigload;
     settings->cb_sigload_ctx = engine->cb_sigload_ctx;
     settings->cb_hash = engine->cb_hash;
@@ -872,6 +873,7 @@ int cl_engine_settings_apply(struct cl_engine *engine, const struct cl_settings 
     engine->cb_pre_cache = settings->cb_pre_cache;
     engine->cb_pre_scan = settings->cb_pre_scan;
     engine->cb_post_scan = settings->cb_post_scan;
+    engine->cb_virus_found = settings->cb_virus_found;
     engine->cb_sigload = settings->cb_sigload;
     engine->cb_sigload_ctx = settings->cb_sigload_ctx;
     engine->cb_hash = settings->cb_hash;
@@ -1051,29 +1053,12 @@ int cli_unlink(const char *pathname)
 
 void cli_append_virus(cli_ctx * ctx, const char * virname)
 {
-    if (!ctx->virname)
-	return;
-    if (SCAN_ALL) {
-	if (ctx->size_viruses == 0) {
-	    if (!(ctx->virname = malloc(2 * sizeof(char *)))) {
-		cli_errmsg("cli_append_virus: fails on malloc() - virus %s virname not appended.\n", virname);
-		return;
-	    }
-	    ctx->size_viruses = 2;
-	} else if (ctx->num_viruses+1 == ctx->size_viruses) {
-	    void * newptr = NULL;
-	    if ((newptr = realloc((void *)ctx->virname, 2 * ctx->size_viruses * sizeof (char *))) == NULL) {
-		cli_errmsg("cli_append_virus: fails on realloc() - virus %s virname not appended.\n", virname);
-		return;
-	    }
-	    ctx->virname = newptr;
-	    ctx->size_viruses *= 2;
-	}
-	ctx->virname[ctx->num_viruses++] = virname;
-	ctx->virname[ctx->num_viruses] = NULL;
-    }
-    else
-	*ctx->virname = virname;
+    if (ctx->virname == NULL)
+        return;
+    if (ctx->engine->cb_virus_found)
+        ctx->engine->cb_virus_found(fmap_fd(*ctx->fmap), virname, ctx->cb_ctx);
+    ctx->num_viruses++;
+    *ctx->virname = virname;
 #if HAVE_JSON
     if (SCAN_PROPERTIES && ctx->wrkproperty) {
         json_object *arrobj, *virobj;
@@ -1099,11 +1084,7 @@ const char * cli_get_last_virus(const cli_ctx * ctx)
 {
     if (!ctx || !ctx->virname || !(*ctx->virname))
 	return NULL;
-
-    if (SCAN_ALL && ctx->num_viruses)
-	return ctx->virname[ctx->num_viruses-1];
-    else
-	return *ctx->virname;
+    return *ctx->virname;
 }
 
 const char * cli_get_last_virus_str(const cli_ctx * ctx)
@@ -1379,6 +1360,10 @@ void cl_engine_set_clcb_pre_scan(struct cl_engine *engine, clcb_pre_scan callbac
 
 void cl_engine_set_clcb_post_scan(struct cl_engine *engine, clcb_post_scan callback) {
     engine->cb_post_scan = callback;
+}
+
+void cl_engine_set_clcb_virus_found(struct cl_engine *engine, clcb_virus_found callback) {
+    engine->cb_virus_found = callback;
 }
 
 void cl_engine_set_clcb_sigload(struct cl_engine *engine, clcb_sigload callback, void *context) {

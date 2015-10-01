@@ -129,8 +129,7 @@ typedef struct bitset_tag
 /* internal clamav context */
 typedef struct cli_ctx_tag {
     const char **virname;
-    unsigned int num_viruses;         /* manages virname when CL_SCAN_ALLMATCHES == 1 */
-    unsigned int size_viruses;        /* manages virname when CL_SCAN_ALLMATCHES == 1 */
+    unsigned int num_viruses;
     unsigned long int *scanned;
     const struct cli_matcher *root;
     const struct cl_engine *engine;
@@ -332,6 +331,7 @@ struct cl_engine {
     clcb_pre_cache cb_pre_cache;
     clcb_pre_scan cb_pre_scan;
     clcb_post_scan cb_post_scan;
+    clcb_virus_found cb_virus_found;
     clcb_sigload cb_sigload;
     void *cb_sigload_ctx;
     clcb_hash cb_hash;
@@ -411,6 +411,7 @@ struct cl_settings {
     clcb_pre_cache cb_pre_cache;
     clcb_pre_scan cb_pre_scan;
     clcb_post_scan cb_post_scan;
+    clcb_virus_found cb_virus_found;
     clcb_sigload cb_sigload;
     void *cb_sigload_ctx;
     clcb_msg cb_msg;
