@@ -466,8 +466,7 @@ int CLAMAPI Scan_Initialize(const wchar_t *pEnginesFolder, const wchar_t *pTempR
 	*/
 	if (bLoadMinDefs) {
 		if ((ret = cl_engine_set_num(engine, CL_ENGINE_DISABLE_CACHE, 1) != CL_SUCCESS)) {
-		free_engine_and_unlock();
-		FAIL(ret, "Failed to set disable engine cache: %s", cl_strerror(ret));
+		logg("Failed to disable engine cache: %s", cl_strerror(ret));
 		}
 	}
 
