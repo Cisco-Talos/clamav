@@ -259,11 +259,8 @@ START_TEST (test_ac_scanbuff_allscan) {
 	ret = cli_scanbuff((const unsigned char*)ac_testdata[i].data, strlen(ac_testdata[i].data), 0, &ctx, 0, NULL);
 	fail_unless_fmt(ret == CL_VIRUS, "cli_scanbuff() failed for %s", ac_testdata[i].virname);
 	fail_unless_fmt(!strncmp(virname, ac_testdata[i].virname, strlen(ac_testdata[i].virname)), "Dataset %u matched with %s", i, virname);
-	if (ctx.num_viruses) {
-	    free((void *)ctx.virname);
+	if (ctx.num_viruses)
 	    ctx.num_viruses = 0;
-	    ctx.size_viruses = 0;
-	}
      }
 
     cli_ac_freedata(&mdata);
@@ -347,11 +344,8 @@ START_TEST (test_ac_scanbuff_allscan_ex) {
 
 	ret = cli_scanbuff((const unsigned char*)ac_sigopts_testdata[i].data, ac_sigopts_testdata[i].dlength, 0, &ctx, 0, NULL);
 	fail_unless_fmt(ret == ac_sigopts_testdata[i].expected_result, "[ac_ex] cli_ac_scanbuff() failed for %s (%d != %d)", ac_sigopts_testdata[i].virname, ret, ac_sigopts_testdata[i].expected_result);
-	if (ctx.num_viruses) {
-	    free((void *)ctx.virname);
+	if (ctx.num_viruses)
 	    ctx.num_viruses = 0;
-	    ctx.size_viruses = 0;
-	}
     }
 
     cli_ac_freedata(&mdata);
@@ -516,11 +510,8 @@ START_TEST (test_pcre_scanbuff_allscan) {
 	ret = cli_scanbuff((const unsigned char*)pcre_testdata[i].data, strlen(pcre_testdata[i].data), 0, &ctx, 0, NULL);
 	fail_unless_fmt(ret == pcre_testdata[i].expected_result, "[pcre] cli_scanbuff() failed for %s", pcre_testdata[i].virname);
 	/* num_virus field add to test case struct */
-	if (ctx.num_viruses) {
-	    free((void *)ctx.virname);
+	if (ctx.num_viruses)
 	    ctx.num_viruses = 0;
-	    ctx.size_viruses = 0;
-	}
     }
 
     cli_ac_freedata(&mdata);

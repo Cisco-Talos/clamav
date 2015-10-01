@@ -322,9 +322,14 @@ int dsresult(int sockd, int scantype, const char *filename, int *printok, int *e
 		    logg("Failed to parse reply: \"%s\"\n", bol);
 		return -1;
 	    } else if(!memcmp(eol - 7, " FOUND", 6)) {
+                static char last_filename[PATH_MAX+1] = {'\0'};
 		*(eol - 7) = 0;
 		*printok = 0;
-		infected++;
+                if (scantype != ALLMATCH || filename != NULL && strcmp(filename, last_filename)) {
+                    infected++;
+                    strncpy(last_filename, filename, PATH_MAX);
+                    last_filename[PATH_MAX] = '\0';
+                }
 		if(filename) {
 		    if(scantype >= STREAM) {
 			logg("~%s%s FOUND\n", filename, colon);

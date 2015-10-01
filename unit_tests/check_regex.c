@@ -490,8 +490,6 @@ static void do_phishing_test_allscan(const struct rtest *rtest)
 			}
 			break;
 	}
-	if (ctx.num_viruses)
-	    free((void *)ctx.virname);
 }
 
 #ifdef CHECK_HAVE_LOOPS

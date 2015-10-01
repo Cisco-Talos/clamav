@@ -54,6 +54,7 @@ struct cb_context {
     const char *filename;
     unsigned long long virsize;
     char virhash[33];
+    struct scan_cb_data *scandata;
 };
 
 int scanfd(const client_conn_t *conn, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts, int odesc, int stream);
@@ -62,5 +63,6 @@ int scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_ftw_rea
 int scan_pathchk(const char *path, struct cli_ftw_cbdata *data);
 void hash_callback(int fd, unsigned long long size, const unsigned char *md5, const char *virname, void *ctx);
 void msg_callback(enum cl_msg severity, const char *fullmsg, const char *msg, void *ctx);
+void clamd_virus_found_cb(int fd, const char *virname, void *context);
 
 #endif
