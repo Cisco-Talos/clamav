@@ -2724,7 +2724,7 @@ downloadmanager (const struct optstruct *opts, const char *hostname,
 
     cli_rmdirs (updtmpdir);
 
-    if (checkdbdir () < 0)
+    if (updated && checkdbdir () < 0)
     {
         if (newver)
             free (newver);
