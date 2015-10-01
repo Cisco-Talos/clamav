@@ -1205,7 +1205,7 @@ cl_error_t prescan_cb(int fd, const char *type, void *context) {
 		while(wsz != rsz) {
 		    DWORD rwsz;
 		    if(!WriteFile(fdhdl, &tmpf[wsz], rsz - wsz, &rwsz, NULL)) {
-			logg("!prescan_cb: failed to write to tempfile %s - error %u\n", GetLastError());
+			logg("!prescan_cb: failed to write to tempfile %s - error %u\n", tmpf, GetLastError());
 			lseek(fd, fpos, SEEK_SET);
 			CloseHandle(fdhdl);
 			return CL_CLEAN;
