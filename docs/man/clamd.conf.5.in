@@ -643,6 +643,21 @@ Files larger than this value will not be scanned in on access.
 .br
 Default: 5M
 .TP
+\fBOnAccessMountPath STRING\fR
+Specifies a mount point (including all files and directories under it), which should be scanned on access. This option can be used multiple times.
+.br
+Default: disabled
+.TP
+\fBOnAccessDisableDDD BOOL\fR
+Disables the dynamic directory determination system which allows for recursively watching include paths.
+.br
+Default: no
+.TP
+\fBOnAccessPrevention BOOL\fR
+Enables fanotify blocking when malicious files are found.
+.br
+Default: disabled
+.TP
 \fBDisableCertCheck BOOL\fR
 Disable authenticode certificate chain verification in PE files.
 .br
