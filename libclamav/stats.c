@@ -41,7 +41,6 @@
 #include <sys/sysctl.h>
 #endif
 #endif
-#include <dlfcn.h>
 #else
 #include <Windows.h>
 #include <tchar.h>
