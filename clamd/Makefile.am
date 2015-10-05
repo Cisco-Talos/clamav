@@ -50,7 +50,9 @@ clamd_SOURCES = \
     onaccess_ddd.c \
     onaccess_ddd.h \
     onaccess_hash.c \
-    onaccess_hash.h
+    onaccess_hash.h \
+    onaccess_scth.c \
+    onaccess_scth.h
 
 AM_CFLAGS=@WERR_CFLAGS@
 

@@ -44,6 +44,7 @@
 #include "onaccess_fan.h"
 #include "onaccess_hash.h"
 #include "onaccess_ddd.h"
+#include "onaccess_scth.h"
 
 #include "libclamav/clamav.h"
 #include "libclamav/scanners.h"
@@ -285,12 +286,12 @@ void *onas_ddd_th(void *arg) {
 	/* ignore all signals except SIGUSR1 */
 	sigfillset(&sigset);
 	sigdelset(&sigset, SIGUSR1);
-	/* The behavior of a process is undefined after it ignores a 
+	/* The behavior of a process is undefined after it ignores a
 	 * SIGFPE, SIGILL, SIGSEGV, or SIGBUS signal */
 	sigdelset(&sigset, SIGFPE);
 	sigdelset(&sigset, SIGILL);
 	sigdelset(&sigset, SIGSEGV);
-#ifdef SIGBUS    
+#ifdef SIGBUS
 	sigdelset(&sigset, SIGBUS);
 #endif
 	pthread_sigmask(SIG_SETMASK, &sigset, NULL);
@@ -366,6 +367,10 @@ void *onas_ddd_th(void *arg) {
 		}
 	}
 
+	if(optget(tharg->opts, "OnAccessExtraScanning")->enabled) {
+		logg("ScanOnAccess: Extra scanning and notifications enabled.\n");
+	}
+
 
 	FD_ZERO(&rfds);
 	FD_SET(onas_in_fd, &rfds);
@@ -393,35 +398,24 @@ void *onas_ddd_th(void *arg) {
 				size_t size = strlen(child) + len + 2;
 				char *child_path = (char *) cli_malloc(size);
 				if (child_path == NULL)
-					return CL_EMEM;
+					return NULL;
+
 				if (path[len-1] == '/')
 					snprintf(child_path, --size, "%s%s", path, child);
 				else
 					snprintf(child_path, size, "%s/%s", path, child);
 
-				struct stat s;
-				if(stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) continue;
-				if(!(event->mask & IN_ISDIR)) continue;
-
 				if (event->mask & IN_DELETE) {
-					logg("*ddd: DELETE - Removing %s from %s with wd:%d\n", child_path, path, wd);
-					onas_ddd_unwatch(child_path, tharg->fan_fd, onas_in_fd);
-					onas_ht_rm_hierarchy(ddd_ht, child_path, strlen(child_path), 0);
+					onas_ddd_handle_in_delete(tharg, path, child_path, event, wd);
 
 				} else if (event->mask & IN_MOVED_FROM) {
-					logg("*ddd: MOVED_FROM - Removing %s from %s with wd:%d\n", child_path, path, wd);
-					onas_ddd_unwatch(child_path, tharg->fan_fd, onas_in_fd);
-					onas_ht_rm_hierarchy(ddd_ht, child_path, strlen(child_path), 0);
+					onas_ddd_handle_in_moved_from(tharg, path, child_path, event, wd);
 
 				} else if (event->mask & IN_CREATE) {
-					logg("*ddd: CREATE - Adding %s to %s with wd:%d\n", child_path, path, wd);
-					onas_ht_add_hierarchy(ddd_ht, child_path);
-					onas_ddd_watch(child_path, tharg->fan_fd, tharg->fan_mask, onas_in_fd, in_mask);
+					onas_ddd_handle_in_create(tharg, path, child_path, event, wd, in_mask);
 
 				} else if (event->mask & IN_MOVED_TO) {
-					logg("*ddd: MOVED_TO - Adding %s to %s with wd:%d\n", child_path, path, wd);
-					onas_ht_add_hierarchy(ddd_ht, child_path);
-					onas_ddd_watch(child_path, tharg->fan_fd, tharg->fan_mask, onas_in_fd, in_mask);
+					onas_ddd_handle_in_moved_to(tharg, path, child_path, event, wd, in_mask);
 				}
 			}
 		}
@@ -430,6 +424,118 @@ void *onas_ddd_th(void *arg) {
 	return NULL;
 }
 
+static void onas_ddd_handle_in_delete(struct ddd_thrarg *tharg,
+		const char *path, const char *child_path, const struct inotify_event *event, int wd) {
+
+	struct stat s;
+	if(stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) return;
+	if(!(event->mask & IN_ISDIR)) return;
+
+	logg("*ddd: DELETE - Removing %s from %s with wd:%d\n", child_path, path, wd);
+	onas_ddd_unwatch(child_path, tharg->fan_fd, onas_in_fd);
+	onas_ht_rm_hierarchy(ddd_ht, child_path, strlen(child_path), 0);
+
+	return;
+}
+
+
+static void onas_ddd_handle_in_moved_from(struct ddd_thrarg *tharg,
+		const char *path, const char *child_path, const struct inotify_event *event, int wd) {
+
+	struct stat s;
+	if(stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) return;
+	if(!(event->mask & IN_ISDIR)) return;
+
+	logg("*ddd: MOVED_FROM - Removing %s from %s with wd:%d\n", child_path, path, wd);
+	onas_ddd_unwatch(child_path, tharg->fan_fd, onas_in_fd);
+	onas_ht_rm_hierarchy(ddd_ht, child_path, strlen(child_path), 0);
+
+	return;
+}
+
+
+static void onas_ddd_handle_in_create(struct ddd_thrarg *tharg,
+		const char *path, const char *child_path, const struct inotify_event *event, int wd, uint64_t in_mask) {
+
+	struct stat s;
+	if (optget(tharg->opts, "OnAccessExtraScanning")->enabled) {
+		if(stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) {
+			onas_ddd_handle_extra_scanning(tharg, child_path, ONAS_SCTH_ISFILE);
+
+		} else if(stat(child_path, &s) == 0 && S_ISDIR(s.st_mode)) {
+			logg("*ddd: CREATE - Adding %s to %s with wd:%d\n", child_path, path, wd);
+			onas_ht_add_hierarchy(ddd_ht, child_path);
+			onas_ddd_watch(child_path, tharg->fan_fd, tharg->fan_mask, onas_in_fd, in_mask);
+
+			onas_ddd_handle_extra_scanning(tharg, child_path, ONAS_SCTH_ISDIR);
+		}
+	} else {
+
+		if(stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) return;
+		if(!(event->mask & IN_ISDIR)) return;
+
+		logg("*ddd: MOVED_TO - Adding %s to %s with wd:%d\n", child_path, path, wd);
+		onas_ht_add_hierarchy(ddd_ht, child_path);
+		onas_ddd_watch(child_path, tharg->fan_fd, tharg->fan_mask, onas_in_fd, in_mask);
+	}
+
+	return;
+}
+
+static void onas_ddd_handle_in_moved_to(struct ddd_thrarg *tharg,
+		const char *path, const char *child_path, const struct inotify_event *event, int wd, uint64_t in_mask) {
+
+	struct stat s;
+	if (optget(tharg->opts, "OnAccessExtraScanning")->enabled) {
+		if(stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) {
+			onas_ddd_handle_extra_scanning(tharg, child_path, ONAS_SCTH_ISFILE);
+
+		} else if(stat(child_path, &s) == 0 && S_ISDIR(s.st_mode)) {
+			logg("*ddd: MOVED_TO - Adding %s to %s with wd:%d\n", child_path, path, wd);
+			onas_ht_add_hierarchy(ddd_ht, child_path);
+			onas_ddd_watch(child_path, tharg->fan_fd, tharg->fan_mask, onas_in_fd, in_mask);
+
+			onas_ddd_handle_extra_scanning(tharg, child_path, ONAS_SCTH_ISDIR);
+		}
+	} else {
+		if(stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) return;
+		if(!(event->mask & IN_ISDIR)) return;
+
+		logg("*ddd: MOVED_TO - Adding %s to %s with wd:%d\n", child_path, path, wd);
+		onas_ht_add_hierarchy(ddd_ht, child_path);
+		onas_ddd_watch(child_path, tharg->fan_fd, tharg->fan_mask, onas_in_fd, in_mask);
+	}
+
+	return;
+}
+
+static void onas_ddd_handle_extra_scanning(struct ddd_thrarg *tharg, const char *pathname, int options) {
+
+	struct scth_thrarg *scth_tharg = NULL;
+	pthread_attr_t scth_attr;
+	pthread_t scth_pid = 0;
+
+	do {
+		if (pthread_attr_init(&scth_attr)) break;
+		pthread_attr_setdetachstate(&scth_attr, PTHREAD_CREATE_JOINABLE);
+
+		if (!(scth_tharg = (struct scth_thrarg *) malloc(sizeof(struct scth_thrarg)))) break;
+
+		scth_tharg->options = options;
+		scth_tharg->opts = tharg->opts;
+		scth_tharg->pathname = strdup(pathname);
+
+		if (!pthread_create(&scth_pid, &scth_attr, onas_scan_th, scth_tharg)) break;
+
+		free(scth_tharg);
+		scth_tharg = NULL;
+	} while(0);
+	if (!scth_tharg) logg("!ScanOnAccess: Unable to kick off extra scanning.\n");
+
+	return;
+}
+
+
 static void onas_ddd_exit(int sig) {
 	logg("*ScanOnAccess: onas_ddd_exit(), signal %d\n", sig);
 
@@ -437,7 +543,7 @@ static void onas_ddd_exit(int sig) {
 
 	onas_free_ht(ddd_ht);
 	free(wdlt);
-	
+
 	pthread_exit(NULL);
 	logg("ScanOnAccess: stopped\n");
 }
