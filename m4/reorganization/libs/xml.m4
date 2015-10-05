@@ -67,7 +67,7 @@ if test "X$found_xml" != "Xno"; then
     save_LDFLAGS="$LDFLAGS"
     LDFLAGS="$LDFLAGS $XML_LIBS"
 
-    AC_CHECK_LIB([xml2], [xmlTextReaderRead], [working_xml="yes"], [working_xml="no"])
+    AC_CHECK_LIB([xml2], [xmlTextReaderRead], [working_xml="yes"], [working_xml="no"], [$XML_LIBS])
 
     CPPFLAGS="$save_CPPFLAGS"
     LDFLAGS="$save_LDFLAGS"
