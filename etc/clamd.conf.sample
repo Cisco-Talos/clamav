@@ -599,6 +599,12 @@ Example
 # Default: no
 #OnAccessPrevention yes
 
+# Toggles extra scanning and notifications when a file or directory is created or moved.
+# Requires the  DDD system to kick-off extra scans.
+# (On-access scan only)
+# Default: no
+#OnAccessExtraScanning yes
+
 ##
 ## Bytecode
 ##

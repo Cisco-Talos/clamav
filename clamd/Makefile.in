@@ -141,7 +141,8 @@ am__clamd_SOURCES_DIST = $(top_srcdir)/shared/output.c \
 	localserver.c localserver.h session.c session.h thrmgr.c \
 	thrmgr.h server-th.c server.h scanner.c scanner.h others.c \
 	others.h shared.h onaccess_fan.c onaccess_fan.h onaccess_ddd.c \
-	onaccess_ddd.h onaccess_hash.c onaccess_hash.h
+	onaccess_ddd.h onaccess_hash.c onaccess_hash.h onaccess_scth.c \
+	onaccess_scth.h
 @BUILD_CLAMD_TRUE@am_clamd_OBJECTS = output.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	optparser.$(OBJEXT) getopt.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	misc.$(OBJEXT) clamd.$(OBJEXT) \
@@ -150,7 +151,8 @@ am__clamd_SOURCES_DIST = $(top_srcdir)/shared/output.c \
 @BUILD_CLAMD_TRUE@	server-th.$(OBJEXT) scanner.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	others.$(OBJEXT) onaccess_fan.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	onaccess_ddd.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	onaccess_hash.$(OBJEXT)
+@BUILD_CLAMD_TRUE@	onaccess_hash.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	onaccess_scth.$(OBJEXT)
 clamd_OBJECTS = $(am_clamd_OBJECTS)
 clamd_LDADD = $(LDADD)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -417,7 +419,9 @@ top_srcdir = @top_srcdir@
 @BUILD_CLAMD_TRUE@    onaccess_ddd.c \
 @BUILD_CLAMD_TRUE@    onaccess_ddd.h \
 @BUILD_CLAMD_TRUE@    onaccess_hash.c \
-@BUILD_CLAMD_TRUE@    onaccess_hash.h
+@BUILD_CLAMD_TRUE@    onaccess_hash.h \
+@BUILD_CLAMD_TRUE@    onaccess_scth.c \
+@BUILD_CLAMD_TRUE@    onaccess_scth.h
 
 @BUILD_CLAMD_TRUE@AM_CFLAGS = @WERR_CFLAGS@
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
@@ -536,6 +540,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/onaccess_ddd.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/onaccess_fan.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/onaccess_hash.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/onaccess_scth.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/optparser.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/others.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/output.Po@am__quote@
