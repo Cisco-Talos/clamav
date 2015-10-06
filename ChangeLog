@@ -1,3 +1,384 @@
+
+Mon, 5 Oct 2015 14:24:58 -0400 (Mickey Sola)
+------------------------------------------
+ * Configuration patch by Bernd Kuhls to allow for building statically
+   linked libraries.
+
+Fri, 2 Oct 2015 12:24:58 -0400 (Steven Morgan)
+------------------------------------------
+ * bb11209: fix for static-only build for uClibc - patch supplied by
+   Yann E. Morin.
+
+Thu, 1 Oct 2015 17:47:37 -0400 (Steven Morgan)
+------------------------------------------
+ * Add 'virus found' callback. Refactor scan-all API.
+
+Thu, 1 Oct 2015 17:23:35 -0400 (Steven Morgan)
+------------------------------------------
+ * Improve freshclam performance - patch posted to clamav-users list by
+   Andreas Schulze.
+
+Tue, 29 Sep 2015 11:10:14 -0400 (Mickey Sola)
+------------------------------------------
+ * onas: preventing use of ddd system to watch '/'
+
+Mon, 21 Sep 2015 15:05:19 -0400 (Steven Morgan)
+------------------------------------------
+ * Change ClamAV Windows icon.
+
+Mon, 21 Sep 2015 14:41:19 -0400 (Mickey Sola)
+------------------------------------------
+ * Sanity check update patches submitted by Bill Parker
+
+Fri, 18 Sep 2015 17:43:06 -0400 (Steven Morgan)
+------------------------------------------
+ * Change windows install directory, change windows Sourcefire artifacts
+   to Cisco.
+
+Thu, 17 Sep 2015 16:49:42 -0400 (Mickey Sola)
+------------------------------------------
+ * onas: changing clamd NotifyOnly option to Prevention and disabling
+   Prevention option by default.
+
+Wed, 16 Sep 2015 13:40:19 -0400 (Mickey Sola)
+------------------------------------------
+ * bb11250 - Removing deprecated function gethostbyname
+
+Mon, 14 Sep 2015 12:11:47 -0400 (Mickey Sola)
+------------------------------------------
+ * fanotify: consolidating prevention options into a single NotifyOnly option.
+
+Mon, 14 Sep 2015 11:46:35 -0400 (Mickey Sola)
+------------------------------------------
+ * fanotify: adding option to watch and notify on mountpoints.
+
+Fri, 11 Sep 2015 14:17:35 -0400 (Mickey Sola)
+------------------------------------------
+ * fanotify: adding clamd configuration toggle options to prevent read and
+   access attempts
+
+Thu, 10 Sep 2015 16:43:45 -0400 (Mickey Sola)
+------------------------------------------
+ * fanotify: adding clamd option to disable ddd
+
+Wed, 9 Sep 2015 17:58:04 -0400 (Steven Morgan)
+------------------------------------------
+ * Improve pkgconfig. Patch supplied by Andreas Cadhalpun.
+
+Wed, 9 Sep 2015 11:19:11 -0400 (Mickey Sola)
+------------------------------------------
+ * fanotify: blocking fanotify during database reload.
+
+Tue, 8 Sep 2015 16:15:52 -0400 (Mickey Sola)
+------------------------------------------
+ * onas: improving handling of thread exit cleanup and db reload.
+
+Tue, 1 Sep 2015 18:53:45 -0400 (Steven Morgan)
+------------------------------------------
+ * DLP: refactor inline code CC range checks to table based. Check IIN
+   range before applying Luhn algorithm.
+
+Tue, 1 Sep 2015 16:13:00 -0400 (Kevin Lin)
+------------------------------------------
+ * ac-alt: check last altstr for fixed property in expr analysis
+
+Fri, 28 Aug 2015 17:10:00 -0400 (Mickey Sola)
+------------------------------------------
+ * Adding FANOTIFY checks to ddd and onas hash files.
+
+Fri, 28 Aug 2015 16:03:29 -0400 (Mickey Sola)
+------------------------------------------
+ * Overhauling clamd onaccess scanning to support dynamic directory
+   determination.
+
+Tue, 25 Aug 2015 15:12:03 -0400 (Steven Morgan)
+------------------------------------------
+ * bb11352 - fix HP-UX 11.11 compile warnings. Patch sent by
+   Michael Pelletier.
+
+Tue, 25 Aug 2015 10:53:23 -0400 (Steven Morgan)
+------------------------------------------
+ * bb11351 - add missing sys/un.h header. Patch by Dmitry Marakasov.
+
+Mon, 24 Aug 2015 15:17:02 -0400 (Steven Morgan)
+------------------------------------------
+ * make retcode passed to post-scan callback to be CL_VIRUS when an
+   heuristic virus was detected.
+
+Fri, 21 Aug 2015 12:43:26 -0400 (Kevin Lin)
+------------------------------------------
+ * bb#11377 - stub pcre functions for dynamic library mapping
+
+Thu, 20 Aug 2015 18:46:30 -0400 (Kevin Lin)
+------------------------------------------
+ * bb#11377 - search for pcre/pcre.h if pcre.h not found
+
+Fri, 14 Aug 2015 15:28:02 -0400 (Steven Morgan)
+------------------------------------------
+ * bb11371 - fix integer underflow. Issue identified by Felix Groebert
+   and the Google Security Team.
+
+Fri, 14 Aug 2015 12:22:49 -0400 (Kevin Lin)
+------------------------------------------
+ * bb#11372 - finalize encrypted hex strings correctly
+
+Thu, 13 Aug 2015 15:59:27 -0400 (Kevin Lin)
+------------------------------------------
+ * bb#11370 - do not update mirrors on custom database urls
+
+Tue, 11 Aug 2015 17:12:15 -0400 (Kevin Lin)
+------------------------------------------
+ * dconf: disable swizzor heuristic by default
+
+Mon, 3 Aug 2015 17:18:31 -0400 (Kevin Lin)
+------------------------------------------
+ * bb#11366 - add 7z heuristic for encrypted header
+
+Thu, 30 Jul 2015 18:05:09 -0400 (Kevin Lin)
+------------------------------------------
+ * win32: update 3rdparty pcre to 8.37; clean up pcre sources
+
+Thu, 30 Jul 2015 17:37:05 -0400 (Kevin Lin)
+------------------------------------------
+ * tiff: added heuristic check for invalid tiff IFD fields
+
+Wed, 29 Jul 2015 12:51:19 -0400 (Steven Morgan)
+------------------------------------------
+ * bb11361 - add file magics for TIFF files.
+
+Wed, 29 Jul 2015 12:05:44 -0400 (Steven Morgan)
+------------------------------------------
+ * bb11359 - correct clamdscan handling of the --infected flag for files
+   excluded with ExcludePath clamd parameter. Patch provided by
+   devel at rinx dot com.
+
+Tue, 28 Jul 2015 13:44:41 -0400 (Kevin Lin)
+------------------------------------------
+ * bb#11196 - autoit script file misclassified as HTML
+
+Fri, 24 Jul 2015 13:24:11 -0400 (Mickey Sola)
+------------------------------------------
+ * bb11343: Automatically appennding YARA. to all yara rule sigs.
+
+Thu, 23 Jul 2015 15:36:16 -0400 (Mickey Sola)
+------------------------------------------
+ * bb11343: Adding yara-rules (yes|no|only) runtime option for clamscan.
+
+Thu, 23 Jul 2015 16:37:15 -0400 (Kevin Lin)
+------------------------------------------
+ * bb#9858 - added target 14 for binary (unidentified) files
+
+Wed, 22 Jul 2015 18:09:50 -0400 (Kevin Lin)
+------------------------------------------
+ * sigtool: added nested string alternative handling
+
+Tue, 21 Jul 2015 16:35:48 -0400 (Mickey Sola)
+------------------------------------------
+ * bb11343: Adding configure option to remove yara at compile-time.
+
+Tue, 21 Jul 2015 17:30:14 -0400 (Kevin Lin)
+------------------------------------------
+ * sigtool: added usage of cli_ldbtokenize to sigtool sigtool: handles
+   signature modifiers
+
+Tue, 21 Jul 2015 14:16:14 -0400 (Kevin Lin)
+------------------------------------------
+ * PCREMaxFileSize now correctly parses sizes (K,M,G suffixes)
+
+Thu, 16 Jul 2015 12:35:38 -0400 (Kevin Lin)
+------------------------------------------
+ * dconf: added passwd dconf for archives, applied to unzip
+
+Tue, 14 Jul 2015 18:26:22 -0400 (Kevin Lin)
+------------------------------------------
+ * unzip: added scanning of decrypted files
+
+Tue, 14 Jul 2015 17:25:01 -0400 (Kevin Lin)
+------------------------------------------
+ * unzip: added traditional PKWARE decryption password verification
+
+Tue, 14 Jul 2015 17:23:43 -0400 (Kevin Lin)
+------------------------------------------
+ * pwdb: added name tracking the pwdb entry
+
+Thu, 9 Jul 2015 17:30:47 -0400 (Kevin Lin)
+------------------------------------------
+ * engine: added .pwdb handler and storage
+
+Wed, 15 Jul 2015 17:08:17 -0400 (Mickey Sola)
+------------------------------------------
+ * bb11253: Upgrading win32 pthreads to version 2.9.1
+
+Thu, 9 Jul 2015 15:35:49 -0400 (Mickey Sola)
+------------------------------------------
+ * bb11219: Fixing scanscript to scan on a normalized map when using
+   relative offsets with type 7 signatures.
+
+Wed, 8 Jul 2015 12:16:03 -0400 (Kevin Lin)
+------------------------------------------
+ * bb#11356 - fixed an issue regarding yara_exec OP_OF
+
+Tue, 7 Jul 2015 16:46:19 -0400 (Mickey Sola)
+------------------------------------------
+ * Adding ascii file normalization option to sigtool.
+
+Tue, 7 Jul 2015 14:02:57 -0400 (Kevin Lin)
+------------------------------------------
+ * check-matcher: added prefix altstr test cases
+
+Thu, 2 Jul 2015 15:06:04 -0400 (Kevin Lin)
+------------------------------------------
+ * matcher-ac: added calc and storage for min/max lengths
+
+Wed, 1 Jul 2015 16:53:07 -0400 (Kevin Lin)
+------------------------------------------
+ * ac_special: tracks both the min and max lengths
+
+Wed, 1 Jul 2015 16:14:14 -0400 (Steven Morgan)
+------------------------------------------
+ * bb11348 - Patch for HPUX sent by Michael Pelletier.
+
+Fri, 19 Jun 2015 16:33:59 -0400 (Steven Morgan)
+------------------------------------------
+ * Add support for YARA private rules and referencing other rules in a
+   YARA condition.
+
+Sat, 22 Nov 2014 15:26:02 +0100 (Andreas Cadhalpun)
+------------------------------------------
+ * Avoid emitting incremental progress messages when not outputting to a
+   terminal.
+
+Tue, 16 Jun 2015 14:56:32 -0400 (Mickey Sola)
+------------------------------------------
+ * bb-11305: Initialized dbstat entries after clamd first loads.
+
+Wed, 10 Jun 2015 17:39:50 -0400 (Steven Morgan)
+------------------------------------------
+ * add unit tests for offset matching yara rules using 'at' and 'in' keywords.
+
+Tue, 9 Jun 2015 11:12:20 -0400 (Kevin Lin)
+------------------------------------------
+ * unit_test: pcre and sigopt test cases added to check_matchers
+
+Fri, 5 Jun 2015 11:28:50 -0400 (Kevin Lin)
+------------------------------------------
+ * unit_tests: added a few pcre test cases
+
+Fri, 5 Jun 2015 11:11:35 -0400 (Kevin Lin)
+------------------------------------------
+ * pcre: added warnings in regard to CVE-2015-3210
+
+Thu, 4 Jun 2015 17:14:26 -0400 (Mickey Sola)
+------------------------------------------
+ * bb-11149: Fixing bzip2 scan to cease scanning after reaching max filesize.
+
+Wed, 3 Jun 2015 15:28:39 -0400 (Kevin Lin)
+------------------------------------------
+ * unit_test: basis for pcre subsig testing
+
+Mon, 1 Jun 2015 17:48:39 -0400 (Kevin Lin)
+------------------------------------------
+ * removed offset 0 limitation on cli_scanraw (revert change from 0.95.2)
+
+Mon, 1 Jun 2015 17:45:14 -0400 (Kevin Lin)
+------------------------------------------
+ * updated internal msxml 2003 file magics
+
+Mon, 1 Jun 2015 16:33:03 -0400 (Kevin Lin)
+------------------------------------------
+ * added 'PCRE_STATIC' to preprocessor macros for 3rdparty pcre linking
+
+Fri, 29 May 2015 16:08:35 -0400 (Kevin Lin)
+------------------------------------------
+ * added pcre source for windows build; needs trimming
+
+Thu, 28 May 2015 18:10:54 -0400 (Kevin Lin)
+------------------------------------------
+ * win32: added yara compiler source to build
+
+Thu, 28 May 2015 18:00:16 -0400 (Steven Morgan)
+------------------------------------------
+ * Add the YARA compiler files.
+
+Thu, 28 May 2015 17:50:20 -0400 (Kevin Lin)
+------------------------------------------
+ * win32: updated sources to include new yara sources
+
+Wed, 27 May 2015 18:27:48 -0400 (Steven Morgan)
+------------------------------------------
+ * Enable YARA include directives, import YARA compiler struct and
+   functions, improve YARA parse/lex error messages.
+
+Thu, 21 May 2015 15:04:22 -0400 (Kevin Lin)
+------------------------------------------
+ * altstr: optimized fixed length alternate runtime
+
+Thu, 21 May 2015 15:03:46 -0400 (Kevin Lin)
+------------------------------------------
+ * added implementation of cli_qsort_r (qsort with cb arg)
+
+Tue, 19 May 2015 12:21:36 -0400 (Kevin Lin)
+------------------------------------------
+ * yara: added support for PUA, IGN, and sigload_cb
+
+Tue, 19 May 2015 12:04:59 -0400 (Kevin Lin)
+------------------------------------------
+ * ac_special_altstr: sigopt support
+
+Mon, 18 May 2015 09:59:04 -0400 (Kevin Lin)
+------------------------------------------
+ * matcher-ac: wildcard support for variable alternates (needs optimization)
+
+Thu, 14 May 2015 13:03:21 -0400 (Steven Morgan)
+------------------------------------------
+ * bb6934 - Incorporate Bill Parker's DLP functions for Canadian RTN/EFT
+   and U.S. MICR codes. TBD - options for invoking those functions.
+
+Thu, 14 May 2015 12:47:54 -0400 (Kevin Lin)
+------------------------------------------
+ * ac: verifier alternative to handling nocase
+
+Wed, 13 May 2015 17:48:22 -0400 (Kevin Lin)
+------------------------------------------
+ * matcher-ac: expansion of nested alternates within alternate expr
+   matcher-ac: three types of alternates: byte, fixed, and generic
+
+Wed, 13 May 2015 17:27:44 -0400 (Steven Morgan)
+------------------------------------------
+ * bb6230 - additional credit/debit card checks for dlp.c. Function by
+   Bill Parker.
+
+Mon, 11 May 2015 11:55:43 -0400 (Kevin Lin)
+------------------------------------------
+ * matcher-ac: basic framework+debug for processing nested alternates
+
+Fri, 8 May 2015 15:52:30 -0400 (Steven Morgan)
+------------------------------------------
+ * bb10731 specify group for socket of which user is not a member - patch by
+   Sebastian Andrzej Siewior.
+
+Fri, 1 May 2015 17:15:55 -0400 (Steven Morgan)
+------------------------------------------
+ * Improve fidelity of reporting error conditions from YARA strings and
+   to continue processing additional YARA rules within files where previous
+   string errors are found.
+
+Wed, 29 Apr 2015 17:17:31 -0400 (Kevin Lin)
+------------------------------------------
+ * msxml: virus detection and allmatch fixes
+
+Tue, 28 Apr 2015 17:28:23 -0400 (Kevin Lin)
+------------------------------------------
+ * bb#11306 - LZMA decompression support for flash files
+
+Tue, 28 Apr 2015 14:56:14 -0400 (Kevin Lin)
+------------------------------------------
+ * added default filetype magic for LZMA compressed SWF
+
+Wed, 22 Apr 2015 04:34:02 -0400 (Kevin Lin)
+------------------------------------------
+ * ole2: added MSO inflation and scanning (detached)
+
 Mon, 27 Apr 12:00:00 EDT
 -----------------------------------
  * 0.98.7 Release.
