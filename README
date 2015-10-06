@@ -27,6 +27,8 @@ adjustments before using ClamAV 0.99.
       against files with unknown file types.
     - Improved fidelity of the "data loss prevention" heuristic
       algorithm. Code supplied by Bill Parker.
+    - Support for LZMA decompression within Adobe Flash files.
+    - Support for MSO attachments within Microsoft Office 2003 XML files.
 
 Steve Basford
 Sebastian Andrzej Siewior
@@ -36,6 +38,7 @@ Yann E. Morin
 Andreas Cadhalpun
 Dmitry Marakasov
 Michael Pelletier
+Felix Groebert
 
 0.98.7
 ------
