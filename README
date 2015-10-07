@@ -2,8 +2,8 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
-0.99
-----
+0.99-rc1
+--------
 
 ClamAV 0.99 contains major new features and changes. Particularly,
 if you are using clamd on-access scanning or have applications using
@@ -29,6 +29,11 @@ adjustments before using ClamAV 0.99.
       algorithm. Code supplied by Bill Parker.
     - Support for LZMA decompression within Adobe Flash files.
     - Support for MSO attachments within Microsoft Office 2003 XML files.
+    - A new sigtool option(--ascii-normalize) allowing signature authors
+      to more easily generate normalized versions of ascii files.
+
+Thank you to the ClamAV community members who sent in patches and bug
+reports included in ClamAV 0.99:
 
 Steve Basford
 Sebastian Andrzej Siewior

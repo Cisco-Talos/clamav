@@ -1,4 +1,8 @@
 
+Wed, 6 Oct 2015 14:25:00 -0400 (Steven Morgan)
+------------------------------------------
+ * ClamAV 0.99-rc1 Release.
+
 Mon, 5 Oct 2015 14:24:58 -0400 (Mickey Sola)
 ------------------------------------------
  * Configuration patch by Bernd Kuhls to allow for building statically
