@@ -1,19 +1,45 @@
-0.99-beta2
+0.99-rc1
 ------
 
-*Highlights* for the second beta of ClamAV 0.99 include:
-    - New and improved on-access scanning for Linux. See the recent
-      blog post for more details on the new on-access capabilities.
-    - Improved support for YARA rules including private rules,
-      referencing other rules, and YARA "include" files.
-    - Configurable default password list to attempt zip file
-      decryption.
-    - TIFF support.
-    - ./configure options for YARA.
-    - upgrade Windows pthread library to 2.9.1.
-    - a new signature target type for uncategorized files.
+ClamAV 0.99 contains major new features and changes. Particularly,
+if you are using clamd on-access scanning or have applications using
+all-match mode, you will want to review the changes and make any necessary
+adjustments before using ClamAV 0.99.
+    - Processing of YARA rules(some limitations- see signatures.pdf).
+    - Support in ClamAV logical signatures for many of the features
+      added for YARA, such as Perl Compatible Regular Expressions,
+      alternate strings, and YARA string attributes. See signatures.pdf
+      for full details.
+    - New and improved on-access scanning for Linux. See the recent blog
+      post and clamdoc.pdf for details on the new on-access capabilities.
+    - A new ClamAV API callback function that is invoked when a virus 
+      is found. This is intended primarily for applications running in 
+      all-match mode. Any applications using all-match mode must use 
+      the new callback function to record and report detected viruses.    
+    - Configurable default password list to attempt zip file decryption.
+    - TIFF file support.
+    - Upgrade Windows pthread library to 2.9.1.
+    - A new signature target type for designating signatures to run
+      against files with unknown file types.
     - Improved fidelity of the "data loss prevention" heuristic
       algorithm. Code supplied by Bill Parker.
+    - Support for LZMA decompression within Adobe Flash files.
+    - Support for MSO attachments within Microsoft Office 2003 XML files.
+    - A new sigtool option(--ascii-normalize) allowing signature authors
+      to more easily generate normalized versions of ascii files.
+
+Thank you to the ClamAV community members who sent in patches and bug
+reports included in ClamAV 0.99:
+
+Steve Basford
+Sebastian Andrzej Siewior
+Bill Parker
+Andreas Schulze
+Yann E. Morin
+Andreas Cadhalpun
+Dmitry Marakasov
+Michael Pelletier
+Felix Groebert
 
 --
 The ClamAV team (http://www.clamav.net/about.html#credits)
