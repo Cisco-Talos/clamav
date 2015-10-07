@@ -58,7 +58,9 @@ On-access Scanning
 </H2>
     There is a special thread in <code>clamd</code> that performs on-access
     scanning under Linux and shares internal virus database
-    with the daemon. <SPAN  CLASS="textbf">You must follow some important rules when
+    with the daemon. By default, this thread will only notify you when
+    potential threats are discovered. If you turn on prevention via
+    <code>clamd.conf</code> then <SPAN  CLASS="textbf">you must follow some important rules when
     using it:</SPAN>
     
 <UL>
@@ -73,24 +75,76 @@ SIGTERM signal. In other case you can lose access
 	      files will be automatically blocked and the scanner (including
 	      <code>clamd</code>!) will not be able to detect any viruses. In the
 	      result <SPAN  CLASS="textbf">all infected mails may be delivered.</SPAN>
+</LI>
+<LI>Watch your entire filesystem only using the <code>clamd.conf</code>
+	      OnAccessMountPath option. While this will disable on-access prevention,
+	      it will avoid potential system lockups caused by fanotify's blocking
+	      functionality.
+</LI>
+<LI>Using the On-Access Scanner to watch a virtual filesytem will result
+	      in undefined behaviour.
     
 </LI>
 </UL>
-    For example, to protect the whole system add the following lines to
+    The default configuration utilizes inotify to recursively keep track of
+    directories. If you need to protect more than 8192 directories it will
+    be necessary to change inotify's <code>max_user_watches</code> value.
+    
+<BR>
+<BR>
+This can be done temporarily with:
+    <PRE>
+    $ sysctl fs.inotify.max_user_watches=&lt;n&gt;
+</PRE>
+    Where <code>&lt;n&gt;</code> is the new maximum desired.
+    
+<BR>
+<BR>
+To watch your entire filesystem add the following lines to
     <code>clamd.conf</code>:
     <PRE>
 	ScanOnAccess yes
-	OnAccessIncludePath /
-	OnAccessExcludePath /proc
-	OnAccessExcludePath /temporary/dir/of/your/mail/scanning/software
+	OnAccessMountPath /
+</PRE>
+    Similarly, to protect your home directory add the following lines to
+    <code>clamd.conf</code>:
+    <PRE>
+	ScanOnAccess yes
+	OnAccessIncludePath /home
+	OnAccessExcludePath /home/user/temp/dir/of/your/mail/scanning/software
+	OnAccessPrevention yes
 </PRE>
     For more configuration options, type 'man clamd.conf' or reference the
     example clamd.conf.
 
 <P>
-<BR><HR>
+
+<DIV CLASS="navigation"><HR>
+<!--Navigation Panel-->
+<A NAME="tex2html619"
+  HREF="node32.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html615"
+  HREF="node28.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html609"
+  HREF="node30.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
+<A NAME="tex2html617"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
+<BR>
+<B> Next:</B> <A NAME="tex2html620"
+  HREF="node32.html">Clamdtop</A>
+<B> Up:</B> <A NAME="tex2html616"
+  HREF="node28.html">Usage</A>
+<B> Previous:</B> <A NAME="tex2html610"
+  HREF="node30.html">Clamdscan</A>
+ &nbsp; <B>  <A NAME="tex2html618"
+  HREF="node1.html">Contents</A></B> </DIV>
+<!--End of Navigation Panel-->
 <ADDRESS>
-Cisco 2015-09-01
+Cisco 2015-10-07
 </ADDRESS>
 </BODY>
 </HTML>
