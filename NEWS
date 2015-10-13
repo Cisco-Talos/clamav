@@ -1,10 +1,10 @@
 0.99-rc1
-------
+--------
 
-ClamAV 0.99 contains major new features and changes. Particularly,
-if you are using clamd on-access scanning or have applications using
-all-match mode, you will want to review the changes and make any necessary
-adjustments before using ClamAV 0.99.
+ClamAV 0.99 contains major new features and changes. YARA rules, 
+Perl Compatible Regular Expressions, revamped on-access scanning
+for Linux, and other new features join the many great features of ClamAV:
+
     - Processing of YARA rules(some limitations- see signatures.pdf).
     - Support in ClamAV logical signatures for many of the features
       added for YARA, such as Perl Compatible Regular Expressions,
@@ -27,9 +27,16 @@ adjustments before using ClamAV 0.99.
     - Support for MSO attachments within Microsoft Office 2003 XML files.
     - A new sigtool option(--ascii-normalize) allowing signature authors
       to more easily generate normalized versions of ascii files.
+    - Windows installation directories changed from \Program Files\Sourcefire\
+      ClamAV to \Program Files\ClamAV or \Program Files\ClamAV-x64.
 
-Thank you to the ClamAV community members who sent in patches and bug
-reports included in ClamAV 0.99:
+PLEASE NOTE:  If you are using clamd on-access scanning or have applications
+using all-match mode, you will want to review the changes and make any necessary
+adjustments before using ClamAV 0.99. Users of windows binaries need to be
+aware of the change of installation directories.
+
+Thank you to the ClamAV community members who sent patches and bug reports
+included for ClamAV 0.99:
 
 Steve Basford
 Sebastian Andrzej Siewior
