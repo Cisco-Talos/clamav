@@ -142,7 +142,7 @@ void *onas_fan_th(void *arg)
     sigaction(SIGSEGV, &act, NULL);
 
     /* Initialize fanotify */
-    onas_fan_fd = fanotify_init(FAN_CLASS_CONTENT | FAN_UNLIMITED_QUEUE | FAN_UNLIMITED_MARKS, O_RDONLY);
+    onas_fan_fd = fanotify_init(FAN_CLASS_CONTENT | FAN_UNLIMITED_QUEUE | FAN_UNLIMITED_MARKS, O_LARGEFILE | O_RDONLY);
     if(onas_fan_fd < 0) {
 	logg("!ScanOnAccess: fanotify_init failed: %s\n", cli_strerror(errno, err, sizeof(err)));
 	if(errno == EPERM)
@@ -226,7 +226,15 @@ void *onas_fan_th(void *arg)
         ret = select(onas_fan_fd + 1, &rfds, NULL, NULL, NULL);
     } while((ret == -1 && errno == EINTR) || reload);
 
-    while((bread = read(onas_fan_fd, buf, sizeof(buf))) > 0) {
+    while(((bread = read(onas_fan_fd, buf, sizeof(buf))) > 0) || errno == EOVERFLOW) {
+
+	if (errno == EOVERFLOW) {
+		logg("!ScanOnAccess: Internal error (failed to read data) ... %s\n", strerror(errno));
+		logg("!ScanOnAccess: File too large for fanotify ... recovering and continuing scans...\n");
+		errno = 0;
+		continue;
+	}
+
 	fmd = (struct fanotify_event_metadata *) buf;
 	while(FAN_EVENT_OK(fmd, bread)) {
 	    scan = 1;
@@ -272,7 +280,7 @@ void *onas_fan_th(void *arg)
     }
 
     if(bread < 0)
-	logg("!ScanOnAccess: Internal error (failed to read data)\n");
+	logg("!ScanOnAccess: Internal error (failed to read data) ... %s\n", strerror(errno));
 
     return NULL;
 }
