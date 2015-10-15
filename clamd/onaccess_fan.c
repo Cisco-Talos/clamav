@@ -34,6 +34,7 @@
 #include <pthread.h>
 #include <string.h>
 #include <errno.h>
+#include <time.h>
 
 #include <sys/fanotify.h>
 
@@ -227,11 +228,17 @@ void *onas_fan_th(void *arg)
         ret = select(onas_fan_fd + 1, &rfds, NULL, NULL, NULL);
     } while((ret == -1 && errno == EINTR) || reload);
 
+
+    time_t start = time(NULL) - 30;
     while(((bread = read(onas_fan_fd, buf, sizeof(buf))) > 0) || errno == EOVERFLOW) {
 
 	if (errno == EOVERFLOW) {
-		logg("!ScanOnAccess: Internal error (failed to read data) ... %s\n", strerror(errno));
-		logg("!ScanOnAccess: File too large for fanotify ... recovering and continuing scans...\n");
+		if (time(NULL) - start >= 30) {
+			logg("!ScanOnAccess: Internal error (failed to read data) ... %s\n", strerror(errno));
+			logg("!ScanOnAccess: File too large for fanotify ... recovering and continuing scans...\n");
+			start = time(NULL);
+		}
+
 		errno = 0;
 		continue;
 	}
