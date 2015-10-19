@@ -526,7 +526,8 @@ dcf43987e4f519d629b103375;SL+550:6300680065005c0046006900
     \subsubsection{Subsignature Modifiers}
     ClamAV (clamav-0.99) supports a number of additional subsignature modifiers
     for logical signatures. This is done by specifying '::' followed by a number
-    of characters representing the desired options.
+    of characters representing the desired options. Signatures using subsignature
+    modifiers require \verb+Engine:81-255+ for backwards-compatibility.
     \begin{itemize}
     \item Case-Insensitive [\verb+i+]\\
       Specifying the \verb+i+ modifier causes ClamAV to match all alphabetic
@@ -547,31 +548,30 @@ dcf43987e4f519d629b103375;SL+550:6300680065005c0046006900
     \end{itemize}
     Examples:
     \begin{verbatim}
-clamav-nocase-A;Target:0;0&1;41414141/i;424242424242/i
+clamav-nocase-A;Engine:81-255,Target:0;0&1;41414141/i;424242424242/i
     -matches 'AAAA'(nocase) and 'BBBBBB'(nocase)
 
-clamav-fullword-A;Target:0;0&1;414141;68656c6c6f/f
+clamav-fullword-A;Engine:81-255,Target:0;0&1;414141;68656c6c6f/f
     -matches 'AAA' and 'hello'(fullword)
-clamav-fullword-B;Target:0;0&1;414141;68656c6c6f/fi
+clamav-fullword-B;Engine:81-255,Target:0;0&1;414141;68656c6c6f/fi
     -matches 'AAA' and 'hello'(fullword nocase)
 
-clamav-wide-B2;Target:0;0&1;414141;68656c6c6f/wa
+clamav-wide-B2;Engine:81-255,Target:0;0&1;414141;68656c6c6f/wa
     -matches 'AAA' and 'hello'(wide ascii)
-clamav-wide-C0;Target:0;0&1;414141;68656c6c6f/iwfa
+clamav-wide-C0;Engine:81-255,Target:0;0&1;414141;68656c6c6f/iwfa
     -matches 'AAA' and 'hello'(nocase wide fullword ascii)
     \end{verbatim}
 
     \subsection{Special Subsignature Types}
     \subsubsection{Macro subsignatures (clamav-0.96) : \textnormal{\texttt{\$\{min-max\}MACROID\$}}}
-    \begin{itemize}
-      \item Macro subsignatures are used to combine a number of existing extended
-      signatures (\verb+.ndb+) into a on-the-fly generated alternate string logical
-      signature (\verb+.ldb+).
-    \end{itemize}
+    Macro subsignatures are used to combine a number of existing extended
+    signatures (\verb+.ndb+) into a on-the-fly generated alternate string logical
+    signature (\verb+.ldb+). Signatures using macro subsignatures require \verb+Engine:51-255+
+    for backwards-compatibility.\\\\
     Example:
     \begin{verbatim}
       test.ldb:
-        TestMacro;Target:0;0&1;616161;${6-7}12$
+        TestMacro;Engine:51-255,Target:0;0&1;616161;${6-7}12$
 
       test.ndb:
         D1:0:$12:626262
@@ -579,7 +579,7 @@ clamav-wide-C0;Target:0;0&1;414141;68656c6c6f/iwfa
         D3:0:$30:626264
     \end{verbatim}
     The example logical signature \verb+TestMacro+ is functionally equivalent to:\\
-    \verb+TestMacro;Target:0;0;616161{3-4}(626262|636363)+
+    \verb+TestMacro;Engine:51-255,Target:0;0;616161{3-4}(626262|636363)+
     \begin{itemize}
 	\item \verb+MACROID+ points to a group of signatures; there can be at most 32 macro groups.
       \begin{itemize}
@@ -595,6 +595,9 @@ clamav-wide-C0;Target:0;0&1;414141;68656c6c6f/iwfa
 	\item For more information and examples please see \url{https://wwws.clamav.net/bugzilla/show_bug.cgi?id=164}.
     \end{itemize}
     \subsubsection{PCRE subsignatures (clamav-0.99) : \textnormal{\texttt{Trigger/PCRE/[Flags]}}}
+    PCRE subsignatures are used within a logical signature (\verb+.ldb+) to specify regex matches
+    that execute once triggered by a conditional based on preceding subsignatures. Signatures using
+    PCRE subsignatures require \verb+Engine:81-255+ for backwards-compatibility.
     \begin{itemize}
     \item \verb+Trigger+ is a required field that is a valid \verb+LogicalExpression+ and
     may refer to any subsignatures that precede this subsignature. Triggers cannot be
@@ -626,32 +629,34 @@ clamav-wide-C0;Target:0;0&1;414141;68656c6c6f/iwfa
     \end{itemize}
     Examples:
     \begin{verbatim}
-Find.All.ClamAV;Target:0;1;6265676c6164697427736e6f7462797465636
-f6465;0/clamav/g
+Find.All.ClamAV;Engine:81-255,Target:0;1;6265676c6164697427736e6
+f7462797465636f6465;0/clamav/g
 
-Find.ClamAV.OnlyAt.299;Target:0;2;7374756c747a67657473;706372657
-2656765786c6f6c;299:0&1/clamav/
+Find.ClamAV.OnlyAt.299;Engine:81-255,Target:0;2;7374756c747a6765
+7473;7063726572656765786c6f6c;299:0&1/clamav/
 
-Find.ClamAV.StartAt.300;Target:0;3;616c61696e;62756731393238;636
-c6f736564;300:0&1&2/clamav/r
+Find.ClamAV.StartAt.300;Engine:81-255,Target:0;3;616c61696e;6275
+6731393238;636c6f736564;300:0&1&2/clamav/r
 
-Find.All.Encompassed.ClamAV;Target:0;3;7768796172656e2774;796f75
-7573696e67;79617261;200,300:0&1&2/clamav/ge
+Find.All.Encompassed.ClamAV;Engine:81-255,Target:0;3;77687961726
+56e2774;796f757573696e67;79617261;200,300:0&1&2/clamav/ge
 
-Named.CapGroup.Pcre;Target:0;3;636f75727479617264;616c62756d;746
-57272696572;50:0&1&2/variable=(?<nilshell>.{16})end/gr
+Named.CapGroup.Pcre;Engine:81-255,Target:0;3;636f75727479617264;
+616c62756d;74657272696572;50:0&1&2/variable=(?<nilshell>.{16})en
+d/gr
 
-Firefox.TreeRange.UseAfterFree;Target:0;0&1&2;2e766965772e73656c
-656374696f6e;2e696e76616c696461746553656c656374696f6e;0&1/\x2Evi
-ew\x2Eselection.*?\x2Etree\s*\x3D\s*null.*?\x2Einvalidate/smi
+Firefox.TreeRange.UseAfterFree;Engine:81-255,Target:0,Engine:81-
+255;0&1&2;2e766965772e73656c656374696f6e;2e696e76616c69646174655
+3656c656374696f6e;0&1/\x2Eview\x2Eselection.*?\x2Etree\s*\x3D\s*
+null.*?\x2Einvalidate/smi
 
-Firefox.IDB.UseAfterFree;Target:0;0&1;4944424b657952616e6765;0/^
-\x2e(only|lowerBound|upperBound|bound)\x28.*?\x29.*?\x2e(lower|u
-pper|lowerOpen|upperOpen)/smi
+Firefox.IDB.UseAfterFree;Engine:81-255,Target:0;0&1;4944424b6579
+52616e6765;0/^\x2e(only|lowerBound|upperBound|bound)\x28.*?\x29.
+*?\x2e(lower|upper|lowerOpen|upperOpen)/smi
 
-Firefox.boundElements;Target:0;0&1&2;6576656e742e626f756e64456c6
-56d656e7473;77696e646f772e636c6f7365;0&1/on(load|click)\s*=\s*\x
-22?window\.close\s*\x28/si
+Firefox.boundElements;Engine:81-255,Target:0;0&1&2;6576656e742e6
+26f756e64456c656d656e7473;77696e646f772e636c6f7365;0&1/on(load|c
+lick)\s*=\s*\x22?window\.close\s*\x28/si
     \end{verbatim}
 
     \subsection{Icon signatures for PE files}
