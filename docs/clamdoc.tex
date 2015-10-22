@@ -336,6 +336,24 @@
     \end{verbatim}
     See section /ref{sec:clamavmilter} for more details on clamav-milter.
 
+    \subsection{Using the system LLVM}
+    Some problems have been reported when compiling ClamAV's built-in LLVM with recent
+    C++ compiler releases. These problems may be avoided by installing and using
+    an external LLVM system library. To configure ClamAV to use LLVM that is installed
+    as a system library instead of the built-in LLVM JIT, use following: 
+    \begin{verbatim}
+	$ ./configure --with-system-llvm=/myllvm/bin/llvm-config
+	$ make
+	$ sudo make install
+    \end{verbatim}
+    The argument to \verb+--with-system-llvm+ is optional, indicating the path name of
+    the LLVM configuration utility (llvm-config). With no argument to \verb+--with-system-llvm+,
+    \verb+./configure+ will search for LLVM in /usr/local/ and then /usr.
+    \\\\
+    Recommended versions of LLVM are 3.2, 3.3, 3.4, and 3.5. Some installations have
+    reported problems using earlier LLVM versions. Versions of LLVM beyond 3.5 are not
+    currently supported in ClamAV.
+
     \subsection{Running unit tests}\label{unit-testing}
 	ClamAV includes unit tests that allow you to test that the compiled binaries work correctly on your platform.
         \\\\
