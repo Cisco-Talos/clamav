@@ -18,8 +18,8 @@ LLVM_INCLUDES=-I$(top_srcdir)/llvm/include -I$(top_builddir)/llvm/include
 # keep it like this while I'm testing LLVM
 # TODO: HP-UX should have -D_REENTRANT -D_HPUX_SOURCE
 LLVM_DEFS=-D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -D_DEBUG -D_GNU_SOURCE
-AM_CPPFLAGS = -I$(top_srcdir)/../.. -I$(top_srcdir)/.. -I$(top_builddir)/../../
-
+AM_CPPFLAGS = @SSL_CPPFLAGS@ -I$(top_srcdir)/../.. -I$(top_srcdir)/.. -I$(top_builddir)/../../
+AM_LDFLAGS = @SSL_LDFLAGS@
 AM_CXXFLAGS = $(LLVM_CXXFLAGS) -fno-exceptions
 ACLOCAL_AMFLAGS=-I m4
 
@@ -35,8 +35,8 @@ if BUILD_EXTERNAL_LLVM
 # $(shell ...)
 #LLVM_DEPS=$(shell $(LLVM_CONFIG) --libfiles jit nativecodegen)
 libclamavcxx_la_CXXFLAGS = $(AM_CPPFLAGS) @LLVMCONFIG_CXXFLAGS@ -fexceptions -DLLVM_VERSION=${LLVM_VERSION}
-libclamavcxx_la_LDFLAGS = @LLVMCONFIG_LDFLAGS@ @LLVMCONFIG_LIBS@ @LLVMCONFIG_LDFLAGS@
-libclamavcxx_la_DEPENDENCIES = @LLVMCONFIG_LIBFILES@
+libclamavcxx_la_LDFLAGS = $(AM_LDFLAGS) @LLVMCONFIG_LDFLAGS@ @LLVMCONFIG_LIBS@ @LLVMCONFIG_LDFLAGS@
+libclamavcxx_la_DEPENDENCIES = @SSL_LIBS@ @LLVMCONFIG_LIBFILES@
 noinst_LTLIBRARIES = libclamavcxx.la
 libclamavcxx_la_SOURCES += PointerTracking.cpp
 libclamavcxx_la_SOURCES += PointerTracking.h
@@ -45,9 +45,9 @@ else
 AM_CPPFLAGS += $(LLVM_INCLUDES) $(LLVM_DEFS)
 noinst_LTLIBRARIES = libclamavcxx.la libllvmsystem.la\
 		     libllvmcodegen.la libllvmjit.la
-libclamavcxx_la_LIBADD=libllvmjit.la
-libclamavcxx_la_DEPENDENCIES=libllvmjit.la libllvmcodegen.la libllvmsystem.la
-libclamavcxx_la_LDFLAGS=-no-undefined
+libclamavcxx_la_LIBADD = libllvmjit.la
+libclamavcxx_la_DEPENDENCIES = @SSL_LIBS@ libllvmjit.la libllvmcodegen.la libllvmsystem.la
+libclamavcxx_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined
 libclamavcxx_la_CXXFLAGS = $(LLVM_CXXFLAGS) -DLLVM_VERSION=${LLVM_VERSION}
 
 
