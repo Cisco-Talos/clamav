@@ -4,6 +4,13 @@ AC_ARG_ENABLE(check,
 [AS_HELP_STRING([--enable-check], [enable check unit tests @<:@default=auto@:>@])], enable_check_ut=$enableval, enable_check_ut="auto" )
 
 if test "$enable_check_ut" != "no" ; then
+
+PKG_CHECK_MODULES(CHECK, [check], [HAVE_LIBCHECK=yes], [HAVE_LIBCHECK=no])
+
+if test "X$HAVE_LIBCHECK" == "Xyes"; then
+    CHECK_CPPFLAGS=$CHECK_CFLAGS
+else
+
 case "$host_os" in
     *linux*)
         save_LDFLAGS="$LDFLAGS"
@@ -23,6 +30,8 @@ case "$host_os" in
 esac
 
 fi
+fi
+
 AC_SUBST([CHECK_CPPFLAGS])
 AC_SUBST([CHECK_LIBS])
 AM_CONDITIONAL([HAVE_LIBCHECK],test "X$HAVE_LIBCHECK" = "Xyes")
