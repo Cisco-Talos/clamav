@@ -436,6 +436,9 @@ struct RE {
 #define yr_realloc cli_realloc
 #define yr_free free
 #define xtoi cli_xtoi
+
+#undef strlcpy
+#undef strlcat
 #define strlcpy cli_strlcpy
 #define strlcat cli_strlcat
 
