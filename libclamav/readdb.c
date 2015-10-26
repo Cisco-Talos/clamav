@@ -4099,7 +4099,7 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
 #define PWDB_TOKENS 4
 static int cli_loadpwdb(FILE *fs, struct cl_engine *engine, unsigned int options, unsigned int internal, struct cli_dbio *dbio)
 {
-    const char *tokens[PWDB_TOKENS + 1], *pt, *passname;
+    const char *tokens[PWDB_TOKENS + 1], *passname;
     char *attribs;
     char buffer[FILEBUFF];
     unsigned int line = 0, skip = 0, pwcnt = 0, tokens_count;
@@ -4142,27 +4142,28 @@ static int cli_loadpwdb(FILE *fs, struct cl_engine *engine, unsigned int options
             continue;
         }
 
-        /* preprocess tdb with target type 0 */
-        memset(&tdb, 0, sizeof(tdb));
-        tdb.mempool = engine->mempool;
-        tdb.cnt[CLI_TDB_UINT]++;
-        tdb.val = (uint32_t *) mpool_realloc2(tdb.mempool, tdb.val, tdb.cnt[CLI_TDB_UINT] * sizeof(uint32_t));
-        if(!tdb.val) {
-            tdb.cnt[CLI_TDB_UINT] = 0;
-            ret = CL_EMEM;
-            break;
+        /* append target type 0 to tdb string if needed */
+        if ((tokens[1][0] == '\0') || (strstr(tokens[1], "Target:") != NULL)) {
+            attribs = cli_strdup(tokens[1]);
+            if(!attribs) {
+                cli_errmsg("cli_loadpwdb: Can't allocate memory for attributes\n");
+                ret = CL_EMEM;
+                break;
+            }
+        } else {
+            size_t attlen = strlen(tokens[1]) + 10;
+            attribs = cli_calloc(attlen, sizeof(char));
+            if(!attribs) {
+                cli_errmsg("cli_loadpwdb: Can't allocate memory for attributes\n");
+                ret = CL_EMEM;
+                break;
+            }
+            snprintf(attribs, attlen, "%s,Target:0", tokens[1]);
         }
-        tdb.val[0] = 0;
-        tdb.target = &(tdb.val[0]);
 
         /* use the tdb to track filetypes and check flevels */
-        attribs = cli_strdup(tokens[1]);
-        if(!attribs) {
-            cli_errmsg("cli_loadpwdb: Can't allocate duplicate of attributes\n");
-            ret = CL_EMEM;
-            break;
-        }
-
+        memset(&tdb, 0, sizeof(tdb));
+        tdb.mempool = engine->mempool;
         ret = init_tdb(&tdb, engine, attribs, passname);
         free(attribs);
         if(ret != CL_SUCCESS) {
