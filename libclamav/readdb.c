@@ -4166,6 +4166,7 @@ static int cli_loadpwdb(FILE *fs, struct cl_engine *engine, unsigned int options
         ret = init_tdb(&tdb, engine, attribs, passname);
         free(attribs);
         if(ret != CL_SUCCESS) {
+            skip++;
             if (ret == CL_BREAK)
                 continue;
             else
