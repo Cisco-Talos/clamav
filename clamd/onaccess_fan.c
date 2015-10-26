@@ -81,6 +81,7 @@ static int onas_fan_scanfile(int fan_fd, const char *fname, struct fanotify_even
     res.response = FAN_ALLOW;
     context.filename = fname;
     context.virsize = 0;
+    context.scandata = NULL;
     if(scan && cl_scandesc_callback(fmd->fd, &virname, NULL, tharg->engine, tharg->options, &context) == CL_VIRUS) {
 	if(extinfo && context.virsize)
 	    logg("ScanOnAccess: %s: %s(%s:%llu) FOUND\n", fname, virname, context.virhash, context.virsize);
@@ -335,6 +336,7 @@ static int cauth_scanfile(const char *fname, int extinfo, struct thrarg *tharg)
 
     context.filename = fname;
     context.virsize = 0;
+    context.scandata = NULL;
 
     fd = open(fname, O_RDONLY);
     if(fd == -1)
