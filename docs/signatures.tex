@@ -938,6 +938,33 @@ Eicar-Test-Signature:bc356bae4c42f19a3de16e333ba3569c
         regular expression string.
     \end{itemize}
 
+    \subsection{Passwords for archive files}
+    ClamAV 0.99 allows for users to specify password attempts for certain password-compatible archives.
+    Passwords will be attempted in order of appearance in the password signature file which use the extension
+    of \verb+.pwdb+. If no passwords apply or none are provided, ClamAV will default to the original
+    behavior of parsing the file.
+    Currently, as of ClamAV 0.99 [flevel 81], only \verb+.zip+ archives are supported.
+    The signature format is
+\begin{verbatim}
+SignatureName;TargetDescriptionBlock;PWStorageType;Password
+\end{verbatim}
+    where:
+    \begin{itemize}
+        \item \verb+SignatureName+: name to be displayed during debug when a password is successful
+        \item \verb+TargetDescriptionBlock+: provides information about the engine and target file with comma separated Arg:Val pairs
+        \begin{itemize}
+             \item \verb+Engine:X-Y+: Required engine functionality
+             \item \verb+Container:CL_TYPE_*+: File type of applicable containers
+        \end{itemize}
+        \item \verb+PWStorageType+: determines how the password field is parsed
+        \begin{itemize}
+            \item 0 = cleartext
+            \item 1 = hex
+        \end{itemize}
+        \item \verb+Password+: value used in password attempt
+    \end{itemize}
+    The signatures for password attempts are stored inside \verb+.pwdb+ files.
+
     \section{Special files}
 
     \subsection{HTML}
