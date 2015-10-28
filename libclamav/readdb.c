@@ -4410,8 +4410,8 @@ int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo
     } else if(cli_strbcasestr(dbname, ".pwdb")) {
         ret = cli_loadpwdb(fs, engine, options, 0, dbio);
     } else {
-	cli_dbgmsg("cli_load: unknown extension - assuming old database format\n");
-	ret = cli_loaddb(fs, engine, signo, options, dbio, dbname);
+	cli_warnmsg("cli_load: unknown extension - skipping %s\n", filename);
+	skipped = 1;
     } 
 
     if(ret) {
