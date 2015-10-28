@@ -55,7 +55,13 @@
 #include "llvm/Analysis/TargetFolder.h"
 #endif
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
+#if LLVM_VERSION < 36
 #include "llvm/ExecutionEngine/JIT.h"
+#else
+#include "llvm/ExecutionEngine/MCJIT.h"
+#include "llvm/Support/DynamicLibrary.h"
+#include "llvm/Object/ObjectFile.h"
+#endif
 #include "llvm/ExecutionEngine/JITEventListener.h"
 #include "llvm/PassManager.h"
 #include "llvm/Support/Compiler.h"
@@ -424,13 +430,19 @@ static void* noUnknownFunctions(const std::string& name) {
     if (addr)
 	return addr;
 
+#if LLVM_VERSION < 36
     std::string reason((Twine("Attempt to call external function ")+name).str());
     llvm_error_handler(0, reason);
+#else
+    // noUnknownFunctions relies on addGlobalMapping, which doesn't work with MCJIT.
+    // Now the function pointers are found with SymbolSearching.
+#endif
     return 0;
 }
 
 class NotifyListener : public JITEventListener {
 public:
+#if LLVM_VERSION < 36
     virtual void NotifyFunctionEmitted(const Function &F,
 				       void *Code, size_t Size,
 				       const EmittedFunctionDetails &Details)
@@ -444,6 +456,18 @@ public:
 			    F.getName().str().c_str(), (long)Size, Code);
 #endif
     }
+#else
+    // MCJIT doesn't emit single functions, but instead whole objects.
+    virtual void NotifyObjectEmitted(const object::ObjectFile &Obj,
+                                     const RuntimeDyld::LoadedObjectInfo &L)
+    {
+        if (!cli_debug_flag)
+            return;
+        cli_dbgmsg_internal("[Bytecode JIT]; emitted %s %s of %zd bytes\n",
+                            Obj.getFileFormatName().str().c_str(),
+                            Obj.getFileName().str().c_str(), Obj.getData().size());
+    }
+#endif
 };
 
 class TimerWrapper {
@@ -1172,10 +1196,18 @@ public:
 	    mdnodes.resize(i+1);
 	assert(i < mdnodes.size());
 	const struct cli_bc_dbgnode *node = &bc->dbgnodes[i];
+#if LLVM_VERSION < 36
 	Value **Vals = new Value*[node->numelements];
+#else
+	Metadata **Vals = new Metadata*[node->numelements];
+#endif
 	for (unsigned j=0;j<node->numelements;j++) {
 	    const struct cli_bc_dbgnode_element* el = &node->elements[j];
+#if LLVM_VERSION < 36
 	    Value *V;
+#else
+	    Metadata *V;
+#endif
 	    if (!el->len) {
 		if (el->nodeid == ~0u)
 		    V = 0;
@@ -1186,12 +1218,21 @@ public:
 	    } else if (el->string) {
 		V = MDString::get(Context, StringRef(el->string, el->len));
 	    } else {
+#if LLVM_VERSION < 36
 		V = ConstantInt::get(IntegerType::get(Context, el->len),
 				     el->constant);
+#else
+		V = ConstantAsMetadata::get(ConstantInt::get(IntegerType::get(Context, el->len),
+				     el->constant));
+#endif
 	    }
 	    Vals[j] = V;
 	}
+#if LLVM_VERSION < 36
 	MDNode *N = MDNode::get(Context, ARRAYREF(Value*,Vals, node->numelements));
+#else
+	MDNode *N = MDNode::get(Context, ARRAYREF(Metadata*,Vals, node->numelements));
+#endif
 	delete[] Vals;
 	mdnodes[i] = N;
 	return N;
@@ -2000,11 +2041,19 @@ class LLVMApiScopedLock {
 	    // it is not like we are going to codegen from multiple threads
 	    // at a time anyway.
 //	    if (!llvm_is_multithreaded())
+#if LLVM_VERSION < 36
 		llvm_api_lock.acquire();
+#else
+		llvm_api_lock.lock();
+#endif
 	}
 	~LLVMApiScopedLock() {
 //	    if (!llvm_is_multithreaded())
+#if LLVM_VERSION < 36
 		llvm_api_lock.release();
+#else
+		llvm_api_lock.unlock();
+#endif
 	}
 };
 
@@ -2022,7 +2071,12 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
 #else
     CF->FHandler->addFnAttr(Attribute::NoInline);
 #endif
+#if LLVM_VERSION < 36
+    // addGlobalMapping still exists in LLVM 3.6, but it doesn't work with MCJIT, which now replaces the JIT implementation.
     EE->addGlobalMapping(CF->FHandler, (void*)(intptr_t)jit_exception_handler);
+#else
+    sys::DynamicLibrary::AddSymbol(CF->FHandler->getName(), (void*)(intptr_t)jit_exception_handler);
+#endif
     EE->InstallLazyFunctionCreator(noUnknownFunctions);
     EE->getPointerToFunction(CF->FHandler);
 
@@ -2112,15 +2166,27 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
     FunctionType* DummyTy = FunctionType::get(Type::getVoidTy(Context), false);
     CF->FRealmemset = Function::Create(DummyTy, GlobalValue::ExternalLinkage,
 					     "memset", M);
+#if LLVM_VERSION < 36
     EE->addGlobalMapping(CF->FRealmemset, (void*)(intptr_t)memset);
+#else
+    sys::DynamicLibrary::AddSymbol(CF->FRealmemset->getName(), (void*)(intptr_t)memset);
+#endif
     EE->getPointerToFunction(CF->FRealmemset);
     CF->FRealMemmove = Function::Create(DummyTy, GlobalValue::ExternalLinkage,
 					      "memmove", M);
+#if LLVM_VERSION < 36
     EE->addGlobalMapping(CF->FRealMemmove, (void*)(intptr_t)memmove);
+#else
+    sys::DynamicLibrary::AddSymbol(CF->FRealMemmove->getName(), (void*)(intptr_t)memmove);
+#endif
     EE->getPointerToFunction(CF->FRealMemmove);
     CF->FRealmemcpy = Function::Create(DummyTy, GlobalValue::ExternalLinkage,
 					     "memcpy", M);
+#if LLVM_VERSION < 36
     EE->addGlobalMapping(CF->FRealmemcpy, (void*)(intptr_t)memcpy);
+#else
+    sys::DynamicLibrary::AddSymbol(CF->FRealmemcpy->getName(), (void*)(intptr_t)memcpy);
+#endif
     EE->getPointerToFunction(CF->FRealmemcpy);
 
     args.clear();
@@ -2134,7 +2200,11 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
     FuncTy_5 = FunctionType::get(Type::getInt32Ty(Context),
 				 args, false);
     CF->FRealmemcmp = Function::Create(FuncTy_5, GlobalValue::ExternalLinkage, "memcmp", M);
+#if LLVM_VERSION < 36
     EE->addGlobalMapping(CF->FRealmemcmp, (void*)(intptr_t)memcmp);
+#else
+    sys::DynamicLibrary::AddSymbol(CF->FRealmemcmp->getName(), (void*)(intptr_t)memcmp);
+#endif
     EE->getPointerToFunction(CF->FRealmemcmp);
 }
 
@@ -2365,8 +2435,10 @@ static void setGuard(unsigned char* guardbuf)
 static void addFPasses(FunctionPassManager &FPM, bool trusted, const TargetData *TD)
 #elif LLVM_VERSION < 35
 static void addFPasses(FunctionPassManager &FPM, bool trusted, const DataLayout *TD)
-#else
+#elif LLVM_VERSION < 36
 static void addFPasses(FunctionPassManager &FPM, bool trusted, const Module *M)
+#else
+static void addFPasses(FunctionPassManager &FPM, bool trusted, Module *M)
 #endif
 {
     // Set up the optimizer pipeline.  Start with registering info about how
@@ -2375,8 +2447,12 @@ static void addFPasses(FunctionPassManager &FPM, bool trusted, const Module *M)
     FPM.add(new TargetData(*TD));
 #elif LLVM_VERSION < 35
     FPM.add(new DataLayout(*TD));
-#else
+#elif LLVM_VERSION < 36
     FPM.add(new DataLayoutPass(M));
+#else
+    DataLayoutPass *DLP = new DataLayoutPass();
+    DLP->doInitialization(*M);
+    FPM.add(DLP);
 #endif
     // Promote allocas to registers.
     FPM.add(createPromoteMemoryToRegisterPass());
@@ -2398,7 +2474,11 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
     {
 	// Create the JIT.
 	std::string ErrorMsg;
+#if LLVM_VERSION < 36
 	EngineBuilder builder(M);
+#else
+	EngineBuilder builder(std::move(std::unique_ptr<Module>(M)));
+#endif
 
 #if LLVM_VERSION >= 31
 	TargetOptions Options;
@@ -2435,7 +2515,12 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	// Due to LLVM PR4816 only X86 supports non-lazy compilation, disable
 	// for now.
 	EE->DisableLazyCompilation();
+#if LLVM_VERSION < 36
 	EE->DisableSymbolSearching();
+#else
+	// This must be enabled for AddSymbol to work.
+	EE->DisableSymbolSearching(false);
+#endif
 
 	struct CommonFunctions CF;
 	addFunctionProtos(&CF, EE, M);
@@ -2513,7 +2598,12 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 		std::string reason((Twine("No mapping for builtin api ")+api->name).str());
 		llvm_error_handler(0, reason);
 	    }
+#if LLVM_VERSION < 36
 	    EE->addGlobalMapping(F, dest);
+#else
+    // addGlobalMapping doesn't work with MCJIT, so use symbol searching instead.
+    sys::DynamicLibrary::AddSymbol(F->getName(), dest);
+#endif
 	    EE->getPointerToFunction(F);
 	    apiFuncs[i] = F;
 	}
@@ -2527,13 +2617,21 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	if (2*sizeof(void*) <= 16 && cli_rndnum(2)==2) {
 	    plus = sizeof(void*);
 	}
+#if LLVM_VERSION < 36
 	EE->addGlobalMapping(Guard, (void*)(&bcs->engine->guard.b[plus]));
+#else
+    sys::DynamicLibrary::AddSymbol(Guard->getName(), (void*)(&bcs->engine->guard.b[plus]));
+#endif
 	setGuard(bcs->engine->guard.b);
 	bcs->engine->guard.b[plus+sizeof(void*)-1] = 0x00;
 //	printf("%p\n", *(void**)(&bcs->engine->guard.b[plus]));
 	Function *SFail = Function::Create(FTy, Function::ExternalLinkage,
 					      "__stack_chk_fail", M);
+#if LLVM_VERSION < 36
 	EE->addGlobalMapping(SFail, (void*)(intptr_t)jit_ssp_handler);
+#else
+    sys::DynamicLibrary::AddSymbol(SFail->getName(), (void*)(intptr_t)jit_ssp_handler);
+#endif
         EE->getPointerToFunction(SFail);
 
 	llvm::Function **Functions = new Function*[bcs->count];
@@ -2572,12 +2670,26 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	PM.add(new TargetData(*EE->getTargetData()));
 #elif LLVM_VERSION < 35
 	PM.add(new DataLayout(*EE->getDataLayout()));
-#else
+#elif LLVM_VERSION < 36
 	PM.add(new DataLayoutPass(M));
+#else
+    DataLayoutPass *DLP = new DataLayoutPass();
+    DLP->doInitialization(*M);
+    PM.add(DLP);
 #endif
 	// TODO: only run this on the untrusted bytecodes, not all of them...
 	if (has_untrusted)
 	    PM.add(createClamBCRTChecks());
+#if LLVM_VERSION >= 36
+	// With LLVM 3.6 (MCJIT) this Pass is required to work around
+	// a crash in LLVM caused by the SCCP Pass:
+	// Pass 'Sparse Conditional Constant Propagation' is not initialized.
+	// Verify if there is a pass dependency cycle.
+	// Required Passes:
+	//
+	// Program received signal SIGSEGV, Segmentation fault.
+	PM.add(createGVNPass());
+#endif
 	PM.add(createSCCPPass());
 	PM.add(createCFGSimplificationPass());
 	PM.add(createGlobalOptimizerPass());
@@ -2590,6 +2702,10 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	PM.run(*M);
 	pmTimer2.stopTimer();
 	DEBUG(M->dump());
+
+#if LLVM_VERSION >= 36
+	EE->finalizeObject();
+#endif
 
 	{
 	    PrettyStackTraceString CrashInfo2("Native machine codegen");
@@ -2676,6 +2792,10 @@ int bytecode_init(void)
     // usable by the JIT.
 #ifndef AC_APPLE_UNIVERSAL_BUILD
     InitializeNativeTarget();
+#if LLVM_VERSION >= 36
+    InitializeNativeTargetAsmPrinter();
+    InitializeNativeTargetAsmParser();
+#endif
 #else
     InitializeAllTargets();
 #endif
@@ -2853,7 +2973,11 @@ void stop(const char *msg, llvm::Function* F, llvm::Instruction* I)
 }
 
 #if LLVM_VERSION >= 29
+#if LLVM_VERSION < 36
 static Value *findDbgGlobalDeclare(GlobalVariable *V) {
+#else
+static Metadata *findDbgGlobalDeclare(GlobalVariable *V) {
+#endif
   const Module *M = V->getParent();
   NamedMDNode *NMD = M->getNamedMetadata("llvm.dbg.gv");
   if (!NMD)
@@ -2870,7 +2994,11 @@ static Value *findDbgGlobalDeclare(GlobalVariable *V) {
 }
 
 /// Find the debug info descriptor corresponding to this function.
+#if LLVM_VERSION < 36
 static Value *findDbgSubprogramDeclare(Function *V) {
+#else
+static Metadata *findDbgSubprogramDeclare(Function *V) {
+#endif
   const Module *M = V->getParent();
   NamedMDNode *NMD = M->getNamedMetadata("llvm.dbg.sp");
   if (!NMD)
@@ -2924,7 +3052,11 @@ static bool getLocationInfo(const Value *V, std::string &DisplayName,
   StringRef T;
 
   if (GlobalVariable *GV = dyn_cast<GlobalVariable>(const_cast<Value*>(V))) {
+#if LLVM_VERSION < 36
     Value *DIGV = findDbgGlobalDeclare(GV);
+#else
+    Metadata *DIGV = findDbgGlobalDeclare(GV);
+#endif
     if (!DIGV) return false;
     DIGlobalVariable Var(cast<MDNode>(DIGV));
 
@@ -2944,7 +3076,11 @@ static bool getLocationInfo(const Value *V, std::string &DisplayName,
     T = Var.getType().getName();
 #endif
   } else if (Function *F = dyn_cast<Function>(const_cast<Value*>(V))){
+#if LLVM_VERSION < 36
     Value *DIF = findDbgSubprogramDeclare(F);
+#else
+    Metadata *DIF = findDbgSubprogramDeclare(F);
+#endif
     if (!DIF) return false;
     DISubprogram Var(cast<MDNode>(DIF));
 

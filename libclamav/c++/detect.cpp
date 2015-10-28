@@ -147,14 +147,16 @@ void cli_detect_env_jit(struct cli_environment *env)
 	case Triple::UnknownOS:
 	    env->os = llvm_os_UnknownOS;
 	    break;
+#if LLVM_VERSION < 36
 	CASE_OS(AuroraUX, os_solaris);
 	CASE_OS(Cygwin, os_win32);
+	CASE_OS(MinGW32, os_win32);
+#endif
 	CASE_OS(Darwin, os_darwin);
 	CASE_OS(DragonFly, os_bsd);
 	CASE_OS(FreeBSD, os_bsd);
 	CASE_OS(Linux, os_linux);
 	CASE_OS(Lv2, os_unknown);
-	CASE_OS(MinGW32, os_win32);
 #if LLVM_VERSION < 29
 	CASE_OS(MinGW64, os_win64);
 #endif
