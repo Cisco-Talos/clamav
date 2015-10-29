@@ -133,7 +133,6 @@ static int cli_untgz(int fd, const char *destdir)
 		    cli_untgz_cleanup(path, infile, outfile, fdd);
 		    return -1;
 	    }
-	    in_block = 1;
 
 	    if(outfile) {
 		if(fclose(outfile)) {
@@ -159,6 +158,9 @@ static int cli_untgz(int fd, const char *destdir)
 		cli_untgz_cleanup(path, infile, outfile, fdd);
 		return -1;
 	    }
+
+	    if (size > 0)
+		in_block = 1;
 
 	} else { /* write or continue writing file contents */
 	    nbytes = size > TAR_BLOCKSIZE ? TAR_BLOCKSIZE : size;
@@ -572,7 +574,7 @@ int cl_cvdverify(const char *file)
 {
 	struct cl_engine *engine;
 	FILE *fs;
-	int ret;
+	int ret, dbtype = 0;
 
 
     if((fs = fopen(file, "rb")) == NULL) {
@@ -587,7 +589,12 @@ int cl_cvdverify(const char *file)
     }
     engine->cb_stats_submit = NULL; /* Don't submit stats if we're just verifying a CVD */
 
-    ret = cli_cvdload(fs, engine, NULL, CL_DB_STDOPT | CL_DB_PUA, !!cli_strbcasestr(file, ".cld"), file, 1);
+    if (!!cli_strbcasestr(file, ".cld"))
+	dbtype = 1;
+    else if (!!cli_strbcasestr(file, ".cud"))
+	dbtype = 2;
+
+    ret = cli_cvdload(fs, engine, NULL, CL_DB_STDOPT | CL_DB_PUA, dbtype, file, 1);
 
     cl_engine_free(engine);
     fclose(fs);
