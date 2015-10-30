@@ -2618,7 +2618,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 	uint8_t typercg = 1;
 	cli_file_t current_container_type = ctx->container_type;
 	size_t current_container_size = ctx->container_size, hashed_size;
-	unsigned char hash[16];
+	unsigned char hash[16] = {'\0'};
 	bitset_t *old_hook_lsig_matches;
 	const char *filetype;
 	int cache_clean = 0, res;
