@@ -325,10 +325,14 @@ int dsresult(int sockd, int scantype, const char *filename, int *printok, int *e
                 static char last_filename[PATH_MAX+1] = {'\0'};
 		*(eol - 7) = 0;
 		*printok = 0;
-                if (scantype != ALLMATCH || filename != NULL && strcmp(filename, last_filename)) {
+                if (scantype != ALLMATCH) {
                     infected++;
-                    strncpy(last_filename, filename, PATH_MAX);
-                    last_filename[PATH_MAX] = '\0';
+                } else {
+                    if (filename != NULL && strcmp(filename, last_filename)) {
+                        infected++;
+                        strncpy(last_filename, filename, PATH_MAX);
+                        last_filename[PATH_MAX] = '\0';
+                    }
                 }
 		if(filename) {
 		    if(scantype >= STREAM) {
