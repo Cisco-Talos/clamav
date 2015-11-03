@@ -185,7 +185,7 @@ void help(void)
     mprintf("\n");
     mprintf("                       ClamAV Daemon Client %s\n", get_version());
     printf("           By The ClamAV Team: http://www.clamav.net/about.html#credits\n");
-    printf("           (C) 2007-2009 Sourcefire, Inc.\n\n");
+    printf("           (C) 2007-2015 Cisco Systems, Inc.\n\n");
 
     mprintf("    --help              -h             Show help\n");
     mprintf("    --version           -V             Print version number and exit\n");
