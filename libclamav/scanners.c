@@ -2565,7 +2565,8 @@ static int magic_scandesc_cleanup(cli_ctx *ctx, cli_file_t type, unsigned char *
     }
     if (cb_retcode == CL_CLEAN && cache_clean) {
         perf_start(ctx, PERFT_CACHE);
-        cache_add(hash, hashed_size, ctx);
+        if (!(SCAN_PROPERTIES))
+            cache_add(hash, hashed_size, ctx);
         perf_stop(ctx, PERFT_CACHE);
     }
     return retcode;
@@ -2738,17 +2739,27 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
     }
 
     perf_start(ctx, PERFT_CACHE);
-    res = cache_check(hash, ctx);
+    if (!(SCAN_PROPERTIES))
+        res = cache_check(hash, ctx);
 
 #if HAVE_JSON
     if (SCAN_PROPERTIES /* ctx.options & CL_SCAN_FILE_PROPERTIES && ctx->wrkproperty != NULL */) {
         char hashstr[33];
-        snprintf(hashstr, 33, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x", hash[0], hash[1], hash[2], hash[3], hash[4], hash[5], hash[6], hash[7], hash[8], hash[9], hash[10], hash[11], hash[12], hash[13], hash[14], hash[15]);
-
-        ret = cli_jsonstr(ctx->wrkproperty, "FileMD5", hashstr);
+        ret = cache_get_MD5(hash, ctx);
         if (ret != CL_SUCCESS) {
             early_ret_from_magicscan(ret);
         }
+        snprintf(hashstr, 33, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
+                 hash[0], hash[1], hash[2], hash[3], hash[4], hash[5], hash[6], hash[7],
+                 hash[8], hash[9], hash[10], hash[11], hash[12], hash[13], hash[14], hash[15]);
+
+        ret = cli_jsonstr(ctx->wrkproperty, "FileMD5", hashstr);
+        if (ctx->engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE)
+            memset(hash, 0, sizeof(hash));
+        if (ret != CL_SUCCESS) {
+            early_ret_from_magicscan(ret);
+        }
+        res = CL_VIRUS;
     }
 #endif
 
