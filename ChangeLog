@@ -1,3 +1,61 @@
+Wed, 4 Nov 2015 14:46:46 -0500 (Steven Morgan)
+------------------------------------------
+ * bb11420 - fix preclass/cache interaction.
+
+Fri, 30 Oct 2015 13:34:56 -0400 (Steven Morgan)
+------------------------------------------
+ * bb11419 - fix valgrind-detected uninitialized value when caching
+   is disabled.
+
+Fri, 30 Oct 2015 12:48:26 -0400 (Steven Morgan)
+------------------------------------------
+ * bb11418 - fix clamdscan segfault when using stream(stdin) input.
+
+Thu, 29 Oct 2015 17:44:43 -0400 (Kevin Lin)
+------------------------------------------
+ * bb#11421 - CUD digital signature verification and empty files
+
+Wed, 28 Oct 2015 17:05:37 -0400 (Kevin Lin)
+------------------------------------------
+ * change unknown database default to skip from .db
+
+Thu, 22 Oct 2015 20:50:53 +0200 (Andreas Cadhalpun)
+------------------------------------------
+ * use pkg-config to determine CHECK_LIBS
+
+Mon, 26 Oct 2015 15:19:22 -0400 (Kevin Lin)
+------------------------------------------
+ * bb#11015(2) - refactor automated pwdb target assignment for tdb
+
+Mon, 26 Oct 2015 11:47:25 -0400 (Kevin Lin)
+------------------------------------------
+ * fix error reporting for pwdb signature loading
+
+Mon, 26 Oct 2015 12:49:01 -0400 (Steven Morgan)
+------------------------------------------
+ * fix crash in clamd scan callback function.
+
+Thu, 22 Oct 2015 14:50:41 -0400 (Kevin Lin)
+------------------------------------------
+ * fix for openssl build with specific openssl location
+
+Mon, 21 Sep 2015 18:28:54 -0400 (Mickey Sola)
+------------------------------------------
+ * onas: adding better feedback for users attempting to use fanotify
+   prevention on kernels with unsupported configurations.
+
+Thu, 15 Oct 2015 15:16:40 -0400 (Mickey Sola)
+------------------------------------------
+ * onas: adding throttling to notifications when handling fanotify errors
+	on large files.
+
+Mon, 5 Oct 2015 13:48:03 -0400 (Mickey Sola)
+------------------------------------------
+ * onas: adding optional extra scanning for inotify events
+
+Wed, 14 Oct 2015 09:37:59 -0400 (Mickey Sola)
+------------------------------------------
+ * onas: improving handling of fanotify read errors for large files.
 
 Wed, 6 Oct 2015 14:25:00 -0400 (Steven Morgan)
 ------------------------------------------
