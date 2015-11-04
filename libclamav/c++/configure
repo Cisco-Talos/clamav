@@ -15880,13 +15880,18 @@ elif test $llvmver_test -lt 290; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: no ($llvmver)" >&5
 $as_echo "no ($llvmver)" >&6; }
     as_fn_error $? "LLVM >= 2.9 required, but \"$llvmver\"($llvmver_test) found" "$LINENO" 5
-elif test $llvmver_test -ge 370; then
+elif test $llvmver_test -lt 360; then
+    llvmcomp="jit nativecodegen scalaropts ipo"
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: ok ($llvmver)" >&5
+$as_echo "ok ($llvmver)" >&6; }
+elif test $llvmver_test -lt 370; then
+            llvmcomp="mcjit nativecodegen scalaropts ipo x86asmparser powerpcasmparser"
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: ok ($llvmver)" >&5
+$as_echo "ok ($llvmver)" >&6; }
+else
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: no ($llvmver)" >&5
 $as_echo "no ($llvmver)" >&6; }
     as_fn_error $? "LLVM < 3.7 required, but \"$llvmver\"($llvmver_test) found" "$LINENO" 5
-else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: ok ($llvmver)" >&5
-$as_echo "ok ($llvmver)" >&6; }
 fi
 
 if test "x$llvmconfig" != "x"; then
@@ -15909,9 +15914,9 @@ if test "x$llvmconfig" != "x"; then
            LLVMCONFIG_LDFLAGS=`$llvmconfig --ldflags`
 
         fi
-        LLVMCONFIG_LIBS=`$llvmconfig --libs jit nativecodegen scalaropts ipo`
+        LLVMCONFIG_LIBS=`$llvmconfig --libs $llvmcomp`
 
-        LLVMCONFIG_LIBFILES=`$llvmconfig --libfiles jit nativecodegen scalaropts ipo`
+        LLVMCONFIG_LIBFILES=`$llvmconfig --libfiles $llvmcomp`
 
     fi
 
