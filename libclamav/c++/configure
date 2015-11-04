@@ -658,6 +658,9 @@ LIBTOOL
 MAINT
 MAINTAINER_MODE_FALSE
 MAINTAINER_MODE_TRUE
+SSL_LIBS
+SSL_LDFLAGS
+SSL_CPPFLAGS
 EGREP
 GREP
 CPP
@@ -766,6 +769,7 @@ ac_user_opts='
 enable_option_checking
 enable_silent_rules
 enable_dependency_tracking
+with_openssl
 enable_maintainer_mode
 enable_static
 enable_shared
@@ -1433,6 +1437,9 @@ Optional Features:
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+  --with-openssl[=DIR]    path to directory containing openssl
+                          [default=/usr/local or /usr if not found in
+                          /usr/local]
   --with-pic[=PKGS]       try to use only PIC/non-PIC objects [default=use
                           both]
   --with-gnu-ld           assume the C compiler uses GNU ld [default=no]
@@ -5046,6 +5053,199 @@ $as_echo "$as_me: Building on Solaris" >&6;}
   ;;
 esac
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for OpenSSL installation" >&5
+$as_echo_n "checking for OpenSSL installation... " >&6; }
+
+
+# Check whether --with-openssl was given.
+if test "${with_openssl+set}" = set; then :
+  withval=$with_openssl;
+if test "$withval"; then
+    LIBSSL_HOME="$withval"
+fi
+
+else
+
+LIBSSL_HOME=/usr/local
+if test ! -f "$LIBSSL_HOME/include/openssl/ssl.h"
+then
+    LIBSSL_HOME=/usr
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $LIBSSL_HOME" >&5
+$as_echo "$LIBSSL_HOME" >&6; }
+
+fi
+
+
+if test ! -f "$LIBSSL_HOME/include/openssl/ssl.h"
+then
+    as_fn_error $? "OpenSSL not found." "$LINENO" 5
+fi
+
+save_LDFLAGS="$LDFLAGS"
+save_CFLAGS="$CFLAGS"
+save_LIBS="$LIBS"
+
+SSL_LIBS="-lssl -lcrypto -lz"
+
+if test "$LIBSSL_HOME" != "/usr"; then
+    SSL_LDFLAGS="-L$LIBSSL_HOME/lib"
+    SSL_CPPFLAGS="-I$LIBSSL_HOME/include"
+    LDFLAGS="-L$LIBSSL_HOME/lib $SSL_LIBS"
+    CFLAGS="$SSL_CPPFLAGS"
+else
+    SSL_LDFLAGS=""
+    SSL_CPPFLAGS=""
+fi
+
+have_ssl="no"
+have_crypto="no"
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for SSL_library_init in -lssl" >&5
+$as_echo_n "checking for SSL_library_init in -lssl... " >&6; }
+if ${ac_cv_lib_ssl_SSL_library_init+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lssl -lcrypto -lz $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char SSL_library_init ();
+int
+main ()
+{
+return SSL_library_init ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_ssl_SSL_library_init=yes
+else
+  ac_cv_lib_ssl_SSL_library_init=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_ssl_SSL_library_init" >&5
+$as_echo "$ac_cv_lib_ssl_SSL_library_init" >&6; }
+if test "x$ac_cv_lib_ssl_SSL_library_init" = xyes; then :
+  have_ssl="yes"
+else
+  as_fn_error $? "Your OpenSSL installation is misconfigured or missing" "$LINENO" 5
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for EVP_EncryptInit in -lcrypto" >&5
+$as_echo_n "checking for EVP_EncryptInit in -lcrypto... " >&6; }
+if ${ac_cv_lib_crypto_EVP_EncryptInit+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lcrypto -lcrypto -lz $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char EVP_EncryptInit ();
+int
+main ()
+{
+return EVP_EncryptInit ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_crypto_EVP_EncryptInit=yes
+else
+  ac_cv_lib_crypto_EVP_EncryptInit=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_crypto_EVP_EncryptInit" >&5
+$as_echo "$ac_cv_lib_crypto_EVP_EncryptInit" >&6; }
+if test "x$ac_cv_lib_crypto_EVP_EncryptInit" = xyes; then :
+  have_crypto="yes"
+else
+  as_fn_error $? "Your OpenSSL installation is misconfigured or missing" "$LINENO" 5
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for X509_VERIFY_PARAM_new in -lssl" >&5
+$as_echo_n "checking for X509_VERIFY_PARAM_new in -lssl... " >&6; }
+if ${ac_cv_lib_ssl_X509_VERIFY_PARAM_new+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lssl -lcrypto -lz $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char X509_VERIFY_PARAM_new ();
+int
+main ()
+{
+return X509_VERIFY_PARAM_new ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_ssl_X509_VERIFY_PARAM_new=yes
+else
+  ac_cv_lib_ssl_X509_VERIFY_PARAM_new=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_ssl_X509_VERIFY_PARAM_new" >&5
+$as_echo "$ac_cv_lib_ssl_X509_VERIFY_PARAM_new" >&6; }
+if test "x$ac_cv_lib_ssl_X509_VERIFY_PARAM_new" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBSSL 1
+_ACEOF
+
+  LIBS="-lssl $LIBS"
+
+else
+  as_fn_error $? "Your OpenSSL installation is missing the X509_VERIFY_PARAM function. Please upgrade to a more recent version of OpenSSL." "$LINENO" 5
+fi
+
+
+LDFLAGS="$save_LDFLAGS"
+CFLAGS="$save_CFLAGS"
+LIBS="$save_LIBS"
+
+SSL_CPPFLAGS=$SSL_CPPFLAGS
+
+SSL_LDFLAGS=$SSL_LDFLAGS
+
+SSL_LIBS=$SSL_LIBS
+
+
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to enable maintainer-specific portions of Makefiles" >&5
 $as_echo_n "checking whether to enable maintainer-specific portions of Makefiles... " >&6; }
@@ -8138,7 +8338,7 @@ $as_echo "$lt_cv_ld_force_load" >&6; }
       case ${MACOSX_DEPLOYMENT_TARGET-10.0},$host in
 	10.0,*86*-darwin8*|10.0,*-darwin[91]*)
 	  _lt_dar_allow_undefined='${wl}-undefined ${wl}dynamic_lookup' ;;
-	10.[012][,.]*)
+	10.[012]*)
 	  _lt_dar_allow_undefined='${wl}-flat_namespace ${wl}-undefined ${wl}suppress' ;;
 	10.*)
 	  _lt_dar_allow_undefined='${wl}-undefined ${wl}dynamic_lookup' ;;
