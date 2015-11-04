@@ -127,11 +127,17 @@ if test "x$packaged_llvm" = "xyes"; then
 elif test $llvmver_test -lt 290; then
     AC_MSG_RESULT([no ($llvmver)])
     AC_MSG_ERROR([LLVM >= 2.9 required, but "$llvmver"($llvmver_test) found])
-elif test $llvmver_test -ge 370; then
+elif test $llvmver_test -lt 360; then
+    llvmcomp="jit nativecodegen scalaropts ipo"
+    AC_MSG_RESULT([ok ($llvmver)])
+elif test $llvmver_test -lt 370; then
+    dnl LLVM 3.6.0 removed jit, so we have to use mcjit
+    dnl and we're using InitializeNativeTargetAsmParser, so we need the architecture specific parsers
+    llvmcomp="mcjit nativecodegen scalaropts ipo x86asmparser powerpcasmparser"
+    AC_MSG_RESULT([ok ($llvmver)])
+else
     AC_MSG_RESULT([no ($llvmver)])
     AC_MSG_ERROR([LLVM < 3.7 required, but "$llvmver"($llvmver_test) found])
-else
-    AC_MSG_RESULT([ok ($llvmver)])
 fi
 
 dnl aquire the required flags to properly link in external LLVM
@@ -151,8 +157,8 @@ if test "x$llvmconfig" != "x"; then
         else
            AC_SUBST(LLVMCONFIG_LDFLAGS, [`$llvmconfig --ldflags`])
         fi
-        AC_SUBST(LLVMCONFIG_LIBS, [`$llvmconfig --libs jit nativecodegen scalaropts ipo`])
-        AC_SUBST(LLVMCONFIG_LIBFILES, [`$llvmconfig --libfiles jit nativecodegen scalaropts ipo`])
+        AC_SUBST(LLVMCONFIG_LIBS, [`$llvmconfig --libs $llvmcomp`])
+        AC_SUBST(LLVMCONFIG_LIBFILES, [`$llvmconfig --libfiles $llvmcomp`])
     fi
 
     AC_MSG_NOTICE([CXXFLAGS from llvm-config: $LLVMCONFIG_CXXFLAGS])
