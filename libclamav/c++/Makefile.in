@@ -993,8 +993,6 @@ SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 SSL_CPPFLAGS = @SSL_CPPFLAGS@
-SSL_LDFLAGS = @SSL_LDFLAGS@
-SSL_LIBS = @SSL_LIBS@
 STRIP = @STRIP@
 THREAD_LIBS = @THREAD_LIBS@
 VERSION = @VERSION@
@@ -1064,7 +1062,6 @@ LLVM_INCLUDES = -I$(top_srcdir)/llvm/include -I$(top_builddir)/llvm/include
 LLVM_DEFS = -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -D_DEBUG -D_GNU_SOURCE
 AM_CPPFLAGS = @SSL_CPPFLAGS@ -I$(top_srcdir)/../.. -I$(top_srcdir)/.. \
 	-I$(top_builddir)/../../ $(am__append_2)
-AM_LDFLAGS = @SSL_LDFLAGS@
 AM_CXXFLAGS = $(LLVM_CXXFLAGS) -fno-exceptions
 ACLOCAL_AMFLAGS = -I m4
 libclamavcxx_la_SOURCES = bytecode2llvm.cpp ClamBCRTChecks.cpp \
@@ -1077,12 +1074,12 @@ libclamavcxx_la_SOURCES = bytecode2llvm.cpp ClamBCRTChecks.cpp \
 #LLVM_DEPS=$(shell $(LLVM_CONFIG) --libfiles jit nativecodegen)
 @BUILD_EXTERNAL_LLVM_TRUE@libclamavcxx_la_CXXFLAGS = $(AM_CPPFLAGS) @LLVMCONFIG_CXXFLAGS@ -fexceptions -DLLVM_VERSION=${LLVM_VERSION}
 @BUILD_EXTERNAL_LLVM_FALSE@libclamavcxx_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined
-@BUILD_EXTERNAL_LLVM_TRUE@libclamavcxx_la_LDFLAGS = $(AM_LDFLAGS) @LLVMCONFIG_LDFLAGS@ @LLVMCONFIG_LIBS@ @LLVMCONFIG_LDFLAGS@
-@BUILD_EXTERNAL_LLVM_FALSE@libclamavcxx_la_DEPENDENCIES = @SSL_LIBS@ \
+@BUILD_EXTERNAL_LLVM_TRUE@libclamavcxx_la_LDFLAGS = @LLVMCONFIG_LDFLAGS@ @LLVMCONFIG_LIBS@ @LLVMCONFIG_LDFLAGS@
+@BUILD_EXTERNAL_LLVM_FALSE@libclamavcxx_la_DEPENDENCIES =  \
 @BUILD_EXTERNAL_LLVM_FALSE@	libllvmjit.la libllvmcodegen.la \
 @BUILD_EXTERNAL_LLVM_FALSE@	libllvmsystem.la $(am__append_4) \
 @BUILD_EXTERNAL_LLVM_FALSE@	$(am__append_7)
-@BUILD_EXTERNAL_LLVM_TRUE@libclamavcxx_la_DEPENDENCIES = @SSL_LIBS@ \
+@BUILD_EXTERNAL_LLVM_TRUE@libclamavcxx_la_DEPENDENCIES =  \
 @BUILD_EXTERNAL_LLVM_TRUE@	@LLVMCONFIG_LIBFILES@ \
 @BUILD_EXTERNAL_LLVM_TRUE@	$(am__append_4) $(am__append_7)
 @BUILD_EXTERNAL_LLVM_FALSE@noinst_LTLIBRARIES = libclamavcxx.la \
@@ -5751,8 +5748,8 @@ maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
 	-test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
-@BUILD_EXTERNAL_LLVM_TRUE@clean-local:
 @BUILD_EXTERNAL_LLVM_TRUE@distclean-local:
+@BUILD_EXTERNAL_LLVM_TRUE@clean-local:
 clean: clean-am
 
 clean-am: clean-generic clean-libtool clean-local \
