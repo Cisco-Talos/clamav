@@ -39,8 +39,6 @@ esac
 
 m4_include([../../m4/reorganization/libs/openssl.m4])
 AC_SUBST(SSL_CPPFLAGS, [$SSL_CPPFLAGS])
-AC_SUBST(SSL_LDFLAGS, [$SSL_LDFLAGS])
-AC_SUBST(SSL_LIBS, [$SSL_LIBS])
 
 AM_MAINTAINER_MODE
 LT_INIT([disable-static])
