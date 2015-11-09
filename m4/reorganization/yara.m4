@@ -5,7 +5,7 @@ AC_ARG_ENABLE([yara],
 enable_yara=$enableval, enable_yara="yes")
 
 if test "$enable_yara" = "yes"; then
-    AC_DEFINE([HAVE_YARA],1,[yara sources are compiled in])]
+    AC_DEFINE([HAVE_YARA],1,[yara sources are compiled in])
     AC_SUBST([HAVE_YARA])
 fi
 
