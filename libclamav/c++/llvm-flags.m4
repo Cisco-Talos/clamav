@@ -6,56 +6,77 @@ dnl Assigns llvmver_int, system_llvm, llvm_linking, and enable_llvm variables (f
 dnl Determine if LLVM is requested (or auto, reassigned if system-llvm specified)
 AC_ARG_ENABLE([llvm],AC_HELP_STRING([--enable-llvm],
 [enable 'llvm' JIT/verifier support @<:@default=auto@:>@]),
-[enable_llvm=$enableval], [enable_llvm="auto"])
+[enable_llvm=$enableval], [eldef="yes"; enable_llvm="auto"])
 
 dnl Determine whether to user built in LLVM or to use system-specified LLVM
 dnl locate the llvmconfig program
 AC_ARG_WITH([system-llvm], AC_HELP_STRING([--with-system-llvm],
 [Use system llvm instead of built-in, uses full path to llvm-config or bin directory
      (default=search PATH environment variable)]),
-[case "$withval" in
-  yes)
-     AC_PATH_PROG([llvmconfig], [llvm-config])
-     if test "x$llvmconfig" = "x"; then
-         AC_MSG_ERROR([llvm-config cannot be found within PATH])
-     fi
-     ;;
-  no) ;;
-  *)
-     if test -d "$withval"; then
-         AC_PATH_PROG([llvmconfig], [llvm-config], [], [$withval/bin])
-     else
-         llvmconfig=$withval
-         if test ! -x "$llvmconfig"; then
-             llvmconfig=""
-         fi
-     fi
+[if test "$enable_llvm" = "no"; then
+    AC_MSG_NOTICE([--with-system-llvm argument ignored])
+else
+    if test "$eldef" = "yes"; then
+        enable_llvm="yes"
+    fi
 
-     if test "x$llvmconfig" = "x"; then
-         AC_MSG_ERROR([llvm-config does not exist at $withval])
-     fi
-     ;;
-  esac
+    case "$withval" in
+      yes)
+         AC_PATH_PROG([llvmconfig], [llvm-config])
+         if test "x$llvmconfig" = "x"; then
+             AC_MSG_ERROR([llvm-config cannot be found within PATH])
+         fi
+         ;;
+      no) ;;
+      *)
+         if test -d "$withval"; then
+             AC_PATH_PROG([llvmconfig], [llvm-config], [], [$withval/bin])
+         else
+             AC_MSG_CHECKING([llvm-config])
+             llvmconfig=$withval
+             if test ! -x "$llvmconfig"; then
+                 AC_MSG_RESULT([no])
+                 llvmconfig=""
+             else
+                 AC_MSG_RESULT([yes])
+             fi
+         fi
+
+         if test "x$llvmconfig" = "x"; then
+             if test "$enable_llvm" != "auto"; then
+                 AC_MSG_ERROR([llvm-config does not exist at $withval])
+             else
+                 AC_MSG_WARN([llvm-config does not exist at $withval, continuing with built-in])
+             fi
+         fi
+         ;;
+    esac
+fi
 ])
 
 dnl Determine linking method to external LLVM, built-in only does static linking
 AC_ARG_WITH([llvm-linking], [AC_HELP_STRING([--with-llvm-linking],
 [specifies method to linking llvm @<:@static|dynamic@:>@, only valid with --with-system-llvm])],
-[if test "x$llvmconfig" = "x"; then
-   AC_MSG_ERROR([Failed to configure LLVM, and LLVM linking was specified without valid llvm-config])  
+[if test "$enable_llvm" = "no"; then
+    AC_MSG_NOTICE([--with-llvm-linking argument ignored])
+elif test "x$llvmconfig" = "x"; then
+    AC_MSG_ERROR([Failed to configure LLVM, and LLVM linking was specified without valid llvm-config])
 else
-   case "$withval" in
-     static)
-         llvm_linking="static"
-         ;;
-     dynamic)
-         llvm_linking="dynamic"
-         ;;
-     *)
-         AC_MSG_ERROR([Invalid argument to --with-llvm-linking])
-   esac
+    case "$withval" in
+      static)
+          llvm_linking="static"
+          ;;
+      dynamic)
+          llvm_linking="dynamic"
+          ;;
+      *)
+          AC_MSG_ERROR([Invalid argument to --with-llvm-linking])
+    esac
 fi
-], [llvm_linking=""])
+], [llvm_linking="static"])
+
+
+if test "$enable_llvm" != "no"; then
 
 dnl Version number check
 if test "x$llvmconfig" != "x"; then
@@ -123,3 +144,5 @@ if test "x$llvmconfig" != "x"; then
 fi
 dnl patch does not affect clamav source (yet)
 llvmver_int=${llvmver_major}${llvmver_minor}
+
+fi dnl test "$enable_llvm" != "no"
