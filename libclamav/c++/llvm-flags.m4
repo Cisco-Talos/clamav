@@ -122,6 +122,9 @@ if test "x$llvmconfig" != "x"; then
     AC_SUBST(LLVMCONFIG_CXXFLAGS, [`$llvmconfig --cxxflags`])
 
     if test "x$llvm_linking" = "xdynamic"; then
+        llvmlibpath=`$llvmconfig --libdir`
+        AC_SUBST(LLVMCONFIG_DYNLIBLINK, [-Wl,-rpath -Wl,$llvmlibpath])
+
         AC_SUBST(LLVMCONFIG_LDFLAGS, [`$llvmconfig --ldflags`])
         AC_SUBST(LLVMCONFIG_LIBS, [-lLLVM-$llvmver])
         AC_SUBST(LLVMCONFIG_LIBFILES, [])
