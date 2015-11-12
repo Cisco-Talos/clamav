@@ -548,17 +548,17 @@ dcf43987e4f519d629b103375;SL+550:6300680065005c0046006900
     \end{itemize}
     Examples:
     \begin{verbatim}
-clamav-nocase-A;Engine:81-255,Target:0;0&1;41414141/i;424242424242/i
+clamav-nocase-A;Engine:81-255,Target:0;0&1;41414141::i;424242424242::i
     -matches 'AAAA'(nocase) and 'BBBBBB'(nocase)
 
-clamav-fullword-A;Engine:81-255,Target:0;0&1;414141;68656c6c6f/f
+clamav-fullword-A;Engine:81-255,Target:0;0&1;414141;68656c6c6f::f
     -matches 'AAA' and 'hello'(fullword)
-clamav-fullword-B;Engine:81-255,Target:0;0&1;414141;68656c6c6f/fi
+clamav-fullword-B;Engine:81-255,Target:0;0&1;414141;68656c6c6f::fi
     -matches 'AAA' and 'hello'(fullword nocase)
 
-clamav-wide-B2;Engine:81-255,Target:0;0&1;414141;68656c6c6f/wa
+clamav-wide-B2;Engine:81-255,Target:0;0&1;414141;68656c6c6f::wa
     -matches 'AAA' and 'hello'(wide ascii)
-clamav-wide-C0;Engine:81-255,Target:0;0&1;414141;68656c6c6f/iwfa
+clamav-wide-C0;Engine:81-255,Target:0;0&1;414141;68656c6c6f::iwfa
     -matches 'AAA' and 'hello'(nocase wide fullword ascii)
     \end{verbatim}
 
