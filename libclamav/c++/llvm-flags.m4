@@ -118,12 +118,13 @@ else
 fi
 
 dnl aquire the required flags to properly link in external LLVM
+AM_CONDITIONAL([LLVM_DYNAMIC], [test "x$llvm_linking" = "xdynamic"])
 if test "x$llvmconfig" != "x"; then
     AC_SUBST(LLVMCONFIG_CXXFLAGS, [`$llvmconfig --cxxflags`])
 
     if test "x$llvm_linking" = "xdynamic"; then
         llvmlibpath=`$llvmconfig --libdir`
-        AC_SUBST(LLVMCONFIG_DYNLIBLINK, [-Wl,-rpath -Wl,$llvmlibpath])
+        AC_SUBST(LLVMCONFIG_DYNLIBLINK, [-Wl,-rpath,$llvmlibpath])
 
         AC_SUBST(LLVMCONFIG_LDFLAGS, [`$llvmconfig --ldflags`])
         AC_SUBST(LLVMCONFIG_LIBS, [-lLLVM-$llvmver])

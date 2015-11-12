@@ -129,6 +129,9 @@ libclamav_internal_utils_nothreads_la_LIBADD=@SSL_LIBS@ @JSON_LIBS@ @PCRE_LIBS@
 if ENABLE_LLVM
 LLVMLIBADD=c++/libclamavcxx.la -lstdc++ -lm
 LLVMDEP=c++/libclamavcxx.la
+if LLVM_DYNAMIC
+LLVMLDFLAGS=@LLVMCONFIG_LDFLAGS@ @LLVMCONFIG_DYNLIBLINK@ @LLVMCONFIG_LIBS@
+endif
 SUBDIRS=c++
 else
 LLVMLIBADD=libclamav_nocxx.la
@@ -148,7 +151,7 @@ libclamav_nocxx_la_CFLAGS=$(AM_CFLAGS) @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPF
 libclamav_la_LIBADD = @SSL_LIBS@ @JSON_LIBS@ @PCRE_LIBS@ @LIBCLAMAV_LIBS@ @LIBLTDL@ $(IFACELIBADD) $(LLVMLIBADD) libclamav_internal_utils.la @THREAD_LIBS@ @LIBM@
 libclamav_la_DEPENDENCIES =  @LTDLDEPS@ $(IFACEDEP) $(LLVMDEP) libclamav_internal_utils.la
 libclamav_la_CFLAGS =$(AM_CFLAGS) $(XML_CPPFLAGS) $(YARA_CFLAGS) -DSEARCH_LIBDIR=\"$(libdir)\" @LIBCLAMAV_CPPFLAGS@ @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
-libclamav_la_LDFLAGS = @SSL_LDFLAGS@ @TH_SAFE@ @JSON_LDFLAGS@ $(XML_LIBS) -version-info @LIBCLAMAV_VERSION@ -no-undefined
+libclamav_la_LDFLAGS = @SSL_LDFLAGS@ @TH_SAFE@ @JSON_LDFLAGS@ $(LLVMLDFLAGS) $(XML_LIBS) -version-info @LIBCLAMAV_VERSION@ -no-undefined
 
 if VERSIONSCRIPT
 libclamav_la_LDFLAGS += -Wl,@VERSIONSCRIPTFLAG@,@top_srcdir@/libclamav/libclamav.map
