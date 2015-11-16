@@ -10,9 +10,6 @@
     <ClCompile Include="..\libclamav\c++\llvm\lib\Transforms\Utils\AddrModeMatcher.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\LiveVariables.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\libclamav\c++\llvm\lib\Transforms\Scalar\LoopStrengthReduce.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -38,9 +35,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\ProcessImplicitDefs.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libclamav\c++\llvm\lib\MC\MCMachOStreamer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\libclamav\c++\llvm\lib\Transforms\Utils\BasicBlockUtils.cpp">
@@ -82,25 +76,13 @@
     <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\Spiller.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\libclamav\c++\llvm\lib\Analysis\ProfileInfo.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\SelectionDAG\LegalizeTypes.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\SelectionDAG\ScheduleDAGFast.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\AsmPrinter\DIE.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\MachineSSAUpdater.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\SelectionDAG\InstrEmitter.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libclamav\c++\llvm\lib\MC\MCAssembler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\libclamav\c++\llvm\lib\Transforms\Utils\Mem2Reg.cpp">
@@ -112,13 +94,7 @@
     <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\ScheduleDAGInstrs.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\AsmPrinter\DwarfLabel.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\MachineSink.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\MachineLoopInfo.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\PHIElimination.cpp">
@@ -172,12 +148,6 @@
     <ClCompile Include="..\libclamav\c++\llvm\lib\Transforms\Utils\UnifyFunctionExitNodes.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\AsmPrinter\AsmPrinter.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\SelectionDAG\CallingConvLower.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\SelectionDAG\LegalizeTypesGeneric.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -200,9 +170,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\libclamav\c++\llvm\lib\Transforms\Utils\PromoteMemoryToRegister.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\AsmPrinter\DwarfException.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\MachinePassRegistry.cpp">
@@ -247,9 +214,6 @@
     <ClCompile Include="..\libclamav\c++\llvm\lib\MC\MCAsmStreamer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\AsmPrinter\DwarfDebug.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\SelectionDAG\LegalizeVectorTypes.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -268,9 +232,6 @@
     <ClCompile Include="..\libclamav\c++\llvm\lib\Transforms\Utils\SSAUpdater.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\ExactHazardRecognizer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\GCMetadata.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -286,25 +247,7 @@
     <ClCompile Include="..\libclamav\c++\llvm\lib\Analysis\ConstantFolding.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\libclamav\c++\llvm\lib\Analysis\AliasSetTracker.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\SelectionDAG\ScheduleDAGSDNodes.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libclamav\c++\llvm\lib\MC\MCSectionMachO.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\ScheduleDAG.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\OptimizeExts.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\UnreachableBlockElim.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\AsmPrinter\DwarfWriter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\SelectionDAG\LegalizeDAG.cpp">
@@ -361,16 +304,58 @@
     <ClCompile Include="..\libclamav\c++\llvm\lib\Analysis\IVUsers.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\libclamav\c++\llvm\lib\MC\MCInst.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\AsmPrinter\DwarfPrinter.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\MachineCSE.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\MachineDominators.cpp">
+    <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\PeepholeOptimizer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\Analysis.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\Support\GraphWriter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\SelectionDAG\TargetSelectionDAGInfo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\Transforms\IPO\ConstantMerge.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\Transforms\Utils\BuildLibCalls.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\RegAllocFast.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\SplitKit.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\CallingConvLower.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\MC\MCLoggingStreamer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\Transforms\IPO\GlobalOpt.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\LocalStackSlotAllocation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\Analysis\ScalarEvolutionNormalization.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\Analysis\Loads.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\InlineSpiller.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\MC\MCInstPrinter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\Transforms\Scalar\SCCP.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
