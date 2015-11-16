@@ -28,7 +28,6 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <fts.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <pthread.h>
@@ -51,6 +50,7 @@
 #include "server.h"
 #include "others.h"
 #include "scanner.h"
+#include "priv_fts.h"
 
 static struct onas_bucket *onas_bucket_init();
 static void onas_free_bucket(struct onas_bucket *bckt);
@@ -580,12 +580,12 @@ int onas_ht_add_hierarchy(struct onas_ht *ht, const char *pathname) {
 	free(prnt);
 
 	char * const pathargv[] = { (char*) pathname, NULL };
-	if (!(ftsp = fts_open(pathargv, ftspopts, NULL))) {
+	if (!(ftsp = _priv_fts_open(pathargv, ftspopts, NULL))) {
 		logg("!ScanOnAccess: Could not open '%s'\n", pathname);
 		return CL_EARG;
 	}
 
-	while((curr = fts_read(ftsp))) {
+	while((curr = _priv_fts_read(ftsp))) {
 
 		struct onas_hnode *hnode = NULL;
 
@@ -608,7 +608,7 @@ int onas_ht_add_hierarchy(struct onas_ht *ht, const char *pathname) {
 				continue;
 		}
 
-		if((childlist = fts_children(ftsp, 0))) {
+		if((childlist = _priv_fts_children(ftsp, 0))) {
 			do {
 				if (childlist->fts_info == FTS_D) {
 					if(CL_EMEM == onas_add_hashnode_child(hnode, childlist->fts_name))
@@ -624,7 +624,7 @@ int onas_ht_add_hierarchy(struct onas_ht *ht, const char *pathname) {
 		if (onas_ht_insert(ht, elem)) return -1;
 	}
 
-	fts_close(ftsp);
+	_priv_fts_close(ftsp);
 	return CL_SUCCESS;
 }
 

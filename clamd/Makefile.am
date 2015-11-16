@@ -54,7 +54,12 @@ clamd_SOURCES = \
     onaccess_hash.c \
     onaccess_hash.h \
     onaccess_scth.c \
-    onaccess_scth.h
+    onaccess_scth.h \
+    priv_fts.h
+
+if !SYSTEM_LFS_FTS
+clamd_SOURCES += fts.c
+endif
 
 AM_CFLAGS=@WERR_CFLAGS@
 
