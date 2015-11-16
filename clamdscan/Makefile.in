@@ -164,6 +164,7 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
 	$(top_srcdir)/m4/reorganization/clamdtop.m4 \
 	$(top_srcdir)/m4/reorganization/distcheck.m4 \
 	$(top_srcdir)/m4/reorganization/llvm.m4 \
+	$(top_srcdir)/libclamav/c++/llvm-flags.m4 \
 	$(top_srcdir)/m4/reorganization/sha_collect.m4 \
 	$(top_srcdir)/m4/reorganization/yara.m4 \
 	$(top_srcdir)/m4/reorganization/bsd.m4 \
@@ -351,6 +352,11 @@ LIBOBJS = @LIBOBJS@
 LIBS = $(top_builddir)/libclamav/libclamav_internal_utils_nothreads.la  @CLAMDSCAN_LIBS@
 LIBTOOL = @LIBTOOL@
 LIPO = @LIPO@
+LLVMCONFIG_CXXFLAGS = @LLVMCONFIG_CXXFLAGS@
+LLVMCONFIG_DYNLIBLINK = @LLVMCONFIG_DYNLIBLINK@
+LLVMCONFIG_LDFLAGS = @LLVMCONFIG_LDFLAGS@
+LLVMCONFIG_LIBFILES = @LLVMCONFIG_LIBFILES@
+LLVMCONFIG_LIBS = @LLVMCONFIG_LIBS@
 LN_S = @LN_S@
 LTDLDEPS = @LTDLDEPS@
 LTDLINCL = @LTDLINCL@
@@ -437,6 +443,7 @@ infodir = @infodir@
 install_sh = @install_sh@
 libdir = @libdir@
 libexecdir = @libexecdir@
+llvmconfig = @llvmconfig@
 localedir = @localedir@
 localstatedir = @localstatedir@
 ltdl_LIBOBJS = @ltdl_LIBOBJS@

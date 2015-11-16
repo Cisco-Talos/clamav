@@ -191,6 +191,7 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
 	$(top_srcdir)/m4/reorganization/clamdtop.m4 \
 	$(top_srcdir)/m4/reorganization/distcheck.m4 \
 	$(top_srcdir)/m4/reorganization/llvm.m4 \
+	$(top_srcdir)/libclamav/c++/llvm-flags.m4 \
 	$(top_srcdir)/m4/reorganization/sha_collect.m4 \
 	$(top_srcdir)/m4/reorganization/yara.m4 \
 	$(top_srcdir)/m4/reorganization/bsd.m4 \
@@ -795,6 +796,11 @@ LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LIBTOOL = @LIBTOOL@
 LIPO = @LIPO@
+LLVMCONFIG_CXXFLAGS = @LLVMCONFIG_CXXFLAGS@
+LLVMCONFIG_DYNLIBLINK = @LLVMCONFIG_DYNLIBLINK@
+LLVMCONFIG_LDFLAGS = @LLVMCONFIG_LDFLAGS@
+LLVMCONFIG_LIBFILES = @LLVMCONFIG_LIBFILES@
+LLVMCONFIG_LIBS = @LLVMCONFIG_LIBS@
 LN_S = @LN_S@
 LTDLDEPS = @LTDLDEPS@
 LTDLINCL = @LTDLINCL@
@@ -881,6 +887,7 @@ infodir = @infodir@
 install_sh = @install_sh@
 libdir = @libdir@
 libexecdir = @libexecdir@
+llvmconfig = @llvmconfig@
 localedir = @localedir@
 localstatedir = @localstatedir@
 ltdl_LIBOBJS = @ltdl_LIBOBJS@
@@ -1005,6 +1012,7 @@ libclamav_internal_utils_nothreads_la_LIBADD = @SSL_LIBS@ @JSON_LIBS@ @PCRE_LIBS
 @ENABLE_LLVM_TRUE@LLVMLIBADD = c++/libclamavcxx.la -lstdc++ -lm
 @ENABLE_LLVM_FALSE@LLVMDEP = libclamav_nocxx.la
 @ENABLE_LLVM_TRUE@LLVMDEP = c++/libclamavcxx.la
+@ENABLE_LLVM_TRUE@@LLVM_DYNAMIC_TRUE@LLVMLDFLAGS = @LLVMCONFIG_LDFLAGS@ @LLVMCONFIG_DYNLIBLINK@ @LLVMCONFIG_LIBS@
 @ENABLE_LLVM_TRUE@SUBDIRS = c++
 @ENABLE_YARA_TRUE@YARA_CFLAGS = -DHAVE_YARA
 libclamav_nocxx_la_SOURCES = bytecode_nojit.c
@@ -1013,8 +1021,8 @@ libclamav_la_LIBADD = @SSL_LIBS@ @JSON_LIBS@ @PCRE_LIBS@ @LIBCLAMAV_LIBS@ @LIBLT
 libclamav_la_DEPENDENCIES = @LTDLDEPS@ $(IFACEDEP) $(LLVMDEP) libclamav_internal_utils.la
 libclamav_la_CFLAGS = $(AM_CFLAGS) $(XML_CPPFLAGS) $(YARA_CFLAGS) -DSEARCH_LIBDIR=\"$(libdir)\" @LIBCLAMAV_CPPFLAGS@ @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
 libclamav_la_LDFLAGS = @SSL_LDFLAGS@ @TH_SAFE@ @JSON_LDFLAGS@ \
-	$(XML_LIBS) -version-info @LIBCLAMAV_VERSION@ -no-undefined \
-	$(am__append_6)
+	$(LLVMLDFLAGS) $(XML_LIBS) -version-info @LIBCLAMAV_VERSION@ \
+	-no-undefined $(am__append_6)
 include_HEADERS = clamav.h
 libclamav_la_SOURCES = matcher-ac.c matcher-ac.h matcher-bm.c \
 	matcher-bm.h matcher-hash.c matcher-hash.h matcher.c matcher.h \
