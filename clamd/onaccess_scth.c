@@ -28,7 +28,6 @@
 #include <unistd.h>
 #include <string.h>
 #include <fcntl.h>
-#include <fts.h>
 #include <signal.h>
 #include <pthread.h>
 
@@ -36,6 +35,7 @@
 #include "shared/output.h"
 
 #include "others.h"
+#include "priv_fts.h"
 
 #include "onaccess_scth.h"
 
@@ -56,10 +56,10 @@ static void onas_scth_handle_dir(const char *pathname) {
 	FTSENT *curr = NULL;
 
 	char *const pathargv[] = { (char *) pathname, NULL };
-	if (!(ftsp = fts_open(pathargv, ftspopts, NULL))) return;
+	if (!(ftsp = _priv_fts_open(pathargv, ftspopts, NULL))) return;
 
 	/* Offload scanning work to fanotify thread to avoid potential deadlocks. */
-	while ((curr = fts_read(ftsp))) {
+	while ((curr = _priv_fts_read(ftsp))) {
 		if (curr->fts_info != FTS_D) {
 			int fd = open(curr->fts_path, O_RDONLY);
 			if (fd > 0) close(fd);

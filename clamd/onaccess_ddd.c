@@ -30,7 +30,6 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <fts.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <pthread.h>

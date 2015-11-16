@@ -125,6 +125,7 @@ m4_include([m4/reorganization/distcheck.m4])
 m4_include([m4/reorganization/llvm.m4])
 m4_include([m4/reorganization/sha_collect.m4])
 m4_include([m4/reorganization/yara.m4])
+m4_include([m4/reorganization/code_checks/fts.m4])
 m4_include([m4/reorganization/libfreshclam.m4])
 
 m4_include([m4/reorganization/prelude.m4])
@@ -277,6 +278,8 @@ else
     CL_MSG_STATUS([libxml2     ],[yes, from $XML_HOME],[])
 fi
 CL_MSG_STATUS([yara        ],[$enable_yara],[$enable_yara])
+CL_MSG_STATUS([fts         ],[yes],[$lfs_fts_msg])
+
 
 # Yep, downgrading the compiler avoids the bug too:
 # 4.0.x, and 4.1.0 are the known buggy versions
