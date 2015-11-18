@@ -76,7 +76,6 @@ static int onas_fan_scanfile(int fan_fd, const char *fname, struct fanotify_even
 	struct cb_context context;
 	const char *virname;
 	int ret = 0;
-	struct thrarg *dummy = tharg;
 
     res.fd = fmd->fd;
     res.response = FAN_ALLOW;

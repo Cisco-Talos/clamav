@@ -52,7 +52,16 @@
 #include "others.h"
 #include "scanner.h"
 
+static struct onas_bucket *onas_bucket_init();
+static void onas_free_bucket(struct onas_bucket *bckt);
+static int onas_bucket_insert(struct onas_bucket *bckt, struct onas_element *elem);
+static int onas_bucket_remove(struct onas_bucket *bckt, struct onas_element *elem);
 
+static int onas_add_hashnode_child(struct onas_hnode *node, const char* dirname);
+
+static struct onas_lnode *onas_listnode_init(void);
+
+static struct onas_hnode *onas_hashnode_init(void);
 
 static inline uint32_t onas_hshift(uint32_t hash) {
 
@@ -72,7 +81,7 @@ static inline uint32_t onas_hshift(uint32_t hash) {
 static inline int onas_hash(const char* key, size_t keylen, uint32_t size) {
 
 	uint32_t hash = 1;
-	int i;
+	uint32_t i;
 
 	for (i = 0; i < keylen; i++) {
 		hash += key[i];
@@ -112,7 +121,7 @@ void onas_free_ht(struct onas_ht *ht) {
 		return;
 	}
 
-	int i = 0;
+	uint32_t i = 0;
 	for (i = 0; i < ht->size; i++) {
 		onas_free_bucket(ht->htable[i]);
 		ht->htable[i] = NULL;
@@ -144,7 +153,7 @@ static void onas_free_bucket(struct onas_bucket *bckt) {
 
 	if (!bckt) return;
 
-	int i = 0;
+	uint32_t i = 0;
 	struct onas_element *curr = NULL;
 
 	for (i = 0; i < bckt->size; i++) {
@@ -197,7 +206,7 @@ int onas_ht_insert(struct onas_ht *ht, struct onas_element *elem) {
 	struct onas_bucket *bckt = ht->htable[idx];
 
 	int ret = 0;
-	int bsize = 0;
+	uint32_t bsize = 0;
 
 	if (bckt == NULL) {
 		ht->htable[idx] = onas_bucket_init();
@@ -324,7 +333,7 @@ static int onas_bucket_remove(struct onas_bucket *bckt, struct onas_element *ele
 /* Dealing with hash nodes and list nodes */
 
 /* Function to initialize hashnode. */
-struct onas_hnode *onas_hashnode_init() {
+static struct onas_hnode *onas_hashnode_init(void) {
 	struct onas_hnode *hnode = NULL;
 	if(!(hnode = (struct onas_hnode *) cli_malloc(sizeof(struct onas_hnode)))) {
 		return NULL;
@@ -358,7 +367,7 @@ struct onas_hnode *onas_hashnode_init() {
 }
 
 /* Function to initialize listnode. */
-struct onas_lnode *onas_listnode_init() {
+static struct onas_lnode *onas_listnode_init(void) {
 	struct onas_lnode *lnode = NULL;
 	if(!(lnode = (struct onas_lnode *) cli_malloc(sizeof(struct onas_lnode)))) {
 		return NULL;
@@ -458,7 +467,7 @@ int onas_rm_listnode(struct onas_lnode *head, const char *dirname) {
 	struct onas_lnode *curr = head;
 	size_t n = strlen(dirname);
 
-	while (curr = curr->next) {
+	while ((curr = curr->next)) {
 		if (!strncmp(curr->dirname, dirname, n)) {
 			struct onas_lnode *tmp = curr->prev;
 			tmp->next = curr->next;
@@ -532,7 +541,7 @@ int onas_ht_rm_child(struct onas_ht *ht, const char *prntpath, size_t prntlen, c
 
 	hnode = elem->data;
 
-	if (ret = onas_rm_listnode(hnode->childhead, &(childpath[idx]))) return CL_EARG;
+	if ((ret = onas_rm_listnode(hnode->childhead, &(childpath[idx])))) return CL_EARG;
 
 	return CL_SUCCESS;
 }
@@ -570,13 +579,13 @@ int onas_ht_add_hierarchy(struct onas_ht *ht, const char *pathname) {
 	if (prnt) onas_ht_add_child(ht, prnt, strlen(prnt), pathname, len);
 	free(prnt);
 
-	char * const pathargv[] = { pathname, NULL };
+	char * const pathargv[] = { (char*) pathname, NULL };
 	if (!(ftsp = fts_open(pathargv, ftspopts, NULL))) {
 		logg("!ScanOnAccess: Could not open '%s'\n", pathname);
 		return CL_EARG;
 	}
 
-	while(curr = fts_read(ftsp)) {
+	while((curr = fts_read(ftsp))) {
 
 		struct onas_hnode *hnode = NULL;
 
@@ -599,7 +608,7 @@ int onas_ht_add_hierarchy(struct onas_ht *ht, const char *pathname) {
 				continue;
 		}
 
-		if(childlist = fts_children(ftsp, 0)) {
+		if((childlist = fts_children(ftsp, 0))) {
 			do {
 				if (childlist->fts_info & FTS_D &&
 				    !(childlist->fts_info & FTS_DNR) &&
@@ -608,7 +617,7 @@ int onas_ht_add_hierarchy(struct onas_ht *ht, const char *pathname) {
 						return CL_EMEM;
 				}
 
-			} while (childlist = childlist->fts_link);
+			} while ((childlist = childlist->fts_link));
 		}
 
 		struct onas_element *elem = onas_element_init(hnode, hnode->pathname, hnode->pathlen);

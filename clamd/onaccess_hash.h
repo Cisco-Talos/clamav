@@ -97,20 +97,12 @@ int onas_ht_add_hierarchy(struct onas_ht *ht, const char *pathname);
 int onas_ht_add_child(struct onas_ht *ht, const char *prntpath, size_t prntlen, const char *childpath, size_t childlen);
 int onas_ht_rm_child(struct onas_ht *ht, const char *prntpath, size_t prntlen, const char *childpath, size_t childlen);
 
-static struct onas_bucket *onas_bucket_init();
-static void onas_free_bucket(struct onas_bucket *bckt);
-static int onas_bucket_insert(struct onas_bucket *bckt, struct onas_element *elem);
-static int onas_bucket_remove(struct onas_bucket *bckt, struct onas_element *elem);
-
 void onas_free_element(struct onas_element *elem);
 struct onas_element *onas_element_init(struct onas_hnode *value, const char *key, size_t klen);
 
 void onas_free_hashnode(struct onas_hnode *hnode);
-struct onas_hnode *onas_hashnode_init();
-static int onas_add_hashnode_child(struct onas_hnode *node, const char* dirname);
 
 void onas_free_listnode(struct onas_lnode *lnode);
-struct onas_lnode *onas_listnode_init();
 int onas_add_listnode(struct onas_lnode *tail, struct onas_lnode *node);
 int onas_rm_listnode(struct onas_lnode *head, const char *dirname);
 

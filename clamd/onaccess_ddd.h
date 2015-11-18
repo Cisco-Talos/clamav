@@ -37,24 +37,9 @@ struct ddd_thrarg {
 	const struct cl_limits *limits;
 };
 
-static int onas_ddd_init_ht(uint32_t ht_size);
-static int onas_ddd_init_wdlt(uint64_t nwatches);
-static int onas_ddd_grow_wdlt();
-
-static int onas_ddd_watch(const char *pathname, int fan_fd, uint64_t fan_mask, int in_fd, uint64_t in_mask);
-static int onas_ddd_watch_hierarchy(const char* pathname, size_t len, int fd, uint64_t mask, uint32_t type);
-static int onas_ddd_unwatch(const char *pathname, int fan_fd, int in_fd);
-static int onas_ddd_unwatch_hierarchy(const char* pathname, size_t len, int fd, uint32_t type);
-
-static void onas_ddd_handle_in_moved_to(struct ddd_thrarg *tharg, const char *path, const char *child_path, const struct inotify_event *event, int wd, uint64_t in_mask);
-static void onas_ddd_handle_in_create(struct ddd_thrarg *tharg, const char *path, const char *child_path, const struct inotify_event *event, int wd, uint64_t in_mask);
-static void onas_ddd_handle_in_moved_from(struct ddd_thrarg *tharg, const char *path, const char *child_path, const struct inotify_event *event, int wd);
-static void onas_ddd_handle_in_delete(struct ddd_thrarg *tharg, const char *path, const char *child_path, const struct inotify_event *event, int wd);
-static void onas_ddd_handle_extra_scanning(struct ddd_thrarg *tharg, const char *pathname, int options);
 
 int onas_ddd_init(uint64_t nwatches, size_t ht_size);
 void *onas_ddd_th(void *arg);
-static void onas_ddd_exit(int sig);
 
 
 #endif

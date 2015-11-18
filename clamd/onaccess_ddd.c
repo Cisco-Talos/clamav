@@ -56,6 +56,23 @@
 #include "others.h"
 #include "scanner.h"
 
+static int onas_ddd_init_ht(uint32_t ht_size);
+static int onas_ddd_init_wdlt(uint64_t nwatches);
+static int onas_ddd_grow_wdlt();
+
+static int onas_ddd_watch(const char *pathname, int fan_fd, uint64_t fan_mask, int in_fd, uint64_t in_mask);
+static int onas_ddd_watch_hierarchy(const char* pathname, size_t len, int fd, uint64_t mask, uint32_t type);
+static int onas_ddd_unwatch(const char *pathname, int fan_fd, int in_fd);
+static int onas_ddd_unwatch_hierarchy(const char* pathname, size_t len, int fd, uint32_t type);
+
+static void onas_ddd_handle_in_moved_to(struct ddd_thrarg *tharg, const char *path, const char *child_path, const struct inotify_event *event, int wd, uint64_t in_mask);
+static void onas_ddd_handle_in_create(struct ddd_thrarg *tharg, const char *path, const char *child_path, const struct inotify_event *event, int wd, uint64_t in_mask);
+static void onas_ddd_handle_in_moved_from(struct ddd_thrarg *tharg, const char *path, const char *child_path, const struct inotify_event *event, int wd);
+static void onas_ddd_handle_in_delete(struct ddd_thrarg *tharg, const char *path, const char *child_path, const struct inotify_event *event, int wd);
+static void onas_ddd_handle_extra_scanning(struct ddd_thrarg *tharg, const char *pathname, int options);
+
+static void onas_ddd_exit(int sig);
+
 /* TODO: Unglobalize these. */
 static struct onas_ht *ddd_ht;
 static char **wdlt;
@@ -162,7 +179,7 @@ static int onas_ddd_watch_hierarchy(const char* pathname, size_t len, int fd, ui
 
 		if (wd < 0) return CL_EARG;
 
-		if (wd >= wdlt_len) {
+		if ((uint32_t) wd >= wdlt_len) {
 			onas_ddd_grow_wdlt();
 		}
 
@@ -273,9 +290,6 @@ void *onas_ddd_th(void *arg) {
 	sigset_t sigset;
 	struct sigaction act;
 	const struct optstruct *pt;
-	short int scan;
-	int sizelimit = 0, extinfo;
-	STATBUF sb;
 	uint64_t in_mask = IN_ONLYDIR | IN_MOVE | IN_DELETE | IN_CREATE;
 	fd_set rfds;
 	char buf[4096];
@@ -392,7 +406,7 @@ void *onas_ddd_th(void *arg) {
 			char *p = buf;
 			const char *path = NULL;
 			const char *child = NULL;
-			for(p; p < buf + bread; p += sizeof(struct inotify_event) + event->len) {
+			for(; p < buf + bread; p += sizeof(struct inotify_event) + event->len) {
 
 				event = (const struct inotify_event *) p;
 				wd = event->wd;
