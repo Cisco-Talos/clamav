@@ -28,6 +28,8 @@
 #include <errno.h>
 #include "snprintf.h"
 
+#ifndef HAVE_SNPRINTF
+
 int snprintf(char *str, size_t size, const char *format, ...) {
 	va_list va;
 	int len;
@@ -40,3 +42,5 @@ int snprintf(char *str, size_t size, const char *format, ...) {
 	va_end(va);
 	return len;
 }
+
+#endif

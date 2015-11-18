@@ -22,6 +22,10 @@
 #ifndef __SNPRINTF_H
 #define __SNPRINTF_H
 
+#ifndef HAVE_SNPRINTF
+
 int snprintf(char *str, size_t size, const char *format, ...);
+
+#endif
 
 #endif /* __SNPRINTF_H */
