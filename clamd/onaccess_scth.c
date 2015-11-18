@@ -39,6 +39,11 @@
 
 #include "onaccess_scth.h"
 
+static void onas_scth_handle_dir(const char *pathname);
+static void onas_scth_handle_file(const char *pathname);
+
+static void onas_scth_exit(int sig);
+
 static void onas_scth_exit(int sig) {
 	logg("*ScanOnAccess: onas_scth_exit(), signal %d\n", sig);
 
@@ -50,11 +55,11 @@ static void onas_scth_handle_dir(const char *pathname) {
 	int ftspopts = FTS_PHYSICAL | FTS_XDEV;
 	FTSENT *curr = NULL;
 
-	char *const pathargv[] = { pathname, NULL };
+	char *const pathargv[] = { (char *) pathname, NULL };
 	if (!(ftsp = fts_open(pathargv, ftspopts, NULL))) return;
 
 	/* Offload scanning work to fanotify thread to avoid potential deadlocks. */
-	while (curr = fts_read(ftsp)) {
+	while ((curr = fts_read(ftsp))) {
 		if (curr->fts_info != FTS_D) {
 			int fd = open(curr->fts_path, O_RDONLY);
 			if (fd > 0) close(fd);
@@ -79,8 +84,6 @@ void *onas_scan_th(void *arg) {
 	struct scth_thrarg *tharg = (struct scth_thrarg *) arg;
 	sigset_t sigset;
 	struct sigaction act;
-	const struct optstruct *pt;
-	short int scan;
 
 	/* ignore all signals except SIGUSR1 */
 	sigfillset(&sigset);
