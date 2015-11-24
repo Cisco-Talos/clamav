@@ -30,6 +30,7 @@ AC_CONFIG_HEADER([clamav-config.h])
 dnl safety check, this used to be a parameter to AC_INIT
 AC_CONFIG_SRCDIR([clamscan/clamscan.c])
 AC_CONFIG_MACRO_DIR([m4])
+dnl AC_CONFIG_MACRO_DIR([libclamav/c++/m4/extern])
 AC_CREATE_TARGET_H([target.h])
 
 dnl -Wall and -Werror here are NOT CFLAGS, they refer to automake warnings
