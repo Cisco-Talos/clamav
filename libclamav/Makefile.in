@@ -107,8 +107,9 @@ target_triplet = @target@
 @ENABLE_UNRAR_TRUE@	@top_srcdir@/libclamunrar/libclamunrar.map \
 @ENABLE_UNRAR_TRUE@	@top_srcdir@/libclamunrar_iface/libclamunrar_iface.map
 @ENABLE_UNRAR_TRUE@@VERSIONSCRIPT_TRUE@am__append_5 = -Wl,@VERSIONSCRIPTFLAG@,@top_srcdir@/libclamunrar_iface/libclamunrar_iface.map
-@VERSIONSCRIPT_TRUE@am__append_6 = -Wl,@VERSIONSCRIPTFLAG@,@top_srcdir@/libclamav/libclamav.map
-@ENABLE_YARA_TRUE@am__append_7 = yara_arena.c \
+@ENABLE_LLVM_TRUE@@LLVM_DYNAMIC_TRUE@am__append_6 = @LLVMCONFIG_DYNLIBLINK@ @LLVMCONFIG_LIBS@
+@VERSIONSCRIPT_TRUE@am__append_7 = -Wl,@VERSIONSCRIPTFLAG@,@top_srcdir@/libclamav/libclamav.map
+@ENABLE_YARA_TRUE@am__append_8 = yara_arena.c \
 @ENABLE_YARA_TRUE@	yara_arena.h \
 @ENABLE_YARA_TRUE@	yara_compiler.c \
 @ENABLE_YARA_TRUE@	yara_compiler.h \
@@ -234,8 +235,10 @@ am__uninstall_files_from_dir = { \
 am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includedir)"
 LTLIBRARIES = $(lib_LTLIBRARIES) $(noinst_LTLIBRARIES)
 @ENABLE_UNRAR_TRUE@am__DEPENDENCIES_1 = libclamunrar_iface.la
-@ENABLE_LLVM_FALSE@am__DEPENDENCIES_2 = libclamav_nocxx.la
-@ENABLE_LLVM_TRUE@am__DEPENDENCIES_2 = c++/libclamavcxx.la
+am__DEPENDENCIES_2 =
+@ENABLE_LLVM_FALSE@am__DEPENDENCIES_3 = libclamav_nocxx.la
+@ENABLE_LLVM_TRUE@am__DEPENDENCIES_3 = c++/libclamavcxx.la \
+@ENABLE_LLVM_TRUE@	$(am__DEPENDENCIES_2)
 am__libclamav_la_SOURCES_DIST = matcher-ac.c matcher-ac.h matcher-bm.c \
 	matcher-bm.h matcher-hash.c matcher-hash.h matcher.c matcher.h \
 	others.c others.h readdb.c readdb.h cvd.c cvd.h dsig.c dsig.h \
@@ -1009,10 +1012,11 @@ libclamav_internal_utils_nothreads_la_LDFLAGS = -static @SSL_LDFLAGS@ @JSON_LDFL
 libclamav_internal_utils_nothreads_la_CFLAGS = $(AM_CFLAGS) -DCL_NOTHREADS @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
 libclamav_internal_utils_nothreads_la_LIBADD = @SSL_LIBS@ @JSON_LIBS@ @PCRE_LIBS@
 @ENABLE_LLVM_FALSE@LLVMLIBADD = libclamav_nocxx.la
-@ENABLE_LLVM_TRUE@LLVMLIBADD = c++/libclamavcxx.la -lstdc++ -lm
+@ENABLE_LLVM_TRUE@LLVMLIBADD = c++/libclamavcxx.la -lstdc++ -lm \
+@ENABLE_LLVM_TRUE@	$(am__append_6)
 @ENABLE_LLVM_FALSE@LLVMDEP = libclamav_nocxx.la
 @ENABLE_LLVM_TRUE@LLVMDEP = c++/libclamavcxx.la
-@ENABLE_LLVM_TRUE@@LLVM_DYNAMIC_TRUE@LLVMLDFLAGS = @LLVMCONFIG_LDFLAGS@ @LLVMCONFIG_DYNLIBLINK@ @LLVMCONFIG_LIBS@
+@ENABLE_LLVM_TRUE@@LLVM_DYNAMIC_TRUE@LLVMLDFLAGS = @LLVMCONFIG_LDFLAGS@
 @ENABLE_LLVM_TRUE@SUBDIRS = c++
 @ENABLE_YARA_TRUE@YARA_CFLAGS = -DHAVE_YARA
 libclamav_nocxx_la_SOURCES = bytecode_nojit.c
@@ -1022,7 +1026,7 @@ libclamav_la_DEPENDENCIES = @LTDLDEPS@ $(IFACEDEP) $(LLVMDEP) libclamav_internal
 libclamav_la_CFLAGS = $(AM_CFLAGS) $(XML_CPPFLAGS) $(YARA_CFLAGS) -DSEARCH_LIBDIR=\"$(libdir)\" @LIBCLAMAV_CPPFLAGS@ @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
 libclamav_la_LDFLAGS = @SSL_LDFLAGS@ @TH_SAFE@ @JSON_LDFLAGS@ \
 	$(LLVMLDFLAGS) $(XML_LIBS) -version-info @LIBCLAMAV_VERSION@ \
-	-no-undefined $(am__append_6)
+	-no-undefined $(am__append_7)
 include_HEADERS = clamav.h
 libclamav_la_SOURCES = matcher-ac.c matcher-ac.h matcher-bm.c \
 	matcher-bm.h matcher-hash.c matcher-hash.h matcher.c matcher.h \
@@ -1079,7 +1083,7 @@ libclamav_la_SOURCES = matcher-ac.c matcher-ac.h matcher-bm.c \
 	stats_json.c stats_json.h hostid.c hostid.h openioc.c \
 	openioc.h msdoc.c msdoc.h matcher-pcre.c matcher-pcre.h \
 	regex_pcre.c regex_pcre.h msxml.c msxml.h msxml_parser.c \
-	msxml_parser.h tiff.c tiff.h $(am__append_7) bignum.h \
+	msxml_parser.h tiff.c tiff.h $(am__append_8) bignum.h \
 	bignum_fast.h tomsfastmath/addsub/fp_add.c \
 	tomsfastmath/addsub/fp_add_d.c tomsfastmath/addsub/fp_addmod.c \
 	tomsfastmath/addsub/fp_cmp.c tomsfastmath/addsub/fp_cmp_d.c \

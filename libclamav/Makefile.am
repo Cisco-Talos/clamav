@@ -127,30 +127,31 @@ libclamav_internal_utils_nothreads_la_CFLAGS=$(AM_CFLAGS) -DCL_NOTHREADS @SSL_CP
 libclamav_internal_utils_nothreads_la_LIBADD=@SSL_LIBS@ @JSON_LIBS@ @PCRE_LIBS@
 
 if ENABLE_LLVM
-LLVMLIBADD=c++/libclamavcxx.la -lstdc++ -lm
-LLVMDEP=c++/libclamavcxx.la
+LLVMLIBADD = c++/libclamavcxx.la -lstdc++ -lm
+LLVMDEP = c++/libclamavcxx.la
 if LLVM_DYNAMIC
-LLVMLDFLAGS=@LLVMCONFIG_LDFLAGS@ @LLVMCONFIG_DYNLIBLINK@ @LLVMCONFIG_LIBS@
+LLVMLIBADD += @LLVMCONFIG_DYNLIBLINK@ @LLVMCONFIG_LIBS@
+LLVMLDFLAGS = @LLVMCONFIG_LDFLAGS@
 endif
-SUBDIRS=c++
+SUBDIRS = c++
 else
-LLVMLIBADD=libclamav_nocxx.la
-LLVMDEP=libclamav_nocxx.la
+LLVMLIBADD = libclamav_nocxx.la
+LLVMDEP = libclamav_nocxx.la
 c++/Makefile: c++/Makefile.nollvm.in
 	$(AM_V_at) cp $< $@
 distclean-recursive distdir maintainer-clean-recursive: c++/Makefile
 endif
 
 if ENABLE_YARA
-YARA_CFLAGS=-DHAVE_YARA
+YARA_CFLAGS = -DHAVE_YARA
 endif
 
 libclamav_nocxx_la_SOURCES = bytecode_nojit.c
-libclamav_nocxx_la_CFLAGS=$(AM_CFLAGS) @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
+libclamav_nocxx_la_CFLAGS = $(AM_CFLAGS) @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
 
 libclamav_la_LIBADD = @SSL_LIBS@ @JSON_LIBS@ @PCRE_LIBS@ @LIBCLAMAV_LIBS@ @LIBLTDL@ $(IFACELIBADD) $(LLVMLIBADD) libclamav_internal_utils.la @THREAD_LIBS@ @LIBM@
-libclamav_la_DEPENDENCIES =  @LTDLDEPS@ $(IFACEDEP) $(LLVMDEP) libclamav_internal_utils.la
-libclamav_la_CFLAGS =$(AM_CFLAGS) $(XML_CPPFLAGS) $(YARA_CFLAGS) -DSEARCH_LIBDIR=\"$(libdir)\" @LIBCLAMAV_CPPFLAGS@ @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
+libclamav_la_DEPENDENCIES = @LTDLDEPS@ $(IFACEDEP) $(LLVMDEP) libclamav_internal_utils.la
+libclamav_la_CFLAGS = $(AM_CFLAGS) $(XML_CPPFLAGS) $(YARA_CFLAGS) -DSEARCH_LIBDIR=\"$(libdir)\" @LIBCLAMAV_CPPFLAGS@ @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
 libclamav_la_LDFLAGS = @SSL_LDFLAGS@ @TH_SAFE@ @JSON_LDFLAGS@ $(LLVMLDFLAGS) $(XML_LIBS) -version-info @LIBCLAMAV_VERSION@ -no-undefined
 
 if VERSIONSCRIPT
