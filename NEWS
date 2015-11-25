@@ -1,5 +1,5 @@
-0.99-rc2
---------
+0.99
+----
 
 ClamAV 0.99 contains major new features and changes. YARA rules, 
 Perl Compatible Regular Expressions, revamped on-access scanning

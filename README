@@ -2,8 +2,8 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
-0.99-rc2
---------
+0.99
+----
 
 ClamAV 0.99 contains major new features and changes. YARA rules, 
 Perl Compatible Regular Expressions, revamped on-access scanning
