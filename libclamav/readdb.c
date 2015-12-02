@@ -760,25 +760,70 @@ char *cli_dbgets(char *buff, unsigned int size, FILE *fs, struct cli_dbio *dbio)
     }
 }
 
+static char *cli_signorm(const char *signame, size_t sz, size_t *new_sz) {
+
+	if (!signame) { 
+		*new_sz = sz;
+		return NULL;
+	}
+	sz = strlen(signame);
+
+	if (sz <= 11) { 
+		*new_sz = sz;
+		return NULL;
+	}
+	*new_sz = sz - 11;
+	
+	char *p = signame + *new_sz;
+	if (strncmp(p, ".UNOFFICIAL", 11)) { 
+		*new_sz = sz;
+		return NULL;
+	}
+
+
+	char *new_signame = malloc(*new_sz + 1);
+	if (!new_signame) {
+		*new_sz = sz;
+		return NULL;
+	}
+
+	memcpy(new_signame, signame, *new_sz);
+	new_signame[*new_sz] = '\0';
+	return new_signame;
+}
+
 static int cli_chkign(const struct cli_matcher *ignored, const char *signame, const char *entry)
 {
+
     const char *md5_expected = NULL;
+    char *norm_signame = NULL;
     unsigned char digest[16];
+    size_t sz = 0;
 
     if(!ignored || !signame || !entry)
         return 0;
 
-    if(cli_bm_scanbuff((const unsigned char *) signame, strlen(signame), &md5_expected, NULL, ignored, 0, NULL, NULL,NULL) == CL_VIRUS) {
+    if(!(norm_signame = cli_signorm(signame, strlen(signame), &sz)))
+	norm_signame = signame;
+
+    if(cli_bm_scanbuff((const unsigned char *) norm_signame, sz, &md5_expected, NULL, ignored, 0, NULL, NULL,NULL) == CL_VIRUS) {
         if(md5_expected) {
             cl_hash_data("md5", entry, strlen(entry), digest, NULL);
-            if(memcmp(digest, (const unsigned char *) md5_expected, 16))
+            if(memcmp(digest, (const unsigned char *) md5_expected, 16)) {
+		if (signame != norm_signame)
+		    free(norm_signame);
                 return 0;
+	    }
         }
 
-        cli_dbgmsg("Ignoring signature %s\n", signame);
+        cli_dbgmsg("Ignoring signature %s\n", norm_signame);
+	if (signame != norm_signame)
+	    free(norm_signame);
         return 1;
     }
 
+    if (signame != norm_signame)
+	free(norm_signame);
     return 0;
 }
 
