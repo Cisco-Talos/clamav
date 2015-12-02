@@ -393,8 +393,8 @@ int cli_dconf_load(FILE *fs, struct cl_engine *engine, unsigned int options, str
             }
         }
 
-        if(!strncmp(buffer, "MACHO:", 4) && chkflevel(buffer, 2)) {
-            if(sscanf(buffer + 4, "0x%x", &val) == 1) {
+        if(!strncmp(buffer, "MACHO:", 6) && chkflevel(buffer, 2)) {
+            if(sscanf(buffer + 6, "0x%x", &val) == 1) {
                 engine->dconf->macho = val;
             } else {
                 ret = CL_EMALFDB;
