@@ -762,6 +762,10 @@ char *cli_dbgets(char *buff, unsigned int size, FILE *fs, struct cli_dbio *dbio)
 
 static char *cli_signorm(const char *signame, size_t sz, size_t *new_sz) {
 
+	char *idx = NULL;
+	char *new_signame = NULL;
+	size_t nsz = 0;
+
 	if (!signame) { 
 		*new_sz = sz;
 		return NULL;
@@ -772,23 +776,24 @@ static char *cli_signorm(const char *signame, size_t sz, size_t *new_sz) {
 		*new_sz = sz;
 		return NULL;
 	}
-	*new_sz = sz - 11;
+	nsz = sz - 11;
 	
-	char *p = signame + *new_sz;
-	if (strncmp(p, ".UNOFFICIAL", 11)) { 
+	idx = signame + nsz;
+	if (strncmp(idx, ".UNOFFICIAL", 11)) { 
 		*new_sz = sz;
 		return NULL;
 	}
 
-
-	char *new_signame = malloc(*new_sz + 1);
+	new_signame = malloc(nsz + 1);
 	if (!new_signame) {
 		*new_sz = sz;
 		return NULL;
 	}
 
-	memcpy(new_signame, signame, *new_sz);
-	new_signame[*new_sz] = '\0';
+	memcpy(new_signame, signame, nsz);
+	new_signame[nsz] = '\0';
+
+	*new_sz = nsz;
 	return new_signame;
 }
 
