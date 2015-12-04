@@ -108,6 +108,7 @@ typedef struct ole2_header_tag {
     struct uniq    *U;
     fmap_t         *map;
     int             has_vba;
+    int             is_hwp;
 }               ole2_header_t;
 
 typedef struct property_tag {
@@ -915,6 +916,9 @@ static int
 handler_enum(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * ctx)
 {
     char           *name = NULL;
+    unsigned char  *hwp_check;
+    int32_t        offset;
+    int            ret = CL_SUCCESS;
 #if HAVE_JSON
     json_object *arrobj, *strmobj;
 
@@ -956,9 +960,62 @@ handler_enum(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * 
         }
     }
 
+    /*
+     * if we can find a root entry fileheader, it may be a HWP file
+     * identify the HWP signature "HWP Document File" at offset 0 stream
+     */
+    if (!hdr->is_hwp) {
+        if (!name)
+            name = get_property_name2(prop->name, prop->name_size);
+        if (name) {
+            if (!strcmp(name, "fileheader")) {
+                hwp_check = (unsigned char *)cli_calloc(1, 1 << hdr->log2_big_block_size);
+                if (!hwp_check) {
+                    free(name);
+                    return CL_EMEM;
+                }
+
+                /* reading safety checks; do-while used for breaks */
+                do {
+                    if ((prop->start_block < 0) && (prop->size <= 0))
+                        break;
+
+                    if (prop->start_block > (int32_t) hdr->max_block_no)
+                        break;
+
+                    /* read the header block (~256 bytes) */
+                    offset = 0;
+                    if (prop->size < (int64_t) hdr->sbat_cutoff) {
+                        if (!ole2_get_sbat_data_block(hdr, hwp_check, prop->start_block)) {
+                            ret = CL_EREAD;
+                            break;
+                        }
+                        offset = (1 << hdr->log2_small_block_size) *
+                            (prop->start_block % (1 << (hdr->log2_big_block_size - hdr->log2_small_block_size)));
+
+                        /* reading safety */
+                        if ((offset + 17 >= 1 << hdr->log2_big_block_size))
+                            break;
+                    } else {
+                        if (!ole2_read_block(hdr, hwp_check, 1 << hdr->log2_big_block_size, prop->start_block)) {
+                            ret = CL_EREAD;
+                            break;
+                        }
+                    }
+
+                    /* compare against HWP signature; we could add the 15 padding NULLs too */
+                    if (!memcmp(hwp_check+offset, "HWP Document File", 17))
+                        hdr->is_hwp = 1;
+                } while(0);
+
+                free(hwp_check);
+            }
+        }
+    }
+
     if (name)
         free(name);
-    return CL_SUCCESS;
+    return ret;
 }
 
 static int
@@ -1395,7 +1452,7 @@ cli_ole2_extract(const char *dirname, cli_ctx * ctx, struct uniq **vba)
     /* size of header - size of other values in struct */
     hdr_size = sizeof(struct ole2_header_tag) - sizeof(int32_t) - sizeof(uint32_t) -
         sizeof(off_t) - sizeof(bitset_t *) -
-        sizeof(struct uniq *) - sizeof(int) - sizeof(fmap_t *);
+        sizeof(struct uniq *) - sizeof(int) - sizeof(int) - sizeof(fmap_t *);
 
     if ((size_t)((*ctx->fmap)->len) < (size_t)(hdr_size)) {
         return CL_CLEAN;
@@ -1460,11 +1517,16 @@ cli_ole2_extract(const char *dirname, cli_ctx * ctx, struct uniq **vba)
 
     /* PASS 1 : Count files and check for VBA */
     hdr.has_vba = 0;
+    hdr.is_hwp = 0;
     ret = ole2_walk_property_tree(&hdr, NULL, 0, handler_enum, 0, &file_count, ctx, &scansize);
     cli_bitset_free(hdr.bitset);
     hdr.bitset = NULL;
     if (!file_count || !(hdr.bitset = cli_bitset_init()))
         goto abort;
+
+    if (hdr.is_hwp) {
+        cli_dbgmsg("OLE2: identified HWP document\n");
+    }
 
     /* If there's no VBA we scan OTF */
     if (hdr.has_vba) {
