@@ -290,13 +290,13 @@ am__libclamav_la_SOURCES_DIST = matcher-ac.c matcher-ac.h matcher-bm.c \
 	stats_json.h hostid.c hostid.h openioc.c openioc.h msdoc.c \
 	msdoc.h matcher-pcre.c matcher-pcre.h regex_pcre.c \
 	regex_pcre.h msxml.c msxml.h msxml_parser.c msxml_parser.h \
-	tiff.c tiff.h yara_arena.c yara_arena.h yara_compiler.c \
-	yara_compiler.h yara_exec.c yara_exec.h yara_hash.c \
-	yara_hash.h yara_grammar.y yara_lexer.l yara_lexer.h \
-	yara_parser.c yara_parser.h yara_clam.h bignum.h bignum_fast.h \
-	tomsfastmath/addsub/fp_add.c tomsfastmath/addsub/fp_add_d.c \
-	tomsfastmath/addsub/fp_addmod.c tomsfastmath/addsub/fp_cmp.c \
-	tomsfastmath/addsub/fp_cmp_d.c \
+	tiff.c tiff.h hwp.c hwp.h yara_arena.c yara_arena.h \
+	yara_compiler.c yara_compiler.h yara_exec.c yara_exec.h \
+	yara_hash.c yara_hash.h yara_grammar.y yara_lexer.l \
+	yara_lexer.h yara_parser.c yara_parser.h yara_clam.h bignum.h \
+	bignum_fast.h tomsfastmath/addsub/fp_add.c \
+	tomsfastmath/addsub/fp_add_d.c tomsfastmath/addsub/fp_addmod.c \
+	tomsfastmath/addsub/fp_cmp.c tomsfastmath/addsub/fp_cmp_d.c \
 	tomsfastmath/addsub/fp_cmp_mag.c tomsfastmath/addsub/fp_sub.c \
 	tomsfastmath/addsub/fp_sub_d.c tomsfastmath/addsub/fp_submod.c \
 	tomsfastmath/addsub/s_fp_add.c tomsfastmath/addsub/s_fp_sub.c \
@@ -432,7 +432,7 @@ am_libclamav_la_OBJECTS = libclamav_la-matcher-ac.lo \
 	libclamav_la-msdoc.lo libclamav_la-matcher-pcre.lo \
 	libclamav_la-regex_pcre.lo libclamav_la-msxml.lo \
 	libclamav_la-msxml_parser.lo libclamav_la-tiff.lo \
-	$(am__objects_1) libclamav_la-fp_add.lo \
+	libclamav_la-hwp.lo $(am__objects_1) libclamav_la-fp_add.lo \
 	libclamav_la-fp_add_d.lo libclamav_la-fp_addmod.lo \
 	libclamav_la-fp_cmp.lo libclamav_la-fp_cmp_d.lo \
 	libclamav_la-fp_cmp_mag.lo libclamav_la-fp_sub.lo \
@@ -1071,8 +1071,8 @@ libclamav_la_SOURCES = matcher-ac.c matcher-ac.h matcher-bm.c \
 	stats_json.c stats_json.h hostid.c hostid.h openioc.c \
 	openioc.h msdoc.c msdoc.h matcher-pcre.c matcher-pcre.h \
 	regex_pcre.c regex_pcre.h msxml.c msxml.h msxml_parser.c \
-	msxml_parser.h tiff.c tiff.h $(am__append_7) bignum.h \
-	bignum_fast.h tomsfastmath/addsub/fp_add.c \
+	msxml_parser.h tiff.c tiff.h hwp.c hwp.h $(am__append_7) \
+	bignum.h bignum_fast.h tomsfastmath/addsub/fp_add.c \
 	tomsfastmath/addsub/fp_add_d.c tomsfastmath/addsub/fp_addmod.c \
 	tomsfastmath/addsub/fp_cmp.c tomsfastmath/addsub/fp_cmp_d.c \
 	tomsfastmath/addsub/fp_cmp_mag.c tomsfastmath/addsub/fp_sub.c \
@@ -1416,6 +1416,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-hfsplus.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-hostid.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-htmlnorm.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-hwp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-infblock.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-inflate64.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-is_tar.Plo@am__quote@
@@ -2537,6 +2538,13 @@ libclamav_la-tiff.lo: tiff.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tiff.c' object='libclamav_la-tiff.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-tiff.lo `test -f 'tiff.c' || echo '$(srcdir)/'`tiff.c
+
+libclamav_la-hwp.lo: hwp.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-hwp.lo -MD -MP -MF $(DEPDIR)/libclamav_la-hwp.Tpo -c -o libclamav_la-hwp.lo `test -f 'hwp.c' || echo '$(srcdir)/'`hwp.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-hwp.Tpo $(DEPDIR)/libclamav_la-hwp.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='hwp.c' object='libclamav_la-hwp.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-hwp.lo `test -f 'hwp.c' || echo '$(srcdir)/'`hwp.c
 
 libclamav_la-yara_arena.lo: yara_arena.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-yara_arena.lo -MD -MP -MF $(DEPDIR)/libclamav_la-yara_arena.Tpo -c -o libclamav_la-yara_arena.lo `test -f 'yara_arena.c' || echo '$(srcdir)/'`yara_arena.c
