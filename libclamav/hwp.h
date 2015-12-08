@@ -45,6 +45,7 @@ typedef struct hwp5_header {
 } hwp5_header_t;
 
 /* HWP 5.0 - OLE2 */
+int cli_hwp5_header(cli_ctx *ctx, hwp5_header_t *hwp5);
 int cli_hwp5_scan_stream(cli_ctx *ctx, hwp5_header_t *hwp5, char *name, int fd);
 
 #endif /* __HWP_H__ */

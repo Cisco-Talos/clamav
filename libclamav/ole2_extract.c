@@ -1526,7 +1526,7 @@ cli_ole2_extract(const char *dirname, cli_ctx * ctx, struct uniq **vba)
 
     if (hdr.map->len > INT32_MAX) {
         cli_dbgmsg("OLE2 extract: Overflow detected\n");
-	ret = CL_EFORMAT;
+        ret = CL_EFORMAT;
         goto abort;
     }
     /* 8 SBAT blocks per file block */
@@ -1549,6 +1549,12 @@ cli_ole2_extract(const char *dirname, cli_ctx * ctx, struct uniq **vba)
         cli_dbgmsg("OLE2: HWP signature: %.17s\n", hdr.is_hwp->signature);
         cli_dbgmsg("OLE2: HWP version: 0x%08x\n", hdr.is_hwp->version);
         cli_dbgmsg("OLE2: HWP flags:   0x%08x\n", hdr.is_hwp->flags);
+
+#if HAVE_JSON
+        ret = cli_hwp5_header(ctx, hdr.is_hwp);
+        if (ret != CL_SUCCESS)
+            goto abort;
+#endif
     }
 
     /* If there's no VBA we scan OTF */

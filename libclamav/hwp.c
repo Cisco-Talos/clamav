@@ -189,6 +189,76 @@ static int decompress_and_scan(int fd, cli_ctx *ctx, int ole2)
     return ret;
 }
 
+int cli_hwp5_header(cli_ctx *ctx, hwp5_header_t *hwp5)
+{
+#if HAVE_JSON
+    json_object *header, *flags;
+
+    if (!ctx || !hwp5)
+        return CL_ENULLARG;
+
+    header = cli_jsonobj(ctx->wrkproperty, "Hwp5Header");
+    if (!header) {
+        cli_errmsg("HWP5.x: No memory for Hwp5Header object\n");
+        return CL_EMEM;
+    }
+
+    /* magic */
+    cli_jsonstr(header, "Magic", hwp5->signature);
+
+    /* version */
+    cli_jsonint(header, "RawVersion", hwp5->version);
+
+    /* flags */
+    cli_jsonint(header, "RawFlags", hwp5->flags);
+
+    flags = cli_jsonarray(header, "Flags");
+    if (!flags) {
+        cli_errmsg("HWP5.x: No memory for Hwp5Header/Flags array\n");
+        return CL_EMEM;
+    }
+
+    if (hwp5->flags & HWP5_COMPRESSED) {
+        cli_jsonstr(flags, NULL, "HWP5_COMPRESSED");
+    }
+    if (hwp5->flags & HWP5_PASSWORD) {
+        cli_jsonstr(flags, NULL, "HWP5_PASSWORD");
+    }
+    if (hwp5->flags & HWP5_DISTRIBUTABLE) {
+        cli_jsonstr(flags, NULL, "HWP5_DISTRIBUTABLE");
+    }
+    if (hwp5->flags & HWP5_SCRIPT) {
+        cli_jsonstr(flags, NULL, "HWP5_SCRIPT");
+    }
+    if (hwp5->flags & HWP5_DRM) {
+        cli_jsonstr(flags, NULL, "HWP5_DRM");
+    }
+    if (hwp5->flags & HWP5_XMLTEMPLATE) {
+        cli_jsonstr(flags, NULL, "HWP5_XMLTEMPLATE");
+    }
+    if (hwp5->flags & HWP5_HISTORY) {
+        cli_jsonstr(flags, NULL, "HWP5_HISTORY");
+    }
+    if (hwp5->flags & HWP5_CERT_SIGNED) {
+        cli_jsonstr(flags, NULL, "HWP5_CERT_SIGNED");
+    }
+    if (hwp5->flags & HWP5_CERT_ENCRYPTED) {
+        cli_jsonstr(flags, NULL, "HWP5_CERT_ENCRYPTED");
+    }
+    if (hwp5->flags & HWP5_CERT_EXTRA) {
+        cli_jsonstr(flags, NULL, "HWP5_CERT_EXTRA");
+    }
+    if (hwp5->flags & HWP5_CERT_DRM) {
+        cli_jsonstr(flags, NULL, "HWP5_CERT_DRM");
+    }
+    if (hwp5->flags & HWP5_CCL) {
+        cli_jsonstr(flags, NULL, "HWP5_CCL");
+    }
+
+#endif
+    return CL_SUCCESS;
+}
+
 int cli_hwp5_scan_stream(cli_ctx *ctx, hwp5_header_t *hwp5, char *name, int fd)
 {
     int ole2;
