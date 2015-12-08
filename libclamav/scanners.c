@@ -107,6 +107,7 @@
 #include "json_api.h"
 #include "msxml.h"
 #include "tiff.h"
+#include "hwp.h"
 
 #ifdef HAVE_BZLIB_H
 #include <bzlib.h>
@@ -2679,7 +2680,8 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
                 type == CL_TYPE_OOXML_PPT ||
                 type == CL_TYPE_OOXML_XL ||
                 type == CL_TYPE_XML_WORD ||
-                type == CL_TYPE_XML_XL) {
+                type == CL_TYPE_XML_XL ||
+                type == CL_TYPE_HWP3) {
                 ctx->properties = json_object_new_object();
                 if (NULL == ctx->properties) {
                     cli_errmsg("magic_scandesc: no memory for json properties object\n");
@@ -2836,6 +2838,10 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
     switch(type) {
 	case CL_TYPE_IGNORED:
 	    break;
+
+    case CL_TYPE_HWP3:
+        ret = cli_scanhwp3(ctx);
+        break;
 
     case CL_TYPE_XML_WORD:
         ret = cli_scanmsxml(ctx);

@@ -1197,7 +1197,7 @@ scan_mso_stream(int fd, cli_ctx *ctx)
 static int
 handler_otf(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * ctx)
 {
-    char           *tempfile, *name;
+    char           *tempfile, *name = NULL;
     unsigned char  *buff;
     int32_t         current_block, len, offset;
     int             ofd, is_mso, ret;
@@ -1355,7 +1355,7 @@ handler_otf(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * c
     if (hdr->is_hwp) {
         if (!name)
             name = get_property_name2(prop->name, prop->name_size);
-        ret = cli_hwp5_scan_stream(ctx, hdr->is_hwp, name, ofd);
+        ret = cli_scanhwp5_stream(ctx, hdr->is_hwp, name, ofd);
     } else if (is_mso < 0) {
         ret = CL_ESEEK;
     } else if (is_mso) {
@@ -1551,7 +1551,7 @@ cli_ole2_extract(const char *dirname, cli_ctx * ctx, struct uniq **vba)
         cli_dbgmsg("OLE2: HWP flags:   0x%08x\n", hdr.is_hwp->flags);
 
 #if HAVE_JSON
-        ret = cli_hwp5_header(ctx, hdr.is_hwp);
+        ret = cli_hwp5header(ctx, hdr.is_hwp);
         if (ret != CL_SUCCESS)
             goto abort;
 #endif
