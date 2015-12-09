@@ -63,9 +63,18 @@ if test "x$PCRE_HOME" != "x"; then
   fi
 
   AC_MSG_RESULT([$PCRECONF_VERSION])
+
+  pcrever_major=`echo "$PCRECONF_VERSION" | sed -e 's/\([[0-9]]*\).*/\1/'`
+  pcrever_minor=`echo "$PCRECONF_VERSION" | sed -e 's/[[0-9]]*\.\([[0-9]]*\).*/\1/'`
+
+  if test $pcrever_major -lt 6; then
+    AC_MSG_ERROR([This pcre version is missing features used by ClamAV. Please upgrade to a newer version: http://www.pcre.org.])
+  fi
+  if test $pcrever_major -eq 6 && test $pcrever_minor -lt 65; then
+    AC_MSG_ERROR([This pcre version is missing features used by ClamAV. Please upgrade to a newer version: http://www.pcre.org.])
+  fi
+
   AC_MSG_CHECKING([for CVE-2015-3210])
-  pcrever_major=`echo "$PCRECONF_VERSION" | sed -e 's/\([[0-9]]\).*/\1/'`
-  pcrever_minor=`echo "$PCRECONF_VERSION" | sed -e 's/[[0-9]]\.\(.*\)/\1/'`
   if test $pcrever_major -eq 8; then
     if test $pcrever_minor -gt 33 && test $pcrever_minor -lt 38; then
        AC_MSG_RESULT([yes])
@@ -84,8 +93,6 @@ fi
 
 have_pcre="no"
 if test "x$found_pcre" != "xno"; then
-  AC_MSG_CHECKING([for pcre.h in $PCRE_HOME])
-
   dnl save_LIBS="$LIBS"
   save_CPPFLAGS="$CPPFLAGS"
   CPPFLAGS="$CPPFLAGS $PCRE_CPPFLAGS"
@@ -101,11 +108,9 @@ if test "x$found_pcre" != "xno"; then
     AC_CHECK_LIB([pcre], [pcre_compile], [have_pcre="yes"], [have_pcre="no"])
   fi
 
-  if test "x$have_pcre" = "xno"; then
-    dnl LIBS="$save_LIBS"
-    CPPFLAGS="$save_CPPFLAGS"
-    LDFLAGS="$save_LDFLAGS"
-  fi
+  dnl LIBS="$save_LIBS"
+  CPPFLAGS="$save_CPPFLAGS"
+  LDFLAGS="$save_LDFLAGS"
 fi
 
 if test "x$have_pcre" = "xyes"; then
