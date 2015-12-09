@@ -1006,7 +1006,11 @@ handler_enum(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * 
 
                     /* compare against HWP signature; we could add the 15 padding NULLs too */
                     if (!memcmp(hwp_check+offset, "HWP Document File", 17)) {
-                        hwp5_header_t *hwp_new = cli_calloc(1, sizeof(hwp5_header_t));
+                        hwp5_header_t *hwp_new;
+#if HAVE_JSON
+                        cli_jsonstr(ctx->wrkproperty, "FileType", "CL_TYPE_HWP5");
+#endif
+                        hwp_new = cli_calloc(1, sizeof(hwp5_header_t));
                         if (!(hwp_new)) {
                             ret = CL_EMEM;
                             break;
