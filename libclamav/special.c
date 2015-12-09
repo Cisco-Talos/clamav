@@ -265,7 +265,16 @@ static int riff_read_chunk(fmap_t *map, off_t *offset, int big_endian, int rec_l
 	if(!(buf = fmap_need_off_once(map, cur_offset, 4*2)))
 	    return 0;
 	cur_offset += 4*2;
-	chunk_size = riff_endian_convert_32(buf[1], big_endian);
+
+	/*  Fix possible alignment issues  */
+	{
+	   uint32_t cache_buf;
+	   void *buffer	= buf;
+
+	   memcpy (&cache_buf, buffer + sizeof (cache_buf),
+		   sizeof (cache_buf));
+	   chunk_size = riff_endian_convert_32(cache_buf, big_endian);
+	}
 
 	if(!memcmp(buf, "anih", 4) && chunk_size != 36)
 	    return 2;
