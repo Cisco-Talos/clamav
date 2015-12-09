@@ -181,6 +181,7 @@
     <ClCompile Include="..\libclamav\crypto.c" />
     <ClCompile Include="..\libclamav\fpu.c" />
     <ClCompile Include="..\libclamav\hostid.c" />
+    <ClCompile Include="..\libclamav\hwp.c" />
     <ClCompile Include="..\libclamav\pdfng.c" />
     <ClCompile Include="..\libclamav\stats_json.c" />
     <ClCompile Include="..\libclamav\openioc.c" />
@@ -541,6 +542,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\libclamav\hostid.h" />
+    <ClInclude Include="..\libclamav\hwp.h" />
     <ClInclude Include="..\libclamav\stats.h" />
     <ClInclude Include="..\libclamav\www.h" />
     <ClInclude Include="..\libclamav\xdp.h" />
