@@ -1017,6 +1017,9 @@
     <ClCompile Include="3rdparty\pcre\pcre_xclass.c">
       <Filter>Source Files\pcre</Filter>
     </ClCompile>
+    <ClCompile Include="..\libclamav\hwp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\libclamav\hostid.h">
@@ -1029,6 +1032,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="..\libclamav\xdp.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libclamav\hwp.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
