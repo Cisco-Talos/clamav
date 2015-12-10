@@ -222,6 +222,7 @@
       <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav\c++\llvm\include;$(SolutionDir)llvmbuild\include;$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)..;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\zlib;C:\clamdeps\win64\openssl\include</AdditionalIncludeDirectories>
       <CompileAs>CompileAsCpp</CompileAs>
       <DisableSpecificWarnings>4146;4800;4244;4996;4355;4267</DisableSpecificWarnings>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

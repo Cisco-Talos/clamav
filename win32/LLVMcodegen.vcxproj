@@ -335,6 +335,7 @@
       <AdditionalIncludeDirectories>"$(SolutionDir)";"$(SolutionDir)..\libclamav\c++\llvm\include";"$(SolutionDir)llvmbuild\include"</AdditionalIncludeDirectories>
       <CompileAs>CompileAsCpp</CompileAs>
       <DisableSpecificWarnings>4146;4800;4244;4996;4624;4355;4351;4267</DisableSpecificWarnings>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

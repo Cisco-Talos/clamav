@@ -237,6 +237,7 @@
       <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\libxml2;$(SolutionDir)3rdparty\libxml2\include;$(SolutionDir)3rdparty\pcre;$(SolutionDir)..;C:\clamdeps\win64\openssl\include</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4996;4090;4244;4018;4101;4333;4146;4267;4334</DisableSpecificWarnings>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
