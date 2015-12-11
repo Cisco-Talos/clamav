@@ -458,6 +458,14 @@ int cli_scanswf(cli_ctx *ctx)
         return CL_CLEAN;
     }
     offset += sizeof(file_hdr);
+    /*
+    **  SWF stores the integer bytes with the least significate byte first
+    */
+    
+    file_hdr.filesize = le32_to_host (file_hdr.filesize); 
+
+    cli_dbgmsg("SWF: Version: %u\n", file_hdr.version);
+    cli_dbgmsg("SWF: File size: %u\n", file_hdr.filesize);
 
     if(!strncmp(file_hdr.signature, "CWS", 3)) {
         cli_dbgmsg("SWF: zlib compressed file\n");
@@ -471,9 +479,6 @@ int cli_scanswf(cli_ctx *ctx)
         cli_dbgmsg("SWF: Not a SWF file\n");
         return CL_CLEAN;
     }
-
-    cli_dbgmsg("SWF: Version: %u\n", file_hdr.version);
-    cli_dbgmsg("SWF: File size: %u\n", EC32(file_hdr.filesize));
 
     INITBITS;
 
