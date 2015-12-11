@@ -23,6 +23,10 @@
 #include "clamav-config.h"
 #endif
 
+#if HAVE_ICONV
+#include <iconv.h>
+#endif
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -38,6 +42,14 @@
 #include "hwp.h"
 #if HAVE_JSON
 #include "msdoc.h"
+#endif
+
+#define HWP5_DEBUG 0
+#define HWP3_DEBUG 1
+#if HWP3_DEBUG
+#define hwp3_debug(...) cli_dbgmsg(__VA_ARGS__)
+#else
+#define hwp3_debug(...) ;
 #endif
 
 static int decompress_and_scan(int fd, cli_ctx *ctx, int ole2)
@@ -189,6 +201,8 @@ static int decompress_and_scan(int fd, cli_ctx *ctx, int ole2)
     return ret;
 }
 
+/*** HWP5 ***/
+
 int cli_hwp5header(cli_ctx *ctx, hwp5_header_t *hwp5)
 {
 #if HAVE_JSON
@@ -305,7 +319,255 @@ int cli_scanhwp5_stream(cli_ctx *ctx, hwp5_header_t *hwp5, char *name, int fd)
     return cli_magic_scandesc(fd, ctx);
 }
 
+/*** HWP3 ***/
+
+/* all fields use little endian and unicode encoding, if appliable */
+
+//File Identification Information - (30 total bytes)
+#define HWP3_IDENTITY_INFO_SIZE 30
+
+//Document Information - (128 total bytes)
+#define HWP3_DOCINFO_SIZE 128
+
+struct hwp3_docinfo {
+#define DI_WRITEPROT   24  /* offset 24 (4 bytes) - write protection */
+#define DI_EXTERNAPP   28  /* offset 28 (2 bytes) - external application */
+#define DI_PASSWD      96  /* offset 96 (2 bytes) - password protected */
+#define DI_COMPRESSED  124 /* offset 124 (1 byte) - compression */
+#define DI_INFOBLKSIZE 126 /* offset 126 (2 bytes) - information block length */
+    uint32_t di_writeprot;
+    uint16_t di_externapp;
+    uint16_t di_passwd;
+    uint8_t  di_compressed;
+    uint16_t di_infoblksize;
+};
+
+//Document Summary - (1008 total bytes)
+#define HWP3_DOCSUMMARY_SIZE 1008
+struct hwp3_docsummary_entry {
+    off_t offset;
+    const char *name;
+} hwp3_docsummary_fields[] = {
+    { 0,   "Title" },    /* offset 0 (56 x 2 bytes) - title */
+    { 112, "Subject" },  /* offset 112 (56 x 2 bytes) - subject */
+    { 224, "Author" },   /* offset 224 (56 x 2 bytes) - author */
+    { 336, "Date" },     /* offset 336 (56 x 2 bytes) - date */
+    { 448, "Keyword1" }, /* offset 448 (2 x 56 x 2 bytes) - keywords */
+    { 560, "Keyword2" },
+
+    { 672, "Guitar0" },  /* offset 672 (3 x 56 x 2 bytes) - WTF guitar? */
+    { 784, "Guitar1" },
+    { 896, "Guitar2" }
+};
+#define NUM_DOCSUMMARY_FIELDS sizeof(hwp3_docsummary_fields)/sizeof(struct hwp3_docsummary_entry)
+
+/* conversion function for little-endian unicode string to ascii */
+static char *hwp_convert_utf16le(const uint8_t *begin, size_t sz)
+{
+    char *outbuf = NULL;
+#if HAVE_ICONV
+    char *buf, *p1, *p2;
+    off_t offset;
+    size_t inlen, outlen, nonrev;
+    int i, try;
+    iconv_t cd;
+
+    p1 = buf = cli_calloc(1, sz);
+    if (!(buf))
+        return NULL;
+
+    memcpy(buf, begin, sz);
+    inlen = sz;
+
+    cd = iconv_open("UTF-8", "UTF-16LE");
+    if (cd == (iconv_t)(-1)) {
+        char errbuf[128];
+        cli_strerror(errno, errbuf, sizeof(errbuf));
+        cli_errmsg("hwp_convert_utf16le: could not initialize iconv for encoding UTF-16LE: %s\n", errbuf);
+        /* TODO: JSON FAILURE TRACKING */
+        /* sctx->flags |= OLE2_CODEPAGE_ERROR_UNINITED; */
+    }
+    else {
+        offset = 0;
+
+        do {
+            outbuf = (char *)cli_calloc(1, sz+1);
+            if (!outbuf) {
+                free(buf);
+                return NULL;
+            }
+
+            outlen = sz - offset;
+            p2 = outbuf + offset;
+
+            /* conversion */
+            nonrev = iconv(cd, &p1, &inlen, &p2, &outlen);
+
+            if (errno == EILSEQ) {
+                cli_dbgmsg("hwp_convert_utf16le: input buffer contains invalid character for its encoding\n");
+                /* TODO: JSON FAILURE TRACKING */
+                /* sctx->flags |= OLE2_CODEPAGE_ERROR_INVALID; */
+                break;
+            }
+            else if (errno == EINVAL && nonrev == (size_t)-1) {
+                cli_dbgmsg("hwp_convert_utf16le: input buffer contains incomplete multibyte character\n");
+                /* TODO: JSON FAILURE TRACKING */
+                /* sctx->flags |= OLE2_CODEPAGE_ERROR_INCOMPLETE; */
+                break;
+            }
+            else if (inlen == 0) {
+                //cli_dbgmsg("hwp_convert_utf16le: input buffer is successfully translated\n");
+                break;
+            }
+
+            offset = sz - outlen;
+        } while(0);
+
+        if (errno == E2BIG && nonrev == (size_t)-1) {
+            cli_dbgmsg("hwp_convert_utf16le: buffer could not be fully translated\n");
+            /* TODO: JSON FAILURE TRACKING */
+            /* sctx->flags |= OLE2_CODEPAGE_ERROR_OUTBUFTOOSMALL; */
+        }
+
+        outbuf[sz - outlen] = '\0';
+    }
+
+    iconv_close(cd);
+    free(buf);
+#endif
+
+    return outbuf; /* if this is NULL, we should base64 encode the data */
+}
+
+static inline int parsehwp3_docinfo(cli_ctx *ctx, struct hwp3_docinfo *docinfo)
+{
+    const uint8_t *hwp3_ptr;
+#if HAVE_JSON
+    json_object *header, *flags;
+#endif
+
+    //TODO: use fmap_readn?
+    if (!(hwp3_ptr = fmap_need_off_once(*ctx->fmap, HWP3_IDENTITY_INFO_SIZE, HWP3_DOCINFO_SIZE))) {
+        cli_dbgmsg("HWP3.x: Failed to read fmap for hwp docinfo\n");
+        return CL_EMAP;
+    }
+
+    memcpy(&(docinfo->di_writeprot), hwp3_ptr+DI_WRITEPROT, sizeof(docinfo->di_writeprot));
+    memcpy(&(docinfo->di_externapp), hwp3_ptr+DI_EXTERNAPP, sizeof(docinfo->di_externapp));
+    memcpy(&(docinfo->di_passwd), hwp3_ptr+DI_PASSWD, sizeof(docinfo->di_passwd));
+    memcpy(&(docinfo->di_compressed), hwp3_ptr+DI_COMPRESSED, sizeof(docinfo->di_compressed));
+    memcpy(&(docinfo->di_infoblksize), hwp3_ptr+DI_INFOBLKSIZE, sizeof(docinfo->di_infoblksize));
+
+    docinfo->di_writeprot = le32_to_host(docinfo->di_writeprot);
+    docinfo->di_externapp = le16_to_host(docinfo->di_externapp);
+    docinfo->di_passwd = le16_to_host(docinfo->di_passwd);
+    docinfo->di_infoblksize = le16_to_host(docinfo->di_infoblksize);
+
+    hwp3_debug("HWP3.x: di_writeprot:   %u\n", docinfo->di_writeprot);
+    hwp3_debug("HWP3.x: di_externapp:   %u\n", docinfo->di_externapp);
+    hwp3_debug("HWP3.x: di_passwd:      %u\n", docinfo->di_passwd);
+    hwp3_debug("HWP3.x: di_compressed:  %u\n", docinfo->di_compressed);
+    hwp3_debug("HWP3.x: di_infoblksize: %u\n", docinfo->di_infoblksize);
+
+#if HAVE_JSON
+    header = cli_jsonobj(ctx->wrkproperty, "Hwp3Header");
+    if (!header) {
+        cli_errmsg("HWP3.x: No memory for Hwp3Header object\n");
+        return CL_EMEM;
+    }
+
+    flags = cli_jsonarray(header, "Flags");
+    if (!flags) {
+        cli_errmsg("HWP5.x: No memory for Hwp5Header/Flags array\n");
+        return CL_EMEM;
+    }
+
+    if (docinfo->di_writeprot) {
+        cli_jsonstr(flags, NULL, "HWP3_WRITEPROTECTED"); /* HWP3_DISTRIBUTABLE */
+    }
+    if (docinfo->di_externapp) {
+        cli_jsonstr(flags, NULL, "HWP3_EXTERNALAPPLICATION");
+    }
+    if (docinfo->di_passwd) {
+        cli_jsonstr(flags, NULL, "HWP3_PASSWORD");
+    }
+    if (docinfo->di_compressed) {
+        cli_jsonstr(flags, NULL, "HWP3_COMPRESSED");
+    }
+#endif
+
+    return CL_SUCCESS;
+}
+
+static inline int parsehwp3_docsummary(cli_ctx *ctx)
+{
+#if HAVE_JSON
+    const uint8_t *hwp3_ptr;
+    char *str;
+    int i, ret;
+    json_object *summary;
+
+    if (!(hwp3_ptr = fmap_need_off_once(*ctx->fmap, HWP3_IDENTITY_INFO_SIZE+HWP3_DOCINFO_SIZE, HWP3_DOCSUMMARY_SIZE))) {
+        cli_dbgmsg("HWP3.x: Failed to read fmap for hwp docinfo\n");
+        return CL_EMAP;
+    }
+
+    summary = cli_jsonobj(ctx->wrkproperty, "Hwp3SummaryInfo");
+    if (!summary) {
+        cli_errmsg("HWP3.x: No memory for json object\n");
+        return CL_EMEM;
+    }
+
+    for (i = 0; i < NUM_DOCSUMMARY_FIELDS; i++) {
+        str = hwp_convert_utf16le(hwp3_ptr+hwp3_docsummary_fields[i].offset, 112);
+        /*
+        if (!str)
+          TODO: BASE64
+          TODO: COMPRESSED SCANNING (FOR THE HWP5)
+        */
+
+        hwp3_debug("HWP3.x: %s, %s\n", hwp3_docsummary_fields[i].name, str);
+        ret = cli_jsonstr(summary, hwp3_docsummary_fields[i].name, str);
+        free(str);
+        if (ret != CL_SUCCESS)
+            return ret;
+    }
+
+#endif
+    return CL_SUCCESS;
+}
+
 int cli_scanhwp3(cli_ctx *ctx)
 {
-    return CL_SUCCESS;
+    struct hwp3_docinfo docinfo;
+    int ret = CL_SUCCESS;
+
+    /*
+    /* magic *
+    cli_jsonstr(header, "Magic", hwp5->signature);
+
+    /* version *
+    cli_jsonint(header, "RawVersion", hwp5->version);
+
+    /* no raw flags, would be a struct *
+    */
+
+    if ((ret = parsehwp3_docinfo(ctx, &docinfo)) != CL_SUCCESS)
+        return ret;
+
+    if ((ret = parsehwp3_docsummary(ctx)) != CL_SUCCESS)
+        return ret;
+
+    /*
+    uint32_t write_protect;
+    uint16_t external, pass_protect, info_length;
+    uint8_t compression;
+
+    write_protect = le32_to_host(write_protect);
+    external = le16_to_host(external);
+    pass_protect = le16_to_host(pass_protect);
+    info_length = le16_to_host(info_length);
+    */
+
+    return ret;
 }
