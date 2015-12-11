@@ -920,7 +920,7 @@ int cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
         sctx.summary = cli_jsonobj(ctx->wrkproperty, "DocSummaryInfo");
         break;
     case 2:
-        sctx.summary = cli_jsonobj(ctx->wrkproperty, "HwpSummaryInfo");
+        sctx.summary = cli_jsonobj(ctx->wrkproperty, "Hwp5SummaryInfo");
         break;
     case 0:
     default:
