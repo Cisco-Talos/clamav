@@ -122,6 +122,7 @@ static const struct ftmap_s {
     { "CL_TYPE_XDP",        CL_TYPE_XDP             },
     { "CL_TYPE_XML_WORD",   CL_TYPE_XML_WORD        },
     { "CL_TYPE_XML_XL",     CL_TYPE_XML_XL          },
+    { "CL_TYPE_HWP3",       CL_TYPE_HWP3            },
     { NULL,			CL_TYPE_IGNORED		}
 };
 
@@ -209,6 +210,17 @@ cli_file_t cli_filetype(const unsigned char *buf, size_t buflen, const struct cl
 
 int is_tar(const unsigned char *buf, unsigned int nbytes);
 
+#define OOXML_XL_DIR "xl/"
+#define OOXML_XL_DIR_LEN (sizeof(OOXML_XL_DIR)-1)
+#define OOXML_PPT_DIR "ppt/"
+#define OOXML_PPT_DIR_LEN (sizeof(OOXML_PPT_DIR)-1)
+#define OOXML_WORD_DIR "word/"
+#define OOXML_WORD_DIR_LEN (sizeof(OOXML_WORD_DIR)-1)
+#define OOXML_DOCPROPS_DIR "docProps/"
+#define OOXML_DOCPROPS_DIR_LEN (sizeof(OOXML_DOCPROPS_DIR)-1)
+#define OOXML_CONTENTTYPES "[ContentTypes].xml"
+#define OOXML_CONTENTTYPES_LEN (sizeof(OOXML_CONTENTTYPES)-1)
+
 cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t basetype)
 {
 	unsigned char buffer[MAGIC_BUFFER_SIZE];
@@ -279,20 +291,54 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
                 if (NULL != znamep) {
                     znamep += SIZEOF_LH;
                     zlen = zread - (znamep - zbuff);
-                    if (zlen > 4) { /* Ensure we've mapped for OOXML filename compare */
-                        if (0 == memcmp(znamep, "xl/", 3)) {
-                            cli_dbgmsg("Recognized OOXML XL file\n");
-                            return CL_TYPE_OOXML_XL;
-                        } else if (0 == memcmp(znamep, "ppt/", 4)) {
-                            cli_dbgmsg("Recognized OOXML PPT file\n");
-                            return CL_TYPE_OOXML_PPT;                        
-                        } else if (0 == memcmp(znamep, "word/", 5)) {
-                            cli_dbgmsg("Recognized OOXML Word file\n");
-                            return CL_TYPE_OOXML_WORD;
-                        } else if (0 == memcmp(znamep, "docProps/", 5)) {
-                            likely_ooxml = 1;
+                    do {
+                        if (zlen <= 0) {
+                            znamep = NULL;
+                            break;
                         }
-
+                        if (zlen >= OOXML_XL_DIR_LEN) {
+                            if (0 == memcmp(znamep, OOXML_XL_DIR, OOXML_XL_DIR_LEN)) {
+                                cli_dbgmsg("Recognized OOXML XL file\n");
+                                return CL_TYPE_OOXML_XL;
+                            }
+                        } else {
+                            znamep = NULL;
+                            break;
+                        }
+                        if (zlen >= OOXML_PPT_DIR_LEN) {
+                            if (0 == memcmp(znamep, OOXML_PPT_DIR, OOXML_PPT_DIR_LEN)) {
+                                cli_dbgmsg("Recognized OOXML PPT file\n");
+                                return CL_TYPE_OOXML_PPT;
+                            }
+                        } else {
+                            znamep = NULL;
+                            break;
+                        }
+                        if (zlen >= OOXML_WORD_DIR_LEN) {
+                            if (0 == memcmp(znamep, OOXML_WORD_DIR, OOXML_WORD_DIR_LEN)) {
+                                cli_dbgmsg("Recognized OOXML Word file\n");
+                                return CL_TYPE_OOXML_WORD;
+                            }
+                        } else {
+                            znamep = NULL;
+                            break;
+                        }
+                        if (zlen >= OOXML_DOCPROPS_DIR_LEN) {
+                            if (0 == memcmp(znamep, OOXML_DOCPROPS_DIR, OOXML_DOCPROPS_DIR_LEN)) {
+                                likely_ooxml = 1;
+                            } else if  (zlen >= OOXML_CONTENTTYPES_LEN) {
+                                if (0 == memcmp(znamep, OOXML_CONTENTTYPES, OOXML_CONTENTTYPES_LEN)) {
+                                    likely_ooxml = 1;
+                                } else {
+                                    znamep = NULL;
+                                    break;
+                                }
+                            }
+                        } else {
+                            znamep = NULL;
+                            break;
+                        }
+                        
                         if (++lhc > 2) {
                             /* only check first three zip headers unless likely ooxml */
                             if (likely_ooxml) {
@@ -317,10 +363,7 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
                             }
                             break;
                         }
-                    }
-                    else {
-                        znamep = NULL; /* force to map more */
-                    }
+                    } while (0);
                 }
 
                 if (znamep == NULL) {

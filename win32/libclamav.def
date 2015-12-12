@@ -175,6 +175,9 @@ EXPORTS text_normalize_init @44377 NONAME
 EXPORTS text_normalize_reset @44378 NONAME
 EXPORTS text_normalize_map @44379 NONAME
 EXPORTS cli_ldbtokenize @44380 NONAME
+EXPORTS cli_hwp5header @44381 NONAME
+EXPORTS cli_scanhwp5_stream @44382 NONAME
+EXPORTS cli_scanhwp3 @44383 NONAME
 
 ; compatibility layer, tommath, zlib
 EXPORTS w32_srand @44269 NONAME
