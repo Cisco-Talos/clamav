@@ -53,6 +53,104 @@
 #define hwp3_debug(...) ;
 #endif
 
+typedef int (*hwp_cb )(void *cbdata, int fd, cli_ctx *ctx);
+/* TODO: respect len argument */
+static int decompress_and_callback(cli_ctx *ctx, fmap_t *input, off_t at, size_t len, const char *parent, hwp_cb cb, void *cbdata)
+{
+    int zret, ofd, ret = CL_SUCCESS;
+    off_t off_in = at;
+    size_t count, outsize = 0;
+    z_stream zstrm;
+    char *tmpname;
+    unsigned char inbuf[FILEBUFF], outbuf[FILEBUFF];
+
+    if (!ctx || !input || !cb)
+        return CL_ENULLARG;
+
+    /* reserve tempfile for output and callback */
+    if ((ret = cli_gentempfd(ctx->engine->tmpdir, &tmpname, &ofd)) != CL_SUCCESS) {
+        cli_errmsg("%s: Can't generate temporary file\n", parent);
+        return ret;
+    }
+
+    /* initialize zlib inflation stream */
+    memset(&zstrm, 0, sizeof(zstrm));
+    zstrm.zalloc = Z_NULL;
+    zstrm.zfree = Z_NULL;
+    zstrm.opaque = Z_NULL;
+    zstrm.next_in = inbuf;
+    zstrm.next_out = outbuf;
+    zstrm.avail_in = 0;
+    zstrm.avail_out = FILEBUFF;
+
+    zret = inflateInit2(&zstrm, -15);
+    if (zret != Z_OK) {
+        cli_dbgmsg("%s: Can't initialize zlib inflation stream\n", parent);
+        ret = CL_EUNPACK;
+        goto dc_end;
+    }
+
+    /* inflation loop */
+    do {
+        if (zstrm.avail_in == 0) {
+            zstrm.next_in = inbuf;
+            ret = fmap_readn(input, inbuf, off_in, FILEBUFF);
+            if (ret < 0) {
+                cli_errmsg("%s: Error reading stream\n", parent);
+                ret = CL_EUNPACK;
+                goto dc_end;
+            }
+            if (!ret)
+                break;
+
+            zstrm.avail_in = ret;
+            off_in += ret;
+        }
+        zret = inflate(&zstrm, Z_SYNC_FLUSH);
+        count = FILEBUFF - zstrm.avail_out;
+        if (count) {
+            if (cli_checklimits("HWP", ctx, outsize + count, 0, 0) != CL_SUCCESS)
+                break;
+
+            if (cli_writen(ofd, outbuf, count) != count) {
+                cli_errmsg("%s: Can't write to file %s\n", parent, tmpname);
+                ret = CL_EWRITE;
+                goto dc_end;
+            }
+            outsize += count;
+        }
+        zstrm.next_out = outbuf;
+        zstrm.avail_out = FILEBUFF;
+    } while(zret == Z_OK);
+
+    /* post inflation checks */
+    if (zret != Z_STREAM_END && zret != Z_OK) {
+        if (outsize == 0) {
+            cli_infomsg(ctx, "%s: Error decompressing stream. No data decompressed.\n", parent);
+            ret = CL_EUNPACK;
+            goto dc_end;
+        }
+
+        cli_infomsg(ctx, "%s: Error decompressing stream. Scanning what was decompressed.\n", parent);
+    }
+    cli_dbgmsg("%s: Decompressed %llu bytes to %s\n", parent, (long long unsigned)outsize, tmpname);
+
+    /* scanning inflated stream */
+    ret = cb(cbdata, ofd, ctx);
+
+    /* clean-up */
+ dc_end:
+    zret = inflateEnd(&zstrm);
+    if (zret != Z_OK)
+        ret = CL_EUNPACK;
+    close(ofd);
+    if (!ctx->engine->keeptmp)
+        if (cli_unlink(tmpname))
+            ret = CL_EUNLINK;
+    free(tmpname);
+    return ret;
+}
+
 static int decompress_and_scan(int fd, cli_ctx *ctx, int ole2)
 {
     int zret, ofd, ret = CL_SUCCESS;
@@ -362,7 +460,7 @@ struct hwp3_docsummary_entry {
 };
 #define NUM_DOCSUMMARY_FIELDS sizeof(hwp3_docsummary_fields)/sizeof(struct hwp3_docsummary_entry)
 
-static inline int parsehwp3_docinfo(cli_ctx *ctx, struct hwp3_docinfo *docinfo)
+static inline int parsehwp3_docinfo(cli_ctx *ctx, off_t offset, struct hwp3_docinfo *docinfo)
 {
     const uint8_t *hwp3_ptr;
 #if HAVE_JSON
@@ -370,7 +468,7 @@ static inline int parsehwp3_docinfo(cli_ctx *ctx, struct hwp3_docinfo *docinfo)
 #endif
 
     //TODO: use fmap_readn?
-    if (!(hwp3_ptr = fmap_need_off_once(*ctx->fmap, HWP3_IDENTITY_INFO_SIZE, HWP3_DOCINFO_SIZE))) {
+    if (!(hwp3_ptr = fmap_need_off_once(*ctx->fmap, offset, HWP3_DOCINFO_SIZE))) {
         cli_dbgmsg("HWP3.x: Failed to read fmap for hwp docinfo\n");
         return CL_EMAP;
     }
@@ -422,7 +520,7 @@ static inline int parsehwp3_docinfo(cli_ctx *ctx, struct hwp3_docinfo *docinfo)
     return CL_SUCCESS;
 }
 
-static inline int parsehwp3_docsummary(cli_ctx *ctx)
+static inline int parsehwp3_docsummary(cli_ctx *ctx, off_t offset)
 {
 #if HAVE_JSON
     const uint8_t *hwp3_ptr;
@@ -430,7 +528,7 @@ static inline int parsehwp3_docsummary(cli_ctx *ctx)
     int i, ret;
     json_object *summary;
 
-    if (!(hwp3_ptr = fmap_need_off_once(*ctx->fmap, HWP3_IDENTITY_INFO_SIZE+HWP3_DOCINFO_SIZE, HWP3_DOCSUMMARY_SIZE))) {
+    if (!(hwp3_ptr = fmap_need_off_once(*ctx->fmap, offset, HWP3_DOCSUMMARY_SIZE))) {
         cli_dbgmsg("HWP3.x: Failed to read fmap for hwp docinfo\n");
         return CL_EMAP;
     }
@@ -468,41 +566,154 @@ static inline int parsehwp3_docsummary(cli_ctx *ctx)
         if (ret != CL_SUCCESS)
             return ret;
     }
+#else
+    UNUSED(ctx);
+    UNUSED(offset);
 #endif
     return CL_SUCCESS;
+}
+
+/*
+  InfoBlock(#1):
+  Information Block ID        (16-bytes)
+  Information Block Length(n) (16-bytes)
+  Information Block Contents  (n-bytes)
+
+  AdditionalInfoBlocks:
+  Information Block ID        (32-bytes)
+  Information Block Length(n) (32-bytes)
+  Information Block Contents  (n-bytes)
+*/
+static inline int parsehwp3_infoblk(cli_ctx *ctx, off_t offset)
+{
+    uint16_t infoid, infolen;
+
+    if (fmap_readn(*ctx->fmap, &infoid, offset, sizeof(infoid)) != sizeof(infoid)) {
+        cli_errmsg("HWP3.x: Failed to read infomation block id @ %llu\n",
+                   (long long unsigned)offset);
+        return CL_EREAD;
+    }
+
+    if (fmap_readn(*ctx->fmap, &infolen, offset+sizeof(infoid), sizeof(infolen)) != sizeof(infolen)) {
+        cli_errmsg("HWP3.x: Failed to read infomation block len @ %llu\n",
+                   (long long unsigned)offset);
+        return CL_EREAD;
+    }
+
+    infoid = le16_to_host(infoid);
+    infolen = le16_to_host(infolen);
+
+    hwp3_debug("HWP3.x: Information Block[%llu]: ID:  %u\n", (long long unsigned)offset, infoid);
+    hwp3_debug("HWP3.x: Information Block[%llu]: LEN: %u\n", (long long unsigned)offset, infolen);
+
+    return CL_SUCCESS;
+}
+
+static int hwp3_cb(void *cbdata, int fd, cli_ctx *ctx)
+{
+    fmap_t *dmap;
+    off_t offset = 0;
+    int i, ret = CL_SUCCESS;
+    uint16_t nstyles;
+
+    if (fd < 0) {
+        cli_dbgmsg("HWP3.x: Invalid file descriptor argument\n");
+        return CL_ENULLARG;
+    } else {
+        STATBUF statbuf;
+
+        if (FSTAT(fd, &statbuf) == -1) {
+            cli_dbgmsg("HWP3.x: Can't stat file descriptor\n");
+            return CL_ESTAT;
+        }
+
+        dmap = fmap(fd, 0, statbuf.st_size);
+        if (!dmap) {
+            cli_dbgmsg("HWP3.x: Failed to get fmap for uncompressed stream\n");
+            return CL_EMAP;
+        }
+    }
+
+    /* Fonts - 7 entries of 2 + (n x 40) bytes where n is the first 2 bytes of the entry */
+    for (i = 0; i < 7; i++) {
+        uint16_t nfonts;
+
+        if ((ret = fmap_readn(dmap, &nfonts, offset, sizeof(nfonts))) != sizeof(nfonts)) {
+            funmap(dmap);
+            return ret;
+        }
+        nfonts = le16_to_host(nfonts);
+
+        hwp3_debug("HWP3.x: Font Entry %d with %u entries @ offset %llu\n", i+1, nfonts, (long long unsigned)offset);
+
+        offset += (2 + nfonts * 40);
+    }
+
+    /* Styles - 2 + (n x 238) bytes where n is the first 2 bytes of the section */
+    if ((ret = fmap_readn(dmap, &nstyles, offset, sizeof(nstyles))) != sizeof(nstyles)) {
+        funmap(dmap);
+        return ret;
+    }
+    nstyles = le16_to_host(nstyles);
+
+    hwp3_debug("HWP3.x: %u Styles @ offset %llu\n", nstyles, (long long unsigned)offset);
+
+    offset += (2 + nstyles * 238);
+
+    /* Paragraphs */
+    hwp3_debug("HWP3.x: Paragraphs start @ offset %llu\n", (long long unsigned)offset);
+
+    /* Additional Information Block (Internal) - Attachments and Media */
+
+    funmap(dmap);
+
+    /* scan the uncompressed stream? */
+    //ret = cli_magic_scandesc(fd, ctx);
+
+    return ret;
 }
 
 int cli_scanhwp3(cli_ctx *ctx)
 {
     struct hwp3_docinfo docinfo;
     int ret = CL_SUCCESS;
+    off_t offset = 0;
 
+#if HAVE_JSON
     /*
     /* magic *
     cli_jsonstr(header, "Magic", hwp5->signature);
 
     /* version *
     cli_jsonint(header, "RawVersion", hwp5->version);
-
-    /* no raw flags, would be a struct *
     */
+#endif
+    offset += HWP3_IDENTITY_INFO_SIZE;
 
-    if ((ret = parsehwp3_docinfo(ctx, &docinfo)) != CL_SUCCESS)
+    if ((ret = parsehwp3_docinfo(ctx, offset, &docinfo)) != CL_SUCCESS)
         return ret;
 
-    if ((ret = parsehwp3_docsummary(ctx)) != CL_SUCCESS)
+    offset += HWP3_DOCINFO_SIZE;
+
+    if ((ret = parsehwp3_docsummary(ctx, offset)) != CL_SUCCESS)
         return ret;
 
+    offset += HWP3_DOCSUMMARY_SIZE;
+
+    /* TODO: HANDLE OPTIONAL INFORMATION BLOCKS HERE */
     /*
-    uint32_t write_protect;
-    uint16_t external, pass_protect, info_length;
-    uint8_t compression;
-
-    write_protect = le32_to_host(write_protect);
-    external = le16_to_host(external);
-    pass_protect = le16_to_host(pass_protect);
-    info_length = le16_to_host(info_length);
+    if (docinfo.di_infoblksize) {
+        if ((ret = parsehwp3_infoblk(ctx, offset)) != CL_SUCCESS)
+            return ret;
+        /* increment offset? /
+    }
     */
+
+    ret = decompress_and_callback(ctx, *ctx->fmap, offset, 0, "HWP3.x", hwp3_cb, NULL);
+    if (ret != CL_SUCCESS)
+        return ret;
+
+    /* TODO: HANDLE OPTIONAL ADDITIONAL INFORMATION BLOCKS */
 
     return ret;
 }
