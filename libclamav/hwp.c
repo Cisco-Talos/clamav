@@ -36,6 +36,7 @@
 
 #include "clamav.h"
 #include "fmap.h"
+#include "str.h"
 #include "others.h"
 #include "scanners.h"
 #include "json_api.h"
@@ -355,89 +356,11 @@ struct hwp3_docsummary_entry {
     { 448, "Keyword1" }, /* offset 448 (2 x 56 x 2 bytes) - keywords */
     { 560, "Keyword2" },
 
-    { 672, "Guitar0" },  /* offset 672 (3 x 56 x 2 bytes) - WTF guitar? */
-    { 784, "Guitar1" },
-    { 896, "Guitar2" }
+    { 672, "Etc0" },  /* offset 672 (3 x 56 x 2 bytes) - etc */
+    { 784, "Etc1" },
+    { 896, "Etc2" }
 };
 #define NUM_DOCSUMMARY_FIELDS sizeof(hwp3_docsummary_fields)/sizeof(struct hwp3_docsummary_entry)
-
-/* conversion function for little-endian unicode string to ascii */
-static char *hwp_convert_utf16le(const uint8_t *begin, size_t sz)
-{
-    char *outbuf = NULL;
-#if HAVE_ICONV
-    char *buf, *p1, *p2;
-    off_t offset;
-    size_t inlen, outlen, nonrev;
-    int i, try;
-    iconv_t cd;
-
-    p1 = buf = cli_calloc(1, sz);
-    if (!(buf))
-        return NULL;
-
-    memcpy(buf, begin, sz);
-    inlen = sz;
-
-    cd = iconv_open("UTF-8", "UTF-16LE");
-    if (cd == (iconv_t)(-1)) {
-        char errbuf[128];
-        cli_strerror(errno, errbuf, sizeof(errbuf));
-        cli_errmsg("hwp_convert_utf16le: could not initialize iconv for encoding UTF-16LE: %s\n", errbuf);
-        /* TODO: JSON FAILURE TRACKING */
-        /* sctx->flags |= OLE2_CODEPAGE_ERROR_UNINITED; */
-    }
-    else {
-        offset = 0;
-
-        do {
-            outbuf = (char *)cli_calloc(1, sz+1);
-            if (!outbuf) {
-                free(buf);
-                return NULL;
-            }
-
-            outlen = sz - offset;
-            p2 = outbuf + offset;
-
-            /* conversion */
-            nonrev = iconv(cd, &p1, &inlen, &p2, &outlen);
-
-            if (errno == EILSEQ) {
-                cli_dbgmsg("hwp_convert_utf16le: input buffer contains invalid character for its encoding\n");
-                /* TODO: JSON FAILURE TRACKING */
-                /* sctx->flags |= OLE2_CODEPAGE_ERROR_INVALID; */
-                break;
-            }
-            else if (errno == EINVAL && nonrev == (size_t)-1) {
-                cli_dbgmsg("hwp_convert_utf16le: input buffer contains incomplete multibyte character\n");
-                /* TODO: JSON FAILURE TRACKING */
-                /* sctx->flags |= OLE2_CODEPAGE_ERROR_INCOMPLETE; */
-                break;
-            }
-            else if (inlen == 0) {
-                //cli_dbgmsg("hwp_convert_utf16le: input buffer is successfully translated\n");
-                break;
-            }
-
-            offset = sz - outlen;
-        } while(0);
-
-        if (errno == E2BIG && nonrev == (size_t)-1) {
-            cli_dbgmsg("hwp_convert_utf16le: buffer could not be fully translated\n");
-            /* TODO: JSON FAILURE TRACKING */
-            /* sctx->flags |= OLE2_CODEPAGE_ERROR_OUTBUFTOOSMALL; */
-        }
-
-        outbuf[sz - outlen] = '\0';
-    }
-
-    iconv_close(cd);
-    free(buf);
-#endif
-
-    return outbuf; /* if this is NULL, we should base64 encode the data */
-}
 
 static inline int parsehwp3_docinfo(cli_ctx *ctx, struct hwp3_docinfo *docinfo)
 {
@@ -519,12 +442,25 @@ static inline int parsehwp3_docsummary(cli_ctx *ctx)
     }
 
     for (i = 0; i < NUM_DOCSUMMARY_FIELDS; i++) {
-        str = hwp_convert_utf16le(hwp3_ptr+hwp3_docsummary_fields[i].offset, 112);
-        /*
-        if (!str)
-          TODO: BASE64
-          TODO: COMPRESSED SCANNING (FOR THE HWP5)
-        */
+        str = cli_utf16_to_utf8(hwp3_ptr+hwp3_docsummary_fields[i].offset, 112, UTF16_LE);
+        if (!str) {
+            char *b64;
+            size_t b64len = strlen(hwp3_docsummary_fields[i].name)+8;
+            b64 = cli_calloc(1, b64len);
+            if (!b64) {
+                cli_errmsg("HWP3.x: Failed to allocate memory for b64 boolean\n");
+                return CL_EMEM;
+            }
+            snprintf(b64, b64len, "%s_base64", hwp3_docsummary_fields[i].name);
+            cli_jsonbool(summary, b64, 1);
+            free(b64);
+
+            str = (char *)cl_base64_encode(hwp3_ptr+hwp3_docsummary_fields[i].offset, 112);
+        }
+        if (!str) {
+            cli_errmsg("HWP3.x: Failed to generate UTF-8 conversion of property string\n");
+            return CL_EMEM;
+        }
 
         hwp3_debug("HWP3.x: %s, %s\n", hwp3_docsummary_fields[i].name, str);
         ret = cli_jsonstr(summary, hwp3_docsummary_fields[i].name, str);
@@ -532,7 +468,6 @@ static inline int parsehwp3_docsummary(cli_ctx *ctx)
         if (ret != CL_SUCCESS)
             return ret;
     }
-
 #endif
     return CL_SUCCESS;
 }
