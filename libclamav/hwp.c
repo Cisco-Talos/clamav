@@ -59,18 +59,20 @@
 #endif
 
 typedef int (*hwp_cb )(void *cbdata, int fd, cli_ctx *ctx);
-/* TODO: respect len argument */
 static int decompress_and_callback(cli_ctx *ctx, fmap_t *input, off_t at, size_t len, const char *parent, hwp_cb cb, void *cbdata)
 {
     int zret, ofd, ret = CL_SUCCESS;
     off_t off_in = at;
-    size_t count, outsize = 0;
+    size_t count, remain = 1, outsize = 0;
     z_stream zstrm;
     char *tmpname;
     unsigned char inbuf[FILEBUFF], outbuf[FILEBUFF];
 
     if (!ctx || !input || !cb)
         return CL_ENULLARG;
+
+    if (len)
+        remain = len;
 
     /* reserve tempfile for output and callback */
     if ((ret = cli_gentempfd(ctx->engine->tmpdir, &tmpname, &ofd)) != CL_SUCCESS) {
@@ -108,6 +110,11 @@ static int decompress_and_callback(cli_ctx *ctx, fmap_t *input, off_t at, size_t
             if (!ret)
                 break;
 
+            if (len) {
+                if (remain < ret)
+                    ret = remain;
+                remain -= ret;
+            }
             zstrm.avail_in = ret;
             off_in += ret;
         }
@@ -126,7 +133,7 @@ static int decompress_and_callback(cli_ctx *ctx, fmap_t *input, off_t at, size_t
         }
         zstrm.next_out = outbuf;
         zstrm.avail_out = FILEBUFF;
-    } while(zret == Z_OK);
+    } while(zret == Z_OK && remain);
 
     /* post inflation checks */
     if (zret != Z_STREAM_END && zret != Z_OK) {
@@ -138,6 +145,9 @@ static int decompress_and_callback(cli_ctx *ctx, fmap_t *input, off_t at, size_t
 
         cli_infomsg(ctx, "%s: Error decompressing stream. Scanning what was decompressed.\n", parent);
     }
+    if (len && remain > 0)
+        cli_infomsg(ctx, "%s: Error decompressing stream. Not all requested input was converted\n", parent);
+
     cli_dbgmsg("%s: Decompressed %llu bytes to %s\n", parent, (long long unsigned)outsize, tmpname);
 
     /* scanning inflated stream */
