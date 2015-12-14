@@ -47,6 +47,11 @@
 
 #define HWP5_DEBUG 0
 #define HWP3_DEBUG 1
+#if HWP5_DEBUG
+#define hwp5_debug(...) cli_dbgmsg(__VA_ARGS__)
+#else
+#define hwp5_debug(...) ;
+#endif
 #if HWP3_DEBUG
 #define hwp3_debug(...) cli_dbgmsg(__VA_ARGS__)
 #else
@@ -85,7 +90,7 @@ static int decompress_and_callback(cli_ctx *ctx, fmap_t *input, off_t at, size_t
 
     zret = inflateInit2(&zstrm, -15);
     if (zret != Z_OK) {
-        cli_dbgmsg("%s: Can't initialize zlib inflation stream\n", parent);
+        cli_errmsg("%s: Can't initialize zlib inflation stream\n", parent);
         ret = CL_EUNPACK;
         goto dc_end;
     }
@@ -148,155 +153,6 @@ static int decompress_and_callback(cli_ctx *ctx, fmap_t *input, off_t at, size_t
         if (cli_unlink(tmpname))
             ret = CL_EUNLINK;
     free(tmpname);
-    return ret;
-}
-
-static int decompress_and_scan(int fd, cli_ctx *ctx, int ole2)
-{
-    int zret, ofd, ret = CL_SUCCESS;
-    fmap_t *input;
-    off_t off_in = 0;
-    size_t count, outsize = 0;
-#ifndef HACKNSLASH
-    size_t expect = 0;
-#endif
-    z_stream zstrm;
-    char *tmpname;
-    unsigned char inbuf[FILEBUFF], outbuf[FILEBUFF];
-
-    /* fmap the input file for easier manipulation */
-    if (fd < 0) {
-        cli_dbgmsg("HWP5.x: Invalid file descriptor argument\n");
-        return CL_ENULLARG;
-    } else {
-        STATBUF statbuf;
-
-        if (FSTAT(fd, &statbuf) == -1) {
-            cli_dbgmsg("HWP5.x: Can't stat file descriptor\n");
-            return CL_ESTAT;
-        }
-
-        input = fmap(fd, 0, statbuf.st_size);
-        if (!input) {
-            cli_dbgmsg("HWP5.x: Failed to get fmap for input stream\n");
-            return CL_EMAP;
-        }
-    }
-
-    /* reserve tempfile for output and scanning */
-    if ((ret = cli_gentempfd(ctx->engine->tmpdir, &tmpname, &ofd)) != CL_SUCCESS) {
-        cli_errmsg("HWP5.x: Can't generate temporary file\n");
-        funmap(input);
-        return ret;
-    }
-
-    /* initialize zlib inflation stream */
-    memset(&zstrm, 0, sizeof(zstrm));
-    zstrm.zalloc = Z_NULL;
-    zstrm.zfree = Z_NULL;
-    zstrm.opaque = Z_NULL;
-    zstrm.next_in = inbuf;
-    zstrm.next_out = outbuf;
-    zstrm.avail_in = 0;
-    zstrm.avail_out = FILEBUFF;
-
-    zret = inflateInit2(&zstrm, -15);
-    if (zret != Z_OK) {
-        cli_dbgmsg("HWP5.x: Can't initialize zlib inflation stream\n");
-        ret = CL_EUNPACK;
-        goto ds_end;
-    }
-
-    /* inflation loop */
-    do {
-        if (zstrm.avail_in == 0) {
-            zstrm.next_in = inbuf;
-            ret = fmap_readn(input, inbuf, off_in, FILEBUFF);
-            if (ret < 0) {
-                cli_errmsg("HWP5.x: Error reading stream\n");
-                ret = CL_EUNPACK;
-                goto ds_end;
-            }
-            if (!ret)
-                break;
-
-            zstrm.avail_in = ret;
-            off_in += ret;
-        }
-        zret = inflate(&zstrm, Z_SYNC_FLUSH);
-        count = FILEBUFF - zstrm.avail_out;
-        if (count) {
-            if (cli_checklimits("HWP", ctx, outsize + count, 0, 0) != CL_SUCCESS)
-                break;
-
-#ifndef HACKNSLASH
-            /* remove decompressed size uint32_t prefix */
-            if (ole2) {
-                ole2 = 0;
-                expect = outbuf[0] + (outbuf[1] << 8) + (outbuf[2] << 16) + (outbuf[3] << 24);
-
-                cli_dbgmsg("HWP5.x: Trimmed OLE2 stream prefix: %08x\n", expect);
-
-                if (cli_writen(ofd, outbuf+4, count-4) != count-4) {
-                    cli_errmsg("HWP5.x: Can't write to file %s\n", tmpname);
-                    ret = CL_EWRITE;
-                    goto ds_end;
-                }
-                outsize += (count-4);
-            } else {
-#endif
-            if (cli_writen(ofd, outbuf, count) != count) {
-                cli_errmsg("HWP5.x: Can't write to file %s\n", tmpname);
-                ret = CL_EWRITE;
-                goto ds_end;
-            }
-            outsize += count;
-#ifndef HACKNSLASH
-            }
-#endif
-        }
-        zstrm.next_out = outbuf;
-        zstrm.avail_out = FILEBUFF;
-    } while(zret == Z_OK);
-
-    /* post inflation checks */
-    if (zret != Z_STREAM_END && zret != Z_OK) {
-        if (outsize == 0) {
-            cli_infomsg(ctx, "HWP5.x: Error decompressing stream. No data decompressed.\n");
-            ret = CL_EUNPACK;
-            goto ds_end;
-        }
-
-        cli_infomsg(ctx, "HWP5.x: Error decompressing stream. Scanning what was decompressed.\n");
-    }
-    cli_dbgmsg("HWP5.x: Decompressed %llu bytes to %s\n", (long long unsigned)outsize, tmpname);
-
-#ifndef HACKNSLASH
-    if (expect) {
-        if (outsize != expect) {
-            cli_warnmsg("HWP5.x: declared prefix != inflated stream size, %llu != %llu\n",
-                        (long long unsigned)expect, (long long unsigned)outsize);
-        } else {
-            cli_dbgmsg("HWP5.x: declared prefix == inflated stream size, %llu == %llu\n",
-                       (long long unsigned)expect, (long long unsigned)outsize);
-        }
-    }
-#endif
-
-    /* scanning inflated stream */
-    ret = cli_magic_scandesc(ofd, ctx);
-
-    /* clean-up */
- ds_end:
-    zret = inflateEnd(&zstrm);
-    if (zret != Z_OK)
-        ret = CL_EUNPACK;
-    close(ofd);
-    if (!ctx->engine->keeptmp)
-        if (cli_unlink(tmpname))
-            ret = CL_EUNLINK;
-    free(tmpname);
-    funmap(input);
     return ret;
 }
 
@@ -372,11 +228,48 @@ int cli_hwp5header(cli_ctx *ctx, hwp5_header_t *hwp5)
     return CL_SUCCESS;
 }
 
+static int hwp5_cb(void *cbdata, int fd, cli_ctx *ctx)
+{
+    int ret, ole2 = *(int *)cbdata;
+
+    if (fd < 0 || !ctx)
+        return CL_ENULLARG;
+
+    /* trim off 32-bit prefix for OLE2 streams */
+    if (ole2) {
+        STATBUF statbuf;
+        fmap_t *map;
+
+        if (FSTAT(fd, &statbuf) == -1) {
+            cli_errmsg("HWP5.x: Can't stat file descriptor\n");
+            return CL_ESTAT;
+        }
+
+        map = fmap(fd, 0, statbuf.st_size);
+        if (!map) {
+            cli_errmsg("HWP5.x: Failed to get fmap for ole2 stream\n");
+            return CL_EMAP;
+        }
+
+        ret = cli_map_scandesc(map, 4, 0, ctx, CL_TYPE_ANY);
+        funmap(map);
+    } else {
+        ret = cli_magic_scandesc(fd, ctx);
+    }
+
+    return ret;
+}
+
 int cli_scanhwp5_stream(cli_ctx *ctx, hwp5_header_t *hwp5, char *name, int fd)
 {
     int ole2;
 
-    cli_dbgmsg("HWP5.x: NAME: %s\n", name);
+    hwp5_debug("HWP5.x: NAME: %s\n", name);
+
+    if (fd < 0) {
+        cli_errmsg("HWP5.x: Invalid file descriptor argument\n");
+        return CL_ENULLARG;
+    }
 
     /* encrypted and compressed streams */
     if (!strncmp(name, "bin", 3) || !strncmp(name, "jscriptversion", 14) ||
@@ -396,8 +289,26 @@ int cli_scanhwp5_stream(cli_ctx *ctx, hwp5_header_t *hwp5, char *name, int fd)
 
         if (hwp5->flags & HWP5_COMPRESSED) {
             /* DocInfo JSON Handling */
-            cli_dbgmsg("HWP5.x: Sending %s for decompress and scan\n", name);
-            return decompress_and_scan(fd, ctx, ole2);
+            STATBUF statbuf;
+            fmap_t *input;
+            int ret;
+
+            hwp5_debug("HWP5.x: Sending %s for decompress and scan\n", name);
+
+            /* fmap the input file for easier manipulation */
+            if (FSTAT(fd, &statbuf) == -1) {
+                cli_errmsg("HWP5.x: Can't stat file descriptor\n");
+                return CL_ESTAT;
+            }
+
+            input = fmap(fd, 0, statbuf.st_size);
+            if (!input) {
+                cli_errmsg("HWP5.x: Failed to get fmap for input stream\n");
+                return CL_EMAP;
+            }
+            ret = decompress_and_callback(ctx, input, 0, 0, "HWP5.x", hwp5_cb, &ole2);
+            funmap(input);
+            return ret;
         }
     }
 
@@ -469,7 +380,7 @@ static inline int parsehwp3_docinfo(cli_ctx *ctx, off_t offset, struct hwp3_doci
 
     //TODO: use fmap_readn?
     if (!(hwp3_ptr = fmap_need_off_once(*ctx->fmap, offset, HWP3_DOCINFO_SIZE))) {
-        cli_dbgmsg("HWP3.x: Failed to read fmap for hwp docinfo\n");
+        cli_errmsg("HWP3.x: Failed to read fmap for hwp docinfo\n");
         return CL_EMAP;
     }
 
@@ -529,7 +440,7 @@ static inline int parsehwp3_docsummary(cli_ctx *ctx, off_t offset)
     json_object *summary;
 
     if (!(hwp3_ptr = fmap_need_off_once(*ctx->fmap, offset, HWP3_DOCSUMMARY_SIZE))) {
-        cli_dbgmsg("HWP3.x: Failed to read fmap for hwp docinfo\n");
+        cli_errmsg("HWP3.x: Failed to read fmap for hwp docinfo\n");
         return CL_EMAP;
     }
 
@@ -617,19 +528,19 @@ static int hwp3_cb(void *cbdata, int fd, cli_ctx *ctx)
     uint16_t nstyles;
 
     if (fd < 0) {
-        cli_dbgmsg("HWP3.x: Invalid file descriptor argument\n");
+        cli_errmsg("HWP3.x: Invalid file descriptor argument\n");
         return CL_ENULLARG;
     } else {
         STATBUF statbuf;
 
         if (FSTAT(fd, &statbuf) == -1) {
-            cli_dbgmsg("HWP3.x: Can't stat file descriptor\n");
+            cli_errmsg("HWP3.x: Can't stat file descriptor\n");
             return CL_ESTAT;
         }
 
         dmap = fmap(fd, 0, statbuf.st_size);
         if (!dmap) {
-            cli_dbgmsg("HWP3.x: Failed to get fmap for uncompressed stream\n");
+            cli_errmsg("HWP3.x: Failed to get fmap for uncompressed stream\n");
             return CL_EMAP;
         }
     }
@@ -665,11 +576,10 @@ static int hwp3_cb(void *cbdata, int fd, cli_ctx *ctx)
 
     /* Additional Information Block (Internal) - Attachments and Media */
 
-    funmap(dmap);
-
     /* scan the uncompressed stream? */
-    //ret = cli_magic_scandesc(fd, ctx);
+    //ret = cli_map_scandesc(dmap, 0, 0, ctx, CL_TYPE_ANY);
 
+    funmap(dmap);
     return ret;
 }
 
