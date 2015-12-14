@@ -341,7 +341,7 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
 #endif
 
                 /* scanning protocol for embedded objects encoded in base64 */
-                if (keyinfo->type & MSXML_SCAN_B64) {
+                if ((keyinfo->type & MSXML_SCAN_B64) || (keyinfo->type & MSXML_SCAN_B64_TRIM4)) {
                     char name[1024];
                     char *decoded, *tempfile = name;
                     size_t decodedlen;
@@ -372,7 +372,31 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
 
                     cli_dbgmsg("msxml_parse_element: extracted binary data to %s\n", tempfile);
 
-                    ret = cli_magic_scandesc(of, ctx);
+                    if (keyinfo->type & MSXML_SCAN_B64_TRIM4) {
+                        STATBUF statbuf;
+                        fmap_t *map;
+
+                        cli_dbgmsg("msxml_parse_element: trimming 4-byte prefix from binary stream\n");
+
+                        if (FSTAT(of, &statbuf) == -1) {
+                            cli_errmsg("msxml_parse_element: cannot stat file descriptor\n");
+                            close(of);
+                            return CL_ESTAT;
+                        }
+
+                        map = fmap(of, 0, statbuf.st_size);
+                        if (!map) {
+                            cli_errmsg("msxml_parse_element: failed to fmap binary data\n");
+                            close(of);
+                            return CL_EMAP;
+                        }
+
+                        ret = cli_map_scandesc(map, 4, 0, ctx, CL_TYPE_ANY);
+                        funmap(map);
+                    } else {
+                        ret = cli_magic_scandesc(of, ctx);
+                    }
+
                     close(of);
                     if (!(ctx->engine->keeptmp))
                         cli_unlink(tempfile);
