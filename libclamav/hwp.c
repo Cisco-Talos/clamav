@@ -23,8 +23,13 @@
 #include "clamav-config.h"
 #endif
 
-#if HAVE_ICONV
-#include <iconv.h>
+#if HAVE_LIBXML2
+#ifdef _WIN32
+#ifndef LIBXML_WRITER_ENABLED
+#define LIBXML_WRITER_ENABLED 1
+#endif
+#endif
+#include <libxml/xmlreader.h>
 #endif
 
 #include <sys/types.h>
@@ -39,6 +44,8 @@
 #include "str.h"
 #include "others.h"
 #include "scanners.h"
+#include "msxml_parser.h"
+#include "msxml.h"
 #include "json_api.h"
 #include "hwp.h"
 #if HAVE_JSON
@@ -47,6 +54,7 @@
 
 #define HWP5_DEBUG 0
 #define HWP3_DEBUG 1
+#define HWPML_DEBUG 1
 #if HWP5_DEBUG
 #define hwp5_debug(...) cli_dbgmsg(__VA_ARGS__)
 #else
@@ -56,6 +64,11 @@
 #define hwp3_debug(...) cli_dbgmsg(__VA_ARGS__)
 #else
 #define hwp3_debug(...) ;
+#endif
+#if HWPML_DEBUG
+#define hwpml_debug(...) cli_dbgmsg(__VA_ARGS__)
+#else
+#define hwpml_debug(...) ;
 #endif
 
 typedef int (*hwp_cb )(void *cbdata, int fd, cli_ctx *ctx);
@@ -488,8 +501,8 @@ static inline int parsehwp3_docsummary(cli_ctx *ctx, off_t offset)
             return ret;
     }
 #else
-    UNUSED(ctx);
-    UNUSED(offset);
+    UNUSEDPARAM(ctx);
+    UNUSEDPARAM(offset);
 #endif
     return CL_SUCCESS;
 }
@@ -636,4 +649,81 @@ int cli_scanhwp3(cli_ctx *ctx)
     /* TODO: HANDLE OPTIONAL ADDITIONAL INFORMATION BLOCKS */
 
     return ret;
+}
+
+/*** HWPML (hijacking the msxml parser) ***/
+
+static const struct key_entry hwpml_keys[] = {
+    { "hwpml",              "HWPML",              MSXML_JSON_ROOT | MSXML_JSON_ATTRIB },
+
+    /* HEAD - Document Properties */
+    { "head",               "Head",               MSXML_JSON_ROOT },
+    { "docsummary",         "DocumentProperties", MSXML_JSON_WRKPTR },
+    { "title",              "Title",              MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "author",             "Author",             MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "date",               "Date",               MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "docsetting",         "DocumentSettings",   MSXML_JSON_WRKPTR },
+    { "beginnumber",        "BeginNumber",        MSXML_JSON_WRKPTR | MSXML_JSON_ATTRIB },
+    { "caretpos",           "CaretPos",           MSXML_JSON_WRKPTR | MSXML_JSON_ATTRIB },
+    { "bindatalist",        "BinDataList",        MSXML_JSON_WRKPTR },
+    { "binitem",            "BinItem",            MSXML_JSON_WRKPTR | MSXML_JSON_ATTRIB },
+    { "facenamelist",       "FaceNameList",       MSXML_IGNORE_ELEM }, /* fonts list */
+    { "borderfilllist",     "BorderFillList",     MSXML_IGNORE_ELEM }, /* borders list */
+    { "charshapelist",      "CharShapeList",      MSXML_IGNORE_ELEM }, /* character shapes */
+    { "tabdeflist",         "TableDefList",       MSXML_IGNORE_ELEM }, /* table defs */
+    { "numberinglist",      "NumberingList",      MSXML_IGNORE_ELEM }, /* numbering list */
+    { "parashapelist",      "ParagraphShapeList", MSXML_IGNORE_ELEM }, /* paragraph shapes */
+    { "stylelist",          "StyleList",          MSXML_IGNORE_ELEM }, /* styles */
+    { "compatibledocument", "WordCompatibility",  MSXML_IGNORE_ELEM }, /* word compatibility data */
+
+    /* BODY - Document Contents */
+    { "body",               "Body",               MSXML_IGNORE_ELEM }, /* document contents (we could build a document contents summary */
+
+    /* TAIL - Document Attachments */
+    { "tail",               "Tail",               MSXML_JSON_ROOT },
+    { "bindatastorage",     "BinaryDataStorage",  MSXML_JSON_WRKPTR },
+    { "bindata",            "BinaryData",         MSXML_SCAN_B64 | MSXML_JSON_WRKPTR | MSXML_JSON_ATTRIB },
+    { "scriptcode",         "ScriptCodeStorage",  MSXML_JSON_WRKPTR | MSXML_JSON_ATTRIB },
+    { "scriptheader",       "ScriptHeader",       MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "scriptsource",       "ScriptSource",       MSXML_JSON_WRKPTR | MSXML_JSON_VALUE }
+};
+static size_t num_hwpml_keys = sizeof(hwpml_keys) / sizeof(struct key_entry);
+
+int cli_scanhwpml(cli_ctx *ctx)
+{
+#if HAVE_LIBXML2
+    struct msxml_cbdata cbdata;
+    xmlTextReaderPtr reader = NULL;
+    int state, ret = CL_SUCCESS;
+
+    cli_dbgmsg("in cli_scanhwpml()\n");
+
+    if (!ctx)
+        return CL_ENULLARG;
+
+    memset(&cbdata, 0, sizeof(cbdata));
+    cbdata.map = *ctx->fmap;
+
+    reader = xmlReaderForIO(msxml_read_cb, NULL, &cbdata, "hwpml.xml", NULL, CLAMAV_MIN_XMLREADER_FLAGS);
+    if (!reader) {
+        cli_dbgmsg("cli_scanhwpml: cannot intialize xmlReader\n");
+
+#if HAVE_JSON
+        ret = cli_json_parse_error(ctx->wrkproperty, "HWPML_ERROR_XML_READER_IO");
+#endif
+        return ret; // libxml2 failed!
+    }
+
+    ret = cli_msxml_parse_document(ctx, reader, hwpml_keys, num_hwpml_keys, 1);
+
+    xmlTextReaderClose(reader);
+    xmlFreeTextReader(reader);
+    return ret;
+#else
+    UNUSEDPARAM(ctx);
+    cli_dbgmsg("in cli_scanhwpml()\n");
+    cli_dbgmsg("cli_scanhwpml: scanning hwpml documents requires libxml2!\n");
+
+    return CL_SUCCESS;
+#endif
 }

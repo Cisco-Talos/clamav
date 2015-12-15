@@ -51,4 +51,7 @@ int cli_scanhwp5_stream(cli_ctx *ctx, hwp5_header_t *hwp5, char *name, int fd);
 /* HWP 3.0 - UNIQUE FORMAT */
 int cli_scanhwp3(cli_ctx *ctx);
 
+/* HWPML - SINGLE XML DOCUMENT (similar to MSXML) */
+int cli_scanhwpml(cli_ctx *ctx);
+
 #endif /* __HWP_H__ */
