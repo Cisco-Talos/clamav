@@ -326,9 +326,11 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
                         if (zlen >= OOXML_DOCPROPS_DIR_LEN) {
                             if (0 == memcmp(znamep, OOXML_DOCPROPS_DIR, OOXML_DOCPROPS_DIR_LEN)) {
                                 likely_ooxml = 1;
-                            } else if  (zlen >= OOXML_CONTENTTYPES_LEN) {
-                                if (0 == memcmp(znamep, OOXML_CONTENTTYPES, OOXML_CONTENTTYPES_LEN)) {
-                                    likely_ooxml = 1;
+                            } else { 
+                                if  (zlen >= OOXML_CONTENTTYPES_LEN) {
+                                    if (0 == memcmp(znamep, OOXML_CONTENTTYPES, OOXML_CONTENTTYPES_LEN)) {
+                                        likely_ooxml = 1;
+                                    }
                                 } else {
                                     znamep = NULL;
                                     break;
@@ -338,7 +340,7 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
                             znamep = NULL;
                             break;
                         }
-                        
+
                         if (++lhc > 2) {
                             /* only check first three zip headers unless likely ooxml */
                             if (likely_ooxml) {
