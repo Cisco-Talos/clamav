@@ -718,6 +718,8 @@ static void handle_df(const yystype *tokens, size_t start, struct decode_result 
 	if(!str)
 		return;
 	len = strlen(str);
+	if(!len)
+		return;
 	clast = str[len-1] - '0';
 
 	str[len-1] = '\0';
