@@ -108,9 +108,9 @@ static const struct ftmap_s {
     { "CL_TYPE_ISO9660",	CL_TYPE_ISO9660		},
     { "CL_TYPE_JAVA",		CL_TYPE_JAVA		},
     { "CL_TYPE_DMG",		CL_TYPE_DMG		},
-    { "CL_TYPE_MBR",        CL_TYPE_MBR     },
-    { "CL_TYPE_GPT",        CL_TYPE_GPT     },
-    { "CL_TYPE_APM",        CL_TYPE_APM     },
+    { "CL_TYPE_MBR",		CL_TYPE_MBR		},
+    { "CL_TYPE_GPT",		CL_TYPE_GPT		},
+    { "CL_TYPE_APM",		CL_TYPE_APM		},
     { "CL_TYPE_XAR",		CL_TYPE_XAR		},
     { "CL_TYPE_PART_ANY",	CL_TYPE_PART_ANY	},
     { "CL_TYPE_PART_HFSPLUS",	CL_TYPE_PART_HFSPLUS	},
@@ -119,10 +119,11 @@ static const struct ftmap_s {
     { "CL_TYPE_OOXML_PPT",	CL_TYPE_OOXML_PPT     	},
     { "CL_TYPE_OOXML_XL",	CL_TYPE_OOXML_XL     	},
     { "CL_TYPE_INTERNAL",	CL_TYPE_INTERNAL     	},
-    { "CL_TYPE_XDP",        CL_TYPE_XDP             },
-    { "CL_TYPE_XML_WORD",   CL_TYPE_XML_WORD        },
-    { "CL_TYPE_XML_XL",     CL_TYPE_XML_XL          },
-    { "CL_TYPE_HWP3",       CL_TYPE_HWP3            },
+    { "CL_TYPE_XDP",		CL_TYPE_XDP		},
+    { "CL_TYPE_XML_WORD",	CL_TYPE_XML_WORD	},
+    { "CL_TYPE_XML_XL",		CL_TYPE_XML_XL		},
+    { "CL_TYPE_HWP3",		CL_TYPE_HWP3		},
+    { "CL_TYPE_XML_HWP",	CL_TYPE_XML_HWP		},
     { NULL,			CL_TYPE_IGNORED		}
 };
 
