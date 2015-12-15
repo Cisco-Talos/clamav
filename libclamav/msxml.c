@@ -79,24 +79,6 @@ static const struct key_entry msxml_keys[] = {
 };
 static size_t num_msxml_keys = sizeof(msxml_keys) / sizeof(struct key_entry);
 
-enum msxml_state {
-    MSXML_STATE_NORMAL = 0,
-    MSXML_STATE_ENTITY_START_1,
-    MSXML_STATE_ENTITY_START_2,
-    MSXML_STATE_ENTITY_HEX,
-    MSXML_STATE_ENTITY_DEC,
-    MSXML_STATE_ENTITY_CLOSE,
-    MSXML_STATE_ENTITY_NONE
-};
-
-struct msxml_cbdata {
-    enum msxml_state state;
-    fmap_t *map;
-    const unsigned char *window;
-    off_t winpos, mappos;
-    size_t winsize;
-};
-
 static inline size_t msxml_read_cb_new_window(struct msxml_cbdata *cbdata)
 {
     const unsigned char *new_window = NULL;

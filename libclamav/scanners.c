@@ -2275,6 +2275,9 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
                 case CL_TYPE_XML_XL:
                     ret = cli_scanmsxml(ctx);
                     break;
+                case CL_TYPE_XML_HWP:
+                    ret = cli_scanhwpml(ctx);
+                    break;
                 case CL_TYPE_RARSFX:
                     if(type != CL_TYPE_RAR && have_rar && SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_RAR)) {
                         char *tmpname = NULL;
@@ -2681,7 +2684,8 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
                 type == CL_TYPE_OOXML_XL ||
                 type == CL_TYPE_XML_WORD ||
                 type == CL_TYPE_XML_XL ||
-                type == CL_TYPE_HWP3) {
+                type == CL_TYPE_HWP3 ||
+                type == CL_TYPE_XML_HWP) {
                 ctx->properties = json_object_new_object();
                 if (NULL == ctx->properties) {
                     cli_errmsg("magic_scandesc: no memory for json properties object\n");
@@ -2849,6 +2853,10 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 
     case CL_TYPE_XML_XL:
         ret = cli_scanmsxml(ctx);
+        break;
+
+    case CL_TYPE_XML_HWP:
+        ret = cli_scanhwpml(ctx);
         break;
 
     case CL_TYPE_XDP:
