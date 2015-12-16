@@ -43,12 +43,17 @@
 #define MSXML_RECLEVEL_MAX 20
 #define MSXML_JSON_STRLEN_MAX 128
 
+struct attrib_entry {
+    const char *key;
+    const char *value;
+};
+
 struct key_entry {
 /* how */
 #define MSXML_IGNORE         0x00
 #define MSXML_IGNORE_ELEM    0x01
-#define MSXML_SCAN_B64       0x02
-#define MSXML_SCAN_B64_TRIM4 0x04
+#define MSXML_SCAN_CB        0x02
+#define MSXML_SCAN_B64       0x04
 /* where */
 #define MSXML_JSON_ROOT      0x08
 #define MSXML_JSON_WRKPTR    0x10
@@ -64,8 +69,11 @@ struct key_entry {
     uint32_t type;
 };
 
+typedef int (*msxml_scan_cb)(int fd, cli_ctx *ctx, int num_attribs, struct attrib_entry *attribs);
+
 struct msxml_ctx {
     cli_ctx *ctx;
+    msxml_scan_cb scan_cb;
     const struct key_entry *keys;
     size_t num_keys;
 
@@ -75,7 +83,7 @@ struct msxml_ctx {
 #endif
 };
 
-int cli_msxml_parse_document(cli_ctx *ctx, xmlTextReaderPtr reader, const struct key_entry *keys, const size_t num_keys, int mode);
+int cli_msxml_parse_document(cli_ctx *ctx, xmlTextReaderPtr reader, const struct key_entry *keys, const size_t num_keys, int mode, msxml_scan_cb scan_cb);
 
 #endif /* HAVE_LIBXML2 */
 

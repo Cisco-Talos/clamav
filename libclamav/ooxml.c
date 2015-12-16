@@ -126,7 +126,7 @@ static int ooxml_parse_document(int fd, cli_ctx *ctx)
         return CL_SUCCESS; // internal error from libxml2
     }
 
-    ret = cli_msxml_parse_document(ctx, reader, ooxml_keys, num_ooxml_keys, 1);
+    ret = cli_msxml_parse_document(ctx, reader, ooxml_keys, num_ooxml_keys, 1, NULL);
 
     if (ret != CL_SUCCESS && ret != CL_ETIMEOUT && ret != CL_BREAK)
         cli_warnmsg("ooxml_parse_document: encountered issue in parsing properties document\n");
