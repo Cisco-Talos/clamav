@@ -657,7 +657,7 @@ static const struct key_entry hwpml_keys[] = {
     { "hwpml",              "HWPML",              MSXML_JSON_ROOT | MSXML_JSON_ATTRIB },
 
     /* HEAD - Document Properties */
-    { "head",               "Head",               MSXML_JSON_ROOT },
+    { "head",               "Head",               MSXML_JSON_WRKPTR },
     { "docsummary",         "DocumentProperties", MSXML_JSON_WRKPTR },
     { "title",              "Title",              MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
     { "author",             "Author",             MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
@@ -680,14 +680,136 @@ static const struct key_entry hwpml_keys[] = {
     { "body",               "Body",               MSXML_IGNORE_ELEM }, /* document contents (we could build a document contents summary */
 
     /* TAIL - Document Attachments */
-    { "tail",               "Tail",               MSXML_JSON_ROOT },
+    { "tail",               "Tail",               MSXML_JSON_WRKPTR },
     { "bindatastorage",     "BinaryDataStorage",  MSXML_JSON_WRKPTR },
-    { "bindata",            "BinaryData",         MSXML_SCAN_B64 | MSXML_JSON_WRKPTR | MSXML_JSON_ATTRIB },
+    { "bindata",            "BinaryData",         MSXML_SCAN_CB | MSXML_JSON_WRKPTR | MSXML_JSON_ATTRIB },
     { "scriptcode",         "ScriptCodeStorage",  MSXML_JSON_WRKPTR | MSXML_JSON_ATTRIB },
-    { "scriptheader",       "ScriptHeader",       MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
-    { "scriptsource",       "ScriptSource",       MSXML_JSON_WRKPTR | MSXML_JSON_VALUE }
+    { "scriptheader",       "ScriptHeader",       MSXML_SCAN_CB | MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "scriptsource",       "ScriptSource",       MSXML_SCAN_CB | MSXML_JSON_WRKPTR | MSXML_JSON_VALUE }
 };
 static size_t num_hwpml_keys = sizeof(hwpml_keys) / sizeof(struct key_entry);
+
+/* binary streams needs to be base64-decoded then decompressed if fields are set */
+static int hwpml_scan_cb(void *cbdata, int fd, cli_ctx *ctx)
+{
+    return cli_magic_scandesc(fd, ctx);
+}
+
+static int hwpml_binary_cb(int fd, cli_ctx *ctx, int num_attribs, struct attrib_entry *attribs)
+{
+    int i, ret, df = 0, com = 0, enc = 0;
+    char name[1024], *tempfile = name;
+
+    /* check attributes for compression and encoding */
+    for (i = 0; i < num_attribs; i++) {
+        if (!strcmp(attribs[i].key, "Compress")) {
+            if (!strcmp(attribs[i].value, "true"))
+                com = 1;
+            else if (!strcmp(attribs[i].value, "false"))
+                com = 0;
+            else
+                com = -1;
+        }
+
+        if (!strcmp(attribs[i].key, "Encoding")) {
+            if (!strcmp(attribs[i].value, "Base64"))
+                enc = 1;
+            else
+                enc = -1;
+        }
+    }
+
+    hwpml_debug("HWPML: Checking attributes: com: %d, enc: %d\n", com, enc);
+
+    /* decode the binary data if needed - base64 */
+    if (enc < 0) {
+        cli_errmsg("HWPML: Unrecognized encoding method\n");
+        return cli_magic_scandesc(fd, ctx);
+    } else if (enc == 1) {
+        STATBUF statbuf;
+        fmap_t *input;
+        const char *instream;
+        char *decoded;
+        size_t decodedlen;
+
+        hwpml_debug("HWPML: Decoding base64-encoded binary data\n");
+
+        /* fmap the input file for easier manipulation */
+        if (FSTAT(fd, &statbuf) == -1) {
+            cli_errmsg("HWPML: Can't stat file descriptor\n");
+            return CL_ESTAT;
+        }
+
+        if (!(input = fmap(fd, 0, statbuf.st_size))) {
+            cli_errmsg("HWPML: Failed to get fmap for binary data\n");
+            return CL_EMAP;
+        }
+
+        /* send data for base64 conversion - TODO: what happens with really big files? */
+        if (!(instream = fmap_need_off_once(input, 0, input->len))) {
+            cli_errmsg("HWPML: Failed to get input stream from binary data\n");
+            funmap(input);
+            return CL_EMAP;
+        }
+
+        decoded = (char *)cl_base64_decode(instream, input->len, NULL, &decodedlen, 0);
+        funmap(input);
+        if (!decoded) {
+            cli_errmsg("HWPML: Failed to get base64 decode binary data\n");
+            return cli_magic_scandesc(fd, ctx);
+        }
+
+        /* open file for writing and scanning */
+        if ((ret = cli_gentempfd(ctx->engine->tmpdir, &tempfile, &df)) != CL_SUCCESS) {
+            cli_warnmsg("HWPML: Failed to create temporary file %s\n", tempfile);
+            return ret;
+        }
+
+        if(cli_writen(df, decoded, decodedlen) != (int)decodedlen) {
+            free(decoded);
+            close(df);
+            return CL_EWRITE;
+        }
+        free(decoded);
+
+        /* keeps the later logic simpler */
+        fd = df;
+
+        cli_dbgmsg("HWPML: Decoded binary data to %s\n", tempfile);
+    }
+
+    /* decompress the file if needed - zlib */
+    if (com) {
+        STATBUF statbuf;
+        fmap_t *input;
+
+        hwpml_debug("HWPML: Decompressing binary data\n");
+
+        /* fmap the input file for easier manipulation */
+        if (FSTAT(fd, &statbuf) == -1) {
+            cli_errmsg("HWPML: Can't stat file descriptor\n");
+            return CL_ESTAT;
+        }
+
+        input = fmap(fd, 0, statbuf.st_size);
+        if (!input) {
+            cli_errmsg("HWPML: Failed to get fmap for binary data\n");
+            return CL_EMAP;
+        }
+        ret = decompress_and_callback(ctx, input, 0, 0, "HWPML", hwpml_scan_cb, NULL);
+        funmap(input);
+    } else {
+        ret = hwpml_scan_cb(NULL, fd, ctx);
+    }
+
+    /* close decoded file descriptor if used */
+    if (df) {
+        close(df);
+        if (!(ctx->engine->keeptmp))
+            cli_unlink(tempfile);
+    }
+    return ret;
+}
 
 int cli_scanhwpml(cli_ctx *ctx)
 {
