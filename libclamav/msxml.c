@@ -253,7 +253,7 @@ int cli_scanmsxml(cli_ctx *ctx)
         return ret; // libxml2 failed!
     }
 
-    ret = cli_msxml_parse_document(ctx, reader, msxml_keys, num_msxml_keys, 1);
+    ret = cli_msxml_parse_document(ctx, reader, msxml_keys, num_msxml_keys, 1, NULL);
 
     xmlTextReaderClose(reader);
     xmlFreeTextReader(reader);

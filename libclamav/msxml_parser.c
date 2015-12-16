@@ -156,12 +156,14 @@ static int msxml_parse_value(json_object *wrkptr, const char *arrname, const xml
 }
 #endif /* HAVE_JSON */
 
+#define MAX_ATTRIBS 20
 static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader, int rlvl, void *jptr)
 {
     const xmlChar *element_name = NULL;
     const xmlChar *node_name = NULL, *node_value = NULL;
     const struct key_entry *keyinfo;
-    int ret, virus = 0, state, node_type, endtag = 0;
+    struct attrib_entry attribs[MAX_ATTRIBS];
+    int ret, virus = 0, state, node_type, endtag = 0, num_attribs = 0;
     cli_ctx *ctx = mxctx->ctx;
 #if HAVE_JSON
     json_object *parent = (json_object *)jptr;
@@ -284,6 +286,35 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
             }
         }
 #endif
+        /* populate attributes for scanning callback - BROKEN, probably from the fact the reader is pointed to the attribute from previously parsing attributes */
+        if ((keyinfo->type & MSXML_SCAN_CB) && mxctx->scan_cb) {
+            state = xmlTextReaderHasAttributes(reader);
+            if (state == 0) {
+                state = xmlTextReaderMoveToFirstAttribute(reader);
+                if (state == 1) {
+                    /* read first attribute (current head) */
+                    attribs[num_attribs].key = xmlTextReaderConstLocalName(reader);
+                    attribs[num_attribs].value = xmlTextReaderConstValue(reader);
+                    num_attribs++;
+                } else if (state == -1) {
+                    return CL_EPARSE;
+                }
+            }
+
+            /* start reading attributes or read remainder of attributes */
+            if (state == 1) {
+                cli_msxmlmsg("msxml_parse_element: adding attributes to scanning context\n");
+
+                while ((num_attribs < MAX_ATTRIBS) && (xmlTextReaderMoveToNextAttribute(reader) == 1)) {
+                    attribs[num_attribs].key = xmlTextReaderConstLocalName(reader);
+                    attribs[num_attribs].value = xmlTextReaderConstValue(reader);
+                    num_attribs++;
+                }
+            }
+            else if (state == -1) {
+                return CL_EPARSE;
+            }
+        }
 
         /* check self-containment */
         state = xmlTextReaderMoveToElement(reader);
@@ -339,9 +370,40 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
                     cli_msxmlmsg("msxml_parse_element: added json value [%s: %s]\n", keyinfo->name, (const char *)node_value);
                 }
 #endif
+                /* callback-based scanning mechanism for embedded objects (used by HWPML) */
+                if ((keyinfo->type & MSXML_SCAN_CB) && mxctx->scan_cb) {
+                    char name[1024];
+                    char *tempfile = name;
+                    int of;
+                    size_t vlen = strlen((const char *)node_value);
 
-                /* scanning protocol for embedded objects encoded in base64 */
-                if ((keyinfo->type & MSXML_SCAN_B64) || (keyinfo->type & MSXML_SCAN_B64_TRIM4)) {
+                    cli_msxmlmsg("BINARY CALLBACK DATA!\n");
+
+                    if ((ret = cli_gentempfd(ctx->engine->tmpdir, &tempfile, &of)) != CL_SUCCESS) {
+                        cli_warnmsg("msxml_parse_element: failed to create temporary file %s\n", tempfile);
+                        return ret;
+                    }
+
+                    if (cli_writen(of, (char *)node_value, vlen) != vlen) {
+                        close(of);
+                        return CL_EWRITE;
+                    }
+
+                    cli_dbgmsg("msxml_parse_element: extracted binary data to %s\n", tempfile);
+
+                    ret = mxctx->scan_cb(of, ctx, num_attribs, attribs);
+                    if (!(ctx->engine->keeptmp))
+                        cli_unlink(tempfile);
+                    free(tempfile);
+                    if (ret != CL_SUCCESS && (ret != CL_VIRUS || (!SCAN_ALL && ret == CL_VIRUS))) {
+                        return ret;
+                    } else if (SCAN_ALL && ret == CL_VIRUS) {
+                        virus = 1;
+                    }
+                }
+
+                /* scanning protocol for embedded objects encoded in base64 (used by MSXML) */
+                if (keyinfo->type & MSXML_SCAN_B64) {
                     char name[1024];
                     char *decoded, *tempfile = name;
                     size_t decodedlen;
@@ -372,31 +434,7 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
 
                     cli_dbgmsg("msxml_parse_element: extracted binary data to %s\n", tempfile);
 
-                    if (keyinfo->type & MSXML_SCAN_B64_TRIM4) {
-                        STATBUF statbuf;
-                        fmap_t *map;
-
-                        cli_dbgmsg("msxml_parse_element: trimming 4-byte prefix from binary stream\n");
-
-                        if (FSTAT(of, &statbuf) == -1) {
-                            cli_errmsg("msxml_parse_element: cannot stat file descriptor\n");
-                            close(of);
-                            return CL_ESTAT;
-                        }
-
-                        map = fmap(of, 0, statbuf.st_size);
-                        if (!map) {
-                            cli_errmsg("msxml_parse_element: failed to fmap binary data\n");
-                            close(of);
-                            return CL_EMAP;
-                        }
-
-                        ret = cli_map_scandesc(map, 4, 0, ctx, CL_TYPE_ANY);
-                        funmap(map);
-                    } else {
-                        ret = cli_magic_scandesc(of, ctx);
-                    }
-
+                    ret = cli_magic_scandesc(of, ctx);
                     close(of);
                     if (!(ctx->engine->keeptmp))
                         cli_unlink(tempfile);
@@ -469,7 +507,7 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
 }
 
 /* reader intialization and closing handled by caller */
-int cli_msxml_parse_document(cli_ctx *ctx, xmlTextReaderPtr reader, const struct key_entry *keys, const size_t num_keys, int mode)
+int cli_msxml_parse_document(cli_ctx *ctx, xmlTextReaderPtr reader, const struct key_entry *keys, const size_t num_keys, int mode, msxml_scan_cb scan_cb)
 {
     struct msxml_ctx mxctx;
     int state, virus = 0, ret = CL_SUCCESS;
@@ -478,6 +516,7 @@ int cli_msxml_parse_document(cli_ctx *ctx, xmlTextReaderPtr reader, const struct
         return CL_ENULLARG;
 
     mxctx.ctx = ctx;
+    mxctx.scan_cb = scan_cb;
     mxctx.keys = keys;
     mxctx.num_keys = num_keys;
 #if HAVE_JSON
