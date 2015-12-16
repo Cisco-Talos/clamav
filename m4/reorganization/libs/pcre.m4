@@ -70,7 +70,7 @@ if test "x$PCRE_HOME" != "x"; then
   if test $pcrever_major -lt 6; then
     AC_MSG_ERROR([This pcre version is missing features used by ClamAV. Please upgrade to a newer version: http://www.pcre.org.])
   fi
-  if test $pcrever_major -eq 6 && test $pcrever_minor -lt 65; then
+  if test $pcrever_major -eq 6 && test $pcrever_minor -lt 5; then
     AC_MSG_ERROR([This pcre version is missing features used by ClamAV. Please upgrade to a newer version: http://www.pcre.org.])
   fi
 
