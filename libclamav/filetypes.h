@@ -86,6 +86,7 @@ typedef enum {
     CL_TYPE_OOXML_XL,
     CL_TYPE_INTERNAL,
     CL_TYPE_HWP3,
+    CL_TYPE_OOXML_HWP,
 
     /* Section for partition types */
     CL_TYPE_PART_ANY, /* unknown partition type */

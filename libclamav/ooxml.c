@@ -25,6 +25,7 @@
 
 #include "clamav.h"
 #include "cltypes.h"
+#include "filetypes.h"
 #include "others.h"
 #include "unzip.h"
 #if HAVE_JSON
@@ -47,6 +48,7 @@
 
 #if HAVE_LIBXML2 && HAVE_JSON
 
+/*** OOXML MSDOC ***/
 static const struct key_entry ooxml_keys[] = {
     { "coreproperties",     "CoreProperties",     MSXML_JSON_ROOT | MSXML_JSON_ATTRIB },
     { "title",              "Title",              MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
@@ -341,6 +343,48 @@ static int ooxml_content_cb(int fd, cli_ctx *ctx)
     xmlFreeTextReader(reader);
     return ret;
 }
+
+/*** OOXML HWP ***/
+static const struct key_entry ooxml_hwp_keys[] = {
+    { "hcfversion",         "HCFVersion",         MSXML_JSON_ROOT | MSXML_JSON_ATTRIB },
+
+    { "package",            "Properties",         MSXML_JSON_ROOT | MSXML_JSON_ATTRIB },
+    { "metadata",           "Metadata",           MSXML_JSON_ROOT | MSXML_JSON_ATTRIB },
+    { "title",              "Title",              MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "language",           "Language",           MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "meta",               "MetaFields",         MSXML_JSON_WRKPTR | MSXML_JSON_ATTRIB | MSXML_JSON_COUNT | MSXML_JSON_MULTI },
+    { "item",               "Contents",           MSXML_JSON_WRKPTR | MSXML_JSON_ATTRIB | MSXML_JSON_COUNT | MSXML_JSON_MULTI }
+};
+static size_t num_ooxml_hwp_keys = sizeof(ooxml_hwp_keys) / sizeof(struct key_entry);
+
+static int ooxml_hwp_cb(int fd, cli_ctx *ctx)
+{
+    int ret = CL_SUCCESS;
+    xmlTextReaderPtr reader = NULL;
+
+    cli_dbgmsg("in ooxml_hwp_cb\n");
+
+    /* perform engine limit checks in temporary tracking session */
+    ret = ooxml_updatelimits(fd, ctx);
+    if (ret != CL_CLEAN)
+        return ret;
+
+    reader = xmlReaderForFd(fd, "ooxml_hwp.xml", NULL, CLAMAV_MIN_XMLREADER_FLAGS);
+    if (reader == NULL) {
+        cli_dbgmsg("ooxml_hwp_cb: xmlReaderForFd error\n");
+        return CL_SUCCESS; // internal error from libxml2
+    }
+
+    ret = cli_msxml_parse_document(ctx, reader, ooxml_hwp_keys, num_ooxml_hwp_keys, 1, NULL);
+
+    if (ret != CL_SUCCESS && ret != CL_ETIMEOUT && ret != CL_BREAK)
+        cli_warnmsg("ooxml_hwp_cb: encountered issue in parsing properties document\n");
+
+    xmlTextReaderClose(reader);
+    xmlFreeTextReader(reader);
+    return ret;
+}
+
 #endif /* HAVE_LIBXML2 && HAVE_JSON */
 
 int cli_ooxml_filetype(cli_ctx *ctx, fmap_t *map)
@@ -376,41 +420,71 @@ int cli_ooxml_filetype(cli_ctx *ctx, fmap_t *map)
     return CL_SUCCESS;
 }
 
-int cli_process_ooxml(cli_ctx *ctx)
+int cli_process_ooxml(cli_ctx *ctx, int type)
 {
 #if HAVE_LIBXML2 && HAVE_JSON
     uint32_t loff = 0;
-    int tmp = CL_SUCCESS;
+    int ret = CL_SUCCESS;
 
     cli_dbgmsg("in cli_process_ooxml\n");
     if (!ctx) {
         return CL_ENULLARG;
     }
 
-    /* find "[Content Types].xml" */
-    tmp = unzip_search_single(ctx, "[Content_Types].xml", 18, &loff);
-    if (tmp == CL_ETIMEOUT) {
-        cli_json_parse_error(ctx->wrkproperty, "OOXML_ERROR_TIMEOUT");
-        return CL_ETIMEOUT;
-    }
-    else if (tmp != CL_VIRUS) {
-        cli_dbgmsg("cli_process_ooxml: failed to find ""[Content_Types].xml""!\n");
-        cli_json_parse_error(ctx->wrkproperty, "OOXML_ERROR_NO_CONTENT_TYPES");
-        return CL_EFORMAT;
-    }
-    cli_dbgmsg("cli_process_ooxml: found ""[Content_Types].xml"" @ %x\n", loff);
+    if (type == CL_TYPE_OOXML_HWP) {
+        /* two files: version.xml and Contents/content.hpf */
+        ret = unzip_search_single(ctx, "version.xml", 11, &loff);
+        if (ret == CL_ETIMEOUT) {
+            cli_json_parse_error(ctx->wrkproperty, "OOXML_ERROR_TIMEOUT");
+            return CL_ETIMEOUT;
+        }
+        else if (ret != CL_VIRUS) {
+            cli_dbgmsg("cli_process_ooxml: failed to find ""version.xml""!\n");
+            cli_json_parse_error(ctx->wrkproperty, "OOXML_ERROR_NO_HWP_VERSION");
+            return CL_EFORMAT;
+        }
+        ret = unzip_single_internal(ctx, loff, ooxml_hwp_cb);
 
-    tmp = unzip_single_internal(ctx, loff, ooxml_content_cb);
-    if (tmp == CL_ETIMEOUT)
+        if (ret == CL_SUCCESS) {
+            ret = unzip_search_single(ctx, "Contents/content.hpf", 20, &loff);
+            if (ret == CL_ETIMEOUT) {
+                cli_json_parse_error(ctx->wrkproperty, "OOXML_ERROR_TIMEOUT");
+                return CL_ETIMEOUT;
+            }
+            else if (ret != CL_VIRUS) {
+                cli_dbgmsg("cli_process_ooxml: failed to find ""Contents/content.hpf""!\n");
+                cli_json_parse_error(ctx->wrkproperty, "OOXML_ERROR_NO_HWP_CONTENT");
+                return CL_EFORMAT;
+            }
+            ret = unzip_single_internal(ctx, loff, ooxml_hwp_cb);
+        }
+    } else {
+        /* find "[Content Types].xml" */
+        ret = unzip_search_single(ctx, "[Content_Types].xml", 19, &loff);
+        if (ret == CL_ETIMEOUT) {
+            cli_json_parse_error(ctx->wrkproperty, "OOXML_ERROR_TIMEOUT");
+            return CL_ETIMEOUT;
+        }
+        else if (ret != CL_VIRUS) {
+            cli_dbgmsg("cli_process_ooxml: failed to find ""[Content_Types].xml""!\n");
+            cli_json_parse_error(ctx->wrkproperty, "OOXML_ERROR_NO_CONTENT_TYPES");
+            return CL_EFORMAT;
+        }
+        cli_dbgmsg("cli_process_ooxml: found ""[Content_Types].xml"" @ %x\n", loff);
+
+        ret = unzip_single_internal(ctx, loff, ooxml_content_cb);
+    }
+
+    if (ret == CL_ETIMEOUT)
         cli_json_parse_error(ctx->wrkproperty, "OOXML_ERROR_TIMEOUT");
-    else if (tmp == CL_EMEM)
+    else if (ret == CL_EMEM)
         cli_json_parse_error(ctx->wrkproperty, "OOXML_ERROR_OUTOFMEM");
-    else if (tmp == CL_EMAXSIZE)
+    else if (ret == CL_EMAXSIZE)
         cli_json_parse_error(ctx->wrkproperty, "OOXML_ERROR_EMAXSIZE");
-    else if (tmp == CL_EMAXFILES)
+    else if (ret == CL_EMAXFILES)
         cli_json_parse_error(ctx->wrkproperty, "OOXML_ERROR_EMAXFILES");
 
-    return tmp;
+    return ret;
 #else
     UNUSEDPARAM(ctx);
     cli_dbgmsg("in cli_process_ooxml\n");

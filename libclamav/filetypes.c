@@ -125,6 +125,7 @@ static const struct ftmap_s {
     { "CL_TYPE_HWP3",		CL_TYPE_HWP3		},
     { "CL_TYPE_XML_HWP",	CL_TYPE_XML_HWP		},
     { "CL_TYPE_HWPOLE2",	CL_TYPE_HWPOLE2		},
+    { "CL_TYPE_OOXML_HWP",	CL_TYPE_OOXML_HWP	},
     { NULL,			CL_TYPE_IGNORED		}
 };
 
@@ -222,6 +223,9 @@ int is_tar(const unsigned char *buf, unsigned int nbytes);
 #define OOXML_DOCPROPS_DIR_LEN (sizeof(OOXML_DOCPROPS_DIR)-1)
 #define OOXML_CONTENTTYPES "[ContentTypes].xml"
 #define OOXML_CONTENTTYPES_LEN (sizeof(OOXML_CONTENTTYPES)-1)
+
+#define OOXML_HWP_CONTENTS "Contents/content.hpf"
+#define OOXML_HWP_CONTENTS_LEN (sizeof(OOXML_HWP_CONTENTS)-1)
 
 cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t basetype)
 {
@@ -328,20 +332,29 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
                         if (zlen >= OOXML_DOCPROPS_DIR_LEN) {
                             if (0 == memcmp(znamep, OOXML_DOCPROPS_DIR, OOXML_DOCPROPS_DIR_LEN)) {
                                 likely_ooxml = 1;
-                            } else { 
-                                if  (zlen >= OOXML_CONTENTTYPES_LEN) {
-                                    if (0 == memcmp(znamep, OOXML_CONTENTTYPES, OOXML_CONTENTTYPES_LEN)) {
-                                        likely_ooxml = 1;
-                                    }
-                                } else {
-                                    znamep = NULL;
-                                    break;
-                                }
                             }
                         } else {
                             znamep = NULL;
                             break;
                         }
+			if  (zlen >= OOXML_CONTENTTYPES_LEN) {
+			    if (0 == memcmp(znamep, OOXML_CONTENTTYPES, OOXML_CONTENTTYPES_LEN)) {
+				likely_ooxml = 1;
+			    }
+			} else {
+			    znamep = NULL;
+			    break;
+			}
+			if (zlen >= OOXML_HWP_CONTENTS_LEN) {
+                            if (0 == memcmp(znamep, OOXML_HWP_CONTENTS, OOXML_HWP_CONTENTS_LEN)) {
+                                cli_dbgmsg("Recognized OOXML HWP file\n");
+                                return CL_TYPE_OOXML_HWP;
+                            }
+                        } else {
+                            znamep = NULL;
+                            break;
+                        }
+
 
                         if (++lhc > 2) {
                             /* only check first three zip headers unless likely ooxml */
