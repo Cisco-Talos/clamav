@@ -54,7 +54,7 @@
 
 #define HWP5_DEBUG 0
 #define HWP3_DEBUG 1
-#define HWPML_DEBUG 1
+#define HWPML_DEBUG 0
 #if HWP5_DEBUG
 #define hwp5_debug(...) cli_dbgmsg(__VA_ARGS__)
 #else
@@ -179,6 +179,28 @@ static int decompress_and_callback(cli_ctx *ctx, fmap_t *input, off_t at, size_t
     return ret;
 }
 
+/*** HWPOLE2 ***/
+int cli_scanhwpole2(cli_ctx *ctx)
+{
+    fmap_t *map = *ctx->fmap;
+    uint32_t usize, asize;
+
+    asize = (uint32_t)(map->len - sizeof(usize));
+
+    if (fmap_readn(map, &usize, 0, sizeof(usize)) != sizeof(usize)) {
+        cli_errmsg("HWPOLE2: Failed to read uncompressed ole2 filesize\n");
+        return CL_EREAD;
+    }
+
+    if (usize != asize)
+        cli_warnmsg("HWPOLE2: Mismatched uncompressed prefix and size: %u != %u\n", usize, asize);
+    else
+        cli_dbgmsg("HWPOLE2: Matched uncompressed prefix and size: %u == %u\n", usize, asize);
+
+    return cli_map_scandesc(map, 4, map->len, ctx, CL_TYPE_ANY);
+    //return cli_map_scandesc(map, 4, map->len, ctx, CL_TYPE_OLE2);
+}
+
 /*** HWP5 ***/
 
 int cli_hwp5header(cli_ctx *ctx, hwp5_header_t *hwp5)
@@ -253,40 +275,16 @@ int cli_hwp5header(cli_ctx *ctx, hwp5_header_t *hwp5)
 
 static int hwp5_cb(void *cbdata, int fd, cli_ctx *ctx)
 {
-    int ret, ole2 = *(int *)cbdata;
+    int ret;
 
     if (fd < 0 || !ctx)
         return CL_ENULLARG;
 
-    /* trim off 32-bit prefix for OLE2 streams */
-    if (ole2) {
-        STATBUF statbuf;
-        fmap_t *map;
-
-        if (FSTAT(fd, &statbuf) == -1) {
-            cli_errmsg("HWP5.x: Can't stat file descriptor\n");
-            return CL_ESTAT;
-        }
-
-        map = fmap(fd, 0, statbuf.st_size);
-        if (!map) {
-            cli_errmsg("HWP5.x: Failed to get fmap for ole2 stream\n");
-            return CL_EMAP;
-        }
-
-        ret = cli_map_scandesc(map, 4, 0, ctx, CL_TYPE_ANY);
-        funmap(map);
-    } else {
-        ret = cli_magic_scandesc(fd, ctx);
-    }
-
-    return ret;
+    return cli_magic_scandesc(fd, ctx);
 }
 
 int cli_scanhwp5_stream(cli_ctx *ctx, hwp5_header_t *hwp5, char *name, int fd)
 {
-    int ole2;
-
     hwp5_debug("HWP5.x: NAME: %s\n", name);
 
     if (fd < 0) {
@@ -298,12 +296,6 @@ int cli_scanhwp5_stream(cli_ctx *ctx, hwp5_header_t *hwp5, char *name, int fd)
     if (!strncmp(name, "bin", 3) || !strncmp(name, "jscriptversion", 14) ||
         !strncmp(name, "defaultjscript", 14) || !strncmp(name, "section", 7) ||
         !strncmp(name, "viewtext", 8) || !strncmp(name, "docinfo", 7)) {
-
-        ole2 = 0;
-        if (strstr(name, ".ole")) {
-            cli_dbgmsg("HWP5.x: Detected embedded OLE2 stream\n");
-            ole2 = 1;
-        }
 
         if (hwp5->flags & HWP5_PASSWORD) {
             cli_dbgmsg("HWP5.x: Password encrypted stream, scanning as-is\n");
@@ -329,7 +321,7 @@ int cli_scanhwp5_stream(cli_ctx *ctx, hwp5_header_t *hwp5, char *name, int fd)
                 cli_errmsg("HWP5.x: Failed to get fmap for input stream\n");
                 return CL_EMAP;
             }
-            ret = decompress_and_callback(ctx, input, 0, 0, "HWP5.x", hwp5_cb, &ole2);
+            ret = decompress_and_callback(ctx, input, 0, 0, "HWP5.x", hwp5_cb, NULL);
             funmap(input);
             return ret;
         }
