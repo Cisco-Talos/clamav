@@ -50,19 +50,20 @@ struct attrib_entry {
 
 struct key_entry {
 /* how */
-#define MSXML_IGNORE         0x00
-#define MSXML_IGNORE_ELEM    0x01
-#define MSXML_SCAN_CB        0x02
-#define MSXML_SCAN_B64       0x04
+#define MSXML_IGNORE          0x0
+#define MSXML_IGNORE_ELEM     0x1
+#define MSXML_SCAN_CB         0x2
+#define MSXML_SCAN_B64        0x4
 /* where */
-#define MSXML_JSON_ROOT      0x08
-#define MSXML_JSON_WRKPTR    0x10
+#define MSXML_JSON_ROOT       0x8
+#define MSXML_JSON_WRKPTR     0x10
+#define MSXML_JSON_MULTI      0x20
 
 #define MSXML_JSON_TRACK (MSXML_JSON_ROOT | MSXML_JSON_WRKPTR)
 /* what */
-#define MSXML_JSON_COUNT     0x20
-#define MSXML_JSON_VALUE     0x40
-#define MSXML_JSON_ATTRIB    0x80
+#define MSXML_JSON_COUNT      0x40
+#define MSXML_JSON_VALUE      0x80
+#define MSXML_JSON_ATTRIB     0x100
 
     const char *key;
     const char *name;
