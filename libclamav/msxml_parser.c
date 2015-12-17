@@ -260,6 +260,21 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
                 cli_msxmlmsg("msxml_parse_element: retrieved json object [Count]\n");
             }
 
+            /* check if multiple entries are allowed */
+            if (thisjobj && (keyinfo->type & MSXML_JSON_MULTI)) {
+                /* replace this object with an array entry object */
+                json_object *multi = cli_jsonarray(thisjobj, "Multi");
+                if (!multi) {
+                    return CL_EMEM;
+                }
+                cli_msxmlmsg("msxml_parse_element: generated or retrieved json multi array\n");
+
+                thisjobj = cli_jsonobj(multi, NULL);
+                if (!thisjobj)
+                    return CL_EMEM;
+                cli_msxmlmsg("msxml_parse_element: generated json multi entry object\n");
+            }
+
             /* handle attributes */
             if (thisjobj && (keyinfo->type & MSXML_JSON_ATTRIB)) {
                 state = xmlTextReaderHasAttributes(reader);
