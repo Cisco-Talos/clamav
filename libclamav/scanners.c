@@ -2685,7 +2685,8 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
                 type == CL_TYPE_XML_WORD ||
                 type == CL_TYPE_XML_XL ||
                 type == CL_TYPE_HWP3 ||
-                type == CL_TYPE_XML_HWP) {
+                type == CL_TYPE_XML_HWP ||
+                type == CL_TYPE_HWPOLE2) {
                 ctx->properties = json_object_new_object();
                 if (NULL == ctx->properties) {
                     cli_errmsg("magic_scandesc: no memory for json properties object\n");
@@ -2845,6 +2846,10 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 
     case CL_TYPE_HWP3:
         ret = cli_scanhwp3(ctx);
+        break;
+
+    case CL_TYPE_HWPOLE2:
+        ret = cli_scanhwpole2(ctx);
         break;
 
     case CL_TYPE_XML_WORD:

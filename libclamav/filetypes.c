@@ -124,6 +124,7 @@ static const struct ftmap_s {
     { "CL_TYPE_XML_XL",		CL_TYPE_XML_XL		},
     { "CL_TYPE_HWP3",		CL_TYPE_HWP3		},
     { "CL_TYPE_XML_HWP",	CL_TYPE_XML_HWP		},
+    { "CL_TYPE_HWPOLE2",	CL_TYPE_HWPOLE2		},
     { NULL,			CL_TYPE_IGNORED		}
 };
 
