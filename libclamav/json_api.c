@@ -361,6 +361,7 @@ int cli_jsondouble(json_object *obj, const char* key, double d)
 
 json_object *cli_jsonarray(json_object *obj, const char *key)
 {
+    json_type objty;
     json_object *newobj;
 
     /* First check to see if this key exists */
@@ -372,10 +373,16 @@ json_object *cli_jsonarray(json_object *obj, const char *key)
     if (!(newobj))
         return NULL;
 
-    if (obj && key) {
-        json_object_object_add(obj, key, newobj);
-        if (!json_object_object_get_ex(obj, key, &newobj))
-            return NULL;
+    if (obj) {
+        objty = json_object_get_type(obj);
+
+        if (key && objty == json_type_object) {
+            json_object_object_add(obj, key, newobj);
+            if (!json_object_object_get_ex(obj, key, &newobj))
+                return NULL;
+        } else if (objty == json_type_array) {
+            json_object_array_add(obj, newobj);
+        }
     }
 
     return newobj;
@@ -388,7 +395,11 @@ int cli_jsonint_array(json_object *obj, int32_t val)
 
 json_object *cli_jsonobj(json_object *obj, const char *key)
 {
+    json_type objty;
     json_object *newobj;
+
+    if (obj && key && json_object_object_get_ex(obj, key, &newobj))
+        return json_object_is_type(newobj, json_type_object) ? newobj : NULL;
 
     if (obj && key && json_object_object_get_ex(obj, key, &newobj))
         return json_object_is_type(newobj, json_type_object) ? newobj : NULL;
@@ -397,10 +408,16 @@ json_object *cli_jsonobj(json_object *obj, const char *key)
     if (!(newobj))
         return NULL;
 
-    if (obj && key) {
-        json_object_object_add(obj, key, newobj);
-        if (!json_object_object_get_ex(obj, key, &newobj))
-            return NULL;
+    if (obj) {
+        objty = json_object_get_type(obj);
+
+        if (key && objty == json_type_object) {
+            json_object_object_add(obj, key, newobj);
+            if (!json_object_object_get_ex(obj, key, &newobj))
+                return NULL;
+        } else if (objty == json_type_array) {
+            json_object_array_add(obj, newobj);
+        }
     }
 
     return newobj;
