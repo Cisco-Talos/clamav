@@ -2686,7 +2686,8 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
                 type == CL_TYPE_XML_XL ||
                 type == CL_TYPE_HWP3 ||
                 type == CL_TYPE_XML_HWP ||
-                type == CL_TYPE_HWPOLE2) {
+                type == CL_TYPE_HWPOLE2 ||
+		type == CL_TYPE_OOXML_HWP) {
                 ctx->properties = json_object_new_object();
                 if (NULL == ctx->properties) {
                     cli_errmsg("magic_scandesc: no memory for json properties object\n");
@@ -2890,22 +2891,24 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 	    }
 	    break;
 
-        case CL_TYPE_OOXML_WORD:
-        case CL_TYPE_OOXML_PPT:
-        case CL_TYPE_OOXML_XL:
+	case CL_TYPE_OOXML_WORD:
+	case CL_TYPE_OOXML_PPT:
+	case CL_TYPE_OOXML_XL:
+	case CL_TYPE_OOXML_HWP:
 #if HAVE_JSON
-            if ((ctx->options & CL_SCAN_FILE_PROPERTIES) && (ctx->wrkproperty != NULL)) {
-                ret = cli_process_ooxml(ctx);
-                if (ret == CL_EMEM || ret == CL_ENULLARG) {
-                    /* critical error */
-                    break;
-                }
-                else if (ret != CL_SUCCESS) {
-                    /* allow for the CL_TYPE_ZIP scan to occur; cli_process_ooxml other possible returns: */
-                    /* CL_ETIMEOUT, CL_EMAXSIZE, CL_EMAXFILES, CL_EPARSE, CL_EFORMAT, CL_BREAK, CL_ESTAT  */
-                    ret = CL_SUCCESS;
-                }
-            }
+	    if ((ctx->options & CL_SCAN_FILE_PROPERTIES) && (ctx->wrkproperty != NULL)) {
+		ret = cli_process_ooxml(ctx, type);
+
+		if (ret == CL_EMEM || ret == CL_ENULLARG) {
+		    /* critical error */
+		    break;
+		}
+		else if (ret != CL_SUCCESS) {
+		    /* allow for the CL_TYPE_ZIP scan to occur; cli_process_ooxml other possible returns: */
+		    /* CL_ETIMEOUT, CL_EMAXSIZE, CL_EMAXFILES, CL_EPARSE, CL_EFORMAT, CL_BREAK, CL_ESTAT  */
+		    ret = CL_SUCCESS;
+		}
+	    }
 #endif
 	case CL_TYPE_ZIP:
 	    ctx->container_type = CL_TYPE_ZIP;
