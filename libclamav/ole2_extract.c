@@ -1126,6 +1126,10 @@ scan_mso_stream(int fd, cli_ctx *ctx)
         ret = CL_EREAD;
         goto mso_end;
     }
+
+    /* RFC1952 says numbers are stored with least significant byte first */
+    prefix = le32_to_host (prefix);
+
     off_in += sizeof(uint32_t);
     cli_dbgmsg("scan_mso_stream: stream prefix = %08x(%d)\n", prefix, prefix);
 
