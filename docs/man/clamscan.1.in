@@ -234,6 +234,9 @@ This option disables the submission of PE section data. (Default: submitting of 
 .TP
 \fB\-\-stats\-timeout=#n\fR
 This option sets the timeout in seconds to wait for communication back from the stats server. (Default: 10).
+.TP
+\fB\-\-disable\-cache\fR
+Disable caching and cache checks for hash sums of scanned files.
 .SH "EXAMPLES"
 .LP 
 .TP 
