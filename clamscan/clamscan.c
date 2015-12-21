@@ -289,6 +289,7 @@ void help(void)
     mprintf("    --disable-pe-stats                   Disable submission of individual PE sections in stats submissions\n");
     mprintf("    --stats-timeout=#n                   Number of seconds to wait for waiting a response back from the stats server\n");
     mprintf("    --stats-host-id=UUID                 Set the Host ID used when submitting statistical info.\n");
+    mprintf("    --disable-cache                      Disable caching and cache checks for hash sums of scanned files.\n");
     mprintf("\n");
     mprintf("(*) Default scan settings\n");
     mprintf("(**) Certain files (e.g. documents, archives, etc.) may in turn contain other\n");
