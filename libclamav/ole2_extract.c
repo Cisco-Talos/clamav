@@ -1455,7 +1455,7 @@ ole2_read_header(int fd, ole2_header_t * hdr)
 int
 cli_ole2_extract(const char *dirname, cli_ctx * ctx, struct uniq **vba)
 {
-    ole2_header_t   hdr;
+    ole2_header_t   hdr = {0};
     int             ret = CL_CLEAN;
     size_t hdr_size;
     unsigned int    file_count = 0;
