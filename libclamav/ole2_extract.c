@@ -1455,7 +1455,7 @@ ole2_read_header(int fd, ole2_header_t * hdr)
 int
 cli_ole2_extract(const char *dirname, cli_ctx * ctx, struct uniq **vba)
 {
-    ole2_header_t   hdr = {0};
+    ole2_header_t   hdr;
     int             ret = CL_CLEAN;
     size_t hdr_size;
     unsigned int    file_count = 0;
@@ -1466,6 +1466,7 @@ cli_ole2_extract(const char *dirname, cli_ctx * ctx, struct uniq **vba)
     if (!ctx)
         return CL_ENULLARG;
 
+    hdr.is_hwp = NULL;
     hdr.bitset = NULL;
     if (ctx->engine->maxscansize) {
         if (ctx->engine->maxscansize > ctx->scansize)
@@ -1545,7 +1546,6 @@ cli_ole2_extract(const char *dirname, cli_ctx * ctx, struct uniq **vba)
 
     /* PASS 1 : Count files and check for VBA */
     hdr.has_vba = 0;
-    hdr.is_hwp = NULL;
     ret = ole2_walk_property_tree(&hdr, NULL, 0, handler_enum, 0, &file_count, ctx, &scansize);
     cli_bitset_free(hdr.bitset);
     hdr.bitset = NULL;
