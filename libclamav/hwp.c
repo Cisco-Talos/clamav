@@ -386,6 +386,17 @@ struct hwp3_docsummary_entry {
 };
 #define NUM_DOCSUMMARY_FIELDS sizeof(hwp3_docsummary_fields)/sizeof(struct hwp3_docsummary_entry)
 
+//Document Paragraph Information - (43 or 230 total bytes)
+#define HWP3_PARAINFO_SIZE_S 43
+#define HWP3_PARAINFO_SIZE_L 230
+struct hwp3_parainfo {
+#define DI_PPFS      0
+#define DI_CHARCOUNT 1
+    uint8_t ppfs;        /* preceding paragraph font style - determines if 43 or 230 bytes; 0 => 43 bytes */
+    uint16_t char_count; /* 0 => empty paragraph => end of paragraph list */
+    /* other information - not interesting */
+};
+
 static inline int parsehwp3_docinfo(cli_ctx *ctx, off_t offset, struct hwp3_docinfo *docinfo)
 {
     const uint8_t *hwp3_ptr;
@@ -510,37 +521,78 @@ static inline int parsehwp3_docsummary(cli_ctx *ctx, off_t offset)
   Information Block Length(n) (32-bytes)
   Information Block Contents  (n-bytes)
 */
-static inline int parsehwp3_infoblk(cli_ctx *ctx, off_t offset)
+
+static inline int parsehwp3_infoblk_s(cli_ctx *ctx, fmap_t *dmap, off_t *offset, int *last)
 {
     uint16_t infoid, infolen;
-
-    if (fmap_readn(*ctx->fmap, &infoid, offset, sizeof(infoid)) != sizeof(infoid)) {
-        cli_errmsg("HWP3.x: Failed to read infomation block id @ %llu\n",
-                   (long long unsigned)offset);
-        return CL_EREAD;
-    }
-
-    if (fmap_readn(*ctx->fmap, &infolen, offset+sizeof(infoid), sizeof(infolen)) != sizeof(infolen)) {
-        cli_errmsg("HWP3.x: Failed to read infomation block len @ %llu\n",
-                   (long long unsigned)offset);
-        return CL_EREAD;
-    }
-
-    infoid = le16_to_host(infoid);
-    infolen = le16_to_host(infolen);
-
-    hwp3_debug("HWP3.x: Information Block[%llu]: ID:  %u\n", (long long unsigned)offset, infoid);
-    hwp3_debug("HWP3.x: Information Block[%llu]: LEN: %u\n", (long long unsigned)offset, infolen);
+    fmap_t *map = (dmap ? dmap : *ctx->fmap);
 
     return CL_SUCCESS;
 }
 
+static inline int parsehwp3_infoblk_l(cli_ctx *ctx, fmap_t *dmap, off_t *offset, int *last)
+{
+    uint32_t infoid, infolen;
+    fmap_t *map = (dmap ? dmap : *ctx->fmap);
+
+    hwp3_debug("HWP3.x: Information Block @ offset %llu\n", (long long unsigned)(*offset));
+
+    if (fmap_readn(map, &infoid, (*offset), sizeof(infoid)) != sizeof(infoid)) {
+        cli_errmsg("HWP3.x: Failed to read infomation block id @ %llu\n",
+                   (long long unsigned)(*offset));
+        return CL_EREAD;
+    }
+    (*offset) += sizeof(infoid);
+
+    if (fmap_readn(map, &infolen, (*offset), sizeof(infolen)) != sizeof(infolen)) {
+        cli_errmsg("HWP3.x: Failed to read infomation block len @ %llu\n",
+                   (long long unsigned)(*offset));
+        return CL_EREAD;
+    }
+    (*offset) += sizeof(infolen);
+
+    infoid = le32_to_host(infoid);
+    infolen = le32_to_host(infolen);
+
+    hwp3_debug("HWP3.x: Information Block[%llu]: ID:  %u\n", (long long unsigned)(*offset), infoid);
+    hwp3_debug("HWP3.x: Information Block[%llu]: LEN: %u\n", (long long unsigned)(*offset), infolen);
+
+    /* Possible Information Blocks */
+    switch(infoid) {
+    case 0:
+        if (infolen == 0) {
+            hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Terminating Entry\n",
+                       (long long unsigned)(*offset));
+            if (last) *last = 1;
+            return CL_SUCCESS;
+        } else {
+            cli_errmsg("HWP3.x: Information Block[%llu]: TYPE: Invalid Terminating Entry\n", 
+                       (long long unsigned)(*offset));
+            return CL_EFORMAT;
+        }
+    case 1:
+        hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Image Data\n", (long long unsigned)(*offset));
+        (*offset) += (32 + infolen);
+        /* TODO: scan image data */
+        break;
+    default:
+        cli_errmsg("HWP3.x: Information Block[%llu]: TYPE: UNKNOWN\n", (long long unsigned)(*offset));
+        return CL_EPARSE;
+    }
+
+    return CL_SUCCESS;
+}
+
+#define PARABUFFERLEN 1024
 static int hwp3_cb(void *cbdata, int fd, cli_ctx *ctx)
 {
     fmap_t *dmap;
     off_t offset = 0;
-    int i, ret = CL_SUCCESS;
+    int i, p = 0, last = 0, ret = CL_SUCCESS;
     uint16_t nstyles;
+    const char *pbuf;
+    struct hwp3_parainfo pinfo;
+    size_t plen = 0, pstate = 0, pbuflen;
 
     if (fd < 0) {
         cli_errmsg("HWP3.x: Invalid file descriptor argument\n");
@@ -564,9 +616,9 @@ static int hwp3_cb(void *cbdata, int fd, cli_ctx *ctx)
     for (i = 0; i < 7; i++) {
         uint16_t nfonts;
 
-        if ((ret = fmap_readn(dmap, &nfonts, offset, sizeof(nfonts))) != sizeof(nfonts)) {
+        if (fmap_readn(dmap, &nfonts, offset, sizeof(nfonts)) != sizeof(nfonts)) {
             funmap(dmap);
-            return ret;
+            return CL_EREAD;
         }
         nfonts = le16_to_host(nfonts);
 
@@ -576,9 +628,9 @@ static int hwp3_cb(void *cbdata, int fd, cli_ctx *ctx)
     }
 
     /* Styles - 2 + (n x 238) bytes where n is the first 2 bytes of the section */
-    if ((ret = fmap_readn(dmap, &nstyles, offset, sizeof(nstyles))) != sizeof(nstyles)) {
+    if (fmap_readn(dmap, &nstyles, offset, sizeof(nstyles)) != sizeof(nstyles)) {
         funmap(dmap);
-        return ret;
+        return CL_EREAD;
     }
     nstyles = le16_to_host(nstyles);
 
@@ -586,10 +638,62 @@ static int hwp3_cb(void *cbdata, int fd, cli_ctx *ctx)
 
     offset += (2 + nstyles * 238);
 
-    /* Paragraphs */
-    hwp3_debug("HWP3.x: Paragraphs start @ offset %llu\n", (long long unsigned)offset);
+    /* Paragraphs - variable */
+    /* Paragraphs - are terminated with 0x0d00[13(CR) as hchar], empty paragraph marks end of section */
+    do {
+        hwp3_debug("HWP3.x: Paragraph %d start @ offset %llu\n", p, (long long unsigned)offset);
+
+        if (fmap_readn(dmap, &(pinfo.ppfs), offset+DI_PPFS, sizeof(pinfo.ppfs)) != sizeof(pinfo.ppfs)) {
+            funmap(dmap);
+            return CL_EREAD;
+        }
+
+        if (fmap_readn(dmap, &(pinfo.char_count), offset+DI_CHARCOUNT, sizeof(pinfo.char_count)) != sizeof(pinfo.char_count)) {
+            funmap(dmap);
+            return CL_EREAD;
+        }
+
+        pinfo.char_count = le16_to_host(pinfo.char_count);
+
+        hwp3_debug("HWP3.x: Paragraph %d: ppfs  %u\n", p, pinfo.ppfs);
+        hwp3_debug("HWP3.x: Paragraph %d: chars %u\n", p++, pinfo.char_count);
+
+        if (pinfo.ppfs)
+            offset += HWP3_PARAINFO_SIZE_S;
+        else
+            offset += HWP3_PARAINFO_SIZE_L;
+
+        /* scan for end-of-paragraph [0x0d00] */
+        pstate = 0;
+        while ((pstate != 2) && (offset < dmap->len)) {
+            pbuflen = MIN(dmap->len-offset, PARABUFFERLEN);
+            if (!(pbuf = fmap_need_off_once(dmap, offset, pbuflen))) {
+                cli_errmsg("HWP3.x: Failed to map buffer @ %llu\n", (long long unsigned)offset);
+                return CL_EREAD;
+            }
+
+            for (i = 0; i < pbuflen; i++) {
+                if (pbuf[i] == 0x0d) {
+                    pstate = 1;
+                } else if (pstate && pbuf[i] == 0x00) {
+                    pstate = 2;
+                    i++;
+                    break;
+                } else {
+                    pstate = 0;
+                }
+            }
+
+            offset += i;
+        }
+    } while (pinfo.char_count && (offset < dmap->len));
+
+    /* detected empty paragraph marker => end-of-paragraph list */
+    if (pinfo.char_count == 0)
+        hwp3_debug("HWP3.x: Detected end-of-paragraph list @ offset %llu\n", (long long unsigned)offset);
 
     /* Additional Information Block (Internal) - Attachments and Media */
+    while (!last && ((ret = parsehwp3_infoblk_l(ctx, dmap, &offset, &last)) == CL_SUCCESS));
 
     /* scan the uncompressed stream? */
     //ret = cli_map_scandesc(dmap, 0, 0, ctx, CL_TYPE_ANY);
