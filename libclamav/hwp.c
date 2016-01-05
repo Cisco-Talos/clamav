@@ -634,7 +634,10 @@ int cli_scanhwp3(cli_ctx *ctx)
     }
     */
 
-    ret = decompress_and_callback(ctx, *ctx->fmap, offset, 0, "HWP3.x", hwp3_cb, NULL);
+    /* TODO: uncompressed segment handler */
+    if (docinfo.di_compressed)
+        ret = decompress_and_callback(ctx, *ctx->fmap, offset, 0, "HWP3.x", hwp3_cb, NULL);
+
     if (ret != CL_SUCCESS)
         return ret;
 
