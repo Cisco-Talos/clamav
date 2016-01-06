@@ -618,38 +618,46 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
 #define PARABUFFERLEN 1024
 static int hwp3_cb(void *cbdata, int fd, cli_ctx *ctx)
 {
-    fmap_t *dmap;
-    off_t offset = 0;
+    fmap_t *map, *dmap;
+    off_t offset, start;
     int i, p = 0, last = 0, ret = CL_SUCCESS;
     uint16_t nstyles;
     const char *pbuf;
     struct hwp3_parainfo pinfo;
     size_t plen = 0, pstate = 0, pbuflen;
 
-    if (fd < 0) {
-        cli_errmsg("HWP3.x: Invalid file descriptor argument\n");
-        return CL_ENULLARG;
+    offset = start = cbdata ? *(off_t *)cbdata : 0;
+
+    if (offset == 0) {
+        if (fd < 0) {
+            cli_errmsg("HWP3.x: Invalid file descriptor argument\n");
+            return CL_ENULLARG;
+        } else {
+            STATBUF statbuf;
+
+            if (FSTAT(fd, &statbuf) == -1) {
+                cli_errmsg("HWP3.x: Can't stat file descriptor\n");
+                return CL_ESTAT;
+            }
+
+            map = dmap = fmap(fd, 0, statbuf.st_size);
+            if (!map) {
+                cli_errmsg("HWP3.x: Failed to get fmap for uncompressed stream\n");
+                return CL_EMAP;
+            }
+        }
     } else {
-        STATBUF statbuf;
-
-        if (FSTAT(fd, &statbuf) == -1) {
-            cli_errmsg("HWP3.x: Can't stat file descriptor\n");
-            return CL_ESTAT;
-        }
-
-        dmap = fmap(fd, 0, statbuf.st_size);
-        if (!dmap) {
-            cli_errmsg("HWP3.x: Failed to get fmap for uncompressed stream\n");
-            return CL_EMAP;
-        }
+        map = *ctx->fmap;
+        dmap = NULL;
     }
 
     /* Fonts - 7 entries of 2 + (n x 40) bytes where n is the first 2 bytes of the entry */
     for (i = 0; i < 7; i++) {
         uint16_t nfonts;
 
-        if (fmap_readn(dmap, &nfonts, offset, sizeof(nfonts)) != sizeof(nfonts)) {
-            funmap(dmap);
+        if (fmap_readn(map, &nfonts, offset, sizeof(nfonts)) != sizeof(nfonts)) {
+            if (dmap)
+                funmap(dmap);
             return CL_EREAD;
         }
         nfonts = le16_to_host(nfonts);
@@ -660,8 +668,9 @@ static int hwp3_cb(void *cbdata, int fd, cli_ctx *ctx)
     }
 
     /* Styles - 2 + (n x 238) bytes where n is the first 2 bytes of the section */
-    if (fmap_readn(dmap, &nstyles, offset, sizeof(nstyles)) != sizeof(nstyles)) {
-        funmap(dmap);
+    if (fmap_readn(map, &nstyles, offset, sizeof(nstyles)) != sizeof(nstyles)) {
+        if (dmap)
+            funmap(dmap);
         return CL_EREAD;
     }
     nstyles = le16_to_host(nstyles);
@@ -675,13 +684,15 @@ static int hwp3_cb(void *cbdata, int fd, cli_ctx *ctx)
     do {
         hwp3_debug("HWP3.x: Paragraph %d start @ offset %llu\n", p, (long long unsigned)offset);
 
-        if (fmap_readn(dmap, &(pinfo.ppfs), offset+DI_PPFS, sizeof(pinfo.ppfs)) != sizeof(pinfo.ppfs)) {
-            funmap(dmap);
+        if (fmap_readn(map, &(pinfo.ppfs), offset+DI_PPFS, sizeof(pinfo.ppfs)) != sizeof(pinfo.ppfs)) {
+            if (dmap)
+                funmap(dmap);
             return CL_EREAD;
         }
 
-        if (fmap_readn(dmap, &(pinfo.char_count), offset+DI_CHARCOUNT, sizeof(pinfo.char_count)) != sizeof(pinfo.char_count)) {
-            funmap(dmap);
+        if (fmap_readn(map, &(pinfo.char_count), offset+DI_CHARCOUNT, sizeof(pinfo.char_count)) != sizeof(pinfo.char_count)) {
+            if (dmap)
+                funmap(dmap);
             return CL_EREAD;
         }
 
@@ -703,9 +714,9 @@ static int hwp3_cb(void *cbdata, int fd, cli_ctx *ctx)
 
         /* scan for end-of-paragraph [0x0d00 on an even offset] */
         pstate = 0;
-        while ((pstate != 2) && (offset < dmap->len)) {
-            pbuflen = MIN(dmap->len-offset, PARABUFFERLEN);
-            if (!(pbuf = fmap_need_off_once(dmap, offset, pbuflen))) {
+        while ((pstate != 2) && (offset < map->len)) {
+            pbuflen = MIN(map->len-offset, PARABUFFERLEN);
+            if (!(pbuf = fmap_need_off_once(map, offset, pbuflen))) {
                 cli_errmsg("HWP3.x: Failed to map buffer @ %llu\n", (long long unsigned)offset);
                 return CL_EREAD;
             }
@@ -724,20 +735,25 @@ static int hwp3_cb(void *cbdata, int fd, cli_ctx *ctx)
 
             offset += i;
         }
-    } while (offset < dmap->len);
+    } while (offset < map->len);
 
     /* 'additional information block #1's - attachments and media */
-    while (!last && ((ret = parsehwp3_infoblk_1(ctx, dmap, &offset, &last)) == CL_SUCCESS));
+    while (!last && ((ret = parsehwp3_infoblk_1(ctx, map, &offset, &last)) == CL_SUCCESS));
 
     /* scan the uncompressed stream - TODO: in both compressed and uncompressed cases [ALLMATCH] */
     if ((ret == CL_SUCCESS) || ((SCAN_ALL) && (ret == CL_VIRUS))) {
         int subret = ret;
-        ret = cli_map_scandesc(dmap, 0, 0, ctx, CL_TYPE_ANY);
+        size_t dlen = offset - start;
+
+        ret = cli_map_scandesc(map, start, dlen, ctx, CL_TYPE_ANY);
+        //ret = cli_map_scandesc(map, 0, 0, ctx, CL_TYPE_ANY);
+
         if (ret == CL_SUCCESS)
             ret = subret;
     }
 
-    funmap(dmap);
+    if (dmap)
+        funmap(dmap);
     return ret;
 }
 
@@ -780,6 +796,8 @@ int cli_scanhwp3(cli_ctx *ctx)
     /* TODO: uncompressed segment handler */
     if (docinfo.di_compressed)
         ret = decompress_and_callback(ctx, *ctx->fmap, offset, 0, "HWP3.x", hwp3_cb, NULL);
+    else
+        ret = hwp3_cb(&offset, 0, ctx);
 
     if (ret != CL_SUCCESS)
         return ret;
