@@ -639,7 +639,7 @@ static int hwp3_cb(void *cbdata, int fd, cli_ctx *ctx)
     offset += (2 + nstyles * 238);
 
     /* Paragraphs - variable */
-    /* Paragraphs - are terminated with 0x0d00[13(CR) as hchar], empty paragraph marks end of section */
+    /* Paragraphs - are terminated with 0x0d00[13(CR) as hchar], empty paragraph marks end of section and do NOT end with 0x0d00 */
     do {
         hwp3_debug("HWP3.x: Paragraph %d start @ offset %llu\n", p, (long long unsigned)offset);
 
@@ -663,7 +663,13 @@ static int hwp3_cb(void *cbdata, int fd, cli_ctx *ctx)
         else
             offset += HWP3_PARAINFO_SIZE_L;
 
-        /* scan for end-of-paragraph [0x0d00] */
+        /* detected empty paragraph marker => end-of-paragraph list */
+        if (pinfo.char_count == 0) {
+            hwp3_debug("HWP3.x: Detected end-of-paragraph list @ offset %llu\n", (long long unsigned)offset);
+            break;
+        }
+
+        /* scan for end-of-paragraph [0x0d00 on an even offset] */
         pstate = 0;
         while ((pstate != 2) && (offset < dmap->len)) {
             pbuflen = MIN(dmap->len-offset, PARABUFFERLEN);
@@ -673,7 +679,7 @@ static int hwp3_cb(void *cbdata, int fd, cli_ctx *ctx)
             }
 
             for (i = 0; i < pbuflen; i++) {
-                if (pbuf[i] == 0x0d) {
+                if ((pbuf[i] == 0x0d) && (((offset+i) % 2) == 0)) {
                     pstate = 1;
                 } else if (pstate && pbuf[i] == 0x00) {
                     pstate = 2;
@@ -686,11 +692,7 @@ static int hwp3_cb(void *cbdata, int fd, cli_ctx *ctx)
 
             offset += i;
         }
-    } while (pinfo.char_count && (offset < dmap->len));
-
-    /* detected empty paragraph marker => end-of-paragraph list */
-    if (pinfo.char_count == 0)
-        hwp3_debug("HWP3.x: Detected end-of-paragraph list @ offset %llu\n", (long long unsigned)offset);
+    } while (offset < dmap->len);
 
     /* Additional Information Block (Internal) - Attachments and Media */
     while (!last && ((ret = parsehwp3_infoblk_l(ctx, dmap, &offset, &last)) == CL_SUCCESS));
