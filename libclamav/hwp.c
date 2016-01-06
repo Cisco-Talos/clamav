@@ -536,9 +536,10 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
     uint32_t infoid, infolen;
     fmap_t *map = (dmap ? dmap : *ctx->fmap);
     int ret = CL_SUCCESS;
+    long long unsigned infoloc = (long long unsigned)(*offset);
     char field[HWP3_FIELD_LENGTH];
 
-    hwp3_debug("HWP3.x: Information Block @ offset %llu\n", (long long unsigned)(*offset));
+    hwp3_debug("HWP3.x: Information Block @ offset %llu\n", infoloc);
 
     if (fmap_readn(map, &infoid, (*offset), sizeof(infoid)) != sizeof(infoid)) {
         cli_errmsg("HWP3.x: Failed to read infomation block id @ %llu\n",
@@ -557,8 +558,8 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
     infoid = le32_to_host(infoid);
     infolen = le32_to_host(infolen);
 
-    hwp3_debug("HWP3.x: Information Block[%llu]: ID:  %u\n", (long long unsigned)(*offset), infoid);
-    hwp3_debug("HWP3.x: Information Block[%llu]: LEN: %u\n", (long long unsigned)(*offset), infolen);
+    hwp3_debug("HWP3.x: Information Block[%llu]: ID:  %u\n", infoloc, infoid);
+    hwp3_debug("HWP3.x: Information Block[%llu]: LEN: %u\n", infoloc, infolen);
 
     /* check information block bounds */
     if ((*offset)+infolen > map->len) {
@@ -571,17 +572,15 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
     switch(infoid) {
     case 0: /* Terminating */
         if (infolen == 0) {
-            hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Terminating Entry\n",
-                       (long long unsigned)(*offset));
+            hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Terminating Entry\n", infoloc);
             if (last) *last = 1;
             return CL_SUCCESS;
         } else {
-            cli_errmsg("HWP3.x: Information Block[%llu]: TYPE: Invalid Terminating Entry\n", 
-                       (long long unsigned)(*offset));
+            cli_errmsg("HWP3.x: Information Block[%llu]: TYPE: Invalid Terminating Entry\n", infoloc);
             return CL_EFORMAT;
         }
     case 1: /* Image Data */
-        hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Image Data\n", (long long unsigned)(*offset));
+        hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Image Data\n", infoloc);
 #if HWP3_DEBUG
         memset(field, 0, HWP3_FIELD_LENGTH);
         if (fmap_readn(map, field, (*offset), 16) != 16) {
@@ -589,7 +588,7 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
                        (long long unsigned)(*offset));
             return CL_EREAD;
         }
-        hwp3_debug("HWP3.x: Information Block[%llu]: NAME: %s\n", (long long unsigned)(*offset), field);
+        hwp3_debug("HWP3.x: Information Block[%llu]: NAME: %s\n", infoloc, field);
 
         memset(field, 0, HWP3_FIELD_LENGTH);
         if (fmap_readn(map, field, (*offset)+16, 16) != 16) {
@@ -597,18 +596,18 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
                        (long long unsigned)(*offset));
             return CL_EREAD;
         }
-        hwp3_debug("HWP3.x: Information Block[%llu]: FORM: %s\n", (long long unsigned)(*offset), field);
+        hwp3_debug("HWP3.x: Information Block[%llu]: FORM: %s\n", infoloc, field);
 #endif
         /* 32 bytes for extra data fields */
         ret = cli_map_scan(map, (*offset)+32, infolen-32, ctx, CL_TYPE_ANY);
         break;
     case 2: /* OLE2 Data */
-        hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: OLE2 Data\n", (long long unsigned)(*offset));
+        hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: OLE2 Data\n", infoloc);
         ret = cli_map_scan(map, (*offset), infolen, ctx, CL_TYPE_ANY);
         break;
     /* TODO: cases 3-6 and 0x100 and 0x101 */
     default:
-        cli_errmsg("HWP3.x: Information Block[%llu]: TYPE: UNKNOWN(%u)\n", (long long unsigned)(*offset), infoid);
+        cli_errmsg("HWP3.x: Information Block[%llu]: TYPE: UNKNOWN(%u)\n", infoloc, infoid);
         ret = cli_map_scan(map, (*offset), infolen, ctx, CL_TYPE_ANY);
     }
 
