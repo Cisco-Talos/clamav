@@ -2679,6 +2679,132 @@ static int decodesigmod(const char *sigmod)
     return 0;
 }
 
+static int decodecdb(const char **tokens)
+{
+
+	char *pt = NULL;
+	int sz = 0;
+	char *range[2];
+
+	if (!tokens)
+		return -1;
+
+	mprintf("VIRUS NAME: %s\n", tokens[0]);
+	mprintf("CONTAINER TYPE: %s\n", (strcmp(tokens[1], "*") ? tokens[1] : "ANY"));
+	mprintf("CONTAINER SIZE: ");
+	if (!cli_isnumber(tokens[2])) {
+		if (!strcmp(tokens[2], "*")) {
+			mprintf("ANY\n");
+
+		} else if (strchr(tokens[2], '-')) {
+			sz = cli_strtokenize(tokens[2], '-', 2 + 1, (const char **) range);
+			if(sz != 2 || !cli_isnumber(range[0]) || !cli_isnumber(range[1])) {
+				mprintf("!decodesig: Invalid container size range\n");
+				return -1;
+			}
+			mprintf("WITHIN RANGE %s to %s\n", range[0], range[1]);
+
+		} else {
+			mprintf("!decodesig: Invalid container size\n");
+			return -1;
+		}
+	} else {
+		mprintf("%s\n", tokens[2]);
+	}
+	mprintf("FILENAME REGEX: %s\n", tokens[3]);
+	mprintf("COMPRESSED FILESIZE: ");
+	if (!cli_isnumber(tokens[4])) {
+		if (!strcmp(tokens[4], "*")) {
+			mprintf("ANY\n");
+
+		} else if (strchr(tokens[4], '-')) {
+			sz = cli_strtokenize(tokens[4], '-', 2 + 1, (const char **) range);
+			if(sz != 2 || !cli_isnumber(range[0]) || !cli_isnumber(range[1])) {
+				mprintf("!decodesig: Invalid container size range\n");
+				return -1;
+			}
+			mprintf("WITHIN RANGE %s to %s\n", range[0], range[1]);	
+
+		} else {
+			mprintf("!decodesig: Invalid compressed filesize\n");
+			return -1;
+		}
+	} else {
+		mprintf("%s\n", tokens[4]);
+	}
+	mprintf("UNCOMPRESSED FILESIZE: ");
+	if (!cli_isnumber(tokens[5])) {
+		if (!strcmp(tokens[5], "*")) {
+			mprintf("ANY\n");
+
+		} else if (strchr(tokens[5], '-')) {
+			sz = cli_strtokenize(tokens[5], '-', 2 + 1, (const char **) range);
+			if(sz != 2 || !cli_isnumber(range[0]) || !cli_isnumber(range[1])) {
+				mprintf("!decodesig: Invalid container size range\n");
+				return -1;
+			}
+			mprintf("WITHIN RANGE %s to %s\n", range[0], range[1]);
+
+		} else {
+			mprintf("!decodesig: Invalid uncompressed filesize\n");
+			return -1;
+		}
+	} else {
+		mprintf("%s\n", tokens[5]);
+	}
+
+	mprintf("ENCRYPTION: "); 
+	if (!cli_isnumber(tokens[6])) {
+		if (!strcmp(tokens[6], "*")) {
+			mprintf("IGNORED\n");
+		} else {
+			mprintf("!decodesig: Invalid encryption flag\n");
+			return -1;
+		}
+	} else {
+		mprintf("%s\n", (atoi(tokens[6]) ? "YES" : "NO"));
+	}
+	
+	mprintf("FILE POSITION: ");
+	if (!cli_isnumber(tokens[7])) {
+		if (!strcmp(tokens[7], "*")) {
+			mprintf("ANY\n");
+
+		} else if (strchr(tokens[7], '-')) {
+			sz = cli_strtokenize(tokens[7], '-', 2 + 1, (const char **) range);
+			if(sz != 2 || !cli_isnumber(range[0]) || !cli_isnumber(range[1])) {
+				mprintf("!decodesig: Invalid container size range\n");
+				return -1;
+			}
+			mprintf("WITHIN RANGE %s to %s\n", range[0], range[1]);	
+
+		} else {
+			mprintf("!decodesig: Invalid file position\n");
+			return -1;
+		}
+	} else {
+		mprintf("%s\n", tokens[7]);
+	}
+
+	if (!strcmp(tokens[1], "CL_TYPE_ZIP") || !strcmp(tokens[1], "CL_TYPE_RAR")) {
+		if (!strcmp(tokens[8], "*")) {
+			mprintf("CRC SUM: ANY\n");
+		} else {
+		
+			errno = 0;
+			sz = (int) strtol(tokens[8], NULL, 16);
+			if (!sz && errno) {
+				mprintf("!decodesig: Invalid cyclic redundancy check sum\n");
+				return -1;
+			} else {
+				mprintf("CRC SUM: %d\n", sz);
+			}
+		}
+	}
+
+	return 0;
+}
+
 static int decodesig(char *sig, int fd)
 {
 	char *pt;
@@ -2754,7 +2880,12 @@ static int decodesig(char *sig, int fd)
 	    }
 	}
     } else if(strchr(sig, ':')) { /* ndb */
-	tokens_count = cli_strtokenize(sig, ':', 6 + 1, (const char **) tokens);
+	tokens_count = cli_strtokenize(sig, ':', 12 + 1, (const char **) tokens);
+
+	if (tokens_count > 9 && tokens_count < 13) { /* cdb*/
+	    return decodecdb((const char **) tokens);
+	}
+
 	if(tokens_count < 4 || tokens_count > 6) {
 	    mprintf("!decodesig: Invalid or not supported signature format\n");
 	    mprintf("TOKENS COUNT: %u\n", tokens_count);
