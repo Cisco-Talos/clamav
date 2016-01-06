@@ -522,7 +522,7 @@ static inline int parsehwp3_docsummary(cli_ctx *ctx, off_t offset)
   Information Block Contents  (n-bytes)
 */
 
-static inline int parsehwp3_infoblk_s(cli_ctx *ctx, fmap_t *dmap, off_t *offset, int *last)
+static inline int parsehwp3_infoblk_0(cli_ctx *ctx, fmap_t *dmap, off_t *offset, int *last)
 {
     uint16_t infoid, infolen;
     fmap_t *map = (dmap ? dmap : *ctx->fmap);
@@ -530,10 +530,13 @@ static inline int parsehwp3_infoblk_s(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
     return CL_SUCCESS;
 }
 
-static inline int parsehwp3_infoblk_l(cli_ctx *ctx, fmap_t *dmap, off_t *offset, int *last)
+#define HWP3_FIELD_LENGTH 17
+static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset, int *last)
 {
     uint32_t infoid, infolen;
     fmap_t *map = (dmap ? dmap : *ctx->fmap);
+    int ret = CL_SUCCESS;
+    char field[HWP3_FIELD_LENGTH];
 
     hwp3_debug("HWP3.x: Information Block @ offset %llu\n", (long long unsigned)(*offset));
 
@@ -557,9 +560,16 @@ static inline int parsehwp3_infoblk_l(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
     hwp3_debug("HWP3.x: Information Block[%llu]: ID:  %u\n", (long long unsigned)(*offset), infoid);
     hwp3_debug("HWP3.x: Information Block[%llu]: LEN: %u\n", (long long unsigned)(*offset), infolen);
 
+    /* check information block bounds */
+    if ((*offset)+infolen > map->len) {
+        cli_errmsg("HWP3.x: Information blocks length exceeds remaining map length, %llu > %llu\n",
+                   (long long unsigned)((*offset)+infolen), (long long unsigned)(map->len));
+        return CL_EREAD;
+    }
+
     /* Possible Information Blocks */
     switch(infoid) {
-    case 0:
+    case 0: /* Terminating */
         if (infolen == 0) {
             hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Terminating Entry\n",
                        (long long unsigned)(*offset));
@@ -570,17 +580,40 @@ static inline int parsehwp3_infoblk_l(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
                        (long long unsigned)(*offset));
             return CL_EFORMAT;
         }
-    case 1:
+    case 1: /* Image Data */
         hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Image Data\n", (long long unsigned)(*offset));
-        (*offset) += (32 + infolen);
-        /* TODO: scan image data */
+#if HWP3_DEBUG
+        memset(field, 0, HWP3_FIELD_LENGTH);
+        if (fmap_readn(map, field, (*offset), 16) != 16) {
+            cli_errmsg("HWP3.x: Failed to read infomation block field @ %llu\n",
+                       (long long unsigned)(*offset));
+            return CL_EREAD;
+        }
+        hwp3_debug("HWP3.x: Information Block[%llu]: NAME: %s\n", (long long unsigned)(*offset), field);
+
+        memset(field, 0, HWP3_FIELD_LENGTH);
+        if (fmap_readn(map, field, (*offset)+16, 16) != 16) {
+            cli_errmsg("HWP3.x: Failed to read infomation block field @ %llu\n",
+                       (long long unsigned)(*offset));
+            return CL_EREAD;
+        }
+        hwp3_debug("HWP3.x: Information Block[%llu]: FORM: %s\n", (long long unsigned)(*offset), field);
+#endif
+        /* 32 bytes for extra data fields */
+        ret = cli_map_scan(map, (*offset)+32, infolen-32, ctx, CL_TYPE_ANY);
         break;
+    case 2: /* OLE2 Data */
+        hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: OLE2 Data\n", (long long unsigned)(*offset));
+        ret = cli_map_scan(map, (*offset), infolen, ctx, CL_TYPE_ANY);
+        break;
+    /* TODO: cases 3-6 and 0x100 and 0x101 */
     default:
-        cli_errmsg("HWP3.x: Information Block[%llu]: TYPE: UNKNOWN\n", (long long unsigned)(*offset));
-        return CL_EPARSE;
+        cli_errmsg("HWP3.x: Information Block[%llu]: TYPE: UNKNOWN(%u)\n", (long long unsigned)(*offset), infoid);
+        ret = cli_map_scan(map, (*offset), infolen, ctx, CL_TYPE_ANY);
     }
 
-    return CL_SUCCESS;
+    (*offset) += infolen;
+    return ret;
 }
 
 #define PARABUFFERLEN 1024
@@ -694,11 +727,16 @@ static int hwp3_cb(void *cbdata, int fd, cli_ctx *ctx)
         }
     } while (offset < dmap->len);
 
-    /* Additional Information Block (Internal) - Attachments and Media */
-    while (!last && ((ret = parsehwp3_infoblk_l(ctx, dmap, &offset, &last)) == CL_SUCCESS));
+    /* 'additional information block #1's - attachments and media */
+    while (!last && ((ret = parsehwp3_infoblk_1(ctx, dmap, &offset, &last)) == CL_SUCCESS));
 
-    /* scan the uncompressed stream? */
-    //ret = cli_map_scandesc(dmap, 0, 0, ctx, CL_TYPE_ANY);
+    /* scan the uncompressed stream - TODO: in both compressed and uncompressed cases [ALLMATCH] */
+    if ((ret == CL_SUCCESS) || ((SCAN_ALL) && (ret == CL_VIRUS))) {
+        int subret = ret;
+        ret = cli_map_scandesc(dmap, 0, 0, ctx, CL_TYPE_ANY);
+        if (ret == CL_SUCCESS)
+            ret = subret;
+    }
 
     funmap(dmap);
     return ret;
