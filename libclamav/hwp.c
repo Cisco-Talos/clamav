@@ -389,13 +389,13 @@ struct hwp3_docsummary_entry {
 //Document Paragraph Information - (43 or 230 total bytes)
 #define HWP3_PARAINFO_SIZE_S 43
 #define HWP3_PARAINFO_SIZE_L 230
-struct hwp3_parainfo {
-#define DI_PPFS      0
-#define DI_CHARCOUNT 1
-    uint8_t ppfs;        /* preceding paragraph font style - determines if 43 or 230 bytes; 0 => 43 bytes */
-    uint16_t char_count; /* 0 => empty paragraph => end of paragraph list */
-    /* other information - not interesting */
-};
+#define PI_PPFS      0  /* offset 0 (1 byte)  - prior paragraph format style */
+#define PI_NCHARS    1  /* offset 1 (2 bytes) - character count */
+#define PI_NLINES    3  /* offset 3 (2 bytes) - line count */
+#define PI_IFSC      5  /* offset 5 (1 byte)  - including font style of characters */
+#define PI_FLAGS     6  /* offset 6 (1 byte)  - other flags */
+#define PI_SPECIAL   7  /* offset 7 (4 bytes) - special characters */
+#define PI_ISTYLE    11 /* offset 11 (1 byte) - paragraph style index */
 
 static inline int parsehwp3_docinfo(cli_ctx *ctx, off_t offset, struct hwp3_docinfo *docinfo)
 {
@@ -621,10 +621,15 @@ static int hwp3_cb(void *cbdata, int fd, cli_ctx *ctx)
     fmap_t *map, *dmap;
     off_t offset, start;
     int i, p = 0, last = 0, ret = CL_SUCCESS;
-    uint16_t nstyles;
+    uint16_t nstyles, nchars;
     const char *pbuf;
-    struct hwp3_parainfo pinfo;
     size_t plen = 0, pstate = 0, pbuflen;
+    uint8_t ppfs;
+#if HWP3_DEBUG
+    uint16_t nlines;
+    uint8_t ifsc, flags, istyle;
+    uint32_t special;
+#endif
 
     offset = start = cbdata ? *(off_t *)cbdata : 0;
 
@@ -684,30 +689,68 @@ static int hwp3_cb(void *cbdata, int fd, cli_ctx *ctx)
     do {
         hwp3_debug("HWP3.x: Paragraph %d start @ offset %llu\n", p, (long long unsigned)offset);
 
-        if (fmap_readn(map, &(pinfo.ppfs), offset+DI_PPFS, sizeof(pinfo.ppfs)) != sizeof(pinfo.ppfs)) {
+        if (fmap_readn(map, &ppfs, offset+PI_PPFS, sizeof(ppfs)) != sizeof(ppfs)) {
             if (dmap)
                 funmap(dmap);
             return CL_EREAD;
         }
 
-        if (fmap_readn(map, &(pinfo.char_count), offset+DI_CHARCOUNT, sizeof(pinfo.char_count)) != sizeof(pinfo.char_count)) {
+        if (fmap_readn(map, &nchars, offset+PI_NCHARS, sizeof(nchars)) != sizeof(nchars)) {
             if (dmap)
                 funmap(dmap);
             return CL_EREAD;
         }
 
-        pinfo.char_count = le16_to_host(pinfo.char_count);
+        nchars = le16_to_host(nchars);
 
-        hwp3_debug("HWP3.x: Paragraph %d: ppfs  %u\n", p, pinfo.ppfs);
-        hwp3_debug("HWP3.x: Paragraph %d: chars %u\n", p++, pinfo.char_count);
+        hwp3_debug("HWP3.x: Paragraph %u: ppfs   %u\n", p, ppfs);
+        hwp3_debug("HWP3.x: Paragraph %u: nchars %u\n", p++, nchars);
 
-        if (pinfo.ppfs)
+#if HWP3_DEBUG
+        if (fmap_readn(map, &nlines, offset+PI_NLINES, sizeof(nlines)) != sizeof(nlines)) {
+            if (dmap)
+                funmap(dmap);
+            return CL_EREAD;
+        }
+
+        if (fmap_readn(map, &ifsc, offset+PI_IFSC, sizeof(ifsc)) != sizeof(ifsc)) {
+            if (dmap)
+                funmap(dmap);
+            return CL_EREAD;
+        }
+
+        if (fmap_readn(map, &flags, offset+PI_FLAGS, sizeof(flags)) != sizeof(flags)) {
+            if (dmap)
+                funmap(dmap);
+            return CL_EREAD;
+        }
+
+        if (fmap_readn(map, &special, offset+PI_SPECIAL, sizeof(special)) != sizeof(special)) {
+            if (dmap)
+                funmap(dmap);
+            return CL_EREAD;
+        }
+
+        if (fmap_readn(map, &istyle, offset+PI_ISTYLE, sizeof(istyle)) != sizeof(istyle)) {
+            if (dmap)
+                funmap(dmap);
+            return CL_EREAD;
+        }
+
+        hwp3_debug("HWP3.x: Paragraph %u: nlines %u\n", p, nlines);
+        hwp3_debug("HWP3.x: Paragraph %u: ifsc   %u\n", p, ifsc);
+        hwp3_debug("HWP3.x: Paragraph %x: flags  %u\n", p, flags);
+        hwp3_debug("HWP3.x: Paragraph %u: spcl   %u\n", p, special);
+        hwp3_debug("HWP3.x: Paragraph %u: istyle %u\n", p, istyle);
+#endif
+
+        if (ppfs)
             offset += HWP3_PARAINFO_SIZE_S;
         else
             offset += HWP3_PARAINFO_SIZE_L;
 
         /* detected empty paragraph marker => end-of-paragraph list */
-        if (pinfo.char_count == 0) {
+        if (nchars == 0) {
             hwp3_debug("HWP3.x: Detected end-of-paragraph list @ offset %llu\n", (long long unsigned)offset);
             break;
         }
