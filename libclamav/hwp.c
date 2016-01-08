@@ -387,12 +387,13 @@ struct hwp3_docsummary_entry {
 #define NUM_DOCSUMMARY_FIELDS sizeof(hwp3_docsummary_fields)/sizeof(struct hwp3_docsummary_entry)
 
 //Document Paragraph Information - (43 or 230 total bytes)
+#define HWP_MAX_PARAGRAPH_RECURSION 15
+
 #define HWP3_PARAINFO_SIZE_S  43
 #define HWP3_PARAINFO_SIZE_L  230
 #define HWP3_LINEINFO_SIZE    14
 #define HWP3_CHARSHPDATA_SIZE 31
 
-#define HWP3_PARABUFFERLEN 1024
 #define HWP3_FIELD_LENGTH  17
 
 #define PI_PPFS      0  /* offset 0 (1 byte)  - prior paragraph format style */
@@ -524,14 +525,40 @@ static inline int parsehwp3_docsummary(cli_ctx *ctx, off_t offset)
     return CL_SUCCESS;
 }
 
-static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, off_t *roffset, int *last)
+static inline int parsehwp3_paragraph_special_verify(fmap_t *map, off_t offset, uint16_t id)
+{
+    uint16_t v;
+
+    /* ID block check - ID block is 8 bytes */
+    /* offset 6 is an identification check */
+    if (fmap_readn(map, &v, offset+6, sizeof(v)) != sizeof(v))
+        return CL_EREAD;
+
+    v = le16_to_host(v);
+
+    if (v != id)
+        return CL_EFORMAT;
+
+    offset += 8;
+
+    /* offset 16 of special info block is another identification check */
+    if (fmap_readn(map, &v, offset+16, sizeof(v)) != sizeof(v))
+        return CL_EREAD;
+
+    v = le16_to_host(v);
+
+    if (v != id)
+        return CL_EFORMAT;
+
+    return CL_SUCCESS;
+}
+
+static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int level, off_t *roffset, int *last)
 {
     off_t offset = *roffset;
-    uint16_t nchars, nlines;
-    uint8_t ppfs, csbf;
-    int i, t;
-    const char *pbuf;
-    size_t plen = 0, pstate = 0, pbuflen;
+    uint16_t nchars, nlines, content;
+    uint8_t ppfs, csb;
+    int i, c, l, sp = 0, term = 0, ret = CL_SUCCESS;
 #if HWP3_DEBUG
     /* other paragraph info */
     uint8_t ifsc, flags, istyle;
@@ -545,7 +572,11 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, off_t *r
     uint8_t pcsd_prop;
 #endif
 
-    hwp3_debug("HWP3.x: Paragraph %d start @ offset %llu\n", p, (long long unsigned)offset);
+    hwp3_debug("HWP3.x: recursion level: %d\n", level);
+    hwp3_debug("HWP3.x: Paragraph[%d, %d] starts @ offset %llu\n", level, p, (long long unsigned)offset);
+
+    if (level >= HWP_MAX_PARAGRAPH_RECURSION)
+        return CL_EMAXREC;
 
     if (fmap_readn(map, &ppfs, offset+PI_PPFS, sizeof(ppfs)) != sizeof(ppfs))
         return CL_EREAD;
@@ -560,9 +591,9 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, off_t *r
 
     nlines = le16_to_host(nlines);
 
-    hwp3_debug("HWP3.x: Paragraph %u: ppfs   %u\n", p, ppfs);
-    hwp3_debug("HWP3.x: Paragraph %u: nchars %u\n", p, nchars);
-    hwp3_debug("HWP3.x: Paragraph %u: nlines %u\n", p, nlines);
+    hwp3_debug("HWP3.x: Paragraph[%d, %d]: ppfs   %u\n", level, p, ppfs);
+    hwp3_debug("HWP3.x: Paragraph[%d, %d]: nchars %u\n", level, p, nchars);
+    hwp3_debug("HWP3.x: Paragraph[%d, %d]: nlines %u\n", level, p, nlines);
 
 #if HWP3_DEBUG
     if (fmap_readn(map, &ifsc, offset+PI_IFSC, sizeof(ifsc)) != sizeof(ifsc))
@@ -577,10 +608,10 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, off_t *r
     if (fmap_readn(map, &istyle, offset+PI_ISTYLE, sizeof(istyle)) != sizeof(istyle))
         return CL_EREAD;
 
-    hwp3_debug("HWP3.x: Paragraph %u: ifsc   %u\n", p, ifsc);
-    hwp3_debug("HWP3.x: Paragraph %u: flags  %x\n", p, flags);
-    hwp3_debug("HWP3.x: Paragraph %u: spcl   %x\n", p, special);
-    hwp3_debug("HWP3.x: Paragraph %u: istyle %u\n", p, istyle);
+    hwp3_debug("HWP3.x: Paragraph[%d, %d]: ifsc   %u\n", level, p, ifsc);
+    hwp3_debug("HWP3.x: Paragraph[%d, %d]: flags  %x\n", level, p, flags);
+    hwp3_debug("HWP3.x: Paragraph[%d, %d]: spcl   %x\n", level, p, special);
+    hwp3_debug("HWP3.x: Paragraph[%d, %d]: istyle %u\n", level, p, istyle);
 #endif
 
     if (ppfs)
@@ -591,13 +622,14 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, off_t *r
     /* detected empty paragraph marker => end-of-paragraph list */
     if (nchars == 0) {
         hwp3_debug("HWP3.x: Detected end-of-paragraph list @ offset %llu\n", (long long unsigned)offset);
+        hwp3_debug("HWP3.x: end recursion level: %d\n", level);
         (*roffset) = offset;
         (*last) = 1;
         return CL_SUCCESS;
     }
 
     /* line information blocks - TODO - check how multiple line data is handled */
-    hwp3_debug("HWP3.x: Paragraph %u line information starts @ offset %llu\n", p, (long long unsigned)offset);
+    hwp3_debug("HWP3.x: Paragraph[%d, %d] line information starts @ offset %llu\n", level, p, (long long unsigned)offset);
 #if HWP3_DEBUG
     for (i = 0; i < nlines; i++) {
         if (fmap_readn(map, &loff, offset+PLI_LOFF, sizeof(loff)) != sizeof(loff))
@@ -617,10 +649,10 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, off_t *r
         lhei = le16_to_host(lhei);
         lpag = le16_to_host(lpag);
 
-        hwp3_debug("HWP3.x: Paragraph %u Line %u: loff %u\n", p, i, loff);
-        hwp3_debug("HWP3.x: Paragraph %u Line %u: lcor %x\n", p, i, lcor);
-        hwp3_debug("HWP3.x: Paragraph %u Line %u: lhei %u\n", p, i, lhei);
-        hwp3_debug("HWP3.x: Paragraph %u Line %u: lpag %u\n", p, i, lpag);
+        hwp3_debug("HWP3.x: Paragraph[%d, %d]: Line %u: loff %u\n", level, p, i, loff);
+        hwp3_debug("HWP3.x: Paragraph[%d, %d]: Line %u: lcor %x\n", level, p, i, lcor);
+        hwp3_debug("HWP3.x: Paragraph[%d, %d]: Line %u: lhei %u\n", level, p, i, lhei);
+        hwp3_debug("HWP3.x: Paragraph[%d, %d]: Line %u: lpag %u\n", level, p, i, lpag);
 
         offset += HWP3_LINEINFO_SIZE;
     }
@@ -628,60 +660,174 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, off_t *r
     offset += (nlines * HWP3_LINEINFO_SIZE);
 #endif
 
-    /* character shape data */
-    hwp3_debug("HWP3.x: Paragraph %u character shape data starts @ offset %llu\n", p, (long long unsigned)offset);
-    if (fmap_readn(map, &csbf, offset, sizeof(csbf)) != sizeof(csbf))
-        return CL_EREAD;
+    /* character shape data, -1 is from the inclusion of the termination character in char count */
+    /* NOTE: each character shape data represents at least one character including the terminator */
+    for (i = 0, c = 0; i < nchars; i++) {
+        /* examine byte for cs data type */
+        if (fmap_readn(map, &csb, offset, sizeof(csb)) != sizeof(csb))
+            return CL_EREAD;
 
-    offset += sizeof(csbf);
+        offset += sizeof(csb);
 
-    hwp3_debug("HWP3.x: Paragraph %u character shape data byte flag %x\n", p, csbf);
+        switch(csb) {
+        case 0: /* character shape block */
+            hwp3_debug("HWP3.x: Paragraph[%d, %d]: character shape data @ offset %llu\n", level, p, (long long unsigned)offset);
 
-    /* TODO - loop on character data */
 #if HWP3_DEBUG
-    if (fmap_readn(map, &pcsd_size, offset+PCSD_SIZE, sizeof(pcsd_size)) != sizeof(pcsd_size))
-        return CL_EREAD;
+            if (fmap_readn(map, &pcsd_size, offset+PCSD_SIZE, sizeof(pcsd_size)) != sizeof(pcsd_size))
+                return CL_EREAD;
 
-    if (fmap_readn(map, &pcsd_prop, offset+PCSD_PROP, sizeof(pcsd_prop)) != sizeof(pcsd_prop))
-        return CL_EREAD;
+            if (fmap_readn(map, &pcsd_prop, offset+PCSD_PROP, sizeof(pcsd_prop)) != sizeof(pcsd_prop))
+                return CL_EREAD;
 
-    pcsd_size = le16_to_host(pcsd_size);
+            pcsd_size = le16_to_host(pcsd_size);
 
-    hwp3_debug("HWP3.x: Paragraph %u CS %u: pcsd_size %u\n", p, 0, pcsd_size);
-    hwp3_debug("HWP3.x: Paragraph %u CS %u: pcsd_prop %x\n", p, 0, pcsd_prop);
+            hwp3_debug("HWP3.x: Paragraph[%d, %d]: CS %u: pcsd_size %u\n", level, p, 0, pcsd_size);
+            hwp3_debug("HWP3.x: Paragraph[%d, %d]: CS %u: pcsd_prop %x\n", level, p, 0, pcsd_prop);
 #endif
 
-    offset += HWP3_CHARSHPDATA_SIZE;
-    /* loop close */
+            c++;
+            offset += HWP3_CHARSHPDATA_SIZE;
+            break;
+        case 1: /* normal character - as representation of another character for previous cs block */
+            break;
+        case 13: /* end-of-paragraph marker - treated identically as character */
+            hwp3_debug("HWP3.x: Detected end-of-paragraph marker @ offset %llu\n", (long long unsigned)offset-1);
+            term = 1;
 
-    t = (offset % 2);
-    hwp3_debug("HWP3.x: Paragraph content starts on %s offset %llu\n", t ? "odd" : "even",
-               (long long unsigned)offset);    
+            /* terminator is 2 bytes but 1 byte is already done */
+            offset += 1;
+            break;
+        default:
+            cli_errmsg("HWP3.x: Paragraph[%d, %d]: unknown CS type 0x%x @ offset %llu\n", level, p, csb,
+                       (long long unsigned)offset);
+            cli_errmsg("HWP3.x: Paragraph parsing detected %d of %u characters\n", i, nchars);
+            return CL_EPARSE;
+        }
+    }
+
+    hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected %d CS block(s) and %d characters\n", level, p, c, i);
+    hwp3_debug("HWP3.x: Paragraph[%d, %d]: content starts @ offset %llu\n", level, p, (long long unsigned)offset);
 
     /* scan for end-of-paragraph [0x0d00 on offset parity to current content] */
-    pstate = 0;
-    while ((pstate != 2) && (offset < map->len)) {
-        pbuflen = MIN(map->len-offset, HWP3_PARABUFFERLEN);
-        if (!(pbuf = fmap_need_off_once(map, offset, pbuflen))) {
-            cli_errmsg("HWP3.x: Failed to map buffer @ %llu\n", (long long unsigned)offset);
+    while (!term) {
+        if (fmap_readn(map, &content, offset, sizeof(content)) != sizeof(content))
             return CL_EREAD;
-        }
 
-        for (i = 0; i < pbuflen; i++) {
-            /* TODO - fix this conditional / parse content */
-            if ((pbuf[i] == 0x0d) && (t ^ ((offset+i) % 2) == 0)) {
-                pstate = 1;
-            } else if (pstate && pbuf[i] == 0x00) {
-                pstate = 2;
-                i++;
+        content = le16_to_host(content);
+
+        /* special character handling */
+        if (content < 32) {
+            hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected special character %u @ offset %llu\n", level, p, content,
+                (long long unsigned)offset);
+
+            switch(content) {
+            case 0:
+            case 1:
+            case 2:
+            case 3:
+            case 4:
+            case 12:
+            case 27:
+                hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected special character as [reserved]\n", level, p);
+                cli_errmsg("HWP3.x: Paragraph[%d, %d]: invalid usage of reserved special character %u\n", level, p, content);
+                return CL_EFORMAT;
+            case 10: /* table, test box, equation, button, hypertext */
+                {
+                    uint16_t ncells;
+                    hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected box marker @ offset %llu\n", level, p, (long long unsigned)offset);
+
+                    /* verification */
+                    ret = parsehwp3_paragraph_special_verify(map, offset, content);
+                    if (ret != CL_SUCCESS) {
+                        if (ret == CL_EFORMAT) {
+                            cli_errmsg("HWP3.x: Box ID block fails verification\n");
+                            return CL_EFORMAT;
+                        }
+                        return ret;
+                    }
+
+                    /* ID block is 8 bytes */
+                    offset += 8;
+
+                    /* table information (84 bytes) */ 
+                    /* ncells is located at offset 80 of table information */
+                    if (fmap_readn(map, &ncells, offset+80, sizeof(ncells)) != sizeof(ncells))
+                        return CL_EREAD;
+
+                    ncells = le16_to_host(ncells);
+                    offset += 84;
+
+                    hwp3_debug("HWP3.x: Paragraph[%d, %d]: box contains %u cell(s)\n", level, p, ncells);
+
+                    /* cell informations (27 bytes x ncells(offset 80 of table)) */
+                    hwp3_debug("HWP3.x: Paragraph[%d, %d]: box cell info array starts @ %llu\n", level, p, (long long unsigned)offset);
+                    offset += (27 * ncells);
+
+                    /* cell paragraph list */
+                    hwp3_debug("HWP3.x: Paragraph[%d, %d]: box cell paragraph list starts @ %llu\n", level, p, (long long unsigned)offset);
+                    for (i = 0; i < ncells; i++) {
+                        l = 0;
+                        while (!l && ((ret = parsehwp3_paragraph(ctx, map, sp++, level+1, &offset, &l)) == CL_SUCCESS));
+                    }
+
+                    /* box caption paragraph list */
+                    hwp3_debug("HWP3.x: Paragraph[%d, %d]: box cell caption pargraph list starts @ %llu\n", level, p, (long long unsigned)offset);
+                    l = 0;
+                    while (!l && ((ret = parsehwp3_paragraph(ctx, map, sp++, level+1, &offset, &l)) == CL_SUCCESS));
+                    break;
+                }
+            case 11: /* drawing */
+                {
+                    uint32_t size;
+                    hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected drawing marker @ offset %llu\n", level, p, (long long unsigned)offset);
+
+                    /* verification */
+                    ret = parsehwp3_paragraph_special_verify(map, offset, content);
+                    if (ret != CL_SUCCESS) {
+                        if (ret == CL_EFORMAT) {
+                            cli_errmsg("HWP3.x: Drawing ID block fails verification\n");
+                            return CL_EFORMAT;
+                        }
+                        return ret;
+                    }
+
+                    /* ID block is 8 bytes */
+                    offset += 8;
+
+                    /* Drawing Info Block is 328+n bytes with n = size of image */
+                    /* n is located at offset 0 of info block */
+                    if (fmap_readn(map, &size, offset, sizeof(size)) != sizeof(size))
+                        return CL_EREAD;
+
+                    hwp3_debug("HWP3.x: Paragraph[%d, %d]: drawing is %u additional bytes\n", level, p, size);
+
+                    size = le32_to_host(size);
+                    offset += (348 + size);
+
+                    /* caption paragraph list */
+                    hwp3_debug("HWP3.x: Paragraph[%d, %d]: drawing caption pargraph list starts @ %llu\n", level, p, (long long unsigned)offset);
+                    l = 0;
+                    while (!l && ((ret = parsehwp3_paragraph(ctx, map, sp++, level+1, &offset, &l)) == CL_SUCCESS));
+                    break;
+                }
+            case 13: /* end-of-paragraph marker - treated identically as character */
+                hwp3_debug("HWP3.x: Detected end-of-paragraph marker @ offset %llu\n", (long long unsigned)offset);
+                term = 1;
+
+                offset += sizeof(content);
                 break;
-            } else {
-                pstate = 0;
+            default:
+                hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected special character as [UNKNOWN]\n", level, p);
+                cli_errmsg("HWP3.x: Paragraph[%d, %d]: cannot understand special character %u\n", level, p, content);
+                return CL_EPARSE;
             }
+        } else { /* normal characters */
+            offset += sizeof(content);
         }
-
-        offset += i;
     }
+
+    hwp3_debug("HWP3.x: end recursion level: %d\n", level);
 
     (*roffset) = offset;
     return CL_SUCCESS;
@@ -857,7 +1003,7 @@ static int hwp3_cb(void *cbdata, int fd, cli_ctx *ctx)
     last = 0;
     /* Paragraphs - variable */
     /* Paragraphs - are terminated with 0x0d00[13(CR) as hchar], empty paragraph marks end of section and do NOT end with 0x0d00 */
-    while (!last && ((ret = parsehwp3_paragraph(ctx, map, p++, &offset, &last)) == CL_SUCCESS));
+    while (!last && ((ret = parsehwp3_paragraph(ctx, map, p++, 0, &offset, &last)) == CL_SUCCESS));
     /* return is never a virus */
     if (ret != CL_SUCCESS) {
         if (dmap)
@@ -922,7 +1068,6 @@ int cli_scanhwp3(cli_ctx *ctx)
     }
     */
 
-    /* TODO: uncompressed segment handler */
     if (docinfo.di_compressed)
         ret = decompress_and_callback(ctx, *ctx->fmap, offset, 0, "HWP3.x", hwp3_cb, NULL);
     else
