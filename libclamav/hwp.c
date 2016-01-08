@@ -52,8 +52,9 @@
 #include "msdoc.h"
 #endif
 
-#define HWP5_DEBUG 0
-#define HWP3_DEBUG 1
+#define HWP5_DEBUG  0
+#define HWP3_DEBUG  1
+#define HWP3_VERIFY 1
 #define HWPML_DEBUG 0
 #if HWP5_DEBUG
 #define hwp5_debug(...) cli_dbgmsg(__VA_ARGS__)
@@ -729,14 +730,178 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
             case 4:
             case 12:
             case 27:
-                hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected special character as [reserved]\n", level, p);
-                cli_errmsg("HWP3.x: Paragraph[%d, %d]: invalid usage of reserved special character %u\n", level, p, content);
-                return CL_EFORMAT;
+                {
+                    uint32_t length;
+#if HWP3_VERIFY
+                    uint16_t match;
+#endif
+
+                    hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected special character as [reserved]\n", level, p);
+
+                    /*
+                     * offset 0 (2 bytes) - special character ID
+                     * offset 2 (4 bytes) - length of information = n
+                     * offset 6 (2 bytes) - special character ID
+                     * offset 8 (n bytes) - information
+                     */
+
+#if HWP3_VERIFY
+                    if (fmap_readn(map, &match, offset+6, sizeof(match)) != sizeof(match))
+                        return CL_EREAD;
+
+                    match = le16_to_host(match);
+
+                    if (content != match) {
+                        cli_errmsg("HWP3.x: Reserved ID block fails verification\n");
+                        return CL_EFORMAT;
+                    }
+#endif
+
+                    if (fmap_readn(map, &length, offset, sizeof(length)) != sizeof(length))
+                        return CL_EREAD;
+
+                    length = le32_to_host(length);
+                    offset += (8 + length);
+#if HWP3_DEBUG
+                    cli_errmsg("HWP3.x: Paragraph[%d, %d]: possible invalid usage of reserved special character %u\n", level, p, content);
+                    return CL_EFORMAT;
+#endif
+                    break;
+                }
+            //case 5:
+            case 6: /* bookmark */
+                {
+#if HWP3_VERIFY
+                    uint32_t length;
+                    uint16_t match;
+#endif
+
+                    hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected bookmark marker @ offset %llu\n", level, p, (long long unsigned)offset);
+
+                    /*
+                     * offset 0 (2 bytes) - special character ID
+                     * offset 2 (4 bytes) - length of information = 34
+                     * offset 6 (2 bytes) - special character ID
+                     * offset 8 (16 x 2 bytes) - bookmark name
+                     * offset 40 (2 bytes) - bookmark type
+                     * total is always 42 bytes
+                     */
+
+#if HWP3_VERIFY
+                    if (fmap_readn(map, &length, offset, sizeof(length)) != sizeof(length))
+                        return CL_EREAD;
+
+                    if (fmap_readn(map, &match, offset+6, sizeof(match)) != sizeof(match))
+                        return CL_EREAD;
+
+                    length = le32_to_host(length);
+                    match = le16_to_host(match);
+
+                    if (content != match) {
+                        cli_errmsg("HWP3.x: Bookmark ID block fails verification\n");
+                        return CL_EFORMAT;
+                    }
+
+                    if (length != 34) {
+                        cli_errmsg("HWP3.x: Bookmark has incorrect length\n");
+                        return CL_EFORMAT;
+                    }
+#endif
+                    offset += 42;
+                }
+            case 7: /* date format */
+                {
+#if HWP3_VERIFY
+                    uint16_t match;
+#endif
+
+                    hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected date format marker @ offset %llu\n", level, p, (long long unsigned)offset);
+
+                    /*
+                     * offset 0 (2 bytes) - special character ID
+                     * offset 2 (40 x 2 bytes) - date format as user-defined dialog
+                     * offset 82 (2 bytes) - special character ID
+                     * total is always 84 bytes
+                     */
+
+#if HWP3_VERIFY
+                    if (fmap_readn(map, &match, offset+82, sizeof(match)) != sizeof(match))
+                        return CL_EREAD;
+
+                    match = le16_to_host(match);
+
+                    if (content != match) {
+                        cli_errmsg("HWP3.x: Date Format ID block fails verification\n");
+                        return CL_EFORMAT;
+                    }
+#endif
+                    offset += 84;
+                }
+            case 8: /* date code */
+                {
+#if HWP3_VERIFY
+                    uint16_t match;
+#endif
+
+                    hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected date code marker @ offset %llu\n", level, p, (long long unsigned)offset);
+
+                    /*
+                     * offset 0 (2 bytes) - special character ID
+                     * offset 2 (40 x 2 bytes) - date format string
+                     * offset 82 (4 x 2 bytes) - date (year, month, day of week)
+                     * offset 90 (2 x 2 bytes) - time (hour, minute)
+                     * offset 94 (2 bytes) - special character ID
+                     * total is always 96 bytes
+                     */
+
+#if HWP3_VERIFY
+                    if (fmap_readn(map, &match, offset+94, sizeof(match)) != sizeof(match))
+                        return CL_EREAD;
+
+                    match = le16_to_host(match);
+
+                    if (content != match) {
+                        cli_errmsg("HWP3.x: Date Code ID block fails verification\n");
+                        return CL_EFORMAT;
+                    }
+#endif
+                    offset += 96;
+                }
+            case 9: /* tab */
+                {
+#if HWP3_VERIFY
+                    uint16_t match;
+#endif
+
+                    hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected tab marker @ offset %llu\n", level, p, (long long unsigned)offset);
+
+                    /*
+                     * offset 0 (2 bytes) - special character ID
+                     * offset 2 (2 bytes) - tab width
+                     * offset 4 (2 bytes) - unknown(?)
+                     * offset 6 (2 bytes) - special character ID
+                     * total is always 8 bytes
+                     */
+
+#if HWP3_VERIFY
+                    if (fmap_readn(map, &match, offset+6, sizeof(match)) != sizeof(match))
+                        return CL_EREAD;
+
+                    match = le16_to_host(match);
+
+                    if (content != match) {
+                        cli_errmsg("HWP3.x: Tab ID block fails verification\n");
+                        return CL_EFORMAT;
+                    }
+#endif
+                    offset += 8;
+                }
             case 10: /* table, test box, equation, button, hypertext */
                 {
                     uint16_t ncells;
                     hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected box marker @ offset %llu\n", level, p, (long long unsigned)offset);
 
+#if HWP3_VERIFY
                     /* verification */
                     ret = parsehwp3_paragraph_special_verify(map, offset, content);
                     if (ret != CL_SUCCESS) {
@@ -746,6 +911,7 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                         }
                         return ret;
                     }
+#endif
 
                     /* ID block is 8 bytes */
                     offset += 8;
@@ -772,7 +938,7 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                     }
 
                     /* box caption paragraph list */
-                    hwp3_debug("HWP3.x: Paragraph[%d, %d]: box cell caption pargraph list starts @ %llu\n", level, p, (long long unsigned)offset);
+                    hwp3_debug("HWP3.x: Paragraph[%d, %d]: box cell caption paragraph list starts @ %llu\n", level, p, (long long unsigned)offset);
                     l = 0;
                     while (!l && ((ret = parsehwp3_paragraph(ctx, map, sp++, level+1, &offset, &l)) == CL_SUCCESS));
                     break;
@@ -782,6 +948,7 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                     uint32_t size;
                     hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected drawing marker @ offset %llu\n", level, p, (long long unsigned)offset);
 
+#if HWP3_VERIFY
                     /* verification */
                     ret = parsehwp3_paragraph_special_verify(map, offset, content);
                     if (ret != CL_SUCCESS) {
@@ -791,6 +958,7 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                         }
                         return ret;
                     }
+#endif
 
                     /* ID block is 8 bytes */
                     offset += 8;
@@ -806,7 +974,7 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                     offset += (348 + size);
 
                     /* caption paragraph list */
-                    hwp3_debug("HWP3.x: Paragraph[%d, %d]: drawing caption pargraph list starts @ %llu\n", level, p, (long long unsigned)offset);
+                    hwp3_debug("HWP3.x: Paragraph[%d, %d]: drawing caption paragraph list starts @ %llu\n", level, p, (long long unsigned)offset);
                     l = 0;
                     while (!l && ((ret = parsehwp3_paragraph(ctx, map, sp++, level+1, &offset, &l)) == CL_SUCCESS));
                     break;
