@@ -634,7 +634,7 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
         return CL_SUCCESS;
     }
 
-    /* line information blocks - TODO - check how multiple line data is handled */
+    /* line information blocks - TODO - check how multiple line data is handled; answer - probably not like this */
     hwp3_debug("HWP3.x: Paragraph[%d, %d] line information starts @ offset %llu\n", level, p, (long long unsigned)offset);
 #if HWP3_DEBUG
     for (i = 0; i < nlines; i++) {
@@ -943,7 +943,7 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                     else if (type == 3)
                         hwp3_debug("HWP3.x: Paragraph[%d, %d]: box object detected as button\n", level, p);
                    else
-                        hwp3_debug("HWP3.x: Paragraph[%d, %d]: box object detected as UNKNOWN\n", level, p);
+                       hwp3_debug("HWP3.x: Paragraph[%d, %d]: box object detected as UNKNOWN(%u)\n", level, p, type);
 #endif
 
                     /* ncells is located at offset 80 of box information */
@@ -964,12 +964,16 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                     for (i = 0; i < ncells; i++) {
                         l = 0;
                         while (!l && ((ret = parsehwp3_paragraph(ctx, map, sp++, level+1, &offset, &l)) == CL_SUCCESS));
+                        if (ret != CL_SUCCESS)
+                            return ret;
                     }
 
                     /* box caption paragraph list */
                     hwp3_debug("HWP3.x: Paragraph[%d, %d]: box cell caption paragraph list starts @ %llu\n", level, p, (long long unsigned)offset);
                     l = 0;
                     while (!l && ((ret = parsehwp3_paragraph(ctx, map, sp++, level+1, &offset, &l)) == CL_SUCCESS));
+                    if (ret != CL_SUCCESS)
+                        return ret;
                     break;
                 }
             case 11: /* drawing */
@@ -1006,6 +1010,8 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                     hwp3_debug("HWP3.x: Paragraph[%d, %d]: drawing caption paragraph list starts @ %llu\n", level, p, (long long unsigned)offset);
                     l = 0;
                     while (!l && ((ret = parsehwp3_paragraph(ctx, map, sp++, level+1, &offset, &l)) == CL_SUCCESS));
+                    if (ret != CL_SUCCESS)
+                        return ret;
                     break;
                 }
             case 13: /* end-of-paragraph marker - treated identically as character */
