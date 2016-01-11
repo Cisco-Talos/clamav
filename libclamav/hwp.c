@@ -563,6 +563,7 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
 #if HWP3_DEBUG
     /* other paragraph info */
     uint8_t ifsc, flags, istyle;
+    uint16_t fsize;
     uint32_t special;
 
     /* line info */
@@ -609,10 +610,14 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
     if (fmap_readn(map, &istyle, offset+PI_ISTYLE, sizeof(istyle)) != sizeof(istyle))
         return CL_EREAD;
 
+    if (fmap_readn(map, &fsize, offset+12, sizeof(fsize)) != sizeof(fsize))
+        return CL_EREAD;
+
     hwp3_debug("HWP3.x: Paragraph[%d, %d]: ifsc   %u\n", level, p, ifsc);
     hwp3_debug("HWP3.x: Paragraph[%d, %d]: flags  %x\n", level, p, flags);
     hwp3_debug("HWP3.x: Paragraph[%d, %d]: spcl   %x\n", level, p, special);
     hwp3_debug("HWP3.x: Paragraph[%d, %d]: istyle %u\n", level, p, istyle);
+    hwp3_debug("HWP3.x: Paragraph[%d, %d]: fsize  %u\n", level, p, fsize);
 #endif
 
     if (ppfs)
@@ -899,7 +904,10 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
             case 10: /* table, test box, equation, button, hypertext */
                 {
                     uint16_t ncells;
-                    hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected box marker @ offset %llu\n", level, p, (long long unsigned)offset);
+#if HWP3_DEBUG
+                    uint16_t type;
+#endif
+                    hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected box object marker @ offset %llu\n", level, p, (long long unsigned)offset);
 
 #if HWP3_VERIFY
                     /* verification */
@@ -916,15 +924,33 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                     /* ID block is 8 bytes */
                     offset += 8;
 
-                    /* table information (84 bytes) */ 
-                    /* ncells is located at offset 80 of table information */
+                    /* box information (84 bytes) */
+#if HWP3_DEBUG
+                    /* box type located at offset 78 of box information */
+                    if (fmap_readn(map, &type, offset+78, sizeof(type)) != sizeof(type))
+                        return CL_EREAD;
+
+                    type = le16_to_host(type);
+                    if (type == 0)
+                        hwp3_debug("HWP3.x: Paragraph[%d, %d]: box object detected as table\n", level, p);
+                    else if (type == 1)
+                        hwp3_debug("HWP3.x: Paragraph[%d, %d]: box object detected as text box\n", level, p);
+                    else if (type == 2)
+                        hwp3_debug("HWP3.x: Paragraph[%d, %d]: box object detected as equation\n", level, p);
+                    else if (type == 3)
+                        hwp3_debug("HWP3.x: Paragraph[%d, %d]: box object detected as button\n", level, p);
+                   else
+                        hwp3_debug("HWP3.x: Paragraph[%d, %d]: box object detected as UNKNOWN\n", level, p);
+#endif
+
+                    /* ncells is located at offset 80 of box information */
                     if (fmap_readn(map, &ncells, offset+80, sizeof(ncells)) != sizeof(ncells))
                         return CL_EREAD;
 
                     ncells = le16_to_host(ncells);
                     offset += 84;
 
-                    hwp3_debug("HWP3.x: Paragraph[%d, %d]: box contains %u cell(s)\n", level, p, ncells);
+                    hwp3_debug("HWP3.x: Paragraph[%d, %d]: box object contains %u cell(s)\n", level, p, ncells);
 
                     /* cell informations (27 bytes x ncells(offset 80 of table)) */
                     hwp3_debug("HWP3.x: Paragraph[%d, %d]: box cell info array starts @ %llu\n", level, p, (long long unsigned)offset);
