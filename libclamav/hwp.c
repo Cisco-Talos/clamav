@@ -637,34 +637,29 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
     /* line information blocks - TODO - check how multiple line data is handled; answer - probably not like this */
     hwp3_debug("HWP3.x: Paragraph[%d, %d] line information starts @ offset %llu\n", level, p, (long long unsigned)offset);
 #if HWP3_DEBUG
-    for (i = 0; i < nlines; i++) {
-        if (fmap_readn(map, &loff, offset+PLI_LOFF, sizeof(loff)) != sizeof(loff))
-            return CL_EREAD;
+    if (fmap_readn(map, &loff, offset+PLI_LOFF, sizeof(loff)) != sizeof(loff))
+        return CL_EREAD;
 
-        if (fmap_readn(map, &lcor, offset+PLI_LCOR, sizeof(lcor)) != sizeof(lcor))
-            return CL_EREAD;
+    if (fmap_readn(map, &lcor, offset+PLI_LCOR, sizeof(lcor)) != sizeof(lcor))
+        return CL_EREAD;
 
-        if (fmap_readn(map, &lhei, offset+PLI_LHEI, sizeof(lhei)) != sizeof(lhei))
-            return CL_EREAD;
+    if (fmap_readn(map, &lhei, offset+PLI_LHEI, sizeof(lhei)) != sizeof(lhei))
+        return CL_EREAD;
 
-        if (fmap_readn(map, &lpag, offset+PLI_LPAG, sizeof(lpag)) != sizeof(lpag))
-            return CL_EREAD;
+    if (fmap_readn(map, &lpag, offset+PLI_LPAG, sizeof(lpag)) != sizeof(lpag))
+        return CL_EREAD;
 
-        loff = le16_to_host(loff);
-        lcor = le16_to_host(lcor);
-        lhei = le16_to_host(lhei);
-        lpag = le16_to_host(lpag);
+    loff = le16_to_host(loff);
+    lcor = le16_to_host(lcor);
+    lhei = le16_to_host(lhei);
+    lpag = le16_to_host(lpag);
 
-        hwp3_debug("HWP3.x: Paragraph[%d, %d]: Line %u: loff %u\n", level, p, i, loff);
-        hwp3_debug("HWP3.x: Paragraph[%d, %d]: Line %u: lcor %x\n", level, p, i, lcor);
-        hwp3_debug("HWP3.x: Paragraph[%d, %d]: Line %u: lhei %u\n", level, p, i, lhei);
-        hwp3_debug("HWP3.x: Paragraph[%d, %d]: Line %u: lpag %u\n", level, p, i, lpag);
-
-        offset += HWP3_LINEINFO_SIZE;
-    }
-#else
-    offset += (nlines * HWP3_LINEINFO_SIZE);
+    hwp3_debug("HWP3.x: Paragraph[%d, %d]: Line %u: loff %u\n", level, p, i, loff);
+    hwp3_debug("HWP3.x: Paragraph[%d, %d]: Line %u: lcor %x\n", level, p, i, lcor);
+    hwp3_debug("HWP3.x: Paragraph[%d, %d]: Line %u: lhei %u\n", level, p, i, lhei);
+    hwp3_debug("HWP3.x: Paragraph[%d, %d]: Line %u: lpag %u\n", level, p, i, lpag);
 #endif
+    offset += HWP3_LINEINFO_SIZE;
 
     /* character shape data - may not be present if no byte flag is detected */
     /* NOTE: each character shape data represents at least one character including the terminator */
@@ -1024,8 +1019,58 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
 
                 offset += sizeof(content);
                 break;
-            //case 14: /* line information */
-            //case 15: /* hidden description */
+            case 14: /* line information */
+                hwp3_debug("HWP3.x: Detected line information marker @ offset %llu\n", (long long unsigned)offset);
+
+#if HWP3_VERIFY
+                /* verification */
+                ret = parsehwp3_paragraph_special_verify(map, offset, content);
+                if (ret != CL_SUCCESS) {
+                    if (ret == CL_EFORMAT) {
+                        cli_errmsg("HWP3.x: Line Information ID block fails verification\n");
+                        return CL_EFORMAT;
+                    }
+                    return ret;
+                }
+#endif
+                /* ID block is 8 bytes + line information is always 84 bytes */
+                offset += 92;
+                break;
+            case 15: /* hidden description */
+                {
+#if HWP3_VERIFY
+                    uint16_t match;
+#endif
+
+                    hwp3_debug("HWP3.x: Detected hidden description marker @ offset %llu\n", (long long unsigned)offset);
+
+                    /*
+                     * offset 0 (2 bytes) - special character ID
+                     * offset 2 (4 bytes) - reserved
+                     * offset 6 (2 bytes) - special character ID
+                     * total is always 8 bytes
+                     */
+
+#if HWP3_VERIFY
+                    if (fmap_readn(map, &match, offset+6, sizeof(match)) != sizeof(match))
+                        return CL_EREAD;
+
+                    match = le16_to_host(match);
+
+                    if (content != match) {
+                        cli_errmsg("HWP3.x: Hidden Description ID block fails verification\n");
+                        return CL_EFORMAT;
+                    }
+#endif
+
+                    /* hidden description paragraph list */
+                    hwp3_debug("HWP3.x: Paragraph[%d, %d]: hidden description paragraph list starts @ %llu\n", level, p, (long long unsigned)offset);
+                    l = 0;
+                    while (!l && ((ret = parsehwp3_paragraph(ctx, map, sp++, level+1, &offset, &l)) == CL_SUCCESS));
+                    if (ret != CL_SUCCESS)
+                        return ret;
+                    break;
+            }
             case 16: /* header/footer */
                 {
 #if HWP3_VERIFY
@@ -1079,7 +1124,40 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                         return ret;
                     break;
                 }
-            //case 17: /* footnote/North America??? */
+            case 17: /* footnote/North America??? */
+                {
+#if HWP3_VERIFY
+                    uint16_t match;
+#endif
+
+                    hwp3_debug("HWP3.x: Detected hidden description marker @ offset %llu\n", (long long unsigned)offset);
+
+                    /*
+                     * offset 0 (2 bytes) - special character ID
+                     * offset 2 (4 bytes) - reserved
+                     * offset 6 (2 bytes) - special character ID
+                     * offset 8 (8 x 1 bytes) - reserved
+                     * offset 16 (2 bytes) - number
+                     * offset 18 (2 bytes) - type
+                     * offset 20 (2 bytes) - alignment
+                     * total is always 22 bytes
+                     */
+
+#if HWP3_VERIFY
+                    if (fmap_readn(map, &match, offset+6, sizeof(match)) != sizeof(match))
+                        return CL_EREAD;
+
+                    match = le16_to_host(match);
+
+                    if (content != match) {
+                        cli_errmsg("HWP3.x: Hidden Description ID block fails verification\n");
+                        return CL_EFORMAT;
+                    }
+#endif
+
+                    offset += 22;
+                    break;
+                }
             case 18: /* paste code number */
                 {
 #if HWP3_VERIFY
