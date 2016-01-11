@@ -261,6 +261,11 @@ static int ea05(cli_ctx *ctx, const uint8_t *base, char *tmpd) {
       continue;
     }
 
+    if (UNP.csize < sizeof(union unaligned_32)) {
+      cli_dbgmsg("autoit: compressed size too small, skipping\n");
+      continue;
+    }
+
     if (!(UNP.inputbuf = cli_malloc(UNP.csize)))
       return CL_EMEM;
     if (!fmap_need_ptr_once(map, base, UNP.csize)) {
@@ -581,6 +586,11 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd) {
       continue;
     }
 
+    if (UNP.csize < sizeof(union unaligned_32)) {
+      cli_dbgmsg("autoit: compressed size too small, skipping\n");
+      continue;
+    }
+
     files++;
     if (!(UNP.inputbuf = cli_malloc(UNP.csize)))
       return CL_EMEM;
@@ -596,9 +606,9 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd) {
     if (comp == 1) {
       cli_dbgmsg("autoit: file is compressed\n");
       if (cli_readint32(UNP.inputbuf)!=0x36304145) {
-	cli_dbgmsg("autoit: bad magic or unsupported version\n");
-	free(UNP.inputbuf);
-	continue;
+          cli_dbgmsg("autoit: bad magic or unsupported version\n");
+          free(UNP.inputbuf);
+          continue;
       }
 
       if(!(UNP.usize = be32_to_host(*(uint32_t *)(UNP.inputbuf+4))))
