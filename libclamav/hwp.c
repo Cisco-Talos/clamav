@@ -395,7 +395,7 @@ struct hwp3_docsummary_entry {
 #define HWP3_LINEINFO_SIZE    14
 #define HWP3_CHARSHPDATA_SIZE 31
 
-#define HWP3_FIELD_LENGTH  17
+#define HWP3_FIELD_LENGTH  512
 
 #define PI_PPFS      0  /* offset 0 (1 byte)  - prior paragraph format style */
 #define PI_NCHARS    1  /* offset 1 (2 bytes) - character count */
@@ -1172,7 +1172,7 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
 {
     uint32_t infoid, infolen;
     fmap_t *map = (dmap ? dmap : *ctx->fmap);
-    int ret = CL_SUCCESS;
+    int i, count, ret = CL_SUCCESS;
     long long unsigned infoloc = (long long unsigned)(*offset);
     char field[HWP3_FIELD_LENGTH];
 
@@ -1184,6 +1184,15 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
         return CL_EREAD;
     }
     (*offset) += sizeof(infoid);
+    infoid = le32_to_host(infoid);
+
+    hwp3_debug("HWP3.x: Information Block[%llu]: ID:  %u\n", infoloc, infoid);
+
+    /* Booking Information(5) - no length field and no content */
+    if (infoid == 5) {
+        hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Booking Infomation\n", infoloc);
+        return CL_SUCCESS;
+    }
 
     if (fmap_readn(map, &infolen, (*offset), sizeof(infolen)) != sizeof(infolen)) {
         cli_errmsg("HWP3.x: Failed to read infomation block len @ %llu\n",
@@ -1191,11 +1200,8 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
         return CL_EREAD;
     }
     (*offset) += sizeof(infolen);
-
-    infoid = le32_to_host(infoid);
     infolen = le32_to_host(infolen);
 
-    hwp3_debug("HWP3.x: Information Block[%llu]: ID:  %u\n", infoloc, infoid);
     hwp3_debug("HWP3.x: Information Block[%llu]: LEN: %u\n", infoloc, infolen);
 
     /* check information block bounds */
@@ -1205,7 +1211,7 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
         return CL_EREAD;
     }
 
-    /* Possible Information Blocks */
+    /* Information Blocks */
     switch(infoid) {
     case 0: /* Terminating */
         if (infolen == 0) {
@@ -1218,7 +1224,7 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
         }
     case 1: /* Image Data */
         hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Image Data\n", infoloc);
-#if HWP3_DEBUG
+#if HWP3_DEBUG /* additional fields can be added */
         memset(field, 0, HWP3_FIELD_LENGTH);
         if (fmap_readn(map, field, (*offset), 16) != 16) {
             cli_errmsg("HWP3.x: Failed to read infomation block field @ %llu\n",
@@ -1244,7 +1250,53 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
         if (infolen > 0)
             ret = cli_map_scan(map, (*offset), infolen, ctx, CL_TYPE_ANY);
         break;
-    /* TODO: cases 3-6 and 0x100 and 0x101 */
+    case 3: /* Hypertext/Hyperlink Information */
+        hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Hypertext/Hyperlink Infomation\n", infoloc);
+        if (infolen % 617) {
+            cli_errmsg("HWP3.x: Information Block[%llu]: Invalid multiple of 617 => %u\n", infoloc, infolen);
+            return CL_EFORMAT;
+        }
+
+        count = (infolen / 617);
+        hwp3_debug("HWP3.x: Information Block[%llu]: COUNT: %d entries\n", infoloc, count);
+        for (i = 0; i < count; i++) {
+#if HWP3_DEBUG /* additional fields can be added */
+            memset(field, 0, HWP3_FIELD_LENGTH);
+            if (fmap_readn(map, field, (*offset), 256) != 256) {
+                cli_errmsg("HWP3.x: Failed to read infomation block field @ %llu\n",
+                           (long long unsigned)(*offset));
+                return CL_EREAD;
+            }
+            hwp3_debug("HWP3.x: Information Block[%llu]: %d: NAME: %s\n", infoloc, i, field);
+#endif
+            /* scanning macros - TODO - check numbers */
+            ret = cli_map_scan(map, (*offset)+(617*i)+288, 325, ctx, CL_TYPE_ANY);
+        }
+        break;
+    case 4:
+        hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Presentation Information\n", infoloc);
+        /* contains nothing of interest to scan */
+        break;
+    case 5:
+        /* should never run this as it is short-circuited above */
+        hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Booking Infomation\n", infoloc);
+        break;
+    case 6: /* Background Image Data */
+        hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Background Image Data\n", infoloc);
+#if HWP3_DEBUG /* additional fields can be added */
+        memset(field, 0, HWP3_FIELD_LENGTH);
+        if (fmap_readn(map, field, (*offset)+24, 256) != 256) {
+            cli_errmsg("HWP3.x: Failed to read infomation block field @ %llu\n",
+                       (long long unsigned)(*offset));
+            return CL_EREAD;
+        }
+        hwp3_debug("HWP3.x: Information Block[%llu]: NAME: %s\n", infoloc, field);
+#endif
+        /* 324 bytes for extra data fields */
+        if (infolen > 0)
+            ret = cli_map_scan(map, (*offset)+324, infolen-324, ctx, CL_TYPE_ANY);
+        break;
+    /* TODO: cases 0x100 and 0x101 */
     default:
         cli_warnmsg("HWP3.x: Information Block[%llu]: TYPE: UNKNOWN(%u)\n", infoloc, infoid);
         if (infolen > 0)
