@@ -1024,6 +1024,114 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
 
                 offset += sizeof(content);
                 break;
+            //case 14: /* line information */
+            //case 15: /* hidden description */
+            case 16: /* header/footer */
+                {
+#if HWP3_VERIFY
+                    uint16_t match;
+#endif
+#if HWP3_DEBUG
+                    uint8_t type;
+#endif
+
+                    hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected header/footer marker @ offset %llu\n", level, p, (long long unsigned)offset);
+
+                    /*
+                     * offset 0 (2 bytes) - special character ID
+                     * offset 2 (4 bytes) - reserved
+                     * offset 6 (2 bytes) - special character ID
+                     * offset 8 (8 x 1 byte) - reserved
+                     * offset 16 (1 byte) - type (header/footer)
+                     * offset 17 (1 byte) - kind
+                     * total is always 18 bytes
+                     */
+
+#if HWP3_VERIFY
+                    if (fmap_readn(map, &match, offset+6, sizeof(match)) != sizeof(match))
+                        return CL_EREAD;
+
+                    match = le16_to_host(match);
+
+                    if (content != match) {
+                        cli_errmsg("HWP3.x: Header/Footer ID block fails verification\n");
+                        return CL_EFORMAT;
+                    }
+#endif
+#if HWP3_DEBUG
+                    if (fmap_readn(map, &type, offset+16, sizeof(type)) != sizeof(type))
+                        return CL_EREAD;
+
+                    if (type == 0)
+                        hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected header/footer as header\n", level, p);
+                    else if (type == 1)
+                        hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected header/footer as footer\n", level, p);
+                    else
+                        hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected header/footer as UNKNOWN(%u)\n", level, p, type);
+#endif
+                    offset += 18;
+
+                    /* content paragraph list */
+                    hwp3_debug("HWP3.x: Paragraph[%d, %d]: header/footer paragraph list starts @ %llu\n", level, p, (long long unsigned)offset);
+                    l = 0;
+                    while (!l && ((ret = parsehwp3_paragraph(ctx, map, sp++, level+1, &offset, &l)) == CL_SUCCESS));
+                    if (ret != CL_SUCCESS)
+                        return ret;
+                    break;
+                }
+            //case 17: /* footnote/North America??? */
+            case 18: /* paste code number */
+                {
+#if HWP3_VERIFY
+                    uint16_t match;
+#endif
+#if HWP3_DEBUG
+                    uint8_t type;
+#endif
+
+                    hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected paste code number marker @ offset %llu\n", level, p, (long long unsigned)offset);
+
+                    /*
+                     * offset 0 (2 bytes) - special character ID
+                     * offset 2 (2 bytes) - type
+                     * offset 4 (2 bytes) - number value
+                     * offset 6 (2 bytes) - special character ID
+                     * total is always 8 bytes
+                     */
+
+#if HWP3_VERIFY
+                    if (fmap_readn(map, &match, offset+6, sizeof(match)) != sizeof(match))
+                        return CL_EREAD;
+
+                    match = le16_to_host(match);
+
+                    if (content != match) {
+                        cli_errmsg("HWP3.x: Patse Code Number ID block fails verification\n");
+                        return CL_EFORMAT;
+                    }
+#endif
+#if HWP3_DEBUG
+                    if (fmap_readn(map, &type, offset+2, sizeof(type)) != sizeof(type))
+                        return CL_EREAD;
+
+                    if (type == 0)
+                        hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected paste code number as side\n", level, p);
+                    else if (type == 1)
+                        hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected paste code number as footnote\n", level, p);
+                    else if (type == 2)
+                        hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected paste code number as North America???\n", level, p);
+                    else if (type == 3)
+                        hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected paste code number as drawing\n", level, p);
+                    else if (type == 4)
+                        hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected paste code number as table\n", level, p);
+                    else if (type == 5)
+                        hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected paste code number as equation\n", level, p);
+                    else
+                        hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected paste code number as UNKNOWN(%u)\n", level, p, type);
+#endif
+                    offset += 8;
+                    break;
+                }
             default:
                 hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected special character as [UNKNOWN]\n", level, p);
                 cli_errmsg("HWP3.x: Paragraph[%d, %d]: cannot understand special character %u\n", level, p, content);
