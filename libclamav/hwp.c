@@ -666,54 +666,57 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
     offset += (nlines * HWP3_LINEINFO_SIZE);
 #endif
 
-    /* character shape data, -1 is from the inclusion of the termination character in char count */
+    /* character shape data - may not be present if no byte flag is detected */
     /* NOTE: each character shape data represents at least one character including the terminator */
-    for (i = 0, c = 0; i < nchars; i++) {
-        /* examine byte for cs data type */
-        if (fmap_readn(map, &csb, offset, sizeof(csb)) != sizeof(csb))
-            return CL_EREAD;
+    /* peek at next character to check if character shape data is present */
+    if (fmap_readn(map, &csb, offset, sizeof(csb)) != sizeof(csb))
+        return CL_EREAD;
 
-        offset += sizeof(csb);
+    if (csb == 0) {
+        for (i = 0, c = 0; i < nchars; i++) {
+            /* examine byte for cs data type */
+            if (fmap_readn(map, &csb, offset, sizeof(csb)) != sizeof(csb))
+                return CL_EREAD;
 
-        switch(csb) {
-        case 0: /* character shape block */
-            hwp3_debug("HWP3.x: Paragraph[%d, %d]: character shape data @ offset %llu\n", level, p, (long long unsigned)offset);
+            offset += sizeof(csb);
+
+            switch(csb) {
+            case 0: /* character shape block */
+                hwp3_debug("HWP3.x: Paragraph[%d, %d]: character shape data @ offset %llu\n", level, p, (long long unsigned)offset);
 
 #if HWP3_DEBUG
-            if (fmap_readn(map, &pcsd_size, offset+PCSD_SIZE, sizeof(pcsd_size)) != sizeof(pcsd_size))
-                return CL_EREAD;
+                if (fmap_readn(map, &pcsd_size, offset+PCSD_SIZE, sizeof(pcsd_size)) != sizeof(pcsd_size))
+                    return CL_EREAD;
 
-            if (fmap_readn(map, &pcsd_prop, offset+PCSD_PROP, sizeof(pcsd_prop)) != sizeof(pcsd_prop))
-                return CL_EREAD;
+                if (fmap_readn(map, &pcsd_prop, offset+PCSD_PROP, sizeof(pcsd_prop)) != sizeof(pcsd_prop))
+                    return CL_EREAD;
 
-            pcsd_size = le16_to_host(pcsd_size);
+                pcsd_size = le16_to_host(pcsd_size);
 
-            hwp3_debug("HWP3.x: Paragraph[%d, %d]: CS %u: pcsd_size %u\n", level, p, 0, pcsd_size);
-            hwp3_debug("HWP3.x: Paragraph[%d, %d]: CS %u: pcsd_prop %x\n", level, p, 0, pcsd_prop);
+                hwp3_debug("HWP3.x: Paragraph[%d, %d]: CS %u: pcsd_size %u\n", level, p, 0, pcsd_size);
+                hwp3_debug("HWP3.x: Paragraph[%d, %d]: CS %u: pcsd_prop %x\n", level, p, 0, pcsd_prop);
 #endif
 
-            c++;
-            offset += HWP3_CHARSHPDATA_SIZE;
-            break;
-        case 1: /* normal character - as representation of another character for previous cs block */
-            break;
-        case 13: /* end-of-paragraph marker - treated identically as character */
-            hwp3_debug("HWP3.x: Detected end-of-paragraph marker @ offset %llu\n", (long long unsigned)offset-1);
-            term = 1;
-
-            /* terminator is 2 bytes but 1 byte is already done */
-            offset += 1;
-            break;
-        default:
-            cli_errmsg("HWP3.x: Paragraph[%d, %d]: unknown CS type 0x%x @ offset %llu\n", level, p, csb,
-                       (long long unsigned)offset);
-            cli_errmsg("HWP3.x: Paragraph parsing detected %d of %u characters\n", i, nchars);
-            return CL_EPARSE;
+                c++;
+                offset += HWP3_CHARSHPDATA_SIZE;
+                break;
+            case 1: /* normal character - as representation of another character for previous cs block */
+                break;
+            default:
+                cli_errmsg("HWP3.x: Paragraph[%d, %d]: unknown CS type 0x%x @ offset %llu\n", level, p, csb,
+                           (long long unsigned)offset);
+                cli_errmsg("HWP3.x: Paragraph parsing detected %d of %u characters\n", i, nchars);
+                return CL_EPARSE;
+            }
         }
+
+        hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected %d CS block(s) and %d characters\n", level, p, c, i);
+    } else {
+        hwp3_debug("HWP3.x: Paragraph[%d, %d]: no character shape data detected\n", level, p);
     }
 
-    hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected %d CS block(s) and %d characters\n", level, p, c, i);
-    hwp3_debug("HWP3.x: Paragraph[%d, %d]: content starts @ offset %llu\n", level, p, (long long unsigned)offset);
+    if (!term)
+        hwp3_debug("HWP3.x: Paragraph[%d, %d]: content starts @ offset %llu\n", level, p, (long long unsigned)offset);
 
     /* scan for end-of-paragraph [0x0d00 on offset parity to current content] */
     while (!term) {
