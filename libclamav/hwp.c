@@ -796,7 +796,7 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                      */
 
 #if HWP3_VERIFY
-                    if (fmap_readn(map, &length, offset, sizeof(length)) != sizeof(length))
+                    if (fmap_readn(map, &length, offset+2, sizeof(length)) != sizeof(length))
                         return CL_EREAD;
 
                     if (fmap_readn(map, &match, offset+6, sizeof(match)) != sizeof(match))
@@ -811,11 +811,12 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                     }
 
                     if (length != 34) {
-                        cli_errmsg("HWP3.x: Bookmark has incorrect length\n");
+                        cli_errmsg("HWP3.x: Bookmark has incorrect length: %u != 34)\n", length);
                         return CL_EFORMAT;
                     }
 #endif
                     offset += 42;
+                    break;
                 }
             case 7: /* date format */
                 {
@@ -844,6 +845,7 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                     }
 #endif
                     offset += 84;
+                    break;
                 }
             case 8: /* date code */
                 {
@@ -874,6 +876,7 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                     }
 #endif
                     offset += 96;
+                    break;
                 }
             case 9: /* tab */
                 {
@@ -903,6 +906,7 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                     }
 #endif
                     offset += 8;
+                    break;
                 }
             case 10: /* table, test box, equation, button, hypertext */
                 {
