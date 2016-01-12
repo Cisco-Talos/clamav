@@ -560,6 +560,9 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
     uint16_t nchars, nlines, content;
     uint8_t ppfs, csb;
     int i, c, l, sp = 0, term = 0, ret = CL_SUCCESS;
+#if HWP3_VERIFY
+    uint16_t match;
+#endif
 #if HWP3_DEBUG
     /* other paragraph info */
     uint8_t ifsc, flags, istyle;
@@ -735,9 +738,6 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
             case 27:
                 {
                     uint32_t length;
-#if HWP3_VERIFY
-                    uint16_t match;
-#endif
 
                     hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected special character as [reserved]\n", level, p);
 
@@ -776,7 +776,6 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                 {
 #if HWP3_VERIFY
                     uint32_t length;
-                    uint16_t match;
 #endif
 
                     hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected bookmark marker @ offset %llu\n", level, p, (long long unsigned)offset);
@@ -815,10 +814,6 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                 }
             case 7: /* date format */
                 {
-#if HWP3_VERIFY
-                    uint16_t match;
-#endif
-
                     hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected date format marker @ offset %llu\n", level, p, (long long unsigned)offset);
 
                     /*
@@ -844,10 +839,6 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                 }
             case 8: /* date code */
                 {
-#if HWP3_VERIFY
-                    uint16_t match;
-#endif
-
                     hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected date code marker @ offset %llu\n", level, p, (long long unsigned)offset);
 
                     /*
@@ -875,10 +866,6 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                 }
             case 9: /* tab */
                 {
-#if HWP3_VERIFY
-                    uint16_t match;
-#endif
-
                     hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected tab marker @ offset %llu\n", level, p, (long long unsigned)offset);
 
                     /*
@@ -1020,28 +1007,26 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                 offset += sizeof(content);
                 break;
             case 14: /* line information */
-                hwp3_debug("HWP3.x: Detected line information marker @ offset %llu\n", (long long unsigned)offset);
+                {
+                    hwp3_debug("HWP3.x: Detected line information marker @ offset %llu\n", (long long unsigned)offset);
 
 #if HWP3_VERIFY
-                /* verification */
-                ret = parsehwp3_paragraph_special_verify(map, offset, content);
-                if (ret != CL_SUCCESS) {
-                    if (ret == CL_EFORMAT) {
-                        cli_errmsg("HWP3.x: Line Information ID block fails verification\n");
-                        return CL_EFORMAT;
+                    /* verification */
+                    ret = parsehwp3_paragraph_special_verify(map, offset, content);
+                    if (ret != CL_SUCCESS) {
+                        if (ret == CL_EFORMAT) {
+                            cli_errmsg("HWP3.x: Line Information ID block fails verification\n");
+                            return CL_EFORMAT;
+                        }
+                        return ret;
                     }
-                    return ret;
-                }
 #endif
-                /* ID block is 8 bytes + line information is always 84 bytes */
-                offset += 92;
-                break;
+                    /* ID block is 8 bytes + line information is always 84 bytes */
+                    offset += 92;
+                    break;
+                }
             case 15: /* hidden description */
                 {
-#if HWP3_VERIFY
-                    uint16_t match;
-#endif
-
                     hwp3_debug("HWP3.x: Detected hidden description marker @ offset %llu\n", (long long unsigned)offset);
 
                     /*
@@ -1073,9 +1058,6 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
             }
             case 16: /* header/footer */
                 {
-#if HWP3_VERIFY
-                    uint16_t match;
-#endif
 #if HWP3_DEBUG
                     uint8_t type;
 #endif
@@ -1126,10 +1108,6 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                 }
             case 17: /* footnote/North America??? */
                 {
-#if HWP3_VERIFY
-                    uint16_t match;
-#endif
-
                     hwp3_debug("HWP3.x: Detected hidden description marker @ offset %llu\n", (long long unsigned)offset);
 
                     /*
@@ -1160,9 +1138,6 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                 }
             case 18: /* paste code number */
                 {
-#if HWP3_VERIFY
-                    uint16_t match;
-#endif
 #if HWP3_DEBUG
                     uint8_t type;
 #endif
@@ -1212,10 +1187,6 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                 }
             case 19: /* code number change */
                 {
-#if HWP3_VERIFY
-                    uint16_t match;
-#endif
-
                     hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected code number change marker @ offset %llu\n", level, p, (long long unsigned)offset);
 
                     /*
@@ -1242,10 +1213,6 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                 }
             case 20:
                 {
-#if HWP3_VERIFY
-                    uint16_t match;
-#endif
-
                     hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected thread page number marker @ offset %llu\n", level, p, (long long unsigned)offset);
 
                     /*
@@ -1272,10 +1239,6 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                 }
             case 21: /* hide special */
                 {
-#if HWP3_VERIFY
-                    uint16_t match;
-#endif
-
                     hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected hide special marker @ offset %llu\n", level, p, (long long unsigned)offset);
 
                     /*
