@@ -618,7 +618,7 @@ static void screnc_decode(unsigned char *ptr, struct screnc_state *s)
 		remaining = strlen((const char*)ptr) + 1;
 		memmove(dst, ptr, remaining);
 	} else {
-		*dst = '\0';
+		*ptr = '\0';
 	}
 }
 
