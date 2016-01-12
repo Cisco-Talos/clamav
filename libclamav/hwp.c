@@ -1344,18 +1344,6 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
     return CL_SUCCESS;
 }
 
-/*
-  InfoBlock(#1):
-  Information Block ID        (16-bytes)
-  Information Block Length(n) (16-bytes)
-  Information Block Contents  (n-bytes)
-
-  AdditionalInfoBlocks:
-  Information Block ID        (32-bytes)
-  Information Block Length(n) (32-bytes)
-  Information Block Contents  (n-bytes)
-*/
-
 static inline int parsehwp3_infoblk_0(cli_ctx *ctx, fmap_t *dmap, off_t *offset, int *last)
 {
     uint16_t infoid, infolen;
@@ -1627,14 +1615,10 @@ int cli_scanhwp3(cli_ctx *ctx)
 
     offset += HWP3_DOCSUMMARY_SIZE;
 
-    /* TODO: HANDLE OPTIONAL INFORMATION BLOCKS HERE */
-    /*
     if (docinfo.di_infoblksize) {
-        if ((ret = parsehwp3_infoblk(ctx, offset)) != CL_SUCCESS)
-            return ret;
-        /* increment offset? /
+        /* OPTIONAL TODO: HANDLE OPTIONAL INFORMATION BLOCK #0's FOR PRECLASS */
+        offset += docinfo.di_infoblksize;
     }
-    */
 
     if (docinfo.di_compressed)
         ret = decompress_and_callback(ctx, *ctx->fmap, offset, 0, "HWP3.x", hwp3_cb, NULL);
@@ -1644,7 +1628,7 @@ int cli_scanhwp3(cli_ctx *ctx)
     if (ret != CL_SUCCESS)
         return ret;
 
-    /* TODO: HANDLE OPTIONAL ADDITIONAL INFORMATION BLOCKS */
+    /* OPTIONAL TODO: HANDLE OPTIONAL ADDITIONAL INFORMATION BLOCK #2's FOR PRECLASS*/
 
     return ret;
 }
