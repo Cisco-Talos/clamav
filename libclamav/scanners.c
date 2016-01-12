@@ -3181,7 +3181,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
     }
 
     /* CL_TYPE_HTML: raw HTML files are not scanned, unless safety measure activated via DCONF */
-    if(type != CL_TYPE_IGNORED && (type != CL_TYPE_HTML || !(DCONF_DOC & DOC_CONF_HTML_SKIPRAW)) && !ctx->engine->sdb) {
+    if(type != CL_TYPE_IGNORED && (type != CL_TYPE_HTML || !(SCAN_HTML) || !(DCONF_DOC & DOC_CONF_HTML_SKIPRAW)) && !ctx->engine->sdb) {
 	res = cli_scanraw(ctx, type, typercg, &dettype, (ctx->engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE) ? NULL : hash);
 	if(res != CL_CLEAN) {
 	    switch(res) {
