@@ -741,7 +741,7 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                     /* id block verification (only on HWP3_VERIFY) */
                     HWP3_PSPECIAL_VERIFY(map, offset, 6, content, match);
 
-                    if (fmap_readn(map, &length, offset, sizeof(length)) != sizeof(length))
+                    if (fmap_readn(map, &length, offset+2, sizeof(length)) != sizeof(length))
                         return CL_EREAD;
 
                     length = le32_to_host(length);
@@ -1138,6 +1138,171 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                     HWP3_PSPECIAL_VERIFY(map, offset, 6, content, match);
 
                     offset += 8;
+                    break;
+                }
+            case 22: /* mail merge display */
+                {
+                    hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected mail merge display marker @ offset %llu\n", level, p, (long long unsigned)offset);
+
+                    /*
+                     * offset 0 (2 bytes) - special character ID
+                     * offset 2 (20 x 1 bytes) - field name (in ASCII)
+                     * offset 22 (2 bytes) - special character ID
+                     * total is always 24 bytes
+                     */
+
+                    /* id block verification (only on HWP3_VERIFY) */
+                    HWP3_PSPECIAL_VERIFY(map, offset, 22, content, match);
+
+                    offset += 24;
+                    break;
+                }
+            case 23: /* overlapping letters */
+                {
+                    hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected overlapping marker @ offset %llu\n", level, p, (long long unsigned)offset);
+
+                    /*
+                     * offset 0 (2 bytes) - special character ID
+                     * offset 2 (3 x 2 bytes) - overlapping letters
+                     * offset 8 (2 bytes) - special character ID
+                     * total is always 10 bytes
+                     */
+
+                    /* id block verification (only on HWP3_VERIFY) */
+                    HWP3_PSPECIAL_VERIFY(map, offset, 8, content, match);
+
+                    offset += 10;
+                    break;
+                }
+            case 24: /* hyphen */
+                {
+                    hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected hyphen marker @ offset %llu\n", level, p, (long long unsigned)offset);
+
+                    /*
+                     * offset 0 (2 bytes) - special character ID
+                     * offset 2 (2 bytes) - width of hyphen
+                     * offset 4 (2 bytes) - special character ID
+                     * total is always 6 bytes
+                     */
+
+                    /* id block verification (only on HWP3_VERIFY) */
+                    HWP3_PSPECIAL_VERIFY(map, offset, 4, content, match);
+
+                    offset += 6;
+                    break;
+                }
+            case 25: /* title/table/picture show times */
+                {
+                    hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected title/table/picture show times marker @ offset %llu\n", level, p, (long long unsigned)offset);
+
+                    /*
+                     * offset 0 (2 bytes) - special character ID
+                     * offset 2 (2 bytes) - type
+                     * offset 4 (2 bytes) - special character ID
+                     * total is always 6 bytes
+                     */
+
+                    /* id block verification (only on HWP3_VERIFY) */
+                    HWP3_PSPECIAL_VERIFY(map, offset, 4, content, match);
+
+                    offset += 6;
+                    break;
+                }
+            case 26: /* browse displayed */
+                {
+                    hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected browse displayed marker @ offset %llu\n", level, p, (long long unsigned)offset);
+
+                    /*
+                     * offset 0 (2 bytes) - special character ID
+                     * offset 2 (60 x 2 bytes) - keyword 1
+                     * offset 122 (60 x 2 bytes) - keyword 2
+                     * offset 242 (2 bytes) - page number
+                     * offset 244 (2 bytes) - special character ID
+                     * total is always 246 bytes
+                     */
+
+                    /* id block verification (only on HWP3_VERIFY) */
+                    HWP3_PSPECIAL_VERIFY(map, offset, 244, content, match);
+
+                    offset += 246;
+                    break;
+                }
+            case 28: /* overview shape/summary number */
+                {
+                    hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected overview shape/summary number marker @ offset %llu\n", level, p, (long long unsigned)offset);
+
+                    /*
+                     * offset 0 (2 bytes) - special character ID
+                     * offset 2 (2 bytes) - type
+                     * offset 4 (1 byte)  - form
+                     * offset 5 (1 byte)  - step
+                     * offset 6 (7 x 2 bytes)  - summary number
+                     * offset 20 (7 x 2 bytes) - custom
+                     * offset 34 (2 x 7 x 2 bytes) - decorative letters
+                     * offset 62 (2 bytes) - special character ID
+                     * total is always 64 bytes
+                     */
+
+                    /* id block verification (only on HWP3_VERIFY) */
+                    HWP3_PSPECIAL_VERIFY(map, offset, 62, content, match);
+
+                    offset += 64;
+                    break;
+                }
+            case 29: /* cross-reference */
+                {
+                    uint32_t length;
+
+                    hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected cross-reference marker @ offset %llu\n", level, p, (long long unsigned)offset);
+
+                    /*
+                     * offset 0 (2 bytes) - special character ID
+                     * offset 2 (4 bytes) - length of information
+                     * offset 6 (2 bytes) - special character ID
+                     * offset 8 (n bytes) - ...
+                     */
+
+                    /* id block verification (only on HWP3_VERIFY) */
+                    HWP3_PSPECIAL_VERIFY(map, offset, 6, content, match);
+
+                    if (fmap_readn(map, &length, offset+2, sizeof(length)) != sizeof(length))
+                        return CL_EREAD;
+
+                    length = le32_to_host(length);
+
+                    offset += (8 + length);
+                    break;
+                }
+            case 30: /* bundle of blanks (ON SALE for 2.99!) */
+                {
+                    hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected title/table/picture show times marker @ offset %llu\n", level, p, (long long unsigned)offset);
+
+                    /*
+                     * offset 0 (2 bytes) - special character ID
+                     * offset 2 (2 bytes) - special character ID
+                     * total is always 4 bytes
+                     */
+
+                    /* id block verification (only on HWP3_VERIFY) */
+                    HWP3_PSPECIAL_VERIFY(map, offset, 2, content, match);
+
+                    offset += 4;
+                    break;
+                }
+            case 31: /* fixed-width space */
+                {
+                    hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected title/table/picture show times marker @ offset %llu\n", level, p, (long long unsigned)offset);
+
+                    /*
+                     * offset 0 (2 bytes) - special character ID
+                     * offset 2 (2 bytes) - special character ID
+                     * total is always 4 bytes
+                     */
+
+                    /* id block verification (only on HWP3_VERIFY) */
+                    HWP3_PSPECIAL_VERIFY(map, offset, 2, content, match);
+
+                    offset += 4;
                     break;
                 }
             default:
