@@ -1184,7 +1184,7 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                     match = le16_to_host(match);
 
                     if (content != match) {
-                        cli_errmsg("HWP3.x: Patse Code Number ID block fails verification\n");
+                        cli_errmsg("HWP3.x: Paste Code Number ID block fails verification\n");
                         return CL_EFORMAT;
                     }
 #endif
@@ -1206,6 +1206,96 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                         hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected paste code number as equation\n", level, p);
                     else
                         hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected paste code number as UNKNOWN(%u)\n", level, p, type);
+#endif
+                    offset += 8;
+                    break;
+                }
+            case 19: /* code number change */
+                {
+#if HWP3_VERIFY
+                    uint16_t match;
+#endif
+
+                    hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected code number change marker @ offset %llu\n", level, p, (long long unsigned)offset);
+
+                    /*
+                     * offset 0 (2 bytes) - special character ID
+                     * offset 2 (2 bytes) - type
+                     * offset 4 (2 bytes) - new number value
+                     * offset 6 (2 bytes) - special character ID
+                     * total is always 8 bytes
+                     */
+
+#if HWP3_VERIFY
+                    if (fmap_readn(map, &match, offset+6, sizeof(match)) != sizeof(match))
+                        return CL_EREAD;
+
+                    match = le16_to_host(match);
+
+                    if (content != match) {
+                        cli_errmsg("HWP3.x: Code Number Change ID block fails verification\n");
+                        return CL_EFORMAT;
+                    }
+#endif
+                    offset += 8;
+                    break;
+                }
+            case 20:
+                {
+#if HWP3_VERIFY
+                    uint16_t match;
+#endif
+
+                    hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected thread page number marker @ offset %llu\n", level, p, (long long unsigned)offset);
+
+                    /*
+                     * offset 0 (2 bytes) - special character ID
+                     * offset 2 (2 bytes) - location
+                     * offset 4 (2 bytes) - shape
+                     * offset 6 (2 bytes) - special character ID
+                     * total is always 8 bytes
+                     */
+
+#if HWP3_VERIFY
+                    if (fmap_readn(map, &match, offset+6, sizeof(match)) != sizeof(match))
+                        return CL_EREAD;
+
+                    match = le16_to_host(match);
+
+                    if (content != match) {
+                        cli_errmsg("HWP3.x: Thread Page Number ID block fails verification\n");
+                        return CL_EFORMAT;
+                    }
+#endif
+                    offset += 8;
+                    break;
+                }
+            case 21: /* hide special */
+                {
+#if HWP3_VERIFY
+                    uint16_t match;
+#endif
+
+                    hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected hide special marker @ offset %llu\n", level, p, (long long unsigned)offset);
+
+                    /*
+                     * offset 0 (2 bytes) - special character ID
+                     * offset 2 (2 bytes) - type
+                     * offset 4 (2 bytes) - target
+                     * offset 6 (2 bytes) - special character ID
+                     * total is always 8 bytes
+                     */
+
+#if HWP3_VERIFY
+                    if (fmap_readn(map, &match, offset+6, sizeof(match)) != sizeof(match))
+                        return CL_EREAD;
+
+                    match = le16_to_host(match);
+
+                    if (content != match) {
+                        cli_errmsg("HWP3.x: Hide Special ID block fails verification\n");
+                        return CL_EFORMAT;
+                    }
 #endif
                     offset += 8;
                     break;
