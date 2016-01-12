@@ -627,7 +627,7 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
         return CL_SUCCESS;
     }
 
-    /* line information blocks - TODO - check how multiple line data is handled; answer - probably not like this */
+    /* line information blocks - TODO - check how multiple line data is handled */
     hwp3_debug("HWP3.x: Paragraph[%d, %d] line information starts @ offset %llu\n", level, p, (long long unsigned)offset);
 #if HWP3_DEBUG
     if (fmap_readn(map, &loff, offset+PLI_LOFF, sizeof(loff)) != sizeof(loff))
@@ -727,6 +727,7 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
             case 12:
             case 27:
                 {
+                    /* reserved */
                     uint32_t length;
 
                     hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected special character as [reserved]\n", level, p);
@@ -752,7 +753,29 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
 #endif
                     break;
                 }
-            //case 5:
+            case 5: /* field codes */
+                {
+                    uint32_t length;
+
+                    hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected field code marker @ offset %llu\n", level, p, (long long unsigned)offset);
+
+                    /*
+                     * offset 0 (2 bytes) - special character ID
+                     * offset 2 (4 bytes) - length of information = n
+                     * offset 6 (2 bytes) - special character ID
+                     * offset 8 (n bytes) - field code details
+                     */
+
+                    /* id block verification (only on HWP3_VERIFY) */
+                    HWP3_PSPECIAL_VERIFY(map, offset, 6, content, match);
+
+                    if (fmap_readn(map, &length, offset+2, sizeof(length)) != sizeof(length))
+                        return CL_EREAD;
+
+                    length = le32_to_host(length);
+                    offset += (8 + length);
+                    break;
+                }
             case 6: /* bookmark */
                 {
 #if HWP3_VERIFY
@@ -1446,11 +1469,11 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
             ret = cli_map_scan(map, (*offset)+(617*i)+288, 325, ctx, CL_TYPE_ANY);
         }
         break;
-    case 4:
+    case 4: /* Presentation Information */
         hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Presentation Information\n", infoloc);
         /* contains nothing of interest to scan */
         break;
-    case 5:
+    case 5: /* Booking Information */
         /* should never run this as it is short-circuited above */
         hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Booking Infomation\n", infoloc);
         break;
@@ -1469,7 +1492,12 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
         if (infolen > 0)
             ret = cli_map_scan(map, (*offset)+324, infolen-324, ctx, CL_TYPE_ANY);
         break;
-    /* TODO: cases 0x100 and 0x101 */
+    case 0x100: /* Table Extension */
+        /* contains nothing of interest to scan */
+        break;
+    case 0x101: /* Press Frame Information Field Name */
+        /* contains nothing of interest to scan */
+        break;
     default:
         cli_warnmsg("HWP3.x: Information Block[%llu]: TYPE: UNKNOWN(%u)\n", infoloc, infoid);
         if (infolen > 0)
