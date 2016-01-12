@@ -526,33 +526,23 @@ static inline int parsehwp3_docsummary(cli_ctx *ctx, off_t offset)
     return CL_SUCCESS;
 }
 
-static inline int parsehwp3_paragraph_special_verify(fmap_t *map, off_t offset, uint16_t id)
-{
-    uint16_t v;
+#if HWP3_VERIFY
+#define HWP3_PSPECIAL_VERIFY(map, offset, second, id, match)            \
+    do {                                                                \
+    if (fmap_readn(map, &match, offset+second, sizeof(match)) != sizeof(match)) \
+        return CL_EREAD;                                                \
+                                                                        \
+    match = le16_to_host(match);                                        \
+                                                                        \
+    if (id != match) {                                                  \
+        cli_errmsg("HWP3.x: ID %u block fails verification\n", id);     \
+        return CL_EFORMAT;                                              \
+    }                                                                   \
+    } while(0)
 
-    /* ID block check - ID block is 8 bytes */
-    /* offset 6 is an identification check */
-    if (fmap_readn(map, &v, offset+6, sizeof(v)) != sizeof(v))
-        return CL_EREAD;
-
-    v = le16_to_host(v);
-
-    if (v != id)
-        return CL_EFORMAT;
-
-    offset += 8;
-
-    /* offset 16 of special info block is another identification check */
-    if (fmap_readn(map, &v, offset+16, sizeof(v)) != sizeof(v))
-        return CL_EREAD;
-
-    v = le16_to_host(v);
-
-    if (v != id)
-        return CL_EFORMAT;
-
-    return CL_SUCCESS;
-}
+#else
+#define HWP3_PSPECIAL_VERIFY(map, offset, second, id, match)
+#endif
 
 static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int level, off_t *roffset, int *last)
 {
@@ -748,17 +738,8 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                      * offset 8 (n bytes) - information
                      */
 
-#if HWP3_VERIFY
-                    if (fmap_readn(map, &match, offset+6, sizeof(match)) != sizeof(match))
-                        return CL_EREAD;
-
-                    match = le16_to_host(match);
-
-                    if (content != match) {
-                        cli_errmsg("HWP3.x: Reserved ID block fails verification\n");
-                        return CL_EFORMAT;
-                    }
-#endif
+                    /* id block verification (only on HWP3_VERIFY) */
+                    HWP3_PSPECIAL_VERIFY(map, offset, 6, content, match);
 
                     if (fmap_readn(map, &length, offset, sizeof(length)) != sizeof(length))
                         return CL_EREAD;
@@ -790,19 +771,14 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                      */
 
 #if HWP3_VERIFY
+                    /* id block verification (only on HWP3_VERIFY) */
+                    HWP3_PSPECIAL_VERIFY(map, offset, 6, content, match);
+
+                    /* length check - always 34 bytes */
                     if (fmap_readn(map, &length, offset+2, sizeof(length)) != sizeof(length))
                         return CL_EREAD;
 
-                    if (fmap_readn(map, &match, offset+6, sizeof(match)) != sizeof(match))
-                        return CL_EREAD;
-
                     length = le32_to_host(length);
-                    match = le16_to_host(match);
-
-                    if (content != match) {
-                        cli_errmsg("HWP3.x: Bookmark ID block fails verification\n");
-                        return CL_EFORMAT;
-                    }
 
                     if (length != 34) {
                         cli_errmsg("HWP3.x: Bookmark has incorrect length: %u != 34)\n", length);
@@ -823,17 +799,9 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                      * total is always 84 bytes
                      */
 
-#if HWP3_VERIFY
-                    if (fmap_readn(map, &match, offset+82, sizeof(match)) != sizeof(match))
-                        return CL_EREAD;
+                    /* id block verification (only on HWP3_VERIFY) */
+                    HWP3_PSPECIAL_VERIFY(map, offset, 82, content, match);
 
-                    match = le16_to_host(match);
-
-                    if (content != match) {
-                        cli_errmsg("HWP3.x: Date Format ID block fails verification\n");
-                        return CL_EFORMAT;
-                    }
-#endif
                     offset += 84;
                     break;
                 }
@@ -850,17 +818,9 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                      * total is always 96 bytes
                      */
 
-#if HWP3_VERIFY
-                    if (fmap_readn(map, &match, offset+94, sizeof(match)) != sizeof(match))
-                        return CL_EREAD;
+                    /* id block verification (only on HWP3_VERIFY) */
+                    HWP3_PSPECIAL_VERIFY(map, offset, 94, content, match);
 
-                    match = le16_to_host(match);
-
-                    if (content != match) {
-                        cli_errmsg("HWP3.x: Date Code ID block fails verification\n");
-                        return CL_EFORMAT;
-                    }
-#endif
                     offset += 96;
                     break;
                 }
@@ -876,17 +836,9 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                      * total is always 8 bytes
                      */
 
-#if HWP3_VERIFY
-                    if (fmap_readn(map, &match, offset+6, sizeof(match)) != sizeof(match))
-                        return CL_EREAD;
+                    /* id block verification (only on HWP3_VERIFY) */
+                    HWP3_PSPECIAL_VERIFY(map, offset, 6, content, match);
 
-                    match = le16_to_host(match);
-
-                    if (content != match) {
-                        cli_errmsg("HWP3.x: Tab ID block fails verification\n");
-                        return CL_EFORMAT;
-                    }
-#endif
                     offset += 8;
                     break;
                 }
@@ -898,17 +850,11 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
 #endif
                     hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected box object marker @ offset %llu\n", level, p, (long long unsigned)offset);
 
-#if HWP3_VERIFY
-                    /* verification */
-                    ret = parsehwp3_paragraph_special_verify(map, offset, content);
-                    if (ret != CL_SUCCESS) {
-                        if (ret == CL_EFORMAT) {
-                            cli_errmsg("HWP3.x: Box ID block fails verification\n");
-                            return CL_EFORMAT;
-                        }
-                        return ret;
-                    }
-#endif
+                    /* verification (only on HWP3_VERIFY) */
+                    /* id block verify */
+                    HWP3_PSPECIAL_VERIFY(map, offset, 6, content, match);
+                    /* extra data block verify */
+                    HWP3_PSPECIAL_VERIFY(map, offset, 24, content, match);
 
                     /* ID block is 8 bytes */
                     offset += 8;
@@ -967,17 +913,11 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                     uint32_t size;
                     hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected drawing marker @ offset %llu\n", level, p, (long long unsigned)offset);
 
-#if HWP3_VERIFY
-                    /* verification */
-                    ret = parsehwp3_paragraph_special_verify(map, offset, content);
-                    if (ret != CL_SUCCESS) {
-                        if (ret == CL_EFORMAT) {
-                            cli_errmsg("HWP3.x: Drawing ID block fails verification\n");
-                            return CL_EFORMAT;
-                        }
-                        return ret;
-                    }
-#endif
+                    /* verification (only on HWP3_VERIFY) */
+                    /* id block verify */
+                    HWP3_PSPECIAL_VERIFY(map, offset, 6, content, match);
+                    /* extra data block verify */
+                    HWP3_PSPECIAL_VERIFY(map, offset, 24, content, match);
 
                     /* ID block is 8 bytes */
                     offset += 8;
@@ -1010,17 +950,12 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                 {
                     hwp3_debug("HWP3.x: Detected line information marker @ offset %llu\n", (long long unsigned)offset);
 
-#if HWP3_VERIFY
-                    /* verification */
-                    ret = parsehwp3_paragraph_special_verify(map, offset, content);
-                    if (ret != CL_SUCCESS) {
-                        if (ret == CL_EFORMAT) {
-                            cli_errmsg("HWP3.x: Line Information ID block fails verification\n");
-                            return CL_EFORMAT;
-                        }
-                        return ret;
-                    }
-#endif
+                    /* verification (only on HWP3_VERIFY) */
+                    /* id block verify */
+                    HWP3_PSPECIAL_VERIFY(map, offset, 6, content, match);
+                    /* extra data block verify */
+                    HWP3_PSPECIAL_VERIFY(map, offset, 24, content, match);
+
                     /* ID block is 8 bytes + line information is always 84 bytes */
                     offset += 92;
                     break;
@@ -1036,17 +971,8 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                      * total is always 8 bytes
                      */
 
-#if HWP3_VERIFY
-                    if (fmap_readn(map, &match, offset+6, sizeof(match)) != sizeof(match))
-                        return CL_EREAD;
-
-                    match = le16_to_host(match);
-
-                    if (content != match) {
-                        cli_errmsg("HWP3.x: Hidden Description ID block fails verification\n");
-                        return CL_EFORMAT;
-                    }
-#endif
+                    /* id block verification (only on HWP3_VERIFY) */
+                    HWP3_PSPECIAL_VERIFY(map, offset, 6, content, match);
 
                     /* hidden description paragraph list */
                     hwp3_debug("HWP3.x: Paragraph[%d, %d]: hidden description paragraph list starts @ %llu\n", level, p, (long long unsigned)offset);
@@ -1074,17 +1000,9 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                      * total is always 18 bytes
                      */
 
-#if HWP3_VERIFY
-                    if (fmap_readn(map, &match, offset+6, sizeof(match)) != sizeof(match))
-                        return CL_EREAD;
+                    /* id block verification (only on HWP3_VERIFY) */
+                    HWP3_PSPECIAL_VERIFY(map, offset, 6, content, match);
 
-                    match = le16_to_host(match);
-
-                    if (content != match) {
-                        cli_errmsg("HWP3.x: Header/Footer ID block fails verification\n");
-                        return CL_EFORMAT;
-                    }
-#endif
 #if HWP3_DEBUG
                     if (fmap_readn(map, &type, offset+16, sizeof(type)) != sizeof(type))
                         return CL_EREAD;
@@ -1121,17 +1039,8 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                      * total is always 22 bytes
                      */
 
-#if HWP3_VERIFY
-                    if (fmap_readn(map, &match, offset+6, sizeof(match)) != sizeof(match))
-                        return CL_EREAD;
-
-                    match = le16_to_host(match);
-
-                    if (content != match) {
-                        cli_errmsg("HWP3.x: Hidden Description ID block fails verification\n");
-                        return CL_EFORMAT;
-                    }
-#endif
+                    /* id block verification (only on HWP3_VERIFY) */
+                    HWP3_PSPECIAL_VERIFY(map, offset, 6, content, match);
 
                     offset += 22;
                     break;
@@ -1152,17 +1061,9 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                      * total is always 8 bytes
                      */
 
-#if HWP3_VERIFY
-                    if (fmap_readn(map, &match, offset+6, sizeof(match)) != sizeof(match))
-                        return CL_EREAD;
+                    /* id block verification (only on HWP3_VERIFY) */
+                    HWP3_PSPECIAL_VERIFY(map, offset, 6, content, match);
 
-                    match = le16_to_host(match);
-
-                    if (content != match) {
-                        cli_errmsg("HWP3.x: Paste Code Number ID block fails verification\n");
-                        return CL_EFORMAT;
-                    }
-#endif
 #if HWP3_DEBUG
                     if (fmap_readn(map, &type, offset+2, sizeof(type)) != sizeof(type))
                         return CL_EREAD;
@@ -1197,17 +1098,9 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                      * total is always 8 bytes
                      */
 
-#if HWP3_VERIFY
-                    if (fmap_readn(map, &match, offset+6, sizeof(match)) != sizeof(match))
-                        return CL_EREAD;
+                    /* id block verification (only on HWP3_VERIFY) */
+                    HWP3_PSPECIAL_VERIFY(map, offset, 6, content, match);
 
-                    match = le16_to_host(match);
-
-                    if (content != match) {
-                        cli_errmsg("HWP3.x: Code Number Change ID block fails verification\n");
-                        return CL_EFORMAT;
-                    }
-#endif
                     offset += 8;
                     break;
                 }
@@ -1223,17 +1116,9 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                      * total is always 8 bytes
                      */
 
-#if HWP3_VERIFY
-                    if (fmap_readn(map, &match, offset+6, sizeof(match)) != sizeof(match))
-                        return CL_EREAD;
+                    /* id block verification (only on HWP3_VERIFY) */
+                    HWP3_PSPECIAL_VERIFY(map, offset, 6, content, match);
 
-                    match = le16_to_host(match);
-
-                    if (content != match) {
-                        cli_errmsg("HWP3.x: Thread Page Number ID block fails verification\n");
-                        return CL_EFORMAT;
-                    }
-#endif
                     offset += 8;
                     break;
                 }
@@ -1249,17 +1134,9 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                      * total is always 8 bytes
                      */
 
-#if HWP3_VERIFY
-                    if (fmap_readn(map, &match, offset+6, sizeof(match)) != sizeof(match))
-                        return CL_EREAD;
+                    /* id block verification (only on HWP3_VERIFY) */
+                    HWP3_PSPECIAL_VERIFY(map, offset, 6, content, match);
 
-                    match = le16_to_host(match);
-
-                    if (content != match) {
-                        cli_errmsg("HWP3.x: Hide Special ID block fails verification\n");
-                        return CL_EFORMAT;
-                    }
-#endif
                     offset += 8;
                     break;
                 }
