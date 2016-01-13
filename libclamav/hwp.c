@@ -53,8 +53,8 @@
 #endif
 
 #define HWP5_DEBUG  0
-#define HWP3_DEBUG  1
-#define HWP3_VERIFY 1
+#define HWP3_DEBUG  0
+#define HWP3_VERIFY 0
 #define HWPML_DEBUG 0
 #if HWP5_DEBUG
 #define hwp5_debug(...) cli_dbgmsg(__VA_ARGS__)
