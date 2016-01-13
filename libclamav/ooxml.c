@@ -352,7 +352,7 @@ static const struct key_entry ooxml_hwp_keys[] = {
     { "metadata",           "Metadata",           MSXML_JSON_ROOT | MSXML_JSON_ATTRIB },
     { "title",              "Title",              MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
     { "language",           "Language",           MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
-    { "meta",               "MetaFields",         MSXML_JSON_WRKPTR | MSXML_JSON_ATTRIB | MSXML_JSON_COUNT | MSXML_JSON_MULTI },
+    { "meta",               "MetaFields",         MSXML_JSON_WRKPTR | MSXML_JSON_ATTRIB | MSXML_JSON_VALUE | MSXML_JSON_COUNT | MSXML_JSON_MULTI },
     { "item",               "Contents",           MSXML_JSON_WRKPTR | MSXML_JSON_ATTRIB | MSXML_JSON_COUNT | MSXML_JSON_MULTI }
 };
 static size_t num_ooxml_hwp_keys = sizeof(ooxml_hwp_keys) / sizeof(struct key_entry);
