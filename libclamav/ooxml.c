@@ -403,6 +403,9 @@ int cli_ooxml_filetype(cli_ctx *ctx, fmap_t *map)
     if ((ret = unzip_search_add(&requests, "word/", 5)) != CL_SUCCESS) {
         return CL_SUCCESS;
     }
+    if ((ret = unzip_search_add(&requests, "Contents/content.hpf", 22)) != CL_SUCCESS) {
+        return CL_SUCCESS;
+    }
 
     if ((ret = unzip_search(ctx, map, &requests)) == CL_VIRUS) {
         switch (requests.found) {
@@ -412,6 +415,8 @@ int cli_ooxml_filetype(cli_ctx *ctx, fmap_t *map)
             return CL_TYPE_OOXML_PPT;
         case 2:
             return CL_TYPE_OOXML_WORD;
+        case 3:
+            return CL_TYPE_OOXML_HWP;
         default:
             return CL_SUCCESS;
         }
