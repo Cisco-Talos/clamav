@@ -213,7 +213,7 @@ cli_file_t cli_filetype(const unsigned char *buf, size_t buflen, const struct cl
 
 int is_tar(const unsigned char *buf, unsigned int nbytes);
 
-/* organize by length */
+/* organize by length, cannot exceed SIZEOF_LH */
 const struct ooxml_ftcodes {
     const char *entry;
     size_t len;
@@ -236,6 +236,8 @@ const struct ooxml_ftcodes {
     { "META-INF/container.xml", 22, CL_TYPE_ZIP         }, /* HWP */
     { NULL,                      0, CL_TYPE_ANY         }
 };
+/* set to biggest ooxml_detect len */
+#define OOXML_DETECT_MAXLEN 22
 
 #define OOXML_FTIDENTIFIED(type)                                \
     do {                                                        \
@@ -329,49 +331,40 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
                 if (NULL != znamep) {
                     znamep += SIZEOF_LH;
                     zlen = zread - (znamep - zbuff);
-                    do {
-                        if (zlen <= 0) {
-                            znamep = NULL;
-                            break;
-                        }
-
+                    if (zlen > OOXML_DETECT_MAXLEN) {
                         for (i = 0; ooxml_detect[i].entry; i++) {
-                            if (zlen >= ooxml_detect[i].len) {
-                                if (0 == memcmp(znamep, ooxml_detect[i].entry, ooxml_detect[i].len)) {
-                                    if (ooxml_detect[i].type != CL_TYPE_ZIP) {
-                                        OOXML_FTIDENTIFIED(ooxml_detect[i].type);
-                                        /* returns any unexpected type detection */
-                                        return ooxml_detect[i].type;
-                                    }
-
-                                    likely_ooxml = 1;
-                                    break;
+                            if (0 == memcmp(znamep, ooxml_detect[i].entry, ooxml_detect[i].len)) {
+                                if (ooxml_detect[i].type != CL_TYPE_ZIP) {
+                                    OOXML_FTIDENTIFIED(ooxml_detect[i].type);
+                                    /* returns any unexpected type detection */
+                                    return ooxml_detect[i].type;
                                 }
-                            } else {
-                                znamep = NULL;
-                                break;
+
+                                likely_ooxml = 1;
                             }
                         }
-
+                        /* only check first three readable zip headers */
                         if (++lhc > 2) {
-                            /* only check first three zip headers unless likely ooxml */
+                            /* if likely, check full archive */
                             if (likely_ooxml) {
                                 cli_dbgmsg("Likely OOXML, checking additional zip headers\n");
                                 if ((ret2 = cli_ooxml_filetype(NULL, map)) != CL_SUCCESS) {
                                     /* either an error or retyping has occurred, return error or just CL_TYPE_ZIP? */
                                     OOXML_FTIDENTIFIED(ret2);
-                                    /* returns any unexpected type detection */
-                                    return ooxml_detect[i].type;
+                                    /* falls-through to additional filetyping */
                                 }
                             }
                             break;
                         }
-                    } while (0);
+                    }
+                    else {
+                        znamep = NULL; /* force to map more */
+                    }
                 }
 
                 if (znamep == NULL) {
                     if (map->len-zoff > SIZEOF_LH) {
-                        zoff -= SIZEOF_LH+5; /* remap for SIZEOF_LH+filelen for header overlap map boundary */ 
+                        zoff -= SIZEOF_LH+OOXML_DETECT_MAXLEN+1; /* remap for SIZEOF_LH+filelen for header overlap map boundary */ 
                         zread = MIN(MAGIC_BUFFER_SIZE, map->len-zoff);
                         zbuff = fmap_need_off_once(map, zoff, zread);
                         if (zbuff == NULL) {
