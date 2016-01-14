@@ -206,70 +206,71 @@ int cli_scanhwpole2(cli_ctx *ctx)
 
 int cli_hwp5header(cli_ctx *ctx, hwp5_header_t *hwp5)
 {
-#if HAVE_JSON
-    json_object *header, *flags;
-
     if (!ctx || !hwp5)
         return CL_ENULLARG;
 
-    header = cli_jsonobj(ctx->wrkproperty, "Hwp5Header");
-    if (!header) {
-        cli_errmsg("HWP5.x: No memory for Hwp5Header object\n");
-        return CL_EMEM;
-    }
+#if HAVE_JSON
+    if (ctx->options & CL_SCAN_FILE_PROPERTIES) {
+        json_object *header, *flags;
 
-    /* magic */
-    cli_jsonstr(header, "Magic", hwp5->signature);
+        header = cli_jsonobj(ctx->wrkproperty, "Hwp5Header");
+        if (!header) {
+            cli_errmsg("HWP5.x: No memory for Hwp5Header object\n");
+            return CL_EMEM;
+        }
 
-    /* version */
-    cli_jsonint(header, "RawVersion", hwp5->version);
+        /* magic */
+        cli_jsonstr(header, "Magic", hwp5->signature);
 
-    /* flags */
-    cli_jsonint(header, "RawFlags", hwp5->flags);
+        /* version */
+        cli_jsonint(header, "RawVersion", hwp5->version);
 
-    flags = cli_jsonarray(header, "Flags");
-    if (!flags) {
-        cli_errmsg("HWP5.x: No memory for Hwp5Header/Flags array\n");
-        return CL_EMEM;
-    }
+        /* flags */
+        cli_jsonint(header, "RawFlags", hwp5->flags);
 
-    if (hwp5->flags & HWP5_COMPRESSED) {
-        cli_jsonstr(flags, NULL, "HWP5_COMPRESSED");
-    }
-    if (hwp5->flags & HWP5_PASSWORD) {
-        cli_jsonstr(flags, NULL, "HWP5_PASSWORD");
-    }
-    if (hwp5->flags & HWP5_DISTRIBUTABLE) {
-        cli_jsonstr(flags, NULL, "HWP5_DISTRIBUTABLE");
-    }
-    if (hwp5->flags & HWP5_SCRIPT) {
-        cli_jsonstr(flags, NULL, "HWP5_SCRIPT");
-    }
-    if (hwp5->flags & HWP5_DRM) {
-        cli_jsonstr(flags, NULL, "HWP5_DRM");
-    }
-    if (hwp5->flags & HWP5_XMLTEMPLATE) {
-        cli_jsonstr(flags, NULL, "HWP5_XMLTEMPLATE");
-    }
-    if (hwp5->flags & HWP5_HISTORY) {
-        cli_jsonstr(flags, NULL, "HWP5_HISTORY");
-    }
-    if (hwp5->flags & HWP5_CERT_SIGNED) {
-        cli_jsonstr(flags, NULL, "HWP5_CERT_SIGNED");
-    }
-    if (hwp5->flags & HWP5_CERT_ENCRYPTED) {
-        cli_jsonstr(flags, NULL, "HWP5_CERT_ENCRYPTED");
-    }
-    if (hwp5->flags & HWP5_CERT_EXTRA) {
-        cli_jsonstr(flags, NULL, "HWP5_CERT_EXTRA");
-    }
-    if (hwp5->flags & HWP5_CERT_DRM) {
-        cli_jsonstr(flags, NULL, "HWP5_CERT_DRM");
-    }
-    if (hwp5->flags & HWP5_CCL) {
-        cli_jsonstr(flags, NULL, "HWP5_CCL");
-    }
+        flags = cli_jsonarray(header, "Flags");
+        if (!flags) {
+            cli_errmsg("HWP5.x: No memory for Hwp5Header/Flags array\n");
+            return CL_EMEM;
+        }
 
+        if (hwp5->flags & HWP5_COMPRESSED) {
+            cli_jsonstr(flags, NULL, "HWP5_COMPRESSED");
+        }
+        if (hwp5->flags & HWP5_PASSWORD) {
+            cli_jsonstr(flags, NULL, "HWP5_PASSWORD");
+        }
+        if (hwp5->flags & HWP5_DISTRIBUTABLE) {
+            cli_jsonstr(flags, NULL, "HWP5_DISTRIBUTABLE");
+        }
+        if (hwp5->flags & HWP5_SCRIPT) {
+            cli_jsonstr(flags, NULL, "HWP5_SCRIPT");
+        }
+        if (hwp5->flags & HWP5_DRM) {
+            cli_jsonstr(flags, NULL, "HWP5_DRM");
+        }
+        if (hwp5->flags & HWP5_XMLTEMPLATE) {
+            cli_jsonstr(flags, NULL, "HWP5_XMLTEMPLATE");
+        }
+        if (hwp5->flags & HWP5_HISTORY) {
+            cli_jsonstr(flags, NULL, "HWP5_HISTORY");
+        }
+        if (hwp5->flags & HWP5_CERT_SIGNED) {
+            cli_jsonstr(flags, NULL, "HWP5_CERT_SIGNED");
+        }
+        if (hwp5->flags & HWP5_CERT_ENCRYPTED) {
+            cli_jsonstr(flags, NULL, "HWP5_CERT_ENCRYPTED");
+        }
+        if (hwp5->flags & HWP5_CERT_EXTRA) {
+            cli_jsonstr(flags, NULL, "HWP5_CERT_EXTRA");
+        }
+        if (hwp5->flags & HWP5_CERT_DRM) {
+            cli_jsonstr(flags, NULL, "HWP5_CERT_DRM");
+        }
+        if (hwp5->flags & HWP5_CCL) {
+            cli_jsonstr(flags, NULL, "HWP5_CCL");
+        }
+    }
 #endif
     return CL_SUCCESS;
 }
@@ -416,9 +417,6 @@ struct hwp3_docsummary_entry {
 static inline int parsehwp3_docinfo(cli_ctx *ctx, off_t offset, struct hwp3_docinfo *docinfo)
 {
     const uint8_t *hwp3_ptr;
-#if HAVE_JSON
-    json_object *header, *flags;
-#endif
 
     //TODO: use fmap_readn?
     if (!(hwp3_ptr = fmap_need_off_once(*ctx->fmap, offset, HWP3_DOCINFO_SIZE))) {
@@ -444,29 +442,33 @@ static inline int parsehwp3_docinfo(cli_ctx *ctx, off_t offset, struct hwp3_doci
     hwp3_debug("HWP3.x: di_infoblksize: %u\n", docinfo->di_infoblksize);
 
 #if HAVE_JSON
-    header = cli_jsonobj(ctx->wrkproperty, "Hwp3Header");
-    if (!header) {
-        cli_errmsg("HWP3.x: No memory for Hwp3Header object\n");
-        return CL_EMEM;
-    }
+    if (ctx->options & CL_SCAN_FILE_PROPERTIES) {
+        json_object *header, *flags;
 
-    flags = cli_jsonarray(header, "Flags");
-    if (!flags) {
-        cli_errmsg("HWP5.x: No memory for Hwp5Header/Flags array\n");
-        return CL_EMEM;
-    }
+        header = cli_jsonobj(ctx->wrkproperty, "Hwp3Header");
+        if (!header) {
+            cli_errmsg("HWP3.x: No memory for Hwp3Header object\n");
+            return CL_EMEM;
+        }
 
-    if (docinfo->di_writeprot) {
-        cli_jsonstr(flags, NULL, "HWP3_WRITEPROTECTED"); /* HWP3_DISTRIBUTABLE */
-    }
-    if (docinfo->di_externapp) {
-        cli_jsonstr(flags, NULL, "HWP3_EXTERNALAPPLICATION");
-    }
-    if (docinfo->di_passwd) {
-        cli_jsonstr(flags, NULL, "HWP3_PASSWORD");
-    }
-    if (docinfo->di_compressed) {
-        cli_jsonstr(flags, NULL, "HWP3_COMPRESSED");
+        flags = cli_jsonarray(header, "Flags");
+        if (!flags) {
+            cli_errmsg("HWP5.x: No memory for Hwp5Header/Flags array\n");
+            return CL_EMEM;
+        }
+
+        if (docinfo->di_writeprot) {
+            cli_jsonstr(flags, NULL, "HWP3_WRITEPROTECTED"); /* HWP3_DISTRIBUTABLE */
+        }
+        if (docinfo->di_externapp) {
+            cli_jsonstr(flags, NULL, "HWP3_EXTERNALAPPLICATION");
+        }
+        if (docinfo->di_passwd) {
+            cli_jsonstr(flags, NULL, "HWP3_PASSWORD");
+        }
+        if (docinfo->di_compressed) {
+            cli_jsonstr(flags, NULL, "HWP3_COMPRESSED");
+        }
     }
 #endif
 
@@ -480,6 +482,9 @@ static inline int parsehwp3_docsummary(cli_ctx *ctx, off_t offset)
     char *str;
     int i, ret;
     json_object *summary;
+
+    if (!(ctx->options & CL_SCAN_FILE_PROPERTIES))
+        return CL_SUCCESS;
 
     if (!(hwp3_ptr = fmap_need_off_once(*ctx->fmap, offset, HWP3_DOCSUMMARY_SIZE))) {
         cli_errmsg("HWP3.x: Failed to read fmap for hwp docinfo\n");
@@ -1680,7 +1685,7 @@ static int hwpml_scan_cb(void *cbdata, int fd, cli_ctx *ctx)
 static int hwpml_binary_cb(int fd, cli_ctx *ctx, int num_attribs, struct attrib_entry *attribs)
 {
     int i, ret, df = 0, com = 0, enc = 0;
-    char name[1024], *tempfile = name;
+    char *tempfile;
 
     /* check attributes for compression and encoding */
     for (i = 0; i < num_attribs; i++) {
@@ -1743,14 +1748,14 @@ static int hwpml_binary_cb(int fd, cli_ctx *ctx, int num_attribs, struct attrib_
 
         /* open file for writing and scanning */
         if ((ret = cli_gentempfd(ctx->engine->tmpdir, &tempfile, &df)) != CL_SUCCESS) {
-            cli_warnmsg("HWPML: Failed to create temporary file %s\n", tempfile);
+            cli_warnmsg("HWPML: Failed to create temporary file for decoded stream scanning\n");
             return ret;
         }
 
         if(cli_writen(df, decoded, decodedlen) != (int)decodedlen) {
             free(decoded);
-            close(df);
-            return CL_EWRITE;
+            ret = CL_EWRITE;
+            goto hwpml_end;
         }
         free(decoded);
 
@@ -1770,13 +1775,15 @@ static int hwpml_binary_cb(int fd, cli_ctx *ctx, int num_attribs, struct attrib_
         /* fmap the input file for easier manipulation */
         if (FSTAT(fd, &statbuf) == -1) {
             cli_errmsg("HWPML: Can't stat file descriptor\n");
-            return CL_ESTAT;
+            ret = CL_ESTAT;
+            goto hwpml_end;
         }
 
         input = fmap(fd, 0, statbuf.st_size);
         if (!input) {
             cli_errmsg("HWPML: Failed to get fmap for binary data\n");
-            return CL_EMAP;
+            ret = CL_EMAP;
+            goto hwpml_end;
         }
         ret = decompress_and_callback(ctx, input, 0, 0, "HWPML", hwpml_scan_cb, NULL);
         funmap(input);
@@ -1785,10 +1792,12 @@ static int hwpml_binary_cb(int fd, cli_ctx *ctx, int num_attribs, struct attrib_
     }
 
     /* close decoded file descriptor if used */
+ hwpml_end:
     if (df) {
         close(df);
         if (!(ctx->engine->keeptmp))
             cli_unlink(tempfile);
+        free(tempfile);
     }
     return ret;
 }
