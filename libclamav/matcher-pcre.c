@@ -768,7 +768,7 @@ void cli_pcre_freemeta(struct cli_matcher *root, struct cli_pcre_meta *pm)
     }
 
     if (pm->statname) {
-        mpool_free(root->mempool, pm->statname);
+        free(pm->statname);
         pm->statname = NULL;
     }
 
