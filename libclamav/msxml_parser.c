@@ -362,7 +362,7 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
 
             switch (node_type) {
             case XML_READER_TYPE_ELEMENT:
-                ret = msxml_parse_element(mxctx, reader, rlvl+1, thisjobj);
+                ret = msxml_parse_element(mxctx, reader, rlvl+1, thisjobj ? thisjobj : parent);
                 if (ret != CL_SUCCESS || (!SCAN_ALL && ret == CL_VIRUS)) {
                     return ret;
                 } else if (SCAN_ALL && ret == CL_VIRUS) {

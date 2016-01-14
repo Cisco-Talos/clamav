@@ -1558,11 +1558,9 @@ cli_ole2_extract(const char *dirname, cli_ctx * ctx, struct uniq **vba)
         cli_dbgmsg("OLE2: HWP version: 0x%08x\n", hdr.is_hwp->version);
         cli_dbgmsg("OLE2: HWP flags:   0x%08x\n", hdr.is_hwp->flags);
 
-#if HAVE_JSON
         ret = cli_hwp5header(ctx, hdr.is_hwp);
         if (ret != CL_SUCCESS)
             goto abort;
-#endif
     }
 
     /* If there's no VBA we scan OTF */
