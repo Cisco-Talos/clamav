@@ -618,19 +618,19 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
     hwp3_debug("HWP3.x: Paragraph[%d, %d]: fsize  %u\n", level, p, fsize);
 #endif
 
-    if (ppfs)
-        offset += HWP3_PARAINFO_SIZE_S;
-    else
-        offset += HWP3_PARAINFO_SIZE_L;
-
     /* detected empty paragraph marker => end-of-paragraph list */
     if (nchars == 0) {
         hwp3_debug("HWP3.x: Detected end-of-paragraph list @ offset %llu\n", (long long unsigned)offset);
         hwp3_debug("HWP3.x: end recursion level: %d\n", level);
-        (*roffset) = offset;
+        (*roffset) = offset + HWP3_PARAINFO_SIZE_S;
         (*last) = 1;
         return CL_SUCCESS;
     }
+
+    if (ppfs)
+        offset += HWP3_PARAINFO_SIZE_S;
+    else
+        offset += HWP3_PARAINFO_SIZE_L;
 
     /* line information blocks - TODO - check how multiple line data is handled */
     hwp3_debug("HWP3.x: Paragraph[%d, %d] line information starts @ offset %llu\n", level, p, (long long unsigned)offset);
@@ -652,10 +652,10 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
     lhei = le16_to_host(lhei);
     lpag = le16_to_host(lpag);
 
-    hwp3_debug("HWP3.x: Paragraph[%d, %d]: Line %u: loff %u\n", level, p, i, loff);
-    hwp3_debug("HWP3.x: Paragraph[%d, %d]: Line %u: lcor %x\n", level, p, i, lcor);
-    hwp3_debug("HWP3.x: Paragraph[%d, %d]: Line %u: lhei %u\n", level, p, i, lhei);
-    hwp3_debug("HWP3.x: Paragraph[%d, %d]: Line %u: lpag %u\n", level, p, i, lpag);
+    hwp3_debug("HWP3.x: Paragraph[%d, %d]: Line 0: loff %u\n", level, p, loff);
+    hwp3_debug("HWP3.x: Paragraph[%d, %d]: Line 0: lcor %x\n", level, p, lcor);
+    hwp3_debug("HWP3.x: Paragraph[%d, %d]: Line 0: lhei %u\n", level, p, lhei);
+    hwp3_debug("HWP3.x: Paragraph[%d, %d]: Line 0: lpag %u\n", level, p, lpag);
 #endif
     offset += HWP3_LINEINFO_SIZE;
 
@@ -1529,6 +1529,8 @@ static int hwp3_cb(void *cbdata, int fd, cli_ctx *ctx)
             }
         }
     } else {
+        hwp3_debug("HWP3.x: Document Content Stream starts @ offset %llu\n", (long long unsigned)offset);
+
         map = *ctx->fmap;
         dmap = NULL;
     }
