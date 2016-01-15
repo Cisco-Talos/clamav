@@ -169,6 +169,7 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
     json_object *parent = (json_object *)jptr;
     json_object *thisjobj = NULL;
 #else
+    void *parent = NULL;
     void *thisjobj = NULL;
 #endif
 
