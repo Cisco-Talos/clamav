@@ -577,6 +577,19 @@ WARNING: setting this limit too high may result in severe damage or impact perfo
 .br
 Default: 100
 .TP
+\fBMaxRecHWP3 NUMBER\fR
+This option sets the maximum recursive calls to HWP3 parsing function.
+.br
+HWP3 files using more than this limit will be terminated and alert the user.
+.br
+Scans will be unable to scan any HWP3 attachments if the recursive limit is reached.
+.br
+Negative values are not allowed.
+.br
+WARNING: setting this limit too high may result in severe damage or impact performance.
+.br
+Default: 16
+.TP
 \fBPCREMatchLimit NUMBER\fR
 This option sets the maximum calls to the PCRE match function during an instance of regex matching.
 .br

@@ -370,6 +370,7 @@ struct cl_engine {
 
     /* Engine max settings */
     uint32_t maxiconspe; /* max number of icons to scan for PE */
+    uint32_t maxrechwp3; /* max recursive calls for HWP3 parsing */
 
     /* millisecond time limit for preclassification scanning */
     uint32_t time_limit;
@@ -442,6 +443,7 @@ struct cl_settings {
 
     /* Engine max settings */
     uint32_t maxiconspe; /* max number of icons to scan for PE */
+    uint32_t maxrechwp3; /* max recursive calls for HWP3 parsing */
 
     /* PCRE matching limitations */
     uint64_t pcre_match_limit;

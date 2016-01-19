@@ -464,8 +464,6 @@ struct hwp3_docsummary_entry {
 #define NUM_DOCSUMMARY_FIELDS sizeof(hwp3_docsummary_fields)/sizeof(struct hwp3_docsummary_entry)
 
 //Document Paragraph Information - (43 or 230 total bytes)
-#define HWP_MAX_PARAGRAPH_RECURSION 15
-
 #define HWP3_PARAINFO_SIZE_S  43
 #define HWP3_PARAINFO_SIZE_L  230
 #define HWP3_LINEINFO_SIZE    14
@@ -673,7 +671,7 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
     hwp3_debug("HWP3.x: recursion level: %d\n", level);
     hwp3_debug("HWP3.x: Paragraph[%d, %d] starts @ offset %llu\n", level, p, (long long unsigned)offset);
 
-    if (level >= HWP_MAX_PARAGRAPH_RECURSION)
+    if (level >= ctx->engine->maxrechwp3)
         return CL_EMAXREC;
 
     if (fmap_readn(map, &ppfs, offset+PI_PPFS, sizeof(ppfs)) != sizeof(ppfs))

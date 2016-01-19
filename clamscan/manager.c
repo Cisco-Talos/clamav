@@ -986,6 +986,15 @@ int scanmanager(const struct optstruct *opts)
         }
     }
 
+    if((opt = optget(opts, "max-rechwp3"))->active) {
+        if((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_RECHWP3, opt->numarg))) {
+            logg("!cli_engine_set_num(CL_ENGINE_MAX_RECHWP3) failed: %s\n", cl_strerror(ret));
+
+            cl_engine_free(engine);
+            return 2;
+        }
+    }
+
     if ((opt = optget(opts, "timelimit"))->active) {
         if ((ret = cl_engine_set_num(engine, CL_ENGINE_TIME_LIMIT, opt->numarg))) {
             logg("!cli_engine_set_num(CL_ENGINE_TIME_LIMIT) failed: %s\n", cl_strerror(ret));

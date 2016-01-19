@@ -444,6 +444,7 @@ struct cl_engine *cl_engine_new(void)
 
     /* Engine max settings */
     new->maxiconspe = CLI_DEFAULT_MAXICONSPE;
+    new->maxrechwp3 = CLI_DEFAULT_MAXRECHWP3;
 
     /* PCRE matching limitations */
 #if HAVE_PCRE
@@ -616,6 +617,9 @@ int cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field field, long
 	case CL_ENGINE_MAX_ICONSPE:
 	    engine->maxiconspe = (uint32_t)num;
 	    break;
+    case CL_ENGINE_MAX_RECHWP3:
+	    engine->maxrechwp3 = (uint32_t)num;
+	    break;
 	case CL_ENGINE_TIME_LIMIT:
             engine->time_limit = (uint32_t)num;
             break;
@@ -701,6 +705,8 @@ long long cl_engine_get_num(const struct cl_engine *engine, enum cl_engine_field
 	    return engine->maxpartitions;
 	case CL_ENGINE_MAX_ICONSPE:
 	    return engine->maxiconspe;
+    case CL_ENGINE_MAX_RECHWP3:
+	    return engine->maxrechwp3;
 	case CL_ENGINE_TIME_LIMIT:
             return engine->time_limit;
 	case CL_ENGINE_PCRE_MATCH_LIMIT:
@@ -820,6 +826,7 @@ struct cl_settings *cl_engine_settings_copy(const struct cl_engine *engine)
     settings->maxpartitions = engine->maxpartitions;
 
     settings->maxiconspe = engine->maxiconspe;
+    settings->maxrechwp3 = engine->maxrechwp3;
 
     settings->pcre_match_limit = engine->pcre_match_limit;
     settings->pcre_recmatch_limit = engine->pcre_recmatch_limit;
@@ -892,6 +899,7 @@ int cl_engine_settings_apply(struct cl_engine *engine, const struct cl_settings 
     engine->maxpartitions = settings->maxpartitions;
 
     engine->maxiconspe = settings->maxiconspe;
+    engine->maxrechwp3 = settings->maxrechwp3;
 
     engine->pcre_match_limit = settings->pcre_match_limit;
     engine->pcre_recmatch_limit = settings->pcre_recmatch_limit;
