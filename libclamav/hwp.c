@@ -651,14 +651,14 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
 {
     off_t offset = *roffset;
     uint16_t nchars, nlines, content;
-    uint8_t ppfs, csb;
+    uint8_t ppfs, ifsc, csb;
     int i, c, l, sp = 0, term = 0, ret = CL_SUCCESS;
 #if HWP3_VERIFY
     uint16_t match;
 #endif
 #if HWP3_DEBUG
     /* other paragraph info */
-    uint8_t ifsc, flags, istyle;
+    uint8_t flags, istyle;
     uint16_t fsize;
     uint32_t special;
 
@@ -689,14 +689,15 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
 
     nlines = le16_to_host(nlines);
 
-    hwp3_debug("HWP3.x: Paragraph[%d, %d]: ppfs   %u\n", level, p, ppfs);
-    hwp3_debug("HWP3.x: Paragraph[%d, %d]: nchars %u\n", level, p, nchars);
-    hwp3_debug("HWP3.x: Paragraph[%d, %d]: nlines %u\n", level, p, nlines);
-
-#if HWP3_DEBUG
     if (fmap_readn(map, &ifsc, offset+PI_IFSC, sizeof(ifsc)) != sizeof(ifsc))
         return CL_EREAD;
 
+    hwp3_debug("HWP3.x: Paragraph[%d, %d]: ppfs   %u\n", level, p, ppfs);
+    hwp3_debug("HWP3.x: Paragraph[%d, %d]: nchars %u\n", level, p, nchars);
+    hwp3_debug("HWP3.x: Paragraph[%d, %d]: nlines %u\n", level, p, nlines);
+    hwp3_debug("HWP3.x: Paragraph[%d, %d]: ifsc   %u\n", level, p, ifsc);
+
+#if HWP3_DEBUG
     if (fmap_readn(map, &flags, offset+PI_FLAGS, sizeof(flags)) != sizeof(flags))
         return CL_EREAD;
 
@@ -709,7 +710,6 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
     if (fmap_readn(map, &fsize, offset+12, sizeof(fsize)) != sizeof(fsize))
         return CL_EREAD;
 
-    hwp3_debug("HWP3.x: Paragraph[%d, %d]: ifsc   %u\n", level, p, ifsc);
     hwp3_debug("HWP3.x: Paragraph[%d, %d]: flags  %x\n", level, p, flags);
     hwp3_debug("HWP3.x: Paragraph[%d, %d]: spcl   %x\n", level, p, special);
     hwp3_debug("HWP3.x: Paragraph[%d, %d]: istyle %u\n", level, p, istyle);
@@ -730,40 +730,42 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
     else
         offset += HWP3_PARAINFO_SIZE_L;
 
-    /* line information blocks - TODO - check how multiple line data is handled */
-    hwp3_debug("HWP3.x: Paragraph[%d, %d] line information starts @ offset %llu\n", level, p, (long long unsigned)offset);
+    /* line information blocks */
 #if HWP3_DEBUG
-    if (fmap_readn(map, &loff, offset+PLI_LOFF, sizeof(loff)) != sizeof(loff))
-        return CL_EREAD;
+    for (i = 0; (i < nlines) && (offset < map->len); i++) {
+        hwp3_debug("HWP3.x: Paragraph[%d, %d]: Line %d information starts @ offset %llu\n", level, p, i, (long long unsigned)offset);
+        if (fmap_readn(map, &loff, offset+PLI_LOFF, sizeof(loff)) != sizeof(loff))
+            return CL_EREAD;
 
-    if (fmap_readn(map, &lcor, offset+PLI_LCOR, sizeof(lcor)) != sizeof(lcor))
-        return CL_EREAD;
+        if (fmap_readn(map, &lcor, offset+PLI_LCOR, sizeof(lcor)) != sizeof(lcor))
+            return CL_EREAD;
 
-    if (fmap_readn(map, &lhei, offset+PLI_LHEI, sizeof(lhei)) != sizeof(lhei))
-        return CL_EREAD;
+        if (fmap_readn(map, &lhei, offset+PLI_LHEI, sizeof(lhei)) != sizeof(lhei))
+            return CL_EREAD;
 
-    if (fmap_readn(map, &lpag, offset+PLI_LPAG, sizeof(lpag)) != sizeof(lpag))
-        return CL_EREAD;
+        if (fmap_readn(map, &lpag, offset+PLI_LPAG, sizeof(lpag)) != sizeof(lpag))
+            return CL_EREAD;
 
-    loff = le16_to_host(loff);
-    lcor = le16_to_host(lcor);
-    lhei = le16_to_host(lhei);
-    lpag = le16_to_host(lpag);
+        loff = le16_to_host(loff);
+        lcor = le16_to_host(lcor);
+        lhei = le16_to_host(lhei);
+        lpag = le16_to_host(lpag);
 
-    hwp3_debug("HWP3.x: Paragraph[%d, %d]: Line 0: loff %u\n", level, p, loff);
-    hwp3_debug("HWP3.x: Paragraph[%d, %d]: Line 0: lcor %x\n", level, p, lcor);
-    hwp3_debug("HWP3.x: Paragraph[%d, %d]: Line 0: lhei %u\n", level, p, lhei);
-    hwp3_debug("HWP3.x: Paragraph[%d, %d]: Line 0: lpag %u\n", level, p, lpag);
+        hwp3_debug("HWP3.x: Paragraph[%d, %d]: Line %d: loff %u\n", level, p, i, loff);
+        hwp3_debug("HWP3.x: Paragraph[%d, %d]: Line %d: lcor %x\n", level, p, i, lcor);
+        hwp3_debug("HWP3.x: Paragraph[%d, %d]: Line %d: lhei %u\n", level, p, i, lhei);
+        hwp3_debug("HWP3.x: Paragraph[%d, %d]: Line %d: lpag %u\n", level, p, i, lpag);
+
+        offset += HWP3_LINEINFO_SIZE;
+    }
+#else
+    offset += (nlines * HWP3_LINEINFO_SIZE);
 #endif
-    offset += HWP3_LINEINFO_SIZE;
 
-    /* character shape data - may not be present if no byte flag is detected */
-    /* NOTE: each character shape data represents at least one character including the terminator */
-    /* peek at next character to check if character shape data is present */
-    if (fmap_readn(map, &csb, offset, sizeof(csb)) != sizeof(csb))
-        return CL_EREAD;
+    if (offset >= map->len)
+        return CL_EFORMAT;
 
-    if (csb == 0) {
+    if (ifsc) {
         for (i = 0, c = 0; i < nchars; i++) {
             /* examine byte for cs data type */
             if (fmap_readn(map, &csb, offset, sizeof(csb)) != sizeof(csb))
@@ -803,7 +805,7 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
 
         hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected %d CS block(s) and %d characters\n", level, p, c, i);
     } else {
-        hwp3_debug("HWP3.x: Paragraph[%d, %d]: no character shape data detected\n", level, p);
+        hwp3_debug("HWP3.x: Paragraph[%d, %d]: no separate character shape data detected\n", level, p);
     }
 
     if (!term)
