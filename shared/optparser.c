@@ -382,6 +382,8 @@ const struct clam_option __clam_options[] = {
 
     { "MaxIconsPE", "max-iconspe", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, CLI_DEFAULT_MAXICONSPE, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the maximum number of icons within a PE to be scanned.\nPE files with more icons than this value will have up to the value number icons scanned.\nNegative values are not allowed.\nWARNING: setting this limit too high may result in severe damage or impact performance.", "100" },
 
+    { "MaxRecHWP3", "max-rechwp3", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, CLI_DEFAULT_MAXRECHWP3, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the maximum recursive calls to HWP3 parsing function.\nHWP3 files using more than this limit will be terminated and alert the user.\nScans will be unable to scan any HWP3 attachments if the recursive limit is reached.\nNegative values are not allowed.\nWARNING: setting this limit too high may result in severe damage or impact performance.", "16" },
+
     { "TimeLimit", "timelimit", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 0, NULL, 0, OPT_CLAMSCAN, "This clamscan option is currently for testing only. It sets the engine parameter CL_ENGINE_TIME_LIMIT. The value is in milliseconds.", "0" },
 
     { "PCREMatchLimit", "pcre-match-limit", 0, CLOPT_TYPE_SIZE, MATCH_SIZE, CLI_DEFAULT_PCRE_MATCH_LIMIT, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the maximum calls to the PCRE match function during an instance of regex matching.\nInstances using more than this limit will be terminated and alert the user but the scan will continue.\nFor more information on match_limit, see the PCRE documentation.\nNegative values are not allowed.\nWARNING: setting this limit too high may severely impact performance.", "10000" },

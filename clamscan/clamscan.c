@@ -280,6 +280,7 @@ void help(void)
     mprintf("    --max-ziptypercg=#n                  Maximum size zip to type reanalyze\n");
     mprintf("    --max-partitions=#n                  Maximum number of partitions in disk image to be scanned\n");
     mprintf("    --max-iconspe=#n                     Maximum number of icons in PE file to be scanned\n");
+    mprintf("    --max-rechwp3=#n                     Maximum recursive calls to HWP3 parsing function\n");
 #if HAVE_PCRE
     mprintf("    --pcre-match-limit=#n                Maximum calls to the PCRE match function.\n");
     mprintf("    --pcre-recmatch-limit=#n             Maximum recursive calls to the PCRE match function.\n");

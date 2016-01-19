@@ -214,6 +214,9 @@ This option sets the maximum number of partitions of a raw disk image to be scan
 \fB\-\-max\-iconspe=#n\fR
 This option sets the maximum number of icons within a PE to be scanned. This must be a positive integer (default: 100).
 .TP
+\fB\-\-max\-rechwp3=#n\fR
+This option sets the maximum recursive calls to HWP3 parsing function (default: 16).
+.TP
 \fB\-\-pcre-match-limit=#n\fR
 Maximum calls to the PCRE match function (default: 10000).
 .TP
