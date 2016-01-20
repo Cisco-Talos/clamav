@@ -261,7 +261,7 @@ static int ea05(cli_ctx *ctx, const uint8_t *base, char *tmpd) {
       continue;
     }
 
-    if (UNP.csize < sizeof(union unaligned_32)) {
+    if (comp == 1 && UNP.csize < sizeof(union unaligned_32)) {
       cli_dbgmsg("autoit: compressed size too small, skipping\n");
       continue;
     }
@@ -586,7 +586,7 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd) {
       continue;
     }
 
-    if (UNP.csize < sizeof(union unaligned_32)) {
+    if (comp == 1 && UNP.csize < sizeof(union unaligned_32)) {
       cli_dbgmsg("autoit: compressed size too small, skipping\n");
       continue;
     }
