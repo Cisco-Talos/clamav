@@ -1094,11 +1094,14 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                      * offset 0 (2 bytes) - special character ID
                      * offset 2 (4 bytes) - reserved
                      * offset 6 (2 bytes) - special character ID
-                     * total is always 8 bytes
+                     * offset 8 (8 bytes) - reserved
+                     * total is always 16 bytes
                      */
 
                     /* id block verification (only on HWP3_VERIFY) */
                     HWP3_PSPECIAL_VERIFY(map, offset, 6, content, match);
+
+                    offset += 16;
 
                     /* hidden description paragraph list */
                     hwp3_debug("HWP3.x: Paragraph[%d, %d]: hidden description paragraph list starts @ %llu\n", level, p, (long long unsigned)offset);
