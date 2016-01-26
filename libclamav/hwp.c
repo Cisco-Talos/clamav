@@ -1845,7 +1845,7 @@ int cli_scanhwp3(cli_ctx *ctx)
 }
 
 /*** HWPML (hijacking the msxml parser) ***/
-
+#if HAVE_LIBXML2
 static const struct key_entry hwpml_keys[] = {
     { "hwpml",              "HWPML",              MSXML_JSON_ROOT | MSXML_JSON_ATTRIB },
 
@@ -2007,6 +2007,7 @@ static int hwpml_binary_cb(int fd, cli_ctx *ctx, int num_attribs, struct attrib_
     }
     return ret;
 }
+#endif /* HAVE_LIBXML2 */
 
 int cli_scanhwpml(cli_ctx *ctx)
 {
