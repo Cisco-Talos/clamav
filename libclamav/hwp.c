@@ -649,7 +649,7 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
 {
     off_t offset = *roffset;
     uint16_t nchars, nlines, content;
-    uint8_t ppfs, ifsc, csb;
+    uint8_t ppfs, ifsc, cfsb;
     int i, c, l, sp = 0, term = 0, ret = CL_SUCCESS;
 #if HWP3_VERIFY
     uint16_t match;
@@ -766,14 +766,14 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
     if (ifsc) {
         for (i = 0, c = 0; i < nchars; i++) {
             /* examine byte for cs data type */
-            if (fmap_readn(map, &csb, offset, sizeof(csb)) != sizeof(csb))
+            if (fmap_readn(map, &cfsb, offset, sizeof(cfsb)) != sizeof(cfsb))
                 return CL_EREAD;
 
-            offset += sizeof(csb);
+            offset += sizeof(cfsb);
 
-            switch(csb) {
+            switch(cfsb) {
             case 0: /* character shape block */
-                hwp3_debug("HWP3.x: Paragraph[%d, %d]: character shape data @ offset %llu\n", level, p, (long long unsigned)offset);
+                hwp3_debug("HWP3.x: Paragraph[%d, %d]: character font style data @ offset %llu\n", level, p, (long long unsigned)offset);
 
 #if HWP3_DEBUG
                 if (fmap_readn(map, &pcsd_size, offset+PCSD_SIZE, sizeof(pcsd_size)) != sizeof(pcsd_size))
@@ -784,8 +784,8 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
 
                 pcsd_size = le16_to_host(pcsd_size);
 
-                hwp3_debug("HWP3.x: Paragraph[%d, %d]: CS %u: pcsd_size %u\n", level, p, 0, pcsd_size);
-                hwp3_debug("HWP3.x: Paragraph[%d, %d]: CS %u: pcsd_prop %x\n", level, p, 0, pcsd_prop);
+                hwp3_debug("HWP3.x: Paragraph[%d, %d]: CFS %u: pcsd_size %u\n", level, p, 0, pcsd_size);
+                hwp3_debug("HWP3.x: Paragraph[%d, %d]: CFS %u: pcsd_prop %x\n", level, p, 0, pcsd_prop);
 #endif
 
                 c++;
@@ -794,16 +794,16 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
             case 1: /* normal character - as representation of another character for previous cs block */
                 break;
             default:
-                cli_errmsg("HWP3.x: Paragraph[%d, %d]: unknown CS type 0x%x @ offset %llu\n", level, p, csb,
+                cli_errmsg("HWP3.x: Paragraph[%d, %d]: unknown CFS type 0x%x @ offset %llu\n", level, p, cfsb,
                            (long long unsigned)offset);
                 cli_errmsg("HWP3.x: Paragraph parsing detected %d of %u characters\n", i, nchars);
                 return CL_EPARSE;
             }
         }
 
-        hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected %d CS block(s) and %d characters\n", level, p, c, i);
+        hwp3_debug("HWP3.x: Paragraph[%d, %d]: detected %d CFS block(s) and %d characters\n", level, p, c, i);
     } else {
-        hwp3_debug("HWP3.x: Paragraph[%d, %d]: no separate character shape data detected\n", level, p);
+        hwp3_debug("HWP3.x: Paragraph[%d, %d]: separate character font style segment not stored\n", level, p);
     }
 
     if (!term)
