@@ -789,7 +789,7 @@ char *decrypt_any(struct pdf_struct *pdf, uint32_t id, const char *in, off_t *le
     if (n > 16)
         n = 16;
 
-    q = cli_malloc(*length);
+    q = cli_calloc(*length, sizeof(char));
     if (!q) {
         noisy_warnmsg("decrypt_any: malloc failed\n");
         return NULL;
