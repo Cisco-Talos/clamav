@@ -1466,16 +1466,22 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
     long long unsigned infoloc = (long long unsigned)(*offset);
     char field[HWP3_FIELD_LENGTH];
 #if HAVE_JSON
-    json_object *infoblk_1, *counter, *entry;
+    json_object *infoblk_1, *contents, *counter, *entry;
 #endif
 
     hwp3_debug("HWP3.x: Information Block @ offset %llu\n", infoloc);
 
 #if HAVE_JSON
     if (ctx->options & CL_SCAN_FILE_PROPERTIES) {
-        infoblk_1 = cli_jsonarray(ctx->wrkproperty, "InfoBlk_1");
+        infoblk_1 = cli_jsonobj(ctx->wrkproperty, "InfoBlk_1");
         if (!infoblk_1) {
             cli_errmsg("HWP5.x: No memory for information block object\n");
+            return CL_EMEM;
+        }
+
+        contents = cli_jsonarray(infoblk_1, "Contents");
+        if (!contents) {
+            cli_errmsg("HWP5.x: No memory for information block contents array\n");
             return CL_EMEM;
         }
 
@@ -1498,7 +1504,7 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
 
 #if HAVE_JSON
     if (ctx->options & CL_SCAN_FILE_PROPERTIES) {
-        entry = cli_jsonobj(infoblk_1, NULL);
+        entry = cli_jsonobj(contents, NULL);
         if (!entry) {
             cli_errmsg("HWP5.x: No memory for information block entry object\n");
             return CL_EMEM;
@@ -1850,7 +1856,7 @@ static const struct key_entry hwpml_keys[] = {
     { "hwpml",              "HWPML",              MSXML_JSON_ROOT | MSXML_JSON_ATTRIB },
 
     /* HEAD - Document Properties */
-    { "head",               "Head",               MSXML_JSON_WRKPTR },
+    //{ "head",               "Head",               MSXML_JSON_WRKPTR },
     { "docsummary",         "DocumentProperties", MSXML_JSON_WRKPTR },
     { "title",              "Title",              MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
     { "author",             "Author",             MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
@@ -1858,8 +1864,8 @@ static const struct key_entry hwpml_keys[] = {
     { "docsetting",         "DocumentSettings",   MSXML_JSON_WRKPTR },
     { "beginnumber",        "BeginNumber",        MSXML_JSON_WRKPTR | MSXML_JSON_ATTRIB },
     { "caretpos",           "CaretPos",           MSXML_JSON_WRKPTR | MSXML_JSON_ATTRIB },
-    { "bindatalist",        "BinDataList",        MSXML_JSON_WRKPTR },
-    { "binitem",            "BinItem",            MSXML_JSON_WRKPTR | MSXML_JSON_ATTRIB },
+    //{ "bindatalist",        "BinDataList",        MSXML_JSON_WRKPTR },
+    //{ "binitem",            "BinItem",            MSXML_JSON_WRKPTR | MSXML_JSON_ATTRIB },
     { "facenamelist",       "FaceNameList",       MSXML_IGNORE_ELEM }, /* fonts list */
     { "borderfilllist",     "BorderFillList",     MSXML_IGNORE_ELEM }, /* borders list */
     { "charshapelist",      "CharShapeList",      MSXML_IGNORE_ELEM }, /* character shapes */
@@ -1873,7 +1879,7 @@ static const struct key_entry hwpml_keys[] = {
     { "body",               "Body",               MSXML_IGNORE_ELEM }, /* document contents (we could build a document contents summary */
 
     /* TAIL - Document Attachments */
-    { "tail",               "Tail",               MSXML_JSON_WRKPTR },
+    //{ "tail",               "Tail",               MSXML_JSON_WRKPTR },
     { "bindatastorage",     "BinaryDataStorage",  MSXML_JSON_WRKPTR },
     { "bindata",            "BinaryData",         MSXML_SCAN_CB | MSXML_JSON_WRKPTR | MSXML_JSON_ATTRIB },
     { "scriptcode",         "ScriptCodeStorage",  MSXML_JSON_WRKPTR | MSXML_JSON_ATTRIB },
