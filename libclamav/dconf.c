@@ -103,6 +103,9 @@ static struct dconf_module modules[] = {
     { "ARCHIVE",    "HFSPLUS",      ARCH_CONF_HFSPLUS,      1 },
     { "ARCHIVE",    "XZ",       ARCH_CONF_XZ,       1 },
     { "ARCHIVE",    "PASSWD",   ARCH_CONF_PASSWD,   1 },
+    { "ARCHIVE",    "MBR",      ARCH_CONF_MBR,      1 },
+    { "ARCHIVE",    "GPT",      ARCH_CONF_GPT,      1 },
+    { "ARCHIVE",    "APM",      ARCH_CONF_APM,      1 },
 
     { "DOCUMENT",   "HTML",     DOC_CONF_HTML,      1 },
     { "DOCUMENT",   "RTF",      DOC_CONF_RTF,       1 },
@@ -111,6 +114,9 @@ static struct dconf_module modules[] = {
     { "DOCUMENT",   "HTMLSKIPRAW",  DOC_CONF_HTML_SKIPRAW,  1 },
     { "DOCUMENT",   "JSNORM",       DOC_CONF_JSNORM,        1 },
     { "DOCUMENT",   "SWF",      DOC_CONF_SWF,       1 },
+    { "DOCUMENT",   "OOXML",    DOC_CONF_OOXML,     1 },
+    { "DOCUMENT",   "MSPML",    DOC_CONF_MSXML,     1 },
+    { "DOCUMENT",   "HWP",      DOC_CONF_HWP,       1 },
 
     { "MAIL",       "MBOX",     MAIL_CONF_MBOX,     1 },
     { "MAIL",       "TNEF",     MAIL_CONF_TNEF,     1 },
