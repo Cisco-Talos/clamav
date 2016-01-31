@@ -760,76 +760,73 @@ char *cli_dbgets(char *buff, unsigned int size, FILE *fs, struct cli_dbio *dbio)
     }
 }
 
-static char *cli_signorm(const char *signame, size_t sz, size_t *new_sz) {
+static char *cli_signorm(const char *signame)
+{
+    char *new_signame = NULL;
+    size_t pad = 0;
+    size_t nsz;
 
-	char *idx = NULL;
-	char *new_signame = NULL;
-	size_t nsz = 0;
+    if (!signame)
+        return NULL;
 
-	if (!signame) { 
-		*new_sz = sz;
-		return NULL;
-	}
-	sz = strlen(signame);
+    nsz = strlen(signame);
 
-	if (sz <= 11) { 
-		*new_sz = sz;
-		return NULL;
-	}
-	nsz = sz - 11;
-	
-	idx = signame + nsz;
-	if (strncmp(idx, ".UNOFFICIAL", 11)) { 
-		*new_sz = sz;
-		return NULL;
-	}
+    if (nsz > 11) {
+        if (!strncmp(signame+nsz-11, ".UNOFFICIAL", 11))
+            nsz -= 11;
+        else
+            return NULL;
+    } else if (nsz > 2)
+        return NULL;
+    
+    if (nsz < 3) {
+        pad = 3 - nsz;
+        nsz = 3;
+    }
 
-	new_signame = malloc(nsz + 1);
-	if (!new_signame) {
-		*new_sz = sz;
-		return NULL;
-	}
+    new_signame = malloc(nsz + 1);
+    if (!new_signame) 
+        return NULL;
 
-	memcpy(new_signame, signame, nsz);
-	new_signame[nsz] = '\0';
+    memcpy(new_signame, signame, nsz-pad);
+    new_signame[nsz] = '\0';
 
-	*new_sz = nsz;
-	return new_signame;
+    while (pad > 0)
+        new_signame[nsz-pad--] = '\x20';
+
+    return new_signame;
 }
 
 static int cli_chkign(const struct cli_matcher *ignored, const char *signame, const char *entry)
 {
 
     const char *md5_expected = NULL;
-    char *norm_signame = NULL;
+    char *norm_signame;
     unsigned char digest[16];
-    size_t sz = 0;
+    int ret = 0;
 
     if(!ignored || !signame || !entry)
         return 0;
 
-    if(!(norm_signame = cli_signorm(signame, strlen(signame), &sz)))
-	norm_signame = signame;
+    norm_signame = cli_signorm(signame);
+    if (norm_signame != NULL)
+	signame = norm_signame;
 
-    if(cli_bm_scanbuff((const unsigned char *) norm_signame, sz, &md5_expected, NULL, ignored, 0, NULL, NULL,NULL) == CL_VIRUS) {
-        if(md5_expected) {
-            cl_hash_data("md5", entry, strlen(entry), digest, NULL);
-            if(memcmp(digest, (const unsigned char *) md5_expected, 16)) {
-		if (signame != norm_signame)
-		    free(norm_signame);
-                return 0;
-	    }
-        }
+    if(cli_bm_scanbuff((const unsigned char *) signame, strlen(signame), &md5_expected, NULL, ignored, 0, NULL, NULL,NULL) == CL_VIRUS)
+        do {
+            if(md5_expected) {
+                cl_hash_data("md5", entry, strlen(entry), digest, NULL);
+                if(memcmp(digest, (const unsigned char *) md5_expected, 16))
+                    break;
+            }
+            
+            cli_dbgmsg("Ignoring signature %s\n", signame);
+            ret = 1;
+        } while (0);
 
-        cli_dbgmsg("Ignoring signature %s\n", norm_signame);
-	if (signame != norm_signame)
-	    free(norm_signame);
-        return 1;
-    }
-
-    if (signame != norm_signame)
+    if (norm_signame)
 	free(norm_signame);
-    return 0;
+    return ret;
 }
 
 static int cli_chkpua(const char *signame, const char *pua_cats, unsigned int options)
@@ -2323,6 +2320,18 @@ static int cli_loadign(FILE *fs, struct cl_engine *engine, unsigned int options,
 	    ret = CL_EMALFDB;
 	    break;
 	}
+        if (len < 3) {
+            int pad = 3 - len;
+            /* patch-up for Boyer-Moore minimum length of 3: pad with spaces */ 
+            if (signame != buffer) {
+                strncpy (buffer, signame, len);
+                signame = buffer;
+            }
+            buffer[3] = '\0';
+            while (pad > 0)
+                buffer[3-pad--] = '\x20';
+            len = 3;
+        }
 
         new = (struct cli_bm_patt *) mpool_calloc(engine->mempool, 1, sizeof(struct cli_bm_patt));
 	if(!new) {
