@@ -139,7 +139,7 @@ static int decompress_and_callback(cli_ctx *ctx, fmap_t *input, off_t at, size_t
         zret = inflate(&zstrm, Z_SYNC_FLUSH);
         count = FILEBUFF - zstrm.avail_out;
         if (count) {
-            if (cli_checklimits("HWP", ctx, outsize + count, 0, 0) != CL_SUCCESS)
+            if ((ret = cli_checklimits("HWP", ctx, outsize + count, 0, 0)) != CL_SUCCESS)
                 break;
 
             if (cli_writen(ofd, outbuf, count) != count) {
@@ -163,13 +163,17 @@ static int decompress_and_callback(cli_ctx *ctx, fmap_t *input, off_t at, size_t
 
         cli_infomsg(ctx, "%s: Error decompressing stream. Scanning what was decompressed.\n", parent);
     }
-    if (len && remain > 0)
-        cli_infomsg(ctx, "%s: Error decompressing stream. Not all requested input was converted\n", parent);
 
-    cli_dbgmsg("%s: Decompressed %llu bytes to %s\n", parent, (long long unsigned)outsize, tmpname);
+    /* check for limits exceeded */
+    if (ret == CL_SUCCESS) {
+        if (len && remain > 0)
+            cli_infomsg(ctx, "%s: Error decompressing stream. Not all requested input was converted\n", parent);
 
-    /* scanning inflated stream */
-    ret = cb(cbdata, ofd, ctx);
+        cli_dbgmsg("%s: Decompressed %llu bytes to %s\n", parent, (long long unsigned)outsize, tmpname);
+
+        /* scanning inflated stream */
+        ret = cb(cbdata, ofd, ctx);
+    }
 
     /* clean-up */
  dc_end:
