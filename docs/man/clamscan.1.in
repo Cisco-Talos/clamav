@@ -168,6 +168,12 @@ Scan SWF files. If you turn off this option, the original files will still be sc
 \fB\-\-scan\-html[=yes(*)/no]\fR
 Detect, normalize/decrypt and scan HTML files and embedded scripts. If you turn off this option, the original files will still be scanned, but without additional processing.
 .TP 
+\fB\-\-scan\-xmldocs[=yes(*)/no]\fR
+Scan xml-based document files supported by libclamav. If you turn off this option, the original files will still be scanned, but without additional processing.
+.TP 
+\fB\-\-scan\-hwp3[=yes(*)/no]\fR
+Scan HWP3 files. If you turn off this option, the original files will still be scanned, but without additional processing.
+.TP 
 \fB\-\-scan\-archive[=yes(*)/no]\fR
 Scan archives supported by libclamav. If you turn off this option, the original files will still be scanned, but without unpacking and additional processing.
 .TP 

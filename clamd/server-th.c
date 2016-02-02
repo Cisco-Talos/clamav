@@ -1010,6 +1010,20 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	logg("HTML support disabled.\n");
     }
 
+    if(optget(opts, "ScanXMLDOCS")->enabled) {
+	logg("XMLDOCS support enabled.\n");
+	options |= CL_SCAN_XMLDOCS;
+    } else {
+	logg("XMLDOCS support disabled.\n");
+    }
+
+    if(optget(opts, "ScanHWP3")->enabled) {
+	logg("HWP3 support enabled.\n");
+	options |= CL_SCAN_HWP3;
+    } else {
+	logg("HWP3 support disabled.\n");
+    }
+
     if(optget(opts,"PhishingScanURLs")->enabled) {
 
 	if(optget(opts,"PhishingAlwaysBlockCloak")->enabled) {

@@ -318,6 +318,18 @@ Example
 # Default: yes
 #ScanSWF yes
 
+# This option enables scanning xml-based document files supported by libclamav.
+# If you turn off this option, the original files will still be scanned, but
+# without additional processing.
+# Default: yes
+#ScanXMLDOCS yes
+
+# This option enables scanning of HWP3 files.
+# If you turn off this option, the original files will still be scanned, but
+# without additional processing.
+# Default: yes
+#ScanHWP3 yes
+
 
 ##
 ## Mail files
