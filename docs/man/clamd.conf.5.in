@@ -467,6 +467,20 @@ If you turn off this option, the original files will still be scanned, but witho
 .br 
 Default: yes
 .TP
+\fBScanXMLDOCS BOOL\fR
+This option enables scanning xml-based document files supported by libclamav.
+.br
+If you turn off this option, the original files will still be scanned, but without additional processing.
+.br
+Default: yes
+.TP
+\fBScanHWP3 BOOL\fR
+This option enables scanning HWP3 files.
+.br
+If you turn off this option, the original files will still be scanned, but without additional processing.
+.br
+Default: yes
+.TP 
 \fBScanArchive BOOL\fR
 Scan within archives and compressed files.
 .br

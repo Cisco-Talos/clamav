@@ -1076,6 +1076,12 @@ int scanmanager(const struct optstruct *opts)
     if(optget(opts, "scan-mail")->enabled)
         options |= CL_SCAN_MAIL;
 
+    if(optget(opts, "scan-xmldocs")->enabled)
+        options |= CL_SCAN_XMLDOCS;
+
+    if(optget(opts, "scan-hwp3")->enabled)
+        options |= CL_SCAN_HWP3;
+
     if(optget(opts, "algorithmic-detection")->enabled)
         options |= CL_SCAN_ALGORITHMIC;
 

@@ -2273,19 +2273,19 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
                     }
                     break;
                 case CL_TYPE_XML_WORD:
-                    if(DCONF_DOC & DOC_CONF_MSXML) {
+                    if(SCAN_XMLDOCS && (DCONF_DOC & DOC_CONF_MSXML)) {
                         cli_dbgmsg("XML-WORD signature found at %u\n", (unsigned int) fpt->offset);
                         ret = cli_scanmsxml(ctx);
                     }
                     break;
                 case CL_TYPE_XML_XL:
-                    if(DCONF_DOC & DOC_CONF_MSXML) {
+                    if(SCAN_XMLDOCS && (DCONF_DOC & DOC_CONF_MSXML)) {
                         cli_dbgmsg("XML-XL signature found at %u\n", (unsigned int) fpt->offset);
                         ret = cli_scanmsxml(ctx);
                     }
                     break;
                 case CL_TYPE_XML_HWP:
-                    if(DCONF_DOC & DOC_CONF_HWP) {
+                    if(SCAN_XMLDOCS && (DCONF_DOC & DOC_CONF_HWP)) {
                         cli_dbgmsg("XML-HWP signature found at %u\n", (unsigned int) fpt->offset);
                         ret = cli_scanhwpml(ctx);
                     }
@@ -2858,7 +2858,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 	    break;
 
 	case CL_TYPE_HWP3:
-	    if(DCONF_DOC & DOC_CONF_HWP)
+	    if(SCAN_HWP3 && (DCONF_DOC & DOC_CONF_HWP))
 		ret = cli_scanhwp3(ctx);
 	    break;
 
@@ -2868,17 +2868,17 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 	    break;
 
 	case CL_TYPE_XML_WORD:
-	    if(DCONF_DOC & DOC_CONF_MSXML)
+	    if(SCAN_XMLDOCS && (DCONF_DOC & DOC_CONF_MSXML))
 		ret = cli_scanmsxml(ctx);
 	    break;
 
 	case CL_TYPE_XML_XL:
-	    if(DCONF_DOC & DOC_CONF_MSXML)
+	    if(SCAN_XMLDOCS && (DCONF_DOC & DOC_CONF_MSXML))
 		ret = cli_scanmsxml(ctx);
 	    break;
 
 	case CL_TYPE_XML_HWP:
-	    if(DCONF_DOC & DOC_CONF_HWP)
+	    if(SCAN_XMLDOCS && (DCONF_DOC & DOC_CONF_HWP))
 		ret = cli_scanhwpml(ctx);
 	    break;
 
@@ -2914,7 +2914,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 	case CL_TYPE_OOXML_XL:
 	case CL_TYPE_OOXML_HWP:
 #if HAVE_JSON
-	    if(DCONF_DOC & DOC_CONF_OOXML) {
+	    if(SCAN_XMLDOCS && (DCONF_DOC & DOC_CONF_OOXML)) {
 		if ((ctx->options & CL_SCAN_FILE_PROPERTIES) && (ctx->wrkproperty != NULL)) {
 		    ret = cli_process_ooxml(ctx, type);
 

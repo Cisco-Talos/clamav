@@ -262,6 +262,8 @@ void help(void)
     mprintf("    --scan-pdf[=yes(*)/no]               Scan PDF files\n");
     mprintf("    --scan-swf[=yes(*)/no]               Scan SWF files\n");
     mprintf("    --scan-html[=yes(*)/no]              Scan HTML files\n");
+    mprintf("    --scan-xmldocs[=yes(*)/no]           Scan xml-based document files\n");
+    mprintf("    --scan-hwp3[=yes(*)/no]              Scan HWP3 files\n");
     mprintf("    --scan-archive[=yes(*)/no]           Scan archive files (supported by libclamav)\n");
     mprintf("    --detect-broken[=yes/no(*)]          Try to detect broken executable files\n");
     mprintf("    --block-encrypted[=yes/no(*)]        Block encrypted archives\n");

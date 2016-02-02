@@ -353,6 +353,10 @@ const struct clam_option __clam_options[] = {
 
     { "ScanSWF", "scan-swf", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option enables scanning within SWF files.\nIf you turn off this option, the original files will still be scanned, but\nwithout decoding and additional processing.", "yes" },
 
+    { "ScanXMLDOCS", "scan-xmldocs", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option enables scanning xml-based document files supported by libclamav.\nIf you turn off this option, the original files will still be scanned, but\nwithout additional processing.", "yes" },
+
+    { "ScanHWP3", "scan-hwp3", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option enables scanning HWP3 files.\nIf you turn off this option, the original files will still be scanned, but\nwithout additional processing.", "yes" },
+
     { "ScanArchive", "scan-archive", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Scan within archives and compressed files.\nIf you turn off this option, the original files will still be scanned, but\nwithout unpacking and additional processing.", "yes" },
 
     { "ArchiveBlockEncrypted", "block-encrypted", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Mark encrypted archives as viruses (Encrypted.Zip, Encrypted.RAR).", "no" },
