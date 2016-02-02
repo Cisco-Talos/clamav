@@ -173,6 +173,9 @@ static int decompress_and_callback(cli_ctx *ctx, fmap_t *input, off_t at, size_t
 
         /* scanning inflated stream */
         ret = cb(cbdata, ofd, ctx);
+    } else {
+        /* default to scanning what we got */
+        ret = cli_magic_scandesc(ofd, ctx);
     }
 
     /* clean-up */
