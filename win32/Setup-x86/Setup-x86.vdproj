@@ -75,66 +75,6 @@
         }
         "Entry"
         {
-        "MsmKey" = "8:_5023780807D9476D885C8ACDB89C8645"
-        "OwnerKey" = "8:_129947045FE24C5AAEE6467547A6FBBB"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_5023780807D9476D885C8ACDB89C8645"
-        "OwnerKey" = "8:_E6AAF8DB843A4CDCBD12F62B44F0D947"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_5023780807D9476D885C8ACDB89C8645"
-        "OwnerKey" = "8:_C3F868E2F86F4F22914EBB33174331CF"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_5023780807D9476D885C8ACDB89C8645"
-        "OwnerKey" = "8:_AA48472048A74261A786515933650C63"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_5023780807D9476D885C8ACDB89C8645"
-        "OwnerKey" = "8:_86FBE3D4BB5F42609082FB54D8079705"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_5023780807D9476D885C8ACDB89C8645"
-        "OwnerKey" = "8:_64B5C4E9452F43349FB4D53DEE15C87D"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_5023780807D9476D885C8ACDB89C8645"
-        "OwnerKey" = "8:_42222ACB125B4398B7BF9C030F7DF8FB"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_5023780807D9476D885C8ACDB89C8645"
-        "OwnerKey" = "8:_4053CC7DC75C48E98893BCEA2D692E55"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_5023780807D9476D885C8ACDB89C8645"
-        "OwnerKey" = "8:_32F4158C158142089DB13F5F29F91589"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_5023780807D9476D885C8ACDB89C8645"
-        "OwnerKey" = "8:_29583B2B37A44A71864FFD88DFED2C8F"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
         "MsmKey" = "8:_572E52797C0A4873ACFC45E53ED1FB78"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
@@ -244,43 +184,7 @@
         "Entry"
         {
         "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_E6AAF8DB843A4CDCBD12F62B44F0D947"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_C3F868E2F86F4F22914EBB33174331CF"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_AA48472048A74261A786515933650C63"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_86FBE3D4BB5F42609082FB54D8079705"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_64B5C4E9452F43349FB4D53DEE15C87D"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_42222ACB125B4398B7BF9C030F7DF8FB"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_4053CC7DC75C48E98893BCEA2D692E55"
+        "OwnerKey" = "8:_29583B2B37A44A71864FFD88DFED2C8F"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
@@ -292,7 +196,43 @@
         "Entry"
         {
         "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_29583B2B37A44A71864FFD88DFED2C8F"
+        "OwnerKey" = "8:_4053CC7DC75C48E98893BCEA2D692E55"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_UNDEFINED"
+        "OwnerKey" = "8:_42222ACB125B4398B7BF9C030F7DF8FB"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_UNDEFINED"
+        "OwnerKey" = "8:_64B5C4E9452F43349FB4D53DEE15C87D"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_UNDEFINED"
+        "OwnerKey" = "8:_86FBE3D4BB5F42609082FB54D8079705"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_UNDEFINED"
+        "OwnerKey" = "8:_AA48472048A74261A786515933650C63"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_UNDEFINED"
+        "OwnerKey" = "8:_C3F868E2F86F4F22914EBB33174331CF"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_UNDEFINED"
+        "OwnerKey" = "8:_E6AAF8DB843A4CDCBD12F62B44F0D947"
         "MsmSig" = "8:_UNDEFINED"
         }
     }
@@ -796,15 +736,15 @@
         {
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:ClamAV"
-        "ProductCode" = "8:{E068B85A-E686-49B2-9497-861DB982C731}"
-        "PackageCode" = "8:{FAA71BF3-81B0-4243-96F3-361D642E8B1D}"
+        "ProductCode" = "8:{97E82024-8464-4A4C-955C-83189B2A8779}"
+        "PackageCode" = "8:{B6F86691-DB89-4795-AB2A-65950711EB1F}"
         "UpgradeCode" = "8:{B65ED295-87F7-4870-8017-E3A594DDADF8}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"
         "RemovePreviousVersions" = "11:TRUE"
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:TRUE"
-        "ProductVersion" = "8:0.99.0"
+        "ProductVersion" = "8:0.99.1"
         "Manufacturer" = "8:Cisco Systems, Inc"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:http://www.clamav.net"
@@ -1313,20 +1253,6 @@
         }
         "MergeModule"
         {
-            "{CEE29DC0-9FBA-4B99-8D47-5BC643D9B626}:_5023780807D9476D885C8ACDB89C8645"
-            {
-            "UseDynamicProperties" = "11:TRUE"
-            "IsDependency" = "11:TRUE"
-            "SourcePath" = "8:Microsoft_VC100_CRT_x86.msm"
-                "Properties"
-                {
-                }
-            "LanguageId" = "3:0"
-            "Exclude" = "11:FALSE"
-            "Folder" = "8:"
-            "Feature" = "8:"
-            "IsolateTo" = "8:"
-            }
         }
         "ProjectOutput"
         {
