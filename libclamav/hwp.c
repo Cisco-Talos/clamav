@@ -1160,9 +1160,9 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                         return ret;
                     break;
                 }
-            case 17: /* footnote/North America??? */
+            case 17: /* footnote/endnote */
                 {
-                    hwp3_debug("HWP3.x: Detected hidden description marker @ offset %llu\n", (long long unsigned)offset);
+                    hwp3_debug("HWP3.x: Detected footnote/endnote marker @ offset %llu\n", (long long unsigned)offset);
 
                     /*
                      * offset 0 (2 bytes) - special character ID
@@ -1179,6 +1179,13 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                     HWP3_PSPECIAL_VERIFY(map, offset, 6, content, match);
 
                     offset += 22;
+
+                    /* content paragraph list */
+                    hwp3_debug("HWP3.x: Paragraph[%d, %d]: footnote/endnote paragraph list starts @ %llu\n", level, p, (long long unsigned)offset);
+                    l = 0;
+                    while (!l && ((ret = parsehwp3_paragraph(ctx, map, sp++, level+1, &offset, &l)) == CL_SUCCESS));
+                    if (ret != CL_SUCCESS)
+                        return ret;
                     break;
                 }
             case 18: /* paste code number */
