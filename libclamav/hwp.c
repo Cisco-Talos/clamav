@@ -81,7 +81,7 @@ static int decompress_and_callback(cli_ctx *ctx, fmap_t *input, off_t at, size_t
 {
     int zret, ofd, ret = CL_SUCCESS;
     off_t off_in = at;
-    size_t count, remain = 1, outsize = 0;
+    size_t in, count, remain = 1, outsize = 0;
     z_stream zstrm;
     char *tmpname;
     unsigned char inbuf[FILEBUFF], outbuf[FILEBUFF];
@@ -119,22 +119,22 @@ static int decompress_and_callback(cli_ctx *ctx, fmap_t *input, off_t at, size_t
     do {
         if (zstrm.avail_in == 0) {
             zstrm.next_in = inbuf;
-            ret = fmap_readn(input, inbuf, off_in, FILEBUFF);
-            if (ret < 0) {
+            in = fmap_readn(input, inbuf, off_in, FILEBUFF);
+            if (in < 0) {
                 cli_errmsg("%s: Error reading stream\n", parent);
                 ret = CL_EUNPACK;
                 goto dc_end;
             }
-            if (!ret)
+            if (!in)
                 break;
 
             if (len) {
-                if (remain < ret)
-                    ret = remain;
-                remain -= ret;
+                if (remain < in)
+                    in = remain;
+                remain -= in;
             }
-            zstrm.avail_in = ret;
-            off_in += ret;
+            zstrm.avail_in = in;
+            off_in += in;
         }
         zret = inflate(&zstrm, Z_SYNC_FLUSH);
         count = FILEBUFF - zstrm.avail_out;
@@ -153,6 +153,8 @@ static int decompress_and_callback(cli_ctx *ctx, fmap_t *input, off_t at, size_t
         zstrm.avail_out = FILEBUFF;
     } while(zret == Z_OK && remain);
 
+    cli_dbgmsg("%s: Decompressed %llu bytes to %s\n", parent, (long long unsigned)outsize, tmpname);
+
     /* post inflation checks */
     if (zret != Z_STREAM_END && zret != Z_OK) {
         if (outsize == 0) {
@@ -164,12 +166,10 @@ static int decompress_and_callback(cli_ctx *ctx, fmap_t *input, off_t at, size_t
         cli_infomsg(ctx, "%s: Error decompressing stream. Scanning what was decompressed.\n", parent);
     }
 
-    /* check for limits exceeded */
-    if (ret == CL_SUCCESS) {
+    /* check for limits exceeded or zlib failure */
+    if (ret == CL_SUCCESS && (zret == Z_STREAM_END || zret == Z_OK)) {
         if (len && remain > 0)
             cli_infomsg(ctx, "%s: Error decompressing stream. Not all requested input was converted\n", parent);
-
-        cli_dbgmsg("%s: Decompressed %llu bytes to %s\n", parent, (long long unsigned)outsize, tmpname);
 
         /* scanning inflated stream */
         ret = cb(cbdata, ofd, ctx);
@@ -181,8 +181,11 @@ static int decompress_and_callback(cli_ctx *ctx, fmap_t *input, off_t at, size_t
     /* clean-up */
  dc_end:
     zret = inflateEnd(&zstrm);
-    if (zret != Z_OK)
-        ret = CL_EUNPACK;
+    if (zret != Z_OK) {
+        cli_errmsg("%s: Error closing zlib inflation stream\n", parent);
+        if (ret == CL_SUCCESS)
+            ret = CL_EUNPACK;
+    }
     close(ofd);
     if (!ctx->engine->keeptmp)
         if (cli_unlink(tmpname))
@@ -278,8 +281,8 @@ int cli_scanhwpole2(cli_ctx *ctx)
     else
         cli_dbgmsg("HWPOLE2: Matched uncompressed prefix and size: %u == %u\n", usize, asize);
 
-    return cli_map_scandesc(map, 4, map->len, ctx, CL_TYPE_ANY);
-    //return cli_map_scandesc(map, 4, map->len, ctx, CL_TYPE_OLE2);
+    return cli_map_scandesc(map, 4, 0, ctx, CL_TYPE_ANY);
+    //return cli_map_scandesc(map, 4, 0, ctx, CL_TYPE_OLE2);
 }
 
 /*** HWP5 ***/
@@ -357,8 +360,6 @@ int cli_hwp5header(cli_ctx *ctx, hwp5_header_t *hwp5)
 
 static int hwp5_cb(void *cbdata, int fd, cli_ctx *ctx)
 {
-    int ret;
-
     if (fd < 0 || !ctx)
         return CL_ENULLARG;
 
@@ -1905,6 +1906,9 @@ static size_t num_hwpml_keys = sizeof(hwpml_keys) / sizeof(struct key_entry);
 /* binary streams needs to be base64-decoded then decompressed if fields are set */
 static int hwpml_scan_cb(void *cbdata, int fd, cli_ctx *ctx)
 {
+    if (fd < 0 || !ctx)
+        return CL_ENULLARG;
+
     return cli_magic_scandesc(fd, ctx);
 }
 
