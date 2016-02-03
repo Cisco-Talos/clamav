@@ -2,8 +2,21 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
-0.99-rc2
---------
+0.99.1
+------
+
+ClamAV 0.99.1 contains a new feature for parsing Hancom Office files
+including extracting and scanning embedded objects. ClamAV 0.99.1
+also contains important bug fixes. Please see ChangeLog for details.
+
+Thanks to the following community members for code submissions used in
+ClamAV 0.99.1:
+
+Jim Morris
+Andreas Cadhalpun
+
+0.99
+----
 
 ClamAV 0.99 contains major new features and changes. YARA rules, 
 Perl Compatible Regular Expressions, revamped on-access scanning
@@ -51,6 +64,7 @@ Andreas Cadhalpun
 Dmitry Marakasov
 Michael Pelletier
 Felix Groebert
+Stephen Welker
 
 0.98.7
 ------

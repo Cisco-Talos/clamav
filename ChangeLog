@@ -1,3 +1,188 @@
+Tue, 3 Feb 2016 17:30:00 -0500 (Steven Morgan)
+------------------------------------------
+ * ClamAV 0.99.1 beta1 release.
+
+Tue, 2 Feb 2016 14:23:13 -0500 (Kevin Lin)
+------------------------------------------
+ * add scanning options for scanning xml-based documents
+	(MSXML, OOXML, HWPML) and HWP3
+
+Fri, 29 Jan 2016 16:17:40 -0500 (Kevin Lin)
+------------------------------------------
+ * add dconfs for XDP, MBR, GPT, APM, OOXML, MSXML, and HWP formats
+
+Tue, 2 Feb 2016 12:38:27 -0500 (Kevin Lin)
+------------------------------------------
+ * hwp: scan decompressed data on limits exceeded
+
+Sun, 31 Jan 2016 15:41:54 -0500 (Steven Morgan)
+------------------------------------------
+ * Fix for signature name length<3 in .ign & .ign2 CVD files.
+
+Fri, 29 Jan 2016 11:21:46 -0500 (Steven Morgan)
+------------------------------------------
+ * Change RTF file magic from '{\rtf' to '{\rt'
+
+Wed, 27 Jan 2016 14:17:47 -0500 (Mickey Sola)
+------------------------------------------
+ * bb11444 - zeroing out buffer at allocation to avoid writing uninitialized
+	bytes to a file
+
+Wed, 20 Jan 2016 16:21:58 -0500 (Mickey Sola)
+------------------------------------------
+ * bb11446 - adding check for compressed input stream
+
+Wed, 13 Jan 2016 14:56:46 -0500 (Kevin Lin)
+------------------------------------------
+ * clean up and boost accuracy to detecting OOXML documents
+
+Thu, 14 Jan 2016 17:01:01 -0500 (Steven Morgan)
+------------------------------------------
+ * 11477 - Fix crash when using pcre statistics due to inconsistent memory
+	management function calls
+
+Thu, 14 Jan 2016 15:31:02 -0500 (Mickey Sola)
+------------------------------------------
+ * bb11444: adding check to verify a valid number of rounds for rijndael aes
+	encryption/decryption
+
+Wed, 13 Jan 2016 13:18:01 -0500 (Mickey Sola)
+------------------------------------------
+ * bb11441 - fixing edge case revealed by unit testing
+
+Tue, 12 Jan 2016 17:20:26 -0500 (Steven Morgan)
+------------------------------------------
+ * bb11466 - let html be scanned raw when --scan-html=no is in effect.
+
+Tue, 12 Jan 2016 16:14:40 -0500 (Steven Morgan)
+------------------------------------------
+ * bb11475: fix crash due to memory overlay with crafted 7z files.
+
+Tue, 12 Jan 2016 14:30:41 -0500 (Mickey Sola)
+------------------------------------------
+ * bb11441 - fixing off by one OOB write in htmlnorm
+
+Mon, 11 Jan 2016 14:47:30 -0500 (Mickey Sola)
+------------------------------------------
+ * bb11446 - fixing autoit OOB bufferread
+
+Wed, 6 Jan 2016 14:57:48 -0500 (Mickey Sola)
+------------------------------------------
+ * sigtool: adding support for decoding cdb sigs
+
+Tue, 5 Jan 2016 13:13:47 -0500 (Steven Morgan)
+------------------------------------------
+ * bb11467 - fix embedded http links.
+
+Tue, 22 Dec 2015 19:04:42 -0500 (Steven Morgan)
+------------------------------------------
+ * bb11451 - fix guard macro name collision on AIX.
+
+Tue, 22 Dec 2015 13:36:51 -0500 (Steven Morgan)
+------------------------------------------
+ * fix regression crash on sid 1005597703 due to uninitialzed
+	(i.e., garbage initialized) structure.
+
+Mon, 21 Dec 2015 17:39:47 -0500 (Steven Morgan)
+------------------------------------------
+ * bb11456 - corrects mso stream prefix value for big endian processors.
+	Patch by Jim Morris.
+
+Thu, 17 Dec 2015 16:16:55 -0500 (Kevin Lin)
+------------------------------------------
+ * ooxml_hwp: add support for filetyping and preclassification
+
+Thu, 17 Dec 2015 11:04:00 -0500 (Kevin Lin)
+------------------------------------------
+ * hwpole2: new filetype and handler for hwp embedded ole2 files
+
+Thu, 17 Dec 2015 12:46:38 -0500 (Mickey Sola)
+------------------------------------------
+ * bb11443 - fixing possible oob dereference when parsing mbox files
+
+Tue, 15 Dec 2015 16:12:01 -0500 (Mickey Sola)
+------------------------------------------
+ * bb11442 - adding explicit wwunpack oob checks
+
+Tue, 15 Dec 2015 10:53:05 -0500 (Mickey Sola)
+------------------------------------------
+ * bb11445 - fixing edge case where a null terminator was unintentionally
+	written into an adjacent buffer.
+
+Wed, 16 Dec 2015 16:13:05 -0500 (Kevin Lin)
+------------------------------------------
+ * hwpml: use msxml_parser callback scanner for binary data
+
+Wed, 16 Dec 2015 16:12:20 -0500 (Kevin Lin)
+------------------------------------------
+ * msxml_parser: add callback-based scanning mechanism
+
+Tue, 15 Dec 2015 13:01:40 -0500 (Kevin Lin)
+------------------------------------------
+ * HWPML: added hwpml_keys for hwpml parsing
+
+Tue, 15 Dec 2015 10:54:20 -0500 (Kevin Lin)
+------------------------------------------
+ * add HMPML filetype, tab fixes in filetype.c
+
+Mon, 14 Dec 2015 16:34:11 -0500 (Kevin Lin)
+------------------------------------------
+ * Hwp3.x: inflate compressed segment and offset tracking
+
+Fri, 11 Dec 2015 17:50:40 -0500 (Kevin Lin)
+------------------------------------------
+ * Hwp3.x file header parsing and preclass
+
+Wed, 16 Dec 2015 14:56:56 -0500 (Kevin Lin)
+------------------------------------------
+ * pcre: fixed minimum pcre version check
+
+Fri, 11 Dec 2015 17:41:38 -0500 (Steven Morgan)
+------------------------------------------
+ * bb11452 - endianess correction for swf files on sparc -
+	patch supplied by Jim Morris.
+
+Wed, 9 Dec 2015 12:15:16 -0500 (Mickey Sola)
+------------------------------------------
+ * bb11424 - correcting buffer alignemnt for riff detection on sparc systems;
+	patch by Jim Morris
+
+Wed, 9 Dec 2015 00:17:41 +0100 (Andreas Cadhalpun)
+------------------------------------------
+ * fix detection of libcheck without pkg-config file
+
+Wed, 9 Dec 2015 11:43:35 -0500 (Kevin Lin)
+------------------------------------------
+ * add HWP5 filetype tracking to preclassification
+
+Tue, 8 Dec 2015 15:05:30 -0500 (Kevin Lin)
+------------------------------------------
+ * add HWP 3.x internal filetypes
+
+Tue, 8 Dec 2015 14:47:12 -0500 (Kevin Lin)
+------------------------------------------
+ * add hwp5 contents to preclass set
+
+Fri, 4 Dec 2015 11:55:52 -0500 (Kevin Lin)
+------------------------------------------
+ * proper identification of HWP file format
+
+Tue, 8 Dec 2015 18:36:48 -0500 (Steven Morgan)
+------------------------------------------
+ * bb11438 - strengthen file typing for OOXML.
+
+Wed, 2 Dec 2015 14:06:32 -0500 (Mickey Sola)
+------------------------------------------
+ * bb-11099 - normalization of whitelist signatures
+
+Wed, 2 Dec 2015 16:23:48 -0500 (Steven Morgan)
+------------------------------------------
+ * github issue #9 - wrong length & offset.
+
+Wed, 25 Nov 2015 11:30:00 -0500 (Steven Morgan)
+------------------------------------------
+ * ClamAV 0.99 Release.
+
 Wed, 4 Nov 2015 14:46:46 -0500 (Steven Morgan)
 ------------------------------------------
  * ClamAV 0.99-rc2 Release.
