@@ -463,7 +463,11 @@ int main(int argc, char **argv)
 	printf("LIBXML2 ");
 #endif
 #ifdef HAVE_PCRE
+#if USING_PCRE2
+	printf("PCRE2 ");
+#else
 	printf("PCRE ");
+#endif
 #endif
 #ifdef HAVE_ICONV
 	printf("ICONV ");
