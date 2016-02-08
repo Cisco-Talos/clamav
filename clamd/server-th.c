@@ -894,23 +894,10 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     val = cl_engine_get_num(engine, CL_ENGINE_MAX_RECHWP3, NULL);
     logg("Limits: MaxRecHWP3 limit set to %llu.\n", val);
 
-    if((opt = optget(opts, "PCREMatchLimit"))->active) {
-        if((ret = cl_engine_set_num(engine, CL_ENGINE_PCRE_MATCH_LIMIT, opt->numarg))) {
-            logg("!cli_engine_set_num(PCREMatchLimit) failed: %s\n", cl_strerror(ret));
-            cl_engine_free(engine);
-            return 1;
-        }
-    }
+    /* options are handled in main (clamd.c) */
     val = cl_engine_get_num(engine, CL_ENGINE_PCRE_MATCH_LIMIT, NULL);
     logg("Limits: PCREMatchLimit limit set to %llu.\n", val);
 
-    if((opt = optget(opts, "PCRERecMatchLimit"))->active) {
-        if((ret = cl_engine_set_num(engine, CL_ENGINE_PCRE_RECMATCH_LIMIT, opt->numarg))) {
-            logg("!cli_engine_set_num(PCRERecMatchLimit) failed: %s\n", cl_strerror(ret));
-            cl_engine_free(engine);
-            return 1;
-        }
-    }
     val = cl_engine_get_num(engine, CL_ENGINE_PCRE_RECMATCH_LIMIT, NULL);
     logg("Limits: PCRERecMatchLimit limit set to %llu.\n", val);
 

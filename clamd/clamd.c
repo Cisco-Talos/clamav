@@ -584,6 +584,23 @@ int main(int argc, char **argv)
 
         logg("#Loaded %u signatures.\n", sigs);
 
+        /* pcre engine limits - required for cl_engine_compile */
+        if((opt = optget(opts, "PCREMatchLimit"))->active) {
+            if((ret = cl_engine_set_num(engine, CL_ENGINE_PCRE_MATCH_LIMIT, opt->numarg))) {
+                logg("!cli_engine_set_num(PCREMatchLimit) failed: %s\n", cl_strerror(ret));
+                cl_engine_free(engine);
+                return 1;
+            }
+        }
+
+        if((opt = optget(opts, "PCRERecMatchLimit"))->active) {
+            if((ret = cl_engine_set_num(engine, CL_ENGINE_PCRE_RECMATCH_LIMIT, opt->numarg))) {
+                logg("!cli_engine_set_num(PCRERecMatchLimit) failed: %s\n", cl_strerror(ret));
+                cl_engine_free(engine);
+                return 1;
+            }
+        }
+
         if((ret = cl_engine_compile(engine)) != 0) {
             logg("!Database initialization error: %s\n", cl_strerror(ret));
             ret = 1;
