@@ -853,6 +853,23 @@ int scanmanager(const struct optstruct *opts)
         free(dbdir);
     }
 
+    /* pcre engine limits - required for cl_engine_compile */
+    if ((opt = optget(opts, "pcre-match-limit"))->active) {
+        if ((ret = cl_engine_set_num(engine, CL_ENGINE_PCRE_MATCH_LIMIT, opt->numarg))) {
+            logg("!cli_engine_set_num(CL_ENGINE_PCRE_MATCH_LIMIT) failed: %s\n", cl_strerror(ret));
+            cl_engine_free(engine);
+            return 2;
+        }
+    }
+
+    if ((opt = optget(opts, "pcre-recmatch-limit"))->active) {
+        if ((ret = cl_engine_set_num(engine, CL_ENGINE_PCRE_RECMATCH_LIMIT, opt->numarg))) {
+            logg("!cli_engine_set_num(CL_ENGINE_PCRE_RECMATCH_LIMIT) failed: %s\n", cl_strerror(ret));
+            cl_engine_free(engine);
+            return 2;
+        }
+    }
+
     if((ret = cl_engine_compile(engine)) != 0) {
         logg("!Database initialization error: %s\n", cl_strerror(ret));;
 
@@ -999,22 +1016,6 @@ int scanmanager(const struct optstruct *opts)
         if ((ret = cl_engine_set_num(engine, CL_ENGINE_TIME_LIMIT, opt->numarg))) {
             logg("!cli_engine_set_num(CL_ENGINE_TIME_LIMIT) failed: %s\n", cl_strerror(ret));
 
-            cl_engine_free(engine);
-            return 2;
-        }
-    }
-
-    if ((opt = optget(opts, "pcre-match-limit"))->active) {
-        if ((ret = cl_engine_set_num(engine, CL_ENGINE_PCRE_MATCH_LIMIT, opt->numarg))) {
-            logg("!cli_engine_set_num(CL_ENGINE_PCRE_MATCH_LIMIT) failed: %s\n", cl_strerror(ret));
-            cl_engine_free(engine);
-            return 2;
-        }
-    }
-
-    if ((opt = optget(opts, "pcre-recmatch-limit"))->active) {
-        if ((ret = cl_engine_set_num(engine, CL_ENGINE_PCRE_RECMATCH_LIMIT, opt->numarg))) {
-            logg("!cli_engine_set_num(CL_ENGINE_PCRE_RECMATCH_LIMIT) failed: %s\n", cl_strerror(ret));
             cl_engine_free(engine);
             return 2;
         }
