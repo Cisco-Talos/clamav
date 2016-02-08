@@ -27,20 +27,42 @@
 #endif
 
 #if HAVE_PCRE
+#if USING_PCRE2
+#define PCRE2_CODE_UNIT_WIDTH 8
+#include <pcre2.h>
+#else
 #include <pcre.h>
+#endif
 
 #include "clamav.h"
 #include "cltypes.h"
 #include "others.h"
 #include "regex_pcre.h"
 
-/* TODO: cli_pcre_init_internal: redefine pcre_malloc and pcre_free, setup callback function? */
+#if USING_PCRE2
+/* NOTE: pcre2 could use mpool through ext */
+void *cli_pcre_malloc(size_t size, void *ext)
+{
+    UNUSEDPARAM(ext);
+    return cli_malloc(size);
+}
+
+void cli_pcre_free(void *ptr, void *ext)
+{
+    UNUSEDPARAM(ext);
+    free(ptr);
+}
+#endif
+
+/* cli_pcre_init_internal: redefine pcre_malloc and pcre_free; pcre2 does this during compile */
 int cli_pcre_init_internal()
 {
+#if !USING_PCRE2
     pcre_malloc = cli_malloc;
     pcre_free = free;
     pcre_stack_malloc = cli_malloc;
     pcre_stack_free = free;
+#endif
 
     return CL_SUCCESS;
 }
@@ -52,6 +74,17 @@ int cli_pcre_addoptions(struct cli_pcre_data *pd, const char **opt, int errout)
 
     while (**opt != '\0') {
         switch(**opt) {
+#if USING_PCRE2
+        case 'i':  pd->options |= PCRE2_CASELESS;            break;
+        case 's':  pd->options |= PCRE2_DOTALL;              break;
+        case 'm':  pd->options |= PCRE2_MULTILINE;           break;
+        case 'x':  pd->options |= PCRE2_EXTENDED;            break;
+
+            /* these are pcre2 specific... don't work with perl */
+        case 'A':  pd->options |= PCRE2_ANCHORED;            break;
+        case 'E':  pd->options |= PCRE2_DOLLAR_ENDONLY;      break;
+        case 'U':  pd->options |= PCRE2_UNGREEDY;            break;
+#else
         case 'i':  pd->options |= PCRE_CASELESS;            break;
         case 's':  pd->options |= PCRE_DOTALL;              break;
         case 'm':  pd->options |= PCRE_MULTILINE;           break;
@@ -61,7 +94,7 @@ int cli_pcre_addoptions(struct cli_pcre_data *pd, const char **opt, int errout)
         case 'A':  pd->options |= PCRE_ANCHORED;            break;
         case 'E':  pd->options |= PCRE_DOLLAR_ENDONLY;      break;
         case 'U':  pd->options |= PCRE_UNGREEDY;            break;
-
+#endif
         default:
             if (errout) {
                 cli_errmsg("cli_pcre_addoptions: unknown/extra pcre option encountered %c\n", **opt);
@@ -76,6 +109,63 @@ int cli_pcre_addoptions(struct cli_pcre_data *pd, const char **opt, int errout)
     return CL_SUCCESS;
 }
 
+#if USING_PCRE2
+int cli_pcre_compile(struct cli_pcre_data *pd, long long unsigned match_limit, long long unsigned match_limit_recursion, unsigned int options, int opt_override)
+{
+    int errornum, erroffset;
+    pcre2_general_context *gctx;
+    pcre2_compile_context *cctx;
+
+    if (!pd || !pd->expression) {
+        cli_errmsg("cli_pcre_compile: NULL pd or NULL pd->expression\n");
+        return CL_ENULLARG;
+    }
+
+    gctx = pcre2_general_context_create(cli_pcre_malloc, cli_pcre_free, NULL);
+    if (!gctx) {
+        cli_errmsg("cli_pcre_compile: Unable to allocate memory for general context\n");
+        return CL_EMEM;
+    }
+
+    cctx = pcre2_compile_context_create(gctx);
+    if (!cctx) {
+        cli_errmsg("cli_pcre_compile: Unable to allocate memory for compile context\n");
+        pcre2_general_context_free(gctx);
+        return CL_EMEM;
+    }
+
+    /* compile the pcre2 regex last arg is charset, allow for options override */
+    if (opt_override)
+        pd->re = pcre2_compile(pd->expression, PCRE2_ZERO_TERMINATED, options, &errornum, &erroffset, cctx); /* pd->re handled by pcre2 -> call pcre_free() -> calls free() */
+    else
+        pd->re = pcre2_compile(pd->expression, PCRE2_ZERO_TERMINATED, pd->options, &errornum, &erroffset, cctx); /* pd->re handled by pcre2 -> call pcre_free() -> calls free() */
+    if (pd->re == NULL) {
+        PCRE2_UCHAR errmsg[256];
+        pcre2_get_error_message(errornum, errmsg, sizeof(errmsg));
+        cli_errmsg("cli_pcre_compile: PCRE2 compilation failed at offset %d: %s\n", erroffset, errmsg);
+        pcre2_compile_context_free(cctx);
+        pcre2_general_context_free(gctx);
+        return CL_EMALFDB;
+    }
+
+    /* setup matching context and set the match limits */
+    pd->mctx = pcre2_match_context_create(gctx);
+    if (!pd->mctx) {
+        cli_errmsg("cli_pcre_compile: Unable to allocate memory for match context\n");
+        pcre2_compile_context_free(cctx);
+        pcre2_general_context_free(gctx);
+        return CL_EMEM;
+    }
+
+    pcre2_set_match_limit(pd->mctx, match_limit);
+    pcre2_set_recursion_limit(pd->mctx, match_limit_recursion);
+
+    /* non-dynamic allocated fields set by caller */
+    pcre2_compile_context_free(cctx);
+    pcre2_general_context_free(gctx);
+    return CL_SUCCESS;
+}
+#else
 int cli_pcre_compile(struct cli_pcre_data *pd, long long unsigned match_limit, long long unsigned match_limit_recursion, unsigned int options, int opt_override)
 {
     const char *error;
@@ -88,11 +178,11 @@ int cli_pcre_compile(struct cli_pcre_data *pd, long long unsigned match_limit, l
 
     /* compile the pcre regex last arg is charset, allow for options override */
     if (opt_override)
-        pd->re = pcre_compile(pd->expression, options, &error, &erroffset, NULL); /* pd->re handled by libpcre -> call pcre_free() -> calls free() */
+        pd->re = pcre_compile(pd->expression, options, &error, &erroffset, NULL); /* pd->re handled by pcre -> call pcre_free() -> calls free() */
     else
-        pd->re = pcre_compile(pd->expression, pd->options, &error, &erroffset, NULL); /* pd->re handled by libpcre -> call pcre_free() -> calls free() */
+        pd->re = pcre_compile(pd->expression, pd->options, &error, &erroffset, NULL); /* pd->re handled by pcre -> call pcre_free() -> calls free() */
     if (pd->re == NULL) {
-        cli_errmsg("cli_pcre_parse: PCRE compilation failed at offset %d: %s\n", erroffset, error);
+        cli_errmsg("cli_pcre_compile: PCRE compilation failed at offset %d: %s\n", erroffset, error);
         return CL_EMALFDB;
     }
 
@@ -101,7 +191,7 @@ int cli_pcre_compile(struct cli_pcre_data *pd, long long unsigned match_limit, l
     if (!(pd->ex)) {
         pd->ex = (pcre_extra *)cli_calloc(1, sizeof(*(pd->ex)));
         if (!(pd->ex)) {
-            cli_errmsg("cli_pcre_parse: Unable to allocate memory\n");
+            cli_errmsg("cli_pcre_compile: Unable to allocate memory for extra data\n");
             return CL_EMEM;
         }
     }
@@ -129,15 +219,15 @@ int cli_pcre_compile(struct cli_pcre_data *pd, long long unsigned match_limit, l
     /* non-dynamic allocated fields set by caller */
     return CL_SUCCESS;
 }
+#endif
 
-int cli_pcre_match(struct cli_pcre_data *pd, const unsigned char *buffer, uint32_t buflen, int override_offset, int options, int *ovector, size_t ovlen)
+int cli_pcre_match(struct cli_pcre_data *pd, const unsigned char *buffer, uint32_t buflen, int override_offset, int options, struct cli_pcre_results *results)
 {
-    int startoffset;
-
-    if (ovlen % 3) {
-        cli_dbgmsg("cli_pcre_match: ovector length is not a multiple of 3\n");
-        return CL_EARG;
-    }
+    int rc, startoffset;
+#if USING_PCRE2
+    pcre2_general_context *pc2ctx;
+    PCRE2_SIZE *ovector;
+#endif
 
     /* set the startoffset, override if a value is specified */
     startoffset = pd->search_offset;
@@ -145,14 +235,69 @@ int cli_pcre_match(struct cli_pcre_data *pd, const unsigned char *buffer, uint32
         startoffset = override_offset;
 
     /* execute the pcre and return */
-    return pcre_exec(pd->re, pd->ex, buffer, buflen, startoffset, options, ovector, ovlen);
+#if USING_PCRE2
+    rc = pcre2_match(pd->re, buffer, buflen, startoffset, options, results->match_data, pd->mctx);
+    if (rc < 0 && rc != PCRE2_ERROR_NOMATCH) {
+        switch (rc) {
+        case PCRE2_ERROR_CALLOUT:
+            break;
+        case PCRE2_ERROR_NOMEMORY:
+            cli_errmsg("cli_pcre_match: pcre_exec: out of memory\n");
+            results->err = CL_EMEM;
+            break;
+        case PCRE2_ERROR_MATCHLIMIT:
+            cli_dbgmsg("cli_pcre_match: pcre_exec: match limit exceeded\n");
+            break;
+        case PCRE2_ERROR_RECURSIONLIMIT:
+            cli_dbgmsg("cli_pcre_match: pcre_exec: recursive limit exceeded\n");
+            break;
+        default:
+            cli_errmsg("cli_pcre_match: pcre_exec: returned error %d\n", rc);
+            results->err = CL_BREAK;
+        }
+    } else if (rc > 0) {
+        ovector = pcre2_get_ovector_pointer(results->match_data);
+
+        results->match[0] = ovector[0];
+        results->match[1] = ovector[1];
+    } else {
+        results->match[0] = results->match[1] = 0;
+    }
+#else
+    rc = pcre_exec(pd->re, pd->ex, buffer, buflen, startoffset, options, results->ovector, OVECCOUNT);
+    if (rc < 0 && rc != PCRE_ERROR_NOMATCH) {
+        switch (rc) {
+        case PCRE_ERROR_CALLOUT:
+            break;
+        case PCRE_ERROR_NOMEMORY:
+            cli_errmsg("cli_pcre_match: pcre_exec: out of memory\n");
+            results->err = CL_EMEM;
+            break;
+        case PCRE_ERROR_MATCHLIMIT:
+            cli_dbgmsg("cli_pcre_match: pcre_exec: match limit exceeded\n");
+            break;
+        case PCRE_ERROR_RECURSIONLIMIT:
+            cli_dbgmsg("cli_pcre_match: pcre_exec: recursive limit exceeded\n");
+            break;
+        default:
+            cli_errmsg("cli_pcre_match: pcre_exec: returned error %d\n", rc);
+            results->err = CL_BREAK;
+        }
+    } else if (rc > 0) {
+        results->match[0] = results->ovector[0];
+        results->match[1] = results->ovector[1];
+    } else {
+        results->match[0] = results->match[1] = 0;
+    }
+#endif
+    return rc;
 }
 
 #define DISABLE_PCRE_REPORT 0
 #define MATCH_MAXLEN 1028 /*because lolz*/
 
 /* TODO: audit this function */
-static void named_substr_print(const struct cli_pcre_data *pd, const unsigned char *buffer, int *ovector, size_t ovlen)
+static void named_substr_print(const struct cli_pcre_data *pd, const unsigned char *buffer, int *ovector)
 {
     int i, j, length, namecount, trunc;
     unsigned char *tabptr;
@@ -162,7 +307,11 @@ static void named_substr_print(const struct cli_pcre_data *pd, const unsigned ch
     char outstr[2*MATCH_MAXLEN+1];
 
     /* determine if there are named substrings */
+#if USING_PCRE2
+    (void)pcre2_pattern_info(pd->re, PCRE2_INFO_NAMECOUNT, &namecount);
+#else
     (void)pcre_fullinfo(pd->re, pd->ex, PCRE_INFO_NAMECOUNT, &namecount);
+#endif
     if (namecount <= 0) {
         cli_dbgmsg("cli_pcre_report: no named substrings\n");
     }
@@ -170,8 +319,13 @@ static void named_substr_print(const struct cli_pcre_data *pd, const unsigned ch
         cli_dbgmsg("cli_pcre_report: named substrings\n");
 
         /* extract named substring translation table */
+#if USING_PCRE2
+        (void)pcre2_pattern_info(pd->re, PCRE2_INFO_NAMETABLE, &name_table);
+        (void)pcre2_pattern_info(pd->re, PCRE2_INFO_NAMEENTRYSIZE, &name_entry_size);
+#else
         (void)pcre_fullinfo(pd->re, pd->ex, PCRE_INFO_NAMETABLE, &name_table);
         (void)pcre_fullinfo(pd->re, pd->ex, PCRE_INFO_NAMEENTRYSIZE, &name_entry_size);
+#endif
 
         /* print named substring information */
         tabptr = name_table;
@@ -202,16 +356,26 @@ static void named_substr_print(const struct cli_pcre_data *pd, const unsigned ch
 }
 
 /* TODO: audit this function */
-void cli_pcre_report(const struct cli_pcre_data *pd, const unsigned char *buffer, uint32_t buflen, int rc, int *ovector, size_t ovlen)
+void cli_pcre_report(const struct cli_pcre_data *pd, const unsigned char *buffer, uint32_t buflen, int rc, struct cli_pcre_results *results)
 {
     int i, j, length, trunc;
     const char *start;
     char outstr[2*MATCH_MAXLEN+1];
+#if USING_PCRE2
+    PCRE2_SIZE *ovector;
+    ovector = pcre2_get_ovector_pointer(results->match_data);
+#else
+    int *ovector = results->ovector;
+#endif
 
     /* print out additional diagnostics if cli_debug_flag is set */
     if (!DISABLE_PCRE_REPORT) {
         cli_dbgmsg("\n");
+#if USING_PCRE2
+        cli_dbgmsg("cli_pcre_report: PCRE2 Execution Report:\n");
+#else
         cli_dbgmsg("cli_pcre_report: PCRE Execution Report:\n");
+#endif
         cli_dbgmsg("cli_pcre_report: running regex /%s/ returns %d\n", pd->expression, rc);
         if (rc > 0) {
             /* print out full-match and capture groups */
@@ -237,9 +401,13 @@ void cli_pcre_report(const struct cli_pcre_data *pd, const unsigned char *buffer
                 //cli_dbgmsg("cli_pcre_report:  %d: %.*s%s\n", i, length, start, trunc ? " (trunc)":"");
             }
 
-            named_substr_print(pd, buffer, ovector, ovlen);
+            named_substr_print(pd, buffer, ovector);
         }
+#if USING_PCRE2
+        else if (rc == 0 || rc == PCRE2_ERROR_NOMATCH) {
+#else
         else if (rc == 0 || rc == PCRE_ERROR_NOMATCH) {
+#endif
             cli_dbgmsg("cli_pcre_report: no match found\n");
         }
         else {
@@ -251,8 +419,45 @@ void cli_pcre_report(const struct cli_pcre_data *pd, const unsigned char *buffer
     }
 }
 
+
+int cli_pcre_results_reset(struct cli_pcre_results *results, const struct cli_pcre_data *pd)
+{
+    results->err = CL_SUCCESS;
+    results->match[0] = results->match[1] = 0;
+#if USING_PCRE2
+    if (results->match_data)
+        pcre2_match_data_free(results->match_data);
+
+    results->match_data = pcre2_match_data_create_from_pattern(pd->re, NULL);
+    if (!results->match_data)
+        return CL_EMEM;
+#else
+    memset(results->ovector, 0, OVECCOUNT);
+#endif
+    return CL_SUCCESS;
+}
+
+void cli_pcre_results_free(struct cli_pcre_results *results)
+{
+#if USING_PCRE2
+    if (results->match_data)
+        pcre2_match_data_free(results->match_data);
+#endif
+}
+
 void cli_pcre_free_single(struct cli_pcre_data *pd)
 {
+#if USING_PCRE2
+    if (pd->re) {
+        pcre2_code_free(pd->re);
+        pd->re = NULL;
+    }
+
+    if (pd->mctx) {
+        pcre2_match_context_free(pd->mctx);
+        pd->mctx = NULL;
+    }
+#else
     if (pd->re) {
         pcre_free(pd->re);
         pd->re = NULL;
@@ -261,6 +466,7 @@ void cli_pcre_free_single(struct cli_pcre_data *pd)
         free(pd->ex);
         pd->ex = NULL;
     }
+#endif
     if (pd->expression) {
         free(pd->expression);
         pd->expression = NULL;

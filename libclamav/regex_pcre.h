@@ -30,7 +30,12 @@
 #endif
 #if HAVE_PCRE
 
+#if USING_PCRE2
+#define PCRE2_CODE_UNIT_WIDTH 8
+#include <pcre2.h>
+#else
 #include <pcre.h>
+#endif
 
 #include "cltypes.h"
 #include "mpool.h"
@@ -40,6 +45,22 @@
 /* must be multiple of 3 */
 #define OVECCOUNT 300
 
+#if USING_PCRE2
+struct cli_pcre_data {
+    pcre2_code *re;               /* compiled pcre regex */
+    pcre2_match_context *mctx;    /* match context */
+    int options;                  /* pcre options */
+    char *expression;             /* copied regular expression */
+    uint32_t search_offset;       /* start offset to search at for pcre_exec */
+};
+
+struct cli_pcre_results {
+    int err;
+    uint32_t match[2]; /* populated by cli_pcre_match to be start (0) and end (1) offset of match */
+
+    pcre2_match_data *match_data;
+};
+#else
 struct cli_pcre_data {
     pcre *re;               /* compiled pcre regex */
     pcre_extra *ex;         /* pcre extra data - limits */
@@ -48,11 +69,22 @@ struct cli_pcre_data {
     uint32_t search_offset; /* start offset to search at for pcre_exec */
 };
 
+struct cli_pcre_results {
+    int err;
+    uint32_t match[2]; /* populated by cli_pcre_match to be start (0) and end (1) offset of match */
+
+    int ovector[OVECCOUNT];
+};
+#endif
+
 int cli_pcre_init_internal();
 int cli_pcre_addoptions(struct cli_pcre_data *pd, const char **opt, int errout);
 int cli_pcre_compile(struct cli_pcre_data *pd, long long unsigned match_limit, long long unsigned match_limit_recursion, unsigned int options, int opt_override);
-int cli_pcre_match(struct cli_pcre_data *pd, const unsigned char *buffer, uint32_t buflen, int override_offset, int options, int *ovector, size_t ovlen);
-void cli_pcre_report(const struct cli_pcre_data *pd, const unsigned char *buffer, uint32_t buflen, int rc, int *ovector, size_t ovlen);
+int cli_pcre_match(struct cli_pcre_data *pd, const unsigned char *buffer, uint32_t buflen, int override_offset, int options, struct cli_pcre_results *results);
+void cli_pcre_report(const struct cli_pcre_data *pd, const unsigned char *buffer, uint32_t buflen, int rc, struct cli_pcre_results *results);
+
+int cli_pcre_results_reset(struct cli_pcre_results *results, const struct cli_pcre_data *pd);
+void cli_pcre_results_free(struct cli_pcre_results *results);
 void cli_pcre_free_single(struct cli_pcre_data *pd);
 #endif /* HAVE_PCRE */
 #endif /*_REGEX_PCRE_H_*/
