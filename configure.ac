@@ -87,6 +87,7 @@ AM_MAINTAINER_MODE
 m4_include([m4/reorganization/libs/libz.m4])
 m4_include([m4/reorganization/libs/bzip.m4])
 m4_include([m4/reorganization/libs/unrar.m4])
+m4_include([m4/reorganization/libs/systemd.m4])
 m4_include([m4/reorganization/code_checks/ipv6.m4])
 m4_include([m4/reorganization/code_checks/dns.m4])
 m4_include([m4/reorganization/code_checks/fanotify.m4])
@@ -139,9 +140,12 @@ clamscan/Makefile
 database/Makefile
 docs/Makefile
 clamd/Makefile
+clamd/clamav-daemon.service
+clamd/clamav-daemon.socket
 clamdscan/Makefile
 clamsubmit/Makefile
 clamav-milter/Makefile
+freshclam/clamav-freshclam.service
 freshclam/Makefile
 sigtool/Makefile
 clamconf/Makefile

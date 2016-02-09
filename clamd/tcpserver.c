@@ -58,9 +58,60 @@ int tcpserver(int **lsockets, unsigned int *nlsockets, char *ipaddr, const struc
     int yes = 1;
     int res;
     unsigned int i=0;
+	int num_fd;
 
     sockets = *lsockets;
 
+    num_fd = sd_listen_fds(0);
+    if (num_fd > 2)
+    {
+        logg("!TCP: Received more than two file descriptors from systemd.\n");
+        return -1;
+    }
+    else if (num_fd > 0)
+    {
+        /* use socket passed by systemd */
+        int i;
+        for(i = 0; i < num_fd; i += 1)
+        {
+            sockfd = SD_LISTEN_FDS_START + i;
+            if (sd_is_socket(sockfd, AF_INET, SOCK_STREAM, 1) == 1)
+            {
+                /* correct socket */
+                logg("#TCP: Received AF_INET SOCK_STREAM socket from systemd.\n");
+                break;
+            }
+            else if (sd_is_socket(sockfd, AF_INET6, SOCK_STREAM, 1) == 1)
+            {
+                /* correct socket */
+                logg("#TCP: Received AF_INET6 SOCK_STREAM socket from systemd.\n");
+                break;
+            }
+            else
+            {
+                /* wrong socket */
+                sockfd = -2;
+            }
+        }
+        if (sockfd == -2)
+        {
+            logg("#TCP: No tcp AF_INET/AF_INET6 SOCK_STREAM socket received from systemd.\n");
+            return -2;
+        }
+
+        t = realloc(sockets, sizeof(int) * (*nlsockets + 1));
+        if (!(t)) {
+            return -1;
+        }
+        sockets = t;
+
+        sockets[*nlsockets] = sockfd;
+        (*nlsockets)++;
+        *lsockets = sockets;
+        return 0;
+    }
+
+    /* create socket */
     snprintf(port, sizeof(port), "%lld", optget(opts, "TCPSocket")->numarg);
 
     memset(&hints, 0x00, sizeof(struct addrinfo));

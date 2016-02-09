@@ -38,6 +38,14 @@
 # endif
 #endif
 
+#ifdef HAVE_SYSTEMD
+# include <systemd/sd-daemon.h>
+#else
+# define sd_listen_fds(u) 0
+# define SD_LISTEN_FDS_START 3
+# define sd_is_socket(f, a, s, l) 1
+#endif
+
 #include <limits.h>
 
 #ifndef PATH_MAX

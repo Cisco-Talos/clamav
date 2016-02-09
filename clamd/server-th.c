@@ -49,6 +49,7 @@
 
 #include "shared/output.h"
 #include "shared/optparser.h"
+#include "shared/misc.h"
 
 #include "onaccess_fan.h"
 #include "server.h"
@@ -455,13 +456,19 @@ static void *acceptloop_th(void *arg)
     }
     pthread_mutex_unlock(fds->buf_mutex);
 
-    for (i=0;i < fds->nfds; i++) {
-	if (fds->buf[i].fd == -1)
-	    continue;
-	logg("$Shutdown: closed fd %d\n", fds->buf[i].fd);
-	shutdown(fds->buf[i].fd, 2);
-	closesocket(fds->buf[i].fd);
+    if (sd_listen_fds(0) == 0)
+    {
+        /* only close the sockets, when not using systemd socket activation */
+        for (i=0;i < fds->nfds; i++)
+        {
+            if (fds->buf[i].fd == -1)
+                continue;
+            logg("$Shutdown: closed fd %d\n", fds->buf[i].fd);
+            shutdown(fds->buf[i].fd, 2);
+            closesocket(fds->buf[i].fd);
+        }
     }
+
     fds_free(fds);
     pthread_mutex_destroy(fds->buf_mutex);
     pthread_mutex_lock(&exit_mutex);
@@ -1396,16 +1403,22 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	if (progexit) {
 	    pthread_mutex_unlock(&exit_mutex);
 	    pthread_mutex_lock(fds->buf_mutex);
-	    for (i=0;i < fds->nfds; i++) {
-		if (fds->buf[i].fd == -1)
-		    continue;
-		thrmgr_group_terminate(fds->buf[i].group);
-		if (thrmgr_group_finished(fds->buf[i].group, EXIT_ERROR)) {
-		    logg("$Shutdown closed fd %d\n", fds->buf[i].fd);
-		    shutdown(fds->buf[i].fd, 2);
-		    closesocket(fds->buf[i].fd);
-		    fds->buf[i].fd = -1;
-		}
+        if (sd_listen_fds(0) == 0)
+        {
+            /* only close the sockets, when not using systemd socket activation */
+            for (i=0;i < fds->nfds; i++)
+            {
+                if (fds->buf[i].fd == -1)
+                    continue;
+                thrmgr_group_terminate(fds->buf[i].group);
+                if (thrmgr_group_finished(fds->buf[i].group, EXIT_ERROR))
+                {
+                    logg("$Shutdown closed fd %d\n", fds->buf[i].fd);
+                    shutdown(fds->buf[i].fd, 2);
+                    closesocket(fds->buf[i].fd);
+                    fds->buf[i].fd = -1;
+                }
+            }
 	    }
 	    pthread_mutex_unlock(fds->buf_mutex);
 	    break;
@@ -1506,9 +1519,13 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 #endif
     if(dbstat.entries)
 	cl_statfree(&dbstat);
-    logg("*Shutting down the main socket%s.\n", (nsockets > 1) ? "s" : "");
-    for (i = 0; i < nsockets; i++)
-	shutdown(socketds[i], 2);
+    if (sd_listen_fds(0) == 0)
+    {
+        /* only close the sockets, when not using systemd socket activation */
+        logg("*Shutting down the main socket%s.\n", (nsockets > 1) ? "s" : "");
+        for (i = 0; i < nsockets; i++)
+            shutdown(socketds[i], 2);
+    }
 
     if((opt = optget(opts, "PidFile"))->enabled) {
 	if(unlink(opt->strarg) == -1)

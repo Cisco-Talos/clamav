@@ -64,7 +64,7 @@
 static short terminate = 0;
 extern int active_children;
 
-static short foreground = 1;
+static short foreground = -1;
 char updtmpdir[512], dbdir[512];
 int sigchld_wait = 1;
 const char *pidfile = NULL;
@@ -117,7 +117,7 @@ sighandler (int sig)
         if (pidfile)
             unlink (pidfile);
         logg ("Update process terminated\n");
-        exit (2);
+        exit (0);
     }
 
     return;
@@ -298,6 +298,7 @@ main (int argc, char **argv)
 #endif
     STATBUF statbuf;
     struct mirdat mdat;
+	int j;
 
     if (check_flevel ())
         exit (FCE_INIT);
@@ -321,6 +322,25 @@ main (int argc, char **argv)
         optfree (opts);
         return 0;
     }
+
+    /* check foreground option from command line to override config file */
+    for(j = 0; j < argc; j += 1)
+    {
+        if ((memcmp(argv[j], "--foreground", 12) == 0) || (memcmp(argv[j], "-F", 2) == 0))
+        {
+            /* found */
+            break;
+        }
+    }
+
+	if (j < argc) {
+		if(optget(opts, "Foreground")->enabled) {
+			foreground = 1;
+		}
+		else {
+			foreground = 0;
+		}
+	}
 
     /* parse the config file */
     cfgfile = optget (opts, "config-file")->strarg;
@@ -638,7 +658,19 @@ main (int argc, char **argv)
         bigsleep = 24 * 3600 / checks;
 
 #ifndef _WIN32
-        if (!optget (opts, "Foreground")->enabled)
+        /* fork into background */
+        if (foreground == -1)
+        {
+            if (optget(opts, "Foreground")->enabled)
+            {
+                foreground = 1;
+            }
+            else
+            {
+                foreground = 0;
+            }
+        }
+        if(foreground == 0)
         {
             if (daemonize () == -1)
             {
@@ -646,7 +678,6 @@ main (int argc, char **argv)
                 optfree (opts);
                 return FCE_FAILEDUPDATE;
             }
-            foreground = 0;
             mprintf_disabled = 1;
         }
 #endif

@@ -40,6 +40,7 @@
 
 #include "shared/optparser.h"
 #include "shared/output.h"
+#include "shared/misc.h"
 
 #include "others.h"
 #include "server.h"
@@ -61,6 +62,39 @@ int localserver(const struct optstruct *opts)
 	STATBUF foo;
 	char *estr;
 
+    int num_fd = sd_listen_fds(0);
+    if (num_fd > 2)
+    {
+        logg("!LOCAL: Received more than two file descriptors from systemd.\n");
+        return -1;
+    }
+    else if (num_fd > 0)
+    {
+        /* use socket passed by systemd */
+        int i;
+        for(i = 0; i < num_fd; i += 1)
+        {
+            sockfd = SD_LISTEN_FDS_START + i;
+            if (sd_is_socket(sockfd, AF_UNIX, SOCK_STREAM, 1) == 1)
+            {
+                /* correct socket */
+                break;
+            }
+            else
+            {
+                /* wrong socket */
+                sockfd = -2;
+            }
+        }
+        if (sockfd == -2)
+        {
+            logg("#LOCAL: No local AF_UNIX SOCK_STREAM socket received from systemd.\n");
+            return -2;
+        }
+        logg("#LOCAL: Received AF_UNIX SOCK_STREAM socket from systemd.\n");
+        return sockfd;
+    }
+    /* create socket */
     memset((char *) &server, 0, sizeof(server));
     server.sun_family = AF_UNIX;
     strncpy(server.sun_path, optget(opts, "LocalSocket")->strarg, sizeof(server.sun_path));

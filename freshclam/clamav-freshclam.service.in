@@ -1,0 +1,12 @@
+[Unit]
+Description=ClamAV virus database updater
+Documentation=man:freshclam(1) man:freshclam.conf(5) http://www.clamav.net/lang/en/doc/
+# If user wants it run from cron, don't start the daemon.
+ConditionPathExists=!/etc/cron.d/clamav-freshclam
+
+[Service]
+ExecStart=@prefix@/bin/freshclam -d --foreground=true
+StandardOutput=syslog
+
+[Install]
+WantedBy=multi-user.target

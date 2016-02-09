@@ -1,0 +1,16 @@
+[Unit]
+Description=Socket for Clam AntiVirus userspace daemon
+Documentation=man:clamd(8) man:clamd.conf(5) http://www.clamav.net/lang/en/doc/
+# Check for database existence
+ConditionPathExistsGlob=@DBDIR@/main.{c[vl]d,inc}
+ConditionPathExistsGlob=@DBDIR@/daily.{c[vl]d,inc}
+
+[Socket]
+ListenStream=/run/clamav/clamd.ctl
+#ListenStream=127.0.0.1:1024
+SocketUser=clamav
+SocketGroup=clamav
+RemoveOnStop=True
+
+[Install]
+WantedBy=sockets.target

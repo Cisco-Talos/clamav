@@ -49,6 +49,10 @@ freshclam_SOURCES = \
     mirman.c \
     mirman.h
 
+if INSTALL_SYSTEMD_UNITS
+systemdsystemunit_DATA = clamav-freshclam.service
+endif
+
 AM_CFLAGS=@WERR_CFLAGS@
 DEFS = @DEFS@ -DCL_NOTHREADS
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @SSL_CPPFLAGS@ @FRESHCLAM_CPPFLAGS@  @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@

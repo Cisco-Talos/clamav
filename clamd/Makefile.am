@@ -56,6 +56,10 @@ clamd_SOURCES = \
 
 AM_CFLAGS=@WERR_CFLAGS@
 
+if INSTALL_SYSTEMD_UNITS
+systemdsystemunit_DATA = clamav-daemon.socket clamav-daemon.service
+endif
+
 endif
 
 LIBS = $(top_builddir)/libclamav/libclamav.la @CLAMD_LIBS@ @THREAD_LIBS@

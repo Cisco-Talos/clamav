@@ -1,0 +1,17 @@
+[Unit]
+Description=Clam AntiVirus userspace daemon
+Documentation=man:clamd(8) man:clamd.conf(5) http://www.clamav.net/lang/en/doc/
+Requires=clamav-daemon.socket
+# Check for database existence
+ConditionPathExistsGlob=@DBDIR@/main.{c[vl]d,inc}
+ConditionPathExistsGlob=@DBDIR@/daily.{c[vl]d,inc}
+
+[Service]
+ExecStart=@prefix@/sbin/clamd --foreground=true
+# Reload the database
+ExecReload=/bin/kill -USR2 $MAINPID
+StandardOutput=syslog
+
+[Install]
+WantedBy=multi-user.target
+Also=clamav-daemon.socket
