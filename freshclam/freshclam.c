@@ -164,6 +164,8 @@ help (void)
         ("    --no-warnings                        don't print and log warnings\n");
     mprintf
         ("    --stdout                             write to stdout instead of stderr\n");
+    mprintf
+        ("    --show-progress                      show download progress percentage\n");
     mprintf ("\n");
     mprintf
         ("    --config-file=FILE                   read configuration from FILE.\n");
@@ -455,6 +457,9 @@ main (int argc, char **argv)
 
     if (optget (opts, "stdout")->enabled)
         mprintf_stdout = 1;
+
+    if (optget (opts, "show-progress")->enabled)
+        mprintf_progress = 1;
 
     /* initialize logger */
     logg_verbose = mprintf_verbose ? 1 : optget (opts, "LogVerbose")->enabled;
