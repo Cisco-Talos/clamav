@@ -930,7 +930,7 @@ getfile_mirman (const char *srcfile, const char *destfile,
             percentage = (int) (100 * (float) totaldownloaded / totalsize);
 
 #ifdef HAVE_UNISTD_H
-        if (!mprintf_quiet && isatty(fileno(stdout)))
+        if (!mprintf_quiet && (mprintf_progress || isatty(fileno(stdout))))
 #else
         if (!mprintf_quiet)
 #endif
