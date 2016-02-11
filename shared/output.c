@@ -91,7 +91,7 @@ short logg_syslog;
 #endif
 
 short int mprintf_disabled = 0, mprintf_verbose = 0, mprintf_quiet = 0,
-	  mprintf_stdout = 0, mprintf_nowarn = 0, mprintf_send_timeout = 100;
+	  mprintf_stdout = 0, mprintf_nowarn = 0, mprintf_send_timeout = 100, mprintf_progress = 0;
 
 #define ARGLEN(args, str, len)			    \
 {						    \
