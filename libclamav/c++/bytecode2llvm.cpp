@@ -2759,6 +2759,9 @@ int bytecode_init(void)
     }
 #endif
 
+    // LLVM safety assertion prevention fix
+    // TODO: do we want to do a full shutdown?
+    remove_fatal_error_handler();
     llvm_install_error_handler(llvm_error_handler);
 #ifdef CL_DEBUG
     sys::PrintStackTraceOnErrorSignal();
