@@ -3138,6 +3138,16 @@ static char *parse_yara_hex_string(YR_STRING *string, int *ret)
         }
     }
 
+/* FIXME: removing this code because anchored bytes are not sufficiently 
+   general for the purposes of yara rule to ClamAV sig conversions.
+   1. ClamAV imposes a maximum value for the upper range limit of 32:
+      #define AC_CH_MAXDIST 32
+      Values larger cause an error in matcher-ac.c
+   2. If the upper range values is not present, ClamAV sets the missing
+      range value to be equal to the lower range value. This changes the
+      semantic of yara jumps.
+*/
+#ifdef YARA_ANCHOR_SUPPORT
     /* backward anchor overwrite, 2 (hex chars in one byte) */
     if ((ovr = strchr(res, '{')) && ((ovr - res) == 2)) {
         *ovr = '[';
@@ -3160,6 +3170,16 @@ static char *parse_yara_hex_string(YR_STRING *string, int *ret)
             return NULL;
         }
     }
+#else
+    if (((ovr = strchr(res, '{')) && ((ovr - res) == 2)) ||
+        ((ovr = strrchr(res, '}')) && ((res+j - ovr) == 3))) {
+        cli_errmsg("parse_yara_hex_string: Single byte subpatterns unsupported in ClamAV\n");
+        free(res);
+        if (ret != NULL)
+            *ret = CL_EMALFDB;
+        return NULL;
+    }
+#endif
 
     if (ret)
         *ret = CL_SUCCESS;
