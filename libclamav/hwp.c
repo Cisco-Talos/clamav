@@ -46,6 +46,7 @@
 #include "clamav.h"
 #include "fmap.h"
 #include "str.h"
+#include "conv.h"
 #include "others.h"
 #include "scanners.h"
 #include "msxml_parser.h"
@@ -79,9 +80,9 @@
 typedef int (*hwp_cb )(void *cbdata, int fd, cli_ctx *ctx);
 static int decompress_and_callback(cli_ctx *ctx, fmap_t *input, off_t at, size_t len, const char *parent, hwp_cb cb, void *cbdata)
 {
-    int zret, ofd, ret = CL_SUCCESS;
+    int zret, ofd, in, ret = CL_SUCCESS;
     off_t off_in = at;
-    size_t in, count, remain = 1, outsize = 0;
+    size_t count, remain = 1, outsize = 0;
     z_stream zstrm;
     char *tmpname;
     unsigned char inbuf[FILEBUFF], outbuf[FILEBUFF];
@@ -252,11 +253,23 @@ static char *convert_hstr_to_utf8(const char *begin, size_t sz, const char *pare
 #endif
     /* safety base64 encoding */
     if (!res && (rc == CL_SUCCESS)) {
-        res = (char *)cl_base64_encode((const uint8_t *)begin, sz);
-        if (res)
-            rc = CL_VIRUS; /* used as placeholder */
-        else
+        char *tmpbuf;
+
+        tmpbuf = cli_calloc(1, sz+1);
+        if (tmpbuf) {
+            memcpy(tmpbuf, begin, sz);
+
+            res = (char *)cl_base64_encode(tmpbuf, sz);
+            if (res)
+                rc = CL_VIRUS; /* used as placeholder */
+            else
+                rc = CL_EMEM;
+
+            free(tmpbuf);
+        } else {
+            cli_errmsg("%s: Failed to allocate memory for temporary buffer\n", parent);
             rc = CL_EMEM;
+        }
     }
 
     (*ret) = rc;
@@ -1975,7 +1988,7 @@ static int hwpml_binary_cb(int fd, cli_ctx *ctx, int num_attribs, struct attrib_
             return CL_EMAP;
         }
 
-        decoded = (char *)cl_base64_decode(instream, input->len, NULL, &decodedlen, 0);
+        decoded = (char *)cl_base64_decode((char *)instream, input->len, NULL, &decodedlen, 0);
         funmap(input);
         if (!decoded) {
             cli_errmsg("HWPML: Failed to get base64 decode binary data\n");

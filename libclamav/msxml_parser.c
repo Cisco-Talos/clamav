@@ -309,8 +309,8 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
                 state = xmlTextReaderMoveToFirstAttribute(reader);
                 if (state == 1) {
                     /* read first attribute (current head) */
-                    attribs[num_attribs].key = xmlTextReaderConstLocalName(reader);
-                    attribs[num_attribs].value = xmlTextReaderConstValue(reader);
+                    attribs[num_attribs].key = (const char *)xmlTextReaderConstLocalName(reader);
+                    attribs[num_attribs].value = (const char *)xmlTextReaderConstValue(reader);
                     num_attribs++;
                 } else if (state == -1) {
                     return CL_EPARSE;
@@ -322,8 +322,8 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
                 cli_msxmlmsg("msxml_parse_element: adding attributes to scanning context\n");
 
                 while ((num_attribs < MAX_ATTRIBS) && (xmlTextReaderMoveToNextAttribute(reader) == 1)) {
-                    attribs[num_attribs].key = xmlTextReaderConstLocalName(reader);
-                    attribs[num_attribs].value = xmlTextReaderConstValue(reader);
+                    attribs[num_attribs].key = (const char *)xmlTextReaderConstLocalName(reader);
+                    attribs[num_attribs].value = (const char *)xmlTextReaderConstValue(reader);
                     num_attribs++;
                 }
             }
