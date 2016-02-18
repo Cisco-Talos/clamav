@@ -1847,6 +1847,12 @@ int cli_scanhwp3(cli_ctx *ctx)
 
     offset += HWP3_DOCSUMMARY_SIZE;
 
+    /* password-protected document - cannot parse */
+    if (docinfo.di_passwd) {
+        cli_dbgmsg("HWP3.x: password-protected file, skip parsing\n");
+        return CL_SUCCESS;
+    }
+
     if (docinfo.di_infoblksize) {
         /* OPTIONAL TODO: HANDLE OPTIONAL INFORMATION BLOCK #0's FOR PRECLASS */
         offset += docinfo.di_infoblksize;
