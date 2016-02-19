@@ -29,6 +29,8 @@
 #include <pwd.h>
 #include <grp.h>
 #include <string.h>
+#include <signal.h>
+#include <pthread.h>
 #ifdef USE_SYSLOG
 #include <syslog.h>
 #endif
@@ -48,14 +50,56 @@
 #include "whitelist.h"
 
 struct smfiDesc descr;
+struct optstruct *opts;
+
+static void milter_exit(int sig) {
+    const struct optstruct *opt;
+
+    logg("*clamav-milter: milter_exit, signal %d\n", sig);
+
+#ifndef _WIN32
+    if((opt = optget(opts, "MilterSocket"))) {
+        if(unlink(opt->strarg) == -1)
+            logg("!Can't unlink the socket file %s\n", opt->strarg);
+        else
+            logg("Socket file removed.\n");
+    }
+#endif
+
+    logg("clamav-milter: stopped\n");
+
+    optfree(opts);
+
+    logg_close();
+    cpool_free();
+    localnets_free();
+    whitelist_free();
+}
 
 int main(int argc, char **argv) {
     char *my_socket, *pt;
     const struct optstruct *opt;
-    struct optstruct *opts;
     time_t currtime;
     mode_t umsk;
     int ret;
+
+    sigset_t sigset;
+    struct sigaction act;
+
+    sigfillset(&sigset);
+    sigdelset(&sigset, SIGUSR1);
+    sigdelset(&sigset, SIGFPE);
+    sigdelset(&sigset, SIGILL);
+    sigdelset(&sigset, SIGSEGV);
+#ifdef SIGBUS
+    sigdelset(&sigset, SIGBUS);
+#endif
+    pthread_sigmask(SIG_SETMASK, &sigset, NULL);
+    memset(&act, 0, sizeof(struct sigaction));
+    act.sa_handler = milter_exit;
+    sigfillset(&(act.sa_mask));
+    sigaction(SIGUSR1, &act, NULL);
+    sigaction(SIGSEGV, &act, NULL);
 
     cl_initialize_crypto();
 
@@ -403,16 +447,7 @@ int main(int argc, char **argv) {
 	umask(old_umask);
     }
 
-    ret = smfi_main();
-
-    optfree(opts);
-
-    logg_close();
-    cpool_free();
-    localnets_free();
-    whitelist_free();
-
-    return ret;
+    return smfi_main();
 }
 
 /*
