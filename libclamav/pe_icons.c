@@ -1051,7 +1051,7 @@ static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr 
 #ifdef USE_FLOATS
     sobel = cli_malloc(side * side * sizeof(double));
     if(!sobel) {
-        cli_errmsg("getmetrics: Unable to allocate memory for edge detection %lu\n", (side * side * sizeof(double)));
+        cli_errmsg("getmetrics: Unable to allocate memory for edge detection %llu\n", (long long unsigned)(side * side * sizeof(double)));
 	free(tmp);
 	return CL_EMEM;
     }

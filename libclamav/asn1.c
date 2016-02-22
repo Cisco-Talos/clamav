@@ -1482,7 +1482,7 @@ int asn1_check_mscat(struct cl_engine *engine, fmap_t *map, size_t offset, unsig
     if (engine->dconf->pe & PE_CONF_DISABLECERT)
         return CL_VIRUS;
 
-    cli_dbgmsg("in asn1_check_mscat (offset: %lu)\n", offset);
+    cli_dbgmsg("in asn1_check_mscat (offset: %llu)\n", (long long unsigned)offset);
     crtmgr_init(&certs);
     if(crtmgr_add_roots(engine, &certs)) {
 	crtmgr_free(&certs);

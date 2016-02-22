@@ -179,7 +179,7 @@ void cli_pcre_perf_print()
     while (elem->run_count) {
         cli_infomsg (NULL, "%-*s %*lu %*lu %*llu %*.2f\n", max_name_len, elem->name,
                      8, elem->run_count, 8, elem->match_count,
-                     12, elem->usecs, 9, (double)elem->usecs/elem->run_count);
+                     12, (long long unsigned)elem->usecs, 9, (double)elem->usecs/elem->run_count);
         elem++;
     }
 }

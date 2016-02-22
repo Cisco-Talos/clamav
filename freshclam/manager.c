@@ -2205,8 +2205,8 @@ updatecustomdb (const char *url, int *signo, const struct optstruct *opts,
 
     if (strlen (url) > sizeof (urlcpy) - 1)
     {
-        logg ("!DatabaseCustomURL: URL must be shorter than %lu\n",
-              sizeof (urlcpy));
+        logg ("!DatabaseCustomURL: URL must be shorter than %llu\n",
+              (long long unsigned)sizeof (urlcpy));
         return FCE_FAILEDUPDATE;
     }
 

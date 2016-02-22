@@ -192,7 +192,8 @@ static inline int matcher_run(const struct cli_matcher *root,
                 if (rc != CL_SUCCESS)
                     return rc;
                 if (maxfilesize && (map->len > maxfilesize)) {
-                    cli_dbgmsg("matcher_run: pcre max filesize (map) exceeded (limit: %llu, needed: %llu)\n", maxfilesize, (long long unsigned)map->len);
+                    cli_dbgmsg("matcher_run: pcre max filesize (map) exceeded (limit: %llu, needed: %llu)\n",
+                               (long long unsigned)maxfilesize, (long long unsigned)map->len);
                     return CL_EMAXSIZE;
                 }
 
@@ -212,7 +213,7 @@ static inline int matcher_run(const struct cli_matcher *root,
             if (rc != CL_SUCCESS)
                 return rc;
             if (maxfilesize && (length > maxfilesize)) {
-                cli_dbgmsg("matcher_run: pcre max filesize (buf) exceeded (limit: %llu, needed: %u)\n", maxfilesize, length);
+                cli_dbgmsg("matcher_run: pcre max filesize (buf) exceeded (limit: %llu, needed: %u)\n", (long long unsigned)maxfilesize, length);
                 return CL_EMAXSIZE;
             }
 
@@ -1205,8 +1206,9 @@ int cli_matchmeta(cli_ctx *ctx, const char *fname, size_t fsizec, size_t fsizer,
 	const struct cli_cdb *cdb;
 	unsigned int viruses_found = 0;
 
-    cli_dbgmsg("CDBNAME:%s:%lu:%s:%lu:%lu:%d:%u:%u:%p\n",
-	       cli_ftname(ctx->container_type), fsizec, fname, fsizec, fsizer, encrypted, filepos, res1, res2);
+    cli_dbgmsg("CDBNAME:%s:%llu:%s:%llu:%llu:%d:%u:%u:%p\n",
+	       cli_ftname(ctx->container_type), (long long unsigned)fsizec, fname, (long long unsigned)fsizec, (long long unsigned)fsizer,
+	       encrypted, filepos, res1, res2);
 
     if (ctx->engine && ctx->engine->cb_meta)
 	if (ctx->engine->cb_meta(cli_ftname(ctx->container_type), fsizec, fname, fsizer, encrypted, filepos, ctx->cb_ctx) == CL_VIRUS) {

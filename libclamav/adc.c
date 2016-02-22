@@ -87,7 +87,8 @@ int adc_decompress(adc_stream *strm)
         return ADC_DATA_ERROR;
     }
 
-    cli_dbgmsg("adc_decompress: avail_in %lu avail_out %lu state %u\n", strm->avail_in, strm->avail_out, strm->state);
+    cli_dbgmsg("adc_decompress: avail_in %llu avail_out %llu state %u\n",
+               (long long unsigned)strm->avail_in, (long long unsigned)strm->avail_out, strm->state);
 
     while (strm->avail_out) {
         /* Exit if needs more in bytes and none available */

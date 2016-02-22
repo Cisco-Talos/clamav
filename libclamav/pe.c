@@ -2127,7 +2127,7 @@ int cli_scanpe(cli_ctx *ctx)
         }
 
         if((sections = (struct cli_exe_section *) cli_malloc((sectcnt + 1) * sizeof(struct cli_exe_section))) == NULL) {
-            cli_errmsg("FSG: Unable to allocate memory for sections %lu\n", (sectcnt + 1) * sizeof(struct cli_exe_section));
+            cli_errmsg("FSG: Unable to allocate memory for sections %llu\n", (long long unsigned)((sectcnt + 1) * sizeof(struct cli_exe_section)));
             free(exe_sections);
             return CL_EMEM;
         }
@@ -2229,7 +2229,7 @@ int cli_scanpe(cli_ctx *ctx)
             break;
 
         if((sections = (struct cli_exe_section *) cli_malloc((sectcnt + 1) * sizeof(struct cli_exe_section))) == NULL) {
-            cli_errmsg("FSG: Unable to allocate memory for sections %lu\n", (sectcnt + 1) * sizeof(struct cli_exe_section));
+            cli_errmsg("FSG: Unable to allocate memory for sections %llu\n", (long long unsigned)((sectcnt + 1) * sizeof(struct cli_exe_section)));
             free(exe_sections);
             return CL_EMEM;
         }
