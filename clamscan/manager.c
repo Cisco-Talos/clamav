@@ -133,7 +133,7 @@ struct metachain {
 
 struct clamscan_cb_data {
     struct metachain * chain;
-    char * filename;
+    const char * filename;
 };
 
 static cl_error_t pre(int fd, const char *type, void *context)
@@ -277,7 +277,7 @@ static cl_error_t meta(const char* container_type, unsigned long fsize_container
 static void clamscan_virus_found_cb(int fd, const char *virname, void *context)
 {
     struct clamscan_cb_data *data = (struct clamscan_cb_data *)context;
-    char * filename;
+    const char * filename;
 
     if (data == NULL)
         return;
@@ -389,9 +389,9 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
                 char str[128];
                 int toolong = print_chain(&chain, str, sizeof(str));
 
-                logg("~%s%s!(%u)%s: %s FOUND\n", str, toolong ? "..." : "", chain.lastvir-1, chain.chains[chain.nchains-1], virname);
+                logg("~%s%s!(%llu)%s: %s FOUND\n", str, toolong ? "..." : "", (long long unsigned)(chain.lastvir-1), chain.chains[chain.nchains-1], virname);
             } else if (chain.lastvir) {
-                logg("~%s!(%u): %s FOUND\n", filename, chain.lastvir-1, virname);
+                logg("~%s!(%llu): %s FOUND\n", filename, (long long unsigned)(chain.lastvir-1), virname);
             }
         }
         if (!(options & CL_SCAN_ALLMATCHES))

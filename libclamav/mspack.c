@@ -1467,7 +1467,7 @@ int lzx_decompress(struct lzx_stream *lzx, uint32_t out_bytes) {
 
     /* check that we've used all of the previous frame first */
     if (lzx->o_ptr != lzx->o_end) {
-      cli_dbgmsg("lzx_decompress: %ld avail bytes, new %d frame\n", lzx->o_end-lzx->o_ptr, frame_size);
+      cli_dbgmsg("lzx_decompress: %d avail bytes, new %d frame\n", lzx->o_end-lzx->o_ptr, frame_size);
       return lzx->error = CL_EFORMAT;
     }
 

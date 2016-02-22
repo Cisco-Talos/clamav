@@ -1052,14 +1052,15 @@ int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
                     cli_dbgmsg("cli_pdf: calculated length %ld\n", length);
                 } else {
                     if (size > (size_t)length+2) {
-                        cli_dbgmsg("cli_pdf: calculated length %ld < %ld\n",
-                               length, size);
+                        cli_dbgmsg("cli_pdf: calculated length %llu < %llu\n",
+                                   (long long unsigned)length, (long long unsigned)size);
                         length = size;
                     }
                 }
 
                 if (orig_length && size > (size_t)orig_length + 20) {
-                    cli_dbgmsg("cli_pdf: orig length: %ld, length: %ld, size: %ld\n", orig_length, length, size);
+                    cli_dbgmsg("cli_pdf: orig length: %ld, length: %ld, size: %llu\n", orig_length, length,
+                               (long long unsigned)size);
                     pdfobj_flag(pdf, obj, BAD_STREAMLEN);
                 }
 

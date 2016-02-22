@@ -699,7 +699,7 @@ static int handle_stream(client_conn_t *conn, struct fd_buf *buf, const struct o
 	    logg("!INSTREAM: Can't write to temporary file.\n");
 	    *error = 1;
 	}
-	logg("$Processed %lu bytes of chunkdata, pos %lu\n", cmdlen, pos);
+	logg("$Processed %llu bytes of chunkdata, pos %llu\n", (long long unsigned)cmdlen, (long long unsigned)pos);
 	pos += cmdlen;
 	if (pos == buf->off) {
 	    buf->off = 0;
