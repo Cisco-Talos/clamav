@@ -306,6 +306,11 @@ struct cl_engine {
     /* Container password storage */
     struct cli_pwdb **pwdbs;
 
+    /* Pre-loading test matcher
+     * Test for presence before using; cleared on engine compile.
+     */
+    struct cli_matcher *test_root;
+
     /* Ignored signatures */
     struct cli_matcher *ignored;
 
