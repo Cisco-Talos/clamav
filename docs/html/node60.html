@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>clamav-config</TITLE>
-<META NAME="description" CONTENT="clamav-config">
+<TITLE>Forking daemons</TITLE>
+<META NAME="description" CONTENT="Forking daemons">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -20,53 +20,51 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="next" HREF="node61.html">
 <LINK REL="previous" HREF="node59.html">
-<LINK REL="up" HREF="node49.html">
+<LINK REL="up" HREF="node50.html">
 <LINK REL="next" HREF="node61.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html1007"
+<A NAME="tex2html1010"
   HREF="node61.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html1003"
-  HREF="node49.html">
+<A NAME="tex2html1006"
+  HREF="node50.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html997"
+<A NAME="tex2html1000"
   HREF="node59.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html1005"
+<A NAME="tex2html1008"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html1008"
-  HREF="node61.html">Example</A>
-<B> Up:</B> <A NAME="tex2html1004"
-  HREF="node49.html">API</A>
-<B> Previous:</B> <A NAME="tex2html998"
-  HREF="node59.html">Forking daemons</A>
- &nbsp; <B>  <A NAME="tex2html1006"
+<B> Next:</B> <A NAME="tex2html1011"
+  HREF="node61.html">clamav-config</A>
+<B> Up:</B> <A NAME="tex2html1007"
+  HREF="node50.html">API</A>
+<B> Previous:</B> <A NAME="tex2html1001"
+  HREF="node59.html">Memory</A>
+ &nbsp; <B>  <A NAME="tex2html1009"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION000731100000000000000">
-clamav-config</A>
+<H3><A NAME="SECTION000731000000000000000">
+Forking daemons</A>
 </H3>
-    Use <code>clamav-config</code> to check compilation information for libclamav.
-    <PRE>
-	$ clamav-config --libs
-	-L/usr/local/lib -lz -lbz2 -lgmp -lpthread
-	$ clamav-config --cflags
-	-I/usr/local/include -g -O2
-</PRE>
+    If you're using libclamav with a forking daemon you should call
+    <code>srand()</code> inside a forked child before making any calls to the
+    libclamav functions. This will avoid possible collisions with temporary
+    filenames created by other processes of the daemon. This procedure
+    is not required for multi-threaded daemons.
 
 <P>
 <BR><HR>
 <ADDRESS>
-Sourcefire 2013-04-16
+Cisco 2016-02-29
 </ADDRESS>
 </BODY>
 </HTML>

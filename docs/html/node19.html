@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Obtain Latest ClamAV anti-virus signature databases</TITLE>
-<META NAME="description" CONTENT="Obtain Latest ClamAV anti-virus signature databases">
+<TITLE>Reporting a unit test failure bug</TITLE>
+<META NAME="description" CONTENT="Reporting a unit test failure bug">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -18,6 +18,7 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
+<LINK REL="next" HREF="node20.html">
 <LINK REL="previous" HREF="node18.html">
 <LINK REL="up" HREF="node11.html">
 <LINK REL="next" HREF="node20.html">
@@ -26,67 +27,76 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html461"
+<A NAME="tex2html466"
   HREF="node20.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html457"
+<A NAME="tex2html462"
   HREF="node11.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html453"
+<A NAME="tex2html456"
   HREF="node18.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html459"
+<A NAME="tex2html464"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html462"
-  HREF="node20.html">Configuration</A>
-<B> Up:</B> <A NAME="tex2html458"
+<B> Next:</B> <A NAME="tex2html467"
+  HREF="node20.html">Obtain Latest ClamAV anti-virus</A>
+<B> Up:</B> <A NAME="tex2html463"
   HREF="node11.html">Installation</A>
-<B> Previous:</B> <A NAME="tex2html454"
-  HREF="node18.html">Reporting a unit test</A>
- &nbsp; <B>  <A NAME="tex2html460"
+<B> Previous:</B> <A NAME="tex2html457"
+  HREF="node18.html">Running unit tests</A>
+ &nbsp; <B>  <A NAME="tex2html465"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
 <H2><A NAME="SECTION00048000000000000000">
-Obtain Latest ClamAV anti-virus signature databases</A>
+Reporting a unit test failure bug</A>
 </H2>
-    Before you can run ClamAV in daemon mode (clamd), 'clamdscan',
-    or 'clamscan' which is ClamAV's command line virus scanner,
-    you must have ClamAV Virus Database (.cvd) file(s) installed
-    in the appropriate location on your system.  The default
-    location for these database files are /usr/local/share/clamav
-    (in Linux/Unix).
-    
-<BR>
-<BR>
-Here is a listing of currently available ClamAV Virus Database Files:
-    
+	If <code>make check</code> says that some tests failed we encourage you to report a bug on our bugzilla: <TT><A NAME="tex2html14"
+  HREF="http://bugs.clamav.net">http://bugs.clamav.net</A></TT>.
+	The information we need is (see also <TT><A NAME="tex2html15"
+  HREF="http://www.clamav.net/documentation.html#ins-bugs">http://www.clamav.net/documentation.html#ins-bugs</A></TT>):
+	
 <UL>
-<LI>bytecode.cvd        (signatures to detect bytecode in files)
+<LI>The exact output from <code>make check</code>	 
 </LI>
-<LI>main.cvd            (main ClamAV virus database file)
+<LI>Output of <code>uname -mrsp</code> 
 </LI>
-<LI>daily.cvd           (daily update file for ClamAV virus databases)
+<LI>your <code>config.log</code>	 
 </LI>
-<LI>safebrowsing.cvd    (virus signatures for safe browsing)
-    
+<LI>The following files from the <code>unit_tests/</code> directory:
+		
+<UL>
+<LI><code>test.log</code>
+</LI>
+<LI><code>clamscan.log</code>
+</LI>
+<LI><code>clamdscan.log</code>
+		
 </LI>
 </UL>
-    These files can be downloaded via HTTP from the main ClamAV website
-    or via the 'freshclam' utility on a periodic basis.  Using 'freshclam'
-    is the preferred method of keeping the ClamAV virus database files
-    up to date without manual intervention (see section <A HREF="node25.html#conf:freshclam">4.4</A> for
-    information on how to configure 'freshclam' for automatic updating and section
-    <A HREF="node35.html#sec:freshclam">5.7</A> for additional details on freshclam).
+</LI>
+<LI><code>/tmp/clamd-test.log</code> if it exists
+</LI>
+<LI>where and how you installed the check package
+</LI>
+<LI>Output of <code>pkg-config check --cflags --libs</code>
+</LI>
+<LI>Optionally if <code>valgrind</code> is available on your platform, the output of the following:
+	 <PRE>
+$ make check
+$ CK_FORK=no ./libtool --mode=execute valgrind unit_tests/check-clamav
+</PRE>
+</LI>
+</UL>
 
 <P>
 <BR><HR>
 <ADDRESS>
-Sourcefire 2013-04-16
+Cisco 2016-02-29
 </ADDRESS>
 </BODY>
 </HTML>
