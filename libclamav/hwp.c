@@ -381,60 +381,62 @@ static int hwp5_cb(void *cbdata, int fd, cli_ctx *ctx)
 
 int cli_scanhwp5_stream(cli_ctx *ctx, hwp5_header_t *hwp5, char *name, int fd)
 {
-    hwp5_debug("HWP5.x: NAME: %s\n", name);
+    hwp5_debug("HWP5.x: NAME: %s\n", name ? name : "(NULL)");
 
     if (fd < 0) {
         cli_errmsg("HWP5.x: Invalid file descriptor argument\n");
         return CL_ENULLARG;
     }
 
-    /* encrypted and compressed streams */
-    if (!strncmp(name, "bin", 3) || !strncmp(name, "jscriptversion", 14) ||
-        !strncmp(name, "defaultjscript", 14) || !strncmp(name, "section", 7) ||
-        !strncmp(name, "viewtext", 8) || !strncmp(name, "docinfo", 7)) {
+    if (name) {
+        /* encrypted and compressed streams */
+        if (!strncmp(name, "bin", 3) || !strncmp(name, "jscriptversion", 14) ||
+            !strncmp(name, "defaultjscript", 14) || !strncmp(name, "section", 7) ||
+            !strncmp(name, "viewtext", 8) || !strncmp(name, "docinfo", 7)) {
 
-        if (hwp5->flags & HWP5_PASSWORD) {
-            cli_dbgmsg("HWP5.x: Password encrypted stream, scanning as-is\n");
-            return cli_magic_scandesc(fd, ctx);
-        }
-
-        if (hwp5->flags & HWP5_COMPRESSED) {
-            /* DocInfo JSON Handling */
-            STATBUF statbuf;
-            fmap_t *input;
-            int ret;
-
-            hwp5_debug("HWP5.x: Sending %s for decompress and scan\n", name);
-
-            /* fmap the input file for easier manipulation */
-            if (FSTAT(fd, &statbuf) == -1) {
-                cli_errmsg("HWP5.x: Can't stat file descriptor\n");
-                return CL_ESTAT;
+            if (hwp5->flags & HWP5_PASSWORD) {
+                cli_dbgmsg("HWP5.x: Password encrypted stream, scanning as-is\n");
+                return cli_magic_scandesc(fd, ctx);
             }
 
-            input = fmap(fd, 0, statbuf.st_size);
-            if (!input) {
-                cli_errmsg("HWP5.x: Failed to get fmap for input stream\n");
-                return CL_EMAP;
+            if (hwp5->flags & HWP5_COMPRESSED) {
+                /* DocInfo JSON Handling */
+                STATBUF statbuf;
+                fmap_t *input;
+                int ret;
+
+                hwp5_debug("HWP5.x: Sending %s for decompress and scan\n", name);
+
+                /* fmap the input file for easier manipulation */
+                if (FSTAT(fd, &statbuf) == -1) {
+                    cli_errmsg("HWP5.x: Can't stat file descriptor\n");
+                    return CL_ESTAT;
+                }
+
+                input = fmap(fd, 0, statbuf.st_size);
+                if (!input) {
+                    cli_errmsg("HWP5.x: Failed to get fmap for input stream\n");
+                    return CL_EMAP;
+                }
+                ret = decompress_and_callback(ctx, input, 0, 0, "HWP5.x", hwp5_cb, NULL);
+                funmap(input);
+                return ret;
             }
-            ret = decompress_and_callback(ctx, input, 0, 0, "HWP5.x", hwp5_cb, NULL);
-            funmap(input);
-            return ret;
         }
-    }
 
 #if HAVE_JSON
-    /* JSON Output Summary Information */
-    if (ctx->options & CL_SCAN_FILE_PROPERTIES && ctx->properties != NULL) {
-        if (name && !strncmp(name, "_5_hwpsummaryinformation", 24)) {
-            cli_dbgmsg("HWP5.x: Detected a '_5_hwpsummaryinformation' stream\n");
-            /* JSONOLE2 - what to do if something breaks? */
-            if (cli_ole2_summary_json(ctx, fd, 2) == CL_ETIMEOUT)
-                return CL_ETIMEOUT;
+        /* JSON Output Summary Information */
+        if (ctx->options & CL_SCAN_FILE_PROPERTIES && ctx->properties != NULL) {
+            if (name && !strncmp(name, "_5_hwpsummaryinformation", 24)) {
+                cli_dbgmsg("HWP5.x: Detected a '_5_hwpsummaryinformation' stream\n");
+                /* JSONOLE2 - what to do if something breaks? */
+                if (cli_ole2_summary_json(ctx, fd, 2) == CL_ETIMEOUT)
+                    return CL_ETIMEOUT;
+            }
         }
-    }
 
 #endif
+    }
 
     /* normal streams */
     return cli_magic_scandesc(fd, ctx);
