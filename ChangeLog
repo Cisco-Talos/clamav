@@ -1,3 +1,23 @@
+Wed, 24 Feb 2016 18:45:00 -0500 (Steven Morgan)
+------------------------------------------
+ * ClamAV 0.99.1 release build.
+
+Wed, 24 Feb 2016 13:29:42 -0500 (Kevin Lin)
+------------------------------------------
+ * hwp5.x: fix for streams without names
+
+Sat, 20 Feb 2016 15:53:48 +0100 (Sebastian Andrzej Siewior)
+------------------------------------------
+ * libclamav: yara: avoid unaliged access to 64bit variable
+
+Thu, 11 Feb 2016 15:56:47 -0500 (Mickey Sola)
+------------------------------------------
+ * bb11455 - patch by Mark Allan to add show-progress option to freshclam.
+
+Tue, 16 Feb 2016 14:15:18 -0500 (Kevin Lin)
+------------------------------------------
+ * added 'CustomXML' as trigger for likely OOXML
+
 Tue, 3 Feb 2016 17:30:00 -0500 (Steven Morgan)
 ------------------------------------------
  * ClamAV 0.99.1 beta1 release.
