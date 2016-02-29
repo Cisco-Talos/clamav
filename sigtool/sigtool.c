@@ -2679,7 +2679,7 @@ static int decodesigmod(const char *sigmod)
     return 0;
 }
 
-static int decodecdb(const char **tokens)
+static int decodecdb(char **tokens)
 {
 
 	char *pt = NULL;
@@ -2883,7 +2883,7 @@ static int decodesig(char *sig, int fd)
 	tokens_count = cli_strtokenize(sig, ':', 12 + 1, (const char **) tokens);
 
 	if (tokens_count > 9 && tokens_count < 13) { /* cdb*/
-	    return decodecdb((const char **) tokens);
+	    return decodecdb(tokens);
 	}
 
 	if(tokens_count < 4 || tokens_count > 6) {
