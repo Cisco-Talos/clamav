@@ -285,7 +285,7 @@
 /* Define to 1 if you have the `opendir' function. */
 #undef HAVE_OPENDIR
 
-/* Define to 1 if you have the 'libpcre' library (-lpcre). */
+/* Define to 1 if you have a pcre library (-lpcre). */
 #undef HAVE_PCRE
 
 /* Define to 1 if you have the `poll' function. */
@@ -383,6 +383,9 @@
 
 /* Define to 1 if you have the `sysctlbyname' function. */
 #undef HAVE_SYSCTLBYNAME
+
+/* systemd is supported */
+#undef HAVE_SYSTEMD
 
 /* Define to 1 if you have the <sys/cdefs.h> header file. */
 #undef HAVE_SYS_CDEFS_H
@@ -566,6 +569,9 @@
 # undef __EXTENSIONS__
 #endif
 
+
+/* Define to 1 if you using the pcre2 library. */
+#undef USING_PCRE2
 
 /* Version number of package */
 #undef VERSION

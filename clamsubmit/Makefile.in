@@ -129,6 +129,7 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
 	$(top_srcdir)/m4/reorganization/libs/libz.m4 \
 	$(top_srcdir)/m4/reorganization/libs/bzip.m4 \
 	$(top_srcdir)/m4/reorganization/libs/unrar.m4 \
+	$(top_srcdir)/m4/reorganization/libs/systemd.m4 \
 	$(top_srcdir)/m4/reorganization/code_checks/ipv6.m4 \
 	$(top_srcdir)/m4/reorganization/code_checks/dns.m4 \
 	$(top_srcdir)/m4/reorganization/code_checks/fanotify.m4 \
@@ -381,6 +382,8 @@ SSL_CPPFLAGS = @SSL_CPPFLAGS@
 SSL_LDFLAGS = @SSL_LDFLAGS@
 SSL_LIBS = @SSL_LIBS@
 STRIP = @STRIP@
+SYSTEMD_CFLAGS = @SYSTEMD_CFLAGS@
+SYSTEMD_LIBS = @SYSTEMD_LIBS@
 THREAD_LIBS = @THREAD_LIBS@
 TH_SAFE = @TH_SAFE@
 VERSION = @VERSION@
@@ -433,6 +436,7 @@ ltdl_LTLIBOBJS = @ltdl_LTLIBOBJS@
 mandir = @mandir@
 mkdir_p = @mkdir_p@
 oldincludedir = @oldincludedir@
+pcreconfig = @pcreconfig@
 pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
@@ -443,6 +447,7 @@ srcdir = @srcdir@
 subdirs = @subdirs@
 sys_symbol_underscore = @sys_symbol_underscore@
 sysconfdir = @sysconfdir@
+systemdsystemunitdir = @systemdsystemunitdir@
 target = @target@
 target_alias = @target_alias@
 target_cpu = @target_cpu@
@@ -463,7 +468,7 @@ clamsubmit_SOURCES = \
 	clamsubmit.c
 
 AM_CFLAGS = @WERR_CFLAGS@ @CLAMSUBMIT_CFLAGS@
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @SSL_CPPFLAGS@ @JSON_CPPFLAGS@
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
 AM_INSTALLCHECK_STD_OPTIONS_EXEMPT = clamsubmit$(EXEEXT)
 CLEANFILES = *.gcda *.gcno
 all: all-am
