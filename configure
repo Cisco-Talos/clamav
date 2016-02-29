@@ -698,6 +698,11 @@ BUILD_CLAMD_FALSE
 BUILD_CLAMD_TRUE
 CFGDIR
 DBDIR
+INSTALL_SYSTEMD_UNITS_FALSE
+INSTALL_SYSTEMD_UNITS_TRUE
+systemdsystemunitdir
+SYSTEMD_LIBS
+SYSTEMD_CFLAGS
 ENABLE_UNRAR_FALSE
 ENABLE_UNRAR_TRUE
 HAVE_LIBBZ2_FALSE
@@ -708,6 +713,7 @@ LIBBZ2
 MAINT
 MAINTAINER_MODE_FALSE
 MAINTAINER_MODE_TRUE
+pcreconfig
 HAVE_LIBXML2_FALSE
 HAVE_LIBXML2_TRUE
 XML_LIBS
@@ -906,6 +912,7 @@ enable_bzip2
 with_libbz2_prefix
 enable_unrar
 enable_getaddrinfo
+with_systemdsystemunitdir
 enable_ipv6
 enable_dns
 enable_fanotify
@@ -950,7 +957,9 @@ PKG_CONFIG
 PKG_CONFIG_PATH
 PKG_CONFIG_LIBDIR
 CHECK_CFLAGS
-CHECK_LIBS'
+CHECK_LIBS
+SYSTEMD_CFLAGS
+SYSTEMD_LIBS'
 ac_subdirs_all='
 libclamav/c++'
 
@@ -1643,14 +1652,16 @@ Optional Packages:
   --with-libjson[=DIR]    path to directory containing libjson
                           [default=/usr/local or /usr if not found in
                           /usr/local]
-  --with-pcre[=DIR]       path to directory containing libpcre library
-                          [default=/usr/local or /usr if not found in
-                          /usr/local]
+  --with-pcre[=DIR]       path to directory containing libpcre library,
+                          prioritizes PCRE2 over PCRE [default=search PATH
+                          environment variable]
   --with-zlib[=DIR]       path to directory containing zlib library
                           [default=/usr/local or /usr if not found in
                           /usr/local]
   --with-libbz2-prefix[=DIR]  search for libbz2 in DIR/include and DIR/lib
   --without-libbz2-prefix     don't search for libbz2 in includedir and libdir
+  --with-systemdsystemunitdir=DIR
+                          Directory for systemd service files
   --with-iconv            supports iconv() [default=auto]
   --with-user[=uid]       name of the clamav user [default=clamav]
   --with-group[=gid]      name of the clamav group [default=clamav]
@@ -1692,6 +1703,10 @@ Some influential environment variables:
   CHECK_CFLAGS
               C compiler flags for CHECK, overriding pkg-config
   CHECK_LIBS  linker flags for CHECK, overriding pkg-config
+  SYSTEMD_CFLAGS
+              C compiler flags for SYSTEMD, overriding pkg-config
+  SYSTEMD_LIBS
+              linker flags for SYSTEMD, overriding pkg-config
 
 Use these variables to override the choices made by `configure' or to help
 it to find libraries and programs with nonstandard names/locations.
@@ -17767,118 +17782,279 @@ LIBS="$save_LIBS"
 
 
 
-PCRE_HOME=""
 
 # Check whether --with-pcre was given.
 if test "${with_pcre+set}" = set; then :
-  withval=$with_pcre;
-  PCRE_HOME=$withval
-
+  withval=$with_pcre; pcreser=$withval
 else
-
-  PCRE_HOME="yes"
-
+  pcreser="yes"
 fi
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for libpcre installation" >&5
-$as_echo_n "checking for libpcre installation... " >&6; }
-case "$PCRE_HOME" in
+case "$pcreser" in
 no)
-  PCRE_HOME=""
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
+  pcreconfig=""
   ;;
 yes)
-  PCRE_HOME=/usr/local
-  if test ! -x "$PCRE_HOME/bin/pcre-config"; then
-    PCRE_HOME=/usr
-    if test ! -x "$PCRE_HOME/bin/pcre-config"; then
-      PCRE_HOME=""
-      { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+    # Extract the first word of "pcre2-config", so it can be a program name with args.
+set dummy pcre2-config; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_pcreconfig+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $pcreconfig in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_pcreconfig="$pcreconfig" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_path_pcreconfig="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+pcreconfig=$ac_cv_path_pcreconfig
+if test -n "$pcreconfig"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $pcreconfig" >&5
+$as_echo "$pcreconfig" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
-      { $as_echo "$as_me:${as_lineno-$LINENO}: cannot locate libpcre at /usr/local or /usr" >&5
-$as_echo "$as_me: cannot locate libpcre at /usr/local or /usr" >&6;}
-    fi
+fi
+
+
+  if test "x$pcreconfig" = "x"; then
+      # Extract the first word of "pcre-config", so it can be a program name with args.
+set dummy pcre-config; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_pcreconfig+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $pcreconfig in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_pcreconfig="$pcreconfig" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_path_pcreconfig="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+pcreconfig=$ac_cv_path_pcreconfig
+if test -n "$pcreconfig"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $pcreconfig" >&5
+$as_echo "$pcreconfig" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+      if test "x$pcreconfig" = "x"; then
+          { $as_echo "$as_me:${as_lineno-$LINENO}: cannot locate libpcre2 or libpcre within PATH" >&5
+$as_echo "$as_me: cannot locate libpcre2 or libpcre within PATH" >&6;}
+      else
+         pcrelib="pcre"
+      fi
+  else
+      pcrelib="pcre2"
   fi
   ;;
 "")
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: " >&5
-$as_echo "" >&6; }
   as_fn_error $? "cannot assign blank value to --with-pcre" "$LINENO" 5
   ;;
 *)
-  PCRE_HOME="$withval"
-  if test ! -x "$PCRE_HOME/bin/pcre-config"; then
-    PCRE_HOME=""
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
-$as_echo "not found" >&6; }
-    as_fn_error $? "cannot locate libpcre at $withval" "$LINENO" 5
+  # Extract the first word of "pcre2-config", so it can be a program name with args.
+set dummy pcre2-config; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_pcreconfig+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $pcreconfig in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_pcreconfig="$pcreconfig" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $pcreser/bin
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_path_pcreconfig="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+pcreconfig=$ac_cv_path_pcreconfig
+if test -n "$pcreconfig"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $pcreconfig" >&5
+$as_echo "$pcreconfig" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+  if test "x$pcreconfig" = "x"; then
+      # Extract the first word of "pcre-config", so it can be a program name with args.
+set dummy pcre-config; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_pcreconfig+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $pcreconfig in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_pcreconfig="$pcreconfig" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $pcreser/bin
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_path_pcreconfig="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+pcreconfig=$ac_cv_path_pcreconfig
+if test -n "$pcreconfig"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $pcreconfig" >&5
+$as_echo "$pcreconfig" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+      if test "x$pcreconfig" = "x"; then
+          as_fn_error $? "cannot locate libpcre2 or libpcre at $pcreser" "$LINENO" 5
+      else
+         pcrelib="pcre"
+      fi
+  else
+      pcrelib="pcre2"
   fi
   ;;
 esac
 
-if test "x$PCRE_HOME" != "x"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: using $PCRE_HOME" >&5
-$as_echo "using $PCRE_HOME" >&6; }
-fi
-
 found_pcre="no"
-PCRECONF_VERSION=""
-PCRE_CPPFLAGS=""
-PCRE_LIBS=""
-if test "x$PCRE_HOME" != "x"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking pcre-config version" >&5
+if test "x$pcreconfig" != "x"; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking pcre-config version" >&5
 $as_echo_n "checking pcre-config version... " >&6; }
-  PCRECONF_VERSION="`$PCRE_HOME/bin/pcre-config --version`"
+    pcre_version="`$pcreconfig --version`"
 
-  if test "x$PCRECONF_VERSION" == "x"; then
-    as_fn_error $? "pcre-config failed" "$LINENO" 5
-  fi
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $PCRECONF_VERSION" >&5
-$as_echo "$PCRECONF_VERSION" >&6; }
-
-  pcrever_major=`echo "$PCRECONF_VERSION" | sed -e 's/\([0-9]*\).*/\1/'`
-  pcrever_minor=`echo "$PCRECONF_VERSION" | sed -e 's/[0-9]*\.\([0-9]*\).*/\1/'`
-
-  if test $pcrever_major -lt 6; then
-    as_fn_error $? "This pcre version is missing features used by ClamAV. Please upgrade to a newer version: http://www.pcre.org." "$LINENO" 5
-  fi
-  if test $pcrever_major -eq 6 && test $pcrever_minor -lt 5; then
-    as_fn_error $? "This pcre version is missing features used by ClamAV. Please upgrade to a newer version: http://www.pcre.org." "$LINENO" 5
-  fi
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for CVE-2015-3210" >&5
-$as_echo_n "checking for CVE-2015-3210... " >&6; }
-  if test $pcrever_major -eq 8; then
-    if test $pcrever_minor -gt 33 && test $pcrever_minor -lt 38; then
-       { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: The installed pcre version may contain a security bug. Please upgrade to 8.38 or later: http://www.pcre.org." >&5
-$as_echo "$as_me: WARNING: The installed pcre version may contain a security bug. Please upgrade to 8.38 or later: http://www.pcre.org." >&2;}
-    else
-       { $as_echo "$as_me:${as_lineno-$LINENO}: result: ok" >&5
-$as_echo "ok" >&6; }
+    if test "x$pcre_version" = "x"; then
+        as_fn_error $? "$pcreconfig failed" "$LINENO" 5
     fi
-  else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: ok" >&5
-$as_echo "ok" >&6; };
-  fi
-  found_pcre="yes"
-  PCRE_CPPFLAGS="`$PCRE_HOME/bin/pcre-config --cflags`"
-  PCRE_LIBS="`$PCRE_HOME/bin/pcre-config --libs`"
 
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $pcre_version" >&5
+$as_echo "$pcre_version" >&6; }
+    pcrever_major=`echo "$pcre_version" | sed -e 's/\([0-9]\+\).*/\1/'`
+    pcrever_minor=`echo "$pcre_version" | sed -e 's/[0-9]\+\.\([0-9]\+\).*/\1/'`
+
+        if test "$pcrelib" = "pcre"; then
+        if test $pcrever_major -lt 6; then
+            as_fn_error $? "This pcre version is missing features used by ClamAV. Please upgrade to a newer version: http://www.pcre.org." "$LINENO" 5
+        fi
+        if test $pcrever_major -eq 6 && test $pcrever_minor -lt 5; then
+            as_fn_error $? "This pcre version is missing features used by ClamAV. Please upgrade to a newer version: http://www.pcre.org." "$LINENO" 5
+        fi
+    fi
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for CVE-2015-3210" >&5
+$as_echo_n "checking for CVE-2015-3210... " >&6; }
+    if test "$pcrelib" = "pcre2"; then
+        if test $pcrever_major -eq 10 && test $pcrever_minor -eq 10; then
+            { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: The installed pcre2 version may contain a security bug. Please upgrade to 10.20 or later: http://www.pcre.org." >&5
+$as_echo "$as_me: WARNING: The installed pcre2 version may contain a security bug. Please upgrade to 10.20 or later: http://www.pcre.org." >&2;}
+        else
+            { $as_echo "$as_me:${as_lineno-$LINENO}: result: ok" >&5
+$as_echo "ok" >&6; }
+        fi
+    else
+        if test $pcrever_major -eq 8 &&
+          test $pcrever_minor -gt 33 && test $pcrever_minor -lt 38; then
+            { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: The installed pcre version may contain a security bug. Please upgrade to 8.38 or later: http://www.pcre.org." >&5
+$as_echo "$as_me: WARNING: The installed pcre version may contain a security bug. Please upgrade to 8.38 or later: http://www.pcre.org." >&2;}
+        else
+            { $as_echo "$as_me:${as_lineno-$LINENO}: result: ok" >&5
+$as_echo "ok" >&6; }
+        fi
+    fi
+
+    found_pcre="yes"
+    PCRE_HOME="`$pcreconfig --prefix`"
+    PCRE_CPPFLAGS="`$pcreconfig --cflags`"
+    if test "$pcrelib" = "pcre2"; then
+        PCRE_LIBS="`$pcreconfig --libs8`"
+    else
+        PCRE_LIBS="`$pcreconfig --libs`"
+    fi
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: CFLAGS from pcre-config: $PCRE_CPPFLAGS" >&5
+$as_echo "$as_me: CFLAGS from pcre-config: $PCRE_CPPFLAGS" >&6;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: LIBS from pcre-config: $PCRE_LIBS" >&5
+$as_echo "$as_me: LIBS from pcre-config: $PCRE_LIBS" >&6;}
 fi
 
 have_pcre="no"
 if test "x$found_pcre" != "xno"; then
     save_CPPFLAGS="$CPPFLAGS"
-  CPPFLAGS="$CPPFLAGS $PCRE_CPPFLAGS"
+  CPPFLAGS=$PCRE_CPPFLAGS
   save_LDFLAGS="$LDFLAGS"
-  LDFLAGS="$LDFLAGS $PCRE_LIBS"
+  LDFLAGS=$PCRE_LIBS
 
-  ac_fn_c_check_header_mongrel "$LINENO" "pcre.h" "ac_cv_header_pcre_h" "$ac_includes_default"
+    if test "$pcrelib" = "pcre2"; then
+
+      have_pcre="yes"
+  else
+      ac_fn_c_check_header_mongrel "$LINENO" "pcre.h" "ac_cv_header_pcre_h" "$ac_includes_default"
 if test "x$ac_cv_header_pcre_h" = xyes; then :
   have_pcre="yes"
 else
@@ -17886,8 +18062,8 @@ else
 fi
 
 
-  if test "x$have_pcre" = "xno"; then
-    ac_fn_c_check_header_mongrel "$LINENO" "pcre/pcre.h" "ac_cv_header_pcre_pcre_h" "$ac_includes_default"
+      if test "x$have_pcre" = "xno"; then
+        ac_fn_c_check_header_mongrel "$LINENO" "pcre/pcre.h" "ac_cv_header_pcre_pcre_h" "$ac_includes_default"
 if test "x$ac_cv_header_pcre_pcre_h" = xyes; then :
   have_pcre="yes"
 else
@@ -17895,10 +18071,10 @@ else
 fi
 
 
-  fi
+      fi
 
-  if test "x$have_pcre" = "xyes"; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for pcre_compile in -lpcre" >&5
+      if test "x$have_pcre" = "xyes"; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for pcre_compile in -lpcre" >&5
 $as_echo_n "checking for pcre_compile in -lpcre... " >&6; }
 if ${ac_cv_lib_pcre_pcre_compile+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -17940,6 +18116,7 @@ else
   have_pcre="no"
 fi
 
+      fi
   fi
 
     CPPFLAGS="$save_CPPFLAGS"
@@ -17950,8 +18127,17 @@ if test "x$have_pcre" = "xyes"; then
 
 $as_echo "#define HAVE_PCRE 1" >>confdefs.h
 
-  { $as_echo "$as_me:${as_lineno-$LINENO}: Compiling and linking with libpcre from $PCRE_HOME" >&5
-$as_echo "$as_me: Compiling and linking with libpcre from $PCRE_HOME" >&6;}
+
+  if test "$pcrelib" = "pcre2"; then
+
+$as_echo "#define USING_PCRE2 1" >>confdefs.h
+
+      { $as_echo "$as_me:${as_lineno-$LINENO}: Compiling and linking with pcre2 from $PCRE_HOME" >&5
+$as_echo "$as_me: Compiling and linking with pcre2 from $PCRE_HOME" >&6;}
+  else
+      { $as_echo "$as_me:${as_lineno-$LINENO}: Compiling and linking with pcre from $PCRE_HOME" >&5
+$as_echo "$as_me: Compiling and linking with pcre from $PCRE_HOME" >&6;}
+  fi
 fi
 
 
@@ -19146,6 +19332,266 @@ $as_echo "#define HAVE_GETADDRINFO 1" >>confdefs.h
 
     fi
 fi
+
+
+pkg_failed=no
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for SYSTEMD" >&5
+$as_echo_n "checking for SYSTEMD... " >&6; }
+
+if test -n "$SYSTEMD_CFLAGS"; then
+    pkg_cv_SYSTEMD_CFLAGS="$SYSTEMD_CFLAGS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libsystemd\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libsystemd") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_SYSTEMD_CFLAGS=`$PKG_CONFIG --cflags "libsystemd" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+if test -n "$SYSTEMD_LIBS"; then
+    pkg_cv_SYSTEMD_LIBS="$SYSTEMD_LIBS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libsystemd\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libsystemd") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_SYSTEMD_LIBS=`$PKG_CONFIG --libs "libsystemd" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+	        SYSTEMD_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "libsystemd" 2>&1`
+        else
+	        SYSTEMD_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "libsystemd" 2>&1`
+        fi
+	# Put the nasty error message in config.log where it belongs
+	echo "$SYSTEMD_PKG_ERRORS" >&5
+
+
+pkg_failed=no
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for SYSTEMD" >&5
+$as_echo_n "checking for SYSTEMD... " >&6; }
+
+if test -n "$SYSTEMD_CFLAGS"; then
+    pkg_cv_SYSTEMD_CFLAGS="$SYSTEMD_CFLAGS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libsystemd-daemon\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libsystemd-daemon") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_SYSTEMD_CFLAGS=`$PKG_CONFIG --cflags "libsystemd-daemon" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+if test -n "$SYSTEMD_LIBS"; then
+    pkg_cv_SYSTEMD_LIBS="$SYSTEMD_LIBS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libsystemd-daemon\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libsystemd-daemon") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_SYSTEMD_LIBS=`$PKG_CONFIG --libs "libsystemd-daemon" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+	        SYSTEMD_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "libsystemd-daemon" 2>&1`
+        else
+	        SYSTEMD_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "libsystemd-daemon" 2>&1`
+        fi
+	# Put the nasty error message in config.log where it belongs
+	echo "$SYSTEMD_PKG_ERRORS" >&5
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: systemd is not supported" >&5
+$as_echo "systemd is not supported" >&6; }
+elif test $pkg_failed = untried; then
+     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: systemd is not supported" >&5
+$as_echo "systemd is not supported" >&6; }
+else
+	SYSTEMD_CFLAGS=$pkg_cv_SYSTEMD_CFLAGS
+	SYSTEMD_LIBS=$pkg_cv_SYSTEMD_LIBS
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+$as_echo "#define HAVE_SYSTEMD /**/" >>confdefs.h
+
+fi
+elif test $pkg_failed = untried; then
+     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+pkg_failed=no
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for SYSTEMD" >&5
+$as_echo_n "checking for SYSTEMD... " >&6; }
+
+if test -n "$SYSTEMD_CFLAGS"; then
+    pkg_cv_SYSTEMD_CFLAGS="$SYSTEMD_CFLAGS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libsystemd-daemon\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libsystemd-daemon") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_SYSTEMD_CFLAGS=`$PKG_CONFIG --cflags "libsystemd-daemon" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+if test -n "$SYSTEMD_LIBS"; then
+    pkg_cv_SYSTEMD_LIBS="$SYSTEMD_LIBS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libsystemd-daemon\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libsystemd-daemon") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_SYSTEMD_LIBS=`$PKG_CONFIG --libs "libsystemd-daemon" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+	        SYSTEMD_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "libsystemd-daemon" 2>&1`
+        else
+	        SYSTEMD_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "libsystemd-daemon" 2>&1`
+        fi
+	# Put the nasty error message in config.log where it belongs
+	echo "$SYSTEMD_PKG_ERRORS" >&5
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: systemd is not supported" >&5
+$as_echo "systemd is not supported" >&6; }
+elif test $pkg_failed = untried; then
+     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: systemd is not supported" >&5
+$as_echo "systemd is not supported" >&6; }
+else
+	SYSTEMD_CFLAGS=$pkg_cv_SYSTEMD_CFLAGS
+	SYSTEMD_LIBS=$pkg_cv_SYSTEMD_LIBS
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+$as_echo "#define HAVE_SYSTEMD /**/" >>confdefs.h
+
+fi
+else
+	SYSTEMD_CFLAGS=$pkg_cv_SYSTEMD_CFLAGS
+	SYSTEMD_LIBS=$pkg_cv_SYSTEMD_LIBS
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+$as_echo "#define HAVE_SYSTEMD /**/" >>confdefs.h
+
+fi
+CLAMD_LIBS="$CLAMD_LIBS $SYSTEMD_LIBS"
+CFLAGS="$CFLAGS $SYSTEMD_CFLAGS"
+
+
+# Check whether --with-systemdsystemunitdir was given.
+if test "${with_systemdsystemunitdir+set}" = set; then :
+  withval=$with_systemdsystemunitdir;
+else
+  with_systemdsystemunitdir=auto
+fi
+
+if test "x$with_systemdsystemunitdir" = "xyes" -o "x$with_systemdsystemunitdir" = "xauto"; then :
+
+     def_systemdsystemunitdir=$($PKG_CONFIG --variable=systemdsystemunitdir systemd)
+     if test "x$def_systemdsystemunitdir" = "x"; then :
+  if test "x$with_systemdsystemunitdir" = "xyes"; then :
+  as_fn_error $? "systemd support requested but pkg-config unable to query systemd package" "$LINENO" 5
+fi
+          with_systemdsystemunitdir=no
+else
+  with_systemdsystemunitdir=$def_systemdsystemunitdir
+fi
+fi
+if test "x$with_systemdsystemunitdir" != "xno"; then :
+  systemdsystemunitdir=$with_systemdsystemunitdir
+
+fi
+ if test "x$with_systemdsystemunitdir" != "xno"; then
+  INSTALL_SYSTEMD_UNITS_TRUE=
+  INSTALL_SYSTEMD_UNITS_FALSE='#'
+else
+  INSTALL_SYSTEMD_UNITS_TRUE='#'
+  INSTALL_SYSTEMD_UNITS_FALSE=
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: checking for systemd system unit installation directory... $with_systemdsystemunitdir" >&5
+$as_echo "checking for systemd system unit installation directory... $with_systemdsystemunitdir" >&6; }
+
 
 # Check whether --enable-ipv6 was given.
 if test "${enable_ipv6+set}" = set; then :
@@ -23275,7 +23721,7 @@ else
 fi
 
 
-ac_config_files="$ac_config_files clamscan/Makefile database/Makefile docs/Makefile clamd/Makefile clamdscan/Makefile clamsubmit/Makefile clamav-milter/Makefile freshclam/Makefile sigtool/Makefile clamconf/Makefile etc/Makefile test/Makefile unit_tests/Makefile clamdtop/Makefile clambc/Makefile Makefile clamav-config libclamav.pc platform.h docs/man/clamav-milter.8 docs/man/clamav-milter.conf.5 docs/man/clambc.1 docs/man/clamconf.1 docs/man/clamd.8 docs/man/clamd.conf.5 docs/man/clamdscan.1 docs/man/clamscan.1 docs/man/freshclam.1 docs/man/freshclam.conf.5 docs/man/sigtool.1 docs/man/clamdtop.1 docs/man/clamsubmit.1"
+ac_config_files="$ac_config_files clamscan/Makefile database/Makefile docs/Makefile clamd/Makefile clamd/clamav-daemon.service clamd/clamav-daemon.socket clamdscan/Makefile clamsubmit/Makefile clamav-milter/Makefile freshclam/clamav-freshclam.service freshclam/Makefile sigtool/Makefile clamconf/Makefile etc/Makefile test/Makefile unit_tests/Makefile clamdtop/Makefile clambc/Makefile Makefile clamav-config libclamav.pc platform.h docs/man/clamav-milter.8 docs/man/clamav-milter.conf.5 docs/man/clambc.1 docs/man/clamconf.1 docs/man/clamd.8 docs/man/clamd.conf.5 docs/man/clamdscan.1 docs/man/clamscan.1 docs/man/freshclam.1 docs/man/freshclam.conf.5 docs/man/sigtool.1 docs/man/clamdtop.1 docs/man/clamsubmit.1"
 
 
 cat >confcache <<\_ACEOF
@@ -23467,6 +23913,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${ENABLE_UNRAR_TRUE}" && test -z "${ENABLE_UNRAR_FALSE}"; then
   as_fn_error $? "conditional \"ENABLE_UNRAR\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${INSTALL_SYSTEMD_UNITS_TRUE}" && test -z "${INSTALL_SYSTEMD_UNITS_FALSE}"; then
+  as_fn_error $? "conditional \"INSTALL_SYSTEMD_UNITS\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_CLAMD_TRUE}" && test -z "${BUILD_CLAMD_FALSE}"; then
@@ -24363,9 +24813,12 @@ do
     "database/Makefile") CONFIG_FILES="$CONFIG_FILES database/Makefile" ;;
     "docs/Makefile") CONFIG_FILES="$CONFIG_FILES docs/Makefile" ;;
     "clamd/Makefile") CONFIG_FILES="$CONFIG_FILES clamd/Makefile" ;;
+    "clamd/clamav-daemon.service") CONFIG_FILES="$CONFIG_FILES clamd/clamav-daemon.service" ;;
+    "clamd/clamav-daemon.socket") CONFIG_FILES="$CONFIG_FILES clamd/clamav-daemon.socket" ;;
     "clamdscan/Makefile") CONFIG_FILES="$CONFIG_FILES clamdscan/Makefile" ;;
     "clamsubmit/Makefile") CONFIG_FILES="$CONFIG_FILES clamsubmit/Makefile" ;;
     "clamav-milter/Makefile") CONFIG_FILES="$CONFIG_FILES clamav-milter/Makefile" ;;
+    "freshclam/clamav-freshclam.service") CONFIG_FILES="$CONFIG_FILES freshclam/clamav-freshclam.service" ;;
     "freshclam/Makefile") CONFIG_FILES="$CONFIG_FILES freshclam/Makefile" ;;
     "sigtool/Makefile") CONFIG_FILES="$CONFIG_FILES sigtool/Makefile" ;;
     "clamconf/Makefile") CONFIG_FILES="$CONFIG_FILES clamconf/Makefile" ;;
@@ -26115,6 +26568,10 @@ if test -z "${ENABLE_UNRAR_TRUE}" && test -z "${ENABLE_UNRAR_FALSE}"; then
   as_fn_error $? "conditional \"ENABLE_UNRAR\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
+if test -z "${INSTALL_SYSTEMD_UNITS_TRUE}" && test -z "${INSTALL_SYSTEMD_UNITS_FALSE}"; then
+  as_fn_error $? "conditional \"INSTALL_SYSTEMD_UNITS\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 if test -z "${BUILD_CLAMD_TRUE}" && test -z "${BUILD_CLAMD_FALSE}"; then
   as_fn_error $? "conditional \"BUILD_CLAMD\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -27022,9 +27479,12 @@ do
     "database/Makefile") CONFIG_FILES="$CONFIG_FILES database/Makefile" ;;
     "docs/Makefile") CONFIG_FILES="$CONFIG_FILES docs/Makefile" ;;
     "clamd/Makefile") CONFIG_FILES="$CONFIG_FILES clamd/Makefile" ;;
+    "clamd/clamav-daemon.service") CONFIG_FILES="$CONFIG_FILES clamd/clamav-daemon.service" ;;
+    "clamd/clamav-daemon.socket") CONFIG_FILES="$CONFIG_FILES clamd/clamav-daemon.socket" ;;
     "clamdscan/Makefile") CONFIG_FILES="$CONFIG_FILES clamdscan/Makefile" ;;
     "clamsubmit/Makefile") CONFIG_FILES="$CONFIG_FILES clamsubmit/Makefile" ;;
     "clamav-milter/Makefile") CONFIG_FILES="$CONFIG_FILES clamav-milter/Makefile" ;;
+    "freshclam/clamav-freshclam.service") CONFIG_FILES="$CONFIG_FILES freshclam/clamav-freshclam.service" ;;
     "freshclam/Makefile") CONFIG_FILES="$CONFIG_FILES freshclam/Makefile" ;;
     "sigtool/Makefile") CONFIG_FILES="$CONFIG_FILES sigtool/Makefile" ;;
     "clamconf/Makefile") CONFIG_FILES="$CONFIG_FILES clamconf/Makefile" ;;
