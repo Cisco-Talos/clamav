@@ -385,11 +385,18 @@ int mew_lzma(char *orgsource, const char *buf, uint32_t size_sum, uint32_t vma, 
 		if (!special)
 		{
 			source = pushed_ebx;
+			if (!CLI_ISCONTAINED(orgsource, size_sum, source, 16))
+				return -1;
+
 			if (cli_readint32(source) == 0)
 			{
 				return 0;
 			}
+		} else {
+			if (!CLI_ISCONTAINED(orgsource, size_sum, source, 12))
+				return -1;
 		}
+
 		var28 = cli_readint32 (source);
 		source += 4;
 		temp = cli_readint32 (source) - vma;
