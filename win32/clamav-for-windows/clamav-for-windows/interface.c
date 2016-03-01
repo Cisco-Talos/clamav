@@ -460,11 +460,11 @@ int CLAMAPI Scan_Initialize(const wchar_t *pEnginesFolder, const wchar_t *pTempR
     cl_engine_set_clcb_pre_scan(engine, prescan_cb);
     cl_engine_set_clcb_post_scan(engine, postscan_cb);
 
-	/* In mindefs mode disable the cache
-	 * In this mode, no standard clamav signatures are loaded and it is used as an unpacking engine.
-	 * Turn off caching, so that files can always be unpacked/unarchived.
-	*/
-	if (bLoadMinDefs) {
+    /* In mindefs mode disable the cache
+     * In this mode, no standard clamav signatures are loaded and it is used as an unpacking engine.
+     * Turn off caching, so that files can always be unpacked/unarchived.
+     */
+    if (bLoadMinDefs) {
 		if ((ret = cl_engine_set_num(engine, CL_ENGINE_DISABLE_CACHE, 1) != CL_SUCCESS)) {
 		logg("Failed to disable engine cache: %s", cl_strerror(ret));
 		}
