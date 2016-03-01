@@ -2699,7 +2699,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
                 type == CL_TYPE_HWP3 ||
                 type == CL_TYPE_XML_HWP ||
                 type == CL_TYPE_HWPOLE2 ||
-		type == CL_TYPE_OOXML_HWP) {
+                type == CL_TYPE_OOXML_HWP) {
                 ctx->properties = json_object_new_object();
                 if (NULL == ctx->properties) {
                     cli_errmsg("magic_scandesc: no memory for json properties object\n");
