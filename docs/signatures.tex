@@ -395,9 +395,8 @@ MalwareName:TargetType:Offset:HexSignature[:MinFL:[MaxFL]]
     \begin{itemize}
 	\item 0 = any file
 	\item 1 = Portable Executable, both 32- and 64-bit.
-	\item 2 = file inside OLE2 container (e.g. image, embedded executable,
-	VBA script). The OLE2 format is primarily used by MS Office and MSI
-	installation files.
+	\item 2 = OLE2 containers, including their specific macros. The OLE2
+    format is primarily used by MS Office and MSI installation files.
 	\item 3 = HTML (normalized: whitespace transformed to spaces, tags/tag
 	attributes normalized, all lowercase), Javascript is normalized too:
 	all strings are normalized (hex encoding is decoded), numbers are
