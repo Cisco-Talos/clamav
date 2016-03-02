@@ -770,11 +770,11 @@ static SRes SzReadSubStreamsInfo(
   }
   else
   {
-    *unpackSizes = (UInt64 *)IAlloc_Alloc(allocTemp, (size_t)*numUnpackStreams * sizeof(UInt64));
+    *unpackSizes = (UInt64 *)IAlloc_Alloc(allocTemp, (size_t)*numUnpackStreams * sizeof(UInt64) + sizeof(UInt64));
     RINOM(*unpackSizes);
-    *digestsDefined = (Byte *)IAlloc_Alloc(allocTemp, (size_t)*numUnpackStreams * sizeof(Byte));
+    *digestsDefined = (Byte *)IAlloc_Alloc(allocTemp, (size_t)*numUnpackStreams * sizeof(Byte) + 1);
     RINOM(*digestsDefined);
-    *digests = (UInt32 *)IAlloc_Alloc(allocTemp, (size_t)*numUnpackStreams * sizeof(UInt32));
+    *digests = (UInt32 *)IAlloc_Alloc(allocTemp, (size_t)*numUnpackStreams * sizeof(UInt32) + sizeof(UInt32));
     RINOM(*digests);
   }
 
@@ -1114,6 +1114,7 @@ static SRes SzReadHeader2(
       if (file->HasStream)
       {
         file->IsDir = 0;
+	if (sizeIndex > numUnpackStreams) return SZ_ERROR_FAIL;
         file->Size = (*unpackSizes)[sizeIndex];
         file->Crc = (*digests)[sizeIndex];
         file->CrcDefined = (Byte)(*digestsDefined)[sizeIndex];
