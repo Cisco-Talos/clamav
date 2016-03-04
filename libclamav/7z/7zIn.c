@@ -191,6 +191,9 @@ static SRes SzArEx_Fill(CSzArEx *p, ISzAlloc *alloc)
   UInt32 i;
   UInt32 folderIndex = 0;
   UInt32 indexInFolder = 0;
+  if ((p->db.NumFolders == 0) || (p->db.NumPackStreams == 0) ||
+      (p->FolderStartFileIndex) || ( p->FileIndexToFolderIndexMap))
+      return SZ_ERROR_FAIL;
   MY_ALLOC(UInt32, p->FolderStartPackStreamIndex, p->db.NumFolders, alloc);
   for (i = 0; i < p->db.NumFolders; i++)
   {
