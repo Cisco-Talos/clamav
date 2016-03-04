@@ -1,6 +1,7 @@
-##  -- Process this file with automake to produce 
+## ltdl.mk -- includable Makefile snippet
 ##
-##   Copyright (C) 2003, 2004, 2005, 2007 Free Software Foundation, Inc.
+##   Copyright (C) 2003-2005, 2007, 2011-2015 Free Software Foundation,
+##   Inc.
 ##   Written by Gary V. Vaughan, 2003
 ##
 ##   NOTE: The canonical source of this file is maintained with the
@@ -28,7 +29,7 @@
 ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #####
 
-ACLOCAL_AMFLAGS = -I m4
+ACLOCAL_AMFLAGS = -I ../m4
 AUTOMAKE_OPTIONS = foreign
 AM_CPPFLAGS =
 AM_LDFLAGS =
@@ -45,9 +46,9 @@ MOSTLYCLEANFILES =
 # (not as a sub-package!) using 'nostdinc':
 AM_CPPFLAGS	       += -DLT_CONFIG_H='<$(LT_CONFIG_H)>' \
 			  -DLTDL -I. -I$(srcdir) -Ilibltdl \
-			  -I$(srcdir)/libltdl -I$(srcdir)/libltdl
+			  -I$(srcdir)/libltdl
 AM_LDFLAGS	       += -no-undefined
-LTDL_VERSION_INFO	= -version-info 10:0:3
+LTDL_VERSION_INFO	= -version-info 10:1:3
 
 noinst_LTLIBRARIES	+= $(LT_DLLOADERS)
 
@@ -71,7 +72,7 @@ libltdl_la_SOURCES = libltdl/lt__alloc.h \
 			  libltdl/lt__strl.h \
 			  libltdl/lt_dlloader.h \
 			  libltdl/lt_error.h \
-	                  libltdl/lt_system.h \
+			  libltdl/lt_system.h \
 			  libltdl/slist.h \
 			  loaders/preopen.c \
 			  lt__alloc.c \
@@ -108,7 +109,7 @@ EXTRA_LTLIBRARIES	       += dlopen.la \
 
 dlopen_la_SOURCES	= loaders/dlopen.c
 dlopen_la_LDFLAGS	= -module -avoid-version
-dlopen_la_LIBADD 	= $(LIBADD_DLOPEN)
+dlopen_la_LIBADD	= $(LIBADD_DLOPEN)
 
 dld_link_la_SOURCES	= loaders/dld_link.c
 dld_link_la_LDFLAGS	= -module -avoid-version
@@ -137,27 +138,22 @@ CLEANFILES		       += libltdl.la \
 CLEANFILES	       += $(ltdl_LIBOBJS) $(ltdl_LTLIBOBJS)
 
 EXTRA_DIST	       += COPYING.LIB \
-			   \
-			   \
-			   \
-			   \
-			   \
-			   \
 			  README
 
 ## --------------------------- ##
-## Gnulib  snippets ##
+## Gnulib Makefile.am snippets ##
 ## --------------------------- ##
 
-BUILT_SOURCES	+= $(ARGZ_H)
-EXTRA_DIST	+= argz_.h \
-		   argz.c
+BUILT_SOURCES	+= libltdl/$(LT_ARGZ_H)
+EXTRA_DIST	+= libltdl/lt__argz_.h \
+		   lt__argz.c
 
 # We need the following in order to create an <argz.h> when the system
 # doesn't have one that works with the given compiler.
-all-local $(lib_OBJECTS): $(ARGZ_H)
-argz.h: argz_.h
-	cp $(srcdir)/argz_.h $@-t
-	mv $@-t $@
-MOSTLYCLEANFILES += argz.h \
-		    argz.h-t
+all-local $(lib_OBJECTS): $(LT_ARGZ_H)
+libltdl/lt__argz.h: libltdl/lt__argz_.h
+	$(AM_V_at)$(mkinstalldirs) . libltdl
+	$(AM_V_GEN)cp $(srcdir)/libltdl/lt__argz_.h $@-t
+	$(AM_V_at)mv $@-t $@
+MOSTLYCLEANFILES += libltdl/lt__argz.h \
+		    libltdl/lt__argz.h-t

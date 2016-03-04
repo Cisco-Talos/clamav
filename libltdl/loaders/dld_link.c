@@ -1,7 +1,7 @@
 /* loader-dld_link.c -- dynamic linking with dld
 
-   Copyright (C) 1998, 1999, 2000, 2004, 2006,
-                 2007, 2008 Free Software Foundation, Inc.
+   Copyright (C) 1998-2000, 2004, 2006-2008, 2011-2015 Free Software
+   Foundation, Inc.
    Written by Thomas Tanner, 1998
 
    NOTE: The canonical source of this file is maintained with the
@@ -90,14 +90,14 @@ get_vtable (lt_user_data loader_data)
 /* --- IMPLEMENTATION --- */
 
 
-#if defined(HAVE_DLD_H)
+#if defined HAVE_DLD_H
 #  include <dld.h>
 #endif
 
 /* A function called through the vtable when this loader is no
    longer needed by the application.  */
 static int
-vl_exit (lt_user_data LT__UNUSED loader_data)
+vl_exit (lt_user_data loader_data LT__UNUSED)
 {
   vtable = NULL;
   return 0;
@@ -107,8 +107,8 @@ vl_exit (lt_user_data LT__UNUSED loader_data)
    loader.  Returns an opaque representation of the newly opened
    module for processing with this loader's other vtable functions.  */
 static lt_module
-vm_open (lt_user_data LT__UNUSED loader_data, const char *filename,
-         lt_dladvise LT__UNUSED advise)
+vm_open (lt_user_data loader_data LT__UNUSED, const char *filename,
+         lt_dladvise advise LT__UNUSED)
 {
   lt_module module = lt__strdup (filename);
 
@@ -124,7 +124,7 @@ vm_open (lt_user_data LT__UNUSED loader_data, const char *filename,
 /* A function called through the vtable when a particular module
    should be unloaded.  */
 static int
-vm_close (lt_user_data LT__UNUSED loader_data, lt_module module)
+vm_close (lt_user_data loader_data LT__UNUSED, lt_module module)
 {
   int errors = 0;
 
@@ -144,7 +144,7 @@ vm_close (lt_user_data LT__UNUSED loader_data, lt_module module)
 /* A function called through the vtable to get the address of
    a symbol loaded from a particular module.  */
 static void *
-vm_sym (lt_user_data LT__UNUSED loader_data, lt_module LT__UNUSED module,
+vm_sym (lt_user_data loader_data LT__UNUSED, lt_module module LT__UNUSED,
 	const char *name)
 {
   void *address = dld_get_func (name);

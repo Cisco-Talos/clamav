@@ -968,6 +968,7 @@ LLVMCONFIG_LIBS = @LLVMCONFIG_LIBS@
 LLVM_VERSION = @LLVM_VERSION@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
+LT_SYS_LIBRARY_PATH = @LT_SYS_LIBRARY_PATH@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
@@ -5749,8 +5750,8 @@ maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
 	-test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
-@BUILD_EXTERNAL_LLVM_TRUE@distclean-local:
 @BUILD_EXTERNAL_LLVM_TRUE@clean-local:
+@BUILD_EXTERNAL_LLVM_TRUE@distclean-local:
 clean: clean-am
 
 clean-am: clean-generic clean-libtool clean-local \

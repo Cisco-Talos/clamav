@@ -1,6 +1,7 @@
 /* lt__alloc.c -- internal memory management interface
 
-   Copyright (C) 2004, 2006, 2007 Free Software Foundation, Inc.
+   Copyright (C) 2004, 2006-2007, 2011-2015 Free Software Foundation,
+   Inc.
    Written by Gary V. Vaughan, 2004
 
    NOTE: The canonical source of this file is maintained with the

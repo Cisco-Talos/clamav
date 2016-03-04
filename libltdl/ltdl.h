@@ -1,7 +1,7 @@
 /* ltdl.h -- generic dlopen functions
 
-   Copyright (C) 1998-2000, 2004, 2005,
-                 2007, 2008 Free Software Foundation, Inc.
+   Copyright (C) 1998-2000, 2004-2005, 2007-2008, 2011-2015 Free
+   Software Foundation, Inc.
    Written by Thomas Tanner, 1998
 
    NOTE: The canonical source of this file is maintained with the
@@ -30,7 +30,7 @@ or obtained by writing to the Free Software Foundation, Inc.,
 */
 
 /* Only include this header file once. */
-#if !defined(LTDL_H)
+#if !defined LTDL_H
 #define LTDL_H 1
 
 #include <libltdl/lt_system.h>
@@ -57,7 +57,7 @@ LT_SCOPE int	    lt_dlexit		(void);
 LT_SCOPE int	    lt_dladdsearchdir	 (const char *search_dir);
 LT_SCOPE int	    lt_dlinsertsearchdir (const char *before,
 						  const char *search_dir);
-LT_SCOPE int 	    lt_dlsetsearchpath	 (const char *search_path);
+LT_SCOPE int	    lt_dlsetsearchpath	 (const char *search_path);
 LT_SCOPE const char *lt_dlgetsearchpath	 (void);
 LT_SCOPE int	    lt_dlforeachfile	 (
 			const char *search_path,
@@ -160,4 +160,4 @@ LT_SCOPE int	    lt_dlisresident	(lt_dlhandle handle);
 
 LT_END_C_DECLS
 
-#endif /*!defined(LTDL_H)*/
+#endif /*!defined LTDL_H*/
