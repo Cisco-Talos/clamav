@@ -1,6 +1,6 @@
 /* lt_system.h -- system portability abstraction layer
 
-   Copyright (C) 2004, 2007, 2010 Free Software Foundation, Inc.
+   Copyright (C) 2004, 2007, 2010-2015 Free Software Foundation, Inc.
    Written by Gary V. Vaughan, 2004
 
    NOTE: The canonical source of this file is maintained with the
@@ -28,7 +28,7 @@ or obtained by writing to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 */
 
-#if !defined(LT_SYSTEM_H)
+#if !defined LT_SYSTEM_H
 #define LT_SYSTEM_H 1
 
 #include <stddef.h>
@@ -36,10 +36,10 @@ or obtained by writing to the Free Software Foundation, Inc.,
 #include <sys/types.h>
 
 /* Some systems do not define EXIT_*, even with STDC_HEADERS.  */
-#if !defined(EXIT_SUCCESS)
+#if !defined EXIT_SUCCESS
 # define EXIT_SUCCESS 0
 #endif
-#if !defined(EXIT_FAILURE)
+#if !defined EXIT_FAILURE
 # define EXIT_FAILURE 1
 #endif
 
@@ -53,7 +53,7 @@ or obtained by writing to the Free Software Foundation, Inc.,
 /* LTDL_BEGIN_C_DECLS should be used at the beginning of your declarations,
    so that C++ compilers don't mangle their names.  Use LTDL_END_C_DECLS at
    the end of C declarations. */
-#if defined(__cplusplus)
+#if defined __cplusplus
 # define LT_BEGIN_C_DECLS	extern "C" {
 # define LT_END_C_DECLS		}
 #else
@@ -61,13 +61,13 @@ or obtained by writing to the Free Software Foundation, Inc.,
 # define LT_END_C_DECLS		/* empty */
 #endif
 
-/* LT_STMT_START/END are used to create macros which expand to a
+/* LT_STMT_START/END are used to create macros that expand to a
    a single compound statement in a portable way.  */
-#if defined (__GNUC__) && !defined (__STRICT_ANSI__) && !defined (__cplusplus)
+#if defined  __GNUC__ && !defined  __STRICT_ANSI__ && !defined  __cplusplus
 #  define LT_STMT_START        (void)(
 #  define LT_STMT_END          )
 #else
-#  if (defined (sun) || defined (__sun__))
+#  if (defined sun || defined __sun__)
 #    define LT_STMT_START      if (1)
 #    define LT_STMT_END        else (void)0
 #  else
@@ -77,11 +77,11 @@ or obtained by writing to the Free Software Foundation, Inc.,
 #endif
 
 /* Keep this code in sync between libtool.m4, ltmain, lt_system.h, and tests.  */
-#if defined(_WIN32) || defined(__CYGWIN__) || defined(_WIN32_WCE)
-/* DATA imports from DLLs on WIN32 con't be const, because runtime
+#if defined _WIN32 || defined __CYGWIN__ || defined _WIN32_WCE
+/* DATA imports from DLLs on WIN32 can't be const, because runtime
    relocations are performed -- see ld's documentation on pseudo-relocs.  */
 # define LT_DLSYM_CONST
-#elif defined(__osf__)
+#elif defined __osf__
 /* This system does not cope well with relocations in const data.  */
 # define LT_DLSYM_CONST
 #else
@@ -91,41 +91,41 @@ or obtained by writing to the Free Software Foundation, Inc.,
 /* Canonicalise Windows and Cygwin recognition macros.
    To match the values set by recent Cygwin compilers, make sure that if
    __CYGWIN__ is defined (after canonicalisation), __WINDOWS__ is NOT!  */
-#if defined(__CYGWIN32__) && !defined(__CYGWIN__)
+#if defined __CYGWIN32__ && !defined __CYGWIN__
 # define __CYGWIN__ __CYGWIN32__
 #endif
-#if defined(__CYGWIN__)
-# if defined(__WINDOWS__)
+#if defined __CYGWIN__
+# if defined __WINDOWS__
 #   undef __WINDOWS__
 # endif
-#elif defined(_WIN32)
+#elif defined _WIN32
 # define __WINDOWS__ _WIN32
-#elif defined(WIN32)
+#elif defined WIN32
 # define __WINDOWS__ WIN32
 #endif
-#if defined(__CYGWIN__) && defined(__WINDOWS__)
+#if defined __CYGWIN__ && defined __WINDOWS__
 # undef __WINDOWS__
 #endif
 
 
 /* DLL building support on win32 hosts;  mostly to workaround their
    ridiculous implementation of data symbol exporting. */
-#if !defined(LT_SCOPE)
-#  if defined(__WINDOWS__) || defined(__CYGWIN__)
-#    if defined(DLL_EXPORT)		/* defined by libtool (if required) */
+#if !defined LT_SCOPE
+#  if defined __WINDOWS__ || defined __CYGWIN__
+#    if defined DLL_EXPORT		/* defined by libtool (if required) */
 #      define LT_SCOPE	extern __declspec(dllexport)
 #    endif
-#    if defined(LIBLTDL_DLL_IMPORT)	/* define if linking with this dll */
+#    if defined LIBLTDL_DLL_IMPORT	/* define if linking with this dll */
        /* note: cygwin/mingw compilers can rely instead on auto-import */
 #      define LT_SCOPE	extern __declspec(dllimport)
 #    endif
 #  endif
-#  if !defined(LT_SCOPE)		/* static linking or !__WINDOWS__ */
+#  if !defined LT_SCOPE			/* static linking or !__WINDOWS__ */
 #    define LT_SCOPE	extern
 #  endif
 #endif
 
-#if defined(__WINDOWS__)
+#if defined __WINDOWS__
 /* LT_DIRSEP_CHAR is accepted *in addition* to '/' as a directory
    separator when it is set. */
 # define LT_DIRSEP_CHAR		'\\'
@@ -134,13 +134,13 @@ or obtained by writing to the Free Software Foundation, Inc.,
 # define LT_PATHSEP_CHAR	':'
 #endif
 
-#if defined(_MSC_VER) /* Visual Studio */
+#if defined _MSC_VER /* Visual Studio */
 #  define R_OK 4
 #endif
 
 /* fopen() mode flags for reading a text file */
 #undef	LT_READTEXT_MODE
-#if defined(__WINDOWS__) || defined(__CYGWIN__)
+#if defined __WINDOWS__ || defined __CYGWIN__
 #  define LT_READTEXT_MODE "rt"
 #else
 #  define LT_READTEXT_MODE "r"
@@ -163,4 +163,4 @@ or obtained by writing to the Free Software Foundation, Inc.,
 #  define LT_CONC3(a, b, c)	LT__CONC3(a, b, c)
 #endif
 
-#endif /*!defined(LT_SYSTEM_H)*/
+#endif /*!defined LT_SYSTEM_H*/

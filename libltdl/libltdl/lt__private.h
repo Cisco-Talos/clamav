@@ -1,6 +1,6 @@
 /* lt__private.h -- internal apis for libltdl
 
-   Copyright (C) 2004, 2005, 2006, 2007, 2008 Free Software Foundation, Inc.
+   Copyright (C) 2004-2008, 2011-2015 Free Software Foundation, Inc.
    Written by Gary V. Vaughan, 2004
 
    NOTE: The canonical source of this file is maintained with the
@@ -28,10 +28,10 @@ or obtained by writing to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
 
-#if !defined(LT__PRIVATE_H)
+#if !defined LT__PRIVATE_H
 #define LT__PRIVATE_H 1
 
-#if defined(LT_CONFIG_H)
+#if defined LT_CONFIG_H
 #  include LT_CONFIG_H
 #else
 #  include <config.h>
@@ -43,7 +43,7 @@ or obtained by writing to the Free Software Foundation, Inc.,
 #include <errno.h>
 #include <string.h>
 
-#if defined(HAVE_UNISTD_H)
+#if defined HAVE_UNISTD_H
 #  include <unistd.h>
 #endif
 
@@ -56,15 +56,15 @@ or obtained by writing to the Free Software Foundation, Inc.,
 /* ...and all exported interfaces.  */
 #include "ltdl.h"
 
-#if defined(WITH_DMALLOC)
+#if defined WITH_DMALLOC
 #  include <dmalloc.h>
 #endif
 
 /* DLL building support on win32 hosts;  mostly to workaround their
    ridiculous implementation of data symbol exporting. */
 #ifndef LT_GLOBAL_DATA
-# if defined(__WINDOWS__) || defined(__CYGWIN__)
-#  if defined(DLL_EXPORT)	/* defined by libtool (if required) */
+# if defined __WINDOWS__ || defined __CYGWIN__
+#  if defined DLL_EXPORT	/* defined by libtool (if required) */
 #   define LT_GLOBAL_DATA	__declspec(dllexport)
 #  endif
 # endif
@@ -86,7 +86,7 @@ or obtained by writing to the Free Software Foundation, Inc.,
 
 LT_BEGIN_C_DECLS
 
-#if !defined(errno)
+#if !defined errno
 extern int errno;
 #endif
 
@@ -94,8 +94,8 @@ LT_SCOPE void	lt__alloc_die_callback (void);
 
 
 /* For readability:  */
-#define strneq(s1, s2)	(strcmp((s1), (s2)) != 0)
-#define streq(s1, s2)	(!strcmp((s1), (s2)))
+#define STRNEQ(s1, s2)	(strcmp((s1), (s2)) != 0)
+#define STREQ(s1, s2)	(strcmp((s1), (s2)) == 0)
 
 
 
@@ -146,4 +146,4 @@ LT_SCOPE const char *lt__set_last_error	(const char *errormsg);
 
 LT_END_C_DECLS
 
-#endif /*!defined(LT__PRIVATE_H)*/
+#endif /*!defined LT__PRIVATE_H*/

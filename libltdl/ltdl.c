@@ -1,7 +1,7 @@
 /* ltdl.c -- system independent dlopen wrapper
 
-   Copyright (C) 1998, 1999, 2000, 2004, 2005, 2006,
-		 2007, 2008, 2011 Free Software Foundation, Inc.
+   Copyright (C) 1998-2000, 2004-2008, 2011-2015 Free Software
+   Foundation, Inc.
    Written by Thomas Tanner, 1998
 
    NOTE: The canonical source of this file is maintained with the
@@ -46,15 +46,15 @@ or obtained by writing to the Free Software Foundation, Inc.,
 #define LT_ARCHIVE_EXT	".la"
 
 /* max. filename length */
-#if !defined(LT_FILENAME_MAX)
+#if !defined LT_FILENAME_MAX
 #  define LT_FILENAME_MAX	1024
 #endif
 
-#if !defined(LT_LIBEXT)
+#if !defined LT_LIBEXT
 #  define LT_LIBEXT "a"
 #endif
 
-#if !defined(LT_LIBPREFIX)
+#if !defined LT_LIBPREFIX
 #  define LT_LIBPREFIX "lib"
 #endif
 
@@ -77,15 +77,15 @@ static	const char	objdir[]		= LT_OBJDIR;
 static	const char	archive_ext[]		= LT_ARCHIVE_EXT;
 static  const char	libext[]		= LT_LIBEXT;
 static  const char	libprefix[]		= LT_LIBPREFIX;
-#if defined(LT_MODULE_EXT)
+#if defined LT_MODULE_EXT
 static	const char	shlib_ext[]		= LT_MODULE_EXT;
 #endif
 /* If the loadable module suffix is not the same as the linkable
  * shared library suffix, this will be defined. */
-#if defined(LT_SHARED_EXT)
+#if defined LT_SHARED_EXT
 static	const char	shared_ext[]		= LT_SHARED_EXT;
 #endif
-#if defined(LT_DLSEARCH_PATH)
+#if defined LT_DLSEARCH_PATH
 static	const char	sys_dlsearch_path[]	= LT_DLSEARCH_PATH;
 #endif
 
@@ -306,7 +306,7 @@ lt_dlexit (void)
 			  ++errors;
 			}
 		      /* Make sure that the handle pointed to by 'cur' still exists.
-			 lt_dlclose recursively closes dependent libraries which removes
+			 lt_dlclose recursively closes dependent libraries, which removes
 			 them from the linked list.  One of these might be the one
 			 pointed to by 'cur'.  */
 		      if (cur)
@@ -385,7 +385,7 @@ tryall_dlopen (lt_dlhandle *phandle, const char *filename,
     {
       if ((handle->info.filename == filename) /* dlopen self: 0 == 0 */
 	  || (handle->info.filename && filename
-	      && streq (handle->info.filename, filename)))
+	      && STREQ (handle->info.filename, filename)))
 	{
 	  break;
 	}
@@ -444,8 +444,15 @@ tryall_dlopen (lt_dlhandle *phandle, const char *filename,
 	handle->module = (*loader_vtable->module_open) (loader_vtable->dlloader_data,
 							filename, advise);
 #ifdef LT_DEBUG_LOADERS
-	fprintf (stderr, "  Result: %s\n",
-		 handle->module ? "Success" : "Failed");
+	if (!handle->module) {
+		char *error;
+		LT__GETERROR(error);
+		fprintf (stderr, "  Result: Failed\n"
+				"  Error message << %s >>\n",
+				error ? error : "(null)");
+	} else {
+		fprintf (stderr, "  Result: Success\n");
+	}
 #endif
 
 	if (handle->module != 0)
@@ -495,7 +502,7 @@ tryall_dlopen_module (lt_dlhandle *handle, const char *prefix,
   assert (handle);
   assert (dirname);
   assert (dlname);
-#if defined(LT_DIRSEP_CHAR)
+#if defined LT_DIRSEP_CHAR
   /* Only canonicalized names (i.e. with DIRSEP chars already converted)
      should make it into this function:  */
   assert (strchr (dirname, LT_DIRSEP_CHAR) == 0);
@@ -606,7 +613,7 @@ canonicalize_path (const char *path, char **pcanonical)
 
 	/* Anything other than a directory separator is copied verbatim.  */
 	if ((path[src] != '/')
-#if defined(LT_DIRSEP_CHAR)
+#if defined LT_DIRSEP_CHAR
 	    && (path[src] != LT_DIRSEP_CHAR)
 #endif
 	    )
@@ -618,7 +625,7 @@ canonicalize_path (const char *path, char **pcanonical)
 	   NULL terminator.  */
 	else if ((path[1+ src] != LT_PATHSEP_CHAR)
 		 && (path[1+ src] != LT_EOS_CHAR)
-#if defined(LT_DIRSEP_CHAR)
+#if defined LT_DIRSEP_CHAR
 		 && (path[1+ src] != LT_DIRSEP_CHAR)
 #endif
 		 && (path[1+ src] != '/'))
@@ -806,15 +813,15 @@ find_handle (const char *search_path, const char *base_name,
   return phandle;
 }
 
-#if !defined(LTDL_DLOPEN_DEPLIBS)
+#if !defined LTDL_DLOPEN_DEPLIBS
 static int
-load_deplibs (lt_dlhandle handle, char * LT__UNUSED deplibs)
+load_deplibs (lt_dlhandle handle, char * deplibs LT__UNUSED)
 {
   handle->depcount = 0;
   return 0;
 }
 
-#else /* defined(LTDL_DLOPEN_DEPLIBS) */
+#else /* defined LTDL_DLOPEN_DEPLIBS */
 static int
 load_deplibs (lt_dlhandle handle, char *deplibs)
 {
@@ -969,7 +976,7 @@ load_deplibs (lt_dlhandle handle, char *deplibs)
 
   return errors;
 }
-#endif /* defined(LTDL_DLOPEN_DEPLIBS) */
+#endif /* defined LTDL_DLOPEN_DEPLIBS */
 
 static int
 unload_deplibs (lt_dlhandle handle)
@@ -1108,11 +1115,11 @@ parse_dotla_file(FILE *file, char **dlname, char **libdir, char **deplibs,
 	{
 	  errors += trim (deplibs, &line[sizeof (STR_DL_DEPLIBS) - 1]);
 	}
-      else if (streq (line, "installed=yes\n"))
+      else if (STREQ (line, "installed=yes\n"))
 	{
 	  *installed = 1;
 	}
-      else if (streq (line, "installed=no\n"))
+      else if (STREQ (line, "installed=no\n"))
 	{
 	  *installed = 0;
 	}
@@ -1233,7 +1240,7 @@ try_dlopen (lt_dlhandle *phandle, const char *filename, const char *ext,
 	  goto cleanup;
 	}
 
-      strncpy (dir, canonical, dirlen);
+      strlcpy (dir, canonical, dirlen);
       dir[dirlen] = LT_EOS_CHAR;
 
       ++base_name;
@@ -1274,7 +1281,7 @@ try_dlopen (lt_dlhandle *phandle, const char *filename, const char *ext,
     name[ext - base_name] = LT_EOS_CHAR;
   }
 
-  /* Before trawling through the filesystem in search of a module,
+  /* Before trawling through the file system in search of a module,
      check whether we are opening a preloaded module.  */
   if (!dir)
     {
@@ -1324,7 +1331,7 @@ try_dlopen (lt_dlhandle *phandle, const char *filename, const char *ext,
     }
 
   /* Check whether we are opening a libtool module (.la extension).  */
-  if (ext && streq (ext, archive_ext))
+  if (ext && STREQ (ext, archive_ext))
     {
       /* this seems to be a libtool module */
       FILE *	file	 = 0;
@@ -1356,7 +1363,7 @@ try_dlopen (lt_dlhandle *phandle, const char *filename, const char *ext,
 		file = find_file (search_path, base_name, &dir);
 	    }
 
-#if defined(LT_MODULE_PATH_VAR)
+#if defined LT_MODULE_PATH_VAR
 	  if (!file)
 	    {
 	      search_path = getenv (LT_MODULE_PATH_VAR);
@@ -1364,7 +1371,7 @@ try_dlopen (lt_dlhandle *phandle, const char *filename, const char *ext,
 		file = find_file (search_path, base_name, &dir);
 	    }
 #endif
-#if defined(LT_DLSEARCH_PATH)
+#if defined LT_DLSEARCH_PATH
 	  if (!file && *sys_dlsearch_path)
 	    {
 	      file = find_file (sys_dlsearch_path, base_name, &dir);
@@ -1461,11 +1468,11 @@ try_dlopen (lt_dlhandle *phandle, const char *filename, const char *ext,
 				 &newhandle, advise)
 		   && !find_handle (getenv (LTDL_SEARCHPATH_VAR), base_name,
 				    &newhandle, advise)
-#if defined(LT_MODULE_PATH_VAR)
+#if defined LT_MODULE_PATH_VAR
 		   && !find_handle (getenv (LT_MODULE_PATH_VAR), base_name,
 				    &newhandle, advise)
 #endif
-#if defined(LT_DLSEARCH_PATH)
+#if defined LT_DLSEARCH_PATH
 		   && !find_handle (sys_dlsearch_path, base_name,
 				    &newhandle, advise)
 #endif
@@ -1512,7 +1519,7 @@ try_dlopen (lt_dlhandle *phandle, const char *filename, const char *ext,
 }
 
 
-/* If the last error message stored was `FILE_NOT_FOUND', then return
+/* If the last error message stored was 'FILE_NOT_FOUND', then return
    non-zero.  */
 static int
 file_not_found (void)
@@ -1538,12 +1545,12 @@ has_library_ext (const char *filename)
 
   ext = strrchr (filename, '.');
 
-  if (ext && ((streq (ext, archive_ext))
-#if defined(LT_MODULE_EXT)
-	     || (streq (ext, shlib_ext))
+  if (ext && ((STREQ (ext, archive_ext))
+#if defined LT_MODULE_EXT
+	     || (STREQ (ext, shlib_ext))
 #endif
-#if defined(LT_SHARED_EXT)
-	     || (streq (ext, shared_ext))
+#if defined LT_SHARED_EXT
+	     || (STREQ (ext, shared_ext))
 #endif
     ))
     {
@@ -1680,7 +1687,7 @@ lt_dlopenadvise (const char *filename, lt_dladvise advise)
       if (handle || ((errors > 0) && !file_not_found ()))
 	return handle;
 
-#if defined(LT_MODULE_EXT)
+#if defined LT_MODULE_EXT
       /* Try appending SHLIB_EXT.   */
       LT__SETERRORSTR (saved_error);
       errors = try_dlopen (&handle, filename, shlib_ext, advise);
@@ -1691,7 +1698,7 @@ lt_dlopenadvise (const char *filename, lt_dladvise advise)
 	return handle;
 #endif
 
-#if defined(LT_SHARED_EXT)
+#if defined LT_SHARED_EXT
       /* Try appending SHARED_EXT.   */
       LT__SETERRORSTR (saved_error);
       errors = try_dlopen (&handle, filename, shared_ext, advise);
@@ -1919,14 +1926,14 @@ lt_dlforeachfile (const char *search_path,
 				       foreachfile_callback, fpptr, data);
 	}
 
-#if defined(LT_MODULE_PATH_VAR)
+#if defined LT_MODULE_PATH_VAR
       if (!is_done)
 	{
 	  is_done = foreach_dirinpath (getenv(LT_MODULE_PATH_VAR), 0,
 				       foreachfile_callback, fpptr, data);
 	}
 #endif
-#if defined(LT_DLSEARCH_PATH)
+#if defined LT_DLSEARCH_PATH
       if (!is_done && *sys_dlsearch_path)
 	{
 	  is_done = foreach_dirinpath (sys_dlsearch_path, 0,
@@ -2281,7 +2288,7 @@ lt_dlisresident	(lt_dlhandle handle)
 /* --- MODULE INFORMATION --- */
 
 typedef struct {
-  const char *id_string;
+  char *id_string;
   lt_dlhandle_interface *iface;
 } lt__interface_id;
 
@@ -2428,7 +2435,7 @@ lt_dlhandle_fetch (lt_dlinterface_id iface, const char *module_name)
   while ((handle = lt_dlhandle_iterate (iface, handle)))
     {
       lt_dlhandle cur = handle;
-      if (cur && cur->info.name && streq (cur->info.name, module_name))
+      if (cur && cur->info.name && STREQ (cur->info.name, module_name))
 	break;
     }
 

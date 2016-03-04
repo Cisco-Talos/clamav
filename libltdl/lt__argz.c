@@ -1,6 +1,7 @@
-/* argz.c -- argz implementation for non-glibc systems
+/* lt__argz.c -- argz implementation for non-glibc systems
 
-   Copyright (C) 2004, 2006, 2007, 2008 Free Software Foundation, Inc.
+   Copyright (C) 2004, 2006-2008, 2011-2015 Free Software Foundation,
+   Inc.
    Written by Gary V. Vaughan, 2004
 
    NOTE: The canonical source of this file is maintained with the
@@ -28,16 +29,15 @@ or obtained by writing to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 */
 
-#if defined(LTDL) && defined LT_CONFIG_H
+#if defined LTDL && defined LT_CONFIG_H
 #  include LT_CONFIG_H
 #else
 #  include <config.h>
 #endif
 
-#include <argz.h>
+#include <lt__argz.h>
 
 #include <assert.h>
-#include <stddef.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <errno.h>
@@ -223,4 +223,3 @@ argz_stringify (char *argz, size_t argz_len, int sep)
 	}
     }
 }
-
