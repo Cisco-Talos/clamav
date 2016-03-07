@@ -662,12 +662,12 @@ static SRes SzReadUnpackInfo(
   RINOK(SzWaitAttribute(sd, k7zIdFolder));
   RINOK(SzReadNumber32(sd, numFolders));
   {
-    RINOK(SzReadSwitch(sd));
-
     MY_ALLOC(CSzFolder, *folders, (size_t)*numFolders, alloc);
 
     for (i = 0; i < *numFolders; i++)
       SzFolder_Init((*folders) + i);
+
+    RINOK(SzReadSwitch(sd));
 
     for (i = 0; i < *numFolders; i++)
     {
