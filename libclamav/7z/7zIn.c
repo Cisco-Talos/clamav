@@ -191,9 +191,6 @@ static SRes SzArEx_Fill(CSzArEx *p, ISzAlloc *alloc)
   UInt32 i;
   UInt32 folderIndex = 0;
   UInt32 indexInFolder = 0;
-  if ((p->db.NumFolders == 0) || (p->db.NumPackStreams == 0) ||
-      (p->FolderStartFileIndex) || ( p->FileIndexToFolderIndexMap))
-      return SZ_ERROR_FAIL;
   MY_ALLOC(UInt32, p->FolderStartPackStreamIndex, p->db.NumFolders, alloc);
   for (i = 0; i < p->db.NumFolders; i++)
   {
@@ -1376,8 +1373,11 @@ SRes SzArEx_Extract(
     ISzAlloc *allocMain,
     ISzAlloc *allocTemp)
 {
-  UInt32 folderIndex = p->FileIndexToFolderIndexMap[fileIndex];
+  UInt32 folderIndex;
   SRes res = SZ_OK;
+  if (!(p->FileIndexToFolderIndexMap) || (fileIndex >= p->db.NumFiles))
+    return SZ_ERROR_FAIL;
+  folderIndex = p->FileIndexToFolderIndexMap[fileIndex];
   *offset = 0;
   *outSizeProcessed = 0;
   if (folderIndex == (UInt32)-1)
@@ -1394,7 +1394,11 @@ SRes SzArEx_Extract(
     CSzFolder *folder = p->db.Folders + folderIndex;
     UInt64 unpackSizeSpec = SzFolder_GetUnpackSize(folder);
     size_t unpackSize = (size_t)unpackSizeSpec;
-    UInt64 startOffset = SzArEx_GetFolderStreamPos(p, folderIndex, 0);
+    UInt64 startOffset;
+    if (!(p->PackStreamStartPositions) || !(p->FolderStartPackStreamIndex) || (folderIndex >= p->db.NumFolders) ||
+        (p->FolderStartPackStreamIndex[folderIndex] >= p->db.NumFolders))
+      return SZ_ERROR_FAIL;
+    startOffset = SzArEx_GetFolderStreamPos(p, folderIndex, 0);
 
     if (unpackSize != unpackSizeSpec)
       return SZ_ERROR_MEM;
@@ -1435,6 +1439,8 @@ SRes SzArEx_Extract(
     UInt32 i;
     CSzFileItem *fileItem = p->db.Files + fileIndex;
     *offset = 0;
+    if (!(p->FolderStartFileIndex) || (folderIndex >= p->db.NumFolders))
+      return SZ_ERROR_FAIL;
     for (i = p->FolderStartFileIndex[folderIndex]; i < fileIndex; i++)
       *offset += (UInt32)p->db.Files[i].Size;
     *outSizeProcessed = (size_t)fileItem->Size;
