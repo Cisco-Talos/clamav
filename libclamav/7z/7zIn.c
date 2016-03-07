@@ -1114,7 +1114,8 @@ static SRes SzReadHeader2(
       if (file->HasStream)
       {
         file->IsDir = 0;
-	if (sizeIndex > numUnpackStreams) return SZ_ERROR_FAIL;
+        if (!(*unpackSizes) || (sizeIndex > numUnpackStreams))
+          return SZ_ERROR_FAIL;
         file->Size = (*unpackSizes)[sizeIndex];
         file->Crc = (*digests)[sizeIndex];
         file->CrcDefined = (Byte)(*digestsDefined)[sizeIndex];
