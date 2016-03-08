@@ -37,7 +37,7 @@ void *__lzma_wrap_alloc(void *unused, size_t size) {
 	return NULL;
     }
 
-    return cli_malloc(size);
+    return cli_calloc(1, size);
 }
 void __lzma_wrap_free(void *unused, void *freeme) {
     UNUSEDPARAM(unused);
