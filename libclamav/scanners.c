@@ -380,6 +380,8 @@ static int cli_scanarj(cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_check)
 
     cli_dbgmsg("in cli_scanarj()\n");
 
+    memset(&metadata, 0, sizeof(arj_metadata_t));
+
      /* generate the temporary directory */
     if(!(dir = cli_gentemp(ctx->engine->tmpdir)))
 	return CL_EMEM;
