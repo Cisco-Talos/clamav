@@ -441,6 +441,9 @@ static SRes SzReadBoolVector(CSzData *sd, size_t numItems, Byte **v, ISzAlloc *a
   Byte b = 0;
   Byte mask = 0;
   size_t i;
+  /* bb#11514 - check for pre-allocation: free or error? */
+  if (*v)
+    return SZ_ERROR_FAIL;
   MY_ALLOC(Byte, *v, numItems, alloc);
   for (i = 0; i < numItems; i++)
   {
@@ -462,6 +465,8 @@ static SRes SzReadBoolVector2(CSzData *sd, size_t numItems, Byte **v, ISzAlloc *
   RINOK(SzReadByte(sd, &allAreDefined));
   if (allAreDefined == 0)
     return SzReadBoolVector(sd, numItems, v, alloc);
+  if (*v)
+    return SZ_ERROR_FAIL;
   MY_ALLOC(Byte, *v, numItems, alloc);
   for (i = 0; i < numItems; i++)
     (*v)[i] = 1;
@@ -1034,6 +1039,8 @@ static SRes SzReadHeader2(
           return SZ_ERROR_ARCHIVE;
         if (!Buf_Create(&p->FileNames, namesSize, allocMain))
           return SZ_ERROR_MEM;
+        if (p->FileNameOffsets)
+          return SZ_ERROR_FAIL;
         MY_ALLOC(size_t, p->FileNameOffsets, numFiles + 1, allocMain);
         memcpy(p->FileNames.data, sd->Data, namesSize);
         RINOK(SzReadFileNames(sd->Data, namesSize >> 1, numFiles, p->FileNameOffsets))
