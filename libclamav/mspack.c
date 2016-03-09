@@ -1783,14 +1783,14 @@ struct qtm_stream *qtm_init(int ofd,
   qtm->length_base[26] = 254; qtm->length_extra[26] = 0;
 
   /* allocate decompression window and input buffer */
-  qtm->window = cli_malloc((size_t) window_size);
+  qtm->window = cli_calloc(1, (size_t) window_size);
   if (!qtm->window) {
       cli_errmsg("qtm_init: Unable to allocate decompression window\n");
     free(qtm);
     return NULL;
   }
 
-  qtm->inbuf  = cli_malloc((size_t) input_buffer_size);
+  qtm->inbuf  = cli_calloc(1, (size_t) input_buffer_size);
   if (!qtm->inbuf) {
       cli_errmsg("qtm_init: Unable to allocate input buffer\n");
     free(qtm->window);
