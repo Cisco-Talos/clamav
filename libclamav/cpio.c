@@ -256,6 +256,7 @@ int cli_scancpio_newc(cli_ctx *ctx, int crc)
 	int ret;
 	off_t pos = 0;
 
+    memset(name, 0, 513);
 
     while(fmap_readn(*ctx->fmap, &hdr_newc, pos, sizeof(hdr_newc)) == sizeof(hdr_newc)) {
 	pos += sizeof(hdr_newc);
