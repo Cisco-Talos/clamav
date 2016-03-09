@@ -482,6 +482,8 @@ static SRes SzReadHashDigests(
 {
   size_t i;
   RINOK(SzReadBoolVector2(sd, numItems, digestsDefined, alloc));
+  if (*digests)
+    return SZ_ERROR_FAIL;
   MY_ALLOC(UInt32, *digests, numItems, alloc);
   for (i = 0; i < numItems; i++)
     if ((*digestsDefined)[i])
@@ -506,6 +508,8 @@ static SRes SzReadPackInfo(
 
   RINOK(SzWaitAttribute(sd, k7zIdSize));
 
+  if (*packSizes)
+    return SZ_ERROR_FAIL;
   MY_ALLOC(UInt64, *packSizes, (size_t)*numPackStreams, alloc);
 
   for (i = 0; i < *numPackStreams; i++)
@@ -528,6 +532,8 @@ static SRes SzReadPackInfo(
   }
   if (*packCRCsDefined == 0)
   {
+    if (*packCRCs)
+      return SZ_ERROR_FAIL;
     MY_ALLOC(Byte, *packCRCsDefined, (size_t)*numPackStreams, alloc);
     MY_ALLOC(UInt32, *packCRCs, (size_t)*numPackStreams, alloc);
     for (i = 0; i < *numPackStreams; i++)
@@ -664,10 +670,14 @@ static SRes SzReadUnpackInfo(
     ISzAlloc *allocTemp)
 {
   UInt32 i;
+  UInt32 nfdrs;
   RINOK(SzWaitAttribute(sd, k7zIdFolder));
-  RINOK(SzReadNumber32(sd, numFolders));
+  RINOK(SzReadNumber32(sd, &nfdrs));
   {
-    MY_ALLOC(CSzFolder, *folders, (size_t)*numFolders, alloc);
+    if (*folders)
+      return SZ_ERROR_FAIL;
+    MY_ALLOC(CSzFolder, *folders, (size_t)nfdrs, alloc);
+    *numFolders = nfdrs;
 
     for (i = 0; i < *numFolders; i++)
       SzFolder_Init((*folders) + i);
@@ -688,6 +698,8 @@ static SRes SzReadUnpackInfo(
     CSzFolder *folder = (*folders) + i;
     UInt32 numOutStreams = SzFolder_GetNumOutStreams(folder);
 
+    if (folder->UnpackSizes)
+      return SZ_ERROR_FAIL;
     MY_ALLOC(UInt64, folder->UnpackSizes, (size_t)numOutStreams, alloc);
 
     for (j = 0; j < numOutStreams; j++)
@@ -766,6 +778,9 @@ static SRes SzReadSubStreamsInfo(
       break;
     RINOK(SzSkeepData(sd));
   }
+
+  if (*unpackSizes || *digestsDefined || *digests)
+    return SZ_ERROR_FAIL;
 
   if (*numUnpackStreams == 0)
   {
