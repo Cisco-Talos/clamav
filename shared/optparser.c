@@ -348,7 +348,7 @@ const struct clam_option __clam_options[] = {
 
     { "ScanOLE2", "scan-ole2", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option enables scanning of OLE2 files, such as Microsoft Office\ndocuments and .msi files.\nIf you turn off this option, the original files will still be scanned, but\nwithout additional processing.", "yes" },
 
-    { "OLE2BlockMacros", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "With this option enabled OLE2 files with VBA macros, which were not\ndetected by signatures will be marked as \"Heuristics.OLE2.ContainsMacros\".", "no" },
+    { "OLE2BlockMacros", "block-macros", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "With this option enabled OLE2 files with VBA macros, which were not\ndetected by signatures will be marked as \"Heuristics.OLE2.ContainsMacros\".", "no" },
 
     { "ScanPDF", "scan-pdf", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option enables scanning within PDF files.\nIf you turn off this option, the original files will still be scanned, but\nwithout decoding and additional processing.", "yes" },
 

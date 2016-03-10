@@ -183,6 +183,9 @@ Mark broken executables as viruses (Broken.Executable).
 \fB\-\-block\-encrypted[=yes/no(*)]\fR
 Mark encrypted archives as viruses (Encrypted.Zip, Encrypted.RAR).
 .TP 
+\fB\-\-block\-macros[=yes/no(*)]\fR
+Mark OLE2 files containing VBA macros as viruses (Heuristics.OLE2.ContainsMacros).
+.TP 
 \fB\-\-max\-filesize=#n\fR
 Extract and scan at most #n bytes from each archive. You may pass the value in kilobytes in format xK or xk, or megabytes in format xM or xm, where x is a number. This option protects your system against DoS attacks (default: 25 MB, max: <4 GB)
 .TP 

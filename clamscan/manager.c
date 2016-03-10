@@ -1056,6 +1056,9 @@ int scanmanager(const struct optstruct *opts)
     if(optget(opts, "block-encrypted")->enabled)
         options |= CL_SCAN_BLOCKENCRYPTED;
 
+    if(optget(opts, "block-macros")->enabled)
+        options |= CL_SCAN_BLOCKMACROS;
+
     if(optget(opts, "scan-pe")->enabled)
         options |= CL_SCAN_PE;
 
