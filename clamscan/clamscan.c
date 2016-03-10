@@ -267,6 +267,7 @@ void help(void)
     mprintf("    --scan-archive[=yes(*)/no]           Scan archive files (supported by libclamav)\n");
     mprintf("    --detect-broken[=yes/no(*)]          Try to detect broken executable files\n");
     mprintf("    --block-encrypted[=yes/no(*)]        Block encrypted archives\n");
+    mprintf("    --block-macros[=yes/no(*)]           Block OLE2 files with VBA macros\n");
     mprintf("    --nocerts                            Disable authenticode certificate chain verification in PE files\n");
     mprintf("    --dumpcerts                          Dump authenticode certificate chain in PE files\n");
     mprintf("\n");
