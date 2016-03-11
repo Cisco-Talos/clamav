@@ -27,6 +27,10 @@ if ENABLE_CLAMSUBMIT
 SUBDIRS += clamsubmit
 endif
 
+if ENABLE_LIBFRESHCLAM
+SUBDIRS += libfreshclam
+endif
+
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libclamav.pc
 
