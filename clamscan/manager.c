@@ -369,6 +369,12 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
         chain.chains = malloc(sizeof(char **));
         if (chain.chains) {
             chain.chains[0] = strdup(filename);
+            if (!chain.chains[0]) {
+                free(chain.chains);
+                logg("Unable to allocate memory in scanfile()\n");
+                info.errors++;
+                return;
+            }
             chain.nchains = 1;
         }
     }
