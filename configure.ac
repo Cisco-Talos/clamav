@@ -135,6 +135,16 @@ m4_include([m4/reorganization/substitutions.m4])
 
 AM_CONDITIONAL([ENABLE_CLAMSUBMIT], [test "$have_curl" = "yes"])
 
+AC_ARG_ENABLE([libfreshclam],
+			   [AS_HELP_STRING([--enable-libfreshclam], [enable building of libfreshclam])],
+			   enable_libfreshclam=$enableval, enable_libfreshclam="no")
+
+if test "$enable_libfreshclam" = "yes"; then
+  AC_CONFIG_FILES([libfreshclam/Makefile])
+  AC_DEFINE([ENABLE_LIBFRESHCLAM],1,[enable libfreshclam])
+fi
+
+
 AC_CONFIG_FILES([
 clamscan/Makefile
 database/Makefile
