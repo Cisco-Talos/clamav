@@ -497,8 +497,8 @@ static void print_con_info(conn_t *conn, const char *fmt, ...)
 	va_start(ap, fmt);
 	if (stats_head_window) {
 		char *buf = malloc(maxx);
-		memset(buf, ' ', maxx);
 		OOM_CHECK(buf);
+		memset(buf, ' ', maxx);
 		vsnprintf(buf, maxx-1, fmt, ap);
 		buf[strlen(buf)] = ' ';
 		buf[maxx-1] = '\0';
