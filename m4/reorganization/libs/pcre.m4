@@ -54,8 +54,8 @@ if test "x$pcreconfig" != "x"; then
     fi
 
     AC_MSG_RESULT([$pcre_version])
-    pcrever_major=`echo "$pcre_version" | sed -e 's/\([[0-9]]\+\).*/\1/'`
-    pcrever_minor=`echo "$pcre_version" | sed -e 's/[[0-9]]\+\.\([[0-9]]\+\).*/\1/'`
+    pcrever_major=`echo "$pcre_version" | sed -re 's/([[0-9]]+).*/\1/'`
+    pcrever_minor=`echo "$pcre_version" | sed -re 's/[[0-9]]+\.([[0-9]]+).*/\1/'`
 
     dnl check for match_limit_recursion support
     if test "$pcrelib" = "pcre"; then

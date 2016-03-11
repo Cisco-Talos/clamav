@@ -67,9 +67,10 @@ else
 fi
 
 llvmver_val=`echo "$llvmver" | sed -e 's/svn//g'`
-llvmver_major=`echo "$llvmver_val" | sed -e 's/\([[0-9]]\).*/\1/'`
-llvmver_minor=`echo "$llvmver_val" | sed -e 's/[[0-9]]//' | sed -e 's/^\.//' | sed -e 's/\([[0-9]]\).*/\1/'`
-llvmver_patch=`echo "$llvmver_val" | sed -e 's/[[0-9]]\.[[0-9]]//' | sed -e 's/^\.//' | sed -e 's/\([[0-9]]\).*/\1/'`
+llvmver_sval=`echo "$llvmver_val" | sed -re 's/[[0-9]]+//' | sed -e 's/^\.//'`
+llvmver_major=`echo "$llvmver_val"  | sed -re 's/([[0-9]]+).*/\1/'`
+llvmver_minor=`echo "$llvmver_sval" | sed -re 's/([[0-9]]+).*/\1/'`
+llvmver_patch=`echo "$llvmver_sval" | sed -re 's/[[0-9]]+//' | sed -e 's/^\.//' | sed -re 's/([[0-9]]+).*/\1/'`
 dnl suffix unused as of LLVM 3.4.1
 llvmver_suffix=
 if test "x$llvmver_patch" = "x"; then
