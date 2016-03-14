@@ -87,6 +87,9 @@
 /* "default FD_SETSIZE value" */
 #undef DEFAULT_FD_SETSIZE
 
+/* enable libfreshclam */
+#undef ENABLE_LIBFRESHCLAM
+
 /* use fanotify */
 #undef FANOTIFY
 
