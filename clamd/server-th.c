@@ -1112,22 +1112,60 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	int max_max_queue;
 	unsigned warn = optget(opts, "MaxQueue")->active;
 	const unsigned clamdfiles = 6;
+#ifdef C_SOLARIS
+	int solaris_has_extended_stdio = 0;
+#endif
 	/* Condition to not run out of file descriptors:
 	 * MaxThreads * MaxRecursion + (MaxQueue - MaxThreads) + CLAMDFILES < RLIMIT_NOFILE 
 	 * CLAMDFILES is 6: 3 standard FD + logfile + 2 FD for reloading the DB
 	 * */
 #ifdef C_SOLARIS
+
+	/*
+	**  If compiling 64bit, then set the solaris_has_extended_stdio
+	**  flag
+	*/
+
+#if defined(_LP64)
+	solaris_has_extended_stdio++;
+#endif
+
 #ifdef HAVE_ENABLE_EXTENDED_FILE_STDIO
 	if (enable_extended_FILE_stdio(-1, -1) == -1) {
 	    logg("^Unable to set extended FILE stdio, clamd will be limited to max 256 open files\n");
 	    rlim.rlim_cur = rlim.rlim_cur > 255 ? 255 : rlim.rlim_cur;
 	}
+	else
+	{
+	   solaris_has_extended_stdio++;
+	}
+
 #elif !defined(_LP64)
-	if (rlim.rlim_cur > 255) {
+	if (solaris_has_extended_stdio && rlim.rlim_cur > 255) {
 	    rlim.rlim_cur = 255;
 	    logg("^Solaris only supports 256 open files for 32-bit processes, you need at least Solaris 10u4, or compile as 64-bit to support more!\n");
 	}
 #endif
+
+	/*
+	**  If compiling in 64bit or the file stdio has been extended,
+	**  then increase the soft limit for the number of open files
+	**  as the default is usually 256
+	*/
+
+	if (solaris_has_extended_stdio)
+	{
+	   rlim_t saved_soft_limit = rlim.rlim_cur;
+
+	   rlim.rlim_cur = rlim.rlim_max;
+	   if (setrlimit (RLIMIT_NOFILE, &rlim) < 0)
+	   {
+	      logg("!setrlimit() for RLIMIT_NOFILE to %lu failed: %s\n",
+		   (unsigned long) rlim.rlim_cur, strerror (errno));
+	      rlim.rlim_cur = saved_soft_limit;
+	   }
+	} /*  If 64bit or has extended stdio  */
+
 #endif
 	opt = optget(opts,"MaxRecursion");
 	maxrec = opt->numarg;
