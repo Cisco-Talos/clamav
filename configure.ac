@@ -140,7 +140,6 @@ AC_ARG_ENABLE([libfreshclam],
                           enable_libfreshclam=$enableval, enable_libfreshclam="no")
 
 if test "$enable_libfreshclam" = "yes"; then
-  AC_CONFIG_FILES([libfreshclam/Makefile])
   AC_DEFINE([ENABLE_LIBFRESHCLAM],1,[enable libfreshclam])
 fi
 AM_CONDITIONAL([ENABLE_LIBFRESHCLAM], [test "$enable_libfreshclam" = "yes"])
@@ -164,6 +163,7 @@ test/Makefile
 unit_tests/Makefile
 clamdtop/Makefile
 clambc/Makefile
+libfreshclam/Makefile
 Makefile
 clamav-config
 libclamav.pc
