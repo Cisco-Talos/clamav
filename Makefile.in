@@ -120,7 +120,7 @@ DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/docs/man/clamsubmit.1.in AUTHORS COPYING \
 	ChangeLog INSTALL NEWS README config/compile \
 	config/config.guess config/config.rpath config/config.sub \
-	config/depcomp config/install-sh config/missing config/ylwrap \
+	config/install-sh config/missing config/ylwrap \
 	config/ltmain.sh $(top_srcdir)/config/compile \
 	$(top_srcdir)/config/config.guess \
 	$(top_srcdir)/config/config.rpath \

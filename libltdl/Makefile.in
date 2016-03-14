@@ -535,25 +535,26 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-ACLOCAL_AMFLAGS = -I m4
+ACLOCAL_AMFLAGS = -I ../m4
 AUTOMAKE_OPTIONS = foreign
 
 # -I$(srcdir) is needed for user that built libltdl with a sub-Automake
 # (not as a sub-package!) using 'nostdinc':
 AM_CPPFLAGS = -DLT_CONFIG_H='<$(LT_CONFIG_H)>' -DLTDL -I. -I$(srcdir) \
-	-Ilibltdl -I$(srcdir)/libltdl -I$(srcdir)/libltdl
+	-Ilibltdl -I$(srcdir)/libltdl
 AM_LDFLAGS = -no-undefined
-BUILT_SOURCES = $(ARGZ_H)
+BUILT_SOURCES = libltdl/$(LT_ARGZ_H)
 include_HEADERS = $(am__append_1)
 noinst_LTLIBRARIES = $(LT_DLLOADERS) $(am__append_3)
 lib_LTLIBRARIES = $(am__append_2)
 EXTRA_LTLIBRARIES = dlopen.la dld_link.la dyld.la load_add_on.la \
 	loadlibrary.la shl_load.la
-EXTRA_DIST = lt__dirent.c lt__strl.c COPYING.LIB README argz_.h argz.c
+EXTRA_DIST = lt__dirent.c lt__strl.c COPYING.LIB README \
+	libltdl/lt__argz_.h lt__argz.c
 CLEANFILES = libltdl.la libltdlc.la libdlloader.la $(ltdl_LIBOBJS) \
 	$(ltdl_LTLIBOBJS)
-MOSTLYCLEANFILES = argz.h argz.h-t
-LTDL_VERSION_INFO = -version-info 10:0:3
+MOSTLYCLEANFILES = libltdl/lt__argz.h libltdl/lt__argz.h-t
+LTDL_VERSION_INFO = -version-info 10:1:3
 @INSTALL_LTDL_TRUE@ltdlincludedir = $(includedir)/libltdl
 @INSTALL_LTDL_TRUE@ltdlinclude_HEADERS = libltdl/lt_system.h \
 @INSTALL_LTDL_TRUE@			  libltdl/lt_error.h \
@@ -566,7 +567,7 @@ libltdl_la_SOURCES = libltdl/lt__alloc.h \
 			  libltdl/lt__strl.h \
 			  libltdl/lt_dlloader.h \
 			  libltdl/lt_error.h \
-	                  libltdl/lt_system.h \
+			  libltdl/lt_system.h \
 			  libltdl/slist.h \
 			  loaders/preopen.c \
 			  lt__alloc.c \
@@ -1144,10 +1145,11 @@ uninstall-am: uninstall-includeHEADERS uninstall-libLTLIBRARIES \
 
 # We need the following in order to create an <argz.h> when the system
 # doesn't have one that works with the given compiler.
-all-local $(lib_OBJECTS): $(ARGZ_H)
-argz.h: argz_.h
-	cp $(srcdir)/argz_.h $@-t
-	mv $@-t $@
+all-local $(lib_OBJECTS): $(LT_ARGZ_H)
+libltdl/lt__argz.h: libltdl/lt__argz_.h
+	$(AM_V_at)$(mkinstalldirs) . libltdl
+	$(AM_V_GEN)cp $(srcdir)/libltdl/lt__argz_.h $@-t
+	$(AM_V_at)mv $@-t $@
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
