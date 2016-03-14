@@ -645,10 +645,6 @@ am__EXEEXT_FALSE
 am__EXEEXT_TRUE
 LTLIBOBJS
 LIBOBJS
-ENABLE_LIBFRESHCLAM_FALSE
-ENABLE_LIBFRESHCLAM_TRUE
-ENABLE_CLAMSUBMIT_FALSE
-ENABLE_CLAMSUBMIT_TRUE
 JSON_LDFLAGS
 JSON_LIBS
 SSL_LDFLAGS
@@ -683,6 +679,10 @@ CLAMSCAN_CPPFLAGS
 FRESHCLAM_CPPFLAGS
 CLAMSUBMIT_CFLAGS
 CLAMSUBMIT_LIBS
+ENABLE_LIBFRESHCLAM_FALSE
+ENABLE_LIBFRESHCLAM_TRUE
+ENABLE_CLAMSUBMIT_FALSE
+ENABLE_CLAMSUBMIT_TRUE
 HAVE_YARA
 subdirs
 WERR_CFLAGS_MILTER
@@ -944,8 +944,8 @@ with_llvm_linking
 enable_llvm
 enable_sha_collector_for_internal_use
 enable_yara
-with_libcurl
 enable_libfreshclam
+with_libcurl
 '
       ac_precious_vars='build_alias
 host_alias
@@ -24032,6 +24032,37 @@ fi
 
 
 
+ if test "$have_curl" = "yes"; then
+  ENABLE_CLAMSUBMIT_TRUE=
+  ENABLE_CLAMSUBMIT_FALSE='#'
+else
+  ENABLE_CLAMSUBMIT_TRUE='#'
+  ENABLE_CLAMSUBMIT_FALSE=
+fi
+
+
+# Check whether --enable-libfreshclam was given.
+if test "${enable_libfreshclam+set}" = set; then :
+  enableval=$enable_libfreshclam; enable_libfreshclam=$enableval
+else
+  enable_libfreshclam="no"
+fi
+
+
+if test "$enable_libfreshclam" = "yes"; then
+
+$as_echo "#define ENABLE_LIBFRESHCLAM 1" >>confdefs.h
+
+fi
+ if test "$enable_libfreshclam" = "yes"; then
+  ENABLE_LIBFRESHCLAM_TRUE=
+  ENABLE_LIBFRESHCLAM_FALSE='#'
+else
+  ENABLE_LIBFRESHCLAM_TRUE='#'
+  ENABLE_LIBFRESHCLAM_FALSE=
+fi
+
+
 
 case "$host_os" in
 freebsd*)
@@ -24212,37 +24243,6 @@ fi
 
 
 
-
-
- if test "$have_curl" = "yes"; then
-  ENABLE_CLAMSUBMIT_TRUE=
-  ENABLE_CLAMSUBMIT_FALSE='#'
-else
-  ENABLE_CLAMSUBMIT_TRUE='#'
-  ENABLE_CLAMSUBMIT_FALSE=
-fi
-
-
-# Check whether --enable-libfreshclam was given.
-if test "${enable_libfreshclam+set}" = set; then :
-  enableval=$enable_libfreshclam; enable_libfreshclam=$enableval
-else
-  enable_libfreshclam="no"
-fi
-
-
-if test "$enable_libfreshclam" = "yes"; then
-
-$as_echo "#define ENABLE_LIBFRESHCLAM 1" >>confdefs.h
-
-fi
- if test "$enable_libfreshclam" = "yes"; then
-  ENABLE_LIBFRESHCLAM_TRUE=
-  ENABLE_LIBFRESHCLAM_FALSE='#'
-else
-  ENABLE_LIBFRESHCLAM_TRUE='#'
-  ENABLE_LIBFRESHCLAM_FALSE=
-fi
 
 
 ac_config_files="$ac_config_files clamscan/Makefile database/Makefile docs/Makefile clamd/Makefile clamd/clamav-daemon.service clamd/clamav-daemon.socket clamdscan/Makefile clamsubmit/Makefile clamav-milter/Makefile freshclam/clamav-freshclam.service freshclam/Makefile sigtool/Makefile clamconf/Makefile etc/Makefile test/Makefile unit_tests/Makefile clamdtop/Makefile clambc/Makefile libfreshclam/Makefile Makefile clamav-config libclamav.pc platform.h docs/man/clamav-milter.8 docs/man/clamav-milter.conf.5 docs/man/clambc.1 docs/man/clamconf.1 docs/man/clamd.8 docs/man/clamd.conf.5 docs/man/clamdscan.1 docs/man/clamscan.1 docs/man/freshclam.1 docs/man/freshclam.conf.5 docs/man/sigtool.1 docs/man/clamdtop.1 docs/man/clamsubmit.1"

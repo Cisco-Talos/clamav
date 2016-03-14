@@ -120,7 +120,7 @@ DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/docs/man/clamsubmit.1.in AUTHORS COPYING \
 	ChangeLog INSTALL NEWS README config/compile \
 	config/config.guess config/config.rpath config/config.sub \
-	config/install-sh config/missing config/ylwrap \
+	config/depcomp config/install-sh config/missing config/ylwrap \
 	config/ltmain.sh $(top_srcdir)/config/compile \
 	$(top_srcdir)/config/config.guess \
 	$(top_srcdir)/config/config.rpath \
@@ -192,6 +192,7 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
 	$(top_srcdir)/m4/reorganization/llvm.m4 \
 	$(top_srcdir)/m4/reorganization/sha_collect.m4 \
 	$(top_srcdir)/m4/reorganization/yara.m4 \
+	$(top_srcdir)/m4/reorganization/libfreshclam.m4 \
 	$(top_srcdir)/m4/reorganization/bsd.m4 \
 	$(top_srcdir)/m4/reorganization/libs/curl.m4 \
 	$(top_srcdir)/m4/reorganization/substitutions.m4 \
