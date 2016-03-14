@@ -23959,8 +23959,6 @@ fi
 
 
 if test "$enable_libfreshclam" = "yes"; then
-  ac_config_files="$ac_config_files libfreshclam/Makefile"
-
 
 $as_echo "#define ENABLE_LIBFRESHCLAM 1" >>confdefs.h
 
@@ -23974,7 +23972,7 @@ else
 fi
 
 
-ac_config_files="$ac_config_files clamscan/Makefile database/Makefile docs/Makefile clamd/Makefile clamd/clamav-daemon.service clamd/clamav-daemon.socket clamdscan/Makefile clamsubmit/Makefile clamav-milter/Makefile freshclam/clamav-freshclam.service freshclam/Makefile sigtool/Makefile clamconf/Makefile etc/Makefile test/Makefile unit_tests/Makefile clamdtop/Makefile clambc/Makefile Makefile clamav-config libclamav.pc platform.h docs/man/clamav-milter.8 docs/man/clamav-milter.conf.5 docs/man/clambc.1 docs/man/clamconf.1 docs/man/clamd.8 docs/man/clamd.conf.5 docs/man/clamdscan.1 docs/man/clamscan.1 docs/man/freshclam.1 docs/man/freshclam.conf.5 docs/man/sigtool.1 docs/man/clamdtop.1 docs/man/clamsubmit.1"
+ac_config_files="$ac_config_files clamscan/Makefile database/Makefile docs/Makefile clamd/Makefile clamd/clamav-daemon.service clamd/clamav-daemon.socket clamdscan/Makefile clamsubmit/Makefile clamav-milter/Makefile freshclam/clamav-freshclam.service freshclam/Makefile sigtool/Makefile clamconf/Makefile etc/Makefile test/Makefile unit_tests/Makefile clamdtop/Makefile clambc/Makefile libfreshclam/Makefile Makefile clamav-config libclamav.pc platform.h docs/man/clamav-milter.8 docs/man/clamav-milter.conf.5 docs/man/clambc.1 docs/man/clamconf.1 docs/man/clamd.8 docs/man/clamd.conf.5 docs/man/clamdscan.1 docs/man/clamscan.1 docs/man/freshclam.1 docs/man/freshclam.conf.5 docs/man/sigtool.1 docs/man/clamdtop.1 docs/man/clamsubmit.1"
 
 
 cat >confcache <<\_ACEOF
@@ -25076,7 +25074,6 @@ do
     "depfiles") CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;
     "libtool") CONFIG_COMMANDS="$CONFIG_COMMANDS libtool" ;;
     "libltdl/Makefile") CONFIG_FILES="$CONFIG_FILES libltdl/Makefile" ;;
-    "libfreshclam/Makefile") CONFIG_FILES="$CONFIG_FILES libfreshclam/Makefile" ;;
     "clamscan/Makefile") CONFIG_FILES="$CONFIG_FILES clamscan/Makefile" ;;
     "database/Makefile") CONFIG_FILES="$CONFIG_FILES database/Makefile" ;;
     "docs/Makefile") CONFIG_FILES="$CONFIG_FILES docs/Makefile" ;;
@@ -25095,6 +25092,7 @@ do
     "unit_tests/Makefile") CONFIG_FILES="$CONFIG_FILES unit_tests/Makefile" ;;
     "clamdtop/Makefile") CONFIG_FILES="$CONFIG_FILES clamdtop/Makefile" ;;
     "clambc/Makefile") CONFIG_FILES="$CONFIG_FILES clambc/Makefile" ;;
+    "libfreshclam/Makefile") CONFIG_FILES="$CONFIG_FILES libfreshclam/Makefile" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "clamav-config") CONFIG_FILES="$CONFIG_FILES clamav-config" ;;
     "libclamav.pc") CONFIG_FILES="$CONFIG_FILES libclamav.pc" ;;
@@ -27672,7 +27670,6 @@ do
     "depfiles") CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;
     "libtool") CONFIG_COMMANDS="$CONFIG_COMMANDS libtool" ;;
     "libltdl/Makefile") CONFIG_FILES="$CONFIG_FILES libltdl/Makefile" ;;
-    "libfreshclam/Makefile") CONFIG_FILES="$CONFIG_FILES libfreshclam/Makefile" ;;
     "clamscan/Makefile") CONFIG_FILES="$CONFIG_FILES clamscan/Makefile" ;;
     "database/Makefile") CONFIG_FILES="$CONFIG_FILES database/Makefile" ;;
     "docs/Makefile") CONFIG_FILES="$CONFIG_FILES docs/Makefile" ;;
@@ -27691,6 +27688,7 @@ do
     "unit_tests/Makefile") CONFIG_FILES="$CONFIG_FILES unit_tests/Makefile" ;;
     "clamdtop/Makefile") CONFIG_FILES="$CONFIG_FILES clamdtop/Makefile" ;;
     "clambc/Makefile") CONFIG_FILES="$CONFIG_FILES clambc/Makefile" ;;
+    "libfreshclam/Makefile") CONFIG_FILES="$CONFIG_FILES libfreshclam/Makefile" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "clamav-config") CONFIG_FILES="$CONFIG_FILES clamav-config" ;;
     "libclamav.pc") CONFIG_FILES="$CONFIG_FILES libclamav.pc" ;;
