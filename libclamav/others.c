@@ -617,12 +617,12 @@ int cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field field, long
 	case CL_ENGINE_MAX_ICONSPE:
 	    engine->maxiconspe = (uint32_t)num;
 	    break;
-    case CL_ENGINE_MAX_RECHWP3:
+	case CL_ENGINE_MAX_RECHWP3:
 	    engine->maxrechwp3 = (uint32_t)num;
 	    break;
 	case CL_ENGINE_TIME_LIMIT:
-            engine->time_limit = (uint32_t)num;
-            break;
+	    engine->time_limit = (uint32_t)num;
+	    break;
 	case CL_ENGINE_PCRE_MATCH_LIMIT:
 	    engine->pcre_match_limit = (uint64_t)num;
 	    break;
@@ -631,6 +631,20 @@ int cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field field, long
 	    break;
 	case CL_ENGINE_PCRE_MAX_FILESIZE:
 	    engine->pcre_max_filesize = (uint64_t)num;
+	    break;
+	case CL_ENGINE_DISABLE_PE_CERTS:
+	    if (num) {
+		engine->engine_options |= ENGINE_OPTIONS_DISABLE_PE_CERTS;
+	    } else {
+		engine->engine_options &= ~(ENGINE_OPTIONS_DISABLE_PE_CERTS);
+	    }
+	    break;
+	case CL_ENGINE_PE_DUMPCERTS:
+	    if (num) {
+		engine->engine_options |= ENGINE_OPTIONS_PE_DUMPCERTS;
+	    } else {
+		engine->engine_options &= ~(ENGINE_OPTIONS_PE_DUMPCERTS);
+	    }
 	    break;
 	default:
 	    cli_errmsg("cl_engine_set_num: Incorrect field number\n");

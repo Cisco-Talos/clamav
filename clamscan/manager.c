@@ -798,6 +798,12 @@ int scanmanager(const struct optstruct *opts)
     if((opt = optget(opts,"bytecode-timeout"))->enabled)
         cl_engine_set_num(engine, CL_ENGINE_BYTECODE_TIMEOUT, opt->numarg);
 
+    if (optget(opts, "nocerts")->enabled)
+        cl_engine_set_num(engine, CL_ENGINE_DISABLE_PE_CERTS, 1);
+
+    if (optget(opts, "dumpcerts")->enabled)
+        cl_engine_set_num(engine, CL_ENGINE_PE_DUMPCERTS, 1);
+
     if((opt = optget(opts,"bytecode-mode"))->enabled) {
         enum bytecode_mode mode;
 
@@ -888,12 +894,6 @@ int scanmanager(const struct optstruct *opts)
         cl_engine_set_clcb_pre_cache(engine, pre);
         cl_engine_set_clcb_post_scan(engine, post);
     }
-
-    if (optget(opts, "nocerts")->enabled)
-        engine->dconf->pe |= PE_CONF_DISABLECERT;
-
-    if (optget(opts, "dumpcerts")->enabled)
-        engine->dconf->pe |= PE_CONF_DUMPCERT;
 
     /* set limits */
 
