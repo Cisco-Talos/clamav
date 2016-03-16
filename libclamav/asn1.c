@@ -848,7 +848,7 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
 		    cli_crt *parent = crtmgr_verify_crt(cmgr, x509);
 
             /* Dump the cert if requested before anything happens to it */
-            if (engine->dconf->pe & PE_CONF_DUMPCERT) {
+            if (engine->engine_options & ENGINE_OPTIONS_PE_DUMPCERTS) {
                 char issuer[SHA1_HASH_SIZE*2+1], subject[SHA1_HASH_SIZE*2+1], serial[SHA1_HASH_SIZE*2+1];
                 char mod[1024], exp[1024];
                 int j=1024;
@@ -1479,8 +1479,10 @@ int asn1_check_mscat(struct cl_engine *engine, fmap_t *map, size_t offset, unsig
     crtmgr certs;
     int ret;
 
-    if (engine->dconf->pe & PE_CONF_DISABLECERT)
-        return CL_VIRUS;
+    if (!(engine->dconf->pe & PE_CONF_CERTS))
+	return CL_VIRUS;
+    if (engine->engine_options & ENGINE_OPTIONS_DISABLE_PE_CERTS)
+	return CL_VIRUS;
 
     cli_dbgmsg("in asn1_check_mscat (offset: %llu)\n", (long long unsigned)offset);
     crtmgr_init(&certs);

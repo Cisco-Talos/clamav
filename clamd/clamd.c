@@ -608,7 +608,7 @@ int main(int argc, char **argv)
         }
 
         if (optget(opts, "DisableCertCheck")->enabled)
-            engine->dconf->pe |= PE_CONF_DISABLECERT;
+            cl_engine_set_num(engine, CL_ENGINE_DISABLE_PE_CERTS, 1);
 
         logg("#Loaded %u signatures.\n", sigs);
 

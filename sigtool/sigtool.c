@@ -3247,7 +3247,7 @@ static int dumpcerts(const struct optstruct *opts)
 	return -1;
     }
 
-    engine->dconf->pe |= PE_CONF_DUMPCERT;
+    cl_engine_set_num(engine, CL_ENGINE_PE_DUMPCERTS, 1);
     cl_debug();
 
     /* prepare context */
