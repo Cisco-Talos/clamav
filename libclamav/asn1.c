@@ -861,7 +861,11 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
                     sprintf(&serial[j*2], "%02x", x509->serial[j]);
                 }
 
-                cli_dbgmsg_internal("cert subject:%s serial:%s pubkey:%s i:%s %lu->%lu %s %s %s\n", subject, serial, mod, issuer, (unsigned long)x509->not_before, (unsigned long)x509->not_after, x509->certSign ? "cert" : "", x509->codeSign ? "code" : "", x509->timeSign ? "time" : "");
+                cli_dbgmsg_internal("cert:\n");
+                cli_dbgmsg_internal("  subject: %s\n", subject);
+                cli_dbgmsg_internal("  serial: %s\n", serial);
+                cli_dbgmsg_internal("  pubkey: %s\n", mod);
+                cli_dbgmsg_internal("  i: %s %lu->%lu %s%s%s\n", issuer, (unsigned long)x509->not_before, (unsigned long)x509->not_after, x509->codeSign ? "code " : "", x509->timeSign ? "time " : "", x509->certSign ? "cert " : "");
             }
 
 		    if(parent) {
