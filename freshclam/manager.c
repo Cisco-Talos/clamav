@@ -604,7 +604,10 @@ remote_cvdhead (const char *cvdfile, const char *localfile,
     }
     else
     {
-        logg ("*Connected to %s (IP: %s).\n", hostname, ipaddr);
+        if (proxy)
+            logg ("*Connected to %s.\n", hostname);
+        else
+            logg ("*Connected to %s (IP: %s).\n", hostname, ipaddr);
         logg ("*Trying to retrieve CVD header of http://%s/%s\n", hostname,
               cvdfile);
     }
@@ -798,8 +801,11 @@ getfile_mirman (const char *srcfile, const char *destfile,
     if (authorization)
         free (authorization);
 
-    logg ("*Trying to download http://%s/%s (IP: %s)\n", hostname, srcfile,
-          ipaddr);
+    if (proxy)
+        logg ("*Trying to download http://%s/%s\n", hostname, srcfile);
+    else
+        logg ("*Trying to download http://%s/%s (IP: %s)\n", hostname, srcfile,
+              ipaddr);
 
     if (ip && !ip[0])
         strcpy (ip, ipaddr);
@@ -824,7 +830,10 @@ getfile_mirman (const char *srcfile, const char *destfile,
         if ((i >= sizeof (buffer) - 1) || recv (sd, buffer + i, 1, 0) == -1)
         {
 #endif
-            logg ("%cgetfile: Error while reading database from %s (IP: %s): %s\n", logerr ? '!' : '^', hostname, ipaddr, strerror (errno));
+            if (proxy)
+                logg ("%cgetfile: Error while reading database from %s: %s\n", logerr ? '!' : '^', hostname, strerror (errno));
+            else
+                logg ("%cgetfile: Error while reading database from %s (IP: %s): %s\n", logerr ? '!' : '^', hostname, ipaddr, strerror (errno));
             if (mdat)
                 mirman_update (mdat->currip, mdat->af, mdat, 1);
             return FCE_CONNECTION;
@@ -846,8 +855,12 @@ getfile_mirman (const char *srcfile, const char *destfile,
     if ((strstr (buffer, "HTTP/1.1 404")) != NULL
         || (strstr (buffer, "HTTP/1.0 404")) != NULL)
     {
-        logg ("^getfile: %s not found on remote server (IP: %s)\n", srcfile,
-              ipaddr);
+        if (proxy)
+            logg ("^getfile: %s not found on %s\n", srcfile, hostname);
+        else
+            logg ("^getfile: %s not found on %s (IP: %s)\n", srcfile, hostname,
+                  ipaddr);
+
         if (mdat)
             mirman_update (mdat->currip, mdat->af, mdat, 2);
         return FCE_FAILEDGET;
@@ -865,8 +878,12 @@ getfile_mirman (const char *srcfile, const char *destfile,
         && !strstr (buffer, "HTTP/1.1 206")
         && !strstr (buffer, "HTTP/1.0 206"))
     {
-        logg ("%cgetfile: Unknown response from remote server (IP: %s)\n",
-              logerr ? '!' : '^', ipaddr);
+        if (proxy)
+            logg ("%cgetfile: Unknown response from %s\n",
+                  logerr ? '!' : '^', hostname);
+        else
+            logg ("%cgetfile: Unknown response from %s (IP: %s)\n",
+                  logerr ? '!' : '^', hostname, ipaddr);
         if (mdat)
             mirman_update (mdat->currip, mdat->af, mdat, 1);
         return FCE_FAILEDGET;
@@ -952,8 +969,12 @@ getfile_mirman (const char *srcfile, const char *destfile,
 
     if (bread == -1)
     {
-        logg ("%cgetfile: Download interrupted: %s (IP: %s)\n",
-              logerr ? '!' : '^', strerror (errno), ipaddr);
+        if (proxy)
+            logg ("%cgetfile: Download interrupted: %s (Host: %s)\n",
+                  logerr ? '!' : '^', strerror (errno), hostname);
+        else
+            logg ("%cgetfile: Download interrupted: %s (IP: %s)\n",
+                  logerr ? '!' : '^', strerror (errno), ipaddr);
         if (mdat)
             mirman_update (mdat->currip, mdat->af, mdat, 2);
         return FCE_CONNECTION;
