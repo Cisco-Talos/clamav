@@ -1948,8 +1948,11 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
 
         if (!remote)
         {
-            logg ("^Can't read %s header from %s (IP: %s)\n", cvdfile,
-                  hostname, ip);
+            if (proxy)
+                logg ("^Can't read %s header from %s\n", cvdfile, hostname);
+            else
+                logg ("^Can't read %s header from %s (IP: %s)\n", cvdfile,
+                      hostname, ip);
 #ifdef HAVE_RESOLV_H
             if (mirror_stats && strlen (ip))
             {
