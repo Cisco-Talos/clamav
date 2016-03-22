@@ -1048,6 +1048,7 @@ getcvd (const char *cvdfile, const char *newfile, const char *hostname,
 {
     struct cl_cvd *cvd;
     int ret;
+    char *newfile2;
 
 
     logg ("*Retrieving http://%s/%s\n", hostname, cvdfile);
@@ -1063,19 +1064,49 @@ getcvd (const char *cvdfile, const char *newfile, const char *hostname,
         return ret;
     }
 
-    if ((ret = cl_cvdverify (newfile)))
+    /* bb#10983 - temporaily rename newfile to correct extension for verification */
+    newfile2 = strdup (newfile);
+    if (!newfile2)
+    {
+        logg ("!Can't allocate memory for filename!\n");
+        unlink (newfile);
+        return FCE_MEM;
+    }
+    strncpy(newfile2 + strlen (newfile2) - 4, cvdfile + strlen (cvdfile) - 4, 4);
+    if (rename (newfile, newfile2) == -1)
+    {
+        logg ("!Can't rename %s to %s: %s\n", newfile, newfile2,
+              strerror (errno));
+        unlink (newfile);
+        free(newfile2);
+        return FCE_DBDIRACCESS;
+    }
+
+    if ((ret = cl_cvdverify (newfile2)))
     {
         logg ("!Verification: %s\n", cl_strerror (ret));
-        unlink (newfile);
+        unlink (newfile2);
+        free(newfile2);
         return FCE_BADCVD;
     }
 
-    if (!(cvd = cl_cvdhead (newfile)))
+    if (!(cvd = cl_cvdhead (newfile2)))
     {
         logg ("!Can't read CVD header of new %s database.\n", cvdfile);
-        unlink (newfile);
+        unlink (newfile2);
+        free(newfile2);
         return FCE_BADCVD;
     }
+
+    if (rename (newfile2, newfile) == -1)
+    {
+        logg ("!Can't rename %s to %s: %s\n", newfile2, newfile,
+              strerror (errno));
+        unlink (newfile2);
+        free(newfile2);
+        return FCE_DBDIRACCESS;
+    }
+    free(newfile2);
 
     if (cvd->version < newver)
     {
@@ -1715,7 +1746,7 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
     struct cl_cvd *current, *remote;
     const struct optstruct *opt;
     unsigned int nodb = 0, currver = 0, newver = 0, port = 0, i, j;
-    int ret, ims = -1, hascld = 0, field = 0;
+    int ret, ims = -1, iscld = 0, field = 0;
     char *pt, cvdfile[32], cldfile[32], localname[32], *tmpdir =
         NULL, *newfile, *newfile2, newdb[32];
     char extradbinfo[256], *extradnsreply = NULL, squery[256];
@@ -1882,14 +1913,14 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
                                 proxy, port, user, pass, uas, &ims, ctimeout,
                                 rtimeout, mdat, logerr, can_whitelist,
                                 attempt);
-            if (remote)
-                hascld = 1;
-            else
+            if (!remote) {
+                iscld = -1;
                 remote =
                     remote_cvdhead (cvdfile, localname, hostname, ip, localip,
                                     proxy, port, user, pass, uas, &ims,
                                     ctimeout, rtimeout, mdat, logerr,
                                     can_whitelist, attempt);
+            }
         }
         else
             remote =
@@ -1972,16 +2003,18 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
         if (optget (opts, "PrivateMirror")->enabled)
         {
             ret = 0;
-            if (hascld)
+            if (iscld >= 0)
                 ret =
                     getcvd (cldfile, newfile, hostname, ip, localip, proxy,
                             port, user, pass, uas, newver, ctimeout, rtimeout,
                             mdat, logerr, can_whitelist, opts, attempt);
-            if (ret || !hascld)
+            if (ret || iscld < 0)
                 ret =
                     getcvd (cvdfile, newfile, hostname, ip, localip, proxy,
                             port, user, pass, uas, newver, ctimeout, rtimeout,
                             mdat, logerr, can_whitelist, opts, attempt);
+            else
+                iscld = 1;
         }
         else
         {
@@ -2006,7 +2039,10 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
             free (newfile);
             return ret;
         }
-        snprintf (newdb, sizeof (newdb), "%s.cvd", dbname);
+        if (iscld > 0)
+            snprintf (newdb, sizeof (newdb), "%s.cld", dbname);
+        else
+            snprintf (newdb, sizeof (newdb), "%s.cvd", dbname);
 
     }
     else
@@ -2175,7 +2211,7 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
         if (unlink (localname))
             logg ("^Can't unlink the old database file %s. Please remove it manually.\n", localname);
 
-    if (!optget (opts, "ScriptedUpdates")->enabled)
+    if (!optget (opts, "ScriptedUpdates")->enabled && !optget (opts, "PrivateMirror")->enabled)
     {
         snprintf (localname, sizeof (localname), "%s.cld", dbname);
         if (!access (localname, R_OK))
