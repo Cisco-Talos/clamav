@@ -3213,7 +3213,7 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo)
                                 if(k) {
                                     v = cli_utf16toascii((const char*)vptr + s_key_sz + 6, s_val_sz);
                                     if(v) {
-                                        s = cli_str2hex((const char*)vptr + 6, s_key_sz + s_val_sz - 6);
+                                        s = cli_str2hex((const char*)vptr + 6, s_key_sz + s_val_sz);
                                         if(s) {
                                             cli_dbgmsg("VersionInfo (%x): '%s'='%s' - VI:%s\n", (uint32_t)(vptr - baseptr + 6), k, v, s);
                                             free(s);
