@@ -2820,6 +2820,12 @@ downloadmanager (const struct optstruct *opts, const char *hostname,
         {
             char *cmd = strdup (opt->strarg);
 
+            if (!cmd)
+            {
+                free (newver);
+                return FCE_MEM;
+            }
+
             if ((pt = newver))
             {
                 while (*pt)
@@ -2857,6 +2863,11 @@ downloadmanager (const struct optstruct *opts, const char *hostname,
                 free (cmd);
                 cmd = strdup (buffer);
                 free (buffer);
+                if (!cmd)
+                {
+                    free (newver);
+                    return FCE_MEM;
+                }
             }
 
             if (newver)
