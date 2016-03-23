@@ -331,7 +331,12 @@ How do I look in hex?
     as two sub-signatures \verb+aabbcc+ and \verb+bbaacc+ with any number
     of bytes between them. It's a requirement that each sub-signature
     includes a block of two static characters somewhere in its body.
-    
+    Note that there is one exception to this restriction; that is when
+    the range wildcard is of the form \verb+{n}+ with \verb+n<128+. In this
+    case, ClamAV uses an optimization and translates \verb+{n}+ to the string
+    consisting of \verb+n ??+ character wildcards. Character wildcards do not
+    divide hex signatures into two parts and so the two static character
+    requirement does not apply.
 
     \subsubsection{Character classes}
     ClamAV supports the following character classes for hex-signatures:
