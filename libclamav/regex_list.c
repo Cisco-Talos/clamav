@@ -631,6 +631,7 @@ static int add_pattern_suffix(void *cbdata, const char *suffix, size_t suffix_le
 	struct regex_matcher *matcher = cbdata;
 	struct regex_list *regex = cli_malloc(sizeof(*regex));
 	const struct cli_element *el;
+	void *tmp_matcher;  /*	save original address if OOM occurs */
 
 	assert(matcher);
 	if(!regex) {
@@ -651,11 +652,13 @@ static int add_pattern_suffix(void *cbdata, const char *suffix, size_t suffix_le
 		/* new suffix */
 		size_t n = matcher->suffix_cnt++;
 		el = cli_hashtab_insert(&matcher->suffix_hash, suffix, suffix_len, n);
-		matcher->suffix_regexes = cli_realloc(matcher->suffix_regexes, (n+1)*sizeof(*matcher->suffix_regexes));
-		if(!matcher->suffix_regexes) {
+		tmp_matcher = matcher->suffix_regexes;	/*  save the current value before cli_realloc()	*/
+		tmp_matcher = cli_realloc(matcher->suffix_regexes, (n+1)*sizeof(*matcher->suffix_regexes));
+		if(!tmp_matcher) {
 			free (regex);
 			return CL_EMEM;
 		}
+		matcher->suffix_regexes = tmp_matcher;	/*  success, point at new memory location   */
 		matcher->suffix_regexes[n].tail = regex;
 		matcher->suffix_regexes[n].head = regex;
 		if (suffix[0] == '/' && suffix[1] == '\0')
