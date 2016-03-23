@@ -105,6 +105,19 @@ struct cli_asn1 {
     const void *next;
 };
 
+static int map_raw(fmap_t *map, const void *data, unsigned int len, uint8_t raw[CRT_RAWMAXLEN]) {
+    unsigned int elen = MIN(len, CRT_RAWMAXLEN-1);
+
+    if(!fmap_need_ptr_once(map, data, elen)) {
+	cli_dbgmsg("map_raw: failed to read map data\n");
+	return 1;
+    }
+    memset(raw, 0, CRT_RAWMAXLEN);
+    raw[0] = (uint8_t)elen;
+    memcpy(&raw[1], data, elen);
+    return 0;
+}
+
 static int map_sha1(fmap_t *map, const void *data, unsigned int len, uint8_t sha1[SHA1_HASH_SIZE]) {
     if(!fmap_need_ptr_once(map, data, len)) {
 	cli_dbgmsg("map_sha1: failed to read hash data\n");
@@ -496,6 +509,8 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
 
 	if(asn1_expect_objtype(map, next, &tbs.size, &obj, 0x02)) /* serialNumber */
 	    break;
+	if(map_raw(map, obj.content, obj.size, x509.raw_serial))
+	    break;
 	if(map_sha1(map, obj.content, obj.size, x509.serial))
 	    break;
 
@@ -526,6 +541,8 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
 	}
 
 	if(asn1_expect_objtype(map, obj.next, &tbs.size, &obj, 0x30)) /* subject */
+	    break;
+	if(map_raw(map, obj.content, obj.size, x509.raw_subject))
 	    break;
 	if(map_sha1(map, obj.content, obj.size, x509.subject))
 	    break;
@@ -700,6 +717,8 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
 	    return 0;
 	}
 
+	if(map_raw(map, issuer, issuersize, x509.raw_issuer))
+	    break;
 	if(map_sha1(map, issuer, issuersize, x509.issuer))
 	    break;
 
@@ -849,12 +868,22 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
 
             /* Dump the cert if requested before anything happens to it */
             if (engine->engine_options & ENGINE_OPTIONS_PE_DUMPCERTS) {
+                char raw_issuer[CRT_RAWMAXLEN*2+1], raw_subject[CRT_RAWMAXLEN*2+1], raw_serial[CRT_RAWMAXLEN*3+1];
                 char issuer[SHA1_HASH_SIZE*2+1], subject[SHA1_HASH_SIZE*2+1], serial[SHA1_HASH_SIZE*2+1];
                 char mod[1024], exp[1024];
                 int j=1024;
 
                 fp_toradix_n(&x509->n, mod, 16, j);
                 fp_toradix_n(&x509->e, exp, 16, j);
+                memset(raw_issuer, 0, CRT_RAWMAXLEN*2+1);
+                memset(raw_subject, 0, CRT_RAWMAXLEN*2+1);
+                memset(raw_serial, 0, CRT_RAWMAXLEN*2+1);
+                for (j=0; j < x509->raw_issuer[0]; j++)
+                    sprintf(&raw_issuer[j*2], "%02x", x509->raw_issuer[j+1]);
+                for (j=0; j < x509->raw_subject[0]; j++)
+                    sprintf(&raw_subject[j*2], "%02x", x509->raw_subject[j+1]);
+                for (j=0; j < x509->raw_serial[0]; j++)
+                    sprintf(&raw_serial[j*3], "%02x%c", x509->raw_serial[j+1], (j != x509->raw_serial[0]-1) ? ':' : '\0');
                 for (j=0; j < SHA1_HASH_SIZE; j++) {
                     sprintf(&issuer[j*2], "%02x", x509->issuer[j]);
                     sprintf(&subject[j*2], "%02x", x509->subject[j]);
@@ -866,6 +895,10 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
                 cli_dbgmsg_internal("  serial: %s\n", serial);
                 cli_dbgmsg_internal("  pubkey: %s\n", mod);
                 cli_dbgmsg_internal("  i: %s %lu->%lu %s%s%s\n", issuer, (unsigned long)x509->not_before, (unsigned long)x509->not_after, x509->codeSign ? "code " : "", x509->timeSign ? "time " : "", x509->certSign ? "cert " : "");
+                cli_dbgmsg_internal("  ==============RAW==============\n");
+                cli_dbgmsg_internal("  raw_subject: %s\n", raw_subject);
+                cli_dbgmsg_internal("  raw_serial: %s\n", raw_serial);
+                cli_dbgmsg_internal("  raw_issuer: %s\n", raw_issuer);
             }
 
 		    if(parent) {
