@@ -126,10 +126,14 @@ int crtmgr_add(crtmgr *m, cli_crt *x509) {
     }
 
     if ((x509->name))
-        i->name = strdup(x509->name);
+	i->name = strdup(x509->name);
     else
-        i->name = NULL;
+	i->name = NULL;
 
+    memcpy(i->raw_subject, x509->raw_subject, sizeof(i->raw_subject));
+    memcpy(i->raw_issuer, x509->raw_issuer, sizeof(i->raw_issuer));
+    memcpy(i->raw_tbshash, x509->raw_tbshash, sizeof(i->raw_tbshash));
+    memcpy(i->raw_serial, x509->raw_serial, sizeof(i->raw_serial));
     memcpy(i->subject, x509->subject, sizeof(i->subject));
     memcpy(i->serial, x509->serial, sizeof(i->serial));
     memcpy(i->issuer, x509->issuer, sizeof(i->issuer));
@@ -167,8 +171,8 @@ void crtmgr_del(crtmgr *m, cli_crt *x509) {
 	    if(i->next)
 		i->next->prev = i->prev;
 	    cli_crt_clear(x509);
-        if ((x509->name))
-            free(x509->name);
+	    if ((x509->name))
+		free(x509->name);
 	    free(x509);
 	    m->items--;
 	    return;
