@@ -1,0 +1,8 @@
+* CAB compression
+* cabd_find(): if many bytes are missing from the end of a cabinet, it should still find it
+* CHM compression
+* HLP: everything
+* LIT: everything
+* SZDD/KWAJ: compression
+* WIM: everything
+* chm: make chunk cache size user-controllable

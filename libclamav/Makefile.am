@@ -125,11 +125,12 @@ libclamav_internal_utils_nothreads_la_SOURCES=str.c\
 libclamav_internal_utils_nothreads_la_LDFLAGS=-static @SSL_LDFLAGS@ @JSON_LDFLAGS@
 libclamav_internal_utils_nothreads_la_CFLAGS=$(AM_CFLAGS) -DCL_NOTHREADS @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
 libclamav_internal_utils_nothreads_la_LIBADD=@SSL_LIBS@ @JSON_LIBS@ @PCRE_LIBS@
+SUBDIRS=
 
 if ENABLE_LLVM
 LLVMLIBADD=c++/libclamavcxx.la -lstdc++ -lm
 LLVMDEP=c++/libclamavcxx.la
-SUBDIRS=c++
+SUBDIRS+=c++
 else
 LLVMLIBADD=libclamav_nocxx.la
 LLVMDEP=libclamav_nocxx.la
@@ -152,6 +153,36 @@ libclamav_la_LDFLAGS = @SSL_LDFLAGS@ @TH_SAFE@ @JSON_LDFLAGS@ $(XML_LIBS) -versi
 
 if VERSIONSCRIPT
 libclamav_la_LDFLAGS += -Wl,@VERSIONSCRIPTFLAG@,@top_srcdir@/libclamav/libclamav.map
+endif
+
+if USE_INTERNAL_MSPACK
+SUBDIRS += libmspack-0.5alpha
+libclamav_la_CFLAGS += -I@top_srcdir@/libclamav/libmspack-0.5alpha/mspack
+libclamav_la_LIBADD +=  @top_builddir@/libclamav/libmspack-0.5alpha/.libs/cabc.o \
+			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/system.o \
+			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/kwajd.o \
+			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/hlpc.o \
+			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/chmd.o \
+			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/qtmd.o \
+			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/litc.o \
+			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/oabc.o \
+			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/lzxd.o \
+			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/litd.o \
+			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/crc32.o \
+			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/lzssd.o \
+			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/kwajc.o \
+			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/cabd.o \
+			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/szddd.o \
+			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/lzxc.o \
+			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/mszipd.o \
+			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/szddc.o \
+			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/oabd.o \
+			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/chmc.o \
+			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/mszipc.o \
+			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/hlpd.o
+else
+libclamav_la_CFLAGS += $(LIBMSPACK_CFLAGS)
+libclamav_la_LDFLAGS += $(LIBMSPACK_LIBS)
 endif
 
 include_HEADERS = clamav.h
@@ -211,8 +242,8 @@ libclamav_la_SOURCES = \
 	upx.h \
 	htmlnorm.c \
 	htmlnorm.h \
-	chmunpack.c \
-	chmunpack.h \
+	libmspack.c \
+	libmspack.h \
 	rebuildpe.c \
 	rebuildpe.h \
 	petite.c \
@@ -292,10 +323,6 @@ libclamav_la_SOURCES = \
 	regex_list.h \
 	regex_suffix.c \
 	regex_suffix.h \
-	mspack.c \
-	mspack.h \
-	cab.c \
-	cab.h \
 	entconv.c \
 	entconv.h \
 	entitylist.h \
