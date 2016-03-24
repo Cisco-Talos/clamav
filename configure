@@ -645,6 +645,10 @@ am__EXEEXT_FALSE
 am__EXEEXT_TRUE
 LTLIBOBJS
 LIBOBJS
+USE_INTERNAL_MSPACK_FALSE
+USE_INTERNAL_MSPACK_TRUE
+LIBMSPACK_LIBS
+LIBMSPACK_CFLAGS
 JSON_LDFLAGS
 JSON_LIBS
 SSL_LDFLAGS
@@ -978,9 +982,12 @@ PKG_CONFIG_LIBDIR
 CHECK_CFLAGS
 CHECK_LIBS
 SYSTEMD_CFLAGS
-SYSTEMD_LIBS'
+SYSTEMD_LIBS
+LIBMSPACK_CFLAGS
+LIBMSPACK_LIBS'
 ac_subdirs_all='
-libclamav/c++'
+libclamav/c++
+libclamav/libmspack-0.5alpha'
 
 # Initialize some variables set by options.
 ac_init_help=
@@ -1734,6 +1741,10 @@ Some influential environment variables:
               C compiler flags for SYSTEMD, overriding pkg-config
   SYSTEMD_LIBS
               linker flags for SYSTEMD, overriding pkg-config
+  LIBMSPACK_CFLAGS
+              C compiler flags for LIBMSPACK, overriding pkg-config
+  LIBMSPACK_LIBS
+              linker flags for LIBMSPACK, overriding pkg-config
 
 Use these variables to override the choices made by `configure' or to help
 it to find libraries and programs with nonstandard names/locations.
@@ -24628,6 +24639,97 @@ fi
 
 
 
+
+pkg_failed=no
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for LIBMSPACK" >&5
+$as_echo_n "checking for LIBMSPACK... " >&6; }
+
+if test -n "$LIBMSPACK_CFLAGS"; then
+    pkg_cv_LIBMSPACK_CFLAGS="$LIBMSPACK_CFLAGS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libmspack\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libmspack") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_LIBMSPACK_CFLAGS=`$PKG_CONFIG --cflags "libmspack" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+if test -n "$LIBMSPACK_LIBS"; then
+    pkg_cv_LIBMSPACK_LIBS="$LIBMSPACK_LIBS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libmspack\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libmspack") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_LIBMSPACK_LIBS=`$PKG_CONFIG --libs "libmspack" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+	        LIBMSPACK_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "libmspack" 2>&1`
+        else
+	        LIBMSPACK_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "libmspack" 2>&1`
+        fi
+	# Put the nasty error message in config.log where it belongs
+	echo "$LIBMSPACK_PKG_ERRORS" >&5
+
+	use_internal_mspack=yes
+elif test $pkg_failed = untried; then
+     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+	use_internal_mspack=yes
+else
+	LIBMSPACK_CFLAGS=$pkg_cv_LIBMSPACK_CFLAGS
+	LIBMSPACK_LIBS=$pkg_cv_LIBMSPACK_LIBS
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+	use_internal_mspack=no
+fi
+
+ if test "x$use_internal_mspack" = "xyes"; then
+  USE_INTERNAL_MSPACK_TRUE=
+  USE_INTERNAL_MSPACK_FALSE='#'
+else
+  USE_INTERNAL_MSPACK_TRUE='#'
+  USE_INTERNAL_MSPACK_FALSE=
+fi
+
+
+if test "x$use_internal_mspack" = "xyes"; then
+       mspack_msg="Internal"
+       subdirs="$subdirs libclamav/libmspack-0.5alpha"
+
+else
+       mspack_msg="External, $LIBMSPACK_CFLAGS $LIBMSPACK_LIBS"
+fi
+
+
+
 ac_config_files="$ac_config_files clamscan/Makefile database/Makefile docs/Makefile clamd/Makefile clamd/clamav-daemon.service clamd/clamav-daemon.socket clamdscan/Makefile clamsubmit/Makefile clamav-milter/Makefile freshclam/clamav-freshclam.service freshclam/Makefile sigtool/Makefile clamconf/Makefile etc/Makefile test/Makefile unit_tests/Makefile clamdtop/Makefile clambc/Makefile libfreshclam/Makefile Makefile clamav-config libclamav.pc platform.h docs/man/clamav-milter.8 docs/man/clamav-milter.conf.5 docs/man/clambc.1 docs/man/clamconf.1 docs/man/clamd.8 docs/man/clamd.conf.5 docs/man/clamdscan.1 docs/man/clamscan.1 docs/man/freshclam.1 docs/man/freshclam.conf.5 docs/man/sigtool.1 docs/man/clamdtop.1 docs/man/clamsubmit.1"
 
 
@@ -24844,6 +24946,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${ENABLE_LIBFRESHCLAM_TRUE}" && test -z "${ENABLE_LIBFRESHCLAM_FALSE}"; then
   as_fn_error $? "conditional \"ENABLE_LIBFRESHCLAM\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${USE_INTERNAL_MSPACK_TRUE}" && test -z "${USE_INTERNAL_MSPACK_FALSE}"; then
+  as_fn_error $? "conditional \"USE_INTERNAL_MSPACK\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 
@@ -27421,6 +27527,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${ENABLE_LIBFRESHCLAM_TRUE}" && test -z "${ENABLE_LIBFRESHCLAM_FALSE}"; then
   as_fn_error $? "conditional \"ENABLE_LIBFRESHCLAM\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${USE_INTERNAL_MSPACK_TRUE}" && test -z "${USE_INTERNAL_MSPACK_FALSE}"; then
+  as_fn_error $? "conditional \"USE_INTERNAL_MSPACK\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${am__EXEEXT_TRUE}" && test -z "${am__EXEEXT_FALSE}"; then
@@ -30075,6 +30185,32 @@ else
 fi
 
 fi
+
+
+   $as_echo_n "              preclass    : "
+   if test "x$have_json" = "xno"; then :
+  $as_echo "$LIBJSON_HOME (disabled)"
+elif test "x$have_json" = "xyes"; then :
+  $as_echo "$LIBJSON_HOME"
+elif test "x$have_json" = "x"; then :
+  $as_echo "$LIBJSON_HOME"
+else
+  $as_echo "$LIBJSON_HOME ($have_json)"
+fi
+
+
+
+   $as_echo_n "              libmspack   : "
+   if test "x$mspack_msg" = "xno"; then :
+  $as_echo "yes (disabled)"
+elif test "x$mspack_msg" = "xyes"; then :
+  $as_echo "yes"
+elif test "x$mspack_msg" = "x"; then :
+  $as_echo "yes"
+else
+  $as_echo "yes ($mspack_msg)"
+fi
+
 if test "x$XML_LIBS" = "x"; then
 
 

@@ -60,7 +60,7 @@
 #include "vba_extract.h"
 #include "msexpand.h"
 #include "mbox.h"
-#include "chmunpack.h"
+#include "libmspack.h"
 #include "pe.h"
 #include "elf.h"
 #include "filetypes.h"
@@ -73,8 +73,6 @@
 #include "sis.h"
 #include "pdf.h"
 #include "str.h"
-#include "mspack.h"
-#include "cab.h"
 #include "rtf.h"
 #include "unarj.h"
 #include "nsis/nulsft.h"
@@ -876,82 +874,6 @@ static int cli_scanszdd(cli_ctx *ctx)
 	if (cli_unlink(tmpname)) ret = CL_EUNLINK;
     free(tmpname);	
 
-    return ret;
-}
-
-static int cli_scanmscab(cli_ctx *ctx, off_t sfx_offset)
-{
-	char *tempname;
-	int ret;
-	unsigned int files = 0;
-	struct cab_archive cab;
-	struct cab_file *file;
-	unsigned int corrupted_input;
-	unsigned int viruses_found = 0;
-
-    cli_dbgmsg("in cli_scanmscab()\n");
-
-    if((ret = cab_open(*ctx->fmap, sfx_offset, &cab)))
-	return ret;
-
-    for(file = cab.files; file; file = file->next) {
-	files++;
-
-	if(cli_matchmeta(ctx, file->name, 0, file->length, 0, files, 0, NULL) == CL_VIRUS) {
-	    if (!SCAN_ALL) {
-		ret = CL_VIRUS;
-		break;
-	    }
-	    viruses_found++;
-	}
-
-	if(ctx->engine->maxscansize && ctx->scansize >= ctx->engine->maxscansize) {
-	    ret = CL_CLEAN;
-	    break;
-	}
-
-	if(!(tempname = cli_gentemp(ctx->engine->tmpdir))) {
-	    ret = CL_EMEM;
-	    break;
-	}
-
-	if(ctx->engine->maxscansize && ctx->scansize + ctx->engine->maxfilesize >= ctx->engine->maxscansize)
-	    file->max_size = ctx->engine->maxscansize - ctx->scansize;
-	else
-	    file->max_size = ctx->engine->maxfilesize ? ctx->engine->maxfilesize : 0xffffffff;
-
-	cli_dbgmsg("CAB: Extracting file %s to %s, size %u, max_size: %u\n", file->name, tempname, file->length, (unsigned int) file->max_size);
-	file->written_size = 0;
-	if((ret = cab_extract(file, tempname))) {
-	    cli_dbgmsg("CAB: Failed to extract file: %s\n", cl_strerror(ret));
-	} else {
-	    corrupted_input = ctx->corrupted_input;
-	    if(file->length != file->written_size) {
-		cli_dbgmsg("CAB: Length from header %u but wrote %u bytes\n", (unsigned int) file->length, (unsigned int) file->written_size);
-		ctx->corrupted_input = 1;
-	    }
-	    ret = cli_scanfile(tempname, ctx);
-	    ctx->corrupted_input = corrupted_input;
-	}
-	if(!ctx->engine->keeptmp) {
-	    if (!access(tempname, R_OK) && cli_unlink(tempname)) {
-	    	free(tempname);
-		ret = CL_EUNLINK;
-		break;
-	    }
-	}
-	free(tempname);
-	if(ret == CL_VIRUS) {
-	    if (SCAN_ALL)
-		viruses_found++;
-	    else
-		break;
-	}
-    }
-
-    cab_free(&cab);
-    if (viruses_found)
-	return CL_VIRUS;
     return ret;
 }
 

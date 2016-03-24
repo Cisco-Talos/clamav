@@ -136,6 +136,20 @@ m4_include([m4/reorganization/libs/curl.m4])
 
 m4_include([m4/reorganization/substitutions.m4])
 
+PKG_CHECK_MODULES([LIBMSPACK], [libmspack],
+                 use_internal_mspack=no, use_internal_mspack=yes)
+
+AM_CONDITIONAL([USE_INTERNAL_MSPACK], test "x$use_internal_mspack" = "xyes")
+
+if test "x$use_internal_mspack" = "xyes"; then
+       mspack_msg="Internal"
+       AC_CONFIG_SUBDIRS([libclamav/libmspack-0.5alpha])
+else
+       mspack_msg="External, $LIBMSPACK_CFLAGS $LIBMSPACK_LIBS"
+fi
+
+
+
 AC_CONFIG_FILES([
 clamscan/Makefile
 database/Makefile
@@ -252,6 +266,8 @@ if test "x$PCRE_HOME" = "x"; then
 else
     CL_MSG_STATUS([pcre        ],[$PCRE_HOME],[$have_pcre])
 fi
+CL_MSG_STATUS([preclass    ],[$LIBJSON_HOME],[$have_json])
+CL_MSG_STATUS([libmspack   ],[yes],[$mspack_msg])
 if test "x$XML_LIBS" = "x"; then 
     CL_MSG_STATUS([libxml2     ],[no],[])
 else
