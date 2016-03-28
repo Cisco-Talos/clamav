@@ -1429,6 +1429,10 @@ static void handle_pdfname(struct pdf_struct *pdf, struct pdf_obj *obj, const ch
         return;
     }
 
+    /* record filter order */
+    if ((*state == STATE_FILTER) && ((1 << act->set_objflag) & KNOWN_FILTERS))
+        obj->filterlist[obj->numfilters++] = act->set_objflag;
+
     if ((act->nameflags & NAMEFLAG_HEURISTIC) && escapes) {
         /* if a commonly used PDF name is escaped that is certainly
            suspicious. */
