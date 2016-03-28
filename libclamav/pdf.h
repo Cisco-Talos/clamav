@@ -22,11 +22,14 @@
 #define __PDF_H
 
 #include "others.h"
+#define PDF_FILTERLIST_MAX 64
 struct pdf_obj {
     uint32_t start;
     uint32_t id;
     uint32_t flags;
     uint32_t statsflags;
+    uint32_t numfilters;
+    uint32_t filterlist[PDF_FILTERLIST_MAX];
     char *path;
 };
 
