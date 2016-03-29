@@ -1281,9 +1281,8 @@ static SRes SzArEx_Open2(
 
   p->startPosAfterHeader = startArcPos + k7zStartHeaderSize;
   
-/* aCaB - 2010-02-16 - RECOVERY MODE  
   if (CrcCalc(header + 12, 20) != GetUi32(header + 8))
-    return SZ_ERROR_CRC; */
+    return SZ_ERROR_CRC;
   if(!GetUi32(header + 8) && !nextHeaderOffset && !nextHeaderSize && !nextHeaderCRC) {
     int i, checkSize = 500;
     Byte buf[500];
