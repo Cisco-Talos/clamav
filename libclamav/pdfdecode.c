@@ -69,7 +69,7 @@ struct pdf_token {
 };
 
 static  int filter_ascii85decode(struct pdf_token *token);
-//static  int filter_rldecode(struct pdf_token *token)
+static  int filter_rldecode(struct pdf_token *token);
 static  int filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_token *token);
 static  int filter_asciihexdecode(struct pdf_token *token);
 
@@ -125,6 +125,11 @@ static int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj
             rc = filter_ascii85decode(token);
             break;
 
+        case OBJ_FILTER_RL:
+            cli_dbgmsg("cli_pdf: decoding [%d] => RLDECODE\n", obj->filterlist[i]);
+            rc = filter_rldecode(token);
+            break;
+
         case OBJ_FILTER_FLATE:
             cli_dbgmsg("cli_pdf: decoding [%d] => FLATEDECODE\n", obj->filterlist[i]);
             rc = filter_flatedecode(pdf, obj, token);
@@ -135,7 +140,6 @@ static int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj
             rc = filter_asciihexdecode(token);
             break;
 
-        case OBJ_FILTER_RL:
         case OBJ_FILTER_JPX:
         case OBJ_FILTER_DCT: //OBJ_FILTER_JBIG2
         case OBJ_FILTER_LZW:
@@ -256,11 +260,92 @@ static int filter_ascii85decode(struct pdf_token *token)
     return rc;
 }
 
-/*
+/* imported from razorback */
 static int filter_rldecode(struct pdf_token *token)
 {
+    uint8_t *decoded, *temp;
+    uint32_t declen = 0, capacity = 0;
+
+    uint8_t *content = (uint8_t *)token->content;
+    uint32_t length = token->length;
+    uint32_t offset = 0;
+    int rc = CL_SUCCESS;
+
+    if (!(decoded = cli_calloc(BUFSIZ, sizeof(uint8_t)))) {
+        cli_errmsg("cli_pdf: cannot allocate memory for decoded output\n");
+        return CL_EMEM;
+    }
+    capacity = BUFSIZ;
+
+    while (offset < length) {
+        uint8_t srclen = content[offset++];
+        if (srclen < 128) {
+            /* direct copy of (srclen + 1) bytes */
+            if (offset + srclen + 1 > length) {
+                cli_dbgmsg("cli_pdf: required source length (%lu) exceeds remaining length (%lu)\n",
+                           (long unsigned)(offset+srclen+1), (long unsigned)(length-offset));
+                rc = CL_EFORMAT;
+                break;
+            }
+            if (declen + srclen + 1 > capacity) {
+                /* TODO - limit check */
+                if (!(temp = cli_realloc(decoded, capacity + BUFSIZ))) {
+                    cli_errmsg("cli_pdf: cannot reallocate memory for decoded output\n");
+                    rc = CL_EMEM;
+                    break;
+                }
+                decoded = temp;
+                capacity += BUFSIZ;
+            }
+
+            memcpy(decoded+declen, content+offset, srclen+1);
+            offset += srclen + 1;
+            declen += srclen + 1;
+        } else if (srclen > 128) {
+            /* copy the next byte (257 - srclen) times */
+            if (offset + 1 > length) {
+                cli_dbgmsg("cli_pdf: required source length (%lu) exceeds remaining length (%lu)\n",
+                           (long unsigned)(offset+srclen+1), (long unsigned)(length-offset));
+                rc = CL_EFORMAT;
+                break;
+            }
+            if (declen + (257 - srclen) + 1 > capacity) {
+                /* TODO - limit check */
+                if (!(temp = cli_realloc(decoded, capacity + BUFSIZ))) {
+                    cli_errmsg("cli_pdf: cannot reallocate memory for decoded output\n");
+                    rc = CL_EMEM;
+                    break;
+                }
+                decoded = temp;
+                capacity += BUFSIZ;
+            }
+
+            memset(decoded+declen, content[offset], 257-srclen);
+            offset++;
+            declen += 257 - srclen;
+        } else { /* srclen == 128 */
+            /* end of data */
+            cli_dbgmsg("cli_pdf: end-of-stream marker @ offset %lu (%lu bytes remaining)\n",
+                       (unsigned long)offset, (long unsigned)(token->length-offset));
+            break;
+        }
+    }
+
+    if (rc == CL_SUCCESS) {
+        free(token->content);
+
+        cli_dbgmsg("cli_pdf: inflated %lu bytes from %lu total bytes\n",
+                   (unsigned long)declen, (unsigned long)(token->length));
+
+        token->content = decoded;
+        token->length = declen;
+    } else {
+        cli_errmsg("cli_pdf: error occurred parsing byte %lu of %lu\n",
+                   (unsigned long)offset, (unsigned long)(token->length));
+        free(decoded);
+    }
+    return rc;
 }
-*/
 
 static uint8_t *decode_nextlinestart(uint8_t *content, uint32_t length)
 {
