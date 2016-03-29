@@ -730,7 +730,7 @@ int cli_unzip(cli_ctx *ctx) {
 
   if(coff) {
       cli_dbgmsg("cli_unzip: central @%x\n", coff);
-      while(ret==CL_CLEAN && (coff=chdr(map, coff, fsize, &fu, fc+1, &ret, ctx, tmpd, NULL))) {
+      while((coff=chdr(map, coff, fsize, &fu, fc+1, &ret, ctx, tmpd, NULL))) {
 	  fc++;
 	  if (ctx->engine->maxfiles && fu>=ctx->engine->maxfiles) {
 	      cli_dbgmsg("cli_unzip: Files limit reached (max: %u)\n", ctx->engine->maxfiles);
@@ -741,9 +741,17 @@ int cli_unzip(cli_ctx *ctx) {
               ret=CL_ETIMEOUT;
           }
 #endif
-
+          if (ret != CL_CLEAN) {
+              if (ret == CL_VIRUS && SCAN_ALL) {
+                  ret = CL_CLEAN;
+                  virus_found = 1;
+              } else
+                  break;
+          }
       }
   } else cli_dbgmsg("cli_unzip: central not found, using localhdrs\n");
+  if (virus_found == 1)
+      ret = CL_VIRUS;
   if(fu<=(fc/4)) { /* FIXME: make up a sane ratio or remove the whole logic */
     fc = 0;
     while (ret==CL_CLEAN && lhoff<fsize && (coff=lhdr(map, lhoff, fsize-lhoff, &fu, fc+1, NULL, &ret, ctx, tmpd, 1, zip_scan_cb))) {
