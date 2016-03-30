@@ -59,6 +59,7 @@
 #include "clamav.h"
 #include "others.h"
 #include "pdf.h"
+#include "pdfdecode.h"
 #include "str.h"
 #include "bytecode.h"
 #include "bytecode_api.h"
@@ -70,12 +71,13 @@ struct pdf_token {
 
 static  int filter_ascii85decode(struct pdf_token *token);
 static  int filter_rldecode(struct pdf_token *token);
-static  int filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_token *token);
+static  int filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token);
 static  int filter_asciihexdecode(struct pdf_token *token);
+static  int filter_decrypt(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token, int mode);
 
-static  int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_token *token);
+static  int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token);
 
-int pdf_decodestream(struct pdf_struct *pdf, struct pdf_obj *obj, const char *stream, uint32_t streamlen, int fout)
+int pdf_decodestream(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, const char *stream, uint32_t streamlen, int fout)
 {
     struct pdf_token *token;
     int rc;
@@ -84,6 +86,11 @@ int pdf_decodestream(struct pdf_struct *pdf, struct pdf_obj *obj, const char *st
         cli_dbgmsg("nothing to decode\n");
         return CL_ENULLARG;
     }
+
+#if 0
+    if (params)
+        pdf_print_dict(params, 0);
+#endif
 
     token = cli_malloc(sizeof(struct pdf_token));
     if (!token)
@@ -97,13 +104,13 @@ int pdf_decodestream(struct pdf_struct *pdf, struct pdf_obj *obj, const char *st
     memcpy(token->content, stream, streamlen);
     token->length = streamlen;
 
-    rc = pdf_decodestream_internal(pdf, obj, token);
+    rc = pdf_decodestream_internal(pdf, obj, params, token);
 
-    if (rc == CL_SUCCESS) {
-        cli_dbgmsg("cli_pdf: decoding SUCCESS!\n");
-
-        if (!cli_checklimits("pdf", pdf->ctx, token->length, 0, 0))
-            rc = cli_writen(fout, token->content, token->length);
+    if ((rc == CL_SUCCESS) && !cli_checklimits("pdf", pdf->ctx, token->length, 0, 0)) {
+        if (cli_writen(fout, token->content, token->length) != token->length) {
+            cli_errmsg("cli_pdf: failed to write output file\n");
+            rc = CL_EWRITE;
+        }
     }
 
     free(token->content);
@@ -111,11 +118,23 @@ int pdf_decodestream(struct pdf_struct *pdf, struct pdf_obj *obj, const char *st
     return rc;
 }
 
-static int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_token *token)
+static int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token)
 {
+    const char *filter = NULL;
     int i, rc;
 
     cli_dbgmsg("cli_pdf: detected %lu filters applied\n", (long unsigned)(obj->numfilters));
+
+    /*
+     * if pdf is decryptable, scan for CRYPT filter
+     * if none, force a DECRYPT filter application
+     */
+    if (!(obj->flags & (1 << OBJ_FILTER_CRYPT))) {
+        cli_dbgmsg("cli_pdf: decoding => non-filter CRYPT\n");
+        if ((rc = filter_decrypt(pdf, obj, params, token, 1)) != CL_SUCCESS)
+            return rc;
+
+    }
 
     /* TODO - MAY BE SUBJECT TO CHANGE */
     for (i = 0; i < obj->numfilters; i++) {
@@ -132,7 +151,7 @@ static int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj
 
         case OBJ_FILTER_FLATE:
             cli_dbgmsg("cli_pdf: decoding [%d] => FLATEDECODE\n", obj->filterlist[i]);
-            rc = filter_flatedecode(pdf, obj, token);
+            rc = filter_flatedecode(pdf, obj, params, token);
             break;
 
         case OBJ_FILTER_AH:
@@ -140,14 +159,30 @@ static int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj
             rc = filter_asciihexdecode(token);
             break;
 
-        case OBJ_FILTER_JPX:
-        case OBJ_FILTER_DCT: //OBJ_FILTER_JBIG2
-        case OBJ_FILTER_LZW:
-        case OBJ_FILTER_FAX:
         case OBJ_FILTER_CRYPT:
+            cli_dbgmsg("cli_pdf: decoding [%d] => CRYPT\n", obj->filterlist[i]);
+            rc = filter_decrypt(pdf, obj, params, token, 0);
+            break;
+
+        case OBJ_FILTER_JPX:
+            if (!filter) filter = "JPXDECODE";
+        case OBJ_FILTER_DCT:
+            if (!filter) filter = "DCTDECODE";
+        case OBJ_FILTER_LZW:
+            if (!filter) filter = "LZWDECODE";
+        case OBJ_FILTER_FAX:
+            if (!filter) filter = "FAXDECODE";
+        case OBJ_FILTER_JBIG2:
+            if (!filter) filter = "JBIG2DECODE";
+
+            cli_warnmsg("cli_pdf: unimplemented filter type [%d] => %s\n", obj->filterlist[i], filter);
+            filter = NULL;
+            rc = CL_BREAK;
+            break;
 
         default:
-            cli_warnmsg("cli_pdf: unknown filter type [%d].\n", obj->filterlist[i]);
+            cli_warnmsg("cli_pdf: unknown filter type [%d]\n", obj->filterlist[i]);
+            rc = CL_BREAK;
             break;
         }
 
@@ -160,6 +195,10 @@ static int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj
     return CL_SUCCESS;
 }
 
+/*
+ * ascii85 inflation
+ * See http://www.piclist.com/techref/method/encode.htm (look for base85)
+ */
 static int filter_ascii85decode(struct pdf_token *token)
 {
     uint8_t *decoded;
@@ -363,7 +402,7 @@ static uint8_t *decode_nextlinestart(uint8_t *content, uint32_t length)
     return pt;
 }
 
-static int filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_token *token)
+static int filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token)
 {
     uint8_t *decoded, *temp;
     uint32_t declen = 0, capacity = 0;
@@ -373,13 +412,15 @@ static int filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj, struc
     z_stream stream;
     int zstat, skip = 0, rc = CL_SUCCESS;
 
+    UNUSEDPARAM(params);
+
     if (length == 0)
         return CL_CLEAN;
 
     if (*content == '\r') {
         content++;
         length--;
-        //pdfobj_flag(pdf, obj, BAD_STREAMSTART);
+        pdfobj_flag(pdf, obj, BAD_STREAMSTART);
         /* PDF spec says stream is followed by \r\n or \n, but not \r alone.
          * Sample 0015315109, it has \r followed by zlib header.
          * Flag pdf as suspicious, and attempt to extract by skipping the \r.
@@ -431,7 +472,7 @@ static int filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj, struc
                 return CL_EMEM;
             }
 
-            //pdfobj_flag(pdf, obj, BAD_FLATESTART);
+            pdfobj_flag(pdf, obj, BAD_FLATESTART);
         }
 
         zstat = inflate(&stream, Z_NO_FLUSH);
@@ -485,12 +526,12 @@ static int filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj, struc
                        (unsigned long)declen, zstat, obj->id>>8, obj->id&0xff);
 
         if (declen == 0) {
-            //pdfobj_flag(pdf, obj, BAD_FLATESTART);
+            pdfobj_flag(pdf, obj, BAD_FLATESTART);
             cli_dbgmsg("cli_pdf: no bytes were inflated.\n");
 
             rc = CL_EFORMAT;
         } else {
-            //pdfobj_flag(pdf, obj, BAD_FLATE);
+            pdfobj_flag(pdf, obj, BAD_FLATE);
         }
         break;
     }
@@ -558,4 +599,47 @@ static int filter_asciihexdecode(struct pdf_token *token)
         free(decoded);
     }
     return rc;
+}
+
+/* modes: 0 = use default/DecodeParms, 1 = use document setting */
+static int filter_decrypt(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token, int mode)
+{
+    char *decrypted;
+    off_t length = token->length;
+    enum enc_method enc = ENC_IDENTITY;
+
+    if (mode)
+        enc = get_enc_method(pdf, obj);
+    else if (params) {
+        struct pdf_dict_node *node = params->nodes;
+
+        while (node) {
+            if (node->type == PDF_DICT_STRING) {
+                if (!strncmp(node->key, "/Type", 6)) { /* optional field - Type */
+                    /* MUST be "CryptFilterDecodeParms" */
+                    cli_dbgmsg("cli_pdf: Type: %s\n", (char *)(node->value));
+                } else if (!strncmp(node->key, "/Name", 6)) { /* optional field - Name */
+                    /* overrides document and default encryption method */
+                    cli_dbgmsg("cli_pdf: Name: %s\n", (char *)(node->value));
+                    enc = parse_enc_method(pdf->CF, pdf->CF_n, (char *)(node->value), enc);
+                }
+            }
+            node = node->next;
+        }
+    }
+
+    decrypted = decrypt_any(pdf, obj->id, token->content, &length, enc);
+    if (!decrypted) {
+        cli_dbgmsg("cli_pdf: failed to decrypt stream\n");
+        return CL_EPARSE; /* TODO: what should this value be? */
+    }
+
+    cli_dbgmsg("cli_pdf: decrypted %lld bytes from %lu total bytes\n",
+               (long long int)length, (long unsigned)token->length);
+
+
+    free(token->content);
+    token->content = (uint8_t *)decrypted;
+    token->length = (uint32_t)length; /* this may truncate unfortunately, TODO: use 64-bit values internally? */
+    return CL_SUCCESS;
 }
