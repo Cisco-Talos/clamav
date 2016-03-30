@@ -139,7 +139,7 @@ int entrypoint()
         if (env.os_features & (1 << feature_selinux))
           /* all SELinux versions deny RWX mapping when policy says so */
           disable_jit_if("^SELinux is preventing 'execmem' access.\n"
-                         "Run  'setsebool -P clamd_use_jit on'.", 0, 1);
+                         "Run 'setsebool -P antivirus_use_jit on'.", 0, 1);
         else if (env.os_features & (1 << feature_pax))
           /* recent versions of PaX deny RWX mapping */
           disable_jit_if("^PaX is preventing 'mprotect' access.\n"
