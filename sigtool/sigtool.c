@@ -2806,6 +2806,23 @@ static int decodecdb(char **tokens)
 	return 0;
 }
 
+static int decodeftm(char **tokens, int tokens_count)
+{
+    mprintf("FILE TYPE NAME: %s\n", tokens[3]);
+    mprintf("FILE SIGNATURE TYPE: %s\n", tokens[0]);
+    mprintf("FILE MAGIC OFFSET: %s\n", tokens[1]);
+    mprintf("FILE MAGIC HEX: %s\n", tokens[2]);
+    mprintf("FILE MAGIC DECODED:\n");
+    decodehex(tokens[2]);
+    mprintf("FILE TYPE REQUIRED: %s\n", tokens[4]);
+    mprintf("FILE TYPE DETECTED: %s\n", tokens[5]);
+    if(tokens_count == 7)
+        mprintf("FTM FLEVEL: >=%s\n", tokens[6]);
+    else if(tokens_count == 8)
+        mprintf("FTM FLEVEL: %s..%s\n", tokens[6], tokens[7]);
+    return 0;
+}
+
 static int decodesig(char *sig, int fd)
 {
 	char *pt;
@@ -2880,12 +2897,20 @@ static int decodesig(char *sig, int fd)
 		matchsig(subhex, subhex, fd);
 	    }
 	}
-    } else if(strchr(sig, ':')) { /* ndb */
+    } else if(strchr(sig, ':')) { /* ndb or cdb or ftm*/
 	tokens_count = cli_strtokenize(sig, ':', 12 + 1, (const char **) tokens);
 
 	if (tokens_count > 9 && tokens_count < 13) { /* cdb*/
 	    return decodecdb(tokens);
 	}
+
+        if (tokens_count > 5 && tokens_count < 9) { /* ftm */
+            long ftmsigtype;
+            char * end;
+            ftmsigtype = strtol(tokens[0], &end, 10);
+            if (end == tokens[0]+1 && (ftmsigtype == 0||ftmsigtype == 1||ftmsigtype == 4))
+                return decodeftm(tokens, tokens_count);
+        }
 
 	if(tokens_count < 4 || tokens_count > 6) {
 	    mprintf("!decodesig: Invalid or not supported signature format\n");
