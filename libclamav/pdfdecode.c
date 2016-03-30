@@ -64,10 +64,15 @@
 #include "bytecode.h"
 #include "bytecode_api.h"
 
+#define PDF_FILTER_DUMP_INTERMEDIATE 1
+
 struct pdf_token {
     uint32_t length;
     uint8_t *content;
 };
+
+static  int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token);
+static  int pdf_decode_dump(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_token *token, int lvl);
 
 static  int filter_ascii85decode(struct pdf_token *token);
 static  int filter_rldecode(struct pdf_token *token);
@@ -75,7 +80,6 @@ static  int filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj, stru
 static  int filter_asciihexdecode(struct pdf_token *token);
 static  int filter_decrypt(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token, int mode);
 
-static  int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token);
 
 int pdf_decodestream(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, const char *stream, uint32_t streamlen, int fout)
 {
@@ -134,6 +138,12 @@ static int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj
         if ((rc = filter_decrypt(pdf, obj, params, token, 1)) != CL_SUCCESS)
             return rc;
 
+#if PDF_FILTER_DUMP_INTERMEDIATE
+        if (pdf->ctx->engine->keeptmp) {
+            if ((rc = pdf_decode_dump(pdf, obj, token, 0)) != CL_SUCCESS)
+                return rc;
+        }
+#endif
     }
 
     /* TODO - MAY BE SUBJECT TO CHANGE */
@@ -186,12 +196,45 @@ static int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj
             break;
         }
 
-        /*TODO: check rc value*/
         /*TODO: check content field*/
         /*TODO: check length value*/
-        /*IF INTERMEDIATE DUMPING - PUT HERE*/
+        /*TODO: check rc value*/
+#if PDF_FILTER_DUMP_INTERMEDIATE
+        if (pdf->ctx->engine->keeptmp) {
+            if ((rc = pdf_decode_dump(pdf, obj, token, i+1)) != CL_SUCCESS)
+                return rc;
+        }
+#endif
     }
 
+    return CL_SUCCESS;
+}
+
+/* used only for intermediate dumping */
+    static int pdf_decode_dump(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_token *token, int lvl)
+{
+    char fname[1024];
+    int ifd;
+
+    snprintf(fname, sizeof(fname), "%s"PATHSEP"pdf%02u_%02ui", pdf->dir, (pdf->files-1), lvl);
+    ifd = open(fname, O_RDWR|O_CREAT|O_EXCL|O_TRUNC|O_BINARY, 0600);
+    if (ifd < 0) {
+        char err[128];
+
+        cli_errmsg("cli_pdf: can't create intermediate temporary file %s: %s\n", fname, cli_strerror(errno, err, sizeof(err)));
+        return CL_ETMPFILE;
+    }
+
+    cli_dbgmsg("cli_pdf: decoded filter %d obj %u %u\n", lvl, obj->id>>8, obj->id&0xff);
+    cli_dbgmsg("         ... to %s\n", fname);
+
+    if (cli_writen(ifd, token->content, token->length) != token->length) {
+        cli_errmsg("cli_pdf: failed to write output file\n");
+        close(ifd);
+        return CL_EWRITE;
+    }
+
+    close(ifd);
     return CL_SUCCESS;
 }
 
@@ -621,7 +664,7 @@ static int filter_decrypt(struct pdf_struct *pdf, struct pdf_obj *obj, struct pd
                 } else if (!strncmp(node->key, "/Name", 6)) { /* optional field - Name */
                     /* overrides document and default encryption method */
                     cli_dbgmsg("cli_pdf: Name: %s\n", (char *)(node->value));
-                    enc = parse_enc_method(pdf->CF, pdf->CF_n, (char *)(node->value), enc);
+                    //enc = parse_enc_method(pdf->CF, pdf->CF_n, (char *)(node->value), enc);
                 }
             }
             node = node->next;
