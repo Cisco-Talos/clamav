@@ -75,7 +75,7 @@ static  int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *ob
 static  int pdf_decode_dump(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_token *token, int lvl);
 
 static  int filter_ascii85decode(struct pdf_token *token);
-static  int filter_rldecode(struct pdf_token *token);
+static  int filter_rldecode(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_token *token);
 static  int filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token);
 static  int filter_asciihexdecode(struct pdf_token *token);
 static  int filter_decrypt(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token, int mode);
@@ -86,8 +86,8 @@ int pdf_decodestream(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dic
     struct pdf_token *token;
     int rc;
 
-    if (!stream || fout < 0 || !obj->numfilters) {
-        cli_dbgmsg("nothing to decode\n");
+    if (!stream || !streamlen || fout < 0 || !obj->numfilters) {
+        cli_dbgmsg("cli_pdf: no filters or stream on obj %u %u\n", obj->id>>8, obj->id&0xff);
         return CL_ENULLARG;
     }
 
@@ -125,15 +125,15 @@ int pdf_decodestream(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dic
 static int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token)
 {
     const char *filter = NULL;
-    int i, rc;
+    int i, rc = CL_SUCCESS;
 
-    cli_dbgmsg("cli_pdf: detected %lu filters applied\n", (long unsigned)(obj->numfilters));
+    cli_dbgmsg("cli_pdf: detected %lu applied filters\n", (long unsigned)(obj->numfilters));
 
     /*
      * if pdf is decryptable, scan for CRYPT filter
      * if none, force a DECRYPT filter application
      */
-    if (!(obj->flags & (1 << OBJ_FILTER_CRYPT))) {
+    if ((pdf->flags & (1 << DECRYPTABLE_PDF)) && !(obj->flags & (1 << OBJ_FILTER_CRYPT))) {
         cli_dbgmsg("cli_pdf: decoding => non-filter CRYPT\n");
         if ((rc = filter_decrypt(pdf, obj, params, token, 1)) != CL_SUCCESS)
             return rc;
@@ -156,7 +156,7 @@ static int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj
 
         case OBJ_FILTER_RL:
             cli_dbgmsg("cli_pdf: decoding [%d] => RLDECODE\n", obj->filterlist[i]);
-            rc = filter_rldecode(token);
+            rc = filter_rldecode(pdf, obj, token);
             break;
 
         case OBJ_FILTER_FLATE:
@@ -196,9 +196,18 @@ static int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj
             break;
         }
 
-        /*TODO: check content field*/
-        /*TODO: check length value*/
-        /*TODO: check rc value*/
+        if (!(token->content) || !(token->length)) {
+            cli_dbgmsg("cli_pdf: empty content, breaking after %d (of %lu) filters\n",
+                       i, (long unsigned)(obj->numfilters));
+            break;
+        }
+
+        if (rc != CL_SUCCESS) {
+            cli_dbgmsg("cli_pdf: error decoding, breaking after %d (of %lu) filters\n",
+                       i, (long unsigned)(obj->numfilters));
+            break;
+        }
+
 #if PDF_FILTER_DUMP_INTERMEDIATE
         if (pdf->ctx->engine->keeptmp) {
             if ((rc = pdf_decode_dump(pdf, obj, token, i+1)) != CL_SUCCESS)
@@ -207,11 +216,13 @@ static int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj
 #endif
     }
 
-    return CL_SUCCESS;
+    if (rc == CL_BREAK)
+        return CL_SUCCESS;
+    return rc;
 }
 
 /* used only for intermediate dumping */
-    static int pdf_decode_dump(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_token *token, int lvl)
+static int pdf_decode_dump(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_token *token, int lvl)
 {
     char fname[1024];
     int ifd;
@@ -343,7 +354,7 @@ static int filter_ascii85decode(struct pdf_token *token)
 }
 
 /* imported from razorback */
-static int filter_rldecode(struct pdf_token *token)
+static int filter_rldecode(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_token *token)
 {
     uint8_t *decoded, *temp;
     uint32_t declen = 0, capacity = 0;
@@ -352,6 +363,8 @@ static int filter_rldecode(struct pdf_token *token)
     uint32_t length = token->length;
     uint32_t offset = 0;
     int rc = CL_SUCCESS;
+
+    UNUSEDPARAM(obj);
 
     if (!(decoded = cli_calloc(BUFSIZ, sizeof(uint8_t)))) {
         cli_errmsg("cli_pdf: cannot allocate memory for decoded output\n");
@@ -370,7 +383,9 @@ static int filter_rldecode(struct pdf_token *token)
                 break;
             }
             if (declen + srclen + 1 > capacity) {
-                /* TODO - limit check */
+                if ((rc = cli_checklimits("pdf", pdf->ctx, capacity+BUFSIZ, 0, 0)) != CL_SUCCESS)
+                    break;
+
                 if (!(temp = cli_realloc(decoded, capacity + BUFSIZ))) {
                     cli_errmsg("cli_pdf: cannot reallocate memory for decoded output\n");
                     rc = CL_EMEM;
@@ -392,7 +407,9 @@ static int filter_rldecode(struct pdf_token *token)
                 break;
             }
             if (declen + (257 - srclen) + 1 > capacity) {
-                /* TODO - limit check */
+                if ((rc = cli_checklimits("pdf", pdf->ctx, capacity+BUFSIZ, 0, 0)) != CL_SUCCESS)
+                    break;
+
                 if (!(temp = cli_realloc(decoded, capacity + BUFSIZ))) {
                     cli_errmsg("cli_pdf: cannot reallocate memory for decoded output\n");
                     rc = CL_EMEM;
@@ -457,9 +474,6 @@ static int filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj, struc
 
     UNUSEDPARAM(params);
 
-    if (length == 0)
-        return CL_CLEAN;
-
     if (*content == '\r') {
         content++;
         length--;
@@ -469,7 +483,7 @@ static int filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj, struc
          * Flag pdf as suspicious, and attempt to extract by skipping the \r.
          */
         if (!length)
-            return CL_CLEAN;
+            return CL_SUCCESS;
     }
 
     if (!(decoded = (uint8_t *)cli_calloc(BUFSIZ, sizeof(uint8_t)))) {
@@ -522,20 +536,21 @@ static int filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj, struc
     }
 
     while (zstat == Z_OK && stream.avail_in) {
-        /* extend output capacity if needed, TODO - limit check */
+        /* extend output capacity if needed,*/
         if(stream.avail_out == 0) {
-            if(stream.avail_out == 0) {
-                if (!(temp = cli_realloc(decoded, capacity + BUFSIZ))) {
-                    cli_errmsg("cli_pdf: cannot reallocate memory for decoded output\n");
-                    rc = CL_EMEM;
-                    break;
-                }
-                decoded = temp;
-                stream.next_out = decoded + capacity;
-                stream.avail_out = BUFSIZ;
-                declen += BUFSIZ;
-                capacity += BUFSIZ;
+            if ((rc = cli_checklimits("pdf", pdf->ctx, capacity+BUFSIZ, 0, 0)) != CL_SUCCESS)
+                break;
+
+            if (!(temp = cli_realloc(decoded, capacity + BUFSIZ))) {
+                cli_errmsg("cli_pdf: cannot reallocate memory for decoded output\n");
+                rc = CL_EMEM;
+                break;
             }
+            decoded = temp;
+            stream.next_out = decoded + capacity;
+            stream.avail_out = BUFSIZ;
+            declen += BUFSIZ;
+            capacity += BUFSIZ;
         }
 
         /* continue inflation */
@@ -674,7 +689,7 @@ static int filter_decrypt(struct pdf_struct *pdf, struct pdf_obj *obj, struct pd
     decrypted = decrypt_any(pdf, obj->id, token->content, &length, enc);
     if (!decrypted) {
         cli_dbgmsg("cli_pdf: failed to decrypt stream\n");
-        return CL_EPARSE; /* TODO: what should this value be? */
+        return CL_EPARSE; /* TODO: what should this value be? CL_SUCCESS would mirror previous behavior */
     }
 
     cli_dbgmsg("cli_pdf: decrypted %lld bytes from %lu total bytes\n",
