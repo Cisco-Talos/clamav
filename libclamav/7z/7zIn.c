@@ -1419,7 +1419,7 @@ SRes SzArEx_Extract(
     size_t unpackSize = (size_t)unpackSizeSpec;
     UInt64 startOffset;
     if (!(p->PackStreamStartPositions) || !(p->FolderStartPackStreamIndex) || (folderIndex >= p->db.NumFolders) ||
-        (p->FolderStartPackStreamIndex[folderIndex] >= p->db.NumFolders))
+        (p->FolderStartPackStreamIndex[folderIndex] >= p->db.NumPackStreams))
       return SZ_ERROR_FAIL;
     startOffset = SzArEx_GetFolderStreamPos(p, folderIndex, 0);
 
