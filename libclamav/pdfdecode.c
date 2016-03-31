@@ -64,8 +64,6 @@
 #include "bytecode.h"
 #include "bytecode_api.h"
 
-#define PDF_FILTER_DUMP_INTERMEDIATE 1
-
 struct pdf_token {
     uint32_t length;
     uint8_t *content;
@@ -138,12 +136,12 @@ static int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj
         if ((rc = filter_decrypt(pdf, obj, params, token, 1)) != CL_SUCCESS)
             return rc;
 
-#if PDF_FILTER_DUMP_INTERMEDIATE
-        if (pdf->ctx->engine->keeptmp) {
+        if (cl_engine_get_num(pdf->ctx->engine, CL_ENGINE_FORCETODISK, NULL) &&
+            cl_engine_get_num(pdf->ctx->engine, CL_ENGINE_KEEPTMP, NULL)) {
+
             if ((rc = pdf_decode_dump(pdf, obj, token, 0)) != CL_SUCCESS)
                 return rc;
         }
-#endif
     }
 
     /* TODO - MAY BE SUBJECT TO CHANGE */
@@ -208,12 +206,12 @@ static int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj
             break;
         }
 
-#if PDF_FILTER_DUMP_INTERMEDIATE
-        if (pdf->ctx->engine->keeptmp) {
+        if (cl_engine_get_num(pdf->ctx->engine, CL_ENGINE_FORCETODISK, NULL) &&
+            cl_engine_get_num(pdf->ctx->engine, CL_ENGINE_KEEPTMP, NULL)) {
+
             if ((rc = pdf_decode_dump(pdf, obj, token, i+1)) != CL_SUCCESS)
                 return rc;
         }
-#endif
     }
 
     if (rc == CL_BREAK)
