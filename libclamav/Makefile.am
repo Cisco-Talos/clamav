@@ -267,6 +267,8 @@ libclamav_la_SOURCES = \
 	pdf.c \
 	pdf.h \
 	pdfng.c \
+	pdfdecode.c \
+	pdfdecode.h \
 	spin.c \
 	spin.h \
 	yc.c \
