@@ -36,6 +36,6 @@
 
 #include "pdf.h"
 
-int pdf_decodestream(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, const char *stream, uint32_t streamlen, int fout);
+off_t pdf_decodestream(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, const char *stream, uint32_t streamlen, int fout, int *rc);
 
 #endif /* __PDFDECODE_H__ */

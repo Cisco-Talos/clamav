@@ -51,6 +51,7 @@
 #include "clamav.h"
 #include "others.h"
 #include "pdf.h"
+#include "pdfdecode.h"
 #include "scanners.h"
 #include "fmap.h"
 #include "str.h"
@@ -373,149 +374,6 @@ void pdfobj_flag(struct pdf_struct *pdf, struct pdf_obj *obj, enum pdf_flag flag
     }
 
     cli_dbgmsg("cli_pdf: %s flagged in object %u %u\n", s, obj->id>>8, obj->id&0xff);
-}
-
-static int filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj, const char *buf, off_t len, int fout, off_t *sum)
-{
-    int skipped = 0;
-    int zstat;
-    z_stream stream;
-    off_t nbytes;
-    char output[BUFSIZ];
-
-    if (len == 0)
-        return CL_CLEAN;
-
-    if (*buf == '\r') {
-        buf++;
-        len--;
-        pdfobj_flag(pdf, obj, BAD_STREAMSTART);
-        /* PDF spec says stream is followed by \r\n or \n, but not \r alone.
-         * Sample 0015315109, it has \r followed by zlib header.
-         * Flag pdf as suspicious, and attempt to extract by skipping the \r.
-         */
-        if (!len)
-            return CL_CLEAN;
-    }
-
-    memset(&stream, 0, sizeof(stream));
-    stream.next_in = (Bytef *)buf;
-    stream.avail_in = len;
-    stream.next_out = (Bytef *)output;
-    stream.avail_out = sizeof(output);
-
-    zstat = inflateInit(&stream);
-    if(zstat != Z_OK) {
-        cli_warnmsg("cli_pdf: inflateInit failed\n");
-        return CL_EMEM;
-    }
-
-    nbytes = 0;
-    while(stream.avail_in) {
-        int written;
-        zstat = inflate(&stream, Z_NO_FLUSH);	/* zlib */
-        switch(zstat) {
-            case Z_OK:
-                if(stream.avail_out == 0) {
-                    if ((written=filter_writen(pdf, obj, fout, output, sizeof(output), sum))!=sizeof(output)) {
-                        cli_errmsg("cli_pdf: failed to write output file\n");
-                        inflateEnd(&stream);
-                        return CL_EWRITE;
-                    }
-
-                    nbytes += written;
-                    stream.next_out = (Bytef *)output;
-                    stream.avail_out = sizeof(output);
-                }
-
-                continue;
-            case Z_STREAM_END:
-            default:
-                written = sizeof(output) - stream.avail_out;
-                if (!written && !nbytes && !skipped) {
-                    /* skip till EOL, and try inflating from there, sometimes
-                     * PDFs contain extra whitespace */
-                    const char *q = pdf_nextlinestart(buf, len);
-                    if (q) {
-                        skipped = 1;
-                        inflateEnd(&stream);
-                        len -= q - buf;
-                        buf = q;
-
-                        stream.next_in = (Bytef *)buf;
-                        stream.avail_in = len;
-                        stream.next_out = (Bytef *)output;
-                        stream.avail_out = sizeof(output);
-                        zstat = inflateInit(&stream);
-
-                        if(zstat != Z_OK) {
-                            cli_warnmsg("cli_pdf: inflateInit failed\n");
-                            return CL_EMEM;
-                        }
-
-                        pdfobj_flag(pdf, obj, BAD_FLATESTART);
-                        continue;
-                    }
-                }
-
-                if (filter_writen(pdf, obj, fout, output, written, sum)!=written) {
-                    cli_errmsg("cli_pdf: failed to write output file\n");
-                    inflateEnd(&stream);
-                    return CL_EWRITE;
-                }
-
-                nbytes += written;
-                stream.next_out = (Bytef *)output;
-                stream.avail_out = sizeof(output);
-                if (zstat == Z_STREAM_END)
-                    break;
-
-                if(stream.msg)
-                    cli_dbgmsg("cli_pdf: after writing %lu bytes, got error \"%s\" inflating PDF stream in %u %u obj\n",
-                           (unsigned long)nbytes,
-                           stream.msg, obj->id>>8, obj->id&0xff);
-                else
-                    cli_dbgmsg("cli_pdf: after writing %lu bytes, got error %d inflating PDF stream in %u %u obj\n",
-                           (unsigned long)nbytes, zstat, obj->id>>8, obj->id&0xff);
-
-                if(stream.msg)
-                    noisy_warnmsg("cli_pdf: after writing %lu bytes, got error \"%s\" inflating PDF stream in %u %u obj\n",
-                           (unsigned long)nbytes,
-                           stream.msg, obj->id>>8, obj->id&0xff);
-                else
-                    noisy_warnmsg("cli_pdf: after writing %lu bytes, got error %d inflating PDF stream in %u %u obj\n",
-                           (unsigned long)nbytes, zstat, obj->id>>8, obj->id&0xff);
-
-                /* mark stream as bad only if not encrypted */
-                inflateEnd(&stream);
-                if (!nbytes) {
-                    pdfobj_flag(pdf, obj, BAD_FLATESTART);
-                    cli_dbgmsg("filter_flatedecode: No bytes, returning CL_EFORMAT for this stream.\n");
-
-                    return CL_EFORMAT;
-                } else {
-                    pdfobj_flag(pdf, obj, BAD_FLATE);
-                }
-
-                return CL_CLEAN;
-            }
-
-        break;
-    }
-
-    if(stream.avail_out != sizeof(output)) {
-        if(filter_writen(pdf, obj, fout, output, sizeof(output) - stream.avail_out, sum) < 0) {
-            cli_errmsg("cli_pdf: failed to write output file\n");
-
-            inflateEnd(&stream);
-
-            return CL_EWRITE;
-        }
-    }
-
-    inflateEnd(&stream);
-
-    return CL_CLEAN;
 }
 
 struct pdf_obj *find_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t objid)
@@ -958,8 +816,6 @@ int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
     int fout;
     off_t sum = 0;
     int rc = CL_SUCCESS;
-    char *ascii_decoded = NULL;
-    char *decrypted = NULL;
     int dump = 1;
 
     cli_dbgmsg("pdf_extract_obj: obj %u %u\n", obj->id>>8, obj->id&0xff);
@@ -990,7 +846,6 @@ int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
     if (fout < 0) {
         char err[128];
         cli_errmsg("cli_pdf: can't create temporary file %s: %s\n", fullname, cli_strerror(errno, err, sizeof(err)));
-        free(ascii_decoded);
 
         return CL_ETMPFILE;
     }
@@ -1001,9 +856,8 @@ int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
     do {
         if (obj->flags & (1 << OBJ_STREAM)) {
             const char *start = pdf->map + obj->start;
-            const char *flate_orig;
             off_t p_stream = 0, p_endstream = 0;
-            off_t length, flate_orig_length;
+            off_t length;
 
             find_stream_bounds(start, pdf->size - obj->start,
                        pdf->size - obj->start,
@@ -1012,10 +866,11 @@ int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
                        pdf->enc_method_embeddedfile <= ENC_IDENTITY);
 
             if (p_stream && p_endstream) {
-                const char *flate_in;
-                long ascii_decoded_size = 0;
                 size_t size = p_endstream - p_stream;
                 off_t orig_length;
+                int len = p_stream;
+                const char *pstr;
+                struct pdf_dict *dparams = NULL;
 
                 length = find_length(pdf, obj, start, p_stream);
                 if (length < 0)
@@ -1071,97 +926,43 @@ int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
                     }
                 }
 
-                flate_orig = flate_in = start + p_stream;
-                flate_orig_length = length;
-                if (pdf->flags & (1 << DECRYPTABLE_PDF)) {
-                    enum enc_method enc = get_enc_method(pdf, obj);
+                cli_dbgmsg("-------------EXPERIMENTAL-------------\n");
 
-                    if (obj->flags & (1 << OBJ_FILTER_CRYPT)) {
-                        int len = p_stream;
-                        const char *q = pdf_getdict(start, &len, "/DecodeParams");
+                pstr = pdf_getdict(start, &len, "/DecodeParms");
+                if (!pstr)
+                    pstr = pdf_getdict(start, &len, "/DP");
 
-                        enc = ENC_IDENTITY;
-                        if (q && pdf->CF) {
-                            char *name = pdf_readval(q, len, "/Name");
-                            cli_dbgmsg("cli_pdf: Crypt filter %s\n", name);
+                if (pstr) {
+                    unsigned int objsz = obj_size(pdf, obj, 1);
 
-                            if (name && strcmp(name, "/Identity"))
-                                enc = parse_enc_method(pdf->CF, pdf->CF_n, name, enc); 
-
-                            free(name);
-                        }
+                    /* shift pstr to "<<" for pdf_parse_dict */
+                    while ((*pstr != '<') && (len > 0)) {
+                        pstr++;
+                        len--;
                     }
 
+                    if (len > 4)
+                        dparams = pdf_parse_dict(pdf, obj, objsz, (char *)pstr, NULL);
+                    else
+                        cli_dbgmsg("cli_pdf: failed to locate DecodeParms dictionary start\n");
+                }
+
+                sum = pdf_decodestream(pdf, obj, dparams, start + p_stream, length, fout, &rc);
+                if (dparams)
+                    pdf_free_dict(dparams);
+
+                if (sum < 0)
+                    return rc;
+
+                cli_dbgmsg("-------------EXPERIMENTAL-------------\n");
+
+#if 0
+                if (pdf->flags & (1 << DECRYPTABLE_PDF)) {
                     if (cli_memstr(start, p_stream, "/XRef", 5)) {
                         cli_dbgmsg("cli_pdf: cross reference stream, skipping\n");
-                    } else {
-                        decrypted = decrypt_any(pdf, obj->id, flate_in, &length,
-                                    enc);
-
-                        if (decrypted)
-                            flate_in = decrypted;
                     }
                 }
-
-                if (obj->flags & (1 << OBJ_FILTER_AH)) {
-                    ascii_decoded = cli_malloc(length/2 + 1);
-                    if (!ascii_decoded) {
-                        cli_errmsg("Cannot allocate memory for ascii_decoded\n");
-                        rc = CL_EMEM;
-                        break;
-                    }
-                    ascii_decoded_size = asciihexdecode(flate_in,
-                                        length,
-                                        ascii_decoded);
-                } else if (obj->flags & (1 << OBJ_FILTER_A85)) {
-                    ascii_decoded = cli_malloc(length*5);
-                    if (!ascii_decoded) {
-                        cli_errmsg("Cannot allocate memory for ascii_decoded\n");
-                        rc = CL_EMEM;
-                        break;
-                    }
-
-                    ascii_decoded_size = ascii85decode(flate_in, length, (unsigned char*)ascii_decoded);
-                }
-
-                if (ascii_decoded_size < 0) {
-                    /* don't flag for images or truncated objs*/
-                    if (!(obj->flags & ((1 << OBJ_IMAGE) | (1 << OBJ_TRUNCATED))))
-                        pdfobj_flag(pdf, obj, BAD_ASCIIDECODE);
-
-                    cli_dbgmsg("cli_pdf: failed to asciidecode in %u %u obj\n", obj->id>>8,obj->id&0xff);
-                    free(ascii_decoded);
-                    ascii_decoded = NULL;
-                    /* attempt to directly flatedecode it */
-                }
-
-                /* either direct or ascii-decoded input */
-                if (!ascii_decoded)
-                    ascii_decoded_size = length;
-                else
-                    flate_in = ascii_decoded;
-
-                if (obj->flags & (1 << OBJ_FILTER_FLATE)) {
-                    cli_dbgmsg("cli_pdf: deflate len %ld (orig %ld)\n", ascii_decoded_size, (long)orig_length);
-                    rc = filter_flatedecode(pdf, obj, flate_in, ascii_decoded_size, fout, &sum);
-                    if (rc == CL_EFORMAT) {
-                        if (decrypted) {
-                            flate_in = flate_orig;
-                            ascii_decoded_size = flate_orig_length;
-                        }
-
-                        cli_dbgmsg("cli_pdf: dumping raw stream (probably encrypted)\n");
-                        noisy_warnmsg("cli_pdf: dumping raw stream, probably encrypted and we failed to decrypt'n");
-
-                        if (filter_writen(pdf, obj, fout, flate_in, ascii_decoded_size, &sum) != ascii_decoded_size) {
-                            cli_errmsg("cli_pdf: failed to write output file\n");
-                            return CL_EWRITE;
-                        }
-                    }
-                } else {
-                    if (filter_writen(pdf, obj, fout, flate_in, ascii_decoded_size, &sum) != ascii_decoded_size)
-                        rc = CL_EWRITE;
-                }
+#endif
             } else {
                 noisy_warnmsg("cannot find stream bounds for obj %u %u\n", obj->id>>8, obj->id&0xff);
             }
@@ -1191,6 +992,7 @@ int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
                 q = q2;
 
                 if (js) {
+                    char *decrypted = NULL;
                     const char *out = js;
                     js_len = strlen(js);
                     if (pdf->flags & (1 << DECRYPTABLE_PDF)) {
@@ -1210,6 +1012,7 @@ int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
                         break;
                     }
 
+                    free(decrypted);
                     free(js);
                     cli_dbgmsg("bytesleft: %d\n", (int)bytesleft);
 
@@ -1278,8 +1081,6 @@ int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
     }
 
     close(fout);
-    free(ascii_decoded);
-    free(decrypted);
 
     if (flags & PDF_EXTRACT_OBJ_SCAN && !pdf->ctx->engine->keeptmp)
         if (cli_unlink(fullname) && rc != CL_VIRUS)
@@ -2761,109 +2562,6 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 
     /* PDF hooks may abort, don't return CL_BREAK to caller! */
     return rc == CL_BREAK ? CL_CLEAN : rc;
-}
-
-static int asciihexdecode(const char *buf, off_t len, char *output)
-{
-    unsigned i,j;
-    for (i=0,j=0;i+1<len;i++) {
-        if (buf[i] == ' ')
-            continue;
-
-        if (buf[i] == '>')
-            break;
-
-        if (cli_hex2str_to(buf+i, output+j, 2) == -1) {
-            if (len - i < 4)
-                continue;
-
-            return -1;
-        }
-
-        j++;
-        i++;
-    }
-
-    return j;
-}
-
-/*
- * ascii85 inflation, returns number of bytes in output, -1 for error
- *
- * See http://www.piclist.com/techref/method/encode.htm (look for base85)
- */
-static int
-ascii85decode(const char *buf, off_t len, unsigned char *output)
-{
-    const char *ptr;
-    uint32_t sum = 0;
-    int quintet = 0;
-    int ret = 0;
-
-    if(cli_memstr(buf, len, "~>", 2) == NULL)
-        cli_dbgmsg("cli_pdf: ascii85decode: no EOF marker found\n");
-
-    ptr = buf;
-
-    cli_dbgmsg("cli_pdf: ascii85decode %lu bytes\n", (unsigned long)len);
-
-    while(len > 0) {
-        int byte = (len--) ? (int)*ptr++ : EOF;
-
-        if((byte == '~') && (len > 0) && (*ptr == '>'))
-            byte = EOF;
-
-        if(byte >= '!' && byte <= 'u') {
-            sum = (sum * 85) + ((uint32_t)byte - '!');
-            if(++quintet == 5) {
-                *output++ = (unsigned char)(sum >> 24);
-                *output++ = (unsigned char)((sum >> 16) & 0xFF);
-                *output++ = (unsigned char)((sum >> 8) & 0xFF);
-                *output++ = (unsigned char)(sum & 0xFF);
-                ret += 4;
-                quintet = 0;
-                sum = 0;
-            }
-        } else if(byte == 'z') {
-            if(quintet) {
-                cli_dbgmsg("cli_pdf: ascii85decode: unexpected 'z'\n");
-                return -1;
-            }
-
-            *output++ = '\0';
-            *output++ = '\0';
-            *output++ = '\0';
-            *output++ = '\0';
-            ret += 4;
-        } else if(byte == EOF) {
-            cli_dbgmsg("cli_pdf: ascii85decode: quintet %d\n", quintet);
-            if(quintet) {
-                int i;
-
-                if(quintet == 1) {
-                    cli_dbgmsg("cli_pdf: ascii85Decode: only 1 byte in last quintet\n");
-                    return -1;
-                }
-
-                for(i = quintet; i < 5; i++)
-                    sum *= 85;
-
-                if(quintet > 1)
-                    sum += (0xFFFFFF >> ((quintet - 2) * 8));
-
-                ret += quintet-1;
-                for(i = 0; i < quintet - 1; i++)
-                    *output++ = (unsigned char)((sum >> (24 - 8 * i)) & 0xFF);
-            }
-
-            break;
-        } else if(!isspace(byte)) {
-            cli_dbgmsg("cli_pdf: ascii85Decode: invalid character 0x%x, len %lu\n", byte & 0xFF, (unsigned long)len);
-
-            return -1;
-        }
-    }
-    return ret;
 }
 
 /*
