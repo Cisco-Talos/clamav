@@ -679,7 +679,7 @@ static int filter_decrypt(struct pdf_struct *pdf, struct pdf_obj *obj, struct pd
                 } else if (!strncmp(node->key, "/Name", 6)) { /* optional field - Name */
                     /* overrides document and default encryption method */
                     cli_dbgmsg("cli_pdf: Name: %s\n", (char *)(node->value));
-                    //enc = parse_enc_method(pdf->CF, pdf->CF_n, (char *)(node->value), enc);
+                    enc = parse_enc_method(pdf->CF, pdf->CF_n, (char *)(node->value), enc);
                 }
             }
             node = node->next;

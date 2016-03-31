@@ -298,7 +298,7 @@ static int filter_writen(struct pdf_struct *pdf, struct pdf_obj *obj, int fout, 
     return cli_writen(fout, buf, len);
 }
 
-static void pdfobj_flag(struct pdf_struct *pdf, struct pdf_obj *obj, enum pdf_flag flag)
+void pdfobj_flag(struct pdf_struct *pdf, struct pdf_obj *obj, enum pdf_flag flag)
 {
     const char *s= "";
     pdf->flags |= 1 << flag;
@@ -950,7 +950,6 @@ static int pdf_scan_contents(int fd, struct pdf_struct *pdf)
 
 static const char *pdf_getdict(const char *q0, int* len, const char *key);
 static char *pdf_readval(const char *q, int len, const char *key);
-static enum enc_method parse_enc_method(const char *dict, unsigned len, const char *key, enum enc_method def);
 static char *pdf_readstring(const char *q0, int len, const char *key, unsigned *slen, const char **qend, int noescape);
 
 int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
@@ -2220,7 +2219,7 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
     }
 }
 
-static enum enc_method parse_enc_method(const char *dict, unsigned len, const char *key, enum enc_method def)
+enum enc_method parse_enc_method(const char *dict, unsigned len, const char *key, enum enc_method def)
 {
     const char *q;
     char *CFM = NULL;
