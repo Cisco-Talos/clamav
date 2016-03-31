@@ -79,14 +79,16 @@ static  int filter_asciihexdecode(struct pdf_struct *pdf, struct pdf_obj *obj, s
 static  int filter_decrypt(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token, int mode);
 
 
-int pdf_decodestream(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, const char *stream, uint32_t streamlen, int fout)
+off_t pdf_decodestream(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, const char *stream, uint32_t streamlen, int fout, int *rc)
 {
     struct pdf_token *token;
-    int rc;
+    off_t rv;
 
-    if (!stream || !streamlen || fout < 0 || !obj->numfilters) {
+    if (!stream || !streamlen || fout < 0) {
         cli_dbgmsg("cli_pdf: no filters or stream on obj %u %u\n", obj->id>>8, obj->id&0xff);
-        return CL_ENULLARG;
+        if (rc)
+            *rc = CL_ENULLARG;
+        return -1;
     }
 
 #if 0
@@ -95,37 +97,21 @@ int pdf_decodestream(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dic
 #endif
 
     token = cli_malloc(sizeof(struct pdf_token));
-    if (!token)
-        return CL_EMEM;
+    if (!token) {
+        if (rc)
+            *rc = CL_EMEM;
+        return -1;
+    }
 
     token->content = cli_malloc(streamlen);
     if (!token->content) {
         free(token);
-        return CL_EMEM;
+        if (rc)
+            *rc = CL_EMEM;
+        return -1;
     }
     memcpy(token->content, stream, streamlen);
     token->length = streamlen;
-
-    rc = pdf_decodestream_internal(pdf, obj, params, token);
-
-    if ((rc == CL_SUCCESS) && !cli_checklimits("pdf", pdf->ctx, token->length, 0, 0)) {
-        if (cli_writen(fout, token->content, token->length) != token->length) {
-            cli_errmsg("cli_pdf: failed to write output file\n");
-            rc = CL_EWRITE;
-        }
-    }
-
-    free(token->content);
-    free(token);
-    return rc;
-}
-
-static int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token)
-{
-    const char *filter = NULL;
-    int i, rc = CL_SUCCESS;
-
-    cli_dbgmsg("cli_pdf: detected %lu applied filters\n", (long unsigned)(obj->numfilters));
 
     /*
      * if pdf is decryptable, scan for CRYPT filter
@@ -133,18 +119,42 @@ static int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj
      */
     if ((pdf->flags & (1 << DECRYPTABLE_PDF)) && !(obj->flags & (1 << OBJ_FILTER_CRYPT))) {
         cli_dbgmsg("cli_pdf: decoding => non-filter CRYPT\n");
-        if ((rc = filter_decrypt(pdf, obj, params, token, 1)) != CL_SUCCESS)
-            return rc;
-
-        if (cl_engine_get_num(pdf->ctx->engine, CL_ENGINE_FORCETODISK, NULL) &&
-            cl_engine_get_num(pdf->ctx->engine, CL_ENGINE_KEEPTMP, NULL)) {
-
-            if ((rc = pdf_decode_dump(pdf, obj, token, 0)) != CL_SUCCESS)
-                return rc;
+        if ((rv = filter_decrypt(pdf, obj, params, token, 1)) != CL_SUCCESS) {
+            if (rc)
+                *rc = rv;
+            return -1;
         }
     }
 
-    /* TODO - MAY BE SUBJECT TO CHANGE */
+    cli_dbgmsg("cli_pdf: detected %lu applied filters\n", (long unsigned)(obj->numfilters));
+
+    if (obj->numfilters) {
+        rv = pdf_decodestream_internal(pdf, obj, params, token);
+        /* return is ignored so that the existing content is dumped to file */
+    }
+
+    if (!cli_checklimits("pdf", pdf->ctx, token->length, 0, 0)) {
+        if (cli_writen(fout, token->content, token->length) != token->length) {
+            cli_errmsg("cli_pdf: failed to write output file\n");
+            if (rc)
+                *rc = CL_EWRITE;
+            return -1;
+        }
+        rv = token->length;
+    }
+
+    free(token->content);
+    free(token);
+    if (rc)
+        *rc = CL_SUCCESS;
+    return rv;
+}
+
+static int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token)
+{
+    const char *filter = NULL;
+    int i, rc = CL_SUCCESS;
+
     for (i = 0; i < obj->numfilters; i++) {
         switch(obj->filterlist[i]) {
         case OBJ_FILTER_A85:
