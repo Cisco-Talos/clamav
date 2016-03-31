@@ -74,10 +74,10 @@ struct pdf_token {
 static  int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token);
 static  int pdf_decode_dump(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_token *token, int lvl);
 
-static  int filter_ascii85decode(struct pdf_token *token);
+static  int filter_ascii85decode(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_token *token);
 static  int filter_rldecode(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_token *token);
 static  int filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token);
-static  int filter_asciihexdecode(struct pdf_token *token);
+static  int filter_asciihexdecode(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_token *token);
 static  int filter_decrypt(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token, int mode);
 
 
@@ -151,7 +151,7 @@ static int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj
         switch(obj->filterlist[i]) {
         case OBJ_FILTER_A85:
             cli_dbgmsg("cli_pdf: decoding [%d] => ASCII85DECODE\n", obj->filterlist[i]);
-            rc = filter_ascii85decode(token);
+            rc = filter_ascii85decode(pdf, obj, token);
             break;
 
         case OBJ_FILTER_RL:
@@ -166,7 +166,7 @@ static int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj
 
         case OBJ_FILTER_AH:
             cli_dbgmsg("cli_pdf: decoding [%d] => ASCIIHEXDECODE\n", obj->filterlist[i]);
-            rc = filter_asciihexdecode(token);
+            rc = filter_asciihexdecode(pdf, obj, token);
             break;
 
         case OBJ_FILTER_CRYPT:
@@ -253,7 +253,7 @@ static int pdf_decode_dump(struct pdf_struct *pdf, struct pdf_obj *obj, struct p
  * ascii85 inflation
  * See http://www.piclist.com/techref/method/encode.htm (look for base85)
  */
-static int filter_ascii85decode(struct pdf_token *token)
+static int filter_ascii85decode(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_token *token)
 {
     uint8_t *decoded;
     uint32_t declen = 0;
@@ -346,6 +346,9 @@ static int filter_ascii85decode(struct pdf_token *token)
         token->content = decoded;
         token->length = declen;
     } else {
+        if (!(obj->flags & ((1 << OBJ_IMAGE) | (1 << OBJ_TRUNCATED))))
+            pdfobj_flag(pdf, obj, BAD_ASCIIDECODE);
+
         cli_errmsg("cli_pdf: error occurred parsing byte %lu of %lu\n",
                    (unsigned long)(token->length-remaining), (unsigned long)(token->length));
         free(decoded);
@@ -610,7 +613,7 @@ static int filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj, struc
     return rc;
 }
 
-static int filter_asciihexdecode(struct pdf_token *token)
+static int filter_asciihexdecode(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_token *token)
 {
     uint8_t *decoded;
 
@@ -652,6 +655,9 @@ static int filter_asciihexdecode(struct pdf_token *token)
         token->content = decoded;
         token->length = j;
     } else {
+        if (!(obj->flags & ((1 << OBJ_IMAGE) | (1 << OBJ_TRUNCATED))))
+            pdfobj_flag(pdf, obj, BAD_ASCIIDECODE);
+
         cli_errmsg("cli_pdf: error occurred parsing byte %lu of %lu\n",
                    (unsigned long)i, (unsigned long)(token->length));
         free(decoded);
