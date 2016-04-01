@@ -1466,7 +1466,9 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
         char * dictionary = malloc(dict_length + 1);
         if (dictionary) {
             for (i = 0; i < dict_length; i++) {
-                if (isprint(dict[i]) || isspace(dict[i]))
+                if (dict[i] == '\r')
+                    dictionary[i] = '\n';
+                else if (isprint(dict[i]) || isspace(dict[i]))
                     dictionary[i] = dict[i];
                 else
                     dictionary[i] = '*';
