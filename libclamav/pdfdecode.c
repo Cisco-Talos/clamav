@@ -113,25 +113,10 @@ off_t pdf_decodestream(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_d
     memcpy(token->content, stream, streamlen);
     token->length = streamlen;
 
-    /*
-     * if pdf is decryptable, scan for CRYPT filter
-     * if none, force a DECRYPT filter application
-     */
-    if ((pdf->flags & (1 << DECRYPTABLE_PDF)) && !(obj->flags & (1 << OBJ_FILTER_CRYPT))) {
-        cli_dbgmsg("cli_pdf: decoding => non-filter CRYPT\n");
-        if ((rv = filter_decrypt(pdf, obj, params, token, 1)) != CL_SUCCESS) {
-            if (rc)
-                *rc = rv;
-            return -1;
-        }
-    }
-
     cli_dbgmsg("cli_pdf: detected %lu applied filters\n", (long unsigned)(obj->numfilters));
 
-    if (obj->numfilters) {
-        rv = pdf_decodestream_internal(pdf, obj, params, token);
-        /* return is ignored so that the existing content is dumped to file */
-    }
+    rv = pdf_decodestream_internal(pdf, obj, params, token);
+    /* return is ignored so that the existing content is dumped to file */
 
     if (!cli_checklimits("pdf", pdf->ctx, token->length, 0, 0)) {
         if (cli_writen(fout, token->content, token->length) != token->length) {
@@ -154,6 +139,17 @@ static int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj
 {
     const char *filter = NULL;
     int i, rc = CL_SUCCESS;
+
+    /*
+     * if pdf is decryptable, scan for CRYPT filter
+     * if none, force a DECRYPT filter application
+     */
+    if ((pdf->flags & (1 << DECRYPTABLE_PDF)) && !(obj->flags & (1 << OBJ_FILTER_CRYPT))) {
+        cli_dbgmsg("cli_pdf: decoding => non-filter CRYPT\n");
+        if ((rc = filter_decrypt(pdf, obj, params, token, 1)) != CL_SUCCESS) {
+            return rc;
+        }
+    }
 
     for (i = 0; i < obj->numfilters; i++) {
         switch(obj->filterlist[i]) {
@@ -263,7 +259,7 @@ static int pdf_decode_dump(struct pdf_struct *pdf, struct pdf_obj *obj, struct p
  */
 static int filter_ascii85decode(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_token *token)
 {
-    uint8_t *decoded;
+    uint8_t *decoded, *dptr;
     uint32_t declen = 0;
 
     const uint8_t *ptr = (uint8_t *)token->content;
@@ -271,8 +267,8 @@ static int filter_ascii85decode(struct pdf_struct *pdf, struct pdf_obj *obj, str
     int quintet = 0, rc = CL_SUCCESS;
     uint64_t sum = 0;
 
-    /* 5:4 decoding ratio - (5*length), ((length/5+1)*4), (((x+4)/5)*4) */
-    if (!(decoded = (uint8_t *)cli_malloc(((remaining+4)/5)*4))) {
+    /* 5:4 decoding ratio, with 1:4 expansion sequences => (4*length)+1 */
+    if (!(dptr = decoded = (uint8_t *)cli_malloc((4*remaining)+1))) {
         cli_errmsg("cli_pdf: cannot allocate memory for decoded output\n");
         return CL_EMEM;
     }
@@ -291,10 +287,10 @@ static int filter_ascii85decode(struct pdf_struct *pdf, struct pdf_obj *obj, str
         if(byte >= '!' && byte <= 'u') {
             sum = (sum * 85) + ((uint32_t)byte - '!');
             if(++quintet == 5) {
-                *decoded++ = (unsigned char)(sum >> 24);
-                *decoded++ = (unsigned char)((sum >> 16) & 0xFF);
-                *decoded++ = (unsigned char)((sum >> 8) & 0xFF);
-                *decoded++ = (unsigned char)(sum & 0xFF);
+                *dptr++ = (unsigned char)(sum >> 24);
+                *dptr++ = (unsigned char)((sum >> 16) & 0xFF);
+                *dptr++ = (unsigned char)((sum >> 8) & 0xFF);
+                *dptr++ = (unsigned char)(sum & 0xFF);
 
                 declen += 4;
                 quintet = 0;
@@ -307,10 +303,10 @@ static int filter_ascii85decode(struct pdf_struct *pdf, struct pdf_obj *obj, str
                 break;
             }
 
-            *decoded++ = '\0';
-            *decoded++ = '\0';
-            *decoded++ = '\0';
-            *decoded++ = '\0';
+            *dptr++ = '\0';
+            *dptr++ = '\0';
+            *dptr++ = '\0';
+            *dptr++ = '\0';
 
             declen += 4;
         } else if(byte == EOF) {
@@ -331,7 +327,7 @@ static int filter_ascii85decode(struct pdf_struct *pdf, struct pdf_obj *obj, str
                     sum += (0xFFFFFF >> ((quintet - 2) * 8));
 
                 for(i = 0; i < quintet - 1; i++)
-                    *decoded++ = (uint8_t)((sum >> (24 - 8 * i)) & 0xFF);
+                    *dptr++ = (uint8_t)((sum >> (24 - 8 * i)) & 0xFF);
                 declen += quintet-1;
             }
 
