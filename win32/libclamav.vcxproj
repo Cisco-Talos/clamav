@@ -469,6 +469,7 @@
     <ClCompile Include="..\libclamav\others_common.c" />
     <ClCompile Include="..\libclamav\packlibs.c" />
     <ClCompile Include="..\libclamav\pdf.c" />
+    <ClCompile Include="..\libclamav\pdfdecode.c" />
     <ClCompile Include="..\libclamav\pe.c" />
     <ClCompile Include="..\libclamav\perflogging.c" />
     <ClCompile Include="..\libclamav\petite.c" />
