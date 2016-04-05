@@ -276,8 +276,6 @@ static int filter_ascii85decode(struct pdf_struct *pdf, struct pdf_obj *obj, str
     if(cli_memstr(ptr, remaining, "~>", 2) == NULL)
         cli_dbgmsg("cli_pdf: no EOF marker found\n");
 
-    cli_dbgmsg("cli_pdf: %lu bytes remaining\n", (unsigned long)remaining);
-
     while (remaining > 0) {
         int byte = (remaining--) ? (int)*ptr++ : EOF;
 
@@ -310,12 +308,12 @@ static int filter_ascii85decode(struct pdf_struct *pdf, struct pdf_obj *obj, str
 
             declen += 4;
         } else if(byte == EOF) {
-            cli_dbgmsg("cli_pdf: %d bytes remaining in last quintet\n", quintet);
+            cli_dbgmsg("cli_pdf: last quintet contains %d bytes\n", quintet);
             if(quintet) {
                 int i;
 
                 if(quintet == 1) {
-                    cli_dbgmsg("cli_pdf: only 1 byte in last quintet\n");
+                    cli_dbgmsg("cli_pdf: invalid last quintet (only 1 byte)\n");
                     rc = CL_EFORMAT;
                     break;
                 }
@@ -440,7 +438,7 @@ static int filter_rldecode(struct pdf_struct *pdf, struct pdf_obj *obj, struct p
     if (rc == CL_SUCCESS) {
         free(token->content);
 
-        cli_dbgmsg("cli_pdf: inflated %lu bytes from %lu total bytes\n",
+        cli_dbgmsg("cli_pdf: decoded %lu bytes from %lu total bytes\n",
                    (unsigned long)declen, (unsigned long)(token->length));
 
         token->content = decoded;
