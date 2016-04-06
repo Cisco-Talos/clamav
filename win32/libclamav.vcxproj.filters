@@ -1034,9 +1034,6 @@
     <ClInclude Include="..\libclamav\xdp.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\libclamav\hwp.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Library Include="libeay32.lib" />

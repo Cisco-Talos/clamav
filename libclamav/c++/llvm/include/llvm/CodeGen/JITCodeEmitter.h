@@ -18,6 +18,7 @@
 #define LLVM_CODEGEN_JITCODEEMITTER_H
 
 #include <string>
+#include <algorithm>
 #include "llvm/System/DataTypes.h"
 #include "llvm/Support/MathExtras.h"
 #include "llvm/CodeGen/MachineCodeEmitter.h"
