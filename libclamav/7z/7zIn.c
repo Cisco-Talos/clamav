@@ -1281,8 +1281,10 @@ static SRes SzArEx_Open2(
 
   p->startPosAfterHeader = startArcPos + k7zStartHeaderSize;
   
-  if (CrcCalc(header + 12, 20) != GetUi32(header + 8))
+  /*aCaB - 2010-02-16 - START OF RECOVERY MODE
+  if (CrcCalc(header + 12, 20) != GetUi32(header + 8)) {
     return SZ_ERROR_CRC;
+  }*/
   if(!GetUi32(header + 8) && !nextHeaderOffset && !nextHeaderSize && !nextHeaderCRC) {
     int i, checkSize = 500;
     Byte buf[500];
@@ -1305,8 +1307,8 @@ static SRes SzArEx_Open2(
     nextHeaderOffset -= k7zStartHeaderSize;
     nextHeaderCRC = CrcCalc(buf + i, (size_t)nextHeaderSize);
     RINOK(inStream->Seek(inStream, &curpos, SZ_SEEK_SET));
-  }
-/* aCaB - 2010-02-16 - END OF RECOVERY MODE */
+  } 
+  /* aCaB - 2010-02-16 - END OF RECOVERY MODE */
 
   nextHeaderSizeT = (size_t)nextHeaderSize;
   if (nextHeaderSizeT != nextHeaderSize)
