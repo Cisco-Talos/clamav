@@ -11,6 +11,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <algorithm>
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/FormattedStream.h"
 
