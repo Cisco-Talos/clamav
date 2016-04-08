@@ -645,6 +645,8 @@ am__EXEEXT_FALSE
 am__EXEEXT_TRUE
 LTLIBOBJS
 LIBOBJS
+ENABLE_CLAMSUBMIT_FALSE
+ENABLE_CLAMSUBMIT_TRUE
 JSON_LDFLAGS
 JSON_LIBS
 SSL_LDFLAGS
@@ -681,8 +683,6 @@ CLAMSUBMIT_CFLAGS
 CLAMSUBMIT_LIBS
 ENABLE_LIBFRESHCLAM_FALSE
 ENABLE_LIBFRESHCLAM_TRUE
-ENABLE_CLAMSUBMIT_FALSE
-ENABLE_CLAMSUBMIT_TRUE
 HAVE_YARA
 subdirs
 WERR_CFLAGS_MILTER
@@ -24041,15 +24041,6 @@ fi
 
 
 
- if test "$have_curl" = "yes"; then
-  ENABLE_CLAMSUBMIT_TRUE=
-  ENABLE_CLAMSUBMIT_FALSE='#'
-else
-  ENABLE_CLAMSUBMIT_TRUE='#'
-  ENABLE_CLAMSUBMIT_FALSE=
-fi
-
-
 # Check whether --enable-libfreshclam was given.
 if test "${enable_libfreshclam+set}" = set; then :
   enableval=$enable_libfreshclam; enable_libfreshclam=$enableval
@@ -24252,6 +24243,15 @@ fi
 
 
 
+
+
+ if test "$have_curl" = "yes"; then
+  ENABLE_CLAMSUBMIT_TRUE=
+  ENABLE_CLAMSUBMIT_FALSE='#'
+else
+  ENABLE_CLAMSUBMIT_TRUE='#'
+  ENABLE_CLAMSUBMIT_FALSE=
+fi
 
 
 ac_config_files="$ac_config_files clamscan/Makefile database/Makefile docs/Makefile clamd/Makefile clamd/clamav-daemon.service clamd/clamav-daemon.socket clamdscan/Makefile clamsubmit/Makefile clamav-milter/Makefile freshclam/clamav-freshclam.service freshclam/Makefile sigtool/Makefile clamconf/Makefile etc/Makefile test/Makefile unit_tests/Makefile clamdtop/Makefile clambc/Makefile libfreshclam/Makefile Makefile clamav-config libclamav.pc platform.h docs/man/clamav-milter.8 docs/man/clamav-milter.conf.5 docs/man/clambc.1 docs/man/clamconf.1 docs/man/clamd.8 docs/man/clamd.conf.5 docs/man/clamdscan.1 docs/man/clamscan.1 docs/man/freshclam.1 docs/man/freshclam.conf.5 docs/man/sigtool.1 docs/man/clamdtop.1 docs/man/clamsubmit.1"
@@ -24464,12 +24464,12 @@ if test -z "${HAVE_CURSES_TRUE}" && test -z "${HAVE_CURSES_FALSE}"; then
   as_fn_error $? "conditional \"HAVE_CURSES\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
-if test -z "${ENABLE_CLAMSUBMIT_TRUE}" && test -z "${ENABLE_CLAMSUBMIT_FALSE}"; then
-  as_fn_error $? "conditional \"ENABLE_CLAMSUBMIT\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
 if test -z "${ENABLE_LIBFRESHCLAM_TRUE}" && test -z "${ENABLE_LIBFRESHCLAM_FALSE}"; then
   as_fn_error $? "conditional \"ENABLE_LIBFRESHCLAM\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${ENABLE_CLAMSUBMIT_TRUE}" && test -z "${ENABLE_CLAMSUBMIT_FALSE}"; then
+  as_fn_error $? "conditional \"ENABLE_CLAMSUBMIT\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 
@@ -27041,12 +27041,12 @@ if test -z "${HAVE_CURSES_TRUE}" && test -z "${HAVE_CURSES_FALSE}"; then
   as_fn_error $? "conditional \"HAVE_CURSES\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
-if test -z "${ENABLE_CLAMSUBMIT_TRUE}" && test -z "${ENABLE_CLAMSUBMIT_FALSE}"; then
-  as_fn_error $? "conditional \"ENABLE_CLAMSUBMIT\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
 if test -z "${ENABLE_LIBFRESHCLAM_TRUE}" && test -z "${ENABLE_LIBFRESHCLAM_FALSE}"; then
   as_fn_error $? "conditional \"ENABLE_LIBFRESHCLAM\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${ENABLE_CLAMSUBMIT_TRUE}" && test -z "${ENABLE_CLAMSUBMIT_FALSE}"; then
+  as_fn_error $? "conditional \"ENABLE_CLAMSUBMIT\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${am__EXEEXT_TRUE}" && test -z "${am__EXEEXT_FALSE}"; then
