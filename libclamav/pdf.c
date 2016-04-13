@@ -935,7 +935,13 @@ int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
                 if (pstr) {
                     unsigned int objsz = obj_size(pdf, obj, 1);
 
-                    /* shift pstr to "<<" for pdf_parse_dict */
+                    /* shift pstr left to "<<" for pdf_parse_dict */
+                    while ((*pstr == '<') && (pstr > start)) {
+                        pstr--;
+                        len++;
+                    }
+
+                    /* shift pstr right to "<<" for pdf_parse_dict */
                     while ((*pstr != '<') && (len > 0)) {
                         pstr++;
                         len--;
