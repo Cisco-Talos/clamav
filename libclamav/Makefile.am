@@ -464,7 +464,9 @@ libclamav_la_SOURCES = \
 	tiff.c \
 	tiff.h \
 	hwp.c \
-	hwp.h
+	hwp.h \
+	lzw/lzwdec.c \
+	lzw/lzwdec.h
 
 if ENABLE_YARA
 libclamav_la_SOURCES += yara_arena.c \
