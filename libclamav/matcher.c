@@ -164,17 +164,18 @@ static inline int matcher_run(const struct cli_matcher *root,
     }
     PERF_LOG_TRIES(acmode, 0, length);
     ret = cli_ac_scanbuff(buffer, length, virname, NULL, acres, root, mdata, offset, ftype, ftoffset, acmode, ctx);
-	if (ret != CL_CLEAN) {
-	    if (ret != CL_VIRUS)
-		return ret;
-
-	    /* else (ret == CL_VIRUS) */
-	    if (SCAN_ALL)
-		viruses_found = 1;
-	    else {
-		cli_append_virus(ctx, *virname);
-		return ret;
-	    }
+    if (ret != CL_CLEAN) {
+	    if (ret == CL_VIRUS) {
+            if (SCAN_ALL)
+                viruses_found = 1;
+            else {
+                cli_append_virus(ctx, *virname);
+                return ret;
+            }
+        } else if (ret > CL_TYPENO && acmode & AC_SCAN_VIR)
+            ; /* intentionally empty */
+        else
+            return ret;
 	}
 
     /* due to logical triggered, pcres cannot be evaluated until after full subsig matching */
