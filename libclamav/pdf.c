@@ -1805,6 +1805,7 @@ static char *pdf_readval(const char *q, int len, const char *key)
 {
     const char *end;
     char *s;
+    int origlen = len;
 
     q = pdf_getdict(q, &len, key);
     if (!q || len <= 0)
@@ -1825,6 +1826,12 @@ static char *pdf_readval(const char *q, int len, const char *key)
     while (len > 0 && *end && !(*end == '/' || (len > 1 && end[0] == '>' && end[1] == '>'))) {
         end++;
         len--;
+    }
+
+    /* end-of-buffer whitespace trimming */
+    while (len < origlen && isspace(*(end-1))) {
+        end--;
+        len++;
     }
 
     s = cli_malloc(end - q + 1);
