@@ -957,8 +957,10 @@ int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
                 if (dparams)
                     pdf_free_dict(dparams);
 
-                if (sum < 0)
-                    return rc;
+                if (sum < 0 || (rc == CL_VIRUS && !(pdf->ctx->options & CL_SCAN_ALLMATCHES))) {
+                    sum = 0; /* prevents post-filter scan */
+                    break;
+                }
 
                 cli_dbgmsg("-------------EXPERIMENTAL-------------\n");
 
