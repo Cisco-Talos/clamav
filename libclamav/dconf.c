@@ -130,6 +130,7 @@ static struct dconf_module modules[] = {
     { "OTHER",      "PREFILTERING", OTHER_CONF_PREFILTERING,1 },
     { "OTHER",      "PDFNAMEOBJ",   OTHER_CONF_PDFNAMEOBJ,  1 },
     { "OTHER",      "PRTNINTXN",   OTHER_CONF_PRTNINTXN,  1 },
+    { "OTHER",      "LZW",      OTHER_CONF_LZW,     1 },
 
     { "PHISHING",   "ENGINE",       PHISHING_CONF_ENGINE,   1 },
     { "PHISHING",   "ENTCONV",      PHISHING_CONF_ENTCONV,  1 },
