@@ -378,7 +378,7 @@ static int filter_ascii85decode(struct pdf_struct *pdf, struct pdf_obj *obj, str
         if (!(obj->flags & ((1 << OBJ_IMAGE) | (1 << OBJ_TRUNCATED))))
             pdfobj_flag(pdf, obj, BAD_ASCIIDECODE);
 
-        cli_errmsg("cli_pdf: error occurred parsing byte %lu of %lu\n",
+        cli_dbgmsg("cli_pdf: error occurred parsing byte %lu of %lu\n",
                    (unsigned long)(token->length-remaining), (unsigned long)(token->length));
         free(decoded);
     }
@@ -471,7 +471,7 @@ static int filter_rldecode(struct pdf_struct *pdf, struct pdf_obj *obj, struct p
         token->content = decoded;
         token->length = declen;
     } else {
-        cli_errmsg("cli_pdf: error occurred parsing byte %lu of %lu\n",
+        cli_dbgmsg("cli_pdf: error occurred parsing byte %lu of %lu\n",
                    (unsigned long)offset, (unsigned long)(token->length));
         free(decoded);
     }
@@ -634,7 +634,7 @@ static int filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj, struc
         token->content = decoded;
         token->length = declen;
     } else {
-        cli_errmsg("cli_pdf: error occurred parsing byte %lu of %lu\n",
+        cli_dbgmsg("cli_pdf: error occurred parsing byte %lu of %lu\n",
                    (unsigned long)(length-stream.avail_in), (unsigned long)(token->length));
         free(decoded);
     }
@@ -687,7 +687,7 @@ static int filter_asciihexdecode(struct pdf_struct *pdf, struct pdf_obj *obj, st
         if (!(obj->flags & ((1 << OBJ_IMAGE) | (1 << OBJ_TRUNCATED))))
             pdfobj_flag(pdf, obj, BAD_ASCIIDECODE);
 
-        cli_errmsg("cli_pdf: error occurred parsing byte %lu of %lu\n",
+        cli_dbgmsg("cli_pdf: error occurred parsing byte %lu of %lu\n",
                    (unsigned long)i, (unsigned long)(token->length));
         free(decoded);
     }
@@ -904,7 +904,7 @@ static int filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, struct 
         token->content = decoded;
         token->length = declen;
     } else {
-        cli_errmsg("cli_pdf: error occurred parsing byte %lu of %lu\n",
+        cli_dbgmsg("cli_pdf: error occurred parsing byte %lu of %lu\n",
                    (unsigned long)(length-stream.avail_in), (unsigned long)(token->length));
         free(decoded);
     }
