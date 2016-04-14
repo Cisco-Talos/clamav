@@ -117,7 +117,13 @@ off_t pdf_decodestream(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_d
     cli_dbgmsg("cli_pdf: detected %lu applied filters\n", (long unsigned)(obj->numfilters));
 
     rv = pdf_decodestream_internal(pdf, obj, params, token);
-    /* return is ignored so that the existing content is dumped to file */
+    /* return is generally ignored */
+    if (rc) {
+        if (rv == CL_VIRUS)
+            *rc = CL_VIRUS;
+        else
+            *rc = CL_SUCCESS;
+    }
 
     if (!cli_checklimits("pdf", pdf->ctx, token->length, 0, 0)) {
         if (cli_writen(fout, token->content, token->length) != token->length) {
@@ -131,15 +137,13 @@ off_t pdf_decodestream(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_d
 
     free(token->content);
     free(token);
-    if (rc)
-        *rc = CL_SUCCESS;
     return rv;
 }
 
 static int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token)
 {
     const char *filter = NULL;
-    int i, rc = CL_SUCCESS;
+    int i, vir = 0, rc = CL_SUCCESS;
 
     /*
      * if pdf is decryptable, scan for CRYPT filter
@@ -211,22 +215,26 @@ static int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj
         }
 
         if (rc != CL_SUCCESS) {
-            const char *reason;
-            switch (rc) {
-            case CL_VIRUS:
-                reason = "detection";
-                break;
-            case CL_BREAK:
-                reason = "break decoding";
-                break;
-            default:
-                reason = "error decoding";
+            if (rc == CL_VIRUS && pdf->ctx->options & CL_SCAN_ALLMATCHES)
+                vir = 1;
+            else {
+                const char *reason;
+                switch (rc) {
+                case CL_VIRUS:
+                    reason = "detection";
+                    break;
+                case CL_BREAK:
+                    reason = "break decoding";
+                    break;
+                default:
+                    reason = "error decoding";
+                    break;
+                }
+
+                cli_dbgmsg("cli_pdf: %s, stopping after %d (of %lu) filters\n",
+                           reason, i, (long unsigned)(obj->numfilters));
                 break;
             }
-
-            cli_dbgmsg("cli_pdf: %s, stopping after %d (of %lu) filters\n",
-                       reason, i, (long unsigned)(obj->numfilters));
-            break;
         }
 
         if (cl_engine_get_num(pdf->ctx->engine, CL_ENGINE_FORCETODISK, NULL) &&
@@ -237,6 +245,8 @@ static int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj
         }
     }
 
+    if (vir)
+        return CL_VIRUS;
     if (rc == CL_BREAK)
         return CL_SUCCESS;
     return rc;
@@ -786,8 +796,10 @@ static int filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, struct 
     stream.avail_in = length;
     stream.next_out = decoded;
     stream.avail_out = BUFSIZ;
+    if (echg)
+        stream.flags |= LZW_FLAG_EARLYCHG;
 
-    lzwstat = lzwInit(&stream, echg ? LZW_FLAG_EARLYCHG : LZW_NOFLAGS);
+    lzwstat = lzwInit(&stream);
     if(lzwstat != Z_OK) {
         cli_warnmsg("cli_pdf: lzwInit failed\n");
         free(decoded);
@@ -811,7 +823,7 @@ static int filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, struct 
             stream.next_out = (Bytef *)decoded;
             stream.avail_out = capacity;
 
-            lzwstat = lzwInit(&stream, echg ? LZW_FLAG_EARLYCHG : LZW_NOFLAGS);
+            lzwstat = lzwInit(&stream);
             if(lzwstat != Z_OK) {
                 cli_warnmsg("cli_pdf: lzwInit failed\n");
                 free(decoded);
@@ -895,6 +907,12 @@ static int filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, struct 
         cli_errmsg("cli_pdf: error occurred parsing byte %lu of %lu\n",
                    (unsigned long)(length-stream.avail_in), (unsigned long)(token->length));
         free(decoded);
+    }
+
+    /* heuristic check */
+    if (stream.flags & LZW_FLAG_BIGDICT) {
+        cli_append_virus(pdf->ctx, "Heuristics.PDF.LZWInvalidDictionary");
+        rc = CL_VIRUS;
     }
 
     return rc;

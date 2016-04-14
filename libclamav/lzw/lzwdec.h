@@ -49,6 +49,8 @@ typedef struct lzw_stream_s {
     unsigned total_out;
 
     char *msg;
+
+    uint32_t flags;
     struct lzw_internal_state *state;
 } lzw_stream;
 
@@ -62,10 +64,13 @@ typedef lzw_stream *lzw_streamp;
 #define LZW_BUF_ERROR    (-5)
 #define LZW_DICT_ERROR   (-7)
 
-#define LZW_NOFLAGS        0
-#define LZW_FLAG_EARLYCHG  1
+/* option flags */
+#define LZW_NOFLAGS        0x0
+#define LZW_FLAG_EARLYCHG  0x1
+/* state flags */
+#define LZW_FLAG_BIGDICT   0x100
 
-int lzwInit(lzw_streamp strm, uint32_t flags);
+int lzwInit(lzw_streamp strm);
 int lzwInflate(lzw_streamp strm);
 int lzwInflateEnd(lzw_streamp strm);
 

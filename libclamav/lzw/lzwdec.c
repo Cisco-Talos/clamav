@@ -67,7 +67,8 @@
  * strings SHOULD range from 9 to 12 bits.
  */
 #define BITS_MIN    9       /* start with 9 bits */
-#define BITS_MAX    13      /* max of 12 bit strings, +1 for robustness */
+#define BITS_VALID  12      /* max of 12 bit strings are valid, used to flag  */
+#define BITS_MAX    14      /* max of 12 bit strings, +2 for robustness */
 /* predefined codes */
 #define CODE_BASIC  256     /* last basic code + 1 */
 #define CODE_CLEAR  256     /* code to clear string table */
@@ -94,7 +95,6 @@ struct lzw_internal_state {
     uint16_t    nbits;      /* # of bits/code */
     long        nextdata;   /* next bits of i/o */
     long        nextbits;   /* # of valid bits in lzw_nextdata */
-    uint32_t    flags;      /* flags affecting decompression */
 
     /* decoding-specific state */
     long    dec_nbitsmask;  /* lzw_nbits 1 bits, right adjusted */
@@ -146,7 +146,7 @@ break;                                                    \
     oldcodep = state->dec_codetab + code;                               \
 }
 
-int lzwInit(lzw_streamp strm, uint32_t flags)
+int lzwInit(lzw_streamp strm)
 {
     struct lzw_internal_state *sp;
     hcode_t code;
@@ -161,7 +161,6 @@ int lzwInit(lzw_streamp strm, uint32_t flags)
     sp->nbits = BITS_MIN;
     sp->nextdata = 0;
     sp->nextbits = 0;
-    sp->flags = flags;
 
     /* dictionary setup */
     sp->dec_codetab = cli_calloc(CSIZE, sizeof(code_t));
@@ -200,18 +199,21 @@ int lzwInflate(lzw_streamp strm)
     uint8_t *wp;
     hcode_t code, free_code;
     int echg, ret = LZW_OK;
+    uint32_t flags;
 
     if (strm == NULL || strm->state == NULL || strm->next_out == NULL ||
         (strm->next_in == NULL && strm->avail_in != 0))
         return LZW_STREAM_ERROR;
 
     /* load state */
-    state = strm->state;
     to = strm->next_out;
     out = left = strm->avail_out;
 
     from = strm->next_in;
     in = have = strm->avail_in;
+
+    flags = strm->flags;
+    state = strm->state;
 
     nbits = state->nbits;
     nextdata = state->nextdata;
@@ -221,7 +223,7 @@ int lzwInflate(lzw_streamp strm)
     free_entp = state->dec_free_entp;
     maxcodep = state->dec_maxcodep;
 
-    echg = state->flags & LZW_FLAG_EARLYCHG;
+    echg = flags & LZW_FLAG_EARLYCHG;
     free_code = free_entp - &state->dec_codetab[0];
 
     if (oldcodep == &state->dec_codetab[CODE_EOI])
@@ -289,8 +291,11 @@ int lzwInflate(lzw_streamp strm)
 
         /* non-earlychange bit expansion */
         if (!echg && free_entp > maxcodep) {
-            if (++nbits > BITS_MAX)     /* should not happen */
-                nbits = BITS_MAX;
+            if (++nbits > BITS_VALID) {
+                flags |= LZW_FLAG_BIGDICT;
+                if (nbits > BITS_MAX)     /* should not happen */
+                    nbits = BITS_MAX;
+            }
             nbitsmask = MAXCODE(nbits);
             maxcodep = state->dec_codetab + nbitsmask-1;
         }
@@ -311,8 +316,11 @@ int lzwInflate(lzw_streamp strm)
         free_entp++;
         /* earlychange bit expansion */
         if (echg && free_entp > maxcodep) {
-            if (++nbits > BITS_MAX)     /* should not happen */
-                nbits = BITS_MAX;
+            if (++nbits > BITS_VALID) {
+                flags |= LZW_FLAG_BIGDICT;
+                if (nbits > BITS_MAX)     /* should not happen */
+                    nbits = BITS_MAX;
+            }
             nbitsmask = MAXCODE(nbits);
             maxcodep = state->dec_codetab + nbitsmask-1;
         }
@@ -366,6 +374,7 @@ inf_end:
     strm->avail_out = left;
     strm->next_in = from;
     strm->avail_in = have;
+    strm->flags = flags;
 
     state->nbits = (uint16_t)nbits;
     state->nextdata = nextdata;
