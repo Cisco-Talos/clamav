@@ -148,42 +148,42 @@ break;                                                    \
 
 int lzwInit(lzw_streamp strm)
 {
-    struct lzw_internal_state *sp;
+    struct lzw_internal_state *state;
     hcode_t code;
 
-    sp = cli_malloc(sizeof(struct lzw_internal_state));
-    if (sp == NULL) {
+    state = cli_malloc(sizeof(struct lzw_internal_state));
+    if (state == NULL) {
         strm->msg = "failed to allocate state";
         return LZW_MEM_ERROR;
     }
 
     /* general state setup */
-    sp->nbits = BITS_MIN;
-    sp->nextdata = 0;
-    sp->nextbits = 0;
+    state->nbits = BITS_MIN;
+    state->nextdata = 0;
+    state->nextbits = 0;
 
     /* dictionary setup */
-    sp->dec_codetab = cli_calloc(CSIZE, sizeof(code_t));
-    if (sp->dec_codetab == NULL) {
-        free(sp);
+    state->dec_codetab = cli_calloc(CSIZE, sizeof(code_t));
+    if (state->dec_codetab == NULL) {
+        free(state);
         strm->msg = "failed to allocate code table";
         return LZW_MEM_ERROR;
     }
 
     for (code = 0; code < CODE_BASIC; code++) {
-        sp->dec_codetab[code].next = NULL;
-        sp->dec_codetab[code].length = 1;
-        sp->dec_codetab[code].value = code;
-        sp->dec_codetab[code].firstchar = code;
+        state->dec_codetab[code].next = NULL;
+        state->dec_codetab[code].length = 1;
+        state->dec_codetab[code].value = code;
+        state->dec_codetab[code].firstchar = code;
     }
 
-    sp->dec_restart = 0;
-    sp->dec_nbitsmask = MAXCODE(BITS_MIN);
-    sp->dec_free_entp = sp->dec_codetab + CODE_FIRST;
-    sp->dec_oldcodep = &sp->dec_codetab[CODE_CLEAR];
-    sp->dec_maxcodep = &sp->dec_codetab[sp->dec_nbitsmask-1];
+    state->dec_restart = 0;
+    state->dec_nbitsmask = MAXCODE(BITS_MIN);
+    state->dec_free_entp = state->dec_codetab + CODE_FIRST;
+    state->dec_oldcodep = &state->dec_codetab[CODE_CLEAR];
+    state->dec_maxcodep = &state->dec_codetab[state->dec_nbitsmask-1];
 
-    strm->state = sp;
+    strm->state = state;
     return LZW_OK;
 }
 
