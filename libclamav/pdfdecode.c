@@ -211,8 +211,21 @@ static int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj
         }
 
         if (rc != CL_SUCCESS) {
-            cli_dbgmsg("cli_pdf: error decoding, breaking after %d (of %lu) filters\n",
-                       i, (long unsigned)(obj->numfilters));
+            const char *reason;
+            switch (rc) {
+            case CL_VIRUS:
+                reason = "detection";
+                break;
+            case CL_BREAK:
+                reason = "break decoding";
+                break;
+            default:
+                reason = "error decoding";
+                break;
+            }
+
+            cli_dbgmsg("cli_pdf: %s, stopping after %d (of %lu) filters\n",
+                       reason, i, (long unsigned)(obj->numfilters));
             break;
         }
 
@@ -725,6 +738,9 @@ static int filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, struct 
     uint32_t length = token->length;
     lzw_stream stream;
     int echg = 1, lzwstat, skip = 0, rc = CL_SUCCESS;
+
+    if (pdf->ctx && !(pdf->ctx->dconf->other & OTHER_CONF_LZW))
+        return CL_BREAK;
 
     if (params) {
         struct pdf_dict_node *node = params->nodes;
