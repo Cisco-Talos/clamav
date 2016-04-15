@@ -2457,6 +2457,12 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
         }
 
         pdf_parseobj(&pdf, obj);
+        if (SCAN_ALGO && obj->numfilters > PDF_FILTER_DTRIGGER) {
+            cli_append_virus(ctx, "Heuristic.PDF.TooManyFilters");
+            alerts++;
+            if (!SCAN_ALL)
+                rc = CL_VIRUS;
+        }
     }
 
     pdf_handle_enc(&pdf);
