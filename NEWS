@@ -1,17 +1,36 @@
-0.99.1
+0.99.2
 ------
 
-ClamAV 0.99.1 contains a new feature for parsing Hancom Office files
-including extracting and scanning embedded objects. ClamAV 0.99.1
-also contains important bug fixes. Please see ChangeLog for details.
+ClamAV 0.99.2 is a release of bug fixes and minor enhancements.
 
-Thanks to the following community members for code submissions used in
-ClamAV 0.99.1:
+    - fix ups improving the reliability of several ClamAV file parsers.
+    - sigtool now decodes file type signatures (e.g., daily.ftm CVD file).
+    - now supporting libpcre2 in addition to libpcre.
+    - systemd support for clamd and freshclam. Patch provided by 
+      Andreas Cadhalpun.
+    - fixed builds on Mac OS X 10.10 & 10.11.
+    - improved debug info for certificate metadata.
+    - improved freshclam messaging when using a proxy.
+    - fixed some freshclam functionality when using private mirrors.
+    - clamd refinements of open file limitations on Solaris. Patch by
+      Jim Morris
+    - clamav-milter signal handling for improved clean up during
+      termination.
 
-Jim Morris
+Thank you to the following ClamAV community members for your code
+submissions and bug reports! 
+
+Brandon Perry
+Sebastian Andrzej Siewior
 Andreas Cadhalpun
-Mark Allan
-Sebastian Siewior
+Jim Morris
+Kai Risku
+Bill Parker
+Tomasz Kojm
+Steve Basford
+Daniel J. Luke
+James Ralston
+John Dodson
 
 --
 The ClamAV team (http://www.clamav.net/about.html#credits)
