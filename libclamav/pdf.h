@@ -22,7 +22,8 @@
 #define __PDF_H
 
 #include "others.h"
-#define PDF_FILTERLIST_MAX 64
+#define PDF_FILTERLIST_MAX  64
+#define PDF_FILTER_DTRIGGER 8
 struct pdf_obj {
     uint32_t start;
     uint32_t id;
