@@ -222,12 +222,13 @@ DWORD WINAPI watch_stop(LPVOID x) {
     while(1) {
 	if(!ReadFile(updpipe, &st, sizeof(st), NULL, NULL)) {
 		DWORD err = GetLastError();
-		if ( err == ERROR_BROKEN_PIPE )
+		if ( err == ERROR_BROKEN_PIPE ) {
 			break;
+		}
 		else if( err != ERROR_IO_PENDING || !GetOverlappedResult(updpipe, &o, &got, TRUE) ) {
 		flog("ERROR: failed to read stop event from pipe");
 		return 0;
-	    }
+		}
 	}
 	if(st.state == UPD_STOP)
 	    break;
