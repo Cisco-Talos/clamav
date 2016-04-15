@@ -54,7 +54,7 @@ cli_events_t *cli_events_new(unsigned max_event)
     if (!ev)
 	return NULL;
     ev->max = max_event;
-    ev->events = cli_calloc(max_event, max_event * sizeof(*ev->events));
+    ev->events = cli_calloc(max_event, sizeof(*ev->events));
     if (!ev->events) {
 	free(ev);
 	return NULL;
