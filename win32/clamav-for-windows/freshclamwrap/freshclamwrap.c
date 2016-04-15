@@ -221,7 +221,10 @@ DWORD WINAPI watch_stop(LPVOID x) {
     o.hEvent = read_event;
     while(1) {
 	if(!ReadFile(updpipe, &st, sizeof(st), NULL, NULL)) {
-	    if(GetLastError() != ERROR_IO_PENDING || !GetOverlappedResult(updpipe, &o, &got, TRUE)) {
+		DWORD err = GetLastError();
+		if ( err == ERROR_BROKEN_PIPE )
+			break;
+		else if( err != ERROR_IO_PENDING || !GetOverlappedResult(updpipe, &o, &got, TRUE) ) {
 		flog("ERROR: failed to read stop event from pipe");
 		return 0;
 	    }
@@ -230,7 +233,7 @@ DWORD WINAPI watch_stop(LPVOID x) {
 	    break;
 	flog("WARNING: received bogus message (%d)", st.state);
     }
-    flog("STOP event received, killing freshclam");
+    flog("STOP event received/pipe broken, killing freshclam");
     kill_freshclam();
     cleanup(NULL);
     return 0;
