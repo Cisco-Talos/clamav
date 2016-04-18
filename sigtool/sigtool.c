@@ -1406,6 +1406,10 @@ static int listdb(const char *filename, const regex_t *regex)
 		continue;
 	    }
 	    line++;
+
+            if(buffer && buffer[0] == '#')
+                continue;
+
 	    pt = strchr(buffer, '=');
 	    if(!pt) {
 		mprintf("!listdb: Malformed pattern line %u (file %s)\n", line, filename);
@@ -1449,7 +1453,11 @@ static int listdb(const char *filename, const regex_t *regex)
 		continue;
 	    }
 	    line++;
-	    start = cli_strtok(buffer, 2, ":");
+
+            if(buffer && buffer[0] == '#')
+                continue;
+
+            start = cli_strtok(buffer, 2, ":");
 
 	    if(!start) {
 		mprintf("!listdb: Malformed pattern line %u (file %s)\n", line, filename);
@@ -1475,6 +1483,9 @@ static int listdb(const char *filename, const regex_t *regex)
 		continue;
 	    }
 	    line++;
+
+            if(buffer && buffer[0] == '#')
+                continue;
 
 	    if(cli_strbcasestr(filename, ".ldb") || cli_strbcasestr(filename, ".ldu"))
 		pt = strchr(buffer, ';');
