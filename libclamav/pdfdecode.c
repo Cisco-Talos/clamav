@@ -65,9 +65,13 @@
 #include "bytecode_api.h"
 #include "lzw/lzwdec.h"
 
+#define PDFTOKEN_FLAG_XREF 0x1
+
 struct pdf_token {
-    uint32_t length;
-    uint8_t *content;
+    uint32_t flags;    /* tracking flags */
+
+    uint32_t length;   /* length of current content */
+    uint8_t *content;  /* content stream */
 };
 
 static  int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token);
@@ -80,7 +84,7 @@ static  int filter_asciihexdecode(struct pdf_struct *pdf, struct pdf_obj *obj, s
 static  int filter_decrypt(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token, int mode);
 static  int filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token);
 
-off_t pdf_decodestream(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, const char *stream, uint32_t streamlen, int fout, int *rc)
+off_t pdf_decodestream(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, const char *stream, uint32_t streamlen, int xref, int fout, int *rc)
 {
     struct pdf_token *token;
     off_t rv;
@@ -103,6 +107,10 @@ off_t pdf_decodestream(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_d
             *rc = CL_EMEM;
         return -1;
     }
+
+    token->flags = 0;
+    if (xref)
+        token->flags |= PDFTOKEN_FLAG_XREF;
 
     token->content = cli_malloc(streamlen);
     if (!token->content) {
@@ -150,9 +158,13 @@ static int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj
      * if none, force a DECRYPT filter application
      */
     if ((pdf->flags & (1 << DECRYPTABLE_PDF)) && !(obj->flags & (1 << OBJ_FILTER_CRYPT))) {
-        cli_dbgmsg("cli_pdf: decoding => non-filter CRYPT\n");
-        if ((rc = filter_decrypt(pdf, obj, params, token, 1)) != CL_SUCCESS) {
-            return rc;
+        if (token->flags & PDFTOKEN_FLAG_XREF) /* TODO: is this on all crypt filters or only the assumed one? */
+            cli_dbgmsg("cli_pdf: skipping decoding => non-filter CRYPT (reason: xref)\n");
+        else {
+            cli_dbgmsg("cli_pdf: decoding => non-filter CRYPT\n");
+            if ((rc = filter_decrypt(pdf, obj, params, token, 1)) != CL_SUCCESS) {
+                return rc;
+            }
         }
     }
 
@@ -224,15 +236,15 @@ static int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj
                     reason = "detection";
                     break;
                 case CL_BREAK:
-                    reason = "break decoding";
+                    reason = "decoding break";
                     break;
                 default:
-                    reason = "error decoding";
+                    reason = "decoding error";
                     break;
                 }
 
-                cli_dbgmsg("cli_pdf: %s, stopping after %d (of %lu) filters\n",
-                           reason, i, (long unsigned)(obj->numfilters));
+                cli_dbgmsg("cli_pdf: stopping after %d (of %lu) filters (reason: %s)\n",
+                           i, (long unsigned)(obj->numfilters), reason);
                 break;
             }
         }

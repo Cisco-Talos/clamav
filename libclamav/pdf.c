@@ -871,6 +871,7 @@ int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
                 int len = p_stream;
                 const char *pstr;
                 struct pdf_dict *dparams = NULL;
+                int xref = 0;
 
                 length = find_length(pdf, obj, start, p_stream);
                 if (length < 0)
@@ -926,6 +927,9 @@ int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
                     }
                 }
 
+                if (cli_memstr(start, p_stream, "/XRef", 5))
+                    xref = 1;
+
                 cli_dbgmsg("-------------EXPERIMENTAL-------------\n");
 
                 pstr = pdf_getdict(start, &len, "/DecodeParms");
@@ -953,7 +957,7 @@ int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
                         cli_dbgmsg("cli_pdf: failed to locate DecodeParms dictionary start\n");
                 }
 
-                sum = pdf_decodestream(pdf, obj, dparams, start + p_stream, length, fout, &rc);
+                sum = pdf_decodestream(pdf, obj, dparams, start + p_stream, length, xref, fout, &rc);
                 if (dparams)
                     pdf_free_dict(dparams);
 
@@ -963,14 +967,6 @@ int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
                 }
 
                 cli_dbgmsg("-------------EXPERIMENTAL-------------\n");
-
-#if 0
-                if (pdf->flags & (1 << DECRYPTABLE_PDF)) {
-                    if (cli_memstr(start, p_stream, "/XRef", 5)) {
-                        cli_dbgmsg("cli_pdf: cross reference stream, skipping\n");
-                    }
-                }
-#endif
             } else {
                 noisy_warnmsg("cannot find stream bounds for obj %u %u\n", obj->id>>8, obj->id&0xff);
             }
