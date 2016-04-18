@@ -69,6 +69,7 @@
 
 struct pdf_token {
     uint32_t flags;    /* tracking flags */
+    uint32_t success;  /* successfully decoded filters */
 
     uint32_t length;   /* length of current content */
     uint8_t *content;  /* content stream */
@@ -112,6 +113,8 @@ off_t pdf_decodestream(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_d
     if (xref)
         token->flags |= PDFTOKEN_FLAG_XREF;
 
+    token->success = 0;
+
     token->content = cli_malloc(streamlen);
     if (!token->content) {
         free(token);
@@ -133,14 +136,28 @@ off_t pdf_decodestream(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_d
             *rc = CL_SUCCESS;
     }
 
-    if (!cli_checklimits("pdf", pdf->ctx, token->length, 0, 0)) {
-        if (cli_writen(fout, token->content, token->length) != token->length) {
-            cli_errmsg("cli_pdf: failed to write output file\n");
-            if (rc)
-                *rc = CL_EWRITE;
-            return -1;
+    if (token->success) {
+        if (!cli_checklimits("pdf", pdf->ctx, token->length, 0, 0)) {
+            if (cli_writen(fout, token->content, token->length) != token->length) {
+                cli_errmsg("cli_pdf: failed to write output file\n");
+                if (rc)
+                    *rc = CL_EWRITE;
+                return -1;
+            }
+            rv = token->length;
         }
-        rv = token->length;
+    } else {  /* if no non-forced filter are decoded, return the raw stream */
+        if (!cli_checklimits("pdf", pdf->ctx, streamlen, 0, 0)) {
+            cli_dbgmsg("cli_pdf: no non-forced filters decoded, returning raw stream\n");
+
+            if (cli_writen(fout, stream, streamlen) != streamlen) {
+                cli_errmsg("cli_pdf: failed to write output file\n");
+                if (rc)
+                    *rc = CL_EWRITE;
+                return -1;
+            }
+            rv = streamlen;
+        }
     }
 
     free(token->content);
@@ -248,6 +265,7 @@ static int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj
                 break;
             }
         }
+        token->success++;
 
         if (cl_engine_get_num(pdf->ctx->engine, CL_ENGINE_FORCETODISK, NULL) &&
             cl_engine_get_num(pdf->ctx->engine, CL_ENGINE_KEEPTMP, NULL)) {
