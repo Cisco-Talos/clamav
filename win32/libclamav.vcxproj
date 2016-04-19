@@ -439,6 +439,7 @@
     <ClCompile Include="..\libclamav\json_api.c" />
     <ClCompile Include="..\libclamav\line.c" />
     <ClCompile Include="..\libclamav\lzma_iface.c" />
+    <ClCompile Include="..\libclamav\lzw\lzwdec.c" />
     <ClCompile Include="..\libclamav\macho.c" />
     <ClCompile Include="..\libclamav\matcher-ac.c" />
     <ClCompile Include="..\libclamav\matcher-bm.c" />
