@@ -81,6 +81,9 @@
     <ClCompile Include="..\libclamav\lzma_iface.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\libclamav\lzw\lzwdec.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\libclamav\bytecode_vm.c">
       <Filter>Source Files</Filter>
     </ClCompile>
