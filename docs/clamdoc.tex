@@ -1055,9 +1055,10 @@ Engine flevel: 77, dconf: 77
 
     \subsubsection{Initialization}
     Before using libclamav, you should call \verb+cl_init()+ to initialize
-    it. When it's done, you're ready to create a new scan engine by calling
-    \verb+cl_engine_new()+. To free resources allocated by the engine use
-    \verb+cl_engine_free()+. Function prototypes:
+    it. \verb+CL_INIT_DEFAULT+ is a macro that can be passed to \verb+cl_init()+
+    representing the default initialization settings. When it's done, you're ready
+    to create a new scan engine by calling \verb+cl_engine_new()+. To free resources
+    allocated by the engine use \verb+cl_engine_free()+. Function prototypes:
     \begin{verbatim}
 	int cl_init(unsigned int options);
 	struct cl_engine *cl_engine_new(void);
@@ -1108,7 +1109,7 @@ Engine flevel: 77, dconf: 77
 	    unsigned int sigs = 0;
 	    int ret;
 
-	if((ret = cl_init()) != CL_SUCCESS) {
+	if((ret = cl_init(CL_INIT_DEFAULT)) != CL_SUCCESS) {
 	    printf("cl_init() error: %s\n", cl_strerror(ret));
 	    return 1;
 	}
