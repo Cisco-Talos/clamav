@@ -99,3 +99,13 @@
    fun:scanmanager
    fun:main
 }
+{
+   dlopen-libcheck-overread
+   Memcheck:Addr8
+   ...
+   fun:vm_open
+   fun:tryall_dlopen
+   fun:find_handle_callback
+   fun:foreach_dirinpath
+   ...
+}
