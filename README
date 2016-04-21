@@ -2,6 +2,40 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
+0.99.2
+------
+
+ClamAV 0.99.2 is a release of bug fixes and minor enhancements.
+
+    - fix ups improving the reliability of several ClamAV file parsers.
+    - sigtool now decodes file type signatures (e.g., daily.ftm CVD file).
+    - now supporting libpcre2 in addition to libpcre.
+    - systemd support for clamd and freshclam. Patch provided by 
+      Andreas Cadhalpun.
+    - fixed builds on Mac OS X 10.10 & 10.11.
+    - improved debug info for certificate metadata.
+    - improved freshclam messaging when using a proxy.
+    - fixed some freshclam functionality when using private mirrors.
+    - clamd refinements of open file limitations on Solaris. Patch by
+      Jim Morris
+    - clamav-milter signal handling for improved clean up during
+      termination.
+
+Thank you to the following ClamAV community members for your code
+submissions and bug reports! 
+
+Brandon Perry
+Sebastian Andrzej Siewior
+Andreas Cadhalpun
+Jim Morris
+Kai Risku
+Bill Parker
+Tomasz Kojm
+Steve Basford
+Daniel J. Luke
+James Ralston
+John Dodson
+
 0.99.1
 ------
 
