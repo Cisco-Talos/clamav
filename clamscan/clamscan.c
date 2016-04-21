@@ -272,6 +272,7 @@ void help(void)
     mprintf("    --structured-ssn-format=X            SSN format (0=normal,1=stripped,2=both)\n");
     mprintf("    --structured-ssn-count=N             Min SSN count to generate a detect\n");
     mprintf("    --structured-cc-count=N              Min CC count to generate a detect\n");
+    mprintf("    --structured-cc-mode=X               CC mode (0=credit debit and private label, 1=credit cards only\n");
     mprintf("    --scan-mail[=yes(*)/no]              Scan mail files\n");
     mprintf("    --phishing-sigs[=yes(*)/no]          Enable email signature-based phishing detection\n");
     mprintf("    --phishing-scan-urls[=yes(*)/no]     Enable URL signature-based phishing detection\n");

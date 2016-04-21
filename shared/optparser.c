@@ -344,6 +344,8 @@ const struct clam_option __clam_options[] = {
 
     {"AlertEncrypted", "alert-encrypted", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Alert on encrypted archives and documents (encrypted .zip, .7zip, .rar, .pdf).", "no"},
 
+    {"StructuredCCOnly", "structured-cc-mode", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "With this option enabled the DLP module will search for valid Credit Card\nnumbers only. Debit and Private Label cards will not be searched.", "no"},
+
     {"AlertEncryptedArchive", "alert-encrypted-archive", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Alert on encrypted archives (encrypted .zip, .7zip, .rar).", "no"},
 
     {"AlertEncryptedDoc", "alert-encrypted-doc", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Alert on encrypted documents (encrypted .pdf).", "no"},
