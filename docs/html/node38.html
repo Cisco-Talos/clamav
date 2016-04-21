@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>clamscan</TITLE>
-<META NAME="description" CONTENT="clamscan">
+<TITLE>Output format</TITLE>
+<META NAME="description" CONTENT="Output format">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -18,69 +18,58 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node39.html">
 <LINK REL="previous" HREF="node37.html">
-<LINK REL="up" HREF="node37.html">
+<LINK REL="up" HREF="node29.html">
 <LINK REL="next" HREF="node39.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html703"
+<A NAME="tex2html704"
   HREF="node39.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html699"
-  HREF="node37.html">
+<A NAME="tex2html700"
+  HREF="node29.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html693"
+<A NAME="tex2html696"
   HREF="node37.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html701"
+<A NAME="tex2html702"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html704"
-  HREF="node39.html">clamd</A>
-<B> Up:</B> <A NAME="tex2html700"
-  HREF="node37.html">Output format</A>
-<B> Previous:</B> <A NAME="tex2html694"
-  HREF="node37.html">Output format</A>
- &nbsp; <B>  <A NAME="tex2html702"
+<B> Next:</B> <A NAME="tex2html705"
+  HREF="node39.html">clamscan</A>
+<B> Up:</B> <A NAME="tex2html701"
+  HREF="node29.html">Usage</A>
+<B> Previous:</B> <A NAME="tex2html697"
+  HREF="node37.html">Clamconf</A>
+ &nbsp; <B>  <A NAME="tex2html703"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00069100000000000000">
-clamscan</A>
-</H3>
-    <code>clamscan</code> writes all regular program messages to <SPAN  CLASS="textbf">stdout</SPAN> and
-    errors/warnings to <SPAN  CLASS="textbf">stderr</SPAN>. You can use the option <code>--stdout</code>
-    to redirect all program messages to <SPAN  CLASS="textbf">stdout</SPAN>. Warnings and error
-    messages from <code>libclamav</code> are always printed to <SPAN  CLASS="textbf">stderr</SPAN>.
-    A typical output from <code>clamscan</code> looks like this:
-    <PRE>
-	/tmp/test/removal-tool.exe: Worm.Sober FOUND
-	/tmp/test/md5.o: OK
-	/tmp/test/blob.c: OK
-	/tmp/test/message.c: OK
-	/tmp/test/error.hta: VBS.Inor.D FOUND
-</PRE>
-    When a virus is found its name is printed between the <code>filename:</code> and
-    <code>FOUND</code> strings. In case of archives the scanner depends on libclamav
-    and only prints the first virus found within an archive:
-    <PRE>
-	$ clamscan malware.zip 
-	malware.zip: Worm.Mydoom.U FOUND
-</PRE>
-    When using the -allmatch(-z) flag, clamscan may print multiple virus
-    <code>FOUND</code> lines for archives and files.
+<H2><A NAME="SECTION00069000000000000000">
+Output format</A>
+</H2>
 
 <P>
 <BR><HR>
+<!--Table of Child-Links-->
+<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
+
+<UL CLASS="ChildLinks">
+<LI><A NAME="tex2html706"
+  HREF="node39.html">clamscan</A>
+<LI><A NAME="tex2html707"
+  HREF="node40.html">clamd</A>
+</UL>
+<!--End of Table of Child-Links-->
+<BR><HR>
 <ADDRESS>
-Sourcefire 2013-04-16
+Cisco 2016-04-21
 </ADDRESS>
 </BODY>
 </HTML>

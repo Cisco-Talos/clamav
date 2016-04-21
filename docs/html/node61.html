@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Example</TITLE>
-<META NAME="description" CONTENT="Example">
+<TITLE>clamav-config</TITLE>
+<META NAME="description" CONTENT="clamav-config">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -18,53 +18,55 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
+<LINK REL="next" HREF="node62.html">
 <LINK REL="previous" HREF="node60.html">
-<LINK REL="up" HREF="node49.html">
+<LINK REL="up" HREF="node50.html">
 <LINK REL="next" HREF="node62.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html1017"
+<A NAME="tex2html1022"
   HREF="node62.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html1013"
-  HREF="node49.html">
+<A NAME="tex2html1018"
+  HREF="node50.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html1009"
+<A NAME="tex2html1012"
   HREF="node60.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html1015"
+<A NAME="tex2html1020"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html1018"
-  HREF="node62.html">CVD format</A>
-<B> Up:</B> <A NAME="tex2html1014"
-  HREF="node49.html">API</A>
-<B> Previous:</B> <A NAME="tex2html1010"
-  HREF="node60.html">clamav-config</A>
- &nbsp; <B>  <A NAME="tex2html1016"
+<B> Next:</B> <A NAME="tex2html1023"
+  HREF="node62.html">Example</A>
+<B> Up:</B> <A NAME="tex2html1019"
+  HREF="node50.html">API</A>
+<B> Previous:</B> <A NAME="tex2html1013"
+  HREF="node60.html">Forking daemons</A>
+ &nbsp; <B>  <A NAME="tex2html1021"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION000731200000000000000">
-Example</A>
+<H3><A NAME="SECTION000731100000000000000">
+clamav-config</A>
 </H3>
-    You will find an example scanner application in the clamav source
-    package (/example). Provided you have ClamAV already installed, execute
-    the following to compile it:
+    Use <code>clamav-config</code> to check compilation information for libclamav.
     <PRE>
-	gcc -Wall ex1.c -o ex1 -lclamav
+	$ clamav-config --libs
+	-L/usr/local/lib -lz -lbz2 -lgmp -lpthread
+	$ clamav-config --cflags
+	-I/usr/local/include -g -O2
 </PRE>
 
 <P>
 <BR><HR>
 <ADDRESS>
-Sourcefire 2013-04-16
+Cisco 2016-04-21
 </ADDRESS>
 </BODY>
 </HTML>

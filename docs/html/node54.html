@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Engine structure</TITLE>
-<META NAME="description" CONTENT="Engine structure">
+<TITLE>Error handling</TITLE>
+<META NAME="description" CONTENT="Error handling">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -20,52 +20,46 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="next" HREF="node55.html">
 <LINK REL="previous" HREF="node53.html">
-<LINK REL="up" HREF="node49.html">
+<LINK REL="up" HREF="node50.html">
 <LINK REL="next" HREF="node55.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html935"
+<A NAME="tex2html938"
   HREF="node55.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html931"
-  HREF="node49.html">
+<A NAME="tex2html934"
+  HREF="node50.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html925"
+<A NAME="tex2html928"
   HREF="node53.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html933"
+<A NAME="tex2html936"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html936"
-  HREF="node55.html">Limits</A>
-<B> Up:</B> <A NAME="tex2html932"
-  HREF="node49.html">API</A>
-<B> Previous:</B> <A NAME="tex2html926"
-  HREF="node53.html">Error handling</A>
- &nbsp; <B>  <A NAME="tex2html934"
+<B> Next:</B> <A NAME="tex2html939"
+  HREF="node55.html">Engine structure</A>
+<B> Up:</B> <A NAME="tex2html935"
+  HREF="node50.html">API</A>
+<B> Previous:</B> <A NAME="tex2html929"
+  HREF="node53.html">Database loading</A>
+ &nbsp; <B>  <A NAME="tex2html937"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00073500000000000000">
-Engine structure</A>
+<H3><A NAME="SECTION00073400000000000000">
+Error handling</A>
 </H3>
-    When all required databases are loaded you should prepare the detection
-    engine by calling <code>cl_engine_compile()</code>. In case of failure you
-    should still free the memory allocated to the engine with
-    <code>cl_engine_free()</code>:
+    Use <code>cl_strerror()</code> to convert error codes into human readable
+    messages.  The function returns a statically allocated string:
     <PRE>
-	int cl_engine_compile(struct cl_engine *engine);
-</PRE>
-    In our example:
-    <PRE>
-	if((ret = cl_engine_compile(engine)) != CL_SUCCESS) {
-	    printf("cl_engine_compile() error: %s\n", cl_strerror(ret));
+	if(ret != CL_SUCCESS) {
+	    printf("cl_load() error: %s\n", cl_strerror(ret));
 	    cl_engine_free(engine);
 	    return 1;
 	}
@@ -74,7 +68,7 @@ Engine structure</A>
 <P>
 <BR><HR>
 <ADDRESS>
-Sourcefire 2013-04-16
+Cisco 2016-04-21
 </ADDRESS>
 </BODY>
 </HTML>

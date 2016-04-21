@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Forking daemons</TITLE>
-<META NAME="description" CONTENT="Forking daemons">
+<TITLE>Memory</TITLE>
+<META NAME="description" CONTENT="Memory">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -20,51 +20,49 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="next" HREF="node60.html">
 <LINK REL="previous" HREF="node58.html">
-<LINK REL="up" HREF="node49.html">
+<LINK REL="up" HREF="node50.html">
 <LINK REL="next" HREF="node60.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html995"
+<A NAME="tex2html998"
   HREF="node60.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html991"
-  HREF="node49.html">
+<A NAME="tex2html994"
+  HREF="node50.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html985"
+<A NAME="tex2html988"
   HREF="node58.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html993"
+<A NAME="tex2html996"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html996"
-  HREF="node60.html">clamav-config</A>
-<B> Up:</B> <A NAME="tex2html992"
-  HREF="node49.html">API</A>
-<B> Previous:</B> <A NAME="tex2html986"
-  HREF="node58.html">Memory</A>
- &nbsp; <B>  <A NAME="tex2html994"
+<B> Next:</B> <A NAME="tex2html999"
+  HREF="node60.html">Forking daemons</A>
+<B> Up:</B> <A NAME="tex2html995"
+  HREF="node50.html">API</A>
+<B> Previous:</B> <A NAME="tex2html989"
+  HREF="node58.html">Data scan functions</A>
+ &nbsp; <B>  <A NAME="tex2html997"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION000731000000000000000">
-Forking daemons</A>
+<H3><A NAME="SECTION00073900000000000000">
+Memory</A>
 </H3>
-    If you're using libclamav with a forking daemon you should call
-    <code>srand()</code> inside a forked child before making any calls to the
-    libclamav functions. This will avoid possible collisions with temporary
-    filenames created by other processes of the daemon. This procedure
-    is not required for multi-threaded daemons.
+    Because the engine structure occupies a few megabytes of system memory, you
+    should release it with <code>cl_engine_free()</code> if you no longer need to
+    scan files.
 
 <P>
 <BR><HR>
 <ADDRESS>
-Sourcefire 2013-04-16
+Cisco 2016-04-21
 </ADDRESS>
 </BODY>
 </HTML>
