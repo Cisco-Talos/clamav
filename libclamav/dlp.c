@@ -136,7 +136,7 @@ struct iin_map_struct {
 };
 
 static struct iin_map_struct iin_map[] = {
-    {100000, 199999, 13, 15, 1, 0, "UATP"},
+    {100000, 199999, 13, 15, 0, 1, "UATP"},
     {222100, 272099, 16, 16, 1, 1, "Mastercard 2016"},
     {300000, 305999, 14, 16, 1, 1, "Diner's Club - Carte Blanche"},
     {309500, 309599, 14, 16, 1, 1, "Diner's Club International"},
@@ -146,7 +146,7 @@ static struct iin_map_struct iin_map[] = {
     {370000, 379999, 15, 15, 1, 1, "American Express"},
     {380000, 399999, 16, 16, 1, 1, "Diner's Club International"},
     {400000, 499999, 16, 16, 1, 1, "Visa"},
-    {500000, 509999, 16, 16, 1, 0, "Maestro"},
+    {500000, 509999, 16, 16, 0, 1, "Maestro"},
     {510000, 559999, 16, 16, 1, 1, "Master Card"},
     {601100, 601199, 16, 16, 1, 1, "Discover"},
     {622126, 622926, 16, 16, 1, 1, "China Union Pay"},
