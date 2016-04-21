@@ -1,3 +1,177 @@
+Thu, 22 Apr 2016 12:45:00 -0500 (Steven Morgan)
+------------------------------------------
+ * ClamAV 0.99.2 release.
+
+Thu, 31 Mar 2016 17:07:39 -0400 (Kevin Lin)
+------------------------------------------
+ * 7z: fix for FolderStartPackStreamIndex array index heck
+
+Tue, 29 Mar 2016 16:18:51 -0400 (Steven Morgan)
+------------------------------------------
+ * bb11547 - print all CDBNAME entries for a zip file when using the
+	-z flag.
+
+Tue, 2 Sep 2014 22:44:41 +0200 (Sebastian Andrzej Siewior)
+------------------------------------------
+ * try to minimize the err cleanup path
+
+Tue, 2 Sep 2014 22:44:14 +0200 (Sebastian Andrzej Siewior)
+------------------------------------------
+ * clamunrar: notice if unpacking comment failed
+
+Wed, 23 Mar 2016 16:39:52 -0400 (Steven Morgan)
+------------------------------------------
+ * bb9042 - signature manual update.
+
+Wed, 23 Mar 2016 16:14:42 -0400 (Kevin Lin)
+------------------------------------------
+ * bb#11396 - use temp var for realloc to prevent pointer loss. Patch by
+	Bill Parker.
+
+Wed, 23 Mar 2016 15:49:56 -0400 (Kevin Lin)
+------------------------------------------
+ * bb#11397 - fix debug VI hex truncation
+
+Wed, 23 Mar 2016 15:38:21 -0400 (Kevin Lin)
+------------------------------------------
+ * bb#11398 - freshclam: avoid random data in mirrors.dat. Patch by
+	Tomasz Kojm.
+
+Wed, 23 Mar 2016 15:28:51 -0400 (Kevin Lin)
+------------------------------------------
+ * libclamav: print raw certificate metadata
+
+Wed, 23 Mar 2016 14:16:00 -0400 (Kevin Lin)
+------------------------------------------
+ * bb#11529 - freshclam manager check return code of strdup. Patch by
+	Sebastian A. Siewior.
+
+Tue, 22 Mar 2016 16:21:59 -0400 (Kevin Lin)
+------------------------------------------
+ * bb#11261 - additional suppress IP notification when using proxy
+
+Tue, 22 Mar 2016 12:54:52 -0400 (Kevin Lin)
+------------------------------------------
+ * bb#10983 - fix download and verification of *.cld through PrivateMirrors
+
+Mon, 21 Mar 2016 11:21:08 -0400 (Kevin Lin)
+------------------------------------------
+ * bb#11261 - suppress IP notification when using proxy
+
+Mon, 21 Mar 2016 11:20:01 -0400 (Kevin Lin)
+------------------------------------------
+ * bb#11543 - remove redundant mempool assignment
+
+Thu, 17 Mar 2016 11:49:26 -0400 (Kevin Lin)
+------------------------------------------
+ * bb#11003 - divide out dumpcerts output for better readability
+
+Wed, 16 Mar 2016 15:42:35 -0400 (Kevin Lin)
+------------------------------------------
+ * bb#11003 - fix dconf and option handling for nocert and dumpcert
+
+Mon, 14 Mar 2016 16:07:45 -0400 (Mickey Sola)
+------------------------------------------
+ * bb11463 - patch by Jim Morris to increase clamd's soft file descriptor to
+	its potential maximum on 64-bit systems
+
+Mon, 14 Mar 2016 17:12:20 -0400 (Steven Morgan)
+------------------------------------------
+ * Move libfreshclam config to m4/reorganization.
+
+Fri, 11 Mar 2016 13:32:31 -0700 (andrey mirtchovski)
+------------------------------------------
+ * adding libfreshclam
+
+Sun, 13 Mar 2016 23:27:23 -0400 (Tom Judge)
+------------------------------------------
+ * Add 'cdb' datafile to sigtools list of datafile types.
+
+Fri, 11 Mar 2016 16:02:22 -0500 (Steven Morgan)
+------------------------------------------
+ * bb11526 - NULL pointer check. Patch by Bill Parker.
+
+Fri, 11 Mar 2016 15:48:01 -0500 (Steven Morgan)
+------------------------------------------
+ * bb11524 - malloc() NULL pointer check. Patch by Bill Parker.
+
+Thu, 10 Mar 2016 18:26:33 -0500 (Steven Morgan)
+------------------------------------------
+ * bb1436 - clamscan 'block-macros' option. Patch by Kai Risku.
+
+Wed, 9 Mar 2016 17:07:06 -0500 (Kevin Lin)
+------------------------------------------
+ * bb#11514 - initialize cpio name buffer
+
+Wed, 9 Mar 2016 16:43:03 -0500 (Kevin Lin)
+------------------------------------------
+ * bb#11514 - initialize mspack decompression buffers
+
+Wed, 9 Mar 2016 12:15:16 -0500 (Kevin Lin)
+------------------------------------------
+ * bb#11514 - prevent memory allocations on used pointers (folder objects)
+
+Tue, 8 Mar 2016 16:04:21 -0500 (Kevin Lin)
+------------------------------------------
+ * bb#11514 - prevent memory allocations on used pointers (boolvectors)
+
+Tue, 8 Mar 2016 14:37:20 -0500 (Kevin Lin)
+------------------------------------------
+ * bb#11514 - initialize ARJ metadata structures
+
+Tue, 8 Mar 2016 14:37:01 -0500 (Kevin Lin)
+------------------------------------------
+ * bb#11514 - change cli_malloc with cli_calloc
+
+Mon, 7 Mar 2016 16:25:10 -0500 (Kevin Lin)
+------------------------------------------
+ * bb#11514 - check packSizes prior to dereference
+
+Mon, 7 Mar 2016 16:10:09 -0500 (Kevin Lin)
+------------------------------------------
+ * bb#11514 - fixed inconsistent folder state on failure
+
+Mon, 7 Mar 2016 15:11:08 -0500 (Kevin Lin)
+------------------------------------------
+ * bb#11514 - pre-check on (*unpackSizes) dereference
+
+Mon, 7 Mar 2016 13:56:42 -0500 (Kevin Lin)
+------------------------------------------
+ * bb11514 - fix on pre-checks on dereferenced array
+
+Fri, 4 Mar 2016 16:57:14 -0500 (Kevin Lin)
+------------------------------------------
+ * bb11514 - pre-checks on dereferenced array size values (not =0)
+
+Wed, 2 Mar 2016 13:57:03 -0500 (Mickey Sola)
+------------------------------------------
+ * bb-11514 - adding sanity checks to 7z header parsing
+
+Tue, 1 Mar 2016 12:43:01 -0500 (Kevin Lin)
+------------------------------------------
+ * bb#11514 - fixed mew source read issue
+
+Fri, 4 Mar 2016 17:05:01 -0500 (Steven Morgan)
+------------------------------------------
+ * bb11188 - Upgrade to use libtool 2.4.6 for ClamAV building: fixes issues
+	with MacOSX 10.10 and 10.11.
+
+Tue, 1 Mar 2016 12:34:48 -0500 (Kevin Lin)
+------------------------------------------
+ * bb#11513 - documentation update on targets
+
+Mon, 29 Feb 2016 16:58:19 -0500 (Kevin Lin)
+------------------------------------------
+ * filetype consistency
+
+Mon, 29 Feb 2016 11:34:25 -0500 (Kevin Lin)
+------------------------------------------
+ * move llvm option flag handling to new m4 file
+
+Wed, 24 Feb 2016 13:29:42 -0500 (Kevin Lin)
+------------------------------------------
+ * hwp5.x: fix for streams without names
+
 Wed, 24 Feb 2016 18:45:00 -0500 (Steven Morgan)
 ------------------------------------------
  * ClamAV 0.99.1 release build.
@@ -10,13 +184,43 @@ Sat, 20 Feb 2016 15:53:48 +0100 (Sebastian Andrzej Siewior)
 ------------------------------------------
  * libclamav: yara: avoid unaliged access to 64bit variable
 
-Thu, 11 Feb 2016 15:56:47 -0500 (Mickey Sola)
+Fri, 19 Feb 2016 16:16:39 -0500 (Mickey Sola)
 ------------------------------------------
- * bb11455 - patch by Mark Allan to add show-progress option to freshclam.
+ * bb11496 - adding signal handling to clamav-milter to allow for socket
+	removal and cleanup at close
+
+Thu, 18 Feb 2016 11:44:54 -0500 (Kevin Lin)
+------------------------------------------
+ * hwp3.x: enable password cancelling of parsing
+
+Wed, 17 Feb 2016 18:12:58 -0500 (Steven Morgan)
+------------------------------------------
+ * Kick out yara rules containing single byte subpatterns.
 
 Tue, 16 Feb 2016 14:15:18 -0500 (Kevin Lin)
 ------------------------------------------
  * added 'CustomXML' as trigger for likely OOXML
+
+Tue, 16 Feb 2016 12:04:14 -0500 (Kevin Lin)
+------------------------------------------
+ * fix make check issue with llvm builds with assertion
+
+Thu, 11 Feb 2016 15:56:47 -0500 (Mickey Sola)
+------------------------------------------
+ * bb11455 - patch by Mark Allan to add show-progress option to freshclam.
+
+Tue, 9 Feb 2016 13:46:13 -0500 (Mickey Sola)
+------------------------------------------
+ * bb10568 - patch from Andreas Cadhalpun to add systemd support for
+	clamd and freshclam
+
+Mon, 8 Feb 2016 11:28:42 -0500 (Kevin Lin)
+------------------------------------------
+ * PCRE2 support
+
+Mon, 8 Feb 2016 11:25:43 -0500 (Kevin Lin)
+------------------------------------------
+ * clamconf: reports usage of PCRE2
 
 Tue, 3 Feb 2016 17:30:00 -0500 (Steven Morgan)
 ------------------------------------------
