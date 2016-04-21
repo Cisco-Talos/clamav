@@ -1054,6 +1054,9 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	val = cl_engine_get_num(engine, CL_ENGINE_MIN_CC_COUNT, NULL);
 	logg("Structured: Minimum Credit Card Number Count set to %u\n", (unsigned int) val);
 
+    if(optget(opts, "StructuredCCOnly")->enabled)
+        options |= CL_SCAN_STRUCTURED_CC_ONLY;
+
 	if((opt = optget(opts, "StructuredMinSSNCount"))->enabled) {
 	    if((ret = cl_engine_set_num(engine, CL_ENGINE_MIN_SSN_COUNT, opt->numarg))) {
 		logg("!cl_engine_set_num(CL_ENGINE_MIN_SSN_COUNT) failed: %s\n", cl_strerror(ret));

@@ -403,6 +403,11 @@ Example
 # Default: 3
 #StructuredMinCreditCardCount 5
 
+# With this option enabled the DLP module will search for valid Credit Card
+# numbers only. Debit and Private Label cards will not be searched.
+# Default: no
+#StructuredCCOnly yes
+
 # This option sets the lowest number of Social Security Numbers found
 # in a file to generate a detect.
 # Default: 3

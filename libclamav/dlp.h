@@ -38,30 +38,33 @@
  *      buffer => data buffer to be validated.
  *      length => length of supplied buffer.  Values greater than 16 are
  *                truncated to 16.  Values less than 13 are rejected. 
+ *      cc_only => Only check for credit cards, not debit or private label.
  * Returns:
  *      1 on a find, 0 on a miss
  */
-int dlp_is_valid_cc(const unsigned char *buffer, int length);
+int dlp_is_valid_cc(const unsigned char *buffer, int length, int cc_only);
 
 /* Searches the supplied buffer for credit card numbers and returns
  * the number of CC's found.
  * Params:
  *      buffer => data buffer to be analyzed.
  *      length => length of buffer.  
+ *      cc_only => Only check for credit cards, not debit or private label.
  * Returns:
  *      Count of detected CC #'s.
  */
-int dlp_get_cc_count(const unsigned char *buffer, int length);
+int dlp_get_cc_count(const unsigned char *buffer, int length, int cc_only);
 
 /* Searches the supplied buffer for CC #'s.  Bails out as soon as a 
  * validated number is detected.
  * Params:
  *      buffer => data buffer to be analyzed.
  *      length => length of buffer.
+ *      cc_only => Only check for credit cards, not debit or private label.
  * Returns:
  *      1 on detect, 0 on fail
  */
-int dlp_has_cc(const unsigned char *buffer, int length);
+int dlp_has_cc(const unsigned char *buffer, int length, int cc_only);
 
 /* Checks the supplied buffer for a valid SSN number.  Validation
  * is supplied via area and group number validation.  Valid numbers

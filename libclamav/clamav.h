@@ -169,7 +169,7 @@ typedef enum {
 #define CL_SCAN_XMLDOCS                 0x1000000
 #define CL_SCAN_HWP3                    0x2000000
 #define CL_SCAN_FILE_PROPERTIES         0x10000000
-//#define UNUSED                        0x20000000
+#define CL_SCAN_STRUCTURED_CC_ONLY      0x20000000
 #define CL_SCAN_PERFORMANCE_INFO        0x40000000 /* collect performance timings */
 #define CL_SCAN_INTERNAL_COLLECT_SHA    0x80000000 /* Enables hash output in sha-collect builds - for internal use only */
 

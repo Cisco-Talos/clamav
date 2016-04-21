@@ -338,6 +338,8 @@ const struct clam_option __clam_options[] = {
 
     { "StructuredMinCreditCardCount", "structured-cc-count", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, CLI_DEFAULT_MIN_CC_COUNT, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the lowest number of Credit Card numbers found in a file\nto generate a detect.", "5" },
 
+    { "StructuredCCOnly", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "With this option enabled the DLP module will search for valid Credit Card\nnumbers only. Debit and Private Label cards will not be searched.", "no" },
+
     { "StructuredMinSSNCount", "structured-ssn-count", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, CLI_DEFAULT_MIN_SSN_COUNT, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the lowest number of Social Security Numbers found\nin a file to generate a detect.", "5" },
 
     { "StructuredSSNFormatNormal", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD, "With this option enabled the DLP module will search for valid\nSSNs formatted as xxx-yy-zzzz.", "yes" },

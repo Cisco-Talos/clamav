@@ -419,6 +419,11 @@ This option sets the lowest number of Credit Card numbers found in a file to gen
 .br 
 Default: 3
 .TP
+\fBStructuredCCOnly BOOL\fR
+With this option enabled the DLP module will search for valid Credit Card\nnumbers only. Debit and Private Label cards will not be searched.
+.br 
+Default: No
+.TP
 \fBStructuredMinSSNCount NUMBER\fR
 This option sets the lowest number of Social Security Numbers found in a file to generate a detect.
 .br 

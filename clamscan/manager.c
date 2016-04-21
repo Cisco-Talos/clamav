@@ -1132,6 +1132,19 @@ int scanmanager(const struct optstruct *opts)
                 return 2;
             }
         }
+        
+        if((opt = optget(opts, "structured-cc-mode"))->active) {
+            switch(opt->numarg) {
+                case 0:
+                    break;
+                case 1:
+                    options |= CL_SCAN_STRUCTURED_CC_ONLY;
+                    break;
+                default:
+                    logg("!Invalid argument for --structured-cc-mode\n");
+                    return 2;
+            }
+        }
     } else {
         options &= ~CL_SCAN_STRUCTURED;
     }
