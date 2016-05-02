@@ -2275,6 +2275,14 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
 
         while(fpt) {
             if(fpt->offset) switch(fpt->type) {
+                case CL_TYPE_MHTML:
+                    ctx->container_type = CL_TYPE_MHTML;
+                    if(SCAN_MAIL && (DCONF_MAIL & MAIL_CONF_MBOX)) {
+                        cli_dbgmsg("MHTML signature found at %u\n", (unsigned int) fpt->offset);
+                        ret = cli_scanmail(ctx);
+                    }
+                    break;
+
                 case CL_TYPE_XDP:
                     if(SCAN_PDF && (DCONF_DOC & DOC_CONF_PDF)) {
                         cli_dbgmsg("XDP signature found at %u\n", (unsigned int) fpt->offset);
@@ -3032,6 +3040,12 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 
 	case CL_TYPE_MAIL:
 	    ctx->container_type = CL_TYPE_MAIL;
+	    if(SCAN_MAIL && (DCONF_MAIL & MAIL_CONF_MBOX))
+		ret = cli_scanmail(ctx);
+	    break;
+
+	case CL_TYPE_MHTML:
+	    ctx->container_type = CL_TYPE_MHTML;
 	    if(SCAN_MAIL && (DCONF_MAIL & MAIL_CONF_MBOX))
 		ret = cli_scanmail(ctx);
 	    break;
