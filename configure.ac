@@ -229,10 +229,12 @@ have_jit="no"
 if test "$subdirfailed" = "no"; then
     have_jit="yes"
 fi
-if test "x$llvm_linking" = "x"; then
-   CL_MSG_STATUS([llvm        ],[$have_jit, from $system_llvm],[$enable_llvm])
+if test "$enable_llvm" = "no"; then
+   CL_MSG_STATUS([llvm        ],[$have_jit],[$enable_llvm])
+elif test "x$llvm_linking" = "x"; then
+   CL_MSG_STATUS([llvm        ],[$have_jit($llvmver), from $system_llvm],[$enable_llvm])
 else
-   CL_MSG_STATUS([llvm        ],[$have_jit, from $system_llvm ($llvm_linking)],[$enable_llvm])
+   CL_MSG_STATUS([llvm        ],[$have_jit($llvmver), from $system_llvm ($llvm_linking)],[$enable_llvm])
 fi
 CL_MSG_STATUS([mempool     ],[$have_mempool],[$enable_mempool])
 
