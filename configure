@@ -685,6 +685,7 @@ ENABLE_CLAMSUBMIT_FALSE
 ENABLE_CLAMSUBMIT_TRUE
 HAVE_YARA
 subdirs
+llvmconfig
 WERR_CFLAGS_MILTER
 WERR_CFLAGS
 HAVE_CURSES_FALSE
@@ -939,9 +940,9 @@ enable_clamdtop
 with_libncurses_prefix
 with_libpdcurses_prefix
 enable_distcheck_werror
+enable_llvm
 with_system_llvm
 with_llvm_linking
-enable_llvm
 enable_sha_collector_for_internal_use
 enable_yara
 enable_libfreshclam
@@ -1680,9 +1681,9 @@ Optional Packages:
   --without-libncurses-prefix     don't search for libncurses in includedir and libdir
   --with-libpdcurses-prefix[=DIR]  search for libpdcurses in DIR/include and DIR/lib
   --without-libpdcurses-prefix     don't search for libpdcurses in includedir and libdir
-  --with-system-llvm      use system llvm instead of built-in, uses full path
-                          to llvm-config [default=/usr/local or /usr if not
-                          found in /usr/local]
+  --with-system-llvm      Specify system llvm location or to use old package,
+                          uses full path to llvm-config or bin directory
+                          (default=search PATH environment variable)
   --with-llvm-linking     specifies method to linking llvm [static|dynamic],
                           only valid with --with-system-llvm
   --with-libcurl[=DIR]    path to directory containing libcurl
@@ -23931,67 +23932,168 @@ fi
 
 
 
-# Check whether --with-system-llvm was given.
-if test "${with_system_llvm+set}" = set; then :
-  withval=$with_system_llvm; case "$withval" in
-  yes)
-    system_llvm="default"
-    ;;
-  no)
-    system_llvm="built-in"
-    ;;
-  *)
-    system_llvm=$withval
- esac
-
-else
-  system_llvm="built-in"
-fi
-
-
-
-# Check whether --with-llvm-linking was given.
-if test "${with_llvm_linking+set}" = set; then :
-  withval=$with_llvm_linking;
-if test "x$system_llvm" = "xbuilt-in"; then
-   as_fn_error $? "Failed to configure LLVM, and LLVM linking was specified without specifying system-llvm" "$LINENO" 5
-else
-case "$withval" in
-  static)
-    llvm_linking="static"
-    ;;
-  dynamic)
-    llvm_linking="dynamic"
-    ;;
-  *)
-    as_fn_error $? "Invalid argument to --with-llvm-linking" "$LINENO" 5
-esac
-fi
-
-else
-
-if test "x$system_llvm" = "xbuilt-in"; then
-   llvm_linking=""
-else
-   llvm_linking="auto"
-fi
-
-fi
-
-
 # Check whether --enable-llvm was given.
 if test "${enable_llvm+set}" = set; then :
   enableval=$enable_llvm; enable_llvm=$enableval
 else
+  enable_llvm="auto"
+fi
 
-if test "x$system_llvm" != "xbuilt-in"; then
-    enable_llvm="yes"
+
+if test "$enable_llvm" != "no"; then
+
+
+# Check whether --with-system-llvm was given.
+if test "${with_system_llvm+set}" = set; then :
+  withval=$with_system_llvm; system_llvm=$withval; if test "$enable_llvm" = "auto"; then enable_llvm="yes"; fi
 else
-    enable_llvm="auto"
+  system_llvm="yes"
 fi
 
+
+case "$system_llvm" in
+  yes)
+     # Extract the first word of "llvm-config", so it can be a program name with args.
+set dummy llvm-config; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_llvmconfig+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $llvmconfig in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_llvmconfig="$llvmconfig" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_path_llvmconfig="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+llvmconfig=$ac_cv_path_llvmconfig
+if test -n "$llvmconfig"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $llvmconfig" >&5
+$as_echo "$llvmconfig" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
 fi
 
+
+     if test "x$llvmconfig" = "x"; then
+         llvmoptserrmsg="llvm-config cannot be found within PATH"
+     fi
+     ;;
+  no) ;;
+  *)
+     if test -d "$withval"; then
+         # Extract the first word of "llvm-config", so it can be a program name with args.
+set dummy llvm-config; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_llvmconfig+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $llvmconfig in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_llvmconfig="$llvmconfig" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $withval/bin
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_path_llvmconfig="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+llvmconfig=$ac_cv_path_llvmconfig
+if test -n "$llvmconfig"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $llvmconfig" >&5
+$as_echo "$llvmconfig" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+     else
+         llvmconfig=$withval
+         if test ! -x "$llvmconfig"; then
+             llvmconfig=""
+         fi
+     fi
+
+     if test "x$llvmconfig" = "x"; then
+         llvmoptserrmsg="llvm-config does not exist at $withval"
+     fi
+     ;;
+esac
+
+if test "x$llvmconfig" != "x"; then
+
+
+# Check whether --with-llvm-linking was given.
+if test "${with_llvm_linking+set}" = set; then :
+  withval=$with_llvm_linking; if test "x$llvmconfig" = "x"; then
+   as_fn_error $? "Failed to configure LLVM, and LLVM linking was specified without valid llvm-config" "$LINENO" 5
+else
+   case "$withval" in
+     static)
+         llvm_linking="static"
+         ;;
+     dynamic)
+         llvm_linking="dynamic"
+         ;;
+     *)
+         as_fn_error $? "Invalid argument to --with-llvm-linking" "$LINENO" 5
+   esac
+fi
+
+else
+  llvm_linking=""
+fi
+
+
+llvmver=`$llvmconfig --version`
+
+else
+llvmver="2.8"
+system_llvm="internal"
+
+fi
+fi
+
+if test "x$llvmoptserrmsg" != "x"; then
+    if test "$enable_llvm" = "auto"; then
+        enable_llvm="no"
+    else
+        as_fn_error $? "Failed to configure LLVM, and LLVM was explicitly requested" "$LINENO" 5
+            fi
+fi
 
 if test "$enable_llvm" != "no"; then
 
@@ -29559,18 +29661,32 @@ have_jit="no"
 if test "$subdirfailed" = "no"; then
     have_jit="yes"
 fi
-if test "x$llvm_linking" = "x"; then
+if test "$enable_llvm" = "no"; then
 
 
    $as_echo_n "              llvm        : "
    if test "x$enable_llvm" = "xno"; then :
-  $as_echo "$have_jit, from $system_llvm (disabled)"
+  $as_echo "$have_jit (disabled)"
 elif test "x$enable_llvm" = "xyes"; then :
-  $as_echo "$have_jit, from $system_llvm"
+  $as_echo "$have_jit"
 elif test "x$enable_llvm" = "x"; then :
-  $as_echo "$have_jit, from $system_llvm"
+  $as_echo "$have_jit"
 else
-  $as_echo "$have_jit, from $system_llvm ($enable_llvm)"
+  $as_echo "$have_jit ($enable_llvm)"
+fi
+
+elif test "x$llvm_linking" = "x"; then
+
+
+   $as_echo_n "              llvm        : "
+   if test "x$enable_llvm" = "xno"; then :
+  $as_echo "$have_jit($llvmver), from $system_llvm (disabled)"
+elif test "x$enable_llvm" = "xyes"; then :
+  $as_echo "$have_jit($llvmver), from $system_llvm"
+elif test "x$enable_llvm" = "x"; then :
+  $as_echo "$have_jit($llvmver), from $system_llvm"
+else
+  $as_echo "$have_jit($llvmver), from $system_llvm ($enable_llvm)"
 fi
 
 else
@@ -29578,13 +29694,13 @@ else
 
    $as_echo_n "              llvm        : "
    if test "x$enable_llvm" = "xno"; then :
-  $as_echo "$have_jit, from $system_llvm ($llvm_linking) (disabled)"
+  $as_echo "$have_jit($llvmver), from $system_llvm ($llvm_linking) (disabled)"
 elif test "x$enable_llvm" = "xyes"; then :
-  $as_echo "$have_jit, from $system_llvm ($llvm_linking)"
+  $as_echo "$have_jit($llvmver), from $system_llvm ($llvm_linking)"
 elif test "x$enable_llvm" = "x"; then :
-  $as_echo "$have_jit, from $system_llvm ($llvm_linking)"
+  $as_echo "$have_jit($llvmver), from $system_llvm ($llvm_linking)"
 else
-  $as_echo "$have_jit, from $system_llvm ($llvm_linking) ($enable_llvm)"
+  $as_echo "$have_jit($llvmver), from $system_llvm ($llvm_linking) ($enable_llvm)"
 fi
 
 fi
