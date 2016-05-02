@@ -146,6 +146,7 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
 	$(top_srcdir)/m4/reorganization/clamdtop.m4 \
 	$(top_srcdir)/m4/reorganization/distcheck.m4 \
 	$(top_srcdir)/m4/reorganization/llvm.m4 \
+	$(top_srcdir)/libclamav/c++/m4/llvm-opts.m4 \
 	$(top_srcdir)/m4/reorganization/sha_collect.m4 \
 	$(top_srcdir)/m4/reorganization/yara.m4 \
 	$(top_srcdir)/m4/reorganization/libfreshclam.m4 \
@@ -447,6 +448,7 @@ infodir = @infodir@
 install_sh = @install_sh@
 libdir = @libdir@
 libexecdir = @libexecdir@
+llvmconfig = @llvmconfig@
 localedir = @localedir@
 localstatedir = @localstatedir@
 ltdl_LIBOBJS = @ltdl_LIBOBJS@

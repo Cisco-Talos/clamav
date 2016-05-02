@@ -648,11 +648,11 @@ THREAD_LIBS
 DEBUG_BUILD_FALSE
 DEBUG_BUILD_TRUE
 LLVM_VERSION
-subdirs
 LLVMCONFIG_LIBFILES
 LLVMCONFIG_LIBS
 LLVMCONFIG_LDFLAGS
 LLVMCONFIG_CXXFLAGS
+subdirs
 llvmconfig
 GMAKE
 ifGNUmake
@@ -1472,9 +1472,9 @@ Optional Packages:
   --with-gnu-ld           assume the C compiler uses GNU ld [default=no]
   --with-sysroot[=DIR]    Search for dependent libraries within DIR (or the
                           compiler's sysroot if not specified).
-  --with-system-llvm      Use system llvm instead of built-in, uses full path
-                          to llvm-config or bin directory (default=search PATH
-                          environment variable)
+  --with-system-llvm      Specify system llvm location or to use old package,
+                          uses full path to llvm-config or bin directory
+                          (default=search PATH environment variable)
   --with-llvm-linking     specifies method to linking llvm [static|dynamic],
                           only valid with --with-system-llvm
 
@@ -16412,10 +16412,18 @@ else
 fi
 
 
+if test "$enable_llvm" != "no"; then
+
 
 # Check whether --with-system-llvm was given.
 if test "${with_system_llvm+set}" = set; then :
-  withval=$with_system_llvm; case "$withval" in
+  withval=$with_system_llvm; system_llvm=$withval; if test "$enable_llvm" = "auto"; then enable_llvm="yes"; fi
+else
+  system_llvm="yes"
+fi
+
+
+case "$system_llvm" in
   yes)
      # Extract the first word of "llvm-config", so it can be a program name with args.
 set dummy llvm-config; ac_word=$2
@@ -16458,7 +16466,7 @@ fi
 
 
      if test "x$llvmconfig" = "x"; then
-         as_fn_error $? "llvm-config cannot be found within PATH" "$LINENO" 5
+         llvmoptserrmsg="llvm-config cannot be found within PATH"
      fi
      ;;
   no) ;;
@@ -16512,13 +16520,12 @@ fi
      fi
 
      if test "x$llvmconfig" = "x"; then
-         as_fn_error $? "llvm-config does not exist at $withval" "$LINENO" 5
+         llvmoptserrmsg="llvm-config does not exist at $withval"
      fi
      ;;
-  esac
+esac
 
-fi
-
+if test "x$llvmconfig" != "x"; then
 
 
 # Check whether --with-llvm-linking was given.
@@ -16543,13 +16550,27 @@ else
 fi
 
 
+llvmver=`$llvmconfig --version`
+
+else
+llvmver="2.8"
+system_llvm="internal"
+
+fi
+fi
+if test "x$llvmflagerrmsg" != "x"; then
+    as_fn_error $? "$llvmflagerrmsg" "$LINENO" 5
+fi
+
 if test "x$llvmconfig" != "x"; then
-    llvmver=`$llvmconfig --version`
     { $as_echo "$as_me:${as_lineno-$LINENO}: Using external LLVM" >&5
 $as_echo "$as_me: Using external LLVM" >&6;}
 else
-    llvmver="2.8"
     packaged_llvm="yes"
+
+
+subdirs="$subdirs llvm"
+
 fi
 
 llvmver_val=`echo "$llvmver" | sed -e 's/svn//g'`
@@ -16631,15 +16652,6 @@ $as_echo "$as_me: LDFLAGS from llvm-config: $LLVMCONFIG_LDFLAGS" >&6;}
 $as_echo "$as_me: LIBS from llvm-config: $LLVMCONFIG_LIBS" >&6;}
 fi
 llvmver_int=${llvmver_major}${llvmver_minor}
-
-
-if test "x$llvmconfig" = "x"; then
-
-
-subdirs="$subdirs llvm"
-
-fi
-
 LLVM_VERSION=$llvmver_int
 
 
