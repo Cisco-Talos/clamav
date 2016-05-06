@@ -140,7 +140,7 @@ Example
 # Default: 5
 #CommandReadTimeout 5
 
-# This option specifies how long to wait (in miliseconds) if the send buffer is full.
+# This option specifies how long to wait (in milliseconds) if the send buffer is full.
 # Keep this value low to prevent clamd hanging
 #
 # Default: 500
@@ -648,7 +648,7 @@ Example
 # Default: TrustSigned
 #BytecodeSecurity TrustSigned
 
-# Set bytecode timeout in miliseconds.
+# Set bytecode timeout in milliseconds.
 # 
 # Default: 5000
 # BytecodeTimeout 1000

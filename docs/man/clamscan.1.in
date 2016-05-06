@@ -278,7 +278,7 @@ Disable caching and cache checks for hash sums of scanned files.
 .TP 
 1 : Virus(es) found.
 .TP 
-2 : Some error(s) occured.
+2 : Some error(s) occurred.
 .SH "CREDITS"
 Please check the full documentation for credits.
 .SH "AUTHOR"

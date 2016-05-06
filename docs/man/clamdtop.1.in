@@ -181,7 +181,7 @@ environment. IPv6 support has been added. If specifying an IPv6 address, please 
 .LP 
 0 : Normal terminator
 .TP 
->0: Error occured.
+>0: Error occurred.
 .SH "CREDITS"
 Please check the full documentation for credits.
 .SH "AUTHOR"
