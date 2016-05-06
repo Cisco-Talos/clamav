@@ -18504,7 +18504,7 @@ $as_echo "$pcre_version" >&6; }
 
     pcrever_major=`expr "$pcrever_frag" : '\([0-9]*\)'`
     pcrever_frag=${pcrever_frag#*\.}
-    pcrever_major=`expr "$pcrever_frag" : '\([0-9]*\)'`
+    pcrever_minor=`expr "$pcrever_frag" : '\([0-9]*\)'`
 
         if test "$pcrelib" = "pcre"; then
         if test $pcrever_major -lt 6; then
