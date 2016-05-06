@@ -134,9 +134,9 @@ static inline void PROFILE_REPORT(const struct cli_hashtable *s)
 	size_t lookups, queries, insert_tries, inserts;
 	cli_dbgmsg("--------Hashtable usage report for %p--------------\n",(const void*)s);
 	cli_dbgmsg("hash function calculations:%ld\n",s->PROFILE_STRUCT.calc_hash);
-	cli_dbgmsg("successfull finds/total searches: %ld/%ld; lookups: %ld\n", s->PROFILE_STRUCT.found, s->PROFILE_STRUCT.find_req, s->PROFILE_STRUCT.found_tries);
-	cli_dbgmsg("unsuccessfull finds/total searches: %ld/%ld; lookups: %ld\n", s->PROFILE_STRUCT.not_found, s->PROFILE_STRUCT.find_req , s->PROFILE_STRUCT.not_found_tries);
-	cli_dbgmsg("successfull finds during grow:%ld; lookups: %ld\n",s->PROFILE_STRUCT.grow_found, s->PROFILE_STRUCT.grow_found_tries);
+	cli_dbgmsg("successful finds/total searches: %ld/%ld; lookups: %ld\n", s->PROFILE_STRUCT.found, s->PROFILE_STRUCT.find_req, s->PROFILE_STRUCT.found_tries);
+	cli_dbgmsg("unsuccessful finds/total searches: %ld/%ld; lookups: %ld\n", s->PROFILE_STRUCT.not_found, s->PROFILE_STRUCT.find_req , s->PROFILE_STRUCT.not_found_tries);
+	cli_dbgmsg("successful finds during grow:%ld; lookups: %ld\n",s->PROFILE_STRUCT.grow_found, s->PROFILE_STRUCT.grow_found_tries);
 	lookups = s->PROFILE_STRUCT.found_tries + s->PROFILE_STRUCT.not_found_tries + s->PROFILE_STRUCT.grow_found_tries;
 	queries = s->PROFILE_STRUCT.find_req + s->PROFILE_STRUCT.grow_found;
 	cli_dbgmsg("Find Lookups/total queries: %ld/%ld = %3f\n", lookups, queries, lookups*1.0/queries);
@@ -739,7 +739,7 @@ static inline size_t cli_hashset_search(const struct cli_hashset* hs, const uint
 	size_t idx = hash32shift(key) & (hs->mask);
 	size_t tries = 1;
 
-	/* check wether the entry is used, and if the key matches */
+	/* check whether the entry is used, and if the key matches */
 	while(BITMAP_CONTAINS(hs->bitmap, idx) && (hs->keys[idx] != key)) {
 		/* entry used, key different -> collision */
 		idx = (idx + tries++)&(hs->mask);

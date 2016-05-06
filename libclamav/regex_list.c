@@ -68,7 +68,7 @@ static int add_static_pattern(struct regex_matcher *matcher, char* pattern);
 #define MATCH_FAILED  -1
 
 /*
- * Call this function when an unrecoverable error has occured, (instead of exit).
+ * Call this function when an unrecoverable error has occurred, (instead of exit).
  */
 static void fatal_error(struct regex_matcher* matcher)
 {
@@ -252,7 +252,7 @@ int regex_list_match(struct regex_matcher* matcher,char* real_url,const char* di
 
 
 /* Initialization & loading */
-/* Initializes @matcher, allocating necesarry substructures */
+/* Initializes @matcher, allocating necessary substructures */
 int init_regex_list(struct regex_matcher* matcher, uint8_t dconf_prefiltering)
 {
 #ifdef USE_MPOOL

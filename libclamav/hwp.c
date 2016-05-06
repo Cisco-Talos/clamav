@@ -1036,7 +1036,7 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
 
                     hwp3_debug("HWP3.x: Paragraph[%d, %d]: box object contains %u cell(s)\n", level, p, ncells);
 
-                    /* cell informations (27 bytes x ncells(offset 80 of table)) */
+                    /* cell information (27 bytes x ncells(offset 80 of table)) */
                     hwp3_debug("HWP3.x: Paragraph[%d, %d]: box cell info array starts @ %llu\n", level, p, (long long unsigned)offset);
                     offset += (27 * ncells);
 
@@ -1525,7 +1525,7 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
 #endif
 
     if (fmap_readn(map, &infoid, (*offset), sizeof(infoid)) != sizeof(infoid)) {
-        cli_errmsg("HWP3.x: Failed to read infomation block id @ %llu\n",
+        cli_errmsg("HWP3.x: Failed to read information block id @ %llu\n",
                    (long long unsigned)(*offset));
         return CL_EREAD;
     }
@@ -1547,16 +1547,16 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
 
     /* Booking Information(5) - no length field and no content */
     if (infoid == 5) {
-        hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Booking Infomation\n", infoloc);
+        hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Booking Information\n", infoloc);
 #if HAVE_JSON
         if (ctx->options & CL_SCAN_FILE_PROPERTIES)
-            cli_jsonstr(entry, "Type", "Booking Infomation");
+            cli_jsonstr(entry, "Type", "Booking Information");
 #endif
         return CL_SUCCESS;
     }
 
     if (fmap_readn(map, &infolen, (*offset), sizeof(infolen)) != sizeof(infolen)) {
-        cli_errmsg("HWP3.x: Failed to read infomation block len @ %llu\n",
+        cli_errmsg("HWP3.x: Failed to read information block len @ %llu\n",
                    (long long unsigned)(*offset));
         return CL_EREAD;
     }
@@ -1602,7 +1602,7 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
 #if HWP3_DEBUG /* additional fields can be added */
         memset(field, 0, HWP3_FIELD_LENGTH);
         if (fmap_readn(map, field, (*offset), 16) != 16) {
-            cli_errmsg("HWP3.x: Failed to read infomation block field @ %llu\n",
+            cli_errmsg("HWP3.x: Failed to read information block field @ %llu\n",
                        (long long unsigned)(*offset));
             return CL_EREAD;
         }
@@ -1610,7 +1610,7 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
 
         memset(field, 0, HWP3_FIELD_LENGTH);
         if (fmap_readn(map, field, (*offset)+16, 16) != 16) {
-            cli_errmsg("HWP3.x: Failed to read infomation block field @ %llu\n",
+            cli_errmsg("HWP3.x: Failed to read information block field @ %llu\n",
                        (long long unsigned)(*offset));
             return CL_EREAD;
         }
@@ -1630,7 +1630,7 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
             ret = cli_map_scan(map, (*offset), infolen, ctx, CL_TYPE_ANY);
         break;
     case 3: /* Hypertext/Hyperlink Information */
-        hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Hypertext/Hyperlink Infomation\n", infoloc);
+        hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Hypertext/Hyperlink Information\n", infoloc);
         if (infolen % 617) {
             cli_errmsg("HWP3.x: Information Block[%llu]: Invalid multiple of 617 => %u\n", infoloc, infolen);
             return CL_EFORMAT;
@@ -1640,7 +1640,7 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
         hwp3_debug("HWP3.x: Information Block[%llu]: COUNT: %d entries\n", infoloc, count);
 #if HAVE_JSON
         if (ctx->options & CL_SCAN_FILE_PROPERTIES) {
-            cli_jsonstr(entry, "Type", "Hypertext/Hyperlink Infomation");
+            cli_jsonstr(entry, "Type", "Hypertext/Hyperlink Information");
             cli_jsonint(entry, "Count", count);
         }
 #endif
@@ -1649,7 +1649,7 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
 #if HWP3_DEBUG /* additional fields can be added */
             memset(field, 0, HWP3_FIELD_LENGTH);
             if (fmap_readn(map, field, (*offset), 256) != 256) {
-                cli_errmsg("HWP3.x: Failed to read infomation block field @ %llu\n",
+                cli_errmsg("HWP3.x: Failed to read information block field @ %llu\n",
                            (long long unsigned)(*offset));
                 return CL_EREAD;
             }
@@ -1669,7 +1669,7 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
         break;
     case 5: /* Booking Information */
         /* should never run this as it is short-circuited above */
-        hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Booking Infomation\n", infoloc);
+        hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Booking Information\n", infoloc);
 #if HAVE_JSON
         if (ctx->options & CL_SCAN_FILE_PROPERTIES)
             cli_jsonstr(entry, "Type", "Booking Information");
@@ -1686,7 +1686,7 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
 #if HWP3_DEBUG /* additional fields can be added */
         memset(field, 0, HWP3_FIELD_LENGTH);
         if (fmap_readn(map, field, (*offset)+24, 256) != 256) {
-            cli_errmsg("HWP3.x: Failed to read infomation block field @ %llu\n",
+            cli_errmsg("HWP3.x: Failed to read information block field @ %llu\n",
                        (long long unsigned)(*offset));
             return CL_EREAD;
         }
@@ -2071,7 +2071,7 @@ int cli_scanhwpml(cli_ctx *ctx)
 
     reader = xmlReaderForIO(msxml_read_cb, NULL, &cbdata, "hwpml.xml", NULL, CLAMAV_MIN_XMLREADER_FLAGS);
     if (!reader) {
-        cli_dbgmsg("cli_scanhwpml: cannot intialize xmlReader\n");
+        cli_dbgmsg("cli_scanhwpml: cannot initialize xmlReader\n");
 
 #if HAVE_JSON
         ret = cli_json_parse_error(ctx->wrkproperty, "HWPML_ERROR_XML_READER_IO");
