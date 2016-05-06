@@ -2,52 +2,87 @@
 want_xml="auto"
 AC_ARG_ENABLE([xml],
 [AS_HELP_STRING([--disable-xml], [do not include DMG and XAR support])],
-want_xml=$enableval, want_xml="auto")
+    [want_xml=$enableval], [want_xml="auto"])
 
 XML_HOME=""
+xmlconfig=""
 if test "X$want_xml" != "Xno"; then
   AC_MSG_CHECKING([for libxml2 installation])
   AC_ARG_WITH([xml],
   [AS_HELP_STRING([--with-xml@<:@=DIR@:>@], [path to directory containing libxml2 library
                   @<:@default=/usr/local or /usr if not found in /usr/local@:>@])],
-  [
-  if test "$withval"
-  then
-    XML_HOME="$withval"
-    AC_MSG_RESULT([using $XML_HOME])
-  else
-    AC_MSG_ERROR([cannot assign blank value to --with-xml])
-  fi
-  ], [
-  XML_HOME=/usr/local
-  if test ! -x "$XML_HOME/bin/xml2-config"
-  then
-    XML_HOME=/usr
-    if test ! -x "$XML_HOME/bin/xml2-config"
-    then
-      XML_HOME=""
+  [if test "x$withval" = x ; then
+      AC_MSG_ERROR([cannot assign blank value to --with-xml])
+   fi
+   with_xml="$withval"
+  ],[with_xml="yes"])
+
+  case "$with_xml" in
+    yes) AC_PATH_PROG([xmlconfig], [xml2-config])
+        if test "x$xmlconfig" = x ; then
+            AC_MSG_NOTICE([can not locate xml2-config in PATH, will search default XML_HOME variants])
+
+            AC_MSG_CHECKING([for xml2-config in default XML_HOME locations])
+            XML_HOME=/usr/local
+            if test ! -x "$XML_HOME/bin/xml2-config"
+            then
+              XML_HOME=/usr
+              if test ! -x "$XML_HOME/bin/xml2-config"
+              then
+                XML_HOME=""
+                AC_MSG_ERROR([not found])
+              fi
+            fi
+        else
+            AC_MSG_RESULT(using $xmlconfig as the xml2-config program)
+        fi
+        ;;
+    no) want_xml=no
+        AC_MSG_RESULT(not wanted by caller)
+        ;;
+    *-config)
+        xmlconfig="$withval"
+        AC_MSG_RESULT(considering $xmlconfig as the xml2-config program)
+        ;;
+    *) # Path to XML_HOME
+        XML_HOME="$withval"
+        AC_MSG_RESULT([using XML_HOME=$XML_HOME to look for xml2-config program])
+        ;;
+  esac
+  if test "x$want_xml" != xno ; then
+    if test "x$xmlconfig" = "x"; then
+      if test "x$XML_HOME" != "x" && test -x "$XML_HOME/bin/xml2-config" ; then
+        xmlconfig="$XML_HOME/bin/xml2-config"
+        AC_MSG_NOTICE([found xml2-config under $XML_HOME])
+      fi
+    fi
+
+    if test "x$xmlconfig" != "x" && test -x "$xmlconfig" -a -s "$xmlconfig"; then
+      AC_MSG_NOTICE([will use $xmlconfig])
+    else
+      AC_MSG_ERROR([cannot use '$xmlconfig' value as the xml2-config program])
     fi
   fi
-  if test "x$XML_HOME" != "x"; then
-    AC_MSG_RESULT([$XML_HOME])
-  else
-    AC_MSG_RESULT([not found])
-  fi
-  ])
 fi
 
 found_xml="no"
 XMLCONF_VERSION=""
 XML_CPPFLAGS=""
 XML_LIBS=""
-if test "x$XML_HOME" != "x"; then
-  AC_MSG_CHECKING([xml2-config version])
-  XMLCONF_VERSION="`$XML_HOME/bin/xml2-config --version`"
-  if test "x%XMLCONF_VERSION" != "x"; then
+if test "x$xmlconfig" != "x"; then
+  AC_MSG_CHECKING([xml2-config version with $xmlconfig])
+  XMLCONF_VERSION="`$xmlconfig --version`"
+  if test "x$XMLCONF_VERSION" != "x"; then
     AC_MSG_RESULT([$XMLCONF_VERSION])
     found_xml="yes"
-    XML_CPPFLAGS="`$XML_HOME/bin/xml2-config --cflags`"
-    XML_LIBS="`$XML_HOME/bin/xml2-config --libs`"
+    XML_CPPFLAGS="`$xmlconfig --cflags`"
+    XML_LIBS="`$xmlconfig --libs`"
+    if test x"$XML_HOME" = x ; then
+      XML_HOME="`$xmlconfig --prefix`"
+    fi
+    if test x"$XML_HOME" = x ; then
+      AC_MSG_ERROR([xml2-config failed])
+    fi
   else
     AC_MSG_ERROR([xml2-config failed])
   fi
