@@ -490,7 +490,7 @@
 /* Define if dlsym() requires a leading underscore in symbol names. */
 #undef NEED_USCORE
 
-/* bzip funtions do not have bz2 prefix */
+/* bzip functions do not have bz2 prefix */
 #undef NOBZ2PREFIX
 
 /* "no fd_set" */
