@@ -60,7 +60,7 @@ if test "x$pcreconfig" != "x"; then
 
     pcrever_major=`expr "$pcrever_frag" : '\([[0-9]]*\)'`
     pcrever_frag=${pcrever_frag#*\.}
-    pcrever_major=`expr "$pcrever_frag" : '\([[0-9]]*\)'`
+    pcrever_minor=`expr "$pcrever_frag" : '\([[0-9]]*\)'`
 
     dnl check for match_limit_recursion support
     if test "$pcrelib" = "pcre"; then
