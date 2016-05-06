@@ -54,17 +54,13 @@ if test "x$pcreconfig" != "x"; then
     fi
 
     AC_MSG_RESULT([$pcre_version])
-    AC_CANONICAL_HOST
-    case $host_os in
-      darwin* )
-        pcrever_major=`echo "$pcre_version" | sed -Ee 's/([[0-9]]+).*/\1/'`
-        pcrever_minor=`echo "$pcre_version" | sed -Ee 's/[[0-9]]+\.([[0-9]]+).*/\1/'`
-        ;;
-      *)
-        pcrever_major=`echo "$pcre_version" | sed -re 's/([[0-9]]+).*/\1/'`
-        pcrever_minor=`echo "$pcre_version" | sed -re 's/[[0-9]]+\.([[0-9]]+).*/\1/'`
-        ;;
-    esac
+
+    pcrever_prefix=`expr "$pcre_version" : '\([[^0-9]]*\)'`
+    pcrever_frag=${pcre_version:${#pcrever_prefix}}
+
+    pcrever_major=`expr "$pcrever_frag" : '\([[0-9]]*\)'`
+    pcrever_frag=${pcrever_frag#*\.}
+    pcrever_major=`expr "$pcrever_frag" : '\([[0-9]]*\)'`
 
     dnl check for match_limit_recursion support
     if test "$pcrelib" = "pcre"; then

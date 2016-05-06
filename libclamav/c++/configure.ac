@@ -64,22 +64,15 @@ else
     AC_CONFIG_SUBDIRS([llvm])
 fi
 
-llvmver_val=`echo "$llvmver" | sed -e 's/svn//g'`
-AC_CANONICAL_HOST
-case $host_os in
-  darwin* )
-    llvmver_sval=`echo "$llvmver_val" | sed -Ee 's/[[0-9]]+//' | sed -e 's/^\.//'`
-    llvmver_major=`echo "$llvmver_val"  | sed -Ee 's/([[0-9]]+).*/\1/'`
-    llvmver_minor=`echo "$llvmver_sval" | sed -Ee 's/([[0-9]]+).*/\1/'`
-    llvmver_patch=`echo "$llvmver_sval" | sed -Ee 's/[[0-9]]+//' | sed -e 's/^\.//' | sed -Ee 's/([[0-9]]+).*/\1/'`
-    ;;
-  *)
-    llvmver_sval=`echo "$llvmver_val" | sed -re 's/[[0-9]]+//' | sed -e 's/^\.//'`
-    llvmver_major=`echo "$llvmver_val"  | sed -re 's/([[0-9]]+).*/\1/'`
-    llvmver_minor=`echo "$llvmver_sval" | sed -re 's/([[0-9]]+).*/\1/'`
-    llvmver_patch=`echo "$llvmver_sval" | sed -re 's/[[0-9]]+//' | sed -e 's/^\.//' | sed -re 's/([[0-9]]+).*/\1/'`
-    ;;
-esac
+llvmver_prefix=`expr "$llvmver" : '\([[^0-9]]*\)'`
+llvmver_frag=${llvmver:${#llvmver_prefix}}
+
+llvmver_major=`expr "$llvmver_frag" : '\([[0-9]]*\)'`
+llvmver_frag=${llvmver_frag#*\.}
+llvmver_minor=`expr "$llvmver_frag" : '\([[0-9]]*\)'`
+llvmver_frag=${llvmver_frag#*\.}
+llvmver_patch=`expr "$llvmver_frag" : '\([[0-9]]*\)'`
+
 dnl suffix unused as of LLVM 3.4.1
 llvmver_suffix=
 if test "x$llvmver_patch" = "x"; then
