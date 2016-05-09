@@ -2348,6 +2348,7 @@ updatecustomdb (const char *url, int *signo, const struct optstruct *opts,
     }
     else if (!strncasecmp (url, "file://", 7))
     {
+        time_t dbtime, rtime;
         rpath = &url[7];
 #ifdef _WIN32
         dbname = strrchr (rpath, '\\');
@@ -2360,12 +2361,24 @@ updatecustomdb (const char *url, int *signo, const struct optstruct *opts,
             return FCE_FAILEDUPDATE;
         }
 
+        if (CLAMSTAT (rpath, &sb) == -1)
+        {
+	    logg ("DatabaseCustomURL: file %s missing\n", rpath);
+	    return FCE_FAILEDUPDATE;
+        }
+        rtime = sb.st_mtime;
+        dbtime = (CLAMSTAT (dbname, &sb) != -1) ? sb.st_mtime : 0;
+        if (dbtime > rtime)
+        {
+            logg ("%s is up to date (version: custom database)\n", dbname);
+            return FC_UPTODATE;
+        }
+
         newfile = cli_gentemp (updtmpdir);
         if (!newfile)
             return FCE_FAILEDUPDATE;
 
         /* FIXME: preserve file permissions, calculate % */
-        logg ("Downloading %s [  0%%]\r", dbname);
         if (cli_filecopy (rpath, newfile) == -1)
         {
             logg ("DatabaseCustomURL: Can't copy file %s into database directory\n", rpath);
