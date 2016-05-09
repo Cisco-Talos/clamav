@@ -71,7 +71,7 @@ static inline int bcfail(const char *msg, long a, long b,
 #define CHECK_EQ(a,b)
 #define CHECK_GT(a,b)
 #endif
-#ifdef CL_DEBUG
+#if 0 /* too verbose, use #ifdef CL_DEBUG if needed */
 #define CHECK_UNREACHABLE do { cli_dbgmsg("bytecode: unreachable executed!\n"); return CL_EBYTECODE; } while(0)
 #define TRACE_PTR(ptr, s) cli_dbgmsg("bytecode trace: ptr %llx, +%x\n", ptr, s);
 #define TRACE_R(x) cli_dbgmsg("bytecode trace: %u, read %llx\n", pc, (long long)x);
@@ -153,7 +153,7 @@ static always_inline void* cli_stack_alloc(struct stack *stack, unsigned bytes)
     /* not enough room here, allocate new chunk */
     chunk = cli_malloc(sizeof(*stack->chunk));
     if (!chunk) {
-        cli_warnmsg("cli_stack_alloc: Unable to allocate memory for stack-chunk: bytes: %u!\n", sizeof(*stack->chunk));
+        cli_warnmsg("cli_stack_alloc: Unable to allocate memory for stack-chunk: bytes: %zu!\n", sizeof(*stack->chunk));
         return NULL;
     }
 
