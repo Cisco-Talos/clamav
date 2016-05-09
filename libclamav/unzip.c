@@ -620,6 +620,7 @@ static unsigned int chdr(fmap_t *map, uint32_t coff, uint32_t zsize, unsigned in
   char name[256];
   int last = 0;
   const uint8_t *ch;
+  int virus_found = 0;
 
   if(!(ch = fmap_need_off(map, coff, SIZEOF_CH)) || CH_magic != 0x02014b50) {
       if(ch) fmap_unneed_ptr(map, ch, SIZEOF_CH);
@@ -636,7 +637,7 @@ static unsigned int chdr(fmap_t *map, uint32_t coff, uint32_t zsize, unsigned in
   }
 
   name[0]='\0';
-  if((cli_debug_flag && !last) || requests) {
+  if(!last) {
       unsigned int size = (CH_flen>=sizeof(name))?sizeof(name)-1:CH_flen;
       const char *src = fmap_need_off_once(map, coff, size);
       if(src) {
@@ -646,6 +647,9 @@ static unsigned int chdr(fmap_t *map, uint32_t coff, uint32_t zsize, unsigned in
       }
   }
   coff+=CH_flen;
+
+  if(cli_matchmeta(ctx, name, CH_csize, CH_usize, (CH_flags & F_ENCR)!=0, fc, CH_crc32, NULL) == CL_VIRUS)
+    virus_found = 1;
 
   if(zsize-coff<=CH_elen && !last) {
     cli_dbgmsg("cli_unzip: ch - extra out of file\n");
@@ -682,6 +686,8 @@ static unsigned int chdr(fmap_t *map, uint32_t coff, uint32_t zsize, unsigned in
       }
   }
 
+  if (virus_found == 1)
+      *ret = CL_VIRUS;
   fmap_unneed_ptr(map, ch, SIZEOF_CH);
   return (last?0:coff);
 }
