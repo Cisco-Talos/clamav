@@ -53,6 +53,7 @@
 
 #include "mbox.h"
 #include "clamav.h"
+#include "json_api.h"
 
 #ifndef isblank
 #define isblank(c)	(((c) == ' ') || ((c) == '\t'))
@@ -198,6 +199,11 @@ messageReset(message *m)
 		assert(m->numberOfEncTypes > 0);
 		free(m->encodingTypes);
 	}
+
+#if HAVE_JSON
+	if(m->jobj)
+		cli_json_delobj(m->jobj);
+#endif
 
 	memset(m, '\0', sizeof(message));
 	m->mimeType = NOMIME;
@@ -2630,3 +2636,15 @@ isuuencodebegin(const char *line)
 		isdigit(line[6]) && isdigit(line[7]) &&
 		isdigit(line[8]) && (line[9] == ' ');
 }
+
+#if HAVE_JSON
+json_object *messageGetJObj(message *m)
+{
+	assert(m != NULL);
+
+	if(m->jobj == NULL)
+		m->jobj = cli_jsonobj(NULL, NULL);
+
+	return m->jobj;
+}
+#endif
