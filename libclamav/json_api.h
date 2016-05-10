@@ -46,9 +46,13 @@ int cli_jsonint(json_object *obj, const char* key, int32_t i);
 int cli_jsonint64(json_object *obj, const char* key, int64_t i);
 int cli_jsonbool(json_object *obj, const char* key, int i);
 int cli_jsondouble(json_object *obj, const char* key, double d);
+
 json_object *cli_jsonarray(json_object *obj, const char *key);
 int cli_jsonint_array(json_object *obj, int32_t val);
 json_object *cli_jsonobj(json_object *obj, const char *key);
+int cli_json_addowner(json_object *owner, json_object *child, const char *key, int idx);
+int cli_json_delowner(json_object *owner, const char *key, int idx);
+#define cli_json_delobj(obj)  json_object_put(obj)
 
 #if HAVE_DEPRECATED_JSON
 int json_object_object_get_ex(struct json_object *obj, const char *key, struct json_object **value);
@@ -87,6 +91,10 @@ int cli_jsonint_array_nojson(int32_t val);
 #define cli_jsondouble(o,n,d)      cli_jsondouble_nojson(n,d)
 #define cli_jsonarray(o,k)         cli_jsonarray_nojson(k)
 #define cli_jsonint_array(o,v)     cli_jsonint_array_nojson(v)
+#define cli_json_addowner(o,c,k,i) cli_json_nojson()
+#define cli_json_addowner(o,k,i)   cli_json_nojson()
+#define cli_json_delobj(o)         cli_json_nojson()
+
 #endif
 
 #endif /*__JSON_C_H__*/
