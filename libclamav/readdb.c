@@ -2755,10 +2755,11 @@ static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	if(!strcmp(tokens[1], "*")) {
 	    new->ctype = CL_TYPE_ANY;
 	} else if((new->ctype = cli_ftcode(tokens[1])) == CL_TYPE_ERROR) {
-	    cli_dbgmsg("cli_loadcdb: Unknown container type %s in signature for %s, skipping\n", tokens[1], tokens[0]);
+	    cli_errmsg("cli_loadcdb: Unknown container type %s in signature for %s, skipping\n", tokens[1], tokens[0]);
+            ret = CL_EMALFDB;
 	    mpool_free(engine->mempool, new->virname);
 	    mpool_free(engine->mempool, new);
-	    continue;
+	    break;
 	}
 
 	if(strcmp(tokens[3], "*") && cli_regcomp(&new->name, tokens[3], REG_EXTENDED | REG_NOSUB)) {

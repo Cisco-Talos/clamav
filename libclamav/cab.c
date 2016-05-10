@@ -135,9 +135,9 @@ static int cab_chkname(char *name, int san)
 	if(!san && (strchr("%/*?|\\\"+=<>;:\t ", name[i]) || !isascii(name[i]))) {
 	    cli_dbgmsg("cab_chkname: File name contains disallowed characters\n");
 	    return 1;
-	} else if(san && !isalnum(name[i])) {
+	} else if(san && !isprint(name[i])) {
 	    name[i] = '*';
-	}
+        }
     }
 
     return 0;
