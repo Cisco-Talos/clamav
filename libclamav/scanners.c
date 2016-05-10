@@ -3694,7 +3694,7 @@ static int scan_common(int desc, cl_fmap_t *map, const char **virname, unsigned 
                     free(tmpname);
             }
         }
-        json_object_put(ctx.properties); /* frees all json memory */
+        cli_json_delobj(ctx.properties); /* frees all json memory */
 #if 0
         // test code  - to be deleted
         if (cli_checktimelimit(&ctx) != CL_SUCCESS) {
