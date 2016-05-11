@@ -18500,7 +18500,7 @@ $as_echo_n "checking pcre-config version... " >&6; }
 $as_echo "$pcre_version" >&6; }
 
     pcrever_prefix=`expr "$pcre_version" : '\([^0-9]*\)'`
-    pcrever_frag=${pcre_version:${#pcrever_prefix}}
+    pcrever_frag=${pcre_version#$pcrever_prefix}
 
     pcrever_major=`expr "$pcrever_frag" : '\([0-9]*\)'`
     pcrever_frag=${pcrever_frag#*\.}
