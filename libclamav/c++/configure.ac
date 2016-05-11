@@ -65,7 +65,7 @@ else
 fi
 
 llvmver_prefix=`expr "$llvmver" : '\([[^0-9]]*\)'`
-llvmver_frag=${llvmver:${#llvmver_prefix}}
+llvmver_frag=${llvmver#$llvmver_prefix}
 
 llvmver_major=`expr "$llvmver_frag" : '\([[0-9]]*\)'`
 llvmver_frag=${llvmver_frag#*\.}
