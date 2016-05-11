@@ -648,7 +648,8 @@ static unsigned int chdr(fmap_t *map, uint32_t coff, uint32_t zsize, unsigned in
   }
   coff+=CH_flen;
 
-  if(cli_matchmeta(ctx, name, CH_csize, CH_usize, (CH_flags & F_ENCR)!=0, fc, CH_crc32, NULL) == CL_VIRUS)
+  /* requests do not supply a ctx; also prevent multiple scans */
+  if(ctx && cli_matchmeta(ctx, name, CH_csize, CH_usize, (CH_flags & F_ENCR)!=0, fc, CH_crc32, NULL) == CL_VIRUS)
     virus_found = 1;
 
   if(zsize-coff<=CH_elen && !last) {
