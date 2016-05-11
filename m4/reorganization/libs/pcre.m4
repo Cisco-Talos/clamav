@@ -56,7 +56,7 @@ if test "x$pcreconfig" != "x"; then
     AC_MSG_RESULT([$pcre_version])
 
     pcrever_prefix=`expr "$pcre_version" : '\([[^0-9]]*\)'`
-    pcrever_frag=${pcre_version:${#pcrever_prefix}}
+    pcrever_frag=${pcre_version#$pcrever_prefix}
 
     pcrever_major=`expr "$pcrever_frag" : '\([[0-9]]*\)'`
     pcrever_frag=${pcrever_frag#*\.}
