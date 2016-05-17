@@ -3614,6 +3614,7 @@ static int scan_common(int desc, cl_fmap_t *map, const char **virname, unsigned 
         }
         else {
             int ret = CL_SUCCESS;
+            struct cli_matcher *iroot = ctx.engine->root[13];
             cli_dbgmsg("%s\n", jstring);
 
             if (rc != CL_VIRUS) {
@@ -3646,7 +3647,7 @@ static int scan_common(int desc, cl_fmap_t *map, const char **virname, unsigned 
                 }
 
                 /* backwards compatibility: scan the json string unless a virus was detected */
-                if (rc != CL_VIRUS && ctx.engine->root[13]->ac_lsigs) {
+                if (rc != CL_VIRUS && (iroot->ac_lsigs || iroot->ac_patterns || iroot->pcre_metas)) {
                     cli_dbgmsg("scan_common: running deprecated preclass bytecodes for target type 13\n");
                     ctx.options &= ~CL_SCAN_FILE_PROPERTIES;
                     rc = cli_mem_scandesc(jstring, strlen(jstring), &ctx);
