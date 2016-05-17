@@ -61,6 +61,10 @@ int localserver(const struct optstruct *opts)
 	int sockfd, backlog;
 	STATBUF foo;
 	char *estr;
+        char *sockdir;
+        char *pos;
+        struct stat sb;
+        int cnt;
 
     int num_fd = sd_listen_fds(0);
     if (num_fd > 2)
@@ -99,6 +103,46 @@ int localserver(const struct optstruct *opts)
     server.sun_family = AF_UNIX;
     strncpy(server.sun_path, optget(opts, "LocalSocket")->strarg, sizeof(server.sun_path));
     server.sun_path[sizeof(server.sun_path)-1]='\0';
+
+    cnt = 0;
+    sockdir = NULL;
+    pos = server.sun_path + strlen(server.sun_path);
+    while (pos != server.sun_path) {
+        if (*pos == '/') {
+            sockdir = strndup(server.sun_path, strlen(server.sun_path) - cnt);
+            break;
+        }
+        else {
+            pos--;
+            cnt++;
+        }
+    }
+
+    if (stat(sockdir, &sb)) {
+        if (errno == ENOENT) {
+            mode_t sock_mode;
+            if(optget(opts, "LocalSocketMode")->enabled) {
+                char *end;
+                sock_mode = strtol(optget(opts, "LocalSocketMode")->strarg, &end, 8);
+
+                if(*end) {
+                    logg("!Invalid LocalSocketMode %s\n", optget(opts, "LocalSocketMode")->strarg);
+                    free(sockdir);
+                    return -1;
+                }
+            } else {
+                sock_mode = 0777;
+            }
+
+            if (mkdir(sockdir, sock_mode)) {
+                logg("!LOCAL: Could not create socket directory: %s, %s\n", sockdir, strerror(errno));
+            }
+            else {
+                logg("LOCAL: Creating socket directory: %s\n", sockdir);
+            }
+        }
+    }
+    free(sockdir);
 
     if((sockfd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
 	estr = strerror(errno);
