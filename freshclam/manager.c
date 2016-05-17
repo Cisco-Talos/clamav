@@ -2893,5 +2893,5 @@ downloadmanager (const struct optstruct *opts, const char *hostname,
     if (newver)
         free (newver);
 
-    return 0;
+    return updated ? 0 : FC_UPTODATE;
 }
