@@ -1175,7 +1175,7 @@ parseRootMHTML(mbox_ctx *mctx, message *m, text *t)
 	return rc;
     }
 
-    ret = cli_msxml_parse_document(ctx, reader, mhtml_keys, num_mhtml_keys, 1, NULL);
+    ret = cli_msxml_parse_document(ctx, reader, mhtml_keys, num_mhtml_keys, MSXML_FLAG_JSON | MSXML_FLAG_WALK, NULL);
     switch (ret) {
     case CL_SUCCESS:
     case CL_ETIMEOUT:
