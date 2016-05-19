@@ -71,6 +71,17 @@
 #include "dconf.h"
 #include "fmap.h"
 #include "json_api.h"
+#include "msxml_parser.h"
+
+#if HAVE_LIBXML2
+#ifdef _WIN32
+#ifndef LIBXML_WRITER_ENABLED
+#define LIBXML_WRITER_ENABLED 1
+#endif
+#endif
+#include <libxml/HTMLtree.h>
+#include <libxml/xmlreader.h>
+#endif
 
 #define DCONF_PHISHING mctx->ctx->dconf->phishing
 
@@ -191,6 +202,7 @@ static	int	cli_parse_mbox(const char *dir, cli_ctx *ctx);
 static	message	*parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821Table, const char *firstLine, const char *dir);
 static	message	*parseEmailHeaders(message *m, const table_t *rfc821Table);
 static	int	parseEmailHeader(message *m, const char *line, const table_t *rfc821Table);
+static	mbox_status	parseRootMHTML(mbox_ctx *mctx, message *m, text *t);
 static	mbox_status	parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int recursion_level);
 static	int	boundaryStart(const char *line, const char *boundary);
 static	int	boundaryEnd(const char *line, const char *boundary);
@@ -1077,6 +1089,129 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821)
 	return ret;
 }
 
+#if HAVE_LIBXML2
+static const struct key_entry mhtml_keys[] = {
+    { "html",               "RootHTML",           MSXML_JSON_ROOT | MSXML_JSON_ATTRIB },
+
+    { "head",               "Head",               MSXML_JSON_WRKPTR },
+    { "meta",               "Meta",               MSXML_JSON_WRKPTR | MSXML_JSON_MULTI | MSXML_JSON_ATTRIB },
+    { "link",               "Link",               MSXML_JSON_WRKPTR | MSXML_JSON_MULTI | MSXML_JSON_ATTRIB }
+/*
+    { "bindata",            "BinaryData",         MSXML_SCAN_B64 | MSXML_JSON_COUNT | MSXML_JSON_ROOT },
+    { "author",             "Author",             MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "styles",             "Styles",             MSXML_IGNORE_ELEM }
+*/
+};
+static size_t num_mhtml_keys = sizeof(mhtml_keys) / sizeof(struct key_entry);
+#endif
+
+/*
+ * The related multipart root HTML file parsing wrapper.
+ *
+ * Attempts to leverage msxml parser, cannot operate without LIBXML2.
+ * This function is only used for Preclassification JSON.
+ */
+static mbox_status
+parseRootMHTML(mbox_ctx *mctx, message *m, text *t)
+{
+    cli_ctx *ctx = mctx->ctx;
+#if HAVE_LIBXML2
+    blob *input;
+    htmlDocPtr htmlDoc;
+    xmlTextReaderPtr reader;
+    int ret = CL_SUCCESS;
+    mbox_status rc = OK;
+#if HAVE_JSON
+    json_object *rhtml;
+#endif
+
+    cli_dbgmsg("in parseRootMHTML\n");
+
+    if (ctx == NULL)
+        return OK;
+
+    if (m == NULL && t == NULL)
+	return OK;
+
+    if (m != NULL)
+	input = messageToBlob(m, 0);
+    else if (t != NULL)
+	input = textToBlob(t, NULL, 0);
+    if (input == NULL)
+	return OK;
+
+    htmlDoc = htmlReadMemory(input->data, input->len, "mhtml.html", NULL, CLAMAV_MIN_XMLREADER_FLAGS);
+    if (htmlDoc == NULL) {
+	cli_dbgmsg("parseRootMHTML: cannot intialize read html document\n");
+#if HAVE_JSON
+	ret = cli_json_parse_error(ctx->wrkproperty, "MHTML_ERROR_HTML_READ");
+	if (ret != CL_SUCCESS)
+	    rc = FAIL;
+#endif
+	blobDestroy(input);
+	return rc;
+    }
+
+#if HAVE_JSON
+    if (mctx->wrkobj) {
+	rhtml = cli_jsonobj(mctx->wrkobj, "RootHTML");
+	if (rhtml != NULL) {
+	    /* MHTML-specific properties */
+	    cli_jsonstr(rhtml, "Encoding", htmlGetMetaEncoding(htmlDoc));
+	    cli_jsonint(rhtml, "CompressMode", xmlGetDocCompressMode(htmlDoc));
+	}
+    }
+#endif
+
+    reader = xmlReaderWalker(htmlDoc);
+    if (reader == NULL) {
+	cli_dbgmsg("parseRootMHTML: cannot intialize xmlTextReader\n");
+#if HAVE_JSON
+	ret = cli_json_parse_error(ctx->wrkproperty, "MHTML_ERROR_XML_READER_IO");
+	if (ret != CL_SUCCESS)
+	    rc = FAIL;
+#endif
+	blobDestroy(input);
+	return rc;
+    }
+
+    ret = cli_msxml_parse_document(ctx, reader, mhtml_keys, num_mhtml_keys, 1, NULL);
+    switch (ret) {
+    case CL_SUCCESS:
+    case CL_ETIMEOUT:
+    case CL_BREAK:
+	rc = OK;
+	break;
+
+    case CL_EMAXREC:
+	rc = MAXREC;
+	break;
+
+    case CL_EMAXFILES:
+	rc = MAXFILES;
+	break;
+
+    case CL_VIRUS:
+	rc = CL_VIRUS;
+	break;
+
+    default:
+	rc = FAIL;
+    }
+
+    xmlFreeDoc(htmlDoc);
+    blobDestroy(input);
+    return rc;
+#else
+    UNUSEDPARAM(m);
+    UNUSEDPARAM(t);
+	cli_dbgmsg("in parseRootMHTML\n");
+	cli_dbgmsg("parseRootMHTML: parsing html documents requires libxml2!\n");
+
+	return OK;
+#endif
+}
+
 /*
  * This is a recursive routine.
  *
@@ -1712,6 +1847,11 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 				if(htmltextPart == -1)
 					cli_dbgmsg("No HTML code found to be scanned\n");
 				else {
+#if HAVE_JSON
+					/* Send root HTML file for preclassification */
+					if (mctx->ctx->wrkproperty)
+						parseRootMHTML(mctx, aMessage, aText);
+#endif
 					rc = parseEmailBody(aMessage, aText, mctx, recursion_level + 1);
 					if((rc == OK) && aMessage) {
 						assert(aMessage == messages[htmltextPart]);
