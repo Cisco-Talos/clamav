@@ -2079,7 +2079,7 @@ int cli_scanhwpml(cli_ctx *ctx)
         return ret; // libxml2 failed!
     }
 
-    ret = cli_msxml_parse_document(ctx, reader, hwpml_keys, num_hwpml_keys, 1, hwpml_binary_cb);
+    ret = cli_msxml_parse_document(ctx, reader, hwpml_keys, num_hwpml_keys, MSXML_FLAG_JSON, hwpml_binary_cb);
 
     xmlTextReaderClose(reader);
     xmlFreeTextReader(reader);
