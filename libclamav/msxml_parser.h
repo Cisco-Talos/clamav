@@ -1,5 +1,5 @@
 /*
- * Extract component parts of MS XML files (e.g. MS Office 2003 XML Documents)
+ * Extract component parts of various MS XML files (e.g. MS Office 2003 XML Documents)
  * 
  * Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  * Copyright (C) 2007-2013 Sourcefire, Inc.
@@ -71,18 +71,6 @@ struct key_entry {
 };
 
 typedef int (*msxml_scan_cb)(int fd, cli_ctx *ctx, int num_attribs, struct attrib_entry *attribs);
-
-struct msxml_ctx {
-    cli_ctx *ctx;
-    msxml_scan_cb scan_cb;
-    const struct key_entry *keys;
-    size_t num_keys;
-
-#if HAVE_JSON
-    json_object *root;
-    int mode, toval;
-#endif
-};
 
 int cli_msxml_parse_document(cli_ctx *ctx, xmlTextReaderPtr reader, const struct key_entry *keys, const size_t num_keys, int mode, msxml_scan_cb scan_cb);
 
