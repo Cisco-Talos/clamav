@@ -2058,6 +2058,7 @@ int cli_scanhwpml(cli_ctx *ctx)
 {
 #if HAVE_LIBXML2
     struct msxml_cbdata cbdata;
+    struct msxml_ctx mxctx;
     xmlTextReaderPtr reader = NULL;
     int state, ret = CL_SUCCESS;
 
@@ -2079,7 +2080,9 @@ int cli_scanhwpml(cli_ctx *ctx)
         return ret; // libxml2 failed!
     }
 
-    ret = cli_msxml_parse_document(ctx, reader, hwpml_keys, num_hwpml_keys, MSXML_FLAG_JSON, hwpml_binary_cb);
+    memset(&mxctx, 0, sizeof(mxctx));
+    mxctx.scan_cb = hwpml_binary_cb;
+    ret = cli_msxml_parse_document(ctx, reader, hwpml_keys, num_hwpml_keys, MSXML_FLAG_JSON, &mxctx);
 
     xmlTextReaderClose(reader);
     xmlFreeTextReader(reader);

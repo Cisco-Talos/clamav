@@ -30,7 +30,6 @@
 #endif
 
 #include "others.h"
-#include "json_api.h"
 
 #ifdef _WIN32
 #ifndef LIBXML_WRITER_ENABLED
@@ -47,6 +46,8 @@
 #define MSXML_FLAG_JSON  0x1
 #define MSXML_FLAG_WALK  0x2
 
+struct msxml_ictx;
+
 struct attrib_entry {
     const char *key;
     const char *value;
@@ -58,16 +59,17 @@ struct key_entry {
 #define MSXML_IGNORE_ELEM     0x1
 #define MSXML_SCAN_CB         0x2
 #define MSXML_SCAN_B64        0x4
+#define MSXML_COMMENT_CB      0x8
 /* where */
-#define MSXML_JSON_ROOT       0x8
-#define MSXML_JSON_WRKPTR     0x10
-#define MSXML_JSON_MULTI      0x20
+#define MSXML_JSON_ROOT       0x10
+#define MSXML_JSON_WRKPTR     0x20
+#define MSXML_JSON_MULTI      0x40
 
 #define MSXML_JSON_TRACK (MSXML_JSON_ROOT | MSXML_JSON_WRKPTR)
 /* what */
-#define MSXML_JSON_COUNT      0x40
-#define MSXML_JSON_VALUE      0x80
-#define MSXML_JSON_ATTRIB     0x100
+#define MSXML_JSON_COUNT      0x100
+#define MSXML_JSON_VALUE      0x200
+#define MSXML_JSON_ATTRIB     0x400
 
     const char *key;
     const char *name;
@@ -75,8 +77,15 @@ struct key_entry {
 };
 
 typedef int (*msxml_scan_cb)(int fd, cli_ctx *ctx, int num_attribs, struct attrib_entry *attribs);
+typedef int (*msxml_comment_cb)(const char *comment, cli_ctx *ctx, void *wrkjobj);
 
-int cli_msxml_parse_document(cli_ctx *ctx, xmlTextReaderPtr reader, const struct key_entry *keys, const size_t num_keys, uint32_t flags, msxml_scan_cb scan_cb);
+struct msxml_ctx {
+    msxml_scan_cb scan_cb;
+    msxml_comment_cb comment_cb;
+    struct msxml_ictx *ictx;
+};
+
+int cli_msxml_parse_document(cli_ctx *ctx, xmlTextReaderPtr reader, const struct key_entry *keys, const size_t num_keys, uint32_t flags, struct msxml_ctx *mxctx);
 
 #endif /* HAVE_LIBXML2 */
 
