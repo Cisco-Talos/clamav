@@ -421,7 +421,7 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
 
                     cli_dbgmsg("msxml_parse_element: extracted binary data to %s\n", tempfile);
 
-                    ret = mxctx->scan_cb(of, ctx, num_attribs, attribs);
+                    ret = mxctx->scan_cb(of, ctx, num_attribs, attribs, mxctx->scan_data);
                     if (!(ctx->engine->keeptmp))
                         cli_unlink(tempfile);
                     free(tempfile);
@@ -489,9 +489,9 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
                 /* callback-based scanning mechanism for comments (used by MHTML) */
                 if ((keyinfo->type & MSXML_COMMENT_CB) && mxctx->comment_cb) {
 #if HAVE_JSON
-                    ret = mxctx->comment_cb((const char *)node_value, ctx, thisjobj);
+                    ret = mxctx->comment_cb((const char *)node_value, ctx, thisjobj, mxctx->comment_data);
 #else
-                    ret = mxctx->comment_cb((const char *)node_value, ctx, NULL);
+                    ret = mxctx->comment_cb((const char *)node_value, ctx, NULL, mxctx->comment_data);
 #endif
                     if (ret != CL_SUCCESS && (ret != CL_VIRUS || (!SCAN_ALL && ret == CL_VIRUS))) {
                         return ret;
