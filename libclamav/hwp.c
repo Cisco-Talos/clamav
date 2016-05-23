@@ -1933,10 +1933,12 @@ static int hwpml_scan_cb(void *cbdata, int fd, cli_ctx *ctx)
     return cli_magic_scandesc(fd, ctx);
 }
 
-static int hwpml_binary_cb(int fd, cli_ctx *ctx, int num_attribs, struct attrib_entry *attribs)
+static int hwpml_binary_cb(int fd, cli_ctx *ctx, int num_attribs, struct attrib_entry *attribs, void *cbdata)
 {
     int i, ret, df = 0, com = 0, enc = 0;
     char *tempfile;
+
+    UNUSEDPARAM(cbdata);
 
     /* check attributes for compression and encoding */
     for (i = 0; i < num_attribs; i++) {
