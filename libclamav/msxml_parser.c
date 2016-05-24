@@ -104,11 +104,11 @@ static void msxml_error_handler(void* arg, const char* msg, xmlParserSeverities 
     switch (severity) {
     case XML_PARSER_SEVERITY_WARNING:
     case XML_PARSER_SEVERITY_VALIDITY_WARNING:
-        cli_warnmsg("%s:%d: parser warning : %s", (char*)URI, line, msg);
+        cli_dbgmsg("%s:%d: parser warning : %s", (char*)URI, line, msg);
         break;
     case XML_PARSER_SEVERITY_ERROR:
     case XML_PARSER_SEVERITY_VALIDITY_ERROR:
-        cli_warnmsg("%s:%d: parser error : %s", (char*)URI, line, msg);
+        cli_dbgmsg("%s:%d: parser error : %s", (char*)URI, line, msg);
         break;
     default:
         cli_dbgmsg("%s:%d: unknown severity : %s", (char*)URI, line, msg);
@@ -594,8 +594,8 @@ int cli_msxml_parse_document(cli_ctx *ctx, xmlTextReaderPtr reader, const struct
 
     /* Error Handler (setting handler on tree walker causes segfault) */
     if (!(flags & MSXML_FLAG_WALK))
-        xmlTextReaderSetErrorHandler(reader, NULL, NULL); /* xml default handler */
-        //xmlTextReaderSetErrorHandler(reader, msxml_error_handler, NULL);
+        //xmlTextReaderSetErrorHandler(reader, NULL, NULL); /* xml default handler */
+        xmlTextReaderSetErrorHandler(reader, msxml_error_handler, NULL);
 
     /* Main Processing Loop */
     while ((state = xmlTextReaderRead(reader)) == 1) {
