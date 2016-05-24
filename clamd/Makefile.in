@@ -108,12 +108,11 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
 	$(top_srcdir)/m4/ax_check_uname_syscall.m4 \
 	$(top_srcdir)/m4/fdpassing.m4 $(top_srcdir)/m4/lib-ld.m4 \
 	$(top_srcdir)/m4/lib-link.m4 $(top_srcdir)/m4/lib-prefix.m4 \
-	$(top_srcdir)/m4/libtool.m4 $(top_srcdir)/m4/llvm.m4 \
-	$(top_srcdir)/m4/ltargz.m4 $(top_srcdir)/m4/ltdl.m4 \
 	$(top_srcdir)/m4/lib-prelude.m4 $(top_srcdir)/m4/libtool.m4 \
-	$(top_srcdir)/m4/llvm.m4 $(top_srcdir)/m4/ltdl.m4 \
-	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
-	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
+	$(top_srcdir)/m4/llvm.m4 $(top_srcdir)/m4/ltargz.m4 \
+	$(top_srcdir)/m4/ltdl.m4 $(top_srcdir)/m4/ltoptions.m4 \
+	$(top_srcdir)/m4/ltsugar.m4 $(top_srcdir)/m4/ltversion.m4 \
+	$(top_srcdir)/m4/lt~obsolete.m4 \
 	$(top_srcdir)/m4/mmap_private.m4 $(top_srcdir)/m4/resolv.m4 \
 	$(top_srcdir)/m4/reorganization/version.m4 \
 	$(top_srcdir)/m4/reorganization/build_tools.m4 \
@@ -200,22 +199,16 @@ am__clamd_SOURCES_DIST = $(top_srcdir)/shared/output.c \
 	onaccess_ddd.h onaccess_hash.c onaccess_hash.h onaccess_scth.c \
 	onaccess_scth.h
 @BUILD_CLAMD_TRUE@am_clamd_OBJECTS = output.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	optparser.$(OBJEXT) getopt.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	misc.$(OBJEXT) clamd.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	tcpserver.$(OBJEXT) localserver.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	session.$(OBJEXT) thrmgr.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	server-th.$(OBJEXT) scanner.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	others.$(OBJEXT) onaccess_fan.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	onaccess_ddd.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	onaccess_hash.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	onaccess_scth.$(OBJEXT)
 @BUILD_CLAMD_TRUE@	idmef_logging.$(OBJEXT) optparser.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	getopt.$(OBJEXT) misc.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	clamd.$(OBJEXT) tcpserver.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	localserver.$(OBJEXT) session.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	thrmgr.$(OBJEXT) server-th.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	scanner.$(OBJEXT) others.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	fan.$(OBJEXT)
+@BUILD_CLAMD_TRUE@	onaccess_fan.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	onaccess_ddd.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	onaccess_hash.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	onaccess_scth.$(OBJEXT)
 clamd_OBJECTS = $(am_clamd_OBJECTS)
 clamd_LDADD = $(LDADD)
 AM_V_lt = $(am__v_lt_@AM_V@)
