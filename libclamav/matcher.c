@@ -109,7 +109,7 @@ static inline int matcher_run(const struct cli_matcher *root,
 			      struct cli_pcre_off *poffdata,
 			      cli_ctx *ctx)
 {
-    int ret;
+    int ret, saved_ret = CL_CLEAN;
     int32_t pos = 0;
     struct filter_match_info info;
     uint32_t orig_length, orig_offset;
@@ -173,7 +173,7 @@ static inline int matcher_run(const struct cli_matcher *root,
                 return ret;
             }
         } else if (ret > CL_TYPENO && acmode & AC_SCAN_VIR)
-            ; /* intentionally empty */
+            saved_ret = ret;
         else
             return ret;
 	}
@@ -231,6 +231,8 @@ static inline int matcher_run(const struct cli_matcher *root,
     if (ctx && SCAN_ALL && viruses_found)
         return CL_VIRUS;
 
+    if (saved_ret && ret == CL_CLEAN)
+        return saved_ret;
     return ret;
 }
 
