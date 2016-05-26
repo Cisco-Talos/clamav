@@ -67,13 +67,14 @@
  * strings SHOULD range from 9 to 12 bits.
  */
 #define BITS_MIN    9       /* start with 9 bits */
-#define BITS_VALID  12      /* max of 12 bit strings are valid, used to flag  */
-#define BITS_MAX    14      /* max of 12 bit strings, +2 for robustness */
+#define BITS_VALID  12      /* 12 bit codes are the max valid */
+#define BITS_MAX    14      /* max of 14 bit codes (2 bits extension) */
 /* predefined codes */
 #define CODE_BASIC  256     /* last basic code + 1 */
 #define CODE_CLEAR  256     /* code to clear string table */
 #define CODE_EOI    257     /* end-of-information code */
 #define CODE_FIRST  258     /* first free code entry */
+#define CODE_VALID  MAXCODE(BITS_VALID)
 #define CODE_MAX    MAXCODE(BITS_MAX)
 
 #define CSIZE       (MAXCODE(BITS_MAX)+1L)
@@ -198,7 +199,7 @@ int lzwInflate(lzw_streamp strm)
 
     uint8_t *wp;
     hcode_t code, free_code;
-    int echg, ret = LZW_OK;
+    int echg, cext, ret = LZW_OK;
     uint32_t flags;
 
     if (strm == NULL || strm->state == NULL || strm->next_out == NULL ||
@@ -224,6 +225,7 @@ int lzwInflate(lzw_streamp strm)
     maxcodep = state->dec_maxcodep;
 
     echg = flags & LZW_FLAG_EARLYCHG;
+    cext = flags & LZW_FLAG_EXTNCODE;
     free_code = free_entp - &state->dec_codetab[0];
 
     if (oldcodep == &state->dec_codetab[CODE_EOI])
@@ -289,47 +291,56 @@ int lzwInflate(lzw_streamp strm)
         }
         codep = state->dec_codetab + code;
 
-        /* non-earlychange bit expansion */
-        if (!echg && free_entp > maxcodep) {
-            if (++nbits > BITS_VALID) {
-                flags |= LZW_FLAG_BIGDICT;
-                if (nbits > BITS_MAX)     /* should not happen */
-                    nbits = BITS_MAX;
+        /* cap dictionary codes to valid range (12-bits) */
+        if (free_code < CODE_VALID+1 || cext) {
+            /* non-earlychange bit expansion */
+            if (!echg && free_entp > maxcodep) {
+                if (++nbits > BITS_VALID) {
+                    if (!cext)
+                        nbits = BITS_VALID;
+                    else if (nbits > BITS_MAX)
+                        nbits = BITS_MAX;
+                }
+                nbitsmask = MAXCODE(nbits);
+                maxcodep = state->dec_codetab + nbitsmask-1;
             }
-            nbitsmask = MAXCODE(nbits);
-            maxcodep = state->dec_codetab + nbitsmask-1;
-        }
-        /*
-         * Add the new entry to the code table.
-         */
-        if (&state->dec_codetab[0] > free_entp || free_entp >= &state->dec_codetab[CSIZE]) {
-            cli_dbgmsg("%p <= %p, %p < %p(%ld)\n", &state->dec_codetab[0], free_entp, free_entp, &state->dec_codetab[CSIZE], CSIZE);
-            strm->msg = "full dictionary, cannot add new entry";
-            ret = LZW_DICT_ERROR;
-            break;
-        }
-        free_entp->next = oldcodep;
-        free_entp->firstchar = free_entp->next->firstchar;
-        free_entp->length = free_entp->next->length+1;
-        free_entp->value = (codep < free_entp) ?
-            codep->firstchar : free_entp->firstchar;
-        free_entp++;
-        /* earlychange bit expansion */
-        if (echg && free_entp > maxcodep) {
-            if (++nbits > BITS_VALID) {
-                flags |= LZW_FLAG_BIGDICT;
-                if (nbits > BITS_MAX)     /* should not happen */
-                    nbits = BITS_MAX;
+            /*
+             * Add the new entry to the code table.
+             */
+            if (&state->dec_codetab[0] > free_entp || free_entp >= &state->dec_codetab[CSIZE]) {
+                cli_dbgmsg("%p <= %p, %p < %p(%ld)\n", &state->dec_codetab[0], free_entp, free_entp, &state->dec_codetab[CSIZE], CSIZE);
+                strm->msg = "full dictionary, cannot add new entry";
+                flags |= LZW_FLAG_FULLDICT;
+                ret = LZW_DICT_ERROR;
+                break;
             }
-            nbitsmask = MAXCODE(nbits);
-            maxcodep = state->dec_codetab + nbitsmask-1;
-        }
-        free_code++;
-        oldcodep = codep;
+            free_entp->next = oldcodep;
+            free_entp->firstchar = free_entp->next->firstchar;
+            free_entp->length = free_entp->next->length+1;
+            free_entp->value = (codep < free_entp) ?
+                codep->firstchar : free_entp->firstchar;
+            free_entp++;
+            /* earlychange bit expansion */
+            if (echg && free_entp > maxcodep) {
+                if (++nbits > BITS_VALID) {
+                    if (!cext)
+                        nbits = BITS_VALID;
+                    else if (nbits > BITS_MAX)
+                        nbits = BITS_MAX;
+                }
+                nbitsmask = MAXCODE(nbits);
+                maxcodep = state->dec_codetab + nbitsmask-1;
+            }
+            if (free_code++ > CODE_VALID)
+                flags |= LZW_FLAG_EXTNCODEUSE;
+            oldcodep = codep;
+        } else
+            flags |= LZW_FLAG_FULLDICT;
         if (code >= CODE_BASIC) {
             /* check if code is valid */
             if (code >= free_code) {
                 strm->msg = "cannot reference unpopulated dictionary entries";
+                flags |= LZW_FLAG_INVALIDCODE;
                 ret = LZW_DATA_ERROR;
                 break;
             }

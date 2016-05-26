@@ -939,11 +939,11 @@ static int filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, struct 
         free(decoded);
     }
 
-    /* heuristic check */
-    if (stream.flags & LZW_FLAG_BIGDICT) {
-        cli_append_virus(pdf->ctx, "Heuristics.PDF.LZWInvalidDictionary");
-        rc = CL_VIRUS;
-    }
+    /*
+       heuristic checks:
+       - full dictionary heuristics?
+       - invalid code points?
+    */
 
     return rc;
 }
