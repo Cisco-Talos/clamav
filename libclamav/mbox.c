@@ -1284,6 +1284,8 @@ parseRootMHTML(mbox_ctx *mctx, message *m, text *t)
 		rc = FAIL;
 	}
 
+	xmlTextReaderClose(reader);
+	xmlFreeTextReader(reader);
 	xmlFreeDoc(htmlDoc);
 	blobDestroy(input);
 	return rc;
@@ -3841,10 +3843,10 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
 	const int doPhishingScan = mctx->ctx->engine->dboptions&CL_DB_PHISHING_URLS && (DCONF_PHISHING&PHISHING_CONF_ENGINE);
 #if HAVE_JSON
 	const char *mtype = NULL;
-	json_object *multiobj, *thisobj, *saveobj = mctx->wrkobj;
+	json_object *thisobj = NULL, *saveobj = mctx->wrkobj;
 
 	if (mctx->wrkobj != NULL) {
-		multiobj = cli_jsonarray(mctx->wrkobj, "Multipart");
+		json_object *multiobj = cli_jsonarray(mctx->wrkobj, "Multipart");
 		if (multiobj == NULL) {
 			cli_errmsg("Cannot get multipart preclass array\n");
 			*rc = -1;
