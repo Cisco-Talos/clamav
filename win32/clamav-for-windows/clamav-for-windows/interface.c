@@ -580,7 +580,7 @@ int CLAMAPI Scan_DestroyInstance(CClamAVScanner *pScanner) {
     if((rc = del_instance((instance *)pScanner))) {
 	if (rc == CL_EBUSY) {
 	    // wait for one of the scanner threads to finish, and retry again,
-	    // thats better than caller always waiting 2 seconds to retry.
+	    // that's better than caller always waiting 2 seconds to retry.
 	    if (WaitForSingleObject(reload_event, 1000) != WAIT_OBJECT_0)
 		logg("Scan_DestroyInstance: timeout");
 	    rc = del_instance((instance *)pScanner);

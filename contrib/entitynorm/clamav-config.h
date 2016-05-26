@@ -301,7 +301,7 @@
 /* Early Linux doesn't set cmsg fields */
 /* #undef INCOMPLETE_CMSG */
 
-/* bzip funtions do not have bz2 prefix */
+/* bzip functions do not have bz2 prefix */
 /* #undef NOBZ2PREFIX */
 
 /* "no fd_set" */
@@ -370,7 +370,7 @@
 /* tcpwrappers support */
 /* #undef WITH_TCPWRAP */
 
-/* endianess */
+/* endianness */
 /* #define WORDS_BIGENDIAN 0 */
 
 /* Define to 1 to make fseeko visible on some hosts (e.g. glibc 2.2). */

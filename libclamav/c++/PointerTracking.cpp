@@ -52,7 +52,7 @@
 
 using namespace llvm;
 #if LLVM_VERSION < 29
-/* function is succeeded in later LLVM with LLVM correspoding standalone */
+/* function is succeeded in later LLVM with LLVM corresponding standalone */
 static Value *GetUnderlyingObject(Value *P, TargetData *TD)
 {
     return P->getUnderlyingObject();

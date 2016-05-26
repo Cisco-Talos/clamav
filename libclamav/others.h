@@ -271,7 +271,7 @@ struct cl_engine {
 				     * within a single archive
 				     */
     /* This is for structured data detection.  You can set the minimum
-     * number of occurences of an CC# or SSN before the system will
+     * number of occurrences of an CC# or SSN before the system will
      * generate a notification.
      */
     uint32_t min_cc_count;

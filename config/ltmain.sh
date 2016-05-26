@@ -1532,7 +1532,7 @@ func_run_hooks ()
 
     case " $hookable_fns " in
       *" $1 "*) ;;
-      *) func_fatal_error "'$1' does not support hook funcions.n" ;;
+      *) func_fatal_error "'$1' does not support hook functions.n" ;;
     esac
 
     eval _G_hook_fns=\$$1_hooks; shift
@@ -1649,7 +1649,7 @@ func_options ()
 # All initialisations required before starting the option parse loop.
 # Note that when calling hook functions, we pass through the list of
 # positional parameters.  If a hook function modifies that list, and
-# needs to propogate that back to rest of this script, then the complete
+# needs to propagate that back to rest of this script, then the complete
 # modified list must be put in 'func_run_hooks_result' before
 # returning.
 func_hookable func_options_prep

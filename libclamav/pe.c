@@ -1146,13 +1146,13 @@ int cli_scanpe(cli_ctx *ctx)
     cli_dbgmsg("------------------------------------\n");
 
     if (DETECT_BROKEN_PE && !native && (!(pe_plus?EC32(optional_hdr64.SectionAlignment):EC32(optional_hdr32.SectionAlignment)) || (pe_plus?EC32(optional_hdr64.SectionAlignment):EC32(optional_hdr32.SectionAlignment))%0x1000)) {
-        cli_dbgmsg("Bad virtual alignemnt\n");
+        cli_dbgmsg("Bad virtual alignment\n");
         cli_append_virus(ctx,"Heuristics.Broken.Executable");
         return CL_VIRUS;
     }
 
     if (DETECT_BROKEN_PE && !native && (!(pe_plus?EC32(optional_hdr64.FileAlignment):EC32(optional_hdr32.FileAlignment)) || (pe_plus?EC32(optional_hdr64.FileAlignment):EC32(optional_hdr32.FileAlignment))%0x200)) {
-        cli_dbgmsg("Bad file alignemnt\n");
+        cli_dbgmsg("Bad file alignment\n");
         cli_append_virus(ctx, "Heuristics.Broken.Executable");
         return CL_VIRUS;
     }

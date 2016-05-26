@@ -1000,7 +1000,7 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821)
 	 * In RFC822 the separater between the key a value is a colon,
 	 * e.g.	Content-Transfer-Encoding: base64
 	 * However some MUA's are lapse about this and virus writers exploit
-	 * this hole, so we need to check all known possiblities
+	 * this hole, so we need to check all known possibilities
 	 */
 	for(separater = ":= "; *separater; separater++)
 		if(strchr(line, *separater) != NULL)
@@ -1948,7 +1948,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 					if(cli_strcasestr(s, "text/plain") != NULL)
 						/*
 						 * Don't bother to save the
-						 * unuseful part, read past
+						 * useless part, read past
 						 * the headers then we'll go
 						 * on to look for the next
 						 * bounce message

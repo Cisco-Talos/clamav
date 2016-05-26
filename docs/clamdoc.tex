@@ -472,7 +472,7 @@ $ CK_FORK=no ./libtool --mode=execute valgrind unit_tests/check-clamav
     One of the interesting features of \verb+clamd+ is on-access scanning
     based on fanotify, included in Linux since kernel 2.6.36.
     \textbf{This is not required to run clamd}. At the moment the fanotify header is
-    only avaliable for Linux.
+    only available for Linux.
     \\\\
     Configure on-access scanning in \verb+clamd.conf+ and read the 
     \ref{On-access} section for on-access scanning usage.
@@ -754,7 +754,7 @@ N * * * *	/usr/local/bin/freshclam --quiet
 	      OnAccessMountPath option. While this will disable on-access prevention,
 	      it will avoid potential system lockups caused by fanotify's blocking
 	      functionality.
-	\item Using the On-Access Scanner to watch a virtual filesytem will result
+	\item Using the On-Access Scanner to watch a virtual filesystem will result
 	      in undefined behaviour.
     \end{itemize}
     The default configuration utilizes inotify to recursively keep track of
@@ -812,7 +812,7 @@ N * * * *	/usr/local/bin/freshclam --quiet
     \subsection{Freshclam}\label{sec:freshclam}
     \verb+freshclam+ is ClamAV's virus database update tool and reads it's
     configuration from the file 'freshclam.conf' (this may be
-    overriden by command line options). Freshclam's default behavior is to
+    overridden by command line options). Freshclam's default behavior is to
     attempt to update databases that are paired with downloaded cdiffs.
     Potentially corrupted databases are not updated and are automatically
     fully replaced after several failed attempts unless otherwise specified.
@@ -1189,7 +1189,7 @@ const char *cl_engine_get_str(const struct cl_engine *engine,
 	cl_statinidir(dbdir, &dbstat);
     \end{verbatim}
     To check for a change you just need to call \verb+cl_statchkdir+ and check
-    its return value (0 - no change, 1 - some change occured). Remember to reset
+    its return value (0 - no change, 1 - some change occurred). Remember to reset
     the \verb+cl_stat+ structure after reloading the database.
     \begin{verbatim}
 	if(cl_statchkdir(&dbstat) == 1) {

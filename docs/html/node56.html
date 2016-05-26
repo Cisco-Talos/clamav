@@ -72,7 +72,7 @@ Database checks</A>
 	cl_statinidir(dbdir, &amp;dbstat);
 </PRE>
     To check for a change you just need to call <code>cl_statchkdir</code> and check
-    its return value (0 - no change, 1 - some change occured). Remember to reset
+    its return value (0 - no change, 1 - some change occurred). Remember to reset
     the <code>cl_stat</code> structure after reloading the database.
     <PRE>
 	if(cl_statchkdir(&amp;dbstat) == 1) {

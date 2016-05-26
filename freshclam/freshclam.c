@@ -191,7 +191,7 @@ help (void)
     mprintf
         ("    --on-update-execute=COMMAND          execute COMMAND after successful update\n");
     mprintf
-        ("    --on-error-execute=COMMAND           execute COMMAND if errors occured\n");
+        ("    --on-error-execute=COMMAND           execute COMMAND if errors occurred\n");
     mprintf
         ("    --on-outdated-execute=COMMAND        execute COMMAND when software is outdated\n");
     mprintf

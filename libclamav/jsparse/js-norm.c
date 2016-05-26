@@ -871,7 +871,7 @@ void cli_js_parse_done(struct parser_state* state)
 	}
 	if (end != '\0')
 		cli_js_process_buffer(state, &end, 1);
-	/* close remaining paranthesis */
+	/* close remaining parenthesis */
 	for (i=0;i<tokens->cnt;i++) {
 		if (tokens->data[i].type == TOK_PAR_OPEN)
 			par_balance++;
@@ -887,7 +887,7 @@ void cli_js_parse_done(struct parser_state* state)
 		}
 	}
 
-	/* we had to close unfinished strings, paranthesis,
+	/* we had to close unfinished strings, parenthesis,
 	 * so that the folders/decoders can run properly */
 	run_folders(&state->tokens);
 	run_decoders(state);

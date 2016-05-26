@@ -66,9 +66,9 @@ void recvlninit(struct RCVLN *s, int sockd) {
 /* Receives a full (terminated with \0) line from a socket
  * Sets rbol to the begin of the received line, and optionally 
  * reol to the end of line.
- * Should be called repeatedly untill all input is consumed
+ * Should be called repeatedly until all input is consumed
  * Returns:
- * - the lenght of the line (a positive number) on success
+ * - the length of the line (a positive number) on success
  * - 0 if the connection is closed
  * - -1 on error
  */

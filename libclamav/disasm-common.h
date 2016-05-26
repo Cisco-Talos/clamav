@@ -162,7 +162,7 @@ enum X86OPS {
   OP_RCR,/**< Rotate Carry Right */
   OP_RDMSR,/**< Read from Model Specific Register */
   OP_RDPMC,/**< Read Performance Monitoring Counters */
-  OP_RDTSC,/**< Read Time-Stamp Coutner */
+  OP_RDTSC,/**< Read Time-Stamp Counter */
   OP_PREFIX_REPE,/**< Repeat String Operation Prefix while Equal */
   OP_PREFIX_REPNE,/**< Repeat String Operation Prefix while Not Equal */
   OP_RETF,/**< Return from Far Procedure */
