@@ -202,6 +202,7 @@ static	int	cli_parse_mbox(const char *dir, cli_ctx *ctx);
 static	message	*parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821Table, const char *firstLine, const char *dir);
 static	message	*parseEmailHeaders(message *m, const table_t *rfc821Table);
 static	int	parseEmailHeader(message *m, const char *line, const table_t *rfc821Table);
+static	int	parseMHTMLComment(const char *comment, cli_ctx *ctx, void *wrkjobj, void *cbdata);
 static	mbox_status	parseRootMHTML(mbox_ctx *mctx, message *m, text *t);
 static	mbox_status	parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int recursion_level);
 static	int	boundaryStart(const char *line, const char *boundary);
@@ -1091,19 +1092,99 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821)
 
 #if HAVE_LIBXML2
 static const struct key_entry mhtml_keys[] = {
-    { "html",               "RootHTML",           MSXML_JSON_ROOT | MSXML_JSON_ATTRIB },
+	/* root html tags for microsoft office document */
+	{	"html",			"RootHTML",		MSXML_JSON_ROOT | MSXML_JSON_ATTRIB	},
 
-    { "head",               "Head",               MSXML_JSON_WRKPTR },
-    { "meta",               "Meta",               MSXML_JSON_WRKPTR | MSXML_JSON_MULTI | MSXML_JSON_ATTRIB },
-    { "link",               "Link",               MSXML_JSON_WRKPTR | MSXML_JSON_MULTI | MSXML_JSON_ATTRIB }
-/*
-    { "bindata",            "BinaryData",         MSXML_SCAN_B64 | MSXML_JSON_COUNT | MSXML_JSON_ROOT },
-    { "author",             "Author",             MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
-    { "styles",             "Styles",             MSXML_IGNORE_ELEM }
-*/
+	{	"head",			"Head",			MSXML_JSON_WRKPTR | MSXML_COMMENT_CB	},
+	{	"meta",			"Meta",			MSXML_JSON_WRKPTR | MSXML_JSON_MULTI | MSXML_JSON_ATTRIB	},
+	{	"link",			"Link",			MSXML_JSON_WRKPTR | MSXML_JSON_MULTI | MSXML_JSON_ATTRIB	},
+	{	"script",		"Script",		MSXML_JSON_WRKPTR | MSXML_JSON_MULTI | MSXML_JSON_VALUE		}
 };
 static size_t num_mhtml_keys = sizeof(mhtml_keys) / sizeof(struct key_entry);
+
+static const struct key_entry mhtml_comment_keys[] = {
+	/* embedded xml tags (comment) for microsoft office document */
+	{	"o:documentproperties",	"DocumentProperties",	MSXML_JSON_ROOT | MSXML_JSON_ATTRIB	},
+	{	"o:author",		"Author",		MSXML_JSON_WRKPTR | MSXML_JSON_VALUE	},
+	{	"o:lastauthor",		"LastAuthor",		MSXML_JSON_WRKPTR | MSXML_JSON_VALUE	},
+	{	"o:revision",		"Revision",		MSXML_JSON_WRKPTR | MSXML_JSON_VALUE	},
+	{	"o:totaltime",		"TotalTime",		MSXML_JSON_WRKPTR | MSXML_JSON_VALUE	},
+	{	"o:created",		"Created",		MSXML_JSON_WRKPTR | MSXML_JSON_VALUE	},
+	{	"o:lastsaved",		"LastSaved",		MSXML_JSON_WRKPTR | MSXML_JSON_VALUE	},
+	{	"o:pages",		"Pages",		MSXML_JSON_WRKPTR | MSXML_JSON_VALUE	},
+	{	"o:words",		"Words",		MSXML_JSON_WRKPTR | MSXML_JSON_VALUE	},
+	{	"o:characters",		"Characters",		MSXML_JSON_WRKPTR | MSXML_JSON_VALUE	},
+	{	"o:company",		"Company",		MSXML_JSON_WRKPTR | MSXML_JSON_VALUE	},
+	{	"o:lines",		"Lines",		MSXML_JSON_WRKPTR | MSXML_JSON_VALUE	},
+	{	"o:paragraphs",		"Paragraphs",		MSXML_JSON_WRKPTR | MSXML_JSON_VALUE	},
+	{	"o:characterswithspaces",	"CharactersWithSpaces",	MSXML_JSON_WRKPTR | MSXML_JSON_VALUE	},
+	{	"o:version",		"Version",		MSXML_JSON_WRKPTR | MSXML_JSON_VALUE	},
+
+	{	"o:officedocumentsettings",	"DocumentSettings",	MSXML_IGNORE_ELEM	},
+	{	"w:worddocument",	"WordDocument",		MSXML_IGNORE_ELEM	},
+	{	"w:latentstyles",	"LatentStyles",		MSXML_IGNORE_ELEM	}
+};
+static size_t num_mhtml_comment_keys = sizeof(mhtml_comment_keys) / sizeof(struct key_entry);
 #endif
+
+/*
+ * The related multipart root HTML file comment parsing wrapper.
+ *
+ * Attempts to leverage msxml parser, cannot operate without LIBXML2.
+ * This function is only used for Preclassification JSON.
+ */
+static int
+parseMHTMLComment(const char *comment, cli_ctx *ctx, void *wrkjobj, void *cbdata)
+{
+#if HAVE_LIBXML2
+	const char *xmlsrt, *xmlend;
+	xmlTextReaderPtr reader;
+#if HAVE_JSON
+	json_object *thisjobj = (json_object *)wrkjobj;
+#endif
+	int ret = CL_SUCCESS;
+
+	UNUSEDPARAM(cbdata);
+
+	xmlend = comment;
+	while ((xmlsrt = strstr(xmlend, "<xml>"))) {
+		xmlend = strstr(xmlsrt, "</xml>");
+		if (xmlend == NULL) {
+			cli_dbgmsg("parseMHTMLComment: unbounded xml tag\n");
+			break;
+		}
+
+		reader = xmlReaderForMemory(xmlsrt, xmlend-xmlsrt+6, "comment.xml", NULL, CLAMAV_MIN_XMLREADER_FLAGS);
+		if (!reader) {
+			cli_dbgmsg("parseMHTMLComment: cannot intialize xmlReader\n");
+
+#if HAVE_JSON
+			ret = cli_json_parse_error(ctx->wrkproperty, "MHTML_ERROR_XML_READER_MEM");
+#endif
+			return ret; // libxml2 failed!
+		}
+
+		/* comment callback is not set to prevent recursion */
+		/* TODO: should we separate the key dictionaries? */
+		/* TODO: should we use the json object pointer? */
+		ret = cli_msxml_parse_document(ctx, reader, mhtml_comment_keys, num_mhtml_comment_keys, MSXML_FLAG_JSON, NULL);
+
+		xmlTextReaderClose(reader);
+		xmlFreeTextReader(reader);
+		if (ret != CL_SUCCESS)
+			return ret;
+	}
+#else
+	UNUSEDPARAM(comment);
+	UNUSEDPARAM(ctx);
+	UNUSEDPARAM(wrkjobj);
+	UNUSEDPARAM(cbdata);
+
+	cli_dbgmsg("in parseMHTMLComment\n");
+	cli_dbgmsg("parseMHTMLComment: parsing html xml-comments requires libxml2!\n");
+#endif
+	return CL_SUCCESS;
+}
 
 /*
  * The related multipart root HTML file parsing wrapper.
@@ -1114,97 +1195,101 @@ static size_t num_mhtml_keys = sizeof(mhtml_keys) / sizeof(struct key_entry);
 static mbox_status
 parseRootMHTML(mbox_ctx *mctx, message *m, text *t)
 {
-    cli_ctx *ctx = mctx->ctx;
+	cli_ctx *ctx = mctx->ctx;
 #if HAVE_LIBXML2
-    blob *input;
-    htmlDocPtr htmlDoc;
-    xmlTextReaderPtr reader;
-    int ret = CL_SUCCESS;
-    mbox_status rc = OK;
+	struct msxml_ctx mxctx;
+	blob *input;
+	htmlDocPtr htmlDoc;
+	xmlTextReaderPtr reader;
+	int ret = CL_SUCCESS;
+	mbox_status rc = OK;
 #if HAVE_JSON
-    json_object *rhtml;
+	json_object *rhtml;
 #endif
 
-    cli_dbgmsg("in parseRootMHTML\n");
+	cli_dbgmsg("in parseRootMHTML\n");
 
-    if (ctx == NULL)
-        return OK;
+	if (ctx == NULL)
+		return OK;
 
-    if (m == NULL && t == NULL)
-	return OK;
+	if (m == NULL && t == NULL)
+		return OK;
 
-    if (m != NULL)
-	input = messageToBlob(m, 0);
-    else if (t != NULL)
-	input = textToBlob(t, NULL, 0);
-    if (input == NULL)
-	return OK;
+	if (m != NULL)
+		input = messageToBlob(m, 0);
+	else if (t != NULL)
+		input = textToBlob(t, NULL, 0);
+	if (input == NULL)
+		return OK;
 
-    htmlDoc = htmlReadMemory(input->data, input->len, "mhtml.html", NULL, CLAMAV_MIN_XMLREADER_FLAGS);
-    if (htmlDoc == NULL) {
-	cli_dbgmsg("parseRootMHTML: cannot intialize read html document\n");
+	htmlDoc = htmlReadMemory(input->data, input->len, "mhtml.html", NULL, CLAMAV_MIN_XMLREADER_FLAGS);
+	if (htmlDoc == NULL) {
+		cli_dbgmsg("parseRootMHTML: cannot intialize read html document\n");
 #if HAVE_JSON
-	ret = cli_json_parse_error(ctx->wrkproperty, "MHTML_ERROR_HTML_READ");
-	if (ret != CL_SUCCESS)
-	    rc = FAIL;
+		ret = cli_json_parse_error(ctx->wrkproperty, "MHTML_ERROR_HTML_READ");
+		if (ret != CL_SUCCESS)
+			rc = FAIL;
 #endif
-	blobDestroy(input);
-	return rc;
-    }
-
-#if HAVE_JSON
-    if (mctx->wrkobj) {
-	rhtml = cli_jsonobj(mctx->wrkobj, "RootHTML");
-	if (rhtml != NULL) {
-	    /* MHTML-specific properties */
-	    cli_jsonstr(rhtml, "Encoding", htmlGetMetaEncoding(htmlDoc));
-	    cli_jsonint(rhtml, "CompressMode", xmlGetDocCompressMode(htmlDoc));
+		blobDestroy(input);
+		return rc;
 	}
-    }
+
+#if HAVE_JSON
+	if (mctx->wrkobj) {
+		rhtml = cli_jsonobj(mctx->wrkobj, "RootHTML");
+		if (rhtml != NULL) {
+			/* MHTML-specific properties */
+			cli_jsonstr(rhtml, "Encoding", htmlGetMetaEncoding(htmlDoc));
+			cli_jsonint(rhtml, "CompressMode", xmlGetDocCompressMode(htmlDoc));
+		}
+	}
 #endif
 
-    reader = xmlReaderWalker(htmlDoc);
-    if (reader == NULL) {
-	cli_dbgmsg("parseRootMHTML: cannot intialize xmlTextReader\n");
+	reader = xmlReaderWalker(htmlDoc);
+	if (reader == NULL) {
+		cli_dbgmsg("parseRootMHTML: cannot intialize xmlTextReader\n");
 #if HAVE_JSON
-	ret = cli_json_parse_error(ctx->wrkproperty, "MHTML_ERROR_XML_READER_IO");
-	if (ret != CL_SUCCESS)
-	    rc = FAIL;
+		ret = cli_json_parse_error(ctx->wrkproperty, "MHTML_ERROR_XML_READER_IO");
+		if (ret != CL_SUCCESS)
+			rc = FAIL;
 #endif
+		blobDestroy(input);
+		return rc;
+	}
+
+	memset(&mxctx, 0, sizeof(mxctx));
+	/* no scanning callback set */
+	mxctx.comment_cb = parseMHTMLComment;
+	ret = cli_msxml_parse_document(ctx, reader, mhtml_keys, num_mhtml_keys, MSXML_FLAG_JSON | MSXML_FLAG_WALK, &mxctx);
+	switch (ret) {
+	case CL_SUCCESS:
+	case CL_ETIMEOUT:
+	case CL_BREAK:
+		rc = OK;
+		break;
+
+	case CL_EMAXREC:
+		rc = MAXREC;
+		break;
+
+	case CL_EMAXFILES:
+		rc = MAXFILES;
+		break;
+
+	case CL_VIRUS:
+		rc = CL_VIRUS;
+		break;
+
+	default:
+		rc = FAIL;
+	}
+
+	xmlFreeDoc(htmlDoc);
 	blobDestroy(input);
 	return rc;
-    }
-
-    ret = cli_msxml_parse_document(ctx, reader, mhtml_keys, num_mhtml_keys, MSXML_FLAG_JSON | MSXML_FLAG_WALK, NULL);
-    switch (ret) {
-    case CL_SUCCESS:
-    case CL_ETIMEOUT:
-    case CL_BREAK:
-	rc = OK;
-	break;
-
-    case CL_EMAXREC:
-	rc = MAXREC;
-	break;
-
-    case CL_EMAXFILES:
-	rc = MAXFILES;
-	break;
-
-    case CL_VIRUS:
-	rc = CL_VIRUS;
-	break;
-
-    default:
-	rc = FAIL;
-    }
-
-    xmlFreeDoc(htmlDoc);
-    blobDestroy(input);
-    return rc;
 #else
-    UNUSEDPARAM(m);
-    UNUSEDPARAM(t);
+	UNUSEDPARAM(m);
+	UNUSEDPARAM(t);
 	cli_dbgmsg("in parseRootMHTML\n");
 	cli_dbgmsg("parseRootMHTML: parsing html documents requires libxml2!\n");
 
