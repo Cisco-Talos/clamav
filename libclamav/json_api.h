@@ -92,7 +92,7 @@ int cli_jsonint_array_nojson(int32_t val);
 #define cli_jsonarray(o,k)         cli_jsonarray_nojson(k)
 #define cli_jsonint_array(o,v)     cli_jsonint_array_nojson(v)
 #define cli_json_addowner(o,c,k,i) cli_json_nojson()
-#define cli_json_addowner(o,k,i)   cli_json_nojson()
+#define cli_json_delowner(o,k,i)   cli_json_nojson()
 #define cli_json_delobj(o)         cli_json_nojson()
 
 #endif
