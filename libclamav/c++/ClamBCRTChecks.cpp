@@ -488,8 +488,13 @@ namespace llvm {
           constType *I64Ty =
               Type::getInt64Ty(Base->getContext());
 
-          if (Base->getType()->isPointerTy()) {
-              if (Argument *A = dyn_cast<Argument>(Base)) {
+#ifndef CLAMBC_COMPILER
+          // first arg is hidden ctx
+          if (Argument *A = dyn_cast<Argument>(Base)) {
+              if (A->getArgNo() == 0) {
+                  constType *Ty = cast<PointerType>(A->getType())->getElementType();
+                  return ConstantInt::get(I64Ty, TD->getTypeAllocSize(Ty));
+              } else if (Base->getType()->isPointerTy()) {
                   Function *F = A->getParent();
                   const FunctionType *FT = F->getFunctionType();
 
@@ -514,15 +519,6 @@ namespace llvm {
                       return BoundsMap[Base] = getValAtIdx(F, A->getArgNo()+1);
               }
           }
-
-#ifndef CLAMBC_COMPILER
-          // first arg is hidden ctx
-          if (Argument *A = dyn_cast<Argument>(Base)) {
-              if (A->getArgNo() == 0) {
-                  constType *Ty = cast<PointerType>(A->getType())->getElementType();
-                  return ConstantInt::get(I64Ty, TD->getTypeAllocSize(Ty));
-              }
-          }
           if (LoadInst *LI = dyn_cast<LoadInst>(Base)) {
               Value *V = GetUnderlyingObject(LI->getPointerOperand()->stripPointerCasts(), TD);
               if (Argument *A = dyn_cast<Argument>(V)) {
@@ -532,6 +528,33 @@ namespace llvm {
                       constType *Ty = cast<PointerType>(LI->getType())->getElementType();
                       return ConstantInt::get(I64Ty, TD->getTypeAllocSize(Ty));
                   }
+              }
+          }
+#else
+          if (Base->getType()->isPointerTy()) {
+              if (Argument *A = dyn_cast<Argument>(Base)) {
+                  Function *F = A->getParent();
+                  const FunctionType *FT = F->getFunctionType();
+
+                  bool checks = true;
+                  // last argument check
+                  if (A->getArgNo() == (FT->getNumParams()-1)) {
+                      //printDiagnostic("pointer argument cannot be last argument", F);
+                      errs() << "pointer argument cannot be last argument\n";
+                      errs() << *F << "\n";
+                      checks = false;
+                  }
+
+                  // argument after pointer MUST be a integer (unsigned probably too)
+                  if (checks && !FT->getParamType(A->getArgNo()+1)->isIntegerTy()) {
+                      //printDiagnostic("argument following pointer argument is not an integer", F);
+                      errs() << "argument following pointer argument is not an integer\n";
+                      errs() << *F << "\n";
+                      checks = false;
+                  }
+
+                  if (checks)
+                      return BoundsMap[Base] = getValAtIdx(F, A->getArgNo()+1);
               }
           }
 #endif
