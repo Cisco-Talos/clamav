@@ -149,6 +149,9 @@ Detect partition intersections in raw disk images using heuristics.
 .TP
 \fB\-\-algorithmic\-detection[=yes(*)/no]\fR
 In some cases (eg. complex malware, exploits in graphic files, and others), ClamAV uses special algorithms to provide accurate detection. This option can be used to control the algorithmic detection.
+.TP
+\fB\-\-normalize[=yes(*)/no]\fR
+Normalize (compress whitespace, downcase, etc.) html, script, and text files. Use normalize=no for yara compatibility. 
 .TP 
 \fB\-\-scan\-pe[=yes(*)/no]\fR
 PE stands for Portable Executable \- it's an executable file format used in all 32\-bit versions of Windows operating systems. By default ClamAV performs deeper analysis of executable files and attempts to decompress popular executable packers such as UPX, Petite, and FSG. If you turn off this option, the original files will still be scanned but without additional processing.
