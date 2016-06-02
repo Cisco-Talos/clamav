@@ -270,11 +270,6 @@ Run the daemon as a specified user (the process must be started by root).
 .br
 Default: disabled
 .TP
-\fBAllowSupplementaryGroups BOOL\fR
-Initialize a supplementary group access (the process must be started by root).
-.br
-Default: no
-.TP
 \fBBytecode BOOL\fR
 With this option enabled ClamAV will load bytecode from the database. It is highly recommended you keep this option turned on, otherwise you may miss detections for many new viruses.
 .br

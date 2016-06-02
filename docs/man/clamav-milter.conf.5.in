@@ -57,11 +57,6 @@ Run as another user (clamav-milter must be started by root for this option to wo
 .br
 Default: unset (don\'t drop privileges)
 .TP 
-\fBAllowSupplementaryGroups BOOL\fR
-Initialize supplementary group access (clamav-milter must be started by root).
-.br 
-Default: no
-.TP 
 \fBReadTimeout NUMBER\fR
 Waiting for data from clamd will timeout after this time (seconds).
 .br 

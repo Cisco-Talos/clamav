@@ -202,10 +202,6 @@ Example
 # Default: don't drop privileges
 #User clamav
 
-# Initialize supplementary group access (clamd must be started by root).
-# Default: no
-#AllowSupplementaryGroups no
-
 # Stop daemon when libclamav reports out of memory condition.
 #ExitOnOOM yes
 

@@ -419,28 +419,17 @@ main (int argc, char **argv)
             return FCE_USERINFO;
         }
 
-        if (optget (opts, "AllowSupplementaryGroups")->enabled)
-        {
 #ifdef HAVE_INITGROUPS
-            if (initgroups (dbowner, user->pw_gid))
-            {
-                logg ("^initgroups() failed.\n");
-                optfree (opts);
-                return FCE_USERORGROUP;
-            }
+	if (initgroups(dbowner, user->pw_gid)) {
+		logg ("^initgroups() failed.\n");
+		return FCE_USERORGROUP;
+	}
+#elif HAVE_SETGROUPS
+	if (setgroups(1, &user->pw_gid)) {
+		logg ("^setgroups() failed.\n");
+		return FCE_USERORGROUP;
+	}
 #endif
-        }
-        else
-        {
-#ifdef HAVE_SETGROUPS
-            if (setgroups (1, &user->pw_gid))
-            {
-                logg ("^setgroups() failed.\n");
-                optfree (opts);
-                return FCE_USERORGROUP;
-            }
-#endif
-        }
 
         if (setgid (user->pw_gid))
         {

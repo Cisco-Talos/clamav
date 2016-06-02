@@ -76,11 +76,6 @@ Enable debug messages in libclamav.
 .br
 Default: no
 .TP 
-\fBAllowSupplementaryGroups BOOL\fR
-Initialize supplementary group access (freshclam must be started by root).
-.br 
-Default: disabled
-.TP 
 \fBUpdateLogFile STRING\fR
 Enable logging to a specified file. Highly recommended.
 .br 

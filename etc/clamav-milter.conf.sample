@@ -38,11 +38,6 @@ Example
 # Default: unset (don't drop privileges)
 #User clamav
 
-# Initialize supplementary group access (clamav-milter must be started by root).
-#
-# Default: no
-#AllowSupplementaryGroups no
-
 # Waiting for data from clamd will timeout after this time (seconds).
 # Value of 0 disables the timeout.
 #
