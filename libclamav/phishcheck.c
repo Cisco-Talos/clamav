@@ -1265,7 +1265,9 @@ int cli_url_canon(const char *inurl, size_t len, char *urlbuff, size_t dest_len,
 	++host_begin;
 
 	/* ignore username in URL */
-	p = strchr(host_begin, '@');
+	while((host_begin < urlend) && *host_begin == '/') ++host_begin;
+	host_len = strcspn(host_begin, ":/?");
+	p = memchr(host_begin, '@', host_len);
 	if (p)
 	    host_begin = p+1;
 	url = host_begin;
