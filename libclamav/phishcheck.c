@@ -1401,7 +1401,7 @@ static int url_hash_match(const struct regex_matcher *rlist, const char *inurl, 
 		while(k < COMPONENTS+2) {
 			p = strchr(path_begin + pp[k-1] + 1, '/');
 			if(p && p > path_begin) {
-				pp[k++] = p - path_begin;
+				pp[k++] = p - path_begin + 1;
 			} else
 				break;
 		}
