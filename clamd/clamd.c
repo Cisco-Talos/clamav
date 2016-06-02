@@ -216,27 +216,17 @@ int main(int argc, char **argv)
             return 1;
         }
 
-        if(optget(opts, "AllowSupplementaryGroups")->enabled) {
 #ifdef HAVE_INITGROUPS
-            if(initgroups(opt->strarg, user->pw_gid)) {
-                fprintf(stderr, "ERROR: initgroups() failed.\n");
-                optfree(opts);
-                return 1;
-            }
-#else
-            mprintf("!AllowSupplementaryGroups: initgroups() is not available, please disable AllowSupplementaryGroups in %s\n", cfgfile);
-            optfree(opts);
-            return 1;
+	if(initgroups(user->pw_name, user->pw_gid)) {
+		fprintf(stderr, "ERROR: initgroups() failed.\n");
+		return 1;
+	}
+#elif HAVE_SETGROUPS
+	if(setgroups(1, &user->pw_gid)) {
+		fprintf(stderr, "ERROR: setgroups() failed.\n");
+		return 1;
+	}
 #endif
-        } else {
-#ifdef HAVE_SETGROUPS
-            if(setgroups(1, &user->pw_gid)) {
-                fprintf(stderr, "ERROR: setgroups() failed.\n");
-                optfree(opts);
-                return 1;
-            }
-#endif
-        }
 
         if(setgid(user->pw_gid)) {
             fprintf(stderr, "ERROR: setgid(%d) failed.\n", (int) user->pw_gid);
