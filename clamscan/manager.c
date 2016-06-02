@@ -1080,7 +1080,7 @@ int scanmanager(const struct optstruct *opts)
     if(optget(opts, "scan-swf")->enabled)
         options |= CL_SCAN_SWF;
 
-    if(optget(opts, "scan-html")->enabled)
+    if(optget(opts, "scan-html")->enabled && optget(opts, "normalize")->enabled)
         options |= CL_SCAN_HTML;
 
     if(optget(opts, "scan-mail")->enabled)

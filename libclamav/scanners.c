@@ -3263,7 +3263,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 	case CL_TYPE_TEXT_UTF16LE:
 	case CL_TYPE_TEXT_UTF8:
 	    perf_nested_start(ctx, PERFT_SCRIPT, PERFT_SCAN);
-	    if((DCONF_DOC & DOC_CONF_SCRIPT) && dettype != CL_TYPE_HTML && ret != CL_VIRUS)
+	    if((DCONF_DOC & DOC_CONF_SCRIPT) && dettype != CL_TYPE_HTML && (ret != CL_VIRUS || SCAN_ALL) && SCAN_HTML)
 	        ret = cli_scanscript(ctx);
 	    if(SCAN_MAIL && (DCONF_MAIL & MAIL_CONF_MBOX) && ret != CL_VIRUS && (ctx->container_type == CL_TYPE_MAIL || dettype == CL_TYPE_MAIL)) {
 		ret = cli_fmap_scandesc(ctx, CL_TYPE_MAIL, 0, NULL, AC_SCAN_VIR, NULL, NULL);

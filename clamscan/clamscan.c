@@ -256,6 +256,7 @@ void help(void)
     mprintf("    --phishing-cloak[=yes/no(*)]         Always block cloaked URLs (phishing module)\n");
     mprintf("    --partition-intersection[=yes/no(*)] Detect partition intersections in raw disk images using heuristics.\n");
     mprintf("    --algorithmic-detection[=yes(*)/no]  Algorithmic detection\n");
+    mprintf("    --normalize[=yes(*)/no]              Normalize html, script, and text files. Use normalize=no for yara compatibility.\n");
     mprintf("    --scan-pe[=yes(*)/no]                Scan PE files\n");
     mprintf("    --scan-elf[=yes(*)/no]               Scan ELF files\n");
     mprintf("    --scan-ole2[=yes(*)/no]              Scan OLE2 containers\n");
