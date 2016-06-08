@@ -619,6 +619,7 @@ fileblobScan(const fileblob *fb)
 {
 	int rc;
 	STATBUF sb;
+        int virus_found = 0;
 
 	if(fb->isInfected)
 		return CL_VIRUS;
@@ -636,11 +637,14 @@ fileblobScan(const fileblob *fb)
 	fflush(fb->fp);
 	lseek(fb->fd, 0, SEEK_SET);
 	FSTAT(fb->fd, &sb);
-	if(cli_matchmeta(fb->ctx, fb->b.name, sb.st_size, sb.st_size, 0, 0, 0, NULL) == CL_VIRUS)
-	    return CL_VIRUS;
+	if(cli_matchmeta(fb->ctx, fb->b.name, sb.st_size, sb.st_size, 0, 0, 0, NULL) == CL_VIRUS) {
+            if (!(fb->ctx->options & CL_SCAN_ALLMATCHES))
+                return CL_VIRUS;
+            virus_found = 1;
+        }
 
 	rc = cli_magic_scandesc(fb->fd, fb->ctx);
-	if(rc == CL_VIRUS) {
+	if(rc == CL_VIRUS || virus_found != 0) {
 		cli_dbgmsg("%s is infected\n", fb->fullname);
 		return CL_VIRUS;
 	}

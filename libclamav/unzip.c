@@ -504,6 +504,7 @@ static unsigned int lhdr(fmap_t *map, uint32_t loff,uint32_t zsize, unsigned int
   const uint8_t *lh, *zip;
   char name[256];
   uint32_t csize, usize;
+  int virus_found = 0;
 
   if(!(lh = fmap_need_off(map, loff, SIZEOF_LH))) {
       cli_dbgmsg("cli_unzip: lh - out of file\n");
@@ -540,8 +541,10 @@ static unsigned int lhdr(fmap_t *map, uint32_t loff,uint32_t zsize, unsigned int
   /* ZMDfmt virname:encrypted(0-1):filename(exact|*):usize(exact|*):csize(exact|*):crc32(exact|*):method(exact|*):fileno(exact|*):maxdepth(exact|*) */
 
   if(cli_matchmeta(ctx, name, LH_csize, LH_usize, (LH_flags & F_ENCR)!=0, fc, LH_crc32, NULL) == CL_VIRUS) {
-    *ret = CL_VIRUS;
-    return 0;
+      *ret = CL_VIRUS;
+      if (!SCAN_ALL)
+          return 0;
+      virus_found = 1;
   }
 
   if(LH_flags & F_MSKED) {
@@ -555,8 +558,11 @@ static unsigned int lhdr(fmap_t *map, uint32_t loff,uint32_t zsize, unsigned int
     cli_dbgmsg("cli_unzip: Encrypted files found in archive.\n");
     cli_append_virus(ctx, "Heuristics.Encrypted.Zip");
     *ret = CL_VIRUS;
-    fmap_unneed_off(map, loff, SIZEOF_LH);
-    return 0;
+    if (!SCAN_ALL) {
+        fmap_unneed_off(map, loff, SIZEOF_LH);
+        return 0;
+    }
+    virus_found = 1;
   }
  
   if(LH_flags & F_USEDD) {
@@ -594,6 +600,9 @@ static unsigned int lhdr(fmap_t *map, uint32_t loff,uint32_t zsize, unsigned int
       zip+=csize;
       zsize-=csize;
   }
+
+  if (virus_found != 0)
+      *ret = CL_VIRUS;
 
   fmap_unneed_off(map, loff, SIZEOF_LH); /* unneed now. block is guaranteed to exists till the next need */
   if(LH_flags & F_USEDD) {
