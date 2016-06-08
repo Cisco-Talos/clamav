@@ -205,6 +205,7 @@ static int cli_scandir(const char *dirname, cli_ctx *ctx)
 static int cli_unrar_scanmetadata(int desc, unrar_metadata_t *metadata, cli_ctx *ctx, unsigned int files, uint32_t* sfx_check)
 {
 	int ret = CL_SUCCESS;
+        int virus_found = 0;
 
     if(files == 1 && sfx_check) {
 	if(*sfx_check == metadata->crc)
@@ -218,8 +219,11 @@ static int cli_unrar_scanmetadata(int desc, unrar_metadata_t *metadata, cli_ctx 
 	(unsigned int) metadata->unpack_size, metadata->method,
 	metadata->pack_size ? (unsigned int) (metadata->unpack_size / metadata->pack_size) : 0);
 
-    if(cli_matchmeta(ctx, metadata->filename, metadata->pack_size, metadata->unpack_size, metadata->encrypted, files, metadata->crc, NULL) == CL_VIRUS)
-	return CL_VIRUS;
+    if(cli_matchmeta(ctx, metadata->filename, metadata->pack_size, metadata->unpack_size, metadata->encrypted, files, metadata->crc, NULL) == CL_VIRUS) {
+        if (!SCAN_ALL)
+            return CL_VIRUS;
+        virus_found = 1;
+    }
 
     if(DETECT_ENCRYPTED && metadata->encrypted) {
 	cli_dbgmsg("RAR: Encrypted files found in archive.\n");
@@ -230,6 +234,8 @@ static int cli_unrar_scanmetadata(int desc, unrar_metadata_t *metadata, cli_ctx 
 	}
     }
 
+    if (virus_found != 0)
+        return CL_VIRUS;
     return ret;
 }
 
@@ -375,6 +381,7 @@ static int cli_scanarj(cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_check)
 	int ret = CL_CLEAN, rc, file = 0;
 	arj_metadata_t metadata;
 	char *dir;
+        int virus_found = 0;
 
     UNUSEDPARAM(sfx_check);
 
@@ -410,10 +417,14 @@ static int cli_scanarj(cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_check)
 	}
 	file++;
 	if(cli_matchmeta(ctx, metadata.filename, metadata.comp_size, metadata.orig_size, metadata.encrypted, file, 0, NULL) == CL_VIRUS) {
-        cli_rmdirs(dir);
-        free(dir);
-	    return CL_VIRUS;
-    }
+            if (!SCAN_ALL) {
+                cli_rmdirs(dir);
+                free(dir);
+                return CL_VIRUS;
+            }
+            virus_found = 1;
+            ret = CL_SUCCESS;
+        }
 
 	if ((ret = cli_checklimits("ARJ", ctx, metadata.orig_size, metadata.comp_size, 0))!=CL_CLEAN) {
 	    ret = CL_SUCCESS;
@@ -433,12 +444,16 @@ static int cli_scanarj(cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_check)
 	    close(metadata.ofd);
 	    if (rc == CL_VIRUS) {
 		cli_dbgmsg("ARJ: infected with %s\n", cli_get_last_virus(ctx));
-		ret = CL_VIRUS;
-		if (metadata.filename) {
-		    free(metadata.filename);
-		    metadata.filename = NULL;
-		}
-		break;
+                if (!SCAN_ALL) {
+                    ret = CL_VIRUS;
+                    if (metadata.filename) {
+                        free(metadata.filename);
+                        metadata.filename = NULL;
+                    }
+                    break;
+                }
+                virus_found = 1;
+                ret = CL_SUCCESS;
 	    }
 	}
 	if (metadata.filename) {
@@ -456,6 +471,8 @@ static int cli_scanarj(cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_check)
 	free(metadata.filename);
     }
 
+    if (virus_found != 0)
+        ret = CL_VIRUS;
     cli_dbgmsg("ARJ: Exit code: %d\n", ret);
     if (ret == CL_BREAK)
 	ret = CL_CLEAN;
@@ -1484,7 +1501,7 @@ static int cli_scanscript(cli_ctx *ctx)
 	cli_ac_freedata(&tmdata);
 	cli_ac_freedata(&gmdata);
 
-	if (SCAN_ALL && viruses_found)
+	if (viruses_found)
 		return CL_VIRUS;
 
 	return ret;
@@ -1688,7 +1705,7 @@ static int cli_scanmschm(cli_ctx *ctx)
     if (ret == CL_BREAK)
 	ret = CL_CLEAN;
 
-    if (SCAN_ALL && viruses_found)
+    if (viruses_found)
 	return CL_VIRUS;
     return ret;
 }
@@ -1918,7 +1935,7 @@ static int cli_scanmail(cli_ctx *ctx)
 	cli_rmdirs(dir);
 
     free(dir);
-    if (SCAN_ALL && viruses_found)
+    if (viruses_found)
 	return CL_VIRUS;
     return ret;
 }
@@ -2000,7 +2017,7 @@ static int cli_scan_structured(cli_ctx *ctx)
 	    return CL_VIRUS;
     }
 
-    if (SCAN_ALL && viruses_found)
+    if (viruses_found)
 	return CL_VIRUS;
     return CL_CLEAN;
 }
@@ -2587,6 +2604,8 @@ static int magic_scandesc_cleanup(cli_ctx *ctx, cli_file_t type, unsigned char *
             cache_add(hash, hashed_size, ctx);
         perf_stop(ctx, PERFT_CACHE);
     }
+    if (retcode == CL_VIRUS && SCAN_ALL)
+        return CL_CLEAN;
     return retcode;
 }
 
