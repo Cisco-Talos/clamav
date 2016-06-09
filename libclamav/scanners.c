@@ -1359,37 +1359,33 @@ static int cli_scanscript(cli_ctx *ctx)
 		return CL_CLEAN;
 	}
 
+	if(!(normalized = cli_malloc(SCANBUFF + maxpatlen))) {
+		cli_dbgmsg("cli_scanscript: Unable to malloc %u bytes\n", SCANBUFF);
+		return CL_EMEM;
+	}
+	text_normalize_init(&state, normalized, SCANBUFF + maxpatlen);
+
+	if ((ret = cli_ac_initdata(&tmdata, troot?troot->ac_partsigs:0, troot?troot->ac_lsigs:0, troot?troot->ac_reloff_num:0, CLI_DEFAULT_AC_TRACKLEN))) {
+            free(normalized);
+            return ret;
+	}
+
+	if ((ret = cli_ac_initdata(&gmdata, groot->ac_partsigs, groot->ac_lsigs, groot->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN))) {
+            cli_ac_freedata(&tmdata);
+            free(normalized);
+            return ret;
+	}
+
 	/* dump to disk only if explicitly asked to
 	 * or if necessary to check relative offsets,
 	 * otherwise we can process just in-memory */
 	if(ctx->engine->keeptmp || (troot && troot->ac_reloff_num > 0)) {
-		if((ret = cli_gentempfd(ctx->engine->tmpdir, &tmpname, &ofd))) {
-			cli_dbgmsg("cli_scanscript: Can't generate temporary file/descriptor\n");
-			return ret;
-		}
-		if (ctx->engine->keeptmp)
-			cli_dbgmsg("cli_scanscript: saving normalized file to %s\n", tmpname);
-	}
-
-	if(!(normalized = cli_malloc(SCANBUFF + maxpatlen))) {
-		cli_dbgmsg("cli_scanscript: Unable to malloc %u bytes\n", SCANBUFF);
-		free(tmpname);
-		return CL_EMEM;
-	}
-
-	text_normalize_init(&state, normalized, SCANBUFF + maxpatlen);
-	ret = CL_CLEAN;
-
-
-	if ((ret = cli_ac_initdata(&tmdata, troot?troot->ac_partsigs:0, troot?troot->ac_lsigs:0, troot?troot->ac_reloff_num:0, CLI_DEFAULT_AC_TRACKLEN))) {
-		free(tmpname);
-		return ret;
-	}
-
-	if ((ret = cli_ac_initdata(&gmdata, groot->ac_partsigs, groot->ac_lsigs, groot->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN))) {
-		cli_ac_freedata(&tmdata);
-		free(tmpname);
-		return ret;
+            if((ret = cli_gentempfd(ctx->engine->tmpdir, &tmpname, &ofd))) {
+                cli_dbgmsg("cli_scanscript: Can't generate temporary file/descriptor\n");
+                goto done;
+            }
+            if (ctx->engine->keeptmp)
+                cli_dbgmsg("cli_scanscript: saving normalized file to %s\n", tmpname);
 	}
 
 	mdata[0] = &tmdata;
@@ -1404,10 +1400,9 @@ static int cli_scanscript(cli_ctx *ctx)
 			map_off += written;
 
 			if  (write(ofd, state.out, state.out_pos) == -1) {
-				cli_errmsg("cli_scanscript: can't write to file %s\n",tmpname);
-				close(ofd);
-				free(tmpname);
-				return CL_EWRITE;
+                            cli_errmsg("cli_scanscript: can't write to file %s\n",tmpname);
+                            ret = CL_EWRITE;
+                            goto done;
 			}
 			text_normalize_reset(&state);
 		}
@@ -1426,11 +1421,6 @@ static int cli_scanscript(cli_ctx *ctx)
 			funmap(*ctx->fmap);
 		}
 		*ctx->fmap = map;
-
-		/* If we aren't keeping temps, delete the normalized file after scan. */
-		if(!(ctx->engine->keeptmp))
-			if (cli_unlink(tmpname)) ret = CL_EUNLINK;
-
 	} else {
 		/* Since the above is moderately costly all in all,
 		 * do the old stuff if there's no relative offsets. */
@@ -1438,11 +1428,8 @@ static int cli_scanscript(cli_ctx *ctx)
 		if (troot) {
 			cli_targetinfo(&info, 7, map);
 			ret = cli_ac_caloff(troot, &tmdata, &info);
-			if (ret) {
-				cli_ac_freedata(&tmdata);
-				free(tmpname);
-				return ret;
-			}
+			if (ret)
+                            goto done;
 		}
 
 		while(1) {
@@ -1483,13 +1470,6 @@ static int cli_scanscript(cli_ctx *ctx)
 
 	}
 
-	if(ctx->engine->keeptmp) {
-		free(tmpname);
-		if (ofd >= 0)
-			close(ofd);
-	}
-	free(normalized);
-
 	if(ret != CL_VIRUS || SCAN_ALL)  {
 		if ((ret = cli_exp_eval(ctx, troot, &tmdata, NULL, NULL)) == CL_VIRUS)
 			viruses_found++;
@@ -1498,11 +1478,21 @@ static int cli_scanscript(cli_ctx *ctx)
 				viruses_found++;
 	}
 
+ done:
+	free(normalized);
 	cli_ac_freedata(&tmdata);
 	cli_ac_freedata(&gmdata);
 
+        if (ofd != -1)
+            close(ofd);
+        if (tmpname != NULL) {
+            if (!ctx->engine->keeptmp)
+                cli_unlink(tmpname);
+            free(tmpname);
+        }
+
 	if (viruses_found)
-		return CL_VIRUS;
+            return CL_VIRUS;
 
 	return ret;
 }
