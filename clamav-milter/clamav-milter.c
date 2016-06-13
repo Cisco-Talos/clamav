@@ -299,7 +299,7 @@ int main(int argc, char **argv) {
 	}
 
 #ifdef HAVE_INITGROUPS
-	if(initgroups(user->pw_name, user->pw_gid)) {
+	if(initgroups(opt->strarg, user->pw_gid)) {
 	    fprintf(stderr, "ERROR: initgroups() failed.\n");
 	    optfree(opts);
 	    return 1;
