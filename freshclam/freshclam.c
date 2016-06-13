@@ -422,11 +422,13 @@ main (int argc, char **argv)
 #ifdef HAVE_INITGROUPS
 	if (initgroups(dbowner, user->pw_gid)) {
 		logg ("^initgroups() failed.\n");
+                optfree (opts);
 		return FCE_USERORGROUP;
 	}
 #elif HAVE_SETGROUPS
 	if (setgroups(1, &user->pw_gid)) {
 		logg ("^setgroups() failed.\n");
+                optfree (opts);
 		return FCE_USERORGROUP;
 	}
 #endif
