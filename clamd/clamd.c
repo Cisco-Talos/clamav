@@ -219,12 +219,14 @@ int main(int argc, char **argv)
 #ifdef HAVE_INITGROUPS
 	if(initgroups(user->pw_name, user->pw_gid)) {
 		fprintf(stderr, "ERROR: initgroups() failed.\n");
+                optfree(opts);
 		return 1;
 	}
 #elif HAVE_SETGROUPS
 	if(setgroups(1, &user->pw_gid)) {
 		fprintf(stderr, "ERROR: setgroups() failed.\n");
-		return 1;
+                optfree(opts);
+                return 1;
 	}
 #endif
 
