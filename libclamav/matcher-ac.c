@@ -1761,7 +1761,10 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
                             if(pt->partno != 1) {
                                 for(j = 1; j <= CLI_DEFAULT_AC_TRACKLEN + 1 && offmatrix[pt->partno - 2][j] != -1; j++) {
                                     found = j;
-                                    if(pt->maxdist)
+                                    if(realoff < offmatrix[pt->partno - 2][j])
+                                        found = 0;
+
+                                    if(found && pt->maxdist)
                                         if(realoff - offmatrix[pt->partno - 2][j] > pt->maxdist)
                                             found = 0;
 
