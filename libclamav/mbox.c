@@ -2137,7 +2137,7 @@ boundaryStart(const char *line, const char *boundary)
 	char buf[RFC2821LENGTH + 1];
     char *newline;
 
-	if(line == NULL)
+	if(line == NULL || *line == '\0')
 		return 0;	/* empty line */
 	if(boundary == NULL)
 		return 0;
@@ -2146,10 +2146,10 @@ boundaryStart(const char *line, const char *boundary)
     if (!(newline))
         newline = (char *)line;
 
-    if (newline != line && strlen(newline)) {
+    if (newline != line && strlen(line)) {
         char *p;
         /* Trim trailing spaces */
-        p = newline + strlen(newline)-1;
+        p = newline + strlen(line);
         while (p >= newline && *p == ' ')
             *(p--) = '\0';
     }
@@ -2261,7 +2261,7 @@ boundaryEnd(const char *line, const char *boundary)
 	size_t len;
     char *newline, *p, *p2;
 
-	if(line == NULL)
+	if(line == NULL || *line == '\0')
 		return 0;
 
     p = newline = strdup(line);
@@ -2270,9 +2270,9 @@ boundaryEnd(const char *line, const char *boundary)
         newline = (char *)line;
     }
 
-    if (newline != line && strlen(newline)) {
+    if (newline != line && strlen(line)) {
         /* Trim trailing spaces */
-        p2 = newline + strlen(newline)-1;
+        p2 = newline + strlen(line);
         while (p2 >= newline && *p2 == ' ')
             *(p2--) = '\0';
     }
