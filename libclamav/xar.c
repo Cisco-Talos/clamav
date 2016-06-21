@@ -71,17 +71,20 @@ static int xar_cleanup_temp_file(cli_ctx *ctx, int fd, char * tmpname)
      value - pointer to long to contain the returned value
    returns - CL_SUCCESS or CL_EFORMAT
  */
-static int xar_get_numeric_from_xml_element(xmlTextReaderPtr reader, long * value)
+static int xar_get_numeric_from_xml_element(xmlTextReaderPtr reader, size_t * value)
 {
     const xmlChar * numstr;
+    ssize_t numval;
+
     if (xmlTextReaderRead(reader) == 1 && xmlTextReaderNodeType(reader) == XML_READER_TYPE_TEXT) {
         numstr = xmlTextReaderConstValue(reader);
         if (numstr) {
-            *value = atol((const char *)numstr);
-            if (*value < 0) {
+            numval = atol((const char *)numstr);
+            if (numval < 0) {
                 cli_dbgmsg("cli_scanxar: XML element value %li\n", *value);
                 return CL_EFORMAT;
             }
+            *value = numval;
             return CL_SUCCESS;
         }
     }
@@ -123,8 +126,18 @@ static void xar_get_checksum_values(xmlTextReaderPtr reader, unsigned char ** ck
     if (xmlTextReaderRead(reader) == 1 && xmlTextReaderNodeType(reader) == XML_READER_TYPE_TEXT) {
         xmlval = xmlTextReaderConstValue(reader);
         if (xmlval) {
-            *cksum = xmlStrdup(xmlval); 
-            cli_dbgmsg("cli_scanxar: checksum value is %s.\n", *cksum);
+            cli_dbgmsg("cli_scanxar: checksum value is %s.\n", xmlval);
+            if (*hash == XAR_CKSUM_SHA1 && xmlStrlen(xmlval) == 2 * CLI_HASHLEN_SHA1 ||
+                *hash == XAR_CKSUM_MD5 && xmlStrlen(xmlval) == 2 * CLI_HASHLEN_MD5)
+                {
+                    *cksum = xmlStrdup(xmlval); 
+                } 
+            else
+                {
+                    cli_dbgmsg("cli_scanxar: checksum type is unknown or length is invalid.\n");
+                    *hash = XAR_CKSUM_OTHER;
+                    *cksum = NULL;
+                }
         } else {
             *cksum = NULL;
             cli_dbgmsg("cli_scanxar: xmlTextReaderConstValue() returns NULL for checksum value.\n");           
@@ -149,7 +162,7 @@ static void xar_get_checksum_values(xmlTextReaderPtr reader, unsigned char ** ck
      e_hash - pointer to int for returning extracted checksum algorithm.
    returns - CL_FORMAT, CL_SUCCESS, CL_BREAK. CL_BREAK indicates no more <data>/<ea> element.
  */
-static int xar_get_toc_data_values(xmlTextReaderPtr reader, long *length, long *offset, long *size, int *encoding,
+static int xar_get_toc_data_values(xmlTextReaderPtr reader, size_t *length, size_t *offset, size_t *size, int *encoding,
                                    unsigned char ** a_cksum, int * a_hash, unsigned char ** e_cksum, int * e_hash)
 {
     const xmlChar *name;
@@ -386,10 +399,10 @@ static int xar_hash_check(int hash, const void * result, const void * expected)
         return 1;
     switch (hash) {
     case XAR_CKSUM_SHA1:
-        len = SHA1_HASH_SIZE;
+        len = CLI_HASHLEN_SHA1;
         break;
     case XAR_CKSUM_MD5:
-        len = CLI_HASH_MD5;
+        len = CLI_HASHLEN_MD5;
         break;
     case XAR_CKSUM_OTHER:
     case XAR_CKSUM_NONE:
@@ -417,7 +430,7 @@ int cli_scanxar(cli_ctx *ctx)
     int fd = -1;
     struct xar_header hdr;
     fmap_t *map = *ctx->fmap;
-    long length, offset, size, at;
+    size_t length, offset, size, at;
     int encoding;
     z_stream strm;
     char *toc, *tmpname;
@@ -490,6 +503,13 @@ int cli_scanxar(cli_ctx *ctx)
         goto exit_toc;
     }
 
+    if (hdr.toc_length_decompressed != strm.total_out) {
+        cli_dbgmsg("TOC decompress length %" PRIu64 " does not match amount decompressed %lu\n",
+                   hdr.toc_length_decompressed, strm.total_out);
+        toc[strm.total_out] = '\0';
+        hdr.toc_length_decompressed = strm.total_out;
+    }
+
     /* cli_dbgmsg("cli_scanxar: TOC xml:\n%s\n", toc); */
     /* printf("cli_scanxar: TOC xml:\n%s\n", toc); */
     /* cli_dbgmsg("cli_scanxar: TOC end:\n"); */
@@ -557,8 +577,8 @@ int cli_scanxar(cli_ctx *ctx)
             goto exit_reader;
         }
 
-        cli_dbgmsg("cli_scanxar: decompress into temp file:\n%s, size %li,\n"
-                   "from xar heap offset %li length %li\n",
+        cli_dbgmsg("cli_scanxar: decompress into temp file:\n%s, size %zu,\n"
+                   "from xar heap offset %zu length %zu\n",
                    tmpname, size, offset, length);
 
 
@@ -638,11 +658,14 @@ int cli_scanxar(cli_ctx *ctx)
 #define CLI_LZMA_IBUF_SIZE CLI_LZMA_OBUF_SIZE>>2 /* estimated compression ratio 25% */
             {
                 struct CLI_LZMA lz;
-                unsigned long in_remaining = length;
+                unsigned long in_remaining = MIN(length, map->len - at);
                 unsigned long out_size = 0;
                 unsigned char * buff = __lzma_wrap_alloc(NULL, CLI_LZMA_OBUF_SIZE);
                 int lret;
-                
+
+                if (length > in_remaining)
+                    length = in_remaining;
+
                 memset(&lz, 0, sizeof(lz));
                 if (buff == NULL) {
                     cli_dbgmsg("cli_scanxar: memory request for lzma decompression buffer fails.\n");
@@ -655,8 +678,8 @@ int cli_scanxar(cli_ctx *ctx)
                 if (blockp == NULL) {
                     char errbuff[128];
                     cli_strerror(errno, errbuff, sizeof(errbuff));
-                    cli_dbgmsg("cli_scanxar: Can't read %li bytes @ %li, errno:%s.\n",
-                               length, at, errbuff);
+                    cli_dbgmsg("cli_scanxar: Can't read %i bytes @ %li, errno:%s.\n",
+                               CLI_LZMA_HDR_SIZE, at, errbuff);
                     rc = CL_EREAD;
                     __lzma_wrap_free(NULL, buff);
                     goto exit_tmpfile;
@@ -693,7 +716,7 @@ int cli_scanxar(cli_ctx *ctx)
                         char errbuff[128];
                         cli_strerror(errno, errbuff, sizeof(errbuff));
                         cli_dbgmsg("cli_scanxar: Can't read %li bytes @ %li, errno: %s.\n",
-                                   length, at, errbuff);
+                                   lz.avail_in, at, errbuff);
                         rc = CL_EREAD;
                         __lzma_wrap_free(NULL, buff);
                         cli_LzmaShutdown(&lz);
@@ -758,33 +781,31 @@ int cli_scanxar(cli_ctx *ctx)
             /* for uncompressed, bzip2, xz, and unknown, just pull the file, cli_magic_scandesc does the rest */
             do_extract_cksum = 0;
             {
-                unsigned long write_len;
-                
+                size_t writelen = MIN(map->len - at, length);
+
                 if (ctx->engine->maxfilesize)
-                    write_len = MIN((size_t)(ctx->engine->maxfilesize), (size_t)length);
-                else
-                    write_len = length;
+                    writelen = MIN((size_t)(ctx->engine->maxfilesize), writelen);
                     
-                if (!(blockp = (void*)fmap_need_off_once(map, at, length))) {
+                if (!(blockp = (void*)fmap_need_off_once(map, at, writelen))) {
                     char errbuff[128];
                     cli_strerror(errno, errbuff, sizeof(errbuff));
-                    cli_dbgmsg("cli_scanxar: Can't read %li bytes @ %li, errno:%s.\n",
-                               length, at, errbuff);
+                    cli_dbgmsg("cli_scanxar: Can't read %zu bytes @ %zu, errno:%s.\n",
+                               writelen, at, errbuff);
                     rc = CL_EREAD;
                     goto exit_tmpfile;
                 }
                 
                 if (a_hash_ctx != NULL)
-                    xar_hash_update(a_hash_ctx, blockp, length, a_hash);
+                    xar_hash_update(a_hash_ctx, blockp, writelen, a_hash);
                 
-                if (cli_writen(fd, blockp, write_len) < 0) {
-                    cli_dbgmsg("cli_scanxar: cli_writen error %li bytes @ %li.\n", length, at);
+                if (cli_writen(fd, blockp, writelen) < 0) {
+                    cli_dbgmsg("cli_scanxar: cli_writen error %zu bytes @ %li.\n", writelen, at);
                     rc = CL_EWRITE;
                     goto exit_tmpfile;
                 }
                 /*break;*/
             }          
-        }
+        } /* end of switch */
 
         if (rc == CL_SUCCESS) {
             if (a_hash_ctx != NULL) {
@@ -871,7 +892,7 @@ int cli_scanxar(cli_ctx *ctx)
     cli_dbgmsg("cli_scanxar: can't scan xar files, need libxml2.\n");
 #endif
     if (cksum_fails + extract_errors != 0) {
-        cli_warnmsg("cli_scanxar: %u checksum errors and %u extraction errors, use --debug for more info.\n",
+        cli_dbgmsg("cli_scanxar: %u checksum errors and %u extraction errors.\n",
                     cksum_fails, extract_errors);
     }
 
