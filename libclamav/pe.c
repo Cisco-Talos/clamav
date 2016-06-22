@@ -3360,19 +3360,21 @@ int cli_scanpe(cli_ctx *ctx)
     cli_bytecode_context_destroy(bc_ctx);
 
     /* Attempt to run scans on import table */
-    /* TODO: should this be target-tree-only? */
-    ret = scan_pe_imptbl(ctx, dirs, exe_sections, nsections, hdr_size, pe_plus);
-    switch (ret) {
-        case CL_ENULLARG:
-            cli_warnmsg("cli_scanpe: NULL argument supplied\n");
-            break;
-        case CL_VIRUS:
-            if (SCAN_ALL)
+    /* Run if there are existing signatures and/or preclassing */
+    if (ctx->dconf->pe & PE_CONF_IMPTBL) {
+        ret = scan_pe_imptbl(ctx, dirs, exe_sections, nsections, hdr_size, pe_plus);
+        switch (ret) {
+            case CL_ENULLARG:
+                cli_warnmsg("cli_scanpe: NULL argument supplied\n");
                 break;
-            /* intentional fall-through */
-        case CL_BREAK:
-            free(exe_sections);
-            return ret == CL_VIRUS ? CL_VIRUS : CL_CLEAN;
+            case CL_VIRUS:
+                if (SCAN_ALL)
+                    break;
+                /* intentional fall-through */
+            case CL_BREAK:
+                free(exe_sections);
+                return ret == CL_VIRUS ? CL_VIRUS : CL_CLEAN;
+        }
     }
     /* Attempt to detect some popular polymorphic viruses */
 
