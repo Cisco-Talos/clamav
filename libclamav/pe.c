@@ -86,6 +86,9 @@
 #define UPX_LZMA1 "\x56\x83\xc3\x04\x53\x50\xc7\x03\x03\x00\x02\x00\x90\x90\x90\x55\x57\x56\x53\x83"
 #define UPX_LZMA2 "\x56\x83\xc3\x04\x53\x50\xc7\x03\x03\x00\x02\x00\x90\x90\x90\x90\x90\x55\x57\x56"
 
+#define PE_MAXNAMESIZE 256
+#define PE_MAXIMPORTS  1024
+
 #define EC32(x) ((uint32_t)cli_readint32(&(x))) /* Convert little endian to host */
 #define EC16(x) ((uint16_t)cli_readint16(&(x)))
 /* lower and upper bondary alignment (size vs offset) */
@@ -2164,8 +2167,6 @@ static char *pe_ordinal(char *dll, uint16_t ord)
   return cli_strdup(name);    
 }
 
-#define PE_MAXIMPORTS  1024
-#define PE_MAXNAMESIZE 256
 static inline int scan_pe_impfuncs(cli_ctx *ctx, void *md5ctx, struct pe_image_import_descriptor *image, char *dllname, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size, int pe_plus, int *first) {
     uint32_t toff, offset;
     fmap_t *map = *ctx->fmap;
@@ -2228,8 +2229,6 @@ static inline int scan_pe_impfuncs(cli_ctx *ctx, void *md5ctx, struct pe_image_i
                 char *fname;
                 size_t funclen;
 
-                //cli_dbgmsg("IMPTBL: FUNC: %s\n", funcname);
-
                 if (dlllen == 0) {
                     char* ext = strstr(dllname, ".");
 
@@ -2257,15 +2256,12 @@ static inline int scan_pe_impfuncs(cli_ctx *ctx, void *md5ctx, struct pe_image_i
                 for (i = 0; i < funclen; i++, j++)
                     fname[j] = tolower(funcname[i]);
 
-                /* JSON TOMFOOLERY */
 #if HAVE_JSON
                 if (imptbl) {
                     char *jname = *first ? fname : fname+1;
                     cli_jsonstr(imptbl, NULL, jname);
                 }
 #endif
-
-                cli_dbgmsg("%u %s\n", strlen(fname), fname);
 
                 cl_update_hash(md5ctx, fname, strlen(fname));
 
@@ -2308,9 +2304,6 @@ static inline int scan_pe_impfuncs(cli_ctx *ctx, void *md5ctx, struct pe_image_i
                 char *fname;
                 size_t funclen;
 
-                /* JSON TOMFOOLERY */
-                //cli_dbgmsg("IMPTBL: FUNC: %s\n", funcname);
-
                 if (dlllen == 0) {
                     char* ext = strstr(dllname, ".");
 
@@ -2332,18 +2325,22 @@ static inline int scan_pe_impfuncs(cli_ctx *ctx, void *md5ctx, struct pe_image_i
                 j = 0;
                 if (!*first)
                     fname[j++] = ',';
-                else
-                    *first = 0;
                 for (i = 0; i < dlllen; i++, j++)
                     fname[j] = tolower(dllname[i]);
                 fname[j++] = '.';
                 for (i = 0; i < funclen; i++, j++)
                     fname[j] = tolower(funcname[i]);
 
-                cli_dbgmsg("%u %s\n", strlen(fname), fname);
+#if HAVE_JSON
+                if (imptbl) {
+                    char *jname = *first ? fname : fname+1;
+                    cli_jsonstr(imptbl, NULL, jname);
+                }
+#endif
 
                 cl_update_hash(md5ctx, fname, strlen(fname));
 
+                *first = 0;
                 free(fname);
                 free(funcname);
             }
@@ -2363,7 +2360,6 @@ static int scan_pe_imptbl(cli_ctx *ctx, struct pe_image_data_dir *dirs, struct c
     const char *impdes, *buffer, *virname;
     void *md5ctx;
     uint8_t digest[16] = {0};
-    char *dstr;
     int i, err, ret = CL_SUCCESS, num_imports = 0, first = 1;
 
     if (datadir->VirtualAddress == 0 || datadir->Size == 0) {
@@ -2380,7 +2376,7 @@ static int scan_pe_imptbl(cli_ctx *ctx, struct pe_image_data_dir *dirs, struct c
     impdes = fmap_need_off(map, impoff, datadir->Size);
     if (impdes == NULL) {
         cli_dbgmsg("IMPTBL: failed to acquire fmap buffer\n");
-        return CL_SUCCESS; /* real error: CL_EMAP? */
+        return CL_EREAD;
     }
     left = datadir->Size;
 
@@ -2399,29 +2395,26 @@ static int scan_pe_imptbl(cli_ctx *ctx, struct pe_image_data_dir *dirs, struct c
         offset = cli_rawaddr(image->Name, exe_sections, nsections, &err, fsize, hdr_size);
         if (err || offset > fsize) {
             cli_dbgmsg("IMPTBL: invalid rva for dll name\n");
-            /* ignore or return? */
+            /* TODO: ignore or return? */
             /*
               image++;
               continue;
              */
             cl_hash_destroy(md5ctx);
-            return CL_SUCCESS; /* error value? continue? */
+            return CL_SUCCESS; /* CL_EFORMAT? */
         }
 
         if ((buffer = fmap_need_off_once(map, offset, MIN(PE_MAXNAMESIZE, fsize-offset))) != NULL) {
-            /* sanitize dllname? */
+            /* TODO - sanitize dllname */
             dllname = strndup(buffer, MIN(PE_MAXNAMESIZE, fsize-offset));
             if (dllname == NULL) {
                 cli_dbgmsg("IMPTBL: cannot duplicate dll name\n");
                 cl_hash_destroy(md5ctx);
                 return CL_EMEM;
             }
-
-            //cli_dbgmsg("IMPTBL: DLL: %s\n", dllname);
-            /* JSON TOMFOOLERY */
         }
 
-        /* DLL function handling - inline function TODO - dconf this */
+        /* DLL function handling - inline function */
         ret = scan_pe_impfuncs(ctx, md5ctx, image, dllname, exe_sections, nsections, hdr_size, pe_plus, &first);
         if (dllname)
             free(dllname);
@@ -2435,15 +2428,24 @@ static int scan_pe_imptbl(cli_ctx *ctx, struct pe_image_data_dir *dirs, struct c
 
     fmap_unneed_off(map, impoff, datadir->Size);
 
-    /* send off for md5 comparison - use ret */
     cl_finish_hash(md5ctx, digest);
-    dstr = cli_str2hex(digest, sizeof(digest));
-    cli_dbgmsg("IMPHASH: %s\n", (char *)dstr);
+
 #if HAVE_JSON
-    if (ctx->wrkproperty)
-        cli_jsonstr(ctx->wrkproperty, "Imphash", dstr);
+    if (cli_debug_flag || ctx->wrkproperty) {
+#else
+    if (cli_debug_flag) {
 #endif
-    free(dstr);
+        char *dstr = cli_str2hex(digest, sizeof(digest));
+        cli_dbgmsg("IMPHASH: %s\n", dstr ? (char *)dstr : "(NULL)");
+#if HAVE_JSON
+        if (ctx->wrkproperty)
+            cli_jsonstr(ctx->wrkproperty, "Imphash", dstr ? dstr : "(NULL)");
+#endif
+        if (dstr)
+            free(dstr);
+    }
+
+    /* TODO: size-dependent hash scans, what should the size value be?  */
 
     if (ith && (ret = cli_hm_scan_wild(digest, &virname, ith, CLI_HASH_MD5)) == CL_VIRUS)
         cli_append_virus(ctx, virname);
@@ -3361,9 +3363,15 @@ int cli_scanpe(cli_ctx *ctx)
 
     /* Attempt to run scans on import table */
     /* Run if there are existing signatures and/or preclassing */
-    if (ctx->dconf->pe & PE_CONF_IMPTBL) {
+#if HAVE_JSON
+    if (DCONF & PE_CONF_IMPTBL && (ctx->engine->hm_ith || ctx->wrkproperty)) {
+#else
+    if (DCONF & PE_CONF_IMPTBL && ctx->engine->hm_ith) {
+#endif
         ret = scan_pe_imptbl(ctx, dirs, exe_sections, nsections, hdr_size, pe_plus);
         switch (ret) {
+            case CL_SUCCESS:
+                break;
             case CL_ENULLARG:
                 cli_warnmsg("cli_scanpe: NULL argument supplied\n");
                 break;
@@ -3374,6 +3382,9 @@ int cli_scanpe(cli_ctx *ctx)
             case CL_BREAK:
                 free(exe_sections);
                 return ret == CL_VIRUS ? CL_VIRUS : CL_CLEAN;
+            default:
+                free(exe_sections);
+                return ret;
         }
     }
     /* Attempt to detect some popular polymorphic viruses */
