@@ -2380,6 +2380,7 @@ static int cli_loadign(FILE *fs, struct cl_engine *engine, unsigned int options,
 #define MD5_HDB	    0
 #define MD5_MDB	    1
 #define MD5_FP	    2
+#define MD5_ITH	    3
 
 #define MD5_TOKENS 5
 static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int mode, unsigned int options, struct cli_dbio *dbio, const char *dbname)
@@ -2400,6 +2401,8 @@ static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo,
 	db = engine->hm_mdb;
     } else if(mode == MD5_HDB)
 	db = engine->hm_hdb;
+    else if(mode == MD5_ITH)
+	db = engine->hm_ith;
     else
 	db = engine->hm_fp;
 
@@ -2413,6 +2416,8 @@ static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo,
 	    engine->hm_hdb = db;
 	else if(mode == MD5_MDB)
 	    engine->hm_mdb = db;
+	else if(mode == MD5_ITH)
+	    engine->hm_ith = db;
 	else
 	    engine->hm_fp = db;
     }
@@ -4280,6 +4285,8 @@ int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo
 	ret = cli_loadhash(fs, engine, signo, MD5_FP, options, dbio, dbname);
     } else if(cli_strbcasestr(dbname, ".mdb") || cli_strbcasestr(dbname, ".msb")) {
 	ret = cli_loadhash(fs, engine, signo, MD5_MDB, options, dbio, dbname);
+    } else if(cli_strbcasestr(dbname, ".ith")) {
+	ret = cli_loadhash(fs, engine, signo, MD5_ITH, options, dbio, dbname);
 
     } else if(cli_strbcasestr(dbname, ".mdu") || cli_strbcasestr(dbname, ".msu")) {
 	if(options & CL_DB_PUA)
