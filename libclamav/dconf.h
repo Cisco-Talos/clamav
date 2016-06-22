@@ -65,6 +65,7 @@ struct cli_dconf {
 #define PE_CONF_CATALOG	    0x10000
 #define PE_CONF_CERTS       0x20000
 #define PE_CONF_MATCHICON   0x40000
+#define PE_CONF_IMPTBL      0x80000
 
 /* Archive flags */
 #define ARCH_CONF_RAR	    0x1
