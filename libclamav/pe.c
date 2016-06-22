@@ -2354,12 +2354,13 @@ static inline int scan_pe_impfuncs(cli_ctx *ctx, void *md5ctx, struct pe_image_i
 }
 
 static int scan_pe_imptbl(cli_ctx *ctx, struct pe_image_data_dir *dirs, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size, int pe_plus) {
+    struct cli_matcher *ith = ctx->engine->hm_ith;
     struct pe_image_data_dir *datadir = &(dirs[1]);
     struct pe_image_import_descriptor *image;
     fmap_t *map = *ctx->fmap;
     size_t left, fsize = map->len;
     uint32_t impoff, offset;
-    const char *impdes, *buffer;
+    const char *impdes, *buffer, *virname;
     void *md5ctx;
     uint8_t digest[16] = {0};
     char *dstr;
@@ -2420,7 +2421,7 @@ static int scan_pe_imptbl(cli_ctx *ctx, struct pe_image_data_dir *dirs, struct c
             /* JSON TOMFOOLERY */
         }
 
-        /* DLL function handling - inline function */
+        /* DLL function handling - inline function TODO - dconf this */
         ret = scan_pe_impfuncs(ctx, md5ctx, image, dllname, exe_sections, nsections, hdr_size, pe_plus, &first);
         if (dllname)
             free(dllname);
@@ -2437,12 +2438,16 @@ static int scan_pe_imptbl(cli_ctx *ctx, struct pe_image_data_dir *dirs, struct c
     /* send off for md5 comparison - use ret */
     cl_finish_hash(md5ctx, digest);
     dstr = cli_str2hex(digest, sizeof(digest));
-    cli_errmsg("IMPHASH: %s\n", (char *)dstr);
+    cli_dbgmsg("IMPHASH: %s\n", (char *)dstr);
 #if HAVE_JSON
     if (ctx->wrkproperty)
         cli_jsonstr(ctx->wrkproperty, "Imphash", dstr);
 #endif
     free(dstr);
+
+    if (ith && (ret = cli_hm_scan_wild(digest, &virname, ith, CLI_HASH_MD5)) == CL_VIRUS)
+        cli_append_virus(ctx, virname);
+
     return ret;
 }
 
@@ -3367,7 +3372,6 @@ int cli_scanpe(cli_ctx *ctx)
             /* intentional fall-through */
         case CL_BREAK:
             free(exe_sections);
-            cli_bytecode_context_destroy(bc_ctx);
             return ret == CL_VIRUS ? CL_VIRUS : CL_CLEAN;
     }
     /* Attempt to detect some popular polymorphic viruses */
