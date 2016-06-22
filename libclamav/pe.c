@@ -2172,6 +2172,9 @@ static inline int scan_pe_impfuncs(cli_ctx *ctx, void *md5ctx, struct pe_image_i
     size_t dlllen = 0, fsize = map->len;
     int i, j, err, num_funcs = 0;
     const char *buffer;
+#if HAVE_JSON
+    json_object *imptbl = NULL;
+#endif
 
     toff = cli_rawaddr(image->u.OriginalFirstThunk, exe_sections, nsections, &err, fsize, hdr_size);
     if (err)
@@ -2180,6 +2183,16 @@ static inline int scan_pe_impfuncs(cli_ctx *ctx, void *md5ctx, struct pe_image_i
         cli_dbgmsg("IMPTBL: invalid rva for image first thunk\n");
         return CL_SUCCESS;
     }
+
+#if HAVE_JSON
+    if (ctx->wrkproperty) {
+        imptbl = cli_jsonarray(ctx->wrkproperty, "ImportTable");
+        if (!imptbl) {
+            cli_dbgmsg("IMPTBL: cannot allocate import table json object\n");
+            return CL_EMEM;
+        }
+    }
+#endif
 
     if (!pe_plus) {
         struct pe_image_thunk32 thunk32;
@@ -2215,7 +2228,6 @@ static inline int scan_pe_impfuncs(cli_ctx *ctx, void *md5ctx, struct pe_image_i
                 char *fname;
                 size_t funclen;
 
-                /* JSON TOMFOOLERY */
                 //cli_dbgmsg("IMPTBL: FUNC: %s\n", funcname);
 
                 if (dlllen == 0) {
@@ -2239,18 +2251,25 @@ static inline int scan_pe_impfuncs(cli_ctx *ctx, void *md5ctx, struct pe_image_i
                 j = 0;
                 if (!*first)
                     fname[j++] = ',';
-                else
-                    *first = 0;
                 for (i = 0; i < dlllen; i++, j++)
                     fname[j] = tolower(dllname[i]);
                 fname[j++] = '.';
                 for (i = 0; i < funclen; i++, j++)
                     fname[j] = tolower(funcname[i]);
 
+                /* JSON TOMFOOLERY */
+#if HAVE_JSON
+                if (imptbl) {
+                    char *jname = *first ? fname : fname+1;
+                    cli_jsonstr(imptbl, NULL, jname);
+                }
+#endif
+
                 cli_dbgmsg("%u %s\n", strlen(fname), fname);
 
                 cl_update_hash(md5ctx, fname, strlen(fname));
 
+                *first = 0;
                 free(fname);
                 free(funcname);
             }
@@ -2419,6 +2438,10 @@ static int scan_pe_imptbl(cli_ctx *ctx, struct pe_image_data_dir *dirs, struct c
     cl_finish_hash(md5ctx, digest);
     dstr = cli_str2hex(digest, sizeof(digest));
     cli_errmsg("IMPHASH: %s\n", (char *)dstr);
+#if HAVE_JSON
+    if (ctx->wrkproperty)
+        cli_jsonstr(ctx->wrkproperty, "Imphash", dstr);
+#endif
     free(dstr);
     return ret;
 }
