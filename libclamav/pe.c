@@ -2167,7 +2167,7 @@ static char *pe_ordinal(char *dll, uint16_t ord)
   return cli_strdup(name);    
 }
 
-static inline int scan_pe_impfuncs(cli_ctx *ctx, void *md5ctx, struct pe_image_import_descriptor *image, char *dllname, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size, int pe_plus, int *first) {
+static inline int scan_pe_impfuncs(cli_ctx *ctx, void *md5ctx, uint32_t *itsz, struct pe_image_import_descriptor *image, char *dllname, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size, int pe_plus, int *first){
     uint32_t toff, offset;
     fmap_t *map = *ctx->fmap;
     size_t dlllen = 0, fsize = map->len;
@@ -2175,6 +2175,8 @@ static inline int scan_pe_impfuncs(cli_ctx *ctx, void *md5ctx, struct pe_image_i
     const char *buffer;
 #if HAVE_JSON
     json_object *imptbl = NULL;
+#else
+    void *imptbl = NULL;
 #endif
 
     toff = cli_rawaddr(image->u.OriginalFirstThunk, exe_sections, nsections, &err, fsize, hdr_size);
@@ -2194,6 +2196,51 @@ static inline int scan_pe_impfuncs(cli_ctx *ctx, void *md5ctx, struct pe_image_i
         }
     }
 #endif
+
+#define update_hash()                                                   \
+    if (funcname) {                                                     \
+        char *fname;                                                    \
+        size_t funclen;                                                 \
+                                                                        \
+        if (dlllen == 0) {                                              \
+            char* ext = strstr(dllname, ".");                           \
+                                                                        \
+            if (ext && (strncasecmp(ext, ".ocx", 4) == 0 ||             \
+                        strncasecmp(ext, ".sys", 4) == 0 ||             \
+                        strncasecmp(ext, ".dll", 4) == 0))              \
+                dlllen = ext - dllname;                                 \
+            else                                                        \
+                dlllen = strlen(dllname);                               \
+        }                                                               \
+                                                                        \
+        funclen = strlen(funcname);                                     \
+                                                                        \
+        fname = cli_calloc(funclen + dlllen + 3, sizeof(char));         \
+        if (fname == NULL) {                                            \
+            cli_dbgmsg("IMPTBL: cannot allocate memory for imphash string\n"); \
+            return CL_EMEM;                                             \
+        }                                                               \
+        j = 0;                                                          \
+        if (!*first)                                                    \
+            fname[j++] = ',';                                           \
+        for (i = 0; i < dlllen; i++, j++)                               \
+            fname[j] = tolower(dllname[i]);                             \
+        fname[j++] = '.';                                               \
+        for (i = 0; i < funclen; i++, j++)                              \
+            fname[j] = tolower(funcname[i]);                            \
+                                                                        \
+        if (imptbl) {                                                   \
+            char *jname = *first ? fname : fname+1;                     \
+            cli_jsonstr(imptbl, NULL, jname);                           \
+        }                                                               \
+                                                                        \
+        cl_update_hash(md5ctx, fname, strlen(fname));                   \
+        *itsz += strlen(fname);                                         \
+                                                                        \
+        *first = 0;                                                     \
+        free(fname);                                                    \
+        free(funcname);                                                 \
+    }
 
     if (!pe_plus) {
         struct pe_image_thunk32 thunk32;
@@ -2225,50 +2272,7 @@ static inline int scan_pe_impfuncs(cli_ctx *ctx, void *md5ctx, struct pe_image_i
                 }
             }
 
-            if (funcname) {
-                char *fname;
-                size_t funclen;
-
-                if (dlllen == 0) {
-                    char* ext = strstr(dllname, ".");
-
-                    if (ext && (strncasecmp(ext, ".ocx", 4) == 0 ||
-                                strncasecmp(ext, ".sys", 4) == 0 ||
-                                strncasecmp(ext, ".dll", 4) == 0))
-                        dlllen = ext - dllname;
-                    else
-                        dlllen = strlen(dllname);
-                }
-
-                funclen = strlen(funcname);
-
-                fname = cli_calloc(funclen + dlllen + 3, sizeof(char));
-                if (fname == NULL) {
-                    cli_dbgmsg("IMPTBL: cannot allocate memory for imphash string\n");
-                    return CL_EMEM;
-                }
-                j = 0;
-                if (!*first)
-                    fname[j++] = ',';
-                for (i = 0; i < dlllen; i++, j++)
-                    fname[j] = tolower(dllname[i]);
-                fname[j++] = '.';
-                for (i = 0; i < funclen; i++, j++)
-                    fname[j] = tolower(funcname[i]);
-
-#if HAVE_JSON
-                if (imptbl) {
-                    char *jname = *first ? fname : fname+1;
-                    cli_jsonstr(imptbl, NULL, jname);
-                }
-#endif
-
-                cl_update_hash(md5ctx, fname, strlen(fname));
-
-                *first = 0;
-                free(fname);
-                free(funcname);
-            }
+            update_hash();
         }
     } else {
         struct pe_image_thunk64 thunk64;
@@ -2300,50 +2304,7 @@ static inline int scan_pe_impfuncs(cli_ctx *ctx, void *md5ctx, struct pe_image_i
                 }
             }
 
-            if (funcname) {
-                char *fname;
-                size_t funclen;
-
-                if (dlllen == 0) {
-                    char* ext = strstr(dllname, ".");
-
-                    if (ext && (strncasecmp(ext, ".ocx", 4) == 0 ||
-                                strncasecmp(ext, ".sys", 4) == 0 ||
-                                strncasecmp(ext, ".dll", 4) == 0))
-                        dlllen = ext - dllname;
-                    else
-                        dlllen = strlen(dllname);
-                }
-
-                funclen = strlen(funcname);
-
-                fname = cli_calloc(funclen + dlllen + 3, sizeof(char));
-                if (fname == NULL) {
-                    cli_dbgmsg("IMPTBL: cannot allocate memory for imphash string\n");
-                    return CL_EMEM;
-                }
-                j = 0;
-                if (!*first)
-                    fname[j++] = ',';
-                for (i = 0; i < dlllen; i++, j++)
-                    fname[j] = tolower(dllname[i]);
-                fname[j++] = '.';
-                for (i = 0; i < funclen; i++, j++)
-                    fname[j] = tolower(funcname[i]);
-
-#if HAVE_JSON
-                if (imptbl) {
-                    char *jname = *first ? fname : fname+1;
-                    cli_jsonstr(imptbl, NULL, jname);
-                }
-#endif
-
-                cl_update_hash(md5ctx, fname, strlen(fname));
-
-                *first = 0;
-                free(fname);
-                free(funcname);
-            }
+            update_hash();
         }
     }
 
@@ -2356,7 +2317,7 @@ static int scan_pe_imptbl(cli_ctx *ctx, struct pe_image_data_dir *dirs, struct c
     struct pe_image_import_descriptor *image;
     fmap_t *map = *ctx->fmap;
     size_t left, fsize = map->len;
-    uint32_t impoff, offset;
+    uint32_t impoff, offset, itsz = 0;
     const char *impdes, *buffer, *virname;
     void *md5ctx;
     uint8_t digest[16] = {0};
@@ -2415,7 +2376,7 @@ static int scan_pe_imptbl(cli_ctx *ctx, struct pe_image_data_dir *dirs, struct c
         }
 
         /* DLL function handling - inline function */
-        ret = scan_pe_impfuncs(ctx, md5ctx, image, dllname, exe_sections, nsections, hdr_size, pe_plus, &first);
+        ret = scan_pe_impfuncs(ctx, md5ctx, &itsz, image, dllname, exe_sections, nsections, hdr_size, pe_plus, &first);
         if (dllname)
             free(dllname);
         if (ret != CL_SUCCESS) {
@@ -2436,7 +2397,7 @@ static int scan_pe_imptbl(cli_ctx *ctx, struct pe_image_data_dir *dirs, struct c
     if (cli_debug_flag) {
 #endif
         char *dstr = cli_str2hex(digest, sizeof(digest));
-        cli_dbgmsg("IMPHASH: %s\n", dstr ? (char *)dstr : "(NULL)");
+        cli_dbgmsg("IMPHASH: %s(%u)\n", dstr ? (char *)dstr : "(NULL)", itsz);
 #if HAVE_JSON
         if (ctx->wrkproperty)
             cli_jsonstr(ctx->wrkproperty, "Imphash", dstr ? dstr : "(NULL)");
@@ -2445,10 +2406,12 @@ static int scan_pe_imptbl(cli_ctx *ctx, struct pe_image_data_dir *dirs, struct c
             free(dstr);
     }
 
-    /* TODO: size-dependent hash scans, what should the size value be?  */
-
-    if (ith && (ret = cli_hm_scan_wild(digest, &virname, ith, CLI_HASH_MD5)) == CL_VIRUS)
-        cli_append_virus(ctx, virname);
+    if (ith) {
+        if ((ret = cli_hm_scan(digest, itsz, &virname, ith, CLI_HASH_MD5)) == CL_VIRUS)
+            cli_append_virus(ctx, virname);
+        else if ((ret = cli_hm_scan_wild(digest, &virname, ith, CLI_HASH_MD5)) == CL_VIRUS)
+            cli_append_virus(ctx, virname);
+    }
 
     return ret;
 }
