@@ -2167,6 +2167,32 @@ static char *pe_ordinal(char *dll, uint16_t ord)
   return cli_strdup(name);    
 }
 
+static int validate_impname(const char *name, uint32_t length, int dll)
+{
+    uint32_t i = 0;
+    const char *c = name;
+
+    cli_dbgmsg("%s\n", name);
+
+    if (!name || length == 0)
+        return CL_SUCCESS;
+
+    while (i < length && *c != '\0') {
+        if ((*c >= '0' && *c <= '9') ||
+            (*c >= 'a' && *c <= 'z') ||
+            (*c >= 'A' && *c <= 'Z') ||
+            (*c == '_') ||
+            (dll && *c == '.')) {
+
+            c++;
+            i++;
+        } else
+            return CL_BREAK;
+    }
+
+    return CL_SUCCESS;
+}
+
 static inline int scan_pe_impfuncs(cli_ctx *ctx, void *md5ctx, uint32_t *itsz, struct pe_image_import_descriptor *image, char *dllname, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size, int pe_plus, int *first){
     uint32_t toff, offset;
     fmap_t *map = *ctx->fmap;
@@ -2214,6 +2240,8 @@ static inline int scan_pe_impfuncs(cli_ctx *ctx, void *md5ctx, uint32_t *itsz, s
         }                                                               \
                                                                         \
         funclen = strlen(funcname);                                     \
+        if (validate_impname(funcname, funclen, 1) != CL_SUCCESS)       \
+            break;                                                      \
                                                                         \
         fname = cli_calloc(funclen + dlllen + 3, sizeof(char));         \
         if (fname == NULL) {                                            \
@@ -2366,7 +2394,8 @@ static int scan_pe_imptbl(cli_ctx *ctx, struct pe_image_data_dir *dirs, struct c
         }
 
         if ((buffer = fmap_need_off_once(map, offset, MIN(PE_MAXNAMESIZE, fsize-offset))) != NULL) {
-            /* TODO - sanitize dllname */
+            if (validate_impname(dllname, MIN(PE_MAXNAMESIZE, fsize-offset), 1) != CL_SUCCESS)
+                break;
             dllname = strndup(buffer, MIN(PE_MAXNAMESIZE, fsize-offset));
             if (dllname == NULL) {
                 cli_dbgmsg("IMPTBL: cannot duplicate dll name\n");
