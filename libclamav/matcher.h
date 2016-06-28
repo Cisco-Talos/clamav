@@ -131,6 +131,9 @@ struct cli_matcher {
     uint32_t pcre_reloff_num, pcre_absoff_num;
 #endif
 
+    /* Bytecode Tracker */
+    uint32_t linked_bcs;
+
 #ifdef USE_MPOOL
     mpool_t *mempool;
 #endif
