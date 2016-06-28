@@ -1230,9 +1230,17 @@ handler_otf(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * c
     current_block = prop->start_block;
     len = prop->size;
 
+    if (cli_debug_flag) {
+        if (!name)
+            name = get_property_name2(prop->name, prop->name_size);
+        cli_dbgmsg("OLE2 [handler_otf]: Dumping '%s' to '%s'\n", name, tempfile);
+    }
+
     buff = (unsigned char *)cli_malloc(1 << hdr->log2_big_block_size);
     if (!buff) {
         close(ofd);
+        if (name)
+            free(name);
         cli_unlink(tempfile);
         free(tempfile);
         return CL_EMEM;
@@ -1243,6 +1251,8 @@ handler_otf(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * c
         cli_errmsg("OLE2: OTF handler init bitset failed\n");
         free(buff);
         close(ofd);
+        if (name)
+            free(name);
         if (cli_unlink(tempfile)) {
             free(tempfile);
             return CL_EUNLINK;
@@ -1274,6 +1284,8 @@ handler_otf(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * c
             offset = (1 << hdr->log2_small_block_size) * (current_block % (1 << (hdr->log2_big_block_size - hdr->log2_small_block_size)));
             if (cli_writen(ofd, &buff[offset], MIN(len, 1 << hdr->log2_small_block_size)) != MIN(len, 1 << hdr->log2_small_block_size)) {
                 close(ofd);
+                if (name)
+                    free(name);
                 free(buff);
                 cli_bitset_free(blk_bitset);
                 if (cli_unlink(tempfile)) {
@@ -1293,6 +1305,8 @@ handler_otf(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * c
             if (cli_writen(ofd, buff, MIN(len, (1 << hdr->log2_big_block_size))) !=
                     MIN(len, (1 << hdr->log2_big_block_size))) {
                 close(ofd);
+                if (name)
+                    free(name);
                 free(buff);
                 cli_bitset_free(blk_bitset);
                 if (cli_unlink(tempfile)) {
@@ -1312,6 +1326,8 @@ handler_otf(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * c
     is_mso = likely_mso_stream(ofd);
     if (lseek(ofd, 0, SEEK_SET) == -1) {
         close(ofd);
+        if (name)
+            free(name);
         if (ctx && !(ctx->engine->keeptmp))
             cli_unlink(tempfile);
 
@@ -1324,7 +1340,8 @@ handler_otf(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * c
 #if HAVE_JSON
     /* JSON Output Summary Information */
     if (ctx->options & CL_SCAN_FILE_PROPERTIES && ctx->properties != NULL) {
-        name = get_property_name2(prop->name, prop->name_size);
+        if (!name)
+            name = get_property_name2(prop->name, prop->name_size);
         if (name) {
             if (!strncmp(name, "_5_summaryinformation", 21)) {
                 cli_dbgmsg("OLE2: detected a '_5_summaryinformation' stream\n");
