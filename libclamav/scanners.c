@@ -1379,7 +1379,7 @@ static int cli_scanscript(cli_ctx *ctx)
 	/* dump to disk only if explicitly asked to
 	 * or if necessary to check relative offsets,
 	 * otherwise we can process just in-memory */
-	if(ctx->engine->keeptmp || (troot && troot->ac_reloff_num > 0)) {
+	if(ctx->engine->keeptmp || (troot && (troot->ac_reloff_num > 0 || troot->linked_bcs))) {
             if((ret = cli_gentempfd(ctx->engine->tmpdir, &tmpname, &ofd))) {
                 cli_dbgmsg("cli_scanscript: Can't generate temporary file/descriptor\n");
                 goto done;
@@ -1391,8 +1391,8 @@ static int cli_scanscript(cli_ctx *ctx)
 	mdata[0] = &tmdata;
 	mdata[1] = &gmdata; 
 
-	/* If there's a relative offset in troot, normalize the file.*/
-	if (troot && troot->ac_reloff_num > 0) {
+	/* If there's a relative offset in troot or triggered bytecodes, normalize to file.*/
+	if (troot && (troot->ac_reloff_num > 0 || troot->linked_bcs)) {
 		size_t map_off = 0;
 		while(map_off < map->len) {
 			size_t written;

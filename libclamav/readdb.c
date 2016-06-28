@@ -1744,9 +1744,13 @@ static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsig
 
     lsigid[0] = lsig->id = root->ac_lsigs;
 
+    if (bc_idx)
+        root->linked_bcs++;
     root->ac_lsigs++;
     newtable = (struct cli_ac_lsig **) mpool_realloc(engine->mempool, root->ac_lsigtable, root->ac_lsigs * sizeof(struct cli_ac_lsig *));
     if(!newtable) {
+        if (bc_idx)
+            root->linked_bcs--;
         root->ac_lsigs--;
         cli_errmsg("cli_loadldb: Can't realloc root->ac_lsigtable\n");
         FREE_TDB(tdb);
