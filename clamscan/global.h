@@ -22,6 +22,11 @@
 #ifndef __GLOBAL_H
 #define __GLOBAL_H
 
+/*
+ * This struct is passed via a pipe. Therefore, its  must not exceed
+ * PIPE_BUF, which can be as low as 512 according to POSIX, and it must
+ * not contain pointers.
+ */
 struct s_info {
     unsigned int sigs;		/* number of signatures */
     unsigned int dirs;		/* number of scanned directories */
@@ -35,5 +40,6 @@ struct s_info {
 extern struct s_info info;
 extern short recursion, bell;
 extern short printinfected, printclean;
+extern int jobs;
 
 #endif
