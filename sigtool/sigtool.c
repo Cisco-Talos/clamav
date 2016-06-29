@@ -164,7 +164,120 @@ static int hexdump(void)
     return 0;
 }
 
-static int hashsig(const struct optstruct *opts, unsigned int mdb, int type)
+static int hashpe(const char *filename, unsigned int class, int type)
+{
+    STATBUF sb;
+    const char *fmptr;
+    struct cl_engine *engine;
+    cli_ctx ctx;
+    int fd, ret;
+
+    /* build engine */
+    if(!(engine = cl_engine_new())) {
+	mprintf("!hashpe: Can't create new engine\n");
+	return -1;
+    }
+    cl_engine_set_num(engine, CL_ENGINE_AC_ONLY, 1);
+
+    if(cli_initroots(engine, 0) != CL_SUCCESS) {
+	mprintf("!hashpe: cli_initroots() failed\n");
+	cl_engine_free(engine);
+	return -1;
+    }
+
+    if(cli_parse_add(engine->root[0], "test", "deadbeef", 0, 0, 0, "*", 0, NULL, 0) != CL_SUCCESS) {
+	mprintf("!hashpe: Can't parse signature\n");
+	cl_engine_free(engine);
+	return -1;
+    }
+
+    if(cl_engine_compile(engine) != CL_SUCCESS) {
+	mprintf("!hashpe: Can't compile engine\n");
+	cl_engine_free(engine);
+	return -1;
+    }
+
+    /* prepare context */
+    memset(&ctx, '\0', sizeof(cli_ctx));
+    ctx.engine = engine;
+    ctx.options = CL_SCAN_STDOPT;
+    ctx.container_type = CL_TYPE_ANY;
+    ctx.dconf = (struct cli_dconf *) engine->dconf;
+    ctx.fmap = calloc(sizeof(fmap_t *), 1);
+    if(!ctx.fmap) {
+	cl_engine_free(engine);
+	return -1;
+    }
+
+    /* Prepare file */
+    fd = open(filename, O_RDONLY);
+    if(fd < 0) {
+	mprintf("!hashpe: Can't open file %s!\n", filename);
+        cl_engine_free(engine);
+        return -1;
+    }
+
+    lseek(fd, 0, SEEK_SET);
+    FSTAT(fd, &sb);
+    if(!(*ctx.fmap = fmap(fd, 0, sb.st_size))) {
+	free(ctx.fmap);
+	close(fd);
+	cl_engine_free(engine);
+	return -1;
+    }
+
+    fmptr = fmap_need_off_once(*ctx.fmap, 0, sb.st_size);
+    if(!fmptr) {
+        mprintf("!hashpe: fmap_need_off_once failed!\n");
+        free(ctx.fmap);
+        close(fd);
+        cl_engine_free(engine);
+	return -1;
+    }
+
+    cl_debug();
+
+    /* Send to PE-specific hasher */
+    switch(class) {
+        case 1:
+	    ret = cli_genhash_pe(&ctx, CL_GENHASH_PE_CLASS_SECTION, type);
+	    break;
+        case 2:
+	    ret = cli_genhash_pe(&ctx, CL_GENHASH_PE_CLASS_IMPTBL, type);
+	    break;
+        default:
+	    mprintf("!hashpe: unknown classification(%u) for pe hash!\n", class);
+	    return -1;
+    }
+
+    cli_debug_flag = 0;
+
+    /* THIS MAY BE UNNECESSARY */
+    switch(ret) {
+        case CL_CLEAN:
+            break;
+        case CL_VIRUS:
+            mprintf("*hashpe: CL_VIRUS after cli_genhash_pe()!\n");
+            break;
+        case CL_BREAK:
+            mprintf("*hashpe: CL_BREAK after cli_genhash_pe()!\n");
+            break;
+        case CL_EFORMAT:
+            mprintf("!hashpe: Not a valid PE file!\n");
+            break;
+        default:
+            mprintf("!hashpe: Other error %d inside cli_genhash_pe.\n", ret);
+            break;
+    }
+
+    /* Cleanup */
+    free(ctx.fmap);
+    close(fd);
+    cl_engine_free(engine);
+    return 0;
+}
+
+static int hashsig(const struct optstruct *opts, unsigned int class, int type)
 {
 	char *hash;
 	unsigned int i;
@@ -179,12 +292,11 @@ static int hashsig(const struct optstruct *opts, unsigned int mdb, int type)
 		return -1;
 	    } else {
 		if((sb.st_mode & S_IFMT) == S_IFREG) {
-		    if((hash = cli_hashfile(opts->filename[i], type))) {
-			if(mdb)
-			    mprintf("%u:%s:%s\n", (unsigned int) sb.st_size, hash, basename(opts->filename[i]));
-			else
-			    mprintf("%s:%u:%s\n", hash, (unsigned int) sb.st_size, basename(opts->filename[i]));
+		    if((class == 0) && (hash = cli_hashfile(opts->filename[i], type))) {
+			mprintf("%s:%u:%s\n", hash, (unsigned int) sb.st_size, basename(opts->filename[i]));
 			free(hash);
+		    } else if((class > 0) && (hashpe(opts->filename[i], class, type) == 0)) {
+			/* intentionally empty - printed in cli_genhash_pe() */
 		    } else {
 			mprintf("!hashsig: Can't generate hash for %s\n", opts->filename[i]);
 			return -1;
@@ -194,6 +306,10 @@ static int hashsig(const struct optstruct *opts, unsigned int mdb, int type)
 	}
 
     } else { /* stream */
+	if (class > 0) {
+	    mprintf("!hashsig: Can't generate requested hash for input stream\n");
+	    return -1;
+	}
 	hash = cli_hashstream(stdin, NULL, type);
 	if(!hash) {
 	    mprintf("!hashsig: Can't generate hash for input stream\n");
