@@ -5444,3 +5444,190 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
         return CL_VIRUS;
     }
 }
+
+int cli_genhash_pe(cli_ctx *ctx, unsigned int class, int type)
+{
+    uint16_t e_magic; /* DOS signature ("MZ") */
+    uint16_t nsections;
+    uint32_t e_lfanew; /* address of new exe header */
+    union {
+        struct pe_image_optional_hdr64 opt64;
+        struct pe_image_optional_hdr32 opt32;
+    } pe_opt;
+    const struct pe_image_section_hdr *section_hdr;
+    ssize_t at;
+    unsigned int i, j, pe_plus = 0;
+    size_t fsize;
+    uint32_t valign, falign, hdr_size;
+    struct pe_image_file_hdr file_hdr;
+    struct cli_exe_section *exe_sections;
+    struct pe_image_data_dir *dirs;
+    fmap_t *map = *ctx->fmap;
+
+    if (class >= CL_GENHASH_PE_CLASS_LAST)
+        return CL_EARG;
+
+    if(fmap_readn(map, &e_magic, 0, sizeof(e_magic)) != sizeof(e_magic))
+        return CL_EFORMAT;
+
+    if(EC16(e_magic) != PE_IMAGE_DOS_SIGNATURE && EC16(e_magic) != PE_IMAGE_DOS_SIGNATURE_OLD)
+        return CL_EFORMAT;
+
+    if(fmap_readn(map, &e_lfanew, 58 + sizeof(e_magic), sizeof(e_lfanew)) != sizeof(e_lfanew))
+        return CL_EFORMAT;
+
+    e_lfanew = EC32(e_lfanew);
+    if(!e_lfanew)
+        return CL_EFORMAT;
+
+    if(fmap_readn(map, &file_hdr, e_lfanew, sizeof(struct pe_image_file_hdr)) != sizeof(struct pe_image_file_hdr))
+        return CL_EFORMAT;
+
+    if(EC32(file_hdr.Magic) != PE_IMAGE_NT_SIGNATURE)
+        return CL_EFORMAT;
+
+    nsections = EC16(file_hdr.NumberOfSections);
+    if(nsections < 1 || nsections > 96)
+        return CL_EFORMAT;
+
+    if(EC16(file_hdr.SizeOfOptionalHeader) < sizeof(struct pe_image_optional_hdr32))
+        return CL_EFORMAT;
+
+    at = e_lfanew + sizeof(struct pe_image_file_hdr);
+    if(fmap_readn(map, &optional_hdr32, at, sizeof(struct pe_image_optional_hdr32)) != sizeof(struct pe_image_optional_hdr32))
+        return CL_EFORMAT;
+
+    at += sizeof(struct pe_image_optional_hdr32);
+
+    /* This will be a chicken and egg problem until we drop 9x */
+    if(EC16(optional_hdr64.Magic)==PE32P_SIGNATURE) {
+        if(EC16(file_hdr.SizeOfOptionalHeader)!=sizeof(struct pe_image_optional_hdr64))
+            return CL_EFORMAT;
+
+        pe_plus = 1;
+    }
+
+    if(!pe_plus) { /* PE */
+        if (EC16(file_hdr.SizeOfOptionalHeader)!=sizeof(struct pe_image_optional_hdr32)) {
+            /* Seek to the end of the long header */
+            at += EC16(file_hdr.SizeOfOptionalHeader)-sizeof(struct pe_image_optional_hdr32);
+        }
+
+        hdr_size = EC32(optional_hdr32.SizeOfHeaders);
+        dirs = optional_hdr32.DataDirectory;
+    } else { /* PE+ */
+        size_t readlen = sizeof(struct pe_image_optional_hdr64) - sizeof(struct pe_image_optional_hdr32);
+        /* read the remaining part of the header */
+        if((size_t)fmap_readn(map, &optional_hdr32 + 1, at, readlen) != readlen)
+            return CL_EFORMAT;
+
+        at += sizeof(struct pe_image_optional_hdr64) - sizeof(struct pe_image_optional_hdr32);
+        hdr_size = EC32(optional_hdr64.SizeOfHeaders);
+        dirs = optional_hdr64.DataDirectory;
+    }
+
+    fsize = map->len;
+
+    valign = (pe_plus)?EC32(optional_hdr64.SectionAlignment):EC32(optional_hdr32.SectionAlignment);
+    falign = (pe_plus)?EC32(optional_hdr64.FileAlignment):EC32(optional_hdr32.FileAlignment);
+
+    section_hdr = fmap_need_off_once(map, at, sizeof(*section_hdr) * nsections);
+    if(!section_hdr)
+        return CL_EFORMAT;
+
+    at += sizeof(*section_hdr) * nsections;
+
+    exe_sections = (struct cli_exe_section *) cli_calloc(nsections, sizeof(struct cli_exe_section));
+    if(!exe_sections)
+        return CL_EMEM;
+
+    for(i = 0; falign!=0x200 && i<nsections; i++) {
+        /* file alignment fallback mode - blah */
+        if (falign && section_hdr[i].SizeOfRawData && EC32(section_hdr[i].PointerToRawData)%falign && !(EC32(section_hdr[i].PointerToRawData)%0x200))
+            falign = 0x200;
+    }
+
+    hdr_size = PESALIGN(hdr_size, falign); /* Aligned headers virtual size */
+
+    for(i = 0; i < nsections; i++) {
+        exe_sections[i].rva = PEALIGN(EC32(section_hdr[i].VirtualAddress), valign);
+        exe_sections[i].vsz = PESALIGN(EC32(section_hdr[i].VirtualSize), valign);
+        exe_sections[i].raw = PEALIGN(EC32(section_hdr[i].PointerToRawData), falign);
+        exe_sections[i].rsz = PESALIGN(EC32(section_hdr[i].SizeOfRawData), falign);
+
+        if (!exe_sections[i].vsz && exe_sections[i].rsz)
+            exe_sections[i].vsz=PESALIGN(exe_sections[i].ursz, valign);
+
+        if (exe_sections[i].rsz && fsize>exe_sections[i].raw && !CLI_ISCONTAINED(0, (uint32_t) fsize, exe_sections[i].raw, exe_sections[i].rsz))
+            exe_sections[i].rsz = fsize - exe_sections[i].raw;
+
+        if (exe_sections[i].rsz && exe_sections[i].raw >= fsize) {
+            free(exe_sections);
+            return CL_EFORMAT;
+        }
+
+        if (exe_sections[i].urva>>31 || exe_sections[i].uvsz>>31 || (exe_sections[i].rsz && exe_sections[i].uraw>>31) || exe_sections[i].ursz>>31) {
+            free(exe_sections);
+            return CL_EFORMAT;
+        }
+    }
+
+    cli_qsort(exe_sections, nsections, sizeof(*exe_sections), sort_sects);
+
+    if (class == CL_GENHASH_PE_CLASS_SECTION) {
+        unsigned char *hash, *hashset[CLI_HASH_AVAIL_TYPES], hstr[2*CLI_HASHLEN_MAX+1];
+        int foundsize[CLI_HASH_AVAIL_TYPES];
+        int foundwild[CLI_HASH_AVAIL_TYPES];
+        int hlen = 0;
+        int ret = CL_CLEAN;
+
+        /* pick hashtypes to generate */
+        memset(foundsize, 0, sizeof(foundsize));
+        memset(foundwild, 0, sizeof(foundwild));
+        switch(type) {
+        case 1:
+            foundsize[CLI_HASH_MD5] = 1;
+            hash = hashset[CLI_HASH_MD5] = cli_malloc(hashlen[CLI_HASH_MD5]);
+            hlen = hashlen[CLI_HASH_MD5];
+            break;
+        case 2:
+            foundsize[CLI_HASH_SHA1] = 1;
+            hash = hashset[CLI_HASH_SHA1] = cli_malloc(hashlen[CLI_HASH_SHA1]);
+            hlen = hashlen[CLI_HASH_SHA1];
+            break;
+        default:
+            foundsize[CLI_HASH_SHA256] = 1;
+            hash = hashset[CLI_HASH_SHA256] = cli_malloc(hashlen[CLI_HASH_SHA256]);
+            hlen = hashlen[CLI_HASH_SHA256];
+            break;
+        }
+
+        if(!hash) {
+            cli_errmsg("cli_genhash_pe: cli_malloc failed!\n");
+            free(exe_sections);
+            return CL_EMEM;
+        }
+
+        for (i = 0; i < nsections; i++) {
+            /* Generate hashes */
+            cli_hashsect(*ctx->fmap, &exe_sections[i], hashset, foundsize, foundwild);
+            for (j = 0; j < hlen; j++)
+                snprintf(hstr+(2*j), sizeof(hstr)-(2*j), "%02x", hash[j]);
+            hstr[j] = '\0';
+            cli_dbgmsg("Section{%u}: %u:%s\n", i, exe_sections[i].rsz, hstr);
+
+            cli_dbgmsg("Section{%u}: %u:%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\n",
+                       i, exe_sections[i].rsz, hash[0], hash[1], hash[2], hash[3], hash[4], hash[5], hash[6], hash[7],
+                       hash[8], hash[9], hash[10], hash[11], hash[12], hash[13], hash[14], hash[15]);
+        }
+
+        free(hash);
+    } else if (class == CL_GENHASH_PE_CLASS_IMPTBL) {
+        /* TODO */
+    } else {
+        cli_dbgmsg("cli_genhash_pe: unknown pe genhash class: %u\n", class);
+    }
+
+    free(exe_sections);
+    return CL_SUCCESS;
+}
