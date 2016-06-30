@@ -118,6 +118,7 @@ static const struct dblist_s {
     { "wdb",   0 },
     { "crb",   1 },
     { "cdb",   1 },
+    { "imp",   1 },
 
     { NULL,	    0 }
 };
@@ -1415,7 +1416,8 @@ static int listdir(const char *dirname, const regex_t *regex)
 	     cli_strbcasestr(dent->d_name, ".cbc") ||
 	     cli_strbcasestr(dent->d_name, ".cld") ||
 	     cli_strbcasestr(dent->d_name, ".cvd") ||  
-	     cli_strbcasestr(dent->d_name, ".crb"))) {
+	     cli_strbcasestr(dent->d_name, ".crb") ||
+	     cli_strbcasestr(dent->d_name, ".imp"))) {
 
 		dbfile = (char *) malloc(strlen(dent->d_name) + strlen(dirname) + 2);
 		if(!dbfile) {
@@ -1559,7 +1561,7 @@ static int listdb(const char *filename, const regex_t *regex)
             line++;
             mprintf("%s\n", buffer);
         }
-    } else if(cli_strbcasestr(filename, ".hdb") || cli_strbcasestr(filename, ".hdu") || cli_strbcasestr(filename, ".mdb") || cli_strbcasestr(filename, ".mdu") || cli_strbcasestr(filename, ".hsb") || cli_strbcasestr(filename, ".hsu") || cli_strbcasestr(filename, ".msb") || cli_strbcasestr(filename, ".msu")) { /* hash database */
+    } else if(cli_strbcasestr(filename, ".hdb") || cli_strbcasestr(filename, ".hdu") || cli_strbcasestr(filename, ".mdb") || cli_strbcasestr(filename, ".mdu") || cli_strbcasestr(filename, ".hsb") || cli_strbcasestr(filename, ".hsu") || cli_strbcasestr(filename, ".msb") || cli_strbcasestr(filename, ".msu") || cli_strbcasestr(filename, ".imp")) { /* hash database */
 
 	while(fgets(buffer, FILEBUFF, fh)) {
 	    cli_chomp(buffer);
@@ -3490,7 +3492,8 @@ static void help(void)
     mprintf("                                           or SHA1 sigs for FILES\n");
     mprintf("    --sha256 [FILES]                       generate SHA256 checksum from stdin\n");
     mprintf("                                           or SHA256 sigs for FILES\n");
-    mprintf("    --mdb [FILES]                          generate .mdb sigs\n");
+    mprintf("    --mdb [FILES]                          generate .mdb (section hash) sigs\n");
+    mprintf("    --imp [FILES]                          generate .imp (import table hash) sigs\n");
     mprintf("    --html-normalise=FILE                  create normalised parts of HTML file\n");
     mprintf("    --ascii-normalise=FILE                 create normalised text file from ascii source\n");
     mprintf("    --utf16-decode=FILE                    decode UTF16 encoded files\n");
@@ -3585,6 +3588,8 @@ int main(int argc, char **argv)
 	ret = hashsig(opts, 0, 3);
     else if(optget(opts, "mdb")->enabled)
 	ret = hashsig(opts, 1, 1);
+    else if(optget(opts, "imp")->enabled)
+	ret = hashsig(opts, 2, 1);
     else if(optget(opts, "html-normalise")->enabled)
 	ret = htmlnorm(opts);
     else if(optget(opts, "ascii-normalise")->enabled)

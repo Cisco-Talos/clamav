@@ -111,6 +111,7 @@ const struct clam_option __clam_options[] = {
     { NULL, "sha1", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_SIGTOOL, "", "" },
     { NULL, "sha256", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_SIGTOOL, "", "" },
     { NULL, "mdb", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_SIGTOOL, "", "" },
+    { NULL, "imp", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_SIGTOOL, "", "" },
     { NULL, "print-certs", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", "" },
     { NULL, "html-normalise", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", "" },
     { NULL, "ascii-normalise", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", "" },
