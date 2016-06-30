@@ -232,6 +232,10 @@ int cli_hm_have_wild(const struct cli_matcher *root, enum CLI_HASH_TYPE type) {
     return (root && root->hwild.hashes[type].items);
 }
 
+int cli_hm_have_any(const struct cli_matcher *root, enum CLI_HASH_TYPE type) {
+    return (root && (root->hwild.hashes[type].items || root->hm.sizehashes[type].capacity));
+}
+
 /* cli_hm_scan will scan only size-specific hashes, if any */
 static int hm_scan(const unsigned char *digest, const char **virname, const struct cli_sz_hash *szh, enum CLI_HASH_TYPE type) {
     unsigned int keylen;
