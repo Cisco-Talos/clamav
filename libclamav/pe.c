@@ -2172,8 +2172,6 @@ static int validate_impname(const char *name, uint32_t length, int dll)
     uint32_t i = 0;
     const char *c = name;
 
-    cli_dbgmsg("%s\n", name);
-
     if (!name || length == 0)
         return CL_SUCCESS;
 
@@ -2193,23 +2191,25 @@ static int validate_impname(const char *name, uint32_t length, int dll)
     return CL_SUCCESS;
 }
 
-static inline int scan_pe_impfuncs(cli_ctx *ctx, void *md5ctx, uint32_t *itsz, struct pe_image_import_descriptor *image, char *dllname, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size, int pe_plus, int *first){
-    uint32_t toff, offset;
+static inline int hash_impfns(cli_ctx *ctx, void **hashctx, uint32_t *impsz, struct pe_image_import_descriptor *image, char *dllname, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size, int pe_plus, int *first)
+{
+    uint32_t thuoff, offset;
     fmap_t *map = *ctx->fmap;
     size_t dlllen = 0, fsize = map->len;
-    int i, j, err, num_funcs = 0;
+    int i, j, err, num_fns = 0;
     const char *buffer;
+    enum CLI_HASH_TYPE type;
 #if HAVE_JSON
     json_object *imptbl = NULL;
 #else
     void *imptbl = NULL;
 #endif
 
-    toff = cli_rawaddr(image->u.OriginalFirstThunk, exe_sections, nsections, &err, fsize, hdr_size);
+    thuoff = cli_rawaddr(image->u.OriginalFirstThunk, exe_sections, nsections, &err, fsize, hdr_size);
     if (err)
-        toff = cli_rawaddr(image->FirstThunk, exe_sections, nsections, &err, fsize, hdr_size);
+        thuoff = cli_rawaddr(image->FirstThunk, exe_sections, nsections, &err, fsize, hdr_size);
     if (err) {
-        cli_dbgmsg("IMPTBL: invalid rva for image first thunk\n");
+        cli_dbgmsg("scan_pe: invalid rva for image first thunk\n");
         return CL_SUCCESS;
     }
 
@@ -2217,13 +2217,13 @@ static inline int scan_pe_impfuncs(cli_ctx *ctx, void *md5ctx, uint32_t *itsz, s
     if (ctx->wrkproperty) {
         imptbl = cli_jsonarray(ctx->wrkproperty, "ImportTable");
         if (!imptbl) {
-            cli_dbgmsg("IMPTBL: cannot allocate import table json object\n");
+            cli_dbgmsg("scan_pe: cannot allocate import table json object\n");
             return CL_EMEM;
         }
     }
 #endif
 
-#define update_hash()                                                   \
+#define update_imphash()                                                \
     if (funcname) {                                                     \
         char *fname;                                                    \
         size_t funclen;                                                 \
@@ -2245,7 +2245,7 @@ static inline int scan_pe_impfuncs(cli_ctx *ctx, void *md5ctx, uint32_t *itsz, s
                                                                         \
         fname = cli_calloc(funclen + dlllen + 3, sizeof(char));         \
         if (fname == NULL) {                                            \
-            cli_dbgmsg("IMPTBL: cannot allocate memory for imphash string\n"); \
+            cli_dbgmsg("scan_pe: cannot allocate memory for imphash string\n"); \
             return CL_EMEM;                                             \
         }                                                               \
         j = 0;                                                          \
@@ -2262,8 +2262,9 @@ static inline int scan_pe_impfuncs(cli_ctx *ctx, void *md5ctx, uint32_t *itsz, s
             cli_jsonstr(imptbl, NULL, jname);                           \
         }                                                               \
                                                                         \
-        cl_update_hash(md5ctx, fname, strlen(fname));                   \
-        *itsz += strlen(fname);                                         \
+        for(type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++)   \
+            cl_update_hash(hashctx[type], fname, strlen(fname));        \
+        *impsz += strlen(fname);                                        \
                                                                         \
         *first = 0;                                                     \
         free(fname);                                                    \
@@ -2273,10 +2274,9 @@ static inline int scan_pe_impfuncs(cli_ctx *ctx, void *md5ctx, uint32_t *itsz, s
     if (!pe_plus) {
         struct pe_image_thunk32 thunk32;
 
-        while (fmap_readn(map, &thunk32, toff, sizeof(struct pe_image_thunk32)) == sizeof(struct pe_image_thunk32) &&
-               thunk32.u.Ordinal != 0 && num_funcs < PE_MAXIMPORTS) {
+        while ((num_fns < PE_MAXIMPORTS) && (fmap_readn(map, &thunk32, thuoff, sizeof(struct pe_image_thunk32)) == sizeof(struct pe_image_thunk32)) && (thunk32.u.Ordinal != 0)) {
             char *funcname = NULL;
-            toff += sizeof(struct pe_image_thunk32);
+            thuoff += sizeof(struct pe_image_thunk32);
 
             if (!(thunk32.u.Ordinal & IMAGE_ORDINAL_FLAG32)) {
                 offset = cli_rawaddr(thunk32.u.Function, exe_sections, nsections, &err, fsize, hdr_size);
@@ -2286,7 +2286,7 @@ static inline int scan_pe_impfuncs(cli_ctx *ctx, void *md5ctx, uint32_t *itsz, s
                     if ((buffer = fmap_need_off_once(map, offset+sizeof(uint16_t), MIN(PE_MAXNAMESIZE, fsize-offset))) != NULL) {
                         funcname = strndup(buffer, MIN(PE_MAXNAMESIZE, fsize-offset));
                         if (funcname == NULL) {
-                            cli_dbgmsg("IMPTBL: cannot duplicate function name\n");
+                            cli_dbgmsg("scan_pe: cannot duplicate function name\n");
                             return CL_EMEM;
                         }
                     }
@@ -2295,20 +2295,19 @@ static inline int scan_pe_impfuncs(cli_ctx *ctx, void *md5ctx, uint32_t *itsz, s
                 /* ordinal lookup */
                 funcname = pe_ordinal(dllname, thunk32.u.Ordinal & 0xFFFF);
                 if (funcname == NULL) {
-                    cli_dbgmsg("IMPTBL: cannot duplicate function name\n");
+                    cli_dbgmsg("scan_pe: cannot duplicate function name\n");
                     return CL_EMEM;
                 }
             }
 
-            update_hash();
+            update_imphash();
         }
     } else {
         struct pe_image_thunk64 thunk64;
 
-        while (fmap_readn(map, &thunk64, toff, sizeof(struct pe_image_thunk64)) == sizeof(struct pe_image_thunk64) &&
-               thunk64.u.Ordinal != 0 && num_funcs < PE_MAXIMPORTS) {
+        while ((num_fns < PE_MAXIMPORTS) && (fmap_readn(map, &thunk64, thuoff, sizeof(struct pe_image_thunk64)) == sizeof(struct pe_image_thunk64)) && (thunk64.u.Ordinal != 0)) {
             char *funcname = NULL;
-            toff += sizeof(struct pe_image_thunk64);
+            thuoff += sizeof(struct pe_image_thunk64);
 
             if (!(thunk64.u.Ordinal & IMAGE_ORDINAL_FLAG32)) {
                 offset = cli_rawaddr(thunk64.u.Function, exe_sections, nsections, &err, fsize, hdr_size);
@@ -2318,7 +2317,7 @@ static inline int scan_pe_impfuncs(cli_ctx *ctx, void *md5ctx, uint32_t *itsz, s
                     if ((buffer = fmap_need_off_once(map, offset+sizeof(uint16_t), MIN(PE_MAXNAMESIZE, fsize-offset))) != NULL) {
                         funcname = strndup(buffer, MIN(PE_MAXNAMESIZE, fsize-offset));
                         if (funcname == NULL) {
-                            cli_dbgmsg("IMPTBL: cannot duplicate function name\n");
+                            cli_dbgmsg("scan_pe: cannot duplicate function name\n");
                             return CL_EMEM;
                         }
                     }
@@ -2327,89 +2326,108 @@ static inline int scan_pe_impfuncs(cli_ctx *ctx, void *md5ctx, uint32_t *itsz, s
                 /* ordinal lookup */
                 funcname = cli_strdup(pe_ordinal(dllname, thunk64.u.Ordinal & 0xFFFF));
                 if (funcname == NULL) {
-                    cli_dbgmsg("IMPTBL: cannot duplicate function name\n");
+                    cli_dbgmsg("scan_pe: cannot duplicate function name\n");
                     return CL_EMEM;
                 }
             }
 
-            update_hash();
+            update_imphash();
         }
     }
 
     return CL_SUCCESS;
 }
 
-static int scan_pe_imptbl(cli_ctx *ctx, struct pe_image_data_dir *dirs, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size, int pe_plus) {
-    struct cli_matcher *imp = ctx->engine->hm_imp;
-    struct pe_image_data_dir *datadir = &(dirs[1]);
+static unsigned int hash_imptbl(cli_ctx *ctx, unsigned char **digest, uint32_t *impsz, int *genhash, struct pe_image_data_dir *datadir, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size, int pe_plus)
+{
     struct pe_image_import_descriptor *image;
     fmap_t *map = *ctx->fmap;
     size_t left, fsize = map->len;
-    uint32_t impoff, offset, itsz = 0;
-    const char *impdes, *buffer, *virname;
-    void *md5ctx;
-    uint8_t digest[16] = {0};
-    int i, err, ret = CL_SUCCESS, num_imports = 0, first = 1;
+    uint32_t impoff, offset;
+    const char *impdes, *buffer;
+    void *hashctx[CLI_HASH_AVAIL_TYPES];
+    enum CLI_HASH_TYPE type;
+    int ret, err, nimps = 0;
+    int first = 1;
 
-    if (datadir->VirtualAddress == 0 || datadir->Size == 0) {
-        cli_dbgmsg("IMPTBL: import table data directory does not exist\n");
+    if(datadir->VirtualAddress == 0 || datadir->Size == 0) {
+        cli_errmsg("scan_pe: import table data directory does not exist\n");
         return CL_SUCCESS;
     }
 
     impoff = cli_rawaddr(datadir->VirtualAddress, exe_sections, nsections, &err, fsize, hdr_size);
-    if (err || impoff + datadir->Size > fsize) {
-        cli_dbgmsg("IMPTBL: invalid rva for import table data\n");
+    if(err || impoff + datadir->Size > fsize) {
+        cli_dbgmsg("scan_pe: invalid rva for import table data\n");
         return CL_SUCCESS;
     }
 
     impdes = fmap_need_off(map, impoff, datadir->Size);
-    if (impdes == NULL) {
-        cli_dbgmsg("IMPTBL: failed to acquire fmap buffer\n");
+    if(impdes == NULL) {
+        cli_dbgmsg("scan_pe: failed to acquire fmap buffer\n");
         return CL_EREAD;
     }
     left = datadir->Size;
 
-    md5ctx = cl_hash_init("md5");
-    if (md5ctx == NULL)
-        return CL_EMEM;
+    memset(hashctx, 0, sizeof(hashctx));
+    if(genhash[CLI_HASH_MD5]) {
+        hashctx[CLI_HASH_MD5] = cl_hash_init("md5");
+        if (hashctx[CLI_HASH_MD5] == NULL)
+            return CL_EMEM;
+    }
+    if(genhash[CLI_HASH_SHA1]) {
+        hashctx[CLI_HASH_SHA1] = cl_hash_init("sha1");
+        if (hashctx[CLI_HASH_SHA1] == NULL)
+            return CL_EMEM;
+    }
+    if(genhash[CLI_HASH_SHA256]) {
+        hashctx[CLI_HASH_SHA256] = cl_hash_init("sha256");
+        if (hashctx[CLI_HASH_SHA256] == NULL)
+            return CL_EMEM;
+    }
 
     image = (struct pe_image_import_descriptor *)impdes;
-    while(image->Name != 0 && num_imports < PE_MAXIMPORTS && left > sizeof(struct pe_image_import_descriptor)) {
+    while(image->Name != 0 && nimps < PE_MAXIMPORTS && left > sizeof(struct pe_image_import_descriptor)) {
         char *dllname = NULL;
 
         left -= sizeof(struct pe_image_import_descriptor);
-        num_imports++;
+        nimps++;
 
         /* DLL name aquisition */
         offset = cli_rawaddr(image->Name, exe_sections, nsections, &err, fsize, hdr_size);
-        if (err || offset > fsize) {
-            cli_dbgmsg("IMPTBL: invalid rva for dll name\n");
+        if(err || offset > fsize) {
+            cli_dbgmsg("scan_pe: invalid rva for dll name\n");
             /* TODO: ignore or return? */
             /*
               image++;
               continue;
              */
-            cl_hash_destroy(md5ctx);
+            fmap_unneed_off(map, impoff, datadir->Size);
+            for(type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++)
+                cl_hash_destroy(hashctx[type]);
             return CL_SUCCESS; /* CL_EFORMAT? */
         }
 
-        if ((buffer = fmap_need_off_once(map, offset, MIN(PE_MAXNAMESIZE, fsize-offset))) != NULL) {
+        if((buffer = fmap_need_off_once(map, offset, MIN(PE_MAXNAMESIZE, fsize-offset))) != NULL) {
             if (validate_impname(dllname, MIN(PE_MAXNAMESIZE, fsize-offset), 1) != CL_SUCCESS)
                 break;
             dllname = strndup(buffer, MIN(PE_MAXNAMESIZE, fsize-offset));
             if (dllname == NULL) {
-                cli_dbgmsg("IMPTBL: cannot duplicate dll name\n");
-                cl_hash_destroy(md5ctx);
+                cli_dbgmsg("scan_pe: cannot duplicate dll name\n");
+                fmap_unneed_off(map, impoff, datadir->Size);
+                for(type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++)
+                    cl_hash_destroy(hashctx[type]);
                 return CL_EMEM;
             }
         }
 
         /* DLL function handling - inline function */
-        ret = scan_pe_impfuncs(ctx, md5ctx, &itsz, image, dllname, exe_sections, nsections, hdr_size, pe_plus, &first);
+        ret = hash_impfns(ctx, hashctx, impsz, image, dllname, exe_sections, nsections, hdr_size, pe_plus, &first);
         if (dllname)
             free(dllname);
         if (ret != CL_SUCCESS) {
-            cl_hash_destroy(md5ctx);
+            fmap_unneed_off(map, impoff, datadir->Size);
+            for(type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++)
+                cl_hash_destroy(hashctx[type]);
             return ret;
         }
 
@@ -2417,16 +2435,61 @@ static int scan_pe_imptbl(cli_ctx *ctx, struct pe_image_data_dir *dirs, struct c
     }
 
     fmap_unneed_off(map, impoff, datadir->Size);
+    for(type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++)
+        cl_finish_hash(hashctx[type], digest[type]);
 
-    cl_finish_hash(md5ctx, digest);
+    return CL_SUCCESS;
+}
 
+static int scan_pe_imp(cli_ctx *ctx, struct pe_image_data_dir *dirs, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size, int pe_plus)
+{
+    struct cli_matcher *imp = ctx->engine->hm_imp;
+    unsigned char *hashset[CLI_HASH_AVAIL_TYPES];
+    const char *virname = NULL;
+    int genhash[CLI_HASH_AVAIL_TYPES];
+    uint32_t impsz = 0;
+    enum CLI_HASH_TYPE type;
+    int ret = CL_CLEAN;
+
+    /* pick hashtypes to generate */
+    for(type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++) {
+        genhash[type] = cli_hm_have_any(imp, type);
+        hashset[type] = cli_malloc(hashlen[type]);
+        if(!hashset[type]) {
+            cli_errmsg("scan_pe: cli_malloc failed!\n");
+            for(; type > 0;)
+                free(hashset[--type]);
+            return CL_EMEM;
+        }
+    }
+
+    /* Force md5 hash generation for debug and preclass */
+#if HAVE_JSON
+    if ((cli_debug_flag || ctx->wrkproperty) && !genhash[CLI_HASH_MD5]) {
+#else
+    if (cli_debug_flag && !genhash[CLI_HASH_MD5]) {
+#endif
+        genhash[CLI_HASH_MD5] = 1;
+        hashset[CLI_HASH_MD5] = cli_malloc(hashlen[CLI_HASH_MD5]);
+        if(!hashset[CLI_HASH_MD5]) {
+            cli_errmsg("scan_pe: cli_malloc failed!\n");
+            for(; type > 0;)
+                free(hashset[--type]);
+            return CL_EMEM;
+        }
+    }
+
+    /* Generate hashes */
+    hash_imptbl(ctx, hashset, &impsz, genhash, &dirs[1], exe_sections, nsections, hdr_size, pe_plus);
+
+    /* Print hash */
 #if HAVE_JSON
     if (cli_debug_flag || ctx->wrkproperty) {
 #else
     if (cli_debug_flag) {
 #endif
-        char *dstr = cli_str2hex(digest, sizeof(digest));
-        cli_dbgmsg("IMPHASH: %s(%u)\n", dstr ? (char *)dstr : "(NULL)", itsz);
+        char *dstr = cli_str2hex(hashset[CLI_HASH_MD5], hashlen[CLI_HASH_MD5]);
+        cli_dbgmsg("IMP: %s:%u\n", dstr ? (char *)dstr : "(NULL)", impsz);
 #if HAVE_JSON
         if (ctx->wrkproperty)
             cli_jsonstr(ctx->wrkproperty, "Imphash", dstr ? dstr : "(NULL)");
@@ -2435,13 +2498,25 @@ static int scan_pe_imptbl(cli_ctx *ctx, struct pe_image_data_dir *dirs, struct c
             free(dstr);
     }
 
-    if (imp) {
-        if ((ret = cli_hm_scan(digest, itsz, &virname, imp, CLI_HASH_MD5)) == CL_VIRUS)
+    /* Do scans */
+    for(type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++) {
+        if(cli_hm_scan(hashset[type], impsz, &virname, imp, type) == CL_VIRUS) {
             cli_append_virus(ctx, virname);
-        else if ((ret = cli_hm_scan_wild(digest, &virname, imp, CLI_HASH_MD5)) == CL_VIRUS)
+            ret = CL_VIRUS;
+            if(!SCAN_ALL)
+                break;
+       }
+       if(cli_hm_scan_wild(hashset[type], &virname, imp, type) == CL_VIRUS) {
             cli_append_virus(ctx, virname);
+            ret = CL_VIRUS;
+            if(!SCAN_ALL)
+                break;
+       }
     }
 
+end:
+    for(type = CLI_HASH_AVAIL_TYPES; type > 0;)
+        free(hashset[--type]);
     return ret;
 }
 
@@ -3360,7 +3435,7 @@ int cli_scanpe(cli_ctx *ctx)
 #else
     if (DCONF & PE_CONF_IMPTBL && ctx->engine->hm_imp) {
 #endif
-        ret = scan_pe_imptbl(ctx, dirs, exe_sections, nsections, hdr_size, pe_plus);
+        ret = scan_pe_imp(ctx, dirs, exe_sections, nsections, hdr_size, pe_plus);
         switch (ret) {
             case CL_SUCCESS:
                 break;
@@ -5464,6 +5539,10 @@ int cli_genhash_pe(cli_ctx *ctx, unsigned int class, int type)
     struct pe_image_data_dir *dirs;
     fmap_t *map = *ctx->fmap;
 
+    unsigned char *hash, *hashset[CLI_HASH_AVAIL_TYPES];
+    int genhash[CLI_HASH_AVAIL_TYPES];
+    int hlen = 0;
+
     if (class >= CL_GENHASH_PE_CLASS_LAST)
         return CL_EARG;
 
@@ -5574,60 +5653,59 @@ int cli_genhash_pe(cli_ctx *ctx, unsigned int class, int type)
 
     cli_qsort(exe_sections, nsections, sizeof(*exe_sections), sort_sects);
 
+    /* pick hashtypes to generate */
+    memset(genhash, 0, sizeof(genhash));
+    switch(type) {
+    case 1:
+        genhash[CLI_HASH_MD5] = 1;
+        hash = hashset[CLI_HASH_MD5] = cli_malloc(hashlen[CLI_HASH_MD5]);
+        hlen = hashlen[CLI_HASH_MD5];
+        break;
+    case 2:
+        genhash[CLI_HASH_SHA1] = 1;
+        hash = hashset[CLI_HASH_SHA1] = cli_malloc(hashlen[CLI_HASH_SHA1]);
+        hlen = hashlen[CLI_HASH_SHA1];
+        break;
+    default:
+        genhash[CLI_HASH_SHA256] = 1;
+        hash = hashset[CLI_HASH_SHA256] = cli_malloc(hashlen[CLI_HASH_SHA256]);
+        hlen = hashlen[CLI_HASH_SHA256];
+        break;
+    }
+
+    if(!hash) {
+        cli_errmsg("cli_genhash_pe: cli_malloc failed!\n");
+        free(exe_sections);
+        return CL_EMEM;
+    }
+
     if (class == CL_GENHASH_PE_CLASS_SECTION) {
-        unsigned char *hash, *hashset[CLI_HASH_AVAIL_TYPES], hstr[2*CLI_HASHLEN_MAX+1];
-        int foundsize[CLI_HASH_AVAIL_TYPES];
-        int foundwild[CLI_HASH_AVAIL_TYPES];
-        int hlen = 0;
-        int ret = CL_CLEAN;
-
-        /* pick hashtypes to generate */
-        memset(foundsize, 0, sizeof(foundsize));
-        memset(foundwild, 0, sizeof(foundwild));
-        switch(type) {
-        case 1:
-            foundsize[CLI_HASH_MD5] = 1;
-            hash = hashset[CLI_HASH_MD5] = cli_malloc(hashlen[CLI_HASH_MD5]);
-            hlen = hashlen[CLI_HASH_MD5];
-            break;
-        case 2:
-            foundsize[CLI_HASH_SHA1] = 1;
-            hash = hashset[CLI_HASH_SHA1] = cli_malloc(hashlen[CLI_HASH_SHA1]);
-            hlen = hashlen[CLI_HASH_SHA1];
-            break;
-        default:
-            foundsize[CLI_HASH_SHA256] = 1;
-            hash = hashset[CLI_HASH_SHA256] = cli_malloc(hashlen[CLI_HASH_SHA256]);
-            hlen = hashlen[CLI_HASH_SHA256];
-            break;
-        }
-
-        if(!hash) {
-            cli_errmsg("cli_genhash_pe: cli_malloc failed!\n");
-            free(exe_sections);
-            return CL_EMEM;
-        }
+        char *dstr;
 
         for (i = 0; i < nsections; i++) {
             /* Generate hashes */
-            cli_hashsect(*ctx->fmap, &exe_sections[i], hashset, foundsize, foundwild);
-            for (j = 0; j < hlen; j++)
-                snprintf(hstr+(2*j), sizeof(hstr)-(2*j), "%02x", hash[j]);
-            hstr[j] = '\0';
-            cli_dbgmsg("Section{%u}: %u:%s\n", i, exe_sections[i].rsz, hstr);
-
-            cli_dbgmsg("Section{%u}: %u:%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\n",
-                       i, exe_sections[i].rsz, hash[0], hash[1], hash[2], hash[3], hash[4], hash[5], hash[6], hash[7],
-                       hash[8], hash[9], hash[10], hash[11], hash[12], hash[13], hash[14], hash[15]);
+            cli_hashsect(*ctx->fmap, &exe_sections[i], hashset, genhash, genhash);
+            dstr = cli_str2hex(hash, hlen);
+            cli_dbgmsg("Section{%u}: %u:%s\n", i, exe_sections[i].rsz, dstr ? (char *)dstr : "(NULL)");
+            if (dstr)
+                free(dstr);
         }
-
-        free(hash);
     } else if (class == CL_GENHASH_PE_CLASS_IMPTBL) {
-        /* TODO */
+        char *dstr;
+        uint32_t impsz = 0;
+
+        /* Generate hash */
+        hash_imptbl(ctx, hashset, &impsz, genhash, &dirs[1], exe_sections, nsections, hdr_size, pe_plus);
+        dstr = cli_str2hex(hash, hlen);
+        cli_dbgmsg("Imphash: %s:%u\n", dstr ? (char *)dstr : "(NULL)", impsz);
+        if (dstr)
+            free(dstr);
     } else {
         cli_dbgmsg("cli_genhash_pe: unknown pe genhash class: %u\n", class);
     }
 
+    if (hash)
+        free(hash);
     free(exe_sections);
     return CL_SUCCESS;
 }
