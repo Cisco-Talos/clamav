@@ -285,7 +285,7 @@ struct cl_engine {
     /* hash matcher for MD5 sigs for PE sections */
     struct cli_matcher *hm_mdb;
     /* hash matcher for MD5 sigs for PE import tables */
-    struct cli_matcher *hm_ith;
+    struct cli_matcher *hm_imp;
     /* hash matcher for whitelist db */
     struct cli_matcher *hm_fp;
 

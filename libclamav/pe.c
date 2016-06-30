@@ -2340,7 +2340,7 @@ static inline int scan_pe_impfuncs(cli_ctx *ctx, void *md5ctx, uint32_t *itsz, s
 }
 
 static int scan_pe_imptbl(cli_ctx *ctx, struct pe_image_data_dir *dirs, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size, int pe_plus) {
-    struct cli_matcher *ith = ctx->engine->hm_ith;
+    struct cli_matcher *imp = ctx->engine->hm_imp;
     struct pe_image_data_dir *datadir = &(dirs[1]);
     struct pe_image_import_descriptor *image;
     fmap_t *map = *ctx->fmap;
@@ -2435,10 +2435,10 @@ static int scan_pe_imptbl(cli_ctx *ctx, struct pe_image_data_dir *dirs, struct c
             free(dstr);
     }
 
-    if (ith) {
-        if ((ret = cli_hm_scan(digest, itsz, &virname, ith, CLI_HASH_MD5)) == CL_VIRUS)
+    if (imp) {
+        if ((ret = cli_hm_scan(digest, itsz, &virname, imp, CLI_HASH_MD5)) == CL_VIRUS)
             cli_append_virus(ctx, virname);
-        else if ((ret = cli_hm_scan_wild(digest, &virname, ith, CLI_HASH_MD5)) == CL_VIRUS)
+        else if ((ret = cli_hm_scan_wild(digest, &virname, imp, CLI_HASH_MD5)) == CL_VIRUS)
             cli_append_virus(ctx, virname);
     }
 
@@ -3356,9 +3356,9 @@ int cli_scanpe(cli_ctx *ctx)
     /* Attempt to run scans on import table */
     /* Run if there are existing signatures and/or preclassing */
 #if HAVE_JSON
-    if (DCONF & PE_CONF_IMPTBL && (ctx->engine->hm_ith || ctx->wrkproperty)) {
+    if (DCONF & PE_CONF_IMPTBL && (ctx->engine->hm_imp || ctx->wrkproperty)) {
 #else
-    if (DCONF & PE_CONF_IMPTBL && ctx->engine->hm_ith) {
+    if (DCONF & PE_CONF_IMPTBL && ctx->engine->hm_imp) {
 #endif
         ret = scan_pe_imptbl(ctx, dirs, exe_sections, nsections, hdr_size, pe_plus);
         switch (ret) {
