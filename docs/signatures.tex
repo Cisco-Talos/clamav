@@ -940,7 +940,34 @@ Eicar-Test-Signature:bc356bae4c42f19a3de16e333ba3569c
         \item YARA rules in ClamAV must contain at least one literal, hexadecimal, or
         regular expression string.
     \end{itemize}
-
+    In addition, there are a few more ClamAV processing modes that may affect the outcome of YARA rules.
+    \begin{itemize}
+        \item \emph{File decomposition and decompression} - Since ClamAV uses file decomposition and decompression
+               to find viruses within de-archived and uncompressed inner files, YARA rules executed by ClamAV
+               will match against these files as well.
+        \item \emph{Normalization} - By default, ClamAV normalizes HTML, JavaScript, and ASCII text files.
+              YARA rules in ClamAV will match against the normalized result. The effects of normalization
+              of these file types may be captured using \verb+clamscan --leave-temps --tempdir=mytempdir+. 
+              YARA rules may then be written using the normalized file(s) found in \verb+mytempdir+.
+              Alternatively, starting with ClamAV 0.99.3, \verb+clamscan --normalize=no+ will prevent
+              normalization and only scan the raw file. To obtain similar behavior prior to 0.99.2, use
+              \verb+clamscan --scan-html=no+. The corresponding parameters for clamd.conf are \verb+Normalize+
+              and \verb+ScanHTML+.
+        \item \emph{YARA conditions driven by string matches} - All YARA conditions are driven by string matches in
+              ClamAV. This saves from executing every YARA rule on every file. Any YARA condition may be augmented
+              with a string match clause which is always true, such as:
+        \begin{verbatim}
+          rule CheckFileSize
+          {
+            strings:
+              $abc = "abc"
+            condition:
+              ($abc or not $abc) and filesize < 200KB
+          }
+        \end{verbatim}
+        This will ensure that the YARA condition always performs the desired action (checking the file size in this example),
+    \end{itemize}
+    
     \subsection{Passwords for archive files [experimental]}
     ClamAV 0.99 allows for users to specify password attempts for certain password-compatible archives.
     Passwords will be attempted in order of appearance in the password signature file which use the extension
