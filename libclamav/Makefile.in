@@ -1090,22 +1090,13 @@ libclamav_la_SOURCES = matcher-ac.c matcher-ac.h matcher-bm.c \
 	tnef.h autoit.c autoit.h unarj.c unarj.h nsis/bzlib.c \
 	nsis/bzlib_private.h nsis/nsis_bzlib.h nsis/nulsft.c \
 	nsis/nulsft.h nsis/infblock.c nsis/nsis_zconf.h \
-<<<<<<< HEAD
 	nsis/nsis_zlib.h nsis/nsis_zutil.h pdf.c pdf.h pdfng.c \
 	pdfdecode.c pdfdecode.h spin.c spin.h yc.c yc.h elf.c elf.h \
 	execs.h sis.c sis.h uuencode.c uuencode.h phishcheck.c \
 	phishcheck.h phish_domaincheck_db.c phish_domaincheck_db.h \
 	phish_whitelist.c phish_whitelist.h iana_cctld.h iana_tld.h \
 	regex_list.c regex_list.h regex_suffix.c regex_suffix.h \
-	mspack.c mspack.h cab.c cab.h entconv.c entconv.h entitylist.h \
-=======
-	nsis/nsis_zlib.h nsis/nsis_zutil.h pdf.c pdf.h pdfng.c spin.c \
-	spin.h yc.c yc.h elf.c elf.h execs.h sis.c sis.h uuencode.c \
-	uuencode.h phishcheck.c phishcheck.h phish_domaincheck_db.c \
-	phish_domaincheck_db.h phish_whitelist.c phish_whitelist.h \
-	iana_cctld.h iana_tld.h regex_list.c regex_list.h \
-	regex_suffix.c regex_suffix.h entconv.c entconv.h entitylist.h \
->>>>>>> bb11062 - adding support for external libmspack
+	entconv.c entconv.h entitylist.h \
 	encoding_aliases.h hashtab.c hashtab.h dconf.c dconf.h \
 	lzma_iface.c lzma_iface.h 7z_iface.c 7z_iface.h 7z/7z.h \
 	7z/7zAlloc.c 7z/7zAlloc.h 7z/7zBuf.c 7z/7zBuf.h 7z/7zBuf2.c \
@@ -1136,18 +1127,11 @@ libclamav_la_SOURCES = matcher-ac.c matcher-ac.h matcher-bm.c \
 	stats_json.h hostid.c hostid.h openioc.c openioc.h msdoc.c \
 	msdoc.h matcher-pcre.c matcher-pcre.h regex_pcre.c \
 	regex_pcre.h msxml.c msxml.h msxml_parser.c msxml_parser.h \
-<<<<<<< HEAD
 	tiff.c tiff.h hwp.c hwp.h lzw/lzwdec.c lzw/lzwdec.h \
 	$(am__append_7) bignum.h bignum_fast.h \
 	tomsfastmath/addsub/fp_add.c tomsfastmath/addsub/fp_add_d.c \
 	tomsfastmath/addsub/fp_addmod.c tomsfastmath/addsub/fp_cmp.c \
 	tomsfastmath/addsub/fp_cmp_d.c \
-=======
-	tiff.c tiff.h hwp.c hwp.h $(am__append_13) bignum.h \
-	bignum_fast.h tomsfastmath/addsub/fp_add.c \
-	tomsfastmath/addsub/fp_add_d.c tomsfastmath/addsub/fp_addmod.c \
-	tomsfastmath/addsub/fp_cmp.c tomsfastmath/addsub/fp_cmp_d.c \
->>>>>>> bb11062 - adding support for external libmspack
 	tomsfastmath/addsub/fp_cmp_mag.c tomsfastmath/addsub/fp_sub.c \
 	tomsfastmath/addsub/fp_sub_d.c tomsfastmath/addsub/fp_submod.c \
 	tomsfastmath/addsub/s_fp_add.c tomsfastmath/addsub/s_fp_sub.c \
