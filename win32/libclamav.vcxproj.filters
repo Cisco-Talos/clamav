@@ -831,6 +831,12 @@
     <ClCompile Include="3rdparty\libxml2\hash.c">
       <Filter>Source Files\libxml2</Filter>
     </ClCompile>
+    <ClCompile Include="3rdparty\libxml2\HTMLparser.c">
+      <Filter>Source Files\libxml2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\libxml2\HTMLtree.c">
+      <Filter>Source Files\libxml2</Filter>
+    </ClCompile>
     <ClCompile Include="3rdparty\libxml2\list.c">
       <Filter>Source Files\libxml2</Filter>
     </ClCompile>

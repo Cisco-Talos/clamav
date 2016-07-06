@@ -556,6 +556,8 @@
     <ClCompile Include="3rdparty\libxml2\error.c" />
     <ClCompile Include="3rdparty\libxml2\globals.c" />
     <ClCompile Include="3rdparty\libxml2\hash.c" />
+    <ClCompile Include="3rdparty\libxml2\HTMLparser.c" />
+    <ClCompile Include="3rdparty\libxml2\HTMLtree.c" />
     <ClCompile Include="3rdparty\libxml2\list.c" />
     <ClCompile Include="3rdparty\libxml2\parser.c" />
     <ClCompile Include="3rdparty\libxml2\parserInternals.c" />
