@@ -79,7 +79,9 @@
 #define LIBXML_WRITER_ENABLED 1
 #endif
 #endif
+#include <libxml/xmlversion.h>
 #include <libxml/HTMLtree.h>
+#include <libxml/HTMLparser.h>
 #include <libxml/xmlreader.h>
 #endif
 
@@ -1197,6 +1199,7 @@ parseRootMHTML(mbox_ctx *mctx, message *m, text *t)
 {
 	cli_ctx *ctx = mctx->ctx;
 #if HAVE_LIBXML2
+#ifdef LIBXML_HTML_ENABLED
 	struct msxml_ctx mxctx;
 	blob *input;
 	htmlDocPtr htmlDoc;
@@ -1289,14 +1292,20 @@ parseRootMHTML(mbox_ctx *mctx, message *m, text *t)
 	xmlFreeDoc(htmlDoc);
 	blobDestroy(input);
 	return rc;
-#else
+#else  /* LIBXML_HTML_ENABLED */
+	UNUSEDPARAM(m);
+	UNUSEDPARAM(t);
+	cli_dbgmsg("in parseRootMHTML\n");
+	cli_dbgmsg("parseRootMHTML: parsing html documents disabled in libxml2!\n");
+#endif /* LIBXML_HTML_ENABLED */
+#else  /* HAVE_LIBXML2 */
 	UNUSEDPARAM(m);
 	UNUSEDPARAM(t);
 	cli_dbgmsg("in parseRootMHTML\n");
 	cli_dbgmsg("parseRootMHTML: parsing html documents requires libxml2!\n");
 
 	return OK;
-#endif
+#endif /* HAVE_LIBXML2 */
 }
 
 /*
