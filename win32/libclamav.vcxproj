@@ -403,9 +403,7 @@
     <ClCompile Include="..\libclamav\bytecode_api.c" />
     <ClCompile Include="..\libclamav\bytecode_api_decl.c" />
     <ClCompile Include="..\libclamav\bytecode_vm.c" />
-    <ClCompile Include="..\libclamav\cab.c" />
     <ClCompile Include="..\libclamav\cache.c" />
-    <ClCompile Include="..\libclamav\chmunpack.c" />
     <ClCompile Include="..\libclamav\cpio.c" />
     <ClCompile Include="..\libclamav\cvd.c" />
     <ClCompile Include="..\libclamav\dconf.c" />
@@ -451,7 +449,6 @@
     <ClCompile Include="..\libclamav\mew.c" />
     <ClCompile Include="..\libclamav\mpool.c" />
     <ClCompile Include="..\libclamav\msexpand.c" />
-    <ClCompile Include="..\libclamav\mspack.c" />
     <ClCompile Include="..\libclamav\msxml.c" />
     <ClCompile Include="..\libclamav\msxml_parser.c" />
     <ClCompile Include="..\libclamav\nsis\bzlib.c">
