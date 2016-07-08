@@ -416,6 +416,9 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
 
                     if (cli_writen(of, (char *)node_value, vlen) != vlen) {
                         close(of);
+                        if (!(ctx->engine->keeptmp))
+                            cli_unlink(tempfile);
+                        free(tempfile);
                         return CL_EWRITE;
                     }
 
@@ -458,7 +461,7 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
                     if(cli_writen(of, decoded, decodedlen) != (int)decodedlen) {
                         free(decoded);
                         close(of);
-                        if (ctx && !(ctx->engine->keeptmp))
+                        if (!(ctx->engine->keeptmp))
                             cli_unlink(tempfile);
                         free(tempfile);
                         return CL_EWRITE;
