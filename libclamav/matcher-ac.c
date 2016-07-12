@@ -2587,8 +2587,9 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 
             if (nest > ACPATT_ALTN_MAXNEST) {
                 cli_errmsg("ac_addspecial: Expression exceeds maximum alternate nesting limit\n");
-                free(hexcpy);
-                return CL_EMALFDB;
+                mpool_free(root->mempool, newspecial);
+                error = CL_EMALFDB;
+                break;
             }
 
             if(!strcmp(pt, "B")) {
