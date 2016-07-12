@@ -248,6 +248,7 @@ static int hashpe(const char *filename, unsigned int class, int type)
 	    break;
         default:
 	    mprintf("!hashpe: unknown classification(%u) for pe hash!\n", class);
+        cl_engine_free(engine);
 	    return -1;
     }
 
