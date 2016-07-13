@@ -215,12 +215,15 @@ unsigned int rarvm_getbits(rarvm_input_t *rarvm_input)
 {
 	unsigned int bit_field;
 
-	bit_field = (unsigned int) rarvm_input->in_buf[rarvm_input->in_addr] << 16;
-	bit_field |= (unsigned int) rarvm_input->in_buf[rarvm_input->in_addr+1] << 8;
-	bit_field |= (unsigned int) rarvm_input->in_buf[rarvm_input->in_addr+2];
-	bit_field >>= (8-rarvm_input->in_bit);
+	if (rarvm_input->in_addr+2 < rarvm_input->buf_size) {
+            bit_field = (unsigned int) rarvm_input->in_buf[rarvm_input->in_addr] << 16;
+            bit_field |= (unsigned int) rarvm_input->in_buf[rarvm_input->in_addr+1] << 8;
+            bit_field |= (unsigned int) rarvm_input->in_buf[rarvm_input->in_addr+2];
+            bit_field >>= (8-rarvm_input->in_bit);
 
-	return (bit_field & 0xffff);
+            return (bit_field & 0xffff);
+        }
+        return 0;
 }
 
 unsigned int rarvm_read_data(rarvm_input_t *rarvm_input)
