@@ -785,6 +785,25 @@ char *cli_mpool_strdup(mpool_t *mp, const char *s) {
   return alloc;
 }
 
+char *cli_mpool_strndup(mpool_t *mp, const char *s, size_t n) {
+  char *alloc;
+  size_t strsz;
+
+  if(s == NULL) {
+    cli_errmsg("cli_mpool_strndup(): s == NULL. Please report to http://bugs.clamav.net\n");
+    return NULL;
+  }
+
+  strsz = strnlen(s, n) + 1;
+  alloc = mpool_malloc(mp, strsz);
+  if(!alloc)
+    cli_errmsg("cli_mpool_strndup(): Can't allocate memory (%lu bytes).\n", (unsigned long) strsz);
+  else
+    memcpy(alloc, s, strsz-1);
+  alloc[strsz-1] = '\0';
+  return alloc;
+}
+
 /* #define EXPAND_PUA */
 char *cli_mpool_virname(mpool_t *mp, const char *virname, unsigned int official) {
   char *newname, *pt;

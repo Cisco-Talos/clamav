@@ -36,6 +36,7 @@ void *mpool_realloc(mpool_t *mpool, void *ptr, size_t size);
 void *mpool_realloc2(mpool_t *mpool, void *ptr, size_t size);
 unsigned char *cli_mpool_hex2str(mpool_t* mpool, const char *src);
 char *cli_mpool_strdup(mpool_t *mpool, const char *s);
+char *cli_mpool_strndup(mpool_t *mpool, const char *s, size_t n);
 char *cli_mpool_virname(mpool_t *mpool, const char *virname, unsigned int official);
 uint16_t *cli_mpool_hex2ui(mpool_t *mpool, const char *hex);
 void mpool_flush(mpool_t *mpool);
@@ -50,6 +51,7 @@ typedef void mpool_t;
 #define mpool_realloc2(a, b, c) cli_realloc2(b, c)
 #define cli_mpool_hex2str(mpool, src) cli_hex2str(src)
 #define cli_mpool_strdup(mpool, s) cli_strdup(s)
+#define cli_mpool_strndup(mpool, s, n) cli_strdup(s, n)
 #define cli_mpool_virname(mpool, a, b) cli_virname(a, b)
 #define cli_mpool_hex2ui(mpool, hex) cli_hex2ui(hex)
 #define mpool_flush(val)

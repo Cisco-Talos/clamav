@@ -694,6 +694,7 @@ void *cli_calloc(size_t nmemb, size_t size);
 void *cli_realloc(void *ptr, size_t size);
 void *cli_realloc2(void *ptr, size_t size);
 char *cli_strdup(const char *s);
+char *cli_strndup(const char *s, size_t n);
 int cli_rmdirs(const char *dirname);
 char *cli_hashstream(FILE *fs, unsigned char *digcpy, int type);
 char *cli_hashfile(const char *filename, int type);

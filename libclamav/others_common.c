@@ -284,6 +284,30 @@ char *cli_strdup(const char *s)
     return alloc;
 }
 
+char *cli_strndup(const char *s, size_t n)
+{
+        char *alloc;
+        size_t len;
+
+    if(s == NULL) {
+        cli_errmsg("cli_strndup(): s == NULL. Please report to http://bugs.clamav.net\n");
+        return NULL;
+    }
+
+    len = strnlen(s, n);
+    alloc = malloc(len+1);
+
+    if(!alloc) {
+        perror("strndup_problem");
+        cli_errmsg("cli_strndup(): Can't allocate memory (%u bytes).\n", (unsigned int) strlen(s));
+        return NULL;
+    } else
+        memcpy(alloc, s, len);
+
+    alloc[len] = '\0';
+    return alloc;
+}
+
 /* returns converted timestamp, in case of error the returned string contains at least one character */
 const char* cli_ctime(const time_t *timep, char *buf, const size_t bufsize)
 {
