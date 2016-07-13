@@ -238,8 +238,8 @@ struct pe_image_import_descriptor {
     uint32_t FirstThunk;
 };
 
-#define IMAGE_ORDINAL_FLAG32  0x80000000
-#define IMAGE_ORDINAL_FLAG64  0x8000000000000000L
+#define PE_IMAGEDIR_ORDINAL_FLAG32  0x80000000
+#define PE_IMAGEDIR_ORDINAL_FLAG64  0x8000000000000000L
 
 struct pe_image_thunk32 {
     union {
@@ -2301,7 +2301,7 @@ static inline int hash_impfns(cli_ctx *ctx, void **hashctx, uint32_t *impsz, str
 
             thunk32.u.Ordinal = EC32(thunk32.u.Ordinal);
 
-            if (!(thunk32.u.Ordinal & IMAGE_ORDINAL_FLAG32)) {
+            if (!(thunk32.u.Ordinal & PE_IMAGEDIR_ORDINAL_FLAG32)) {
                 offset = cli_rawaddr(thunk32.u.Function, exe_sections, nsections, &err, fsize, hdr_size);
 
                 if (offset >= 0) {
@@ -2337,7 +2337,7 @@ static inline int hash_impfns(cli_ctx *ctx, void **hashctx, uint32_t *impsz, str
 
             thunk64.u.Ordinal = EC64(thunk64.u.Ordinal);
 
-            if (!(thunk64.u.Ordinal & IMAGE_ORDINAL_FLAG64)) {
+            if (!(thunk64.u.Ordinal & PE_IMAGEDIR_ORDINAL_FLAG64)) {
                 offset = cli_rawaddr(thunk64.u.Function, exe_sections, nsections, &err, fsize, hdr_size);
 
                 if (offset >= 0) {

@@ -252,8 +252,6 @@ static int hashpe(const char *filename, unsigned int class, int type)
 	    return -1;
     }
 
-    cli_debug_flag = 0;
-
     /* THIS MAY BE UNNECESSARY */
     switch(ret) {
         case CL_CLEAN:
