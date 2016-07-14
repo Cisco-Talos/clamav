@@ -80,7 +80,7 @@ static int unz(const uint8_t *src, uint32_t csize, uint32_t usize, uint16_t meth
   if((of = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRUSR|S_IWUSR))==-1) {
     cli_warnmsg("cli_unzip: failed to create temporary file %s\n", tempfile);
     if(!tmpd) free(tempfile);
-    return CL_ECREAT;
+    return CL_ETMPFILE;
   }
   switch (method) {
   case ALG_STORED:
@@ -432,7 +432,7 @@ static inline int zdecrypt(const uint8_t *src, uint32_t csize, uint32_t usize, c
 	    if((of = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRUSR|S_IWUSR))==-1) {
 		cli_warnmsg("cli_unzip: decrypt - failed to create temporary file %s\n", tempfile);
 		if(!tmpd) free(tempfile);
-		return CL_ECREAT;
+		return CL_ETMPFILE;
 	    }
 
 	    for (i = 12; i < csize; i++) {
