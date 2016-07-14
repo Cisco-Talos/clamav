@@ -136,6 +136,7 @@ const struct clam_option __clam_options[] = {
     { NULL, "compare", 'c', CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", "" },
     { NULL, "run-cdiff", 'r', CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", "" },
     { NULL, "verify-cdiff", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", "" },
+    { NULL, "hybrid", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_SIGTOOL, "Create a hybrid (standard and bytecode) database file", ""},
     { NULL, "defaultcolors", 'd', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMDTOP, "", "" },
 
     { NULL, "config-dir", 'c', CLOPT_TYPE_STRING, NULL, 0, CONFDIR, FLAG_REQUIRED, OPT_CLAMCONF, "", "" },
