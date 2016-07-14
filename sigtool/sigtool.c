@@ -661,7 +661,8 @@ static int writeinfo(const char *dbname, const char *builder, const char *header
 	    }
 	    free(pt);
 	}
-    } else {
+    }
+    if(!dblist2cnt || optget(opts, "hybrid")->enabled) {
 	for(i = 0; dblist[i].ext; i++) {
 	    snprintf(dbfile, sizeof(dbfile), "%s.%s", dbname, dblist[i].ext);
 	    if(strcmp(dblist[i].ext, "info") && !access(dbfile, R_OK)) {
@@ -842,7 +843,7 @@ static int qcompare(const void *a, const void *b)
 
 static int build(const struct optstruct *opts)
 {
-	int ret, bc = 0;
+	int ret, bc = 0, hy = 0;
 	size_t bytes;
 	unsigned int i, sigs = 0, oldsigs = 0, entries = 0, version, real_header, fl, maxentries;
 	STATBUF foo;
@@ -883,6 +884,9 @@ static int build(const struct optstruct *opts)
     if(!strcmp(dbname, "bytecode"))
 	bc = 1;
 
+    if(optget(opts, "hybrid")->enabled)
+	hy = 1;
+
     if(!(engine = cl_engine_new())) {
 	mprintf("!build: Can't initialize antivirus engine\n");
 	return 50;
@@ -898,7 +902,7 @@ static int build(const struct optstruct *opts)
     if(!sigs) {
 	mprintf("!build: There are no signatures in database files\n");
     } else {
-	if(bc) {
+	if(bc || hy) {
 	    if((dd = opendir(".")) == NULL) {
 		mprintf("!build: Can't open current directory\n");
 		return -1;
@@ -947,7 +951,8 @@ static int build(const struct optstruct *opts)
 		dblist2cnt++;
 		entries += countlines("last.hdb");
 	    }
-	} else {
+	}
+	if(!bc || hy) {
 	    for(i = 0; dblist[i].ext; i++) {
 		snprintf(dbfile, sizeof(dbfile), "%s.%s", dbname, dblist[i].ext);
 		if(dblist[i].count && !access(dbfile, R_OK))
@@ -958,15 +963,15 @@ static int build(const struct optstruct *opts)
 	if(entries != sigs)
 	    mprintf("^build: Signatures in %s db files: %u, loaded by libclamav: %u\n", dbname, entries, sigs);
 
-    maxentries = optget(opts, "max-bad-sigs")->numarg;
+	maxentries = optget(opts, "max-bad-sigs")->numarg;
 
-    if (maxentries) {
-        if(!entries || (sigs > entries && sigs - entries >= maxentries)) {
-            mprintf("!Bad number of signatures in database files\n");
-            FREE_LS(dblist2);
-            return -1;
-        }
-    }
+	if (maxentries) {
+	    if(!entries || (sigs > entries && sigs - entries >= maxentries)) {
+		mprintf("!Bad number of signatures in database files\n");
+		FREE_LS(dblist2);
+		return -1;
+	    }
+	}
     }
 
     /* try to read cvd header of current database */
@@ -1086,8 +1091,8 @@ static int build(const struct optstruct *opts)
 	return -1;
     }
 
-    if(bc) {
-	if(tar_addfile(-1, tar, "bytecode.info") == -1) {
+    if(bc || hy) {
+	if(!hy && tar_addfile(-1, tar, "bytecode.info") == -1) {
 	    gzclose(tar);
 	    unlink(tarfile);
 	    free(tarfile);
@@ -1103,7 +1108,8 @@ static int build(const struct optstruct *opts)
 		return -1;
 	    }
 	}
-    } else {
+    }
+    if(!bc || hy) {
 	for(i = 0; dblist[i].ext; i++) {
 	    snprintf(dbfile, sizeof(dbfile), "%s.%s", dbname, dblist[i].ext);
 	    if(!access(dbfile, R_OK)) {
@@ -3513,6 +3519,7 @@ static void help(void)
     mprintf("                                           this value is ignored.\n");
     mprintf("    --no-cdiff                             Don't generate .cdiff file\n");
     mprintf("    --unsigned                             Create unsigned database file (.cud)\n");
+    mprintf("    --hybrid                               Create a hybrid (standard and bytecode) database file\n");
     mprintf("    --print-certs=FILE                     Print Authenticode details from a PE\n");
     mprintf("    --server=ADDR                          ClamAV Signing Service address\n");
     mprintf("    --datadir=DIR                          Use DIR as default database directory\n");
