@@ -435,6 +435,7 @@
     <ClCompile Include="..\libclamav\is_tar.c" />
     <ClCompile Include="..\libclamav\jsparse\js-norm.c" />
     <ClCompile Include="..\libclamav\json_api.c" />
+    <ClCompile Include="..\libclamav\libmspack.c" />
     <ClCompile Include="..\libclamav\line.c" />
     <ClCompile Include="..\libclamav\lzma_iface.c" />
     <ClCompile Include="..\libclamav\lzw\lzwdec.c" />

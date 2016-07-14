@@ -159,6 +159,9 @@
     <ClCompile Include="..\libclamav\json_api.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\libclamav\libmspack.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\libclamav\line.c">
       <Filter>Source Files</Filter>
     </ClCompile>
