@@ -611,6 +611,7 @@ int onas_ht_add_hierarchy(struct onas_ht *ht, const char *pathname) {
 		if((childlist = fts_children(ftsp, 0))) {
 			do {
 				if (childlist->fts_info & FTS_D &&
+                                    !(childlist->fts_info & FTS_DEFAULT) &&
 				    !(childlist->fts_info & FTS_DNR) &&
 				    !(childlist->fts_info & FTS_SL)) {
 					if(CL_EMEM == onas_add_hashnode_child(hnode, childlist->fts_name))
