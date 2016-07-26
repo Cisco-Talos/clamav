@@ -1033,6 +1033,25 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 		    /* cli_dbgmsg("Project content:\n%s", data); */
 		    if(ctx->scanned)
 			*ctx->scanned += data_len / CL_COUNT_PRECISION;
+		    if (ctx->engine->keeptmp) {
+			char *tempfile;
+			int of;
+
+			if ((ret = cli_gentempfd(ctx->engine->tmpdir, &tempfile, &of)) != CL_SUCCESS) {
+			    cli_warnmsg("VBADir: WARNING: VBA project '%s_%u' cannot be dumped to file\n", vba_project->name[i], j);
+			    return ret;
+			}
+			if (cli_writen(of, data, data_len) != data_len) {
+			    cli_warnmsg("VBADir: WARNING: VBA project '%s_%u' failed to write to file\n", vba_project->name[i], j);
+			    close(of);
+			    free(tempfile);
+			    return CL_EWRITE;
+			}
+
+			cli_dbgmsg("VBADir: VBA project '%s_%u' dumped to %s\n", vba_project->name[i], j, tempfile);
+			free(tempfile);
+		    }
+
 		    if(vba_scandata(data, data_len, ctx) == CL_VIRUS) {
 			if (SCAN_ALL) 
 			    viruses_found++;
