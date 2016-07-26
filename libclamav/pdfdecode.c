@@ -267,8 +267,7 @@ static int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj
         }
         token->success++;
 
-        if (cl_engine_get_num(pdf->ctx->engine, CL_ENGINE_FORCETODISK, NULL) &&
-            cl_engine_get_num(pdf->ctx->engine, CL_ENGINE_KEEPTMP, NULL)) {
+        if (pdf->ctx->engine->keeptmp) {
 
             if ((rc = pdf_decode_dump(pdf, obj, token, i+1)) != CL_SUCCESS)
                 return rc;
@@ -330,7 +329,7 @@ static int filter_ascii85decode(struct pdf_struct *pdf, struct pdf_obj *obj, str
         return CL_EMEM;
     }
 
-    if(cli_memstr(ptr, remaining, "~>", 2) == NULL)
+    if(cli_memstr((const char *)ptr, remaining, "~>", 2) == NULL)
         cli_dbgmsg("cli_pdf: no EOF marker found\n");
 
     while (remaining > 0) {
@@ -693,7 +692,7 @@ static int filter_asciihexdecode(struct pdf_struct *pdf, struct pdf_obj *obj, st
         if (content[i] == '>')
             break;
 
-        if (cli_hex2str_to(content+i, decoded+j, 2) == -1) {
+        if (cli_hex2str_to((const char *)content+i, (char *)decoded+j, 2) == -1) {
             if (length - i < 4)
                 continue;
 
@@ -753,7 +752,7 @@ static int filter_decrypt(struct pdf_struct *pdf, struct pdf_obj *obj, struct pd
         }
     }
 
-    decrypted = decrypt_any(pdf, obj->id, token->content, &length, enc);
+    decrypted = decrypt_any(pdf, obj->id, (const char *)token->content, &length, enc);
     if (!decrypted) {
         cli_dbgmsg("cli_pdf: failed to decrypt stream\n");
         return CL_EPARSE; /* TODO: what should this value be? CL_SUCCESS would mirror previous behavior */
