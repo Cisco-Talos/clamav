@@ -1093,7 +1093,12 @@ libclamavcxx_la_SOURCES = bytecode2llvm.cpp ClamBCRTChecks.cpp \
 @BUILD_EXTERNAL_LLVM_FALSE@libclamavcxx_la_LIBADD = libllvmjit.la \
 @BUILD_EXTERNAL_LLVM_FALSE@	$(am__append_3) $(am__append_6) \
 @BUILD_EXTERNAL_LLVM_FALSE@	libllvmcodegen.la libllvmsystem.la
-@BUILD_EXTERNAL_LLVM_FALSE@LLVM_CXXFLAGS = -Woverloaded-virtual -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings
+
+# crdaviso@cisco.com - Removed -pedantic from the following line to allow
+# building on CentOS 5 (g++ 4.1.2). An openssl header file is included that
+# includes a comma at the end of an enumerator list, which is valid in C99 but
+# not C++98, so -pedantic produces an error and the build fails.
+@BUILD_EXTERNAL_LLVM_FALSE@LLVM_CXXFLAGS = -Woverloaded-virtual -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings
 @BUILD_EXTERNAL_LLVM_FALSE@unittest_CXXFLAGS = @NO_VARIADIC_MACROS@ @NO_MISSING_FIELD_INITIALIZERS@ -DGTEST_HAS_TR1_TUPLE=0
 @BUILD_EXTERNAL_LLVM_FALSE@TBLGENFILES = llvm/include/llvm/Intrinsics.gen X86GenRegisterInfo.h.inc X86GenRegisterNames.inc X86GenRegisterInfo.inc X86GenInstrNames.inc X86GenInstrInfo.inc\
 @BUILD_EXTERNAL_LLVM_FALSE@    X86GenDAGISel.inc X86GenFastISel.inc X86GenCallingConv.inc\
@@ -5750,8 +5755,8 @@ maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
 	-test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
-@BUILD_EXTERNAL_LLVM_TRUE@clean-local:
 @BUILD_EXTERNAL_LLVM_TRUE@distclean-local:
+@BUILD_EXTERNAL_LLVM_TRUE@clean-local:
 clean: clean-am
 
 clean-am: clean-generic clean-libtool clean-local \
