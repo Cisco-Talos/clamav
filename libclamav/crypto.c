@@ -1096,7 +1096,6 @@ X509_CRL *cl_load_crl(const char *file)
 {
     X509_CRL *x=NULL;
     FILE *fp;
-    struct tm *tm;
 
     if (!(file))
         return NULL;
@@ -1110,21 +1109,13 @@ X509_CRL *cl_load_crl(const char *file)
     fclose(fp);
 
     if ((x)) {
-        tm = cl_ASN1_GetTimeT(x->crl->nextUpdate);
-        if (!(tm)) {
-            X509_CRL_free(x);
-            return NULL;
-        }
+	ASN1_TIME *tme;
 
-#if !defined(_WIN32)
-        if (timegm(tm) < time(NULL)) {
-            X509_CRL_free(x);
-            free(tm);
-            return NULL;
-        }
-#endif
-
-        free(tm);
+	tme = X509_CRL_get_nextUpdate(x);
+	if (!tme || X509_cmp_current_time(tme) < 0) {
+		X509_CRL_free(x);
+		return NULL;
+	}
     }
 
     return x;
