@@ -457,6 +457,7 @@ Int32 main ( Int32 argc, Char** argv )
             bsPutUChar ( bsWr, 0x50 ); bsPutUChar ( bsWr, 0x90 );
             bsPutUInt32 ( bsWr, blockCRC );
             bsClose ( bsWr );
+            outFile = NULL;
          }
          if (wrBlock >= rbCtr) break;
          wrBlock++;
