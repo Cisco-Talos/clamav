@@ -115,7 +115,9 @@ static int cli_elf_fileheader(cli_ctx *ctx, fmap_t *map, union elf_file_hdr *fil
 	    break;
         default:
 	    cli_dbgmsg("ELF: Unknown ELF class (%u)\n", file_hdr->hdr64.e_ident[4]);
-	    return CL_EFORMAT;
+	    if (ctx)
+	      cli_append_virus(ctx, "Heuristics.Broken.Executable");
+	    return CL_VIRUS;
     }
 
     /* Need to know to endian convert */
