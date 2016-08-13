@@ -131,6 +131,10 @@ char *cl_base64_encode(void *data, size_t len)
 
     /* Ensure we're dealing with a NULL-terminated string */
     p = (char *)malloc(elen+1);
+    if (NULL == p) {
+        BIO_free(b64);
+        return NULL;
+    }
     memcpy((void *)p, (void *)buf, elen);
     p[elen] = 0x00;
     buf = p;
