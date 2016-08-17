@@ -43,15 +43,6 @@ struct mspack_handle {
 	off_t max_size;
 };
 
-#define container_of(ptr, type, member) ({			\
-	const typeof( ((type *)0)->member ) *__mptr = (ptr);	\
-	(type *)( (char *)__mptr - offsetof(type,member) );})
-
-#define min_t(type, x, y) ({		\
-	type __min1 = (x);		\
-	type __min2 = (y);		\
-	__min1 < __min2 ? __min1: __min2; })
-
 static struct mspack_file *mspack_fmap_open(struct mspack_system *self,
 		const char *filename, int mode)
 {
@@ -59,6 +50,7 @@ static struct mspack_file *mspack_fmap_open(struct mspack_system *self,
 	struct mspack_handle *mspack_handle;
 	struct mspack_system_ex *self_ex;
 	const char *fmode;
+        const struct mspack_system *mptr = self;
 
 	if (!filename) {
 		cli_dbgmsg("%s() failed at %d\n", __func__, __LINE__);
@@ -101,7 +93,8 @@ static struct mspack_file *mspack_fmap_open(struct mspack_system *self,
 		cli_dbgmsg("%s() failed %d\n", __func__, __LINE__);
 		goto out_err;
 	}
-	self_ex = container_of(self, struct mspack_system_ex, ops);
+
+	self_ex = (struct mspack_system_ex *)((char *)mptr - offsetof(struct mspack_system_ex,ops));
 	mspack_handle->max_size = self_ex->max_size;
 	return (struct mspack_file *)mspack_handle;
 
@@ -181,7 +174,8 @@ static int mspack_fmap_write(struct mspack_file *file, void *buffer, int bytes)
 	if (!max_size)
 		return bytes;
 
-	max_size = min_t(off_t, max_size, bytes);
+	max_size = max_size < (off_t) bytes ? max_size : (off_t) bytes;
+ 
 	mspack_handle->max_size -= max_size;
 
 	count = fwrite(buffer, max_size, 1, mspack_handle->f);
@@ -318,9 +312,9 @@ int cli_scanmscab(cli_ctx *ctx, off_t sfx_offset)
 		.fmap	= *ctx->fmap,
 		.org	= sfx_offset,
 	};
-	struct mspack_system_ex ops_ex = {
-		.ops	= mspack_sys_fmap_ops,
-	};
+	struct mspack_system_ex ops_ex;
+	memset(&ops_ex, 0, sizeof(struct mspack_system_ex));
+ 	ops_ex.ops = mspack_sys_fmap_ops;
 
 	MSPACK_SYS_SELFTEST(ret);
 	if (ret) {
@@ -425,9 +419,9 @@ int cli_scanmschm(cli_ctx *ctx)
 	struct mspack_name mspack_fmap = {
 		.fmap = *ctx->fmap,
 	};
-	struct mspack_system_ex ops_ex = {
-		.ops	= mspack_sys_fmap_ops,
-	};
+	struct mspack_system_ex ops_ex;
+	memset(&ops_ex, 0, sizeof(struct mspack_system_ex));
+ 	ops_ex.ops = mspack_sys_fmap_ops;
 
 	MSPACK_SYS_SELFTEST(ret);
 	if (ret) {
