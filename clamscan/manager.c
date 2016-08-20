@@ -71,6 +71,9 @@ dev_t procdev;
 
 char hostid[37];
 
+char **files;
+size_t files_num, files_alloc;
+
 int is_valid_hostid(void);
 char *get_hostid(void *cbdata);
 
@@ -289,7 +292,7 @@ static void clamscan_virus_found_cb(int fd, const char *virname, void *context)
     return;
 }
 
-static void scanfile(const char *filename, struct cl_engine *engine, const struct optstruct *opts, unsigned int options)
+static void do_scanfile(const char *filename, struct cl_engine *engine, const struct optstruct *opts, unsigned int options, struct s_info *info)
 {
     int ret = 0, fd, included;
     unsigned i;
@@ -349,7 +352,7 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
             return;
         }
 
-        info.rblocks += sb.st_size / CL_COUNT_PRECISION;
+        info->rblocks += sb.st_size / CL_COUNT_PRECISION;
     }
 
 #ifndef _WIN32
@@ -358,7 +361,7 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
             if(!printinfected)
                 logg("~%s: Access denied\n", filename);
 
-            info.errors++;
+            info->errors++;
             return;
         }
     }
@@ -372,7 +375,7 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
             if (!chain.chains[0]) {
                 free(chain.chains);
                 logg("Unable to allocate memory in scanfile()\n");
-                info.errors++;
+                info->errors++;
                 return;
             }
             chain.nchains = 1;
@@ -383,13 +386,13 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
 
     if((fd = safe_open(filename, O_RDONLY|O_BINARY)) == -1) {
         logg("^Can't open file %s: %s\n", filename, strerror(errno));
-        info.errors++;
+        info->errors++;
         return;
     }
 
     data.chain = &chain;
     data.filename = filename;
-    if((ret = cl_scandesc_callback(fd, &virname, &info.blocks, engine, options, &data)) == CL_VIRUS) {
+    if((ret = cl_scandesc_callback(fd, &virname, &info->blocks, engine, options, &data)) == CL_VIRUS) {
         if(optget(opts, "archive-verbose")->enabled) {
             if (chain.nchains > 1) {
                 char str[128];
@@ -403,8 +406,8 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
         if (!(options & CL_SCAN_ALLMATCHES))
             logg("~%s: %s FOUND\n", filename, virname);
 
-        info.files++;
-        info.ifiles++;
+        info->files++;
+        info->ifiles++;
 
         if(bell)
             fprintf(stderr, "\007");
@@ -412,12 +415,12 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
         if(!printinfected && printclean)
             mprintf("~%s: OK\n", filename);
 
-        info.files++;
+        info->files++;
     } else {
         if(!printinfected)
             logg("~%s: %s ERROR\n", filename, cl_strerror(ret));
 
-        info.errors++;
+        info->errors++;
     }
 
     for (i=0;i<chain.nchains;i++)
@@ -428,6 +431,134 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
 
     if(ret == CL_VIRUS && action)
         action(filename);
+}
+
+static void scanfile(const char *filename, struct cl_engine *engine, const struct optstruct *opts, unsigned int options)
+{
+    if (jobs <= 1) {
+	do_scanfile(filename, engine, opts, options, &info);
+	return;
+    }
+    if (!files_alloc) {
+	if (!(files = malloc(4096 * sizeof(char *)))) {
+	    logg("Unable to allocate memory in scanfile()\n");
+	    info.errors++;
+	    return;
+	}
+	files_alloc = 4096;
+    }
+    if (files_num >= files_alloc) {
+	char **new_list;
+
+	if (!(new_list = realloc(files, files_alloc * 2 * sizeof(char *)))) {
+	    logg("Unable to allocate memory in scanfile()\n");
+	    info.errors++;
+	    return;
+	}
+	files_alloc *= 2;
+	files = new_list;
+    }
+    if (!(files[files_num] = strdup(filename))) {
+	    logg("Unable to allocate memory in scanfile()\n");
+	    info.errors++;
+	    return;
+    }
+    files_num++;
+}
+
+static void do_job(struct cl_engine *engine, const struct optstruct *opts, unsigned int options, int dispath_fd, int result_fd)
+{
+    struct s_info info2;
+    size_t i;
+
+    memset(&info2, 0, sizeof(info2));
+    while (read(dispath_fd, &i, sizeof(i)) > 0) {
+	if (i > files_num) {
+	    logg("Invalid file number received from parent\n");
+	    continue;
+	}
+	do_scanfile(files[i], engine, opts, options, &info2);
+    }
+    write(result_fd, &info2, sizeof(info2));
+    close(result_fd);
+    exit(0);
+}
+
+static void run_jobs(struct cl_engine *engine, const struct optstruct *opts, unsigned int options)
+{
+    size_t i;
+    struct s_info info2;
+    int dispath_pipe[2], result_pipe[2];
+
+    if (jobs > files_num)
+	jobs = files_num;
+    if (pipe(dispath_pipe) < 0 || pipe(result_pipe) < 0) {
+	logg("Unable to create pipes in run_jobs(): %s\n", strerror(errno));
+	info.errors += files_num;
+	return;
+    }
+    for (i = 0; i < jobs; i++) {
+	pid_t pid = fork();
+	if (pid < 0) {
+	    logg("Can't fork in run_jobs(): %s\n", strerror(errno));
+	    /* there is probably no point in trying again */
+	    jobs = i;
+	    break;
+	}
+	/* child */
+	if (pid == 0) {
+	    close(dispath_pipe[1]);
+	    close(result_pipe[0]);
+	    do_job(engine, opts, options, dispath_pipe[0], result_pipe[1]);
+	}
+    }
+    /* parent */
+    close(dispath_pipe[0]);
+    close(result_pipe[1]);
+    if (jobs < 1) {
+	logg("Could not run any jobs\n");
+	info.errors += files_num;
+	close(dispath_pipe[1]);
+	close(result_pipe[0]);
+	return;
+    }
+    /*
+     * Feed the dispatch_pipe with indexes to the files array. The first
+     * idle child reads the index and scans the respective file.
+     */
+    for (i = 0; i < files_num; i++) {
+	if (write(dispath_pipe[1], &i, sizeof(i)) < 0) {
+	    logg("Unable to write to pipe: %s\n", strerror(errno));
+	    info.errors += files_num - i;
+	}
+    }
+    close(dispath_pipe[1]);
+    /*
+     * Once the dispath_pipe is closed, all children send their stats via
+     * the result_pipe.
+     */
+    while (read(result_pipe[0], &info2, sizeof(info2)) > 0) {
+	info.files   += info2.files;
+	info.ifiles  += info2.ifiles;
+	info.errors  += info2.errors;
+	info.blocks  += info2.blocks;
+	info.rblocks += info2.rblocks;
+    }
+    for (; jobs > 0; jobs--) {
+	int status;
+	pid_t err = wait(&status);
+	if (err < 0)
+	    logg("Error waiting for children to terminate: %s\n", strerror(errno));
+	if (WIFSIGNALED(status))
+	    logg("Job terminated by signal %d\n", WTERMSIG(status));
+	if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
+	    logg("Job returned error %d\n", WEXITSTATUS(status));
+    }
+    close(result_pipe[0]);
+    for (i = 0; i < files_num; i++) {
+	free(files[i]);
+    }
+    free(files);
 }
 
 static void scandirs(const char *dirname, struct cl_engine *engine, const struct optstruct *opts, unsigned int options, unsigned int depth, dev_t dev)
@@ -1213,6 +1344,8 @@ int scanmanager(const struct optstruct *opts)
             free(file);
         }
     }
+    if (jobs > 1)
+	run_jobs(engine, opts, options);
 
     if((opt = optget(opts, "statistics"))->enabled) {
 	while(opt) {

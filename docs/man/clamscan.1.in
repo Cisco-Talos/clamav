@@ -45,6 +45,9 @@ Skip printing OK files
 \fB\-\-bell\fR
 Sound bell on virus detection.
 .TP
+\fB\-j NUM, \-\-jobs=NUM\fR
+Spawn NUM processes to scan files in parallel.
+.TP
 \fB\-\-tempdir=DIRECTORY\fR
 Create temporary files in DIRECTORY. Directory must be writable for the '@CLAMAVUSER@' user or unprivileged user running clamscan.
 .TP

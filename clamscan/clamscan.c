@@ -56,6 +56,7 @@ void help(void);
 struct s_info info;
 short recursion = 0, bell = 0;
 short printinfected = 0, printclean = 1;
+int jobs;
 
 int main(int argc, char **argv)
 {
@@ -154,6 +155,8 @@ int main(int argc, char **argv)
 	exit(2);
     }
 
+    jobs = optget(opts, "jobs")->numarg;
+
     memset(&info, 0, sizeof(struct s_info));
 
     gettimeofday(&t1, NULL);
@@ -216,6 +219,7 @@ void help(void)
     mprintf("    --infected            -i             Only print infected files\n");
     mprintf("    --suppress-ok-results -o             Skip printing OK files\n");
     mprintf("    --bell                               Sound bell on virus detection\n");
+    mprintf("    --jobs=#n             -j             Number of parallel jobs to spawn\n");
     mprintf("\n");
     mprintf("    --tempdir=DIRECTORY                  Create temporary files in DIRECTORY\n");
     mprintf("    --leave-temps[=yes/no(*)]            Do not remove temporary files\n");
