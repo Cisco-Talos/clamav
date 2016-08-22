@@ -10,7 +10,6 @@
 #include <fcntl.h>
 
 #include <mspack.h>
-#include <system.h>
 
 #include "clamav.h"
 #include "fmap.h"
