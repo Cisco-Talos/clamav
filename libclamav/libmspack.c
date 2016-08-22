@@ -10,6 +10,7 @@
 #include <fcntl.h>
 
 #include <mspack.h>
+#include <system.h>
 
 #include "clamav.h"
 #include "fmap.h"
@@ -237,7 +238,7 @@ static int mspack_fmap_seek(struct mspack_file *file, off_t offset, int mode)
 		return -1;
 	}
 
-	return fseeko(mspack_handle->f, offset, mode);
+	return fseek(mspack_handle->f, offset, mode);
 }
 
 static off_t mspack_fmap_tell(struct mspack_file *file)
@@ -250,7 +251,7 @@ static off_t mspack_fmap_tell(struct mspack_file *file)
 	if (mspack_handle->type == FILETYPE_FMAP)
 		return mspack_handle->offset;
 
-	return ftello(mspack_handle->f);
+	return (off_t) ftell(mspack_handle->f);
 }
 
 static void mspack_fmap_message(struct mspack_file *file, const char *fmt, ...)
