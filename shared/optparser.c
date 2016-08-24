@@ -175,7 +175,7 @@ const struct clam_option __clam_options[] = {
     { NULL, "no-phishing-restrictedscan", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", "" },
     { NULL, "max-ratio", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 0, NULL, 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", "" },
     { NULL, "max-space", 0, CLOPT_TYPE_SIZE, MATCH_SIZE, 0, NULL, 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", "" },
-    { NULL, "block-max", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", "" },
+    { NULL, "block-max", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN, "", "" },
     { NULL, "unzip", 0, CLOPT_TYPE_STRING, NULL, -1, "foo", 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", "" },
     { NULL, "unrar", 0, CLOPT_TYPE_STRING, NULL, -1, "foo", 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", "" },
     { NULL, "arj", 0, CLOPT_TYPE_STRING, NULL, -1, "foo", 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", "" },

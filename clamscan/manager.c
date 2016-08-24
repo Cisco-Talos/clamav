@@ -400,9 +400,6 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
                 logg("~%s!(%llu): %s FOUND\n", filename, (long long unsigned)(chain.lastvir-1), virname);
             }
         }
-        if (!(options & CL_SCAN_ALLMATCHES))
-            logg("~%s: %s FOUND\n", filename, virname);
-
         info.files++;
         info.ifiles++;
 
@@ -596,9 +593,6 @@ static int scanstdin(const struct cl_engine *engine, const struct optstruct *opt
     data.filename = "stdin";
     data.chain = NULL;
     if((ret = cl_scanfile_callback(file, &virname, &info.blocks, engine, options, &data)) == CL_VIRUS) {
-        if (!(options & CL_SCAN_ALLMATCHES))
-            logg("stdin: %s FOUND\n", virname);
-
         info.ifiles++;
 
         if(bell)
@@ -676,6 +670,8 @@ int scanmanager(const struct optstruct *opts)
         return 2;
     }
 
+    cl_engine_set_clcb_virus_found(engine, clamscan_virus_found_cb);
+    
     if (optget(opts, "disable-cache")->enabled)
         cl_engine_set_num(engine, CL_ENGINE_DISABLE_CACHE, 1);
 
@@ -1038,7 +1034,6 @@ int scanmanager(const struct optstruct *opts)
     /* set scan options */
     if(optget(opts, "allmatch")->enabled) {
         options |= CL_SCAN_ALLMATCHES;
-        cl_engine_set_clcb_virus_found(engine, clamscan_virus_found_cb);
     }
 
     if(optget(opts,"phishing-ssl")->enabled)
@@ -1094,6 +1089,10 @@ int scanmanager(const struct optstruct *opts)
 
     if(optget(opts, "algorithmic-detection")->enabled)
         options |= CL_SCAN_ALGORITHMIC;
+
+    if(optget(opts, "block-max")->enabled) {
+        options |= CL_SCAN_BLOCKMAX;
+    }
 
 #ifdef HAVE__INTERNAL__SHA_COLLECT
     if(optget(opts, "dev-collect-hashes")->enabled)

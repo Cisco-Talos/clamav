@@ -157,6 +157,7 @@ typedef struct cli_ctx_tag {
     struct json_object *wrkproperty;
 #endif
     struct timeval time_limit;
+    int limit_exceeded;
 } cli_ctx;
 
 #define STATS_ANON_UUID "5b585e8f-3be5-11e3-bf0b-18037319526c"
@@ -473,7 +474,7 @@ extern int have_rar;
 #define SCAN_ELF	    (ctx->options & CL_SCAN_ELF)
 #define SCAN_ALGO 	    (ctx->options & CL_SCAN_ALGORITHMIC)
 #define DETECT_ENCRYPTED    (ctx->options & CL_SCAN_BLOCKENCRYPTED)
-/* #define BLOCKMAX	    (ctx->options & CL_SCAN_BLOCKMAX) */
+#define BLOCKMAX	    (ctx->options & CL_SCAN_BLOCKMAX)
 #define DETECT_BROKEN	    (ctx->options & CL_SCAN_BLOCKBROKEN)
 #define BLOCK_MACROS	    (ctx->options & CL_SCAN_BLOCKMACROS)
 #define SCAN_STRUCTURED	    (ctx->options & CL_SCAN_STRUCTURED)
@@ -712,6 +713,7 @@ void cli_bitset_free(bitset_t *bs);
 int cli_bitset_set(bitset_t *bs, unsigned long bit_offset);
 int cli_bitset_test(bitset_t *bs, unsigned long bit_offset);
 const char* cli_ctime(const time_t *timep, char *buf, const size_t bufsize);
+void cli_check_blockmax(cli_ctx *, int);
 int cli_checklimits(const char *, cli_ctx *, unsigned long, unsigned long, unsigned long);
 int cli_updatelimits(cli_ctx *, unsigned long);
 unsigned long cli_getsizelimit(cli_ctx *, unsigned long);
