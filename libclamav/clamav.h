@@ -151,7 +151,7 @@ typedef enum {
 #define CL_SCAN_PE			0x20
 #define CL_SCAN_BLOCKBROKEN		0x40
 #define CL_SCAN_MAILURL			0x80 /* ignored */
-#define CL_SCAN_BLOCKMAX		0x100 /* ignored */
+#define CL_SCAN_BLOCKMAX		0x100
 #define CL_SCAN_ALGORITHMIC		0x200
 #define CL_SCAN_PHISHING_BLOCKSSL	0x800 /* ssl mismatches, not ssl by itself*/
 #define CL_SCAN_PHISHING_BLOCKCLOAK	0x1000
