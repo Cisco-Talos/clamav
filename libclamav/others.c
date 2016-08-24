@@ -934,6 +934,16 @@ int cl_engine_settings_free(struct cl_settings *settings)
     return CL_SUCCESS;
 }
 
+void cli_check_blockmax(cli_ctx *ctx, int rc)
+{
+    if (BLOCKMAX && !ctx->limit_exceeded) {
+        cli_append_virus (ctx, "Heuristic.Limits.Exceeded");
+        ctx->limit_exceeded = 1;
+        cli_dbgmsg ("Limit %s Exceeded: scanning may be incomplete and additional analysis needed for this file.\n",
+            cl_strerror(rc));
+    }
+}
+
 int cli_checklimits(const char *who, cli_ctx *ctx, unsigned long need1, unsigned long need2, unsigned long need3) {
     int ret = CL_SUCCESS;
     unsigned long needed;
@@ -963,8 +973,12 @@ int cli_checklimits(const char *who, cli_ctx *ctx, unsigned long need1, unsigned
 
     if(ctx->engine->maxfiles && ctx->scannedfiles>=ctx->engine->maxfiles) {
         cli_dbgmsg("%s: files limit reached (max: %u)\n", who, ctx->engine->maxfiles);
-	return CL_EMAXFILES;
+	ret = CL_EMAXFILES;
     }
+
+    if (ret != CL_SUCCESS)
+        cli_check_blockmax(ctx, ret);
+
     return ret;
 }
 

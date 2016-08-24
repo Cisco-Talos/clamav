@@ -2276,8 +2276,10 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
 	size_t current_container_size = ctx->container_size;
 
 
-    if(ctx->engine->maxreclevel && ctx->recursion >= ctx->engine->maxreclevel)
+    if(ctx->engine->maxreclevel && ctx->recursion >= ctx->engine->maxreclevel) {
+        cli_check_blockmax(ctx, CL_EMAXREC);
         return CL_EMAXREC;
+    }
 
     perf_start(ctx, PERFT_RAW);
     if(typercg)
@@ -2697,6 +2699,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
     if(ctx->engine->maxreclevel && ctx->recursion > ctx->engine->maxreclevel) {
         cli_dbgmsg("cli_magic_scandesc: Archive recursion limit exceeded (%u, max: %u)\n", ctx->recursion, ctx->engine->maxreclevel);
 	emax_reached(ctx);
+        cli_check_blockmax(ctx, CL_EMAXREC);
 	early_ret_from_magicscan(CL_CLEAN);
     }
 
@@ -2835,8 +2838,10 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
     ctx->hook_lsig_matches = NULL;
 
     if(!(ctx->options&~CL_SCAN_ALLMATCHES) || (ctx->recursion == ctx->engine->maxreclevel)) { /* raw mode (stdin, etc.) or last level of recursion */
-	if(ctx->recursion == ctx->engine->maxreclevel)
+	if(ctx->recursion == ctx->engine->maxreclevel) {
+            cli_check_blockmax(ctx, CL_EMAXREC);
 	    cli_dbgmsg("cli_magic_scandesc: Hit recursion limit, only scanning raw file\n");
+        }
 	else
 	    cli_dbgmsg("Raw mode: No support for special files\n");
 
@@ -3736,7 +3741,7 @@ static int scan_common(int desc, cl_fmap_t *map, const char **virname, unsigned 
     cli_bitset_free(ctx.hook_lsig_matches);
     free(ctx.fmap);
     if (rc == CL_CLEAN) {
-        if ((ctx.num_viruses != 0 && ctx.options & CL_SCAN_ALLMATCHES) ||
+        if ((ctx.num_viruses != 0 && (ctx.options & (CL_SCAN_ALLMATCHES | CL_SCAN_BLOCKMAX))) ||
             ctx.found_possibly_unwanted)
                 rc = CL_VIRUS;
     }
