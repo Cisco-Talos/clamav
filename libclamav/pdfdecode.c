@@ -226,13 +226,13 @@ static int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj
         case OBJ_FILTER_JBIG2:
             if (!filter) filter = "JBIG2DECODE";
 
-            cli_warnmsg("cli_pdf: unimplemented filter type [%d] => %s\n", obj->filterlist[i], filter);
+            cli_dbgmsg("cli_pdf: unimplemented filter type [%d] => %s\n", obj->filterlist[i], filter);
             filter = NULL;
             rc = CL_BREAK;
             break;
 
         default:
-            cli_warnmsg("cli_pdf: unknown filter type [%d]\n", obj->filterlist[i]);
+            cli_dbgmsg("cli_pdf: unknown filter type [%d]\n", obj->filterlist[i]);
             rc = CL_BREAK;
             break;
         }
