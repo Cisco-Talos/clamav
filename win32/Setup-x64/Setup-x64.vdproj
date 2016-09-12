@@ -1,4 +1,4 @@
-﻿"DeployProject"
+"DeployProject"
 {
 "VSVersion" = "3:800"
 "ProjectType" = "8:{978C614F-708E-4E1A-B201-565925725DBA}"
@@ -27,66 +27,6 @@
         }
         "Entry"
         {
-        "MsmKey" = "8:_31A9BB7D7AC44E50902256927B1FAAA5"
-        "OwnerKey" = "8:_335D34A6BB624E7190CFE4E63CD398E8"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_31A9BB7D7AC44E50902256927B1FAAA5"
-        "OwnerKey" = "8:_FEDD087CC8B64ED3A476664BC5FCAF59"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_31A9BB7D7AC44E50902256927B1FAAA5"
-        "OwnerKey" = "8:_F047B3505FC74D809FB8251423DF4095"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_31A9BB7D7AC44E50902256927B1FAAA5"
-        "OwnerKey" = "8:_EB8D0E3AFBC24F9B9845F08708803C2B"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_31A9BB7D7AC44E50902256927B1FAAA5"
-        "OwnerKey" = "8:_DF09DF52E5014B378FBA8B4CD6C11C3B"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_31A9BB7D7AC44E50902256927B1FAAA5"
-        "OwnerKey" = "8:_C0DFAFFC11514B9190D3A585C3E58832"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_31A9BB7D7AC44E50902256927B1FAAA5"
-        "OwnerKey" = "8:_804379F8A48A4F7DBB50D72302559297"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_31A9BB7D7AC44E50902256927B1FAAA5"
-        "OwnerKey" = "8:_71984994A7494BE2965C585DB3EBED1F"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_31A9BB7D7AC44E50902256927B1FAAA5"
-        "OwnerKey" = "8:_65C31C39B3E443C4B6EBE65247933F5E"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_31A9BB7D7AC44E50902256927B1FAAA5"
-        "OwnerKey" = "8:_5CED7DA1BD104DA5AF2882D6CBA6E313"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
         "MsmKey" = "8:_31D6EE7D636A445AA1F07038549BEE42"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
@@ -107,12 +47,6 @@
         {
         "MsmKey" = "8:_5CED7DA1BD104DA5AF2882D6CBA6E313"
         "OwnerKey" = "8:_UNDEFINED"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_5D5D0374F3467EFB6E3863BDF65FAD52"
-        "OwnerKey" = "8:_335D34A6BB624E7190CFE4E63CD398E8"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
@@ -231,68 +165,14 @@
         }
         "Entry"
         {
-        "MsmKey" = "8:_FEDD087CC8B64ED3A476664BC5FCAF59"
+        "MsmKey" = "8:_FE9CC20C4AEB4D78A3D4C8AC6D10A721"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_335D34A6BB624E7190CFE4E63CD398E8"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_FEDD087CC8B64ED3A476664BC5FCAF59"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_F047B3505FC74D809FB8251423DF4095"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_EB8D0E3AFBC24F9B9845F08708803C2B"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_DF09DF52E5014B378FBA8B4CD6C11C3B"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_C0DFAFFC11514B9190D3A585C3E58832"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_804379F8A48A4F7DBB50D72302559297"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_71984994A7494BE2965C585DB3EBED1F"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_65C31C39B3E443C4B6EBE65247933F5E"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_5CED7DA1BD104DA5AF2882D6CBA6E313"
+        "MsmKey" = "8:_FEDD087CC8B64ED3A476664BC5FCAF59"
+        "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
     }
@@ -478,26 +358,6 @@
             "Register" = "3:1"
             "Exclude" = "11:FALSE"
             "IsDependency" = "11:FALSE"
-            "IsolateTo" = "8:"
-            }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_5D5D0374F3467EFB6E3863BDF65FAD52"
-            {
-            "SourcePath" = "8:DNSAPI.dll"
-            "TargetName" = "8:DNSAPI.dll"
-            "Tag" = "8:"
-            "Folder" = "8:_CEC880DBF61041CCA0B367A8647B2589"
-            "Condition" = "8:"
-            "Transitive" = "11:FALSE"
-            "Vital" = "11:TRUE"
-            "ReadOnly" = "11:FALSE"
-            "Hidden" = "11:FALSE"
-            "System" = "11:FALSE"
-            "Permanent" = "11:FALSE"
-            "SharedLegacy" = "11:FALSE"
-            "PackageAs" = "3:1"
-            "Register" = "3:1"
-            "Exclude" = "11:TRUE"
-            "IsDependency" = "11:TRUE"
             "IsolateTo" = "8:"
             }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_5E62992905A04275887C09F8469F522F"
@@ -740,6 +600,26 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_FE9CC20C4AEB4D78A3D4C8AC6D10A721"
+            {
+            "SourcePath" = "8:C:\\clamdeps\\win64\\mspack\\lib\\mspack.dll"
+            "TargetName" = "8:mspack.dll"
+            "Tag" = "8:"
+            "Folder" = "8:_CEC880DBF61041CCA0B367A8647B2589"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
         }
         "FileType"
         {
@@ -797,7 +677,7 @@
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:ClamAV-x64"
         "ProductCode" = "8:{2C98EF87-969C-4192-AE51-A7E53CFCCF85}"
-        "PackageCode" = "8:{E2C16922-2B39-413A-9C20-F5E7A43990B5}"
+        "PackageCode" = "8:{E4142105-5553-418D-BBE7-CE33D8AE8C20}"
         "UpgradeCode" = "8:{D35B7E07-D7B1-404B-A0C3-FBB599A1D58B}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"
@@ -1313,26 +1193,12 @@
         }
         "MergeModule"
         {
-            "{CEE29DC0-9FBA-4B99-8D47-5BC643D9B626}:_31A9BB7D7AC44E50902256927B1FAAA5"
-            {
-            "UseDynamicProperties" = "11:TRUE"
-            "IsDependency" = "11:TRUE"
-            "SourcePath" = "8:Microsoft_VC100_CRT_x86.msm"
-                "Properties"
-                {
-                }
-            "LanguageId" = "3:0"
-            "Exclude" = "11:FALSE"
-            "Folder" = "8:"
-            "Feature" = "8:"
-            "IsolateTo" = "8:"
-            }
         }
         "ProjectOutput"
         {
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_335D34A6BB624E7190CFE4E63CD398E8"
             {
-            "SourcePath" = "8:..\\Win32\\Release\\freshclam.exe"
+            "SourcePath" = "8:..\\Win32\\Debug\\freshclam.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_CEC880DBF61041CCA0B367A8647B2589"
@@ -1360,7 +1226,7 @@
             }
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_5CED7DA1BD104DA5AF2882D6CBA6E313"
             {
-            "SourcePath" = "8:..\\Win32\\Release\\clamconf.exe"
+            "SourcePath" = "8:..\\Win32\\Debug\\clamconf.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_CEC880DBF61041CCA0B367A8647B2589"
@@ -1388,7 +1254,7 @@
             }
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_65C31C39B3E443C4B6EBE65247933F5E"
             {
-            "SourcePath" = "8:..\\Win32\\Release\\sigtool.exe"
+            "SourcePath" = "8:..\\Win32\\Debug\\sigtool.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_CEC880DBF61041CCA0B367A8647B2589"
@@ -1416,7 +1282,7 @@
             }
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_71984994A7494BE2965C585DB3EBED1F"
             {
-            "SourcePath" = "8:..\\Win32\\Release\\libclamav.dll"
+            "SourcePath" = "8:..\\Win32\\Debug\\libclamav.dll"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_CEC880DBF61041CCA0B367A8647B2589"
@@ -1444,7 +1310,7 @@
             }
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_804379F8A48A4F7DBB50D72302559297"
             {
-            "SourcePath" = "8:..\\Win32\\Release\\libclamunrar.dll"
+            "SourcePath" = "8:..\\Win32\\Debug\\libclamunrar.dll"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_CEC880DBF61041CCA0B367A8647B2589"
@@ -1472,7 +1338,7 @@
             }
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_C0DFAFFC11514B9190D3A585C3E58832"
             {
-            "SourcePath" = "8:..\\Win32\\Release\\libclamunrar_iface.dll"
+            "SourcePath" = "8:..\\Win32\\Debug\\libclamunrar_iface.dll"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_CEC880DBF61041CCA0B367A8647B2589"
@@ -1500,7 +1366,7 @@
             }
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_DF09DF52E5014B378FBA8B4CD6C11C3B"
             {
-            "SourcePath" = "8:..\\Win32\\Release\\clambc.exe"
+            "SourcePath" = "8:..\\Win32\\Debug\\clambc.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_CEC880DBF61041CCA0B367A8647B2589"
@@ -1528,7 +1394,7 @@
             }
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_EB8D0E3AFBC24F9B9845F08708803C2B"
             {
-            "SourcePath" = "8:..\\Win32\\Release\\clamscan.exe"
+            "SourcePath" = "8:..\\Win32\\Debug\\clamscan.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_CEC880DBF61041CCA0B367A8647B2589"
@@ -1556,7 +1422,7 @@
             }
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_F047B3505FC74D809FB8251423DF4095"
             {
-            "SourcePath" = "8:..\\Win32\\Release\\clamd.exe"
+            "SourcePath" = "8:..\\Win32\\Debug\\clamd.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_CEC880DBF61041CCA0B367A8647B2589"
@@ -1584,7 +1450,7 @@
             }
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_FEDD087CC8B64ED3A476664BC5FCAF59"
             {
-            "SourcePath" = "8:..\\Win32\\Release\\clamdscan.exe"
+            "SourcePath" = "8:..\\Win32\\Debug\\clamdscan.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_CEC880DBF61041CCA0B367A8647B2589"
