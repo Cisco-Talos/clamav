@@ -14,21 +14,16 @@ cat >config.h <<END
 END
 
 # Change if your VS 2015 path differs.
-VS_PATH="C:\Program Files\Microsoft Visual Studio 14.0\VC"
+VS_PATH='C:\Program Files\Microsoft Visual Studio 14.0\VC'
 
 # Do not change anything below unless you know what you're doing.
 LIBMS_PATH=`pwd`
 LIBMS_PATH+='/mspack'
 
 compile_for () {
-    echo "Configuring windows compiler for $1 ..."
-
-    cd "${VS_PATH}"
-    ./vcvarsall.bat $1
-
+    echo "Compiling for $1 ..."
     cd "${LIBMS_PATH}"
-    cl /O2 -I. /c *.c
-    link *.obj /DLL /DEF:mspack.def /IMPLIB:mspack.lib
+    ../wincompile.bat "$VS_PATH" $1
 
     cd ..
 
@@ -55,16 +50,14 @@ if [[ -d 'C:\clamdeps\win32\mspack\include' && -d 'C:\clamdeps\win32\mspack\lib'
     copy_lib 64
 
     if [ $(uname -m) == 'x86_64' ]; then
-        compile_for amd64_x86 32
-        compile_for amd64 64
+        compile_for 'amd64_x86' 32
+        compile_for 'amd64' 64
     else
-        compile_for x86 32
-        compile_for x86_amd64 64
+        compile_for 'x86' 32
+        compile_for 'x86_amd64' 64
 
     fi
 else
-    echo 'ERROR: C:\clamdeps\winXX\mspack\include and/or C:\clamdeps\winXX\mspack\lib not found.'
+    echo 'ERROR: mspack include and/or lib clamdep dirs not found'
 fi
-
-
 
