@@ -287,23 +287,23 @@ am__libclamav_la_SOURCES_DIST = matcher-ac.c matcher-ac.h matcher-bm.c \
 	nsis/bzlib_private.h nsis/nsis_bzlib.h nsis/nulsft.c \
 	nsis/nulsft.h nsis/infblock.c nsis/nsis_zconf.h \
 	nsis/nsis_zlib.h nsis/nsis_zutil.h pdf.c pdf.h pdfng.c \
-	pdfdecode.c pdfdecode.h yc.c yc.h elf.c elf.h execs.h sis.c sis.h \
-	uuencode.c uuencode.h phishcheck.c phishcheck.h phish_domaincheck_db.c \
-	phish_domaincheck_db.h phish_whitelist.c phish_whitelist.h \
-	iana_cctld.h iana_tld.h regex_list.c regex_list.h \
-	regex_suffix.c regex_suffix.h entconv.c entconv.h entitylist.h \
-	encoding_aliases.h hashtab.c hashtab.h dconf.c dconf.h \
-	lzma_iface.c lzma_iface.h 7z_iface.c 7z_iface.h 7z/7z.h \
-	7z/7zAlloc.c 7z/7zAlloc.h 7z/7zBuf.c 7z/7zBuf.h 7z/7zBuf2.c \
-	7z/7zCrc.c 7z/7zCrc.h 7z/7zDec.c 7z/7zFile.c 7z/7zFile.h \
-	7z/7zIn.c 7z/7zStream.c 7z/7zVersion.h 7z/Bcj2.c 7z/Bcj2.h \
-	7z/Bra.c 7z/Bra.h 7z/Bra86.c 7z/CpuArch.h 7z/Lzma2Dec.c \
-	7z/Lzma2Dec.h 7z/LzmaDec.c 7z/LzmaDec.h 7z/Ppmd.h 7z/Ppmd7.c \
-	7z/Ppmd7.h 7z/Ppmd7Dec.c 7z/Types.h 7z/Xz.c 7z/Xz.h \
-	7z/XzCrc64.c 7z/XzCrc64.h 7z/XzDec.c 7z/XzIn.c 7z/Delta.c \
-	7z/Delta.h 7z/Alloc.h 7z/BraIA64.c 7z/CpuArch.c 7z/7zCrcOpt.c \
-	7z/RotateDefs.h explode.c explode.h textnorm.c textnorm.h \
-	dlp.c dlp.h jsparse/js-norm.c jsparse/js-norm.h \
+	pdfdecode.c pdfdecode.h spin.c spin.h yc.c yc.h elf.c elf.h \
+	execs.h sis.c sis.h uuencode.c uuencode.h phishcheck.c \
+	phishcheck.h phish_domaincheck_db.c phish_domaincheck_db.h \
+	phish_whitelist.c phish_whitelist.h iana_cctld.h iana_tld.h \
+	regex_list.c regex_list.h regex_suffix.c regex_suffix.h \
+	entconv.c entconv.h entitylist.h encoding_aliases.h hashtab.c \
+	hashtab.h dconf.c dconf.h lzma_iface.c lzma_iface.h 7z_iface.c \
+	7z_iface.h 7z/7z.h 7z/7zAlloc.c 7z/7zAlloc.h 7z/7zBuf.c \
+	7z/7zBuf.h 7z/7zBuf2.c 7z/7zCrc.c 7z/7zCrc.h 7z/7zDec.c \
+	7z/7zFile.c 7z/7zFile.h 7z/7zIn.c 7z/7zStream.c 7z/7zVersion.h \
+	7z/Bcj2.c 7z/Bcj2.h 7z/Bra.c 7z/Bra.h 7z/Bra86.c 7z/CpuArch.h \
+	7z/Lzma2Dec.c 7z/Lzma2Dec.h 7z/LzmaDec.c 7z/LzmaDec.h \
+	7z/Ppmd.h 7z/Ppmd7.c 7z/Ppmd7.h 7z/Ppmd7Dec.c 7z/Types.h \
+	7z/Xz.c 7z/Xz.h 7z/XzCrc64.c 7z/XzCrc64.h 7z/XzDec.c 7z/XzIn.c \
+	7z/Delta.c 7z/Delta.h 7z/Alloc.h 7z/BraIA64.c 7z/CpuArch.c \
+	7z/7zCrcOpt.c 7z/RotateDefs.h explode.c explode.h textnorm.c \
+	textnorm.h dlp.c dlp.h jsparse/js-norm.c jsparse/js-norm.h \
 	jsparse/lexglobal.h jsparse/textbuf.h uniq.c uniq.h version.c \
 	version.h mpool.c mpool.h filtering.h filtering.c fmap.c \
 	fmap.h perflogging.c perflogging.h default.h bytecode.c \
@@ -1096,39 +1096,38 @@ libclamav_la_SOURCES = matcher-ac.c matcher-ac.h matcher-bm.c \
 	phishcheck.h phish_domaincheck_db.c phish_domaincheck_db.h \
 	phish_whitelist.c phish_whitelist.h iana_cctld.h iana_tld.h \
 	regex_list.c regex_list.h regex_suffix.c regex_suffix.h \
-	entconv.c entconv.h entitylist.h \
-	encoding_aliases.h hashtab.c hashtab.h dconf.c dconf.h \
-	lzma_iface.c lzma_iface.h 7z_iface.c 7z_iface.h 7z/7z.h \
-	7z/7zAlloc.c 7z/7zAlloc.h 7z/7zBuf.c 7z/7zBuf.h 7z/7zBuf2.c \
-	7z/7zCrc.c 7z/7zCrc.h 7z/7zDec.c 7z/7zFile.c 7z/7zFile.h \
-	7z/7zIn.c 7z/7zStream.c 7z/7zVersion.h 7z/Bcj2.c 7z/Bcj2.h \
-	7z/Bra.c 7z/Bra.h 7z/Bra86.c 7z/CpuArch.h 7z/Lzma2Dec.c \
-	7z/Lzma2Dec.h 7z/LzmaDec.c 7z/LzmaDec.h 7z/Ppmd.h 7z/Ppmd7.c \
-	7z/Ppmd7.h 7z/Ppmd7Dec.c 7z/Types.h 7z/Xz.c 7z/Xz.h \
-	7z/XzCrc64.c 7z/XzCrc64.h 7z/XzDec.c 7z/XzIn.c 7z/Delta.c \
-	7z/Delta.h 7z/Alloc.h 7z/BraIA64.c 7z/CpuArch.c 7z/CpuArch.h \
-	7z/7zCrcOpt.c 7z/RotateDefs.h explode.c explode.h textnorm.c \
-	textnorm.h dlp.c dlp.h jsparse/js-norm.c jsparse/js-norm.h \
-	jsparse/lexglobal.h jsparse/textbuf.h uniq.c uniq.h version.c \
-	version.h mpool.c mpool.h filtering.h filtering.c fmap.c \
-	fmap.h perflogging.c perflogging.h default.h bytecode.c \
-	bytecode.h bytecode_vm.c bytecode_priv.h clambc.h cpio.c \
-	cpio.h macho.c macho.h ishield.c ishield.h type_desc.h \
-	bcfeatures.h bytecode_api.c bytecode_api_decl.c bytecode_api.h \
-	bytecode_api_impl.h bytecode_hooks.h cache.c cache.h \
-	bytecode_detect.c bytecode_detect.h builtin_bytecodes.h \
-	events.c events.h adc.c adc.h dmg.c dmg.h xar.c xar.h xdp.c \
-	xdp.h mbr.c mbr.h gpt.c gpt.h apm.c apm.h prtn_intxn.c \
-	prtn_intxn.h json_api.c json_api.h xz_iface.c xz_iface.h \
-	sf_base64decode.c sf_base64decode.h hfsplus.c hfsplus.h swf.c \
-	swf.h jpeg.c jpeg.h png.c png.h iso9660.c iso9660.h arc4.c \
-	arc4.h rijndael.c rijndael.h crtmgr.c crtmgr.h asn1.c asn1.h \
-	fpu.c fpu.h stats.c stats.h www.c www.h stats_json.c \
-	stats_json.h hostid.c hostid.h openioc.c openioc.h msdoc.c \
-	msdoc.h matcher-pcre.c matcher-pcre.h regex_pcre.c \
-	regex_pcre.h msxml.c msxml.h msxml_parser.c msxml_parser.h \
-	tiff.c tiff.h hwp.c hwp.h lzw/lzwdec.c lzw/lzwdec.h \
-	$(am__append_7) bignum.h bignum_fast.h \
+	entconv.c entconv.h entitylist.h encoding_aliases.h hashtab.c \
+	hashtab.h dconf.c dconf.h lzma_iface.c lzma_iface.h 7z_iface.c \
+	7z_iface.h 7z/7z.h 7z/7zAlloc.c 7z/7zAlloc.h 7z/7zBuf.c \
+	7z/7zBuf.h 7z/7zBuf2.c 7z/7zCrc.c 7z/7zCrc.h 7z/7zDec.c \
+	7z/7zFile.c 7z/7zFile.h 7z/7zIn.c 7z/7zStream.c 7z/7zVersion.h \
+	7z/Bcj2.c 7z/Bcj2.h 7z/Bra.c 7z/Bra.h 7z/Bra86.c 7z/CpuArch.h \
+	7z/Lzma2Dec.c 7z/Lzma2Dec.h 7z/LzmaDec.c 7z/LzmaDec.h \
+	7z/Ppmd.h 7z/Ppmd7.c 7z/Ppmd7.h 7z/Ppmd7Dec.c 7z/Types.h \
+	7z/Xz.c 7z/Xz.h 7z/XzCrc64.c 7z/XzCrc64.h 7z/XzDec.c 7z/XzIn.c \
+	7z/Delta.c 7z/Delta.h 7z/Alloc.h 7z/BraIA64.c 7z/CpuArch.c \
+	7z/CpuArch.h 7z/7zCrcOpt.c 7z/RotateDefs.h explode.c explode.h \
+	textnorm.c textnorm.h dlp.c dlp.h jsparse/js-norm.c \
+	jsparse/js-norm.h jsparse/lexglobal.h jsparse/textbuf.h uniq.c \
+	uniq.h version.c version.h mpool.c mpool.h filtering.h \
+	filtering.c fmap.c fmap.h perflogging.c perflogging.h \
+	default.h bytecode.c bytecode.h bytecode_vm.c bytecode_priv.h \
+	clambc.h cpio.c cpio.h macho.c macho.h ishield.c ishield.h \
+	type_desc.h bcfeatures.h bytecode_api.c bytecode_api_decl.c \
+	bytecode_api.h bytecode_api_impl.h bytecode_hooks.h cache.c \
+	cache.h bytecode_detect.c bytecode_detect.h \
+	builtin_bytecodes.h events.c events.h adc.c adc.h dmg.c dmg.h \
+	xar.c xar.h xdp.c xdp.h mbr.c mbr.h gpt.c gpt.h apm.c apm.h \
+	prtn_intxn.c prtn_intxn.h json_api.c json_api.h xz_iface.c \
+	xz_iface.h sf_base64decode.c sf_base64decode.h hfsplus.c \
+	hfsplus.h swf.c swf.h jpeg.c jpeg.h png.c png.h iso9660.c \
+	iso9660.h arc4.c arc4.h rijndael.c rijndael.h crtmgr.c \
+	crtmgr.h asn1.c asn1.h fpu.c fpu.h stats.c stats.h www.c www.h \
+	stats_json.c stats_json.h hostid.c hostid.h openioc.c \
+	openioc.h msdoc.c msdoc.h matcher-pcre.c matcher-pcre.h \
+	regex_pcre.c regex_pcre.h msxml.c msxml.h msxml_parser.c \
+	msxml_parser.h tiff.c tiff.h hwp.c hwp.h lzw/lzwdec.c \
+	lzw/lzwdec.h $(am__append_13) bignum.h bignum_fast.h \
 	tomsfastmath/addsub/fp_add.c tomsfastmath/addsub/fp_add_d.c \
 	tomsfastmath/addsub/fp_addmod.c tomsfastmath/addsub/fp_cmp.c \
 	tomsfastmath/addsub/fp_cmp_d.c \

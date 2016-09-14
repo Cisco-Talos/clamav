@@ -645,12 +645,12 @@ am__EXEEXT_FALSE
 am__EXEEXT_TRUE
 LTLIBOBJS
 LIBOBJS
-ENABLE_CLAMSUBMIT_FALSE
-ENABLE_CLAMSUBMIT_TRUE
 USE_INTERNAL_MSPACK_FALSE
 USE_INTERNAL_MSPACK_TRUE
 LIBMSPACK_LIBS
 LIBMSPACK_CFLAGS
+ENABLE_CLAMSUBMIT_FALSE
+ENABLE_CLAMSUBMIT_TRUE
 JSON_LDFLAGS
 JSON_LIBS
 SSL_LDFLAGS
@@ -17944,12 +17944,13 @@ save_LDFLAGS="$LDFLAGS"
 save_CFLAGS="$CFLAGS"
 save_LIBS="$LIBS"
 
-SSL_LIBS="-lssl -lcrypto -lz"
+SSL_LIBS="$LIBS -lssl -lcrypto -lz"
+LIBS="$LIBS $SSL_LIBS"
 
 if test "$LIBSSL_HOME" != "/usr"; then
     SSL_LDFLAGS="-L$LIBSSL_HOME/lib"
     SSL_CPPFLAGS="-I$LIBSSL_HOME/include"
-    LDFLAGS="-L$LIBSSL_HOME/lib $SSL_LIBS"
+    LDFLAGS="-L$LIBSSL_HOME/lib"
     CFLAGS="$SSL_CPPFLAGS"
 else
     SSL_LDFLAGS=""
@@ -17959,47 +17960,24 @@ fi
 have_ssl="no"
 have_crypto="no"
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for SSL_library_init in -lssl" >&5
-$as_echo_n "checking for SSL_library_init in -lssl... " >&6; }
-if ${ac_cv_lib_ssl_SSL_library_init+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lssl -lcrypto -lz $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char SSL_library_init ();
+#include <openssl/ssl.h>
 int
 main ()
 {
-return SSL_library_init ();
+SSL_library_init();
   ;
   return 0;
 }
 _ACEOF
 if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_ssl_SSL_library_init=yes
-else
-  ac_cv_lib_ssl_SSL_library_init=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_ssl_SSL_library_init" >&5
-$as_echo "$ac_cv_lib_ssl_SSL_library_init" >&6; }
-if test "x$ac_cv_lib_ssl_SSL_library_init" = xyes; then :
-  have_ssl="yes"
+  have_ssl="yes";
 else
   as_fn_error $? "Your OpenSSL installation is misconfigured or missing" "$LINENO" 5
 fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
 
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for EVP_EncryptInit in -lcrypto" >&5
@@ -24635,6 +24613,7 @@ else
   ENABLE_CLAMSUBMIT_FALSE=
 fi
 
+
 pkg_failed=no
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for LIBMSPACK" >&5
 $as_echo_n "checking for LIBMSPACK... " >&6; }
@@ -24941,6 +24920,8 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${ENABLE_CLAMSUBMIT_TRUE}" && test -z "${ENABLE_CLAMSUBMIT_FALSE}"; then
   as_fn_error $? "conditional \"ENABLE_CLAMSUBMIT\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 if test -z "${USE_INTERNAL_MSPACK_TRUE}" && test -z "${USE_INTERNAL_MSPACK_FALSE}"; then
   as_fn_error $? "conditional \"USE_INTERNAL_MSPACK\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -27521,6 +27502,7 @@ fi
 if test -z "${ENABLE_CLAMSUBMIT_TRUE}" && test -z "${ENABLE_CLAMSUBMIT_FALSE}"; then
   as_fn_error $? "conditional \"ENABLE_CLAMSUBMIT\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 if test -z "${USE_INTERNAL_MSPACK_TRUE}" && test -z "${USE_INTERNAL_MSPACK_FALSE}"; then
   as_fn_error $? "conditional \"USE_INTERNAL_MSPACK\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
