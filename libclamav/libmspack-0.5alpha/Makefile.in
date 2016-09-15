@@ -16,7 +16,6 @@
 
 
 
-
 VPATH = @srcdir@
 am__is_gnu_make = test -n '$(MAKEFILE_LIST)' && test -n '$(MAKELEVEL)'
 am__make_running_with_option = \
@@ -83,13 +82,7 @@ build_triplet = @build@
 host_triplet = @host@
 # add "-DMSPACK_NO_DEFAULT_SYSTEM" to remove default mspack_system
 @DEBUG_TRUE@am__append_1 = -DDEBUG
-@GCC_TRUE@am__append_2 = -Wall -Wextra -Wno-unused-parameter -Wno-unused-result
-noinst_PROGRAMS = test/cabd_md5$(EXEEXT) test/cabd_memory$(EXEEXT) \
-	test/cabd_test$(EXEEXT) test/cabrip$(EXEEXT) \
-	test/chmd_md5$(EXEEXT) test/chmx$(EXEEXT) \
-	test/chminfo$(EXEEXT) test/multifh$(EXEEXT) \
-	test/expand$(EXEEXT) test/chmd_find$(EXEEXT) \
-	test/chmd_order$(EXEEXT) test/oabx$(EXEEXT)
+@GCC_TRUE@am__append_2 = -Wall -Wextra -Wno-unused-parameter
 subdir = .
 DIST_COMMON = INSTALL NEWS README AUTHORS ChangeLog \
 	$(srcdir)/Makefile.in $(srcdir)/Makefile.am \
@@ -165,44 +158,6 @@ libmspack_la_OBJECTS = $(am_libmspack_la_OBJECTS)
 libmspack_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(libmspack_la_LDFLAGS) $(LDFLAGS) -o $@
-PROGRAMS = $(noinst_PROGRAMS)
-am_test_cabd_md5_OBJECTS = cabd_md5.$(OBJEXT) md5.$(OBJEXT)
-test_cabd_md5_OBJECTS = $(am_test_cabd_md5_OBJECTS)
-test_cabd_md5_DEPENDENCIES = libmscabd.la
-am__dirstamp = $(am__leading_dot)dirstamp
-am_test_cabd_memory_OBJECTS = cabd_memory.$(OBJEXT)
-test_cabd_memory_OBJECTS = $(am_test_cabd_memory_OBJECTS)
-test_cabd_memory_DEPENDENCIES = libmscabd.la
-am_test_cabd_test_OBJECTS = cabd_test.$(OBJEXT)
-test_cabd_test_OBJECTS = $(am_test_cabd_test_OBJECTS)
-test_cabd_test_DEPENDENCIES = libmscabd.la
-am_test_cabrip_OBJECTS = cabrip.$(OBJEXT)
-test_cabrip_OBJECTS = $(am_test_cabrip_OBJECTS)
-test_cabrip_DEPENDENCIES = libmscabd.la
-am_test_chmd_find_OBJECTS = chmd_find.$(OBJEXT)
-test_chmd_find_OBJECTS = $(am_test_chmd_find_OBJECTS)
-test_chmd_find_DEPENDENCIES = libmschmd.la
-am_test_chmd_md5_OBJECTS = chmd_md5.$(OBJEXT) md5.$(OBJEXT)
-test_chmd_md5_OBJECTS = $(am_test_chmd_md5_OBJECTS)
-test_chmd_md5_DEPENDENCIES = libmschmd.la
-am_test_chmd_order_OBJECTS = chmd_order.$(OBJEXT) md5.$(OBJEXT)
-test_chmd_order_OBJECTS = $(am_test_chmd_order_OBJECTS)
-test_chmd_order_DEPENDENCIES = libmschmd.la
-am_test_chminfo_OBJECTS = chminfo.$(OBJEXT)
-test_chminfo_OBJECTS = $(am_test_chminfo_OBJECTS)
-test_chminfo_DEPENDENCIES = libmschmd.la
-am_test_chmx_OBJECTS = chmx.$(OBJEXT)
-test_chmx_OBJECTS = $(am_test_chmx_OBJECTS)
-test_chmx_DEPENDENCIES = libmschmd.la
-am_test_expand_OBJECTS = expand.$(OBJEXT)
-test_expand_OBJECTS = $(am_test_expand_OBJECTS)
-test_expand_DEPENDENCIES = libmspack.la
-am_test_multifh_OBJECTS = multifh.$(OBJEXT)
-test_multifh_OBJECTS = $(am_test_multifh_OBJECTS)
-test_multifh_DEPENDENCIES = libmscabd.la
-am_test_oabx_OBJECTS = oabx.$(OBJEXT) md5.$(OBJEXT)
-test_oabx_OBJECTS = $(am_test_oabx_OBJECTS)
-test_oabx_DEPENDENCIES = libmspack.la
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -238,21 +193,9 @@ am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
 SOURCES = $(libmscabd_la_SOURCES) $(libmschmd_la_SOURCES) \
-	$(libmspack_la_SOURCES) $(test_cabd_md5_SOURCES) \
-	$(test_cabd_memory_SOURCES) $(test_cabd_test_SOURCES) \
-	$(test_cabrip_SOURCES) $(test_chmd_find_SOURCES) \
-	$(test_chmd_md5_SOURCES) $(test_chmd_order_SOURCES) \
-	$(test_chminfo_SOURCES) $(test_chmx_SOURCES) \
-	$(test_expand_SOURCES) $(test_multifh_SOURCES) \
-	$(test_oabx_SOURCES)
+	$(libmspack_la_SOURCES)
 DIST_SOURCES = $(libmscabd_la_SOURCES) $(libmschmd_la_SOURCES) \
-	$(libmspack_la_SOURCES) $(test_cabd_md5_SOURCES) \
-	$(test_cabd_memory_SOURCES) $(test_cabd_test_SOURCES) \
-	$(test_cabrip_SOURCES) $(test_chmd_find_SOURCES) \
-	$(test_chmd_md5_SOURCES) $(test_chmd_order_SOURCES) \
-	$(test_chminfo_SOURCES) $(test_chmx_SOURCES) \
-	$(test_expand_SOURCES) $(test_multifh_SOURCES) \
-	$(test_oabx_SOURCES)
+	$(libmspack_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -413,12 +356,12 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-EXTRA_DIST = $(srcdir)/debian/* $(srcdir)/doc/* $(srcdir)/test/test_files/*/*
+EXTRA_DIST = $(srcdir)/doc/
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libmspack.pc
 ACLOCAL_AMFLAGS = -I m4
 AM_CFLAGS = $(am__append_1) $(am__append_2)
-AM_CPPFLAGS = -I$(top_srcdir)/mspack -I$(top_srcdir)/test 
+AM_CPPFLAGS = -I$(top_srcdir)/mspack #-I$(top_srcdir)/test 
 lib_LTLIBRARIES = libmspack.la
 include_HEADERS = mspack/mspack.h
 noinst_LTLIBRARIES = libmscabd.la libmschmd.la
@@ -456,38 +399,6 @@ libmschmd_la_SOURCES = mspack/mspack.h \
 			mspack/readbits.h mspack/readhuff.h
 
 libmschmd_la_LDFLAGS = -export-symbols-regex '^mspack_'
-test_chmx_SOURCES = test/chmx.c test/error.h libmschmd.la
-test_chmx_LDADD = libmschmd.la
-test_chmd_md5_SOURCES = test/chmd_md5.c test/md5.c test/md5.h test/md5_fh.h \
-			test/error.h libmschmd.la
-
-test_chmd_md5_LDADD = libmschmd.la
-test_cabd_md5_SOURCES = test/cabd_md5.c test/md5.c test/md5.h test/md5_fh.h \
-			test/error.h libmscabd.la
-
-test_cabd_md5_LDADD = libmscabd.la
-test_cabd_test_SOURCES = test/cabd_test.c libmscabd.la
-test_cabd_test_LDADD = libmscabd.la
-test_cabrip_SOURCES = test/cabrip.c libmscabd.la
-test_cabrip_LDADD = libmscabd.la
-test_cabd_memory_SOURCES = test/cabd_memory.c libmscabd.la
-test_cabd_memory_LDADD = libmscabd.la
-test_chminfo_SOURCES = test/chminfo.c libmschmd.la
-test_chminfo_LDADD = libmschmd.la
-test_multifh_SOURCES = test/multifh.c libmscabd.la
-test_multifh_LDADD = libmscabd.la
-test_expand_SOURCES = test/expand.c test/error.h libmspack.la
-test_expand_LDADD = libmspack.la
-test_chmd_find_SOURCES = test/chmd_find.c test/error.h libmschmd.la
-test_chmd_find_LDADD = libmschmd.la
-test_chmd_order_SOURCES = test/chmd_order.c test/md5.c test/md5.h test/md5_fh.h \
-			test/error.h libmschmd.la
-
-test_chmd_order_LDADD = libmschmd.la
-test_oabx_SOURCES = test/oabx.c test/md5.c test/md5.h test/md5_fh.h \
-			test/error.h libmspack.la
-
-test_oabx_LDADD = libmspack.la
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
@@ -600,66 +511,6 @@ libmschmd.la: $(libmschmd_la_OBJECTS) $(libmschmd_la_DEPENDENCIES) $(EXTRA_libms
 libmspack.la: $(libmspack_la_OBJECTS) $(libmspack_la_DEPENDENCIES) $(EXTRA_libmspack_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(libmspack_la_LINK) -rpath $(libdir) $(libmspack_la_OBJECTS) $(libmspack_la_LIBADD) $(LIBS)
 
-clean-noinstPROGRAMS:
-	@list='$(noinst_PROGRAMS)'; test -n "$$list" || exit 0; \
-	echo " rm -f" $$list; \
-	rm -f $$list || exit $$?; \
-	test -n "$(EXEEXT)" || exit 0; \
-	list=`for p in $$list; do echo "$$p"; done | sed 's/$(EXEEXT)$$//'`; \
-	echo " rm -f" $$list; \
-	rm -f $$list
-test/$(am__dirstamp):
-	@$(MKDIR_P) test
-	@: > test/$(am__dirstamp)
-
-test/cabd_md5$(EXEEXT): $(test_cabd_md5_OBJECTS) $(test_cabd_md5_DEPENDENCIES) $(EXTRA_test_cabd_md5_DEPENDENCIES) test/$(am__dirstamp)
-	@rm -f test/cabd_md5$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_cabd_md5_OBJECTS) $(test_cabd_md5_LDADD) $(LIBS)
-
-test/cabd_memory$(EXEEXT): $(test_cabd_memory_OBJECTS) $(test_cabd_memory_DEPENDENCIES) $(EXTRA_test_cabd_memory_DEPENDENCIES) test/$(am__dirstamp)
-	@rm -f test/cabd_memory$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_cabd_memory_OBJECTS) $(test_cabd_memory_LDADD) $(LIBS)
-
-test/cabd_test$(EXEEXT): $(test_cabd_test_OBJECTS) $(test_cabd_test_DEPENDENCIES) $(EXTRA_test_cabd_test_DEPENDENCIES) test/$(am__dirstamp)
-	@rm -f test/cabd_test$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_cabd_test_OBJECTS) $(test_cabd_test_LDADD) $(LIBS)
-
-test/cabrip$(EXEEXT): $(test_cabrip_OBJECTS) $(test_cabrip_DEPENDENCIES) $(EXTRA_test_cabrip_DEPENDENCIES) test/$(am__dirstamp)
-	@rm -f test/cabrip$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_cabrip_OBJECTS) $(test_cabrip_LDADD) $(LIBS)
-
-test/chmd_find$(EXEEXT): $(test_chmd_find_OBJECTS) $(test_chmd_find_DEPENDENCIES) $(EXTRA_test_chmd_find_DEPENDENCIES) test/$(am__dirstamp)
-	@rm -f test/chmd_find$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_chmd_find_OBJECTS) $(test_chmd_find_LDADD) $(LIBS)
-
-test/chmd_md5$(EXEEXT): $(test_chmd_md5_OBJECTS) $(test_chmd_md5_DEPENDENCIES) $(EXTRA_test_chmd_md5_DEPENDENCIES) test/$(am__dirstamp)
-	@rm -f test/chmd_md5$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_chmd_md5_OBJECTS) $(test_chmd_md5_LDADD) $(LIBS)
-
-test/chmd_order$(EXEEXT): $(test_chmd_order_OBJECTS) $(test_chmd_order_DEPENDENCIES) $(EXTRA_test_chmd_order_DEPENDENCIES) test/$(am__dirstamp)
-	@rm -f test/chmd_order$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_chmd_order_OBJECTS) $(test_chmd_order_LDADD) $(LIBS)
-
-test/chminfo$(EXEEXT): $(test_chminfo_OBJECTS) $(test_chminfo_DEPENDENCIES) $(EXTRA_test_chminfo_DEPENDENCIES) test/$(am__dirstamp)
-	@rm -f test/chminfo$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_chminfo_OBJECTS) $(test_chminfo_LDADD) $(LIBS)
-
-test/chmx$(EXEEXT): $(test_chmx_OBJECTS) $(test_chmx_DEPENDENCIES) $(EXTRA_test_chmx_DEPENDENCIES) test/$(am__dirstamp)
-	@rm -f test/chmx$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_chmx_OBJECTS) $(test_chmx_LDADD) $(LIBS)
-
-test/expand$(EXEEXT): $(test_expand_OBJECTS) $(test_expand_DEPENDENCIES) $(EXTRA_test_expand_DEPENDENCIES) test/$(am__dirstamp)
-	@rm -f test/expand$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_expand_OBJECTS) $(test_expand_LDADD) $(LIBS)
-
-test/multifh$(EXEEXT): $(test_multifh_OBJECTS) $(test_multifh_DEPENDENCIES) $(EXTRA_test_multifh_DEPENDENCIES) test/$(am__dirstamp)
-	@rm -f test/multifh$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_multifh_OBJECTS) $(test_multifh_LDADD) $(LIBS)
-
-test/oabx$(EXEEXT): $(test_oabx_OBJECTS) $(test_oabx_DEPENDENCIES) $(EXTRA_test_oabx_DEPENDENCIES) test/$(am__dirstamp)
-	@rm -f test/oabx$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_oabx_OBJECTS) $(test_oabx_LDADD) $(LIBS)
-
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 
@@ -668,19 +519,9 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cabc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cabd.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cabd_md5.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cabd_memory.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cabd_test.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cabrip.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/chmc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/chmd.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/chmd_find.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/chmd_md5.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/chmd_order.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/chminfo.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/chmx.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/crc32.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/expand.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hlpc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hlpd.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/kwajc.Plo@am__quote@
@@ -690,13 +531,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lzssd.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lzxc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lzxd.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/md5.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mszipc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mszipd.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/multifh.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/oabc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/oabd.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/oabx.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/qtmd.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/system.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/szddc.Plo@am__quote@
@@ -877,194 +715,11 @@ crc32.lo: mspack/crc32.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o crc32.lo `test -f 'mspack/crc32.c' || echo '$(srcdir)/'`mspack/crc32.c
 
-cabd_md5.o: test/cabd_md5.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT cabd_md5.o -MD -MP -MF $(DEPDIR)/cabd_md5.Tpo -c -o cabd_md5.o `test -f 'test/cabd_md5.c' || echo '$(srcdir)/'`test/cabd_md5.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/cabd_md5.Tpo $(DEPDIR)/cabd_md5.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test/cabd_md5.c' object='cabd_md5.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o cabd_md5.o `test -f 'test/cabd_md5.c' || echo '$(srcdir)/'`test/cabd_md5.c
-
-cabd_md5.obj: test/cabd_md5.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT cabd_md5.obj -MD -MP -MF $(DEPDIR)/cabd_md5.Tpo -c -o cabd_md5.obj `if test -f 'test/cabd_md5.c'; then $(CYGPATH_W) 'test/cabd_md5.c'; else $(CYGPATH_W) '$(srcdir)/test/cabd_md5.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/cabd_md5.Tpo $(DEPDIR)/cabd_md5.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test/cabd_md5.c' object='cabd_md5.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o cabd_md5.obj `if test -f 'test/cabd_md5.c'; then $(CYGPATH_W) 'test/cabd_md5.c'; else $(CYGPATH_W) '$(srcdir)/test/cabd_md5.c'; fi`
-
-md5.o: test/md5.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT md5.o -MD -MP -MF $(DEPDIR)/md5.Tpo -c -o md5.o `test -f 'test/md5.c' || echo '$(srcdir)/'`test/md5.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/md5.Tpo $(DEPDIR)/md5.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test/md5.c' object='md5.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o md5.o `test -f 'test/md5.c' || echo '$(srcdir)/'`test/md5.c
-
-md5.obj: test/md5.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT md5.obj -MD -MP -MF $(DEPDIR)/md5.Tpo -c -o md5.obj `if test -f 'test/md5.c'; then $(CYGPATH_W) 'test/md5.c'; else $(CYGPATH_W) '$(srcdir)/test/md5.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/md5.Tpo $(DEPDIR)/md5.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test/md5.c' object='md5.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o md5.obj `if test -f 'test/md5.c'; then $(CYGPATH_W) 'test/md5.c'; else $(CYGPATH_W) '$(srcdir)/test/md5.c'; fi`
-
-cabd_memory.o: test/cabd_memory.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT cabd_memory.o -MD -MP -MF $(DEPDIR)/cabd_memory.Tpo -c -o cabd_memory.o `test -f 'test/cabd_memory.c' || echo '$(srcdir)/'`test/cabd_memory.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/cabd_memory.Tpo $(DEPDIR)/cabd_memory.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test/cabd_memory.c' object='cabd_memory.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o cabd_memory.o `test -f 'test/cabd_memory.c' || echo '$(srcdir)/'`test/cabd_memory.c
-
-cabd_memory.obj: test/cabd_memory.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT cabd_memory.obj -MD -MP -MF $(DEPDIR)/cabd_memory.Tpo -c -o cabd_memory.obj `if test -f 'test/cabd_memory.c'; then $(CYGPATH_W) 'test/cabd_memory.c'; else $(CYGPATH_W) '$(srcdir)/test/cabd_memory.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/cabd_memory.Tpo $(DEPDIR)/cabd_memory.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test/cabd_memory.c' object='cabd_memory.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o cabd_memory.obj `if test -f 'test/cabd_memory.c'; then $(CYGPATH_W) 'test/cabd_memory.c'; else $(CYGPATH_W) '$(srcdir)/test/cabd_memory.c'; fi`
-
-cabd_test.o: test/cabd_test.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT cabd_test.o -MD -MP -MF $(DEPDIR)/cabd_test.Tpo -c -o cabd_test.o `test -f 'test/cabd_test.c' || echo '$(srcdir)/'`test/cabd_test.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/cabd_test.Tpo $(DEPDIR)/cabd_test.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test/cabd_test.c' object='cabd_test.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o cabd_test.o `test -f 'test/cabd_test.c' || echo '$(srcdir)/'`test/cabd_test.c
-
-cabd_test.obj: test/cabd_test.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT cabd_test.obj -MD -MP -MF $(DEPDIR)/cabd_test.Tpo -c -o cabd_test.obj `if test -f 'test/cabd_test.c'; then $(CYGPATH_W) 'test/cabd_test.c'; else $(CYGPATH_W) '$(srcdir)/test/cabd_test.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/cabd_test.Tpo $(DEPDIR)/cabd_test.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test/cabd_test.c' object='cabd_test.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o cabd_test.obj `if test -f 'test/cabd_test.c'; then $(CYGPATH_W) 'test/cabd_test.c'; else $(CYGPATH_W) '$(srcdir)/test/cabd_test.c'; fi`
-
-cabrip.o: test/cabrip.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT cabrip.o -MD -MP -MF $(DEPDIR)/cabrip.Tpo -c -o cabrip.o `test -f 'test/cabrip.c' || echo '$(srcdir)/'`test/cabrip.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/cabrip.Tpo $(DEPDIR)/cabrip.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test/cabrip.c' object='cabrip.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o cabrip.o `test -f 'test/cabrip.c' || echo '$(srcdir)/'`test/cabrip.c
-
-cabrip.obj: test/cabrip.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT cabrip.obj -MD -MP -MF $(DEPDIR)/cabrip.Tpo -c -o cabrip.obj `if test -f 'test/cabrip.c'; then $(CYGPATH_W) 'test/cabrip.c'; else $(CYGPATH_W) '$(srcdir)/test/cabrip.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/cabrip.Tpo $(DEPDIR)/cabrip.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test/cabrip.c' object='cabrip.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o cabrip.obj `if test -f 'test/cabrip.c'; then $(CYGPATH_W) 'test/cabrip.c'; else $(CYGPATH_W) '$(srcdir)/test/cabrip.c'; fi`
-
-chmd_find.o: test/chmd_find.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT chmd_find.o -MD -MP -MF $(DEPDIR)/chmd_find.Tpo -c -o chmd_find.o `test -f 'test/chmd_find.c' || echo '$(srcdir)/'`test/chmd_find.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/chmd_find.Tpo $(DEPDIR)/chmd_find.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test/chmd_find.c' object='chmd_find.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o chmd_find.o `test -f 'test/chmd_find.c' || echo '$(srcdir)/'`test/chmd_find.c
-
-chmd_find.obj: test/chmd_find.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT chmd_find.obj -MD -MP -MF $(DEPDIR)/chmd_find.Tpo -c -o chmd_find.obj `if test -f 'test/chmd_find.c'; then $(CYGPATH_W) 'test/chmd_find.c'; else $(CYGPATH_W) '$(srcdir)/test/chmd_find.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/chmd_find.Tpo $(DEPDIR)/chmd_find.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test/chmd_find.c' object='chmd_find.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o chmd_find.obj `if test -f 'test/chmd_find.c'; then $(CYGPATH_W) 'test/chmd_find.c'; else $(CYGPATH_W) '$(srcdir)/test/chmd_find.c'; fi`
-
-chmd_md5.o: test/chmd_md5.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT chmd_md5.o -MD -MP -MF $(DEPDIR)/chmd_md5.Tpo -c -o chmd_md5.o `test -f 'test/chmd_md5.c' || echo '$(srcdir)/'`test/chmd_md5.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/chmd_md5.Tpo $(DEPDIR)/chmd_md5.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test/chmd_md5.c' object='chmd_md5.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o chmd_md5.o `test -f 'test/chmd_md5.c' || echo '$(srcdir)/'`test/chmd_md5.c
-
-chmd_md5.obj: test/chmd_md5.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT chmd_md5.obj -MD -MP -MF $(DEPDIR)/chmd_md5.Tpo -c -o chmd_md5.obj `if test -f 'test/chmd_md5.c'; then $(CYGPATH_W) 'test/chmd_md5.c'; else $(CYGPATH_W) '$(srcdir)/test/chmd_md5.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/chmd_md5.Tpo $(DEPDIR)/chmd_md5.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test/chmd_md5.c' object='chmd_md5.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o chmd_md5.obj `if test -f 'test/chmd_md5.c'; then $(CYGPATH_W) 'test/chmd_md5.c'; else $(CYGPATH_W) '$(srcdir)/test/chmd_md5.c'; fi`
-
-chmd_order.o: test/chmd_order.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT chmd_order.o -MD -MP -MF $(DEPDIR)/chmd_order.Tpo -c -o chmd_order.o `test -f 'test/chmd_order.c' || echo '$(srcdir)/'`test/chmd_order.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/chmd_order.Tpo $(DEPDIR)/chmd_order.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test/chmd_order.c' object='chmd_order.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o chmd_order.o `test -f 'test/chmd_order.c' || echo '$(srcdir)/'`test/chmd_order.c
-
-chmd_order.obj: test/chmd_order.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT chmd_order.obj -MD -MP -MF $(DEPDIR)/chmd_order.Tpo -c -o chmd_order.obj `if test -f 'test/chmd_order.c'; then $(CYGPATH_W) 'test/chmd_order.c'; else $(CYGPATH_W) '$(srcdir)/test/chmd_order.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/chmd_order.Tpo $(DEPDIR)/chmd_order.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test/chmd_order.c' object='chmd_order.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o chmd_order.obj `if test -f 'test/chmd_order.c'; then $(CYGPATH_W) 'test/chmd_order.c'; else $(CYGPATH_W) '$(srcdir)/test/chmd_order.c'; fi`
-
-chminfo.o: test/chminfo.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT chminfo.o -MD -MP -MF $(DEPDIR)/chminfo.Tpo -c -o chminfo.o `test -f 'test/chminfo.c' || echo '$(srcdir)/'`test/chminfo.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/chminfo.Tpo $(DEPDIR)/chminfo.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test/chminfo.c' object='chminfo.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o chminfo.o `test -f 'test/chminfo.c' || echo '$(srcdir)/'`test/chminfo.c
-
-chminfo.obj: test/chminfo.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT chminfo.obj -MD -MP -MF $(DEPDIR)/chminfo.Tpo -c -o chminfo.obj `if test -f 'test/chminfo.c'; then $(CYGPATH_W) 'test/chminfo.c'; else $(CYGPATH_W) '$(srcdir)/test/chminfo.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/chminfo.Tpo $(DEPDIR)/chminfo.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test/chminfo.c' object='chminfo.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o chminfo.obj `if test -f 'test/chminfo.c'; then $(CYGPATH_W) 'test/chminfo.c'; else $(CYGPATH_W) '$(srcdir)/test/chminfo.c'; fi`
-
-chmx.o: test/chmx.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT chmx.o -MD -MP -MF $(DEPDIR)/chmx.Tpo -c -o chmx.o `test -f 'test/chmx.c' || echo '$(srcdir)/'`test/chmx.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/chmx.Tpo $(DEPDIR)/chmx.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test/chmx.c' object='chmx.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o chmx.o `test -f 'test/chmx.c' || echo '$(srcdir)/'`test/chmx.c
-
-chmx.obj: test/chmx.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT chmx.obj -MD -MP -MF $(DEPDIR)/chmx.Tpo -c -o chmx.obj `if test -f 'test/chmx.c'; then $(CYGPATH_W) 'test/chmx.c'; else $(CYGPATH_W) '$(srcdir)/test/chmx.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/chmx.Tpo $(DEPDIR)/chmx.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test/chmx.c' object='chmx.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o chmx.obj `if test -f 'test/chmx.c'; then $(CYGPATH_W) 'test/chmx.c'; else $(CYGPATH_W) '$(srcdir)/test/chmx.c'; fi`
-
-expand.o: test/expand.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT expand.o -MD -MP -MF $(DEPDIR)/expand.Tpo -c -o expand.o `test -f 'test/expand.c' || echo '$(srcdir)/'`test/expand.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/expand.Tpo $(DEPDIR)/expand.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test/expand.c' object='expand.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o expand.o `test -f 'test/expand.c' || echo '$(srcdir)/'`test/expand.c
-
-expand.obj: test/expand.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT expand.obj -MD -MP -MF $(DEPDIR)/expand.Tpo -c -o expand.obj `if test -f 'test/expand.c'; then $(CYGPATH_W) 'test/expand.c'; else $(CYGPATH_W) '$(srcdir)/test/expand.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/expand.Tpo $(DEPDIR)/expand.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test/expand.c' object='expand.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o expand.obj `if test -f 'test/expand.c'; then $(CYGPATH_W) 'test/expand.c'; else $(CYGPATH_W) '$(srcdir)/test/expand.c'; fi`
-
-multifh.o: test/multifh.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT multifh.o -MD -MP -MF $(DEPDIR)/multifh.Tpo -c -o multifh.o `test -f 'test/multifh.c' || echo '$(srcdir)/'`test/multifh.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/multifh.Tpo $(DEPDIR)/multifh.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test/multifh.c' object='multifh.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o multifh.o `test -f 'test/multifh.c' || echo '$(srcdir)/'`test/multifh.c
-
-multifh.obj: test/multifh.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT multifh.obj -MD -MP -MF $(DEPDIR)/multifh.Tpo -c -o multifh.obj `if test -f 'test/multifh.c'; then $(CYGPATH_W) 'test/multifh.c'; else $(CYGPATH_W) '$(srcdir)/test/multifh.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/multifh.Tpo $(DEPDIR)/multifh.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test/multifh.c' object='multifh.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o multifh.obj `if test -f 'test/multifh.c'; then $(CYGPATH_W) 'test/multifh.c'; else $(CYGPATH_W) '$(srcdir)/test/multifh.c'; fi`
-
-oabx.o: test/oabx.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT oabx.o -MD -MP -MF $(DEPDIR)/oabx.Tpo -c -o oabx.o `test -f 'test/oabx.c' || echo '$(srcdir)/'`test/oabx.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/oabx.Tpo $(DEPDIR)/oabx.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test/oabx.c' object='oabx.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o oabx.o `test -f 'test/oabx.c' || echo '$(srcdir)/'`test/oabx.c
-
-oabx.obj: test/oabx.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT oabx.obj -MD -MP -MF $(DEPDIR)/oabx.Tpo -c -o oabx.obj `if test -f 'test/oabx.c'; then $(CYGPATH_W) 'test/oabx.c'; else $(CYGPATH_W) '$(srcdir)/test/oabx.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/oabx.Tpo $(DEPDIR)/oabx.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test/oabx.c' object='oabx.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o oabx.obj `if test -f 'test/oabx.c'; then $(CYGPATH_W) 'test/oabx.c'; else $(CYGPATH_W) '$(srcdir)/test/oabx.c'; fi`
-
 mostlyclean-libtool:
 	-rm -f *.lo
 
 clean-libtool:
 	-rm -rf .libs _libs
-	-rm -rf test/.libs test/_libs
 
 distclean-libtool:
 	-rm -f libtool config.lt
@@ -1338,8 +993,7 @@ distcleancheck: distclean
 	       exit 1; } >&2
 check-am: all-am
 check: check-am
-all-am: Makefile $(LTLIBRARIES) $(PROGRAMS) $(DATA) $(HEADERS) \
-		config.h
+all-am: Makefile $(LTLIBRARIES) $(DATA) $(HEADERS) config.h
 installdirs:
 	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(pkgconfigdir)" "$(DESTDIR)$(includedir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
@@ -1370,7 +1024,6 @@ clean-generic:
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
-	-rm -f test/$(am__dirstamp)
 
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
@@ -1378,7 +1031,7 @@ maintainer-clean-generic:
 clean: clean-am
 
 clean-am: clean-generic clean-libLTLIBRARIES clean-libtool \
-	clean-noinstLTLIBRARIES clean-noinstPROGRAMS mostlyclean-am
+	clean-noinstLTLIBRARIES mostlyclean-am
 
 distclean: distclean-am
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
@@ -1454,23 +1107,23 @@ uninstall-am: uninstall-includeHEADERS uninstall-libLTLIBRARIES \
 
 .PHONY: CTAGS GTAGS TAGS all all-am am--refresh check check-am clean \
 	clean-cscope clean-generic clean-libLTLIBRARIES clean-libtool \
-	clean-noinstLTLIBRARIES clean-noinstPROGRAMS cscope \
-	cscopelist-am ctags ctags-am dist dist-all dist-bzip2 \
-	dist-gzip dist-hook dist-lzip dist-shar dist-tarZ dist-xz \
-	dist-zip distcheck distclean distclean-compile \
-	distclean-generic distclean-hdr distclean-libtool \
-	distclean-tags distcleancheck distdir distuninstallcheck dvi \
-	dvi-am html html-am info info-am install install-am \
-	install-data install-data-am install-dvi install-dvi-am \
-	install-exec install-exec-am install-html install-html-am \
-	install-includeHEADERS install-info install-info-am \
-	install-libLTLIBRARIES install-man install-pdf install-pdf-am \
-	install-pkgconfigDATA install-ps install-ps-am install-strip \
-	installcheck installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	tags tags-am uninstall uninstall-am uninstall-includeHEADERS \
-	uninstall-libLTLIBRARIES uninstall-pkgconfigDATA
+	clean-noinstLTLIBRARIES cscope cscopelist-am ctags ctags-am \
+	dist dist-all dist-bzip2 dist-gzip dist-hook dist-lzip \
+	dist-shar dist-tarZ dist-xz dist-zip distcheck distclean \
+	distclean-compile distclean-generic distclean-hdr \
+	distclean-libtool distclean-tags distcleancheck distdir \
+	distuninstallcheck dvi dvi-am html html-am info info-am \
+	install install-am install-data install-data-am install-dvi \
+	install-dvi-am install-exec install-exec-am install-html \
+	install-html-am install-includeHEADERS install-info \
+	install-info-am install-libLTLIBRARIES install-man install-pdf \
+	install-pdf-am install-pkgconfigDATA install-ps install-ps-am \
+	install-strip installcheck installcheck-am installdirs \
+	maintainer-clean maintainer-clean-generic mostlyclean \
+	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
+	pdf pdf-am ps ps-am tags tags-am uninstall uninstall-am \
+	uninstall-includeHEADERS uninstall-libLTLIBRARIES \
+	uninstall-pkgconfigDATA
 
 
 dist-hook:
