@@ -649,8 +649,6 @@ USE_INTERNAL_MSPACK_FALSE
 USE_INTERNAL_MSPACK_TRUE
 LIBMSPACK_LIBS
 LIBMSPACK_CFLAGS
-ENABLE_CLAMSUBMIT_FALSE
-ENABLE_CLAMSUBMIT_TRUE
 JSON_LDFLAGS
 JSON_LIBS
 SSL_LDFLAGS
@@ -694,6 +692,8 @@ LIBPRELUDE_CFLAGS
 LIBPRELUDE_CONFIG
 ENABLE_LIBFRESHCLAM_FALSE
 ENABLE_LIBFRESHCLAM_TRUE
+ENABLE_CLAMSUBMIT_FALSE
+ENABLE_CLAMSUBMIT_TRUE
 HAVE_YARA
 subdirs
 llvmconfig
@@ -24613,7 +24613,6 @@ else
   ENABLE_CLAMSUBMIT_FALSE=
 fi
 
-
 pkg_failed=no
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for LIBMSPACK" >&5
 $as_echo_n "checking for LIBMSPACK... " >&6; }
@@ -24916,10 +24915,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${ENABLE_LIBFRESHCLAM_TRUE}" && test -z "${ENABLE_LIBFRESHCLAM_FALSE}"; then
   as_fn_error $? "conditional \"ENABLE_LIBFRESHCLAM\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${ENABLE_CLAMSUBMIT_TRUE}" && test -z "${ENABLE_CLAMSUBMIT_FALSE}"; then
-  as_fn_error $? "conditional \"ENABLE_CLAMSUBMIT\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${USE_INTERNAL_MSPACK_TRUE}" && test -z "${USE_INTERNAL_MSPACK_FALSE}"; then
@@ -27497,10 +27492,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${ENABLE_LIBFRESHCLAM_TRUE}" && test -z "${ENABLE_LIBFRESHCLAM_FALSE}"; then
   as_fn_error $? "conditional \"ENABLE_LIBFRESHCLAM\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${ENABLE_CLAMSUBMIT_TRUE}" && test -z "${ENABLE_CLAMSUBMIT_FALSE}"; then
-  as_fn_error $? "conditional \"ENABLE_CLAMSUBMIT\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${USE_INTERNAL_MSPACK_TRUE}" && test -z "${USE_INTERNAL_MSPACK_FALSE}"; then
