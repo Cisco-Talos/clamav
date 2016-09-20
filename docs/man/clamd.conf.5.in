@@ -447,6 +447,11 @@ Default: yes
 With this option enabled OLE2 files with VBA macros, which were not detected by signatures will be marked as "Heuristics.OLE2.ContainsMacros".
 .br 
 Default: no
+.TP
+\fBBlockMax BOOL\fR
+ Flag files with "Heuristics.Limits.Exceeded" when scanning is incomplete due to exceeding a scan or file size limit.
+.br 
+Default: no
 .TP 
 \fBScanPDF BOOL\fR
 This option enables scanning within PDF files.

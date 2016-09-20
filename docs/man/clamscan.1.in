@@ -189,6 +189,9 @@ Mark encrypted archives as viruses (Encrypted.Zip, Encrypted.RAR).
 \fB\-\-block\-macros[=yes/no(*)]\fR
 Mark OLE2 files containing VBA macros as viruses (Heuristics.OLE2.ContainsMacros).
 .TP 
+\fB\-\-block\-max[=yes/no(*)]\fR
+Flag files with "Heuristics.Limits.Exceeded" when scanning is incomplete due to exceeding a scan or file size limit.
+.TP 
 \fB\-\-max\-filesize=#n\fR
 Extract and scan at most #n bytes from each archive. You may pass the value in kilobytes in format xK or xk, or megabytes in format xM or xm, where x is a number. This option protects your system against DoS attacks (default: 25 MB, max: <4 GB)
 .TP 
