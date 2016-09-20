@@ -570,6 +570,10 @@ Example
 # Default: 25M
 #PCREMaxFileSize 100M
 
+# When BlockMax is set, files exceeding the MaxFileSize, MaxScanSize, or MaxRecursion limit will be flagged
+# with the virus "Heuristic.Limits.Exceeded".
+# Default: no
+#BlockMax yes
 
 ##
 ## On-access Scan Settings

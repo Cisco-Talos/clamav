@@ -933,6 +933,13 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	logg("Archive support disabled.\n");
     }
 
+    if (optget(opts, "BlockMax")->enabled) {
+        logg("BlockMax heuristic detection enabled.\n");
+        options |= CL_SCAN_BLOCKMAX;
+    } else {
+        logg("BlockMax heuristic detection disabled.\n");
+    }
+
     if(optget(opts, "AlgorithmicDetection")->enabled) {
 	logg("Algorithmic detection enabled.\n");
 	options |= CL_SCAN_ALGORITHMIC;
