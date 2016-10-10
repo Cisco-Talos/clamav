@@ -37,7 +37,9 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/time.h>
+#ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
+#endif
 #include <time.h>
 #include <errno.h>
 #include <netdb.h>
