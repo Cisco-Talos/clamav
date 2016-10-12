@@ -111,7 +111,7 @@ static const struct dblist_s {
     { "zmd",   1 },
     { "rmd",   1 },
     { "idb",   0 },
-    { "fp",    0 },
+    { "fp",    1 },
     { "sfp",   0 },
     { "gdb",   1 },
     { "pdb",   1 },
