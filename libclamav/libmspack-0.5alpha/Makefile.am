@@ -1,4 +1,3 @@
-EXTRA_DIST =		$(srcdir)/doc/
 pkgconfigdir =		$(libdir)/pkgconfig
 pkgconfig_DATA = 	libmspack.pc
 
