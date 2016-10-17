@@ -401,9 +401,6 @@ json_object *cli_jsonobj(json_object *obj, const char *key)
     if (obj && key && json_object_object_get_ex(obj, key, &newobj))
         return json_object_is_type(newobj, json_type_object) ? newobj : NULL;
 
-    if (obj && key && json_object_object_get_ex(obj, key, &newobj))
-        return json_object_is_type(newobj, json_type_object) ? newobj : NULL;
-
     newobj = json_object_new_object();
     if (!(newobj))
         return NULL;
