@@ -39,7 +39,7 @@
 /* CLAMAPI - return codes */
 /* Always check for the return value of CLAMAPI's 
  * Possible values are:
- * - return_value == CLAMAPI_SUCCESS: API succeded
+ * - return_value == CLAMAPI_SUCCESS: API succeeded
  * - return_value != CLAMAPI_SUCCESS: API failed (call Scan_GetErrorMsg(return_value) to retrieve the error message)
  */
 #define CLAMAPI_SUCCESS 0
