@@ -738,7 +738,7 @@ version:
     (clamd: ExcludePUA, IncludePUA; clamscan: --exclude-pua, --include-pua)
 
   - Data Loss Prevention (DLP): This version includes a new module that, when
-    enabled, scans data for the inclusion of US formated Social Security
+    enabled, scans data for the inclusion of US formatted Social Security
     Numbers and credit card numbers (clamd: StructuredDataDetection,
     clamscan: --detect-structured; additional fine-tuning options are available)
 
@@ -1408,7 +1408,7 @@ Important note to clamdwatch users: please upgrade to the latest version
     + a lot of minor improvements, including support for new platforms
 
 -) clamd:
-    + new directive ExitOnOOM (stop the deamon when libclamav reports an out of
+    + new directive ExitOnOOM (stop the daemon when libclamav reports an out of
       memory condition)
     + new directives StreamMinPort and StreamMaxPort (port range specification
       for a stream mode)
@@ -2224,7 +2224,7 @@ configure:
    Tru64 support (thanks to Christophe Varoqui <ext.devoteam.varoqui@sncf.fr>)
 
 -) documentation:
-    + included how-to in Portugese by Alexandre de Jesus Marcolino
+    + included how-to in Portuguese by Alexandre de Jesus Marcolino
     + clamdoc.pdf and system manual updates
 
 Many thanks to Luca 'NERvOus' Gibelli from ElektraPro for his support,
@@ -2286,7 +2286,7 @@ This release has removed the limit for a file name length in clamscan. Some
 viruses (eg. W32/Yaha.E) are using very long file names, and they were
 ignored in mbox mode. Users of AMaViS-ng and other wrappers were not
 vulnerable to this problem, because that programs don't use original
-attachement file names.
+attachment file names.
 
 -) clamscan:
     + removed limit for a file name length (thanks to Odhiambo Washington
@@ -2444,9 +2444,9 @@ Documentation:
 update viruses.db2 and supports OpenAntiVirus.org site only (the last
 update of the OAV database was 1 July !). Nicholas Chua <nicholas@ncmbox.net>
 has generated over 200 new signatures, ClamAV's database is also frequently
-updated (expecially when new wild virus/worm appears, eg. W32/BugBear.A).
+updated (especially when new wild virus/worm appears, eg. W32/BugBear.A).
 
-    This software is still in developement (new software == new bugs), however
+    This software is still in development (new software == new bugs), however
 clamscan should be very stable. You shouldn't use clamd/clamuko (well, clamd is
 stable, clamuko isn't) on production systems, yet. Please wait for 0.51 at
 least ;). ClamAV 0.50 was tested on Linux and Solaris and should work fine.
@@ -2520,7 +2520,7 @@ There are binary packages for AIX available. Please check the documentation.
 ----
 
 This release fixes bug with scanning archives in unaccessible directories with
-*superuser* priviledges (after dropping priviledges scanner wasn't able to
+*superuser* privileges (after dropping privileges scanner wasn't able to
 access the archive, although the same archive was accessible), thanks
 for Sergei Pronin <sp@finndesign.fi> for the problem description. Now all
 archives unaccessible directly by the clamav user are copied (with a respect to
@@ -2558,7 +2558,7 @@ and clamdoc documentation corrected by Dennis Leeuw <dleeuw@made-it.com>.
 ------------
 
 The most important change in this release is a new, linear pattern matching
-algorithm. You will find more informations about it in clamscan/matcher.c -
+algorithm. You will find more information about it in clamscan/matcher.c -
 in the sources and in clamdoc. Summary (since 0.15):
 
 New features:
