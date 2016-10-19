@@ -179,9 +179,9 @@ For example try setting it to TERM=xterm\-color if you are in an xterm-like
 environment. IPv6 support has been added. If specifying an IPv6 address, please use the normal IPv6 addressing rules. If specifying both an IPv6 address and a port combination, encapsulate the IPv6 address in square brakets (e.g. [::1]:3410).
 .SH "RETURN CODES"
 .LP 
-0 : Normal terminator
+0 : Normal termination
 .TP 
->0: Error occured.
+>0: Error occurred.
 .SH "CREDITS"
 Please check the full documentation for credits.
 .SH "AUTHOR"
