@@ -331,8 +331,8 @@ void *onas_ddd_th(void *arg) {
 	if((pt = optget(tharg->opts, "OnAccessIncludePath"))->enabled) {
 		while(pt) {
 			if (!strcmp(pt->strarg, "/")) {
-				logg("!ScanOnAcess: Not inlcuding path '%s' while DDD is enabled\n", pt->strarg);
-				logg("!ScanOnAcess: Please use the OnAccessMountPath option to watch '%s'\n", pt->strarg);
+				logg("!ScanOnAccess: Not including path '%s' while DDD is enabled\n", pt->strarg);
+				logg("!ScanOnAccess: Please use the OnAccessMountPath option to watch '%s'\n", pt->strarg);
 				pt = (struct optstruct *) pt->nextarg;
 				continue;
 			}
