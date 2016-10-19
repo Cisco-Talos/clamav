@@ -134,7 +134,7 @@ int cli_mbr_check2(cli_ctx *ctx, size_t sectorsize) {
     return mbr_check_mbr(&mbr, maplen, sectorsize);
 }
 
-/* sets sectorsize to default value if specfied to be 0 */
+/* sets sectorsize to default value if specified to be 0 */
 int cli_scanmbr(cli_ctx *ctx, size_t sectorsize)
 {
     struct mbr_boot_record mbr;
@@ -225,7 +225,7 @@ int cli_scanmbr(cli_ctx *ctx, size_t sectorsize)
                 cli_dbgmsg("cli_scanmbr: detected a master boot record "
                            "with multiple extended partitions\n");
             }
-            state = SEEN_EXTENDED; /* used only to detect mutiple extended partitions */
+            state = SEEN_EXTENDED; /* used only to detect multiple extended partitions */
 
             ret = mbr_scanextprtn(ctx, &prtncount, mbr.entries[i].firstLBA, 
                                   mbr.entries[i].numLBA, sectorsize);

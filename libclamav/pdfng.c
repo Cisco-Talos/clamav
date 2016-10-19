@@ -990,7 +990,7 @@ struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj *obj, s
                     break;
                 }
 
-                /* Not a dictionary. Intentially fall through. */
+                /* Not a dictionary. Intentionally fall through. */
             case '(':
                 val = pdf_parse_string(pdf, obj, begin, objsz, NULL, &begin, NULL);
                 begin += 2;
