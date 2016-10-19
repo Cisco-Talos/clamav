@@ -444,7 +444,7 @@ int cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, lon
             ret = cli_pcre_compile(&(pm->pdata), match_limit, recmatch_limit, 0, 0);
         }
         else {
-            /* compile the regex, options overrided and disabled */
+            /* compile the regex, options overridden and disabled */
             pm_dbgmsg("cli_pcre_build: Compiling regex: /%s/ (without options)\n", pm->pdata.expression);
             ret = cli_pcre_compile(&(pm->pdata), match_limit, recmatch_limit, 0, 1);
         }
@@ -627,7 +627,7 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const char **
                     continue;
         }
         else {
-            cli_dbgmsg("cli_pcre_scanbuf: skipping %s check due to unintialized lsigid\n", pm->trigger);
+            cli_dbgmsg("cli_pcre_scanbuf: skipping %s check due to uninitialized lsigid\n", pm->trigger);
             /* fall-through to unconditional execution - sigtool-only */
         }
 

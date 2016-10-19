@@ -566,7 +566,7 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
     return (virus ? CL_VIRUS : CL_SUCCESS);
 }
 
-/* reader intialization and closing handled by caller */
+/* reader initialization and closing handled by caller */
 int cli_msxml_parse_document(cli_ctx *ctx, xmlTextReaderPtr reader, const struct key_entry *keys, const size_t num_keys, uint32_t flags, struct msxml_ctx *mxctx)
 {
     struct msxml_ctx reserve;
@@ -663,7 +663,7 @@ int cli_msxml_parse_document(cli_ctx *ctx, xmlTextReaderPtr reader, const struct
     }
 #endif
 
-    /* non-critical return supression */
+    /* non-critical return suppression */
     if (ret == CL_ETIMEOUT || ret == CL_BREAK)
         ret = CL_SUCCESS;
 

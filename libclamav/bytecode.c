@@ -1821,7 +1821,7 @@ int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, stru
 	inst.u.ops.funcid = ctx->funcid;
 	inst.u.ops.ops = ctx->operands;
 	inst.u.ops.opsizes = ctx->opsizes;
-	cli_dbgmsg("Bytecode %u: executing in interpeter mode\n", bc->id);
+	cli_dbgmsg("Bytecode %u: executing in interpreter mode\n", bc->id);
 
 	ctx->on_jit = 0;
 

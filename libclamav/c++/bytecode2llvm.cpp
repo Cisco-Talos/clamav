@@ -2736,7 +2736,7 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 		 badalloc.what());
       return CL_EMEM;
   } catch (...) {
-      cli_errmsg("[Bytecode JIT]: Unexpected unknown exception occured\n");
+      cli_errmsg("[Bytecode JIT]: Unexpected unknown exception occurred\n");
       return CL_EBYTECODE;
   }
   return 0;
