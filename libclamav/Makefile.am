@@ -21,7 +21,7 @@ AM_YFLAGS = -d
 AM_CPPFLAGS = -I$(top_srcdir) -I@srcdir@/nsis $(LTDLINCL)
 AM_CFLAGS=@WERR_CFLAGS@
 lib_LTLIBRARIES =
-EXTRA_DIST = c++/Makefile.nollvm.in
+EXTRA_DIST = c++/Makefile.nollvm.in libmspack-0.5alpha/Makefile.intmspack.in
 if ENABLE_UNRAR
 
 AM_CPPFLAGS += -DWARN_DLOPEN_FAIL
@@ -183,6 +183,9 @@ libclamav_la_LIBADD +=  @top_builddir@/libclamav/libmspack-0.5alpha/.libs/cabc.o
 else
 libclamav_la_CFLAGS += $(LIBMSPACK_CFLAGS)
 libclamav_la_LDFLAGS += $(LIBMSPACK_LIBS)
+libmspack-0.5alpha/Makefile: libmspack-0.5alpha/Makefile.intmspack.in
+	$(AM_V_at) cp $< $@
+distclean-recursive distdir maintainer-clean-recursive: libmspack-0.5alpha/Makefile
 endif
 
 include_HEADERS = clamav.h
