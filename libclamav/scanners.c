@@ -901,12 +901,18 @@ static int vba_scandata(const unsigned char *data, unsigned int len, cli_ctx *ct
 	viruses_found++;
 
     if (ret == CL_CLEAN || (ret == CL_VIRUS && SCAN_ALL)) {
+        fmap_t *map =  *ctx->fmap;
+        *ctx->fmap = cl_fmap_open_memory(data, len);
+        if (*ctx->fmap == NULL)
+            return CL_EMEM;
 	ret = cli_exp_eval(ctx, troot, &tmdata, NULL, NULL);
 	if (ret == CL_VIRUS)
 	    viruses_found++;
 
 	if (ret == CL_CLEAN || (ret == CL_VIRUS && SCAN_ALL))
 	    ret = cli_exp_eval(ctx, groot, &gmdata, NULL, NULL);
+        funmap(*ctx->fmap);
+        *ctx->fmap = map;
     }
     cli_ac_freedata(&tmdata);
     cli_ac_freedata(&gmdata);
