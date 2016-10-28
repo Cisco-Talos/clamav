@@ -2141,7 +2141,7 @@ inline static int ac_addspecial_add_alt_node(const char *subexpr, uint8_t sigopt
 
     s = cli_mpool_hex2ui(root->mempool, subexpr);
     if (!s) {
-        free(newnode);
+        mpool_free(root->mempool, newnode);
         return CL_EMALFDB;
     }
 
