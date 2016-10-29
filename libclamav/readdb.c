@@ -4173,7 +4173,7 @@ static int cli_loadpwdb(FILE *fs, struct cl_engine *engine, unsigned int options
             }
 
             if(pwstype == 0) { /* cleartext */
-                new->passwd = cli_mpool_strdup(engine->mempool, tokens[3]);
+                new->passwd = (unsigned char *)cli_mpool_strdup(engine->mempool, tokens[3]);
                 new->length = strlen(tokens[3]);
             } else { /* 1 => hex-encoded */
                 new->passwd = cli_mpool_hex2str(engine->mempool, tokens[3]);

@@ -2359,7 +2359,7 @@ inline static int ac_special_altstr(const char *hexpr, uint8_t sigopts, struct c
                 (special->alt).byte[i] = *c;
                 mpool_free(root->mempool, c);
             } else {
-                (special->alt).f_str[i] = c;
+                (special->alt).f_str[i] = (unsigned char *)c;
             }
             special->num++;
         }

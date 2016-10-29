@@ -268,7 +268,7 @@ static int riff_read_chunk(fmap_t *map, off_t *offset, int big_endian, int rec_l
 	    return 0;
 	cur_offset += 4*2;
 
-	buffer = buf;
+	buffer = (char *)buf;
 	memcpy (&cache_buf, buffer + sizeof (cache_buf),
 			sizeof (cache_buf));
 	chunk_size = riff_endian_convert_32(cache_buf, big_endian);

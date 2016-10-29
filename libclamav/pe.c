@@ -2212,7 +2212,8 @@ static inline int hash_impfns(cli_ctx *ctx, void **hashctx, uint32_t *impsz, str
     uint32_t thuoff, offset;
     fmap_t *map = *ctx->fmap;
     size_t dlllen = 0, fsize = map->len;
-    int i, j, err, num_fns = 0, ret = CL_SUCCESS;
+    int i, j, num_fns = 0, ret = CL_SUCCESS;
+    unsigned int err;
     const char *buffer;
     enum CLI_HASH_TYPE type;
 #if HAVE_JSON
@@ -2378,7 +2379,8 @@ static unsigned int hash_imptbl(cli_ctx *ctx, unsigned char **digest, uint32_t *
     const char *impdes, *buffer;
     void *hashctx[CLI_HASH_AVAIL_TYPES];
     enum CLI_HASH_TYPE type;
-    int err, nimps = 0, ret = CL_SUCCESS;
+    int nimps = 0, ret = CL_SUCCESS;
+    unsigned int err;
     int first = 1;
 
     if(datadir->VirtualAddress == 0 || datadir->Size == 0) {
@@ -2543,7 +2545,7 @@ static int scan_pe_imp(cli_ctx *ctx, struct pe_image_data_dir *dirs, struct cli_
 #else
     if (cli_debug_flag) {
 #endif
-        char *dstr = cli_str2hex(hashset[CLI_HASH_MD5], hashlen[CLI_HASH_MD5]);
+        char *dstr = cli_str2hex((char *)hashset[CLI_HASH_MD5], hashlen[CLI_HASH_MD5]);
         cli_dbgmsg("IMP: %s:%u\n", dstr ? (char *)dstr : "(NULL)", impsz);
 #if HAVE_JSON
         if (ctx->wrkproperty)
@@ -5740,7 +5742,7 @@ int cli_genhash_pe(cli_ctx *ctx, unsigned int class, int type)
         for (i = 0; i < nsections; i++) {
             /* Generate hashes */
             if (cli_hashsect(*ctx->fmap, &exe_sections[i], hashset, genhash, genhash) == 1) {
-                dstr = cli_str2hex(hash, hlen);
+                dstr = cli_str2hex((char *)hash, hlen);
                 cli_dbgmsg("Section{%u}: %u:%s\n", i, exe_sections[i].rsz, dstr ? (char *)dstr : "(NULL)");
                 if (dstr != NULL) {
                     free(dstr);
@@ -5758,7 +5760,7 @@ int cli_genhash_pe(cli_ctx *ctx, unsigned int class, int type)
         /* Generate hash */
         ret = hash_imptbl(ctx, hashset, &impsz, genhash, &dirs[1], exe_sections, nsections, hdr_size, pe_plus);
         if (ret == CL_SUCCESS) {
-            dstr = cli_str2hex(hash, hlen);
+            dstr = cli_str2hex((char *)hash, hlen);
             cli_dbgmsg("Imphash: %s:%u\n", dstr ? (char *)dstr : "(NULL)", impsz);
             if (dstr != NULL) {
                 free(dstr);

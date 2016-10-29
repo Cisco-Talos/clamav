@@ -1406,7 +1406,7 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 	}
 	bcfunc->dbgnodes = cli_malloc(num*sizeof(*bcfunc->dbgnodes));
 	if (!bcfunc->dbgnodes) {
-        cli_errmsg("Unable to allocate memory for dbg nodes: %u\n", num*sizeof(*bcfunc->dbgnodes));
+        cli_errmsg("Unable to allocate memory for dbg nodes: %zu\n", num*sizeof(*bcfunc->dbgnodes));
 	    return CL_EMEM;
     }
 	for (i=0;i<num;i++) {
@@ -1497,7 +1497,7 @@ void cli_sigperf_print()
     cli_infomsg (NULL, "%-*s %*s %*s %*s %*s\n", max_name_len, "=============",
 	    8, "=====", 8, "========", 12, "===========", 9, "=========");
     while (elem->run_count) {
-	cli_infomsg (NULL, "%-*s %*lu %*lu %*llu %*.2f\n", max_name_len, elem->bc_name,
+	cli_infomsg (NULL, "%-*s %*lu %*lu %*" PRIu64 " %*.2f\n", max_name_len, elem->bc_name,
 		     8, elem->run_count, 8, elem->match_count, 
 		12, elem->usecs, 9, (double)elem->usecs/elem->run_count);
 	elem++;
@@ -2071,7 +2071,7 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
     bc->numGlobalBytes = 0;
     gmap = cli_malloc(bc->num_globals*sizeof(*gmap));
     if (!gmap) {
-        cli_errmsg("interpreter: Unable to allocate memory for global map: %u\n", bc->num_globals*sizeof(*gmap));
+        cli_errmsg("interpreter: Unable to allocate memory for global map: %zu\n", bc->num_globals*sizeof(*gmap));
         return CL_EMEM;
     }
     for (j=0;j<bc->num_globals;j++) {
@@ -2153,7 +2153,7 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 	unsigned totValues = bcfunc->numValues + bcfunc->numConstants + bc->num_globals;
 	unsigned *map = cli_malloc(sizeof(*map)*totValues);
 	if (!map) {
-        cli_errmsg("interpreter: Unable to allocate memory for map: %u\n", sizeof(*map)*totValues);
+        cli_errmsg("interpreter: Unable to allocate memory for map: %zu\n", sizeof(*map)*totValues);
         free(gmap);
 	    return CL_EMEM;
     }
@@ -3201,7 +3201,7 @@ void cli_bytevalue_describe(const struct cli_bc *bc, unsigned funcid)
         return;
     }
     // globals
-    printf("found a total of %d globals\n", bc->num_globals);
+    printf("found a total of %zd globals\n", bc->num_globals);
     printf("GID  ID    VALUE\n");
     printf("------------------------------------------------------------------------\n");
     for (i = 0; i < bc->num_globals; ++i) {
@@ -3231,7 +3231,7 @@ void cli_bytevalue_describe(const struct cli_bc *bc, unsigned funcid)
     printf("CID  ID    VALUE\n");
     printf("------------------------------------------------------------------------\n");
     for (i = 0; i < func->numConstants; ++i) {
-        printf("%3u [%3u]: %llu(0x%llx)\n", i, total++, func->constants[i], func->constants[i]);
+        printf("%3u [%3u]: " STDx64 "(0x" STDx64 ")\n", i, total++, func->constants[i], func->constants[i]);
     }
     printf("------------------------------------------------------------------------\n");
     printf("found a total of %u total values\n", total);
@@ -3243,7 +3243,7 @@ void cli_byteinst_describe(const struct cli_bc_inst *inst, unsigned *bbnum)
 {
     unsigned j;
     char inst_str[256];
-	const struct cli_apicall *api;
+    const struct cli_apicall *api;
 
     if (inst->opcode > OP_BC_INVALID) {
         printf("opcode %u[%u] of type %u is not implemented yet!",
@@ -3298,13 +3298,13 @@ void cli_byteinst_describe(const struct cli_bc_inst *inst, unsigned *bbnum)
 
         // casting operations
     case OP_BC_TRUNC:
-        printf("%d = %d trunc %llx", inst->dest, inst->u.cast.source, inst->u.cast.mask);
+        printf("%d = %d trunc " STDx64, inst->dest, inst->u.cast.source, inst->u.cast.mask);
         break;
     case OP_BC_SEXT:
-        printf("%d = %d sext %llx", inst->dest, inst->u.cast.source, inst->u.cast.mask);
+        printf("%d = %d sext " STDx64, inst->dest, inst->u.cast.source, inst->u.cast.mask);
         break;
     case OP_BC_ZEXT:
-        printf("%d = %d zext %llx", inst->dest, inst->u.cast.source, inst->u.cast.mask);
+        printf("%d = %d zext " STDx64, inst->dest, inst->u.cast.source, inst->u.cast.mask);
         break;
         
         // control operations (termination instructions)
