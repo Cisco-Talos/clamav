@@ -810,13 +810,11 @@ static int arj_read_main_header(arj_metadata_t *metadata)
 	uint16_t header_size, count;
 	arj_main_hdr_t main_hdr;
 	const char *filename, *comment;
-	off_t header_offset;
 
 	if (fmap_readn(metadata->map, &header_size, metadata->offset, 2) != 2)
 	    return FALSE;
 
 	metadata->offset += 2;
-	header_offset = metadata->offset;
 	header_size = le16_to_host(header_size);
 	cli_dbgmsg("Header Size: %d\n", header_size);
 	if (header_size == 0) {

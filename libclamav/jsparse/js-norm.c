@@ -962,7 +962,6 @@ void cli_js_process_buffer(struct parser_state *state, const char *buf, size_t n
 	struct scope* current = state->current;
 	YYSTYPE val;
 	int yv;
-	YY_BUFFER_STATE yyb;
 
 	if(!state->global) {
 		/* this state has either not been initialized,
@@ -970,7 +969,7 @@ void cli_js_process_buffer(struct parser_state *state, const char *buf, size_t n
 		cli_warnmsg(MODULE "invalid state\n");
 		return;
 	}
-	yyb = yy_scan_bytes(buf, n, state->scanner);
+	yy_scan_bytes(buf, n, state->scanner);
 	memset(&val, 0, sizeof(val));
 	val.vtype = vtype_undefined;
 	/* on EOF yylex will return 0 */

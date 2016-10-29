@@ -657,13 +657,13 @@ static int parseHeader(struct cli_bc *bc, unsigned char *buffer, unsigned *linel
 
 static int parseLSig(struct cli_bc *bc, char *buffer)
 {
-    const char *prefix;
-    char *vnames, *vend = strchr(buffer, ';');
+//  const char *prefix;
+    char /**vnames, */*vend = strchr(buffer, ';');
     if (vend) {
 	bc->lsig = cli_strdup(buffer);
 	*vend++ = '\0';
-	prefix = buffer;
-	vnames = strchr(vend, '{');
+//       prefix = buffer;
+//       vnames = strchr(vend, '{');
     } else {
 	/* Not a logical signature, but we still have a virusname */
 	bc->hook_name = cli_strdup(buffer);
@@ -2599,7 +2599,7 @@ static int run_builtin_or_loaded(struct cli_all_bc *bcs, uint8_t kind, const cha
 
 int cli_bytecode_prepare2(struct cl_engine *engine, struct cli_all_bc *bcs, unsigned dconfmask)
 {
-    unsigned i, interp = 0, jitok = 0, jitcount=0;
+    unsigned i, interp = 0, jitcount = 0;
     int rc;
     struct cli_bc_ctx *ctx;
 
@@ -2683,7 +2683,6 @@ int cli_bytecode_prepare2(struct cl_engine *engine, struct cli_all_bc *bcs, unsi
 	selfcheck(1, bcs->engine);
 	rc = cli_bytecode_prepare_jit(bcs);
 	if (rc == CL_SUCCESS) {
-	    jitok = 1;
 	    cli_dbgmsg("Bytecode: %u bytecode prepared with JIT\n", bcs->count);
 	    if (engine->bytecode_mode != CL_BYTECODE_MODE_TEST)
 		return CL_SUCCESS;

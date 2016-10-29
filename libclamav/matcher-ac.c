@@ -2305,14 +2305,13 @@ static int ac_special_altexpand(char *hexpr, char *subexpr, uint16_t maxlen, int
 inline static int ac_special_altstr(const char *hexpr, uint8_t sigopts, struct cli_ac_special *special, struct cli_matcher *root)
 {
     char *hexprcpy, *h, *c;
-    int i, ret, num, fixed, slen, len;
+    int i, ret, num, fixed, slen;
 
     if (!(hexprcpy = cli_strdup(hexpr))) {
         cli_errmsg("ac_special_altstr: Can't duplicate alternate expression\n");
         return CL_EDUP;
     }
 
-    len = strlen(hexpr);
     num = ac_analyze_expr(hexprcpy, &fixed, &slen);
 
     if (!sigopts && fixed) {

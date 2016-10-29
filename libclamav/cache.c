@@ -436,7 +436,7 @@ static void printnode(const char *prefix, struct cache_set *cs, struct node *n) 
         printf("NULL\n");
 }
 #else
-#define printnode(a,b,c) (0)
+#define printnode(a,b,c) (void)0
 #endif
 
 /* #define PRINT_CHAINS */
@@ -466,7 +466,7 @@ static inline void printchain(const char *prefix, struct cache_set *cs) {
     }
 }
 #else
-#define printchain(a,b) (0)
+#define printchain(a,b) (void)0
 #endif
 
 /* Looks up a node and splays it up to the root of the tree */
