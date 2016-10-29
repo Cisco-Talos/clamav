@@ -197,6 +197,7 @@ static int decompress_and_callback(cli_ctx *ctx, fmap_t *input, off_t at, size_t
 
 /* convert HANGUL_NUMERICAL to UTF-8 encoding using iconv library, converts to base64 encoding if no iconv or failure */
 #define HANGUL_NUMERICAL 0
+#if HAVE_JSON
 static char *convert_hstr_to_utf8(const char *begin, size_t sz, const char *parent, int *ret)
 {
     int rc = CL_SUCCESS;
@@ -275,6 +276,7 @@ static char *convert_hstr_to_utf8(const char *begin, size_t sz, const char *pare
     (*ret) = rc;
     return res;
 }
+#endif
 
 /*** HWPOLE2 ***/
 int cli_scanhwpole2(cli_ctx *ctx)

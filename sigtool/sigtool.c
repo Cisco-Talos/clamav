@@ -2192,12 +2192,11 @@ static int verifydiff(const char *diff, const char *cvd, const char *incdir)
 
 static void matchsig(const char *sig, const char *offset, int fd)
 {
-	struct cl_engine *engine;
-        struct cli_ac_result *acres = NULL, *res;
-	STATBUF sb;
-	unsigned int matches = 0;
-	cli_ctx ctx;
-	int ret;
+    struct cl_engine *engine;
+    struct cli_ac_result *acres = NULL, *res;
+    STATBUF sb;
+    unsigned int matches = 0;
+    cli_ctx ctx;
 
     mprintf("SUBSIG: %s\n", sig);
 
@@ -2241,7 +2240,7 @@ static void matchsig(const char *sig, const char *offset, int fd)
 	cl_engine_free(engine);
 	return;
     }
-    ret = cli_fmap_scandesc(&ctx, 0, 0, NULL, AC_SCAN_VIR, &acres, NULL);
+    cli_fmap_scandesc(&ctx, 0, 0, NULL, AC_SCAN_VIR, &acres, NULL);
     res = acres;
     while(res) {
 	matches++;
@@ -2562,10 +2561,10 @@ static char *decodehexspecial(const char *hex, unsigned int *dlen)
 
 static int decodehex(const char *hexsig)
 {
-	char *pt, *hexcpy, *start, *n, *decoded, *wild;
-	int asterisk = 0;
-	unsigned int i, j, hexlen, dlen, parts = 0, bw;
-	int mindist = 0, maxdist = 0, error = 0;
+    char *pt, *hexcpy, *start, *n, *decoded, *wild;
+    int asterisk = 0;
+    unsigned int i, j, hexlen, dlen, parts = 0;
+    int mindist = 0, maxdist = 0, error = 0;
 
 
     hexlen = strlen(hexsig);
@@ -2683,7 +2682,7 @@ static int decodehex(const char *hexsig)
 		free(hexcpy);
 		return -1;
 	    }
-	    bw = write(1, decoded, dlen);
+	    write(1, decoded, dlen);
 	    free(decoded);
 
 	    if(i == parts)
@@ -2764,7 +2763,7 @@ static int decodehex(const char *hexsig)
         free(pt);
 		return -1;
 	    }
-	    bw = write(1, decoded, dlen);
+	    write(1, decoded, dlen);
 	    free(decoded);
 	    if(i < parts)
 		mprintf("{WILDCARD_ANY_STRING}");
@@ -2776,7 +2775,7 @@ static int decodehex(const char *hexsig)
 	    mprintf("!Decoding failed\n");
 	    return -1;
 	}
-	bw = write(1, decoded, dlen);
+	write(1, decoded, dlen);
 	free(decoded);
     }
 

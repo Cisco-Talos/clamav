@@ -1572,8 +1572,8 @@ int32_t cli_bcapi_json_is_active(struct cli_bc_ctx *ctx )
     return 0;
 }
 
-static int32_t cli_bcapi_json_objs_init(struct cli_bc_ctx *ctx) {
 #if HAVE_JSON 
+static int32_t cli_bcapi_json_objs_init(struct cli_bc_ctx *ctx) {
     unsigned n = ctx->njsonobjs + 1;
     json_object **j, **jobjs = (json_object **)(ctx->jsonobjs);
     cli_ctx *cctx = (cli_ctx *)ctx->ctx;
@@ -1588,11 +1588,8 @@ static int32_t cli_bcapi_json_objs_init(struct cli_bc_ctx *ctx) {
     j[n-1] = cctx->properties;    
 
     return 0;
-#else
-    UNUSEDPARAM(ctx);
-    return -1;
-#endif
 }
+#endif
 
 #define INIT_JSON_OBJS(ctx)                                             \
     if (!cli_bcapi_json_is_active(ctx))                                 \

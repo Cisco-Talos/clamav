@@ -13,7 +13,6 @@ int fp_radix_size(fp_int *a, int radix, int *size);
 
 int fp_radix_size(fp_int *a, int radix, int *size)
 {
-  int     digs;
   fp_int  t;
   fp_digit d;
    
@@ -38,7 +37,6 @@ int fp_radix_size(fp_int *a, int radix, int *size)
     t.sign = FP_ZPOS;
   }
 
-  digs = 0;
   while (fp_iszero (&t) == FP_NO) {
     fp_div_d (&t, (fp_digit) radix, &t, &d);
     (*size)++;

@@ -359,6 +359,7 @@ static int fmap_readpage(fmap_t *m, unsigned int first_page, unsigned int count,
 	/* Also not worth reusing the loop below */
 	volatile char faultme;
 	faultme = ((char *)m)[(first_page+i) * m->pgsz + m->hdrsz];
+         (void)faultme;
     }
     fmap_unlock;
     for(i=0; i<=count; i++, page++) {

@@ -355,6 +355,7 @@ static always_inline struct stack_entry *pop_stack(struct stack *stack,
                     READ1(op0, BINOP(0));\
                     READ1(op1, BINOP(1));\
                     sop0 = op0; sop1 = op1;\
+                    sop0 = sop0; sop1 = sop1;\
                     OP;\
                     W0(inst->dest, res);\
                     break;\
@@ -365,6 +366,7 @@ static always_inline struct stack_entry *pop_stack(struct stack *stack,
                     READ8(op0, BINOP(0));\
                     READ8(op1, BINOP(1));\
                     sop0 = op0; sop1 = op1;\
+                    sop0 = sop0; sop1 = sop1;\
                     OP;\
                     W1(inst->dest, res);\
                     break;\
@@ -375,6 +377,7 @@ static always_inline struct stack_entry *pop_stack(struct stack *stack,
                     READ16(op0, BINOP(0));\
                     READ16(op1, BINOP(1));\
                     sop0 = op0; sop1 = op1;\
+                    sop0 = sop0; sop1 = sop1;\
                     OP;\
                     W2(inst->dest, res);\
                     break;\
@@ -385,6 +388,7 @@ static always_inline struct stack_entry *pop_stack(struct stack *stack,
                     READ32(op0, BINOP(0));\
                     READ32(op1, BINOP(1));\
                     sop0 = op0; sop1 = op1;\
+                    sop0 = sop0; sop1 = sop1;\
                     OP;\
                     W3(inst->dest, res);\
                     break;\
@@ -395,6 +399,7 @@ static always_inline struct stack_entry *pop_stack(struct stack *stack,
                     READ64(op0, BINOP(0));\
                     READ64(op1, BINOP(1));\
                     sop0 = op0; sop1 = op1;\
+                    sop0 = sop0; sop1 = sop1;\
                     OP;\
                     W4(inst->dest, res);\
                     break;\
@@ -462,7 +467,7 @@ static always_inline struct stack_entry *pop_stack(struct stack *stack,
 
 #define DEFINE_OP_BC_RET_N(OP, T, R0, W0) \
     case OP: {\
-                T tmp;\
+                T tmp = 0;\
                 R0(tmp, inst->u.unaryop);\
                 CHECK_GT(stack_depth, 0);\
                 stack_depth--;\
@@ -632,6 +637,8 @@ static struct {
     {(void*)cli_bcapi_get_pe_section, sizeof(struct cli_exe_section)},
 };
 
+static inline void dummy_function(int dummy, ...) {}
+
 int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct cli_bc_func *func, const struct cli_bc_inst *inst)
 {
     unsigned i, j, stack_depth=0, bb_inst=0, stop=0, pc=0;
@@ -738,11 +745,11 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
             DEFINE_OP_BC_RET_N(OP_BC_RET*5+3, uint32_t, READ32, WRITE32);
             DEFINE_OP_BC_RET_N(OP_BC_RET*5+4, uint64_t, READ64, WRITE64);
 
-            DEFINE_OP_BC_RET_N(OP_BC_RET_VOID*5, uint8_t, (void), (void));
-            DEFINE_OP_BC_RET_N(OP_BC_RET_VOID*5+1, uint8_t, (void), (void));
-            DEFINE_OP_BC_RET_N(OP_BC_RET_VOID*5+2, uint8_t, (void), (void));
-            DEFINE_OP_BC_RET_N(OP_BC_RET_VOID*5+3, uint8_t, (void), (void));
-            DEFINE_OP_BC_RET_N(OP_BC_RET_VOID*5+4, uint8_t, (void), (void));
+            DEFINE_OP_BC_RET_N(OP_BC_RET_VOID*5, uint8_t, dummy_function, dummy_function);
+            DEFINE_OP_BC_RET_N(OP_BC_RET_VOID*5+1, uint8_t, dummy_function, dummy_function);
+            DEFINE_OP_BC_RET_N(OP_BC_RET_VOID*5+2, uint8_t, dummy_function, dummy_function);
+            DEFINE_OP_BC_RET_N(OP_BC_RET_VOID*5+3, uint8_t, dummy_function, dummy_function);
+            DEFINE_OP_BC_RET_N(OP_BC_RET_VOID*5+4, uint8_t, dummy_function, dummy_function);
 
             DEFINE_ICMPOP(OP_BC_ICMP_EQ, res = (op0 == op1));
             DEFINE_ICMPOP(OP_BC_ICMP_NE, res = (op0 != op1));
@@ -1103,7 +1110,7 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
                 break;
             }
             DEFINE_OP(OP_BC_GEPZ) {
-                int64_t ptr, iptr;
+                int64_t ptr/*, iptr*/;
                 int32_t off;
                 READ32(off, inst->u.three[2]);
 
@@ -1119,7 +1126,7 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
                 } else {
                     READ64(ptr, inst->u.three[1]);
                     off += (ptr & 0x00000000ffffffffULL);
-                    iptr = (ptr & 0xffffffff00000000ULL) + (uint64_t)(off);
+//                  iptr = (ptr & 0xffffffff00000000ULL) + (uint64_t)(off);
                     WRITE64(inst->dest, ptr+off);
                 }
                 break;

@@ -462,6 +462,7 @@ dissect(struct match *m, char *start, char *stop, sopno startst, sopno stopst)
 		}
 	}
 
+	(void)dp;
 	assert(sp == stop);
 	return(sp);
 }

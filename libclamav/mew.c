@@ -356,7 +356,7 @@ int mew_lzma(char *orgsource, const char *buf, uint32_t size_sum, uint32_t vma, 
 	uint32_t new_eax, new_edx, temp;
 	int i, mainloop;
 
-	char var1, var30;
+	char var1;
 	const char *source = buf;
 	char *dest, *new_ebx;
 	const char *new_ecx, *var0C_ecxcopy;
@@ -647,7 +647,6 @@ int mew_lzma(char *orgsource, const char *buf, uint32_t size_sum, uint32_t vma, 
 				t = *(var18+new_eax);
 				new_eax = (new_eax&0xffffff00) | t;
 
-				var30 = t;
 				if (lzma_48635C (t, &new_ecx, &var40, &new_eax, orgsource, size_sum) == 0xffffffff)
 					return -1;
 				var20 = 0;

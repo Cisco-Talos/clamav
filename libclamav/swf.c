@@ -493,7 +493,7 @@ int cli_scanswf(cli_ctx *ctx)
         cli_dbgmsg("SWF: FrameSize xMin %u xMax %u yMin %u yMax %u\n", xMin, xMax, yMin, yMax);
     }
 
-    GETWORD(foo);
+    GETWORD(foo); (void)foo;
     GETWORD(val);
     cli_dbgmsg("SWF: Frames total: %d\n", val);
 

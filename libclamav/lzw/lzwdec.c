@@ -107,8 +107,8 @@ struct lzw_internal_state {
     code_t *dec_codetab;    /* kept separate for small machines */
 };
 
-static void code_print(code_t *code);
-static void dict_print(code_t *codetab, uint16_t start, uint16_t maxcode);
+//static void code_print(code_t *code);
+//static void dict_print(code_t *codetab, uint16_t start, uint16_t maxcode);
 
 #define GetNextCode(code) {                                           \
     if (have == 0)                                                    \
@@ -416,6 +416,7 @@ int lzwInflateEnd(lzw_streamp strm)
     return LZW_OK;
 }
 
+#if 0
 static void code_print(code_t *code)
 {
     code_t *cpt = code;
@@ -449,3 +450,4 @@ static void dict_print(code_t *codetab, uint16_t start, uint16_t maxcode)
         code_print(codetab + i);
     }
 }
+#endif
