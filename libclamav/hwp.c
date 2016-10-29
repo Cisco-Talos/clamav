@@ -513,7 +513,9 @@ struct hwp3_docsummary_entry {
 static inline int parsehwp3_docinfo(cli_ctx *ctx, off_t offset, struct hwp3_docinfo *docinfo)
 {
     const uint8_t *hwp3_ptr;
+#if HAVE_JSON
     int iret;
+#endif
 
     //TODO: use fmap_readn?
     if (!(hwp3_ptr = fmap_need_off_once(*ctx->fmap, offset, HWP3_DOCINFO_SIZE))) {
@@ -1482,8 +1484,8 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
 
 static inline int parsehwp3_infoblk_0(cli_ctx *ctx, fmap_t *dmap, off_t *offset, int *last)
 {
-    uint16_t infoid, infolen;
-    fmap_t *map = (dmap ? dmap : *ctx->fmap);
+//  uint16_t infoid, infolen;
+//  fmap_t *map = (dmap ? dmap : *ctx->fmap);
 
     return CL_SUCCESS;
 }
@@ -1494,7 +1496,9 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
     fmap_t *map = (dmap ? dmap : *ctx->fmap);
     int i, count, ret = CL_SUCCESS;
     long long unsigned infoloc = (long long unsigned)(*offset);
+#if HWP3_DEBUG
     char field[HWP3_FIELD_LENGTH];
+#endif
 #if HAVE_JSON
     json_object *infoblk_1, *contents, *counter, *entry;
 #endif
@@ -1726,7 +1730,7 @@ static int hwp3_cb(void *cbdata, int fd, cli_ctx *ctx)
 {
     fmap_t *map, *dmap;
     off_t offset, start;
-    int i, t = 0, p = 0, last = 0, ret = CL_SUCCESS;
+    int i, p = 0, last = 0, ret = CL_SUCCESS;
     uint16_t nstyles;
 #if HAVE_JSON
     json_object *fonts;
@@ -2062,7 +2066,7 @@ int cli_scanhwpml(cli_ctx *ctx)
     struct msxml_cbdata cbdata;
     struct msxml_ctx mxctx;
     xmlTextReaderPtr reader = NULL;
-    int state, ret = CL_SUCCESS;
+    int ret = CL_SUCCESS;
 
     cli_dbgmsg("in cli_scanhwpml()\n");
 

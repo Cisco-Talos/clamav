@@ -233,7 +233,7 @@ int cli_scanmsxml(cli_ctx *ctx)
 #if HAVE_LIBXML2
     struct msxml_cbdata cbdata;
     xmlTextReaderPtr reader = NULL;
-    int state, ret = CL_SUCCESS;
+    int ret = CL_SUCCESS;
 
     cli_dbgmsg("in cli_scanmsxml()\n");
 

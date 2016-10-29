@@ -144,7 +144,9 @@ int yr_execute_code(
 
   YR_RULE* rule;
   YR_STRING* string;
+#if REAL_YARA
   YR_MATCH* match;
+#endif
   YR_OBJECT* object;
   YR_OBJECT_FUNCTION* function;
 

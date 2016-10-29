@@ -316,7 +316,6 @@ static int unz(const uint8_t *src, uint32_t csize, uint32_t usize, uint16_t meth
 static inline void zupdatekey(uint32_t key[3], unsigned char input)
 {
     unsigned char tmp[1];
-    unsigned long crctmp;
 
     tmp[0] = input;
     ZIP_CRC32(key[0], key[0], tmp, 1);

@@ -893,11 +893,11 @@ static int dmg_stripe_inflate(cli_ctx *ctx, int fd, uint32_t index, struct dmg_m
 static int dmg_stripe_bzip(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish_with_stripes *mish_set)
 {
     int ret = CL_CLEAN;
-    size_t off = mish_set->stripes[index].dataOffset;
     size_t len = mish_set->stripes[index].dataLength;
     uint64_t size_so_far = 0;
     uint64_t expected_len = mish_set->stripes[index].sectorCount * DMG_SECTOR_SIZE;
 #if HAVE_BZLIB_H
+    size_t off = mish_set->stripes[index].dataOffset;
     int rc;
     bz_stream strm;
     uint8_t obuf[BUFSIZ];

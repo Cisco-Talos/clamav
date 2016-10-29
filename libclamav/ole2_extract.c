@@ -357,8 +357,6 @@ print_ole2_property(property_t * property)
 static void
 print_ole2_header(ole2_header_t * hdr)
 {
-    int             i;
-
     if (!hdr || !cli_debug_flag) {
         return;
     }

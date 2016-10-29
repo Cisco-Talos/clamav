@@ -307,7 +307,6 @@ static int cli_ac_addpatt_recursive(struct cli_matcher *root, struct cli_ac_patt
 
 int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
 {
-    struct cli_ac_node *pt;
     struct cli_ac_patt **newtable;
     uint16_t len = MIN(root->ac_maxdepth, pattern->length[0]);
     uint8_t i;
@@ -1529,7 +1528,6 @@ int lsig_sub_matched(const struct cli_matcher *root, struct cli_ac_data *mdata, 
     }
 
     if (ac_lsig->type & CLI_YARA_OFFSET && realoff != CLI_OFF_NONE) {
-        uint32_t * offs;
         struct cli_subsig_matches * ss_matches;
         struct cli_lsig_matches * ls_matches;
         cli_dbgmsg("lsig_sub_matched lsig %u:%u at %u\n", lsigid1, lsigid2, realoff);
@@ -2026,7 +2024,7 @@ inline static int ac_analyze_expr(char *hexstr, int *fixed_len, int *sub_len)
 
 inline static int ac_uicmp(uint16_t *a, size_t alen, uint16_t *b, size_t blen, int *wild)
 {
-    uint16_t cmp, awild, bwild, side_wild;
+    uint16_t awild, bwild, side_wild;
     size_t i, minlen = MIN(alen, blen);
 
     side_wild = 0;
@@ -2404,7 +2402,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
     char *pt, *pt2, *hex = NULL, *hexcpy = NULL;
     uint16_t i, j, ppos = 0, pend, *dec, nzpos = 0;
     uint8_t wprefix = 0, zprefix = 1, plen = 0, nzplen = 0;
-    struct cli_ac_special *newspecial, *specialpt, **newtable;
+    struct cli_ac_special *newspecial, **newtable;
     int ret, error = CL_SUCCESS;
 
 
