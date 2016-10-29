@@ -351,7 +351,7 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
                             /* if likely, check full archive */
                             if (likely_ooxml) {
                                 cli_dbgmsg("Likely OOXML, checking additional zip headers\n");
-                                if ((ret2 = cli_ooxml_filetype(NULL, map)) != CL_SUCCESS) {
+                                if ((int)(ret2 = cli_ooxml_filetype(NULL, map)) != CL_SUCCESS) {
                                     /* either an error or retyping has occurred, return error or just CL_TYPE_ZIP? */
                                     OOXML_FTIDENTIFIED(ret2);
                                     /* falls-through to additional filetyping */
