@@ -115,7 +115,7 @@ limitations under the License.
 %expect 2   // expect 2 shift/reduce conflicts
 
 %debug
-%name-prefix="yara_yy"
+%name-prefix "yara_yy"
 %pure-parser
 %parse-param {void *yyscanner}
 %parse-param {YR_COMPILER* compiler}
@@ -229,7 +229,7 @@ rules
     | rules rule
     | rules import
     | rules error rule      /* on error skip until next rule..*/
-    | rules error 'include' /* .. or include statement */
+    | rules error "include" /* .. or include statement */
     ;
 
 
