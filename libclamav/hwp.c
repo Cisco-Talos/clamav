@@ -1848,13 +1848,13 @@ int cli_scanhwp3(cli_ctx *ctx)
     off_t offset = 0;
 
 #if HAVE_JSON
-    /*
     /* magic *
     cli_jsonstr(header, "Magic", hwp5->signature);
+     */
 
     /* version *
     cli_jsonint(header, "RawVersion", hwp5->version);
-    */
+     */
 #endif
     offset += HWP3_IDENTITY_INFO_SIZE;
 
