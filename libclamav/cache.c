@@ -33,7 +33,7 @@
 #include "cache.h"
 #include "fmap.h"
 
-#ifdef CL_THREAD_SAFE
+#ifdef USE_LRUHASHCACHE
 static pthread_mutex_t pool_mutex = PTHREAD_MUTEX_INITIALIZER;
 #else
 #define pthread_mutex_lock(x) 0

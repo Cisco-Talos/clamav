@@ -302,7 +302,6 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
     int ret, asterisk = 0, range;
     unsigned int i, j, hexlen, nest, parts = 0;
     int mindist = 0, maxdist = 0, error = 0;
-    size_t hexcpysz;
 
     hexlen = strlen(hexsig);
     if (hexsig[0] == '$') {
@@ -3080,7 +3079,6 @@ static char *parse_yara_hex_string(YR_STRING *string, int *ret)
 {
     char *res, *str, *ovr;
     size_t slen, reslen=0, i, j;
-    int sqr = 0;
 
     if (!(string) || !(string->string)) {
         if (ret) *ret = CL_ENULLARG;
@@ -3216,7 +3214,6 @@ static int32_t ytable_lookup(const char *hexsig)
 static int ytable_add_attrib(struct cli_ytable *ytable, const char *hexsig, const char *value, int type)
 {
     int32_t lookup;
-    char **attrib;
 
     if (!ytable || !value)
         return CL_ENULLARG;
@@ -3377,10 +3374,7 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
     struct cli_matcher *root;
     struct cli_ac_lsig **newtable, *lsig, *tsig = NULL;
     unsigned short target = 0;
-    size_t lsize;
     char *logic = NULL, *target_str = NULL;
-    uint8_t has_short_string;
-    char *exp_op = "|";
     char *newident = NULL;
 
     cli_yaramsg("load_oneyara: attempting to load %s\n", rule->identifier);
@@ -4058,7 +4052,7 @@ static int cli_loadpwdb(FILE *fs, struct cl_engine *engine, unsigned int options
     char *attribs;
     char buffer[FILEBUFF];
     unsigned int line = 0, skip = 0, pwcnt = 0, tokens_count;
-    struct cli_pwdb *new, *ins;
+    struct cli_pwdb *new;
     cl_pwdb_t container;
     struct cli_lsig_tdb tdb;
     int ret = CL_SUCCESS, pwstype;

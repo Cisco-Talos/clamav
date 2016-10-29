@@ -628,8 +628,6 @@ int main(int argc, char **argv)
         }
 
         if(tcpsock || num_fd > 0) {
-            int *t;
-
             opt = optget(opts, "TCPAddr");
             if (opt->enabled) {
                 int breakout = 0;

@@ -585,13 +585,13 @@ int cli_pcre_qoff(struct cli_pcre_meta *pm, uint32_t length, uint32_t *adjbuffer
 
 int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const char **virname, struct cli_ac_result **res, const struct cli_matcher *root, struct cli_ac_data *mdata, const struct cli_pcre_off *data, cli_ctx *ctx)
 {
-    struct cli_pcre_meta **metatable = root->pcre_metatable, *pm = NULL;
+    struct cli_pcre_meta *pm = NULL;
     struct cli_pcre_data *pd;
     struct cli_pcre_results p_res;
     struct cli_ac_result *newres;
     uint32_t adjbuffer, adjshift, adjlength;
     unsigned int i, evalcnt = 0;
-    uint64_t maxfilesize, evalids = 0;
+    uint64_t evalids = 0;
     uint32_t global, encompass, rolling;
     int rc, offset, ret = CL_SUCCESS, options=0;
     uint8_t viruses_found = 0;

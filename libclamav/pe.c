@@ -5587,7 +5587,7 @@ int cli_genhash_pe(cli_ctx *ctx, unsigned int class, int type)
     } pe_opt;
     const struct pe_image_section_hdr *section_hdr;
     ssize_t at;
-    unsigned int i, j, pe_plus = 0;
+    unsigned int i, pe_plus = 0;
     size_t fsize;
     uint32_t valign, falign, hdr_size;
     struct pe_image_file_hdr file_hdr;

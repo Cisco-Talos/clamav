@@ -3192,7 +3192,7 @@ void cli_bytetype_describe(const struct cli_bc *bc)
 
 void cli_bytevalue_describe(const struct cli_bc *bc, unsigned funcid)
 {
-    unsigned i, j, total = 0;
+    unsigned i, total = 0;
     const struct cli_bc_func *func;
 
     if (funcid >= bc->num_func) {

@@ -382,7 +382,6 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
     size_t len, checklen;
     char *res = NULL;
     uint32_t objid;
-    size_t i;
 
     /*
      * Yes, all of this is required to find the start and end of a potentially UTF-* string
