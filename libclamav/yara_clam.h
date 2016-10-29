@@ -43,6 +43,7 @@ limitations under the License.
 #include "shared/queue.h"
 #include "yara_hash.h"
 #include "others.h"
+#include "str.h"
 
 /* From libyara/include/yara/types.h            */
 #define DECLARE_REFERENCE(type, name) \
