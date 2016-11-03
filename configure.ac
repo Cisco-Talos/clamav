@@ -136,19 +136,14 @@ m4_include([m4/reorganization/libs/curl.m4])
 
 m4_include([m4/reorganization/substitutions.m4])
 
-AM_CONDITIONAL([ENABLE_CLAMSUBMIT], [test "$have_curl" = "yes"])
-PKG_CHECK_MODULES([LIBMSPACK], [libmspack],
-                 use_internal_mspack=no, use_internal_mspack=yes)
-
-AM_CONDITIONAL([USE_INTERNAL_MSPACK], test "x$use_internal_mspack" = "xyes")
+m4_include([m4/reorganization/libmspack.m4])
 
 if test "x$use_internal_mspack" = "xyes"; then
-       mspack_msg="Internal"
-       AC_CONFIG_SUBDIRS([libclamav/libmspack-0.5alpha])
+    mspack_msg="Internal"
+    AC_CONFIG_SUBDIRS([libclamav/libmspack-0.5alpha])
 else
-       mspack_msg="External, $LIBMSPACK_CFLAGS $LIBMSPACK_LIBS"
+    mspack_msg="External, $LIBMSPACK_CFLAGS $LIBMSPACK_LIBS"
 fi
-
 
 
 AC_CONFIG_FILES([
