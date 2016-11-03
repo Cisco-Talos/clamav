@@ -136,7 +136,8 @@ target_triplet = @target@
 
 @USE_INTERNAL_MSPACK_FALSE@am__append_11 = $(LIBMSPACK_CFLAGS)
 @USE_INTERNAL_MSPACK_FALSE@am__append_12 = $(LIBMSPACK_LIBS)
-@ENABLE_YARA_TRUE@am__append_13 = yara_arena.c \
+@USE_INTERNAL_MSPACK_FALSE@am__append_13 = libmspack-0.5alpha
+@ENABLE_YARA_TRUE@am__append_14 = yara_arena.c \
 @ENABLE_YARA_TRUE@	yara_arena.h \
 @ENABLE_YARA_TRUE@	yara_compiler.c \
 @ENABLE_YARA_TRUE@	yara_compiler.h \
@@ -228,6 +229,8 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
 	$(top_srcdir)/m4/reorganization/bsd.m4 \
 	$(top_srcdir)/m4/reorganization/libs/curl.m4 \
 	$(top_srcdir)/m4/reorganization/substitutions.m4 \
+	$(top_srcdir)/m4/reorganization/libmspack.m4 \
+	$(top_srcdir)/libclamav/libmspack-0.5alpha/m4/libmspack-opts.m4 \
 	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
@@ -962,7 +965,8 @@ AM_CFLAGS = @WERR_CFLAGS@
 lib_LTLIBRARIES = $(am__append_3) libclamav.la
 EXTRA_DIST = c++/Makefile.nollvm.in \
 	libmspack-0.5alpha/Makefile.intmspack.in $(am__append_4) \
-	regex/engine.c tomsfastmath/sqr/fp_sqr_comba.c \
+	$(am__append_13) regex/engine.c \
+	tomsfastmath/sqr/fp_sqr_comba.c \
 	tomsfastmath/mul/fp_mul_comba.c libclamav.map \
 	jsparse/generated/operators.h jsparse/generated/keywords.h \
 	jsparse/future_reserved_words.list jsparse/keywords.list \
@@ -1128,7 +1132,7 @@ libclamav_la_SOURCES = matcher-ac.c matcher-ac.h matcher-bm.c \
 	openioc.h msdoc.c msdoc.h matcher-pcre.c matcher-pcre.h \
 	regex_pcre.c regex_pcre.h msxml.c msxml.h msxml_parser.c \
 	msxml_parser.h tiff.c tiff.h hwp.c hwp.h lzw/lzwdec.c \
-	lzw/lzwdec.h $(am__append_13) bignum.h bignum_fast.h \
+	lzw/lzwdec.h $(am__append_14) bignum.h bignum_fast.h \
 	tomsfastmath/addsub/fp_add.c tomsfastmath/addsub/fp_add_d.c \
 	tomsfastmath/addsub/fp_addmod.c tomsfastmath/addsub/fp_cmp.c \
 	tomsfastmath/addsub/fp_cmp_d.c \

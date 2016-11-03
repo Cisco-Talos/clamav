@@ -183,6 +183,7 @@ libclamav_la_LIBADD +=  @top_builddir@/libclamav/libmspack-0.5alpha/.libs/cabc.o
 else
 libclamav_la_CFLAGS += $(LIBMSPACK_CFLAGS)
 libclamav_la_LDFLAGS += $(LIBMSPACK_LIBS)
+EXTRA_DIST += libmspack-0.5alpha
 libmspack-0.5alpha/Makefile: libmspack-0.5alpha/Makefile.intmspack.in
 	$(AM_V_at) cp $< $@
 distclean-recursive distdir maintainer-clean-recursive: libmspack-0.5alpha/Makefile

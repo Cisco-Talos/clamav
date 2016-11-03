@@ -645,10 +645,10 @@ am__EXEEXT_FALSE
 am__EXEEXT_TRUE
 LTLIBOBJS
 LIBOBJS
-USE_INTERNAL_MSPACK_FALSE
-USE_INTERNAL_MSPACK_TRUE
 LIBMSPACK_LIBS
 LIBMSPACK_CFLAGS
+USE_INTERNAL_MSPACK_FALSE
+USE_INTERNAL_MSPACK_TRUE
 JSON_LDFLAGS
 JSON_LIBS
 SSL_LDFLAGS
@@ -960,6 +960,7 @@ enable_libfreshclam
 enable_prelude
 with_libprelude_prefix
 with_libcurl
+with_system_libmspack
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1708,6 +1709,9 @@ Optional Packages:
   --with-libcurl[=DIR]    path to directory containing libcurl
                           [default=/usr/local or /usr if not found in
                           /usr/local]
+  --with-system-libmspack Specify system libmspack location or to use internal
+                          package, uses full path to libmspack or bin
+                          directory (default=search PATH environment variable)
 
 Some influential environment variables:
   CC          C compiler command
@@ -24615,6 +24619,28 @@ fi
 
 
 
+
+# Check whether --with-system-libmspack was given.
+if test "${with_system_libmspack+set}" = set; then :
+  withval=$with_system_libmspack; system_libmspack=$withval
+else
+  system_libmspack="no"
+fi
+
+
+
+if test "x$system_libmspack" = "xno"; then
+    use_internal_mspack=yes
+     if test TRUE; then
+  USE_INTERNAL_MSPACK_TRUE=
+  USE_INTERNAL_MSPACK_FALSE='#'
+else
+  USE_INTERNAL_MSPACK_TRUE='#'
+  USE_INTERNAL_MSPACK_FALSE=
+fi
+
+else
+
 pkg_failed=no
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for LIBMSPACK" >&5
 $as_echo_n "checking for LIBMSPACK... " >&6; }
@@ -24685,8 +24711,7 @@ else
 $as_echo "yes" >&6; }
 	use_internal_mspack=no
 fi
-
- if test "x$use_internal_mspack" = "xyes"; then
+     if test "x$use_internal_mspack" = "xyes"; then
   USE_INTERNAL_MSPACK_TRUE=
   USE_INTERNAL_MSPACK_FALSE='#'
 else
@@ -24694,15 +24719,16 @@ else
   USE_INTERNAL_MSPACK_FALSE=
 fi
 
-
-if test "x$use_internal_mspack" = "xyes"; then
-       mspack_msg="Internal"
-       subdirs="$subdirs libclamav/libmspack-0.5alpha"
-
-else
-       mspack_msg="External, $LIBMSPACK_CFLAGS $LIBMSPACK_LIBS"
 fi
 
+
+if test "x$use_internal_mspack" = "xyes"; then
+    mspack_msg="Internal"
+    subdirs="$subdirs libclamav/libmspack-0.5alpha"
+
+else
+    mspack_msg="External, $LIBMSPACK_CFLAGS $LIBMSPACK_LIBS"
+fi
 
 
 ac_config_files="$ac_config_files clamscan/Makefile database/Makefile docs/Makefile clamd/Makefile clamd/clamav-daemon.service clamd/clamav-daemon.socket clamdscan/Makefile clamsubmit/Makefile clamav-milter/Makefile freshclam/clamav-freshclam.service freshclam/Makefile sigtool/Makefile clamconf/Makefile etc/Makefile test/Makefile unit_tests/Makefile clamdtop/Makefile clambc/Makefile libfreshclam/Makefile Makefile clamav-config libclamav.pc platform.h docs/man/clamav-milter.8 docs/man/clamav-milter.conf.5 docs/man/clambc.1 docs/man/clamconf.1 docs/man/clamd.8 docs/man/clamd.conf.5 docs/man/clamdscan.1 docs/man/clamscan.1 docs/man/freshclam.1 docs/man/freshclam.conf.5 docs/man/sigtool.1 docs/man/clamdtop.1 docs/man/clamsubmit.1"
@@ -24921,6 +24947,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${ENABLE_LIBFRESHCLAM_TRUE}" && test -z "${ENABLE_LIBFRESHCLAM_FALSE}"; then
   as_fn_error $? "conditional \"ENABLE_LIBFRESHCLAM\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${USE_INTERNAL_MSPACK_TRUE}" && test -z "${USE_INTERNAL_MSPACK_FALSE}"; then
+  as_fn_error $? "conditional \"USE_INTERNAL_MSPACK\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${USE_INTERNAL_MSPACK_TRUE}" && test -z "${USE_INTERNAL_MSPACK_FALSE}"; then
@@ -27502,6 +27532,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${ENABLE_LIBFRESHCLAM_TRUE}" && test -z "${ENABLE_LIBFRESHCLAM_FALSE}"; then
   as_fn_error $? "conditional \"ENABLE_LIBFRESHCLAM\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${USE_INTERNAL_MSPACK_TRUE}" && test -z "${USE_INTERNAL_MSPACK_FALSE}"; then
+  as_fn_error $? "conditional \"USE_INTERNAL_MSPACK\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${USE_INTERNAL_MSPACK_TRUE}" && test -z "${USE_INTERNAL_MSPACK_FALSE}"; then
