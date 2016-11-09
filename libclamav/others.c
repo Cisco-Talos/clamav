@@ -1092,10 +1092,12 @@ void cli_append_virus(cli_ctx * ctx, const char * virname)
 {
     if (ctx->virname == NULL)
         return;
-    if (ctx->engine->cb_virus_found)
-        ctx->engine->cb_virus_found(fmap_fd(*ctx->fmap), virname, ctx->cb_ctx);
-    ctx->num_viruses++;
-    *ctx->virname = virname;
+    if (ctx->limit_exceeded == 0 || SCAN_ALL) { 
+        if (ctx->engine->cb_virus_found)
+            ctx->engine->cb_virus_found(fmap_fd(*ctx->fmap), virname, ctx->cb_ctx);
+        ctx->num_viruses++;
+        *ctx->virname = virname;
+    }
 #if HAVE_JSON
     if (SCAN_PROPERTIES && ctx->wrkproperty) {
         json_object *arrobj, *virobj;
