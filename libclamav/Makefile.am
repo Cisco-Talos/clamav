@@ -21,6 +21,7 @@ AM_YFLAGS = -d
 AM_CPPFLAGS = -I$(top_srcdir) -I@srcdir@/nsis $(LTDLINCL)
 AM_CFLAGS=@WERR_CFLAGS@
 lib_LTLIBRARIES =
+COMMON_CLEANFILES =
 EXTRA_DIST = c++/Makefile.nollvm.in libmspack-0.5alpha/Makefile.intmspack.in
 if ENABLE_UNRAR
 
@@ -180,6 +181,7 @@ libclamav_la_LIBADD +=  @top_builddir@/libclamav/libmspack-0.5alpha/.libs/cabc.l
 			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/chmc.lo \
 			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/mszipc.lo \
 			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/hlpd.lo
+COMMON_CLEANFILES+=@top_builddir@/libclamav/libmspack-0.5alpha/config.h @top_builddir@/libclamav/libmspack-0.5alpha/libmspack.pc
 else
 libclamav_la_CFLAGS += $(LIBMSPACK_CFLAGS)
 libclamav_la_LDFLAGS += $(LIBMSPACK_LIBS)
@@ -627,7 +629,7 @@ noinst_LTLIBRARIES = libclamav_internal_utils.la libclamav_internal_utils_nothre
 EXTRA_DIST += regex/engine.c tomsfastmath/sqr/fp_sqr_comba.c tomsfastmath/mul/fp_mul_comba.c libclamav.map \
 	     jsparse/generated/operators.h jsparse/generated/keywords.h jsparse/future_reserved_words.list\
 	     jsparse/keywords.list jsparse/special_keywords.list jsparse/operators.gperf
-COMMON_CLEANFILES=version.h version.h.tmp *.gcda *.gcno
+COMMON_CLEANFILES+=version.h version.h.tmp *.gcda *.gcno
 if MAINTAINER_MODE
 BUILT_SOURCES=jsparse/generated/operators.h jsparse/generated/keywords.h jsparse-keywords.gperf
 
