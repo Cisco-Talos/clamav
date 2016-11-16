@@ -136,6 +136,9 @@ give_advice ()
 
   printf '%s\n' "'$1' is $msg."
 
+  echo "If you pulled this source code from a git repo,"
+  echo "try running 'autoreconf -ivf' to resolve this warning"
+
   configure_deps="'configure.ac' or m4 files included by 'configure.ac'"
   case $normalized_program in
     autoconf*)
@@ -204,7 +207,10 @@ give_advice "$1" | sed -e '1s/^/WARNING: /' \
 
 # Propagate the correct exit status (expected to be 127 for a program
 # not found, 63 for a program that failed due to version mismatch).
-exit $st
+#exit $st
+
+# Modification to exit normally after printing warning.
+exit 0
 
 # Local variables:
 # eval: (add-hook 'write-file-hooks 'time-stamp)

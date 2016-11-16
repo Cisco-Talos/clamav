@@ -776,12 +776,12 @@ static int yara_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data 
     int rc;
     YR_SCAN_CONTEXT context = {0};
  
+    context.fmap = *ctx->fmap;
+    context.file_size = (*ctx->fmap)->len;
     if (target_info != NULL) {
-        context.file_size = target_info->fsize;
         if (target_info->status == 1)   
             context.entry_point = target_info->exeinfo.ep;
     }
-    context.fmap = *ctx->fmap;
 
     rc = yr_execute_code(ac_lsig, acdata, &context, 0, 0);
 

@@ -21,7 +21,8 @@ AM_YFLAGS = -d
 AM_CPPFLAGS = -I$(top_srcdir) -I@srcdir@/nsis $(LTDLINCL)
 AM_CFLAGS=@WERR_CFLAGS@
 lib_LTLIBRARIES =
-EXTRA_DIST = c++/Makefile.nollvm.in
+COMMON_CLEANFILES =
+EXTRA_DIST = c++/Makefile.nollvm.in libmspack-0.5alpha/Makefile.intmspack.in
 if ENABLE_UNRAR
 
 AM_CPPFLAGS += -DWARN_DLOPEN_FAIL
@@ -158,31 +159,38 @@ endif
 if USE_INTERNAL_MSPACK
 SUBDIRS += libmspack-0.5alpha
 libclamav_la_CFLAGS += -I@top_srcdir@/libclamav/libmspack-0.5alpha/mspack
-libclamav_la_LIBADD +=  @top_builddir@/libclamav/libmspack-0.5alpha/.libs/cabc.o \
-			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/system.o \
-			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/kwajd.o \
-			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/hlpc.o \
-			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/chmd.o \
-			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/qtmd.o \
-			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/litc.o \
-			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/oabc.o \
-			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/lzxd.o \
-			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/litd.o \
-			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/crc32.o \
-			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/lzssd.o \
-			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/kwajc.o \
-			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/cabd.o \
-			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/szddd.o \
-			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/lzxc.o \
-			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/mszipd.o \
-			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/szddc.o \
-			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/oabd.o \
-			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/chmc.o \
-			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/mszipc.o \
-			@top_builddir@/libclamav/libmspack-0.5alpha/.libs/hlpd.o
+libclamav_la_LIBADD +=  @top_builddir@/libclamav/libmspack-0.5alpha/cabc.lo \
+			@top_builddir@/libclamav/libmspack-0.5alpha/system.lo \
+			@top_builddir@/libclamav/libmspack-0.5alpha/kwajd.lo \
+			@top_builddir@/libclamav/libmspack-0.5alpha/hlpc.lo \
+			@top_builddir@/libclamav/libmspack-0.5alpha/chmd.lo \
+			@top_builddir@/libclamav/libmspack-0.5alpha/qtmd.lo \
+			@top_builddir@/libclamav/libmspack-0.5alpha/litc.lo \
+			@top_builddir@/libclamav/libmspack-0.5alpha/oabc.lo \
+			@top_builddir@/libclamav/libmspack-0.5alpha/lzxd.lo \
+			@top_builddir@/libclamav/libmspack-0.5alpha/litd.lo \
+			@top_builddir@/libclamav/libmspack-0.5alpha/crc32.lo \
+			@top_builddir@/libclamav/libmspack-0.5alpha/lzssd.lo \
+			@top_builddir@/libclamav/libmspack-0.5alpha/kwajc.lo \
+			@top_builddir@/libclamav/libmspack-0.5alpha/cabd.lo \
+			@top_builddir@/libclamav/libmspack-0.5alpha/szddd.lo \
+			@top_builddir@/libclamav/libmspack-0.5alpha/lzxc.lo \
+			@top_builddir@/libclamav/libmspack-0.5alpha/mszipd.lo \
+			@top_builddir@/libclamav/libmspack-0.5alpha/szddc.lo \
+			@top_builddir@/libclamav/libmspack-0.5alpha/oabd.lo \
+			@top_builddir@/libclamav/libmspack-0.5alpha/chmc.lo \
+			@top_builddir@/libclamav/libmspack-0.5alpha/mszipc.lo \
+			@top_builddir@/libclamav/libmspack-0.5alpha/hlpd.lo
+COMMON_CLEANFILES+=@top_builddir@/libclamav/libmspack-0.5alpha/config.h \
+		   @top_builddir@/libclamav/libmspack-0.5alpha/libmspack.pc \
+		   @top_builddir@/libclamav/libmspack-0.5alpha/autom4te.cache/*
 else
 libclamav_la_CFLAGS += $(LIBMSPACK_CFLAGS)
 libclamav_la_LDFLAGS += $(LIBMSPACK_LIBS)
+EXTRA_DIST += libmspack-0.5alpha
+libmspack-0.5alpha/Makefile: libmspack-0.5alpha/Makefile.intmspack.in
+	$(AM_V_at) cp $< $@
+distclean-recursive distdir maintainer-clean-recursive: libmspack-0.5alpha/Makefile
 endif
 
 include_HEADERS = clamav.h
@@ -623,7 +631,7 @@ noinst_LTLIBRARIES = libclamav_internal_utils.la libclamav_internal_utils_nothre
 EXTRA_DIST += regex/engine.c tomsfastmath/sqr/fp_sqr_comba.c tomsfastmath/mul/fp_mul_comba.c libclamav.map \
 	     jsparse/generated/operators.h jsparse/generated/keywords.h jsparse/future_reserved_words.list\
 	     jsparse/keywords.list jsparse/special_keywords.list jsparse/operators.gperf
-COMMON_CLEANFILES=version.h version.h.tmp *.gcda *.gcno
+COMMON_CLEANFILES+=version.h version.h.tmp *.gcda *.gcno
 if MAINTAINER_MODE
 BUILT_SOURCES=jsparse/generated/operators.h jsparse/generated/keywords.h jsparse-keywords.gperf
 
