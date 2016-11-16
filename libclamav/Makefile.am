@@ -181,7 +181,9 @@ libclamav_la_LIBADD +=  @top_builddir@/libclamav/libmspack-0.5alpha/cabc.lo \
 			@top_builddir@/libclamav/libmspack-0.5alpha/chmc.lo \
 			@top_builddir@/libclamav/libmspack-0.5alpha/mszipc.lo \
 			@top_builddir@/libclamav/libmspack-0.5alpha/hlpd.lo
-COMMON_CLEANFILES+=@top_builddir@/libclamav/libmspack-0.5alpha/config.h @top_builddir@/libclamav/libmspack-0.5alpha/libmspack.pc
+COMMON_CLEANFILES+=@top_builddir@/libclamav/libmspack-0.5alpha/config.h \
+		   @top_builddir@/libclamav/libmspack-0.5alpha/libmspack.pc \
+		   @top_builddir@/libclamav/libmspack-0.5alpha/autom4te.cache/*
 else
 libclamav_la_CFLAGS += $(LIBMSPACK_CFLAGS)
 libclamav_la_LDFLAGS += $(LIBMSPACK_LIBS)
