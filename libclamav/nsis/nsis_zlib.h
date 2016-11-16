@@ -157,7 +157,7 @@ struct inflate_blocks_state {
 };
 
 typedef struct nsis_z_stream_s {
-    Bytef    *next_in;  /* next input byte */
+    const Bytef *next_in;  /* next input byte */
     uInt     avail_in;  /* number of bytes available at next_in */
     uLong    total_in;  /* total nb of input bytes read so far */
 

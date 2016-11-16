@@ -97,8 +97,8 @@ testchecksum(const char *header, int targetsum)
 	}
 
 	/* Build checksums. POSIX is unsigned; some legacy tars use signed. */
-	posix = (unsigned char *)header;
-	legacy = (signed char *)header;
+	posix = (const unsigned char *)header;
+	legacy = (const char *)header;
 	for (i = 0; i < BLOCKSIZE; i++ ) {
 		if ((i >= TARCHECKSUMOFFSET) && (i < TARCHECKSUMOFFSET + TARCHECKSUMLEN)) {
 			/* Use ascii value of space in place of checksum value */

@@ -91,7 +91,7 @@ int cli_unfsg(const char *source, char *dest, int ssize, int dsize, const char *
 	  /* 18f */
 	  if (csrc >= source+ssize)
 	    return -1;
-	  backbytes = *(unsigned char*)csrc;
+	  backbytes = *(const unsigned char*)csrc;
 	  backsize = backsize * 2 + (backbytes & 1);
 	  backbytes = (backbytes & 0xff)>>1;
 	  csrc++;
@@ -129,7 +129,7 @@ int cli_unfsg(const char *source, char *dest, int ssize, int dsize, const char *
 	  /* 198 */
 	  if (csrc >= source+ssize)
 	    return -1;
-	  backbytes = *(unsigned char*)csrc;
+	  backbytes = *(const unsigned char*)csrc;
 	  backbytes += (backsize-1)<<8;
 	  backsize = 1;
 	  csrc++;
@@ -217,7 +217,7 @@ int unmew(const char *source, char *dest, int ssize, int dsize, const char **end
 	  /* 18f */
 	  if (csrc >= source+ssize)
 	    return -1;
-	  myeax_backbytes = *(unsigned char*)csrc;
+	  myeax_backbytes = *(const unsigned char*)csrc;
 	  myecx_backsize = myecx_backsize * 2 + (myeax_backbytes & 1);
 	  myeax_backbytes = (myeax_backbytes & 0xff)>>1;
 	  csrc++;
@@ -258,7 +258,7 @@ int unmew(const char *source, char *dest, int ssize, int dsize, const char **end
 	  /* 198 */
 	  if (csrc >= source+ssize)
 	    return -1;
-	  myeax_backbytes = *(unsigned char*)csrc;
+	  myeax_backbytes = *(const unsigned char*)csrc;
 	  myeax_backbytes += (myecx_backsize-1)<<8;
 	  myecx_backsize = 1;
 	  csrc++;

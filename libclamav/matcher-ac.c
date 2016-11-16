@@ -1937,8 +1937,8 @@ static int qcompare_byte(const void *a, const void *b)
 
 static int qcompare_fstr(const void *arg, const void *a, const void *b)
 {
-    uint16_t len = *(uint16_t *)arg;
-    return memcmp(*(const unsigned char **)a, *(const unsigned char **)b, len);
+    uint16_t len = *(const uint16_t *)arg;
+    return memcmp(*(const unsigned char * const *)a, *(const unsigned char * const *)b, len);
 }
 
 /* returns if level of nesting, end set to MATCHING paren, start AFTER staring paren */
@@ -2712,7 +2712,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
     /* TODO - sigopts affect on filters? */
     if (root->filter) {
         /* so that we can show meaningful messages */
-        new->virname = (char*)virname;
+        new->virname = virname;
         if (filter_add_acpatt(root->filter, new) == -1) {
             cli_warnmsg("cli_ac_addpatt: cannot use filter for trie\n");
             mpool_free(root->mempool, root->filter);

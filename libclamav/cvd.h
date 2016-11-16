@@ -30,7 +30,7 @@ struct cli_dbio {
     gzFile gzs;
     FILE *fs;
     unsigned int size, bread;
-    char *buf, *bufpt, *readpt;
+    const char *buf, *bufpt, *readpt;
     unsigned int usebuf, bufsize, readsize;
     unsigned int chkonly;
     void *hashctx;

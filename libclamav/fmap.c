@@ -681,7 +681,7 @@ static const void *mem_need(fmap_t *m, size_t at, size_t len, int lock) { /* WIN
 	return NULL;
     }
 
-    return (void *)((char *)m->data + at);
+    return ((const char *)m->data + at);
 }
 
 static void mem_unneed_off(fmap_t *m, size_t at, size_t len)
@@ -692,7 +692,7 @@ static void mem_unneed_off(fmap_t *m, size_t at, size_t len)
 }
 
 static const void *mem_need_offstr(fmap_t *m, size_t at, size_t len_hint) {
-    char *ptr = (char *)m->data + at;
+    const char *ptr = (const char *)m->data + at;
 
     if(!len_hint || len_hint > m->real_len - at)
 	len_hint = m->real_len - at;
@@ -701,12 +701,13 @@ static const void *mem_need_offstr(fmap_t *m, size_t at, size_t len_hint) {
 	return NULL;
 
     if(memchr(ptr, 0, len_hint))
-	return (void *)ptr;
+	return (const void *)ptr;
     return NULL;
 }
 
 static const void *mem_gets(fmap_t *m, char *dst, size_t *at, size_t max_len) {
-    char *src = (char *)m->data + *at, *endptr = NULL;
+    const char *src = (const char *)m->data + *at;
+	char *endptr = NULL;
     size_t len = MIN(max_len-1, m->real_len - *at);
 
     if(!len || !CLI_ISCONTAINED(0, m->real_len, *at, len))

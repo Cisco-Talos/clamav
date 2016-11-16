@@ -2555,7 +2555,7 @@ static int run_builtin_or_loaded(struct cli_all_bc *bcs, uint8_t kind, const cha
 
 	memset(&dbio, 0, sizeof(dbio));
 	dbio.usebuf = 1;
-	dbio.bufpt = dbio.buf = (char*)builtin_cbc;
+	dbio.bufpt = dbio.buf = builtin_cbc;
 	dbio.bufsize = strlen(builtin_cbc)+1;
 	if (!dbio.bufsize || dbio.bufpt[dbio.bufsize-2] != '\n') {
 	    cli_errmsg("Invalid builtin bytecode: missing terminator\n");

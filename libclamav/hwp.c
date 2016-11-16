@@ -1998,7 +1998,7 @@ static int hwpml_binary_cb(int fd, cli_ctx *ctx, int num_attribs, struct attrib_
             return CL_EMAP;
         }
 
-        decoded = (char *)cl_base64_decode((char *)instream, input->len, NULL, &decodedlen, 0);
+        decoded = (char *)cl_base64_decode((const char *)instream, input->len, NULL, &decodedlen, 0);
         funmap(input);
         if (!decoded) {
             cli_errmsg("HWPML: Failed to get base64 decode binary data\n");

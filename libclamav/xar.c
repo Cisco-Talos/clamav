@@ -363,7 +363,7 @@ static void * xar_hash_init(int hash, void **sc, void **mc)
     }
 }
 
-static void xar_hash_update(void * hash_ctx, void * data, unsigned long size, int hash)
+static void xar_hash_update(void * hash_ctx, const void * data, unsigned long size, int hash)
 {
     if (!hash_ctx || !data || !size)
         return;
@@ -558,7 +558,7 @@ int cli_scanxar(cli_ctx *ctx)
     while (CL_SUCCESS == (rc = xar_get_toc_data_values(reader, &length, &offset, &size, &encoding,
                                                        &a_cksum, &a_hash, &e_cksum, &e_hash))) {
         int do_extract_cksum = 1;
-        unsigned char * blockp;
+        const unsigned char * blockp;
         void *a_sc, *e_sc;
         void *a_mc, *e_mc;
         char * expected;
@@ -674,7 +674,7 @@ int cli_scanxar(cli_ctx *ctx)
                     
                 }
 
-                blockp = (void*)fmap_need_off_once(map, at, CLI_LZMA_HDR_SIZE);
+                blockp = fmap_need_off_once(map, at, CLI_LZMA_HDR_SIZE);
                 if (blockp == NULL) {
                     char errbuff[128];
                     cli_strerror(errno, errbuff, sizeof(errbuff));
@@ -786,7 +786,7 @@ int cli_scanxar(cli_ctx *ctx)
                 if (ctx->engine->maxfilesize)
                     writelen = MIN((size_t)(ctx->engine->maxfilesize), writelen);
                     
-                if (!(blockp = (void*)fmap_need_off_once(map, at, writelen))) {
+                if (!(blockp = (const void *)fmap_need_off_once(map, at, writelen))) {
                     char errbuff[128];
                     cli_strerror(errno, errbuff, sizeof(errbuff));
                     cli_dbgmsg("cli_scanxar: Can't read %zu bytes @ %zu, errno:%s.\n",

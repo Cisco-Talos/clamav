@@ -528,7 +528,7 @@ int unupack399(char *bs, uint32_t bl, uint32_t init_eax, char *init_ebx, uint32_
 							/* do not put in one statment because of difference in signedness */
 							if (!CLI_ISCONTAINED(bs, bl, p.p0, 4))
 								return -1;
-							temp_edx = cli_readint32((char *)p.p0);
+							temp_edx = cli_readint32((const char *)p.p0);
 							temp_edx = EC32(CE32(temp_edx));
 							p.p1 >>= 1;
 							temp_edx -= p.p2;

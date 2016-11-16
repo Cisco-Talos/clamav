@@ -501,11 +501,12 @@ static int is_parse_hdr(cli_ctx *ctx, struct IS_CABSTUFF *c) {
     uint32_t h1_data_off, objs_files_cnt, objs_dirs_off;
     unsigned int off, i, scanned = 0;
     int ret = CL_BREAK;
-    char hash[33], *hdr;
+    char hash[33];
+	const char *hdr;
     fmap_t *map = *ctx->fmap;
 
     const struct IS_HDR *h1;
-    struct IS_OBJECTS *objs;
+    const struct IS_OBJECTS *objs;
     /* struct IS_INSTTYPEHDR *typehdr; -- UNUSED */
 
     if(!c->hdr || !c->hdrsz || !c->cabcnt) {
@@ -517,9 +518,9 @@ static int is_parse_hdr(cli_ctx *ctx, struct IS_CABSTUFF *c) {
 	cli_dbgmsg("is_parse_hdr: not enough room for H1\n");
 	return CL_CLEAN;
     }
-    hdr = (char *)h1;
+    hdr = (const char *)h1;
     h1_data_off = le32_to_host(h1->data_off);
-    objs = (struct IS_OBJECTS *)fmap_need_ptr(map, hdr + h1_data_off, sizeof(*objs));
+    objs = (const struct IS_OBJECTS *)fmap_need_ptr(map, hdr + h1_data_off, sizeof(*objs));
     if(!objs) {
         cli_dbgmsg("is_parse_hdr: not enough room for OBJECTS\n");
         return CL_CLEAN;
@@ -572,7 +573,7 @@ static int is_parse_hdr(cli_ctx *ctx, struct IS_CABSTUFF *c) {
     off = h1_data_off + objs_dirs_off + le32_to_host(objs->dir_sz2);
     fmap_unneed_ptr(map, objs, sizeof(*objs));
     for(i=0; i<objs_files_cnt ;i++) {
-	struct IS_FILEITEM *file = (struct IS_FILEITEM *)fmap_need_off(map, c->hdr + off, sizeof(*file));
+	const struct IS_FILEITEM *file = (const struct IS_FILEITEM *)fmap_need_off(map, c->hdr + off, sizeof(*file));
 
 	if(file) {
 	    const char *emptyname = "", *dir_name = emptyname, *file_name = emptyname;
@@ -629,9 +630,9 @@ static int is_parse_hdr(cli_ctx *ctx, struct IS_CABSTUFF *c) {
 				if (ctx->engine->maxfiles && scanned >= ctx->engine->maxfiles) {
 				    cli_dbgmsg("is_parse_hdr: File limit reached (max: %u)\n", ctx->engine->maxfiles);
 				    if(file_name != emptyname)
-					fmap_unneed_ptr(map, (void *)file_name, strlen(file_name)+1);
+					fmap_unneed_ptr(map, file_name, strlen(file_name)+1);
 				    if(dir_name != emptyname)
-					fmap_unneed_ptr(map, (void *)dir_name, strlen(dir_name)+1);
+					fmap_unneed_ptr(map, dir_name, strlen(dir_name)+1);
 				    return CL_EMAXFILES;
 				}
 				cabret = is_extract_cab(ctx, file_stream_off + c->cabs[j].off, file_size, file_csize);
@@ -649,9 +650,9 @@ static int is_parse_hdr(cli_ctx *ctx, struct IS_CABSTUFF *c) {
 			}
 			if(cabret != CL_CLEAN) {
 			    if(file_name != emptyname)
-				fmap_unneed_ptr(map, (void *)file_name, strlen(file_name)+1);
+				fmap_unneed_ptr(map, file_name, strlen(file_name)+1);
 			    if(dir_name != emptyname)
-				fmap_unneed_ptr(map, (void *)dir_name, strlen(dir_name)+1);
+				fmap_unneed_ptr(map, dir_name, strlen(dir_name)+1);
 			    return cabret;
 			}
 		    } else {
@@ -663,9 +664,9 @@ static int is_parse_hdr(cli_ctx *ctx, struct IS_CABSTUFF *c) {
 		cli_dbgmsg("is_parse_hdr: skipped unknown file entry %u\n", i);
 	    }
 	    if(file_name != emptyname)
-		fmap_unneed_ptr(map, (void *)file_name, strlen(file_name)+1);
+		fmap_unneed_ptr(map, file_name, strlen(file_name)+1);
 	    if(dir_name != emptyname)
-		fmap_unneed_ptr(map, (void *)dir_name, strlen(dir_name)+1);
+		fmap_unneed_ptr(map, dir_name, strlen(dir_name)+1);
 	    fmap_unneed_ptr(map, file, sizeof(*file));
 	} else {
 	    ret = CL_CLEAN;

@@ -452,13 +452,13 @@ static int nsis_headers(struct nsis_st *n, cli_ctx *ctx) {
   /* Guess if solid */
   for (i=0, pos=0;pos < n->asz-4;i++) {
     int32_t nextsz;
-    if (!(buf = fmap_need_ptr_once(n->map, (void *)buf, 4))) return CL_EREAD;
+    if (!(buf = fmap_need_ptr_once(n->map, buf, 4))) return CL_EREAD;
     nextsz=cli_readint32(buf);
     if (!i) n->comp = nsis_detcomp(buf);
     buf += 4;
     if (nextsz&0x80000000) {
       nextsz&=~0x80000000;
-      if (!(buf = fmap_need_ptr_once(n->map, (void *)buf, 4))) return CL_EREAD;
+      if (!(buf = fmap_need_ptr_once(n->map, buf, 4))) return CL_EREAD;
       comps[nsis_detcomp(buf)]++;
       nextsz-=4;
       pos+=4;

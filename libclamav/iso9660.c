@@ -234,7 +234,7 @@ int cli_scaniso(cli_ctx *ctx, size_t offset) {
     if(!privol)
 	return CL_CLEAN;
 
-    next = (uint8_t *)cli_memstr((char *)privol + 2049, 2448 + 6 - 2049, "CD001", 5);
+    next = cli_memstr((const char *)privol + 2049, 2448 + 6 - 2049, "CD001", 5);
     if(!next)
 	return CL_CLEAN; /* Find next volume descriptor */
 

@@ -93,7 +93,7 @@ struct cli_ac_patt {
     uint32_t sigid;
     uint32_t lsigid[3];
     uint16_t ch[2];
-    char *virname;
+    const char *virname;
     void *customdata;
     uint16_t ch_mindist[2];
     uint16_t ch_maxdist[2];

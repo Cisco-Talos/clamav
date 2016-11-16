@@ -950,7 +950,7 @@ int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
                     }
 
                     if (len > 4)
-                        dparams = pdf_parse_dict(pdf, obj, objsz, (char *)pstr, NULL);
+                        dparams = pdf_parse_dict(pdf, obj, objsz, pstr, NULL);
                     else
                         cli_dbgmsg("cli_pdf: failed to locate DecodeParms dictionary start\n");
                 }

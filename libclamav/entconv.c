@@ -709,7 +709,7 @@ static int in_iconv_u16(const m_area_t* in_m_area, iconv_t* iconv_struct, m_area
 	char   tmp4[4];
 	size_t inleft = in_m_area->length - in_m_area->offset;
 	size_t rc, alignfix;
-	char*  input   = (char*)in_m_area->buffer + in_m_area->offset;
+	const char*  input = in_m_area->buffer + in_m_area->offset;
 	size_t outleft = out_m_area->length > 0 ? out_m_area->length : 0;
 	char* out      = (char*)out_m_area->buffer;
 
