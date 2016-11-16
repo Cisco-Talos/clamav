@@ -134,7 +134,10 @@ target_triplet = @target@
 @USE_INTERNAL_MSPACK_TRUE@			@top_builddir@/libclamav/libmspack-0.5alpha/mszipc.lo \
 @USE_INTERNAL_MSPACK_TRUE@			@top_builddir@/libclamav/libmspack-0.5alpha/hlpd.lo
 
-@USE_INTERNAL_MSPACK_TRUE@am__append_11 = @top_builddir@/libclamav/libmspack-0.5alpha/config.h @top_builddir@/libclamav/libmspack-0.5alpha/libmspack.pc
+@USE_INTERNAL_MSPACK_TRUE@am__append_11 = @top_builddir@/libclamav/libmspack-0.5alpha/config.h \
+@USE_INTERNAL_MSPACK_TRUE@		   @top_builddir@/libclamav/libmspack-0.5alpha/libmspack.pc \
+@USE_INTERNAL_MSPACK_TRUE@		   @top_builddir@/libclamav/libmspack-0.5alpha/autom4te.cache/*
+
 @USE_INTERNAL_MSPACK_FALSE@am__append_12 = $(LIBMSPACK_CFLAGS)
 @USE_INTERNAL_MSPACK_FALSE@am__append_13 = $(LIBMSPACK_LIBS)
 @USE_INTERNAL_MSPACK_FALSE@am__append_14 = libmspack-0.5alpha
