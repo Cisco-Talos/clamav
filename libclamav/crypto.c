@@ -184,7 +184,7 @@ unsigned char *cl_hash_data(char *alg, const void *buf, size_t len, unsigned cha
         size_t todo = MIN((unsigned long)EVP_MD_block_size(md), (unsigned long)(len-cur));
 
         EXCEPTION_PREAMBLE
-        if (!EVP_DigestUpdate(ctx, (void *)(((unsigned char *)buf)+cur), todo)) {
+        if (!EVP_DigestUpdate(ctx, (const void *)(((const unsigned char *)buf)+cur), todo)) {
             if (!(obuf))
                 free(ret);
 
@@ -1148,7 +1148,7 @@ void *cl_hash_init(const char *alg)
     return (void *)ctx;
 }
 
-int cl_update_hash(void *ctx, void *data, size_t sz)
+int cl_update_hash(void *ctx, const void *data, size_t sz)
 {
     int winres=0;
 

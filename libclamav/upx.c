@@ -557,7 +557,7 @@ int upx_inflatelzma(const char *src, uint32_t ssize, char *dst, uint32_t *dsize,
       return 0;
   l.avail_in = ssize;
   l.avail_out = *dsize;
-  l.next_in = (unsigned char*)src+2;
+  l.next_in = src + 2;
   l.next_out = (unsigned char*)dst;
 
   if(cli_LzmaDecode(&l)==LZMA_RESULT_DATA_ERROR) {

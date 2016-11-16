@@ -790,7 +790,7 @@ SRes XzUnpacker_Code(CXzUnpacker *p, Byte *dest, SizeT *destLen,
               srcRem = (SizeT)cur;
             p->crc = CrcUpdate(p->crc, src, srcRem);
             if ((p->sha))
-                cl_update_hash(p->sha, (void *)src, srcRem);
+                cl_update_hash(p->sha, src, srcRem);
             (*srcLen) += srcRem;
             src += srcRem;
             p->indexPos += srcRem;

@@ -694,7 +694,7 @@ int yr_arena_make_relocatable(
 
 int yr_arena_write_data(
     YR_ARENA* arena,
-    void* data,
+    const void* data,
     size_t size,
     void** written_data)
 {
@@ -745,7 +745,7 @@ int yr_arena_write_string(
 {
   return yr_arena_write_data(
       arena,
-      (void*) string,
+      string,
       strlen(string) + 1,
       (void**) written_string);
 }

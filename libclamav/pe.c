@@ -2376,7 +2376,8 @@ static unsigned int hash_imptbl(cli_ctx *ctx, unsigned char **digest, uint32_t *
     fmap_t *map = *ctx->fmap;
     size_t left, fsize = map->len;
     uint32_t impoff, offset;
-    const char *impdes, *buffer;
+    const char *buffer;
+    char *impdes;
     void *hashctx[CLI_HASH_AVAIL_TYPES];
     enum CLI_HASH_TYPE type;
     int nimps = 0, ret = CL_SUCCESS;
@@ -5471,12 +5472,12 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
             return CL_EFORMAT; \
         } \
         if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE && hashctx) \
-            cl_update_hash(hashctx, (void *)hptr, size); \
+            cl_update_hash(hashctx, hptr, size); \
         if (isStatAble && flags & CL_CHECKFP_PE_FLAG_STATS) { \
             void *md5ctx; \
             md5ctx = cl_hash_init("md5"); \
             if (md5ctx) { \
-                cl_update_hash(md5ctx, (void *)hptr, size); \
+                cl_update_hash(md5ctx, hptr, size); \
                 cl_finish_hash(md5ctx, hashes->sections[section].md5); \
             } \
         } \

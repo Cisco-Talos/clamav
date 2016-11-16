@@ -171,7 +171,8 @@ static inline unsigned int rewind_tospace(const unsigned char* chunk, unsigned i
  * This used to be called cli_readline, but we don't stop at end-of-line anymore */
 static unsigned char *cli_readchunk(FILE *stream, m_area_t *m_area, unsigned int max_len)
 {
-	unsigned char *chunk, *start, *ptr, *end;
+	unsigned char *chunk;
+	const unsigned char *start, *ptr, *end;
 	unsigned int chunk_len, count;
 
 	chunk = (unsigned char *) cli_malloc(max_len);
@@ -190,7 +191,7 @@ static unsigned char *cli_readchunk(FILE *stream, m_area_t *m_area, unsigned int
 			return NULL;
 		}
 		if(m_area->map)
-		    ptr = (unsigned char *)fmap_need_off_once(m_area->map, m_area->offset, chunk_len);
+		    ptr = fmap_need_off_once(m_area->map, m_area->offset, chunk_len);
 		else
 		    ptr = m_area->buffer + m_area->offset;
 		start = ptr;
@@ -221,7 +222,7 @@ static unsigned char *cli_readchunk(FILE *stream, m_area_t *m_area, unsigned int
 				ptr = start;
 			}
 			if(m_area->map)
-			    ptr = (unsigned char *)fmap_need_ptr_once(m_area->map, ptr, end - ptr);
+			    ptr = fmap_need_ptr_once(m_area->map, ptr, end - ptr);
 			if (!ptr) {
 			    cli_warnmsg("fmap inconsistency\n");
 			    ptr = end;

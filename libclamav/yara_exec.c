@@ -102,7 +102,7 @@ typedef struct _YR_MATCH
       data = fmap_need_off_once(fmap, offset, sizeof(type));    \
       if (!data)                                                \
           return UNDEFINED;                                     \
-      return *((type *) data);                                  \
+      return *((const type *) data);                                  \
     };
 #endif
 

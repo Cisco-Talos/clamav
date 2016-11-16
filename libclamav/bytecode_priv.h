@@ -190,7 +190,7 @@ struct cli_bc_ctx {
     uint32_t pdf_startoff;
     unsigned pdf_phase;
     int32_t pdf_dumpedid;
-    const struct cli_exe_section *sections;
+    struct cli_exe_section *sections;
     uint32_t resaddr;
     char *tempfile;
     void *ctx;

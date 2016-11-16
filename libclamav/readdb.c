@@ -942,7 +942,7 @@ static int cli_loaddb(FILE *fs, struct cl_engine *engine, unsigned int *signo, u
 #define ICO_TOKENS 4
 static int cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio)
 {
-        const char *tokens[ICO_TOKENS + 1];
+    char *tokens[ICO_TOKENS + 1];
 	char buffer[FILEBUFF], *buffer_cpy = NULL;
 	uint8_t *hash;
 	int ret = CL_SUCCESS;
@@ -970,7 +970,7 @@ static int cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	if(engine->ignored)
 	    strcpy(buffer_cpy, buffer);
 
-	tokens_count = cli_strtokenize(buffer, ':', ICO_TOKENS + 1, tokens);
+	tokens_count = cli_strtokenize(buffer, ':', ICO_TOKENS + 1, (const char **)tokens);
 	if(tokens_count != ICO_TOKENS) {
 	    cli_errmsg("cli_loadidb: Malformed hash at line %u (wrong token count)\n", line);
 	    ret = CL_EMALFDB;
@@ -992,7 +992,7 @@ static int cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	}
 
 	hash = (uint8_t *)tokens[3];
-	if(cli_hexnibbles((char *)hash, 124)) {
+	if(cli_hexnibbles(hash, 124)) {
 	    cli_errmsg("cli_loadidb: Malformed hash at line %u (bad chars)\n", line);
 	    ret = CL_EMALFDB;
 	    break;
@@ -1345,7 +1345,7 @@ static int cli_loadndb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 struct lsig_attrib {
     const char *name;
     unsigned int type;
-    void **pt;
+    const void **pt;
 };
 
 /* TODO: rework this */
@@ -1353,28 +1353,28 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
 {
     struct lsig_attrib attrtab[] = {
 #define ATTRIB_TOKENS   9
-        { "Target",         CLI_TDB_UINT,   (void **) &tdb->target      },
-        { "Engine",         CLI_TDB_RANGE,  (void **) &tdb->engine      },
+        { "Target",         CLI_TDB_UINT,   (const void **) &tdb->target      },
+        { "Engine",         CLI_TDB_RANGE,  (const void **) &tdb->engine      },
 
-        { "FileSize",       CLI_TDB_RANGE,  (void **) &tdb->filesize    },
-        { "EntryPoint",     CLI_TDB_RANGE,  (void **) &tdb->ep      },
-        { "NumberOfSections",   CLI_TDB_RANGE,  (void **) &tdb->nos     },
+        { "FileSize",       CLI_TDB_RANGE,  (const void **) &tdb->filesize    },
+        { "EntryPoint",     CLI_TDB_RANGE,  (const void **) &tdb->ep      },
+        { "NumberOfSections",   CLI_TDB_RANGE,  (const void **) &tdb->nos     },
 
-        { "IconGroup1",     CLI_TDB_STR,    (void **) &tdb->icongrp1    },
-        { "IconGroup2",     CLI_TDB_STR,    (void **) &tdb->icongrp2    },
+        { "IconGroup1",     CLI_TDB_STR,    (const void **) &tdb->icongrp1    },
+        { "IconGroup2",     CLI_TDB_STR,    (const void **) &tdb->icongrp2    },
 
-        { "Container",      CLI_TDB_FTYPE,  (void **) &tdb->container   },
-        { "HandlerType",        CLI_TDB_FTYPE,  (void **) &tdb->handlertype },
+        { "Container",      CLI_TDB_FTYPE,  (const void **) &tdb->container   },
+        { "HandlerType",        CLI_TDB_FTYPE,  (const void **) &tdb->handlertype },
 /*
-        { "SectOff",    CLI_TDB_RANGE2, (void **) &tdb->sectoff     },
-        { "SectRVA",    CLI_TDB_RANGE2, (void **) &tdb->sectrva     },
-        { "SectVSZ",    CLI_TDB_RANGE2, (void **) &tdb->sectvsz     },
-        { "SectRAW",    CLI_TDB_RANGE2, (void **) &tdb->sectraw     },
-        { "SectRSZ",    CLI_TDB_RANGE2, (void **) &tdb->sectrsz     },
-        { "SectURVA",   CLI_TDB_RANGE2, (void **) &tdb->secturva    },
-        { "SectUVSZ",   CLI_TDB_RANGE2, (void **) &tdb->sectuvsz    },
-        { "SectURAW",   CLI_TDB_RANGE2, (void **) &tdb->secturaw    },
-        { "SectURSZ",   CLI_TDB_RANGE2, (void **) &tdb->sectursz    },
+        { "SectOff",    CLI_TDB_RANGE2, (const void **) &tdb->sectoff     },
+        { "SectRVA",    CLI_TDB_RANGE2, (const void **) &tdb->sectrva     },
+        { "SectVSZ",    CLI_TDB_RANGE2, (const void **) &tdb->sectvsz     },
+        { "SectRAW",    CLI_TDB_RANGE2, (const void **) &tdb->sectraw     },
+        { "SectRSZ",    CLI_TDB_RANGE2, (const void **) &tdb->sectrsz     },
+        { "SectURVA",   CLI_TDB_RANGE2, (const void **) &tdb->secturva    },
+        { "SectUVSZ",   CLI_TDB_RANGE2, (const void **) &tdb->sectuvsz    },
+        { "SectURAW",   CLI_TDB_RANGE2, (const void **) &tdb->secturaw    },
+        { "SectURSZ",   CLI_TDB_RANGE2, (const void **) &tdb->sectursz    },
 */
         { NULL,     0,          NULL,               }
     };
@@ -2384,9 +2384,9 @@ static int cli_loadign(FILE *fs, struct cl_engine *engine, unsigned int options,
 #define MD5_TOKENS 5
 static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int mode, unsigned int options, struct cli_dbio *dbio, const char *dbname)
 {
-    const char *tokens[MD5_TOKENS + 1];
-    char buffer[FILEBUFF], *buffer_cpy = NULL;
-    const char *pt, *virname;
+    char *tokens[MD5_TOKENS + 1];
+    char buffer[FILEBUFF], *buffer_cpy = NULL, *pt;
+    const char *virname;
     int ret = CL_SUCCESS;
     unsigned int size_field = 1, md5_field = 0, line = 0, sigs = 0, tokens_count;
     unsigned int req_fl = 0; 
@@ -2435,7 +2435,7 @@ static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo,
 	if(engine->ignored)
 	    strcpy(buffer_cpy, buffer);
 
-	tokens_count = cli_strtokenize(buffer, ':', MD5_TOKENS + 1, tokens);
+	tokens_count = cli_strtokenize(buffer, ':', MD5_TOKENS + 1, (const char **)tokens);
 	if(tokens_count < 3) {
 	    ret = CL_EMALFDB;
 	    break;
@@ -2458,7 +2458,7 @@ static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo,
 	}
 
 	if((mode == MD5_MDB) || strcmp(tokens[size_field],"*")) {
-	    size = strtoul(tokens[size_field], (char **)&pt, 10);
+	    size = strtoul(tokens[size_field], &pt, 10);
 	    if(*pt || !size || size >= 0xffffffff) {
 		cli_errmsg("cli_loadhash: Invalid value for the size field\n");
 		ret = CL_EMALFDB;
@@ -2503,7 +2503,7 @@ static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo,
 
 	if((ret = hm_addhash_str(db, tokens[md5_field], size, virname))) {
 	    cli_errmsg("cli_loadhash: Malformed hash string at line %u\n", line);
-	    mpool_free(engine->mempool, (void *)virname);
+	    mpool_free(engine->mempool, virname);
 	    break;
 	}
 

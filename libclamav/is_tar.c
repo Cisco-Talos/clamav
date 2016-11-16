@@ -25,7 +25,7 @@
 
 #define	isodigit(c)	( ((c) >= '0') && ((c) <= '7') )
 
-static int from_oct(int digs, char *where);
+static int from_oct(int digs, const char *where);
 
 /*
  * Return 
@@ -35,10 +35,10 @@ static int from_oct(int digs, char *where);
  */
 int is_tar(const unsigned char *buf, unsigned int nbytes)
 {
-	union record *header = (union record *)buf;
+	const union record *header = (const union record *)buf;
 	int	i;
 	int	sum, recsum;
-	char	*p;
+	const char *p;
 
 
 	if (nbytes < sizeof(union record))
@@ -76,11 +76,11 @@ int is_tar(const unsigned char *buf, unsigned int nbytes)
  *
  * Result is -1 if the field is invalid (all blank, or nonoctal).
  */
-static int from_oct(int digs, char *where)
+static int from_oct(int digs, const char *where)
 {
 	int value;
 
-	while (isspace((unsigned char)*where)) {		/* Skip spaces */
+	while (isspace((const unsigned char)*where)) {		/* Skip spaces */
 		where++;
 		if (--digs <= 0)
 			return -1;		/* All blank field */

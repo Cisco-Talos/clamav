@@ -139,7 +139,7 @@ int hm_addhash_bin(struct cli_matcher *root, const void *binhash, enum CLI_HASH_
 
 static inline int hm_cmp(const uint8_t *itm, const uint8_t *ref, unsigned int keylen) {
 #if WORDS_BIGENDIAN == 0
-    uint32_t i = *(uint32_t *)itm, r = *(uint32_t *)ref;
+    uint32_t i = *(const uint32_t *)itm, r = *(const uint32_t *)ref;
     if(i!=r)
 	return (i<r) * 2 -1;
     return memcmp(&itm[4], &ref[4], keylen - 4);
@@ -311,7 +311,7 @@ void hm_free(struct cli_matcher *root) {
 
 	    mpool_free(root->mempool, szh->hash_array);
 	    while(szh->items)
-		mpool_free(root->mempool, (void *)szh->virusnames[--szh->items]);
+		mpool_free(root->mempool, szh->virusnames[--szh->items]);
 	    mpool_free(root->mempool, szh->virusnames);
 	    mpool_free(root->mempool, szh);
 	}
@@ -326,7 +326,7 @@ void hm_free(struct cli_matcher *root) {
 
 	mpool_free(root->mempool, szh->hash_array);
 	while(szh->items)
-	    mpool_free(root->mempool, (void *)szh->virusnames[--szh->items]);
+	    mpool_free(root->mempool, szh->virusnames[--szh->items]);
 	mpool_free(root->mempool, szh->virusnames);
     }
 }

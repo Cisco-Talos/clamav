@@ -343,7 +343,7 @@ cli_crt *crtmgr_verify_pkcs7(crtmgr *m, const uint8_t *issuer, const uint8_t *se
     return i;
 }
 
-int crtmgr_add_roots(struct cl_engine *engine, crtmgr *m) {
+int crtmgr_add_roots(const struct cl_engine *engine, crtmgr *m) {
     cli_crt *crt;
     /*
      * Certs are cached in engine->cmgr. Copy from there.
