@@ -164,7 +164,7 @@ static inline const void *fmap_need_off_once_len(fmap_t *m, size_t at, size_t le
     const void *p;
     if(at >= m->len) {
 	*lenout = 0;
-	return (void*)0xE0F00000;/* EOF, not read error */
+	return (void*)(size_t)0xE0F00000;/* EOF, not read error */
     }
     if(len > m->len - at)
 	len = m->len - at;

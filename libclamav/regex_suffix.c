@@ -329,7 +329,8 @@ static struct node* parse_regex(const char *p, size_t *last)
 
 static int build_suffixtree_ascend(struct node *n, struct text_buffer *buf, struct node *prev, suffix_callback cb, void *cbdata, struct regex_list *regex)
 {
-	size_t i, cnt;
+	unsigned char i;
+	size_t cnt;
 	while(n) {
 		struct node *q = n;
 		switch(n->type) {
