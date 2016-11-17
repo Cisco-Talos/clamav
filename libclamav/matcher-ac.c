@@ -2144,7 +2144,7 @@ inline static int ac_addspecial_add_alt_node(const char *subexpr, uint8_t sigopt
     }
 
     newnode->str = s;
-    newnode->len = strlen(subexpr)/2;
+    newnode->len = (uint16_t)strlen(subexpr) / 2;
     newnode->unique = 1;
 
     /* setting nocase match */
@@ -2685,7 +2685,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
         return CL_EMALFDB;
     }
 
-    new->length[0] = strlen(hex ? hex : hexsig) / 2;
+    new->length[0] = (uint16_t)strlen(hex ? hex : hexsig) / 2;
     for(i = 0, j = 0; i < new->length[0]; i++) {
         if((new->pattern[i] & CLI_MATCH_METADATA) == CLI_MATCH_SPECIAL) {
             new->length[1] += new->special_table[j]->len[0];

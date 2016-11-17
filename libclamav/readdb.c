@@ -2114,7 +2114,7 @@ static int cli_loadftm(FILE *fs, struct cl_engine *engine, unsigned int options,
 		mpool_free(engine->mempool, new);
 		break;
 	    }
-	    new->length = strlen(tokens[2]) / 2;
+             new->length = (uint16_t)strlen(tokens[2]) / 2;
 	    new->tname = cli_mpool_strdup(engine->mempool, tokens[3]);
 	    if(!new->tname) {
 		mpool_free(engine->mempool, new->magic);
@@ -4168,10 +4168,10 @@ static int cli_loadpwdb(FILE *fs, struct cl_engine *engine, unsigned int options
 
             if(pwstype == 0) { /* cleartext */
                 new->passwd = (unsigned char *)cli_mpool_strdup(engine->mempool, tokens[3]);
-                new->length = strlen(tokens[3]);
+                new->length = (uint16_t)strlen(tokens[3]);
             } else { /* 1 => hex-encoded */
                 new->passwd = cli_mpool_hex2str(engine->mempool, tokens[3]);
-                new->length = strlen(tokens[3]) / 2;
+                new->length = (uint16_t)strlen(tokens[3]) / 2;
             }
             if(!new->passwd) {
                 cli_errmsg("cli_loadpwdb: Can't decode or add new password entry\n");

@@ -1107,7 +1107,7 @@ freeset(struct parse *p, cset *cs)
 	size_t css = (size_t)p->g->csetsize;
 
 	for (i = 0; i < css; i++)
-		CHsub(cs, i);
+		CHsub(cs, (unsigned char)i);
 	if (cs == top-1)	/* recover only the easy case */
 		p->g->ncsets--;
 }
