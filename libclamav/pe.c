@@ -2446,7 +2446,7 @@ static unsigned int hash_imptbl(cli_ctx *ctx, unsigned char **digest, uint32_t *
         image->Name = EC32(image->Name);
         image->FirstThunk = EC32(image->FirstThunk);
 
-        /* DLL name aquisition */
+        /* DLL name acquisition */
         offset = cli_rawaddr(image->Name, exe_sections, nsections, &err, fsize, hdr_size);
         if(err || offset > fsize) {
             cli_dbgmsg("scan_pe: invalid rva for dll name\n");
