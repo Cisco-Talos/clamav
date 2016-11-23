@@ -1188,7 +1188,7 @@ Fri, 11 Dec 2015 17:41:38 -0500 (Steven Morgan)
 
 Wed, 9 Dec 2015 12:15:16 -0500 (Mickey Sola)
 ------------------------------------------
- * bb11424 - correcting buffer alignemnt for riff detection on sparc systems;
+ * bb11424 - correcting buffer alignment for riff detection on sparc systems;
 	patch by Jim Morris
 
 Wed, 9 Dec 2015 00:17:41 +0100 (Andreas Cadhalpun)
