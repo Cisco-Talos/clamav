@@ -1395,7 +1395,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 			 * This is effectively no encoding, notice that we
 			 * don't check that charset is us-ascii
 			 */
-			cli_dbgmsg("text/plain: Assume no attachements\n");
+			cli_dbgmsg("text/plain: Assume no attachments\n");
 			mimeType = NOMIME;
 			messageSetMimeSubtype(mainMessage, "");
 		} else if((mimeType == MESSAGE) &&

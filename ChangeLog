@@ -19447,7 +19447,7 @@ Thu May  6 16:22:32 BST 2004 (trog)
 
 Thu May  6 12:27:03 BST 2004 (njh)
 ----------------------------------
-  * libclamav/mbox.c:	Ensure all attachements marked as RFC822 emails will
+  * libclamav/mbox.c:	Ensure all attachments marked as RFC822 emails will
 			be recognised as email messages by libclamav/scanners.c
 			and hence be scanned
   * clamav-milter:	Fixed boundary cases for streamMaxLength
