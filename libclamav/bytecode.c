@@ -479,7 +479,7 @@ static inline operand_t readOperand(struct cli_bc_func *func, unsigned char *p,
 	dest = &func->constants[func->numConstants];
 	/* Write the constant to the correct place according to its type.
 	 * This is needed on big-endian machines, because constants are always
-	 * read as u64, but accesed as one of these types: u8, u16, u32, u64 */
+	 * read as u64, but accessed as one of these types: u8, u16, u32, u64 */
 	*dest= 0;
 	ty = 8*readFixedNumber(p, off, len, ok, 1);
 	if (!ty) {
