@@ -860,7 +860,7 @@ messageSetEncoding(message *m, const char *enctype)
 			 * The stated encoding type is illegal, so we
 			 * use a best guess of what it should be.
 			 *
-			 * 50% is arbitary. For example 7bi will match as
+			 * 50% is arbitrary. For example 7bi will match as
 			 * 66% certain to be 7bit
 			 */
 			if(highestSimil >= 50) {
