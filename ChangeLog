@@ -16567,7 +16567,7 @@ Thu Jan 27 10:55:35 GMT 2005 (njh)
 
 Thu Jan 27 01:35:35 CET 2005 (tk)
 ---------------------------------
-  * freshclam/manager.c: add support for HTTP/1.0 ansers in IMS (--no-dns) mode
+  * freshclam/manager.c: add support for HTTP/1.0 answers in IMS (--no-dns) mode
 			 (patch by Sven Strickroth <sstrickroth*gym-oha.de>)
 
 Wed Jan 26 19:27:57 CET 2005 (tk)
