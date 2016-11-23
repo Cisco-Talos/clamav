@@ -101,7 +101,7 @@ int cli_parsetiff(cli_ctx *ctx)
             case 1: /* BYTE */
                 value_size *= 1;
                 break;
-            case 2: /* ACSII */
+            case 2: /* ASCII */
                 value_size *= 1;
                 break;
             case 3: /* SHORT */
