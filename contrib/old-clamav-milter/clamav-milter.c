@@ -2338,7 +2338,7 @@ pingServer(int serverNumber)
 		hostname = cli_strtok(serverHostNames, serverNumber, ":");
 		/*
 		 * FIXME: use non-blocking connect, once the code is
-		 * amalgomated
+		 * amalgamated
 		 */
 		if(nonblock_connect(sock, &server, hostname) < 0) {
 			int is_connected = 0;
