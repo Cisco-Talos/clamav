@@ -1453,7 +1453,7 @@ Tue, 28 Jul 2015 13:44:41 -0400 (Kevin Lin)
 
 Fri, 24 Jul 2015 13:24:11 -0400 (Mickey Sola)
 ------------------------------------------
- * bb11343: Automatically appennding YARA. to all yara rule sigs.
+ * bb11343: Automatically appending YARA. to all yara rule sigs.
 
 Thu, 23 Jul 2015 15:36:16 -0400 (Mickey Sola)
 ------------------------------------------
