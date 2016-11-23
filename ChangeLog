@@ -21559,7 +21559,7 @@ Tue Sep 16 18:06:47 CEST 2003 (tk)
 ----------------------------------
   * libclamav: included patch from Thomas Lamy:
        > - a fix to my own fix (*ret was declared const -> gcc warning)
-       > - antoher fix to my own code (double fclose() on malformed zip archive)
+       > - another fix to my own code (double fclose() on malformed zip archive)
        > - global to local fix for unrarlib.c (BOOL FileFound).
 
 Mon Sep 15 14:09:50 BST 2003
