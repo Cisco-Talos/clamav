@@ -7875,7 +7875,7 @@ Thu Feb 12 19:19:42 EET 2009 (edwin)
      dt_type redesign clamd main loop: there is now an accept thread, and
      a recv()/dispatch thread, +MaxThreads worker (scanner) threads.      introduce limiting on commands when worker threads are
      contended.  introduce IDSESSION, a replacement for the old
-     SESSION command, that allows asyncronous (scan) commands and scan
+     SESSION command, that allows asynchronous (scan) commands and scan
      replies introduce INSTREAM that allows sending the data to scan on
      same connection (vs STREAM that requires another port)     introduce zCOMMANDS
 
@@ -7889,7 +7889,7 @@ Thu Feb 12 19:19:42 EET 2009 (edwin)
      dt_type redesign clamd main loop: there is now an accept thread, and
      a recv()/dispatch thread, +MaxThreads worker (scanner) threads.      introduce limiting on commands when worker threads are
      contended.  introduce IDSESSION, a replacement for the old
-     SESSION command, that allows asyncronous (scan) commands and scan
+     SESSION command, that allows asynchronous (scan) commands and scan
      replies introduce INSTREAM that allows sending the data to scan on
      same connection (vs STREAM that requires another port)     introduce zCOMMANDS
 

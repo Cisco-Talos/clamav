@@ -116,7 +116,7 @@ int prelude_initialize_client(const char *analyzer_name){
 
     ret = prelude_client_set_flags(prelude_client, PRELUDE_CLIENT_FLAGS_ASYNC_SEND|PRELUDE_CLIENT_FLAGS_ASYNC_TIMER);
     if ( ret < 0) {
-        logg("Unable to send asynchrnous send and timer : %s", prelude_strerror(ret));
+        logg("Unable to send asynchronous send and timer : %s", prelude_strerror(ret));
         prelude_client_destroy(prelude_client, PRELUDE_CLIENT_EXIT_STATUS_SUCCESS);
         return -1;
     }
