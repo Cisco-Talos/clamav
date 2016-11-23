@@ -2024,7 +2024,7 @@ decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(
 			b3 = (*decoder)(*in++);
 			/*
 			 * Put this line here to help on some compilers which
-			 * can make use of some architecure's ability to
+			 * can make use of some architecture's ability to
 			 * multiprocess when different variables can be
 			 * updated at the same time - here b3 is used in
 			 * one line, b1/b2 in the next and b4 in the next after
