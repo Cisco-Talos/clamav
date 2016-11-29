@@ -2073,7 +2073,7 @@ Noteworthy changes in this version:
       (thanks to Michael Dankov)
     + fixed PidFile permissions (Magnus Ekdahl, bug reported by Tomasz Papszun)
     + fixed LogFile permissions (Magnus Ekdahl)
-    + new directive ScanRAR (bacause RAR support is now disabled by default)
+    + new directive ScanRAR (because RAR support is now disabled by default)
     + new directive VirusEvent
     + new directive FixStaleSocket (Thomas Lamy and Mark Mielke)
     + new directive TCPAddr (Bernard Quatermass, fixed by Damien Curtain)
