@@ -1548,6 +1548,6 @@ int asn1_check_mscat(struct cl_engine *engine, fmap_t *map, size_t offset, unsig
     if(asn1_expect_obj(map, &c.content, &c.size, 0x04, SHA1_HASH_SIZE, computed_sha1))
 	return CL_VIRUS;
 
-    cli_dbgmsg("asn1_check_mscat: file with valid authenicode signature, whitelisted\n");
+    cli_dbgmsg("asn1_check_mscat: file with valid authenticode signature, whitelisted\n");
     return CL_CLEAN;
 }
