@@ -820,7 +820,7 @@ static int parseTypes(struct cli_bc *bc, unsigned char *buffer)
 }
 
 /* checks whether the type described by tid is the same as the one described by
- * expectty. */
+ * apitid. */
 static int types_equal(const struct cli_bc *bc, uint16_t *apity2ty, uint16_t tid, uint16_t apitid)
 {
     unsigned i;
