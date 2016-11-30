@@ -10995,7 +10995,7 @@ Thu Dec 13 15:29:46 GMT 2007 (njh)
   * clamav-milter:	Don't block when checking remote clamds on startup
 			Removed duplicated call to openlog
 			Minor improvements to log messages
-  * libclamav:		Rewrite much of vba_extract.c (and dependancies in
+  * libclamav:		Rewrite much of vba_extract.c (and dependencies in
 				blob.c)
 			Better RFC2231 handling in message.c
 			Rewrite non-blocking connect (mbox.c)
