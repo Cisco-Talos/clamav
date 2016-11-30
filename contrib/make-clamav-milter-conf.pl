@@ -343,7 +343,7 @@ print <<BLOCK2;
 # - Blackhole (not available for OnFail)
 #   Like accept but the message is sent to oblivion
 # - Quarantine (not available for OnFail)
-#   Like accept but message is quarantined instead of being deilievered
+#   Like accept but message is quarantined instead of being delivered
 #   In sendmail the quarantine queue can be examined via mailq -qQ
 #   For Postfix this causes the message to be accepted but placed on hold
 # 
