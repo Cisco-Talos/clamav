@@ -8812,7 +8812,7 @@ Sat Oct 11 13:01:36 EEST 2008 (edwin)
  with type 0) too
 
 Sat Oct 11 12:20:10 CEST 2008 (acab)
-  * freshclama/manager.c: bump _XOPEN_SOURCE
+  * freshclam/manager.c: bump _XOPEN_SOURCE
 
 Sat Oct 11 11:56:10 CEST 2008 (acab)
 ------------------------------------
@@ -9563,7 +9563,7 @@ Sat May 24 21:38:47 EEST 2008 (edwin)
 
 Wed May 21 15:51:32 CEST 2008 (tk)
 ----------------------------------
-  * freshclam/fresclam.c: don't call daemonize() under w32 (bb#1002)
+  * freshclam/freshclam.c: don't call daemonize() under w32 (bb#1002)
 
 Wed May 21 14:54:04 CEST 2008 (tk)
 ----------------------------------
@@ -11913,7 +11913,7 @@ Wed May 30 15:07:58 CEST 2007 (tk)
 
 Wed May 30 13:27:09 CEST 2007 (tk)
 ----------------------------------
-  * fresclam/manager.c: add sanity check for %v (bb#463)
+  * freshclam/manager.c: add sanity check for %v (bb#463)
 
 Tue May 29 21:47:23 CEST 2007 (tk)
 ----------------------------------
