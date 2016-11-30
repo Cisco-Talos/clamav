@@ -12301,7 +12301,7 @@ Fri Mar 16 21:56:21 CET 2007 (tk)
 
 Fri Mar 16 15:47:08 GMT 2007 (njh)
 ----------------------------------
-  * clamav-milter:	Better start up of the logg() inferface, now similar
+  * clamav-milter:	Better start up of the logg() interface, now similar
 				to that used in clamd
 
 Mon Mar 14 19:29:00 EET 2007 (edwin)
