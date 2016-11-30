@@ -1766,7 +1766,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 	}
 
 	if(dconf_entconv) {
-		/* handle "unfinished" entitites */
+		/* handle "unfinished" entities */
 		size_t i;
 		const char* normalized;
 		entity_val[entity_val_length] = '\0';
