@@ -479,7 +479,7 @@ static	int	child_timeout = 300;	/* number of seconds to wait for
 					 */
 static	int	dont_wait = 0;	/*
 				 * If 1 send retry later to the remote end
-				 * if max_chilren is exceeded, otherwise we
+				 * if max_children is exceeded, otherwise we
 				 * wait for the number to go down
 				 */
 static	int	dont_sanitise = 0; /*
@@ -675,7 +675,7 @@ help(void)
 	puts(_("\t--headers\t\t-H\tInclude original message headers in the report."));
 	puts(_("\t--ignore IPaddr\t\t-I IPaddr\tAdd IPaddr to LAN IP list (see --local)."));
 	puts(_("\t--local\t\t\t-l\tScan messages sent from machines on our LAN."));
-	puts(_("\t--max-childen\t\t-m\tMaximum number of concurrent scans."));
+	puts(_("\t--max-children\t\t-m\tMaximum number of concurrent scans."));
 	puts(_("\t--outgoing\t\t-o\tScan outgoing messages from this machine."));
 	puts(_("\t--noreject\t\t-N\tDon't reject viruses, silently throw them away."));
 	puts(_("\t--noxheader\t\t-n\tSuppress X-Virus-Scanned/X-Virus-Status headers."));
@@ -694,7 +694,7 @@ help(void)
 	puts(_("\t--signature-file=FILE\t-F FILE\tLocation of signature file."));
 	puts(_("\t--template-file=FILE\t-t FILE\tLocation of e-mail template file."));
 	puts(_("\t--template-headers=FILE\t\tLocation of e-mail headers for template file."));
-	puts(_("\t--timeout=SECS\t\t-T SECS\tTimeout waiting to childen to die."));
+	puts(_("\t--timeout=SECS\t\t-T SECS\tTimeout waiting to children to die."));
 	puts(_("\t--whitelist-file=FILE\t-W FILE\tLocation of the file of whitelisted addresses"));
 	puts(_("\t--version\t\t-V\tPrint the version number of this software."));
 #ifdef	CL_DEBUG

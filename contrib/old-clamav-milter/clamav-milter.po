@@ -104,7 +104,7 @@ msgid "\t--local\t\t\t-l\tScan messages sent from machines on our LAN."
 msgstr ""
 
 #: clamav-milter.c:607
-msgid "\t--max-childen\t\t-m\tMaximum number of concurrent scans."
+msgid "\t--max-children\t\t-m\tMaximum number of concurrent scans."
 msgstr ""
 
 #: clamav-milter.c:608
@@ -181,7 +181,7 @@ msgid ""
 msgstr ""
 
 #: clamav-milter.c:625
-msgid "\t--timeout=SECS\t\t-T SECS\tTimeout waiting to childen to die."
+msgid "\t--timeout=SECS\t\t-T SECS\tTimeout waiting to children to die."
 msgstr ""
 
 #: clamav-milter.c:626

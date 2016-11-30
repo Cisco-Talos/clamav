@@ -16861,7 +16861,7 @@ Mon Dec 20 02:32:30 CET 2004 (tk)
 
 Sun Dec 19 17:01:56 GMT 2004 (njh)
 ----------------------------------
-  * clamav-milter: Correctly warn that --max_childen must be given in SESSION
+  * clamav-milter: Correctly warn that --max_children must be given in SESSION
 		mode if LocalSocket is used and MaxThreads isn't given in
 		clamd.conf. max_children is needed to know how many sessions
 		to initiate to clamd(s)
