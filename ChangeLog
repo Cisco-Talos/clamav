@@ -8902,7 +8902,7 @@ Fri Oct  3 15:49:17 CEST 2008 (acab)
   * clamav-milter/clamav-milter.c: reopen log files on USR1 instead of HUP
   - bb#1194. Note that this is an interim solution, as the milter should not
   abuse other daemons' logfiles. This also doesn't need a fair amount of
-  documentantion as this feature never worked before.
+  documentation as this feature never worked before.
 
 Wed Oct  1 19:11:30 CEST 2008 (acab)
 ------------------------------------
@@ -17399,7 +17399,7 @@ Wed Oct 27 07:36:49 BST 2004 (njh)
 Sun Oct 24 05:36:39 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:		Handle multipart/knowbot as multipart/mixed
-			until syntax documention can be found for this format
+			until syntax documentation can be found for this format
 
 Sun Oct 24 04:52:01 BST 2004 (njh)
 ----------------------------------
