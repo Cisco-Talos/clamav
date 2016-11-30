@@ -9714,7 +9714,7 @@ Mon Apr 21 16:21:56 CEST 2008 (tk)
 
 Mon Apr 21 11:28:38 CEST 2008 (tk)
 ----------------------------------
-  * libclamav/others.h: explicitely cast some constants (bb#936)
+  * libclamav/others.h: explicitly cast some constants (bb#936)
 
 Sun Apr 20 19:09:00 CEST 2008 (tk)
 ----------------------------------
