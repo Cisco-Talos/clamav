@@ -183,7 +183,7 @@ static struct basic_test {
     {"CONTSCAN "CLEANFILE, NULL, CLEANREPLY, 1, 0, IDS_REJECT},
     {"MULTISCAN "SCANFILE, NULL, FOUNDREPLY, 1, 0, IDS_REJECT},
     {"MULTISCAN "CLEANFILE, NULL, CLEANREPLY, 1, 0, IDS_REJECT},
-    /* unknown commnads */
+    /* unknown commands */
     {"RANDOM", NULL, UNKNOWN_REPLY, 1, 0, IDS_REJECT},
     /* commands invalid as first */
     {"END", NULL, UNKNOWN_REPLY, 1, 0, IDS_END},
