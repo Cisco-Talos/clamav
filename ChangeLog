@@ -1183,7 +1183,7 @@ Wed, 16 Dec 2015 14:56:56 -0500 (Kevin Lin)
 
 Fri, 11 Dec 2015 17:41:38 -0500 (Steven Morgan)
 ------------------------------------------
- * bb11452 - endianess correction for swf files on sparc -
+ * bb11452 - endianness correction for swf files on sparc -
 	patch supplied by Jim Morris.
 
 Wed, 9 Dec 2015 12:15:16 -0500 (Mickey Sola)
@@ -9020,7 +9020,7 @@ Mon Sep  1 10:57:56 EEST 2008 (edwin)
 
 Sun Aug 31 15:31:04 CEST 2008 (acab)
 ------------------------------------
-  * libclamav/disasm, unit_tests: more endianess issues fixed (that should eb all)
+  * libclamav/disasm, unit_tests: more endianness issues fixed (that should eb all)
 
 Sun Aug 31 04:23:12 CEST 2008 (acab)
 ------------------------------------
@@ -10095,7 +10095,7 @@ Tue Feb 19 00:24:01 CET 2008 (tk)
 
 Mon Feb 18 20:48:41 CET 2008 (acab)
 -----------------------------------
-  * configure: make fpu endianess manually configurable
+  * configure: make fpu endianness manually configurable
 
 Mon Feb 18 19:45:06 EET 2008 (edwin)
 ------------------------------------
@@ -11138,7 +11138,7 @@ Mon Nov  5 17:16:18 GMT 2007 (njh)
   * libclamav/vba_extract.c:	More tidy up
 
 Sat Nov  3 14:28:17 CET 2007 (edwin)
-  * libclamav/autoit.c: fix endianess checks for arm - thanks edwin
+  * libclamav/autoit.c: fix endianness checks for arm - thanks edwin
 
 Sat Nov  3 00:25:52 EET 2007 (edwin)
 ------------------------------------

@@ -32,7 +32,7 @@
  * Returns:
  *   FPU_ENDIAN_BIG - floating point big endian
  *   FPU_ENDIAN_LITTLE - floating point little endian
- *   FPU_ENDIAN_UNKNOWN - floating point endianess unknown
+ *   FPU_ENDIAN_UNKNOWN - floating point endianness unknown
  */
 extern int get_fpu_endian(void);
 
