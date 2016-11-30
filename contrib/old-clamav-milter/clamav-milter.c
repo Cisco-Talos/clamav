@@ -4969,7 +4969,7 @@ checkClamd(int log_result)
 
 /*
  * Send a templated message about an intercepted message. Very basic for
- * now, just to prove it works, will enhance the flexability later, only
+ * now, just to prove it works, will enhance the flexibility later, only
  * supports %v and $sendmail_variables$ at present.
  *
  * TODO: more template features
