@@ -22,7 +22,7 @@
 #include "../libclamav/clamav.h"
 #include "../libclamav/fpu.h"
 
-/* Helper command line interface to determinine fpu endianess in unit test scripts.
+/* Helper command line interface to determine fpu endianess in unit test scripts.
  *   parameters: none
  *   returns:
  *     1 - fpu big endian

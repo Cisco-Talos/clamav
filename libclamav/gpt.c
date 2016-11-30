@@ -122,7 +122,7 @@ int cli_scangpt(cli_ctx *ctx, size_t sectorsize)
         cli_dbgmsg("cli_scangpt: detected %lu sector size\n", (unsigned long)sectorsize);
     }
     if (sectorsize == 0) {
-        cli_errmsg("cli_scangpt: could not detemine sector size\n");
+        cli_errmsg("cli_scangpt: could not determine sector size\n");
         return CL_EFORMAT;
     }
 
