@@ -19400,7 +19400,7 @@ Tue May 11 02:07:55 CEST 2004 (tk)
 Mon May 10 12:25:09 BST 2004 (njh)
 ----------------------------------
   * libclamav:		Don't call cli_filetype() so often since the latest
-		chanves give false positives about the start of bounce messages
+		changes give false positives about the start of bounce messages
 		which opens up DoS attacks, and allows worms hidden in bounce
 		messages to be hidden with ease
 
