@@ -10736,7 +10736,7 @@ Thu Jan 10 15:17:19 CET 2008 (tk)
 
 Thu Jan 10 14:29:28 CET 2008 (tk)
 ---------------------------------
-  * clamdscan: remove dependendcy on libclamav (bb#750), patch from Edwin
+  * clamdscan: remove dependency on libclamav (bb#750), patch from Edwin
 
 Thu Jan 10 11:23:32 GMT 2008 (njh)
 ----------------------------------
