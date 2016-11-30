@@ -9071,7 +9071,7 @@ Mon Aug 25 16:03:44 CEST 2008 (tk)
 
 Sun Aug 24 23:51:48 CEST 2008 (tk)
 ----------------------------------
-  * libclamav/unrar.c: improve handling of currupted archives and downgrade
+  * libclamav/unrar.c: improve handling of corrupted archives and downgrade
 		       some error messages
 
 Sat Aug 23 22:18:47 CEST 2008 (tk)
