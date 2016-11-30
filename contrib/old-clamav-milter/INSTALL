@@ -363,7 +363,7 @@ Use the tab key, not space key, to indent.
 Except for functions, braces always go on the same line as the condition.
 
 Don't leave to chance, or your knowledge of precedence, use brackets to
-highten the readability.
+heighten the readability.
 
 Choose variable names sensibly, don't use Hungarian style.
 
