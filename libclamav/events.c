@@ -84,7 +84,7 @@ void cli_event_error_oom(cli_events_t *ctx, uint32_t amount)
         return;
     ctx->oom_total += amount;
     ctx->oom_count++;
-    /* amount == 0 means error already reported, just incremenet count */
+    /* amount == 0 means error already reported, just increment count */
     if (amount)
         cli_errmsg("events: out of memory allocating %u bytes\n", amount);
 }
