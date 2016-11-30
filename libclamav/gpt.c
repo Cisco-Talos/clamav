@@ -116,7 +116,7 @@ int cli_scangpt(cli_ctx *ctx, size_t sectorsize)
         return CL_ENULLARG;
     }
 
-    /* sector size calculatation */
+    /* sector size calculation */
     if (sectorsize == 0) {
         sectorsize = gpt_detect_size((*ctx->fmap));
         cli_dbgmsg("cli_scangpt: detected %lu sector size\n", (unsigned long)sectorsize);
