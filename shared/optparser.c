@@ -471,7 +471,7 @@ const struct clam_option __clam_options[] = {
     { "OnOutdatedExecute", "on-outdated-execute", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "Run a command when freshclam reports an outdated version.\nIn the command string %v will be replaced with the new version number.", "command" },
 
     /* FIXME: MATCH_IPADDR */
-    { "LocalIPAddress", "local-address", 'a', CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "With this option you can provide a client address for the database downlading.\nUseful for multi-homed systems.", "aaa.bbb.ccc.ddd" },
+    { "LocalIPAddress", "local-address", 'a', CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "With this option you can provide a client address for the database downloading.\nUseful for multi-homed systems.", "aaa.bbb.ccc.ddd" },
 
     { "ConnectTimeout", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 30, NULL, 0, OPT_FRESHCLAM, "Timeout in seconds when connecting to database server.", "30" },
 
