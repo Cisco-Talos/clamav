@@ -269,7 +269,7 @@ int lzwInflate(lzw_streamp strm)
         state->dec_restart = 0;
     }
 
-    /* guarentee valid initial state */
+    /* guarantee valid initial state */
     if (left > 0 && (oldcodep == &state->dec_codetab[CODE_CLEAR])) {
         code = CODE_CLEAR;
         CodeClear(code);
