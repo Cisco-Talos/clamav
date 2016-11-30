@@ -16139,7 +16139,7 @@ Fri Mar 25 18:47:34 CET 2005 (tk)
 
 Tue Mar 22 22:54:46 CET 2005 (tk)
 ---------------------------------
-  * libclamav/scanners.c: fix encrypted zip detecion (patch by Dirk Mueller
+  * libclamav/scanners.c: fix encrypted zip detection (patch by Dirk Mueller
 			  <mueller*kde.org>)
 
 Tue Mar 22 22:22:30 CET 2005 (tk)
