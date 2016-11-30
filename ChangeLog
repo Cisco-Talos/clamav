@@ -20340,7 +20340,7 @@ Sun Feb 22 22:59:39 GMT 2004 (njh)
 ----------------------------------
   * clamav-milter: Change the log level TCPwrapper denying
 			Handle ERROR message from clamd
-			Moved smfi_setconn to avoid race condictions when
+			Moved smfi_setconn to avoid race conditions when
 			an e-mail is received just as the milter is starting
 			but isn't ready to handle it causing the milter to
 			go to an error state
