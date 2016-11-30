@@ -13619,7 +13619,7 @@ Sun Nov  5 19:11:28 CET 2006 (acab)
 -----------------------------------
   * libclamav/regex_list.c: apply patch from Edvin to:
                             fix jump on uninitialized variable
-                            fix improprer string length calculation
+                            fix improper string length calculation
 			    - closes bug 52 -
 
 Sun Nov  5 15:08:09 CET 2006 (tk)
