@@ -999,7 +999,7 @@ static int real_scansis9x(cli_ctx *ctx, const char *tmpd) {
 /*       break; */
 /*     } */
 /*     if(!this->optional && this->expect!=field) { */
-/*       printf("Error: expecing %s but found %s\n", sisfields[this->expect], sisfields[field]); */
+/*       printf("Error: expected %s but found %s\n", sisfields[this->expect], sisfields[field]); */
 /*       goto SIS_ERROR; */
 /*     } */
 /*     printf("Got %s field (%d) with size %x(%u)\n", sisfields[field], field, fsz, fsz); */
