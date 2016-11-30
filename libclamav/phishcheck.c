@@ -265,7 +265,7 @@ static int string_assign_concatenated(struct string* dest, const char* prefix, c
 	const size_t prefix_len = strlen(prefix);
 	char* ret = cli_malloc(prefix_len + end - begin + 1);
 	if(!ret) {
-        cli_errmsg("Phishcheck: Unable to allocate memory for string_assign_concatonated\n");
+        cli_errmsg("Phishcheck: Unable to allocate memory for string_assign_concatenated\n");
 		return CL_EMEM;
     }
 	strncpy(ret, prefix, prefix_len);
