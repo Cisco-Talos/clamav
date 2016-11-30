@@ -135,13 +135,13 @@ Example
 ## Actions
 ##
 
-# The following group of options controls the delievery process under
+# The following group of options controls the delivery process under
 # different circumstances.
 # The following actions are available:
 # - Accept
-#   The message is accepted for delievery
+#   The message is accepted for delivery
 # - Reject
-#   Immediately refuse delievery (a 5xx error is returned to the peer)
+#   Immediately refuse delivery (a 5xx error is returned to the peer)
 # - Defer
 #   Return a temporary failure message (4xx) to the peer
 # - Blackhole (not available for OnFail)
@@ -194,7 +194,7 @@ Example
 # Note #1: this requires MTA macroes to be available (see LogInfected below)
 # Note #2: the process is invoked in the context of clamav-milter
 # Note #3: clamav-milter will wait for the process to exit. Be quick or fork to
-# avoid unnecessary delays in email delievery
+# avoid unnecessary delays in email delivery
 # Default: disabled
 #VirusAction /usr/local/bin/my_infected_message_handler
 

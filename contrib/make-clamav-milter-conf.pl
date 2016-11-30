@@ -331,13 +331,13 @@ print <<BLOCK2;
 ## Actions
 ##
 
-# The following group of options controls the delievery process under
+# The following group of options controls the delivery process under
 # different circumstances.
 # The following actions are available:
 # - Accept
-#   The message is accepted for delievery
+#   The message is accepted for delivery
 # - Reject
-#   Immediately refuse delievery (a 5xx error is returned to the peer)
+#   Immediately refuse delivery (a 5xx error is returned to the peer)
 # - Defer
 #   Return a temporary failure message (4xx) to the peer
 # - Blackhole (not available for OnFail)

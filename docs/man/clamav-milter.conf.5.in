@@ -123,11 +123,11 @@ Messages larger than this value won\'t be scanned. Make sure this value is lower
 .br
 Default: 25M
 .SH "ACTIONS"
-The following group of options controls the delievery process under  different circumstances. The following actions are available:
+The following group of options controls the delivery process under  different circumstances. The following actions are available:
 .br
-- Accept: The message is accepted for delievery
+- Accept: The message is accepted for delivery
 .br
-- Reject: Immediately refuse delievery (a 5xx error is returned to the peer)
+- Reject: Immediately refuse delivery (a 5xx error is returned to the peer)
 .br
 - Defer: Return a temporary failure message (4xx) to the peer
 .br
@@ -166,7 +166,7 @@ When AddHeader is in use, this option allows you to set the reported hostname. T
 Default: disabled
 .TP 
 \fBVirusAction STRING\fr
-Execute a command (possibly searching PATH) when an infected message is found. The following parameters are passed to the invoked program in this order: virus name, queue id, sender, destination, subject, message id, message date. Note #1: this requires MTA macroes to be available (see LogInfected below). Note #2: the process is invoked in the context of clamav-milter. Note #3: clamav-milter will wait for the process to exit. Be quick or fork to avoid unnecessary delays in email delievery.
+Execute a command (possibly searching PATH) when an infected message is found. The following parameters are passed to the invoked program in this order: virus name, queue id, sender, destination, subject, message id, message date. Note #1: this requires MTA macroes to be available (see LogInfected below). Note #2: the process is invoked in the context of clamav-milter. Note #3: clamav-milter will wait for the process to exit. Be quick or fork to avoid unnecessary delays in email delivery.
 .br
 Default: disabled
 .SH "LOGGING OPTIONS"
