@@ -19937,7 +19937,7 @@ Sat Mar 20 19:37:11 GMT 2004 (njh)
 
 Sat Mar 20 17:49:43 GMT 2004 (njh)
 ----------------------------------
-  * libclamav:	More flexable approach to scanning bounce messages within
+  * libclamav:	More flexible approach to scanning bounce messages within
 	emails means more bounces are caught but at the expense of some
 	duplication of code for now
 
