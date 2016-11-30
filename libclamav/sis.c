@@ -407,7 +407,7 @@ static int real_scansis(cli_ctx *ctx, const char *tmpd) {
 	sftype = "sub sis";
 	break;
       case FTcontsis:
-	sftype = "conatiner sis";
+	sftype = "container sis";
 	break;
       case FTtextuninst:
 	sftype = "uninstall text";

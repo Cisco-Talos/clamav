@@ -4197,7 +4197,7 @@ static int cli_loadpwdb(FILE *fs, struct cl_engine *engine, unsigned int options
                 container = CLI_PWDB_RAR;
                 break;
             default:
-                cli_errmsg("cli_loadpwdb: Invalid conatiner specified to .pwdb signature\n");
+                cli_errmsg("cli_loadpwdb: Invalid container specified to .pwdb signature\n");
                 return CL_EMALFDB;
             }
         }
