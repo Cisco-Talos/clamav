@@ -2560,7 +2560,7 @@ Thu Aug 23 15:40:10 EDT 2012 (swebb)
 Mon Aug 20 10:53:25 EDT 2012 (swebb)
 ----------------------------------
  * BB#5659 - 4.0.0.8955 Consumer - Created a 1GB+ Clamav.log by running
- continious full scans for 10 hours. Add LogRotate config variable.
+ continuous full scans for 10 hours. Add LogRotate config variable.
 
 Mon Aug 13 09:32:27 EDT 2012 (swebb)
 ----------------------------------
