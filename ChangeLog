@@ -8601,7 +8601,7 @@ Sat Nov  1 03:51:58 CET 2008 (acab)
 	when not better, however there is a small overhead (a few MB)
 	in the initial memory usage (but at least it no longer grows).
 	Thanks a lot sgran for the idea and nitrox for the extensive
-	testing. Please test and report any problem (expecially on
+	testing. Please test and report any problem (especially on
 	non-x86 and non-Linux setups).
 	Make check doesn't currently work with --enable-mempool; this
 	will be fixed soon.
