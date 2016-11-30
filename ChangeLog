@@ -11786,7 +11786,7 @@ Tue Jul 10 22:02:15 CEST 2007 (tk)
 
 Sun Jul  8 17:25:04 CEST 2007 (acab)
 ------------------------------------
-  * misc: Implement compiler indepenedent sign-extended signed right shift
+  * misc: Implement compiler independent sign-extended signed right shift
 	  when needed - reported by Michal Spadlinski <gim913 * gmail.com>
 
 Sat Jul 07 10:52:00 CEST 2007 (edwin)
