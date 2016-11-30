@@ -19207,7 +19207,7 @@ Fri Jun 11 22:11:31 CEST 2004 (tk)
 Wed Jun  9 17:47:29 CEST 2004 (tk)
 ----------------------------------
   * clamd: do not display "Command parser: read() failed." (in SESSION mode)
-	   if the client disconnescts (problem reported by Matthew Trent
+	   if the client disconnects (problem reported by Matthew Trent
 	   <mtrent*localaccess.com> and Omer Faruk Sen <ofsen*enderunix.org>)
 
 Tue Jun  8 22:46:29 BST 2004 (njh)
