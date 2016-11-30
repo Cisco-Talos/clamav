@@ -2888,7 +2888,7 @@ Thu Dec 22 20:57:43 CET 2011 (acab)
 
 Thu Dec 22 16:47:40 CET 2011 (acab)
 ---------------------------------
- * read bn's as unsigned as tom and asn1 don't agree on sign convensions
+ * read bn's as unsigned as tom and asn1 don't agree on sign conversions
 
 Wed Dec 21 22:52:46 CET 2011 (acab)
 ---------------------------------
