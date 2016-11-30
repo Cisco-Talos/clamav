@@ -20344,7 +20344,7 @@ Sun Feb 22 22:59:39 GMT 2004 (njh)
 			an e-mail is received just as the milter is starting
 			but isn't ready to handle it causing the milter to
 			go to an error state
-			Hardend umask
+			Hardened umask
 
 Sun Feb 22 17:34:08 GMT 2004 (njh)
 ----------------------------------
