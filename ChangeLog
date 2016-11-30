@@ -17260,7 +17260,7 @@ Mon Nov  8 16:29:13 GMT 2004 (njh)
 
 Mon Nov  8 15:24:18 CET 2004 (tk)
 ---------------------------------
-  * clamd: new directive ExitOnOOM (stop deamon when libclamav reports out of
+  * clamd: new directive ExitOnOOM (stop daemon when libclamav reports out of
 	   memory condition)
 
 Mon Nov  8 11:32:11 CET 2004 (tk)
