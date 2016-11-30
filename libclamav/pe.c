@@ -109,7 +109,7 @@
 #define EC64(x) ((uint64_t)cli_readint64(&(x))) /* Convert little endian to host */
 #define EC32(x) ((uint32_t)cli_readint32(&(x)))
 #define EC16(x) ((uint16_t)cli_readint16(&(x)))
-/* lower and upper bondary alignment (size vs offset) */
+/* lower and upper boundary alignment (size vs offset) */
 #define PEALIGN(o,a) (((a))?(((o)/(a))*(a)):(o))
 #define PESALIGN(o,a) (((a))?(((o)/(a)+((o)%(a)!=0))*(a)):(o))
 
