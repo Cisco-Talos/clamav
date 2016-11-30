@@ -21404,7 +21404,7 @@ Fri Oct 17 05:08:22 CEST 2003 (tk)
 	       with outdated cfgfile.c in freshclam was reported by Jim C.
   * clamd: fixed a segmentation fault with TCPAddr. Problem reported by
 	   Stefan Kaltenbrunner and fixed by Damien Curtain.
-  * libclamav: zziplib downgroaded to 0.10.81 with Martin Schitter's hardening
+  * libclamav: zziplib downgraded to 0.10.81 with Martin Schitter's hardening
 	       patches
   * sigtool: major stability fixes
 
