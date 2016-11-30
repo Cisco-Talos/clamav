@@ -4035,7 +4035,7 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
 			body = parseEmailHeaders(aMessage, mctx->rfc821Table);
 
 			/*
-			 * We've fininished with the
+			 * We've finished with the
 			 * original copy of the message,
 			 * so throw that away and
 			 * deal with the encapsulated
