@@ -2806,7 +2806,7 @@ int cli_bytecode_runlsig(cli_ctx *cctx, struct cli_target_info *tinfo,
     cli_dbgmsg("Running bytecode for logical signature match\n");
     ret = cli_bytecode_run(bcs, bc, &ctx);
     if (ret != CL_SUCCESS) {
-	cli_warnmsg("Bytcode %u failed to run: %s\n", bc->id, cl_strerror(ret));
+	cli_warnmsg("Bytecode %u failed to run: %s\n", bc->id, cl_strerror(ret));
 	cli_bytecode_context_clear(&ctx);
 	return CL_SUCCESS;
     }
@@ -3203,7 +3203,7 @@ void cli_bytevalue_describe(const struct cli_bc *bc, unsigned funcid)
     const struct cli_bc_func *func;
 
     if (funcid >= bc->num_func) {
-        printf("bytecode diagnostic: funcid [%u] outside byecode numfuncs [%u]\n",
+        printf("bytecode diagnostic: funcid [%u] outside bytecode numfuncs [%u]\n",
                funcid, bc->num_func);
         return;
     }
@@ -3521,7 +3521,7 @@ void cli_bytefunc_describe(const struct cli_bc *bc, unsigned funcid)
     const struct cli_bc_func *func;
 
     if (funcid >= bc->num_func) {
-        printf("bytecode diagnostic: funcid [%u] outside byecode numfuncs [%u]\n",
+        printf("bytecode diagnostic: funcid [%u] outside bytecode numfuncs [%u]\n",
                funcid, bc->num_func);
         return;
     }
