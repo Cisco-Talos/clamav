@@ -3969,7 +3969,7 @@ int cli_scanpe(cli_ctx *ctx)
         /* Check EP for UPX vs. FSG vs. Upack */
 
         /* Upack 0.39 produces 2 types of executables
-         * 3 sections:           | 2 sections (one empty, I don't chech found if !upack, since it's in OR above):
+         * 3 sections:           | 2 sections (one empty, I don't check found if !upack, since it's in OR above):
          *   mov esi, value      |   pusha
          *   lodsd               |   call $+0x9
          *   push eax            |
