@@ -1732,7 +1732,7 @@ Mon, 16 Mar 2015 18:26:07 EDT (klin)
 
 Mon, 16 Mar 2015 13:11:56 EDT (klin)
 -----------------------------------
- * fixed converity issue ID 12109 buffer was not freed on rare error case 
+ * fixed coverity issue ID 12109 buffer was not freed on rare error case 
 
 Mon, 16 Mar 2015 13:08:03 EDT (klin)
 -----------------------------------
