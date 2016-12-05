@@ -86,7 +86,7 @@ int (*cli_unrar_extract_next_prepare)(unrar_state_t *state, const char *dirname)
 int (*cli_unrar_extract_next)(unrar_state_t *state, const char *dirname);
 void (*cli_unrar_close)(unrar_state_t *state);
 int have_rar = 0;
-static int is_rar_initd = 0;
+static int is_rar_inited = 0;
 
 static int warn_dlerror(const char *msg)
 {
@@ -173,8 +173,8 @@ static lt_dlhandle lt_dlfind(const char *name, const char *featurename)
 static void cli_rarload(void) {
     lt_dlhandle rhandle;
 
-    if(is_rar_initd) return;
-    is_rar_initd = 1;
+    if(is_rar_inited) return;
+    is_rar_inited = 1;
 
     rhandle = lt_dlfind("libclamunrar_iface", "unrar");
     if (!rhandle)

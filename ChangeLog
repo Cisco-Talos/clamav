@@ -3999,7 +3999,7 @@ Sat Oct 16 18:23:17 CEST 2010 (acab)
 
 Fri Oct 15 17:48:00 CEST 2010 (acab)
 ------------------------------------
- * libclamav/pe_icons.c: make sure all ref points are initted (bb#2291)
+ * libclamav/pe_icons.c: make sure all ref points are inited (bb#2291)
 
 Fri Oct 15 16:13:27 CEST 2010 (tk)
 ----------------------------------
