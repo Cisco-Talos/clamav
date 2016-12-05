@@ -3463,7 +3463,7 @@ void cli_byteinst_describe(const struct cli_bc_inst *inst, unsigned *bbnum)
         printf("load  %d <- p.%d", inst->dest, inst->u.unaryop);
         break;
 
-        // llvm instrinsics
+        // llvm intrinsics
     case OP_BC_MEMSET:
         printf("%d = memset (p.%d, %d, %d)", inst->dest, inst->u.three[0],
                inst->u.three[1], inst->u.three[2]);
