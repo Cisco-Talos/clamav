@@ -7498,7 +7498,7 @@ Fri Feb 20 15:53:18 EET 2009 (edwin)
 
 Fri Feb 20 13:54:53 EET 2009 (edwin)
 ------------------------------------
- * docs/man/clamd.8.in: more documentation on IDSESSION/INSTREEAM (bb
+ * docs/man/clamd.8.in: more documentation on IDSESSION/INSTREAM (bb
  #1401).
 
 Thu Feb 19 13:28:04 CET 2009 (tk)
