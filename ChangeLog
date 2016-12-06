@@ -11249,7 +11249,7 @@ Tue Oct  9 11:36:44 BST 2007 (trog)
 
 Tue Oct  9 08:47:44 BST 2007 (njh)
 ----------------------------------
-  * clamav-milter:	Fix bug introducted in revision 3277.
+  * clamav-milter:	Fix bug introduced in revision 3277.
 
 Mon Oct  8 23:20:23 CEST 2007 (tk)
 ----------------------------------
