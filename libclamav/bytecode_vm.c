@@ -1115,7 +1115,7 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
                 }
 
                 if (!(inst->interp_op%5)) {
-                    // how do negative offsets affect pointer intialization?
+                    // how do negative offsets affect pointer initialization?
                     WRITE64(inst->dest, ptr_compose(stackid,
                                                     inst->u.three[1]+off));
                 } else {
@@ -1217,7 +1217,7 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
                 }
 
                 if (!(inst->interp_op%5)) {
-                    // how do negative offsets affect pointer intialization?
+                    // how do negative offsets affect pointer initialization?
                     cli_dbgmsg("bytecode warning: untested case for GEP1\n");
                     off *= inst->u.three[0];
                     WRITE64(inst->dest, ptr_compose(stackid,
