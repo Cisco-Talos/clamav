@@ -1158,7 +1158,7 @@ parseMHTMLComment(const char *comment, cli_ctx *ctx, void *wrkjobj, void *cbdata
 
 		reader = xmlReaderForMemory(xmlsrt, xmlend-xmlsrt+6, "comment.xml", NULL, CLAMAV_MIN_XMLREADER_FLAGS);
 		if (!reader) {
-			cli_dbgmsg("parseMHTMLComment: cannot intialize xmlReader\n");
+			cli_dbgmsg("parseMHTMLComment: cannot initialize xmlReader\n");
 
 #if HAVE_JSON
                        if (ctx->wrkproperty != NULL)
@@ -1229,7 +1229,7 @@ parseRootMHTML(mbox_ctx *mctx, message *m, text *t)
 
 	htmlDoc = htmlReadMemory((char*)input->data, input->len, "mhtml.html", NULL, CLAMAV_MIN_XMLREADER_FLAGS);
 	if (htmlDoc == NULL) {
-		cli_dbgmsg("parseRootMHTML: cannot intialize read html document\n");
+		cli_dbgmsg("parseRootMHTML: cannot initialize read html document\n");
 #if HAVE_JSON
                 if (ctx->wrkproperty != NULL)
                     ret = cli_json_parse_error(ctx->wrkproperty, "MHTML_ERROR_HTML_READ");
@@ -1253,7 +1253,7 @@ parseRootMHTML(mbox_ctx *mctx, message *m, text *t)
 
 	reader = xmlReaderWalker(htmlDoc);
 	if (reader == NULL) {
-		cli_dbgmsg("parseRootMHTML: cannot intialize xmlTextReader\n");
+		cli_dbgmsg("parseRootMHTML: cannot initialize xmlTextReader\n");
 #if HAVE_JSON
                 if (ctx->wrkproperty != NULL)
                     ret = cli_json_parse_error(ctx->wrkproperty, "MHTML_ERROR_XML_READER_IO");

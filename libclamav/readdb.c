@@ -3541,7 +3541,7 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
             }
 
             /* handle lack of hexstr support here in order to suppress */
-            /* initalize testing matcher */
+            /* initialize testing matcher */
             if (!engine->test_root) {
                 engine->test_root = (struct cli_matcher *) mpool_calloc(engine->mempool, 1, sizeof(struct cli_matcher));
                 if (!engine->test_root) {
