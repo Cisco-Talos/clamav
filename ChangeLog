@@ -4327,7 +4327,7 @@ Fri Jul 23 22:32:18 EEST 2010 (edwin)
 
 Thu Jul 22 22:32:08 EEST 2010 (edwin)
 -------------------------------------
- * libclamav/c++/bytecode2llvm.cpp: detect PaX and fallback to intepreter if
+ * libclamav/c++/bytecode2llvm.cpp: detect PaX and fallback to interpreter if
  needed (bb #2092).
  * libclamav/bytecode.c: selfcheck on startup (bb #2092).
 
@@ -5341,7 +5341,7 @@ Mon Feb 15 17:34:41 2010 +0200 (edwin)
 
 Mon Feb 15 17:32:00 2010 +0200 (edwin)
 --------------------------------------
- * libclamav/bytecode.c: fix loading of bytecode into intepreter.
+ * libclamav/bytecode.c: fix loading of bytecode into interpreter.
 
 Mon Feb 15 16:08:38 2010 +0200 (edwin)
 --------------------------------------
