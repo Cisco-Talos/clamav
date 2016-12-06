@@ -413,7 +413,7 @@ static int real_scansis(cli_ctx *ctx, const char *tmpd) {
 	sftype = "uninstall text";
 	break;
       case FTnotinst:
-	sftype = "not to be intalled";
+	sftype = "not to be installed";
 	break;
       default:
 	sftype = "unknown";
