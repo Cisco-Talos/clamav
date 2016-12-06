@@ -8412,7 +8412,7 @@ Wed Nov 12 00:34:20 CET 2008 (acab)
 
 Tue Nov 11 20:42:28 CET 2008 (acab)
 -----------------------------------
- * libclamav/nsis: improve lateny (bb#1180)
+ * libclamav/nsis: improve latency (bb#1180)
 
 Mon Nov 10 20:12:47 EET 2008 (edwin)
 ------------------------------------
