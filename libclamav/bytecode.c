@@ -3139,7 +3139,7 @@ static void cli_bytetype_helper(const struct cli_bc *bc, unsigned tid)
 
     i = tid - 65;
     if (i >= bc->num_types) {
-        printf("invaltype");
+        printf("invalid type");
         return;
     }
     ty = &bc->types[i];
