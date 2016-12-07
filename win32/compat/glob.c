@@ -27,7 +27,7 @@
 /* 
     I GIVE UP! The CRT is b0rked and cannot be helped.
 
-    The documentation suggestes to handle globbing automagically via linking in
+    The documentation suggests to handle globbing automagically via linking in
     the msvc-provided setargv.obj. Unfortunately that thing has got any sort of bugs
     and perverts filenames rather than expanding them.
 
