@@ -968,7 +968,7 @@ messageAddStr(message *m, const char *data)
 			 * blank lines
 			 */
 			if(messageGetMimeType(m) != TEXT)
-				/* don't save two blank lines in sucession */
+				/* don't save two blank lines in succession */
 				return 1;
 
 		m->body_last->t_next = (text *)cli_malloc(sizeof(text));
