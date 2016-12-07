@@ -15093,7 +15093,7 @@ $as_echo "#define FILEBUFF 8192" >>confdefs.h
 
 
 
-	# Only modify libdir if user has not overriden it
+	# Only modify libdir if user has not overridden it
 	default_libdir='${exec_prefix}/lib'
 	if test "$libdir" = "$default_libdir"; then
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for multiarch libdir" >&5
