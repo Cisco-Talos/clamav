@@ -986,7 +986,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 				if ((tag_val_length == 5) && (strncmp(tag_val, "data:", 5) == 0)) {
 					/* RFC2397 inline data */
 
-					/* Rewind one byte so we don't recursuive */
+					/* Rewind one byte so we don't recursive */
 					if (file_buff_o2 && (file_buff_o2->length > 0)) {
 						file_buff_o2->length--;
 					}
@@ -1000,7 +1000,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 				} else if ((tag_val_length == 6) && (strncmp(tag_val, "\"data:", 6) == 0)) {
 					/* RFC2397 inline data */
 
-					/* Rewind one byte so we don't recursuive */
+					/* Rewind one byte so we don't recursive */
 					if (file_buff_o2 && (file_buff_o2->length > 0)) {
 						file_buff_o2->length--;
 					}
