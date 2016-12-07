@@ -20932,7 +20932,7 @@ Fri Jan  9 14:46:29 GMT 2004 (njh)
 
 Fri Jan  9 10:21:27 GMT 2004 (njh)
 ----------------------------------
-  * libclamav: Locate uuencoded viruses hidden in text poritions of
+  * libclamav: Locate uuencoded viruses hidden in text portions of
 	multipart/mixed mime messages
 
 Fri Jan  9 02:07:53 CET 2004 (tk)
