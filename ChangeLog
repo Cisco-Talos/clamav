@@ -9150,7 +9150,7 @@ Thu Aug  7 14:27:44 CEST 2008 (tk)
 
 Wed Aug  6 02:15:39 CEST 2008 (acab)
 ------------------------------------
-  * libclamav/unzip.c: fix incorrect debug spam which misleaded poor sigmakers
+  * libclamav/unzip.c: fix incorrect debug spam which misled poor sigmakers
 
 Wed Aug  6 02:11:12 CEST 2008 (acab)
 ------------------------------------
