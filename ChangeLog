@@ -13823,7 +13823,7 @@ Mon Oct 23 17:48:39 CEST 2006 (tk)
 
 Sun Oct 22 11:24:07 BST 2006 (njh)
 ----------------------------------
-  * libclamav/pdf.c:	Handle ASCII85 encoded Flated objectes (bug#43)
+  * libclamav/pdf.c:	Handle ASCII85 encoded Flated objects (bug#43)
 
 Thu Oct 19 20:33:15 CEST 2006 (acab)
 ------------------------------------
