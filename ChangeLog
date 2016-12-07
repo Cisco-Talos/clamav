@@ -1685,7 +1685,7 @@ Tue, 14 Apr 2015 15:53:17 EDT (klin)
 Mon, 13 Apr 2015 12:14:41 EDT (smorgan)
 -----------------------------------
  * bb11298 - look for TOC element name <unarchived-checksum> 
-   (as a synonynm for <extracted-checksum>). Continue processing rather
+   (as a synonym for <extracted-checksum>). Continue processing rather
     than exit in the event of missing or error in TOC checksum specification.
 
 Wed, 8 Apr 2015 15:51:04 EDT (smorgan)
