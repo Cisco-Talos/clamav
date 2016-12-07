@@ -777,7 +777,7 @@ version:
 
   - Anti-phishing Technology: Users can now change the priority and reporting
     of ClamAV's heuristic anti-phishing scanner within the detection engine
-    process. They can choose whether, when scanning a supicious file, ClamAV
+    process. They can choose whether, when scanning a suspicious file, ClamAV
     should stop scanning and report the phish, or continue to scan in case the
     file contains other malware (clamd: HeuristicScanPrecedence,
     clamscan: --heuristic-scan-precedence)
