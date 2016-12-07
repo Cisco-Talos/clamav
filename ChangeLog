@@ -22719,7 +22719,7 @@ Thu Apr 18 23:18:21 CEST 2002
 Wed Apr 17 01:49:42 CEST 2002
 -----------------------------
   * added support for FreeBSD
-  * seperated thread code, POSIX threads are not required now,
+  * separated thread code, POSIX threads are not required now,
     if there are problems (detected pthread.h, but problems with linker)
     threads code may be disabled with --disable-pthreads
   * improved error handling in database parser
