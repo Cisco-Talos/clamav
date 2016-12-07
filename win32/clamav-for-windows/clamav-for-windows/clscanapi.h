@@ -307,7 +307,7 @@ int CLAMAPI Scan_SetLimit(int option, unsigned int value);
  * INPUT @param option : option enum
  * INPUT @param value : location to store value
  * INPUT @param inputLength : size of input buffer
- * OUTPUT @param outLength : mimimum size require to store data
+ * OUTPUT @param outLength : minimum size require to store data
  */
 int CLAMAPI Scan_GetOption(CClamAVScanner *pScanner, int option, void *value, unsigned long inputLength, unsigned long *outLength);
 
