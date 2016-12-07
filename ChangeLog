@@ -21615,7 +21615,7 @@ Sat Aug 30 21:25:25 CEST 2003
 
 Fri Aug 29 06:00:01 CEST 2003
 -----------------------------
-  * clamav-milter: 0.60d: Removed superflous buffer and unneeded strerror
+  * clamav-milter: 0.60d: Removed superfluous buffer and unneeded strerror
 		   call (Nigel)
   * libclamav: enabled support for Maildir files (thanks to Tomasz Papszun
 	       for samples and to Nigel for making his code so flexible)
