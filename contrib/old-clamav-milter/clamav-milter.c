@@ -685,7 +685,7 @@ help(void)
 	puts(_("\t--quiet\t\t\t-q\tDon't send e-mail notifications of interceptions."));
 	puts(_("\t--quarantine=USER\t-Q EMAIL\tQuarantine e-mail account."));
 	puts(_("\t--report-phish=EMAIL\t-r EMAIL\tReport phish to this email address."));
-	puts(_("\t--report-phish-false-positives=EMAIL\t-R EMAIL\tReport phish false positves to this email address."));
+	puts(_("\t--report-phish-false-positives=EMAIL\t-R EMAIL\tReport phish false positives to this email address."));
 	puts(_("\t--quarantine-dir=DIR\t-U DIR\tDirectory to store infected emails."));
 	puts(_("\t--server=SERVER\t\t-s SERVER\tHostname/IP address of server(s) running clamd (when using TCPsocket)."));
 	puts(_("\t--sendmail-cf=FILE\t\tLocation of the sendmail.cf file to verify"));

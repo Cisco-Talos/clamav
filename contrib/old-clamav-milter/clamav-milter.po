@@ -146,7 +146,7 @@ msgstr ""
 #: clamav-milter.c:617
 msgid ""
 "\t--report-phish-false-positives=EMAIL\t-R EMAIL\tReport phish false "
-"positves to this email address."
+"positives to this email address."
 msgstr ""
 
 #: clamav-milter.c:618
