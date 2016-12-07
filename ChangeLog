@@ -4563,7 +4563,7 @@ Mon May 10 14:11:51 CEST 2010 (acab)
 Mon May 10 03:43:43 CEST 2010 (acab)
 ------------------------------------
  * libclamav: Use mpool in win32 (well, sort of) as the mighty crt allocator
-	      chokes when loading about one milion signatures
+	      chokes when loading about one million signatures
 
 Sat May  8 00:18:13 CEST 2010 (acab)
 ------------------------------------
