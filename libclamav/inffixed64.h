@@ -1,6 +1,6 @@
 /* 
  * This file contains code from zlib library v.1.2.3 with modifications
- * by aCaB <acab@clamav.net> to allow decompression of deflate64 stereams
+ * by aCaB <acab@clamav.net> to allow decompression of deflate64 streams
  * (aka zip method 9). The implementation is heavily inspired by InfoZip
  *  and zlib's inf9back.c
  * 
