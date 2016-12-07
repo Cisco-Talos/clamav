@@ -148,7 +148,7 @@ As a result the following command line options cannot be converted into new conf
  --blacklist-time (-k)
 " if $black;
 
-wwarn "Phising reports are no longer supported.
+wwarn "Phishing reports are no longer supported.
 As a result the following command line options cannot be converted into new config options:
  --report-phish (-r)
  --report-phish-false-positives (-R)
