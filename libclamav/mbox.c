@@ -1036,22 +1036,22 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821)
 #ifdef CL_THREAD_SAFE
 	char *strptr;
 #endif
-	const char *separater;
-	char *cmd, *copy, tokenseparater[2];
+	const char *separator;
+	char *cmd, *copy, tokenseparator[2];
 
 	cli_dbgmsg("parseEmailHeader '%s'\n", line);
 
 	/*
-	 * In RFC822 the separater between the key a value is a colon,
+	 * In RFC822 the separator between the key a value is a colon,
 	 * e.g.	Content-Transfer-Encoding: base64
 	 * However some MUA's are lapse about this and virus writers exploit
 	 * this hole, so we need to check all known possibilities
 	 */
-	for(separater = ":= "; *separater; separater++)
-		if(strchr(line, *separater) != NULL)
+	for(separator = ":= "; *separator; separator++)
+		if(strchr(line, *separator) != NULL)
 			break;
 
-	if(*separater == '\0')
+	if(*separator == '\0')
 		return -1;
 
 	copy = rfc2047(line);
@@ -1059,15 +1059,15 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821)
 		/* an RFC checker would return -1 here */
 		copy = cli_strdup(line);
 
-	tokenseparater[0] = *separater;
-	tokenseparater[1] = '\0';
+	tokenseparator[0] = *separator;
+	tokenseparator[1] = '\0';
 
 	ret = -1;
 
 #ifdef	CL_THREAD_SAFE
-	cmd = strtok_r(copy, tokenseparater, &strptr);
+	cmd = strtok_r(copy, tokenseparator, &strptr);
 #else
-	cmd = strtok(copy, tokenseparater);
+	cmd = strtok(copy, tokenseparator);
 #endif
 
 	if(cmd && (strstrip(cmd) > 0)) {
