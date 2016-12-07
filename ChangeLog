@@ -18419,7 +18419,7 @@ Sat Aug 21 14:07:47 CEST 2004 (acab)
 
 Sat Aug 21 12:59:43 BST 2004 (njh)
 ----------------------------------
-  * libclamav:	Changed the handling of miltipart messages, that is scanning
+  * libclamav:	Changed the handling of multipart messages, that is scanning
 			emails with attachments. Reports on impact on memory
 			usage and speed welcome to clamav-devel*lists.sf.net.
 
