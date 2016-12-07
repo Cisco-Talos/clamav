@@ -225,7 +225,7 @@ int get_clamd_version(const struct optstruct *opts)
 
     while((len = recvln(&rcv, &buff, NULL))) {
 	if(len == -1) {
-	    logg("!Error occoured while receiving version information.\n");
+	    logg("!Error occurred while receiving version information.\n");
 	    break;
 	}
 	printf("%s\n", buff);
