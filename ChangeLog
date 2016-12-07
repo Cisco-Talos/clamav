@@ -3160,7 +3160,7 @@ Thu Jun 30 14:24:34 EEST 2011 (edwin)
 
 Wed Jun 29 16:39:56 CEST 2011 (acab)
 ------------------------------------
- * cw4: track number of loaded sigs, provide retieval api
+ * cw4: track number of loaded sigs, provide retrieval api
  
 Wed Jun 29 14:28:03 CEST 2011 (acab)
 ------------------------------------
