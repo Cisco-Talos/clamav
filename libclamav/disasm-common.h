@@ -129,7 +129,7 @@ enum X86OPS {
   OP_LODSB,/**< Load String Byte */
   OP_LOOP,/**< Loop According to ECX Counter */
   OP_LOOPE,/**< Loop According to ECX Counter and ZF=1 */
-  OP_LOOPNE,/**< Looop According to ECX Counter and ZF=0 */
+  OP_LOOPNE,/**< Loop According to ECX Counter and ZF=0 */
   OP_JECXZ,/**< Jump if ECX is Zero */
   OP_LSL,/**< Load Segment Limit */
   OP_LSS,/**< Load Far Pointer into SS */
