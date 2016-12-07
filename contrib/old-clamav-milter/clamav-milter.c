@@ -948,7 +948,7 @@ main(int argc, char **argv)
 			case 'a':	/* e-mail errors from here */
 				/*
 				 * optarg is optional - if you give --from
-				 * then the --from is set to the orginal,
+				 * then the --from is set to the original,
 				 * probably forged, email address
 				 */
 				from = optarg;
