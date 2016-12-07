@@ -251,10 +251,10 @@ uint32_t cli_bcapi_trace_scope(struct cli_bc_ctx *ctx, const uint8_t *scope, uin
     if (ctx->scope != (const char*)scope) {
         ctx->scope = (const char*)scope ? (const char*)scope : "?";
         ctx->scopeid = scopeid;
-        ctx->trace_level |= 0x80;/* temporarely increase level to print params */
+        ctx->trace_level |= 0x80;/* temporarily increase level to print params */
     } else if ((ctx->trace_level >= trace_scope) && ctx->scopeid != scopeid) {
         ctx->scopeid = scopeid;
-        ctx->trace_level |= 0x40;/* temporarely increase level to print location */
+        ctx->trace_level |= 0x40;/* temporarily increase level to print location */
     }
     return 0;
 }
