@@ -181,7 +181,7 @@ typedef	unsigned int	in_addr_t;
 		 * command connexion is created for each new email
 		 *
 		 * FIXME: When SESSIONS are open, freshclam can hang when
-		 *	notfying clamd of an update. This is most likely to be a
+		 *	notifying clamd of an update. This is most likely to be a
 		 *	problem with the implementation of SESSIONS on clamd.
 		 *	The problem seems worst on BSD.
 		 *
