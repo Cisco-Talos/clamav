@@ -106,7 +106,7 @@
  *   - probability for end[Q] to match low (avoid 0000, and other common case
  *   - choose the most "diverse" subset from a long pattern
  *
- * diverse = refering to what we are scanning, so that the filter rarely
+ * diverse = referring to what we are scanning, so that the filter rarely
  * matches, so this actually means that we *want* to avoid adding more
  * characters to the filter, if we have 2 patterns:
  * abxfg, and dalabxpo, it may be preferable to shift the 2nd one so that we
