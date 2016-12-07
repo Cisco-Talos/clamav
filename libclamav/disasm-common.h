@@ -169,7 +169,7 @@ enum X86OPS {
   OP_RETN,/**< Return from Near Procedure */
   OP_ROL,/**< Rotate Left */
   OP_ROR,/**< Rotate Right */
-  OP_RSM,/**< Resumse from System Management Mode */
+  OP_RSM,/**< Resume from System Management Mode */
   OP_SAHF,/**< Store AH into Flags */
   OP_SAR,/**< Shift Arithmetic Right */
   OP_SBB,/**< Subtract with Borrow */
