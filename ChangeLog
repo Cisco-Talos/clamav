@@ -20422,7 +20422,7 @@ Wed Feb 18 13:35:59 GMT 2004 (njh)
 
 Wed Feb 18 10:12:54 GMT 2004 (njh)
 ----------------------------------
-  * libclamav:	Found some occurances of Yaha
+  * libclamav:	Found some occurrences of Yaha
 	Added debug of number of lines in (encoded) attachment
   * clamav-milter:	clamav-milter now builds on freeBSD 5.2 (wrong logic
 		in including malloc.h)
