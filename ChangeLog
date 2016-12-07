@@ -8597,7 +8597,7 @@ Sat Nov  1 03:51:58 CET 2008 (acab)
 	different memory "pools".
 	As soon as a database is no longer needed its pool is destroyed
 	and the memory is *really* returned to the system.
-	The performace is comparable to that of the glibc allocator,
+	The performance is comparable to that of the glibc allocator,
 	when not better, however there is a small overhead (a few MB)
 	in the initial memory usage (but at least it no longer grows).
 	Thanks a lot sgran for the idea and nitrox for the extensive
