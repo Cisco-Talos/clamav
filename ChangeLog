@@ -21476,7 +21476,7 @@ Tue Sep 30 12:54:32 BST 2003 (njh)
 
 Mon Sep 29 18:10:39 BST 2003 (njh)
 ----------------------------------
-  * libclamav: moved stub from heap to stack since its mazimum size is known
+  * libclamav: moved stub from heap to stack since its maximum size is known
 
 Mon Sep 29 13:59:13 BST 2003 (njh)
 ---------------------------------
