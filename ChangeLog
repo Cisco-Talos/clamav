@@ -10684,7 +10684,7 @@ Fri Jan 18 17:01:25 EET 2008 (edwin)
 
 Fri Jan 18 12:13:16 CET 2008 (acab)
 -----------------------------------
-  * test: Storing the testifles byteswapped to avoid detection of the tarball.
+  * test: Storing the testfiles byteswapped to avoid detection of the tarball.
   	  Real files are generated at make time and are additionally available
 	  under /contrib/test - close bb#398
 
