@@ -2239,7 +2239,7 @@ createSession(unsigned int s)
 	session->sock = -1;
 	proto = getprotobyname("tcp");
 	if(proto == NULL) {
-		fputs("Unknown prototol tcp, check /etc/protocols\n", stderr);
+		fputs("Unknown protocol tcp, check /etc/protocols\n", stderr);
 		fd = ret = -1;
 	} else if((fd = socket(AF_INET, SOCK_STREAM, proto->p_proto)) < 0) {
 		perror("socket");
