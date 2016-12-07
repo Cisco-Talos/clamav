@@ -16658,7 +16658,7 @@ Sat Jan 22 13:45:42 GMT 2005 (njh)
 ----------------------------------
   * clamav-milter:	If forwarding to a quarantine user fails log as LOG_ERR
 				not LOG_DEBUG
-			Try to santity check that the input socket name is the
+			Try to sanity check that the input socket name is the
 				same as the same given to sendmail
 			Redirect stdout and stderr to LogFile, if that is set
 			--quarantine didn't redirect to the given email address
