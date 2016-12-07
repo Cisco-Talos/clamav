@@ -2976,7 +2976,7 @@ saveTextPart(mbox_ctx *mctx, message *m, int destroy_text)
  * If out == NULL, return a buffer without the comments, the caller must free
  *	the returned buffer
  * Return NULL on error or if the input * has no comments.
- * See secion 3.4.3 of RFC822
+ * See section 3.4.3 of RFC822
  * TODO: handle comments that go on to more than one line
  */
 static char *
