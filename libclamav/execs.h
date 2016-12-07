@@ -56,7 +56,7 @@ struct cli_exe_info {
     /** Number of sections*/
     uint16_t nsections;
     void *dummy;/* for compat - preserve offset */
-    /** Resrources RVA - PE ONLY */
+    /** Resources RVA - PE ONLY */
     uint32_t res_addr;
     /** Address size - PE ONLY */
     uint32_t hdr_size;
