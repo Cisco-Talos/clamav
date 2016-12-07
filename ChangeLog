@@ -8146,7 +8146,7 @@ Sun Dec  7 14:53:17 CET 2008 (acab)
 
 Sun Dec  7 13:46:07 CET 2008 (acab)
 -----------------------------------
- * clamav-milter: work around stupid milter protoes
+ * clamav-milter: work around stupid milter protos
 
 Sun Dec  7 13:38:49 CET 2008 (acab)
 -----------------------------------

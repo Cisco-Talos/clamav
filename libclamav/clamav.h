@@ -304,7 +304,7 @@ extern int cli_cache_enable(struct cl_engine *engine);
 
 /* CALLBACKS */
 
-/* I certainly wish I could declare the callback protoes stable and
+/* I certainly wish I could declare the callback protos stable and
    move on to better things. But real life crossed my way enough times
    already and what looked perfect had to evolve somehow.
    So all I can say is I'll try my best not to break these things in the long run.
