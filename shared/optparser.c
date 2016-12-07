@@ -249,7 +249,7 @@ const struct clam_option __clam_options[] = {
 
     { "CommandReadTimeout", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 5, NULL, 0, OPT_CLAMD, "This option specifies the time (in seconds) after which clamd should\ntimeout if a client doesn't provide any initial command after connecting.", "5" },
 
-    { "SendBufTimeout", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 500, NULL, 0, OPT_CLAMD, "This option specifies how long to wait (in miliseconds) if the send buffer\nis full. Keep this value low to prevent clamd hanging.", "200"},
+    { "SendBufTimeout", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 500, NULL, 0, OPT_CLAMD, "This option specifies how long to wait (in milliseconds) if the send buffer\nis full. Keep this value low to prevent clamd hanging.", "200"},
 
     { "ReadTimeout", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 120, NULL, 0, OPT_MILTER, "Waiting for data from clamd will timeout after this time (seconds).", "300" },
 
@@ -292,7 +292,7 @@ const struct clam_option __clam_options[] = {
 	"Set bytecode security level.\nPossible values:\n\tTrustSigned - trust bytecode loaded from signed .c[lv]d files,\n\t\t insert runtime safety checks for bytecode loaded from other sources\n\tParanoid - don't trust any bytecode, insert runtime checks for all\nRecommended: TrustSigned, because bytecode in .cvd files already has these checks.","TrustSigned"},
 
     { "BytecodeTimeout", "bytecode-timeout", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 5000, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, 
-	"Set bytecode timeout in miliseconds.","5000"},
+	"Set bytecode timeout in milliseconds.","5000"},
 
     { "BytecodeUnsigned", "bytecode-unsigned", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, 
 	"Allow loading bytecode from outside digitally signed .c[lv]d files.","no"},
