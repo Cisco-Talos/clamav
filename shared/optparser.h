@@ -36,7 +36,7 @@
 
 #define CLOPT_TYPE_STRING  1	/* quoted/regular string */
 #define CLOPT_TYPE_NUMBER  2	/* raw number */
-#define CLOPT_TYPE_SIZE    3	/* number possibly followed by modifers (M/m or K/k) */
+#define CLOPT_TYPE_SIZE    3	/* number possibly followed by modifiers (M/m or K/k) */
 #define CLOPT_TYPE_BOOL    4	/* boolean */
 
 struct optstruct {
