@@ -236,7 +236,7 @@ Note: although it's probably a good idea to enable this option, the default valu
 Default: no
 .SH "NOTES"
 .LP 
-All options expressing a size are limited to max 4GB. Values in excess will be resetted to the maximum.
+All options expressing a size are limited to max 4GB. Values in excess will be reset to the maximum.
 .SH "FILES"
 .LP 
 @CFGDIR@/clamav-milter.conf

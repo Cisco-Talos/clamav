@@ -691,7 +691,7 @@ Disable authenticode certificate chain verification in PE files.
 Default: no
 .SH "NOTES"
 .LP 
-All options expressing a size are limited to max 4GB. Values in excess will be resetted to the maximum.
+All options expressing a size are limited to max 4GB. Values in excess will be reset to the maximum.
 .SH "FILES"
 .LP 
 @CFGDIR@/clamd.conf
