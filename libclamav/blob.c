@@ -51,7 +51,7 @@
 
 #include <assert.h>
 
-/* Scehduled for rewrite in 0.94 (bb#804). Disabling for now */
+/* Scheduled for rewrite in 0.94 (bb#804). Disabling for now */
 /* #define	MAX_SCAN_SIZE	20*1024	/\* */
 /* 				 * The performance benefit of scanning */
 /* 				 * early disappears on medium and */
