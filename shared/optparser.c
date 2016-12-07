@@ -513,7 +513,7 @@ const struct clam_option __clam_options[] = {
 
     { "MilterSocketMode", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "Sets the permissions on the (unix) milter socket to the specified mode.", "660" },
 
-    { "LocalNet", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_MILTER, "Messages originating from these hosts/networks will not be scanned\nThis option takes a host(name)/mask pair in CIRD notation and can be\nrepeated several times. If \"/mask\" is omitted, a host is assumed.\nTo specify a locally orignated, non-smtp, email use the keyword \"local\".", "local\n192.168.0.0/24\n1111:2222:3333::/48" },
+    { "LocalNet", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_MILTER, "Messages originating from these hosts/networks will not be scanned\nThis option takes a host(name)/mask pair in CIRD notation and can be\nrepeated several times. If \"/mask\" is omitted, a host is assumed.\nTo specify a locally originated, non-smtp, email use the keyword \"local\".", "local\n192.168.0.0/24\n1111:2222:3333::/48" },
 
     { "OnClean", NULL, 0, CLOPT_TYPE_STRING, "^(Accept|Reject|Defer|Blackhole|Quarantine)$", -1, "Accept", 0, OPT_MILTER, "Action to be performed on clean messages (mostly useful for testing).\nThe following actions are available:\nAccept: the message is accepted for delivery\nReject: immediately refuse delivery (a 5xx error is returned to the peer)\nDefer: return a temporary failure message (4xx) to the peer\nBlackhole: like Accept but the message is sent to oblivion\nQuarantine: like Accept but message is quarantined instead of being delivered", "Accept" },
 
