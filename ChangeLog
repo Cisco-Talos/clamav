@@ -3922,7 +3922,7 @@ Tue Nov  2 13:01:14 EET 2010 (edwin)
 
 Mon Oct 18 11:35:45 EEST 2010 (edwin)
 -------------------------------------
- * clamd, libclamavll: add ability to logg messages from libclamav (bb #1965)
+ * clamd, libclamav: add ability to logg messages from libclamav (bb #1965)
 
 Sun Oct 31 09:13:33 EET 2010 (edwin)
 ------------------------------------
@@ -10305,7 +10305,7 @@ Sun Feb 10 10:28:55 EET 2008 (edwin)
 			     
 Fri Feb  8 20:16:45 CET 2008 (tk)
 ---------------------------------
-  * libclamac/readdb.c: add support for signature whitelisting with
+  * libclamav/readdb.c: add support for signature whitelisting with
 			daily.ign/local.ign (bb#779)
 
 Fri Feb  8 14:20:55 EET 2008 (edwin)
@@ -13443,7 +13443,7 @@ Tue Dec  5 03:18:06 CET 2006 (tk)
 
 Mon Dec  4 19:08:27 CET 2006 (acab)
 -----------------------------------
-  * liblcalamv/pe.c: removed useless debug line
+  * libclamav/pe.c: removed useless debug line
 
 Mon Dec  4 19:03:23 CET 2006 (acab)
 -----------------------------------
@@ -14735,7 +14735,7 @@ Wed Jun 21 09:55:54 BST 2006 (njh)
 
 Tue Jun 20 20:37:21 BST 2006 (njh)
 ----------------------------------
-  * libclamv/tnef.c:	Better indication of where an error was trapped
+  * libclamav/tnef.c:	Better indication of where an error was trapped
 
 Tue Jun 20 18:49:10 CEST 2006 (tk)
 ----------------------------------
@@ -17026,7 +17026,7 @@ Wed Dec  1 13:14:33 GMT 2004 (njh)
 
 Wed Dec  1 12:14:46 GMT 2004 (njh)
 ----------------------------------
-  * libeclamav/message.c:	Part of rule 3 of paragraph 5.1 of RFC1521 was
+  * libclamav/message.c:	Part of rule 3 of paragraph 5.1 of RFC1521 was
 		not being implemented, which meant that quoted-printable
 		attachments with spaces before the '=' character at the end
 		of soft breakon lines where not being correctly decoded
@@ -18020,7 +18020,7 @@ Thu Sep 16 14:00:05 BST 2004 (njh)
 
 Thu Sep 16 12:20:59 BST 2004 (njh)
 ----------------------------------
-  * libvclamav/mbox.c:	Improved handling of line breaks in the middle of
+  * libclamav/mbox.c:	Improved handling of line breaks in the middle of
 				headers for multipart sections
 
 Thu Sep 16 11:07:37 BST 2004 (njh)
@@ -18353,7 +18353,7 @@ Wed Aug 25 11:32:48 BST 2004 (njh)
 
 Wed Aug 25 11:06:42 BST 2004 (trog)
 -----------------------------------
-  * libclamac/ole2_extract.c: fix error path memory leaks
+  * libclamav/ole2_extract.c: fix error path memory leaks
 	(thanks to acab and njh)
 
 Wed Aug 25 10:13:43 CEST 2004 (acab)
@@ -19108,7 +19108,7 @@ Mon Jun 21 21:20:47 EDT 2004 (tk)
 
 Mon Jun 21 16:23:07 BST 2004 (trog)
 -----------------------------------
-  * libclamac/ole2_extract.c: Don't try and process (probably corrupt) files
+  * libclamav/ole2_extract.c: Don't try and process (probably corrupt) files
 	with untested parameters, issue a warning instead.
 
 Mon Jun 21 11:21:48 BST 2004 (njh)
@@ -20041,7 +20041,7 @@ Mon Mar 15 20:53:10 CET 2004 (tk)
 
 Mon Mar 15 18:40:44 GMT 2004 (trog)
 -----------------------------------
-  * libvlamav/ole2_extract.c: fix cli_malloc() error
+  * libclamav/ole2_extract.c: fix cli_malloc() error
 
 Mon Mar 15 17:05:01 CET 2004 (tk)
 ---------------------------------
