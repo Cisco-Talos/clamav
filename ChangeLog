@@ -1935,7 +1935,7 @@ Thu, 6 Nov 2014 14:51:26 EDT (swebb)
 
 Mon, 20 Oct 2014 11:33:18 EDT (swebb)
 -------------------------------------
-* Revert "bb#10731 - Allow to specificy a group for the socket of which
+* Revert "bb#10731 - Allow to specify a group for the socket of which
   the user is not a member"
 
 Thu, 31 Jul 2014 19:11:22 EDT (swebb)
