@@ -10782,7 +10782,7 @@ Sun Jan  6 15:36:46 CET 2008 (acab)
 
 Sat Jan  5 10:25:22 GMT 2008 (njh)
 ----------------------------------
-  * libclamav/vba_extract.c:	Minor optimisation
+  * libclamav/vba_extract.c:	Minor optimization
 
 Sat Jan  5 03:07:37 CET 2008 (acab)
   * libclamav: fix several warnings - mostly format strings
@@ -11378,7 +11378,7 @@ Fri Sep 28 20:17:41 EEST 2007 (edwin)
 
 Wed Sep 26 23:36:06 CEST 2007 (tk)
 ----------------------------------
-  * libclamav/matcher-ac.c: minor optimisation
+  * libclamav/matcher-ac.c: minor optimization
 
 Tue Sep 25 10:43:35 BST 2007 (njh)
 ----------------------------------
@@ -11455,7 +11455,7 @@ Sat Sep 15 09:13:14 BST 2007 (njh)
 
 Fri Sep 14 20:16:20 CEST 2007 (tk)
 ----------------------------------
-  * libclamav/matcher-ac.c: minor optimisation
+  * libclamav/matcher-ac.c: minor optimization
 
 Fri Sep 14 10:03:22 BST 2007 (njh)
 ----------------------------------
@@ -11463,14 +11463,14 @@ Fri Sep 14 10:03:22 BST 2007 (njh)
 
 Thu Sep 13 19:23:31 CEST 2007 (tk)
 ----------------------------------
-  * libclamav/matcher-ac.[ch]: various speed optimisations:
+  * libclamav/matcher-ac.[ch]: various speed optimizations:
 				- optimise node usage
 				- try hard to not overload node 0x00.0x00[0x00]
 				- optimise memory usage
 
 Thu Sep 13 17:37:31 BST 2007 (njh)
 ----------------------------------
-  * libclamav:	More optimisations
+  * libclamav:	More optimizations
 
 Thu Sep 13 14:01:08 CEST 2007 (acab)
   * libclamav/pe.c: One more typo fixed
@@ -11481,11 +11481,11 @@ Thu Sep 13 12:37:26 CEST 2007 (acab)
 
 Wed Sep 12 13:36:37 BST 2007 (njh)
 ----------------------------------
-  * libclamav:	More optimisations
+  * libclamav:	More optimizations
 
 Tue Sep 11 10:33:21 BST 2007 (njh)
 ----------------------------------
-  * libclamav:	Various code clean ups and optimisations
+  * libclamav:	Various code clean ups and optimizations
 
 Sun Sep  9 13:42:26 CEST 2007 (acab)
   * libclamav/nsis: tidy
@@ -11556,7 +11556,7 @@ Thu Aug 30 09:05:45 BST 2007 (njh)
 
 Wed Aug 29 18:27:55 BST 2007 (njh)
 ----------------------------------
-  * libclamav:	mbox optimisation to reduce the lifetime of temporary files
+  * libclamav:	mbox optimization to reduce the lifetime of temporary files
 
 Tue Aug 28 16:08:13 BST 2007 (njh)
 ----------------------------------
@@ -13613,7 +13613,7 @@ Mon Nov  6 00:12:28 CET 2006 (tk)
 
 Mon Nov  6 00:02:57 CET 2006 (tk)
 ---------------------------------
-  * libclamav/matcher-ac.c: minor optimisation, thanks to Christophe Jaillet
+  * libclamav/matcher-ac.c: minor optimization, thanks to Christophe Jaillet
 
 Sun Nov  5 19:11:28 CET 2006 (acab)
 -----------------------------------
@@ -17747,7 +17747,7 @@ Thu Sep 30 20:19:46 BST 2004 (njh)
 
 Thu Sep 30 10:01:25 BST 2004 (njh)
 ----------------------------------
-  * libclamav:		Further small speed and size optimisations with MIME
+  * libclamav:		Further small speed and size optimizations with MIME
 				decoding
 
 Thu Sep 30 09:24:26 BST 2004 (trog)
@@ -17766,7 +17766,7 @@ Thu Sep 30 02:19:12 CEST 2004 (tk)
 
 Tue Sep 28 19:41:39 BST 2004 (njh)
 ----------------------------------
-  * libclamav:		Some small speed and size optimisations in MIME decoding
+  * libclamav:		Some small speed and size optimizations in MIME decoding
 
 Tue Sep 28 15:46:18 BST 2004 (njh)
 ---------------------------------
@@ -18313,7 +18313,7 @@ Thu Aug 26 11:23:22 BST 2004 (njh)
   * clamav-milter/clamav-milter.c: Generate correct message if there is no
 			response from any clamd server
 		Handle %h (headers) in the template file
-		Fix bug in optimisation when more than one To line is
+		Fix bug in optimization when more than one To line is
 			received
 
 Thu Aug 26 10:34:48 BST 2004 (njh)
@@ -18335,7 +18335,7 @@ Thu Aug 26 02:19:47 CEST 2004 (tk)
 
 Wed Aug 25 13:32:22 BST 2004 (njh)
 ----------------------------------
-  * libclamav/line.c:	Small code optimisation
+  * libclamav/line.c:	Small code optimization
 
 Wed Aug 25 12:45:53 BST 2004 (njh)
 ----------------------------------
@@ -18446,7 +18446,7 @@ Wed Aug 18 22:38:39 BST 2004 (njh)
 
 Wed Aug 18 20:37:42 CEST 2004 (tk)
 ----------------------------------
-  * libclamav/contrib: Include database optimisation tool (optimize/optimize.c).
+  * libclamav/contrib: Include database optimization tool (optimize/optimize.c).
 		       It's ClamAV specific and attempts to normalise signature
 		       prefixes so there are more signatures using the same
 		       prefix (and saving nodes in the Aho-Corasick pattern
@@ -19062,7 +19062,7 @@ Thu Jun 24 09:09:27 BST 2004 (trog)
 
 Wed Jun 23 17:23:59 BST 2004 (njh)
 ----------------------------------
-  * libclamav/mbox.c:	Further optimisation in the handling of empty lines
+  * libclamav/mbox.c:	Further optimization in the handling of empty lines
 	in emails
 
 Wed Jun 23 15:16:20 BST 2004 (trog)
@@ -22714,7 +22714,7 @@ Fri Apr 19 23:43:11 CEST 2002
 
 Thu Apr 18 23:18:21 CEST 2002
 -----------------------------
-  * huge optimisation
+  * huge optimization
 
 Wed Apr 17 01:49:42 CEST 2002
 -----------------------------

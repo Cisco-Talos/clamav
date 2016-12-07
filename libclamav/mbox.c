@@ -3764,7 +3764,7 @@ exportBounceMessage(mbox_ctx *mctx, text *start)
 	 * helps a bit.
 	 *
 	 * messageAddLine
-	 * optimisation could help here, but needs
+	 * optimization could help here, but needs
 	 * careful thought, do it with line numbers
 	 * would be best, since the current method in
 	 * messageAddLine of checking encoding first

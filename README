@@ -895,7 +895,7 @@ The ClamAV team (http://www.clamav.net/about.html#credits)
 0.92
 ----
 
-This release provides various bugfixes, optimisations and improvements
+This release provides various bugfixes, optimizations and improvements
 to the scanning engine. The new features include support for ARJ and
 SFX-ARJ archives, AutoIt, basic SPF parser in clamav-milter (to reduce
 phishing false-positives), faster scanning and others (see ChangeLog).
@@ -1471,7 +1471,7 @@ Important note to clamdwatch users: please upgrade to the latest version
 -) clamav-milter:
     + by default uses libclamav to scan e-mails
     + new option --external (enables the use of clamd)
-    + various optimisations
+    + various optimizations
 
 -) freshclam:
     + the DNS mode is now enabled by default (no need for DNSDatabaseInfo in
@@ -1719,7 +1719,7 @@ The ClamAV team (http://www.clamav.net/about.html#credits)
 ----
 
 Bugfixes in this version include crashes with multipart/mixed messages
-and corrupted OLE2 and Zip files. Improvements include various optimisations
+and corrupted OLE2 and Zip files. Improvements include various optimizations
 of mail scanning and clamav-milter and clamdscan behaviour.
 
 
