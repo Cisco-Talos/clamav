@@ -92,7 +92,7 @@ static	char	*rfc2231(const char *in);
 static	int	simil(const char *str1, const char *str2);
 
 /*
- * These maps are ordered in decreasing likelyhood of their appearance
+ * These maps are ordered in decreasing likelihood of their appearance
  * in an e-mail. Probably these should be in a table...
  */
 static	const	struct	encoding_map {

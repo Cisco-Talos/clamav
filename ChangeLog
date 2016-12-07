@@ -20490,7 +20490,7 @@ Sun Feb 15 12:52:25 CET 2004 (tk)
 
 Sun Feb 15 08:50:21 GMT 2004 (njh)
 ----------------------------------
-  * libclamav:	added blobClose and blobCmp to reduce likelyhood of scanning the
+  * libclamav:	added blobClose and blobCmp to reduce likelihood of scanning the
 			same file twice and reducing the runtime memory usage
 	support video within multiparts
 	better warning of unsupported types that may need to be added later
