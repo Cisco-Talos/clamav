@@ -83,7 +83,7 @@ int cli_parsetiff(cli_ctx *ctx)
 
         cli_dbgmsg("cli_parsetiff: IFD %u declared %u directory entries\n", ifd_count, num_entries);
 
-        /* tranverse IFD entries */
+        /* transverse IFD entries */
         for(i = 0; i < num_entries; i++) {
             if(fmap_readn(map, &entry, offset, sizeof(entry)) != sizeof(entry))
                 return CL_EPARSE;
