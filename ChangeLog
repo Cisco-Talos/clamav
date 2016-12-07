@@ -3002,7 +3002,7 @@ Fri Nov 4 18:32:50 CEST 2011 (tk)
 
 Fri Nov  4 00:52:21 CET 2011 (acab)
 -----------------------------------
- * libclamav/pe.c: parse vinfo where varfileinfo occours before stringfileinfo
+ * libclamav/pe.c: parse vinfo where varfileinfo occurs before stringfileinfo
 		   (bb#3062)
 
 Thu Nov 3 22:43:49 CEST 2011 (acab)
