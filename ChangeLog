@@ -15897,7 +15897,7 @@ Sat May 14 17:14:52 BST 2005 (njh)
 
 Thu May 12 09:23:52 BST 2005 (trog)
 -----------------------------------
-  * libclamav/speical.c: Fix reading PString type in Photoshop thumbnails.
+  * libclamav/special.c: Fix reading PString type in Photoshop thumbnails.
 
 Thu May 12 08:32:22 BST 2005 (njh)
 ----------------------------------
