@@ -1042,7 +1042,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 
     if(optget(opts,"PartitionIntersection")->enabled) {
         options |= CL_SCAN_PARTITION_INTXN;
-        logg("Raw DMG: Always checking for partitons intersections\n");
+        logg("Raw DMG: Always checking for partitions intersections\n");
     }
 
     if(optget(opts,"HeuristicScanPrecedence")->enabled) {

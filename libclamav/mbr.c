@@ -217,7 +217,7 @@ int cli_scanmbr(cli_ctx *ctx, size_t sectorsize)
 
         /* Handle MBR entry based on type */
         if (mbr.entries[i].type == MBR_EMPTY) {
-            /* empty partiton entry */
+            /* empty partition entry */
             prtncount++;
         }
         else if (mbr.entries[i].type == MBR_EXTENDED) {
@@ -312,7 +312,7 @@ static int mbr_scanextprtn(cli_ctx *ctx, unsigned *prtncount, off_t extlba, size
                            (unsigned long)(ebr.entries[j].numLBA * sectorsize));
 
                 if (ebr.entries[j].type == MBR_EMPTY) {
-                    /* empty partiton entry */
+                    /* empty partition entry */
                     switch(state) {
                     case SEEN_NOTHING:
                         state = SEEN_EMPTY;
@@ -495,7 +495,7 @@ static int mbr_primary_prtn_intxn(cli_ctx *ctx, struct mbr_boot_record mbr, size
 
     for (i = 0; i < MBR_MAX_PARTITION_ENTRIES && prtncount < ctx->engine->maxpartitions; ++i) {
         if (mbr.entries[i].type == MBR_EMPTY) {
-            /* empty partiton entry */
+            /* empty partition entry */
             prtncount++;
         }
         else {
