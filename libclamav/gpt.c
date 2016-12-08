@@ -568,7 +568,7 @@ static void gpt_printSectors(cli_ctx *ctx, size_t sectorsize)
     gpt_parsemsg("0: MBR\n");
     gpt_parsemsg("%llu: Primary GPT Header\n", phdr.currentLBA);
     gpt_parsemsg("%llu-%llu: Primary GPT Partition Table\n", phdr.tableStartLBA, ptableLastLBA);
-    gpt_parsemsg("%llu-%llu: Usuable LBAs\n", phdr.firstUsableLBA, phdr.lastUsableLBA);
+    gpt_parsemsg("%llu-%llu: Usable LBAs\n", phdr.firstUsableLBA, phdr.lastUsableLBA);
     gpt_parsemsg("%llu-%llu: Secondary GPT Partition Table\n", shdr.tableStartLBA, stableLastLBA);
     gpt_parsemsg("%llu: Secondary GPT Header\n", phdr.backupLBA);
 #else
