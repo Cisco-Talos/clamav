@@ -17455,7 +17455,7 @@ Wed Oct 20 21:00:37 CEST 2004 (tk)
 
 Wed Oct 20 13:23:33 BST 2004 (njh)
 ----------------------------------
-  * libclamav/untar.c:	Print warning message about unsopported (yet) formats
+  * libclamav/untar.c:	Print warning message about unsupported (yet) formats
 
 Wed Oct 20 11:37:40 BST 2004 (njh)
 ----------------------------------
