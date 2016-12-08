@@ -832,7 +832,7 @@ static int real_scansis9x(cli_ctx *ctx, const char *tmpd) {
 /* #define GETD(VAR) \ */
 /*   if (cbuff) { \ */
 /*     if (sleft<4) { \ */
-/*       printf("Unespectedly reached end of compressed buffer\n"); \ */
+/*       printf("Unexpectedly reached end of compressed buffer\n"); \ */
 /*       free(cbuff); \ */
 /*       cbuff=NULL; \ */
 /*       smax=sleft=0; \ */
