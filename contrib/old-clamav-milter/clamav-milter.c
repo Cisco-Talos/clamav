@@ -5694,7 +5694,7 @@ watchdog(void *a)
 
 		/*
 		 * TODO: sanity check that if n_children == 0, that
-		 * root->refcount == 0. Unfortunatly root->refcount isn't
+		 * root->refcount == 0. Unfortunately root->refcount isn't
 		 * thread-safe, since it's governed by a mutex that we can't
 		 * see, and there's no access to it via an approved method
 		 */
