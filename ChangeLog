@@ -15157,7 +15157,7 @@ Tue Feb  7 11:34:17 GMT 2006 (njh)
 
 Sun Feb  5 13:56:56 GMT 2006 (njh)
 ----------------------------------
-  * clamav-milter:	Added --template-headers option, based on a whishlist
+  * clamav-milter:	Added --template-headers option, based on a wishlist
 				by Denis Eremenko <moonshade*mail.kz> for
 				the support of foreign language and HTML
 				emails in --template-file
