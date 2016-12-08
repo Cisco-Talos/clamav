@@ -365,7 +365,7 @@ cli_mbox(const char *dir, cli_ctx *ctx)
  *	http://www.lazerware.com/formats/Specs/AppleSingle_AppleDouble.pdf
  * TODO: ensure parseEmailHeaders is always called before parseEmailBody
  * TODO: create parseEmail which calls parseEmailHeaders then parseEmailBody
- * TODO: Handle unepected NUL bytes in header lines which stop strcmp()s:
+ * TODO: Handle unexpected NUL bytes in header lines which stop strcmp()s:
  *	e.g. \0Content-Type: application/binary;
  */
 static int
