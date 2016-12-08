@@ -1124,7 +1124,7 @@ Tue, 22 Dec 2015 19:04:42 -0500 (Steven Morgan)
 
 Tue, 22 Dec 2015 13:36:51 -0500 (Steven Morgan)
 ------------------------------------------
- * fix regression crash on sid 1005597703 due to uninitialzed
+ * fix regression crash on sid 1005597703 due to uninitialized
 	(i.e., garbage initialized) structure.
 
 Mon, 21 Dec 2015 17:39:47 -0500 (Steven Morgan)
@@ -18051,7 +18051,7 @@ Wed Sep 15 19:09:56 BST 2004 (njh)
 
 Wed Sep 15 18:46:44 CEST 2004 (tk)
 ----------------------------------
-  * libclamav/matcher.c: fix problem with uninitialised voffset structure
+  * libclamav/matcher.c: fix problem with uninitialized voffset structure
 			 (thanks to Nigel)
   * libclamav/str.c: check if memory is correctly allocated (thanks to Trog)
 
@@ -18939,7 +18939,7 @@ Tue Jul  6 17:19:15 CEST 2004 (tk)
 
 Tue Jul  6 16:37:34 CEST 2004 (tk)
 ----------------------------------
-  * libclamav: pe: fix sanity check on uninitialised data (bug found by aCaB)
+  * libclamav: pe: fix sanity check on uninitialized data (bug found by aCaB)
 
 Tue Jul  6 14:26:19 BST 2004 (trog)
 -----------------------------------
@@ -20819,7 +20819,7 @@ Sat Jan 24 18:17:51 GMT 2004 (njh)
 
 Sat Jan 24 17:45:40 GMT 2004 (njh)
 ----------------------------------
-  * libclamav: Removed (incorrect) warning about uninitialised variable
+  * libclamav: Removed (incorrect) warning about uninitialized variable
 
 Fri Jan 23 12:12:30 CET 2004 (tk)
 ---------------------------------
