@@ -16417,7 +16417,7 @@ Sun Feb 13 09:32:51 GMT 2005 (njh)
 
 Fri Feb 11 22:21:44 GMT 2005 (njh)
 ----------------------------------
-  * clamav-milter:	Added --whistlist-file and --sendmail-cf options
+  * clamav-milter:	Added --whitelist-file and --sendmail-cf options
 			When in SESSION mode, not all sessions would send END
 
 Tue Feb  8 14:45:05 GMT 2005 (trog)
