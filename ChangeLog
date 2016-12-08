@@ -7285,7 +7285,7 @@ Wed Mar  4 16:42:57 CET 2009 (acab)
 
 Wed Mar  4 15:20:47 CET 2009 (acab)
 -----------------------------------
- * clamav-milter: fix few typoes - thx Jakub Jankowski <shasta*toxcorp.com>
+ * clamav-milter: fix few typos - thx Jakub Jankowski <shasta*toxcorp.com>
 	and Peter Bonivart <bonivart*opencsw.org> for the testing
 
 Wed Mar  4 09:12:59 CET 2009 (tk)
@@ -9845,7 +9845,7 @@ Thu Mar 27 18:16:28 CET 2008 (tk)
 
 Tue Mar 25 01:55:19 CET 2008 (acab)
 -----------------------------------
-  * libclamav/nsis: typoes - bb#894
+  * libclamav/nsis: typos - bb#894
 
 Mon Mar 24 21:22:16 EET 2008 (edwin)
 -----------------------------------
@@ -11477,7 +11477,7 @@ Thu Sep 13 14:01:08 CEST 2007 (acab)
 
 Thu Sep 13 12:37:26 CEST 2007 (acab)
 ------------------------------------
-  * libclamav: Shut up a few warnings and fix some typoes
+  * libclamav: Shut up a few warnings and fix some typos
 
 Wed Sep 12 13:36:37 BST 2007 (njh)
 ----------------------------------
