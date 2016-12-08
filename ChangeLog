@@ -17410,7 +17410,7 @@ Sun Oct 24 04:52:01 BST 2004 (njh)
 			named pipe
 				SESSION code now on by default
 				Use cli_strtokbuf() instead of cli_strtok()
-			whereever possible
+			wherever possible
 
 Fri Oct 22 18:20:03 BST 2004 (njh)
 ----------------------------------

@@ -2878,7 +2878,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 	if(fflag)
 		/*
 		 * Patch from "Richard G. Roberto" <rgr@dedlegend.com>
-		 * Always scan whereever the message is from
+		 * Always scan wherever the message is from
 		 */
 		return SMFIS_CONTINUE;
 
