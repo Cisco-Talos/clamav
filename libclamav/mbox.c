@@ -1867,7 +1867,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 				case -1:
 					/*
 					 * According to section 7.2.6 of
-					 * RFC1521, unrecognised multiparts
+					 * RFC1521, unrecognized multiparts
 					 * should be treated as multipart/mixed.
 					 */
 					cli_dbgmsg("Unsupported multipart format `%s', parsed as mixed\n", mimeSubtype);

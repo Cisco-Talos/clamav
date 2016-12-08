@@ -743,7 +743,7 @@ main(int argc, char **argv)
 		clamfi_abort,	/* message aborted callback */
 		clamfi_close,	/* connexion cleanup callback */
 #if	SMFI_VERSION > 2
-		NULL,		/* Unrecognised command */
+		NULL,		/* Unrecognized command */
 #endif
 #if	SMFI_VERSION > 3
 		NULL,		/* DATA command callback */
