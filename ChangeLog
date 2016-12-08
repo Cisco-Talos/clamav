@@ -22439,7 +22439,7 @@ Tue Jul 23 21:42:00 CEST 2002
 
 Tue Jul 23 03:23:50 CEST 2002
 -----------------------------
-  * fixed problem with unaccesible directories with archives
+  * fixed problem with inaccessible directories with archives
     (quite a big piece of code was added for this fix)
   * removed --strange-unzip
   * improved -i option, it shuts unpackers up too.
