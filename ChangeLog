@@ -8803,7 +8803,7 @@ Sat Oct 11 11:16:02 EEST 2008 (edwin)
 -------------------------------------
  * Makefile.am, Makefile.in, libclamav/jsparse/js-norm.c,
  unit_tests/Makefile.am, unit_tests/Makefile.in,
- unit_tests/check_jsnorm.c: handle unfinishes string tokens in JS
+ unit_tests/check_jsnorm.c: handle unfinished string tokens in JS
  parser
 
 Sat Oct 11 13:01:36 EEST 2008 (edwin)
