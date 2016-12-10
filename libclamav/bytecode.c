@@ -657,13 +657,10 @@ static int parseHeader(struct cli_bc *bc, unsigned char *buffer, unsigned *linel
 
 static int parseLSig(struct cli_bc *bc, char *buffer)
 {
-//  const char *prefix;
-    char /**vnames, */*vend = strchr(buffer, ';');
+    char *vend = strchr(buffer, ';');
     if (vend) {
 	bc->lsig = cli_strdup(buffer);
 	*vend++ = '\0';
-//       prefix = buffer;
-//       vnames = strchr(vend, '{');
     } else {
 	/* Not a logical signature, but we still have a virusname */
 	bc->hook_name = cli_strdup(buffer);
@@ -1406,9 +1403,9 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 	}
 	bcfunc->dbgnodes = cli_malloc(num*sizeof(*bcfunc->dbgnodes));
 	if (!bcfunc->dbgnodes) {
-        cli_errmsg("Unable to allocate memory for dbg nodes: %zu\n", num*sizeof(*bcfunc->dbgnodes));
-	    return CL_EMEM;
-    }
+             cli_errmsg("Unable to allocate memory for dbg nodes: %zu\n", num*sizeof(*bcfunc->dbgnodes));
+             return CL_EMEM;
+         }
 	for (i=0;i<num;i++) {
 	    bcfunc->dbgnodes[i] = readNumber(buffer, &offset, len, &ok);
 	    if (!ok)
@@ -2153,10 +2150,10 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 	unsigned totValues = bcfunc->numValues + bcfunc->numConstants + bc->num_globals;
 	unsigned *map = cli_malloc(sizeof(*map)*totValues);
 	if (!map) {
-        cli_errmsg("interpreter: Unable to allocate memory for map: %zu\n", sizeof(*map)*totValues);
-        free(gmap);
-	    return CL_EMEM;
-    }
+             cli_errmsg("interpreter: Unable to allocate memory for map: %zu\n", sizeof(*map)*totValues);
+             free(gmap);
+             return CL_EMEM;
+         }
 	bcfunc->numBytes = 0;
 	for (j=0;j<bcfunc->numValues;j++) {
 	    uint16_t ty = bcfunc->types[j];
@@ -2555,7 +2552,7 @@ static int run_builtin_or_loaded(struct cli_all_bc *bcs, uint8_t kind, const cha
 
 	memset(&dbio, 0, sizeof(dbio));
 	dbio.usebuf = 1;
-	dbio.bufpt = dbio.buf = builtin_cbc;
+	dbio.bufpt = dbio.buf = (char*)builtin_cbc;
 	dbio.bufsize = strlen(builtin_cbc)+1;
 	if (!dbio.bufsize || dbio.bufpt[dbio.bufsize-2] != '\n') {
 	    cli_errmsg("Invalid builtin bytecode: missing terminator\n");
@@ -3230,7 +3227,7 @@ void cli_bytevalue_describe(const struct cli_bc *bc, unsigned funcid)
     printf("CID  ID    VALUE\n");
     printf("------------------------------------------------------------------------\n");
     for (i = 0; i < func->numConstants; ++i) {
-        printf("%3u [%3u]: " STDx64 "(0x" STDx64 ")\n", i, total++, func->constants[i], func->constants[i]);
+        printf("%3u [%3u]: " STDu64 "(0x" STDx64 ")\n", i, total++, func->constants[i], func->constants[i]);
     }
     printf("------------------------------------------------------------------------\n");
     printf("found a total of %u total values\n", total);
