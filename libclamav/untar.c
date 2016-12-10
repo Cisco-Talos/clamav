@@ -87,7 +87,7 @@ static int
 testchecksum(const char *header, int targetsum)
 {
 	const unsigned char *posix;	
-	const signed char *legacy;
+	const char *legacy;
 	int posix_sum = 0, legacy_sum = 0;
 	int i;
 
