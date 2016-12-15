@@ -86,8 +86,10 @@ int dconnect() {
         if ((sockd = socket(AF_UNIX, SOCK_STREAM, 0)) >= 0) {
             if (connect(sockd, (struct sockaddr *)&nixsock, sizeof(nixsock)) == 0)
                 return sockd;
-            else
+            else {
+                logg("!Could not connect to clamd on LocalSocket %s: %s\n", opt->strarg, strerror(errno));
                 close(sockd);
+            }
         }
     }
 #endif
