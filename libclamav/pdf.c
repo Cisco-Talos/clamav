@@ -1081,7 +1081,7 @@ static int run_pdf_hooks(struct pdf_struct *pdf, enum pdf_phase phase, int fd, i
 
 static void dbg_printhex(const char *msg, const char *hex, unsigned len);
 
-static void aes_decrypt(const unsigned char *in, size_t *length, unsigned char *q, char *key, unsigned key_n, int has_iv)
+static void aes_256cbc_decrypt(const unsigned char *in, size_t *length, unsigned char *q, char *key, unsigned key_n, int has_iv)
 {
     unsigned long rk[RKLENGTH(256)];
     unsigned char iv[16];
@@ -1097,8 +1097,8 @@ static void aes_decrypt(const unsigned char *in, size_t *length, unsigned char *
     }
 
     if (len < 32) {
-        cli_dbgmsg("aes_decrypt: len is <32: %zu\n", len);
-        noisy_warnmsg("aes_decrypt: len is <32: %zu\n", len);
+        cli_dbgmsg("aes_256cbc_decrypt: len is <32: %zu\n", len);
+        noisy_warnmsg("aes_256cbc_decrypt: len is <32: %zu\n", len);
         return;
     }
 
@@ -1110,13 +1110,13 @@ static void aes_decrypt(const unsigned char *in, size_t *length, unsigned char *
         memset(iv, 0, sizeof(iv));
     }
 
-    cli_dbgmsg("aes_decrypt: Calling rijndaelSetupDecrypt\n");
+    cli_dbgmsg("aes_256cbc_decrypt: Calling rijndaelSetupDecrypt\n");
     nrounds = rijndaelSetupDecrypt(rk, (const unsigned char *)key, key_n * 8);
     if (!nrounds) {
-        cli_dbgmsg("aes_decrypt: nrounds = 0\n");
+	cli_dbgmsg("aes_256cbc_decrypt: nrounds = 0\n");
         return;
     }
-    cli_dbgmsg("aes_decrypt: Beginning rijndaelDecrypt\n");
+    cli_dbgmsg("aes_256cbc_decrypt: Beginning rijndaelDecrypt\n");
 
     while (len >= 16) {
         unsigned i;
@@ -1136,8 +1136,8 @@ static void aes_decrypt(const unsigned char *in, size_t *length, unsigned char *
         pad = q[-1];
 
         if (pad > 0x10) {
-            cli_dbgmsg("aes_decrypt: bad pad: %x (extra len: %zu)\n", pad, len - 16);
-            noisy_warnmsg("aes_decrypt: bad pad: %x (extra len: %zu)\n", pad, len - 16);
+            cli_dbgmsg("aes_256cbc_decrypt: bad pad: %x (extra len: %zu)\n", pad, len-16);
+            noisy_warnmsg("aes_256cbc_decrypt: bad pad: %x (extra len: %zu)\n", pad, len-16);
             *length -= len;
             return;
         }
@@ -1145,8 +1145,8 @@ static void aes_decrypt(const unsigned char *in, size_t *length, unsigned char *
         q -= pad;
         for (i = 1; i < pad; i++) {
             if (q[i] != pad) {
-                cli_dbgmsg("aes_decrypt: bad pad: %x != %x\n", q[i], pad);
-                noisy_warnmsg("aes_decrypt: bad pad: %x != %x\n", q[i], pad);
+                cli_dbgmsg("aes_256cbc_decrypt: bad pad: %x != %x\n",q[i],pad);
+                noisy_warnmsg("aes_256cbc_decrypt: bad pad: %x != %x\n",q[i],pad);
                 *length -= len;
 
                 return;
@@ -1158,7 +1158,59 @@ static void aes_decrypt(const unsigned char *in, size_t *length, unsigned char *
 
     *length -= len;
 
-    cli_dbgmsg("aes_decrypt: length is %zu\n", *length);
+    cli_dbgmsg("aes_256cbc_decrypt: length is %zu\n", (int)*length);
+}
+
+static void aes_128cbc_encrypt(const unsigned char *in, size_t in_length, unsigned char *out, size_t* out_length, const unsigned char *key, size_t key_n, const unsigned char* iv)
+{
+    unsigned long rk[RKLENGTH(128)];
+    unsigned char real_iv[16] = { 0 };
+    int nrounds;
+
+    cli_dbgmsg("cli_pdf: aes_128cbc_encrypt: key length: %zd, data length: %zu\n", key_n, in_length);
+    if (key_n > 16)
+    {
+        cli_dbgmsg("cli_pdf: aes_128cbc_encrypt: key length is %zd!\n", key_n * 8);
+        return;
+    }
+
+    if (in_length < 16)
+    {
+        cli_dbgmsg("cli_pdf: aes_128cbc_encrypt: in_length is <16: %zd\n", in_length);
+        noisy_warnmsg("cli_pdf: aes_128cbc_encrypt: in_length is <16: %zd\n", in_length);
+        return;
+    }
+
+    cli_dbgmsg("aes_128cbc_encrypt: Calling rijndaelSetupEncrypt\n");
+    nrounds = rijndaelSetupEncrypt(rk, key, key_n * 8);
+    if (!nrounds)
+    {
+        cli_dbgmsg("cli_pdf: aes_128cbc_encrypt: nrounds = 0\n");
+        return;
+    }
+    cli_dbgmsg("aes_128cbc_encrypt: Beginning rijndaelEncrypt\n");
+
+    if (iv)
+        memcpy(real_iv, iv, sizeof(real_iv));
+
+    *out_length = 0;
+    while (in_length >= 16)
+    {
+        for (uint8_t i = 0; i < 16; i++)
+        real_iv[i] ^= in[i];
+
+        rijndaelEncrypt(rk, nrounds, real_iv, real_iv);
+
+        for (uint8_t i = 0; i < 16; i++)
+            out[i] = real_iv[i];
+
+        out += 16;
+        *out_length += 16;
+        in += 16;
+        in_length -= 16;
+    }
+
+    cli_dbgmsg("cli_pdf: aes_128cbc_encrypt: length is %zu\n", *out_length);
 }
 
 char *decrypt_any(struct pdf_struct *pdf, uint32_t id, const char *in, size_t *length, enum enc_method enc_method)
@@ -1225,7 +1277,7 @@ char *decrypt_any(struct pdf_struct *pdf, uint32_t id, const char *in, size_t *l
             break;
         case ENC_AESV2:
             cli_dbgmsg("cli_pdf: enc is aesv2\n");
-            aes_decrypt((const unsigned char *)in, length, q, (char *)result, n, 1);
+        aes_256cbc_decrypt((const unsigned char *)in, length, q, (char *)result, n, 1);
 
             noisy_msg(pdf, "decrypt_any: decrypted AES(v2) data\n");
 
@@ -1237,7 +1289,7 @@ char *decrypt_any(struct pdf_struct *pdf, uint32_t id, const char *in, size_t *l
                 return NULL;
             }
 
-            aes_decrypt((const unsigned char *)in, length, q, pdf->key, pdf->keylen, 1);
+        aes_256cbc_decrypt((const unsigned char *)in, length, q, pdf->key, pdf->keylen, 1);
 
             noisy_msg(pdf, "decrypted AES(v3) data\n");
 
@@ -2722,6 +2774,55 @@ static void dbg_printhex(const char *msg, const char *hex, unsigned len)
     }
 }
 
+static void compute_hash_r6(const char* password, size_t pwlen, const unsigned char salt[16], unsigned char hash[32])
+{
+    unsigned char data[(128 + 64 + 48) * 64];
+    unsigned char block[64];
+    int32_t block_size = 32;
+    size_t in_data_len = 0, out_data_len;
+    int32_t i, j, sum;
+    uint8_t sha256[32], sha384[48], sha512[64];
+
+    memcpy(data, password, pwlen);
+    memcpy(data + pwlen, salt, 8);
+    cl_sha256(data, pwlen + 8, block, NULL);
+
+    for (i = 0; i < 64 || i < (data[(in_data_len * 64) - 1] + 32); i++)
+    {
+        memcpy(data, password, pwlen);
+        memcpy(data + pwlen, block, block_size);
+        in_data_len = pwlen + block_size;
+        for (j = 1; j < 64; j++)
+            memcpy(data + j * in_data_len, data, in_data_len);
+
+        aes_128cbc_encrypt(data, in_data_len * 64, data, &out_data_len, block, 16, block + 16);
+
+        for (j = 0, sum = 0; j < 16; j++)
+            sum += data[j];
+
+        block_size = 32 + (sum % 3) * 16;
+        switch (block_size)
+        {
+            case 32:
+                cl_sha256(data, in_data_len * 64, sha256, NULL);
+                memcpy(block, sha256, 32);
+                break;
+
+            case 48:
+                cl_sha384(data, in_data_len * 64, sha384, NULL);
+                memcpy(block, sha384, 48);
+                break;
+
+            case 64:
+                cl_sha512(data, in_data_len * 64, sha512, NULL);
+                memcpy(block, sha512, 64);
+                break;
+        }
+    }
+
+    memcpy(hash, block, 32);
+}
+
 static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
                                 const char *U, int32_t P, int EM,
                                 const char *UE,
@@ -2756,17 +2857,42 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
                 noisy_warnmsg("check_user_password: UE length is not 32: %zu\n", UE_len);
             } else {
                 pdf->keylen = 32;
-                pdf->key    = cli_malloc(32);
+                pdf->key = cli_malloc(pdf->keylen);
                 if (!pdf->key) {
                     cli_errmsg("check_user_password: Cannot allocate memory for pdf->key\n");
                     return;
                 }
 
-                aes_decrypt((const unsigned char *)UE, &UE_len, (unsigned char *)(pdf->key), (char *)result2, 32, 0);
+                aes_256cbc_decrypt((const unsigned char *)UE, &UE_len, (unsigned char *)(pdf->key), (char *)result2, 32, 0);
                 dbg_printhex("check_user_password: Candidate encryption key", pdf->key, pdf->keylen);
             }
         }
-    } else if ((R >= 2) && (R <= 4)) {
+    }
+    else if (R == 6)
+    {
+        unsigned char hash[32], validationkey[32];
+
+        size_t pwlen = 0;
+        char password[] = "";
+
+        compute_hash_r6(password, pwlen, (const unsigned char *)(U + 32), validationkey);
+        if (!memcmp(U, validationkey, sizeof(validationkey)))
+        {
+            compute_hash_r6(password, pwlen, (const unsigned char *)(U + 40), hash);
+
+            pdf->keylen = 32;
+            pdf->key = cli_malloc(pdf->keylen);
+            if (!pdf->key)
+            {
+                cli_errmsg("check_user_password: Cannot allocate memory for pdf->key\n");
+                return;
+            }
+
+            off_t inLen = 32;
+            aes_256cbc_decrypt((const unsigned char *)UE, &inLen, (unsigned char *)(pdf->key), (char *)hash, 32, 0);
+        }
+    }
+    else if ((R >= 2) && (R <= 4)) {
         unsigned char *d;
         size_t sz = 68 + pdf->fileIDlen + (R >= 4 && !EM ? 4 : 0);
         d         = calloc(1, sz);
@@ -2982,9 +3108,9 @@ void pdf_handle_enc(struct pdf_struct *pdf)
             break;
         }
 
-        if ((R > 5) || (R < 2)) {
-            cli_dbgmsg("pdf_handle_enc: R value outside supported range [2..5]\n");
-            noisy_warnmsg("pdf_handle_enc: R value outside supported range [2..5]\n");
+        if ((R > 6) || (R < 2)) {
+            cli_dbgmsg("pdf_handle_enc: R value outside supported range [2..6]\n");
+            noisy_warnmsg("pdf_handle_enc: R value outside supported range [2..6]\n");
             break;
         }
 
@@ -2997,7 +3123,7 @@ void pdf_handle_enc(struct pdf_struct *pdf)
             pdf->enc_method_stream       = ENC_V2;
             pdf->enc_method_string       = ENC_V2;
             pdf->enc_method_embeddedfile = ENC_V2;
-        } else if (R == 4 || R == 5) {
+        } else if (R == 4 || R == 5 || R == 6) {
             EM        = pdf_readbool(q, len, "/EncryptMetadata", 1);
             StmF      = pdf_readval(q, len, "/StmF");
             StrF      = pdf_readval(q, len, "/StrF");
