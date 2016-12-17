@@ -341,6 +341,16 @@ unsigned char *cl_hash_file_fp(FILE *fp, char *alg, unsigned int *olen)
     return cl_hash_file_fd(fileno(fp), alg, olen);
 }
 
+unsigned char *cl_sha512(const void *buf, size_t len, unsigned char *obuf, unsigned int *olen)
+{
+    return cl_hash_data("sha512", buf, len, obuf, olen);
+}
+
+unsigned char *cl_sha384(const void *buf, size_t len, unsigned char *obuf, unsigned int *olen)
+{
+    return cl_hash_data("sha384", buf, len, obuf, olen);
+}
+
 unsigned char *cl_sha256(const void *buf, size_t len, unsigned char *obuf, unsigned int *olen)
 {
     return cl_hash_data("sha256", buf, len, obuf, olen);
