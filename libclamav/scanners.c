@@ -2665,6 +2665,8 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
     perf_start(ctx, PERFT_CACHE);
     if (!(SCAN_PROPERTIES))
         res = cache_check(hash, ctx);
+    else
+        res = CL_VIRUS;
 
 #if HAVE_JSON
     if (SCAN_PROPERTIES /* ctx.options & CL_SCAN_FILE_PROPERTIES && ctx->wrkproperty != NULL */) {
@@ -2683,7 +2685,6 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
         if (ret != CL_SUCCESS) {
             early_ret_from_magicscan(ret);
         }
-        res = CL_VIRUS;
     }
 #endif
 
