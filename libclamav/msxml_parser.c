@@ -425,6 +425,7 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
                     cli_dbgmsg("msxml_parse_element: extracted binary data to %s\n", tempfile);
 
                     ret = mxctx->scan_cb(of, ctx, num_attribs, attribs, mxctx->scan_data);
+                    close(of);
                     if (!(ctx->engine->keeptmp))
                         cli_unlink(tempfile);
                     free(tempfile);
