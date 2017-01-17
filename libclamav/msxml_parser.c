@@ -1,7 +1,7 @@
 /*
  * Extract component parts of MS XML files (e.g. MS Office 2003 XML Documents)
  *
- * Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ * Copyright (C) 2015, 2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  * Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  * Authors: Kevin Lin
@@ -408,6 +408,7 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
                     cli_dbgmsg("msxml_parse_element: extracted binary data to %s\n", tempfile);
 
                     ret = mxctx->scan_cb(of, ctx, num_attribs, attribs);
+                    close(of);
                     if (!(ctx->engine->keeptmp))
                         cli_unlink(tempfile);
                     free(tempfile);
