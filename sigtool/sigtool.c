@@ -202,7 +202,12 @@ static int hashpe(const char *filename, unsigned int class, int type)
     memset(&ctx, '\0', sizeof(cli_ctx));
     ctx.engine = engine;
     ctx.options = CL_SCAN_STDOPT;
-    ctx.container_type = CL_TYPE_ANY;
+    ctx.containers = cli_calloc(sizeof(cli_ctx_container), engine->maxreclevel + 2);
+    if(!ctx.containers) {
+	cl_engine_free(engine);
+	return -1;
+    }
+    ctx.containers[0].type = CL_TYPE_ANY;
     ctx.dconf = (struct cli_dconf *) engine->dconf;
     ctx.fmap = calloc(sizeof(fmap_t *), 1);
     if(!ctx.fmap) {
@@ -2227,7 +2232,12 @@ static void matchsig(const char *sig, const char *offset, int fd)
     memset(&ctx, '\0', sizeof(cli_ctx));
     ctx.engine = engine;
     ctx.options = CL_SCAN_STDOPT;
-    ctx.container_type = CL_TYPE_ANY;
+    ctx.containers = cli_calloc(sizeof(cli_ctx_container), engine->maxreclevel + 2);
+    if(!ctx.containers) {
+	cl_engine_free(engine);
+	return;
+    }
+    ctx.containers[0].type = CL_TYPE_ANY;
     ctx.dconf = (struct cli_dconf *) engine->dconf;
     ctx.fmap = calloc(sizeof(fmap_t *), 1);
     if(!ctx.fmap) {
@@ -3413,7 +3423,12 @@ static int dumpcerts(const struct optstruct *opts)
     memset(&ctx, '\0', sizeof(cli_ctx));
     ctx.engine = engine;
     ctx.options = CL_SCAN_STDOPT;
-    ctx.container_type = CL_TYPE_ANY;
+    ctx.containers = cli_calloc(sizeof(cli_ctx_container), engine->maxreclevel + 2);
+    if(!ctx.containers) {
+	cl_engine_free(engine);
+	return -1;
+    }
+    ctx.containers[0].type = CL_TYPE_ANY;
     ctx.dconf = (struct cli_dconf *) engine->dconf;
     ctx.fmap = calloc(sizeof(fmap_t *), 1);
     if(!ctx.fmap) {
