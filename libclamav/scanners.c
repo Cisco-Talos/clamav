@@ -3571,6 +3571,7 @@ static int scan_common(int desc, cl_fmap_t *map, const char **virname, unsigned 
     }
 #endif
 
+    free(ctx.containers);
     cli_bitset_free(ctx.hook_lsig_matches);
     free(ctx.fmap);
     if (rc == CL_CLEAN) {
