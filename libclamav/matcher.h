@@ -54,11 +54,12 @@ struct cli_target_info {
 #define CLI_MATCH_NIBBLE_LOW	0x0400
 
 struct cli_lsig_tdb {
-#define CLI_TDB_UINT	0
-#define CLI_TDB_RANGE	1
-#define CLI_TDB_STR	2
-#define CLI_TDB_RANGE2	3
-#define CLI_TDB_FTYPE	4
+#define CLI_TDB_UINT		0
+#define CLI_TDB_RANGE		1
+#define CLI_TDB_STR		2
+#define CLI_TDB_RANGE2		3
+#define CLI_TDB_FTYPE		4
+#define CLI_TDB_FTYPE_EXPR	5
     uint32_t *val, *range;
     char *str;
     uint32_t cnt[3];
@@ -67,6 +68,7 @@ struct cli_lsig_tdb {
     const uint32_t *target;
     const uint32_t *engine, *nos, *ep, *filesize;
     const uint32_t *container, *handlertype;
+    const uint32_t *intermediates;
     /*
     const uint32_t *sectoff, *sectrva, *sectvsz, *sectraw, *sectrsz,
 		   *secturva, *sectuvsz, *secturaw, *sectursz;

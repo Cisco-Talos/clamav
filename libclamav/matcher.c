@@ -703,6 +703,23 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
     return ret;
 }
 
+static int intermediates_eval(cli_ctx *ctx, struct cli_ac_lsig *ac_lsig)
+{
+    uint32_t i, icnt = ac_lsig->tdb.intermediates[0];
+    int32_t j = -1;
+
+    if (ctx->recursion < icnt)
+        return 0;
+
+    for (i = icnt; i > 0; i--) {
+        if (ac_lsig->tdb.intermediates[i] == CL_TYPE_ANY)
+            continue;
+        if (ac_lsig->tdb.intermediates[i] != cli_get_container_type(ctx, j--))
+            return 0;
+    }
+    return 1;
+}
+
 static int lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *acdata, struct cli_target_info *target_info, const char *hash, uint32_t lsid)
 {
     unsigned evalcnt = 0;
@@ -718,6 +735,8 @@ static int lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data 
         return rc;
     if (cli_ac_chklsig(exp, exp_end, acdata->lsigcnt[lsid], &evalcnt, &evalids, 0) == 1) {
         if(ac_lsig->tdb.container && ac_lsig->tdb.container[0] != cli_get_container_type(ctx, -1))
+            return CL_CLEAN;
+        if(ac_lsig->tdb.intermediates && !intermediates_eval(ctx, ac_lsig))
             return CL_CLEAN;
         if(ac_lsig->tdb.filesize && (ac_lsig->tdb.filesize[0] > map->len || ac_lsig->tdb.filesize[1] < map->len))
             return CL_CLEAN;

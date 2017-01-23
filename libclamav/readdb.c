@@ -1353,7 +1353,8 @@ struct lsig_attrib {
 static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
 {
     struct lsig_attrib attrtab[] = {
-#define ATTRIB_TOKENS   9
+#define ATTRIB_TOKENS   10
+#define EXPR_TOKEN_MAX  16
         { "Target",         CLI_TDB_UINT,   (void **) &tdb->target      },
         { "Engine",         CLI_TDB_RANGE,  (void **) &tdb->engine      },
 
@@ -1366,6 +1367,7 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
 
         { "Container",      CLI_TDB_FTYPE,  (void **) &tdb->container   },
         { "HandlerType",        CLI_TDB_FTYPE,  (void **) &tdb->handlertype },
+        { "Intermediates",  CLI_TDB_FTYPE_EXPR, (void **) &tdb->intermediates },
 /*
         { "SectOff",    CLI_TDB_RANGE2, (void **) &tdb->sectoff     },
         { "SectRVA",    CLI_TDB_RANGE2, (void **) &tdb->sectrva     },
@@ -1435,7 +1437,7 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
 
         case CLI_TDB_FTYPE:
             if((v1 = cli_ftcode(pt)) == CL_TYPE_ERROR) {
-                cli_dbgmsg("lsigattribs: Unknown file type in %s\n", tokens[i]);
+                cli_dbgmsg("lsigattribs: Unknown file type '%s' in %s\n", pt, tokens[i]);
                 return 1; /* skip */
             }
 
@@ -1447,6 +1449,31 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
             }
 
             tdb->val[cnt] = v1;
+            break;
+
+        case CLI_TDB_FTYPE_EXPR:
+            {
+                char *ftypes[EXPR_TOKEN_MAX];
+                unsigned int ftypes_count;
+
+		off[i] = cnt = tdb->cnt[CLI_TDB_UINT];
+                ftypes_count = cli_strtokenize(pt, '>', EXPR_TOKEN_MAX, (const char **) ftypes);
+		tdb->cnt[CLI_TDB_UINT] += (ftypes_count + 1);
+		tdb->val = (uint32_t *) mpool_realloc2(tdb->mempool, tdb->val, tdb->cnt[CLI_TDB_UINT] * sizeof(uint32_t));
+		if(!tdb->val) {
+		    tdb->cnt[CLI_TDB_UINT] = 0;
+		    return -1;
+		}
+
+		tdb->val[cnt++] = ftypes_count;
+                for(j = 0; j < ftypes_count; j++) {
+                    if((v1 = cli_ftcode(ftypes[j])) == CL_TYPE_ERROR) {
+                        cli_dbgmsg("lsigattribs: Unknown file type '%s' in %s\n", ftypes[j], tokens[i]);
+                        return 1; /* skip */
+                    }
+		    tdb->val[cnt++] = v1;
+                }
+            }
             break;
 
         case CLI_TDB_RANGE:
@@ -1535,6 +1562,7 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
         switch(apt->type) {
         case CLI_TDB_UINT:
         case CLI_TDB_FTYPE:
+        case CLI_TDB_FTYPE_EXPR:
             *apt->pt = (uint32_t *) &tdb->val[off[i]];
             break;
 
