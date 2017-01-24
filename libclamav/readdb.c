@@ -1456,22 +1456,22 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
                 char *ftypes[EXPR_TOKEN_MAX];
                 unsigned int ftypes_count;
 
-		off[i] = cnt = tdb->cnt[CLI_TDB_UINT];
+                off[i] = cnt = tdb->cnt[CLI_TDB_UINT];
                 ftypes_count = cli_strtokenize(pt, '>', EXPR_TOKEN_MAX, (const char **) ftypes);
-		tdb->cnt[CLI_TDB_UINT] += (ftypes_count + 1);
-		tdb->val = (uint32_t *) mpool_realloc2(tdb->mempool, tdb->val, tdb->cnt[CLI_TDB_UINT] * sizeof(uint32_t));
-		if(!tdb->val) {
-		    tdb->cnt[CLI_TDB_UINT] = 0;
-		    return -1;
-		}
+                tdb->cnt[CLI_TDB_UINT] += (ftypes_count + 1);
+                tdb->val = (uint32_t *) mpool_realloc2(tdb->mempool, tdb->val, tdb->cnt[CLI_TDB_UINT] * sizeof(uint32_t));
+                if(!tdb->val) {
+                    tdb->cnt[CLI_TDB_UINT] = 0;
+                    return -1;
+                }
 
-		tdb->val[cnt++] = ftypes_count;
+                tdb->val[cnt++] = ftypes_count;
                 for(j = 0; j < ftypes_count; j++) {
                     if((v1 = cli_ftcode(ftypes[j])) == CL_TYPE_ERROR) {
                         cli_dbgmsg("lsigattribs: Unknown file type '%s' in %s\n", ftypes[j], tokens[i]);
                         return 1; /* skip */
                     }
-		    tdb->val[cnt++] = v1;
+                    tdb->val[cnt++] = v1;
                 }
             }
             break;
