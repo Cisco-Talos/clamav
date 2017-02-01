@@ -527,7 +527,7 @@ int32_t cli_bcapi_extract_new(struct cli_bc_ctx *ctx, int32_t id)
     if (cctx) {
         cctx->recursion++;
         if (ctx->containertype != CL_TYPE_ANY) {
-            size_t csize = cli_get_container_size(cctx, -1);
+            size_t csize = cli_get_container_size(cctx, -2);
             cli_set_container(cctx, ctx->containertype, csize);
         }
         res = cli_magic_scandesc(ctx->outfd, cctx);
