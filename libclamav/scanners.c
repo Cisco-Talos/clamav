@@ -2370,7 +2370,7 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
 	if(nret != CL_VIRUS) switch(ret) {
 	    case CL_TYPE_HTML:
 		/* bb#11196 - autoit script file misclassified as HTML */
-		if (cli_get_container_type(ctx, -1) == CL_TYPE_AUTOIT) {
+		if (cli_get_container_type(ctx, -2) == CL_TYPE_AUTOIT) {
 		    ret = CL_TYPE_TEXT_ASCII;
 		} else if (SCAN_HTML && (type == CL_TYPE_TEXT_ASCII || type == CL_TYPE_GRAPHICS) &&
                     (DCONF_DOC & DOC_CONF_HTML)) {

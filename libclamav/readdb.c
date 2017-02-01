@@ -1458,6 +1458,10 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
 
                 off[i] = cnt = tdb->cnt[CLI_TDB_UINT];
                 ftypes_count = cli_strtokenize(pt, '>', EXPR_TOKEN_MAX, (const char **) ftypes);
+                if(!ftypes_count) {
+                    cli_dbgmsg("lsigattribs: No intermediate container tokens found.");
+                    return 1;
+                }
                 tdb->cnt[CLI_TDB_UINT] += (ftypes_count + 1);
                 tdb->val = (uint32_t *) mpool_realloc2(tdb->mempool, tdb->val, tdb->cnt[CLI_TDB_UINT] * sizeof(uint32_t));
                 if(!tdb->val) {
