@@ -24,7 +24,7 @@ void usage(char *name)
     fprintf(stderr, "    -h or -?\tShow the help text\n");
     fprintf(stderr, "    -n [FILE]\tSubmit a false negative (FN)\n");
     fprintf(stderr, "    -N [NAME]\tYour name (required)\n");
-    fprintf(stderr, "    -p [FILE]\tSubmit a fase positive (FP)\n");
+    fprintf(stderr, "    -p [FILE]\tSubmit a false positive (FP)\n");
     fprintf(stderr, "    -v\t\tShow version number and exit\n");
     fprintf(stderr, "You must specify -n or -p. Both are mutually exclusive. Pass in - as the filename for stdin.\n");
     exit(0);
