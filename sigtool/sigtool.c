@@ -202,10 +202,16 @@ static int hashpe(const char *filename, unsigned int class, int type)
     memset(&ctx, '\0', sizeof(cli_ctx));
     ctx.engine = engine;
     ctx.options = CL_SCAN_STDOPT;
-    ctx.container_type = CL_TYPE_ANY;
+    ctx.containers = cli_calloc(sizeof(cli_ctx_container), engine->maxreclevel + 2);
+    if(!ctx.containers) {
+	cl_engine_free(engine);
+	return -1;
+    }
+    ctx.containers[0].type = CL_TYPE_ANY;
     ctx.dconf = (struct cli_dconf *) engine->dconf;
     ctx.fmap = calloc(sizeof(fmap_t *), 1);
     if(!ctx.fmap) {
+        free(ctx.containers);
 	cl_engine_free(engine);
 	return -1;
     }
@@ -214,6 +220,7 @@ static int hashpe(const char *filename, unsigned int class, int type)
     fd = open(filename, O_RDONLY);
     if(fd < 0) {
 	mprintf("!hashpe: Can't open file %s!\n", filename);
+        free(ctx.containers);
         cl_engine_free(engine);
         return -1;
     }
@@ -221,6 +228,7 @@ static int hashpe(const char *filename, unsigned int class, int type)
     lseek(fd, 0, SEEK_SET);
     FSTAT(fd, &sb);
     if(!(*ctx.fmap = fmap(fd, 0, sb.st_size))) {
+        free(ctx.containers);
 	free(ctx.fmap);
 	close(fd);
 	cl_engine_free(engine);
@@ -230,6 +238,7 @@ static int hashpe(const char *filename, unsigned int class, int type)
     fmptr = fmap_need_off_once(*ctx.fmap, 0, sb.st_size);
     if(!fmptr) {
         mprintf("!hashpe: fmap_need_off_once failed!\n");
+        free(ctx.containers);
         free(ctx.fmap);
         close(fd);
         cl_engine_free(engine);
@@ -271,6 +280,7 @@ static int hashpe(const char *filename, unsigned int class, int type)
     }
 
     /* Cleanup */
+    free(ctx.containers);
     free(ctx.fmap);
     close(fd);
     cl_engine_free(engine);
@@ -2226,16 +2236,23 @@ static void matchsig(const char *sig, const char *offset, int fd)
     memset(&ctx, '\0', sizeof(cli_ctx));
     ctx.engine = engine;
     ctx.options = CL_SCAN_STDOPT;
-    ctx.container_type = CL_TYPE_ANY;
+    ctx.containers = cli_calloc(sizeof(cli_ctx_container), engine->maxreclevel + 2);
+    if(!ctx.containers) {
+	cl_engine_free(engine);
+	return;
+    }
+    ctx.containers[0].type = CL_TYPE_ANY;
     ctx.dconf = (struct cli_dconf *) engine->dconf;
     ctx.fmap = calloc(sizeof(fmap_t *), 1);
     if(!ctx.fmap) {
+        free(ctx.containers);
 	cl_engine_free(engine);
 	return;
     }
     lseek(fd, 0, SEEK_SET);
     FSTAT(fd, &sb);
     if(!(*ctx.fmap = fmap(fd, 0, sb.st_size))) {
+        free(ctx.containers);
 	free(ctx.fmap);
 	cl_engine_free(engine);
 	return;
@@ -2263,6 +2280,7 @@ static void matchsig(const char *sig, const char *offset, int fd)
 	acres = acres->next;
 	free(res);
     }
+    free(ctx.containers);
     free(ctx.fmap);
     cl_engine_free(engine);
 }
@@ -3410,10 +3428,16 @@ static int dumpcerts(const struct optstruct *opts)
     memset(&ctx, '\0', sizeof(cli_ctx));
     ctx.engine = engine;
     ctx.options = CL_SCAN_STDOPT;
-    ctx.container_type = CL_TYPE_ANY;
+    ctx.containers = cli_calloc(sizeof(cli_ctx_container), engine->maxreclevel + 2);
+    if(!ctx.containers) {
+	cl_engine_free(engine);
+	return -1;
+    }
+    ctx.containers[0].type = CL_TYPE_ANY;
     ctx.dconf = (struct cli_dconf *) engine->dconf;
     ctx.fmap = calloc(sizeof(fmap_t *), 1);
     if(!ctx.fmap) {
+        free(ctx.containers);
 	cl_engine_free(engine);
 	return -1;
     }
@@ -3422,6 +3446,7 @@ static int dumpcerts(const struct optstruct *opts)
     fd = open(filename, O_RDONLY);
     if(fd < 0) {
 	mprintf("!dumpcerts: Can't open file %s!\n", filename);
+        free(ctx.containers);
         cl_engine_free(engine);
         return -1;
     }
@@ -3429,6 +3454,7 @@ static int dumpcerts(const struct optstruct *opts)
     lseek(fd, 0, SEEK_SET);
     FSTAT(fd, &sb);
     if(!(*ctx.fmap = fmap(fd, 0, sb.st_size))) {
+        free(ctx.containers);
 	free(ctx.fmap);
 	close(fd);
 	cl_engine_free(engine);
@@ -3438,6 +3464,7 @@ static int dumpcerts(const struct optstruct *opts)
     fmptr = fmap_need_off_once(*ctx.fmap, 0, sb.st_size);
     if(!fmptr) {
         mprintf("!dumpcerts: fmap_need_off_once failed!\n");
+        free(ctx.containers);
         free(ctx.fmap);
         close(fd);
         cl_engine_free(engine);
@@ -3468,6 +3495,7 @@ static int dumpcerts(const struct optstruct *opts)
     }
 
     /* Cleanup */
+    free(ctx.containers);
     free(ctx.fmap);
     close(fd);
     cl_engine_free(engine);

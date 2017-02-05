@@ -64,6 +64,7 @@ enum os_kind_conf {
   os_solaris,
   os_win32,
   os_win64,
+  os_generic,
   os_ANY = 0xff
 };
 

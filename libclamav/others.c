@@ -1092,10 +1092,12 @@ void cli_append_virus(cli_ctx * ctx, const char * virname)
 {
     if (ctx->virname == NULL)
         return;
-    if (ctx->engine->cb_virus_found)
-        ctx->engine->cb_virus_found(fmap_fd(*ctx->fmap), virname, ctx->cb_ctx);
-    ctx->num_viruses++;
-    *ctx->virname = virname;
+    if (ctx->limit_exceeded == 0 || SCAN_ALL) { 
+        if (ctx->engine->cb_virus_found)
+            ctx->engine->cb_virus_found(fmap_fd(*ctx->fmap), virname, ctx->cb_ctx);
+        ctx->num_viruses++;
+        *ctx->virname = virname;
+    }
 #if HAVE_JSON
     if (SCAN_PROPERTIES && ctx->wrkproperty) {
         json_object *arrobj, *virobj;
@@ -1130,6 +1132,30 @@ const char * cli_get_last_virus_str(const cli_ctx * ctx)
     if ((ret = cli_get_last_virus(ctx)))
 	return ret;
     return "";
+}
+
+void cli_set_container(cli_ctx *ctx, cli_file_t type, size_t size)
+{
+    ctx->containers[ctx->recursion].type = type;
+    ctx->containers[ctx->recursion].size = size;
+}
+
+cli_file_t cli_get_container_type(cli_ctx *ctx, int index)
+{
+    if (index < 0)
+	index = ctx->recursion + index + 1;
+    if (index >= 0 && index <= ctx->recursion)
+	return ctx->containers[index].type;
+    return CL_TYPE_ANY;
+}
+
+size_t cli_get_container_size(cli_ctx *ctx, int index)
+{
+    if (index < 0)
+	index = ctx->recursion + index + 1;
+    if (index >= 0 && index <= ctx->recursion)
+	return ctx->containers[index].size;
+    return 0;
 }
 
 
