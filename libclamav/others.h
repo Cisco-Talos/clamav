@@ -126,6 +126,11 @@ typedef struct bitset_tag
         unsigned long length;
 } bitset_t;
 
+typedef struct cli_ctx_container_tag {
+    cli_file_t type;
+    size_t size;
+} cli_ctx_container;
+
 /* internal clamav context */
 typedef struct cli_ctx_tag {
     const char **virname;
@@ -140,8 +145,7 @@ typedef struct cli_ctx_tag {
     unsigned int found_possibly_unwanted;
     unsigned int corrupted_input;
     unsigned int img_validate;
-    cli_file_t container_type; /* FIXME: to be made into a stack or array - see bb#1579 & bb#1293 */
-    size_t container_size;
+    cli_ctx_container *containers; /* set container type after recurse */
     unsigned char handlertype_hash[16];
     struct cli_dconf *dconf;
     fmap_t **fmap;
@@ -600,6 +604,10 @@ static inline void cli_writeint32(void *offset, uint32_t value)
 void cli_append_virus(cli_ctx *ctx, const char *virname);
 const char *cli_get_last_virus(const cli_ctx *ctx);
 const char *cli_get_last_virus_str(const cli_ctx *ctx);
+
+void cli_set_container(cli_ctx *ctx, cli_file_t type, size_t size);
+cli_file_t cli_get_container_type(cli_ctx *ctx, int index);
+size_t cli_get_container_size(cli_ctx *ctx, int index);
 
 /* used by: spin, yc (C) aCaB */
 #define __SHIFTBITS(a) (sizeof(a)<<3)

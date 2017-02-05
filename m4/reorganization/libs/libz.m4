@@ -29,9 +29,9 @@ then
     AC_MSG_ERROR([Please install zlib and zlib-devel packages])
 else
 
-    vuln=`grep "ZLIB_VERSION \"1.2.0" $ZLIB_HOME/include/zlib.h`
+    vuln=`grep "ZLIB_VERSION \"1.2.0\"" $ZLIB_HOME/include/zlib.h`
     if test -z "$vuln"; then
-	vuln=`grep "ZLIB_VERSION \"1.2.1" $ZLIB_HOME/include/zlib.h`
+	vuln=`grep "ZLIB_VERSION \"1.2.1\"" $ZLIB_HOME/include/zlib.h`
     fi
 
     if test -n "$vuln"; then

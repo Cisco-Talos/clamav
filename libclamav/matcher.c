@@ -703,6 +703,23 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
     return ret;
 }
 
+static int intermediates_eval(cli_ctx *ctx, struct cli_ac_lsig *ac_lsig)
+{
+    uint32_t i, icnt = ac_lsig->tdb.intermediates[0];
+    int32_t j = -1;
+
+    if (ctx->recursion < icnt)
+        return 0;
+
+    for (i = icnt; i > 0; i--) {
+        if (ac_lsig->tdb.intermediates[i] == CL_TYPE_ANY)
+            continue;
+        if (ac_lsig->tdb.intermediates[i] != cli_get_container_type(ctx, j--))
+            return 0;
+    }
+    return 1;
+}
+
 static int lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *acdata, struct cli_target_info *target_info, const char *hash, uint32_t lsid)
 {
     unsigned evalcnt = 0;
@@ -717,7 +734,9 @@ static int lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data 
     if (rc != CL_SUCCESS)
         return rc;
     if (cli_ac_chklsig(exp, exp_end, acdata->lsigcnt[lsid], &evalcnt, &evalids, 0) == 1) {
-        if(ac_lsig->tdb.container && ac_lsig->tdb.container[0] != ctx->container_type)
+        if(ac_lsig->tdb.container && ac_lsig->tdb.container[0] != cli_get_container_type(ctx, -1))
+            return CL_CLEAN;
+        if(ac_lsig->tdb.intermediates && !intermediates_eval(ctx, ac_lsig))
             return CL_CLEAN;
         if(ac_lsig->tdb.filesize && (ac_lsig->tdb.filesize[0] > map->len || ac_lsig->tdb.filesize[1] < map->len))
             return CL_CLEAN;
@@ -1211,11 +1230,11 @@ int cli_matchmeta(cli_ctx *ctx, const char *fname, size_t fsizec, size_t fsizer,
 	unsigned int viruses_found = 0;
 
     cli_dbgmsg("CDBNAME:%s:%llu:%s:%llu:%llu:%d:%u:%u:%p\n",
-	       cli_ftname(ctx->container_type), (long long unsigned)fsizec, fname, (long long unsigned)fsizec, (long long unsigned)fsizer,
+	       cli_ftname(cli_get_container_type(ctx, -1)), (long long unsigned)fsizec, fname, (long long unsigned)fsizec, (long long unsigned)fsizer,
 	       encrypted, filepos, res1, res2);
 
     if (ctx->engine && ctx->engine->cb_meta)
-	if (ctx->engine->cb_meta(cli_ftname(ctx->container_type), fsizec, fname, fsizer, encrypted, filepos, ctx->cb_ctx) == CL_VIRUS) {
+	if (ctx->engine->cb_meta(cli_ftname(cli_get_container_type(ctx, -1)), fsizec, fname, fsizer, encrypted, filepos, ctx->cb_ctx) == CL_VIRUS) {
 	    cli_dbgmsg("inner file blacklisted by callback: %s\n", fname);
 
 	    cli_append_virus(ctx, "Detected.By.Callback");
@@ -1228,7 +1247,7 @@ int cli_matchmeta(cli_ctx *ctx, const char *fname, size_t fsizec, size_t fsizer,
 	return CL_CLEAN;
 
     do {
-	if(cdb->ctype != CL_TYPE_ANY && cdb->ctype != ctx->container_type)
+	if(cdb->ctype != CL_TYPE_ANY && cdb->ctype != cli_get_container_type(ctx, -1))
 	    continue;
 
 	if(cdb->encrypted != 2 && cdb->encrypted != encrypted)
@@ -1246,7 +1265,7 @@ int cli_matchmeta(cli_ctx *ctx, const char *fname, size_t fsizec, size_t fsizer,
 		continue;						    \
 	}
 
-	CDBRANGE(cdb->csize, ctx->container_size);
+	CDBRANGE(cdb->csize, cli_get_container_size(ctx, -1));
 	CDBRANGE(cdb->fsizec, fsizec);
 	CDBRANGE(cdb->fsizer, fsizer);
 	CDBRANGE(cdb->filepos, filepos);
