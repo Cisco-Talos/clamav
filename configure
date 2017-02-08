@@ -635,7 +635,9 @@ ac_includes_default="\
 #endif"
 
 enable_option_checking=no
-ac_subst_vars='ENABLE_YARA_FALSE
+ac_subst_vars='ENABLE_CLAMSUBMIT_FALSE
+ENABLE_CLAMSUBMIT_TRUE
+ENABLE_YARA_FALSE
 ENABLE_YARA_TRUE
 ENABLE_LLVM_FALSE
 ENABLE_LLVM_TRUE
@@ -692,8 +694,6 @@ LIBPRELUDE_CFLAGS
 LIBPRELUDE_CONFIG
 ENABLE_LIBFRESHCLAM_FALSE
 ENABLE_LIBFRESHCLAM_TRUE
-ENABLE_CLAMSUBMIT_FALSE
-ENABLE_CLAMSUBMIT_TRUE
 HAVE_YARA
 subdirs
 llvmconfig
@@ -18718,9 +18718,9 @@ then
     as_fn_error $? "Please install zlib and zlib-devel packages" "$LINENO" 5
 else
 
-    vuln=`grep "ZLIB_VERSION \"1.2.0" $ZLIB_HOME/include/zlib.h`
+    vuln=`grep "ZLIB_VERSION \"1.2.0\"" $ZLIB_HOME/include/zlib.h`
     if test -z "$vuln"; then
-	vuln=`grep "ZLIB_VERSION \"1.2.1" $ZLIB_HOME/include/zlib.h`
+	vuln=`grep "ZLIB_VERSION \"1.2.1\"" $ZLIB_HOME/include/zlib.h`
     fi
 
     if test -n "$vuln"; then
@@ -27315,6 +27315,14 @@ else
   ENABLE_YARA_FALSE=
 fi
 
+ if test "X$have_curl" = "Xyes" && test "X$have_json" = "Xyes"; then
+  ENABLE_CLAMSUBMIT_TRUE=
+  ENABLE_CLAMSUBMIT_FALSE='#'
+else
+  ENABLE_CLAMSUBMIT_TRUE='#'
+  ENABLE_CLAMSUBMIT_FALSE=
+fi
+
 no_recursion="yes";
 
 ac_config_files="$ac_config_files libclamav/Makefile"
@@ -27552,6 +27560,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${ENABLE_YARA_TRUE}" && test -z "${ENABLE_YARA_FALSE}"; then
   as_fn_error $? "conditional \"ENABLE_YARA\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${ENABLE_CLAMSUBMIT_TRUE}" && test -z "${ENABLE_CLAMSUBMIT_FALSE}"; then
+  as_fn_error $? "conditional \"ENABLE_CLAMSUBMIT\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 
@@ -30003,19 +30015,35 @@ else
   $as_echo "yes ($have_milter)"
 fi
 
+if test "X$have_curl" = "Xyes" && test "X$have_json" = "Xyes"; then
 
 
    $as_echo_n "              clamsubmit  : "
-   if test "x$curl_msg" = "xno"; then :
-  $as_echo "$have_curl (disabled)"
-elif test "x$curl_msg" = "xyes"; then :
-  $as_echo "$have_curl"
-elif test "x$curl_msg" = "x"; then :
-  $as_echo "$have_curl"
+   if test "xyes" = "xno"; then :
+  $as_echo "yes (disabled)"
+elif test "xyes" = "xyes"; then :
+  $as_echo "yes"
+elif test "xyes" = "x"; then :
+  $as_echo "yes"
 else
-  $as_echo "$have_curl ($curl_msg)"
+  $as_echo "yes (yes)"
 fi
 
+else
+
+
+   $as_echo_n "              clamsubmit  : "
+   if test "xno" = "xno"; then :
+  $as_echo "no (disabled)"
+elif test "xno" = "xyes"; then :
+  $as_echo "no"
+elif test "xno" = "x"; then :
+  $as_echo "no"
+else
+  $as_echo "no (no)"
+fi
+
+fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: Summary of engine performance features" >&5
 $as_echo "$as_me: Summary of engine performance features" >&6;}
