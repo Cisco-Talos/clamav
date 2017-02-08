@@ -2212,7 +2212,8 @@ static inline int hash_impfns(cli_ctx *ctx, void **hashctx, uint32_t *impsz, str
     uint32_t thuoff, offset;
     fmap_t *map = *ctx->fmap;
     size_t dlllen = 0, fsize = map->len;
-    int i, j, err, num_fns = 0, ret = CL_SUCCESS;
+    int i, j, num_fns = 0, ret = CL_SUCCESS;
+    unsigned int err;
     const char *buffer;
     enum CLI_HASH_TYPE type;
 #if HAVE_JSON
@@ -2375,10 +2376,12 @@ static unsigned int hash_imptbl(cli_ctx *ctx, unsigned char **digest, uint32_t *
     fmap_t *map = *ctx->fmap;
     size_t left, fsize = map->len;
     uint32_t impoff, offset;
-    const char *impdes, *buffer;
+    const char *buffer;
+    char *impdes;
     void *hashctx[CLI_HASH_AVAIL_TYPES];
     enum CLI_HASH_TYPE type;
-    int err, nimps = 0, ret = CL_SUCCESS;
+    int nimps = 0, ret = CL_SUCCESS;
+    unsigned int err;
     int first = 1;
 
     if(datadir->VirtualAddress == 0 || datadir->Size == 0) {
@@ -2543,7 +2546,7 @@ static int scan_pe_imp(cli_ctx *ctx, struct pe_image_data_dir *dirs, struct cli_
 #else
     if (cli_debug_flag) {
 #endif
-        char *dstr = cli_str2hex(hashset[CLI_HASH_MD5], hashlen[CLI_HASH_MD5]);
+        char *dstr = cli_str2hex((char *)hashset[CLI_HASH_MD5], hashlen[CLI_HASH_MD5]);
         cli_dbgmsg("IMP: %s:%u\n", dstr ? (char *)dstr : "(NULL)", impsz);
 #if HAVE_JSON
         if (ctx->wrkproperty)
@@ -5469,12 +5472,12 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
             return CL_EFORMAT; \
         } \
         if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE && hashctx) \
-            cl_update_hash(hashctx, (void *)hptr, size); \
+            cl_update_hash(hashctx, hptr, size); \
         if (isStatAble && flags & CL_CHECKFP_PE_FLAG_STATS) { \
             void *md5ctx; \
             md5ctx = cl_hash_init("md5"); \
             if (md5ctx) { \
-                cl_update_hash(md5ctx, (void *)hptr, size); \
+                cl_update_hash(md5ctx, hptr, size); \
                 cl_finish_hash(md5ctx, hashes->sections[section].md5); \
             } \
         } \
@@ -5585,7 +5588,7 @@ int cli_genhash_pe(cli_ctx *ctx, unsigned int class, int type)
     } pe_opt;
     const struct pe_image_section_hdr *section_hdr;
     ssize_t at;
-    unsigned int i, j, pe_plus = 0;
+    unsigned int i, pe_plus = 0;
     size_t fsize;
     uint32_t valign, falign, hdr_size;
     struct pe_image_file_hdr file_hdr;
@@ -5740,7 +5743,7 @@ int cli_genhash_pe(cli_ctx *ctx, unsigned int class, int type)
         for (i = 0; i < nsections; i++) {
             /* Generate hashes */
             if (cli_hashsect(*ctx->fmap, &exe_sections[i], hashset, genhash, genhash) == 1) {
-                dstr = cli_str2hex(hash, hlen);
+                dstr = cli_str2hex((char *)hash, hlen);
                 cli_dbgmsg("Section{%u}: %u:%s\n", i, exe_sections[i].rsz, dstr ? (char *)dstr : "(NULL)");
                 if (dstr != NULL) {
                     free(dstr);
@@ -5758,7 +5761,7 @@ int cli_genhash_pe(cli_ctx *ctx, unsigned int class, int type)
         /* Generate hash */
         ret = hash_imptbl(ctx, hashset, &impsz, genhash, &dirs[1], exe_sections, nsections, hdr_size, pe_plus);
         if (ret == CL_SUCCESS) {
-            dstr = cli_str2hex(hash, hlen);
+            dstr = cli_str2hex((char *)hash, hlen);
             cli_dbgmsg("Imphash: %s:%u\n", dstr ? (char *)dstr : "(NULL)", impsz);
             if (dstr != NULL) {
                 free(dstr);

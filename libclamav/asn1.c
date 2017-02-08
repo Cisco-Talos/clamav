@@ -173,7 +173,7 @@ static int asn1_get_obj(fmap_t *map, const void *asn1data, unsigned int *asn1len
     } else
 	obj->size = i;
 
-    asn1_sz -= data - (uint8_t *)asn1data;
+    asn1_sz -= data - (const uint8_t *)asn1data;
     if(obj->size > asn1_sz) {
 	cli_dbgmsg("asn1_get_obj: content overflow\n");
 	return 1;
@@ -305,7 +305,7 @@ static int asn1_get_time(fmap_t *map, const void **asn1data, unsigned int *size,
     struct cli_asn1 obj;
     int ret = asn1_get_obj(map, *asn1data, size, &obj);
     unsigned int len;
-    char *ptr;
+    const char *ptr;
     struct tm t;
     int n;
 
@@ -327,7 +327,7 @@ static int asn1_get_time(fmap_t *map, const void **asn1data, unsigned int *size,
     }
 
     memset(&t, 0, sizeof(t));
-    ptr = (char *)obj.content;
+    ptr = obj.content;
     if(obj.type == 0x18) {
 	t.tm_year = asn1_getnum(ptr) * 100;
 	if(t.tm_year < 0)
@@ -423,13 +423,13 @@ static int asn1_get_rsa_pubkey(fmap_t *map, const void **asn1data, unsigned int 
 	cli_dbgmsg("asn1_get_rsa_pubkey: cannot read public key content\n");
 	return 1;
     }
-    if(((uint8_t *)obj.content)[0] != 0) { /* no byte fragments */
+    if(((const uint8_t *)obj.content)[0] != 0) { /* no byte fragments */
 	cli_dbgmsg("asn1_get_rsa_pubkey: unexpected byte frags in public key\n");
 	return 1;
     }
 
     avail = obj.size - 1;
-    obj.content = ((uint8_t *)obj.content) + 1;
+    obj.content = ((const uint8_t *)obj.content) + 1;
     if(asn1_expect_objtype(map, obj.content, &avail, &obj, 0x30)) /* SEQUENCE */
 	return 1;
     if(avail) {
@@ -494,7 +494,7 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
 	tbsdata = crt.content;
 	if(asn1_expect_objtype(map, crt.content, &crt.size, &tbs, 0x30)) /* SEQUENCE - TBSCertificate */
 	    break;
-	tbssize = (uint8_t *)tbs.next - tbsdata;
+	tbssize = (const uint8_t *)tbs.next - tbsdata;
 
 	if(asn1_expect_objtype(map, tbs.content, &tbs.size, &obj, 0xa0)) /* [0] */
 	    break;
@@ -695,7 +695,7 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
 				exts.size = 1;
 				break;
 			    }
-			    x509.certSign = (((uint8_t *)(ext.content))[0] != 0);
+			    x509.certSign = (((const uint8_t *)(ext.content))[0] != 0);
 			}
 		    }
 		}
@@ -971,7 +971,7 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
 	attrs = asn1.next;
 	if(asn1_expect_objtype(map, asn1.next, &size, &asn1, 0xa0)) /* authenticatedAttributes */
 	    break;
-	attrs_size = (uint8_t *)(asn1.next) - attrs;
+	attrs_size = (const uint8_t *)(asn1.next) - attrs;
 	if(attrs_size < 2) {
 	    cli_dbgmsg("asn1_parse_mscat: authenticatedAttributes size is too small\n");
 	    break;
@@ -1086,7 +1086,7 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
         break;
 
 	cl_update_hash(ctx, "\x31", 1);
-	cl_update_hash(ctx, (void *)(attrs + 1), attrs_size - 1);
+	cl_update_hash(ctx, (attrs + 1), attrs_size - 1);
 	cl_finish_hash(ctx, sha1);
 
 	if(!fmap_need_ptr_once(map, asn1.content, asn1.size)) {
@@ -1196,7 +1196,7 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
 	attrs = asn1.next;
 	if(asn1_expect_objtype(map, asn1.next, &size, &asn1, 0xa0)) /* authenticatedAttributes */
 	    break;
-	attrs_size = (uint8_t *)(asn1.next) - attrs;
+	attrs_size = (const uint8_t *)(asn1.next) - attrs;
 	if(attrs_size < 2) {
 	    cli_dbgmsg("asn1_parse_mscat: countersignature authenticatedAttributes are too small\n");
 	    break;
@@ -1330,7 +1330,7 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
             break;
 
         cl_update_hash(ctx, "\x31", 1);
-        cl_update_hash(ctx, (void *)(attrs + 1), attrs_size - 1);
+        cl_update_hash(ctx, attrs + 1, attrs_size - 1);
         cl_finish_hash(ctx, sha1);
 	} else {
         ctx = cl_hash_init("md5");
@@ -1338,7 +1338,7 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
             break;
 
         cl_update_hash(ctx, "\x31", 1);
-        cl_update_hash(ctx, (void *)(attrs + 1), attrs_size - 1);
+        cl_update_hash(ctx, attrs + 1, attrs_size - 1);
         cl_finish_hash(ctx, sha1);
 	}
 
@@ -1487,7 +1487,7 @@ int asn1_load_mscat(fmap_t *map, struct cl_engine *engine) {
 	    if(cli_debug_flag) {
 		char sha1[SHA1_HASH_SIZE*2+1];
 		for(i=0;i<SHA1_HASH_SIZE;i++)
-		    sprintf(&sha1[i*2], "%02x", ((uint8_t *)(tagval3.content))[i]);
+		    sprintf(&sha1[i*2], "%02x", ((const uint8_t *)(tagval3.content))[i]);
 		cli_dbgmsg("asn1_load_mscat: got hash %s (%s)\n", sha1, (hashtype == 2) ? "PE" : "CAB");
 	    }
 	    if(!engine->hm_fp) {

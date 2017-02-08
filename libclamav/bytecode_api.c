@@ -994,7 +994,7 @@ int32_t cli_bcapi_jsnorm_process(struct cli_bc_ctx *ctx, int32_t id)
     if (cctx && cli_checklimits("bytecode js api", cctx, ctx->jsnormwritten + avail, 0, 0))
         return -1;
     cli_bcapi_buffer_pipe_read_stopped(ctx, b->from, avail);
-    cli_js_process_buffer(b->state, (char*)in, avail);
+    cli_js_process_buffer(b->state, (const char *)in, avail);
     return 0;
 }
 
@@ -1572,8 +1572,8 @@ int32_t cli_bcapi_json_is_active(struct cli_bc_ctx *ctx )
     return 0;
 }
 
-static int32_t cli_bcapi_json_objs_init(struct cli_bc_ctx *ctx) {
 #if HAVE_JSON 
+static int32_t cli_bcapi_json_objs_init(struct cli_bc_ctx *ctx) {
     unsigned n = ctx->njsonobjs + 1;
     json_object **j, **jobjs = (json_object **)(ctx->jsonobjs);
     cli_ctx *cctx = (cli_ctx *)ctx->ctx;
@@ -1588,11 +1588,8 @@ static int32_t cli_bcapi_json_objs_init(struct cli_bc_ctx *ctx) {
     j[n-1] = cctx->properties;    
 
     return 0;
-#else
-    UNUSEDPARAM(ctx);
-    return -1;
-#endif
 }
+#endif
 
 #define INIT_JSON_OBJS(ctx)                                             \
     if (!cli_bcapi_json_is_active(ctx))                                 \

@@ -709,7 +709,7 @@ static int in_iconv_u16(const m_area_t* in_m_area, iconv_t* iconv_struct, m_area
 	char   tmp4[4];
 	size_t inleft = in_m_area->length - in_m_area->offset;
 	size_t rc, alignfix;
-	char*  input   = (char*)in_m_area->buffer + in_m_area->offset;
+	const char*  input = in_m_area->buffer + in_m_area->offset;
 	size_t outleft = out_m_area->length > 0 ? out_m_area->length : 0;
 	char* out      = (char*)out_m_area->buffer;
 
@@ -734,7 +734,7 @@ static int in_iconv_u16(const m_area_t* in_m_area, iconv_t* iconv_struct, m_area
 	while (inleft && (outleft >= 2)) { /* iconv doesn't like inleft to be 0 */
 		const size_t outleft_last = outleft;
 		assert(*iconv_struct != (iconv_t)-1);
-		rc = iconv(*iconv_struct, (const char **)(&input),  &inleft, &out, &outleft);
+		rc = iconv(*iconv_struct, (char **)(&input),  &inleft, &out, &outleft);
 		if(rc == (size_t)-1) {
 			if(errno == E2BIG) {
 				/* not enough space in output buffer */

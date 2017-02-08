@@ -88,7 +88,7 @@ static const struct key_entry *msxml_check_key(struct msxml_ictx *ictx, const xm
     }
 
     for (i = 0; i < ictx->num_keys; ++i) {
-        if (keylen == strlen(ictx->keys[i].key) && !strncasecmp((char *)key, ictx->keys[i].key, keylen)) {
+        if (keylen == strlen(ictx->keys[i].key) && !strncasecmp((const char *)key, ictx->keys[i].key, keylen)) {
             return &ictx->keys[i];
         }
     }
@@ -414,7 +414,7 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
                         return ret;
                     }
 
-                    if (cli_writen(of, (char *)node_value, vlen) != vlen) {
+                    if (cli_writen(of, (const char *)node_value, vlen) != vlen) {
                         close(of);
                         if (!(ctx->engine->keeptmp))
                             cli_unlink(tempfile);
@@ -445,7 +445,7 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
 
                     cli_msxmlmsg("BINARY DATA!\n");
 
-                    decoded = (char *)cl_base64_decode((char *)node_value, strlen((const char *)node_value), NULL, &decodedlen, 0);
+                    decoded = (char *)cl_base64_decode((const char *)node_value, strlen((const char *)node_value), NULL, &decodedlen, 0);
                     if (!decoded) {
                         cli_warnmsg("msxml_parse_element: failed to decode base64-encoded binary data\n");
                         state = xmlTextReaderRead(reader);

@@ -378,11 +378,10 @@ char *pdf_finalize_string(struct pdf_struct *pdf, struct pdf_obj *obj, const cha
 char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *objstart, size_t objsize, const char *str, char **endchar, struct pdf_stats_metadata *meta)
 {
     const char *q = objstart;
-    char *p1, *p2;
+    const char *p1, *p2;
     size_t len, checklen;
     char *res = NULL;
     uint32_t objid;
-    size_t i;
 
     /*
      * Yes, all of this is required to find the start and end of a potentially UTF-* string
@@ -400,7 +399,7 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
         if (objsize < strlen(str) + 3)
             return NULL;
 
-        for (p1=(char *)q; (size_t)(p1 - q) < objsize-checklen; p1++)
+        for (p1=q; (size_t)(p1 - q) < objsize-checklen; p1++)
             if (!strncmp(p1, str, checklen))
                 break;
 
@@ -409,7 +408,7 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
 
         p1 += checklen;
     } else {
-        p1 = (char *)q;
+        p1 = q;
     }
 
     while ((size_t)(p1 - q) < objsize && isspace(p1[0]))
@@ -425,7 +424,7 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
      *     We should be at the start of the string
      */
 
-    p2 = (char *)(q + objsize);
+    p2 = q + objsize;
     if (is_object_reference(p1, &p2, &objid)) {
         struct pdf_obj *newobj;
         char *begin, *p3;

@@ -236,7 +236,7 @@ static int check_text(uch *buffer, int maxsize)
 static int check_ascii_float(uch *buffer, int len)
 {
   uch *qq = buffer, *bufEnd = buffer + len;
-  int have_sign = 0, have_integer = 0, have_dot = 0, have_fraction = 0;
+  int have_integer = 0, have_dot = 0, have_fraction = 0;
   int have_E = 0, have_Esign = 0, have_exponent = 0, in_digits = 0;
   int have_nonzero = 0;
   int rc = 0;
@@ -246,7 +246,6 @@ static int check_ascii_float(uch *buffer, int len)
       case '+':
       case '-':
         if (qq == buffer) {
-          have_sign = 1;
           in_digits = 0;
         } else if (have_E && !have_Esign) {
           have_Esign = 1;
@@ -582,7 +581,7 @@ int cli_parsepng(cli_ctx *ctx)
         static uch *p;   /* always points to next filter byte */
         static int cur_y, cur_pass, cur_xoff, cur_yoff, cur_xskip, cur_yskip;
         static long cur_width, cur_linebytes;
-        static long numfilt, numfilt_this_block, numfilt_total, numfilt_pass[7];
+        static long numfilt, numfilt_this_block, numfilt_pass[7];
         uch *eod;
         int err=Z_OK;
 
@@ -633,7 +632,6 @@ int cli_parsepng(cli_ctx *ctx)
             numfilt_pass[1] = numfilt_pass[2] = numfilt_pass[3] = h;
             numfilt_pass[4] = numfilt_pass[5] = numfilt_pass[6] = h;
           }
-          numfilt_total = numfilt_pass[6];
         }
         numfilt_this_block = 0L;
 
@@ -710,7 +708,7 @@ int cli_parsepng(cli_ctx *ctx)
             } else if (cur_y >= h) {
                 inflateEnd(&zstrm);
 		if(eod - p > 0) {
-		    cli_dbgmsg("PNG:  %d bytes remaining in buffer before inflateEnd()", eod-p);
+		    cli_dbgmsg("PNG:  %zd bytes remaining in buffer before inflateEnd()", eod-p);
 		    return CL_EPARSE;
 		}
 		err = Z_STREAM_END;

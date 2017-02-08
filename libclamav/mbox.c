@@ -204,8 +204,10 @@ static	int	cli_parse_mbox(const char *dir, cli_ctx *ctx);
 static	message	*parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821Table, const char *firstLine, const char *dir);
 static	message	*parseEmailHeaders(message *m, const table_t *rfc821Table);
 static	int	parseEmailHeader(message *m, const char *line, const table_t *rfc821Table);
+#if HAVE_JSON
 static	int	parseMHTMLComment(const char *comment, cli_ctx *ctx, void *wrkjobj, void *cbdata);
 static	mbox_status	parseRootMHTML(mbox_ctx *mctx, message *m, text *t);
+#endif
 static	mbox_status	parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int recursion_level);
 static	int	boundaryStart(const char *line, const char *boundary);
 static	int	boundaryEnd(const char *line, const char *boundary);
@@ -222,8 +224,10 @@ static	char	*getline_from_mbox(char *buffer, size_t len, fmap_t *map, size_t *at
 static	bool	isBounceStart(mbox_ctx *mctx, const char *line);
 static	bool	exportBinhexMessage(mbox_ctx *mctx, message *m);
 static	int	exportBounceMessage(mbox_ctx *ctx, text *start);
+#ifdef HAVE_JSON
 static	const	char	*getMimeTypeStr(mime_type mimetype);
 static	const	char	*getEncTypeStr(encoding_type enctype);
+#endif
 static	message	*do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, mbox_ctx *mctx, message *messageIn, text **tptr, unsigned int recursion_level);
 static	int	count_quotes(const char *buf);
 static	bool	next_is_folded_header(const text *t);
@@ -1102,7 +1106,9 @@ static const struct key_entry mhtml_keys[] = {
 	{	"link",			"Link",			MSXML_JSON_WRKPTR | MSXML_JSON_MULTI | MSXML_JSON_ATTRIB	},
 	{	"script",		"Script",		MSXML_JSON_WRKPTR | MSXML_JSON_MULTI | MSXML_JSON_VALUE		}
 };
+#if HAVE_JSON
 static size_t num_mhtml_keys = sizeof(mhtml_keys) / sizeof(struct key_entry);
+#endif
 
 static const struct key_entry mhtml_comment_keys[] = {
 	/* embedded xml tags (comment) for microsoft office document */
@@ -1126,9 +1132,12 @@ static const struct key_entry mhtml_comment_keys[] = {
 	{	"w:worddocument",	"WordDocument",		MSXML_IGNORE_ELEM	},
 	{	"w:latentstyles",	"LatentStyles",		MSXML_IGNORE_ELEM	}
 };
+#if HAVE_JSON
 static size_t num_mhtml_comment_keys = sizeof(mhtml_comment_keys) / sizeof(struct key_entry);
 #endif
+#endif
 
+#if HAVE_JSON
 /*
  * The related multipart root HTML file comment parsing wrapper.
  *
@@ -1225,7 +1234,7 @@ parseRootMHTML(mbox_ctx *mctx, message *m, text *t)
 	if (input == NULL)
 		return OK;
 
-	htmlDoc = htmlReadMemory(input->data, input->len, "mhtml.html", NULL, CLAMAV_MIN_XMLREADER_FLAGS);
+	htmlDoc = htmlReadMemory((char *)input->data, input->len, "mhtml.html", NULL, CLAMAV_MIN_XMLREADER_FLAGS);
 	if (htmlDoc == NULL) {
 		cli_dbgmsg("parseRootMHTML: cannot intialize read html document\n");
 #if HAVE_JSON
@@ -1307,6 +1316,7 @@ parseRootMHTML(mbox_ctx *mctx, message *m, text *t)
 	return OK;
 #endif /* HAVE_LIBXML2 */
 }
+#endif
 
 /*
  * This is a recursive routine.
@@ -3807,6 +3817,7 @@ exportBounceMessage(mbox_ctx *mctx, text *start)
 	return rc;
 }
 
+#if HAVE_JSON
 /*
  * Get string representation of mimetype
  */
@@ -3836,6 +3847,7 @@ static	const	char	*getEncTypeStr(encoding_type enctype)
 	}
 	return "UNKNOWN";
 }
+#endif
 
 /*
  * Handle the ith element of a number of multiparts, e.g. multipart/alternative

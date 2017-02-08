@@ -81,7 +81,7 @@ static int xar_get_numeric_from_xml_element(xmlTextReaderPtr reader, size_t * va
         if (numstr) {
             numval = atol((const char *)numstr);
             if (numval < 0) {
-                cli_dbgmsg("cli_scanxar: XML element value %li\n", *value);
+                cli_dbgmsg("cli_scanxar: XML element value %zd\n", *value);
                 return CL_EFORMAT;
             }
             *value = numval;
@@ -127,8 +127,8 @@ static void xar_get_checksum_values(xmlTextReaderPtr reader, unsigned char ** ck
         xmlval = xmlTextReaderConstValue(reader);
         if (xmlval) {
             cli_dbgmsg("cli_scanxar: checksum value is %s.\n", xmlval);
-            if (*hash == XAR_CKSUM_SHA1 && xmlStrlen(xmlval) == 2 * CLI_HASHLEN_SHA1 ||
-                *hash == XAR_CKSUM_MD5 && xmlStrlen(xmlval) == 2 * CLI_HASHLEN_MD5)
+            if ((*hash == XAR_CKSUM_SHA1 && xmlStrlen(xmlval) == 2 * CLI_HASHLEN_SHA1) ||
+                (*hash == XAR_CKSUM_MD5 && xmlStrlen(xmlval) == 2 * CLI_HASHLEN_MD5))
                 {
                     *cksum = xmlStrdup(xmlval); 
                 } 
@@ -363,7 +363,7 @@ static void * xar_hash_init(int hash, void **sc, void **mc)
     }
 }
 
-static void xar_hash_update(void * hash_ctx, void * data, unsigned long size, int hash)
+static void xar_hash_update(void * hash_ctx, const void * data, unsigned long size, int hash)
 {
     if (!hash_ctx || !data || !size)
         return;
@@ -558,7 +558,7 @@ int cli_scanxar(cli_ctx *ctx)
     while (CL_SUCCESS == (rc = xar_get_toc_data_values(reader, &length, &offset, &size, &encoding,
                                                        &a_cksum, &a_hash, &e_cksum, &e_hash))) {
         int do_extract_cksum = 1;
-        unsigned char * blockp;
+        const unsigned char * blockp;
         void *a_sc, *e_sc;
         void *a_mc, *e_mc;
         char * expected;
@@ -674,11 +674,11 @@ int cli_scanxar(cli_ctx *ctx)
                     
                 }
 
-                blockp = (void*)fmap_need_off_once(map, at, CLI_LZMA_HDR_SIZE);
+                blockp = fmap_need_off_once(map, at, CLI_LZMA_HDR_SIZE);
                 if (blockp == NULL) {
                     char errbuff[128];
                     cli_strerror(errno, errbuff, sizeof(errbuff));
-                    cli_dbgmsg("cli_scanxar: Can't read %i bytes @ %li, errno:%s.\n",
+                    cli_dbgmsg("cli_scanxar: Can't read %i bytes @ %zd, errno:%s.\n",
                                CLI_LZMA_HDR_SIZE, at, errbuff);
                     rc = CL_EREAD;
                     __lzma_wrap_free(NULL, buff);
@@ -715,7 +715,7 @@ int cli_scanxar(cli_ctx *ctx)
                     if (lz.next_in == NULL) {
                         char errbuff[128];
                         cli_strerror(errno, errbuff, sizeof(errbuff));
-                        cli_dbgmsg("cli_scanxar: Can't read %li bytes @ %li, errno: %s.\n",
+                        cli_dbgmsg("cli_scanxar: Can't read %zd bytes @ %zd, errno: %s.\n",
                                    lz.avail_in, at, errbuff);
                         rc = CL_EREAD;
                         __lzma_wrap_free(NULL, buff);
@@ -786,7 +786,7 @@ int cli_scanxar(cli_ctx *ctx)
                 if (ctx->engine->maxfilesize)
                     writelen = MIN((size_t)(ctx->engine->maxfilesize), writelen);
                     
-                if (!(blockp = (void*)fmap_need_off_once(map, at, writelen))) {
+                if (!(blockp = (const void *)fmap_need_off_once(map, at, writelen))) {
                     char errbuff[128];
                     cli_strerror(errno, errbuff, sizeof(errbuff));
                     cli_dbgmsg("cli_scanxar: Can't read %zu bytes @ %zu, errno:%s.\n",
@@ -799,7 +799,7 @@ int cli_scanxar(cli_ctx *ctx)
                     xar_hash_update(a_hash_ctx, blockp, writelen, a_hash);
                 
                 if (cli_writen(fd, blockp, writelen) < 0) {
-                    cli_dbgmsg("cli_scanxar: cli_writen error %zu bytes @ %li.\n", writelen, at);
+                    cli_dbgmsg("cli_scanxar: cli_writen error %zu bytes @ %zd.\n", writelen, at);
                     rc = CL_EWRITE;
                     goto exit_tmpfile;
                 }

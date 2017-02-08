@@ -227,7 +227,7 @@ void submit_post(const char *host, const char *port, const char *method, const c
         if (!(encoded))
             return;
 #if defined(_WIN32)
-		snprintf(chunkedlen, sizeof(chunkedlen), "%u", strlen(encoded));
+		snprintf(chunkedlen, sizeof(chunkedlen), "%zu", strlen(encoded));
 #else
         snprintf(chunkedlen, sizeof(chunkedlen), "%zu", strlen(encoded));
 #endif

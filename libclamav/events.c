@@ -175,6 +175,8 @@ void cli_event_int(cli_events_t *ctx, unsigned id, uint64_t arg)
 		ev_chain(ctx, ev, &val);
 		break;
 	    }
+         default:
+             break;
     }
 }
 
@@ -256,6 +258,8 @@ static void event_string(cli_events_t *ctx, struct cli_event *ev, const char *st
 		ev_chain(ctx, ev, &val);
 		break;
 	    }
+         default:
+             break;
     }
 }
 
@@ -313,6 +317,8 @@ void cli_event_data(cli_events_t *ctx, unsigned id, const void *data, uint32_t l
 		}
 		break;
 	    }
+         default:
+             break;
     }
 }
 
@@ -369,6 +375,8 @@ static inline void ev_debug(enum ev_type type, union ev_val *val, uint32_t count
 	    cli_dbgmsg("\t(%u): %d.%06us\n", count, (signed)(val->v_int / 1000000),
 		       (unsigned)(val->v_int % 1000000));
 	    break;
+         default:
+             break;
     }
 }
 
@@ -429,6 +437,8 @@ static int ev_diff(enum ev_type type, union ev_val *v1, union ev_val *v2, uint32
 	    return memcmp(v1->v_data, v2->v_data, count);
 	case ev_time:
 	    return 0;
+         default:
+             break;
     }
     return 0;
 }

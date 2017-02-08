@@ -72,7 +72,7 @@ uint32_t byte_to_int32[]  =
 
 uint32_t hash(
     uint32_t seed,
-    uint8_t* buffer,
+    const uint8_t* buffer,
     int len)
 {
   int i;
@@ -154,10 +154,10 @@ void* yr_hash_table_lookup(
   YR_HASH_TABLE_ENTRY* entry;
   uint32_t bucket_index;
 
-  bucket_index = hash(0, (uint8_t*) key, strlen(key));
+  bucket_index = hash(0, (const uint8_t*) key, strlen(key));
 
   if (ns != NULL)
-    bucket_index = hash(bucket_index, (uint8_t*) ns, strlen(ns));
+    bucket_index = hash(bucket_index, (const uint8_t*) ns, strlen(ns));
 
   bucket_index = bucket_index % table->size;
 
@@ -218,10 +218,10 @@ int yr_hash_table_add(
   }
 
   entry->value = value;
-  bucket_index = hash(0, (uint8_t*) key, strlen(key));
+  bucket_index = hash(0, (const uint8_t*) key, strlen(key));
 
   if (ns != NULL)
-    bucket_index = hash(bucket_index, (uint8_t*) ns, strlen(ns));
+    bucket_index = hash(bucket_index, (const uint8_t*) ns, strlen(ns));
 
   bucket_index = bucket_index % table->size;
 

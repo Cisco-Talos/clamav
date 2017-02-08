@@ -314,11 +314,12 @@ int _yr_parser_write_string(
 
   YR_ATOM_LIST_ITEM* atom;
   YR_ATOM_LIST_ITEM* atom_list = NULL;
+
+  int max_string_len;
+  int free_literal = FALSE;
 #endif
 
   int result;
-  int max_string_len;
-  int free_literal = FALSE;
 
   *string = NULL;
 
@@ -496,23 +497,24 @@ YR_STRING* yr_parser_reduce_string_declaration(
     SIZED_STRING* str)
 {
   int min_atom_length;
-  int min_atom_length_aux;
   int re_flags = 0;
+
+  YR_COMPILER* compiler = yyget_extra(yyscanner);
+  YR_STRING* string = NULL;
+
+#if REAL_YARA
+  int min_atom_length_aux;
 
   int32_t min_gap;
   int32_t max_gap;
 
   char message[512];
 
-  YR_COMPILER* compiler = yyget_extra(yyscanner);
-  YR_STRING* string = NULL;
   YR_STRING* aux_string;
   YR_STRING* prev_string;
 
   RE* re = NULL;
   RE* remainder_re;
-
-#if REAL_YARA
   RE_ERROR re_error;
 #endif
 
@@ -961,9 +963,9 @@ int yr_parser_reduce_import(
     yyscan_t yyscanner,
     SIZED_STRING* module_name)
 {
+#if REAL_YARA
   YR_COMPILER* compiler = yyget_extra(yyscanner);
   ///  YR_OBJECT* module_structure;
-#if REAL_YARA
 
   char* name;
 

@@ -102,7 +102,7 @@ typedef struct _YR_MATCH
       data = fmap_need_off_once(fmap, offset, sizeof(type));    \
       if (!data)                                                \
           return UNDEFINED;                                     \
-      return *((type *) data);                                  \
+      return *((const type *) data);                                  \
     };
 #endif
 
@@ -144,7 +144,9 @@ int yr_execute_code(
 
   YR_RULE* rule;
   YR_STRING* string;
+#if REAL_YARA
   YR_MATCH* match;
+#endif
   YR_OBJECT* object;
   YR_OBJECT_FUNCTION* function;
 

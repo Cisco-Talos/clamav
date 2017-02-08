@@ -137,7 +137,7 @@ int cli_scanxdp(cli_ctx *ctx)
         if (!strcmp((const char *)name, "chunk") && xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT) {
             value = xmlTextReaderReadInnerXml(reader);
             if (value) {
-                decoded = cl_base64_decode((char *)value, strlen((const char *)value), NULL, &decodedlen, 0);
+                decoded = cl_base64_decode((const char *)value, strlen((const char *)value), NULL, &decodedlen, 0);
                 if (decoded) {
                     unsigned int shouldscan=0;
 

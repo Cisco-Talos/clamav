@@ -453,7 +453,7 @@ static int hfsplus_fetch_node (cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfs
 {
     int foundBlock = 0;
     uint64_t catalogOffset;
-    uint32_t fetchBlock, fetchStart;
+    uint32_t fetchBlock;
     uint32_t extentNum = 0, realFileBlock;
     size_t fileOffset = 0;
     hfsPlusForkData *catFork;
@@ -474,7 +474,6 @@ static int hfsplus_fetch_node (cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfs
         catalogOffset = (uint64_t)node * catHeader->nodeSize;
         /* Determine which block of the catalog we need */
         fetchBlock = (uint32_t) (catalogOffset / volHeader->blockSize);
-        fetchStart = (uint32_t) (catalogOffset % volHeader->blockSize);
         cli_dbgmsg("hfsplus_fetch_node: need catalog block " STDu32 "\n", fetchBlock);
         if (fetchBlock >= catFork->totalBlocks) {
             cli_dbgmsg("hfsplus_fetch_node: block number invalid!\n");
@@ -549,11 +548,9 @@ static int hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hf
     unsigned int has_alerts = 0;
     uint32_t thisNode, nodeLimit, nodesScanned = 0;
     uint16_t nodeSize, recordNum, topOfOffsets;
-    uint16_t distance, recordStart, nextDist, nextStart;
+    uint16_t recordStart, nextDist, nextStart;
     uint8_t *nodeBuf = NULL;
-    hfsPlusForkData *catFork;
 
-    catFork = &(volHeader->catalogFile);
     nodeLimit = MIN(catHeader->totalNodes, HFSPLUS_NODE_LIMIT);
     thisNode = catHeader->firstLeafNode;
     nodeSize = catHeader->nodeSize;
@@ -603,7 +600,6 @@ static int hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hf
         }
 
         /* Walk this node's records and scan */
-        distance = nodeSize;
         recordStart = 14; /* 1st record can be after end of node descriptor */
         /* offsets take 1 u16 per at the end of the node, along with an empty space offset */
         topOfOffsets = nodeSize - (nodeDesc.numRecords * 2) - 2;
@@ -621,7 +617,6 @@ static int hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hf
                 ret = CL_EFORMAT;
                 break;
             }
-            distance = nextDist;
             recordStart = nextStart;
             /* Get record key length */
             keylen = nodeBuf[recordStart] * 0x100 + nodeBuf[recordStart+1];

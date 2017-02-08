@@ -787,7 +787,7 @@ unsigned char *cl_sign_file_fp(FILE *fp, EVP_PKEY *pkey, char *alg, unsigned int
 EVP_PKEY *cl_get_pkey_file(char *keypath);
 
 void *cl_hash_init(const char *alg);
-int cl_update_hash(void *ctx, void *data, size_t sz);
+int cl_update_hash(void *ctx, const void *data, size_t sz);
 int cl_finish_hash(void *ctx, void *buf);
 void cl_hash_destroy(void *ctx);
 /* End of crypto/hashing functions */

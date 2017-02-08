@@ -307,7 +307,6 @@ static int cli_ac_addpatt_recursive(struct cli_matcher *root, struct cli_ac_patt
 
 int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
 {
-    struct cli_ac_node *pt;
     struct cli_ac_patt **newtable;
     uint16_t len = MIN(root->ac_maxdepth, pattern->length[0]);
     uint8_t i;
@@ -1529,7 +1528,6 @@ int lsig_sub_matched(const struct cli_matcher *root, struct cli_ac_data *mdata, 
     }
 
     if (ac_lsig->type & CLI_YARA_OFFSET && realoff != CLI_OFF_NONE) {
-        uint32_t * offs;
         struct cli_subsig_matches * ss_matches;
         struct cli_lsig_matches * ls_matches;
         cli_dbgmsg("lsig_sub_matched lsig %u:%u at %u\n", lsigid1, lsigid2, realoff);
@@ -1939,8 +1937,8 @@ static int qcompare_byte(const void *a, const void *b)
 
 static int qcompare_fstr(const void *arg, const void *a, const void *b)
 {
-    uint16_t len = *(uint16_t *)arg;
-    return memcmp(*(const unsigned char **)a, *(const unsigned char **)b, len);
+    uint16_t len = *(const uint16_t *)arg;
+    return memcmp(*(const unsigned char * const *)a, *(const unsigned char * const *)b, len);
 }
 
 /* returns if level of nesting, end set to MATCHING paren, start AFTER staring paren */
@@ -2026,7 +2024,7 @@ inline static int ac_analyze_expr(char *hexstr, int *fixed_len, int *sub_len)
 
 inline static int ac_uicmp(uint16_t *a, size_t alen, uint16_t *b, size_t blen, int *wild)
 {
-    uint16_t cmp, awild, bwild, side_wild;
+    uint16_t awild, bwild, side_wild;
     size_t i, minlen = MIN(alen, blen);
 
     side_wild = 0;
@@ -2146,7 +2144,7 @@ inline static int ac_addspecial_add_alt_node(const char *subexpr, uint8_t sigopt
     }
 
     newnode->str = s;
-    newnode->len = strlen(subexpr)/2;
+    newnode->len = (uint16_t)strlen(subexpr) / 2;
     newnode->unique = 1;
 
     /* setting nocase match */
@@ -2307,14 +2305,13 @@ static int ac_special_altexpand(char *hexpr, char *subexpr, uint16_t maxlen, int
 inline static int ac_special_altstr(const char *hexpr, uint8_t sigopts, struct cli_ac_special *special, struct cli_matcher *root)
 {
     char *hexprcpy, *h, *c;
-    int i, ret, num, fixed, slen, len;
+    int i, ret, num, fixed, slen;
 
     if (!(hexprcpy = cli_strdup(hexpr))) {
         cli_errmsg("ac_special_altstr: Can't duplicate alternate expression\n");
         return CL_EDUP;
     }
 
-    len = strlen(hexpr);
     num = ac_analyze_expr(hexprcpy, &fixed, &slen);
 
     if (!sigopts && fixed) {
@@ -2359,7 +2356,7 @@ inline static int ac_special_altstr(const char *hexpr, uint8_t sigopts, struct c
                 (special->alt).byte[i] = *c;
                 mpool_free(root->mempool, c);
             } else {
-                (special->alt).f_str[i] = c;
+                (special->alt).f_str[i] = (unsigned char *)c;
             }
             special->num++;
         }
@@ -2404,7 +2401,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
     char *pt, *pt2, *hex = NULL, *hexcpy = NULL;
     uint16_t i, j, ppos = 0, pend, *dec, nzpos = 0;
     uint8_t wprefix = 0, zprefix = 1, plen = 0, nzplen = 0;
-    struct cli_ac_special *newspecial, *specialpt, **newtable;
+    struct cli_ac_special *newspecial, **newtable;
     int ret, error = CL_SUCCESS;
 
 
@@ -2688,7 +2685,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
         return CL_EMALFDB;
     }
 
-    new->length[0] = strlen(hex ? hex : hexsig) / 2;
+    new->length[0] = (uint16_t)strlen(hex ? hex : hexsig) / 2;
     for(i = 0, j = 0; i < new->length[0]; i++) {
         if((new->pattern[i] & CLI_MATCH_METADATA) == CLI_MATCH_SPECIAL) {
             new->length[1] += new->special_table[j]->len[0];
@@ -2715,7 +2712,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
     /* TODO - sigopts affect on filters? */
     if (root->filter) {
         /* so that we can show meaningful messages */
-        new->virname = (char*)virname;
+        new->virname = virname;
         if (filter_add_acpatt(root->filter, new) == -1) {
             cli_warnmsg("cli_ac_addpatt: cannot use filter for trie\n");
             mpool_free(root->mempool, root->filter);

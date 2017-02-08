@@ -66,7 +66,7 @@ static size_t base64_len(const char *data, size_t len)
  * @param[out] olen The length of the decoded data
  * @return The base64-decoded data
  */
-void *cl_base64_decode(char *data, size_t len, void *obuf, size_t *olen, int oneline)
+void *cl_base64_decode(const char *data, size_t len, void *obuf, size_t *olen, int oneline)
 {
     BIO *bio, *b64;
     void *buf;

@@ -264,7 +264,7 @@ int cli_pcre_match(struct cli_pcre_data *pd, const unsigned char *buffer, uint32
         results->match[0] = results->match[1] = 0;
     }
 #else
-    rc = pcre_exec(pd->re, pd->ex, buffer, buflen, startoffset, options, results->ovector, OVECCOUNT);
+    rc = pcre_exec(pd->re, pd->ex, (const char *)buffer, buflen, startoffset, options, results->ovector, OVECCOUNT);
     if (rc < 0 && rc != PCRE_ERROR_NOMATCH) {
         switch (rc) {
         case PCRE_ERROR_CALLOUT:
@@ -332,7 +332,7 @@ static void named_substr_print(const struct cli_pcre_data *pd, const unsigned ch
         for (i = 0; i < namecount; i++) {
             int n = (tabptr[0] << 8) | tabptr[1];
 
-            start = buffer + ovector[2*n];
+            start = (const char *)buffer + ovector[2*n];
             length = ovector[2*n+1] - ovector[2*n];
 
             trunc = 0;
@@ -380,7 +380,7 @@ void cli_pcre_report(const struct cli_pcre_data *pd, const unsigned char *buffer
         if (rc > 0) {
             /* print out full-match and capture groups */
             for (i = 0; i < rc; ++i) {
-                start = buffer + ovector[2*i];
+                start = (const char *)buffer + ovector[2*i];
                 length = ovector[2*i+1] - ovector[2*i];
 
                 if (ovector[2*i+1] > buflen) {

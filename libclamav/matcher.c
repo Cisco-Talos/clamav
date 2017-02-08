@@ -676,7 +676,7 @@ int32_t cli_bcapi_matchicon(struct cli_bc_ctx *ctx , const uint8_t* grp1, int32_
 	    info.res_addr = le32_to_host(ctx->hooks.pedata->dirs[2].VirtualAddress);
     } else
 	info.res_addr = ctx->resaddr; /* from target_info */
-    info.section = (struct cli_exe_section*)ctx->sections;
+    info.section = ctx->sections;
     info.nsections = ctx->hooks.pedata->nsections;
     info.hdr_size = ctx->hooks.pedata->hdr_size;
     cli_dbgmsg("bytecode matchicon %s %s\n", group1, group2);
@@ -1101,11 +1101,11 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
                 uint32_t data_len = bytes - maxpatlen * (offset!=0);
 
                 if(compute_hash[CLI_HASH_MD5])
-                    cl_update_hash(md5ctx, (void *)data, data_len);
+                    cl_update_hash(md5ctx, data, data_len);
                 if(compute_hash[CLI_HASH_SHA1])
-                    cl_update_hash(sha1ctx, (void *)data, data_len);
+                    cl_update_hash(sha1ctx, data, data_len);
                 if(compute_hash[CLI_HASH_SHA256])
-                    cl_update_hash(sha256ctx, (void *)data, data_len);
+                    cl_update_hash(sha256ctx, data, data_len);
             }
         }
 

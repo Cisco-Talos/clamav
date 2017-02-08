@@ -70,8 +70,6 @@
 
 struct pdf_struct;
 
-static	int	asciihexdecode(const char *buf, off_t len, char *output);
-static	int	ascii85decode(const char *buf, off_t len, unsigned char *output);
 static	const	char	*pdf_nextlinestart(const char *ptr, size_t len);
 static	const	char	*pdf_nextobject(const char *ptr, size_t len);
 
@@ -148,8 +146,8 @@ static int xrefCheck(const char *xref, const char *eof)
 #define noisy_msg(pdf, ...) cli_infomsg(pdf->ctx, __VA_ARGS__)
 #define noisy_warnmsg cli_warnmsg
 #else
-#define noisy_msg (void)
-#define noisy_warnmsg (void)
+#define noisy_msg(pdf, ...) (void)0
+#define noisy_warnmsg(...) (void)0
 #endif
 
 static const char *findNextNonWSBack(const char *q, const char *start)
@@ -952,7 +950,7 @@ int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
                     }
 
                     if (len > 4)
-                        dparams = pdf_parse_dict(pdf, obj, objsz, (char *)pstr, NULL);
+                        dparams = pdf_parse_dict(pdf, obj, objsz, pstr, NULL);
                     else
                         cli_dbgmsg("cli_pdf: failed to locate DecodeParms dictionary start\n");
                 }

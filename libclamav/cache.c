@@ -33,7 +33,7 @@
 #include "cache.h"
 #include "fmap.h"
 
-#ifdef CL_THREAD_SAFE
+#ifdef USE_LRUHASHCACHE
 static pthread_mutex_t pool_mutex = PTHREAD_MUTEX_INITIALIZER;
 #else
 #define pthread_mutex_lock(x) 0
@@ -436,7 +436,7 @@ static void printnode(const char *prefix, struct cache_set *cs, struct node *n) 
         printf("NULL\n");
 }
 #else
-#define printnode(a,b,c) (0)
+#define printnode(a,b,c) (void)0
 #endif
 
 /* #define PRINT_CHAINS */
@@ -466,7 +466,7 @@ static inline void printchain(const char *prefix, struct cache_set *cs) {
     }
 }
 #else
-#define printchain(a,b) (0)
+#define printchain(a,b) (void)0
 #endif
 
 /* Looks up a node and splays it up to the root of the tree */
@@ -921,7 +921,7 @@ int cache_get_MD5(unsigned char *hash, cli_ctx *ctx)
         todo -= readme;
         at += readme;
 
-        if (cl_update_hash(hashctx, (void *)buf, readme)) {
+        if (cl_update_hash(hashctx, buf, readme)) {
             cl_hash_destroy(hashctx);
             cli_errmsg("cache_check: error reading while generating hash!\n");
             return CL_EREAD;

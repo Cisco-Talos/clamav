@@ -150,7 +150,7 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) { /* WIN3
 	CloseHandle(fh);
 	return NULL;
     }
-    m->handle = (void*)(ssize_t)fd;
+    m->handle = (void*)(size_t)fd;
     m->handle_is_fd = 1;
     m->fh = fh;
     m->mh = mh;
@@ -359,6 +359,7 @@ static int fmap_readpage(fmap_t *m, unsigned int first_page, unsigned int count,
 	/* Also not worth reusing the loop below */
 	volatile char faultme;
 	faultme = ((char *)m)[(first_page+i) * m->pgsz + m->hdrsz];
+         (void)faultme;
     }
     fmap_unlock;
     for(i=0; i<=count; i++, page++) {
@@ -401,7 +402,7 @@ static int fmap_readpage(fmap_t *m, unsigned int first_page, unsigned int count,
 	    /* we have some pending reads to perform */
 	    if (m->handle_is_fd) {
 		unsigned int j;
-		int _fd = (int)(ssize_t)m->handle;
+		int _fd = (int)(size_t)m->handle;
 		for(j=first_page; j<page; j++) {
 		    if(fmap_bitmap[j] & FM_MASK_SEEN) {
 			/* page we've seen before: check mtime */
@@ -547,7 +548,7 @@ static void unmap_mmap(fmap_t *m)
     size_t len = m->pages * m->pgsz + m->hdrsz;
     fmap_lock;
     if (munmap((void *)m, len) == -1) /* munmap() failed */
-        cli_warnmsg("funmap: unable to unmap memory segment at address: %p with length: %d\n", (void *)m, len);
+        cli_warnmsg("funmap: unable to unmap memory segment at address: %p with length: %zd\n", (void *)m, len);
     fmap_unlock;
 #endif
 }
@@ -680,7 +681,7 @@ static const void *mem_need(fmap_t *m, size_t at, size_t len, int lock) { /* WIN
 	return NULL;
     }
 
-    return (void *)((char *)m->data + at);
+    return ((const char *)m->data + at);
 }
 
 static void mem_unneed_off(fmap_t *m, size_t at, size_t len)
@@ -691,7 +692,7 @@ static void mem_unneed_off(fmap_t *m, size_t at, size_t len)
 }
 
 static const void *mem_need_offstr(fmap_t *m, size_t at, size_t len_hint) {
-    char *ptr = (char *)m->data + at;
+    const char *ptr = (const char *)m->data + at;
 
     if(!len_hint || len_hint > m->real_len - at)
 	len_hint = m->real_len - at;
@@ -700,12 +701,13 @@ static const void *mem_need_offstr(fmap_t *m, size_t at, size_t len_hint) {
 	return NULL;
 
     if(memchr(ptr, 0, len_hint))
-	return (void *)ptr;
+	return (const void *)ptr;
     return NULL;
 }
 
 static const void *mem_gets(fmap_t *m, char *dst, size_t *at, size_t max_len) {
-    char *src = (char *)m->data + *at, *endptr = NULL;
+    const char *src = (const char *)m->data + *at;
+	char *endptr = NULL;
     size_t len = MIN(max_len-1, m->real_len - *at);
 
     if(!len || !CLI_ISCONTAINED(0, m->real_len, *at, len))
@@ -784,7 +786,7 @@ int fmap_fd(fmap_t *m)
     int fd;
     if (!m->handle_is_fd)
 	return -1;
-    fd = (int)(ssize_t)m->handle;
+    fd = (int)(size_t)m->handle;
     lseek(fd, 0, SEEK_SET);
     return fd;
 }

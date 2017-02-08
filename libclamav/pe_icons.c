@@ -184,7 +184,7 @@ int cli_groupiconscan(struct ICON_ENV *icon_env, uint32_t rva)
         if(gsz>6) {
             uint32_t icnt, raddr;
             unsigned int piconcnt;
-            struct icondir {
+            const struct icondir {
                 uint8_t w;
                 uint8_t h;
                 uint8_t palcnt;
@@ -207,7 +207,7 @@ int cli_groupiconscan(struct ICON_ENV *icon_env, uint32_t rva)
                 while(icnt && gsz >= 14 /* && (remaining amount of icons) */) {
                     piconcnt = icon_env->hcnt;
 
-                    dir = (struct icondir *)grp;
+                    dir = (const struct icondir *)grp;
                     cli_dbgmsg("cli_scanicon: Icongrp @%x - %ux%ux%u - (id=%x, rsvd=%u, planes=%u, palcnt=%u, sz=%x)\n", rva, dir->w, dir->h, cli_readint16(&dir->depth), cli_readint16(&dir->id), cli_readint16(&dir->planes), dir->palcnt, dir->rsvd, cli_readint32(&dir->sz));
 
                     /* icon scan callback --> icon_scan_cb() */

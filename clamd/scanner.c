@@ -57,6 +57,7 @@
 #include "shared/optparser.h"
 #include "shared/output.h"
 #include "shared/misc.h"
+#include "shared/idmef_logging.h"
 
 #include "others.h"
 #include "scanner.h"

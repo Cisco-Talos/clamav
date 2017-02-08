@@ -371,10 +371,10 @@ static int cli_elf_ph64(cli_ctx *ctx, fmap_t *map, struct cli_exe_info *elfinfo,
             if(ctx) {
                 cli_dbgmsg("ELF: Segment #%d\n", i);
                 cli_dbgmsg("ELF: Segment type: 0x%x\n", EC32(program_hdr[i].p_type, conv));
-                cli_dbgmsg("ELF: Segment offset: 0x" STDx64 "\n", EC64(program_hdr[i].p_offset, conv));
-                cli_dbgmsg("ELF: Segment virtual address: 0x" STDx64 "\n", EC64(program_hdr[i].p_vaddr, conv));
-                cli_dbgmsg("ELF: Segment real size: 0x" STDx64 "\n", EC64(program_hdr[i].p_filesz, conv));
-                cli_dbgmsg("ELF: Segment virtual size: 0x" STDx64 "\n", EC64(program_hdr[i].p_memsz, conv));
+                cli_dbgmsg("ELF: Segment offset: 0x" STDx64 "\n", (uint64_t)EC64(program_hdr[i].p_offset, conv));
+                cli_dbgmsg("ELF: Segment virtual address: 0x" STDx64 "\n", (uint64_t)EC64(program_hdr[i].p_vaddr, conv));
+                cli_dbgmsg("ELF: Segment real size: 0x" STDx64 "\n", (uint64_t)EC64(program_hdr[i].p_filesz, conv));
+                cli_dbgmsg("ELF: Segment virtual size: 0x" STDx64 "\n", (uint64_t)EC64(program_hdr[i].p_memsz, conv));
                 cli_dbgmsg("------------------------------------\n");
             }
         }
@@ -606,8 +606,8 @@ static int cli_elf_sh64(cli_ctx *ctx, fmap_t *map, struct cli_exe_info *elfinfo,
         }
         if(ctx) {
 	    cli_dbgmsg("ELF: Section %u\n", i);
-	    cli_dbgmsg("ELF: Section offset: " STDu64 "\n", EC64(section_hdr[i].sh_offset, conv));
-	    cli_dbgmsg("ELF: Section size: " STDu64 "\n", EC64(section_hdr[i].sh_size, conv));
+	    cli_dbgmsg("ELF: Section offset: " STDu64 "\n", (uint64_t)EC64(section_hdr[i].sh_offset, conv));
+	    cli_dbgmsg("ELF: Section size: " STDu64 "\n", (uint64_t)EC64(section_hdr[i].sh_size, conv));
 
             sh_type = EC32(section_hdr[i].sh_type, conv);
             sh_flags = (uint32_t)(EC64(section_hdr[i].sh_flags, conv) & ELF_SHF_MASK);

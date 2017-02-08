@@ -356,7 +356,7 @@ int mew_lzma(char *orgsource, const char *buf, uint32_t size_sum, uint32_t vma, 
 	uint32_t new_eax, new_edx, temp;
 	int i, mainloop;
 
-	char var1, var30;
+	char var1;
 	const char *source = buf;
 	char *dest, *new_ebx;
 	const char *new_ecx, *var0C_ecxcopy;
@@ -580,10 +580,10 @@ int mew_lzma(char *orgsource, const char *buf, uint32_t size_sum, uint32_t vma, 
 				new_edx = new_eax = var08;
 				new_eax -= loc_edi;
 				if ( ((var0C < var28 - new_edx) &&
-						(!CLI_ISCONTAINED(orgsource, size_sum, (char*)(new_ecx + new_eax), var0C) || 
-						 !CLI_ISCONTAINED(orgsource, size_sum, (char*)(new_ecx + new_edx), var0C))) ||
-						(!CLI_ISCONTAINED(orgsource, size_sum, (char*)(new_ecx + new_eax), var28 - new_edx) ||
-						 !CLI_ISCONTAINED(orgsource, size_sum, (char*)(new_ecx + new_edx), var28 - new_edx)) )
+						(!CLI_ISCONTAINED(orgsource, size_sum, (const char*)(new_ecx + new_eax), var0C) || 
+						 !CLI_ISCONTAINED(orgsource, size_sum, (const char*)(new_ecx + new_edx), var0C))) ||
+						(!CLI_ISCONTAINED(orgsource, size_sum, (const char*)(new_ecx + new_eax), var28 - new_edx) ||
+						 !CLI_ISCONTAINED(orgsource, size_sum, (const char*)(new_ecx + new_edx), var28 - new_edx)) )
 					return -1;
 				do {
 					var1 = *(uint8_t *)(new_ecx + new_eax);
@@ -647,7 +647,6 @@ int mew_lzma(char *orgsource, const char *buf, uint32_t size_sum, uint32_t vma, 
 				t = *(var18+new_eax);
 				new_eax = (new_eax&0xffffff00) | t;
 
-				var30 = t;
 				if (lzma_48635C (t, &new_ecx, &var40, &new_eax, orgsource, size_sum) == 0xffffffff)
 					return -1;
 				var20 = 0;
@@ -712,7 +711,7 @@ uint32_t lzma_upack_esi_00(struct lzmastate *p, char *old_ecx, char *bb, uint32_
 	}
 	ret = cli_readint32(old_ecx);
 	loc_eax *= ret;
-	loc_edi = cli_readint32((char *)p->p0);
+	loc_edi = cli_readint32((const char *)p->p0);
 	loc_edi = EC32(CE32(loc_edi)); /* bswap */
 	loc_edi -= p->p2;
 	if (loc_edi < loc_eax)

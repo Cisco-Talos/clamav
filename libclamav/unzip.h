@@ -110,16 +110,16 @@ enum ALGO {
 /*   char extra[elen] */
 /* } __attribute__((packed)); */
 
-#define LH_magic	((uint32_t)cli_readint32((uint8_t *)(lh)+0))
-#define LH_version	((uint16_t)cli_readint16((uint8_t *)(lh)+4))
-#define LH_flags	((uint16_t)cli_readint16((uint8_t *)(lh)+6))
-#define LH_method	((uint16_t)cli_readint16((uint8_t *)(lh)+8))
-#define LH_mtime	((uint32_t)cli_readint32((uint8_t *)(lh)+10))
-#define LH_crc32	((uint32_t)cli_readint32((uint8_t *)(lh)+14))
-#define LH_csize	((uint32_t)cli_readint32((uint8_t *)(lh)+18))
-#define LH_usize	((uint32_t)cli_readint32((uint8_t *)(lh)+22))
-#define LH_flen 	((uint16_t)cli_readint16((uint8_t *)(lh)+26))
-#define LH_elen 	((uint16_t)cli_readint16((uint8_t *)(lh)+28))
+#define LH_magic	((uint32_t)cli_readint32((const uint8_t *)(lh)+0))
+#define LH_version	((uint16_t)cli_readint16((const uint8_t *)(lh)+4))
+#define LH_flags	((uint16_t)cli_readint16((const uint8_t *)(lh)+6))
+#define LH_method	((uint16_t)cli_readint16((const uint8_t *)(lh)+8))
+#define LH_mtime	((uint32_t)cli_readint32((const uint8_t *)(lh)+10))
+#define LH_crc32	((uint32_t)cli_readint32((const uint8_t *)(lh)+14))
+#define LH_csize	((uint32_t)cli_readint32((const uint8_t *)(lh)+18))
+#define LH_usize	((uint32_t)cli_readint32((const uint8_t *)(lh)+22))
+#define LH_flen 	((uint16_t)cli_readint16((const uint8_t *)(lh)+26))
+#define LH_elen 	((uint16_t)cli_readint16((const uint8_t *)(lh)+28))
 #define SIZEOF_LH 30
 
 /* struct CH { */
@@ -144,22 +144,22 @@ enum ALGO {
 /*   char comment[clen] */
 /* } __attribute__((packed)); */
 
-#define CH_magic	((uint32_t)cli_readint32((uint8_t *)(ch)+0))
-#define CH_vermade	((uint16_t)cli_readint16((uint8_t *)(ch)+4))
-#define CH_verneed	((uint16_t)cli_readint16((uint8_t *)(ch)+6))
-#define CH_flags	((uint16_t)cli_readint16((uint8_t *)(ch)+8))
-#define CH_method	((uint16_t)cli_readint16((uint8_t *)(ch)+10))
-#define CH_mtime	((uint32_t)cli_readint32((uint8_t *)(ch)+12))
-#define CH_crc32	((uint32_t)cli_readint32((uint8_t *)(ch)+16))
-#define CH_csize	((uint32_t)cli_readint32((uint8_t *)(ch)+20))
-#define CH_usize	((uint32_t)cli_readint32((uint8_t *)(ch)+24))
-#define CH_flen 	((uint16_t)cli_readint16((uint8_t *)(ch)+28))
-#define CH_elen 	((uint16_t)cli_readint16((uint8_t *)(ch)+30))
-#define CH_clen 	((uint16_t)cli_readint16((uint8_t *)(ch)+32))
-#define CH_dsk  	((uint16_t)cli_readint16((uint8_t *)(ch)+34))
-#define CH_iattrib	((uint16_t)cli_readint16((uint8_t *)(ch)+36))
-#define CH_eattrib	((uint32_t)cli_readint32((uint8_t *)(ch)+38))
-#define CH_off  	((uint32_t)cli_readint32((uint8_t *)(ch)+42))
+#define CH_magic	((uint32_t)cli_readint32((const uint8_t *)(ch)+0))
+#define CH_vermade	((uint16_t)cli_readint16((const uint8_t *)(ch)+4))
+#define CH_verneed	((uint16_t)cli_readint16((const uint8_t *)(ch)+6))
+#define CH_flags	((uint16_t)cli_readint16((const uint8_t *)(ch)+8))
+#define CH_method	((uint16_t)cli_readint16((const uint8_t *)(ch)+10))
+#define CH_mtime	((uint32_t)cli_readint32((const uint8_t *)(ch)+12))
+#define CH_crc32	((uint32_t)cli_readint32((const uint8_t *)(ch)+16))
+#define CH_csize	((uint32_t)cli_readint32((const uint8_t *)(ch)+20))
+#define CH_usize	((uint32_t)cli_readint32((const uint8_t *)(ch)+24))
+#define CH_flen 	((uint16_t)cli_readint16((const uint8_t *)(ch)+28))
+#define CH_elen 	((uint16_t)cli_readint16((const uint8_t *)(ch)+30))
+#define CH_clen 	((uint16_t)cli_readint16((const uint8_t *)(ch)+32))
+#define CH_dsk  	((uint16_t)cli_readint16((const uint8_t *)(ch)+34))
+#define CH_iattrib	((uint16_t)cli_readint16((const uint8_t *)(ch)+36))
+#define CH_eattrib	((uint32_t)cli_readint32((const uint8_t *)(ch)+38))
+#define CH_off  	((uint32_t)cli_readint32((const uint8_t *)(ch)+42))
 #define SIZEOF_CH 46
 
 #define SIZEOF_EH 12

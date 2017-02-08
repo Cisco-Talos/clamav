@@ -183,7 +183,6 @@ int dlp_is_valid_cc(const unsigned char *buffer, int length)
     char cc_digits[20];
     int pad_allowance = MAX_CC_BREAKS;
     const struct iin_map_struct * iin;
-    int need;
     
     if(buffer == NULL || length < 13)
         return 0;

@@ -351,7 +351,7 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
                             /* if likely, check full archive */
                             if (likely_ooxml) {
                                 cli_dbgmsg("Likely OOXML, checking additional zip headers\n");
-                                if ((ret2 = cli_ooxml_filetype(NULL, map)) != CL_SUCCESS) {
+                                if ((int)(ret2 = cli_ooxml_filetype(NULL, map)) != CL_SUCCESS) {
                                     /* either an error or retyping has occurred, return error or just CL_TYPE_ZIP? */
                                     OOXML_FTIDENTIFIED(ret2);
                                     /* falls-through to additional filetyping */
@@ -421,7 +421,7 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
 	    if(cli_ac_initdata(&mdata, root->ac_partsigs, root->ac_lsigs, root->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN))
 		return ret;
 
-	    decoded = (unsigned char *) cli_utf16toascii((char *) buff, bread);
+	    decoded = (unsigned char *) cli_utf16toascii((const char *)buff, bread);
 	    if(decoded) {
 		sret = cli_ac_scanbuff(decoded, bread / 2, NULL, NULL, NULL,  engine->root[0], &mdata, 0, CL_TYPE_TEXT_ASCII, NULL, AC_SCAN_FT, NULL);
 		free(decoded);
@@ -442,7 +442,7 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
 			    
 			    memset(decodedbuff, 0, sizeof(decodedbuff));
 
-			    in_area.buffer = (unsigned char *) buff;
+			    in_area.buffer = buff;
 			    in_area.length = bread;
 			    in_area.offset = 0;
 			    out_area.buffer = decodedbuff;
