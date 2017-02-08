@@ -32,7 +32,11 @@
 #include <openssl/err.h>
 
 /* Certain OSs already use 64bit variables in their stat struct */
-#define STAT64_BLACKLIST !defined(__FreeBSD__) && !defined(__APPLE__)
+#if ( !defined(__FreeBSD__) && !defined(__APPLE__) )
+#define STAT64_BLACKLIST 1
+#else
+#define STAT64_BLACKLIST 0
+#endif
 
 #if defined(HAVE_STAT64) && STAT64_BLACKLIST
 
