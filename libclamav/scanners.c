@@ -3009,7 +3009,12 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 
 	    break;
 
-	case CL_TYPE_PDF: /* FIXMELIMITS: pdf should be an archive! */
+    case CL_TYPE_PNG:
+        if (SCAN_ALGO)
+            ret = cli_parsepng(ctx);
+        break;
+
+    case CL_TYPE_PDF: /* FIXMELIMITS: pdf should be an archive! */
 	    if(SCAN_PDF && (DCONF_DOC & DOC_CONF_PDF))
 		ret = cli_scanpdf(ctx, 0);
 	    break;

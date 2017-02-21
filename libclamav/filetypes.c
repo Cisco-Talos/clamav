@@ -83,6 +83,7 @@ static const struct ftmap_s {
     { "CL_TYPE_SIS",		CL_TYPE_SIS		},
     { "CL_TYPE_SCRENC",		CL_TYPE_SCRENC		},
     { "CL_TYPE_GRAPHICS",	CL_TYPE_GRAPHICS	},
+    { "CL_TYPE_PNG",        CL_TYPE_PNG         },
     { "CL_TYPE_RIFF",		CL_TYPE_RIFF		},
     { "CL_TYPE_BINHEX",		CL_TYPE_BINHEX		},
     { "CL_TYPE_TNEF",		CL_TYPE_TNEF		},
