@@ -68,7 +68,7 @@ static void headerrecord_print(const char *pfx, hfsHeaderRecord *hdr)
     cli_dbgmsg("%s Header: depth %hu root %u leafRecords %u firstLeaf %u lastLeaf %u nodeSize %hu\n",
         pfx, hdr->treeDepth, hdr->rootNode, hdr->leafRecords, hdr->firstLeafNode,
         hdr->lastLeafNode, hdr->nodeSize);
-    cli_dbgmsg("%s Header: maxKeyLength %hu totalNodes %u freeNodes %u btreeType %hu attributes %x\n",
+    cli_dbgmsg("%s Header: maxKeyLength %hu totalNodes %u freeNodes %u btreeType %hhu attributes %x\n",
         pfx, hdr->maxKeyLength, hdr->totalNodes, hdr->freeNodes,
         hdr->btreeType, hdr->attributes);
 }

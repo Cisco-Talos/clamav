@@ -708,7 +708,7 @@ int cli_parsepng(cli_ctx *ctx)
             } else if (cur_y >= h) {
                 inflateEnd(&zstrm);
 		if(eod - p > 0) {
-		    cli_dbgmsg("PNG:  %zd bytes remaining in buffer before inflateEnd()", eod-p);
+		    cli_dbgmsg("PNG:  %ld bytes remaining in buffer before inflateEnd()", eod-p);
 		    return CL_EPARSE;
 		}
 		err = Z_STREAM_END;

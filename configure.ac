@@ -199,6 +199,8 @@ AM_CONDITIONAL([ENABLE_LLVM],
 	       [test "$subdirfailed" != "yes" && test "$enable_llvm" != "no"])
 AM_CONDITIONAL([ENABLE_YARA],
 	       [test "$enable_yara" != "no"])
+AM_CONDITIONAL([ENABLE_CLAMSUBMIT],
+	       [test "X$have_curl" = "Xyes" && test "X$have_json" = "Xyes"])
 no_recursion="yes";
 
 AC_OUTPUT([libclamav/Makefile])
@@ -229,7 +231,11 @@ CL_MSG_STATUS([IPv6        ],[$have_cv_ipv6],[$want_ipv6])
 AC_MSG_NOTICE([Summary of optional tools])
 CL_MSG_STATUS([clamdtop    ],[$CURSES_LIBS],[$enable_clamdtop])
 CL_MSG_STATUS([milter      ],[yes],[$have_milter])
-CL_MSG_STATUS([clamsubmit  ],[$have_curl],[$curl_msg])
+if test "X$have_curl" = "Xyes" && test "X$have_json" = "Xyes"; then
+    CL_MSG_STATUS([clamsubmit  ], [yes], [yes])
+else
+    CL_MSG_STATUS([clamsubmit  ], [no], [no])
+fi
 
 AC_MSG_NOTICE([Summary of engine performance features])
 if test "x$enable_debug" = "xyes"; then
