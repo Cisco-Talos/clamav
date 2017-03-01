@@ -551,7 +551,7 @@ Example
 # For more information on match_limit, see the PCRE documentation.
 # Negative values are not allowed.
 # WARNING: setting this limit too high may severely impact performance.
-# Default: 10000
+# Default: 100000
 #PCREMatchLimit 20000
 
 # This option sets the maximum recursive calls to the PCRE match function during an instance of regex matching.

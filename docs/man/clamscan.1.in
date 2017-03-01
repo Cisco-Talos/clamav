@@ -233,7 +233,7 @@ This option sets the maximum number of icons within a PE to be scanned. This mus
 This option sets the maximum recursive calls to HWP3 parsing function (default: 16).
 .TP
 \fB\-\-pcre-match-limit=#n\fR
-Maximum calls to the PCRE match function (default: 10000).
+Maximum calls to the PCRE match function (default: 100000).
 .TP
 \fB\-\-pcre-recmatch-limit=#n\fR
 Maximum recursive calls to the PCRE match function (default: 5000).
