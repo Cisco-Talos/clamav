@@ -445,8 +445,12 @@ messageAddArgument(message *m, const char *arg)
 			 * FIXME: Bounce message handling is corrupting the in
 			 * core copies of headers
 			 */
-			cli_dbgmsg("Possible data corruption fixed\n");
-			p[8] = '=';
+                        if (strlen(p) > 8) {
+                            cli_dbgmsg("Possible data corruption fixed\n");
+                            p[8] = '=';
+                        } else {
+                            cli_dbgmsg("Possible data corruption not fixed\n");
+                        }
 		} else {
 			if(*p)
 				cli_dbgmsg("messageAddArgument, '%s' contains no '='\n", p);
@@ -682,7 +686,7 @@ messageFindArgument(const message *m, const char *variable)
 				cli_dbgmsg("messageFindArgument: no '=' sign found in MIME header '%s' (%s)\n", variable, messageGetArgument(m, i));
 				return NULL;
 			}
-			if((*++ptr == '"') && (strchr(&ptr[1], '"') != NULL)) {
+			if((strlen(ptr) > 2) && (*++ptr == '"') && (strchr(&ptr[1], '"') != NULL)) {
 				/* Remove any quote characters */
 				char *ret = cli_strdup(++ptr);
 				char *p;
