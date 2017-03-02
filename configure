@@ -712,6 +712,8 @@ BUILD_CLAMD_FALSE
 BUILD_CLAMD_TRUE
 CFGDIR
 DBDIR
+ICONV_CPPFLAGS
+ICONV_LDFLAGS
 INSTALL_SYSTEMD_UNITS_FALSE
 INSTALL_SYSTEMD_UNITS_TRUE
 systemdsystemunitdir
@@ -20382,7 +20384,10 @@ else
 fi
 
 if test "X$wiconv" != "Xno"; then
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for libiconv_open in -liconv" >&5
+        save_LDFLAGS="$LDFLAGS"
+        LDFLAGS="-L/usr/local/lib -liconv"
+        ICONV_HOME=""
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for libiconv_open in -liconv" >&5
 $as_echo_n "checking for libiconv_open in -liconv... " >&6; }
 if ${ac_cv_lib_iconv_libiconv_open+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -20419,14 +20424,69 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_iconv_libiconv_open" >&5
 $as_echo "$ac_cv_lib_iconv_libiconv_open" >&6; }
 if test "x$ac_cv_lib_iconv_libiconv_open" = xyes; then :
-  LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -liconv"
+  ICONV_HOME="/usr/local"
+else
+
+          LDFLAGS="-L/usr/lib -liconv"
+          { $as_echo "$as_me:${as_lineno-$LINENO}: checking for libiconv_open in -liconv" >&5
+$as_echo_n "checking for libiconv_open in -liconv... " >&6; }
+if ${ac_cv_lib_iconv_libiconv_open+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-liconv  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char libiconv_open ();
+int
+main ()
+{
+return libiconv_open ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_iconv_libiconv_open=yes
+else
+  ac_cv_lib_iconv_libiconv_open=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_iconv_libiconv_open" >&5
+$as_echo "$ac_cv_lib_iconv_libiconv_open" >&6; }
+if test "x$ac_cv_lib_iconv_libiconv_open" = xyes; then :
+  ICONV_HOME="/usr"
+else
+  LDFLAGS="$save_LDFLAGS"
 fi
 
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for iconv" >&5
+
+fi
+
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for iconv" >&5
 $as_echo_n "checking for iconv... " >&6; }
-	save_LIBS="$LIBS"
-	LIBS="$LIBCLAMAV_LIBS"
-	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+        save_LIBS="$LIBS"
+        save_CPPFLAGS="$CPPFLAGS"
+        LIBS="$LIBCLAMAV_LIBS"
+        if test "X$ICONV_HOME" != "X"; then
+          ICONV_LDFLAGS="$LDFLAGS"
+          ICONV_CPPFLAGS="-I$ICONV_HOME/include"
+        else
+          ICONV_LDFLAGS=""
+          ICONV_CPPFLAGS=""
+        fi
+        CPPFLAGS="$ICONV_CPPFLAGS $LIBCLAMAV_CPPFLAGS"
+        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 		     #include <iconv.h>
@@ -20435,12 +20495,12 @@ int
 main ()
 {
 
-	char** xin,**xout;
-	unsigned long il,ol;
-	int rc;
-	iconv_t iconv_struct = iconv_open("UTF-16BE","UTF-8");
-	rc = iconv(iconv_struct,xin,&il,xout,&ol);
-	iconv_close(iconv_struct);
+	  char** xin,**xout;
+	  unsigned long il,ol;
+	  int rc;
+	  iconv_t iconv_struct = iconv_open("UTF-16BE","UTF-8");
+	  rc = iconv(iconv_struct,xin,&il,xout,&ol);
+	  iconv_close(iconv_struct);
 
   ;
   return 0;
@@ -20448,21 +20508,25 @@ main ()
 _ACEOF
 if ac_fn_c_try_link "$LINENO"; then :
 
-   { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+          { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
 
 $as_echo "#define HAVE_ICONV 1" >>confdefs.h
 
 
+
+
 else
 
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+	  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-	LIBS="$save_LIBS"
+        LIBS="$save_LIBS"
+        LDFLAGS="$save_LDFLAGS"
+        CPPFLAGS="$save_CPPFLAGS"
 fi
 
 have_pthreads=no
