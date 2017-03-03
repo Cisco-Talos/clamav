@@ -93,6 +93,7 @@
 #include "events.h"
 #include "swf.h"
 #include "jpeg.h"
+#include "gif.h"
 #include "png.h"
 #include "iso9660.h"
 #include "dmg.h"
@@ -3808,6 +3809,11 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
                 ret = cli_parsetiff(ctx);
 
             break;
+
+    case CL_TYPE_GIF:
+        if(SCAN_HEURISTICS)
+            ret = cli_parsegif(ctx);
+        break;
 
         case CL_TYPE_PDF: /* FIXMELIMITS: pdf should be an archive! */
             if (SCAN_PARSE_PDF && (DCONF_DOC & DOC_CONF_PDF))

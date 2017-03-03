@@ -1,6 +1,6 @@
 /*
- *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
- *  Copyright (C) 2011-2013 Sourcefire, Inc.
+ *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2011 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm <tkojm@clamav.net>
  *
@@ -19,11 +19,11 @@
  *  MA 02110-1301, USA.
  */
 
-#ifndef __JPEG_H
-#define __JPEG_H
+#ifndef __GIF_H
+#define __GIF_H
 
 #include "others.h"
 
-int cli_parsejpeg(cli_ctx *ctx);
+int cli_parsegif(cli_ctx *ctx);
 
 #endif
