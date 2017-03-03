@@ -460,6 +460,8 @@ libclamav_la_SOURCES = \
 	hfsplus.h \
 	swf.c \
 	swf.h \
+	gif.c \
+	gif.h \
 	jpeg.c \
 	jpeg.h \
 	png.c \

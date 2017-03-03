@@ -504,6 +504,9 @@
     <ClCompile Include="..\libclamav\jpeg.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\libclamav\gif.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\libclamav\swf.c">
       <Filter>Source Files</Filter>
     </ClCompile>

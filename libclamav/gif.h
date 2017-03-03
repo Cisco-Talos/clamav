@@ -19,11 +19,11 @@
  *  MA 02110-1301, USA.
  */
 
-#ifndef __JPEG_H
-#define __JPEG_H
+#ifndef __GIF_H
+#define __GIF_H
 
 #include "others.h"
 
-int cli_parsejpeg(cli_ctx *ctx);
+int cli_parsegif(cli_ctx *ctx);
 
 #endif

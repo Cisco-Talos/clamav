@@ -425,6 +425,7 @@
     <ClCompile Include="..\libclamav\filtering.c" />
     <ClCompile Include="..\libclamav\fmap.c" />
     <ClCompile Include="..\libclamav\fsg.c" />
+    <ClCompile Include="..\libclamav\gif.c" />
     <ClCompile Include="..\libclamav\gpt.c" />
     <ClCompile Include="..\libclamav\hashtab.c" />
     <ClCompile Include="..\libclamav\hfsplus.c" />
