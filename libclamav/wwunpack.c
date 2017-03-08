@@ -226,13 +226,10 @@ int wwunpack(uint8_t *exe, uint32_t exesz, uint8_t *wwsect, struct cli_exe_secti
 	return CL_EFORMAT;
     exe[pe+6]=(uint8_t)scount;
     exe[pe+7]=(uint8_t)(scount>>8);
-    if (!CLI_ISCONTAINED(wwsect, sects[scount].rsz, wwsect+0x295, 4) ||
-        !CLI_ISCONTAINED(wwsect, sects[scount].rsz, wwsect+0x295+sects[scount].rva, 4) ||
-        !CLI_ISCONTAINED(wwsect, sects[scount].rsz, wwsect+0x295+sects[scount].rva+0x299, 4)) {
+    if (!CLI_ISCONTAINED(wwsect, sects[scount].rsz, wwsect+0x295, 4))
         cli_dbgmsg("WWPack: unpack memory address out of bounds.\n");
-        return CL_EFORMAT;
-    }
-    cli_writeint32(&exe[pe+0x28], cli_readint32(wwsect+0x295)+sects[scount].rva+0x299);
+    else
+        cli_writeint32(&exe[pe+0x28], cli_readint32(wwsect+0x295)+sects[scount].rva+0x299);
     cli_writeint32(&exe[pe+0x50], cli_readint32(&exe[pe+0x50])-sects[scount].vsz);
 
     structs = &exe[(0xffff&cli_readint32(&exe[pe+0x14]))+pe+0x18];

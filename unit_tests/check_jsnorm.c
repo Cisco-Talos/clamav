@@ -145,7 +145,7 @@ END_TEST
 
 START_TEST (test_token_dval)
 {
-	int val = 0.12345;
+	double val = 0.12345;
 	yystype tok;
 	memset(&tok, 0, sizeof(tok));
 
