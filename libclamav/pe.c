@@ -2221,8 +2221,9 @@ static inline int hash_impfns(cli_ctx *ctx, void **hashctx, uint32_t *impsz, str
     void *imptbl = NULL;
 #endif
 
-    thuoff = cli_rawaddr(image->u.OriginalFirstThunk, exe_sections, nsections, &err, fsize, hdr_size);
-    if (err)
+    if (image->u.OriginalFirstThunk)
+        thuoff = cli_rawaddr(image->u.OriginalFirstThunk, exe_sections, nsections, &err, fsize, hdr_size);
+    if (err || thuoff == 0)
         thuoff = cli_rawaddr(image->FirstThunk, exe_sections, nsections, &err, fsize, hdr_size);
     if (err) {
         cli_dbgmsg("scan_pe: invalid rva for image first thunk\n");
