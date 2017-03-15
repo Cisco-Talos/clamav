@@ -497,8 +497,6 @@ Default: no
 This option causes memory or nested map scans to dump the content to disk.
 .br
 If you turn on this option, more data is written to disk and is available when the leave-temps option is enabled at the cost of more disk writes.
-.br
-Default: no
 .br 
 Default: no
 .TP 
