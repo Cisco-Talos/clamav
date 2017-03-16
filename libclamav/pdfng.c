@@ -377,7 +377,7 @@ char *pdf_finalize_string(struct pdf_struct *pdf, struct pdf_obj *obj, const cha
 
 char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *objstart, size_t objsize, const char *str, char **endchar, struct pdf_stats_metadata *meta)
 {
-    const char *q = objstart;
+    const char *q = objstart, *oobj=obj->start+pdf->map;
     char *p1, *p2;
     size_t len, checklen;
     char *res = NULL;
@@ -551,10 +551,10 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
         /* Hex string */
 
         p2 = p1+1;
-        while ((size_t)(p2 - q) < objsize && *p2 != '>')
+        while ((size_t)(p2 - oobj) < objsize && *p2 != '>')
             p2++;
 
-        if ((size_t)(p2 - q) == objsize) {
+        if ((size_t)(p2 - oobj) == objsize) {
             return NULL;
         }
 
