@@ -264,7 +264,11 @@ static void *mspack_fmap_alloc(struct mspack_system *self, size_t num)
 
 static void mspack_fmap_free(void *mem)
 {
-	free(mem);
+    if(mem) {
+        free(mem);
+        mem = NULL;
+    }
+    return;
 }
 
 static void mspack_fmap_copy(void *src, void *dst, size_t num)
