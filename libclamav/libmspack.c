@@ -320,12 +320,6 @@ int cli_scanmscab(cli_ctx *ctx, off_t sfx_offset)
 	memset(&ops_ex, 0, sizeof(struct mspack_system_ex));
  	ops_ex.ops = mspack_sys_fmap_ops;
 
-	MSPACK_SYS_SELFTEST(ret);
-	if (ret) {
-		cli_dbgmsg("%s() failed at %d\n", __func__, __LINE__);
-		return CL_EUNPACK;
-	}
-
 	cab_d = mspack_create_cab_decompressor(&ops_ex.ops);
 	if (!cab_d) {
 		cli_dbgmsg("%s() failed at %d\n", __func__, __LINE__);
@@ -426,12 +420,6 @@ int cli_scanmschm(cli_ctx *ctx)
 	struct mspack_system_ex ops_ex;
 	memset(&ops_ex, 0, sizeof(struct mspack_system_ex));
  	ops_ex.ops = mspack_sys_fmap_ops;
-
-	MSPACK_SYS_SELFTEST(ret);
-	if (ret) {
-		cli_dbgmsg("%s() failed at %d\n", __func__, __LINE__);
-		return CL_EUNPACK;
-	}
 
 	mschm_d = mspack_create_chm_decompressor(&ops_ex.ops);
 	if (!mschm_d) {
