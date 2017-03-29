@@ -1,9 +1,16 @@
 AC_MSG_CHECKING([LFS safe fts implementation])
-AC_TRY_COMPILE([
-	        #include <fts.h>
-	], [ fts_open((void *)0, FTS_PHYSICAL, (void *)0);],
-	[ have_LFS_fts=yes ],
-	[ have_LFS_fts=no]
+AC_TRY_RUN( [
+#include <fts.h>
+
+int main(void) {
+    fts_open((void *)0, FTS_PHYSICAL, (void *)0);
+
+    return 0;
+}
+],
+[have_LFS_fts=yes],
+[have_LFS_fts=no],
+[have_LFS_fts=no]
 )
 AC_MSG_RESULT([$have_LFS_fts])
 AM_CONDITIONAL([SYSTEM_LFS_FTS], [test "x$have_LFS_fts" = "xyes"])
