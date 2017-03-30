@@ -99,6 +99,7 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 @BUILD_CLAMD_TRUE@sbin_PROGRAMS = clamd$(EXEEXT)
+@BUILD_CLAMD_TRUE@@SYSTEM_LFS_FTS_FALSE@am__append_1 = fts.c
 subdir = clamd
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(srcdir)/clamav-daemon.service.in \
@@ -170,6 +171,7 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
 	$(top_srcdir)/libclamav/c++/m4/llvm-opts.m4 \
 	$(top_srcdir)/m4/reorganization/sha_collect.m4 \
 	$(top_srcdir)/m4/reorganization/yara.m4 \
+	$(top_srcdir)/m4/reorganization/code_checks/fts.m4 \
 	$(top_srcdir)/m4/reorganization/libfreshclam.m4 \
 	$(top_srcdir)/m4/reorganization/prelude.m4 \
 	$(top_srcdir)/m4/reorganization/bsd.m4 \
@@ -199,7 +201,8 @@ am__clamd_SOURCES_DIST = $(top_srcdir)/shared/output.c \
 	thrmgr.h server-th.c server.h scanner.c scanner.h others.c \
 	others.h shared.h onaccess_fan.c onaccess_fan.h onaccess_ddd.c \
 	onaccess_ddd.h onaccess_hash.c onaccess_hash.h onaccess_scth.c \
-	onaccess_scth.h
+	onaccess_scth.h priv_fts.h fts.c
+@BUILD_CLAMD_TRUE@@SYSTEM_LFS_FTS_FALSE@am__objects_1 = fts.$(OBJEXT)
 @BUILD_CLAMD_TRUE@am_clamd_OBJECTS = output.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	idmef_logging.$(OBJEXT) optparser.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	getopt.$(OBJEXT) misc.$(OBJEXT) \
@@ -210,7 +213,7 @@ am__clamd_SOURCES_DIST = $(top_srcdir)/shared/output.c \
 @BUILD_CLAMD_TRUE@	onaccess_fan.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	onaccess_ddd.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	onaccess_hash.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	onaccess_scth.$(OBJEXT)
+@BUILD_CLAMD_TRUE@	onaccess_scth.$(OBJEXT) $(am__objects_1)
 clamd_OBJECTS = $(am_clamd_OBJECTS)
 clamd_LDADD = $(LDADD)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -527,42 +530,24 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-@BUILD_CLAMD_TRUE@clamd_SOURCES = \
-@BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/output.c \
-@BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/output.h \
-@BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/idmef_logging.c \
-@BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/idmef_logging.h \
-@BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/optparser.c \
-@BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/optparser.h \
-@BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/getopt.c \
-@BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/getopt.h \
-@BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/misc.c \
-@BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/misc.h \
-@BUILD_CLAMD_TRUE@    clamd.c \
-@BUILD_CLAMD_TRUE@    tcpserver.c \
-@BUILD_CLAMD_TRUE@    tcpserver.h \
-@BUILD_CLAMD_TRUE@    localserver.c \
-@BUILD_CLAMD_TRUE@    localserver.h \
-@BUILD_CLAMD_TRUE@    session.c \
-@BUILD_CLAMD_TRUE@    session.h \
-@BUILD_CLAMD_TRUE@    thrmgr.c \
-@BUILD_CLAMD_TRUE@    thrmgr.h \
-@BUILD_CLAMD_TRUE@    server-th.c \
-@BUILD_CLAMD_TRUE@    server.h \
-@BUILD_CLAMD_TRUE@    scanner.c \
-@BUILD_CLAMD_TRUE@    scanner.h \
-@BUILD_CLAMD_TRUE@    others.c \
-@BUILD_CLAMD_TRUE@    others.h \
-@BUILD_CLAMD_TRUE@    shared.h \
-@BUILD_CLAMD_TRUE@    onaccess_fan.c \
-@BUILD_CLAMD_TRUE@    onaccess_fan.h \
-@BUILD_CLAMD_TRUE@    onaccess_ddd.c \
-@BUILD_CLAMD_TRUE@    onaccess_ddd.h \
-@BUILD_CLAMD_TRUE@    onaccess_hash.c \
-@BUILD_CLAMD_TRUE@    onaccess_hash.h \
-@BUILD_CLAMD_TRUE@    onaccess_scth.c \
-@BUILD_CLAMD_TRUE@    onaccess_scth.h
-
+@BUILD_CLAMD_TRUE@clamd_SOURCES = $(top_srcdir)/shared/output.c \
+@BUILD_CLAMD_TRUE@	$(top_srcdir)/shared/output.h \
+@BUILD_CLAMD_TRUE@	$(top_srcdir)/shared/idmef_logging.c \
+@BUILD_CLAMD_TRUE@	$(top_srcdir)/shared/idmef_logging.h \
+@BUILD_CLAMD_TRUE@	$(top_srcdir)/shared/optparser.c \
+@BUILD_CLAMD_TRUE@	$(top_srcdir)/shared/optparser.h \
+@BUILD_CLAMD_TRUE@	$(top_srcdir)/shared/getopt.c \
+@BUILD_CLAMD_TRUE@	$(top_srcdir)/shared/getopt.h \
+@BUILD_CLAMD_TRUE@	$(top_srcdir)/shared/misc.c \
+@BUILD_CLAMD_TRUE@	$(top_srcdir)/shared/misc.h clamd.c \
+@BUILD_CLAMD_TRUE@	tcpserver.c tcpserver.h localserver.c \
+@BUILD_CLAMD_TRUE@	localserver.h session.c session.h thrmgr.c \
+@BUILD_CLAMD_TRUE@	thrmgr.h server-th.c server.h scanner.c \
+@BUILD_CLAMD_TRUE@	scanner.h others.c others.h shared.h \
+@BUILD_CLAMD_TRUE@	onaccess_fan.c onaccess_fan.h onaccess_ddd.c \
+@BUILD_CLAMD_TRUE@	onaccess_ddd.h onaccess_hash.c \
+@BUILD_CLAMD_TRUE@	onaccess_hash.h onaccess_scth.c \
+@BUILD_CLAMD_TRUE@	onaccess_scth.h priv_fts.h $(am__append_1)
 @BUILD_CLAMD_TRUE@AM_CFLAGS = @WERR_CFLAGS@
 @BUILD_CLAMD_TRUE@@INSTALL_SYSTEMD_UNITS_TRUE@systemdsystemunit_DATA = clamav-daemon.socket clamav-daemon.service
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
@@ -686,6 +671,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clamd.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fts.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getopt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/idmef_logging.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/localserver.Po@am__quote@
