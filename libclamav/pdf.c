@@ -48,6 +48,10 @@
 #include <iconv.h>
 #endif
 
+#ifdef _WIN32
+#include <stdint.h>
+#endif
+
 #include "clamav.h"
 #include "others.h"
 #include "pdf.h"
