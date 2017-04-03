@@ -82,7 +82,6 @@ static inline int _priv_fts_set (FTS *ftsp, FTSENT *f, int options)
 #ifndef	_FTS_H
 #define	_FTS_H 1
 
-#include <features.h>
 #include <sys/types.h>
 
 
