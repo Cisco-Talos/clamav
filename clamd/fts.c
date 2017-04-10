@@ -49,6 +49,12 @@
 static char sccsid[] = "@(#)fts.c	8.6 (Berkeley) 8/14/94";
 #endif /* LIBC_SCCS and not lint */
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
+#if defined(FANOTIFY) && defined(C_LINUX)
+
 #include <sys/param.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -1156,3 +1162,4 @@ bail:
 	__set_errno (oerrno);
 	return (ret);
 }
+#endif
