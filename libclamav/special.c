@@ -90,8 +90,7 @@ int cli_check_mydoom_log(cli_ctx *ctx)
     if ((~check) != key)
 	return CL_CLEAN;
 
-    cli_append_virus(ctx, "Heuristics.Worm.Mydoom.M.log");
-    return CL_VIRUS;
+    return cli_append_virus(ctx, "Heuristics.Worm.Mydoom.M.log");
 }
 
 static int jpeg_check_photoshop_8bim(cli_ctx *ctx, off_t *off)

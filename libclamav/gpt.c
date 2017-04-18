@@ -604,6 +604,7 @@ static int gpt_prtn_intxn(cli_ctx *ctx, struct gpt_header hdr, size_t sectorsize
     off_t pos;
     size_t maplen;
     uint32_t max_prtns = 0;
+    int virus_found = 0;
 
     maplen = (*ctx->fmap)->real_len;
 
@@ -647,23 +648,19 @@ static int gpt_prtn_intxn(cli_ctx *ctx, struct gpt_header hdr, size_t sectorsize
         else {
             tmp = prtn_intxn_list_check(&prtncheck, &pitxn, gpe.firstLBA, gpe.lastLBA - gpe.firstLBA + 1);
             if (tmp != CL_CLEAN) {
-                if ((ctx->options & CL_SCAN_ALLMATCHES) && (tmp == CL_VIRUS)) {
+                if (tmp == CL_VIRUS) {
                     cli_dbgmsg("cli_scangpt: detected intersection with partitions "
                                "[%u, %u]\n", pitxn, i);
-                    cli_append_virus(ctx, PRTN_INTXN_DETECTION);
+                    ret = cli_append_virus(ctx, PRTN_INTXN_DETECTION);
+                    if (ret == CL_VIRUS)
+                        virus_found = 1;
+                    if (SCAN_ALL || ret == CL_CLEAN)
+                        tmp = 0;
+                    else
+                        goto leave;
+                } else {
                     ret = tmp;
-                    tmp = 0;
-                }
-                else if (tmp == CL_VIRUS) {
-                    cli_dbgmsg("cli_scangpt: detected intersection with partitions "
-                               "[%u, %u]\n", pitxn, i);
-                    cli_append_virus(ctx, PRTN_INTXN_DETECTION);
-                    prtn_intxn_list_free(&prtncheck);
-                    return CL_VIRUS;
-                }
-                else {
-                    prtn_intxn_list_free(&prtncheck);
-                    return tmp;
+                    goto leave;
                 }
             }
         }
@@ -672,6 +669,9 @@ static int gpt_prtn_intxn(cli_ctx *ctx, struct gpt_header hdr, size_t sectorsize
         pos += hdr.tableEntrySize;
     }
 
+ leave:
     prtn_intxn_list_free(&prtncheck);
+    if (virus_found)
+        return CL_VIRUS;
     return ret;
 }
