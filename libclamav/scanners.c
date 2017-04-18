@@ -227,9 +227,9 @@ static int cli_unrar_scanmetadata(int desc, unrar_metadata_t *metadata, cli_ctx 
 	cli_dbgmsg("RAR: Encrypted files found in archive.\n");
 	ret = cli_scandesc(desc, ctx, 0, 0, NULL, AC_SCAN_VIR, NULL);
 	if(ret != CL_VIRUS) {
-	    cli_append_virus(ctx, "Heuristics.Encrypted.RAR");
-	    return CL_VIRUS;
-	}
+	    if (CL_VIRUS == cli_append_virus(ctx, "Heuristics.Encrypted.RAR"))
+                return CL_VIRUS;
+        }
     }
 
     if (virus_found != 0)
@@ -269,13 +269,13 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	    cli_dbgmsg("RAR: Encrypted main header\n");
 	    if(DETECT_ENCRYPTED) {
 		if (lseek(desc, 0, SEEK_SET) == -1) {
-            cli_dbgmsg("RAR: call to lseek() failed\n");
-            return CL_ESEEK;
-        }
+                    cli_dbgmsg("RAR: call to lseek() failed\n");
+                    return CL_ESEEK;
+                }
 		ret = cli_scandesc(desc, ctx, 0, 0, NULL, AC_SCAN_VIR, NULL);
 		if(ret != CL_VIRUS)
-		    cli_append_virus(ctx, "Heuristics.Encrypted.RAR");
-		return CL_VIRUS;
+		    if (CL_VIRUS == cli_append_virus(ctx, "Heuristics.Encrypted.RAR"))
+                        return CL_VIRUS;
 	    }
 	    return CL_CLEAN;
 	} if(ret == UNRAR_EMEM) {
@@ -1179,9 +1179,9 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
         cli_jsonbool(ctx->wrkproperty, "HasMacros", 1);
 #endif
     if(BLOCK_MACROS && hasmacros) {
-	cli_append_virus(ctx, "Heuristics.OLE2.ContainsMacros");
-	ret = CL_VIRUS;
-	viruses_found++;
+	ret = cli_append_virus(ctx, "Heuristics.OLE2.ContainsMacros");
+	if (ret == CL_VIRUS)
+            viruses_found++;
     }
     if (SCAN_ALL && viruses_found)
 	return CL_VIRUS;
@@ -1609,24 +1609,20 @@ static int cli_scanscrenc(cli_ctx *ctx)
 
 static int cli_scanriff(cli_ctx *ctx)
 {
-	int ret = CL_CLEAN;
+    int ret = CL_CLEAN;
 
-    if(cli_check_riff_exploit(ctx) == 2) {
-	ret = CL_VIRUS;
-	cli_append_virus(ctx, "Heuristics.Exploit.W32.MS05-002");
-    }
+    if (cli_check_riff_exploit(ctx) == 2)
+	ret = cli_append_virus(ctx, "Heuristics.Exploit.W32.MS05-002");
 
     return ret;
 }
 
 static int cli_scanjpeg(cli_ctx *ctx)
 {
-	int ret = CL_CLEAN;
+    int ret = CL_CLEAN;
 
-	if(cli_check_jpeg_exploit(ctx, 0) == 1) {
-	ret = CL_VIRUS;
-	cli_append_virus(ctx, "Heuristics.Exploit.W32.MS04-028");
-    }
+    if(cli_check_jpeg_exploit(ctx, 0) == 1)
+        ret = cli_append_virus(ctx, "Heuristics.Exploit.W32.MS04-028");
 
     return ret;
 }
@@ -1872,20 +1868,20 @@ static int cli_scan_structured(cli_ctx *ctx)
 
     if(cc_count != 0 && cc_count >= ctx->engine->min_cc_count) {
 	cli_dbgmsg("cli_scan_structured: %u credit card numbers detected\n", cc_count);
-	cli_append_virus(ctx,"Heuristics.Structured.CreditCardNumber");
-	if (SCAN_ALL)
-	    viruses_found++;
-	else
-	    return CL_VIRUS;
+	if (CL_VIRUS == cli_append_virus(ctx,"Heuristics.Structured.CreditCardNumber"))
+            if (SCAN_ALL)
+                viruses_found++;
+            else
+                return CL_VIRUS;
     }
 
     if(ssn_count != 0 && ssn_count >= ctx->engine->min_ssn_count) {
 	cli_dbgmsg("cli_scan_structured: %u social security numbers detected\n", ssn_count);
-	cli_append_virus(ctx,"Heuristics.Structured.SSN");
-	if (SCAN_ALL)
-	    viruses_found++;
-	else
-	    return CL_VIRUS;
+	if (CL_VIRUS == cli_append_virus(ctx,"Heuristics.Structured.SSN"))
+            if (SCAN_ALL)
+                viruses_found++;
+            else
+                return CL_VIRUS;
     }
 
     if (viruses_found)
@@ -2161,32 +2157,32 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
                 case CL_TYPE_MHTML:
                     if(SCAN_MAIL && (DCONF_MAIL & MAIL_CONF_MBOX)) {
                         cli_dbgmsg("MHTML signature found at %u\n", (unsigned int) fpt->offset);
-                        ret = cli_scanmail(ctx);
+                        nret = ret = cli_scanmail(ctx);
                     }
                     break;
 
                 case CL_TYPE_XDP:
                     if(SCAN_PDF && (DCONF_DOC & DOC_CONF_PDF)) {
                         cli_dbgmsg("XDP signature found at %u\n", (unsigned int) fpt->offset);
-                        ret = cli_scanxdp(ctx);
+                        nret = ret = cli_scanxdp(ctx);
                     }
                     break;
                 case CL_TYPE_XML_WORD:
                     if(SCAN_XMLDOCS && (DCONF_DOC & DOC_CONF_MSXML)) {
                         cli_dbgmsg("XML-WORD signature found at %u\n", (unsigned int) fpt->offset);
-                        ret = cli_scanmsxml(ctx);
+                        nret = ret = cli_scanmsxml(ctx);
                     }
                     break;
                 case CL_TYPE_XML_XL:
                     if(SCAN_XMLDOCS && (DCONF_DOC & DOC_CONF_MSXML)) {
                         cli_dbgmsg("XML-XL signature found at %u\n", (unsigned int) fpt->offset);
-                        ret = cli_scanmsxml(ctx);
+                        nret = ret = cli_scanmsxml(ctx);
                     }
                     break;
                 case CL_TYPE_XML_HWP:
                     if(SCAN_XMLDOCS && (DCONF_DOC & DOC_CONF_HWP)) {
                         cli_dbgmsg("XML-HWP signature found at %u\n", (unsigned int) fpt->offset);
-                        ret = cli_scanhwpml(ctx);
+                        nret = ret = cli_scanhwpml(ctx);
                     }
                     break;
                 case CL_TYPE_RARSFX:
@@ -2441,10 +2437,16 @@ static int magic_scandesc_cleanup(cli_ctx *ctx, cli_file_t type, unsigned char *
 
     UNUSEDPARAM(type);
 
-    if (retcode == CL_CLEAN && (ctx->found_possibly_unwanted || ctx->num_viruses != 0))
+    if (retcode == CL_CLEAN && ctx->found_possibly_unwanted) {
+        cli_virus_found_cb(ctx);
         cb_retcode = CL_VIRUS;
-    else
-        cb_retcode = retcode;
+    }
+    else {
+        if (retcode == CL_CLEAN && ctx->num_viruses != 0)
+            cb_retcode = CL_VIRUS;
+        else
+            cb_retcode = retcode;
+    }
 
     cli_dbgmsg("cli_magic_scandesc: returning %d %s\n", retcode, __AT__);
     if(ctx->engine->cb_post_scan) {
@@ -2689,6 +2691,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 
     perf_stop(ctx, PERFT_CACHE);
     hashed_size = (*ctx->fmap)->len;
+    memcpy((*ctx->fmap)->maphash, hash, 16);
     ctx->hook_lsig_matches = NULL;
 
     if(!(ctx->options&~CL_SCAN_ALLMATCHES) || (ctx->recursion == ctx->engine->maxreclevel)) { /* raw mode (stdin, etc.) or last level of recursion */

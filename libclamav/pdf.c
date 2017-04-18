@@ -2458,10 +2458,10 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 
         pdf_parseobj(&pdf, obj);
         if (SCAN_ALGO && obj->numfilters > PDF_FILTER_DTRIGGER) {
-            cli_append_virus(ctx, "Heuristic.PDF.TooManyFilters");
+            rc = cli_append_virus(ctx, "Heuristic.PDF.TooManyFilters");
             alerts++;
-            if (!SCAN_ALL)
-                rc = CL_VIRUS;
+            if (SCAN_ALL && rc == CL_VIRUS)
+                rc = CL_CLEAN;
         }
     }
 
@@ -2479,8 +2479,8 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
          * a password to decrypt */
         cli_append_virus(ctx, "Heuristics.Encrypted.PDF");
         alerts++;
-        if (!SCAN_ALL)
-            rc = CL_VIRUS;
+        if (SCAN_ALL && rc == CL_VIRUS)
+            rc = CL_CLEAN;
     }
 
     if (!rc) {
@@ -2547,8 +2547,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
         if (!rc && SCAN_ALGO && (ctx->dconf->other & OTHER_CONF_PDFNAMEOBJ)) {
             if (pdf.flags & (1 << ESCAPED_COMMON_PDFNAME)) {
                 /* for example /Fl#61te#44#65#63#6f#64#65 instead of /FlateDecode */
-                cli_append_virus(ctx, "Heuristics.PDF.ObfuscatedNameObject");
-                rc = cli_found_possibly_unwanted(ctx);
+                cli_append_possibly_unwanted(ctx, "Heuristics.PDF.ObfuscatedNameObject");
             }
         }
 #if 0

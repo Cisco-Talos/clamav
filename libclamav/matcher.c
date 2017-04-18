@@ -157,8 +157,9 @@ static inline int matcher_run(const struct cli_matcher *root,
 	    if (SCAN_ALL)
 		viruses_found = 1;
 	    else {
-		cli_append_virus(ctx, *virname);
-		return ret;
+		ret = cli_append_virus(ctx, *virname);
+		if (ret != CL_CLEAN)
+                    return ret;
 	    }
 	}
     }
@@ -169,8 +170,9 @@ static inline int matcher_run(const struct cli_matcher *root,
             if (SCAN_ALL)
                 viruses_found = 1;
             else {
-                cli_append_virus(ctx, *virname);
-                return ret;
+                ret = cli_append_virus(ctx, *virname);
+                if (ret != CL_CLEAN)
+                    return ret;
             }
         } else if (ret > CL_TYPENO && acmode & AC_SCAN_VIR)
             saved_ret = ret;
@@ -227,7 +229,7 @@ static inline int matcher_run(const struct cli_matcher *root,
     /* end experimental fragment */
 
     if (ctx && !SCAN_ALL && ret == CL_VIRUS)
-        cli_append_virus(ctx, *virname);
+        return cli_append_virus(ctx, *virname);
     if (ctx && SCAN_ALL && viruses_found)
         return CL_VIRUS;
 
@@ -501,6 +503,11 @@ void cli_targetinfo(struct cli_target_info *info, unsigned int target, fmap_t *m
 
 int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx)
 {
+    return cli_checkfp_virus(digest, size, ctx, NULL);
+}
+
+int cli_checkfp_virus(unsigned char *digest, size_t size, cli_ctx *ctx, const char * vname)
+{
     char md5[33];
     unsigned int i;
     const char *virname=NULL;
@@ -525,11 +532,11 @@ int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx)
             sprintf(md5 + i * 2, "%02x", digest[i]);
         md5[32] = 0;
         cli_dbgmsg("FP SIGNATURE: %s:%u:%s\n", md5, (unsigned int) size,
-               cli_get_last_virus(ctx) ? cli_get_last_virus(ctx) : "Name");
+                   vname ? vname : "Name");
     }
 
-    if(cli_get_last_virus(ctx))
-        do_dsig_check = strncmp("W32S.", cli_get_last_virus(ctx), 5);
+    if(vname)
+        do_dsig_check = strncmp("W32S.", vname, 5);
 
     map = *ctx->fmap;
     have_sha1 = cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA1, size)
@@ -586,7 +593,7 @@ int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx)
             for(i=0; i<SHA1_HASH_SIZE; i++)
                 sprintf((char *)shash1+i*2, "%02x", shash1[SHA1_HASH_SIZE+i]);
 
-            cli_errmsg("COLLECT:%s:%s:%u:%s:%s\n", shash256, shash1, size, cli_get_last_virus(ctx), ctx->entry_filename);
+            cli_errmsg("COLLECT:%s:%s:%u:%s:%s\n", shash256, shash1, size, vname?vname:"noname", ctx->entry_filename);
         } else
             cli_errmsg("can't compute sha\n!");
 
@@ -614,10 +621,10 @@ int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx)
     }
 
     if (ctx->engine->cb_hash)
-        ctx->engine->cb_hash(fmap_fd(*ctx->fmap), size, (const unsigned char *)md5, cli_get_last_virus(ctx), ctx->cb_ctx);
+        ctx->engine->cb_hash(fmap_fd(*ctx->fmap), size, (const unsigned char *)md5, vname?vname:"noname", ctx->cb_ctx);
 
     if (ctx->engine->cb_stats_add_sample)
-        ctx->engine->cb_stats_add_sample(cli_get_last_virus(ctx), digest, size, &sections, ctx->engine->stats_data);
+        ctx->engine->cb_stats_add_sample(vname?vname:"noname", digest, size, &sections, ctx->engine->stats_data);
 
     if (sections.sections)
         free(sections.sections);
@@ -768,8 +775,9 @@ static int lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data 
                 return CL_CLEAN;
             if(matchicon(ctx, &target_info->exeinfo, ac_lsig->tdb.icongrp1, ac_lsig->tdb.icongrp2) == CL_VIRUS) {
                 if(!ac_lsig->bc_idx) {
-                    cli_append_virus(ctx, ac_lsig->virname);
-                    return CL_VIRUS;
+                    rc = cli_append_virus(ctx, ac_lsig->virname);
+                    if (rc != CL_CLEAN)
+                        return rc;
                 } else if(cli_bytecode_runlsig(ctx, target_info, &ctx->engine->bcs, ac_lsig->bc_idx, acdata->lsigcnt[lsid], acdata->lsigsuboff_first[lsid], map) == CL_VIRUS) {
                     return CL_VIRUS;
                 }
@@ -777,8 +785,9 @@ static int lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data 
             return CL_CLEAN;
         }
         if(!ac_lsig->bc_idx) {
-            cli_append_virus(ctx, ac_lsig->virname);
-            return CL_VIRUS;
+            rc = cli_append_virus(ctx, ac_lsig->virname);
+            if (rc != CL_CLEAN)
+                return rc;
         }
         if(cli_bytecode_runlsig(ctx, target_info, &ctx->engine->bcs, ac_lsig->bc_idx, acdata->lsigcnt[lsid], acdata->lsigsuboff_first[lsid], map) == CL_VIRUS) {
             return CL_VIRUS;
@@ -808,7 +817,7 @@ static int yara_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data 
         if (ac_lsig->flag & CLI_LSIG_FLAG_PRIVATE) {
             rc = CL_CLEAN;
         } else {
-            cli_append_virus(ctx, ac_lsig->virname);
+            rc = cli_append_virus(ctx, ac_lsig->virname);
         }
     }
     return rc;
@@ -1172,19 +1181,18 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
             /* If matched size-based hash ... */
             if (found % 2) {
                 viruses_found = 1;
-                cli_append_virus(ctx, virname);
-                if (!SCAN_ALL)
+                ret = cli_append_virus(ctx, virname);
+                if (!SCAN_ALL || ret != CL_CLEAN)
                     break;
                 virname = NULL;
             }
             /* If matched size-agnostic hash ... */
             if (found > 1) {
                 viruses_found = 1;
-                cli_append_virus(ctx, virname_w);
-
-                if (!SCAN_ALL)
+                ret = cli_append_virus(ctx, virname_w);
+                if (!SCAN_ALL || ret != CL_CLEAN)
                     break;
-            }
+             }
         }
     }
 
@@ -1228,6 +1236,7 @@ int cli_matchmeta(cli_ctx *ctx, const char *fname, size_t fsizec, size_t fsizer,
 {
 	const struct cli_cdb *cdb;
 	unsigned int viruses_found = 0;
+        int ret = CL_CLEAN;
 
     cli_dbgmsg("CDBNAME:%s:%llu:%s:%llu:%llu:%d:%u:%u:%p\n",
 	       cli_ftname(cli_get_container_type(ctx, -1)), (long long unsigned)fsizec, fname, (long long unsigned)fsizec, (long long unsigned)fsizer,
@@ -1237,10 +1246,10 @@ int cli_matchmeta(cli_ctx *ctx, const char *fname, size_t fsizec, size_t fsizer,
 	if (ctx->engine->cb_meta(cli_ftname(cli_get_container_type(ctx, -1)), fsizec, fname, fsizer, encrypted, filepos, ctx->cb_ctx) == CL_VIRUS) {
 	    cli_dbgmsg("inner file blacklisted by callback: %s\n", fname);
 
-	    cli_append_virus(ctx, "Detected.By.Callback");
+	    ret = cli_append_virus(ctx, "Detected.By.Callback");
 	    viruses_found++;
-	    if(!SCAN_ALL)
-		return CL_VIRUS;
+	    if(!SCAN_ALL || ret != CL_CLEAN)
+		return ret;
 	}
 
     if(!ctx->engine || !(cdb = ctx->engine->cdb))
@@ -1273,10 +1282,10 @@ int cli_matchmeta(cli_ctx *ctx, const char *fname, size_t fsizec, size_t fsizer,
 	if(cdb->name.re_magic && (!fname || cli_regexec(&cdb->name, fname, 0, NULL, 0) == REG_NOMATCH))
 	    continue;
 
-	cli_append_virus(ctx, cdb->virname);
+	ret = cli_append_virus(ctx, cdb->virname);
 	viruses_found++;
-	if(!SCAN_ALL)
-	    return CL_VIRUS;
+	if(!SCAN_ALL || ret != CL_CLEAN)
+	    return ret;
 
     } while((cdb = cdb->next));
 

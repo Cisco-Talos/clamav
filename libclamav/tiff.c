@@ -146,8 +146,7 @@ int cli_parsetiff(cli_ctx *ctx)
                 if(entry.value + value_size > map->len) {
                     cli_warnmsg("cli_parsetiff: TFD entry field %u exceeds bounds of TIFF file [%llu > %llu]\n",
                                 i, (long long unsigned)(entry.value + value_size), (long long unsigned)map->len);
-                    cli_append_virus(ctx, "Heuristic.TIFF.OutOfBoundsAccess");
-                    return CL_VIRUS;
+                    return cli_append_virus(ctx, "Heuristic.TIFF.OutOfBoundsAccess");
                 }
             }
         }

@@ -601,9 +601,10 @@ static inline void cli_writeint32(void *offset, uint32_t value)
 }
 #endif
 
-void cli_append_virus(cli_ctx *ctx, const char *virname);
+int cli_append_virus(cli_ctx *ctx, const char *virname);
 const char *cli_get_last_virus(const cli_ctx *ctx);
 const char *cli_get_last_virus_str(const cli_ctx *ctx);
+void cli_virus_found_cb(cli_ctx *ctx);
 
 void cli_set_container(cli_ctx *ctx, cli_file_t type, size_t size);
 cli_file_t cli_get_container_type(cli_ctx *ctx, int index);

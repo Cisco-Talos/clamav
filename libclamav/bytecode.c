@@ -2810,11 +2810,10 @@ int cli_bytecode_runlsig(cli_ctx *cctx, struct cli_target_info *tinfo,
     if (ctx.virname) {
 	int rc;
 	cli_dbgmsg("Bytecode found virus: %s\n", ctx.virname);
-	cli_append_virus(cctx, ctx.virname);
 	if (!strncmp(ctx.virname, "BC.Heuristics", 13))
-	    rc = cli_found_possibly_unwanted(cctx);
-	else
-	    rc = CL_VIRUS;
+	    rc = cli_append_possibly_unwanted(cctx, ctx.virname);
+        else
+            rc = cli_append_virus(cctx, ctx.virname);
 	cli_bytecode_context_clear(&ctx);
 	return rc;
     }

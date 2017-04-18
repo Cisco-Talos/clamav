@@ -80,6 +80,7 @@ struct cl_fmap {
     HANDLE fh;
     HANDLE mh;
 #endif
+    unsigned char maphash[16];
     uint32_t placeholder_for_bitmap;
 };
 

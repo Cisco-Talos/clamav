@@ -738,16 +738,15 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const char **
                         newres->offset = adjbuffer+p_res.match[0];
                         *res = newres;
                     } else {
-                        if (ctx && SCAN_ALL) {
-                            viruses_found = 1;
-                            cli_append_virus(ctx, (const char *)pm->virname);
-                        }
+                        ret = CL_CLEAN;
+                        viruses_found = 1;
+                        if (ctx)
+                            ret = cli_append_virus(ctx, (const char *)pm->virname);
                         if (virname)
                             *virname = pm->virname;
-                        if (!ctx || !SCAN_ALL) {
-                            ret = CL_VIRUS;
-                            break;
-                        }
+                        if (!ctx || !SCAN_ALL)
+                            if (ret != CL_CLEAN)
+                                break;
                     }
                 }
             }

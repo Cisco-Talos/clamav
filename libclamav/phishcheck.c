@@ -814,32 +814,31 @@ int phishingScan(cli_ctx* ctx,tag_arguments_t* hrefs)
 				case CL_PHISH_CLEAN:
 					continue;
 				case CL_PHISH_NUMERIC_IP:
-				    cli_append_virus(ctx, "Heuristics.Phishing.Email.Cloaked.NumericIP");
+				    cli_append_possibly_unwanted(ctx, "Heuristics.Phishing.Email.Cloaked.NumericIP");
 					break;
 				case CL_PHISH_CLOAKED_NULL:
-				    cli_append_virus(ctx, "Heuristics.Phishing.Email.Cloaked.Null");/*fakesite%01%00@fake.example.com*/
+				    cli_append_possibly_unwanted(ctx, "Heuristics.Phishing.Email.Cloaked.Null");/*fakesite%01%00@fake.example.com*/
 					break;
 				case CL_PHISH_SSL_SPOOF:
-				    cli_append_virus(ctx, "Heuristics.Phishing.Email.SSL-Spoof");
+				    cli_append_possibly_unwanted(ctx, "Heuristics.Phishing.Email.SSL-Spoof");
 					break;
 				case CL_PHISH_CLOAKED_UIU:
-				    cli_append_virus(ctx, "Heuristics.Phishing.Email.Cloaked.Username");/*http://banksite@fake.example.com*/
+				    cli_append_possibly_unwanted(ctx, "Heuristics.Phishing.Email.Cloaked.Username");/*http://banksite@fake.example.com*/
 					break;
 				case CL_PHISH_HASH0:
-				    cli_append_virus(ctx, "Heuristics.Safebrowsing.Suspected-malware_safebrowsing.clamav.net");
+				    cli_append_possibly_unwanted(ctx, "Heuristics.Safebrowsing.Suspected-malware_safebrowsing.clamav.net");
 					break;
 				case CL_PHISH_HASH1:
-				    cli_append_virus(ctx, "Heuristics.Phishing.URL.Blacklisted");
+				    cli_append_possibly_unwanted(ctx, "Heuristics.Phishing.URL.Blacklisted");
 					break;
 				case CL_PHISH_HASH2:
-				    cli_append_virus(ctx, "Heuristics.Safebrowsing.Suspected-phishing_safebrowsing.clamav.net");
+				    cli_append_possibly_unwanted(ctx, "Heuristics.Safebrowsing.Suspected-phishing_safebrowsing.clamav.net");
 					break;
 				case CL_PHISH_NOMATCH:
 				default:
-				    cli_append_virus(ctx, "Heuristics.Phishing.Email.SpoofedDomain");
+				    cli_append_possibly_unwanted(ctx, "Heuristics.Phishing.Email.SpoofedDomain");
 					break;
 			}
-			return cli_found_possibly_unwanted(ctx);
 	}
 	return CL_CLEAN;
 }

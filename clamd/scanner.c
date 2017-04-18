@@ -116,7 +116,7 @@ void clamd_virus_found_cb(int fd, const char *virname, void *ctx)
     
     if (d == NULL)
         return;
-    if (!(d->options & CL_SCAN_ALLMATCHES))
+    if (!(d->options & CL_SCAN_ALLMATCHES) && !(d->options & CL_SCAN_HEURISTIC_PRECEDENCE))
         return;
     if (virname == NULL)
         return;
@@ -124,6 +124,7 @@ void clamd_virus_found_cb(int fd, const char *virname, void *ctx)
     fname = (c && c->filename) ? c->filename : "(filename not set)";
 
     if (virname) {
+        d->infected++;
         conn_reply_virus(d->conn, fname, virname);
         if(c->virsize > 0 && optget(d->opts, "ExtendedDetectionInfo")->enabled)
             logg("~%s: %s(%s:%llu) FOUND\n", fname, virname, c->virhash, c->virsize);
@@ -274,19 +275,18 @@ int scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_ftw_rea
     }
 
     if (ret == CL_VIRUS) {
-        scandata->infected++;
 
-        if (scandata->options & CL_SCAN_ALLMATCHES) {
+         if (scandata->options & CL_SCAN_ALLMATCHES || (scandata->infected && scandata->options & CL_SCAN_HEURISTIC_PRECEDENCE)) {
             if(optget(scandata->opts, "PreludeEnable")->enabled){
                 prelude_logging(filename, virname, context.virhash, context.virsize);
             }
             virusaction(filename, virname, scandata->opts);
         } else {
+           scandata->infected++;
             if (conn_reply_virus(scandata->conn, filename, virname) == -1) {
                 free(filename);
                 return CL_ETIMEOUT;
             }
-
             if(optget(scandata->opts, "PreludeEnable")->enabled){
                 prelude_logging(filename, virname, context.virhash, context.virsize);
             }

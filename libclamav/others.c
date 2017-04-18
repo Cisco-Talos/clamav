@@ -1088,15 +1088,39 @@ int cli_unlink(const char *pathname)
 	return 0;
 }
 
-void cli_append_virus(cli_ctx * ctx, const char * virname)
+void cli_virus_found_cb(cli_ctx * ctx)
 {
-    if (ctx->virname == NULL)
-        return;
-    if (ctx->limit_exceeded == 0 || SCAN_ALL) { 
-        if (ctx->engine->cb_virus_found)
-            ctx->engine->cb_virus_found(fmap_fd(*ctx->fmap), virname, ctx->cb_ctx);
+    if (ctx->engine->cb_virus_found)
+        ctx->engine->cb_virus_found(fmap_fd(*ctx->fmap), (const char *)*ctx->virname, ctx->cb_ctx);
+}
+
+int cli_append_possibly_unwanted(cli_ctx * ctx, const char * virname)
+{
+    if (SCAN_ALL)
+        return cli_append_virus(ctx, virname);
+    else if (ctx->options & CL_SCAN_HEURISTIC_PRECEDENCE)
+        return cli_append_virus(ctx, virname);
+    else if (ctx->num_viruses == 0 && ctx->virname != NULL && *ctx->virname == NULL) {
+        ctx->found_possibly_unwanted = 1;
         ctx->num_viruses++;
         *ctx->virname = virname;
+    }
+    return CL_CLEAN;
+}
+
+int cli_append_virus(cli_ctx * ctx, const char * virname)
+{
+    if (ctx->virname == NULL)
+        return CL_CLEAN;
+    if (ctx->fmap != NULL && (*ctx->fmap) != NULL && CL_VIRUS != cli_checkfp_virus((*ctx->fmap)->maphash, (*ctx->fmap)->len, ctx, virname))
+        return CL_CLEAN;
+    if (!SCAN_ALL && ctx->num_viruses != 0)
+        if (ctx->options & CL_SCAN_HEURISTIC_PRECEDENCE)
+            return CL_CLEAN;
+    if (ctx->limit_exceeded == 0 || SCAN_ALL) { 
+        ctx->num_viruses++;
+        *ctx->virname = virname;
+        cli_virus_found_cb(ctx);
     }
 #if HAVE_JSON
     if (SCAN_PROPERTIES && ctx->wrkproperty) {
@@ -1105,17 +1129,18 @@ void cli_append_virus(cli_ctx * ctx, const char * virname)
             arrobj = json_object_new_array();
             if (NULL == arrobj) {
                 cli_errmsg("cli_append_virus: no memory for json virus array\n");
-                return;
+                return CL_EMEM;
             }
             json_object_object_add(ctx->wrkproperty, "Viruses", arrobj);
         }
         virobj = json_object_new_string(virname);
         if (NULL == virobj) {
             cli_errmsg("cli_append_virus: no memory for json virus name object\n");
-            return;
+            return CL_EMEM;
         }
         json_object_array_add(arrobj, virobj);
     }
+    return CL_VIRUS;
 #endif
 }
 
