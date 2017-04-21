@@ -2357,7 +2357,7 @@ static inline int hash_impfns(cli_ctx *ctx, void **hashctx, uint32_t *impsz, str
                 }
             } else {
                 /* ordinal lookup */
-                funcname = cli_strdup(pe_ordinal(dllname, thunk64.u.Ordinal & 0xFFFF));
+                funcname = pe_ordinal(dllname, thunk64.u.Ordinal & 0xFFFF);
                 if (funcname == NULL) {
                     cli_dbgmsg("scan_pe: cannot duplicate function name\n");
                     return CL_EMEM;
