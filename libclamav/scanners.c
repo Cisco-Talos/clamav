@@ -3110,7 +3110,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
             return magic_scandesc_cleanup(ctx, type, hash, hashed_size, cache_clean, res, parent_property);
 		/* CL_VIRUS = malware found, check FP and report */
 		case CL_VIRUS:
-		    ret = cli_checkfp(hash, hashed_size, ctx);
+		    ret = res;
 		    if (SCAN_ALL)
 			break;
 		    cli_bitset_free(ctx->hook_lsig_matches);
