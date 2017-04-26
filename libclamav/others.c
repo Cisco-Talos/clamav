@@ -1140,8 +1140,8 @@ int cli_append_virus(cli_ctx * ctx, const char * virname)
         }
         json_object_array_add(arrobj, virobj);
     }
-    return CL_VIRUS;
 #endif
+    return CL_VIRUS;
 }
 
 const char * cli_get_last_virus(const cli_ctx * ctx)
