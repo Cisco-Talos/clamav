@@ -543,14 +543,19 @@ int upx_inflate2e(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, u
   return pefromupx (src, ssize, dst, dsize, ep, upx0, upx1, magic, dcur);
 }
 
-int upx_inflatelzma(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_t upx0, uint32_t upx1, uint32_t ep) {
+int upx_inflatelzma(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_t upx0, uint32_t upx1, uint32_t ep, uint32_t properties) {
   struct CLI_LZMA l;
   uint32_t magic[]={0xb16,0xb1e,0};
   unsigned char fake_lzmahdr[5];
 
   memset(&l, 0, sizeof(l));
   cli_writeint32(fake_lzmahdr + 1, *dsize);
-  *fake_lzmahdr = 3 /* lc */ + 9* ( 5* 2 /* pb */ + 0 /* lp */);
+  uint8_t lc = properties & 0xff;
+  uint8_t pb = (properties >> 16) & 0xff; 
+  if (lc >= 9 || pb >= 5)
+      return 0;
+
+  *fake_lzmahdr = lc + 9* ( 5* pb + 0 /* lp */);
   l.next_in = fake_lzmahdr;
   l.avail_in = 5;
   if(cli_LzmaInit(&l, *dsize) != LZMA_RESULT_OK)
