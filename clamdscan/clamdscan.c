@@ -74,6 +74,12 @@ int main(int argc, char **argv)
 	return 2;
     }
 
+    if(optget(opts, "help")->enabled) {
+	optfree(opts);
+	optfree(clamdopts);
+    	help();
+    }
+
     if((clamdopts = optparse(optget(opts, "config-file")->strarg, 0, NULL, 1, OPT_CLAMD, 0, NULL)) == NULL) {
 	logg("!Can't parse clamd configuration file %s\n", optget(opts, "config-file")->strarg);
 	return 2;
@@ -95,12 +101,6 @@ int main(int argc, char **argv)
 	optfree(opts);
 	optfree(clamdopts);
 	exit(0);
-    }
-
-    if(optget(opts, "help")->enabled) {
-	optfree(opts);
-	optfree(clamdopts);
-    	help();
     }
 
     if(optget(opts, "infected")->enabled)
