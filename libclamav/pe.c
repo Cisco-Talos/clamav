@@ -98,7 +98,9 @@
 #define UPX_NRV2B "\x11\xdb\x11\xc9\x01\xdb\x75\x07\x8b\x1e\x83\xee\xfc\x11\xdb\x11\xc9\x11\xc9\x75\x20\x41\x01\xdb"
 #define UPX_NRV2D "\x83\xf0\xff\x74\x78\xd1\xf8\x89\xc5\xeb\x0b\x01\xdb\x75\x07\x8b\x1e\x83\xee\xfc\x11\xdb\x11\xc9"
 #define UPX_NRV2E "\xeb\x52\x31\xc9\x83\xe8\x03\x72\x11\xc1\xe0\x08\x8a\x06\x46\x83\xf0\xff\x74\x75\xd1\xf8\x89\xc5"
-#define UPX_LZMA1 "\x56\x83\xc3\x04\x53\x50\xc7\x03\x03\x00\x02\x00\x90\x90\x90\x55\x57\x56\x53\x83"
+#define UPX_LZMA1_FIRST  "\x56\x83\xc3\x04\x53\x50\xc7\x03"
+#define UPX_LZMA1_SECOND "\x90\x90\x90\x55\x57\x56\x53\x83"
+#define UPX_LZMA0 "\x56\x83\xc3\x04\x53\x50\xc7\x03\x03\x00\x00\x00\x90\x90\x90\x55\x57\x56\x53\x83"
 #define UPX_LZMA2 "\x56\x83\xc3\x04\x53\x50\xc7\x03\x03\x00\x02\x00\x90\x90\x90\x90\x90\x55\x57\x56"
 
 #define PE_MAXNAMESIZE 256
@@ -4478,9 +4480,10 @@ int cli_scanpe(cli_ctx *ctx)
             }
 
             if(strictdsize<=dsize)
-                upx_success = upx_inflatelzma(src+skew, ssize-skew, dest, &strictdsize, exe_sections[i].rva, exe_sections[i + 1].rva, vep) >=0;
-        } else if (cli_memstr(UPX_LZMA1, 20, epbuff + 0x39, 20)) {
+                upx_success = upx_inflatelzma(src+skew, ssize-skew, dest, &strictdsize, exe_sections[i].rva, exe_sections[i + 1].rva, vep, 0x20003) >=0;
+        } else if (cli_memstr(UPX_LZMA1_FIRST, 8, epbuff + 0x39, 8) && cli_memstr(UPX_LZMA1_SECOND, 8, epbuff + 0x45, 8)) {
             uint32_t strictdsize=cli_readint32(epbuff+0x2b), skew = 0;
+            uint32_t properties=cli_readint32(epbuff+0x41);
             if(ssize > 0x15 && epbuff[0] == '\x60' && epbuff[1] == '\xbe') {
                 skew = cli_readint32(epbuff+2) - exe_sections[i + 1].rva - optional_hdr32.ImageBase;
                 if(skew!=0x15)
@@ -4488,7 +4491,7 @@ int cli_scanpe(cli_ctx *ctx)
             }
 
             if(strictdsize<=dsize)
-                upx_success = upx_inflatelzma(src+skew, ssize-skew, dest, &strictdsize, exe_sections[i].rva, exe_sections[i + 1].rva, vep) >=0;
+                upx_success = upx_inflatelzma(src+skew, ssize-skew, dest, &strictdsize, exe_sections[i].rva, exe_sections[i + 1].rva, vep, properties) >=0;
         }
 
         if(!upx_success) {
