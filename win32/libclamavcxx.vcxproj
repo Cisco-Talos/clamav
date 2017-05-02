@@ -130,7 +130,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>HAVE_STRUCT_TIMESPEC;HAVE_STDBOOL_H;WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav\c++\llvm\include;$(SolutionDir)llvmbuild\include;$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)..;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\zlib;$(CLAM_DEPENDANCIES)\$(PlatformName)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav\c++\llvm\include;$(SolutionDir)llvmbuild\include;$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)..;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\zlib;$(CLAM_DEPENDENCIES)\$(PlatformName)\include</AdditionalIncludeDirectories>
       <CompileAs>CompileAsCpp</CompileAs>
       <DisableSpecificWarnings>4146;4800;4244;4996;4355</DisableSpecificWarnings>
     </ClCompile>
@@ -145,7 +145,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>HAVE_STRUCT_TIMESPEC;HAVE_STDBOOL_H;WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav\c++\llvm\include;$(SolutionDir)llvmbuild\include;$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)..;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\zlib;$(CLAM_DEPENDANCIES)\$(PlatformName)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav\c++\llvm\include;$(SolutionDir)llvmbuild\include;$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)..;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\zlib;$(CLAM_DEPENDENCIES)\$(PlatformName)\include</AdditionalIncludeDirectories>
       <CompileAs>CompileAsCpp</CompileAs>
       <DisableSpecificWarnings>4146;4800;4244;4996;4355;4267</DisableSpecificWarnings>
     </ClCompile>
@@ -162,7 +162,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>HAVE_STRUCT_TIMESPEC;HAVE_STDBOOL_H;WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav\c++\llvm\include;$(SolutionDir)llvmbuild\include;$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)..;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\zlib;$(CLAM_DEPENDANCIES)\$(PlatformName)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav\c++\llvm\include;$(SolutionDir)llvmbuild\include;$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)..;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\zlib;$(CLAM_DEPENDENCIES)\$(PlatformName)\include</AdditionalIncludeDirectories>
       <CompileAs>CompileAsCpp</CompileAs>
       <DisableSpecificWarnings>4146;4800;4244;4996;4355</DisableSpecificWarnings>
     </ClCompile>
@@ -181,7 +181,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>HAVE_STRUCT_TIMESPEC;HAVE_STDBOOL_H;WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav\c++\llvm\include;$(SolutionDir)llvmbuild\include;$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)..;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\zlib;$(CLAM_DEPENDANCIES)\$(PlatformName)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav\c++\llvm\include;$(SolutionDir)llvmbuild\include;$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)..;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\zlib;$(CLAM_DEPENDENCIES)\$(PlatformName)\include</AdditionalIncludeDirectories>
       <CompileAs>CompileAsCpp</CompileAs>
       <DisableSpecificWarnings>4146;4800;4244;4996;4355</DisableSpecificWarnings>
     </ClCompile>
@@ -200,7 +200,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>HAVE_STRUCT_TIMESPEC;HAVE_STDBOOL_H;WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav\c++\llvm\include;$(SolutionDir)llvmbuild\include;$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)..;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\zlib;$(CLAM_DEPENDANCIES)\$(PlatformName)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav\c++\llvm\include;$(SolutionDir)llvmbuild\include;$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)..;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\zlib;$(CLAM_DEPENDENCIES)\$(PlatformName)\include</AdditionalIncludeDirectories>
       <CompileAs>CompileAsCpp</CompileAs>
       <DisableSpecificWarnings>4146;4800;4244;4996;4355;4267</DisableSpecificWarnings>
     </ClCompile>
@@ -219,7 +219,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>HAVE_STRUCT_TIMESPEC;HAVE_STDBOOL_H;WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav\c++\llvm\include;$(SolutionDir)llvmbuild\include;$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)..;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\zlib;$(CLAM_DEPENDANCIES)\$(PlatformName)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav\c++\llvm\include;$(SolutionDir)llvmbuild\include;$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)..;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\zlib;$(CLAM_DEPENDENCIES)\$(PlatformName)\include</AdditionalIncludeDirectories>
       <CompileAs>CompileAsCpp</CompileAs>
       <DisableSpecificWarnings>4146;4800;4244;4996;4355;4267</DisableSpecificWarnings>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
