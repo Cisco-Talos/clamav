@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.24720.0
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libclamavcxx", "libclamavcxx.vcxproj", "{3AE8051D-A188-4B11-95A4-14B8F0C290CB}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -22,6 +22,7 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libclamav", "libclamav.vcxproj", "{09D341E9-7372-46E9-B0D7-CAAF77984190}"
 	ProjectSection(ProjectDependencies) = postProject
 		{3AE8051D-A188-4B11-95A4-14B8F0C290CB} = {3AE8051D-A188-4B11-95A4-14B8F0C290CB}
+		{AA443662-4AED-4F50-95E4-9B5BB5429E9E} = {AA443662-4AED-4F50-95E4-9B5BB5429E9E}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sigtool", "sigtool.vcxproj", "{05957B93-39F9-45EC-87BD-86B7AF571557}"
@@ -69,6 +70,8 @@ EndProject
 Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "Setup-x86", "Setup-x86\Setup-x86.vdproj", "{048ECA7F-4F7D-45B9-A02D-593240356556}"
 EndProject
 Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "Setup-x64", "Setup-x64\Setup-x64.vdproj", "{9C42D9BA-08AC-44E4-BAA8-145F7F44389A}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mspack", "..\libclamav\libmspack-0.5alpha\mspack\mspack.vcxproj", "{AA443662-4AED-4F50-95E4-9B5BB5429E9E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -276,6 +279,18 @@ Global
 		{9C42D9BA-08AC-44E4-BAA8-145F7F44389A}.Release|x64.Build.0 = Release
 		{9C42D9BA-08AC-44E4-BAA8-145F7F44389A}.Release-Static|Win32.ActiveCfg = Release
 		{9C42D9BA-08AC-44E4-BAA8-145F7F44389A}.Release-Static|x64.ActiveCfg = Release
+		{AA443662-4AED-4F50-95E4-9B5BB5429E9E}.Debug|Win32.ActiveCfg = Debug|Win32
+		{AA443662-4AED-4F50-95E4-9B5BB5429E9E}.Debug|Win32.Build.0 = Debug|Win32
+		{AA443662-4AED-4F50-95E4-9B5BB5429E9E}.Debug|x64.ActiveCfg = Debug|x64
+		{AA443662-4AED-4F50-95E4-9B5BB5429E9E}.Debug|x64.Build.0 = Debug|x64
+		{AA443662-4AED-4F50-95E4-9B5BB5429E9E}.Release|Win32.ActiveCfg = Release|Win32
+		{AA443662-4AED-4F50-95E4-9B5BB5429E9E}.Release|Win32.Build.0 = Release|Win32
+		{AA443662-4AED-4F50-95E4-9B5BB5429E9E}.Release|x64.ActiveCfg = Release|x64
+		{AA443662-4AED-4F50-95E4-9B5BB5429E9E}.Release|x64.Build.0 = Release|x64
+		{AA443662-4AED-4F50-95E4-9B5BB5429E9E}.Release-Static|Win32.ActiveCfg = Release|Win32
+		{AA443662-4AED-4F50-95E4-9B5BB5429E9E}.Release-Static|Win32.Build.0 = Release|Win32
+		{AA443662-4AED-4F50-95E4-9B5BB5429E9E}.Release-Static|x64.ActiveCfg = Release|x64
+		{AA443662-4AED-4F50-95E4-9B5BB5429E9E}.Release-Static|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
