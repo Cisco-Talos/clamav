@@ -551,11 +551,12 @@ int upx_inflatelzma(const char *src, uint32_t ssize, char *dst, uint32_t *dsize,
   memset(&l, 0, sizeof(l));
   cli_writeint32(fake_lzmahdr + 1, *dsize);
   uint8_t lc = properties & 0xff;
+  uint8_t lp = (properties >> 8) & 0xff;
   uint8_t pb = (properties >> 16) & 0xff; 
-  if (lc >= 9 || pb >= 5)
-      return 0;
+  if (lc >= 9 || lp >= 5 || pb >= 5)
+      return -1;
 
-  *fake_lzmahdr = lc + 9* ( 5* pb + 0 /* lp */);
+  *fake_lzmahdr = lc + 9* ( 5* pb + lp);
   l.next_in = fake_lzmahdr;
   l.avail_in = 5;
   if(cli_LzmaInit(&l, *dsize) != LZMA_RESULT_OK)
