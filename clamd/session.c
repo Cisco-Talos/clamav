@@ -96,7 +96,8 @@ static struct {
     {CMD17, sizeof(CMD17)-1,	COMMAND_INSTREAM,   0,	0, 1},
     {CMD19, sizeof(CMD19)-1,	COMMAND_DETSTATSCLEAR,	0, 1, 1},
     {CMD20, sizeof(CMD20)-1,	COMMAND_DETSTATS,   0, 1, 1},
-    {CMD21, sizeof(CMD21)-1,	COMMAND_ALLMATCHSCAN,  1, 0, 1}
+    {CMD21, sizeof(CMD21)-1,	COMMAND_ALLMATCHSCAN,  1, 0, 1},
+    {CMD22, sizeof(CMD22)-1,	COMMAND_ALLMATCHSTREAM,  0, 0, 1},
 };
 
 enum commands parse_command(const char *cmd, const char **argument, int oldstyle)
@@ -372,6 +373,11 @@ int command(client_conn_t *conn, int *virus)
 	    scandata.options |= CL_SCAN_ALLMATCHES;
 	    type = TYPE_SCAN;
 	    break;
+	 case COMMAND_ALLMATCHSTREAMSCAN:
+	    thrmgr_setactivetask(NULL, "INSTREAM");
+	    scandata.options |= CL_SCAN_ALLMATCHES;
+	    type = TYPE_SCAN;
+	    break;
 	 default:
 	    logg("!Invalid command dispatched: %d\n", conn->cmdtype);
 	    return 1;
@@ -456,6 +462,7 @@ int command(client_conn_t *conn, int *virus)
 		ret = -1;
 	    }
 	    break;
+	case COMMAND_ALLMATCHSTREAMSCAN:
 	case COMMAND_INSTREAMSCAN:
 	    dup_conn->scanfd = conn->scanfd;
 	    conn->scanfd = -1;
@@ -605,6 +612,15 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
         /* TODO: tell client this command has been removed */
 		return 1;
 	    }
+	case COMMAND_ALLMATCHSTREAM:
+        {
+		int rc = cli_gentempfd(optget(conn->opts, "TemporaryDirectory")->strarg, &conn->filename, &conn->scanfd);
+		if (rc != CL_SUCCESS)
+		    return rc;
+		conn->quota = optget(conn->opts, "StreamMaxLength")->numarg;
+		conn->mode = MODE_STREAMALL;
+		return 0;
+	    }
 	case COMMAND_INSTREAM:
 	    {
 		int rc = cli_gentempfd(optget(conn->opts, "TemporaryDirectory")->strarg, &conn->filename, &conn->scanfd);
@@ -622,6 +638,7 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
 	case COMMAND_SCAN:
 	case COMMAND_INSTREAMSCAN:
 	case COMMAND_ALLMATCHSCAN:
+	case COMMAND_ALLMATCHSTREAMSCAN:
 	    return dispatch_command(conn, cmd, argument);
 	case COMMAND_IDSESSION:
 	    conn->group = thrmgr_group_new();

@@ -548,7 +548,7 @@ static const char* parse_dispatch_cmd(client_conn_t *conn, struct fd_buf *buf, s
 		closesocket(conn->sd);
 		buf->fd = -1;
 		conn->group = NULL;
-	    } else if (conn->mode != MODE_STREAM) {
+	    } else if (conn->mode != MODE_STREAM && conn->mode != MODE_STREAMALL) {
 		logg("$mode -> MODE_WAITREPLY\n");
 		/* no more commands are accepted */
 		conn->mode = MODE_WAITREPLY;
@@ -583,7 +583,7 @@ static const char* parse_dispatch_cmd(client_conn_t *conn, struct fd_buf *buf, s
 	time(&buf->timeout_at);
 	buf->timeout_at += readtimeout;
 	pos += cmdlen+1;
-	if (conn->mode == MODE_STREAM) {
+	if (conn->mode == MODE_STREAM || conn->mode == MODE_STREAMALL) {
 	    /* TODO: this doesn't belong here */
 	    buf->dumpname = conn->filename;
 	    buf->dumpfd = conn->scanfd;
@@ -632,8 +632,16 @@ static int handle_stream(client_conn_t *conn, struct fd_buf *buf, const struct o
     int rc;
     size_t pos = *ppos;
     size_t cmdlen;
-    
-    logg("$mode == MODE_STREAM\n");
+    enum commands internalcmdtype;
+
+    if (buf->mode == MODE_STREAMALL) {
+        internalcmdtype = COMMAND_ALLMATCHSTREAMSCAN;
+        logg("$mode == MODE_STREAMALL\n");
+    } else {
+        internalcmdtype = COMMAND_INSTREAMSCAN;
+        logg("$mode == MODE_STREAM\n");
+    }
+
     /* we received some data, set readtimeout */
     time(&buf->timeout_at);
     buf->timeout_at += readtimeout;
@@ -656,7 +664,7 @@ static int handle_stream(client_conn_t *conn, struct fd_buf *buf, const struct o
 			buf->fd = -1;
 		    logg("$Chunks complete\n");
 		    buf->dumpname = NULL;
-		    if ((rc = execute_or_dispatch_command(conn, COMMAND_INSTREAMSCAN, NULL)) < 0) {
+		    if ((rc = execute_or_dispatch_command(conn, internalcmdtype, NULL)) < 0) {
 			logg("!Command dispatch failed\n");
 			if(rc == -1 && optget(opts, "ExitOnOOM")->enabled) {
 			    pthread_mutex_lock(&exit_mutex);
@@ -1407,7 +1415,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 			buf->buffer[buf->off] = '\0';
 			logg("$Garbage: %s\n", buf->buffer);
 			error = 1;
-		    } else if (buf->mode == MODE_STREAM) {
+		    } else if (buf->mode == MODE_STREAM || buf->mode == MODE_STREAMALL) {
 			rc = handle_stream(&conn, buf, opts, &error, &pos, readtimeout);
 			if (rc == -1)
 			    break;

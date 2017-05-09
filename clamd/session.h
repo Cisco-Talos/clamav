@@ -45,6 +45,7 @@
 #define CMD20 "DETSTATS"
 
 #define CMD21 "ALLMATCHSCAN"
+#define CMD22 "ALLMATCHSTREAM"
 
 #include "libclamav/clamav.h"
 #include "shared/optparser.h"
@@ -68,13 +69,15 @@ enum commands {
     /* new proto commands */
     COMMAND_IDSESSION,
     COMMAND_INSTREAM,
+    COMMAND_ALLMATCHSTREAM,
     COMMAND_COMMANDS,
     COMMAND_DETSTATSCLEAR,
     COMMAND_DETSTATS,
     /* internal commands */
     COMMAND_MULTISCANFILE,
     COMMAND_INSTREAMSCAN,
-    COMMAND_ALLMATCHSCAN
+    COMMAND_ALLMATCHSCAN,
+    COMMAND_ALLMATCHSTREAMSCAN,
 };
 
 typedef struct client_conn_tag {
