@@ -3073,8 +3073,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
     perf_nested_stop(ctx, PERFT_CONTAINER, PERFT_SCAN);
     ctx->recursion--;
 
-    if(ret == CL_VIRUS) {
-	ret = cli_checkfp(hash, hashed_size, ctx);
+    if(ret == CL_VIRUS && !SCAN_ALL) {
 	cli_bitset_free(ctx->hook_lsig_matches);
 	ctx->hook_lsig_matches = old_hook_lsig_matches;
     return magic_scandesc_cleanup(ctx, type, hash, hashed_size, cache_clean, ret, parent_property);
@@ -3171,8 +3170,6 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 	    break;
     }
 
-    if(ret == CL_VIRUS)
-	ret = cli_checkfp(hash, hashed_size, ctx);
     ctx->recursion--;
     cli_bitset_free(ctx->hook_lsig_matches);
     ctx->hook_lsig_matches = old_hook_lsig_matches;
