@@ -26,7 +26,7 @@ SPLIT_DIR=$(top_srcdir)/test/.split
 all: $(FILES)
 
 $(FILES) :
-	cat $(SPLIT_DIR)/split.$@aa $(SPLIT_DIR)/split.$@ab > $@
+	cat $(SPLIT_DIR)/split.$@a* > $@
 
 clean-local:
 	rm -f clam*
