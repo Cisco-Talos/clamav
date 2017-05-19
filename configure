@@ -692,8 +692,6 @@ LIBPRELUDE_CFLAGS
 LIBPRELUDE_CONFIG
 ENABLE_LIBFRESHCLAM_FALSE
 ENABLE_LIBFRESHCLAM_TRUE
-ENABLE_CLAMSUBMIT_FALSE
-ENABLE_CLAMSUBMIT_TRUE
 SYSTEM_LFS_FTS_FALSE
 SYSTEM_LFS_FTS_TRUE
 HAVE_YARA
@@ -24261,15 +24259,6 @@ $as_echo "#define HAVE_SYSTEM_LFS_FTS 0" >>confdefs.h
 	lfs_fts_msg="internal, libc's is not LFS compatible"
 fi
 
- if test "$have_curl" = "yes"; then
-  ENABLE_CLAMSUBMIT_TRUE=
-  ENABLE_CLAMSUBMIT_FALSE='#'
-else
-  ENABLE_CLAMSUBMIT_TRUE='#'
-  ENABLE_CLAMSUBMIT_FALSE=
-fi
-
-
 # Check whether --enable-libfreshclam was given.
 if test "${enable_libfreshclam+set}" = set; then :
   enableval=$enable_libfreshclam; enable_libfreshclam=$enableval
@@ -25261,10 +25250,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${SYSTEM_LFS_FTS_TRUE}" && test -z "${SYSTEM_LFS_FTS_FALSE}"; then
   as_fn_error $? "conditional \"SYSTEM_LFS_FTS\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${ENABLE_CLAMSUBMIT_TRUE}" && test -z "${ENABLE_CLAMSUBMIT_FALSE}"; then
-  as_fn_error $? "conditional \"ENABLE_CLAMSUBMIT\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${ENABLE_LIBFRESHCLAM_TRUE}" && test -z "${ENABLE_LIBFRESHCLAM_FALSE}"; then
@@ -27858,10 +27843,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${SYSTEM_LFS_FTS_TRUE}" && test -z "${SYSTEM_LFS_FTS_FALSE}"; then
   as_fn_error $? "conditional \"SYSTEM_LFS_FTS\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${ENABLE_CLAMSUBMIT_TRUE}" && test -z "${ENABLE_CLAMSUBMIT_FALSE}"; then
-  as_fn_error $? "conditional \"ENABLE_CLAMSUBMIT\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${ENABLE_LIBFRESHCLAM_TRUE}" && test -z "${ENABLE_LIBFRESHCLAM_FALSE}"; then
