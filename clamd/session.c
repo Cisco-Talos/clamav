@@ -614,9 +614,6 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
 	    }
 	case COMMAND_ALLMATCHSTREAM:
         {
-		int rc = cli_gentempfd(optget(conn->opts, "TemporaryDirectory")->strarg, &conn->filename, &conn->scanfd);
-		if (rc != CL_SUCCESS)
-		    return rc;
 		conn->quota = optget(conn->opts, "StreamMaxLength")->numarg;
 		conn->mode = MODE_STREAMALL;
 		return 0;
