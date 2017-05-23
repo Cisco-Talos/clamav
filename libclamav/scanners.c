@@ -2366,7 +2366,7 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
 	if(nret != CL_VIRUS) switch(ret) {
 	    case CL_TYPE_HTML:
 		/* bb#11196 - autoit script file misclassified as HTML */
-		if (cli_get_container_type(ctx, -2) == CL_TYPE_AUTOIT) {
+		if (cli_get_container_intermediate(ctx, -2) == CL_TYPE_AUTOIT) {
 		    ret = CL_TYPE_TEXT_ASCII;
 		} else if (SCAN_HTML && (type == CL_TYPE_TEXT_ASCII || type == CL_TYPE_GRAPHICS) &&
                     (DCONF_DOC & DOC_CONF_HTML)) {
@@ -3146,7 +3146,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 	    perf_nested_start(ctx, PERFT_SCRIPT, PERFT_SCAN);
 	    if((DCONF_DOC & DOC_CONF_SCRIPT) && dettype != CL_TYPE_HTML && (ret != CL_VIRUS || SCAN_ALL) && SCAN_HTML)
 	        ret = cli_scanscript(ctx);
-	    if(SCAN_MAIL && (DCONF_MAIL & MAIL_CONF_MBOX) && ret != CL_VIRUS && (cli_get_container_type(ctx, -1) == CL_TYPE_MAIL || dettype == CL_TYPE_MAIL)) {
+	    if(SCAN_MAIL && (DCONF_MAIL & MAIL_CONF_MBOX) && ret != CL_VIRUS && (cli_get_container(ctx, -1) == CL_TYPE_MAIL || dettype == CL_TYPE_MAIL)) {
 		ret = cli_fmap_scandesc(ctx, CL_TYPE_MAIL, 0, NULL, AC_SCAN_VIR, NULL, NULL);
 	    }
 	    perf_nested_stop(ctx, PERFT_SCRIPT, PERFT_SCAN);

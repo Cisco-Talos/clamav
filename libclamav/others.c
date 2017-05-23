@@ -1163,11 +1163,27 @@ void cli_set_container(cli_ctx *ctx, cli_file_t type, size_t size)
 {
     ctx->containers[ctx->recursion].type = type;
     ctx->containers[ctx->recursion].size = size;
+    if (type >=  CL_TYPE_MSEXE && type != CL_TYPE_OTHER && type != CL_TYPE_IGNORED)
+        ctx->containers[ctx->recursion].flag = CONTAINER_FLAG_VALID;
+    else
+        ctx->containers[ctx->recursion].flag = 0;
 }
 
-cli_file_t cli_get_container_type(cli_ctx *ctx, int index)
+cli_file_t cli_get_container(cli_ctx *ctx, int index)
 {
     if (index < 0)
+	index = ctx->recursion + index + 1;
+    while (index >= 0 && index <= ctx->recursion) {
+        if (ctx->containers[index].flag & CONTAINER_FLAG_VALID)
+            return ctx->containers[index].type;
+        index--;
+    }
+    return CL_TYPE_ANY;
+}
+
+cli_file_t cli_get_container_intermediate(cli_ctx *ctx, int index)
+{
+   if (index < 0)
 	index = ctx->recursion + index + 1;
     if (index >= 0 && index <= ctx->recursion)
 	return ctx->containers[index].type;
@@ -1178,8 +1194,11 @@ size_t cli_get_container_size(cli_ctx *ctx, int index)
 {
     if (index < 0)
 	index = ctx->recursion + index + 1;
-    if (index >= 0 && index <= ctx->recursion)
-	return ctx->containers[index].size;
+    while (index >= 0 && index <= ctx->recursion) {
+        if (ctx->containers[index].flag & CONTAINER_FLAG_VALID)
+            return ctx->containers[index].size;
+        index--;
+    }
     return 0;
 }
 

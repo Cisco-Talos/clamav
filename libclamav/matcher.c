@@ -166,7 +166,7 @@ static inline int matcher_run(const struct cli_matcher *root,
     PERF_LOG_TRIES(acmode, 0, length);
     ret = cli_ac_scanbuff(buffer, length, virname, NULL, acres, root, mdata, offset, ftype, ftoffset, acmode, ctx);
     if (ret != CL_CLEAN) {
-	    if (ret == CL_VIRUS) {
+        if (ret == CL_VIRUS) {
             if (SCAN_ALL)
                 viruses_found = 1;
             else {
@@ -178,7 +178,7 @@ static inline int matcher_run(const struct cli_matcher *root,
             saved_ret = ret;
         else
             return ret;
-	}
+    }
 
     /* due to logical triggered, pcres cannot be evaluated until after full subsig matching */
     /* cannot save pcre execution state without possible evasion; must scan entire buffer */
@@ -721,7 +721,7 @@ static int intermediates_eval(cli_ctx *ctx, struct cli_ac_lsig *ac_lsig)
     for (i = icnt; i > 0; i--) {
         if (ac_lsig->tdb.intermediates[i] == CL_TYPE_ANY)
             continue;
-        if (ac_lsig->tdb.intermediates[i] != cli_get_container_type(ctx, j--))
+        if (ac_lsig->tdb.intermediates[i] != cli_get_container_intermediate(ctx, j--))
             return 0;
     }
     return 1;
@@ -741,7 +741,7 @@ static int lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data 
     if (rc != CL_SUCCESS)
         return rc;
     if (cli_ac_chklsig(exp, exp_end, acdata->lsigcnt[lsid], &evalcnt, &evalids, 0) == 1) {
-        if(ac_lsig->tdb.container && ac_lsig->tdb.container[0] != cli_get_container_type(ctx, -1))
+        if(ac_lsig->tdb.container && ac_lsig->tdb.container[0] != cli_get_container(ctx, -1))
             return CL_CLEAN;
         if(ac_lsig->tdb.intermediates && !intermediates_eval(ctx, ac_lsig))
             return CL_CLEAN;
@@ -1239,11 +1239,11 @@ int cli_matchmeta(cli_ctx *ctx, const char *fname, size_t fsizec, size_t fsizer,
         int ret = CL_CLEAN;
 
     cli_dbgmsg("CDBNAME:%s:%llu:%s:%llu:%llu:%d:%u:%u:%p\n",
-	       cli_ftname(cli_get_container_type(ctx, -1)), (long long unsigned)fsizec, fname, (long long unsigned)fsizec, (long long unsigned)fsizer,
+	       cli_ftname(cli_get_container(ctx, -1)), (long long unsigned)fsizec, fname, (long long unsigned)fsizec, (long long unsigned)fsizer,
 	       encrypted, filepos, res1, res2);
 
     if (ctx->engine && ctx->engine->cb_meta)
-	if (ctx->engine->cb_meta(cli_ftname(cli_get_container_type(ctx, -1)), fsizec, fname, fsizer, encrypted, filepos, ctx->cb_ctx) == CL_VIRUS) {
+	if (ctx->engine->cb_meta(cli_ftname(cli_get_container(ctx, -1)), fsizec, fname, fsizer, encrypted, filepos, ctx->cb_ctx) == CL_VIRUS) {
 	    cli_dbgmsg("inner file blacklisted by callback: %s\n", fname);
 
 	    ret = cli_append_virus(ctx, "Detected.By.Callback");
@@ -1256,7 +1256,7 @@ int cli_matchmeta(cli_ctx *ctx, const char *fname, size_t fsizec, size_t fsizer,
 	return CL_CLEAN;
 
     do {
-	if(cdb->ctype != CL_TYPE_ANY && cdb->ctype != cli_get_container_type(ctx, -1))
+	if(cdb->ctype != CL_TYPE_ANY && cdb->ctype != cli_get_container(ctx, -1))
 	    continue;
 
 	if(cdb->encrypted != 2 && cdb->encrypted != encrypted)

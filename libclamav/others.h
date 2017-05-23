@@ -129,7 +129,9 @@ typedef struct bitset_tag
 typedef struct cli_ctx_container_tag {
     cli_file_t type;
     size_t size;
+    unsigned char flag;
 } cli_ctx_container;
+#define CONTAINER_FLAG_VALID 0x01
 
 /* internal clamav context */
 typedef struct cli_ctx_tag {
@@ -607,8 +609,9 @@ const char *cli_get_last_virus_str(const cli_ctx *ctx);
 void cli_virus_found_cb(cli_ctx *ctx);
 
 void cli_set_container(cli_ctx *ctx, cli_file_t type, size_t size);
-cli_file_t cli_get_container_type(cli_ctx *ctx, int index);
+cli_file_t cli_get_container(cli_ctx *ctx, int index);
 size_t cli_get_container_size(cli_ctx *ctx, int index);
+cli_file_t cli_get_container_intermediate(cli_ctx *ctx, int index);
 
 /* used by: spin, yc (C) aCaB */
 #define __SHIFTBITS(a) (sizeof(a)<<3)
