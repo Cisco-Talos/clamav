@@ -417,6 +417,67 @@ int scanfd(const client_conn_t *conn, unsigned long int *scanned,
 	return ret;
 }
 
+
+int scanfd_all(const client_conn_t *conn, unsigned long int *scanned,
+	   const struct cl_engine *engine,
+	   int odesc, int stream, const struct scan_cb_data *scandata)
+{
+    int ret, fd = conn->scanfd;
+	const char *virname;
+	STATBUF statbuf;
+	struct cb_context context;
+	char fdstr[32];
+	const char*reply_fdstr;
+
+    UNUSEDPARAM(odesc);
+
+	if (stream) {
+	    struct sockaddr_in sa;
+	    socklen_t salen = sizeof(sa);
+	    if(getpeername(conn->sd, (struct sockaddr *)&sa, &salen) || salen > sizeof(sa) || sa.sin_family != AF_INET)
+		strncpy(fdstr, "instream(local)", sizeof(fdstr));
+	    else
+		snprintf(fdstr, sizeof(fdstr), "instream(%s@%u)", inet_ntoa(sa.sin_addr), ntohs(sa.sin_port));
+	    reply_fdstr = "stream";
+	} else {
+	    snprintf(fdstr, sizeof(fdstr), "fd[%d]", fd);
+	    reply_fdstr = fdstr;
+	}
+	if(FSTAT(fd, &statbuf) == -1 || !S_ISREG(statbuf.st_mode)) {
+		logg("%s: Not a regular file. ERROR\n", fdstr);
+		if (conn_reply(conn, reply_fdstr, "Not a regular file", "ERROR") == -1)
+		    return CL_ETIMEOUT;
+		return -1;
+	}
+
+	thrmgr_setactivetask(fdstr, NULL);
+	context.filename = fdstr;
+	context.scandata = scandata;
+	ret = cl_scandesc_callback(fd, &virname, scanned, engine, scandata->options, &context);
+	thrmgr_setactivetask(NULL, NULL);
+
+	if (thrmgr_group_need_terminate(conn->group)) {
+	    logg("*Client disconnected while scanjob was active\n");
+	    return ret == CL_ETIMEOUT ? ret : CL_BREAK;
+	}
+
+	if(ret == CL_VIRUS) {
+	    /* The virus matches where already pushed into the connection*/
+		return ret;
+	} else if(ret != CL_CLEAN) {
+		if (conn_reply(conn, reply_fdstr, cl_strerror(ret), "ERROR") == -1)
+		    ret = CL_ETIMEOUT;
+		logg("%s: %s ERROR\n", fdstr, cl_strerror(ret));
+	} else {
+		if (conn_reply_single(conn, reply_fdstr, "OK") == CL_ETIMEOUT)
+		    ret = CL_ETIMEOUT;
+		if(logok)
+			logg("%s: OK\n", fdstr);
+	}
+
+	return ret;
+}
+
 int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts, char term)
 {
 	int ret, sockfd, acceptd;

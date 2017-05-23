@@ -374,10 +374,30 @@ int command(client_conn_t *conn, int *virus)
 	    type = TYPE_SCAN;
 	    break;
 	 case COMMAND_ALLMATCHSTREAMSCAN:
-	    thrmgr_setactivetask(NULL, "INSTREAM");
-	    scandata.options |= CL_SCAN_ALLMATCHES;
-	    type = TYPE_SCAN;
-	    break;
+	     thrmgr_setactivetask(NULL, "ALLMATCHSTREAM");
+	     scandata.options |= CL_SCAN_ALLMATCHES;
+	     ret = scanfd_all(conn, NULL, engine, desc, 1, &scandata);
+	     if (ret == CL_VIRUS) {
+		 *virus = 1;
+		 ret = 0;
+	     } else if (ret == CL_EMEM) {
+		 if(optget(opts, "ExitOnOOM")->enabled)
+		     ret = -1;
+		 else
+		     ret = 1;
+	     } else if (ret == CL_ETIMEOUT) {
+		 thrmgr_group_terminate(conn->group);
+		 ret = 1;
+	     } else
+		 ret = 0;
+	     if (ftruncate(conn->scanfd, 0) == -1) {
+		 /* not serious, we're going to close it and unlink it anyway */
+		 logg("*ftruncate failed: %d\n", errno);
+	     }
+	     close(conn->scanfd);
+	     conn->scanfd = -1;
+	     cli_unlink(conn->filename);
+	     return ret;
 	 default:
 	    logg("!Invalid command dispatched: %d\n", conn->cmdtype);
 	    return 1;
@@ -614,6 +634,9 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
 	    }
 	case COMMAND_ALLMATCHSTREAM:
         {
+		int rc = cli_gentempfd(optget(conn->opts, "TemporaryDirectory")->strarg, &conn->filename, &conn->scanfd);
+		if (rc != CL_SUCCESS)
+		    return rc;
 		conn->quota = optget(conn->opts, "StreamMaxLength")->numarg;
 		conn->mode = MODE_STREAMALL;
 		return 0;
