@@ -1163,7 +1163,7 @@ void cli_set_container(cli_ctx *ctx, cli_file_t type, size_t size)
 {
     ctx->containers[ctx->recursion].type = type;
     ctx->containers[ctx->recursion].size = size;
-    if (type >=  CL_TYPE_MSEXE && type != CL_TYPE_OTHER && type != CL_TYPE_IGNORED)
+    if (type >=  CL_TYPE_MSEXE && type != CL_TYPE_HTML && type != CL_TYPE_OTHER && type != CL_TYPE_IGNORED)
         ctx->containers[ctx->recursion].flag = CONTAINER_FLAG_VALID;
     else
         ctx->containers[ctx->recursion].flag = 0;
@@ -1199,7 +1199,7 @@ size_t cli_get_container_size(cli_ctx *ctx, int index)
             return ctx->containers[index].size;
         index--;
     }
-    return 0;
+    return ctx->containers[0].size;
 }
 
 
