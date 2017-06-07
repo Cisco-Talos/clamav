@@ -291,12 +291,12 @@ static struct mspack_system mspack_sys_fmap_ops = {
 
 static int cli_scanfile(const char *filename, cli_ctx *ctx)
 {
-	int fd, ret;
+	int fd, ret = 0;
 
 	/* internal version of cl_scanfile with arec/mrec preserved */
 	fd = safe_open(filename, O_RDONLY|O_BINARY);
 	if (fd < 0)
-		return CL_EOPEN;
+		return ret;
 
 	ret = cli_magic_scandesc(fd, ctx);
 
