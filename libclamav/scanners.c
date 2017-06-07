@@ -1357,7 +1357,7 @@ static int cli_scanscript(cli_ctx *ctx)
 		/* Temporarily store the normalized file map in the context. */
 		*ctx->fmap = fmap(ofd, 0, 0);
 		if (!(*ctx->fmap)) {
-			cli_errmsg("cli_scanscript: could not map file %s\n",tmpname);
+			cli_dbgmsg("cli_scanscript: could not map file %s\n",tmpname);
 		} else {
 
 			/* scan map */
