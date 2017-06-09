@@ -514,7 +514,7 @@ static int run_pdf_hooks(struct pdf_struct *pdf, enum pdf_phase phase, int fd, i
     if (fd != -1) {
         map = fmap(fd, 0, 0);
         if (!map) {
-            cli_warnmsg("can't mmap pdf extracted obj\n");
+            cli_dbgmsg("can't mmap pdf extracted obj\n");
             map = *ctx->fmap;
             fd = -1;
         }
