@@ -28,8 +28,27 @@ extern "C" {
 # undef read
 #endif
 
+
+
+
+
 #ifdef DEBUG
 # include <stdio.h>
+# include <stdarg.h>
+
+/* Adding custom clamav debug code. */
+#ifndef MSGCODE
+#define MSGCODE(buff, len, x)                               \
+        va_list args;                                       \
+        size_t len = sizeof(x) - 1;                         \
+        char buff[BUFSIZ];                                  \
+    strncpy(buff, x, len);                                  \
+    va_start(args, str);                                    \
+    vsnprintf(buff + len, sizeof(buff) - len, str, args);   \
+    buff[sizeof(buff) - 1] = '\0';                          \
+    va_end(args)
+#endif
+
 /* Old GCCs don't have __func__, but __FUNCTION__:
  * http://gcc.gnu.org/onlinedocs/gcc/Function-Names.html
  */
@@ -40,10 +59,10 @@ extern "C" {
 #   define __func__ "<unknown>"
 #  endif
 # endif
-# define D(x) do { printf("%s:%d (%s) ",__FILE__, __LINE__, __func__); \
-                   printf x ; fputc('\n', stdout); fflush(stdout);} while (0);
+# define D(str) do {    MSGCODE(buff, len, "LibClamAV debug: ");
+                        fputs(buff, stderr); } while (0);
 #else
-# define D(x)
+# define D(str)
 #endif
 
 /* CAB supports searching through files over 4GB in size, and the CHM file
