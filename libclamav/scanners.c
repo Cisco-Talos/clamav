@@ -798,6 +798,10 @@ static int cli_scanxz(cli_ctx *ctx)
         /* xz decompress a chunk */
 	rc = cli_XzDecode(&strm);
 	if (XZ_RESULT_OK != rc && XZ_STREAM_END != rc) {
+            if (rc == XZ_DIC_HEURISTIC) {
+                ret = cli_append_virus(ctx, "Heuristic.XZ.DicSizeLimit");
+                goto xz_exit;
+            }
 	    cli_errmsg("cli_scanxz: decompress error: %d\n", rc);
             ret = CL_EFORMAT;
             goto xz_exit;
