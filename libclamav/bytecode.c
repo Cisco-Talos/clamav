@@ -1834,7 +1834,7 @@ int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, stru
 
 	/* need to be called here to catch any extracted but not yet scanned files
 	*/
-	if (ctx->outfd)
+	if (ctx->outfd && (ret != CL_VIRUS || cctx->options & CL_SCAN_ALLMATCHES))
 	    cli_bcapi_extract_new(ctx, -1);
     }
     if (bc->state == bc_jit || test_mode) {
@@ -1854,7 +1854,7 @@ int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, stru
 
 	/* need to be called here to catch any extracted but not yet scanned files
 	*/
-	if (ctx->outfd)
+	if (ctx->outfd && (ret != CL_VIRUS || cctx->options & CL_SCAN_ALLMATCHES))
 	    cli_bcapi_extract_new(ctx, -1);
     }
     cli_event_time_stop(g_sigevents, bc->sigtime_id);
@@ -2808,14 +2808,19 @@ int cli_bytecode_runlsig(cli_ctx *cctx, struct cli_target_info *tinfo,
 	return CL_SUCCESS;
     }
     if (ctx.virname) {
-	int rc;
-	cli_dbgmsg("Bytecode found virus: %s\n", ctx.virname);
-	if (!strncmp(ctx.virname, "BC.Heuristics", 13))
-	    rc = cli_append_possibly_unwanted(cctx, ctx.virname);
-        else
-            rc = cli_append_virus(cctx, ctx.virname);
-	cli_bytecode_context_clear(&ctx);
-	return rc;
+        if (cctx->num_viruses == 0) {
+            int rc;
+            cli_dbgmsg("Bytecode found virus: %s\n", ctx.virname);
+            if (!strncmp(ctx.virname, "BC.Heuristics", 13))
+                rc = cli_append_possibly_unwanted(cctx, ctx.virname);
+            else
+                rc = cli_append_virus(cctx, ctx.virname);
+            cli_bytecode_context_clear(&ctx);
+            return rc;
+        }
+        else {
+            return CL_VIRUS;
+        }
     }
     ret = cli_bytecode_context_getresult_int(&ctx);
     cli_dbgmsg("Bytecode %u returned code: %u\n", bc->id, ret);
