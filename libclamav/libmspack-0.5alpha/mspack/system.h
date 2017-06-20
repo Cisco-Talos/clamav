@@ -34,7 +34,9 @@ extern "C" {
 
 #ifdef DEBUG
 # include <stdio.h>
+# include <stdint.h>
 
+extern uint8_t cli_debug_flag;
 /* Old GCCs don't have __func__, but __FUNCTION__:
  * http://gcc.gnu.org/onlinedocs/gcc/Function-Names.html
  */
@@ -46,8 +48,11 @@ extern "C" {
 #  endif
 # endif
 /* Adding custom clamav debug code. */
-# define D(x) do {   printf("LibClamAV debug: %s:%d (%s)", __FILE__, __LINE__, __func__); \
-                     printf x ; fputc('\n', stdout); fflush(stdout);} while (0);
+# define D(x) do {   if(cli_debug_flag) { \
+                        printf("LibClamAV debug: %s:%d (%s)", __FILE__, __LINE__, __func__); \
+                        printf x ; fputc('\n', stdout); fflush(stdout); \
+                     } \
+                  } while (0);
 
 #else
 # define D(x)
