@@ -2771,6 +2771,9 @@ int cli_bytecode_runlsig(cli_ctx *cctx, struct cli_target_info *tinfo,
     const struct cli_bc *bc = &bcs->all_bcs[bc_idx-1];
     struct cli_pe_hook_data pehookdata;
 
+    if (bc_idx == 0) 
+        return CL_ENULLARG;
+
     memset(&ctx, 0, sizeof(ctx));
     cli_bytecode_context_setfuncid(&ctx, bc, 0);
     ctx.hooks.match_counts = lsigcnt;
