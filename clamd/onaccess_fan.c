@@ -108,7 +108,7 @@ void *onas_fan_th(void *arg)
         struct sigaction act;
 	const struct optstruct *pt;
 	short int scan;
-	int sizelimit = 0, extinfo;
+	unsigned int sizelimit = 0, extinfo;
 	STATBUF sb;
         uint64_t fan_mask = FAN_EVENT_ON_CHILD | FAN_CLOSE;
         fd_set rfds;
@@ -214,7 +214,7 @@ void *onas_fan_th(void *arg)
     /* Load other options. */
     sizelimit = optget(tharg->opts, "OnAccessMaxFileSize")->numarg;
     if(sizelimit)
-	logg("ScanOnAccess: Max file size limited to %d bytes\n", sizelimit);
+	logg("ScanOnAccess: Max file size limited to %u bytes\n", sizelimit);
     else
 	logg("ScanOnAccess: File size limit disabled\n");
 
