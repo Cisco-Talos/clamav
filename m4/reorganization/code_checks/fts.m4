@@ -1,5 +1,5 @@
 AC_MSG_CHECKING([LFS safe fts implementation])
-AC_TRY_RUN( [
+AC_COMPILE_IFELSE( [
 #include <fts.h>
 
 int main(void) {
