@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>clamd</TITLE>
-<META NAME="description" CONTENT="clamd">
+<TITLE>clamscan</TITLE>
+<META NAME="description" CONTENT="clamscan">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -18,71 +18,69 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
+<LINK REL="next" HREF="node40.html">
 <LINK REL="previous" HREF="node38.html">
-<LINK REL="up" HREF="node37.html">
+<LINK REL="up" HREF="node38.html">
 <LINK REL="next" HREF="node40.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html713"
+<A NAME="tex2html718"
   HREF="node40.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html709"
-  HREF="node37.html">
+<A NAME="tex2html714"
+  HREF="node38.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html705"
+<A NAME="tex2html708"
   HREF="node38.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html711"
+<A NAME="tex2html716"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html714"
-  HREF="node40.html">LibClamAV</A>
-<B> Up:</B> <A NAME="tex2html710"
-  HREF="node37.html">Output format</A>
-<B> Previous:</B> <A NAME="tex2html706"
-  HREF="node38.html">clamscan</A>
- &nbsp; <B>  <A NAME="tex2html712"
+<B> Next:</B> <A NAME="tex2html719"
+  HREF="node40.html">clamd</A>
+<B> Up:</B> <A NAME="tex2html715"
+  HREF="node38.html">Output format</A>
+<B> Previous:</B> <A NAME="tex2html709"
+  HREF="node38.html">Output format</A>
+ &nbsp; <B>  <A NAME="tex2html717"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00069200000000000000">
-clamd</A>
+<H3><A NAME="SECTION00069100000000000000">
+clamscan</A>
 </H3>
-    The output format of <code>clamd</code> is very similar to <code>clamscan</code>.
+    <code>clamscan</code> writes all regular program messages to <SPAN  CLASS="textbf">stdout</SPAN> and
+    errors/warnings to <SPAN  CLASS="textbf">stderr</SPAN>. You can use the option <code>--stdout</code>
+    to redirect all program messages to <SPAN  CLASS="textbf">stdout</SPAN>. Warnings and error
+    messages from <code>libclamav</code> are always printed to <SPAN  CLASS="textbf">stderr</SPAN>.
+    A typical output from <code>clamscan</code> looks like this:
     <PRE>
-	$ telnet localhost 3310
-	Trying 127.0.0.1...
-	Connected to localhost.
-	Escape character is '^]'.
-	SCAN /home/zolw/test
-	/home/zolw/test/clam.exe: ClamAV-Test-File FOUND
-	Connection closed by foreign host.
+	/tmp/test/removal-tool.exe: Worm.Sober FOUND
+	/tmp/test/md5.o: OK
+	/tmp/test/blob.c: OK
+	/tmp/test/message.c: OK
+	/tmp/test/error.hta: VBS.Inor.D FOUND
 </PRE>
-    In the <SPAN  CLASS="textbf">SCAN</SPAN> mode it closes the connection when the first virus
-    is found.
+    When a virus is found its name is printed between the <code>filename:</code> and
+    <code>FOUND</code> strings. In case of archives the scanner depends on libclamav
+    and only prints the first virus found within an archive:
     <PRE>
-	SCAN /home/zolw/test/clam.zip
-	/home/zolw/test/clam.zip: ClamAV-Test-File FOUND
+	$ clamscan malware.zip 
+	malware.zip: Worm.Mydoom.U FOUND
 </PRE>
-    <SPAN  CLASS="textbf">CONTSCAN</SPAN> and <SPAN  CLASS="textbf">MULTISCAN</SPAN> don't stop scanning in case
-    a virus is found.
-<BR>
-Error messages are printed in the following format:
-    <PRE>
-	SCAN /no/such/file
-	/no/such/file: Can't stat() the file. ERROR
-</PRE>
+    When using the -allmatch(-z) flag, clamscan may print multiple virus
+    <code>FOUND</code> lines for archives and files.
 
 <P>
 <BR><HR>
 <ADDRESS>
-Sourcefire 2013-04-16
+Cisco 2017-07-13
 </ADDRESS>
 </BODY>
 </HTML>

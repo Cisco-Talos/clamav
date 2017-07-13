@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>clamav-milter</TITLE>
-<META NAME="description" CONTENT="clamav-milter">
+<TITLE>On-access scanning</TITLE>
+<META NAME="description" CONTENT="On-access scanning">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -18,80 +18,56 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node24.html">
-<LINK REL="previous" HREF="node21.html">
-<LINK REL="up" HREF="node20.html">
+<LINK REL="previous" HREF="node22.html">
+<LINK REL="up" HREF="node22.html">
 <LINK REL="next" HREF="node24.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html515"
+<A NAME="tex2html518"
   HREF="node24.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html511"
-  HREF="node20.html">
+<A NAME="tex2html514"
+  HREF="node22.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html505"
+<A NAME="tex2html510"
   HREF="node22.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html513"
+<A NAME="tex2html516"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html516"
-  HREF="node24.html">Testing</A>
-<B> Up:</B> <A NAME="tex2html512"
-  HREF="node20.html">Configuration</A>
-<B> Previous:</B> <A NAME="tex2html506"
-  HREF="node22.html">On-access scanning</A>
- &nbsp; <B>  <A NAME="tex2html514"
+<B> Next:</B> <A NAME="tex2html519"
+  HREF="node24.html">clamav-milter</A>
+<B> Up:</B> <A NAME="tex2html515"
+  HREF="node22.html">clamd</A>
+<B> Previous:</B> <A NAME="tex2html511"
+  HREF="node22.html">clamd</A>
+ &nbsp; <B>  <A NAME="tex2html517"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00052000000000000000"></A><A NAME="sec:clamavmilter"></A>
-<BR>
-clamav-milter
-</H2>
-    ClamAV <SPAN CLASS="MATH"><IMG
- WIDTH="58" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
- SRC="img5.png"
- ALT="$\ge0.95$"></SPAN> includes a new, redesigned clamav-milter. The most notable
-    difference is that the internal mode has been dropped and now a working
-    clamd companion is required. The second important difference is that now
-    the milter has got its own configuration and log files. 
+<H3><A NAME="SECTION00051100000000000000">
+On-access scanning</A>
+</H3>
+    One of the interesting features of <code>clamd</code> is on-access scanning
+    based on fanotify, included in Linux since kernel 2.6.36.
+    <SPAN  CLASS="textbf">This is not required to run clamd</SPAN>. At the moment the fanotify header is
+    only available for Linux.
     
 <BR>
 <BR>
-To compile ClamAV with the clamav-milter just run <code>./configure</code>
-    <code>--enable-milter</code> and make as usual. In order to use the 
-    '-enable-milter' option with 'configure', your system MUST have the milter 
-    library installed.  If you use the '-enable-milter' option without the 
-    library being installed, you will most likely see output like this during 
-    'configure':
-    <PRE>
-        checking for libiconv_open in -liconv... no
-        checking for iconv... yes
-        checking whether in_port_t is defined... yes
-        checking for in_addr_t definition... yes
-        checking for mi_stop in -lmilter... no
-        checking for library containing strlcpy... no
-        checking for mi_stop in -lmilter... no
-        configure: error: Cannot find libmilter
-</PRE>
-    At which point the 'configure' script will stop processing.
-    
-<BR>
-<BR>
-Please consult your MTA's manual on how to connect ClamAV with the milter.
+Configure on-access scanning in <code>clamd.conf</code> and read the 
+    <A HREF="node32.html#On-access">5.3</A> section for on-access scanning usage.
 
 <P>
 <BR><HR>
 <ADDRESS>
-Sourcefire 2013-04-16
+Cisco 2017-07-13
 </ADDRESS>
 </BODY>
 </HTML>

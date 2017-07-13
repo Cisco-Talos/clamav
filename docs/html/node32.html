@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Clamdtop</TITLE>
-<META NAME="description" CONTENT="Clamdtop">
+<TITLE>On-access Scanning</TITLE>
+<META NAME="description" CONTENT="On-access Scanning">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -20,56 +20,131 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="next" HREF="node33.html">
 <LINK REL="previous" HREF="node31.html">
-<LINK REL="up" HREF="node28.html">
+<LINK REL="up" HREF="node29.html">
 <LINK REL="next" HREF="node33.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html631"
+<A NAME="tex2html634"
   HREF="node33.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html627"
-  HREF="node28.html">
+<A NAME="tex2html630"
+  HREF="node29.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html621"
+<A NAME="tex2html624"
   HREF="node31.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html629"
+<A NAME="tex2html632"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html632"
-  HREF="node33.html">Clamscan</A>
-<B> Up:</B> <A NAME="tex2html628"
-  HREF="node28.html">Usage</A>
-<B> Previous:</B> <A NAME="tex2html622"
-  HREF="node31.html">On-access Scanning</A>
- &nbsp; <B>  <A NAME="tex2html630"
+<B> Next:</B> <A NAME="tex2html635"
+  HREF="node33.html">Clamdtop</A>
+<B> Up:</B> <A NAME="tex2html631"
+  HREF="node29.html">Usage</A>
+<B> Previous:</B> <A NAME="tex2html625"
+  HREF="node31.html">Clamdscan</A>
+ &nbsp; <B>  <A NAME="tex2html633"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00064000000000000000">
-Clamdtop</A>
+<H2><A NAME="SECTION00063000000000000000"></A><A NAME="On-access"></A>
+<BR>
+On-access Scanning
 </H2>
-    <code>clamdtop</code> is a tool to monitor one or multiple instances of clamd.  It
-    has a (color) ncurses interface, that shows the jobs in clamd's queue,
-    memory usage, and information about the loaded signature database.
-    You can specify on the command-line to which clamd(s) it should connect
-    to. By default it will attempt to connect to the local clamd as defined
-    in clamd.conf.
+    There is a special thread in <code>clamd</code> that performs on-access
+    scanning under Linux and shares internal virus database
+    with the daemon. By default, this thread will only notify you when
+    potential threats are discovered. If you turn on prevention via
+    <code>clamd.conf</code> then <SPAN  CLASS="textbf">you must follow some important rules when
+    using it:</SPAN>
+    
+<UL>
+<LI>Always stop the daemon cleanly - using the SHUTDOWN command or
+	      the
+<BR>
+SIGTERM signal. In other case you can lose access
+	      to protected files until the system is restarted.
+</LI>
+<LI>Never protect the directory your mail-scanner software
+	      uses for attachment unpacking. Access to all infected
+	      files will be automatically blocked and the scanner (including
+	      <code>clamd</code>!) will not be able to detect any viruses. In the
+	      result <SPAN  CLASS="textbf">all infected mails may be delivered.</SPAN>
+</LI>
+<LI>Watch your entire filesystem only using the <code>clamd.conf</code>
+	      OnAccessMountPath option. While this will disable on-access prevention,
+	      it will avoid potential system lockups caused by fanotify's blocking
+	      functionality.
+</LI>
+<LI>Using the On-Access Scanner to watch a virtual filesystem will result
+	      in undefined behaviour.
+    
+</LI>
+</UL>
+    The default configuration utilizes inotify to recursively keep track of
+    directories. If you need to protect more than 8192 directories it will
+    be necessary to change inotify's <code>max_user_watches</code> value.
     
 <BR>
 <BR>
-For more detailed help, type 'man clamdtop' or 'clamdtop -help'.
+This can be done temporarily with:
+    <PRE>
+    $ sysctl fs.inotify.max_user_watches=&lt;n&gt;
+</PRE>
+    Where <code>&lt;n&gt;</code> is the new maximum desired.
+    
+<BR>
+<BR>
+To watch your entire filesystem add the following lines to
+    <code>clamd.conf</code>:
+    <PRE>
+	ScanOnAccess yes
+	OnAccessMountPath /
+</PRE>
+    Similarly, to protect your home directory add the following lines to
+    <code>clamd.conf</code>:
+    <PRE>
+	ScanOnAccess yes
+	OnAccessIncludePath /home
+	OnAccessExcludePath /home/user/temp/dir/of/your/mail/scanning/software
+	OnAccessPrevention yes
+</PRE>
+    For more configuration options, type 'man clamd.conf' or reference the
+    example clamd.conf.
 
 <P>
-<BR><HR>
+
+<DIV CLASS="navigation"><HR>
+<!--Navigation Panel-->
+<A NAME="tex2html634"
+  HREF="node33.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html630"
+  HREF="node29.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html624"
+  HREF="node31.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
+<A NAME="tex2html632"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
+<BR>
+<B> Next:</B> <A NAME="tex2html635"
+  HREF="node33.html">Clamdtop</A>
+<B> Up:</B> <A NAME="tex2html631"
+  HREF="node29.html">Usage</A>
+<B> Previous:</B> <A NAME="tex2html625"
+  HREF="node31.html">Clamdscan</A>
+ &nbsp; <B>  <A NAME="tex2html633"
+  HREF="node1.html">Contents</A></B> </DIV>
+<!--End of Navigation Panel-->
 <ADDRESS>
-Sourcefire 2013-04-16
+Cisco 2017-07-13
 </ADDRESS>
 </BODY>
 </HTML>
