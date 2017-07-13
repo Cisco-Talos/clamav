@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Clamscan</TITLE>
-<META NAME="description" CONTENT="Clamscan">
+<TITLE>Clamdtop</TITLE>
+<META NAME="description" CONTENT="Clamdtop">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -20,58 +20,56 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="next" HREF="node34.html">
 <LINK REL="previous" HREF="node32.html">
-<LINK REL="up" HREF="node28.html">
+<LINK REL="up" HREF="node29.html">
 <LINK REL="next" HREF="node34.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html643"
+<A NAME="tex2html646"
   HREF="node34.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html639"
-  HREF="node28.html">
+<A NAME="tex2html642"
+  HREF="node29.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html633"
+<A NAME="tex2html636"
   HREF="node32.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html641"
+<A NAME="tex2html644"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html644"
-  HREF="node34.html">ClamBC</A>
-<B> Up:</B> <A NAME="tex2html640"
-  HREF="node28.html">Usage</A>
-<B> Previous:</B> <A NAME="tex2html634"
-  HREF="node32.html">Clamdtop</A>
- &nbsp; <B>  <A NAME="tex2html642"
+<B> Next:</B> <A NAME="tex2html647"
+  HREF="node34.html">Clamscan</A>
+<B> Up:</B> <A NAME="tex2html643"
+  HREF="node29.html">Usage</A>
+<B> Previous:</B> <A NAME="tex2html637"
+  HREF="node32.html">On-access Scanning</A>
+ &nbsp; <B>  <A NAME="tex2html645"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00065000000000000000">
-Clamscan</A>
+<H2><A NAME="SECTION00064000000000000000">
+Clamdtop</A>
 </H2>
-    <code>clamscan</code> is ClamAV's command line virus scanner.  It can be used to
-    scan files and/or directories for viruses.  In order for clamscan
-    to work proper, the ClamAV virus database files must be installed on
-    the system you are using clamscan on.
+    <code>clamdtop</code> is a tool to monitor one or multiple instances of clamd.  It
+    has a (color) ncurses interface, that shows the jobs in clamd's queue,
+    memory usage, and information about the loaded signature database.
+    You can specify on the command-line to which clamd(s) it should connect
+    to. By default it will attempt to connect to the local clamd as defined
+    in clamd.conf.
     
 <BR>
 <BR>
-The general usage of clamscan is: clamscan [options] [file/directory/-]
-    
-<BR>
-<BR>
-For more detailed help, type 'man clamscan' or 'clamscan -help'.
+For more detailed help, type 'man clamdtop' or 'clamdtop -help'.
 
 <P>
 <BR><HR>
 <ADDRESS>
-Sourcefire 2013-04-16
+Cisco 2017-07-13
 </ADDRESS>
 </BODY>
 </HTML>

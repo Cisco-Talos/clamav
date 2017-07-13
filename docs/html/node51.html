@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Initialization</TITLE>
-<META NAME="description" CONTENT="Initialization">
+<TITLE>Header file</TITLE>
+<META NAME="description" CONTENT="Header file">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -20,59 +20,50 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="next" HREF="node52.html">
 <LINK REL="previous" HREF="node50.html">
-<LINK REL="up" HREF="node49.html">
+<LINK REL="up" HREF="node50.html">
 <LINK REL="next" HREF="node52.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html899"
+<A NAME="tex2html902"
   HREF="node52.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html895"
-  HREF="node49.html">
+<A NAME="tex2html898"
+  HREF="node50.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html889"
+<A NAME="tex2html892"
   HREF="node50.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html897"
+<A NAME="tex2html900"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html900"
-  HREF="node52.html">Database loading</A>
-<B> Up:</B> <A NAME="tex2html896"
-  HREF="node49.html">API</A>
-<B> Previous:</B> <A NAME="tex2html890"
-  HREF="node50.html">Header file</A>
- &nbsp; <B>  <A NAME="tex2html898"
+<B> Next:</B> <A NAME="tex2html903"
+  HREF="node52.html">Initialization</A>
+<B> Up:</B> <A NAME="tex2html899"
+  HREF="node50.html">API</A>
+<B> Previous:</B> <A NAME="tex2html893"
+  HREF="node50.html">API</A>
+ &nbsp; <B>  <A NAME="tex2html901"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00073200000000000000">
-Initialization</A>
+<H3><A NAME="SECTION00073100000000000000">
+Header file</A>
 </H3>
-    Before using libclamav, you should call <code>cl_init()</code> to initialize
-    it. When it's done, you're ready to create a new scan engine by calling
-    <code>cl_engine_new()</code>. To free resources allocated by the engine use
-    <code>cl_engine_free()</code>. Function prototypes:
+    Every program using libclamav must include the header file <code>clamav.h</code>:
     <PRE>
-	int cl_init(unsigned int options);
-	struct cl_engine *cl_engine_new(void);
-	int cl_engine_free(struct cl_engine *engine);
+	#include &lt;clamav.h&gt;
 </PRE>
-    <code>cl_init()</code> and <code>cl_engine_free()</code> return <code>CL_SUCCESS</code>
-    on success or another code on error. <code>cl_engine_new()</code> return
-    a pointer or NULL if there's not enough memory to allocate a new
-    engine structure.
 
 <P>
 <BR><HR>
 <ADDRESS>
-Sourcefire 2013-04-16
+Cisco 2017-07-13
 </ADDRESS>
 </BODY>
 </HTML>

@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Data Loss Prevention</TITLE>
-<META NAME="description" CONTENT="Data Loss Prevention">
+<TITLE>Documents</TITLE>
+<META NAME="description" CONTENT="Documents">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -20,56 +20,62 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="next" HREF="node48.html">
 <LINK REL="previous" HREF="node46.html">
-<LINK REL="up" HREF="node42.html">
+<LINK REL="up" HREF="node43.html">
 <LINK REL="next" HREF="node48.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html841"
+<A NAME="tex2html844"
   HREF="node48.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html837"
-  HREF="node42.html">
+<A NAME="tex2html840"
+  HREF="node43.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html831"
+<A NAME="tex2html834"
   HREF="node46.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html839"
+<A NAME="tex2html842"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html842"
-  HREF="node48.html">Others</A>
-<B> Up:</B> <A NAME="tex2html838"
-  HREF="node42.html">Supported formats and features</A>
-<B> Previous:</B> <A NAME="tex2html832"
-  HREF="node46.html">Documents</A>
- &nbsp; <B>  <A NAME="tex2html840"
+<B> Next:</B> <A NAME="tex2html845"
+  HREF="node48.html">Data Loss Prevention</A>
+<B> Up:</B> <A NAME="tex2html841"
+  HREF="node43.html">Supported formats and features</A>
+<B> Previous:</B> <A NAME="tex2html835"
+  HREF="node46.html">Archives and compressed files</A>
+ &nbsp; <B>  <A NAME="tex2html843"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00072500000000000000">
-Data Loss Prevention</A>
+<H3><A NAME="SECTION00072400000000000000">
+Documents</A>
 </H3>
-    Libclamav includes a DLP module which can detect the following
-    credit card issuers: AMEX, VISA, MasterCard, Discover, Diner's Club,
-    and JCB and U.S. social security numbers inside text files.
+    The most popular file formats are supported:
     
-<BR>
-<BR>
-Future versions of Libclamav may include additional features to
-    detect other credit cards and other forms of PII (Personally
-    Identifiable Information) which may be transmitted without the
-    benefit of being encrypted.
+<UL>
+<LI>MS Office and MacOffice files
+</LI>
+<LI>RTF
+</LI>
+<LI>PDF
+</LI>
+<LI>HTML
+    
+</LI>
+</UL>
+    In the case of Office, RTF and PDF files, libclamav will only extract the
+    embedded objects and will not decode the text data itself. The text
+    decoding and normalization is only performed for HTML files.
 
 <P>
 <BR><HR>
 <ADDRESS>
-Sourcefire 2013-04-16
+Cisco 2017-07-13
 </ADDRESS>
 </BODY>
 </HTML>

@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>On-access scanning</TITLE>
-<META NAME="description" CONTENT="On-access scanning">
+<TITLE>clamd</TITLE>
+<META NAME="description" CONTENT="clamd">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -18,6 +18,7 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
+<LINK REL="next" HREF="node24.html">
 <LINK REL="previous" HREF="node21.html">
 <LINK REL="up" HREF="node21.html">
 <LINK REL="next" HREF="node23.html">
@@ -26,48 +27,58 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html503"
+<A NAME="tex2html507"
   HREF="node23.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html499"
+<A NAME="tex2html503"
   HREF="node21.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html495"
+<A NAME="tex2html497"
   HREF="node21.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html501"
+<A NAME="tex2html505"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html504"
-  HREF="node23.html">clamav-milter</A>
-<B> Up:</B> <A NAME="tex2html500"
-  HREF="node21.html">clamd</A>
-<B> Previous:</B> <A NAME="tex2html496"
-  HREF="node21.html">clamd</A>
- &nbsp; <B>  <A NAME="tex2html502"
+<B> Next:</B> <A NAME="tex2html508"
+  HREF="node23.html">On-access scanning</A>
+<B> Up:</B> <A NAME="tex2html504"
+  HREF="node21.html">Configuration</A>
+<B> Previous:</B> <A NAME="tex2html498"
+  HREF="node21.html">Configuration</A>
+ &nbsp; <B>  <A NAME="tex2html506"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00051100000000000000">
-On-access scanning</A>
-</H3>
-    One of the interesting features of <code>clamd</code> is on-access scanning
-    based on fanotify, included in Linux since kernel 2.6.36.
-    <SPAN  CLASS="textbf">This is not required to run clamd</SPAN>. At the moment the fanotify header is
-    only avaliable for Linux.
-    
-<BR>
-<BR>
-Configure on-access scanning in <code>clamd.conf</code> and read the 
-    <A HREF="node31.html#On-access">5.3</A> section for on-access scanning usage.
+<H2><A NAME="SECTION00051000000000000000">
+clamd</A>
+</H2>
+    Before you start using the daemon you have to edit the configuration file
+    (in other case <code>clamd</code> won't run):
+    <PRE>
+	$ clamd
+	ERROR: Please edit the example config file /etc/clamd.conf.
+</PRE>
+    This shows the location of the default configuration file. The format and
+    options of this file are fully described in the <SPAN  CLASS="textit">clamd.conf(5)</SPAN>
+    manual. The config file is well commented and configuration should be
+    straightforward.
 
 <P>
 <BR><HR>
+<!--Table of Child-Links-->
+<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
+
+<UL CLASS="ChildLinks">
+<LI><A NAME="tex2html509"
+  HREF="node23.html">On-access scanning</A>
+</UL>
+<!--End of Table of Child-Links-->
+<BR><HR>
 <ADDRESS>
-Sourcefire 2013-04-16
+Cisco 2017-07-13
 </ADDRESS>
 </BODY>
 </HTML>
