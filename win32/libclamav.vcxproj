@@ -223,7 +223,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>ws2_32.lib;C:\clamdeps\win64\mspack\lib\mspack.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>$(SolutionDir)libclamav.def</ModuleDefinitionFile>
-      <AdditionalLibraryDirectories>C:\clamdeps\win64\openssl\lib;C:\clamdeps\win64\mspack\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\clamdeps\win64\openssl\bin;C:\clamdeps\win64\mspack\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release-Static|x64'">
