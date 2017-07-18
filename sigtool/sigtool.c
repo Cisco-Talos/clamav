@@ -3510,7 +3510,7 @@ static void help(void)
     mprintf("\n");
     mprintf("Clam AntiVirus: Signature Tool (sigtool)  %s\n", get_version());
     mprintf("       By The ClamAV Team: http://www.clamav.net/team\n");
-    mprintf("       (C) 2007-2015 Cisco Systems, Inc.\n\n");
+    mprintf("       (C) 2007-2017 Cisco Systems, Inc.\n\n");
 
     mprintf("    --help                 -h              show help\n");
     mprintf("    --version              -V              print version number and exit\n");
