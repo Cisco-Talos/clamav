@@ -1,36 +1,43 @@
-0.99.2
+0.99.3
 ------
 
-ClamAV 0.99.2 is a release of bug fixes and minor enhancements.
+Welcome to ClamAV 0.99.3. In this release, we have included many code
+submissions from the ClamAV community:
+    - Interfaces to Prelude open source SIEM.
+    - Visual Studio 2015 for building Microsoft Windows binaries.
+    - Support libmspack code internally or as a shared object library.
+    - Linking with openssl 1.1.0.
+    - Numerous code patches, typos, and compiler warnings.
 
-    - fix ups improving the reliability of several ClamAV file parsers.
-    - sigtool now decodes file type signatures (e.g., daily.ftm CVD file).
-    - now supporting libpcre2 in addition to libpcre.
-    - systemd support for clamd and freshclam. Patch provided by 
-      Andreas Cadhalpun.
-    - fixed builds on Mac OS X 10.10 & 10.11.
-    - improved debug info for certificate metadata.
-    - improved freshclam messaging when using a proxy.
-    - fixed some freshclam functionality when using private mirrors.
-    - clamd refinements of open file limitations on Solaris. Patch by
-      Jim Morris
-    - clamav-milter signal handling for improved clean up during
-      termination.
+Additionally, we have introduced important changes and new features in
+ClamAV 0.99.3, including:
+    - Deprecating internal LLVM code support. The configure script has changed
+      to search the system for an installed instance of the LLVM development
+      libraries, and to otherwise use the bytecode interpreter for ClamAV
+      bytecode signatures. Using the deprecated internal LLVM code is possible
+      with the command: './configure --with-system-llvm=no'
+    - Compute and check PE import table hash (a.k.a. "imphash") signatures.
+    - Support file property collection and analysis for MHTML files.
+    - Raw scanning of PostScript files.
+    - Fix clamsubmit to use the new virus and false positive submission web
+      interface.
+    - Optionally, flag files with the virus "Heuristic.Limits.Exceeded" when
+      size limitations are exceeded.
+    - Improve decoders for PDF files.
 
-Thank you to the following ClamAV community members for your code
-submissions and bug reports! 
+The ClamAV community thanks the following individuals for their ClamAV 0.99.3
+code submissions:
 
-Brandon Perry
 Sebastian Andrzej Siewior
-Andreas Cadhalpun
-Jim Morris
-Kai Risku
+Keith Jones
 Bill Parker
-Tomasz Kojm
-Steve Basford
+Chris Miserva
 Daniel J. Luke
-James Ralston
-John Dodson
+Matthew Boedicker
+Ningirsu
+Michael Pelletier
+Anthony Chan
+Stephen Welker
 
 --
 The ClamAV team (http://www.clamav.net/about.html#credits)
