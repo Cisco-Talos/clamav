@@ -7,19 +7,25 @@ here may not be available in binary packages.
 
 Welcome to ClamAV 0.99.3. In this release, we have included many code
 submissions from the ClamAV community:
-    - Interfaces to Prelude open source SIEM.
+    - Interfaces to the Prelude SIEM open source package for collecting
+      ClamAV virus events.
     - Visual Studio 2015 for building Microsoft Windows binaries.
-    - Support libmspack code internally or as a shared object library.
+    - Support libmspack internal code or as a shared object library.
+      The internal library is the default and contains additional
+      integrity checks.
     - Linking with openssl 1.1.0.
-    - Numerous code patches, typos, and compiler warnings.
+    - Numerous code patches, typos, and compiler warning fixes.
 
 Additionally, we have introduced important changes and new features in
 ClamAV 0.99.3, including:
     - Deprecating internal LLVM code support. The configure script has changed
       to search the system for an installed instance of the LLVM development
       libraries, and to otherwise use the bytecode interpreter for ClamAV
-      bytecode signatures. Using the deprecated internal LLVM code is possible
-      with the command: './configure --with-system-llvm=no'
+      bytecode signatures. To use the LLVM Just-In-Time compiler for
+      executing bytecode signatures, please ensure that the LLVM development
+      package at version 3.6 or lower is installed. Using the deprecated LLVM
+      code is possible with the command: './configure --with-system-llvm=no',
+      but it no longer compiles on all platforms.
     - Compute and check PE import table hash (a.k.a. "imphash") signatures.
     - Support file property collection and analysis for MHTML files.
     - Raw scanning of PostScript files.
