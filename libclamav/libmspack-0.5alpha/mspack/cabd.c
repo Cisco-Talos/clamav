@@ -525,7 +525,8 @@ static char *cabd_read_string(struct mspack_system *sys,
   ssize_t len;
 
   /* read up to 256 bytes */
-  if ( !(len = sys->read(fh, &buf[0], 256) > 0)) {
+  len = sys->read(fh, &buf[0], 256);
+  if (len <= 0) {
       *error = MSPACK_ERR_READ;
       return NULL;
   }
