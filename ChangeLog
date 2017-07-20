@@ -1,3 +1,823 @@
+Thu, 20 Jul 2017 12:10:38 -0400 (Mickey Sola)
+------------------------------------------
+ * 11874 - fixing OOB read in cabd
+
+Wed, 19 Jul 2017 12:14:24 -0400 (Steven Morgan)
+------------------------------------------
+ * ClamAV 0.99.3-beta1 NEWS and README.
+
+Fri, 7 Jul 2017 17:28:14 +0000 (Sebastian Andrzej Siewior)
+------------------------------------------
+ * fts: use AC_COMPILE_IFELSE instead AC_TRY_RUN
+
+Thu, 29 Jun 2017 14:02:03 -0400 (Mickey Sola)
+------------------------------------------
+ * unrar - adding proposed changes to fix RAR VMSF_DELTA Filter Signedness error
+
+Mon, 26 Jun 2017 13:30:57 -0400 (Mickey Sola)
+------------------------------------------
+ * onas - changing sizelimit to unsigned int to allow for wider scan ranges
+
+Wed, 21 Jun 2017 15:53:14 -0400 (Mickey Sola)
+------------------------------------------
+ * bc - adding bc_idx sanity check when running bc lsigs
+
+Tue, 20 Jun 2017 17:15:15 -0400 (Steven Morgan)
+------------------------------------------
+ * fix cli_bcapi_extract_new() return code path virus reporting.
+
+Mon, 19 Jun 2017 15:41:17 -0400 (Mickey Sola)
+------------------------------------------
+ * bb11625 - adding heuristic check for XZ dictionary size evasion
+
+wMon, 12 Jun 2017 17:16:44 -0400 (Mickey Sola)
+------------------------------------------
+ * mspack - simplifying libclamav debug stamp and fixing errors when configuring the library with en
+
+Mon, 12 Jun 2017 14:43:13 -0400 (Mickey Sola)
+------------------------------------------
+ * mspack - adding custom clam debug output for internal mspack
+
+Wed, 31 May 2017 11:20:11 -0400 (Steven Morgan)
+------------------------------------------
+ * fix for 0.99.3 false negative of Andr.Trojan.SMSsend-2.
+
+Tue, 23 May 2017 15:56:41 -0400 (Steven Morgan)
+------------------------------------------
+ * fix 0.99.3 false negative of virus Pdf.Exploit.CVE_2016_1046-1.
+
+Fri, 19 May 2017 13:38:51 -0400 (Steven Morgan)
+------------------------------------------
+ * re-split/regenerate make check's test files.
+
+Wed, 10 May 2017 16:51:16 -0400 (Steven Morgan)
+------------------------------------------
+ * fix for amp allmatch.
+
+Wed, 26 Apr 2017 18:10:57 -0400 (Steven Morgan)
+------------------------------------------
+ * Fix for regression FN's.
+
+Fri, 21 Apr 2017 11:50:47 -0400 (Mickey Sola)
+------------------------------------------
+ * pe - correcting memory loss caused by double string allocation
+
+Tue, 18 Apr 2017 12:03:36 -0400 (Steven Morgan)
+------------------------------------------
+ * bb11805 fix multiple results. Refactor false positive and heuristic precedence logic.
+
+Mon, 16 Nov 2015 22:19:16 +0100 (Sebastian Andrzej Siewior)
+------------------------------------------
+ * clamav: add private fts() implementation
+
+Wed, 1 Feb 2017 16:59:54 -0500 (Mickey Sola)
+------------------------------------------
+ * Configure with largefile size when using internal mspack
+
+Wed, 29 Mar 2017 14:55:26 -0400 (Mickey Sola)
+------------------------------------------
+ * fixing potential OOB window write when unpacking chm files
+
+Thu, 16 Mar 2017 15:06:09 -0400 (Steven Morgan)
+------------------------------------------
+ * bb11803 - Fix pdf out of bound reference.
+
+Thu, 9 Mar 2017 15:11:56 -0500 (Steven Morgan)
+------------------------------------------
+ * fix imphash 'thunk' processing due to unit test check1_clamscan fail.
+
+Wed, 8 Mar 2017 08:58:28 -0500 (Steven Morgan)
+------------------------------------------
+ * bb11798 - fix unit tests.
+
+Fri, 3 Mar 2017 13:56:28 -0500 (Steven Morgan)
+------------------------------------------
+ * bb19798 - fix out of bound memory access for crafted wwunpack file.
+
+Thu, 2 Mar 2017 14:41:20 -0500 (Steven Morgan)
+------------------------------------------
+ * bb11797 - fix invalid read in fuzzed mail file.
+
+Thu, 2 Mar 2017 09:44:09 -0500 (Steven Morgan)
+------------------------------------------
+ * Autotool fixes for libiconv.
+
+Wed, 1 Mar 2017 16:18:27 -0500 (Mickey Sola)
+------------------------------------------
+ * increasing size of pcre match limit
+
+Wed, 15 Feb 2017 14:25:29 -0500 (Steven Morgan)
+------------------------------------------
+ * bb11751 fix compile error in entconv.c.
+
+Wed, 15 Feb 2017 14:07:50 -0500 (Steven Morgan)
+------------------------------------------
+ * bb11742 fix compile error in bytecode_api.c on Mac OS X.
+
+Tue, 14 Feb 2017 15:06:12 -0500 (Steven Morgan)
+------------------------------------------
+ * bb11750 Fix compile warning in special.c.
+
+Tue, 14 Feb 2017 14:53:33 -0500 (Steven Morgan)
+------------------------------------------
+ * bb11749 Fix compile warning in hfsplus.c on Mac OS X. Patch supplied by Ruga.
+
+Tue, 14 Feb 2017 14:31:23 -0500 (Steven Morgan)
+------------------------------------------
+ * bb11748 Fix compile warning is regex_pcre.c on Mac OS X.
+
+Tue, 14 Feb 2017 14:16:18 -0500 (Steven Morgan)
+------------------------------------------
+ * bb11746 Fix compile warning in spin.c. Patch by Ruga.
+
+Tue, 14 Feb 2017 14:04:52 -0500 (Steven Morgan)
+------------------------------------------
+ * bb11745 Fix compile warning. Patch by Ruga.
+
+Fri, 10 Feb 2017 13:52:16 -0500 (Steven Morgan)
+------------------------------------------
+ * bb11744 - fix compiler warnings on Mac OS X.
+
+Fri, 10 Feb 2017 12:59:23 -0500 (Steven Morgan)
+------------------------------------------
+ * bb11743 - fix compiler warning. Patch contributed by Ruga.
+
+Fri, 10 Feb 2017 12:53:24 -0500 (Steven Morgan)
+------------------------------------------
+ * bb11742 - fix compiler warnings. Patch contributed by Ruga.
+
+Wed, 8 Feb 2017 15:00:54 -0500 (Steven Morgan)
+------------------------------------------
+ * bb11741 - fix compiler warnings due to STAT64_BLACKLIST. Patch supplied by Ruga.
+
+Tue, 7 Feb 2017 13:27:15 -0500 (Steven Morgan)
+------------------------------------------
+ * bb11548 fix clamsubmit.
+
+Thu, 2 Feb 2017 12:40:08 -0500 (klin)
+------------------------------------------
+ * updated documentation for 'Intermediates' TDB option (#5)
+
+Wed, 1 Feb 2017 17:29:27 -0500 (Mickey Sola)
+------------------------------------------
+ * Fixes and updates to intermediate container sig rules based on code review
+
+on, 23 Jan 2017 13:11:03 -0500 (Kevin Lin)
+------------------------------------------
+ * add 'Intermediates' field to target description block (allows specification of any number of intermediate containers)
+
+Tue, 17 Jan 2017 12:27:07 -0500 (Steven Morgan)
+------------------------------------------
+ * fix file descriptor leak for msxml documents - patch from Chris Miserva.
+
+Thu, 5 Jan 2017 17:23:46 -0500 (Steven Morgan)
+------------------------------------------
+ * bb11703 - compile pcre with NO_RECURSE on windows.
+
+Thu, 5 Jan 2017 12:30:35 -0500 (Steven Morgan)
+------------------------------------------
+ * bb111711 - fix zlib version check - patch by Daniel J. Luke.
+
+Wed, 4 Jan 2017 13:20:29 -0500 (Steven Morgan)
+------------------------------------------
+ * Fix uninitialized variable issue when scanning file properties with libjson not configured.
+
+Thu, 22 Dec 2016 17:53:40 -0500 (Steven Morgan)
+------------------------------------------
+ * Add missing OS identifier os_generic.
+
+Wed, 21 Dec 2016 17:16:39 -0500 (Steven Morgan)
+------------------------------------------
+ * Change Windows build to use OpenSSL 1.1.0.c
+
+Thu, 15 Dec 2016 11:46:40 -0500 (Steven Morgan)
+------------------------------------------
+ * clamdscan - add an error message when local socket connection fails.
+
+Wed, 14 Dec 2016 18:12:37 -0500 (Steven Morgan)
+------------------------------------------
+ * clamdscan - check that the TCPAddr parameter is enabled before using.
+
+Wed, 14 Dec 2016 13:29:00 -0500 (Steven Morgan)
+------------------------------------------
+ * bb11601 - revise buffer limit check due.
+
+Wed, 16 Nov 2016 11:45:03 -0500 (Mickey Sola)
+------------------------------------------
+ * bb11062 - updated libmspack missing script to warn only and included more prescient advice
+
+Tue, 15 Nov 2016 11:54:25 -0500 (Mickey Sola)
+------------------------------------------
+ * bb11062 - loosening libmspack automake strictness and enabling maintainer mode to mitigate timestamp mangling
+
+Wed, 9 Nov 2016 13:12:19 -0500 (Steven Morgan)
+------------------------------------------
+ * Whitespace commit to prevent ClamAV build from invoking yacc/bison.
+
+Tue, 8 Nov 2016 11:57:16 -0500 (Mickey Sola)
+------------------------------------------
+ * bb11062 - link against libmspack libtool objects
+
+Tue, 8 Nov 2016 11:38:57 -0500 (Steven Morgan)
+------------------------------------------
+ * bb11684 - consistently set file size for yara condition handling.
+
+Thu, 3 Nov 2016 16:58:11 -0400 (Mickey Sola)
+------------------------------------------
+ * bb11062 - add autom4te cache to repo
+
+Thu, 3 Nov 2016 14:23:37 -0400 (Mickey Sola)
+------------------------------------------
+ * bb11062 - defaulting build to internal libmspack and creating configure option to specify use of external library
+
+Fri, 21 Oct 2016 17:05:45 -0400 (Mickey Sola)
+------------------------------------------
+ * bb11062 - require internal libmspack for make distcheck
+
+Fri, 28 Oct 2016 16:14:31 -0400 (Steven Morgan)
+------------------------------------------
+ * bb11677 - release mpool memory with mpool_free(), not free().
+
+Mon, 24 Oct 2016 18:03:36 -0400 (Steven Morgan)
+------------------------------------------
+ * bb11639 - for VBA, run bytecodes and lsigs against decompressed VBA objects rather than the raw VBA project.
+
+Wed, 19 Oct 2016 16:33:48 -0400 (Steven Morgan)
+------------------------------------------
+ * pull request #53(4/4): Spelling fix by klemens(ka7).
+
+Wed, 19 Oct 2016 16:04:25 -0400 (Steven Morgan)
+------------------------------------------
+ * pull request #53(3/4): Spelling fix by klemens(ka7).
+
+Wed, 19 Oct 2016 15:57:45 -0400 (Steven Morgan)
+------------------------------------------
+ * pull request #53(2/4): Spelling fix by klemens(ka7).
+
+Wed, 19 Oct 2016 12:26:33 -0400 (Steven Morgan)
+------------------------------------------
+ * pull request #53(1/4): Spelling fix by klemens(ka7).
+
+Wed, 19 Oct 2016 11:19:08 -0400 (Steven Morgan)
+------------------------------------------
+ * pull request #62: Fix typos in log messages from Matthew Boedicker.
+
+Mon, 17 Oct 2016 11:10:31 -0400 (Mickey Sola)
+------------------------------------------
+ * bb11062 - remove libmspack artifacts from upstream
+
+Mon, 17 Oct 2016 11:07:18 -0400 (Mickey Sola)
+------------------------------------------
+ * bb11062 - make make distcheck work with internal libmspack
+
+Wed, 12 Oct 2016 18:16:51 -0400 (Steven Morgan)
+------------------------------------------
+ * bb17595 (FireAmp) - add sigtool support for building fp-only virus databases.
+
+Tue, 11 Oct 2016 17:48:58 -0400 (Steven Morgan)
+------------------------------------------
+ * bb17169 - compute MD5 file hashsums when using wildcard hdb signatures with caching disabled.
+
+Mon, 10 Oct 2016 16:50:38 -0400 (Steven Morgan)
+------------------------------------------
+ * bb11349 - patch from Michael Pelletier to fix compilation on HP-UX 11.11.
+
+Mon, 19 Sep 2016 11:50:43 -0400 (Mickey Sola)
+------------------------------------------
+ * bb11062 - removing configure option print-multi-os-directory
+
+Thu, 15 Sep 2016 16:04:21 -0400 (Mickey Sola)
+------------------------------------------
+ * bb1062 - simplifying configuration and compilation of internal libmspack
+
+Mon, 12 Sep 2016 14:54:27 -0400 (Mickey Sola)
+------------------------------------------
+ * bb11062 - including new dlls in setup redistributables
+
+Mon, 12 Sep 2016 14:34:52 -0400 (Mickey Sola)
+------------------------------------------
+ * bb11062 - adding compilation batch script to allow for proper windows env configuration
+
+Thu, 8 Sep 2016 13:52:34 -0400 (Mickey Sola)
+------------------------------------------
+ * bb11062 - updating libclamav.vcxproj to properly include 64bit mspack dlls
+
+Thu, 8 Sep 2016 13:04:43 -0400 (Mickey Sola)
+------------------------------------------
+ * bb11062 - updating libmspack windows installer to automate clamdep setup
+
+Mon, 22 Aug 2016 17:50:35 -0400 (Mickey Sola)
+------------------------------------------
+ * bb11062 - removing unnecessary include of mspack's system.h
+
+Mon, 22 Aug 2016 15:43:17 -0400 (Mickey Sola)
+------------------------------------------
+ * bb11062 - convert use of fseeko and ftello functions to meet vs2015 compatibility
+
+Mon, 22 Aug 2016 15:41:02 -0400 (Mickey Sola)
+------------------------------------------
+ * bb11062 - provide libmspack .lib path to vs2015 linker
+
+Mon, 22 Aug 2016 15:39:06 -0400 (Mickey Sola)
+------------------------------------------
+ * bb11062 - link libmspack dll
+
+Wed, 17 Aug 2016 18:06:11 -0400 (Mickey Sola)
+------------------------------------------
+ * bb11062 - modifying libmspack.c macros and casts for VS 2015 compatibility
+
+Wed, 20 Jul 2016 14:21:01 -0400 (Mickey Sola)
+------------------------------------------
+ * bb11062 - adding idmef_logging references to clamd vs2015 proj
+
+Thu, 14 Jul 2016 14:43:12 -0400 (Mickey Sola)
+------------------------------------------
+ * bb11062 - add libmspack.c to vs2015 libclamav solution
+
+Thu, 7 Jul 2016 14:59:47 -0400 (Mickey Sola)
+------------------------------------------
+ * bb11062 - removing old mspack references from VS2015 vcxproj files
+
+Wed, 6 Jul 2016 17:28:17 -0400 (Mickey Sola)
+------------------------------------------
+ * bb11062 - adding mspack.def file
+
+Tue, 5 Jul 2016 14:10:40 -0400 (Mickey Sola)
+------------------------------------------
+ * bb-11062 - adding winbuild script
+
+Tue, 5 Jul 2016 11:20:55 -0400 (Mickey Sola)
+------------------------------------------
+ * bb-11062 - cleanup scanners.c conflict
+
+Tue, 5 Jul 2016 11:13:38 -0400 (Mickey Sola)
+------------------------------------------
+ * bb-11062 - cleanup makefile conflicts
+
+Tue, 5 Jul 2016 10:39:02 -0400 (Mickey Sola)
+------------------------------------------
+ * bb-11062 - removing custom mspack.c
+
+Thu, 24 Mar 2016 12:26:04 -0400 (Mickey Sola)
+------------------------------------------
+ * bb11062 - adding support for external libmspack
+
+Wed, 24 Aug 2016 17:39:20 -0400 (Steven Morgan)
+------------------------------------------
+ * bb11522 - enable clamscan option --blockmax to flag files as virus Heuristic.Limits.Exceeded when --max-filesize, --max-scansize, or --max-recursion is exceeded.
+
+Thu, 14 Jul 2016 17:31:04 -0400 (Kevin Lin)
+------------------------------------------
+ * sigtool: patch hybrid cvd generation
+
+Sat, 13 Aug 2016 02:14:00 +0200 (tomime)
+------------------------------------------
+ * fixing NULL pointer dereference
+
+Thu, 11 Aug 2016 13:16:04 -0400 (Steven Morgan)
+------------------------------------------
+ * bb11618 - indicate virus Heuristic.Broken.Executable for an ELF file with a corrupted header.
+
+Wed, 10 Aug 2016 14:17:18 -0400 (Steven Morgan)
+------------------------------------------
+ * FireAMP bb17724: fix for CVE-2016-3189 for Windows build (win32/3rdparty/bzip2/bzip2recover.c).
+
+Tue, 9 Aug 2016 15:48:31 -0400 (Mickey Sola)
+------------------------------------------
+ * bb11594 - allow for compilation against openssl 1.1.0
+
+Mon, 8 Aug 2016 17:26:38 -0400 (Mickey Sola)
+------------------------------------------
+ * bb11602 - correcting and simplifying fts_info check
+
+Mon, 8 Aug 2016 15:55:49 -0400 (Steven Morgan)
+------------------------------------------
+ * Apply patch from Craig Davidson to fix compilation on RHEL5/CentOS 5.11 with g++ 4.1.2.
+
+Fri, 5 Aug 2016 10:58:51 -0400 (Mickey Sola)
+------------------------------------------
+ * systemd - removing generated files from repository
+
+Tue, 26 Jul 2016 16:36:44 -0400 (Kevin Lin)
+------------------------------------------
+ * pdfdecode: reduced stream dumping conditions to just leave-temps + fix warnings
+
+Tue, 26 Jul 2016 16:06:18 -0400 (Kevin Lin)
+------------------------------------------
+ * bb#11613 - dump vba project data to file with leave-temps
+
+Thu, 21 Jul 2016 15:36:11 -0400 (Mickey Sola)
+------------------------------------------
+ * bb11602 - fixing case where on access scanning would erroneously classify sockets and other objects as directories
+
+Thu, 14 Jul 2016 16:26:16 -0700 (Matthew Boedicker)
+------------------------------------------
+ * bb11605 - Update the error code to CL_ETMPFILE
+
+Wed, 13 Jul 2016 16:26:58 -0400 (Kevin Lin)
+------------------------------------------
+ * win32: fixes for sigtool imphash linking
+
+Wed, 13 Jul 2016 15:52:17 -0400 (Kevin Lin)
+------------------------------------------
+ * implement cli_strndup and cli_mpool_strndup
+
+Tue, 12 Jul 2016 11:53:59 -0400 (Kevin Lin)
+------------------------------------------
+ * imphash: code review and clean up
+
+Mon, 11 Jul 2016 16:25:37 -0400 (Kevin Lin)
+------------------------------------------
+ * imphash: yara copyright for pe_ordinal function
+
+Thu, 30 Jun 2016 17:29:49 -0400 (Kevin Lin)
+------------------------------------------
+ * imphash: refactor code for scanning and sigtool usage
+
+Thu, 30 Jun 2016 11:11:03 -0400 (Kevin Lin)
+------------------------------------------
+ * sig: convert .ith to .imp; add .imp to sigtool
+
+Wed, 29 Jun 2016 18:21:39 -0400 (Kevin Lin)
+------------------------------------------
+ * sigtool: properly generates and reports pe section hashes (mdb)
+
+Mon, 27 Jun 2016 17:55:16 -0400 (Kevin Lin)
+------------------------------------------
+ * imphash: dll and func name validation
+
+Mon, 27 Jun 2016 12:03:45 -0400 (Kevin Lin)
+------------------------------------------
+ * imptbl: macroize similar code; add size based on hashed data
+
+Wed, 22 Jun 2016 17:35:30 -0400 (Kevin Lin)
+------------------------------------------
+ * imptbl: general code clean-up and fixes
+
+Wed, 22 Jun 2016 16:39:42 -0400 (Kevin Lin)
+------------------------------------------
+ * dconf: support added for imptbl and imphash
+
+Wed, 22 Jun 2016 16:28:02 -0400 (Kevin Lin)
+------------------------------------------
+ * imphash: signature file support
+
+Wed, 22 Jun 2016 15:03:14 -0400 (Kevin Lin)
+------------------------------------------
+ * imptbl: add data collection for preclass
+
+Tue, 21 Jun 2016 17:17:40 -0400 (Kevin Lin)
+------------------------------------------
+ * imphash: add parsing of import table and calculate imphash
+
+Tue, 12 Jul 2016 12:46:16 -0400 (Kevin Lin)
+------------------------------------------
+ * matcher-ac: fix error case handling
+
+Wed, 13 Jul 2016 14:27:10 -0400 (Steven Morgan)
+------------------------------------------
+ * bb11601 - check array boundaries in unrarvm rarvm_getbits().
+
+Tue, 12 Jul 2016 14:31:38 -0400 (Steven Morgan)
+------------------------------------------
+ * fix possible out of bounds stack read.
+
+Tue, 12 Jul 2016 12:36:29 -0400 (Steven Morgan)
+------------------------------------------
+ * bb11600 - fix out of bounds stack read.
+
+Fri, 8 Jul 2016 12:15:12 -0400 (Steven Morgan)
+------------------------------------------
+ * clean up file/memory in error case.
+
+Thu, 7 Jul 2016 16:27:47 -0600 (Anthony Chan)
+------------------------------------------
+ * Fix bug in msxml_parse_element which may leave behind empty temp file and leak a little memory
+
+Wed, 6 Jul 2016 18:00:29 -0400 (Kevin Lin)
+------------------------------------------
+ * win32: add missing libxml2 html source files
+
+Wed, 6 Jul 2016 17:27:25 -0400 (Kevin Lin)
+------------------------------------------
+ * mhtml: checks for html parsing support in libxml2
+
+Tue, 5 Jul 2016 15:32:03 -0400 (Steven Morgan)
+------------------------------------------
+ * Additional documentation on using yara in ClamAV.
+
+Tue, 28 Jun 2016 17:39:06 -0400 (Steven Morgan)
+------------------------------------------
+ * bb11586 - change CL_TYPE_EPS to CL_TYPE_PS.
+
+Tue, 28 Jun 2016 15:18:30 -0400 (Kevin Lin)
+------------------------------------------
+ * bb#11587 - track linked bcs on matchers for target 7 normalization
+
+Tue, 28 Jun 2016 11:59:48 -0400 (Kevin Lin)
+------------------------------------------
+ * ole2: added debug message handler_otf stream -> tempfile
+
+Tue, 28 Jun 2016 11:37:31 -0400 (Steven Morgan)
+------------------------------------------
+ * bb11586 - add file type CL_TYPE_EPS for raw scan matching of PostScript files.
+
+Tue, 21 Jun 2016 17:22:52 -0400 (Steven Morgan)
+------------------------------------------
+ * bb11588 - fix out of bounds read.
+
+Tue, 21 Jun 2016 12:11:23 -0400 (Mickey Sola)
+------------------------------------------
+ * adding libltdl valgrind supression for newer distros
+
+Thu, 16 Jun 2016 11:02:21 -0400 (Mickey Sola)
+------------------------------------------
+ * fixing mbox parsing buffer reading issues
+
+Tue, 14 Jun 2016 17:11:41 -0400 (Kevin Lin)
+------------------------------------------
+ * bb#8239 - added offset check to prevent integer wrap
+
+Mon, 13 Jun 2016 14:44:36 -0400 (Mickey Sola)
+------------------------------------------
+ * bb11557 - prefer using opt value for userpwname
+
+Mon, 13 Jun 2016 12:42:01 -0400 (Steven Morgan)
+------------------------------------------
+ * pull request #56: Allow freshclam downloadmanager to return FC_UPTODATE if no update was required.
+
+Mon, 13 Jun 2016 11:16:39 -0400 (Mickey Sola)
+------------------------------------------
+ * bb11557 - freeing opts on exit after failed initgroups check
+
+Thu, 9 Jun 2016 14:06:23 -0400 (Steven Morgan)
+------------------------------------------
+ * bb11549 - fix temp file cleanup issue.
+
+Thu, 2 Jun 2016 11:54:01 -0400 (Mickey Sola)
+------------------------------------------
+ * bb11557 - drop AllowSupplementaryGroups option and make it default, patch by Sebastian A. Siewior
+
+Tue, 24 May 2016 15:04:51 -0400 (Mickey Sola)
+------------------------------------------
+ * updating prelude hook to work with allmatch
+
+Thu, 18 Jun 2015 09:33:04 +0200 (Ningirsu)
+------------------------------------------
+ * Adds a module to use Prelude and connect to a prelude manager
+
+Wed, 8 Jun 2016 16:25:34 -0400 (Steven Morgan)
+------------------------------------------
+ * bb11580 - make cli_matchmeta() respect allmatch.
+
+Thu, 2 Jun 2016 18:08:36 -0400 (Steven Morgan)
+------------------------------------------
+ * bb11471 - add clamscan parameter --normalize=no for yara compatibility.
+
+Thu, 2 Jun 2016 17:49:56 -0400 (Steven Morgan)
+------------------------------------------
+ * phishcheck: include trailing '/' in path names per safebrowsing url canonicalization spec.
+
+Thu, 2 Jun 2016 17:31:56 -0400 (Kevin Lin)
+------------------------------------------
+ * bb#11578 - adjustments to pointer last argument check (exclude hidden ctx)
+
+Thu, 2 Jun 2016 11:09:55 -0400 (Kevin Lin)
+------------------------------------------
+ * bb#11129 - applied unencoded '@' patch
+
+Fri, 27 May 2016 10:46:17 -0400 (Kevin Lin)
+------------------------------------------
+ * json_api: fix function redeclararations
+
+Thu, 26 May 2016 16:30:27 -0400 (Kevin Lin)
+------------------------------------------
+ * mhtml: reader memory fixes
+
+Thu, 26 May 2016 16:06:39 -0400 (Kevin Lin)
+------------------------------------------
+ * mhtml: add comment xml parser and general code clean up
+
+Tue, 24 May 2016 16:32:02 -0400 (Kevin Lin)
+------------------------------------------
+ * msxml_parser: suppress xml2 parser error and warnings to clamav debug
+
+Mon, 23 May 2016 16:08:05 -0400 (Kevin Lin)
+------------------------------------------
+ * msxml_parser: add custom callback data slot
+
+Fri, 20 May 2016 13:47:35 -0400 (Kevin Lin)
+------------------------------------------
+ * msxml_parser: change method of setting callback system; add comment_cb
+
+Thu, 19 May 2016 17:54:56 -0400 (Kevin Lin)
+------------------------------------------
+ * msxml_parser: flags for modifying reader usage (json, walk)
+
+Thu, 19 May 2016 17:24:53 -0400 (Kevin Lin)
+------------------------------------------
+ * mhtml: wrapper for xml parsing using libxml2 htmlparser
+
+Tue, 10 May 2016 18:53:59 -0400 (Kevin Lin)
+------------------------------------------
+ * mhtml: add preclass tracking for document body (attachments)
+
+Tue, 10 May 2016 18:46:32 -0400 (Kevin Lin)
+------------------------------------------
+ * message: add preclass tracking object to message structure
+
+Tue, 10 May 2016 18:43:42 -0400 (Kevin Lin)
+------------------------------------------
+ * jsonapi: add object ownership manipulation and deletion
+
+Tue, 3 May 2016 12:57:13 -0400 (Kevin Lin)
+------------------------------------------
+ * add mhtml files to preclass set
+
+Mon, 2 May 2016 17:32:03 -0400 (Kevin Lin)
+------------------------------------------
+ * MHTML: added filetype and switch case
+
+Thu, 26 May 2016 15:25:54 -0400 (Kevin Lin)
+------------------------------------------
+ * lzwdec: modify dictionary max code points and change state flags
+
+Wed, 25 May 2016 17:32:04 -0400 (Kevin Lin)
+------------------------------------------
+ * matcher: fix issue where filetyping may be lost
+
+Wed, 18 May 2016 16:59:48 -0400 (Kevin Lin)
+------------------------------------------
+ * bumped flevel to 83
+
+Wed, 18 May 2016 14:16:43 -0400 (Mickey Sola)
+------------------------------------------
+ * bb11566 - added additional checks and more verbose error messages
+
+Tue, 17 May 2016 16:44:21 -0400 (Kevin Lin)
+------------------------------------------
+ * preclass: scanning condition includes ac_patterns and pcre_metas
+
+Tue, 17 May 2016 11:54:07 -0400 (Mickey Sola)
+------------------------------------------
+ * bb11566 - adding support for clamd socket directory creation at load time
+
+Wed, 11 May 2016 14:48:58 -0400 (Kevin Lin)
+------------------------------------------
+ * unzip: check for ctx value as requests do not supply a ctx
+
+Wed, 11 May 2016 11:28:01 -0400 (Kevin Lin)
+------------------------------------------
+ * autoreconf
+
+Wed, 11 May 2016 11:27:25 -0400 (Kevin Lin)
+------------------------------------------
+ * config: change bash-specific string manipulation
+
+Tue, 10 May 2016 16:44:36 -0400 (Steven Morgan)
+------------------------------------------
+ * bb11565 - return error for bad file type in cdb sigs & fix cab file name sanitizing.
+
+Mon, 9 May 2016 18:30:30 -0400 (Steven Morgan)
+------------------------------------------
+ * bb11561 - don't copy unmodified file-scheme custom databases. Patch by Stephen Welker.
+
+Mon, 9 May 2016 14:00:00 -0400 (Steven Morgan)
+------------------------------------------
+ * bb11564 - change CL_TYPE_CAB -> CL_TYPE_MSCAB in signatures manual.
+
+Mon, 9 May 2016 13:53:27 -0400 (Steven Morgan)
+------------------------------------------
+ * bb11560 - make cdb signatures also operate on central directory file names because they can differ from the file names in the local headers.
+
+Mon, 9 May 2016 13:43:45 -0400 (Steven Morgan)
+------------------------------------------
+ * bytecode_vm.c: fix compiler warning and reduce debug verbosity.
+
+Fri, 6 May 2016 16:00:04 -0400 (Kevin Lin)
+------------------------------------------
+ * config: fixed pcre version check bug
+
+Fri, 6 May 2016 12:35:13 -0400 (Kevin Lin)
+------------------------------------------
+ * make: change options for make distcheck
+
+Fri, 6 May 2016 11:53:43 -0400 (Kevin Lin)
+------------------------------------------
+ * config: non-sed method for verison string manipulation
+
+Wed, 4 May 2016 12:09:00 -0400 (Kevin Lin)
+------------------------------------------
+ * additional change of PCREMaxFileSize from MATCH_NUMBER to MATCH_SIZE
+
+Mon, 2 May 2016 15:45:01 -0400 (Kevin Lin)
+------------------------------------------
+ * config: unified llvm-opts handling, changed llvm defaults
+
+Wed, 20 Apr 2016 13:03:43 -0400 (Kevin Lin)
+------------------------------------------
+ * unit_tests: valgrind suppression for freebsd 11 dlopen invalid read
+
+Tue, 19 Apr 2016 12:49:57 -0400 (Kevin Lin)
+------------------------------------------
+ * bb#6451 - docs: add notes on cl_init macro
+
+Tue, 19 Apr 2016 11:22:38 -0400 (Kevin Lin)
+------------------------------------------
+ * win32: add lzw/lzwdec.c to source list
+
+Mon, 18 Apr 2016 17:11:59 -0400 (Kevin Lin)
+------------------------------------------
+ * pdfdecode: return raw stream if no non-forced filters succeed
+
+Mon, 18 Apr 2016 17:11:12 -0400 (Kevin Lin)
+------------------------------------------
+ * pdfdecode: do not apply forced decryption to /XRef streams
+
+Wed, 6 Apr 2016 16:47:26 -0400 (Mickey Sola)
+------------------------------------------
+ * bb11378 - updating ClamAV to support VS 2015, patch based on pull request by Keith Jones
+
+Mon, 18 Apr 2016 10:28:32 -0400 (Mickey Sola)
+------------------------------------------
+ * bb11553 - allowing sigtool to ignore comments in signature files
+
+Fri, 15 Apr 2016 11:28:40 -0400 (Kevin Lin)
+------------------------------------------
+ * pdf: add filter count heuristic
+
+Thu, 14 Apr 2016 17:09:27 -0400 (Kevin Lin)
+------------------------------------------
+ * pdfdecode: reduce errmsg to dbgmsg for log reduction
+
+Thu, 14 Apr 2016 16:52:48 -0400 (Kevin Lin)
+------------------------------------------
+ * lzw: increase variable name consistency
+
+Thu, 14 Apr 2016 16:42:51 -0400 (Kevin Lin)
+------------------------------------------
+ * pdfdecode: add dictionary heuristic and all-match support
+
+Thu, 14 Apr 2016 15:17:02 -0400 (Kevin Lin)
+------------------------------------------
+ * pdfdecode: lzw dconf
+
+Wed, 13 Apr 2016 18:46:50 -0400 (Kevin Lin)
+------------------------------------------
+ * pdfdecode: integrate lzw decompression
+
+Wed, 13 Apr 2016 18:45:34 -0400 (Kevin Lin)
+------------------------------------------
+ * implement lzw decompression, derived from tiff
+
+Wed, 13 Apr 2016 18:29:55 -0400 (Kevin Lin)
+------------------------------------------
+ * pdf: fix for locate DecodeParms for filters
+
+Tue, 5 Apr 2016 17:04:10 -0400 (Kevin Lin)
+------------------------------------------
+ * pdfdecode: change various debug messages for clarity
+
+Tue, 5 Apr 2016 11:34:17 -0400 (Kevin Lin)
+------------------------------------------
+ * win32: add pdfdecode to source lists
+
+Fri, 1 Apr 2016 15:20:36 -0400 (Kevin Lin)
+------------------------------------------
+ * pdf: fix for '\r' in obj dictionary debug
+
+Wed, 30 Mar 2016 16:39:37 -0400 (Kevin Lin)
+------------------------------------------
+ * pdfdecode: implement crypt filter handler
+
+Tue, 29 Mar 2016 12:52:08 -0400 (Kevin Lin)
+------------------------------------------
+ * pdfdecode: implement rldecode filter handler
+
+Mon, 28 Mar 2016 13:16:17 -0400 (Kevin Lin)
+------------------------------------------
+ * pdf: filter order tracking implementation (max:64)
+
+Mon, 28 Mar 2016 11:53:40 -0400 (Kevin Lin)
+------------------------------------------
+ * pdfdecode: add new source for stream decoding (ascii85, asciihex, flate)
+
+Fri, 15 Apr 2016 12:02:36 -0400 (Kevin Lin)
+------------------------------------------
+ * bb#11551 - remove excess memory used by events
+
+Wed, 13 Apr 2016 13:16:24 -0400 (Kevin Lin)
+------------------------------------------
+ * matcher: perform regex match if ac has filetype detected
+
+Fri, 8 Apr 2016 14:15:00 -0400 (Steven Morgan)
+------------------------------------------
+ * fix clamsubmit autoconf.
+
+Wed, 30 Mar 2016 19:30:08 -0400 (Steven Morgan)
+------------------------------------------
+ * Add sigtool support for decoding *.ftm signatures (version 1).
+
 Thu, 22 Apr 2016 12:45:00 -0500 (Steven Morgan)
 ------------------------------------------
  * ClamAV 0.99.2 release.
