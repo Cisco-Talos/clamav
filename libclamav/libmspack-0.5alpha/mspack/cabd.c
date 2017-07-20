@@ -521,11 +521,15 @@ static char *cabd_read_string(struct mspack_system *sys,
 {
   off_t base = sys->tell(fh);
   char buf[256], *str;
-  unsigned int len, i, ok;
+  unsigned int i, ok;
+  ssize_t len;
 
   /* read up to 256 bytes */
-  len = sys->read(fh, &buf[0], 256);
-
+  if ( !(len = sys->read(fh, &buf[0], 256) > 0)) {
+      *error = MSPACK_ERR_READ;
+      return NULL;
+  }
+  
   /* search for a null terminator in the buffer. reject empty strings */
   for (i = 1, ok = 0; i < len; i++) if (!buf[i]) { ok = 1; break; }
   if (!ok) {
