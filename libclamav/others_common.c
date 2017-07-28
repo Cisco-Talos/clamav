@@ -117,6 +117,17 @@ void cli_logg_unsetup(void)
 {
 }
 #endif
+
+#if defined(C_SOLARIS)
+size_t strnlen(const char *s, size_t n) __attribute__((weak));
+size_t strnlen(const char *s, size_t n)
+{
+    size_t i = 0;
+    for(; (i < n) && s[i] != '\0'; ++i);
+    return i;
+}
+#endif
+
 uint8_t cli_debug_flag = 0;
 uint8_t cli_always_gen_section_hash = 0;
 

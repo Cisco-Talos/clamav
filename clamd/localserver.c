@@ -25,6 +25,37 @@
 
 #include <stdio.h>
 #include <string.h>
+#if defined(C_SOLARIS)
+size_t strnlen(const char *s, size_t n) __attribute__((weak));
+size_t strnlen(const char *s, size_t n)
+{
+    size_t i = 0;
+    for(; (i < n) && s[i] != '\0'; ++i);
+    return i;
+}
+
+char *strndup(const char *s, size_t n) __attribute__((weak));
+char *strndup(const char *s, size_t n)
+{
+    char *alloc;
+    size_t len;
+
+    if(!s) {
+        return NULL;
+    }
+
+    len = strnlen(s, n);
+    alloc = malloc(len+1);
+
+    if(!alloc) {
+        return NULL;
+    } else
+        memcpy(alloc, s, len);
+
+    alloc[len] = '\0';
+    return alloc;
+}
+#endif
 #include <sys/types.h>
 #ifndef	_WIN32
 #include <sys/socket.h>

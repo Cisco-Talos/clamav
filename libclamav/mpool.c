@@ -364,6 +364,17 @@ static const unsigned int fragsz[] = {
   134217728,
 };
 #endif
+
+#if defined(C_SOLARIS)
+size_t strnlen(const char *s, size_t n) __attribute__((weak));
+size_t strnlen(const char *s, size_t n)
+{
+    size_t i = 0;
+    for(; (i < n) && s[i] != '\0'; ++i);
+    return i;
+}
+#endif
+
 #define FRAGSBITS (sizeof(fragsz)/sizeof(fragsz[0]))
 
 struct MPMAP {
