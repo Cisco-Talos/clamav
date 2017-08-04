@@ -5,7 +5,7 @@ if test "$have_milter" = "yes"; then
 
     dnl Check for libmilter and it's header files in the usual locations
     save_LIBS="$LIBS"
-    CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lpthread"
+    CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS $THREAD_LIBS"
     if test -d /usr/lib/libmilter ; then
 	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -L/usr/lib/libmilter"
     fi
