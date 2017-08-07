@@ -100,7 +100,17 @@
    fun:main
 }
 {
-   dlopen-libcheck-overread
+   dlopen-libcheck-overread4
+   Memcheck:Addr4
+   ...
+   fun:vm_open
+   fun:tryall_dlopen
+   fun:find_handle_callback
+   fun:foreach_dirinpath
+   ...
+}
+{
+   dlopen-libcheck-overread8
    Memcheck:Addr8
    ...
    fun:vm_open
@@ -116,4 +126,136 @@
    ...
    obj:/usr/*lib*/libltdl*
    fun:lt_dlopen
+}
+{
+   bsd-iconv-openat
+   Memcheck:Param
+   openat(filename)
+   fun:_openat
+   ...
+   fun:__bsd_iconv_open
+   ...
+}
+{
+   bsd-iconv-strlen
+   Memcheck:Cond
+   fun:strlen
+   ...
+   fun:snprintf
+   ...
+   fun:__bsd_iconv_open
+   ...
+}
+{
+   bsd-iconv-openat2
+   Memcheck:Param
+   openat(filename)
+   fun:_openat
+   ...
+   fun:open
+   fun:_citrus_map_file
+   ...
+   fun:iconv_open_cached
+   fun:encoding_normalize_toascii
+   ...
+}
+{
+   bsd-iconv-strlen2
+   Memcheck:Cond
+   fun:strlen
+   ...
+   fun:snprintf
+   ...
+   fun:iconv_open_cached
+   fun:encoding_normalize_toascii
+   ...
+}
+{
+   bsd-jit-peephole
+   Memcheck:Cond
+   fun:_ZN12_GLOBAL__N_117PeepholeOptimizer20runOnMachineFunctionERN4llvm15MachineFunctionE
+   ...
+   fun:cli_bytecode_prepare_jit
+   ...
+}
+{
+   bsd-acceptloop-poll
+   Memcheck:Addr4
+   obj:/lib/libthr.so.3
+   obj:/lib/libthr.so.3
+   obj:/usr/local/lib/valgrind/memcheck-x86-freebsd
+   fun:fds_poll_recv
+   fun:acceptloop_th
+   obj:/lib/libthr.so.3
+}
+{
+   bsd-recvloop-poll1
+   Memcheck:Addr4
+   obj:/lib/libthr.so.3
+   obj:/lib/libthr.so.3
+   obj:/usr/local/lib/valgrind/memcheck-x86-freebsd
+   fun:send
+   fun:fds_poll_recv
+   fun:recvloop_th
+   obj:/lib/libthr.so.3
+}
+{
+   bsd-recvloop-poll2
+   Memcheck:Addr4
+   obj:/lib/libthr.so.3
+   obj:/lib/libthr.so.3
+   obj:/usr/local/lib/valgrind/memcheck-x86-freebsd
+   fun:poll
+   fun:fds_poll_recv
+   fun:recvloop_th
+   ...
+}
+{
+   bsd-lowering
+   Memcheck:Cond
+   fun:_ZNK4llvm17X86TargetLowering9LowerCallERNS_14TargetLowering16CallLoweringInfoERNS_15SmallVectorImplINS_7SDValueEEE
+   fun:_ZNK4llvm14TargetLowering11LowerCallToERNS0_16CallLoweringInfoE
+   fun:_ZN4llvm19SelectionDAGBuilder11LowerCallToENS_17ImmutableCallSiteENS_7SDValueEbPNS_17MachineBasicBlockE
+   fun:_ZN4llvm19SelectionDAGBuilder9visitCallERKNS_8CallInstE
+   fun:_ZN4llvm19SelectionDAGBuilder5visitEjRKNS_4UserE
+   fun:_ZN4llvm19SelectionDAGBuilder5visitERKNS_11InstructionE
+   fun:_ZN4llvm16SelectionDAGISel16SelectBasicBlockENS_14ilist_iteratorIKNS_11InstructionEEES4_Rb
+   fun:_ZN4llvm16SelectionDAGISel20SelectAllBasicBlocksERKNS_8FunctionE
+   fun:_ZN4llvm16SelectionDAGISel20runOnMachineFunctionERNS_15MachineFunctionE
+   fun:_ZN4llvm19MachineFunctionPass13runOnFunctionERNS_8FunctionE
+   fun:_ZN4llvm13FPPassManager13runOnFunctionERNS_8FunctionE
+   fun:_ZN4llvm23FunctionPassManagerImpl3runERNS_8FunctionE
+}
+{
+   bsd-lowering2
+   Memcheck:Cond
+   fun:_ZNK4llvm17X86TargetLowering9LowerCallERNS_14TargetLowering16CallLoweringInfoERNS_15SmallVectorImplINS_7SDValueEEE
+   fun:_ZNK4llvm14TargetLowering11LowerCallToERNS0_16CallLoweringInfoE
+   fun:_ZN4llvm12SelectionDAG9getMemcpyENS_7SDValueENS_8DebugLocES1_S1_S1_jbbNS_18MachinePointerInfoES3_
+   fun:_ZN4llvm19SelectionDAGBuilder18visitIntrinsicCallERKNS_8CallInstEj
+   fun:_ZN4llvm19SelectionDAGBuilder9visitCallERKNS_8CallInstE
+   fun:_ZN4llvm19SelectionDAGBuilder5visitEjRKNS_4UserE
+   fun:_ZN4llvm19SelectionDAGBuilder5visitERKNS_11InstructionE
+   fun:_ZN4llvm16SelectionDAGISel16SelectBasicBlockENS_14ilist_iteratorIKNS_11InstructionEEES4_Rb
+   fun:_ZN4llvm16SelectionDAGISel20SelectAllBasicBlocksERKNS_8FunctionE
+   fun:_ZN4llvm16SelectionDAGISel20runOnMachineFunctionERNS_15MachineFunctionE
+   fun:_ZN4llvm19MachineFunctionPass13runOnFunctionERNS_8FunctionE
+   fun:_ZN4llvm13FPPassManager13runOnFunctionERNS_8FunctionE
+}
+
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Cond
+   fun:_ZNK4llvm17X86TargetLowering9LowerCallERNS_14TargetLowering16CallLoweringInfoERNS_15SmallVectorImplINS_7SDValueEEE
+   fun:_ZNK4llvm14TargetLowering11LowerCallToERNS0_16CallLoweringInfoE
+   fun:_ZN4llvm12SelectionDAG9getMemsetENS_7SDValueENS_8DebugLocES1_S1_S1_jbNS_18MachinePointerInfoE
+   fun:_ZN4llvm19SelectionDAGBuilder18visitIntrinsicCallERKNS_8CallInstEj
+   fun:_ZN4llvm19SelectionDAGBuilder9visitCallERKNS_8CallInstE
+   fun:_ZN4llvm19SelectionDAGBuilder5visitEjRKNS_4UserE
+   fun:_ZN4llvm19SelectionDAGBuilder5visitERKNS_11InstructionE
+   fun:_ZN4llvm16SelectionDAGISel16SelectBasicBlockENS_14ilist_iteratorIKNS_11InstructionEEES4_Rb
+   fun:_ZN4llvm16SelectionDAGISel20SelectAllBasicBlocksERKNS_8FunctionE
+   fun:_ZN4llvm16SelectionDAGISel20runOnMachineFunctionERNS_15MachineFunctionE
+   fun:_ZN4llvm19MachineFunctionPass13runOnFunctionERNS_8FunctionE
+   fun:_ZN4llvm13FPPassManager13runOnFunctionERNS_8FunctionE
 }
