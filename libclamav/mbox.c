@@ -1224,7 +1224,7 @@ parseRootMHTML(mbox_ctx *mctx, message *m, text *t)
 	if (input == NULL)
 		return OK;
 
-	htmlDoc = htmlReadMemory(input->data, input->len, "mhtml.html", NULL, CLAMAV_MIN_XMLREADER_FLAGS);
+	htmlDoc = htmlReadMemory((char*)input->data, input->len, "mhtml.html", NULL, CLAMAV_MIN_XMLREADER_FLAGS);
 	if (htmlDoc == NULL) {
 		cli_dbgmsg("parseRootMHTML: cannot intialize read html document\n");
 #if HAVE_JSON
@@ -1279,7 +1279,7 @@ parseRootMHTML(mbox_ctx *mctx, message *m, text *t)
 		break;
 
 	case CL_VIRUS:
-		rc = CL_VIRUS;
+		rc = VIRUS;
 		break;
 
 	default:
