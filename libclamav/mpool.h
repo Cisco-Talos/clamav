@@ -34,7 +34,7 @@ void mpool_free(mpool_t *mpool, void *ptr);
 void *mpool_calloc(mpool_t *mpool, size_t nmemb, size_t size);
 void *mpool_realloc(mpool_t *mpool, void *ptr, size_t size);
 void *mpool_realloc2(mpool_t *mpool, void *ptr, size_t size);
-unsigned char *cli_mpool_hex2str(mpool_t* mpool, const char *src);
+char *cli_mpool_hex2str(mpool_t* mpool, const char *src);
 char *cli_mpool_strdup(mpool_t *mpool, const char *s);
 char *cli_mpool_strndup(mpool_t *mpool, const char *s, size_t n);
 char *cli_mpool_virname(mpool_t *mpool, const char *virname, unsigned int official);

@@ -756,8 +756,8 @@ void *mpool_realloc2(struct MP *mp, void *ptr, size_t size) {
     return NULL;
 }
 
-unsigned char *cli_mpool_hex2str(mpool_t *mp, const char *hex) {
-    unsigned char *str;
+char *cli_mpool_hex2str(mpool_t *mp, const char *hex) {
+    char *str;
     size_t len = strlen((const char*)hex);
 
     if (len&1) {
@@ -770,7 +770,7 @@ unsigned char *cli_mpool_hex2str(mpool_t *mp, const char *hex) {
 	cli_errmsg("cli_mpool_hex2str(): Can't allocate memory (%lu bytes).\n", (unsigned long)(len/2 + 1));
 	return NULL;
     }
-    if (cli_hex2str_to(hex, (char*)str, len) == -1) {
+    if (cli_hex2str_to(hex, str, len) == -1) {
 	mpool_free(mp, str);
 	return NULL;
     }

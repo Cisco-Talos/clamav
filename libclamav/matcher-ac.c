@@ -2341,13 +2341,13 @@ inline static int ac_special_altstr(const char *hexpr, uint8_t sigopts, struct c
 
         for (i = 0; i < num; i++) {
             if (num == 1) {
-                c = (char *) cli_mpool_hex2str(root->mempool, hexprcpy);
+                c = cli_mpool_hex2str(root->mempool, hexprcpy);
             } else {
                 if(!(h = cli_strtok(hexprcpy, i, "|"))) {
                     free(hexprcpy);
                     return CL_EMEM;
                 }
-                c = (char *) cli_mpool_hex2str(root->mempool, h);
+                c = cli_mpool_hex2str(root->mempool, h);
                 free(h);
             }
             if (!c) {
@@ -2356,10 +2356,10 @@ inline static int ac_special_altstr(const char *hexpr, uint8_t sigopts, struct c
             }
 
             if (special->type == AC_SPECIAL_ALT_CHAR) {
-                (special->alt).byte[i] = *c;
+                (special->alt).byte[i] = (unsigned char)*c;
                 mpool_free(root->mempool, c);
             } else {
-                (special->alt).f_str[i] = c;
+                (special->alt).f_str[i] = (unsigned char*)c;
             }
             special->num++;
         }
