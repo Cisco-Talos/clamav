@@ -213,7 +213,7 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
 	unsigned int type, size, pad, compr = 1;
 	off_t off;
 	struct cli_dbinfo *db;
-	unsigned char hash[32];
+	char hash[32];
 
     cli_dbgmsg("in cli_tgzload()\n");
 

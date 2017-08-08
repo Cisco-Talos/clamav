@@ -2193,8 +2193,8 @@ static int cli_loadinfo(FILE *fs, struct cl_engine *engine, unsigned int options
 	const char *tokens[INFO_TOKENS + 1];
 	char buffer[FILEBUFF];
 	unsigned int line = 0, tokens_count, len;
-	unsigned char hash[32];
-        struct cli_dbinfo *last = NULL, *new;
+	char hash[32];
+    struct cli_dbinfo *last = NULL, *new;
 	int ret = CL_SUCCESS, dsig = 0;
     void *ctx;
 
@@ -2213,7 +2213,7 @@ static int cli_loadinfo(FILE *fs, struct cl_engine *engine, unsigned int options
 	if(!(options & CL_DB_UNSIGNED) && !strncmp(buffer, "DSIG:", 5)) {
 	    dsig = 1;
 	    cl_finish_hash(ctx, hash);
-	    if(cli_versig2(hash, buffer + 5, INFO_NSTR, INFO_ESTR) != CL_SUCCESS) {
+	    if(cli_versig2((unsigned char*)hash, buffer + 5, INFO_NSTR, INFO_ESTR) != CL_SUCCESS) {
 		cli_errmsg("cli_loadinfo: Incorrect digital signature\n");
 		ret = CL_EMALFDB;
 	    }
@@ -2262,7 +2262,7 @@ static int cli_loadinfo(FILE *fs, struct cl_engine *engine, unsigned int options
 	    ret = CL_EMALFDB;
 	    break;
 	}
-        new = (struct cli_dbinfo *) mpool_calloc(engine->mempool, 1, sizeof(struct cli_dbinfo));
+    new = (struct cli_dbinfo *) mpool_calloc(engine->mempool, 1, sizeof(struct cli_dbinfo));
 	if(!new) {
 	    ret = CL_EMEM;
 	    break;
@@ -2381,7 +2381,7 @@ static int cli_loadign(FILE *fs, struct cl_engine *engine, unsigned int options,
 	    break;
 	}
 	if(hash) {
-	    if(strlen(hash) != 32 || !(new->virname = (char *) cli_mpool_hex2str(engine->mempool, hash))) {
+	    if(strlen(hash) != 32 || !(new->virname = cli_mpool_hex2str(engine->mempool, hash))) {
 		cli_errmsg("cli_loadign: Malformed MD5 string at line %u\n", line);
 		mpool_free(engine->mempool, new->pattern);
 		mpool_free(engine->mempool, new);

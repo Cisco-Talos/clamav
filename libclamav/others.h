@@ -234,7 +234,7 @@ struct icon_matcher {
 
 struct cli_dbinfo {
     char *name;
-    unsigned char *hash;
+    char *hash;
     size_t size;
     struct cl_cvd *cvd;
     struct cli_dbinfo *next;
@@ -249,7 +249,7 @@ typedef enum {
 
 struct cli_pwdb {
     char *name;
-    unsigned char *passwd;
+    char *passwd;
     uint16_t length;
     struct cli_pwdb *next;
 };
