@@ -6,22 +6,33 @@ AC_ARG_WITH([libcurl],
 [AS_HELP_STRING([--with-libcurl@<:@=DIR@:>@], [path to directory containing libcurl
                 @<:@default=/usr/local or /usr if not found in /usr/local@:>@])],
 [
-if test "$withval"; then
-    LIBCURL_HOME="$withval"
-fi
-], [
-LIBCURL_HOME=/usr/local
-if test ! -f "$LIBCURL_HOME/include/curl/curl.h"
-then
-    LIBCURL_HOME=/usr
-fi
-AC_MSG_RESULT([$LIBCURL_HOME])
-])
-
-if test ! -f "$LIBCURL_HOME/include/curl/curl.h"
-then
-    AC_MSG_WARN([libcurl not found. Please use the web interface for submitting FPs/FNs.])
+find_curl="no"
+if test "X$withval" = "Xyes"; then
+    find_curl="yes"
 else
+    if test "X$withval" != "Xno"; then
+        LIBCURL_HOME="$withval"
+    fi
+fi
+],
+[find_curl="yes"])
+
+if test "X$find_curl" = "Xyes"; then
+    LIBCURL_HOME=/usr/local
+fi
+if test -f "$LIBCURL_HOME/include/curl/curl.h"; then
+    have_curl="yes"
+else
+    if test "X$find_curl" = "Xyes"; then
+        LIBCURL_HOME=/usr
+        if test -f "$LIBCURL_HOME/include/curl/curl.h"; then
+            have_curl="yes"
+        fi
+    fi
+fi
+
+if test "X$have_curl" = "Xyes"; then
+    AC_MSG_RESULT([$LIBCURL_HOME])
     if test -f "$LIBCURL_HOME/bin/curl-config"; then
         CURL_LDFLAGS=$($LIBCURL_HOME/bin/curl-config --libs)
         CURL_CPPFLAGS=$($LIBCURL_HOME/bin/curl-config --cflags)
@@ -34,12 +45,13 @@ else
             CURL_CPPFLAGS=""
         fi
     fi
-
     save_LDFLAGS="$LDFLAGS"
     LDFLAGS="$CURL_LDFLAGS"
     AC_CHECK_LIB([curl], [curl_easy_init], [curl_msg="";have_curl="yes";CLAMSUBMIT_LIBS="$CLAMSUBMIT_LIBS $CURL_LDFLAGS";CLAMSUBMIT_CFLAGS="$CLAMSUBMIT_CFLAGS $CURL_CPPFLAGS"],
-            [AC_MSG_WARN([Your libcurl is misconfigured. Please use the web interface for submitting FPs/FNs.])], [$CURL_LDFLAGS])
+        [AC_MSG_WARN([Your libcurl is misconfigured. Please use the web interface for submitting FPs/FNs.])], [$CURL_LDFLAGS])
     LDFLAGS="$save_LDFLAGS"
+else
+    AC_MSG_WARN([libcurl not found or not requested by ./configure. Please use the web interface for submitting FPs/FNs.])
 fi
 
 AC_SUBST([CLAMSUBMIT_LIBS])
