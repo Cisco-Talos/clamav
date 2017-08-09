@@ -24212,11 +24212,7 @@ fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking LFS safe fts implementation" >&5
 $as_echo_n "checking LFS safe fts implementation... " >&6; }
-if test "$cross_compiling" = yes; then :
-  have_LFS_fts=no
-
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 #include <fts.h>
@@ -24228,15 +24224,12 @@ int main(void) {
 }
 
 _ACEOF
-if ac_fn_c_try_run "$LINENO"; then :
+if ac_fn_c_try_compile "$LINENO"; then :
   have_LFS_fts=yes
 else
   have_LFS_fts=no
 fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
-  conftest.$ac_objext conftest.beam conftest.$ac_ext
-fi
-
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $have_LFS_fts" >&5
 $as_echo "$have_LFS_fts" >&6; }
  if test "x$have_LFS_fts" = "xyes"; then
@@ -24600,28 +24593,37 @@ $as_echo_n "checking for libcurl installation... " >&6; }
 # Check whether --with-libcurl was given.
 if test "${with_libcurl+set}" = set; then :
   withval=$with_libcurl;
-if test "$withval"; then
-    LIBCURL_HOME="$withval"
+find_curl="no"
+if test "X$withval" = "Xyes"; then
+    find_curl="yes"
+else
+    if test "X$withval" != "Xno"; then
+        LIBCURL_HOME="$withval"
+    fi
 fi
 
 else
-
-LIBCURL_HOME=/usr/local
-if test ! -f "$LIBCURL_HOME/include/curl/curl.h"
-then
-    LIBCURL_HOME=/usr
+  find_curl="yes"
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $LIBCURL_HOME" >&5
+
+
+if test "X$find_curl" = "Xyes"; then
+    LIBCURL_HOME=/usr/local
+fi
+if test -f "$LIBCURL_HOME/include/curl/curl.h"; then
+    have_curl="yes"
+else
+    if test "X$find_curl" = "Xyes"; then
+        LIBCURL_HOME=/usr
+        if test -f "$LIBCURL_HOME/include/curl/curl.h"; then
+            have_curl="yes"
+        fi
+    fi
+fi
+
+if test "X$have_curl" = "Xyes"; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $LIBCURL_HOME" >&5
 $as_echo "$LIBCURL_HOME" >&6; }
-
-fi
-
-
-if test ! -f "$LIBCURL_HOME/include/curl/curl.h"
-then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: libcurl not found. Please use the web interface for submitting FPs/FNs." >&5
-$as_echo "$as_me: WARNING: libcurl not found. Please use the web interface for submitting FPs/FNs." >&2;}
-else
     if test -f "$LIBCURL_HOME/bin/curl-config"; then
         CURL_LDFLAGS=$($LIBCURL_HOME/bin/curl-config --libs)
         CURL_CPPFLAGS=$($LIBCURL_HOME/bin/curl-config --cflags)
@@ -24634,7 +24636,6 @@ else
             CURL_CPPFLAGS=""
         fi
     fi
-
     save_LDFLAGS="$LDFLAGS"
     LDFLAGS="$CURL_LDFLAGS"
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for curl_easy_init in -lcurl" >&5
@@ -24681,6 +24682,9 @@ $as_echo "$as_me: WARNING: Your libcurl is misconfigured. Please use the web int
 fi
 
     LDFLAGS="$save_LDFLAGS"
+else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: libcurl not found or not requested by ./configure. Please use the web interface for submitting FPs/FNs." >&5
+$as_echo "$as_me: WARNING: libcurl not found or not requested by ./configure. Please use the web interface for submitting FPs/FNs." >&2;}
 fi
 
 
@@ -27622,7 +27626,7 @@ else
   ENABLE_YARA_FALSE=
 fi
 
- if test "X$have_curl" = "Xyes" && test "X$have_json" = "Xyes"; then
+ if test "X$have_curl" != "Xno" && test "X$have_json" != "Xno"; then
   ENABLE_CLAMSUBMIT_TRUE=
   ENABLE_CLAMSUBMIT_FALSE='#'
 else

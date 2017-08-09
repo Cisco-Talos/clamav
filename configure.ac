@@ -202,7 +202,7 @@ AM_CONDITIONAL([ENABLE_LLVM],
 AM_CONDITIONAL([ENABLE_YARA],
 	       [test "$enable_yara" != "no"])
 AM_CONDITIONAL([ENABLE_CLAMSUBMIT],
-	       [test "X$have_curl" = "Xyes" && test "X$have_json" = "Xyes"])
+	       [test "X$have_curl" != "Xno" && test "X$have_json" != "Xno"])
 no_recursion="yes";
 
 AC_OUTPUT([libclamav/Makefile])
