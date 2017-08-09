@@ -1213,9 +1213,6 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
                 if (off < 0) {
                     cli_dbgmsg("bytecode warning: GEP with negative offset %d!\n", off);
                 }
-                if (inst->u.three[0] < 0) {
-                    cli_dbgmsg("bytecode warning: GEP with negative size %d!\n", inst->u.three[0]);
-                }
 
                 if (!(inst->interp_op%5)) {
                     // how do negative offsets affect pointer intialization?
