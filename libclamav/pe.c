@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015-2016 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2008 Sourcefire, Inc.
  *
  *  Authors: Alberto Wu, Tomasz Kojm
@@ -2216,7 +2216,8 @@ static inline int hash_impfns(cli_ctx *ctx, void **hashctx, uint32_t *impsz, str
     uint32_t thuoff = 0, offset;
     fmap_t *map = *ctx->fmap;
     size_t dlllen = 0, fsize = map->len;
-    int i, j, err = 0, num_fns = 0, ret = CL_SUCCESS;
+    unsigned int err = 0;
+    int i, j, num_fns = 0, ret = CL_SUCCESS;
     const char *buffer;
     enum CLI_HASH_TYPE type;
 #if HAVE_JSON
