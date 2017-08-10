@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015-2016 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015-2017 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2008 Sourcefire, Inc.
  *
  *  Authors: Alberto Wu, Tomasz Kojm
@@ -2310,7 +2310,7 @@ static inline int hash_impfns(cli_ctx *ctx, void **hashctx, uint32_t *impsz, str
             if (!(thunk32.u.Ordinal & PE_IMAGEDIR_ORDINAL_FLAG32)) {
                 offset = cli_rawaddr(thunk32.u.Function, exe_sections, nsections, &err, fsize, hdr_size);
 
-                if (offset >= 0) {
+                if (!ret) {
                     /* Hint field is a uint16_t and precedes the Name field */
                     if ((buffer = fmap_need_off_once(map, offset+sizeof(uint16_t), MIN(PE_MAXNAMESIZE, fsize-offset))) != NULL) {
                         funcname = cli_strndup(buffer, MIN(PE_MAXNAMESIZE, fsize-offset));
@@ -2346,7 +2346,7 @@ static inline int hash_impfns(cli_ctx *ctx, void **hashctx, uint32_t *impsz, str
             if (!(thunk64.u.Ordinal & PE_IMAGEDIR_ORDINAL_FLAG64)) {
                 offset = cli_rawaddr(thunk64.u.Function, exe_sections, nsections, &err, fsize, hdr_size);
 
-                if (offset >= 0) {
+                if (!err) {
                     /* Hint field is a uint16_t and precedes the Name field */
                     if ((buffer = fmap_need_off_once(map, offset+sizeof(uint16_t), MIN(PE_MAXNAMESIZE, fsize-offset))) != NULL) {
                         funcname = cli_strndup(buffer, MIN(PE_MAXNAMESIZE, fsize-offset));
@@ -2384,7 +2384,8 @@ static unsigned int hash_imptbl(cli_ctx *ctx, unsigned char **digest, uint32_t *
     const char *impdes, *buffer;
     void *hashctx[CLI_HASH_AVAIL_TYPES];
     enum CLI_HASH_TYPE type;
-    int err, nimps = 0, ret = CL_SUCCESS;
+    int nimps = 0, ret = CL_SUCCESS;
+    unsigned int err;
     int first = 1;
 
     if(datadir->VirtualAddress == 0 || datadir->Size == 0) {
@@ -2549,7 +2550,7 @@ static int scan_pe_imp(cli_ctx *ctx, struct pe_image_data_dir *dirs, struct cli_
 #else
     if (cli_debug_flag) {
 #endif
-        char *dstr = cli_str2hex(hashset[CLI_HASH_MD5], hashlen[CLI_HASH_MD5]);
+        char *dstr = cli_str2hex((char*)hashset[CLI_HASH_MD5], hashlen[CLI_HASH_MD5]);
         cli_dbgmsg("IMP: %s:%u\n", dstr ? (char *)dstr : "(NULL)", impsz);
 #if HAVE_JSON
         if (ctx->wrkproperty)
@@ -5794,7 +5795,7 @@ int cli_genhash_pe(cli_ctx *ctx, unsigned int class, int type)
         for (i = 0; i < nsections; i++) {
             /* Generate hashes */
             if (cli_hashsect(*ctx->fmap, &exe_sections[i], hashset, genhash, genhash) == 1) {
-                dstr = cli_str2hex(hash, hlen);
+                dstr = cli_str2hex((char*)hash, hlen);
                 cli_dbgmsg("Section{%u}: %u:%s\n", i, exe_sections[i].rsz, dstr ? (char *)dstr : "(NULL)");
                 if (dstr != NULL) {
                     free(dstr);
@@ -5812,7 +5813,7 @@ int cli_genhash_pe(cli_ctx *ctx, unsigned int class, int type)
         /* Generate hash */
         ret = hash_imptbl(ctx, hashset, &impsz, genhash, &dirs[1], exe_sections, nsections, hdr_size, pe_plus);
         if (ret == CL_SUCCESS) {
-            dstr = cli_str2hex(hash, hlen);
+            dstr = cli_str2hex((char*)hash, hlen);
             cli_dbgmsg("Imphash: %s:%u\n", dstr ? (char *)dstr : "(NULL)", impsz);
             if (dstr != NULL) {
                 free(dstr);
