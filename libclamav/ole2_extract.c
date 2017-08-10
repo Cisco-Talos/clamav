@@ -1,7 +1,7 @@
 /*
  * Extract component parts of OLE2 files (e.g. MS Office Documents)
  * 
- * Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ * Copyright (C) 2015, 2017 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  * Copyright (C) 2007-2013 Sourcefire, Inc.
  * 
  * Authors: Trog
@@ -978,7 +978,7 @@ handler_enum(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * 
 
                 /* reading safety checks; do-while used for breaks */
                 do {
-                    if ((prop->start_block < 0) && (prop->size <= 0))
+                    if (prop->size == 0)
                         break;
 
                     if (prop->start_block > (int32_t) hdr->max_block_no)
