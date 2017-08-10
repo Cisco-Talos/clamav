@@ -20284,6 +20284,7 @@ else
   want_fanotify="yes"
 fi
 
+have_fanotify="no"
 
 if test "$cross_compiling" = no; then
  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether setpgrp takes no argument" >&5
@@ -20778,6 +20779,7 @@ linux*)
 
 $as_echo "#define C_LINUX 1" >>confdefs.h
 
+    have_fanotify="no"
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-lpthread"
 	TH_SAFE="-thread-safe"
@@ -20787,6 +20789,7 @@ if test "x$ac_cv_header_sys_fanotify_h" = xyes; then :
 
 $as_echo "#define FANOTIFY 1" >>confdefs.h
 
+                have_fanotify="yes"
 fi
 
 
@@ -30245,14 +30248,14 @@ fi
 
 
    $as_echo_n "              fanotify    : "
-   if test "x$want_fanotify" = "xno"; then :
-  $as_echo "$want_fanotify (disabled)"
-elif test "x$want_fanotify" = "xyes"; then :
-  $as_echo "$want_fanotify"
-elif test "x$want_fanotify" = "x"; then :
-  $as_echo "$want_fanotify"
+   if test "x$have_fanotify" = "xno"; then :
+  $as_echo "$have_fanotify (disabled)"
+elif test "x$have_fanotify" = "xyes"; then :
+  $as_echo "$have_fanotify"
+elif test "x$have_fanotify" = "x"; then :
+  $as_echo "$have_fanotify"
 else
-  $as_echo "$want_fanotify ($want_fanotify)"
+  $as_echo "$have_fanotify ($have_fanotify)"
 fi
 
 if test "x$ac_cv_have_control_in_msghdr" = "xyes"; then
