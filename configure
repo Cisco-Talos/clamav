@@ -27631,7 +27631,7 @@ else
   ENABLE_YARA_FALSE=
 fi
 
- if test "X$have_curl" != "Xno" && test "X$have_json" != "Xno"; then
+ if test "X$have_curl" = "Xyes" && test "X$have_json" = "Xyes"; then
   ENABLE_CLAMSUBMIT_TRUE=
   ENABLE_CLAMSUBMIT_FALSE='#'
 else
