@@ -1241,7 +1241,7 @@ parseRootMHTML(mbox_ctx *mctx, message *m, text *t)
 		rhtml = cli_jsonobj(mctx->wrkobj, "RootHTML");
 		if (rhtml != NULL) {
 			/* MHTML-specific properties */
-			cli_jsonstr(rhtml, "Encoding", htmlGetMetaEncoding(htmlDoc));
+			cli_jsonstr(rhtml, "Encoding", (const char*)htmlGetMetaEncoding(htmlDoc));
 			cli_jsonint(rhtml, "CompressMode", xmlGetDocCompressMode(htmlDoc));
 		}
 	}

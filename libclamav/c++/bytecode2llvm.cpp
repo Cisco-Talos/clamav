@@ -1,7 +1,7 @@
 /*
  *  JIT compile ClamAV bytecode.
  *
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2017 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2009-2010 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
@@ -2429,7 +2429,7 @@ static void setGuard(unsigned char* guardbuf)
     for(unsigned i = 16; i < 48; i++)
 	salt[i] = cli_rndnum(255);
 
-    cl_hash_data("md5", salt, 48, guardbuf, NULL);
+    cl_hash_data((char*)"md5", salt, 48, guardbuf, NULL);
 }
 #if LLVM_VERSION < 32
 static void addFPasses(FunctionPassManager &FPM, bool trusted, const TargetData *TD)
