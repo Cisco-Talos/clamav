@@ -222,7 +222,7 @@ else
     check_libs="$CHECK_LIBS"
 fi
 CL_MSG_STATUS([check       ],[$check_libs],[$enable_check_ut])
-CL_MSG_STATUS([fanotify    ],[$want_fanotify],[$want_fanotify])
+CL_MSG_STATUS([fanotify    ],[$have_fanotify],[$have_fanotify])
 if test "x$ac_cv_have_control_in_msghdr" = "xyes"; then
     CL_MSG_STATUS([fdpassing   ],[$have_fdpass],[$want_fdpassing])
 else
