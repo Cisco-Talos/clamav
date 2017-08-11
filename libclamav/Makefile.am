@@ -147,7 +147,7 @@ endif
 libclamav_nocxx_la_SOURCES = bytecode_nojit.c
 libclamav_nocxx_la_CFLAGS=$(AM_CFLAGS) @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
 
-libclamav_la_LIBADD = @SSL_LIBS@ @JSON_LIBS@ @PCRE_LIBS@ @LIBCLAMAV_LIBS@ @LIBLTDL@ $(IFACELIBADD) $(LLVMLIBADD) libclamav_internal_utils.la @THREAD_LIBS@ @LIBM@
+libclamav_la_LIBADD = @SSL_LIBS@ @JSON_LIBS@ @PCRE_LIBS@ @LIBCLAMAV_LIBS@ @LIBLTDL@ $(XML_LIBS) $(IFACELIBADD) $(LLVMLIBADD) libclamav_internal_utils.la @THREAD_LIBS@ @LIBM@
 libclamav_la_DEPENDENCIES =  @LTDLDEPS@ $(IFACEDEP) $(LLVMDEP) libclamav_internal_utils.la
 libclamav_la_CFLAGS =$(AM_CFLAGS) $(XML_CPPFLAGS) $(YARA_CFLAGS) -DSEARCH_LIBDIR=\"$(libdir)\" @LIBCLAMAV_CPPFLAGS@ @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @ICONV_CPPFLAGS@ @PCRE_CPPFLAGS@
 libclamav_la_LDFLAGS = @SSL_LDFLAGS@ @TH_SAFE@ @JSON_LDFLAGS@ @ICONV_LDFLAGS@ $(XML_LIBS) -version-info @LIBCLAMAV_VERSION@ -no-undefined
