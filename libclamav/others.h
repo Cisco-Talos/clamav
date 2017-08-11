@@ -733,6 +733,7 @@ int cli_matchregex(const char *str, const char *regex);
 void cli_qsort(void *a, size_t n, size_t es, int (*cmp)(const void *, const void *));
 void cli_qsort_r(void *a, size_t n, size_t es, int (*cmp)(const void*, const void *, const void *), void *arg);
 int cli_checktimelimit(cli_ctx *ctx);
+int cli_append_possibly_unwanted(cli_ctx * ctx, const char * virname);
 
 /* symlink behaviour */
 #define CLI_FTW_FOLLOW_FILE_SYMLINK 0x01
