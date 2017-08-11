@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2017 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2009 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm, Török Edvin
@@ -54,6 +54,7 @@
 #include "libclamav/others.h"
 #include "libclamav/scanners.h"
 
+#include "shared/idmef_logging.h"
 #include "shared/optparser.h"
 #include "shared/output.h"
 #include "shared/misc.h"

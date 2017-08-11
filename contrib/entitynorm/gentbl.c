@@ -4,14 +4,14 @@
 
 int main(int argc, char* argv[])
 {
-	int i;
+	size_t i;
 	uint8_t tbl[256];
 	if(argc < 3) {
 		fprintf(stderr, "Usage: %s <variable-name> <character-range|single-char> ...\n", argv[0]);
 		return 1;
 	}
 	memset(tbl, 0, sizeof(tbl));
-	for(i=2;i<argc;i++) {
+	for(i=2;i<(size_t)argc;i++) {
 		const char* v = argv[i];
 		tbl[*v] = 1;
 		if(v[1] == '-') {

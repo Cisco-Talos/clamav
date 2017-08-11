@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2017 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2014 Sourcefire, Inc.
  *
  *  Authors: Nigel Horne, Török Edvin
@@ -1345,8 +1345,8 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
     off_t dict_length, full_dict_length;
     off_t objsize = obj_size(pdf, obj, 1);
     off_t bytesleft;
-    unsigned i, filters=0;
-    unsigned blockopens=0;
+    size_t i;
+    unsigned filters=0, blockopens=0;
     enum objstate objstate = STATE_NONE;
 #if HAVE_JSON
     json_object *pdfobj=NULL, *jsonobj=NULL;

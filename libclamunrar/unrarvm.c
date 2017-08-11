@@ -270,7 +270,7 @@ unsigned int rarvm_read_data(rarvm_input_t *rarvm_input)
 static rarvm_standard_filters_t is_standard_filter(unsigned char *code, int code_size)
 {
 	uint32_t code_crc;
-	int i;
+	size_t i;
 
 	struct standard_filter_signature
 	{
