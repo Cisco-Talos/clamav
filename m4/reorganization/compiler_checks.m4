@@ -141,7 +141,7 @@ int crashtest()
 
 int main(void)
 {
-	int i;
+	size_t i;
 	for(i=0;i<sizeof(values)/sizeof(values[0]);i++) {
 		struct v* v= &values[i];
 		char* dst = v->dst;

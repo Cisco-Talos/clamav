@@ -395,8 +395,9 @@ static int read_tables(int fd, unpack_data_t *unpack_data)
 	uint8_t bit_length[BC];
 	unsigned char table[HUFF_TABLE_SIZE];
 	unsigned int bit_field;
-	int i, length, zero_count, number, n;
-	const int table_size=HUFF_TABLE_SIZE;
+	int length, zero_count, number, n;
+	size_t i;
+	const size_t table_size=HUFF_TABLE_SIZE;
 	
 	rar_dbgmsg("in read_tables Offset=%ld in_addr=%d read_top=%d\n", lseek(fd, 0, SEEK_CUR),
 				unpack_data->in_addr, unpack_data->read_top);

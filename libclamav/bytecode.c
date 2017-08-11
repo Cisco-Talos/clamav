@@ -1,7 +1,7 @@
 /*
  *  Load, and verify ClamAV bytecode.
  *
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2017 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2009-2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
@@ -1749,7 +1749,7 @@ static struct {
 
 static int register_events(cli_events_t *ev)
 {
-    unsigned i;
+    size_t i;
     for (i=0;i<sizeof(bc_events)/sizeof(bc_events[0]);i++) {
 	if (cli_event_define(ev, bc_events[i].id, bc_events[i].name, bc_events[i].type,
 			     bc_events[i].multiple) == -1)

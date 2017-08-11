@@ -634,7 +634,9 @@ static struct {
 
 int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct cli_bc_func *func, const struct cli_bc_inst *inst)
 {
-    unsigned i, j, stack_depth=0, bb_inst=0, stop=0, pc=0;
+    size_t i;
+    uint32_t j;
+    unsigned stack_depth=0, bb_inst=0, stop=0, pc=0;
     struct cli_bc_func *func2;
     struct stack stack;
     struct stack_entry *stack_entry = NULL;
@@ -647,7 +649,7 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 
     memset(&ptrinfos, 0, sizeof(ptrinfos));
     memset(&stack, 0, sizeof(stack));
-    for (i=0;i < cli_apicall_maxglobal - _FIRST_GLOBAL; i++) {
+    for (i=0; i < (size_t)cli_apicall_maxglobal - _FIRST_GLOBAL; i++) {
         void *apiptr;
         uint32_t size;
         const struct cli_apiglobal *g = &cli_globals[i];
@@ -820,7 +822,6 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
                         break;
                     }
                     case 1: {
-                        unsigned i;
                         void* arg1;
                         unsigned arg2, arg1size;
                         READ32(arg2, inst->u.ops.ops[1]);

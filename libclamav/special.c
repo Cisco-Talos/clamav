@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2017 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2008 Sourcefire, Inc.
  *
  *  Authors: Trog, Török Edvin
@@ -355,7 +355,7 @@ static inline int swizz_j48(const uint16_t n[])
 void cli_detect_swizz_str(const unsigned char *str, uint32_t len, struct swizz_stats *stats, int blob)
 {
 	unsigned char stri[4096];
-        uint32_t i, j = 0;
+	size_t i, j = 0;
 	int bad = 0;
 	int lastalnum = 0;
 	uint8_t ngrams[17576];
@@ -365,7 +365,8 @@ void cli_detect_swizz_str(const unsigned char *str, uint32_t len, struct swizz_s
 	int ret;
 
 	stats->entries++;
-	for(i=0;i<len-1 && j < sizeof(stri)-2;i += 2) {
+	for (i=0; (i < (size_t)len - 1) && (j < sizeof(stri) - 2); i += 2)
+	{
 		unsigned char c = str[i];
 		if (str[i+1] || !c) {
 			bad++;
@@ -452,7 +453,7 @@ int cli_detect_swizz(struct swizz_stats *stats)
 {
 	uint32_t gn[10];
 	uint32_t all = 0;
-	unsigned i;
+	size_t i;
 	int global_swizz = CL_CLEAN;
 
 	cli_dbgmsg("cli_detect_swizz: %lu/%lu, version:%d, manifest: %d \n",
