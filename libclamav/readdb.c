@@ -126,7 +126,8 @@ char *cli_virname(const char *virname, unsigned int official)
 int cli_sigopts_handler(struct cli_matcher *root, const char *virname, const char *hexsig, uint8_t sigopts, uint16_t rtype, uint16_t type, const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options)
 {
     char *hexcpy, *start, *end;
-    int i, ret = CL_SUCCESS;
+    unsigned int i;
+    int ret = CL_SUCCESS;
 
     /*
      * cyclic loops with cli_parse_add are impossible now as cli_parse_add 
@@ -303,7 +304,6 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
     int ret, asterisk = 0, range;
     unsigned int i, j, hexlen, nest, parts = 0;
     int mindist = 0, maxdist = 0, error = 0;
-    size_t hexcpysz;
 
     hexlen = strlen(hexsig);
     if (hexsig[0] == '$') {
@@ -1820,7 +1820,7 @@ static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsig
             sigopts = subtokens[3];
 
         if(sigopts) { /* signature modifiers */
-            for(j = 0; j < strlen(sigopts); j++)
+            for(j = 0; j < (int)strlen(sigopts); j++)
                 switch(sigopts[j]) {
                 case 'i':
                     subsig_opts |= ACPATT_OPTION_NOCASE;
@@ -2687,7 +2687,7 @@ static int cli_loadmd(FILE *fs, struct cl_engine *engine, unsigned int *signo, i
 
 	/* tokens[6] - not used */
 
-	new->filepos[0] = new->filepos[1] = strcmp(tokens[7], "*") ? atoi(tokens[7]) : (int) CLI_OFF_ANY;
+	new->filepos[0] = new->filepos[1] = strcmp(tokens[7], "*") ? (unsigned int) atoi(tokens[7]) : (unsigned int) CLI_OFF_ANY;
 
 	/* tokens[8] - not used */
 
@@ -2812,36 +2812,46 @@ static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	    break;
 	}
 
-#define CDBRANGE(token_str, dest)					    \
-	if(strcmp(token_str, "*")) {					    \
-	    if(strchr(token_str, '-')) {				    \
-		if(sscanf(token_str, "%u-%u", &n0, &n1) != 2) {		    \
-		    ret = CL_EMALFDB;					    \
-		} else {						    \
-		    dest[0] = n0;					    \
-		    dest[1] = n1;					    \
-		}							    \
-	    } else {							    \
-		if(!cli_isnumber(token_str))				    \
-		    ret = CL_EMALFDB;					    \
-		else							    \
-		    dest[0] = dest[1] = atoi(token_str);		    \
-	    }								    \
-	    if(ret != CL_SUCCESS) {					    \
-		cli_errmsg("cli_loadcdb: Invalid value %s in signature for %s\n",\
-		    token_str, tokens[0]);				    \
-		if(new->name.re_magic)					    \
-		    cli_regfree(&new->name);				    \
-		mpool_free(engine->mempool, new->virname);		    \
-		mpool_free(engine->mempool, new);			    \
-		ret = CL_EMEM;						    \
-		break;							    \
-	    }								    \
-	} else {							    \
-	    dest[0] = dest[1] = CLI_OFF_ANY;				    \
-	}
+    #define CDBRANGE(token_str, dest)                                             \
+        if (strcmp(token_str, "*"))                                               \
+        {                                                                         \
+            if (strchr(token_str, '-'))                                           \
+            {                                                                     \
+                if (sscanf(token_str, "%u-%u", &n0, &n1) != 2)                    \
+                {                                                                 \
+                    ret = CL_EMALFDB;                                             \
+                }                                                                 \
+                else                                                              \
+                {                                                                 \
+                    dest[0] = n0;                                                 \
+                    dest[1] = n1;                                                 \
+                }                                                                 \
+            }                                                                     \
+            else                                                                  \
+            {                                                                     \
+                if (!cli_isnumber(token_str))                                     \
+                    ret = CL_EMALFDB;                                             \
+                else                                                              \
+                    dest[0] = dest[1] = (unsigned int)atoi(token_str);            \
+            }                                                                     \
+            if (ret != CL_SUCCESS)                                                \
+            {                                                                     \
+                cli_errmsg("cli_loadcdb: Invalid value %s in signature for %s\n", \
+                        token_str, tokens[0]);                                    \
+                if (new->name.re_magic)                                           \
+                    cli_regfree(&new->name);                                      \
+                mpool_free(engine->mempool, new->virname);                        \
+                mpool_free(engine->mempool, new);                                 \
+                ret = CL_EMEM;                                                    \
+                break;                                                            \
+            }                                                                     \
+        }                                                                         \
+        else                                                                      \
+        {                                                                         \
+            dest[0] = dest[1] = CLI_OFF_ANY;                                      \
+        }
 
-	CDBRANGE(tokens[2], new->csize);
+    CDBRANGE(tokens[2], new->csize);
 	CDBRANGE(tokens[4], new->fsizec);
 	CDBRANGE(tokens[5], new->fsizer);
 	CDBRANGE(tokens[7], new->filepos);
@@ -3113,7 +3123,6 @@ static char *parse_yara_hex_string(YR_STRING *string, int *ret)
 {
     char *res, *str, *ovr;
     size_t slen, reslen=0, i, j;
-    int sqr = 0;
 
     if (!(string) || !(string->string)) {
         if (ret) *ret = CL_ENULLARG;
@@ -3242,6 +3251,7 @@ struct cli_ytable {
 
 static int32_t ytable_lookup(const char *hexsig)
 {
+    (void) hexsig;
     /* TODO - WRITE ME! */
     return -1;
 }
@@ -3249,7 +3259,6 @@ static int32_t ytable_lookup(const char *hexsig)
 static int ytable_add_attrib(struct cli_ytable *ytable, const char *hexsig, const char *value, int type)
 {
     int32_t lookup;
-    char **attrib;
 
     if (!ytable || !value)
         return CL_ENULLARG;
@@ -3349,7 +3358,7 @@ static int ytable_add_string(struct cli_ytable *ytable, const char *hexsig)
 
 static void ytable_delete(struct cli_ytable *ytable)
 {
-    uint32_t i;
+    int32_t i;
     if (!ytable)
         return;
 
@@ -3404,17 +3413,17 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
 {
     YR_STRING *string;
     struct cli_ytable ytable;
-    int str_error = 0, i = 0, ret = CL_SUCCESS;
+    size_t i;
+    int str_error = 0, ret = CL_SUCCESS;
     struct cli_lsig_tdb tdb;
     uint32_t lsigid[2];
     struct cli_matcher *root;
     struct cli_ac_lsig **newtable, *lsig, *tsig = NULL;
     unsigned short target = 0;
-    size_t lsize;
     char *logic = NULL, *target_str = NULL;
-    uint8_t has_short_string;
-    char *exp_op = "|";
     char *newident = NULL;
+    /* size_t lsize; */         // only used in commented out code
+    /* char *exp_op = "|"; */   // only used in commented out code
 
     cli_yaramsg("load_oneyara: attempting to load %s\n", rule->identifier);
 
@@ -3859,10 +3868,10 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
     tdb.subsigs = ytable.tbl_cnt;
 
     /*** loading step - put things into the AC trie ***/
-    for (i = 0; i < ytable.tbl_cnt; ++i) {
+    for (i = 0; i < (size_t)ytable.tbl_cnt; ++i) {
         lsigid[1] = i;
 
-        cli_yaramsg("%d: [%s] [%s] [%s%s%s%s]\n", i, ytable.table[i]->hexstr, ytable.table[i]->offset,
+        cli_yaramsg("%zu: [%s] [%s] [%s%s%s%s]\n", i, ytable.table[i]->hexstr, ytable.table[i]->offset,
                     (ytable.table[i]->sigopts & ACPATT_OPTION_NOCASE) ? "i" : "",
                     (ytable.table[i]->sigopts & ACPATT_OPTION_FULLWORD) ? "f" : "",
                     (ytable.table[i]->sigopts & ACPATT_OPTION_WIDE) ? "w" : "",
@@ -3972,7 +3981,7 @@ void cli_yara_free(struct cl_engine * engine)
 //TODO - pua? dbio?
 static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio, const char *filename)
 {
-    YR_COMPILER compiler = {0};
+    YR_COMPILER compiler;
     YR_NAMESPACE ns;
     YR_RULE *rule;
     unsigned int sigs = 0, rules = 0;
@@ -3982,6 +3991,8 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
 
     if((rc = cli_initroots(engine, options)))
         return rc;
+
+    memset(&compiler, 0, sizeof(YR_COMPILER));
 
     compiler.last_result = ERROR_SUCCESS;
     STAILQ_INIT(&compiler.rule_q);
@@ -4091,7 +4102,7 @@ static int cli_loadpwdb(FILE *fs, struct cl_engine *engine, unsigned int options
     char *attribs;
     char buffer[FILEBUFF];
     unsigned int line = 0, skip = 0, pwcnt = 0, tokens_count;
-    struct cli_pwdb *new, *ins;
+    struct cli_pwdb *new;
     cl_pwdb_t container;
     struct cli_lsig_tdb tdb;
     int ret = CL_SUCCESS, pwstype;

@@ -27,7 +27,7 @@
 #ifdef RAR_HIGH_DEBUG
 #define rar_dbgmsg printf
 #else
-static void rar_dbgmsg(const char* fmt,...){}
+static void rar_dbgmsg(const char* fmt,...){(void)fmt;}
 #endif
 
 #define MAX_O 64
@@ -754,19 +754,20 @@ static void update1(ppm_data_t *ppm_data, struct state_tag *p, struct ppm_contex
 static int ppm_decode_symbol1(ppm_data_t *ppm_data, struct ppm_context *context)
 {
 	struct state_tag *p;
-	int i, hi_cnt, count;
+	int i, count;
+	uint8_t hi_cnt;
 	
 	rar_dbgmsg("in ppm_decode_symbol1\n");
 	ppm_data->coder.scale = context->con_ut.u.summ_freq;
 	p = context->con_ut.u.stats;
 	count = coder_get_current_count(&ppm_data->coder);
-	if (count >= ppm_data->coder.scale) {
+	if (count >= (int)ppm_data->coder.scale) {
 		return FALSE;
 	}
-	if (count < (hi_cnt = p->freq)) {
-		ppm_data->prev_success = (2 * (ppm_data->coder.high_count=hi_cnt) >
+	if (count < (int)(hi_cnt = p->freq)) {
+		ppm_data->prev_success = (2 * (ppm_data->coder.high_count=(unsigned int)hi_cnt) >
 						ppm_data->coder.scale);
-		ppm_data->run_length += ppm_data->prev_success;
+		ppm_data->run_length += (int)ppm_data->prev_success;
 		(ppm_data->found_state=p)->freq=(hi_cnt += 4);
 		context->con_ut.u.summ_freq += 4;
 		if (hi_cnt > MAX_FREQ) {
@@ -782,9 +783,9 @@ static int ppm_decode_symbol1(ppm_data_t *ppm_data, struct ppm_context *context)
 	while ((hi_cnt += (++p)->freq) <= count) {
 		if (--i == 0) {
 			ppm_data->hi_bits_flag = ppm_data->hb2flag[ppm_data->found_state->symbol];
-			ppm_data->coder.low_count = hi_cnt;
+			ppm_data->coder.low_count = (unsigned int)hi_cnt;
 			ppm_data->char_mask[p->symbol] = ppm_data->esc_count;
-			i = (ppm_data->num_masked=context->num_stats) - 1;
+			i = (ppm_data->num_masked=(int)context->num_stats) - 1;
 			ppm_data->found_state = NULL;
 			do {
 				ppm_data->char_mask[(--p)->symbol] = ppm_data->esc_count;
@@ -793,7 +794,7 @@ static int ppm_decode_symbol1(ppm_data_t *ppm_data, struct ppm_context *context)
 			return TRUE;
 		}
 	}
-	ppm_data->coder.low_count = (ppm_data->coder.high_count = hi_cnt) - p->freq;
+	ppm_data->coder.low_count = ( ppm_data->coder.high_count = (unsigned int)hi_cnt ) - (unsigned int)p->freq;
 	update1(ppm_data, p, context);
 	return TRUE;
 }
@@ -867,12 +868,13 @@ static struct see2_context_tag *make_esc_freq(ppm_data_t *ppm_data,
 
 static int ppm_decode_symbol2(ppm_data_t *ppm_data, struct ppm_context *context)
 {
-	int count, hi_cnt, i;
+	int count, i;
+	uint8_t hi_cnt;
 	struct see2_context_tag *psee2c;
 	struct state_tag *ps[256], **pps, *p;
 	
 	rar_dbgmsg("in ppm_decode_symbol2\n");
-	i = context->num_stats - ppm_data->num_masked;
+	i = (int)context->num_stats - ppm_data->num_masked;
 	psee2c = make_esc_freq(ppm_data, context, i);
 	pps = ps;
 	p = context->con_ut.u.stats - 1;
@@ -887,28 +889,28 @@ static int ppm_decode_symbol2(ppm_data_t *ppm_data, struct ppm_context *context)
 	} while (--i);
 	ppm_data->coder.scale += hi_cnt;
 	count = coder_get_current_count(&ppm_data->coder);
-	if (count >= ppm_data->coder.scale) {
+	if (count >= (int)ppm_data->coder.scale) {
 		return FALSE;
 	}
 	p=*(pps=ps);
-	if (count < hi_cnt) {
+	if (count < (int)hi_cnt) {
 		hi_cnt = 0;
-		while ((hi_cnt += p->freq) <= count) {
+		while ((int)(hi_cnt += p->freq) <= count) {
 			p=*++pps;
 		}
-		ppm_data->coder.low_count = (ppm_data->coder.high_count=hi_cnt) - p->freq;
+		ppm_data->coder.low_count = (ppm_data->coder.high_count=(unsigned int)hi_cnt) - (unsigned int)p->freq;
 		update(psee2c);
 		update2(ppm_data, p, context);
 	} else {
-		ppm_data->coder.low_count = hi_cnt;
-		ppm_data->coder.high_count = ppm_data->coder.scale;
-		i = context->num_stats - ppm_data->num_masked;
+		ppm_data->coder.low_count = (unsigned int)hi_cnt;
+		ppm_data->coder.high_count = (unsigned int)ppm_data->coder.scale;
+		i = (int)context->num_stats - ppm_data->num_masked;
 		pps--;
 		do {
 			ppm_data->char_mask[(*++pps)->symbol] = ppm_data->esc_count;
 		} while (--i);
 		psee2c->summ += ppm_data->coder.scale;
-		ppm_data->num_masked = context->num_stats;
+		ppm_data->num_masked = (int)context->num_stats;
 	}
 	return TRUE;
 }
@@ -1013,7 +1015,7 @@ int ppm_decode_char(ppm_data_t *ppm_data, int fd, unpack_data_t *unpack_data)
 					ppm_data->sub_alloc.heap_end) {
 				return -1;
 			}
-		} while (ppm_data->min_context->num_stats == ppm_data->num_masked);
+		} while ((int)ppm_data->min_context->num_stats == ppm_data->num_masked);
 		if (!ppm_decode_symbol2(ppm_data, ppm_data->min_context)) {
 			return -1;
 		}
