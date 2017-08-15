@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2017 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007 Sourcefire, Inc.
  *
  *  The unRAR sources may be used in any software to handle RAR
@@ -19,7 +19,7 @@
 #ifdef RAR_HIGH_DEBUG
 #define rar_dbgmsg printf
 #else
-static void rar_dbgmsg(const char* fmt,...){}
+static void rar_dbgmsg(const char* fmt,...){(void)fmt;}
 #endif
 
 #define RAR_MAX_ALLOCATION 184549376

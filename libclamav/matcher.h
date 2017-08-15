@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2017 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -143,18 +143,18 @@ struct cli_matcher {
 
 struct cli_cdb
 {
-    char	*virname;   /* virus name */
-    cli_file_t	ctype;	    /* container type */
-    regex_t	name;	    /* filename regex */
-    size_t	csize[2];   /* container size (min, max); if csize[0] != csize[1]
-			     * then value of 0 makes the field ignored
-			     */
-    size_t	fsizec[2];  /* file size in container */
-    size_t	fsizer[2];  /* real file size */
-    int		encrypted;  /* file is encrypted; 2 == ignore */
-    int		filepos[2]; /* file position in container */
-    int		res1;	    /* reserved / format specific */
-    void	*res2;	    /* reserved / format specific */
+    char	        *virname;   /* virus name */
+    cli_file_t	    ctype;	    /* container type */
+    regex_t	        name;	    /* filename regex */
+    size_t	        csize[2];   /* container size (min, max); if csize[0] != csize[1]
+			                     * then value of 0 makes the field ignored
+			                     */
+    size_t	        fsizec[2];  /* file size in container */
+    size_t	        fsizer[2];  /* real file size */
+    int		        encrypted;  /* file is encrypted; 2 == ignore */
+    unsigned int    filepos[2]; /* file position in container */
+    int		        res1;	    /* reserved / format specific */
+    void	        *res2;	    /* reserved / format specific */
 
     struct cli_cdb *next;
 };
