@@ -1146,6 +1146,7 @@ parseMHTMLComment(const char *comment, cli_ctx *ctx, void *wrkjobj, void *cbdata
 	int ret = CL_SUCCESS;
 
 	UNUSEDPARAM(cbdata);
+	UNUSEDPARAM(wrkjobj);
 
 	xmlend = comment;
 	while ((xmlsrt = strstr(xmlend, "<xml>"))) {
@@ -1200,7 +1201,7 @@ parseRootMHTML(mbox_ctx *mctx, message *m, text *t)
 #if HAVE_LIBXML2
 #ifdef LIBXML_HTML_ENABLED
 	struct msxml_ctx mxctx;
-	blob *input;
+	blob *input = NULL;
 	htmlDocPtr htmlDoc;
 	xmlTextReaderPtr reader;
 	int ret = CL_SUCCESS;
@@ -1219,8 +1220,9 @@ parseRootMHTML(mbox_ctx *mctx, message *m, text *t)
 
 	if (m != NULL)
 		input = messageToBlob(m, 0);
-	else if (t != NULL)
+	else /* t != NULL */
 		input = textToBlob(t, NULL, 0);
+
 	if (input == NULL)
 		return OK;
 

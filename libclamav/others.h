@@ -80,21 +80,40 @@ extern uint8_t cli_debug_flag;
 extern uint8_t cli_always_gen_section_hash;
 
 /*
- * CLI_ISCONTAINED(buf1, size1, buf2, size2) checks if buf2 is contained
- * within buf1.
+ * CLI_ISCONTAINED(bb, bb_size, sb, sb_size) checks if sb (sub buffer) is contained
+ * within bb (buffer).
  *
- * buf1 and buf2 are pointers (or offsets) for the main buffer and the
- * sub-buffer respectively, and size1/2 are their sizes
+ * bb and sb are pointers (or offsets) for the main buffer and the
+ * sub-buffer respectively, and bb_size and sb_size are their sizes
  *
  * The macro can be used to protect against wraps.
  */
-#define CLI_ISCONTAINED(bb, bb_size, sb, sb_size)	\
-  ((bb_size) > 0 && (sb_size) > 0 && (size_t)(sb_size) <= (size_t)(bb_size) \
-   && (sb) >= (bb) && ((sb) + (sb_size)) <= ((bb) + (bb_size)) && ((sb) + (sb_size)) > (bb) && (sb) < ((bb) + (bb_size)))
+#define CLI_ISCONTAINED(bb, bb_size, sb, sb_size)                                           \
+    (                                                                                       \
+        (size_t)(bb_size) > 0 && (size_t)(sb_size) > 0 &&                                   \
+        (size_t)(sb_size) <= (size_t)(bb_size) &&                                           \
+        (ptrdiff_t)(sb) >= (ptrdiff_t)(bb) &&                                               \
+        (ptrdiff_t)(sb) + (ptrdiff_t)(sb_size) <= (ptrdiff_t)(bb) + (ptrdiff_t)(bb_size) && \
+        (ptrdiff_t)(sb) + (ptrdiff_t)(sb_size) > (ptrdiff_t)(bb) &&                         \
+        (ptrdiff_t)(sb) < (ptrdiff_t)(bb) + (ptrdiff_t)(bb_size)                            \
+    )
 
-#define CLI_ISCONTAINED2(bb, bb_size, sb, sb_size)	\
-  ((bb_size) > 0 && (sb_size) >= 0 && (size_t)(sb_size) <= (size_t)(bb_size) \
-   && (sb) >= (bb) && ((sb) + (sb_size)) <= ((bb) + (bb_size)) && ((sb) + (sb_size)) >= (bb) && (sb) < ((bb) + (bb_size)))
+/*
+ * CLI_ISCONTAINED2(bb, bb_size, sb, sb_size) checks if sb (sub buffer) is contained
+ * within bb (buffer).
+ *
+ * CLI_ISCONTAINED2 is the same as CLI_ISCONTAINED except that it allows for sub-
+ * buffers with sb_size == 0.
+ */
+#define CLI_ISCONTAINED2(bb, bb_size, sb, sb_size)                                          \
+    (                                                                                       \
+        (size_t)(bb_size) > 0 && (size_t)(sb_size) >= 0 &&                                  \
+        (size_t)(sb_size) <= (size_t)(bb_size) &&                                           \
+        (ptrdiff_t)(sb) >= (ptrdiff_t)(bb) &&                                               \
+        (ptrdiff_t)(sb) + (ptrdiff_t)(sb_size) <= (ptrdiff_t)(bb) + (ptrdiff_t)(bb_size) && \
+        (ptrdiff_t)(sb) + (ptrdiff_t)(sb_size) >= (ptrdiff_t)(bb) &&                        \
+        (ptrdiff_t)(sb) < (ptrdiff_t)(bb) + (ptrdiff_t)(bb_size)                            \
+    )
 
 #define CLI_MAX_ALLOCATION (182*1024*1024)
 

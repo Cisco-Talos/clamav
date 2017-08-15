@@ -3680,8 +3680,8 @@ int cli_map_scan(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx, cli_
         }
         if (!CLI_ISCONTAINED(old_off, old_len, old_off + offset, length))
         {
-            cli_dbgmsg("cli_map_scan: map error occurred [%ld, %lu]\n",
-                       (long)old_off, (unsigned long)old_len);
+            cli_dbgmsg("cli_map_scan: map error occurred [%ld, %zu]\n",
+                       (long)old_off, old_len);
             return CL_CLEAN;
         }
 
