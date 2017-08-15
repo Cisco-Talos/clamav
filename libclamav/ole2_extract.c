@@ -357,8 +357,6 @@ print_ole2_property(property_t * property)
 static void
 print_ole2_header(ole2_header_t * hdr)
 {
-    int             i;
-
     if (!hdr || !cli_debug_flag) {
         return;
     }
@@ -981,7 +979,7 @@ handler_enum(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * 
                     if (prop->size == 0)
                         break;
 
-                    if (prop->start_block > (int32_t) hdr->max_block_no)
+                    if (prop->start_block > hdr->max_block_no)
                         break;
 
                     /* read the header block (~256 bytes) */
@@ -1154,7 +1152,7 @@ scan_mso_stream(int fd, cli_ctx *ctx)
         if (count) {
             if (cli_checklimits("MSO", ctx, outsize + count, 0, 0) != CL_SUCCESS)
                 break;
-            if (cli_writen(ofd, outbuf, count) != count) {
+            if (cli_writen(ofd, outbuf, count) != (int)count) {
                 cli_errmsg("scan_mso_stream: Can't write to file %s\n", tmpname);
                 ret = CL_EWRITE;
                 goto mso_end;
@@ -1228,7 +1226,7 @@ handler_otf(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * c
         return CL_ECREAT;
     }
     current_block = prop->start_block;
-    len = prop->size;
+    len = (int32_t)prop->size;
 
     if (cli_debug_flag) {
         if (!name)

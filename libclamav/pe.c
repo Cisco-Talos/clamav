@@ -2217,7 +2217,7 @@ static inline int hash_impfns(cli_ctx *ctx, void **hashctx, uint32_t *impsz, str
     fmap_t *map = *ctx->fmap;
     size_t dlllen = 0, fsize = map->len;
     unsigned int err = 0;
-    int i, j, num_fns = 0, ret = CL_SUCCESS;
+    int num_fns = 0, ret = CL_SUCCESS;
     const char *buffer;
     enum CLI_HASH_TYPE type;
 #if HAVE_JSON
@@ -2245,9 +2245,10 @@ static inline int hash_impfns(cli_ctx *ctx, void **hashctx, uint32_t *impsz, str
     }
 #endif
 
-#define update_imphash()                                                \
+#define UPDATE_IMPHASH()                                                \
     do {                                                                \
     if (funcname) {                                                     \
+        size_t i, j;                                                    \
         char *fname;                                                    \
         size_t funclen;                                                 \
                                                                         \
@@ -2329,7 +2330,7 @@ static inline int hash_impfns(cli_ctx *ctx, void **hashctx, uint32_t *impsz, str
                 }
             }
 
-            update_imphash();
+            UPDATE_IMPHASH();
             free(funcname);
             if (ret != CL_SUCCESS)
                 return ret;
@@ -2365,7 +2366,7 @@ static inline int hash_impfns(cli_ctx *ctx, void **hashctx, uint32_t *impsz, str
                 }
             }
 
-            update_imphash();
+            UPDATE_IMPHASH();
             free(funcname);
             if (ret != CL_SUCCESS)
                 return ret;
@@ -5640,7 +5641,7 @@ int cli_genhash_pe(cli_ctx *ctx, unsigned int class, int type)
     } pe_opt;
     const struct pe_image_section_hdr *section_hdr;
     ssize_t at;
-    unsigned int i, j, pe_plus = 0;
+    unsigned int i, pe_plus = 0;
     size_t fsize;
     uint32_t valign, falign, hdr_size;
     struct pe_image_file_hdr file_hdr;
