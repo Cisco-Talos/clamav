@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2014 Cisco and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2014, 2017 Cisco and/or its affiliates. All rights reserved.
  *
  *  Author: Shawn Webb
  *
@@ -226,7 +226,7 @@ int is_object_reference(char *begin, char **endchar, uint32_t *id)
     return 0;
 }
 
-static char *pdf_decrypt_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *in, off_t *length)
+static char *pdf_decrypt_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *in, size_t *length)
 {
     enum enc_method enc;
 
@@ -242,8 +242,8 @@ static char *pdf_decrypt_string(struct pdf_struct *pdf, struct pdf_obj *obj, con
 char *pdf_finalize_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *in, size_t len)
 {
     char *wrkstr, *output = NULL;
-    size_t wrklen = len, outlen;
-    unsigned int i, likelyutf = 0;
+    size_t wrklen = len, outlen, i;
+    unsigned int likelyutf = 0;
 
     if (!in)
         return NULL;
@@ -336,9 +336,9 @@ char *pdf_finalize_string(struct pdf_struct *pdf, struct pdf_obj *obj, const cha
     /* check for encryption and decrypt */
     if (pdf->flags & (1 << ENCRYPTED_PDF))
     {
-        off_t tmpsz = (off_t)wrklen;
+        size_t tmpsz = wrklen;
         output = pdf_decrypt_string(pdf, obj, wrkstr, &tmpsz);
-        outlen = (size_t)tmpsz;
+        outlen = tmpsz;
         free(wrkstr);
         if (output) {
             wrkstr = cli_calloc(outlen+1, sizeof(char));

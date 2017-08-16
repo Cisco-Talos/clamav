@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2016 Cisco and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2016-2017 Cisco and/or its affiliates. All rights reserved.
  *
  *  Author: Kevin Lin
  *
@@ -71,7 +71,7 @@ struct pdf_token {
     uint32_t flags;    /* tracking flags */
     uint32_t success;  /* successfully decoded filters */
 
-    uint32_t length;   /* length of current content */
+    uint32_t length;   /* length of current content */ /* TODO: transition to size_t */
     uint8_t *content;  /* content stream */
 };
 
@@ -85,10 +85,10 @@ static  int filter_asciihexdecode(struct pdf_struct *pdf, struct pdf_obj *obj, s
 static  int filter_decrypt(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token, int mode);
 static  int filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token);
 
-off_t pdf_decodestream(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, const char *stream, uint32_t streamlen, int xref, int fout, int *rc)
+ptrdiff_t pdf_decodestream(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, const char *stream, uint32_t streamlen, int xref, int fout, int *rc)
 {
     struct pdf_token *token;
-    off_t rv;
+    ptrdiff_t rv;
 
     if (!stream || !streamlen || fout < 0) {
         cli_dbgmsg("cli_pdf: no filters or stream on obj %u %u\n", obj->id>>8, obj->id&0xff);
@@ -127,7 +127,7 @@ off_t pdf_decodestream(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_d
 
     cli_dbgmsg("cli_pdf: detected %lu applied filters\n", (long unsigned)(obj->numfilters));
 
-    rv = pdf_decodestream_internal(pdf, obj, params, token);
+    rv = (ptrdiff_t)pdf_decodestream_internal(pdf, obj, params, token);
     /* return is generally ignored */
     if (rc) {
         if (rv == CL_VIRUS)
@@ -727,7 +727,7 @@ static int filter_asciihexdecode(struct pdf_struct *pdf, struct pdf_obj *obj, st
 static int filter_decrypt(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token, int mode)
 {
     char *decrypted;
-    off_t length = token->length;
+    size_t length = (size_t)token->length;
     enum enc_method enc = ENC_IDENTITY;
 
     if (mode)
@@ -758,8 +758,8 @@ static int filter_decrypt(struct pdf_struct *pdf, struct pdf_obj *obj, struct pd
         return CL_EPARSE; /* TODO: what should this value be? CL_SUCCESS would mirror previous behavior */
     }
 
-    cli_dbgmsg("cli_pdf: decrypted %lld bytes from %lu total bytes\n",
-               (long long int)length, (long unsigned)token->length);
+    cli_dbgmsg("cli_pdf: decrypted %zu bytes from %u total bytes\n",
+               length, token->length);
 
 
     free(token->content);

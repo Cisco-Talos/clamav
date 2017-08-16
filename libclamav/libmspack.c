@@ -213,7 +213,7 @@ static int mspack_fmap_seek(struct mspack_file *file, off_t offset, int mode)
 			cli_dbgmsg("%s() err %d\n", __func__, __LINE__);
 			return -1;
 		}
-		if (new_pos < 0 || new_pos > mspack_handle->fmap->len) {
+		if (new_pos < 0 || new_pos > (off_t)mspack_handle->fmap->len) {
 			cli_dbgmsg("%s() err %d\n", __func__, __LINE__);
 			return -1;
 		}
@@ -255,10 +255,12 @@ static off_t mspack_fmap_tell(struct mspack_file *file)
 
 static void mspack_fmap_message(struct mspack_file *file, const char *fmt, ...)
 {
+	UNUSEDPARAM(file);
 	cli_dbgmsg("%s() %s\n", __func__, fmt);
 }
 static void *mspack_fmap_alloc(struct mspack_system *self, size_t num)
 {
+	UNUSEDPARAM(self);
 	return malloc(num);
 }
 
