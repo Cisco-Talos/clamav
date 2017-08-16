@@ -365,16 +365,6 @@ static const unsigned int fragsz[] = {
 };
 #endif
 
-#if defined(C_SOLARIS)
-size_t strnlen(const char *s, size_t n) __attribute__((weak));
-size_t strnlen(const char *s, size_t n)
-{
-    size_t i = 0;
-    for(; (i < n) && s[i] != '\0'; ++i);
-    return i;
-}
-#endif
-
 #define FRAGSBITS (sizeof(fragsz)/sizeof(fragsz[0]))
 
 struct MPMAP {
@@ -805,7 +795,7 @@ char *cli_mpool_strndup(mpool_t *mp, const char *s, size_t n) {
     return NULL;
   }
 
-  strsz = strnlen(s, n) + 1;
+  strsz = cli_strnlen(s, n) + 1;
   alloc = mpool_malloc(mp, strsz);
   if(!alloc)
     cli_errmsg("cli_mpool_strndup(): Can't allocate memory (%lu bytes).\n", (unsigned long) strsz);
