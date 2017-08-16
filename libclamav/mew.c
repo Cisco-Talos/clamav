@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2017 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2008 Sourcefire, Inc.
  *
  *  Authors: Michal 'GiM' Spadlinski
@@ -783,7 +783,7 @@ uint32_t lzma_upack_esi_54(struct lzmastate *p, uint32_t old_eax, uint32_t *old_
 }
 
 
-int unmew11(char *src, int off, int ssize, int dsize, uint32_t base, uint32_t vadd, int uselzma, int filedesc)
+int unmew11(char *src, uint32_t off, uint32_t ssize, uint32_t dsize, uint32_t base, uint32_t vadd, int uselzma, int filedesc)
 {
 	uint32_t entry_point, newedi, loc_ds=dsize, loc_ss=ssize;
 	char *source = src + dsize + off;
@@ -863,7 +863,7 @@ int unmew11(char *src, int off, int ssize, int dsize, uint32_t base, uint32_t va
              * or, in other words, exceed the specified size of destination
              */
             if (section[i].raw + section[i].rsz > dsize) {
-                cli_dbgmsg("MEW: Section %i [%d, %d] exceeds destination size %d\n",
+                cli_dbgmsg("MEW: Section %i [%d, %d] exceeds destination size %u\n",
                            i, section[i].raw, section[i].raw+section[i].rsz, dsize);
                 free(section);
                 return -1;

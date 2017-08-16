@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2016 Cisco and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2016-2017 Cisco and/or its affiliates. All rights reserved.
  *
  *  Author: Kevin Lin
  *
@@ -36,6 +36,6 @@
 
 #include "pdf.h"
 
-off_t pdf_decodestream(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, const char *stream, uint32_t streamlen, int xref, int fout, int *rc);
+ptrdiff_t pdf_decodestream(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, const char *stream, uint32_t streamlen, int xref, int fout, int *rc);
 
 #endif /* __PDFDECODE_H__ */
