@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2008 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm, Nigel Horne, Török Edvin
@@ -31,6 +31,18 @@
 #define cli_strcasestr strcasestr
 #else
 const char *cli_strcasestr(const char *haystack, const char *needle);
+#endif
+
+#ifdef HAVE_STRNDUP
+#define cli_strndup strndup
+#else
+char *cli_strndup(const char *s, size_t n);
+#endif
+
+#ifdef HAVE_STRNLEN
+#define cli_strnlen strnlen
+#else
+size_t cli_strnlen(const char *s, size_t n);
 #endif
 
 #include <stdio.h>

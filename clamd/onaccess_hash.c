@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2015 Sourcefire, Inc.
  *
  *  Authors: Mickey Sola
@@ -44,6 +44,7 @@
 
 #include "libclamav/clamav.h"
 #include "libclamav/scanners.h"
+#include "libclamav/str.h"
 
 #include "shared/optparser.h"
 #include "shared/output.h"
@@ -438,7 +439,7 @@ static int onas_add_hashnode_child(struct onas_hnode *node, const char* dirname)
 	if (!child) return CL_EMEM;
 	
 	size_t n = strlen(dirname);
-	child->dirname = strndup(dirname, n);
+	child->dirname = cli_strndup(dirname, n);
 
 	onas_add_listnode(node->childtail, child);
 
@@ -500,7 +501,7 @@ inline static char *onas_get_parent(const char *pathname, size_t len) {
 		idx++;
 	}
 
-	ret = strndup(pathname, idx);
+	ret = cli_strndup(pathname, idx);
 	if (!ret) {
 		errno = ENOMEM;
 		return NULL;
@@ -596,7 +597,7 @@ int onas_ht_add_hierarchy(struct onas_ht *ht, const char *pathname) {
 				if (!hnode) return CL_EMEM;
 
 				hnode->pathlen = curr->fts_pathlen;
-				hnode->pathname = strndup(curr->fts_path, hnode->pathlen);
+				hnode->pathname = cli_strndup(curr->fts_path, hnode->pathlen);
 
 				hnode->prnt_pathname = onas_get_parent(hnode->pathname, hnode->pathlen);
 				if (hnode->prnt_pathname)

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2008 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm, Nigel Horne, Török Edvin
@@ -457,6 +457,38 @@ const char* cli_strcasestr(const char* a, const char *b)
 		if (strncasecmp(a + l, b, strlen_b) == 0)
 			return(a + l);
 	return(NULL);
+}
+#endif
+
+#ifndef HAVE_STRNLEN
+size_t cli_strnlen(const char *s, size_t n)
+{
+    size_t i = 0;
+    for(; (i < n) && s[i] != '\0'; ++i);
+    return i;
+}
+#endif
+
+#ifndef HAVE_STRNDUP
+char *cli_strndup(const char *s, size_t n)
+{
+    char *alloc;
+    size_t len;
+
+    if(!s) {
+        return NULL;
+    }
+
+    len = strnlen(s, n);
+    alloc = malloc(len+1);
+
+    if(!alloc) {
+        return NULL;
+    } else
+        memcpy(alloc, s, len);
+
+    alloc[len] = '\0';
+    return alloc;
 }
 #endif
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2009 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -37,6 +37,7 @@
 #endif
 
 #include "libclamav/clamav.h"
+#include "libclamav/str.h"
 
 #include "shared/optparser.h"
 #include "shared/output.h"
