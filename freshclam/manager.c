@@ -2557,6 +2557,7 @@ downloadmanager (const struct optstruct *opts, const char *hostname,
                     strncpy (vstr, get_version (), 32);
                     vstr[31] = 0;
                     if (vwarning && !strstr (vstr, "devel")
+                        && !strstr (vstr, "beta")
                         && !strstr (vstr, "rc"))
                     {
                         pt = strchr (vstr, '-');
