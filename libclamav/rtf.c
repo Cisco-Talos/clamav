@@ -174,7 +174,7 @@ static int push_state(struct stack* stack,struct rtf_state* state)
 	*state = base_state;
 
 	state->encounteredTopLevel = toplevel;
-	state->default_elements = defelements;
+	state->default_elements = 0;
 	return 0; 
 }
 
