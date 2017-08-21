@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2017 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2014 Sourcefire, Inc.
  *
  *  Authors: Kevin Lin <klin@sourcefire.com>
@@ -288,7 +288,7 @@ static int gpt_scan_partitions(cli_ctx *ctx, struct gpt_header hdr, size_t secto
 
     /* print header info for the debug */
     cli_dbgmsg("GPT Header:\n");
-    cli_dbgmsg("Signature: 0x%llx\n", hdr.signature);
+    cli_dbgmsg("Signature: 0x%llx\n", (long long unsigned)hdr.signature);
     cli_dbgmsg("Revision: %x\n", hdr.revision);
     gpt_printGUID(hdr.DiskGUID, "DISK GUID");
     cli_dbgmsg("Partition Entry Count: %u\n", hdr.tableNumEntries);
@@ -341,10 +341,10 @@ static int gpt_scan_partitions(cli_ctx *ctx, struct gpt_header hdr, size_t secto
             gpt_printName(gpe.name, "Name");
             gpt_printGUID(gpe.typeGUID, "Type GUID");
             gpt_printGUID(gpe.uniqueGUID, "Unique GUID");
-            cli_dbgmsg("Attributes: %llx\n", gpe.attributes);
+            cli_dbgmsg("Attributes: %llx\n", (long long unsigned)gpe.attributes);
             cli_dbgmsg("Blocks: [%llu(%llu) -> %llu(%llu)]\n",
-                       gpe.firstLBA, (gpe.firstLBA * sectorsize), 
-                       gpe.lastLBA, ((gpe.lastLBA+1) * sectorsize));
+                (long long unsigned)gpe.firstLBA, (long long unsigned)(gpe.firstLBA * sectorsize), 
+                (long long unsigned)gpe.lastLBA, (long long unsigned)((gpe.lastLBA+1) * sectorsize));
 
             /* send the partition to cli_map_scan */
             part_off = gpe.firstLBA * sectorsize;
@@ -414,7 +414,7 @@ static int gpt_validate_header(cli_ctx *ctx, struct gpt_header hdr, size_t secto
     /* check signature */
     if (hdr.signature != GPT_SIGNATURE) {
         cli_dbgmsg("cli_scangpt: Invalid GPT header signature %llx\n",
-                   hdr.signature);
+            (long long unsigned)hdr.signature);
         return CL_EFORMAT;
     }
 

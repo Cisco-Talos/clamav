@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2017 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2013 Sourcefire, Inc.
  *
  *  Authors: Steven Morgan <smorgan@sourcefire.com>
@@ -127,8 +127,8 @@ static void xar_get_checksum_values(xmlTextReaderPtr reader, unsigned char ** ck
         xmlval = xmlTextReaderConstValue(reader);
         if (xmlval) {
             cli_dbgmsg("cli_scanxar: checksum value is %s.\n", xmlval);
-            if (*hash == XAR_CKSUM_SHA1 && xmlStrlen(xmlval) == 2 * CLI_HASHLEN_SHA1 ||
-                *hash == XAR_CKSUM_MD5 && xmlStrlen(xmlval) == 2 * CLI_HASHLEN_MD5)
+            if (( (*hash == XAR_CKSUM_SHA1)  &&  (xmlStrlen(xmlval) == 2 * CLI_HASHLEN_SHA1))  ||
+                ( (*hash == XAR_CKSUM_MD5)  &&  (xmlStrlen(xmlval) == 2 * CLI_HASHLEN_MD5) ))
                 {
                     *cksum = xmlStrdup(xmlval); 
                 } 

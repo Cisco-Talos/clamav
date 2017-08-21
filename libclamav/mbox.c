@@ -3563,7 +3563,7 @@ print_trace(int use_syslog)
 	for(i = 0; i < size; i++) {
 		cli_errmsg("%s\n", strings[i]);
 		if(use_syslog)
-			syslog(LOG_ERR, "bt[%u]: %s", i, strings[i]);
+			syslog(LOG_ERR, "bt[%llu]: %s", (unsigned long long)i, strings[i]);
 	}
 
 #ifdef	SAVE_TMP
