@@ -187,6 +187,9 @@ void cli_event_int(cli_events_t *ctx, unsigned id, uint64_t arg)
         ev_chain(ctx, ev, &val);
         break;
     }
+    default:
+        // TODO: Consider if we should handle multiple_concat cases.
+        break;
     }
 }
 
@@ -273,6 +276,9 @@ static void event_string(cli_events_t *ctx, struct cli_event *ev, const char *st
         ev_chain(ctx, ev, &val);
         break;
     }
+    default:
+        // TODO: Consider if we should handle multiple_sum, multiple_concat cases.
+        break;
     }
 }
 
@@ -339,6 +345,9 @@ void cli_event_data(cli_events_t *ctx, unsigned id, const void *data, uint32_t l
         }
         break;
     }
+    default:
+        // TODO: Consider if we should handle multiple_sum, multiple_chain cases.
+        break;
     }
 }
 
@@ -396,6 +405,9 @@ static inline void ev_debug(enum ev_type type, union ev_val *val, uint32_t count
     case ev_time:
         cli_dbgmsg("\t(%u): %d.%06us\n", count, (signed)(val->v_int / 1000000),
                    (unsigned)(val->v_int % 1000000));
+        break;
+    default:
+        // TODO: Consider if we should handle ev_none cases.
         break;
     }
 }
@@ -463,6 +475,9 @@ static int ev_diff(enum ev_type type, union ev_val *v1, union ev_val *v2, uint32
         return memcmp(v1->v_data, v2->v_data, count);
     case ev_time:
         return 0;
+    default:
+        // TODO: Consider if we should handle ev_none cases.
+        break;
     }
     return 0;
 }

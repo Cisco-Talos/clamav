@@ -1,7 +1,7 @@
 /*
  * YARA parser for ClamAV: back-end functions
  * 
- * Copyright (C) 2014 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ * Copyright (C) 2014, 2017 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  * 
  * Authors: Steven Morgan
  * 
@@ -703,7 +703,7 @@ int yr_parser_reduce_rule_declaration(
 
   YR_RULE* rule;
   YR_STRING* string;
-  int8_t halt = OP_HALT;
+  uint8_t halt = OP_HALT;
 
   if (yr_hash_table_lookup(
         compiler->rules_table,

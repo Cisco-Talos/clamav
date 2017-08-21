@@ -462,15 +462,16 @@ static always_inline struct stack_entry *pop_stack(struct stack *stack,
 
 #define DEFINE_OP_BC_RET_N(OP, T, R0, W0) \
     case OP: {\
+                operand_t ret;\
                 T tmp;\
                 R0(tmp, inst->u.unaryop);\
                 CHECK_GT(stack_depth, 0);\
                 stack_depth--;\
-                stack_entry = pop_stack(&stack, stack_entry, &func, &i, &bb,\
+                stack_entry = pop_stack(&stack, stack_entry, &func, &ret, &bb,\
                                         &bb_inst);\
                 values = stack_entry ? stack_entry->values : ctx->values;\
-                CHECK_GT(func->numBytes, i);\
-                W0(i, tmp);\
+                CHECK_GT(func->numBytes, ret);\
+                W0(ret, tmp);\
                 if (!bb) {\
                     stop = CL_BREAK;\
                     continue;\
@@ -706,7 +707,7 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
             DEFINE_BINOP(OP_BC_XOR, res = op0 ^ op1);
 
             DEFINE_SCASTOP(OP_BC_SEXT,
-                          CHOOSE(READ1(sres, inst->u.cast.source); res = sres ? ~0ull : 0,
+                          CHOOSE(READ1(sres, inst->u.cast.source); res = sres ? ~0 : 0,
                                  READ8(sres, inst->u.cast.source); res=sres=SIGNEXT(sres, inst->u.cast.mask),
                                  READ16(sres, inst->u.cast.source); res=sres=SIGNEXT(sres, inst->u.cast.mask),
                                  READ32(sres, inst->u.cast.source); res=sres=SIGNEXT(sres, inst->u.cast.mask),
