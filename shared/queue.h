@@ -238,6 +238,7 @@ struct {								\
 	SLIST_FIRST((head)) = SLIST_NEXT(SLIST_FIRST((head)), field);	\
 } while (0)
 
+#undef SLIST_SWAP
 #define SLIST_SWAP(head1, head2, type) do {				\
 	struct type *swap_first = SLIST_FIRST(head1);			\
 	SLIST_FIRST(head1) = SLIST_FIRST(head2);			\
@@ -473,8 +474,10 @@ struct {								\
 	(elm)->field.le_prev = &LIST_FIRST((head));			\
 } while (0)
 
+#undef LIST_NEXT
 #define	LIST_NEXT(elm, field)	((elm)->field.le_next)
 
+#undef LIST_PREV
 #define	LIST_PREV(elm, head, type, field)				\
 	((elm)->field.le_prev == &LIST_FIRST((head)) ? NULL :		\
 	    __containerof((elm)->field.le_prev, struct type, field.le_next))

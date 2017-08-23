@@ -3959,7 +3959,12 @@ static int scan_common(int desc, cl_fmap_t *map, const char **virname, unsigned 
                 }
 
                 /* backwards compatibility: scan the json string unless a virus was detected */
-                if (rc != CL_VIRUS && (iroot->ac_lsigs || iroot->ac_patterns || iroot->pcre_metas))
+                if (rc != CL_VIRUS && (iroot->ac_lsigs
+                                    || iroot->ac_patterns
+#ifdef HAVE_PCRE
+                                    || iroot->pcre_metas
+#endif
+                ))
                 {
                     cli_dbgmsg("scan_common: running deprecated preclass bytecodes for target type 13\n");
                     ctx.options &= ~CL_SCAN_FILE_PROPERTIES;
