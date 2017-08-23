@@ -460,6 +460,38 @@ const char* cli_strcasestr(const char* a, const char *b)
 }
 #endif
 
+#ifndef HAVE_STRNLEN
+size_t cli_strnlen(const char *s, size_t n)
+{
+    size_t i = 0;
+    for(; (i < n) && s[i] != '\0'; ++i);
+    return i;
+}
+#endif
+
+#ifndef HAVE_STRNDUP
+char *cli_strndup(const char *s, size_t n)
+{
+    char *alloc;
+    size_t len;
+
+    if(!s) {
+        return NULL;
+    }
+
+    len = cli_strnlen(s, n);
+    alloc = malloc(len+1);
+
+    if(!alloc) {
+        return NULL;
+    } else
+        memcpy(alloc, s, len);
+
+    alloc[len] = '\0';
+    return alloc;
+}
+#endif
+
 size_t cli_strtokenize(char *buffer, const char delim, const size_t token_count, const char **tokens)
 {
 	size_t tokens_found, i;

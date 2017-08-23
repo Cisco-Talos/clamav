@@ -634,6 +634,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
+ac_func_list=
 enable_option_checking=no
 ac_subst_vars='ENABLE_CLAMSUBMIT_FALSE
 ENABLE_CLAMSUBMIT_TRUE
@@ -694,6 +695,8 @@ LIBPRELUDE_CFLAGS
 LIBPRELUDE_CONFIG
 ENABLE_LIBFRESHCLAM_FALSE
 ENABLE_LIBFRESHCLAM_TRUE
+ENABLE_CLAMSUBMIT_FALSE
+ENABLE_CLAMSUBMIT_TRUE
 SYSTEM_LFS_FTS_FALSE
 SYSTEM_LFS_FTS_TRUE
 HAVE_YARA
@@ -2569,6 +2572,23 @@ $as_echo "$as_me: creating cache $cache_file" >&6;}
   >$cache_file
 fi
 
+as_fn_append ac_func_list " poll"
+as_fn_append ac_func_list " setsid"
+as_fn_append ac_func_list " memcpy"
+as_fn_append ac_func_list " snprintf"
+as_fn_append ac_func_list " vsnprintf"
+as_fn_append ac_func_list " strerror_r"
+as_fn_append ac_func_list " strlcpy"
+as_fn_append ac_func_list " strlcat"
+as_fn_append ac_func_list " strcasestr"
+as_fn_append ac_func_list " inet_ntop"
+as_fn_append ac_func_list " setgroups"
+as_fn_append ac_func_list " initgroups"
+as_fn_append ac_func_list " ctime_r"
+as_fn_append ac_func_list " mkstemp"
+as_fn_append ac_func_list " mallinfo"
+as_fn_append ac_func_list " madvise"
+as_fn_append ac_func_list " getnameinfo"
 # Check that the precious variables saved in the cache have kept the same
 # value.
 ac_cache_corrupted=false
@@ -16287,13 +16307,73 @@ if test "$ac_res" != no; then :
 fi
 
 
-for ac_func in poll setsid memcpy snprintf vsnprintf strerror_r strlcpy strlcat strcasestr inet_ntop setgroups initgroups ctime_r mkstemp mallinfo madvise getnameinfo
+
+
+
+  for ac_func in $ac_func_list
 do :
   as_ac_var=`$as_echo "ac_cv_func_$ac_func" | $as_tr_sh`
 ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"
 if eval test \"x\$"$as_ac_var"\" = x"yes"; then :
   cat >>confdefs.h <<_ACEOF
 #define `$as_echo "HAVE_$ac_func" | $as_tr_cpp` 1
+_ACEOF
+
+fi
+done
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+for ac_func in strndup
+do :
+  ac_fn_c_check_func "$LINENO" "strndup" "ac_cv_func_strndup"
+if test "x$ac_cv_func_strndup" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_STRNDUP 1
+_ACEOF
+
+fi
+done
+
+for ac_func in strnlen
+do :
+  ac_fn_c_check_func "$LINENO" "strnlen" "ac_cv_func_strnlen"
+if test "x$ac_cv_func_strnlen" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_STRNLEN 1
 _ACEOF
 
 fi
@@ -24257,6 +24337,15 @@ $as_echo "#define HAVE_SYSTEM_LFS_FTS 0" >>confdefs.h
 	lfs_fts_msg="internal, libc's is not LFS compatible"
 fi
 
+ if test "$have_curl" = "yes"; then
+  ENABLE_CLAMSUBMIT_TRUE=
+  ENABLE_CLAMSUBMIT_FALSE='#'
+else
+  ENABLE_CLAMSUBMIT_TRUE='#'
+  ENABLE_CLAMSUBMIT_FALSE=
+fi
+
+
 # Check whether --enable-libfreshclam was given.
 if test "${enable_libfreshclam+set}" = set; then :
   enableval=$enable_libfreshclam; enable_libfreshclam=$enableval
@@ -25259,6 +25348,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${SYSTEM_LFS_FTS_TRUE}" && test -z "${SYSTEM_LFS_FTS_FALSE}"; then
   as_fn_error $? "conditional \"SYSTEM_LFS_FTS\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${ENABLE_CLAMSUBMIT_TRUE}" && test -z "${ENABLE_CLAMSUBMIT_FALSE}"; then
+  as_fn_error $? "conditional \"ENABLE_CLAMSUBMIT\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${ENABLE_LIBFRESHCLAM_TRUE}" && test -z "${ENABLE_LIBFRESHCLAM_FALSE}"; then
@@ -27852,6 +27945,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${SYSTEM_LFS_FTS_TRUE}" && test -z "${SYSTEM_LFS_FTS_FALSE}"; then
   as_fn_error $? "conditional \"SYSTEM_LFS_FTS\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${ENABLE_CLAMSUBMIT_TRUE}" && test -z "${ENABLE_CLAMSUBMIT_FALSE}"; then
+  as_fn_error $? "conditional \"ENABLE_CLAMSUBMIT\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${ENABLE_LIBFRESHCLAM_TRUE}" && test -z "${ENABLE_LIBFRESHCLAM_FALSE}"; then

@@ -118,16 +118,6 @@ void cli_logg_unsetup(void)
 }
 #endif
 
-#if defined(C_SOLARIS)
-size_t strnlen(const char *s, size_t n) __attribute__((weak));
-size_t strnlen(const char *s, size_t n)
-{
-    size_t i = 0;
-    for(; (i < n) && s[i] != '\0'; ++i);
-    return i;
-}
-#endif
-
 uint8_t cli_debug_flag = 0;
 uint8_t cli_always_gen_section_hash = 0;
 
@@ -292,30 +282,6 @@ char *cli_strdup(const char *s)
         return NULL;
     }
 
-    return alloc;
-}
-
-char *cli_strndup(const char *s, size_t n)
-{
-        char *alloc;
-        size_t len;
-
-    if(s == NULL) {
-        cli_errmsg("cli_strndup(): s == NULL. Please report to http://bugs.clamav.net\n");
-        return NULL;
-    }
-
-    len = strnlen(s, n);
-    alloc = malloc(len+1);
-
-    if(!alloc) {
-        perror("strndup_problem");
-        cli_errmsg("cli_strndup(): Can't allocate memory (%u bytes).\n", (unsigned int) strlen(s));
-        return NULL;
-    } else
-        memcpy(alloc, s, len);
-
-    alloc[len] = '\0';
     return alloc;
 }
 

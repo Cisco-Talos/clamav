@@ -33,6 +33,18 @@
 const char *cli_strcasestr(const char *haystack, const char *needle);
 #endif
 
+#ifdef HAVE_STRNDUP
+#define cli_strndup strndup
+#else
+char *cli_strndup(const char *s, size_t n);
+#endif
+
+#ifdef HAVE_STRNLEN
+#define cli_strnlen strnlen
+#else
+size_t cli_strnlen(const char *s, size_t n);
+#endif
+
 #include <stdio.h>
 #define cli_nocase(val) tolower(val)
 #define cli_nocasei(val) toupper(val)
