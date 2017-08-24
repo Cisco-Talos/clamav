@@ -131,4 +131,10 @@ struct mscabd_folder_p {
   struct mscabd_file *merge_next;    /* first file needing forwards merge    */
 };
 
+#ifdef _WIN32
+#include <basestd.h>
+#define ssize_t SSIZE_T
+#endif // _WIN32
+
+
 #endif
