@@ -3984,7 +3984,7 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
     YR_COMPILER compiler;
     YR_NAMESPACE ns;
     YR_RULE *rule;
-    unsigned int sigs = 0, rules = 0;
+    unsigned int sigs = 0, rules = 0, rule_errors = 0;
     int rc;
 
     UNUSEDPARAM(dbio);
@@ -4021,6 +4021,7 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
     rc = yr_lex_parse_rules_file(fs, &compiler);
     if (rc > 0) { /* rc = number of errors */
         /* TODO - handle the various errors? */
+#ifdef YARA_FINISHED
         cli_errmsg("cli_loadyara: failed to parse rules file %s, error count %i\n", filename, rc);
         if (compiler.sz_arena != NULL)
             yr_arena_destroy(compiler.sz_arena);
@@ -4033,12 +4034,12 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
         if (compiler.metas_arena != NULL)
             yr_arena_destroy(compiler.metas_arena);
         _yr_compiler_pop_file_name(&compiler);
-#ifdef YARA_FINISHED
         return CL_EMALFDB;
 #else
         if (compiler.last_result == ERROR_INSUFICIENT_MEMORY)
             return CL_EMEM;
-        return CL_SUCCESS;
+        rule_errors = rc;
+        rc = CL_SUCCESS;
 #endif
     }
 
@@ -4057,6 +4058,9 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
             continue;
         }
     }
+
+    if (0 != rule_errors)
+        cli_warnmsg("cli_loadyara: failed to parse or load %u yara rules from file %s, successfully loaded %u rules.\n", rule_errors+rules-sigs, filename, sigs);
 
     yr_arena_append(engine->yara_global->the_arena, compiler.sz_arena);
     yr_arena_append(engine->yara_global->the_arena, compiler.rules_arena);
