@@ -146,7 +146,7 @@ static int xrefCheck(const char *xref, const char *eof)
 }
 
 /* define this to be noisy about things that we can't parse properly */
-#define NOISY
+#undef NOISY
 
 #ifdef NOISY
 #define noisy_msg(pdf, ...) cli_infomsg(pdf->ctx, __VA_ARGS__)
@@ -2458,9 +2458,11 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
         pdf_parseobj(&pdf, obj);
         if (SCAN_ALGO && obj->numfilters > PDF_FILTER_DTRIGGER) {
             rc = cli_append_virus(ctx, "Heuristic.PDF.TooManyFilters");
-            alerts++;
-            if (SCAN_ALL && rc == CL_VIRUS)
-                rc = CL_CLEAN;
+            if (rc == CL_VIRUS) { 
+                alerts++;
+                if (SCAN_ALL)
+                    rc = CL_CLEAN;
+            }
         }
     }
 
@@ -2476,10 +2478,12 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
         /* It is encrypted, and a password/key needs to be supplied to decrypt.
          * This doesn't trigger for PDFs that are encrypted but don't need
          * a password to decrypt */
-        cli_append_virus(ctx, "Heuristics.Encrypted.PDF");
-        alerts++;
-        if (SCAN_ALL && rc == CL_VIRUS)
-            rc = CL_CLEAN;
+        rc = cli_append_virus(ctx, "Heuristics.Encrypted.PDF");
+        if (rc == CL_VIRUS) { 
+            alerts++;
+            if (SCAN_ALL)
+                rc = CL_CLEAN;
+        }
     }
 
     if (!rc) {
