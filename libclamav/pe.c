@@ -2528,7 +2528,7 @@ static int scan_pe_imp(cli_ctx *ctx, struct pe_image_data_dir *dirs, struct cli_
     if (cli_debug_flag && !genhash[CLI_HASH_MD5]) {
 #endif
         genhash[CLI_HASH_MD5] = 1;
-        hashset[CLI_HASH_MD5] = cli_malloc(hashlen[CLI_HASH_MD5]);
+        hashset[CLI_HASH_MD5] = cli_calloc(hashlen[CLI_HASH_MD5], sizeof(char));
         if(!hashset[CLI_HASH_MD5]) {
             cli_errmsg("scan_pe: cli_malloc failed!\n");
             for(type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++)
