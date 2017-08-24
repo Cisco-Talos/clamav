@@ -132,7 +132,7 @@ struct mscabd_folder_p {
 };
 
 #ifdef _WIN32
-#include <basestd.h>
+#include <basetsd.h>
 #define ssize_t SSIZE_T
 #endif // _WIN32
 
