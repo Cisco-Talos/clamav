@@ -1,7 +1,7 @@
 /*
  * HWP Stuff
  * 
- * Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ * Copyright (C) 2015, 2017 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  * 
  * Authors: Kevin Lin
  * 
@@ -316,7 +316,7 @@ int cli_hwp5header(cli_ctx *ctx, hwp5_header_t *hwp5)
         }
 
         /* magic */
-        cli_jsonstr(header, "Magic", hwp5->signature);
+        cli_jsonstr(header, "Magic", (char*)hwp5->signature);
 
         /* version */
         cli_jsonint(header, "RawVersion", hwp5->version);
@@ -569,7 +569,7 @@ static inline int parsehwp3_docinfo(cli_ctx *ctx, off_t offset, struct hwp3_doci
         }
 
         /* Printed File Name */
-        str = convert_hstr_to_utf8(hwp3_ptr+DI_PNAME, 40, "HWP3.x", &iret);
+        str = convert_hstr_to_utf8((char*)(hwp3_ptr+DI_PNAME), 40, "HWP3.x", &iret);
         if (!str || (iret == CL_EMEM))
             return CL_EMEM;
 
@@ -581,7 +581,7 @@ static inline int parsehwp3_docinfo(cli_ctx *ctx, off_t offset, struct hwp3_doci
         free(str);
 
         /* Annotation */
-        str = convert_hstr_to_utf8(hwp3_ptr+DI_ANNOTE, 24, "HWP3.x", &iret);
+        str = convert_hstr_to_utf8((char*)(hwp3_ptr+DI_ANNOTE), 24, "HWP3.x", &iret);
         if (!str || (iret == CL_EMEM))
             return CL_EMEM;
 
@@ -620,7 +620,7 @@ static inline int parsehwp3_docsummary(cli_ctx *ctx, off_t offset)
     }
 
     for (i = 0; i < NUM_DOCSUMMARY_FIELDS; i++) {
-        str = convert_hstr_to_utf8(hwp3_ptr+hwp3_docsummary_fields[i].offset, 112, "HWP3.x", &iret);
+        str = convert_hstr_to_utf8((char*)(hwp3_ptr + hwp3_docsummary_fields[i].offset), 112, "HWP3.x", &iret);
         if (!str || (iret == CL_EMEM))
             return CL_EMEM;
 
@@ -1843,10 +1843,10 @@ int cli_scanhwp3(cli_ctx *ctx)
 
 #if HAVE_JSON
     /*
-    /* magic *
+    // magic 
     cli_jsonstr(header, "Magic", hwp5->signature);
 
-    /* version *
+    // version
     cli_jsonint(header, "RawVersion", hwp5->version);
     */
 #endif
