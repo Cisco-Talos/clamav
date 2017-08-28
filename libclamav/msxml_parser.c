@@ -1,7 +1,7 @@
 /*
  * Extract component parts of various MS XML files (e.g. MS Office 2003 XML Documents)
  *
- * Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ * Copyright (C) 2015, 2017 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  * Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  * Authors: Kevin Lin
@@ -308,7 +308,7 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
                         value = xmlTextReaderConstValue(reader);
 
                         cli_msxmlmsg("\t%s: %s\n", name, value);
-                        cli_jsonstr(attributes, name, (const char *)value);
+                        cli_jsonstr(attributes, (char*)name, (const char *)value);
                     }
                 }
                 else if (state == -1)
