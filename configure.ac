@@ -139,6 +139,8 @@ m4_include([m4/reorganization/substitutions.m4])
 
 m4_include([m4/reorganization/libmspack.m4])
 
+m4_include([m4/reorganization/strni.m4])
+
 if test "x$use_internal_mspack" = "xyes"; then
     mspack_msg="Internal"
     AC_CONFIG_SUBDIRS([libclamav/libmspack-0.5alpha])
