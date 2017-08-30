@@ -27,6 +27,8 @@
 #include "clupdate.h"
 #include "flog.h"
 
+#define FRESHCLAM_EXIT_CODE_SUCCESS(dw) (dw == 0||dw == 1)
+
 struct my_f {
     HANDLE h;
     char buf[1024];
@@ -325,10 +327,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     /* Early exit for custom only */
     if(customonly) {
-        if( dw == 0 || dw == 1 ) 
-            SENDMSG_AND_RETURN(UPD_DONE, dw);
-        else
-            SENDMSG_AND_RETURN(UPD_ABORT, dw);
+		switch(dw){
+		case 0:
+			SENDMSG_AND_RETURN(UPD_DONE, dw);
+		case 1:
+			SENDMSG_AND_RETURN(UPD_NONE, dw);
+		default:
+			SENDMSG_AND_RETURN(UPD_ABORT, dw);
+		}
     }
 
     /* Make pipe for freshclam stdio */
@@ -480,7 +486,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	SENDFAIL_AND_QUIT(UPD_ABORT);
     }
     CloseHandle(pinfo.hProcess);
-    if( dw && dw != 1 ) {
+    if(!FRESHCLAM_EXIT_CODE_SUCCESS(dw)) {
 	if(dw == STILL_ACTIVE) {
 	    flog("WARNING: freshclam didn't exit, killing it...");
 	    kill_freshclam();
