@@ -134,6 +134,8 @@ m4_include([m4/reorganization/libs/curl.m4])
 
 m4_include([m4/reorganization/substitutions.m4])
 
+m4_include([m4/reorganization/strni.m4])
+
 AM_CONDITIONAL([ENABLE_CLAMSUBMIT], [test "$have_curl" = "yes"])
 
 AC_CONFIG_FILES([
