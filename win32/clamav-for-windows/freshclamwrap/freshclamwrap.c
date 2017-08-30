@@ -325,7 +325,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     /* Early exit for custom only */
     if(customonly) {
-        if(dw == 0) 
+        if( dw == 0 || dw == 1 ) 
             SENDMSG_AND_RETURN(UPD_DONE, dw);
         else
             SENDMSG_AND_RETURN(UPD_ABORT, dw);
@@ -480,7 +480,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	SENDFAIL_AND_QUIT(UPD_ABORT);
     }
     CloseHandle(pinfo.hProcess);
-    if(dw) {
+    if( dw && dw != 1 ) {
 	if(dw == STILL_ACTIVE) {
 	    flog("WARNING: freshclam didn't exit, killing it...");
 	    kill_freshclam();
