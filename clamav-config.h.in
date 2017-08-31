@@ -384,6 +384,9 @@
 /* Define to 1 if you have the `strndup' function. */
 #undef HAVE_STRNDUP
 
+/* using internal strn functions */
+#undef HAVE_STRNI
+
 /* Define to 1 if you have the `strnlen' function. */
 #undef HAVE_STRNLEN
 
