@@ -229,7 +229,7 @@ int openioc_parse(const char * fname, int fd, struct cl_engine *engine, unsigned
     else
         iocp++;
 
-    ioclen = strlen(fname);
+    ioclen = (uint16_t)strlen(fname);
 
     if (elems != NULL) {
         if (NULL == engine->hm_hdb) {

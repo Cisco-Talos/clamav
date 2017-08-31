@@ -226,11 +226,7 @@ void submit_post(const char *host, const char *port, const char *method, const c
         encoded = encode_data(postdata);
         if (!(encoded))
             return;
-#if defined(_WIN32)
-		snprintf(chunkedlen, sizeof(chunkedlen), "%u", strlen(encoded));
-#else
         snprintf(chunkedlen, sizeof(chunkedlen), "%zu", strlen(encoded));
-#endif
         bufsz += sizeof("Content-Type: application/x-www-form-urlencoded\r\n");
         bufsz += sizeof("Content-Length: \r\n");
         bufsz += strlen(chunkedlen);

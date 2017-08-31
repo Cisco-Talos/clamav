@@ -41,7 +41,7 @@
 #else
 #define DUPMAX  255
 #endif
-#define	INFINITY	(DUPMAX + 1)
+#define	REGEX_INFINITY	(DUPMAX + 1)
 #define	NC		(CHAR_MAX - CHAR_MIN + 1)
 typedef unsigned char uch;
 

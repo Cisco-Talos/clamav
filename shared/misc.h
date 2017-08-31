@@ -26,6 +26,7 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #endif
+#include "platform.h"
 #include "optparser.h"
 /* Maximum filenames under various systems - njh */
 #ifndef	NAME_MAX	/* e.g. Linux */
