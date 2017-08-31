@@ -646,6 +646,7 @@ am__EXEEXT_FALSE
 am__EXEEXT_TRUE
 LTLIBOBJS
 LIBOBJS
+HAVE_STRNI
 LIBMSPACK_LIBS
 LIBMSPACK_CFLAGS
 USE_INTERNAL_MSPACK_FALSE
@@ -966,6 +967,7 @@ enable_prelude
 with_libprelude_prefix
 with_libcurl
 with_system_libmspack
+enable_strni
 enable_largefile
 '
       ac_precious_vars='build_alias
@@ -1659,6 +1661,8 @@ Optional Features:
   --disable-yara          do not include yara support
   --enable-libfreshclam   enable building of libfreshclam
   --enable-prelude        Enable Prelude support for alerts.
+  --enable-strni          enables explicit use of internal strn functions to
+                          support cross-compilation against older libs
   --disable-largefile     omit support for large files
 
 Optional Packages:
@@ -24923,6 +24927,25 @@ else
 fi
 
 fi
+
+
+
+# Check whether --enable-strni was given.
+if test "${enable_strni+set}" = set; then :
+  enableval=$enable_strni; enable_strni=$enableval
+else
+  enable_strni="no"
+fi
+
+
+if test "$enable_strni" = "yes"; then
+
+$as_echo "#define HAVE_STRNI 1" >>confdefs.h
+
+
+fi
+
+
 
 
 if test "x$use_internal_mspack" = "xyes"; then
