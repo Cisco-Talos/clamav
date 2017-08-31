@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2017 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2009 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm, Trog, Török Edvin
@@ -437,7 +437,7 @@ static void *acceptloop_th(void *arg)
 	    } else if (errno != EINTR) {
 		/* very bad - need to exit or restart */
 #ifdef HAVE_STRERROR_R
-		strerror_r(errno, buff, BUFFSIZE);
+		(void)strerror_r(errno, buff, BUFFSIZE);
 		logg("!accept() failed: %s\n", buff);
 #else
 		logg("!accept() failed\n");

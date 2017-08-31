@@ -439,7 +439,7 @@ int unspin(char *src, int ssize, struct cli_exe_section *sections, int sectcnt, 
     cli_dbgmsg("spin: Compression bitmap is %x\n", bitmap);
     if ((sects = (char **)cli_malloc(sectcnt * sizeof(char *))) == NULL)
     {
-        cli_dbgmsg("spin: malloc(%lu) failed\n", sectcnt * sizeof(char *));
+        cli_dbgmsg("spin: malloc(%zu) failed\n", (size_t)sectcnt * sizeof(char *));
         return 1;
     }
 
@@ -450,7 +450,7 @@ int unspin(char *src, int ssize, struct cli_exe_section *sections, int sectcnt, 
         {
             if ((sects[j] = (char *)cli_malloc(sections[j].vsz)) == NULL)
             {
-                cli_dbgmsg("spin: malloc(%d) failed\n", sections[j].vsz);
+                cli_dbgmsg("spin: malloc(%u) failed\n", sections[j].vsz);
                 len = 1;
                 break;
             }

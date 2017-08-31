@@ -1393,11 +1393,11 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 	offset++;
     }
     if (buffer[offset] == 'D') {
-	unsigned num;
+		uint32_t num;
 	offset += 3;
 	if (offset >= len)
 	    return CL_EMALFDB;
-	num = readNumber(buffer, &offset, len, &ok);
+	num = (uint32_t)readNumber(buffer, &offset, len, &ok);
 	if (!ok)
 	    return CL_EMALFDB;
 	if (num != bcfunc->numInsts) {
@@ -1406,10 +1406,10 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 	}
 	bcfunc->dbgnodes = cli_malloc(num*sizeof(*bcfunc->dbgnodes));
 	if (!bcfunc->dbgnodes) {
-        cli_errmsg("Unable to allocate memory for dbg nodes: %lu\n", num*sizeof(*bcfunc->dbgnodes));
+        cli_errmsg("Unable to allocate memory for dbg nodes: %u\n", num * (uint32_t)sizeof(*bcfunc->dbgnodes));
 	    return CL_EMEM;
     }
-	for (i=0;i<num;i++) {
+	for (i=0; (uint32_t)i < num; i++) {
 	    bcfunc->dbgnodes[i] = readNumber(buffer, &offset, len, &ok);
 	    if (!ok)
 		return CL_EMALFDB;
@@ -2071,7 +2071,7 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
     bc->numGlobalBytes = 0;
     gmap = cli_malloc(bc->num_globals*sizeof(*gmap));
     if (!gmap) {
-        cli_errmsg("interpreter: Unable to allocate memory for global map: %lu\n", bc->num_globals*sizeof(*gmap));
+        cli_errmsg("interpreter: Unable to allocate memory for global map: %zu\n", bc->num_globals*sizeof(*gmap));
         return CL_EMEM;
     }
     for (j=0;j<bc->num_globals;j++) {
@@ -2151,9 +2151,9 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
     for (i=0;i<bc->num_func && ret == CL_SUCCESS;i++) {
 	struct cli_bc_func *bcfunc = &bc->funcs[i];
 	unsigned totValues = bcfunc->numValues + bcfunc->numConstants + bc->num_globals;
-	unsigned *map = cli_malloc(sizeof(*map)*totValues);
+	unsigned *map = cli_malloc(sizeof(*map) * (size_t)totValues);
 	if (!map) {
-        cli_errmsg("interpreter: Unable to allocate memory for map: %lu\n", sizeof(*map)*totValues);
+        cli_errmsg("interpreter: Unable to allocate memory for map: %zu\n", sizeof(*map) * (size_t)totValues);
         free(gmap);
 	    return CL_EMEM;
     }
