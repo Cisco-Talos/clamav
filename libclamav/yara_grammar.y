@@ -1566,7 +1566,7 @@ primary_expression
     | _TEXT_STRING_
       {
         SIZED_STRING* sized_string = $1;
-        char* string;
+        char* string = NULL;
 
 #if REAL_YARA
         compiler->last_result = yr_arena_write_string(

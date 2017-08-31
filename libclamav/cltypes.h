@@ -36,6 +36,8 @@
 #include <inttypes.h>
 #elif defined(HAVE_STDINT_H)
 #include <stdint.h>
+#elif defined(_MSC_VER)
+#include <stdint.h>
 #else
     typedef signed char int8_t;
     typedef unsigned char uint8_t;

@@ -166,7 +166,7 @@ uint32_t rar_crc(uint32_t start_crc, void *addr, uint32_t size)
 
 	data = addr;
 #if WORDS_BIGENDIAN == 0
-	while (size > 0 && ((long)data & 7))
+	while (size > 0 && ((size_t)data & 7))
 	{
 		start_crc = crc_tab[(unsigned char)(start_crc^data[0])]^(start_crc>>8);
 		size--;
