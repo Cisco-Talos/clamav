@@ -460,7 +460,7 @@ const char* cli_strcasestr(const char* a, const char *b)
 }
 #endif
 
-#ifndef HAVE_STRNLEN
+#if !defined(HAVE_STRNLEN) || defined(HAVE_STRNI)
 size_t cli_strnlen(const char *s, size_t n)
 {
     size_t i = 0;
@@ -469,7 +469,7 @@ size_t cli_strnlen(const char *s, size_t n)
 }
 #endif
 
-#ifndef HAVE_STRNDUP
+#if !defined(HAVE_STRNDUP) || defined(HAVE_STRNI)
 char *cli_strndup(const char *s, size_t n)
 {
     char *alloc;
