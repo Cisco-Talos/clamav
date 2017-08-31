@@ -81,7 +81,7 @@ static int xar_get_numeric_from_xml_element(xmlTextReaderPtr reader, size_t * va
         if (numstr) {
             numval = atol((const char *)numstr);
             if (numval < 0) {
-                cli_dbgmsg("cli_scanxar: XML element value %li\n", *value);
+                cli_dbgmsg("cli_scanxar: XML element value %zu\n", *value);
                 return CL_EFORMAT;
             }
             *value = numval;
@@ -678,7 +678,7 @@ int cli_scanxar(cli_ctx *ctx)
                 if (blockp == NULL) {
                     char errbuff[128];
                     cli_strerror(errno, errbuff, sizeof(errbuff));
-                    cli_dbgmsg("cli_scanxar: Can't read %i bytes @ %li, errno:%s.\n",
+                    cli_dbgmsg("cli_scanxar: Can't read %i bytes @ %zu, errno:%s.\n",
                                CLI_LZMA_HDR_SIZE, at, errbuff);
                     rc = CL_EREAD;
                     __lzma_wrap_free(NULL, buff);
@@ -702,7 +702,7 @@ int cli_scanxar(cli_ctx *ctx)
 
                 at += CLI_LZMA_HDR_SIZE;
                 in_remaining -= CLI_LZMA_HDR_SIZE;
-                while ((size_t)at < map->len && (unsigned long)at < offset+hdr.toc_length_compressed+hdr.size+length) {
+                while (at < map->len && at < offset + (size_t)hdr.toc_length_compressed + (size_t)hdr.size + length) {
                     SizeT avail_in;
                     SizeT avail_out;
                     void * next_in;
@@ -715,7 +715,7 @@ int cli_scanxar(cli_ctx *ctx)
                     if (lz.next_in == NULL) {
                         char errbuff[128];
                         cli_strerror(errno, errbuff, sizeof(errbuff));
-                        cli_dbgmsg("cli_scanxar: Can't read %li bytes @ %li, errno: %s.\n",
+                        cli_dbgmsg("cli_scanxar: Can't read %zu bytes @ %zu, errno: %s.\n",
                                    lz.avail_in, at, errbuff);
                         rc = CL_EREAD;
                         __lzma_wrap_free(NULL, buff);
@@ -799,7 +799,7 @@ int cli_scanxar(cli_ctx *ctx)
                     xar_hash_update(a_hash_ctx, blockp, writelen, a_hash);
                 
                 if (cli_writen(fd, blockp, writelen) < 0) {
-                    cli_dbgmsg("cli_scanxar: cli_writen error %zu bytes @ %li.\n", writelen, at);
+                    cli_dbgmsg("cli_scanxar: cli_writen error %zu bytes @ %zu.\n", writelen, at);
                     rc = CL_EWRITE;
                     goto exit_tmpfile;
                 }
