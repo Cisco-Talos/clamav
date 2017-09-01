@@ -163,12 +163,13 @@ static inline const void *fmap_gets(fmap_t *m, char *dst, size_t *at, size_t max
 static inline const void *fmap_need_off_once_len(fmap_t *m, size_t at, size_t len, size_t *lenout)
 {
     const void *p;
-    if(at >= m->len) {
-	*lenout = 0;
-	return (void*)(size_t)0xE0F00000;/* EOF, not read error */
+    if (at >= m->len)
+    {
+        *lenout = 0;
+        return NULL; /* EOF, not read error */
     }
-    if(len > m->len - at)
-	len = m->len - at;
+    if (len > m->len - at)
+        len = m->len - at;
     p = fmap_need_off_once(m, at, len);
     *lenout = p ? len : 0;
     return p;
