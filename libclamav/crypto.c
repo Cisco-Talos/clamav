@@ -51,6 +51,8 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+#include <openssl/evp.h>
+
 #if !defined(_WIN32)
 #include <unistd.h>
 #endif
