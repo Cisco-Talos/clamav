@@ -1,5 +1,0 @@
-/* We need this to get the right default icon. */
-aaaaaa   ICON "helpview.ico"
-helpview ICON "helpview.ico"
-
-#include "wx/msw/wx.rc"
