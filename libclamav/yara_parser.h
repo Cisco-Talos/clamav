@@ -37,12 +37,10 @@ int yr_parser_emit_with_arg_reloc(
     int64_t argument,
     int8_t** instruction_address);
 
-#if REAL_YARA
 int yr_parser_check_types(
     YR_COMPILER* compiler,
     YR_OBJECT_FUNCTION* function,
     const char* actual_args_fmt);
-#endif
 
 YR_STRING* yr_parser_lookup_string(
   yyscan_t yyscanner,
