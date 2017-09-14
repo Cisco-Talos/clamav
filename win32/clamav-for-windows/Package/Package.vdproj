@@ -121,33 +121,6 @@
                 {
                 }
             }
-            "{3169EF16-0292-4576-A031-DDE5527F1848}:_B1A854C1005D4E3A914A09DBBD725202"
-            {
-            "SourcePath" = "8:"
-            "TargetName" = "8:"
-            "Tag" = "8:"
-            "Folder" = "8:"
-            "Condition" = "8:"
-            "Transitive" = "11:FALSE"
-            "Vital" = "11:TRUE"
-            "ReadOnly" = "11:FALSE"
-            "Hidden" = "11:FALSE"
-            "System" = "11:FALSE"
-            "Permanent" = "11:FALSE"
-            "SharedLegacy" = "11:FALSE"
-            "PackageAs" = "3:1"
-            "Register" = "3:1"
-            "Exclude" = "11:FALSE"
-            "IsDependency" = "11:FALSE"
-            "IsolateTo" = "8:"
-            "OutputConfiguration" = "8:"
-            "OutputGroupCanonicalName" = "8:Built"
-            "OutputProjectCanonicalName" = "8:sigui\\SigUI\\sigui_vc10.vcxproj"
-            "OutputProjectGuid" = "8:{853D1FD7-20AB-586C-9699-9680F84AC985}"
-                "ExcludeFilters"
-                {
-                }
-            }
         }
     }
 }

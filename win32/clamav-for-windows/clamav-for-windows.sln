@@ -7,12 +7,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "clamav-for-windows", "clama
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "freshclamwrap", "freshclamwrap\freshclamwrap.vcxproj", "{366C2DCE-777A-43EE-96DC-C530E67E7B32}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SigUI", "sigui\SigUI\sigui_vc10.vcxproj", "{853D1FD7-20AB-586C-9699-9680F84AC985}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "base", "sigui\wxWidgets-2.9.1\build\wx291_msw_vc10\wx_vc10_base.vcxproj", "{3FCC50C2-81E9-5DB2-B8D8-2129427568B1}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "core", "sigui\wxWidgets-2.9.1\build\wx291_msw_vc10\wx_vc10_core.vcxproj", "{6744DAD8-9C70-574A-BFF2-9F8DDDB24A75}"
-EndProject
 Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "Package", "Package\Package.vdproj", "{A0CFC1BD-66D6-41EF-A4D9-9B5B4BD3A895}"
 EndProject
 Global
@@ -39,24 +33,12 @@ Global
 		{366C2DCE-777A-43EE-96DC-C530E67E7B32}.Release|Win32.Build.0 = Release|Win32
 		{366C2DCE-777A-43EE-96DC-C530E67E7B32}.Release|x64.ActiveCfg = Release|x64
 		{366C2DCE-777A-43EE-96DC-C530E67E7B32}.Release|x64.Build.0 = Release|x64
-		{853D1FD7-20AB-586C-9699-9680F84AC985}.Debug|Win32.ActiveCfg = Debug|Win32
-		{853D1FD7-20AB-586C-9699-9680F84AC985}.Debug|x64.ActiveCfg = Debug|x64
-		{853D1FD7-20AB-586C-9699-9680F84AC985}.Release|Win32.ActiveCfg = Release|Win32
-		{853D1FD7-20AB-586C-9699-9680F84AC985}.Release|x64.ActiveCfg = Release|x64
-		{3FCC50C2-81E9-5DB2-B8D8-2129427568B1}.Debug|Win32.ActiveCfg = Debug|Win32
-		{3FCC50C2-81E9-5DB2-B8D8-2129427568B1}.Debug|x64.ActiveCfg = Debug|x64
-		{3FCC50C2-81E9-5DB2-B8D8-2129427568B1}.Release|Win32.ActiveCfg = Release|Win32
-		{3FCC50C2-81E9-5DB2-B8D8-2129427568B1}.Release|x64.ActiveCfg = Release|x64
-		{6744DAD8-9C70-574A-BFF2-9F8DDDB24A75}.Debug|Win32.ActiveCfg = Debug|Win32
-		{6744DAD8-9C70-574A-BFF2-9F8DDDB24A75}.Debug|x64.ActiveCfg = Debug|x64
-		{6744DAD8-9C70-574A-BFF2-9F8DDDB24A75}.Release|Win32.ActiveCfg = Release|Win32
-		{6744DAD8-9C70-574A-BFF2-9F8DDDB24A75}.Release|x64.ActiveCfg = Release|x64
-		{A0CFC1BD-66D6-41EF-A4D9-9B5B4BD3A895}.Debug|Win32.ActiveCfg = Win32
-		{A0CFC1BD-66D6-41EF-A4D9-9B5B4BD3A895}.Debug|Win32.Build.0 = Win32
+		{A0CFC1BD-66D6-41EF-A4D9-9B5B4BD3A895}.Debug|Win32.ActiveCfg = Debug
+		{A0CFC1BD-66D6-41EF-A4D9-9B5B4BD3A895}.Debug|Win32.Build.0 = Debug
 		{A0CFC1BD-66D6-41EF-A4D9-9B5B4BD3A895}.Debug|x64.ActiveCfg = Debug
 		{A0CFC1BD-66D6-41EF-A4D9-9B5B4BD3A895}.Debug|x64.Build.0 = Debug
-		{A0CFC1BD-66D6-41EF-A4D9-9B5B4BD3A895}.Release|Win32.ActiveCfg = Win32
-		{A0CFC1BD-66D6-41EF-A4D9-9B5B4BD3A895}.Release|Win32.Build.0 = Win32
+		{A0CFC1BD-66D6-41EF-A4D9-9B5B4BD3A895}.Release|Win32.ActiveCfg = Release
+		{A0CFC1BD-66D6-41EF-A4D9-9B5B4BD3A895}.Release|Win32.Build.0 = Release
 		{A0CFC1BD-66D6-41EF-A4D9-9B5B4BD3A895}.Release|x64.ActiveCfg = Release
 		{A0CFC1BD-66D6-41EF-A4D9-9B5B4BD3A895}.Release|x64.Build.0 = Release
 	EndGlobalSection
