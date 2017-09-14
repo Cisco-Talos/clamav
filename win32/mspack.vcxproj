@@ -71,18 +71,22 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <IntDir>$(SolutionDir)build\$(PlatformName)\$(ProjectName)\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)$(PlatformName)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <IntDir>$(SolutionDir)build\$(PlatformName)\$(ProjectName)\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)$(PlatformName)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
+    <IntDir>$(SolutionDir)build\$(PlatformName)\$(ProjectName)\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)$(PlatformName)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <IntDir>$(SolutionDir)build\$(PlatformName)\$(ProjectName)\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)$(PlatformName)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -93,12 +97,12 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_WINDOWS;_USRDLL;MSPACK_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>.</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\libclamav\libmspack-0.5alpha\mspack</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ModuleDefinitionFile>mspack.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>$(SolutionDir)..\libclamav\libmspack-0.5alpha\mspack\mspack.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -109,12 +113,12 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_DEBUG;_WINDOWS;_USRDLL;MSPACK_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>.</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\libclamav\libmspack-0.5alpha\mspack</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ModuleDefinitionFile>mspack.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>$(SolutionDir)..\libclamav\libmspack-0.5alpha\mspack\mspack.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -127,14 +131,14 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;_WINDOWS;_USRDLL;MSPACK_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>.</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\libclamav\libmspack-0.5alpha\mspack</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ModuleDefinitionFile>mspack.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>$(SolutionDir)..\libclamav\libmspack-0.5alpha\mspack\mspack.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -147,59 +151,59 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;NDEBUG;_WINDOWS;_USRDLL;MSPACK_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>.</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\libclamav\libmspack-0.5alpha\mspack</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ModuleDefinitionFile>mspack.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>$(SolutionDir)..\libclamav\libmspack-0.5alpha\mspack\mspack.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="cabc.c" />
-    <ClCompile Include="cabd.c" />
-    <ClCompile Include="chmc.c" />
-    <ClCompile Include="chmd.c" />
-    <ClCompile Include="crc32.c" />
-    <ClCompile Include="hlpc.c" />
-    <ClCompile Include="hlpd.c" />
-    <ClCompile Include="kwajc.c" />
-    <ClCompile Include="kwajd.c" />
-    <ClCompile Include="litc.c" />
-    <ClCompile Include="litd.c" />
-    <ClCompile Include="lzssd.c" />
-    <ClCompile Include="lzxc.c" />
-    <ClCompile Include="lzxd.c" />
-    <ClCompile Include="mszipc.c" />
-    <ClCompile Include="mszipd.c" />
-    <ClCompile Include="oabc.c" />
-    <ClCompile Include="oabd.c" />
-    <ClCompile Include="qtmd.c" />
-    <ClCompile Include="system.c" />
-    <ClCompile Include="szddc.c" />
-    <ClCompile Include="szddd.c" />
+    <ClCompile Include="..\libclamav\libmspack-0.5alpha\mspack\cabc.c" />
+    <ClCompile Include="..\libclamav\libmspack-0.5alpha\mspack\cabd.c" />
+    <ClCompile Include="..\libclamav\libmspack-0.5alpha\mspack\chmc.c" />
+    <ClCompile Include="..\libclamav\libmspack-0.5alpha\mspack\chmd.c" />
+    <ClCompile Include="..\libclamav\libmspack-0.5alpha\mspack\crc32.c" />
+    <ClCompile Include="..\libclamav\libmspack-0.5alpha\mspack\hlpc.c" />
+    <ClCompile Include="..\libclamav\libmspack-0.5alpha\mspack\hlpd.c" />
+    <ClCompile Include="..\libclamav\libmspack-0.5alpha\mspack\kwajc.c" />
+    <ClCompile Include="..\libclamav\libmspack-0.5alpha\mspack\kwajd.c" />
+    <ClCompile Include="..\libclamav\libmspack-0.5alpha\mspack\litc.c" />
+    <ClCompile Include="..\libclamav\libmspack-0.5alpha\mspack\litd.c" />
+    <ClCompile Include="..\libclamav\libmspack-0.5alpha\mspack\lzssd.c" />
+    <ClCompile Include="..\libclamav\libmspack-0.5alpha\mspack\lzxc.c" />
+    <ClCompile Include="..\libclamav\libmspack-0.5alpha\mspack\lzxd.c" />
+    <ClCompile Include="..\libclamav\libmspack-0.5alpha\mspack\mszipc.c" />
+    <ClCompile Include="..\libclamav\libmspack-0.5alpha\mspack\mszipd.c" />
+    <ClCompile Include="..\libclamav\libmspack-0.5alpha\mspack\oabc.c" />
+    <ClCompile Include="..\libclamav\libmspack-0.5alpha\mspack\oabd.c" />
+    <ClCompile Include="..\libclamav\libmspack-0.5alpha\mspack\qtmd.c" />
+    <ClCompile Include="..\libclamav\libmspack-0.5alpha\mspack\system.c" />
+    <ClCompile Include="..\libclamav\libmspack-0.5alpha\mspack\szddc.c" />
+    <ClCompile Include="..\libclamav\libmspack-0.5alpha\mspack\szddd.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="cab.h" />
-    <ClInclude Include="chm.h" />
-    <ClInclude Include="crc32.h" />
-    <ClInclude Include="des.h" />
-    <ClInclude Include="hlp.h" />
-    <ClInclude Include="kwaj.h" />
-    <ClInclude Include="lit.h" />
-    <ClInclude Include="lzss.h" />
-    <ClInclude Include="lzx.h" />
-    <ClInclude Include="mspack.h" />
-    <ClInclude Include="mszip.h" />
-    <ClInclude Include="oab.h" />
-    <ClInclude Include="qtm.h" />
-    <ClInclude Include="readbits.h" />
-    <ClInclude Include="readhuff.h" />
-    <ClInclude Include="sha.h" />
-    <ClInclude Include="system.h" />
-    <ClInclude Include="szdd.h" />
+    <ClInclude Include="..\libclamav\libmspack-0.5alpha\mspack\cab.h" />
+    <ClInclude Include="..\libclamav\libmspack-0.5alpha\mspack\chm.h" />
+    <ClInclude Include="..\libclamav\libmspack-0.5alpha\mspack\crc32.h" />
+    <ClInclude Include="..\libclamav\libmspack-0.5alpha\mspack\des.h" />
+    <ClInclude Include="..\libclamav\libmspack-0.5alpha\mspack\hlp.h" />
+    <ClInclude Include="..\libclamav\libmspack-0.5alpha\mspack\kwaj.h" />
+    <ClInclude Include="..\libclamav\libmspack-0.5alpha\mspack\lit.h" />
+    <ClInclude Include="..\libclamav\libmspack-0.5alpha\mspack\lzss.h" />
+    <ClInclude Include="..\libclamav\libmspack-0.5alpha\mspack\lzx.h" />
+    <ClInclude Include="..\libclamav\libmspack-0.5alpha\mspack\mspack.h" />
+    <ClInclude Include="..\libclamav\libmspack-0.5alpha\mspack\mszip.h" />
+    <ClInclude Include="..\libclamav\libmspack-0.5alpha\mspack\oab.h" />
+    <ClInclude Include="..\libclamav\libmspack-0.5alpha\mspack\qtm.h" />
+    <ClInclude Include="..\libclamav\libmspack-0.5alpha\mspack\readbits.h" />
+    <ClInclude Include="..\libclamav\libmspack-0.5alpha\mspack\readhuff.h" />
+    <ClInclude Include="..\libclamav\libmspack-0.5alpha\mspack\sha.h" />
+    <ClInclude Include="..\libclamav\libmspack-0.5alpha\mspack\system.h" />
+    <ClInclude Include="..\libclamav\libmspack-0.5alpha\mspack\szdd.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
