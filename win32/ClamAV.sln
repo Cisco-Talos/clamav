@@ -73,6 +73,8 @@ Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "Setup-x64", "Setup-x64\Setu
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mspack", "..\libclamav\libmspack-0.5alpha\mspack\mspack.vcxproj", "{AA443662-4AED-4F50-95E4-9B5BB5429E9E}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "openssl", "openssl.vcxproj", "{5661EB2A-7AE6-4C1A-864B-FDDD32F3D45A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -291,8 +293,23 @@ Global
 		{AA443662-4AED-4F50-95E4-9B5BB5429E9E}.Release-Static|Win32.Build.0 = Release|Win32
 		{AA443662-4AED-4F50-95E4-9B5BB5429E9E}.Release-Static|x64.ActiveCfg = Release|x64
 		{AA443662-4AED-4F50-95E4-9B5BB5429E9E}.Release-Static|x64.Build.0 = Release|x64
+		{5661EB2A-7AE6-4C1A-864B-FDDD32F3D45A}.Debug|Win32.ActiveCfg = Debug|Win32
+		{5661EB2A-7AE6-4C1A-864B-FDDD32F3D45A}.Debug|Win32.Build.0 = Debug|Win32
+		{5661EB2A-7AE6-4C1A-864B-FDDD32F3D45A}.Debug|x64.ActiveCfg = Debug|x64
+		{5661EB2A-7AE6-4C1A-864B-FDDD32F3D45A}.Debug|x64.Build.0 = Debug|x64
+		{5661EB2A-7AE6-4C1A-864B-FDDD32F3D45A}.Release|Win32.ActiveCfg = Release|Win32
+		{5661EB2A-7AE6-4C1A-864B-FDDD32F3D45A}.Release|Win32.Build.0 = Release|Win32
+		{5661EB2A-7AE6-4C1A-864B-FDDD32F3D45A}.Release|x64.ActiveCfg = Release|x64
+		{5661EB2A-7AE6-4C1A-864B-FDDD32F3D45A}.Release|x64.Build.0 = Release|x64
+		{5661EB2A-7AE6-4C1A-864B-FDDD32F3D45A}.Release-Static|Win32.ActiveCfg = Release|Win32
+		{5661EB2A-7AE6-4C1A-864B-FDDD32F3D45A}.Release-Static|Win32.Build.0 = Release|Win32
+		{5661EB2A-7AE6-4C1A-864B-FDDD32F3D45A}.Release-Static|x64.ActiveCfg = Release|x64
+		{5661EB2A-7AE6-4C1A-864B-FDDD32F3D45A}.Release-Static|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {38FD28C7-70C2-4413-80E7-5A2D1718760E}
 	EndGlobalSection
 EndGlobal
