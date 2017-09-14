@@ -89,14 +89,14 @@ elif test $llvmver_test -lt 290; then
 elif test $llvmver_test -lt 360; then
     llvmcomp="jit nativecodegen scalaropts ipo"
     AC_MSG_RESULT([ok ($llvmver)])
-elif test $llvmver_test -lt 370; then
+elif test $llvmver_test -lt 400; then
     dnl LLVM 3.6.0 removed jit, so we have to use mcjit
     dnl and we're using InitializeNativeTargetAsmParser, so we need the architecture specific parsers
     llvmcomp="mcjit nativecodegen scalaropts ipo x86asmparser powerpcasmparser"
     AC_MSG_RESULT([ok ($llvmver)])
 else
     AC_MSG_RESULT([no ($llvmver)])
-    AC_MSG_ERROR([LLVM < 3.7 required, but "$llvmver"($llvmver_test) found])
+    AC_MSG_ERROR([LLVM < 4.0 required, but "$llvmver"($llvmver_test) found])
 fi
 
 dnl acquire the required flags to properly link in external LLVM

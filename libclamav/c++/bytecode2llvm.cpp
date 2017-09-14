@@ -63,7 +63,11 @@
 #include "llvm/Object/ObjectFile.h"
 #endif
 #include "llvm/ExecutionEngine/JITEventListener.h"
+#if LLVM_VERSION < 37
 #include "llvm/PassManager.h"
+#else
+#include "llvm/IR/LegacyPassManager.h"
+#endif
 #include "llvm/Support/Compiler.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/CommandLine.h"
@@ -166,7 +170,9 @@ void LLVMInitializePowerPCAsmPrinter();
 //#define TIMING
 #undef TIMING
 
+#if LLVM_VERSION < 38
 #include "llvm/Config/config.h"
+#endif
 #ifdef ENABLE_THREADS
 #if !ENABLE_THREADS
 #error "Thread support was explicitly disabled. Cannot continue"
@@ -231,7 +237,9 @@ namespace {
 #define llvm_report_error(x) report_fatal_error(x)
 #define llvm_install_error_handler(x) install_fatal_error_handler(x)
 #define DwarfExceptionHandling JITExceptionHandling
+#if LLVM_VERSION < 37
 #define SetCurrentDebugLocation(x) SetCurrentDebugLocation(DebugLoc::getFromDILocation(x))
+#endif
 #define DEFINEPASS(passname) passname() : FunctionPass(ID)
 #else
 #define DEFINEPASS(passname) passname() : FunctionPass(&ID)
@@ -718,8 +726,16 @@ public:
 	    BBMap[BB] = apicalls;
 	}
 	if (!BackedgeTargets.empty()) {
+#if LLVM_VERSION < 37
 	    LoopInfo &LI = getAnalysis<LoopInfo>();
+#else
+        LoopInfo &LI = getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
+#endif
+#if LLVM_VERSION < 38
 	    ScalarEvolution &SE = getAnalysis<ScalarEvolution>();
+#else
+        ScalarEvolution &SE = getAnalysis<ScalarEvolutionWrapperPass>().getSE();
+#endif
 
 	    // Now check whether any of these backedge targets are part of a loop
 	    // with a small constant trip count
@@ -771,9 +787,17 @@ public:
         AbrtC->setDoesNotThrow();
 #endif
         new UnreachableInst(F.getContext(), AbrtBB);
+#if LLVM_VERSION < 39
 	IRBuilder<false> Builder(F.getContext());
+#else
+    IRBuilder<> Builder(F.getContext());
+#endif
 
+#if LLVM_VERSION < 38
 	Value *Flag = F.arg_begin();
+#else
+    Value *Flag = &*F.arg_begin();
+#endif
 #if LLVM_VERSION < 30
 	Function *LSBarrier = Intrinsic::getDeclaration(F.getParent(),
 							Intrinsic::memory_barrier);
@@ -787,22 +811,36 @@ public:
 #endif
 	verifyFunction(F);
 	BasicBlock *BB = &F.getEntryBlock();
+#if LLVM_VERSION < 38
 	Builder.SetInsertPoint(BB, BB->getTerminator());
+#else
+    Builder.SetInsertPoint(BB, BB->getTerminator()->getIterator());
+#endif
 	Flag = Builder.CreatePointerCast(Flag, PointerType::getUnqual(
 		Type::getInt1Ty(F.getContext())));
 	for (BBSetTy::iterator I=needsTimeoutCheck.begin(),
 	     E=needsTimeoutCheck.end(); I != E; ++I) {
 	    BasicBlock *BB = *I;
+#if LLVM_VERSION < 38
 	    Builder.SetInsertPoint(BB, BB->getTerminator());
+#else
+        Builder.SetInsertPoint(BB, BB->getTerminator()->getIterator());
+#endif
 #if LLVM_VERSION < 30
 	    // store-load barrier: will be a no-op on x86 but not other arches
 	    Builder.CreateCall(LSBarrier, ARRAYREF(Value*, MBArgs, MBArgs+5));
-#else
+#elif LLVM_VERSION < 39
 	    Builder.CreateFence(Release);
+#else
+        Builder.CreateFence(AtomicOrdering::Release);
 #endif
 	    // Load Flag that tells us we timed out (first byte in bc_ctx)
 	    Value *Cond = Builder.CreateLoad(Flag, true);
+#if LLVM_VERSION < 37
 	    BasicBlock *newBB = SplitBlock(BB, BB->getTerminator(), this);
+#else
+        BasicBlock *newBB = SplitBlock(BB, BB->getTerminator());
+#endif
 	    TerminatorInst *TI = BB->getTerminator();
 	    BranchInst::Create(AbrtBB, newBB, Cond, TI);
 	    TI->eraseFromParent();
@@ -823,8 +861,16 @@ public:
 
     virtual void getAnalysisUsage(AnalysisUsage &AU) const {
       AU.setPreservesAll();
+#if LLVM_VERSION < 37
       AU.addRequired<LoopInfo>();
+#else
+      AU.addRequired<LoopInfoWrapperPass>();
+#endif
+#if LLVM_VERSION < 38
       AU.addRequired<ScalarEvolution>();
+#else
+      AU.addRequired<ScalarEvolutionWrapperPass>();
+#endif
 #if LLVM_VERSION < 35
       AU.addRequired<DominatorTree>();
 #else
@@ -916,7 +962,11 @@ private:
     Module *M;
     LLVMContext &Context;
     ExecutionEngine *EE;
+#if LLVM_VERSION < 37
     FunctionPassManager &PM, &PMUnsigned;
+#else
+    legacy::FunctionPassManager &PM, &PMUnsigned;
+#endif
     LLVMTypeMapper *TypeMap;
 
     Function **apiFuncs;
@@ -925,7 +975,11 @@ private:
     Twine BytecodeID;
 
     TargetFolder Folder;
+#if LLVM_VERSION < 39
     IRBuilder<false, TargetFolder> Builder;
+#else
+    IRBuilder<TargetFolder> Builder;
+#endif
 
     std::vector<Value*> globals;
     DenseMap<unsigned, unsigned> GVoffsetMap;
@@ -1089,7 +1143,11 @@ private:
 	  Constant *C = ConstantExpr::getPointerCast(GV, IP8Ty);
 	  //TODO: check constant bounds here
 	  return ConstantExpr::getPointerCast(
+#if LLVM_VERSION < 37
 	      ConstantExpr::getInBoundsGetElementPtr(C, ARRAYREF(Value*, idxs, 1)),
+#else
+	      ConstantExpr::getInBoundsGetElementPtr(Ty, C, ARRAYREF(Value*, idxs, 1)),
+#endif
 	      PTy);
         }
 	if (isa<IntegerType>(Ty)) {
@@ -1118,15 +1176,23 @@ private:
 
 public:
     LLVMCodegen(const struct cli_bc *bc, Module *M, struct CommonFunctions *CF, FunctionMapTy &cFuncs,
+#if LLVM_VERSION < 37
 		ExecutionEngine *EE, FunctionPassManager &PM, FunctionPassManager &PMUnsigned,
+#else
+        ExecutionEngine *EE, legacy::FunctionPassManager &PM, legacy::FunctionPassManager &PMUnsigned,
+#endif
 		Function **apiFuncs, LLVMTypeMapper &apiMap)
 	: bc(bc), M(M), Context(M->getContext()), EE(EE),
 	PM(PM),PMUnsigned(PMUnsigned), TypeMap(), apiFuncs(apiFuncs),apiMap(apiMap),
 	compiledFunctions(cFuncs), BytecodeID("bc"+Twine(bc->id)),
 #if LLVM_VERSION < 32
 	Folder(EE->getTargetData()), Builder(Context, Folder), Values(), CF(CF) {
-#else
+#elif LLVM_VERSION < 37
 	Folder(EE->getDataLayout()), Builder(Context, Folder), Values(), CF(CF) {
+#elif LLVM_VERSION < 38
+    Folder(*EE->getDataLayout()), Builder(Context, Folder), Values(), CF(CF) {
+#else
+    Folder(EE->getDataLayout()), Builder(Context, Folder), Values(), CF(CF) {
 #endif
 
 	for (unsigned i=0;i<cli_apicall_maxglobal - _FIRST_GLOBAL;i++) {
@@ -1141,7 +1207,17 @@ public:
     template <typename InputIterator>
 #endif
     Value* createGEP(Value *Base, constType *ETy, ARRAYREFPARAM(Value*,InputIterator Start,InputIterator End,ARef)) {
+#if LLVM_VERSION < 37
 	constType *Ty = GetElementPtrInst::getIndexedType(Base->getType(),ARRAYREFP(Start,End,ARef));
+#else
+    Type *Ty = NULL;
+    // This used to be done internally in LLVM's getIndexedTypeInternal.
+    PointerType *PTy = dyn_cast<PointerType>(Base->getType()->getScalarType());
+    if (PTy) {
+        Type *Agg = PTy->getElementType();
+        Ty = GetElementPtrInst::getIndexedType(Agg,ARRAYREFP(Start,End,ARef));
+    }
+#endif
 	if (!Ty || (ETy && (Ty != ETy && (!isa<IntegerType>(Ty) || !isa<IntegerType>(ETy))))) {
 	    if (cli_debug_flag) {
 		std::string str;
@@ -1277,8 +1353,10 @@ public:
 	}
 #if LLVM_VERSION < 32
 	if (EE->getTargetData()->getPointerSize() == 8) {
-#else
+#elif LLVM_VERSION < 38
 	if (EE->getDataLayout()->getPointerSize() == 8) {
+#else
+    if (EE->getDataLayout().getPointerSize() == 8) {
 #endif
 	    // eliminate useless trunc, GEP can take i64 too
 	    if (TruncInst *I = dyn_cast<TruncInst>(V)) {
@@ -1398,7 +1476,11 @@ public:
 	    numArgs = func->numArgs;
 
 	    if (FakeGVs.any()) {
+#if LLVM_VERSION < 38
 		Argument *Ctx = F->arg_begin();
+#else
+        Argument *Ctx = &*F->arg_begin();
+#endif
 		for (unsigned i=0;i<bc->num_globals;i++) {
 		    if (!FakeGVs[i])
 			continue;
@@ -1457,7 +1539,11 @@ public:
 			if (func->dbgnodes[c] != ~0u) {
 			unsigned j = func->dbgnodes[c];
 			assert(j < mdnodes.size());
+#if LLVM_VERSION < 37
 			Builder.SetCurrentDebugLocation(mdnodes[j]);
+#else
+            Builder.SetCurrentDebugLocation(DebugLoc(mdnodes[j]));
+#endif
 			} else
 			    Builder.SetCurrentDebugLocation(0);
 		    }
@@ -1767,11 +1853,16 @@ public:
 #if LLVM_VERSION < 29
 			    CallInst *c = Builder.CreateCall4(CF->FMemset, Dst, Val, Len,
 								ConstantInt::get(Type::getInt32Ty(Context), 1));
-#else
+#elif LLVM_VERSION < 37
 			    CallInst *c = Builder.CreateCall5(CF->FMemset, Dst, Val, Len,
 								ConstantInt::get(Type::getInt32Ty(Context), 1),
 								ConstantInt::get(Type::getInt1Ty(Context), 0)
 								);
+#else
+                Value *args[] = { Dst, Val, Len,
+                                  ConstantInt::get(Type::getInt32Ty(Context), 1),
+                                  ConstantInt::get(Type::getInt1Ty(Context), 0)};
+                CallInst *c = Builder.CreateCall(CF->FMemset, ARRAYREF(Value*, args, args + 5));
 #endif
 			    c->setTailCall(true);
 			    c->setDoesNotThrow();
@@ -1788,11 +1879,16 @@ public:
 #if LLVM_VERSION < 29
 			    CallInst *c = Builder.CreateCall4(CF->FMemcpy, Dst, Src, Len,
 								ConstantInt::get(Type::getInt32Ty(Context), 1));
-#else
+#elif LLVM_VERSION < 37
 			    CallInst *c = Builder.CreateCall5(CF->FMemcpy, Dst, Src, Len,
 								ConstantInt::get(Type::getInt32Ty(Context), 1),
 								ConstantInt::get(Type::getInt1Ty(Context), 0)
 								);
+#else
+                Value *args[] = { Dst, Src, Len,
+                                  ConstantInt::get(Type::getInt32Ty(Context), 1),
+                                  ConstantInt::get(Type::getInt1Ty(Context), 0)};
+                CallInst *c = Builder.CreateCall(CF->FMemcpy, ARRAYREF(Value*, args, args + 5));
 #endif
 			    c->setTailCall(true);
 			    c->setDoesNotThrow();
@@ -1809,10 +1905,15 @@ public:
 #if LLVM_VERSION < 29
 			    CallInst *c = Builder.CreateCall4(CF->FMemmove, Dst, Src, Len,
 								ConstantInt::get(Type::getInt32Ty(Context), 1));
-#else
+#elif LLVM_VERSION < 37
 			    CallInst *c = Builder.CreateCall5(CF->FMemmove, Dst, Src, Len,
 								ConstantInt::get(Type::getInt32Ty(Context), 1),
 								ConstantInt::get(Type::getInt1Ty(Context), 0));
+#else
+                Value *args[] = {Dst, Src, Len,
+                                 ConstantInt::get(Type::getInt32Ty(Context), 1),
+                                 ConstantInt::get(Type::getInt1Ty(Context), 0)};
+                CallInst *c = Builder.CreateCall(CF->FMemmove, args);
 #endif
 			    c->setTailCall(true);
 			    c->setDoesNotThrow();
@@ -1827,10 +1928,17 @@ public:
 			    Src = Builder.CreatePointerCast(Src, PointerType::getUnqual(Type::getInt8Ty(Context)));
 #if LLVM_VERSION < 32
 			    Value *Len = convertOperand(func, EE->getTargetData()->getIntPtrType(Context), inst->u.three[2]);
-#else
+#elif LLVM_VERSION < 38
 			    Value *Len = convertOperand(func, EE->getDataLayout()->getIntPtrType(Context), inst->u.three[2]);
+#else
+                Value *Len = convertOperand(func, EE->getDataLayout().getIntPtrType(Context), inst->u.three[2]);
 #endif
+#if LLVM_VERSION < 37
 			    CallInst *c = Builder.CreateCall3(CF->FRealmemcmp, Dst, Src, Len);
+#else
+                Value *args[] = {Dst, Src, Len};
+                CallInst *c = Builder.CreateCall(CF->FRealmemcmp, ARRAYREF(Value*, args, args + 3));
+#endif
 			    c->setTailCall(true);
 			    c->setDoesNotThrow();
 			    Store(inst->dest, c);
@@ -1962,6 +2070,7 @@ public:
 		PMUnsigned.run(*F);
 		PMUnsigned.doFinalization();
 	    }
+
 	    apiMap.pmTimer.stopTimer();
 	    apiMap.irgenTimer.startTimer();
 	}
@@ -2194,8 +2303,10 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
     args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
 #if LLVM_VERSION < 32
     args.push_back(EE->getTargetData()->getIntPtrType(Context));
-#else
+#elif LLVM_VERSION < 38
     args.push_back(EE->getDataLayout()->getIntPtrType(Context));
+#else
+    args.push_back(EE->getDataLayout().getIntPtrType(Context));
 #endif
     FuncTy_5 = FunctionType::get(Type::getInt32Ty(Context),
 				 args, false);
@@ -2211,8 +2322,16 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
 }
 #if LLVM_VERSION >= 29
 INITIALIZE_PASS_BEGIN(RuntimeLimits, "rl", "Runtime Limits", false, false)
+#if LLVM_VERSION < 37
 INITIALIZE_PASS_DEPENDENCY(LoopInfo)
+#else
+INITIALIZE_PASS_DEPENDENCY(LoopInfoWrapperPass)
+#endif
+#if LLVM_VERSION < 38
 INITIALIZE_PASS_DEPENDENCY(ScalarEvolution)
+#else
+INITIALIZE_PASS_DEPENDENCY(ScalarEvolutionWrapperPass)
+#endif
 #if LLVM_VERSION < 35
 INITIALIZE_PASS_DEPENDENCY(DominatorTree)
 #else
@@ -2437,8 +2556,10 @@ static void addFPasses(FunctionPassManager &FPM, bool trusted, const TargetData 
 static void addFPasses(FunctionPassManager &FPM, bool trusted, const DataLayout *TD)
 #elif LLVM_VERSION < 36
 static void addFPasses(FunctionPassManager &FPM, bool trusted, const Module *M)
-#else
+#elif LLVM_VERSION < 37
 static void addFPasses(FunctionPassManager &FPM, bool trusted, Module *M)
+#else
+static void addFPasses(legacy::FunctionPassManager &FPM, bool trusted, Module *M)
 #endif
 {
     // Set up the optimizer pipeline.  Start with registering info about how
@@ -2449,10 +2570,12 @@ static void addFPasses(FunctionPassManager &FPM, bool trusted, Module *M)
     FPM.add(new DataLayout(*TD));
 #elif LLVM_VERSION < 36
     FPM.add(new DataLayoutPass(M));
-#else
+#elif LLVM_VERSION < 37
     DataLayoutPass *DLP = new DataLayoutPass();
     DLP->doInitialization(*M);
     FPM.add(DLP);
+#else
+    // No DataLayout pass needed anymore.
 #endif
     // Promote allocas to registers.
     FPM.add(createPromoteMemoryToRegisterPass());
@@ -2482,12 +2605,15 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 
 #if LLVM_VERSION >= 31
 	TargetOptions Options;
+#if LLVM_VERSION < 37
+    // This option was removed.
 #ifdef CL_DEBUG
 	//disable this for now, it leaks
 	Options.JITEmitDebugInfo = false;
 //	Options.JITEmitDebugInfo = true;
 #else
 	Options.JITEmitDebugInfo = false;
+#endif
 #endif
 #if LLVM_VERSION < 34
 	Options.DwarfExceptionHandling = false;
@@ -2525,11 +2651,17 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	struct CommonFunctions CF;
 	addFunctionProtos(&CF, EE, M);
 
+#if LLVM_VERSION < 37
 	FunctionPassManager OurFPM(M), OurFPMUnsigned(M);
+#else
+    legacy::FunctionPassManager OurFPM(M), OurFPMUnsigned(M);
+#endif
 #if LLVM_VERSION < 32
 	M->setDataLayout(EE->getTargetData()->getStringRepresentation());
-#else
+#elif LLVM_VERSION < 38
 	M->setDataLayout(EE->getDataLayout()->getStringRepresentation());
+#else
+    M->setDataLayout(EE->getDataLayout().getStringRepresentation());
 #endif
 #if LLVM_VERSION < 31
 	M->setTargetTriple(sys::getHostTriple());
@@ -2665,22 +2797,32 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 		break;
 	    }
 	}
+#if LLVM_VERSION < 37
 	PassManager PM;
+#else
+	legacy::PassManager PM;
+#endif
 #if LLVM_VERSION < 32
 	PM.add(new TargetData(*EE->getTargetData()));
 #elif LLVM_VERSION < 35
 	PM.add(new DataLayout(*EE->getDataLayout()));
 #elif LLVM_VERSION < 36
 	PM.add(new DataLayoutPass(M));
-#else
+#elif LLVM_VERSION < 37
     DataLayoutPass *DLP = new DataLayoutPass();
     DLP->doInitialization(*M);
     PM.add(DLP);
+#else
+    // No DataLayout pass needed anymore.
 #endif
 	// TODO: only run this on the untrusted bytecodes, not all of them...
 	if (has_untrusted)
 	    PM.add(createClamBCRTChecks());
-#if LLVM_VERSION >= 36
+#if LLVM_VERSION >= 38
+    // With LLVM 3.8 the test_bswap_jit test fails with the GVNPass enabled.
+    // To prevent the segfaults mentioned below, replace it with the ConstantPropagationPass.
+    PM.add(createConstantPropagationPass());
+#elif LLVM_VERSION >= 36
 	// With LLVM 3.6 (MCJIT) this Pass is required to work around
 	// a crash in LLVM caused by the SCCP Pass:
 	// Pass 'Sparse Conditional Constant Propagation' is not initialized.
@@ -2754,7 +2896,7 @@ int bytecode_init(void)
 	return CL_EARG;
     }
 #else
-    if (!LLVMIsMultithreaded()) {
+    if (!llvm_is_multithreaded()) {
         cli_warnmsg("bytecode_init: LLVM is compiled without multithreading support\n");
     }
 #endif
@@ -2803,11 +2945,7 @@ int bytecode_init(void)
     InitializeAllTargets();
 #endif
 
-#if LLVM_VERSION < 35
     if (!llvm_is_multithreaded()) {
-#else
-    if (!LLVMIsMultithreaded()) {
-#endif
 	//TODO:cli_dbgmsg
 	DEBUG(errs() << "WARNING: ClamAV JIT built w/o atomic builtins\n"
 	      << "On x86 for best performance ClamAV should be built for i686, not i386!\n");
@@ -2987,11 +3125,19 @@ static Metadata *findDbgGlobalDeclare(GlobalVariable *V) {
     return 0;
 
   for (unsigned i = 0, e = NMD->getNumOperands(); i != e; ++i) {
+#if LLVM_VERSION < 37
     DIDescriptor DIG(cast<MDNode>(NMD->getOperand(i)));
     if (!DIG.isGlobalVariable())
       continue;
     if (DIGlobalVariable(DIG).getGlobal() == V)
       return DIG;
+#else
+    MDNode *DIG = NMD->getOperand(i);
+    if (!DIGlobalVariable::classof(DIG))
+      continue;
+    if ((cast<DIGlobalVariable>(DIG))->getVariable() == V)
+      return DIG;
+#endif
   }
   return 0;
 }
@@ -3008,11 +3154,19 @@ static Metadata *findDbgSubprogramDeclare(Function *V) {
     return 0;
 
   for (unsigned i = 0, e = NMD->getNumOperands(); i != e; ++i) {
+#if LLVM_VERSION < 37
     DIDescriptor DIG(cast<MDNode>(NMD->getOperand(i)));
     if (!DIG.isSubprogram())
       continue;
     if (DISubprogram(DIG).getFunction() == V)
       return DIG;
+#else
+    MDNode *DIG = NMD->getOperand(i);
+    if (!DISubprogram::classof(DIG))
+      continue;
+    if ((cast<DISubprogram>(DIG))->describes(V))
+      return DIG;
+#endif
   }
   return 0;
 }
@@ -3061,22 +3215,39 @@ static bool getLocationInfo(const Value *V, std::string &DisplayName,
     Metadata *DIGV = findDbgGlobalDeclare(GV);
 #endif
     if (!DIGV) return false;
+#if LLVM_VERSION < 37
     DIGlobalVariable Var(cast<MDNode>(DIGV));
+#else
+    DIGlobalVariable *Var = cast<DIGlobalVariable>(DIGV);
+#endif
 
+#if LLVM_VERSION < 37
     StringRef D = Var.getDisplayName();
+#else
+    StringRef D = Var->getDisplayName();
+#endif
     if (!D.empty())
       DisplayName = D;
+#if LLVM_VERSION < 37
     LineNo = Var.getLineNumber();
+#else
+    LineNo = Var->getLine();
+#endif
 #if LLVM_VERSION < 33
     Unit = Var.getCompileUnit();
-#else
+#elif LLVM_VERSION < 37
     G = Var.getFilename();
     H = Var.getDirectory();
+#else
+    G = Var->getFilename();
+    H = Var->getDirectory();
 #endif
 #if LLVM_VERSION < 35
     TypeD = Var.getType();
-#else
+#elif LLVM_VERSION < 37
     T = Var.getType().getName();
+#else
+    T = (cast<DIType>(*Var->getType())).getName();
 #endif
   } else if (Function *F = dyn_cast<Function>(const_cast<Value*>(V))){
 #if LLVM_VERSION < 36
@@ -3085,32 +3256,61 @@ static bool getLocationInfo(const Value *V, std::string &DisplayName,
     Metadata *DIF = findDbgSubprogramDeclare(F);
 #endif
     if (!DIF) return false;
+#if LLVM_VERSION < 37
     DISubprogram Var(cast<MDNode>(DIF));
+#else
+    DISubprogram *Var = cast<DISubprogram>(DIF);
+#endif
 
+#if LLVM_VERSION < 37
     StringRef D = Var.getDisplayName();
+#else
+    StringRef D = Var->getDisplayName();
+#endif
     if (!D.empty())
       DisplayName = D;
+#if LLVM_VERSION < 37
     LineNo = Var.getLineNumber();
+#else
+    LineNo = Var->getLine();
+#endif
 #if LLVM_VERSION < 33
     Unit = Var.getCompileUnit();
-#else
+#elif LLVM_VERSION < 37
     G = Var.getFilename();
     H = Var.getDirectory();
+#else
+    G = Var->getFilename();
+    H = Var->getDirectory();
 #endif
 #if LLVM_VERSION < 35
     TypeD = Var.getType();
-#else
+#elif LLVM_VERSION < 37
     T = Var.getType().getName();
+#else
+    T = Var->getType()->getName();
 #endif
   } else {
     const DbgDeclareInst *DDI = findDbgDeclare(V);
     if (!DDI) return false;
+#if LLVM_VERSION < 37
     DIVariable Var(cast<MDNode>(DDI->getVariable()));
+#else
+    DIVariable* Var = DDI->getVariable();
+#endif
 
+#if LLVM_VERSION < 37
     StringRef D = Var.getName();
+#else
+    StringRef D = Var->getName();
+#endif
     if (!D.empty())
       DisplayName = D;
+#if LLVM_VERSION < 37
     LineNo = Var.getLineNumber();
+#else
+    LineNo = Var->getLine();
+#endif
 #if LLVM_VERSION < 33
     Unit = Var.getCompileUnit();
 #else
@@ -3120,8 +3320,10 @@ static bool getLocationInfo(const Value *V, std::string &DisplayName,
 #endif
 #if LLVM_VERSION < 35
     TypeD = Var.getType();
-#else
+#elif LLVM_VERSION < 37
     T = Var.getType().getName();
+#else
+    T = (cast<DIType>(*Var->getType())).getName();
 #endif
   }
 
@@ -3157,9 +3359,15 @@ void printValue(llvm::Value *V, bool a, bool b) {
 
 void printLocation(llvm::Instruction *I, bool a, bool b) {
     if (MDNode *N = I->getMetadata("dbg")) {
+#if LLVM_VERSION < 37
 	DILocation Loc(N);
 	errs() << Loc.getFilename() << ":" << Loc.getLineNumber();
 	if (unsigned Col = Loc.getColumnNumber()) {
+#else
+    DebugLoc Loc(N);
+    errs() << Loc.get()->getFilename() << ":" << Loc.getLine();
+    if (unsigned Col = Loc.getCol()) {
+#endif
   	    errs() << ":" << Col;
   	}
   	errs() << ": ";

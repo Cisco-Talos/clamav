@@ -1,7 +1,7 @@
 /*
  *  JIT detection for ClamAV bytecode.
  *
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2017 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2010 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
@@ -22,7 +22,9 @@
  */
 
 #include "llvm/ADT/Triple.h"
+#if LLVM_VERSION < 38
 #include "llvm/Config/config.h"
+#endif
 #include "llvm/Support/raw_ostream.h"
 #if LLVM_VERSION < 29
 #include "llvm/System/DataTypes.h"

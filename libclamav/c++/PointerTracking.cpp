@@ -30,7 +30,11 @@
 #include "llvm/IR/InstIterator.h"
 #endif
 #include "llvm/Support/raw_ostream.h"
+#if LLVM_VERSION < 37
 #include "llvm/Target/TargetLibraryInfo.h"
+#else
+#include <llvm/Analysis/TargetLibraryInfo.h>
+#endif
 
 #if LLVM_VERSION < 32
 #include "llvm/Target/TargetData.h"
@@ -70,8 +74,16 @@ INITIALIZE_PASS_DEPENDENCY(DominatorTree)
 #else
 INITIALIZE_PASS_DEPENDENCY(DominatorTreeWrapperPass)
 #endif
+#if LLVM_VERSION < 37
 INITIALIZE_PASS_DEPENDENCY(LoopInfo)
+#else
+INITIALIZE_PASS_DEPENDENCY(LoopInfoWrapperPass)
+#endif
+#if LLVM_VERSION < 38
 INITIALIZE_PASS_DEPENDENCY(ScalarEvolution)
+#else
+INITIALIZE_PASS_DEPENDENCY(ScalarEvolutionWrapperPass)
+#endif
 #if LLVM_VERSION < 35
 INITIALIZE_PASS_DEPENDENCY(DominatorTree)
 #else
@@ -96,12 +108,22 @@ bool PointerTracking::runOnFunction(Function &F) {
   TD = getAnalysisIfAvailable<TargetData>();
 #elif LLVM_VERSION < 35
   TD = getAnalysisIfAvailable<DataLayout>();
-#else
+#elif LLVM_VERSION < 37
   DataLayoutPass *DLP = getAnalysisIfAvailable<DataLayoutPass>();
   TD = DLP ? &DLP->getDataLayout() : 0;
+#else
+  TD = &F.getEntryBlock().getModule()->getDataLayout();
 #endif
+#if LLVM_VERSION < 38
   SE = &getAnalysis<ScalarEvolution>();
+#else
+  SE = &getAnalysis<ScalarEvolutionWrapperPass>().getSE();
+#endif
+#if LLVM_VERSION < 37
   LI = &getAnalysis<LoopInfo>();
+#else
+ LI = &getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
+#endif
 #if LLVM_VERSION < 35
   DT = &getAnalysis<DominatorTree>();
 #else
@@ -116,8 +138,16 @@ void PointerTracking::getAnalysisUsage(AnalysisUsage &AU) const {
 #else
   AU.addRequiredTransitive<DominatorTreeWrapperPass>();
 #endif
+#if LLVM_VERSION < 37
   AU.addRequiredTransitive<LoopInfo>();
+#else
+  AU.addRequiredTransitive<LoopInfoWrapperPass>();
+#endif
+#if LLVM_VERSION < 38
   AU.addRequiredTransitive<ScalarEvolution>();
+#else
+  AU.addRequiredTransitive<ScalarEvolutionWrapperPass>();
+#endif
   AU.setPreservesAll();
 }
 
@@ -178,11 +208,18 @@ const SCEV *PointerTracking::computeAllocationCount(Value *P,
   if (CallInst *CI = extractMallocCall(V)) {
     Value *arraySize = getMallocArraySize(CI, TD);
     constType* AllocTy = getMallocAllocatedType(CI);
-#else
+#elif LLVM_VERSION < 37
   TargetLibraryInfo* TLI = new TargetLibraryInfo();
 
   if (CallInst *CI = extractMallocCall(V, TLI)) {
     Value *arraySize = getMallocArraySize(CI, TD, TLI);
+    constType* AllocTy = getMallocAllocatedType(CI, TLI);
+#else
+  TargetLibraryInfoImpl* TLII = new TargetLibraryInfoImpl();
+  TargetLibraryInfo* TLI = new TargetLibraryInfo(*TLII);
+
+  if (CallInst *CI = extractMallocCall(V, TLI)) {
+    Value *arraySize = getMallocArraySize(CI, *TD, TLI);
     constType* AllocTy = getMallocAllocatedType(CI, TLI);
 #endif
     if (!AllocTy || !arraySize) return SE->getCouldNotCompute();
@@ -240,7 +277,7 @@ Value *PointerTracking::computeAllocationCountValue(Value *P, constType *&Ty) co
     if (!Ty)
       return 0;
     Value *arraySize = getMallocArraySize(CI, TD);
-#else
+#elif LLVM_VERSION < 37
   TargetLibraryInfo* TLI = new TargetLibraryInfo();
 
   if (CallInst *CI = extractMallocCall(V, TLI)) {
@@ -248,6 +285,15 @@ Value *PointerTracking::computeAllocationCountValue(Value *P, constType *&Ty) co
     if (!Ty)
       return 0;
     Value *arraySize = getMallocArraySize(CI, TD, TLI);
+#else
+  TargetLibraryInfoImpl* TLII = new TargetLibraryInfoImpl();
+  TargetLibraryInfo* TLI = new TargetLibraryInfo(*TLII);
+
+  if (CallInst *CI = extractMallocCall(V, TLI)) {
+    Ty = getMallocAllocatedType(CI, TLI);
+    if (!Ty)
+      return 0;
+    Value *arraySize = getMallocArraySize(CI, *TD, TLI);
 #endif
     if (!arraySize) {
       Ty = Type::getInt8Ty(P->getContext());
@@ -351,7 +397,11 @@ void PointerTracking::getPointerOffset(Value *Pointer, Value *&Base,
                                        const SCEV *&Offset) const
 {
     Pointer = Pointer->stripPointerCasts();
+#if LLVM_VERSION < 37
     Base = GetUnderlyingObject(Pointer, TD);
+#else
+    Base = GetUnderlyingObject(Pointer, *TD);
+#endif
     Limit = getAllocationSizeInBytes(Base);
     if (isa<SCEVCouldNotCompute>(Limit)) {
       Base = 0;

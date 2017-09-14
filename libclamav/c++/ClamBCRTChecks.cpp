@@ -1,7 +1,7 @@
 /*
  *  Compile LLVM bytecode to ClamAV bytecode.
  *
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2017 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2009-2013 Sourcefire, Inc.
  *  All rights reserved.
  *
@@ -54,7 +54,9 @@
 #include "llvm/Analysis/ScalarEvolution.h"
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
 #include "llvm/Analysis/ScalarEvolutionExpander.h"
+#if LLVM_VERSION < 38
 #include "llvm/Config/config.h"
+#endif
 #include "llvm/Pass.h"
 #include "llvm/Support/CommandLine.h"
 #if LLVM_VERSION < 35
@@ -201,18 +203,28 @@ namespace llvm {
           TD = &getAnalysis<TargetData>();
 #elif LLVM_VERSION < 35
           TD = &getAnalysis<DataLayout>();
-#else
+#elif LLVM_VERSION < 37
           DataLayoutPass *DLP = getAnalysisIfAvailable<DataLayoutPass>();
           TD = DLP ? &DLP->getDataLayout() : 0;
+#else
+          TD = &F.getEntryBlock().getModule()->getDataLayout();
 #endif
+#if LLVM_VERSION < 38
           SE = &getAnalysis<ScalarEvolution>();
+#else
+          SE = &getAnalysis<ScalarEvolutionWrapperPass>().getSE();
+#endif
           PT = &getAnalysis<PointerTracking>();
 #if LLVM_VERSION < 35
           DT = &getAnalysis<DominatorTree>();
 #else
           DT = &getAnalysis<DominatorTreeWrapperPass>().getDomTree();
 #endif
+#if LLVM_VERSION < 37
           expander = new SCEVExpander(*SE OPT("SCEVexpander"));
+#else
+          expander = new SCEVExpander(*SE, *TD OPT("SCEVexpander"));
+#endif
 
           std::vector<Instruction*> insns;
 
@@ -326,7 +338,11 @@ namespace llvm {
               AbrtC->setDoesNotThrow();
 #endif
               // remove all instructions from entry
+#if LLVM_VERSION < 38
               BasicBlock::iterator BBI = I, BBE=BB->end();
+#else
+              BasicBlock::iterator BBI = I->getIterator(), BBE=BB->end();
+#endif
               while (BBI != BBE) {
                   if (!BBI->use_empty())
                       BBI->replaceAllUsesWith(UndefValue::get(BBI->getType()));
@@ -351,15 +367,21 @@ namespace llvm {
           AU.addRequired<TargetData>();
 #elif LLVM_VERSION < 35
           AU.addRequired<DataLayout>();
-#else
+#elif LLVM_VERSION < 37
           AU.addRequired<DataLayoutPass>();
+#else
+    // No DataLayout pass needed anymore.
 #endif
 #if LLVM_VERSION < 35
           AU.addRequired<DominatorTree>();
 #else
           AU.addRequired<DominatorTreeWrapperPass>();
 #endif
+#if LLVM_VERSION < 38
           AU.addRequired<ScalarEvolution>();
+#else
+          AU.addRequired<ScalarEvolutionWrapperPass>();
+#endif
           AU.addRequired<PointerTracking>();
 #if LLVM_VERSION < 35
           AU.addRequired<CallGraph>();
@@ -390,9 +412,17 @@ namespace llvm {
 
       Instruction *getInsertPoint(Value *V)
       {
+#if LLVM_VERSION < 38
           BasicBlock::iterator It = EP;
+#else
+          BasicBlock::iterator It = EP->getIterator();
+#endif
           if (Instruction *I = dyn_cast<Instruction>(V)) {
+#if LLVM_VERSION < 38
               It = I;
+#else
+              It = I->getIterator();
+#endif
               ++It;
           }
           return &*It;
@@ -406,7 +436,11 @@ namespace llvm {
           if (BaseMap.count(P)) {
               return BaseMap[Ptr] = BaseMap[P];
           }
+#if LLVM_VERSION < 37
           Value *P2 = GetUnderlyingObject(P, TD);
+#else
+          Value *P2 = GetUnderlyingObject(P, *TD);
+#endif
           if (P2 != P) {
               Value *V = getPointerBase(P2);
               return BaseMap[Ptr] = V;
@@ -415,7 +449,11 @@ namespace llvm {
           constType *P8Ty =
               PointerType::getUnqual(Type::getInt8Ty(Ptr->getContext()));
           if (PHINode *PN = dyn_cast<PHINode>(Ptr)) {
+#if LLVM_VERSION < 38
               BasicBlock::iterator It = PN;
+#else
+              BasicBlock::iterator It = PN->getIterator();
+#endif
               ++It;
               PHINode *newPN = PHINode::Create(P8Ty, HINT(PN->getNumIncomingValues()) ".verif.base", &*It);
               Changed = true;
@@ -429,7 +467,11 @@ namespace llvm {
               return newPN;
           }
           if (SelectInst *SI = dyn_cast<SelectInst>(Ptr)) {
+#if LLVM_VERSION < 38
               BasicBlock::iterator It = SI;
+#else
+              BasicBlock::iterator It = SI->getIterator();
+#endif
               ++It;
               Value *TrueB = getPointerBase(SI->getTrueValue());
               Value *FalseB = getPointerBase(SI->getFalseValue());
@@ -520,7 +562,11 @@ namespace llvm {
               }
           }
           if (LoadInst *LI = dyn_cast<LoadInst>(Base)) {
+#if LLVM_VERSION < 37
               Value *V = GetUnderlyingObject(LI->getPointerOperand()->stripPointerCasts(), TD);
+#else
+              Value *V = GetUnderlyingObject(LI->getPointerOperand()->stripPointerCasts(), *TD);
+#endif
               if (Argument *A = dyn_cast<Argument>(V)) {
                   if (A->getArgNo() == 0) {
                       // pointers from hidden ctx are trusted to be at least the
@@ -559,7 +605,11 @@ namespace llvm {
           }
 #endif
           if (PHINode *PN = dyn_cast<PHINode>(Base)) {
+#if LLVM_VERSION < 38
               BasicBlock::iterator It = PN;
+#else
+              BasicBlock::iterator It = PN->getIterator();
+#endif
               ++It;
               PHINode *newPN = PHINode::Create(I64Ty, HINT(PN->getNumIncomingValues()) ".verif.bounds", &*It);
               Changed = true;
@@ -582,7 +632,11 @@ namespace llvm {
               return BoundsMap[Base] = newPN;
           }
           if (SelectInst *SI = dyn_cast<SelectInst>(Base)) {
+#if LLVM_VERSION < 38
               BasicBlock::iterator It = SI;
+#else
+              BasicBlock::iterator It = SI->getIterator();
+#endif
               ++It;
               Value *TrueB = getPointerBounds(SI->getTrueValue());
               Value *FalseB = getPointerBounds(SI->getFalseValue());
@@ -639,7 +693,11 @@ namespace llvm {
           if (!MDDbgKind)
               return 0;
           Approximate = true;
+#if LLVM_VERSION < 38
           BasicBlock::iterator It = I;
+#else
+          BasicBlock::iterator It = I->getIterator();
+#endif
           while (It != I->getParent()->begin()) {
               --It;
               if (MDNode *Dbg = It->getMetadata(MDDbgKind))
@@ -673,8 +731,16 @@ namespace llvm {
               return false;
           }
           BasicBlock *BB = I->getParent();
+#if LLVM_VERSION < 38
           BasicBlock::iterator It = I;
+#else
+          BasicBlock::iterator It = I->getIterator();
+#endif
+#if LLVM_VERSION < 37
           BasicBlock *newBB = SplitBlock(BB, &*It, this);
+#else
+          BasicBlock *newBB = SplitBlock(BB, &*It);
+#endif
           PHINode *PN;
           unsigned MDDbgKind = I->getContext().getMDKindID("dbg");
           //verifyFunction(*BB->getParent());
@@ -719,9 +785,15 @@ namespace llvm {
           unsigned locationid = 0;
           bool Approximate;
           if (MDNode *Dbg = getLocation(I, Approximate, MDDbgKind)) {
+#if LLVM_VERSION < 37
               DILocation Loc(Dbg);
               locationid = Loc.getLineNumber() << 8;
               unsigned col = Loc.getColumnNumber();
+#else
+              DebugLoc Loc(Dbg);
+              locationid = Loc.getLine() << 8;
+              unsigned col = Loc.getCol();
+#endif
               if (col > 254)
                   col = 254;
               if (Approximate)
@@ -935,14 +1007,22 @@ INITIALIZE_PASS_DEPENDENCY(TargetData)
 #elif LLVM_VERSION < 35
 INITIALIZE_PASS_DEPENDENCY(DataLayout)
 #else
+#if LLVM_VERSION < 37
 INITIALIZE_PASS_DEPENDENCY(DataLayoutPass)
+#else
+// No DataLayout pass needed anymore.
+#endif
 #endif
 #if LLVM_VERSION < 35
 INITIALIZE_PASS_DEPENDENCY(DominatorTree)
 #else
 INITIALIZE_PASS_DEPENDENCY(DominatorTreeWrapperPass)
 #endif
+#if LLVM_VERSION < 38
 INITIALIZE_PASS_DEPENDENCY(ScalarEvolution)
+#else
+INITIALIZE_PASS_DEPENDENCY(ScalarEvolutionWrapperPass)
+#endif
 #if LLVM_VERSION < 34
 INITIALIZE_AG_DEPENDENCY(CallGraph)
 #elif LLVM_VERSION < 35
