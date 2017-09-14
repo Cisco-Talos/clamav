@@ -71,7 +71,7 @@ Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "Setup-x86", "Setup-x86\Setu
 EndProject
 Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "Setup-x64", "Setup-x64\Setup-x64.vdproj", "{9C42D9BA-08AC-44E4-BAA8-145F7F44389A}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mspack", "..\libclamav\libmspack-0.5alpha\mspack\mspack.vcxproj", "{AA443662-4AED-4F50-95E4-9B5BB5429E9E}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mspack", "mspack.vcxproj", "{AA443662-4AED-4F50-95E4-9B5BB5429E9E}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "openssl", "openssl.vcxproj", "{5661EB2A-7AE6-4C1A-864B-FDDD32F3D45A}"
 EndProject
