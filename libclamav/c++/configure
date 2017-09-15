@@ -16579,14 +16579,14 @@ elif test $llvmver_test -lt 360; then
     llvmcomp="jit nativecodegen scalaropts ipo"
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: ok ($llvmver)" >&5
 $as_echo "ok ($llvmver)" >&6; }
-elif test $llvmver_test -lt 370; then
+elif test $llvmver_test -lt 400; then
             llvmcomp="mcjit nativecodegen scalaropts ipo x86asmparser powerpcasmparser"
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: ok ($llvmver)" >&5
 $as_echo "ok ($llvmver)" >&6; }
 else
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: no ($llvmver)" >&5
 $as_echo "no ($llvmver)" >&6; }
-    as_fn_error $? "LLVM < 3.7 required, but \"$llvmver\"($llvmver_test) found" "$LINENO" 5
+    as_fn_error $? "LLVM < 4.0 required, but \"$llvmver\"($llvmver_test) found" "$LINENO" 5
 fi
 
 if test "x$llvmconfig" != "x"; then
