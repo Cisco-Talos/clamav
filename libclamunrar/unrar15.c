@@ -119,18 +119,16 @@ static void copy_string15(unpack_data_t *unpack_data, unsigned int distance,
 	}
 }
 
-static unsigned int decode_num(unpack_data_t *unpack_data, unsigned int num, unsigned int start_pos,
+static unsigned int decode_num(unpack_data_t *unpack_data, int num, unsigned int start_pos,
 			unsigned int *dec_tab, unsigned int *pos_tab)
 {
 	int i;
 	
-	for (num &= 0xfff0, i=0; dec_tab[i] <= num; i++) {
+	for (num&=0xfff0, i=0 ; dec_tab[i] <= num ; i++) {
 		start_pos++;
 	}
-
 	rar_addbits(unpack_data, start_pos);
-	
-	return ( ((int)num - (i ? dec_tab[i-1] : 0)) >> (16 - start_pos) ) + pos_tab[start_pos];
+	return (((num-(i ? dec_tab[i-1]:0)) >> (16-start_pos)) + pos_tab[start_pos]);
 }
 
 static void huff_decode(unpack_data_t *unpack_data)

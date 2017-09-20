@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015, 2017 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *  All Rights Reserved.
  *
@@ -802,11 +802,8 @@ static int yara_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data 
 {
     struct cli_ac_lsig *ac_lsig = root->ac_lsigtable[lsid];
     int rc;
-    YR_SCAN_CONTEXT context;
-
-    (void)hash;
+    YR_SCAN_CONTEXT context = {0};
  
-    memset(&context, 0, sizeof(YR_SCAN_CONTEXT));
     context.fmap = *ctx->fmap;
     context.file_size = (*ctx->fmap)->len;
     if (target_info != NULL) {
@@ -855,9 +852,9 @@ int cli_exp_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *acd
 int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode, struct cli_ac_result **acres, unsigned char *refhash)
 {
     const unsigned char *buff;
-    int ret = CL_CLEAN, type = CL_CLEAN, compute_hash[CLI_HASH_AVAIL_TYPES];
+    int ret = CL_CLEAN, type = CL_CLEAN, bytes, compute_hash[CLI_HASH_AVAIL_TYPES];
     unsigned int i = 0, j = 0, bm_offmode = 0;
-    uint32_t maxpatlen, bytes, offset = 0;
+    uint32_t maxpatlen, offset = 0;
     struct cli_ac_data gdata, tdata;
     struct cli_bm_off toff;
     struct cli_pcre_off gpoff, tpoff;
@@ -1268,17 +1265,16 @@ int cli_matchmeta(cli_ctx *ctx, const char *fname, size_t fsizec, size_t fsizer,
 	if(cdb->res1 && (cdb->ctype == CL_TYPE_ZIP || cdb->ctype == CL_TYPE_RAR) && cdb->res1 != res1)
 	    continue;
 
-    #define CDBRANGE(field, val)                                              \
-        if (field[0] != CLI_OFF_ANY)                                          \
-        {                                                                     \
-            if (field[0] == field[1] && field[0] != val)                      \
-                continue;                                                     \
-            else if (field[0] != field[1] && ((field[0] && field[0] > val) || \
-                                            (field[1] && field[1] < val)))    \
-                continue;                                                     \
-        }
+#define CDBRANGE(field, val)						    \
+	if(field[0] != CLI_OFF_ANY) {					    \
+	    if(field[0] == field[1] && field[0] != val)			    \
+		continue;						    \
+	    else if(field[0] != field[1] && ((field[0] && field[0] > val) ||\
+	      (field[1] && field[1] < val)))				    \
+		continue;						    \
+	}
 
-    CDBRANGE(cdb->csize, cli_get_container_size(ctx, -1));
+	CDBRANGE(cdb->csize, cli_get_container_size(ctx, -1));
 	CDBRANGE(cdb->fsizec, fsizec);
 	CDBRANGE(cdb->fsizer, fsizer);
 	CDBRANGE(cdb->filepos, filepos);
