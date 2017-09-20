@@ -1371,22 +1371,16 @@ static int chmd_error(struct mschm_decompressor *base) {
  * are accepted, offsets beyond that cause an error message.
  */
 static int read_off64(off_t *var, unsigned char *mem,
-                      struct mspack_system *sys, struct mspack_file *fh)
+		      struct mspack_system *sys, struct mspack_file *fh)
 {
-  (void) sys;
-
 #ifdef LARGEFILE_SUPPORT
-  (void) fh;
-
-  *var = EndGetI64(mem);
+    *var = EndGetI64(mem);
 #else
-  *var = EndGetI32(mem);
-
-  if ((*var & 0x80000000) || EndGetI32(mem + 4))
-  {
-    sys->message(fh, (char *)largefile_msg);
-    return 1;
-  }
+    *var = EndGetI32(mem);
+    if ((*var & 0x80000000) || EndGetI32(mem+4)) {
+	sys->message(fh, (char *)largefile_msg);
+	return 1;
+    }
 #endif
-  return 0;
+    return 0;
 }

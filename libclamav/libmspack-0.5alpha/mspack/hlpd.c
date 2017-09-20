@@ -15,13 +15,10 @@
 struct mshlp_decompressor *
   mspack_create_hlp_decompressor(struct mspack_system *sys)
 {
-  (void) sys;
   /* todo */
   return NULL;
 }
 
 void mspack_destroy_hlp_decompressor(struct mshlp_decompressor *self) {
-  (void) self;
   /* todo */
-  return;
 }

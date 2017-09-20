@@ -15,13 +15,10 @@
 struct mslit_compressor *
   mspack_create_lit_compressor(struct mspack_system *sys)
 {
-  (void) sys;
   /* todo */
   return NULL;
 }
 
 void mspack_destroy_lit_compressor(struct mslit_compressor *self) {
-  (void) self;
   /* todo */
-  return;
 }

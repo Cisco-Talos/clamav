@@ -29,7 +29,7 @@
 #ifdef RAR_HIGH_DEBUG
 #define rar_dbgmsg printf
 #else
-static void rar_dbgmsg(const char* fmt,...){(void)fmt;}
+static void rar_dbgmsg(const char* fmt,...){}
 #endif
 
 #define VMCF_OP0             0
@@ -41,28 +41,6 @@ static void rar_dbgmsg(const char* fmt,...){(void)fmt;}
 #define VMCF_PROC           16
 #define VMCF_USEFLAGS       32
 #define VMCF_CHFLAGS        64
-
-#define UINT32(x)  (sizeof(uint32_t)==4 ? (uint32_t)(x):((x)&0xffffffff))
-
-#if WORDS_BIGENDIAN == 0
-#define GET_VALUE(byte_mode,addr) ((byte_mode) ? (*(unsigned char *)(addr)) : UINT32((*(unsigned int *)(addr))))
-#else
-#define GET_VALUE(byte_mode,addr) ((byte_mode) ? (*(unsigned char *)(addr)) : (((unsigned char *)addr)[0] | ((unsigned char *)addr)[1]<<8 | ((unsigned char *)addr)[2]<<16 | ((unsigned char *)addr)[3]<<24))
-#endif
-		
-#if WORDS_BIGENDIAN == 0
-#define SET_VALUE(byte_mode,addr,value) (void)(((byte_mode) ? (*(unsigned char *)(addr)=(value)):(*(uint32_t *)(addr)=((uint32_t)(value)))))
-#else
-#define SET_VALUE(byte_mode,addr,value) rarvm_set_value(byte_mode, (unsigned int *)addr, value);
-#endif
-				
-#define SET_IP(IP)                        \
-  if ((IP)>=(unsigned int)code_size)      \
-    return TRUE;                          \
-  if (--max_ops<=0)                       \
-    return FALSE;                         \
-  cmd=prepared_code+(IP);
-
 
 static uint8_t vm_cmdflags[]=
 {
@@ -108,6 +86,37 @@ static uint8_t vm_cmdflags[]=
   /* VM_PRINT */ VMCF_OP0
 };
 
+#define UINT32(x)  (sizeof(uint32_t)==4 ? (uint32_t)(x):((x)&0xffffffff))
+
+#if WORDS_BIGENDIAN == 0
+#define GET_VALUE(byte_mode,addr) ((byte_mode) ? (*(unsigned char *)(addr)) : UINT32((*(unsigned int *)(addr))))
+#else
+#define GET_VALUE(byte_mode,addr) ((byte_mode) ? (*(unsigned char *)(addr)) : (((unsigned char *)addr)[0] | ((unsigned char *)addr)[1]<<8 | ((unsigned char *)addr)[2]<<16 | ((unsigned char *)addr)[3]<<24))
+#endif
+
+void rarvm_set_value(int byte_mode, unsigned int *addr, unsigned int value)
+{
+	if (byte_mode) {
+		*(unsigned char *)addr=value;
+	} else {
+#if WORDS_BIGENDIAN == 0
+		*(uint32_t *)addr = value;
+#else
+		((unsigned char *)addr)[0]=(unsigned char)value;
+		((unsigned char *)addr)[1]=(unsigned char)(value>>8);
+		((unsigned char *)addr)[2]=(unsigned char)(value>>16);
+		((unsigned char *)addr)[3]=(unsigned char)(value>>24);
+#endif
+	}
+}
+
+		
+#if WORDS_BIGENDIAN == 0
+#define SET_VALUE(byte_mode,addr,value) (void)(((byte_mode) ? (*(unsigned char *)(addr)=(value)):(*(uint32_t *)(addr)=((uint32_t)(value)))))
+#else
+#define SET_VALUE(byte_mode,addr,value) rarvm_set_value(byte_mode, (unsigned int *)addr, value);
+#endif
+
 const uint32_t crc_tab[256]={
 	0x0,        0x77073096, 0xee0e612c, 0x990951ba, 0x76dc419,  0x706af48f, 0xe963a535, 0x9e6495a3,
 	0xedb8832,  0x79dcb8a4, 0xe0d5e91e, 0x97d2d988, 0x9b64c2b,  0x7eb17cbd, 0xe7b82d07, 0x90bf1d91,
@@ -143,26 +152,10 @@ const uint32_t crc_tab[256]={
 	0xb3667a2e, 0xc4614ab8, 0x5d681b02, 0x2a6f2b94, 0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d
 };
 
-void rarvm_set_value(int byte_mode, unsigned int *addr, unsigned int value)
-{
-	if (byte_mode) {
-		*(unsigned char *)addr=value;
-	} else {
-#if WORDS_BIGENDIAN == 0
-		*(uint32_t *)addr = value;
-#else
-		((unsigned char *)addr)[0]=(unsigned char)value;
-		((unsigned char *)addr)[1]=(unsigned char)(value>>8);
-		((unsigned char *)addr)[2]=(unsigned char)(value>>16);
-		((unsigned char *)addr)[3]=(unsigned char)(value>>24);
-#endif
-	}
-}
-
 uint32_t rar_crc(uint32_t start_crc, void *addr, uint32_t size)
 {
 	unsigned char *data;
-	uint32_t i;
+	int i;
 
 	data = addr;
 #if WORDS_BIGENDIAN == 0
@@ -583,6 +576,13 @@ static void execute_standard_filter(rarvm_data_t *rarvm_data, rarvm_standard_fil
 		break;
 	}
 }
+				
+#define SET_IP(IP)                      \
+  if ((IP)>=code_size)                   \
+    return TRUE;                       \
+  if (--max_ops<=0)                  \
+    return FALSE;                      \
+  cmd=prepared_code+(IP);
 
 static int rarvm_execute_code(rarvm_data_t *rarvm_data,
 		struct rarvm_prepared_command *prepared_code, int code_size)

@@ -118,8 +118,6 @@ static struct mspack_file *msp_open(struct mspack_system *self,
   struct mspack_file_p *fh;
   const char *fmode;
 
-  (void) self;
-
   switch (mode) {
   case MSPACK_SYS_OPEN_READ:   fmode = "rb";  break;
   case MSPACK_SYS_OPEN_WRITE:  fmode = "wb";  break;
@@ -203,12 +201,10 @@ static void *msp_alloc(struct mspack_system *self, size_t bytes) {
 #ifdef DEBUG
   /* make uninitialised data obvious */
   char *buf = malloc(bytes + 8);
-  (void) self;
   if (buf) memset(buf, 0xDC, bytes);
   *((size_t *)buf) = bytes;
   return &buf[8];
 #else
-  (void) self;
   return malloc(bytes);
 #endif
 }

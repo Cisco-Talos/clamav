@@ -43,7 +43,7 @@
 #ifdef RAR_HIGH_DEBUG
 #define rar_dbgmsg printf
 #else
-static void rar_dbgmsg(const char* fmt,...){(void)fmt;}
+static void rar_dbgmsg(const char* fmt,...){}
 #endif
 
 static void insert_old_dist(unpack_data_t *unpack_data, unsigned int distance)
@@ -113,16 +113,17 @@ int rar_unp_read_buf(int fd, unpack_data_t *unpack_data)
 	
 	/* Is buffer read pos more than half way? */
 	if (unpack_data->in_addr > MAX_BUF_SIZE/2) {
-		memmove(unpack_data->in_buf, unpack_data->in_buf+unpack_data->in_addr,
-				data_size);
-
+		if (data_size > 0) {
+			memmove(unpack_data->in_buf, unpack_data->in_buf+unpack_data->in_addr,
+					data_size);
+		}
 		unpack_data->in_addr = 0;
 		unpack_data->read_top = data_size;
 	} else {
 		data_size = unpack_data->read_top;
 	}
 	/* RAR2 depends on us only reading upto the end of the current compressed file */
-	if (unpack_data->pack_size < (uint32_t)((MAX_BUF_SIZE-data_size)&~0xf)) {
+	if (unpack_data->pack_size < ((MAX_BUF_SIZE-data_size)&~0xf)) {
 		read_size = unpack_data->pack_size;
 	} else {
 		read_size = (MAX_BUF_SIZE-data_size)&~0xf;
@@ -217,7 +218,7 @@ static void unp_write_buf(unpack_data_t *unpack_data)
 	struct UnpackFilter *flt, *next_filter;
 	struct rarvm_prepared_program *prg, *next_prg;
 	uint8_t *filtered_data;
-	size_t i, j;
+	int i, j;
 	
 	rar_dbgmsg("in unp_write_buf\n");
 	written_border = unpack_data->wr_ptr;
@@ -540,11 +541,9 @@ static int add_vm_code(unpack_data_t *unpack_data, unsigned int first_byte,
 			unsigned char *vmcode, int code_size)
 {
 	rarvm_input_t rarvm_input;
-	unsigned int filter_pos, new_filter, block_start, init_mask, cur_size, data_size;
+	unsigned int filter_pos, new_filter, block_start, init_mask, cur_size;
 	struct UnpackFilter *filter, *stack_filter;
-	size_t i, empty_count, stack_pos;
-	unsigned int vm_codesize;
-	long static_size;
+	int i, empty_count, stack_pos, vm_codesize, static_size, data_size;
 	unsigned char *vm_code, *global_data;
 	
 	rar_dbgmsg("in add_vm_code first_byte=0x%x code_size=%d\n", first_byte, code_size);
@@ -564,7 +563,7 @@ static int add_vm_code(unpack_data_t *unpack_data, unsigned int first_byte,
 		filter_pos = unpack_data->last_filter;
 	}
 	rar_dbgmsg("filter_pos = %u\n", filter_pos);
-	if ((size_t) filter_pos > unpack_data->Filters.num_items ||
+	if (filter_pos > unpack_data->Filters.num_items ||
 			filter_pos > unpack_data->old_filter_lengths_size) {
 		rar_dbgmsg("filter_pos check failed\n");
 		return FALSE;
@@ -654,7 +653,7 @@ static int add_vm_code(unpack_data_t *unpack_data, unsigned int first_byte,
 	}
 	if (new_filter) {
 		vm_codesize = rarvm_read_data(&rarvm_input);
-		if (vm_codesize >= 0x1000 || vm_codesize == 0 || vm_codesize > (unsigned int)rarvm_input.buf_size) {
+		if (vm_codesize >= 0x1000 || vm_codesize == 0 || (vm_codesize > rarvm_input.buf_size) || vm_codesize < 0) {
 			rar_dbgmsg("ERROR: vm_codesize=0x%x buf_size=0x%x\n", vm_codesize, rarvm_input.buf_size);
 			return FALSE;
 		}
@@ -663,11 +662,11 @@ static int add_vm_code(unpack_data_t *unpack_data, unsigned int first_byte,
 		    rar_dbgmsg("unrar: add_vm_code: rar_malloc failed for vm_code\n");
 		    return FALSE;
 		}
-		for (i=0 ; i < (size_t) vm_codesize ; i++) {
+		for (i=0 ; i < vm_codesize ; i++) {
 			vm_code[i] = rarvm_getbits(&rarvm_input) >> 8;
 			rarvm_addbits(&rarvm_input, 8);
 		}
-		if(!rarvm_prepare(&unpack_data->rarvm_data, &rarvm_input, &vm_code[0], (int) vm_codesize, &filter->prg)) {
+		if(!rarvm_prepare(&unpack_data->rarvm_data, &rarvm_input, &vm_code[0], vm_codesize, &filter->prg)) {
 		    rar_dbgmsg("unrar: add_vm_code: rarvm_prepare failed\n");
 		    free(vm_code);
 		    return FALSE;
@@ -715,10 +714,10 @@ static int add_vm_code(unpack_data_t *unpack_data, unsigned int first_byte,
 		if (data_size >= 0x10000) {
 			return FALSE;
 		}
-		cur_size = (unsigned int)stack_filter->prg.global_size;
-		if (cur_size < data_size + VM_FIXEDGLOBALSIZE) {
-			stack_filter->prg.global_size += (long)data_size + VM_FIXEDGLOBALSIZE - cur_size;
-			stack_filter->prg.global_data = (unsigned char*)rar_realloc2(stack_filter->prg.global_data,
+		cur_size = stack_filter->prg.global_size;
+		if (cur_size < data_size+VM_FIXEDGLOBALSIZE) {
+			stack_filter->prg.global_size += data_size+VM_FIXEDGLOBALSIZE-cur_size;
+			stack_filter->prg.global_data = rar_realloc2(stack_filter->prg.global_data,
 				stack_filter->prg.global_size);
 			if(!stack_filter->prg.global_data) {
 			    rar_dbgmsg("unrar: add_vm_code: rar_realloc2 failed for stack_filter->prg.global_data\n");
@@ -726,8 +725,8 @@ static int add_vm_code(unpack_data_t *unpack_data, unsigned int first_byte,
 			}
 		}
 		global_data = &stack_filter->prg.global_data[VM_FIXEDGLOBALSIZE];
-		for (i=0 ; i < (size_t)data_size ; i++) {
-			if (rarvm_input.in_addr + 2 > rarvm_input.buf_size) {
+		for (i=0 ; i< data_size ; i++) {
+			if ((rarvm_input.in_addr+2) > rarvm_input.buf_size) {
 				rar_dbgmsg("Buffer truncated\n");
 				return FALSE;
 			}

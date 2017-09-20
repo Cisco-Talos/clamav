@@ -15,13 +15,10 @@
 struct msoab_compressor *
   mspack_create_oab_compressor(struct mspack_system *sys)
 {
-  (void) sys;
   /* todo */
   return NULL;
 }
 
 void mspack_destroy_oab_compressor(struct msoab_compressor *self) {
-  (void) self;
   /* todo */
-  return;
 }
