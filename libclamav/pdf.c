@@ -908,18 +908,18 @@ int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
                     if (length < 0)
                         length = 0;
 
-                    cli_dbgmsg("cli_pdf: calculated length %jd\n", length);
+                    cli_dbgmsg("cli_pdf: calculated length %lld\n", (long long)length);
                 } else {
                     if (size > (size_t)length+2) {
-                        cli_dbgmsg("cli_pdf: calculated length %jd < %jd\n",
-                                   length, size);
+                        cli_dbgmsg("cli_pdf: calculated length %zu < %zu\n",
+                                   (size_t)length, size);
                         length = size;
                     }
                 }
 
                 if (orig_length && size > (size_t)orig_length + 20) {
-                    cli_dbgmsg("cli_pdf: orig length: %jd, length: %jd, size: %jd\n",
-                               orig_length, length, size);
+                    cli_dbgmsg("cli_pdf: orig length: %lld, length: %lld, size: %zu\n",
+                               (long long)orig_length, (long long)length, size);
                     pdfobj_flag(pdf, obj, BAD_STREAMLEN);
                 }
 
@@ -2320,7 +2320,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 
     if (pdfver != start || offset) {
         pdf.flags |= 1 << BAD_PDF_HEADERPOS;
-        cli_dbgmsg("cli_pdf: PDF header is not at position 0: %jd\n",(pdfver-start+offset));
+        cli_dbgmsg("cli_pdf: PDF header is not at position 0: %lld\n", (long long)(pdfver - start + offset));
 #if HAVE_JSON
         if (pdfobj)
             cli_jsonbool(pdfobj, "BadVersionLocation", 1);
@@ -2429,7 +2429,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     while ((rc = pdf_findobj(&pdf)) > 0) {
         struct pdf_obj *obj = &pdf.objs[pdf.nobjs-1];
 
-        cli_dbgmsg("cli_pdf: found %d %d obj @%jd\n", obj->id >> 8, obj->id&0xff, (obj->start + offset));
+        cli_dbgmsg("cli_pdf: found %d %d obj @%lld\n", obj->id >> 8, obj->id&0xff, (long long)(obj->start + offset));
     }
 
     if (pdf.nobjs)
