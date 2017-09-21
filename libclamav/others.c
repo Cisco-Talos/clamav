@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2017 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2010 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm, Trog
@@ -1171,35 +1171,37 @@ void cli_set_container(cli_ctx *ctx, cli_file_t type, size_t size)
 
 cli_file_t cli_get_container(cli_ctx *ctx, int index)
 {
-    if (index < 0)
-	index = ctx->recursion + index + 1;
-    while (index >= 0 && index <= ctx->recursion) {
-        if (ctx->containers[index].flag & CONTAINER_FLAG_VALID)
-            return ctx->containers[index].type;
-        index--;
-    }
-    return CL_TYPE_ANY;
+	if (index < 0)
+		index = ctx->recursion + index + 1;
+	while (index >= 0 && index <= (int)ctx->recursion)
+	{
+		if (ctx->containers[index].flag & CONTAINER_FLAG_VALID)
+			return ctx->containers[index].type;
+		index--;
+	}
+	return CL_TYPE_ANY;
 }
 
 cli_file_t cli_get_container_intermediate(cli_ctx *ctx, int index)
 {
-   if (index < 0)
-	index = ctx->recursion + index + 1;
-    if (index >= 0 && index <= ctx->recursion)
-	return ctx->containers[index].type;
-    return CL_TYPE_ANY;
+	if (index < 0)
+		index = ctx->recursion + index + 1;
+	if (index >= 0 && index <= (int)ctx->recursion)
+		return ctx->containers[index].type;
+	return CL_TYPE_ANY;
 }
 
 size_t cli_get_container_size(cli_ctx *ctx, int index)
 {
-    if (index < 0)
-	index = ctx->recursion + index + 1;
-    while (index >= 0 && index <= ctx->recursion) {
-        if (ctx->containers[index].flag & CONTAINER_FLAG_VALID)
-            return ctx->containers[index].size;
-        index--;
-    }
-    return ctx->containers[0].size;
+	if (index < 0)
+		index = ctx->recursion + index + 1;
+	while (index >= 0 && index <= (int)ctx->recursion)
+	{
+		if (ctx->containers[index].flag & CONTAINER_FLAG_VALID)
+			return ctx->containers[index].size;
+		index--;
+	}
+	return ctx->containers[0].size;
 }
 
 
