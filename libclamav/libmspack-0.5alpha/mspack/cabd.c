@@ -308,7 +308,7 @@ static int cabd_read_headers(struct mspack_system *sys,
 			     off_t offset, int quiet)
 {
   unsigned int num_folders, num_files, folder_resv, i, x;
-  int read_string_errno;
+  int read_string_errno = 0;
   struct mscabd_folder_p *fol, *linkfol = NULL;
   struct mscabd_file *file, *linkfile = NULL;
   unsigned char buf[64];
@@ -489,6 +489,12 @@ static int cabd_read_headers(struct mspack_system *sys,
 	if (!fol->merge_prev) fol->merge_prev = file;
       }
     }
+    else {
+      /* unexpected/invalid folder index */
+      file->folder = NULL;
+      sys->message(fh, "WARNING; cab header file %d of %d has invalid folder index (%d out of %d folders)", 
+        i, num_files, x, num_folders);
+    }
 
     /* get time */
     x = EndGetI16(&buf[cffile_Time]);
@@ -504,7 +510,12 @@ static int cabd_read_headers(struct mspack_system *sys,
 
     /* get filename */
     file->filename = cabd_read_string(sys, fh, &read_string_errno);
-
+    if (read_string_errno) {
+        /* unexpected/invalid folder index */
+        file->filename = NULL;
+        sys->message(fh, "WARNING; cab header file %d of %d has invalid filename", i, num_files);
+    }
+    
     if (file->folder && !read_string_errno) {
         /* link file entry into file list */
         if (!linkfile) cab->base.files = file;
@@ -514,7 +525,7 @@ static int cabd_read_headers(struct mspack_system *sys,
     else {
         /* ignore invalid file and continue parsing */
         sys->free(file);
-        sys->message(fh, "WARNING; cab header has invalid file description for file");
+        sys->message(fh, "WARNING; omitting file %d of %d from file list", i, num_files);
     }
   }
 
