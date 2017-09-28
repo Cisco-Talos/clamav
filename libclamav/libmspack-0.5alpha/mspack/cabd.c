@@ -307,7 +307,8 @@ static int cabd_read_headers(struct mspack_system *sys,
 			     struct mscabd_cabinet_p *cab,
 			     off_t offset, int quiet)
 {
-  int num_folders, num_files, folder_resv, i, x;
+  unsigned int num_folders, num_files, folder_resv, i, x;
+  int read_string_errno;
   struct mscabd_folder_p *fol, *linkfol = NULL;
   struct mscabd_file *file, *linkfile = NULL;
   unsigned char buf[64];
@@ -390,14 +391,14 @@ static int cabd_read_headers(struct mspack_system *sys,
 
   /* read name and info of preceeding cabinet in set, if present */
   if (cab->base.flags & cfheadPREV_CABINET) {
-    cab->base.prevname = cabd_read_string(sys, fh, &x); if (x) return x;
-    cab->base.previnfo = cabd_read_string(sys, fh, &x); if (x) return x;
+    cab->base.prevname = cabd_read_string(sys, fh, &read_string_errno); if (read_string_errno) return read_string_errno;
+    cab->base.previnfo = cabd_read_string(sys, fh, &read_string_errno); if (read_string_errno) return read_string_errno;
   }
 
   /* read name and info of next cabinet in set, if present */
   if (cab->base.flags & cfheadNEXT_CABINET) {
-    cab->base.nextname = cabd_read_string(sys, fh, &x); if (x) return x;
-    cab->base.nextinfo = cabd_read_string(sys, fh, &x); if (x) return x;
+    cab->base.nextname = cabd_read_string(sys, fh, &read_string_errno); if (read_string_errno) return read_string_errno;
+    cab->base.nextinfo = cabd_read_string(sys, fh, &read_string_errno); if (read_string_errno) return read_string_errno;
   }
 
   /* read folders */
@@ -447,7 +448,7 @@ static int cabd_read_headers(struct mspack_system *sys,
 
     /* set folder pointer */
     x = EndGetI16(&buf[cffile_FolderIndex]);
-    if (x < cffileCONTINUED_FROM_PREV) {
+    if (x < num_folders) {
       /* normal folder index; count up to the correct folder. the folder
        * pointer will be NULL if folder index is invalid */
       struct mscabd_folder *ifol = cab->base.folders; 
@@ -460,7 +461,7 @@ static int cabd_read_headers(struct mspack_system *sys,
 	return MSPACK_ERR_DATAFORMAT;
       }
     }
-    else {
+    else if (x >= cffileCONTINUED_FROM_PREV) {
       /* either CONTINUED_TO_NEXT, CONTINUED_FROM_PREV or
        * CONTINUED_PREV_AND_NEXT */
       if ((x == cffileCONTINUED_TO_NEXT) ||
@@ -501,16 +502,19 @@ static int cabd_read_headers(struct mspack_system *sys,
     file->date_y = (x >> 9) + 1980;
 
     /* get filename */
-    file->filename = cabd_read_string(sys, fh, &x);
-    if (x) { 
-      sys->free(file);
-      return x;
-    }
+    file->filename = cabd_read_string(sys, fh, &read_string_errno);
 
-    /* link file entry into file list */
-    if (!linkfile) cab->base.files = file;
-    else linkfile->next = file;
-    linkfile = file;
+    if (file->folder && !read_string_errno) {
+        /* link file entry into file list */
+        if (!linkfile) cab->base.files = file;
+        else linkfile->next = file;
+        linkfile = file;
+    }
+    else {
+        /* ignore invalid file and continue parsing */
+        sys->free(file);
+        sys->message(fh, "WARNING; cab header has invalid file description for file");
+    }
   }
 
   return MSPACK_ERR_OK;
