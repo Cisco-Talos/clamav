@@ -17,6 +17,9 @@
 #include "scanners.h"
 #include "others.h"
 
+#define DBG_PREFIX "LibClamAV debug: "
+#define BUFSIZ 1024
+
 enum mspack_type {
 	FILETYPE_DUNNO,
 	FILETYPE_FMAP,
@@ -256,12 +259,30 @@ static off_t mspack_fmap_tell(struct mspack_file *file)
 
 static void mspack_fmap_message(struct mspack_file *file, const char *fmt, ...)
 {
-	va_list argList;
 	UNUSEDPARAM(file);
-	va_start(argList, fmt);
-	cli_dbgmsg(fmt, argList );
-	va_end(argList);
+
+	if (UNLIKELY(cli_debug_flag)) {
+		va_list args;
+		char buff[BUFSIZ];
+		size_t len = sizeof(DBG_PREFIX) - 1;	
+
+		memset(buff, 0, BUFSIZ);
+	
+		/* Add the prefix */
+		strncpy(buff, DBG_PREFIX, len);
+		
+		va_start(args, fmt);
+		vsnprintf(buff + len, sizeof(buff) - len - 2, fmt, args);
+		va_end(args);
+	
+		/* Add a newline and a null terminator */
+		buff[strlen(buff)] = '\n';
+		buff[strlen(buff) + 1] = '\n';
+	
+		fputs(buff, stderr);
+	}
 }
+
 static void *mspack_fmap_alloc(struct mspack_system *self, size_t num)
 {
 	UNUSEDPARAM(self);
