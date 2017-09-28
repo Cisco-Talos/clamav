@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <stdarg.h>
 
 #include <mspack.h>
 
@@ -255,8 +256,11 @@ static off_t mspack_fmap_tell(struct mspack_file *file)
 
 static void mspack_fmap_message(struct mspack_file *file, const char *fmt, ...)
 {
+	va_list argList;
 	UNUSEDPARAM(file);
-	cli_dbgmsg("%s() %s\n", __func__, fmt);
+	va_start(argList, fmt);
+	cli_dbgmsg(fmt, argList );
+	va_end(argList);
 }
 static void *mspack_fmap_alloc(struct mspack_system *self, size_t num)
 {

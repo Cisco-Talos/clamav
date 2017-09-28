@@ -441,6 +441,7 @@ static int cabd_read_headers(struct mspack_system *sys,
       return MSPACK_ERR_NOMEMORY;
     }
 
+    file->folder   = NULL;
     file->next     = NULL;
     file->length   = EndGetI32(&buf[cffile_UncompressedSize]);
     file->attribs  = EndGetI16(&buf[cffile_Attribs]);
@@ -1008,6 +1009,8 @@ static int cabd_extract(struct mscab_decompressor *base,
   if ( (file->offset > CAB_LENGTHMAX) || (file->length > CAB_LENGTHMAX) ||
       ((file->offset + file->length) > CAB_LENGTHMAX))
   {
+    sys->message(NULL, "ERROR; file \"%s\" cannot be extracted, "
+      "invalid file offset and length.", file->filename);
     return self->error = MSPACK_ERR_DATAFORMAT;
   }
 
