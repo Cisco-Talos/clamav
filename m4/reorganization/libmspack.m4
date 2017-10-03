@@ -1,4 +1,4 @@
-m4_include([libclamav/libmspack-0.5alpha/m4/libmspack-opts.m4])
+m4_include([libclamav/libmspack/m4/libmspack-opts.m4])
 
 if test "x$system_libmspack" = "xno"; then
     use_internal_mspack=yes

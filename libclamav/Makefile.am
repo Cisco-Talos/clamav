@@ -22,7 +22,7 @@ AM_CPPFLAGS = -I$(top_srcdir) -I@srcdir@/nsis $(LTDLINCL)
 AM_CFLAGS=@WERR_CFLAGS@
 lib_LTLIBRARIES =
 COMMON_CLEANFILES =
-EXTRA_DIST = c++/Makefile.nollvm.in libmspack-0.5alpha/Makefile.intmspack.in
+EXTRA_DIST = c++/Makefile.nollvm.in libmspack/Makefile.intmspack.in
 if ENABLE_UNRAR
 
 AM_CPPFLAGS += -DWARN_DLOPEN_FAIL
@@ -157,40 +157,40 @@ libclamav_la_LDFLAGS += -Wl,@VERSIONSCRIPTFLAG@,@top_srcdir@/libclamav/libclamav
 endif
 
 if USE_INTERNAL_MSPACK
-SUBDIRS += libmspack-0.5alpha
-libclamav_la_CFLAGS += -I@top_srcdir@/libclamav/libmspack-0.5alpha/mspack
-libclamav_la_LIBADD +=  @top_builddir@/libclamav/libmspack-0.5alpha/cabc.lo \
-			@top_builddir@/libclamav/libmspack-0.5alpha/system.lo \
-			@top_builddir@/libclamav/libmspack-0.5alpha/kwajd.lo \
-			@top_builddir@/libclamav/libmspack-0.5alpha/hlpc.lo \
-			@top_builddir@/libclamav/libmspack-0.5alpha/chmd.lo \
-			@top_builddir@/libclamav/libmspack-0.5alpha/qtmd.lo \
-			@top_builddir@/libclamav/libmspack-0.5alpha/litc.lo \
-			@top_builddir@/libclamav/libmspack-0.5alpha/oabc.lo \
-			@top_builddir@/libclamav/libmspack-0.5alpha/lzxd.lo \
-			@top_builddir@/libclamav/libmspack-0.5alpha/litd.lo \
-			@top_builddir@/libclamav/libmspack-0.5alpha/crc32.lo \
-			@top_builddir@/libclamav/libmspack-0.5alpha/lzssd.lo \
-			@top_builddir@/libclamav/libmspack-0.5alpha/kwajc.lo \
-			@top_builddir@/libclamav/libmspack-0.5alpha/cabd.lo \
-			@top_builddir@/libclamav/libmspack-0.5alpha/szddd.lo \
-			@top_builddir@/libclamav/libmspack-0.5alpha/lzxc.lo \
-			@top_builddir@/libclamav/libmspack-0.5alpha/mszipd.lo \
-			@top_builddir@/libclamav/libmspack-0.5alpha/szddc.lo \
-			@top_builddir@/libclamav/libmspack-0.5alpha/oabd.lo \
-			@top_builddir@/libclamav/libmspack-0.5alpha/chmc.lo \
-			@top_builddir@/libclamav/libmspack-0.5alpha/mszipc.lo \
-			@top_builddir@/libclamav/libmspack-0.5alpha/hlpd.lo
-COMMON_CLEANFILES+=@top_builddir@/libclamav/libmspack-0.5alpha/config.h \
-		   @top_builddir@/libclamav/libmspack-0.5alpha/libmspack.pc \
-		   @top_builddir@/libclamav/libmspack-0.5alpha/autom4te.cache/*
+SUBDIRS += libmspack
+libclamav_la_CFLAGS += -I@top_srcdir@/libclamav/libmspack/mspack
+libclamav_la_LIBADD +=  @top_builddir@/libclamav/libmspack/cabc.lo \
+			@top_builddir@/libclamav/libmspack/system.lo \
+			@top_builddir@/libclamav/libmspack/kwajd.lo \
+			@top_builddir@/libclamav/libmspack/hlpc.lo \
+			@top_builddir@/libclamav/libmspack/chmd.lo \
+			@top_builddir@/libclamav/libmspack/qtmd.lo \
+			@top_builddir@/libclamav/libmspack/litc.lo \
+			@top_builddir@/libclamav/libmspack/oabc.lo \
+			@top_builddir@/libclamav/libmspack/lzxd.lo \
+			@top_builddir@/libclamav/libmspack/litd.lo \
+			@top_builddir@/libclamav/libmspack/crc32.lo \
+			@top_builddir@/libclamav/libmspack/lzssd.lo \
+			@top_builddir@/libclamav/libmspack/kwajc.lo \
+			@top_builddir@/libclamav/libmspack/cabd.lo \
+			@top_builddir@/libclamav/libmspack/szddd.lo \
+			@top_builddir@/libclamav/libmspack/lzxc.lo \
+			@top_builddir@/libclamav/libmspack/mszipd.lo \
+			@top_builddir@/libclamav/libmspack/szddc.lo \
+			@top_builddir@/libclamav/libmspack/oabd.lo \
+			@top_builddir@/libclamav/libmspack/chmc.lo \
+			@top_builddir@/libclamav/libmspack/mszipc.lo \
+			@top_builddir@/libclamav/libmspack/hlpd.lo
+COMMON_CLEANFILES+=@top_builddir@/libclamav/libmspack/config.h \
+		   @top_builddir@/libclamav/libmspack/libmspack.pc \
+		   @top_builddir@/libclamav/libmspack/autom4te.cache/*
 else
 libclamav_la_CFLAGS += $(LIBMSPACK_CFLAGS)
 libclamav_la_LDFLAGS += $(LIBMSPACK_LIBS)
-EXTRA_DIST += libmspack-0.5alpha
-libmspack-0.5alpha/Makefile: libmspack-0.5alpha/Makefile.intmspack.in
+EXTRA_DIST += libmspack
+libmspack/Makefile: libmspack/Makefile.intmspack.in
 	$(AM_V_at) cp $< $@
-distclean-recursive distdir maintainer-clean-recursive: libmspack-0.5alpha/Makefile
+distclean-recursive distdir maintainer-clean-recursive: libmspack/Makefile
 endif
 
 include_HEADERS = clamav.h

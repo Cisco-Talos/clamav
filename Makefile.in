@@ -201,7 +201,7 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
 	$(top_srcdir)/m4/reorganization/libs/curl.m4 \
 	$(top_srcdir)/m4/reorganization/substitutions.m4 \
 	$(top_srcdir)/m4/reorganization/libmspack.m4 \
-	$(top_srcdir)/libclamav/libmspack-0.5alpha/m4/libmspack-opts.m4 \
+	$(top_srcdir)/libclamav/libmspack/m4/libmspack-opts.m4 \
 	$(top_srcdir)/m4/reorganization/strni.m4 \
 	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -573,7 +573,7 @@ ACLOCAL_AMFLAGS = -I m4
 SUBDIRS = libltdl libclamav clamscan clamd clamdscan freshclam sigtool \
 	clamconf database docs etc clamav-milter test clamdtop clambc \
 	unit_tests $(am__append_1) $(am__append_2)
-EXTRA_DIST = FAQ examples BUGS shared libclamav.pc.in libclamunrar_iface/Makefile.am libclamunrar_iface/Makefile.in UPGRADE COPYING.bzip2 COPYING.lzma COPYING.unrar COPYING.LGPL COPYING.llvm COPYING.file COPYING.zlib COPYING.getopt COPYING.regex COPYING.YARA COPYING.pcre platform.h.in clamdscan/clamdscan.map win32 libclamav/libmspack-0.5alpha/mspack/mspack.def
+EXTRA_DIST = FAQ examples BUGS shared libclamav.pc.in libclamunrar_iface/Makefile.am libclamunrar_iface/Makefile.in UPGRADE COPYING.bzip2 COPYING.lzma COPYING.unrar COPYING.LGPL COPYING.llvm COPYING.file COPYING.zlib COPYING.getopt COPYING.regex COPYING.YARA COPYING.pcre platform.h.in clamdscan/clamdscan.map win32 libclamav/libmspack/mspack/mspack.def
 bin_SCRIPTS = clamav-config
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libclamav.pc

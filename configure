@@ -995,7 +995,7 @@ LIBMSPACK_CFLAGS
 LIBMSPACK_LIBS'
 ac_subdirs_all='
 libclamav/c++
-libclamav/libmspack-0.5alpha'
+libclamav/libmspack'
 
 # Initialize some variables set by options.
 ac_init_help=
@@ -24952,7 +24952,7 @@ fi
 
 if test "x$use_internal_mspack" = "xyes"; then
     mspack_msg="Internal"
-    subdirs="$subdirs libclamav/libmspack-0.5alpha"
+    subdirs="$subdirs libclamav/libmspack"
 
     # Check whether --enable-largefile was given.
 if test "${enable_largefile+set}" = set; then :

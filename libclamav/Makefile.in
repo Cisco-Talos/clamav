@@ -109,38 +109,38 @@ target_triplet = @target@
 @ENABLE_UNRAR_TRUE@@VERSIONSCRIPT_TRUE@am__append_5 = -Wl,@VERSIONSCRIPTFLAG@,@top_srcdir@/libclamunrar_iface/libclamunrar_iface.map
 @ENABLE_LLVM_TRUE@am__append_6 = c++
 @VERSIONSCRIPT_TRUE@am__append_7 = -Wl,@VERSIONSCRIPTFLAG@,@top_srcdir@/libclamav/libclamav.map
-@USE_INTERNAL_MSPACK_TRUE@am__append_8 = libmspack-0.5alpha
-@USE_INTERNAL_MSPACK_TRUE@am__append_9 = -I@top_srcdir@/libclamav/libmspack-0.5alpha/mspack
-@USE_INTERNAL_MSPACK_TRUE@am__append_10 = @top_builddir@/libclamav/libmspack-0.5alpha/cabc.lo \
-@USE_INTERNAL_MSPACK_TRUE@			@top_builddir@/libclamav/libmspack-0.5alpha/system.lo \
-@USE_INTERNAL_MSPACK_TRUE@			@top_builddir@/libclamav/libmspack-0.5alpha/kwajd.lo \
-@USE_INTERNAL_MSPACK_TRUE@			@top_builddir@/libclamav/libmspack-0.5alpha/hlpc.lo \
-@USE_INTERNAL_MSPACK_TRUE@			@top_builddir@/libclamav/libmspack-0.5alpha/chmd.lo \
-@USE_INTERNAL_MSPACK_TRUE@			@top_builddir@/libclamav/libmspack-0.5alpha/qtmd.lo \
-@USE_INTERNAL_MSPACK_TRUE@			@top_builddir@/libclamav/libmspack-0.5alpha/litc.lo \
-@USE_INTERNAL_MSPACK_TRUE@			@top_builddir@/libclamav/libmspack-0.5alpha/oabc.lo \
-@USE_INTERNAL_MSPACK_TRUE@			@top_builddir@/libclamav/libmspack-0.5alpha/lzxd.lo \
-@USE_INTERNAL_MSPACK_TRUE@			@top_builddir@/libclamav/libmspack-0.5alpha/litd.lo \
-@USE_INTERNAL_MSPACK_TRUE@			@top_builddir@/libclamav/libmspack-0.5alpha/crc32.lo \
-@USE_INTERNAL_MSPACK_TRUE@			@top_builddir@/libclamav/libmspack-0.5alpha/lzssd.lo \
-@USE_INTERNAL_MSPACK_TRUE@			@top_builddir@/libclamav/libmspack-0.5alpha/kwajc.lo \
-@USE_INTERNAL_MSPACK_TRUE@			@top_builddir@/libclamav/libmspack-0.5alpha/cabd.lo \
-@USE_INTERNAL_MSPACK_TRUE@			@top_builddir@/libclamav/libmspack-0.5alpha/szddd.lo \
-@USE_INTERNAL_MSPACK_TRUE@			@top_builddir@/libclamav/libmspack-0.5alpha/lzxc.lo \
-@USE_INTERNAL_MSPACK_TRUE@			@top_builddir@/libclamav/libmspack-0.5alpha/mszipd.lo \
-@USE_INTERNAL_MSPACK_TRUE@			@top_builddir@/libclamav/libmspack-0.5alpha/szddc.lo \
-@USE_INTERNAL_MSPACK_TRUE@			@top_builddir@/libclamav/libmspack-0.5alpha/oabd.lo \
-@USE_INTERNAL_MSPACK_TRUE@			@top_builddir@/libclamav/libmspack-0.5alpha/chmc.lo \
-@USE_INTERNAL_MSPACK_TRUE@			@top_builddir@/libclamav/libmspack-0.5alpha/mszipc.lo \
-@USE_INTERNAL_MSPACK_TRUE@			@top_builddir@/libclamav/libmspack-0.5alpha/hlpd.lo
+@USE_INTERNAL_MSPACK_TRUE@am__append_8 = libmspack
+@USE_INTERNAL_MSPACK_TRUE@am__append_9 = -I@top_srcdir@/libclamav/libmspack/mspack
+@USE_INTERNAL_MSPACK_TRUE@am__append_10 = @top_builddir@/libclamav/libmspack/cabc.lo \
+@USE_INTERNAL_MSPACK_TRUE@			@top_builddir@/libclamav/libmspack/system.lo \
+@USE_INTERNAL_MSPACK_TRUE@			@top_builddir@/libclamav/libmspack/kwajd.lo \
+@USE_INTERNAL_MSPACK_TRUE@			@top_builddir@/libclamav/libmspack/hlpc.lo \
+@USE_INTERNAL_MSPACK_TRUE@			@top_builddir@/libclamav/libmspack/chmd.lo \
+@USE_INTERNAL_MSPACK_TRUE@			@top_builddir@/libclamav/libmspack/qtmd.lo \
+@USE_INTERNAL_MSPACK_TRUE@			@top_builddir@/libclamav/libmspack/litc.lo \
+@USE_INTERNAL_MSPACK_TRUE@			@top_builddir@/libclamav/libmspack/oabc.lo \
+@USE_INTERNAL_MSPACK_TRUE@			@top_builddir@/libclamav/libmspack/lzxd.lo \
+@USE_INTERNAL_MSPACK_TRUE@			@top_builddir@/libclamav/libmspack/litd.lo \
+@USE_INTERNAL_MSPACK_TRUE@			@top_builddir@/libclamav/libmspack/crc32.lo \
+@USE_INTERNAL_MSPACK_TRUE@			@top_builddir@/libclamav/libmspack/lzssd.lo \
+@USE_INTERNAL_MSPACK_TRUE@			@top_builddir@/libclamav/libmspack/kwajc.lo \
+@USE_INTERNAL_MSPACK_TRUE@			@top_builddir@/libclamav/libmspack/cabd.lo \
+@USE_INTERNAL_MSPACK_TRUE@			@top_builddir@/libclamav/libmspack/szddd.lo \
+@USE_INTERNAL_MSPACK_TRUE@			@top_builddir@/libclamav/libmspack/lzxc.lo \
+@USE_INTERNAL_MSPACK_TRUE@			@top_builddir@/libclamav/libmspack/mszipd.lo \
+@USE_INTERNAL_MSPACK_TRUE@			@top_builddir@/libclamav/libmspack/szddc.lo \
+@USE_INTERNAL_MSPACK_TRUE@			@top_builddir@/libclamav/libmspack/oabd.lo \
+@USE_INTERNAL_MSPACK_TRUE@			@top_builddir@/libclamav/libmspack/chmc.lo \
+@USE_INTERNAL_MSPACK_TRUE@			@top_builddir@/libclamav/libmspack/mszipc.lo \
+@USE_INTERNAL_MSPACK_TRUE@			@top_builddir@/libclamav/libmspack/hlpd.lo
 
-@USE_INTERNAL_MSPACK_TRUE@am__append_11 = @top_builddir@/libclamav/libmspack-0.5alpha/config.h \
-@USE_INTERNAL_MSPACK_TRUE@		   @top_builddir@/libclamav/libmspack-0.5alpha/libmspack.pc \
-@USE_INTERNAL_MSPACK_TRUE@		   @top_builddir@/libclamav/libmspack-0.5alpha/autom4te.cache/*
+@USE_INTERNAL_MSPACK_TRUE@am__append_11 = @top_builddir@/libclamav/libmspack/config.h \
+@USE_INTERNAL_MSPACK_TRUE@		   @top_builddir@/libclamav/libmspack/libmspack.pc \
+@USE_INTERNAL_MSPACK_TRUE@		   @top_builddir@/libclamav/libmspack/autom4te.cache/*
 
 @USE_INTERNAL_MSPACK_FALSE@am__append_12 = $(LIBMSPACK_CFLAGS)
 @USE_INTERNAL_MSPACK_FALSE@am__append_13 = $(LIBMSPACK_LIBS)
-@USE_INTERNAL_MSPACK_FALSE@am__append_14 = libmspack-0.5alpha
+@USE_INTERNAL_MSPACK_FALSE@am__append_14 = libmspack
 @ENABLE_YARA_TRUE@am__append_15 = yara_arena.c \
 @ENABLE_YARA_TRUE@	yara_arena.h \
 @ENABLE_YARA_TRUE@	yara_compiler.c \
@@ -235,7 +235,7 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
 	$(top_srcdir)/m4/reorganization/libs/curl.m4 \
 	$(top_srcdir)/m4/reorganization/substitutions.m4 \
 	$(top_srcdir)/m4/reorganization/libmspack.m4 \
-	$(top_srcdir)/libclamav/libmspack-0.5alpha/m4/libmspack-opts.m4 \
+	$(top_srcdir)/libclamav/libmspack/m4/libmspack-opts.m4 \
 	$(top_srcdir)/m4/reorganization/strni.m4 \
 	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -718,7 +718,7 @@ am__define_uniq_tagged_files = \
   done | $(am__uniquify_input)`
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = c++ libmspack-0.5alpha
+DIST_SUBDIRS = c++ libmspack
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 am__relativize = \
   dir0=`pwd`; \
@@ -975,7 +975,7 @@ lib_LTLIBRARIES = $(am__append_3) libclamav.la
 COMMON_CLEANFILES = $(am__append_11) version.h version.h.tmp *.gcda \
 	*.gcno
 EXTRA_DIST = c++/Makefile.nollvm.in \
-	libmspack-0.5alpha/Makefile.intmspack.in $(am__append_4) \
+	libmspack/Makefile.intmspack.in $(am__append_4) \
 	$(am__append_14) regex/engine.c \
 	tomsfastmath/sqr/fp_sqr_comba.c \
 	tomsfastmath/mul/fp_mul_comba.c libclamav.map \
@@ -3797,9 +3797,9 @@ uninstall-am: uninstall-includeHEADERS uninstall-libLTLIBRARIES
 @ENABLE_LLVM_FALSE@c++/Makefile: c++/Makefile.nollvm.in
 @ENABLE_LLVM_FALSE@	$(AM_V_at) cp $< $@
 @ENABLE_LLVM_FALSE@distclean-recursive distdir maintainer-clean-recursive: c++/Makefile
-@USE_INTERNAL_MSPACK_FALSE@libmspack-0.5alpha/Makefile: libmspack-0.5alpha/Makefile.intmspack.in
+@USE_INTERNAL_MSPACK_FALSE@libmspack/Makefile: libmspack/Makefile.intmspack.in
 @USE_INTERNAL_MSPACK_FALSE@	$(AM_V_at) cp $< $@
-@USE_INTERNAL_MSPACK_FALSE@distclean-recursive distdir maintainer-clean-recursive: libmspack-0.5alpha/Makefile
+@USE_INTERNAL_MSPACK_FALSE@distclean-recursive distdir maintainer-clean-recursive: libmspack/Makefile
 
 .PHONY: version.h.tmp
 version.c: version.h

@@ -1,0 +1,4 @@
+[submodule "libclamav/libmspack"]
+	path = libclamav/libmspack
+	url = git@github.com:micah-at-talos/clamav-mspack.git
+	branch = master

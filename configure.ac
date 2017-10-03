@@ -143,7 +143,7 @@ m4_include([m4/reorganization/strni.m4])
 
 if test "x$use_internal_mspack" = "xyes"; then
     mspack_msg="Internal"
-    AC_CONFIG_SUBDIRS([libclamav/libmspack-0.5alpha])
+    AC_CONFIG_SUBDIRS([libclamav/libmspack])
     AC_SYS_LARGEFILE
 else
     mspack_msg="External, $LIBMSPACK_CFLAGS $LIBMSPACK_LIBS"
