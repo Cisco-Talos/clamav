@@ -425,7 +425,7 @@ int mszipd_decompress(struct mszipd_stream *zip, off_t out_bytes) {
     STORE_BITS;
     if ((error = inflate(zip))) {
       D(("inflate error %d", error))
-      if (zip->repair_mode) {
+      if (1) {
 	/* recover partially-inflated buffers */
 	if (zip->bytes_output == 0 && zip->window_posn > 0) {
 	  zip->flush_window(zip, zip->window_posn);
@@ -438,7 +438,8 @@ int mszipd_decompress(struct mszipd_stream *zip, off_t out_bytes) {
 	zip->bytes_output = MSZIP_FRAME_SIZE;
       }
       else {
-	return zip->error = (error > 0) ? error : MSPACK_ERR_DECRUNCH;
+	zip->sys->message(NULL, "MZSIP DECRUNCH 1 .... %d", zip->repair_mode);
+        return zip->error = (error > 0) ? error : MSPACK_ERR_DECRUNCH;
       }
     }
     zip->o_ptr = &zip->window[0];
@@ -460,6 +461,7 @@ int mszipd_decompress(struct mszipd_stream *zip, off_t out_bytes) {
 
   if (out_bytes) {
     D(("bytes left to output"))
+    zip->sys->message(NULL, "MZSIP DECRUNCH 2");
     return zip->error = MSPACK_ERR_DECRUNCH;
   }
   return MSPACK_ERR_OK;
@@ -494,6 +496,7 @@ int mszipd_decompress_kwaj(struct mszipd_stream *zip) {
 	STORE_BITS;
 	if ((error = inflate(zip))) {
 	    D(("inflate error %d", error))
+    	    zip->sys->message(NULL, "MZSIP DECRUNCH 3");
 	    return zip->error = (error > 0) ? error : MSPACK_ERR_DECRUNCH;
 	}
 

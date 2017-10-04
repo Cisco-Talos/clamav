@@ -155,7 +155,7 @@ struct mscab_decompressor *
     self->error           = MSPACK_ERR_OK;
 
     self->param[MSCABD_PARAM_SEARCHBUF] = 32768;
-    self->param[MSCABD_PARAM_FIXMSZIP]  = 0;
+    self->param[MSCABD_PARAM_FIXMSZIP]  = 1;
     self->param[MSCABD_PARAM_DECOMPBUF] = 4096;
   }
   return (struct mscab_decompressor *) self;
@@ -1110,7 +1110,9 @@ static int cabd_extract(struct mscab_decompressor *base,
     /* if getting to the correct offset was error free, unpack file */
     if (!self->error) {
       self->d->outfh = fh;
+      sys->message(NULL, "SUCC DECOMP 1");
       error = self->d->decompress(self->d->state, (off_t) file->length);
+      sys->message(NULL, "SUCC DECOMP %d", error);
       self->error = (error == MSPACK_ERR_READ) ? self->read_error : error;
     }
   }
@@ -1254,6 +1256,8 @@ static int cabd_sys_read(struct mspack_file *file, void *buffer, int bytes) {
       }
     } /* if (avail) */
   } /* while (todo > 0) */
+
+  //sys->message(self->d->infh, "ERR END %d", bytes - todo);
   return bytes - todo;
 }
 
@@ -1302,13 +1306,15 @@ static int cabd_sys_read_block(struct mspack_system *sys,
     if (((d->i_end - d->i_ptr) + len) > CAB_INPUTMAX) {
       D(("block size > CAB_INPUTMAX (%ld + %d)",
           (long)(d->i_end - d->i_ptr), len))
-      return MSPACK_ERR_DATAFORMAT;
+         sys->message(d->infh, "ERR DF 1");
+      //return MSPACK_ERR_DATAFORMAT;
     }
 
      /* blocks must not expand to more than CAB_BLOCKMAX */
     if (EndGetI16(&hdr[cfdata_UncompressedSize]) > CAB_BLOCKMAX) {
       D(("block size > CAB_BLOCKMAX"))
-      return MSPACK_ERR_DATAFORMAT;
+         sys->message(d->infh, "ERR DF 2");
+      //return MSPACK_ERR_DATAFORMAT;
     }
 
     /* read the block data */
@@ -1320,7 +1326,6 @@ static int cabd_sys_read_block(struct mspack_system *sys,
     if ((cksum = EndGetI32(&hdr[cfdata_CheckSum]))) {
       unsigned int sum2 = cabd_checksum(d->i_end, (unsigned int) len, 0);
       if (cabd_checksum(&hdr[4], 4, sum2) != cksum) {
-	if (!ignore_cksum) return MSPACK_ERR_CHECKSUM;
 	sys->message(d->infh, "WARNING; bad block checksum found");
       }
     }
@@ -1347,6 +1352,7 @@ static int cabd_sys_read_block(struct mspack_system *sys,
     /* advance to next member in the cabinet set */
     if (!(d->data = d->data->next)) {
       D(("ran out of splits in cabinet set"))
+         sys->message(d->infh, "ERR DF 3");
       return MSPACK_ERR_DATAFORMAT;
     }
 
