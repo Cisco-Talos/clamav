@@ -336,8 +336,8 @@ int cli_scanmscab(cli_ctx *ctx, off_t sfx_offset)
 	struct mscab_decompressor *cab_d;
 	struct mscabd_cabinet *cab_h;
 	struct mscabd_file *cab_f;
-	int ret;
-	int files;
+	int ret = 0;
+    int files;
 	int virus_num = 0;
 	struct mspack_name mspack_fmap = {
 		.fmap	= *ctx->fmap,
