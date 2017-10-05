@@ -155,7 +155,7 @@ struct mscab_decompressor *
     self->error           = MSPACK_ERR_OK;
 
     self->param[MSCABD_PARAM_SEARCHBUF] = 32768;
-    self->param[MSCABD_PARAM_FIXMSZIP]  = 0;
+    self->param[MSCABD_PARAM_FIXMSZIP]  = 1;
     self->param[MSCABD_PARAM_DECOMPBUF] = 4096;
   }
   return (struct mscab_decompressor *) self;
@@ -1302,13 +1302,21 @@ static int cabd_sys_read_block(struct mspack_system *sys,
     if (((d->i_end - d->i_ptr) + len) > CAB_INPUTMAX) {
       D(("block size > CAB_INPUTMAX (%ld + %d)",
           (long)(d->i_end - d->i_ptr), len))
-      return MSPACK_ERR_DATAFORMAT;
+      /* Do not return -- 
+       * because malware may not conform exactly to the standard CAB format
+       * but we still want to scan it */
+      //return MSPACK_ERR_DATAFORMAT;
     }
 
      /* blocks must not expand to more than CAB_BLOCKMAX */
     if (EndGetI16(&hdr[cfdata_UncompressedSize]) > CAB_BLOCKMAX) {
       D(("block size > CAB_BLOCKMAX"))
-      return MSPACK_ERR_DATAFORMAT;
+      /* 
+       * Do not return -- 
+       * because malware may not conform exactly to the standard CAB format
+       * but we still want to scan it
+       */
+      //return MSPACK_ERR_DATAFORMAT;
     }
 
     /* read the block data */
@@ -1320,8 +1328,13 @@ static int cabd_sys_read_block(struct mspack_system *sys,
     if ((cksum = EndGetI32(&hdr[cfdata_CheckSum]))) {
       unsigned int sum2 = cabd_checksum(d->i_end, (unsigned int) len, 0);
       if (cabd_checksum(&hdr[4], 4, sum2) != cksum) {
-	if (!ignore_cksum) return MSPACK_ERR_CHECKSUM;
-	sys->message(d->infh, "WARNING; bad block checksum found");
+        /* 
+         * Do not validate the checksum --
+         * Because the checksum does not necessarily matter
+         * and we still want to scan the block if possible
+         */
+        //if (!ignore_cksum) return MSPACK_ERR_CHECKSUM;
+        sys->message(d->infh, "WARNING; bad block checksum found: 0x%x", cksum);
       }
     }
 
