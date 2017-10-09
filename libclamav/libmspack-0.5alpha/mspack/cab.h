@@ -10,6 +10,7 @@
 #ifndef MSPACK_CAB_H
 #define MSPACK_CAB_H 1
 
+#include <math.h>
 #include <mszip.h>
 #include <qtm.h>
 #include <lzx.h>
@@ -75,7 +76,7 @@
  * one folder, this is also their max offset, length and offset+length limit.
  */
 #define CAB_FOLDERMAX (65535)
-#define CAB_LENGTHMAX (CAB_BLOCKMAX * CAB_FOLDERMAX)
+#define CAB_LENGTHMAX fmin(CAB_BLOCKMAX * CAB_FOLDERMAX, UINT_MAX)
 
 /* CAB compression definitions */
 
