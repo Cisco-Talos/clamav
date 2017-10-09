@@ -66,6 +66,8 @@ static struct mspack_file *mspack_fmap_open(struct mspack_system *self,
 		cli_dbgmsg("%s() failed at %d\n", __func__, __LINE__);
 		return NULL;
 	}
+	memset(mspack_handle, 0, sizeof(*mspack_handle));
+
 	switch (mode) {
 	case MSPACK_SYS_OPEN_READ:
 		mspack_handle->type = FILETYPE_FMAP;
@@ -295,7 +297,11 @@ static void mspack_fmap_message(struct mspack_file *file, const char *fmt, ...)
 static void *mspack_fmap_alloc(struct mspack_system *self, size_t num)
 {
 	UNUSEDPARAM(self);
-	return malloc(num);
+	void * addr = malloc(num);
+	if (addr) {
+		memset(addr, 0, num);
+	}
+	return addr;
 }
 
 static void mspack_fmap_free(void *mem)
