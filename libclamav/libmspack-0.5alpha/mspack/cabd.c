@@ -1247,7 +1247,7 @@ static int cabd_sys_read(struct mspack_file *file, void *buffer, int bytes) {
       }
       else {
 	/* not the last block */
-	if (outlen != CAB_BLOCKMAX) {
+	if (outlen < CAB_BLOCKMAX) {
 	  self->system->message(self->d->infh,
 				"WARNING; non-maximal data block");
 	}
@@ -1278,7 +1278,7 @@ static int cabd_sys_read_block(struct mspack_system *sys,
 {
   unsigned char hdr[cfdata_SIZEOF];
   unsigned int cksum;
-  int len;
+  unsigned int len;
 
   /* reset the input block pointer and end of block pointer */
   d->i_ptr = d->i_end = &d->input[0];
@@ -1300,27 +1300,19 @@ static int cabd_sys_read_block(struct mspack_system *sys,
     /* blocks must not be over CAB_INPUTMAX in size */
     len = EndGetI16(&hdr[cfdata_CompressedSize]);
     if (((d->i_end - d->i_ptr) + len) > CAB_INPUTMAX) {
-      D(("block size > CAB_INPUTMAX (%ld + %d)",
-          (long)(d->i_end - d->i_ptr), len))
-      /* Do not return -- 
-       * because malware may not conform exactly to the standard CAB format
-       * but we still want to scan it */
-      //return MSPACK_ERR_DATAFORMAT;
+      sys->message(NULL, "block size > CAB_INPUTMAX (%ld + %d)",
+          (long)(d->i_end - d->i_ptr), len);
+      return MSPACK_ERR_DATAFORMAT;
     }
 
      /* blocks must not expand to more than CAB_BLOCKMAX */
     if (EndGetI16(&hdr[cfdata_UncompressedSize]) > CAB_BLOCKMAX) {
-      D(("block size > CAB_BLOCKMAX"))
-      /* 
-       * Do not return -- 
-       * because malware may not conform exactly to the standard CAB format
-       * but we still want to scan it
-       */
-      //return MSPACK_ERR_DATAFORMAT;
+      sys->message(NULL, "block size > CAB_BLOCKMAX");
+      return MSPACK_ERR_DATAFORMAT;
     }
 
     /* read the block data */
-    if (sys->read(d->infh, d->i_end, len) != len) {
+    if (sys->read(d->infh, d->i_end, len) != (int)len) {
       return MSPACK_ERR_READ;
     }
 
