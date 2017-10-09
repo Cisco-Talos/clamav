@@ -1008,7 +1008,7 @@ static int cabd_extract(struct mscab_decompressor *base,
   struct mscab_decompressor_p *self = (struct mscab_decompressor_p *) base;
   struct mscabd_folder_p *fol;
   struct mspack_system *sys;
-  struct mspack_file *fh;
+  struct mspack_file *fh = NULL;
 
   if (!self) return MSPACK_ERR_ARGS;
   if (!file) return self->error = MSPACK_ERR_ARGS;
