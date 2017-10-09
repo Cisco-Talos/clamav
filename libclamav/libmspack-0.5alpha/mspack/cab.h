@@ -67,7 +67,7 @@
  * more than 6144 bytes. Quantum has no documentation, but the largest
  * block seen in the wild is 337 bytes above uncompressed size.
  */
-#define CAB_BLOCKMAX (32768)
+#define CAB_BLOCKMAX (65535)
 #define CAB_INPUTMAX (CAB_BLOCKMAX+6144)
 
 /* There are no more than 65535 data blocks per folder, so a folder cannot

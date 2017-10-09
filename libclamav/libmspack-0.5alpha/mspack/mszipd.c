@@ -191,7 +191,7 @@ static int inflate(struct mszipd_stream *zip) {
           if (read_input(BITS_VAR)) return BITS_VAR->error;
           i_ptr = BITS_VAR->i_ptr;
           i_end = BITS_VAR->i_end;
-          if(i_ptr == i_end) break;
+          if(i_ptr >= i_end) break;
         }
         lens_buf[i++] = *i_ptr++;
       }
