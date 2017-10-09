@@ -61,6 +61,7 @@ static struct mspack_file *mspack_fmap_open(struct mspack_system *self,
 		return NULL;
 	}
 	mspack_handle = malloc(sizeof(*mspack_handle));
+	memset(mspack_handle, 0, (sizeof(*mspack_handle)));
 	if (!mspack_handle) {
 		cli_dbgmsg("%s() failed at %d\n", __func__, __LINE__);
 		return NULL;
@@ -103,7 +104,9 @@ static struct mspack_file *mspack_fmap_open(struct mspack_system *self,
 	return (struct mspack_file *)mspack_handle;
 
 out_err:
+	memset(mspack_handle, 0, (sizeof(*mspack_handle)));
 	free(mspack_handle);
+	mspack_handle = NULL;
 	return NULL;
 }
 
@@ -115,8 +118,14 @@ static void mspack_fmap_close(struct mspack_file *file)
 		return;
 
 	if (mspack_handle->type == FILETYPE_FILENAME)
-		fclose(mspack_handle->f);
+                if (mspack_handle->f)
+        		fclose(mspack_handle->f);
+
+
+	memset(mspack_handle, 0, (sizeof(*mspack_handle)));
 	free(mspack_handle);
+	mspack_handle = NULL;
+        return;
 }
 
 static int mspack_fmap_read(struct mspack_file *file, void *buffer, int bytes)
@@ -362,7 +371,7 @@ int cli_scanmscab(cli_ctx *ctx, off_t sfx_offset)
 	files = 0;
 	for (cab_f = cab_h->files; cab_f; cab_f = cab_f->next) {
 		off_t max_size;
-		char *tmp_fname;
+		char *tmp_fname = NULL;
 
 		ret = cli_matchmeta(ctx, cab_f->filename, 0, cab_f->length, 0,
 				files, 0, NULL);
