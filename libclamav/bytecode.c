@@ -1497,7 +1497,7 @@ void cli_sigperf_print()
     cli_infomsg (NULL, "%-*s %*s %*s %*s %*s\n", max_name_len, "=============",
 	    8, "=====", 8, "========", 12, "===========", 9, "=========");
     while (elem->run_count) {
-	cli_infomsg (NULL, "%-*s %*lu %*lu %*llu %*.2f\n", max_name_len, elem->bc_name,
+	cli_infomsg (NULL, "%-*s %*lu %*lu %*" PRIu64 " %*.2f\n", max_name_len, elem->bc_name,
 		     8, elem->run_count, 8, elem->match_count, 
 		12, elem->usecs, 9, (double)elem->usecs/elem->run_count);
 	elem++;
@@ -3238,7 +3238,7 @@ void cli_bytevalue_describe(const struct cli_bc *bc, unsigned funcid)
     printf("CID  ID    VALUE\n");
     printf("------------------------------------------------------------------------\n");
     for (i = 0; i < func->numConstants; ++i) {
-        printf("%3u [%3u]: %llu(0x%llx)\n", i, total++, func->constants[i], func->constants[i]);
+        printf("%3u [%3u]: " STDu64 "(0x" STDx64 ")\n", i, total++, func->constants[i], func->constants[i]);
     }
     printf("------------------------------------------------------------------------\n");
     printf("found a total of %u total values\n", total);
@@ -3305,13 +3305,13 @@ void cli_byteinst_describe(const struct cli_bc_inst *inst, unsigned *bbnum)
 
         // casting operations
     case OP_BC_TRUNC:
-        printf("%d = %d trunc %llx", inst->dest, inst->u.cast.source, inst->u.cast.mask);
+        printf("%d = %d trunc " STDx64, inst->dest, inst->u.cast.source, inst->u.cast.mask);
         break;
     case OP_BC_SEXT:
-        printf("%d = %d sext %llx", inst->dest, inst->u.cast.source, inst->u.cast.mask);
+        printf("%d = %d sext " STDx64, inst->dest, inst->u.cast.source, inst->u.cast.mask);
         break;
     case OP_BC_ZEXT:
-        printf("%d = %d zext %llx", inst->dest, inst->u.cast.source, inst->u.cast.mask);
+        printf("%d = %d zext " STDx64, inst->dest, inst->u.cast.source, inst->u.cast.mask);
         break;
         
         // control operations (termination instructions)
