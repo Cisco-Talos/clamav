@@ -18,7 +18,7 @@
 #include "others.h"
 
 #define DBG_PREFIX "LibClamAV debug: "
-#define BUFSIZ 1024
+#define DBG_BUFSIZ 1024
 
 enum mspack_type {
 	FILETYPE_DUNNO,
@@ -274,10 +274,10 @@ static void mspack_fmap_message(struct mspack_file *file, const char *fmt, ...)
 
 	if (UNLIKELY(cli_debug_flag)) {
 		va_list args;
-		char buff[BUFSIZ];
+		char buff[DBG_BUFSIZ];
 		size_t len = sizeof(DBG_PREFIX) - 1;	
 
-		memset(buff, 0, BUFSIZ);
+		memset(buff, 0, DBG_BUFSIZ);
 	
 		/* Add the prefix */
 		strncpy(buff, DBG_PREFIX, len);
@@ -288,7 +288,7 @@ static void mspack_fmap_message(struct mspack_file *file, const char *fmt, ...)
 	
 		/* Add a newline and a null terminator */
 		buff[strlen(buff)] = '\n';
-		buff[strlen(buff) + 1] = '\n';
+		buff[strlen(buff) + 1] = '\0';
 	
 		fputs(buff, stderr);
 	}
