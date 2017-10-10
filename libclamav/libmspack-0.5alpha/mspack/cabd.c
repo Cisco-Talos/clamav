@@ -346,20 +346,20 @@ static int cabd_read_headers(struct mspack_system *sys,
   /* get the number of folders */
   num_folders = EndGetI16(&buf[cfhead_NumFolders]);
   if (num_folders == 0) {
-    if (!quiet) sys->message(fh, "no folders in cabinet.");
+    sys->message(fh, "no folders in cabinet.");
     return MSPACK_ERR_DATAFORMAT;
   }
 
   /* get the number of files */
   num_files = EndGetI16(&buf[cfhead_NumFiles]);
   if (num_files == 0) {
-    if (!quiet) sys->message(fh, "no files in cabinet.");
+    sys->message(fh, "no files in cabinet.");
     return MSPACK_ERR_DATAFORMAT;
   }
 
   /* check cabinet version */
   if ((buf[cfhead_MajorVersion] != 1) && (buf[cfhead_MinorVersion] != 3)) {
-    if (!quiet) sys->message(fh, "WARNING; cabinet version is not 1.3");
+    sys->message(fh, "WARNING; unexpected cabinet version %d.%d (expected 1.3)", buf[cfhead_MajorVersion], buf[cfhead_MinorVersion]);
   }
 
   /* read the reserved-sizes part of header, if present */
@@ -458,7 +458,7 @@ static int cabd_read_headers(struct mspack_system *sys,
 
       if (!ifol) {
 	sys->free(file);
-	D(("invalid folder index"))
+	sys->message(NULL, "invalid folder index: %d", x);
 	return MSPACK_ERR_DATAFORMAT;
       }
     }
@@ -551,6 +551,7 @@ static char *cabd_read_string(struct mspack_system *sys,
   for (i = 1, ok = 0; i < len; i++) if (!buf[i]) { ok = 1; break; }
   if (!ok) {
     *error = MSPACK_ERR_DATAFORMAT;
+    sys->message(NULL, "Unable to find null terminator for string read in buffer of len %d", len);
     return NULL;
   }
 
@@ -873,6 +874,7 @@ static int cabd_merge(struct mscab_decompressor *base,
   else {
     /* folder merge required - do the files match? */
     if (! cabd_can_merge_folders(sys, lfol, rfol)) {
+      sys->message(NULL, "Failed to merge folders");
       return self->error = MSPACK_ERR_DATAFORMAT;
     }
 
@@ -1142,27 +1144,32 @@ static int cabd_init_decomp(struct mscab_decompressor_p *self, unsigned int ct)
 
   switch (ct & cffoldCOMPTYPE_MASK) {
   case cffoldCOMPTYPE_NONE:
+    self->d->sys.message(NULL, "Detected CAB Compression Type: None (%x)", ct & cffoldCOMPTYPE_MASK);
     self->d->decompress = (int (*)(void *, off_t)) &noned_decompress;
     self->d->state = noned_init(&self->d->sys, fh, fh,
 				self->param[MSCABD_PARAM_DECOMPBUF]);
     break;
   case cffoldCOMPTYPE_MSZIP:
+    self->d->sys.message(NULL, "Detected CAB Compression Type: MSZIP (%x)", ct & cffoldCOMPTYPE_MASK);
     self->d->decompress = (int (*)(void *, off_t)) &mszipd_decompress;
     self->d->state = mszipd_init(&self->d->sys, fh, fh,
 				 self->param[MSCABD_PARAM_DECOMPBUF],
 				 self->param[MSCABD_PARAM_FIXMSZIP]);
     break;
   case cffoldCOMPTYPE_QUANTUM:
+    self->d->sys.message(NULL, "Detected CAB Compression Type: QUANTUM (%x)", ct & cffoldCOMPTYPE_MASK);
     self->d->decompress = (int (*)(void *, off_t)) &qtmd_decompress;
     self->d->state = qtmd_init(&self->d->sys, fh, fh, (int) (ct >> 8) & 0x1f,
 			       self->param[MSCABD_PARAM_DECOMPBUF]);
     break;
   case cffoldCOMPTYPE_LZX:
+    self->d->sys.message(NULL, "Detected CAB Compression Type: LZX (%x)", ct & cffoldCOMPTYPE_MASK);
     self->d->decompress = (int (*)(void *, off_t)) &lzxd_decompress;
     self->d->state = lzxd_init(&self->d->sys, fh, fh, (int) (ct >> 8) & 0x1f, 0,
 			       self->param[MSCABD_PARAM_DECOMPBUF], (off_t)0,0);
     break;
   default:
+    self->d->sys.message(NULL, "Unsupported compression type for CAB: %x", ct & cffoldCOMPTYPE_MASK);
     return self->error = MSPACK_ERR_DATAFORMAT;
   }
   return self->error = (self->d->state) ? MSPACK_ERR_OK : MSPACK_ERR_NOMEMORY;
@@ -1220,6 +1227,7 @@ static int cabd_sys_read(struct mspack_file *file, void *buffer, int bytes) {
 
       /* check if we're out of input blocks, advance block counter */
       if (self->d->block++ >= self->d->folder->base.num_blocks) {
+  sys->message(NULL, "Ran out of CAB input blocks prematurely");
 	self->read_error = MSPACK_ERR_DATAFORMAT;
 	break;
       }
@@ -1242,15 +1250,11 @@ static int cabd_sys_read(struct mspack_file *file, void *buffer, int bytes) {
 	  /* special LZX hack -- on the last block, inform LZX of the
 	   * size of the output data stream. */
 	  lzxd_set_output_length((struct lzxd_stream *) self->d->state, (off_t)
-				 ((self->d->block-1) * CAB_BLOCKMAX + outlen));
+				 ((self->d->block-1) * CAB_BLOCKSTD + outlen));
 	}
       }
       else {
-	/* not the last block */
-	if (outlen < CAB_BLOCKMAX) {
-	  self->system->message(self->d->infh,
-				"WARNING; non-maximal data block");
-	}
+        /* not the last block */
       }
     } /* if (avail) */
   } /* while (todo > 0) */
@@ -1351,7 +1355,7 @@ static int cabd_sys_read_block(struct mspack_system *sys,
 
     /* advance to next member in the cabinet set */
     if (!(d->data = d->data->next)) {
-      D(("ran out of splits in cabinet set"))
+      sys->message(NULL, "ran out of splits in cabinet set");
       return MSPACK_ERR_DATAFORMAT;
     }
 
