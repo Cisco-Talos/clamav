@@ -493,7 +493,7 @@ static int cabd_read_headers(struct mspack_system *sys,
       /* unexpected/invalid folder index */
       file->folder = NULL;
       sys->message(fh, "WARNING; cab header file %d of %d has invalid folder index (%d out of %d folders)", 
-        i, num_files, x, num_folders);
+        i + 1, num_files, x, num_folders);
     }
 
     /* get time */
@@ -513,7 +513,7 @@ static int cabd_read_headers(struct mspack_system *sys,
     if (read_string_errno) {
         /* unexpected/invalid folder index */
         file->filename = NULL;
-        sys->message(fh, "WARNING; cab header file %d of %d has invalid filename", i, num_files);
+        sys->message(fh, "WARNING; cab header file %d of %d has invalid filename", i + 1, num_files);
     }
     
     if (file->folder && !read_string_errno) {
@@ -531,6 +531,13 @@ static int cabd_read_headers(struct mspack_system *sys,
         sys->free(file);
         sys->message(fh, "WARNING; omitting file %d of %d from file list", i, num_files);
     }
+  }
+
+  if (cab->base.files == NULL) {
+    /* We never actually added any files to the file list.  Something went wrong.
+     * The file header may have been invalid */
+    sys->message(NULL, "No files found, even though header claimed to have %d files", num_files);
+    return MSPACK_ERR_DATAFORMAT;
   }
 
   return MSPACK_ERR_OK;
