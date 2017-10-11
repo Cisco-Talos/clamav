@@ -619,7 +619,7 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const char **
 
         /* evaluate trigger */
         if (pm->lsigid[0]) {
-            cli_dbgmsg("cli_pcre_scanbuf: checking %s; running regex /%s/\n", pm->trigger, pd->expression);
+            pm_dbgmsg("cli_pcre_scanbuf: checking %s; running regex /%s/\n", pm->trigger, pd->expression);
 #ifdef PCRE_BYPASS
             if (strcmp(pm->trigger, PCRE_BYPASS))
 #endif
@@ -636,7 +636,7 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const char **
         rolling = (pm->flags & CLI_PCRE_ROLLING);     /* rolling search (unanchored) */
         offset = pd->search_offset;                   /* this is usually 0 */
 
-        cli_dbgmsg("cli_pcre_scanbuf: triggered %s; running regex /%s/%s%s\n", pm->trigger, pd->expression, 
+        pm_dbgmsg("cli_pcre_scanbuf: triggered %s; running regex /%s/%s%s\n", pm->trigger, pd->expression, 
                    global ? " (global)":"", rolling ? " (rolling)":"");
 
         /* adjust the buffer sent to cli_pcre_match for offset and maxshift */
