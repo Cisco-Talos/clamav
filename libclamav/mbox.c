@@ -1161,7 +1161,8 @@ parseMHTMLComment(const char *comment, cli_ctx *ctx, void *wrkjobj, void *cbdata
 			cli_dbgmsg("parseMHTMLComment: cannot intialize xmlReader\n");
 
 #if HAVE_JSON
-			ret = cli_json_parse_error(ctx->wrkproperty, "MHTML_ERROR_XML_READER_MEM");
+                       if (ctx->wrkproperty != NULL)
+                           ret = cli_json_parse_error(ctx->wrkproperty, "MHTML_ERROR_XML_READER_MEM");
 #endif
 			return ret; // libxml2 failed!
 		}
@@ -1230,7 +1231,8 @@ parseRootMHTML(mbox_ctx *mctx, message *m, text *t)
 	if (htmlDoc == NULL) {
 		cli_dbgmsg("parseRootMHTML: cannot intialize read html document\n");
 #if HAVE_JSON
-		ret = cli_json_parse_error(ctx->wrkproperty, "MHTML_ERROR_HTML_READ");
+                if (ctx->wrkproperty != NULL)
+                    ret = cli_json_parse_error(ctx->wrkproperty, "MHTML_ERROR_HTML_READ");
 		if (ret != CL_SUCCESS)
 			rc = FAIL;
 #endif
@@ -1253,7 +1255,8 @@ parseRootMHTML(mbox_ctx *mctx, message *m, text *t)
 	if (reader == NULL) {
 		cli_dbgmsg("parseRootMHTML: cannot intialize xmlTextReader\n");
 #if HAVE_JSON
-		ret = cli_json_parse_error(ctx->wrkproperty, "MHTML_ERROR_XML_READER_IO");
+                if (ctx->wrkproperty != NULL)
+                    ret = cli_json_parse_error(ctx->wrkproperty, "MHTML_ERROR_XML_READER_IO");
 		if (ret != CL_SUCCESS)
 			rc = FAIL;
 #endif
@@ -1442,7 +1445,8 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 			boundary = messageFindArgument(mainMessage, "boundary");
 
 #if HAVE_JSON
-			cli_jsonstr(mctx->wrkobj, "Boundary", boundary);
+                        if (mctx->wrkobj != NULL)
+                            cli_jsonstr(mctx->wrkobj, "Boundary", boundary);
 #endif
 
 			if(boundary == NULL) {
