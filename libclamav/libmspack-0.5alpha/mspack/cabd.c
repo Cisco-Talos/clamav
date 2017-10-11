@@ -524,6 +524,10 @@ static int cabd_read_headers(struct mspack_system *sys,
     }
     else {
         /* ignore invalid file and continue parsing */
+        if (file->filename) {
+          sys->free(file->filename);
+          file->filename = NULL;
+        }
         sys->free(file);
         sys->message(fh, "WARNING; omitting file %d of %d from file list", i, num_files);
     }
