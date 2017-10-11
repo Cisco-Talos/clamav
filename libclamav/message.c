@@ -680,7 +680,8 @@ messageFindArgument(const message *m, const char *variable)
 				cli_dbgmsg("messageFindArgument: no '=' sign found in MIME header '%s' (%s)\n", variable, messageGetArgument(m, i));
 				return NULL;
 			}
-			if((strlen(ptr) > 2) && (*++ptr == '"') && (strchr(&ptr[1], '"') != NULL)) {
+                        ptr++;
+                        if((strlen(ptr) > 1) && (*ptr == '"') && (strchr(&ptr[1], '"') != NULL)) {
 				/* Remove any quote characters */
 				char *ret = cli_strdup(++ptr);
 				char *p;
