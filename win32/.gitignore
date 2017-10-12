@@ -9,3 +9,7 @@ build/*
 */Debug/*
 */Release/*
 ipch
+ClamAV.VC.db
+Debug
+Release
+.vs
