@@ -69,7 +69,6 @@
 
 /* Ensure we have print format types */
 /* PRIu64 should be in <inttypes.h> */
-#ifndef PRIu64
 #ifndef _SF64_PREFIX
 #if SIZEOF_LONG == 8
 #define _SF64_PREFIX "l"
@@ -78,9 +77,14 @@
 #endif
 #endif
 
+#ifndef PRIu64
 #define PRIu64 _SF64_PREFIX "u"
-#define PRIi64 _SF64_PREFIX "i"
-#define PRIx64 _SF64_PREFIX "x"
+#endif
+#ifndef PRIx64
+#define PRIx64 _SF64_PREFIX "i"
+#endif
+#ifndef PRIi64
+#define PRIi64 _SF64_PREFIX "x"
 #endif
 
 #ifndef STDu64

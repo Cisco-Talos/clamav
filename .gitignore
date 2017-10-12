@@ -61,3 +61,4 @@ libclamav/c++/llvm/tools/llvmc/plugins/Base/Base.td
 *.dll
 *.obj
 *.opendb
+.vscode
