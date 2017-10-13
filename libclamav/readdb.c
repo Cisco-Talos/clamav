@@ -772,7 +772,13 @@ static char *cli_signorm(const char *signame)
 
     nsz = strlen(signame);
 
-    if (nsz > 11) {
+    if (nsz > 3 && signame[nsz-1] == '}') {
+        char *pt = strstr(signame, ".{");
+        if (pt)         /* strip the ".{ }" clause at the end of signame */
+            nsz = pt - signame;
+        else
+            return NULL;
+    } else if (nsz > 11) {
         if (!strncmp(signame+nsz-11, ".UNOFFICIAL", 11))
             nsz -= 11;
         else
