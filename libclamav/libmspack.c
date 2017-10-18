@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdarg.h>
+#include <stdio.h>
 
 #include <mspack.h>
 
@@ -16,9 +17,6 @@
 #include "fmap.h"
 #include "scanners.h"
 #include "others.h"
-
-#define DBG_PREFIX "LibClamAV debug: "
-#define DBG_BUFSIZ 1024
 
 enum mspack_type {
 	FILETYPE_DUNNO,
@@ -274,13 +272,13 @@ static void mspack_fmap_message(struct mspack_file *file, const char *fmt, ...)
 
 	if (UNLIKELY(cli_debug_flag)) {
 		va_list args;
-		char buff[DBG_BUFSIZ];
-		size_t len = sizeof(DBG_PREFIX) - 1;	
+		char buff[BUFSIZ];
+		size_t len = sizeof("LibClamAV debug: ") - 1;
 
-		memset(buff, 0, DBG_BUFSIZ);
+		memset(buff, 0, BUFSIZ);
 	
 		/* Add the prefix */
-		strncpy(buff, DBG_PREFIX, len);
+		strncpy(buff, "LibClamAV debug: ", len);
 		
 		va_start(args, fmt);
 		vsnprintf(buff + len, sizeof(buff) - len - 2, fmt, args);

@@ -24,6 +24,7 @@
 #include <system.h>
 #include <cab.h>
 #include <assert.h>
+#include <ctype.h>
 
 /* Notes on compliance with cabinet specification:
  *
@@ -295,6 +296,33 @@ static void cabd_close(struct mscab_decompressor *base,
   }
 }
 
+static int cab_chkname(
+           struct mspack_system *sys,
+           char *name,
+           int san)
+{
+  size_t i, len = 0;
+
+  if (NULL == sys || NULL == name) return 1;
+
+  len = strlen(name);
+
+  for (i = 0; i < len; i++)
+  {
+    if (!san && (strchr("%/*?|\\\"+=<>;:\t ", name[i]) || !isascii(name[i])))
+    {
+      sys->message(NULL, "cab_chkname: File name contains disallowed characters");
+      return 1;
+    }
+    else if (san && !isalnum(name[i]))
+    {
+      name[i] = '*';
+    }
+  }
+
+  return 0;
+}
+
 /***************************************
  * CABD_READ_HEADERS
  ***************************************
@@ -307,7 +335,7 @@ static int cabd_read_headers(struct mspack_system *sys,
 			     struct mscabd_cabinet_p *cab,
 			     off_t offset, int quiet)
 {
-  unsigned int num_folders, num_files, folder_resv, i, x;
+  unsigned int num_folders, num_files, folder_resv, i, x, fidx;
   int read_string_errno = 0;
   struct mscabd_folder_p *fol, *linkfol = NULL;
   struct mscabd_file *file, *linkfile = NULL;
@@ -392,14 +420,30 @@ static int cabd_read_headers(struct mspack_system *sys,
   /* read name and info of preceeding cabinet in set, if present */
   if (cab->base.flags & cfheadPREV_CABINET) {
     cab->base.prevname = cabd_read_string(sys, fh, &read_string_errno); if (read_string_errno) return read_string_errno;
+    if(cab_chkname(sys, cab->base.prevname, 0))
+        sys->message(NULL, "CAB: Invalid name of preceding cabinet");
+    else
+        sys->message(NULL, "CAB: Preceding cabinet name: %s", cab->base.prevname);
     cab->base.previnfo = cabd_read_string(sys, fh, &read_string_errno); if (read_string_errno) return read_string_errno;
+    if(cab_chkname(sys, cab->base.previnfo, 0))
+        sys->message(NULL, "CAB: Invalid info of preceding cabinet");
+    else
+        sys->message(NULL, "CAB: Preceding cabinet info: %s", cab->base.previnfo);
   }
 
   /* read name and info of next cabinet in set, if present */
   if (cab->base.flags & cfheadNEXT_CABINET) {
     cab->base.nextname = cabd_read_string(sys, fh, &read_string_errno); if (read_string_errno) return read_string_errno;
+    if(cab_chkname(sys, cab->base.nextname, 0))
+        sys->message(NULL, "CAB: Invalid name of next cabinet");
+    else
+        sys->message(NULL, "CAB: Next cabinet name: %s", cab->base.nextname);
     cab->base.nextinfo = cabd_read_string(sys, fh, &read_string_errno); if (read_string_errno) return read_string_errno;
-  }
+    if(cab_chkname(sys, cab->base.nextinfo, 0))
+        sys->message(NULL, "CAB: Invalid info of next cabinet");
+    else
+        sys->message(NULL, "CAB: Next cabinet info: %s", cab->base.nextinfo);
+}
 
   /* read folders */
   for (i = 0; i < num_folders; i++) {
@@ -448,25 +492,24 @@ static int cabd_read_headers(struct mspack_system *sys,
     file->offset   = EndGetI32(&buf[cffile_FolderOffset]);
 
     /* set folder pointer */
-    x = EndGetI16(&buf[cffile_FolderIndex]);
-    if (x < num_folders) {
+    fidx = EndGetI16(&buf[cffile_FolderIndex]);
+    if (fidx < num_folders) {
       /* normal folder index; count up to the correct folder. the folder
        * pointer will be NULL if folder index is invalid */
       struct mscabd_folder *ifol = cab->base.folders; 
-      while (x--) if (ifol) ifol = ifol->next;
+      while (fidx--) if (ifol) ifol = ifol->next;
       file->folder = ifol;
 
       if (!ifol) {
 	sys->free(file);
-	sys->message(NULL, "invalid folder index: %d", x);
+	sys->message(NULL, "invalid folder index: %d", fidx);
 	return MSPACK_ERR_DATAFORMAT;
       }
     }
-    else if (x >= cffileCONTINUED_FROM_PREV) {
+    else if (fidx >= cffileCONTINUED_FROM_PREV) {
       /* either CONTINUED_TO_NEXT, CONTINUED_FROM_PREV or
        * CONTINUED_PREV_AND_NEXT */
-      if ((x == cffileCONTINUED_TO_NEXT) ||
-	  (x == cffileCONTINUED_PREV_AND_NEXT))
+      if ((fidx == cffileCONTINUED_TO_NEXT) || (fidx == cffileCONTINUED_PREV_AND_NEXT))
       {
 	/* get last folder */
 	struct mscabd_folder *ifol = cab->base.folders;
@@ -478,8 +521,7 @@ static int cabd_read_headers(struct mspack_system *sys,
 	if (!fol->merge_next) fol->merge_next = file;
       }
 
-      if ((x == cffileCONTINUED_FROM_PREV) ||
-	  (x == cffileCONTINUED_PREV_AND_NEXT))
+      if ((fidx == cffileCONTINUED_FROM_PREV) || (fidx == cffileCONTINUED_PREV_AND_NEXT))
       {
 	/* get first folder */
 	file->folder = cab->base.folders;
@@ -493,7 +535,7 @@ static int cabd_read_headers(struct mspack_system *sys,
       /* unexpected/invalid folder index */
       file->folder = NULL;
       sys->message(fh, "WARNING; cab header file %d of %d has invalid folder index (%d out of %d folders)", 
-        i + 1, num_files, x, num_folders);
+        i + 1, num_files, fidx, num_folders);
     }
 
     /* get time */
@@ -515,8 +557,29 @@ static int cabd_read_headers(struct mspack_system *sys,
         file->filename = NULL;
         sys->message(fh, "WARNING; cab header file %d of %d has invalid filename", i + 1, num_files);
     }
+
+    /* sanitize the name, incase it contains invalid characters */
+	  cab_chkname(sys, file->filename, 1);
     
     if (file->folder && !read_string_errno) {
+        sys->message(NULL, "CAB: File record %u", i);
+        sys->message(NULL, "CAB: File name: %s", file->filename);
+        sys->message(NULL, "CAB: File offset: %u", (unsigned int) file->offset);
+        sys->message(NULL, "CAB: File folder index: %u", fidx);
+        sys->message(NULL, "CAB: File attribs: 0x%x", file->attribs);
+        if(file->attribs & 0x01)
+            sys->message(NULL, "CAB:   * file is read-only");
+        if(file->attribs & 0x02)
+            sys->message(NULL, "CAB:   * file is hidden");
+        if(file->attribs & 0x04)
+            sys->message(NULL, "CAB:   * file is a system file");
+        if(file->attribs & 0x20)
+            sys->message(NULL, "CAB:   * file modified since last backup");
+        if(file->attribs & 0x40)
+            sys->message(NULL, "CAB:   * file to be run after extraction");
+        if(file->attribs & 0x80)
+            sys->message(NULL, "CAB:   * file name contains UTF");
+    
         /* link file entry into file list */
         if (!linkfile) cab->base.files = file;
         else linkfile->next = file;
@@ -529,7 +592,7 @@ static int cabd_read_headers(struct mspack_system *sys,
           file->filename = NULL;
         }
         sys->free(file);
-        sys->message(fh, "WARNING; omitting file %d of %d from file list", i, num_files);
+        sys->message(fh, "WARNING; omitting file %d of %d from file list.", i, num_files);
     }
   }
 
