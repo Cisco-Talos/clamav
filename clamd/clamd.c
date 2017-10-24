@@ -457,42 +457,6 @@ int main(int argc, char **argv)
             logg("#Not loading PUA signatures.\n");
         }
 
-        if (optget(opts, "StatsEnabled")->enabled) {
-            cl_engine_stats_enable(engine);
-        }
-
-        if (optget(opts, "StatsPEDisabled")->enabled) {
-            cl_engine_set_num(engine, CL_ENGINE_DISABLE_PE_STATS, 1);
-        }
-
-        if (optget(opts, "StatsTimeout")->enabled) {
-            cl_engine_set_num(engine, CL_ENGINE_STATS_TIMEOUT, optget(opts, "StatsTimeout")->numarg);
-        }
-
-        if (optget(opts, "StatsHostID")->enabled) {
-            char *p = optget(opts, "StatsHostID")->strarg;
-
-            if (strcmp(p, "default")) {
-                if (!strcmp(p, "none")) {
-                    cl_engine_set_clcb_stats_get_hostid(engine, NULL);
-                } else if (!strcmp(p, "anonymous")) {
-                    strcpy(hostid, STATS_ANON_UUID);
-                } else {
-                    if (strlen(p) > 36) {
-                        logg("!Invalid HostID\n");
-                        cl_engine_set_clcb_stats_submit(engine, NULL);
-                        cl_engine_free(engine);
-                        ret = 1;
-                        break;
-                    }
-
-                    strcpy(hostid, p);
-                }
-
-                cl_engine_set_clcb_stats_get_hostid(engine, get_hostid);
-            }
-        }
-
         if(optget(opts, "OfficialDatabaseOnly")->enabled) {
             dboptions |= CL_DB_OFFICIAL_ONLY;
             logg("#Only loading official signatures.\n");
