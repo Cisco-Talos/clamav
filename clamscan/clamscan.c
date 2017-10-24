@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2017 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2012 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -290,10 +290,6 @@ void help(void)
     mprintf("    --pcre-recmatch-limit=#n             Maximum recursive calls to the PCRE match function.\n");
     mprintf("    --pcre-max-filesize=#n               Maximum size file to perform PCRE subsig matching.\n");
 #endif /* HAVE_PCRE */
-    mprintf("    --enable-stats                       Enable statistical reporting of malware\n");
-    mprintf("    --disable-pe-stats                   Disable submission of individual PE sections in stats submissions\n");
-    mprintf("    --stats-timeout=#n                   Number of seconds to wait for waiting a response back from the stats server\n");
-    mprintf("    --stats-host-id=UUID                 Set the Host ID used when submitting statistical info.\n");
     mprintf("    --disable-cache                      Disable caching and cache checks for hash sums of scanned files.\n");
     mprintf("\n");
     mprintf("(*) Default scan settings\n");

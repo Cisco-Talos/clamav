@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2017 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -674,42 +674,6 @@ int scanmanager(const struct optstruct *opts)
     
     if (optget(opts, "disable-cache")->enabled)
         cl_engine_set_num(engine, CL_ENGINE_DISABLE_CACHE, 1);
-
-    if (optget(opts, "disable-pe-stats")->enabled) {
-        cl_engine_set_num(engine, CL_ENGINE_DISABLE_PE_STATS, 1);
-    }
-
-    if (optget(opts, "enable-stats")->enabled) {
-        cl_engine_stats_enable(engine);
-    }
-
-    if (optget(opts, "stats-timeout")->enabled) {
-        cl_engine_set_num(engine, CL_ENGINE_STATS_TIMEOUT, optget(opts, "StatsTimeout")->numarg);
-    }
-
-    if (optget(opts, "stats-host-id")->enabled) {
-        char *p = optget(opts, "stats-host-id")->strarg;
-
-        if (strcmp(p, "default")) {
-            if (!strcmp(p, "none")) {
-                cl_engine_set_clcb_stats_get_hostid(engine, NULL);
-            } else if (!strcmp(p, "anonymous")) {
-                strcpy(hostid, STATS_ANON_UUID);
-            } else {
-                if (strlen(p) > 36) {
-                    logg("!Invalid HostID\n");
-
-                    cl_engine_set_clcb_stats_submit(engine, NULL);
-                    cl_engine_free(engine);
-                    return 2;
-                }
-
-                strcpy(hostid, p);
-            }
-
-            cl_engine_set_clcb_stats_get_hostid(engine, get_hostid);
-        }
-    }
 
     if(optget(opts, "detect-pua")->enabled) {
         dboptions |= CL_DB_PUA;
