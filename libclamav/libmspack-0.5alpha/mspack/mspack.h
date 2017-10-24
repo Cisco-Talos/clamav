@@ -712,6 +712,9 @@ struct mscabd_cabinet {
   /** The file offset of cabinet within the physical file it resides in. */
   off_t base_offset;
 
+  /** The offset within the cabinet of the first file entry */
+  off_t file_offset;
+
   /** The length of the cabinet file in bytes. */
   unsigned int length;
 
