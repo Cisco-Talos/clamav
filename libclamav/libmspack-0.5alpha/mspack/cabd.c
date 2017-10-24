@@ -335,6 +335,7 @@ static int cabd_read_headers(struct mspack_system *sys,
 			     struct mscabd_cabinet_p *cab,
 			     off_t offset, int quiet)
 {
+  unsigned int found_files = 0, found_folders = 0;
   unsigned int num_folders, num_files, folder_resv, i, x, fidx;
   int read_string_errno = 0;
   struct mscabd_folder_p *fol, *linkfol = NULL;
@@ -392,6 +393,8 @@ static int cabd_read_headers(struct mspack_system *sys,
 
   /* read the reserved-sizes part of header, if present */
   cab->base.flags = EndGetI16(&buf[cfhead_Flags]);
+  cab->base.file_offset = EndGetI32(&buf[cfhead_FileOffset]);
+
   if (cab->base.flags & cfheadRESERVE_PRESENT) {
     if (sys->read(fh, &buf[0], cfheadext_SIZEOF) != cfheadext_SIZEOF) {
       return MSPACK_ERR_READ;
@@ -469,10 +472,26 @@ static int cabd_read_headers(struct mspack_system *sys,
     fol->merge_prev      = NULL;
     fol->merge_next      = NULL;
 
+    sys->message(fh, "CAB: Folder record %u", i);
+    sys->message(fh, "CAB: Folder offset: %u", (unsigned int) fol->data.offset);
+    sys->message(fh, "CAB: Folder compression method: %d", fol->base.comp_type);
+
     /* link folder into list of folders */
     if (!linkfol) cab->base.folders = (struct mscabd_folder *) fol;
     else linkfol->base.next = (struct mscabd_folder *) fol;
     linkfol = fol;
+    found_folders++;
+  }
+
+  sys->message(fh, "CAB: Recorded folders: %u", found_folders);
+
+  /* if the # folders found does not match the # listed in the header
+   * then adjust the offset to point to the first file entry because
+   * the offset is probably incorrect now */
+  if(num_folders != found_folders) {
+    /* if the file offset is bogus and we just seeked out of the file,
+     * the next read will fail */
+    sys->seek(fh, cab->base.file_offset, MSPACK_SYS_SEEK_START);
   }
 
   /* read files */
@@ -501,9 +520,15 @@ static int cabd_read_headers(struct mspack_system *sys,
       file->folder = ifol;
 
       if (!ifol) {
-	sys->free(file);
-	sys->message(NULL, "invalid folder index: %d", fidx);
-	return MSPACK_ERR_DATAFORMAT;
+        sys->free(file);
+        sys->message(NULL, "Folder not found for file %s", file->filename);
+        /* ignore invalid file and continue parsing */
+        if (file->filename) {
+          sys->free(file->filename);
+          file->filename = NULL;
+        }
+        sys->free(file);
+        continue;
       }
     }
     else if (fidx >= cffileCONTINUED_FROM_PREV) {
@@ -557,10 +582,11 @@ static int cabd_read_headers(struct mspack_system *sys,
         file->filename = NULL;
         sys->message(fh, "WARNING; cab header file %d of %d has invalid filename", i + 1, num_files);
     }
+    else {
+      /* sanitize the name, incase it contains invalid characters */
+      cab_chkname(sys, file->filename, 1);
+    }
 
-    /* sanitize the name, incase it contains invalid characters */
-	  cab_chkname(sys, file->filename, 1);
-    
     if (file->folder && !read_string_errno) {
         sys->message(NULL, "CAB: File record %u", i);
         sys->message(NULL, "CAB: File name: %s", file->filename);
@@ -584,6 +610,7 @@ static int cabd_read_headers(struct mspack_system *sys,
         if (!linkfile) cab->base.files = file;
         else linkfile->next = file;
         linkfile = file;
+        found_files++;
     }
     else {
         /* ignore invalid file and continue parsing */
@@ -595,6 +622,7 @@ static int cabd_read_headers(struct mspack_system *sys,
         sys->message(fh, "WARNING; omitting file %d of %d from file list.", i, num_files);
     }
   }
+  sys->message(NULL, "CAB: Recorded files: %u\n", found_files);
 
   if (cab->base.files == NULL) {
     /* We never actually added any files to the file list.  Something went wrong.
@@ -621,8 +649,8 @@ static char *cabd_read_string(struct mspack_system *sys,
       return NULL;
   }
   
-  /* search for a null terminator in the buffer. reject empty strings */
-  for (i = 1, ok = 0; i < len; i++) if (!buf[i]) { ok = 1; break; }
+  /* search for a null terminator in the buffer. accept empty strings */
+  for (i = 0, ok = 0; i < len; i++) if (!buf[i]) { ok = 1; break; }
   if (!ok) {
     *error = MSPACK_ERR_DATAFORMAT;
     sys->message(NULL, "Unable to find null terminator for string read in buffer of len %d", len);
