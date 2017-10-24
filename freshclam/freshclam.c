@@ -70,7 +70,6 @@ int sigchld_wait = 1;
 const char *pidfile = NULL;
 char hostid[37];
 
-void submit_host_info(struct optstruct *opts);
 char *get_hostid(void *cbdata);
 int is_valid_hostid(void);
 
@@ -146,16 +145,20 @@ help (void)
 {
     mprintf_stdout = 1;
 
-    mprintf ("\n");
-    mprintf ("                   Clam AntiVirus: freshclam  %s\n",
-             get_version ());
-    printf ("           By The ClamAV Team: http://www.clamav.net/about.html#credits\n");
-    printf ("           (C) 2007-2017 Cisco Systems, Inc.\n\n");
-
-    mprintf ("    --help               -h              show help\n");
+    mprintf 
+        ("\n");
+    mprintf 
+        ("                   Clam AntiVirus: freshclam  %s\n", get_version ());
+    printf 
+        ("           By The ClamAV Team: http://www.clamav.net/about.html#credits\n");
+    printf 
+        ("           (C) 2007-2017 Cisco Systems, Inc.\n\n");
+    mprintf 
+        ("    --help               -h              show help\n");
     mprintf
         ("    --version            -V              print version number and exit\n");
-    mprintf ("    --verbose            -v              be verbose\n");
+    mprintf 
+        ("    --verbose            -v              be verbose\n");
     mprintf
         ("    --debug                              enable debug messages\n");
     mprintf
@@ -166,15 +169,19 @@ help (void)
         ("    --stdout                             write to stdout instead of stderr\n");
     mprintf
         ("    --show-progress                      show download progress percentage\n");
-    mprintf ("\n");
+    mprintf 
+        ("\n");
     mprintf
         ("    --config-file=FILE                   read configuration from FILE.\n");
-    mprintf ("    --log=FILE           -l FILE         log into FILE\n");
+    mprintf 
+        ("    --log=FILE           -l FILE         log into FILE\n");
 #ifndef _WIN32
-    mprintf ("    --daemon             -d              run in daemon mode\n");
+    mprintf 
+        ("    --daemon             -d              run in daemon mode\n");
     mprintf
         ("    --pid=FILE           -p FILE         save daemon's pid in FILE\n");
-    mprintf ("    --user=USER          -u USER         run as USER\n");
+    mprintf 
+        ("    --user=USER          -u USER         run as USER\n");
 #endif
     mprintf
         ("    --no-dns                             force old non-DNS verification method\n");
@@ -196,10 +203,6 @@ help (void)
         ("    --on-outdated-execute=COMMAND        execute COMMAND when software is outdated\n");
     mprintf
         ("    --list-mirrors                       print mirrors from mirrors.dat\n");
-    mprintf
-        ("    --enable-stats                       enable statistical information reporting\n");
-    mprintf
-        ("    --stats-host-id=UUID                 HostID in the form of an UUID to use when submitting statistical information\n");
     mprintf
         ("    --update-db=DBNAME                   only update database DBNAME\n");
 
@@ -362,28 +365,6 @@ main (int argc, char **argv)
         optfree (opts);
         return 0;
     }
-
-    /* Stats/intelligence gathering  */
-    if (optget(opts, "stats-host-id")->enabled) {
-        char *p = optget(opts, "stats-host-id")->strarg;
-
-        if (strcmp(p, "default")) {
-            if (!strcmp(p, "anonymous")) {
-                strcpy(hostid, STATS_ANON_UUID);
-            } else {
-                if (strlen(p) > 36) {
-                    logg("!Invalid HostID\n");
-                    optfree(opts);
-                    return FCE_INIT;
-                }
-
-                strcpy(hostid, p);
-            }
-        } else {
-            strcpy(hostid, "default");
-        }
-    }
-    submit_host_info(opts);
 
     if (optget (opts, "HTTPProxyPassword")->enabled)
     {
@@ -769,54 +750,6 @@ main (int argc, char **argv)
     cl_cleanup_crypto();
 
     return (ret);
-}
-
-void submit_host_info(struct optstruct *opts)
-{
-    struct cl_engine *engine;
-    cli_intel_t *intel;
-
-    if (!optget(opts, "enable-stats")->enabled)
-        return;
-
-    engine = cl_engine_new();
-    if (!(engine))
-        return;
-
-    if (optget (opts, "Debug")->enabled || optget (opts, "debug")->enabled)
-        cl_debug ();
-
-    if (optget (opts, "verbose")->enabled)
-        mprintf_verbose = 1;
-
-    cl_engine_stats_enable(engine);
-
-    intel = engine->stats_data;
-    if (!(intel)) {
-        engine->cb_stats_submit = NULL;
-        cl_engine_free(engine);
-        return;
-    }
-
-    intel->host_info = calloc(1, strlen(TARGET_OS_TYPE) + strlen(TARGET_ARCH_TYPE) + 2);
-    if (!(intel->host_info)) {
-        engine->cb_stats_submit = NULL;
-        cl_engine_free(engine);
-        return;
-    }
-
-    sprintf(intel->host_info, "%s %s", TARGET_OS_TYPE, TARGET_ARCH_TYPE);
-
-    if (!strcmp(hostid, "none"))
-        cl_engine_set_clcb_stats_get_hostid(engine, NULL);
-    else if (strcmp(hostid, "default"))
-        cl_engine_set_clcb_stats_get_hostid(engine, get_hostid);
-
-    if (optget(opts, "stats-timeout")->enabled) {
-        cl_engine_set_num(engine, CL_ENGINE_STATS_TIMEOUT, optget(opts, "StatsTimeout")->numarg);
-    }
-
-    cl_engine_free(engine);
 }
 
 int is_valid_hostid(void)

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2017 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2008-2013 Sourcefire, Inc.
  *
  *  Author: Tomasz Kojm <tkojm@clamav.net>
@@ -192,14 +192,6 @@ const struct clam_option __clam_options[] = {
     { "PreludeAnalyzerName", "prelude-analyzer-name", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD, "Name of the analyzer as seen in prewikka"},
 
     { "LogFile", "log", 'l', CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD | OPT_MILTER | OPT_CLAMSCAN | OPT_CLAMDSCAN, "Save all reports to a log file.", "/tmp/clamav.log" },
-
-    { "StatsHostID", "stats-host-id", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM | OPT_CLAMD | OPT_CLAMSCAN, "HostID in the form of an UUID to use when submitting statistical information. See the clamscan manpage for more information.", "default" },
-
-    { "StatsEnabled", "enable-stats", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_CLAMSCAN, "Enable submission of statistical data", "yes" },
-
-    { "StatsPEDisabled", "disable-pe-stats", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Disable submission of PE section statistical data", "no" },
-
-    { "StatsTimeout", "stats-timeout", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, -1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN | OPT_FRESHCLAM, "Timeout in seconds to timeout communication with the stats server.", "10" },
 
     { "LogFileUnlock", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_MILTER, "By default the log file is locked for writing and only a single\ndaemon process can write to it. This option disables the lock.", "yes" },
 
@@ -483,10 +475,6 @@ const struct clam_option __clam_options[] = {
     { "ConnectTimeout", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 30, NULL, 0, OPT_FRESHCLAM, "Timeout in seconds when connecting to database server.", "30" },
 
     { "ReceiveTimeout", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 30, NULL, 0, OPT_FRESHCLAM, "Timeout in seconds when reading from database server.", "30" },
-
-    { "SubmitDetectionStats", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "When enabled freshclam will submit statistics to the ClamAV Project about\nthe latest virus detections in your environment. The ClamAV maintainers\nwill then use this data to determine what types of malware are the most\ndetected in the field and in what geographic area they are.\nFreshclam will connect to clamd in order to get recent statistics.", "/path/to/clamd.conf" },
-
-    { "DetectionStatsCountry", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "Country of origin of malware/detection statistics (for statistical\npurposes only). The statistics collector at ClamAV.net will look up\nyour IP address to determine the geographical origin of the malware\nreported by your installation. If this installation is mainly used to\nscan data which comes from a different location, please enable this\noption and enter a two-letter code (see http://www.iana.org/domains/root/db/)\nof the country of origin.", "country-code" },
 
     { "SafeBrowsing", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM, "This option enables support for Google Safe Browsing. When activated for\nthe first time, freshclam will download a new database file (safebrowsing.cvd)\nwhich will be automatically loaded by clamd and clamscan during the next\nreload, provided that the heuristic phishing detection is turned on. This\ndatabase includes information about websites that may be phishing sites or\npossible sources of malware. When using this option, it's mandatory to run\nfreshclam at least every 30 minutes.\nFreshclam uses the ClamAV's mirror infrastructure to distribute the\ndatabase and its updates but all the contents are provided under Google's\nterms of use. See http://www.google.com/transparencyreport/safebrowsing\nand http://www.clamav.net/doc/safebrowsing.html for more information.", "yes" },
 
