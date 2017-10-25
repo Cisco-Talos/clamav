@@ -2452,7 +2452,7 @@ boundaryStart(const char *line, const char *boundary)
     if (newline != line && strlen(line)) {
         char *p;
         /* Trim trailing spaces */
-        p = newline + strlen(line);
+        p = newline + strlen(line) - 1;
         while (p >= newline && *p == ' ')
             *(p--) = '\0';
     }
@@ -2575,7 +2575,7 @@ boundaryEnd(const char *line, const char *boundary)
 
     if (newline != line && strlen(line)) {
         /* Trim trailing spaces */
-        p2 = newline + strlen(line);
+        p2 = newline + strlen(line) - 1;
         while (p2 >= newline && *p2 == ' ')
             *(p2--) = '\0';
     }
