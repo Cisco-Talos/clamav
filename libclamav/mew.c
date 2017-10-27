@@ -424,6 +424,8 @@ int mew_lzma(char *orgsource, const char *buf, uint32_t size_sum, uint32_t vma, 
 		loc_edi = 1;
 		var14 = var10 = var24 = 1;
 
+                if(CLI_ISCONTAINED(orgsource, size_sum, var2C, 5))
+                    return -1;
 		lzma_bswap_4861dc(&var40, var2C);
 		new_edx = 0;
 	} while (var28 <= loc_esi); /* source = 0 */
