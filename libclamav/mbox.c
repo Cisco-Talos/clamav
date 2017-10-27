@@ -2836,6 +2836,10 @@ rfc2047(const char *in)
 				break;
 		}
 		b = messageToBlob(m, 1);
+                if (b == NULL) {
+                    messageDestroy(m);
+                    break;
+                }
 		len = blobGetDataSize(b);
 		cli_dbgmsg("Decoded as '%*.*s'\n", (int)len, (int)len,
 			(const char *)blobGetData(b));
