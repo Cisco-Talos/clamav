@@ -2841,7 +2841,7 @@ rfc2047(const char *in)
 		memcpy(pout, blobGetData(b), len);
 		blobDestroy(b);
 		messageDestroy(m);
-		if(pout[len - 1] == '\n')
+		if(len > 0 && pout[len - 1] == '\n')
 			pout += len - 1;
 		else
 			pout += len;
