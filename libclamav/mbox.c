@@ -2365,7 +2365,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 				 * bother saving to scan, it's safe
 				 */
 				saveIt = (bool)(encodingLine(mainMessage) != NULL);
-			else if((t_line = encodingLine(mainMessage)) != NULL) {
+			else if(mainMessage->body_last != NULL && (t_line = encodingLine(mainMessage)) != NULL) {
 				/*
 				 * Some bounces include the message
 				 * body without the headers.
