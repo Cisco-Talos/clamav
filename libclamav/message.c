@@ -1075,8 +1075,10 @@ messageMoveText(message *m, text *t, message *old_message)
 			for(u = old_message->body_first; u != t;) {
 				text *next;
 
-				if(u->t_line)
+				if(u->t_line) {
 					lineUnlink(u->t_line);
+					u->t_line = NULL;
+				}
 				next = u->t_next;
 
 				free(u);
