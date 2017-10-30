@@ -1237,7 +1237,7 @@ static void handle_pdfname(struct pdf_struct *pdf, struct pdf_obj *obj, const ch
     }
 
     /* record filter order */
-    if ((*state == STATE_FILTER) && ((1 << act->set_objflag) & KNOWN_FILTERS))
+    if (obj->numfilters < PDF_FILTERLIST_MAX && (*state == STATE_FILTER) && ((1 << act->set_objflag) & KNOWN_FILTERS))
         obj->filterlist[obj->numfilters++] = act->set_objflag;
 
     if ((act->nameflags & NAMEFLAG_HEURISTIC) && escapes) {
@@ -1255,7 +1255,7 @@ static void handle_pdfname(struct pdf_struct *pdf, struct pdf_obj *obj, const ch
     if (act->from_state == *state || act->from_state == STATE_ANY) {
         *state = act->to_state;
 
-        if (*state == STATE_FILTER && act->set_objflag !=OBJ_DICT && (obj->flags & (1 << act->set_objflag))) {
+        if (*state == STATE_FILTER && act->set_objflag != OBJ_DICT && (obj->flags & (1 << act->set_objflag))) {
             cli_dbgmsg("cli_pdf: duplicate stream filter %s\n", pdfname);
             pdfobj_flag(pdf, obj, BAD_STREAM_FILTERS);
         }
