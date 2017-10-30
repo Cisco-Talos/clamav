@@ -2351,8 +2351,9 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 		/*
 		 * Look for uu-encoded main file
 		 */
-		if((encodingLine(mainMessage) != NULL) &&
-		   ((t_line = bounceBegin(mainMessage)) != NULL))
+		if(mainMessage->body_first != NULL &&
+			(encodingLine(mainMessage) != NULL) &&
+			((t_line = bounceBegin(mainMessage)) != NULL))
 			rc = (exportBounceMessage(mctx, t_line) == CL_VIRUS) ? VIRUS : OK;
 		else {
 			bool saveIt;
