@@ -649,8 +649,8 @@ static char *cabd_read_string(struct mspack_system *sys,
       return NULL;
   }
   
-  /* search for a null terminator in the buffer. accept empty strings */
-  for (i = 0, ok = 0; i < len; i++) if (!buf[i]) { ok = 1; break; }
+  /* search for a null terminator in the buffer. reject empty strings */
+  for (i = 1, ok = 0; i < len; i++) if (!buf[i]) { ok = 1; break; }
   if (!ok) {
     *error = MSPACK_ERR_DATAFORMAT;
     sys->message(NULL, "Unable to find null terminator for string read in buffer of len %d", len);
