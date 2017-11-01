@@ -2328,15 +2328,16 @@ rfc2231(const char *in)
 						in++;
 						continue;
 					}
-					*p = '\0';
 					break;
 				case '=':
 					/*strcpy(p, in);*/
 					strcpy(p, "=rfc2231failure");
+                                        p += strlen ("=rfc2231failure");
 					break;
 			}
 			break;
 		} while(*in);
+                *p = '\0';
 
 		cli_dbgmsg("RFC2231 parameter continuations are not yet handled, returning \"%s\"\n",
 			ret);
