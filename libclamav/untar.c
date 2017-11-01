@@ -43,7 +43,9 @@
 #include "scanners.h"
 #include "matcher.h"
 
-#define BLOCKSIZE 512
+#define TARHEADERSIZE 512
+/* BLOCKSIZE must be >= TARHEADERSIZE */
+#define BLOCKSIZE TARHEADERSIZE
 #define TARSIZEOFFSET 124
 #define TARSIZELEN 12
 #define TARCHECKSUMOFFSET 148
@@ -182,8 +184,9 @@ cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx)
 			if((ret=cli_checklimits("cli_untar", ctx, 0, 0, 0))!=CL_CLEAN)
 				return ret;
 
-                        if (nread < TARCHECKSUMOFFSET + TARCHECKSUMLEN)
-                            return ret;
+			if (nread < TARHEADERSIZE) {
+				return CL_CLEAN;
+			}
 
 			checksum = getchecksum(block);
 			cli_dbgmsg("cli_untar: Candidate checksum = %d, [%o in octal]\n", checksum, checksum);
@@ -200,7 +203,6 @@ cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx)
 				cli_dbgmsg("cli_untar: Checksum %d is valid.\n", checksum);
 			}
 
-			/* Notice assumption that BLOCKSIZE > 262 */
 			if(posix) {
 				strncpy(magic, block+257, 5);
 				magic[5] = '\0';
