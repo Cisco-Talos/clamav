@@ -2351,8 +2351,9 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 		/*
 		 * Look for uu-encoded main file
 		 */
-		if((encodingLine(mainMessage) != NULL) &&
-		   ((t_line = bounceBegin(mainMessage)) != NULL))
+		if(mainMessage->body_first != NULL &&
+			(encodingLine(mainMessage) != NULL) &&
+			((t_line = bounceBegin(mainMessage)) != NULL))
 			rc = (exportBounceMessage(mctx, t_line) == CL_VIRUS) ? VIRUS : OK;
 		else {
 			bool saveIt;
@@ -2365,7 +2366,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 				 * bother saving to scan, it's safe
 				 */
 				saveIt = (bool)(encodingLine(mainMessage) != NULL);
-			else if((t_line = encodingLine(mainMessage)) != NULL) {
+			else if(mainMessage->body_last != NULL && (t_line = encodingLine(mainMessage)) != NULL) {
 				/*
 				 * Some bounces include the message
 				 * body without the headers.
@@ -3138,13 +3139,17 @@ rfc2047(const char *in)
 				break;
 		}
 		b = messageToBlob(m, 1);
+                if (b == NULL) {
+                    messageDestroy(m);
+                    break;
+                }
 		len = blobGetDataSize(b);
 		cli_dbgmsg("Decoded as '%*.*s'\n", (int)len, (int)len,
 			(const char *)blobGetData(b));
 		memcpy(pout, blobGetData(b), len);
 		blobDestroy(b);
 		messageDestroy(m);
-		if(pout[len - 1] == '\n')
+		if(len > 0 && pout[len - 1] == '\n')
 			pout += len - 1;
 		else
 			pout += len;
