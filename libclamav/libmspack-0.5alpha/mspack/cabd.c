@@ -1206,9 +1206,11 @@ static int cabd_extract(struct mscab_decompressor *base,
      *   and pass back MSPACK_ERR_READ
      */
     self->d->outfh = NULL;
-    if ((bytes = file->offset - self->d->offset)) {
-      error = self->d->decompress(self->d->state, bytes);
-      self->error = (error == MSPACK_ERR_READ) ? self->read_error : error;
+    if ((self->d->comp_type & cffoldCOMPTYPE_MASK) != cffoldCOMPTYPE_LZX) {
+        if (bytes = file->offset - self->d->offset) {
+            error = self->d->decompress(self->d->state, bytes);
+            self->error = (error == MSPACK_ERR_READ) ? self->read_error : error;
+        }
     }
 
     /* if getting to the correct offset was error free, unpack file */
@@ -1328,9 +1330,10 @@ static int cabd_sys_read(struct mspack_file *file, void *buffer, int bytes) {
       /* out of data, read a new block */
 
       /* check if we're out of input blocks, advance block counter */
+        //sys->message(NULL, "block num: %d", self->d->block);
+        //sys->message(NULL, "folder num of blocks: %d", self->d->folder->base.num_blocks);
       if (self->d->block++ >= self->d->folder->base.num_blocks) {
-  sys->message(NULL, "Ran out of CAB input blocks prematurely");
-	self->read_error = MSPACK_ERR_DATAFORMAT;
+	sys->message(NULL, "Ran out of CAB input blocks prematurely");
 	break;
       }
 
