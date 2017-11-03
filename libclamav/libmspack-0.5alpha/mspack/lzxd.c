@@ -294,6 +294,7 @@ struct lzxd_stream *lzxd_init(struct mspack_system *system,
    * regular LZX windows are between 2^15 (32KiB) and 2^21 (2MiB)
    */
   if (is_delta) {
+      system->message(NULL, "Detected LZX Compression Type: DELTA");
       if (window_bits < 17 || window_bits > 25) return NULL;
   }
   else {
@@ -393,7 +394,7 @@ int lzxd_decompress(struct lzxd_stream *lzx, off_t out_bytes) {
   register unsigned short sym;
 
   int match_length, length_footer, extra, verbatim_bits, bytes_todo;
-  int this_run, main_element, aligned_bits, j;
+  int this_run, main_element, aligned_bits, j, warned = 0;
   unsigned char *window, *runsrc, *rundest, buf[12];
   unsigned int frame_size=0, end_frame, match_offset, window_posn;
   unsigned int R0, R1, R2;
@@ -404,7 +405,7 @@ int lzxd_decompress(struct lzxd_stream *lzx, off_t out_bytes) {
 
   /* flush out any stored-up bytes before we begin */
   i = lzx->o_end - lzx->o_ptr;
-  if ((off_t) i > out_bytes) i = (int) out_bytes;
+  if (((off_t) i > out_bytes) && ((int) out_bytes >= 0)) i = (int) out_bytes;
   if (i) {
     if (lzx->sys->write(lzx->output, lzx->o_ptr, i) != i) {
       return lzx->error = MSPACK_ERR_WRITE;
@@ -424,13 +425,19 @@ int lzxd_decompress(struct lzxd_stream *lzx, off_t out_bytes) {
   R2 = lzx->R2;
 
   end_frame = (unsigned int)((lzx->offset + out_bytes) / LZX_FRAME_SIZE) + 1;
+  lzx->sys->message(NULL, "lzx_decompress: end_frame = %u", end_frame);
 
   while (lzx->frame < end_frame) {
+    lzx->sys->message(NULL, "lzx_decompress: current_frame = %u", lzx->frame);
     /* have we reached the reset interval? (if there is one?) */
     if (lzx->reset_interval && ((lzx->frame % lzx->reset_interval) == 0)) {
       if (lzx->block_remaining) {
-	D(("%d bytes remaining at reset interval", lzx->block_remaining))
-	return lzx->error = MSPACK_ERR_DECRUNCH;
+        /* this is a file format error, but we need to extract what we can and scan that */
+        lzx->sys->message(NULL, "lzx_decompress: bytes remaining at reset interval", lzx->block_remaining);
+        if (!warned) {
+            lzx->sys->message(NULL, "lzx_decompress: detected an invalid reset interval during decompresion");
+            warned++;
+        }
       }
 
       /* re-read the intel header and reset the huffman lengths */
@@ -520,7 +527,7 @@ int lzxd_decompress(struct lzxd_stream *lzx, off_t out_bytes) {
 	  break;
 
 	default:
-	  D(("bad block type"))
+	  lzx->sys->message(NULL, "lzx_decompress: bad block type");
 	  return lzx->error = MSPACK_ERR_DECRUNCH;
 	}
       }
@@ -552,7 +559,7 @@ int lzxd_decompress(struct lzxd_stream *lzx, off_t out_bytes) {
 	    match_length = main_element & LZX_NUM_PRIMARY_LENGTHS;
 	    if (match_length == LZX_NUM_PRIMARY_LENGTHS) {
 	      if (lzx->LENGTH_empty) {
-                D(("LENGTH symbol needed but tree is empty"))
+                lzx->sys->message(NULL, "lzx_decompress: LENGTH symbol needed but tree is empty");
                 return lzx->error = MSPACK_ERR_DECRUNCH;
               }
 	      READ_HUFFSYM(LENGTH, length_footer);
@@ -599,7 +606,7 @@ int lzxd_decompress(struct lzxd_stream *lzx, off_t out_bytes) {
 	    }
 
 	    if ((window_posn + match_length) > lzx->window_size) {
-	      D(("match ran over window wrap"))
+	      lzx->sys->message(NULL, "lzx_decompress: match ran over window wrap");
 	      return lzx->error = MSPACK_ERR_DECRUNCH;
 	    }
 	    
@@ -611,13 +618,13 @@ int lzxd_decompress(struct lzxd_stream *lzx, off_t out_bytes) {
 	      if (match_offset > lzx->offset &&
 		  (match_offset - window_posn) > lzx->ref_data_size)
 	      {
-		D(("match offset beyond LZX stream"))
+		lzx->sys->message(NULL, "lzx_decompress: match offset beyond LZX stream");
 		return lzx->error = MSPACK_ERR_DECRUNCH;
 	      }
 	      /* j = length from match offset to end of window */
 	      j = match_offset - window_posn;
 	      if (j > (int) lzx->window_size) {
-		D(("match offset beyond window boundaries"))
+		lzx->sys->message(NULL, "lzx_decompress: match offset beyond window boundaries");
 		return lzx->error = MSPACK_ERR_DECRUNCH;
 	      }
 	      runsrc = &window[lzx->window_size - j];
@@ -655,7 +662,7 @@ int lzxd_decompress(struct lzxd_stream *lzx, off_t out_bytes) {
 	    match_length = main_element & LZX_NUM_PRIMARY_LENGTHS;
 	    if (match_length == LZX_NUM_PRIMARY_LENGTHS) {
               if (lzx->LENGTH_empty) {
-                D(("LENGTH symbol needed but tree is empty"))
+                lzx->sys->message(NULL, "lzx_decompress: LENGTH symbol needed but tree is empty");
                 return lzx->error = MSPACK_ERR_DECRUNCH;
               } 
 	      READ_HUFFSYM(LENGTH, length_footer);
@@ -723,7 +730,7 @@ int lzxd_decompress(struct lzxd_stream *lzx, off_t out_bytes) {
 	    }
 
 	    if ((window_posn + match_length) > lzx->window_size) {
-	      D(("match ran over window wrap"))
+	      lzx->sys->message(NULL, "lzx_decompress: match ran over window wrap");
 	      return lzx->error = MSPACK_ERR_DECRUNCH;
 	    }
 
@@ -735,13 +742,13 @@ int lzxd_decompress(struct lzxd_stream *lzx, off_t out_bytes) {
 	      if (match_offset > lzx->offset &&
 		  (match_offset - window_posn) > lzx->ref_data_size)
 	      {
-		D(("match offset beyond LZX stream"))
+		lzx->sys->message(NULL, "lzx_decompress: match offset beyond LZX stream");
 		return lzx->error = MSPACK_ERR_DECRUNCH;
 	      }
 	      /* j = length from match offset to end of window */
 	      j = match_offset - window_posn;
 	      if (j > (int) lzx->window_size) {
-		D(("match offset beyond window boundaries"))
+		lzx->sys->message(NULL, "lzx_decompress: match offset beyond window boundaries");
 		return lzx->error = MSPACK_ERR_DECRUNCH;
 	      }
 	      runsrc = &window[lzx->window_size - j];
@@ -767,7 +774,7 @@ int lzxd_decompress(struct lzxd_stream *lzx, off_t out_bytes) {
 	/* as this_run is limited not to wrap a frame, this also means it
 	 * won't wrap the window (as the window is a multiple of 32k) */
         if (window_posn + this_run > lzx->window_size) {
-                D(("match ran over window boundary"))
+                lzx->sys->message(NULL, "lzx_decompress: match ran over window boundary");
                 return lzx->error = MSPACK_ERR_DECRUNCH;
         }
 	rundest = &window[window_posn];
@@ -794,8 +801,8 @@ int lzxd_decompress(struct lzxd_stream *lzx, off_t out_bytes) {
       /* did the final match overrun our desired this_run length? */
       if (this_run < 0) {
 	if ((unsigned int)(-this_run) > lzx->block_remaining) {
-	  D(("overrun went past end of block by %d (%d remaining)",
-	     -this_run, lzx->block_remaining ))
+	  lzx->sys->message(NULL, "lzx_decompress: overrun went past end of block by %d (%d remaining)",
+	     -this_run, lzx->block_remaining );
 	  return lzx->error = MSPACK_ERR_DECRUNCH;
 	}
 	lzx->block_remaining -= -this_run;
@@ -804,8 +811,8 @@ int lzxd_decompress(struct lzxd_stream *lzx, off_t out_bytes) {
 
     /* streams don't extend over frame boundaries */
     if ((window_posn - lzx->frame_posn) != frame_size) {
-      D(("decode beyond output frame limits! %d != %d",
-	 window_posn - lzx->frame_posn, frame_size))
+      lzx->sys->message(NULL, "lzx_decompress: decode beyond output frame limits! %d != %d",
+	 window_posn - lzx->frame_posn, frame_size);
       return lzx->error = MSPACK_ERR_DECRUNCH;
     }
 
@@ -815,8 +822,8 @@ int lzxd_decompress(struct lzxd_stream *lzx, off_t out_bytes) {
 
     /* check that we've used all of the previous frame first */
     if (lzx->o_ptr != lzx->o_end) {
-      D(("%ld avail bytes, new %d frame",
-          (long)(lzx->o_end - lzx->o_ptr), frame_size))
+       lzx->sys->message(NULL, "lzx_decompress: %ld avail bytes, new %d frame",
+          (long)(lzx->o_end - lzx->o_ptr), frame_size);
       return lzx->error = MSPACK_ERR_DECRUNCH;
     }
 
@@ -875,7 +882,7 @@ int lzxd_decompress(struct lzxd_stream *lzx, off_t out_bytes) {
   } /* while (lzx->frame < end_frame) */
 
   if (out_bytes) {
-    D(("bytes left to output"))
+    lzx->sys->message(NULL, "lzx_decompress: bytes left to output");
     return lzx->error = MSPACK_ERR_DECRUNCH;
   }
 
