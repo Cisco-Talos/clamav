@@ -314,7 +314,7 @@ static int cab_chkname(
       sys->message(NULL, "cab_chkname: File name contains disallowed characters");
       return 1;
     }
-    else if (san && ((name[i] < -1 || name[i] > 255) || !isalnum((unsigned char*)name[i])))
+    else if (san && !isalnum((unsigned char)(name[i])))
     {
       name[i] = '*';
     }
