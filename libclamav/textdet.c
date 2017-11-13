@@ -80,9 +80,21 @@ static int td_isascii(const unsigned char *buf, unsigned int len)
 {
 	unsigned int i;
 
-    for(i = 0; i < len; i++)
-	if(text_chars[buf[i]] == F)
-	    return 0;
+	/* Check for the Byte-Order-Mark for UTF-8 */
+	if ((len >= 3) &&
+		(buf[0] == 0xEF) &&
+		(buf[1] == 0xBB) &&
+		(buf[2] == 0xBF))
+	{
+		return 0;
+	}
+
+	/* Validate that the data all falls within the bounds of 
+	 * plain ASCII, ISO-8859 text, and non-ISO extended ASCII (Mac, IBM PC)
+	 */
+	for(i = 0; i < len; i++)
+		if(text_chars[buf[i]] == F)
+			return 0;
 
     return 1;
 }
