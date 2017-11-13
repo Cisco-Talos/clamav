@@ -258,6 +258,10 @@ int qtmd_decompress(struct qtmd_stream *qtm, off_t out_bytes) {
   int i, j, selector, extra, sym, match_length;
   unsigned short H, L, C, symf;
 
+  unsigned char *prev_o_ptr = NULL, *prev_o_end = NULL;
+  off_t prev_out_bytes = 0;
+  int prev_i = 0;
+
   register unsigned int bit_buffer;
   register unsigned char bits_left;
 
@@ -288,6 +292,11 @@ int qtmd_decompress(struct qtmd_stream *qtm, off_t out_bytes) {
 
   /* while we do not have enough decoded bytes in reserve: */
   while ((qtm->o_end - qtm->o_ptr) < out_bytes) {
+    prev_o_ptr = qtm->o_ptr;
+    prev_o_end = qtm->o_end;
+    prev_out_bytes = out_bytes;
+    prev_i = i;
+
     /* read header if necessary. Initialises H, L and C */
     if (!qtm->header_read) {
       H = 0xFFFF; L = 0; READ_BITS(C, 16);
@@ -455,6 +464,15 @@ int qtmd_decompress(struct qtmd_stream *qtm, off_t out_bytes) {
       qtm->o_end = &window[0]; 
       window_posn = 0;
    }
+
+    if ((prev_o_ptr == qtm->o_ptr) &&
+        (prev_o_end == qtm->o_end) &&
+        (prev_out_bytes == out_bytes) &&
+        (i == prev_i))
+    {
+      /* It appears that we've hit and infinite loop.  Bail out */
+      return qtm->error = MSPACK_ERR_DATAFORMAT;
+    }
 
   } /* while (more bytes needed) */
 
