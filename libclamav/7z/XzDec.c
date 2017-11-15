@@ -331,7 +331,7 @@ void MixCoder_Construct(CMixCoder *p, ISzAlloc *alloc)
 {
   int i;
   p->alloc = alloc;
-  p->buf = 0;
+  p->buf = NULL;
   p->numCoders = 0;
   for (i = 0; i < MIXCODER_NUM_FILTERS_MAX; i++)
     p->coders[i].p = NULL;
@@ -348,7 +348,10 @@ void MixCoder_Free(CMixCoder *p)
   }
   p->numCoders = 0;
   if (p->buf)
+  {
     p->alloc->Free(p->alloc, p->buf);
+    p->buf = NULL; /* 9.31: the BUG was fixed */
+  }
 }
 
 void MixCoder_Init(CMixCoder *p)
@@ -604,6 +607,8 @@ SRes XzUnpacker_Create(CXzUnpacker *p, ISzAlloc *alloc)
   p->state = XZ_STATE_STREAM_HEADER;
   p->pos = 0;
   p->numStreams = 0;
+  p->numBlocks = 0;
+  p->padSize = 0;
   return SZ_OK;
 }
 
