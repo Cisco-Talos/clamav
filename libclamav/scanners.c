@@ -2682,8 +2682,8 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
                 {
                     ret = CL_TYPE_TEXT_ASCII;
                 }
-                else if (SCAN_HTML && (type == CL_TYPE_TEXT_ASCII || type == CL_TYPE_GRAPHICS) &&
-                         (DCONF_DOC & DOC_CONF_HTML))
+                else if (SCAN_HTML && (type == CL_TYPE_TEXT_ASCII || type == CL_TYPE_TEXT_UTF8 || type == CL_TYPE_GRAPHICS) &&
+                    (DCONF_DOC & DOC_CONF_HTML))
                 {
                     *dettype = CL_TYPE_HTML;
                     nret = cli_scanhtml(ctx);
@@ -2692,7 +2692,8 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
 
             case CL_TYPE_MAIL:
                 cli_set_container(ctx, CL_TYPE_MAIL, map->len);
-                if (SCAN_MAIL && type == CL_TYPE_TEXT_ASCII && (DCONF_MAIL & MAIL_CONF_MBOX))
+                if (SCAN_MAIL && (type == CL_TYPE_TEXT_ASCII || type == CL_TYPE_TEXT_UTF8) && 
+                    (DCONF_MAIL & MAIL_CONF_MBOX))
                 {
                     *dettype = CL_TYPE_MAIL;
                     nret = cli_scanmail(ctx);
