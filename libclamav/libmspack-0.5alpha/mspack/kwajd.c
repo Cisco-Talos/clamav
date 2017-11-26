@@ -198,30 +198,36 @@ static int kwajd_read_headers(struct mspack_system *sys,
 
     /* filename and extension */
     if (hdr->headers & (MSKWAJ_HDR_HASFILENAME | MSKWAJ_HDR_HASFILEEXT)) {
-	off_t pos = sys->tell(fh);
-	char *fn = (char *) sys->alloc(sys, (size_t) 13);
-
+	int len;
 	/* allocate memory for maximum length filename */
-	if (! fn) return MSPACK_ERR_NOMEMORY;
-	hdr->filename = fn;
+	char *fn = (char *) sys->alloc(sys, (size_t) 13);
+	if (!(hdr->filename = fn)) return MSPACK_ERR_NOMEMORY;
 
 	/* copy filename if present */
 	if (hdr->headers & MSKWAJ_HDR_HASFILENAME) {
-	    if (sys->read(fh, &buf[0], 9) != 9) return MSPACK_ERR_READ;
-	    for (i = 0; i < 9; i++, fn++) if (!(*fn = buf[i])) break;
-	    pos += (i < 9) ? i+1 : 9;
-	    if (sys->seek(fh, pos, MSPACK_SYS_SEEK_START))
+	    /* read and copy up to 9 bytes of a null terminated string */
+	    if ((len = sys->read(fh, &buf[0], 9)) < 2) return MSPACK_ERR_READ;
+	    for (i = 0; i < len; i++) if (!(*fn++ = buf[i])) break;
+	    /* if string was 9 bytes with no null terminator, reject it */
+	    if (i == 9 && buf[8] != '\0') return MSPACK_ERR_DATAFORMAT;
+	    /* seek to byte after string ended in file */
+	    if (sys->seek(fh, (off_t)(i + 1 - len), MSPACK_SYS_SEEK_CUR))
 		return MSPACK_ERR_SEEK;
+	    fn--; /* remove the null terminator */
 	}
 
 	/* copy extension if present */
 	if (hdr->headers & MSKWAJ_HDR_HASFILEEXT) {
 	    *fn++ = '.';
-	    if (sys->read(fh, &buf[0], 4) != 4) return MSPACK_ERR_READ;
-	    for (i = 0; i < 4; i++, fn++) if (!(*fn = buf[i])) break;
-	    pos += (i < 4) ? i+1 : 4;
-	    if (sys->seek(fh, pos, MSPACK_SYS_SEEK_START))
+	    /* read and copy up to 4 bytes of a null terminated string */
+	    if ((len = sys->read(fh, &buf[0], 4)) < 2) return MSPACK_ERR_READ;
+	    for (i = 0; i < len; i++) if (!(*fn++ = buf[i])) break;
+	    /* if string was 4 bytes with no null terminator, reject it */
+	    if (i == 4 && buf[3] != '\0') return MSPACK_ERR_DATAFORMAT;
+	    /* seek to byte after string ended in file */
+	    if (sys->seek(fh, (off_t)(i + 1 - len), MSPACK_SYS_SEEK_CUR))
 		return MSPACK_ERR_SEEK;
+	    fn--; /* remove the null terminator */
 	}
 	*fn = '\0';
     }
