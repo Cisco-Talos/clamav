@@ -807,6 +807,7 @@ onas_fan_checkowner (int pid, const struct optstruct *opts)
 {
     char path[32];
     STATBUF sb;
+    int num_arg;
     const struct optstruct *opt;
 
     if (pid == (int) getpid()) {
@@ -821,7 +822,9 @@ onas_fan_checkowner (int pid, const struct optstruct *opts)
     {
         while (opt)
         {
-            if (opt->numarg == (long long) sb.st_uid)
+            /* We use UID 0 in place of -1 because the option would be disabled for UID 0*/
+            (opt->numarg == -1) ? (num_arg = 0) : (num_arg = opt->numarg);
+            if (num_arg == (long long) sb.st_uid)
                 return 1;
             opt = opt->nextarg;
         }
