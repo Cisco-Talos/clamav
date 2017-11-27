@@ -610,10 +610,11 @@ Example
 #OnAccessExcludePath /home/bofh
 
 # With this option you can whitelist specific UIDs. Processes with these UIDs
-# will be able to access all files.
+# will be able to access all files. For UID 0 please use a value of -1 since
+# a value of 0 will disable this option.
 # This option can be used multiple times (one per line).
 # Default: disabled
-#OnAccessExcludeUID 0
+#OnAccessExcludeUID -1
 
 # Toggles dynamic directory determination. Allows for recursively watching include paths.
 # (On-access scan only)
