@@ -696,8 +696,6 @@ LIBPRELUDE_CFLAGS
 LIBPRELUDE_CONFIG
 ENABLE_LIBFRESHCLAM_FALSE
 ENABLE_LIBFRESHCLAM_TRUE
-ENABLE_CLAMSUBMIT_FALSE
-ENABLE_CLAMSUBMIT_TRUE
 SYSTEM_LFS_FTS_FALSE
 SYSTEM_LFS_FTS_TRUE
 HAVE_YARA
@@ -17838,7 +17836,7 @@ fi
 
 
 
-
+with_xml_val="yes"
 want_xml="auto"
 # Check whether --enable-xml was given.
 if test "${enable_xml+set}" = set; then :
@@ -17855,37 +17853,42 @@ $as_echo_n "checking for libxml2 installation... " >&6; }
 
 # Check whether --with-xml was given.
 if test "${with_xml+set}" = set; then :
-  withval=$with_xml;
-  if test "$withval"
-  then
-    XML_HOME="$withval"
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: using $XML_HOME" >&5
-$as_echo "using $XML_HOME" >&6; }
-  else
-    as_fn_error $? "cannot assign blank value to --with-xml" "$LINENO" 5
-  fi
-
-else
-
-  XML_HOME=/usr/local
-  if test ! -x "$XML_HOME/bin/xml2-config"
-  then
-    XML_HOME=/usr
-    if test ! -x "$XML_HOME/bin/xml2-config"
-    then
-      XML_HOME=""
-    fi
-  fi
-  if test "x$XML_HOME" != "x"; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $XML_HOME" >&5
-$as_echo "$XML_HOME" >&6; }
-  else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
-$as_echo "not found" >&6; }
-  fi
+  withval=$with_xml; with_xml_val=$withval
 
 fi
 
+fi
+
+if test "x$with_xml_val" = "xno"; then :
+  XML_HOME=""
+elif test "x$with_xml_val" = "xyes"; then :
+  XML_HOME="/usr/local"
+else
+  XML_HOME="$with_xml_val"
+fi
+
+if test "x$XML_HOME" != "x"; then :
+
+   if test ! -x "$XML_HOME/bin/xml2-config"; then :
+  XML_HOME=""
+fi
+
+fi
+
+if test "x$XML_HOME" = "x" -a "x$with_xml_val" = "xyes"; then :
+
+   if test -x "/usr/bin/xml2-config"; then :
+  XML_HOME="/usr"
+fi
+
+fi
+
+if test "x$XML_HOME" != "x"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $XML_HOME" >&5
+$as_echo "$XML_HOME" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+$as_echo "not found" >&6; }
 fi
 
 found_xml="no"
@@ -17902,6 +17905,8 @@ $as_echo "$XMLCONF_VERSION" >&6; }
     found_xml="yes"
     XML_CPPFLAGS="`$XML_HOME/bin/xml2-config --cflags`"
     XML_LIBS="`$XML_HOME/bin/xml2-config --libs`"
+    $as_echo "$XML_CPPFLAGS"
+    $as_echo "$XML_LIBS"
   else
     as_fn_error $? "xml2-config failed" "$LINENO" 5
   fi
@@ -17923,6 +17928,9 @@ $as_echo "found" >&6; }
     CPPFLAGS="$CPPFLAGS $XML_CPPFLAGS"
     save_LDFLAGS="$LDFLAGS"
     LDFLAGS="$LDFLAGS $XML_LIBS"
+
+    $as_echo "CPPFLAGS: $CPPFLAGS"
+    $as_echo "LD_FLAGS: $LDFLAGS"
 
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for xmlTextReaderRead in -lxml2" >&5
 $as_echo_n "checking for xmlTextReaderRead in -lxml2... " >&6; }
@@ -24341,15 +24349,6 @@ $as_echo "#define HAVE_SYSTEM_LFS_FTS 0" >>confdefs.h
 	lfs_fts_msg="internal, libc's is not LFS compatible"
 fi
 
- if test "$have_curl" = "yes"; then
-  ENABLE_CLAMSUBMIT_TRUE=
-  ENABLE_CLAMSUBMIT_FALSE='#'
-else
-  ENABLE_CLAMSUBMIT_TRUE='#'
-  ENABLE_CLAMSUBMIT_FALSE=
-fi
-
-
 # Check whether --enable-libfreshclam was given.
 if test "${enable_libfreshclam+set}" = set; then :
   enableval=$enable_libfreshclam; enable_libfreshclam=$enableval
@@ -25371,10 +25370,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${SYSTEM_LFS_FTS_TRUE}" && test -z "${SYSTEM_LFS_FTS_FALSE}"; then
   as_fn_error $? "conditional \"SYSTEM_LFS_FTS\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${ENABLE_CLAMSUBMIT_TRUE}" && test -z "${ENABLE_CLAMSUBMIT_FALSE}"; then
-  as_fn_error $? "conditional \"ENABLE_CLAMSUBMIT\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${ENABLE_LIBFRESHCLAM_TRUE}" && test -z "${ENABLE_LIBFRESHCLAM_FALSE}"; then
@@ -27968,10 +27963,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${SYSTEM_LFS_FTS_TRUE}" && test -z "${SYSTEM_LFS_FTS_FALSE}"; then
   as_fn_error $? "conditional \"SYSTEM_LFS_FTS\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${ENABLE_CLAMSUBMIT_TRUE}" && test -z "${ENABLE_CLAMSUBMIT_FALSE}"; then
-  as_fn_error $? "conditional \"ENABLE_CLAMSUBMIT\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${ENABLE_LIBFRESHCLAM_TRUE}" && test -z "${ENABLE_LIBFRESHCLAM_FALSE}"; then

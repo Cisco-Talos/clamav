@@ -5755,8 +5755,8 @@ maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
 	-test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
-@BUILD_EXTERNAL_LLVM_TRUE@clean-local:
 @BUILD_EXTERNAL_LLVM_TRUE@distclean-local:
+@BUILD_EXTERNAL_LLVM_TRUE@clean-local:
 clean: clean-am
 
 clean-am: clean-generic clean-libtool clean-local \
