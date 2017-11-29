@@ -1,3 +1,343 @@
+Tue, 28 Nov 2017 18:05:44 -0500 (Steven Morgan)
+------------------------------------------
+ * bb11882 - set default ./configure library search for libxml2.
+
+Mon, 27 Nov 2017 15:01:55 -0500 (Mickey Sola)
+------------------------------------------
+ * bb11963 - ensuring users have a way to correctly exlcude UID 0 when using
+	the onaccess scanner
+
+Mon, 20 Nov 2017 12:32:08 -0500 (Mickey Sola)
+------------------------------------------
+ * bb11954 - adding pid check to fanotify event verification to ensure we
+	ignore events triggered by our own process
+
+Fri, 17 Nov 2017 09:00:06 -0500 (Micah Snyder)
+------------------------------------------
+ * Regargeting openssl solution to match the other projects.
+
+Mon, 13 Nov 2017 16:24:45 -0500 (Micah Snyder)
+------------------------------------------
+ * eliminating potential infinite loop in libmspack quantum decompression code.
+
+Thu, 9 Nov 2017 12:07:45 -0500 (Micah Snyder)
+------------------------------------------
+ * applying a cleaner casting solution to account for isalnum issue on
+	Windows Debug builds.
+
+Wed, 8 Nov 2017 20:27:19 -0500 (Micah Snyder)
+------------------------------------------
+ * adding check prior to call to isalnum to avoid assert error in windows when
+	random data that is < -1 or > 255 is fed into isalnum().
+
+Fri, 3 Nov 2017 14:42:24 -0400 (Mickey Sola)
+------------------------------------------
+ * 0.99.3 - regression fix - removing first pass offset check when extracting
+	cab files compressed with lzx, improving debug output for LZX type
+	decompression, warning on lzx file format issue instead of exiting decompression
+
+Wed, 25 Oct 2017 14:37:14 -0400 (Micah Snyder)
+------------------------------------------
+ * Adding missing -1 that enables trimming of trailing spaces in mbox parsing code.
+
+Tue, 24 Oct 2017 13:38:37 -0400 (Micah Snyder)
+------------------------------------------
+ * eliminating additional option references to stat collection and submission
+	until such time as a new stats website and associated clamav code is ready.
+
+Tue, 24 Oct 2017 09:33:54 -0400 (Micah Snyder)
+------------------------------------------
+ *      1) improved debug messages
+	2) accept files in the cab with 0-byte (just a null terminator) lengths.
+	   I don’t know that there are any real cabs that have this, but it’s
+	   conceivable.
+	3) only try to sanitize if we actually got the filename correctly
+	4) reset the parsing offset to the beginning of the file entries in case
+	   the # of folder entries found did not match the # stated in the header.
+
+Wed, 18 Oct 2017 16:46:58 -0400 (Steven Morgan)
+------------------------------------------
+ * bb11910 - remove DetectionStatsHostID.
+
+Wed, 18 Oct 2017 15:52:19 -0400 (Micah Snyder)
+------------------------------------------
+ * Adding some debug strings for cab parsing that existed in 0.99.2.  Adding
+	code that sterilizes garbage data that is read in as a string so it
+	is not output to stderr when --debug is enabled.
+
+Fri, 13 Oct 2017 12:23:06 -0400 (Steven Morgan)
+------------------------------------------
+ * bb11915 - Fix for whitelisting bytecode signatures. Patch by Georgy Salnikov.
+
+Thu, 12 Oct 2017 17:00:27 -0400 (Micah Snyder)
+------------------------------------------
+ * updating git commits, sln to fix build, and most importantly adding macro
+	definitions to cltypes in support of Windows.
+
+Wed, 11 Oct 2017 12:50:14 -0400 (Micah Snyder)
+------------------------------------------
+ * adding code to fail out of cab header parsing function if at the end of the
+	function no files were added to the file list (i.e. format issue with header)
+
+Tue, 10 Oct 2017 21:50:48 -0400 (Micah Snyder)
+------------------------------------------
+ * fixing small memory leak.
+
+Tue, 10 Oct 2017 14:19:18 -0400 (Micah Snyder)
+------------------------------------------
+ * fixing decompression hack for LZX since we increased CAB_BLOCKMAX.  adding
+	some debug messages and eliminating one that no longer makes sense.
+
+Mon, 9 Oct 2017 13:00:25 -0400 (Micah Snyder)
+------------------------------------------
+ * fmin resulted in an incorrect value. switching to just use UINT_MAX because
+	we know that will be the minimum in the statement anyways.
+
+Mon, 9 Oct 2017 12:47:11 -0400 (Micah Snyder)
+------------------------------------------
+ * adding fix that limits cabmax size to UINT_MAX
+
+Mon, 9 Oct 2017 11:32:14 -0400 (Micah Snyder)
+------------------------------------------
+ * updating max cab size t 64k as was in old implementation, even though it's
+	technically higher than the spec. adding back size checks. adding fix
+	to mspack_fmap_alloc to zero the mem.
+
+Mon, 9 Oct 2017 11:50:50 -0400 (Mickey Sola)
+------------------------------------------
+ * Ensuring mspack file handle is zeroed out after allocation and only closed if it exists
+
+Thu, 5 Oct 2017 15:38:25 -0400 (Micah Snyder)
+------------------------------------------
+ * Adding modifications to continue scanning cab files that don't conform to cab size norms.
+
+Wed, 11 Oct 2017 12:49:39 -0400 (Steven Morgan)
+------------------------------------------
+ * add some null argument checks before using the json api.
+
+Wed, 11 Oct 2017 12:10:51 -0400 (Steven Morgan)
+------------------------------------------
+ * quieter debug messages from pcre matcher.
+
+Wed, 11 Oct 2017 12:08:00 -0400 (Steven Morgan)
+------------------------------------------
+ * fix for Html.Trojan.Iframe-35 false negative.
+
+Wed, 4 Oct 2017 08:30:25 -0700 (Micah Snyder)
+------------------------------------------
+ * fixed uninitized variable that valgrind picked up in centos 6.8
+
+Thu, 28 Sep 2017 16:24:24 -0400 (Micah Snyder)
+------------------------------------------
+ * initializing error code to zero, fixing mspack_fmap_message so it has a new
+	line character and will print fmt strings correctly
+
+Thu, 28 Sep 2017 14:04:47 -0400 (Micah Snyder)
+------------------------------------------
+ * initializing file->folder to NULL to prevent accidental segfaults and
+	valgrind complaints. adding correction to mspack_fmap_message()
+	so it will correctly print format strings.
+
+Thu, 28 Sep 2017 12:33:05 -0400 (Micah Snyder)
+------------------------------------------
+ * adding fix to cabd.c that allows completion of parsing of cab files that
+	describe files in the header that are invalid. This occurs when
+	non-header data is hidden at the end of the header.
+
+Thu, 14 Sep 2017 00:50:35 -0400 (Micah Snyder)
+------------------------------------------
+ * moving mspack visual studio project into win32 directory.
+
+Thu, 14 Sep 2017 00:08:33 -0400 (Micah Snyder)
+------------------------------------------
+ * adding openssl visual studio project to provide the openssl DLLs to the
+	Setup installer projects.
+
+Wed, 30 Aug 2017 13:48:12 -0600 (Adrian Wu)
+------------------------------------------
+ * Address PR comments and fix logic
+
+Wed, 30 Aug 2017 09:17:48 -0600 (Adrian Wu)
+------------------------------------------
+ * BUGFIX 18264: Make freshclamwrap interpret FC_UPTODATE as UPD_NONE
+
+Fri, 15 Apr 2016 17:13:46 -0600 (Prashant Pathak)
+------------------------------------------
+ * Formatting attempt# 2
+
+Fri, 15 Apr 2016 17:00:44 -0600 (Prashant Pathak)
+------------------------------------------
+ * Fix formatting issues
+
+Fri, 15 Apr 2016 16:09:48 -0600 (Prashant Pathak)
+------------------------------------------
+ * BUGFIX: 16588: Exit freshclam if pipe is broken
+
+Mon, 29 Feb 2016 22:14:57 -0700 (Prashant Pathak)
+------------------------------------------
+ * Fix: Fix formatting to keep inline with original file
+
+Thu, 1 Oct 2015 14:40:13 -0600 (Prashant Pathak)
+------------------------------------------
+ * BUGFIX: Do not treat failure as fatal
+
+Tue, 22 Sep 2015 15:37:00 -0600 (Prashant Pathak)
+------------------------------------------
+ * BUGFIX: 14528: Disable caching by default in the wrapper code
+
+Thu, 24 Aug 2017 16:30:40 -0600 (Adrian Wu)
+------------------------------------------
+ * basetsd not basestd
+
+Thu, 24 Aug 2017 16:14:17 -0600 (Prashant Pathak)
+------------------------------------------
+ * FIX: Compile issue with VS 2015
+
+Tue, 2 May 2017 16:07:04 -0600 (Jake Fehr)
+------------------------------------------
+ * Fix lib path
+
+Tue, 2 May 2017 14:56:59 -0600 (Jake Fehr)
+------------------------------------------
+ * null an additional variable
+
+Tue, 2 May 2017 14:51:07 -0600 (Jake Fehr)
+------------------------------------------
+ * Fix spelling mistake
+
+Tue, 2 May 2017 13:02:08 -0600 (Jake Fehr)
+------------------------------------------
+ * Remove old build files
+
+Tue, 2 May 2017 12:55:49 -0600 (Jake Fehr)
+------------------------------------------
+ * Remove dependancy on c:\clamdeps
+
+Mon, 11 Sep 2017 12:13:46 -0400 (Micah Snyder)
+------------------------------------------
+ * Updated clamav-for-windows interface.c to include new file types.
+
+Mon, 11 Sep 2017 10:25:28 -0400 (Micah Snyder)
+------------------------------------------
+ * Correct clamav-for-windows.sln debug/release x64/win32 settings.
+
+Fri, 8 Sep 2017 15:50:46 -0400 (Micah Snyder)
+------------------------------------------
+ * partial pull-request from jfehr, ommiting changes to openssl lib names:
+	Changes needed to build Cmam in VS2015.
+
+Wed, 29 Mar 2017 16:20:04 -0600 (Jake Fehr)
+------------------------------------------
+ * disable building of sigui
+
+Fri, 8 Sep 2017 15:00:21 -0400 (Micah Snyder)
+------------------------------------------
+ * B11858 removed sigui
+
+Wed, 3 May 2017 15:05:12 +0200 (Jonas Zaddach)
+------------------------------------------
+ * Also added decoding for the lp parameter
+
+Fri, 28 Apr 2017 17:59:23 +0200 (Jonas Zaddach)
+------------------------------------------
+ * Tolerate different LZMA parameters in UPX compression
+
+Mon, 11 Sep 2017 14:16:12 -0400 (Micah Snyder)
+------------------------------------------
+ * fix to update autogenerated files for machines that do not have bison
+	installed. also eliminating warning in .y file at the same time by
+	removing ifdef from yara_parser.h
+
+Wed, 6 Sep 2017 15:21:43 -0400 (Mickey Sola)
+------------------------------------------
+ * mspack - adding windows build scripts to dist
+
+Wed, 6 Sep 2017 15:06:54 -0400 (Mickey Sola)
+------------------------------------------
+ * mspack - removing ssize_t typing to ensure VS15 compilation
+
+Wed, 6 Sep 2017 12:58:50 -0400 (Mickey Sola)
+------------------------------------------
+ * openssl - fixing linking issue where VS2015 would fail to find external
+	function definitions
+
+Fri, 1 Sep 2017 10:18:02 -0400 (Micah Snyder)
+------------------------------------------
+ * changing magic 0xE0F0000 to NULL, because the use cases verify it being 0
+	and do not verify the magic EOF number.
+
+Wed, 30 Aug 2017 15:24:23 -0400 (Mickey Sola)
+------------------------------------------
+ * strn - adding configuration option to force use of internal strn functions
+	for use when crosscompiling binaries against older libraries
+
+Thu, 24 Aug 2017 17:23:38 -0400 (Mickey Sola)
+------------------------------------------
+ * bb11904 - ensuring md5 hashset string is initialized before use
+
+Thu, 24 Aug 2017 17:19:29 -0400 (Steven Morgan)
+------------------------------------------
+ * bb11567 - Improve YARA rule handling in files containing unsupported
+	YARA features.
+
+Thu, 24 Aug 2017 16:33:33 -0400 (Steven Morgan)
+------------------------------------------
+ * bb11896 - fix 'infected' count for whitelisted pdf file.
+
+Wed, 23 Aug 2017 15:08:47 -0400 (Micah Snyder)
+------------------------------------------
+ * bb11896 -- increasing size of max filter for pdf filter heuristic. Still
+	have work to be done to investigate whitelisting issue.
+
+Wed, 16 Aug 2017 17:03:39 -0400 (Mickey Sola)
+------------------------------------------
+ * m4 - rework of strndup and strnlen function absence handling
+
+Mon, 21 Aug 2017 17:10:57 -0400 (Steven Morgan)
+------------------------------------------
+ * bb11881 - straighten out state stacking logic.
+	Patch by Jonas Zaddach.
+
+Fri, 18 Aug 2017 16:53:10 -0400 (Steven Morgan)
+------------------------------------------
+ * bb11897 - fix-up for freshclam warnings in beta versions.
+	Patch provided by Andreas Schulze.
+
+Fri, 18 Aug 2017 16:06:26 -0400 (Steven Morgan)
+------------------------------------------
+ * 11898 - fix unit test failure with zlib 1.2.9+.
+	Patch provided by Marc Deslauriers.
+
+Thu, 10 Aug 2017 16:21:52 -0400 (Steven Morgan)
+------------------------------------------
+ * Fix clamsubmit prereq checks.
+
+Thu, 10 Aug 2017 12:55:41 -0400 (Steven Morgan)
+------------------------------------------
+ * bb11883 - Fix fanotify ./configure issue.
+
+Wed, 9 Aug 2017 16:11:32 -0400 (Steven Morgan)
+------------------------------------------
+ * bb11867/11885 - Fix clamsubmit build issues.
+
+Wed, 9 Aug 2017 09:33:05 -0400 (Micah Snyder)
+------------------------------------------
+ * Removing check for negative values, because the variable in question
+	is unsigned.
+
+Tue, 8 Aug 2017 17:37:55 -0400 (Micah Snyder)
+------------------------------------------
+ * fixed compiler warnings.
+
+Mon, 7 Aug 2017 17:56:08 -0400 (Steven Morgan)
+------------------------------------------
+ * bb11887 - add valgrind supression rules for FreeBSD.
+
+Fri, 28 Jul 2017 11:34:26 -0400 (Mickey Sola)
+------------------------------------------
+ * solaris - adding strnlen and strndup implementations to ensure compatability
+	with versions <= 10
+
 Thu, 20 Jul 2017 12:10:38 -0400 (Mickey Sola)
 ------------------------------------------
  * 11874 - fixing OOB read in cabd
