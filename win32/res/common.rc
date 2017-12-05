@@ -7,7 +7,7 @@
 #endif
 
 #define RES_VER_Q 0,99,3,0
-#define RES_VER_S "ClamAV 0.99.3-beta1"
+#define RES_VER_S "ClamAV 0.99.3-beta2"
 
 VS_VERSION_INFO VERSIONINFO
     FILEVERSION RES_VER_Q
@@ -35,7 +35,7 @@ BEGIN
 	    VALUE "OriginalFilename", RES_FNAME
 	    VALUE "ProductName", "ClamAV"
 	    VALUE "ProductVersion", RES_VER_S " ("  REPO_VERSION ")"
-	    VALUE "LegalCopyright", "(C) 2015 Cisco Systems, Inc."
+	    VALUE "LegalCopyright", "(C) 2017 Cisco Systems, Inc."
 	    VALUE "LegalTrademarks", "License: GNU GPL, Version 2"
 	    VALUE "Comments", REPO_VERSION
 	}
