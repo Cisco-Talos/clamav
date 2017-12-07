@@ -45,6 +45,12 @@
         }
         "Entry"
         {
+        "MsmKey" = "8:_54C5C55693A2A8756FC8A2918B7396B5"
+        "OwnerKey" = "8:_DF09DF52E5014B378FBA8B4CD6C11C3B"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
         "MsmKey" = "8:_5CED7DA1BD104DA5AF2882D6CBA6E313"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
@@ -65,6 +71,12 @@
         {
         "MsmKey" = "8:_671D69A7B15349CF8AE7C0075C51AF53"
         "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_686E294DF4DB79D23B246B560B459B97"
+        "OwnerKey" = "8:_DF09DF52E5014B378FBA8B4CD6C11C3B"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
@@ -117,6 +129,30 @@
         }
         "Entry"
         {
+        "MsmKey" = "8:_90D9B33997DBBB89CBC1E519CFCDDDB2"
+        "OwnerKey" = "8:_DF09DF52E5014B378FBA8B4CD6C11C3B"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_92D3793AFCA9ECAF4ACA197D1C97A8E1"
+        "OwnerKey" = "8:_DF09DF52E5014B378FBA8B4CD6C11C3B"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_97545E314A2AA3E02C5E4210590E0F79"
+        "OwnerKey" = "8:_DF09DF52E5014B378FBA8B4CD6C11C3B"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_9B0D235988C6818141CA5F5D36676FD3"
+        "OwnerKey" = "8:_DF09DF52E5014B378FBA8B4CD6C11C3B"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
         "MsmKey" = "8:_C0DFAFFC11514B9190D3A585C3E58832"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
@@ -159,6 +195,12 @@
         }
         "Entry"
         {
+        "MsmKey" = "8:_F5E53CCFD47544CCB03C1D6FFAB996ED"
+        "OwnerKey" = "8:_DF09DF52E5014B378FBA8B4CD6C11C3B"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
         "MsmKey" = "8:_FEDD087CC8B64ED3A476664BC5FCAF59"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
@@ -171,7 +213,7 @@
         "DisplayName" = "8:Debug"
         "IsDebugOnly" = "11:TRUE"
         "IsReleaseOnly" = "11:FALSE"
-        "OutputFilename" = "8:Debug\\Setup-x64.msi"
+        "OutputFilename" = "8:Debug\\ClamAV-0.99.3-beta2-x64.msi"
         "PackageFilesAs" = "3:2"
         "PackageFileSize" = "3:-2147483648"
         "CabType" = "3:1"
@@ -190,15 +232,15 @@
             "ComponentsUrl" = "8:"
                 "Items"
                 {
-                    "{EDC2488A-8267-493A-A98E-7D9C3B36CDF3}:.NETFramework,Version=v4.0,Profile=Client"
+                    "{EDC2488A-8267-493A-A98E-7D9C3B36CDF3}:Microsoft.Visual.C++.14.0.x64"
                     {
-                    "Name" = "8:Microsoft .NET Framework 4 Client Profile (x86 and x64)"
-                    "ProductCode" = "8:.NETFramework,Version=v4.0,Profile=Client"
+                    "Name" = "8:Visual C++ \"14\" Runtime Libraries (x64)"
+                    "ProductCode" = "8:Microsoft.Visual.C++.14.0.x64"
                     }
-                    "{EDC2488A-8267-493A-A98E-7D9C3B36CDF3}:Microsoft.Windows.Installer.3.1"
+                    "{EDC2488A-8267-493A-A98E-7D9C3B36CDF3}:Microsoft.Windows.Installer.4.5"
                     {
-                    "Name" = "8:Windows Installer 3.1"
-                    "ProductCode" = "8:Microsoft.Windows.Installer.3.1"
+                    "Name" = "8:Windows Installer 4.5"
+                    "ProductCode" = "8:Microsoft.Windows.Installer.4.5"
                     }
                 }
             }
@@ -208,7 +250,7 @@
         "DisplayName" = "8:Release"
         "IsDebugOnly" = "11:FALSE"
         "IsReleaseOnly" = "11:TRUE"
-        "OutputFilename" = "8:Release\\Setup-x64.msi"
+        "OutputFilename" = "8:Release\\ClamAV-0.99.3-beta2-x64.msi"
         "PackageFilesAs" = "3:2"
         "PackageFileSize" = "3:-2147483648"
         "CabType" = "3:1"
@@ -227,15 +269,15 @@
             "ComponentsUrl" = "8:"
                 "Items"
                 {
-                    "{EDC2488A-8267-493A-A98E-7D9C3B36CDF3}:.NETFramework,Version=v4.0,Profile=Client"
+                    "{EDC2488A-8267-493A-A98E-7D9C3B36CDF3}:Microsoft.Visual.C++.14.0.x64"
                     {
-                    "Name" = "8:Microsoft .NET Framework 4 Client Profile (x86 and x64)"
-                    "ProductCode" = "8:.NETFramework,Version=v4.0,Profile=Client"
+                    "Name" = "8:Visual C++ \"14\" Runtime Libraries (x64)"
+                    "ProductCode" = "8:Microsoft.Visual.C++.14.0.x64"
                     }
-                    "{EDC2488A-8267-493A-A98E-7D9C3B36CDF3}:Microsoft.Windows.Installer.3.1"
+                    "{EDC2488A-8267-493A-A98E-7D9C3B36CDF3}:Microsoft.Windows.Installer.4.5"
                     {
-                    "Name" = "8:Windows Installer 3.1"
-                    "ProductCode" = "8:Microsoft.Windows.Installer.3.1"
+                    "Name" = "8:Windows Installer 4.5"
+                    "ProductCode" = "8:Microsoft.Windows.Installer.4.5"
                     }
                 }
             }
@@ -290,7 +332,7 @@
             }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_2D34BE4ADCB24E408828FCF0F494C6EB"
             {
-            "SourcePath" = "8:..\\..\\etc\\clamd.conf.sample"
+            "SourcePath" = "8:..\\conf_examples\\clamd.conf.sample"
             "TargetName" = "8:clamd.conf.sample"
             "Tag" = "8:"
             "Folder" = "8:_9DF108569FF14FE68E665C908435DE1A"
@@ -348,6 +390,26 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_54C5C55693A2A8756FC8A2918B7396B5"
+            {
+            "SourcePath" = "8:LLVMx86codegen.lib"
+            "TargetName" = "8:LLVMx86codegen.lib"
+            "Tag" = "8:"
+            "Folder" = "8:_CEC880DBF61041CCA0B367A8647B2589"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:TRUE"
+            "IsolateTo" = "8:"
+            }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_5E62992905A04275887C09F8469F522F"
             {
             "SourcePath" = "8:..\\..\\COPYING"
@@ -386,6 +448,26 @@
             "Register" = "3:1"
             "Exclude" = "11:FALSE"
             "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_686E294DF4DB79D23B246B560B459B97"
+            {
+            "SourcePath" = "8:libclamavcxx.lib"
+            "TargetName" = "8:libclamavcxx.lib"
+            "Tag" = "8:"
+            "Folder" = "8:_CEC880DBF61041CCA0B367A8647B2589"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:TRUE"
             "IsolateTo" = "8:"
             }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_73A073DB877E4372ACF9FDFF0700894C"
@@ -430,7 +512,7 @@
             }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_78E45831C6EA4D948B5DB00F3D6DFCE1"
             {
-            "SourcePath" = "8:..\\..\\etc\\freshclam.conf.sample"
+            "SourcePath" = "8:..\\conf_examples\\freshclam.conf.sample"
             "TargetName" = "8:freshclam.conf.sample"
             "Tag" = "8:"
             "Folder" = "8:_9DF108569FF14FE68E665C908435DE1A"
@@ -486,6 +568,86 @@
             "Register" = "3:1"
             "Exclude" = "11:FALSE"
             "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_90D9B33997DBBB89CBC1E519CFCDDDB2"
+            {
+            "SourcePath" = "8:libclamav.dll"
+            "TargetName" = "8:libclamav.dll"
+            "Tag" = "8:"
+            "Folder" = "8:_CEC880DBF61041CCA0B367A8647B2589"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:TRUE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_92D3793AFCA9ECAF4ACA197D1C97A8E1"
+            {
+            "SourcePath" = "8:LLVMjit.lib"
+            "TargetName" = "8:LLVMjit.lib"
+            "Tag" = "8:"
+            "Folder" = "8:_CEC880DBF61041CCA0B367A8647B2589"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:TRUE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_97545E314A2AA3E02C5E4210590E0F79"
+            {
+            "SourcePath" = "8:LLVMcodegen.lib"
+            "TargetName" = "8:LLVMcodegen.lib"
+            "Tag" = "8:"
+            "Folder" = "8:_CEC880DBF61041CCA0B367A8647B2589"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:TRUE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_9B0D235988C6818141CA5F5D36676FD3"
+            {
+            "SourcePath" = "8:LLVMsystem.lib"
+            "TargetName" = "8:LLVMsystem.lib"
+            "Tag" = "8:"
+            "Folder" = "8:_CEC880DBF61041CCA0B367A8647B2589"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:TRUE"
             "IsolateTo" = "8:"
             }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_C2EA2581FE8048FFB9B1DC2F809435EA"
@@ -575,6 +737,17 @@
                         {
                         }
                     }
+                    "{9EF0B969-E518-4E46-987F-47570745A589}:_19E668FC663A4F7CBF9DA69A5FA28CDD"
+                    {
+                    "Name" = "8:database"
+                    "AlwaysCreate" = "11:TRUE"
+                    "Condition" = "8:"
+                    "Transitive" = "11:FALSE"
+                    "Property" = "8:_72742E1E77DD4A478291D98182BF8352"
+                        "Folders"
+                        {
+                        }
+                    }
                     "{9EF0B969-E518-4E46-987F-47570745A589}:_B1EECD7690104D83820ED6C1AB405445"
                     {
                     "Name" = "8:COPYING"
@@ -603,22 +776,22 @@
         "Product"
         {
         "Name" = "8:Microsoft Visual Studio"
-        "ProductName" = "8:ClamAV-x64"
+        "ProductName" = "8:ClamAV"
         "ProductCode" = "8:{EFAEABEF-06ED-4095-9BAA-A5B1D1B4AACA}"
-        "PackageCode" = "8:{20499516-5159-44D6-A699-DF2451394874}"
+        "PackageCode" = "8:{675E4372-18D7-448A-A126-A7D7593E4E3F}"
         "UpgradeCode" = "8:{D35B7E07-D7B1-404B-A0C3-FBB599A1D58B}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"
-        "RemovePreviousVersions" = "11:FALSE"
+        "RemovePreviousVersions" = "11:TRUE"
         "DetectNewerInstalledVersion" = "11:TRUE"
-        "InstallAllUsers" = "11:FALSE"
+        "InstallAllUsers" = "11:TRUE"
         "ProductVersion" = "8:0.99.3"
-        "Manufacturer" = "8:Cisco Systems, Inc."
+        "Manufacturer" = "8:Cisco Systems, Inc"
         "ARPHELPTELEPHONE" = "8:"
-        "ARPHELPLINK" = "8:"
-        "Title" = "8:ClamAV-x64"
+        "ARPHELPLINK" = "8:http://www.clamav.net"
+        "Title" = "8:ClamAV"
         "Subject" = "8:"
-        "ARPCONTACT" = "8:Sourcefire Inc"
+        "ARPCONTACT" = "8:Cisco Systems, Inc"
         "Keywords" = "8:"
         "ARPCOMMENTS" = "8:ClamAV"
         "ARPURLINFOABOUT" = "8:http://www.clamav.net"
@@ -1121,6 +1294,20 @@
         }
         "MergeModule"
         {
+            "{CEE29DC0-9FBA-4B99-8D47-5BC643D9B626}:_F5E53CCFD47544CCB03C1D6FFAB996ED"
+            {
+            "UseDynamicProperties" = "11:TRUE"
+            "IsDependency" = "11:TRUE"
+            "SourcePath" = "8:microsoft_vc140_crt_x64.msm"
+                "Properties"
+                {
+                }
+            "LanguageId" = "3:0"
+            "Exclude" = "11:FALSE"
+            "Folder" = "8:"
+            "Feature" = "8:"
+            "IsolateTo" = "8:"
+            }
         }
         "ProjectOutput"
         {
@@ -1154,7 +1341,7 @@
             }
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_335D34A6BB624E7190CFE4E63CD398E8"
             {
-            "SourcePath" = "8:..\\x64\\Release\\freshclam.exe"
+            "SourcePath" = "8:..\\Win32\\Release\\freshclam.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_CEC880DBF61041CCA0B367A8647B2589"
@@ -1182,7 +1369,7 @@
             }
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_5CED7DA1BD104DA5AF2882D6CBA6E313"
             {
-            "SourcePath" = "8:..\\x64\\Release\\clamconf.exe"
+            "SourcePath" = "8:..\\Win32\\Release\\clamconf.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_CEC880DBF61041CCA0B367A8647B2589"
@@ -1210,7 +1397,7 @@
             }
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_65C31C39B3E443C4B6EBE65247933F5E"
             {
-            "SourcePath" = "8:..\\x64\\Release\\sigtool.exe"
+            "SourcePath" = "8:..\\Win32\\Release\\sigtool.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_CEC880DBF61041CCA0B367A8647B2589"
@@ -1238,7 +1425,7 @@
             }
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_71984994A7494BE2965C585DB3EBED1F"
             {
-            "SourcePath" = "8:..\\x64\\Release\\libclamav.dll"
+            "SourcePath" = "8:..\\Win32\\Release\\libclamav.dll"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_CEC880DBF61041CCA0B367A8647B2589"
@@ -1266,7 +1453,7 @@
             }
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_7F93817BA09242BBA5B1DE77746F85EE"
             {
-            "SourcePath" = "8:..\\x64\\Release\\mspack.dll"
+            "SourcePath" = "8:..\\Win32\\Release\\mspack.dll"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_CEC880DBF61041CCA0B367A8647B2589"
@@ -1294,7 +1481,7 @@
             }
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_804379F8A48A4F7DBB50D72302559297"
             {
-            "SourcePath" = "8:..\\x64\\Release\\libclamunrar.dll"
+            "SourcePath" = "8:..\\Win32\\Release\\libclamunrar.dll"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_CEC880DBF61041CCA0B367A8647B2589"
@@ -1322,7 +1509,7 @@
             }
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_C0DFAFFC11514B9190D3A585C3E58832"
             {
-            "SourcePath" = "8:..\\x64\\Release\\libclamunrar_iface.dll"
+            "SourcePath" = "8:..\\Win32\\Release\\libclamunrar_iface.dll"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_CEC880DBF61041CCA0B367A8647B2589"
@@ -1350,7 +1537,7 @@
             }
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_DF09DF52E5014B378FBA8B4CD6C11C3B"
             {
-            "SourcePath" = "8:..\\x64\\Release\\clambc.exe"
+            "SourcePath" = "8:..\\Win32\\Release\\clambc.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_CEC880DBF61041CCA0B367A8647B2589"
@@ -1378,7 +1565,7 @@
             }
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_EB8D0E3AFBC24F9B9845F08708803C2B"
             {
-            "SourcePath" = "8:..\\x64\\Release\\clamscan.exe"
+            "SourcePath" = "8:..\\Win32\\Release\\clamscan.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_CEC880DBF61041CCA0B367A8647B2589"
@@ -1406,7 +1593,7 @@
             }
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_F047B3505FC74D809FB8251423DF4095"
             {
-            "SourcePath" = "8:..\\x64\\Release\\clamd.exe"
+            "SourcePath" = "8:..\\Win32\\Release\\clamd.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_CEC880DBF61041CCA0B367A8647B2589"
@@ -1434,7 +1621,7 @@
             }
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_FEDD087CC8B64ED3A476664BC5FCAF59"
             {
-            "SourcePath" = "8:..\\x64\\Release\\clamdscan.exe"
+            "SourcePath" = "8:..\\Win32\\Release\\clamdscan.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_CEC880DBF61041CCA0B367A8647B2589"
