@@ -808,27 +808,40 @@ onas_fan_checkowner (int pid, const struct optstruct *opts)
     char path[32];
     STATBUF sb;
     int num_arg;
-    const struct optstruct *opt;
+    const struct optstruct *opt = NULL;
+    const struct optstruct *opt_root = NULL;
 
+    /* always ignore ourselves */
     if (pid == (int) getpid()) {
         return 1;
     }
 
-    if (!(opt = optget (opts, "OnAccessExcludeUID"))->enabled)
+    /* check to see if we even need to stat /proc */
+
+    if (!(opt = optget (opts, "OnAccessExcludeUID"))->enabled && !(opt_root = optget (opts, "OnAccessExcludeRootUID"))->enabled)
         return 0;
 
+    /* if we can stat OK */
     snprintf (path, sizeof (path), "/proc/%u", pid);
-    if (CLAMSTAT (path, &sb) == 0)
-    {
-        while (opt)
-        {
-            /* We use UID 0 in place of -1 because the option would be disabled for UID 0*/
-            (opt->numarg == -1) ? (num_arg = 0) : (num_arg = opt->numarg);
-            if (num_arg == (long long) sb.st_uid)
-                return 1;
-            opt = opt->nextarg;
+    if (CLAMSTAT (path, &sb) == 0) {
+        /* check all our non-root UIDs first */
+        if (opt->enabled) {
+            while (opt)
+            {
+                if (opt->numarg == (long long) sb.st_uid)
+                    return 1;
+                opt = opt->nextarg;
+            }
         }
+        /* finally check root UID */
+        if (opt_root->enabled) {
+            if (0 == (long long) sb.st_uid)
+                return 1;
+        }
+    } else {
+        logg("*Could not stat /proc to exclude UIDs...consider checking your SELinux policy.");
     }
+
     return 0;
 }
 #endif
