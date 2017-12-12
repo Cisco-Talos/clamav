@@ -404,7 +404,9 @@ const struct clam_option __clam_options[] = {
 
     { "OnAccessExcludePath", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD, "This option allows excluding directories from on-access scanning. It can\nbe used multiple times. Only works with DDD system.", "/home/bofh\n/root" },
 
-    { "OnAccessExcludeUID", NULL, 0, CLOPT_TYPE_NUMBER, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD, "With this option you can whitelist specific UIDs. Processes with these UIDs\nwill be able to access all files.\nThis option can be used multiple times (one per line). For a UID of 0 please use the value -1 instead, since 0 will disable this option.", "0" },
+    { "OnAccessExcludeRootUID", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_CLAMD, "Use this option to whitelist the root UID (0) and allow any processes run under root to access all watched files without triggering scans.", "no" },
+
+    { "OnAccessExcludeUID", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD, "With this option you can whitelist specific UIDs. Processes with these UIDs\nwill be able to access all files.\nThis option can be used multiple times (one per line). Using a value of 0 on any line will disable this option entirely. To whitelist the root UID please enable the OnAccessExcludeRootUID option.", "0" },
 
     { "OnAccessMaxFileSize", NULL, 0, CLOPT_TYPE_SIZE, MATCH_SIZE, 5242880, NULL, 0, OPT_CLAMD, "Files larger than this value will not be scanned in on access.", "5M" },
 
