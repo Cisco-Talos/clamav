@@ -658,10 +658,17 @@ This option allows excluding directories from on-access scanning. It can be used
 .br
 Default: disabled
 .TP
+\fBOnAccessExcludeRootUID BOOL\fR
+With this option you can whitelist the root UID (0). Processes run under root with be able to access all files without triggering scans or permission denied events.
+.br
+Default: no
+.TP
 \fBOnAccessExcludeUID NUMBER\fR
 With this option you can whitelist specific UIDs. Processes with these UIDs will be able to access all files.
 .br
 This option can be used multiple times (one per line).
+.br
+Note: using a value of 0 on any line will disable this option entirely. To whitelist the root UID (0) please enable the OnAccessExcludeRootUID option.
 .br
 Default: disabled
 .TP
