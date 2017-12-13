@@ -612,6 +612,11 @@ Example
 # With this option you can whitelist the root UID (0). Processes run under
 # root with be able to access all files without triggering scans or
 # permission denied events.
+# Note that if clamd cannot check the uid of the process that generated an
+# on-access scan event (e.g., because OnAccessPrevention was not enabled, and
+# the process already exited), clamd will perform a scan.  Thus, setting
+# OnAccessExcludeRootUID is not *guaranteed* to prevent every access by the
+# root user from triggering a scan (unless OnAccessPrevention is enabled).
 # Default: no
 #OnAccessExcludeRootUID no
 
@@ -621,6 +626,11 @@ Example
 # This option can be used multiple times (one per line).
 # Using a value of 0 on any line will disable this option entirely. To whitelist
 # the root UID (0) please enable the OnAccessExcludeRootUID option.
+# Also note that if clamd cannot check the uid of the process that generated an
+# on-access scan event (e.g., because OnAccessPrevention was not enabled, and
+# the process already exited), clamd will perform a scan.  Thus, setting
+# OnAccessExcludeUID is not *guaranteed* to prevent every access by the
+# specified uid from triggering a scan (unless OnAccessPrevention is enabled).
 # Default: disabled
 #OnAccessExcludeUID -1
 
