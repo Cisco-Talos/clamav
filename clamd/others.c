@@ -807,7 +807,6 @@ onas_fan_checkowner (int pid, const struct optstruct *opts)
 {
     char path[32];
     STATBUF sb;
-    int num_arg;
     const struct optstruct *opt = NULL;
     const struct optstruct *opt_root = NULL;
 
@@ -817,8 +816,10 @@ onas_fan_checkowner (int pid, const struct optstruct *opts)
     }
 
     /* check to see if we even need to stat /proc */
+    opt = optget (opts, "OnAccessExcludeUID");
+    opt_root = optget (opts, "OnAccessExcludeRootUID");
 
-    if (!(opt = optget (opts, "OnAccessExcludeUID"))->enabled && !(opt_root = optget (opts, "OnAccessExcludeRootUID"))->enabled)
+    if (!(opt->enabled || opt_root->enabled))
         return 0;
 
     /* if we can stat OK */
