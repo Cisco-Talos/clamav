@@ -612,8 +612,8 @@ Example
 # With this option you can whitelist the root UID (0). Processes run under
 # root with be able to access all files without triggering scans or
 # permission denied events.
-# Default: disabled
-#OnAccessExcludeRootUID 0
+# Default: no
+#OnAccessExcludeRootUID no
 
 # With this option you can whitelist specific UIDs. Processes with these UIDs
 # will be able to access all files without triggering scans or permission

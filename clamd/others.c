@@ -815,14 +815,15 @@ onas_fan_checkowner (int pid, const struct optstruct *opts)
         return 1;
     }
 
-    /* check to see if we even need to stat /proc */
+    /* look up options */
     opt = optget (opts, "OnAccessExcludeUID");
     opt_root = optget (opts, "OnAccessExcludeRootUID");
 
+    /* we can return immediately if no uid exclusions were requested */
     if (!(opt->enabled || opt_root->enabled))
         return 0;
 
-    /* if we can stat OK */
+    /* perform exclusion checks if we can stat OK */
     snprintf (path, sizeof (path), "/proc/%u", pid);
     if (CLAMSTAT (path, &sb) == 0) {
         /* check all our non-root UIDs first */
@@ -839,8 +840,11 @@ onas_fan_checkowner (int pid, const struct optstruct *opts)
             if (0 == (long long) sb.st_uid)
                 return 1;
         }
-    } else {
-        logg("*Could not stat /proc to exclude UIDs...consider checking your SELinux policy.");
+    } else if (errno == EACCES) {
+        logg("*Permission denied to stat /proc/%d to exclude UIDs... perhaps SELinux denial?\n", pid);
+    } else if (errno == ENOENT) {
+        /* FIXME: should this be configurable? */
+        logg("$/proc/%d vanished before UIDs could be excluded; scanning anyway\n", pid);
     }
 
     return 0;
