@@ -1055,7 +1055,7 @@ int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
         }
     } while (0);
 
-    cli_dbgmsg("cli_pdf: extracted %jd bytes %u %u obj\n", sum, obj->id>>8, obj->id&0xff);
+    cli_dbgmsg("cli_pdf: extracted %td bytes %u %u obj\n", sum, obj->id>>8, obj->id&0xff);
     cli_dbgmsg("         ... to %s\n", fullname);
 
     if (flags & PDF_EXTRACT_OBJ_SCAN && sum) {
