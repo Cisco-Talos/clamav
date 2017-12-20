@@ -451,7 +451,7 @@ int cli_scanmschm(cli_ctx *ctx)
 	struct mschm_decompressor *mschm_d;
 	struct mschmd_header *mschm_h;
 	struct mschmd_file *mschm_f;
-	int ret;
+	int ret = CL_CLEAN; // Default CLEAN in case CHM contains no files.
 	int files;
 	int virus_num = 0;
 	struct mspack_name mspack_fmap = {
@@ -546,6 +546,4 @@ out_dest:
 	if (virus_num)
 		return CL_VIRUS;
 	return ret;
-
-	return 0;
 }

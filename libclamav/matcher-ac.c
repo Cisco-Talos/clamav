@@ -1066,7 +1066,7 @@ inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t off
 static int ac_backward_match_branch(const unsigned char *buffer, uint32_t bp, uint32_t offset, uint32_t fileoffset, uint32_t length,
                                     const struct cli_ac_patt *pattern, uint32_t pp, uint16_t specialcnt, uint32_t *start, uint32_t *end)
 {
-    int match;
+    int match = 0;
     uint16_t wc, i;
     uint32_t filestart;
 
