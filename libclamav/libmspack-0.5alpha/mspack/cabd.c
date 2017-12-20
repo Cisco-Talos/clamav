@@ -1389,6 +1389,8 @@ static int cabd_sys_read_block(struct mspack_system *sys,
   unsigned int cksum;
   unsigned int len;
 
+  (void) ignore_cksum;
+
   /* reset the input block pointer and end of block pointer */
   d->i_ptr = d->i_end = &d->input[0];
 

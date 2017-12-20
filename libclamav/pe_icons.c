@@ -1566,7 +1566,7 @@ static const int gkernsz = (sizeof(gaussk) / sizeof(gaussk[0]));
             case 8:
             {
                 unsigned int have = 0;
-                unsigned char c;
+                unsigned char c = 0; // will be set in first loop
                 for (x = 0; x < width; x++)
                 {
                     if (!have)
@@ -1645,7 +1645,7 @@ static const int gkernsz = (sizeof(gaussk) / sizeof(gaussk[0]));
             {
                 unsigned int x_off = y * andlinesz;
                 unsigned int have = 0;
-                unsigned char c;
+                unsigned char c = 0; // will be set in first loop
                 for (x = 0; x < width; x++)
                 {
                     if (!have)
