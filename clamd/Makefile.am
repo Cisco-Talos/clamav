@@ -47,6 +47,8 @@ clamd_SOURCES = \
     others.c \
     others.h \
     shared.h \
+    onaccess_others.c \
+    onaccess_others.h \
     onaccess_fan.c \
     onaccess_fan.h \
     onaccess_ddd.c \
