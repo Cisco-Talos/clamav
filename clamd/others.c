@@ -68,12 +68,12 @@
 
 #include <limits.h>
 #include "libclamav/clamav.h"
+#include "libclamav/scanners.h"
 #include "shared/optparser.h"
 #include "shared/output.h"
 #include "shared/misc.h"
 #include "libclamav/others.h"
 
-#include "session.h"
 #include "others.h"
 
 static pthread_mutex_t virusaction_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -800,53 +800,3 @@ fds_free (struct fd_data *data)
     data->nfds = 0;
     fds_unlock (data);
 }
-
-#ifdef FANOTIFY
-int
-onas_fan_checkowner (int pid, const struct optstruct *opts)
-{
-    char path[32];
-    STATBUF sb;
-    const struct optstruct *opt = NULL;
-    const struct optstruct *opt_root = NULL;
-
-    /* always ignore ourselves */
-    if (pid == (int) getpid()) {
-        return 1;
-    }
-
-    /* look up options */
-    opt = optget (opts, "OnAccessExcludeUID");
-    opt_root = optget (opts, "OnAccessExcludeRootUID");
-
-    /* we can return immediately if no uid exclusions were requested */
-    if (!(opt->enabled || opt_root->enabled))
-        return 0;
-
-    /* perform exclusion checks if we can stat OK */
-    snprintf (path, sizeof (path), "/proc/%u", pid);
-    if (CLAMSTAT (path, &sb) == 0) {
-        /* check all our non-root UIDs first */
-        if (opt->enabled) {
-            while (opt)
-            {
-                if (opt->numarg == (long long) sb.st_uid)
-                    return 1;
-                opt = opt->nextarg;
-            }
-        }
-        /* finally check root UID */
-        if (opt_root->enabled) {
-            if (0 == (long long) sb.st_uid)
-                return 1;
-        }
-    } else if (errno == EACCES) {
-        logg("*Permission denied to stat /proc/%d to exclude UIDs... perhaps SELinux denial?\n", pid);
-    } else if (errno == ENOENT) {
-        /* FIXME: should this be configurable? */
-        logg("$/proc/%d vanished before UIDs could be excluded; scanning anyway\n", pid);
-    }
-
-    return 0;
-}
-#endif
