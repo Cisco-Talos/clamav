@@ -504,6 +504,7 @@ const struct clam_option __clam_options[] = {
     { "ClamukoExcludePath", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD | OPT_DEPRECATED, "", "" },
     { "ClamukoExcludeUID", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD | OPT_DEPRECATED, "", "" },
     { "ClamukoMaxFileSize", NULL, 0, CLOPT_TYPE_SIZE, MATCH_SIZE, 5242880, NULL, 0, OPT_CLAMD | OPT_DEPRECATED, "", "" },
+    { "AllowSupplementaryGroups", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_MILTER | OPT_DEPRECATED, "Initialize a supplementary group access (the process must be started by root).", "no" },
 
     /* Milter specific options */
 
