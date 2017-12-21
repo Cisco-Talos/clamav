@@ -14,6 +14,9 @@ submissions from the ClamAV community:
       The internal library is the default and contains additional
       integrity checks.
     - Linking with openssl 1.1.0.
+    - Deprecation of the AllowSupplementaryGroups parameter statement
+      in clamd, clamav-milter, and freshclam. Use of supplementary
+      is now in effect by default.
     - Numerous code patches, typos, and compiler warning fixes.
 
 Additionally, we have introduced important changes and new features in
@@ -52,6 +55,7 @@ Marc Deslauriers
 Mark Allan
 Andreas Schulze
 Jonas Zaddach
+Georgy Salnikov
 
 0.99.2
 ------
