@@ -1338,7 +1338,7 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
     /* enough to hold common pdf names, we don't need all the names */
     char pdfname[64];
     const char *q2, *q3;
-    const char *nextobj, *nextopen, *nextclose;
+    const char *nextobj = NULL, *nextopen = NULL, *nextclose = NULL;
     const char *q = obj->start + pdf->map;
     const char *dict, *enddict, *start;
     off_t dict_length, full_dict_length;
