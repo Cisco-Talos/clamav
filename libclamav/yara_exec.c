@@ -885,7 +885,7 @@ int yr_execute_code(
           NULL,
           NULL);
 #else
-        //TDB CLAMAV
+        result = -1;  //matches not currently supported in ClamAV. push(FALSE).
 #endif
 
         push(result >= 0);
