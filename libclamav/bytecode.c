@@ -553,7 +553,7 @@ static inline char *readData(const unsigned char *p, unsigned *off, unsigned len
 
 static inline char *readString(const unsigned char *p, unsigned *off, unsigned len, char *ok)
 {
-    unsigned stringlen;
+    unsigned stringlen = 0;
     char *str = readData(p, off, len, ok, &stringlen);
     if (*ok && stringlen && str[stringlen-1] != '\0') {
 	str[stringlen-1] = '\0';
@@ -3199,7 +3199,7 @@ void cli_bytetype_describe(const struct cli_bc *bc)
 
 void cli_bytevalue_describe(const struct cli_bc *bc, unsigned funcid)
 {
-    unsigned i, j, total = 0;
+    unsigned i, total = 0;
     const struct cli_bc_func *func;
 
     if (funcid >= bc->num_func) {

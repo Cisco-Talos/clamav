@@ -1,7 +1,7 @@
 /*
  *  Support for matcher using PCRE
  *
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2017 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *  All Rights Reserved.
  *
@@ -593,7 +593,7 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const char **
     unsigned int i, evalcnt = 0;
     uint64_t maxfilesize, evalids = 0;
     uint32_t global, encompass, rolling;
-    int rc, offset, ret = CL_SUCCESS, options=0;
+    int rc = 0, offset = 0, ret = CL_SUCCESS, options=0;
     uint8_t viruses_found = 0;
 
     if ((root->pcre_metas == 0) || (!root->pcre_metatable) || (ctx && ctx->dconf && !(ctx->dconf->pcre & PCRE_CONF_SUPPORT)))
