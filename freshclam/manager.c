@@ -2474,7 +2474,7 @@ downloadmanager (const struct optstruct *opts, const char *hostname,
                  unsigned int attempt)
 {
     time_t currtime;
-    int ret, custret, updated = 0, outdated = 0, signo = 0, logerr;
+    int ret, custret = 0, updated = 0, outdated = 0, signo = 0, logerr;
     unsigned int ttl;
     char ipaddr[46], *dnsreply = NULL, *pt, *localip = NULL, *newver = NULL;
     const struct optstruct *opt;

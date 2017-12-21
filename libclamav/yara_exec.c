@@ -153,7 +153,7 @@ int yr_execute_code(
   int i;
   int found;
   int count;
-  int result;
+  int result = -1;
   int cycle = 0;
 #if REAL_YARA
   int tidx = yr_get_tidx();

@@ -183,7 +183,7 @@ static int print_chain(struct metachain *c, char *str, size_t len)
 static cl_error_t post(int fd, int result, const char *virname, void *context)
 {
     struct clamscan_cb_data *d = context;
-    struct metachain *c;
+    struct metachain *c = NULL;
     char str[128];
 
     UNUSEDPARAM(fd);
