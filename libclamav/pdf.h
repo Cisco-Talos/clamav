@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015, 2017 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2017-2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Nigel Horne
@@ -174,5 +174,7 @@ void pdf_free_dict(struct pdf_dict *dict);
 void pdf_free_array(struct pdf_array *array);
 void pdf_print_dict(struct pdf_dict *dict, unsigned long depth);
 void pdf_print_array(struct pdf_array *array, unsigned long depth);
+
+int pdf_find_and_extract_all_objs(struct pdf_struct *pdf);
 
 #endif

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2016-2017 Cisco and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2016-2018 Cisco and/or its affiliates. All rights reserved.
  *
  *  Author: Kevin Lin
  *
@@ -176,9 +176,9 @@ static int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj
      */
     if ((pdf->flags & (1 << DECRYPTABLE_PDF)) && !(obj->flags & (1 << OBJ_FILTER_CRYPT))) {
         if (token->flags & PDFTOKEN_FLAG_XREF) /* TODO: is this on all crypt filters or only the assumed one? */
-            cli_dbgmsg("cli_pdf: skipping decoding => non-filter CRYPT (reason: xref)\n");
+            cli_dbgmsg("pdf_decodestream_internal: skipping decoding => non-filter CRYPT (reason: xref)\n");
         else {
-            cli_dbgmsg("cli_pdf: decoding => non-filter CRYPT\n");
+            cli_dbgmsg("pdf_decodestream_internal: decoding => non-filter CRYPT\n");
             if ((rc = filter_decrypt(pdf, obj, params, token, 1)) != CL_SUCCESS) {
                 return rc;
             }
@@ -188,32 +188,32 @@ static int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj
     for (i = 0; i < obj->numfilters; i++) {
         switch(obj->filterlist[i]) {
         case OBJ_FILTER_A85:
-            cli_dbgmsg("cli_pdf: decoding [%d] => ASCII85DECODE\n", obj->filterlist[i]);
+            cli_dbgmsg("pdf_decodestream_internal: decoding [%d] => ASCII85DECODE\n", obj->filterlist[i]);
             rc = filter_ascii85decode(pdf, obj, token);
             break;
 
         case OBJ_FILTER_RL:
-            cli_dbgmsg("cli_pdf: decoding [%d] => RLDECODE\n", obj->filterlist[i]);
+            cli_dbgmsg("pdf_decodestream_internal: decoding [%d] => RLDECODE\n", obj->filterlist[i]);
             rc = filter_rldecode(pdf, obj, token);
             break;
 
         case OBJ_FILTER_FLATE:
-            cli_dbgmsg("cli_pdf: decoding [%d] => FLATEDECODE\n", obj->filterlist[i]);
+            cli_dbgmsg("pdf_decodestream_internal: decoding [%d] => FLATEDECODE\n", obj->filterlist[i]);
             rc = filter_flatedecode(pdf, obj, params, token);
             break;
 
         case OBJ_FILTER_AH:
-            cli_dbgmsg("cli_pdf: decoding [%d] => ASCIIHEXDECODE\n", obj->filterlist[i]);
+            cli_dbgmsg("pdf_decodestream_internal: decoding [%d] => ASCIIHEXDECODE\n", obj->filterlist[i]);
             rc = filter_asciihexdecode(pdf, obj, token);
             break;
 
         case OBJ_FILTER_CRYPT:
-            cli_dbgmsg("cli_pdf: decoding [%d] => CRYPT\n", obj->filterlist[i]);
+            cli_dbgmsg("pdf_decodestream_internal: decoding [%d] => CRYPT\n", obj->filterlist[i]);
             rc = filter_decrypt(pdf, obj, params, token, 0);
             break;
 
         case OBJ_FILTER_LZW:
-            cli_dbgmsg("cli_pdf: decoding [%d] => LZWDECODE\n", obj->filterlist[i]);
+            cli_dbgmsg("pdf_decodestream_internal: decoding [%d] => LZWDECODE\n", obj->filterlist[i]);
             rc = filter_lzwdecode(pdf, obj, params, token);
             break;
 
@@ -226,19 +226,19 @@ static int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj
         case OBJ_FILTER_JBIG2:
             if (!filter) filter = "JBIG2DECODE";
 
-            cli_dbgmsg("cli_pdf: unimplemented filter type [%d] => %s\n", obj->filterlist[i], filter);
+            cli_dbgmsg("pdf_decodestream_internal: unimplemented filter type [%d] => %s\n", obj->filterlist[i], filter);
             filter = NULL;
             rc = CL_BREAK;
             break;
 
         default:
-            cli_dbgmsg("cli_pdf: unknown filter type [%d]\n", obj->filterlist[i]);
+            cli_dbgmsg("pdf_decodestream_internal: unknown filter type [%d]\n", obj->filterlist[i]);
             rc = CL_BREAK;
             break;
         }
 
         if (!(token->content) || !(token->length)) {
-            cli_dbgmsg("cli_pdf: empty content, breaking after %d (of %lu) filters\n",
+            cli_dbgmsg("pdf_decodestream_internal: empty content, breaking after %d (of %lu) filters\n",
                        i, (long unsigned)(obj->numfilters));
             break;
         }
@@ -260,15 +260,49 @@ static int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj
                     break;
                 }
 
-                cli_dbgmsg("cli_pdf: stopping after %d (of %lu) filters (reason: %s)\n",
+                cli_dbgmsg("pdf_decodestream_internal: stopping after %d (of %lu) filters (reason: %s)\n",
                            i, (long unsigned)(obj->numfilters), reason);
                 break;
             }
         }
         token->success++;
 
-        if (pdf->ctx->engine->keeptmp) {
+        /*
+         * Experimental object parsing:
+         *   Find and extract objects recursively.
+         * 
+         *   Preserve the old pdf map information and restore it afterwards. 
+         *      start = pdf->map + pdf->offset;
+         *      bytesleft = pdf->size - pdf->offset;
+         */
+        char *orig_map = pdf->map;
+        off_t orig_offset = pdf->offset;
+        off_t orig_size = pdf->size;
 
+        pdf->map = (char*)token->content;
+        pdf->offset = 0;
+        pdf->size = (off_t)token->length;
+
+        /*
+         * Find & extract.
+         */
+        int objs_found = 0;
+        objs_found = pdf_find_and_extract_all_objs(pdf);
+        if (!objs_found) {
+            cli_dbgmsg("pdf_decodestream_internal: No objects found in object stream!");
+        } else {
+            cli_dbgmsg("pdf_decodestream_internal: Found %d objects in object stream!", objs_found);
+        }
+
+        /*
+         * Restore pdf structure to original map
+         */
+        pdf->map = orig_map;
+        pdf->offset = orig_offset;
+        pdf->size = orig_size;
+
+        /* Dump the object stream content to a text file if keeptmp is enabled. */
+        if (pdf->ctx->engine->keeptmp) {
             if ((rc = pdf_decode_dump(pdf, obj, token, i+1)) != CL_SUCCESS)
                 return rc;
         }
