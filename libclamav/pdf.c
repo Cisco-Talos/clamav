@@ -2253,21 +2253,22 @@ void pdf_handle_enc(struct pdf_struct *pdf)
  * 
  * @return cl_error_t   Error code.
  */
-cl_error_t pdf_find_and_extract_all_objs(cli_ctx *ctx, struct pdf_struct *pdf)
+cl_error_t pdf_find_and_extract_all_objs(struct pdf_struct *pdf)
 {
     cl_error_t rc = CL_SUCCESS;
     int foundobj = 0;
+    int alerts = 0;
 
     /* parse PDF and find obj offsets */
-    while ((foundobj = pdf_findobj(&pdf)) > 0) {
-        struct pdf_obj *obj = &pdf.objs[pdf.nobjs-1];
+    while ((foundobj = pdf_findobj(pdf)) > 0) {
+        struct pdf_obj *obj = &(pdf->objs[pdf->nobjs - 1]);
 
-        cli_dbgmsg("cli_pdf: found %d %d obj @%lld\n", obj->id >> 8, obj->id&0xff, (long long)(obj->start + offset));
+        cli_dbgmsg("cli_pdf: found %d %d obj @%lld\n", obj->id >> 8, obj->id&0xff, (long long)(obj->start + pdf->startoff));
 
-        if (cli_checktimelimit(ctx) != CL_SUCCESS) {
+        if (cli_checktimelimit(pdf->ctx) != CL_SUCCESS) {
             cli_errmsg("Timeout reached in the PDF parser\n");
 #if HAVE_JSON
-            pdf_export_json(&pdf);
+            pdf_export_json(pdf);
 #endif
             free(pdf->objs);
             if (pdf->fileID)
@@ -2278,29 +2279,28 @@ cl_error_t pdf_find_and_extract_all_objs(cli_ctx *ctx, struct pdf_struct *pdf)
         }
 
         /* parse PDF obj */
-        pdf_parseobj(&pdf, obj);
-        if (SCAN_ALGO && obj->numfilters > PDF_FILTER_DTRIGGER) {
-            rc = cli_append_virus(ctx, "Heuristic.PDF.TooManyFilters");
+        pdf_parseobj(pdf, obj);
+        if ((pdf->ctx->options & CL_SCAN_ALGORITHMIC) && obj->numfilters > PDF_FILTER_DTRIGGER) {
+            rc = cli_append_virus(pdf->ctx, "Heuristic.PDF.TooManyFilters");
             if (rc == CL_VIRUS) { 
                 alerts++;
-                if (SCAN_ALL)
+                if (pdf->ctx->options & CL_SCAN_ALLMATCHES)
                     rc = CL_CLEAN;
             }
         }
 
         /* extract PDF obj */
-        rc = pdf_extract_obj(&pdf, obj, PDF_EXTRACT_OBJ_SCAN);
+        rc = pdf_extract_obj(pdf, obj, PDF_EXTRACT_OBJ_SCAN);
         switch (rc) {
             case CL_EFORMAT:
                 /* Don't halt on one bad object */
                 cli_dbgmsg("cli_pdf: bad format object, skipping to next\n");
-                badobjects++;
-                pdf.stats.ninvalidobjs++;
+                pdf->stats.ninvalidobjs++;
                 rc = CL_CLEAN;
                 break;
             case CL_VIRUS:
                 alerts++;
-                if (SCAN_ALL) {
+                if (pdf->ctx->options & CL_SCAN_ALLMATCHES) {
                     rc = CL_CLEAN;
                 }
                 break;
@@ -2309,11 +2309,15 @@ cl_error_t pdf_find_and_extract_all_objs(cli_ctx *ctx, struct pdf_struct *pdf)
         }
     }
 
-    if (pdf.nobjs)
-        pdf.nobjs--;
+    if (pdf->nobjs)
+        pdf->nobjs--;
 
     if (foundobj == -1)
-        pdf.flags |= 1 << BAD_PDF_TOOMANYOBJS;
+        pdf->flags |= 1 << BAD_PDF_TOOMANYOBJS;
+
+    if (alerts) {
+        rc = CL_VIRUS;
+    }
 
     return rc;
 }
@@ -2337,7 +2341,6 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     long xref;
     const char *pdfver, *start, *eofmap, *q, *eof;
     cl_error_t rc = CL_SUCCESS;
-    int foundobj = 0, badobjects = 0;
     unsigned i, alerts = 0;
 #if HAVE_JSON
     json_object *pdfobj=NULL;
@@ -2512,7 +2515,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
      * New experimental recursive methodology that adds objects from object streams.
      */
     int objs_found = pdf.nobjs;
-    if (CL_SUCCESS != pdf_find_and_extract_all_objs(pdf))
+    if (CL_SUCCESS != pdf_find_and_extract_all_objs(&pdf))
     {
         cli_dbgmsg("cli_pdf: pdf_find_and_extract_all_objs failed!");
     }
@@ -2520,7 +2523,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     if (pdf.nobjs <= objs_found) {
         cli_dbgmsg("cli_pdf: pdf_find_and_extract_all_objs did not find any new objects!");
     } else {
-        cli_dbgmsg("cli_pdf: pdf_find_and_extract_all_objs found %d new objects.", &pdf.nobjs - objs_found);
+        cli_dbgmsg("cli_pdf: pdf_find_and_extract_all_objs found %d new objects.", pdf.nobjs - objs_found);
     }
 
     pdf_handle_enc(&pdf);
@@ -2592,7 +2595,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
         rc = CL_VIRUS;
     }
 
-    else if (!rc && badobjects) {
+    else if (!rc && pdf.stats.ninvalidobjs > 0) {
         rc = CL_EFORMAT;
     }
 

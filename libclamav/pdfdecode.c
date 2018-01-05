@@ -37,6 +37,7 @@
 #endif
 
 #include <stdio.h>
+#include <stddef.h> 
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <ctype.h>
@@ -275,7 +276,7 @@ static int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj
          *      start = pdf->map + pdf->offset;
          *      bytesleft = pdf->size - pdf->offset;
          */
-        char *orig_map = pdf->map;
+        const char *orig_map = pdf->map;
         off_t orig_offset = pdf->offset;
         off_t orig_size = pdf->size;
 
@@ -284,14 +285,19 @@ static int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj
         pdf->size = (off_t)token->length;
 
         /*
-         * Find & extract.
-         */
-        int objs_found = 0;
-        objs_found = pdf_find_and_extract_all_objs(pdf);
-        if (!objs_found) {
-            cli_dbgmsg("pdf_decodestream_internal: No objects found in object stream!");
+        * Find and extract all objects in the PDF. 
+        * New experimental recursive methodology that adds objects from object streams.
+        */
+        int objs_found = pdf->nobjs;
+        if (CL_SUCCESS != pdf_find_and_extract_all_objs(pdf))
+        {
+            cli_dbgmsg("pdf_decodestream_internal: pdf_find_and_extract_all_objs failed!");
+        }
+
+        if (pdf->nobjs <= objs_found) {
+            cli_dbgmsg("pdf_decodestream_internal: pdf_find_and_extract_all_objs did not find any new objects!");
         } else {
-            cli_dbgmsg("pdf_decodestream_internal: Found %d objects in object stream!", objs_found);
+            cli_dbgmsg("pdf_decodestream_internal: pdf_find_and_extract_all_objs found %d new objects.", pdf->nobjs - objs_found);
         }
 
         /*

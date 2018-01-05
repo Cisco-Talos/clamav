@@ -166,7 +166,7 @@ enum enc_method parse_enc_method(const char *dict, unsigned len, const char *key
 
 void pdfobj_flag(struct pdf_struct *pdf, struct pdf_obj *obj, enum pdf_flag flag);
 char *pdf_finalize_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *in, size_t len);
-char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *objstart, size_t objsize, const char *str, char **endchar, struct pdf_stats_metadata *stats);
+char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *objstart, size_t objsize, const char *str, char **endchar, struct pdf_stats_metadata *meta);
 struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj *obj, size_t objsz, char *begin, char **endchar);
 struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, size_t objsz, char *begin, char **endchar);
 int is_object_reference(char *begin, char **endchar, uint32_t *id);
@@ -175,6 +175,6 @@ void pdf_free_array(struct pdf_array *array);
 void pdf_print_dict(struct pdf_dict *dict, unsigned long depth);
 void pdf_print_array(struct pdf_array *array, unsigned long depth);
 
-int pdf_find_and_extract_all_objs(struct pdf_struct *pdf);
+cl_error_t pdf_find_and_extract_all_objs(struct pdf_struct *pdf);
 
 #endif
