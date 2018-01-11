@@ -201,8 +201,131 @@ static int find_stream_bounds(const char *start, off_t bytesleft, off_t byteslef
     return 0;
 }
 
-/* Expected returns: 1 if success, 0 if no more objects, -1 if error */
+/**
+ * @brief Find the next *indirect* object.
+ * 
+ * Indirect objects begin with "obj" and end with "endobj".
+ * 
+ * @param pdf   Pdf struct that keeps track of all information found in the PDF. 
+ * 
+ * @return 1    if success
+ * @return 0    if no more objects
+ * @return -1   if error
+ */
 int pdf_findobj(struct pdf_struct *pdf)
+{
+    const char *start, *q, *q2, *q3, *eof;
+    struct pdf_obj *obj;
+    off_t bytesleft;
+    unsigned genid, objid;
+
+    pdf->nobjs++;
+    pdf->objs = cli_realloc2(pdf->objs, sizeof(*pdf->objs)*pdf->nobjs);
+    if (!pdf->objs) {
+        cli_warnmsg("cli_pdf: out of memory parsing objects (%u)\n", pdf->nobjs);
+        return -1;
+    }
+
+    obj = &pdf->objs[pdf->nobjs-1];
+    memset(obj, 0, sizeof(*obj));
+    start = pdf->map+pdf->offset;
+    bytesleft = pdf->size - pdf->offset;
+    while (bytesleft > 0) {
+        q2 = cli_memstr(start, bytesleft, "obj", 3);
+        if (!q2)
+            return 0;/* no more objs */
+
+        q2--;
+        bytesleft -= q2 - start;
+        if (*q2 != 0 && *q2 != 9 && *q2 != 0xa && *q2 != 0xc && *q2 != 0xd && *q2 != 0x20) {
+            start = q2+4;
+            bytesleft -= 4;
+            continue;
+        }
+
+        break;
+    }
+
+    if (bytesleft <= 0)
+        return 0;
+
+    q = findNextNonWSBack(q2-1, start);
+    while (q > start && isdigit(*q))
+        q--;
+
+    genid = atoi(q);
+    q = findNextNonWSBack(q-1,start);
+    while (q > start && isdigit(*q))
+        q--;
+
+    objid = atoi(q);
+    obj->id = (objid << 8) | (genid&0xff);
+    obj->start = q2+4 - pdf->map;
+    obj->flags = 0;
+    bytesleft -= 4;
+    eof = pdf->map + pdf->size;
+    q = pdf->map + obj->start;
+
+    while (q < eof && bytesleft > 0) {
+        off_t p_stream, p_endstream;
+        q2 = pdf_nextobject(q, bytesleft);
+        if (!q2)
+            q2 = pdf->map + pdf->size;
+
+        bytesleft -= q2 - q;
+        if (find_stream_bounds(q-1, q2-q, bytesleft + (q2-q), &p_stream, &p_endstream, 1)) {
+            obj->flags |= 1 << OBJ_STREAM;
+            q2 = q-1 + p_endstream + 9;
+            bytesleft -= q2 - q + 1;
+
+            if (bytesleft < 0) {
+                obj->flags |= 1 << OBJ_TRUNCATED;
+                pdf->offset = pdf->size;
+                return 1;/* truncated */
+            }
+        } else if ((q3 = cli_memstr(q-1, q2-q+1, "endobj", 6))) {
+            q2 = q3 + 6;
+            pdf->offset = q2 - pdf->map;
+            return 1; /* obj found and offset positioned */
+        } else {
+            q2++;
+            bytesleft--;
+        }
+
+        q = q2;
+    }
+
+    obj->flags |= 1 << OBJ_TRUNCATED;
+    pdf->offset = pdf->size;
+
+    return 1;/* truncated */
+}
+
+/**
+ * @brief Find the next *indirect* object in an object stream.
+ * 
+ * All objects in an object stream are indirect and thus do not begin or start 
+ * with "obj" or "endobj".  Instead, the object stream takes the following 
+ * format.
+ * 
+ *      <dictionary describing stream> objstm content endobjstm
+ * 
+ * where content looks something like the following:
+ * 
+ *      15 0 16 3 17 46 (ab)<</IDS 8 0 R/JavaScript 27 0 R/URLS 9 0 R>><</Names[(Test)28 0 R]>>
+ * 
+ * In the above example, the literal string (ab) is indirect object # 15, and 
+ * begins at offset 0 of the set of objects.  The next object, # 16 begis at 
+ * offset 3 is a dictionary.  The final object is also a dictionary, beginning 
+ * at offset 46.
+ * 
+ * @param pdf   Pdf struct that keeps track of all information found in the PDF. 
+ * 
+ * @return 1    if success
+ * @return 0    if no more objects
+ * @return -1   if error
+ */
+int pdf_findobj_in_objstm(struct pdf_struct *pdf)
 {
     const char *start, *q, *q2, *q3, *eof;
     struct pdf_obj *obj;
