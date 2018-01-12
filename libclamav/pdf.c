@@ -156,6 +156,14 @@ static int xrefCheck(const char *xref, const char *eof)
 #define noisy_warnmsg(...)
 #endif
 
+/**
+ * @brief   Searching BACKwards, find the next character that is not a whitespace.
+ * 
+ * @param q         Index to start from (at the end of the search space)
+ * @param start     Beginning of the search space. 
+ * 
+ * @return const char*  Address of the final non-whitespace character OR the same address as the start.
+ */
 static const char *findNextNonWSBack(const char *q, const char *start)
 {
     while (q > start && (*q == 0 || *q == 9 || *q == 0xa || *q == 0xc || *q == 0xd || *q == 0x20))
@@ -164,15 +172,40 @@ static const char *findNextNonWSBack(const char *q, const char *start)
     return q;
 }
 
-static int find_stream_bounds(const char *start, off_t bytesleft, off_t bytesleft2, off_t *stream, off_t *endstream, int newline_hack)
+/**
+ * @brief   Find bounds of stream.
+ * 
+ * PDF streams are prefixed with "stream" and suffixed with "endstream".
+ * Return value indicates success or failure.
+ * 
+ * @param start             start address of search space.
+ * @param bytesleft         size of search space for "stream"
+ * @param bytesleft2        size of search space for "endstream"
+ * @param[out] stream       output param, address of start of stream data
+ * @param[out] endstream    output param, address of end of stream data
+ * @param newline_hack      hack to support newlines that are \r\n, and not just \n or just \r.
+ * 
+ * @return int  1 if stream bounds were found. 
+ * @return int  0 if stream bounds could not be found. 
+ */
+static int find_stream_bounds(
+    const char *start, 
+    off_t bytesleft, 
+    off_t bytesleft2, 
+    off_t *stream, 
+    off_t *endstream, 
+    int newline_hack)
 {
     const char *q2, *q;
+
+    /* Begin by finding the "stream" string that prefixes stream data. */
     if ((q2 = cli_memstr(start, bytesleft, "stream", 6))) {
         q2 += 6;
         bytesleft -= q2 - start;
         if (bytesleft < 0)
             return 0;
 
+        /* Skip any new line charcters. */
         if (bytesleft >= 2 && q2[0] == '\xd' && q2[1] == '\xa') {
             q2 += 2;
             if (newline_hack && (bytesleft > 2) && q2[0] == '\xa')
@@ -182,16 +215,23 @@ static int find_stream_bounds(const char *start, off_t bytesleft, off_t byteslef
         }
 
         *stream = q2 - start;
+
         bytesleft2 -= q2 - start;
         if (bytesleft2 <= 0)
             return 0;
 
+        /* Now find the "endstream" string that suffixes stream data */
         q = q2;
         q2 = cli_memstr(q, bytesleft2, "endstream", 9);
-        if (!q2)
+        if (!q2) {
+            /* Couldn't find "endstream", but that's ok --
+             * -- we'll just count the data we have until EOF. */
             q2 = q + bytesleft2-9; /* till EOF */
+        }
 
         *endstream = q2 - start;
+
+        /* Double-check that endstream >= stream */
         if (*endstream < *stream)
             *endstream = *stream;
 
@@ -205,6 +245,12 @@ static int find_stream_bounds(const char *start, off_t bytesleft, off_t byteslef
  * @brief Find the next *indirect* object.
  * 
  * Indirect objects begin with "obj" and end with "endobj".
+ * Identify objects that contain streams.
+ * Identify truncated objects. 
+ * 
+ * If found, pdf->offset will be updated to just after the "endobj".
+ * If truncated, pdf->offset will == pdf->size.
+ * If not found, pdf->offset will not be updated.
  * 
  * @param pdf   Pdf struct that keeps track of all information found in the PDF. 
  * 
@@ -228,52 +274,67 @@ int pdf_findobj(struct pdf_struct *pdf)
 
     obj = &pdf->objs[pdf->nobjs-1];
     memset(obj, 0, sizeof(*obj));
-    start = pdf->map+pdf->offset;
+    start = pdf->map + pdf->offset;
     bytesleft = pdf->size - pdf->offset;
-    while (bytesleft > 0) {
+
+    /* Indirect objects located outside of an object stream are prefaced with "obj"
+     * and suffixed with "endobj".  Find the "obj" preface. */
+    while (bytesleft > 0)
+    {
         q2 = cli_memstr(start, bytesleft, "obj", 3);
         if (!q2)
             return 0;/* no more objs */
 
+        /* verify that "obj" has a whitespace before it, and is not the end of 
+         * a previous string like... "globj" */
         q2--;
         bytesleft -= q2 - start;
+
         if (*q2 != 0 && *q2 != 9 && *q2 != 0xa && *q2 != 0xc && *q2 != 0xd && *q2 != 0x20) {
+            /* This instance of the "obj" string appears to be part of another string.
+             * Skip it, and keep searching for an object. */
             start = q2+4;
             bytesleft -= 4;
             continue;
         }
 
-        break;
+        break; /* Found it. q2 should point to the whitespace before the "obj" string */
     }
 
     if (bytesleft <= 0)
-        return 0;
+        return 0; /* No "obj" found. */
 
+    /* "obj" found. */
+
+    /* Find the gen id that appears before the obj */
     q = findNextNonWSBack(q2-1, start);
     while (q > start && isdigit(*q))
         q--;
-
     genid = atoi(q);
+
+    /* Find the obj id that appers before the gen id */
     q = findNextNonWSBack(q-1,start);
     while (q > start && isdigit(*q))
         q--;
-
     objid = atoi(q);
-    obj->id = (objid << 8) | (genid&0xff);
-    obj->start = q2+4 - pdf->map;
+
+    obj->id = (objid << 8) | (genid & 0xff);
+    obj->start = q2+4 - pdf->map;           /* obj start begins just after the "obj" string */
     obj->flags = 0;
     bytesleft -= 4;
     eof = pdf->map + pdf->size;
     q = pdf->map + obj->start;
 
-    while (q < eof && bytesleft > 0) {
+    while (q < eof && bytesleft > 0)
+    {
         off_t p_stream, p_endstream;
         q2 = pdf_nextobject(q, bytesleft);
         if (!q2)
-            q2 = pdf->map + pdf->size;
+            q2 = pdf->map + pdf->size; /* No interesting objects found, fast-forward to eof */
 
         bytesleft -= q2 - q;
         if (find_stream_bounds(q-1, q2-q, bytesleft + (q2-q), &p_stream, &p_endstream, 1)) {
+            /* Found obj that contains a stream */
             obj->flags |= 1 << OBJ_STREAM;
             q2 = q-1 + p_endstream + 9;
             bytesleft -= q2 - q + 1;
@@ -281,12 +342,12 @@ int pdf_findobj(struct pdf_struct *pdf)
             if (bytesleft < 0) {
                 obj->flags |= 1 << OBJ_TRUNCATED;
                 pdf->offset = pdf->size;
-                return 1;/* truncated */
+                return 1; /* truncated file, no end to obj/stream */
             }
         } else if ((q3 = cli_memstr(q-1, q2-q+1, "endobj", 6))) {
             q2 = q3 + 6;
-            pdf->offset = q2 - pdf->map;
-            return 1; /* obj found and offset positioned */
+            pdf->offset = q2 - pdf->map; /* update the offset to just after the endobj */
+            return 1; /* obj found and offset positioned. ideal return case */
         } else {
             q2++;
             bytesleft--;
@@ -298,7 +359,7 @@ int pdf_findobj(struct pdf_struct *pdf)
     obj->flags |= 1 << OBJ_TRUNCATED;
     pdf->offset = pdf->size;
 
-    return 1;/* truncated */
+    return 1; /* truncated file, no end to obj. */
 }
 
 /**
@@ -2735,8 +2796,13 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     return rc == CL_BREAK ? CL_CLEAN : rc;
 }
 
-/*
- * Find the start of the next line
+/**
+ * @brief   Skip the rest of the current line, and find the start of the next line.
+ * 
+ * @param ptr   Current offset into buffer.
+ * @param len   Remaining bytes in buffer. 
+ * 
+ * @return const char*  Address of next line, or NULL if no next line in buffer.
  */
 static const char *
 pdf_nextlinestart(const char *ptr, size_t len)
@@ -2758,9 +2824,15 @@ pdf_nextlinestart(const char *ptr, size_t len)
     return ptr;
 }
 
-/*
- * Return the start of the next PDF object.
+/**
+ * @brief   Return the start of the next PDF object.
+ * 
  * This assumes that we're not in a stream.
+ * 
+ * @param ptr   Current offset into buffer.
+ * @param len   Remaining bytes in buffer. 
+ * 
+ * @return const char*  Address of next object in the buffer, or NULL if there is none in the buffer. 
  */
 static const char *
 pdf_nextobject(const char *ptr, size_t len)
