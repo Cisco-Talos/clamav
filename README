@@ -2,6 +2,29 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
+0.99.2.1
+------
+
+ClamAV 0.99.2.1 is a hotfix release to patch a set of vulnerabilities.
+
+    - fixes for the following CVE's: CVE-2017-6418, CVE-2017-6420, 
+      CVE-2017-12374, CVE-2017-12375, CVE-2017-12376, CVE-2017-12377, 
+      CVE-2017-12378, CVE-2017-12379, CVE-2017-12380. 
+    - also included are 2 minor fixes to properly detect openssl install
+      locations on FreeBSD 11, and prevent false warnings about zlib 1.2.1#
+      version numbers. 
+
+Thank you to the following ClamAV community members for your code
+submissions and bug reports! 
+
+Alberto Garcia
+Daniel J. Luke
+Francisco Oca
+Sebastian A. Siewior
+Suleman Ali
+
+Special thanks to Offensive Research at Salesforce.com for responsible disclosure.
+
 0.99.2
 ------
 
@@ -2052,7 +2075,7 @@ Noteworthy changes in this version:
 -) documentation:
     + new Spanish documentation on ClamAV and Sendmail integration by
       Erick Ivaan Lopez Carreon
-    + included clamdoc.pdf Turkish translation by yavuz kaya and Ýbrahim erken
+    + included clamdoc.pdf Turkish translation by yavuz kaya and ï¿½brahim erken
     + included clamav-mirror-howto.pdf by Luca Gibelli
     + included clamd+daemontools HOWTO by Jesse D. Guardiani
     + included signatures.pdf
