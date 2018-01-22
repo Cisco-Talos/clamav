@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2009 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -59,7 +59,7 @@ int localserver(const struct optstruct *opts)
 int localserver(const struct optstruct *opts)
 {
 	struct sockaddr_un server;
-	int sockfd, backlog;
+	int sockfd = 0, backlog;
 	STATBUF foo;
 	char *estr;
         char *sockdir;

@@ -1,7 +1,7 @@
 /*
  *  ClamdTOP
  *
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2008 - 2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
@@ -610,7 +610,7 @@ char *make_ip(const char *host, const char *port)
 
 static int make_connection_real(const char *soname, conn_t *conn)
 {
-    int s;
+    int s = -1;
     struct timeval tv;
     char *port=NULL;
     char *pt = strdup(soname);
