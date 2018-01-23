@@ -112,7 +112,8 @@ int cli_pcre_addoptions(struct cli_pcre_data *pd, const char **opt, int errout)
 #if USING_PCRE2
 int cli_pcre_compile(struct cli_pcre_data *pd, long long unsigned match_limit, long long unsigned match_limit_recursion, unsigned int options, int opt_override)
 {
-    int errornum, erroffset;
+    int errornum;
+    PCRE2_SIZE erroffset;
     pcre2_general_context *gctx;
     pcre2_compile_context *cctx;
 
@@ -142,7 +143,8 @@ int cli_pcre_compile(struct cli_pcre_data *pd, long long unsigned match_limit, l
     if (pd->re == NULL) {
         PCRE2_UCHAR errmsg[256];
         pcre2_get_error_message(errornum, errmsg, sizeof(errmsg));
-        cli_errmsg("cli_pcre_compile: PCRE2 compilation failed at offset %d: %s\n", erroffset, errmsg);
+        cli_errmsg("cli_pcre_compile: PCRE2 compilation failed at offset %llu: %s\n",
+                   (long long unsigned)erroffset, errmsg);
         pcre2_compile_context_free(cctx);
         pcre2_general_context_free(gctx);
         return CL_EMALFDB;
