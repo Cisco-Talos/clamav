@@ -2,10 +2,10 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
-0.99.2.1
+0.99.3
 ------
 
-ClamAV 0.99.2.1 is a hotfix release to patch a set of vulnerabilities.
+ClamAV 0.99.3 is a hotfix release to patch a set of vulnerabilities.
 
     - fixes for the following CVE's: CVE-2017-6418, CVE-2017-6420, 
       CVE-2017-12374, CVE-2017-12375, CVE-2017-12376, CVE-2017-12377, 
