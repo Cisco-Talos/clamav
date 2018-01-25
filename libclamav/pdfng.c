@@ -960,7 +960,7 @@ struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj *obj, s
     }
 
     /* More sanity checking */
-    if ((size_t)(end - objstart) == objsz)
+    if ((size_t)(end - objstart) >= objsz)
         return NULL;
 
     if (*end != ']')
