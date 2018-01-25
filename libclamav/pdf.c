@@ -1748,10 +1748,11 @@ static char *pdf_readstring(const char *q0, int len, const char *key, unsigned *
                     case '8':
                     case '9':
                         /* octal escape */
-                        if (q+2 < end)
-                            q++;
+                        if (q+2 < end) {
+                            *s++ = 64*(q[0] - '0') + 8*(q[1] - '0') + (q[2] - '0');
+                            q++; q++;
+                        }
 
-                        *s++ = 64*(q[0] - '0') + 8*(q[1] - '0') + (q[2] - '0');
                         break;
                     default:
                         /* ignore */
@@ -2191,8 +2192,9 @@ void pdf_handle_enc(struct pdf_struct *pdf)
         n = 0;
         O = pdf_readstring(q, len, "/O", &n, NULL, 0);
         if (!O || n < oulen) {
-            cli_dbgmsg("cli_pdf: invalid O: %d\n", n);
-            cli_dbgmsg("cli_pdf: invalid O: %d\n", n);
+            cli_dbgmsg("cli_pdf: invalid O: %u\n", n);
+            noisy_warnmsg("cli_pdf: invalid O: %u\n", n);
+
             if (O)
                 dbg_printhex("invalid O", O, n);
 
@@ -2228,6 +2230,7 @@ void pdf_handle_enc(struct pdf_struct *pdf)
                     break;
             if (i != n) {
                 dbg_printhex("too long U", U, n);
+                noisy_warnmsg("too long U: %u", n);
                 break;
             }
         }
