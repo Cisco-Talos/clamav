@@ -1,8 +1,10 @@
-0.99.3
+
+0.100.0 (in development)
 ------
 
-Welcome to ClamAV 0.99.3. In this release, we have included many code
-submissions from the ClamAV community:
+Welcome to ClamAV 0.100.0.  0.100.0 is currently in development.
+
+It includes many code submissions from the ClamAV community:
     - Interfaces to the Prelude SIEM open source package for collecting
       ClamAV virus events.
     - Visual Studio 2015 for building Microsoft Windows binaries.
@@ -16,7 +18,7 @@ submissions from the ClamAV community:
     - Numerous code patches, typos, and compiler warning fixes.
 
 Additionally, we have introduced important changes and new features in
-ClamAV 0.99.3, including:
+ClamAV 0.100, including:
     - Deprecating internal LLVM code support. The configure script has changed
       to search the system for an installed instance of the LLVM development
       libraries, and to otherwise use the bytecode interpreter for ClamAV
@@ -34,8 +36,7 @@ ClamAV 0.99.3, including:
       size limitations are exceeded.
     - Improve decoders for PDF files.
 
-The ClamAV community thanks the following individuals for their ClamAV 0.99.3
-code submissions:
+The ClamAV team thanks the following individuals for their code submissions:
 
 Sebastian Andrzej Siewior
 Keith Jones
