@@ -6,8 +6,8 @@
 #define REPO_VERSION VERSION
 #endif
 
-#define RES_VER_Q 0,99,3,0
-#define RES_VER_S "ClamAV 0.99.3-beta2"
+#define RES_VER_Q 0,100,0,0
+#define RES_VER_S "ClamAV 0.100.0-beta"
 
 VS_VERSION_INFO VERSIONINFO
     FILEVERSION RES_VER_Q
@@ -21,11 +21,14 @@ VS_VERSION_INFO VERSIONINFO
     FILEOS VOS_NT_WINDOWS32
 #ifdef THIS_IS_LIBCLAMAV
     FILETYPE VFT_DLL
-#else
+#else
+
     FILETYPE VFT_APP
-#endif
+#endif
+
     FILESUBTYPE 0
-BEGIN
+BEGIN
+
     BLOCK "StringFileInfo" {
 	BLOCK "040904B0" {
 	    VALUE "CompanyName", "Cisco Systems, Inc."
