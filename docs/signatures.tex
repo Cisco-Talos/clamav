@@ -487,7 +487,7 @@ Subsig1;Subsig2;...
 	\item \verb+Intermediates:CL_TYPE_*>CL_TYPE_*+: File types of intermediate containers which stores the scanned file.
 	  Specify 1-16 file types separated by '\verb+>+' in top-down order ('\verb+>+' separator not needed for single file type),
 	  last type should be the immediate container for the malicious content. \verb+CL_TYPE_ANY+ can be used as a wildcard
-	  file type. (expr; 0.99.3)
+	  file type. (expr; 0.100.0)
 	\item \verb+IconGroup1+: Icon group name 1 from .idb signature Required engine functionality (range; 0.96)
 	\item \verb+IconGroup2+: Icon group name 2 from .idb signature Required engine functionality (range; 0.96)
     \end{itemize}
@@ -954,7 +954,7 @@ Eicar-Test-Signature:bc356bae4c42f19a3de16e333ba3569c
               YARA rules in ClamAV will match against the normalized result. The effects of normalization
               of these file types may be captured using \verb+clamscan --leave-temps --tempdir=mytempdir+. 
               YARA rules may then be written using the normalized file(s) found in \verb+mytempdir+.
-              Alternatively, starting with ClamAV 0.99.3, \verb+clamscan --normalize=no+ will prevent
+              Alternatively, starting with ClamAV 0.100.0, \verb+clamscan --normalize=no+ will prevent
               normalization and only scan the raw file. To obtain similar behavior prior to 0.99.2, use
               \verb+clamscan --scan-html=no+. The corresponding parameters for clamd.conf are \verb+Normalize+
               and \verb+ScanHTML+.
