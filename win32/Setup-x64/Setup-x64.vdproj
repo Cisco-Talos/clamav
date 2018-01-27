@@ -45,12 +45,6 @@
         }
         "Entry"
         {
-        "MsmKey" = "8:_54C5C55693A2A8756FC8A2918B7396B5"
-        "OwnerKey" = "8:_DF09DF52E5014B378FBA8B4CD6C11C3B"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
         "MsmKey" = "8:_5CED7DA1BD104DA5AF2882D6CBA6E313"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
@@ -71,12 +65,6 @@
         {
         "MsmKey" = "8:_671D69A7B15349CF8AE7C0075C51AF53"
         "OwnerKey" = "8:_UNDEFINED"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_686E294DF4DB79D23B246B560B459B97"
-        "OwnerKey" = "8:_DF09DF52E5014B378FBA8B4CD6C11C3B"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
@@ -129,30 +117,6 @@
         }
         "Entry"
         {
-        "MsmKey" = "8:_90D9B33997DBBB89CBC1E519CFCDDDB2"
-        "OwnerKey" = "8:_DF09DF52E5014B378FBA8B4CD6C11C3B"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_92D3793AFCA9ECAF4ACA197D1C97A8E1"
-        "OwnerKey" = "8:_DF09DF52E5014B378FBA8B4CD6C11C3B"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_97545E314A2AA3E02C5E4210590E0F79"
-        "OwnerKey" = "8:_DF09DF52E5014B378FBA8B4CD6C11C3B"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_9B0D235988C6818141CA5F5D36676FD3"
-        "OwnerKey" = "8:_DF09DF52E5014B378FBA8B4CD6C11C3B"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
         "MsmKey" = "8:_C0DFAFFC11514B9190D3A585C3E58832"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
@@ -191,12 +155,6 @@
         {
         "MsmKey" = "8:_F047B3505FC74D809FB8251423DF4095"
         "OwnerKey" = "8:_UNDEFINED"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_F5E53CCFD47544CCB03C1D6FFAB996ED"
-        "OwnerKey" = "8:_DF09DF52E5014B378FBA8B4CD6C11C3B"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
@@ -390,26 +348,6 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_54C5C55693A2A8756FC8A2918B7396B5"
-            {
-            "SourcePath" = "8:LLVMx86codegen.lib"
-            "TargetName" = "8:LLVMx86codegen.lib"
-            "Tag" = "8:"
-            "Folder" = "8:_CEC880DBF61041CCA0B367A8647B2589"
-            "Condition" = "8:"
-            "Transitive" = "11:FALSE"
-            "Vital" = "11:TRUE"
-            "ReadOnly" = "11:FALSE"
-            "Hidden" = "11:FALSE"
-            "System" = "11:FALSE"
-            "Permanent" = "11:FALSE"
-            "SharedLegacy" = "11:FALSE"
-            "PackageAs" = "3:1"
-            "Register" = "3:1"
-            "Exclude" = "11:FALSE"
-            "IsDependency" = "11:TRUE"
-            "IsolateTo" = "8:"
-            }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_5E62992905A04275887C09F8469F522F"
             {
             "SourcePath" = "8:..\\..\\COPYING"
@@ -448,26 +386,6 @@
             "Register" = "3:1"
             "Exclude" = "11:FALSE"
             "IsDependency" = "11:FALSE"
-            "IsolateTo" = "8:"
-            }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_686E294DF4DB79D23B246B560B459B97"
-            {
-            "SourcePath" = "8:libclamavcxx.lib"
-            "TargetName" = "8:libclamavcxx.lib"
-            "Tag" = "8:"
-            "Folder" = "8:_CEC880DBF61041CCA0B367A8647B2589"
-            "Condition" = "8:"
-            "Transitive" = "11:FALSE"
-            "Vital" = "11:TRUE"
-            "ReadOnly" = "11:FALSE"
-            "Hidden" = "11:FALSE"
-            "System" = "11:FALSE"
-            "Permanent" = "11:FALSE"
-            "SharedLegacy" = "11:FALSE"
-            "PackageAs" = "3:1"
-            "Register" = "3:1"
-            "Exclude" = "11:FALSE"
-            "IsDependency" = "11:TRUE"
             "IsolateTo" = "8:"
             }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_73A073DB877E4372ACF9FDFF0700894C"
@@ -570,86 +488,6 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_90D9B33997DBBB89CBC1E519CFCDDDB2"
-            {
-            "SourcePath" = "8:libclamav.dll"
-            "TargetName" = "8:libclamav.dll"
-            "Tag" = "8:"
-            "Folder" = "8:_CEC880DBF61041CCA0B367A8647B2589"
-            "Condition" = "8:"
-            "Transitive" = "11:FALSE"
-            "Vital" = "11:TRUE"
-            "ReadOnly" = "11:FALSE"
-            "Hidden" = "11:FALSE"
-            "System" = "11:FALSE"
-            "Permanent" = "11:FALSE"
-            "SharedLegacy" = "11:FALSE"
-            "PackageAs" = "3:1"
-            "Register" = "3:1"
-            "Exclude" = "11:FALSE"
-            "IsDependency" = "11:TRUE"
-            "IsolateTo" = "8:"
-            }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_92D3793AFCA9ECAF4ACA197D1C97A8E1"
-            {
-            "SourcePath" = "8:LLVMjit.lib"
-            "TargetName" = "8:LLVMjit.lib"
-            "Tag" = "8:"
-            "Folder" = "8:_CEC880DBF61041CCA0B367A8647B2589"
-            "Condition" = "8:"
-            "Transitive" = "11:FALSE"
-            "Vital" = "11:TRUE"
-            "ReadOnly" = "11:FALSE"
-            "Hidden" = "11:FALSE"
-            "System" = "11:FALSE"
-            "Permanent" = "11:FALSE"
-            "SharedLegacy" = "11:FALSE"
-            "PackageAs" = "3:1"
-            "Register" = "3:1"
-            "Exclude" = "11:FALSE"
-            "IsDependency" = "11:TRUE"
-            "IsolateTo" = "8:"
-            }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_97545E314A2AA3E02C5E4210590E0F79"
-            {
-            "SourcePath" = "8:LLVMcodegen.lib"
-            "TargetName" = "8:LLVMcodegen.lib"
-            "Tag" = "8:"
-            "Folder" = "8:_CEC880DBF61041CCA0B367A8647B2589"
-            "Condition" = "8:"
-            "Transitive" = "11:FALSE"
-            "Vital" = "11:TRUE"
-            "ReadOnly" = "11:FALSE"
-            "Hidden" = "11:FALSE"
-            "System" = "11:FALSE"
-            "Permanent" = "11:FALSE"
-            "SharedLegacy" = "11:FALSE"
-            "PackageAs" = "3:1"
-            "Register" = "3:1"
-            "Exclude" = "11:FALSE"
-            "IsDependency" = "11:TRUE"
-            "IsolateTo" = "8:"
-            }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_9B0D235988C6818141CA5F5D36676FD3"
-            {
-            "SourcePath" = "8:LLVMsystem.lib"
-            "TargetName" = "8:LLVMsystem.lib"
-            "Tag" = "8:"
-            "Folder" = "8:_CEC880DBF61041CCA0B367A8647B2589"
-            "Condition" = "8:"
-            "Transitive" = "11:FALSE"
-            "Vital" = "11:TRUE"
-            "ReadOnly" = "11:FALSE"
-            "Hidden" = "11:FALSE"
-            "System" = "11:FALSE"
-            "Permanent" = "11:FALSE"
-            "SharedLegacy" = "11:FALSE"
-            "PackageAs" = "3:1"
-            "Register" = "3:1"
-            "Exclude" = "11:FALSE"
-            "IsDependency" = "11:TRUE"
-            "IsolateTo" = "8:"
-            }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_C2EA2581FE8048FFB9B1DC2F809435EA"
             {
             "SourcePath" = "8:..\\..\\COPYING.YARA"
@@ -726,17 +564,6 @@
             "Property" = "8:TARGETDIR"
                 "Folders"
                 {
-                    "{9EF0B969-E518-4E46-987F-47570745A589}:_9DF108569FF14FE68E665C908435DE1A"
-                    {
-                    "Name" = "8:conf_examples"
-                    "AlwaysCreate" = "11:FALSE"
-                    "Condition" = "8:"
-                    "Transitive" = "11:FALSE"
-                    "Property" = "8:_2A6147680C63441CA241C77DEAE4C204"
-                        "Folders"
-                        {
-                        }
-                    }
                     "{9EF0B969-E518-4E46-987F-47570745A589}:_19E668FC663A4F7CBF9DA69A5FA28CDD"
                     {
                     "Name" = "8:database"
@@ -744,6 +571,17 @@
                     "Condition" = "8:"
                     "Transitive" = "11:FALSE"
                     "Property" = "8:_72742E1E77DD4A478291D98182BF8352"
+                        "Folders"
+                        {
+                        }
+                    }
+                    "{9EF0B969-E518-4E46-987F-47570745A589}:_9DF108569FF14FE68E665C908435DE1A"
+                    {
+                    "Name" = "8:conf_examples"
+                    "AlwaysCreate" = "11:FALSE"
+                    "Condition" = "8:"
+                    "Transitive" = "11:FALSE"
+                    "Property" = "8:_2A6147680C63441CA241C77DEAE4C204"
                         "Folders"
                         {
                         }
@@ -777,8 +615,8 @@
         {
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:ClamAV"
-        "ProductCode" = "8:{EFAEABEF-06ED-4095-9BAA-A5B1D1B4AACA}"
-        "PackageCode" = "8:{675E4372-18D7-448A-A126-A7D7593E4E3F}"
+        "ProductCode" = "8:{8AFA9F0E-C72B-43D0-BB9A-671584E73D81}"
+        "PackageCode" = "8:{65E19B2F-6C5C-41B9-A4B2-09868658043C}"
         "UpgradeCode" = "8:{D35B7E07-D7B1-404B-A0C3-FBB599A1D58B}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"
@@ -1294,20 +1132,6 @@
         }
         "MergeModule"
         {
-            "{CEE29DC0-9FBA-4B99-8D47-5BC643D9B626}:_F5E53CCFD47544CCB03C1D6FFAB996ED"
-            {
-            "UseDynamicProperties" = "11:TRUE"
-            "IsDependency" = "11:TRUE"
-            "SourcePath" = "8:microsoft_vc140_crt_x64.msm"
-                "Properties"
-                {
-                }
-            "LanguageId" = "3:0"
-            "Exclude" = "11:FALSE"
-            "Folder" = "8:"
-            "Feature" = "8:"
-            "IsolateTo" = "8:"
-            }
         }
         "ProjectOutput"
         {
