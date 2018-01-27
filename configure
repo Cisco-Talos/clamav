@@ -5025,7 +5025,7 @@ $as_echo "$ac_cv_safe_to_define___extensions__" >&6; }
 
 
 
-VERSION="0.99.3-beta2"
+VERSION="0.100.0-beta"
 
 LC_CURRENT=8
 LC_REVISION=1
