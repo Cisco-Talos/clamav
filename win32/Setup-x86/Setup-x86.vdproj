@@ -615,8 +615,8 @@
         {
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:ClamAV"
-        "ProductCode" = "8:{4A276EA4-571D-47C4-9A8C-17967DFBFAA1}"
-        "PackageCode" = "8:{05C917BE-C6EB-437B-BB9E-5FBD8FEF5E80}"
+        "ProductCode" = "8:{30C44A86-1FA2-466A-A9AA-F902D4730A76}"
+        "PackageCode" = "8:{44298AE2-C133-4ADD-8690-47570FE3C3C1}"
         "UpgradeCode" = "8:{B65ED295-87F7-4870-8017-E3A594DDADF8}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"
@@ -1165,7 +1165,7 @@
             }
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_29583B2B37A44A71864FFD88DFED2C8F"
             {
-            "SourcePath" = "8:"
+            "SourcePath" = "8:..\\Win32\\Release\\libclamav.dll"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_C751D6577C584B05A32BF01390F14B9F"
