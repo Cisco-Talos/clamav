@@ -519,6 +519,8 @@ remote_cvdhead (const char *cvdfile, const char *localfile,
     struct cl_cvd *cvd;
     char last_modified[36], uastr[128];
 
+    /* Initialize mirror status variable to unknown */
+    *ims = -1;
 
     if (proxy)
     {
@@ -659,6 +661,7 @@ remote_cvdhead (const char *cvdfile, const char *localfile,
     if ((strstr (buffer, "HTTP/1.1 304")) != NULL
         || (strstr (buffer, "HTTP/1.0 304")) != NULL)
     {
+        /* mirror status: up to date */
         *ims = 0;
         logg ("OK (IMS)\n");
         mirman_update (mdat->currip, mdat->af, mdat, 0);
@@ -666,6 +669,7 @@ remote_cvdhead (const char *cvdfile, const char *localfile,
     }
     else
     {
+        /* mirror status: newer versin available */
         *ims = 1;
     }
 
@@ -1908,12 +1912,19 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
     {
         if (optget (opts, "PrivateMirror")->enabled)
         {
+            /*
+             * For a private mirror, get the CLD instead of the CVD.
+             */
             remote =
                 remote_cvdhead (cldfile, localname, hostname, ip, localip,
                                 proxy, port, user, pass, uas, &ims, ctimeout,
                                 rtimeout, mdat, logerr, can_whitelist,
                                 attempt);
-            if (!remote) {
+            if (!remote && (ims != 0)) {
+                /*
+                 * Failed to get CLD update, and it's unknown if the status is up-to-date.
+                 * Attempt to get the CVD instead.
+                 */
                 iscld = -1;
                 remote =
                     remote_cvdhead (cvdfile, localname, hostname, ip, localip,
