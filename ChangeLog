@@ -1,3 +1,63 @@
+Mon Jan 22 15:41:22 2018 -0500 (Micah Snyder)
+------------------------------------------
+ * bb11992: fixed issue with variables being used before being initialized.
+
+Wed Jan 24 19:17:31 2018 -0500 (Micah Snyder)
+------------------------------------------
+ * bb11025: Correcting PUA URL in man pages and shared optparser.
+
+Wed Jan 31 08:32:22 2018 -0500 (Micah Snyder)
+------------------------------------------
+ * bb12009: adding check to verify that CLD isn't simply up to date before downloading the CVD for updates from private mirrors.
+
+Wed Jan 24 13:43:59 2018 -0500 (Micah Snyder)
+------------------------------------------
+ * bumping the FLEVEL for 0.100
+
+Tue Jan 23 16:09:56 2018 -0500 (Kevin Lin)
+------------------------------------------
+ * bb11965: fix issue with pcre2 support on 64-bit machines
+
+Fri Jan 19 13:53:15 2018 -0500 (Kevin Lin)
+------------------------------------------
+ * bb11962: add nocase support to filtering system
+
+Wed Jan 17 10:01:38 2018 -0500 (Micah Snyder)
+------------------------------------------
+ * bb11733: applying patch provided courtesy of A. Wilcox that resolves stack size issues on non-glibc Linux machines.  May apply to bb11979 as well.
+
+Thu Dec 21 17:00:37 2017 -0500 (Steven Morgan)
+------------------------------------------
+ * bb11996 - deprecate AllowSupplementaryGroups more gracefully.
+
+Thu Dec 21 12:26:34 2017 -0500 (Steven Morgan)
+------------------------------------------
+ * fix result of yara matches operator when running in ClamAV.
+
+Tue Dec 19 14:47:06 2017 -0500 (Steven Morgan)
+------------------------------------------
+ * bb11981 - fix for some unit tests.
+
+Wed Dec 13 16:56:30 2017 -0500 (James Ralston)
+------------------------------------------
+ * bb11978 - onas: document limitations of OnAccessExcludeRootUID and OnAccessExcludeUID.
+
+Wed Dec 13 14:48:16 2017 -0500 (James Ralston)
+------------------------------------------
+ * bb11978 - onas: onas_fan_checkowner(): distinguish EACCES and ENOENT stat() failures; clean up documentation.
+
+Wed Dec 13 14:03:35 2017 -0500 (Mickey Sola)
+------------------------------------------
+ * 0.99.3 - bb11978 - onas - onas_fan_checkowner cleanup patch submitted by James Ralston
+
+Tue Dec 12 15:56:55 2017 -0500 (Mickey Sola)
+------------------------------------------
+ * 0.99.3 - bb11978 - onas - adding ExcludeRootUID option as cleaner alternative to using negative values to whitelist root UIDs using the ExcludeUID option
+
+Thu Dec 7 16:23:20 2017 -0500 (Micah Snyder)
+------------------------------------------
+ * Setting up installer project files to create setup.exe that install the missing redistributables.  Adding sample config files that are targetted towards windows.  Fixing setup-x86 configuration to actually include 32bit binaries instead of using the 64bit binaries.  Removing the broken Release-Static configuration.
+
 Tue, 28 Nov 2017 18:05:44 -0500 (Steven Morgan)
 ------------------------------------------
  * bb11882 - set default ./configure library search for libxml2.
@@ -14,7 +74,7 @@ Mon, 20 Nov 2017 12:32:08 -0500 (Mickey Sola)
 
 Fri, 17 Nov 2017 09:00:06 -0500 (Micah Snyder)
 ------------------------------------------
- * Regargeting openssl solution to match the other projects.
+ * Retargeting openssl solution to match the other projects.
 
 Mon, 13 Nov 2017 16:24:45 -0500 (Micah Snyder)
 ------------------------------------------
@@ -47,12 +107,12 @@ Tue, 24 Oct 2017 13:38:37 -0400 (Micah Snyder)
 
 Tue, 24 Oct 2017 09:33:54 -0400 (Micah Snyder)
 ------------------------------------------
- *      1) improved debug messages
-	2) accept files in the cab with 0-byte (just a null terminator) lengths.
+ * 1) improved debug messages
+   2) accept files in the cab with 0-byte (just a null terminator) lengths.
 	   I don’t know that there are any real cabs that have this, but it’s
 	   conceivable.
-	3) only try to sanitize if we actually got the filename correctly
-	4) reset the parsing offset to the beginning of the file entries in case
+   3) only try to sanitize if we actually got the filename correctly
+   4) reset the parsing offset to the beginning of the file entries in case
 	   the # of folder entries found did not match the # stated in the header.
 
 Wed, 18 Oct 2017 16:46:58 -0400 (Steven Morgan)

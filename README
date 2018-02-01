@@ -2,7 +2,7 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
-0.100.0 (in development)
+0.100.0-beta
 ------
 
 Welcome to ClamAV 0.100.0.  0.100.0 is under active development.
@@ -18,7 +18,7 @@ It includes many code submissions from the ClamAV community:
     - Deprecation of the AllowSupplementaryGroups parameter statement
       in clamd, clamav-milter, and freshclam. Use of supplementary
       is now in effect by default.
-    - Numerous code patches, typos, and compiler warning fixes.
+    - Numerous bug fixes, typo corrections, and compiler warning fixes.
 
 Additionally, we have introduced important changes and new features in
 ClamAV 0.100, including:
@@ -41,21 +41,21 @@ ClamAV 0.100, including:
 
 The ClamAV team thanks the following individuals for their code submissions:
 
-Sebastian Andrzej Siewior
-Keith Jones
+Andreas Schulze
+Anthony Chan
 Bill Parker
 Chris Miserva
 Daniel J. Luke
-Matthew Boedicker
-Ningirsu
-Michael Pelletier
-Anthony Chan
-Stephen Welker
+Georgy Salnikov
+Jonas Zaddach
+Keith Jones
 Marc Deslauriers
 Mark Allan
-Andreas Schulze
-Jonas Zaddach
-Georgy Salnikov
+Matthew Boedicker
+Michael Pelletier
+Ningirsu
+Sebastian Andrzej Siewior
+Stephen Welker
 
 0.99.3 (current stable release)
 ------
