@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015, 2017 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2017-2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2014 Sourcefire, Inc.
  *
  *  Authors: Nigel Horne, Török Edvin
@@ -2456,14 +2456,6 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
         }
 
         pdf_parseobj(&pdf, obj);
-        if (SCAN_ALGO && obj->numfilters > PDF_FILTER_DTRIGGER) {
-            rc = cli_append_virus(ctx, "Heuristic.PDF.TooManyFilters");
-            if (rc == CL_VIRUS) { 
-                alerts++;
-                if (SCAN_ALL)
-                    rc = CL_CLEAN;
-            }
-        }
     }
 
     pdf_handle_enc(&pdf);
