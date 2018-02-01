@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015, 2017 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2017-2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Nigel Horne
@@ -23,7 +23,7 @@
 
 #include "others.h"
 #define PDF_FILTERLIST_MAX  64
-#define PDF_FILTER_DTRIGGER 16
+
 struct pdf_obj {
     uint32_t start;
     uint32_t id;
