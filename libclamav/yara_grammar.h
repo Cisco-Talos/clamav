@@ -34,7 +34,7 @@
 # define YY_YARA_YY_YARA_GRAMMAR_H_INCLUDED
 /* Debug traces.  */
 #ifndef YYDEBUG
-# define YYDEBUG 1
+# define YYDEBUG 0
 #endif
 #if YYDEBUG
 extern int yara_yydebug;
@@ -158,7 +158,7 @@ extern int yara_yydebug;
 
 union YYSTYPE
 {
-#line 214 "yara_grammar.y" /* yacc.c:1915  */
+#line 214 "yara_grammar.y" /* yacc.c:1909  */
 
   SIZED_STRING*   sized_string;
   char*           c_string;
@@ -168,7 +168,7 @@ union YYSTYPE
   YR_META*        meta;
   YR_OBJECT*      object;
 
-#line 170 "yara_grammar.h" /* yacc.c:1915  */
+#line 170 "yara_grammar.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;
