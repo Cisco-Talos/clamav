@@ -1,3 +1,7 @@
+Wed, 4 Nov 2015 14:46:46 -0500 (Steven Morgan)
+------------------------------------------
+ * ClamAV 0.100.0-beta Release.
+ 
 Mon Jan 22 15:41:22 2018 -0500 (Micah Snyder)
 ------------------------------------------
  * bb11992: fixed issue with variables being used before being initialized.
