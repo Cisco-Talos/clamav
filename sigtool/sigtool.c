@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007 - 2013 Sourcefire, Inc.
  *  Copyright (C) 2002 - 2007 Tomasz Kojm <tkojm@clamav.net>
  *  CDIFF code (C) 2006 Sensory Networks, Inc.
@@ -3508,32 +3508,34 @@ static int dumpcerts(const struct optstruct *opts)
 static void help(void)
 {
     mprintf("\n");
-    mprintf("Clam AntiVirus: Signature Tool (sigtool)  %s\n", get_version());
-    mprintf("       By The ClamAV Team: http://www.clamav.net/team\n");
-    mprintf("       (C) 2007-2017 Cisco Systems, Inc.\n\n");
-
-    mprintf("    --help                 -h              show help\n");
-    mprintf("    --version              -V              print version number and exit\n");
-    mprintf("    --quiet                                be quiet, output only error messages\n");
-    mprintf("    --debug                                enable debug messages\n");
-    mprintf("    --stdout                               write to stdout instead of stderr\n");
-    mprintf("    --hex-dump                             convert data from stdin to a hex\n");
+    mprintf("                      Clam AntiVirus: Signature Tool %s\n", get_version());
+    mprintf("           By The ClamAV Team: http://www.clamav.net/team\n");
+    mprintf("           (C) 2007-2018 Cisco Systems, Inc.\n");
+    mprintf("\n");
+    mprintf("    sigtool [options]\n");
+    mprintf("\n");
+    mprintf("    --help                 -h              Show this help\n");
+    mprintf("    --version              -V              Print version number and exit\n");
+    mprintf("    --quiet                                Be quiet, output only error messages\n");
+    mprintf("    --debug                                Enable debug messages\n");
+    mprintf("    --stdout                               Write to stdout instead of stderr\n");
+    mprintf("    --hex-dump                             Convert data from stdin to a hex\n");
     mprintf("                                           string and print it on stdout\n");
-    mprintf("    --md5 [FILES]                          generate MD5 checksum from stdin\n");
+    mprintf("    --md5 [FILES]                          Generate MD5 checksum from stdin\n");
     mprintf("                                           or MD5 sigs for FILES\n");
-    mprintf("    --sha1 [FILES]                         generate SHA1 checksum from stdin\n");
+    mprintf("    --sha1 [FILES]                         Generate SHA1 checksum from stdin\n");
     mprintf("                                           or SHA1 sigs for FILES\n");
-    mprintf("    --sha256 [FILES]                       generate SHA256 checksum from stdin\n");
+    mprintf("    --sha256 [FILES]                       Generate SHA256 checksum from stdin\n");
     mprintf("                                           or SHA256 sigs for FILES\n");
-    mprintf("    --mdb [FILES]                          generate .mdb (section hash) sigs\n");
-    mprintf("    --imp [FILES]                          generate .imp (import table hash) sigs\n");
-    mprintf("    --html-normalise=FILE                  create normalised parts of HTML file\n");
-    mprintf("    --ascii-normalise=FILE                 create normalised text file from ascii source\n");
-    mprintf("    --utf16-decode=FILE                    decode UTF16 encoded files\n");
-    mprintf("    --info=FILE            -i FILE         print database information\n");
-    mprintf("    --build=NAME [cvd] -b NAME             build a CVD file\n");
+    mprintf("    --mdb [FILES]                          Generate .mdb (section hash) sigs\n");
+    mprintf("    --imp [FILES]                          Generate .imp (import table hash) sigs\n");
+    mprintf("    --html-normalise=FILE                  Create normalised parts of HTML file\n");
+    mprintf("    --ascii-normalise=FILE                 Create normalised text file from ascii source\n");
+    mprintf("    --utf16-decode=FILE                    Decode UTF16 encoded files\n");
+    mprintf("    --info=FILE            -i FILE         Print database information\n");
+    mprintf("    --build=NAME [cvd] -b NAME             Build a CVD file\n");
     mprintf("    --max-bad-sigs=NUMBER                  Maximum number of mismatched signatures\n");
-    mprintf("                                           when building a CVD. Default: 3000\n");
+    mprintf("                                           When building a CVD. Default: 3000\n");
     mprintf("    --flevel=FLEVEL                        Specify a custom flevel.\n");
     mprintf("                                           Default: %u\n", cl_retflevel());
     mprintf("    --cvd-version=NUMBER                   Specify the version number to use for\n");

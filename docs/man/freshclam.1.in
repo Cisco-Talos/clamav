@@ -33,6 +33,9 @@ Don't print and log warnings.
 \fB\-\-stdout\fR
 Write all messages to stdout.
 .TP 
+\fB\-\-show\-progress\fR
+Show download progress percentage.
+.TP 
 \fB\-\-config\-file=FILE
 Read configuration from FILE.
 .TP
