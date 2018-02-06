@@ -1233,16 +1233,18 @@ static void sigint(int a)
 static void help(void)
 {
     printf("\n");
-    printf("           Clam AntiVirus: Monitoring Tool %s\n", get_version());
+    printf("                       Clam AntiVirus: Monitoring Tool %s\n", get_version());
     printf("           By The ClamAV Team: http://www.clamav.net/about.html#credits\n");
-    printf("           (C) 2008-2017 Cisco Systems, Inc.\n\n");
-    printf("clamdtop [-hVc] [host[:port] /path/to/clamd.socket ...]\n\n");
-    printf("    --help                 -h         Show help\n");
+    printf("           (C) 2008-2018 Cisco Systems, Inc.\n");
+    printf("\n");
+    printf("    clamdtop [-hVc] [host[:port] /path/to/clamd.socket ...]\n");
+    printf("\n");
+    printf("    --help                 -h         Show this help\n");
     printf("    --version              -V         Show version\n");
     printf("    --config-file=FILE     -c FILE    Read clamd's configuration files from FILE\n");
-    printf("    --defaultcolors	       -d	  Use default terminal colors\n");
-    printf("	host[:port]			  Connect to clamd on host at port (default 3310)\n");
-    printf("    /path/to/clamd.socket		  Connect to clamd over a local socket\n");
+    printf("    --defaultcolors	       -d         Use default terminal colors\n");
+    printf("    host[:port]                       Connect to clamd on host at port (default 3310)\n");
+    printf("    /path/to/clamd.socket             Connect to clamd over a local socket\n");
     printf("\n");
     return;
 }

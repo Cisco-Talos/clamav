@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2008 Sourcefire, Inc.
  *
  *  Author: aCaB <acab@clamav.net>
@@ -122,10 +122,17 @@ int main(int argc, char **argv) {
     }
 
     if(optget(opts, "help")->enabled) {
-	printf("Usage: %s [-c <config-file>]\n\n", argv[0]);
+    printf("\n");
+    printf("                       Clam AntiVirus: Milter Mail Scanner %s\n", get_version());
+    printf("           By The ClamAV Team: http://www.clamav.net/about.html#credits\n");
+    printf("           (C) 2009-2018 Cisco Systems, Inc.\n");
+    printf("\n");
+	printf("    %s [-c <config-file>]\n\n", argv[0]);
+    printf("\n");
 	printf("    --help                   -h       Show this help\n");
-	printf("    --version                -V       Show version and exit\n");
-	printf("    --config-file <file>     -c       Read configuration from file\n\n");
+	printf("    --version                -V       Show version\n");
+	printf("    --config-file <file>     -c       Read configuration from file\n");
+    printf("\n");
 	optfree(opts);
 	return 0;
     }

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2009 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -82,14 +82,19 @@ int is_valid_hostid(void);
 static void help(void)
 {
     printf("\n");
-    printf("                      Clam AntiVirus Daemon %s\n", get_version());
+    printf("                      Clam AntiVirus: Daemon %s\n", get_version());
     printf("           By The ClamAV Team: http://www.clamav.net/about.html#credits\n");
-    printf("           (C) 2007-2017 Cisco Systems, Inc.\n\n");
-
-    printf("    --help                   -h             Show this help.\n");
-    printf("    --version                -V             Show version number.\n");
-    printf("    --debug                                 Enable debug mode.\n");
-    printf("    --config-file=FILE       -c FILE        Read configuration from FILE.\n\n");
+    printf("           (C) 2007-2018 Cisco Systems, Inc.\n");
+    printf("\n");
+    printf("    clamd [options]\n");
+    printf("\n");
+    printf("    --help                   -h             Show this help\n");
+    printf("    --version                -V             Show version number\n");
+    printf("    --debug                                 Enable debug mode\n");
+    printf("    --config-file=FILE       -c FILE        Read configuration from FILE\n");
+    printf("\n");
+    printf("Pass in - as the filename for stdin.\n");
+    printf("\n");
 }
 
 static struct optstruct *opts;
