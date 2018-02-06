@@ -834,7 +834,7 @@ static int search_chunk(struct mschmd_header *chm,
 # endif
 # define TOLOWER(x) tolower(x)
 #else
-# define TOLOWER(x) (((x)<0||(x)>256)?(x):mspack_tolower_map[(x)])
+# define TOLOWER(x) (((x)<0||(x)>255)?(x):mspack_tolower_map[(x)])
 /* Map of char -> lowercase char for the first 256 chars. Generated with:
  * LC_CTYPE=en_GB.utf-8 perl -Mlocale -le 'print map{ord(lc chr).","} 0..255'
  */
