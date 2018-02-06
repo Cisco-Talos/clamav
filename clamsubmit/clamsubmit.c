@@ -29,16 +29,22 @@ typedef struct _write_data {
 
 void usage(char *name)
 {
-    fprintf(stderr, "USAGE: %s -hHinpVv?\n", name);
-    fprintf(stderr, "OPTIONS:\n");
-    fprintf(stderr, "    -e [EMAIL]\tYour email address (required)\n");
-    fprintf(stderr, "    -h or -?\tShow the help text\n");
-    fprintf(stderr, "    -n [FILE]\tSubmit a false negative (FN)\n");
-    fprintf(stderr, "    -N [NAME]\tYour name contained in quotation marks (required)\n");
-    fprintf(stderr, "    -p [FILE]\tSubmit a false positive (FP)\n");
-    fprintf(stderr, "    -V [NAME] \tDetected virus name(required with -p)\n");
-    fprintf(stderr, "    -v\t\tShow version number and exit\n");
-    fprintf(stderr, "You must specify -n or -p. Both are mutually exclusive. Pass in - as the filename for stdin.\n");
+    printf("\n");
+    printf("                       Clam AntiVirus: Monitoring Tool %s\n", get_version());
+    printf("           By The ClamAV Team: http://www.clamav.net/about.html#credits\n");
+    printf("           (C) 2008-2018 Cisco Systems, Inc.\n");
+    printf("\n");
+    printf("    %s -hHinpVv?\n", name);
+    printf("\n");
+    printf("    -h or -?                  Show this help\n");
+    printf("    -v                        Show version\n");
+    printf("    -e [EMAIL]                Your email address (required)\n");
+    printf("    -n [FILE/-]               Submit a false negative (FN)\n");
+    printf("    -N [NAME]                 Your name contained in quotation marks (required)\n");
+    printf("    -p [FILE/-]               Submit a false positive (FP)\n");
+    printf("    -V [VIRUS]                Detected virus name (required with -p)\n");
+    printf("\n");
+    printf("You must specify -n or -p. Both are mutually exclusive. Pass in - as the filename for stdin.\n\n");
     exit(0);
 }
 

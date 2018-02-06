@@ -1,4 +1,4 @@
-.TH "clamav-milter.conf" "5" "February 12, 2007" "ClamAV @VERSION@" "Clam AntiVirus"
+.TH "clamav-milter.conf" "5" "Feb 25, 2009" "ClamAV @VERSION@" "Clam AntiVirus"
 .SH "NAME"
 .LP 
 \fBclamav-milter.conf\fR \- Configuration file for clamav-milter

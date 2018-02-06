@@ -145,67 +145,41 @@ help (void)
 {
     mprintf_stdout = 1;
 
-    mprintf 
-        ("\n");
-    mprintf 
-        ("                   Clam AntiVirus: freshclam  %s\n", get_version ());
-    printf 
-        ("           By The ClamAV Team: http://www.clamav.net/about.html#credits\n");
-    printf 
-        ("           (C) 2007-2017 Cisco Systems, Inc.\n\n");
-    mprintf 
-        ("    --help               -h              show help\n");
-    mprintf
-        ("    --version            -V              print version number and exit\n");
-    mprintf 
-        ("    --verbose            -v              be verbose\n");
-    mprintf
-        ("    --debug                              enable debug messages\n");
-    mprintf
-        ("    --quiet                              only output error messages\n");
-    mprintf
-        ("    --no-warnings                        don't print and log warnings\n");
-    mprintf
-        ("    --stdout                             write to stdout instead of stderr\n");
-    mprintf
-        ("    --show-progress                      show download progress percentage\n");
-    mprintf 
-        ("\n");
-    mprintf
-        ("    --config-file=FILE                   read configuration from FILE.\n");
-    mprintf 
-        ("    --log=FILE           -l FILE         log into FILE\n");
+    mprintf("\n");
+    mprintf("                      Clam AntiVirus: Database Updater %s\n", get_version());
+    mprintf("           By The ClamAV Team: http://www.clamav.net/about.html#credits\n");
+    mprintf("           (C) 2007-2018 Cisco Systems, Inc.\n");
+    mprintf("\n");
+    mprintf("    freshclam [options]\n");
+    mprintf("\n");
+    mprintf("    --help               -h              Show this help\n");
+    mprintf("    --version            -V              Print version number and exit\n");
+    mprintf("    --verbose            -v              Be verbose\n");
+    mprintf("    --debug                              Enable debug messages\n");
+    mprintf("    --quiet                              Only output error messages\n");
+    mprintf("    --no-warnings                        Don't print and log warnings\n");
+    mprintf("    --stdout                             Write to stdout instead of stderr\n");
+    mprintf("    --show-progress                      Show download progress percentage\n");
+    mprintf("\n");
+    mprintf("    --config-file=FILE                   Read configuration from FILE.\n");
+    mprintf("    --log=FILE           -l FILE         Log into FILE\n");
 #ifndef _WIN32
-    mprintf 
-        ("    --daemon             -d              run in daemon mode\n");
-    mprintf
-        ("    --pid=FILE           -p FILE         save daemon's pid in FILE\n");
-    mprintf 
-        ("    --user=USER          -u USER         run as USER\n");
+    mprintf("    --daemon             -d              Run in daemon mode\n");
+    mprintf("    --pid=FILE           -p FILE         Save daemon's pid in FILE\n");
+    mprintf("    --user=USER          -u USER         Run as USER\n");
 #endif
-    mprintf
-        ("    --no-dns                             force old non-DNS verification method\n");
-    mprintf
-        ("    --checks=#n          -c #n           number of checks per day, 1 <= n <= 50\n");
-    mprintf
-        ("    --datadir=DIRECTORY                  download new databases into DIRECTORY\n");
+    mprintf("    --no-dns                             Force old non-DNS verification method\n");
+    mprintf("    --checks=#n          -c #n           Number of checks per day, 1 <= n <= 50\n");
+    mprintf("    --datadir=DIRECTORY                  Download new databases into DIRECTORY\n");
 #ifdef BUILD_CLAMD
-    mprintf
-        ("    --daemon-notify[=/path/clamd.conf]   send RELOAD command to clamd\n");
+    mprintf("    --daemon-notify[=/path/clamd.conf]   Send RELOAD command to clamd\n");
 #endif
-    mprintf
-        ("    --local-address=IP   -a IP           bind to IP for HTTP downloads\n");
-    mprintf
-        ("    --on-update-execute=COMMAND          execute COMMAND after successful update\n");
-    mprintf
-        ("    --on-error-execute=COMMAND           execute COMMAND if errors occurred\n");
-    mprintf
-        ("    --on-outdated-execute=COMMAND        execute COMMAND when software is outdated\n");
-    mprintf
-        ("    --list-mirrors                       print mirrors from mirrors.dat\n");
-    mprintf
-        ("    --update-db=DBNAME                   only update database DBNAME\n");
-
+    mprintf("    --local-address=IP   -a IP           Bind to IP for HTTP downloads\n");
+    mprintf("    --on-update-execute=COMMAND          Execute COMMAND after successful update\n");
+    mprintf("    --on-error-execute=COMMAND           Execute COMMAND if errors occurred\n");
+    mprintf("    --on-outdated-execute=COMMAND        Execute COMMAND when software is outdated\n");
+    mprintf("    --list-mirrors                       Print mirrors from mirrors.dat\n");
+    mprintf("    --update-db=DBNAME                   Only update database DBNAME\n");
     mprintf ("\n");
 }
 

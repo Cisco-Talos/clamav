@@ -51,6 +51,9 @@ Create temporary files in DIRECTORY. Directory must be writable for the '@CLAMAV
 \fB\-\-leave\-temps\fR
 Do not remove temporary files.
 .TP 
+\fB\-\-gen\-json\fR
+Generate JSON description of scanned file(s). JSON will be printed and also dropped to the temp directory if --leave-temps is enabled.
+.TP 
 \fB\-d FILE/DIR, \-\-database=FILE/DIR\fR
 Load virus database from FILE or load all virus database files from DIR.
 .TP 
