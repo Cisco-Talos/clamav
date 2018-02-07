@@ -17952,6 +17952,10 @@ else
     fi
   fi
 fi
+if test "X$have_json_header" != "Xyes"
+then
+    as_fn_error $? "unable to find json includes." "$LINENO" 5
+fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $LIBJSON_HOME" >&5
 $as_echo "$LIBJSON_HOME" >&6; }
 
@@ -30369,6 +30373,19 @@ else
   $as_echo "$LIBJSON_HOME ($have_json)"
 fi
 
+
+
+   $as_echo_n "              preclass    : "
+   if test "x$have_json" = "xno"; then :
+  $as_echo "$LIBJSON_HOME (disabled)"
+elif test "x$have_json" = "xyes"; then :
+  $as_echo "$LIBJSON_HOME"
+elif test "x$have_json" = "x"; then :
+  $as_echo "$LIBJSON_HOME"
+else
+  $as_echo "$LIBJSON_HOME ($have_json)"
+fi
+
 fi
 if test "x$PCRE_HOME" = "x"; then
 
@@ -30399,19 +30416,6 @@ else
 fi
 
 fi
-
-
-   $as_echo_n "              preclass    : "
-   if test "x$have_json" = "xno"; then :
-  $as_echo "$LIBJSON_HOME (disabled)"
-elif test "x$have_json" = "xyes"; then :
-  $as_echo "$LIBJSON_HOME"
-elif test "x$have_json" = "x"; then :
-  $as_echo "$LIBJSON_HOME"
-else
-  $as_echo "$LIBJSON_HOME ($have_json)"
-fi
-
 
 
    $as_echo_n "              libmspack   : "
