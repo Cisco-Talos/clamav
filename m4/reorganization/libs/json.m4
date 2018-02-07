@@ -28,6 +28,10 @@ else
     fi
   fi
 fi
+if test "X$have_json_header" != "Xyes"
+then
+    AC_MSG_ERROR([unable to find json includes.])
+fi
 AC_MSG_RESULT([$LIBJSON_HOME])
 ],
 [
