@@ -159,31 +159,7 @@ endif
 if USE_INTERNAL_MSPACK
 SUBDIRS += libmspack-0.5alpha
 libclamav_la_CFLAGS += -I@top_srcdir@/libclamav/libmspack-0.5alpha/mspack
-libclamav_la_LIBADD +=  @top_builddir@/libclamav/libmspack-0.5alpha/cabc.lo \
-			@top_builddir@/libclamav/libmspack-0.5alpha/system.lo \
-			@top_builddir@/libclamav/libmspack-0.5alpha/kwajd.lo \
-			@top_builddir@/libclamav/libmspack-0.5alpha/hlpc.lo \
-			@top_builddir@/libclamav/libmspack-0.5alpha/chmd.lo \
-			@top_builddir@/libclamav/libmspack-0.5alpha/qtmd.lo \
-			@top_builddir@/libclamav/libmspack-0.5alpha/litc.lo \
-			@top_builddir@/libclamav/libmspack-0.5alpha/oabc.lo \
-			@top_builddir@/libclamav/libmspack-0.5alpha/lzxd.lo \
-			@top_builddir@/libclamav/libmspack-0.5alpha/litd.lo \
-			@top_builddir@/libclamav/libmspack-0.5alpha/crc32.lo \
-			@top_builddir@/libclamav/libmspack-0.5alpha/lzssd.lo \
-			@top_builddir@/libclamav/libmspack-0.5alpha/kwajc.lo \
-			@top_builddir@/libclamav/libmspack-0.5alpha/cabd.lo \
-			@top_builddir@/libclamav/libmspack-0.5alpha/szddd.lo \
-			@top_builddir@/libclamav/libmspack-0.5alpha/lzxc.lo \
-			@top_builddir@/libclamav/libmspack-0.5alpha/mszipd.lo \
-			@top_builddir@/libclamav/libmspack-0.5alpha/szddc.lo \
-			@top_builddir@/libclamav/libmspack-0.5alpha/oabd.lo \
-			@top_builddir@/libclamav/libmspack-0.5alpha/chmc.lo \
-			@top_builddir@/libclamav/libmspack-0.5alpha/mszipc.lo \
-			@top_builddir@/libclamav/libmspack-0.5alpha/hlpd.lo
-COMMON_CLEANFILES+=@top_builddir@/libclamav/libmspack-0.5alpha/config.h \
-		   @top_builddir@/libclamav/libmspack-0.5alpha/libmspack.pc \
-		   @top_builddir@/libclamav/libmspack-0.5alpha/autom4te.cache/*
+libclamav_la_LIBADD += libmspack-0.5alpha/libclammspack.la
 else
 libclamav_la_CFLAGS += $(LIBMSPACK_CFLAGS)
 libclamav_la_LDFLAGS += $(LIBMSPACK_LIBS)
