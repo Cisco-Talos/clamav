@@ -1064,7 +1064,7 @@ getcvd (const char *cvdfile, const char *newfile, const char *hostname,
         return ret;
     }
 
-    /* bb#10983 - temporaily rename newfile to correct extension for verification */
+    /* bb#10983 - temporarily rename newfile to correct extension for verification */
     newfile2 = strdup (newfile);
     if (!newfile2)
     {

@@ -76,7 +76,7 @@ Execute COMMAND when freshclam reports outdated version. In the command string %
 Print mirror details from mirrors.dat (cache file for the mirror manager).
 .TP
 \fB\-\-update\-db=DBNAME\fR
-With this option you can limit updates to a subset of database files. The DBNAME should be "main", "daily", "bytecode", "safebrowsing" or one of the 3rd party database names. This option can be used multiple times and only works with the official and 3rd party databases distrubuted through the ClamAV mirrors, your custom databases (specified with DatabaseCustomURL in freshclam.conf) will not be ignored.
+With this option you can limit updates to a subset of database files. The DBNAME should be "main", "daily", "bytecode", "safebrowsing" or one of the 3rd party database names. This option can be used multiple times and only works with the official and 3rd party databases distributed through the ClamAV mirrors, your custom databases (specified with DatabaseCustomURL in freshclam.conf) will not be ignored.
 .SH "EXAMPLES"
 .LP 
 .TP 

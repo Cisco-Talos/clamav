@@ -365,7 +365,7 @@ cli_mbox(const char *dir, cli_ctx *ctx)
  *	http://www.lazerware.com/formats/Specs/AppleSingle_AppleDouble.pdf
  * TODO: ensure parseEmailHeaders is always called before parseEmailBody
  * TODO: create parseEmail which calls parseEmailHeaders then parseEmailBody
- * TODO: Handle unepected NUL bytes in header lines which stop strcmp()s:
+ * TODO: Handle unexpected NUL bytes in header lines which stop strcmp()s:
  *	e.g. \0Content-Type: application/binary;
  */
 static int
@@ -1036,22 +1036,22 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821)
 #ifdef CL_THREAD_SAFE
 	char *strptr;
 #endif
-	const char *separater;
-	char *cmd, *copy, tokenseparater[2];
+	const char *separator;
+	char *cmd, *copy, tokenseparator[2];
 
 	cli_dbgmsg("parseEmailHeader '%s'\n", line);
 
 	/*
-	 * In RFC822 the separater between the key a value is a colon,
+	 * In RFC822 the separator between the key a value is a colon,
 	 * e.g.	Content-Transfer-Encoding: base64
 	 * However some MUA's are lapse about this and virus writers exploit
 	 * this hole, so we need to check all known possibilities
 	 */
-	for(separater = ":= "; *separater; separater++)
-		if(strchr(line, *separater) != NULL)
+	for(separator = ":= "; *separator; separator++)
+		if(strchr(line, *separator) != NULL)
 			break;
 
-	if(*separater == '\0')
+	if(*separator == '\0')
 		return -1;
 
 	copy = rfc2047(line);
@@ -1059,15 +1059,15 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821)
 		/* an RFC checker would return -1 here */
 		copy = cli_strdup(line);
 
-	tokenseparater[0] = *separater;
-	tokenseparater[1] = '\0';
+	tokenseparator[0] = *separator;
+	tokenseparator[1] = '\0';
 
 	ret = -1;
 
 #ifdef	CL_THREAD_SAFE
-	cmd = strtok_r(copy, tokenseparater, &strptr);
+	cmd = strtok_r(copy, tokenseparator, &strptr);
 #else
-	cmd = strtok(copy, tokenseparater);
+	cmd = strtok(copy, tokenseparator);
 #endif
 
 	if(cmd && (strstrip(cmd) > 0)) {
@@ -1158,7 +1158,7 @@ parseMHTMLComment(const char *comment, cli_ctx *ctx, void *wrkjobj, void *cbdata
 
 		reader = xmlReaderForMemory(xmlsrt, xmlend-xmlsrt+6, "comment.xml", NULL, CLAMAV_MIN_XMLREADER_FLAGS);
 		if (!reader) {
-			cli_dbgmsg("parseMHTMLComment: cannot intialize xmlReader\n");
+			cli_dbgmsg("parseMHTMLComment: cannot initialize xmlReader\n");
 
 #if HAVE_JSON
                        if (ctx->wrkproperty != NULL)
@@ -1229,7 +1229,7 @@ parseRootMHTML(mbox_ctx *mctx, message *m, text *t)
 
 	htmlDoc = htmlReadMemory((char*)input->data, input->len, "mhtml.html", NULL, CLAMAV_MIN_XMLREADER_FLAGS);
 	if (htmlDoc == NULL) {
-		cli_dbgmsg("parseRootMHTML: cannot intialize read html document\n");
+		cli_dbgmsg("parseRootMHTML: cannot initialize read html document\n");
 #if HAVE_JSON
                 if (ctx->wrkproperty != NULL)
                     ret = cli_json_parse_error(ctx->wrkproperty, "MHTML_ERROR_HTML_READ");
@@ -1253,7 +1253,7 @@ parseRootMHTML(mbox_ctx *mctx, message *m, text *t)
 
 	reader = xmlReaderWalker(htmlDoc);
 	if (reader == NULL) {
-		cli_dbgmsg("parseRootMHTML: cannot intialize xmlTextReader\n");
+		cli_dbgmsg("parseRootMHTML: cannot initialize xmlTextReader\n");
 #if HAVE_JSON
                 if (ctx->wrkproperty != NULL)
                     ret = cli_json_parse_error(ctx->wrkproperty, "MHTML_ERROR_XML_READER_IO");
@@ -1395,7 +1395,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 			 * This is effectively no encoding, notice that we
 			 * don't check that charset is us-ascii
 			 */
-			cli_dbgmsg("text/plain: Assume no attachements\n");
+			cli_dbgmsg("text/plain: Assume no attachments\n");
 			mimeType = NOMIME;
 			messageSetMimeSubtype(mainMessage, "");
 		} else if((mimeType == MESSAGE) &&
@@ -1867,7 +1867,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 				case -1:
 					/*
 					 * According to section 7.2.6 of
-					 * RFC1521, unrecognised multiparts
+					 * RFC1521, unrecognized multiparts
 					 * should be treated as multipart/mixed.
 					 */
 					cli_dbgmsg("Unsupported multipart format `%s', parsed as mixed\n", mimeSubtype);
@@ -2976,7 +2976,7 @@ saveTextPart(mbox_ctx *mctx, message *m, int destroy_text)
  * If out == NULL, return a buffer without the comments, the caller must free
  *	the returned buffer
  * Return NULL on error or if the input * has no comments.
- * See secion 3.4.3 of RFC822
+ * See section 3.4.3 of RFC822
  * TODO: handle comments that go on to more than one line
  */
 static char *
@@ -3764,7 +3764,7 @@ exportBounceMessage(mbox_ctx *mctx, text *start)
 	 * helps a bit.
 	 *
 	 * messageAddLine
-	 * optimisation could help here, but needs
+	 * optimization could help here, but needs
 	 * careful thought, do it with line numbers
 	 * would be best, since the current method in
 	 * messageAddLine of checking encoding first
@@ -4035,7 +4035,7 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
 			body = parseEmailHeaders(aMessage, mctx->rfc821Table);
 
 			/*
-			 * We've fininished with the
+			 * We've finished with the
 			 * original copy of the message,
 			 * so throw that away and
 			 * deal with the encapsulated

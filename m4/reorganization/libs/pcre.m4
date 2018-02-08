@@ -6,7 +6,7 @@ AC_ARG_WITH([pcre],[AS_HELP_STRING([--with-pcre@<:@=DIR@:>@],
     @<:@default=search PATH environment variable@:>@])],
   [pcreser=$withval],[pcreser="yes"])
 
-dnl detemine if specified (or default) is valid
+dnl determine if specified (or default) is valid
 case "$pcreser" in
 no)
   pcreconfig=""

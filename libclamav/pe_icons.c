@@ -783,7 +783,7 @@ static const int gkernsz = (sizeof(gaussk) / sizeof(gaussk[0]));
             fclose(f);
             cli_unlink(fname);
             free(fname);
-            cli_dbgmsg("makebmp: failed to write outoput\n");
+            cli_dbgmsg("makebmp: failed to write output\n");
             return;
         }
 

@@ -644,7 +644,7 @@ int cli_initroots(struct cl_engine *engine, unsigned int options)
 	    if(cli_mtargets[i].ac_only || engine->ac_only)
 		root->ac_only = 1;
 
-	    cli_dbgmsg("Initialising AC pattern matcher of root[%d]\n", i);
+	    cli_dbgmsg("Initializing AC pattern matcher of root[%d]\n", i);
 	    if((ret = cli_ac_init(root, engine->ac_mindepth, engine->ac_maxdepth, engine->dconf->other&OTHER_CONF_PREFILTERING))) {
 		/* no need to free previously allocated memory here */
 		cli_errmsg("cli_initroots: Can't initialise AC pattern matcher\n");
@@ -3541,7 +3541,7 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
             }
 
             /* handle lack of hexstr support here in order to suppress */
-            /* initalize testing matcher */
+            /* initialize testing matcher */
             if (!engine->test_root) {
                 engine->test_root = (struct cli_matcher *) mpool_calloc(engine->mempool, 1, sizeof(struct cli_matcher));
                 if (!engine->test_root) {
@@ -4197,7 +4197,7 @@ static int cli_loadpwdb(FILE *fs, struct cl_engine *engine, unsigned int options
                 container = CLI_PWDB_RAR;
                 break;
             default:
-                cli_errmsg("cli_loadpwdb: Invalid conatiner specified to .pwdb signature\n");
+                cli_errmsg("cli_loadpwdb: Invalid container specified to .pwdb signature\n");
                 return CL_EMALFDB;
             }
         }

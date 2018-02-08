@@ -68,7 +68,7 @@ m4_define([_LT_BUILD_PREFIX],
 AC_DEFUN([LTDL_CONVENIENCE],
 [AC_BEFORE([$0], [LTDL_INIT])dnl
 dnl Although the argument is deprecated and no longer documented,
-dnl LTDL_CONVENIENCE used to take a DIRECTORY orgument, if we have one
+dnl LTDL_CONVENIENCE used to take a DIRECTORY argument, if we have one
 dnl here make sure it is the same as any other declaration of libltdl's
 dnl location!  This also ensures lt_ltdl_dir is set when configure.ac is
 dnl not yet using an explicit LT_CONFIG_LTDL_DIR.
@@ -124,7 +124,7 @@ AC_SUBST([INCLTDL])
 AC_DEFUN([LTDL_INSTALLABLE],
 [AC_BEFORE([$0], [LTDL_INIT])dnl
 dnl Although the argument is deprecated and no longer documented,
-dnl LTDL_INSTALLABLE used to take a DIRECTORY orgument, if we have one
+dnl LTDL_INSTALLABLE used to take a DIRECTORY argument, if we have one
 dnl here make sure it is the same as any other declaration of libltdl's
 dnl location!  This also ensures lt_ltdl_dir is set when configure.ac is
 dnl not yet using an explicit LT_CONFIG_LTDL_DIR.

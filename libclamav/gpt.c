@@ -116,13 +116,13 @@ int cli_scangpt(cli_ctx *ctx, size_t sectorsize)
         return CL_ENULLARG;
     }
 
-    /* sector size calculatation */
+    /* sector size calculation */
     if (sectorsize == 0) {
         sectorsize = gpt_detect_size((*ctx->fmap));
         cli_dbgmsg("cli_scangpt: detected %lu sector size\n", (unsigned long)sectorsize);
     }
     if (sectorsize == 0) {
-        cli_errmsg("cli_scangpt: could not detemine sector size\n");
+        cli_errmsg("cli_scangpt: could not determine sector size\n");
         return CL_EFORMAT;
     }
 
@@ -568,7 +568,7 @@ static void gpt_printSectors(cli_ctx *ctx, size_t sectorsize)
     gpt_parsemsg("0: MBR\n");
     gpt_parsemsg("%llu: Primary GPT Header\n", phdr.currentLBA);
     gpt_parsemsg("%llu-%llu: Primary GPT Partition Table\n", phdr.tableStartLBA, ptableLastLBA);
-    gpt_parsemsg("%llu-%llu: Usuable LBAs\n", phdr.firstUsableLBA, phdr.lastUsableLBA);
+    gpt_parsemsg("%llu-%llu: Usable LBAs\n", phdr.firstUsableLBA, phdr.lastUsableLBA);
     gpt_parsemsg("%llu-%llu: Secondary GPT Partition Table\n", shdr.tableStartLBA, stableLastLBA);
     gpt_parsemsg("%llu: Secondary GPT Header\n", phdr.backupLBA);
 #else

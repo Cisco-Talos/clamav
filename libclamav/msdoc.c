@@ -751,7 +751,7 @@ static int ole2_summary_propset_json(summary_ctx_t *sctx, off_t offset)
     else {
         limitprops = numprops;
     }
-    cli_dbgmsg("ole2_summary_propset_json: processing %u of %u (%u max) propeties\n",
+    cli_dbgmsg("ole2_summary_propset_json: processing %u of %u (%u max) properties\n",
                limitprops, numprops, PROPCNTLIMIT);
 
     /* extract remaining fragment of propset */

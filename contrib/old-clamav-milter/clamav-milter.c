@@ -181,7 +181,7 @@ typedef	unsigned int	in_addr_t;
 		 * command connexion is created for each new email
 		 *
 		 * FIXME: When SESSIONS are open, freshclam can hang when
-		 *	notfying clamd of an update. This is most likely to be a
+		 *	notifying clamd of an update. This is most likely to be a
 		 *	problem with the implementation of SESSIONS on clamd.
 		 *	The problem seems worst on BSD.
 		 *
@@ -479,7 +479,7 @@ static	int	child_timeout = 300;	/* number of seconds to wait for
 					 */
 static	int	dont_wait = 0;	/*
 				 * If 1 send retry later to the remote end
-				 * if max_chilren is exceeded, otherwise we
+				 * if max_children is exceeded, otherwise we
 				 * wait for the number to go down
 				 */
 static	int	dont_sanitise = 0; /*
@@ -675,7 +675,7 @@ help(void)
 	puts(_("\t--headers\t\t-H\tInclude original message headers in the report."));
 	puts(_("\t--ignore IPaddr\t\t-I IPaddr\tAdd IPaddr to LAN IP list (see --local)."));
 	puts(_("\t--local\t\t\t-l\tScan messages sent from machines on our LAN."));
-	puts(_("\t--max-childen\t\t-m\tMaximum number of concurrent scans."));
+	puts(_("\t--max-children\t\t-m\tMaximum number of concurrent scans."));
 	puts(_("\t--outgoing\t\t-o\tScan outgoing messages from this machine."));
 	puts(_("\t--noreject\t\t-N\tDon't reject viruses, silently throw them away."));
 	puts(_("\t--noxheader\t\t-n\tSuppress X-Virus-Scanned/X-Virus-Status headers."));
@@ -685,7 +685,7 @@ help(void)
 	puts(_("\t--quiet\t\t\t-q\tDon't send e-mail notifications of interceptions."));
 	puts(_("\t--quarantine=USER\t-Q EMAIL\tQuarantine e-mail account."));
 	puts(_("\t--report-phish=EMAIL\t-r EMAIL\tReport phish to this email address."));
-	puts(_("\t--report-phish-false-positives=EMAIL\t-R EMAIL\tReport phish false positves to this email address."));
+	puts(_("\t--report-phish-false-positives=EMAIL\t-R EMAIL\tReport phish false positives to this email address."));
 	puts(_("\t--quarantine-dir=DIR\t-U DIR\tDirectory to store infected emails."));
 	puts(_("\t--server=SERVER\t\t-s SERVER\tHostname/IP address of server(s) running clamd (when using TCPsocket)."));
 	puts(_("\t--sendmail-cf=FILE\t\tLocation of the sendmail.cf file to verify"));
@@ -694,7 +694,7 @@ help(void)
 	puts(_("\t--signature-file=FILE\t-F FILE\tLocation of signature file."));
 	puts(_("\t--template-file=FILE\t-t FILE\tLocation of e-mail template file."));
 	puts(_("\t--template-headers=FILE\t\tLocation of e-mail headers for template file."));
-	puts(_("\t--timeout=SECS\t\t-T SECS\tTimeout waiting to childen to die."));
+	puts(_("\t--timeout=SECS\t\t-T SECS\tTimeout waiting to children to die."));
 	puts(_("\t--whitelist-file=FILE\t-W FILE\tLocation of the file of whitelisted addresses"));
 	puts(_("\t--version\t\t-V\tPrint the version number of this software."));
 #ifdef	CL_DEBUG
@@ -743,7 +743,7 @@ main(int argc, char **argv)
 		clamfi_abort,	/* message aborted callback */
 		clamfi_close,	/* connexion cleanup callback */
 #if	SMFI_VERSION > 2
-		NULL,		/* Unrecognised command */
+		NULL,		/* Unrecognized command */
 #endif
 #if	SMFI_VERSION > 3
 		NULL,		/* DATA command callback */
@@ -948,7 +948,7 @@ main(int argc, char **argv)
 			case 'a':	/* e-mail errors from here */
 				/*
 				 * optarg is optional - if you give --from
-				 * then the --from is set to the orginal,
+				 * then the --from is set to the original,
 				 * probably forged, email address
 				 */
 				from = optarg;
@@ -2239,7 +2239,7 @@ createSession(unsigned int s)
 	session->sock = -1;
 	proto = getprotobyname("tcp");
 	if(proto == NULL) {
-		fputs("Unknown prototol tcp, check /etc/protocols\n", stderr);
+		fputs("Unknown protocol tcp, check /etc/protocols\n", stderr);
 		fd = ret = -1;
 	} else if((fd = socket(AF_INET, SOCK_STREAM, proto->p_proto)) < 0) {
 		perror("socket");
@@ -2338,7 +2338,7 @@ pingServer(int serverNumber)
 		hostname = cli_strtok(serverHostNames, serverNumber, ":");
 		/*
 		 * FIXME: use non-blocking connect, once the code is
-		 * amalgomated
+		 * amalgamated
 		 */
 		if(nonblock_connect(sock, &server, hostname) < 0) {
 			int is_connected = 0;
@@ -2878,7 +2878,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 	if(fflag)
 		/*
 		 * Patch from "Richard G. Roberto" <rgr@dedlegend.com>
-		 * Always scan whereever the message is from
+		 * Always scan wherever the message is from
 		 */
 		return SMFIS_CONTINUE;
 
@@ -4969,7 +4969,7 @@ checkClamd(int log_result)
 
 /*
  * Send a templated message about an intercepted message. Very basic for
- * now, just to prove it works, will enhance the flexability later, only
+ * now, just to prove it works, will enhance the flexibility later, only
  * supports %v and $sendmail_variables$ at present.
  *
  * TODO: more template features
@@ -5694,7 +5694,7 @@ watchdog(void *a)
 
 		/*
 		 * TODO: sanity check that if n_children == 0, that
-		 * root->refcount == 0. Unfortunatly root->refcount isn't
+		 * root->refcount == 0. Unfortunately root->refcount isn't
 		 * thread-safe, since it's governed by a mutex that we can't
 		 * see, and there's no access to it via an approved method
 		 */

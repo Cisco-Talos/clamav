@@ -249,7 +249,7 @@ const struct clam_option __clam_options[] = {
 
     { "CommandReadTimeout", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 5, NULL, 0, OPT_CLAMD, "This option specifies the time (in seconds) after which clamd should\ntimeout if a client doesn't provide any initial command after connecting.", "5" },
 
-    { "SendBufTimeout", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 500, NULL, 0, OPT_CLAMD, "This option specifies how long to wait (in miliseconds) if the send buffer\nis full. Keep this value low to prevent clamd hanging.", "200"},
+    { "SendBufTimeout", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 500, NULL, 0, OPT_CLAMD, "This option specifies how long to wait (in milliseconds) if the send buffer\nis full. Keep this value low to prevent clamd hanging.", "200"},
 
     { "ReadTimeout", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 120, NULL, 0, OPT_MILTER, "Waiting for data from clamd will timeout after this time (seconds).", "300" },
 
@@ -292,7 +292,7 @@ const struct clam_option __clam_options[] = {
 	"Set bytecode security level.\nPossible values:\n\tTrustSigned - trust bytecode loaded from signed .c[lv]d files,\n\t\t insert runtime safety checks for bytecode loaded from other sources\n\tParanoid - don't trust any bytecode, insert runtime checks for all\nRecommended: TrustSigned, because bytecode in .cvd files already has these checks.","TrustSigned"},
 
     { "BytecodeTimeout", "bytecode-timeout", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 5000, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, 
-	"Set bytecode timeout in miliseconds.","5000"},
+	"Set bytecode timeout in milliseconds.","5000"},
 
     { "BytecodeUnsigned", "bytecode-unsigned", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, 
 	"Allow loading bytecode from outside digitally signed .c[lv]d files.","no"},
@@ -473,7 +473,7 @@ const struct clam_option __clam_options[] = {
     { "OnOutdatedExecute", "on-outdated-execute", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "Run a command when freshclam reports an outdated version.\nIn the command string %v will be replaced with the new version number.", "command" },
 
     /* FIXME: MATCH_IPADDR */
-    { "LocalIPAddress", "local-address", 'a', CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "With this option you can provide a client address for the database downlading.\nUseful for multi-homed systems.", "aaa.bbb.ccc.ddd" },
+    { "LocalIPAddress", "local-address", 'a', CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "With this option you can provide a client address for the database downloading.\nUseful for multi-homed systems.", "aaa.bbb.ccc.ddd" },
 
     { "ConnectTimeout", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 30, NULL, 0, OPT_FRESHCLAM, "Timeout in seconds when connecting to database server.", "30" },
 
@@ -516,13 +516,13 @@ const struct clam_option __clam_options[] = {
 
     { "MilterSocketMode", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "Sets the permissions on the (unix) milter socket to the specified mode.", "660" },
 
-    { "LocalNet", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_MILTER, "Messages originating from these hosts/networks will not be scanned\nThis option takes a host(name)/mask pair in CIRD notation and can be\nrepeated several times. If \"/mask\" is omitted, a host is assumed.\nTo specify a locally orignated, non-smtp, email use the keyword \"local\".", "local\n192.168.0.0/24\n1111:2222:3333::/48" },
+    { "LocalNet", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_MILTER, "Messages originating from these hosts/networks will not be scanned\nThis option takes a host(name)/mask pair in CIRD notation and can be\nrepeated several times. If \"/mask\" is omitted, a host is assumed.\nTo specify a locally originated, non-smtp, email use the keyword \"local\".", "local\n192.168.0.0/24\n1111:2222:3333::/48" },
 
-    { "OnClean", NULL, 0, CLOPT_TYPE_STRING, "^(Accept|Reject|Defer|Blackhole|Quarantine)$", -1, "Accept", 0, OPT_MILTER, "Action to be performed on clean messages (mostly useful for testing).\nThe following actions are available:\nAccept: the message is accepted for delievery\nReject: immediately refuse delievery (a 5xx error is returned to the peer)\nDefer: return a temporary failure message (4xx) to the peer\nBlackhole: like Accept but the message is sent to oblivion\nQuarantine: like Accept but message is quarantined instead of being delivered", "Accept" },
+    { "OnClean", NULL, 0, CLOPT_TYPE_STRING, "^(Accept|Reject|Defer|Blackhole|Quarantine)$", -1, "Accept", 0, OPT_MILTER, "Action to be performed on clean messages (mostly useful for testing).\nThe following actions are available:\nAccept: the message is accepted for delivery\nReject: immediately refuse delivery (a 5xx error is returned to the peer)\nDefer: return a temporary failure message (4xx) to the peer\nBlackhole: like Accept but the message is sent to oblivion\nQuarantine: like Accept but message is quarantined instead of being delivered", "Accept" },
 
-    { "OnInfected", NULL, 0, CLOPT_TYPE_STRING, "^(Accept|Reject|Defer|Blackhole|Quarantine)$", -1, "Quarantine", 0, OPT_MILTER, "Action to be performed on clean messages (mostly useful for testing).\nThe following actions are available:\nAccept: the message is accepted for delievery\nReject: immediately refuse delievery (a 5xx error is returned to the peer)\nDefer: return a temporary failure message (4xx) to the peer\nBlackhole: like Accept but the message is sent to oblivion\nQuarantine: like Accept but message is quarantined instead of being delivered", "Quarantine" },
+    { "OnInfected", NULL, 0, CLOPT_TYPE_STRING, "^(Accept|Reject|Defer|Blackhole|Quarantine)$", -1, "Quarantine", 0, OPT_MILTER, "Action to be performed on clean messages (mostly useful for testing).\nThe following actions are available:\nAccept: the message is accepted for delivery\nReject: immediately refuse delivery (a 5xx error is returned to the peer)\nDefer: return a temporary failure message (4xx) to the peer\nBlackhole: like Accept but the message is sent to oblivion\nQuarantine: like Accept but message is quarantined instead of being delivered", "Quarantine" },
 
-    { "OnFail", NULL, 0, CLOPT_TYPE_STRING, "^(Accept|Reject|Defer)$", -1, "Defer", 0, OPT_MILTER, "Action to be performed on error conditions (this includes failure to\nallocate data structures, no scanners available, network timeouts, unknown\nscanner replies and the like.\nThe following actions are available:\nAccept: the message is accepted for delievery;\nReject: immediately refuse delievery (a 5xx error is returned to the peer);\nDefer: return a temporary failure message (4xx) to the peer.", "Defer" },
+    { "OnFail", NULL, 0, CLOPT_TYPE_STRING, "^(Accept|Reject|Defer)$", -1, "Defer", 0, OPT_MILTER, "Action to be performed on error conditions (this includes failure to\nallocate data structures, no scanners available, network timeouts, unknown\nscanner replies and the like.\nThe following actions are available:\nAccept: the message is accepted for delivery;\nReject: immediately refuse delivery (a 5xx error is returned to the peer);\nDefer: return a temporary failure message (4xx) to the peer.", "Defer" },
 
     { "RejectMsg", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "This option allows you to set a specific rejection reason for infected messages\nand it's therefore only useful together with \"OnInfected Reject\"\nThe string \"%v\", if present, will be replaced with the virus name.", "MTA specific" },
 
@@ -530,7 +530,7 @@ const struct clam_option __clam_options[] = {
 
     { "ReportHostname", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "When AddHeader is in use, this option allows you to set the reported\nhostname. This may be desirable in order to avoid leaking internal names.\nIf unset the real machine name is used.", "my.mail.server.name" },
 
-    { "VirusAction", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "Execute a command when an infected message is processed.\nThe following parameters are passed to the invoked program in this order:\nvirus name, queue id, sender, destination, subject, message id, message date.\nNote #1: this requires MTA macroes to be available (see LogInfected below)\nNote #2: the process is invoked in the context of clamav-milter\nNote #3: clamav-milter will wait for the process to exit. Be quick or fork to\navoid unnecessary delays in email delievery", "/usr/local/bin/my_infected_message_handler" },
+    { "VirusAction", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "Execute a command when an infected message is processed.\nThe following parameters are passed to the invoked program in this order:\nvirus name, queue id, sender, destination, subject, message id, message date.\nNote #1: this requires MTA macroes to be available (see LogInfected below)\nNote #2: the process is invoked in the context of clamav-milter\nNote #3: clamav-milter will wait for the process to exit. Be quick or fork to\navoid unnecessary delays in email delivery", "/usr/local/bin/my_infected_message_handler" },
 
     { "Chroot", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "Chroot to the specified directory.\nChrooting is performed just after reading the config file and before\ndropping privileges.", "/newroot" },
 

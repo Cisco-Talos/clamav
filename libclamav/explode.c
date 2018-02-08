@@ -28,7 +28,7 @@
 */
 
 
-/* To Cami and Dario, the only laywers I can stand */
+/* To Cami and Dario, the only lawyers I can stand */
 
 
 #if HAVE_CONFIG_H

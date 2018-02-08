@@ -193,7 +193,7 @@ As always, we appreciate contributions of bug reports, code fixes,
 and sample submission from the ClamAV community members:
 
 Sebastian Andrzej Siewior
-Minzhaun Gong
+Minzhuan Gong
 Dimitri Kirchner
 Goulven Guiheux
 John E. Krokes
@@ -781,7 +781,7 @@ version:
 
   - Anti-phishing Technology: Users can now change the priority and reporting
     of ClamAV's heuristic anti-phishing scanner within the detection engine
-    process. They can choose whether, when scanning a supicious file, ClamAV
+    process. They can choose whether, when scanning a suspicious file, ClamAV
     should stop scanning and report the phish, or continue to scan in case the
     file contains other malware (clamd: HeuristicScanPrecedence,
     clamscan: --heuristic-scan-precedence)
@@ -899,7 +899,7 @@ The ClamAV team (http://www.clamav.net/about.html#credits)
 0.92
 ----
 
-This release provides various bugfixes, optimisations and improvements
+This release provides various bugfixes, optimizations and improvements
 to the scanning engine. The new features include support for ARJ and
 SFX-ARJ archives, AutoIt, basic SPF parser in clamav-milter (to reduce
 phishing false-positives), faster scanning and others (see ChangeLog).
@@ -1475,7 +1475,7 @@ Important note to clamdwatch users: please upgrade to the latest version
 -) clamav-milter:
     + by default uses libclamav to scan e-mails
     + new option --external (enables the use of clamd)
-    + various optimisations
+    + various optimizations
 
 -) freshclam:
     + the DNS mode is now enabled by default (no need for DNSDatabaseInfo in
@@ -1723,7 +1723,7 @@ The ClamAV team (http://www.clamav.net/about.html#credits)
 ----
 
 Bugfixes in this version include crashes with multipart/mixed messages
-and corrupted OLE2 and Zip files. Improvements include various optimisations
+and corrupted OLE2 and Zip files. Improvements include various optimizations
 of mail scanning and clamav-milter and clamdscan behaviour.
 
 
@@ -2077,7 +2077,7 @@ Noteworthy changes in this version:
       (thanks to Michael Dankov)
     + fixed PidFile permissions (Magnus Ekdahl, bug reported by Tomasz Papszun)
     + fixed LogFile permissions (Magnus Ekdahl)
-    + new directive ScanRAR (bacause RAR support is now disabled by default)
+    + new directive ScanRAR (because RAR support is now disabled by default)
     + new directive VirusEvent
     + new directive FixStaleSocket (Thomas Lamy and Mark Mielke)
     + new directive TCPAddr (Bernard Quatermass, fixed by Damien Curtain)

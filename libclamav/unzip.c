@@ -333,7 +333,7 @@ static inline void zinitkey(uint32_t key[3], struct cli_pwdb *password)
 {
     int i;
 
-    /* intialize keys, these are specified but the zip specification */
+    /* initialize keys, these are specified but the zip specification */
     key[0] = 305419896L;
     key[1] = 591751049L;
     key[2] = 878082192L;
