@@ -16,7 +16,6 @@
 @SET_MAKE@
 
 
-
 VPATH = @srcdir@
 am__make_dryrun = \
   { \
@@ -57,12 +56,11 @@ host_triplet = @host@
 @DEBUG_TRUE@am__append_1 = -DDEBUG
 @GCC_TRUE@am__append_2 = -Wall -Wextra -Wno-unused-parameter
 subdir = .
-DIST_COMMON = README $(am__configure_deps) $(include_HEADERS) \
-	$(srcdir)/Makefile.am $(srcdir)/Makefile.in \
-	$(srcdir)/config.h.in $(srcdir)/libmspack.pc.in \
-	$(top_srcdir)/configure AUTHORS COPYING.LIB ChangeLog INSTALL \
-	NEWS TODO compile config.guess config.sub depcomp install-sh \
-	ltmain.sh missing
+DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
+	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
+	$(srcdir)/libclammspack.pc.in $(top_srcdir)/configure AUTHORS \
+	COPYING.LIB ChangeLog INSTALL NEWS TODO compile config.guess \
+	config.sub depcomp install-sh ltmain.sh missing
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/libtool.m4 \
 	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
@@ -74,7 +72,7 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno config.status.lineno
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = config.h
-CONFIG_CLEAN_FILES = libmspack.pc
+CONFIG_CLEAN_FILES = libclammspack.pc
 CONFIG_CLEAN_VPATH_FILES =
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
@@ -103,15 +101,24 @@ am__uninstall_files_from_dir = { \
     || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
          $(am__cd) "$$dir" && rm -f $$files; }; \
   }
-am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(pkgconfigdir)" \
-	"$(DESTDIR)$(includedir)"
+am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(pkgconfigdir)"
 LTLIBRARIES = $(lib_LTLIBRARIES) $(noinst_LTLIBRARIES)
-libmscabd_la_LIBADD =
-am_libmscabd_la_OBJECTS = system.lo cabd.lo lzxd.lo mszipd.lo qtmd.lo
-libmscabd_la_OBJECTS = $(am_libmscabd_la_OBJECTS)
+libclammspack_la_LIBADD =
+am_libclammspack_la_OBJECTS = system.lo cabc.lo cabd.lo chmc.lo \
+	chmd.lo hlpc.lo hlpd.lo litc.lo litd.lo kwajc.lo kwajd.lo \
+	szddc.lo szddd.lo oabc.lo oabd.lo lzxc.lo lzxd.lo mszipc.lo \
+	mszipd.lo qtmd.lo lzssd.lo crc32.lo
+libclammspack_la_OBJECTS = $(am_libclammspack_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
+libclammspack_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(AM_CFLAGS) $(CFLAGS) $(libclammspack_la_LDFLAGS) $(LDFLAGS) \
+	-o $@
+libmscabd_la_LIBADD =
+am_libmscabd_la_OBJECTS = system.lo cabd.lo lzxd.lo mszipd.lo qtmd.lo
+libmscabd_la_OBJECTS = $(am_libmscabd_la_OBJECTS)
 libmscabd_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(libmscabd_la_LDFLAGS) $(LDFLAGS) -o $@
@@ -121,15 +128,6 @@ libmschmd_la_OBJECTS = $(am_libmschmd_la_OBJECTS)
 libmschmd_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(libmschmd_la_LDFLAGS) $(LDFLAGS) -o $@
-libmspack_la_LIBADD =
-am_libmspack_la_OBJECTS = system.lo cabc.lo cabd.lo chmc.lo chmd.lo \
-	hlpc.lo hlpd.lo litc.lo litd.lo kwajc.lo kwajd.lo szddc.lo \
-	szddd.lo oabc.lo oabd.lo lzxc.lo lzxd.lo mszipc.lo mszipd.lo \
-	qtmd.lo lzssd.lo crc32.lo
-libmspack_la_OBJECTS = $(am_libmspack_la_OBJECTS)
-libmspack_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(libmspack_la_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -156,17 +154,16 @@ am__v_CCLD_0 = @echo "  CCLD  " $@;
 AM_V_GEN = $(am__v_GEN_@AM_V@)
 am__v_GEN_ = $(am__v_GEN_@AM_DEFAULT_V@)
 am__v_GEN_0 = @echo "  GEN   " $@;
-SOURCES = $(libmscabd_la_SOURCES) $(libmschmd_la_SOURCES) \
-	$(libmspack_la_SOURCES)
-DIST_SOURCES = $(libmscabd_la_SOURCES) $(libmschmd_la_SOURCES) \
-	$(libmspack_la_SOURCES)
+SOURCES = $(libclammspack_la_SOURCES) $(libmscabd_la_SOURCES) \
+	$(libmschmd_la_SOURCES)
+DIST_SOURCES = $(libclammspack_la_SOURCES) $(libmscabd_la_SOURCES) \
+	$(libmschmd_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
     *) (install-info --version) >/dev/null 2>&1;; \
   esac
 DATA = $(pkgconfig_DATA)
-HEADERS = $(include_HEADERS)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -300,14 +297,14 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = libmspack.pc
+pkgconfig_DATA = libclammspack.pc
 ACLOCAL_AMFLAGS = -I m4
 AM_CFLAGS = $(am__append_1) $(am__append_2)
 AM_CPPFLAGS = -I$(top_srcdir)/mspack #-I$(top_srcdir)/test 
-lib_LTLIBRARIES = libmspack.la
-include_HEADERS = mspack/mspack.h
+lib_LTLIBRARIES = libclammspack.la
+#include_HEADERS =	mspack/mspack.h
 noinst_LTLIBRARIES = libmscabd.la libmschmd.la
-libmspack_la_SOURCES = mspack/mspack.h \
+libclammspack_la_SOURCES = mspack/mspack.h \
 			mspack/system.h mspack/system.c \
 			mspack/cab.h mspack/cabc.c mspack/cabd.c \
 			mspack/chm.h mspack/chmc.c mspack/chmd.c \
@@ -324,7 +321,7 @@ libmspack_la_SOURCES = mspack/mspack.h \
 			mspack/des.h mspack/sha.h \
 			mspack/crc32.c mspack/crc32.h
 
-libmspack_la_LDFLAGS = -export-symbols-regex '^mspack_' -version-info 1:0:1
+libclammspack_la_LDFLAGS = -export-symbols-regex '^mspack_' -version-info 1:0:1
 libmscabd_la_SOURCES = mspack/mspack.h \
 			mspack/system.h mspack/system.c \
 			mspack/cab.h mspack/cabd.c \
@@ -395,7 +392,7 @@ $(srcdir)/config.h.in: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 
 distclean-hdr:
 	-rm -f config.h stamp-h1
-libmspack.pc: $(top_builddir)/config.status $(srcdir)/libmspack.pc.in
+libclammspack.pc: $(top_builddir)/config.status $(srcdir)/libclammspack.pc.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 install-libLTLIBRARIES: $(lib_LTLIBRARIES)
 	@$(NORMAL_INSTALL)
@@ -438,12 +435,12 @@ clean-noinstLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
+libclammspack.la: $(libclammspack_la_OBJECTS) $(libclammspack_la_DEPENDENCIES) $(EXTRA_libclammspack_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(libclammspack_la_LINK) -rpath $(libdir) $(libclammspack_la_OBJECTS) $(libclammspack_la_LIBADD) $(LIBS)
 libmscabd.la: $(libmscabd_la_OBJECTS) $(libmscabd_la_DEPENDENCIES) $(EXTRA_libmscabd_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(libmscabd_la_LINK)  $(libmscabd_la_OBJECTS) $(libmscabd_la_LIBADD) $(LIBS)
 libmschmd.la: $(libmschmd_la_OBJECTS) $(libmschmd_la_DEPENDENCIES) $(EXTRA_libmschmd_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(libmschmd_la_LINK)  $(libmschmd_la_OBJECTS) $(libmschmd_la_LIBADD) $(LIBS)
-libmspack.la: $(libmspack_la_OBJECTS) $(libmspack_la_DEPENDENCIES) $(EXTRA_libmspack_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(libmspack_la_LINK) -rpath $(libdir) $(libmspack_la_OBJECTS) $(libmspack_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -502,41 +499,6 @@ system.lo: mspack/system.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o system.lo `test -f 'mspack/system.c' || echo '$(srcdir)/'`mspack/system.c
 
-cabd.lo: mspack/cabd.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT cabd.lo -MD -MP -MF $(DEPDIR)/cabd.Tpo -c -o cabd.lo `test -f 'mspack/cabd.c' || echo '$(srcdir)/'`mspack/cabd.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/cabd.Tpo $(DEPDIR)/cabd.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mspack/cabd.c' object='cabd.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o cabd.lo `test -f 'mspack/cabd.c' || echo '$(srcdir)/'`mspack/cabd.c
-
-lzxd.lo: mspack/lzxd.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT lzxd.lo -MD -MP -MF $(DEPDIR)/lzxd.Tpo -c -o lzxd.lo `test -f 'mspack/lzxd.c' || echo '$(srcdir)/'`mspack/lzxd.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/lzxd.Tpo $(DEPDIR)/lzxd.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mspack/lzxd.c' object='lzxd.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o lzxd.lo `test -f 'mspack/lzxd.c' || echo '$(srcdir)/'`mspack/lzxd.c
-
-mszipd.lo: mspack/mszipd.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT mszipd.lo -MD -MP -MF $(DEPDIR)/mszipd.Tpo -c -o mszipd.lo `test -f 'mspack/mszipd.c' || echo '$(srcdir)/'`mspack/mszipd.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/mszipd.Tpo $(DEPDIR)/mszipd.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mspack/mszipd.c' object='mszipd.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o mszipd.lo `test -f 'mspack/mszipd.c' || echo '$(srcdir)/'`mspack/mszipd.c
-
-qtmd.lo: mspack/qtmd.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT qtmd.lo -MD -MP -MF $(DEPDIR)/qtmd.Tpo -c -o qtmd.lo `test -f 'mspack/qtmd.c' || echo '$(srcdir)/'`mspack/qtmd.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/qtmd.Tpo $(DEPDIR)/qtmd.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mspack/qtmd.c' object='qtmd.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o qtmd.lo `test -f 'mspack/qtmd.c' || echo '$(srcdir)/'`mspack/qtmd.c
-
-chmd.lo: mspack/chmd.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT chmd.lo -MD -MP -MF $(DEPDIR)/chmd.Tpo -c -o chmd.lo `test -f 'mspack/chmd.c' || echo '$(srcdir)/'`mspack/chmd.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/chmd.Tpo $(DEPDIR)/chmd.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mspack/chmd.c' object='chmd.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o chmd.lo `test -f 'mspack/chmd.c' || echo '$(srcdir)/'`mspack/chmd.c
-
 cabc.lo: mspack/cabc.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT cabc.lo -MD -MP -MF $(DEPDIR)/cabc.Tpo -c -o cabc.lo `test -f 'mspack/cabc.c' || echo '$(srcdir)/'`mspack/cabc.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/cabc.Tpo $(DEPDIR)/cabc.Plo
@@ -544,12 +506,26 @@ cabc.lo: mspack/cabc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o cabc.lo `test -f 'mspack/cabc.c' || echo '$(srcdir)/'`mspack/cabc.c
 
+cabd.lo: mspack/cabd.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT cabd.lo -MD -MP -MF $(DEPDIR)/cabd.Tpo -c -o cabd.lo `test -f 'mspack/cabd.c' || echo '$(srcdir)/'`mspack/cabd.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/cabd.Tpo $(DEPDIR)/cabd.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mspack/cabd.c' object='cabd.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o cabd.lo `test -f 'mspack/cabd.c' || echo '$(srcdir)/'`mspack/cabd.c
+
 chmc.lo: mspack/chmc.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT chmc.lo -MD -MP -MF $(DEPDIR)/chmc.Tpo -c -o chmc.lo `test -f 'mspack/chmc.c' || echo '$(srcdir)/'`mspack/chmc.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/chmc.Tpo $(DEPDIR)/chmc.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mspack/chmc.c' object='chmc.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o chmc.lo `test -f 'mspack/chmc.c' || echo '$(srcdir)/'`mspack/chmc.c
+
+chmd.lo: mspack/chmd.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT chmd.lo -MD -MP -MF $(DEPDIR)/chmd.Tpo -c -o chmd.lo `test -f 'mspack/chmd.c' || echo '$(srcdir)/'`mspack/chmd.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/chmd.Tpo $(DEPDIR)/chmd.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mspack/chmd.c' object='chmd.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o chmd.lo `test -f 'mspack/chmd.c' || echo '$(srcdir)/'`mspack/chmd.c
 
 hlpc.lo: mspack/hlpc.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT hlpc.lo -MD -MP -MF $(DEPDIR)/hlpc.Tpo -c -o hlpc.lo `test -f 'mspack/hlpc.c' || echo '$(srcdir)/'`mspack/hlpc.c
@@ -628,12 +604,33 @@ lzxc.lo: mspack/lzxc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o lzxc.lo `test -f 'mspack/lzxc.c' || echo '$(srcdir)/'`mspack/lzxc.c
 
+lzxd.lo: mspack/lzxd.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT lzxd.lo -MD -MP -MF $(DEPDIR)/lzxd.Tpo -c -o lzxd.lo `test -f 'mspack/lzxd.c' || echo '$(srcdir)/'`mspack/lzxd.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/lzxd.Tpo $(DEPDIR)/lzxd.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mspack/lzxd.c' object='lzxd.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o lzxd.lo `test -f 'mspack/lzxd.c' || echo '$(srcdir)/'`mspack/lzxd.c
+
 mszipc.lo: mspack/mszipc.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT mszipc.lo -MD -MP -MF $(DEPDIR)/mszipc.Tpo -c -o mszipc.lo `test -f 'mspack/mszipc.c' || echo '$(srcdir)/'`mspack/mszipc.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/mszipc.Tpo $(DEPDIR)/mszipc.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mspack/mszipc.c' object='mszipc.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o mszipc.lo `test -f 'mspack/mszipc.c' || echo '$(srcdir)/'`mspack/mszipc.c
+
+mszipd.lo: mspack/mszipd.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT mszipd.lo -MD -MP -MF $(DEPDIR)/mszipd.Tpo -c -o mszipd.lo `test -f 'mspack/mszipd.c' || echo '$(srcdir)/'`mspack/mszipd.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/mszipd.Tpo $(DEPDIR)/mszipd.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mspack/mszipd.c' object='mszipd.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o mszipd.lo `test -f 'mspack/mszipd.c' || echo '$(srcdir)/'`mspack/mszipd.c
+
+qtmd.lo: mspack/qtmd.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT qtmd.lo -MD -MP -MF $(DEPDIR)/qtmd.Tpo -c -o qtmd.lo `test -f 'mspack/qtmd.c' || echo '$(srcdir)/'`mspack/qtmd.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/qtmd.Tpo $(DEPDIR)/qtmd.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mspack/qtmd.c' object='qtmd.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o qtmd.lo `test -f 'mspack/qtmd.c' || echo '$(srcdir)/'`mspack/qtmd.c
 
 lzssd.lo: mspack/lzssd.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT lzssd.lo -MD -MP -MF $(DEPDIR)/lzssd.Tpo -c -o lzssd.lo `test -f 'mspack/lzssd.c' || echo '$(srcdir)/'`mspack/lzssd.c
@@ -678,27 +675,6 @@ uninstall-pkgconfigDATA:
 	@list='$(pkgconfig_DATA)'; test -n "$(pkgconfigdir)" || list=; \
 	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
 	dir='$(DESTDIR)$(pkgconfigdir)'; $(am__uninstall_files_from_dir)
-install-includeHEADERS: $(include_HEADERS)
-	@$(NORMAL_INSTALL)
-	@list='$(include_HEADERS)'; test -n "$(includedir)" || list=; \
-	if test -n "$$list"; then \
-	  echo " $(MKDIR_P) '$(DESTDIR)$(includedir)'"; \
-	  $(MKDIR_P) "$(DESTDIR)$(includedir)" || exit 1; \
-	fi; \
-	for p in $$list; do \
-	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	  echo "$$d$$p"; \
-	done | $(am__base_list) | \
-	while read files; do \
-	  echo " $(INSTALL_HEADER) $$files '$(DESTDIR)$(includedir)'"; \
-	  $(INSTALL_HEADER) $$files "$(DESTDIR)$(includedir)" || exit $$?; \
-	done
-
-uninstall-includeHEADERS:
-	@$(NORMAL_UNINSTALL)
-	@list='$(include_HEADERS)'; test -n "$(includedir)" || list=; \
-	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
-	dir='$(DESTDIR)$(includedir)'; $(am__uninstall_files_from_dir)
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
@@ -919,9 +895,9 @@ distcleancheck: distclean
 	       exit 1; } >&2
 check-am: all-am
 check: check-am
-all-am: Makefile $(LTLIBRARIES) $(DATA) $(HEADERS) config.h
+all-am: Makefile $(LTLIBRARIES) $(DATA) config.h
 installdirs:
-	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(pkgconfigdir)" "$(DESTDIR)$(includedir)"; do \
+	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(pkgconfigdir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -978,7 +954,7 @@ info: info-am
 
 info-am:
 
-install-data-am: install-includeHEADERS install-pkgconfigDATA
+install-data-am: install-pkgconfigDATA
 
 install-dvi: install-dvi-am
 
@@ -1026,8 +1002,7 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-includeHEADERS uninstall-libLTLIBRARIES \
-	uninstall-pkgconfigDATA
+uninstall-am: uninstall-libLTLIBRARIES uninstall-pkgconfigDATA
 
 .MAKE: all install-am install-strip
 
@@ -1041,14 +1016,14 @@ uninstall-am: uninstall-includeHEADERS uninstall-libLTLIBRARIES \
 	dvi-am html html-am info info-am install install-am \
 	install-data install-data-am install-dvi install-dvi-am \
 	install-exec install-exec-am install-html install-html-am \
-	install-includeHEADERS install-info install-info-am \
-	install-libLTLIBRARIES install-man install-pdf install-pdf-am \
-	install-pkgconfigDATA install-ps install-ps-am install-strip \
-	installcheck installcheck-am installdirs maintainer-clean \
+	install-info install-info-am install-libLTLIBRARIES \
+	install-man install-pdf install-pdf-am install-pkgconfigDATA \
+	install-ps install-ps-am install-strip installcheck \
+	installcheck-am installdirs maintainer-clean \
 	maintainer-clean-generic mostlyclean mostlyclean-compile \
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	tags uninstall uninstall-am uninstall-includeHEADERS \
-	uninstall-libLTLIBRARIES uninstall-pkgconfigDATA
+	tags uninstall uninstall-am uninstall-libLTLIBRARIES \
+	uninstall-pkgconfigDATA
 
 
 dist-hook:
