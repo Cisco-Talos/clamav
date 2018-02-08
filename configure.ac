@@ -127,18 +127,13 @@ m4_include([m4/reorganization/sha_collect.m4])
 m4_include([m4/reorganization/yara.m4])
 m4_include([m4/reorganization/code_checks/fts.m4])
 m4_include([m4/reorganization/libfreshclam.m4])
-
 m4_include([m4/reorganization/prelude.m4])
-
 m4_include([m4/reorganization/bsd.m4])
 
 dnl Freshclam dependencies
 m4_include([m4/reorganization/libs/curl.m4])
-
 m4_include([m4/reorganization/substitutions.m4])
-
 m4_include([m4/reorganization/libmspack.m4])
-
 m4_include([m4/reorganization/strni.m4])
 
 if test "x$use_internal_mspack" = "xyes"; then
@@ -236,9 +231,17 @@ AC_MSG_NOTICE([Summary of optional tools])
 CL_MSG_STATUS([clamdtop    ],[$CURSES_LIBS],[$enable_clamdtop])
 CL_MSG_STATUS([milter      ],[yes],[$have_milter])
 if test "X$have_curl" = "Xyes" && test "X$have_json" = "Xyes"; then
-    CL_MSG_STATUS([clamsubmit  ], [yes], [yes])
+    CL_MSG_STATUS([clamsubmit  ], [yes (libjson-c-dev found at $LIBJSON_HOME), libcurl-devel found at $LIBCURL_HOME)], [yes])
 else
-    CL_MSG_STATUS([clamsubmit  ], [no], [no])
+    if test "X$have_curl" != "Xyes" && test "X$have_json" != "Xyes"; then
+        CL_MSG_STATUS([clamsubmit  ], [no (missing libjson-c-dev AND libcurl-devel. Use the website to submit FPs/FNs.)], [no])
+    else
+        if test "X$have_curl" = "Xyes"; then 
+            CL_MSG_STATUS([clamsubmit  ], [no (missing libjson-c-dev. Use the website to submit FPs/FNs.)], [no])
+        else
+            CL_MSG_STATUS([clamsubmit  ], [no (missing libcurl-devel. Use the website to submit FPs/FNs.)], [no])
+        fi
+    fi
 fi
 
 AC_MSG_NOTICE([Summary of engine performance features])
@@ -254,9 +257,9 @@ fi
 if test "$enable_llvm" = "no"; then
    CL_MSG_STATUS([llvm        ],[$have_jit],[$enable_llvm])
 elif test "x$llvm_linking" = "x"; then
-   CL_MSG_STATUS([llvm        ],[$have_jit($llvmver), from $system_llvm],[$enable_llvm])
+   CL_MSG_STATUS([llvm        ],[$have_jit ($llvmver), from $system_llvm],[$enable_llvm])
 else
-   CL_MSG_STATUS([llvm        ],[$have_jit($llvmver), from $system_llvm ($llvm_linking)],[$enable_llvm])
+   CL_MSG_STATUS([llvm        ],[$have_jit ($llvmver), from $system_llvm ($llvm_linking)],[$enable_llvm])
 fi
 CL_MSG_STATUS([mempool     ],[$have_mempool],[$enable_mempool])
 
@@ -264,9 +267,10 @@ AC_MSG_NOTICE([Summary of engine detection features])
 CL_MSG_STATUS([bzip2       ],[$bzip_check],[$want_bzip2])
 CL_MSG_STATUS([zlib        ],[$ZLIB_HOME],[yes])
 CL_MSG_STATUS([unrar       ],[$want_unrar],[$want_unrar])
-if test "x$LIBJSON_HOME" != "x"; then
-    CL_MSG_STATUS([libjson     ],[$LIBJSON_HOME],[$have_json])
-    CL_MSG_STATUS([preclass    ],[$LIBJSON_HOME],[$have_json])
+if test "X$have_json" = "Xyes"; then
+    CL_MSG_STATUS([preclass    ],[yes (libjson-c-dev found at $LIBJSON_HOME)],[yes])
+else
+    CL_MSG_STATUS([preclass    ],[no (missing libjson-c-dev)],[no])
 fi
 if test "x$PCRE_HOME" = "x"; then
     CL_MSG_STATUS([pcre        ],[no],[$have_pcre])

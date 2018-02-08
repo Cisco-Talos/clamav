@@ -1,5 +1,6 @@
+dnl Check for libcurl
+
 have_curl="no"
-curl_msg="Please use the web interface for submitting FPs/FNs."
 AC_MSG_CHECKING([for libcurl installation])
 
 AC_ARG_WITH([libcurl],
