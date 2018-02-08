@@ -10146,7 +10146,7 @@ if test "$GCC" = yes; then
   # Ok, now we have the path, separated by spaces, we can step through it
   # and add multilib dir if necessary.
   lt_tmp_lt_search_path_spec=
-  lt_multi_os_dir=`$CC $CPPFLAGS $CFLAGS $LDFLAGS 2>/dev/null`
+  lt_multi_os_dir=`$CC $CPPFLAGS $CFLAGS $LDFLAGS -print-multi-os-directory 2>/dev/null`
   for lt_sys_path in $lt_search_path_spec; do
     if test -d "$lt_sys_path/$lt_multi_os_dir"; then
       lt_tmp_lt_search_path_spec="$lt_tmp_lt_search_path_spec $lt_sys_path/$lt_multi_os_dir"
@@ -12237,7 +12237,7 @@ fi
 
 
 # Checks for library functions.
-ac_config_files="$ac_config_files Makefile libmspack.pc"
+ac_config_files="$ac_config_files Makefile libclammspack.pc"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -13249,7 +13249,7 @@ do
     "depfiles") CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;
     "libtool") CONFIG_COMMANDS="$CONFIG_COMMANDS libtool" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
-    "libmspack.pc") CONFIG_FILES="$CONFIG_FILES libmspack.pc" ;;
+    "libclammspack.pc") CONFIG_FILES="$CONFIG_FILES libclammspack.pc" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac

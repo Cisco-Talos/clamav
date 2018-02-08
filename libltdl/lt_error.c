@@ -1,7 +1,6 @@
-/* lt_error.c -- error propagation interface
+/* lt_error.c -- error propogation interface
 
-   Copyright (C) 1999-2001, 2004-2005, 2007, 2011-2015 Free Software
-   Foundation, Inc.
+   Copyright (C) 1999, 2000, 2001, 2004, 2005, 2007 Free Software Foundation, Inc.
    Written by Thomas Tanner, 1999
 
    NOTE: The canonical source of this file is maintained with the
