@@ -1,6 +1,6 @@
 /* lt__alloc.h -- internal memory management interface
 
-   Copyright (C) 2004 Free Software Foundation, Inc.
+   Copyright (C) 2004, 2011-2015 Free Software Foundation, Inc.
    Written by Gary V. Vaughan, 2004
 
    NOTE: The canonical source of this file is maintained with the
@@ -28,7 +28,7 @@ or obtained by writing to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
 
-#if !defined(LT__ALLOC_H)
+#if !defined LT__ALLOC_H
 #define LT__ALLOC_H 1
 
 #include "lt_system.h"
@@ -37,10 +37,10 @@ LT_BEGIN_C_DECLS
 
 #define MALLOC(tp, n)		(tp*) lt__malloc((n) * sizeof(tp))
 #define REALLOC(tp, mem, n)	(tp*) lt__realloc((mem), (n) * sizeof(tp))
-#define FREE(mem)					LT_STMT_START {	\
-	if (mem) { free ((void *)mem); mem = NULL; }	} LT_STMT_END
-#define MEMREASSIGN(p, q)				LT_STMT_START {	\
-	if ((p) != (q)) { if (p) free (p); (p) = (q); (q) = 0; }	\
+#define FREE(mem)				LT_STMT_START {	\
+	free (mem); mem = NULL;					} LT_STMT_END
+#define MEMREASSIGN(p, q)			LT_STMT_START {	\
+	if ((p) != (q)) { free (p); (p) = (q); (q) = 0; }	\
 								} LT_STMT_END
 
 /* If set, this function is called when memory allocation has failed.  */
@@ -55,4 +55,4 @@ LT_SCOPE char *lt__strdup (const char *string);
 
 LT_END_C_DECLS
 
-#endif /*!defined(LT__ALLOC_H)*/
+#endif /*!defined LT__ALLOC_H*/

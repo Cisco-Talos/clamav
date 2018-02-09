@@ -1,7 +1,7 @@
 /* loader-dlopen.c --  dynamic linking with dlopen/dlsym
 
-   Copyright (C) 1998, 1999, 2000, 2004, 2006,
-                 2007, 2008 Free Software Foundation, Inc.
+   Copyright (C) 1998-2000, 2004, 2006-2008, 2011-2015 Free Software
+   Foundation, Inc.
    Written by Thomas Tanner, 1998
 
    NOTE: The canonical source of this file is maintained with the
@@ -68,7 +68,7 @@ get_vtable (lt_user_data loader_data)
   if (vtable && !vtable->name)
     {
       vtable->name		= "lt_dlopen";
-#if defined(DLSYM_USCORE)
+#if defined DLSYM_USCORE
       vtable->sym_prefix	= "_";
 #endif
       vtable->module_open	= vm_open;
@@ -93,53 +93,53 @@ get_vtable (lt_user_data loader_data)
 /* --- IMPLEMENTATION --- */
 
 
-#if defined(HAVE_DLFCN_H)
+#if defined HAVE_DLFCN_H
 #  include <dlfcn.h>
 #endif
 
-#if defined(HAVE_SYS_DL_H)
+#if defined HAVE_SYS_DL_H
 #  include <sys/dl.h>
 #endif
 
 
 /* We may have to define LT_LAZY_OR_NOW in the command line if we
    find out it does not work in some platform. */
-#if !defined(LT_LAZY_OR_NOW)
-#  if defined(RTLD_LAZY)
+#if !defined LT_LAZY_OR_NOW
+#  if defined RTLD_LAZY
 #    define LT_LAZY_OR_NOW	RTLD_LAZY
 #  else
-#    if defined(DL_LAZY)
+#    if defined DL_LAZY
 #      define LT_LAZY_OR_NOW	DL_LAZY
 #    endif
 #  endif /* !RTLD_LAZY */
 #endif
-#if !defined(LT_LAZY_OR_NOW)
-#  if defined(RTLD_NOW)
+#if !defined LT_LAZY_OR_NOW
+#  if defined RTLD_NOW
 #    define LT_LAZY_OR_NOW	RTLD_NOW
 #  else
-#    if defined(DL_NOW)
+#    if defined DL_NOW
 #      define LT_LAZY_OR_NOW	DL_NOW
 #    endif
 #  endif /* !RTLD_NOW */
 #endif
-#if !defined(LT_LAZY_OR_NOW)
+#if !defined LT_LAZY_OR_NOW
 #  define LT_LAZY_OR_NOW	0
 #endif /* !LT_LAZY_OR_NOW */
 
 /* We only support local and global symbols from modules for loaders
    that provide such a thing, otherwise the system default is used.  */
-#if !defined(RTLD_GLOBAL)
-#  if defined(DL_GLOBAL)
+#if !defined RTLD_GLOBAL
+#  if defined DL_GLOBAL
 #    define RTLD_GLOBAL		DL_GLOBAL
 #  endif
 #endif /* !RTLD_GLOBAL */
-#if !defined(RTLD_LOCAL)
-#  if defined(DL_LOCAL)
+#if !defined RTLD_LOCAL
+#  if defined DL_LOCAL
 #    define RTLD_LOCAL		DL_LOCAL
 #  endif
 #endif /* !RTLD_LOCAL */
 
-#if defined(HAVE_DLERROR)
+#if defined HAVE_DLERROR
 #  define DLERROR(arg)	dlerror ()
 #else
 #  define DLERROR(arg)	LT__STRERROR (arg)
@@ -152,7 +152,7 @@ get_vtable (lt_user_data loader_data)
 /* A function called through the vtable when this loader is no
    longer needed by the application.  */
 static int
-vl_exit (lt_user_data LT__UNUSED loader_data)
+vl_exit (lt_user_data loader_data LT__UNUSED)
 {
   vtable = NULL;
   return 0;
@@ -163,11 +163,14 @@ vl_exit (lt_user_data LT__UNUSED loader_data)
    loader.  Returns an opaque representation of the newly opened
    module for processing with this loader's other vtable functions.  */
 static lt_module
-vm_open (lt_user_data LT__UNUSED loader_data, const char *filename,
+vm_open (lt_user_data loader_data LT__UNUSED, const char *filename,
          lt_dladvise advise)
 {
   int		module_flags = LT_LAZY_OR_NOW;
   lt_module	module;
+#ifdef RTLD_MEMBER
+  int		len = LT_STRLEN (filename);
+#endif
 
   if (advise)
     {
@@ -191,7 +194,44 @@ vm_open (lt_user_data LT__UNUSED loader_data, const char *filename,
 #endif
     }
 
+#ifdef RTLD_MEMBER /* AIX */
+  if (len >= 4) /* at least "l(m)" */
+    {
+      /* Advise loading an archive member only if the filename really
+	 contains both the opening and closing parent, and a member. */
+      if (filename[len-1] == ')')
+	{
+	  const char *opening = strrchr(filename, '(');
+	  if (opening && opening < (filename+len-2) && strchr(opening+1, '/') == NULL)
+	    module_flags |= RTLD_MEMBER;
+	}
+    }
+#endif
+
   module = dlopen (filename, module_flags);
+
+#if defined RTLD_MEMBER && defined LT_SHARED_LIB_MEMBER
+  if (!module && len && !(module_flags & RTLD_MEMBER) && errno == ENOEXEC)
+    {
+      /* Loading without a member specified failed with "Exec format error".
+	 So the file is there, but either has wrong bitwidth, or is an
+	 archive eventually containing the default shared archive member.
+	 Retry with default member, getting same error in worst case. */
+      const char *member = LT_SHARED_LIB_MEMBER;
+
+      char *attempt = MALLOC (char, len + strlen (member) + 1);
+      if (!attempt)
+	{
+	  LT__SETERROR (NO_MEMORY);
+	  return module;
+	}
+
+      sprintf (attempt, "%s%s", filename, member);
+      module = vm_open (loader_data, attempt, advise);
+      FREE (attempt);
+      return module;
+    }
+#endif
 
   if (!module)
     {
@@ -205,7 +245,7 @@ vm_open (lt_user_data LT__UNUSED loader_data, const char *filename,
 /* A function called through the vtable when a particular module
    should be unloaded.  */
 static int
-vm_close (lt_user_data LT__UNUSED loader_data, lt_module module)
+vm_close (lt_user_data loader_data LT__UNUSED, lt_module module)
 {
   int errors = 0;
 
@@ -222,7 +262,7 @@ vm_close (lt_user_data LT__UNUSED loader_data, lt_module module)
 /* A function called through the vtable to get the address of
    a symbol loaded from a particular module.  */
 static void *
-vm_sym (lt_user_data LT__UNUSED loader_data, lt_module module, const char *name)
+vm_sym (lt_user_data loader_data LT__UNUSED, lt_module module, const char *name)
 {
   void *address = dlsym (module, name);
 
