@@ -1,6 +1,6 @@
 /* lt__strl.c -- size-bounded string copying and concatenation
 
-   Copyright (C) 2004 Free Software Foundation, Inc.
+   Copyright (C) 2004, 2011-2015 Free Software Foundation, Inc.
    Written by Bob Friesenhahn, 2004
 
    NOTE: The canonical source of this file is maintained with the
@@ -36,9 +36,9 @@ or obtained by writing to the Free Software Foundation, Inc.,
 /*
  lt_strlcat appends the NULL-terminated string src to the end of dst.
  It will append at most dstsize - strlen(dst) - 1 bytes,
- NULL-terminating the result. The total length of the string which
+ NULL-terminating the result. The total length of the string that
  would have been created given sufficient buffer size (may be longer
- than dstsize) is returned.  This function substitutes for strlcat()
+ than dstsize) is returned.  This function substitutes for strlcat(),
  which is available under NetBSD, FreeBSD and Solaris 9.
 
  Buffer overflow can be checked as follows:
@@ -46,7 +46,7 @@ or obtained by writing to the Free Software Foundation, Inc.,
    if (lt_strlcat(dst, src, dstsize) >= dstsize)
      return -1;
 */
-#if !defined(HAVE_STRLCAT)
+#if !defined HAVE_STRLCAT
 size_t
 lt_strlcat(char *dst, const char *src, const size_t dstsize)
 {
@@ -65,7 +65,7 @@ lt_strlcat(char *dst, const char *src, const size_t dstsize)
     size - 1.
   */
   for ( p = dst + length, q = src;
-        (*q != 0) && (length < dstsize - 1) ;
+        (*q != 0) && (length < dstsize - 1);
         length++, p++, q++ )
     *p = *q;
 
@@ -79,14 +79,14 @@ lt_strlcat(char *dst, const char *src, const size_t dstsize)
 
   return length;
 }
-#endif /* !defined(HAVE_STRLCAT) */
+#endif /* !defined HAVE_STRLCAT */
 
 /*
   lt_strlcpy copies up to dstsize - 1 characters from the NULL-terminated
   string src to dst, NULL-terminating the result. The total length of
-  the string which would have been created given sufficient buffer
+  the string that would have been created given sufficient buffer
   size (may be longer than dstsize) is returned. This function
-  substitutes for strlcpy() which is available under OpenBSD, FreeBSD
+  substitutes for strlcpy(), which is available under OpenBSD, FreeBSD
   and Solaris 9.
 
   Buffer overflow can be checked as  follows:
@@ -94,7 +94,7 @@ lt_strlcat(char *dst, const char *src, const size_t dstsize)
     if (lt_strlcpy(dst, src, dstsize) >= dstsize)
       return -1;
 */
-#if !defined(HAVE_STRLCPY)
+#if !defined HAVE_STRLCPY
 size_t
 lt_strlcpy(char *dst, const char *src, const size_t dstsize)
 {
@@ -109,8 +109,8 @@ lt_strlcpy(char *dst, const char *src, const size_t dstsize)
   /*
     Copy src to dst within bounds of size-1.
   */
-  for ( p=dst, q=src, length=0 ;
-        (*q != 0) && (length < dstsize-1) ;
+  for ( p=dst, q=src, length=0;
+        (*q != 0) && (length < dstsize-1);
         length++, p++, q++ )
     *p = *q;
 
@@ -124,4 +124,4 @@ lt_strlcpy(char *dst, const char *src, const size_t dstsize)
 
   return length;
 }
-#endif /* !defined(HAVE_STRLCPY) */
+#endif /* !defined HAVE_STRLCPY */
