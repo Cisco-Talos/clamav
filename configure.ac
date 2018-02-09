@@ -20,7 +20,7 @@ dnl   MA 02110-1301, USA.
 AC_PREREQ([2.59])
 dnl For a release change [devel] to the real version [0.xy]
 dnl also change VERSION below
-AC_INIT([ClamAV], [0.99.3], [http://bugs.clamav.net/], [clamav], [http://www.clamav.net/])
+AC_INIT([ClamAV], [0.99.4], [http://bugs.clamav.net/], [clamav], [http://www.clamav.net/])
 
 AH_BOTTOM([#include "platform.h"])
 dnl put configure auxiliary into config

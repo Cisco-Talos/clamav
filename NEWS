@@ -1,17 +1,25 @@
-0.99.1
+0.99.4
 ------
 
-ClamAV 0.99.1 contains a new feature for parsing Hancom Office files
-including extracting and scanning embedded objects. ClamAV 0.99.1
-also contains important bug fixes. Please see ChangeLog for details.
+ClamAV 0.99.4 is a hotfix release to patch a set of vulnerabilities.
 
-Thanks to the following community members for code submissions used in
-ClamAV 0.99.1:
+    - fixes for the following CVE's: CVE-2012-6706, CVE-2017-6419, 
+      CVE-2017-11423. 
+    - also included are 2 fixes for file descriptor leaks as well fixes for
+      a handful of other important bugs. 
 
-Jim Morris
-Andreas Cadhalpun
-Mark Allan
-Sebastian Siewior
+Thank you to the following ClamAV community members for your code
+submissions and bug reports! 
+
+Alberto Garcia
+Bernhard Vogel
+Francisco Oca
+mtowalski
+Suleman Ali
+yongji.oy
+xrym
+
+Special thanks again to Offensive Research at Salesforce.com for responsible disclosure.
 
 --
 The ClamAV team (http://www.clamav.net/about.html#credits)
