@@ -1423,6 +1423,10 @@ int lzx_decompress(struct lzx_stream *lzx, uint32_t out_bytes) {
       case LZX_BLOCKTYPE_UNCOMPRESSED:
 	/* as this_run is limited not to wrap a frame, this also means it
 	 * won't wrap the window (as the window is a multiple of 32k) */
+  if (window_posn + this_run > lzx->window_size) {
+      cli_dbgmsg("match ran over window boundary\n");
+      return lzx->error = CL_EFORMAT; /* might as well */
+    }
 	rundest = &window[window_posn];
 	window_posn += this_run;
 	while (this_run > 0) {
@@ -1540,8 +1544,10 @@ int lzx_decompress(struct lzx_stream *lzx, uint32_t out_bytes) {
 
 void lzx_free(struct lzx_stream *lzx) {
   if (lzx) {
-    free(lzx->inbuf);
-    free(lzx->window);
+    if(lzx->inbuf)
+      free(lzx->inbuf);
+    if(lzx->window)
+      free(lzx->window);
     free(lzx);
   }
 }
