@@ -479,7 +479,7 @@ char *cli_strndup(const char *s, size_t n)
         return NULL;
     }
 
-    len = strnlen(s, n);
+    len = cli_strnlen(s, n);
     alloc = malloc(len+1);
 
     if(!alloc) {
