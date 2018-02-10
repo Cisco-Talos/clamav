@@ -159,6 +159,66 @@
         }
         "Entry"
         {
+        "MsmKey" = "8:_E5BCF7BBC59D480B8B76A837304A5D32"
+        "OwnerKey" = "8:_129947045FE24C5AAEE6467547A6FBBB"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_E5BCF7BBC59D480B8B76A837304A5D32"
+        "OwnerKey" = "8:_E6AAF8DB843A4CDCBD12F62B44F0D947"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_E5BCF7BBC59D480B8B76A837304A5D32"
+        "OwnerKey" = "8:_C3F868E2F86F4F22914EBB33174331CF"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_E5BCF7BBC59D480B8B76A837304A5D32"
+        "OwnerKey" = "8:_AA48472048A74261A786515933650C63"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_E5BCF7BBC59D480B8B76A837304A5D32"
+        "OwnerKey" = "8:_86FBE3D4BB5F42609082FB54D8079705"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_E5BCF7BBC59D480B8B76A837304A5D32"
+        "OwnerKey" = "8:_64B5C4E9452F43349FB4D53DEE15C87D"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_E5BCF7BBC59D480B8B76A837304A5D32"
+        "OwnerKey" = "8:_42222ACB125B4398B7BF9C030F7DF8FB"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_E5BCF7BBC59D480B8B76A837304A5D32"
+        "OwnerKey" = "8:_4053CC7DC75C48E98893BCEA2D692E55"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_E5BCF7BBC59D480B8B76A837304A5D32"
+        "OwnerKey" = "8:_32F4158C158142089DB13F5F29F91589"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_E5BCF7BBC59D480B8B76A837304A5D32"
+        "OwnerKey" = "8:_29583B2B37A44A71864FFD88DFED2C8F"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
         "MsmKey" = "8:_E6AAF8DB843A4CDCBD12F62B44F0D947"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
@@ -736,21 +796,21 @@
         {
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:ClamAV"
-        "ProductCode" = "8:{C090FC94-9B14-4736-A36E-18D4E6E6396F}"
-        "PackageCode" = "8:{E8E42F86-31C6-4CDF-8F5E-C1FB42D4D378}"
+        "ProductCode" = "8:{6C4364D6-1988-4638-8D97-95AB52844655}"
+        "PackageCode" = "8:{A6EEA8BE-3B85-44A7-9DF2-17F5B6D6BDBB}"
         "UpgradeCode" = "8:{B65ED295-87F7-4870-8017-E3A594DDADF8}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"
         "RemovePreviousVersions" = "11:TRUE"
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:TRUE"
-        "ProductVersion" = "8:0.99.3"
+        "ProductVersion" = "8:0.99.4"
         "Manufacturer" = "8:Cisco Systems, Inc"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:http://www.clamav.net"
         "Title" = "8:ClamAV"
         "Subject" = "8:"
-        "ARPCONTACT" = "8:Sourcefire Inc"
+        "ARPCONTACT" = "8:Cisco Systems, Inc"
         "Keywords" = "8:"
         "ARPCOMMENTS" = "8:ClamAV"
         "ARPURLINFOABOUT" = "8:http://www.clamav.net"
@@ -1253,6 +1313,20 @@
         }
         "MergeModule"
         {
+            "{CEE29DC0-9FBA-4B99-8D47-5BC643D9B626}:_E5BCF7BBC59D480B8B76A837304A5D32"
+            {
+            "UseDynamicProperties" = "11:TRUE"
+            "IsDependency" = "11:TRUE"
+            "SourcePath" = "8:Microsoft_VC100_CRT_x86.msm"
+                "Properties"
+                {
+                }
+            "LanguageId" = "3:0"
+            "Exclude" = "11:FALSE"
+            "Folder" = "8:"
+            "Feature" = "8:"
+            "IsolateTo" = "8:"
+            }
         }
         "ProjectOutput"
         {
