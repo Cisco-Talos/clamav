@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2014 Cisco and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2014, 2018 Cisco and/or its affiliates. All rights reserved.
  *
  *  Author: Shawn Webb
  *
@@ -960,7 +960,7 @@ struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj *obj, s
     }
 
     /* More sanity checking */
-    if ((size_t)(end - objstart) == objsz)
+    if ((size_t)(end - objstart) >= objsz)
         return NULL;
 
     if (*end != ']')
