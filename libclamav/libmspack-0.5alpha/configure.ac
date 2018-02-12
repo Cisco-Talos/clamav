@@ -4,7 +4,7 @@ AC_PREREQ(2.59)
 AC_INIT([libmspack],[0.5alpha],[kyzer@4u.net])
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([foreign])
-AM_MAINTAINER_MODE([enable])
+AM_MAINTAINER_MODE([disable])
 AC_CONFIG_SRCDIR([mspack/mspack.h])
 AC_CONFIG_HEADER([config.h])
 
