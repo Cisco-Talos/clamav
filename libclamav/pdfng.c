@@ -590,12 +590,7 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
 
     /* Make a best effort to find the end of the string and determine if UTF-* */
     p2 = ++p1;
-    if (!str) {
-        checklen = cli_strnlen(p1, objsize - 1) + 1;
-    }
-    else {
-        checklen = cli_strnlen(p1, checklen) + 1;
-    }
+    checklen = cli_strnlen(p1, objsize - 1) + 1;
 
     while (p2 < objstart + checklen) {
         int shouldbreak=0;
