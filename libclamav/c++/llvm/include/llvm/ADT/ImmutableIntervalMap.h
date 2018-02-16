@@ -215,7 +215,7 @@ public:
 
     ImmutableIntervalMap Add(ImmutableIntervalMap Old, 
                              key_type_ref K, data_type_ref D) {
-      TreeTy *T = F.Add(Old.Root, std::make_pair<key_type, data_type>(K, D));
+      TreeTy *T = F.Add(Old.Root, std::pair<key_type, data_type>(K, D));
       return ImmutableIntervalMap(F.GetCanonicalTree(T));
     }
 
