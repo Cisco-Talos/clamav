@@ -415,7 +415,7 @@ namespace llvm {
       IndexListEntry *entry =
         static_cast<IndexListEntry*>(
           ileAllocator.Allocate(sizeof(IndexListEntry),
-          alignof<IndexListEntry>()));
+          alignofLLVM<IndexListEntry>()));
 
       new (entry) IndexListEntry(mi, index);
 
