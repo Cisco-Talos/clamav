@@ -92,7 +92,7 @@ public:
     ImmutableMap GetEmptyMap() { return ImmutableMap(F.GetEmptyTree()); }
 
     ImmutableMap Add(ImmutableMap Old, key_type_ref K, data_type_ref D) {
-      TreeTy *T = F.Add(Old.Root, std::make_pair<key_type,data_type>(K,D));
+      TreeTy *T = F.Add(Old.Root, std::pair<key_type,data_type>(K,D));
       return ImmutableMap(Canonicalize ? F.GetCanonicalTree(T): T);
     }
 
