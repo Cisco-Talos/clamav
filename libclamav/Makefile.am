@@ -616,7 +616,7 @@ version.h: version.h.tmp
 version.h.tmp:
 	$(AM_V_GEN) test -f version.h || touch version.h;\
 	rm -f $@;\
-	REVISION="$$(LANG=C cd "$(top_srcdir)"; git describe --always 2>/dev/null || echo "exported")";\
+	REVISION="$$(LANG=C git --git-dir "$(top_srcdir)"/.git describe --always 2>/dev/null || echo "exported")";\
 	if test "$$REVISION" = "exported"; then\
 	    REVISION="";\
 	fi;\
