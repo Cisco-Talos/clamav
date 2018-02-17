@@ -150,7 +150,7 @@ help (void)
     mprintf ("                   Clam AntiVirus: freshclam  %s\n",
              get_version ());
     printf ("           By The ClamAV Team: http://www.clamav.net/about.html#credits\n");
-    printf ("           (C) 2007-2015 Cisco Systems, Inc.\n\n");
+    printf ("           (C) 2007-2018 Cisco Systems, Inc.\n\n");
 
     mprintf ("    --help               -h              show help\n");
     mprintf

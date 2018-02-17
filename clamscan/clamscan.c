@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2012 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -203,7 +203,7 @@ void help(void)
     mprintf("\n");
     mprintf("                       Clam AntiVirus Scanner %s\n", get_version());
     printf("           By The ClamAV Team: http://www.clamav.net/about.html#credits\n");
-    printf("           (C) 2007-2015 Cisco Systems, Inc.\n\n");
+    printf("           (C) 2007-2018 Cisco Systems, Inc.\n\n");
 
     mprintf("    --help                -h             Print this help screen\n");
     mprintf("    --version             -V             Print version number\n");

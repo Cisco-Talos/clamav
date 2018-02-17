@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007 - 2013 Sourcefire, Inc.
  *  Copyright (C) 2002 - 2007 Tomasz Kojm <tkojm@clamav.net>
  *  CDIFF code (C) 2006 Sensory Networks, Inc.
@@ -3334,7 +3334,7 @@ static void help(void)
     mprintf("\n");
     mprintf("Clam AntiVirus: Signature Tool (sigtool)  %s\n", get_version());
     mprintf("       By The ClamAV Team: http://www.clamav.net/team\n");
-    mprintf("       (C) 2007-2015 Cisco Systems, Inc.\n\n");
+    mprintf("       (C) 2007-2018 Cisco Systems, Inc.\n\n");
 
     mprintf("    --help                 -h              show help\n");
     mprintf("    --version              -V              print version number and exit\n");

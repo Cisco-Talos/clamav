@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2009-2013 Sourcefire, Inc.
  *  Author: Tomasz Kojm <tkojm@clamav.net>
  *
@@ -202,7 +202,7 @@ static void help(void)
     printf("\n");
     printf("           Clam AntiVirus: Configuration Tool %s\n", get_version());
     printf("           By The ClamAV Team: http://www.clamav.net/about.html#credits\n");
-    printf("           (C) 2009-2015 Cisco Systems, Inc.\n\n");
+    printf("           (C) 2009-2018 Cisco Systems, Inc.\n\n");
 
     printf("    --help                 -h         Show help\n");
     printf("    --version              -V         Show version\n");
