@@ -23964,12 +23964,12 @@ fi
 if test "X$find_curl" = "Xyes"; then
     LIBCURL_HOME=/usr/local
 fi
-if test -f "$LIBCURL_HOME/include/curl/curl.h"; then
+if test -f "$LIBCURL_HOME/bin/curl-config"; then
     have_curl="yes"
 else
     if test "X$find_curl" = "Xyes"; then
         LIBCURL_HOME=/usr
-        if test -f "$LIBCURL_HOME/include/curl/curl.h"; then
+        if test -f "$LIBCURL_HOME/bin/curl-config"; then
             have_curl="yes"
         fi
     fi
