@@ -666,7 +666,11 @@ static int add_vm_code(unpack_data_t *unpack_data, unsigned int first_byte,
 		    return FALSE;
 		}
 		for (i=0 ; i < (size_t) vm_codesize ; i++) {
-			vm_code[i] = rarvm_getbits(&rarvm_input) >> 8;
+			if ((rarvm_input.in_addr + 2) < rarvm_input.buf_size) {
+				vm_code[i] = rarvm_getbits(&rarvm_input) >> 8;
+			} else {
+				vm_code[i] = 0;
+			}
 			rarvm_addbits(&rarvm_input, 8);
 		}
 		if(!rarvm_prepare(&unpack_data->rarvm_data, &rarvm_input, &vm_code[0], (int) vm_codesize, &filter->prg)) {
