@@ -256,8 +256,8 @@ if test "$subdirfailed" = "no"; then
 fi
 if test "$enable_llvm" = "no"; then
    CL_MSG_STATUS([llvm        ],[$have_jit],[$enable_llvm])
-elif test "x$llvm_linking" = "x"; then
-   CL_MSG_STATUS([llvm        ],[$have_jit ($llvmver), from $llvmconfig],[$enable_llvm])
+elif test "x$llvmconfig" = "x"; then
+   CL_MSG_STATUS([llvm        ],[$have_jit ($llvmver), from internal],[$enable_llvm])
 else
    CL_MSG_STATUS([llvm        ],[$have_jit ($llvmver), from $llvmconfig ($llvm_linking)],[$enable_llvm])
 fi
