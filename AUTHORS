@@ -1,81 +1,76 @@
 The ClamAV Team - http://www.clamav.net/about.html#credits 
-============================================
-Joel Esler
-Douglas Goddard
-Nigel Houghton
-Tom Judge
-Kevin Lin
-Steve Morgan
-Matt Olney
-Dave Raynor
-Samir Sapra
-Ryan Steinmetz
-Dave Suffling
-Matt Watchinkski
-Shawn Webb
+==========================================================
+
+ClamAV Development
+==================
+Micah Snyder
+Mickey Sola
+Tom McCourt
+
+ClamAV Malware Research
+=======================
 Alain Zidouemba
+Angel Villegas
+Ben Baker
+Chris Marczewski
+Christopher McBee
+Emmanuel Tacheau
+Jonas Zaddach
+Lilia Gonzalez Medina
+Mariano Graziano
+Matthew Molyett
+Paul Frank
+Xabier Ugarte Pedrero
 
 Talos Group
-==============
-Andrea Allievi
-Jonathan Arneson
-Aaron Benson
-Nathan Benson
-Andrew Blunk
-Kevin Brooks
-Marjeta Cedilnik
-Paul Frank
-Douglas Goddard
-Nicholas Herbert
-Pawel Janic
-Richard Johnson
-Alex Kambis
-Christopher Marshall
-Christopher McBee
-David McDaniel
-Alex McDonnel
-Kevin Miklavcic
-Patrick Mullen
-Marcin Noga
-Katie Nolan
-Carlos Pacho
-Ryan Pentney
-Nick Randolph
-Marcos Rodriguez
-Brandon Stultz
-Michael Verbeck
-Angel Villegas
-Andy Walker
-Yves Younan
-
-ClamAV QA
 ===========
-Erin Germ
-Dragos Malene
-Vijay Mistry
-Matt Donnan
+Alex Kambis
+Alex McDonnel
+Andrew Blunck
+Brandon Stultz
+Carlos Pacho
+Christopher Marshall
+Dave Raynor
+David McDaniel
+Joel Esler
+Kate Nolan
+Kevin Brooks
+Kevin Miklavcic
+Marcin Noga
+Marcos Rodriguez
+Matt Watchinkski
+Nicholas Herbert
+Nick Randolph
+Patrick Mullen
+Ryan Pentney
+Yves Younan
 
 Contributors
 ============
-Aeriana 
-Mike Cathey 
-Diego d’Ambra 
 Andreas Faust 
 Arnaud Jacques 
-Tomasz Papszun 
+Aeriana 
+Diego d’Ambra 
+Mike Cathey 
 Sven Strickroth 
+Tomasz Papszun 
 Trog 
 
 ClamAV Emeritus
 ===============
 aCaB
+Dragos Malene
+Erin Germ
+Kevin Lin
 Luca Gibelli
+Matt Donnan
+Nigel Horne
+Steve Morgan
 Tomasz Kojmnet
 Török Edvin 
-Nigel Horne
+Vijay Mistry
 
-
-Please see the ChangeLog and clamdoc.pdf for the full list of contributors.
+Please see the ChangeLog,  he README, and the ClamDoc for the full list of contributors.
 
 -------------------------------------------------------------------------------
 
