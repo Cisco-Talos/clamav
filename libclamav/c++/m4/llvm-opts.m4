@@ -60,7 +60,7 @@ else
          AC_MSG_ERROR([Invalid argument to --with-llvm-linking])
    esac
 fi
-], [llvm_linking=""])
+], [llvm_linking="dynamic"])
 
 llvmver=`$llvmconfig --version`
 
