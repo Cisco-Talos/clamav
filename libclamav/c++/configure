@@ -15763,7 +15763,7 @@ else
 fi
 
 else
-  llvm_linking=""
+  llvm_linking="dynamic"
 fi
 
 
