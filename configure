@@ -23497,7 +23497,7 @@ else
 fi
 
 else
-  llvm_linking=""
+  llvm_linking="dynamic"
 fi
 
 
@@ -29974,18 +29974,18 @@ else
   $as_echo "$have_jit ($enable_llvm)"
 fi
 
-elif test "x$llvm_linking" = "x"; then
+elif test "x$llvmconfig" = "x"; then
 
 
    $as_echo_n "              llvm        : "
    if test "x$enable_llvm" = "xno"; then :
-  $as_echo "$have_jit ($llvmver), from $system_llvm (disabled)"
+  $as_echo "$have_jit ($llvmver), from internal (disabled)"
 elif test "x$enable_llvm" = "xyes"; then :
-  $as_echo "$have_jit ($llvmver), from $system_llvm"
+  $as_echo "$have_jit ($llvmver), from internal"
 elif test "x$enable_llvm" = "x"; then :
-  $as_echo "$have_jit ($llvmver), from $system_llvm"
+  $as_echo "$have_jit ($llvmver), from internal"
 else
-  $as_echo "$have_jit ($llvmver), from $system_llvm ($enable_llvm)"
+  $as_echo "$have_jit ($llvmver), from internal ($enable_llvm)"
 fi
 
 else
@@ -29993,13 +29993,13 @@ else
 
    $as_echo_n "              llvm        : "
    if test "x$enable_llvm" = "xno"; then :
-  $as_echo "$have_jit ($llvmver), from $system_llvm ($llvm_linking) (disabled)"
+  $as_echo "$have_jit ($llvmver), from $llvmconfig ($llvm_linking) (disabled)"
 elif test "x$enable_llvm" = "xyes"; then :
-  $as_echo "$have_jit ($llvmver), from $system_llvm ($llvm_linking)"
+  $as_echo "$have_jit ($llvmver), from $llvmconfig ($llvm_linking)"
 elif test "x$enable_llvm" = "x"; then :
-  $as_echo "$have_jit ($llvmver), from $system_llvm ($llvm_linking)"
+  $as_echo "$have_jit ($llvmver), from $llvmconfig ($llvm_linking)"
 else
-  $as_echo "$have_jit ($llvmver), from $system_llvm ($llvm_linking) ($enable_llvm)"
+  $as_echo "$have_jit ($llvmver), from $llvmconfig ($llvm_linking) ($enable_llvm)"
 fi
 
 fi
