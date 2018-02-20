@@ -258,7 +258,7 @@ start_clamd()
     if test_run 0 $CLAMD -c test-clamd.conf --help >clamd-test.log; then
 	die "Failed to run clamd --help";
     fi
-    grep "Clam AntiVirus Daemon" clamd-test.log >/dev/null || die "Wrong --help reply from clamd!";
+    grep "Clam AntiVirus: Daemon" clamd-test.log >/dev/null || die "Wrong --help reply from clamd!";
     if test_run 0 $CLAMD -c test-clamd.conf >clamd-test.log 2>&1; then
 	cat clamd-test.log
 	die "Failed to run clamd";
