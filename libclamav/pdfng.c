@@ -612,7 +612,7 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
         p2++;
     }
 
-    if (p2 == objstart + checklen)
+    if (p2 >= objstart + checklen)
         return NULL;
 
     len = (size_t)(p2 - p1) + 1;
