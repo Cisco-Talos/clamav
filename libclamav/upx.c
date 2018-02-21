@@ -187,7 +187,7 @@ static int pefromupx (const char *src, uint32_t ssize, char *dst, uint32_t *dsiz
 
   if (!pehdr) {
     uint32_t rebsz = PESALIGN(dend, 0x1000);
-    cli_dbgmsg("UPX: no luck - brutally crafing a reasonable PE\n");
+    cli_dbgmsg("UPX: no luck - brutally crafting a reasonable PE\n");
     if (!(newbuf = (char *)cli_calloc(rebsz+0x200, sizeof(char)))) {
       cli_dbgmsg("UPX: malloc failed - giving up rebuild\n");
       return 0;

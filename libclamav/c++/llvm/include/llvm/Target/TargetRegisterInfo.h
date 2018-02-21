@@ -736,7 +736,7 @@ public:
     return false;
   }
 
-  /// eliminateFrameIndex - This method must be overriden to eliminate abstract
+  /// eliminateFrameIndex - This method must be overridden to eliminate abstract
   /// frame indices from instructions which may use them.  The instruction
   /// referenced by the iterator contains an MO_FrameIndex operand which must be
   /// eliminated by this method.  This method may modify or replace the

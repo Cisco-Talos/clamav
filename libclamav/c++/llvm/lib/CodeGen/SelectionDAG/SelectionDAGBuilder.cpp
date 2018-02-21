@@ -3151,7 +3151,7 @@ SelectionDAGBuilder::implVisitBinaryAtomic(const CallInst& I,
   return 0;
 }
 
-// implVisitAluOverflow - Lower arithmetic overflow instrinsics.
+// implVisitAluOverflow - Lower arithmetic overflow intrinsics.
 const char *
 SelectionDAGBuilder::implVisitAluOverflow(const CallInst &I, ISD::NodeType Op) {
   SDValue Op1 = getValue(I.getArgOperand(0));

@@ -145,7 +145,7 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) { /* WIN3
 	return NULL;
     }
     if(!(m = cl_fmap_open_memory(data, len))) {
-	cli_errmsg("fmap: canot allocate fmap_t\n", fd);
+	cli_errmsg("fmap: cannot allocate fmap_t\n", fd);
 	CloseHandle(mh);
 	CloseHandle(fh);
 	return NULL;
