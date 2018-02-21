@@ -4,7 +4,7 @@
 ClamAV 0.99.4 is a hotfix release to patch a set of vulnerabilities.
 
     - fixes for the following CVE's: CVE-2012-6706, CVE-2017-6419, 
-      CVE-2017-11423. 
+      CVE-2017-11423, CVE-2018-0202, and CVE-2018-1000085. 
     - also included are 2 fixes for file descriptor leaks as well fixes for
       a handful of other important bugs, including patches to support g++ 6, C++11. 
 
@@ -14,14 +14,13 @@ submissions and bug reports!
 Alberto Garcia
 Bernhard Vogel
 Francisco Oca
+Hanno Böck
 Jeffrey Yasskin
 Keith Jones
 mtowalski
 Suleman Ali
 yongji.oy
 xrym
-
-Special thanks again to Offensive Research at Salesforce.com for responsible disclosure.
 
 --
 The ClamAV team (http://www.clamav.net/about.html#credits)
