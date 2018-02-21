@@ -20,7 +20,7 @@ if test "$gcc_check" = "yes"; then
 		esac
 		case "${gcc_version}" in
 		    [[56789]].* | 4.[[3456789]].*)
-			# bb #1581 - temporarely add -fno-strict-aliasing so gcc 4.4.0
+			# bb #1581 - temporarily add -fno-strict-aliasing so gcc 4.4.0
 			# works correctly
 			CFLAGS="$CFLAGS -fno-strict-aliasing"
 			;;

@@ -2412,7 +2412,7 @@ static char *decodehexspecial(const char *hex, unsigned int *dlen)
 	    free(decoded);
 
 	    if(!(start = get_paren_end(pt))) {
-		mprintf("!decodehexspecial: Missing closing parethesis\n");
+		mprintf("!decodehexspecial: Missing closing parenthesis\n");
 		free(hexcpy);
 		free(buff);
 		return NULL;

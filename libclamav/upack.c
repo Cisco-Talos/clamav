@@ -525,7 +525,7 @@ int unupack399(char *bs, uint32_t bl, uint32_t init_eax, char *init_ebx, uint32_
 						do {
 							uint32_t temp_edx;
 							/* compare with lzma_upack_esi_00 */
-							/* do not put in one statment because of difference in signedness */
+							/* do not put in one statement because of difference in signedness */
 							if (!CLI_ISCONTAINED(bs, bl, p.p0, 4))
 								return -1;
 							temp_edx = cli_readint32((char *)p.p0);

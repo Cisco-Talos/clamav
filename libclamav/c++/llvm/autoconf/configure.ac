@@ -1451,7 +1451,7 @@ AC_SUBST(LLVM_INFODIR)
 AC_SUBST(LLVM_MANDIR)
 AC_SUBST(LLVM_CONFIGTIME)
 
-# Place the various directores into the config.h file as #defines so that we
+# Place the various directories into the config.h file as #defines so that we
 # can know about the installation paths within LLVM.
 AC_DEFINE_UNQUOTED(LLVM_PREFIX,"$LLVM_PREFIX",
                    [Installation prefix directory])

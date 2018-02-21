@@ -109,7 +109,7 @@
 #define EC64(x) ((uint64_t)cli_readint64(&(x))) /* Convert little endian to host */
 #define EC32(x) ((uint32_t)cli_readint32(&(x)))
 #define EC16(x) ((uint16_t)cli_readint16(&(x)))
-/* lower and upper bondary alignment (size vs offset) */
+/* lower and upper boundary alignment (size vs offset) */
 #define PEALIGN(o,a) (((a))?(((o)/(a))*(a)):(o))
 #define PESALIGN(o,a) (((a))?(((o)/(a)+((o)%(a)!=0))*(a)):(o))
 
@@ -2446,7 +2446,7 @@ static unsigned int hash_imptbl(cli_ctx *ctx, unsigned char **digest, uint32_t *
         image->Name = EC32(image->Name);
         image->FirstThunk = EC32(image->FirstThunk);
 
-        /* DLL name aquisition */
+        /* DLL name acquisition */
         offset = cli_rawaddr(image->Name, exe_sections, nsections, &err, fsize, hdr_size);
         if(err || offset > fsize) {
             cli_dbgmsg("scan_pe: invalid rva for dll name\n");
@@ -3969,7 +3969,7 @@ int cli_scanpe(cli_ctx *ctx)
         /* Check EP for UPX vs. FSG vs. Upack */
 
         /* Upack 0.39 produces 2 types of executables
-         * 3 sections:           | 2 sections (one empty, I don't chech found if !upack, since it's in OR above):
+         * 3 sections:           | 2 sections (one empty, I don't check found if !upack, since it's in OR above):
          *   mov esi, value      |   pusha
          *   lodsd               |   call $+0x9
          *   push eax            |

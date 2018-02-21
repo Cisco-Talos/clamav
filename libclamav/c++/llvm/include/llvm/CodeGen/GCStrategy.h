@@ -129,7 +129,7 @@ namespace llvm {
     GCFunctionInfo *insertFunctionInfo(const Function &F);
 
     /// initializeCustomLowering/performCustomLowering - If any of the actions
-    /// are set to custom, performCustomLowering must be overriden to transform
+    /// are set to custom, performCustomLowering must be overridden to transform
     /// the corresponding actions to LLVM IR. initializeCustomLowering is
     /// optional to override. These are the only GCStrategy methods through
     /// which the LLVM IR can be modified.

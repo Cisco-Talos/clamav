@@ -499,7 +499,7 @@ int unspin(char *src, int ssize, struct cli_exe_section *sections, int sectcnt, 
         }
 
         if (j != sectcnt && ((bitman & (1 << j)) == 0))
-        { /* FIXME: not really sure either the res sect is lamed or just compressed, but this'll save some major headakes */
+        { /* FIXME: not really sure either the res sect is lamed or just compressed, but this'll save some major headaches */
             cli_dbgmsg("spin: Resources (sect%d) appear to be compressed\n\tuncompressed offset %x, len %x\n\tcompressed offset %x, len %x\n", j, sections[j].rva, key32 - sections[j].rva, key32, sections[j].vsz - (key32 - sections[j].rva));
 
             if ((curr = (char *)cli_malloc(sections[j].vsz)) != NULL)

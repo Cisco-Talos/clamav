@@ -796,7 +796,7 @@ AC_DEFUN([AC_LIB_FIND],
 dnl Try to set a correct default libdir for multiarch systems
 AC_DEFUN([AC_LIB_MULTILIB_GUESS],
 [
-	# Only modify libdir if user has not overriden it
+	# Only modify libdir if user has not overridden it
 	default_libdir='${exec_prefix}/lib'
 	if test "$libdir" = "$default_libdir"; then
 		AC_MSG_CHECKING([for multiarch libdir])

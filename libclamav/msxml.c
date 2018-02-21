@@ -245,7 +245,7 @@ int cli_scanmsxml(cli_ctx *ctx)
 
     reader = xmlReaderForIO(msxml_read_cb, NULL, &cbdata, "msxml.xml", NULL, CLAMAV_MIN_XMLREADER_FLAGS);
     if (!reader) {
-        cli_dbgmsg("cli_scanmsxml: cannot intialize xmlReader\n");
+        cli_dbgmsg("cli_scanmsxml: cannot initialize xmlReader\n");
 
 #if HAVE_JSON
         ret = cli_json_parse_error(ctx->wrkproperty, "OOXML_ERROR_XML_READER_IO");

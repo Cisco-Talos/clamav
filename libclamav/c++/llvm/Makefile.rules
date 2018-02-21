@@ -806,7 +806,7 @@ $(ParallelTargets) :
 endif
 
 #---------------------------------------------------------
-# Handle the OPTIONAL_DIRS options for directores that may
+# Handle the OPTIONAL_DIRS options for directories that may
 # or may not exist.
 #---------------------------------------------------------
 ifdef OPTIONAL_DIRS

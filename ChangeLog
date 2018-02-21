@@ -1528,7 +1528,7 @@ Tue, 22 Dec 2015 19:04:42 -0500 (Steven Morgan)
 
 Tue, 22 Dec 2015 13:36:51 -0500 (Steven Morgan)
 ------------------------------------------
- * fix regression crash on sid 1005597703 due to uninitialzed
+ * fix regression crash on sid 1005597703 due to uninitialized
 	(i.e., garbage initialized) structure.
 
 Mon, 21 Dec 2015 17:39:47 -0500 (Steven Morgan)
@@ -1587,12 +1587,12 @@ Wed, 16 Dec 2015 14:56:56 -0500 (Kevin Lin)
 
 Fri, 11 Dec 2015 17:41:38 -0500 (Steven Morgan)
 ------------------------------------------
- * bb11452 - endianess correction for swf files on sparc -
+ * bb11452 - endianness correction for swf files on sparc -
 	patch supplied by Jim Morris.
 
 Wed, 9 Dec 2015 12:15:16 -0500 (Mickey Sola)
 ------------------------------------------
- * bb11424 - correcting buffer alignemnt for riff detection on sparc systems;
+ * bb11424 - correcting buffer alignment for riff detection on sparc systems;
 	patch by Jim Morris
 
 Wed, 9 Dec 2015 00:17:41 +0100 (Andreas Cadhalpun)
@@ -1857,7 +1857,7 @@ Tue, 28 Jul 2015 13:44:41 -0400 (Kevin Lin)
 
 Fri, 24 Jul 2015 13:24:11 -0400 (Mickey Sola)
 ------------------------------------------
- * bb11343: Automatically appennding YARA. to all yara rule sigs.
+ * bb11343: Automatically appending YARA. to all yara rule sigs.
 
 Thu, 23 Jul 2015 15:36:16 -0400 (Mickey Sola)
 ------------------------------------------
@@ -2089,12 +2089,12 @@ Tue, 14 Apr 2015 15:53:17 EDT (klin)
 Mon, 13 Apr 2015 12:14:41 EDT (smorgan)
 -----------------------------------
  * bb11298 - look for TOC element name <unarchived-checksum> 
-   (as a synonynm for <extracted-checksum>). Continue processing rather
+   (as a synonym for <extracted-checksum>). Continue processing rather
     than exit in the event of missing or error in TOC checksum specification.
 
 Wed, 8 Apr 2015 15:51:04 EDT (smorgan)
 -----------------------------------
- * iso9660: remove unnecessaty parameter on iso_parse_dir() and reset return
+ * iso9660: remove unnecessary parameter on iso_parse_dir() and reset return
    code when scanall is in effect. 
 
 Wed, 1 Apr 2015 17:41:59 EDT (klin)
@@ -2136,7 +2136,7 @@ Mon, 16 Mar 2015 18:26:07 EDT (klin)
 
 Mon, 16 Mar 2015 13:11:56 EDT (klin)
 -----------------------------------
- * fixed converity issue ID 12109 buffer was not freed on rare error case 
+ * fixed coverity issue ID 12109 buffer was not freed on rare error case 
 
 Mon, 16 Mar 2015 13:08:03 EDT (klin)
 -----------------------------------
@@ -2339,7 +2339,7 @@ Thu, 6 Nov 2014 14:51:26 EDT (swebb)
 
 Mon, 20 Oct 2014 11:33:18 EDT (swebb)
 -------------------------------------
-* Revert "bb#10731 - Allow to specificy a group for the socket of which
+* Revert "bb#10731 - Allow to specify a group for the socket of which
   the user is not a member"
 
 Thu, 31 Jul 2014 19:11:22 EDT (swebb)
@@ -2964,7 +2964,7 @@ Thu Aug 23 15:40:10 EDT 2012 (swebb)
 Mon Aug 20 10:53:25 EDT 2012 (swebb)
 ----------------------------------
  * BB#5659 - 4.0.0.8955 Consumer - Created a 1GB+ Clamav.log by running
- continious full scans for 10 hours. Add LogRotate config variable.
+ continuous full scans for 10 hours. Add LogRotate config variable.
 
 Mon Aug 13 09:32:27 EDT 2012 (swebb)
 ----------------------------------
@@ -3292,7 +3292,7 @@ Thu Dec 22 20:57:43 CET 2011 (acab)
 
 Thu Dec 22 16:47:40 CET 2011 (acab)
 ---------------------------------
- * read bn's as unsigned as tom and asn1 don't agree on sign convensions
+ * read bn's as unsigned as tom and asn1 don't agree on sign conversions
 
 Wed Dec 21 22:52:46 CET 2011 (acab)
 ---------------------------------
@@ -3406,7 +3406,7 @@ Fri Nov 4 18:32:50 CEST 2011 (tk)
 
 Fri Nov  4 00:52:21 CET 2011 (acab)
 -----------------------------------
- * libclamav/pe.c: parse vinfo where varfileinfo occours before stringfileinfo
+ * libclamav/pe.c: parse vinfo where varfileinfo occurs before stringfileinfo
 		   (bb#3062)
 
 Thu Nov 3 22:43:49 CEST 2011 (acab)
@@ -3486,7 +3486,7 @@ Thu Sep 15 14:44:11 CEST 2011 (tk)
 
 Wed Sep 14 16:29:49 CEST 2011 (acab)
 ----------------------------------
- * c4w: reoder ftypes
+ * c4w: reorder ftypes
 
 Mon Sep 12 16:29:22 CEST 2011 (tk)
 ----------------------------------
@@ -3564,7 +3564,7 @@ Thu Jun 30 14:24:34 EEST 2011 (edwin)
 
 Wed Jun 29 16:39:56 CEST 2011 (acab)
 ------------------------------------
- * cw4: track number of loaded sigs, provide retieval api
+ * cw4: track number of loaded sigs, provide retrieval api
  
 Wed Jun 29 14:28:03 CEST 2011 (acab)
 ------------------------------------
@@ -4326,7 +4326,7 @@ Tue Nov  2 13:01:14 EET 2010 (edwin)
 
 Mon Oct 18 11:35:45 EEST 2010 (edwin)
 -------------------------------------
- * clamd, libclamavll: add ability to logg messages from libclamav (bb #1965)
+ * clamd, libclamav: add ability to logg messages from libclamav (bb #1965)
 
 Sun Oct 31 09:13:33 EET 2010 (edwin)
 ------------------------------------
@@ -4403,7 +4403,7 @@ Sat Oct 16 18:23:17 CEST 2010 (acab)
 
 Fri Oct 15 17:48:00 CEST 2010 (acab)
 ------------------------------------
- * libclamav/pe_icons.c: make sure all ref points are initted (bb#2291)
+ * libclamav/pe_icons.c: make sure all ref points are inited (bb#2291)
 
 Fri Oct 15 16:13:27 CEST 2010 (tk)
 ----------------------------------
@@ -4731,7 +4731,7 @@ Fri Jul 23 22:32:18 EEST 2010 (edwin)
 
 Thu Jul 22 22:32:08 EEST 2010 (edwin)
 -------------------------------------
- * libclamav/c++/bytecode2llvm.cpp: detect PaX and fallback to intepreter if
+ * libclamav/c++/bytecode2llvm.cpp: detect PaX and fallback to interpreter if
  needed (bb #2092).
  * libclamav/bytecode.c: selfcheck on startup (bb #2092).
 
@@ -4967,7 +4967,7 @@ Mon May 10 14:11:51 CEST 2010 (acab)
 Mon May 10 03:43:43 CEST 2010 (acab)
 ------------------------------------
  * libclamav: Use mpool in win32 (well, sort of) as the mighty crt allocator
-	      chokes when loading about one milion signatures
+	      chokes when loading about one million signatures
 
 Sat May  8 00:18:13 CEST 2010 (acab)
 ------------------------------------
@@ -5745,7 +5745,7 @@ Mon Feb 15 17:34:41 2010 +0200 (edwin)
 
 Mon Feb 15 17:32:00 2010 +0200 (edwin)
 --------------------------------------
- * libclamav/bytecode.c: fix loading of bytecode into intepreter.
+ * libclamav/bytecode.c: fix loading of bytecode into interpreter.
 
 Mon Feb 15 16:08:38 2010 +0200 (edwin)
 --------------------------------------
@@ -7689,7 +7689,7 @@ Wed Mar  4 16:42:57 CET 2009 (acab)
 
 Wed Mar  4 15:20:47 CET 2009 (acab)
 -----------------------------------
- * clamav-milter: fix few typoes - thx Jakub Jankowski <shasta*toxcorp.com>
+ * clamav-milter: fix few typos - thx Jakub Jankowski <shasta*toxcorp.com>
 	and Peter Bonivart <bonivart*opencsw.org> for the testing
 
 Wed Mar  4 09:12:59 CET 2009 (tk)
@@ -7902,7 +7902,7 @@ Fri Feb 20 15:53:18 EET 2009 (edwin)
 
 Fri Feb 20 13:54:53 EET 2009 (edwin)
 ------------------------------------
- * docs/man/clamd.8.in: more documentation on IDSESSION/INSTREEAM (bb
+ * docs/man/clamd.8.in: more documentation on IDSESSION/INSTREAM (bb
  #1401).
 
 Thu Feb 19 13:28:04 CET 2009 (tk)
@@ -8279,7 +8279,7 @@ Thu Feb 12 19:19:42 EET 2009 (edwin)
      dt_type redesign clamd main loop: there is now an accept thread, and
      a recv()/dispatch thread, +MaxThreads worker (scanner) threads.      introduce limiting on commands when worker threads are
      contended.  introduce IDSESSION, a replacement for the old
-     SESSION command, that allows asyncronous (scan) commands and scan
+     SESSION command, that allows asynchronous (scan) commands and scan
      replies introduce INSTREAM that allows sending the data to scan on
      same connection (vs STREAM that requires another port)     introduce zCOMMANDS
 
@@ -8293,7 +8293,7 @@ Thu Feb 12 19:19:42 EET 2009 (edwin)
      dt_type redesign clamd main loop: there is now an accept thread, and
      a recv()/dispatch thread, +MaxThreads worker (scanner) threads.      introduce limiting on commands when worker threads are
      contended.  introduce IDSESSION, a replacement for the old
-     SESSION command, that allows asyncronous (scan) commands and scan
+     SESSION command, that allows asynchronous (scan) commands and scan
      replies introduce INSTREAM that allows sending the data to scan on
      same connection (vs STREAM that requires another port)     introduce zCOMMANDS
 
@@ -8550,7 +8550,7 @@ Sun Dec  7 14:53:17 CET 2008 (acab)
 
 Sun Dec  7 13:46:07 CET 2008 (acab)
 -----------------------------------
- * clamav-milter: work around stupid milter protoes
+ * clamav-milter: work around stupid milter protos
 
 Sun Dec  7 13:38:49 CET 2008 (acab)
 -----------------------------------
@@ -8816,7 +8816,7 @@ Wed Nov 12 00:34:20 CET 2008 (acab)
 
 Tue Nov 11 20:42:28 CET 2008 (acab)
 -----------------------------------
- * libclamav/nsis: improve lateny (bb#1180)
+ * libclamav/nsis: improve latency (bb#1180)
 
 Mon Nov 10 20:12:47 EET 2008 (edwin)
 ------------------------------------
@@ -9001,11 +9001,11 @@ Sat Nov  1 03:51:58 CET 2008 (acab)
 	different memory "pools".
 	As soon as a database is no longer needed its pool is destroyed
 	and the memory is *really* returned to the system.
-	The performace is comparable to that of the glibc allocator,
+	The performance is comparable to that of the glibc allocator,
 	when not better, however there is a small overhead (a few MB)
 	in the initial memory usage (but at least it no longer grows).
 	Thanks a lot sgran for the idea and nitrox for the extensive
-	testing. Please test and report any problem (expecially on
+	testing. Please test and report any problem (especially on
 	non-x86 and non-Linux setups).
 	Make check doesn't currently work with --enable-mempool; this
 	will be fixed soon.
@@ -9126,7 +9126,7 @@ Wed Oct 22 17:45:11 EEST 2008 (edwin)
 
 Wed Oct 22 17:43:38 EEST 2008 (edwin)
 -------------------------------------
- * configure, m4/acinclude.m4: When user has overriden --libdir, we
+ * configure, m4/acinclude.m4: When user has overridden --libdir, we
  still need to find out the correct acl_libdirstem
 
 Mon Oct 20 17:23:12 EEST 2008 (edwin)
@@ -9167,7 +9167,7 @@ Wed Oct 15 12:30:57 CEST 2008 (tk)
 
 Tue Oct 14 23:46:45 CEST 2008 (acab)
 ------------------------------------
-  * docs/man/clamscan.1.in: drop reference to non-exsistent option --max-space
+  * docs/man/clamscan.1.in: drop reference to non-existent option --max-space
                      (http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=502165)
 
 Tue Oct 14 21:08:10 EEST 2008 (edwin)
@@ -9207,7 +9207,7 @@ Sat Oct 11 11:16:02 EEST 2008 (edwin)
 -------------------------------------
  * Makefile.am, Makefile.in, libclamav/jsparse/js-norm.c,
  unit_tests/Makefile.am, unit_tests/Makefile.in,
- unit_tests/check_jsnorm.c: handle unfinishes string tokens in JS
+ unit_tests/check_jsnorm.c: handle unfinished string tokens in JS
  parser
 
 Sat Oct 11 13:01:36 EEST 2008 (edwin)
@@ -9216,7 +9216,7 @@ Sat Oct 11 13:01:36 EEST 2008 (edwin)
  with type 0) too
 
 Sat Oct 11 12:20:10 CEST 2008 (acab)
-  * freshclama/manager.c: bump _XOPEN_SOURCE
+  * freshclam/manager.c: bump _XOPEN_SOURCE
 
 Sat Oct 11 11:56:10 CEST 2008 (acab)
 ------------------------------------
@@ -9306,7 +9306,7 @@ Fri Oct  3 15:49:17 CEST 2008 (acab)
   * clamav-milter/clamav-milter.c: reopen log files on USR1 instead of HUP
   - bb#1194. Note that this is an interim solution, as the milter should not
   abuse other daemons' logfiles. This also doesn't need a fair amount of
-  documentantion as this feature never worked before.
+  documentation as this feature never worked before.
 
 Wed Oct  1 19:11:30 CEST 2008 (acab)
 ------------------------------------
@@ -9424,7 +9424,7 @@ Mon Sep  1 10:57:56 EEST 2008 (edwin)
 
 Sun Aug 31 15:31:04 CEST 2008 (acab)
 ------------------------------------
-  * libclamav/disasm, unit_tests: more endianess issues fixed (that should eb all)
+  * libclamav/disasm, unit_tests: more endianness issues fixed (that should eb all)
 
 Sun Aug 31 04:23:12 CEST 2008 (acab)
 ------------------------------------
@@ -9475,7 +9475,7 @@ Mon Aug 25 16:03:44 CEST 2008 (tk)
 
 Sun Aug 24 23:51:48 CEST 2008 (tk)
 ----------------------------------
-  * libclamav/unrar.c: improve handling of currupted archives and downgrade
+  * libclamav/unrar.c: improve handling of corrupted archives and downgrade
 		       some error messages
 
 Sat Aug 23 22:18:47 CEST 2008 (tk)
@@ -9554,7 +9554,7 @@ Thu Aug  7 14:27:44 CEST 2008 (tk)
 
 Wed Aug  6 02:15:39 CEST 2008 (acab)
 ------------------------------------
-  * libclamav/unzip.c: fix incorrect debug spam which misleaded poor sigmakers
+  * libclamav/unzip.c: fix incorrect debug spam which misled poor sigmakers
 
 Wed Aug  6 02:11:12 CEST 2008 (acab)
 ------------------------------------
@@ -9967,7 +9967,7 @@ Sat May 24 21:38:47 EEST 2008 (edwin)
 
 Wed May 21 15:51:32 CEST 2008 (tk)
 ----------------------------------
-  * freshclam/fresclam.c: don't call daemonize() under w32 (bb#1002)
+  * freshclam/freshclam.c: don't call daemonize() under w32 (bb#1002)
 
 Wed May 21 14:54:04 CEST 2008 (tk)
 ----------------------------------
@@ -10118,7 +10118,7 @@ Mon Apr 21 16:21:56 CEST 2008 (tk)
 
 Mon Apr 21 11:28:38 CEST 2008 (tk)
 ----------------------------------
-  * libclamav/others.h: explicitely cast some constants (bb#936)
+  * libclamav/others.h: explicitly cast some constants (bb#936)
 
 Sun Apr 20 19:09:00 CEST 2008 (tk)
 ----------------------------------
@@ -10249,7 +10249,7 @@ Thu Mar 27 18:16:28 CET 2008 (tk)
 
 Tue Mar 25 01:55:19 CET 2008 (acab)
 -----------------------------------
-  * libclamav/nsis: typoes - bb#894
+  * libclamav/nsis: typos - bb#894
 
 Mon Mar 24 21:22:16 EET 2008 (edwin)
 -----------------------------------
@@ -10499,11 +10499,11 @@ Tue Feb 19 00:24:01 CET 2008 (tk)
 
 Mon Feb 18 20:48:41 CET 2008 (acab)
 -----------------------------------
-  * configure: make fpu endianess manually configurable
+  * configure: make fpu endianness manually configurable
 
 Mon Feb 18 19:45:06 EET 2008 (edwin)
 ------------------------------------
-  * libclamav/textnorm.c: initialiaze each field
+  * libclamav/textnorm.c: initialize each field
 	      scanners.c: decrease limit on scanscript
 
 Mon Feb 18 12:39:39 CET 2008 (acab)
@@ -10709,7 +10709,7 @@ Sun Feb 10 10:28:55 EET 2008 (edwin)
 			     
 Fri Feb  8 20:16:45 CET 2008 (tk)
 ---------------------------------
-  * libclamac/readdb.c: add support for signature whitelisting with
+  * libclamav/readdb.c: add support for signature whitelisting with
 			daily.ign/local.ign (bb#779)
 
 Fri Feb  8 14:20:55 EET 2008 (edwin)
@@ -11088,7 +11088,7 @@ Fri Jan 18 17:01:25 EET 2008 (edwin)
 
 Fri Jan 18 12:13:16 CET 2008 (acab)
 -----------------------------------
-  * test: Storing the testifles byteswapped to avoid detection of the tarball.
+  * test: Storing the testfiles byteswapped to avoid detection of the tarball.
   	  Real files are generated at make time and are additionally available
 	  under /contrib/test - close bb#398
 
@@ -11140,7 +11140,7 @@ Thu Jan 10 15:17:19 CET 2008 (tk)
 
 Thu Jan 10 14:29:28 CET 2008 (tk)
 ---------------------------------
-  * clamdscan: remove dependendcy on libclamav (bb#750), patch from Edwin
+  * clamdscan: remove dependency on libclamav (bb#750), patch from Edwin
 
 Thu Jan 10 11:23:32 GMT 2008 (njh)
 ----------------------------------
@@ -11186,7 +11186,7 @@ Sun Jan  6 15:36:46 CET 2008 (acab)
 
 Sat Jan  5 10:25:22 GMT 2008 (njh)
 ----------------------------------
-  * libclamav/vba_extract.c:	Minor optimisation
+  * libclamav/vba_extract.c:	Minor optimization
 
 Sat Jan  5 03:07:37 CET 2008 (acab)
   * libclamav: fix several warnings - mostly format strings
@@ -11399,7 +11399,7 @@ Thu Dec 13 15:29:46 GMT 2007 (njh)
   * clamav-milter:	Don't block when checking remote clamds on startup
 			Removed duplicated call to openlog
 			Minor improvements to log messages
-  * libclamav:		Rewrite much of vba_extract.c (and dependancies in
+  * libclamav:		Rewrite much of vba_extract.c (and dependencies in
 				blob.c)
 			Better RFC2231 handling in message.c
 			Rewrite non-blocking connect (mbox.c)
@@ -11542,7 +11542,7 @@ Mon Nov  5 17:16:18 GMT 2007 (njh)
   * libclamav/vba_extract.c:	More tidy up
 
 Sat Nov  3 14:28:17 CET 2007 (edwin)
-  * libclamav/autoit.c: fix endianess checks for arm - thanks edwin
+  * libclamav/autoit.c: fix endianness checks for arm - thanks edwin
 
 Sat Nov  3 00:25:52 EET 2007 (edwin)
 ------------------------------------
@@ -11653,7 +11653,7 @@ Tue Oct  9 11:36:44 BST 2007 (trog)
 
 Tue Oct  9 08:47:44 BST 2007 (njh)
 ----------------------------------
-  * clamav-milter:	Fix bug introducted in revision 3277.
+  * clamav-milter:	Fix bug introduced in revision 3277.
 
 Mon Oct  8 23:20:23 CEST 2007 (tk)
 ----------------------------------
@@ -11782,7 +11782,7 @@ Fri Sep 28 20:17:41 EEST 2007 (edwin)
 
 Wed Sep 26 23:36:06 CEST 2007 (tk)
 ----------------------------------
-  * libclamav/matcher-ac.c: minor optimisation
+  * libclamav/matcher-ac.c: minor optimization
 
 Tue Sep 25 10:43:35 BST 2007 (njh)
 ----------------------------------
@@ -11859,7 +11859,7 @@ Sat Sep 15 09:13:14 BST 2007 (njh)
 
 Fri Sep 14 20:16:20 CEST 2007 (tk)
 ----------------------------------
-  * libclamav/matcher-ac.c: minor optimisation
+  * libclamav/matcher-ac.c: minor optimization
 
 Fri Sep 14 10:03:22 BST 2007 (njh)
 ----------------------------------
@@ -11867,29 +11867,29 @@ Fri Sep 14 10:03:22 BST 2007 (njh)
 
 Thu Sep 13 19:23:31 CEST 2007 (tk)
 ----------------------------------
-  * libclamav/matcher-ac.[ch]: various speed optimisations:
+  * libclamav/matcher-ac.[ch]: various speed optimizations:
 				- optimise node usage
 				- try hard to not overload node 0x00.0x00[0x00]
 				- optimise memory usage
 
 Thu Sep 13 17:37:31 BST 2007 (njh)
 ----------------------------------
-  * libclamav:	More optimisations
+  * libclamav:	More optimizations
 
 Thu Sep 13 14:01:08 CEST 2007 (acab)
   * libclamav/pe.c: One more typo fixed
 
 Thu Sep 13 12:37:26 CEST 2007 (acab)
 ------------------------------------
-  * libclamav: Shut up a few warnings and fix some typoes
+  * libclamav: Shut up a few warnings and fix some typos
 
 Wed Sep 12 13:36:37 BST 2007 (njh)
 ----------------------------------
-  * libclamav:	More optimisations
+  * libclamav:	More optimizations
 
 Tue Sep 11 10:33:21 BST 2007 (njh)
 ----------------------------------
-  * libclamav:	Various code clean ups and optimisations
+  * libclamav:	Various code clean ups and optimizations
 
 Sun Sep  9 13:42:26 CEST 2007 (acab)
   * libclamav/nsis: tidy
@@ -11960,7 +11960,7 @@ Thu Aug 30 09:05:45 BST 2007 (njh)
 
 Wed Aug 29 18:27:55 BST 2007 (njh)
 ----------------------------------
-  * libclamav:	mbox optimisation to reduce the lifetime of temporary files
+  * libclamav:	mbox optimization to reduce the lifetime of temporary files
 
 Tue Aug 28 16:08:13 BST 2007 (njh)
 ----------------------------------
@@ -12190,7 +12190,7 @@ Tue Jul 10 22:02:15 CEST 2007 (tk)
 
 Sun Jul  8 17:25:04 CEST 2007 (acab)
 ------------------------------------
-  * misc: Implement compiler indepenedent sign-extended signed right shift
+  * misc: Implement compiler independent sign-extended signed right shift
 	  when needed - reported by Michal Spadlinski <gim913 * gmail.com>
 
 Sat Jul 07 10:52:00 CEST 2007 (edwin)
@@ -12317,7 +12317,7 @@ Wed May 30 15:07:58 CEST 2007 (tk)
 
 Wed May 30 13:27:09 CEST 2007 (tk)
 ----------------------------------
-  * fresclam/manager.c: add sanity check for %v (bb#463)
+  * freshclam/manager.c: add sanity check for %v (bb#463)
 
 Tue May 29 21:47:23 CEST 2007 (tk)
 ----------------------------------
@@ -12499,7 +12499,7 @@ Thu Apr 19 09:28:14 BST 2007 (njh)
 Thu Apr 19 08:43:29 BST 2007 (njh)
 ----------------------------------
   * clamav-milter:	The wrong line was removed when preparing for
-				yesderday's release
+				yesterday's release
 
 Wed Apr 18 10:22:13 BST 2007 (njh)
 ----------------------------------
@@ -12705,7 +12705,7 @@ Fri Mar 16 21:56:21 CET 2007 (tk)
 
 Fri Mar 16 15:47:08 GMT 2007 (njh)
 ----------------------------------
-  * clamav-milter:	Better start up of the logg() inferface, now similar
+  * clamav-milter:	Better start up of the logg() interface, now similar
 				to that used in clamd
 
 Mon Mar 14 19:29:00 EET 2007 (edwin)
@@ -13847,7 +13847,7 @@ Tue Dec  5 03:18:06 CET 2006 (tk)
 
 Mon Dec  4 19:08:27 CET 2006 (acab)
 -----------------------------------
-  * liblcalamv/pe.c: removed useless debug line
+  * libclamav/pe.c: removed useless debug line
 
 Mon Dec  4 19:03:23 CET 2006 (acab)
 -----------------------------------
@@ -14017,13 +14017,13 @@ Mon Nov  6 00:12:28 CET 2006 (tk)
 
 Mon Nov  6 00:02:57 CET 2006 (tk)
 ---------------------------------
-  * libclamav/matcher-ac.c: minor optimisation, thanks to Christophe Jaillet
+  * libclamav/matcher-ac.c: minor optimization, thanks to Christophe Jaillet
 
 Sun Nov  5 19:11:28 CET 2006 (acab)
 -----------------------------------
   * libclamav/regex_list.c: apply patch from Edvin to:
                             fix jump on uninitialized variable
-                            fix improprer string length calculation
+                            fix improper string length calculation
 			    - closes bug 52 -
 
 Sun Nov  5 15:08:09 CET 2006 (tk)
@@ -14227,7 +14227,7 @@ Mon Oct 23 17:48:39 CEST 2006 (tk)
 
 Sun Oct 22 11:24:07 BST 2006 (njh)
 ----------------------------------
-  * libclamav/pdf.c:	Handle ASCII85 encoded Flated objectes (bug#43)
+  * libclamav/pdf.c:	Handle ASCII85 encoded Flated objects (bug#43)
 
 Thu Oct 19 20:33:15 CEST 2006 (acab)
 ------------------------------------
@@ -15139,7 +15139,7 @@ Wed Jun 21 09:55:54 BST 2006 (njh)
 
 Tue Jun 20 20:37:21 BST 2006 (njh)
 ----------------------------------
-  * libclamv/tnef.c:	Better indication of where an error was trapped
+  * libclamav/tnef.c:	Better indication of where an error was trapped
 
 Tue Jun 20 18:49:10 CEST 2006 (tk)
 ----------------------------------
@@ -15561,7 +15561,7 @@ Tue Feb  7 11:34:17 GMT 2006 (njh)
 
 Sun Feb  5 13:56:56 GMT 2006 (njh)
 ----------------------------------
-  * clamav-milter:	Added --template-headers option, based on a whishlist
+  * clamav-milter:	Added --template-headers option, based on a wishlist
 				by Denis Eremenko <moonshade*mail.kz> for
 				the support of foreign language and HTML
 				emails in --template-file
@@ -16301,7 +16301,7 @@ Sat May 14 17:14:52 BST 2005 (njh)
 
 Thu May 12 09:23:52 BST 2005 (trog)
 -----------------------------------
-  * libclamav/speical.c: Fix reading PString type in Photoshop thumbnails.
+  * libclamav/special.c: Fix reading PString type in Photoshop thumbnails.
 
 Thu May 12 08:32:22 BST 2005 (njh)
 ----------------------------------
@@ -16543,7 +16543,7 @@ Fri Mar 25 18:47:34 CET 2005 (tk)
 
 Tue Mar 22 22:54:46 CET 2005 (tk)
 ---------------------------------
-  * libclamav/scanners.c: fix encrypted zip detecion (patch by Dirk Mueller
+  * libclamav/scanners.c: fix encrypted zip detection (patch by Dirk Mueller
 			  <mueller*kde.org>)
 
 Tue Mar 22 22:22:30 CET 2005 (tk)
@@ -16821,7 +16821,7 @@ Sun Feb 13 09:32:51 GMT 2005 (njh)
 
 Fri Feb 11 22:21:44 GMT 2005 (njh)
 ----------------------------------
-  * clamav-milter:	Added --whistlist-file and --sendmail-cf options
+  * clamav-milter:	Added --whitelist-file and --sendmail-cf options
 			When in SESSION mode, not all sessions would send END
 
 Tue Feb  8 14:45:05 GMT 2005 (trog)
@@ -16971,7 +16971,7 @@ Thu Jan 27 10:55:35 GMT 2005 (njh)
 
 Thu Jan 27 01:35:35 CET 2005 (tk)
 ---------------------------------
-  * freshclam/manager.c: add support for HTTP/1.0 ansers in IMS (--no-dns) mode
+  * freshclam/manager.c: add support for HTTP/1.0 answers in IMS (--no-dns) mode
 			 (patch by Sven Strickroth <sstrickroth*gym-oha.de>)
 
 Wed Jan 26 19:27:57 CET 2005 (tk)
@@ -17062,7 +17062,7 @@ Sat Jan 22 13:45:42 GMT 2005 (njh)
 ----------------------------------
   * clamav-milter:	If forwarding to a quarantine user fails log as LOG_ERR
 				not LOG_DEBUG
-			Try to santity check that the input socket name is the
+			Try to sanity check that the input socket name is the
 				same as the same given to sendmail
 			Redirect stdout and stderr to LogFile, if that is set
 			--quarantine didn't redirect to the given email address
@@ -17265,7 +17265,7 @@ Mon Dec 20 02:32:30 CET 2004 (tk)
 
 Sun Dec 19 17:01:56 GMT 2004 (njh)
 ----------------------------------
-  * clamav-milter: Correctly warn that --max_childen must be given in SESSION
+  * clamav-milter: Correctly warn that --max_children must be given in SESSION
 		mode if LocalSocket is used and MaxThreads isn't given in
 		clamd.conf. max_children is needed to know how many sessions
 		to initiate to clamd(s)
@@ -17430,7 +17430,7 @@ Wed Dec  1 13:14:33 GMT 2004 (njh)
 
 Wed Dec  1 12:14:46 GMT 2004 (njh)
 ----------------------------------
-  * libeclamav/message.c:	Part of rule 3 of paragraph 5.1 of RFC1521 was
+  * libclamav/message.c:	Part of rule 3 of paragraph 5.1 of RFC1521 was
 		not being implemented, which meant that quoted-printable
 		attachments with spaces before the '=' character at the end
 		of soft breakon lines where not being correctly decoded
@@ -17664,7 +17664,7 @@ Mon Nov  8 16:29:13 GMT 2004 (njh)
 
 Mon Nov  8 15:24:18 CET 2004 (tk)
 ---------------------------------
-  * clamd: new directive ExitOnOOM (stop deamon when libclamav reports out of
+  * clamd: new directive ExitOnOOM (stop daemon when libclamav reports out of
 	   memory condition)
 
 Mon Nov  8 11:32:11 CET 2004 (tk)
@@ -17730,7 +17730,7 @@ Thu Nov  4 08:24:21 GMT 2004 (njh)
 Wed Nov  3 12:47:41 GMT 2004 (njh)
 ----------------------------------
   * libclamav/clamav-milter:	Save the original subject as X-Original-Subject
-			when running in advisory or qurantine mode
+			when running in advisory or quarantine mode
 			SESSION mode: warn when no clamd can be reached
 
 Wed Nov  3 12:50:19 CET 2004 (tk)
@@ -17803,7 +17803,7 @@ Wed Oct 27 07:36:49 BST 2004 (njh)
 Sun Oct 24 05:36:39 BST 2004 (njh)
 ----------------------------------
   * libclamav/mbox.c:		Handle multipart/knowbot as multipart/mixed
-			until syntax documention can be found for this format
+			until syntax documentation can be found for this format
 
 Sun Oct 24 04:52:01 BST 2004 (njh)
 ----------------------------------
@@ -17814,7 +17814,7 @@ Sun Oct 24 04:52:01 BST 2004 (njh)
 			named pipe
 				SESSION code now on by default
 				Use cli_strtokbuf() instead of cli_strtok()
-			whereever possible
+			wherever possible
 
 Fri Oct 22 18:20:03 BST 2004 (njh)
 ----------------------------------
@@ -17859,7 +17859,7 @@ Wed Oct 20 21:00:37 CEST 2004 (tk)
 
 Wed Oct 20 13:23:33 BST 2004 (njh)
 ----------------------------------
-  * libclamav/untar.c:	Print warning message about unsopported (yet) formats
+  * libclamav/untar.c:	Print warning message about unsupported (yet) formats
 
 Wed Oct 20 11:37:40 BST 2004 (njh)
 ----------------------------------
@@ -18151,7 +18151,7 @@ Thu Sep 30 20:19:46 BST 2004 (njh)
 
 Thu Sep 30 10:01:25 BST 2004 (njh)
 ----------------------------------
-  * libclamav:		Further small speed and size optimisations with MIME
+  * libclamav:		Further small speed and size optimizations with MIME
 				decoding
 
 Thu Sep 30 09:24:26 BST 2004 (trog)
@@ -18170,7 +18170,7 @@ Thu Sep 30 02:19:12 CEST 2004 (tk)
 
 Tue Sep 28 19:41:39 BST 2004 (njh)
 ----------------------------------
-  * libclamav:		Some small speed and size optimisations in MIME decoding
+  * libclamav:		Some small speed and size optimizations in MIME decoding
 
 Tue Sep 28 15:46:18 BST 2004 (njh)
 ---------------------------------
@@ -18424,7 +18424,7 @@ Thu Sep 16 14:00:05 BST 2004 (njh)
 
 Thu Sep 16 12:20:59 BST 2004 (njh)
 ----------------------------------
-  * libvclamav/mbox.c:	Improved handling of line breaks in the middle of
+  * libclamav/mbox.c:	Improved handling of line breaks in the middle of
 				headers for multipart sections
 
 Thu Sep 16 11:07:37 BST 2004 (njh)
@@ -18455,7 +18455,7 @@ Wed Sep 15 19:09:56 BST 2004 (njh)
 
 Wed Sep 15 18:46:44 CEST 2004 (tk)
 ----------------------------------
-  * libclamav/matcher.c: fix problem with uninitialised voffset structure
+  * libclamav/matcher.c: fix problem with uninitialized voffset structure
 			 (thanks to Nigel)
   * libclamav/str.c: check if memory is correctly allocated (thanks to Trog)
 
@@ -18717,7 +18717,7 @@ Thu Aug 26 11:23:22 BST 2004 (njh)
   * clamav-milter/clamav-milter.c: Generate correct message if there is no
 			response from any clamd server
 		Handle %h (headers) in the template file
-		Fix bug in optimisation when more than one To line is
+		Fix bug in optimization when more than one To line is
 			received
 
 Thu Aug 26 10:34:48 BST 2004 (njh)
@@ -18739,7 +18739,7 @@ Thu Aug 26 02:19:47 CEST 2004 (tk)
 
 Wed Aug 25 13:32:22 BST 2004 (njh)
 ----------------------------------
-  * libclamav/line.c:	Small code optimisation
+  * libclamav/line.c:	Small code optimization
 
 Wed Aug 25 12:45:53 BST 2004 (njh)
 ----------------------------------
@@ -18757,7 +18757,7 @@ Wed Aug 25 11:32:48 BST 2004 (njh)
 
 Wed Aug 25 11:06:42 BST 2004 (trog)
 -----------------------------------
-  * libclamac/ole2_extract.c: fix error path memory leaks
+  * libclamav/ole2_extract.c: fix error path memory leaks
 	(thanks to acab and njh)
 
 Wed Aug 25 10:13:43 CEST 2004 (acab)
@@ -18823,7 +18823,7 @@ Sat Aug 21 14:07:47 CEST 2004 (acab)
 
 Sat Aug 21 12:59:43 BST 2004 (njh)
 ----------------------------------
-  * libclamav:	Changed the handling of miltipart messages, that is scanning
+  * libclamav:	Changed the handling of multipart messages, that is scanning
 			emails with attachments. Reports on impact on memory
 			usage and speed welcome to clamav-devel*lists.sf.net.
 
@@ -18850,7 +18850,7 @@ Wed Aug 18 22:38:39 BST 2004 (njh)
 
 Wed Aug 18 20:37:42 CEST 2004 (tk)
 ----------------------------------
-  * libclamav/contrib: Include database optimisation tool (optimize/optimize.c).
+  * libclamav/contrib: Include database optimization tool (optimize/optimize.c).
 		       It's ClamAV specific and attempts to normalise signature
 		       prefixes so there are more signatures using the same
 		       prefix (and saving nodes in the Aho-Corasick pattern
@@ -19034,7 +19034,7 @@ Thu Aug  5 08:44:51 BST 2004 (njh)
 			Template files can now contain more than one variable
 			Template files sendmail variables handling changed to
 				allow access to variables not in braces. All
-				sendmail variables are now delimeted by
+				sendmail variables are now delimited by
 				dollars, e.g.  ${j}$
 			Better local IP table by Damian Menscher
 				<menscher*uiuc.edu> and Andy Fiddaman
@@ -19343,7 +19343,7 @@ Tue Jul  6 17:19:15 CEST 2004 (tk)
 
 Tue Jul  6 16:37:34 CEST 2004 (tk)
 ----------------------------------
-  * libclamav: pe: fix sanity check on uninitialised data (bug found by aCaB)
+  * libclamav: pe: fix sanity check on uninitialized data (bug found by aCaB)
 
 Tue Jul  6 14:26:19 BST 2004 (trog)
 -----------------------------------
@@ -19466,7 +19466,7 @@ Thu Jun 24 09:09:27 BST 2004 (trog)
 
 Wed Jun 23 17:23:59 BST 2004 (njh)
 ----------------------------------
-  * libclamav/mbox.c:	Further optimisation in the handling of empty lines
+  * libclamav/mbox.c:	Further optimization in the handling of empty lines
 	in emails
 
 Wed Jun 23 15:16:20 BST 2004 (trog)
@@ -19512,7 +19512,7 @@ Mon Jun 21 21:20:47 EDT 2004 (tk)
 
 Mon Jun 21 16:23:07 BST 2004 (trog)
 -----------------------------------
-  * libclamac/ole2_extract.c: Don't try and process (probably corrupt) files
+  * libclamav/ole2_extract.c: Don't try and process (probably corrupt) files
 	with untested parameters, issue a warning instead.
 
 Mon Jun 21 11:21:48 BST 2004 (njh)
@@ -19611,7 +19611,7 @@ Fri Jun 11 22:11:31 CEST 2004 (tk)
 Wed Jun  9 17:47:29 CEST 2004 (tk)
 ----------------------------------
   * clamd: do not display "Command parser: read() failed." (in SESSION mode)
-	   if the client disconnescts (problem reported by Matthew Trent
+	   if the client disconnects (problem reported by Matthew Trent
 	   <mtrent*localaccess.com> and Omer Faruk Sen <ofsen*enderunix.org>)
 
 Tue Jun  8 22:46:29 BST 2004 (njh)
@@ -19804,7 +19804,7 @@ Tue May 11 02:07:55 CEST 2004 (tk)
 Mon May 10 12:25:09 BST 2004 (njh)
 ----------------------------------
   * libclamav:		Don't call cli_filetype() so often since the latest
-		chanves give false positives about the start of bounce messages
+		changes give false positives about the start of bounce messages
 		which opens up DoS attacks, and allows worms hidden in bounce
 		messages to be hidden with ease
 
@@ -19851,7 +19851,7 @@ Thu May  6 16:22:32 BST 2004 (trog)
 
 Thu May  6 12:27:03 BST 2004 (njh)
 ----------------------------------
-  * libclamav/mbox.c:	Ensure all attachements marked as RFC822 emails will
+  * libclamav/mbox.c:	Ensure all attachments marked as RFC822 emails will
 			be recognised as email messages by libclamav/scanners.c
 			and hence be scanned
   * clamav-milter:	Fixed boundary cases for streamMaxLength
@@ -20341,7 +20341,7 @@ Sat Mar 20 19:37:11 GMT 2004 (njh)
 
 Sat Mar 20 17:49:43 GMT 2004 (njh)
 ----------------------------------
-  * libclamav:	More flexable approach to scanning bounce messages within
+  * libclamav:	More flexible approach to scanning bounce messages within
 	emails means more bounces are caught but at the expense of some
 	duplication of code for now
 
@@ -20445,7 +20445,7 @@ Mon Mar 15 20:53:10 CET 2004 (tk)
 
 Mon Mar 15 18:40:44 GMT 2004 (trog)
 -----------------------------------
-  * libvlamav/ole2_extract.c: fix cli_malloc() error
+  * libclamav/ole2_extract.c: fix cli_malloc() error
 
 Mon Mar 15 17:05:01 CET 2004 (tk)
 ---------------------------------
@@ -20574,7 +20574,7 @@ Sun Mar  7 15:19:51 GMT 2004 (njh)
 
 Sun Mar  7 12:40:05 GMT 2004 (njh)
 ----------------------------------
-  * libclamav/message.c:	Added new bounce delimeter (thanks to Dirk
+  * libclamav/message.c:	Added new bounce delimiter (thanks to Dirk
 	  Mueller <mueller*kde.org>)
 	  Removed a warning generated by icc
 
@@ -20744,11 +20744,11 @@ Sun Feb 22 22:59:39 GMT 2004 (njh)
 ----------------------------------
   * clamav-milter: Change the log level TCPwrapper denying
 			Handle ERROR message from clamd
-			Moved smfi_setconn to avoid race condictions when
+			Moved smfi_setconn to avoid race conditions when
 			an e-mail is received just as the milter is starting
 			but isn't ready to handle it causing the milter to
 			go to an error state
-			Hardend umask
+			Hardened umask
 
 Sun Feb 22 17:34:08 GMT 2004 (njh)
 ----------------------------------
@@ -20781,7 +20781,7 @@ Fri Feb 20 17:13:10 GMT 2004 (njh)
 ----------------------------------
   * clamav-milter:	If clamd is on the local machine and PidFile is defined
 		check if clamd is dead when send() fails
-  * libclamav:		Added a new bounce delimeter
+  * libclamav:		Added a new bounce delimiter
 
 Fri Feb 20 16:49:05 CET 2004 (tk)
 ---------------------------------
@@ -20826,7 +20826,7 @@ Wed Feb 18 13:35:59 GMT 2004 (njh)
 
 Wed Feb 18 10:12:54 GMT 2004 (njh)
 ----------------------------------
-  * libclamav:	Found some occurances of Yaha
+  * libclamav:	Found some occurrences of Yaha
 	Added debug of number of lines in (encoded) attachment
   * clamav-milter:	clamav-milter now builds on freeBSD 5.2 (wrong logic
 		in including malloc.h)
@@ -20845,7 +20845,7 @@ Tue Feb 17 23:43:22 CET 2004 (tk)
 
 Tue Feb 17 20:49:23 GMT 2004 (njh)
 ----------------------------------
-  * libclamav: Added a new bounce delimeter
+  * libclamav: Added a new bounce delimiter
   * test:	Updated mbox/debugm.c compilation instructions
 		removed SIGINT signal handler
 
@@ -20855,7 +20855,7 @@ Tue Feb 17 17:09:24 GMT 2004 (trog)
 
 Tue Feb 17 09:59:03 GMT 2004 (njh)
 ----------------------------------
-  * libclamav: Added a new bounce delimeter
+  * libclamav: Added a new bounce delimiter
 
 Tue Feb 17 01:06:58 CET 2004 (tk)
 ---------------------------------
@@ -20894,7 +20894,7 @@ Sun Feb 15 12:52:25 CET 2004 (tk)
 
 Sun Feb 15 08:50:21 GMT 2004 (njh)
 ----------------------------------
-  * libclamav:	added blobClose and blobCmp to reduce likelyhood of scanning the
+  * libclamav:	added blobClose and blobCmp to reduce likelihood of scanning the
 			same file twice and reducing the runtime memory usage
 	support video within multiparts
 	better warning of unsupported types that may need to be added later
@@ -20931,7 +20931,7 @@ Fri Feb 13 22:35:55 CET 2004 (tk)
 
 Fri Feb 13 14:28:05 GMT 2004 (njh)
 ----------------------------------
-  * libclamav: Added a new bounce delimeter
+  * libclamav: Added a new bounce delimiter
 
 Thu Feb 12 18:47:44 GMT 2004 (njh)
 ----------------------------------
@@ -21056,7 +21056,7 @@ Thu Feb  5 13:49:24 GMT 2004 (njh)
 
 Thu Feb  5 11:25:56 GMT 2004 (njh)
 ----------------------------------
-  * libclamav:	Bounce delimeters were found by a list of strcasecmps,
+  * libclamav:	Bounce delimiters were found by a list of strcasecmps,
 			now handled in a table which means it's easier to
 			add new examples as they are found
 
@@ -21223,7 +21223,7 @@ Sat Jan 24 18:17:51 GMT 2004 (njh)
 
 Sat Jan 24 17:45:40 GMT 2004 (njh)
 ----------------------------------
-  * libclamav: Removed (incorrect) warning about uninitialised variable
+  * libclamav: Removed (incorrect) warning about uninitialized variable
 
 Fri Jan 23 12:12:30 CET 2004 (tk)
 ---------------------------------
@@ -21336,7 +21336,7 @@ Fri Jan  9 14:46:29 GMT 2004 (njh)
 
 Fri Jan  9 10:21:27 GMT 2004 (njh)
 ----------------------------------
-  * libclamav: Locate uuencoded viruses hidden in text poritions of
+  * libclamav: Locate uuencoded viruses hidden in text portions of
 	multipart/mixed mime messages
 
 Fri Jan  9 02:07:53 CET 2004 (tk)
@@ -21671,7 +21671,7 @@ Tue Nov 11 22:47:37 CET 2003 (tk)
 	       next version.
   * docs/manpages: updated
   * docs/clamdoc.pdf: rewritten
-  * docs/Turkish: included Turish clamdoc.pdf translation by yavuz kaya and
+  * docs/Turkish: included Turkish clamdoc.pdf translation by yavuz kaya and
 		  Ýbrahim erken
 
 Tue Nov 11 13:51:23 IST 2003 (njh)
@@ -21808,7 +21808,7 @@ Fri Oct 17 05:08:22 CEST 2003 (tk)
 	       with outdated cfgfile.c in freshclam was reported by Jim C.
   * clamd: fixed a segmentation fault with TCPAddr. Problem reported by
 	   Stefan Kaltenbrunner and fixed by Damien Curtain.
-  * libclamav: zziplib downgroaded to 0.10.81 with Martin Schitter's hardening
+  * libclamav: zziplib downgraded to 0.10.81 with Martin Schitter's hardening
 	       patches
   * sigtool: major stability fixes
 
@@ -21880,7 +21880,7 @@ Tue Sep 30 12:54:32 BST 2003 (njh)
 
 Mon Sep 29 18:10:39 BST 2003 (njh)
 ----------------------------------
-  * libclamav: moved stub from heap to stack since its mazimum size is known
+  * libclamav: moved stub from heap to stack since its maximum size is known
 
 Mon Sep 29 13:59:13 BST 2003 (njh)
 ---------------------------------
@@ -21963,7 +21963,7 @@ Tue Sep 16 18:06:47 CEST 2003 (tk)
 ----------------------------------
   * libclamav: included patch from Thomas Lamy:
        > - a fix to my own fix (*ret was declared const -> gcc warning)
-       > - antoher fix to my own code (double fclose() on malformed zip archive)
+       > - another fix to my own code (double fclose() on malformed zip archive)
        > - global to local fix for unrarlib.c (BOOL FileFound).
 
 Mon Sep 15 14:09:50 BST 2003
@@ -22019,7 +22019,7 @@ Sat Aug 30 21:25:25 CEST 2003
 
 Fri Aug 29 06:00:01 CEST 2003
 -----------------------------
-  * clamav-milter: 0.60d: Removed superflous buffer and unneeded strerror
+  * clamav-milter: 0.60d: Removed superfluous buffer and unneeded strerror
 		   call (Nigel)
   * libclamav: enabled support for Maildir files (thanks to Tomasz Papszun
 	       for samples and to Nigel for making his code so flexible)
@@ -22843,7 +22843,7 @@ Tue Jul 23 21:42:00 CEST 2002
 
 Tue Jul 23 03:23:50 CEST 2002
 -----------------------------
-  * fixed problem with unaccesible directories with archives
+  * fixed problem with inaccessible directories with archives
     (quite a big piece of code was added for this fix)
   * removed --strange-unzip
   * improved -i option, it shuts unpackers up too.
@@ -23118,12 +23118,12 @@ Fri Apr 19 23:43:11 CEST 2002
 
 Thu Apr 18 23:18:21 CEST 2002
 -----------------------------
-  * huge optimisation
+  * huge optimization
 
 Wed Apr 17 01:49:42 CEST 2002
 -----------------------------
   * added support for FreeBSD
-  * seperated thread code, POSIX threads are not required now,
+  * separated thread code, POSIX threads are not required now,
     if there are problems (detected pthread.h, but problems with linker)
     threads code may be disabled with --disable-pthreads
   * improved error handling in database parser

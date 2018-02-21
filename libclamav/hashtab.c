@@ -673,7 +673,7 @@ int cli_hashset_init(struct cli_hashset* hs, size_t initial_capacity, uint8_t lo
 	hs->keys = cli_malloc(initial_capacity * sizeof(*hs->keys));
 	hs->mempool = NULL;
 	if(!hs->keys) {
-        cli_errmsg("hashtab.c: Uable to allocate memory for hs->keys\n");
+        cli_errmsg("hashtab.c: Unable to allocate memory for hs->keys\n");
 		return CL_EMEM;
 	}
 	hs->bitmap = cli_calloc(initial_capacity >> 5, sizeof(*hs->bitmap));

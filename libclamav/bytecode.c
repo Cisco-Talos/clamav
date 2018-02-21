@@ -479,7 +479,7 @@ static inline operand_t readOperand(struct cli_bc_func *func, unsigned char *p,
 	dest = &func->constants[func->numConstants];
 	/* Write the constant to the correct place according to its type.
 	 * This is needed on big-endian machines, because constants are always
-	 * read as u64, but accesed as one of these types: u8, u16, u32, u64 */
+	 * read as u64, but accessed as one of these types: u8, u16, u32, u64 */
 	*dest= 0;
 	ty = 8*readFixedNumber(p, off, len, ok, 1);
 	if (!ty) {
@@ -820,7 +820,7 @@ static int parseTypes(struct cli_bc *bc, unsigned char *buffer)
 }
 
 /* checks whether the type described by tid is the same as the one described by
- * expectty. */
+ * apitid. */
 static int types_equal(const struct cli_bc *bc, uint16_t *apity2ty, uint16_t tid, uint16_t apitid)
 {
     unsigned i;
@@ -2806,7 +2806,7 @@ int cli_bytecode_runlsig(cli_ctx *cctx, struct cli_target_info *tinfo,
     cli_dbgmsg("Running bytecode for logical signature match\n");
     ret = cli_bytecode_run(bcs, bc, &ctx);
     if (ret != CL_SUCCESS) {
-	cli_warnmsg("Bytcode %u failed to run: %s\n", bc->id, cl_strerror(ret));
+	cli_warnmsg("Bytecode %u failed to run: %s\n", bc->id, cl_strerror(ret));
 	cli_bytecode_context_clear(&ctx);
 	return CL_SUCCESS;
     }
@@ -3139,7 +3139,7 @@ static void cli_bytetype_helper(const struct cli_bc *bc, unsigned tid)
 
     i = tid - 65;
     if (i >= bc->num_types) {
-        printf("invaltype");
+        printf("invalid type");
         return;
     }
     ty = &bc->types[i];
@@ -3203,7 +3203,7 @@ void cli_bytevalue_describe(const struct cli_bc *bc, unsigned funcid)
     const struct cli_bc_func *func;
 
     if (funcid >= bc->num_func) {
-        printf("bytecode diagnostic: funcid [%u] outside byecode numfuncs [%u]\n",
+        printf("bytecode diagnostic: funcid [%u] outside bytecode numfuncs [%u]\n",
                funcid, bc->num_func);
         return;
     }
@@ -3463,7 +3463,7 @@ void cli_byteinst_describe(const struct cli_bc_inst *inst, unsigned *bbnum)
         printf("load  %d <- p.%d", inst->dest, inst->u.unaryop);
         break;
 
-        // llvm instrinsics
+        // llvm intrinsics
     case OP_BC_MEMSET:
         printf("%d = memset (p.%d, %d, %d)", inst->dest, inst->u.three[0],
                inst->u.three[1], inst->u.three[2]);
@@ -3521,7 +3521,7 @@ void cli_bytefunc_describe(const struct cli_bc *bc, unsigned funcid)
     const struct cli_bc_func *func;
 
     if (funcid >= bc->num_func) {
-        printf("bytecode diagnostic: funcid [%u] outside byecode numfuncs [%u]\n",
+        printf("bytecode diagnostic: funcid [%u] outside bytecode numfuncs [%u]\n",
                funcid, bc->num_func);
         return;
     }

@@ -278,7 +278,7 @@ end:
 #ifdef CL_THREAD_SAFE
     err = pthread_mutex_unlock(&(intel->mutex));
     if (err) {
-        cli_warnmsg("clamav_stats_add_sample: unlcoking mutex failed (err: %d): %s\n", err, strerror(err));
+        cli_warnmsg("clamav_stats_add_sample: unlocking mutex failed (err: %d): %s\n", err, strerror(err));
     }
 #endif
     return;

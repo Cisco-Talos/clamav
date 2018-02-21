@@ -92,7 +92,7 @@ static	char	*rfc2231(const char *in);
 static	int	simil(const char *str1, const char *str2);
 
 /*
- * These maps are ordered in decreasing likelyhood of their appearance
+ * These maps are ordered in decreasing likelihood of their appearance
  * in an e-mail. Probably these should be in a table...
  */
 static	const	struct	encoding_map {
@@ -860,7 +860,7 @@ messageSetEncoding(message *m, const char *enctype)
 			 * The stated encoding type is illegal, so we
 			 * use a best guess of what it should be.
 			 *
-			 * 50% is arbitary. For example 7bi will match as
+			 * 50% is arbitrary. For example 7bi will match as
 			 * 66% certain to be 7bit
 			 */
 			if(highestSimil >= 50) {
@@ -968,7 +968,7 @@ messageAddStr(message *m, const char *data)
 			 * blank lines
 			 */
 			if(messageGetMimeType(m) != TEXT)
-				/* don't save two blank lines in sucession */
+				/* don't save two blank lines in succession */
 				return 1;
 
 		m->body_last->t_next = (text *)cli_malloc(sizeof(text));
@@ -2024,7 +2024,7 @@ decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(
 			b3 = (*decoder)(*in++);
 			/*
 			 * Put this line here to help on some compilers which
-			 * can make use of some architecure's ability to
+			 * can make use of some architecture's ability to
 			 * multiprocess when different variables can be
 			 * updated at the same time - here b3 is used in
 			 * one line, b1/b2 in the next and b4 in the next after

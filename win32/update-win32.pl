@@ -242,10 +242,10 @@ my @PROJECTS = (
     # LLVMsystem #
     {makefile => 'libclamav/c++', sections => ['libllvmsystem'], output => 'win32/LLVMsystem.vcxproj'},
 
-    # LLVMcodgen #
+    # LLVMcodegen #
     {makefile => 'libclamav/c++', sections => ['libllvmcodegen'], output => 'win32/LLVMcodegen.vcxproj'},
 
-    # LLVMx86codgen #
+    # LLVMx86codegen #
     {makefile => 'libclamav/c++', sections => ['libllvmx86codegen'], output => 'win32/LLVMx86codegen.vcxproj'},
 
     # LLVMjit #
