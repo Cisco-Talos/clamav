@@ -81,7 +81,7 @@ static int xar_get_numeric_from_xml_element(xmlTextReaderPtr reader, size_t * va
         if (numstr) {
             numval = atol((const char *)numstr);
             if (numval < 0) {
-                cli_dbgmsg("cli_scanxar: XML element value %li\n", *value);
+                cli_dbgmsg("cli_scanxar: XML element value %zd\n", numval);
                 return CL_EFORMAT;
             }
             *value = numval;
