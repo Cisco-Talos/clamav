@@ -74,14 +74,16 @@ static int xar_cleanup_temp_file(cli_ctx *ctx, int fd, char * tmpname)
 static int xar_get_numeric_from_xml_element(xmlTextReaderPtr reader, size_t * value)
 {
     const xmlChar * numstr;
-    ssize_t numval;
 
     if (xmlTextReaderRead(reader) == 1 && xmlTextReaderNodeType(reader) == XML_READER_TYPE_TEXT) {
         numstr = xmlTextReaderConstValue(reader);
         if (numstr) {
-            numval = atol((const char *)numstr);
-            if (numval < 0) {
-                cli_dbgmsg("cli_scanxar: XML element value %zd\n", numval);
+            long numval;
+            char *endptr;
+            errno = 0;
+            numval = strtol((const char *)numstr, &endptr, 10);
+            if (numval < 0 || (numval == LONG_MAX && errno) || endptr == numstr) {
+                cli_dbgmsg("cli_scanxar: XML element value %s\n", numstr);
                 return CL_EFORMAT;
             }
             *value = numval;
