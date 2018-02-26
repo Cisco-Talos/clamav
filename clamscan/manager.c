@@ -791,6 +791,19 @@ int scanmanager(const struct optstruct *opts)
         }
     }
 
+    /* JSON check to prevent engine loading if specified without libjson-c  */
+#if HAVE_JSON
+    if (optget(opts, "gen-json")->enabled)
+        options |= CL_SCAN_FILE_PROPERTIES;
+#else
+    if (optget(opts, "gen-json")->enabled) {
+        logg("!Can't generate json (gen-json). libjson-c dev library was missing or misconfigured when ClamAV was built.\n")
+
+        cl_engine_free(engine);
+        return 2;
+    }
+#endif
+
     if((opt = optget(opts, "tempdir"))->enabled) {
         if((ret = cl_engine_set_str(engine, CL_ENGINE_TMPDIR, opt->strarg))) {
             logg("!cli_engine_set_str(CL_ENGINE_TMPDIR) failed: %s\n", cl_strerror(ret));
@@ -1112,11 +1125,6 @@ int scanmanager(const struct optstruct *opts)
     procdev = (dev_t) 0;
     if(CLAMSTAT("/proc", &sb) != -1 && !sb.st_size)
         procdev = sb.st_dev;
-#endif
-
-#if HAVE_JSON
-    if (optget(opts, "gen-json")->enabled)
-        options |= CL_SCAN_FILE_PROPERTIES;
 #endif
 
     /* check filetype */
