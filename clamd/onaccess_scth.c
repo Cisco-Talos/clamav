@@ -64,13 +64,13 @@ static int onas_scth_scanfile(const char *fname, int fd, int extinfo, struct sct
 
 static int onas_scth_handle_dir(const char *pathname, struct scth_thrarg *tharg) {
 	FTS *ftsp = NULL;
-        int fd;
+	int fd;
 	int ftspopts = FTS_PHYSICAL | FTS_XDEV;
-        int extinfo;
-        int ret;
+	int extinfo;
+	int ret;
 	FTSENT *curr = NULL;
 
-        extinfo = optget(tharg->opts, "ExtendedDetectionInfo")->enabled;
+	extinfo = optget(tharg->opts, "ExtendedDetectionInfo")->enabled;
 
 	char *const pathargv[] = { (char *) pathname, NULL };
 	if (!(ftsp = _priv_fts_open(pathargv, ftspopts, NULL))) return CL_EOPEN;
@@ -93,18 +93,18 @@ static int onas_scth_handle_dir(const char *pathname, struct scth_thrarg *tharg)
 
 static int onas_scth_handle_file(const char *pathname, struct scth_thrarg *tharg) {
 	int fd;
-        int extinfo;
-        int ret;
+	int extinfo;
+	int ret;
 
 	if (!pathname) return CL_ENULLARG;
 
-        extinfo = optget(tharg->opts, "ExtendedDetectionInfo")->enabled;
+	extinfo = optget(tharg->opts, "ExtendedDetectionInfo")->enabled;
 
 	if ((fd = safe_open(pathname, O_RDONLY | O_BINARY)) == -1)
 		return CL_EOPEN;
 	ret = onas_scth_scanfile(pathname, fd, extinfo, tharg);
-            
-        close(fd);
+
+	close(fd);
 
 	return ret;
 }
