@@ -23,6 +23,12 @@
 
 #include "shared/optparser.h"
 
+typedef enum {
+    CHK_CLEAN,
+    CHK_FOUND,
+    CHK_SELF
+} cli_check_t;
+
 int onas_fan_checkowner(int pid, const struct optstruct *opts);
 int onas_scan(const char *fname, int fd, const char **virname, const struct cl_engine *engine, int options, int extinfo);
 

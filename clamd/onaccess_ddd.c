@@ -542,6 +542,7 @@ static void onas_ddd_handle_extra_scanning(struct ddd_thrarg *tharg, const char 
 		scth_tharg->options = options;
 		scth_tharg->opts = tharg->opts;
 		scth_tharg->pathname = strdup(pathname);
+                scth_tharg->engine = tharg->engine;
 
 		if (!pthread_create(&scth_pid, &scth_attr, onas_scan_th, scth_tharg)) break;
 
