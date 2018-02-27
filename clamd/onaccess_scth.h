@@ -27,6 +27,7 @@
 struct scth_thrarg {
 	int options;
 	const struct optstruct *opts;
+        const struct cl_engine *engine;
 	char *pathname;
 };
 

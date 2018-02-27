@@ -56,7 +56,7 @@ int onas_fan_checkowner(int pid, const struct optstruct *opts)
 
     /* always ignore ourselves */
     if (pid == (int) getpid()) {
-        return 1;
+        return CHK_SELF;
     }
 
     /* look up options */
@@ -65,7 +65,7 @@ int onas_fan_checkowner(int pid, const struct optstruct *opts)
 
     /* we can return immediately if no uid exclusions were requested */
     if (!(opt->enabled || opt_root->enabled))
-        return 0;
+        return CHK_CLEAN;
 
     /* perform exclusion checks if we can stat OK */
     snprintf (path, sizeof (path), "/proc/%u", pid);
@@ -75,14 +75,14 @@ int onas_fan_checkowner(int pid, const struct optstruct *opts)
             while (opt)
             {
                 if (opt->numarg == (long long) sb.st_uid)
-                    return 1;
+                    return CHK_FOUND;
                 opt = opt->nextarg;
             }
         }
         /* finally check root UID */
         if (opt_root->enabled) {
             if (0 == (long long) sb.st_uid)
-                return 1;
+                return CHK_FOUND;
         }
     } else if (errno == EACCES) {
         logg("*Permission denied to stat /proc/%d to exclude UIDs... perhaps SELinux denial?\n", pid);
@@ -91,7 +91,7 @@ int onas_fan_checkowner(int pid, const struct optstruct *opts)
         logg("$/proc/%d vanished before UIDs could be excluded; scanning anyway\n", pid);
     }
 
-    return 0;
+    return CHK_CLEAN;
 }
 
 int onas_scan(const char *fname, int fd, const char **virname, const struct cl_engine *engine, int options, int extinfo)
@@ -99,15 +99,13 @@ int onas_scan(const char *fname, int fd, const char **virname, const struct cl_e
     int ret = 0;
     struct cb_context context;
 
+    pthread_mutex_lock(&onas_scan_lock);
+
     context.filename = fname;
     context.virsize = 0;
     context.scandata = NULL;
-
-    pthread_mutex_lock(&onas_scan_lock);
-    
-    ret = cl_scandesc_callback(fd, virname, NULL, engine, options, context);
-
-    pthread_mutex_unlock(&onas_scan_lock);
+ 
+    ret = cl_scandesc_callback(fd, virname, NULL, engine, options, &context);
 
     if (ret) {
         if (extinfo && context.virsize)
@@ -115,6 +113,8 @@ int onas_scan(const char *fname, int fd, const char **virname, const struct cl_e
         else
             logg("ScanOnAccess: %s: %s FOUND\n", fname, *virname);
     }
+
+    pthread_mutex_unlock(&onas_scan_lock);
 
     return ret;
 }
