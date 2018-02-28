@@ -391,16 +391,17 @@ int logg(const char *str, ...)
             /* Need to avoid logging time for verbose messages when logverbose
                is not set or we get a bunch of timestamps in the log without
                newlines... */
-	    if(logg_time && ((*buff != '*') || logg_verbose)) {
-	        char timestr[32];
-		time(&currtime);
-		cli_ctime(&currtime, timestr, sizeof(timestr));
-		/* cut trailing \n */
-		timestr[strlen(timestr)-1] = '\0';
-		fprintf(logg_fp, "%s -> ", timestr);
-	    }
+		if (logg_time && ((*buff != '*') || logg_verbose))
+		{
+			char timestr[32];
+			time(&currtime);
+			cli_ctime(&currtime, timestr, sizeof(timestr));
+			/* cut trailing \n */
+			timestr[strlen(timestr) - 1] = '\0';
+			fprintf(logg_fp, "%s -> ", timestr);
+		}
 
-	    if(*buff == '!') {
+		if(*buff == '!') {
 		fprintf(logg_fp, "ERROR: %s", buff + 1);
 		flush = 1;
 	    } else if(*buff == '^') {
@@ -418,10 +419,25 @@ int logg(const char *str, ...)
 		fflush(logg_fp);
 	}
 
-    if(logg_foreground) {
-	if(buff[0] != '#')
-	    mprintf("%s", buff);
-    }
+	if (logg_foreground)
+	{
+		if (buff[0] != '#')
+		{
+			if (logg_time)
+			{
+				char timestr[32];
+				time(&currtime);
+				cli_ctime(&currtime, timestr, sizeof(timestr));
+				/* cut trailing \n */
+				timestr[strlen(timestr) - 1] = '\0';
+				mprintf("%s -> %s", timestr, buff);
+			}
+			else
+			{
+				mprintf("%s", buff);
+			}
+		}
+	}
 
 #if defined(USE_SYSLOG) && !defined(C_AIX)
     if(logg_syslog) {
