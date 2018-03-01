@@ -797,7 +797,7 @@ int scanmanager(const struct optstruct *opts)
         options |= CL_SCAN_FILE_PROPERTIES;
 #else
     if (optget(opts, "gen-json")->enabled) {
-        logg("!Can't generate json (gen-json). libjson-c dev library was missing or misconfigured when ClamAV was built.\n")
+        logg("!Can't generate json (gen-json). libjson-c dev library was missing or misconfigured when ClamAV was built.\n");
 
         cl_engine_free(engine);
         return 2;
