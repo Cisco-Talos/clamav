@@ -148,17 +148,21 @@ Example
 # Default: 5
 #CommandReadTimeout 5
 
-# This option specifies how long to wait (in milliseconds) if the send buffer is full.
+# This option specifies how long to wait (in milliseconds) if the send buffer
+# is full.
 # Keep this value low to prevent clamd hanging
 #
 # Default: 500
 #SendBufTimeout 200
 
-# Maximum number of queued items (including those being processed by MaxThreads threads)
+# Maximum number of queued items (including those being processed by
+# MaxThreads threads)
 # It is recommended to have this value at least twice MaxThreads if possible.
-# WARNING: you shouldn't increase this too much to avoid running out  of file descriptors,
+# WARNING: you shouldn't increase this too much to avoid running out  of file
+# descriptors,
 # the following condition should hold:
-# MaxThreads*MaxRecursion + (MaxQueue - MaxThreads) + 6< RLIMIT_NOFILE (usual max is 1024)
+# MaxThreads*MaxRecursion + (MaxQueue - MaxThreads) + 6< RLIMIT_NOFILE (usual
+# max is 1024)
 #
 # Default: 100
 #MaxQueue 200
@@ -263,8 +267,8 @@ Example
 ##
 
 # PE stands for Portable Executable - it's an executable file format used
-# in all 32 and 64-bit versions of Windows operating systems. This option allows
-# ClamAV to perform a deeper analysis of executable files and it's also
+# in all 32 and 64-bit versions of Windows operating systems. This option
+# allows ClamAV to perform a deeper analysis of executable files and it's also
 # required for decompression of popular executable packers such as UPX, FSG,
 # and Petite. If you turn off this option, the original files will still be
 # scanned, but without additional processing.
@@ -346,7 +350,8 @@ Example
 #ScanMail yes
 
 # Scan RFC1341 messages split over many emails.
-# You will need to periodically clean up $TemporaryDirectory/clamav-partial directory.
+# You will need to periodically clean up $TemporaryDirectory/clamav-partial
+# directory.
 # WARNING: This option may open your system to a DoS attack.
 #	   Never use it on loaded servers.
 # Default: no
@@ -381,9 +386,9 @@ Example
 # When enabled, if a heuristic scan (such as phishingScan) detects
 # a possible virus/phish it will stop scan immediately. Recommended, saves CPU
 # scan-time.
-# When disabled, virus/phish detected by heuristic scans will be reported only at
-# the end of a scan. If an archive contains both a heuristically detected
-# virus/phish, and a real malware, the real malware will be reported
+# When disabled, virus/phish detected by heuristic scans will be reported
+# only at the end of a scan. If an archive contains both a heuristically
+# detected virus/phish, and a real malware, the real malware will be reported.
 #
 # Keep this disabled if you intend to handle "*.Heuristics.*" viruses 
 # differently from "real" malware.
@@ -456,9 +461,10 @@ Example
 # The options below protect your system against Denial of Service attacks
 # using archive bombs.
 
-# This option sets the maximum amount of data to be scanned for each input file.
-# Archives and other containers are recursively extracted and scanned up to this
-# value.
+# This option sets the maximum amount of data to be scanned for each input
+# file.
+# Archives and other containers are recursively extracted and scanned up to
+# this value.
 # Value of 0 disables the limit
 # Note: disabling this limit or setting it too high may result in severe damage
 # to the system.
@@ -524,54 +530,68 @@ Example
 # Default: 1M
 #MaxZipTypeRcg 1M
 
-# This option sets the maximum number of partitions of a raw disk image to be scanned.
-# Raw disk images with more partitions than this value will have up to the value number
-# partitions scanned. Negative values are not allowed.
-# Note: setting this limit too high may result in severe damage or impact performance.
+# This option sets the maximum number of partitions of a raw disk image to be
+# scanned.
+# Raw disk images with more partitions than this value will have up to
+# the value number partitions scanned. Negative values are not allowed.
+# Note: setting this limit too high may result in severe damage or impact
+# performance.
 # Default: 50
 #MaxPartitions 128
 
 # This option sets the maximum number of icons within a PE to be scanned.
-# PE files with more icons than this value will have up to the value number icons scanned.
+# PE files with more icons than this value will have up to the value number
+# icons scanned.
 # Negative values are not allowed.
-# WARNING: setting this limit too high may result in severe damage or impact performance.
+# WARNING: setting this limit too high may result in severe damage or impact
+# performance.
 # Default: 100
 #MaxIconsPE 200
 
-# This option sets the maximum recursive calls for HWP3 parsing during scanning.
-# HWP3 files using more than this limit will be terminated and alert the user.
-# Scans will be unable to scan any HWP3 attachments if the recursive limit is reached.
+# This option sets the maximum recursive calls for HWP3 parsing during
+# scanning. HWP3 files using more than this limit will be terminated and
+# alert the user.
+# Scans will be unable to scan any HWP3 attachments if the recursive limit
+# is reached.
 # Negative values are not allowed.
-# WARNING: setting this limit too high may result in severe damage or impact performance.
+# WARNING: setting this limit too high may result in severe damage or impact
+# performance.
 # Default: 16
 #MaxRecHWP3 16
 
-# This option sets the maximum calls to the PCRE match function during an instance of regex matching.
-# Instances using more than this limit will be terminated and alert the user but the scan will continue.
+# This option sets the maximum calls to the PCRE match function during
+# an instance of regex matching.
+# Instances using more than this limit will be terminated and alert the user
+# but the scan will continue.
 # For more information on match_limit, see the PCRE documentation.
 # Negative values are not allowed.
 # WARNING: setting this limit too high may severely impact performance.
 # Default: 100000
 #PCREMatchLimit 20000
 
-# This option sets the maximum recursive calls to the PCRE match function during an instance of regex matching.
-# Instances using more than this limit will be terminated and alert the user but the scan will continue.
+# This option sets the maximum recursive calls to the PCRE match function
+# during an instance of regex matching.
+# Instances using more than this limit will be terminated and alert the user
+# but the scan will continue.
 # For more information on match_limit_recursion, see the PCRE documentation.
 # Negative values are not allowed and values > PCREMatchLimit are superfluous.
 # WARNING: setting this limit too high may severely impact performance.
 # Default: 5000
 #PCRERecMatchLimit 10000
 
-# This option sets the maximum filesize for which PCRE subsigs will be executed.
-# Files exceeding this limit will not have PCRE subsigs executed unless a subsig is encompassed to a smaller buffer.
+# This option sets the maximum filesize for which PCRE subsigs will be
+# executed. Files exceeding this limit will not have PCRE subsigs executed
+# unless a subsig is encompassed to a smaller buffer.
 # Negative values are not allowed.
 # Setting this value to zero disables the limit.
-# WARNING: setting this limit too high or disabling it may severely impact performance.
+# WARNING: setting this limit too high or disabling it may severely impact
+# performance.
 # Default: 25M
 #PCREMaxFileSize 100M
 
-# When BlockMax is set, files exceeding the MaxFileSize, MaxScanSize, or MaxRecursion limit will be flagged
-# with the virus "Heuristic.Limits.Exceeded".
+# When BlockMax is set, files exceeding the MaxFileSize, MaxScanSize, or
+# MaxRecursion limit will be flagged with the virus
+# "Heuristic.Limits.Exceeded".
 # Default: no
 #BlockMax yes
 
@@ -584,9 +604,10 @@ Example
 # Default: no
 #ScanOnAccess yes
 
-# Set the  mount point to be scanned. The mount point specified, or the mount point 
-# containing the specified directory will be watched. If any directories are specified, 
-# this option will preempt the DDD system. This will notify only. It can be used multiple times.
+# Set the  mount point to be scanned. The mount point specified, or the mount
+# point containing the specified directory will be watched. If any directories
+# are specified, this option will preempt the DDD system. This will notify
+# only. It can be used multiple times.
 # (On-access scan only)
 # Default: disabled
 #OnAccessMountPath /
@@ -624,8 +645,9 @@ Example
 # will be able to access all files without triggering scans or permission
 # denied events.
 # This option can be used multiple times (one per line).
-# Using a value of 0 on any line will disable this option entirely. To whitelist
-# the root UID (0) please enable the OnAccessExcludeRootUID option.
+# Using a value of 0 on any line will disable this option entirely.
+# To whitelist the root UID (0) please enable the OnAccessExcludeRootUID
+# option.
 # Also note that if clamd cannot check the uid of the process that generated an
 # on-access scan event (e.g., because OnAccessPrevention was not enabled, and
 # the process already exited), clamd will perform a scan.  Thus, setting
@@ -634,7 +656,8 @@ Example
 # Default: disabled
 #OnAccessExcludeUID -1
 
-# Toggles dynamic directory determination. Allows for recursively watching include paths.
+# Toggles dynamic directory determination. Allows for recursively watching
+# include paths.
 # (On-access scan only)
 # Default: no
 #OnAccessDisableDDD yes
@@ -646,7 +669,8 @@ Example
 # Default: no
 #OnAccessPrevention yes
 
-# Toggles extra scanning and notifications when a file or directory is created or moved.
+# Toggles extra scanning and notifications when a file or directory is
+# created or moved.
 # Requires the  DDD system to kick-off extra scans.
 # (On-access scan only)
 # Default: no
@@ -657,18 +681,22 @@ Example
 ##
 
 # With this option enabled ClamAV will load bytecode from the database. 
-# It is highly recommended you keep this option on, otherwise you'll miss detections for many new viruses.
+# It is highly recommended you keep this option on, otherwise you'll miss
+# detections for many new viruses.
 # Default: yes
 #Bytecode yes
 
 # Set bytecode security level.
 # Possible values:
-#       None - no security at all, meant for debugging. DO NOT USE THIS ON PRODUCTION SYSTEMS
-#         This value is only available if clamav was built with --enable-debug!
-#       TrustSigned - trust bytecode loaded from signed .c[lv]d files,
-#                insert runtime safety checks for bytecode loaded from other sources
-#       Paranoid - don't trust any bytecode, insert runtime checks for all
-# Recommended: TrustSigned, because bytecode in .cvd files already has these checks
+#   None -      No security at all, meant for debugging.
+#               DO NOT USE THIS ON PRODUCTION SYSTEMS.
+#               This value is only available if clamav was built
+#               with --enable-debug!
+#   TrustSigned - Trust bytecode loaded from signed .c[lv]d files, insert
+#               runtime safety checks for bytecode loaded from other sources.
+#   Paranoid -  Don't trust any bytecode, insert runtime checks for all.
+# Recommended: TrustSigned, because bytecode in .cvd files already has these
+# checks.
 # Note that by default only signed bytecode is loaded, currently you can only
 # load unsigned bytecode in --enable-debug mode.
 #
