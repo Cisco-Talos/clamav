@@ -1,16 +1,18 @@
-Note: This README/NEWS file refers to the source tarball. Some things described
-here may not be available in binary packages.
---
+ClamAV News
+===========
 
-0.100.0-beta
-------
+Note: This file refers to the source tarball. Things described here may
+ differ slightly from the binary packages.
 
-Welcome to ClamAV 0.100.0.  0.100.0 is under active development.
+0.100.0
+-------
 
-It includes many code submissions from the ClamAV community:
+ClamAV 0.100.0 is a feature release which includes many code submissions
+ from the ClamAV community.  Some of the more prominent submissions include:
+
     - Interfaces to the Prelude SIEM open source package for collecting
       ClamAV virus events.
-    - Visual Studio 2015 for building Microsoft Windows binaries.
+    - Support for Visual Studio 2015 for Windows builds.
     - Support libmspack internal code or as a shared object library.
       The internal library is the default and contains additional
       integrity checks.
@@ -21,14 +23,15 @@ It includes many code submissions from the ClamAV community:
     - Numerous bug fixes, typo corrections, and compiler warning fixes.
 
 Additionally, we have introduced important changes and new features in
-ClamAV 0.100, including:
+ClamAV 0.100, including but not limited to:
+
     - Deprecating internal LLVM code support. The configure script has changed
       to search the system for an installed instance of the LLVM development
       libraries, and to otherwise use the bytecode interpreter for ClamAV
       bytecode signatures. To use the LLVM Just-In-Time compiler for
       executing bytecode signatures, please ensure that the LLVM development
       package at version 3.6 or lower is installed. Using the deprecated LLVM
-      code is possible with the command: './configure --with-system-llvm=no',
+      code is possible with the command: `./configure --with-system-llvm=no`,
       but it no longer compiles on all platforms.
     - Compute and check PE import table hash (a.k.a. "imphash") signatures.
     - Support file property collection and analysis for MHTML files.
@@ -37,7 +40,13 @@ ClamAV 0.100, including:
       interface.
     - Optionally, flag files with the virus "Heuristic.Limits.Exceeded" when
       size limitations are exceeded.
-    - Improve decoders for PDF files.
+    - Improved decoders for PDF files.
+    - Reduced number of compile time warnings.
+    - Improved support for C++11.
+    - Improved detection of system installed libraries.
+    - Fixes to ClamAV's Container system and the introduction of Intermediates
+      for more descriptive signatures.
+    - Improvements to clamd's On-Access scanning capabilities for Linux.
 
 The ClamAV team thanks the following individuals for their code submissions:
 
@@ -56,8 +65,33 @@ Michael Pelletier
 Ningirsu
 Sebastian Andrzej Siewior
 Stephen Welker
+Tuomo Soini
 
-0.99.3 (current stable release)
+0.99.4
+------
+
+ClamAV 0.99.4 is a hotfix release to patch a set of vulnerabilities.
+
+    - fixes for the following CVE's: CVE-2012-6706, CVE-2017-6419,
+      CVE-2017-11423, CVE-2018-0202, and CVE-2018-1000085.
+    - also included are 2 fixes for file descriptor leaks as well fixes for
+      a handful of other important bugs, including patches to support g++ 6, C++11.
+
+Thank you to the following ClamAV community members for your code
+submissions and bug reports! 
+
+Alberto Garcia
+Bernhard Vogel
+Francisco Oca
+Hanno Böck
+Jeffrey Yasskin
+Keith Jones
+mtowalski
+Suleman Ali
+yongji.oy
+xrym
+
+0.99.3
 ------
 
 ClamAV 0.99.3 is a hotfix release to patch a set of vulnerabilities.
