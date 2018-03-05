@@ -1,8 +1,13 @@
 /*
- *  Copyright (C) 2015-2017 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015-2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2008 Sourcefire, Inc.
  *
  *  Authors: Nigel Horne
+ * 
+ *  Acknowledgements: Some ideas came from Stephen White <stephen@earth.li>,
+ *                    Michael Dankov <misha@btrc.ru>, Gianluigi Tiesi <sherpya@netfarm.it>,
+ *                    Everton da Silva Marques, Thomas Lamy <Thomas.Lamy@in-online.net>,
+ *                    James Stevens <James@kyzo.com>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as

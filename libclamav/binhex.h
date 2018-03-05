@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2008 Sourcefire, Inc.
  *
  *  Authors: Nigel Horne
@@ -17,18 +17,6 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
- *
- * Change History:
- * $Log: binhex.h,v $
- * Revision 1.4  2006/04/09 19:59:27  kojm
- * update GPL headers with new address for FSF
- *
- * Revision 1.3  2004/11/18 19:30:29  kojm
- * add support for Mac's HQX file format
- *
- * Revision 1.2  2004/11/18 18:24:45  nigelhorne
- * Added binhex.h
- *
  */
 
 #ifndef __BINHEX_H
