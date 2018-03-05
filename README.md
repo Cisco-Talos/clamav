@@ -50,3 +50,7 @@ The ClamAV development team welcomes
  [code contributions](https://github.com/Cisco-Talos/clamav-devel),
  improvements to [our FAQ](https://github.com/Cisco-Talos/clamav-faq), and also
  [bug reports](http://bugs.clamav.net/). Thanks for joining us!
+
+## Credits
+
+[The ClamAV Team](http://www.clamav.net/about.html#credits)
