@@ -44,7 +44,7 @@ The best way to get in touch with the ClamAV community is to join our
  [our mailing lists](http://www.clamav.net/documents/mailing-lists-faq), and
  tune to #clamav on [IRC](irc.freenode.net).
 
-## ClamAV is Open Source
+## Want to make a contribution?
 
 The ClamAV development team welcomes
  [code contributions](https://github.com/Cisco-Talos/clamav-devel),
