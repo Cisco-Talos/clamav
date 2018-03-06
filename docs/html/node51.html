@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Initialization</TITLE>
-<META NAME="description" CONTENT="Initialization">
+<TITLE>Error handling</TITLE>
+<META NAME="description" CONTENT="Error handling">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -20,60 +20,55 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="next" HREF="node52.html">
 <LINK REL="previous" HREF="node50.html">
-<LINK REL="up" HREF="node49.html">
+<LINK REL="up" HREF="node47.html">
 <LINK REL="next" HREF="node52.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html898"
+<A NAME="tex2html792"
   HREF="node52.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html894"
-  HREF="node49.html">
+<A NAME="tex2html788"
+  HREF="node47.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html888"
+<A NAME="tex2html782"
   HREF="node50.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html896"
+<A NAME="tex2html790"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html899"
-  HREF="node52.html">Database loading</A>
-<B> Up:</B> <A NAME="tex2html895"
-  HREF="node49.html">API</A>
-<B> Previous:</B> <A NAME="tex2html889"
-  HREF="node50.html">Header file</A>
- &nbsp; <B>  <A NAME="tex2html897"
+<B> Next:</B> <A NAME="tex2html793"
+  HREF="node52.html">Engine structure</A>
+<B> Up:</B> <A NAME="tex2html789"
+  HREF="node47.html">API</A>
+<B> Previous:</B> <A NAME="tex2html783"
+  HREF="node50.html">Database loading</A>
+ &nbsp; <B>  <A NAME="tex2html791"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00073200000000000000">
-Initialization</A>
+<H3><A NAME="SECTION00073400000000000000">
+Error handling</A>
 </H3>
-    Before using libclamav, you should call <code>cl_init()</code> to initialize
-    it. <code>CL_INIT_DEFAULT</code> is a macro that can be passed to <code>cl_init()</code>
-    representing the default initialization settings. When it's done, you're ready
-    to create a new scan engine by calling <code>cl_engine_new()</code>. To free resources
-    allocated by the engine use <code>cl_engine_free()</code>. Function prototypes:
+    Use <code>cl_strerror()</code> to convert error codes into human readable
+    messages.  The function returns a statically allocated string:
     <PRE>
-	int cl_init(unsigned int options);
-	struct cl_engine *cl_engine_new(void);
-	int cl_engine_free(struct cl_engine *engine);
+	if(ret != CL_SUCCESS) {
+	    printf("cl_load() error: %s\n", cl_strerror(ret));
+	    cl_engine_free(engine);
+	    return 1;
+	}
 </PRE>
-    <code>cl_init()</code> and <code>cl_engine_free()</code> return <code>CL_SUCCESS</code>
-    on success or another code on error. <code>cl_engine_new()</code> return
-    a pointer or NULL if there's not enough memory to allocate a new
-    engine structure.
 
 <P>
 <BR><HR>
 <ADDRESS>
-Cisco 2018-02-01
+Cisco 2018-02-28
 </ADDRESS>
 </BODY>
 </HTML>

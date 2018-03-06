@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Usage</TITLE>
-<META NAME="description" CONTENT="Usage">
+<TITLE>Clamdscan</TITLE>
+<META NAME="description" CONTENT="Clamdscan">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -18,78 +18,64 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node40.html">
-<LINK REL="previous" HREF="node21.html">
-<LINK REL="up" HREF="clamdoc.html">
+<LINK REL="next" HREF="node29.html">
+<LINK REL="previous" HREF="node27.html">
+<LINK REL="up" HREF="node26.html">
 <LINK REL="next" HREF="node29.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html571"
+<A NAME="tex2html480"
   HREF="node29.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html567"
-  HREF="clamdoc.html">
+<A NAME="tex2html476"
+  HREF="node26.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html561"
+<A NAME="tex2html470"
   HREF="node27.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html569"
+<A NAME="tex2html478"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html572"
-  HREF="node29.html">Clam daemon</A>
-<B> Up:</B> <A NAME="tex2html568"
-  HREF="clamdoc.html">clamdoc</A>
-<B> Previous:</B> <A NAME="tex2html562"
-  HREF="node27.html">Closest mirrors</A>
- &nbsp; <B>  <A NAME="tex2html570"
+<B> Next:</B> <A NAME="tex2html481"
+  HREF="node29.html">On-access Scanning</A>
+<B> Up:</B> <A NAME="tex2html477"
+  HREF="node26.html">Usage</A>
+<B> Previous:</B> <A NAME="tex2html471"
+  HREF="node27.html">Clam daemon</A>
+ &nbsp; <B>  <A NAME="tex2html479"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H1><A NAME="SECTION00060000000000000000">
-Usage</A>
-</H1>
+<H2><A NAME="SECTION00062000000000000000">
+Clam<SPAN  CLASS="textbf">d</SPAN>scan</A>
+</H2>
+    <code>clamdscan</code> is a simple <code>clamd</code> client. In many cases you can
+    use it as a <code>clamscan</code> replacement however you must remember that:
+    
+<UL>
+<LI>it only depends on <code>clamd</code>
+</LI>
+<LI>although it accepts the same command line options as
+	      <code>clamscan</code> most of them are ignored because they must be
+	      enabled directly in <code>clamd</code>, i.e. <code>clamd.conf</code>
+</LI>
+<LI>in TCP mode scanned files must be accessible for <code>clamd</code>,
+	      if you enabled LocalSocket in clamd.conf then clamdscan will
+	      try to workaround this limitation by using FILDES
+    
+</LI>
+</UL>
 
 <P>
 <BR><HR>
-<!--Table of Child-Links-->
-<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
-
-<UL CLASS="ChildLinks">
-<LI><A NAME="tex2html573"
-  HREF="node29.html">Clam daemon</A>
-<LI><A NAME="tex2html574"
-  HREF="node30.html">Clam<SPAN  CLASS="textbf">d</SPAN>scan</A>
-<LI><A NAME="tex2html575"
-  HREF="node31.html">On-access Scanning</A>
-<LI><A NAME="tex2html576"
-  HREF="node32.html">Clamdtop</A>
-<LI><A NAME="tex2html577"
-  HREF="node33.html">Clamscan</A>
-<LI><A NAME="tex2html578"
-  HREF="node34.html">ClamBC</A>
-<LI><A NAME="tex2html579"
-  HREF="node35.html">Freshclam</A>
-<LI><A NAME="tex2html580"
-  HREF="node36.html">Clamconf</A>
-<LI><A NAME="tex2html581"
-  HREF="node37.html">Output format</A>
-<UL>
-<LI><A NAME="tex2html582"
-  HREF="node38.html">clamscan</A>
-<LI><A NAME="tex2html583"
-  HREF="node39.html">clamd</A>
-</UL></UL>
-<!--End of Table of Child-Links-->
-<BR><HR>
 <ADDRESS>
-Cisco 2018-02-01
+Cisco 2018-02-28
 </ADDRESS>
 </BODY>
 </HTML>

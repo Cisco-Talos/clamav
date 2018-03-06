@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>clamscan</TITLE>
-<META NAME="description" CONTENT="clamscan">
+<TITLE>LibClamAV</TITLE>
+<META NAME="description" CONTENT="LibClamAV">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -18,69 +18,112 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node39.html">
-<LINK REL="previous" HREF="node37.html">
-<LINK REL="up" HREF="node37.html">
+<LINK REL="previous" HREF="node26.html">
+<LINK REL="up" HREF="clamdoc.html">
 <LINK REL="next" HREF="node39.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html702"
+<A NAME="tex2html596"
   HREF="node39.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html698"
-  HREF="node37.html">
+<A NAME="tex2html592"
+  HREF="clamdoc.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html692"
+<A NAME="tex2html588"
   HREF="node37.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html700"
+<A NAME="tex2html594"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html703"
-  HREF="node39.html">clamd</A>
-<B> Up:</B> <A NAME="tex2html699"
-  HREF="node37.html">Output format</A>
-<B> Previous:</B> <A NAME="tex2html693"
-  HREF="node37.html">Output format</A>
- &nbsp; <B>  <A NAME="tex2html701"
+<B> Next:</B> <A NAME="tex2html597"
+  HREF="node39.html">License</A>
+<B> Up:</B> <A NAME="tex2html593"
+  HREF="clamdoc.html">clamdoc</A>
+<B> Previous:</B> <A NAME="tex2html589"
+  HREF="node37.html">clamd</A>
+ &nbsp; <B>  <A NAME="tex2html595"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00069100000000000000">
-clamscan</A>
-</H3>
-    <code>clamscan</code> writes all regular program messages to <SPAN  CLASS="textbf">stdout</SPAN> and
-    errors/warnings to <SPAN  CLASS="textbf">stderr</SPAN>. You can use the option <code>--stdout</code>
-    to redirect all program messages to <SPAN  CLASS="textbf">stdout</SPAN>. Warnings and error
-    messages from <code>libclamav</code> are always printed to <SPAN  CLASS="textbf">stderr</SPAN>.
-    A typical output from <code>clamscan</code> looks like this:
-    <PRE>
-	/tmp/test/removal-tool.exe: Worm.Sober FOUND
-	/tmp/test/md5.o: OK
-	/tmp/test/blob.c: OK
-	/tmp/test/message.c: OK
-	/tmp/test/error.hta: VBS.Inor.D FOUND
-</PRE>
-    When a virus is found its name is printed between the <code>filename:</code> and
-    <code>FOUND</code> strings. In case of archives the scanner depends on libclamav
-    and only prints the first virus found within an archive:
-    <PRE>
-	$ clamscan malware.zip 
-	malware.zip: Worm.Mydoom.U FOUND
-</PRE>
-    When using the -allmatch(-z) flag, clamscan may print multiple virus
-    <code>FOUND</code> lines for archives and files.
+<H1><A NAME="SECTION00070000000000000000">
+LibClamAV</A>
+</H1>
+    Libclamav provides an easy and effective way to add a virus protection into
+    your software. The library is thread-safe and transparently recognizes and
+    scans within archives, mail files, MS Office document files, executables
+    and other special formats.
 
 <P>
 <BR><HR>
+<!--Table of Child-Links-->
+<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
+
+<UL CLASS="ChildLinks">
+<LI><A NAME="tex2html598"
+  HREF="node39.html">License</A>
+<LI><A NAME="tex2html599"
+  HREF="node40.html">Supported formats and features</A>
+<UL>
+<LI><A NAME="tex2html600"
+  HREF="node41.html">Executables</A>
+<LI><A NAME="tex2html601"
+  HREF="node42.html">Mail files</A>
+<LI><A NAME="tex2html602"
+  HREF="node43.html">Archives and compressed files</A>
+<LI><A NAME="tex2html603"
+  HREF="node44.html">Documents</A>
+<LI><A NAME="tex2html604"
+  HREF="node45.html">Data Loss Prevention</A>
+<LI><A NAME="tex2html605"
+  HREF="node46.html">Others</A>
+</UL>
+<BR>
+<LI><A NAME="tex2html606"
+  HREF="node47.html">API</A>
+<UL>
+<LI><A NAME="tex2html607"
+  HREF="node48.html">Header file</A>
+<LI><A NAME="tex2html608"
+  HREF="node49.html">Initialization</A>
+<LI><A NAME="tex2html609"
+  HREF="node50.html">Database loading</A>
+<LI><A NAME="tex2html610"
+  HREF="node51.html">Error handling</A>
+<LI><A NAME="tex2html611"
+  HREF="node52.html">Engine structure</A>
+<LI><A NAME="tex2html612"
+  HREF="node53.html">Limits</A>
+<LI><A NAME="tex2html613"
+  HREF="node54.html">Database checks</A>
+<LI><A NAME="tex2html614"
+  HREF="node55.html">Data scan functions</A>
+<LI><A NAME="tex2html615"
+  HREF="node56.html">Memory</A>
+<LI><A NAME="tex2html616"
+  HREF="node57.html">Forking daemons</A>
+<LI><A NAME="tex2html617"
+  HREF="node58.html">clamav-config</A>
+<LI><A NAME="tex2html618"
+  HREF="node59.html">Example</A>
+</UL>
+<BR>
+<LI><A NAME="tex2html619"
+  HREF="node60.html">CVD format</A>
+<LI><A NAME="tex2html620"
+  HREF="node61.html">Graphics</A>
+<LI><A NAME="tex2html621"
+  HREF="node62.html">OpenAntiVirus</A>
+</UL>
+<!--End of Table of Child-Links-->
+<BR><HR>
 <ADDRESS>
-Cisco 2018-02-01
+Cisco 2018-02-28
 </ADDRESS>
 </BODY>
 </HTML>

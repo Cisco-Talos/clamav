@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Error handling</TITLE>
-<META NAME="description" CONTENT="Error handling">
+<TITLE>Limits</TITLE>
+<META NAME="description" CONTENT="Limits">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -20,55 +20,65 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="next" HREF="node54.html">
 <LINK REL="previous" HREF="node52.html">
-<LINK REL="up" HREF="node49.html">
+<LINK REL="up" HREF="node47.html">
 <LINK REL="next" HREF="node54.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html922"
+<A NAME="tex2html816"
   HREF="node54.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html918"
-  HREF="node49.html">
+<A NAME="tex2html812"
+  HREF="node47.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html912"
+<A NAME="tex2html806"
   HREF="node52.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html920"
+<A NAME="tex2html814"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html923"
-  HREF="node54.html">Engine structure</A>
-<B> Up:</B> <A NAME="tex2html919"
-  HREF="node49.html">API</A>
-<B> Previous:</B> <A NAME="tex2html913"
-  HREF="node52.html">Database loading</A>
- &nbsp; <B>  <A NAME="tex2html921"
+<B> Next:</B> <A NAME="tex2html817"
+  HREF="node54.html">Database checks</A>
+<B> Up:</B> <A NAME="tex2html813"
+  HREF="node47.html">API</A>
+<B> Previous:</B> <A NAME="tex2html807"
+  HREF="node52.html">Engine structure</A>
+ &nbsp; <B>  <A NAME="tex2html815"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00073400000000000000">
-Error handling</A>
+<H3><A NAME="SECTION00073600000000000000">
+Limits</A>
 </H3>
-    Use <code>cl_strerror()</code> to convert error codes into human readable
-    messages.  The function returns a statically allocated string:
+    When you create a new engine with <code>cl_engine_new()</code>, it will have
+    all internal settings set to default values as recommended by the
+    ClamAV authors. It's possible to check and modify the values (numerical
+    and strings) using the following set of functions:
     <PRE>
-	if(ret != CL_SUCCESS) {
-	    printf("cl_load() error: %s\n", cl_strerror(ret));
-	    cl_engine_free(engine);
-	    return 1;
-	}
+int cl_engine_set_num(struct cl_engine *engine,
+  enum cl_engine_field field, long long num);
+
+long long cl_engine_get_num(const struct cl_engine *engine,
+  enum cl_engine_field field, int *err);
+
+int cl_engine_set_str(struct cl_engine *engine,
+  enum cl_engine_field field, const char *str);
+
+const char *cl_engine_get_str(const struct cl_engine *engine,
+  enum cl_engine_field field, int *err);
 </PRE>
+    Please don't modify the default values unless you know what you're doing.
+    Refer to the ClamAV sources (clamscan, clamd) for examples.
 
 <P>
 <BR><HR>
 <ADDRESS>
-Cisco 2018-02-01
+Cisco 2018-02-28
 </ADDRESS>
 </BODY>
 </HTML>

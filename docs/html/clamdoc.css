@@ -1,6 +1,6 @@
 /* Century Schoolbook font is very similar to Computer Modern Math: cmmi */
 .MATH    { font-family: "Century Schoolbook", serif; }
-.MATH I  { font-family: "Century Schoolbook", serif; font-shape: italic }
+.MATH I  { font-family: "Century Schoolbook", serif; font-style: italic }
 .BOLDMATH { font-family: "Century Schoolbook", serif; font-weight: bold }
 
 /* implement both fixed-size and relative sizes */
@@ -28,3 +28,11 @@ TD.eqno			{ }	/* equation-number cells */
 
 
 /* document-specific styles come next */
+PRE.preform		{   }
+DIV.center		{   }
+DIV.flushright		{   }
+DIV.navigation		{   }
+SPAN.textbf		{ font-weight: bold  }
+SPAN.arabic		{   }
+SPAN.textit		{ font-style: italic  }
+#hue36		{ color: #ffffff;  }
