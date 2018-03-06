@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Obtain Latest ClamAV anti-virus signature databases</TITLE>
-<META NAME="description" CONTENT="Obtain Latest ClamAV anti-virus signature databases">
+<TITLE>clamd</TITLE>
+<META NAME="description" CONTENT="clamd">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -18,75 +18,67 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
+<LINK REL="next" HREF="node22.html">
 <LINK REL="previous" HREF="node19.html">
-<LINK REL="up" HREF="node11.html">
+<LINK REL="up" HREF="node19.html">
 <LINK REL="next" HREF="node21.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html473"
+<A NAME="tex2html377"
   HREF="node21.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html469"
-  HREF="node11.html">
+<A NAME="tex2html373"
+  HREF="node19.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html465"
+<A NAME="tex2html367"
   HREF="node19.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html471"
+<A NAME="tex2html375"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html474"
-  HREF="node21.html">Configuration</A>
-<B> Up:</B> <A NAME="tex2html470"
-  HREF="node11.html">Installation</A>
-<B> Previous:</B> <A NAME="tex2html466"
-  HREF="node19.html">Reporting a unit test</A>
- &nbsp; <B>  <A NAME="tex2html472"
+<B> Next:</B> <A NAME="tex2html378"
+  HREF="node21.html">On-access scanning</A>
+<B> Up:</B> <A NAME="tex2html374"
+  HREF="node19.html">Configuration</A>
+<B> Previous:</B> <A NAME="tex2html368"
+  HREF="node19.html">Configuration</A>
+ &nbsp; <B>  <A NAME="tex2html376"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00049000000000000000">
-Obtain Latest ClamAV anti-virus signature databases</A>
+<H2><A NAME="SECTION00051000000000000000">
+clamd</A>
 </H2>
-    Before you can run ClamAV in daemon mode (clamd), 'clamdscan',
-    or 'clamscan' which is ClamAV's command line virus scanner,
-    you must have ClamAV Virus Database (.cvd) file(s) installed
-    in the appropriate location on your system.  The default
-    location for these database files are /usr/local/share/clamav
-    (in Linux/Unix).
-    
-<BR>
-<BR>
-Here is a listing of currently available ClamAV Virus Database Files:
-    
-<UL>
-<LI>bytecode.cvd        (signatures to detect bytecode in files)
-</LI>
-<LI>main.cvd            (main ClamAV virus database file)
-</LI>
-<LI>daily.cvd           (daily update file for ClamAV virus databases)
-</LI>
-<LI>safebrowsing.cvd    (virus signatures for safe browsing)
-    
-</LI>
-</UL>
-    These files can be downloaded via HTTP from the main ClamAV website
-    or via the 'freshclam' utility on a periodic basis.  Using 'freshclam'
-    is the preferred method of keeping the ClamAV virus database files
-    up to date without manual intervention (see section <A HREF="node26.html#conf:freshclam">4.4</A> for
-    information on how to configure 'freshclam' for automatic updating and section
-    <A HREF="node35.html#sec:freshclam">5.7</A> for additional details on freshclam).
+    Before you start using the daemon you have to edit the configuration file
+    (in other case <code>clamd</code> won't run):
+    <PRE>
+	$ clamd
+	ERROR: Please edit the example config file /etc/clamd.conf.
+</PRE>
+    This shows the location of the default configuration file. The format and
+    options of this file are fully described in the <SPAN  CLASS="textit">clamd.conf(5)</SPAN>
+    manual. The config file is well commented and configuration should be
+    straightforward.
 
 <P>
 <BR><HR>
+<!--Table of Child-Links-->
+<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
+
+<UL CLASS="ChildLinks">
+<LI><A NAME="tex2html379"
+  HREF="node21.html">On-access scanning</A>
+</UL>
+<!--End of Table of Child-Links-->
+<BR><HR>
 <ADDRESS>
-Cisco 2018-02-01
+Cisco 2018-02-28
 </ADDRESS>
 </BODY>
 </HTML>

@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Output format</TITLE>
-<META NAME="description" CONTENT="Output format">
+<TITLE>clamd</TITLE>
+<META NAME="description" CONTENT="clamd">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -19,57 +19,70 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
 <LINK REL="previous" HREF="node36.html">
-<LINK REL="up" HREF="node28.html">
+<LINK REL="up" HREF="node35.html">
 <LINK REL="next" HREF="node38.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html688"
+<A NAME="tex2html586"
   HREF="node38.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html684"
-  HREF="node28.html">
+<A NAME="tex2html582"
+  HREF="node35.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html680"
+<A NAME="tex2html578"
   HREF="node36.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html686"
+<A NAME="tex2html584"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html689"
-  HREF="node38.html">clamscan</A>
-<B> Up:</B> <A NAME="tex2html685"
-  HREF="node28.html">Usage</A>
-<B> Previous:</B> <A NAME="tex2html681"
-  HREF="node36.html">Clamconf</A>
- &nbsp; <B>  <A NAME="tex2html687"
+<B> Next:</B> <A NAME="tex2html587"
+  HREF="node38.html">LibClamAV</A>
+<B> Up:</B> <A NAME="tex2html583"
+  HREF="node35.html">Output format</A>
+<B> Previous:</B> <A NAME="tex2html579"
+  HREF="node36.html">clamscan</A>
+ &nbsp; <B>  <A NAME="tex2html585"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00069000000000000000">
-Output format</A>
-</H2>
+<H3><A NAME="SECTION00069200000000000000">
+clamd</A>
+</H3>
+    The output format of <code>clamd</code> is very similar to <code>clamscan</code>.
+    <PRE>
+	$ telnet localhost 3310
+	Trying 127.0.0.1...
+	Connected to localhost.
+	Escape character is '^]'.
+	SCAN /home/zolw/test
+	/home/zolw/test/clam.exe: ClamAV-Test-File FOUND
+	Connection closed by foreign host.
+</PRE>
+    In the <SPAN  CLASS="textbf">SCAN</SPAN> mode it closes the connection when the first virus
+    is found.
+    <PRE>
+	SCAN /home/zolw/test/clam.zip
+	/home/zolw/test/clam.zip: ClamAV-Test-File FOUND
+</PRE>
+    <SPAN  CLASS="textbf">CONTSCAN</SPAN> and <SPAN  CLASS="textbf">MULTISCAN</SPAN> don't stop scanning in case
+    a virus is found.
+<BR>
+Error messages are printed in the following format:
+    <PRE>
+	SCAN /no/such/file
+	/no/such/file: Can't stat() the file. ERROR
+</PRE>
 
 <P>
 <BR><HR>
-<!--Table of Child-Links-->
-<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
-
-<UL CLASS="ChildLinks">
-<LI><A NAME="tex2html690"
-  HREF="node38.html">clamscan</A>
-<LI><A NAME="tex2html691"
-  HREF="node39.html">clamd</A>
-</UL>
-<!--End of Table of Child-Links-->
-<BR><HR>
 <ADDRESS>
-Cisco 2018-02-01
+Cisco 2018-02-28
 </ADDRESS>
 </BODY>
 </HTML>

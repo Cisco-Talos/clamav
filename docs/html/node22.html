@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>clamd</TITLE>
-<META NAME="description" CONTENT="clamd">
+<TITLE>clamav-milter</TITLE>
+<META NAME="description" CONTENT="clamav-milter">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -18,67 +18,80 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node24.html">
-<LINK REL="previous" HREF="node21.html">
-<LINK REL="up" HREF="node21.html">
+<LINK REL="next" HREF="node23.html">
+<LINK REL="previous" HREF="node20.html">
+<LINK REL="up" HREF="node19.html">
 <LINK REL="next" HREF="node23.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html503"
+<A NAME="tex2html400"
   HREF="node23.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html499"
-  HREF="node21.html">
+<A NAME="tex2html396"
+  HREF="node19.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html493"
+<A NAME="tex2html390"
   HREF="node21.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html501"
+<A NAME="tex2html398"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html504"
-  HREF="node23.html">On-access scanning</A>
-<B> Up:</B> <A NAME="tex2html500"
-  HREF="node21.html">Configuration</A>
-<B> Previous:</B> <A NAME="tex2html494"
-  HREF="node21.html">Configuration</A>
- &nbsp; <B>  <A NAME="tex2html502"
+<B> Next:</B> <A NAME="tex2html401"
+  HREF="node23.html">Testing</A>
+<B> Up:</B> <A NAME="tex2html397"
+  HREF="node19.html">Configuration</A>
+<B> Previous:</B> <A NAME="tex2html391"
+  HREF="node21.html">On-access scanning</A>
+ &nbsp; <B>  <A NAME="tex2html399"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00051000000000000000">
-clamd</A>
+<H2><A NAME="SECTION00052000000000000000"></A><A NAME="sec:clamavmilter"></A>
+<BR>
+clamav-milter
 </H2>
-    Before you start using the daemon you have to edit the configuration file
-    (in other case <code>clamd</code> won't run):
+    ClamAV <SPAN CLASS="MATH"><IMG
+ WIDTH="58" HEIGHT="35" ALIGN="MIDDLE" BORDER="0"
+ SRC="img5.png"
+ ALT="$\ge0.95$"></SPAN> includes a new, redesigned clamav-milter. The most notable
+    difference is that the internal mode has been dropped and now a working
+    clamd companion is required. The second important difference is that now
+    the milter has got its own configuration and log files. 
+    
+<BR>
+<BR>
+To compile ClamAV with the clamav-milter just run <code>./configure</code>
+    <code>--enable-milter</code> and make as usual. In order to use the 
+    '-enable-milter' option with 'configure', your system MUST have the milter 
+    library installed.  If you use the '-enable-milter' option without the 
+    library being installed, you will most likely see output like this during 
+    'configure':
     <PRE>
-	$ clamd
-	ERROR: Please edit the example config file /etc/clamd.conf.
+        checking for libiconv_open in -liconv... no
+        checking for iconv... yes
+        checking whether in_port_t is defined... yes
+        checking for in_addr_t definition... yes
+        checking for mi_stop in -lmilter... no
+        checking for library containing strlcpy... no
+        checking for mi_stop in -lmilter... no
+        configure: error: Cannot find libmilter
 </PRE>
-    This shows the location of the default configuration file. The format and
-    options of this file are fully described in the <SPAN  CLASS="textit">clamd.conf(5)</SPAN>
-    manual. The config file is well commented and configuration should be
-    straightforward.
+    At which point the 'configure' script will stop processing.
+    
+<BR>
+<BR>
+Please consult your MTA's manual on how to connect ClamAV with the milter.
 
 <P>
 <BR><HR>
-<!--Table of Child-Links-->
-<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
-
-<UL CLASS="ChildLinks">
-<LI><A NAME="tex2html505"
-  HREF="node23.html">On-access scanning</A>
-</UL>
-<!--End of Table of Child-Links-->
-<BR><HR>
 <ADDRESS>
-Cisco 2018-02-01
+Cisco 2018-02-28
 </ADDRESS>
 </BODY>
 </HTML>

@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Testing</TITLE>
-<META NAME="description" CONTENT="Testing">
+<TITLE>Closest mirrors</TITLE>
+<META NAME="description" CONTENT="Closest mirrors">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -18,63 +18,65 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node26.html">
 <LINK REL="previous" HREF="node24.html">
-<LINK REL="up" HREF="node21.html">
+<LINK REL="up" HREF="node24.html">
 <LINK REL="next" HREF="node26.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html538"
+<A NAME="tex2html433"
   HREF="node26.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html534"
-  HREF="node21.html">
+<A NAME="tex2html429"
+  HREF="node24.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html528"
+<A NAME="tex2html425"
   HREF="node24.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html536"
+<A NAME="tex2html431"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html539"
-  HREF="node26.html">Setting up auto-updating</A>
-<B> Up:</B> <A NAME="tex2html535"
-  HREF="node21.html">Configuration</A>
-<B> Previous:</B> <A NAME="tex2html529"
-  HREF="node24.html">clamav-milter</A>
- &nbsp; <B>  <A NAME="tex2html537"
+<B> Next:</B> <A NAME="tex2html434"
+  HREF="node26.html">Usage</A>
+<B> Up:</B> <A NAME="tex2html430"
+  HREF="node24.html">Setting up auto-updating</A>
+<B> Previous:</B> <A NAME="tex2html426"
+  HREF="node24.html">Setting up auto-updating</A>
+ &nbsp; <B>  <A NAME="tex2html432"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00053000000000000000">
-Testing</A>
-</H2>
-    Try to scan recursively the source directory:
+<H3><A NAME="SECTION00054100000000000000">
+Closest mirrors</A>
+</H3>
+    The <code>DatabaseMirror</code> directive in the config file specifies the
+    database server <code>freshclam</code> will attempt (up to <code>MaxAttempts</code>
+    times) to download the database from. The default database mirror
+    is <TT><A NAME="tex2html16"
+  HREF="database.clamav.net">database.clamav.net</A></TT> but multiple directives are allowed.
+    In order to download the database from the closest mirror you should  
+    configure <code>freshclam</code> to use <TT><A NAME="tex2html17"
+  HREF="db.xx.clamav.net">db.xx.clamav.net</A></TT> where xx
+    represents your country code. For example, if your server is in "Ascension
+    Island" you should have the following lines included in <code>freshclam.conf</code>:
     <PRE>
-	$ clamscan -r -l scan.txt clamav-x.yz
+	DNSDatabaseInfo current.cvd.clamav.net
+	DatabaseMirror db.ac.clamav.net
+	DatabaseMirror database.clamav.net
 </PRE>
-    It should find some test files in the clamav-x.yz/test directory.
-    The scan result will be saved in the <code>scan.txt</code> log file
-    <A NAME="tex2html16"
-  HREF="footnode.html#foot210"><SUP><SPAN CLASS="arabic">8</SPAN></SUP></A>.
-    To test <code>clamd</code>, start it and use <code>clamdscan</code> (or instead connect
-    directly to its socket and run the SCAN command):
-    <PRE>
-	$ clamdscan -l scan.txt clamav-x.yz
-</PRE>
-    Please note that the scanned files must be accessible by the user running
-    <code>clamd</code> or you will get an error.
-
+    The second entry acts as a fallback in case the connection to the first
+    mirror fails for some reason. The full list of two-letters country codes
+    is available at <TT><A NAME="tex2html18"
+  HREF="http://www.iana.org/cctld/cctld-whois.htm">http://www.iana.org/cctld/cctld-whois.htm</A></TT>
 <P>
 <BR><HR>
 <ADDRESS>
-Cisco 2018-02-01
+Cisco 2018-02-28
 </ADDRESS>
 </BODY>
 </HTML>

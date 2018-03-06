@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Using the system LLVM</TITLE>
-<META NAME="description" CONTENT="Using the system LLVM">
+<TITLE>Reporting a unit test failure bug</TITLE>
+<META NAME="description" CONTENT="Reporting a unit test failure bug">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -20,64 +20,83 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="next" HREF="node18.html">
 <LINK REL="previous" HREF="node16.html">
-<LINK REL="up" HREF="node11.html">
+<LINK REL="up" HREF="node9.html">
 <LINK REL="next" HREF="node18.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html439"
+<A NAME="tex2html337"
   HREF="node18.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html435"
-  HREF="node11.html">
+<A NAME="tex2html333"
+  HREF="node9.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html429"
+<A NAME="tex2html327"
   HREF="node16.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html437"
+<A NAME="tex2html335"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html440"
-  HREF="node18.html">Running unit tests</A>
-<B> Up:</B> <A NAME="tex2html436"
-  HREF="node11.html">Installation</A>
-<B> Previous:</B> <A NAME="tex2html430"
-  HREF="node16.html">Compilation with clamav-milter enabled</A>
- &nbsp; <B>  <A NAME="tex2html438"
+<B> Next:</B> <A NAME="tex2html338"
+  HREF="node18.html">Obtain Latest ClamAV anti-virus</A>
+<B> Up:</B> <A NAME="tex2html334"
+  HREF="node9.html">Installation</A>
+<B> Previous:</B> <A NAME="tex2html328"
+  HREF="node16.html">Running unit tests</A>
+ &nbsp; <B>  <A NAME="tex2html336"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00046000000000000000">
-Using the system LLVM</A>
+<H2><A NAME="SECTION00048000000000000000">
+Reporting a unit test failure bug</A>
 </H2>
-    Some problems have been reported when compiling ClamAV's built-in LLVM with recent
-    C++ compiler releases. These problems may be avoided by installing and using
-    an external LLVM system library. To configure ClamAV to use LLVM that is installed
-    as a system library instead of the built-in LLVM JIT, use following: 
-    <PRE>
-	$ ./configure --with-system-llvm=/myllvm/bin/llvm-config
-	$ make
-	$ sudo make install
+	If <code>make check</code> says that some tests failed we encourage you to report a bug on our bugzilla: <TT><A NAME="tex2html13"
+  HREF="http://bugs.clamav.net">http://bugs.clamav.net</A></TT>.
+	The information we need is (see also <TT><A NAME="tex2html14"
+  HREF="http://www.clamav.net/documentation.html#ins-bugs">http://www.clamav.net/documentation.html#ins-bugs</A></TT>):
+	
+<UL>
+<LI>The exact output from <code>make check</code>	 
+</LI>
+<LI>Output of <code>uname -mrsp</code> 
+</LI>
+<LI>your <code>config.log</code>	 
+</LI>
+<LI>The following files from the <code>unit_tests/</code> directory:
+		
+<UL>
+<LI><code>test.log</code>
+</LI>
+<LI><code>clamscan.log</code>
+</LI>
+<LI><code>clamdscan.log</code>
+		
+</LI>
+</UL>
+</LI>
+<LI><code>/tmp/clamd-test.log</code> if it exists
+</LI>
+<LI>where and how you installed the check package
+</LI>
+<LI>Output of <code>pkg-config check --cflags --libs</code>
+</LI>
+<LI>Optionally if <code>valgrind</code> is available on your platform, the output of the following:
+	 <PRE>
+$ make check
+$ CK_FORK=no ./libtool --mode=execute valgrind unit_tests/check_clamav
 </PRE>
-    The argument to <code>--with-system-llvm</code> is optional, indicating the path name of
-    the LLVM configuration utility (llvm-config). With no argument to <code>--with-system-llvm</code>,
-    <code>./configure</code> will search for LLVM in /usr/local/ and then /usr.
-    
-<BR>
-<BR>
-Recommended versions of LLVM are 3.2, 3.3, 3.4, 3.5, and 3.6. Some installations have
-    reported problems using earlier LLVM versions. Versions of LLVM beyond 3.6 are not
-    currently supported in ClamAV.
+</LI>
+</UL>
 
 <P>
 <BR><HR>
 <ADDRESS>
-Cisco 2018-02-01
+Cisco 2018-02-28
 </ADDRESS>
 </BODY>
 </HTML>

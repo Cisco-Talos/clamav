@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Forking daemons</TITLE>
-<META NAME="description" CONTENT="Forking daemons">
+<TITLE>Example</TITLE>
+<META NAME="description" CONTENT="Example">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -18,53 +18,53 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node60.html">
 <LINK REL="previous" HREF="node58.html">
-<LINK REL="up" HREF="node49.html">
+<LINK REL="up" HREF="node47.html">
 <LINK REL="next" HREF="node60.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html994"
+<A NAME="tex2html886"
   HREF="node60.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html990"
-  HREF="node49.html">
+<A NAME="tex2html882"
+  HREF="node47.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html984"
+<A NAME="tex2html878"
   HREF="node58.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html992"
+<A NAME="tex2html884"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html995"
-  HREF="node60.html">clamav-config</A>
-<B> Up:</B> <A NAME="tex2html991"
-  HREF="node49.html">API</A>
-<B> Previous:</B> <A NAME="tex2html985"
-  HREF="node58.html">Memory</A>
- &nbsp; <B>  <A NAME="tex2html993"
+<B> Next:</B> <A NAME="tex2html887"
+  HREF="node60.html">CVD format</A>
+<B> Up:</B> <A NAME="tex2html883"
+  HREF="node47.html">API</A>
+<B> Previous:</B> <A NAME="tex2html879"
+  HREF="node58.html">clamav-config</A>
+ &nbsp; <B>  <A NAME="tex2html885"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION000731000000000000000">
-Forking daemons</A>
+<H3><A NAME="SECTION000731200000000000000">
+Example</A>
 </H3>
-    If you're using libclamav with a forking daemon you should call
-    <code>srand()</code> inside a forked child before making any calls to the
-    libclamav functions. This will avoid possible collisions with temporary
-    filenames created by other processes of the daemon. This procedure
-    is not required for multi-threaded daemons.
+    You will find an example scanner application in the clamav source
+    package (/example). Provided you have ClamAV already installed, execute
+    the following to compile it:
+    <PRE>
+	gcc -Wall ex1.c -o ex1 -lclamav
+</PRE>
 
 <P>
 <BR><HR>
 <ADDRESS>
-Cisco 2018-02-01
+Cisco 2018-02-28
 </ADDRESS>
 </BODY>
 </HTML>
