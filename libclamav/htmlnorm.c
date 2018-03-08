@@ -1852,7 +1852,7 @@ int html_normalise_map(fmap_t *map, const char *dirname, tag_arguments_t *hrefs,
 int html_screnc_decode(fmap_t *map, const char *dirname)
 {
 	int count, retval=FALSE;
-	unsigned char *line, tmpstr[6];
+	unsigned char *line = NULL, tmpstr[6];
 	unsigned char *ptr, filename[1024];
 	int ofd;
 	struct screnc_state screnc_state;
@@ -1877,7 +1877,8 @@ int html_screnc_decode(fmap_t *map, const char *dirname)
 			break;
 		}
 		free(line);
-        }
+		line = NULL;
+	}
 	if (!line) {
 		goto abort;
 	}
@@ -1914,6 +1915,7 @@ int html_screnc_decode(fmap_t *map, const char *dirname)
 		screnc_decode(ptr, &screnc_state);
 		cli_writen(ofd, ptr, strlen((const char*)ptr));
 		free(line);
+		line = NULL;
 		if (screnc_state.length) {
 			ptr = line = cli_readchunk(NULL, &m_area, 8192);
 		}
@@ -1925,5 +1927,8 @@ int html_screnc_decode(fmap_t *map, const char *dirname)
 
 abort:
 	close(ofd);
+	if (line) {
+		free(line);
+	}
 	return retval;
 }
