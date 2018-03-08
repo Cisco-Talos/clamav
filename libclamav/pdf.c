@@ -1556,20 +1556,27 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
         if (objstate == STATE_LAUNCHACTION)
             pdfobj_flag(pdf, obj, HAS_LAUNCHACTION);
         if (dict_length > 0 && (objstate == STATE_JAVASCRIPT || objstate == STATE_OPENACTION || objstate == STATE_CONTENTS)) {
+            off_t dict_remaining = dict_length;
+
             if (objstate == STATE_OPENACTION)
                 pdfobj_flag(pdf, obj, HAS_OPENACTION);
 
-            q2 = pdf_nextobject(q, dict_length);
+            q2 = pdf_nextobject(q, dict_remaining);
             if (q2 && isdigit(*q2)) {
+                const char * q2_old = NULL;
+                dict_remaining -= (off_t)(q2 - q);
+
                 uint32_t objid = atoi(q2) << 8;
                 while (isdigit(*q2))
                     q2++;
 
-                q2 = pdf_nextobject(q2, dict_length);
+                q2_old = q2;
+                q2 = pdf_nextobject(q2, dict_remaining);
                 if (q2 && isdigit(*q2)) {
+                    dict_remaining -= (off_t)(q2 - q2_old);
                     objid |= atoi(q2) & 0xff;
-                    q2 = pdf_nextobject(q2, dict_length);
 
+                    q2 = pdf_nextobject(q2, dict_remaining);
                     if (q2 && *q2 == 'R') {
                         struct pdf_obj *obj2;
 
