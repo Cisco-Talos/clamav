@@ -2254,7 +2254,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     off_t versize = size > 1032 ? 1032 : size;
     off_t map_off, bytesleft;
     long xref;
-    const char *pdfver, *start, *eofmap, *q, *eof;
+    const char *pdfver, *tmp, *start, *eofmap, *q, *eof;
     int rc, badobjects = 0;
     unsigned i, alerts = 0;
 #if HAVE_JSON
@@ -2282,14 +2282,21 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 #endif
 
     /* offset is 0 when coming from filetype2 */
-    pdfver = cli_memstr(pdfver, versize, "%PDF-", 5);
-    if (!pdfver) {
+    tmp = cli_memstr(pdfver, versize, "%PDF-", 5);
+    if (!tmp) {
         cli_dbgmsg("cli_pdf: no PDF- header found\n");
         noisy_warnmsg("cli_pdf: no PDF- header found\n");
 #if HAVE_JSON
         pdf_export_json(&pdf);
 #endif
         return CL_SUCCESS;
+    }
+
+    versize -= tmp - pdfver;
+    pdfver = tmp;
+
+    if (versize < 8) {
+        return CL_EFORMAT;
     }
 
     /* Check for PDF-1.[0-9]. Although 1.7 is highest now, allow for future versions */
