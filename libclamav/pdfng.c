@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2014, 2017 Cisco and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2014, 2017-2018 Cisco and/or its affiliates. All rights reserved.
  *
  *  Author: Shawn Webb
  *
@@ -590,7 +590,7 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
 
     /* Make a best effort to find the end of the string and determine if UTF-* */
     p2 = ++p1;
-    checklen = cli_strnlen(p1, objsize - 1) + 1;
+    checklen = cli_strnlen(p1, objsize - (size_t)(p1 - oobj)) + 1;
 
     while (p2 < objstart + checklen) {
         int shouldbreak=0;
