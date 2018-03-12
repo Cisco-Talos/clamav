@@ -27,6 +27,12 @@
         }
         "Entry"
         {
+        "MsmKey" = "8:_12BC851BCD7ED0B5DE2452E089FE060E"
+        "OwnerKey" = "8:_5F49C9D74EC64A6DB334CAD85B00B844"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
         "MsmKey" = "8:_16125625C5AD4097ABC5161C62CAD8D9"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
@@ -57,14 +63,32 @@
         }
         "Entry"
         {
+        "MsmKey" = "8:_3AE0483642CAE89AB530A3BFAD1FE237"
+        "OwnerKey" = "8:_5F49C9D74EC64A6DB334CAD85B00B844"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
         "MsmKey" = "8:_3D8905CACB1B4C45B76D8C27DA8AB71F"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
+        "MsmKey" = "8:_3E4EE76708E96AEA25AB1F603BB4261C"
+        "OwnerKey" = "8:_5F49C9D74EC64A6DB334CAD85B00B844"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
         "MsmKey" = "8:_49EB8577CD164925A62E7C391F0E755D"
         "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_4BB75676FC79A4DAD9AF3A1136169FBF"
+        "OwnerKey" = "8:_5F49C9D74EC64A6DB334CAD85B00B844"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
@@ -117,8 +141,26 @@
         }
         "Entry"
         {
+        "MsmKey" = "8:_9C58F4CAFC224C04A16EB53D06C4C24E"
+        "OwnerKey" = "8:_5F49C9D74EC64A6DB334CAD85B00B844"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
         "MsmKey" = "8:_AB2127663D62467FA1B487FCD4452698"
         "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_B21E3A9D494A2A59B0B84B8229DF4DD0"
+        "OwnerKey" = "8:_5F49C9D74EC64A6DB334CAD85B00B844"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_B48212E67D69DD27401FB655EA77FA60"
+        "OwnerKey" = "8:_5F49C9D74EC64A6DB334CAD85B00B844"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
@@ -188,6 +230,14 @@
             "PrerequisitesLocation" = "2:1"
             "Url" = "8:"
             "ComponentsUrl" = "8:"
+                "Items"
+                {
+                    "{EDC2488A-8267-493A-A98E-7D9C3B36CDF3}:.NETFramework,Version=v4.5"
+                    {
+                    "Name" = "8:Microsoft .NET Framework 4.5 (x86 and x64)"
+                    "ProductCode" = "8:.NETFramework,Version=v4.5"
+                    }
+                }
             }
         }
         "Release"
@@ -218,6 +268,11 @@
                     {
                     "Name" = "8:Microsoft .NET Framework 4.5 (x86 and x64)"
                     "ProductCode" = "8:.NETFramework,Version=v4.5"
+                    }
+                    "{EDC2488A-8267-493A-A98E-7D9C3B36CDF3}:Microsoft.Visual.C++.14.0.x86"
+                    {
+                    "Name" = "8:Visual C++ \"14\" Runtime Libraries (x86)"
+                    "ProductCode" = "8:Microsoft.Visual.C++.14.0.x86"
                     }
                 }
             }
@@ -282,6 +337,26 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_12BC851BCD7ED0B5DE2452E089FE060E"
+            {
+            "SourcePath" = "8:LLVMcodegen.lib"
+            "TargetName" = "8:LLVMcodegen.lib"
+            "Tag" = "8:"
+            "Folder" = "8:_008B7C8409804955AA838A24FDF47F97"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:TRUE"
+            "IsolateTo" = "8:"
+            }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_16125625C5AD4097ABC5161C62CAD8D9"
             {
             "SourcePath" = "8:..\\..\\COPYING.YARA"
@@ -342,6 +417,26 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_3AE0483642CAE89AB530A3BFAD1FE237"
+            {
+            "SourcePath" = "8:LLVMsystem.lib"
+            "TargetName" = "8:LLVMsystem.lib"
+            "Tag" = "8:"
+            "Folder" = "8:_008B7C8409804955AA838A24FDF47F97"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:TRUE"
+            "IsolateTo" = "8:"
+            }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_3D8905CACB1B4C45B76D8C27DA8AB71F"
             {
             "SourcePath" = "8:..\\conf_examples\\clamd.conf.sample"
@@ -362,6 +457,26 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_3E4EE76708E96AEA25AB1F603BB4261C"
+            {
+            "SourcePath" = "8:libclamavcxx.lib"
+            "TargetName" = "8:libclamavcxx.lib"
+            "Tag" = "8:"
+            "Folder" = "8:_008B7C8409804955AA838A24FDF47F97"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:TRUE"
+            "IsolateTo" = "8:"
+            }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_49EB8577CD164925A62E7C391F0E755D"
             {
             "SourcePath" = "8:..\\..\\COPYING.lzma"
@@ -380,6 +495,26 @@
             "Register" = "3:1"
             "Exclude" = "11:FALSE"
             "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_4BB75676FC79A4DAD9AF3A1136169FBF"
+            {
+            "SourcePath" = "8:libclamav.dll"
+            "TargetName" = "8:libclamav.dll"
+            "Tag" = "8:"
+            "Folder" = "8:_008B7C8409804955AA838A24FDF47F97"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:TRUE"
             "IsolateTo" = "8:"
             }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_555A18D4E1A14F0B86F24C668B83C1D3"
@@ -440,6 +575,46 @@
             "Register" = "3:1"
             "Exclude" = "11:FALSE"
             "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_B21E3A9D494A2A59B0B84B8229DF4DD0"
+            {
+            "SourcePath" = "8:LLVMx86codegen.lib"
+            "TargetName" = "8:LLVMx86codegen.lib"
+            "Tag" = "8:"
+            "Folder" = "8:_008B7C8409804955AA838A24FDF47F97"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:TRUE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_B48212E67D69DD27401FB655EA77FA60"
+            {
+            "SourcePath" = "8:LLVMjit.lib"
+            "TargetName" = "8:LLVMjit.lib"
+            "Tag" = "8:"
+            "Folder" = "8:_008B7C8409804955AA838A24FDF47F97"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:TRUE"
             "IsolateTo" = "8:"
             }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_C679644CB15A4F7B8B3C4FF17F634993"
@@ -589,8 +764,8 @@
         {
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:ClamAV"
-        "ProductCode" = "8:{5C41A9CD-E72D-4A18-AE7D-45CDA897B967}"
-        "PackageCode" = "8:{A0CF509B-0E11-4E91-8A36-287539A4B6E6}"
+        "ProductCode" = "8:{60806B56-966E-462B-9570-D670279C9386}"
+        "PackageCode" = "8:{B4011E1A-14B2-4BE5-A6DE-17C05C7F44A8}"
         "UpgradeCode" = "8:{8C7E41DE-9820-4B16-9949-43B1B267AC37}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"
@@ -1106,6 +1281,20 @@
         }
         "MergeModule"
         {
+            "{CEE29DC0-9FBA-4B99-8D47-5BC643D9B626}:_9C58F4CAFC224C04A16EB53D06C4C24E"
+            {
+            "UseDynamicProperties" = "11:TRUE"
+            "IsDependency" = "11:TRUE"
+            "SourcePath" = "8:microsoft_vc140_crt_x86.msm"
+                "Properties"
+                {
+                }
+            "LanguageId" = "3:0"
+            "Exclude" = "11:FALSE"
+            "Folder" = "8:"
+            "Feature" = "8:"
+            "IsolateTo" = "8:"
+            }
         }
         "ProjectOutput"
         {
