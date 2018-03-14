@@ -384,6 +384,12 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
     uint32_t objid;
     size_t i;
 
+    if (objsize > (size_t)(pdf->size - (objstart - pdf->map))) {
+        /* Possible attempt to exploit bb11980 */
+        cli_dbgmsg("Malformed PDF: Alleged size of obj in PDF would extend further than the PDF data.\n");
+        return NULL;
+    }
+
     /*
      * Yes, all of this is required to find the start and end of a potentially UTF-* string
      *
@@ -590,9 +596,8 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
 
     /* Make a best effort to find the end of the string and determine if UTF-* */
     p2 = ++p1;
-    checklen = cli_strnlen(p1, objsize - (size_t)(p1 - oobj)) + 1;
 
-    while (p2 < objstart + checklen) {
+    while (p2 < objstart + objsize) {
         int shouldbreak=0;
 
         switch (*p2) {
@@ -612,7 +617,7 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
         p2++;
     }
 
-    if (p2 >= objstart + checklen)
+    if (p2 >= objstart + objsize)
         return NULL;
 
     len = (size_t)(p2 - p1) + 1;
