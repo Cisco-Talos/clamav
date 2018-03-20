@@ -259,6 +259,12 @@ int main(int argc, char *argv[])
     else
         curl_easy_setopt(clam_curl, CURLOPT_URL, "http://www.clamav.net/presigned?type=fp");
     curl_easy_setopt(clam_curl, CURLOPT_HTTPGET, 1);
+
+    if (NULL == hd_malware.cfduid || NULL == hd_malware.session) {
+        fprintf (stderr, "invalid cfduid and/or session id values provided by clamav.net/presigned. Unable to continue submission.");
+        exit(1);
+    }
+
     len = strlen(hd_malware.cfduid) + strlen(hd_malware.session) + 3;
     str = malloc(len);
     if (str == NULL) {
@@ -371,13 +377,13 @@ int main(int argc, char *argv[])
 
     /*** The POST submit to clamav.net ***/
     slist = curl_slist_append(slist, "Expect:");
-    len = strlen(hd_malware.cfduid) + strlen(hd_presigned.session) + 3;
+    len = strlen(hd_malware.cfduid) + strlen(hd_malware.session) + 3;
     str = malloc(len);
     if (str == NULL) {
         fprintf(stderr, "No memory for POST submit cookies.\n");
         exit(1);
     }
-    if (snprintf(str, len, "%s; %s;", hd_malware.cfduid, hd_presigned.session) > len) {
+    if (snprintf(str, len, "%s; %s;", hd_malware.cfduid, hd_malware.session) > len) {
         fprintf(stderr, "snprintf() failed formatting POST submit cookies\n");
         exit(1);
     }
