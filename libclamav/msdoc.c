@@ -892,7 +892,7 @@ int cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
         return CL_ENULLARG; /* placeholder */
     }
 
-    if (mode < 0 && mode > 2) {
+    if (mode < 0 || mode > 2) {
         cli_dbgmsg("ole2_summary_json: invalid mode specified\n");
         return CL_ENULLARG; /* placeholder */
     }
