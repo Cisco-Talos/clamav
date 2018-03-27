@@ -30,7 +30,7 @@ void *rar_malloc(size_t size)
 
 
     if(!size || size > RAR_MAX_ALLOCATION) {
-	rar_dbgmsg("UNRAR: rar_malloc(): Attempt to allocate %lu bytes. Please report to http://bugs.clamav.net\n", size);
+	rar_dbgmsg("UNRAR: rar_malloc(): Attempt to allocate %lu bytes. Please report to https://bugzilla.clamav.net\n", size);
 	return NULL;
     }
 
@@ -48,7 +48,7 @@ void *rar_realloc2(void *ptr, size_t size)
 
 
     if(!size || size > RAR_MAX_ALLOCATION) {
-	rar_dbgmsg("UNRAR: rar_realloc2(): Attempt to allocate %lu bytes. Please report to http://bugs.clamav.net\n", size);
+	rar_dbgmsg("UNRAR: rar_realloc2(): Attempt to allocate %lu bytes. Please report to https://bugzilla.clamav.net\n", size);
 	return NULL;
     }
 

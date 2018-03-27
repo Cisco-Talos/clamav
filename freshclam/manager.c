@@ -1991,7 +1991,7 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
             logg ("^Current functionality level = %d, recommended = %d\n",
                   flevel, current->fl);
             logg ("Please check if ClamAV tools are linked against the proper version of libclamav\n");
-            logg ("DON'T PANIC! Read http://www.clamav.net/doc/install.html\n");
+            logg ("DON'T PANIC! Read https://www.clamav.net/documents/installing-clamav\n");
         }
 
         *signo += current->sigs;
@@ -2242,7 +2242,7 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
         logg ("^Your ClamAV installation is OUTDATED!\n");
         logg ("^Current functionality level = %d, recommended = %d\n", flevel,
               current->fl);
-        logg ("DON'T PANIC! Read http://www.clamav.net/documents/upgrading-clamav\n");
+        logg ("DON'T PANIC! Read https://www.clamav.net/documents/installing-clamav\n");
 
     }
 
@@ -2577,7 +2577,7 @@ downloadmanager (const struct optstruct *opts, const char *hostname,
                         {
                             logg ("^Your ClamAV installation is OUTDATED!\n");
                             logg ("^Local version: %s Recommended version: %s\n", vstr, newver);
-                            logg ("DON'T PANIC! Read http://www.clamav.net/documents/upgrading-clamav\n");
+                            logg ("DON'T PANIC! Read https://www.clamav.net/documents/upgrading-clamav\n");
                             outdated = 1;
                         }
                     }

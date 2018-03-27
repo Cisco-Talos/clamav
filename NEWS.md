@@ -537,7 +537,7 @@ There are also fixes for other minor issues and code quality changes. Please
 see the ChangeLog file for details.
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 0.97.8
 ----
@@ -595,7 +595,7 @@ This is a bugfix release recommended for all users. Please refer to the
 ChangeLog file for details.
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 
 0.97
@@ -616,11 +616,11 @@ the full power of the LibClamAV engine, all the ClamAV signatures,
 and creation of custom signatures on any platform running Immunet 3.0,
 powered by ClamAV. If you run Windows systems in your environment and
 need an AV solution to protect them, give Immunet 3.0, powered by ClamAV
-a try; you can download it from http://www.clamav.net/download.html#otherversions 
+a try; you can download it from https://www.clamav.net/download.html#otherversions 
 
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 
 0.96.5
@@ -632,7 +632,7 @@ and support for custom database URLs in freshclam. Please refer to the
 ChangeLog for details.
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 
 0.96.4
@@ -641,7 +641,7 @@ The ClamAV team (http://www.clamav.net/about.html#credits)
 ClamAV 0.96.4 is a bugfix release recommended for all users.
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 0.96.3
 ------
@@ -650,7 +650,7 @@ This release fixes problems with the PDF parser and the internal bzip2
 library. A complete list of changes is available in the Changelog file.
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 0.96.2
 ------
@@ -666,7 +666,7 @@ This is a bugfix release, please refer to the ChangeLog for the complete
 list of changes.
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 0.96
 ----
@@ -707,7 +707,7 @@ The complete list of changes is available in the ChangeLog file. For upgrade
 notes and tips please see: https://wiki.clamav.net/Main/UpgradeNotes096
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 0.95.3
 ------
@@ -717,7 +717,7 @@ Please refer to the ChangeLog included in the source distribution
 for the list of changes.
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 0.95.2
 ------
@@ -727,7 +727,7 @@ in clamscan and clamdscan, and fixes various issues found in previous
 releases.
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 0.95.1
 ------
@@ -735,7 +735,7 @@ The ClamAV team (http://www.clamav.net/about.html#credits)
 This is a bugfix release only, please see the ChangeLog for details.
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 0.95
 ----
@@ -753,7 +753,7 @@ The following are the key features of this release:
       phishing and malware sites. The ClamAV Project distributes a constantly
       updated Safe Browsing database, which can be automatically fetched by
       freshclam. For more information, please see freshclam.conf(5) and
-      http://safebrowsing.clamav.net.
+      https://www.clamav.net/documents/safebrowsing.
 
     - New clamav-milter: The program has been redesigned and rewritten from
       scratch. The most notable difference is that the internal mode has been
@@ -793,7 +793,7 @@ The following are the key features of this release:
       the details.
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 
 0.94.2
@@ -803,7 +803,7 @@ This is a bugfix release, please refer to the ChangeLog for a complete
 list of changes.
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 
 0.94.1
@@ -822,7 +822,7 @@ For more details, please refer to the ChangeLog
 
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 
 0.94
@@ -873,7 +873,7 @@ You may need to run 'ldconfig' after installing this version.
 ** ClamAV behaviour.
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 
 0.93.3
@@ -882,7 +882,7 @@ The ClamAV team (http://www.clamav.net/about.html#credits)
 This release fixes a problem in handling of .cld files introduced in 0.93.2.
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 0.93.2
 ------
@@ -898,7 +898,7 @@ This version improves handling of PDF, CAB, RTF, OLE2 and HTML files
 and includes various bugfixes for 0.93 issues.
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 
 0.93
@@ -941,7 +941,7 @@ Most important changes include:
       remove them manually from your database directory
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 
 0.92.1
@@ -951,7 +951,7 @@ This is a bugfix release, please refer to the ChangeLog for a complete
 list of changes.
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 
 0.92
@@ -965,7 +965,7 @@ To get a consistent behaviour of the anti-phishing module on all platforms,
 libclamav now includes the regex library from OpenBSD.
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 
 0.91.2
@@ -1005,7 +1005,7 @@ the advancement of ClamAV and the CVD as employees of Sourcefire. Both the
 ClamAV engine and the signature database will remain under GPL.
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 
 0.91.1
@@ -1014,7 +1014,7 @@ The ClamAV team (http://www.clamav.net/about.html#credits)
 This release fixes stability and other issues of 0.91.
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 
 0.91
@@ -1040,7 +1040,7 @@ Other important changes and add-ons in this version include:
     - many other improvements and bugfixes
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 
 0.90.3
@@ -1054,7 +1054,7 @@ consider installing 0.91rc1 which is due to be released shortly
 after 0.90.3.
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 
 0.90.2
@@ -1063,7 +1063,7 @@ The ClamAV team (http://www.clamav.net/about.html#credits)
 This release fixes many problems in libclamav and freshclam.
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 0.90.1
 ------
@@ -1074,7 +1074,7 @@ see ChangeLog for complete list of changes.
 ** Important note **: please run 'ldconfig' after installing this version.
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 
 0.90
@@ -1104,7 +1104,7 @@ parts are not compiled in by default because they are not ready for production
 systems yet. You are encouraged to pass the --enable-experimental flag to
 ./configure when compiling ClamAV. The experimental code introduces many
 improvements in terms of detection rate and performances. If you find a bug,
-please take some time to report it on our bugzilla: http://bugs.clamav.net.
+please take some time to report it on our bugzilla: https://bugzilla.clamav.net.
 Your help in testing the new code is really appreciated. The experimental code
 introduces many improvements in terms of detection rate and performances. 
 
@@ -1123,7 +1123,7 @@ comparing the real site with the URL displayed to the user in the message.
 On the performance side, support for the MULTISCAN command has been 
 implemented in clamd, allowing to scan multiple files simultaneously.
 Support for Sensory Networks' NodalCore acceleration technology
-(http://www.clamav.net/nodalcore/) is now available in ClamAV and will be
+(https://www.clamav.net/nodalcore/) is now available in ClamAV and will be
 compiled in if the ncore libraries are detected at compile time. NodalCore
 acceleration allows highly improved scan speeds on systems equipped with
 NodalCore cards.
@@ -1219,10 +1219,10 @@ We are happy to announce new interesting software with support for ClamAV:
   + mod_streamav - a ClamAV based antivirus filter for Apache 2
   + pyClamd - a python interface to Clamd
 
-More information at http://www.clamav.net/download.html#tools 
+More information at https://www.clamav.net/download.html#tools 
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 
 0.88.7
@@ -1231,7 +1231,7 @@ The ClamAV team (http://www.clamav.net/about.html#credits)
 This version improves scanning of mail and tar files.
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 
 0.88.6
@@ -1244,7 +1244,7 @@ The ClamAV developers encourage all users to give a try to the latest
 beta version of 0.90!
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 
 0.88.5
@@ -1254,7 +1254,7 @@ This version fixes a crash in the CHM unpacker and a heap overflow in the
 function rebuilding PE files after unpacking.
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 
 0.88.4
@@ -1263,7 +1263,7 @@ The ClamAV team (http://www.clamav.net/about.html#credits)
 This release fixes a possible heap overflow in the UPX code.
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 0.88.3
 ------
@@ -1272,7 +1272,7 @@ This version fixes handling of large binhex files and multiple alternatives in
 virus signatures.
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 
 0.88.2
@@ -1288,7 +1288,7 @@ together with detailed information about security bugs it fixes.
 
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 
 0.88.1
@@ -1298,7 +1298,7 @@ This version fixes a number of minor bugs and provides code updates
 to improve virus detection.
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 
 0.88
@@ -1309,7 +1309,7 @@ include better zip and mail processing, and support for a self-protection mode.
 The security of the UPX, FSG and Petite modules has been improved, too.
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 0.87.1
 ------
@@ -1318,7 +1318,7 @@ This release includes major bugfixes for problems with handling TNEF
 attachments, cabinet files and FSG compressed executables.
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 0.87
 ----
@@ -1329,7 +1329,7 @@ and other small bugfixes have been made. The new option "--on-outdated-execute"
 allows freshclam to run a command when system reports a new engine version.
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 
 0.86.2
@@ -1340,7 +1340,7 @@ in libclamav, improved scanning of Cabinet and FSG compressed files, better
 database handling in clamav-milter, and others.
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 0.86.1
 ------
@@ -1348,7 +1348,7 @@ The ClamAV team (http://www.clamav.net/about.html#credits)
 A possible crash in the libmspack's Quantum decompressor has been fixed.
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 0.86
 ----
@@ -1358,7 +1358,7 @@ leaks in archive unpackers and mishandling of fast track uuencoded files have
 been fixed in libclamav. Database reloading in clamav-milter has been improved.
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 0.85.1
 ------
@@ -1368,7 +1368,7 @@ one or more of which was empty, could crash libclamav has been fixed. Other
 minor bugfixes have been made.
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 0.85
 ----
@@ -1377,7 +1377,7 @@ Bugfixes in this release include correct signature offset calculation in large
 files, proper handling of encrypted zip archives, and others.
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 0.84
 ----
@@ -1458,7 +1458,7 @@ volunteered to design the whole line of products, including:
 By purchasing our merchandise, you contribute to the development of ClamAV.
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 
 0.83
@@ -1469,7 +1469,7 @@ exploit detector now only checks specific RIFF files. This version also fixes
 a stability problem of clamav-milter/clamd and improves e-mail scanning.
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 0.82
 ----
@@ -1482,7 +1482,7 @@ warning on non-standard zip archives created by ICEOWS, better proxy support
 in freshclam, and speed improvements.
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 
 0.81
@@ -1579,7 +1579,7 @@ Important note to clamdwatch users: please upgrade to the latest version
     + WRAVLib - a library for a-v integration with Mono/.NET applications
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 
 0.80
@@ -1588,7 +1588,7 @@ The ClamAV team (http://www.clamav.net/about.html#credits)
 Stable version. Please read the release notes for the candidate versions below.
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 
 0.80rc4
@@ -1599,7 +1599,7 @@ faster base64 decoding, support for GNU tar files, updated on-access scanner,
 and others.
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 0.80rc3
 -------
@@ -1746,7 +1746,7 @@ project. Visit http://www.sourcewear.com and click on ClamAV logo!
 
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 0.75
 ----
@@ -1775,7 +1775,7 @@ CAB, CHM, UPX, HTML (normalisation), PowerPoint macros and can detect
 annoying e-mails with empty attachments generated by new Bagle variants.
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 0.74
 ----
@@ -1802,7 +1802,7 @@ and join the clamav-jp-users mailing list.
 
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 
 0.73
@@ -1814,7 +1814,7 @@ improves mail scanning.
 Thank you for using ClamAV !
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 0.72
 ----
@@ -1825,7 +1825,7 @@ functional since 0.70) was improved and a number of other improvements were
 made.
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 0.71
 ----
@@ -1873,7 +1873,7 @@ the noteworthy changes include:
 
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 
 
 
@@ -1944,7 +1944,7 @@ please help us and test CVS snapshots from time to time.
 
 We are happy to announce new programs with support for ClamAV (all of them
 have been reviewed by our team - more info in the documentation and
-on our website: http://www.clamav.net/download.html#tools):
+on our website: https://www.clamav.net/download.html#tools):
 
     + ClamWin - a GUI for Windows (!)
     + KlamAV - a collection of GUI tools for using ClamAV on KDE
@@ -1967,7 +1967,7 @@ on our website: http://www.clamav.net/download.html#tools):
     + Local Area Security - a Live CD Linux distribution
 
 --
-The ClamAV team (http://www.clamav.net/about.html#credits)
+The ClamAV team (https://www.clamav.net/about.html#credits)
 April 17, 2004
 
 
@@ -2080,10 +2080,9 @@ the highest possible level.
 
 
 New mirroring mechanisms. Luca Gibelli (ClamAV) and mirror administrators
-(22 sites, http://www.clamav.net/documentation.html for
-a complete mirror information) are converting mirrors to new "push mirroring"
+(22 sites) are converting mirrors to new "push mirroring"
 method. It uses advanced techniques to ensure all the mirrors are up to date.
-More info: http://www.clamav.net/documentation.html 
+More info: https://www.clamav.net/documents/introduction 
 
 
 We would like to thank our donors:

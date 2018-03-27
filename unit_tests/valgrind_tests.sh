@@ -53,7 +53,7 @@ parse_valgrindlog()
 		' <$1 | grep -Ev "Thread.+was created" | grep -v "Open"
 	fi
 	echo "***"
-	echo "*** Please submit $1 to http://bugs.clamav.net"
+	echo "*** Please submit $1 to https://bugzilla.clamav.net"
 	echo "***"
 }
 

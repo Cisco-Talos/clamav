@@ -64,7 +64,7 @@ Example
 #DNSDatabaseInfo current.cvd.clamav.net
 
 # Uncomment the following line and replace XY with your country
-# code. See http://www.iana.org/cctld/cctld-whois.htm for the full list.
+# code. See https://www.iana.org/domains/root/db for the full list.
 # You can use db.XY.ipv6.clamav.net for IPv6 connections.
 #DatabaseMirror db.XY.clamav.net
 
@@ -178,8 +178,8 @@ DatabaseMirror database.clamav.net
 # option, it's mandatory to run freshclam at least every 30 minutes.
 # Freshclam uses the ClamAV's mirror infrastructure to distribute the
 # database and its updates but all the contents are provided under Google's
-# terms of use. See http://www.google.com/transparencyreport/safebrowsing
-# and http://www.clamav.net/documentation.html#safebrowsing 
+# terms of use. See https://www.google.com/transparencyreport/safebrowsing
+# and https://www.clamav.net/documents/safebrowsing
 # for more information.
 # Default: disabled
 #SafeBrowsing yes

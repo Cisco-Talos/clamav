@@ -201,7 +201,7 @@ void help(void)
 
     mprintf("\n");
     mprintf("                       Clam AntiVirus: Scanner %s\n", get_version());
-    printf("           By The ClamAV Team: http://www.clamav.net/about.html#credits\n");
+    printf("           By The ClamAV Team: https://www.clamav.net/about.html#credits\n");
     printf("           (C) 2007-2018 Cisco Systems, Inc.\n");
     mprintf("\n");
     mprintf("    clamscan [options] [file/directory/-]\n");

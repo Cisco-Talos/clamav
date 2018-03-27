@@ -500,7 +500,7 @@ int unrar_extract_next(unrar_state_t *state, const char *dirname)
 	    unrar_dbgmsg("UNRAR: Computed File CRC: 0x%x\n", unpack_data->unp_crc^0xffffffff);
 	    if(unpack_data->unp_crc != 0xffffffff) {
 		if(state->file_header->file_crc != (unpack_data->unp_crc^0xffffffff)) {
-		    unrar_dbgmsg("UNRAR: RAR CRC error. If the file is not corrupted, please report at http://bugs.clamav.net/\n");
+		    unrar_dbgmsg("UNRAR: RAR CRC error. If the file is not corrupted, please report at https://bugzilla.clamav.net/\n");
 		}
 	    }
 	    if(!retval) {
