@@ -147,7 +147,7 @@ help (void)
 
     mprintf("\n");
     mprintf("                      Clam AntiVirus: Database Updater %s\n", get_version());
-    mprintf("           By The ClamAV Team: http://www.clamav.net/about.html#credits\n");
+    mprintf("           By The ClamAV Team: https://www.clamav.net/about.html#credits\n");
     mprintf("           (C) 2007-2018 Cisco Systems, Inc.\n");
     mprintf("\n");
     mprintf("    freshclam [options]\n");
@@ -223,7 +223,7 @@ download (const struct optstruct *opts, const char *cfgfile)
                     opt = (struct optstruct *) opt->nextarg;
                     if (!opt)
                     {
-                        logg ("Update failed. Your network may be down or none of the mirrors listed in %s is working. Check http://www.clamav.net/doc/mirrors-faq.html for possible reasons.\n", cfgfile);
+                        logg ("Update failed. Your network may be down or none of the mirrors listed in %s is working. Check https://www.clamav.net/documents/official-mirror-faq for possible reasons.\n", cfgfile);
                     }
                 }
 

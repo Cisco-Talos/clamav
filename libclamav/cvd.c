@@ -671,10 +671,10 @@ int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigne
     }
 
     if(cvd.fl > cl_retflevel()) {
-	cli_warnmsg("***********************************************************\n");
-	cli_warnmsg("***  This version of the ClamAV engine is outdated.     ***\n");
-	cli_warnmsg("***   Read http://www.clamav.net/doc/install.html       ***\n");
-	cli_warnmsg("***********************************************************\n");
+	cli_warnmsg("*******************************************************************\n");
+	cli_warnmsg("***  This version of the ClamAV engine is outdated.             ***\n");
+	cli_warnmsg("***   Read https://www.clamav.net/documents/installing-clamav   ***\n");
+	cli_warnmsg("*******************************************************************\n");
     }
 
     cfd = fileno(fs);

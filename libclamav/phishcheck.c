@@ -63,8 +63,8 @@
 
 
 /*
-* Phishing design documentation,
-(initially written at http://wiki.clamav.net/index.php/phishing_design as discussed with aCaB)
+ * Phishing design documentation
+ * -----------------------------
 
 TODO: update this doc whenever behaviour changes
 

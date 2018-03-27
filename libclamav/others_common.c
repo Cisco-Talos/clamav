@@ -191,7 +191,7 @@ void *cli_malloc(size_t size)
 
 
     if(!size || size > CLI_MAX_ALLOCATION) {
-	cli_errmsg("cli_malloc(): Attempt to allocate %lu bytes. Please report to http://bugs.clamav.net\n", (unsigned long int) size);
+	cli_errmsg("cli_malloc(): Attempt to allocate %lu bytes. Please report to https://bugzilla.clamav.net\n", (unsigned long int) size);
 	return NULL;
     }
 
@@ -211,7 +211,7 @@ void *cli_calloc(size_t nmemb, size_t size)
 
     if(!nmemb || !size || size > CLI_MAX_ALLOCATION || nmemb > CLI_MAX_ALLOCATION
         || (nmemb*size > CLI_MAX_ALLOCATION)) {
-	cli_errmsg("cli_calloc(): Attempt to allocate %lu bytes. Please report to http://bugs.clamav.net\n", (unsigned long int) nmemb*size);
+	cli_errmsg("cli_calloc(): Attempt to allocate %lu bytes. Please report to https://bugzilla.clamav.net\n", (unsigned long int) nmemb*size);
 	return NULL;
     }
 
@@ -230,7 +230,7 @@ void *cli_realloc(void *ptr, size_t size)
 
 
     if(!size || size > CLI_MAX_ALLOCATION) {
-	cli_errmsg("cli_realloc(): Attempt to allocate %lu bytes. Please report to http://bugs.clamav.net\n", (unsigned long int) size);
+	cli_errmsg("cli_realloc(): Attempt to allocate %lu bytes. Please report to https://bugzilla.clamav.net\n", (unsigned long int) size);
 	return NULL;
     }
 
@@ -249,7 +249,7 @@ void *cli_realloc2(void *ptr, size_t size)
 
 
     if(!size || size > CLI_MAX_ALLOCATION) {
-	cli_errmsg("cli_realloc2(): Attempt to allocate %lu bytes. Please report to http://bugs.clamav.net\n", (unsigned long int) size);
+	cli_errmsg("cli_realloc2(): Attempt to allocate %lu bytes. Please report to https://bugzilla.clamav.net\n", (unsigned long int) size);
 	return NULL;
     }
 
@@ -270,7 +270,7 @@ char *cli_strdup(const char *s)
 
 
     if(s == NULL) {
-        cli_errmsg("cli_strdup(): s == NULL. Please report to http://bugs.clamav.net\n");
+        cli_errmsg("cli_strdup(): s == NULL. Please report to https://bugzilla.clamav.net\n");
         return NULL;
     }
 

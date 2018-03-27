@@ -7,7 +7,7 @@ ClamAV® is an open source antivirus engine for detecting trojans, viruses,
 
 The ClamAV documentation can be found in locally in `docs/clamdoc.pdf` with
  additional information online in
-[our FAQ](http://www.clamav.net/documentation.html).
+[our FAQ](https://www.clamav.net/documents).
 
 ## ClamAV Signatures
 
@@ -24,11 +24,11 @@ For basic compile and install instructions, check out `INSTALL.md`.  For more
 ### Install from a binary package
 
 For binary package distribution insallation instructions, head over to
-[our website](http://www.clamav.net/documents/installing-clamav).
+[our website](https://www.clamav.net/documents/installing-clamav).
 
 ### Upgrading from a previous version
 
-Some tips on [how to upgrade](http://www.clamav.net/documents/upgrading-clamav)
+Some tips on [how to upgrade](https://www.clamav.net/documents/upgrading-clamav)
  from a previous version of ClamAV.
 
 ## ClamAV News
@@ -41,7 +41,7 @@ Catch up on the latest about ClamAV by reading our
 ## Join the ClamAV Community
 
 The best way to get in touch with the ClamAV community is to join our
- [our mailing lists](http://www.clamav.net/documents/mailing-lists-faq), and
+ [our mailing lists](https://www.clamav.net/documents/mailing-lists-faq), and
  tune to #clamav on [IRC](irc.freenode.net).
 
 ## Want to make a contribution?
@@ -49,8 +49,8 @@ The best way to get in touch with the ClamAV community is to join our
 The ClamAV development team welcomes
  [code contributions](https://github.com/Cisco-Talos/clamav-devel),
  improvements to [our FAQ](https://github.com/Cisco-Talos/clamav-faq), and also
- [bug reports](http://bugs.clamav.net/). Thanks for joining us!
+ [bug reports](https://bugzilla.clamav.net/). Thanks for joining us!
 
 ## Credits
 
-[The ClamAV Team](http://www.clamav.net/about.html#credits)
+[The ClamAV Team](https://www.clamav.net/about.html#credits)

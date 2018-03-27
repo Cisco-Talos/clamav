@@ -160,7 +160,7 @@ int main(void)
 	return 0;
 }
 ], [AC_MSG_RESULT([ok, bug not present])],
-[AC_MSG_ERROR([your compiler has a bug that causes clamav bug no. 670, use a different compiler, see http://bugs.clamav.net/bugzilla/show_bug.cgi?id=670])], [AC_MSG_RESULT([cross-compiling, assumed ok])])
+[AC_MSG_ERROR([your compiler has a bug that causes clamav bug no. 670, use a different compiler, see https://bugzilla.clamav.net/show_bug.cgi?id=670#c5])], [AC_MSG_RESULT([cross-compiling, assumed ok])])
 
 dnl Check if compiler produces invalid code on gcc PR28045 (affects upx.c)
 dnl testcase from gcc testsuite

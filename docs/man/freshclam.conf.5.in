@@ -99,7 +99,7 @@ Use DNS to verify the virus database version. Freshclam uses DNS TXT records to 
 Default: enabled, pointing to current.cvd.clamav.net
 .TP 
 \fBDatabaseMirror STRING\fR
-DatabaseMirror specifies to which mirror(s) freshclam should connect. You should have at least two entries: db.XY.clamav.net (or db.XY.ipv6.clamav.net for IPv6) and database.clamav.net (in this order). Please replace XY with your country code (see http://www.iana.org/cctld/cctld-whois.htm). database.clamav.net is a round-robin record which points to our most reliable mirrors. It's used as a fall back in case db.XY.clamav.net is not working.
+DatabaseMirror specifies to which mirror(s) freshclam should connect. You should have at least two entries: db.XY.clamav.net (or db.XY.ipv6.clamav.net for IPv6) and database.clamav.net (in this order). Please replace XY with your country code (see https://www.iana.org/domains/root/db). database.clamav.net is a round-robin record which points to our most reliable mirrors. It's used as a fall back in case db.XY.clamav.net is not working.
 .br 
 Default: database.clamav.net
 .TP 
@@ -129,7 +129,7 @@ By default freshclam will keep the local databases (.cld) uncompressed to make t
 Default: no
 .TP
 \fBExtraDatabase STRING\fR
-Download an additional 3rd party signature database distributed through the ClamAV mirrors. This option can be used multiple times. Here you can find a list of available databases: http://www.clamav.net/download/cvd/3rdparty
+Download an additional 3rd party signature database distributed through the ClamAV mirrors. This option can be used multiple times.
 .br
 Default: disabled
 .TP 
@@ -187,7 +187,7 @@ Timeout in seconds when reading from database server.
 Default: 30
 .TP
 \fBSafeBrowsing BOOL\fR
-This option enables support for Google Safe Browsing. When activated for the first time, freshclam will download a new database file (safebrowsing.cvd) which will be automatically loaded by clamd and clamscan during the next reload, provided that the heuristic phishing detection is turned on. This database includes information about websites that may be phishing sites or possible sources of malware. When using this option, it's mandatory to run freshclam at least every 30 minutes. Freshclam uses the ClamAV's mirror infrastructure to distribute the database and its updates but all the contents are provided under Google's terms of use. See http://code.google.com/support/bin/answer.py?answer=70015 and http://safebrowsing.clamav.net for more information.
+This option enables support for Google Safe Browsing. When activated for the first time, freshclam will download a new database file (safebrowsing.cvd) which will be automatically loaded by clamd and clamscan during the next reload, provided that the heuristic phishing detection is turned on. This database includes information about websites that may be phishing sites or possible sources of malware. When using this option, it's mandatory to run freshclam at least every 30 minutes. Freshclam uses the ClamAV's mirror infrastructure to distribute the database and its updates but all the contents are provided under Google's terms of use. See https://support.google.com/code/answer/70015 and https://www.clamav.net/documents/safebrowsing for more information.
 .br
 Default: disabled
 .TP

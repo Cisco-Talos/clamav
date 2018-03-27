@@ -124,7 +124,7 @@ int main(int argc, char **argv) {
     if(optget(opts, "help")->enabled) {
     printf("\n");
     printf("                       Clam AntiVirus: Milter Mail Scanner %s\n", get_version());
-    printf("           By The ClamAV Team: http://www.clamav.net/about.html#credits\n");
+    printf("           By The ClamAV Team: https://www.clamav.net/about.html#credits\n");
     printf("           (C) 2009-2018 Cisco Systems, Inc.\n");
     printf("\n");
 	printf("    %s [-c <config-file>]\n\n", argv[0]);
