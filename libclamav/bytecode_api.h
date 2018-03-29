@@ -107,6 +107,13 @@ enum FunctionalityLevels {
     FUNC_LEVEL_098_5     = 79, /**< LibClamAV release 0.98.5: JSON reading API requires this minimum level */
     FUNC_LEVEL_098_6     = 79, /**< LibClamAV release 0.98.6 */
     FUNC_LEVEL_098_7     = 80, /**< LibClamAV release 0.98.7: BC_PRECLASS bytecodes require minimum level */
+    FUNC_LEVEL_099       = 81, /**< LibClamAV release 0.99, 0.99-beta1(.1-.5), 0.99-beta2 */
+    FUNC_LEVEL_099_1     = 82, /**< LibClamAV release 0.99.1 */
+    FUNC_LEVEL_099_2     = 82, /**< LibClamAV release 0.99.2 */
+    FUNC_LEVEL_099_3     = 84, /**< LibClamAV release 0.99.3 */
+    FUNC_LEVEL_099_4     = 85, /**< LibClamAV release 0.99.4 */
+    FUNC_LEVEL_0100_0_BETA = 90 /**< LibClamAV beta release 0.100.0-beta */
+    FUNC_LEVEL_0100_0    = 91 /**< LibClamAV release 0.100.0, 0.100.0-rc */
     FUNC_LEVEL_100       = 100 /*future release candidate*/
 };
 
