@@ -6,14 +6,13 @@
 
 Table Of Contents
 
-1. [Introduction](Introduction.md)
-2. [Base Package](BasePackage.md)
-3. [Installation](Installation.md)
-4. [Configuration](Configuration.md)
-5. [Usage](Usage.md)
-6. [libclamav](libclamav.md)
-7. [Signatures](Signatures.md)
-8. [PhishSigs](PhishSigs.md)
+1. [Introduction to ClamAV](UserManual/Introduction.md)
+2. [Installing ClamAV](UserManual/Installation.md)
+3. [Configuring ClamAV](UserManual/Configuration.md)
+4. [Using ClamAV](UserManual/Usage.md)
+5. [Build \[lib\]ClamAV Into Your Programs](UserManual/libclamav.md)
+6. [Writing ClamAV Signatures](UserManual/Signatures.md)
+7. [Writing ClamAV Phishing Signatures](UserManual/PhishSigs.md)
 
 -----
 
