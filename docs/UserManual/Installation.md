@@ -1,4 +1,4 @@
-# Installation
+# Installation from Source
 
 ## Requirements
 
@@ -188,3 +188,10 @@ Here is a listing of currently available ClamAV Virus Database Files:
 - safebrowsing.cvd (virus signatures for safe browsing)
 
 These files can be downloaded via HTTP from the main ClamAV website or via the ’freshclam’ utility on a periodic basis. Using ’freshclam’ is the preferred method of keeping the ClamAV virus database files up to date without manual intervention (see the [freshclam configuration](Configuration.md#Setting-up-auto\-updating) section for information on how to configure ’freshclam’ for automatic updating and the main [freshclam](Usage.md#freshclam) section for additional details on freshclam).
+
+## Binary packages
+
+As an alternative to building and installing from source, most Linux package managers provide pre-compiled ClamAV packages.
+
+For more information about installing ClamAV via a Package Manager, please visit:
+<https://www.clamav.net/download.html#otherversions>
