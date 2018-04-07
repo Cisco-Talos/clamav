@@ -1,6 +1,6 @@
 # Clam AntiVirus 0.100.0 *User Manual*
 
-![image](images/demon.png)
+![image](UserManual/images/demon.png)
 
 -----
 
