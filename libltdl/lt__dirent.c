@@ -1,6 +1,6 @@
 /* lt__dirent.c -- internal directory entry scanning interface
 
-   Copyright (C) 2001, 2004 Free Software Foundation, Inc.
+   Copyright (C) 2001, 2004, 2011-2015 Free Software Foundation, Inc.
    Written by Bob Friesenhahn, 2001
 
    NOTE: The canonical source of this file is maintained with the
@@ -31,18 +31,17 @@ or obtained by writing to the Free Software Foundation, Inc.,
 #include "lt__private.h"
 
 #include <assert.h>
-#include <stddef.h>
 
 #include "lt__dirent.h"
 
-#if defined(__WINDOWS__)
+#if defined __WINDOWS__
 
 void
 closedir (DIR *entry)
 {
   assert (entry != (DIR *) NULL);
   FindClose (entry->hSearch);
-  free ((void *) entry);
+  free (entry);
 }
 
 
@@ -104,4 +103,4 @@ readdir (DIR *entry)
   return &entry->file_info;
 }
 
-#endif /*defined(__WINDOWS__)*/
+#endif /*defined __WINDOWS__*/

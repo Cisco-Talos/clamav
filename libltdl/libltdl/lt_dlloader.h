@@ -1,6 +1,7 @@
 /* lt_dlloader.h -- dynamic library loader interface
 
-   Copyright (C) 2004, 2007, 2008 Free Software Foundation, Inc.
+   Copyright (C) 2004, 2007-2008, 2011-2015 Free Software Foundation,
+   Inc.
    Written by Gary V. Vaughan, 2004
 
    NOTE: The canonical source of this file is maintained with the
@@ -28,7 +29,7 @@ or obtained by writing to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 */
 
-#if !defined(LT_DLLOADER_H)
+#if !defined LT_DLLOADER_H
 #define LT_DLLOADER_H 1
 
 #include <libltdl/lt_system.h>
@@ -87,4 +88,4 @@ LT_SCOPE void		lt_dlloader_dump	(void);
 
 LT_END_C_DECLS
 
-#endif /*!defined(LT_DLLOADER_H)*/
+#endif /*!defined LT_DLLOADER_H*/

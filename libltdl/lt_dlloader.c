@@ -1,6 +1,7 @@
 /* lt_dlloader.c -- dynamic library loader interface
 
-   Copyright (C) 2004, 2007, 2008 Free Software Foundation, Inc.
+   Copyright (C) 2004, 2007-2008, 2011-2015 Free Software Foundation,
+   Inc.
    Written by Gary V. Vaughan, 2004
 
    NOTE: The canonical source of this file is maintained with the
@@ -52,7 +53,7 @@ loader_callback (SList *item, void *userdata)
 
   assert (vtable);
 
-  return streq (vtable->name, name) ? (void *) item : NULL;
+  return STREQ (vtable->name, name) ? (void *) item : NULL;
 }
 
 
@@ -165,7 +166,7 @@ lt_dlloader_remove (const char *name)
       return 0;
     }
 
-  /* Fail if there are any open modules which use this loader.  */
+  /* Fail if there are any open modules that use this loader.  */
   iface = lt_dlinterface_register (id_string, NULL);
   while ((handle = lt_dlhandle_iterate (iface, handle)))
     {
