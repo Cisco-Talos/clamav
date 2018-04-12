@@ -47,6 +47,7 @@ m4_include([m4/reorganization/version.m4])
 LT_CONFIG_LTDL_DIR([libltdl])
 LT_INIT([dlopen disable-static])
 LTDL_INIT([recursive])
+PKG_PROG_PKG_CONFIG(0.16)
 
 m4_include([m4/reorganization/build_tools.m4])
 m4_include([m4/reorganization/headers.m4])
