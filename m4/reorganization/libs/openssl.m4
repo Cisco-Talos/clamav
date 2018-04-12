@@ -43,13 +43,13 @@ have_ssl="no"
 have_crypto="no"
 
 AC_LINK_IFELSE(
-	       [AC_LANG_PROGRAM([[#include <openssl/ssl.h>]],
-				[[SSL_library_init();]])],
+	       [AC_LANG_PROGRAM([[#include <openssl/bn.h>]],
+				[[BN_CTX_new();]])],
 	       [have_ssl="yes";],
 	       [AC_MSG_ERROR([Your OpenSSL installation is misconfigured or missing])])
 
 
-AC_CHECK_LIB([crypto], [EVP_EncryptInit], [have_crypto="yes"], [AC_MSG_ERROR([Your OpenSSL installation is misconfigured or missing])], [-lcrypto -lz])
+AC_CHECK_LIB([crypto], [CRYPTO_free], [have_crypto="yes"], [AC_MSG_ERROR([Your OpenSSL installation is misconfigured or missing])], [-lcrypto -lz])
 
 dnl OpenSSL 0.9.8 is the minimum required version due to X509_VERIFY_PARAM
 AC_CHECK_LIB([ssl], [X509_VERIFY_PARAM_new], [], [AC_MSG_ERROR([Your OpenSSL installation is missing the X509_VERIFY_PARAM function. Please upgrade to a more recent version of OpenSSL.])], [-lcrypto -lz])
