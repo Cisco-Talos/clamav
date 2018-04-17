@@ -18064,11 +18064,11 @@ have_crypto="no"
 
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-#include <openssl/ssl.h>
+#include <openssl/bn.h>
 int
 main ()
 {
-SSL_library_init();
+BN_CTX_new();
   ;
   return 0;
 }
@@ -18082,9 +18082,9 @@ rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for EVP_EncryptInit in -lcrypto" >&5
-$as_echo_n "checking for EVP_EncryptInit in -lcrypto... " >&6; }
-if ${ac_cv_lib_crypto_EVP_EncryptInit+:} false; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for CRYPTO_free in -lcrypto" >&5
+$as_echo_n "checking for CRYPTO_free in -lcrypto... " >&6; }
+if ${ac_cv_lib_crypto_CRYPTO_free+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
@@ -18098,27 +18098,27 @@ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 #ifdef __cplusplus
 extern "C"
 #endif
-char EVP_EncryptInit ();
+char CRYPTO_free ();
 int
 main ()
 {
-return EVP_EncryptInit ();
+return CRYPTO_free ();
   ;
   return 0;
 }
 _ACEOF
 if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_crypto_EVP_EncryptInit=yes
+  ac_cv_lib_crypto_CRYPTO_free=yes
 else
-  ac_cv_lib_crypto_EVP_EncryptInit=no
+  ac_cv_lib_crypto_CRYPTO_free=no
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 LIBS=$ac_check_lib_save_LIBS
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_crypto_EVP_EncryptInit" >&5
-$as_echo "$ac_cv_lib_crypto_EVP_EncryptInit" >&6; }
-if test "x$ac_cv_lib_crypto_EVP_EncryptInit" = xyes; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_crypto_CRYPTO_free" >&5
+$as_echo "$ac_cv_lib_crypto_CRYPTO_free" >&6; }
+if test "x$ac_cv_lib_crypto_CRYPTO_free" = xyes; then :
   have_crypto="yes"
 else
   as_fn_error $? "Your OpenSSL installation is misconfigured or missing" "$LINENO" 5
