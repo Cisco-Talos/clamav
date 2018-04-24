@@ -1,4 +1,4 @@
-# Clam AntiVirus 0.100.0 *User Manual*
+# Clam AntiVirus 0.101.0 *User Manual*
 
 ![image](UserManual/images/demon.png)
 

@@ -3,6 +3,19 @@
 Note: This file refers to the source tarball. Things described here may differ
  slightly from the binary packages.
 
+## 0.101.0
+
+ClamAV 0.101.0 is in development!
+
+Here are the new features and improvements found in 0.101.0 in addition to
+an assortment of minor fixes:
+
+- User manual has been converted from latex/pdf/html over to Markdown. Markdown
+  is easier to read & edit than latex, and is easier to contribute to as it
+  eliminates the need to generate documents (the PDF, HTML).  Find the user
+  manual under docs/UserManual[.md].
+- Backwards compatibility improvements for detecting the OpenSSL dependency.
+
 ## 0.100.0
 
 ClamAV 0.100.0 is a feature release which includes many code submissions

@@ -78,41 +78,42 @@ enum BytecodeKind {
  * LibClamAV functionality level constants
  */
 enum FunctionalityLevels {
-    FUNC_LEVEL_096       = 51, /**< LibClamAV release 0.96.0: bytecode engine released */
+    FUNC_LEVEL_096       = 51, /* LibClamAV release 0.96.0: bytecode engine released */
     FUNC_LEVEL_096_dev   = 52,
-    FUNC_LEVEL_096_1     = 53, /**< LibClamAV release 0.96.1: logical signature use of VI/macros
+    FUNC_LEVEL_096_1     = 53, /* LibClamAV release 0.96.1: logical signature use of VI/macros
                                 * requires this minimum functionality level */
     FUNC_LEVEL_096_1_dev = 54,
-    FUNC_LEVEL_096_2     = 54, /**< LibClamAV release 0.96.2: PDF Hooks require this minimum level */
+    FUNC_LEVEL_096_2     = 54, /* LibClamAV release 0.96.2: PDF Hooks require this minimum level */
     FUNC_LEVEL_096_2_dev = 55,
-    FUNC_LEVEL_096_3     = 55, /**< LibClamAV release 0.96.3: BC_PE_ALL bytecodes require this minimum level */
-    FUNC_LEVEL_096_4     = 56, /**< LibClamAV release 0.96.4: minimum recommended engine version, older versions 
+    FUNC_LEVEL_096_3     = 55, /* LibClamAV release 0.96.3: BC_PE_ALL bytecodes require this minimum level */
+    FUNC_LEVEL_096_4     = 56, /* LibClamAV release 0.96.4: minimum recommended engine version, older versions 
                                 * have quadratic load time */
-    FUNC_LEVEL_096_5     = 58, /**< LibClamAV release 0.96.5 */
-    FUNC_LEVEL_097       = 60, /**< LibClamAV release 0.97.0: older bytecodes may incorrectly use 57 */
-    FUNC_LEVEL_097_1     = 61, /**< LibClamAV release 0.97.1 */
-    FUNC_LEVEL_097_2     = 62, /**< LibClamAV release 0.97.2 */
-    FUNC_LEVEL_097_3     = 63, /**< LibClamAV release 0.97.3 */ /*last bcc changes as former team resigns*/
-    FUNC_LEVEL_097_4     = 64, /**< LibClamAV release 0.97.4 */
-    FUNC_LEVEL_097_5     = 65, /**< LibClamAV release 0.97.5 */
-    FUNC_LEVEL_097_6     = 67, /**< LibClamAV release 0.97.6 */
-    FUNC_LEVEL_097_7     = 68, /**< LibClamAV release 0.97.7 */
-    FUNC_LEVEL_097_8     = 69, /**< LibClamAV release 0.97.8 */
-    FUNC_LEVEL_098_1     = 76, /**< LibClamAV release 0.98.1 */ /*last syncing to clamav*/
-    FUNC_LEVEL_098_2     = 77, /**< LibClamAV release 0.98.2 */
-    FUNC_LEVEL_098_3     = 77, /**< LibClamAV release 0.98.3 */
-    FUNC_LEVEL_098_4     = 77, /**< LibClamAV release 0.98.4 */
-    FUNC_LEVEL_098_5     = 79, /**< LibClamAV release 0.98.5: JSON reading API requires this minimum level */
-    FUNC_LEVEL_098_6     = 79, /**< LibClamAV release 0.98.6 */
-    FUNC_LEVEL_098_7     = 80, /**< LibClamAV release 0.98.7: BC_PRECLASS bytecodes require minimum level */
-    FUNC_LEVEL_099       = 81, /**< LibClamAV release 0.99, 0.99-beta1(.1-.5), 0.99-beta2 */
-    FUNC_LEVEL_099_1     = 82, /**< LibClamAV release 0.99.1 */
-    FUNC_LEVEL_099_2     = 82, /**< LibClamAV release 0.99.2 */
-    FUNC_LEVEL_099_3     = 84, /**< LibClamAV release 0.99.3 */
-    FUNC_LEVEL_099_4     = 85, /**< LibClamAV release 0.99.4 */
-    FUNC_LEVEL_0100_0_BETA = 90, /**< LibClamAV beta release 0.100.0-beta */
-    FUNC_LEVEL_0100_0    = 91, /**< LibClamAV release 0.100.0, 0.100.0-rc */
-    FUNC_LEVEL_100       = 100 /*future release candidate*/
+    FUNC_LEVEL_096_5     = 58, /* LibClamAV release 0.96.5 */
+    FUNC_LEVEL_097       = 60, /* LibClamAV release 0.97.0: older bytecodes may incorrectly use 57 */
+    FUNC_LEVEL_097_1     = 61, /* LibClamAV release 0.97.1 */
+    FUNC_LEVEL_097_2     = 62, /* LibClamAV release 0.97.2 */
+    FUNC_LEVEL_097_3     = 63, /* LibClamAV release 0.97.3 */ /*last bcc changes as former team resigns*/
+    FUNC_LEVEL_097_4     = 64, /* LibClamAV release 0.97.4 */
+    FUNC_LEVEL_097_5     = 65, /* LibClamAV release 0.97.5 */
+    FUNC_LEVEL_097_6     = 67, /* LibClamAV release 0.97.6 */
+    FUNC_LEVEL_097_7     = 68, /* LibClamAV release 0.97.7 */
+    FUNC_LEVEL_097_8     = 69, /* LibClamAV release 0.97.8 */
+    FUNC_LEVEL_098_1     = 76, /* LibClamAV release 0.98.1 */ /*last syncing to clamav*/
+    FUNC_LEVEL_098_2     = 77, /* LibClamAV release 0.98.2 */
+    FUNC_LEVEL_098_3     = 77, /* LibClamAV release 0.98.3 */
+    FUNC_LEVEL_098_4     = 77, /* LibClamAV release 0.98.4 */
+    FUNC_LEVEL_098_5     = 79, /* LibClamAV release 0.98.5: JSON reading API requires this minimum level */
+    FUNC_LEVEL_098_6     = 79, /* LibClamAV release 0.98.6 */
+    FUNC_LEVEL_098_7     = 80, /* LibClamAV release 0.98.7: BC_PRECLASS bytecodes require minimum level */
+    FUNC_LEVEL_099       = 81, /* LibClamAV release 0.99, 0.99-beta1(.1-.5), 0.99-beta2 */
+    FUNC_LEVEL_099_1     = 82, /* LibClamAV release 0.99.1 */
+    FUNC_LEVEL_099_2     = 82, /* LibClamAV release 0.99.2 */
+    FUNC_LEVEL_099_3     = 84, /* LibClamAV release 0.99.3 */
+    FUNC_LEVEL_099_4     = 85, /* LibClamAV release 0.99.4 */
+    FUNC_LEVEL_0100_0_BETA = 90, /* LibClamAV beta release 0.100.0-beta */
+    FUNC_LEVEL_0100_0    = 91, /* LibClamAV release 0.100.0, 0.100.0-rc */
+    FUNC_LEVEL_0101_0    = 100, /* LibClamAV release 0.101.0 */
+    FUNC_LEVEL_100       = 255 /* future release candidate */
 };
 
 /**
@@ -120,11 +121,11 @@ enum FunctionalityLevels {
  * Phase of PDF parsing used for PDF Hooks
  */
 enum pdf_phase {
-    PDF_PHASE_NONE,     /**< not a PDF */
-    PDF_PHASE_PARSED,   /**< after parsing a PDF, object flags can be set etc. */
-    PDF_PHASE_POSTDUMP, /**< after an obj was dumped and scanned */
-    PDF_PHASE_END,      /**< after the pdf scan finished */
-    PDF_PHASE_PRE       /**< before pdf is parsed at all */
+    PDF_PHASE_NONE,     /* not a PDF */
+    PDF_PHASE_PARSED,   /* after parsing a PDF, object flags can be set etc. */
+    PDF_PHASE_POSTDUMP, /* after an obj was dumped and scanned */
+    PDF_PHASE_END,      /* after the pdf scan finished */
+    PDF_PHASE_PRE       /* before pdf is parsed at all */
 };
 
 /**
@@ -132,27 +133,27 @@ enum pdf_phase {
  * PDF flags 
  */
 enum pdf_flag {
-    BAD_PDF_VERSION=0,      /**< */
-    BAD_PDF_HEADERPOS,      /**< */
-    BAD_PDF_TRAILER,        /**< */
-    BAD_PDF_TOOMANYOBJS,    /**< */
-    BAD_STREAM_FILTERS,     /**< */
-    BAD_FLATE,              /**< */
-    BAD_FLATESTART,         /**< */
-    BAD_STREAMSTART,        /**< */
-    BAD_ASCIIDECODE,        /**< */
-    BAD_INDOBJ,             /**< */
-    UNTERMINATED_OBJ_DICT,  /**< */
-    ESCAPED_COMMON_PDFNAME, /**< */
-    HEX_JAVASCRIPT,         /**< */
-    UNKNOWN_FILTER,         /**< */
-    MANY_FILTERS,           /**< */
-    HAS_OPENACTION,         /**< */
-    BAD_STREAMLEN,          /**< */
-    ENCRYPTED_PDF,          /**< */
-    LINEARIZED_PDF,         /**< */ /* not bad, just as flag */
-    DECRYPTABLE_PDF,        /**< */
-    HAS_LAUNCHACTION        /**< */
+    BAD_PDF_VERSION=0,      /* */
+    BAD_PDF_HEADERPOS,      /* */
+    BAD_PDF_TRAILER,        /* */
+    BAD_PDF_TOOMANYOBJS,    /* */
+    BAD_STREAM_FILTERS,     /* */
+    BAD_FLATE,              /* */
+    BAD_FLATESTART,         /* */
+    BAD_STREAMSTART,        /* */
+    BAD_ASCIIDECODE,        /* */
+    BAD_INDOBJ,             /* */
+    UNTERMINATED_OBJ_DICT,  /* */
+    ESCAPED_COMMON_PDFNAME, /* */
+    HEX_JAVASCRIPT,         /* */
+    UNKNOWN_FILTER,         /* */
+    MANY_FILTERS,           /* */
+    HAS_OPENACTION,         /* */
+    BAD_STREAMLEN,          /* */
+    ENCRYPTED_PDF,          /* */
+    LINEARIZED_PDF,         /* not bad, just as flag */
+    DECRYPTABLE_PDF,        /* */
+    HAS_LAUNCHACTION        /* */
 };
 
 /**
@@ -160,31 +161,31 @@ enum pdf_flag {
  * PDF obj flags
  */
 enum pdf_objflags {
-    OBJ_STREAM=0,        /**< */
-    OBJ_DICT,            /**< */
-    OBJ_EMBEDDED_FILE,   /**< */
-    OBJ_FILTER_AH,       /**< */
-    OBJ_FILTER_A85,      /**< */
-    OBJ_FILTER_FLATE,    /**< */
-    OBJ_FILTER_LZW,      /**< */
-    OBJ_FILTER_RL,       /**< */
-    OBJ_FILTER_FAX,      /**< */
-    OBJ_FILTER_JBIG2,    /**< */
-    OBJ_FILTER_DCT,      /**< */
-    OBJ_FILTER_JPX,      /**< */
-    OBJ_FILTER_CRYPT,    /**< */
-    OBJ_FILTER_UNKNOWN,  /**< */
-    OBJ_JAVASCRIPT,      /**< */
-    OBJ_OPENACTION,      /**< */
-    OBJ_HASFILTERS,      /**< */
-    OBJ_SIGNED,          /**< */
-    OBJ_IMAGE,           /**< */
-    OBJ_TRUNCATED,       /**< */
-    OBJ_FORCEDUMP,       /**< */
-    OBJ_FILTER_STANDARD, /**< */
-    OBJ_LAUNCHACTION,    /**< */
-    OBJ_PAGE,            /**< */
-    OBJ_CONTENTS         /**< */
+    OBJ_STREAM=0,        /* */
+    OBJ_DICT,            /* */
+    OBJ_EMBEDDED_FILE,   /* */
+    OBJ_FILTER_AH,       /* */
+    OBJ_FILTER_A85,      /* */
+    OBJ_FILTER_FLATE,    /* */
+    OBJ_FILTER_LZW,      /* */
+    OBJ_FILTER_RL,       /* */
+    OBJ_FILTER_FAX,      /* */
+    OBJ_FILTER_JBIG2,    /* */
+    OBJ_FILTER_DCT,      /* */
+    OBJ_FILTER_JPX,      /* */
+    OBJ_FILTER_CRYPT,    /* */
+    OBJ_FILTER_UNKNOWN,  /* */
+    OBJ_JAVASCRIPT,      /* */
+    OBJ_OPENACTION,      /* */
+    OBJ_HASFILTERS,      /* */
+    OBJ_SIGNED,          /* */
+    OBJ_IMAGE,           /* */
+    OBJ_TRUNCATED,       /* */
+    OBJ_FORCEDUMP,       /* */
+    OBJ_FILTER_STANDARD, /* */
+    OBJ_LAUNCHACTION,    /* */
+    OBJ_PAGE,            /* */
+    OBJ_CONTENTS         /* */
 };
 
 /**
@@ -192,13 +193,13 @@ enum pdf_objflags {
  * JSON types
  */
 enum bc_json_type {
-    JSON_TYPE_NULL=0,    /**< */
-    JSON_TYPE_BOOLEAN,   /**< */
-    JSON_TYPE_DOUBLE,    /**< */
-    JSON_TYPE_INT,       /**< */
-    JSON_TYPE_OBJECT,    /**< */
-    JSON_TYPE_ARRAY,     /**< */
-    JSON_TYPE_STRING     /**< */
+    JSON_TYPE_NULL=0,    /* */
+    JSON_TYPE_BOOLEAN,   /* */
+    JSON_TYPE_DOUBLE,    /* */
+    JSON_TYPE_INT,       /* */
+    JSON_TYPE_OBJECT,    /* */
+    JSON_TYPE_ARRAY,     /* */
+    JSON_TYPE_STRING     /* */
 };
 
 #ifdef __CLAMBC__
