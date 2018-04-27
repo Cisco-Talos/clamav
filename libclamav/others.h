@@ -579,36 +579,36 @@ struct unaligned_ptr {
     #define be32_to_host(v)	(v)
     #define be64_to_host(v)	(v)
 
-    static inline int32_t cli_readint64(const void *buff)
+    static inline int64_t cli_readint64(const void *buff)
     {
         int64_t ret;
-        ret = ((const char *)buff)[0] & 0xff;
-        ret |= (((const char *)buff)[1] & 0xff) << 8;
-        ret |= (((const char *)buff)[2] & 0xff) << 16;
-        ret |= (((const char *)buff)[3] & 0xff) << 24;
+        ret = (int64_t)((const char *)buff)[0] & 0xff;
+        ret |= (int64_t)(((const char *)buff)[1] & 0xff) << 8;
+        ret |= (int64_t)(((const char *)buff)[2] & 0xff) << 16;
+        ret |= (int64_t)(((const char *)buff)[3] & 0xff) << 24;
 
-        ret |= (((const char *)buff)[4] & 0xff) << 32;
-        ret |= (((const char *)buff)[5] & 0xff) << 40;
-        ret |= (((const char *)buff)[6] & 0xff) << 48;
-        ret |= (((const char *)buff)[7] & 0xff) << 56;
+        ret |= (int64_t)(((const char *)buff)[4] & 0xff) << 32;
+        ret |= (int64_t)(((const char *)buff)[5] & 0xff) << 40;
+        ret |= (int64_t)(((const char *)buff)[6] & 0xff) << 48;
+        ret |= (int64_t)(((const char *)buff)[7] & 0xff) << 56;
         return ret;
     }
 
     static inline int32_t cli_readint32(const void *buff)
     {
         int32_t ret;
-        ret = ((const char *)buff)[0] & 0xff;
-        ret |= (((const char *)buff)[1] & 0xff) << 8;
-        ret |= (((const char *)buff)[2] & 0xff) << 16;
-        ret |= (((const char *)buff)[3] & 0xff) << 24;
+        ret = (int32_t)((const char *)buff)[0] & 0xff;
+        ret |= (int32_t)(((const char *)buff)[1] & 0xff) << 8;
+        ret |= (int32_t)(((const char *)buff)[2] & 0xff) << 16;
+        ret |= (int32_t)(((const char *)buff)[3] & 0xff) << 24;
         return ret;
     }
 
     static inline int16_t cli_readint16(const void *buff)
     {
         int16_t ret;
-        ret = ((const char *)buff)[0] & 0xff;
-        ret |= (((const char *)buff)[1] & 0xff) << 8;
+        ret = (int16_t)((const char *)buff)[0] & 0xff;
+        ret |= (int16_t)(((const char *)buff)[1] & 0xff) << 8;
         return ret;
     }
 
