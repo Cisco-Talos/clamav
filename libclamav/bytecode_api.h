@@ -42,6 +42,12 @@ struct cli_exe_section;
 struct DISASM_RESULT;
 #endif
 
+  /**
+\group_pe
+   * Invalid RVA specified
+   */
+#define PE_INVALID_RVA 0xFFFFFFFF
+
 /**
 \group_config
  * Specifies the bytecode type and how ClamAV executes it 
@@ -65,14 +71,6 @@ enum BytecodeKind {
       * operates on the original file targeted for property collection */
     BC_PRECLASS,
     _BC_LAST_HOOK
-};
-
-enum {
-  /**
-\group_pe
-   * Invalid RVA specified
-   */
-  PE_INVALID_RVA = 0xFFFFFFFF
 };
 
 /**
