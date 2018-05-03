@@ -5,7 +5,7 @@ ClamAV® is an open source antivirus engine for detecting trojans, viruses,
 
 ## Documentation & FAQ
 
-The ClamAV documentation can be found in locally in `docs/clamdoc.pdf` with
+The ClamAV documentation can be found in locally in `docs/UserManual.md` with
  additional information online in
 [our FAQ](https://www.clamav.net/documents).
 
@@ -19,7 +19,7 @@ Anyone can learn to read and write ClamAV signatures.  Take a look
 ### Build from Source
 
 For basic compile and install instructions, check out `INSTALL.md`.  For more
- detail please investigate the docs in `docs/clamdoc.pdf`.
+ detail please investigate the docs in `docs/UserManual.md`.
 
 ### Install from a binary package
 
