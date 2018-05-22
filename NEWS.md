@@ -3,6 +3,18 @@
 Note: This file refers to the source tarball. Things described here may differ
  slightly from the binary packages.
 
+## 0.100.1
+
+ClamAV 0.99.4 is a hotfix release to patch a set of vulnerabilities.
+
+- fixes for the following CVE's: .
+- also included are for a few minor vulnerabilities.
+
+Thank you to the following ClamAV community members for your code
+submissions and bug reports! 
+
+
+
 ## 0.100.0
 
 ClamAV 0.100.0 is a feature release which includes many code submissions
