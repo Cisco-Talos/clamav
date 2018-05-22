@@ -23,6 +23,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libclamav", "libclamav.vcxp
 	ProjectSection(ProjectDependencies) = postProject
 		{3AE8051D-A188-4B11-95A4-14B8F0C290CB} = {3AE8051D-A188-4B11-95A4-14B8F0C290CB}
 		{AA443662-4AED-4F50-95E4-9B5BB5429E9E} = {AA443662-4AED-4F50-95E4-9B5BB5429E9E}
+		{56424F95-3DE6-429D-8D80-7F57CCE9209C} = {56424F95-3DE6-429D-8D80-7F57CCE9209C}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sigtool", "sigtool.vcxproj", "{05957B93-39F9-45EC-87BD-86B7AF571557}"
@@ -74,6 +75,8 @@ EndProject
 Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "Setup-x64", "Setup-x64\Setup-x64.vdproj", "{92C046F5-ED35-4CF1-B016-F7052EFB3AD3}"
 EndProject
 Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "Setup-x86", "Setup-x86\Setup-x86.vdproj", "{17F29B6A-389D-44DB-AC8B-9349EA7DBACE}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pthreads", "pthreads.vcxproj", "{56424F95-3DE6-429D-8D80-7F57CCE9209C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -229,6 +232,14 @@ Global
 		{17F29B6A-389D-44DB-AC8B-9349EA7DBACE}.Debug|x64.ActiveCfg = Debug
 		{17F29B6A-389D-44DB-AC8B-9349EA7DBACE}.Release|Win32.ActiveCfg = Release
 		{17F29B6A-389D-44DB-AC8B-9349EA7DBACE}.Release|x64.ActiveCfg = Release
+		{56424F95-3DE6-429D-8D80-7F57CCE9209C}.Debug|Win32.ActiveCfg = Debug|Win32
+		{56424F95-3DE6-429D-8D80-7F57CCE9209C}.Debug|Win32.Build.0 = Debug|Win32
+		{56424F95-3DE6-429D-8D80-7F57CCE9209C}.Debug|x64.ActiveCfg = Debug|x64
+		{56424F95-3DE6-429D-8D80-7F57CCE9209C}.Debug|x64.Build.0 = Debug|x64
+		{56424F95-3DE6-429D-8D80-7F57CCE9209C}.Release|Win32.ActiveCfg = Release|Win32
+		{56424F95-3DE6-429D-8D80-7F57CCE9209C}.Release|Win32.Build.0 = Release|Win32
+		{56424F95-3DE6-429D-8D80-7F57CCE9209C}.Release|x64.ActiveCfg = Release|x64
+		{56424F95-3DE6-429D-8D80-7F57CCE9209C}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
