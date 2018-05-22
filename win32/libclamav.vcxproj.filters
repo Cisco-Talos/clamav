@@ -249,9 +249,6 @@
     <ClCompile Include="..\libclamav\prtn_intxn.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="3rdparty\pthreads\pthread.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\libclamav\yc.c">
       <Filter>Source Files</Filter>
     </ClCompile>

@@ -63,12 +63,6 @@
         }
         "Entry"
         {
-        "MsmKey" = "8:_65E3B3F3FCEB43AE9FDCAC06686B4E2C"
-        "OwnerKey" = "8:_804379F8A48A4F7DBB50D72302559297"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
         "MsmKey" = "8:_671D69A7B15349CF8AE7C0075C51AF53"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
@@ -99,6 +93,12 @@
         }
         "Entry"
         {
+        "MsmKey" = "8:_7995E732E0F94150B596C90C659E88DF"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
         "MsmKey" = "8:_7F93817BA09242BBA5B1DE77746F85EE"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
@@ -119,6 +119,12 @@
         {
         "MsmKey" = "8:_8A600E8AAC0B4E3FA975E5056E8E6967"
         "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_AE55F79902BE4F90AC09D6D78FEAF55E"
+        "OwnerKey" = "8:_7995E732E0F94150B596C90C659E88DF"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
@@ -612,7 +618,7 @@
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:ClamAV"
         "ProductCode" = "8:{B29C0EBE-9FAF-4F8C-8044-F6A92F8506D8}"
-        "PackageCode" = "8:{B42DCD94-4BDA-40A8-AF0A-829EA38DB69E}"
+        "PackageCode" = "8:{70C21A9E-655D-4C8B-9481-AEA8B6E93D4C}"
         "UpgradeCode" = "8:{D35B7E07-D7B1-404B-A0C3-FBB599A1D58B}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"
@@ -1128,7 +1134,7 @@
         }
         "MergeModule"
         {
-            "{CEE29DC0-9FBA-4B99-8D47-5BC643D9B626}:_65E3B3F3FCEB43AE9FDCAC06686B4E2C"
+            "{CEE29DC0-9FBA-4B99-8D47-5BC643D9B626}:_AE55F79902BE4F90AC09D6D78FEAF55E"
             {
             "UseDynamicProperties" = "11:TRUE"
             "IsDependency" = "11:TRUE"
@@ -1280,6 +1286,34 @@
             "OutputConfiguration" = "8:"
             "OutputGroupCanonicalName" = "8:Built"
             "OutputProjectGuid" = "8:{09D341E9-7372-46E9-B0D7-CAAF77984190}"
+            "ShowKeyOutput" = "11:TRUE"
+                "ExcludeFilters"
+                {
+                }
+            }
+            "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_7995E732E0F94150B596C90C659E88DF"
+            {
+            "SourcePath" = "8:..\\x64\\Release\\pthreads.dll"
+            "TargetName" = "8:"
+            "Tag" = "8:"
+            "Folder" = "8:_CEC880DBF61041CCA0B367A8647B2589"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            "ProjectOutputGroupRegister" = "3:1"
+            "OutputConfiguration" = "8:"
+            "OutputGroupCanonicalName" = "8:Built"
+            "OutputProjectGuid" = "8:{56424F95-3DE6-429D-8D80-7F57CCE9209C}"
             "ShowKeyOutput" = "11:TRUE"
                 "ExcludeFilters"
                 {
