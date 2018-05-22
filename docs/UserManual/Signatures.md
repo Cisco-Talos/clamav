@@ -19,13 +19,13 @@
     - [Logical signatures](#logical-signatures)
     - [Subsignature Modifiers](#subsignature-modifiers)
   - [Special Subsignature Types](#special-subsignature-types)
-    - [Macro subsignatures (clamav-0.96) : <span class="nodecor">`${min-max}MACROID$`</span>](#macro-subsignatures-clamav-096-span-classnodecormin-maxmacroidspan)
-    - [PCRE subsignatures (clamav-0.99) : <span class="nodecor">`Trigger/PCRE/[Flags]`</span>](#pcre-subsignatures-clamav-099-span-classnodecortriggerpcreflagsspan)
+    - [Macro subsignatures (clamav-0.96) : <span class="nodecor">`${min-max}MACROID$`</span>](#macro-subsignatures-clamav-096---span-classnodecormin-maxmacroid-span)
+    - [PCRE subsignatures (clamav-0.99) : <span class="nodecor">`Trigger/PCRE/[Flags]`</span>](#pcre-subsignatures-clamav-099---span-classnodecortrigger-pcre-flags-span)
   - [Icon signatures for PE files](#icon-signatures-for-pe-files)
   - [Signatures for Version Information metadata in PE files](#signatures-for-version-information-metadata-in-pe-files)
   - [Trusted and Revoked Certificates](#trusted-and-revoked-certificates)
   - [Signatures based on container metadata](#signatures-based-on-container-metadata)
-  - [Signatures based on ZIP/RAR metadata (obsolete)](#signatures-based-on-ziprar-metadata-obsolete)
+  - [Signatures based on ZIP/RAR metadata (obsolete)](#signatures-based-on-zip-rar-metadata-obsolete)
   - [Whitelist databases](#whitelist-databases)
   - [Signature names](#signature-names)
   - [Using YARA rules in ClamAV](#using-yara-rules-in-clamav)
@@ -594,7 +594,7 @@ to:
 
   - In the example, `{min-max}` is `{6-7}` and it is relative to the start of a `616161` match.
 
-- For more information and examples please see <https://wwws.clamav.net/bugzilla/show_bug.cgi?id=164>.
+- For more information and examples please see <https://bugzilla.clamav.net/show_bug.cgi?id=164>.
 
 ### PCRE subsignatures (clamav-0.99) : <span class="nodecor">`Trigger/PCRE/[Flags]`</span>
 
