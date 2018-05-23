@@ -417,6 +417,7 @@ int main(int argc, char *argv[])
     post = NULL;
     last = NULL;
     curl_easy_cleanup(aws_curl);
+    aws_curl = NULL;
     json_object_put(ps_json_obj);
     free(wd.str);
     wd.str = NULL;
