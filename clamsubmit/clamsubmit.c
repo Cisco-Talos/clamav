@@ -279,6 +279,7 @@ int main(int argc, char *argv[])
     }
     if (snprintf(str, len, "%s; %s;", hd_malware.cfduid, hd_malware.session) > len) {
         fprintf(stderr, "snprintf() failed formatting GET presigned cookies\n");
+        free(str);
         goto cleanup;
     }
     curl_easy_setopt(clam_curl, CURLOPT_COOKIE, str);
@@ -434,6 +435,7 @@ int main(int argc, char *argv[])
     }
     if (snprintf(str, len, "%s; %s;", hd_malware.cfduid, hd_malware.session) > len) {
         fprintf(stderr, "snprintf() failed formatting POST submit cookies\n");
+        free(str);
         goto cleanup;
     }
     curl_easy_setopt(clam_curl, CURLOPT_COOKIE, str);
