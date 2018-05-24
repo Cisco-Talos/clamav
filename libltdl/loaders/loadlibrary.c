@@ -1,7 +1,7 @@
 /* loader-loadlibrary.c --  dynamic linking for Win32
 
-   Copyright (C) 1998, 1999, 2000, 2004, 2005, 2006,
-                 2007, 2008, 2010 Free Software Foundation, Inc.
+   Copyright (C) 1998-2000, 2004-2008, 2010-2015 Free Software
+   Foundation, Inc.
    Written by Thomas Tanner, 1998
 
    NOTE: The canonical source of this file is maintained with the
@@ -32,7 +32,7 @@ or obtained by writing to the Free Software Foundation, Inc.,
 #include "lt__private.h"
 #include "lt_dlloader.h"
 
-#if defined(__CYGWIN__)
+#if defined __CYGWIN__
 # include <sys/cygwin.h>
 #endif
 
@@ -120,7 +120,7 @@ static char *error_message = 0;
 /* A function called through the vtable when this loader is no
    longer needed by the application.  */
 static int
-vl_exit (lt_user_data LT__UNUSED loader_data)
+vl_exit (lt_user_data loader_data LT__UNUSED)
 {
   vtable = NULL;
   LOCALFREE (error_message);
@@ -131,8 +131,8 @@ vl_exit (lt_user_data LT__UNUSED loader_data)
    loader.  Returns an opaque representation of the newly opened
    module for processing with this loader's other vtable functions.  */
 static lt_module
-vm_open (lt_user_data LT__UNUSED loader_data, const char *filename,
-         lt_dladvise LT__UNUSED advise)
+vm_open (lt_user_data loader_data LT__UNUSED, const char *filename,
+         lt_dladvise advise LT__UNUSED)
 {
   lt_module	module	   = 0;
   char		*ext;
@@ -163,7 +163,7 @@ vm_open (lt_user_data LT__UNUSED loader_data, const char *filename,
 	  return 0;
 	}
       len = 0;
-#elif defined(__CYGWIN__)
+#elif defined __CYGWIN__
       cygwin_conv_to_full_win32_path (filename, wpath);
       len = 0;
 #else
@@ -173,8 +173,8 @@ vm_open (lt_user_data LT__UNUSED loader_data, const char *filename,
       ext = strrchr (wpath, '.');
       if (!ext)
 	{
-	  /* Append a `.' to stop Windows from adding an
-	     implicit `.dll' extension. */
+	  /* Append a '.' to stop Windows from adding an
+	     implicit '.dll' extension. */
 	  if (!len)
 	    len = strlen (wpath);
 
@@ -245,7 +245,7 @@ vm_open (lt_user_data LT__UNUSED loader_data, const char *filename,
 /* A function called through the vtable when a particular module
    should be unloaded.  */
 static int
-vm_close (lt_user_data LT__UNUSED loader_data, lt_module module)
+vm_close (lt_user_data loader_data LT__UNUSED, lt_module module)
 {
   int errors = 0;
 
@@ -262,7 +262,7 @@ vm_close (lt_user_data LT__UNUSED loader_data, lt_module module)
 /* A function called through the vtable to get the address of
    a symbol loaded from a particular module.  */
 static void *
-vm_sym (lt_user_data LT__UNUSED loader_data, lt_module module, const char *name)
+vm_sym (lt_user_data loader_data LT__UNUSED, lt_module module, const char *name)
 {
   void *address = (void *) GetProcAddress ((HMODULE) module, name);
 
@@ -306,7 +306,7 @@ loadlibraryerror (const char *default_errmsg)
   return len ? error_message : default_errmsg;
 }
 
-/* A function called through the getthreaderrormode variable which checks
+/* A function called through the getthreaderrormode variable that checks
    if the system supports GetThreadErrorMode (or GetErrorMode) and arranges
    for it or a fallback implementation to be called directly in the future.
    The selected version is then called. */
@@ -339,7 +339,7 @@ fallback_getthreaderrormode (void)
   return (DWORD) SetErrorMode (SEM_FAILCRITICALERRORS);
 }
 
-/* A function called through the setthreaderrormode variable which checks
+/* A function called through the setthreaderrormode variable that checks
    if the system supports SetThreadErrorMode and arranges for it or a
    fallback implementation to be called directly in the future.
    The selected version is then called. */

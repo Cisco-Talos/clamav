@@ -1,6 +1,7 @@
-/* lt_error.h -- error propogation interface
+/* lt_error.h -- error propagation interface
 
-   Copyright (C) 1999, 2000, 2001, 2004, 2007 Free Software Foundation, Inc.
+   Copyright (C) 1999-2001, 2004, 2007, 2011-2015 Free Software
+   Foundation, Inc.
    Written by Thomas Tanner, 1999
 
    NOTE: The canonical source of this file is maintained with the
@@ -29,7 +30,7 @@ or obtained by writing to the Free Software Foundation, Inc.,
 */
 
 /* Only include this header file once. */
-#if !defined(LT_ERROR_H)
+#if !defined LT_ERROR_H
 #define LT_ERROR_H 1
 
 #include <libltdl/lt_system.h>
@@ -82,4 +83,4 @@ LT_SCOPE int	lt_dlseterror	(int errorcode);
 
 LT_END_C_DECLS
 
-#endif /*!defined(LT_ERROR_H)*/
+#endif /*!defined LT_ERROR_H*/

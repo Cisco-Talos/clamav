@@ -1,7 +1,7 @@
 /* loader-dyld.c -- dynamic linking on darwin and OS X
 
-   Copyright (C) 1998, 1999, 2000, 2004, 2006,
-                 2007, 2008 Free Software Foundation, Inc.
+   Copyright (C) 1998-2000, 2004, 2006-2008, 2011-2015 Free Software
+   Foundation, Inc.
    Written by Peter O'Gorman, 1998
 
    NOTE: The canonical source of this file is maintained with the
@@ -93,8 +93,8 @@ get_vtable (lt_user_data loader_data)
 /* --- IMPLEMENTATION --- */
 
 
-#if defined(HAVE_MACH_O_DYLD_H)
-#  if !defined(__APPLE_CC__) && !defined(__MWERKS__) && !defined(__private_extern__)
+#if defined HAVE_MACH_O_DYLD_H
+#  if !defined __APPLE_CC__ && !defined __MWERKS__ && !defined __private_extern__
   /* Is this correct? Does it still function properly? */
 #    define __private_extern__ extern
 #  endif
@@ -104,7 +104,7 @@ get_vtable (lt_user_data loader_data)
 #include <mach-o/getsect.h>
 
 /* We have to put some stuff here that isn't in older dyld.h files */
-#if !defined(ENUM_DYLD_BOOL)
+#if !defined ENUM_DYLD_BOOL
 # define ENUM_DYLD_BOOL
 # undef FALSE
 # undef TRUE
@@ -113,46 +113,46 @@ get_vtable (lt_user_data loader_data)
     TRUE
  };
 #endif
-#if !defined(LC_REQ_DYLD)
+#if !defined LC_REQ_DYLD
 # define LC_REQ_DYLD 0x80000000
 #endif
-#if !defined(LC_LOAD_WEAK_DYLIB)
+#if !defined LC_LOAD_WEAK_DYLIB
 # define LC_LOAD_WEAK_DYLIB (0x18 | LC_REQ_DYLD)
 #endif
 
-#if !defined(NSADDIMAGE_OPTION_NONE)
+#if !defined NSADDIMAGE_OPTION_NONE
 #  define NSADDIMAGE_OPTION_NONE                          0x0
 #endif
-#if !defined(NSADDIMAGE_OPTION_RETURN_ON_ERROR)
+#if !defined NSADDIMAGE_OPTION_RETURN_ON_ERROR
 #  define NSADDIMAGE_OPTION_RETURN_ON_ERROR               0x1
 #endif
-#if !defined(NSADDIMAGE_OPTION_WITH_SEARCHING)
+#if !defined NSADDIMAGE_OPTION_WITH_SEARCHING
 #  define NSADDIMAGE_OPTION_WITH_SEARCHING                0x2
 #endif
-#if !defined(NSADDIMAGE_OPTION_RETURN_ONLY_IF_LOADED)
+#if !defined NSADDIMAGE_OPTION_RETURN_ONLY_IF_LOADED
 #  define NSADDIMAGE_OPTION_RETURN_ONLY_IF_LOADED         0x4
 #endif
-#if !defined(NSADDIMAGE_OPTION_MATCH_FILENAME_BY_INSTALLNAME)
+#if !defined NSADDIMAGE_OPTION_MATCH_FILENAME_BY_INSTALLNAME
 #  define NSADDIMAGE_OPTION_MATCH_FILENAME_BY_INSTALLNAME 0x8
 #endif
 
-#if !defined(NSLOOKUPSYMBOLINIMAGE_OPTION_BIND)
+#if !defined NSLOOKUPSYMBOLINIMAGE_OPTION_BIND
 #  define NSLOOKUPSYMBOLINIMAGE_OPTION_BIND               0x0
 #endif
-#if !defined(NSLOOKUPSYMBOLINIMAGE_OPTION_BIND_NOW)
+#if !defined NSLOOKUPSYMBOLINIMAGE_OPTION_BIND_NOW
 #  define NSLOOKUPSYMBOLINIMAGE_OPTION_BIND_NOW           0x1
 #endif
-#if !defined(NSLOOKUPSYMBOLINIMAGE_OPTION_BIND_FULLY)
+#if !defined NSLOOKUPSYMBOLINIMAGE_OPTION_BIND_FULLY
 #  define NSLOOKUPSYMBOLINIMAGE_OPTION_BIND_FULLY         0x2
 #endif
-#if !defined(NSLOOKUPSYMBOLINIMAGE_OPTION_RETURN_ON_ERROR)
+#if !defined NSLOOKUPSYMBOLINIMAGE_OPTION_RETURN_ON_ERROR
 #  define NSLOOKUPSYMBOLINIMAGE_OPTION_RETURN_ON_ERROR    0x4
 #endif
 
 #define LT__SYMLOOKUP_OPTS	(NSLOOKUPSYMBOLINIMAGE_OPTION_BIND_NOW \
 				| NSLOOKUPSYMBOLINIMAGE_OPTION_RETURN_ON_ERROR)
 
-#if defined(__BIG_ENDIAN__)
+#if defined __BIG_ENDIAN__
 #  define LT__MAGIC	MH_MAGIC
 #else
 #  define LT__MAGIC	MH_CIGAM
@@ -185,7 +185,7 @@ static int dyld_cannot_close				  = 0;
 /* A function called through the vtable when this loader is no
    longer needed by the application.  */
 static int
-vl_exit (lt_user_data LT__UNUSED loader_data)
+vl_exit (lt_user_data loader_data LT__UNUSED)
 {
   vtable = NULL;
   return 0;
@@ -226,7 +226,7 @@ vl_init (lt_user_data loader_data)
    module for processing with this loader's other vtable functions.  */
 static lt_module
 vm_open (lt_user_data loader_data, const char *filename,
-         lt_dladvise LT__UNUSED advise)
+         lt_dladvise advise LT__UNUSED)
 {
   lt_module module = 0;
   NSObjectFileImage ofi = 0;
@@ -240,8 +240,8 @@ vm_open (lt_user_data loader_data, const char *filename,
     {
     case NSObjectFileImageSuccess:
       module = NSLinkModule (ofi, filename, NSLINKMODULE_OPTION_RETURN_ON_ERROR
-			     		    | NSLINKMODULE_OPTION_PRIVATE
-			     		    | NSLINKMODULE_OPTION_BINDNOW);
+					    | NSLINKMODULE_OPTION_PRIVATE
+					    | NSLINKMODULE_OPTION_BINDNOW);
       NSDestroyObjectFileImage (ofi);
 
       if (module)
@@ -302,7 +302,7 @@ vm_close (lt_user_data loader_data, lt_module module)
 	    {
 	      flags |= NSUNLINKMODULE_OPTION_KEEP_MEMORY_MAPPED;
 	    }
-#if defined(__ppc__)
+#if defined __ppc__
 	  flags |= NSUNLINKMODULE_OPTION_RESET_LAZY_REFERENCES;
 #endif
 	  if (!NSUnLinkModule (module, flags))
@@ -350,7 +350,7 @@ vm_sym (lt_user_data loader_data, lt_module module, const char *name)
 
   if (!nssym)
     {
-      strncpy (saveError, dylderror (LT__STRERROR (SYMBOL_NOT_FOUND)), 255);
+      strlcpy (saveError, dylderror (LT__STRERROR (SYMBOL_NOT_FOUND)), 255);
       saveError[255] = 0;
       if (!mh)
 	{
