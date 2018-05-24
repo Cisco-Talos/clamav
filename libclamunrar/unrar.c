@@ -833,8 +833,6 @@ void rar_unpack_init_data(int solid, unpack_data_t *unpack_data)
 		memset(unpack_data->old_dist, 0, sizeof(unpack_data->old_dist));
 		unpack_data->old_dist_ptr= 0;
 		memset(unpack_data->unp_old_table, 0, sizeof(unpack_data->unp_old_table));
-		memset(&unpack_data->LD, 0, sizeof(unpack_data->LD));
-		memset(&unpack_data->DD, 0, sizeof(unpack_data->DD));
 		memset(&unpack_data->LDD, 0, sizeof(unpack_data->LDD));
 		memset(&unpack_data->RD, 0, sizeof(unpack_data->RD));
 		memset(&unpack_data->BD, 0, sizeof(unpack_data->BD));
@@ -846,6 +844,8 @@ void rar_unpack_init_data(int solid, unpack_data_t *unpack_data)
 		unpack_data->unp_block_type = BLOCK_LZ;
 		rar_init_filters(unpack_data);
 	}
+	memset(&unpack_data->LD, 0, sizeof(unpack_data->LD));
+	memset(&unpack_data->DD, 0, sizeof(unpack_data->DD));
 	unpack_data->in_bit = 0;
 	unpack_data->in_addr = 0;
 	unpack_data->read_top = 0;
