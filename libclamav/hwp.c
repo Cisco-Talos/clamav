@@ -671,6 +671,7 @@ static inline int parsehwp3_docsummary(cli_ctx *ctx, off_t offset)
 static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int level, off_t *roffset, int *last)
 {
     off_t offset = *roffset;
+    off_t new_offset;
     uint16_t nchars, nlines, content;
     uint8_t ppfs, ifsc, cfsb;
     int i, c, l, sp = 0, term = 0, ret = CL_SUCCESS;
@@ -780,7 +781,12 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
         offset += HWP3_LINEINFO_SIZE;
     }
 #else
-    offset += (nlines * HWP3_LINEINFO_SIZE);
+    new_offset = offset + (nlines * HWP3_LINEINFO_SIZE);
+    if ((new_offset <= offset) || (new_offset >= map->len)) {
+        cli_errmsg("HWP3.x: Paragraph[%d, %d]: length value is too high, invalid. %u\n", level, p, nlines);
+        return CL_EPARSE;
+    }
+    offset = new_offset;
 #endif
 
     if (offset >= map->len)
@@ -835,7 +841,8 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
     /* scan for end-of-paragraph [0x0d00 on offset parity to current content] */
     while ((!term) &&
            (offset >= 0) &&
-           (offset < map->len)) {
+           (offset < map->len))
+    {
         if (fmap_readn(map, &content, offset, sizeof(content)) != sizeof(content))
             return CL_EREAD;
 
@@ -874,12 +881,13 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                         return CL_EREAD;
 
                     length = le32_to_host(length);
-                    if ((size_t)length >= (size_t)map->len - 8 - (size_t)offset) {
+                    new_offset = offset + (8 + length);
+                    if ((new_offset <= offset) || (new_offset >= map->len)) {
                         cli_errmsg("HWP3.x: Paragraph[%d, %d]: length value is too high, invalid. %u\n", level, p, length);
                         return CL_EPARSE;
                     }
+                    offset = new_offset;
 
-                    offset += (8 + length);
 #if HWP3_DEBUG
                     cli_errmsg("HWP3.x: Paragraph[%d, %d]: possible invalid usage of reserved special character %u\n", level, p, content);
                     return CL_EFORMAT;
@@ -906,12 +914,12 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                         return CL_EREAD;
 
                     length = le32_to_host(length);
-                    if ((size_t)length >= (size_t)map->len - 8 - (size_t)offset) {
+                    new_offset = offset + (8 + length);
+                    if ((new_offset <= offset) || (new_offset >= map->len)) {
                         cli_errmsg("HWP3.x: Paragraph[%d, %d]: length value is too high, invalid. %u\n", level, p, length);
                         return CL_EPARSE;
                     }
-
-                    offset += (8 + length);
+                    offset = new_offset;
                     break;
                 }
             case 6: /* bookmark */
@@ -1050,11 +1058,13 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
 
                     /* cell information (27 bytes x ncells(offset 80 of table)) */
                     hwp3_debug("HWP3.x: Paragraph[%d, %d]: box cell info array starts @ %llu\n", level, p, (long long unsigned)offset);
-                    if (27 * (size_t)ncells >= (size_t)map->len - (size_t)offset) {
+
+                    new_offset = offset + (27 * ncells);
+                    if ((new_offset <= offset) || (new_offset >= map->len)) {
                         cli_errmsg("HWP3.x: Paragraph[%d, %d]: number of box cells is too high, invalid. %u\n", level, p, ncells);
                         return CL_EPARSE;
                     }
-                    offset += (27 * ncells);
+                    offset = new_offset;
 
                     /* cell paragraph list */
                     hwp3_debug("HWP3.x: Paragraph[%d, %d]: box cell paragraph list starts @ %llu\n", level, p, (long long unsigned)offset);
@@ -1095,12 +1105,12 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                     hwp3_debug("HWP3.x: Paragraph[%d, %d]: drawing is %u additional bytes\n", level, p, size);
 
                     size = le32_to_host(size);
-                    if ((size_t)size >= (size_t)map->len - 348 - (size_t)offset) {
+                    new_offset = offset + (348 + size);
+                    if ((new_offset <= offset) || (new_offset >= map->len)) {
                         cli_errmsg("HWP3.x: Paragraph[%d, %d]: image size value is too high, invalid. %u\n", level, p, size);
                         return CL_EPARSE;
                     }
-
-                    offset += (348 + size);
+                    offset = new_offset;
 
                     /* caption paragraph list */
                     hwp3_debug("HWP3.x: Paragraph[%d, %d]: drawing caption paragraph list starts @ %llu\n", level, p, (long long unsigned)offset);
@@ -1449,12 +1459,12 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                         return CL_EREAD;
 
                     length = le32_to_host(length);
-                    if ((size_t)length >= (size_t)map->len - 8 - (size_t)offset) {
+                    new_offset = offset + (8 + length);
+                    if ((new_offset <= offset) || (new_offset >= map->len)) {
                         cli_errmsg("HWP3.x: Paragraph[%d, %d]: length value is too high, invalid. %u\n", level, p, length);
                         return CL_EPARSE;
                     }
-
-                    offset += (8 + length);
+                    offset = new_offset;
                     break;
                 }
             case 30: /* bundle of blanks (ON SALE for 2.99!) */
@@ -1750,7 +1760,7 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
 static int hwp3_cb(void *cbdata, int fd, cli_ctx *ctx)
 {
     fmap_t *map, *dmap;
-    off_t offset, start;
+    off_t offset, start, new_offset;
     int i, t = 0, p = 0, last = 0, ret = CL_SUCCESS;
     uint16_t nstyles;
 #if HAVE_JSON
@@ -1803,13 +1813,12 @@ static int hwp3_cb(void *cbdata, int fd, cli_ctx *ctx)
         if (ctx->options & CL_SCAN_FILE_PROPERTIES)
             cli_jsonint(fonts, NULL, nfonts);
 #endif
-        hwp3_debug("HWP3.x: Font Entry %d with %u entries @ offset %llu\n", i+1, nfonts, (long long unsigned)offset);
-        if (2 + (size_t)nfonts * 40 >= (size_t)map->len - (size_t)offset) {
+        new_offset = offset + (2 + nfonts * 40);
+        if ((new_offset <= offset) || (new_offset >= map->len)) {
             cli_errmsg("HWP3.x: Font Entry: number of fonts is too high, invalid. %u\n", nfonts);
             return CL_EPARSE;
         }
-
-        offset += (2 + nfonts * 40);
+        offset = new_offset;
     }
 
     /* Styles - 2 + (n x 238) bytes where n is the first 2 bytes of the section */
@@ -1825,11 +1834,11 @@ static int hwp3_cb(void *cbdata, int fd, cli_ctx *ctx)
         cli_jsonint(ctx->wrkproperty, "StyleCount", nstyles);
 #endif
     hwp3_debug("HWP3.x: %u Styles @ offset %llu\n", nstyles, (long long unsigned)offset);
-    if (2 +  (size_t)nstyles * 238 >= (size_t)map->len -  (size_t)offset) {
+    new_offset = offset + (2 + nstyles * 238);
+    if ((new_offset <= offset) || (new_offset >= map->len)) {
         cli_errmsg("HWP3.x: Font Entry: number of font styles is too high, invalid. %u\n", nstyles);
         return CL_EPARSE;
     }
-
     offset += (2 + nstyles * 238);
 
     last = 0;
@@ -1872,7 +1881,7 @@ int cli_scanhwp3(cli_ctx *ctx)
 {
     struct hwp3_docinfo docinfo;
     int ret = CL_SUCCESS;
-    off_t offset = 0;
+    off_t offset = 0, new_offset = 0;
     fmap_t *map = *ctx->fmap;
 
 #if HAVE_JSON
@@ -1904,11 +1913,12 @@ int cli_scanhwp3(cli_ctx *ctx)
 
     if (docinfo.di_infoblksize) {
         /* OPTIONAL TODO: HANDLE OPTIONAL INFORMATION BLOCK #0's FOR PRECLASS */
-        if ((size_t)docinfo.di_infoblksize >= (size_t)map->len - (size_t)offset) {
+        new_offset = offset + docinfo.di_infoblksize;
+        if ((new_offset <= offset) || (new_offset >= map->len)) {
             cli_errmsg("HWP3.x: Doc info block size is too high, invalid. %u\n", docinfo.di_infoblksize);
             return CL_EPARSE;
         }
-        offset += docinfo.di_infoblksize;
+        offset = new_offset;
     }
 
     if (docinfo.di_compressed)
