@@ -626,7 +626,7 @@ static unsigned char *read_chunk(struct mschm_decompressor_p *self,
     
     /* ensure chunk cache is available */
     if (!chm->chunk_cache) {
-	size_t size = sizeof(unsigned char *) * chm->num_chunks;
+	size_t size = sizeof(unsigned char *) * (chm->num_chunks + 1);
 	if (!(chm->chunk_cache = (unsigned char **) sys->alloc(sys, size))) {
 	    self->error = MSPACK_ERR_NOMEMORY;
 	    return NULL;
