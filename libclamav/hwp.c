@@ -782,7 +782,7 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
     }
 #else
     new_offset = offset + (nlines * HWP3_LINEINFO_SIZE);
-    if ((new_offset <= offset) || (new_offset >= map->len)) {
+    if ((new_offset < offset) || (new_offset >= map->len)) {
         cli_errmsg("HWP3.x: Paragraph[%d, %d]: length value is too high, invalid. %u\n", level, p, nlines);
         return CL_EPARSE;
     }
@@ -1060,7 +1060,7 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                     hwp3_debug("HWP3.x: Paragraph[%d, %d]: box cell info array starts @ %llu\n", level, p, (long long unsigned)offset);
 
                     new_offset = offset + (27 * ncells);
-                    if ((new_offset <= offset) || (new_offset >= map->len)) {
+                    if ((new_offset < offset) || (new_offset >= map->len)) {
                         cli_errmsg("HWP3.x: Paragraph[%d, %d]: number of box cells is too high, invalid. %u\n", level, p, ncells);
                         return CL_EPARSE;
                     }
