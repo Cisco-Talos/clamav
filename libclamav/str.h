@@ -68,6 +68,7 @@ const char *cli_memstr(const char *haystack, unsigned int hs, const char *needle
 char *cli_strrcpy(char *dest, const char *source);
 size_t cli_strtokenize(char *buffer, const char delim, const size_t token_count, const char **tokens);
 size_t cli_ldbtokenize(char *buffer, const char delim, const size_t token_count, const char **tokens, int token_skip);
+long cli_strntol(const char *nptr, size_t n, char **endptr, register int base);
 int cli_isnumber(const char *str);
 char *cli_unescape(const char *str);
 struct text_buffer;

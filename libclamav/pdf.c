@@ -243,12 +243,12 @@ int pdf_findobj(struct pdf_struct *pdf)
     while (q > start && isdigit(*q))
         q--;
 
-    genid = atoi(q);
+    genid = (unsigned int)cli_strntol(q, (size_t)bytesleft, NULL, 10);
     q = findNextNonWSBack(q-1,start);
     while (q > start && isdigit(*q))
         q--;
 
-    objid = atoi(q);
+    objid = (unsigned int)cli_strntol(q, (size_t)bytesleft, NULL, 10);
     obj->id = (objid << 8) | (genid&0xff);
     obj->start = q2+4 - pdf->map;
     obj->flags = 0;
@@ -421,17 +421,22 @@ static int find_length(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
 
     /* len -= start - q; */
     q = start;
-    length = atoi(q);
-    while (isdigit(*q))
+    length = (int)cli_strntol(q, (size_t)len, NULL, 10);
+    while (isdigit(*q) && len > 0) {
         q++;
+        len--;
+    }
 
-    if (*q == ' ') {
+    if (*q == ' ' && len > 0) {
         int genid;
         q++;
-        genid = atoi(q);
+        len--;
+        genid = (int)cli_strntol(q, (size_t)len, NULL, 10);
 
-        while(isdigit(*q))
+        while(isdigit(*q) && len > 0) {
             q++;
+            len--;
+        }
 
         if (q[0] == ' ' && q[1] == 'R') {
             cli_dbgmsg("cli_pdf: length is in indirect object %u %u\n", length, genid);
@@ -448,7 +453,7 @@ static int find_length(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
                 return 0;
             }
 
-            length = atoi(q);
+            length = (int)cli_strntol(q, (size_t)len, NULL, 10);
         }
     }
 
@@ -564,8 +569,8 @@ static void aes_decrypt(const unsigned char *in, size_t *length, unsigned char *
     cli_dbgmsg("aes_decrypt: Calling rijndaelSetupDecrypt\n");
     nrounds = rijndaelSetupDecrypt(rk, (const unsigned char *)key, key_n*8);
     if (!nrounds) {
-	cli_dbgmsg("cli_pdf: aes_decrypt: nrounds = 0\n");
-	return;
+    cli_dbgmsg("cli_pdf: aes_decrypt: nrounds = 0\n");
+    return;
     }
     cli_dbgmsg("aes_decrypt: Beginning rijndaelDecrypt\n");
 
@@ -1294,17 +1299,17 @@ static void pdf_parse_encrypt(struct pdf_struct *pdf, const char *enc, int len)
     q2 = pdf_nextobject(q, len);
     if (!q2 || !isdigit(*q2))
         return;
-
-    objid = atoi(q2) << 8;
     len -= q2 - q;
     q = q2;
+
+    objid = (uint32_t)cli_strntol(q2, (size_t)len, NULL, 10) << 8;
     q2 = pdf_nextobject(q, len);
     if (!q2 || !isdigit(*q2))
         return;
-
-    objid |= atoi(q2) & 0xff;
     len -= q2 - q;
     q = q2;
+
+    objid |= (uint32_t)cli_strntol(q2, (size_t)len, NULL, 10) & 0xff;
     q2 = pdf_nextobject(q, len);
     if (!q2 || *q2 != 'R')
         return;
@@ -1566,7 +1571,7 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
                 const char * q2_old = NULL;
                 dict_remaining -= (off_t)(q2 - q);
 
-                uint32_t objid = atoi(q2) << 8;
+                uint32_t objid = (uint32_t)cli_strntol(q2, (size_t)dict_remaining, NULL, 10) << 8;
                 while (isdigit(*q2))
                     q2++;
 
@@ -1574,7 +1579,7 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
                 q2 = pdf_nextobject(q2, dict_remaining);
                 if (q2 && isdigit(*q2)) {
                     dict_remaining -= (off_t)(q2 - q2_old);
-                    objid |= atoi(q2) & 0xff;
+                    objid |= (uint32_t)cli_strntol(q2, (size_t)dict_remaining, NULL, 10) & 0xff;
 
                     q2 = pdf_nextobject(q2, dict_remaining);
                     if (q2 && *q2 == 'R') {
@@ -1876,7 +1881,7 @@ static int pdf_readint(const char *q0, int len, const char *key)
 {
     const char *q  = pdf_getdict(q0, &len, key);
 
-    return (q != NULL) ? atoi(q) : -1;
+    return (q != NULL) ? (int)cli_strntol(q, (size_t)len, NULL, 10) : -1;
 }
 
 static int pdf_readbool(const char *q0, int len, const char *key, int Default)
@@ -1913,9 +1918,9 @@ static void dbg_printhex(const char *msg, const char *hex, unsigned len)
 }
 
 static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
-				const char *U, int32_t P, int EM,
-				const char *UE,
-				unsigned length, unsigned oulen)
+                const char *U, int32_t P, int EM,
+                const char *UE,
+                unsigned length, unsigned oulen)
 {
     unsigned i;
     uint8_t result[16];
@@ -2420,7 +2425,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 
             while (q < eof && (*q == ' ' || *q == '\n' || *q == '\r')) { q++; }
 
-            xref = atol(q);
+            xref = cli_strntol(q, q - eofmap + map_off, NULL, 10);
             bytesleft = map->len - offset - xref;
             if (bytesleft > 4096)
                 bytesleft = 4096;
@@ -2580,17 +2585,17 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
             }
         }
 #if 0
-	/* TODO: find both trailers, and /Encrypt settings */
-	if (pdf.flags & (1 << LINEARIZED_PDF))
-	    pdf.flags &= ~ (1 << BAD_ASCIIDECODE);
-	if (pdf.flags & (1 << MANY_FILTERS))
-	    pdf.flags &= ~ (1 << BAD_ASCIIDECODE);
-	if (!rc && (pdf.flags &
-	    ((1 << BAD_PDF_TOOMANYOBJS) | (1 << BAD_STREAM_FILTERS) |
-	     (1<<BAD_FLATE) | (1<<BAD_ASCIIDECODE)|
-    	     (1<<UNTERMINATED_OBJ_DICT) | (1<<UNKNOWN_FILTER)))) {
-	    rc = CL_EUNPACK;
-	}
+    /* TODO: find both trailers, and /Encrypt settings */
+    if (pdf.flags & (1 << LINEARIZED_PDF))
+        pdf.flags &= ~ (1 << BAD_ASCIIDECODE);
+    if (pdf.flags & (1 << MANY_FILTERS))
+        pdf.flags &= ~ (1 << BAD_ASCIIDECODE);
+    if (!rc && (pdf.flags &
+        ((1 << BAD_PDF_TOOMANYOBJS) | (1 << BAD_STREAM_FILTERS) |
+         (1<<BAD_FLATE) | (1<<BAD_ASCIIDECODE)|
+             (1<<UNTERMINATED_OBJ_DICT) | (1<<UNKNOWN_FILTER)))) {
+        rc = CL_EUNPACK;
+    }
 #endif
     }
 
@@ -3216,7 +3221,7 @@ static void Pages_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname
         goto cleanup;
     }
 
-    count = strtoul(begin, NULL, 10);
+    count = cli_strntol(begin, (size_t)(obj->start + pdf->map + objsz - begin), NULL, 10);
     if (count != npages)
         cli_jsonbool(pdfobj, "IncorrectPagesCount", 1);
 
@@ -3261,7 +3266,7 @@ static void Colors_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfnam
     if ((size_t)(p1 - start) == objsz)
         return;
 
-    ncolors = strtoul(p1, NULL, 10);
+    ncolors = cli_strntol(p1, (size_t)((p1 - start) - objsz), NULL, 10);
 
     /* We only care if the number of colors > 2**24 */
     if (ncolors < 1<<24)
