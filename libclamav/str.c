@@ -31,6 +31,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 #ifdef HAVE_STRINGS_H
 #include <strings.h>
 #endif
@@ -523,16 +524,21 @@ size_t cli_strtokenize(char *buffer, const char delim, const size_t token_count,
  * Copyright (c) 1990 The Regents of the University of California.
  * All rights reserved.
  *
- * @param nptr 		Pointer to start of string.
- * @param n 		Max length of buffer in bytes.
- * @param endptr 	[OUT optional] If endptr is not NULL, strtol() stores the address
- * 					of the first invalid character in *endptr. If there were no digits
- * 					at all, however, strtol() stores the
- * 					original value of str in *endptr.
- * @param int 		The conversion is done according to the given base, which must be
- * 					between 2 and 36 inclusive, or be the special value 0.
- * @return long 	The signed long value.
+ * @param nptr          Pointer to start of string.
+ * @param n             Max length of buffer in bytes.
+ * @param[out] endptr   [optional] If endptr is not NULL, strtol() stores the address
+ *                      of the first invalid character in *endptr. If there were no digits
+ *                      at all, however, strtol() stores the
+ *                      original value of str in *endptr. 
+ * 	                     Nota Bene:  If the buffer is non-null terminated and the number
+ *                       comprises the entire buffer, endptr will point past the end of
+ *                       the buffer, and the caller should check if endptr >= nptr + n.
+ *                      
+ * @param int           The conversion is done according to the given base, which must be
+ *                      between 2 and 36 inclusive, or be the special value 0.
+ * @return long         The signed long value.
  */
+static
 long cli_strntol(const char *nptr, size_t n, char **endptr, register int base)
 {
 	register const char *s = nptr;
@@ -627,9 +633,53 @@ long cli_strntol(const char *nptr, size_t n, char **endptr, register int base)
 	} else if (neg)
 		acc = -acc;
 	if (endptr != 0)
-		*endptr = (char *) (any ? s - 1 : nptr);
+		*endptr = (char *) (any ? s : nptr);
 	return (acc);
 }
+
+/**
+ * @brief 	The strntol() function converts the string in str to a long value.
+ * 
+ * Wrapper for cli_strntol() that provides incentive to check for failure.
+ * 
+ * @param buf               Pointer to start of string. 
+ * @param buf_size 			Max length of buffer to convert to integer.
+ * @param fail_at_nondigit  If 1, fail out if the a non-digit character is found before the end of the buffer.
+ *                          If 0, non-digit character represents end of number and is not a failure.
+ * @param base              The conversion is done according to the given base, which must be
+ *                          between 2 and 36 inclusive, or be the special value 0.
+ * @param[out] result 	    Long integer value of ascii number.
+ * @return CL_SUCCESS       Success
+ * @return CL_EPARSE        Failure
+ */
+int cli_strntol_wrap(const char *buf, size_t buf_size, int fail_at_nondigit, int base, long *result)
+{
+    char *endptr = NULL;
+    long num;
+
+    if (buf_size == 0 || !buf || !result) {
+        /* invalid parameter */
+        return CL_EPARSE;
+    }
+    errno = 0;
+    num = cli_strntol(buf, buf_size, &endptr, base);
+    if ((num == LONG_MIN || num == LONG_MAX) && errno == ERANGE) {
+        /* under- or overflow */
+        return CL_EPARSE;
+    }
+    if (endptr == buf) {
+        /* no digits */
+        return CL_EPARSE;
+    }
+    if (fail_at_nondigit && (endptr < (buf + buf_size)) && (*endptr != '\0')) {
+        /* non-digit encountered */
+        return CL_EPARSE;
+    }
+    /* success */
+    *result = num;
+    return CL_SUCCESS;
+}
+
 
 size_t cli_ldbtokenize(char *buffer, const char delim, const size_t token_count, const char **tokens, int token_skip)
 {
