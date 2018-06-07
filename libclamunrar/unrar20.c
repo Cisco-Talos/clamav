@@ -338,13 +338,26 @@ int rar_unpack20(int fd, int solid, unpack_data_t *unpack_data)
 			continue;
 		}
 		if (number > 269) {
-			length = ldecode[number-=270]+3;
+			/* If number is higher or equal to 298 in this instance something has likely
+			 * gone horribly wrong and/or this is a RAR 5 file that Clam does not yet
+			 * support parsing. Either way, this is a total failure case. */
+			if (number < 298) {
+				length = ldecode[number-=270]+3;
+			} else {
+				retval = FALSE;
+				break;
+			}
+
 			if ((bits = lbits[number]) > 0) {
 				length += rar_getbits(unpack_data) >> (16-bits);
 				rar_addbits(unpack_data, bits);
 			}
 			
 			dist_number = rar_decode_number(unpack_data, (struct Decode *)&unpack_data->DD);
+			if (dist_number > 47 || dist_number < 0) {
+				retval = FALSE;
+				break;
+			}
 			distance = ddecode[dist_number] + 1;
 			if ((bits = dbits[dist_number]) > 0) {
 				distance += rar_getbits(unpack_data)>>(16-bits);

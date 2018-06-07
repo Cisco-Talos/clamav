@@ -666,11 +666,7 @@ static int add_vm_code(unpack_data_t *unpack_data, unsigned int first_byte,
 		    return FALSE;
 		}
 		for (i=0 ; i < (size_t) vm_codesize ; i++) {
-			if ((rarvm_input.in_addr + 2) < rarvm_input.buf_size) {
-				vm_code[i] = rarvm_getbits(&rarvm_input) >> 8;
-			} else {
-				vm_code[i] = 0;
-			}
+			vm_code[i] = rarvm_getbits(&rarvm_input) >> 8;
 			rarvm_addbits(&rarvm_input, 8);
 		}
 		if(!rarvm_prepare(&unpack_data->rarvm_data, &rarvm_input, &vm_code[0], (int) vm_codesize, &filter->prg)) {
@@ -834,6 +830,8 @@ void rar_unpack_init_data(int solid, unpack_data_t *unpack_data)
 		unpack_data->old_dist_ptr= 0;
 		memset(unpack_data->unp_old_table, 0, sizeof(unpack_data->unp_old_table));
 		memset(&unpack_data->LDD, 0, sizeof(unpack_data->LDD));
+		memset(&unpack_data->LD, 0, sizeof(unpack_data->LD));
+		memset(&unpack_data->DD, 0, sizeof(unpack_data->DD));
 		memset(&unpack_data->RD, 0, sizeof(unpack_data->RD));
 		memset(&unpack_data->BD, 0, sizeof(unpack_data->BD));
 		unpack_data->last_dist= 0;
@@ -844,8 +842,6 @@ void rar_unpack_init_data(int solid, unpack_data_t *unpack_data)
 		unpack_data->unp_block_type = BLOCK_LZ;
 		rar_init_filters(unpack_data);
 	}
-	memset(&unpack_data->LD, 0, sizeof(unpack_data->LD));
-	memset(&unpack_data->DD, 0, sizeof(unpack_data->DD));
 	unpack_data->in_bit = 0;
 	unpack_data->in_addr = 0;
 	unpack_data->read_top = 0;
