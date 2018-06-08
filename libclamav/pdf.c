@@ -1627,6 +1627,16 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
     cli_dbgmsg("cli_pdf: %u %u obj flags: %02x\n", obj->id>>8, obj->id&0xff, obj->flags);
 }
 
+/**
+ * @brief   Given a pointer to a dictionary object and a key, get the key's value.
+ *
+ * @param q0            Offset of the start of the dictionary.
+ * @param[in,out] len   In: The number of bytes in the dictionary.
+ *                      Out: The number of bytes remaining from the start
+ *                           of the value to the end of the dict
+ * @param key           Null terminated 'key' to search for.
+ * @return const char*  Address of the dictionary key's 'value'.
+ */
 static const char *pdf_getdict(const char *q0, int* len, const char *key)
 {
     const char *q;
@@ -1639,6 +1649,7 @@ static const char *pdf_getdict(const char *q0, int* len, const char *key)
     if (!q0)
         return NULL;
 
+    /* find the key */
     q = cli_memstr(q0, *len, key, strlen(key));
     if (!q) {
         cli_dbgmsg("cli_pdf: %s not found in dict\n", key);
@@ -1647,12 +1658,15 @@ static const char *pdf_getdict(const char *q0, int* len, const char *key)
 
     *len -= q - q0;
     q0 = q;
+
+    /* find the start of the value object */
     q = pdf_nextobject(q0 + 1, *len - 1);
     if (!q) {
         cli_dbgmsg("cli_pdf: %s is invalid in dict\n", key);
         return NULL;
     }
 
+    /* if the value is a dictionary object, include the < > brackets.*/
     if (q[-1] == '<')
         q--;
 
@@ -1671,12 +1685,13 @@ static char *pdf_readstring(const char *q0, int len, const char *key, unsigned *
         *qend = q0;
 
     q = pdf_getdict(q0, &len, key);
-    if (!q)
+    if (!q || len <= 0)
         return NULL;
 
     if (*q == '(') {
         int paren = 1;
         start = ++q;
+        len--;
         for (;paren > 0 && len > 0; q++,len--) {
             switch (*q) {
             case '(':
@@ -1692,6 +1707,11 @@ static char *pdf_readstring(const char *q0, int len, const char *key, unsigned *
             default:
                 break;
             }
+        }
+
+        if (len <= 0) {
+            cli_errmsg("pdf_readstring: Invalid, truncated dictionary.\n");
+            return NULL;
         }
 
         if (qend)
