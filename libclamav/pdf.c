@@ -450,7 +450,7 @@ static int find_length(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
     if (!start)
         return 0;
 
-    /* len -= start - q; */
+    len -= start - q;
     q = start;
     if (CL_SUCCESS != cli_strntol_wrap(q, (size_t)len, 0, 10, (long*)&length)) {
         cli_dbgmsg("cli_pdf: failed to parse object length\n");
