@@ -201,7 +201,15 @@ static int find_stream_bounds(const char *start, off_t bytesleft, off_t byteslef
     return 0;
 }
 
-/* Expected returns: 1 if success, 0 if no more objects, -1 if error */
+/**
+ * @brief  Finds the next obj and adds it to our list of objects, and increments nobj.
+ *
+ * @param pdf   PDF structure
+ * @return int  -1 if error
+ * @return int  0 if no more objects
+ * @return int  1 if success
+ * @return int  2 if an invalid object was discovered, may be skipped.
+ */
 int pdf_findobj(struct pdf_struct *pdf)
 {
     const char *start, *q, *q2, *q3, *eof;
@@ -245,7 +253,9 @@ int pdf_findobj(struct pdf_struct *pdf)
 
     if (CL_SUCCESS != cli_strntol_wrap(q, (size_t)(bytesleft + (q2-q)), 0, 10, (long*)&genid)) {
         cli_dbgmsg("cli_pdf: Failed to parse object genid (%u)\n", pdf->nobjs);
-        return -1;
+        /* Failed to parse, probably not a real object.  Skip past the "obj" thing, and continue. */
+        pdf->offset = q2 + 4 - pdf->map;
+        return 2;
     }
     q = findNextNonWSBack(q-1,start);
     while (q > start && isdigit(*q))
@@ -260,9 +270,11 @@ int pdf_findobj(struct pdf_struct *pdf)
         if (q - 4 > start) {
             const char* lastfile = q - 4;
             if (0 != strncmp(lastfile, "\%\%EOF", 5)) {
-                /* Nope, wasn't %%EOF, I guess just fail out. */
+                /* Nope, wasn't %%EOF */
                 cli_dbgmsg("cli_pdf: Failed to parse object objid (%u)\n", pdf->nobjs);
-                return -1;
+                /* Skip past the "obj" thing, and continue. */
+                pdf->offset = q2 + 4 - pdf->map;
+                return 2;
             }
             /* Yup, Looks, like the file continues after %%EOF.  
              * Probably another revision.  Keep parsing... */
@@ -271,12 +283,16 @@ int pdf_findobj(struct pdf_struct *pdf)
         } else {
             /* Failed parsing at the very beginning */
             cli_dbgmsg("cli_pdf: Failed to parse object objid (%u)\n", pdf->nobjs);
-            return -1;
+            /* Probably not a real object.  Skip past the "obj" thing, and continue. */
+            pdf->offset = q2 + 4 - pdf->map;
+            return 2;
         }
         /* Try again, with offset slightly adjusted */
         if (CL_SUCCESS != cli_strntol_wrap(q, (size_t)(bytesleft + (q2-q)), 0, 10, (long*)&objid)) {
             cli_dbgmsg("cli_pdf: Failed to parse object objid (%u)\n", pdf->nobjs);
-            return -1;
+            /* Still failed... Probably not a real object.  Skip past the "obj" thing, and continue. */
+            pdf->offset = q2 + 4 - pdf->map;
+            return 2;
         }
         cli_dbgmsg("cli_pdf: There appears to be an additional revision. Continuing to parse...\n");
     }
@@ -2540,9 +2556,19 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 
     /* parse PDF and find obj offsets */
     while ((rc = pdf_findobj(&pdf)) > 0) {
-        struct pdf_obj *obj = &pdf.objs[pdf.nobjs-1];
+        if (rc == 1) {
+            struct pdf_obj *obj = &pdf.objs[pdf.nobjs-1];
 
-        cli_dbgmsg("cli_pdf: found %d %d obj @%lld\n", obj->id >> 8, obj->id&0xff, (long long)(obj->start + offset));
+            cli_dbgmsg("cli_pdf: found %d %d obj @%lld\n", obj->id >> 8, obj->id&0xff, (long long)(obj->start + offset));
+        }
+        else if (rc == 2) {
+            pdf.nobjs--;
+            cli_dbgmsg("cli_pdf: Failed to parse object, likely an oversight in parser design.\n");
+        }
+        else {
+            pdf.nobjs--;
+            cli_dbgmsg("cli_pdf: unexpected return code %d.\n", rc);
+        }
     }
 
     if (pdf.nobjs)
