@@ -251,7 +251,7 @@ int pdf_findobj(struct pdf_struct *pdf)
     while (q > start && isdigit(*q))
         q--;
 
-    if (CL_SUCCESS != cli_strntol_wrap(q, (size_t)(bytesleft + (q2-q)), 0, 10, (long*)&genid)) {
+    if (CL_SUCCESS != cli_strntoul_wrap(q, (size_t)(bytesleft + (q2-q)), 0, 10, &genid)) {
         cli_dbgmsg("cli_pdf: Failed to parse object genid (%u)\n", pdf->nobjs);
         /* Failed to parse, probably not a real object.  Skip past the "obj" thing, and continue. */
         pdf->offset = q2 + 4 - pdf->map;
@@ -261,7 +261,7 @@ int pdf_findobj(struct pdf_struct *pdf)
     while (q > start && isdigit(*q))
         q--;
 
-    if (CL_SUCCESS != cli_strntol_wrap(q, (size_t)(bytesleft + (q2-q)), 0, 10, (long*)&objid)) {
+    if (CL_SUCCESS != cli_strntoul_wrap(q, (size_t)(bytesleft + (q2-q)), 0, 10, &objid)) {
         /*
          * PDFs with multiple revisions will have %%EOF before the end of the file, 
          * followed by the next revision of the PDF.  If this is the case, we can 
@@ -288,7 +288,7 @@ int pdf_findobj(struct pdf_struct *pdf)
             return 2;
         }
         /* Try again, with offset slightly adjusted */
-        if (CL_SUCCESS != cli_strntol_wrap(q, (size_t)(bytesleft + (q2-q)), 0, 10, (long*)&objid)) {
+        if (CL_SUCCESS != cli_strntoul_wrap(q, (size_t)(bytesleft + (q2-q)), 0, 10, &objid)) {
             cli_dbgmsg("cli_pdf: Failed to parse object objid (%u)\n", pdf->nobjs);
             /* Still failed... Probably not a real object.  Skip past the "obj" thing, and continue. */
             pdf->offset = q2 + 4 - pdf->map;
@@ -468,7 +468,7 @@ static int find_length(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
 
     len -= start - q;
     q = start;
-    if (CL_SUCCESS != cli_strntol_wrap(q, (size_t)len, 0, 10, (long*)&length)) {
+    if (CL_SUCCESS != cli_strntoul_wrap(q, (size_t)len, 0, 10, &length)) {
         cli_dbgmsg("cli_pdf: failed to parse object length\n");
         return 0;
     }
@@ -482,7 +482,7 @@ static int find_length(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
         unsigned long genid;
         q++;
         len--;
-        if (CL_SUCCESS != cli_strntol_wrap(q, (size_t)len, 0, 10, (long*)&genid)) {
+        if (CL_SUCCESS != cli_strntoul_wrap(q, (size_t)len, 0, 10, &genid)) {
             cli_dbgmsg("cli_pdf: failed to parse object genid\n");
             return 0;
         }
@@ -507,7 +507,7 @@ static int find_length(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
                 return 0;
             }
 
-            if (CL_SUCCESS != cli_strntol_wrap(q, (size_t)len, 0, 10, (long*)&length)) {
+            if (CL_SUCCESS != cli_strntoul_wrap(q, (size_t)len, 0, 10, &length)) {
                 cli_dbgmsg("cli_pdf: failed to parse object length from indirect object\n");
                 return 0;
             }
@@ -1360,7 +1360,7 @@ static void pdf_parse_encrypt(struct pdf_struct *pdf, const char *enc, int len)
     len -= q2 - q;
     q = q2;
 
-    if (CL_SUCCESS != cli_strntol_wrap(q2, (size_t)len, 0, 10, (long*)&objid)) {
+    if (CL_SUCCESS != cli_strntoul_wrap(q2, (size_t)len, 0, 10, &objid)) {
         cli_dbgmsg("cli_pdf: Found Encrypt dictionary but failed to parse objid\n");
         return;
     }
@@ -1371,7 +1371,7 @@ static void pdf_parse_encrypt(struct pdf_struct *pdf, const char *enc, int len)
     len -= q2 - q;
     q = q2;
 
-    if (CL_SUCCESS != cli_strntol_wrap(q2, (size_t)len, 0, 10, (long*)&genid)) {
+    if (CL_SUCCESS != cli_strntoul_wrap(q2, (size_t)len, 0, 10, &genid)) {
         cli_dbgmsg("cli_pdf: Found Encrypt dictionary but failed to parse genid\n");
         return;
     }
@@ -1640,7 +1640,7 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 
                 dict_remaining -= (off_t)(q2 - q);
 
-                if (CL_SUCCESS != cli_strntol_wrap(q2, (size_t)dict_remaining, 0, 10, (long*)&objid)) {
+                if (CL_SUCCESS != cli_strntoul_wrap(q2, (size_t)dict_remaining, 0, 10, &objid)) {
                     cli_dbgmsg("cli_pdf: failed to parse object objid\n");
                     return;
                 }
@@ -1653,7 +1653,7 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
                 q2 = pdf_nextobject(q2, dict_remaining);
                 if (q2 && isdigit(*q2)) {
                     dict_remaining -= (off_t)(q2 - q2_old);
-                    if (CL_SUCCESS != cli_strntol_wrap(q2, (size_t)dict_remaining, 0, 10, (long*)&genid)) {
+                    if (CL_SUCCESS != cli_strntoul_wrap(q2, (size_t)dict_remaining, 0, 10, &genid)) {
                         cli_dbgmsg("cli_pdf: failed to parse object genid\n");
                         return;
                     }
@@ -2370,7 +2370,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     size_t size = map->len - offset;
     off_t versize = size > 1032 ? 1032 : size;
     off_t map_off, bytesleft;
-    long xref;
+    unsigned long xref;
     const char *pdfver, *tmp, *start, *eofmap, *q, *eof;
     int rc, badobjects = 0;
     unsigned i, alerts = 0;
@@ -2510,7 +2510,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 
             while (q < eof && (*q == ' ' || *q == '\n' || *q == '\r')) { q++; }
 
-            if (CL_SUCCESS != cli_strntol_wrap(q, q - eofmap + map_off, 0, 10, &xref)) {
+            if (CL_SUCCESS != cli_strntoul_wrap(q, q - eofmap + map_off, 0, 10, &xref)) {
                 cli_dbgmsg("cli_pdf: failed to parse PDF trailer xref\n");
                 pdf.flags |= 1 << BAD_PDF_TRAILER;
             }
@@ -3321,7 +3321,7 @@ static void Pages_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname
         goto cleanup;
     }
 
-    if ((CL_SUCCESS != cli_strntol_wrap(begin, (size_t)(obj->start + pdf->map + objsz - begin), 0, 10, (long*)&count)) ||
+    if ((CL_SUCCESS != cli_strntoul_wrap(begin, (size_t)(obj->start + pdf->map + objsz - begin), 0, 10, &count)) ||
         (count != npages)) {
         cli_jsonbool(pdfobj, "IncorrectPagesCount", 1);
     }
@@ -3367,7 +3367,7 @@ static void Colors_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfnam
     if ((size_t)(p1 - start) == objsz)
         return;
 
-    if (CL_SUCCESS != cli_strntol_wrap(p1, (size_t)((p1 - start) - objsz), 0, 10, (long*)&ncolors))
+    if (CL_SUCCESS != cli_strntoul_wrap(p1, (size_t)((p1 - start) - objsz), 0, 10, &ncolors))
         return;
 
     /* We only care if the number of colors > 2**24 */
