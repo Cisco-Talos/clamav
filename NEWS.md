@@ -5,15 +5,37 @@ Note: This file refers to the source tarball. Things described here may differ
 
 ## 0.100.1
 
-ClamAV 0.99.4 is a hotfix release to patch a set of vulnerabilities.
+ClamAV 0.100.1 is a hotfix release to patch a set of vulnerabilities.
 
-- fixes for the following CVE's: .
-- also included are for a few minor vulnerabilities.
+- Fixes for the following CVE's:
+  - [CVE-2017-16932](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2017-16932):
+    Vulnerability in libxml2 dependency (affects ClamAV on Windows only).
+  - [CVE-2018-0360](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-0360):
+    HWP integer overflow, infinite loop vulnerability.
+    Reported by Secunia Research at Flexera.
+  - [CVE-2018-0361](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-0361):
+    ClamAV PDF object length check, unreasonably long time to parse relatively
+    small file.  Reported by aCaB.
+- Fixes for a few additional bugs:
+  - Buffer over-read in unRAR code due to missing max value checks in table
+    initialization.  Reported by Rui Reis.
+  - Libmspack heap buffer over-read in CHM parser. Reported by Hanno Böck.
+  - PDF parser bugs reported by Alex Gaynor.
+    - Buffer length checks when reading integers from non-NULL terminated strings.
+    - Buffer length tracking when reading strings from dictionary objects.
+- HTTPS support for clamsubmit.
+- Fix for DNS resolution for users on IPv4-only machines where IPv6 is not
+  available or is link-local only.  Patch provided by Guilherme Benkenstein.
 
-Thank you to the following ClamAV community members for your code
-submissions and bug reports! 
+Thank you to the following ClamAV community members for your code submissions
+and bug reports!
 
-
+- aCaB
+- Alex Gaynor
+- Guilherme Benkenstein
+- Hanno Böck
+- Rui Reis
+- Laurent Delosieres, Secunia Research at Flexera
 
 ## 0.100.0
 
