@@ -1055,7 +1055,7 @@ libclamav_la_CFLAGS = $(AM_CFLAGS) $(XML_CPPFLAGS) $(YARA_CFLAGS) \
 	-DSEARCH_LIBDIR=\"$(libdir)\" @LIBCLAMAV_CPPFLAGS@ \
 	@SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @ICONV_CPPFLAGS@ \
 	@PCRE_CPPFLAGS@ $(am__append_10)
-@USE_INTERNAL_MSPACK_TRUE@libclamav_la_CFLAGS = -I@top_srcdir@/libclamav/libmspack-0.5alpha/mspack \
+@USE_INTERNAL_MSPACK_TRUE@libclamav_la_CFLAGS := -I@top_srcdir@/libclamav/libmspack-0.5alpha/mspack \
 @USE_INTERNAL_MSPACK_TRUE@	$(libclamav_la_CFLAGS) \
 @USE_INTERNAL_MSPACK_TRUE@	$(am__append_10)
 libclamav_la_LDFLAGS = @SSL_LDFLAGS@ @TH_SAFE@ @JSON_LDFLAGS@ \
