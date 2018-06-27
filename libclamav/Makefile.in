@@ -110,12 +110,11 @@ target_triplet = @target@
 @ENABLE_LLVM_TRUE@am__append_6 = c++
 @VERSIONSCRIPT_TRUE@am__append_7 = -Wl,@VERSIONSCRIPTFLAG@,@top_srcdir@/libclamav/libclamav.map
 @USE_INTERNAL_MSPACK_TRUE@am__append_8 = libmspack-0.5alpha
-@USE_INTERNAL_MSPACK_TRUE@am__append_9 = -I@top_srcdir@/libclamav/libmspack-0.5alpha/mspack
-@USE_INTERNAL_MSPACK_TRUE@am__append_10 = libmspack-0.5alpha/libclammspack.la
-@USE_INTERNAL_MSPACK_FALSE@am__append_11 = $(LIBMSPACK_CFLAGS)
-@USE_INTERNAL_MSPACK_FALSE@am__append_12 = $(LIBMSPACK_LIBS)
-@USE_INTERNAL_MSPACK_FALSE@am__append_13 = libmspack-0.5alpha
-@ENABLE_YARA_TRUE@am__append_14 = yara_arena.c \
+@USE_INTERNAL_MSPACK_TRUE@am__append_9 = libmspack-0.5alpha/libclammspack.la
+@USE_INTERNAL_MSPACK_FALSE@am__append_10 = $(LIBMSPACK_CFLAGS)
+@USE_INTERNAL_MSPACK_FALSE@am__append_11 = $(LIBMSPACK_LIBS)
+@USE_INTERNAL_MSPACK_FALSE@am__append_12 = libmspack-0.5alpha
+@ENABLE_YARA_TRUE@am__append_13 = yara_arena.c \
 @ENABLE_YARA_TRUE@	yara_arena.h \
 @ENABLE_YARA_TRUE@	yara_compiler.c \
 @ENABLE_YARA_TRUE@	yara_compiler.h \
@@ -949,7 +948,7 @@ lib_LTLIBRARIES = $(am__append_3) libclamav.la
 COMMON_CLEANFILES = version.h version.h.tmp *.gcda *.gcno
 EXTRA_DIST = c++/Makefile.nollvm.in \
 	libmspack-0.5alpha/Makefile.intmspack.in $(am__append_4) \
-	$(am__append_13) regex/engine.c \
+	$(am__append_12) regex/engine.c \
 	tomsfastmath/sqr/fp_sqr_comba.c \
 	tomsfastmath/mul/fp_mul_comba.c libclamav.map \
 	jsparse/generated/operators.h jsparse/generated/keywords.h \
@@ -1050,15 +1049,18 @@ libclamav_nocxx_la_CFLAGS = $(AM_CFLAGS) @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CP
 libclamav_la_LIBADD = @SSL_LIBS@ @JSON_LIBS@ @PCRE_LIBS@ \
 	@LIBCLAMAV_LIBS@ @LIBLTDL@ $(IFACELIBADD) $(LLVMLIBADD) \
 	libclamav_internal_utils.la @THREAD_LIBS@ @LIBM@ \
-	$(am__append_10)
+	$(am__append_9)
 libclamav_la_DEPENDENCIES = @LTDLDEPS@ $(IFACEDEP) $(LLVMDEP) libclamav_internal_utils.la
 libclamav_la_CFLAGS = $(AM_CFLAGS) $(XML_CPPFLAGS) $(YARA_CFLAGS) \
 	-DSEARCH_LIBDIR=\"$(libdir)\" @LIBCLAMAV_CPPFLAGS@ \
 	@SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @ICONV_CPPFLAGS@ \
-	@PCRE_CPPFLAGS@ $(am__append_9) $(am__append_11)
+	@PCRE_CPPFLAGS@ $(am__append_10)
+@USE_INTERNAL_MSPACK_TRUE@libclamav_la_CFLAGS = -I@top_srcdir@/libclamav/libmspack-0.5alpha/mspack \
+@USE_INTERNAL_MSPACK_TRUE@	$(libclamav_la_CFLAGS) \
+@USE_INTERNAL_MSPACK_TRUE@	$(am__append_10)
 libclamav_la_LDFLAGS = @SSL_LDFLAGS@ @TH_SAFE@ @JSON_LDFLAGS@ \
 	@ICONV_LDFLAGS@ $(XML_LIBS) -version-info @LIBCLAMAV_VERSION@ \
-	-no-undefined $(am__append_7) $(am__append_12)
+	-no-undefined $(am__append_7) $(am__append_11)
 include_HEADERS = clamav.h
 libclamav_la_SOURCES = matcher-ac.c matcher-ac.h matcher-bm.c \
 	matcher-bm.h matcher-hash.c matcher-hash.h matcher.c matcher.h \
@@ -1116,7 +1118,7 @@ libclamav_la_SOURCES = matcher-ac.c matcher-ac.h matcher-bm.c \
 	openioc.h msdoc.c msdoc.h matcher-pcre.c matcher-pcre.h \
 	regex_pcre.c regex_pcre.h msxml.c msxml.h msxml_parser.c \
 	msxml_parser.h tiff.c tiff.h hwp.c hwp.h lzw/lzwdec.c \
-	lzw/lzwdec.h $(am__append_14) bignum.h bignum_fast.h \
+	lzw/lzwdec.h $(am__append_13) bignum.h bignum_fast.h \
 	tomsfastmath/addsub/fp_add.c tomsfastmath/addsub/fp_add_d.c \
 	tomsfastmath/addsub/fp_addmod.c tomsfastmath/addsub/fp_cmp.c \
 	tomsfastmath/addsub/fp_cmp_d.c \

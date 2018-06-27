@@ -158,7 +158,7 @@ endif
 
 if USE_INTERNAL_MSPACK
 SUBDIRS += libmspack-0.5alpha
-libclamav_la_CFLAGS += -I@top_srcdir@/libclamav/libmspack-0.5alpha/mspack
+libclamav_la_CFLAGS = -I@top_srcdir@/libclamav/libmspack-0.5alpha/mspack $(libclamav_la_CFLAGS)
 libclamav_la_LIBADD += libmspack-0.5alpha/libclammspack.la
 else
 libclamav_la_CFLAGS += $(LIBMSPACK_CFLAGS)
