@@ -70,19 +70,19 @@ if test "x$pcreconfig" != "x"; then
         if test $pcrever_major -eq 6 && test $pcrever_minor -lt 5; then
             AC_MSG_ERROR([This pcre version is missing features used by ClamAV. Please upgrade to a newer version: http://www.pcre.org.])
         fi
+        AC_MSG_WARN([pcre (original) detected. We recommend upgrading from pcre to pcre2 10.30 or later: http://www.pcre.org.])
     fi
 
-    AC_MSG_CHECKING([for CVE-2015-3210])
+    AC_MSG_CHECKING([for CVE-2017-7186])
     if test "$pcrelib" = "pcre2"; then
-        if test $pcrever_major -eq 10 && test $pcrever_minor -eq 10; then
-            AC_MSG_WARN([The installed pcre2 version may contain a security bug. Please upgrade to 10.20 or later: http://www.pcre.org.])
+        if test $pcrever_major -eq 10 && test $pcrever_minor -lt 24; then
+            AC_MSG_WARN([The installed pcre2 version may contain security bugs. Please upgrade to 10.30 or later: http://www.pcre.org.])
         else
             AC_MSG_RESULT([ok])
         fi
     else
-        if test $pcrever_major -eq 8 &&
-          test $pcrever_minor -gt 33 && test $pcrever_minor -lt 38; then
-            AC_MSG_WARN([The installed pcre version may contain a security bug. Please upgrade to 8.38 or later: http://www.pcre.org.])
+        if test $pcrever_major -eq 8 && test $pcrever_minor -lt 41; then
+            AC_MSG_WARN([The installed pcre version may contain security bugs. Please upgrade to 8.41+ or _preferably_ install pcre2 10.30+: http://www.pcre.org.])
         else
             AC_MSG_RESULT([ok])
         fi
