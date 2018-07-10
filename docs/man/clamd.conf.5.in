@@ -626,7 +626,7 @@ Negative values are not allowed and values > PCREMatchLimit are superfluous.
 .br
 WARNING: setting this limit too high may severely impact performance.
 .br
-Default: 5000
+Default: 2000
 .TP
 \fBPCREMaxFileSize SIZE\fR
 This option sets the maximum filesize for which PCRE subsigs will be executed.

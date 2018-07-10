@@ -239,7 +239,7 @@ This option sets the maximum recursive calls to HWP3 parsing function (default: 
 Maximum calls to the PCRE match function (default: 100000).
 .TP
 \fB\-\-pcre-recmatch-limit=#n\fR
-Maximum recursive calls to the PCRE match function (default: 5000).
+Maximum recursive calls to the PCRE match function (default: 2000).
 .TP
 \fB\-\-pcre-max-filesize=#n\fR
 Maximum size file to perform PCRE subsig matching (default: 25 MB, max: <4 GB).

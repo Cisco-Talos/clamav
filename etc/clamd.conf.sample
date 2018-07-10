@@ -576,7 +576,7 @@ Example
 # For more information on match_limit_recursion, see the PCRE documentation.
 # Negative values are not allowed and values > PCREMatchLimit are superfluous.
 # WARNING: setting this limit too high may severely impact performance.
-# Default: 5000
+# Default: 2000
 #PCRERecMatchLimit 10000
 
 # This option sets the maximum filesize for which PCRE subsigs will be
