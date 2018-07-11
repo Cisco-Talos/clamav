@@ -152,20 +152,14 @@ int download_with_opts(struct optstruct *opts, const char* db_path, const char* 
             return FCE_USERINFO;
         }
         
-        if (optget (opts, "AllowSupplementaryGroups")->enabled)
-        {
 #ifdef HAVE_INITGROUPS
-            if (initgroups (dbowner, user->pw_gid))
-            {
-                logg ("^initgroups() failed.\n");
-                optfree (opts);
-                return FCE_USERORGROUP;
-            }
+	if (initgroups (dbowner, user->pw_gid))
+	{
+		logg ("^initgroups() failed.\n");
+		optfree (opts);
+		return FCE_USERORGROUP;
+	}
 #endif
-        }
-        else
-        {
-        }
     }
 #endif /* HAVE_PWD_H */
     
