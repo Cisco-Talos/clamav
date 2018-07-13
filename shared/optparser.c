@@ -883,7 +883,7 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
 
 	    if(!(pt = strpbrk(buff, " \t"))) {
 		if(verbose)
-		    fprintf(stderr, "ERROR: Missing argument for option at line %d\n", line);
+		    fprintf(stderr, "ERROR: Missing argument for option at %s:%d\n", cfgfile, line);
 		err = 1;
 		break;
 	    }
@@ -894,7 +894,7 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
 	    for(i = strlen(pt); i >= 1 && (pt[i - 1] == ' ' || pt[i - 1] == '\t' || pt[i - 1] == '\n'); i--);
 	    if(!i) {
 		if(verbose)
-		    fprintf(stderr, "ERROR: Missing argument for option at line %d\n", line);
+		    fprintf(stderr, "ERROR: Missing argument for option at %s:%d\n", cfgfile, line);
 		err = 1;
 		break;
 	    }
@@ -905,14 +905,14 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
 		pt = strrchr(pt, '"');
 		if(!pt) {
 		    if(verbose)
-			fprintf(stderr, "ERROR: Missing closing parenthesis in option %s at line %d\n", name, line);
+			fprintf(stderr, "ERROR: Missing closing parenthesis in option %s at %s:%d\n", name, cfgfile, line);
 		    err = 1;
 		    break;
 		}
 		*pt = 0;
 		if(!strlen(arg)) {
 		    if(verbose)
-			fprintf(stderr, "ERROR: Empty argument for option %s at line %d\n", name, line);
+			fprintf(stderr, "ERROR: Empty argument for option %s at %s:%d\n", name, cfgfile, line);
 		    err = 1;
 		    break;
 		}
@@ -963,7 +963,7 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
 	if(!opt) {
 	    if(cfgfile) {
 		if(verbose)
-		    fprintf(stderr, "ERROR: Parse error at line %d: Unknown option %s\n", line, name);
+		    fprintf(stderr, "ERROR: Parse error at %s:%d: Unknown option %s\n", cfgfile, line, name);
 	    }
 	    err = 1;
 	    break;
@@ -973,7 +973,7 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
 	if(ignore && (optentry->owner & ignore) && !(optentry->owner & toolmask)) {
 	    if(cfgfile) {
 		if(verbose)
-		    fprintf(stderr, "WARNING: Ignoring unsupported option %s at line %u\n", opt->name, line);
+		    fprintf(stderr, "WARNING: Ignoring unsupported option %s at %s:%d\n", opt->name, cfgfile, line);
 	    } else {
 		if(verbose) {
 		    if(optentry->shortopt)
@@ -998,7 +998,7 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
 	    } else {
 		if(cfgfile) {
 		    if(verbose)
-			fprintf(stderr, "WARNING: Ignoring deprecated option %s at line %u\n", opt->name, line);
+			fprintf(stderr, "WARNING: Ignoring deprecated option %s at %s:%d\n", opt->name, cfgfile, line);
 		} else {
 		    if(verbose) {
 			if(optentry->shortopt)
@@ -1171,6 +1171,7 @@ struct optstruct *optadditem(const char *name, const char *arg, int verbose, int
 {
 	int i, err = 0, sc = 0, lc=0, line = 0, ret;
 	struct optstruct *opts = NULL, *opts_last = NULL, *opt;
+	static char cfgfile[] = "(optadditem-api)";
 	char *buff;
 	regex_t regex;
 	long long numarg, lnumarg;
@@ -1212,7 +1213,7 @@ struct optstruct *optadditem(const char *name, const char *arg, int verbose, int
         opt = optget_i(opts, name);
         if(!opt) {
             if(verbose)
-                fprintf(stderr, "ERROR: Parse error at line %d: Unknown option %s\n", line, name);
+                fprintf(stderr, "ERROR: Parse error at %s:%d: Unknown option %s\n", cfgfile, line, name);
             err = 1;
             break;
         }
@@ -1220,7 +1221,7 @@ struct optstruct *optadditem(const char *name, const char *arg, int verbose, int
         
         if(ignore && (optentry->owner & ignore) && !(optentry->owner & toolmask)) {
             if(verbose)
-                fprintf(stderr, "WARNING: Ignoring unsupported option %s at line %u\n", opt->name, line);
+                fprintf(stderr, "WARNING: Ignoring unsupported option %s at %s:%d\n", opt->name, cfgfile, line);
             continue;
         }
         
@@ -1233,7 +1234,7 @@ struct optstruct *optadditem(const char *name, const char *arg, int verbose, int
                 }
             } else {
                 if(verbose)
-                    fprintf(stderr, "WARNING: Ignoring deprecated option %s at line %u\n", opt->name, line);
+                    fprintf(stderr, "WARNING: Ignoring deprecated option %s at %s:%d\n", opt->name, cfgfile, line);
             }
             continue;
         }
