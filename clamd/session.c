@@ -33,6 +33,7 @@
 #include <dirent.h>
 #ifndef _WIN32
 #include <sys/socket.h>
+#include <sys/stat.h>
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
 #endif
@@ -549,6 +550,8 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
 
     switch (cmd) {
         case COMMAND_SHUTDOWN:
+            if(!check_root(conn, "SHUTDOWN"))
+		return 0;
             pthread_mutex_lock(&exit_mutex);
             progexit = 1;
             pthread_mutex_unlock(&exit_mutex);
@@ -595,9 +598,14 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
             conn->mode  = MODE_STREAM;
             return 0;
         }
+       case COMMAND_STATS: {
+            if(check_root(conn, "STATS")) {
+                return dispatch_command(conn, cmd, argument);
+            }
+            return 0;
+        }
         case COMMAND_MULTISCAN:
         case COMMAND_CONTSCAN:
-        case COMMAND_STATS:
         case COMMAND_FILDES:
         case COMMAND_SCAN:
         case COMMAND_INSTREAMSCAN:
@@ -621,4 +629,28 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
             conn_reply_single(conn, NULL, "UNKNOWN COMMAND");
             return 1;
     }
+}
+
+int check_root(const client_conn_t *conn, const char * cmd_str) {
+    /* Check to make sure we are testing a socket, and not a pipe or something */
+    struct stat sb;
+    int rc = fstat(conn->sd, &sb);
+    if ((rc != 0) || (S_ISSOCK(sb.st_mode) == 0)) {
+        return 1;
+    }
+
+    /* Check PEERCRED data for socket, this should fail gracefully for non AF_UNIX sockets */
+    struct ucred ucred;
+    socklen_t len;
+    len = sizeof(struct ucred);
+    rc = getsockopt(conn->sd, SOL_SOCKET, SO_PEERCRED, &ucred, &len);
+    if ((rc != 0) || (ucred.uid == 0)) {
+        return 1;
+    }
+
+    /* If we have gotten here, we should be a AF_UNIX socket connected to a non-root user */
+    conn_reply_error(conn, "Command invalid for non root users.");
+    logg("Command invalid for non root users: %s\n", cmd_str);
+
+    return 0;
 }

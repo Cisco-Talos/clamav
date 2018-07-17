@@ -105,6 +105,7 @@ typedef struct client_conn_tag {
 int command(client_conn_t *conn, int *virus);
 enum commands parse_command(const char *cmd, const char **argument, int oldstyle);
 int execute_or_dispatch_command(client_conn_t *conn, enum commands command, const char *argument);
+int check_root(const client_conn_t *conn, const char * cmd_str);
 
 int conn_reply(const client_conn_t *conn, const char *path, const char *msg, const char *status);
 int conn_reply_single(const client_conn_t *conn, const char *path, const char *status);
