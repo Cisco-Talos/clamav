@@ -24,6 +24,7 @@
 
 #include <sys/types.h>
 
+#include "libclamav/others.h"
 #include "libclamav/clamav.h"
 #include "shared/optparser.h"
 #include "thrmgr.h"
@@ -42,7 +43,7 @@ struct scan_cb_data {
     const client_conn_t *conn;
     const char *toplevel_path;
     unsigned long scanned;
-    unsigned int options;
+    struct cl_scan_options *options;
     struct cl_engine *engine;
     const struct optstruct *opts;
     threadpool_t *thr_pool;
@@ -57,8 +58,8 @@ struct cb_context {
     struct scan_cb_data *scandata;
 };
 
-int scanfd(const client_conn_t *conn, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts, int odesc, int stream);
-int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts, char term);
+int scanfd(const client_conn_t *conn, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *options, const struct optstruct *opts, int odesc, int stream);
+int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *options, const struct optstruct *opts, char term);
 int scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data);
 int scan_pathchk(const char *path, struct cli_ftw_cbdata *data);
 void hash_callback(int fd, unsigned long long size, const unsigned char *md5, const char *virname, void *ctx);

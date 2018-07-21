@@ -2,7 +2,7 @@
  *  ClamAV bytecode internal API
  *  This is an automatically generated file!
  *
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2014-2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2009-2013 Sourcefire, Inc.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -131,5 +131,6 @@ int32_t cli_bcapi_json_get_string_length(struct cli_bc_ctx *ctx , int32_t);
 int32_t cli_bcapi_json_get_string(struct cli_bc_ctx *ctx , int8_t*, int32_t, int32_t);
 int32_t cli_bcapi_json_get_boolean(struct cli_bc_ctx *ctx , int32_t);
 int32_t cli_bcapi_json_get_int(struct cli_bc_ctx *ctx , int32_t);
+uint32_t cli_bcapi_engine_scan_options_ex(struct cli_bc_ctx *ctx , const uint8_t*, uint32_t);
 
 #endif

@@ -744,7 +744,7 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const char **
                             ret = cli_append_virus(ctx, (const char *)pm->virname);
                         if (virname)
                             *virname = pm->virname;
-                        if (!ctx || !SCAN_ALL)
+                        if (!ctx || !SCAN_ALLMATCHES)
                             if (ret != CL_CLEAN)
                                 break;
                     }

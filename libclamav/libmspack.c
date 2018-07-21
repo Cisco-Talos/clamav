@@ -385,7 +385,7 @@ int cli_scanmscab(cli_ctx *ctx, off_t sfx_offset)
 		if (ret) {
 			if (ret == CL_VIRUS) {
 				virus_num++;
-				if (!SCAN_ALL)
+				if (!SCAN_ALLMATCHES)
 					break;
 			}
 			goto out_close;
@@ -434,7 +434,7 @@ int cli_scanmscab(cli_ctx *ctx, off_t sfx_offset)
 		}
 		free(tmp_fname);
 		files++;
-		if (ret == CL_VIRUS && SCAN_ALL)
+		if (ret == CL_VIRUS && SCAN_ALLMATCHES)
 			continue;
 		if (ret)
 			break;
@@ -486,7 +486,7 @@ int cli_scanmschm(cli_ctx *ctx)
 		if (ret) {
 			if (ret == CL_VIRUS) {
 				virus_num++;
-				if (!SCAN_ALL)
+				if (!SCAN_ALLMATCHES)
 					break;
 			}
 			goto out_close;
@@ -536,7 +536,7 @@ int cli_scanmschm(cli_ctx *ctx)
 		}
 		free(tmp_fname);
 		files++;
-		if (ret == CL_VIRUS && SCAN_ALL)
+		if (ret == CL_VIRUS && SCAN_ALLMATCHES)
 			continue;
 		if (ret)
 			break;

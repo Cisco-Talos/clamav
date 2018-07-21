@@ -137,7 +137,7 @@ int cli_scangpt(cli_ctx *ctx, size_t sectorsize)
     /* check the protective mbr */
     ret = gpt_check_mbr(ctx, sectorsize);
     if (ret != CL_CLEAN) {
-        if ((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))
+        if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
             detection = CL_VIRUS;
         else
             return ret;
@@ -198,17 +198,17 @@ int cli_scangpt(cli_ctx *ctx, size_t sectorsize)
     }
 
     /* check that the partition table has no intersections - HEURISTICS */
-    if ((ctx->options & CL_SCAN_PARTITION_INTXN) && (ctx->dconf->other & OTHER_CONF_PRTNINTXN)) {
+    if (SCAN_HEURISTIC_PARTITION_INTXN && (ctx->dconf->other & OTHER_CONF_PRTNINTXN)) {
         ret = gpt_prtn_intxn(ctx, phdr, sectorsize);
         if (ret != CL_CLEAN) {
-            if ((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))
+            if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
                 detection = CL_VIRUS;
             else
                 return ret;
         }
         ret = gpt_prtn_intxn(ctx, shdr, sectorsize);
         if (ret != CL_CLEAN) {
-            if ((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))
+            if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
                 detection = CL_VIRUS;
             else
                 return ret;
@@ -221,7 +221,7 @@ int cli_scangpt(cli_ctx *ctx, size_t sectorsize)
         cli_dbgmsg("cli_scangpt: Scanning primary GPT partitions only\n");
         ret = gpt_scan_partitions(ctx, phdr, sectorsize);
         if (ret != CL_CLEAN) {
-            if ((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))
+            if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
                 detection = CL_VIRUS;
             else
                 return ret;
@@ -231,7 +231,7 @@ int cli_scangpt(cli_ctx *ctx, size_t sectorsize)
         cli_dbgmsg("cli_scangpt: Scanning secondary GPT partitions only\n");
         ret = gpt_scan_partitions(ctx, shdr, sectorsize);
         if (ret != CL_CLEAN) {
-            if ((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))
+            if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
                 detection = CL_VIRUS;
             else
                 return ret;
@@ -241,7 +241,7 @@ int cli_scangpt(cli_ctx *ctx, size_t sectorsize)
         cli_dbgmsg("cli_scangpt: Scanning primary GPT partitions\n");
         ret = gpt_scan_partitions(ctx, phdr, sectorsize);
         if (ret != CL_CLEAN) {
-            if ((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))
+            if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
                 detection = CL_VIRUS;
             else
                 return ret;
@@ -249,7 +249,7 @@ int cli_scangpt(cli_ctx *ctx, size_t sectorsize)
         cli_dbgmsg("cli_scangpt: Scanning secondary GPT partitions\n");
         ret = gpt_scan_partitions(ctx, shdr, sectorsize);
         if (ret != CL_CLEAN) {
-            if ((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))
+            if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
                 detection = CL_VIRUS;
             else
                 return ret;
@@ -351,7 +351,7 @@ static int gpt_scan_partitions(cli_ctx *ctx, struct gpt_header hdr, size_t secto
             part_size = (gpe.lastLBA - gpe.firstLBA + 1) * sectorsize;
             ret = cli_map_scan(*ctx->fmap, part_off, part_size, ctx, CL_TYPE_PART_ANY);
             if (ret != CL_CLEAN) {
-                if ((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))
+                if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
                     detection = CL_VIRUS;
                 else
                     return ret;
@@ -654,7 +654,7 @@ static int gpt_prtn_intxn(cli_ctx *ctx, struct gpt_header hdr, size_t sectorsize
                     ret = cli_append_virus(ctx, PRTN_INTXN_DETECTION);
                     if (ret == CL_VIRUS)
                         virus_found = 1;
-                    if (SCAN_ALL || ret == CL_CLEAN)
+                    if (SCAN_ALLMATCHES || ret == CL_CLEAN)
                         tmp = 0;
                     else
                         goto leave;

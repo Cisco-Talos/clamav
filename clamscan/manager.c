@@ -289,7 +289,7 @@ static void clamscan_virus_found_cb(int fd, const char *virname, void *context)
     return;
 }
 
-static void scanfile(const char *filename, struct cl_engine *engine, const struct optstruct *opts, unsigned int options)
+static void scanfile(const char *filename, struct cl_engine *engine, const struct optstruct *opts, struct cl_scan_options *options)
 {
     int ret = 0, fd, included;
     unsigned i;
@@ -427,7 +427,7 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
         action(filename);
 }
 
-static void scandirs(const char *dirname, struct cl_engine *engine, const struct optstruct *opts, unsigned int options, unsigned int depth, dev_t dev)
+static void scandirs(const char *dirname, struct cl_engine *engine, const struct optstruct *opts, struct cl_scan_options *options, unsigned int depth, dev_t dev)
 {
     DIR *dd;
     struct dirent *dent;
@@ -540,7 +540,7 @@ static void scandirs(const char *dirname, struct cl_engine *engine, const struct
     }
 }
 
-static int scanstdin(const struct cl_engine *engine, const struct optstruct *opts, int options)
+static int scanstdin(const struct cl_engine *engine, const struct optstruct *opts, struct cl_scan_options *options)
 {
     int ret;
     unsigned int fsize = 0;
@@ -615,7 +615,8 @@ static int scanstdin(const struct cl_engine *engine, const struct optstruct *opt
 int scanmanager(const struct optstruct *opts)
 {
     int ret = 0, i;
-    unsigned int options = 0, dboptions = 0, dirlnk = 1, filelnk = 1;
+    struct cl_scan_options options;
+    unsigned int dboptions = 0, dirlnk = 1, filelnk = 1;
     struct cl_engine *engine;
     STATBUF sb;
     char *file, cwd[1024], *pua_cats = NULL;
@@ -624,6 +625,9 @@ int scanmanager(const struct optstruct *opts)
 #ifndef _WIN32
     struct rlimit rlim;
 #endif
+
+    /* Initalize scan options struct */
+    memset(&options, 0, sizeof(struct cl_scan_options));
 
     dirlnk = optget(opts, "follow-dir-symlinks")->numarg;
     if(dirlnk > 2) {
@@ -794,7 +798,7 @@ int scanmanager(const struct optstruct *opts)
     /* JSON check to prevent engine loading if specified without libjson-c  */
 #if HAVE_JSON
     if (optget(opts, "gen-json")->enabled)
-        options |= CL_SCAN_FILE_PROPERTIES;
+        options.general |= CL_SCAN_GENERAL_COLLECT_METADATA;
 #else
     if (optget(opts, "gen-json")->enabled) {
         logg("!Can't generate json (gen-json). libjson-c dev library was missing or misconfigured when ClamAV was built.\n");
@@ -1010,95 +1014,95 @@ int scanmanager(const struct optstruct *opts)
 
     /* set scan options */
     if(optget(opts, "allmatch")->enabled) {
-        options |= CL_SCAN_ALLMATCHES;
+        options.general |= CL_SCAN_GENERAL_ALLMATCHES;
     }
 
     if(optget(opts,"phishing-ssl")->enabled)
-        options |= CL_SCAN_PHISHING_BLOCKSSL;
+        options.heuristic |= CL_SCAN_HEURISTIC_PHISHING_SSL_MISMATCH;
 
     if(optget(opts,"phishing-cloak")->enabled)
-        options |= CL_SCAN_PHISHING_BLOCKCLOAK;
+        options.heuristic |= CL_SCAN_HEURISTIC_PHISHING_CLOAK;
 
     if(optget(opts,"partition-intersection")->enabled)
-        options |= CL_SCAN_PARTITION_INTXN;
+        options.heuristic |= CL_SCAN_HEURISTIC_PARTITION_INTXN;
 
     if(optget(opts,"heuristic-scan-precedence")->enabled)
-        options |= CL_SCAN_HEURISTIC_PRECEDENCE;
+        options.general |= CL_SCAN_GENERAL_HEURISTIC_PRECEDENCE;
 
     if(optget(opts, "scan-archive")->enabled)
-        options |= CL_SCAN_ARCHIVE;
+        options.parse |= CL_SCAN_PARSE_ARCHIVE;
 
     if(optget(opts, "detect-broken")->enabled)
-        options |= CL_SCAN_BLOCKBROKEN;
+        options.heuristic |= CL_SCAN_HEURISTIC_BROKEN;
 
     if(optget(opts, "block-encrypted")->enabled)
-        options |= CL_SCAN_BLOCKENCRYPTED;
+        options.heuristic |= CL_SCAN_HEURISTIC_ENCRYPTED;
 
     if(optget(opts, "block-macros")->enabled)
-        options |= CL_SCAN_BLOCKMACROS;
+        options.heuristic |= CL_SCAN_HEURISTIC_MACROS;
 
     if(optget(opts, "scan-pe")->enabled)
-        options |= CL_SCAN_PE;
+        options.parse |= CL_SCAN_PARSE_PE;
 
     if(optget(opts, "scan-elf")->enabled)
-        options |= CL_SCAN_ELF;
+        options.parse |= CL_SCAN_PARSE_ELF;
 
     if(optget(opts, "scan-ole2")->enabled)
-        options |= CL_SCAN_OLE2;
+        options.parse |= CL_SCAN_PARSE_OLE2;
 
     if(optget(opts, "scan-pdf")->enabled)
-        options |= CL_SCAN_PDF;
+        options.parse |= CL_SCAN_PARSE_PDF;
 
     if(optget(opts, "scan-swf")->enabled)
-        options |= CL_SCAN_SWF;
+        options.parse |= CL_SCAN_PARSE_SWF;
 
     if(optget(opts, "scan-html")->enabled && optget(opts, "normalize")->enabled)
-        options |= CL_SCAN_HTML;
+        options.parse |= CL_SCAN_PARSE_HTML;
 
     if(optget(opts, "scan-mail")->enabled)
-        options |= CL_SCAN_MAIL;
+        options.parse |= CL_SCAN_PARSE_MAIL;
 
     if(optget(opts, "scan-xmldocs")->enabled)
-        options |= CL_SCAN_XMLDOCS;
+        options.parse |= CL_SCAN_PARSE_XMLDOCS;
 
     if(optget(opts, "scan-hwp3")->enabled)
-        options |= CL_SCAN_HWP3;
+        options.parse |= CL_SCAN_PARSE_HWP3;
 
     if(optget(opts, "algorithmic-detection")->enabled)
-        options |= CL_SCAN_ALGORITHMIC;
+        options.general |= CL_SCAN_GENERAL_HEURISTICS;
 
     if(optget(opts, "block-max")->enabled) {
-        options |= CL_SCAN_BLOCKMAX;
+        options.heuristic |= CL_SCAN_HEURISTIC_EXCEEDS_MAX;
     }
 
 #ifdef HAVE__INTERNAL__SHA_COLLECT
     if(optget(opts, "dev-collect-hashes")->enabled)
-        options |= CL_SCAN_INTERNAL_COLLECT_SHA;
+        options.dev |= CL_SCAN_DEV_COLLECT_SHA;
 #endif
 
     if(optget(opts, "dev-performance")->enabled)
-        options |= CL_SCAN_PERFORMANCE_INFO;
+        options.general |= CL_SCAN_DEV_COLLECT_PERFORMANCE_INFO;
 
     if(optget(opts, "detect-structured")->enabled) {
-        options |= CL_SCAN_STRUCTURED;
+        options.heuristic |= CL_SCAN_HEURISTIC_STRUCTURED;
 
         if((opt = optget(opts, "structured-ssn-format"))->enabled) {
             switch(opt->numarg) {
             case 0:
-                options |= CL_SCAN_STRUCTURED_SSN_NORMAL;
+                options.heuristic |= CL_SCAN_HEURISTIC_STRUCTURED_SSN_NORMAL;
                 break;
             case 1:
-                options |= CL_SCAN_STRUCTURED_SSN_STRIPPED;
+                options.heuristic |= CL_SCAN_HEURISTIC_STRUCTURED_SSN_STRIPPED;
                 break;
             case 2:
-                options |= (CL_SCAN_STRUCTURED_SSN_NORMAL | CL_SCAN_STRUCTURED_SSN_STRIPPED);
+                options.heuristic |= (CL_SCAN_HEURISTIC_STRUCTURED_SSN_NORMAL | CL_SCAN_HEURISTIC_STRUCTURED_SSN_STRIPPED);
                 break;
             default:
                 logg("!Invalid argument for --structured-ssn-format\n");
                 return 2;
             }
         } else {
-            options |= CL_SCAN_STRUCTURED_SSN_NORMAL;
+            options.heuristic |= CL_SCAN_HEURISTIC_STRUCTURED_SSN_NORMAL;
         }
 
         if((opt = optget(opts, "structured-ssn-count"))->active) {
@@ -1118,7 +1122,7 @@ int scanmanager(const struct optstruct *opts)
             }
         }
     } else {
-        options &= ~CL_SCAN_STRUCTURED;
+        options.heuristic &= ~CL_SCAN_HEURISTIC_STRUCTURED;
     }
 
 #ifdef C_LINUX
@@ -1135,11 +1139,11 @@ int scanmanager(const struct optstruct *opts)
             ret = 2;
         } else {
             CLAMSTAT(cwd, &sb);
-            scandirs(cwd, engine, opts, options, 1, sb.st_dev);
+            scandirs(cwd, engine, opts, &options, 1, sb.st_dev);
         }
 
     } else if(opts->filename && !optget(opts, "file-list")->enabled && !strcmp(opts->filename[0], "-")) { /* read data from stdin */
-        ret = scanstdin(engine, opts, options);
+        ret = scanstdin(engine, opts, &options);
     } else {
         if(opts->filename && optget(opts, "file-list")->enabled)
             logg("^Only scanning files from --file-list (files passed at cmdline are ignored)\n");
@@ -1163,18 +1167,18 @@ int scanmanager(const struct optstruct *opts)
                             logg("%s: Symbolic link\n", file);
                     } else if(CLAMSTAT(file, &sb) != -1) {
                         if(S_ISREG(sb.st_mode) && filelnk) {
-                            scanfile(file, engine, opts, options);
+                            scanfile(file, engine, opts, &options);
                         } else if(S_ISDIR(sb.st_mode) && dirlnk) {
-                            scandirs(file, engine, opts, options, 1, sb.st_dev);
+                            scandirs(file, engine, opts, &options, 1, sb.st_dev);
                         } else {
                             if(!printinfected)
                                 logg("%s: Symbolic link\n", file);
                         }
                     }
                 } else if(S_ISREG(sb.st_mode)) {
-                    scanfile(file, engine, opts, options);
+                    scanfile(file, engine, opts, &options);
                 } else if(S_ISDIR(sb.st_mode)) {
-                    scandirs(file, engine, opts, options, 1, sb.st_dev);
+                    scandirs(file, engine, opts, &options, 1, sb.st_dev);
                 } else {
                     logg("^%s: Not supported file type\n", file);
                     ret = 2;

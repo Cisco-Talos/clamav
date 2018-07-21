@@ -117,7 +117,7 @@ void clamd_virus_found_cb(int fd, const char *virname, void *ctx)
     
     if (d == NULL)
         return;
-    if (!(d->options & CL_SCAN_ALLMATCHES) && !(d->options & CL_SCAN_HEURISTIC_PRECEDENCE))
+    if (!(d->options->general & CL_SCAN_GENERAL_ALLMATCHES) && !(d->options->general & CL_SCAN_GENERAL_HEURISTIC_PRECEDENCE))
         return;
     if (virname == NULL)
         return;
@@ -277,7 +277,7 @@ int scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_ftw_rea
 
     if (ret == CL_VIRUS) {
 
-         if (scandata->options & CL_SCAN_ALLMATCHES || (scandata->infected && scandata->options & CL_SCAN_HEURISTIC_PRECEDENCE)) {
+         if (scandata->options->general & CL_SCAN_GENERAL_ALLMATCHES || (scandata->infected && scandata->options->general & CL_SCAN_GENERAL_HEURISTIC_PRECEDENCE)) {
             if(optget(scandata->opts, "PreludeEnable")->enabled){
                 prelude_logging(filename, virname, context.virhash, context.virsize);
             }
@@ -353,9 +353,14 @@ int scan_pathchk(const char *path, struct cli_ftw_cbdata *data)
     return 0;
 }
 
-int scanfd(const client_conn_t *conn, unsigned long int *scanned,
-	   const struct cl_engine *engine,
-	   unsigned int options, const struct optstruct *opts, int odesc, int stream)
+int scanfd(
+	const client_conn_t *conn,
+	unsigned long int *scanned,
+	const struct cl_engine *engine,
+	struct cl_scan_options *options,
+	const struct optstruct *opts,
+	int odesc,
+	int stream)
 {
     int ret, fd = conn->scanfd;
 	const char *virname = NULL;
@@ -418,7 +423,13 @@ int scanfd(const client_conn_t *conn, unsigned long int *scanned,
 	return ret;
 }
 
-int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts, char term)
+int scanstream(
+	int odesc,
+	unsigned long int *scanned,
+	const struct cl_engine *engine,
+	struct cl_scan_options *options,
+	const struct optstruct *opts,
+	char term)
 {
 	int ret, sockfd, acceptd;
 	int tmpd, bread, retval, firsttimeout, timeout, btread;

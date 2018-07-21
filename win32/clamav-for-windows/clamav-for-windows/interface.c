@@ -130,7 +130,7 @@ FILETIME last_chk_time = {0, 0};
 typedef struct {
 	CLAM_SCAN_CALLBACK scancb;
 	void *scancb_ctx;
-	unsigned int scanopts;
+	struct cl_scan_options* scanopts;
 	_int64 *filetype;
 } instance;
 
@@ -562,31 +562,46 @@ int CLAMAPI Scan_Uninitialize(void) {
 
 int CLAMAPI Scan_CreateInstance(CClamAVScanner **ppScanner) {
 	instance *inst;
+	struct cl_scan_options *scanopts;
 
 	INFN();
 	if(!ppScanner)
 	FAIL(CL_ENULLARG, "NULL pScanner");
 	inst = (instance *)calloc(1, sizeof(*inst));
 	if(!inst)
-	FAIL(CL_EMEM, "CreateInstance: OOM");
+		FAIL(CL_EMEM, "CreateInstance: OOM");
+
+	scanopts = (struct cl_scan_options *)calloc(1, sizeof(struct cl_scan_options));
+	memset(scanopts, 0, sizeof(struct cl_scan_options));
+	if(!scanopts) {
+		free(inst);
+		FAIL(CL_EMEM, "CreateInstance: OOM");
+	}
+	inst->scanopts = scanopts;
+
 	if(lock_engine()) {
-	free(inst);
-	FAIL(CL_ELOCK, "Failed to lock engine");
+		free(inst->scanopts);
+		free(inst);
+		FAIL(CL_ELOCK, "CreateInstance: Failed to lock engine");
 	}
 	if(!engine) {
-	free(inst);
-	unlock_engine();
-	FAIL(CL_ESTATE, "Create instance called with no engine");
+		free(inst->scanopts);
+		free(inst);
+		unlock_engine();
+		FAIL(CL_ESTATE, "CreateInstance: Create instance called with no engine");
 	}
 	if(add_instance(inst)) {
-	free(inst);
-	unlock_engine();
-	FAIL(CL_EMEM, "add_instance failed");
+		free(inst->scanopts);
+		free(inst);
+		unlock_engine();
+		FAIL(CL_EMEM, "CreateInstance: add_instance failed");
 	}
 	unlock_engine();
-	inst->scanopts = CL_SCAN_STDOPT;
+	inst->scanopts->parser |= ~0;  /* enable all parsers */
+	inst->scanopts->general |= CL_SCAN_GENERAL_HEURISTICS;  /* enable heuristic alert options */
 	if (logg_verbose)
-	inst->scanopts |= CL_SCAN_PERFORMANCE_INFO;
+		inst->scanopts->dev |= CL_SCAN_DEV_COLLECT_PERFORMANCE_INFO;
+
 	*ppScanner = (CClamAVScanner *)inst;
 	logg("Created new instance %p\n", inst);
 	WIN();
@@ -596,21 +611,23 @@ int CLAMAPI Scan_CreateInstance(CClamAVScanner **ppScanner) {
 // No point in retrying more times since we are shutting down anyway.
 int CLAMAPI Scan_DestroyInstance(CClamAVScanner *pScanner) {
 	int rc;
+	instance *inst = (instance*)pScanner;
 	INFN();
 	if(!pScanner)
-	FAIL(CL_ENULLARG, "NULL pScanner");
-	if((rc = del_instance((instance *)pScanner))) {
-	if (rc == CL_EBUSY) {
-		// wait for one of the scanner threads to finish, and retry again,
-		// that's better than caller always waiting 2 seconds to retry.
-		if (WaitForSingleObject(reload_event, 1000) != WAIT_OBJECT_0)
-		logg("Scan_DestroyInstance: timeout");
-		rc = del_instance((instance *)pScanner);
+		FAIL(CL_ENULLARG, "NULL pScanner");
+	if((rc = del_instance(inst))) {
+		if (rc == CL_EBUSY) {
+			// wait for one of the scanner threads to finish, and retry again,
+			// that's better than caller always waiting 2 seconds to retry.
+			if (WaitForSingleObject(reload_event, 1000) != WAIT_OBJECT_0)
+			logg("Scan_DestroyInstance: timeout");
+			rc = del_instance(inst);
+		}
+		if (rc)
+			FAIL(rc, "del_instance failed for %p", pScanner);
 	}
-	if (rc)
-		FAIL(rc, "del_instance failed for %p", pScanner);
-	}
-	free(pScanner);
+	free(inst->scanopts);
+	free(inst);
 	logg("in Scan_DestroyInstance: Instance %p destroyed\n", pScanner);
 	WIN();
 }
@@ -656,39 +673,39 @@ int CLAMAPI Scan_SetOption(CClamAVScanner *pScanner, int option, void *value, un
 	switch(option) {
 	case CLAM_OPTION_SCAN_ARCHIVE:
 		logg("CLAM_OPTION_SCAN_ARCHIVE: %s on instance %p\n", newval ? "enabled" : "disabled", inst);
-		whichopt = CL_SCAN_ARCHIVE;
+		whichopt = CL_SCAN_PARSE_ARCHIVE;
 		break;
 	case CLAM_OPTION_SCAN_MAIL:
 		logg("CLAM_OPTION_SCAN_MAIL: %s on instance %p\n", newval ? "enabled" : "disabled", inst);
-		whichopt = CL_SCAN_MAIL;
+		whichopt = CL_SCAN_PARSE_MAIL;
 		break;
 	case CLAM_OPTION_SCAN_OLE2:
 		logg("CLAM_OPTION_SCAN_OLE2: %s on instance %p\n", newval ? "enabled" : "disabled", inst);
-		whichopt = CL_SCAN_OLE2;
+		whichopt = CL_SCAN_PARSE_OLE2;
 		break;
 	case CLAM_OPTION_SCAN_HTML:
 		logg("CLAM_OPTION_SCAN_HTML: %s on instance %p\n", newval ? "enabled" : "disabled", inst);
-		whichopt = CL_SCAN_HTML;
+		whichopt = CL_SCAN_PARSE_HTML;
 		break;
 	case CLAM_OPTION_SCAN_PE:
 		logg("CLAM_OPTION_SCAN_PE: %s on instance %p\n", newval ? "enabled" : "disabled", inst);
-		whichopt = CL_SCAN_PE;
+		whichopt = CL_SCAN_PARSE_PE;
 		break;
 	case CLAM_OPTION_SCAN_PDF:
 		logg("CLAM_OPTION_SCAN_PDF: %s on instance %p\n", newval ? "enabled" : "disabled", inst);
-		whichopt = CL_SCAN_PDF;
+		whichopt = CL_SCAN_PARSE_PDF;
 		break;
 	case CLAM_OPTION_SCAN_ALGORITHMIC:
 		logg("CLAM_OPTION_SCAN_ALGORITHMIC: %s on instance %p\n", newval ? "enabled" : "disabled", inst);
-		whichopt = CL_SCAN_ALGORITHMIC;
+		whichopt = CL_SCAN_GENERAL_HEURISTICS;
 		break;
 	case CLAM_OPTION_SCAN_ELF:
 		logg("CLAM_OPTION_SCAN_ELF: %s on instance %p\n", newval ? "enabled" : "disabled", inst);
-		whichopt = CL_SCAN_ELF;
+		whichopt = CL_SCAN_PARSE_ELF;
 		break;
 	case CLAM_OPTION_SCAN_SWF:
 		logg("CLAM_OPTION_SCAN_SWF: %s on instance %p\n", newval ? "enabled" : "disabled", inst);
-		whichopt = CL_SCAN_SWF;
+		whichopt = CL_SCAN_PARSE_SWF;
 		break;
 	default:
 		unlock_instances();
@@ -722,31 +739,31 @@ int CLAMAPI Scan_GetOption(CClamAVScanner *pScanner, int option, void *value, un
 	}
 	switch(option) {
 	case CLAM_OPTION_SCAN_ARCHIVE:
-		whichopt = CL_SCAN_ARCHIVE;
+		whichopt = CL_SCAN_PARSE_ARCHIVE;
 		break;
 	case CLAM_OPTION_SCAN_MAIL:
-		whichopt = CL_SCAN_MAIL;
+		whichopt = CL_SCAN_PARSE_MAIL;
 		break;
 	case CLAM_OPTION_SCAN_OLE2:
-		whichopt = CL_SCAN_OLE2;
+		whichopt = CL_SCAN_PARSE_OLE2;
 		break;
 	case CLAM_OPTION_SCAN_HTML:
-		whichopt = CL_SCAN_HTML;
+		whichopt = CL_SCAN_PARSE_HTML;
 		break;
 	case CLAM_OPTION_SCAN_PE:
-		whichopt = CL_SCAN_PE;
+		whichopt = CL_SCAN_PARSE_PE;
 		break;
 	case CLAM_OPTION_SCAN_PDF:
-		whichopt = CL_SCAN_PDF;
+		whichopt = CL_SCAN_PARSE_PDF;
 		break;
 	case CLAM_OPTION_SCAN_ALGORITHMIC:
-		whichopt = CL_SCAN_ALGORITHMIC;
+		whichopt = CL_SCAN_GENERAL_HEURISTICS;
 		break;
 	case CLAM_OPTION_SCAN_ELF:
-		whichopt = CL_SCAN_ELF;
+		whichopt = CL_SCAN_PARSE_ELF;
 		break;
 	case CLAM_OPTION_SCAN_SWF:
-		whichopt = CL_SCAN_SWF;
+		whichopt = CL_SCAN_PARSE_SWF;
 		break;
 	default:
 		unlock_instances();

@@ -651,7 +651,7 @@ ole2_walk_property_tree(ole2_header_t * hdr, const char *dir, int32_t prop_index
             if ((int)(prop_block[idx].child) != -1) {
                 ret = ole2_walk_property_tree(hdr, dir, prop_block[idx].child, handler, rec_level + 1, file_count, ctx, scansize);
                 if (ret != CL_SUCCESS) {
-                    if ((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS)) {
+                    if (SCAN_ALLMATCHES && (ret == CL_VIRUS)) {
                         func_ret = ret;
                     }
                     else {
@@ -686,7 +686,7 @@ ole2_walk_property_tree(ole2_header_t * hdr, const char *dir, int32_t prop_index
                 ole2_listmsg("running file handler\n");
                 ret = handler(hdr, &prop_block[idx], dir, ctx);
                 if (ret != CL_SUCCESS) {
-                    if ((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS)) {
+                    if (SCAN_ALLMATCHES && (ret == CL_VIRUS)) {
                         func_ret = ret;
                     }
                     else {
@@ -701,7 +701,7 @@ ole2_walk_property_tree(ole2_header_t * hdr, const char *dir, int32_t prop_index
             if ((int)(prop_block[idx].child) != -1) {
                 ret = ole2_walk_property_tree(hdr, dir, prop_block[idx].child, handler, rec_level, file_count, ctx, scansize);
                 if (ret != CL_SUCCESS) {
-                    if ((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS)) {
+                    if (SCAN_ALLMATCHES && (ret == CL_VIRUS)) {
                         func_ret = ret;
                     }
                     else {
@@ -727,7 +727,7 @@ ole2_walk_property_tree(ole2_header_t * hdr, const char *dir, int32_t prop_index
             ole2_listmsg("directory node\n");
             if (dir) {
 #if HAVE_JSON
-                if ((ctx->options & CL_SCAN_FILE_PROPERTIES) && (ctx->wrkproperty != NULL)) {
+                if (SCAN_COLLECT_METADATA && (ctx->wrkproperty != NULL)) {
                     if (!json_object_object_get_ex(ctx->wrkproperty, "DigitalSignatures", NULL)) {
                         name = get_property_name2(prop_block[idx].name, prop_block[idx].name_size);
                         if (name) {
@@ -758,7 +758,7 @@ ole2_walk_property_tree(ole2_header_t * hdr, const char *dir, int32_t prop_index
             if ((int)(prop_block[idx].child) != -1) {
                 ret = ole2_walk_property_tree(hdr, dirname, prop_block[idx].child, handler, rec_level + 1, file_count, ctx, scansize);
                 if (ret != CL_SUCCESS) {
-                    if ((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS)) {
+                    if (SCAN_ALLMATCHES && (ret == CL_VIRUS)) {
                         func_ret = ret;
                     }
                     else {
@@ -926,7 +926,7 @@ handler_enum(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * 
 
     name = get_property_name2(prop->name, prop->name_size);
     if (name) {
-        if (ctx->options & CL_SCAN_FILE_PROPERTIES && ctx->wrkproperty != NULL) {
+        if (SCAN_COLLECT_METADATA && ctx->wrkproperty != NULL) {
             arrobj = cli_jsonarray(ctx->wrkproperty, "Streams");
             if (NULL == arrobj) {
                 cli_warnmsg("ole2: no memory for streams list or streams is not an array\n");
@@ -1340,7 +1340,7 @@ handler_otf(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * c
 
 #if HAVE_JSON
     /* JSON Output Summary Information */
-    if (ctx->options & CL_SCAN_FILE_PROPERTIES && ctx->properties != NULL) {
+    if (SCAN_COLLECT_METADATA && (ctx->properties != NULL)) {
         if (!name)
             name = get_property_name2(prop->name, prop->name_size);
         if (name) {

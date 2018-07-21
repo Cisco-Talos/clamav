@@ -51,7 +51,6 @@
 #ifdef	HAVE_SYS_PARAM_H
 #include <sys/param.h>
 #endif
-#include "clamav.h"
 #include <dirent.h>
 #include <limits.h>
 #include <signal.h>
@@ -166,7 +165,7 @@ typedef	enum {
 #include <fcntl.h>
 
 /*
- * Use CL_SCAN_PARTIAL_MESSAGE to handle messages covered by section 7.3.2 of RFC1341.
+ * Use CL_SCAN_MAIL_PARTIAL_MESSAGE to handle messages covered by section 7.3.2 of RFC1341.
  *	This is experimental code so it is up to YOU to (1) ensure it's secure
  * (2) periodically trim the directory of old files
  *
@@ -594,7 +593,7 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
 	}
 	
 	if((retcode == CL_CLEAN) && ctx->found_possibly_unwanted &&
-	   (*ctx->virname == NULL || SCAN_ALL)) {
+	   (*ctx->virname == NULL || SCAN_ALLMATCHES)) {
 	    retcode = cli_append_virus(ctx, "Heuristics.Phishing.Email");
 	    ctx->found_possibly_unwanted = 0;
 	}
@@ -2131,7 +2130,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 				rc = OK;
 				break;
 			} else if(strcasecmp(mimeSubtype, "partial") == 0) {
-				if(mctx->ctx->options&CL_SCAN_PARTIAL_MESSAGE) {
+				if(mctx->ctx->options->mail & CL_SCAN_MAIL_PARTIAL_MESSAGE) {
 					/* RFC1341 message split over many emails */
 					if(rfc1341(mainMessage, mctx->dir) >= 0)
 						rc = OK;

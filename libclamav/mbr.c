@@ -186,17 +186,17 @@ int cli_scanmbr(cli_ctx *ctx, size_t sectorsize)
     /* MBR is valid, examine bootstrap code */
     ret = cli_map_scan(*ctx->fmap, 0, sectorsize, ctx, CL_TYPE_ANY);
     if (ret != CL_CLEAN) {
-        if ((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))
+        if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
             detection = CL_VIRUS;
         else
             return ret;
     }
 
     /* check that the partition table has no intersections - HEURISTICS */
-    if ((ctx->options & CL_SCAN_PARTITION_INTXN) && (ctx->dconf->other & OTHER_CONF_PRTNINTXN)) {
+    if (SCAN_HEURISTIC_PARTITION_INTXN && (ctx->dconf->other & OTHER_CONF_PRTNINTXN)) {
         ret = mbr_primary_prtn_intxn(ctx, mbr, sectorsize);
         if (ret != CL_CLEAN) {
-            if ((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))
+            if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
                 detection = CL_VIRUS;
             else
                 return ret;
@@ -230,7 +230,7 @@ int cli_scanmbr(cli_ctx *ctx, size_t sectorsize)
             ret = mbr_scanextprtn(ctx, &prtncount, mbr.entries[i].firstLBA, 
                                   mbr.entries[i].numLBA, sectorsize);
             if (ret != CL_CLEAN) {
-                if ((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))
+                if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
                     detection = CL_VIRUS;
                 else
                     return ret;
@@ -244,7 +244,7 @@ int cli_scanmbr(cli_ctx *ctx, size_t sectorsize)
             mbr_parsemsg("cli_map_scan: [%u, +%u)\n", partoff, partsize);
             ret = cli_map_scan(*ctx->fmap, partoff, partsize, ctx, CL_TYPE_PART_ANY);
             if (ret != CL_CLEAN) {
-                if ((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))
+                if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
                     detection = CL_VIRUS;
                 else
                     return ret;
@@ -387,7 +387,7 @@ static int mbr_scanextprtn(cli_ctx *ctx, unsigned *prtncount, off_t extlba, size
 
                     ret = cli_map_scan(*ctx->fmap, partoff, partsize, ctx, CL_TYPE_PART_ANY);
                     if (ret != CL_CLEAN) {
-                        if ((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))
+                        if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
                             detection = CL_VIRUS;
                         else
                             return ret;
@@ -506,7 +506,7 @@ static int mbr_primary_prtn_intxn(cli_ctx *ctx, struct mbr_boot_record mbr, size
                     cli_dbgmsg("cli_scanmbr: detected intersection with partitions "
                                "[%u, %u]\n", pitxn, i);
                     ret = cli_append_virus(ctx, PRTN_INTXN_DETECTION);
-                    if (SCAN_ALL || ret == CL_CLEAN)
+                    if (SCAN_ALLMATCHES || ret == CL_CLEAN)
                         tmp = 0;
                     else
                         goto leave;
@@ -521,7 +521,7 @@ static int mbr_primary_prtn_intxn(cli_ctx *ctx, struct mbr_boot_record mbr, size
                 tmp = mbr_extended_prtn_intxn(ctx, &prtncount, 
                                   mbr.entries[i].firstLBA, sectorsize);
                 if (tmp != CL_CLEAN) {
-                    if ((ctx->options & CL_SCAN_ALLMATCHES) && (tmp == CL_VIRUS)) {
+                    if (SCAN_ALLMATCHES && (tmp == CL_VIRUS)) {
                         ret = tmp;
                         tmp = 0;
                     }
@@ -587,7 +587,7 @@ static int mbr_extended_prtn_intxn(cli_ctx *ctx, unsigned *prtncount, off_t extl
                 ret = cli_append_virus(ctx, PRTN_INTXN_DETECTION);
                 if (ret == CL_VIRUS)
                     virus_found = 1;
-                if (SCAN_ALL || ret == CL_CLEAN)
+                if (SCAN_ALLMATCHES || ret == CL_CLEAN)
                     tmp = 0;
                 else
                     goto leave;

@@ -739,7 +739,7 @@ int phishingScan(cli_ctx* ctx,tag_arguments_t* hrefs)
 	if(!pchk || pchk->is_disabled)
 		return CL_CLEAN;
 
-	if(!ctx->found_possibly_unwanted && !SCAN_ALL)
+	if(!ctx->found_possibly_unwanted && !SCAN_ALLMATCHES)
 		*ctx->virname=NULL;
 #if 0
 	FILE *f = fopen("/home/edwin/quarantine/urls","r");
@@ -785,10 +785,10 @@ int phishingScan(cli_ctx* ctx,tag_arguments_t* hrefs)
 				urls.link_type |= LINKTYPE_IMAGE;
 			}
 			urls.always_check_flags = 0;
-			if (ctx->options & CL_SCAN_PHISHING_BLOCKSSL) {
+			if (SCAN_HEURISTIC_PHISHING_SSL_MISMATCH) {
 				urls.always_check_flags |= CHECK_SSL;
 			}
-			if (ctx->options & CL_SCAN_PHISHING_BLOCKCLOAK) {
+			if (SCAN_HEURISTIC_PHISHING_CLOAK) {
 				urls.always_check_flags |= CHECK_CLOAKING;
 			}
 			string_init_c(&urls.realLink,(char*)hrefs->value[i]);

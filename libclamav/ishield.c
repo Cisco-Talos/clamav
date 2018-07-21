@@ -380,7 +380,7 @@ int cli_scanishield(cli_ctx *ctx, off_t off, size_t sz) {
 
 	cli_dbgmsg("ishield: @%lx found file %s (%s) - version %s - size %lu\n", (unsigned long int) coff, fname, path, version, (unsigned long int) fsize);
 	if(cli_matchmeta(ctx, fname, fsize, fsize, 0, fc++, 0, NULL) == CL_VIRUS) {
-            if (!SCAN_ALL) {
+            if (!SCAN_ALLMATCHES) {
                 ret = CL_VIRUS;
                 break;
             }

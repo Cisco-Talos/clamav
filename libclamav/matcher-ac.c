@@ -1854,7 +1854,7 @@ int cli_ac_scanbuff(
                                         ptN = ptN->next_same;
                                         continue;
                                     } else {
-                                        if(ctx && SCAN_ALL) {
+                                        if(ctx && SCAN_ALLMATCHES) {
                                             cli_append_virus(ctx, (const char *)pt->virname);
                                             viruses_found = 1;
                                         }
@@ -1862,7 +1862,7 @@ int cli_ac_scanbuff(
                                             *virname = pt->virname;
                                         if(customdata)
                                             *customdata = pt->customdata;
-                                        if (!ctx || !SCAN_ALL)
+                                        if (!ctx || !SCAN_ALLMATCHES)
                                             return CL_VIRUS;
                                         ptN = ptN->next_same;
                                         continue;
@@ -1909,7 +1909,7 @@ int cli_ac_scanbuff(
                                     ptN = ptN->next_same;
                                     continue;
                                 } else {
-                                    if(ctx && SCAN_ALL) {
+                                    if(ctx && SCAN_ALLMATCHES) {
                                         cli_append_virus(ctx, (const char *)pt->virname);
                                         viruses_found = 1;
                                     }
@@ -1920,7 +1920,7 @@ int cli_ac_scanbuff(
                                     if(customdata)
                                         *customdata = pt->customdata;
 
-                                    if (!ctx || !SCAN_ALL)
+                                    if (!ctx || !SCAN_ALLMATCHES)
                                         return CL_VIRUS;
 
                                     ptN = ptN->next_same;

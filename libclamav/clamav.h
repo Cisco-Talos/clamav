@@ -65,6 +65,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include "cltypes.h"
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -121,64 +123,75 @@ typedef enum cl_error_t {
 } cl_error_t;
 
 /* db options */
-#define CL_DB_PHISHING	    0x2
-#define CL_DB_PHISHING_URLS 0x8
-#define CL_DB_PUA	    0x10
-#define CL_DB_CVDNOTMP	    0x20    /* obsolete */
-#define CL_DB_OFFICIAL	    0x40    /* internal */
-#define CL_DB_PUA_MODE	    0x80
-#define CL_DB_PUA_INCLUDE   0x100
-#define CL_DB_PUA_EXCLUDE   0x200
-#define CL_DB_COMPILED	    0x400   /* internal */
-#define CL_DB_DIRECTORY	    0x800   /* internal */
-#define CL_DB_OFFICIAL_ONLY 0x1000
-#define CL_DB_BYTECODE      0x2000
-#define CL_DB_SIGNED	    0x4000  /* internal */
-#define CL_DB_BYTECODE_UNSIGNED	0x8000
-#define CL_DB_UNSIGNED	    0x10000 /* internal */
-#define CL_DB_BYTECODE_STATS 0x20000
-#define CL_DB_ENHANCED      0x40000
-#define CL_DB_PCRE_STATS    0x80000
-#define CL_DB_YARA_EXCLUDE  0x100000
-#define CL_DB_YARA_ONLY     0x200000
+#define CL_DB_PHISHING          0x2
+#define CL_DB_PHISHING_URLS     0x8
+#define CL_DB_PUA               0x10
+#define CL_DB_CVDNOTMP          0x20    /* obsolete */
+#define CL_DB_OFFICIAL          0x40    /* internal */
+#define CL_DB_PUA_MODE          0x80
+#define CL_DB_PUA_INCLUDE       0x100
+#define CL_DB_PUA_EXCLUDE       0x200
+#define CL_DB_COMPILED          0x400   /* internal */
+#define CL_DB_DIRECTORY         0x800   /* internal */
+#define CL_DB_OFFICIAL_ONLY     0x1000
+#define CL_DB_BYTECODE          0x2000
+#define CL_DB_SIGNED            0x4000  /* internal */
+#define CL_DB_BYTECODE_UNSIGNED 0x8000
+#define CL_DB_UNSIGNED          0x10000 /* internal */
+#define CL_DB_BYTECODE_STATS    0x20000
+#define CL_DB_ENHANCED          0x40000
+#define CL_DB_PCRE_STATS        0x80000
+#define CL_DB_YARA_EXCLUDE      0x100000
+#define CL_DB_YARA_ONLY         0x200000
 
 /* recommended db settings */
-#define CL_DB_STDOPT	    (CL_DB_PHISHING | CL_DB_PHISHING_URLS | CL_DB_BYTECODE)
+#define CL_DB_STDOPT (CL_DB_PHISHING | CL_DB_PHISHING_URLS | CL_DB_BYTECODE)
 
-/* scan options */
-#define CL_SCAN_RAW			0x0
-#define CL_SCAN_ARCHIVE			0x1
-#define CL_SCAN_MAIL			0x2
-#define CL_SCAN_OLE2			0x4
-#define CL_SCAN_BLOCKENCRYPTED		0x8
-#define CL_SCAN_HTML			0x10
-#define CL_SCAN_PE			0x20
-#define CL_SCAN_BLOCKBROKEN		0x40
-#define CL_SCAN_MAILURL			0x80 /* ignored */
-#define CL_SCAN_BLOCKMAX		0x100
-#define CL_SCAN_ALGORITHMIC		0x200
-#define CL_SCAN_PHISHING_BLOCKSSL	0x800 /* ssl mismatches, not ssl by itself*/
-#define CL_SCAN_PHISHING_BLOCKCLOAK	0x1000
-#define CL_SCAN_ELF			0x2000
-#define CL_SCAN_PDF			0x4000
-#define CL_SCAN_STRUCTURED		0x8000
-#define CL_SCAN_STRUCTURED_SSN_NORMAL	0x10000
-#define CL_SCAN_STRUCTURED_SSN_STRIPPED	0x20000
-#define CL_SCAN_PARTIAL_MESSAGE         0x40000
-#define CL_SCAN_HEURISTIC_PRECEDENCE    0x80000
-#define CL_SCAN_BLOCKMACROS		0x100000
-#define CL_SCAN_ALLMATCHES		0x200000
-#define CL_SCAN_SWF			0x400000
-#define CL_SCAN_PARTITION_INTXN         0x800000
-#define CL_SCAN_XMLDOCS                 0x1000000
-#define CL_SCAN_HWP3                    0x2000000
-#define CL_SCAN_FILE_PROPERTIES         0x10000000
-//#define UNUSED                        0x20000000
-#define CL_SCAN_PERFORMANCE_INFO        0x40000000 /* collect performance timings */
-#define CL_SCAN_INTERNAL_COLLECT_SHA    0x80000000 /* Enables hash output in sha-collect builds - for internal use only */
+/*** scan options ***/
+struct cl_scan_options {
+    uint32_t general;
+    uint32_t parse;
+    uint32_t heuristic;
+    uint32_t mail;
+    uint32_t dev;
+};
 
-/* recommended scan settings */
-#define CL_SCAN_STDOPT		(CL_SCAN_ARCHIVE | CL_SCAN_MAIL | CL_SCAN_OLE2 | CL_SCAN_PDF | CL_SCAN_HTML | CL_SCAN_PE | CL_SCAN_ALGORITHMIC | CL_SCAN_ELF | CL_SCAN_SWF | CL_SCAN_XMLDOCS | CL_SCAN_HWP3)
+/* general */
+#define CL_SCAN_GENERAL_ALLMATCHES                  0x1 /* scan in all-match mode */
+#define CL_SCAN_GENERAL_COLLECT_METADATA            0x2 /* collect metadata (--gen-json) */
+#define CL_SCAN_GENERAL_HEURISTICS                  0x4 /* option to enable heuristic alerts */
+#define CL_SCAN_GENERAL_HEURISTIC_PRECEDENCE        0x8 /* allow heuristic match to take precedence. */
+
+/* parsing capabilities options */
+#define CL_SCAN_PARSE_ARCHIVE                       0x1
+#define CL_SCAN_PARSE_ELF                           0x2
+#define CL_SCAN_PARSE_PDF                           0x4
+#define CL_SCAN_PARSE_SWF                           0x8
+#define CL_SCAN_PARSE_HWP3                          0x10
+#define CL_SCAN_PARSE_XMLDOCS                       0x20
+#define CL_SCAN_PARSE_MAIL                          0x40
+#define CL_SCAN_PARSE_OLE2                          0x80
+#define CL_SCAN_PARSE_HTML                          0x100
+#define CL_SCAN_PARSE_PE                            0x200
+
+/* heuristic alerting options */
+#define CL_SCAN_HEURISTIC_BROKEN                    0x2
+#define CL_SCAN_HEURISTIC_EXCEEDS_MAX               0x4
+#define CL_SCAN_HEURISTIC_PHISHING_SSL_MISMATCH     0x8
+#define CL_SCAN_HEURISTIC_PHISHING_CLOAK            0x10
+#define CL_SCAN_HEURISTIC_MACROS                    0x20
+#define CL_SCAN_HEURISTIC_ENCRYPTED                 0x40
+#define CL_SCAN_HEURISTIC_PARTITION_INTXN           0x80 /* alert if partition table size doesn't make sense */
+#define CL_SCAN_HEURISTIC_STRUCTURED                0x100 /* data loss prevention options, i.e. alert when detecting personal information */
+#define CL_SCAN_HEURISTIC_STRUCTURED_SSN_NORMAL     0x200 /* alert when detecting social security numbers */
+#define CL_SCAN_HEURISTIC_STRUCTURED_SSN_STRIPPED   0x400 /* alert when detecting stripped social security numbers */
+
+/* mail scanning options */
+#define CL_SCAN_MAIL_PARTIAL_MESSAGE                0x1
+
+/* dev options */
+#define CL_SCAN_DEV_COLLECT_SHA                     0x1 /* Enables hash output in sha-collect builds - for internal use only */
+#define CL_SCAN_DEV_COLLECT_PERFORMANCE_INFO        0x2 /* collect performance timings */
 
 /* cl_countsigs options */
 #define CL_COUNTSIGS_OFFICIAL	    0x1
@@ -488,11 +501,11 @@ struct cl_cvd {		    /* field no. */
 };
 
 /* file scanning */
-extern int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions);
-extern int cl_scandesc_callback(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions, void *context);
+extern int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options* scanoptions);
+extern int cl_scandesc_callback(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options* scanoptions, void *context);
 
-extern int cl_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions);
-extern int cl_scanfile_callback(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions, void *context);
+extern int cl_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options* scanoptions);
+extern int cl_scanfile_callback(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options* scanoptions, void *context);
 
 /* database handling */
 extern int cl_load(const char *path, struct cl_engine *engine, unsigned int *signo, unsigned int dboptions);
@@ -558,7 +571,7 @@ extern cl_fmap_t *cl_fmap_open_memory(const void *start, size_t len);
 extern void cl_fmap_close(cl_fmap_t*);
 
 /* Scan custom data */
-extern int cl_scanmap_callback(cl_fmap_t *map, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions, void *context);
+extern int cl_scanmap_callback(cl_fmap_t *map, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *scanoptions, void *context);
 
 /* Crypto/hashing functions */
 #define SHA1_HASH_SIZE 20

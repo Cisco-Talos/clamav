@@ -662,8 +662,8 @@ static int hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hf
                 /* Check return code */
                 if (ret == CL_VIRUS) {
                     has_alerts = 1;
-                    if (SCAN_ALL) {
-                        /* Continue scanning in SCAN_ALL mode */
+                    if (SCAN_ALLMATCHES) {
+                        /* Continue scanning in SCAN_ALLMATCHES mode */
                         cli_dbgmsg("hfsplus_walk_catalog: data fork alert, continuing");
                         ret = CL_CLEAN;
                     }
@@ -681,8 +681,8 @@ static int hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hf
                 /* Check return code */
                 if (ret == CL_VIRUS) {
                     has_alerts = 1;
-                    if (SCAN_ALL) {
-                        /* Continue scanning in SCAN_ALL mode */
+                    if (SCAN_ALLMATCHES) {
+                        /* Continue scanning in SCAN_ALLMATCHES mode */
                         cli_dbgmsg("hfsplus_walk_catalog: resource fork alert, continuing");
                         ret = CL_CLEAN;
                     }

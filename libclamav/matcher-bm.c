@@ -381,7 +381,7 @@ int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 		    }
 		    if(virname) {
 			*virname = p->virname;
-			if(ctx != NULL && SCAN_ALL) {
+			if(ctx != NULL && SCAN_ALLMATCHES) {
 			    cli_append_virus(ctx, *virname);
 			    //*viroffset = offset + i + j - BM_MIN_LENGTH + BM_BLOCK_SIZE;
 			}
@@ -391,7 +391,7 @@ int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 
 		    viruses_found = 1;
 
-		    if(ctx != NULL && !SCAN_ALL)
+		    if(ctx != NULL && !SCAN_ALLMATCHES)
 			return CL_VIRUS;
 		}
 		p = p->next;

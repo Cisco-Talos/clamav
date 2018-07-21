@@ -171,7 +171,11 @@ static int hashpe(const char *filename, unsigned int class, int type)
     const char *fmptr;
     struct cl_engine *engine;
     cli_ctx ctx;
+	struct cl_scan_options options;
     int fd, ret;
+
+	memset(&options, 0, sizeof(struct cl_scan_options));
+	ctx.options = &options;
 
     /* build engine */
     if(!(engine = cl_engine_new())) {
@@ -201,7 +205,7 @@ static int hashpe(const char *filename, unsigned int class, int type)
     /* prepare context */
     memset(&ctx, '\0', sizeof(cli_ctx));
     ctx.engine = engine;
-    ctx.options = CL_SCAN_STDOPT;
+    ctx.options->parse = ~0;
     ctx.containers = cli_calloc(sizeof(cli_ctx_container), engine->maxreclevel + 2);
     if(!ctx.containers) {
 	cl_engine_free(engine);
@@ -2207,7 +2211,11 @@ static void matchsig(const char *sig, const char *offset, int fd)
 	STATBUF sb;
 	unsigned int matches = 0;
 	cli_ctx ctx;
+	struct cl_scan_options options;
 	int ret;
+
+	memset(&options, 0, sizeof(struct cl_scan_options));
+	ctx.options = &options;
 
     mprintf("SUBSIG: %s\n", sig);
 
@@ -2236,7 +2244,7 @@ static void matchsig(const char *sig, const char *offset, int fd)
     }
     memset(&ctx, '\0', sizeof(cli_ctx));
     ctx.engine = engine;
-    ctx.options = CL_SCAN_STDOPT;
+    ctx.options->parse = ~0;
     ctx.containers = cli_calloc(sizeof(cli_ctx_container), engine->maxreclevel + 2);
     if(!ctx.containers) {
 	cl_engine_free(engine);
@@ -3388,9 +3396,13 @@ static int dumpcerts(const struct optstruct *opts)
     const char * fmptr;
     struct cl_engine *engine;
     cli_ctx ctx;
+	struct cl_scan_options options;
     int fd, ret;
     uint8_t shash1[SHA1_HASH_SIZE];
 
+	memset(&options, 0, sizeof(struct cl_scan_options));
+	ctx.options = &options;
+	
     logg_file = NULL;
 
     filename = optget(opts, "print-certs")->strarg;
@@ -3430,7 +3442,7 @@ static int dumpcerts(const struct optstruct *opts)
     /* prepare context */
     memset(&ctx, '\0', sizeof(cli_ctx));
     ctx.engine = engine;
-    ctx.options = CL_SCAN_STDOPT;
+    ctx.options->parse = ~0;
     ctx.containers = cli_calloc(sizeof(cli_ctx_container), engine->maxreclevel + 2);
     if(!ctx.containers) {
 	cl_engine_free(engine);

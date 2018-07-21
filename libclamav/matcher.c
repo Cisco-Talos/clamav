@@ -154,7 +154,7 @@ static inline int matcher_run(const struct cli_matcher *root,
 		return ret;
 
 	    /* else (ret == CL_VIRUS) */
-	    if (SCAN_ALL)
+	    if (SCAN_ALLMATCHES)
 		viruses_found = 1;
 	    else {
 		ret = cli_append_virus(ctx, *virname);
@@ -167,7 +167,7 @@ static inline int matcher_run(const struct cli_matcher *root,
     ret = cli_ac_scanbuff(buffer, length, virname, NULL, acres, root, mdata, offset, ftype, ftoffset, acmode, ctx);
     if (ret != CL_CLEAN) {
         if (ret == CL_VIRUS) {
-            if (SCAN_ALL)
+            if (SCAN_ALLMATCHES)
                 viruses_found = 1;
             else {
                 ret = cli_append_virus(ctx, *virname);
@@ -228,9 +228,9 @@ static inline int matcher_run(const struct cli_matcher *root,
 #endif /* HAVE_PCRE */
     /* end experimental fragment */
 
-    if (ctx && !SCAN_ALL && ret == CL_VIRUS)
+    if (ctx && !SCAN_ALLMATCHES && ret == CL_VIRUS)
         return cli_append_virus(ctx, *virname);
-    if (ctx && SCAN_ALL && viruses_found)
+    if (ctx && SCAN_ALLMATCHES && viruses_found)
         return CL_VIRUS;
 
     if (saved_ret && ret == CL_CLEAN)
@@ -280,7 +280,7 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, 
 	    return ret;
 	if(ret == CL_VIRUS) {
 	    viruses_found = 1;
-	    if(ctx && !SCAN_ALL) {
+	    if(ctx && !SCAN_ALLMATCHES) {
 		return ret;
 	    }
 	}
@@ -579,7 +579,7 @@ int cli_checkfp_virus(unsigned char *digest, size_t size, cli_ctx *ctx, const ch
     }
 
 #ifdef HAVE__INTERNAL__SHA_COLLECT
-    if((ctx->options & CL_SCAN_INTERNAL_COLLECT_SHA) && ctx->sha_collect>0) {
+    if(SCAN_DEV_COLLECT_SHA && (ctx->sha_collect > 0)) {
         if((ptr = fmap_need_off_once(map, 0, size))) {
             if(!have_sha256)
                 cl_sha256(ptr, size, shash256+SHA256_HASH_SIZE, NULL);
@@ -842,7 +842,7 @@ int cli_exp_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *acd
 #endif
         if (rc == CL_VIRUS) {
             viruses_found = 1;
-            if (SCAN_ALL)
+            if (SCAN_ALLMATCHES)
                 continue;
             break;
         }
@@ -1053,7 +1053,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
                 /* virname already appended by matcher_run */
                 viruses_found = 1;
             }
-            if((ret == CL_VIRUS && !SCAN_ALL) || ret == CL_EMEM) {
+            if((ret == CL_VIRUS && !SCAN_ALLMATCHES) || ret == CL_EMEM) {
                 if(!ftonly) {
                     cli_ac_freedata(&gdata);
                     cli_pcre_freeoff(&gpoff);
@@ -1083,7 +1083,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
                 /* virname already appended by matcher_run */
                 viruses_found = 1;
             }
-            if((ret == CL_VIRUS && !SCAN_ALL) || ret == CL_EMEM) {
+            if((ret == CL_VIRUS && !SCAN_ALLMATCHES) || ret == CL_EMEM) {
                 cli_ac_freedata(&gdata);
                 cli_pcre_freeoff(&gpoff);
                 if(troot) {
@@ -1158,7 +1158,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
             if((ret = cli_hm_scan(digest[hashtype], map->len, &virname, hdb, hashtype)) == CL_VIRUS) {
                 found += 1;
             }
-            if(!found || SCAN_ALL) {
+            if(!found || SCAN_ALLMATCHES) {
                 if ((ret = cli_hm_scan_wild(digest[hashtype], &virname_w, hdb, hashtype)) == CL_VIRUS)
                     found += 2;
             }
@@ -1185,7 +1185,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
             if (found % 2) {
                 viruses_found = 1;
                 ret = cli_append_virus(ctx, virname);
-                if (!SCAN_ALL || ret != CL_CLEAN)
+                if (!SCAN_ALLMATCHES || ret != CL_CLEAN)
                     break;
                 virname = NULL;
             }
@@ -1193,7 +1193,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
             if (found > 1) {
                 viruses_found = 1;
                 ret = cli_append_virus(ctx, virname_w);
-                if (!SCAN_ALL || ret != CL_CLEAN)
+                if (!SCAN_ALLMATCHES || ret != CL_CLEAN)
                     break;
              }
         }
@@ -1204,7 +1204,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
     cl_hash_destroy(sha256ctx);
 
     if(troot) {
-        if(ret != CL_VIRUS || SCAN_ALL)
+        if(ret != CL_VIRUS || SCAN_ALLMATCHES)
             ret = cli_exp_eval(ctx, troot, &tdata, &info, (const char *)refhash);
         if (ret == CL_VIRUS)
             viruses_found++;
@@ -1216,7 +1216,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
     }
 
     if(groot) {
-        if(ret != CL_VIRUS || SCAN_ALL)
+        if(ret != CL_VIRUS || SCAN_ALLMATCHES)
             ret = cli_exp_eval(ctx, groot, &gdata, &info, (const char *)refhash);
         cli_ac_freedata(&gdata);
         cli_pcre_freeoff(&gpoff);
@@ -1227,7 +1227,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 
     cli_hashset_destroy(&info.exeinfo.vinfo);
 
-    if (SCAN_ALL && viruses_found)
+    if (SCAN_ALLMATCHES && viruses_found)
         return CL_VIRUS;
     if(ret == CL_VIRUS)
         return CL_VIRUS;
@@ -1251,7 +1251,7 @@ int cli_matchmeta(cli_ctx *ctx, const char *fname, size_t fsizec, size_t fsizer,
 
 	    ret = cli_append_virus(ctx, "Detected.By.Callback");
 	    viruses_found++;
-	    if(!SCAN_ALL || ret != CL_CLEAN)
+	    if(!SCAN_ALLMATCHES || ret != CL_CLEAN)
 		return ret;
 	}
 
@@ -1288,12 +1288,12 @@ int cli_matchmeta(cli_ctx *ctx, const char *fname, size_t fsizec, size_t fsizer,
 
 	ret = cli_append_virus(ctx, cdb->virname);
 	viruses_found++;
-	if(!SCAN_ALL || ret != CL_CLEAN)
+	if(!SCAN_ALLMATCHES || ret != CL_CLEAN)
 	    return ret;
 
     } while((cdb = cdb->next));
 
-    if (SCAN_ALL && viruses_found)
+    if (SCAN_ALLMATCHES && viruses_found)
 	return CL_VIRUS;
     return CL_CLEAN;
 }

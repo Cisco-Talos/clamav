@@ -1834,7 +1834,7 @@ int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, stru
 
 	/* need to be called here to catch any extracted but not yet scanned files
 	*/
-	if (ctx->outfd && (ret != CL_VIRUS || cctx->options & CL_SCAN_ALLMATCHES))
+	if (ctx->outfd && (ret != CL_VIRUS || cctx->options->general & CL_SCAN_GENERAL_ALLMATCHES))
 	    cli_bcapi_extract_new(ctx, -1);
     }
     if (bc->state == bc_jit || test_mode) {
@@ -1854,7 +1854,7 @@ int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, stru
 
 	/* need to be called here to catch any extracted but not yet scanned files
 	*/
-	if (ctx->outfd && (ret != CL_VIRUS || cctx->options & CL_SCAN_ALLMATCHES))
+	if (ctx->outfd && (ret != CL_VIRUS || cctx->options->general & CL_SCAN_GENERAL_ALLMATCHES))
 	    cli_bcapi_extract_new(ctx, -1);
     }
     cli_event_time_stop(g_sigevents, bc->sigtime_id);
@@ -2866,7 +2866,7 @@ int cli_bytecode_runhook(cli_ctx *cctx, const struct cl_engine *engine, struct c
 	if (ctx->virname) {
 	    cli_dbgmsg("Bytecode runhook found virus: %s\n", ctx->virname);
 	    cli_append_virus(cctx, ctx->virname);
-	    if (!(cctx->options & CL_SCAN_ALLMATCHES)) {
+	    if (!(cctx->options->general & CL_SCAN_GENERAL_ALLMATCHES)) {
 		cli_bytecode_context_clear(ctx);
 		return CL_VIRUS;
 	    }
@@ -2906,7 +2906,7 @@ int cli_bytecode_runhook(cli_ctx *cctx, const struct cl_engine *engine, struct c
 		if (ret != CL_CLEAN) {
 		    if (ret == CL_VIRUS) {
 			cli_dbgmsg("Scanning unpacked file by bytecode %u found a virus\n", bc->id);
-			if (cctx->options & CL_SCAN_ALLMATCHES) {
+			if (cctx->options->general & CL_SCAN_GENERAL_ALLMATCHES) {
 			    cli_bytecode_context_reset(ctx);
 			    continue;
 			}

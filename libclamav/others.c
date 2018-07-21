@@ -936,8 +936,8 @@ int cl_engine_settings_free(struct cl_settings *settings)
 
 void cli_check_blockmax(cli_ctx *ctx, int rc)
 {
-    if (BLOCKMAX && !ctx->limit_exceeded) {
-        cli_append_virus (ctx, "Heuristic.Limits.Exceeded");
+    if (SCAN_HEURISTIC_EXCEEDS_MAX && !ctx->limit_exceeded) {
+        cli_append_virus (ctx, "Heuristics.Limits.Exceeded");
         ctx->limit_exceeded = 1;
         cli_dbgmsg ("Limit %s Exceeded: scanning may be incomplete and additional analysis needed for this file.\n",
             cl_strerror(rc));
@@ -1096,9 +1096,9 @@ void cli_virus_found_cb(cli_ctx * ctx)
 
 int cli_append_possibly_unwanted(cli_ctx * ctx, const char * virname)
 {
-    if (SCAN_ALL)
+    if (SCAN_ALLMATCHES)
         return cli_append_virus(ctx, virname);
-    else if (ctx->options & CL_SCAN_HEURISTIC_PRECEDENCE)
+    else if (SCAN_HEURISTIC_PRECEDENCE)
         return cli_append_virus(ctx, virname);
     else if (ctx->num_viruses == 0 && ctx->virname != NULL && *ctx->virname == NULL) {
         ctx->found_possibly_unwanted = 1;
@@ -1114,16 +1114,16 @@ int cli_append_virus(cli_ctx * ctx, const char * virname)
         return CL_CLEAN;
     if (ctx->fmap != NULL && (*ctx->fmap) != NULL && CL_VIRUS != cli_checkfp_virus((*ctx->fmap)->maphash, (*ctx->fmap)->len, ctx, virname))
         return CL_CLEAN;
-    if (!SCAN_ALL && ctx->num_viruses != 0)
-        if (ctx->options & CL_SCAN_HEURISTIC_PRECEDENCE)
+    if (!SCAN_ALLMATCHES && ctx->num_viruses != 0)
+        if (SCAN_HEURISTIC_PRECEDENCE)
             return CL_CLEAN;
-    if (ctx->limit_exceeded == 0 || SCAN_ALL) { 
+    if (ctx->limit_exceeded == 0 || SCAN_ALLMATCHES) { 
         ctx->num_viruses++;
         *ctx->virname = virname;
         cli_virus_found_cb(ctx);
     }
 #if HAVE_JSON
-    if (SCAN_PROPERTIES && ctx->wrkproperty) {
+    if (SCAN_COLLECT_METADATA && ctx->wrkproperty) {
         json_object *arrobj, *virobj;
         if (!json_object_object_get_ex(ctx->wrkproperty, "Viruses", &arrobj)) {
             arrobj = json_object_new_array();

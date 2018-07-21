@@ -133,10 +133,10 @@ int cli_scanapm(cli_ctx *ctx)
     }
 
     /* check that the partition table fits in the space specified - HEURISTICS */
-    if ((ctx->options & CL_SCAN_PARTITION_INTXN) && (ctx->dconf->other & OTHER_CONF_PRTNINTXN)) {
+    if (SCAN_HEURISTIC_PARTITION_INTXN && (ctx->dconf->other & OTHER_CONF_PRTNINTXN)) {
         ret = apm_prtn_intxn(ctx, &aptable, sectorsize, old_school);
         if (ret != CL_CLEAN) {
-            if ((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))
+            if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
                 detection = CL_VIRUS;
             else
                 return ret;
@@ -226,7 +226,7 @@ int cli_scanapm(cli_ctx *ctx)
         /* send the partition to cli_map_scan */
         ret = cli_map_scan(*ctx->fmap, partoff, partsize, ctx, CL_TYPE_PART_ANY);
         if (ret != CL_CLEAN) {
-            if ((ctx->options & CL_SCAN_ALLMATCHES) && (ret == CL_VIRUS))
+            if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
                 detection = CL_VIRUS;
             else
                 return ret;
@@ -296,7 +296,7 @@ static int apm_prtn_intxn(cli_ctx *ctx, struct apm_partition_info *aptable, size
                 ret = cli_append_virus(ctx, PRTN_INTXN_DETECTION);
                 if (ret == CL_VIRUS)
                     virus_found = 1;
-                if (SCAN_ALL || ret == CL_CLEAN)
+                if (SCAN_ALLMATCHES || ret == CL_CLEAN)
                     tmp = 0;
                 else
                     goto leave;

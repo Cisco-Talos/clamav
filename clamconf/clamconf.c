@@ -39,6 +39,7 @@
 #include "shared/optparser.h"
 #include "shared/misc.h"
 
+#include "clamav-config.h"
 #include "libclamav/str.h"
 #include "libclamav/clamav.h"
 #include "libclamav/others.h"
