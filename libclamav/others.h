@@ -160,7 +160,7 @@ typedef struct cli_ctx_tag {
     const struct cli_matcher *root;
     const struct cl_engine *engine;
     unsigned long scansize;
-    unsigned int options;
+    struct cl_scan_options *options;
     unsigned int recursion;
     unsigned int scannedfiles;
     unsigned int found_possibly_unwanted;
@@ -490,24 +490,37 @@ extern int (*cli_unrar_extract_next)(unrar_state_t *state, const char *dirname);
 extern void (*cli_unrar_close)(unrar_state_t *state);
 extern int have_rar;
 
-#define SCAN_ARCHIVE	    (ctx->options & CL_SCAN_ARCHIVE)
-#define SCAN_MAIL	    (ctx->options & CL_SCAN_MAIL)
-#define SCAN_OLE2	    (ctx->options & CL_SCAN_OLE2)
-#define SCAN_PDF	    (ctx->options & CL_SCAN_PDF)
-#define SCAN_HTML	    (ctx->options & CL_SCAN_HTML)
-#define SCAN_PE		    (ctx->options & CL_SCAN_PE)
-#define SCAN_ELF	    (ctx->options & CL_SCAN_ELF)
-#define SCAN_ALGO 	    (ctx->options & CL_SCAN_ALGORITHMIC)
-#define DETECT_ENCRYPTED    (ctx->options & CL_SCAN_BLOCKENCRYPTED)
-#define BLOCKMAX	    (ctx->options & CL_SCAN_BLOCKMAX)
-#define DETECT_BROKEN	    (ctx->options & CL_SCAN_BLOCKBROKEN)
-#define BLOCK_MACROS	    (ctx->options & CL_SCAN_BLOCKMACROS)
-#define SCAN_STRUCTURED	    (ctx->options & CL_SCAN_STRUCTURED)
-#define SCAN_ALL            (ctx->options & CL_SCAN_ALLMATCHES)
-#define SCAN_SWF            (ctx->options & CL_SCAN_SWF)
-#define SCAN_PROPERTIES     (ctx->options & CL_SCAN_FILE_PROPERTIES)
-#define SCAN_XMLDOCS        (ctx->options & CL_SCAN_XMLDOCS)
-#define SCAN_HWP3           (ctx->options & CL_SCAN_HWP3)
+#define SCAN_ALLMATCHES                         (ctx->options->general & CL_SCAN_GENERAL_ALLMATCHES)
+#define SCAN_COLLECT_METADATA                   (ctx->options->general & CL_SCAN_GENERAL_COLLECT_METADATA)
+#define SCAN_HEURISTICS                         (ctx->options->general & CL_SCAN_GENERAL_HEURISTICS)
+#define SCAN_HEURISTIC_PRECEDENCE               (ctx->options->general & CL_SCAN_GENERAL_HEURISTIC_PRECEDENCE)
+
+#define SCAN_PARSE_ARCHIVE                      (ctx->options->parse & CL_SCAN_PARSE_ARCHIVE)
+#define SCAN_PARSE_ELF                          (ctx->options->parse & CL_SCAN_PARSE_ELF)
+#define SCAN_PARSE_PDF                          (ctx->options->parse & CL_SCAN_PARSE_PDF)
+#define SCAN_PARSE_SWF                          (ctx->options->parse & CL_SCAN_PARSE_SWF)
+#define SCAN_PARSE_HWP3                         (ctx->options->parse & CL_SCAN_PARSE_HWP3)
+#define SCAN_PARSE_XMLDOCS                      (ctx->options->parse & CL_SCAN_PARSE_XMLDOCS)
+#define SCAN_PARSE_MAIL                         (ctx->options->parse & CL_SCAN_PARSE_MAIL)
+#define SCAN_PARSE_OLE2                         (ctx->options->parse & CL_SCAN_PARSE_OLE2)
+#define SCAN_PARSE_HTML                         (ctx->options->parse & CL_SCAN_PARSE_HTML)
+#define SCAN_PARSE_PE                           (ctx->options->parse & CL_SCAN_PARSE_PE)
+
+#define SCAN_HEURISTIC_BROKEN                   (ctx->options->heuristic & CL_SCAN_HEURISTIC_BROKEN)
+#define SCAN_HEURISTIC_EXCEEDS_MAX              (ctx->options->heuristic & CL_SCAN_HEURISTIC_EXCEEDS_MAX)
+#define SCAN_HEURISTIC_PHISHING_SSL_MISMATCH    (ctx->options->heuristic & CL_SCAN_HEURISTIC_PHISHING_SSL_MISMATCH)
+#define SCAN_HEURISTIC_PHISHING_CLOAK           (ctx->options->heuristic & CL_SCAN_HEURISTIC_PHISHING_CLOAK)
+#define SCAN_HEURISTIC_MACROS                   (ctx->options->heuristic & CL_SCAN_HEURISTIC_MACROS)
+#define SCAN_HEURISTIC_ENCRYPTED                (ctx->options->heuristic & CL_SCAN_HEURISTIC_ENCRYPTED)
+#define SCAN_HEURISTIC_PARTITION_INTXN          (ctx->options->heuristic & CL_SCAN_HEURISTIC_PARTITION_INTXN)
+#define SCAN_HEURISTIC_STRUCTURED               (ctx->options->heuristic & CL_SCAN_HEURISTIC_STRUCTURED)
+#define SCAN_HEURISTIC_STRUCTURED_SSN_NORMAL    (ctx->options->heuristic & CL_SCAN_HEURISTIC_STRUCTURED_SSN_NORMAL)
+#define SCAN_HEURISTIC_STRUCTURED_SSN_STRIPPED  (ctx->options->heuristic & CL_SCAN_HEURISTIC_STRUCTURED_SSN_STRIPPED)
+
+#define SCAN_MAIL_PARTIAL_MESSAGE               (ctx->options->mail & CL_SCAN_MAIL_PARTIAL_MESSAGE)
+
+#define SCAN_DEV_COLLECT_SHA                    (ctx->options->dev & CL_SCAN_DEV_COLLECT_SHA)
+#define SCAN_DEV_COLLECT_PERF_INFO              (ctx->options->dev & CL_SCAN_DEV_COLLECT_PERFORMANCE_INFO)
 
 /* based on macros from A. Melnikoff */
 #define cbswap16(v) (((v & 0xff) << 8) | (((v) >> 8) & 0xff))

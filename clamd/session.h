@@ -82,7 +82,7 @@ typedef struct client_conn_tag {
     char *filename;
     int scanfd;
     int sd;
-    unsigned int options;
+    struct cl_scan_options *options;
     const struct optstruct *opts;
     struct cl_engine *engine;
     time_t engine_timestamp;

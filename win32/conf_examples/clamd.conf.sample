@@ -547,7 +547,7 @@ TCPAddr 127.0.0.1
 #PCREMaxFileSize 100M
 
 # When BlockMax is set, files exceeding the MaxFileSize, MaxScanSize, or MaxRecursion limit will be flagged
-# with the virus "Heuristic.Limits.Exceeded".
+# with the virus "Heuristics.Limits.Exceeded".
 # Default: no
 #BlockMax yes
 

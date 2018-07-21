@@ -171,24 +171,36 @@ void *onas_fan_th(void *arg)
 	    }
 
     } else if (!optget(tharg->opts, "OnAccessDisableDDD")->enabled) {
+		int thread_started = 1;
 	    do {
 		    if(pthread_attr_init(&ddd_attr)) break;
 		    pthread_attr_setdetachstate(&ddd_attr, PTHREAD_CREATE_JOINABLE);
 
-		    if(!(ddd_tharg = (struct ddd_thrarg *) malloc(sizeof(struct ddd_thrarg)))) break;
+			/* Allocate memory for arguments. Thread is responsible for freeing it. */
+		    if (!(ddd_tharg = (struct ddd_thrarg *) calloc(sizeof(struct ddd_thrarg), 1))) break;
+			if (!(ddd_tharg->options = (struct cl_scan_options *) calloc(sizeof(struct cl_scan_options), 1))) break;
 
+			(void) memcpy(ddd_tharg->options, tharg->options, sizeof(struct cl_scan_options));
 		    ddd_tharg->fan_fd = onas_fan_fd;
 		    ddd_tharg->fan_mask = fan_mask;
 		    ddd_tharg->opts = tharg->opts;
 		    ddd_tharg->engine = tharg->engine;
-		    ddd_tharg->options = tharg->options;
 
-		    if(!pthread_create(&ddd_pid, &ddd_attr, onas_ddd_th, ddd_tharg)) break;
-
-		    free(ddd_tharg);
-		    ddd_tharg=NULL;
+		    thread_started = pthread_create(&ddd_pid, &ddd_attr, onas_ddd_th, ddd_tharg);
 	    } while(0);
-	    if (!ddd_tharg) logg("!Unable to start dynamic directory determination.\n");
+
+		if (0 != thread_started) {
+			/* Failed to create thread. Free anything we may have allocated. */
+			logg("!Unable to start dynamic directory determination.\n");
+			if (NULL != ddd_tharg) {
+				if (NULL != ddd_tharg->options) {
+					free(ddd_tharg->options);
+					ddd_tharg->options = NULL;
+				}
+				free(ddd_tharg);
+				ddd_tharg = NULL;
+			}
+		}
 
     } else {
 	    if((pt = optget(tharg->opts, "OnAccessIncludePath"))->enabled) {

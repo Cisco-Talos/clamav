@@ -306,7 +306,7 @@ int cli_hwp5header(cli_ctx *ctx, hwp5_header_t *hwp5)
         return CL_ENULLARG;
 
 #if HAVE_JSON
-    if (ctx->options & CL_SCAN_FILE_PROPERTIES) {
+    if (SCAN_COLLECT_METADATA) {
         json_object *header, *flags;
 
         header = cli_jsonobj(ctx->wrkproperty, "Hwp5Header");
@@ -426,7 +426,7 @@ int cli_scanhwp5_stream(cli_ctx *ctx, hwp5_header_t *hwp5, char *name, int fd)
 
 #if HAVE_JSON
         /* JSON Output Summary Information */
-        if (ctx->options & CL_SCAN_FILE_PROPERTIES && ctx->properties != NULL) {
+        if (SCAN_COLLECT_METADATA && ctx->properties != NULL) {
             if (name && !strncmp(name, "_5_hwpsummaryinformation", 24)) {
                 cli_dbgmsg("HWP5.x: Detected a '_5_hwpsummaryinformation' stream\n");
                 /* JSONOLE2 - what to do if something breaks? */
@@ -539,7 +539,7 @@ static inline int parsehwp3_docinfo(cli_ctx *ctx, off_t offset, struct hwp3_doci
     hwp3_debug("HWP3.x: di_infoblksize: %u\n", docinfo->di_infoblksize);
 
 #if HAVE_JSON
-    if (ctx->options & CL_SCAN_FILE_PROPERTIES) {
+    if (SCAN_COLLECT_METADATA) {
         json_object *header, *flags;
         char *str;
 
@@ -605,7 +605,7 @@ static inline int parsehwp3_docsummary(cli_ctx *ctx, off_t offset)
     int i, iret, ret;
     json_object *summary;
 
-    if (!(ctx->options & CL_SCAN_FILE_PROPERTIES))
+    if (!SCAN_COLLECT_METADATA)
         return CL_SUCCESS;
 
     if (!(hwp3_ptr = fmap_need_off_once(*ctx->fmap, offset, HWP3_DOCSUMMARY_SIZE))) {
@@ -1537,7 +1537,7 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
     hwp3_debug("HWP3.x: Information Block @ offset %llu\n", infoloc);
 
 #if HAVE_JSON
-    if (ctx->options & CL_SCAN_FILE_PROPERTIES) {
+    if (SCAN_COLLECT_METADATA) {
         infoblk_1 = cli_jsonobj(ctx->wrkproperty, "InfoBlk_1");
         if (!infoblk_1) {
             cli_errmsg("HWP5.x: No memory for information block object\n");
@@ -1568,7 +1568,7 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
     infoid = le32_to_host(infoid);
 
 #if HAVE_JSON
-    if (ctx->options & CL_SCAN_FILE_PROPERTIES) {
+    if (SCAN_COLLECT_METADATA) {
         entry = cli_jsonobj(contents, NULL);
         if (!entry) {
             cli_errmsg("HWP5.x: No memory for information block entry object\n");
@@ -1584,7 +1584,7 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
     if (infoid == 5) {
         hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Booking Information\n", infoloc);
 #if HAVE_JSON
-        if (ctx->options & CL_SCAN_FILE_PROPERTIES)
+        if (SCAN_COLLECT_METADATA)
             cli_jsonstr(entry, "Type", "Booking Information");
 #endif
         return CL_SUCCESS;
@@ -1599,7 +1599,7 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
     infolen = le32_to_host(infolen);
 
 #if HAVE_JSON
-    if (ctx->options & CL_SCAN_FILE_PROPERTIES) {
+    if (SCAN_COLLECT_METADATA) {
         cli_jsonint64(entry, "Offset", infoloc);
         cli_jsonint(entry, "Length", infolen);
     }
@@ -1619,7 +1619,7 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
         if (infolen == 0) {
             hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Terminating Entry\n", infoloc);
 #if HAVE_JSON
-        if (ctx->options & CL_SCAN_FILE_PROPERTIES)
+        if (SCAN_COLLECT_METADATA)
             cli_jsonstr(entry, "Type", "Terminating Entry");
 #endif
             if (last) *last = 1;
@@ -1631,7 +1631,7 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
     case 1: /* Image Data */
         hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Image Data\n", infoloc);
 #if HAVE_JSON
-        if (ctx->options & CL_SCAN_FILE_PROPERTIES)
+        if (SCAN_COLLECT_METADATA)
             cli_jsonstr(entry, "Type", "Image Data");
 #endif
 #if HWP3_DEBUG /* additional fields can be added */
@@ -1658,7 +1658,7 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
     case 2: /* OLE2 Data */
         hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: OLE2 Data\n", infoloc);
 #if HAVE_JSON
-        if (ctx->options & CL_SCAN_FILE_PROPERTIES)
+        if (SCAN_COLLECT_METADATA)
             cli_jsonstr(entry, "Type", "OLE2 Data");
 #endif
         if (infolen > 0)
@@ -1674,7 +1674,7 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
         count = (infolen / 617);
         hwp3_debug("HWP3.x: Information Block[%llu]: COUNT: %d entries\n", infoloc, count);
 #if HAVE_JSON
-        if (ctx->options & CL_SCAN_FILE_PROPERTIES) {
+        if (SCAN_COLLECT_METADATA) {
             cli_jsonstr(entry, "Type", "Hypertext/Hyperlink Information");
             cli_jsonint(entry, "Count", count);
         }
@@ -1697,7 +1697,7 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
     case 4: /* Presentation Information */
         hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Presentation Information\n", infoloc);
 #if HAVE_JSON
-        if (ctx->options & CL_SCAN_FILE_PROPERTIES)
+        if (SCAN_COLLECT_METADATA)
             cli_jsonstr(entry, "Type", "Presentation Information");
 #endif
         /* contains nothing of interest to scan */
@@ -1706,14 +1706,14 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
         /* should never run this as it is short-circuited above */
         hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Booking Information\n", infoloc);
 #if HAVE_JSON
-        if (ctx->options & CL_SCAN_FILE_PROPERTIES)
+        if (SCAN_COLLECT_METADATA)
             cli_jsonstr(entry, "Type", "Booking Information");
 #endif
         break;
     case 6: /* Background Image Data */
         hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Background Image Data\n", infoloc);
 #if HAVE_JSON
-        if (ctx->options & CL_SCAN_FILE_PROPERTIES) {
+        if (SCAN_COLLECT_METADATA) {
             cli_jsonstr(entry, "Type", "Background Image Data");
             cli_jsonint(entry, "ImageSize", infolen-324);
         }
@@ -1734,7 +1734,7 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
     case 0x100: /* Table Extension */
         hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Table Extension\n", infoloc);
 #if HAVE_JSON
-        if (ctx->options & CL_SCAN_FILE_PROPERTIES)
+        if (SCAN_COLLECT_METADATA)
             cli_jsonstr(entry, "Type", "Table Extension");
 #endif
         /* contains nothing of interest to scan */
@@ -1742,7 +1742,7 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
     case 0x101: /* Press Frame Information Field Name */
         hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Press Frame Information Field Name\n", infoloc);
 #if HAVE_JSON
-        if (ctx->options & CL_SCAN_FILE_PROPERTIES)
+        if (SCAN_COLLECT_METADATA)
             cli_jsonstr(entry, "Type", "Press Frame Information Field Name");
 #endif
         /* contains nothing of interest to scan */
@@ -1796,7 +1796,7 @@ static int hwp3_cb(void *cbdata, int fd, cli_ctx *ctx)
 
     /* Fonts - 7 entries of 2 + (n x 40) bytes where n is the first 2 bytes of the entry */
 #if HAVE_JSON
-    if (ctx->options & CL_SCAN_FILE_PROPERTIES)
+    if (SCAN_COLLECT_METADATA)
         fonts = cli_jsonarray(ctx->wrkproperty, "FontCounts");
 #endif
     for (i = 0; i < 7; i++) {
@@ -1810,7 +1810,7 @@ static int hwp3_cb(void *cbdata, int fd, cli_ctx *ctx)
         nfonts = le16_to_host(nfonts);
 
 #if HAVE_JSON
-        if (ctx->options & CL_SCAN_FILE_PROPERTIES)
+        if (SCAN_COLLECT_METADATA)
             cli_jsonint(fonts, NULL, nfonts);
 #endif
         hwp3_debug("HWP3.x: Font Entry %d with %u entries @ offset %llu\n", i+1, nfonts, (long long unsigned)offset);
@@ -1831,7 +1831,7 @@ static int hwp3_cb(void *cbdata, int fd, cli_ctx *ctx)
     nstyles = le16_to_host(nstyles);
 
 #if HAVE_JSON
-    if (ctx->options & CL_SCAN_FILE_PROPERTIES)
+    if (SCAN_COLLECT_METADATA)
         cli_jsonint(ctx->wrkproperty, "StyleCount", nstyles);
 #endif
     hwp3_debug("HWP3.x: %u Styles @ offset %llu\n", nstyles, (long long unsigned)offset);
@@ -1853,7 +1853,7 @@ static int hwp3_cb(void *cbdata, int fd, cli_ctx *ctx)
         return ret;
     }
 #if HAVE_JSON
-    if (ctx->options & CL_SCAN_FILE_PROPERTIES)
+    if (SCAN_COLLECT_METADATA)
         cli_jsonint(ctx->wrkproperty, "ParagraphCount", p);
 #endif
 
@@ -1862,7 +1862,7 @@ static int hwp3_cb(void *cbdata, int fd, cli_ctx *ctx)
     while (!last && ((ret = parsehwp3_infoblk_1(ctx, map, &offset, &last)) == CL_SUCCESS));
 
     /* scan the uncompressed stream - both compressed and uncompressed cases [ALLMATCH] */
-    if ((ret == CL_SUCCESS) || ((SCAN_ALL) && (ret == CL_VIRUS))) {
+    if ((ret == CL_SUCCESS) || ((SCAN_ALLMATCHES) && (ret == CL_VIRUS))) {
         int subret = ret;
         size_t dlen = offset - start;
 

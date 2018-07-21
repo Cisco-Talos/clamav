@@ -542,7 +542,7 @@ static unsigned int lhdr(fmap_t *map, uint32_t loff,uint32_t zsize, unsigned int
 
   if(cli_matchmeta(ctx, name, LH_csize, LH_usize, (LH_flags & F_ENCR)!=0, fc, LH_crc32, NULL) == CL_VIRUS) {
       *ret = CL_VIRUS;
-      if (!SCAN_ALL)
+      if (!SCAN_ALLMATCHES)
           return 0;
       virus_found = 1;
   }
@@ -554,10 +554,10 @@ static unsigned int lhdr(fmap_t *map, uint32_t loff,uint32_t zsize, unsigned int
     return 0;
   }
 
-  if(detect_encrypted && (LH_flags & F_ENCR) && DETECT_ENCRYPTED) {
+  if(detect_encrypted && (LH_flags & F_ENCR) && SCAN_HEURISTIC_ENCRYPTED) {
     cli_dbgmsg("cli_unzip: Encrypted files found in archive.\n");
     *ret = cli_append_virus(ctx, "Heuristics.Encrypted.Zip");
-    if ((*ret == CL_VIRUS && !SCAN_ALL) || *ret != CL_CLEAN) {
+    if ((*ret == CL_VIRUS && !SCAN_ALLMATCHES) || *ret != CL_CLEAN) {
         fmap_unneed_off(map, loff, SIZEOF_LH);
         return 0;
     }
@@ -757,7 +757,7 @@ int cli_unzip(cli_ctx *ctx) {
           }
 #endif
           if (ret != CL_CLEAN) {
-              if (ret == CL_VIRUS && SCAN_ALL) {
+              if (ret == CL_VIRUS && SCAN_ALLMATCHES) {
                   ret = CL_CLEAN;
                   virus_found = 1;
               } else
@@ -772,7 +772,7 @@ int cli_unzip(cli_ctx *ctx) {
     while (ret==CL_CLEAN && lhoff<fsize && (coff=lhdr(map, lhoff, fsize-lhoff, &fu, fc+1, NULL, &ret, ctx, tmpd, 1, zip_scan_cb))) {
       fc++;
       lhoff+=coff;
-      if (SCAN_ALL && ret == CL_VIRUS) {
+      if (SCAN_ALLMATCHES && ret == CL_VIRUS) {
           ret = CL_CLEAN;
           virus_found = 1;
       }

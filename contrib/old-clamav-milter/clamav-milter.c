@@ -382,7 +382,10 @@ uint32_t maxreclevel;
 uint32_t maxfiles;
 
 static	struct	cl_stat	dbstat;
-static	int	options = CL_SCAN_STDOPT;
+static	struct cl_scan_options	options;
+
+memset(&options, 0, sizeof(struct cl_scan_options));
+options.parse |= ~0; /* enable all parsers */
 
 #ifdef	BOUNCE
 static	int	bflag = 0;	/*

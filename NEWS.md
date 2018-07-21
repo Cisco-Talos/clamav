@@ -86,7 +86,7 @@ ClamAV 0.100, including but not limited to:
 - Raw scanning of PostScript files.
 - Fix clamsubmit to use the new virus and false positive submission web
   interface.
-- Optionally, flag files with the virus "Heuristic.Limits.Exceeded" when
+- Optionally, flag files with the virus "Heuristics.Limits.Exceeded" when
   size limitations are exceeded.
 - Improved decoders for PDF files.
 - Reduced number of compile time warnings.
@@ -1147,7 +1147,7 @@ Detailed list of changes:
   - Support for Sensory Networks' NodalCore hardware acceleration technology
   - Advanced phishing detection module (experimental)
   - Signatures are stored in separate trees depending on their target type
-  - Algorithmic detection can be controlled with CL_SCAN_ALGORITHMIC
+  - Algorithmic detection can be controlled with CL_SCAN_GENERAL_HEURISTICS
   - Support for new obfuscators: SUE, Y0da Cryptor, CryptFF
   - Support for new packers: NsPack, wwpack32, MEW, Upack
   - Support for SIS files (SymbianOS packages)
@@ -1598,11 +1598,11 @@ the new version of ClamAV have detected and blocked 100% of Mydoom attacks!
 New features in this release include:
 
 - libclamav
-  - Portable Executable analyser (CL_SCAN_PE) featuring:
+  - Portable Executable analyser (CL_SCAN_PARSE_PE) featuring:
   - UPX decompression (all versions)
   - Petite decompression (2.x)
   - FSG decompression (1.3, 1.31, 1.33)
-  - detection of broken executables (CL_SCAN_BLOCKBROKEN)
+  - detection of broken executables (CL_SCAN_HEURISTIC_BROKEN)
   - new, memory efficient, pattern matching algorithm (multipattern variant
     of Boyer-Moore) - it's now primary matcher and Aho-Corasick is only used
     for regular expression extended signatures
@@ -1618,7 +1618,7 @@ New features in this release include:
   - new method of mail files detection
   - all e-mail attachments are now scanned (previously only the first ten
     attachments were scanned)
-  - added support for scanning URLs in e-mails (CL_SCAN_MAILURL)
+  - added support for scanning URLs in e-mails (CL_SCAN_PARSE_MAILURL)
   - detection of Worm.Mydoom.M.log
   - updated API (still backward compatible but please consult clamdoc.pdf
     (Section 6) and adapt your software)

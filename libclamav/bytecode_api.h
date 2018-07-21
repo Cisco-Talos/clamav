@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2014-2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2009-2013 Sourcefire, Inc.
  *  All rights reserved.
  *  Authors: Török Edvin, Kevin Lin
@@ -202,6 +202,45 @@ enum bc_json_type {
     JSON_TYPE_ARRAY,     /* */
     JSON_TYPE_STRING     /* */
 };
+
+/**
+\group_engine
+ * Scan option flag values for engine_scan_options(). *DEPRECATED*
+ */
+#define CL_SCAN_RAW                     0x0
+#define CL_SCAN_ARCHIVE                 0x1
+#define CL_SCAN_MAIL                    0x2
+#define CL_SCAN_OLE2                    0x4
+#define CL_SCAN_BLOCKENCRYPTED          0x8
+#define CL_SCAN_HTML                    0x10
+#define CL_SCAN_PE                      0x20
+#define CL_SCAN_BLOCKBROKEN             0x40
+#define CL_SCAN_MAILURL                 0x80  /* deprecated circa 2009 */
+#define CL_SCAN_BLOCKMAX                0x100
+#define CL_SCAN_ALGORITHMIC             0x200
+//#define UNUSED                        0x400
+#define CL_SCAN_PHISHING_BLOCKSSL       0x800 /* ssl mismatches, not ssl by itself*/
+#define CL_SCAN_PHISHING_BLOCKCLOAK     0x1000
+#define CL_SCAN_ELF                     0x2000
+#define CL_SCAN_PDF                     0x4000
+#define CL_SCAN_STRUCTURED              0x8000
+#define CL_SCAN_STRUCTURED_SSN_NORMAL   0x10000
+#define CL_SCAN_STRUCTURED_SSN_STRIPPED 0x20000
+#define CL_SCAN_PARTIAL_MESSAGE         0x40000
+#define CL_SCAN_HEURISTIC_PRECEDENCE    0x80000
+#define CL_SCAN_BLOCKMACROS             0x100000
+#define CL_SCAN_ALLMATCHES              0x200000
+#define CL_SCAN_SWF                     0x400000
+#define CL_SCAN_PARTITION_INTXN         0x800000
+#define CL_SCAN_XMLDOCS                 0x1000000
+#define CL_SCAN_HWP3                    0x2000000
+//#define UNUSED                        0x4000000
+//#define UNUSED                        0x8000000
+#define CL_SCAN_FILE_PROPERTIES         0x10000000
+//#define UNUSED                        0x20000000
+#define CL_SCAN_PERFORMANCE_INFO        0x40000000 /* Collect performance timings */
+#define CL_SCAN_INTERNAL_COLLECT_SHA    0x80000000 /* Enables hash output in sha-collect builds - for internal use only */
+
 
 #ifdef __CLAMBC__
 
@@ -885,7 +924,7 @@ uint32_t engine_dconf_level(void);
 
 /**
 \group_engine
-  * Returns the current engine's scan options.
+  * Returns the current engine's scan options. **DEPRECATED**
   * @return CL_SCAN* flags 
   */
 uint32_t engine_scan_options(void);
@@ -1222,5 +1261,49 @@ int32_t json_get_int(int32_t objid);
 //double json_get_double(int32_t objid);
 
 /* ----------------- END 0.98.4 APIs ---------------------------------- */
+/* ----------------- BEGIN 0.100.0 APIs ------------------------------- */
+/* ----------------- Scan Options APIs -------------------------------- */
+/**
+\group_engine
+  * Check if any given scan option is enabled.
+  * Returns non-zero if the following named options are set:
+  * 
+  * "general allmatch"                - all-match mode is enabled
+  * "general collect metadata"        - --gen-json is enabled
+  * "general heuristics"              - --gen-json is enabled
+  * 
+  * "parse archive"                   - archive parsing is enabled
+  * "parse pdf"                       - pdf parsing is enabled
+  * "parse swf"                       - swf parsing is enabled
+  * "parse hwp3"                      - hwp3 parsing is enabled
+  * "parse xmldocs"                   - xmldocs parsing is enabled
+  * "parse mail"                      - mail parsing is enabled
+  * "parse ole2"                      - ole2 parsing is enabled
+  * "parse html"                      - html parsing is enabled
+  * "parse pe"                        - pe parsing is enabled
+  * 
+  * "heuristic precedence"            - heuristic signatures are set to take precedence
+  * "heuristic broken"                - broken pe heuristic is enabled
+  * "heuristic exceeds max"           - heuristic for when max settings are exceeded is enabled
+  * "heuristic phishing ssl mismatch" - phishing ssl mismatch heuristic is enabled
+  * "heuristic phishing cloak"        - phishing cloak heuristic is enabled
+  * "heuristic macros"                - macros heuristic is enabled
+  * "heuristic encrypted"             - encrypted heuristic is enabled
+  * "heuristic partition intxn"       - macpartition intxnros heuristic is enabled
+  * "heuristic structured"            - structured heuristic is enabled
+  * "heuristic structured ssn normal" - structured ssn normal heuristic is enabled
+  * "heuristic structured ssn stripped" - structured ssn stripped heuristic is enabled
+  * 
+  * "mail partial message"            - parsing of partial mail messages is enabled
+  * 
+  * "dev collect sha"                 - --dev-collect-hashes is enabled
+  * "dev collect performance info"    - --dev-performance is enabled
+  * 
+  * @param[in] scan_options enum value for desired scan option category.
+  * @return CL_SCAN_<OPTION>_* flags 
+  */
+uint32_t engine_scan_options_ex(const uint8_t *option_name, uint32_t name_len);
+
+/* ----------------- END 0.101 APIs ---------------------------------- */
 #endif
 #endif

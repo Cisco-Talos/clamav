@@ -239,7 +239,7 @@ int cli_scandmg(cli_ctx *ctx)
             if (depth < 0) {
                 break;
             }
-            if ((depth > 50) && SCAN_ALGO) {
+            if ((depth > 50) && SCAN_HEURISTICS) {
                 // Possible heuristic, should limit runaway
                 cli_dbgmsg("cli_scandmg: Excessive nesting in DMG TOC.\n");
                 break;

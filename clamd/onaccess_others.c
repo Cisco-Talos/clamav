@@ -94,7 +94,7 @@ int onas_fan_checkowner(int pid, const struct optstruct *opts)
     return CHK_CLEAN;
 }
 
-int onas_scan(const char *fname, int fd, const char **virname, const struct cl_engine *engine, int options, int extinfo)
+int onas_scan(const char *fname, int fd, const char **virname, const struct cl_engine *engine, struct cl_scan_options *options, int extinfo)
 {
     int ret = 0;
     struct cb_context context;

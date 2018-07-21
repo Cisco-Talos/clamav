@@ -285,7 +285,7 @@ static int xar_get_toc_data_values(xmlTextReaderPtr reader, size_t *length, size
      reader - xmlTextReaderPtr
      ctx - pointer to cli_ctx
   Returns:
-     CL_SUCCESS - subdoc found and clean scan (or virus found and SCAN_ALL), or no subdocument
+     CL_SUCCESS - subdoc found and clean scan (or virus found and SCAN_ALLMATCHES), or no subdocument
      other - error return code from cli_mem_scandesc()
 */                        
 static int xar_scan_subdocuments(xmlTextReaderPtr reader, cli_ctx *ctx)
@@ -316,7 +316,7 @@ static int xar_scan_subdocuments(xmlTextReaderPtr reader, cli_ctx *ctx)
             subdoc_len = xmlStrlen(subdoc);
             cli_dbgmsg("cli_scanxar: in-memory scan of xml subdocument, len %i.\n", subdoc_len);
             rc = cli_mem_scandesc(subdoc, subdoc_len, ctx);
-            if (rc == CL_VIRUS && SCAN_ALL)
+            if (rc == CL_VIRUS && SCAN_ALLMATCHES)
                 rc = CL_SUCCESS;
             
             /* make a file to leave if --leave-temps in effect */
@@ -524,7 +524,7 @@ int cli_scanxar(cli_ctx *ctx)
     cli_dbgmsg("cli_scanxar: scanning xar TOC xml in memory.\n"); 
     rc = cli_mem_scandesc(toc, hdr.toc_length_decompressed, ctx);
     if (rc != CL_SUCCESS) {
-        if (rc != CL_VIRUS || !SCAN_ALL)
+        if (rc != CL_VIRUS || !SCAN_ALLMATCHES)
             goto exit_toc;        
     }
 
@@ -855,7 +855,7 @@ int cli_scanxar(cli_ctx *ctx)
             if (rc != CL_SUCCESS) {
                 if (rc == CL_VIRUS) {
                     cli_dbgmsg("cli_scanxar: Infected with %s\n", cli_get_last_virus(ctx));
-                    if (!SCAN_ALL)
+                    if (!SCAN_ALLMATCHES)
                         goto exit_tmpfile;
                 } else if (rc != CL_BREAK) {
                     cli_dbgmsg("cli_scanxar: cli_magic_scandesc error %i\n", rc);

@@ -153,7 +153,7 @@ int cli_scancpio_old(cli_ctx *ctx)
 	    continue;
 
 	if(cli_matchmeta(ctx, name, filesize, filesize, 0, file, 0, NULL) == CL_VIRUS) {
-            if (!SCAN_ALL)
+            if (!SCAN_ALLMATCHES)
                 return CL_VIRUS;
             virus_found = 1;
         }
@@ -168,7 +168,7 @@ int cli_scancpio_old(cli_ctx *ctx)
 	    } else if(ret == CL_SUCCESS) {
 		ret = cli_map_scan(*ctx->fmap, pos, filesize, ctx, CL_TYPE_ANY);
 		if(ret == CL_VIRUS) {
-                    if (!SCAN_ALL)
+                    if (!SCAN_ALLMATCHES)
                         return ret;
                     virus_found = 1;
                 }
@@ -247,7 +247,7 @@ int cli_scancpio_odc(cli_ctx *ctx)
 	    continue;
 
 	if(cli_matchmeta(ctx, name, filesize, filesize, 0, file, 0, NULL) == CL_VIRUS) {
-            if (!SCAN_ALL)
+            if (!SCAN_ALLMATCHES)
                 return CL_VIRUS;
             virus_found = 1;
         }
@@ -259,7 +259,7 @@ int cli_scancpio_odc(cli_ctx *ctx)
 	} else if(ret == CL_SUCCESS) {
 	    ret = cli_map_scan(*ctx->fmap, pos, filesize, ctx, CL_TYPE_ANY);
 	    if(ret == CL_VIRUS) {
-                if (!SCAN_ALL)
+                if (!SCAN_ALLMATCHES)
                     return ret;
                 virus_found = 1;
             }
@@ -341,7 +341,7 @@ int cli_scancpio_newc(cli_ctx *ctx, int crc)
 	    continue;
 
 	if(cli_matchmeta(ctx, name, filesize, filesize, 0, file, 0, NULL) == CL_VIRUS) {
-            if (!SCAN_ALL)
+            if (!SCAN_ALLMATCHES)
                 return CL_VIRUS;
             virus_found = 1;
         }
@@ -352,7 +352,7 @@ int cli_scancpio_newc(cli_ctx *ctx, int crc)
 	} else if(ret == CL_SUCCESS) {
 	    ret = cli_map_scan(*ctx->fmap, pos, filesize, ctx, CL_TYPE_ANY);
 	    if(ret == CL_VIRUS) {
-                if (!SCAN_ALL)
+                if (!SCAN_ALLMATCHES)
                     return ret;
                 virus_found = 1;
             }

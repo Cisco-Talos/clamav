@@ -160,7 +160,7 @@ static int get_test_file(int i, char *file, unsigned fsize, unsigned long *size)
 static struct cl_engine *g_engine;
 
 #ifdef CHECK_HAVE_LOOPS
-/* int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options) */
+/* int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, struct cl_scan_options* options) */
 START_TEST (test_cl_scandesc)
 {
     const char *virname = NULL;
@@ -168,10 +168,14 @@ START_TEST (test_cl_scandesc)
     unsigned long size;
     unsigned long int scanned = 0;
     int ret;
+    struct cl_scan_options options;
+
+    memset(&options, 0, sizeof(struct cl_scan_options));
+    options.parse |= ~0;
 
     int fd = get_test_file(_i, file, sizeof(file), &size);
     cli_dbgmsg("scanning (scandesc) %s\n", file);
-    ret = cl_scandesc(fd, &virname, &scanned, g_engine, CL_SCAN_STDOPT);
+    ret = cl_scandesc(fd, &virname, &scanned, g_engine, &options);
     cli_dbgmsg("scan end (scandesc) %s\n", file);
 
     if (!FALSE_NEGATIVE) {
@@ -189,10 +193,15 @@ START_TEST (test_cl_scandesc_allscan)
     unsigned long size;
     unsigned long int scanned = 0;
     int ret;
+    struct cl_scan_options options;
+
+    memset(&options, 0, sizeof(struct cl_scan_options));
+    options.parse |= ~0;
+    options.general |= CL_SCAN_GENERAL_ALLMATCHES;
 
     int fd = get_test_file(_i, file, sizeof(file), &size);
     cli_dbgmsg("scanning (scandesc) %s\n", file);
-    ret = cl_scandesc(fd, &virname, &scanned, g_engine, CL_SCAN_ALLMATCHES+CL_SCAN_STDOPT);
+    ret = cl_scandesc(fd, &virname, &scanned, g_engine, &options);
 
     cli_dbgmsg("scan end (scandesc) %s\n", file);
 
@@ -212,12 +221,16 @@ START_TEST (test_cl_scanfile)
     unsigned long size;
     unsigned long int scanned = 0;
     int ret;
+    struct cl_scan_options options;
+
+    memset(&options, 0, sizeof(struct cl_scan_options));
+    options.parse |= ~0;
 
     int fd = get_test_file(_i, file, sizeof(file), &size);
     close(fd);
 
     cli_dbgmsg("scanning (scanfile) %s\n", file);
-    ret = cl_scanfile(file, &virname, &scanned, g_engine, CL_SCAN_STDOPT);
+    ret = cl_scanfile(file, &virname, &scanned, g_engine, &options);
     cli_dbgmsg("scan end (scanfile) %s\n", file);
 
     if (!FALSE_NEGATIVE) {
@@ -234,12 +247,17 @@ START_TEST (test_cl_scanfile_allscan)
     unsigned long size;
     unsigned long int scanned = 0;
     int ret;
+    struct cl_scan_options options;
+
+    memset(&options, 0, sizeof(struct cl_scan_options));
+    options.parse |= ~0;
+    options.general |= CL_SCAN_GENERAL_ALLMATCHES;
 
     int fd = get_test_file(_i, file, sizeof(file), &size);
     close(fd);
 
     cli_dbgmsg("scanning (scanfile_allscan) %s\n", file);
-    ret = cl_scanfile(file, &virname, &scanned, g_engine, CL_SCAN_ALLMATCHES+CL_SCAN_STDOPT);
+    ret = cl_scanfile(file, &virname, &scanned, g_engine, &options);
     cli_dbgmsg("scan end (scanfile_allscan) %s\n", file);
 
     if (!FALSE_NEGATIVE) {
@@ -256,13 +274,17 @@ START_TEST (test_cl_scanfile_callback)
     unsigned long size;
     unsigned long int scanned = 0;
     int ret;
+    struct cl_scan_options options;
+
+    memset(&options, 0, sizeof(struct cl_scan_options));
+    options.parse |= ~0;
 
     int fd = get_test_file(_i, file, sizeof(file), &size);
     close(fd);
 
     cli_dbgmsg("scanning (scanfile_cb) %s\n", file);
     /* TODO: test callbacks */
-    ret = cl_scanfile_callback(file, &virname, &scanned, g_engine, CL_SCAN_STDOPT, NULL);
+    ret = cl_scanfile_callback(file, &virname, &scanned, g_engine, &options, NULL);
     cli_dbgmsg("scan end (scanfile_cb) %s\n", file);
 
     if (!FALSE_NEGATIVE) {
@@ -279,13 +301,18 @@ START_TEST (test_cl_scanfile_callback_allscan)
     unsigned long size;
     unsigned long int scanned = 0;
     int ret;
+    struct cl_scan_options options;
+
+    memset(&options, 0, sizeof(struct cl_scan_options));
+    options.parse |= ~0;
+    options.general |= CL_SCAN_GENERAL_ALLMATCHES;
 
     int fd = get_test_file(_i, file, sizeof(file), &size);
     close(fd);
 
     cli_dbgmsg("scanning (scanfile_cb_allscan) %s\n", file);
     /* TODO: test callbacks */
-    ret = cl_scanfile_callback(file, &virname, &scanned, g_engine, CL_SCAN_ALLMATCHES+CL_SCAN_STDOPT, NULL);
+    ret = cl_scanfile_callback(file, &virname, &scanned, g_engine, &options, NULL);
     cli_dbgmsg("scan end (scanfile_cb_allscan) %s\n", file);
 
     if (!FALSE_NEGATIVE) {
@@ -302,12 +329,16 @@ START_TEST (test_cl_scandesc_callback)
     unsigned long size;
     unsigned long int scanned = 0;
     int ret;
+    struct cl_scan_options options;
+
+    memset(&options, 0, sizeof(struct cl_scan_options));
+    options.parse |= ~0;
 
     int fd = get_test_file(_i, file, sizeof(file), &size);
 
     cli_dbgmsg("scanning (scandesc_cb) %s\n", file);
     /* TODO: test callbacks */
-    ret = cl_scandesc_callback(fd, &virname, &scanned, g_engine, CL_SCAN_STDOPT, NULL);
+    ret = cl_scandesc_callback(fd, &virname, &scanned, g_engine, &options, NULL);
     cli_dbgmsg("scan end (scandesc_cb) %s\n", file);
 
     if (!FALSE_NEGATIVE) {
@@ -325,12 +356,17 @@ START_TEST (test_cl_scandesc_callback_allscan)
     unsigned long size;
     unsigned long int scanned = 0;
     int ret;
+    struct cl_scan_options options;
+
+    memset(&options, 0, sizeof(struct cl_scan_options));
+    options.parse |= ~0;
+    options.general |= CL_SCAN_GENERAL_ALLMATCHES;
 
     int fd = get_test_file(_i, file, sizeof(file), &size);
 
     cli_dbgmsg("scanning (scandesc_cb_allscan) %s\n", file);
     /* TODO: test callbacks */
-    ret = cl_scandesc_callback(fd, &virname, &scanned, g_engine, CL_SCAN_ALLMATCHES+CL_SCAN_STDOPT, NULL);
+    ret = cl_scandesc_callback(fd, &virname, &scanned, g_engine, &options, NULL);
     cli_dbgmsg("scan end (scandesc_cb_allscan) %s\n", file);
 
     if (!FALSE_NEGATIVE) {
@@ -490,6 +526,10 @@ START_TEST (test_cl_scanmap_callback_handle)
     int ret;
     char file[256];
     unsigned long size;
+    struct cl_scan_options options;
+
+    memset(&options, 0, sizeof(struct cl_scan_options));
+    options.parse |= ~0;
 
     int fd = get_test_file(_i, file, sizeof(file), &size);
     /* intentionally use different way than scanners.c for testing */
@@ -497,7 +537,7 @@ START_TEST (test_cl_scanmap_callback_handle)
     fail_unless(!!map, "cl_fmap_open_handle");
 
     cli_dbgmsg("scanning (handle) %s\n", file);
-    ret = cl_scanmap_callback(map, &virname, &scanned, g_engine, CL_SCAN_STDOPT, NULL);
+    ret = cl_scanmap_callback(map, &virname, &scanned, g_engine, &options, NULL);
     cli_dbgmsg("scan end (handle) %s\n", file);
 
     if (!FALSE_NEGATIVE) {
@@ -516,6 +556,11 @@ START_TEST (test_cl_scanmap_callback_handle_allscan)
     int ret;
     char file[256];
     unsigned long size;
+    struct cl_scan_options options;
+
+    memset(&options, 0, sizeof(struct cl_scan_options));
+    options.parse |= ~0;
+    options.general |= CL_SCAN_GENERAL_ALLMATCHES;
 
     int fd = get_test_file(_i, file, sizeof(file), &size);
     /* intentionally use different way than scanners.c for testing */
@@ -523,7 +568,7 @@ START_TEST (test_cl_scanmap_callback_handle_allscan)
     fail_unless(!!map, "cl_fmap_open_handle %s");
 
     cli_dbgmsg("scanning (handle) allscan %s\n", file);
-    ret = cl_scanmap_callback(map, &virname, &scanned, g_engine, CL_SCAN_ALLMATCHES+CL_SCAN_STDOPT, NULL);
+    ret = cl_scanmap_callback(map, &virname, &scanned, g_engine, &options, NULL);
     cli_dbgmsg("scan end (handle) allscan %s\n", file);
 
     if (!FALSE_NEGATIVE) {
@@ -543,6 +588,10 @@ START_TEST (test_cl_scanmap_callback_mem)
     void *mem;
     unsigned long size;
     char file[256];
+    struct cl_scan_options options;
+
+    memset(&options, 0, sizeof(struct cl_scan_options));
+    options.parse |= ~0;
 
     int fd = get_test_file(_i, file, sizeof(file), &size);
 
@@ -554,7 +603,7 @@ START_TEST (test_cl_scanmap_callback_mem)
     fail_unless(!!map, "cl_fmap_open_mem");
 
     cli_dbgmsg("scanning (mem) %s\n", file);
-    ret = cl_scanmap_callback(map, &virname, &scanned, g_engine, CL_SCAN_STDOPT, NULL);
+    ret = cl_scanmap_callback(map, &virname, &scanned, g_engine, &options, NULL);
     cli_dbgmsg("scan end (mem) %s\n", file);
     if (!FALSE_NEGATIVE) {
       fail_unless_fmt(ret == CL_VIRUS, "cl_scanmap_callback failed for %s: %s", file, cl_strerror(ret));
@@ -576,6 +625,11 @@ START_TEST (test_cl_scanmap_callback_mem_allscan)
     void *mem;
     unsigned long size;
     char file[256];
+    struct cl_scan_options options;
+
+    memset(&options, 0, sizeof(struct cl_scan_options));
+    options.parse |= ~0;
+    options.general |= CL_SCAN_GENERAL_ALLMATCHES;
 
     int fd = get_test_file(_i, file, sizeof(file), &size);
 
@@ -587,7 +641,7 @@ START_TEST (test_cl_scanmap_callback_mem_allscan)
     fail_unless(!!map, "cl_fmap_open_mem %s");
 
     cli_dbgmsg("scanning (mem) allscan %s\n", file);
-    ret = cl_scanmap_callback(map, &virname, &scanned, g_engine, CL_SCAN_ALLMATCHES+CL_SCAN_STDOPT, NULL);
+    ret = cl_scanmap_callback(map, &virname, &scanned, g_engine, &options, NULL);
     cli_dbgmsg("scan end (mem) allscan %s\n", file);
     if (!FALSE_NEGATIVE) {
       fail_unless_fmt(ret == CL_VIRUS, "cl_scanmap_callback failed for %s: %s", file, cl_strerror(ret));

@@ -106,7 +106,7 @@ int cli_7unz (cli_ctx *ctx, size_t offset) {
 
     SzArEx_Init(&db);
     res = SzArEx_Open(&db, &lookStream.s, &allocImp, &allocTempImp);
-    if(res == SZ_ERROR_ENCRYPTED && DETECT_ENCRYPTED) {
+    if(res == SZ_ERROR_ENCRYPTED && SCAN_HEURISTIC_ENCRYPTED) {
 	cli_dbgmsg("cli_7unz: Encrypted header found in archive.\n");
 	found = cli_append_virus(ctx, "Heuristics.Encrypted.7Zip");
     } else if(res == SZ_OK) {
@@ -158,12 +158,12 @@ int cli_7unz (cli_ctx *ctx, size_t offset) {
 	    res = SzArEx_Extract(&db, &lookStream.s, i, &blockIndex, &outBuffer, &outBufferSize, &offset, &outSizeProcessed, &allocImp, &allocTempImp);
 	    if(res == SZ_ERROR_ENCRYPTED) {
 		encrypted = 1;
-		if(DETECT_ENCRYPTED) {
+		if(SCAN_HEURISTIC_ENCRYPTED) {
 		    cli_dbgmsg("cli_7unz: Encrypted files found in archive.\n");
 		    found = cli_append_virus(ctx, "Heuristics.Encrypted.7Zip");
                     if (found != CL_CLEAN) {
                         if (found == CL_VIRUS) {
-                            if (SCAN_ALL)
+                            if (SCAN_ALLMATCHES)
                                 viruses_found++;
                         } else
                             break;
@@ -173,7 +173,7 @@ int cli_7unz (cli_ctx *ctx, size_t offset) {
 	    if(cli_matchmeta(ctx, name, 0, f->Size, encrypted, i, f->CrcDefined ? f->Crc : 0, NULL)) {
 		found = CL_VIRUS;
 		viruses_found++;
-		if (!SCAN_ALL)
+		if (!SCAN_ALLMATCHES)
 		    break;
 	    }
 	    if (res != SZ_OK)
@@ -194,7 +194,7 @@ int cli_7unz (cli_ctx *ctx, size_t offset) {
 
 		free(name);
 		if(found != CL_CLEAN)
-		    if (!(SCAN_ALL && found == CL_VIRUS))
+		    if (!(SCAN_ALLMATCHES && found == CL_VIRUS))
 			break;
 	    }
 	}
@@ -217,7 +217,7 @@ int cli_7unz (cli_ctx *ctx, size_t offset) {
     else
 	cli_dbgmsg("cli_7unz: error %d\n", res);
 
-    if (SCAN_ALL && viruses_found)
+    if (SCAN_ALLMATCHES && viruses_found)
 	return CL_VIRUS;
     return found;
 }

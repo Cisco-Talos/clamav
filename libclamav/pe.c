@@ -223,7 +223,7 @@ FSGSTUFF; \
 #define CLI_UNPRESULTSFSG1(NAME,EXPR,GOOD,FREEME) CLI_UNPRESULTS_(NAME,FSGCASE(NAME,free(sections)),EXPR,GOOD,FREEME)
 #define CLI_UNPRESULTSFSG2(NAME,EXPR,GOOD,FREEME) CLI_UNPRESULTS_(NAME,FSGCASE(NAME,(void)0),EXPR,GOOD,FREEME)
 
-#define DETECT_BROKEN_PE (DETECT_BROKEN && !ctx->corrupted_input)
+#define DETECT_BROKEN_PE (SCAN_HEURISTIC_BROKEN && !ctx->corrupted_input)
 
 extern const unsigned int hashlen[];
 
@@ -598,7 +598,7 @@ static int scan_pe_mdb (cli_ctx * ctx, struct cli_exe_section *exe_section)
             if (ret != CL_CLEAN) {
                 if (ret != CL_VIRUS)
                     break;
-                else if (!SCAN_ALL)
+                else if (!SCAN_ALLMATCHES)
                     break;
             }
        }
@@ -607,7 +607,7 @@ static int scan_pe_mdb (cli_ctx * ctx, struct cli_exe_section *exe_section)
             if (ret != CL_CLEAN) {
                 if (ret != CL_VIRUS)
                     break;
-                else if (!SCAN_ALL)
+                else if (!SCAN_ALLMATCHES)
                     break;
             }
        }
@@ -2573,7 +2573,7 @@ static int scan_pe_imp(cli_ctx *ctx, struct pe_image_data_dir *dirs, struct cli_
             if (ret != CL_CLEAN) {
                 if (ret != CL_VIRUS)
                     break;
-                else if (!SCAN_ALL)
+                else if (!SCAN_ALLMATCHES)
                     break;
             }
         }
@@ -2582,7 +2582,7 @@ static int scan_pe_imp(cli_ctx *ctx, struct pe_image_data_dir *dirs, struct cli_
             if (ret != CL_CLEAN) {
                 if (ret != CL_VIRUS)
                     break;
-                else if (!SCAN_ALL)
+                else if (!SCAN_ALLMATCHES)
                     break;
             }
        }
@@ -2758,7 +2758,7 @@ int cli_scanpe(cli_ctx *ctx)
         return CL_ETIMEOUT;
     }
 
-    if (ctx->options & CL_SCAN_FILE_PROPERTIES) {
+    if (SCAN_COLLECT_METADATA) {
         pe_json = get_pe_property(ctx);
     }
 #endif
@@ -3119,7 +3119,7 @@ int cli_scanpe(cli_ctx *ctx)
     }
 
 #if HAVE_JSON
-    if (ctx->options & CL_SCAN_FILE_PROPERTIES) {
+    if (SCAN_COLLECT_METADATA) {
         snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", vep);
         if (pe_json != NULL)
             cli_jsonstr(pe_json, "EntryPoint", jsonbuf);
@@ -3349,7 +3349,7 @@ int cli_scanpe(cli_ctx *ctx)
         }
 
         if (exe_sections[i].rsz) { /* Don't bother with virtual only sections */
-            if(SCAN_ALGO && (DCONF & PE_CONF_POLIPOS) && !*sname && exe_sections[i].vsz > 40000 && exe_sections[i].vsz < 70000 && exe_sections[i].chr == 0xe0000060) polipos = i;
+            if(SCAN_HEURISTICS && (DCONF & PE_CONF_POLIPOS) && !*sname && exe_sections[i].vsz > 40000 && exe_sections[i].vsz < 70000 && exe_sections[i].chr == 0xe0000060) polipos = i;
 
             /* check hash section sigs */
             if((DCONF & PE_CONF_MD5SECT) && ctx->engine->hm_mdb) {
@@ -3516,7 +3516,7 @@ int cli_scanpe(cli_ctx *ctx)
                 cli_warnmsg("cli_scanpe: NULL argument supplied\n");
                 break;
             case CL_VIRUS:
-                if (SCAN_ALL)
+                if (SCAN_ALLMATCHES)
                     break;
                 /* intentional fall-through */
             case CL_BREAK:
@@ -3530,7 +3530,7 @@ int cli_scanpe(cli_ctx *ctx)
     /* Attempt to detect some popular polymorphic viruses */
 
     /* W32.Parite.B */
-    if(SCAN_ALGO && (DCONF & PE_CONF_PARITE) && !dll && epsize == 4096 && ep == exe_sections[nsections - 1].raw) {
+    if(SCAN_HEURISTICS && (DCONF & PE_CONF_PARITE) && !dll && epsize == 4096 && ep == exe_sections[nsections - 1].raw) {
         const char *pt = cli_memstr(epbuff, 4040, "\x47\x65\x74\x50\x72\x6f\x63\x41\x64\x64\x72\x65\x73\x73\x00", 15);
         if(pt) {
             pt += 15;
@@ -3538,7 +3538,7 @@ int cli_scanpe(cli_ctx *ctx)
                 ret = cli_append_virus(ctx,"Heuristics.W32.Parite.B");
                 if (ret != CL_CLEAN) {
                     if (ret == CL_VIRUS) {
-                        if (!SCAN_ALL) {
+                        if (!SCAN_ALLMATCHES) {
                             free(exe_sections);
                             return ret;
                         }
@@ -3554,7 +3554,7 @@ int cli_scanpe(cli_ctx *ctx)
     }
 
     /* Kriz */
-    if(SCAN_ALGO && (DCONF & PE_CONF_KRIZ) && epsize >= 200 && CLI_ISCONTAINED(exe_sections[nsections - 1].raw, exe_sections[nsections - 1].rsz, ep, 0x0fd2) && epbuff[1]=='\x9c' && epbuff[2]=='\x60') {
+    if(SCAN_HEURISTICS && (DCONF & PE_CONF_KRIZ) && epsize >= 200 && CLI_ISCONTAINED(exe_sections[nsections - 1].raw, exe_sections[nsections - 1].rsz, ep, 0x0fd2) && epbuff[1]=='\x9c' && epbuff[2]=='\x60') {
         enum {KZSTRASH,KZSCDELTA,KZSPDELTA,KZSGETSIZE,KZSXORPRFX,KZSXOR,KZSDDELTA,KZSLOOP,KZSTOP};
         uint8_t kzs[] = {KZSTRASH,KZSCDELTA,KZSPDELTA,KZSGETSIZE,KZSTRASH,KZSXORPRFX,KZSXOR,KZSTRASH,KZSDDELTA,KZSTRASH,KZSLOOP,KZSTOP};
         uint8_t *kzstate = kzs;
@@ -3663,7 +3663,7 @@ int cli_scanpe(cli_ctx *ctx)
                     ret = cli_append_virus(ctx,"Heuristics.W32.Kriz");
                     if (ret != CL_CLEAN) {
                         if (ret == CL_VIRUS) {
-                            if (!SCAN_ALL) {
+                            if (!SCAN_ALLMATCHES) {
                                 free(exe_sections);
                                 return ret;
                             }
@@ -3682,7 +3682,7 @@ int cli_scanpe(cli_ctx *ctx)
     }
 
     /* W32.Magistr.A/B */
-    if(SCAN_ALGO && (DCONF & PE_CONF_MAGISTR) && !dll && (nsections>1) && (exe_sections[nsections - 1].chr & 0x80000000)) {
+    if(SCAN_HEURISTICS && (DCONF & PE_CONF_MAGISTR) && !dll && (nsections>1) && (exe_sections[nsections - 1].chr & 0x80000000)) {
         uint32_t rsize, vsize, dam = 0;
 
         vsize = exe_sections[nsections - 1].uvsz;
@@ -3701,7 +3701,7 @@ int cli_scanpe(cli_ctx *ctx)
                     ret = cli_append_virus(ctx, dam ? "Heuristics.W32.Magistr.A.dam" : "Heuristics.W32.Magistr.A");
                     if (ret != CL_CLEAN) {
                         if (ret == CL_VIRUS) {
-                            if (!SCAN_ALL) {
+                            if (!SCAN_ALLMATCHES) {
                                 free(exe_sections);
                                 return ret;
                             }
@@ -3723,7 +3723,7 @@ int cli_scanpe(cli_ctx *ctx)
                     ret = cli_append_virus(ctx,dam ? "Heuristics.W32.Magistr.B.dam" : "Heuristics.W32.Magistr.B");
                     if (ret != CL_CLEAN) {
                         if (ret == CL_VIRUS) {
-                            if (!SCAN_ALL) {
+                            if (!SCAN_ALLMATCHES) {
                                 free(exe_sections);
                                 return ret;
                             }
@@ -3800,7 +3800,7 @@ int cli_scanpe(cli_ctx *ctx)
                 ret = cli_append_virus(ctx,"Heuristics.W32.Polipos.A");
                 if (ret != CL_CLEAN) {
                     if (ret == CL_VIRUS) {
-                        if (!SCAN_ALL) {
+                        if (!SCAN_ALLMATCHES) {
                             free(jumps);
                             free(exe_sections);
                             return ret;
@@ -3821,7 +3821,7 @@ int cli_scanpe(cli_ctx *ctx)
     }
 
     /* Trojan.Swizzor.Gen */
-    if (SCAN_ALGO && (DCONF & PE_CONF_SWIZZOR) && nsections > 1 && fsize > 64*1024 && fsize < 4*1024*1024) {
+    if (SCAN_HEURISTICS && (DCONF & PE_CONF_SWIZZOR) && nsections > 1 && fsize > 64*1024 && fsize < 4*1024*1024) {
         if(dirs[2].Size) {
             struct swizz_stats *stats = cli_calloc(1, sizeof(*stats));
             unsigned int m = 1000;
@@ -3836,7 +3836,7 @@ int cli_scanpe(cli_ctx *ctx)
                     ret = cli_append_virus(ctx,"Heuristics.Trojan.Swizzor.Gen");
                     if (ret != CL_CLEAN) {
                         if (ret == CL_VIRUS) {
-                            if (!SCAN_ALL) {
+                            if (!SCAN_ALLMATCHES) {
                                 free(stats);
                                 free(exe_sections);
                                 return ret;
@@ -4727,7 +4727,7 @@ out_no_petite:
                 CLI_UNPTEMP("yC",(spinned,exe_sections,0));
                 CLI_UNPRESULTS("yC",(yc_decrypt(ctx, spinned, fsize, exe_sections, nsections-1, e_lfanew, ndesc, ecx, offset)),0,(spinned,0));
 
-                if (SCAN_ALL && yc_unp_num_viruses != ctx->num_viruses) {
+                if (SCAN_ALLMATCHES && yc_unp_num_viruses != ctx->num_viruses) {
                     free(exe_sections);
                     return CL_VIRUS;
                 }
@@ -4991,7 +4991,7 @@ out_no_petite:
         return CL_ETIMEOUT;
 #endif
 
-    if (SCAN_ALL && viruses_found)
+    if (SCAN_ALLMATCHES && viruses_found)
         return CL_VIRUS;
 
     return CL_CLEAN;

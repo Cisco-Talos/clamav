@@ -250,59 +250,104 @@ The first argument points to the database directory, the second one specifies wh
 It’s possible to scan a file or descriptor using:
 
 ```c
-    int cl_scanfile(const char *filename, const char **virname,
-    unsigned long int *scanned, const struct cl_engine *engine,
-    unsigned int options);
+    int cl_scanfile(
+        const char *filename,
+        const char **virname,
+        unsigned long int *scanned,
+        const struct cl_engine *engine,
+        struct cl_scan_options *options);
 
-    int cl_scandesc(int desc, const char **virname, unsigned
-    long int *scanned, const struct cl_engine *engine,
-    unsigned int options);
+    int cl_scandesc(
+        int desc,
+        const char **virname,
+        unsigned long int *scanned,
+        const struct cl_engine *engine,
+        struct cl_scan_options *options);
 ```
 
-Both functions will store a virus name under the pointer `virname`, the virus name is part of the engine structure and must not be released directly. If the third argument (`scanned`) is not NULL, the functions will increase its value with the size of scanned data (in `CL_COUNT_PRECISION` units). The last argument (`options`) specified the scan options and supports the following flags (which can be combined using bit operators):
+Both functions will store a virus name under the pointer `virname`, the virus name is part of the engine structure and must not be released directly. If the third argument (`scanned`) is not NULL, the functions will increase its value with the size of scanned data (in `CL_COUNT_PRECISION` units). The last argument (`options`) requires a pointer to a data structure that specifies the scan options.  The data structure should be `memset()` Each variable in the structure is a bit-flag field.  The structure definition is:
 
-- **CL_SCAN_STDOPT**
-    This is an alias for a recommended set of scan options. You should use it to make your software ready for new features in the future versions of libclamav.
-- **CL_SCAN_RAW**
-    Use it alone if you want to disable support for special files.
-- **CL_SCAN_ARCHIVE**
+```c
+    struct cl_scan_options {
+        uint32_t general;
+        uint32_t parse;
+        uint32_t alert;
+        uint32_t heuristic_alert;
+        uint32_t mail;
+        uint32_t dev;
+    };
+```
+
+Supported flags for each of the fields are as follows:
+
+`general` - General scanning options.
+
+- **CL_SCAN_GENERAL_ALLMATCHES**
+    Scan in all-match mode
+- **CL_SCAN_GENERAL_COLLECT_METADATA**
+    Collect metadata (--gen-json)
+- **CL_SCAN_GENERAL_HEURISTICS**
+    Option to enable heuristic alerts.  Required for any of the heuristic alerting options to work.
+
+`parse` - Options to enable/disable specific parsing capabilities.  Generally you will want to enable all parsers.  The easiest way to do this is to set the parse flags to ~0.
+
+- **CL_SCAN_PARSE_ARCHIVE**
     This flag enables transparent scanning of various archive formats.
-- **CL_SCAN_BLOCKENCRYPTED**
-    With this flag the library will mark encrypted archives as viruses (Encrypted.Zip, Encrypted.RAR).
-- **CL_SCAN_MAIL**
-    Enable support for mail files.
-- **CL_SCAN_OLE2**
-    Enables support for OLE2 containers (used by MS Office and .msi files).
-- **CL_SCAN_PDF**
-    Enables scanning within PDF files.
-- **CL_SCAN_SWF**
-    Enables scanning within SWF files, notably compressed SWF.
-- **CL_SCAN_PE**
-    This flag enables deep scanning of Portable Executable files and allows libclamav to unpack executables compressed with run-time unpackers.
-- **CL_SCAN_ELF**
+- **CL_SCAN_PARSE_ELF**
     Enable support for ELF files.
-- **CL_SCAN_BLOCKBROKEN**
-    libclamav will try to detect broken executables and mark them as Broken.Executable.
-- **CL_SCAN_HTML**
+- **CL_SCAN_PARSE_PDF**
+    Enables scanning within PDF files.
+- **CL_SCAN_PARSE_SWF**
+    Enables scanning within SWF files, notably compressed SWF.
+- **CL_SCAN_PARSE_HWP**
+    Enables scanning of Hangul Word Processor (HWP) files.
+- **CL_SCAN_PARSE_XMLDOCS**
+    Enables scanning of XML-formatted documents (e.g. Word, Excel, Powerpoint, HWP).
+- **CL_SCAN_PARSE_MAIL**
+    Enable support for mail files.
+- **CL_SCAN_PARSE_OLE2**
+    Enables support for OLE2 containers (used by MS Office and .msi files).
+- **CL_SCAN_PARSE_HTML**
     This flag enables HTML normalisation (including ScrEnc decryption).
-- **CL_SCAN_ALGORITHMIC**
-    Enable algorithmic detection of viruses.
-- **CL_SCAN_PHISHING_BLOCKSSL**
-    Phishing module: always block SSL mismatches in URLs.
-- **CL_SCAN_PHISHING_BLOCKCLOAK**
+- **CL_SCAN_PARSE_PE**
+    This flag enables deep scanning of Portable Executable files and allows libclamav to unpack executables compressed with run-time unpackers.
+
+`heuristic` - Options to enable specific heuristic alerts
+
+- **CL_SCAN_GENERAL_HEURISTIC_PRECEDENCE**
+    Allow heuristic match to take precedence. When enabled, if a heuristic scan (such as phishingScan) detects a possible virus/phish it will stop scan immediately. Recommended, saves CPU scan-time. When *disabled*, virus/phish detected by heuristic scans will be reported only at the end of a scan. If an archive contains both a heuristically detected virus/phishing, and a real malware, the real malware will be reported.
+- **CL_SCAN_HEURISTIC_ENCRYPTED**
+    With this flag the library will mark encrypted archives as viruses (Encrypted.Zip, Encrypted.RAR).
+- **CL_SCAN_HEURISTIC_BROKEN**
+    libclamav will try to detect broken executables and mark them as Broken.Executable.
+- **CL_SCAN_HEURISTIC_EXCEEDS_MAX**
+    Alert when the scan of any file exceeds maximums such as max filesize, max scansize, max recursion level.
+- **CL_SCAN_HEURISTIC_PHISHING_SSL_MISMATCH**
+    Heuristic for Phishing module: always block SSL mismatches in URLs.
+- **CL_SCAN_HEURISTIC_PHISHING_CLOAK**
     Phishing module: always block cloaked URLs.
-- **CL_SCAN_STRUCTURED**
-    Enable the DLP module which scans for credit card and SSN numbers.
-- **CL_SCAN_STRUCTURED_SSN_NORMAL**
-    Search for SSNs formatted as xx-yy-zzzz.
-- **CL_SCAN_STRUCTURED_SSN_STRIPPED**
-    Search for SSNs formatted as xxyyzzzz.
-- **CL_SCAN_PARTIAL_MESSAGE**
-    Scan RFC1341 messages split over many emails. You will need to periodically clean up `$TemporaryDirectory/clamav-partial` directory.
-- **CL_SCAN_HEURISTIC_PRECEDENCE**
-    Allow heuristic match to take precedence. When enabled, if a heuristic scan (such as phishingScan) detects a possible virus/phish it will stop scan immediately. Recommended, saves CPU scan-time. When disabled, virus/phish detected by heuristic scans will be reported only at the end of a scan. If an archive contains both a heuristically detected virus/phishing, and a real malware, the real malware will be reported.
-- **CL_SCAN_BLOCKMACROS**
+- **CL_SCAN_HEURISTIC_MACROS**
     OLE2 containers, which contain VBA macros will be marked infected (Heuristics.OLE2.ContainsMacros).
+- **CL_SCAN_HEURISTIC_PARTITION_INTXN**
+    alert if partition table size doesn't make sense
+- **CL_SCAN_HEURISTIC_STRUCTURED**
+    Enable the data loss prevention (DLP) module which scans for credit card and SSN numbers. i.e. alert when detecting personal information
+- **CL_SCAN_HEURISTIC_STRUCTURED_SSN_NORMAL**
+    Search for [and alert when detecting] SSNs formatted as xx-yy-zzzz.
+- **CL_SCAN_HEURISTIC_STRUCTURED_SSN_STRIPPED**
+    Search for [and alert when detecting] SSNs formatted as xxyyzzzz.
+
+`mail` - Options to enable specific mail parsing features
+
+- **CL_SCAN_MAIL_PARTIAL_MESSAGE**
+    Scan RFC1341 messages split over many emails. You will need to periodically clean up `$TemporaryDirectory/clamav-partial` directory.
+
+`dev` - Options designed for use by ClamAV developers
+
+- **CL_SCAN_DEV_COLLECT_SHA**
+    Enables hash output in sha-collect builds - for internal use only
+- **CL_SCAN_DEV_COLLECT_PERFORMANCE_INFO**
+    Collect performance timings
 
 All functions return `CL_CLEAN` when the file seems clean, `CL_VIRUS` when a virus is detected and another value on failure.
 
@@ -311,7 +356,7 @@ All functions return `CL_CLEAN` when the file seems clean, `CL_VIRUS` when a vir
         const char *virname;
 
     if((ret = cl_scanfile("/tmp/test.exe", &virname, NULL, engine,
-    CL_SCAN_STDOPT)) == CL_VIRUS) {
+    &options)) == CL_VIRUS) {
         printf("Virus detected: %s\n", virname);
     } else {
         printf("No virus detected.\n");

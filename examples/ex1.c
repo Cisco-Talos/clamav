@@ -45,6 +45,7 @@ int main(int argc, char **argv)
 	long double mb;
 	const char *virname;
 	struct cl_engine *engine;
+    struct cl_scan_options options;
 
     if(argc != 2) {
 	printf("Usage: %s file\n", argv[0]);
@@ -85,7 +86,11 @@ int main(int argc, char **argv)
     }
 
     /* scan file descriptor */
-    if((ret = cl_scandesc(fd, &virname, &size, engine, CL_SCAN_STDOPT)) == CL_VIRUS) {
+    memset(&options, 0, sizeof(struct cl_scan_options));
+    options.parse |= ~0; /* enable all parsers */
+    options.general |= CL_SCAN_GENERAL_HEURISTICS; /* enable heuristic alert options */
+
+    if((ret = cl_scandesc(fd, &virname, &size, engine, &options)) == CL_VIRUS) {
 	printf("Virus detected: %s\n", virname);
     } else {
 	if(ret == CL_CLEAN) {

@@ -227,6 +227,7 @@ static ptrdiff_t pdf_decodestream_internal(
     cl_error_t vir = CL_CLEAN;
     cl_error_t retval = CL_SUCCESS;
     ptrdiff_t bytes_scanned = -1;
+    cli_ctx *ctx = pdf->ctx;
     const char *filter = NULL;
     int i;
 
@@ -315,7 +316,7 @@ static ptrdiff_t pdf_decodestream_internal(
         }
 
         if (retval != CL_SUCCESS) {
-            if (retval == CL_VIRUS && pdf->ctx->options & CL_SCAN_ALLMATCHES) {
+            if (retval == CL_VIRUS && SCAN_ALLMATCHES) {
                 vir = CL_VIRUS;
             } else {
                 const char* reason;
