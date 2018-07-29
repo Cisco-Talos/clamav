@@ -1169,9 +1169,8 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
 struct optstruct *optadditem(const char *name, const char *arg, int verbose, int toolmask, int ignore,
                             struct optstruct *oldopts)
 {
-	int i, err = 0, sc = 0, lc=0, line = 0, ret;
+	int i, err = 0, sc = 0, lc=0, ret;
 	struct optstruct *opts = NULL, *opts_last = NULL, *opt;
-	static char cfgfile[] = "(optadditem-api)";
 	char *buff;
 	regex_t regex;
 	long long numarg, lnumarg;
@@ -1213,7 +1212,7 @@ struct optstruct *optadditem(const char *name, const char *arg, int verbose, int
         opt = optget_i(opts, name);
         if(!opt) {
             if(verbose)
-                fprintf(stderr, "ERROR: Parse error at %s:%d: Unknown option %s\n", cfgfile, line, name);
+                fprintf(stderr, "ERROR: Parse error: Unknown option %s\n", name);
             err = 1;
             break;
         }
@@ -1221,7 +1220,7 @@ struct optstruct *optadditem(const char *name, const char *arg, int verbose, int
         
         if(ignore && (optentry->owner & ignore) && !(optentry->owner & toolmask)) {
             if(verbose)
-                fprintf(stderr, "WARNING: Ignoring unsupported option %s at %s:%d\n", opt->name, cfgfile, line);
+                fprintf(stderr, "WARNING: Ignoring unsupported option %s\n", opt->name);
             continue;
         }
         
@@ -1234,7 +1233,7 @@ struct optstruct *optadditem(const char *name, const char *arg, int verbose, int
                 }
             } else {
                 if(verbose)
-                    fprintf(stderr, "WARNING: Ignoring deprecated option %s at %s:%d\n", opt->name, cfgfile, line);
+                    fprintf(stderr, "WARNING: Ignoring deprecated option %s\n", opt->name);
             }
             continue;
         }
