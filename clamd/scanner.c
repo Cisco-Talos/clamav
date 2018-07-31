@@ -358,7 +358,7 @@ int scanfd(const client_conn_t *conn, unsigned long int *scanned,
 	   unsigned int options, const struct optstruct *opts, int odesc, int stream)
 {
     int ret, fd = conn->scanfd;
-	const char *virname;
+	const char *virname = NULL;
 	STATBUF statbuf;
 	struct cb_context context;
 	char fdstr[32];
@@ -425,7 +425,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
 	unsigned int port = 0, portscan, min_port, max_port;
 	unsigned long int quota = 0, maxsize = 0;
 	short bound = 0;
-	const char *virname;
+	const char *virname = NULL;
 	char buff[FILEBUFF];
 	char peer_addr[32];
 	struct cb_context context;

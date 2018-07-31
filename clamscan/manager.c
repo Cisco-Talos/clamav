@@ -294,7 +294,7 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
     int ret = 0, fd, included;
     unsigned i;
     const struct optstruct *opt;
-    const char *virname;
+    const char *virname = NULL;
     STATBUF sb;
     struct metachain chain;
     struct clamscan_cb_data data;
