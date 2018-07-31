@@ -231,7 +231,9 @@ wwwconnect (const char *server, const char *proxy, int pport, char *ip,
     hints.ai_family = AF_INET;
 #endif
     hints.ai_socktype = SOCK_STREAM;
+#ifdef AI_ADDRCONFIG
     hints.ai_flags    = AI_ADDRCONFIG;
+#endif
     snprintf (port_s, sizeof (port_s), "%d", port);
     port_s[sizeof (port_s) - 1] = 0;
     ret = getaddrinfo (hostpt, port_s, &hints, &res);
