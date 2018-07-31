@@ -341,7 +341,7 @@ static int cli_scanfile(const char *filename, cli_ctx *ctx)
 	if (fd < 0)
 		return ret;
 
-	ret = cli_magic_scandesc(fd, ctx);
+	ret = cli_magic_scandesc(fd, filename, ctx);
 
 	close(fd);
 	return ret;

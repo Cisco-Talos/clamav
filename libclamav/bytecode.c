@@ -2892,7 +2892,7 @@ int cli_bytecode_runhook(cli_ctx *cctx, const struct cl_engine *engine, struct c
 		lseek(fd, 0, SEEK_SET);
 		cli_dbgmsg("***** Scanning unpacked file ******\n");
 		cctx->recursion++;
-		ret = cli_magic_scandesc(fd, cctx);
+		ret = cli_magic_scandesc(fd, tempfile, cctx);
 		cctx->recursion--;
 		if (!cctx->engine->keeptmp)
 		    if (ftruncate(fd, 0) == -1)

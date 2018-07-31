@@ -856,21 +856,24 @@ unsigned int cli_rndnum(unsigned int max)
     return 1 + (unsigned int) (max * (rand() / (1.0 + RAND_MAX)));
 }
 
-char *cli_gentemp(const char *dir)
+char* cli_genfname(const char * prefix)
 {
-	char *name, *tmp;
-        const char *mdir;
-	unsigned char salt[16 + 32];
-	int i;
-    size_t len;
+	char* fname;
+    unsigned char salt[16 + 32];
+    char* tmp;
+    int i;
+	size_t len;
 
-    mdir = dir ? dir : cli_gettmpdir();
+	if (prefix && (strlen(prefix) > 0)) {
+    	len = strlen(prefix) + 1 + 5 + 1;  /* {prefix}.{5}\0 */
+	} else {
+    	len = 6 + 1 + 48 + 4 + 1;  /* clamav-{48}.tmp\0 */
+	}
 
-    len = strlen(mdir) + 42 + 4;
-    name = (char *) cli_calloc(len, sizeof(char));
-    if(!name) {
-	cli_dbgmsg("cli_gentemp('%s'): out of memory\n", mdir);
-	return NULL;
+    fname = (char*)cli_calloc(len, sizeof(char));
+    if (!fname) {
+        cli_dbgmsg("cli_genfname: out of memory\n");
+        return NULL;
     }
 
 #ifdef CL_THREAD_SAFE
@@ -879,8 +882,8 @@ char *cli_gentemp(const char *dir)
 
     memcpy(salt, name_salt, 16);
 
-    for(i = 16; i < 48; i++)
-	salt[i] = cli_rndnum(255);
+    for (i = 16; i < 48; i++)
+        salt[i] = cli_rndnum(255);
 
     tmp = cli_md5buff(salt, 48, name_salt);
 
@@ -888,31 +891,77 @@ char *cli_gentemp(const char *dir)
     pthread_mutex_unlock(&cli_gentemp_mutex);
 #endif
 
-    if(!tmp) {
-	free(name);
-	cli_dbgmsg("cli_gentemp('%s'): out of memory\n", mdir);
-	return NULL;
+    if (!tmp) {
+        free(fname);
+        cli_dbgmsg("cli_genfname: out of memory\n");
+        return NULL;
     }
 
-	snprintf(name, len, "%s"PATHSEP"clamav-%s.tmp", mdir, tmp);
+	if (prefix && (strlen(prefix) > 0)) {
+		fname[5] = '\0';
+    	snprintf(fname, len, "%s.%s", prefix, tmp);
+	} else {
+    	snprintf(fname, len, "clamav-%s.tmp", tmp);
+	}
+
     free(tmp);
 
-    return(name);
+    return (fname);
 }
 
-int cli_gentempfd(const char *dir, char **name, int *fd)
+char* cli_gentemp_with_prefix(const char* dir, const char* prefix)
 {
-    *name = cli_gentemp(dir);
-    if(!*name)
-	return CL_EMEM;
+	char* fname;
+    char* fullpath;
+    const char* mdir;
+    int i;
+    size_t len;
 
-    *fd = open(*name, O_RDWR|O_CREAT|O_TRUNC|O_BINARY|O_EXCL, S_IRWXU);
+    mdir = dir ? dir : cli_gettmpdir();
+
+	fname = cli_genfname(prefix);
+    if (!fname) {
+        cli_dbgmsg("cli_gentemp('%s'): out of memory\n", mdir);
+        return NULL;
+    }
+
+    len = strlen(mdir) + strlen(PATHSEP) + strlen(fname) + 1; /* mdir/fname\0 */
+    fullpath = (char*)cli_calloc(len, sizeof(char));
+    if (!fullpath) {
+        free(fname);
+        cli_dbgmsg("cli_gentemp('%s'): out of memory\n", mdir);
+        return NULL;
+    }
+
+    snprintf(fullpath, len, "%s" PATHSEP "%s", mdir, fname);
+	free(fname);
+
+    return (fullpath);
+}
+
+char* cli_gentemp(const char* dir)
+{
+	return cli_gentemp_with_prefix(dir, NULL);
+}
+
+cl_error_t cli_gentempfd(const char *dir, char **name, int *fd)
+{
+    return cli_gentempfd_with_prefix(dir, NULL, name, fd);
+}
+
+cl_error_t cli_gentempfd_with_prefix(const char* dir, char* prefix, char** name, int* fd)
+{
+    *name = cli_gentemp_with_prefix(dir, prefix);
+    if (!*name)
+        return CL_EMEM;
+
+    *fd = open(*name, O_RDWR | O_CREAT | O_TRUNC | O_BINARY | O_EXCL, S_IRWXU);
     /*
      * EEXIST is almost impossible to occur, so we just treat it as other
      * errors
      */
-    if(*fd == -1) {
-        cli_errmsg("cli_gentempfd: Can't create temporary file %s: %s\n", *name, strerror(errno));
+    if (*fd == -1) {
+        cli_errmsg("cli_gentempfd_with_prefix: Can't create temporary file %s: %s\n", *name, strerror(errno));
         free(*name);
         *name = NULL;
         return CL_ECREAT;
@@ -928,4 +977,94 @@ int cli_regcomp(regex_t *preg, const char *pattern, int cflags)
 	cflags |= REG_ICASE;
     }
     return cli_regcomp_real(preg, pattern, cflags);
+}
+
+cl_error_t cli_get_filepath_from_filedesc(int desc, char** filepath)
+{
+    cl_error_t status = CL_EARG;
+
+    if (NULL == filepath) {
+        cli_errmsg("cli_get_filepath_from_filedesc: Invalid args.\n");
+        goto done;
+    }
+
+#ifdef __linux__
+    char fname[PATH_MAX];
+
+    char link[32];
+    ssize_t linksz;
+
+    memset(&fname, 0, PATH_MAX);
+
+    snprintf(link, sizeof(link), "/proc/self/fd/%u", desc);
+    link[sizeof(link) - 1] = '\0';
+
+    if (-1 == (linksz = readlink(link, fname, PATH_MAX - 1))) {
+        cli_errmsg("cli_get_filepath_from_filedesc: Failed to resolve filename for descriptor %d (%s)\n", desc, link);
+        status = CL_EOPEN;
+        goto done;
+    }
+
+	/* Success. Add null terminator */
+	fname[linksz] = '\0';
+
+    *filepath = cli_strndup(fname, strnlen(fname, PATH_MAX));
+	if (NULL == *filepath) {
+		cli_errmsg("cli_get_filepath_from_filedesc: Failed to allocate memory to store filename\n");
+		status = CL_EMEM;
+		goto done;
+	}
+
+#elif __APPLE__
+    char fname[PATH_MAX];
+    memset(&fname, 0, PATH_MAX);
+
+    if (fcntl(desc, F_GETPATH, &fname) < 0) {
+        printf("cli_get_filepath_from_filedesc: Failed to resolve filename for descriptor %d\n", desc);
+        status = CL_EOPEN;
+        goto done;
+    }
+
+    *filepath = cli_strndup(fname, strnlen(fname, PATH_MAX));
+	if (NULL == *filepath) {
+		cli_errmsg("cli_get_filepath_from_filedesc: Failed to allocate memory to store filename\n");
+		status = CL_EMEM;
+		goto done;
+	}
+
+#elif _WIN32
+    DWORD dwRet = 0;
+    intptr_t hFile = _get_osfhandle(desc);
+
+    dwRet = GetFinalPathNameByHandleA((HANDLE)hFile, NULL, 0, VOLUME_NAME_NT);
+    if (dwRet == 0) {
+        cli_errmsg("cli_get_filepath_from_filedesc: Failed to resolve filename for descriptor %d\n", desc);
+		status = CL_EOPEN;
+		goto done;
+    }
+
+	*filepath = calloc(dwRet + 1, 1);
+	if (NULL == *filepath) {
+		cli_errmsg("cli_get_filepath_from_filedesc: Failed to allocate %u bytes to store filename\n", dwRet + 1);
+		status = CL_EMEM;
+		goto done;
+	}
+
+	dwRet = GetFinalPathNameByHandleA((HANDLE)hFile, *filepath, dwRet + 1, VOLUME_NAME_NT);
+	if (dwRet == 0) {
+		cli_errmsg("cli_get_filepath_from_filedesc: Failed to resolve filename for descriptor %d\n", desc);
+		free(*filepath);
+		*filepath = NULL;
+		status = CL_EOPEN;
+		goto done;
+	}
+
+#endif
+
+	cli_errmsg("cli_get_filepath_from_filedesc: File path for fd [%d] is: %s\n", desc, *filepath);
+	status = CL_SUCCESS;
+
+done:
+
+    return status;
 }

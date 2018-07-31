@@ -393,8 +393,8 @@ int scanfd(
 	thrmgr_setactivetask(fdstr, NULL);
 	context.filename = fdstr;
 	context.virsize = 0;
-        context.scandata = NULL;
-	ret = cl_scandesc_callback(fd, &virname, scanned, engine, options, &context);
+	context.scandata = NULL;
+	ret = cl_scandesc_callback(fd, NULL, &virname, scanned, engine, options, &context);
 	thrmgr_setactivetask(NULL, NULL);
 
 	if (thrmgr_group_need_terminate(conn->group)) {
@@ -563,13 +563,13 @@ int scanstream(
     }
 
     if(retval == 1) {
-	lseek(tmpd, 0, SEEK_SET);
-	thrmgr_setactivetask(peer_addr, NULL);
-	context.filename = peer_addr;
-	context.virsize = 0;
-        context.scandata = NULL;
-	ret = cl_scandesc_callback(tmpd, &virname, scanned, engine, options, &context);
-	thrmgr_setactivetask(NULL, NULL);
+		lseek(tmpd, 0, SEEK_SET);
+		thrmgr_setactivetask(peer_addr, NULL);
+		context.filename = peer_addr;
+		context.virsize = 0;
+		context.scandata = NULL;
+		ret = cl_scandesc_callback(tmpd, NULL, &virname, scanned, engine, options, &context);
+		thrmgr_setactivetask(NULL, NULL);
     } else {
     	ret = -1;
     }

@@ -76,7 +76,7 @@ struct key_entry {
     uint32_t type;
 };
 
-typedef int (*msxml_scan_cb)(int fd, cli_ctx *ctx, int num_attribs, struct attrib_entry *attribs, void *cbdata);
+typedef int (*msxml_scan_cb)(int fd, const char *filepath, cli_ctx *ctx, int num_attribs, struct attrib_entry *attribs, void *cbdata);
 typedef int (*msxml_comment_cb)(const char *comment, cli_ctx *ctx, void *wrkjobj, void *cbdata);
 
 struct msxml_ctx {

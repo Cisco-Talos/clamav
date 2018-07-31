@@ -393,7 +393,7 @@ static int ea05(cli_ctx *ctx, const uint8_t *base, char *tmpd) {
         close(i);
         return CL_ESEEK;
     }
-    if(cli_magic_scandesc(i, ctx) == CL_VIRUS) {
+    if(cli_magic_scandesc(i, tempfile, ctx) == CL_VIRUS) {
       if (!SCAN_ALLMATCHES) {
 	close(i);
 	if(!ctx->engine->keeptmp)
@@ -920,7 +920,7 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd) {
         close(i);
         return CL_ESEEK;
     }
-    if(cli_magic_scandesc(i, ctx) == CL_VIRUS) {
+    if(cli_magic_scandesc(i, tempfile, ctx) == CL_VIRUS) {
       if (!SCAN_ALLMATCHES) {
 	close(i);
 	if(!ctx->engine->keeptmp)

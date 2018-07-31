@@ -171,7 +171,7 @@ cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx)
 
 			if(fout>=0) {
 				lseek(fout, 0, SEEK_SET);
-				ret = cli_magic_scandesc(fout, ctx);
+				ret = cli_magic_scandesc(fout, fullname, ctx);
 				close(fout);
 				if (!ctx->engine->keeptmp)
 					if (cli_unlink(fullname)) return CL_EUNLINK;
@@ -360,7 +360,7 @@ cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx)
         }
 	if(fout>=0) {
 		lseek(fout, 0, SEEK_SET);
-		ret = cli_magic_scandesc(fout, ctx);
+		ret = cli_magic_scandesc(fout, fullname, ctx);
 		close(fout);
 		if (!ctx->engine->keeptmp)
 			if (cli_unlink(fullname)) return CL_EUNLINK;

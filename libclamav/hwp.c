@@ -77,7 +77,7 @@
 #define hwpml_debug(...) ;
 #endif
 
-typedef int (*hwp_cb )(void *cbdata, int fd, cli_ctx *ctx);
+typedef int (*hwp_cb )(void *cbdata, int fd, const char *filepath, cli_ctx *ctx);
 static int decompress_and_callback(cli_ctx *ctx, fmap_t *input, off_t at, size_t len, const char *parent, hwp_cb cb, void *cbdata)
 {
     int zret, ofd, in, ret = CL_SUCCESS;
@@ -173,10 +173,10 @@ static int decompress_and_callback(cli_ctx *ctx, fmap_t *input, off_t at, size_t
             cli_infomsg(ctx, "%s: Error decompressing stream. Not all requested input was converted\n", parent);
 
         /* scanning inflated stream */
-        ret = cb(cbdata, ofd, ctx);
+        ret = cb(cbdata, ofd, tmpname, ctx);
     } else {
         /* default to scanning what we got */
-        ret = cli_magic_scandesc(ofd, ctx);
+        ret = cli_magic_scandesc(ofd, tmpname, ctx);
     }
 
     /* clean-up */
@@ -371,15 +371,15 @@ int cli_hwp5header(cli_ctx *ctx, hwp5_header_t *hwp5)
     return CL_SUCCESS;
 }
 
-static int hwp5_cb(void *cbdata, int fd, cli_ctx *ctx)
+static int hwp5_cb(void *cbdata, int fd, const char* filepath, cli_ctx *ctx)
 {
     if (fd < 0 || !ctx)
         return CL_ENULLARG;
 
-    return cli_magic_scandesc(fd, ctx);
+    return cli_magic_scandesc(fd, filepath, ctx);
 }
 
-int cli_scanhwp5_stream(cli_ctx *ctx, hwp5_header_t *hwp5, char *name, int fd)
+int cli_scanhwp5_stream(cli_ctx *ctx, hwp5_header_t *hwp5, char *name, int fd, const char *filepath)
 {
     hwp5_debug("HWP5.x: NAME: %s\n", name ? name : "(NULL)");
 
@@ -396,7 +396,7 @@ int cli_scanhwp5_stream(cli_ctx *ctx, hwp5_header_t *hwp5, char *name, int fd)
 
             if (hwp5->flags & HWP5_PASSWORD) {
                 cli_dbgmsg("HWP5.x: Password encrypted stream, scanning as-is\n");
-                return cli_magic_scandesc(fd, ctx);
+                return cli_magic_scandesc(fd, filepath, ctx);
             }
 
             if (hwp5->flags & HWP5_COMPRESSED) {
@@ -439,7 +439,7 @@ int cli_scanhwp5_stream(cli_ctx *ctx, hwp5_header_t *hwp5, char *name, int fd)
     }
 
     /* normal streams */
-    return cli_magic_scandesc(fd, ctx);
+    return cli_magic_scandesc(fd, filepath, ctx);
 }
 
 /*** HWP3 ***/
@@ -1757,7 +1757,7 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
     return ret;
 }
 
-static int hwp3_cb(void *cbdata, int fd, cli_ctx *ctx)
+static int hwp3_cb(void *cbdata, int fd, const char* filepath, cli_ctx *ctx)
 {
     fmap_t *map, *dmap;
     off_t offset, start, new_offset;
@@ -1925,7 +1925,7 @@ int cli_scanhwp3(cli_ctx *ctx)
     if (docinfo.di_compressed)
         ret = decompress_and_callback(ctx, *ctx->fmap, offset, 0, "HWP3.x", hwp3_cb, NULL);
     else
-        ret = hwp3_cb(&offset, 0, ctx);
+        ret = hwp3_cb(&offset, 0, ctx->sub_filepath, ctx);
 
     if (ret != CL_SUCCESS)
         return ret;
@@ -1974,15 +1974,15 @@ static const struct key_entry hwpml_keys[] = {
 static size_t num_hwpml_keys = sizeof(hwpml_keys) / sizeof(struct key_entry);
 
 /* binary streams needs to be base64-decoded then decompressed if fields are set */
-static int hwpml_scan_cb(void *cbdata, int fd, cli_ctx *ctx)
+static int hwpml_scan_cb(void *cbdata, int fd, const char* filepath, cli_ctx *ctx)
 {
     if (fd < 0 || !ctx)
         return CL_ENULLARG;
 
-    return cli_magic_scandesc(fd, ctx);
+    return cli_magic_scandesc(fd, filepath, ctx);
 }
 
-static int hwpml_binary_cb(int fd, cli_ctx *ctx, int num_attribs, struct attrib_entry *attribs, void *cbdata)
+static int hwpml_binary_cb(int fd, const char* filepath, cli_ctx *ctx, int num_attribs, struct attrib_entry *attribs, void *cbdata)
 {
     int i, ret, df = 0, com = 0, enc = 0;
     char *tempfile;
@@ -2013,7 +2013,7 @@ static int hwpml_binary_cb(int fd, cli_ctx *ctx, int num_attribs, struct attrib_
     /* decode the binary data if needed - base64 */
     if (enc < 0) {
         cli_errmsg("HWPML: Unrecognized encoding method\n");
-        return cli_magic_scandesc(fd, ctx);
+        return cli_magic_scandesc(fd, filepath, ctx);
     } else if (enc == 1) {
         STATBUF statbuf;
         fmap_t *input;
@@ -2045,7 +2045,7 @@ static int hwpml_binary_cb(int fd, cli_ctx *ctx, int num_attribs, struct attrib_
         funmap(input);
         if (!decoded) {
             cli_errmsg("HWPML: Failed to get base64 decode binary data\n");
-            return cli_magic_scandesc(fd, ctx);
+            return cli_magic_scandesc(fd, filepath, ctx);
         }
 
         /* open file for writing and scanning */
@@ -2090,7 +2090,11 @@ static int hwpml_binary_cb(int fd, cli_ctx *ctx, int num_attribs, struct attrib_
         ret = decompress_and_callback(ctx, input, 0, 0, "HWPML", hwpml_scan_cb, NULL);
         funmap(input);
     } else {
-        ret = hwpml_scan_cb(NULL, fd, ctx);
+        if (fd == df) { /* fd is a decoded tempfile */
+            ret = hwpml_scan_cb(NULL, fd, tempfile, ctx);
+        } else {        /* fd is the original filepath, no decoding necessary */
+            ret = hwpml_scan_cb(NULL, fd, filepath, ctx);
+        }
     }
 
     /* close decoded file descriptor if used */

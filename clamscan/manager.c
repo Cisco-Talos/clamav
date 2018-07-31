@@ -389,7 +389,7 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
 
     data.chain = &chain;
     data.filename = filename;
-    if((ret = cl_scandesc_callback(fd, &virname, &info.blocks, engine, options, &data)) == CL_VIRUS) {
+    if((ret = cl_scandesc_callback(fd, filename, &virname, &info.blocks, engine, options, &data)) == CL_VIRUS) {
         if(optget(opts, "archive-verbose")->enabled) {
             if (chain.nchains > 1) {
                 char str[128];

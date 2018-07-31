@@ -851,7 +851,7 @@ int cli_scanxar(cli_ctx *ctx)
                 }
             }
         
-            rc = cli_magic_scandesc(fd, ctx);
+            rc = cli_magic_scandesc(fd, tmpname, ctx);
             if (rc != CL_SUCCESS) {
                 if (rc == CL_VIRUS) {
                     cli_dbgmsg("cli_scanxar: Infected with %s\n", cli_get_last_virus(ctx));

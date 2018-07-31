@@ -556,34 +556,99 @@ libclamav_nocxx_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(libclamav_nocxx_la_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
 libclamunrar_la_LIBADD =
-am__libclamunrar_la_SOURCES_DIST = ../libclamunrar/unrar15.c \
-	../libclamunrar/unrar20.h ../libclamunrar/unrar.h \
-	../libclamunrar/unrar15.h ../libclamunrar/unrar.c \
-	../libclamunrar/unrar20.c ../libclamunrar/unrarcmd.h \
-	../libclamunrar/unrarfilter.h ../libclamunrar/unrarppm.c \
-	../libclamunrar/unrarvm.c ../libclamunrar/unrarcmd.c \
-	../libclamunrar/unrarfilter.c ../libclamunrar/unrarppm.h \
-	../libclamunrar/unrarvm.h ../libclamunrar/unrarhlp.c \
-	../libclamunrar/unrarhlp.h
-@ENABLE_UNRAR_TRUE@am_libclamunrar_la_OBJECTS = unrar15.lo unrar.lo \
-@ENABLE_UNRAR_TRUE@	unrar20.lo unrarppm.lo unrarvm.lo \
-@ENABLE_UNRAR_TRUE@	unrarcmd.lo unrarfilter.lo unrarhlp.lo
+am__libclamunrar_la_SOURCES_DIST = ../libclamunrar/archive.cpp \
+	../libclamunrar/arcread.cpp ../libclamunrar/blake2s.cpp \
+	../libclamunrar/cmddata.cpp ../libclamunrar/consio.cpp \
+	../libclamunrar/crc.cpp ../libclamunrar/crypt.cpp \
+	../libclamunrar/dll.cpp ../libclamunrar/encname.cpp \
+	../libclamunrar/errhnd.cpp ../libclamunrar/extinfo.cpp \
+	../libclamunrar/extract.cpp ../libclamunrar/filcreat.cpp \
+	../libclamunrar/file.cpp ../libclamunrar/filefn.cpp \
+	../libclamunrar/filestr.cpp ../libclamunrar/find.cpp \
+	../libclamunrar/getbits.cpp ../libclamunrar/global.cpp \
+	../libclamunrar/hash.cpp ../libclamunrar/headers.cpp \
+	../libclamunrar/isnt.cpp ../libclamunrar/list.cpp \
+	../libclamunrar/match.cpp ../libclamunrar/options.cpp \
+	../libclamunrar/pathfn.cpp ../libclamunrar/qopen.cpp \
+	../libclamunrar/rar.cpp ../libclamunrar/rarvm.cpp \
+	../libclamunrar/rawread.cpp ../libclamunrar/rdwrfn.cpp \
+	../libclamunrar/recvol.cpp ../libclamunrar/resource.cpp \
+	../libclamunrar/rijndael.cpp ../libclamunrar/rs.cpp \
+	../libclamunrar/rs16.cpp ../libclamunrar/scantree.cpp \
+	../libclamunrar/secpassword.cpp ../libclamunrar/sha1.cpp \
+	../libclamunrar/sha256.cpp ../libclamunrar/smallfn.cpp \
+	../libclamunrar/strfn.cpp ../libclamunrar/strlist.cpp \
+	../libclamunrar/system.cpp ../libclamunrar/threadpool.cpp \
+	../libclamunrar/timefn.cpp ../libclamunrar/ui.cpp \
+	../libclamunrar/unicode.cpp ../libclamunrar/unpack.cpp \
+	../libclamunrar/volume.cpp
+@ENABLE_UNRAR_TRUE@am_libclamunrar_la_OBJECTS =  \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-archive.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-arcread.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-blake2s.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-cmddata.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-consio.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-crc.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-crypt.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-dll.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-encname.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-errhnd.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-extinfo.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-extract.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-filcreat.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-file.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-filefn.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-filestr.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-find.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-getbits.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-global.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-hash.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-headers.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-isnt.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-list.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-match.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-options.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-pathfn.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-qopen.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-rar.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-rarvm.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-rawread.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-rdwrfn.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-recvol.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-resource.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-rijndael.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-rs.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-rs16.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-scantree.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-secpassword.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-sha1.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-sha256.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-smallfn.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-strfn.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-strlist.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-system.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-threadpool.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-timefn.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-ui.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-unicode.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-unpack.lo \
+@ENABLE_UNRAR_TRUE@	libclamunrar_la-volume.lo
 libclamunrar_la_OBJECTS = $(am_libclamunrar_la_OBJECTS)
-libclamunrar_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
-	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
-	$(AM_CFLAGS) $(CFLAGS) $(libclamunrar_la_LDFLAGS) $(LDFLAGS) \
-	-o $@
+libclamunrar_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) \
+	$(libclamunrar_la_LDFLAGS) $(LDFLAGS) -o $@
 @ENABLE_UNRAR_TRUE@am_libclamunrar_la_rpath = -rpath $(libdir)
 @ENABLE_UNRAR_TRUE@libclamunrar_iface_la_DEPENDENCIES =  \
 @ENABLE_UNRAR_TRUE@	libclamunrar.la
 am__libclamunrar_iface_la_SOURCES_DIST =  \
-	../libclamunrar_iface/unrar_iface.c \
+	../libclamunrar_iface/unrar_iface.cpp \
 	../libclamunrar_iface/unrar_iface.h
 @ENABLE_UNRAR_TRUE@am_libclamunrar_iface_la_OBJECTS = unrar_iface.lo
 libclamunrar_iface_la_OBJECTS = $(am_libclamunrar_iface_la_OBJECTS)
-libclamunrar_iface_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
-	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
-	$(AM_CFLAGS) $(CFLAGS) $(libclamunrar_iface_la_LDFLAGS) \
+libclamunrar_iface_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(AM_CXXFLAGS) $(CXXFLAGS) $(libclamunrar_iface_la_LDFLAGS) \
 	$(LDFLAGS) -o $@
 @ENABLE_UNRAR_TRUE@am_libclamunrar_iface_la_rpath = -rpath $(libdir)
 AM_V_P = $(am__v_P_@AM_V@)
@@ -620,6 +685,24 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
+CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
+LTCXXCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) \
+	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
+	$(AM_CXXFLAGS) $(CXXFLAGS)
+AM_V_CXX = $(am__v_CXX_@AM_V@)
+am__v_CXX_ = $(am__v_CXX_@AM_DEFAULT_V@)
+am__v_CXX_0 = @echo "  CXX     " $@;
+am__v_CXX_1 = 
+CXXLD = $(CXX)
+CXXLINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
+	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+AM_V_CXXLD = $(am__v_CXXLD_@AM_V@)
+am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
+am__v_CXXLD_0 = @echo "  CXXLD   " $@;
+am__v_CXXLD_1 = 
 @MAINTAINER_MODE_FALSE@am__skiplex = test -f $@ ||
 LEXCOMPILE = $(LEX) $(AM_LFLAGS) $(LFLAGS)
 LTLEXCOMPILE = $(LIBTOOL) $(AM_V_lt) $(AM_LIBTOOLFLAGS) \
@@ -758,6 +841,10 @@ CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CURSES_CPPFLAGS = @CURSES_CPPFLAGS@
 CURSES_LIBS = @CURSES_LIBS@
+CXX = @CXX@
+CXXCPP = @CXXCPP@
+CXXDEPMODE = @CXXDEPMODE@
+CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
 DBDIR = @DBDIR@
 DEFS = @DEFS@
@@ -883,6 +970,7 @@ abs_top_builddir = @abs_top_builddir@
 abs_top_srcdir = @abs_top_srcdir@
 ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
+ac_ct_CXX = @ac_ct_CXX@
 ac_ct_DUMPBIN = @ac_ct_DUMPBIN@
 am__include = @am__include@
 am__leading_dot = @am__leading_dot@
@@ -954,34 +1042,68 @@ EXTRA_DIST = c++/Makefile.nollvm.in \
 	jsparse/generated/operators.h jsparse/generated/keywords.h \
 	jsparse/future_reserved_words.list jsparse/keywords.list \
 	jsparse/special_keywords.list jsparse/operators.gperf
+@ENABLE_UNRAR_TRUE@libclamunrar_la_CXXFLAGS = $(AM_CPPFLAGS) -DRARDLL -Wno-logical-op-parentheses -Wno-switch -Wno-dangling-else
 @ENABLE_UNRAR_TRUE@libclamunrar_la_LDFLAGS = @TH_SAFE@ -version-info \
 @ENABLE_UNRAR_TRUE@	@LIBCLAMAV_VERSION@ -no-undefined \
 @ENABLE_UNRAR_TRUE@	$(am__append_2)
 @ENABLE_UNRAR_TRUE@libclamunrar_la_SOURCES = \
-@ENABLE_UNRAR_TRUE@	../libclamunrar/unrar15.c \
-@ENABLE_UNRAR_TRUE@	../libclamunrar/unrar20.h \
-@ENABLE_UNRAR_TRUE@	../libclamunrar/unrar.h \
-@ENABLE_UNRAR_TRUE@	../libclamunrar/unrar15.h \
-@ENABLE_UNRAR_TRUE@	../libclamunrar/unrar.c \
-@ENABLE_UNRAR_TRUE@	../libclamunrar/unrar20.c \
-@ENABLE_UNRAR_TRUE@	../libclamunrar/unrarcmd.h \
-@ENABLE_UNRAR_TRUE@	../libclamunrar/unrarfilter.h \
-@ENABLE_UNRAR_TRUE@	../libclamunrar/unrarppm.c \
-@ENABLE_UNRAR_TRUE@	../libclamunrar/unrarvm.c \
-@ENABLE_UNRAR_TRUE@	../libclamunrar/unrarcmd.c \
-@ENABLE_UNRAR_TRUE@	../libclamunrar/unrarfilter.c \
-@ENABLE_UNRAR_TRUE@	../libclamunrar/unrar.h \
-@ENABLE_UNRAR_TRUE@	../libclamunrar/unrarppm.h \
-@ENABLE_UNRAR_TRUE@	../libclamunrar/unrarvm.h \
-@ENABLE_UNRAR_TRUE@	../libclamunrar/unrarhlp.c \
-@ENABLE_UNRAR_TRUE@	../libclamunrar/unrarhlp.h
+@ENABLE_UNRAR_TRUE@	../libclamunrar/archive.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/arcread.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/blake2s.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/cmddata.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/consio.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/crc.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/crypt.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/dll.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/encname.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/errhnd.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/extinfo.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/extract.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/filcreat.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/file.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/filefn.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/filestr.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/find.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/getbits.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/global.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/hash.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/headers.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/isnt.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/list.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/match.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/options.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/pathfn.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/qopen.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/rar.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/rarvm.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/rawread.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/rdwrfn.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/recvol.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/resource.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/rijndael.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/rs.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/rs16.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/scantree.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/secpassword.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/sha1.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/sha256.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/smallfn.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/strfn.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/strlist.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/system.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/threadpool.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/timefn.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/ui.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/unicode.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/unpack.cpp \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/volume.cpp
 
 @ENABLE_UNRAR_TRUE@libclamunrar_iface_la_LIBADD = libclamunrar.la
 @ENABLE_UNRAR_TRUE@libclamunrar_iface_la_LDFLAGS = -module @TH_SAFE@ \
 @ENABLE_UNRAR_TRUE@	-version-info @LIBCLAMAV_VERSION@ \
 @ENABLE_UNRAR_TRUE@	-no-undefined $(am__append_5)
 @ENABLE_UNRAR_TRUE@libclamunrar_iface_la_SOURCES = \
-@ENABLE_UNRAR_TRUE@	../libclamunrar_iface/unrar_iface.c \
+@ENABLE_UNRAR_TRUE@	../libclamunrar_iface/unrar_iface.cpp \
 @ENABLE_UNRAR_TRUE@	../libclamunrar_iface/unrar_iface.h
 
 @ENABLE_UNRAR_TRUE@IFACELIBADD = -dlopen libclamunrar_iface.la
@@ -1191,7 +1313,7 @@ all: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 
 .SUFFIXES:
-.SUFFIXES: .c .l .lo .o .obj .y
+.SUFFIXES: .c .cpp .l .lo .o .obj .y
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -1285,10 +1407,10 @@ libclamav_nocxx.la: $(libclamav_nocxx_la_OBJECTS) $(libclamav_nocxx_la_DEPENDENC
 	$(AM_V_CCLD)$(libclamav_nocxx_la_LINK)  $(libclamav_nocxx_la_OBJECTS) $(libclamav_nocxx_la_LIBADD) $(LIBS)
 
 libclamunrar.la: $(libclamunrar_la_OBJECTS) $(libclamunrar_la_DEPENDENCIES) $(EXTRA_libclamunrar_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(libclamunrar_la_LINK) $(am_libclamunrar_la_rpath) $(libclamunrar_la_OBJECTS) $(libclamunrar_la_LIBADD) $(LIBS)
+	$(AM_V_CXXLD)$(libclamunrar_la_LINK) $(am_libclamunrar_la_rpath) $(libclamunrar_la_OBJECTS) $(libclamunrar_la_LIBADD) $(LIBS)
 
 libclamunrar_iface.la: $(libclamunrar_iface_la_OBJECTS) $(libclamunrar_iface_la_DEPENDENCIES) $(EXTRA_libclamunrar_iface_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(libclamunrar_iface_la_LINK) $(am_libclamunrar_iface_la_rpath) $(libclamunrar_iface_la_OBJECTS) $(libclamunrar_iface_la_LIBADD) $(LIBS)
+	$(AM_V_CXXLD)$(libclamunrar_iface_la_LINK) $(am_libclamunrar_iface_la_rpath) $(libclamunrar_iface_la_OBJECTS) $(libclamunrar_iface_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -1553,15 +1675,57 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-yara_parser.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-yc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_nocxx_la-bytecode_nojit.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unrar.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unrar15.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unrar20.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-archive.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-arcread.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-blake2s.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-cmddata.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-consio.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-crc.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-crypt.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-dll.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-encname.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-errhnd.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-extinfo.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-extract.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-filcreat.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-file.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-filefn.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-filestr.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-find.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-getbits.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-global.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-hash.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-headers.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-isnt.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-list.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-match.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-options.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-pathfn.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-qopen.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-rar.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-rarvm.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-rawread.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-rdwrfn.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-recvol.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-resource.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-rijndael.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-rs.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-rs16.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-scantree.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-secpassword.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-sha1.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-sha256.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-smallfn.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-strfn.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-strlist.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-system.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-threadpool.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-timefn.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-ui.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-unicode.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-unpack.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-volume.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unrar_iface.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unrarcmd.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unrarfilter.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unrarhlp.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unrarppm.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unrarvm.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -3383,68 +3547,383 @@ libclamav_nocxx_la-bytecode_nojit.lo: bytecode_nojit.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_nocxx_la_CFLAGS) $(CFLAGS) -c -o libclamav_nocxx_la-bytecode_nojit.lo `test -f 'bytecode_nojit.c' || echo '$(srcdir)/'`bytecode_nojit.c
 
-unrar15.lo: ../libclamunrar/unrar15.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT unrar15.lo -MD -MP -MF $(DEPDIR)/unrar15.Tpo -c -o unrar15.lo `test -f '../libclamunrar/unrar15.c' || echo '$(srcdir)/'`../libclamunrar/unrar15.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unrar15.Tpo $(DEPDIR)/unrar15.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='../libclamunrar/unrar15.c' object='unrar15.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o unrar15.lo `test -f '../libclamunrar/unrar15.c' || echo '$(srcdir)/'`../libclamunrar/unrar15.c
+.cpp.o:
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXXCOMPILE) -c -o $@ $<
 
-unrar.lo: ../libclamunrar/unrar.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT unrar.lo -MD -MP -MF $(DEPDIR)/unrar.Tpo -c -o unrar.lo `test -f '../libclamunrar/unrar.c' || echo '$(srcdir)/'`../libclamunrar/unrar.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unrar.Tpo $(DEPDIR)/unrar.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='../libclamunrar/unrar.c' object='unrar.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o unrar.lo `test -f '../libclamunrar/unrar.c' || echo '$(srcdir)/'`../libclamunrar/unrar.c
+.cpp.obj:
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
-unrar20.lo: ../libclamunrar/unrar20.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT unrar20.lo -MD -MP -MF $(DEPDIR)/unrar20.Tpo -c -o unrar20.lo `test -f '../libclamunrar/unrar20.c' || echo '$(srcdir)/'`../libclamunrar/unrar20.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unrar20.Tpo $(DEPDIR)/unrar20.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='../libclamunrar/unrar20.c' object='unrar20.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o unrar20.lo `test -f '../libclamunrar/unrar20.c' || echo '$(srcdir)/'`../libclamunrar/unrar20.c
+.cpp.lo:
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LTCXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LTCXXCOMPILE) -c -o $@ $<
 
-unrarppm.lo: ../libclamunrar/unrarppm.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT unrarppm.lo -MD -MP -MF $(DEPDIR)/unrarppm.Tpo -c -o unrarppm.lo `test -f '../libclamunrar/unrarppm.c' || echo '$(srcdir)/'`../libclamunrar/unrarppm.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unrarppm.Tpo $(DEPDIR)/unrarppm.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='../libclamunrar/unrarppm.c' object='unrarppm.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o unrarppm.lo `test -f '../libclamunrar/unrarppm.c' || echo '$(srcdir)/'`../libclamunrar/unrarppm.c
+libclamunrar_la-archive.lo: ../libclamunrar/archive.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-archive.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-archive.Tpo -c -o libclamunrar_la-archive.lo `test -f '../libclamunrar/archive.cpp' || echo '$(srcdir)/'`../libclamunrar/archive.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-archive.Tpo $(DEPDIR)/libclamunrar_la-archive.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/archive.cpp' object='libclamunrar_la-archive.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-archive.lo `test -f '../libclamunrar/archive.cpp' || echo '$(srcdir)/'`../libclamunrar/archive.cpp
 
-unrarvm.lo: ../libclamunrar/unrarvm.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT unrarvm.lo -MD -MP -MF $(DEPDIR)/unrarvm.Tpo -c -o unrarvm.lo `test -f '../libclamunrar/unrarvm.c' || echo '$(srcdir)/'`../libclamunrar/unrarvm.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unrarvm.Tpo $(DEPDIR)/unrarvm.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='../libclamunrar/unrarvm.c' object='unrarvm.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o unrarvm.lo `test -f '../libclamunrar/unrarvm.c' || echo '$(srcdir)/'`../libclamunrar/unrarvm.c
+libclamunrar_la-arcread.lo: ../libclamunrar/arcread.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-arcread.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-arcread.Tpo -c -o libclamunrar_la-arcread.lo `test -f '../libclamunrar/arcread.cpp' || echo '$(srcdir)/'`../libclamunrar/arcread.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-arcread.Tpo $(DEPDIR)/libclamunrar_la-arcread.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/arcread.cpp' object='libclamunrar_la-arcread.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-arcread.lo `test -f '../libclamunrar/arcread.cpp' || echo '$(srcdir)/'`../libclamunrar/arcread.cpp
 
-unrarcmd.lo: ../libclamunrar/unrarcmd.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT unrarcmd.lo -MD -MP -MF $(DEPDIR)/unrarcmd.Tpo -c -o unrarcmd.lo `test -f '../libclamunrar/unrarcmd.c' || echo '$(srcdir)/'`../libclamunrar/unrarcmd.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unrarcmd.Tpo $(DEPDIR)/unrarcmd.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='../libclamunrar/unrarcmd.c' object='unrarcmd.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o unrarcmd.lo `test -f '../libclamunrar/unrarcmd.c' || echo '$(srcdir)/'`../libclamunrar/unrarcmd.c
+libclamunrar_la-blake2s.lo: ../libclamunrar/blake2s.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-blake2s.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-blake2s.Tpo -c -o libclamunrar_la-blake2s.lo `test -f '../libclamunrar/blake2s.cpp' || echo '$(srcdir)/'`../libclamunrar/blake2s.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-blake2s.Tpo $(DEPDIR)/libclamunrar_la-blake2s.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/blake2s.cpp' object='libclamunrar_la-blake2s.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-blake2s.lo `test -f '../libclamunrar/blake2s.cpp' || echo '$(srcdir)/'`../libclamunrar/blake2s.cpp
 
-unrarfilter.lo: ../libclamunrar/unrarfilter.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT unrarfilter.lo -MD -MP -MF $(DEPDIR)/unrarfilter.Tpo -c -o unrarfilter.lo `test -f '../libclamunrar/unrarfilter.c' || echo '$(srcdir)/'`../libclamunrar/unrarfilter.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unrarfilter.Tpo $(DEPDIR)/unrarfilter.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='../libclamunrar/unrarfilter.c' object='unrarfilter.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o unrarfilter.lo `test -f '../libclamunrar/unrarfilter.c' || echo '$(srcdir)/'`../libclamunrar/unrarfilter.c
+libclamunrar_la-cmddata.lo: ../libclamunrar/cmddata.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-cmddata.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-cmddata.Tpo -c -o libclamunrar_la-cmddata.lo `test -f '../libclamunrar/cmddata.cpp' || echo '$(srcdir)/'`../libclamunrar/cmddata.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-cmddata.Tpo $(DEPDIR)/libclamunrar_la-cmddata.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/cmddata.cpp' object='libclamunrar_la-cmddata.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-cmddata.lo `test -f '../libclamunrar/cmddata.cpp' || echo '$(srcdir)/'`../libclamunrar/cmddata.cpp
 
-unrarhlp.lo: ../libclamunrar/unrarhlp.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT unrarhlp.lo -MD -MP -MF $(DEPDIR)/unrarhlp.Tpo -c -o unrarhlp.lo `test -f '../libclamunrar/unrarhlp.c' || echo '$(srcdir)/'`../libclamunrar/unrarhlp.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unrarhlp.Tpo $(DEPDIR)/unrarhlp.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='../libclamunrar/unrarhlp.c' object='unrarhlp.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o unrarhlp.lo `test -f '../libclamunrar/unrarhlp.c' || echo '$(srcdir)/'`../libclamunrar/unrarhlp.c
+libclamunrar_la-consio.lo: ../libclamunrar/consio.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-consio.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-consio.Tpo -c -o libclamunrar_la-consio.lo `test -f '../libclamunrar/consio.cpp' || echo '$(srcdir)/'`../libclamunrar/consio.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-consio.Tpo $(DEPDIR)/libclamunrar_la-consio.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/consio.cpp' object='libclamunrar_la-consio.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-consio.lo `test -f '../libclamunrar/consio.cpp' || echo '$(srcdir)/'`../libclamunrar/consio.cpp
 
-unrar_iface.lo: ../libclamunrar_iface/unrar_iface.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT unrar_iface.lo -MD -MP -MF $(DEPDIR)/unrar_iface.Tpo -c -o unrar_iface.lo `test -f '../libclamunrar_iface/unrar_iface.c' || echo '$(srcdir)/'`../libclamunrar_iface/unrar_iface.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unrar_iface.Tpo $(DEPDIR)/unrar_iface.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='../libclamunrar_iface/unrar_iface.c' object='unrar_iface.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o unrar_iface.lo `test -f '../libclamunrar_iface/unrar_iface.c' || echo '$(srcdir)/'`../libclamunrar_iface/unrar_iface.c
+libclamunrar_la-crc.lo: ../libclamunrar/crc.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-crc.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-crc.Tpo -c -o libclamunrar_la-crc.lo `test -f '../libclamunrar/crc.cpp' || echo '$(srcdir)/'`../libclamunrar/crc.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-crc.Tpo $(DEPDIR)/libclamunrar_la-crc.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/crc.cpp' object='libclamunrar_la-crc.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-crc.lo `test -f '../libclamunrar/crc.cpp' || echo '$(srcdir)/'`../libclamunrar/crc.cpp
+
+libclamunrar_la-crypt.lo: ../libclamunrar/crypt.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-crypt.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-crypt.Tpo -c -o libclamunrar_la-crypt.lo `test -f '../libclamunrar/crypt.cpp' || echo '$(srcdir)/'`../libclamunrar/crypt.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-crypt.Tpo $(DEPDIR)/libclamunrar_la-crypt.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/crypt.cpp' object='libclamunrar_la-crypt.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-crypt.lo `test -f '../libclamunrar/crypt.cpp' || echo '$(srcdir)/'`../libclamunrar/crypt.cpp
+
+libclamunrar_la-dll.lo: ../libclamunrar/dll.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-dll.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-dll.Tpo -c -o libclamunrar_la-dll.lo `test -f '../libclamunrar/dll.cpp' || echo '$(srcdir)/'`../libclamunrar/dll.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-dll.Tpo $(DEPDIR)/libclamunrar_la-dll.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/dll.cpp' object='libclamunrar_la-dll.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-dll.lo `test -f '../libclamunrar/dll.cpp' || echo '$(srcdir)/'`../libclamunrar/dll.cpp
+
+libclamunrar_la-encname.lo: ../libclamunrar/encname.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-encname.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-encname.Tpo -c -o libclamunrar_la-encname.lo `test -f '../libclamunrar/encname.cpp' || echo '$(srcdir)/'`../libclamunrar/encname.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-encname.Tpo $(DEPDIR)/libclamunrar_la-encname.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/encname.cpp' object='libclamunrar_la-encname.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-encname.lo `test -f '../libclamunrar/encname.cpp' || echo '$(srcdir)/'`../libclamunrar/encname.cpp
+
+libclamunrar_la-errhnd.lo: ../libclamunrar/errhnd.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-errhnd.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-errhnd.Tpo -c -o libclamunrar_la-errhnd.lo `test -f '../libclamunrar/errhnd.cpp' || echo '$(srcdir)/'`../libclamunrar/errhnd.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-errhnd.Tpo $(DEPDIR)/libclamunrar_la-errhnd.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/errhnd.cpp' object='libclamunrar_la-errhnd.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-errhnd.lo `test -f '../libclamunrar/errhnd.cpp' || echo '$(srcdir)/'`../libclamunrar/errhnd.cpp
+
+libclamunrar_la-extinfo.lo: ../libclamunrar/extinfo.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-extinfo.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-extinfo.Tpo -c -o libclamunrar_la-extinfo.lo `test -f '../libclamunrar/extinfo.cpp' || echo '$(srcdir)/'`../libclamunrar/extinfo.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-extinfo.Tpo $(DEPDIR)/libclamunrar_la-extinfo.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/extinfo.cpp' object='libclamunrar_la-extinfo.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-extinfo.lo `test -f '../libclamunrar/extinfo.cpp' || echo '$(srcdir)/'`../libclamunrar/extinfo.cpp
+
+libclamunrar_la-extract.lo: ../libclamunrar/extract.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-extract.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-extract.Tpo -c -o libclamunrar_la-extract.lo `test -f '../libclamunrar/extract.cpp' || echo '$(srcdir)/'`../libclamunrar/extract.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-extract.Tpo $(DEPDIR)/libclamunrar_la-extract.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/extract.cpp' object='libclamunrar_la-extract.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-extract.lo `test -f '../libclamunrar/extract.cpp' || echo '$(srcdir)/'`../libclamunrar/extract.cpp
+
+libclamunrar_la-filcreat.lo: ../libclamunrar/filcreat.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-filcreat.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-filcreat.Tpo -c -o libclamunrar_la-filcreat.lo `test -f '../libclamunrar/filcreat.cpp' || echo '$(srcdir)/'`../libclamunrar/filcreat.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-filcreat.Tpo $(DEPDIR)/libclamunrar_la-filcreat.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/filcreat.cpp' object='libclamunrar_la-filcreat.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-filcreat.lo `test -f '../libclamunrar/filcreat.cpp' || echo '$(srcdir)/'`../libclamunrar/filcreat.cpp
+
+libclamunrar_la-file.lo: ../libclamunrar/file.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-file.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-file.Tpo -c -o libclamunrar_la-file.lo `test -f '../libclamunrar/file.cpp' || echo '$(srcdir)/'`../libclamunrar/file.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-file.Tpo $(DEPDIR)/libclamunrar_la-file.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/file.cpp' object='libclamunrar_la-file.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-file.lo `test -f '../libclamunrar/file.cpp' || echo '$(srcdir)/'`../libclamunrar/file.cpp
+
+libclamunrar_la-filefn.lo: ../libclamunrar/filefn.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-filefn.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-filefn.Tpo -c -o libclamunrar_la-filefn.lo `test -f '../libclamunrar/filefn.cpp' || echo '$(srcdir)/'`../libclamunrar/filefn.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-filefn.Tpo $(DEPDIR)/libclamunrar_la-filefn.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/filefn.cpp' object='libclamunrar_la-filefn.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-filefn.lo `test -f '../libclamunrar/filefn.cpp' || echo '$(srcdir)/'`../libclamunrar/filefn.cpp
+
+libclamunrar_la-filestr.lo: ../libclamunrar/filestr.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-filestr.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-filestr.Tpo -c -o libclamunrar_la-filestr.lo `test -f '../libclamunrar/filestr.cpp' || echo '$(srcdir)/'`../libclamunrar/filestr.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-filestr.Tpo $(DEPDIR)/libclamunrar_la-filestr.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/filestr.cpp' object='libclamunrar_la-filestr.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-filestr.lo `test -f '../libclamunrar/filestr.cpp' || echo '$(srcdir)/'`../libclamunrar/filestr.cpp
+
+libclamunrar_la-find.lo: ../libclamunrar/find.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-find.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-find.Tpo -c -o libclamunrar_la-find.lo `test -f '../libclamunrar/find.cpp' || echo '$(srcdir)/'`../libclamunrar/find.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-find.Tpo $(DEPDIR)/libclamunrar_la-find.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/find.cpp' object='libclamunrar_la-find.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-find.lo `test -f '../libclamunrar/find.cpp' || echo '$(srcdir)/'`../libclamunrar/find.cpp
+
+libclamunrar_la-getbits.lo: ../libclamunrar/getbits.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-getbits.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-getbits.Tpo -c -o libclamunrar_la-getbits.lo `test -f '../libclamunrar/getbits.cpp' || echo '$(srcdir)/'`../libclamunrar/getbits.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-getbits.Tpo $(DEPDIR)/libclamunrar_la-getbits.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/getbits.cpp' object='libclamunrar_la-getbits.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-getbits.lo `test -f '../libclamunrar/getbits.cpp' || echo '$(srcdir)/'`../libclamunrar/getbits.cpp
+
+libclamunrar_la-global.lo: ../libclamunrar/global.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-global.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-global.Tpo -c -o libclamunrar_la-global.lo `test -f '../libclamunrar/global.cpp' || echo '$(srcdir)/'`../libclamunrar/global.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-global.Tpo $(DEPDIR)/libclamunrar_la-global.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/global.cpp' object='libclamunrar_la-global.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-global.lo `test -f '../libclamunrar/global.cpp' || echo '$(srcdir)/'`../libclamunrar/global.cpp
+
+libclamunrar_la-hash.lo: ../libclamunrar/hash.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-hash.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-hash.Tpo -c -o libclamunrar_la-hash.lo `test -f '../libclamunrar/hash.cpp' || echo '$(srcdir)/'`../libclamunrar/hash.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-hash.Tpo $(DEPDIR)/libclamunrar_la-hash.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/hash.cpp' object='libclamunrar_la-hash.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-hash.lo `test -f '../libclamunrar/hash.cpp' || echo '$(srcdir)/'`../libclamunrar/hash.cpp
+
+libclamunrar_la-headers.lo: ../libclamunrar/headers.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-headers.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-headers.Tpo -c -o libclamunrar_la-headers.lo `test -f '../libclamunrar/headers.cpp' || echo '$(srcdir)/'`../libclamunrar/headers.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-headers.Tpo $(DEPDIR)/libclamunrar_la-headers.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/headers.cpp' object='libclamunrar_la-headers.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-headers.lo `test -f '../libclamunrar/headers.cpp' || echo '$(srcdir)/'`../libclamunrar/headers.cpp
+
+libclamunrar_la-isnt.lo: ../libclamunrar/isnt.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-isnt.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-isnt.Tpo -c -o libclamunrar_la-isnt.lo `test -f '../libclamunrar/isnt.cpp' || echo '$(srcdir)/'`../libclamunrar/isnt.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-isnt.Tpo $(DEPDIR)/libclamunrar_la-isnt.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/isnt.cpp' object='libclamunrar_la-isnt.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-isnt.lo `test -f '../libclamunrar/isnt.cpp' || echo '$(srcdir)/'`../libclamunrar/isnt.cpp
+
+libclamunrar_la-list.lo: ../libclamunrar/list.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-list.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-list.Tpo -c -o libclamunrar_la-list.lo `test -f '../libclamunrar/list.cpp' || echo '$(srcdir)/'`../libclamunrar/list.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-list.Tpo $(DEPDIR)/libclamunrar_la-list.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/list.cpp' object='libclamunrar_la-list.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-list.lo `test -f '../libclamunrar/list.cpp' || echo '$(srcdir)/'`../libclamunrar/list.cpp
+
+libclamunrar_la-match.lo: ../libclamunrar/match.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-match.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-match.Tpo -c -o libclamunrar_la-match.lo `test -f '../libclamunrar/match.cpp' || echo '$(srcdir)/'`../libclamunrar/match.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-match.Tpo $(DEPDIR)/libclamunrar_la-match.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/match.cpp' object='libclamunrar_la-match.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-match.lo `test -f '../libclamunrar/match.cpp' || echo '$(srcdir)/'`../libclamunrar/match.cpp
+
+libclamunrar_la-options.lo: ../libclamunrar/options.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-options.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-options.Tpo -c -o libclamunrar_la-options.lo `test -f '../libclamunrar/options.cpp' || echo '$(srcdir)/'`../libclamunrar/options.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-options.Tpo $(DEPDIR)/libclamunrar_la-options.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/options.cpp' object='libclamunrar_la-options.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-options.lo `test -f '../libclamunrar/options.cpp' || echo '$(srcdir)/'`../libclamunrar/options.cpp
+
+libclamunrar_la-pathfn.lo: ../libclamunrar/pathfn.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-pathfn.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-pathfn.Tpo -c -o libclamunrar_la-pathfn.lo `test -f '../libclamunrar/pathfn.cpp' || echo '$(srcdir)/'`../libclamunrar/pathfn.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-pathfn.Tpo $(DEPDIR)/libclamunrar_la-pathfn.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/pathfn.cpp' object='libclamunrar_la-pathfn.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-pathfn.lo `test -f '../libclamunrar/pathfn.cpp' || echo '$(srcdir)/'`../libclamunrar/pathfn.cpp
+
+libclamunrar_la-qopen.lo: ../libclamunrar/qopen.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-qopen.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-qopen.Tpo -c -o libclamunrar_la-qopen.lo `test -f '../libclamunrar/qopen.cpp' || echo '$(srcdir)/'`../libclamunrar/qopen.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-qopen.Tpo $(DEPDIR)/libclamunrar_la-qopen.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/qopen.cpp' object='libclamunrar_la-qopen.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-qopen.lo `test -f '../libclamunrar/qopen.cpp' || echo '$(srcdir)/'`../libclamunrar/qopen.cpp
+
+libclamunrar_la-rar.lo: ../libclamunrar/rar.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-rar.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-rar.Tpo -c -o libclamunrar_la-rar.lo `test -f '../libclamunrar/rar.cpp' || echo '$(srcdir)/'`../libclamunrar/rar.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-rar.Tpo $(DEPDIR)/libclamunrar_la-rar.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/rar.cpp' object='libclamunrar_la-rar.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-rar.lo `test -f '../libclamunrar/rar.cpp' || echo '$(srcdir)/'`../libclamunrar/rar.cpp
+
+libclamunrar_la-rarvm.lo: ../libclamunrar/rarvm.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-rarvm.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-rarvm.Tpo -c -o libclamunrar_la-rarvm.lo `test -f '../libclamunrar/rarvm.cpp' || echo '$(srcdir)/'`../libclamunrar/rarvm.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-rarvm.Tpo $(DEPDIR)/libclamunrar_la-rarvm.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/rarvm.cpp' object='libclamunrar_la-rarvm.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-rarvm.lo `test -f '../libclamunrar/rarvm.cpp' || echo '$(srcdir)/'`../libclamunrar/rarvm.cpp
+
+libclamunrar_la-rawread.lo: ../libclamunrar/rawread.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-rawread.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-rawread.Tpo -c -o libclamunrar_la-rawread.lo `test -f '../libclamunrar/rawread.cpp' || echo '$(srcdir)/'`../libclamunrar/rawread.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-rawread.Tpo $(DEPDIR)/libclamunrar_la-rawread.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/rawread.cpp' object='libclamunrar_la-rawread.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-rawread.lo `test -f '../libclamunrar/rawread.cpp' || echo '$(srcdir)/'`../libclamunrar/rawread.cpp
+
+libclamunrar_la-rdwrfn.lo: ../libclamunrar/rdwrfn.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-rdwrfn.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-rdwrfn.Tpo -c -o libclamunrar_la-rdwrfn.lo `test -f '../libclamunrar/rdwrfn.cpp' || echo '$(srcdir)/'`../libclamunrar/rdwrfn.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-rdwrfn.Tpo $(DEPDIR)/libclamunrar_la-rdwrfn.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/rdwrfn.cpp' object='libclamunrar_la-rdwrfn.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-rdwrfn.lo `test -f '../libclamunrar/rdwrfn.cpp' || echo '$(srcdir)/'`../libclamunrar/rdwrfn.cpp
+
+libclamunrar_la-recvol.lo: ../libclamunrar/recvol.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-recvol.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-recvol.Tpo -c -o libclamunrar_la-recvol.lo `test -f '../libclamunrar/recvol.cpp' || echo '$(srcdir)/'`../libclamunrar/recvol.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-recvol.Tpo $(DEPDIR)/libclamunrar_la-recvol.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/recvol.cpp' object='libclamunrar_la-recvol.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-recvol.lo `test -f '../libclamunrar/recvol.cpp' || echo '$(srcdir)/'`../libclamunrar/recvol.cpp
+
+libclamunrar_la-resource.lo: ../libclamunrar/resource.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-resource.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-resource.Tpo -c -o libclamunrar_la-resource.lo `test -f '../libclamunrar/resource.cpp' || echo '$(srcdir)/'`../libclamunrar/resource.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-resource.Tpo $(DEPDIR)/libclamunrar_la-resource.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/resource.cpp' object='libclamunrar_la-resource.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-resource.lo `test -f '../libclamunrar/resource.cpp' || echo '$(srcdir)/'`../libclamunrar/resource.cpp
+
+libclamunrar_la-rijndael.lo: ../libclamunrar/rijndael.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-rijndael.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-rijndael.Tpo -c -o libclamunrar_la-rijndael.lo `test -f '../libclamunrar/rijndael.cpp' || echo '$(srcdir)/'`../libclamunrar/rijndael.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-rijndael.Tpo $(DEPDIR)/libclamunrar_la-rijndael.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/rijndael.cpp' object='libclamunrar_la-rijndael.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-rijndael.lo `test -f '../libclamunrar/rijndael.cpp' || echo '$(srcdir)/'`../libclamunrar/rijndael.cpp
+
+libclamunrar_la-rs.lo: ../libclamunrar/rs.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-rs.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-rs.Tpo -c -o libclamunrar_la-rs.lo `test -f '../libclamunrar/rs.cpp' || echo '$(srcdir)/'`../libclamunrar/rs.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-rs.Tpo $(DEPDIR)/libclamunrar_la-rs.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/rs.cpp' object='libclamunrar_la-rs.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-rs.lo `test -f '../libclamunrar/rs.cpp' || echo '$(srcdir)/'`../libclamunrar/rs.cpp
+
+libclamunrar_la-rs16.lo: ../libclamunrar/rs16.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-rs16.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-rs16.Tpo -c -o libclamunrar_la-rs16.lo `test -f '../libclamunrar/rs16.cpp' || echo '$(srcdir)/'`../libclamunrar/rs16.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-rs16.Tpo $(DEPDIR)/libclamunrar_la-rs16.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/rs16.cpp' object='libclamunrar_la-rs16.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-rs16.lo `test -f '../libclamunrar/rs16.cpp' || echo '$(srcdir)/'`../libclamunrar/rs16.cpp
+
+libclamunrar_la-scantree.lo: ../libclamunrar/scantree.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-scantree.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-scantree.Tpo -c -o libclamunrar_la-scantree.lo `test -f '../libclamunrar/scantree.cpp' || echo '$(srcdir)/'`../libclamunrar/scantree.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-scantree.Tpo $(DEPDIR)/libclamunrar_la-scantree.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/scantree.cpp' object='libclamunrar_la-scantree.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-scantree.lo `test -f '../libclamunrar/scantree.cpp' || echo '$(srcdir)/'`../libclamunrar/scantree.cpp
+
+libclamunrar_la-secpassword.lo: ../libclamunrar/secpassword.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-secpassword.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-secpassword.Tpo -c -o libclamunrar_la-secpassword.lo `test -f '../libclamunrar/secpassword.cpp' || echo '$(srcdir)/'`../libclamunrar/secpassword.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-secpassword.Tpo $(DEPDIR)/libclamunrar_la-secpassword.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/secpassword.cpp' object='libclamunrar_la-secpassword.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-secpassword.lo `test -f '../libclamunrar/secpassword.cpp' || echo '$(srcdir)/'`../libclamunrar/secpassword.cpp
+
+libclamunrar_la-sha1.lo: ../libclamunrar/sha1.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-sha1.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-sha1.Tpo -c -o libclamunrar_la-sha1.lo `test -f '../libclamunrar/sha1.cpp' || echo '$(srcdir)/'`../libclamunrar/sha1.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-sha1.Tpo $(DEPDIR)/libclamunrar_la-sha1.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/sha1.cpp' object='libclamunrar_la-sha1.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-sha1.lo `test -f '../libclamunrar/sha1.cpp' || echo '$(srcdir)/'`../libclamunrar/sha1.cpp
+
+libclamunrar_la-sha256.lo: ../libclamunrar/sha256.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-sha256.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-sha256.Tpo -c -o libclamunrar_la-sha256.lo `test -f '../libclamunrar/sha256.cpp' || echo '$(srcdir)/'`../libclamunrar/sha256.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-sha256.Tpo $(DEPDIR)/libclamunrar_la-sha256.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/sha256.cpp' object='libclamunrar_la-sha256.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-sha256.lo `test -f '../libclamunrar/sha256.cpp' || echo '$(srcdir)/'`../libclamunrar/sha256.cpp
+
+libclamunrar_la-smallfn.lo: ../libclamunrar/smallfn.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-smallfn.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-smallfn.Tpo -c -o libclamunrar_la-smallfn.lo `test -f '../libclamunrar/smallfn.cpp' || echo '$(srcdir)/'`../libclamunrar/smallfn.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-smallfn.Tpo $(DEPDIR)/libclamunrar_la-smallfn.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/smallfn.cpp' object='libclamunrar_la-smallfn.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-smallfn.lo `test -f '../libclamunrar/smallfn.cpp' || echo '$(srcdir)/'`../libclamunrar/smallfn.cpp
+
+libclamunrar_la-strfn.lo: ../libclamunrar/strfn.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-strfn.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-strfn.Tpo -c -o libclamunrar_la-strfn.lo `test -f '../libclamunrar/strfn.cpp' || echo '$(srcdir)/'`../libclamunrar/strfn.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-strfn.Tpo $(DEPDIR)/libclamunrar_la-strfn.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/strfn.cpp' object='libclamunrar_la-strfn.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-strfn.lo `test -f '../libclamunrar/strfn.cpp' || echo '$(srcdir)/'`../libclamunrar/strfn.cpp
+
+libclamunrar_la-strlist.lo: ../libclamunrar/strlist.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-strlist.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-strlist.Tpo -c -o libclamunrar_la-strlist.lo `test -f '../libclamunrar/strlist.cpp' || echo '$(srcdir)/'`../libclamunrar/strlist.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-strlist.Tpo $(DEPDIR)/libclamunrar_la-strlist.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/strlist.cpp' object='libclamunrar_la-strlist.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-strlist.lo `test -f '../libclamunrar/strlist.cpp' || echo '$(srcdir)/'`../libclamunrar/strlist.cpp
+
+libclamunrar_la-system.lo: ../libclamunrar/system.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-system.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-system.Tpo -c -o libclamunrar_la-system.lo `test -f '../libclamunrar/system.cpp' || echo '$(srcdir)/'`../libclamunrar/system.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-system.Tpo $(DEPDIR)/libclamunrar_la-system.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/system.cpp' object='libclamunrar_la-system.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-system.lo `test -f '../libclamunrar/system.cpp' || echo '$(srcdir)/'`../libclamunrar/system.cpp
+
+libclamunrar_la-threadpool.lo: ../libclamunrar/threadpool.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-threadpool.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-threadpool.Tpo -c -o libclamunrar_la-threadpool.lo `test -f '../libclamunrar/threadpool.cpp' || echo '$(srcdir)/'`../libclamunrar/threadpool.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-threadpool.Tpo $(DEPDIR)/libclamunrar_la-threadpool.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/threadpool.cpp' object='libclamunrar_la-threadpool.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-threadpool.lo `test -f '../libclamunrar/threadpool.cpp' || echo '$(srcdir)/'`../libclamunrar/threadpool.cpp
+
+libclamunrar_la-timefn.lo: ../libclamunrar/timefn.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-timefn.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-timefn.Tpo -c -o libclamunrar_la-timefn.lo `test -f '../libclamunrar/timefn.cpp' || echo '$(srcdir)/'`../libclamunrar/timefn.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-timefn.Tpo $(DEPDIR)/libclamunrar_la-timefn.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/timefn.cpp' object='libclamunrar_la-timefn.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-timefn.lo `test -f '../libclamunrar/timefn.cpp' || echo '$(srcdir)/'`../libclamunrar/timefn.cpp
+
+libclamunrar_la-ui.lo: ../libclamunrar/ui.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-ui.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-ui.Tpo -c -o libclamunrar_la-ui.lo `test -f '../libclamunrar/ui.cpp' || echo '$(srcdir)/'`../libclamunrar/ui.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-ui.Tpo $(DEPDIR)/libclamunrar_la-ui.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/ui.cpp' object='libclamunrar_la-ui.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-ui.lo `test -f '../libclamunrar/ui.cpp' || echo '$(srcdir)/'`../libclamunrar/ui.cpp
+
+libclamunrar_la-unicode.lo: ../libclamunrar/unicode.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-unicode.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-unicode.Tpo -c -o libclamunrar_la-unicode.lo `test -f '../libclamunrar/unicode.cpp' || echo '$(srcdir)/'`../libclamunrar/unicode.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-unicode.Tpo $(DEPDIR)/libclamunrar_la-unicode.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/unicode.cpp' object='libclamunrar_la-unicode.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-unicode.lo `test -f '../libclamunrar/unicode.cpp' || echo '$(srcdir)/'`../libclamunrar/unicode.cpp
+
+libclamunrar_la-unpack.lo: ../libclamunrar/unpack.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-unpack.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-unpack.Tpo -c -o libclamunrar_la-unpack.lo `test -f '../libclamunrar/unpack.cpp' || echo '$(srcdir)/'`../libclamunrar/unpack.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-unpack.Tpo $(DEPDIR)/libclamunrar_la-unpack.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/unpack.cpp' object='libclamunrar_la-unpack.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-unpack.lo `test -f '../libclamunrar/unpack.cpp' || echo '$(srcdir)/'`../libclamunrar/unpack.cpp
+
+libclamunrar_la-volume.lo: ../libclamunrar/volume.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -MT libclamunrar_la-volume.lo -MD -MP -MF $(DEPDIR)/libclamunrar_la-volume.Tpo -c -o libclamunrar_la-volume.lo `test -f '../libclamunrar/volume.cpp' || echo '$(srcdir)/'`../libclamunrar/volume.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamunrar_la-volume.Tpo $(DEPDIR)/libclamunrar_la-volume.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar/volume.cpp' object='libclamunrar_la-volume.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamunrar_la_CXXFLAGS) $(CXXFLAGS) -c -o libclamunrar_la-volume.lo `test -f '../libclamunrar/volume.cpp' || echo '$(srcdir)/'`../libclamunrar/volume.cpp
+
+unrar_iface.lo: ../libclamunrar_iface/unrar_iface.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT unrar_iface.lo -MD -MP -MF $(DEPDIR)/unrar_iface.Tpo -c -o unrar_iface.lo `test -f '../libclamunrar_iface/unrar_iface.cpp' || echo '$(srcdir)/'`../libclamunrar_iface/unrar_iface.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unrar_iface.Tpo $(DEPDIR)/unrar_iface.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../libclamunrar_iface/unrar_iface.cpp' object='unrar_iface.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o unrar_iface.lo `test -f '../libclamunrar_iface/unrar_iface.cpp' || echo '$(srcdir)/'`../libclamunrar_iface/unrar_iface.cpp
 
 .l.c:
 	$(AM_V_LEX)$(am__skiplex) $(SHELL) $(YLWRAP) $< $(LEX_OUTPUT_ROOT).c $@ -- $(LEXCOMPILE)

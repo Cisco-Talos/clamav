@@ -644,7 +644,7 @@ fileblobScan(const fileblob *fb)
             virus_found = 1;
         }
 
-	rc = cli_magic_scandesc(fb->fd, fb->ctx);
+	rc = cli_magic_scandesc(fb->fd, fb->fullname, fb->ctx);
 	if(rc == CL_VIRUS || virus_found != 0) {
 		cli_dbgmsg("%s is infected\n", fb->fullname);
 		return CL_VIRUS;

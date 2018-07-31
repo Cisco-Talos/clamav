@@ -28,7 +28,7 @@
 
 #include "others.h"
 
-typedef int (*zip_cb)(int fd, cli_ctx *ctx);
+typedef int (*zip_cb)(int fd, const char *filepath, cli_ctx *ctx);
 #define zip_scan_cb cli_magic_scandesc
 
 #define MAX_ZIP_REQUESTS 10

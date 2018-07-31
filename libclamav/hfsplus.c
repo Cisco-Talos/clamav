@@ -407,7 +407,7 @@ static int hfsplus_scanfile(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsHea
 
     /* if successful so far, scan the output */
     if (ret == CL_CLEAN) {
-        ret = cli_magic_scandesc(ofd, ctx);
+        ret = cli_magic_scandesc(ofd, tmpname, ctx);
     }
 
     if (ofd >= 0) {

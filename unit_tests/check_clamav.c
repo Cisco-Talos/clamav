@@ -175,7 +175,7 @@ START_TEST (test_cl_scandesc)
 
     int fd = get_test_file(_i, file, sizeof(file), &size);
     cli_dbgmsg("scanning (scandesc) %s\n", file);
-    ret = cl_scandesc(fd, &virname, &scanned, g_engine, &options);
+    ret = cl_scandesc(fd, file, &virname, &scanned, g_engine, &options);
     cli_dbgmsg("scan end (scandesc) %s\n", file);
 
     if (!FALSE_NEGATIVE) {
@@ -201,7 +201,7 @@ START_TEST (test_cl_scandesc_allscan)
 
     int fd = get_test_file(_i, file, sizeof(file), &size);
     cli_dbgmsg("scanning (scandesc) %s\n", file);
-    ret = cl_scandesc(fd, &virname, &scanned, g_engine, &options);
+    ret = cl_scandesc(fd, file, &virname, &scanned, g_engine, &options);
 
     cli_dbgmsg("scan end (scandesc) %s\n", file);
 
@@ -338,7 +338,7 @@ START_TEST (test_cl_scandesc_callback)
 
     cli_dbgmsg("scanning (scandesc_cb) %s\n", file);
     /* TODO: test callbacks */
-    ret = cl_scandesc_callback(fd, &virname, &scanned, g_engine, &options, NULL);
+    ret = cl_scandesc_callback(fd, file, &virname, &scanned, g_engine, &options, NULL);
     cli_dbgmsg("scan end (scandesc_cb) %s\n", file);
 
     if (!FALSE_NEGATIVE) {
@@ -366,7 +366,7 @@ START_TEST (test_cl_scandesc_callback_allscan)
 
     cli_dbgmsg("scanning (scandesc_cb_allscan) %s\n", file);
     /* TODO: test callbacks */
-    ret = cl_scandesc_callback(fd, &virname, &scanned, g_engine, &options, NULL);
+    ret = cl_scandesc_callback(fd, file, &virname, &scanned, g_engine, &options, NULL);
     cli_dbgmsg("scan end (scandesc_cb_allscan) %s\n", file);
 
     if (!FALSE_NEGATIVE) {
@@ -537,7 +537,7 @@ START_TEST (test_cl_scanmap_callback_handle)
     fail_unless(!!map, "cl_fmap_open_handle");
 
     cli_dbgmsg("scanning (handle) %s\n", file);
-    ret = cl_scanmap_callback(map, &virname, &scanned, g_engine, &options, NULL);
+    ret = cl_scanmap_callback(map, file, &virname, &scanned, g_engine, &options, NULL);
     cli_dbgmsg("scan end (handle) %s\n", file);
 
     if (!FALSE_NEGATIVE) {
@@ -568,11 +568,11 @@ START_TEST (test_cl_scanmap_callback_handle_allscan)
     fail_unless(!!map, "cl_fmap_open_handle %s");
 
     cli_dbgmsg("scanning (handle) allscan %s\n", file);
-    ret = cl_scanmap_callback(map, &virname, &scanned, g_engine, &options, NULL);
+    ret = cl_scanmap_callback(map, file, &virname, &scanned, g_engine, &options, NULL);
     cli_dbgmsg("scan end (handle) allscan %s\n", file);
 
     if (!FALSE_NEGATIVE) {
-      fail_unless_fmt(ret == CL_VIRUS, "cl_scanmap_callback_allscan failed for %s: %s", file, cl_strerror(ret));
+      fail_unless_fmt(ret == CL_VIRUS, "cl_scanmap_callback allscan failed for %s: %s", file, cl_strerror(ret));
       fail_unless_fmt(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", virname);
     }
     close(fd);
@@ -603,7 +603,7 @@ START_TEST (test_cl_scanmap_callback_mem)
     fail_unless(!!map, "cl_fmap_open_mem");
 
     cli_dbgmsg("scanning (mem) %s\n", file);
-    ret = cl_scanmap_callback(map, &virname, &scanned, g_engine, &options, NULL);
+    ret = cl_scanmap_callback(map, file, &virname, &scanned, g_engine, &options, NULL);
     cli_dbgmsg("scan end (mem) %s\n", file);
     if (!FALSE_NEGATIVE) {
       fail_unless_fmt(ret == CL_VIRUS, "cl_scanmap_callback failed for %s: %s", file, cl_strerror(ret));
@@ -641,10 +641,10 @@ START_TEST (test_cl_scanmap_callback_mem_allscan)
     fail_unless(!!map, "cl_fmap_open_mem %s");
 
     cli_dbgmsg("scanning (mem) allscan %s\n", file);
-    ret = cl_scanmap_callback(map, &virname, &scanned, g_engine, &options, NULL);
+    ret = cl_scanmap_callback(map, file, &virname, &scanned, g_engine, &options, NULL);
     cli_dbgmsg("scan end (mem) allscan %s\n", file);
     if (!FALSE_NEGATIVE) {
-      fail_unless_fmt(ret == CL_VIRUS, "cl_scanmap_callback failed for %s: %s", file, cl_strerror(ret));
+      fail_unless_fmt(ret == CL_VIRUS, "cl_scanmap_callback allscan failed for %s: %s", file, cl_strerror(ret));
       fail_unless_fmt(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s for %s", virname, file);
     }
     close(fd);
