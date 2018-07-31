@@ -783,7 +783,7 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
 #else
     new_offset = offset + (nlines * HWP3_LINEINFO_SIZE);
     if ((new_offset < offset) || (new_offset >= map->len)) {
-        cli_errmsg("HWP3.x: Paragraph[%d, %d]: length value is too high, invalid. %u\n", level, p, nlines);
+        cli_errmsg("HWP3.x: Paragraph[%d, %d]: nlines value is too high, invalid. %u\n", level, p, nlines);
         return CL_EPARSE;
     }
     offset = new_offset;
@@ -882,7 +882,7 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
 
                     length = le32_to_host(length);
                     new_offset = offset + (8 + length);
-                    if ((new_offset <= offset) || (new_offset >= map->len)) {
+                    if ((new_offset <= offset) || (new_offset > map->len)) {
                         cli_errmsg("HWP3.x: Paragraph[%d, %d]: length value is too high, invalid. %u\n", level, p, length);
                         return CL_EPARSE;
                     }
@@ -915,7 +915,7 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
 
                     length = le32_to_host(length);
                     new_offset = offset + (8 + length);
-                    if ((new_offset <= offset) || (new_offset >= map->len)) {
+                    if ((new_offset <= offset) || (new_offset > map->len)) {
                         cli_errmsg("HWP3.x: Paragraph[%d, %d]: length value is too high, invalid. %u\n", level, p, length);
                         return CL_EPARSE;
                     }
@@ -1460,7 +1460,7 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
 
                     length = le32_to_host(length);
                     new_offset = offset + (8 + length);
-                    if ((new_offset <= offset) || (new_offset >= map->len)) {
+                    if ((new_offset <= offset) || (new_offset > map->len)) {
                         cli_errmsg("HWP3.x: Paragraph[%d, %d]: length value is too high, invalid. %u\n", level, p, length);
                         return CL_EPARSE;
                     }
