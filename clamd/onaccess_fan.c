@@ -359,7 +359,7 @@ static int cauth_scanfile(const char *fname, int extinfo, struct thrarg *tharg)
     if(fd == -1)
 	return -1;
 
-    if(cl_scandesc_callback(fd, &virname, NULL, tharg->engine, tharg->options, &context) == CL_VIRUS) {
+    if(cl_scandesc_callback(fd, fname, &virname, NULL, tharg->engine, tharg->options, &context) == CL_VIRUS) {
 	if(extinfo && context.virsize)
 	    logg("ScanOnAccess: %s: %s(%s:%llu) FOUND\n", fname, virname, context.virhash, context.virsize);
 	else

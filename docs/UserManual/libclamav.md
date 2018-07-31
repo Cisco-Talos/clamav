@@ -259,6 +259,7 @@ It’s possible to scan a file or descriptor using:
 
     int cl_scandesc(
         int desc,
+        const char *filename,
         const char **virname,
         unsigned long int *scanned,
         const struct cl_engine *engine,

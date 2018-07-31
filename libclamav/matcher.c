@@ -593,7 +593,11 @@ int cli_checkfp_virus(unsigned char *digest, size_t size, cli_ctx *ctx, const ch
             for(i=0; i<SHA1_HASH_SIZE; i++)
                 sprintf((char *)shash1+i*2, "%02x", shash1[SHA1_HASH_SIZE+i]);
 
-            cli_errmsg("COLLECT:%s:%s:%u:%s:%s\n", shash256, shash1, size, vname?vname:"noname", ctx->entry_filename);
+            if (NULL == ctx->target_filepath) {
+                cli_errmsg("COLLECT:%s:%s:%u:%s:%s\n", shash256, shash1, size, vname?vname:"noname", "NO_IDEA");
+            } else {
+                cli_errmsg("COLLECT:%s:%s:%u:%s:%s\n", shash256, shash1, size, vname?vname:"noname", ctx->target_filepath);
+            }
         } else
             cli_errmsg("can't compute sha\n!");
 

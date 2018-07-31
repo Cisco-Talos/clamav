@@ -24,11 +24,11 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\libclamunrar_iface\unrar_iface.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="compat\snprintf.c">
       <Filter>Source Files\compat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamunrar_iface\unrar_iface.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -186,7 +186,7 @@ int cli_7unz (cli_ctx *ctx, size_t offset) {
 		if((size_t)cli_writen(fd, outBuffer + offset, outSizeProcessed) != outSizeProcessed)
 		    found = CL_EWRITE;
 		else
-		    if ((found = cli_magic_scandesc(fd, ctx)) == CL_VIRUS)
+		    if ((found = cli_magic_scandesc(fd, name, ctx)) == CL_VIRUS)
 			viruses_found++;
 		close(fd);
 		if(!ctx->engine->keeptmp && cli_unlink(name))

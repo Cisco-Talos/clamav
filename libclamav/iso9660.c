@@ -81,7 +81,7 @@ static int iso_scan_file(const iso9660_t *iso, unsigned int block, unsigned int 
     }
 
     if (!len)
-        ret = cli_magic_scandesc(fd, iso->ctx);
+        ret = cli_magic_scandesc(fd, tmpf, iso->ctx);
 
     close(fd);
     if(!iso->ctx->engine->keeptmp) {

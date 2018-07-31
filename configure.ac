@@ -22,6 +22,9 @@ dnl For a release change [devel] to the real version [0.xy]
 dnl also change VERSION below
 AC_INIT([ClamAV], [0.101.0], [https://bugzilla.clamav.net/], [clamav], [https://www.clamav.net/])
 
+dnl enable C++
+AC_PROG_CXX()
+
 AH_BOTTOM([#include "platform.h"])
 dnl put configure auxiliary into config
 AC_CONFIG_AUX_DIR([config])
@@ -36,6 +39,8 @@ dnl -Wall and -Werror here are NOT CFLAGS, they refer to automake warnings
 dnl enable stealth builds and psychedelic tests
 AM_INIT_AUTOMAKE([1.11 -Wall -Wportability -Wno-override std-options foreign dist-bzip2 no-define color-tests parallel-tests tar-ustar])
 AM_SILENT_RULES([yes])
+
+m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 
 dnl we told automake to not define these, since we want to include
 dnl the date in the version
@@ -144,7 +149,6 @@ if test "x$use_internal_mspack" = "xyes"; then
 else
     mspack_msg="External, $LIBMSPACK_CFLAGS $LIBMSPACK_LIBS"
 fi
-
 
 AC_CONFIG_FILES([
 clamscan/Makefile

@@ -1350,7 +1350,7 @@ static int pdf_scan_contents(int fd, struct pdf_struct *pdf)
     cli_writen(fout, s.out, s.out_pos);
 
     lseek(fout, 0, SEEK_SET);
-    rc = cli_magic_scandesc(fout, pdf->ctx);
+    rc = cli_magic_scandesc(fout, fullname, pdf->ctx);
     close(fout);
 
     if (!pdf->ctx->engine->keeptmp)
@@ -1722,7 +1722,7 @@ int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
 
         /* TODO: invoke bytecode on this pdf obj with metainformation associated */
         lseek(fout, 0, SEEK_SET);
-        rc2 = cli_magic_scandesc(fout, pdf->ctx);
+        rc2 = cli_magic_scandesc(fout, fullname, pdf->ctx);
         if (rc2 == CL_VIRUS || rc == CL_SUCCESS)
             rc = rc2;
 

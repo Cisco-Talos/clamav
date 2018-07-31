@@ -26,6 +26,7 @@ EXTRA_DIST = c++/Makefile.nollvm.in libmspack-0.5alpha/Makefile.intmspack.in
 if ENABLE_UNRAR
 
 AM_CPPFLAGS += -DWARN_DLOPEN_FAIL
+libclamunrar_la_CXXFLAGS = $(AM_CPPFLAGS) -DRARDLL -Wno-logical-op-parentheses -Wno-switch -Wno-dangling-else
 libclamunrar_la_LDFLAGS = @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@ -no-undefined
 
 if VERSIONSCRIPT
@@ -33,23 +34,56 @@ libclamunrar_la_LDFLAGS += -Wl,@VERSIONSCRIPTFLAG@,@top_srcdir@/libclamunrar/lib
 endif
 
 libclamunrar_la_SOURCES = \
-	../libclamunrar/unrar15.c \
-	../libclamunrar/unrar20.h \
-	../libclamunrar/unrar.h \
-	../libclamunrar/unrar15.h \
-	../libclamunrar/unrar.c \
-	../libclamunrar/unrar20.c \
-	../libclamunrar/unrarcmd.h \
-	../libclamunrar/unrarfilter.h \
-	../libclamunrar/unrarppm.c \
-	../libclamunrar/unrarvm.c \
-	../libclamunrar/unrarcmd.c \
-	../libclamunrar/unrarfilter.c \
-	../libclamunrar/unrar.h \
-	../libclamunrar/unrarppm.h \
-	../libclamunrar/unrarvm.h \
-	../libclamunrar/unrarhlp.c \
-	../libclamunrar/unrarhlp.h
+	../libclamunrar/archive.cpp \
+	../libclamunrar/arcread.cpp \
+	../libclamunrar/blake2s.cpp \
+	../libclamunrar/cmddata.cpp \
+	../libclamunrar/consio.cpp \
+	../libclamunrar/crc.cpp \
+	../libclamunrar/crypt.cpp \
+	../libclamunrar/dll.cpp \
+	../libclamunrar/encname.cpp \
+	../libclamunrar/errhnd.cpp \
+	../libclamunrar/extinfo.cpp \
+	../libclamunrar/extract.cpp \
+	../libclamunrar/filcreat.cpp \
+	../libclamunrar/file.cpp \
+	../libclamunrar/filefn.cpp \
+	../libclamunrar/filestr.cpp \
+	../libclamunrar/find.cpp \
+	../libclamunrar/getbits.cpp \
+	../libclamunrar/global.cpp \
+	../libclamunrar/hash.cpp \
+	../libclamunrar/headers.cpp \
+	../libclamunrar/isnt.cpp \
+	../libclamunrar/list.cpp \
+	../libclamunrar/match.cpp \
+	../libclamunrar/options.cpp \
+	../libclamunrar/pathfn.cpp \
+	../libclamunrar/qopen.cpp \
+	../libclamunrar/rar.cpp \
+	../libclamunrar/rarvm.cpp \
+	../libclamunrar/rawread.cpp \
+	../libclamunrar/rdwrfn.cpp \
+	../libclamunrar/recvol.cpp \
+	../libclamunrar/resource.cpp \
+	../libclamunrar/rijndael.cpp \
+	../libclamunrar/rs.cpp \
+	../libclamunrar/rs16.cpp \
+	../libclamunrar/scantree.cpp \
+	../libclamunrar/secpassword.cpp \
+	../libclamunrar/sha1.cpp \
+	../libclamunrar/sha256.cpp \
+	../libclamunrar/smallfn.cpp \
+	../libclamunrar/strfn.cpp \
+	../libclamunrar/strlist.cpp \
+	../libclamunrar/system.cpp \
+	../libclamunrar/threadpool.cpp \
+	../libclamunrar/timefn.cpp \
+	../libclamunrar/ui.cpp \
+	../libclamunrar/unicode.cpp \
+	../libclamunrar/unpack.cpp \
+	../libclamunrar/volume.cpp
 
 lib_LTLIBRARIES += libclamunrar.la
 EXTRA_DIST += @top_srcdir@/libclamunrar/libclamunrar.map
@@ -63,7 +97,7 @@ libclamunrar_iface_la_LDFLAGS += -Wl,@VERSIONSCRIPTFLAG@,@top_srcdir@/libclamunr
 endif
 
 libclamunrar_iface_la_SOURCES = \
-	../libclamunrar_iface/unrar_iface.c \
+	../libclamunrar_iface/unrar_iface.cpp \
 	../libclamunrar_iface/unrar_iface.h
 
 lib_LTLIBRARIES += libclamunrar_iface.la

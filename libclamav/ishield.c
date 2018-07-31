@@ -304,7 +304,7 @@ int cli_scanishield_msi(cli_ctx *ctx, off_t off) {
             cli_dbgmsg("ishield-msi: call to lseek() failed\n");
             ret = CL_ESEEK;
         }
-	    ret = cli_magic_scandesc(ofd, ctx);
+	    ret = cli_magic_scandesc(ofd, tempfile, ctx);
 	}
 	close(ofd);
 
@@ -487,7 +487,7 @@ static int is_dump_and_scan(cli_ctx *ctx, off_t off, size_t fsize) {
         cli_dbgmsg("ishield: call to lseek() failed\n");
         ret = CL_ESEEK;
     }
-	ret = cli_magic_scandesc(ofd, ctx);
+	ret = cli_magic_scandesc(ofd, fname, ctx);
     }
     close(ofd);
     if(!ctx->engine->keeptmp)
@@ -786,7 +786,7 @@ static int is_extract_cab(cli_ctx *ctx, uint64_t off, uint64_t size, uint64_t cs
 	    cli_dbgmsg("is_extract_cab: extracted to %s\n", tempfile);
 	if (lseek(ofd, 0, SEEK_SET) == -1)
         cli_dbgmsg("is_extract_cab: call to lseek() failed\n");
-	ret = cli_magic_scandesc(ofd, ctx);
+	ret = cli_magic_scandesc(ofd, tempfile, ctx);
     }
 
     close(ofd);

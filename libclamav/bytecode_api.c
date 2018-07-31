@@ -530,7 +530,7 @@ int32_t cli_bcapi_extract_new(struct cli_bc_ctx *ctx, int32_t id)
             size_t csize = cli_get_container_size(cctx, -2);
             cli_set_container(cctx, ctx->containertype, csize);
         }
-        res = cli_magic_scandesc(ctx->outfd, cctx);
+        res = cli_magic_scandesc(ctx->outfd, ctx->tempfile, cctx);
         cctx->recursion--;
         if (res == CL_VIRUS) {
             ctx->virname = cli_get_last_virus(cctx);

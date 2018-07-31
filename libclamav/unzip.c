@@ -296,7 +296,7 @@ static int unz(const uint8_t *src, uint32_t csize, uint32_t usize, uint16_t meth
         close(of);
         return CL_ESEEK;
     }
-    ret = zcb(of, ctx);
+    ret = zcb(of, tempfile, ctx);
     close(of);
     if(!ctx->engine->keeptmp)
       if(cli_unlink(tempfile)) ret = CL_EUNLINK;

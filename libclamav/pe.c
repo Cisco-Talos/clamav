@@ -190,7 +190,7 @@ if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) { \
         lseek(ndesc, 0, SEEK_SET); \
         cli_dbgmsg("***** Scanning rebuilt PE file *****\n"); \
         SHA_OFF; \
-        if(cli_magic_scandesc(ndesc, ctx) == CL_VIRUS) { \
+        if(cli_magic_scandesc(ndesc, tempfile, ctx) == CL_VIRUS) { \
             close(ndesc); \
             CLI_TMPUNLK(); \
             free(tempfile); \
@@ -4535,7 +4535,7 @@ int cli_scanpe(cli_ctx *ctx)
 
         cli_dbgmsg("***** Scanning decompressed file *****\n");
         SHA_OFF;
-        if((ret = cli_magic_scandesc(ndesc, ctx)) == CL_VIRUS) {
+        if((ret = cli_magic_scandesc(ndesc, tempfile, ctx)) == CL_VIRUS) {
             close(ndesc);
             CLI_TMPUNLK();
             free(tempfile);

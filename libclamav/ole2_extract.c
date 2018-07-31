@@ -1187,7 +1187,7 @@ scan_mso_stream(int fd, cli_ctx *ctx)
     }
 
     /* scanning inflated stream */
-    ret = cli_magic_scandesc(ofd, ctx);
+    ret = cli_magic_scandesc(ofd, tmpname, ctx);
 
     /* clean-up */
  mso_end:
@@ -1381,7 +1381,7 @@ handler_otf(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * c
     if (hdr->is_hwp) {
         if (!name)
             name = get_property_name2(prop->name, prop->name_size);
-        ret = cli_scanhwp5_stream(ctx, hdr->is_hwp, name, ofd);
+        ret = cli_scanhwp5_stream(ctx, hdr->is_hwp, name, ofd, tempfile);
     } else if (is_mso < 0) {
         ret = CL_ESEEK;
     } else if (is_mso) {
@@ -1389,7 +1389,7 @@ handler_otf(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * c
         ret = scan_mso_stream(ofd, ctx);
     } else {
         /* Normal File Scan */
-        ret = cli_magic_scandesc(ofd, ctx);
+        ret = cli_magic_scandesc(ofd, tempfile, ctx);
     }
     if (name)
         free(name);
