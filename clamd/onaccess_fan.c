@@ -72,7 +72,7 @@ static void onas_fan_exit(int sig)
 static int onas_fan_scanfile(int fan_fd, const char *fname, struct fanotify_event_metadata *fmd, int scan, int extinfo, struct thrarg *tharg)
 {
 	struct fanotify_response res;
-	const char *virname;
+	const char *virname = NULL;
 	int ret = 0;
 
     res.fd = fmd->fd;
@@ -336,7 +336,7 @@ static void cauth_exit(int sig)
 static int cauth_scanfile(const char *fname, int extinfo, struct thrarg *tharg)
 {
 	struct cb_context context;
-	const char *virname;
+	const char *virname = NULL;
 	int ret = 0, fd;
 
     context.filename = fname;

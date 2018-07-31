@@ -57,7 +57,7 @@ static void onas_scth_exit(int sig) {
 static int onas_scth_scanfile(const char *fname, int fd, int extinfo, struct scth_thrarg *tharg)
 {
     int ret = 0;
-    const char *virname;
+    const char *virname = NULL;
 
     return onas_scan(fname, fd, &virname, tharg->engine, tharg->options, extinfo);
 }
