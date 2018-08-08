@@ -120,6 +120,16 @@ time_t timegm(struct tm *t)
 }
 #endif
 
+
+/**
+ * @brief This function initializes the openssl crypto system
+ *
+ * Called by cl_init() and does not need to be cleaned up as de-init
+ * is handled automatically by openssl 1.0.2.h and 1.1.0
+ *
+ * @return Always returns 0
+ *
+ */
 int cl_initialize_crypto(void)
 {
     SSL_load_error_strings();
@@ -132,9 +142,16 @@ int cl_initialize_crypto(void)
     return 0;
 }
 
+/**
+ * @brief This is a deprecated function that used to clean up ssl crypto inits
+ * 
+ * Call to EVP_cleanup() has been removed since cleanup is now handled by 
+ * auto-deinit as of openssl 1.0.2h and 1.1.0 
+ *
+ */
 void cl_cleanup_crypto(void)
 {
-    EVP_cleanup();
+    return;
 }
 
 unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsigned char *obuf, unsigned int *olen)
