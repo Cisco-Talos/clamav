@@ -197,13 +197,22 @@ struct cl_engine;
 struct cl_settings;
 
 /**
- * Initialize the crypto system.
+ * @brief This function initializes the openssl crypto system
+ *
+ * Called by cl_init() and does not need to be cleaned up as de-init
+ * is handled automatically by openssl 1.0.2.h and 1.1.0
+ *
  * @return Always returns 0
- */
+ *
+ */ 
 int cl_initialize_crypto(void);
 
 /**
- * Cleanup the crypto system prior to program exit
+ * @brief This is a deprecated function that used to clean up ssl crypto inits
+ * 
+ * Call to EVP_cleanup() has been removed since cleanup is now handled by 
+ * auto-deinit as of openssl 1.0.2h and 1.1.0 
+ *
  */
 void cl_cleanup_crypto(void);
 
