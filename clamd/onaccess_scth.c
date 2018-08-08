@@ -133,10 +133,10 @@ void *onas_scan_th(void *arg) {
 	sigaction(SIGSEGV, &act, NULL);
 
 	if (tharg->options & ONAS_SCTH_ISDIR) {
-		logg("ScanOnAccess: Performing additional scanning on directory '%s'\n", tharg->pathname);
+		logg("*ScanOnAccess: Performing additional scanning on directory '%s'\n", tharg->pathname);
 		onas_scth_handle_dir(tharg->pathname, tharg);
 	} else if (tharg->options & ONAS_SCTH_ISFILE) {
-		logg("ScanOnAccess: Performing additional scanning on file '%s'\n", tharg->pathname);
+		logg("*ScanOnAccess: Performing additional scanning on file '%s'\n", tharg->pathname);
 		onas_scth_handle_file(tharg->pathname, tharg);
 	}
 
