@@ -50,14 +50,29 @@ struct cli_pcre_off {
 #define CLI_PCRE_GLOBAL    0x00000001 /* g */
 #define CLI_PCRE_ENCOMPASS 0x00000002 /* e */
 #define CLI_PCRE_ROLLING   0x00000004 /* r */
+#define CLI_PCRE_BCOMP     0x00000008 /* z */ 
 
 #define CLI_PCRE_DISABLED  0x80000000 /* used for dconf or fail to build */
+
+#define CLI_PCRE_BCOMP_HEX 0x10
+#define CLI_PCRE_BCOMP_DEC 0x20
+#define CLI_PCRE_BCOMP_LE  0x01 
+#define CLI_PCRE_BCOMP_BE  0x02
+
+struct cli_pcre_bcomp {
+    size_t offset;
+    uint32_t options;
+    size_t byte_len;
+    char comp_symbol;
+    uint32_t comp_value;
+};
 
 struct cli_pcre_meta {
     char *trigger;
     char *virname;
     uint32_t lsigid[3]; /* 0=valid, 1=lsigid, 2=subsigid */
     struct cli_pcre_data pdata;
+    struct cli_pcre_bcomp bcmp_data;
     /* clamav offset data */
     uint32_t offdata[4];
     uint32_t offset_min, offset_max;
