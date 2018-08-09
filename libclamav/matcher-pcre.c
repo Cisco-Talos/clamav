@@ -325,6 +325,10 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *virname, const char *
             case 'g':  pm->flags |= CLI_PCRE_GLOBAL;            break;
             case 'r':  pm->flags |= CLI_PCRE_ROLLING;           break;
             case 'e':  pm->flags |= CLI_PCRE_ENCOMPASS;         break;
+            case 'z':  if(CL_SUCCESS == cli_pcre_addbytecomp(&opt, &pm->bcmp_data)) {
+                           pm->flags |= CLI_PCRE_BCOMP;
+                           break;
+                       }
             default:
                 cli_errmsg("cli_pcre_addpatt: unknown/extra pcre option encountered %c\n", *opt);
                 cli_pcre_freemeta(root, pm);
@@ -342,6 +346,18 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *virname, const char *
         }
         else
             pm_dbgmsg("Matcher:  NONE\n");
+
+        if (pm->flags && pm->flags & CLI_PCRE_BCOMP) {
+            pm_dbgmsg("Matcher Byte Compare: (%zu#%c%c%zu#%c%d)\n",
+                      pm->bcmp_data.offset,
+                      pm->bcmp_data.options & CLI_PCRE_BCOMP_HEX ? 'h' : 'd',
+                      pm->bcmp_data.options & CLI_PCRE_BCOMP_LE ? 'l' : 'b',
+                      pm->bcmp_data.byte_len,
+                      pm->bcmp_data.comp_symbol,
+                      pm->bcmp_data.comp_value);
+        }
+        else
+            pm_dbgmsg("Matcher Byte Compare:  NONE\n");
 
         if (pm->pdata.options) {
 #if USING_PCRE2
@@ -390,6 +406,125 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *virname, const char *
 
     root->pcre_metas = pcre_count;
 
+    return CL_SUCCESS;
+}
+
+int cli_pcre_addbytecomp (const char **opt, struct cli_pcre_bcomp *bcomp) {
+
+    if (!opt || !(*opt) || !bcomp)
+        return CL_ENULLARG;
+
+    size_t len = 0;
+    const char *buf_start = ++(*opt);
+    const char *buf_end = NULL;
+    char *buf = NULL;
+    const char *tokens[3];
+    size_t toks = 0;
+    uint64_t offset_param = 0;
+    size_t byte_length = 0;
+    uint32_t comp_val = 0;
+
+    memset(bcomp, 0, sizeof(struct cli_pcre_bcomp));
+
+
+
+    if (**opt == '(') {
+        if (buf_end = strchr(buf_start, ')')) {
+            len = (size_t) (buf_end - ++buf_start);
+        }
+        else {
+            cli_errmsg("cli_pcre_addbytecomp: ending paren not found\n");
+            return CL_EMALFDB;
+        }
+    }
+    else {
+            cli_errmsg("cli_pcre_addbytecomp: opening paren not found\n");
+            return CL_EMALFDB;
+    }
+
+    buf = cli_strndup(buf_start, len);
+    pm_dbgmsg("buf: %s\n", buf);
+    *opt += len+1;
+    pm_dbgmsg("opt_pos: %c\n", **opt);
+
+    toks = cli_strtokenize(buf, '#', 3+1, tokens);
+    if (3 != toks) {
+        cli_errmsg("cli_pcre_addbytecomp: %zu params provided, 3 expected\n", toks);
+        free(buf);
+        return CL_EMALFDB;
+    }
+
+    buf_end = NULL;
+    offset_param = strtol(tokens[0], (char**) &buf_end, 0);
+    if (buf_end && buf_end+1 != tokens[1]) {
+        cli_errmsg("cli_pcre_addbytecomp: while parsing (%s#%s#%s), offset parameter included invalid characters\n", tokens[0], tokens[1], tokens[2]);
+        free(buf);
+        return CL_EMALFDB;
+    }
+
+    bcomp->offset = offset_param;
+
+    buf_start = tokens[1];
+
+    switch (*buf_start) {
+        case 'h': bcomp->options |= CLI_PCRE_BCOMP_HEX;    break;
+        case 'd': bcomp->options |= CLI_PCRE_BCOMP_DEC;    break;
+
+        default:
+            cli_errmsg("cli_pcre_addbytecomp: while parsing (%s#%s#%s), hex/decimal byte length indicator was found invalid\n", tokens[0], tokens[1], tokens[2]);
+            free(buf);
+            return CL_EMALFDB;
+    }
+
+
+    buf_start++;
+    switch (*buf_start) {
+        case 'l': bcomp->options |= CLI_PCRE_BCOMP_LE;    break;
+        case 'b': bcomp->options |= CLI_PCRE_BCOMP_BE;    break;
+
+        default:
+            cli_errmsg("cli_pcre_addbytecomp: while parsing (%s#%s#%s), little/big endian byte length indicator was invalid\n", tokens[0], tokens[1], tokens[2]);
+            free(buf);
+            return CL_EMALFDB;
+    }
+
+    buf_start++;
+    buf_end = NULL;
+    byte_length = strtol(buf_start, (char **) &buf_end, 0);
+    if (buf_end && buf_end+1 != tokens[2]) {
+        cli_errmsg("cli_pcre_addbytecomp: while parsing (%s#%s#%s), byte length parameter included invalid characters\n", tokens[0], tokens[1], tokens[3]);
+        free(buf);
+        return CL_EMALFDB;
+    }
+
+    bcomp->byte_len = byte_length;
+
+    buf_start = tokens[2];
+    pm_dbgmsg("tokens2: %c\n", *tokens[2]);
+    switch (*buf_start) {
+        case '<':
+        case '>':
+        case '=':
+            bcomp->comp_symbol = *buf_start;    break;
+
+        default:
+            cli_errmsg("cli_pcre_addbytecomp: while parsing (%s#%s#%s), byte comparison symbol was invalid (>, <, = are supported operators)\n", tokens[0], tokens[1], tokens[2]);
+            free(buf);
+            return CL_EMALFDB;
+    }
+
+    buf_start++;
+    buf_end = NULL;
+    comp_val = strtol(buf_start, (char **) &buf_end, 0);
+    if (*buf_end) {
+        cli_errmsg("cli_pcre_addbytecomp: while parsing (%s#%s#%s), comparison value contained invalid input\n", tokens[0], tokens[1], tokens[2]);
+        free(buf);
+        return CL_EMALFDB;
+    }
+
+    bcomp->comp_value = comp_val;
+
+    free(buf);
     return CL_SUCCESS;
 }
 
@@ -764,6 +899,11 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const char **
         if (ret != CL_SUCCESS)
             break;
     }
+    
+    /* hijack pcre matches for byte comparison 
+    if (pm.comp) {
+        pm_dbgmsg("cli_pcre_scanbuf: assigning lsigcnt[%d][%d], located @ %d\n",
+    }*/
 
     /* free match results */
     cli_pcre_results_free(&p_res);
