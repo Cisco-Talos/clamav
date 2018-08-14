@@ -184,7 +184,7 @@ struct cli_bc_ctx {
     uint32_t lsigcnt[64];
     uint32_t lsigoff[64];
     uint32_t pdf_nobjs;
-    struct pdf_obj *pdf_objs;
+    struct pdf_obj **pdf_objs;
     uint32_t* pdf_flags;
     uint32_t pdf_size;
     uint32_t pdf_startoff;

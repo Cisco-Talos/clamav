@@ -1427,7 +1427,7 @@ uint32_t cli_bcapi_check_platform(struct cli_bc_ctx *ctx , uint32_t a, uint32_t 
 
 int cli_bytecode_context_setpdf(struct cli_bc_ctx *ctx, unsigned phase,
                                 unsigned nobjs,
-                                struct pdf_obj *objs, uint32_t *pdf_flags,
+                                struct pdf_obj **objs, uint32_t *pdf_flags,
                                 uint32_t pdfsize, uint32_t pdfstartoff)
 {
     ctx->pdf_nobjs = nobjs;
@@ -1470,7 +1470,7 @@ int32_t cli_bcapi_pdf_lookupobj(struct cli_bc_ctx *ctx , uint32_t objid)
     if (!ctx->pdf_phase)
         return -1;
     for (i=0;i<ctx->pdf_nobjs;i++) {
-        if (ctx->pdf_objs[i].id == objid)
+        if (ctx->pdf_objs[i]->id == objid)
             return i;
     }
     return -1;
@@ -1484,8 +1484,8 @@ uint32_t cli_bcapi_pdf_getobjsize(struct cli_bc_ctx *ctx , int32_t objidx)
        )
         return 0;
     if ((uint32_t)(objidx + 1) == ctx->pdf_nobjs)
-        return ctx->pdf_size - ctx->pdf_objs[objidx].start;
-    return ctx->pdf_objs[objidx+1].start - ctx->pdf_objs[objidx].start - 4;
+        return ctx->pdf_size - ctx->pdf_objs[objidx]->start;
+    return ctx->pdf_objs[objidx+1]->start - ctx->pdf_objs[objidx]->start - 4;
 }
 
 const uint8_t* cli_bcapi_pdf_getobj(struct cli_bc_ctx *ctx , int32_t objidx, uint32_t amount)
@@ -1493,7 +1493,7 @@ const uint8_t* cli_bcapi_pdf_getobj(struct cli_bc_ctx *ctx , int32_t objidx, uin
     uint32_t size = cli_bcapi_pdf_getobjsize(ctx, objidx);
     if (amount > size)
         return NULL;
-    return fmap_need_off(ctx->fmap, ctx->pdf_objs[objidx].start, amount);
+    return fmap_need_off(ctx->fmap, ctx->pdf_objs[objidx]->start, amount);
 }
 
 int32_t cli_bcapi_pdf_getobjid(struct cli_bc_ctx *ctx , int32_t objidx)
@@ -1501,7 +1501,7 @@ int32_t cli_bcapi_pdf_getobjid(struct cli_bc_ctx *ctx , int32_t objidx)
     if (!ctx->pdf_phase ||
         (uint32_t)objidx >= ctx->pdf_nobjs)
         return -1;
-    return ctx->pdf_objs[objidx].id;
+    return ctx->pdf_objs[objidx]->id;
 }
 
 int32_t cli_bcapi_pdf_getobjflags(struct cli_bc_ctx *ctx , int32_t objidx)
@@ -1509,7 +1509,7 @@ int32_t cli_bcapi_pdf_getobjflags(struct cli_bc_ctx *ctx , int32_t objidx)
     if (!ctx->pdf_phase ||
         (uint32_t)objidx >= ctx->pdf_nobjs)
         return -1;
-    return ctx->pdf_objs[objidx].flags;
+    return ctx->pdf_objs[objidx]->flags;
 }
 
 int32_t cli_bcapi_pdf_setobjflags(struct cli_bc_ctx *ctx , int32_t objidx, int32_t flags)
@@ -1518,9 +1518,9 @@ int32_t cli_bcapi_pdf_setobjflags(struct cli_bc_ctx *ctx , int32_t objidx, int32
         (uint32_t)objidx >= ctx->pdf_nobjs)
         return -1;
     cli_dbgmsg("cli_pdf: bytecode setobjflags %08x -> %08x\n",
-               ctx->pdf_objs[objidx].flags,
+               ctx->pdf_objs[objidx]->flags,
                flags);
-    ctx->pdf_objs[objidx].flags = flags;
+    ctx->pdf_objs[objidx]->flags = flags;
     return 0;
 }
 
@@ -1529,7 +1529,7 @@ int32_t cli_bcapi_pdf_get_offset(struct cli_bc_ctx *ctx , int32_t objidx)
     if (!ctx->pdf_phase ||
         (uint32_t)objidx >= ctx->pdf_nobjs)
         return -1;
-    return ctx->pdf_startoff + ctx->pdf_objs[objidx].start;
+    return ctx->pdf_startoff + ctx->pdf_objs[objidx]->start;
 }
 
 int32_t cli_bcapi_pdf_get_phase(struct cli_bc_ctx *ctx)

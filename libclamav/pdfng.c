@@ -377,17 +377,26 @@ char *pdf_finalize_string(struct pdf_struct *pdf, struct pdf_obj *obj, const cha
 
 char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *objstart, size_t objsize, const char *str, char **endchar, struct pdf_stats_metadata *meta)
 {
-    const char *q = objstart, *oobj=obj->start+pdf->map;
+    const char *q = objstart;
     char *p1, *p2;
     size_t len, checklen;
     char *res = NULL;
     uint32_t objid;
     size_t i;
 
-    if (objsize > (size_t)(pdf->size - (objstart - pdf->map))) {
-        /* Possible attempt to exploit bb11980 */
-        cli_dbgmsg("Malformed PDF: Alleged size of obj in PDF would extend further than the PDF data.\n");
-        return NULL;
+    if (obj->objstm) {
+        if (objsize > (size_t)(obj->objstm->streambuf_len - (objstart - obj->objstm->streambuf))) {
+            /* Possible attempt to exploit bb11980 */
+            cli_dbgmsg("Malformed PDF: Alleged size of obj in object stream in PDF would extend further than the object stream data.\n");
+            return NULL;
+        }
+    }
+    else {
+        if (objsize > (size_t)(pdf->size - (objstart - pdf->map))) {
+            /* Possible attempt to exploit bb11980 */
+            cli_dbgmsg("Malformed PDF: Alleged size of obj in PDF would extend further than the PDF data.\n");
+            return NULL;
+        }
     }
 
     /*
@@ -557,10 +566,10 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
         /* Hex string */
 
         p2 = p1+1;
-        while ((size_t)(p2 - oobj) < objsize && *p2 != '>')
+        while ((size_t)(p2 - objstart) < objsize && *p2 != '>')
             p2++;
 
-        if ((size_t)(p2 - oobj) == objsize) {
+        if ((size_t)(p2 - objstart) == objsize) {
             return NULL;
         }
 
@@ -647,7 +656,7 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
     return res;
 }
 
-struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, size_t objsz, char *begin, char **endchar)
+struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, size_t objsize, char *begin, char **endchar)
 {
     struct pdf_dict *res=NULL;
     struct pdf_dict_node *node=NULL;
@@ -659,9 +668,10 @@ struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, siz
     if (!(pdf) || !(obj) || !(begin))
         return NULL;
 
-    objstart = (const char *)(obj->start + pdf->map);
+    objstart = (obj->objstm) ? (const char *)(obj->start + obj->objstm->streambuf)
+                             : (const char *)(obj->start + pdf->map);
 
-    if (begin < objstart || (size_t)(begin - objstart) >= objsz - 2)
+    if (begin < objstart || (size_t)(begin - objstart) >= objsize - 2)
         return NULL;
 
     if (begin[0] != '<' || begin[1] != '<')
@@ -669,7 +679,7 @@ struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, siz
 
     /* Find the end of the dictionary */
     end = begin;
-    while ((size_t)(end - objstart) < objsz) {
+    while ((size_t)(end - objstart) < objsize) {
         int increment=1;
         if (in_string) {
             if (*end == '\\') {
@@ -689,18 +699,18 @@ struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, siz
                 in_string=1;
                 break;
             case '<':
-                if ((size_t)(end - objstart) <= objsz - 2 && end[1] == '<')
+                if ((size_t)(end - objstart) <= objsize - 2 && end[1] == '<')
                     ninner++;
                 increment=2;
                 break;
             case '>':
-                if ((size_t)(end - objstart) <= objsz - 2 && end[1] == '>')
+                if ((size_t)(end - objstart) <= objsize - 2 && end[1] == '>')
                     ninner--;
                 increment=2;
                 break;
         }
 
-        if ((size_t)(end - objstart) <= objsz - 2)
+        if ((size_t)(end - objstart) <= objsize - 2)
             if (end[0] == '>' && end[1] == '>' && ninner == 0)
                 break;
 
@@ -708,7 +718,7 @@ struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, siz
     }
 
     /* More sanity checking */
-    if ((size_t)(end - objstart) >= objsz - 2)
+    if ((size_t)(end - objstart) >= objsize - 2)
         return NULL;
 
     if (end[0] != '>' || end[1] != '>')
@@ -809,7 +819,7 @@ struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, siz
                 begin = p1+1;
                 break;
             case '<':
-                if ((size_t)(begin - objstart) < objsz - 2) {
+                if ((size_t)(begin - objstart) < objsize - 2) {
                     if (begin[1] == '<') {
                         dict = pdf_parse_dict(pdf, obj, end - objstart, begin, &p1);
                         begin = p1+2;
@@ -912,7 +922,7 @@ struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, siz
     return res;
 }
 
-struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj *obj, size_t objsz, char *begin, char **endchar)
+struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj *obj, size_t objsize, char *begin, char **endchar)
 {
     struct pdf_array *res=NULL;
     struct pdf_array_node *node=NULL;
@@ -924,9 +934,10 @@ struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj *obj, s
     if (!(pdf) || !(obj) || !(begin))
         return NULL;
 
-    objstart = obj->start + pdf->map;
+    objstart = (obj->objstm) ? (const char *)(obj->start + obj->objstm->streambuf)
+                             : (const char *)(obj->start + pdf->map);
 
-    if (begin < objstart || (size_t)(begin - objstart) >= objsz)
+    if (begin < objstart || (size_t)(begin - objstart) >= objsize)
         return NULL;
 
     if (begin[0] != '[')
@@ -934,7 +945,7 @@ struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj *obj, s
 
     /* Find the end of the array */
     end = begin;
-    while ((size_t)(end - objstart) < objsz) {
+    while ((size_t)(end - objstart) < objsize) {
         if (in_string) {
             if (*end == '\\') {
                 end += 2;
@@ -967,7 +978,7 @@ struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj *obj, s
     }
 
     /* More sanity checking */
-    if ((size_t)(end - objstart) >= objsz)
+    if ((size_t)(end - objstart) >= objsize)
         return NULL;
 
     if (*end != ']')
@@ -991,7 +1002,7 @@ struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj *obj, s
 
         switch (begin[0]) {
             case '<':
-                if ((size_t)(begin - objstart) < objsz - 2 && begin[1] == '<') {
+                if ((size_t)(begin - objstart) < objsize - 2 && begin[1] == '<') {
                     dict = pdf_parse_dict(pdf, obj, end - objstart, begin, &begin);
                     begin+=2;
                     break;

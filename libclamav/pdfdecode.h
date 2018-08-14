@@ -36,6 +36,26 @@
 
 #include "pdf.h"
 
-ptrdiff_t pdf_decodestream(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, const char *stream, uint32_t streamlen, int xref, int fout, int *rc);
+/**
+ * @brief       Wrapper function for pdf_decodestream_internal.
+ * 
+ * Allocate a token object to store decoded filter data.
+ * Parse/decode the filter data and scan it.
+ * 
+ * @param pdf       Pdf context structure.
+ * @param obj       The object we found the filter content in.
+ * @param params    Dictionary parameters describing the filter data.
+ * @param stream    Filter stream buffer pointer.
+ * @param streamlen Length of filter stream buffer.
+ * @param xref      Indicates if the stream is an /XRef stream.  Do not apply forced decryption on /XRef streams.
+ * @param fout      File descriptor to write to a temp file.
+ * @param[out] rc   Return code ()
+ * @param objstm    Object stream context structure.
+ * @return ptrdiff_t 
+ */
+ptrdiff_t pdf_decodestream(
+    struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params,
+    const char *stream, uint32_t streamlen, int xref, int fout, cl_error_t *status,
+    struct objstm_struct *objstm);
 
 #endif /* __PDFDECODE_H__ */

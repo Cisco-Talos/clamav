@@ -24,13 +24,26 @@
 #include "others.h"
 #define PDF_FILTERLIST_MAX  64
 
+struct objstm_struct {
+    uint32_t first;         // offset of first obj
+    uint32_t current;       // offset of current obj
+    uint32_t current_pair;  // offset of current pair describing id, location of object
+    uint32_t length;        // total length of all objects (starting at first)
+    uint32_t n;             // number of objects that should be found in the object stream
+    uint32_t nobjs_found;   // number of objects actually found in the object stream
+    char *streambuf;        // address of stream buffer, beginning with first obj pair
+    size_t streambuf_len;   // length of stream buffer, includes pairs followed by actual objects
+};
+
 struct pdf_obj {
     uint32_t start;
+    int32_t size;
     uint32_t id;
     uint32_t flags;
     uint32_t statsflags;
     uint32_t numfilters;
     uint32_t filterlist[PDF_FILTERLIST_MAX];
+    struct objstm_struct *objstm;  // Should be NULL unless the obj exists in an object stream (separate buffer)
     char *path;
 };
 
@@ -124,7 +137,7 @@ enum enc_method {
 };
 
 struct pdf_struct {
-    struct pdf_obj *objs;
+    struct pdf_obj **objs;
     unsigned nobjs;
     unsigned flags;
     unsigned enc_method_stream;
@@ -145,6 +158,8 @@ struct pdf_struct {
     char *key;
     unsigned keylen;
     struct pdf_stats stats;
+    struct objstm_struct **objstms;
+    uint32_t nobjstms;
 };
 
 #define OBJ_FLAG_PDFNAME_NONE 0x0
@@ -156,7 +171,7 @@ struct pdf_struct {
 int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset);
 void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj);
 int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags);
-int pdf_findobj(struct pdf_struct *pdf);
+cl_error_t pdf_findobj(struct pdf_struct *pdf);
 struct pdf_obj *find_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t objid);
 
 void pdf_handle_enc(struct pdf_struct *pdf);
@@ -166,13 +181,16 @@ enum enc_method parse_enc_method(const char *dict, unsigned len, const char *key
 
 void pdfobj_flag(struct pdf_struct *pdf, struct pdf_obj *obj, enum pdf_flag flag);
 char *pdf_finalize_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *in, size_t len);
-char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *objstart, size_t objsize, const char *str, char **endchar, struct pdf_stats_metadata *stats);
-struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj *obj, size_t objsz, char *begin, char **endchar);
-struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, size_t objsz, char *begin, char **endchar);
+char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *objstart, size_t objsize, const char *str, char **endchar, struct pdf_stats_metadata *meta);
+struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj *obj, size_t objsize, char *begin, char **endchar);
+struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, size_t objsize, char *begin, char **endchar);
 int is_object_reference(char *begin, char **endchar, uint32_t *id);
 void pdf_free_dict(struct pdf_dict *dict);
 void pdf_free_array(struct pdf_array *array);
 void pdf_print_dict(struct pdf_dict *dict, unsigned long depth);
 void pdf_print_array(struct pdf_array *array, unsigned long depth);
+
+cl_error_t pdf_find_and_extract_objs(struct pdf_struct *pdf, uint32_t *alerts);
+cl_error_t pdf_find_and_parse_objs_in_objstm(struct pdf_struct *pdf, struct objstm_struct *objstm);
 
 #endif

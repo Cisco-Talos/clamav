@@ -755,7 +755,7 @@ done:
  * @return CL_SUCCESS       Success
  * @return CL_EPARSE        Failure
  */
-int cli_strntol_wrap(const char *buf, size_t buf_size, int fail_at_nondigit, int base, long *result)
+cl_error_t cli_strntol_wrap(const char *buf, size_t buf_size, int fail_at_nondigit, int base, long *result)
 {
     char *endptr = NULL;
     long num;
@@ -798,7 +798,7 @@ int cli_strntol_wrap(const char *buf, size_t buf_size, int fail_at_nondigit, int
  * @return CL_SUCCESS       Success
  * @return CL_EPARSE        Failure
  */
-int cli_strntoul_wrap(const char *buf, size_t buf_size, int fail_at_nondigit, int base, unsigned long *result)
+cl_error_t cli_strntoul_wrap(const char *buf, size_t buf_size, int fail_at_nondigit, int base, unsigned long *result)
 {
     char *endptr = NULL;
     long num;
