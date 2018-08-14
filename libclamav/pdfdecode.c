@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2016-2017 Cisco and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2016-2018 Cisco and/or its affiliates. All rights reserved.
  *
  *  Author: Kevin Lin
  *
@@ -37,6 +37,7 @@
 #endif
 
 #include <stdio.h>
+#include <stddef.h> 
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <ctype.h>
@@ -75,26 +76,57 @@ struct pdf_token {
     uint8_t *content;  /* content stream */
 };
 
-static  int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token);
-static  int pdf_decode_dump(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_token *token, int lvl);
+static ptrdiff_t pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token, int fout, cl_error_t *status, struct objstm_struct *objstm);
+static cl_error_t pdf_decode_dump(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_token *token, int lvl);
 
-static  int filter_ascii85decode(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_token *token);
-static  int filter_rldecode(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_token *token);
-static  int filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token);
-static  int filter_asciihexdecode(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_token *token);
-static  int filter_decrypt(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token, int mode);
-static  int filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token);
+static cl_error_t filter_ascii85decode(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_token *token);
+static cl_error_t filter_rldecode(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_token *token);
+static cl_error_t filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token);
+static cl_error_t filter_asciihexdecode(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_token *token);
+static cl_error_t filter_decrypt(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token, int mode);
+static cl_error_t filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token);
 
-ptrdiff_t pdf_decodestream(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, const char *stream, uint32_t streamlen, int xref, int fout, int *rc)
+/**
+ * @brief       Wrapper function for pdf_decodestream_internal.
+ * 
+ * Allocate a token object to store decoded filter data.
+ * Parse/decode the filter data and scan it.
+ * 
+ * @param pdf       Pdf context structure.
+ * @param obj       The object we found the filter content in.
+ * @param params    (optional) Dictionary parameters describing the filter data.
+ * @param stream    Filter stream buffer pointer.
+ * @param streamlen Length of filter stream buffer.
+ * @param xref      Indicates if the stream is an /XRef stream.  Do not apply forced decryption on /XRef streams.
+ * @param fout      File descriptor to write to to be scanned.
+ * @param[out] rc   Return code ()
+ * @param objstm    (optional) Object stream context structure.
+ * @return ptrdiff_t   The number of bytes written to 'fout' to be scanned. -1 if failed out.
+ */
+ptrdiff_t pdf_decodestream(
+    struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params,
+    const char *stream, uint32_t streamlen, int xref, int fout, cl_error_t *status,
+    struct objstm_struct *objstm)
 {
-    struct pdf_token *token;
-    ptrdiff_t rv;
+    struct pdf_token *token = NULL;
+    ptrdiff_t bytes_scanned = -1;
+    cl_error_t retval = CL_SUCCESS;
+
+    if (!status) {
+        /* invalid args, and no way to pass back the status code */
+        return -1;
+    }
+
+    if (!pdf || !obj) {
+        /* Invalid args */
+        retval = CL_EARG;
+        goto done;
+    }
 
     if (!stream || !streamlen || fout < 0) {
-        cli_dbgmsg("cli_pdf: no filters or stream on obj %u %u\n", obj->id>>8, obj->id&0xff);
-        if (rc)
-            *rc = CL_ENULLARG;
-        return -1;
+        cli_dbgmsg("pdf_decodestream: no filters or stream on obj %u %u\n", obj->id>>8, obj->id&0xff);
+        retval = CL_ENULLARG;
+        goto done;
     }
 
 #if 0
@@ -104,9 +136,8 @@ ptrdiff_t pdf_decodestream(struct pdf_struct *pdf, struct pdf_obj *obj, struct p
 
     token = cli_malloc(sizeof(struct pdf_token));
     if (!token) {
-        if (rc)
-            *rc = CL_EMEM;
-        return -1;
+        retval = CL_EMEM;
+        goto done;
     }
 
     token->flags = 0;
@@ -118,69 +149,110 @@ ptrdiff_t pdf_decodestream(struct pdf_struct *pdf, struct pdf_obj *obj, struct p
     token->content = cli_malloc(streamlen);
     if (!token->content) {
         free(token);
-        if (rc)
-            *rc = CL_EMEM;
-        return -1;
+        retval = CL_EMEM;
+        goto done;
     }
     memcpy(token->content, stream, streamlen);
     token->length = streamlen;
 
-    cli_dbgmsg("cli_pdf: detected %lu applied filters\n", (long unsigned)(obj->numfilters));
+    cli_dbgmsg("pdf_decodestream: detected %lu applied filters\n", (long unsigned)(obj->numfilters));
 
-    rv = (ptrdiff_t)pdf_decodestream_internal(pdf, obj, params, token);
-    /* return is generally ignored */
-    if (rc) {
-        if (rv == CL_VIRUS)
-            *rc = CL_VIRUS;
-        else
-            *rc = CL_SUCCESS;
-    }
+    bytes_scanned = pdf_decodestream_internal(pdf, obj, params, token, fout, &retval, objstm);
+    /* 
+     * Pass back the return value, though we really only care
+     * if it is CV_VIRUS or CL_SUCCESS.
+     */
+    if (retval == CL_VIRUS)
+        retval = CL_VIRUS;
+    else
+        retval = CL_SUCCESS;
 
-    if (token->success) {
-        if (!cli_checklimits("pdf", pdf->ctx, token->length, 0, 0)) {
-            if (cli_writen(fout, token->content, token->length) != token->length) {
-                cli_errmsg("cli_pdf: failed to write output file\n");
-                if (rc)
-                    *rc = CL_EWRITE;
-                return -1;
-            }
-            rv = token->length;
-        }
-    } else {  /* if no non-forced filter are decoded, return the raw stream */
+    if (!token->success) {
+        /*
+         * If it was successful, the internal() function calls cli_writen()
+         * However, in this case... no non-forced filter are decoded, 
+         *   so return the raw stream.
+         */
         if (!cli_checklimits("pdf", pdf->ctx, streamlen, 0, 0)) {
-            cli_dbgmsg("cli_pdf: no non-forced filters decoded, returning raw stream\n");
+            cli_dbgmsg("pdf_decodestream: no non-forced filters decoded, returning raw stream\n");
 
             if (cli_writen(fout, stream, streamlen) != streamlen) {
-                cli_errmsg("cli_pdf: failed to write output file\n");
-                if (rc)
-                    *rc = CL_EWRITE;
-                return -1;
+                cli_errmsg("pdf_decodestream: failed to write output file\n");
+                retval = CL_EWRITE;
+                bytes_scanned = -1;
+                goto done;
             }
-            rv = streamlen;
+            bytes_scanned = streamlen;
         }
     }
 
-    free(token->content);
-    free(token);
-    return rv;
+done:
+    *status = retval;
+
+    /*
+     * Free up the token, and token content, if any.
+     */
+    if (NULL != token)
+    {
+        if (NULL != token->content) {
+            free(token->content);
+            token->content = NULL;
+            token->length = 0;
+        }
+        free(token);
+        token = NULL;
+    }
+
+    return bytes_scanned;
 }
 
-static int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token)
+/**
+ * @brief       Decode filter buffer data. 
+ * 
+ * Attempt to decompress, decrypt or otherwise parse it.
+ * 
+ * @param pdf           Pdf context structure.
+ * @param obj           The object we found the filter content in.
+ * @param params        (optional) Dictionary parameters describing the filter data.
+ * @param token         Pointer to and length of filter data.
+ * @param fout          File handle to write data to to be scanned.
+ * @param[out] status   CL_CLEAN/CL_SUCCESS or CL_VIRUS/CL_E<error>
+ * @param objstm        (optional) Object stream context structure.
+ * @return ptrdiff_t    The number of bytes we wrote to 'fout'. -1 if failed out.
+ */
+static ptrdiff_t pdf_decodestream_internal(
+    struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params,
+    struct pdf_token *token, int fout, cl_error_t *status, struct objstm_struct *objstm)
 {
+    cl_error_t vir = CL_CLEAN;
+    cl_error_t retval = CL_SUCCESS;
+    ptrdiff_t bytes_scanned = -1;
     const char *filter = NULL;
-    int i, vir = 0, rc = CL_SUCCESS;
+    int i;
 
+    if (!status) {
+        /* invalid args, and no way to pass back the status code */
+        return -1;
+    }
+
+    if (!pdf || !obj || !token) {
+        /* Invalid args */
+        retval = CL_EARG;
+        goto done;
+    }
+    
     /*
      * if pdf is decryptable, scan for CRYPT filter
      * if none, force a DECRYPT filter application
      */
     if ((pdf->flags & (1 << DECRYPTABLE_PDF)) && !(obj->flags & (1 << OBJ_FILTER_CRYPT))) {
         if (token->flags & PDFTOKEN_FLAG_XREF) /* TODO: is this on all crypt filters or only the assumed one? */
-            cli_dbgmsg("cli_pdf: skipping decoding => non-filter CRYPT (reason: xref)\n");
+            cli_dbgmsg("pdf_decodestream_internal: skipping decoding => non-filter CRYPT (reason: xref)\n");
         else {
-            cli_dbgmsg("cli_pdf: decoding => non-filter CRYPT\n");
-            if ((rc = filter_decrypt(pdf, obj, params, token, 1)) != CL_SUCCESS) {
-                return rc;
+            cli_dbgmsg("pdf_decodestream_internal: decoding => non-filter CRYPT\n");
+            retval = filter_decrypt(pdf, obj, params, token, 1);
+            if (retval != CL_SUCCESS) {
+                goto done;
             }
         }
     }
@@ -188,33 +260,33 @@ static int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj
     for (i = 0; i < obj->numfilters; i++) {
         switch(obj->filterlist[i]) {
         case OBJ_FILTER_A85:
-            cli_dbgmsg("cli_pdf: decoding [%d] => ASCII85DECODE\n", obj->filterlist[i]);
-            rc = filter_ascii85decode(pdf, obj, token);
+            cli_dbgmsg("pdf_decodestream_internal: decoding [%d] => ASCII85DECODE\n", obj->filterlist[i]);
+            retval = filter_ascii85decode(pdf, obj, token);
             break;
 
         case OBJ_FILTER_RL:
-            cli_dbgmsg("cli_pdf: decoding [%d] => RLDECODE\n", obj->filterlist[i]);
-            rc = filter_rldecode(pdf, obj, token);
+            cli_dbgmsg("pdf_decodestream_internal: decoding [%d] => RLDECODE\n", obj->filterlist[i]);
+            retval = filter_rldecode(pdf, obj, token);
             break;
 
         case OBJ_FILTER_FLATE:
-            cli_dbgmsg("cli_pdf: decoding [%d] => FLATEDECODE\n", obj->filterlist[i]);
-            rc = filter_flatedecode(pdf, obj, params, token);
+            cli_dbgmsg("pdf_decodestream_internal: decoding [%d] => FLATEDECODE\n", obj->filterlist[i]);
+            retval = filter_flatedecode(pdf, obj, params, token);
             break;
 
         case OBJ_FILTER_AH:
-            cli_dbgmsg("cli_pdf: decoding [%d] => ASCIIHEXDECODE\n", obj->filterlist[i]);
-            rc = filter_asciihexdecode(pdf, obj, token);
+            cli_dbgmsg("pdf_decodestream_internal: decoding [%d] => ASCIIHEXDECODE\n", obj->filterlist[i]);
+            retval = filter_asciihexdecode(pdf, obj, token);
             break;
 
         case OBJ_FILTER_CRYPT:
-            cli_dbgmsg("cli_pdf: decoding [%d] => CRYPT\n", obj->filterlist[i]);
-            rc = filter_decrypt(pdf, obj, params, token, 0);
+            cli_dbgmsg("pdf_decodestream_internal: decoding [%d] => CRYPT\n", obj->filterlist[i]);
+            retval = filter_decrypt(pdf, obj, params, token, 0);
             break;
 
         case OBJ_FILTER_LZW:
-            cli_dbgmsg("cli_pdf: decoding [%d] => LZWDECODE\n", obj->filterlist[i]);
-            rc = filter_lzwdecode(pdf, obj, params, token);
+            cli_dbgmsg("pdf_decodestream_internal: decoding [%d] => LZWDECODE\n", obj->filterlist[i]);
+            retval = filter_lzwdecode(pdf, obj, params, token);
             break;
 
         case OBJ_FILTER_JPX:
@@ -226,29 +298,29 @@ static int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj
         case OBJ_FILTER_JBIG2:
             if (!filter) filter = "JBIG2DECODE";
 
-            cli_dbgmsg("cli_pdf: unimplemented filter type [%d] => %s\n", obj->filterlist[i], filter);
+            cli_dbgmsg("pdf_decodestream_internal: unimplemented filter type [%d] => %s\n", obj->filterlist[i], filter);
             filter = NULL;
-            rc = CL_BREAK;
+            retval = CL_BREAK;
             break;
 
         default:
-            cli_dbgmsg("cli_pdf: unknown filter type [%d]\n", obj->filterlist[i]);
-            rc = CL_BREAK;
+            cli_dbgmsg("pdf_decodestream_internal: unknown filter type [%d]\n", obj->filterlist[i]);
+            retval = CL_BREAK;
             break;
         }
 
         if (!(token->content) || !(token->length)) {
-            cli_dbgmsg("cli_pdf: empty content, breaking after %d (of %lu) filters\n",
-                       i, (long unsigned)(obj->numfilters));
+            cli_dbgmsg("pdf_decodestream_internal: empty content, breaking after %d (of %lu) filters\n", i, (long unsigned)(obj->numfilters));
             break;
         }
 
-        if (rc != CL_SUCCESS) {
-            if (rc == CL_VIRUS && pdf->ctx->options & CL_SCAN_ALLMATCHES)
-                vir = 1;
-            else {
-                const char *reason;
-                switch (rc) {
+        if (retval != CL_SUCCESS) {
+            if (retval == CL_VIRUS && pdf->ctx->options & CL_SCAN_ALLMATCHES) {
+                vir = CL_VIRUS;
+            } else {
+                const char* reason;
+
+                switch (retval) {
                 case CL_VIRUS:
                     reason = "detection";
                     break;
@@ -260,29 +332,89 @@ static int pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj
                     break;
                 }
 
-                cli_dbgmsg("cli_pdf: stopping after %d (of %lu) filters (reason: %s)\n",
-                           i, (long unsigned)(obj->numfilters), reason);
+                cli_dbgmsg("pdf_decodestream_internal: stopping after %d (of %lu) filters (reason: %s)\n", i, (long unsigned)(obj->numfilters), reason);
                 break;
             }
         }
         token->success++;
 
+        /* Dump the stream content to a text file if keeptmp is enabled. */
         if (pdf->ctx->engine->keeptmp) {
-
-            if ((rc = pdf_decode_dump(pdf, obj, token, i+1)) != CL_SUCCESS)
-                return rc;
+            retval = pdf_decode_dump(pdf, obj, token, i+1);
+            if (retval != CL_SUCCESS) {
+                goto done;
+            }
         }
     }
 
-    if (vir)
-        return CL_VIRUS;
-    if (rc == CL_BREAK)
-        return CL_SUCCESS;
-    return rc;
+    if (token->success > 0) {
+        /*
+         * Looks like we successfully decoded the stream, so lets write it out.
+         *   In the failure case, the caller will deal with the raw stream.
+         */
+        if (!cli_checklimits("pdf", pdf->ctx, token->length, 0, 0)) {
+            if (cli_writen(fout, token->content, token->length) != token->length) {
+                cli_errmsg("pdf_decodestream_internal: failed to write output file\n");
+                retval = CL_EWRITE;
+                bytes_scanned = -1;
+                goto done;
+            }
+            bytes_scanned = token->length;
+        }
+    }
+
+    if (NULL != objstm)
+    {
+        /*
+         * The caller indicated that the decoded data is an object stream.
+         * Perform experimental object stream parsing to extract objects from the stream.
+         */
+        objstm->streambuf = (char*)token->content;
+        objstm->streambuf_len = (size_t)token->length;
+
+        /* Take ownership of the malloc'd buffer */
+        token->content = NULL;
+        token->length = 0;
+
+        int objs_found = pdf->nobjs;
+        if (CL_SUCCESS != pdf_find_and_parse_objs_in_objstm(pdf, objstm))
+        {
+            cli_dbgmsg("pdf_decodestream_internal: pdf_find_and_parse_objs_in_objstm failed!\n");
+        }
+
+        if (pdf->nobjs <= objs_found) {
+            cli_dbgmsg("pdf_decodestream_internal: pdf_find_and_parse_objs_in_objstm did not find any new objects!\n");
+        } else {
+            cli_dbgmsg("pdf_decodestream_internal: pdf_find_and_parse_objs_in_objstm found %d new objects.\n", pdf->nobjs - objs_found);
+        }
+    }
+
+done:
+
+    *status = retval;
+
+    if (vir == CL_VIRUS)
+        *status = CL_VIRUS;
+
+    if (*status == CL_BREAK)
+        *status = CL_SUCCESS;
+
+    return bytes_scanned;
 }
 
-/* used only for intermediate dumping */
-static int pdf_decode_dump(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_token *token, int lvl)
+/**
+ * @brief   Dump PDF filter content such as stream contents to a temp file.
+ * 
+ * Temp file is created in the pdf->dir directory.
+ * Filename format is "pdf<pdf->files-1>_<lvl>".
+ * 
+ * @param pdf   Pdf context structure.
+ * @param obj   The object we found the filter content in.
+ * @param token The struct for the filter contents.
+ * @param lvl   A unique index to distinguish the files from each other.
+ * @return cl_error_t 
+ */
+static cl_error_t pdf_decode_dump(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_token *token, int lvl)
 {
     char fname[1024];
     int ifd;
@@ -313,7 +445,7 @@ static int pdf_decode_dump(struct pdf_struct *pdf, struct pdf_obj *obj, struct p
  * ascii85 inflation
  * See http://www.piclist.com/techref/method/encode.htm (look for base85)
  */
-static int filter_ascii85decode(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_token *token)
+static cl_error_t filter_ascii85decode(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_token *token)
 {
     uint8_t *decoded, *dptr;
     uint32_t declen = 0;
@@ -415,7 +547,7 @@ static int filter_ascii85decode(struct pdf_struct *pdf, struct pdf_obj *obj, str
 }
 
 /* imported from razorback */
-static int filter_rldecode(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_token *token)
+static cl_error_t filter_rldecode(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_token *token)
 {
     uint8_t *decoded, *temp;
     uint32_t declen = 0, capacity = 0;
@@ -523,7 +655,7 @@ static uint8_t *decode_nextlinestart(uint8_t *content, uint32_t length)
     return pt;
 }
 
-static int filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token)
+static cl_error_t filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token)
 {
     uint8_t *decoded, *temp;
     uint32_t declen = 0, capacity = 0;
@@ -671,14 +803,14 @@ static int filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj, struc
     return rc;
 }
 
-static int filter_asciihexdecode(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_token *token)
+static cl_error_t filter_asciihexdecode(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_token *token)
 {
     uint8_t *decoded;
 
     const uint8_t *content = (uint8_t *)token->content;
     uint32_t length = token->length;
     uint32_t i, j;
-    int rc = CL_SUCCESS;
+    cl_error_t rc = CL_SUCCESS;
 
     if (!(decoded = (uint8_t *)cli_calloc(length/2 + 1, sizeof(uint8_t)))) {
         cli_errmsg("cli_pdf: cannot allocate memory for decoded output\n");
@@ -724,7 +856,7 @@ static int filter_asciihexdecode(struct pdf_struct *pdf, struct pdf_obj *obj, st
 }
 
 /* modes: 0 = use default/DecodeParms, 1 = use document setting */
-static int filter_decrypt(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token, int mode)
+static cl_error_t filter_decrypt(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token, int mode)
 {
     char *decrypted;
     size_t length = (size_t)token->length;
@@ -768,7 +900,7 @@ static int filter_decrypt(struct pdf_struct *pdf, struct pdf_obj *obj, struct pd
     return CL_SUCCESS;
 }
 
-static int filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token)
+static cl_error_t filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token)
 {
     uint8_t *decoded, *temp;
     uint32_t declen = 0, capacity = 0;

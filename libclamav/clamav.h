@@ -73,7 +73,7 @@ extern "C"
 #define CL_COUNT_PRECISION 4096
 
 /* return codes */
-typedef enum {
+typedef enum cl_error_t {
     /* libclamav specific */
     CL_CLEAN = 0,
     CL_SUCCESS = 0,
