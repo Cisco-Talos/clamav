@@ -539,7 +539,7 @@ size_t cli_strtokenize(char *buffer, const char delim, const size_t token_count,
  *                      between 2 and 36 inclusive, or be the special value 0.
  * @return long         The signed long value.
  */
-static long cli_strntol(const char* nptr, size_t n, char** endptr, register int base)
+long cli_strntol(const char* nptr, size_t n, char** endptr, register int base)
 {
     register const char* s = nptr;
     register unsigned long acc = 0;
@@ -662,7 +662,7 @@ done:
  *                      between 2 and 36 inclusive, or be the special value 0.
  * @return unsigned long The unsigned long value.
  */
-static unsigned long
+unsigned long
 cli_strntoul(const char* nptr, size_t n, char** endptr, register int base)
 {
     register const char* s = nptr;
