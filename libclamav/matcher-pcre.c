@@ -37,6 +37,7 @@
 #include "mpool.h"
 #include "readdb.h"
 #include "regex_pcre.h"
+#include "str.h"
 
 #if HAVE_PCRE
 #if USING_PCRE2
@@ -325,7 +326,7 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *virname, const char *
             case 'g':  pm->flags |= CLI_PCRE_GLOBAL;            break;
             case 'r':  pm->flags |= CLI_PCRE_ROLLING;           break;
             case 'e':  pm->flags |= CLI_PCRE_ENCOMPASS;         break;
-            case 'z':  if(CL_SUCCESS == cli_pcre_addbytecomp(&opt, &pm->bcmp_data)) {
+            case 'z':  if(CL_SUCCESS == cli_pcre_bcmp_add_opts(&opt, &pm->bcmp_data)) {
                            pm->flags |= CLI_PCRE_BCOMP;
                            break;
                        }
@@ -409,7 +410,7 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *virname, const char *
     return CL_SUCCESS;
 }
 
-int cli_pcre_addbytecomp (const char **opt, struct cli_pcre_bcomp *bcomp) {
+int cli_pcre_bcmp_add_opts(const char **opt, struct cli_pcre_bcomp *bcomp) {
 
     if (!opt || !(*opt) || !bcomp)
         return CL_ENULLARG;
@@ -889,6 +890,14 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const char **
             /* move off to the end of the match for next match; offset is relative to adjbuffer
              * NOTE: misses matches starting within the last match; TODO: start from start of last match? */
             offset = p_res.match[1];
+            
+            if(pm->flags & CLI_PCRE_BCOMP) {
+                ret = cli_pcre_bcmp_compare_check(buffer, length, offset, pm);
+                if (ret != CL_SUCCESS) {
+                    break;
+                }
+            }
+
         } while (global && rc > 0 && offset < adjlength);
 
         /* handle error code */
@@ -899,11 +908,6 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const char **
         if (ret != CL_SUCCESS)
             break;
     }
-    
-    /* hijack pcre matches for byte comparison 
-    if (pm.comp) {
-        pm_dbgmsg("cli_pcre_scanbuf: assigning lsigcnt[%d][%d], located @ %d\n",
-    }*/
 
     /* free match results */
     cli_pcre_results_free(&p_res);
@@ -912,6 +916,97 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const char **
         return CL_VIRUS;
     return ret;
 }
+
+int cli_pcre_bcmp_compare_check(const unsigned char *buffer, uint32_t length, int offset, struct cli_pcre_meta *pm)
+{
+    if (!buffer || !pm) {
+        return CL_ENULLARG;
+    }
+
+    const uint32_t byte_len = pm->bcmp_data.byte_len;
+    unsigned char* conversion_buf[byte_len+1];
+    char opt = (char) pm->bcmp_data.options;
+    uint32_t value = 0;
+    const unsigned char* end_buf = NULL;
+
+    if (!(pm->flags & CLI_PCRE_BCOMP) || !(offset + pm->bcmp_data.offset + pm->bcmp_data.byte_len < length)) {
+            return CL_SUCCESS;
+            
+    }
+
+    offset += pm->bcmp_data.offset;
+    memcpy(conversion_buf, buffer+offset, byte_len);
+    conversion_buf[byte_len] = '\0';
+
+    switch(opt) {
+        /*hb*/
+        case CLI_PCRE_BCOMP_HEX | CLI_PCRE_BCOMP_LE:
+            value = cli_strntoul(buffer+offset, byte_len, &end_buf, 16);
+            if (value < 0 || NULL == end_buf || buffer+offset+byte_len != end_buf) {
+                return CL_SUCCESS;
+            }
+
+            value = le32_to_host(value);
+            break;
+
+        /*hl*/  
+        case CLI_PCRE_BCOMP_HEX | CLI_PCRE_BCOMP_BE:
+            value = cli_strntoul(buffer+offset, byte_len, &end_buf, 16);
+            if (value < 0 || NULL == end_buf || buffer+offset+byte_len != end_buf) {
+                return CL_SUCCESS;
+            }
+
+            value = be32_to_host(value);
+            break;
+
+        /*dl*/
+        case CLI_PCRE_BCOMP_DEC | CLI_PCRE_BCOMP_LE:
+            value = cli_strntoul(buffer+offset, byte_len, &end_buf, 10);
+            if (value < 0 || NULL == end_buf || buffer+offset+byte_len != end_buf) {
+                return CL_SUCCESS;
+            }
+
+            value = le32_to_host(value);
+            break;
+
+        /*db*/
+        case CLI_PCRE_BCOMP_DEC | CLI_PCRE_BCOMP_BE:
+            value = cli_strntoul(buffer+offset, byte_len, &end_buf, 10);
+            if (value < 0 || NULL == end_buf || buffer+offset+byte_len != end_buf) {
+                return CL_SUCCESS;
+            }
+
+            value = be32_to_host(value);
+            break;
+
+        default:
+            return CL_ENULLARG;
+    }
+
+    switch (pm->bcmp_data.comp_symbol) {
+
+        case '>':
+            if (value > pm->bcmp_data.comp_value) {
+                return CL_VIRUS;
+            }
+
+        case '<':
+            if (value < pm->bcmp_data.comp_value) {
+                return CL_VIRUS;
+            }
+
+        case '=':
+            if (value == pm->bcmp_data.comp_value) {
+                return CL_VIRUS;
+            }
+
+        default:
+            return CL_ENULLARG;
+    }
+
+    return CL_SUCCESS;
+}
+
 
 void cli_pcre_freemeta(struct cli_matcher *root, struct cli_pcre_meta *pm)
 {
