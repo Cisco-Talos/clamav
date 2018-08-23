@@ -937,11 +937,11 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
                     if (engine->engine_options & ENGINE_OPTIONS_PE_DUMPCERTS) {
                         char raw_issuer[CRT_RAWMAXLEN*2+1], raw_subject[CRT_RAWMAXLEN*2+1], raw_serial[CRT_RAWMAXLEN*3+1];
                         char issuer[SHA1_HASH_SIZE*2+1], subject[SHA1_HASH_SIZE*2+1], serial[SHA1_HASH_SIZE*2+1];
-                        char mod[1024], exp[1024];
+                        char mod[1024+1], exp[1024+1];
                         int j=1024;
 
-                        fp_toradix_n(&x509->n, mod, 16, j);
-                        fp_toradix_n(&x509->e, exp, 16, j);
+                        fp_toradix_n(&x509->n, mod, 16, j+1);
+                        fp_toradix_n(&x509->e, exp, 16, j+1);
                         memset(raw_issuer, 0, CRT_RAWMAXLEN*2+1);
                         memset(raw_subject, 0, CRT_RAWMAXLEN*2+1);
                         memset(raw_serial, 0, CRT_RAWMAXLEN*2+1);
