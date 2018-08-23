@@ -27,6 +27,15 @@
 #include "others.h"
 #include "crtmgr.h"
 
+#define OID_1_2_840_113549_2_5 "\x2a\x86\x48\x86\xf7\x0d\x02\x05"
+#define OID_md5 OID_1_2_840_113549_2_5
+
+#define OID_1_3_14_3_2_26 "\x2b\x0e\x03\x02\x1a"
+#define OID_sha1 OID_1_3_14_3_2_26
+
+#define OID_2_16_840_1_101_3_4_2_1 "\x60\x86\x48\x01\x65\x03\x04\x02\x01"
+#define OID_sha256 OID_2_16_840_1_101_3_4_2_1
+
 int cli_crt_init(cli_crt *x509) {
     int ret;
     if((ret = mp_init_multi(&x509->n, &x509->e, &x509->sig, NULL))) {
@@ -132,7 +141,6 @@ int crtmgr_add(crtmgr *m, cli_crt *x509) {
 
     memcpy(i->raw_subject, x509->raw_subject, sizeof(i->raw_subject));
     memcpy(i->raw_issuer, x509->raw_issuer, sizeof(i->raw_issuer));
-    memcpy(i->raw_tbshash, x509->raw_tbshash, sizeof(i->raw_tbshash));
     memcpy(i->raw_serial, x509->raw_serial, sizeof(i->raw_serial));
     memcpy(i->subject, x509->subject, sizeof(i->subject));
     memcpy(i->serial, x509->serial, sizeof(i->serial));
@@ -187,9 +195,20 @@ void crtmgr_free(crtmgr *m) {
 
 static int crtmgr_rsa_verify(cli_crt *x509, mp_int *sig, cli_crt_hashtype hashtype, const uint8_t *refhash) {
     int keylen = mp_unsigned_bin_size(&x509->n), siglen = mp_unsigned_bin_size(sig);
-    int ret, j, objlen, hashlen = (hashtype == CLI_SHA1RSA) ? SHA1_HASH_SIZE : 16;
+    int ret, j, objlen, hashlen;
     uint8_t d[513];
     mp_int x;
+
+    if (hashtype == CLI_SHA1RSA) {
+        hashlen = SHA1_HASH_SIZE;
+    } else if (hashtype == CLI_MD5RSA) {
+        hashlen = MD5_HASH_SIZE;
+    } else if (hashtype == CLI_SHA256RSA) {
+        hashlen = SHA256_HASH_SIZE;
+    } else {
+        cli_errmsg("crtmgr_rsa_verify: Unsupported hashtype\n");
+        return 1;
+    }
 
     if((ret = mp_init(&x))) {
 	cli_errmsg("crtmgr_rsa_verify: mp_init failed with %d\n", ret);
@@ -244,12 +263,20 @@ static int crtmgr_rsa_verify(cli_crt *x509, mp_int *sig, cli_crt_hashtype hashty
 	    if(keylen < objlen)
 		break;
 	    if(objlen == 9) {
-		if(hashtype != CLI_SHA1RSA || memcmp(&d[j], "\x06\x05\x2b\x0e\x03\x02\x1a\x05\x00", 9)) {
+                // Check for OID type indicating a length of 5, OID_sha1, and the NULL type/value
+		if(hashtype != CLI_SHA1RSA || memcmp(&d[j], "\x06\x05" OID_sha1 "\x05\x00", 9)) {
 		    cli_errmsg("crtmgr_rsa_verify: FIXME ACAB - CRYPTO MISSING?\n");
 		    break;
 		}
 	    } else if(objlen == 12) {
-		if(hashtype != CLI_MD5RSA || memcmp(&d[j], "\x06\x08\x2a\x86\x48\x86\xf7\x0d\x02\x05\x05\x00", 12)) {
+                // Check for OID type indicating a length of 8, OID_md5, and the NULL type/value
+		if(hashtype != CLI_MD5RSA || memcmp(&d[j], "\x06\x08" OID_md5 "\x05\x00", 12)) {
+		    cli_errmsg("crtmgr_rsa_verify: FIXME ACAB - CRYPTO MISSING?\n");
+		    break;
+		}
+	    } else if(objlen == 13) {
+                // Check for OID type indicating a length of 9, OID_sha256, and the NULL type/value
+		if(hashtype != CLI_SHA256RSA || memcmp(&d[j], "\x06\x09" OID_sha256 "\x05\x00", 13)) {
 		    cli_errmsg("crtmgr_rsa_verify: FIXME ACAB - CRYPTO MISSING?\n");
 		    break;
 		}
