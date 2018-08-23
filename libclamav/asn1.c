@@ -127,6 +127,14 @@ static int map_raw(fmap_t *map, const void *data, unsigned int len, uint8_t raw[
     return 0;
 }
 
+static int map_sha256(fmap_t *map, const void *data, unsigned int len, uint8_t sha256[SHA256_HASH_SIZE]) {
+    if(!fmap_need_ptr_once(map, data, len)) {
+        cli_dbgmsg("map_sha256: failed to read hash data\n");
+        return 1;
+    }
+    return (cl_sha256(data, len, sha256, NULL) == NULL);
+}
+
 static int map_sha1(fmap_t *map, const void *data, unsigned int len, uint8_t sha1[SHA1_HASH_SIZE]) {
     if(!fmap_need_ptr_once(map, data, len)) {
         cli_dbgmsg("map_sha1: failed to read hash data\n");
@@ -282,8 +290,7 @@ static int asn1_expect_rsa(fmap_t *map, const void **asn1data, unsigned int *asn
         return 1;
     }
     else if(obj.size == lenof(OID_sha256WithRSAEncryption) && !memcmp(obj.content, OID_sha256WithRSAEncryption, lenof(OID_sha256WithRSAEncryption))) {
-        cli_dbgmsg("asn1_expect_rsa: SHA256 with RSA (not yet supported)\n");
-        return 1;
+        *hashtype = CLI_SHA256RSA; /* sha256WithRSAEncryption 1.2.840.113549.1.1.11 */
     }
     else if(obj.size == lenof(OID_sha512WithRSAEncryption) && !memcmp(obj.content, OID_sha512WithRSAEncryption, lenof(OID_sha512WithRSAEncryption))) {
         cli_dbgmsg("asn1_expect_rsa: SHA512 with RSA (not yet supported)\n");
@@ -759,7 +766,9 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
             break;
         }
 
-        if((x509.hashtype == CLI_SHA1RSA && map_sha1(map, tbsdata, tbssize, x509.tbshash)) || (x509.hashtype == CLI_MD5RSA && (map_md5(map, tbsdata, tbssize, x509.tbshash))))
+        if((x509.hashtype == CLI_SHA1RSA && map_sha1(map, tbsdata, tbssize, x509.tbshash)) || \
+           (x509.hashtype == CLI_MD5RSA && map_md5(map, tbsdata, tbssize, x509.tbshash)) || \
+           (x509.hashtype == CLI_SHA256RSA && map_sha256(map, tbsdata, tbssize, x509.tbshash)))
             break;
 
         if(crtmgr_add(other, &x509))
@@ -1508,6 +1517,8 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
             ctx = cl_hash_init("sha1");
         } else if (hashtype == CLI_MD5RSA) {
             ctx = cl_hash_init("md5");
+        } else {
+            break;
         }
 
         if (!(ctx))
