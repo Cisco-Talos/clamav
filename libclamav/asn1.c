@@ -95,8 +95,17 @@
 #define OID_1_3_6_1_4_1_311_12_1_2 "\x2b\x06\x01\x04\x01\x82\x37\x0c\x01\x02"
 #define OID_szOID_CATALOG_LIST_MEMBER OID_1_3_6_1_4_1_311_12_1_2
 
-#define lenof(x) (sizeof((x))-1)
 /* --------------------------------------------------------------------------- OIDS */
+#define lenof(x) (sizeof((x))-1)
+
+#define ASN1_TYPE_BOOLEAN 0x01
+#define ASN1_TYPE_INTEGER 0x02
+#define ASN1_TYPE_BIT_STRING 0x03
+#define ASN1_TYPE_OCTET_STRING 0x04
+#define ASN1_TYPE_NULL 0x05
+#define ASN1_TYPE_OBJECT_ID 0x06
+#define ASN1_TYPE_SEQUENCE 0x30
+#define ASN1_TYPE_SET 0x31
 
 struct cli_asn1 {
     uint8_t type;
@@ -226,14 +235,14 @@ static int asn1_expect_algo(fmap_t *map, const void **asn1data, unsigned int *as
     struct cli_asn1 obj;
     unsigned int avail;
     int ret;
-    if((ret = asn1_expect_objtype(map, *asn1data, asn1len, &obj, 0x30))) /* SEQUENCE */
+    if((ret = asn1_expect_objtype(map, *asn1data, asn1len, &obj, ASN1_TYPE_SEQUENCE))) /* SEQUENCE */
         return ret;
     avail = obj.size;
     *asn1data = obj.next;
 
-    if((ret = asn1_expect_obj(map, &obj.content, &avail, 0x06, algo_size, algo))) /* ALGO */
+    if((ret = asn1_expect_obj(map, &obj.content, &avail, ASN1_TYPE_OBJECT_ID, algo_size, algo))) /* ALGO */
         return ret;
-    if(avail && (ret = asn1_expect_obj(map, &obj.content, &avail, 0x05, 0, NULL))) /* NULL */
+    if(avail && (ret = asn1_expect_obj(map, &obj.content, &avail, ASN1_TYPE_NULL, 0, NULL))) /* NULL */
         return ret;
     if(avail) {
         cli_dbgmsg("asn1_expect_algo: extra data found in SEQUENCE\n");
@@ -247,12 +256,12 @@ static int asn1_expect_rsa(fmap_t *map, const void **asn1data, unsigned int *asn
     struct cli_asn1 obj;
     unsigned int avail;
     int ret;
-    if((ret = asn1_expect_objtype(map, *asn1data, asn1len, &obj, 0x30))) /* SEQUENCE */
+    if((ret = asn1_expect_objtype(map, *asn1data, asn1len, &obj, ASN1_TYPE_SEQUENCE))) /* SEQUENCE */
         return ret;
     avail = obj.size;
     *asn1data = obj.next;
 
-    if(asn1_expect_objtype(map, obj.content, &avail, &obj, 0x06))
+    if(asn1_expect_objtype(map, obj.content, &avail, &obj, ASN1_TYPE_OBJECT_ID))
         return 1;
     if(obj.size != lenof(OID_sha1WithRSA) && obj.size != lenof(OID_sha1WithRSAEncryption)) { /* lenof(OID_sha1WithRSAEncryption) = lenof(OID_md5WithRSAEncryption) = 9 */
         cli_dbgmsg("asn1_expect_rsa: expecting OID with size 5 or 9, got %02x with size %u\n", obj.type, obj.size);
@@ -284,7 +293,7 @@ static int asn1_expect_rsa(fmap_t *map, const void **asn1data, unsigned int *asn
         cli_dbgmsg("asn1_expect_rsa: OID mismatch (size %u)\n", obj.size);
         return 1;
     }
-    if((ret = asn1_expect_obj(map, &obj.next, &avail, 0x05, 0, NULL))) /* NULL */
+    if((ret = asn1_expect_obj(map, &obj.next, &avail, ASN1_TYPE_NULL, 0, NULL))) /* NULL */
         return ret;
     if(avail) {
         cli_dbgmsg("asn1_expect_rsa: extra data found in SEQUENCE\n");
@@ -402,7 +411,7 @@ static int asn1_get_rsa_pubkey(fmap_t *map, const void **asn1data, unsigned int 
     struct cli_asn1 obj;
     unsigned int avail, avail2;
 
-    if(asn1_expect_objtype(map, *asn1data, size, &obj, 0x30)) /* subjectPublicKeyInfo */
+    if(asn1_expect_objtype(map, *asn1data, size, &obj, ASN1_TYPE_SEQUENCE)) /* subjectPublicKeyInfo */
         return 1;
     *asn1data = obj.next;
 
@@ -410,7 +419,7 @@ static int asn1_get_rsa_pubkey(fmap_t *map, const void **asn1data, unsigned int 
     if(asn1_expect_algo(map, &obj.content, &avail, lenof(OID_rsaEncryption), OID_rsaEncryption)) /* rsaEncryption */
        return 1;
 
-    if(asn1_expect_objtype(map, obj.content, &avail, &obj, 0x03)) /* BIT STRING - subjectPublicKey */
+    if(asn1_expect_objtype(map, obj.content, &avail, &obj, ASN1_TYPE_BIT_STRING)) /* BIT STRING - subjectPublicKey */
         return 1;
     if(avail) {
         cli_dbgmsg("asn1_get_rsa_pubkey: found unexpected extra data in subjectPublicKeyInfo\n");
@@ -430,7 +439,7 @@ static int asn1_get_rsa_pubkey(fmap_t *map, const void **asn1data, unsigned int 
 
     avail = obj.size - 1;
     obj.content = ((uint8_t *)obj.content) + 1;
-    if(asn1_expect_objtype(map, obj.content, &avail, &obj, 0x30)) /* SEQUENCE */
+    if(asn1_expect_objtype(map, obj.content, &avail, &obj, ASN1_TYPE_SEQUENCE)) /* SEQUENCE */
         return 1;
     if(avail) {
         cli_dbgmsg("asn1_get_rsa_pubkey: found unexpected extra data in public key content\n");
@@ -438,7 +447,7 @@ static int asn1_get_rsa_pubkey(fmap_t *map, const void **asn1data, unsigned int 
     }
 
     avail = obj.size;
-    if(asn1_expect_objtype(map, obj.content, &avail, &obj, 0x02)) /* INTEGER - mod */
+    if(asn1_expect_objtype(map, obj.content, &avail, &obj, ASN1_TYPE_INTEGER)) /* INTEGER - mod */
         return 1;
     if(obj.size < 1024/8 || obj.size > 4096/8+1) {
         cli_dbgmsg("asn1_get_rsa_pubkey: modulus has got an unsupported length (%u)\n",  obj.size * 8);
@@ -454,7 +463,7 @@ static int asn1_get_rsa_pubkey(fmap_t *map, const void **asn1data, unsigned int 
         return 1;
     }
 
-    if(asn1_expect_objtype(map, obj.next, &avail, &obj, 0x02)) /* INTEGER - exp */
+    if(asn1_expect_objtype(map, obj.next, &avail, &obj, ASN1_TYPE_INTEGER)) /* INTEGER - exp */
         return 1;
     if(avail) {
         cli_dbgmsg("asn1_get_rsa_pubkey: found unexpected extra data after exp\n");
@@ -487,12 +496,12 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
         return 1;
 
     do {
-        if(asn1_expect_objtype(map, *asn1data, size, &crt, 0x30)) /* SEQUENCE */
+        if(asn1_expect_objtype(map, *asn1data, size, &crt, ASN1_TYPE_SEQUENCE)) /* SEQUENCE */
             break;
         *asn1data = crt.next;
 
         tbsdata = crt.content;
-        if(asn1_expect_objtype(map, crt.content, &crt.size, &tbs, 0x30)) /* SEQUENCE - TBSCertificate */
+        if(asn1_expect_objtype(map, crt.content, &crt.size, &tbs, ASN1_TYPE_SEQUENCE)) /* SEQUENCE - TBSCertificate */
             break;
         tbssize = (uint8_t *)tbs.next - tbsdata;
 
@@ -500,14 +509,14 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
             break;
         avail = obj.size;
         next = obj.next;
-        if(asn1_expect_obj(map, &obj.content, &avail, 0x02, 1, "\x02")) /* version 3 only */
+        if(asn1_expect_obj(map, &obj.content, &avail, ASN1_TYPE_INTEGER, 1, "\x02")) /* version 3 only */
             break;
         if(avail) {
             cli_dbgmsg("asn1_get_x509: found unexpected extra data in version\n");
             break;
         }
 
-        if(asn1_expect_objtype(map, next, &tbs.size, &obj, 0x02)) /* serialNumber */
+        if(asn1_expect_objtype(map, next, &tbs.size, &obj, ASN1_TYPE_INTEGER)) /* serialNumber */
             break;
         if(map_raw(map, obj.content, obj.size, x509.raw_serial))
             break;
@@ -517,12 +526,12 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
         if(asn1_expect_rsa(map, &obj.next, &tbs.size, &hashtype1)) /* algo = sha1WithRSAEncryption | md5WithRSAEncryption */
             break;
 
-        if(asn1_expect_objtype(map, obj.next, &tbs.size, &obj, 0x30)) /* issuer */
+        if(asn1_expect_objtype(map, obj.next, &tbs.size, &obj, ASN1_TYPE_SEQUENCE)) /* issuer */
             break;
         issuer = obj.content;
         issuersize = obj.size;
 
-        if(asn1_expect_objtype(map, obj.next, &tbs.size, &obj, 0x30)) /* validity */
+        if(asn1_expect_objtype(map, obj.next, &tbs.size, &obj, ASN1_TYPE_SEQUENCE)) /* validity */
             break;
         avail = obj.size;
         next = obj.content;
@@ -540,7 +549,7 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
             break;
         }
 
-        if(asn1_expect_objtype(map, obj.next, &tbs.size, &obj, 0x30)) /* subject */
+        if(asn1_expect_objtype(map, obj.next, &tbs.size, &obj, ASN1_TYPE_SEQUENCE)) /* subject */
             break;
         if(map_raw(map, obj.content, obj.size, x509.raw_subject))
             break;
@@ -564,7 +573,7 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
             if(obj.type == 0xa3) {
                 struct cli_asn1 exts;
                 int have_ext_key = 0;
-                if(asn1_expect_objtype(map, obj.content, &obj.size, &exts, 0x30)) {
+                if(asn1_expect_objtype(map, obj.content, &obj.size, &exts, ASN1_TYPE_SEQUENCE)) {
                     tbs.size = 1;
                     break;
                 }
@@ -574,12 +583,12 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
                 }
                 while(exts.size) {
                     struct cli_asn1 ext, id, value;
-                    if(asn1_expect_objtype(map, exts.content, &exts.size, &ext, 0x30)) {
+                    if(asn1_expect_objtype(map, exts.content, &exts.size, &ext, ASN1_TYPE_SEQUENCE)) {
                         exts.size = 1;
                         break;
                     }
                     exts.content = ext.next;
-                    if(asn1_expect_objtype(map, ext.content, &ext.size, &id, 0x06)) {
+                    if(asn1_expect_objtype(map, ext.content, &ext.size, &id, ASN1_TYPE_OBJECT_ID)) {
                         exts.size = 1;
                         break;
                     }
@@ -587,7 +596,7 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
                         exts.size = 1;
                         break;
                     }
-                    if(value.type == 0x01) {
+                    if(value.type == ASN1_TYPE_BOOLEAN) {
                         /* critical flag */
                         if(value.size != 1) {
                             cli_dbgmsg("asn1_get_x509: found boolean with wrong length\n");
@@ -599,7 +608,7 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
                             break;
                         }
                     }
-                    if(value.type != 0x04) {
+                    if(value.type != ASN1_TYPE_OCTET_STRING) {
                         cli_dbgmsg("asn1_get_x509: bad extension value type %u\n", value.type);
                         exts.size = 1;
                         break;
@@ -644,7 +653,7 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
                         /* ExtKeyUsage 2.5.29.37 */
                         struct cli_asn1 keypurp;
                         have_ext_key = 1;
-                        if(asn1_expect_objtype(map, value.content, &value.size, &keypurp, 0x30)) {
+                        if(asn1_expect_objtype(map, value.content, &value.size, &keypurp, ASN1_TYPE_SEQUENCE)) {
                             exts.size = 1;
                             break;
                         }
@@ -655,7 +664,7 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
                         }
                         ext.next = keypurp.content;
                         while(keypurp.size) {
-                            if(asn1_expect_objtype(map, ext.next, &keypurp.size, &ext, 0x06)) {
+                            if(asn1_expect_objtype(map, ext.next, &keypurp.size, &ext, ASN1_TYPE_OBJECT_ID)) {
                                 exts.size = 1;
                                 break;
                             }
@@ -675,14 +684,14 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
                     if(!memcmp("\x55\x1d\x13", id.content, 3)) {
                         /* Basic Constraints 2.5.29.19 */
                         struct cli_asn1 constr;
-                        if(asn1_expect_objtype(map, value.content, &value.size, &constr, 0x30)) {
+                        if(asn1_expect_objtype(map, value.content, &value.size, &constr, ASN1_TYPE_SEQUENCE)) {
                             exts.size = 1;
                             break;
                         }
                         if(!constr.size)
                             x509.certSign = 0;
                         else {
-                            if(asn1_expect_objtype(map, constr.content, &constr.size, &ext, 0x01)) {
+                            if(asn1_expect_objtype(map, constr.content, &constr.size, &ext, ASN1_TYPE_BOOLEAN)) {
                                 exts.size = 1;
                                 break;
                             }
@@ -731,7 +740,7 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
         }
         x509.hashtype = hashtype1;
 
-        if(asn1_expect_objtype(map, tbs.next, &crt.size, &obj, 0x03)) /* signature */
+        if(asn1_expect_objtype(map, tbs.next, &crt.size, &obj, ASN1_TYPE_BIT_STRING)) /* signature */
             break;
         if(obj.size > 513) {
             cli_dbgmsg("asn1_get_x509: signature too long\n");
@@ -781,14 +790,14 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
             break;
         }
 
-        if(asn1_expect_objtype(map, message, &size, &asn1, 0x30)) /* SEQUENCE */
+        if(asn1_expect_objtype(map, message, &size, &asn1, ASN1_TYPE_SEQUENCE)) /* SEQUENCE */
             break;
         /* if(size) { */
         /*     cli_dbgmsg("asn1_parse_mscat: found extra data after pkcs#7 %u\n", size); */
         /*     break; */
         /* } */
         size = asn1.size;
-        if(asn1_expect_obj(map, &asn1.content, &size, 0x06, lenof(OID_signedData), OID_signedData)) /* OBJECT 1.2.840.113549.1.7.2 - contentType = signedData */
+        if(asn1_expect_obj(map, &asn1.content, &size, ASN1_TYPE_OBJECT_ID, lenof(OID_signedData), OID_signedData)) /* OBJECT 1.2.840.113549.1.7.2 - contentType = signedData */
             break;
         if(asn1_expect_objtype(map, asn1.content, &size, &asn1, 0xa0)) /* [0] - content */
             break;
@@ -797,17 +806,17 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
             break;
         }
         size = asn1.size;
-        if(asn1_expect_objtype(map, asn1.content, &size, &asn1, 0x30)) /* SEQUENCE */
+        if(asn1_expect_objtype(map, asn1.content, &size, &asn1, ASN1_TYPE_SEQUENCE)) /* SEQUENCE */
             break;
         if(size) {
             cli_dbgmsg("asn1_parse_mscat: found extra data in signedData\n");
             break;
         }
         size = asn1.size;
-        if(asn1_expect_obj(map, &asn1.content, &size, 0x02, 1, "\x01")) /* INTEGER - VERSION 1 */
+        if(asn1_expect_obj(map, &asn1.content, &size, ASN1_TYPE_INTEGER, 1, "\x01")) /* INTEGER - VERSION 1 */
             break;
 
-        if(asn1_expect_objtype(map, asn1.content, &size, &asn1, 0x31)) /* SET OF DigestAlgorithmIdentifier */
+        if(asn1_expect_objtype(map, asn1.content, &size, &asn1, ASN1_TYPE_SET)) /* SET OF DigestAlgorithmIdentifier */
             break;
 
         if(asn1_expect_algo(map, &asn1.content, &asn1.size, lenof(OID_sha1), OID_sha1)) /* DigestAlgorithmIdentifier[0] == sha1 */
@@ -817,13 +826,13 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
             break;
         }
 
-        if(asn1_expect_objtype(map, asn1.next, &size, &asn1, 0x30)) /* SEQUENCE - contentInfo */
+        if(asn1_expect_objtype(map, asn1.next, &size, &asn1, ASN1_TYPE_SEQUENCE)) /* SEQUENCE - contentInfo */
             break;
         /* Here there is either a PKCS #7 ContentType Object Identifier for Certificate Trust List (szOID_CTL)
          * or a single SPC_INDIRECT_DATA_OBJID */
         if(
-           (!embedded && asn1_expect_obj(map, &asn1.content, &asn1.size, 0x06, lenof(OID_szOID_CTL), OID_szOID_CTL)) ||
-           (embedded && asn1_expect_obj(map, &asn1.content, &asn1.size, 0x06, lenof(OID_SPC_INDIRECT_DATA_OBJID), OID_SPC_INDIRECT_DATA_OBJID))
+           (!embedded && asn1_expect_obj(map, &asn1.content, &asn1.size, ASN1_TYPE_OBJECT_ID, lenof(OID_szOID_CTL), OID_szOID_CTL)) ||
+           (embedded && asn1_expect_obj(map, &asn1.content, &asn1.size, ASN1_TYPE_OBJECT_ID, lenof(OID_SPC_INDIRECT_DATA_OBJID), OID_SPC_INDIRECT_DATA_OBJID))
            )
             break;
 
@@ -834,7 +843,7 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
             break;
         }
         dsize = deep.size;
-        if(asn1_expect_objtype(map, deep.content, &dsize, &deep, 0x30))
+        if(asn1_expect_objtype(map, deep.content, &dsize, &deep, ASN1_TYPE_SEQUENCE))
             break;
         if(dsize) {
             cli_dbgmsg("asn1_parse_mscat: found extra data in content\n");
@@ -931,7 +940,7 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
             break;
         if(asn1.type == 0xa1 && asn1_get_obj(map, asn1.next, &size, &asn1)) /* crls - unused shouldn't be present */
             break;
-        if(asn1.type != 0x31) { /* signerInfos */
+        if(asn1.type != ASN1_TYPE_SET) { /* signerInfos */
             cli_dbgmsg("asn1_parse_mscat: unexpected type %02x for signerInfos\n", asn1.type);
             break;
         }
@@ -940,24 +949,24 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
             break;
         }
         size = asn1.size;
-        if(asn1_expect_objtype(map, asn1.content, &size, &asn1, 0x30))
+        if(asn1_expect_objtype(map, asn1.content, &size, &asn1, ASN1_TYPE_SEQUENCE))
             break;
         if(size) {
             cli_dbgmsg("asn1_parse_mscat: only one signerInfo shall be present\n");
             break;
         }
         size = asn1.size;
-        if(asn1_expect_obj(map, &asn1.content, &size, 0x02, 1, "\x01")) /* Version = 1 */
+        if(asn1_expect_obj(map, &asn1.content, &size, ASN1_TYPE_INTEGER, 1, "\x01")) /* Version = 1 */
             break;
-        if(asn1_expect_objtype(map, asn1.content, &size, &asn1, 0x30)) /* issuerAndSerialNumber */
+        if(asn1_expect_objtype(map, asn1.content, &size, &asn1, ASN1_TYPE_SEQUENCE)) /* issuerAndSerialNumber */
             break;
         dsize = asn1.size;
-        if(asn1_expect_objtype(map, asn1.content, &dsize, &deep, 0x30)) /* issuer */
+        if(asn1_expect_objtype(map, asn1.content, &dsize, &deep, ASN1_TYPE_SEQUENCE)) /* issuer */
             break;
         if(map_sha1(map, deep.content, deep.size, issuer))
             break;
 
-        if(asn1_expect_objtype(map, deep.next, &dsize, &deep, 0x02)) /* serial */
+        if(asn1_expect_objtype(map, deep.next, &dsize, &deep, ASN1_TYPE_INTEGER)) /* serial */
             break;
         if(map_sha1(map, deep.content, deep.size, serial))
             break;
@@ -983,11 +992,11 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
         while(dsize) {
             struct cli_asn1 cobj;
             int content;
-            if(asn1_expect_objtype(map, deep.next, &dsize, &deep, 0x30)) { /* attribute */
+            if(asn1_expect_objtype(map, deep.next, &dsize, &deep, ASN1_TYPE_SEQUENCE)) { /* attribute */
                 dsize = 1;
                 break;
             }
-            if(asn1_expect_objtype(map, deep.content, &deep.size, &deeper, 0x06)) { /* attribute type */
+            if(asn1_expect_objtype(map, deep.content, &deep.size, &deeper, ASN1_TYPE_OBJECT_ID)) { /* attribute type */
                 dsize = 1;
                 break;
             }
@@ -1004,7 +1013,7 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
                 content = 1; /* messageDigest */
             else
                 continue;
-            if(asn1_expect_objtype(map, deeper.next, &deep.size, &deeper, 0x31)) { /* set - contents */
+            if(asn1_expect_objtype(map, deeper.next, &deep.size, &deeper, ASN1_TYPE_SET)) { /* set - contents */
                 dsize = 1;
                 break;
             }
@@ -1022,15 +1031,15 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
 
             if(content == 0) { /* contentType */
                 if(
-                   (!embedded && asn1_expect_obj(map, &deeper.content, &deeper.size, 0x06, lenof(OID_szOID_CTL), OID_szOID_CTL)) || /* cat file */
-                   (embedded && asn1_expect_obj(map, &deeper.content, &deeper.size, 0x06, lenof(OID_SPC_INDIRECT_DATA_OBJID), OID_SPC_INDIRECT_DATA_OBJID)) /* embedded cat */
+                   (!embedded && asn1_expect_obj(map, &deeper.content, &deeper.size, ASN1_TYPE_OBJECT_ID, lenof(OID_szOID_CTL), OID_szOID_CTL)) || /* cat file */
+                   (embedded && asn1_expect_obj(map, &deeper.content, &deeper.size, ASN1_TYPE_OBJECT_ID, lenof(OID_SPC_INDIRECT_DATA_OBJID), OID_SPC_INDIRECT_DATA_OBJID)) /* embedded cat */
                   ) {
                     dsize = 1;
                     break;
                 }
                 result |= 1;
             } else { /* messageDigest */
-                if(asn1_expect_objtype(map, deeper.content, &deeper.size, &cobj, 0x04)) {
+                if(asn1_expect_objtype(map, deeper.content, &deeper.size, &cobj, ASN1_TYPE_OCTET_STRING)) {
                     dsize = 1;
                     break;
                 }
@@ -1063,7 +1072,7 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
         if(asn1_expect_algo(map, &asn1.next, &size, lenof(OID_rsaEncryption), OID_rsaEncryption)) /* digestEncryptionAlgorithm == sha1 */
             break;
 
-        if(asn1_expect_objtype(map, asn1.next, &size, &asn1, 0x04)) /* encryptedDigest */
+        if(asn1_expect_objtype(map, asn1.next, &size, &asn1, ASN1_TYPE_OCTET_STRING)) /* encryptedDigest */
             break;
         if(asn1.size > 513) {
             cli_dbgmsg("asn1_parse_mscat: encryptedDigest too long\n");
@@ -1114,7 +1123,7 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
         }
 
         size = asn1.size;
-        if(asn1_expect_objtype(map, asn1.content, &size, &asn1, 0x30))
+        if(asn1_expect_objtype(map, asn1.content, &size, &asn1, ASN1_TYPE_SEQUENCE))
             break;
         if(size) {
             cli_dbgmsg("asn1_parse_mscat: extra data inside unauthenticatedAttributes\n");
@@ -1123,9 +1132,9 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
 
         size = asn1.size;
         /* 1.2.840.113549.1.9.6 - counterSignature */
-        if(asn1_expect_obj(map, &asn1.content, &size, 0x06, lenof(OID_countersignature), OID_countersignature))
+        if(asn1_expect_obj(map, &asn1.content, &size, ASN1_TYPE_OBJECT_ID, lenof(OID_countersignature), OID_countersignature))
             break;
-        if(asn1_expect_objtype(map, asn1.content, &size, &asn1, 0x31))
+        if(asn1_expect_objtype(map, asn1.content, &size, &asn1, ASN1_TYPE_SET))
             break;
         if(size) {
             cli_dbgmsg("asn1_parse_mscat: extra data inside counterSignature\n");
@@ -1133,7 +1142,7 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
         }
 
         size = asn1.size;
-        if(asn1_expect_objtype(map, asn1.content, &size, &asn1, 0x30))
+        if(asn1_expect_objtype(map, asn1.content, &size, &asn1, ASN1_TYPE_SEQUENCE))
             break;
         if(size) {
             cli_dbgmsg("asn1_parse_mscat: extra data inside unauthenticatedAttributes\n");
@@ -1141,18 +1150,18 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
         }
 
         size = asn1.size;
-        if(asn1_expect_obj(map, &asn1.content, &size, 0x02, 1, "\x01")) /* Version = 1*/
+        if(asn1_expect_obj(map, &asn1.content, &size, ASN1_TYPE_INTEGER, 1, "\x01")) /* Version = 1*/
             break;
 
-        if(asn1_expect_objtype(map, asn1.content, &size, &asn1, 0x30)) /* issuerAndSerialNumber */
+        if(asn1_expect_objtype(map, asn1.content, &size, &asn1, ASN1_TYPE_SEQUENCE)) /* issuerAndSerialNumber */
             break;
 
-        if(asn1_expect_objtype(map, asn1.content, &asn1.size, &deep, 0x30)) /* issuer */
+        if(asn1_expect_objtype(map, asn1.content, &asn1.size, &deep, ASN1_TYPE_SEQUENCE)) /* issuer */
             break;
         if(map_sha1(map, deep.content, deep.size, issuer))
             break;
 
-        if(asn1_expect_objtype(map, deep.next, &asn1.size, &deep, 0x02)) /* serial */
+        if(asn1_expect_objtype(map, deep.next, &asn1.size, &deep, ASN1_TYPE_INTEGER)) /* serial */
             break;
         if(map_sha1(map, deep.content, deep.size, serial))
             break;
@@ -1162,9 +1171,9 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
             break;
         }
 
-        if(asn1_expect_objtype(map, asn1.next, &size, &asn1, 0x30)) /* digestAlgorithm */
+        if(asn1_expect_objtype(map, asn1.next, &size, &asn1, ASN1_TYPE_SEQUENCE)) /* digestAlgorithm */
             break;
-        if(asn1_expect_objtype(map, asn1.content, &asn1.size, &deep, 0x06))
+        if(asn1_expect_objtype(map, asn1.content, &asn1.size, &deep, ASN1_TYPE_OBJECT_ID))
             break;
         if(deep.size != lenof(OID_sha1) && deep.size != lenof(OID_md5)) {
             cli_dbgmsg("asn1_parse_mscat: wrong digestAlgorithm size\n");
@@ -1186,7 +1195,7 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
             cli_dbgmsg("asn1_parse_mscat: unknown digest oid in countersignature\n");
             break;
         }
-        if(asn1.size && asn1_expect_obj(map, &deep.next, &asn1.size, 0x05, 0, NULL))
+        if(asn1.size && asn1_expect_obj(map, &deep.next, &asn1.size, ASN1_TYPE_NULL, 0, NULL))
             break;
         if(asn1.size) {
             cli_dbgmsg("asn1_parse_mscat: extra data in countersignature oid\n");
@@ -1206,11 +1215,11 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
         deep.next = asn1.content;
         while(dsize) {
             int content;
-            if(asn1_expect_objtype(map, deep.next, &dsize, &deep, 0x30)) { /* attribute */
+            if(asn1_expect_objtype(map, deep.next, &dsize, &deep, ASN1_TYPE_SEQUENCE)) { /* attribute */
                 dsize = 1;
                 break;
             }
-            if(asn1_expect_objtype(map, deep.content, &deep.size, &deeper, 0x06)) { /* attribute type */
+            if(asn1_expect_objtype(map, deep.content, &deep.size, &deeper, ASN1_TYPE_OBJECT_ID)) { /* attribute type */
                 dsize = 1;
                 break;
             }
@@ -1235,7 +1244,7 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
                 break;
             }
             result |= (1<<content);
-            if(asn1_expect_objtype(map, deeper.next, &deep.size, &deeper, 0x31)) { /* attribute type */
+            if(asn1_expect_objtype(map, deeper.next, &deep.size, &deeper, ASN1_TYPE_SET)) { /* attribute type */
                 dsize = 1;
                 break;
             }
@@ -1247,13 +1256,13 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
             deep.size = deeper.size;
             switch(content) {
             case 0:  /* contentType = pkcs7-data */
-                if(asn1_expect_obj(map, &deeper.content, &deep.size, 0x06, lenof(OID_pkcs7_data), OID_pkcs7_data))
+                if(asn1_expect_obj(map, &deeper.content, &deep.size, ASN1_TYPE_OBJECT_ID, lenof(OID_pkcs7_data), OID_pkcs7_data))
                     deep.size = 1;
                 else if(deep.size)
                     cli_dbgmsg("asn1_parse_mscat: extra data in countersignature content-type\n");
                 break;
             case 1:  /* messageDigest */
-                if(asn1_expect_obj(map, &deeper.content, &deep.size, 0x04, (hashtype == CLI_SHA1RSA) ? SHA1_HASH_SIZE : 16, md)) {
+                if(asn1_expect_obj(map, &deeper.content, &deep.size, ASN1_TYPE_OCTET_STRING, (hashtype == CLI_SHA1RSA) ? SHA1_HASH_SIZE : 16, md)) {
                     deep.size = 1;
                     cli_dbgmsg("asn1_parse_mscat: countersignature hash mismatch\n");
                 } else if(deep.size)
@@ -1285,9 +1294,9 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
             break;
         }
 
-        if(asn1_expect_objtype(map, asn1.next, &size, &asn1, 0x30)) /* digestEncryptionAlgorithm == sha1 */
+        if(asn1_expect_objtype(map, asn1.next, &size, &asn1, ASN1_TYPE_SEQUENCE)) /* digestEncryptionAlgorithm == sha1 */
             break;
-        if(asn1_expect_objtype(map, asn1.content, &asn1.size, &deep, 0x06)) /* digestEncryptionAlgorithm == sha1 */
+        if(asn1_expect_objtype(map, asn1.content, &asn1.size, &deep, ASN1_TYPE_OBJECT_ID)) /* digestEncryptionAlgorithm == sha1 */
             break;
         if(deep.size != lenof(OID_rsaEncryption)) { /* lenof(OID_rsaEncryption) = lenof(OID_sha1WithRSAEncryption) = 9 */
             cli_dbgmsg("asn1_parse_mscat: wrong digestEncryptionAlgorithm size in countersignature\n");
@@ -1302,14 +1311,14 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
             cli_dbgmsg("asn1_parse_mscat: digestEncryptionAlgorithm in countersignature is not sha1\n");
             break;
         }
-        if(asn1.size && asn1_expect_obj(map, &deep.next, &asn1.size, 0x05, 0, NULL))
+        if(asn1.size && asn1_expect_obj(map, &deep.next, &asn1.size, ASN1_TYPE_NULL, 0, NULL))
             break;
         if(asn1.size) {
             cli_dbgmsg("asn1_parse_mscat: extra data in digestEncryptionAlgorithm in countersignature\n");
             break;
         }
 
-        if(asn1_expect_objtype(map, asn1.next, &size, &asn1, 0x04)) /* encryptedDigest */
+        if(asn1_expect_objtype(map, asn1.next, &size, &asn1, ASN1_TYPE_OCTET_STRING)) /* encryptedDigest */
             break;
         if(asn1.size > 513) {
             cli_dbgmsg("asn1_parse_mscat: countersignature encryptedDigest too long\n");
@@ -1371,9 +1380,9 @@ int asn1_load_mscat(fmap_t *map, struct cl_engine *engine) {
     if(asn1_parse_mscat(map, 0, map->len, &engine->cmgr, 0, &c.next, &size, engine))
         return 1;
 
-    if(asn1_expect_objtype(map, c.next, &size, &c, 0x30))
+    if(asn1_expect_objtype(map, c.next, &size, &c, ASN1_TYPE_SEQUENCE))
         return 1;
-    if(asn1_expect_obj(map, &c.content, &c.size, 0x06, lenof(OID_szOID_CATALOG_LIST), OID_szOID_CATALOG_LIST))
+    if(asn1_expect_obj(map, &c.content, &c.size, ASN1_TYPE_OBJECT_ID, lenof(OID_szOID_CATALOG_LIST), OID_szOID_CATALOG_LIST))
         return 1;
     if(c.size) {
         cli_dbgmsg("asn1_load_mscat: found extra data in szOID_CATALOG_LIST content\n");
@@ -1385,7 +1394,7 @@ int asn1_load_mscat(fmap_t *map, struct cl_engine *engine) {
         return 1;
     if(asn1_expect_algo(map, &c.next, &size, lenof(OID_szOID_CATALOG_LIST_MEMBER), OID_szOID_CATALOG_LIST_MEMBER)) /* szOID_CATALOG_LIST_MEMBER */
         return 1;
-    if(asn1_expect_objtype(map, c.next, &size, &c, 0x30)) /* hashes here */
+    if(asn1_expect_objtype(map, c.next, &size, &c, ASN1_TYPE_SEQUENCE)) /* hashes here */
         return 1;
     /* [0] is next but we don't care as it's really descriptives stuff */
 
@@ -1393,11 +1402,11 @@ int asn1_load_mscat(fmap_t *map, struct cl_engine *engine) {
     c.next = c.content;
     while(size) {
         struct cli_asn1 tag;
-        if(asn1_expect_objtype(map, c.next, &size, &c, 0x30))
+        if(asn1_expect_objtype(map, c.next, &size, &c, ASN1_TYPE_SEQUENCE))
             return 1;
-        if(asn1_expect_objtype(map, c.content, &c.size, &tag, 0x04)) /* TAG NAME */
+        if(asn1_expect_objtype(map, c.content, &c.size, &tag, ASN1_TYPE_OCTET_STRING)) /* TAG NAME */
             return 1;
-        if(asn1_expect_objtype(map, tag.next, &c.size, &tag, 0x31)) /* set */
+        if(asn1_expect_objtype(map, tag.next, &c.size, &tag, ASN1_TYPE_SET)) /* set */
             return 1;
         if(c.size) {
             cli_dbgmsg("asn1_load_mscat: found extra data in tag\n");
@@ -1407,11 +1416,11 @@ int asn1_load_mscat(fmap_t *map, struct cl_engine *engine) {
             struct cli_asn1 tagval1, tagval2, tagval3;
             int hashtype;
 
-            if(asn1_expect_objtype(map, tag.content, &tag.size, &tagval1, 0x30))
+            if(asn1_expect_objtype(map, tag.content, &tag.size, &tagval1, ASN1_TYPE_SEQUENCE))
                 return 1;
             tag.content = tagval1.next;
 
-            if(asn1_expect_objtype(map, tagval1.content, &tagval1.size, &tagval2, 0x06))
+            if(asn1_expect_objtype(map, tagval1.content, &tagval1.size, &tagval2, ASN1_TYPE_OBJECT_ID))
                 return 1;
             if(tagval2.size != lenof(OID_SPC_INDIRECT_DATA_OBJID))
                 continue;
@@ -1423,24 +1432,24 @@ int asn1_load_mscat(fmap_t *map, struct cl_engine *engine) {
             if(memcmp(tagval2.content, OID_SPC_INDIRECT_DATA_OBJID, lenof(OID_SPC_INDIRECT_DATA_OBJID)))
                 continue; /* stuff like CAT_NAMEVALUE_OBJID(1.3.6.1.4.1.311.12.2.1) and CAT_MEMBERINFO_OBJID(.2).. */
 
-            if(asn1_expect_objtype(map, tagval2.next, &tagval1.size, &tagval2, 0x31))
+            if(asn1_expect_objtype(map, tagval2.next, &tagval1.size, &tagval2, ASN1_TYPE_SET))
                 return 1;
             if(tagval1.size) {
                 cli_dbgmsg("asn1_load_mscat: found extra data in tag value\n");
                 return 1;
             }
 
-            if(asn1_expect_objtype(map, tagval2.content, &tagval2.size, &tagval1, 0x30))
+            if(asn1_expect_objtype(map, tagval2.content, &tagval2.size, &tagval1, ASN1_TYPE_SEQUENCE))
                 return 1;
             if(tagval2.size) {
                 cli_dbgmsg("asn1_load_mscat: found extra data in SPC_INDIRECT_DATA_OBJID tag\n");
                 return 1;
             }
 
-            if(asn1_expect_objtype(map, tagval1.content, &tagval1.size, &tagval2, 0x30))
+            if(asn1_expect_objtype(map, tagval1.content, &tagval1.size, &tagval2, ASN1_TYPE_SEQUENCE))
                 return 1;
 
-            if(asn1_expect_objtype(map, tagval2.content, &tagval2.size, &tagval3, 0x06)) /* shall have an obj 1.3.6.1.4.1.311.2.1.15 or 1.3.6.1.4.1.311.2.1.25 inside */
+            if(asn1_expect_objtype(map, tagval2.content, &tagval2.size, &tagval3, ASN1_TYPE_OBJECT_ID)) /* shall have an obj 1.3.6.1.4.1.311.2.1.15 or 1.3.6.1.4.1.311.2.1.25 inside */
                 return 1;
             if(tagval3.size != lenof(OID_SPC_PE_IMAGE_DATA_OBJID)) { /* lenof(OID_SPC_PE_IMAGE_DATA_OBJID) = lenof(OID_SPC_CAB_DATA_OBJID) = 10*/
                 cli_dbgmsg("asn1_load_mscat: bad hash type size\n");
@@ -1459,7 +1468,7 @@ int asn1_load_mscat(fmap_t *map, struct cl_engine *engine) {
                 return 1;
             }
 
-            if(asn1_expect_objtype(map, tagval2.next, &tagval1.size, &tagval2, 0x30))
+            if(asn1_expect_objtype(map, tagval2.next, &tagval1.size, &tagval2, ASN1_TYPE_SEQUENCE))
                 return 1;
             if(tagval1.size) {
                 cli_dbgmsg("asn1_load_mscat: found extra data after hash\n");
@@ -1469,7 +1478,7 @@ int asn1_load_mscat(fmap_t *map, struct cl_engine *engine) {
             if(asn1_expect_algo(map, &tagval2.content, &tagval2.size, lenof(OID_sha1), OID_sha1)) /* objid 1.3.14.3.2.26 - sha1 */
                 return 1;
 
-            if(asn1_expect_objtype(map, tagval2.content, &tagval2.size, &tagval3, 0x04))
+            if(asn1_expect_objtype(map, tagval2.content, &tagval2.size, &tagval3, ASN1_TYPE_OCTET_STRING))
                 return 1;
             if(tagval2.size) {
                 cli_dbgmsg("asn1_load_mscat: found extra data in hash\n");
@@ -1532,11 +1541,11 @@ int asn1_check_mscat(struct cl_engine *engine, fmap_t *map, size_t offset, unsig
     if(ret)
         return CL_VIRUS;
 
-    if(asn1_expect_objtype(map, content, &content_size, &c, 0x30))
+    if(asn1_expect_objtype(map, content, &content_size, &c, ASN1_TYPE_SEQUENCE))
         return CL_VIRUS;
-    if(asn1_expect_obj(map, &c.content, &c.size, 0x06, lenof(OID_SPC_PE_IMAGE_DATA_OBJID), OID_SPC_PE_IMAGE_DATA_OBJID))
+    if(asn1_expect_obj(map, &c.content, &c.size, ASN1_TYPE_OBJECT_ID, lenof(OID_SPC_PE_IMAGE_DATA_OBJID), OID_SPC_PE_IMAGE_DATA_OBJID))
         return CL_VIRUS;
-    if(asn1_expect_objtype(map, c.next, &content_size, &c, 0x30))
+    if(asn1_expect_objtype(map, c.next, &content_size, &c, ASN1_TYPE_SEQUENCE))
         return CL_VIRUS;
     if(content_size) {
         cli_dbgmsg("asn1_check_mscat: extra data in content\n");
@@ -1545,7 +1554,7 @@ int asn1_check_mscat(struct cl_engine *engine, fmap_t *map, size_t offset, unsig
     if(asn1_expect_algo(map, &c.content, &c.size, lenof(OID_sha1), OID_sha1))
         return CL_VIRUS;
 
-    if(asn1_expect_obj(map, &c.content, &c.size, 0x04, SHA1_HASH_SIZE, computed_sha1))
+    if(asn1_expect_obj(map, &c.content, &c.size, ASN1_TYPE_OCTET_STRING, SHA1_HASH_SIZE, computed_sha1))
         return CL_VIRUS;
 
     cli_dbgmsg("asn1_check_mscat: file with valid authenticode signature, whitelisted\n");
