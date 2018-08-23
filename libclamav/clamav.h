@@ -575,6 +575,7 @@ extern void cl_fmap_close(cl_fmap_t*);
 extern int cl_scanmap_callback(cl_fmap_t *map, const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *scanoptions, void *context);
 
 /* Crypto/hashing functions */
+#define MD5_HASH_SIZE 16
 #define SHA1_HASH_SIZE 20
 #define SHA256_HASH_SIZE 32
 
