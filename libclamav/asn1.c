@@ -86,6 +86,9 @@
 #define OID_1_3_6_1_4_1_311_2_1_25 "\x2b\x06\x01\x04\x01\x82\x37\x02\x01\x19"
 #define OID_SPC_CAB_DATA_OBJID OID_1_3_6_1_4_1_311_2_1_25
 
+#define OID_1_3_6_1_4_1_311_2_4_1 "\x2b\x06\x01\x04\x01\x82\x37\x02\x04\x01"
+#define OID_nestedSignatures OID_1_3_6_1_4_1_311_2_4_1
+
 #define OID_1_3_6_1_4_1_311_10_1 "\x2b\x06\x01\x04\x01\x82\x37\x0a\x01"
 #define OID_szOID_CTL OID_1_3_6_1_4_1_311_10_1
 
@@ -783,8 +786,8 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
 static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmgr *cmgr, int embedded, const void **hashes, unsigned int *hashes_size, struct cl_engine *engine) {
     struct cli_asn1 asn1, deep, deeper;
     uint8_t sha1[SHA1_HASH_SIZE], issuer[SHA1_HASH_SIZE], md[SHA1_HASH_SIZE], serial[SHA1_HASH_SIZE];
-    const uint8_t *message, *attrs;
-    unsigned int dsize, message_size, attrs_size;
+    const uint8_t *message, *attrs, *nested;
+    unsigned int dsize, message_size, attrs_size, nested_size;
     cli_crt_hashtype hashtype;
     unsigned int hashsize;
     cli_crt *x509;
@@ -1254,10 +1257,14 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
             cli_dbgmsg("asn1_parse_mscat: expected SEQUENCE in unauthenticated data section\n");
             break;
         }
-        if(size) {
-            cli_dbgmsg("asn1_parse_mscat: extra data inside unauthenticatedAttributes\n");
-            break;
-        }
+
+        /* Older authenticode sigs only contain one SEQUENCE in the unauth
+         * attribs section, but newer ones can have an additional one
+         * containing nested signatures.  Save off a pointer to the
+         * additional SEQUENCE, if present, so we can parse it after we
+         * verify the counter signature. */
+        nested = asn1.next;
+        nested_size = size;
 
         size = asn1.size;
         /* 1.2.840.113549.1.9.6 - counterSignature */
@@ -1535,6 +1542,28 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
         if(!crtmgr_verify_pkcs7(cmgr, issuer, serial, asn1.content, asn1.size, hashtype, sha1, VRFY_TIME)) {
             cli_dbgmsg("asn1_parse_mscat: pkcs7 countersignature verification failed\n");
             break;
+        }
+
+        if(nested) {
+
+            if (asn1_expect_objtype(map, nested, &nested_size, &asn1, ASN1_TYPE_SEQUENCE)) {
+                cli_dbgmsg("asn1_parse_mscat: expected SEQUENCE in unauthenticatedAttributes following the counterSignature\n");
+                break;
+            }
+
+            if (nested_size) {
+                cli_dbgmsg("asn1_parse_mscat: extra data inside unauthenticatedAttributes\n");
+                break;
+            }
+
+            /* 1.3.6.1.4.1.311.2.4.1 - nested signatures */
+            if(asn1_expect_obj(map, &asn1.content, &asn1.size, ASN1_TYPE_OBJECT_ID, lenof(OID_nestedSignatures), OID_nestedSignatures)) {
+                cli_dbgmsg("asn1_parse_mscat: expected nested signature OID in the second unauthenticatedAttributes SEQUENCE\n");
+                break;
+            }
+
+            // TODO Support parsing these out in the future
+            cli_dbgmsg("asn1_parse_mscat: nested signatures detected but parsing them is not currently supported\n");
         }
 
         cli_dbgmsg("asn1_parse_mscat: catalog successfully parsed\n");
