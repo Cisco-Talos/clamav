@@ -523,7 +523,7 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
         if(map_sha1(map, obj.content, obj.size, x509.serial))
             break;
 
-        if(asn1_expect_rsa(map, &obj.next, &tbs.size, &hashtype1)) /* algo = sha1WithRSAEncryption | md5WithRSAEncryption */
+        if(asn1_expect_rsa(map, &obj.next, &tbs.size, &hashtype1)) /* algo - Ex: sha1WithRSAEncryption */
             break;
 
         if(asn1_expect_objtype(map, obj.next, &tbs.size, &obj, ASN1_TYPE_SEQUENCE)) /* issuer */
@@ -731,7 +731,7 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
         if(map_sha1(map, issuer, issuersize, x509.issuer))
             break;
 
-        if(asn1_expect_rsa(map, &tbs.next, &crt.size, &hashtype2)) /* signature algo = sha1WithRSAEncryption | md5WithRSAEncryption */
+        if(asn1_expect_rsa(map, &tbs.next, &crt.size, &hashtype2)) /* signature algo - Ex: sha1WithRSAEncryption */
             break;
 
         if(hashtype1 != hashtype2) {
@@ -777,6 +777,7 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
     const uint8_t *message, *attrs;
     unsigned int dsize, message_size, attrs_size;
     cli_crt_hashtype hashtype;
+    unsigned int hashsize;
     cli_crt *x509;
     void *ctx;
     int result;
@@ -790,70 +791,114 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
             break;
         }
 
-        if(asn1_expect_objtype(map, message, &size, &asn1, ASN1_TYPE_SEQUENCE)) /* SEQUENCE */
+        if(asn1_expect_objtype(map, message, &size, &asn1, ASN1_TYPE_SEQUENCE)){ /* SEQUENCE */
+            cli_dbgmsg("asn1_parse_mscat: expected SEQUENCE at top level\n");
             break;
+        }
+
+        // TODO Example where this is the case?
         /* if(size) { */
         /*     cli_dbgmsg("asn1_parse_mscat: found extra data after pkcs#7 %u\n", size); */
         /*     break; */
         /* } */
         size = asn1.size;
-        if(asn1_expect_obj(map, &asn1.content, &size, ASN1_TYPE_OBJECT_ID, lenof(OID_signedData), OID_signedData)) /* OBJECT 1.2.840.113549.1.7.2 - contentType = signedData */
+        if(asn1_expect_obj(map, &asn1.content, &size, ASN1_TYPE_OBJECT_ID, lenof(OID_signedData), OID_signedData)){ /* OBJECT 1.2.840.113549.1.7.2 - contentType = signedData */
+            cli_dbgmsg("asn1_parse_mscat: expected contentType == signedData\n");
             break;
-        if(asn1_expect_objtype(map, asn1.content, &size, &asn1, 0xa0)) /* [0] - content */
+        }
+        if(asn1_expect_objtype(map, asn1.content, &size, &asn1, 0xa0)){ /* [0] - content */
+            cli_dbgmsg("asn1_parse_mscat: expected '[0] - content' following signedData contentType\n");
             break;
+        }
         if(size) {
             cli_dbgmsg("asn1_parse_mscat: found extra data in pkcs#7\n");
             break;
         }
         size = asn1.size;
-        if(asn1_expect_objtype(map, asn1.content, &size, &asn1, ASN1_TYPE_SEQUENCE)) /* SEQUENCE */
+        if(asn1_expect_objtype(map, asn1.content, &size, &asn1, ASN1_TYPE_SEQUENCE)){ /* SEQUENCE */
+            cli_dbgmsg("asn1_parse_mscat: expected SEQUENCE inside signedData '[0] - content'\n");
             break;
+        }
         if(size) {
             cli_dbgmsg("asn1_parse_mscat: found extra data in signedData\n");
             break;
         }
         size = asn1.size;
-        if(asn1_expect_obj(map, &asn1.content, &size, ASN1_TYPE_INTEGER, 1, "\x01")) /* INTEGER - VERSION 1 */
+        if(asn1_expect_obj(map, &asn1.content, &size, ASN1_TYPE_INTEGER, 1, "\x01")){ /* INTEGER - VERSION 1 */
+            cli_dbgmsg("asn1_parse_mscat: expected 'INTEGER - VERSION 1' for signedData version\n");
             break;
+        }
 
-        if(asn1_expect_objtype(map, asn1.content, &size, &asn1, ASN1_TYPE_SET)) /* SET OF DigestAlgorithmIdentifier */
+        if(asn1_expect_objtype(map, asn1.content, &size, &asn1, ASN1_TYPE_SET)){ /* SET OF DigestAlgorithmIdentifier */
+            cli_dbgmsg("asn1_parse_mscat: expected SET OF DigestAlgorithmIdentifier inside signedData\n");
             break;
+        }
 
-        if(asn1_expect_algo(map, &asn1.content, &asn1.size, lenof(OID_sha1), OID_sha1)) /* DigestAlgorithmIdentifier[0] == sha1 */
+        if(asn1_expect_algo(map, &asn1.content, &asn1.size, lenof(OID_sha1), OID_sha1)){ /* DigestAlgorithmIdentifier[0] == sha1 */
+            cli_dbgmsg("asn1_parse_mscat: DigestAlgorithmIdentifier[0] does not indicate SHA1\n");
             break;
+        }
         if(asn1.size) {
             cli_dbgmsg("asn1_parse_mscat: only one digestAlgorithmIdentifier is allowed\n");
             break;
         }
 
-        if(asn1_expect_objtype(map, asn1.next, &size, &asn1, ASN1_TYPE_SEQUENCE)) /* SEQUENCE - contentInfo */
+        if(asn1_expect_objtype(map, asn1.next, &size, &asn1, ASN1_TYPE_SEQUENCE)){ /* SEQUENCE - contentInfo */
+            cli_dbgmsg("asn1_parse_mscat: expected 'SEQUENCE - contentInfo' inside DigestAlgorithmIdentifier SET\n");
             break;
+        }
         /* Here there is either a PKCS #7 ContentType Object Identifier for Certificate Trust List (szOID_CTL)
          * or a single SPC_INDIRECT_DATA_OBJID */
         if(
            (!embedded && asn1_expect_obj(map, &asn1.content, &asn1.size, ASN1_TYPE_OBJECT_ID, lenof(OID_szOID_CTL), OID_szOID_CTL)) ||
            (embedded && asn1_expect_obj(map, &asn1.content, &asn1.size, ASN1_TYPE_OBJECT_ID, lenof(OID_SPC_INDIRECT_DATA_OBJID), OID_SPC_INDIRECT_DATA_OBJID))
-           )
+           ){
+            cli_dbgmsg("asn1_parse_mscat: unexpected ContentType for embedded mode %d\n", embedded);
             break;
+        }
 
-        if(asn1_expect_objtype(map, asn1.content, &asn1.size, &deep, 0xa0))
+        if(asn1_expect_objtype(map, asn1.content, &asn1.size, &deep, 0xa0)){
+            cli_dbgmsg("asn1_parse_mscat: expected '[0] - content' following DigestAlgorithmIdentifier contentType\n");
             break;
+        }
         if(asn1.size) {
             cli_dbgmsg("asn1_parse_mscat: found extra data in contentInfo\n");
             break;
         }
         dsize = deep.size;
         if(asn1_expect_objtype(map, deep.content, &dsize, &deep, ASN1_TYPE_SEQUENCE))
+        {
+            cli_dbgmsg("asn1_parse_mscat: expected SEQUENCE in DigestAlgorithmIdentifier '[0] - contentInfo'\n");
             break;
+        }
         if(dsize) {
             cli_dbgmsg("asn1_parse_mscat: found extra data in content\n");
             break;
         }
+
+        /*
+         * Hashes should look like: TODO Verify
+         * SEQUENCE(2 elem)
+         *    OBJECT IDENTIFIER 1.3.6.1.4.1.311.2.1.15 spcPEImageData
+         *    SEQUENCE(2 elem)
+         *        BIT STRING(0 elem)
+         *        [0](1 elem)
+         *            [2](1 elem)
+         *                [0]
+         * SEQUENCE(2 elem)
+         *    SEQUENCE(2 elem)
+         *        OBJECT IDENTIFIER 1.3.14.3.2.26 sha1 (OIW)
+         *        NULL
+         *    OCTET STRING(20 byte)
+         */
+
         *hashes = deep.content;
         *hashes_size = deep.size;
 
-        if(asn1_expect_objtype(map, asn1.next, &size, &asn1, 0xa0)) /* certificates */
+        if(asn1_expect_objtype(map, asn1.next, &size, &asn1, 0xa0)){ /* certificates */
+            cli_dbgmsg("asn1_parse_mscat: expected 0xa0 certificates entry\n");
             break;
+        }
 
         dsize = asn1.size;
         if(dsize) {
@@ -867,6 +912,7 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
             }
             if(dsize) {
                 crtmgr_free(&newcerts);
+                cli_dbgmsg("asn1_parse_mscat: an error occurred while extracting x509 certificates\n");
                 break;
             }
             if(newcerts.crts) {
@@ -918,8 +964,10 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
 
                         x509->codeSign &= parent->codeSign;
                         x509->timeSign &= parent->timeSign;
-                        if(crtmgr_add(cmgr, x509))
+                        if(crtmgr_add(cmgr, x509)) {
+                            cli_dbgmsg("asn1_parse_mscat: adding x509 cert to crtmgr failed\n");
                             break;
+                        }
                         crtmgr_del(&newcerts, x509);
                         x509 = newcerts.crts;
                         continue;
@@ -936,10 +984,14 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
             }
         }
 
-        if(asn1_get_obj(map, asn1.next, &size, &asn1))
+        if(asn1_get_obj(map, asn1.next, &size, &asn1)) {
+            cli_dbgmsg("asn1_parse_mscat: failed to get next ASN1 section\n");
             break;
-        if(asn1.type == 0xa1 && asn1_get_obj(map, asn1.next, &size, &asn1)) /* crls - unused shouldn't be present */
+        }
+        if(asn1.type == 0xa1 && asn1_get_obj(map, asn1.next, &size, &asn1)){ /* crls - unused shouldn't be present */
+            cli_dbgmsg("asn1_parse_mscat: unexpected CRL entries were found\n");
             break;
+        }
         if(asn1.type != ASN1_TYPE_SET) { /* signerInfos */
             cli_dbgmsg("asn1_parse_mscat: unexpected type %02x for signerInfos\n", asn1.type);
             break;
@@ -949,37 +1001,85 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
             break;
         }
         size = asn1.size;
-        if(asn1_expect_objtype(map, asn1.content, &size, &asn1, ASN1_TYPE_SEQUENCE))
+        if(asn1_expect_objtype(map, asn1.content, &size, &asn1, ASN1_TYPE_SEQUENCE)) {
+            cli_dbgmsg("asn1_parse_mscat: expected SEQUENCE in signerInfos");
             break;
+        }
         if(size) {
             cli_dbgmsg("asn1_parse_mscat: only one signerInfo shall be present\n");
             break;
         }
         size = asn1.size;
-        if(asn1_expect_obj(map, &asn1.content, &size, ASN1_TYPE_INTEGER, 1, "\x01")) /* Version = 1 */
+        if(asn1_expect_obj(map, &asn1.content, &size, ASN1_TYPE_INTEGER, 1, "\x01")){ /* Version = 1 */
+            cli_dbgmsg("asn1_parse_mscat: expected Version == 1 for signerInfo\n");
             break;
-        if(asn1_expect_objtype(map, asn1.content, &size, &asn1, ASN1_TYPE_SEQUENCE)) /* issuerAndSerialNumber */
+        }
+        if(asn1_expect_objtype(map, asn1.content, &size, &asn1, ASN1_TYPE_SEQUENCE)){ /* issuerAndSerialNumber */
+            cli_dbgmsg("asn1_parse_mscat: expected issuerAndSerialNumber SEQUENCE\n");
             break;
+        }
         dsize = asn1.size;
-        if(asn1_expect_objtype(map, asn1.content, &dsize, &deep, ASN1_TYPE_SEQUENCE)) /* issuer */
+        if(asn1_expect_objtype(map, asn1.content, &dsize, &deep, ASN1_TYPE_SEQUENCE)){ /* issuer */
+            cli_dbgmsg("asn1_parse_mscat: expected issuer SEQUENCE\n");
             break;
-        if(map_sha1(map, deep.content, deep.size, issuer))
-            break;
+        }
 
-        if(asn1_expect_objtype(map, deep.next, &dsize, &deep, ASN1_TYPE_INTEGER)) /* serial */
+        /* Make sure the issuer ID is mapped into memory and then compute the
+         * SHA1 of it so we can use this value in verification later on. This
+         * will be a hash over all the values in the issuer SEQUENCE, which
+         * looks something like:
+         * SET(1 elem)
+         *     SEQUENCE(2 elem)
+         *         OBJECT IDENTIFIER 2.5.4.6 countryName (X.520 DN component)
+         *         PrintableString
+         * SET(1 elem)
+         *     SEQUENCE(2 elem)
+         *         OBJECT IDENTIFIER2.5.4.8 stateOrProvinceName (X.520 DN component)
+         *         PrintableString
+         * SET(1 elem)
+         *     SEQUENCE(2 elem)
+         *         OBJECT IDENTIFIER2.5.4.7 localityName (X.520 DN component)
+         *         PrintableString
+         * SET(1 elem)
+         *     SEQUENCE(2 elem)
+         *         OBJECT IDENTIFIER2.5.4.10 organizationName (X.520 DN component)
+         *         PrintableString
+         * SET(1 elem)
+         *     SEQUENCE(2 elem)
+         *         OBJECT IDENTIFIER2.5.4.3commonName(X.520 DN component)
+         *         PrintableString
+         */
+        if(map_sha1(map, deep.content, deep.size, issuer)){
+            cli_dbgmsg("asn1_parse_mscat: error in call to map_sha1 for issuer\n");
             break;
-        if(map_sha1(map, deep.content, deep.size, serial))
+        }
+
+        // TODO Isn't dsize too big here? Should we use dsize - deep.size
+        if(asn1_expect_objtype(map, deep.next, &dsize, &deep, ASN1_TYPE_INTEGER)){ /* serial */
+            cli_dbgmsg("asn1_parse_mscat: expected ASN1_TYPE_INTEGER serial\n");
             break;
+        }
+
+        /* Make sure the serial INTEGER is mapped into memory and compute the
+         * SHA1 of it so we can use this value in verification later on. */
+        if(map_sha1(map, deep.content, deep.size, serial)){
+            cli_dbgmsg("asn1_parse_mscat: error in call to map_sha1 for serial\n");
+            break;
+        }
         if(dsize) {
             cli_dbgmsg("asn1_parse_mscat: extra data inside issuerAndSerialNumber\n");
             break;
         }
-        if(asn1_expect_algo(map, &asn1.next, &size, lenof(OID_sha1), OID_sha1)) /* digestAlgorithm == sha1 */
+        if(asn1_expect_algo(map, &asn1.next, &size, lenof(OID_sha1), OID_sha1)){ /* digestAlgorithm == sha1 */
+            cli_dbgmsg("asn1_parse_mscat: expected digestAlgorithm == sha1\n");
             break;
+        }
 
         attrs = asn1.next;
-        if(asn1_expect_objtype(map, asn1.next, &size, &asn1, 0xa0)) /* authenticatedAttributes */
+        if(asn1_expect_objtype(map, asn1.next, &size, &asn1, 0xa0)){ /* authenticatedAttributes */
+            cli_dbgmsg("asn1_parse_mscat: unable to parse authenticatedAttributes section\n");
             break;
+        }
         attrs_size = (uint8_t *)(asn1.next) - attrs;
         if(attrs_size < 2) {
             cli_dbgmsg("asn1_parse_mscat: authenticatedAttributes size is too small\n");
@@ -993,10 +1093,12 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
             struct cli_asn1 cobj;
             int content;
             if(asn1_expect_objtype(map, deep.next, &dsize, &deep, ASN1_TYPE_SEQUENCE)) { /* attribute */
+                cli_dbgmsg("asn1_parse_mscat: expected attribute SEQUENCE\n");
                 dsize = 1;
                 break;
             }
             if(asn1_expect_objtype(map, deep.content, &deep.size, &deeper, ASN1_TYPE_OBJECT_ID)) { /* attribute type */
+                cli_dbgmsg("asn1_parse_mscat: expected attribute type inside attribute SEQUENCE\n");
                 dsize = 1;
                 break;
             }
@@ -1014,6 +1116,7 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
             else
                 continue;
             if(asn1_expect_objtype(map, deeper.next, &deep.size, &deeper, ASN1_TYPE_SET)) { /* set - contents */
+                cli_dbgmsg("asn1_parse_mscat: expected 'set - contents' for authenticated attribute\n");
                 dsize = 1;
                 break;
             }
@@ -1034,12 +1137,14 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
                    (!embedded && asn1_expect_obj(map, &deeper.content, &deeper.size, ASN1_TYPE_OBJECT_ID, lenof(OID_szOID_CTL), OID_szOID_CTL)) || /* cat file */
                    (embedded && asn1_expect_obj(map, &deeper.content, &deeper.size, ASN1_TYPE_OBJECT_ID, lenof(OID_SPC_INDIRECT_DATA_OBJID), OID_SPC_INDIRECT_DATA_OBJID)) /* embedded cat */
                   ) {
+                    cli_dbgmsg("asn1_parse_mscat: unexpected ContentType for embedded mode %d (for authenticated attribute)\n", embedded);
                     dsize = 1;
                     break;
                 }
                 result |= 1;
             } else { /* messageDigest */
                 if(asn1_expect_objtype(map, deeper.content, &deeper.size, &cobj, ASN1_TYPE_OCTET_STRING)) {
+                    cli_dbgmsg("asn1_parse_mscat: unexpected messageDigest value\n");
                     dsize = 1;
                     break;
                 }
@@ -1069,17 +1174,26 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
             break;
         }
 
-        if(asn1_expect_algo(map, &asn1.next, &size, lenof(OID_rsaEncryption), OID_rsaEncryption)) /* digestEncryptionAlgorithm == sha1 */
+        if(asn1_expect_algo(map, &asn1.next, &size, lenof(OID_rsaEncryption), OID_rsaEncryption)) { /* digestEncryptionAlgorithm == rsa */
+            cli_dbgmsg("asn1_parse_mscat: digestEncryptionAlgorithms other than RSA are not yet supported\n");
             break;
+        }
 
-        if(asn1_expect_objtype(map, asn1.next, &size, &asn1, ASN1_TYPE_OCTET_STRING)) /* encryptedDigest */
+        if(asn1_expect_objtype(map, asn1.next, &size, &asn1, ASN1_TYPE_OCTET_STRING)) { /* encryptedDigest */
+            cli_dbgmsg("asn1_parse_mscat: unexpected encryptedDigest value\n");
             break;
+        }
+
+        // TODO Is this much space needed?  why not just 256
         if(asn1.size > 513) {
             cli_dbgmsg("asn1_parse_mscat: encryptedDigest too long\n");
             break;
         }
-        if(map_sha1(map, *hashes, *hashes_size, sha1))
+
+        if(map_sha1(map, *hashes, *hashes_size, sha1)) {
+            cli_dbgmsg("asn1_parse_mscat: error in call to map_sha1 for extracting the message digest\n");
             break;
+        }
         if(memcmp(sha1, md, sizeof(sha1))) {
             cli_dbgmsg("asn1_parse_mscat: messageDigest mismatch\n");
             break;
@@ -1102,6 +1216,8 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
             cli_dbgmsg("asn1_parse_mscat: failed to read encryptedDigest\n");
             break;
         }
+
+        // Verify the authenticatedAttributes
         if(!(x509 = crtmgr_verify_pkcs7(cmgr, issuer, serial, asn1.content, asn1.size, CLI_SHA1RSA, sha1, VRFY_CODE))) {
             cli_dbgmsg("asn1_parse_mscat: pkcs7 signature verification failed\n");
             break;
@@ -1114,8 +1230,10 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
             break;
         }
 
-        if(size && asn1_expect_objtype(map, asn1.next, &size, &asn1, 0xa1)) /* unauthenticatedAttributes */
+        if(size && asn1_expect_objtype(map, asn1.next, &size, &asn1, 0xa1)) { /* unauthenticatedAttributes */
+            cli_dbgmsg("asn1_parse_mscat: unable to find unauthenticatedAttributes section\n");
             break;
+        }
 
         if(size) {
             cli_dbgmsg("asn1_parse_mscat: extra data inside signerInfo\n");
@@ -1123,8 +1241,10 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
         }
 
         size = asn1.size;
-        if(asn1_expect_objtype(map, asn1.content, &size, &asn1, ASN1_TYPE_SEQUENCE))
+        if(asn1_expect_objtype(map, asn1.content, &size, &asn1, ASN1_TYPE_SEQUENCE)) {
+            cli_dbgmsg("asn1_parse_mscat: expected SEQUENCE in unauthenticated data section\n");
             break;
+        }
         if(size) {
             cli_dbgmsg("asn1_parse_mscat: extra data inside unauthenticatedAttributes\n");
             break;
@@ -1132,51 +1252,80 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
 
         size = asn1.size;
         /* 1.2.840.113549.1.9.6 - counterSignature */
-        if(asn1_expect_obj(map, &asn1.content, &size, ASN1_TYPE_OBJECT_ID, lenof(OID_countersignature), OID_countersignature))
+        if(asn1_expect_obj(map, &asn1.content, &size, ASN1_TYPE_OBJECT_ID, lenof(OID_countersignature), OID_countersignature)) {
+            cli_dbgmsg("asn1_parse_mscat: expected countersignature OID in the first unauthenticatedAttributes SEQUENCE\n");
             break;
-        if(asn1_expect_objtype(map, asn1.content, &size, &asn1, ASN1_TYPE_SET))
+        }
+        if(asn1_expect_objtype(map, asn1.content, &size, &asn1, ASN1_TYPE_SET)) {
+            cli_dbgmsg("asn1_parse_mscat: expected SET following counterSignature OID\n");
             break;
+        }
         if(size) {
-            cli_dbgmsg("asn1_parse_mscat: extra data inside counterSignature\n");
+            cli_dbgmsg("asn1_parse_mscat: extra data inside counterSignature SEQUENCE\n");
             break;
         }
 
         size = asn1.size;
-        if(asn1_expect_objtype(map, asn1.content, &size, &asn1, ASN1_TYPE_SEQUENCE))
+        if(asn1_expect_objtype(map, asn1.content, &size, &asn1, ASN1_TYPE_SEQUENCE)) {
+            cli_dbgmsg("asn1_parse_mscat: expected SEQUENCE inside counterSignature SET\n");
             break;
+        }
         if(size) {
-            cli_dbgmsg("asn1_parse_mscat: extra data inside unauthenticatedAttributes\n");
+            cli_dbgmsg("asn1_parse_mscat: extra data inside counterSignature SET\n");
             break;
         }
 
         size = asn1.size;
-        if(asn1_expect_obj(map, &asn1.content, &size, ASN1_TYPE_INTEGER, 1, "\x01")) /* Version = 1*/
+        if(asn1_expect_obj(map, &asn1.content, &size, ASN1_TYPE_INTEGER, 1, "\x01")) { /* Version = 1*/
+            cli_dbgmsg("asn1_parse_mscat: expected counterSignature version to be 1\n");
             break;
+        }
 
-        if(asn1_expect_objtype(map, asn1.content, &size, &asn1, ASN1_TYPE_SEQUENCE)) /* issuerAndSerialNumber */
+        if(asn1_expect_objtype(map, asn1.content, &size, &asn1, ASN1_TYPE_SEQUENCE)) { /* issuerAndSerialNumber */
+            cli_dbgmsg("asn1_parse_mscat: unable to parse issuerAndSerialNumber SEQUENCE in counterSignature\n");
             break;
+        }
 
-        if(asn1_expect_objtype(map, asn1.content, &asn1.size, &deep, ASN1_TYPE_SEQUENCE)) /* issuer */
+        if(asn1_expect_objtype(map, asn1.content, &asn1.size, &deep, ASN1_TYPE_SEQUENCE)) { /* issuer */
+            cli_dbgmsg("asn1_parse_mscat: unable to parse issuer SEQUENCE in counterSignature\n");
             break;
-        if(map_sha1(map, deep.content, deep.size, issuer))
+        }
+        // Compute the hash of the issuer section
+        if(map_sha1(map, deep.content, deep.size, issuer)) {
+            cli_dbgmsg("asn1_parse_mscat: error in call to map_sha1 for counterSignature issuer\n");
             break;
+        }
 
-        if(asn1_expect_objtype(map, deep.next, &asn1.size, &deep, ASN1_TYPE_INTEGER)) /* serial */
+        // TODO This seems like a bug, but it might have no effect.  asn1.size
+        // is too big, asn1.content points to the issuer sequence and not the
+        // integer object.  Should we use asn1.size - deep.size
+        if(asn1_expect_objtype(map, deep.next, &asn1.size, &deep, ASN1_TYPE_INTEGER)) { /* serial */
+            cli_dbgmsg("asn1_parse_mscat: expected ASN1_TYPE_INTEGER serial for counterSignature\n");
             break;
-        if(map_sha1(map, deep.content, deep.size, serial))
+        }
+
+        // Compute the hash of the serial INTEGER
+        if(map_sha1(map, deep.content, deep.size, serial)) {
+            cli_dbgmsg("asn1_parse_mscat: error in call to map_sha1 for counterSignature serial\n");
             break;
+        }
 
         if(asn1.size) {
-            cli_dbgmsg("asn1_parse_mscat: extra data inside countersignature issuer\n");
+            cli_dbgmsg("asn1_parse_mscat: extra data inside counterSignature issuer\n");
             break;
         }
 
-        if(asn1_expect_objtype(map, asn1.next, &size, &asn1, ASN1_TYPE_SEQUENCE)) /* digestAlgorithm */
+        // TODO This is the way to replace asn1_expect_algo above
+        if(asn1_expect_objtype(map, asn1.next, &size, &asn1, ASN1_TYPE_SEQUENCE)) { /* digestAlgorithm */
+            cli_dbgmsg("asn1_parse_mscat: expected SEQUENCE to start digestAlgorithm counterSignature section\n");
             break;
-        if(asn1_expect_objtype(map, asn1.content, &asn1.size, &deep, ASN1_TYPE_OBJECT_ID))
+        }
+        if(asn1_expect_objtype(map, asn1.content, &asn1.size, &deep, ASN1_TYPE_OBJECT_ID)) {
+            cli_dbgmsg("asn1_parse_mscat: unexpected value when parsing counterSignature\n");
             break;
+        }
         if(deep.size != lenof(OID_sha1) && deep.size != lenof(OID_md5)) {
-            cli_dbgmsg("asn1_parse_mscat: wrong digestAlgorithm size\n");
+            cli_dbgmsg("asn1_parse_mscat: wrong digestAlgorithm size in counterSignature\n");
             break;
         }
         if(!fmap_need_ptr_once(map, deep.content, deep.size)) {
@@ -1185,29 +1334,39 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
         }
         if(deep.size == lenof(OID_sha1) && !memcmp(deep.content, OID_sha1, lenof(OID_sha1))) {
             hashtype = CLI_SHA1RSA;
-            if(map_sha1(map, message, message_size, md))
+            hashsize = SHA1_HASH_SIZE;
+            if(map_sha1(map, message, message_size, md)) {
+                cli_dbgmsg("asn1_parse_mscat: map_sha1 for counterSignature verification failed\n");
                 break;
+            }
         } else if(deep.size == lenof(OID_md5) && !memcmp(deep.content, OID_md5, lenof(OID_md5))) {
             hashtype = CLI_MD5RSA;
-            if(map_md5(map, message, message_size, md))
+            hashsize = MD5_HASH_SIZE;
+            if(map_md5(map, message, message_size, md)) {
+                cli_dbgmsg("asn1_parse_mscat: map_md5 for counterSignature verification failed\n");
                 break;
+            }
         } else {
-            cli_dbgmsg("asn1_parse_mscat: unknown digest oid in countersignature\n");
+            cli_dbgmsg("asn1_parse_mscat: unknown digest OID in counterSignature\n");
             break;
         }
-        if(asn1.size && asn1_expect_obj(map, &deep.next, &asn1.size, ASN1_TYPE_NULL, 0, NULL))
+        if(asn1.size && asn1_expect_obj(map, &deep.next, &asn1.size, ASN1_TYPE_NULL, 0, NULL)) {
+            cli_dbgmsg("asn1_parse_mscat: unexpected value after counterSignature digestAlgorithm\n");
             break;
+        }
         if(asn1.size) {
-            cli_dbgmsg("asn1_parse_mscat: extra data in countersignature oid\n");
+            cli_dbgmsg("asn1_parse_mscat: extra data in counterSignature OID\n");
             break;
         }
 
         attrs = asn1.next;
-        if(asn1_expect_objtype(map, asn1.next, &size, &asn1, 0xa0)) /* authenticatedAttributes */
+        if(asn1_expect_objtype(map, asn1.next, &size, &asn1, 0xa0)) { /* authenticatedAttributes */
+            cli_dbgmsg("asn1_parse_mscat: unable to parse counterSignature authenticatedAttributes section\n");
             break;
+        }
         attrs_size = (uint8_t *)(asn1.next) - attrs;
         if(attrs_size < 2) {
-            cli_dbgmsg("asn1_parse_mscat: countersignature authenticatedAttributes are too small\n");
+            cli_dbgmsg("asn1_parse_mscat: counterSignature authenticatedAttributes are too small\n");
             break;
         }
         result = 0;
@@ -1216,10 +1375,12 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
         while(dsize) {
             int content;
             if(asn1_expect_objtype(map, deep.next, &dsize, &deep, ASN1_TYPE_SEQUENCE)) { /* attribute */
+                cli_dbgmsg("asn1_parse_mscat: expected counterSignature attribute SEQUENCE\n");
                 dsize = 1;
                 break;
             }
             if(asn1_expect_objtype(map, deep.content, &deep.size, &deeper, ASN1_TYPE_OBJECT_ID)) { /* attribute type */
+                cli_dbgmsg("asn1_parse_mscat: expected attribute type inside counterSignature attribute SEQUENCE\n");
                 dsize = 1;
                 break;
             }
@@ -1227,6 +1388,7 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
                 continue;
 
             if(!fmap_need_ptr_once(map, deeper.content, lenof(OID_contentType))) {
+                cli_dbgmsg("asn1_parse_mscat: failed to read counterSignature authenticated attribute\n");
                 dsize = 1;
                 break;
             }
@@ -1244,7 +1406,8 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
                 break;
             }
             result |= (1<<content);
-            if(asn1_expect_objtype(map, deeper.next, &deep.size, &deeper, ASN1_TYPE_SET)) { /* attribute type */
+            if(asn1_expect_objtype(map, deeper.next, &deep.size, &deeper, ASN1_TYPE_SET)) { /* set - contents */
+                cli_dbgmsg("asn1_parse_mscat: failed to read counterSignature authenticated attribute\n");
                 dsize = 1;
                 break;
             }
@@ -1262,7 +1425,7 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
                     cli_dbgmsg("asn1_parse_mscat: extra data in countersignature content-type\n");
                 break;
             case 1:  /* messageDigest */
-                if(asn1_expect_obj(map, &deeper.content, &deep.size, ASN1_TYPE_OCTET_STRING, (hashtype == CLI_SHA1RSA) ? SHA1_HASH_SIZE : 16, md)) {
+                if(asn1_expect_obj(map, &deeper.content, &deep.size, ASN1_TYPE_OCTET_STRING, hashsize, md)) {
                     deep.size = 1;
                     cli_dbgmsg("asn1_parse_mscat: countersignature hash mismatch\n");
                 } else if(deep.size)
@@ -1294,10 +1457,14 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
             break;
         }
 
-        if(asn1_expect_objtype(map, asn1.next, &size, &asn1, ASN1_TYPE_SEQUENCE)) /* digestEncryptionAlgorithm == sha1 */
+        if(asn1_expect_objtype(map, asn1.next, &size, &asn1, ASN1_TYPE_SEQUENCE)) { /* digestEncryptionAlgorithm == sha1 */
+            cli_dbgmsg("asn1_parse_mscat: expected to parse SEQUENCE after counterSignature attributes\n");
             break;
-        if(asn1_expect_objtype(map, asn1.content, &asn1.size, &deep, ASN1_TYPE_OBJECT_ID)) /* digestEncryptionAlgorithm == sha1 */
+        }
+        if(asn1_expect_objtype(map, asn1.content, &asn1.size, &deep, ASN1_TYPE_OBJECT_ID)) {/* digestEncryptionAlgorithm == sha1 */
+            cli_dbgmsg("asn1_parse_mscat: unexpected value when parsing counterSignature digestEncryptionAlgorithm\n");
             break;
+        }
         if(deep.size != lenof(OID_rsaEncryption)) { /* lenof(OID_rsaEncryption) = lenof(OID_sha1WithRSAEncryption) = 9 */
             cli_dbgmsg("asn1_parse_mscat: wrong digestEncryptionAlgorithm size in countersignature\n");
             break;
@@ -1311,15 +1478,19 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
             cli_dbgmsg("asn1_parse_mscat: digestEncryptionAlgorithm in countersignature is not sha1\n");
             break;
         }
-        if(asn1.size && asn1_expect_obj(map, &deep.next, &asn1.size, ASN1_TYPE_NULL, 0, NULL))
+        if(asn1.size && asn1_expect_obj(map, &deep.next, &asn1.size, ASN1_TYPE_NULL, 0, NULL)) {
+            cli_dbgmsg("asn1_parse_mscat: unexpected value after counterSignature digestEncryptionAlgorithm\n");
             break;
+        }
         if(asn1.size) {
             cli_dbgmsg("asn1_parse_mscat: extra data in digestEncryptionAlgorithm in countersignature\n");
             break;
         }
 
-        if(asn1_expect_objtype(map, asn1.next, &size, &asn1, ASN1_TYPE_OCTET_STRING)) /* encryptedDigest */
+        if(asn1_expect_objtype(map, asn1.next, &size, &asn1, ASN1_TYPE_OCTET_STRING)) { /* encryptedDigest */
+            cli_dbgmsg("asn1_parse_mscat: unexpected encryptedDigest value in counterSignature\n");
             break;
+        }
         if(asn1.size > 513) {
             cli_dbgmsg("asn1_parse_mscat: countersignature encryptedDigest too long\n");
             break;
@@ -1335,21 +1506,16 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
 
         if(hashtype == CLI_SHA1RSA) {
             ctx = cl_hash_init("sha1");
-            if (!(ctx))
-                break;
-
-            cl_update_hash(ctx, "\x31", 1);
-            cl_update_hash(ctx, (void *)(attrs + 1), attrs_size - 1);
-            cl_finish_hash(ctx, sha1);
-        } else {
+        } else if (hashtype == CLI_MD5RSA) {
             ctx = cl_hash_init("md5");
-            if (!(ctx))
-                break;
-
-            cl_update_hash(ctx, "\x31", 1);
-            cl_update_hash(ctx, (void *)(attrs + 1), attrs_size - 1);
-            cl_finish_hash(ctx, sha1);
         }
+
+        if (!(ctx))
+            break;
+
+        cl_update_hash(ctx, "\x31", 1);
+        cl_update_hash(ctx, (void *)(attrs + 1), attrs_size - 1);
+        cl_finish_hash(ctx, sha1);
 
         if(!fmap_need_ptr_once(map, asn1.content, asn1.size)) {
             cli_dbgmsg("asn1_parse_mscat: failed to read countersignature encryptedDigest\n");
@@ -1361,6 +1527,7 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
         }
 
         cli_dbgmsg("asn1_parse_mscat: catalog successfully parsed\n");
+
         if (isBlacklisted) {
             return 1;
         }
