@@ -26,7 +26,7 @@
 
 #include "bignum.h"
 
-typedef enum { CLI_SHA1RSA, CLI_MD5RSA, CLI_SHA256RSA } cli_crt_hashtype;
+typedef enum { CLI_SHA1RSA, CLI_MD5RSA, CLI_SHA256RSA, CLI_SHA384RSA } cli_crt_hashtype;
 typedef enum {VRFY_CODE, VRFY_TIME} cli_vrfy_type;
 
 #define CRT_RAWMAXLEN 64
@@ -41,7 +41,7 @@ typedef struct cli_crt_t {
     /* tbshash holds the hash we'll use for verification with data in the sig,
      * so it must have at least enough space for the largest hash in
      * cli_crt_hashtype */
-    uint8_t tbshash[SHA256_HASH_SIZE];
+    uint8_t tbshash[SHA384_HASH_SIZE];
     mp_int n;
     mp_int e;
     mp_int sig;

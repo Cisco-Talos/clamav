@@ -52,6 +52,9 @@
 #define OID_1_2_840_113549_1_1_11 "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x0b"
 #define OID_sha256WithRSAEncryption OID_1_2_840_113549_1_1_11
 
+#define OID_1_2_840_113549_1_1_12 "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x0c"
+#define OID_sha384WithRSAEncryption OID_1_2_840_113549_1_1_12
+
 #define OID_1_2_840_113549_1_1_13 "\x2a\x86\x48\x86\xf7\x0d\x01\x01\x0d"
 #define OID_sha512WithRSAEncryption OID_1_2_840_113549_1_1_13
 
@@ -277,7 +280,19 @@ static int asn1_expect_rsa(fmap_t *map, const void **asn1data, unsigned int *asn
 
     if(asn1_expect_objtype(map, obj.content, &avail, &obj, ASN1_TYPE_OBJECT_ID))
         return 1;
-    if(obj.size != lenof(OID_sha1WithRSA) && obj.size != lenof(OID_sha1WithRSAEncryption)) { /* lenof(OID_sha1WithRSAEncryption) = lenof(OID_md5WithRSAEncryption) = 9 */
+
+    // Two cases to check for:
+    // obj.size == 5:
+    //  - OID_sha1WithRSA
+    //
+    // obj.size == 9:
+    //  - OID_md2WithRSAEncryption
+    //  - OID_md5WithRSAEncryption
+    //  - OID_sha1WithRSAEncryption
+    //  - OID_sha256WithRSAEncryption
+    //  - OID_sha384WithRSAEncryption
+    //  - OID_sha512WithRSAEncryption
+    if(obj.size != lenof(OID_sha1WithRSA) && obj.size != lenof(OID_sha1WithRSAEncryption)) {
         cli_dbgmsg("asn1_expect_rsa: expecting OID with size 5 or 9, got %02x with size %u\n", obj.type, obj.size);
         return 1;
     }
@@ -285,22 +300,33 @@ static int asn1_expect_rsa(fmap_t *map, const void **asn1data, unsigned int *asn
         cli_dbgmsg("asn1_expect_rsa: failed to read OID\n");
         return 1;
     }
-    if(obj.size == lenof(OID_sha1WithRSA) && !memcmp(obj.content, OID_sha1WithRSA, lenof(OID_sha1WithRSA)))
-        *hashtype = CLI_SHA1RSA; /* Obsolete sha1rsa 1.3.14.3.2.29 */
-    else if(obj.size == lenof(OID_sha1WithRSAEncryption) && !memcmp(obj.content, OID_sha1WithRSAEncryption, lenof(OID_sha1WithRSAEncryption)))
-        *hashtype = CLI_SHA1RSA; /* sha1withRSAEncryption 1.2.840.113549.1.1.5 */
-    else if(obj.size == lenof(OID_md5WithRSAEncryption) && !memcmp(obj.content, OID_md5WithRSAEncryption, lenof(OID_md5WithRSAEncryption)))
-        *hashtype = CLI_MD5RSA; /* md5withRSAEncryption 1.2.840.113549.1.1.4 */
-    else if(obj.size == lenof(OID_md2WithRSAEncryption) && !memcmp(obj.content, OID_md2WithRSAEncryption, lenof(OID_md2WithRSAEncryption))) {
-        cli_dbgmsg("asn1_expect_rsa: MD2 with RSA (not yet supported)\n");
-        return 1;
-    }
-    else if(obj.size == lenof(OID_sha256WithRSAEncryption) && !memcmp(obj.content, OID_sha256WithRSAEncryption, lenof(OID_sha256WithRSAEncryption))) {
-        *hashtype = CLI_SHA256RSA; /* sha256WithRSAEncryption 1.2.840.113549.1.1.11 */
-    }
-    else if(obj.size == lenof(OID_sha512WithRSAEncryption) && !memcmp(obj.content, OID_sha512WithRSAEncryption, lenof(OID_sha512WithRSAEncryption))) {
-        cli_dbgmsg("asn1_expect_rsa: SHA512 with RSA (not yet supported)\n");
-        return 1;
+    if(obj.size == lenof(OID_sha1WithRSA)) {
+
+        if(!memcmp(obj.content, OID_sha1WithRSA, lenof(OID_sha1WithRSA)))
+            *hashtype = CLI_SHA1RSA; /* Obsolete sha1rsa 1.3.14.3.2.29 */
+
+    } else if (obj.size == lenof(OID_sha1WithRSAEncryption)) {
+
+        if(!memcmp(obj.content, OID_sha1WithRSAEncryption, lenof(OID_sha1WithRSAEncryption)))
+            *hashtype = CLI_SHA1RSA; /* sha1withRSAEncryption 1.2.840.113549.1.1.5 */
+
+        else if(!memcmp(obj.content, OID_md5WithRSAEncryption, lenof(OID_md5WithRSAEncryption)))
+            *hashtype = CLI_MD5RSA; /* md5withRSAEncryption 1.2.840.113549.1.1.4 */
+
+        else if(!memcmp(obj.content, OID_md2WithRSAEncryption, lenof(OID_md2WithRSAEncryption))) {
+            cli_dbgmsg("asn1_expect_rsa: MD2 with RSA (not yet supported)\n");
+            return 1;
+        }
+        else if(!memcmp(obj.content, OID_sha256WithRSAEncryption, lenof(OID_sha256WithRSAEncryption))) {
+            *hashtype = CLI_SHA256RSA; /* sha256WithRSAEncryption 1.2.840.113549.1.1.11 */
+        }
+        else if(!memcmp(obj.content, OID_sha384WithRSAEncryption, lenof(OID_sha384WithRSAEncryption))) {
+            *hashtype = CLI_SHA384RSA; /* sha384WithRSAEncryption 1.2.840.113549.1.1.12 */
+        }
+        else if(!memcmp(obj.content, OID_sha512WithRSAEncryption, lenof(OID_sha512WithRSAEncryption))) {
+            cli_dbgmsg("asn1_expect_rsa: SHA512 with RSA (not yet supported)\n");
+            return 1;
+        }
     }
     else {
         cli_dbgmsg("asn1_expect_rsa: OID mismatch (size %u)\n", obj.size);
@@ -509,35 +535,47 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
         return 1;
 
     do {
-        if(asn1_expect_objtype(map, *asn1data, size, &crt, ASN1_TYPE_SEQUENCE)) /* SEQUENCE */
+        if(asn1_expect_objtype(map, *asn1data, size, &crt, ASN1_TYPE_SEQUENCE)) { /* SEQUENCE */
+            cli_dbgmsg("asn1_get_x509: expected SEQUENCE at the x509 start\n");
             break;
+        }
         *asn1data = crt.next;
 
         tbsdata = crt.content;
-        if(asn1_expect_objtype(map, crt.content, &crt.size, &tbs, ASN1_TYPE_SEQUENCE)) /* SEQUENCE - TBSCertificate */
+        if(asn1_expect_objtype(map, crt.content, &crt.size, &tbs, ASN1_TYPE_SEQUENCE)) { /* SEQUENCE - TBSCertificate */
+            cli_dbgmsg("asn1_get_x509: expected SEQUENCE at the TBSCertificate start\n");
             break;
+        }
         tbssize = (uint8_t *)tbs.next - tbsdata;
 
-        if(asn1_expect_objtype(map, tbs.content, &tbs.size, &obj, 0xa0)) /* [0] */
+        if(asn1_expect_objtype(map, tbs.content, &tbs.size, &obj, 0xa0)) { /* [0] */
+            cli_dbgmsg("asn1_get_x509: expected [0] version container in TBSCertificate\n");
             break;
+        }
         avail = obj.size;
         next = obj.next;
-        if(asn1_expect_obj(map, &obj.content, &avail, ASN1_TYPE_INTEGER, 1, "\x02")) /* version 3 only */
+        if(asn1_expect_obj(map, &obj.content, &avail, ASN1_TYPE_INTEGER, 1, "\x02")) { /* version 3 only */
+            cli_dbgmsg("asn1_get_x509: unexpected type or value for TBSCertificate version\n");
             break;
+        }
         if(avail) {
             cli_dbgmsg("asn1_get_x509: found unexpected extra data in version\n");
             break;
         }
 
-        if(asn1_expect_objtype(map, next, &tbs.size, &obj, ASN1_TYPE_INTEGER)) /* serialNumber */
+        if(asn1_expect_objtype(map, next, &tbs.size, &obj, ASN1_TYPE_INTEGER)) { /* serialNumber */
+            cli_dbgmsg("asn1_get_x509: expected x509 serial INTEGER\n");
             break;
+        }
         if(map_raw(map, obj.content, obj.size, x509.raw_serial))
             break;
         if(map_sha1(map, obj.content, obj.size, x509.serial))
             break;
 
-        if(asn1_expect_rsa(map, &obj.next, &tbs.size, &hashtype1)) /* algo - Ex: sha1WithRSAEncryption */
+        if(asn1_expect_rsa(map, &obj.next, &tbs.size, &hashtype1)) { /* algo - Ex: sha1WithRSAEncryption */
+            cli_dbgmsg("asn1_get_x509: unable to parse AlgorithmIdentifier\n");
             break;
+        }
 
         if(asn1_expect_objtype(map, obj.next, &tbs.size, &obj, ASN1_TYPE_SEQUENCE)) /* issuer */
             break;
