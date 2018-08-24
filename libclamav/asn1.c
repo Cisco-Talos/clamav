@@ -273,19 +273,24 @@ static int asn1_expect_rsa(fmap_t *map, const void **asn1data, unsigned int *asn
     struct cli_asn1 obj;
     unsigned int avail;
     int ret;
-    if((ret = asn1_expect_objtype(map, *asn1data, asn1len, &obj, ASN1_TYPE_SEQUENCE))) /* SEQUENCE */
+    if((ret = asn1_expect_objtype(map, *asn1data, asn1len, &obj, ASN1_TYPE_SEQUENCE))) { /* SEQUENCE */
+        cli_dbgmsg("asn1_expect_rsa: expecting SEQUENCE at the start of the RSA algo\n");
         return ret;
+    }
     avail = obj.size;
     *asn1data = obj.next;
 
-    if(asn1_expect_objtype(map, obj.content, &avail, &obj, ASN1_TYPE_OBJECT_ID))
+    if(asn1_expect_objtype(map, obj.content, &avail, &obj, ASN1_TYPE_OBJECT_ID)) {
+        cli_dbgmsg("asn1_expect_rsa: expected OID in RSA algo\n");
         return 1;
+    }
 
     // Two cases to check for:
     // obj.size == 5:
     //  - OID_sha1WithRSA
     //
     // obj.size == 9:
+    //  - OID_rsaEncryption
     //  - OID_md2WithRSAEncryption
     //  - OID_md5WithRSAEncryption
     //  - OID_sha1WithRSAEncryption
@@ -302,8 +307,13 @@ static int asn1_expect_rsa(fmap_t *map, const void **asn1data, unsigned int *asn
     }
     if(obj.size == lenof(OID_sha1WithRSA)) {
 
-        if(!memcmp(obj.content, OID_sha1WithRSA, lenof(OID_sha1WithRSA)))
+        if(!memcmp(obj.content, OID_sha1WithRSA, lenof(OID_sha1WithRSA))) {
             *hashtype = CLI_SHA1RSA; /* Obsolete sha1rsa 1.3.14.3.2.29 */
+        }
+        else {
+            cli_dbgmsg("asn1_expect_rsa: unknown OID (length 5)\n");
+            return 1;
+        }
 
     } else if (obj.size == lenof(OID_sha1WithRSAEncryption)) {
 
@@ -313,9 +323,11 @@ static int asn1_expect_rsa(fmap_t *map, const void **asn1data, unsigned int *asn
         else if(!memcmp(obj.content, OID_md5WithRSAEncryption, lenof(OID_md5WithRSAEncryption)))
             *hashtype = CLI_MD5RSA; /* md5withRSAEncryption 1.2.840.113549.1.1.4 */
 
+        else if(!memcmp(obj.content, OID_rsaEncryption, lenof(OID_rsaEncryption)))
+            *hashtype = CLI_RSA; /* rsaEncryption 1.2.840.113549.1.1.1 */
+
         else if(!memcmp(obj.content, OID_md2WithRSAEncryption, lenof(OID_md2WithRSAEncryption))) {
-            cli_dbgmsg("asn1_expect_rsa: MD2 with RSA (not yet supported)\n");
-            return 1;
+            *hashtype = CLI_MD2RSA; /* md2withRSAEncryption 1.2.840.113549.1.1.2 */
         }
         else if(!memcmp(obj.content, OID_sha256WithRSAEncryption, lenof(OID_sha256WithRSAEncryption))) {
             *hashtype = CLI_SHA256RSA; /* sha256WithRSAEncryption 1.2.840.113549.1.1.11 */
@@ -324,7 +336,10 @@ static int asn1_expect_rsa(fmap_t *map, const void **asn1data, unsigned int *asn
             *hashtype = CLI_SHA384RSA; /* sha384WithRSAEncryption 1.2.840.113549.1.1.12 */
         }
         else if(!memcmp(obj.content, OID_sha512WithRSAEncryption, lenof(OID_sha512WithRSAEncryption))) {
-            cli_dbgmsg("asn1_expect_rsa: SHA512 with RSA (not yet supported)\n");
+            *hashtype = CLI_SHA512RSA; /* sha512WithRSAEncryption 1.2.840.113549.1.1.13 */
+        }
+        else {
+            cli_dbgmsg("asn1_expect_rsa: unknown OID (length 9)\n");
             return 1;
         }
     }
@@ -332,8 +347,10 @@ static int asn1_expect_rsa(fmap_t *map, const void **asn1data, unsigned int *asn
         cli_dbgmsg("asn1_expect_rsa: OID mismatch (size %u)\n", obj.size);
         return 1;
     }
-    if((ret = asn1_expect_obj(map, &obj.next, &avail, ASN1_TYPE_NULL, 0, NULL))) /* NULL */
+    if((ret = asn1_expect_obj(map, &obj.next, &avail, ASN1_TYPE_NULL, 0, NULL))) { /* NULL */
+        cli_dbgmsg("asn1_expect_rsa: expected NULL following RSA OID\n");
         return ret;
+    }
     if(avail) {
         cli_dbgmsg("asn1_expect_rsa: extra data found in SEQUENCE\n");
         return 1;
