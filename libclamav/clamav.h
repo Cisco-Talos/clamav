@@ -578,6 +578,7 @@ extern int cl_scanmap_callback(cl_fmap_t *map, const char *filename, const char 
 #define MD5_HASH_SIZE 16
 #define SHA1_HASH_SIZE 20
 #define SHA256_HASH_SIZE 32
+#define SHA384_HASH_SIZE 48
 
 /** Generate a hash of data.
  @param[in] alg The hashing algorithm to use
@@ -621,6 +622,15 @@ unsigned char *cl_hash_file_fp(FILE *fp, const char *alg, unsigned int *olen);
  @return A pointer to the buffer that holds the generated hash
  */
 unsigned char *cl_sha256(const void *buf, size_t len, unsigned char *obuf, unsigned int *olen);
+
+/** Generate a sha384 hash of data
+ @param[in] buf The data to hash
+ @param[in] len The length of the to-be-hashed data
+ @param[out] obuf An optional pointer to store the generated hash. Use NULL to dynamically allocate buffer.
+ @param[out] olen An optional pointer that stores how long the generated hash is.
+ @return A pointer to the buffer that holds the generated hash
+ */
+unsigned char *cl_sha384(const void *buf, size_t len, unsigned char *obuf, unsigned int *olen);
 
 /** Generate a sha1 hash of data
  @param[in] buf The data to hash
