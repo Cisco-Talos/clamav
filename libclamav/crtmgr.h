@@ -26,7 +26,7 @@
 
 #include "bignum.h"
 
-typedef enum { CLI_SHA1RSA, CLI_MD5RSA, CLI_SHA256RSA, CLI_SHA384RSA } cli_crt_hashtype;
+typedef enum {CLI_SHA1RSA, CLI_MD5RSA, CLI_MD2RSA, CLI_RSA, CLI_SHA256RSA, CLI_SHA384RSA, CLI_SHA512RSA } cli_crt_hashtype;
 typedef enum {VRFY_CODE, VRFY_TIME} cli_vrfy_type;
 
 #define CRT_RAWMAXLEN 64
