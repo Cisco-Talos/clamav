@@ -1926,21 +1926,41 @@ int asn1_check_mscat(struct cl_engine *engine, fmap_t *map, size_t offset, unsig
     if(ret)
         return CL_VIRUS;
 
-    if(asn1_expect_objtype(map, content, &content_size, &c, ASN1_TYPE_SEQUENCE))
-        return CL_VIRUS;
-    if(asn1_expect_obj(map, &c.content, &c.size, ASN1_TYPE_OBJECT_ID, lenof(OID_SPC_PE_IMAGE_DATA_OBJID), OID_SPC_PE_IMAGE_DATA_OBJID))
-        return CL_VIRUS;
-    if(asn1_expect_objtype(map, c.next, &content_size, &c, ASN1_TYPE_SEQUENCE))
-        return CL_VIRUS;
-    if(content_size) {
-        cli_dbgmsg("asn1_check_mscat: extra data in content\n");
+    if(asn1_expect_objtype(map, content, &content_size, &c, ASN1_TYPE_SEQUENCE)) {
+        cli_dbgmsg("asn1_check_mscat: expected SEQUENCE at top level of hash container\n");
         return CL_VIRUS;
     }
-    if(asn1_expect_algo(map, &c.content, &c.size, lenof(OID_sha1), OID_sha1))
+    if(asn1_expect_obj(map, &c.content, &c.size, ASN1_TYPE_OBJECT_ID, lenof(OID_SPC_PE_IMAGE_DATA_OBJID), OID_SPC_PE_IMAGE_DATA_OBJID)) {
+        cli_dbgmsg("asn1_check_mscat: expected spcPEImageData OID in the first hash SEQUENCE\n");
         return CL_VIRUS;
+    }
 
-    if(asn1_expect_obj(map, &c.content, &c.size, ASN1_TYPE_OCTET_STRING, SHA1_HASH_SIZE, computed_sha1))
+    // TODO Should we do anything with the underlying SEQUENCE and data?  From
+    // the 2008 spec doc it doesn't sound like many of the fields are used, so
+    // ignoring is probably fine for now
+
+    if(asn1_expect_objtype(map, c.next, &content_size, &c, ASN1_TYPE_SEQUENCE)) {
+        cli_dbgmsg("asn1_check_mscat: expected second hash container object to be a SEQUENCE\n");
         return CL_VIRUS;
+    }
+    if(content_size) {
+        cli_dbgmsg("asn1_check_mscat: extra data in hash SEQUENCE\n");
+        return CL_VIRUS;
+    }
+
+    if(asn1_expect_algo(map, &c.content, &c.size, lenof(OID_sha1), OID_sha1)) {
+        cli_dbgmsg("asn1_check_mscat: expected SHA1 for the file hash algo\n");
+        return CL_VIRUS;
+    }
+
+    if(asn1_expect_obj(map, &c.content, &c.size, ASN1_TYPE_OCTET_STRING, SHA1_HASH_SIZE, computed_sha1)) {
+        cli_dbgmsg("asn1_check_mscat: computed authenticode hash did not match stored value\n");
+        return CL_VIRUS;
+    }
+    if(c.size) {
+        cli_dbgmsg("asn1_check_mscat: extra data after the stored authenticode hash\n");
+        return CL_VIRUS;
+    }
 
     cli_dbgmsg("asn1_check_mscat: file with valid authenticode signature, whitelisted\n");
     return CL_CLEAN;
