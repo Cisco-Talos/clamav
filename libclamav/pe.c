@@ -5652,8 +5652,6 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
         /* Security to End of header */
         hlen = hdr_size - at;
         hash_chunk(at, hlen, 0, 0);
-
-        at = hdr_size;
         break;
     }
 
@@ -5663,6 +5661,20 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
             continue;
 
         hash_chunk(exe_sections[i].raw, exe_sections[i].rsz, 1, i);
+    }
+
+    /* Finally, if there is data after the section with the highest
+     * PointerToRawData, hash that too.  This is a variation of what
+     * the 2008 spec doc says to do (add up all the SizeOfRawData's and
+     * start hashing at that point after the PE header), but should also
+     * work in the case where a binary has overlapping sections or a section
+     * overlaps the PE header (barring some edge cases like a section
+     * fully containing another section with a higher starting addr.)
+     */
+    at = exe_sections[nsections-1].raw + exe_sections[nsections-1].rsz;
+    if (at < EC32(dirs[4].VirtualAddress)) {
+        hlen = EC32(dirs[4].VirtualAddress)-at;
+        hash_chunk(at, hlen, 0, 0);
     }
 
     free(exe_sections);
