@@ -5405,6 +5405,7 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
     struct pe_image_data_dir *dirs;
     fmap_t *map = *ctx->fmap;
     void *hashctx=NULL;
+    struct pe_certificate_hdr cert_hdr;
 
     if (flags & CL_CHECKFP_PE_FLAG_STATS)
         if (!(hashes))
@@ -5439,8 +5440,14 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
     if(nsections < 1 || nsections > 96)
         return CL_EFORMAT;
 
-    if(EC16(file_hdr.SizeOfOptionalHeader) < sizeof(struct pe_image_optional_hdr32))
+    // TODO the pe_image_optional_hdr32 structure includes space for all 16
+    // data directories, but these might not all exist in a given binary.
+    // We need to check NumberOfRvaAndSizes instead, and allow through any
+    // with at least 5 (the security DataDirectory)
+    if(EC16(file_hdr.SizeOfOptionalHeader) < sizeof(struct pe_image_optional_hdr32)) {
+        cli_dbgmsg("cli_checkfp_pe: SizeOfOptionalHeader < less than the size expected (%lu)\n", sizeof(struct pe_image_optional_hdr32));
         return CL_EFORMAT;
+    }
 
     at = e_lfanew + sizeof(struct pe_image_file_hdr);
     if(fmap_readn(map, &optional_hdr32, at, sizeof(struct pe_image_optional_hdr32)) != sizeof(struct pe_image_optional_hdr32))
@@ -5475,6 +5482,17 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
         dirs = optional_hdr64.DataDirectory;
     }
 
+    // As an optimization, check the security DataDirectory here and if
+    // it's less than 8-bytes (and we aren't relying on this code to compute
+    // the section hashes), bail out
+    if (EC32(dirs[4].Size) < 8) {
+        if (flags & CL_CHECKFP_PE_FLAG_STATS) {
+            /* If stats is enabled, continue parsing the sample */
+            flags ^= CL_CHECKFP_PE_FLAG_AUTHENTICODE;
+        } else {
+            return CL_VIRUS;
+        }
+    }
     fsize = map->len;
 
     valign = (pe_plus)?EC32(optional_hdr64.SectionAlignment):EC32(optional_hdr32.SectionAlignment);
@@ -5490,12 +5508,17 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
     if(!exe_sections)
         return CL_EMEM;
 
+    // TODO I'm not sure why this is necessary since the specification says
+    // that PointerToRawData is expected to be a multiple of the file
+    // alignment.  Should we report this is as a PE with an error?
     for(i = 0; falign!=0x200 && i<nsections; i++) {
         /* file alignment fallback mode - blah */
         if (falign && section_hdr[i].SizeOfRawData && EC32(section_hdr[i].PointerToRawData)%falign && !(EC32(section_hdr[i].PointerToRawData)%0x200))
             falign = 0x200;
     }
 
+    // TODO Why is this needed?  hdr_size should already be rounded up
+    // to a multiple of the file alignment.
     hdr_size = PESALIGN(hdr_size, falign); /* Aligned headers virtual size */
 
     if (flags & CL_CHECKFP_PE_FLAG_STATS) {
@@ -5507,23 +5530,32 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
         }
     }
 
+    // TODO Why do we fix up these alignments?  This shouldn't be needed?
     for(i = 0; i < nsections; i++) {
         exe_sections[i].rva = PEALIGN(EC32(section_hdr[i].VirtualAddress), valign);
         exe_sections[i].vsz = PESALIGN(EC32(section_hdr[i].VirtualSize), valign);
         exe_sections[i].raw = PEALIGN(EC32(section_hdr[i].PointerToRawData), falign);
         exe_sections[i].rsz = PESALIGN(EC32(section_hdr[i].SizeOfRawData), falign);
 
+        // TODO exe_sections[i].ursz is not assigned to (will always be 0)
+        // Figure out what this is meant to do and ensure that happens
         if (!exe_sections[i].vsz && exe_sections[i].rsz)
             exe_sections[i].vsz=PESALIGN(exe_sections[i].ursz, valign);
 
-        if (exe_sections[i].rsz && fsize>exe_sections[i].raw && !CLI_ISCONTAINED(0, (uint32_t) fsize, exe_sections[i].raw, exe_sections[i].rsz))
-            exe_sections[i].rsz = fsize - exe_sections[i].raw;
-
-        if (exe_sections[i].rsz && exe_sections[i].raw >= fsize) {
+        if (exe_sections[i].rsz && fsize>exe_sections[i].raw && !CLI_ISCONTAINED(0, (uint32_t) fsize, exe_sections[i].raw, exe_sections[i].rsz)) {
+            cli_dbgmsg("cli_checkfp_pe: encountered section not fully contained within the file\n");
             free(exe_sections);
             return CL_EFORMAT;
         }
 
+        if (exe_sections[i].rsz && exe_sections[i].raw >= fsize) {
+            cli_dbgmsg("cli_checkfp_pe: encountered section that doesn't exist within the file\n");
+            free(exe_sections);
+            return CL_EFORMAT;
+        }
+
+        // TODO These checks aren't needed because the u vars are never assigned (always 0)
+        // Figure out what this is meant to do and ensure that happens
         if (exe_sections[i].urva>>31 || exe_sections[i].uvsz>>31 || (exe_sections[i].rsz && exe_sections[i].uraw>>31) || exe_sections[i].ursz>>31) {
             free(exe_sections);
             return CL_EFORMAT;
@@ -5539,14 +5571,31 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
 
     if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE) {
         /* Check to see if we have a security section. */
-        if(!cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA1, 2) && dirs[4].Size < 8) {
+        if(!cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA1, 2) && EC32(dirs[4].Size) < 8) {
             if (flags & CL_CHECKFP_PE_FLAG_STATS) {
                 /* If stats is enabled, continue parsing the sample */
                 flags ^= CL_CHECKFP_PE_FLAG_AUTHENTICODE;
             } else {
+                free(exe_sections);
                 if (hashctx)
                     cl_hash_destroy(hashctx);
                 return CL_BREAK;
+            }
+        }
+
+
+        // Verify that we have all the bytes we expect in the authenticode sig
+        // and that the certificate table is the last thing in the file
+        // (according to the MS13-098 bulletin, this is a requirement)
+        if (fsize != EC32(dirs[4].Size) + EC32(dirs[4].VirtualAddress)) {
+            if (flags & CL_CHECKFP_PE_FLAG_STATS) {
+                flags ^= CL_CHECKFP_PE_FLAG_AUTHENTICODE;
+            } else {
+                cli_dbgmsg("cli_checkfp_pe: expected authenticode data at the end of the file\n");
+                free(exe_sections);
+                if (hashctx)
+                    cl_hash_destroy(hashctx);
+                return CL_EFORMAT;
             }
         }
     }
@@ -5614,32 +5663,7 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
             continue;
 
         hash_chunk(exe_sections[i].raw, exe_sections[i].rsz, 1, i);
-        if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE)
-            at += exe_sections[i].rsz;
     }
-
-    while (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE) {
-        if((size_t)at < fsize) {
-            hlen = fsize - at;
-            if(dirs[4].Size > hlen) {
-                if (flags & CL_CHECKFP_PE_FLAG_STATS) {
-                    flags ^= CL_CHECKFP_PE_FLAG_AUTHENTICODE;
-                    break;
-                } else {
-                    free(exe_sections);
-                    if (hashctx)
-                        cl_hash_destroy(hashctx);
-                    return CL_EFORMAT;
-                }
-            }
-
-            hlen -= dirs[4].Size;
-            hash_chunk(at, hlen, 0, 0);
-            at += hlen;
-        }
-
-        break;
-    } while (0);
 
     free(exe_sections);
 
@@ -5653,13 +5677,30 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
             cli_dbgmsg("Authenticode: %s\n", shatxt);
         }
 
-        hlen = dirs[4].Size;
-        if(hlen < 8)
+        hlen = EC32(dirs[4].Size);
+
+        if(fmap_readn(map, &cert_hdr, EC32(dirs[4].VirtualAddress), sizeof(cert_hdr)) != sizeof(cert_hdr))
+            return CL_EFORMAT;
+
+        if (EC16(cert_hdr.revision) != WIN_CERT_REV_2) {
+            cli_dbgmsg("cli_checkfp_pe: unsupported authenticode data revision\n");
             return CL_VIRUS;
+        }
 
-        hlen -= 8;
+        if (EC16(cert_hdr.type) != WIN_CERT_TYPE_PKCS7) {
+            cli_dbgmsg("cli_checkfp_pe: unsupported authenticode data type\n");
+            return CL_VIRUS;
+        }
 
-        return asn1_check_mscat((struct cl_engine *)(ctx->engine), map, at + 8, hlen, authsha1);
+        if (EC32(cert_hdr.length) != hlen) {
+            cli_dbgmsg("cli_checkfp_pe: unexpected authenticode data length\n");
+            return CL_VIRUS;
+        }
+
+        at = EC32(dirs[4].VirtualAddress) + sizeof(cert_hdr);
+        hlen -= sizeof(cert_hdr);
+
+        return asn1_check_mscat((struct cl_engine *)(ctx->engine), map, at, hlen, authsha1);
     } else {
         if (hashctx)
             cl_hash_destroy(hashctx);
