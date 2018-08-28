@@ -144,6 +144,17 @@ struct pe_image_section_hdr {
     uint32_t Characteristics;
 };
 
+#define WIN_CERT_REV_2 0x0200
+#define WIN_CERT_TYPE_PKCS7 0x0002
+
+/** PE authenticode data header
+  \group_pe */
+struct pe_certificate_hdr {
+    uint32_t length; /** length of the certificate data, including the header */
+    uint16_t revision;
+    uint16_t type;
+};
+
 /** Data for the bytecode PE hook
   \group_pe */
 struct cli_pe_hook_data {
