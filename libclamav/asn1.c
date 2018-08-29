@@ -540,6 +540,11 @@ static int asn1_get_rsa_pubkey(fmap_t *map, const void **asn1data, unsigned int 
     return 0;
 }
 
+
+#define ASN1_GET_X509_SUCCESS 0
+#define ASN1_GET_X509_CERT_ERROR 1
+#define ASN1_GET_X509_UNRECOVERABLE_ERROR 2
+
 static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size, crtmgr *master, crtmgr *other) {
     struct cli_asn1 crt, tbs, obj;
     unsigned int avail, tbssize, issuersize;
@@ -547,9 +552,10 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
     cli_crt x509;
     const uint8_t *tbsdata;
     const void *next, *issuer;
+    int ret = ASN1_GET_X509_UNRECOVERABLE_ERROR;
 
     if(cli_crt_init(&x509))
-        return 1;
+        return ret;
 
     do {
         if(asn1_expect_objtype(map, *asn1data, size, &crt, ASN1_TYPE_SEQUENCE)) { /* SEQUENCE */
@@ -557,6 +563,10 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
             break;
         }
         *asn1data = crt.next;
+
+        /* After this point, an error is recoverable because asn1data and size
+         * will be suitable for continued use by the caller, so change ret */
+        ret = ASN1_GET_X509_CERT_ERROR;
 
         tbsdata = crt.content;
         if(asn1_expect_objtype(map, crt.content, &crt.size, &tbs, ASN1_TYPE_SEQUENCE)) { /* SEQUENCE - TBSCertificate */
@@ -791,7 +801,7 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
         if(crtmgr_lookup(master, &x509) || crtmgr_lookup(other, &x509)) {
             cli_dbgmsg("asn1_get_x509: certificate already exists\n");
             cli_crt_clear(&x509);
-            return 0;
+            return ASN1_GET_X509_SUCCESS;
         }
 
         if(map_raw(map, issuer, issuersize, x509.raw_issuer))
@@ -835,10 +845,10 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
         if(crtmgr_add(other, &x509))
             break;
         cli_crt_clear(&x509);
-        return 0;
+        return ASN1_GET_X509_SUCCESS;
     } while(0);
     cli_crt_clear(&x509);
-    return 1;
+    return ret;
 }
 
 static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmgr *cmgr, int embedded, const void **hashes, unsigned int *hashes_size, struct cl_engine *engine) {
@@ -1025,14 +1035,18 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
             crtmgr newcerts;
             crtmgr_init(&newcerts);
             while(dsize) {
-                if(asn1_get_x509(map, &asn1.content, &dsize, cmgr, &newcerts)) {
+                result = asn1_get_x509(map, &asn1.content, &dsize, cmgr, &newcerts);
+                if(ASN1_GET_X509_UNRECOVERABLE_ERROR == result) {
                     dsize = 1;
                     break;
+                }
+                else if(ASN1_GET_X509_CERT_ERROR == result) {
+                    cli_dbgmsg("asn1_parse_mscat: skipping x509 certificate with errors\n");
                 }
             }
             if(dsize) {
                 crtmgr_free(&newcerts);
-                cli_dbgmsg("asn1_parse_mscat: an error occurred while extracting x509 certificates\n");
+                cli_dbgmsg("asn1_parse_mscat: an unrecoverable error occurred while extracting x509 certificates\n");
                 break;
             }
             if(newcerts.crts) {
