@@ -39,8 +39,8 @@
 int cli_crt_init(cli_crt *x509) {
     int ret;
     if((ret = mp_init_multi(&x509->n, &x509->e, &x509->sig, NULL))) {
-	cli_errmsg("cli_crt_init: mp_init_multi failed with %d\n", ret);
-	return 1;
+        cli_errmsg("cli_crt_init: mp_init_multi failed with %d\n", ret);
+        return 1;
     }
     x509->name = NULL;
     x509->isBlacklisted = 0;
@@ -58,17 +58,17 @@ void cli_crt_clear(cli_crt *x509) {
 cli_crt *crtmgr_lookup(crtmgr *m, cli_crt *x509) {
     cli_crt *i;
     for(i = m->crts; i; i = i->next) {
-	if(x509->not_before >= i->not_before &&
-	   x509->not_after <= i->not_after &&
-	   (i->certSign | x509->certSign) == i->certSign &&
-	   (i->codeSign | x509->codeSign) == i->codeSign &&
-	   (i->timeSign | x509->timeSign) == i->timeSign &&
-	   !memcmp(x509->subject, i->subject, sizeof(i->subject)) &&
-	   !memcmp(x509->serial, i->serial, sizeof(i->serial)) &&
-	   !mp_cmp(&x509->n, &i->n) &&
-	   !mp_cmp(&x509->e, &i->e) && !(i->isBlacklisted)) {
-	    return i;
-	}
+        if(x509->not_before >= i->not_before &&
+           x509->not_after <= i->not_after &&
+           (i->certSign | x509->certSign) == i->certSign &&
+           (i->codeSign | x509->codeSign) == i->codeSign &&
+           (i->timeSign | x509->timeSign) == i->timeSign &&
+           !memcmp(x509->subject, i->subject, sizeof(i->subject)) &&
+           !memcmp(x509->serial, i->serial, sizeof(i->serial)) &&
+           !mp_cmp(&x509->n, &i->n) &&
+           !mp_cmp(&x509->e, &i->e) && !(i->isBlacklisted)) {
+            return i;
+        }
     }
     return NULL;
 }
@@ -78,66 +78,66 @@ int crtmgr_add(crtmgr *m, cli_crt *x509) {
     int ret = 0;
 
     for(i = m->crts; i; i = i->next) {
-	if(!memcmp(x509->subject, i->subject, sizeof(i->subject)) &&
-	   !memcmp(x509->serial, i->subject, sizeof(i->serial)) &&
-	   !mp_cmp(&x509->n, &i->n) &&
-	   !mp_cmp(&x509->e, &i->e)) {
-	    if(x509->not_before >= i->not_before && x509->not_after <= i->not_after) {
-		/* Already same or broader */
-		ret = 1;
-	    }
-	    if(i->not_before > x509->not_before && i->not_before <= x509->not_after) {
-		/* Extend left */
-		i->not_before = x509->not_before;
-		ret = 1;
-	    }
-	    if(i->not_after >= x509->not_before && i->not_after < x509->not_after) {
-		/* Extend right */
-		i->not_after = x509->not_after;
-		ret = 1;
-	    }
-	    if(!ret)
-		continue;
-	    i->certSign |= x509->certSign;
-	    i->codeSign |= x509->codeSign;
-	    i->timeSign |= x509->timeSign;
-
-	    return 0;
-	}
-
-    /* If certs match, we're likely just revoking it */
-    if (!memcmp(x509->subject, i->subject, sizeof(x509->subject)) &&
-        !memcmp(x509->issuer, i->issuer, sizeof(x509->issuer)) &&
-        !memcmp(x509->serial, i->serial, sizeof(x509->serial)) &&
-        !mp_cmp(&x509->n, &i->n) &&
-        !mp_cmp(&x509->e, &i->e)) {
-            if (i->isBlacklisted != x509->isBlacklisted)
-                i->isBlacklisted = x509->isBlacklisted;
+        if(!memcmp(x509->subject, i->subject, sizeof(i->subject)) &&
+           !memcmp(x509->serial, i->subject, sizeof(i->serial)) &&
+           !mp_cmp(&x509->n, &i->n) &&
+           !mp_cmp(&x509->e, &i->e)) {
+            if(x509->not_before >= i->not_before && x509->not_after <= i->not_after) {
+                /* Already same or broader */
+                ret = 1;
+            }
+            if(i->not_before > x509->not_before && i->not_before <= x509->not_after) {
+                /* Extend left */
+                i->not_before = x509->not_before;
+                ret = 1;
+            }
+            if(i->not_after >= x509->not_before && i->not_after < x509->not_after) {
+                /* Extend right */
+                i->not_after = x509->not_after;
+                ret = 1;
+            }
+            if(!ret)
+                continue;
+            i->certSign |= x509->certSign;
+            i->codeSign |= x509->codeSign;
+            i->timeSign |= x509->timeSign;
 
             return 0;
-    }
+        }
+
+        /* If certs match, we're likely just revoking it */
+        if (!memcmp(x509->subject, i->subject, sizeof(x509->subject)) &&
+            !memcmp(x509->issuer, i->issuer, sizeof(x509->issuer)) &&
+            !memcmp(x509->serial, i->serial, sizeof(x509->serial)) &&
+            !mp_cmp(&x509->n, &i->n) &&
+            !mp_cmp(&x509->e, &i->e)) {
+                if (i->isBlacklisted != x509->isBlacklisted)
+                    i->isBlacklisted = x509->isBlacklisted;
+
+                return 0;
+        }
     }
 
     i = cli_malloc(sizeof(*i));
     if(!i)
-	return 1;
+        return 1;
 
     if((ret = mp_init_multi(&i->n, &i->e, &i->sig, NULL))) {
-	cli_warnmsg("crtmgr_add: failed to mp_init failed with %d\n", ret);
-	free(i);
-	return 1;
+        cli_warnmsg("crtmgr_add: failed to mp_init failed with %d\n", ret);
+        free(i);
+        return 1;
     }
     if((ret = mp_copy(&x509->n, &i->n)) || (ret = mp_copy(&x509->e, &i->e)) || (ret = mp_copy(&x509->sig, &i->sig))) {
-	cli_warnmsg("crtmgr_add: failed to mp_init failed with %d\n", ret);
-	cli_crt_clear(i);
-	free(i);
-	return 1;
+        cli_warnmsg("crtmgr_add: failed to mp_init failed with %d\n", ret);
+        cli_crt_clear(i);
+        free(i);
+        return 1;
     }
 
     if ((x509->name))
-	i->name = strdup(x509->name);
+        i->name = strdup(x509->name);
     else
-	i->name = NULL;
+        i->name = NULL;
 
     memcpy(i->raw_subject, x509->raw_subject, sizeof(i->raw_subject));
     memcpy(i->raw_issuer, x509->raw_issuer, sizeof(i->raw_issuer));
@@ -156,7 +156,7 @@ int crtmgr_add(crtmgr *m, cli_crt *x509) {
     i->next = m->crts;
     i->prev = NULL;
     if(m->crts)
-	m->crts->prev = i;
+        m->crts->prev = i;
     m->crts = i;
 
     m->items++;
@@ -171,26 +171,26 @@ void crtmgr_init(crtmgr *m) {
 void crtmgr_del(crtmgr *m, cli_crt *x509) {
     cli_crt *i;
     for(i = m->crts; i; i = i->next) {
-	if(i==x509) {
-	    if(i->prev)
-		i->prev->next = i->next;
-	    else
-		m->crts = i->next;
-	    if(i->next)
-		i->next->prev = i->prev;
-	    cli_crt_clear(x509);
-	    if ((x509->name))
-		free(x509->name);
-	    free(x509);
-	    m->items--;
-	    return;
-	}
+        if(i==x509) {
+            if(i->prev)
+                i->prev->next = i->next;
+            else
+                m->crts = i->next;
+            if(i->next)
+                i->next->prev = i->prev;
+            cli_crt_clear(x509);
+            if ((x509->name))
+                free(x509->name);
+            free(x509);
+            m->items--;
+            return;
+        }
     }
 }
 
 void crtmgr_free(crtmgr *m) {
     while(m->items)
-	crtmgr_del(m, m->crts);
+        crtmgr_del(m, m->crts);
 }
 
 static int crtmgr_rsa_verify(cli_crt *x509, mp_int *sig, cli_crt_hashtype hashtype, const uint8_t *refhash) {
@@ -211,94 +211,94 @@ static int crtmgr_rsa_verify(cli_crt *x509, mp_int *sig, cli_crt_hashtype hashty
     }
 
     if((ret = mp_init(&x))) {
-	cli_errmsg("crtmgr_rsa_verify: mp_init failed with %d\n", ret);
-	return 1;
+        cli_errmsg("crtmgr_rsa_verify: mp_init failed with %d\n", ret);
+        return 1;
     }
 
     do {
-	if(MAX(keylen, siglen) - MIN(keylen, siglen) > 1)
-	    break;
-	if((ret = mp_exptmod(sig, &x509->e, &x509->n, &x))) {
-	    cli_warnmsg("crtmgr_rsa_verify: verification failed: mp_exptmod failed with %d\n", ret);
-	    break;
-	}
-	if(mp_unsigned_bin_size(&x) != keylen - 1)
-	    break;
-	if((ret = mp_to_unsigned_bin(&x, d))) {
-	    cli_warnmsg("crtmgr_rsa_verify: mp_unsigned_bin_size failed with %d\n", ret);
-	    break;
-	}
-	if(*d != 1) /* block type 1 */
-	    break;
+        if(MAX(keylen, siglen) - MIN(keylen, siglen) > 1)
+            break;
+        if((ret = mp_exptmod(sig, &x509->e, &x509->n, &x))) {
+            cli_warnmsg("crtmgr_rsa_verify: verification failed: mp_exptmod failed with %d\n", ret);
+            break;
+        }
+        if(mp_unsigned_bin_size(&x) != keylen - 1)
+            break;
+        if((ret = mp_to_unsigned_bin(&x, d))) {
+            cli_warnmsg("crtmgr_rsa_verify: mp_unsigned_bin_size failed with %d\n", ret);
+            break;
+        }
+        if(*d != 1) /* block type 1 */
+            break;
 
-	keylen -= 1; /* 0xff padding */
-	for(j=1; j<keylen-2; j++)
-	    if(d[j] != 0xff)
-		break;
-	if(j == keylen - 2)
-	    break;
-	if(d[j] != 0) /* 0x00 separator */
-	    break;
+        keylen -= 1; /* 0xff padding */
+        for(j=1; j<keylen-2; j++)
+            if(d[j] != 0xff)
+                break;
+        if(j == keylen - 2)
+            break;
+        if(d[j] != 0) /* 0x00 separator */
+            break;
 
-	j++;
-	keylen -= j; /* asn1 size */
+        j++;
+        keylen -= j; /* asn1 size */
 
-	if(keylen < hashlen)
-	    break;
-	if(keylen > hashlen) {
-	    /* hash is asn1 der encoded */
-	    /* SEQ { SEQ { OID, NULL }, OCTET STRING */
-	    if(keylen < 2 || d[j] != 0x30 || d[j+1] + 2 != keylen)
-		break;
-	    keylen -= 2;
-	    j+=2;
+        if(keylen < hashlen)
+            break;
+        if(keylen > hashlen) {
+            /* hash is asn1 der encoded */
+            /* SEQ { SEQ { OID, NULL }, OCTET STRING */
+            if(keylen < 2 || d[j] != 0x30 || d[j+1] + 2 != keylen)
+                break;
+            keylen -= 2;
+            j+=2;
 
-	    if(keylen <2 || d[j] != 0x30)
-		break;
+            if(keylen <2 || d[j] != 0x30)
+                break;
 
-	    objlen = d[j+1];
+            objlen = d[j+1];
 
-	    keylen -= 2;
-	    j+=2;
-	    if(keylen < objlen)
-		break;
-	    if(objlen == 9) {
+            keylen -= 2;
+            j+=2;
+            if(keylen < objlen)
+                break;
+            if(objlen == 9) {
                 // Check for OID type indicating a length of 5, OID_sha1, and the NULL type/value
-		if(hashtype != CLI_SHA1RSA || memcmp(&d[j], "\x06\x05" OID_sha1 "\x05\x00", 9)) {
-		    cli_errmsg("crtmgr_rsa_verify: FIXME ACAB - CRYPTO MISSING?\n");
-		    break;
-		}
-	    } else if(objlen == 12) {
+                if(hashtype != CLI_SHA1RSA || memcmp(&d[j], "\x06\x05" OID_sha1 "\x05\x00", 9)) {
+                    cli_errmsg("crtmgr_rsa_verify: FIXME ACAB - CRYPTO MISSING?\n");
+                    break;
+                }
+            } else if(objlen == 12) {
                 // Check for OID type indicating a length of 8, OID_md5, and the NULL type/value
-		if(hashtype != CLI_MD5RSA || memcmp(&d[j], "\x06\x08" OID_md5 "\x05\x00", 12)) {
-		    cli_errmsg("crtmgr_rsa_verify: FIXME ACAB - CRYPTO MISSING?\n");
-		    break;
-		}
-	    } else if(objlen == 13) {
+                if(hashtype != CLI_MD5RSA || memcmp(&d[j], "\x06\x08" OID_md5 "\x05\x00", 12)) {
+                    cli_errmsg("crtmgr_rsa_verify: FIXME ACAB - CRYPTO MISSING?\n");
+                    break;
+                }
+            } else if(objlen == 13) {
                 // Check for OID type indicating a length of 9, OID_sha256, and the NULL type/value
-		if(hashtype != CLI_SHA256RSA || memcmp(&d[j], "\x06\x09" OID_sha256 "\x05\x00", 13)) {
-		    cli_errmsg("crtmgr_rsa_verify: FIXME ACAB - CRYPTO MISSING?\n");
-		    break;
-		}
-	    } else {
-		cli_errmsg("crtmgr_rsa_verify: FIXME ACAB - CRYPTO MISSING?\n");
-		break;
-	    }
+                if(hashtype != CLI_SHA256RSA || memcmp(&d[j], "\x06\x09" OID_sha256 "\x05\x00", 13)) {
+                    cli_errmsg("crtmgr_rsa_verify: FIXME ACAB - CRYPTO MISSING?\n");
+                    break;
+                }
+            } else {
+                cli_errmsg("crtmgr_rsa_verify: FIXME ACAB - CRYPTO MISSING?\n");
+                break;
+            }
 
-	    keylen -= objlen;
-	    j += objlen;
-	    if(keylen < 2 || d[j] != 0x04 || d[j+1] != hashlen)
-		break;
-	    keylen -= 2;
-	    j+=2;
-	    if(keylen != hashlen)
-		break;
-	}
-	if(memcmp(&d[j], refhash, hashlen))
-	    break;
+            keylen -= objlen;
+            j += objlen;
+            if(keylen < 2 || d[j] != 0x04 || d[j+1] != hashlen)
+                break;
+            keylen -= 2;
+            j+=2;
+            if(keylen != hashlen)
+                break;
+        }
+        if(memcmp(&d[j], refhash, hashlen))
+            break;
 
-	mp_clear(&x);
-	return 0;
+        mp_clear(&x);
+        return 0;
 
     } while(0);
 
@@ -320,18 +320,18 @@ cli_crt *crtmgr_verify_crt(crtmgr *m, cli_crt *x509) {
     }
 
     for(i = m->crts; i; i = i->next) {
-	if(i->certSign &&
-	   !memcmp(i->subject, x509->issuer, sizeof(i->subject)) &&
-	   !crtmgr_rsa_verify(i, &x509->sig, x509->hashtype, x509->tbshash)) {
-	    int curscore;
-	    if((x509->codeSign & i->codeSign) == x509->codeSign && (x509->timeSign & i->timeSign) == x509->timeSign)
-		return i;
-	    curscore = (x509->codeSign & i->codeSign) + (x509->timeSign & i->timeSign);
-	    if(curscore > score) {
-		best = i;
-		score = curscore;
-	    }
-	}
+        if(i->certSign &&
+           !memcmp(i->subject, x509->issuer, sizeof(i->subject)) &&
+           !crtmgr_rsa_verify(i, &x509->sig, x509->hashtype, x509->tbshash)) {
+            int curscore;
+            if((x509->codeSign & i->codeSign) == x509->codeSign && (x509->timeSign & i->timeSign) == x509->timeSign)
+                return i;
+            curscore = (x509->codeSign & i->codeSign) + (x509->timeSign & i->timeSign);
+            if(curscore > score) {
+                best = i;
+                score = curscore;
+            }
+        }
     }
     return best;
 }
@@ -342,28 +342,28 @@ cli_crt *crtmgr_verify_pkcs7(crtmgr *m, const uint8_t *issuer, const uint8_t *se
     int ret;
 
     if(signature_len < 1024/8 || signature_len > 4096/8+1) {
-	cli_dbgmsg("crtmgr_verify_pkcs7: unsupported sig len: %u\n", signature_len);
-	return NULL;
+        cli_dbgmsg("crtmgr_verify_pkcs7: unsupported sig len: %u\n", signature_len);
+        return NULL;
     }
     if((ret = mp_init(&sig))) {
-	cli_errmsg("crtmgr_verify_pkcs7: mp_init failed with %d\n", ret);
-	return NULL;
+        cli_errmsg("crtmgr_verify_pkcs7: mp_init failed with %d\n", ret);
+        return NULL;
     }
 
     if((ret=mp_read_unsigned_bin(&sig, signature, signature_len))) {
-	cli_warnmsg("crtmgr_verify_pkcs7: mp_read_unsigned_bin failed with %d\n", ret);
-	return NULL;
+        cli_warnmsg("crtmgr_verify_pkcs7: mp_read_unsigned_bin failed with %d\n", ret);
+        return NULL;
     }
 
     for(i = m->crts; i; i = i->next) {
-	if(vrfytype == VRFY_CODE && !i->codeSign)
-	    continue;
-	if(vrfytype == VRFY_TIME && !i->timeSign)
-	    continue;
-	if(!memcmp(i->issuer, issuer, sizeof(i->issuer)) &&
-	   !memcmp(i->serial, serial, sizeof(i->serial)) &&
-	   !crtmgr_rsa_verify(i, &sig, hashtype, refhash)) {
-	    break;
+        if(vrfytype == VRFY_CODE && !i->codeSign)
+            continue;
+        if(vrfytype == VRFY_TIME && !i->timeSign)
+            continue;
+        if(!memcmp(i->issuer, issuer, sizeof(i->issuer)) &&
+           !memcmp(i->serial, serial, sizeof(i->serial)) &&
+           !crtmgr_rsa_verify(i, &sig, hashtype, refhash)) {
+            break;
         }
     }
     mp_clear(&sig);
