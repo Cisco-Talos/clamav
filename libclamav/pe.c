@@ -90,11 +90,11 @@
 
 #define DCONF ctx->dconf->pe
 
-#define PE_IMAGE_DOS_SIGNATURE	    0x5a4d	    /* MZ */
+#define PE_IMAGE_DOS_SIGNATURE      0x5a4d          /* MZ */
 #define PE_IMAGE_DOS_SIGNATURE_OLD  0x4d5a          /* ZM */
-#define PE_IMAGE_NT_SIGNATURE	    0x00004550
-#define PE32_SIGNATURE		    0x010b
-#define PE32P_SIGNATURE		    0x020b
+#define PE_IMAGE_NT_SIGNATURE       0x00004550
+#define PE32_SIGNATURE              0x010b
+#define PE32P_SIGNATURE             0x020b
 
 #define optional_hdr64 pe_opt.opt64
 #define optional_hdr32 pe_opt.opt32
@@ -118,9 +118,9 @@
 #define PESALIGN(o,a) (((a))?(((o)/(a)+((o)%(a)!=0))*(a)):(o))
 
 #define CLI_UNPSIZELIMITS(NAME,CHK) \
-if(cli_checklimits(NAME, ctx, (CHK), 0, 0)!=CL_CLEAN) {	\
-    free(exe_sections);					\
-    return CL_CLEAN;					\
+if(cli_checklimits(NAME, ctx, (CHK), 0, 0)!=CL_CLEAN) { \
+    free(exe_sections);                                 \
+    return CL_CLEAN;                                    \
 }
 
 #define CLI_UNPTEMP(NAME,FREEME) \
@@ -349,62 +349,62 @@ void findres(uint32_t by_type, uint32_t by_name, uint32_t res_rva, fmap_t *map, 
     uint16_t type_cnt, name_cnt, lang_cnt;
 
     if (!(resdir = fmap_need_off_once(map, cli_rawaddr(res_rva, exe_sections, nsections, &err, map->len, hdr_size), 16)) || err)
-	return;
+        return;
 
     type_cnt = (uint16_t)cli_readint16(resdir+12);
     type_entry = resdir+16;
     if(!(by_type>>31)) {
-	type_entry += type_cnt * 8;
-	type_cnt = (uint16_t)cli_readint16(resdir+14);
+        type_entry += type_cnt * 8;
+        type_cnt = (uint16_t)cli_readint16(resdir+14);
     }
 
     while(type_cnt--) {
-	if(!fmap_need_ptr_once(map, type_entry, 8))
-	    return;
-	type = cli_readint32(type_entry);
-	type_offs = cli_readint32(type_entry+4);
-	if(type == by_type && (type_offs>>31)) {
-	    type_offs &= 0x7fffffff;
-	    if (!(resdir = fmap_need_off_once(map, cli_rawaddr(res_rva + type_offs, exe_sections, nsections, &err, map->len, hdr_size), 16)) || err)
-		return;
+        if(!fmap_need_ptr_once(map, type_entry, 8))
+            return;
+        type = cli_readint32(type_entry);
+        type_offs = cli_readint32(type_entry+4);
+        if(type == by_type && (type_offs>>31)) {
+            type_offs &= 0x7fffffff;
+            if (!(resdir = fmap_need_off_once(map, cli_rawaddr(res_rva + type_offs, exe_sections, nsections, &err, map->len, hdr_size), 16)) || err)
+                return;
 
-	    name_cnt = (uint16_t)cli_readint16(resdir+12);
-	    name_entry = resdir+16;
-	    if(by_name == 0xffffffff)
-		name_cnt += (uint16_t)cli_readint16(resdir+14);
-	    else if(!(by_name>>31)) {
-		name_entry += name_cnt * 8;
-		name_cnt = (uint16_t)cli_readint16(resdir+14);
-	    }
-	    while(name_cnt--) {
-		if(!fmap_need_ptr_once(map, name_entry, 8))
-		    return;
-		name = cli_readint32(name_entry);
-		name_offs = cli_readint32(name_entry+4);
-		if((by_name == 0xffffffff || name == by_name) && (name_offs>>31)) {
-		    name_offs &= 0x7fffffff;
-		    if (!(resdir = fmap_need_off_once(map, cli_rawaddr(res_rva + name_offs, exe_sections, nsections, &err, map->len, hdr_size), 16)) || err)
-			return;
-		    
-		    lang_cnt = (uint16_t)cli_readint16(resdir+12) + (uint16_t)cli_readint16(resdir+14);
-		    lang_entry = resdir+16;
-		    while(lang_cnt--) {
-			if(!fmap_need_ptr_once(map, lang_entry, 8))
-			    return;
-			lang = cli_readint32(lang_entry);
-			lang_offs = cli_readint32(lang_entry+4);
-			if(!(lang_offs >>31)) {
-			    if(cb(opaque, type, name, lang, res_rva + lang_offs))
-				return;
-			}
-			lang_entry += 8;
-		    }
-		}
-		name_entry += 8;
-	    }
-	    return; /* FIXME: unless we want to find ALL types */
-	}
-	type_entry += 8;
+            name_cnt = (uint16_t)cli_readint16(resdir+12);
+            name_entry = resdir+16;
+            if(by_name == 0xffffffff)
+                name_cnt += (uint16_t)cli_readint16(resdir+14);
+            else if(!(by_name>>31)) {
+                name_entry += name_cnt * 8;
+                name_cnt = (uint16_t)cli_readint16(resdir+14);
+            }
+            while(name_cnt--) {
+                if(!fmap_need_ptr_once(map, name_entry, 8))
+                    return;
+                name = cli_readint32(name_entry);
+                name_offs = cli_readint32(name_entry+4);
+                if((by_name == 0xffffffff || name == by_name) && (name_offs>>31)) {
+                    name_offs &= 0x7fffffff;
+                    if (!(resdir = fmap_need_off_once(map, cli_rawaddr(res_rva + name_offs, exe_sections, nsections, &err, map->len, hdr_size), 16)) || err)
+                        return;
+
+                    lang_cnt = (uint16_t)cli_readint16(resdir+12) + (uint16_t)cli_readint16(resdir+14);
+                    lang_entry = resdir+16;
+                    while(lang_cnt--) {
+                        if(!fmap_need_ptr_once(map, lang_entry, 8))
+                            return;
+                        lang = cli_readint32(lang_entry);
+                        lang_offs = cli_readint32(lang_entry+4);
+                        if(!(lang_offs >>31)) {
+                            if(cb(opaque, type, name, lang, res_rva + lang_offs))
+                                return;
+                        }
+                        lang_entry += 8;
+                    }
+                }
+                name_entry += 8;
+            }
+            return; /* FIXME: unless we want to find ALL types */
+        }
+        type_entry += 8;
     }
 }
 
@@ -419,82 +419,82 @@ static void cli_parseres_special(uint32_t base, uint32_t rva, fmap_t *map, struc
     if(level>2 || !*maxres) return;
     *maxres-=1;
     if(err || !(resdir = fmap_need_off_once(map, rawaddr, 16)))
-	    return;
+            return;
     named = (uint16_t)cli_readint16(resdir+12);
     unnamed = (uint16_t)cli_readint16(resdir+14);
 
     entries = /*named+*/unnamed;
     if (!entries)
-	    return;
+            return;
     rawaddr += named*8; /* skip named */
     /* this is just used in a heuristic detection, so don't give error on failure */
     if(!(entry = fmap_need_off(map, rawaddr+16, entries*8))) {
-	    cli_dbgmsg("cli_parseres_special: failed to read resource directory at:%lu\n", (unsigned long)rawaddr+16);
-	    return;
+            cli_dbgmsg("cli_parseres_special: failed to read resource directory at:%lu\n", (unsigned long)rawaddr+16);
+            return;
     }
     oentry = entry;
     /*for (i=0; i<named; i++) {
-	uint32_t id, offs;
-	id = cli_readint32(entry);
-	offs = cli_readint32(entry+4);
-	if(offs>>31)
-	    cli_parseres( base, base + (offs&0x7fffffff), srcfd, exe_sections, nsections, fsize, hdr_size, level+1, type, maxres, stats);
-	entry+=8;
+        uint32_t id, offs;
+        id = cli_readint32(entry);
+        offs = cli_readint32(entry+4);
+        if(offs>>31)
+            cli_parseres( base, base + (offs&0x7fffffff), srcfd, exe_sections, nsections, fsize, hdr_size, level+1, type, maxres, stats);
+        entry+=8;
     }*/
     for (i=0; i<unnamed; i++, entry += 8) {
-	uint32_t id, offs;
-	if (stats->errors >= SWIZZ_MAXERRORS) {
-	    cli_dbgmsg("cli_parseres_special: resources broken, ignoring\n");
-	    return;
-	}
-	id = cli_readint32(entry)&0x7fffffff;
-	if(level==0) {
-		type = 0;
-		switch(id) {
-			case 4: /* menu */
-			case 5: /* dialog */
-			case 6: /* string */
-			case 11:/* msgtable */
-				type = id;
-				break;
-			case 16:
-				type = id;
-				/* 14: version */
-				stats->has_version = 1;
-				break;
-			case 24: /* manifest */
-				stats->has_manifest = 1;
-				break;
-			/* otherwise keep it 0, we don't want it */
-		}
-	}
-	if (!type) {
-		/* if we are not interested in this type, skip */
-		continue;
-	}
-	offs = cli_readint32(entry+4);
-	if(offs>>31)
-		cli_parseres_special(base, base + (offs&0x7fffffff), map, exe_sections, nsections, fsize, hdr_size, level+1, type, maxres, stats);
-	else {
-			offs = cli_readint32(entry+4);
-			rawaddr = cli_rawaddr(base + offs, exe_sections, nsections, &err, fsize, hdr_size);
-			if (!err && (resdir = fmap_need_off_once(map, rawaddr, 16))) {
-				uint32_t isz = cli_readint32(resdir+4);
-				const uint8_t *str;
-				rawaddr = cli_rawaddr(cli_readint32(resdir), exe_sections, nsections, &err, fsize, hdr_size);
-				if (err || !isz || isz >= fsize || rawaddr+isz >= fsize) {
-					cli_dbgmsg("cli_parseres_special: invalid resource table entry: %lu + %lu\n", 
-							(unsigned long)rawaddr, 
-							(unsigned long)isz);
-					stats->errors++;
-					continue;
-				}
-				if ((id&0xff) != 0x09) /* english res only */
-				    continue;
-				if((str = fmap_need_off_once(map, rawaddr, isz)))
-					cli_detect_swizz_str(str, isz, stats, type);
-			}
-	}
+        uint32_t id, offs;
+        if (stats->errors >= SWIZZ_MAXERRORS) {
+            cli_dbgmsg("cli_parseres_special: resources broken, ignoring\n");
+            return;
+        }
+        id = cli_readint32(entry)&0x7fffffff;
+        if(level==0) {
+                type = 0;
+                switch(id) {
+                        case 4: /* menu */
+                        case 5: /* dialog */
+                        case 6: /* string */
+                        case 11:/* msgtable */
+                                type = id;
+                                break;
+                        case 16:
+                                type = id;
+                                /* 14: version */
+                                stats->has_version = 1;
+                                break;
+                        case 24: /* manifest */
+                                stats->has_manifest = 1;
+                                break;
+                        /* otherwise keep it 0, we don't want it */
+                }
+        }
+        if (!type) {
+                /* if we are not interested in this type, skip */
+                continue;
+        }
+        offs = cli_readint32(entry+4);
+        if(offs>>31)
+                cli_parseres_special(base, base + (offs&0x7fffffff), map, exe_sections, nsections, fsize, hdr_size, level+1, type, maxres, stats);
+        else {
+                        offs = cli_readint32(entry+4);
+                        rawaddr = cli_rawaddr(base + offs, exe_sections, nsections, &err, fsize, hdr_size);
+                        if (!err && (resdir = fmap_need_off_once(map, rawaddr, 16))) {
+                                uint32_t isz = cli_readint32(resdir+4);
+                                const uint8_t *str;
+                                rawaddr = cli_rawaddr(cli_readint32(resdir), exe_sections, nsections, &err, fsize, hdr_size);
+                                if (err || !isz || isz >= fsize || rawaddr+isz >= fsize) {
+                                        cli_dbgmsg("cli_parseres_special: invalid resource table entry: %lu + %lu\n", 
+                                                        (unsigned long)rawaddr, 
+                                                        (unsigned long)isz);
+                                        stats->errors++;
+                                        continue;
+                                }
+                                if ((id&0xff) != 0x09) /* english res only */
+                                    continue;
+                                if((str = fmap_need_off_once(map, rawaddr, isz)))
+                                        cli_detect_swizz_str(str, isz, stats, type);
+                        }
+        }
     }
     fmap_unneed_ptr(map, oentry, entries*8);
 }
@@ -3447,13 +3447,13 @@ int cli_scanpe(cli_ctx *ctx)
 
     /* CLI_UNPTEMP("DISASM",(exe_sections,0)); */
     /* if(disasmbuf((unsigned char*)epbuff, epsize, ndesc)) */
-    /* 	ret = cli_scandesc(ndesc, ctx, CL_TYPE_PE_DISASM, 1, NULL, AC_SCAN_VIR); */
+    /*  ret = cli_scandesc(ndesc, ctx, CL_TYPE_PE_DISASM, 1, NULL, AC_SCAN_VIR); */
     /* close(ndesc); */
     /* CLI_TMPUNLK(); */
     /* free(tempfile); */
     /* if(ret == CL_VIRUS) { */
-    /* 	free(exe_sections); */
-    /* 	return ret; */
+    /*  free(exe_sections); */
+    /*  return ret; */
     /* } */
 
     if(overlays) {
@@ -4601,20 +4601,20 @@ int cli_scanpe(cli_ctx *ctx)
 
             for(i = 0 ; i < nsections; i++) {
                 if(exe_sections[i].raw) {
-			unsigned int r_ret;
+                        unsigned int r_ret;
 
-			if (!exe_sections[i].rsz)
-				goto out_no_petite;
+                        if (!exe_sections[i].rsz)
+                                goto out_no_petite;
 
-			if (!CLI_ISCONTAINED(dest, dsize,
-					     dest + exe_sections[i].rva - min,
-					     exe_sections[i].ursz))
-				goto out_no_petite;
+                        if (!CLI_ISCONTAINED(dest, dsize,
+                                             dest + exe_sections[i].rva - min,
+                                             exe_sections[i].ursz))
+                                goto out_no_petite;
 
-			r_ret = fmap_readn(map, dest + exe_sections[i].rva - min,
-					exe_sections[i].raw,
-					exe_sections[i].ursz);
-		    if (r_ret != exe_sections[i].ursz) {
+                        r_ret = fmap_readn(map, dest + exe_sections[i].rva - min,
+                                        exe_sections[i].raw,
+                                        exe_sections[i].ursz);
+                    if (r_ret != exe_sections[i].ursz) {
 out_no_petite:
                         free(exe_sections);
                         free(dest);
@@ -5588,10 +5588,10 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
         // and that the certificate table is the last thing in the file
         // (according to the MS13-098 bulletin, this is a requirement)
         if (fsize != EC32(dirs[4].Size) + EC32(dirs[4].VirtualAddress)) {
+            cli_dbgmsg("cli_checkfp_pe: expected authenticode data at the end of the file\n");
             if (flags & CL_CHECKFP_PE_FLAG_STATS) {
                 flags ^= CL_CHECKFP_PE_FLAG_AUTHENTICODE;
             } else {
-                cli_dbgmsg("cli_checkfp_pe: expected authenticode data at the end of the file\n");
                 free(exe_sections);
                 if (hashctx)
                     cl_hash_destroy(hashctx);
