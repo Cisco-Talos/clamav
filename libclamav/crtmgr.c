@@ -36,6 +36,9 @@
 #define OID_2_16_840_1_101_3_4_2_1 "\x60\x86\x48\x01\x65\x03\x04\x02\x01"
 #define OID_sha256 OID_2_16_840_1_101_3_4_2_1
 
+#define OID_2_16_840_1_101_3_4_2_2 "\x60\x86\x48\x01\x65\x03\x04\x02\x02"
+#define OID_sha384 OID_2_16_840_1_101_3_4_2_2
+
 int cli_crt_init(cli_crt *x509) {
     int ret;
     if((ret = mp_init_multi(&x509->n, &x509->e, &x509->sig, NULL))) {
@@ -205,8 +208,10 @@ static int crtmgr_rsa_verify(cli_crt *x509, mp_int *sig, cli_crt_hashtype hashty
         hashlen = MD5_HASH_SIZE;
     } else if (hashtype == CLI_SHA256RSA) {
         hashlen = SHA256_HASH_SIZE;
+    } else if (hashtype == CLI_SHA384RSA) {
+        hashlen = SHA384_HASH_SIZE;
     } else {
-        cli_errmsg("crtmgr_rsa_verify: Unsupported hashtype\n");
+        cli_errmsg("crtmgr_rsa_verify: Unsupported hashtype: %d\n", hashtype);
         return 1;
     }
 
@@ -223,6 +228,8 @@ static int crtmgr_rsa_verify(cli_crt *x509, mp_int *sig, cli_crt_hashtype hashty
             break;
         }
         if(mp_unsigned_bin_size(&x) != keylen - 1)
+            break;
+        if(mp_unsigned_bin_size(&x) > sizeof(d))
             break;
         if((ret = mp_to_unsigned_bin(&x, d))) {
             cli_warnmsg("crtmgr_rsa_verify: mp_unsigned_bin_size failed with %d\n", ret);
@@ -275,8 +282,21 @@ static int crtmgr_rsa_verify(cli_crt *x509, mp_int *sig, cli_crt_hashtype hashty
                     break;
                 }
             } else if(objlen == 13) {
-                // Check for OID type indicating a length of 9, OID_sha256, and the NULL type/value
-                if(hashtype != CLI_SHA256RSA || memcmp(&d[j], "\x06\x09" OID_sha256 "\x05\x00", 13)) {
+                if (hashtype == CLI_SHA256RSA) {
+                    // Check for OID type indicating a length of 9, OID_sha256, and the NULL type/value
+                    if (0 != memcmp(&d[j], "\x06\x09" OID_sha256 "\x05\x00", 13)) {
+                        cli_dbgmsg("crtmgr_rsa_verify: invalid AlgorithmIdentifier block for SHA256 hash\n");
+                        break;
+                    }
+
+                } else if (hashtype == CLI_SHA384RSA) {
+                    // Check for OID type indicating a length of 9, OID_sha384, and the NULL type/value
+                    if (0 != memcmp(&d[j], "\x06\x09" OID_sha384 "\x05\x00", 13)) {
+                        cli_dbgmsg("crtmgr_rsa_verify: invalid AlgorithmIdentifier block for SHA384 hash\n");
+                        break;
+                    }
+
+                } else {
                     cli_errmsg("crtmgr_rsa_verify: FIXME ACAB - CRYPTO MISSING?\n");
                     break;
                 }
