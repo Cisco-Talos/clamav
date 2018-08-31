@@ -221,54 +221,74 @@ static int crtmgr_rsa_verify(cli_crt *x509, mp_int *sig, cli_crt_hashtype hashty
     }
 
     do {
-        if(MAX(keylen, siglen) - MIN(keylen, siglen) > 1)
+        if(MAX(keylen, siglen) - MIN(keylen, siglen) > 1) {
+            cli_dbgmsg("crtmgr_rsa_verify: keylen and siglen differ by more than one\n");
             break;
+        }
         if((ret = mp_exptmod(sig, &x509->e, &x509->n, &x))) {
             cli_warnmsg("crtmgr_rsa_verify: verification failed: mp_exptmod failed with %d\n", ret);
             break;
         }
-        if(mp_unsigned_bin_size(&x) != keylen - 1)
+        if(mp_unsigned_bin_size(&x) != keylen - 1){
+            cli_dbgmsg("crtmgr_rsa_verify: keylen-1 doesn't match expected size of exptmod result\n");
             break;
-        if(mp_unsigned_bin_size(&x) > sizeof(d))
+        }
+        if(mp_unsigned_bin_size(&x) > sizeof(d)) {
+            cli_dbgmsg("crtmgr_rsa_verify: exptmod result would overrun working buffer\n");
             break;
+        }
         if((ret = mp_to_unsigned_bin(&x, d))) {
             cli_warnmsg("crtmgr_rsa_verify: mp_unsigned_bin_size failed with %d\n", ret);
             break;
         }
-        if(*d != 1) /* block type 1 */
+        if(*d != 1) {/* block type 1 */
+            cli_dbgmsg("crtmgr_rsa_verify: expected block type 1 at d[0]\n");
             break;
+        }
 
         keylen -= 1; /* 0xff padding */
         for(j=1; j<keylen-2; j++)
             if(d[j] != 0xff)
                 break;
-        if(j == keylen - 2)
+        if(j == keylen - 2) {
+            cli_dbgmsg("crtmgr_rsa_verify: only encountered 0xFF padding parsing cert\n");
             break;
-        if(d[j] != 0) /* 0x00 separator */
+        }
+        if(d[j] != 0) { /* 0x00 separator */
+            cli_dbgmsg("crtmgr_rsa_verify: expected 0x00 separator\n");
             break;
+        }
 
         j++;
         keylen -= j; /* asn1 size */
 
-        if(keylen < hashlen)
+        if(keylen < hashlen) {
+            cli_dbgmsg("crtmgr_rsa_verify: encountered keylen less than hashlen\n");
             break;
+        }
         if(keylen > hashlen) {
             /* hash is asn1 der encoded */
             /* SEQ { SEQ { OID, NULL }, OCTET STRING */
-            if(keylen < 2 || d[j] != 0x30 || d[j+1] + 2 != keylen)
+            if(keylen < 2 || d[j] != 0x30 || d[j+1] + 2 != keylen) {
+                cli_dbgmsg("crtmgr_rsa_verify: unexpected hash to be ASN1 DER encoded\n");
                 break;
+            }
             keylen -= 2;
             j+=2;
 
-            if(keylen <2 || d[j] != 0x30)
+            if(keylen <2 || d[j] != 0x30) {
+                cli_dbgmsg("crtmgr_rsa_verify: expected SEQUENCE at beginning of cert AlgorithmIdentifier\n");
                 break;
+            }
 
             objlen = d[j+1];
 
             keylen -= 2;
             j+=2;
-            if(keylen < objlen)
+            if(keylen < objlen) {
+                cli_dbgmsg("crtmgr_rsa_verify: key length mismatch in ASN1 DER hash encoding\n");
                 break;
+            }
             if(objlen == 9) {
                 // Check for OID type indicating a length of 5, OID_sha1, and the NULL type/value
                 if(hashtype != CLI_SHA1RSA || memcmp(&d[j], "\x06\x05" OID_sha1 "\x05\x00", 9)) {
@@ -307,15 +327,25 @@ static int crtmgr_rsa_verify(cli_crt *x509, mp_int *sig, cli_crt_hashtype hashty
 
             keylen -= objlen;
             j += objlen;
-            if(keylen < 2 || d[j] != 0x04 || d[j+1] != hashlen)
+            if(keylen < 2 || d[j] != 0x04 || d[j+1] != hashlen) {
+                cli_dbgmsg("crtmgr_rsa_verify: hash length mismatch in ASN1 DER hash encoding\n");
                 break;
+            }
             keylen -= 2;
             j+=2;
-            if(keylen != hashlen)
+            if(keylen != hashlen) {
+                cli_dbgmsg("crtmgr_rsa_verify: extra data in the ASN1 DER hash encoding\n");
                 break;
+            }
         }
-        if(memcmp(&d[j], refhash, hashlen))
+        if(memcmp(&d[j], refhash, hashlen)) {
+            // This is a common error case if we are using crtmgr_rsa_verify to
+            // determine whether we've found the right issuer certificate based
+            // (as is done by crtmgr_verify_crt).  If we are pretty sure that
+            // x509 is the correct cert to use for verification, then this
+            // case is more of a concern.
             break;
+        }
 
         mp_clear(&x);
         return 0;
@@ -326,7 +356,10 @@ static int crtmgr_rsa_verify(cli_crt *x509, mp_int *sig, cli_crt_hashtype hashty
     return 1;
 }
 
-
+/* For a given cli_crt, returns an existing blacklisted cert in crtmgr if one
+ * is present.  Otherwise returns a pointer to the signer x509 certificate if
+ * one is found in the crtmgr and it's signature can be validated (NULL is
+ * returned otherwise.) */
 cli_crt *crtmgr_verify_crt(crtmgr *m, cli_crt *x509) {
     cli_crt *i = m->crts, *best = NULL;
     int score = 0;
@@ -334,6 +367,13 @@ cli_crt *crtmgr_verify_crt(crtmgr *m, cli_crt *x509) {
     for (i = m->crts; i; i = i->next) {
         if (!memcmp(i->subject, x509->subject, sizeof(i->subject)) &&
             !memcmp(i->serial, x509->serial, sizeof(i->serial))) {
+
+            // TODO Shouldn't we compare public keys in this case as well?  I'd
+            // think that it's the public key that really makes a certificate
+            // unique (not subject/serial).  Otherwise, you could have malware
+            // use the subject/serial from a popular company's cert and if we
+            // blacklisted that it would cause FPs on the popular software.
+
             if (i->isBlacklisted)
                 return i;
         }
@@ -366,12 +406,12 @@ cli_crt *crtmgr_verify_pkcs7(crtmgr *m, const uint8_t *issuer, const uint8_t *se
         return NULL;
     }
     if((ret = mp_init(&sig))) {
-        cli_errmsg("crtmgr_verify_pkcs7: mp_init failed with %d\n", ret);
+        cli_dbgmsg("crtmgr_verify_pkcs7: mp_init failed with %d\n", ret);
         return NULL;
     }
 
     if((ret=mp_read_unsigned_bin(&sig, signature, signature_len))) {
-        cli_warnmsg("crtmgr_verify_pkcs7: mp_read_unsigned_bin failed with %d\n", ret);
+        cli_dbgmsg("crtmgr_verify_pkcs7: mp_read_unsigned_bin failed with %d\n", ret);
         return NULL;
     }
 
@@ -381,9 +421,11 @@ cli_crt *crtmgr_verify_pkcs7(crtmgr *m, const uint8_t *issuer, const uint8_t *se
         if(vrfytype == VRFY_TIME && !i->timeSign)
             continue;
         if(!memcmp(i->issuer, issuer, sizeof(i->issuer)) &&
-           !memcmp(i->serial, serial, sizeof(i->serial)) &&
-           !crtmgr_rsa_verify(i, &sig, hashtype, refhash)) {
-            break;
+           !memcmp(i->serial, serial, sizeof(i->serial))) {
+            if(!crtmgr_rsa_verify(i, &sig, hashtype, refhash)) {
+                break;
+            }
+            cli_dbgmsg("crtmgr_verify_pkcs7: found cert with matching issuer and serial but RSA verification failed\n");
         }
     }
     mp_clear(&sig);

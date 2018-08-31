@@ -545,6 +545,12 @@ static int asn1_get_rsa_pubkey(fmap_t *map, const void **asn1data, unsigned int 
 #define ASN1_GET_X509_CERT_ERROR 1
 #define ASN1_GET_X509_UNRECOVERABLE_ERROR 2
 
+/* Parse the asn1data associated with an x509 certificate and add the cert
+ * to the crtmgr other if it doesn't already exist in master or other.
+ * ASN1_GET_X509_CERT_ERROR will be returned in the case that an invalid x509
+ * certificate is encountered but asn1data and size are suitable for continued
+ * signature parsing.  ASN1_GET_X509_UNRECOVERABLE_ERROR will be returned in
+ * the case where asn1data and size are not suitable for continued use. */
 static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size, crtmgr *master, crtmgr *other) {
     struct cli_asn1 crt, tbs, obj;
     unsigned int avail, tbssize, issuersize;
@@ -604,20 +610,28 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
             break;
         }
 
-        if(asn1_expect_objtype(map, obj.next, &tbs.size, &obj, ASN1_TYPE_SEQUENCE)) /* issuer */
+        if(asn1_expect_objtype(map, obj.next, &tbs.size, &obj, ASN1_TYPE_SEQUENCE)) { /* issuer */
+            cli_dbgmsg("asn1_get_x509: expected SEQUENCE when parsing cert issuer\n");
             break;
+        }
         issuer = obj.content;
         issuersize = obj.size;
 
-        if(asn1_expect_objtype(map, obj.next, &tbs.size, &obj, ASN1_TYPE_SEQUENCE)) /* validity */
+        if(asn1_expect_objtype(map, obj.next, &tbs.size, &obj, ASN1_TYPE_SEQUENCE)) { /* validity */
+            cli_dbgmsg("asn1_get_x509: expected SEQUENCE when parsing cert validity\n");
             break;
+        }
         avail = obj.size;
         next = obj.content;
 
-        if(asn1_get_time(map, &next, &avail, &x509.not_before)) /* notBefore */
+        if(asn1_get_time(map, &next, &avail, &x509.not_before)) { /* notBefore */
+            cli_dbgmsg("asn1_get_x509: unable to extract the notBefore time\n");
             break;
-        if(asn1_get_time(map, &next, &avail, &x509.not_after)) /* notAfter */
+        }
+        if(asn1_get_time(map, &next, &avail, &x509.not_after)) { /* notAfter */
+            cli_dbgmsg("asn1_get_x509: unable to extract the notAfter time\n");
             break;
+        }
         if(x509.not_before >= x509.not_after) {
             cli_dbgmsg("asn1_get_x509: bad validity\n");
             break;
@@ -627,8 +641,10 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
             break;
         }
 
-        if(asn1_expect_objtype(map, obj.next, &tbs.size, &obj, ASN1_TYPE_SEQUENCE)) /* subject */
+        if(asn1_expect_objtype(map, obj.next, &tbs.size, &obj, ASN1_TYPE_SEQUENCE)) { /* subject */
+            cli_dbgmsg("asn1_get_x509: expected SEQUENCE when parsing cert subject\n");
             break;
+        }
         if(map_raw(map, obj.content, obj.size, x509.raw_subject))
             break;
         if(map_sha1(map, obj.content, obj.size, x509.subject))
@@ -794,8 +810,10 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
                     x509.codeSign = x509.timeSign = 1;
             }
         }
-        if(tbs.size)
+        if(tbs.size) {
+            cli_dbgmsg("asn1_get_x509: An error occurred when parsing x509 extensions\n");
             break;
+        }
 
 
         if(crtmgr_lookup(master, &x509) || crtmgr_lookup(other, &x509)) {
@@ -813,13 +831,15 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
             break;
 
         if(hashtype1 != hashtype2) {
-            cli_dbgmsg("asn1_get_x509: found conflicting rsa hash types\n");
+            cli_dbgmsg("asn1_get_x509: found conflicting RSA hash types\n");
             break;
         }
         x509.hashtype = hashtype1;
 
-        if(asn1_expect_objtype(map, tbs.next, &crt.size, &obj, ASN1_TYPE_BIT_STRING)) /* signature */
+        if(asn1_expect_objtype(map, tbs.next, &crt.size, &obj, ASN1_TYPE_BIT_STRING)) { /* signature */
+            cli_dbgmsg("asn1_get_x509: Failed to parse x509 signature BIT STRING\n");
             break;
+        }
         if(obj.size > 513) {
             cli_dbgmsg("asn1_get_x509: signature too long\n");
             break;
@@ -839,8 +859,10 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
 
         if((x509.hashtype == CLI_SHA1RSA && map_sha1(map, tbsdata, tbssize, x509.tbshash)) || \
            (x509.hashtype == CLI_MD5RSA && map_md5(map, tbsdata, tbssize, x509.tbshash)) || \
-           (x509.hashtype == CLI_SHA256RSA && map_sha256(map, tbsdata, tbssize, x509.tbshash)))
+           (x509.hashtype == CLI_SHA256RSA && map_sha256(map, tbsdata, tbssize, x509.tbshash))) {
+            cli_dbgmsg("asn1_get_x509: Unsupported hashtype or hash computation failed\n");
             break;
+        }
 
         if(crtmgr_add(other, &x509))
             break;
@@ -1092,12 +1114,21 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
 
                     if(parent) {
                         if (parent->isBlacklisted) {
+                            // NOTE: In this case, parent is a blacklist entry
+                            // in cmgr for this certificate, not a blacklist
+                            // entry for this certificate's parent
                             isBlacklisted = 1;
                             cli_dbgmsg("asn1_parse_mscat: Authenticode certificate %s is revoked. Flagging sample as virus.\n", (parent->name ? parent->name : "(no name)"));
+
+                            // TODO In this case cmgr already has a blacklisted
+                            // cert for this x509, so I don't think we need to
+                            // continue on below and try to add it to cmgr
                         }
 
+                        // TODO Why is this done?
                         x509->codeSign &= parent->codeSign;
                         x509->timeSign &= parent->timeSign;
+
                         if(crtmgr_add(cmgr, x509)) {
                             cli_dbgmsg("asn1_parse_mscat: adding x509 cert to crtmgr failed\n");
                             break;
@@ -1431,9 +1462,29 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
         message = asn1.content;
         message_size = asn1.size;
 
+        cli_dbgmsg("asn1_parse_mscat: authenticatedAttributes successfully parsed and verified\n");
+
+        /* We need to verify the time validity of the certificate.  If a
+         * signature has a time-stamping countersignature, then we just need to
+         * verify that countersignature.  Otherwise, we should determine
+         * whether the signing certificate is still valid (time-based, since at
+         * this point in the code no matching blacklist rules fired). */
+
         if(!size) {
-            cli_dbgmsg("asn1_parse_mscat: countersignature is missing\n");
-            break;
+            time_t now;
+
+            cli_dbgmsg("asn1_parse_mscat: unauthenticatedAttributes section is missing\n");
+
+            // No countersignature, so judge validity based on time
+            now = time(NULL);
+
+            if(now < x509->not_before || now > x509->not_after) {
+                cli_dbgmsg("asn1_parse_mscat: no countersignature and signing certificate has expired\n");
+                break;
+            }
+
+            cli_dbgmsg("asn1_parse_mscat: no countersignature but the signing certificate is still valid\n");
+            return 0;
         }
 
         if(size && asn1_expect_objtype(map, asn1.next, &size, &asn1, 0xa1)) { /* unauthenticatedAttributes */
@@ -1758,7 +1809,7 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
             cli_dbgmsg("asn1_parse_mscat: nested signatures detected but parsing them is not currently supported\n");
         }
 
-        cli_dbgmsg("asn1_parse_mscat: catalog successfully parsed\n");
+        cli_dbgmsg("asn1_parse_mscat: unauthenticatedAttributes successfully parsed\n");
 
         if (isBlacklisted) {
             return 1;
