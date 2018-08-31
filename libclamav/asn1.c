@@ -873,11 +873,291 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
     return ret;
 }
 
+static int asn1_parse_countersignature(fmap_t *map, const void **asn1data, unsigned int *size, crtmgr *cmgr, const uint8_t *message, const unsigned int message_size, time_t not_before, time_t not_after) {
+
+    struct cli_asn1 asn1, deep, deeper;
+    uint8_t issuer[SHA1_HASH_SIZE], serial[SHA1_HASH_SIZE];
+    const uint8_t *attrs;
+    unsigned int dsize, attrs_size;
+    unsigned int avail;
+    uint8_t hash[SHA256_HASH_SIZE];
+    cli_crt_hashtype hashtype;
+    unsigned int hashsize;
+    uint8_t md[SHA256_HASH_SIZE];
+    int result;
+    void *ctx;
+
+    do {
+        if(asn1_expect_objtype(map, *asn1data, size, &asn1, ASN1_TYPE_SEQUENCE)) {
+            cli_dbgmsg("asn1_parse_mscat: expected SEQUENCE inside counterSignature SET\n");
+            break;
+        }
+
+        avail = asn1.size;
+        if(asn1_expect_obj(map, &asn1.content, &avail, ASN1_TYPE_INTEGER, 1, "\x01")) { /* Version = 1*/
+            cli_dbgmsg("asn1_parse_mscat: expected counterSignature version to be 1\n");
+            break;
+        }
+
+        if(asn1_expect_objtype(map, asn1.content, &avail, &asn1, ASN1_TYPE_SEQUENCE)) { /* issuerAndSerialNumber */
+            cli_dbgmsg("asn1_parse_mscat: unable to parse issuerAndSerialNumber SEQUENCE in counterSignature\n");
+            break;
+        }
+
+        if(asn1_expect_objtype(map, asn1.content, &asn1.size, &deep, ASN1_TYPE_SEQUENCE)) { /* issuer */
+            cli_dbgmsg("asn1_parse_mscat: unable to parse issuer SEQUENCE in counterSignature\n");
+            break;
+        }
+        // Compute the hash of the issuer section
+        if(map_sha1(map, deep.content, deep.size, issuer)) {
+            cli_dbgmsg("asn1_parse_mscat: error in call to map_sha1 for counterSignature issuer\n");
+            break;
+        }
+
+        if(asn1_expect_objtype(map, deep.next, &asn1.size, &deep, ASN1_TYPE_INTEGER)) { /* serial */
+            cli_dbgmsg("asn1_parse_mscat: expected ASN1_TYPE_INTEGER serial for counterSignature\n");
+            break;
+        }
+
+        // Compute the hash of the serial INTEGER
+        if(map_sha1(map, deep.content, deep.size, serial)) {
+            cli_dbgmsg("asn1_parse_mscat: error in call to map_sha1 for counterSignature serial\n");
+            break;
+        }
+
+        if(asn1.size) {
+            cli_dbgmsg("asn1_parse_mscat: extra data inside counterSignature issuer\n");
+            break;
+        }
+
+        if(asn1_expect_objtype(map, asn1.next, &avail, &asn1, ASN1_TYPE_SEQUENCE)) { /* digestAlgorithm */
+            cli_dbgmsg("asn1_parse_mscat: expected SEQUENCE to start digestAlgorithm counterSignature section\n");
+            break;
+        }
+        if(asn1_expect_objtype(map, asn1.content, &asn1.size, &deep, ASN1_TYPE_OBJECT_ID)) {
+            cli_dbgmsg("asn1_parse_mscat: unexpected value when parsing counterSignature\n");
+            break;
+        }
+        if(deep.size != lenof(OID_sha1) && deep.size != lenof(OID_md5)) {
+            cli_dbgmsg("asn1_parse_mscat: wrong digestAlgorithm size in counterSignature\n");
+            break;
+        }
+        if(!fmap_need_ptr_once(map, deep.content, deep.size)) {
+            cli_dbgmsg("asn1_parse_mscat: failed to read digestAlgorithm OID\n");
+            break;
+        }
+        if(deep.size == lenof(OID_sha1) && !memcmp(deep.content, OID_sha1, lenof(OID_sha1))) {
+            hashtype = CLI_SHA1RSA;
+            hashsize = SHA1_HASH_SIZE;
+            if(map_sha1(map, message, message_size, md)) {
+                cli_dbgmsg("asn1_parse_mscat: map_sha1 for counterSignature verification failed\n");
+                break;
+            }
+        } else if(deep.size == lenof(OID_md5) && !memcmp(deep.content, OID_md5, lenof(OID_md5))) {
+            hashtype = CLI_MD5RSA;
+            hashsize = MD5_HASH_SIZE;
+            if(map_md5(map, message, message_size, md)) {
+                cli_dbgmsg("asn1_parse_mscat: map_md5 for counterSignature verification failed\n");
+                break;
+            }
+        } else {
+            cli_dbgmsg("asn1_parse_mscat: unknown digest OID in counterSignature\n");
+            break;
+        }
+        if(asn1.size && asn1_expect_obj(map, &deep.next, &asn1.size, ASN1_TYPE_NULL, 0, NULL)) {
+            cli_dbgmsg("asn1_parse_mscat: unexpected value after counterSignature digestAlgorithm\n");
+            break;
+        }
+        if(asn1.size) {
+            cli_dbgmsg("asn1_parse_mscat: extra data in counterSignature OID\n");
+            break;
+        }
+
+        attrs = asn1.next;
+        if(asn1_expect_objtype(map, asn1.next, &avail, &asn1, 0xa0)) { /* authenticatedAttributes */
+            cli_dbgmsg("asn1_parse_mscat: unable to parse counterSignature authenticatedAttributes section\n");
+            break;
+        }
+        attrs_size = (uint8_t *)(asn1.next) - attrs;
+        if(asn1.next == NULL && attrs_size < 2) {
+            cli_dbgmsg("asn1_parse_mscat: counterSignature authenticatedAttributes are too small\n");
+            break;
+        }
+        result = 0;
+        dsize = asn1.size;
+        deep.next = asn1.content;
+        while(dsize) {
+            int content;
+            if(asn1_expect_objtype(map, deep.next, &dsize, &deep, ASN1_TYPE_SEQUENCE)) { /* attribute */
+                cli_dbgmsg("asn1_parse_mscat: expected counterSignature attribute SEQUENCE\n");
+                dsize = 1;
+                break;
+            }
+            if(asn1_expect_objtype(map, deep.content, &deep.size, &deeper, ASN1_TYPE_OBJECT_ID)) { /* attribute type */
+                cli_dbgmsg("asn1_parse_mscat: expected attribute type inside counterSignature attribute SEQUENCE\n");
+                dsize = 1;
+                break;
+            }
+            if(deeper.size != lenof(OID_contentType)) /* lenof(contentType) = lenof(messageDigest) = lenof(signingTime) = 9 */
+                continue;
+
+            if(!fmap_need_ptr_once(map, deeper.content, lenof(OID_contentType))) {
+                cli_dbgmsg("asn1_parse_mscat: failed to read counterSignature authenticated attribute\n");
+                dsize = 1;
+                break;
+            }
+            if(!memcmp(deeper.content, OID_contentType, lenof(OID_contentType)))
+                content = 0; /* contentType */
+            else if(!memcmp(deeper.content, OID_messageDigest, lenof(OID_messageDigest)))
+                content = 1; /* messageDigest */
+            else if(!memcmp(deeper.content, OID_signingTime, lenof(OID_signingTime)))
+                content = 2; /* signingTime */
+            else
+                continue;
+            if(result & (1<<content)) {
+                cli_dbgmsg("asn1_parse_mscat: duplicate field in countersignature\n");
+                dsize = 1;
+                break;
+            }
+            result |= (1<<content);
+            if(asn1_expect_objtype(map, deeper.next, &deep.size, &deeper, ASN1_TYPE_SET)) { /* set - contents */
+                cli_dbgmsg("asn1_parse_mscat: failed to read counterSignature authenticated attribute\n");
+                dsize = 1;
+                break;
+            }
+            if(deep.size) {
+                cli_dbgmsg("asn1_parse_mscat: extra data in countersignature value\n");
+                dsize = 1;
+                break;
+            }
+            deep.size = deeper.size;
+            switch(content) {
+            case 0:  /* contentType = pkcs7-data */
+                if(asn1_expect_obj(map, &deeper.content, &deep.size, ASN1_TYPE_OBJECT_ID, lenof(OID_pkcs7_data), OID_pkcs7_data)) {
+                    cli_dbgmsg("asn1_parse_mscat: contentType != pkcs7-data\n");
+                    deep.size = 1;
+                } else if(deep.size)
+                    cli_dbgmsg("asn1_parse_mscat: extra data in countersignature content-type\n");
+                break;
+            case 1:  /* messageDigest */
+                if(asn1_expect_obj(map, &deeper.content, &deep.size, ASN1_TYPE_OCTET_STRING, hashsize, md)) {
+                    deep.size = 1;
+                    cli_dbgmsg("asn1_parse_mscat: countersignature hash mismatch\n");
+                } else if(deep.size)
+                    cli_dbgmsg("asn1_parse_mscat: extra data in countersignature message-digest\n");
+                break;
+            case 2:  /* signingTime */
+                {
+                    time_t sigdate; /* FIXME shall i use it?! */
+                    if(asn1_get_time(map, &deeper.content, &deep.size, &sigdate)) {
+                        cli_dbgmsg("asn1_parse_mscat: an error occurred when getting the time\n");
+                        deep.size = 1;
+                    } else if(deep.size)
+                        cli_dbgmsg("asn1_parse_mscat: extra data in countersignature signing-time\n");
+                    else if(sigdate < not_before || sigdate > not_after) {
+                        cli_dbgmsg("asn1_parse_mscat: countersignature timestamp outside cert validity\n");
+                        deep.size = 1;
+                    }
+                    break;
+                }
+            }
+            if(deep.size) {
+                dsize = 1;
+                break;
+            }
+        }
+        if(dsize)
+            break;
+        if(result != 7) {
+            cli_dbgmsg("asn1_parse_mscat: some important attributes are missing in countersignature\n");
+            break;
+        }
+
+        if(asn1_expect_objtype(map, asn1.next, &avail, &asn1, ASN1_TYPE_SEQUENCE)) { /* digestEncryptionAlgorithm == sha1 */
+            cli_dbgmsg("asn1_parse_mscat: expected to parse SEQUENCE after counterSignature attributes\n");
+            break;
+        }
+        if(asn1_expect_objtype(map, asn1.content, &asn1.size, &deep, ASN1_TYPE_OBJECT_ID)) {/* digestEncryptionAlgorithm == sha1 */
+            cli_dbgmsg("asn1_parse_mscat: unexpected value when parsing counterSignature digestEncryptionAlgorithm\n");
+            break;
+        }
+        if(deep.size != lenof(OID_rsaEncryption)) { /* lenof(OID_rsaEncryption) = lenof(OID_sha1WithRSAEncryption) = 9 */
+            cli_dbgmsg("asn1_parse_mscat: wrong digestEncryptionAlgorithm size in countersignature\n");
+            break;
+        }
+        if(!fmap_need_ptr_once(map, deep.content, lenof(OID_rsaEncryption))) {
+            cli_dbgmsg("asn1_parse_mscat: cannot read digestEncryptionAlgorithm in countersignature\n");
+            break;
+        }
+        /* rsaEncryption or sha1withRSAEncryption */
+        if(memcmp(deep.content, OID_rsaEncryption, lenof(OID_rsaEncryption)) && memcmp(deep.content, OID_sha1WithRSAEncryption, lenof(OID_sha1WithRSAEncryption))) {
+            cli_dbgmsg("asn1_parse_mscat: digestEncryptionAlgorithm in countersignature is not sha1\n");
+            break;
+        }
+        if(asn1.size && asn1_expect_obj(map, &deep.next, &asn1.size, ASN1_TYPE_NULL, 0, NULL)) {
+            cli_dbgmsg("asn1_parse_mscat: unexpected value after counterSignature digestEncryptionAlgorithm\n");
+            break;
+        }
+        if(asn1.size) {
+            cli_dbgmsg("asn1_parse_mscat: extra data in digestEncryptionAlgorithm in countersignature\n");
+            break;
+        }
+
+        if(asn1_expect_objtype(map, asn1.next, &avail, &asn1, ASN1_TYPE_OCTET_STRING)) { /* encryptedDigest */
+            cli_dbgmsg("asn1_parse_mscat: unexpected encryptedDigest value in counterSignature\n");
+            break;
+        }
+        if(asn1.size > 513) {
+            cli_dbgmsg("asn1_parse_mscat: countersignature encryptedDigest too long\n");
+            break;
+        }
+        if(avail) {
+            cli_dbgmsg("asn1_parse_mscat: extra data inside countersignature\n");
+            break;
+        }
+        if(!fmap_need_ptr_once(map, attrs, attrs_size)) {
+            cli_dbgmsg("asn1_parse_mscat: failed to read authenticatedAttributes\n");
+            break;
+        }
+
+        if(hashtype == CLI_SHA1RSA) {
+            ctx = cl_hash_init("sha1");
+        } else if (hashtype == CLI_MD5RSA) {
+            ctx = cl_hash_init("md5");
+        } else {
+            break;
+        }
+
+        if (!(ctx))
+            break;
+
+        cl_update_hash(ctx, "\x31", 1);
+        cl_update_hash(ctx, (void *)(attrs + 1), attrs_size - 1);
+        cl_finish_hash(ctx, hash);
+
+        if(!fmap_need_ptr_once(map, asn1.content, asn1.size)) {
+            cli_dbgmsg("asn1_parse_mscat: failed to read countersignature encryptedDigest\n");
+            break;
+        }
+        if(!crtmgr_verify_pkcs7(cmgr, issuer, serial, asn1.content, asn1.size, hashtype, hash, VRFY_TIME)) {
+            cli_dbgmsg("asn1_parse_mscat: pkcs7 countersignature verification failed\n");
+            break;
+        }
+
+        cli_dbgmsg("asn1_parse_mscat: countersignature verification completed successfully\n");
+
+        return 0;
+
+    } while(0);
+
+    return 1;
+}
+
 static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmgr *cmgr, int embedded, const void **hashes, unsigned int *hashes_size, struct cl_engine *engine) {
     struct cli_asn1 asn1, deep, deeper;
     uint8_t issuer[SHA1_HASH_SIZE], serial[SHA1_HASH_SIZE];
-    const uint8_t *message, *attrs, *nested;
-    unsigned int dsize, message_size, attrs_size, nested_size;
+    const uint8_t *message, *attrs;
+    unsigned int dsize, message_size, attrs_size;
     // hash is used to hold the hashes we compute as part of sig verification
     uint8_t hash[SHA256_HASH_SIZE];
     cli_crt_hashtype hashtype;
@@ -929,6 +1209,7 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
             cli_dbgmsg("asn1_parse_mscat: found extra data in signedData\n");
             break;
         }
+
         size = asn1.size;
         if(asn1_expect_obj(map, &asn1.content, &size, ASN1_TYPE_INTEGER, 1, "\x01")){ /* INTEGER - VERSION 1 */
             cli_dbgmsg("asn1_parse_mscat: expected 'INTEGER - VERSION 1' for signedData version\n");
@@ -1473,18 +1754,16 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
         if(!size) {
             time_t now;
 
-            cli_dbgmsg("asn1_parse_mscat: unauthenticatedAttributes section is missing\n");
-
             // No countersignature, so judge validity based on time
             now = time(NULL);
 
             if(now < x509->not_before || now > x509->not_after) {
-                cli_dbgmsg("asn1_parse_mscat: no countersignature and signing certificate has expired\n");
+                cli_dbgmsg("asn1_parse_mscat: no countersignature (unauthAttrs missing) and signing certificate has expired\n");
                 break;
             }
 
-            cli_dbgmsg("asn1_parse_mscat: no countersignature but the signing certificate is still valid\n");
-            return 0;
+            cli_dbgmsg("asn1_parse_mscat: no countersignature (unauthAttrs missing) but the signing certificate is still valid\n");
+            goto finish;
         }
 
         if(size && asn1_expect_objtype(map, asn1.next, &size, &asn1, 0xa1)) { /* unauthenticatedAttributes */
@@ -1497,320 +1776,110 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
             break;
         }
 
-        size = asn1.size;
-        if(asn1_expect_objtype(map, asn1.content, &size, &asn1, ASN1_TYPE_SEQUENCE)) {
-            cli_dbgmsg("asn1_parse_mscat: expected SEQUENCE in unauthenticated data section\n");
-            break;
-        }
+        // Parse the unauthenticated attributes
 
-        /* Older authenticode sigs only contain one SEQUENCE in the unauth
-         * attribs section, but newer ones can have an additional one
-         * containing nested signatures.  Save off a pointer to the
-         * additional SEQUENCE, if present, so we can parse it after we
-         * verify the counter signature. */
-        nested = asn1.next;
-        nested_size = size;
-
-        size = asn1.size;
-        /* 1.2.840.113549.1.9.6 - counterSignature */
-        if(asn1_expect_obj(map, &asn1.content, &size, ASN1_TYPE_OBJECT_ID, lenof(OID_countersignature), OID_countersignature)) {
-            cli_dbgmsg("asn1_parse_mscat: expected countersignature OID in the first unauthenticatedAttributes SEQUENCE\n");
-            break;
-        }
-        if(asn1_expect_objtype(map, asn1.content, &size, &asn1, ASN1_TYPE_SET)) {
-            cli_dbgmsg("asn1_parse_mscat: expected SET following counterSignature OID\n");
-            break;
-        }
-        if(size) {
-            cli_dbgmsg("asn1_parse_mscat: extra data inside counterSignature SEQUENCE\n");
-            break;
-        }
-
-        size = asn1.size;
-        if(asn1_expect_objtype(map, asn1.content, &size, &asn1, ASN1_TYPE_SEQUENCE)) {
-            cli_dbgmsg("asn1_parse_mscat: expected SEQUENCE inside counterSignature SET\n");
-            break;
-        }
-        if(size) {
-            cli_dbgmsg("asn1_parse_mscat: extra data inside counterSignature SET\n");
-            break;
-        }
-
-        size = asn1.size;
-        if(asn1_expect_obj(map, &asn1.content, &size, ASN1_TYPE_INTEGER, 1, "\x01")) { /* Version = 1*/
-            cli_dbgmsg("asn1_parse_mscat: expected counterSignature version to be 1\n");
-            break;
-        }
-
-        if(asn1_expect_objtype(map, asn1.content, &size, &asn1, ASN1_TYPE_SEQUENCE)) { /* issuerAndSerialNumber */
-            cli_dbgmsg("asn1_parse_mscat: unable to parse issuerAndSerialNumber SEQUENCE in counterSignature\n");
-            break;
-        }
-
-        if(asn1_expect_objtype(map, asn1.content, &asn1.size, &deep, ASN1_TYPE_SEQUENCE)) { /* issuer */
-            cli_dbgmsg("asn1_parse_mscat: unable to parse issuer SEQUENCE in counterSignature\n");
-            break;
-        }
-        // Compute the hash of the issuer section
-        if(map_sha1(map, deep.content, deep.size, issuer)) {
-            cli_dbgmsg("asn1_parse_mscat: error in call to map_sha1 for counterSignature issuer\n");
-            break;
-        }
-
-        if(asn1_expect_objtype(map, deep.next, &asn1.size, &deep, ASN1_TYPE_INTEGER)) { /* serial */
-            cli_dbgmsg("asn1_parse_mscat: expected ASN1_TYPE_INTEGER serial for counterSignature\n");
-            break;
-        }
-
-        // Compute the hash of the serial INTEGER
-        if(map_sha1(map, deep.content, deep.size, serial)) {
-            cli_dbgmsg("asn1_parse_mscat: error in call to map_sha1 for counterSignature serial\n");
-            break;
-        }
-
-        if(asn1.size) {
-            cli_dbgmsg("asn1_parse_mscat: extra data inside counterSignature issuer\n");
-            break;
-        }
-
-        if(asn1_expect_objtype(map, asn1.next, &size, &asn1, ASN1_TYPE_SEQUENCE)) { /* digestAlgorithm */
-            cli_dbgmsg("asn1_parse_mscat: expected SEQUENCE to start digestAlgorithm counterSignature section\n");
-            break;
-        }
-        if(asn1_expect_objtype(map, asn1.content, &asn1.size, &deep, ASN1_TYPE_OBJECT_ID)) {
-            cli_dbgmsg("asn1_parse_mscat: unexpected value when parsing counterSignature\n");
-            break;
-        }
-        if(deep.size != lenof(OID_sha1) && deep.size != lenof(OID_md5)) {
-            cli_dbgmsg("asn1_parse_mscat: wrong digestAlgorithm size in counterSignature\n");
-            break;
-        }
-        if(!fmap_need_ptr_once(map, deep.content, deep.size)) {
-            cli_dbgmsg("asn1_parse_mscat: failed to read digestAlgorithm OID\n");
-            break;
-        }
-        if(deep.size == lenof(OID_sha1) && !memcmp(deep.content, OID_sha1, lenof(OID_sha1))) {
-            hashtype = CLI_SHA1RSA;
-            hashsize = SHA1_HASH_SIZE;
-            if(map_sha1(map, message, message_size, md)) {
-                cli_dbgmsg("asn1_parse_mscat: map_sha1 for counterSignature verification failed\n");
-                break;
-            }
-        } else if(deep.size == lenof(OID_md5) && !memcmp(deep.content, OID_md5, lenof(OID_md5))) {
-            hashtype = CLI_MD5RSA;
-            hashsize = MD5_HASH_SIZE;
-            if(map_md5(map, message, message_size, md)) {
-                cli_dbgmsg("asn1_parse_mscat: map_md5 for counterSignature verification failed\n");
-                break;
-            }
-        } else {
-            cli_dbgmsg("asn1_parse_mscat: unknown digest OID in counterSignature\n");
-            break;
-        }
-        if(asn1.size && asn1_expect_obj(map, &deep.next, &asn1.size, ASN1_TYPE_NULL, 0, NULL)) {
-            cli_dbgmsg("asn1_parse_mscat: unexpected value after counterSignature digestAlgorithm\n");
-            break;
-        }
-        if(asn1.size) {
-            cli_dbgmsg("asn1_parse_mscat: extra data in counterSignature OID\n");
-            break;
-        }
-
-        attrs = asn1.next;
-        if(asn1_expect_objtype(map, asn1.next, &size, &asn1, 0xa0)) { /* authenticatedAttributes */
-            cli_dbgmsg("asn1_parse_mscat: unable to parse counterSignature authenticatedAttributes section\n");
-            break;
-        }
-        attrs_size = (uint8_t *)(asn1.next) - attrs;
-        if(asn1.next == NULL && attrs_size < 2) {
-            cli_dbgmsg("asn1_parse_mscat: counterSignature authenticatedAttributes are too small\n");
-            break;
-        }
-        result = 0;
         dsize = asn1.size;
         deep.next = asn1.content;
+        result = 0;
         while(dsize) {
+            struct cli_asn1 cobj;
             int content;
-            if(asn1_expect_objtype(map, deep.next, &dsize, &deep, ASN1_TYPE_SEQUENCE)) { /* attribute */
-                cli_dbgmsg("asn1_parse_mscat: expected counterSignature attribute SEQUENCE\n");
+            if(asn1_expect_objtype(map, deep.next, &dsize, &deep, ASN1_TYPE_SEQUENCE)) {
+                cli_dbgmsg("asn1_parse_mscat: expected SEQUENCE starting an unauthenticatedAttribute\n");
                 dsize = 1;
                 break;
             }
-            if(asn1_expect_objtype(map, deep.content, &deep.size, &deeper, ASN1_TYPE_OBJECT_ID)) { /* attribute type */
-                cli_dbgmsg("asn1_parse_mscat: expected attribute type inside counterSignature attribute SEQUENCE\n");
+            if(asn1_expect_objtype(map, deep.content, &deep.size, &deeper, ASN1_TYPE_OBJECT_ID)) {
+                cli_dbgmsg("asn1_parse_mscat: expected OID inside unauthenticatedAttribute SEQUENCE\n");
                 dsize = 1;
                 break;
             }
-            if(deeper.size != lenof(OID_contentType)) /* lenof(contentType) = lenof(messageDigest) = lenof(signingTime) = 9 */
-                continue;
+            // Supported OIDs include:
+            // - 1.2.840.113549.1.9.6 - counterSignature
+            // - 1.3.6.1.4.1.311.2.4.1 - nested signatures
 
-            if(!fmap_need_ptr_once(map, deeper.content, lenof(OID_contentType))) {
-                cli_dbgmsg("asn1_parse_mscat: failed to read counterSignature authenticated attribute\n");
-                dsize = 1;
-                break;
-            }
-            if(!memcmp(deeper.content, OID_contentType, lenof(OID_contentType)))
-                content = 0; /* contentType */
-            else if(!memcmp(deeper.content, OID_messageDigest, lenof(OID_messageDigest)))
-                content = 1; /* messageDigest */
-            else if(!memcmp(deeper.content, OID_signingTime, lenof(OID_signingTime)))
-                content = 2; /* signingTime */
-            else
+            // I've seen some other ones like 1.3.6.1.4.1.3845.3.9876.1.1.1,
+            // and the presence of those doesn't seem to mess up verification
+            // through the Windows API, so just skip those
+
+            if(deeper.size != lenof(OID_countersignature) && deeper.size != lenof(OID_nestedSignatures)) {
                 continue;
-            if(result & (1<<content)) {
-                cli_dbgmsg("asn1_parse_mscat: duplicate field in countersignature\n");
+            }
+
+            if(!fmap_need_ptr_once(map, deeper.content, deeper.size)) {
+                cli_dbgmsg("asn1_parse_mscat: failed to read unauthenticated attribute OID\n");
                 dsize = 1;
                 break;
             }
-            result |= (1<<content);
+
+            if(!memcmp(deeper.content, OID_countersignature, deeper.size))
+                content = 0; /* counterSignature */
+            else if(!memcmp(deeper.content, OID_nestedSignatures, deeper.size))
+                content = 1; /* nested */
+            else {
+                continue;
+            }
+
             if(asn1_expect_objtype(map, deeper.next, &deep.size, &deeper, ASN1_TYPE_SET)) { /* set - contents */
-                cli_dbgmsg("asn1_parse_mscat: failed to read counterSignature authenticated attribute\n");
+                cli_dbgmsg("asn1_parse_mscat: expected 'set - contents' inside unauthenticated attribute\n");
                 dsize = 1;
                 break;
             }
             if(deep.size) {
-                cli_dbgmsg("asn1_parse_mscat: extra data in countersignature value\n");
+                cli_dbgmsg("asn1_parse_mscat: extra data in unauthenticated attribute\n");
                 dsize = 1;
                 break;
             }
-            deep.size = deeper.size;
-            switch(content) {
-            case 0:  /* contentType = pkcs7-data */
-                if(asn1_expect_obj(map, &deeper.content, &deep.size, ASN1_TYPE_OBJECT_ID, lenof(OID_pkcs7_data), OID_pkcs7_data)) {
-                    cli_dbgmsg("asn1_parse_mscat: contentType != pkcs7-data\n");
-                    deep.size = 1;
-                } else if(deep.size)
-                    cli_dbgmsg("asn1_parse_mscat: extra data in countersignature content-type\n");
+
+            if(result & (1<<content)) {
+                cli_dbgmsg("asn1_parse_mscat: counterSignature or nestedSignature appear twice\n");
+                dsize = 1;
                 break;
-            case 1:  /* messageDigest */
-                if(asn1_expect_obj(map, &deeper.content, &deep.size, ASN1_TYPE_OCTET_STRING, hashsize, md)) {
-                    deep.size = 1;
-                    cli_dbgmsg("asn1_parse_mscat: countersignature hash mismatch\n");
-                } else if(deep.size)
-                    cli_dbgmsg("asn1_parse_mscat: extra data in countersignature message-digest\n");
-                break;
-            case 2:  /* signingTime */
-                {
-                    time_t sigdate; /* FIXME shall i use it?! */
-                    if(asn1_get_time(map, &deeper.content, &deep.size, &sigdate)) {
-                        cli_dbgmsg("asn1_parse_mscat: an error occurred when getting the time\n");
-                        deep.size = 1;
-                    } else if(deep.size)
-                        cli_dbgmsg("asn1_parse_mscat: extra data in countersignature signing-time\n");
-                    else if(sigdate < x509->not_before || sigdate > x509->not_after) {
-                        cli_dbgmsg("asn1_parse_mscat: countersignature timestamp outside cert validity\n");
-                        deep.size = 1;
-                    }
+            }
+
+            if(content == 0) { /* counterSignature */
+
+                if(asn1_parse_countersignature(map, &deeper.content, &deeper.size, cmgr, message, message_size, x509->not_before, x509->not_after)) {
+                    dsize = 1;
                     break;
                 }
+
+                result |= 1;
+
+            } else { /* nestedSignature */
+
+                // TODO Support parsing these out in the future
+                cli_dbgmsg("asn1_parse_mscat: nested signatures detected but parsing them is not currently supported\n");
+
+                deeper.size = 0;
+                result |= 2;
             }
-            if(deep.size) {
+            if(deeper.size) {
+                cli_dbgmsg("asn1_parse_mscat: extra data in unauthenticated attribute\n");
                 dsize = 1;
                 break;
             }
         }
         if(dsize)
             break;
-        if(result != 7) {
-            cli_dbgmsg("asn1_parse_mscat: some important attributes are missing in countersignature\n");
-            break;
-        }
 
-        if(asn1_expect_objtype(map, asn1.next, &size, &asn1, ASN1_TYPE_SEQUENCE)) { /* digestEncryptionAlgorithm == sha1 */
-            cli_dbgmsg("asn1_parse_mscat: expected to parse SEQUENCE after counterSignature attributes\n");
-            break;
-        }
-        if(asn1_expect_objtype(map, asn1.content, &asn1.size, &deep, ASN1_TYPE_OBJECT_ID)) {/* digestEncryptionAlgorithm == sha1 */
-            cli_dbgmsg("asn1_parse_mscat: unexpected value when parsing counterSignature digestEncryptionAlgorithm\n");
-            break;
-        }
-        if(deep.size != lenof(OID_rsaEncryption)) { /* lenof(OID_rsaEncryption) = lenof(OID_sha1WithRSAEncryption) = 9 */
-            cli_dbgmsg("asn1_parse_mscat: wrong digestEncryptionAlgorithm size in countersignature\n");
-            break;
-        }
-        if(!fmap_need_ptr_once(map, deep.content, lenof(OID_rsaEncryption))) {
-            cli_dbgmsg("asn1_parse_mscat: cannot read digestEncryptionAlgorithm in countersignature\n");
-            break;
-        }
-        /* rsaEncryption or sha1withRSAEncryption */
-        if(memcmp(deep.content, OID_rsaEncryption, lenof(OID_rsaEncryption)) && memcmp(deep.content, OID_sha1WithRSAEncryption, lenof(OID_sha1WithRSAEncryption))) {
-            cli_dbgmsg("asn1_parse_mscat: digestEncryptionAlgorithm in countersignature is not sha1\n");
-            break;
-        }
-        if(asn1.size && asn1_expect_obj(map, &deep.next, &asn1.size, ASN1_TYPE_NULL, 0, NULL)) {
-            cli_dbgmsg("asn1_parse_mscat: unexpected value after counterSignature digestEncryptionAlgorithm\n");
-            break;
-        }
-        if(asn1.size) {
-            cli_dbgmsg("asn1_parse_mscat: extra data in digestEncryptionAlgorithm in countersignature\n");
-            break;
-        }
+        if (2 != (result & 2)) {
+            time_t now;
 
-        if(asn1_expect_objtype(map, asn1.next, &size, &asn1, ASN1_TYPE_OCTET_STRING)) { /* encryptedDigest */
-            cli_dbgmsg("asn1_parse_mscat: unexpected encryptedDigest value in counterSignature\n");
-            break;
-        }
-        if(asn1.size > 513) {
-            cli_dbgmsg("asn1_parse_mscat: countersignature encryptedDigest too long\n");
-            break;
-        }
-        if(size) {
-            cli_dbgmsg("asn1_parse_mscat: extra data inside countersignature\n");
-            break;
-        }
-        if(!fmap_need_ptr_once(map, attrs, attrs_size)) {
-            cli_dbgmsg("asn1_parse_mscat: failed to read authenticatedAttributes\n");
-            break;
-        }
+            // No countersignature, so judge validity based on time
+            now = time(NULL);
 
-        if(hashtype == CLI_SHA1RSA) {
-            ctx = cl_hash_init("sha1");
-        } else if (hashtype == CLI_MD5RSA) {
-            ctx = cl_hash_init("md5");
-        } else {
-            break;
-        }
-
-        if (!(ctx))
-            break;
-
-        cl_update_hash(ctx, "\x31", 1);
-        cl_update_hash(ctx, (void *)(attrs + 1), attrs_size - 1);
-        cl_finish_hash(ctx, hash);
-
-        if(!fmap_need_ptr_once(map, asn1.content, asn1.size)) {
-            cli_dbgmsg("asn1_parse_mscat: failed to read countersignature encryptedDigest\n");
-            break;
-        }
-        if(!crtmgr_verify_pkcs7(cmgr, issuer, serial, asn1.content, asn1.size, hashtype, hash, VRFY_TIME)) {
-            cli_dbgmsg("asn1_parse_mscat: pkcs7 countersignature verification failed\n");
-            break;
-        }
-
-        if(nested) {
-
-            if (asn1_expect_objtype(map, nested, &nested_size, &asn1, ASN1_TYPE_SEQUENCE)) {
-                cli_dbgmsg("asn1_parse_mscat: expected SEQUENCE in unauthenticatedAttributes following the counterSignature\n");
+            if(now < x509->not_before || now > x509->not_after) {
+                cli_dbgmsg("asn1_parse_mscat: no countersignature and signing certificate has expired\n");
                 break;
             }
 
-            if (nested_size) {
-                cli_dbgmsg("asn1_parse_mscat: extra data inside unauthenticatedAttributes\n");
-                break;
-            }
-
-            /* 1.3.6.1.4.1.311.2.4.1 - nested signatures */
-            if(asn1_expect_obj(map, &asn1.content, &asn1.size, ASN1_TYPE_OBJECT_ID, lenof(OID_nestedSignatures), OID_nestedSignatures)) {
-                cli_dbgmsg("asn1_parse_mscat: expected nested signature OID in the second unauthenticatedAttributes SEQUENCE\n");
-                break;
-            }
-
-            // TODO Support parsing these out in the future
-            cli_dbgmsg("asn1_parse_mscat: nested signatures detected but parsing them is not currently supported\n");
+            cli_dbgmsg("asn1_parse_mscat: no countersignature but the signing certificate is still valid\n");
         }
 
         cli_dbgmsg("asn1_parse_mscat: unauthenticatedAttributes successfully parsed\n");
 
+finish:
         if (isBlacklisted) {
             return 1;
         }
