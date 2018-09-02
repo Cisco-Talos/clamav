@@ -579,6 +579,7 @@ extern int cl_scanmap_callback(cl_fmap_t *map, const char *filename, const char 
 #define SHA1_HASH_SIZE 20
 #define SHA256_HASH_SIZE 32
 #define SHA384_HASH_SIZE 48
+#define SHA512_HASH_SIZE 64
 
 /** Generate a hash of data.
  @param[in] alg The hashing algorithm to use
