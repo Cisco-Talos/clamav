@@ -109,6 +109,9 @@
 
 #define PE_MAXNAMESIZE 256
 #define PE_MAXIMPORTS  1024
+// TODO On Vista and above, up to 65535 sections are allowed.  Make sure
+// that using this lower limit from XP is acceptable in all cases
+#define PE_MAXSECTIONS  96
 
 #define EC64(x) ((uint64_t)cli_readint64(&(x))) /* Convert little endian to host */
 #define EC32(x) ((uint32_t)cli_readint32(&(x)))
@@ -2922,7 +2925,7 @@ int cli_scanpe(cli_ctx *ctx)
     }
 
     nsections = EC16(file_hdr.NumberOfSections);
-    if(nsections < 1 || nsections > 96) {
+    if(nsections < 1 || nsections > PE_MAXSECTIONS) {
 #if HAVE_JSON
         pe_add_heuristic_property(ctx, "BadNumberOfSections");
 #endif
@@ -5083,7 +5086,7 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo)
         return -1;
     }
 
-    if ( (peinfo->nsections = EC16(file_hdr.NumberOfSections)) < 1 || peinfo->nsections > 96 ) return -1;
+    if ( (peinfo->nsections = EC16(file_hdr.NumberOfSections)) < 1 || peinfo->nsections > PE_MAXSECTIONS ) return -1;
 
     if (EC16(file_hdr.SizeOfOptionalHeader) < sizeof(struct pe_image_optional_hdr32)) {
         cli_dbgmsg("SizeOfOptionalHeader too small\n");
@@ -5404,8 +5407,10 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
     struct cli_exe_section *exe_sections;
     struct pe_image_data_dir *dirs;
     fmap_t *map = *ctx->fmap;
-    void *hashctx=NULL;
     struct pe_certificate_hdr cert_hdr;
+    struct cli_mapped_region *regions;
+    unsigned int nregions;
+    int ret;
 
     if (flags & CL_CHECKFP_PE_FLAG_STATS)
         if (!(hashes))
@@ -5437,7 +5442,7 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
         return CL_EFORMAT;
 
     nsections = EC16(file_hdr.NumberOfSections);
-    if(nsections < 1 || nsections > 96)
+    if(nsections < 1 || nsections > PE_MAXSECTIONS)
         return CL_EFORMAT;
 
     // TODO the pe_image_optional_hdr32 structure includes space for all 16
@@ -5563,11 +5568,6 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
     }
 
     cli_qsort(exe_sections, nsections, sizeof(*exe_sections), sort_sects);
-    hashctx = cl_hash_init("sha1");
-    if (!(hashctx)) {
-        if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE)
-            flags ^= CL_CHECKFP_PE_FLAG_AUTHENTICODE;
-    }
 
     if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE) {
         /* Check to see if we have a security section. */
@@ -5577,8 +5577,6 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
                 flags ^= CL_CHECKFP_PE_FLAG_AUTHENTICODE;
             } else {
                 free(exe_sections);
-                if (hashctx)
-                    cl_hash_destroy(hashctx);
                 return CL_BREAK;
             }
         }
@@ -5593,30 +5591,41 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
                 flags ^= CL_CHECKFP_PE_FLAG_AUTHENTICODE;
             } else {
                 free(exe_sections);
-                if (hashctx)
-                    cl_hash_destroy(hashctx);
                 return CL_EFORMAT;
             }
         }
     }
 
-#define hash_chunk(where, size, isStatAble, section) \
+    // We'll build a list of the regions that need to be hashed and pass it to
+    // asn1_check_mscat to do hash verification there (the hash algorithm is
+    // specified in the PCKS7 structure).  We need to hash up to 4 regions + the
+    // data associated with each section.
+    regions = (struct cli_mapped_region *) cli_calloc(nsections+4, sizeof(struct cli_mapped_region));
+    if(!regions) {
+        free(exe_sections);
+        return CL_EMEM;
+    }
+    nregions = 0;
+
+#define hash_chunk(where, _size, isStatAble, section) \
     do { \
         const uint8_t *hptr; \
-        if(!(size)) break; \
-        if(!(hptr = fmap_need_off_once(map, where, size))){ \
+        if(!(_size)) break; \
+        if(!(hptr = fmap_need_off_once(map, where, _size))){ \
             free(exe_sections); \
-            if (hashctx) \
-                cl_hash_destroy(hashctx); \
+            free(regions); \
             return CL_EFORMAT; \
         } \
-        if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE && hashctx) \
-            cl_update_hash(hashctx, (void *)hptr, size); \
+        if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE) { \
+            regions[nregions].ptr = hptr; \
+            regions[nregions].size = _size; \
+            nregions++; \
+        } \
         if (isStatAble && flags & CL_CHECKFP_PE_FLAG_STATS) { \
             void *md5ctx; \
             md5ctx = cl_hash_init("md5"); \
             if (md5ctx) { \
-                cl_update_hash(md5ctx, (void *)hptr, size); \
+                cl_update_hash(md5ctx, (void *)hptr, _size); \
                 cl_finish_hash(md5ctx, hashes->sections[section].md5); \
             } \
         } \
@@ -5643,8 +5652,7 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
                 break;
             } else {
                 free(exe_sections);
-                if (hashctx)
-                    cl_hash_destroy(hashctx);
+                free(regions);
                 return CL_EFORMAT;
             }
         }
@@ -5679,28 +5687,24 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
 
     free(exe_sections);
 
-    if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE && hashctx) {
-        cl_finish_hash(hashctx, authsha1);
-
-        if(cli_debug_flag) {
-            char shatxt[SHA1_HASH_SIZE*2+1];
-            for(i=0; i<SHA1_HASH_SIZE; i++)
-                sprintf(&shatxt[i*2], "%02x", authsha1[i]);
-            cli_dbgmsg("Authenticode: %s\n", shatxt);
-        }
+    if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE) {
 
         hlen = EC32(dirs[4].Size);
 
-        if(fmap_readn(map, &cert_hdr, EC32(dirs[4].VirtualAddress), sizeof(cert_hdr)) != sizeof(cert_hdr))
+        if(fmap_readn(map, &cert_hdr, EC32(dirs[4].VirtualAddress), sizeof(cert_hdr)) != sizeof(cert_hdr)) {
+            free(regions);
             return CL_EFORMAT;
+        }
 
         if (EC16(cert_hdr.revision) != WIN_CERT_REV_2) {
             cli_dbgmsg("cli_checkfp_pe: unsupported authenticode data revision\n");
+            free(regions);
             return CL_VIRUS;
         }
 
         if (EC16(cert_hdr.type) != WIN_CERT_TYPE_PKCS7) {
             cli_dbgmsg("cli_checkfp_pe: unsupported authenticode data type\n");
+            free(regions);
             return CL_VIRUS;
         }
 
@@ -5719,10 +5723,14 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
         at = EC32(dirs[4].VirtualAddress) + sizeof(cert_hdr);
         hlen -= sizeof(cert_hdr);
 
-        return asn1_check_mscat((struct cl_engine *)(ctx->engine), map, at, hlen, authsha1);
+        ret = asn1_check_mscat((struct cl_engine *)(ctx->engine), map, at, hlen, regions, nregions);
+
+        free(regions);
+
+        return ret;
+
     } else {
-        if (hashctx)
-            cl_hash_destroy(hashctx);
+        free(regions);
         return CL_VIRUS;
     }
 }
@@ -5773,7 +5781,7 @@ int cli_genhash_pe(cli_ctx *ctx, unsigned int class, int type)
         return CL_EFORMAT;
 
     nsections = EC16(file_hdr.NumberOfSections);
-    if(nsections < 1 || nsections > 96)
+    if(nsections < 1 || nsections > PE_MAXSECTIONS)
         return CL_EFORMAT;
 
     if(EC16(file_hdr.SizeOfOptionalHeader) < sizeof(struct pe_image_optional_hdr32))

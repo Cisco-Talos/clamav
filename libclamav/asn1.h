@@ -25,7 +25,12 @@
 #include "others.h"
 #include "fmap.h"
 
+struct cli_mapped_region {
+    const unsigned char *ptr;
+    unsigned int size;
+};
+
 int asn1_load_mscat(fmap_t *map, struct cl_engine *engine);
-int asn1_check_mscat(struct cl_engine *engine, fmap_t *map, size_t offset, unsigned int size, uint8_t *computed_sha1);
+int asn1_check_mscat(struct cl_engine *engine, fmap_t *map, size_t offset, unsigned int size, struct cli_mapped_region *regions, uint32_t nregions);
 
 #endif
