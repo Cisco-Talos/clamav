@@ -633,6 +633,15 @@ unsigned char *cl_sha256(const void *buf, size_t len, unsigned char *obuf, unsig
  */
 unsigned char *cl_sha384(const void *buf, size_t len, unsigned char *obuf, unsigned int *olen);
 
+/** Generate a sha512 hash of data
+ @param[in] buf The data to hash
+ @param[in] len The length of the to-be-hashed data
+ @param[out] obuf An optional pointer to store the generated hash. Use NULL to dynamically allocate buffer.
+ @param[out] olen An optional pointer that stores how long the generated hash is.
+ @return A pointer to the buffer that holds the generated hash
+ */
+unsigned char *cl_sha512(const void *buf, size_t len, unsigned char *obuf, unsigned int *olen);
+
 /** Generate a sha1 hash of data
  @param[in] buf The data to hash
  @param[in] len The length of the to-be-hashed data
