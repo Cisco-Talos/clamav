@@ -138,6 +138,22 @@ static int map_raw(fmap_t *map, const void *data, unsigned int len, uint8_t raw[
     return 0;
 }
 
+static int map_sha512(fmap_t *map, const void *data, unsigned int len, uint8_t sha512[SHA512_HASH_SIZE]) {
+    if(!fmap_need_ptr_once(map, data, len)) {
+        cli_dbgmsg("map_sha512: failed to read hash data\n");
+        return 1;
+    }
+    return (cl_sha512(data, len, sha512, NULL) == NULL);
+}
+
+static int map_sha384(fmap_t *map, const void *data, unsigned int len, uint8_t sha384[SHA384_HASH_SIZE]) {
+    if(!fmap_need_ptr_once(map, data, len)) {
+        cli_dbgmsg("map_sha384: failed to read hash data\n");
+        return 1;
+    }
+    return (cl_sha384(data, len, sha384, NULL) == NULL);
+}
+
 static int map_sha256(fmap_t *map, const void *data, unsigned int len, uint8_t sha256[SHA256_HASH_SIZE]) {
     if(!fmap_need_ptr_once(map, data, len)) {
         cli_dbgmsg("map_sha256: failed to read hash data\n");
@@ -176,11 +192,37 @@ static int map_hash(fmap_t *map, const void *data, unsigned int len, uint8_t *ou
         if(map_sha256(map, data, len, out_hash)) {
             return 1;
         }
+    } else if(hashtype == CLI_SHA384RSA) {
+        if(map_sha384(map, data, len, out_hash)) {
+            return 1;
+        }
+    } else if(hashtype == CLI_SHA512RSA) {
+        if(map_sha512(map, data, len, out_hash)) {
+            return 1;
+        }
     } else {
         cli_dbgmsg("asn1_map_hash: unsupported hashtype\n");
         return 1;
     }
     return 0;
+}
+
+static void * get_hash_ctx(cli_crt_hashtype hashtype) {
+    void *ctx = NULL;
+    if(hashtype == CLI_SHA1RSA) {
+        ctx = cl_hash_init("sha1");
+    } else if (hashtype == CLI_MD5RSA) {
+        ctx = cl_hash_init("md5");
+    } else if (hashtype == CLI_SHA256RSA) {
+        ctx = cl_hash_init("sha256");
+    } else if (hashtype == CLI_SHA384RSA) {
+        ctx = cl_hash_init("sha384");
+    } else if (hashtype == CLI_SHA512RSA) {
+        ctx = cl_hash_init("sha512");
+    } else {
+        cli_dbgmsg("asn1_get_hash_ctx: unsupported hashtype\n");
+    }
+    return ctx;
 }
 
 
@@ -1157,18 +1199,9 @@ static int asn1_parse_countersignature(fmap_t *map, const void **asn1data, unsig
             break;
         }
 
-        if(hashtype == CLI_SHA1RSA) {
-            ctx = cl_hash_init("sha1");
-        } else if (hashtype == CLI_MD5RSA) {
-            ctx = cl_hash_init("md5");
-        } else if (hashtype == CLI_SHA256RSA) {
-            ctx = cl_hash_init("sha256");
-        } else {
+        if (NULL == (ctx = get_hash_ctx(hashtype))) {
             break;
         }
-
-        if (!(ctx))
-            break;
 
         cl_update_hash(ctx, "\x31", 1);
         cl_update_hash(ctx, (void *)(attrs + 1), attrs_size - 1);
@@ -1667,18 +1700,9 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
             break;
         }
 
-        if(hashtype == CLI_SHA1RSA) {
-            ctx = cl_hash_init("sha1");
-        } else if (hashtype == CLI_MD5RSA) {
-            ctx = cl_hash_init("md5");
-        } else if (hashtype == CLI_SHA256RSA) {
-            ctx = cl_hash_init("sha256");
-        } else {
+        if (NULL == (ctx = get_hash_ctx(hashtype))) {
             break;
         }
-
-        if (!(ctx))
-            break;
 
         cl_update_hash(ctx, "\x31", 1);
         cl_update_hash(ctx, (void *)(attrs + 1), attrs_size - 1);
@@ -2045,19 +2069,9 @@ int asn1_check_mscat(struct cl_engine *engine, fmap_t *map, size_t offset, unsig
         return CL_VIRUS;
     }
 
-    // TODO Move into common a function
-    if(hashtype == CLI_SHA1RSA) {
-        ctx = cl_hash_init("sha1");
-    } else if (hashtype == CLI_MD5RSA) {
-        ctx = cl_hash_init("md5");
-    } else if (hashtype == CLI_SHA256RSA) {
-        ctx = cl_hash_init("sha256");
-    } else {
+    if (NULL == (ctx = get_hash_ctx(hashtype))) {
         return CL_VIRUS;
     }
-
-    if (!(ctx))
-        return CL_VIRUS;
 
     // Now that we know the hash algorithm, compute the authenticode hash
     // across the required regions of memory.
