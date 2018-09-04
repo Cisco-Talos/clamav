@@ -5660,6 +5660,7 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
         /* Security to End of header */
         hlen = hdr_size - at;
         hash_chunk(at, hlen, 0, 0);
+        at += hlen;
         break;
     }
 
@@ -5669,6 +5670,24 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
             continue;
 
         hash_chunk(exe_sections[i].raw, exe_sections[i].rsz, 1, i);
+
+        /* If the section overlaps with the header (the case for UPX binaries)
+         * adjust the entry in the authenticode hash regions list to account
+         * for the fact that we've already accounted for computing the hash
+         * over the header */
+        if (exe_sections[i].raw < at)
+        {
+            uint32_t overlap_size = (at - exe_sections[i].raw);
+            if (overlap_size >= exe_sections[i].rsz) {
+                /* The section completely overlaps the header.  Setting the
+                 * size to zero should prevent this section from affecting
+                 * the actual Authenticode hash computation. */
+                regions[nregions-1].size = 0;
+            } else {
+                regions[nregions-1].size -= overlap_size;
+                regions[nregions-1].ptr += overlap_size;
+            }
+        }
     }
 
     /* Finally, if there is data after the section with the highest
