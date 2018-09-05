@@ -5607,7 +5607,7 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
     }
     nregions = 0;
 
-#define hash_chunk(where, _size, isStatAble, section) \
+#define hash_chunk(where, _size) \
     do { \
         const uint8_t *hptr; \
         if(!(_size)) break; \
@@ -5621,21 +5621,13 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
             regions[nregions].size = _size; \
             nregions++; \
         } \
-        if (isStatAble && flags & CL_CHECKFP_PE_FLAG_STATS) { \
-            void *md5ctx; \
-            md5ctx = cl_hash_init("md5"); \
-            if (md5ctx) { \
-                cl_update_hash(md5ctx, (void *)hptr, _size); \
-                cl_finish_hash(md5ctx, hashes->sections[section].md5); \
-            } \
-        } \
     } while(0)
 
     while (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE) {
         /* MZ to checksum */
         at = 0;
         hlen = e_lfanew + sizeof(struct pe_image_file_hdr) + (pe_plus ? offsetof(struct pe_image_optional_hdr64, CheckSum) : offsetof(struct pe_image_optional_hdr32, CheckSum));
-        hash_chunk(0, hlen, 0, 0);
+        hash_chunk(0, hlen);
         at = hlen + 4;
 
         /* Checksum to security */
@@ -5643,7 +5635,7 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
             hlen = offsetof(struct pe_image_optional_hdr64, DataDirectory[4]) - offsetof(struct pe_image_optional_hdr64, CheckSum) - 4;
         else
             hlen = offsetof(struct pe_image_optional_hdr32, DataDirectory[4]) - offsetof(struct pe_image_optional_hdr32, CheckSum) - 4;
-        hash_chunk(at, hlen, 0, 0);
+        hash_chunk(at, hlen);
         at += hlen + 8;
 
         if(at > hdr_size) {
@@ -5659,52 +5651,43 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
 
         /* Security to End of header */
         hlen = hdr_size - at;
-        hash_chunk(at, hlen, 0, 0);
+        hash_chunk(at, hlen);
         at += hlen;
         break;
     }
 
     /* Hash the sections */
-    for(i = 0; i < nsections; i++) {
-        if(!exe_sections[i].rsz)
-            continue;
+    if (flags & CL_CHECKFP_PE_FLAG_STATS) {
 
-        hash_chunk(exe_sections[i].raw, exe_sections[i].rsz, 1, i);
+        for(i = 0; i < nsections; i++) {
+            const uint8_t *hptr;
+            void *md5ctx;
 
-        /* If the section overlaps with the header (the case for UPX binaries)
-         * adjust the entry in the authenticode hash regions list to account
-         * for the fact that we've already accounted for computing the hash
-         * over the header */
-        if (exe_sections[i].raw < at)
-        {
-            uint32_t overlap_size = (at - exe_sections[i].raw);
-            if (overlap_size >= exe_sections[i].rsz) {
-                /* The section completely overlaps the header.  Setting the
-                 * size to zero should prevent this section from affecting
-                 * the actual Authenticode hash computation. */
-                regions[nregions-1].size = 0;
-            } else {
-                regions[nregions-1].size -= overlap_size;
-                regions[nregions-1].ptr += overlap_size;
+            if(!exe_sections[i].rsz)
+                continue;
+
+            if(!(hptr = fmap_need_off_once(map, exe_sections[i].raw, exe_sections[i].rsz))){
+                free(exe_sections);
+                free(regions);
+                return CL_EFORMAT;
+            }
+            md5ctx = cl_hash_init("md5");
+            if (md5ctx) {
+                cl_update_hash(md5ctx, (void *)hptr, exe_sections[i].rsz);
+                cl_finish_hash(md5ctx, hashes->sections[i].md5);
             }
         }
     }
 
-    /* Finally, if there is data after the section with the highest
-     * PointerToRawData, hash that too.  This is a variation of what
-     * the 2008 spec doc says to do (add up all the SizeOfRawData's and
-     * start hashing at that point after the PE header), but should also
-     * work in the case where a binary has overlapping sections or a section
-     * overlaps the PE header (barring some edge cases like a section
-     * fully containing another section with a higher starting addr.)
+    free(exe_sections);
+
+    /* Finally, hash everything from the end of the header to the start of
+     * the security section, which must be the last thing in a file
      */
-    at = exe_sections[nsections-1].raw + exe_sections[nsections-1].rsz;
     if (at < EC32(dirs[4].VirtualAddress)) {
         hlen = EC32(dirs[4].VirtualAddress)-at;
-        hash_chunk(at, hlen, 0, 0);
+        hash_chunk(at, hlen);
     }
-
-    free(exe_sections);
 
     if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE) {
 
