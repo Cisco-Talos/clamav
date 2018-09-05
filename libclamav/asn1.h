@@ -26,7 +26,7 @@
 #include "fmap.h"
 
 struct cli_mapped_region {
-    const unsigned char *ptr;
+    unsigned int offset;
     unsigned int size;
 };
 
