@@ -2075,9 +2075,13 @@ int asn1_check_mscat(struct cl_engine *engine, fmap_t *map, size_t offset, unsig
 
     // Now that we know the hash algorithm, compute the authenticode hash
     // across the required regions of memory.
-    // NOTE: section[i].ptr points to an already mapped region of memory
     for(int i = 0; i < nregions; i++) {
-        cl_update_hash(ctx, regions[i].ptr, regions[i].size);
+        const uint8_t *hptr; \
+        if(!(hptr = fmap_need_off_once(map, regions[i].offset, regions[i].size))){
+            return CL_VIRUS;
+        }
+
+        cl_update_hash(ctx, hptr, regions[i].size);
     }
 
     cl_finish_hash(ctx, hash);

@@ -5567,94 +5567,10 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
         }
     }
 
+    // TODO This likely isn't needed anymore, since we no longer compute
+    // the authenticode hash like the 2008 spec doc says (sort sections
+    // and use the section info to compute the hash)
     cli_qsort(exe_sections, nsections, sizeof(*exe_sections), sort_sects);
-
-    if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE) {
-        /* Check to see if we have a security section. */
-        if(!cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA1, 2) && EC32(dirs[4].Size) < 8) {
-            if (flags & CL_CHECKFP_PE_FLAG_STATS) {
-                /* If stats is enabled, continue parsing the sample */
-                flags ^= CL_CHECKFP_PE_FLAG_AUTHENTICODE;
-            } else {
-                free(exe_sections);
-                return CL_BREAK;
-            }
-        }
-
-
-        // Verify that we have all the bytes we expect in the authenticode sig
-        // and that the certificate table is the last thing in the file
-        // (according to the MS13-098 bulletin, this is a requirement)
-        if (fsize != EC32(dirs[4].Size) + EC32(dirs[4].VirtualAddress)) {
-            cli_dbgmsg("cli_checkfp_pe: expected authenticode data at the end of the file\n");
-            if (flags & CL_CHECKFP_PE_FLAG_STATS) {
-                flags ^= CL_CHECKFP_PE_FLAG_AUTHENTICODE;
-            } else {
-                free(exe_sections);
-                return CL_EFORMAT;
-            }
-        }
-    }
-
-    // We'll build a list of the regions that need to be hashed and pass it to
-    // asn1_check_mscat to do hash verification there (the hash algorithm is
-    // specified in the PCKS7 structure).  We need to hash up to 4 regions + the
-    // data associated with each section.
-    regions = (struct cli_mapped_region *) cli_calloc(nsections+4, sizeof(struct cli_mapped_region));
-    if(!regions) {
-        free(exe_sections);
-        return CL_EMEM;
-    }
-    nregions = 0;
-
-#define hash_chunk(where, _size) \
-    do { \
-        const uint8_t *hptr; \
-        if(!(_size)) break; \
-        if(!(hptr = fmap_need_off_once(map, where, _size))){ \
-            free(exe_sections); \
-            free(regions); \
-            return CL_EFORMAT; \
-        } \
-        if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE) { \
-            regions[nregions].ptr = hptr; \
-            regions[nregions].size = _size; \
-            nregions++; \
-        } \
-    } while(0)
-
-    while (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE) {
-        /* MZ to checksum */
-        at = 0;
-        hlen = e_lfanew + sizeof(struct pe_image_file_hdr) + (pe_plus ? offsetof(struct pe_image_optional_hdr64, CheckSum) : offsetof(struct pe_image_optional_hdr32, CheckSum));
-        hash_chunk(0, hlen);
-        at = hlen + 4;
-
-        /* Checksum to security */
-        if(pe_plus)
-            hlen = offsetof(struct pe_image_optional_hdr64, DataDirectory[4]) - offsetof(struct pe_image_optional_hdr64, CheckSum) - 4;
-        else
-            hlen = offsetof(struct pe_image_optional_hdr32, DataDirectory[4]) - offsetof(struct pe_image_optional_hdr32, CheckSum) - 4;
-        hash_chunk(at, hlen);
-        at += hlen + 8;
-
-        if(at > hdr_size) {
-            if (flags & CL_CHECKFP_PE_FLAG_STATS) {
-                flags ^= CL_CHECKFP_PE_FLAG_AUTHENTICODE;
-                break;
-            } else {
-                free(exe_sections);
-                free(regions);
-                return CL_EFORMAT;
-            }
-        }
-
-        /* Security to End of header */
-        hlen = hdr_size - at;
-        hash_chunk(at, hlen);
-        at += hlen;
-        break;
-    }
 
     /* Hash the sections */
     if (flags & CL_CHECKFP_PE_FLAG_STATS) {
@@ -5668,7 +5584,6 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
 
             if(!(hptr = fmap_need_off_once(map, exe_sections[i].raw, exe_sections[i].rsz))){
                 free(exe_sections);
-                free(regions);
                 return CL_EFORMAT;
             }
             md5ctx = cl_hash_init("md5");
@@ -5681,12 +5596,88 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
 
     free(exe_sections);
 
+    if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE) {
+        /* Check to see if we have a security section. */
+        if(!cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA1, 2) && EC32(dirs[4].Size) < 8) {
+            if (flags & CL_CHECKFP_PE_FLAG_STATS) {
+                /* If stats is enabled, continue parsing the sample */
+                flags ^= CL_CHECKFP_PE_FLAG_AUTHENTICODE;
+            } else {
+                return CL_BREAK;
+            }
+        }
+
+
+        // Verify that we have all the bytes we expect in the authenticode sig
+        // and that the certificate table is the last thing in the file
+        // (according to the MS13-098 bulletin, this is a requirement)
+        if (fsize != EC32(dirs[4].Size) + EC32(dirs[4].VirtualAddress)) {
+            cli_dbgmsg("cli_checkfp_pe: expected authenticode data at the end of the file\n");
+            if (flags & CL_CHECKFP_PE_FLAG_STATS) {
+                flags ^= CL_CHECKFP_PE_FLAG_AUTHENTICODE;
+            } else {
+                return CL_EFORMAT;
+            }
+        }
+    }
+
+    // We'll build a list of the regions that need to be hashed and pass it to
+    // asn1_check_mscat to do hash verification there (the hash algorithm is
+    // specified in the PCKS7 structure).  We need to hash up to 4 regions + the
+    // data associated with each section.
+    regions = (struct cli_mapped_region *) cli_calloc(nsections+4, sizeof(struct cli_mapped_region));
+    if(!regions) {
+        return CL_EMEM;
+    }
+    nregions = 0;
+
+#define add_chunk_to_hash_list(_offset, _size) \
+    do { \
+        if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE) { \
+            regions[nregions].offset = (_offset); \
+            regions[nregions].size = (_size); \
+            nregions++; \
+        } \
+    } while(0)
+
+    while (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE) {
+        /* MZ to checksum */
+        at = 0;
+        hlen = e_lfanew + sizeof(struct pe_image_file_hdr) + (pe_plus ? offsetof(struct pe_image_optional_hdr64, CheckSum) : offsetof(struct pe_image_optional_hdr32, CheckSum));
+        add_chunk_to_hash_list(0, hlen);
+        at = hlen + 4;
+
+        /* Checksum to security */
+        if(pe_plus)
+            hlen = offsetof(struct pe_image_optional_hdr64, DataDirectory[4]) - offsetof(struct pe_image_optional_hdr64, CheckSum) - 4;
+        else
+            hlen = offsetof(struct pe_image_optional_hdr32, DataDirectory[4]) - offsetof(struct pe_image_optional_hdr32, CheckSum) - 4;
+        add_chunk_to_hash_list(at, hlen);
+        at += hlen + 8;
+
+        if(at > hdr_size) {
+            if (flags & CL_CHECKFP_PE_FLAG_STATS) {
+                flags ^= CL_CHECKFP_PE_FLAG_AUTHENTICODE;
+                break;
+            } else {
+                free(regions);
+                return CL_EFORMAT;
+            }
+        }
+
+        /* Security to End of header */
+        hlen = hdr_size - at;
+        add_chunk_to_hash_list(at, hlen);
+        at += hlen;
+        break;
+    }
+
     /* Finally, hash everything from the end of the header to the start of
      * the security section, which must be the last thing in a file
      */
     if (at < EC32(dirs[4].VirtualAddress)) {
         hlen = EC32(dirs[4].VirtualAddress)-at;
-        hash_chunk(at, hlen);
+        add_chunk_to_hash_list(at, hlen);
     }
 
     if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE) {
