@@ -104,6 +104,12 @@
 #define OID_2_16_840_1_101_3_4_2_1 "\x60\x86\x48\x01\x65\x03\x04\x02\x01"
 #define OID_sha256 OID_2_16_840_1_101_3_4_2_1
 
+#define OID_2_16_840_1_101_3_4_2_2 "\x60\x86\x48\x01\x65\x03\x04\x02\x02"
+#define OID_sha384 OID_2_16_840_1_101_3_4_2_2
+
+#define OID_2_16_840_1_101_3_4_2_3 "\x60\x86\x48\x01\x65\x03\x04\x02\x03"
+#define OID_sha512 OID_2_16_840_1_101_3_4_2_3
+
 /* --------------------------------------------------------------------------- OIDS */
 #define lenof(x) (sizeof((x))-1)
 
@@ -360,6 +366,10 @@ static int asn1_expect_hash_algo(fmap_t *map, const void **asn1data, unsigned in
      *     - OID_sha1WithRSAEncryption
      *     - OID_md5WithRSAEncryption
      *     - OID_sha256WithRSAEncryption
+     *     - OID_sha384
+     *     - OID_sha384WithRSAEncryption
+     *     - OID_sha512
+     *     - OID_sha512WithRSAEncryption
      */
     if(obj.size != lenof(OID_sha1) && obj.size != lenof(OID_md5) && obj.size != lenof(OID_sha256)) {
         cli_dbgmsg("asn1_expect_hash_algo: unsupported algorithm OID size for AlgorithmIdentifier\n");
@@ -381,6 +391,14 @@ static int asn1_expect_hash_algo(fmap_t *map, const void **asn1data, unsigned in
               (obj.size == lenof(OID_sha256WithRSAEncryption) && !memcmp(obj.content, OID_sha256WithRSAEncryption, lenof(OID_sha256WithRSAEncryption)))) {
         *hashtype = CLI_SHA256RSA;
         *hashsize = SHA256_HASH_SIZE;
+    } else if((obj.size == lenof(OID_sha384) && !memcmp(obj.content, OID_sha384, lenof(OID_sha384))) ||
+              (obj.size == lenof(OID_sha384WithRSAEncryption) && !memcmp(obj.content, OID_sha384WithRSAEncryption, lenof(OID_sha384WithRSAEncryption)))) {
+        *hashtype = CLI_SHA384RSA;
+        *hashsize = SHA384_HASH_SIZE;
+    } else if((obj.size == lenof(OID_sha512) && !memcmp(obj.content, OID_sha512, lenof(OID_sha512))) ||
+              (obj.size == lenof(OID_sha512WithRSAEncryption) && !memcmp(obj.content, OID_sha512WithRSAEncryption, lenof(OID_sha512WithRSAEncryption)))) {
+        *hashtype = CLI_SHA512RSA;
+        *hashsize = SHA512_HASH_SIZE;
     } else {
         cli_dbgmsg("asn1_expect_hash_algo: unknown digest OID in AlgorithmIdentifier\n");
         return 1;
