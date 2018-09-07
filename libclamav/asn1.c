@@ -324,8 +324,10 @@ static int asn1_expect_algo(fmap_t *map, const void **asn1data, unsigned int *as
 
     if((ret = asn1_expect_obj(map, &obj.content, &avail, ASN1_TYPE_OBJECT_ID, algo_size, algo))) /* ALGO */
         return ret;
-    if(avail && (ret = asn1_expect_obj(map, &obj.content, &avail, ASN1_TYPE_NULL, 0, NULL))) /* NULL */
+    if(avail && (ret = asn1_expect_obj(map, &obj.content, &avail, ASN1_TYPE_NULL, 0, NULL))) { /* NULL */
+        cli_dbgmsg("asn1_expect_algo: expected NULL after AlgorithmIdentifier OID\n");
         return ret;
+    }
     if(avail) {
         cli_dbgmsg("asn1_expect_algo: extra data found in SEQUENCE\n");
         return 1;
@@ -348,6 +350,17 @@ static int asn1_expect_hash_algo(fmap_t *map, const void **asn1data, unsigned in
         cli_dbgmsg("asn1_expect_hash_algo: unexpected object type inside AlgorithmIdentifier SET\n");
         return ret;
     }
+    /* Cases to consider for the length check:
+     *  - obj.size == 5:
+     *     - OID_sha1
+     *  - obj.size == 8:
+     *     - OID_md5
+     *  - obj.size == 9:
+     *     - OID_sha256
+     *     - OID_sha1WithRSAEncryption
+     *     - OID_md5WithRSAEncryption
+     *     - OID_sha256WithRSAEncryption
+     */
     if(obj.size != lenof(OID_sha1) && obj.size != lenof(OID_md5) && obj.size != lenof(OID_sha256)) {
         cli_dbgmsg("asn1_expect_hash_algo: unsupported algorithm OID size for AlgorithmIdentifier\n");
         return 1;
@@ -356,13 +369,16 @@ static int asn1_expect_hash_algo(fmap_t *map, const void **asn1data, unsigned in
         cli_dbgmsg("asn1_expect_hash_algo: failed to get AlgorithmIdentifier OID\n");
         return 1;
     }
-    if(obj.size == lenof(OID_sha1) && !memcmp(obj.content, OID_sha1, lenof(OID_sha1))) {
+    if((obj.size == lenof(OID_sha1) && !memcmp(obj.content, OID_sha1, lenof(OID_sha1))) ||
+       (obj.size == lenof(OID_sha1WithRSAEncryption) && !memcmp(obj.content, OID_sha1WithRSAEncryption, lenof(OID_sha1WithRSAEncryption)))) {
         *hashtype = CLI_SHA1RSA;
         *hashsize = SHA1_HASH_SIZE;
-    } else if(obj.size == lenof(OID_md5) && !memcmp(obj.content, OID_md5, lenof(OID_md5))) {
+    } else if((obj.size == lenof(OID_md5) && !memcmp(obj.content, OID_md5, lenof(OID_md5))) ||
+              (obj.size == lenof(OID_md5WithRSAEncryption) && !memcmp(obj.content, OID_md5WithRSAEncryption, lenof(OID_md5WithRSAEncryption)))) {
         *hashtype = CLI_MD5RSA;
         *hashsize = MD5_HASH_SIZE;
-    } else if(obj.size == lenof(OID_sha256) && !memcmp(obj.content, OID_sha256, lenof(OID_sha256))) {
+    } else if((obj.size == lenof(OID_sha256) && !memcmp(obj.content, OID_sha256, lenof(OID_sha256))) ||
+              (obj.size == lenof(OID_sha256WithRSAEncryption) && !memcmp(obj.content, OID_sha256WithRSAEncryption, lenof(OID_sha256WithRSAEncryption)))) {
         *hashtype = CLI_SHA256RSA;
         *hashsize = SHA256_HASH_SIZE;
     } else {
@@ -370,7 +386,7 @@ static int asn1_expect_hash_algo(fmap_t *map, const void **asn1data, unsigned in
         return 1;
     }
     if(ret = asn1_expect_obj(map, &obj.next, &avail, ASN1_TYPE_NULL, 0, NULL)) {
-        cli_dbgmsg("asn1_expect_hash_algo: unexpected value after AlgorithmIdentifier OID\n");
+        cli_dbgmsg("asn1_expect_hash_algo: expected NULL after AlgorithmIdentifier OID\n");
         return ret;
     }
     if(avail) {
@@ -1174,7 +1190,7 @@ static int asn1_parse_countersignature(fmap_t *map, const void **asn1data, unsig
             break;
         }
         if(asn1.size && asn1_expect_obj(map, &deep.next, &asn1.size, ASN1_TYPE_NULL, 0, NULL)) {
-            cli_dbgmsg("asn1_parse_countersignature: unexpected value after counterSignature digestEncryptionAlgorithm\n");
+            cli_dbgmsg("asn1_parse_countersignature: expected NULL after counterSignature digestEncryptionAlgorithm OID\n");
             break;
         }
         if(asn1.size) {
