@@ -1039,10 +1039,29 @@ static int asn1_parse_countersignature(fmap_t *map, const void **asn1data, unsig
         }
 
         avail = asn1.size;
-        if(asn1_expect_obj(map, &asn1.content, &avail, ASN1_TYPE_INTEGER, 1, "\x01")) { /* Version = 1*/
-            cli_dbgmsg("asn1_parse_countersignature: expected counterSignature version to be 1\n");
+
+        if (asn1_expect_objtype(map, asn1.content, &avail, &deep, ASN1_TYPE_INTEGER)) {
+            cli_dbgmsg("asn1_parse_countersignature: expected INTEGER for counterSignature version");
             break;
         }
+
+        if(deep.size != 1) {
+            cli_dbgmsg("asn1_parse_countersignature: expected INTEGER of size 1, got size %u\n", deep.size);
+            break;
+        }
+
+        if(!fmap_need_ptr_once(map, deep.content, 1)) {
+            cli_dbgmsg("asn1_parse_countersignature: failed to read version\n");
+            break;
+        }
+        /* Allow either '0' or '1' for the version. The specification says
+         * that this field must be 1, but some binaries have 0 here and
+         * they appear to validate just fine via the Windows API */
+        if(memcmp(deep.content, "\x01", 1) && memcmp(deep.content, "\x00", 1)) {
+            cli_dbgmsg("asn1_parse_countersignature: counterSignature version is not 1 or 0\n");
+            break;
+        }
+        asn1.content = deep.next;
 
         if(asn1_expect_objtype(map, asn1.content, &avail, &asn1, ASN1_TYPE_SEQUENCE)) { /* issuerAndSerialNumber */
             cli_dbgmsg("asn1_parse_countersignature: unable to parse issuerAndSerialNumber SEQUENCE in counterSignature\n");
