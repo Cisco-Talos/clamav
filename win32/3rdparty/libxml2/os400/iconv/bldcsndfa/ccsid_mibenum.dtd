@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+---     DTD for CCSID/MIBEnum association documents.
+---
+---     See Copyright for the status of this software.
+---
+---     Author: Patrick Monnerat <pm@datasphere.ch>, DATASPHERE S.A.
+-->
+<!ELEMENT ccsid_mibenum (assoc)*>
+<!ELEMENT assoc (alias)*>
+<!ATTLIST assoc
+        ccsid CDATA #IMPLIED
+        mibenum CDATA #IMPLIED
+>
+<!ELEMENT alias (#PCDATA)>

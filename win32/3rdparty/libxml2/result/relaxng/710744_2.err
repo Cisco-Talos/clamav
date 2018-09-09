@@ -1,0 +1,2 @@
+./test/relaxng/710744_2.xml:3: element test: Relax-NG validity error : Invalid attribute foo for element test
+./test/relaxng/710744_2.xml fails to validate

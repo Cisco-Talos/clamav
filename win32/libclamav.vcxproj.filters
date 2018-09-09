@@ -1038,6 +1038,81 @@
     <ClCompile Include="3rdparty\pcre2\pcre2_chartables.c">
       <Filter>Source Files\pcre2</Filter>
     </ClCompile>
+    <ClCompile Include="3rdparty\libxml2\catalog.c">
+      <Filter>Source Files\libxml2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\libxml2\xmlschemas.c">
+      <Filter>Source Files\libxml2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\libxml2\xmlschemastypes.c">
+      <Filter>Source Files\libxml2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\libxml2\relaxng.c">
+      <Filter>Source Files\libxml2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\libxml2\xpath.c">
+      <Filter>Source Files\libxml2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\libxml2\trio.c">
+      <Filter>Source Files\libxml2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\libxml2\trionan.c">
+      <Filter>Source Files\libxml2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\libxml2\triostr.c">
+      <Filter>Source Files\libxml2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\libxml2\xinclude.c">
+      <Filter>Source Files\libxml2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\libxml2\xlink.c">
+      <Filter>Source Files\libxml2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\libxml2\xmllint.c">
+      <Filter>Source Files\libxml2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\libxml2\xmlmodule.c">
+      <Filter>Source Files\libxml2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\libxml2\xmlregexp.c">
+      <Filter>Source Files\libxml2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\libxml2\xmlunicode.c">
+      <Filter>Source Files\libxml2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\libxml2\xmlwriter.c">
+      <Filter>Source Files\libxml2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\libxml2\xpointer.c">
+      <Filter>Source Files\libxml2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\libxml2\xzlib.c">
+      <Filter>Source Files\libxml2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\libxml2\c14n.c">
+      <Filter>Source Files\libxml2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\libxml2\debugXML.c">
+      <Filter>Source Files\libxml2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\libxml2\DOCBparser.c">
+      <Filter>Source Files\libxml2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\libxml2\legacy.c">
+      <Filter>Source Files\libxml2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\libxml2\nanohttp.c">
+      <Filter>Source Files\libxml2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\libxml2\pattern.c">
+      <Filter>Source Files\libxml2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\libxml2\schematron.c">
+      <Filter>Source Files\libxml2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\libxml2\nanoftp.c">
+      <Filter>Source Files\libxml2</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\libclamav\hostid.h">

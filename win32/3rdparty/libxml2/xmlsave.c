@@ -1595,31 +1595,31 @@ xhtmlNodeDumpOutput(xmlSaveCtxtPtr ctxt, xmlNodePtr cur) {
     if (cur->properties != NULL)
         xhtmlAttrListDumpOutput(ctxt, cur->properties);
 
-	if ((cur->type == XML_ELEMENT_NODE) &&
-		(cur->parent != NULL) &&
-		(cur->parent->parent == (xmlNodePtr) cur->doc) &&
-		xmlStrEqual(cur->name, BAD_CAST"head") &&
-		xmlStrEqual(cur->parent->name, BAD_CAST"html")) {
+    if ((cur->type == XML_ELEMENT_NODE) &&
+        (cur->parent != NULL) &&
+        (cur->parent->parent == (xmlNodePtr) cur->doc) &&
+        xmlStrEqual(cur->name, BAD_CAST"head") &&
+        xmlStrEqual(cur->parent->name, BAD_CAST"html")) {
 
-		tmp = cur->children;
-		while (tmp != NULL) {
-			if (xmlStrEqual(tmp->name, BAD_CAST"meta")) {
-				xmlChar *httpequiv;
+        tmp = cur->children;
+        while (tmp != NULL) {
+            if (xmlStrEqual(tmp->name, BAD_CAST"meta")) {
+                xmlChar *httpequiv;
 
-				httpequiv = xmlGetProp(tmp, BAD_CAST"http-equiv");
-				if (httpequiv != NULL) {
-					if (xmlStrcasecmp(httpequiv, BAD_CAST"Content-Type") == 0) {
-						xmlFree(httpequiv);
-						break;
-					}
-					xmlFree(httpequiv);
-				}
-			}
-			tmp = tmp->next;
-		}
-		if (tmp == NULL)
-			addmeta = 1;
-	}
+                httpequiv = xmlGetProp(tmp, BAD_CAST"http-equiv");
+                if (httpequiv != NULL) {
+                    if (xmlStrcasecmp(httpequiv, BAD_CAST"Content-Type") == 0) {
+                        xmlFree(httpequiv);
+                        break;
+                    }
+                    xmlFree(httpequiv);
+                }
+            }
+            tmp = tmp->next;
+        }
+        if (tmp == NULL)
+            addmeta = 1;
+    }
 
     if ((cur->type == XML_ELEMENT_NODE) && (cur->children == NULL)) {
 	if (((cur->ns == NULL) || (cur->ns->prefix == NULL)) &&
@@ -2097,8 +2097,8 @@ xmlBufAttrSerializeTxtContent(xmlBufPtr buf, xmlDocPtr doc,
             xmlBufAdd(buf, BAD_CAST "&amp;", 5);
             cur++;
             base = cur;
-        } else if ((*cur >= 0x80) && ((doc == NULL) ||
-                                      (doc->encoding == NULL))) {
+        } else if ((*cur >= 0x80) && (cur[1] != 0) &&
+	           ((doc == NULL) || (doc->encoding == NULL))) {
             /*
              * We assume we have UTF-8 content.
              */
@@ -2109,8 +2109,6 @@ xmlBufAttrSerializeTxtContent(xmlBufPtr buf, xmlDocPtr doc,
                 xmlBufAdd(buf, base, cur - base);
             if (*cur < 0xC0) {
                 xmlSaveErr(XML_SAVE_NOT_UTF8, (xmlNodePtr) attr, NULL);
-                if (doc != NULL)
-                    doc->encoding = xmlStrdup(BAD_CAST "ISO-8859-1");
 		xmlSerializeHexCharRef(tmp, *cur);
                 xmlBufAdd(buf, (xmlChar *) tmp, -1);
                 cur++;
@@ -2121,14 +2119,14 @@ xmlBufAttrSerializeTxtContent(xmlBufPtr buf, xmlDocPtr doc,
                 val <<= 6;
                 val |= (cur[1]) & 0x3F;
                 l = 2;
-            } else if (*cur < 0xF0) {
+            } else if ((*cur < 0xF0) && (cur [2] != 0)) {
                 val = (cur[0]) & 0x0F;
                 val <<= 6;
                 val |= (cur[1]) & 0x3F;
                 val <<= 6;
                 val |= (cur[2]) & 0x3F;
                 l = 3;
-            } else if (*cur < 0xF8) {
+            } else if ((*cur < 0xF8) && (cur [2] != 0) && (cur[3] != 0)) {
                 val = (cur[0]) & 0x07;
                 val <<= 6;
                 val |= (cur[1]) & 0x3F;
@@ -2140,9 +2138,6 @@ xmlBufAttrSerializeTxtContent(xmlBufPtr buf, xmlDocPtr doc,
             }
             if ((l == 1) || (!IS_CHAR(val))) {
                 xmlSaveErr(XML_SAVE_CHAR_INVALID, (xmlNodePtr) attr, NULL);
-                if (doc != NULL)
-                    doc->encoding = xmlStrdup(BAD_CAST "ISO-8859-1");
-
 		xmlSerializeHexCharRef(tmp, *cur);
                 xmlBufAdd(buf, (xmlChar *) tmp, -1);
                 cur++;
@@ -2709,7 +2704,7 @@ xmlSaveFormatFileEnc( const char * filename, xmlDocPtr cur,
 		return(-1);
     }
 
-#ifdef HAVE_ZLIB_H
+#ifdef LIBXML_ZLIB_ENABLED
     if (cur->compression < 0) cur->compression = xmlGetCompressMode();
 #endif
     /*

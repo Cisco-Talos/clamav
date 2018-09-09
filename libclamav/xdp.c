@@ -44,11 +44,6 @@
 #include <errno.h>
 #include "xar.h"
 #include "fmap.h"
-#ifdef _WIN32
-#ifndef LIBXML_WRITER_ENABLED
-#define LIBXML_WRITER_ENABLED 1
-#endif
-#endif
 #if HAVE_LIBXML2
 #include <libxml/xmlreader.h>
 #endif

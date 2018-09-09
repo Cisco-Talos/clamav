@@ -1,0 +1,38 @@
+
+========================
+Expression: /doc/elem/namespace::node()/..
+Object is a Node Set :
+Set contains 1 nodes:
+1  ELEMENT elem
+    namespace ns2 href=nsuri2
+
+========================
+Expression: /doc/elem/namespace::*/self::node()[true()]
+Object is a Node Set :
+Set contains 3 nodes:
+1  namespace xml href=http://www.w3.org/XML/1998/namespace
+2  namespace ns1 href=nsuri1
+3  namespace ns2 href=nsuri2
+
+========================
+Expression: //*[namespace::ns1]
+Object is a Node Set :
+Set contains 4 nodes:
+1  ELEMENT doc
+    namespace ns1 href=nsuri1
+2  ELEMENT preceding
+3  ELEMENT elem
+    namespace ns2 href=nsuri2
+4  ELEMENT following
+
+========================
+Expression: /doc/elem/namespace::ns2/following::*
+Object is a Node Set :
+Set contains 1 nodes:
+1  ELEMENT following
+
+========================
+Expression: /doc/elem/namespace::ns2/preceding::*
+Object is a Node Set :
+Set contains 1 nodes:
+1  ELEMENT preceding

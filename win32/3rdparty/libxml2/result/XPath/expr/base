@@ -1,0 +1,68 @@
+
+========================
+Expression: 1
+Object is a number : 1
+
+========================
+Expression: 1+2
+Object is a number : 3
+
+========================
+Expression: 2*3
+Object is a number : 6
+
+========================
+Expression: 1+2*3+4
+Object is a number : 11
+
+========================
+Expression: (1+2)*(3+4)
+Object is a number : 21
+
+========================
+Expression: 1*1+1*1+1*1+1*1+1*1+1*1+1*1+1*1+1*1+1*1+1*1+1*1+1*1+1*1+1*1+1*1+1*1+1*1+1*1+1*1+1*1
+Object is a number : 21
+
+========================
+Expression: 0.000000000000000000000000000000000000000000000000001
+Object is a number : 1e-51
+
+========================
+Expression: -0.000000000000000000000000000000000000000000000000001
+Object is a number : -1e-51
+
+========================
+Expression: 1e2147483648
+Object is a number : Infinity
+
+========================
+Expression: 1e4294967296
+Object is a number : Infinity
+
+========================
+Expression: 1e9223372036854775808
+Object is a number : Infinity
+
+========================
+Expression: 1e18446744073709551616
+Object is a number : Infinity
+
+========================
+Expression: 1e-2147483649
+Object is a number : 0
+
+========================
+Expression: 1e-4294967296
+Object is a number : 0
+
+========================
+Expression: 1e-9223372036854775809
+Object is a number : 0
+
+========================
+Expression: 1e-18446744073709551616
+Object is a number : 0
+
+========================
+Expression: self::-name
+Object is empty (NULL)

@@ -1,0 +1,4 @@
+./test/errors/759573-2.xml:2: parser error : Extra content at the end of the document
+<!DOCTYPE test [
+               ^
+./test/errors/759573-2.xml : failed to parse

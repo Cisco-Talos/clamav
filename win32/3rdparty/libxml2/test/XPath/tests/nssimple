@@ -1,0 +1,5 @@
+/doc/elem/namespace::node()/..
+/doc/elem/namespace::*/self::node()[true()]
+//*[namespace::ns1]
+/doc/elem/namespace::ns2/following::*
+/doc/elem/namespace::ns2/preceding::*
