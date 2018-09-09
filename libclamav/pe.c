@@ -47,6 +47,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 #if HAVE_STRING_H
 #include <string.h>
@@ -3899,7 +3900,10 @@ int cli_scanpe(cli_ctx *ctx)
             else
                 cli_dbgmsg("MEW: Win9x compatibility was NOT set!\n");
 
-            if((offdiff = cli_readint32(tbuff+1) - EC32(optional_hdr32.ImageBase)) <= exe_sections[i + 1].rva || offdiff >= exe_sections[i + 1].rva + exe_sections[i + 1].raw - 4) {
+            offdiff = cli_readint32(tbuff+1) - EC32(optional_hdr32.ImageBase);
+            if ((offdiff <= exe_sections[i + 1].rva) || 
+                (offdiff >= exe_sections[i + 1].rva + exe_sections[i + 1].raw - 4))
+            {
                 cli_dbgmsg("MEW: ESI is not in proper section\n");
                 break;
             }
@@ -3913,6 +3917,18 @@ int cli_scanpe(cli_ctx *ctx)
 
             ssize = exe_sections[i + 1].vsz;
             dsize = exe_sections[i].vsz;
+
+            /* Guard against integer overflow */
+            if ((ssize + dsize < ssize) || (ssize + dsize < dsize)) {
+                cli_dbgmsg("MEW: section size (%08x) + diff size (%08x) exceeds max size of unsigned int (%08x)\n", ssize, dsize, UINT32_MAX);
+                break;
+            }
+
+            /* Verify that offdiff does not exceed the ssize + sdiff */
+            if (offdiff >= ssize + dsize) {
+                cli_dbgmsg("MEW: offdiff (%08x) exceeds section size + diff size (%08x)\n", offdiff, ssize + dsize);
+                break;
+            }
 
             cli_dbgmsg("MEW: ssize %08x dsize %08x offdiff: %08x\n", ssize, dsize, offdiff);
 
