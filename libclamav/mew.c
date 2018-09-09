@@ -784,18 +784,59 @@ uint32_t lzma_upack_esi_54(struct lzmastate *p, uint32_t old_eax, uint32_t *old_
 	return 0;
 }
 
-
+/**
+ * @brief 	Unpack MEW 11 packed PE file
+ * 
+ * @param src 		buffer to unpack
+ * @param off 		offset of diff
+ * @param ssize 	pe section size
+ * @param dsize 	diff size
+ * @param base 		OPTIONAL_HEADER32.ImageBase
+ * @param vadd 		RVA of pe section
+ * @param uselzma 	Bool - use LZMA
+ * @param filedesc 	File descriptor
+ * @return int 		Returns -1 on failure, 1 on success.
+ */
 int unmew11(char *src, uint32_t off, uint32_t ssize, uint32_t dsize, uint32_t base, uint32_t vadd, int uselzma, int filedesc)
 {
 	uint32_t entry_point, newedi, loc_ds=dsize, loc_ss=ssize;
-	char *source = src + dsize + off;
-	const char *lesi = source + 12;
+	char *source = NULL;
+	const char *lesi = NULL;
 	char *ledi;
 	const char *f1;
 	char *f2;
 	int i;
 	struct cli_exe_section *section = NULL;
-	uint32_t vma = base + vadd, size_sum = ssize + dsize;
+	uint32_t vma = base + vadd;
+	uint32_t size_sum = ssize + dsize;
+
+	/* Guard against integer overflows */
+	if (base + vadd < base) {
+	    cli_dbgmsg("MEW: base (%08x) + PE section RVA (%08x) exceeds max size of unsigned int (%08x)\n", 
+			base, vadd, UINT32_MAX);
+	    return -1;
+	}
+	if (ssize + dsize < ssize) {
+	    cli_dbgmsg("MEW: section size (%08x) + diff size (%08x) exceeds max size of unsigned int (%08x)\n", 
+			ssize, dsize, UINT32_MAX);
+	    return -1;
+	}
+	if (((size_t)(src + off) < (size_t)(src)) || 
+		((size_t)(src + off) < (size_t)(off)))
+	{
+	    cli_dbgmsg("MEW: Buffer pointer (%08zx) + offset (%08zx) exceeds max size of pointer (%08lx)\n", 
+			(size_t)src, (size_t)off, SIZE_MAX);
+	    return -1;
+	}
+
+	/* Ensure that off + required data exists within buffer */
+	if (!CLI_ISCONTAINED(src, size_sum, src + off, 12)) {
+		cli_dbgmsg("MEW: Data reference exceeds size of provided buffer.\n");
+		return -1;
+	}
+
+	source = src + dsize + off;
+	lesi = source + 12;
 
 	entry_point  = cli_readint32(source + 4);
 	newedi = cli_readint32(source + 8);
