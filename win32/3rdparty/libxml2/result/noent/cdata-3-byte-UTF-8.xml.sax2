@@ -1,0 +1,23 @@
+SAX.setDocumentLocator()
+SAX.startDocument()
+SAX.comment( This tests that three-byte UTF-8 characters are parsed properly when split across a buffer boundary of length XML_PARSER_BIG_BUFFER_SIZE (300 bytes). )
+SAX.startElementNs(doc, NULL, NULL, 0, 0, 0)
+SAX.characters(
+, 1)
+SAX.startElementNs(p, NULL, NULL, 0, 0, 0)
+SAX.pcdata(牛牛牛牛牛牛�, 1200)
+SAX.endElementNs(p, NULL, NULL)
+SAX.characters(
+, 1)
+SAX.startElementNs(p, NULL, NULL, 0, 0, 0)
+SAX.pcdata( 牛牛牛牛牛牛�, 1201)
+SAX.endElementNs(p, NULL, NULL)
+SAX.characters(
+, 1)
+SAX.startElementNs(p, NULL, NULL, 0, 0, 0)
+SAX.pcdata(  牛牛牛牛牛牛, 1202)
+SAX.endElementNs(p, NULL, NULL)
+SAX.characters(
+, 1)
+SAX.endElementNs(doc, NULL, NULL)
+SAX.endDocument()

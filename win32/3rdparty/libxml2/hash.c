@@ -168,7 +168,7 @@ xmlHashComputeQKey(xmlHashTablePtr table,
  *
  * Create a new xmlHashTablePtr.
  *
- * Returns the newly created object, or NULL if an error occured.
+ * Returns the newly created object, or NULL if an error occurred.
  */
 xmlHashTablePtr
 xmlHashCreate(int size) {
@@ -202,7 +202,7 @@ xmlHashCreate(int size) {
  *
  * Create a new xmlHashTablePtr which will use @dict as the internal dictionary
  *
- * Returns the newly created object, or NULL if an error occured.
+ * Returns the newly created object, or NULL if an error occurred.
  */
 xmlHashTablePtr
 xmlHashCreateDict(int size, xmlDictPtr dict) {
@@ -358,6 +358,18 @@ xmlHashFree(xmlHashTablePtr table, xmlHashDeallocator f) {
     if (table->dict)
         xmlDictFree(table->dict);
     xmlFree(table);
+}
+
+/**
+ * xmlHashDefaultDeallocator:
+ * @entry: the hash table entry
+ * @name: the entry's name
+ *
+ * Free a hash table entry with xmlFree.
+ */
+void
+xmlHashDefaultDeallocator(void *entry, const xmlChar *name ATTRIBUTE_UNUSED) {
+    xmlFree(entry);
 }
 
 /**
@@ -912,8 +924,11 @@ void
 xmlHashScan3(xmlHashTablePtr table, const xmlChar *name,
 	     const xmlChar *name2, const xmlChar *name3,
 	     xmlHashScanner f, void *data) {
-    xmlHashScanFull3 (table, name, name2, name3,
-		      (xmlHashScannerFull) f, data);
+    stubData stubdata;
+    stubdata.data = data;
+    stubdata.hashscanner = f;
+    xmlHashScanFull3(table, name, name2, name3, stubHashScannerFull,
+                     &stubdata);
 }
 
 /**
@@ -984,6 +999,9 @@ xmlHashCopy(xmlHashTablePtr table, xmlHashCopier f) {
 	return(NULL);
 
     ret = xmlHashCreate(table->size);
+    if (ret == NULL)
+        return(NULL);
+
     if (table->table) {
 	for(i = 0; i < table->size; i++) {
 	    if (table->table[i].valid == 0)

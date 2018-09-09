@@ -78,11 +78,6 @@
 #include "msxml_parser.h"
 
 #if HAVE_LIBXML2
-#ifdef _WIN32
-#ifndef LIBXML_WRITER_ENABLED
-#define LIBXML_WRITER_ENABLED 1
-#endif
-#endif
 #include <libxml/xmlversion.h>
 #include <libxml/HTMLtree.h>
 #include <libxml/HTMLparser.h>

@@ -27,6 +27,7 @@
 #ifdef HAVE_PTHREAD_H
 #include <pthread.h>
 #elif defined HAVE_WIN32_THREADS
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #ifndef HAVE_COMPILER_TLS
 #include <process.h>
@@ -46,50 +47,37 @@
 
 #ifdef HAVE_PTHREAD_H
 
+#if defined(__GNUC__) && (__GNUC__ * 100 + __GNUC_MINOR__ >= 303) && \
+    defined(__GLIBC__) && defined(__linux__)
+
 static int libxml_is_threaded = -1;
-#ifdef __GNUC__
-#ifdef linux
-#if (__GNUC__ == 3 && __GNUC_MINOR__ >= 3) || (__GNUC__ > 3)
-extern int pthread_once (pthread_once_t *__once_control,
-                         void (*__init_routine) (void))
-	   __attribute((weak));
-extern void *pthread_getspecific (pthread_key_t __key)
-	   __attribute((weak));
-extern int pthread_setspecific (pthread_key_t __key,
-                                __const void *__pointer)
-	   __attribute((weak));
-extern int pthread_key_create (pthread_key_t *__key,
-                               void (*__destr_function) (void *))
-	   __attribute((weak));
-extern int pthread_key_delete (pthread_key_t __key)
-	   __attribute((weak));
-extern int pthread_mutex_init ()
-	   __attribute((weak));
-extern int pthread_mutex_destroy ()
-	   __attribute((weak));
-extern int pthread_mutex_lock ()
-	   __attribute((weak));
-extern int pthread_mutex_unlock ()
-	   __attribute((weak));
-extern int pthread_cond_init ()
-	   __attribute((weak));
-extern int pthread_cond_destroy ()
-	   __attribute((weak));
-extern int pthread_cond_wait ()
-	   __attribute((weak));
-extern int pthread_equal ()
-	   __attribute((weak));
-extern pthread_t pthread_self ()
-	   __attribute((weak));
-extern int pthread_key_create ()
-	   __attribute((weak));
-extern int pthread_key_delete ()
-	   __attribute((weak));
-extern int pthread_cond_signal ()
-	   __attribute((weak));
-#endif
-#endif /* linux */
-#endif /* __GNUC__ */
+
+#define XML_PTHREAD_WEAK
+
+#pragma weak pthread_once
+#pragma weak pthread_getspecific
+#pragma weak pthread_setspecific
+#pragma weak pthread_key_create
+#pragma weak pthread_key_delete
+#pragma weak pthread_mutex_init
+#pragma weak pthread_mutex_destroy
+#pragma weak pthread_mutex_lock
+#pragma weak pthread_mutex_unlock
+#pragma weak pthread_cond_init
+#pragma weak pthread_cond_destroy
+#pragma weak pthread_cond_wait
+#pragma weak pthread_equal
+#pragma weak pthread_self
+#pragma weak pthread_key_create
+#pragma weak pthread_key_delete
+#pragma weak pthread_cond_signal
+
+#else /* __GNUC__, __GLIBC__, __linux__ */
+
+static int libxml_is_threaded = 1;
+
+#endif /* __GNUC__, __GLIBC__, __linux__ */
+
 #endif /* HAVE_PTHREAD_H */
 
 /*
@@ -158,7 +146,7 @@ static DWORD globalkey = TLS_OUT_OF_INDEXES;
 static DWORD mainthread;
 static struct {
     DWORD done;
-    DWORD control;
+    LONG control;
 } run_once = { 0, 0};
 static volatile LPCRITICAL_SECTION global_init_lock = NULL;
 
@@ -378,7 +366,7 @@ xmlRMutexLock(xmlRMutexPtr tok)
     pthread_mutex_unlock(&tok->lock);
 #elif defined HAVE_WIN32_THREADS
     EnterCriticalSection(&tok->cs);
-    ++tok->count;
+    tok->count++;
 #elif defined HAVE_BEOS_THREADS
     if (tok->lock->tid == find_thread(NULL)) {
         tok->count++;
@@ -414,8 +402,10 @@ xmlRMutexUnlock(xmlRMutexPtr tok ATTRIBUTE_UNUSED)
     }
     pthread_mutex_unlock(&tok->lock);
 #elif defined HAVE_WIN32_THREADS
-    if (!--tok->count)
+    if (tok->count > 0) {
+	tok->count--;
         LeaveCriticalSection(&tok->cs);
+    }
 #elif defined HAVE_BEOS_THREADS
     if (tok->lock->tid == find_thread(NULL)) {
         tok->count--;
@@ -439,8 +429,11 @@ __xmlGlobalInitMutexLock(void)
     /* Make sure the global init lock is initialized and then lock it. */
 #ifdef HAVE_PTHREAD_H
     /* The mutex is statically initialized, so we just lock it. */
-    if (pthread_mutex_lock != NULL)
-        pthread_mutex_lock(&global_init_lock);
+#ifdef XML_PTHREAD_WEAK
+    if (pthread_mutex_lock == NULL)
+        return;
+#endif /* XML_PTHREAD_WEAK */
+    pthread_mutex_lock(&global_init_lock);
 #elif defined HAVE_WIN32_THREADS
     LPCRITICAL_SECTION cs;
 
@@ -456,7 +449,8 @@ __xmlGlobalInitMutexLock(void)
 
         /* Swap it into the global_init_lock */
 #ifdef InterlockedCompareExchangePointer
-        InterlockedCompareExchangePointer(&global_init_lock, cs, NULL);
+        InterlockedCompareExchangePointer((void **) &global_init_lock,
+                                          cs, NULL);
 #else /* Use older void* version */
         InterlockedCompareExchange((void **) &global_init_lock,
                                    (void *) cs, NULL);
@@ -508,8 +502,11 @@ void
 __xmlGlobalInitMutexUnlock(void)
 {
 #ifdef HAVE_PTHREAD_H
-    if (pthread_mutex_unlock != NULL)
-        pthread_mutex_unlock(&global_init_lock);
+#ifdef XML_PTHREAD_WEAK
+    if (pthread_mutex_unlock == NULL)
+        return;
+#endif /* XML_PTHREAD_WEAK */
+    pthread_mutex_unlock(&global_init_lock);
 #elif defined HAVE_WIN32_THREADS
     if (global_init_lock != NULL) {
 	LeaveCriticalSection(global_init_lock);
@@ -861,6 +858,7 @@ void
 xmlInitThreads(void)
 {
 #ifdef HAVE_PTHREAD_H
+#ifdef XML_PTHREAD_WEAK
     if (libxml_is_threaded == -1) {
         if ((pthread_once != NULL) &&
             (pthread_getspecific != NULL) &&
@@ -886,6 +884,7 @@ xmlInitThreads(void)
             libxml_is_threaded = 0;
         }
     }
+#endif /* XML_PTHREAD_WEAK */
 #elif defined(HAVE_WIN32_THREADS) && !defined(HAVE_COMPILER_TLS) && (!defined(LIBXML_STATIC) || defined(LIBXML_STATIC_FOR_DLL))
     InitializeCriticalSection(&cleanup_helpers_cs);
 #endif
@@ -912,7 +911,7 @@ xmlCleanupThreads(void)
     xmlGenericError(xmlGenericErrorContext, "xmlCleanupThreads()\n");
 #endif
 #ifdef HAVE_PTHREAD_H
-    if ((libxml_is_threaded)  && (pthread_key_delete != NULL))
+    if (libxml_is_threaded != 0)
         pthread_key_delete(globalkey);
     once_control = once_control_init;
 #elif defined(HAVE_WIN32_THREADS) && !defined(HAVE_COMPILER_TLS) && (!defined(LIBXML_STATIC) || defined(LIBXML_STATIC_FOR_DLL))
@@ -997,11 +996,23 @@ xmlOnceInit(void)
 #ifdef HAVE_PTHREAD_H
 #elif defined(HAVE_WIN32_THREADS) && !defined(HAVE_COMPILER_TLS) && (!defined(LIBXML_STATIC) || defined(LIBXML_STATIC_FOR_DLL))
 #if defined(LIBXML_STATIC_FOR_DLL)
-BOOL XMLCALL
-xmlDllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
+int XMLCALL
+xmlDllMain(ATTRIBUTE_UNUSED void *hinstDLL, unsigned long fdwReason,
+           ATTRIBUTE_UNUSED void *lpvReserved)
 #else
+/* declare to avoid "no previous prototype for 'DllMain'" warning */
+/* Note that we do NOT want to include this function declaration in
+   a public header because it's meant to be called by Windows itself,
+   not a program that uses this library.  This also has to be exported. */
+
+XMLPUBFUN BOOL WINAPI
+DllMain (HINSTANCE hinstDLL,
+         DWORD     fdwReason,
+         LPVOID    lpvReserved);
+
 BOOL WINAPI
-DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
+DllMain(ATTRIBUTE_UNUSED HINSTANCE hinstDLL, DWORD fdwReason,
+        ATTRIBUTE_UNUSED LPVOID lpvReserved)
 #endif
 {
     switch (fdwReason) {

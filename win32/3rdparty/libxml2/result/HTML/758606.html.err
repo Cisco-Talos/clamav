@@ -1,0 +1,16 @@
+./test/HTML/758606.html:1: HTML parser error : Comment not terminated 
+<!--
+<!--<!doctype
+    ^
+./test/HTML/758606.html:1: HTML parser error : Invalid char in CDATA 0xC
+<!--<!doctype
+    ^
+./test/HTML/758606.html:1: HTML parser error : Misplaced DOCTYPE declaration
+<!--<!doctype
+     ^
+./test/HTML/758606.html:2: HTML parser error : htmlParseDocTypeDecl : no DOCTYPE name !
+
+^
+./test/HTML/758606.html:2: HTML parser error : DOCTYPE improperly terminated
+
+^

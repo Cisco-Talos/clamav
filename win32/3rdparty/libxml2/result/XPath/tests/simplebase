@@ -1,0 +1,132 @@
+
+========================
+Expression: /child::*
+Object is a Node Set :
+Set contains 1 nodes:
+1  ELEMENT EXAMPLE
+    ATTRIBUTE prop1
+      TEXT
+        content=gnome is great
+    ATTRIBUTE prop2
+      TEXT
+        content=& linux too
+
+========================
+Expression: /child::EXAMPLE
+Object is a Node Set :
+Set contains 1 nodes:
+1  ELEMENT EXAMPLE
+    ATTRIBUTE prop1
+      TEXT
+        content=gnome is great
+    ATTRIBUTE prop2
+      TEXT
+        content=& linux too
+
+========================
+Expression: /child::EXAMPLE/child::head
+Object is a Node Set :
+Set contains 1 nodes:
+1  ELEMENT head
+
+========================
+Expression: /child::EXAMPLE/child::*
+Object is a Node Set :
+Set contains 2 nodes:
+1  ELEMENT head
+2  ELEMENT chapter
+
+========================
+Expression: /child::EXAMPLE/child::head/child::title
+Object is a Node Set :
+Set contains 1 nodes:
+1  ELEMENT title
+
+========================
+Expression: /child::EXAMPLE/child::head/child::title/child::text()
+Object is a Node Set :
+Set contains 1 nodes:
+1  TEXT
+    content=Welcome to Gnome
+
+========================
+Expression: /child::EXAMPLE/child::head/node()
+Object is a Node Set :
+Set contains 3 nodes:
+1  TEXT
+    content=    
+2  ELEMENT title
+3  TEXT
+    content=   
+
+========================
+Expression: /child::EXAMPLE/attribute::prop1/self::node()
+Object is a Node Set :
+Set contains 1 nodes:
+1  ATTRIBUTE prop1
+    TEXT
+      content=gnome is great
+
+========================
+Expression: /child::EXAMPLE/attribute::prop1/self::*
+Object is a Node Set :
+Set contains 0 nodes:
+
+========================
+Expression: /child::EXAMPLE/attribute::prop1/descendant-or-self::node()
+Object is a Node Set :
+Set contains 1 nodes:
+1  ATTRIBUTE prop1
+    TEXT
+      content=gnome is great
+
+========================
+Expression: /child::EXAMPLE/attribute::prop1/descendant-or-self::*
+Object is a Node Set :
+Set contains 0 nodes:
+
+========================
+Expression: /child::EXAMPLE/attribute::prop1/ancestor-or-self::node()
+Object is a Node Set :
+Set contains 3 nodes:
+1   /
+2  ELEMENT EXAMPLE
+    ATTRIBUTE prop1
+      TEXT
+        content=gnome is great
+    ATTRIBUTE prop2
+      TEXT
+        content=& linux too
+3  ATTRIBUTE prop1
+    TEXT
+      content=gnome is great
+
+========================
+Expression: /child::EXAMPLE/attribute::prop1/ancestor-or-self::*
+Object is a Node Set :
+Set contains 1 nodes:
+1  ELEMENT EXAMPLE
+    ATTRIBUTE prop1
+      TEXT
+        content=gnome is great
+    ATTRIBUTE prop2
+      TEXT
+        content=& linux too
+
+========================
+Expression: /descendant::title
+Object is a Node Set :
+Set contains 2 nodes:
+1  ELEMENT title
+2  ELEMENT title
+
+========================
+Expression: /descendant::p/ancestor::chapter
+Object is a Node Set :
+Set contains 1 nodes:
+1  ELEMENT chapter
+
+========================
+Expression: /child::EXAMPLE/attribute::prop2/preceding::text()
+Object is a Node Set :
+Set contains 0 nodes:

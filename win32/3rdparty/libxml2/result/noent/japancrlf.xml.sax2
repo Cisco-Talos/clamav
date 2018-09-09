@@ -1,0 +1,11 @@
+SAX.setDocumentLocator()
+SAX.startDocument()
+SAX.startElementNs(入力メッセージ, NULL, 'http://schemas.cordys.com/webapps/1.0/bpm/c8c8b82a-0ac0-3d19-01e2-bda74af9b826', 1, xmlns='http://schemas.cordys.com/webapps/1.0/bpm/c8c8b82a-0ac0-3d19-01e2-bda74af9b826', 0, 0)
+SAX.characters(
+	, 2)
+SAX.startElementNs(Ele, c8c, 'http://schemas.cordys.com/webapps/1.0/bpm/c8c8b82a-0ac0-3d19-01e2-bda74af9b826', 1, xmlns:c8c='http://schemas.cordys.com/webapps/1.0/bpm/c8c8b82a-0ac0-3d19-01e2-bda74af9b826', 0, 0)
+SAX.endElementNs(Ele, c8c, 'http://schemas.cordys.com/webapps/1.0/bpm/c8c8b82a-0ac0-3d19-01e2-bda74af9b826')
+SAX.characters(
+, 1)
+SAX.endElementNs(入力メッセージ, NULL, 'http://schemas.cordys.com/webapps/1.0/bpm/c8c8b82a-0ac0-3d19-01e2-bda74af9b826')
+SAX.endDocument()

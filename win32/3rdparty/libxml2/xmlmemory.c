@@ -109,8 +109,9 @@ typedef struct memnod {
 #define RESERVE_SIZE (((HDR_SIZE + (ALIGN_SIZE-1)) \
 		      / ALIGN_SIZE ) * ALIGN_SIZE)
 
+#define MAX_SIZE_T ((size_t)-1)
 
-#define CLIENT_2_HDR(a) ((MEMHDR *) (((char *) (a)) - RESERVE_SIZE))
+#define CLIENT_2_HDR(a) ((void *) (((char *) (a)) - RESERVE_SIZE))
 #define HDR_2_CLIENT(a)    ((void *) (((char *) (a)) + RESERVE_SIZE))
 
 
@@ -171,6 +172,13 @@ xmlMallocLoc(size_t size, const char * file, int line)
 
     TEST_POINT
 
+    if (size > (MAX_SIZE_T - RESERVE_SIZE)) {
+	xmlGenericError(xmlGenericErrorContext,
+		"xmlMallocLoc : Unsigned overflow\n");
+	xmlMemoryDump();
+	return(NULL);
+    }
+
     p = (MEMHDR *) malloc(RESERVE_SIZE+size);
 
     if (!p) {
@@ -217,7 +225,7 @@ xmlMallocLoc(size_t size, const char * file, int line)
 
 /**
  * xmlMallocAtomicLoc:
- * @size:  an int specifying the size in byte to allocate.
+ * @size:  an unsigned int specifying the size in byte to allocate.
  * @file:  the file name or NULL
  * @line:  the line number
  *
@@ -240,11 +248,18 @@ xmlMallocAtomicLoc(size_t size, const char * file, int line)
 
     TEST_POINT
 
+    if (size > (MAX_SIZE_T - RESERVE_SIZE)) {
+	xmlGenericError(xmlGenericErrorContext,
+		"xmlMallocAtomicLoc : Unsigned overflow\n");
+	xmlMemoryDump();
+	return(NULL);
+    }
+
     p = (MEMHDR *) malloc(RESERVE_SIZE+size);
 
     if (!p) {
 	xmlGenericError(xmlGenericErrorContext,
-		"xmlMallocLoc : Out of free space\n");
+		"xmlMallocAtomicLoc : Out of free space\n");
 	xmlMemoryDump();
 	return(NULL);
     }
@@ -313,7 +328,7 @@ xmlMemMalloc(size_t size)
 void *
 xmlReallocLoc(void *ptr,size_t size, const char * file, int line)
 {
-    MEMHDR *p;
+    MEMHDR *p, *tmp;
     unsigned long number;
 #ifdef DEBUG_MEMORY
     size_t oldsize;
@@ -344,10 +359,19 @@ xmlReallocLoc(void *ptr,size_t size, const char * file, int line)
 #endif
     xmlMutexUnlock(xmlMemMutex);
 
-    p = (MEMHDR *) realloc(p,RESERVE_SIZE+size);
-    if (!p) {
+    if (size > (MAX_SIZE_T - RESERVE_SIZE)) {
+	xmlGenericError(xmlGenericErrorContext,
+		"xmlReallocLoc : Unsigned overflow\n");
+	xmlMemoryDump();
+	return(NULL);
+    }
+
+    tmp = (MEMHDR *) realloc(p,RESERVE_SIZE+size);
+    if (!tmp) {
+	 free(p);
 	 goto error;
     }
+    p = tmp;
     if (xmlMemTraceBlockAt == ptr) {
 	xmlGenericError(xmlGenericErrorContext,
 			"%p : Realloced(%lu -> %lu) Ok\n",
@@ -463,7 +487,7 @@ xmlMemFree(void *ptr)
 
 error:
     xmlGenericError(xmlGenericErrorContext,
-	    "xmlMemFree(%lX) error\n", (unsigned long) ptr);
+	    "xmlMemFree(%p) error\n", ptr);
     xmlMallocBreakpoint();
     return;
 }
@@ -489,6 +513,13 @@ xmlMemStrdupLoc(const char *str, const char *file, int line)
     if (!xmlMemInitialized) xmlInitMemory();
     TEST_POINT
 
+    if (size > (MAX_SIZE_T - RESERVE_SIZE)) {
+	xmlGenericError(xmlGenericErrorContext,
+		"xmlMemStrdupLoc : Unsigned overflow\n");
+	xmlMemoryDump();
+	return(NULL);
+    }
+
     p = (MEMHDR *) malloc(RESERVE_SIZE+size);
     if (!p) {
       goto error;
@@ -512,10 +543,7 @@ xmlMemStrdupLoc(const char *str, const char *file, int line)
 
     if (xmlMemStopAtBlock == p->mh_number) xmlMallocBreakpoint();
 
-    if (s != NULL)
-      strcpy(s,str);
-    else
-      goto error;
+    strcpy(s,str);
 
     TEST_POINT
 
@@ -555,7 +583,12 @@ xmlMemoryStrdup(const char *str) {
 
 int
 xmlMemUsed(void) {
-     return(debugMemSize);
+    int res;
+
+    xmlMutexLock(xmlMemMutex);
+    res = debugMemSize;
+    xmlMutexUnlock(xmlMemMutex);
+    return(res);
 }
 
 /**
@@ -568,7 +601,12 @@ xmlMemUsed(void) {
 
 int
 xmlMemBlocks(void) {
-     return(debugMemBlocks);
+    int res;
+
+    xmlMutexLock(xmlMemMutex);
+    res = debugMemBlocks;
+    xmlMutexUnlock(xmlMemMutex);
+    return(res);
 }
 
 #ifdef MEM_LIST
@@ -583,13 +621,15 @@ xmlMemBlocks(void) {
 static void
 xmlMemContentShow(FILE *fp, MEMHDR *p)
 {
-    int i,j,k,len = p->mh_size;
-    const char *buf = (const char *) HDR_2_CLIENT(p);
+    int i,j,k,len;
+    const char *buf;
 
     if (p == NULL) {
 	fprintf(fp, " NULL");
 	return;
     }
+    len = p->mh_size;
+    buf = (const char *) HDR_2_CLIENT(p);
 
     for (i = 0;i < len;i++) {
         if (buf[i] == 0) break;

@@ -32,11 +32,6 @@
 #include "openioc.h"
 
 #ifdef HAVE_LIBXML2
-#ifdef _WIN32
-#ifndef LIBXML_WRITER_ENABLED
-#define LIBXML_WRITER_ENABLED 1
-#endif
-#endif
 #include <libxml/xmlreader.h>
 
 struct openioc_hash {

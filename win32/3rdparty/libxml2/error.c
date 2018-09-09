@@ -18,7 +18,7 @@
 
 void XMLCDECL xmlGenericErrorDefaultFunc	(void *ctx ATTRIBUTE_UNUSED,
 				 const char *msg,
-				 ...);
+				 ...) LIBXML_ATTR_FORMAT(2,3);
 
 #define XML_GET_VAR_STR(msg, str) {				\
     int       size, prev_size = -1;				\
@@ -177,7 +177,9 @@ xmlParserPrintFileContextInternal(xmlParserInputPtr input ,
     xmlChar  content[81]; /* space for 80 chars + line terminator */
     xmlChar *ctnt;
 
-    if (input == NULL) return;
+    if ((input == NULL) || (input->cur == NULL))
+        return;
+
     cur = input->cur;
     base = input->base;
     /* skip backwards over any end-of-lines */
@@ -851,7 +853,7 @@ xmlParserValidityWarning(void *ctx, const char *msg, ...)
  * Get the last global error registered. This is per thread if compiled
  * with thread support.
  *
- * Returns NULL if no error occured or a pointer to the error
+ * Returns NULL if no error occurred or a pointer to the error
  */
 xmlErrorPtr
 xmlGetLastError(void)
@@ -908,7 +910,7 @@ xmlResetLastError(void)
  *
  * Get the last parsing error registered.
  *
- * Returns NULL if no error occured or a pointer to the error
+ * Returns NULL if no error occurred or a pointer to the error
  */
 xmlErrorPtr
 xmlCtxtGetLastError(void *ctx)

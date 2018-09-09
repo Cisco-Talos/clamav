@@ -1,0 +1,16 @@
+/child::*
+/child::EXAMPLE
+/child::EXAMPLE/child::head
+/child::EXAMPLE/child::*
+/child::EXAMPLE/child::head/child::title
+/child::EXAMPLE/child::head/child::title/child::text()
+/child::EXAMPLE/child::head/node()
+/child::EXAMPLE/attribute::prop1/self::node()
+/child::EXAMPLE/attribute::prop1/self::*
+/child::EXAMPLE/attribute::prop1/descendant-or-self::node()
+/child::EXAMPLE/attribute::prop1/descendant-or-self::*
+/child::EXAMPLE/attribute::prop1/ancestor-or-self::node()
+/child::EXAMPLE/attribute::prop1/ancestor-or-self::*
+/descendant::title
+/descendant::p/ancestor::chapter
+/child::EXAMPLE/attribute::prop2/preceding::text()

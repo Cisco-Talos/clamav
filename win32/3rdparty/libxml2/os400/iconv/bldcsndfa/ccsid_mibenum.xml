@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE ccsid_mibenum SYSTEM "ccsid_mibenum.dtd">
+<!--
+---     CCSID/MIBEnum associations.
+---
+---     See Copyright for the status of this software.
+---
+---     Author: Patrick Monnerat <pm@datasphere.ch>, DATASPHERE S.A.
+-->
+<ccsid_mibenum>
+        <assoc ccsid="0"><!-- Curent job's CCSID. --></assoc>
+        <assoc ccsid="37" mibenum="2028"><!-- EBCDIC-US -->
+                <alias>EBCDIC</alias>
+        </assoc>
+        <assoc ccsid="256"><!-- Netherlands ? --></assoc>
+        <assoc ccsid="273" mibenum="2030"><!-- EBCDIC-DE --></assoc>
+        <assoc ccsid="277" mibenum="2033"><!-- EBCDIC-DK/NO --></assoc>
+        <assoc ccsid="278" mibenum="2034"><!-- EBCDIC-FI/SE --></assoc>
+        <assoc ccsid="280" mibenum="2035"><!-- EBCDIC-IT --></assoc>
+        <assoc ccsid="284" mibenum="2037"><!-- EBCDIC-ES --></assoc>
+        <assoc ccsid="285" mibenum="2038"><!-- EBCDIC-GB --></assoc>
+        <assoc ccsid="290" mibenum="2039"><!-- EBCDIC-JP-Kana --></assoc>
+        <assoc ccsid="297" mibenum="2040"><!-- EBCDIC-FR --></assoc>
+        <assoc ccsid="300"><!-- Japan English ? --></assoc>
+        <assoc ccsid="301"><!-- PC DATA Japanese --></assoc>
+        <assoc ccsid="367" mibenum="3"><!-- ANSI X3.4 ASCII -->
+                <alias>ASCII</alias>
+        </assoc>
+        <assoc ccsid="420" mibenum="2041"><!-- EBCDIC-Arab --></assoc>
+        <assoc ccsid="423" mibenum="2042"><!-- EBCDIC-GR --></assoc>
+        <assoc ccsid="424" mibenum="2043"><!-- EBCDIC-Hebrew --></assoc>
+        <assoc ccsid="437" mibenum="2011"><!-- 8-bit PC ASCII --></assoc>
+        <assoc ccsid="500" mibenum="2044"><!-- EBCDIC-BE/CH international latin 1 --></assoc>
+        <assoc ccsid="720"><!-- MSDOS Arabic ? --></assoc>
+        <assoc ccsid="737"><!-- MSDOS Greek PC DATA ? --></assoc>
+        <assoc ccsid="775" mibenum="2087"><!-- MSDOS Baltic PC DATA --></assoc>
+        <assoc ccsid="813" mibenum="10"><!-- ISO-8859-7 --></assoc>
+        <assoc ccsid="819" mibenum="4"><!-- ISO-8859-1 --></assoc>
+        <assoc ccsid="833"><!-- Korea (extended range) --></assoc>
+        <assoc ccsid="835"><!-- Korea host double byte --></assoc>
+        <assoc ccsid="836"><!-- Simplified chinese (extended range) --></assoc>
+        <assoc ccsid="837"><!-- Simplified chinese --></assoc>
+        <assoc ccsid="838" mibenum="2016"><!-- IBM-Thai --></assoc>
+        <assoc ccsid="850" mibenum="2009"><!-- PC DATA international latin 1 --></assoc>
+        <assoc ccsid="851" mibenum="2045"><!-- PC DATA greek --></assoc>
+        <assoc ccsid="852" mibenum="2010"><!-- PC DATA latin-2 multilingual --></assoc>
+        <assoc ccsid="855" mibenum="2046"><!-- PC DATA ROECE cyrillic --></assoc>
+        <assoc ccsid="857" mibenum="2047"><!-- PC DATA Turkey latin-5 --></assoc>
+        <assoc ccsid="858" mibenum="2089"><!-- PC-Multilingual-850+Euro --></assoc>
+        <assoc ccsid="860" mibenum="2048"><!-- PC DATA Portugal --></assoc>
+        <assoc ccsid="861" mibenum="2049"><!-- PC DATA Iceland --></assoc>
+        <assoc ccsid="862" mibenum="2013"><!-- PC DATA Hebrew --></assoc>
+        <assoc ccsid="863" mibenum="2050"><!-- PC DATA Canada --></assoc>
+        <assoc ccsid="864" mibenum="2051"><!-- PC DATA Arabic --></assoc>
+        <assoc ccsid="865" mibenum="2052"><!-- PC DATA DK/NO --></assoc>
+        <assoc ccsid="866" mibenum="2086"><!-- PC DATA cyrillic 2 --></assoc>
+        <assoc ccsid="868" mibenum="2053"><!-- PC DATA Urdu --></assoc>
+        <assoc ccsid="869" mibenum="2054"><!-- PC DATA greek (2?) --></assoc>
+        <assoc ccsid="870" mibenum="2055"><!-- EBCDIC-Latin2-Multilingual --></assoc>
+        <assoc ccsid="871" mibenum="2056"><!-- EBCDIC-IS --></assoc>
+        <assoc ccsid="874" mibenum="2259"><!-- TIS-620 -->
+                <alias>EUC-TH></alias>
+                <alias>eucTH</alias>
+                <alias>csEUCTH</alias>
+        </assoc>
+        <assoc ccsid="875"><!-- Greece --></assoc>
+        <assoc ccsid="878" mibenum="2084"><!-- KOI8-R --></assoc>
+        <assoc ccsid="880" mibenum="2057"><!-- EBCDIC-Cyrillic --></assoc>
+        <assoc ccsid="891" mibenum="2058"><!-- PC DATA corean (non-extended) --></assoc>
+        <assoc ccsid="896"><!-- Japan 7-bit Katakana --></assoc>
+        <assoc ccsid="897" mibenum="15"><!-- JIS_X0201 --></assoc>
+        <assoc ccsid="903" mibenum="2059"><!-- PC DATA simplified chinese (non-extended) --></assoc>
+        <assoc ccsid="904" mibenum="2060"><!-- PC DATA traditional chinese --></assoc>
+        <assoc ccsid="905" mibenum="2061"><!-- EBCDIC-TR latin 3 --></assoc>
+        <assoc ccsid="912" mibenum="5"><!-- ISO-8859-2 --></assoc>
+        <assoc ccsid="913" mibenum="6"><!-- ISO-8859-3 --></assoc>
+        <assoc ccsid="914" mibenum="7"><!-- ISO-8859-4 --></assoc>
+        <assoc ccsid="915" mibenum="8"><!-- ISO-8859-5 --></assoc>
+        <assoc ccsid="916" mibenum="11"><!-- ISO-8859-8 --></assoc>
+        <assoc ccsid="918" mibenum="2062"><!-- IBM918 --></assoc>
+        <assoc ccsid="920" mibenum="12"><!-- ISO-8859-9 --></assoc>
+        <assoc ccsid="921" mibenum="109"><!-- ISO-8859-13 --></assoc>
+        <assoc ccsid="922"><!-- Estonia, 8-bit --></assoc>
+        <assoc ccsid="923" mibenum="111"><!-- ISO-8859-15 --></assoc>
+        <assoc ccsid="924" mibenum="2090"><!-- EBCDIC-Latin9+Euro --></assoc>
+        <assoc ccsid="926"><!-- Korean PC DATA DBCS, UDC 1880 --></assoc>
+        <assoc ccsid="927"><!-- Traditional chinese PC DATA DBCS, UDC 6204 --></assoc>
+        <assoc ccsid="928"><!-- Simplified chinese PC DATA DBCS, UDC 1880 --></assoc>
+        <assoc ccsid="930"><!-- Japan Katakana (extended range) 4370 UDC (User Defined Characters) --></assoc>
+        <assoc ccsid="932"><!-- Japan PC DATA Mixed --></assoc>
+        <assoc ccsid="933"><!-- Korea (extended range), 1880 UDC --></assoc>
+        <assoc ccsid="934"><!-- Korean PC DATA --></assoc>
+        <assoc ccsid="935"><!-- Simplified Chinese (extended range) --></assoc>
+        <assoc ccsid="936"><!-- Simplified Chinese (non-extended) --></assoc>
+        <assoc ccsid="937"><!-- Traditional Chinese (extended range) --></assoc>
+        <assoc ccsid="938"><!-- Traditional Chinese (non-extended) --></assoc>
+        <assoc ccsid="939"><!-- Japan English (extended range) 4370 UDC --></assoc>
+        <assoc ccsid="942"><!-- Japanese PC DATA Mixed --></assoc>
+        <assoc ccsid="943" mibenum="17"><!-- Shift_JIS --></assoc>
+        <assoc ccsid="944"><!-- Korean PC DATA Mixed --></assoc>
+        <assoc ccsid="946"><!-- Simplified Chinese PC DATA Mixed --></assoc>
+        <assoc ccsid="947"><!-- Traditional Chinese PC DATA Mixed 6204 UDC (User Defined Characters) --></assoc>
+        <assoc ccsid="949"><!-- Republic of Korea National Standard Graphic Character Set (KS). PC DATA mixed-byte including 1800 UDC --></assoc>
+        <assoc ccsid="950"><!-- Traditional Chinese PC DATA Mixed for Big5 --></assoc>
+        <assoc ccsid="951"><!-- Republic of Korea National Standard Graphic Character Set (KS). PC DATA double-byte including 1800 UDC --></assoc>
+        <assoc ccsid="956"><!-- JIS X201 Roman for CP 00895; JIS X208-1983 for CP 00952 --></assoc>
+        <assoc ccsid="957"><!-- JIS X201 Roman for CP 00895; JIS X208-1978 for CP 00955 --></assoc>
+        <assoc ccsid="958"><!-- ASCII for CP 00367; JIS X208-1983 for CP 00952 --></assoc>
+        <assoc ccsid="959"><!-- ASCII for CP 00367; JIS X208-1978 for CP 00955 --></assoc>
+        <assoc ccsid="964"><!-- G0 - ASCII for CP 00367; G1-CNS 11643 plane 1 for CP 960 --></assoc>
+        <assoc ccsid="965"><!-- ASCII for CP 00367; CNS 11643 plane 1 for CP 960 --></assoc>
+        <assoc ccsid="970" mibenum="38"><!-- EUC-KR --></assoc>
+        <assoc ccsid="1008"><!-- Arabic 8-bit ISO/ASCII --></assoc>
+        <assoc ccsid="1009"><!-- IRV --></assoc>
+        <assoc ccsid="1010"><!-- France --></assoc>
+        <assoc ccsid="1011"><!-- Germany --></assoc>
+        <assoc ccsid="1012"><!-- Italy --></assoc>
+        <assoc ccsid="1013"><!-- United Kingdom --></assoc>
+        <assoc ccsid="1014"><!-- Spain --></assoc>
+        <assoc ccsid="1015"><!-- Portugal --></assoc>
+        <assoc ccsid="1016"><!-- Norway --></assoc>
+        <assoc ccsid="1017"><!-- Denmark --></assoc>
+        <assoc ccsid="1018"><!-- Finland and Sweden --></assoc>
+        <assoc ccsid="1019"><!-- Belgium and Netherlands --></assoc>
+        <assoc ccsid="1025"><!-- Cyrillic Multilingual --></assoc>
+        <assoc ccsid="1026" mibenum="2063"><!-- Turkey latin 5 CECP --></assoc>
+        <assoc ccsid="1027"><!-- Japan english (extended range) --></assoc>
+        <assoc ccsid="1040"><!-- Korean Latin PC DATA extended --></assoc>
+        <assoc ccsid="1041"><!-- Japanese PC DATA extended --></assoc>
+        <assoc ccsid="1042"><!-- Simplified Chinese PC DATA extended --></assoc>
+        <assoc ccsid="1043"><!-- Traditional Chinese PC DATA extended --></assoc>
+        <assoc ccsid="1046"><!-- PC DATA - Arabic Extended --></assoc>
+        <assoc ccsid="1047" mibenum="2102"><!-- Latin open sys EBCDIC --></assoc>
+        <assoc ccsid="1051" mibenum="2004"><!-- hp-roman8 --></assoc>
+        <assoc ccsid="1088"><!-- Korean PC DATA single-byte --></assoc>
+        <assoc ccsid="1089" mibenum="9"><!-- ISO 8859-6: Arabic --></assoc>
+        <assoc ccsid="1097"><!-- Farsi --></assoc>
+        <assoc ccsid="1098"><!-- Farsi (IBM-PC) --></assoc>
+        <assoc ccsid="1112"><!-- Baltic, Multilingual --></assoc>
+        <assoc ccsid="1114"><!-- Traditional Chinese, Taiwan Industry Graphic Character Set (Big5) --></assoc>
+        <assoc ccsid="1115"><!-- Simplified Chinese, People&#x27;s Republic of China National. Standard (GB), personal computer SBCS --></assoc>
+        <assoc ccsid="1122"><!-- Estonia --></assoc>
+        <assoc ccsid="1123"/>
+        <assoc ccsid="1129"><!-- ISO-8 Vietnamese --></assoc>
+        <assoc ccsid="1130"><!-- EBCDIC Vietnamese --></assoc>
+        <assoc ccsid="1132"><!-- EBCDIC Lao --></assoc>
+        <assoc ccsid="1133"><!-- ISO-8 Lao --></assoc>
+        <assoc ccsid="1137"/>
+        <assoc ccsid="1140" mibenum="2091"><!-- EBCDIC-US-37+Euro --></assoc>
+        <assoc ccsid="1141" mibenum="2092"><!-- EBCDIC-DE-273+Euro --></assoc>
+        <assoc ccsid="1142" mibenum="2093"><!-- EBCDIC-DK/NO-277+Euro --></assoc>
+        <assoc ccsid="1143" mibenum="2094"><!-- EBCDIC-FI/SE-278+Euro --></assoc>
+        <assoc ccsid="1144" mibenum="2095"><!-- EBCDIC-IT-280+Euro --></assoc>
+        <assoc ccsid="1145" mibenum="2096"><!-- EBCDIC-ES-284+Euro --></assoc>
+        <assoc ccsid="1146" mibenum="2097"><!-- EBCDIC-GB-285+Euro --></assoc>
+        <assoc ccsid="1147" mibenum="2098"><!-- EBCDIC-FR-297+Euro --></assoc>
+        <assoc ccsid="1148" mibenum="2099"><!-- EBCDIC-INT-500+Euro --></assoc>
+        <assoc ccsid="1149" mibenum="2100"><!-- EBCDIC-IS-871+Euro --></assoc>
+        <assoc ccsid="1153"/>
+        <assoc ccsid="1154"/>
+        <assoc ccsid="1155"/>
+        <assoc ccsid="1156"/>
+        <assoc ccsid="1157"/>
+        <assoc ccsid="1158"/>
+        <assoc ccsid="1160"/>
+        <assoc ccsid="1164"/>
+        <assoc ccsid="1201" mibenum="1013"><!-- UTF-16BE -->
+                <alias>UTF16-BE</alias>
+                <alias>UTF16BE</alias>
+                <alias>UTF-16-BE</alias>
+        </assoc>
+        <assoc ccsid="1203" mibenum="1014"><!-- UTF-16LE -->
+                <alias>UTF16-LE</alias>
+                <alias>UTF16LE</alias>
+                <alias>UTF-16-LE</alias>
+        </assoc>
+        <assoc ccsid="1208" mibenum="106"><!-- UTF-8 -->
+                <alias>UTF8</alias>
+        </assoc>
+        <assoc ccsid="1233" mibenum="1018"><!-- UTF-32BE -->
+                <alias>UTF32-BE</alias>
+                <alias>UTF32BE</alias>
+                <alias>UTF-32-BE</alias>
+        </assoc>
+        <assoc ccsid="1235" mibenum="1019"><!-- UTF-32LE -->
+                <alias>UTF32-LE</alias>
+                <alias>UTF32LE</alias>
+                <alias>UTF-32-LE</alias>
+        </assoc>
+        <assoc ccsid="1250" mibenum="2002"><!-- Windows Latin 2 --></assoc>
+        <assoc ccsid="1251"><!-- Windows Cyrillic --></assoc>
+        <assoc ccsid="1252" mibenum="2001"><!-- Windows Latin 1 --></assoc>
+        <assoc ccsid="1253"><!-- Windows Greek --></assoc>
+        <assoc ccsid="1254"><!-- Windows Turkish --></assoc>
+        <assoc ccsid="1255"><!-- Windows Hebrew --></assoc>
+        <assoc ccsid="1256"><!-- Windows Arabic --></assoc>
+        <assoc ccsid="1257"><!-- Windows Baltic Rim --></assoc>
+        <assoc ccsid="1258"><!-- Windows Vietnamese --></assoc>
+        <assoc ccsid="1275"><!-- Apple, Latin-1 --></assoc>
+        <assoc ccsid="1276" mibenum="2005"><!-- Adobe-Standard-Encoding --></assoc>
+        <assoc ccsid="1280"><!-- Apple, Greek --></assoc>
+        <assoc ccsid="1281"><!-- Apple, Turkey --></assoc>
+        <assoc ccsid="1282"><!-- Apple, Central European (Latin-2) --></assoc>
+        <assoc ccsid="1283"><!-- Apple, Cyrillic --></assoc>
+        <assoc ccsid="1363" mibenum="36"><!-- KS_C_5601-1987 -->
+                <alias>korean</alias>
+        </assoc>
+        <assoc ccsid="1364"/>
+        <assoc ccsid="1373"><!-- Windows-950 --></assoc>
+        <assoc ccsid="1375" mibenum="2101"><!-- Big5-HKSCS --></assoc>
+        <assoc ccsid="1380"><!-- Simplified Chinese DBCS PC --></assoc>
+        <assoc ccsid="1381"><!-- Simplified Chinese PC DATA Mixed --></assoc>
+        <assoc ccsid="1383" mibenum="2025"><!-- GB2312 -->
+                <alias>EUC-CN</alias>
+        </assoc>
+        <assoc ccsid="1386" mibenum="113"><!-- GBK --></assoc>
+        <assoc ccsid="1388"><!-- Simplified Chinese DBCS-Host DATA GBK mixed --></assoc>
+        <assoc ccsid="1392"><!-- S-ch PC Dara mixed GB18030 --></assoc>
+        <assoc ccsid="1399" />
+        <assoc ccsid="4396"><!-- Japanese Host DB including 1880 --></assoc>
+        <assoc ccsid="4948"><!-- Latin 2 PC DATA Multilingual --></assoc>
+        <assoc ccsid="4951"><!-- Cyrillic PC DATA Multilingual --></assoc>
+        <assoc ccsid="4952"><!-- Hebrew PC DATA --></assoc>
+        <assoc ccsid="4953"><!-- Turkey PC DATA Latin 5 --></assoc>
+        <assoc ccsid="4960"><!-- Arabic PC DATA --></assoc>
+        <assoc ccsid="4965"><!-- Greek PC DATA --></assoc>
+        <assoc ccsid="4971"/>
+        <assoc ccsid="5026"><!-- Japan Katakana (extended range) 1880 UDC --></assoc>
+        <assoc ccsid="5035"><!-- Japan English (extended range) 1880 UDC --></assoc>
+        <assoc ccsid="5050"><!-- G0 - JIS X201 Roman for CP 895; G1 JIS X208-1990 for CP 952 --></assoc>
+        <assoc ccsid="5052"><!-- JIS X201 Roman for CP 895; JIS X208-1983 for CP 952 --></assoc>
+        <assoc ccsid="5053"><!-- JIS X201 Roman for CP 895; JIS X208-1978 for CP 955 --></assoc>
+        <assoc ccsid="5054"><!-- ASCII for CP 367; JIS X208-1983 for CP 952 --></assoc>
+        <assoc ccsid="5055"><!-- ASCII for CP 367; JIS X208-1978 for CP 955 --></assoc>
+        <assoc ccsid="5354" mibenum="2258"><!-- windows-1258 --></assoc>
+        <assoc ccsid="5346" mibenum="2250"><!-- windows-1250 --></assoc>
+        <assoc ccsid="5347" mibenum="2251"><!-- windows-1251 --></assoc>
+        <assoc ccsid="5348" mibenum="2252"><!-- windows-1252 --></assoc>
+        <assoc ccsid="5349" mibenum="2253"><!-- windows-1253 --></assoc>
+        <assoc ccsid="5350" mibenum="2254"><!-- windows-1254 --></assoc>
+        <assoc ccsid="5123"/>
+        <assoc ccsid="5478" mibenum="57"><!-- GB_2312-80 -->
+                <alias>chinese</alias>
+        </assoc>
+        <assoc ccsid="8612"><!-- Arabic (base shapes only) --></assoc>
+        <assoc ccsid="9030"><!-- Thai Host Extended SBCS --></assoc>
+        <assoc ccsid="9056"><!-- PC DATA: Arabic PC Storage/Interchange --></assoc>
+        <assoc ccsid="9066"><!-- Thai PC DATA Extended SBCS --></assoc>
+        <assoc ccsid="9447" mibenum="2255"><!-- windows-1255 --></assoc>
+        <assoc ccsid="9448" mibenum="2256"><!-- windows-1256 --></assoc>
+        <assoc ccsid="9449" mibenum="2257"><!-- windows-1257 --></assoc>
+        <assoc ccsid="12708"/>
+        <assoc ccsid="13121"/>
+        <assoc ccsid="13124"/>
+        <assoc ccsid="13488" mibenum="1000"><!-- ISO-10646-UCS-2 -->
+                <alias>UCS-2</alias>
+                <alias>UCS2</alias>
+        </assoc>
+        <assoc ccsid="17354"><!-- G0 - ASCII for CP 00367; G1 -KSC X5601-1989 (including 188 UDCs) for --></assoc>
+        <assoc ccsid="25546"><!-- Korean 2022-KR TCP ASCII --></assoc>
+        <assoc ccsid="28709"><!-- Traditional Chinese (extended range) --></assoc>
+        <assoc ccsid="33722" mibenum="18"><!-- EUC-JP --></assoc>
+        <assoc ccsid="57345"><!-- All Japanese 2022 characters --></assoc>
+        <assoc ccsid="61952"><!-- AS/400 specific UCS level 2. --></assoc>
+        <assoc ccsid="62211"/>
+        <assoc ccsid="62224"/>
+        <assoc ccsid="62235"/>
+        <assoc ccsid="62245"/>
+        <assoc mibenum="27"><!-- ISO-10646-UTF-1 --></assoc>
+</ccsid_mibenum>
