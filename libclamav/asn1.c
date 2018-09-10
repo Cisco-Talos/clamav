@@ -79,6 +79,9 @@
 #define OID_1_2_840_113549_1_9_6 "\x2a\x86\x48\x86\xf7\x0d\x01\x09\x06"
 #define OID_countersignature OID_1_2_840_113549_1_9_6
 
+#define OID_1_2_840_113549_1_9_16_1_4 "\x2a\x86\x48\x86\xf7\x0d\x01\x09\x10\x01\x04"
+#define OID_timestampToken OID_1_2_840_113549_1_9_16_1_4
+
 
 #define OID_1_3_6_1_4_1_311_2_1_4 "\x2b\x06\x01\x04\x01\x82\x37\x02\x01\x04"
 #define OID_SPC_INDIRECT_DATA_OBJID OID_1_3_6_1_4_1_311_2_1_4
@@ -1164,13 +1167,28 @@ static int asn1_parse_countersignature(fmap_t *map, const void **asn1data, unsig
             }
             deep.size = deeper.size;
             switch(content) {
-            case 0:  /* contentType = pkcs7-data */
+            case 0:
+            {  /* contentType = pkcs7-data */
+                const void *backupPtr = deeper.content;
+                unsigned int backupSize = deep.size;
                 if(asn1_expect_obj(map, &deeper.content, &deep.size, ASN1_TYPE_OBJECT_ID, lenof(OID_pkcs7_data), OID_pkcs7_data)) {
-                    cli_dbgmsg("asn1_parse_countersignature: contentType != pkcs7-data\n");
-                    deep.size = 1;
-                } else if(deep.size)
+                    cli_dbgmsg("asn1_parse_countersignature: contentType != pkcs7-data, checking for timestampToken instead\n");
+                    /* Some signatures use OID_timestampToken instead, so allow
+                     * that also (despite the 2008 spec saying that this value
+                     * must be pkcs7-data) */
+                    deeper.content = backupPtr;
+                    deep.size = backupSize;
+                    if(asn1_expect_obj(map, &deeper.content, &deep.size, ASN1_TYPE_OBJECT_ID, lenof(OID_timestampToken), OID_timestampToken)) {
+                        cli_dbgmsg("asn1_parse_countersignature: contentType != timestampToken\n");
+                        deep.size = 1;
+                        break;
+                    }
+                }
+
+                if(deep.size)
                     cli_dbgmsg("asn1_parse_countersignature: extra data in countersignature content-type\n");
                 break;
+            }
             case 1:  /* messageDigest */
                 if(asn1_expect_obj(map, &deeper.content, &deep.size, ASN1_TYPE_OCTET_STRING, hashsize, md)) {
                     deep.size = 1;
