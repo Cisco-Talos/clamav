@@ -708,6 +708,7 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
     const uint8_t *tbsdata;
     const void *next, *issuer;
     int ret = ASN1_GET_X509_UNRECOVERABLE_ERROR;
+    unsigned int version;
 
     if(cli_crt_init(&x509))
         return ret;
@@ -730,25 +731,54 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
         }
         tbssize = (uint8_t *)tbs.next - tbsdata;
 
-        if(asn1_expect_objtype(map, tbs.content, &tbs.size, &obj, 0xa0)) { /* [0] */
-            cli_dbgmsg("asn1_get_x509: expected [0] version container in TBSCertificate\n");
+        /* The version field of the x509 certificate is optional, defaulting
+         * to 1 if the field is not present.  Version 3 is backward compatible,
+         * adding the optional issuerUniqueID, sujectUniqueID, and extensions
+         * fields.  We'll try to handle both cases, since the Windows API
+         * appears to allow for both (despite the fact that the 2008 spec doc
+         * says that v3 certificates are used for everything) */
+
+        if (asn1_get_obj(map, tbs.content, &tbs.size, &obj)) {
+            cli_dbgmsg("asn1_get_x509: failed to get first item in the TBSCertificate\n");
             break;
         }
-        avail = obj.size;
-        next = obj.next;
-        if(asn1_expect_obj(map, &obj.content, &avail, ASN1_TYPE_INTEGER, 1, "\x02")) { /* version 3 only */
-            cli_dbgmsg("asn1_get_x509: unexpected type or value for TBSCertificate version\n");
-            break;
-        }
-        if(avail) {
-            cli_dbgmsg("asn1_get_x509: found unexpected extra data in version\n");
+        if(0xa0 == obj.type) { /* [0] */
+            avail = obj.size;
+            next = obj.next;
+            // TODO Should we support v2 certs?  Supposedly they are not widely used...
+            if(asn1_expect_obj(map, &obj.content, &avail, ASN1_TYPE_INTEGER, 1, "\x02")) { /* version 3 only (indicated by '\x02')*/
+                cli_dbgmsg("asn1_get_x509: unexpected type or value for TBSCertificate version\n");
+                break;
+            }
+            if(avail) {
+                cli_dbgmsg("asn1_get_x509: found unexpected extra data in version\n");
+                break;
+            }
+            version = 3;
+
+            if(asn1_expect_objtype(map, next, &tbs.size, &obj, ASN1_TYPE_INTEGER)) { /* serialNumber */
+                cli_dbgmsg("asn1_get_x509: expected x509 serial INTEGER\n");
+                break;
+            }
+        } else if (ASN1_TYPE_INTEGER == obj.type) {
+            /* The version field is missing, so we'll assume that this is a
+             * version 1 certificate.  obj points to the serialNumber
+             * INTEGER, then, so just continue on to map it. */
+            version = 1;
+
+            /* v1 certificates don't have enough information to convey the
+             * purpose of the certificate.  I've only ever seen these used
+             * in the timestamp signing chain, so set the flags to indicate
+             * that. */
+            x509.certSign = 1;
+            x509.codeSign = 0;
+            x509.timeSign = 1;
+
+        } else {
+            cli_dbgmsg("asn1_get_x509: expected version or serialNumber as the first item in TBSCertificate\n");
             break;
         }
 
-        if(asn1_expect_objtype(map, next, &tbs.size, &obj, ASN1_TYPE_INTEGER)) { /* serialNumber */
-            cli_dbgmsg("asn1_get_x509: expected x509 serial INTEGER\n");
-            break;
-        }
         if(map_raw(map, obj.content, obj.size, x509.raw_serial))
             break;
         if(map_sha1(map, obj.content, obj.size, x509.serial))
@@ -798,8 +828,13 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
             break;
         if(map_sha1(map, obj.content, obj.size, x509.subject))
             break;
-        if(asn1_get_rsa_pubkey(map, &obj.next, &tbs.size, &x509))
+        if(asn1_get_rsa_pubkey(map, &obj.next, &tbs.size, &x509)) /* subjectPublicKeyInfo */
             break;
+
+        if (1 == version && tbs.size) {
+            cli_dbgmsg("asn1_get_x509: TBSCertificate should not contain fields beyond subjectPublicKeyInfo if version == 1\n");
+            break;
+        }
 
         avail = 0;
         while(tbs.size) {
@@ -911,9 +946,9 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
                                 exts.size = 1;
                                 break;
                             }
-                            if(ext.size != 8)
+                            if(ext.size != 8 && ext.size != 10)
                                 continue;
-                            if(!fmap_need_ptr_once(map, ext.content, 8)) {
+                            if(!fmap_need_ptr_once(map, ext.content, ext.size)) {
                                 exts.size = 1;
                                 break;
                             }
@@ -921,6 +956,8 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
                                 x509.codeSign = 1;
                             else if(!memcmp("\x2b\x06\x01\x05\x05\x07\x03\x08", ext.content, 8)) /* id_kp_timeStamping */
                                 x509.timeSign = 1;
+                            else if(!memcmp("\x2b\x06\x01\x04\x01\x82\x37\x0a\x03\x0d", ext.content, 10)) /* id_kp_lifetimeSigning */
+                                cli_dbgmsg("asn1_get_x509: lifetime signing specified but enforcing this is not currently supported\n");
                         }
                         continue;
                     }
