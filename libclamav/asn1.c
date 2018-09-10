@@ -1912,7 +1912,7 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
         if(dsize)
             break;
 
-        if (2 != (result & 2)) {
+        if (1 != (result & 1)) {
             time_t now;
 
             // No countersignature, so judge validity based on time
