@@ -5390,6 +5390,24 @@ static int sort_sects(const void *first, const void *second) {
     return (a->raw - b->raw);
 }
 
+/* Check the given PE file for an authenticode signature and return CL_CLEAN if
+ * the signature is valid.  Also, this function computes the hashes of each
+ * section (sorted based on the RVAs of the sections) if the
+ * CL_CHECKFP_PE_FLAG_STATS flag exists in flags.
+ *
+ * If the section hashes are to be computed and returned, this function
+ * allocates memory for the section hashes, and it's up to the caller to free
+ * it.  hashes->sections will be initialized to NULL at the beginning of the
+ * function, and if after the call it's value is non-NULL, the memory should be
+ * freed.  Furthermore, if hashes->sections is non-NULL, the hashes can assume
+ * to be valid regardless of the return code.
+ *
+ * Also, a few other notes:
+ *  - If a section has a virtual size of zero, it's corresponding hash value
+ *    will not be computed and the hash contents will be all zeroes.
+ *  - TODO Instead of not providing back any hashes when an invalid section is
+ *    encountered, would it be better to still compute hashes for the valid
+ *    sections? */
 int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uint32_t flags) {
     uint16_t e_magic; /* DOS signature ("MZ") */
     uint16_t nsections;
@@ -5412,9 +5430,11 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
     unsigned int nregions;
     int ret;
 
-    if (flags & CL_CHECKFP_PE_FLAG_STATS)
+    if (flags & CL_CHECKFP_PE_FLAG_STATS) {
         if (!(hashes))
             return CL_EFORMAT;
+        hashes->sections = NULL;
+    }
 
     if (flags == CL_CHECKFP_PE_FLAG_NONE)
         return CL_VIRUS;
@@ -5535,6 +5555,15 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
         }
     }
 
+#define free_section_hashes() \
+    do { \
+        if (flags & CL_CHECKFP_PE_FLAG_STATS) { \
+            free(hashes->sections); \
+            hashes->sections = NULL; \
+        } \
+    } while(0)
+
+
     // TODO Why do we fix up these alignments?  This shouldn't be needed?
     for(i = 0; i < nsections; i++) {
         exe_sections[i].rva = PEALIGN(EC32(section_hdr[i].VirtualAddress), valign);
@@ -5550,12 +5579,14 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
         if (exe_sections[i].rsz && fsize>exe_sections[i].raw && !CLI_ISCONTAINED(0, (uint32_t) fsize, exe_sections[i].raw, exe_sections[i].rsz)) {
             cli_dbgmsg("cli_checkfp_pe: encountered section not fully contained within the file\n");
             free(exe_sections);
+            free_section_hashes();
             return CL_EFORMAT;
         }
 
         if (exe_sections[i].rsz && exe_sections[i].raw >= fsize) {
             cli_dbgmsg("cli_checkfp_pe: encountered section that doesn't exist within the file\n");
             free(exe_sections);
+            free_section_hashes();
             return CL_EFORMAT;
         }
 
@@ -5563,6 +5594,7 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
         // Figure out what this is meant to do and ensure that happens
         if (exe_sections[i].urva>>31 || exe_sections[i].uvsz>>31 || (exe_sections[i].rsz && exe_sections[i].uraw>>31) || exe_sections[i].ursz>>31) {
             free(exe_sections);
+            free_section_hashes();
             return CL_EFORMAT;
         }
     }
@@ -5584,6 +5616,7 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
 
             if(!(hptr = fmap_need_off_once(map, exe_sections[i].raw, exe_sections[i].rsz))){
                 free(exe_sections);
+                free_section_hashes();
                 return CL_EFORMAT;
             }
             md5ctx = cl_hash_init("md5");
@@ -5594,6 +5627,7 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
         }
     }
 
+    /* After this point it's the caller's responsibility to free hashes->sections */
     free(exe_sections);
 
     if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE) {
@@ -5623,9 +5657,8 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
 
     // We'll build a list of the regions that need to be hashed and pass it to
     // asn1_check_mscat to do hash verification there (the hash algorithm is
-    // specified in the PCKS7 structure).  We need to hash up to 4 regions + the
-    // data associated with each section.
-    regions = (struct cli_mapped_region *) cli_calloc(nsections+4, sizeof(struct cli_mapped_region));
+    // specified in the PKCS7 structure).  We need to hash up to 4 regions
+    regions = (struct cli_mapped_region *) cli_calloc(4, sizeof(struct cli_mapped_region));
     if(!regions) {
         return CL_EMEM;
     }
