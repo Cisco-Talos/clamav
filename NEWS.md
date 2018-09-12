@@ -56,6 +56,9 @@ ClamAV 0.100.0 is a feature release which includes many code submissions
   in clamd, clamav-milter, and freshclam. Use of supplementary
   is now in effect by default.
 - Numerous bug fixes, typo corrections, and compiler warning fixes.
+- freshclam changed to return an exit code of 1 when the database is
+  up-to-date. This will be reverted in a future version and is not
+  currently documented in the freshclam.1 man page.
 
 Additionally, we have introduced important changes and new features in
 ClamAV 0.100, including but not limited to:
