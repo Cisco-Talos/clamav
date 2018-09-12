@@ -15,6 +15,7 @@ an assortment of minor fixes:
   eliminates the need to generate documents (the PDF, HTML).  Find the user
   manual under docs/UserManual[.md].
 - Backwards compatibility improvements for detecting the OpenSSL dependency.
+- freshclam updated to match exit codes defined in the freshclam.1 man page.
 
 ## 0.100.1
 

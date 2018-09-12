@@ -723,7 +723,7 @@ main (int argc, char **argv)
 
     cl_cleanup_crypto();
 
-    return (ret);
+    return ret > 1 ? ret : 0;
 }
 
 int is_valid_hostid(void)
