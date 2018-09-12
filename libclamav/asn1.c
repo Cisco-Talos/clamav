@@ -850,6 +850,7 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
             avail = obj.type - 0xa0;
             if(obj.type == 0xa3) {
                 struct cli_asn1 exts;
+                int have_key_usage = 0;
                 int have_ext_key = 0;
                 if(asn1_expect_objtype(map, obj.content, &obj.size, &exts, ASN1_TYPE_SEQUENCE)) {
                     tbs.size = 1;
@@ -907,6 +908,7 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
                         /* KeyUsage 2.5.29.15 */
                         const uint8_t *keyusage = value.content;
                         uint8_t usage;
+                        have_key_usage = 1;
                         if(value.size < 4 || value.size > 5) {
                             cli_dbgmsg("asn1_get_x509: bad KeyUsage\n");
                             exts.size = 1;
@@ -992,8 +994,29 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
                     tbs.size = 1;
                     break;
                 }
+
+                /* The 2008 spec doc says that for a certificate to be used for
+                 * code signing, it must either have an EKU indicating code
+                 * signing or the entire certificate chain must not have any
+                 * EKUs.
+                 * TODO We should actually enforce that last check.
+                 * For time stamping, the doc says the EKU must be present, and
+                 * makes no exception for EKUs being missing.
+                 * TODO Should we not set timeSign = 1 in this case, then? */
                 if(!have_ext_key)
                     x509.codeSign = x509.timeSign = 1;
+
+                /* RFC 3280 section 4.2.1.3 says that if a certificate is
+                 * used to validate digital signatures on other public key
+                 * certificates, it MUST have a key usage extension with the
+                 * appropriate bits set.  However, the MS MD5 root authority
+                 * certificate (A43489159A520F0D93D032CCAF37E7FE20A8B419)
+                 * doesn't have a KU or any EKUs, and PEs with it in the
+                 * chain validate successfully.
+                 * TODO Flip the certSign bit for now, but revisit if
+                 * a clarification on this becomes available */
+                if(!have_key_usage)
+                    x509.certSign = 1;
             }
         }
         if(tbs.size) {
