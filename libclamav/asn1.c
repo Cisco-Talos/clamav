@@ -1024,6 +1024,10 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
             break;
         }
 
+        if (!x509.certSign && !x509.codeSign && !x509.timeSign) {
+            cli_dbgmsg("asn1_get_x509: encountered a certificate with no cert, code, or time signing capabilities\n");
+        }
+
 
         if(crtmgr_lookup(master, &x509) || crtmgr_lookup(other, &x509)) {
             cli_dbgmsg("asn1_get_x509: certificate already exists\n");
