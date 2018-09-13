@@ -695,12 +695,12 @@ static int asn1_get_rsa_pubkey(fmap_t *map, const void **asn1data, unsigned int 
 #define ASN1_GET_X509_UNRECOVERABLE_ERROR 2
 
 /* Parse the asn1data associated with an x509 certificate and add the cert
- * to the crtmgr other if it doesn't already exist in master or other.
+ * to the crtmgr certs if it doesn't already exist there.
  * ASN1_GET_X509_CERT_ERROR will be returned in the case that an invalid x509
  * certificate is encountered but asn1data and size are suitable for continued
  * signature parsing.  ASN1_GET_X509_UNRECOVERABLE_ERROR will be returned in
  * the case where asn1data and size are not suitable for continued use. */
-static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size, crtmgr *master, crtmgr *other) {
+static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size, crtmgr *crts) {
     struct cli_asn1 crt, tbs, obj;
     unsigned int avail, tbssize, issuersize;
     cli_crt_hashtype hashtype1, hashtype2;
@@ -1029,8 +1029,8 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
         }
 
 
-        if(crtmgr_lookup(master, &x509) || crtmgr_lookup(other, &x509)) {
-            cli_dbgmsg("asn1_get_x509: certificate already exists\n");
+        if(crtmgr_lookup(crts, &x509)) {
+            cli_dbgmsg("asn1_get_x509: duplicate embedded certificates detected\n");
             cli_crt_clear(&x509);
             return ASN1_GET_X509_SUCCESS;
         }
@@ -1076,7 +1076,7 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
 
         }
 
-        if(crtmgr_add(other, &x509))
+        if(crtmgr_add(crts, &x509))
             break;
         cli_crt_clear(&x509);
         return ASN1_GET_X509_SUCCESS;
@@ -1510,7 +1510,7 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
             crtmgr newcerts;
             crtmgr_init(&newcerts);
             while(dsize) {
-                result = asn1_get_x509(map, &asn1.content, &dsize, cmgr, &newcerts);
+                result = asn1_get_x509(map, &asn1.content, &dsize, &newcerts);
                 if(ASN1_GET_X509_UNRECOVERABLE_ERROR == result) {
                     dsize = 1;
                     break;
@@ -1526,12 +1526,10 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
             }
             if(newcerts.crts) {
                 x509 = newcerts.crts;
-                cli_dbgmsg("asn1_parse_mscat: %u new certificates collected\n", newcerts.items);
-                while(x509) {
-                    cli_crt *parent = crtmgr_verify_crt(cmgr, x509);
-
-                    /* Dump the cert if requested before anything happens to it */
-                    if (engine->engine_options & ENGINE_OPTIONS_PE_DUMPCERTS) {
+                cli_dbgmsg("asn1_parse_mscat: %u embedded certificates collected\n", newcerts.items);
+                if (engine->engine_options & ENGINE_OPTIONS_PE_DUMPCERTS) {
+                    /* Dump the certs if requested before anything happens to them */
+                    while(x509) {
                         char raw_issuer[CRT_RAWMAXLEN*2+1], raw_subject[CRT_RAWMAXLEN*2+1], raw_serial[CRT_RAWMAXLEN*3+1];
                         char issuer[SHA1_HASH_SIZE*2+1], subject[SHA1_HASH_SIZE*2+1], serial[SHA1_HASH_SIZE*2+1];
                         char mod[1024+1], exp[1024+1];
@@ -1563,7 +1561,28 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
                         cli_dbgmsg_internal("  raw_subject: %s\n", raw_subject);
                         cli_dbgmsg_internal("  raw_serial: %s\n", raw_serial);
                         cli_dbgmsg_internal("  raw_issuer: %s\n", raw_issuer);
+
+                        x509 = x509->next;
                     }
+                    x509 = newcerts.crts;
+                }
+
+                while(x509) {
+                    cli_crt *parent;
+
+                    /* If the certificate is in the trust store already, remove
+                     * it from the newcerts list */
+                    if (crtmgr_lookup(cmgr, x509)) {
+                        cli_crt *tmp = x509->next;
+                        cli_dbgmsg("asn1_parse_mscat: found embedded certificate matching one in the trust store\n");
+                        crtmgr_del(&newcerts, x509);
+                        x509 = tmp;
+                        continue;
+                    }
+
+                    /* Determine whether the cert is signed by one in our trust
+                     * store or has a blacklist entry */
+                    parent = crtmgr_verify_crt(cmgr, x509);
 
                     if(parent) {
                         if (parent->isBlacklisted) {
@@ -1572,10 +1591,7 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
                             // entry for this certificate's parent
                             isBlacklisted = 1;
                             cli_dbgmsg("asn1_parse_mscat: Authenticode certificate %s is revoked. Flagging sample as virus.\n", (parent->name ? parent->name : "(no name)"));
-
-                            // TODO In this case cmgr already has a blacklisted
-                            // cert for this x509, so I don't think we need to
-                            // continue on below and try to add it to cmgr
+                            break;
                         }
 
                         // TODO Why is this done?
@@ -1587,9 +1603,16 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
                             break;
                         }
                         crtmgr_del(&newcerts, x509);
+
+                        /* Start at the beginning of newcerts so that we can see
+                         * whether adding this new trusted cert causes more
+                         * certs to be trusted (via chaining).  Otherwise we
+                         * might miss valid certs if the ordering in the binary
+                         * doesn't align with the chain ordering. */
                         x509 = newcerts.crts;
                         continue;
                     }
+
                     x509 = x509->next;
                 }
                 if(x509) {
@@ -1895,7 +1918,6 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
         deep.next = asn1.content;
         result = 0;
         while(dsize) {
-            struct cli_asn1 cobj;
             int content;
             if(asn1_expect_objtype(map, deep.next, &dsize, &deep, ASN1_TYPE_SEQUENCE)) {
                 cli_dbgmsg("asn1_parse_mscat: expected SEQUENCE starting an unauthenticatedAttribute\n");
@@ -2210,7 +2232,7 @@ int asn1_check_mscat(struct cl_engine *engine, fmap_t *map, size_t offset, unsig
 
     // Now that we know the hash algorithm, compute the authenticode hash
     // across the required regions of memory.
-    for(int i = 0; i < nregions; i++) {
+    for(unsigned int i = 0; i < nregions; i++) {
         const uint8_t *hptr; \
         if(!(hptr = fmap_need_off_once(map, regions[i].offset, regions[i].size))){
             return CL_VIRUS;
@@ -2223,7 +2245,7 @@ int asn1_check_mscat(struct cl_engine *engine, fmap_t *map, size_t offset, unsig
 
     if(cli_debug_flag) {
         char hashtxt[MAX_HASH_SIZE*2+1];
-        for(int i=0; i<hashsize; i++)
+        for(unsigned int i=0; i<hashsize; i++)
             sprintf(&hashtxt[i*2], "%02x", hash[i]);
         cli_dbgmsg("Authenticode: %s\n", hashtxt);
     }
