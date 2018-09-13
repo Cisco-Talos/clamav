@@ -42,6 +42,7 @@ HANDLE PASCAL RAROpenArchiveEx(struct RAROpenArchiveDataEx *r)
     Data->Cmd.DllError=0;
     Data->OpenMode=r->OpenMode;
     Data->Cmd.FileArgs.AddString(L"*");
+    Data->Cmd.KeepBroken = true;
 
     char AnsiArcName[NM];
     *AnsiArcName=0;
