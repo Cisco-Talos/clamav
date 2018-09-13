@@ -41,7 +41,7 @@ typedef struct cli_crt_t {
     /* tbshash holds the hash we'll use for verification with data in the sig,
      * so it must have at least enough space for the largest hash in
      * cli_crt_hashtype */
-    uint8_t tbshash[SHA384_HASH_SIZE];
+    uint8_t tbshash[SHA512_HASH_SIZE];
     mp_int n;
     mp_int e;
     mp_int sig;
