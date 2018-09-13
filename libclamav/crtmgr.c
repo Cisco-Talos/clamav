@@ -62,66 +62,85 @@ void cli_crt_clear(cli_crt *x509) {
     mp_clear_multi(&x509->n, &x509->e, &x509->sig, NULL);
 }
 
-cli_crt *crtmgr_lookup(crtmgr *m, cli_crt *x509) {
+/* Look for an existing certificate in the trust store m.  This search allows
+ * the not_before / not_after / certSign / codeSign / timeSign fields to be
+ * more restrictive than the values associated with a cert in the trust store,
+ * but not less.  It's probably overkill to not do exact matching on those
+ * fields... TODO Is there a case where this is needed
+ *
+ * There are two ways that things get added to the whitelist - through the CRB
+ * rules, and through embedded signatures / catalog files that we parse.  CRB
+ * rules only specify the subject, serial, public key, and whether the cert
+ * can be used for cert/code/time signing, so in those cases the issuer and
+ * hashtype get set to a hardcoded value.  Those values are important for
+ * doing signature verification, though, so we include them when doing this
+ * lookup.  That way, certs with more specific values can get added to the
+ * whitelist by functions like crtmgr_add and increase the probability of
+ * successful signature verification. */
+cli_crt *crtmgr_whitelist_lookup(crtmgr *m, cli_crt *x509) {
     cli_crt *i;
     for(i = m->crts; i; i = i->next) {
-        if(x509->not_before >= i->not_before &&
+        if(!i->isBlacklisted &&
+           x509->not_before >= i->not_before &&
            x509->not_after <= i->not_after &&
            (i->certSign | x509->certSign) == i->certSign &&
            (i->codeSign | x509->codeSign) == i->codeSign &&
            (i->timeSign | x509->timeSign) == i->timeSign &&
            !memcmp(x509->subject, i->subject, sizeof(i->subject)) &&
            !memcmp(x509->serial, i->serial, sizeof(i->serial)) &&
+           !memcmp(x509->issuer, i->issuer, sizeof(i->issuer)) &&
+           x509->hashtype == i->hashtype &&
            !mp_cmp(&x509->n, &i->n) &&
-           !mp_cmp(&x509->e, &i->e) && !(i->isBlacklisted)) {
+           !mp_cmp(&x509->e, &i->e)) {
             return i;
         }
     }
     return NULL;
 }
 
+cli_crt *crtmgr_blacklist_lookup(crtmgr *m, cli_crt *x509) {
+    cli_crt *i;
+    for (i = m->crts; i; i = i->next) {
+        // The CRB rules are based on subject, serial, and public key,
+        // so do blacklist queries based on those fields
+
+        // TODO Handle the case where these items aren't specified in a CRB
+        // rule entry - substitute in default values instead.
+
+        if (i->isBlacklisted &&
+            !memcmp(i->subject, x509->subject, sizeof(i->subject)) &&
+            !memcmp(i->serial, x509->serial, sizeof(i->serial)) &&
+            !mp_cmp(&x509->n, &i->n) &&
+            !mp_cmp(&x509->e, &i->e)) {
+            return i;
+        }
+    }
+    return NULL;
+}
+
+/* Determine whether x509 already exists in m. The fields compared depend on
+ * whether x509 is a blacklist entry or a trusted certificate */
+cli_crt *crtmgr_lookup(crtmgr *m, cli_crt *x509) {
+    if (x509->isBlacklisted) {
+        return crtmgr_blacklist_lookup(m, x509);
+    } else {
+        return crtmgr_whitelist_lookup(m, x509);
+    }
+}
+
 int crtmgr_add(crtmgr *m, cli_crt *x509) {
     cli_crt *i;
     int ret = 0;
 
-    for(i = m->crts; i; i = i->next) {
-        if(!memcmp(x509->subject, i->subject, sizeof(i->subject)) &&
-           !memcmp(x509->serial, i->subject, sizeof(i->serial)) &&
-           !mp_cmp(&x509->n, &i->n) &&
-           !mp_cmp(&x509->e, &i->e)) {
-            if(x509->not_before >= i->not_before && x509->not_after <= i->not_after) {
-                /* Already same or broader */
-                ret = 1;
-            }
-            if(i->not_before > x509->not_before && i->not_before <= x509->not_after) {
-                /* Extend left */
-                i->not_before = x509->not_before;
-                ret = 1;
-            }
-            if(i->not_after >= x509->not_before && i->not_after < x509->not_after) {
-                /* Extend right */
-                i->not_after = x509->not_after;
-                ret = 1;
-            }
-            if(!ret)
-                continue;
-            i->certSign |= x509->certSign;
-            i->codeSign |= x509->codeSign;
-            i->timeSign |= x509->timeSign;
-
+    if (x509->isBlacklisted) {
+        if (crtmgr_blacklist_lookup(m, x509)) {
+            cli_dbgmsg("crtmgr_add: duplicate blacklist entry detected - not adding\n");
             return 0;
         }
-
-        /* If certs match, we're likely just revoking it */
-        if (!memcmp(x509->subject, i->subject, sizeof(x509->subject)) &&
-            !memcmp(x509->issuer, i->issuer, sizeof(x509->issuer)) &&
-            !memcmp(x509->serial, i->serial, sizeof(x509->serial)) &&
-            !mp_cmp(&x509->n, &i->n) &&
-            !mp_cmp(&x509->e, &i->e)) {
-                if (i->isBlacklisted != x509->isBlacklisted)
-                    i->isBlacklisted = x509->isBlacklisted;
-
-                return 0;
+    } else {
+        if (crtmgr_whitelist_lookup(m, x509)) {
+            cli_dbgmsg("crtmgr_add: duplicate trusted certificate detected - not adding\n");
+            return 0;
         }
     }
 
@@ -239,7 +258,7 @@ static int crtmgr_rsa_verify(cli_crt *x509, mp_int *sig, cli_crt_hashtype hashty
             cli_dbgmsg("crtmgr_rsa_verify: keylen-1 doesn't match expected size of exptmod result\n");
             break;
         }
-        if(mp_unsigned_bin_size(&x) > sizeof(d)) {
+        if(((unsigned int) mp_unsigned_bin_size(&x)) > sizeof(d)) {
             cli_dbgmsg("crtmgr_rsa_verify: exptmod result would overrun working buffer\n");
             break;
         }
@@ -376,35 +395,40 @@ static int crtmgr_rsa_verify(cli_crt *x509, mp_int *sig, cli_crt_hashtype hashty
 cli_crt *crtmgr_verify_crt(crtmgr *m, cli_crt *x509) {
     cli_crt *i = m->crts, *best = NULL;
     int score = 0;
+    unsigned int possible = 0;
 
-    for (i = m->crts; i; i = i->next) {
-        if (!memcmp(i->subject, x509->subject, sizeof(i->subject)) &&
-            !memcmp(i->serial, x509->serial, sizeof(i->serial))) {
-
-            // TODO Shouldn't we compare public keys in this case as well?  I'd
-            // think that it's the public key that really makes a certificate
-            // unique (not subject/serial).  Otherwise, you could have malware
-            // use the subject/serial from a popular company's cert and if we
-            // blacklisted that it would cause FPs on the popular software.
-
-            if (i->isBlacklisted)
-                return i;
-        }
+    if (NULL != (i = crtmgr_blacklist_lookup(m, x509))) {
+        return i;
     }
+
+    // TODO Technically we should loop through all of the blacklisted certs
+    // first to see whether one of those is used to sign x509.  This case
+    // will get handled if the blacklisted certificate is embedded, since we
+    // will call crtmgr_verify_crt on it and match against the blacklist entry
+    // that way, but the cert doesn't HAVE to be embedded.  This case seems
+    // unlikely enough to ignore, though.
 
     for(i = m->crts; i; i = i->next) {
         if(i->certSign &&
+           !i->isBlacklisted &&
            !memcmp(i->subject, x509->issuer, sizeof(i->subject)) &&
            !crtmgr_rsa_verify(i, &x509->sig, x509->hashtype, x509->tbshash)) {
             int curscore;
             if((x509->codeSign & i->codeSign) == x509->codeSign && (x509->timeSign & i->timeSign) == x509->timeSign)
                 return i;
+            possible++;
             curscore = (x509->codeSign & i->codeSign) + (x509->timeSign & i->timeSign);
             if(curscore > score) {
                 best = i;
                 score = curscore;
             }
         }
+    }
+
+    if (possible > 1) {
+        // If this is ever triggered, it's probably an indication of an error
+        // in the CRB being used.
+        cli_warnmsg("crtmgr_verify_crt: choosing between codeSign cert and timeSign cert without enough info - errors may result\n");
     }
     return best;
 }
