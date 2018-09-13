@@ -366,7 +366,10 @@ cl_unrar_error_t unrar_extract_file(void* hArchive, const char* destPath, char *
     }
 
     process_file_ret = RARProcessFile(hArchive, RAR_EXTRACT, NULL, (char *)destPath);
-    if (ERAR_SUCCESS != process_file_ret) {
+    if (ERAR_BAD_DATA == process_file_ret) {
+        unrar_dbgmsg("unrar_extract_file: Warning: Bad data/Invalid CRC. Attempting to scan anyways...\n");
+    }
+    else if (ERAR_SUCCESS != process_file_ret) {
         status = unrar_retcode(process_file_ret);
         goto done;
     }
