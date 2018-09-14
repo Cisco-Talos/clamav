@@ -103,8 +103,10 @@ target_triplet = @target@
 subdir = .
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/configure $(am__configure_deps) \
-	$(srcdir)/clamav-config.h.in $(srcdir)/clamav-config.in \
-	$(srcdir)/libclamav.pc.in $(srcdir)/platform.h.in \
+	$(srcdir)/clamav-config.h.in \
+	$(top_srcdir)/libclammspack/config.h.in \
+	$(srcdir)/clamav-config.in $(srcdir)/libclamav.pc.in \
+	$(srcdir)/platform.h.in \
 	$(top_srcdir)/docs/man/clamav-milter.8.in \
 	$(top_srcdir)/docs/man/clamav-milter.conf.5.in \
 	$(top_srcdir)/docs/man/clambc.1.in \
@@ -199,8 +201,6 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
 	$(top_srcdir)/m4/reorganization/bsd.m4 \
 	$(top_srcdir)/m4/reorganization/libs/curl.m4 \
 	$(top_srcdir)/m4/reorganization/substitutions.m4 \
-	$(top_srcdir)/m4/reorganization/libmspack.m4 \
-	$(top_srcdir)/libclamav/libmspack-0.5alpha/m4/libmspack-opts.m4 \
 	$(top_srcdir)/m4/reorganization/strni.m4 \
 	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -208,7 +208,7 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno config.status.lineno
 mkinstalldirs = $(install_sh) -d
-CONFIG_HEADER = clamav-config.h
+CONFIG_HEADER = clamav-config.h $(top_builddir)/libclammspack/config.h
 CONFIG_CLEAN_FILES = clamav-config libclamav.pc platform.h \
 	docs/man/clamav-milter.8 docs/man/clamav-milter.conf.5 \
 	docs/man/clambc.1 docs/man/clamconf.1 docs/man/clamd.8 \
@@ -441,8 +441,6 @@ LIBCLAMAV_VERSION = @LIBCLAMAV_VERSION@
 LIBCLAMSHARED_CPPFLAGS = @LIBCLAMSHARED_CPPFLAGS@
 LIBLTDL = @LIBLTDL@
 LIBM = @LIBM@
-LIBMSPACK_CFLAGS = @LIBMSPACK_CFLAGS@
-LIBMSPACK_LIBS = @LIBMSPACK_LIBS@
 LIBOBJS = @LIBOBJS@
 LIBPRELUDE_CFLAGS = @LIBPRELUDE_CFLAGS@
 LIBPRELUDE_CONFIG = @LIBPRELUDE_CONFIG@
@@ -577,7 +575,7 @@ ACLOCAL_AMFLAGS = -I m4
 SUBDIRS = libltdl libclamav clamscan clamd clamdscan freshclam sigtool \
 	clamconf database docs etc clamav-milter test clamdtop clambc \
 	unit_tests $(am__append_1) $(am__append_2)
-EXTRA_DIST = examples shared libclamav.pc.in COPYING.bzip2 COPYING.lzma COPYING.unrar COPYING.LGPL COPYING.llvm COPYING.file COPYING.zlib COPYING.getopt COPYING.regex COPYING.YARA COPYING.pcre platform.h.in libclamunrar libclamunrar_iface clamdscan/clamdscan.map win32 libclamav/libmspack-0.5alpha/mspack/mspack.def ChangeLog.md INSTALL.md NEWS.md README.md
+EXTRA_DIST = examples shared libclamav.pc.in COPYING.bzip2 COPYING.lzma COPYING.unrar COPYING.LGPL COPYING.llvm COPYING.file COPYING.zlib COPYING.getopt COPYING.regex COPYING.YARA COPYING.pcre platform.h.in libclamunrar libclamunrar_iface libclammspack clamdscan/clamdscan.map win32 libclamav/libmspack-0.5alpha/mspack/mspack.def ChangeLog.md INSTALL.md NEWS.md README.md
 bin_SCRIPTS = clamav-config
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libclamav.pc
@@ -637,8 +635,16 @@ $(srcdir)/clamav-config.h.in: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 	rm -f stamp-h1
 	touch $@
 
+libclammspack/config.h: libclammspack/stamp-h2
+	@test -f $@ || rm -f libclammspack/stamp-h2
+	@test -f $@ || $(MAKE) $(AM_MAKEFLAGS) libclammspack/stamp-h2
+
+libclammspack/stamp-h2: $(top_srcdir)/libclammspack/config.h.in $(top_builddir)/config.status
+	@rm -f libclammspack/stamp-h2
+	cd $(top_builddir) && $(SHELL) ./config.status libclammspack/config.h
+
 distclean-hdr:
-	-rm -f clamav-config.h stamp-h1
+	-rm -f clamav-config.h stamp-h1 libclammspack/config.h libclammspack/stamp-h2
 clamav-config: $(top_builddir)/config.status $(srcdir)/clamav-config.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 libclamav.pc: $(top_builddir)/config.status $(srcdir)/libclamav.pc.in
