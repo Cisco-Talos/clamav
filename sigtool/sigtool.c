@@ -3392,13 +3392,12 @@ static int dumpcerts(const struct optstruct *opts)
 {
     char * filename = NULL;
     STATBUF sb;
-    const char * fmptr;
     struct cl_engine *engine;
     cli_ctx ctx;
     struct cl_scan_options options;
-    int fd, ret;
-    uint8_t shash1[SHA1_HASH_SIZE];
-	
+    int fd;
+    cl_error_t ret;
+
     logg_file = NULL;
 
     filename = optget(opts, "print-certs")->strarg;
@@ -3474,20 +3473,7 @@ static int dumpcerts(const struct optstruct *opts)
 	return -1;
     }
 
-    fmptr = fmap_need_off_once(*ctx.fmap, 0, sb.st_size);
-    if(!fmptr) {
-        mprintf("!dumpcerts: fmap_need_off_once failed!\n");
-        free(ctx.containers);
-        free(ctx.fmap);
-        close(fd);
-        cl_engine_free(engine);
-	return -1;
-    }
-
-    /* Generate SHA1 */
-    cl_sha1(fmptr, sb.st_size, shash1, NULL);
-
-    ret = cli_checkfp_pe(&ctx, shash1, NULL, CL_CHECKFP_PE_FLAG_AUTHENTICODE);
+    ret = cli_checkfp_pe(&ctx, NULL, CL_CHECKFP_PE_FLAG_AUTHENTICODE);
     
     switch(ret) {
         case CL_CLEAN:
@@ -3500,7 +3486,7 @@ static int dumpcerts(const struct optstruct *opts)
             mprintf("*dumpcerts: CL_BREAK after cli_checkfp_pe()!\n");
             break;
         case CL_EFORMAT:
-            mprintf("!dumpcerts: Not a valid PE file!\n");
+            mprintf("!dumpcerts: An error occurred when parsing the file\n");
             break;
         default:
             mprintf("!dumpcerts: Other error %d inside cli_checkfp_pe.\n", ret);

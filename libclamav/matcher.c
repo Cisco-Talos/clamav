@@ -632,19 +632,14 @@ int cli_checkfp_virus(unsigned char *digest, size_t size, cli_ctx *ctx, const ch
         if (!(ctx->engine->engine_options & ENGINE_OPTIONS_DISABLE_PE_STATS) && !(ctx->engine->dconf->stats & (DCONF_STATS_DISABLED | DCONF_STATS_PE_SECTION_DISABLED)))
             flags |= CL_CHECKFP_PE_FLAG_STATS;
 
-        switch(cli_checkfp_pe(ctx, shash1, &sections, flags)) {
+        switch(cli_checkfp_pe(ctx, &sections, flags)) {
         case CL_CLEAN:
-            cli_dbgmsg("cli_checkfp(pe): PE file whitelisted due to valid embedded digital signature\n");
+            cli_dbgmsg("cli_checkfp(pe): PE file whitelisted due to valid digital signature\n");
             if (sections.sections)
                 free(sections.sections);
             return CL_CLEAN;
-        case CL_VIRUS:
-            if(cli_hm_scan(shash1, 2, &virname, ctx->engine->hm_fp, CLI_HASH_SHA1) == CL_VIRUS) {
-                cli_dbgmsg("cli_checkfp(pe): PE file whitelisted by catalog file\n");
-                if (sections.sections)
-                    free(sections.sections);
-                return CL_CLEAN;
-            }
+        default:
+            break;
         }
     }
 
