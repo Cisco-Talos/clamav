@@ -178,6 +178,8 @@ static void cli_rarload(void) {
     if(is_rar_inited) return;
     is_rar_inited = 1;
 
+    if(have_rar) return;
+
     rhandle = lt_dlfind("libclamunrar_iface", "unrar");
     if (!rhandle)
 	return;
