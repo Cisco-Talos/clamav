@@ -22,7 +22,7 @@ AM_CPPFLAGS = -I$(top_srcdir) -I@srcdir@/nsis $(LTDLINCL)
 AM_CFLAGS=@WERR_CFLAGS@
 lib_LTLIBRARIES =
 COMMON_CLEANFILES =
-EXTRA_DIST = c++/Makefile.nollvm.in libmspack-0.5alpha/Makefile.intmspack.in
+EXTRA_DIST = c++/Makefile.nollvm.in
 if ENABLE_UNRAR
 
 AM_CPPFLAGS += -DWARN_DLOPEN_FAIL
@@ -131,7 +131,7 @@ libclamav_internal_utils_la_SOURCES=str.c\
 					strlcat.c
 
 libclamav_internal_utils_la_LDFLAGS=-static @SSL_LDFLAGS@ @JSON_LDFLAGS@
-libclamav_internal_utils_la_CFLAGS=$(AM_CFLAGS)  -fPIC -DPIC @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
+libclamav_internal_utils_la_CFLAGS=$(AM_CFLAGS)  -fPIC -DPIC @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@ @XML_CPPFLAGS@
 libclamav_internal_utils_la_LIBADD=@SSL_LIBS@ @JSON_LIBS@ @PCRE_LIBS@
 
 libclamav_internal_utils_nothreads_la_SOURCES=str.c\
@@ -174,6 +174,66 @@ c++/Makefile: c++/Makefile.nollvm.in
 distclean-recursive distdir maintainer-clean-recursive: c++/Makefile
 endif
 
+# libmspack version:
+LIBMSPACK_VERSION = 0:5:0
+
+libclammspack_la_CFLAGS = -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -I@top_srcdir@/libclammspack/mspack
+libclammspack_la_LDFLAGS = -version-info $(LIBMSPACK_VERSION) -no-undefined -export-symbols-regex '^mspack_'
+
+# if VERSIONSCRIPT
+# libclammspack_la_LDFLAGS += -Wl,@VERSIONSCRIPTFLAG@,@top_srcdir@/libclammspack/libclammspack.map
+# endif
+
+libclammspack_la_SOURCES = \
+	../libclammspack/mspack/cab.h \
+	../libclammspack/mspack/cabc.c \
+	../libclammspack/mspack/cabd.c \
+	../libclammspack/mspack/chm.h \
+	../libclammspack/mspack/chmc.c \
+	../libclammspack/mspack/chmd.c \
+	../libclammspack/mspack/crc32.c \
+	../libclammspack/mspack/crc32.h \
+	../libclammspack/mspack/des.h \
+	../libclammspack/mspack/hlp.h \
+	../libclammspack/mspack/hlpc.c \
+	../libclammspack/mspack/hlpd.c \
+	../libclammspack/mspack/kwaj.h \
+	../libclammspack/mspack/kwajc.c \
+	../libclammspack/mspack/kwajd.c \
+	../libclammspack/mspack/lit.h \
+	../libclammspack/mspack/litc.c \
+	../libclammspack/mspack/litd.c \
+	../libclammspack/mspack/lzss.h \
+	../libclammspack/mspack/lzssd.c \
+	../libclammspack/mspack/lzx.h \
+	../libclammspack/mspack/lzxc.c \
+	../libclammspack/mspack/lzxd.c \
+	../libclammspack/mspack/mspack.h \
+	../libclammspack/mspack/mszip.h \
+	../libclammspack/mspack/mszipc.c \
+	../libclammspack/mspack/mszipd.c \
+	../libclammspack/mspack/oab.h \
+	../libclammspack/mspack/oabc.c \
+	../libclammspack/mspack/oabd.c \
+	../libclammspack/mspack/qtm.h \
+	../libclammspack/mspack/qtmd.c \
+	../libclammspack/mspack/readbits.h \
+	../libclammspack/mspack/readhuff.h \
+	../libclammspack/mspack/sha.h \
+	../libclammspack/mspack/system.c \
+	../libclammspack/mspack/system.h \
+	../libclammspack/mspack/szdd.h \
+	../libclammspack/mspack/szddc.c \
+	../libclammspack/mspack/szddd.c
+
+lib_LTLIBRARIES += libclammspack.la
+# EXTRA_DIST += @top_srcdir@/libclammspack/libclammspack.map
+
+MSPACK_CFLAGS = -I@top_srcdir@/libclammspack/mspack
+MSPACKLIBADD = -lclammspack
+MSPACKDEP = libclammspack.la
+
+
 if ENABLE_YARA
 YARA_CFLAGS=-DHAVE_YARA
 endif
@@ -181,26 +241,13 @@ endif
 libclamav_nocxx_la_SOURCES = bytecode_nojit.c
 libclamav_nocxx_la_CFLAGS=$(AM_CFLAGS) @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
 
-libclamav_la_LIBADD = @SSL_LIBS@ @JSON_LIBS@ @PCRE_LIBS@ @LIBCLAMAV_LIBS@ @LIBLTDL@ $(IFACELIBADD) $(LLVMLIBADD) libclamav_internal_utils.la @THREAD_LIBS@ @LIBM@
-libclamav_la_DEPENDENCIES =  @LTDLDEPS@ $(IFACEDEP) $(LLVMDEP) libclamav_internal_utils.la
-libclamav_la_CFLAGS =$(AM_CFLAGS) $(XML_CPPFLAGS) $(YARA_CFLAGS) -DSEARCH_LIBDIR=\"$(libdir)\" @LIBCLAMAV_CPPFLAGS@ @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @ICONV_CPPFLAGS@ @PCRE_CPPFLAGS@
+libclamav_la_LIBADD = @SSL_LIBS@ @JSON_LIBS@ @PCRE_LIBS@ @LIBCLAMAV_LIBS@ @LIBLTDL@ $(IFACELIBADD) $(MSPACKLIBADD) $(LLVMLIBADD) libclamav_internal_utils.la @THREAD_LIBS@ @LIBM@
+libclamav_la_DEPENDENCIES =  @LTDLDEPS@ $(IFACEDEP) $(LLVMDEP) $(MSPACKDEP) libclamav_internal_utils.la
+libclamav_la_CFLAGS =$(AM_CFLAGS) $(YARA_CFLAGS) -DSEARCH_LIBDIR=\"$(libdir)\" @LIBCLAMAV_CPPFLAGS@ @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @ICONV_CPPFLAGS@ @PCRE_CPPFLAGS@ @XML_CPPFLAGS@ $(MSPACK_CFLAGS)
 libclamav_la_LDFLAGS = @SSL_LDFLAGS@ @TH_SAFE@ @JSON_LDFLAGS@ @ICONV_LDFLAGS@ $(XML_LIBS) -version-info @LIBCLAMAV_VERSION@ -no-undefined
 
 if VERSIONSCRIPT
 libclamav_la_LDFLAGS += -Wl,@VERSIONSCRIPTFLAG@,@top_srcdir@/libclamav/libclamav.map
-endif
-
-if USE_INTERNAL_MSPACK
-SUBDIRS += libmspack-0.5alpha
-libclamav_la_CFLAGS := -I@top_srcdir@/libclamav/libmspack-0.5alpha/mspack $(libclamav_la_CFLAGS)
-libclamav_la_LIBADD += libmspack-0.5alpha/libclammspack.la
-else
-libclamav_la_CFLAGS += $(LIBMSPACK_CFLAGS)
-libclamav_la_LDFLAGS += $(LIBMSPACK_LIBS)
-EXTRA_DIST += libmspack-0.5alpha
-libmspack-0.5alpha/Makefile: libmspack-0.5alpha/Makefile.intmspack.in
-	$(AM_V_at) cp $< $@
-distclean-recursive distdir maintainer-clean-recursive: libmspack-0.5alpha/Makefile
 endif
 
 include_HEADERS = clamav.h

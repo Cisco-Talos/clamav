@@ -28,7 +28,7 @@ AC_PROG_CXX()
 AH_BOTTOM([#include "platform.h"])
 dnl put configure auxiliary into config
 AC_CONFIG_AUX_DIR([config])
-AC_CONFIG_HEADER([clamav-config.h])
+AC_CONFIG_HEADERS([clamav-config.h libclammspack/config.h:libclammspack/config.h.in])
 
 dnl safety check, this used to be a parameter to AC_INIT
 AC_CONFIG_SRCDIR([clamscan/clamscan.c])
@@ -139,12 +139,10 @@ m4_include([m4/reorganization/bsd.m4])
 dnl Freshclam dependencies
 m4_include([m4/reorganization/libs/curl.m4])
 m4_include([m4/reorganization/substitutions.m4])
-m4_include([m4/reorganization/libmspack.m4])
 m4_include([m4/reorganization/strni.m4])
 
 if test "x$use_internal_mspack" = "xyes"; then
     mspack_msg="Internal"
-    AC_CONFIG_SUBDIRS([libclamav/libmspack-0.5alpha])
     AC_SYS_LARGEFILE
 else
     mspack_msg="External, $LIBMSPACK_CFLAGS $LIBMSPACK_LIBS"
@@ -282,7 +280,6 @@ if test "x$PCRE_HOME" = "x"; then
 else
     CL_MSG_STATUS([pcre        ],[$PCRE_HOME],[$have_pcre])
 fi
-CL_MSG_STATUS([libmspack   ],[yes],[$mspack_msg])
 if test "x$XML_LIBS" = "x"; then 
     CL_MSG_STATUS([libxml2     ],[no],[])
 else

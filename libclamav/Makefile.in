@@ -109,12 +109,7 @@ target_triplet = @target@
 @ENABLE_UNRAR_TRUE@@VERSIONSCRIPT_TRUE@am__append_5 = -Wl,@VERSIONSCRIPTFLAG@,@top_srcdir@/libclamunrar_iface/libclamunrar_iface.map
 @ENABLE_LLVM_TRUE@am__append_6 = c++
 @VERSIONSCRIPT_TRUE@am__append_7 = -Wl,@VERSIONSCRIPTFLAG@,@top_srcdir@/libclamav/libclamav.map
-@USE_INTERNAL_MSPACK_TRUE@am__append_8 = libmspack-0.5alpha
-@USE_INTERNAL_MSPACK_TRUE@am__append_9 = libmspack-0.5alpha/libclammspack.la
-@USE_INTERNAL_MSPACK_FALSE@am__append_10 = $(LIBMSPACK_CFLAGS)
-@USE_INTERNAL_MSPACK_FALSE@am__append_11 = $(LIBMSPACK_LIBS)
-@USE_INTERNAL_MSPACK_FALSE@am__append_12 = libmspack-0.5alpha
-@ENABLE_YARA_TRUE@am__append_13 = yara_arena.c \
+@ENABLE_YARA_TRUE@am__append_8 = yara_arena.c \
 @ENABLE_YARA_TRUE@	yara_arena.h \
 @ENABLE_YARA_TRUE@	yara_compiler.c \
 @ENABLE_YARA_TRUE@	yara_compiler.h \
@@ -207,14 +202,13 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
 	$(top_srcdir)/m4/reorganization/bsd.m4 \
 	$(top_srcdir)/m4/reorganization/libs/curl.m4 \
 	$(top_srcdir)/m4/reorganization/substitutions.m4 \
-	$(top_srcdir)/m4/reorganization/libmspack.m4 \
-	$(top_srcdir)/libclamav/libmspack-0.5alpha/m4/libmspack-opts.m4 \
 	$(top_srcdir)/m4/reorganization/strni.m4 \
 	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(install_sh) -d
-CONFIG_HEADER = $(top_builddir)/clamav-config.h
+CONFIG_HEADER = $(top_builddir)/clamav-config.h \
+	$(top_builddir)/libclammspack/config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
@@ -247,8 +241,9 @@ am__uninstall_files_from_dir = { \
 am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includedir)"
 LTLIBRARIES = $(lib_LTLIBRARIES) $(noinst_LTLIBRARIES)
 @ENABLE_UNRAR_TRUE@am__DEPENDENCIES_1 = libclamunrar_iface.la
-@ENABLE_LLVM_FALSE@am__DEPENDENCIES_2 = libclamav_nocxx.la
-@ENABLE_LLVM_TRUE@am__DEPENDENCIES_2 = c++/libclamavcxx.la
+am__DEPENDENCIES_2 =
+@ENABLE_LLVM_FALSE@am__DEPENDENCIES_3 = libclamav_nocxx.la
+@ENABLE_LLVM_TRUE@am__DEPENDENCIES_3 = c++/libclamavcxx.la
 am__libclamav_la_SOURCES_DIST = matcher-ac.c matcher-ac.h matcher-bm.c \
 	matcher-bm.h matcher-hash.c matcher-hash.h matcher.c matcher.h \
 	others.c others.h readdb.c readdb.h cvd.c cvd.h dsig.c dsig.h \
@@ -555,6 +550,24 @@ libclamav_nocxx_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(libclamav_nocxx_la_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
+libclammspack_la_LIBADD =
+am_libclammspack_la_OBJECTS = libclammspack_la-cabc.lo \
+	libclammspack_la-cabd.lo libclammspack_la-chmc.lo \
+	libclammspack_la-chmd.lo libclammspack_la-crc32.lo \
+	libclammspack_la-hlpc.lo libclammspack_la-hlpd.lo \
+	libclammspack_la-kwajc.lo libclammspack_la-kwajd.lo \
+	libclammspack_la-litc.lo libclammspack_la-litd.lo \
+	libclammspack_la-lzssd.lo libclammspack_la-lzxc.lo \
+	libclammspack_la-lzxd.lo libclammspack_la-mszipc.lo \
+	libclammspack_la-mszipd.lo libclammspack_la-oabc.lo \
+	libclammspack_la-oabd.lo libclammspack_la-qtmd.lo \
+	libclammspack_la-system.lo libclammspack_la-szddc.lo \
+	libclammspack_la-szddd.lo
+libclammspack_la_OBJECTS = $(am_libclammspack_la_OBJECTS)
+libclammspack_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(libclammspack_la_CFLAGS) $(CFLAGS) \
+	$(libclammspack_la_LDFLAGS) $(LDFLAGS) -o $@
 libclamunrar_la_LIBADD =
 am__libclamunrar_la_SOURCES_DIST = ../libclamunrar/archive.cpp \
 	../libclamunrar/arcread.cpp ../libclamunrar/blake2s.cpp \
@@ -663,7 +676,7 @@ AM_V_at = $(am__v_at_@AM_V@)
 am__v_at_ = $(am__v_at_@AM_DEFAULT_V@)
 am__v_at_0 = @
 am__v_at_1 = 
-DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
+DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/libclammspack
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
 am__mv = mv -f
@@ -725,12 +738,12 @@ am__v_YACC_1 =
 SOURCES = $(libclamav_la_SOURCES) \
 	$(libclamav_internal_utils_la_SOURCES) \
 	$(libclamav_internal_utils_nothreads_la_SOURCES) \
-	$(libclamav_nocxx_la_SOURCES) $(libclamunrar_la_SOURCES) \
-	$(libclamunrar_iface_la_SOURCES)
+	$(libclamav_nocxx_la_SOURCES) $(libclammspack_la_SOURCES) \
+	$(libclamunrar_la_SOURCES) $(libclamunrar_iface_la_SOURCES)
 DIST_SOURCES = $(am__libclamav_la_SOURCES_DIST) \
 	$(libclamav_internal_utils_la_SOURCES) \
 	$(libclamav_internal_utils_nothreads_la_SOURCES) \
-	$(libclamav_nocxx_la_SOURCES) \
+	$(libclamav_nocxx_la_SOURCES) $(libclammspack_la_SOURCES) \
 	$(am__libclamunrar_la_SOURCES_DIST) \
 	$(am__libclamunrar_iface_la_SOURCES_DIST)
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
@@ -774,7 +787,7 @@ am__define_uniq_tagged_files = \
   done | $(am__uniquify_input)`
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = c++ libmspack-0.5alpha
+DIST_SUBDIRS = c++
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 am__relativize = \
   dir0=`pwd`; \
@@ -896,8 +909,6 @@ LIBCLAMAV_VERSION = @LIBCLAMAV_VERSION@
 LIBCLAMSHARED_CPPFLAGS = @LIBCLAMSHARED_CPPFLAGS@
 LIBLTDL = @LIBLTDL@
 LIBM = @LIBM@
-LIBMSPACK_CFLAGS = @LIBMSPACK_CFLAGS@
-LIBMSPACK_LIBS = @LIBMSPACK_LIBS@
 LIBOBJS = @LIBOBJS@
 LIBPRELUDE_CFLAGS = @LIBPRELUDE_CFLAGS@
 LIBPRELUDE_CONFIG = @LIBPRELUDE_CONFIG@
@@ -1032,11 +1043,9 @@ AM_YFLAGS = -d
 AM_CPPFLAGS = -I$(top_srcdir) -I@srcdir@/nsis $(LTDLINCL) \
 	$(am__append_1)
 AM_CFLAGS = @WERR_CFLAGS@
-lib_LTLIBRARIES = $(am__append_3) libclamav.la
+lib_LTLIBRARIES = $(am__append_3) libclammspack.la libclamav.la
 COMMON_CLEANFILES = version.h version.h.tmp *.gcda *.gcno
-EXTRA_DIST = c++/Makefile.nollvm.in \
-	libmspack-0.5alpha/Makefile.intmspack.in $(am__append_4) \
-	$(am__append_12) regex/engine.c \
+EXTRA_DIST = c++/Makefile.nollvm.in $(am__append_4) regex/engine.c \
 	tomsfastmath/sqr/fp_sqr_comba.c \
 	tomsfastmath/mul/fp_mul_comba.c libclamav.map \
 	jsparse/generated/operators.h jsparse/generated/keywords.h \
@@ -1132,7 +1141,7 @@ libclamav_internal_utils_la_SOURCES = str.c\
 					strlcat.c
 
 libclamav_internal_utils_la_LDFLAGS = -static @SSL_LDFLAGS@ @JSON_LDFLAGS@
-libclamav_internal_utils_la_CFLAGS = $(AM_CFLAGS)  -fPIC -DPIC @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
+libclamav_internal_utils_la_CFLAGS = $(AM_CFLAGS)  -fPIC -DPIC @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@ @XML_CPPFLAGS@
 libclamav_internal_utils_la_LIBADD = @SSL_LIBS@ @JSON_LIBS@ @PCRE_LIBS@
 libclamav_internal_utils_nothreads_la_SOURCES = str.c\
 					conv.c \
@@ -1160,29 +1169,75 @@ libclamav_internal_utils_nothreads_la_SOURCES = str.c\
 libclamav_internal_utils_nothreads_la_LDFLAGS = -static @SSL_LDFLAGS@ @JSON_LDFLAGS@
 libclamav_internal_utils_nothreads_la_CFLAGS = $(AM_CFLAGS) -DCL_NOTHREADS @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
 libclamav_internal_utils_nothreads_la_LIBADD = @SSL_LIBS@ @JSON_LIBS@ @PCRE_LIBS@
-SUBDIRS = $(am__append_6) $(am__append_8)
+SUBDIRS = $(am__append_6)
 @ENABLE_LLVM_FALSE@LLVMLIBADD = libclamav_nocxx.la
 @ENABLE_LLVM_TRUE@LLVMLIBADD = c++/libclamavcxx.la -lstdc++ -lm
 @ENABLE_LLVM_FALSE@LLVMDEP = libclamav_nocxx.la
 @ENABLE_LLVM_TRUE@LLVMDEP = c++/libclamavcxx.la
+
+# libmspack version:
+LIBMSPACK_VERSION = 0:5:0
+libclammspack_la_CFLAGS = -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -I@top_srcdir@/libclammspack/mspack
+libclammspack_la_LDFLAGS = -version-info $(LIBMSPACK_VERSION) -no-undefined -export-symbols-regex '^mspack_'
+
+# if VERSIONSCRIPT
+# libclammspack_la_LDFLAGS += -Wl,@VERSIONSCRIPTFLAG@,@top_srcdir@/libclammspack/libclammspack.map
+# endif
+libclammspack_la_SOURCES = \
+	../libclammspack/mspack/cab.h \
+	../libclammspack/mspack/cabc.c \
+	../libclammspack/mspack/cabd.c \
+	../libclammspack/mspack/chm.h \
+	../libclammspack/mspack/chmc.c \
+	../libclammspack/mspack/chmd.c \
+	../libclammspack/mspack/crc32.c \
+	../libclammspack/mspack/crc32.h \
+	../libclammspack/mspack/des.h \
+	../libclammspack/mspack/hlp.h \
+	../libclammspack/mspack/hlpc.c \
+	../libclammspack/mspack/hlpd.c \
+	../libclammspack/mspack/kwaj.h \
+	../libclammspack/mspack/kwajc.c \
+	../libclammspack/mspack/kwajd.c \
+	../libclammspack/mspack/lit.h \
+	../libclammspack/mspack/litc.c \
+	../libclammspack/mspack/litd.c \
+	../libclammspack/mspack/lzss.h \
+	../libclammspack/mspack/lzssd.c \
+	../libclammspack/mspack/lzx.h \
+	../libclammspack/mspack/lzxc.c \
+	../libclammspack/mspack/lzxd.c \
+	../libclammspack/mspack/mspack.h \
+	../libclammspack/mspack/mszip.h \
+	../libclammspack/mspack/mszipc.c \
+	../libclammspack/mspack/mszipd.c \
+	../libclammspack/mspack/oab.h \
+	../libclammspack/mspack/oabc.c \
+	../libclammspack/mspack/oabd.c \
+	../libclammspack/mspack/qtm.h \
+	../libclammspack/mspack/qtmd.c \
+	../libclammspack/mspack/readbits.h \
+	../libclammspack/mspack/readhuff.h \
+	../libclammspack/mspack/sha.h \
+	../libclammspack/mspack/system.c \
+	../libclammspack/mspack/system.h \
+	../libclammspack/mspack/szdd.h \
+	../libclammspack/mspack/szddc.c \
+	../libclammspack/mspack/szddd.c
+
+# EXTRA_DIST += @top_srcdir@/libclammspack/libclammspack.map
+MSPACK_CFLAGS = -I@top_srcdir@/libclammspack/mspack
+MSPACKLIBADD = -lclammspack
+MSPACKDEP = libclammspack.la
 @ENABLE_YARA_TRUE@YARA_CFLAGS = -DHAVE_YARA
 libclamav_nocxx_la_SOURCES = bytecode_nojit.c
 libclamav_nocxx_la_CFLAGS = $(AM_CFLAGS) @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
-libclamav_la_LIBADD = @SSL_LIBS@ @JSON_LIBS@ @PCRE_LIBS@ \
-	@LIBCLAMAV_LIBS@ @LIBLTDL@ $(IFACELIBADD) $(LLVMLIBADD) \
-	libclamav_internal_utils.la @THREAD_LIBS@ @LIBM@ \
-	$(am__append_9)
-libclamav_la_DEPENDENCIES = @LTDLDEPS@ $(IFACEDEP) $(LLVMDEP) libclamav_internal_utils.la
-libclamav_la_CFLAGS = $(AM_CFLAGS) $(XML_CPPFLAGS) $(YARA_CFLAGS) \
-	-DSEARCH_LIBDIR=\"$(libdir)\" @LIBCLAMAV_CPPFLAGS@ \
-	@SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @ICONV_CPPFLAGS@ \
-	@PCRE_CPPFLAGS@ $(am__append_10)
-@USE_INTERNAL_MSPACK_TRUE@libclamav_la_CFLAGS := -I@top_srcdir@/libclamav/libmspack-0.5alpha/mspack \
-@USE_INTERNAL_MSPACK_TRUE@	$(libclamav_la_CFLAGS) \
-@USE_INTERNAL_MSPACK_TRUE@	$(am__append_10)
+libclamav_la_LIBADD = @SSL_LIBS@ @JSON_LIBS@ @PCRE_LIBS@ @LIBCLAMAV_LIBS@ @LIBLTDL@ $(IFACELIBADD) $(MSPACKLIBADD) $(LLVMLIBADD) libclamav_internal_utils.la @THREAD_LIBS@ @LIBM@
+libclamav_la_DEPENDENCIES = @LTDLDEPS@ $(IFACEDEP) $(LLVMDEP) $(MSPACKDEP) libclamav_internal_utils.la
+libclamav_la_CFLAGS = $(AM_CFLAGS) $(YARA_CFLAGS) -DSEARCH_LIBDIR=\"$(libdir)\" @LIBCLAMAV_CPPFLAGS@ @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @ICONV_CPPFLAGS@ @PCRE_CPPFLAGS@ @XML_CPPFLAGS@ $(MSPACK_CFLAGS)
 libclamav_la_LDFLAGS = @SSL_LDFLAGS@ @TH_SAFE@ @JSON_LDFLAGS@ \
 	@ICONV_LDFLAGS@ $(XML_LIBS) -version-info @LIBCLAMAV_VERSION@ \
-	-no-undefined $(am__append_7) $(am__append_11)
+	-no-undefined $(am__append_7)
 include_HEADERS = clamav.h
 libclamav_la_SOURCES = matcher-ac.c matcher-ac.h matcher-bm.c \
 	matcher-bm.h matcher-hash.c matcher-hash.h matcher.c matcher.h \
@@ -1240,7 +1295,7 @@ libclamav_la_SOURCES = matcher-ac.c matcher-ac.h matcher-bm.c \
 	openioc.h msdoc.c msdoc.h matcher-pcre.c matcher-pcre.h \
 	regex_pcre.c regex_pcre.h msxml.c msxml.h msxml_parser.c \
 	msxml_parser.h tiff.c tiff.h hwp.c hwp.h lzw/lzwdec.c \
-	lzw/lzwdec.h $(am__append_13) bignum.h bignum_fast.h \
+	lzw/lzwdec.h $(am__append_8) bignum.h bignum_fast.h \
 	tomsfastmath/addsub/fp_add.c tomsfastmath/addsub/fp_add_d.c \
 	tomsfastmath/addsub/fp_addmod.c tomsfastmath/addsub/fp_cmp.c \
 	tomsfastmath/addsub/fp_cmp_d.c \
@@ -1405,6 +1460,9 @@ libclamav_internal_utils_nothreads.la: $(libclamav_internal_utils_nothreads_la_O
 
 libclamav_nocxx.la: $(libclamav_nocxx_la_OBJECTS) $(libclamav_nocxx_la_DEPENDENCIES) $(EXTRA_libclamav_nocxx_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(libclamav_nocxx_la_LINK)  $(libclamav_nocxx_la_OBJECTS) $(libclamav_nocxx_la_LIBADD) $(LIBS)
+
+libclammspack.la: $(libclammspack_la_OBJECTS) $(libclammspack_la_DEPENDENCIES) $(EXTRA_libclammspack_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(libclammspack_la_LINK) -rpath $(libdir) $(libclammspack_la_OBJECTS) $(libclammspack_la_LIBADD) $(LIBS)
 
 libclamunrar.la: $(libclamunrar_la_OBJECTS) $(libclamunrar_la_DEPENDENCIES) $(EXTRA_libclamunrar_la_DEPENDENCIES) 
 	$(AM_V_CXXLD)$(libclamunrar_la_LINK) $(am_libclamunrar_la_rpath) $(libclamunrar_la_OBJECTS) $(libclamunrar_la_LIBADD) $(LIBS)
@@ -1675,6 +1733,28 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-yara_parser.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-yc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_nocxx_la-bytecode_nojit.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclammspack_la-cabc.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclammspack_la-cabd.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclammspack_la-chmc.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclammspack_la-chmd.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclammspack_la-crc32.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclammspack_la-hlpc.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclammspack_la-hlpd.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclammspack_la-kwajc.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclammspack_la-kwajd.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclammspack_la-litc.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclammspack_la-litd.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclammspack_la-lzssd.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclammspack_la-lzxc.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclammspack_la-lzxd.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclammspack_la-mszipc.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclammspack_la-mszipd.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclammspack_la-oabc.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclammspack_la-oabd.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclammspack_la-qtmd.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclammspack_la-system.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclammspack_la-szddc.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclammspack_la-szddd.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-archive.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-arcread.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamunrar_la-blake2s.Plo@am__quote@
@@ -3547,6 +3627,160 @@ libclamav_nocxx_la-bytecode_nojit.lo: bytecode_nojit.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_nocxx_la_CFLAGS) $(CFLAGS) -c -o libclamav_nocxx_la-bytecode_nojit.lo `test -f 'bytecode_nojit.c' || echo '$(srcdir)/'`bytecode_nojit.c
 
+libclammspack_la-cabc.lo: ../libclammspack/mspack/cabc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclammspack_la_CFLAGS) $(CFLAGS) -MT libclammspack_la-cabc.lo -MD -MP -MF $(DEPDIR)/libclammspack_la-cabc.Tpo -c -o libclammspack_la-cabc.lo `test -f '../libclammspack/mspack/cabc.c' || echo '$(srcdir)/'`../libclammspack/mspack/cabc.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclammspack_la-cabc.Tpo $(DEPDIR)/libclammspack_la-cabc.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='../libclammspack/mspack/cabc.c' object='libclammspack_la-cabc.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclammspack_la_CFLAGS) $(CFLAGS) -c -o libclammspack_la-cabc.lo `test -f '../libclammspack/mspack/cabc.c' || echo '$(srcdir)/'`../libclammspack/mspack/cabc.c
+
+libclammspack_la-cabd.lo: ../libclammspack/mspack/cabd.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclammspack_la_CFLAGS) $(CFLAGS) -MT libclammspack_la-cabd.lo -MD -MP -MF $(DEPDIR)/libclammspack_la-cabd.Tpo -c -o libclammspack_la-cabd.lo `test -f '../libclammspack/mspack/cabd.c' || echo '$(srcdir)/'`../libclammspack/mspack/cabd.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclammspack_la-cabd.Tpo $(DEPDIR)/libclammspack_la-cabd.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='../libclammspack/mspack/cabd.c' object='libclammspack_la-cabd.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclammspack_la_CFLAGS) $(CFLAGS) -c -o libclammspack_la-cabd.lo `test -f '../libclammspack/mspack/cabd.c' || echo '$(srcdir)/'`../libclammspack/mspack/cabd.c
+
+libclammspack_la-chmc.lo: ../libclammspack/mspack/chmc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclammspack_la_CFLAGS) $(CFLAGS) -MT libclammspack_la-chmc.lo -MD -MP -MF $(DEPDIR)/libclammspack_la-chmc.Tpo -c -o libclammspack_la-chmc.lo `test -f '../libclammspack/mspack/chmc.c' || echo '$(srcdir)/'`../libclammspack/mspack/chmc.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclammspack_la-chmc.Tpo $(DEPDIR)/libclammspack_la-chmc.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='../libclammspack/mspack/chmc.c' object='libclammspack_la-chmc.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclammspack_la_CFLAGS) $(CFLAGS) -c -o libclammspack_la-chmc.lo `test -f '../libclammspack/mspack/chmc.c' || echo '$(srcdir)/'`../libclammspack/mspack/chmc.c
+
+libclammspack_la-chmd.lo: ../libclammspack/mspack/chmd.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclammspack_la_CFLAGS) $(CFLAGS) -MT libclammspack_la-chmd.lo -MD -MP -MF $(DEPDIR)/libclammspack_la-chmd.Tpo -c -o libclammspack_la-chmd.lo `test -f '../libclammspack/mspack/chmd.c' || echo '$(srcdir)/'`../libclammspack/mspack/chmd.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclammspack_la-chmd.Tpo $(DEPDIR)/libclammspack_la-chmd.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='../libclammspack/mspack/chmd.c' object='libclammspack_la-chmd.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclammspack_la_CFLAGS) $(CFLAGS) -c -o libclammspack_la-chmd.lo `test -f '../libclammspack/mspack/chmd.c' || echo '$(srcdir)/'`../libclammspack/mspack/chmd.c
+
+libclammspack_la-crc32.lo: ../libclammspack/mspack/crc32.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclammspack_la_CFLAGS) $(CFLAGS) -MT libclammspack_la-crc32.lo -MD -MP -MF $(DEPDIR)/libclammspack_la-crc32.Tpo -c -o libclammspack_la-crc32.lo `test -f '../libclammspack/mspack/crc32.c' || echo '$(srcdir)/'`../libclammspack/mspack/crc32.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclammspack_la-crc32.Tpo $(DEPDIR)/libclammspack_la-crc32.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='../libclammspack/mspack/crc32.c' object='libclammspack_la-crc32.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclammspack_la_CFLAGS) $(CFLAGS) -c -o libclammspack_la-crc32.lo `test -f '../libclammspack/mspack/crc32.c' || echo '$(srcdir)/'`../libclammspack/mspack/crc32.c
+
+libclammspack_la-hlpc.lo: ../libclammspack/mspack/hlpc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclammspack_la_CFLAGS) $(CFLAGS) -MT libclammspack_la-hlpc.lo -MD -MP -MF $(DEPDIR)/libclammspack_la-hlpc.Tpo -c -o libclammspack_la-hlpc.lo `test -f '../libclammspack/mspack/hlpc.c' || echo '$(srcdir)/'`../libclammspack/mspack/hlpc.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclammspack_la-hlpc.Tpo $(DEPDIR)/libclammspack_la-hlpc.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='../libclammspack/mspack/hlpc.c' object='libclammspack_la-hlpc.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclammspack_la_CFLAGS) $(CFLAGS) -c -o libclammspack_la-hlpc.lo `test -f '../libclammspack/mspack/hlpc.c' || echo '$(srcdir)/'`../libclammspack/mspack/hlpc.c
+
+libclammspack_la-hlpd.lo: ../libclammspack/mspack/hlpd.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclammspack_la_CFLAGS) $(CFLAGS) -MT libclammspack_la-hlpd.lo -MD -MP -MF $(DEPDIR)/libclammspack_la-hlpd.Tpo -c -o libclammspack_la-hlpd.lo `test -f '../libclammspack/mspack/hlpd.c' || echo '$(srcdir)/'`../libclammspack/mspack/hlpd.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclammspack_la-hlpd.Tpo $(DEPDIR)/libclammspack_la-hlpd.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='../libclammspack/mspack/hlpd.c' object='libclammspack_la-hlpd.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclammspack_la_CFLAGS) $(CFLAGS) -c -o libclammspack_la-hlpd.lo `test -f '../libclammspack/mspack/hlpd.c' || echo '$(srcdir)/'`../libclammspack/mspack/hlpd.c
+
+libclammspack_la-kwajc.lo: ../libclammspack/mspack/kwajc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclammspack_la_CFLAGS) $(CFLAGS) -MT libclammspack_la-kwajc.lo -MD -MP -MF $(DEPDIR)/libclammspack_la-kwajc.Tpo -c -o libclammspack_la-kwajc.lo `test -f '../libclammspack/mspack/kwajc.c' || echo '$(srcdir)/'`../libclammspack/mspack/kwajc.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclammspack_la-kwajc.Tpo $(DEPDIR)/libclammspack_la-kwajc.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='../libclammspack/mspack/kwajc.c' object='libclammspack_la-kwajc.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclammspack_la_CFLAGS) $(CFLAGS) -c -o libclammspack_la-kwajc.lo `test -f '../libclammspack/mspack/kwajc.c' || echo '$(srcdir)/'`../libclammspack/mspack/kwajc.c
+
+libclammspack_la-kwajd.lo: ../libclammspack/mspack/kwajd.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclammspack_la_CFLAGS) $(CFLAGS) -MT libclammspack_la-kwajd.lo -MD -MP -MF $(DEPDIR)/libclammspack_la-kwajd.Tpo -c -o libclammspack_la-kwajd.lo `test -f '../libclammspack/mspack/kwajd.c' || echo '$(srcdir)/'`../libclammspack/mspack/kwajd.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclammspack_la-kwajd.Tpo $(DEPDIR)/libclammspack_la-kwajd.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='../libclammspack/mspack/kwajd.c' object='libclammspack_la-kwajd.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclammspack_la_CFLAGS) $(CFLAGS) -c -o libclammspack_la-kwajd.lo `test -f '../libclammspack/mspack/kwajd.c' || echo '$(srcdir)/'`../libclammspack/mspack/kwajd.c
+
+libclammspack_la-litc.lo: ../libclammspack/mspack/litc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclammspack_la_CFLAGS) $(CFLAGS) -MT libclammspack_la-litc.lo -MD -MP -MF $(DEPDIR)/libclammspack_la-litc.Tpo -c -o libclammspack_la-litc.lo `test -f '../libclammspack/mspack/litc.c' || echo '$(srcdir)/'`../libclammspack/mspack/litc.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclammspack_la-litc.Tpo $(DEPDIR)/libclammspack_la-litc.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='../libclammspack/mspack/litc.c' object='libclammspack_la-litc.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclammspack_la_CFLAGS) $(CFLAGS) -c -o libclammspack_la-litc.lo `test -f '../libclammspack/mspack/litc.c' || echo '$(srcdir)/'`../libclammspack/mspack/litc.c
+
+libclammspack_la-litd.lo: ../libclammspack/mspack/litd.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclammspack_la_CFLAGS) $(CFLAGS) -MT libclammspack_la-litd.lo -MD -MP -MF $(DEPDIR)/libclammspack_la-litd.Tpo -c -o libclammspack_la-litd.lo `test -f '../libclammspack/mspack/litd.c' || echo '$(srcdir)/'`../libclammspack/mspack/litd.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclammspack_la-litd.Tpo $(DEPDIR)/libclammspack_la-litd.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='../libclammspack/mspack/litd.c' object='libclammspack_la-litd.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclammspack_la_CFLAGS) $(CFLAGS) -c -o libclammspack_la-litd.lo `test -f '../libclammspack/mspack/litd.c' || echo '$(srcdir)/'`../libclammspack/mspack/litd.c
+
+libclammspack_la-lzssd.lo: ../libclammspack/mspack/lzssd.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclammspack_la_CFLAGS) $(CFLAGS) -MT libclammspack_la-lzssd.lo -MD -MP -MF $(DEPDIR)/libclammspack_la-lzssd.Tpo -c -o libclammspack_la-lzssd.lo `test -f '../libclammspack/mspack/lzssd.c' || echo '$(srcdir)/'`../libclammspack/mspack/lzssd.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclammspack_la-lzssd.Tpo $(DEPDIR)/libclammspack_la-lzssd.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='../libclammspack/mspack/lzssd.c' object='libclammspack_la-lzssd.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclammspack_la_CFLAGS) $(CFLAGS) -c -o libclammspack_la-lzssd.lo `test -f '../libclammspack/mspack/lzssd.c' || echo '$(srcdir)/'`../libclammspack/mspack/lzssd.c
+
+libclammspack_la-lzxc.lo: ../libclammspack/mspack/lzxc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclammspack_la_CFLAGS) $(CFLAGS) -MT libclammspack_la-lzxc.lo -MD -MP -MF $(DEPDIR)/libclammspack_la-lzxc.Tpo -c -o libclammspack_la-lzxc.lo `test -f '../libclammspack/mspack/lzxc.c' || echo '$(srcdir)/'`../libclammspack/mspack/lzxc.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclammspack_la-lzxc.Tpo $(DEPDIR)/libclammspack_la-lzxc.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='../libclammspack/mspack/lzxc.c' object='libclammspack_la-lzxc.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclammspack_la_CFLAGS) $(CFLAGS) -c -o libclammspack_la-lzxc.lo `test -f '../libclammspack/mspack/lzxc.c' || echo '$(srcdir)/'`../libclammspack/mspack/lzxc.c
+
+libclammspack_la-lzxd.lo: ../libclammspack/mspack/lzxd.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclammspack_la_CFLAGS) $(CFLAGS) -MT libclammspack_la-lzxd.lo -MD -MP -MF $(DEPDIR)/libclammspack_la-lzxd.Tpo -c -o libclammspack_la-lzxd.lo `test -f '../libclammspack/mspack/lzxd.c' || echo '$(srcdir)/'`../libclammspack/mspack/lzxd.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclammspack_la-lzxd.Tpo $(DEPDIR)/libclammspack_la-lzxd.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='../libclammspack/mspack/lzxd.c' object='libclammspack_la-lzxd.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclammspack_la_CFLAGS) $(CFLAGS) -c -o libclammspack_la-lzxd.lo `test -f '../libclammspack/mspack/lzxd.c' || echo '$(srcdir)/'`../libclammspack/mspack/lzxd.c
+
+libclammspack_la-mszipc.lo: ../libclammspack/mspack/mszipc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclammspack_la_CFLAGS) $(CFLAGS) -MT libclammspack_la-mszipc.lo -MD -MP -MF $(DEPDIR)/libclammspack_la-mszipc.Tpo -c -o libclammspack_la-mszipc.lo `test -f '../libclammspack/mspack/mszipc.c' || echo '$(srcdir)/'`../libclammspack/mspack/mszipc.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclammspack_la-mszipc.Tpo $(DEPDIR)/libclammspack_la-mszipc.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='../libclammspack/mspack/mszipc.c' object='libclammspack_la-mszipc.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclammspack_la_CFLAGS) $(CFLAGS) -c -o libclammspack_la-mszipc.lo `test -f '../libclammspack/mspack/mszipc.c' || echo '$(srcdir)/'`../libclammspack/mspack/mszipc.c
+
+libclammspack_la-mszipd.lo: ../libclammspack/mspack/mszipd.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclammspack_la_CFLAGS) $(CFLAGS) -MT libclammspack_la-mszipd.lo -MD -MP -MF $(DEPDIR)/libclammspack_la-mszipd.Tpo -c -o libclammspack_la-mszipd.lo `test -f '../libclammspack/mspack/mszipd.c' || echo '$(srcdir)/'`../libclammspack/mspack/mszipd.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclammspack_la-mszipd.Tpo $(DEPDIR)/libclammspack_la-mszipd.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='../libclammspack/mspack/mszipd.c' object='libclammspack_la-mszipd.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclammspack_la_CFLAGS) $(CFLAGS) -c -o libclammspack_la-mszipd.lo `test -f '../libclammspack/mspack/mszipd.c' || echo '$(srcdir)/'`../libclammspack/mspack/mszipd.c
+
+libclammspack_la-oabc.lo: ../libclammspack/mspack/oabc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclammspack_la_CFLAGS) $(CFLAGS) -MT libclammspack_la-oabc.lo -MD -MP -MF $(DEPDIR)/libclammspack_la-oabc.Tpo -c -o libclammspack_la-oabc.lo `test -f '../libclammspack/mspack/oabc.c' || echo '$(srcdir)/'`../libclammspack/mspack/oabc.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclammspack_la-oabc.Tpo $(DEPDIR)/libclammspack_la-oabc.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='../libclammspack/mspack/oabc.c' object='libclammspack_la-oabc.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclammspack_la_CFLAGS) $(CFLAGS) -c -o libclammspack_la-oabc.lo `test -f '../libclammspack/mspack/oabc.c' || echo '$(srcdir)/'`../libclammspack/mspack/oabc.c
+
+libclammspack_la-oabd.lo: ../libclammspack/mspack/oabd.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclammspack_la_CFLAGS) $(CFLAGS) -MT libclammspack_la-oabd.lo -MD -MP -MF $(DEPDIR)/libclammspack_la-oabd.Tpo -c -o libclammspack_la-oabd.lo `test -f '../libclammspack/mspack/oabd.c' || echo '$(srcdir)/'`../libclammspack/mspack/oabd.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclammspack_la-oabd.Tpo $(DEPDIR)/libclammspack_la-oabd.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='../libclammspack/mspack/oabd.c' object='libclammspack_la-oabd.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclammspack_la_CFLAGS) $(CFLAGS) -c -o libclammspack_la-oabd.lo `test -f '../libclammspack/mspack/oabd.c' || echo '$(srcdir)/'`../libclammspack/mspack/oabd.c
+
+libclammspack_la-qtmd.lo: ../libclammspack/mspack/qtmd.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclammspack_la_CFLAGS) $(CFLAGS) -MT libclammspack_la-qtmd.lo -MD -MP -MF $(DEPDIR)/libclammspack_la-qtmd.Tpo -c -o libclammspack_la-qtmd.lo `test -f '../libclammspack/mspack/qtmd.c' || echo '$(srcdir)/'`../libclammspack/mspack/qtmd.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclammspack_la-qtmd.Tpo $(DEPDIR)/libclammspack_la-qtmd.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='../libclammspack/mspack/qtmd.c' object='libclammspack_la-qtmd.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclammspack_la_CFLAGS) $(CFLAGS) -c -o libclammspack_la-qtmd.lo `test -f '../libclammspack/mspack/qtmd.c' || echo '$(srcdir)/'`../libclammspack/mspack/qtmd.c
+
+libclammspack_la-system.lo: ../libclammspack/mspack/system.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclammspack_la_CFLAGS) $(CFLAGS) -MT libclammspack_la-system.lo -MD -MP -MF $(DEPDIR)/libclammspack_la-system.Tpo -c -o libclammspack_la-system.lo `test -f '../libclammspack/mspack/system.c' || echo '$(srcdir)/'`../libclammspack/mspack/system.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclammspack_la-system.Tpo $(DEPDIR)/libclammspack_la-system.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='../libclammspack/mspack/system.c' object='libclammspack_la-system.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclammspack_la_CFLAGS) $(CFLAGS) -c -o libclammspack_la-system.lo `test -f '../libclammspack/mspack/system.c' || echo '$(srcdir)/'`../libclammspack/mspack/system.c
+
+libclammspack_la-szddc.lo: ../libclammspack/mspack/szddc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclammspack_la_CFLAGS) $(CFLAGS) -MT libclammspack_la-szddc.lo -MD -MP -MF $(DEPDIR)/libclammspack_la-szddc.Tpo -c -o libclammspack_la-szddc.lo `test -f '../libclammspack/mspack/szddc.c' || echo '$(srcdir)/'`../libclammspack/mspack/szddc.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclammspack_la-szddc.Tpo $(DEPDIR)/libclammspack_la-szddc.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='../libclammspack/mspack/szddc.c' object='libclammspack_la-szddc.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclammspack_la_CFLAGS) $(CFLAGS) -c -o libclammspack_la-szddc.lo `test -f '../libclammspack/mspack/szddc.c' || echo '$(srcdir)/'`../libclammspack/mspack/szddc.c
+
+libclammspack_la-szddd.lo: ../libclammspack/mspack/szddd.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclammspack_la_CFLAGS) $(CFLAGS) -MT libclammspack_la-szddd.lo -MD -MP -MF $(DEPDIR)/libclammspack_la-szddd.Tpo -c -o libclammspack_la-szddd.lo `test -f '../libclammspack/mspack/szddd.c' || echo '$(srcdir)/'`../libclammspack/mspack/szddd.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclammspack_la-szddd.Tpo $(DEPDIR)/libclammspack_la-szddd.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='../libclammspack/mspack/szddd.c' object='libclammspack_la-szddd.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclammspack_la_CFLAGS) $(CFLAGS) -c -o libclammspack_la-szddd.lo `test -f '../libclammspack/mspack/szddd.c' || echo '$(srcdir)/'`../libclammspack/mspack/szddd.c
+
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
@@ -4251,9 +4485,6 @@ uninstall-am: uninstall-includeHEADERS uninstall-libLTLIBRARIES
 @ENABLE_LLVM_FALSE@c++/Makefile: c++/Makefile.nollvm.in
 @ENABLE_LLVM_FALSE@	$(AM_V_at) cp $< $@
 @ENABLE_LLVM_FALSE@distclean-recursive distdir maintainer-clean-recursive: c++/Makefile
-@USE_INTERNAL_MSPACK_FALSE@libmspack-0.5alpha/Makefile: libmspack-0.5alpha/Makefile.intmspack.in
-@USE_INTERNAL_MSPACK_FALSE@	$(AM_V_at) cp $< $@
-@USE_INTERNAL_MSPACK_FALSE@distclean-recursive distdir maintainer-clean-recursive: libmspack-0.5alpha/Makefile
 
 .PHONY: version.h.tmp
 version.c: version.h
