@@ -1360,7 +1360,7 @@ static int asn1_parse_countersignature(fmap_t *map, const void **asn1data, unsig
     return 1;
 }
 
-static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmgr *cmgr, int embedded, const void **hashes, unsigned int *hashes_size, struct cl_engine *engine) {
+static cl_error_t asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmgr *cmgr, int embedded, const void **hashes, unsigned int *hashes_size, struct cl_engine *engine) {
     struct cli_asn1 asn1, deep, deeper;
     uint8_t issuer[SHA1_HASH_SIZE], serial[SHA1_HASH_SIZE];
     const uint8_t *message, *attrs;
@@ -1374,7 +1374,7 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
     cli_crt *x509;
     void *ctx;
     int result;
-    int isBlacklisted = 0;
+    cl_error_t ret = CL_EPARSE;
 
     cli_dbgmsg("in asn1_parse_mscat\n");
 
@@ -1589,9 +1589,10 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
                             // NOTE: In this case, parent is a blacklist entry
                             // in cmgr for this certificate, not a blacklist
                             // entry for this certificate's parent
-                            isBlacklisted = 1;
+                            ret = CL_VIRUS;
                             cli_dbgmsg("asn1_parse_mscat: Authenticode certificate %s is revoked. Flagging sample as virus.\n", (parent->name ? parent->name : "(no name)"));
-                            break;
+                            crtmgr_free(&newcerts);
+                            goto finish;
                         }
 
                         // TODO Why is this done?
@@ -1874,6 +1875,7 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
         // Verify the authenticatedAttributes
         if(!(x509 = crtmgr_verify_pkcs7(cmgr, issuer, serial, asn1.content, asn1.size, hashtype, hash, VRFY_CODE))) {
             cli_dbgmsg("asn1_parse_mscat: pkcs7 signature verification failed\n");
+            ret = CL_EVERIFY;
             break;
         }
         message = asn1.content;
@@ -1895,10 +1897,12 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
 
             if(now < x509->not_before || now > x509->not_after) {
                 cli_dbgmsg("asn1_parse_mscat: no countersignature (unauthAttrs missing) and signing certificate has expired\n");
+                ret = CL_EVERIFY;
                 break;
             }
 
             cli_dbgmsg("asn1_parse_mscat: no countersignature (unauthAttrs missing) but the signing certificate is still valid\n");
+            ret = CL_CLEAN;
             goto finish;
         }
 
@@ -1998,6 +2002,8 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
         if(dsize)
             break;
 
+        cli_dbgmsg("asn1_parse_mscat: unauthenticatedAttributes successfully parsed\n");
+
         if (1 != (result & 1)) {
             time_t now;
 
@@ -2006,23 +2012,22 @@ static int asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmg
 
             if(now < x509->not_before || now > x509->not_after) {
                 cli_dbgmsg("asn1_parse_mscat: no countersignature and signing certificate has expired\n");
+                ret = CL_EVERIFY;
                 break;
             }
 
             cli_dbgmsg("asn1_parse_mscat: no countersignature but the signing certificate is still valid\n");
         }
 
-        cli_dbgmsg("asn1_parse_mscat: unauthenticatedAttributes successfully parsed\n");
+        ret = CL_CLEAN;
 
-finish:
-        if (isBlacklisted) {
-            return 1;
-        }
-        return 0;
     } while(0);
 
-    cli_dbgmsg("asn1_parse_mscat: failed to parse catalog\n");
-    return 1;
+finish:
+    if (CL_EPARSE == ret) {
+        cli_dbgmsg("asn1_parse_mscat: failed to parse authenticode section\n");
+    }
+    return ret;
 }
 
 int asn1_load_mscat(fmap_t *map, struct cl_engine *engine) {
@@ -2031,7 +2036,15 @@ int asn1_load_mscat(fmap_t *map, struct cl_engine *engine) {
     struct cli_matcher *db;
     int i;
 
-    if(asn1_parse_mscat(map, 0, map->len, &engine->cmgr, 0, &c.next, &size, engine))
+    // TODO As currently implemented, loading in a .cat file with -d requires
+    // an accompanying .crb with whitelist entries that will cause the .cat
+    // file signatures to verify successfully.  If a user is specifying a .cat
+    // file to use, though, we should assume they trust it and at least add the
+    // covered hashes from it to hm_fp
+    // TODO Since we pass engine->cmgr directly here, the whole chain of trust
+    // for this .cat file will get added to the global trust store assuming it
+    // verifies successfully.  Is this a bug for a feature?
+    if(CL_CLEAN != asn1_parse_mscat(map, 0, map->len, &engine->cmgr, 0, &c.next, &size, engine))
         return 1;
 
     if(asn1_expect_objtype(map, c.next, &size, &c, ASN1_TYPE_SEQUENCE))
@@ -2172,7 +2185,12 @@ int asn1_load_mscat(fmap_t *map, struct cl_engine *engine) {
     return 0;
 }
 
-int asn1_check_mscat(struct cl_engine *engine, fmap_t *map, size_t offset, unsigned int size, struct cli_mapped_region *regions, uint32_t nregions) {
+/* Check an embedded PE Authenticode section to determine whether it's trusted.
+ * This will return CL_CLEAN if the file should be trusted, CL_EPARSE if an
+ * error occurred while parsing the signature, CL_EVERIFY if parsing was
+ * successful but there were no whitelist rules for the signature, and
+ * CL_VIRUS if a blacklist rule was found for an embedded certificate. */
+cl_error_t asn1_check_mscat(struct cl_engine *engine, fmap_t *map, size_t offset, unsigned int size, struct cli_mapped_region *regions, uint32_t nregions) {
     unsigned int content_size;
     struct cli_asn1 c;
     cli_crt_hashtype hashtype;
@@ -2183,29 +2201,30 @@ int asn1_check_mscat(struct cl_engine *engine, fmap_t *map, size_t offset, unsig
     int ret;
     void *ctx;
 
+    // TODO Move these into cli_checkfp_pe
     if (!(engine->dconf->pe & PE_CONF_CERTS))
-        return CL_VIRUS;
+        return CL_EVERIFY;
     if (engine->engine_options & ENGINE_OPTIONS_DISABLE_PE_CERTS)
-        return CL_VIRUS;
+        return CL_EVERIFY;
 
     cli_dbgmsg("in asn1_check_mscat (offset: %llu)\n", (long long unsigned)offset);
     crtmgr_init(&certs);
     if(crtmgr_add_roots(engine, &certs)) {
         crtmgr_free(&certs);
-        return CL_VIRUS;
+        return CL_EVERIFY;
     }
     ret = asn1_parse_mscat(map, offset, size, &certs, 1, &content, &content_size, engine);
     crtmgr_free(&certs);
-    if(ret)
-        return CL_VIRUS;
+    if(CL_CLEAN != ret)
+        return ret;
 
     if(asn1_expect_objtype(map, content, &content_size, &c, ASN1_TYPE_SEQUENCE)) {
         cli_dbgmsg("asn1_check_mscat: expected SEQUENCE at top level of hash container\n");
-        return CL_VIRUS;
+        return CL_EPARSE;
     }
     if(asn1_expect_obj(map, &c.content, &c.size, ASN1_TYPE_OBJECT_ID, lenof(OID_SPC_PE_IMAGE_DATA_OBJID), OID_SPC_PE_IMAGE_DATA_OBJID)) {
         cli_dbgmsg("asn1_check_mscat: expected spcPEImageData OID in the first hash SEQUENCE\n");
-        return CL_VIRUS;
+        return CL_EPARSE;
     }
 
     // TODO Should we do anything with the underlying SEQUENCE and data?  From
@@ -2214,28 +2233,31 @@ int asn1_check_mscat(struct cl_engine *engine, fmap_t *map, size_t offset, unsig
 
     if(asn1_expect_objtype(map, c.next, &content_size, &c, ASN1_TYPE_SEQUENCE)) {
         cli_dbgmsg("asn1_check_mscat: expected second hash container object to be a SEQUENCE\n");
-        return CL_VIRUS;
+        return CL_EPARSE;
     }
     if(content_size) {
         cli_dbgmsg("asn1_check_mscat: extra data in hash SEQUENCE\n");
-        return CL_VIRUS;
+        return CL_EPARSE;
     }
 
     if(asn1_expect_hash_algo(map, &c.content, &c.size, &hashtype, &hashsize)) {
         cli_dbgmsg("asn1_check_mscat: unexpected file hash algo\n");
-        return CL_VIRUS;
+        return CL_EPARSE;
     }
 
     if (NULL == (ctx = get_hash_ctx(hashtype))) {
-        return CL_VIRUS;
+        return CL_EPARSE;
     }
 
     // Now that we know the hash algorithm, compute the authenticode hash
     // across the required regions of memory.
     for(unsigned int i = 0; i < nregions; i++) {
-        const uint8_t *hptr; \
+        const uint8_t *hptr;
+        if (0 == regions[i].size) {
+            continue;
+        }
         if(!(hptr = fmap_need_off_once(map, regions[i].offset, regions[i].size))){
-            return CL_VIRUS;
+            return CL_EVERIFY;
         }
 
         cl_update_hash(ctx, hptr, regions[i].size);
@@ -2252,11 +2274,11 @@ int asn1_check_mscat(struct cl_engine *engine, fmap_t *map, size_t offset, unsig
 
     if(asn1_expect_obj(map, &c.content, &c.size, ASN1_TYPE_OCTET_STRING, hashsize, hash)) {
         cli_dbgmsg("asn1_check_mscat: computed authenticode hash did not match stored value\n");
-        return CL_VIRUS;
+        return CL_EVERIFY;
     }
     if(c.size) {
         cli_dbgmsg("asn1_check_mscat: extra data after the stored authenticode hash\n");
-        return CL_VIRUS;
+        return CL_EPARSE;
     }
 
     cli_dbgmsg("asn1_check_mscat: file with valid authenticode signature, whitelisted\n");

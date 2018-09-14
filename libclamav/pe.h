@@ -187,7 +187,7 @@ enum {
 };
 
 int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo);
-int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uint32_t flags);
+cl_error_t cli_checkfp_pe(cli_ctx *ctx, stats_section_t *hashes, uint32_t flags);
 int cli_genhash_pe(cli_ctx *ctx, unsigned int class, int type);
 
 uint32_t cli_rawaddr(uint32_t, const struct cli_exe_section *, uint16_t, unsigned int *, size_t, uint32_t);
