@@ -1,5 +1,5 @@
 /* libmspack -- a library for working with Microsoft compression formats.
- * (C) 2003-2013 Stuart Caie <kyzer@4u.net>
+ * (C) 2003-2016 Stuart Caie <kyzer@cabextract.org.uk>
  *
  * libmspack is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License (LGPL) version 2.1
@@ -328,7 +328,9 @@ struct mspack_system {
    * @param bytes   the number of bytes to read from the file.
    * @return the number of bytes successfully read (this can be less than
    *         the number requested), zero to mark the end of file, or less
-   *         than zero to indicate an error.
+   *         than zero to indicate an error. The library does not "retry"
+   *         reads and assumes short reads are due to EOF, so you should
+   *         avoid returning short reads because of transient errors.
    * @see open(), write()
    */
   int (*read)(struct mspack_file *file,
@@ -711,9 +713,6 @@ struct mscabd_cabinet {
   
   /** The file offset of cabinet within the physical file it resides in. */
   off_t base_offset;
-
-  /** The offset within the cabinet of the first file entry */
-  off_t file_offset;
 
   /** The length of the cabinet file in bytes. */
   unsigned int length;

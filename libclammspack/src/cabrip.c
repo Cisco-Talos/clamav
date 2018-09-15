@@ -25,7 +25,7 @@ void rip(char *fname, off_t offset, unsigned int length) {
 	 fname, offset, length, outname);
 
   if ((in = fopen(fname, "rb"))) {
-#ifdef HAVE_FSEEKO
+#if HAVE_FSEEKO
     if (!fseeko(in, offset, SEEK_SET)) {
 #else
     if (!fseek(in, offset, SEEK_SET)) {

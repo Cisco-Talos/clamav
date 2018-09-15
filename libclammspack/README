@@ -1,4 +1,4 @@
-libmspack 0.5alpha
+libmspack 0.7.1alpha
 
 The purpose of libmspack is to provide compressors and decompressors,
 archivers and dearchivers for Microsoft compression formats: CAB, CHM, WIM,
@@ -24,7 +24,7 @@ DOCUMENTATION
 
 The API documentation is stored in the doc/ directory. It is generated
 automatically from mspack.h with doxygen. It is also available online at
-http://www.cabextract.org.uk/libmspack/doc/
+https://www.cabextract.org.uk/libmspack/doc/
 
 
 BUILDING / INSTALLING
@@ -56,7 +56,7 @@ source files directly in your application's build environment.
 
 LEGAL ISSUES
 
-The the best of my knowledge, libmspack does not infringe on any
+To the best of my knowledge, libmspack does not infringe on any
 compression or decompression patents. However, this is not legal
 advice, and it is recommended that you perform your own patent search.
 
@@ -78,27 +78,31 @@ provided you meet ALL of the following conditions:
 
 EXAMPLE CODE
 
-There are a number of useful programs in the test/ directory which
-exercise and demonstrate libmspack's features.
+libmspack is bundled with programs which demonstrate the library's features.
 
-cabd_c10       - Tests the CAB decompressor on the C10 collection.
-cabd_compare   - Compares the CAB decompressor with Microsoft's EXTRACT.EXE
-cabd_md5       - Prints the MD5 checksums of all files within a CAB file/set.
-cabd_memory    - An mspack_system implementation that reads/writes to memory.
-cabd_test      - Regression tests for libmspack's CAB decompression.
-cabrip         - Extracts any CAB files embedded in another file.
-chmd_compare   - Compares the CHM decompressor to Microsoft's HH.EXE
-chmd_find      - Fast-finds a file within a CHM file.
-chmd_md5       - Prints the MD5 checksums of all files within a CHM file.
-chmd_order     - Tests extracting files in a CHM file in four different ways.
-chminfo        - Prints verbose information about CHM file structures.
-chmx           - Extracts all files in a CHM file to disk.
-expand         - Extracts an SZDD or KWAJ file.
-msdecompile_md5- Runs Microsoft's HH.EXE -DECOMPILE via WINE.
-msexpand_md5   - Runs Microsoft's EXTRACT.EXE via WINE.
-multifh        - An mspack_system implementation that can simultaneously work
-                 on in-memory images, raw file descriptors, open file handles
-                 and regular disk files.
+examples/cabd_memory.c - an mspack_system that can read and write to memory
+examples/multifh.c     - an mspack_system that can simultaneously work on
+                         in-memory images, raw file descriptors, open file
+                         handles and regular disk files
+
+src/cabrip.c           - extracts any CAB files embedded in another file
+src/chmextract.c       - extracts all files in a CHM file to disk
+src/msexpand.c         - expands an SZDD or KWAJ file
+src/oabextract.c       - extracts an Exchange Offline Address Book (.LZX) file
+
+test/cabd_c10          - tests the CAB decompressor on the C10 collection
+test/cabd_compare      - compares libmspack with Microsoft's EXTRACT.EXE
+test/cabd_md5          - shows MD5 checksums of all files in a CAB file/set
+test/cabd_test.c       - regression tests for libmspack's CAB decompression
+test/chmd_compare      - compares libmspack with Microsoft's HH.EXE
+test/chmd_find.c       - fast-finds a file within a CHM file.
+test/chmd_md5.c        - shows MD5 checksums of all files within a CHM file
+test/chmd_order.c      - extracts files in a CHM file in four different ways
+test/chmd_test.c       - regression tests for libmspack's CHM decompression
+test/kwajd_test.c      - regression tests for libmspack's KWAJ decompression
+test/chminfo.c         - prints verbose information about CHM file structures
+test/msdecompile_md5   - runs Microsoft's HH.EXE -DECOMPILE via WINE
+test/msextract_md5     - runs Microsoft's EXTRACT.EXE via WINE
 
 Here is a simple example of usage, which will create a CAB decompressor,
 then use that to open an existing Microsoft CAB file called "example.cab",

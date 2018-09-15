@@ -15,13 +15,10 @@
 struct mscab_compressor *
   mspack_create_cab_compressor(struct mspack_system *sys)
 {
-  (void) sys;
   /* todo */
   return NULL;
 }
 
 void mspack_destroy_cab_compressor(struct mscab_compressor *self) {
-  (void) self;
   /* todo */
-  return;
 }

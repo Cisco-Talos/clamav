@@ -1,0 +1,331 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="eng">
+<head>
+<style type="text/css">
+dt {
+  font-weight:bold;
+}
+pre {
+  background-color:#F9F9F9;
+  border:1px dashed #2F6FAB;
+  color:black;
+  padding:1em;
+}
+table.wikitable  {
+  background:none repeat scroll 0 0 #F9F9F9;
+  border:1px solid #AAAAAA;
+  border-collapse:collapse;
+  margin:1em 1em 1em 0;
+}
+.wikitable th, .wikitable td {
+  border:1px solid #AAAAAA;
+  padding:0.2em;
+}
+.wikitable th {
+  background:none repeat scroll 0 0 #F2F2F2;
+  text-align:center;
+}
+.wikitable caption {
+  font-weight:bold;
+}
+.c.source-c .de1, .c.source-c .de2 {font: normal normal 1em/1.2em monospace; margin:0; padding:0; background:none; vertical-align:top;}
+.c.source-c  {font-family:monospace;}
+.c.source-c .imp {font-weight: bold; color: red;}
+.c.source-c li, .c.source-c .li1 {font-weight: normal; vertical-align:top;}
+.c.source-c .ln {width:1px;text-align:right;margin:0;padding:0 2px;vertical-align:top;}
+.c.source-c .li2 {font-weight: bold; vertical-align:top;}
+.c.source-c .kw1 {color: #b1b100;}
+.c.source-c .kw2 {color: #000000; font-weight: bold;}
+.c.source-c .kw3 {color: #000066;}
+.c.source-c .kw4 {color: #993333;}
+.c.source-c .co1 {color: #666666; font-style: italic;}
+.c.source-c .co2 {color: #339933;}
+.c.source-c .coMULTI {color: #808080; font-style: italic;}
+.c.source-c .es0 {color: #000099; font-weight: bold;}
+.c.source-c .es1 {color: #000099; font-weight: bold;}
+.c.source-c .es2 {color: #660099; font-weight: bold;}
+.c.source-c .es3 {color: #660099; font-weight: bold;}
+.c.source-c .es4 {color: #660099; font-weight: bold;}
+.c.source-c .es5 {color: #006699; font-weight: bold;}
+.c.source-c .br0 {color: #009900;}
+.c.source-c .sy0 {color: #339933;}
+.c.source-c .st0 {color: #ff0000;}
+.c.source-c .nu0 {color: #0000dd;}
+.c.source-c .nu6 {color: #208080;}
+.c.source-c .nu8 {color: #208080;}
+.c.source-c .nu12 {color: #208080;}
+.c.source-c .nu16 {color:#800080;}
+.c.source-c .nu17 {color:#800080;}
+.c.source-c .nu18 {color:#800080;}
+.c.source-c .nu19 {color:#800080;}
+.c.source-c .me1 {color: #202020;}
+.c.source-c .me2 {color: #202020;}
+.c.source-c .ln-xtra, .c.source-c li.ln-xtra, .c.source-c div.ln-xtra {background-color: #ffc;}
+.c.source-c span.xtra { display:block; }
+</style>
+<meta name="author" content="Stuart Caie" />
+<title>COMPRESS.EXE file formats: SZDD and KWAJ</title>
+</head>
+<body>
+<h1>COMPRESS.EXE file formats: SZDD and KWAJ</h1>
+
+<p>This document describes the <b>SZDD</b> and <b>KWAJ</b> file
+formats which are implemented in the MS-DOS commands
+<tt>COMPRESS.EXE</tt> and <tt>EXPAND.EXE</tt>.</p>
+
+<p>Both formats compress a single file to another single file,
+replacing the last character in the filename with an underscore or
+dollar character, e.g. <tt>README.TXT</tt> becomes <tt>README.TX_</tt>
+or <tt>README.TX$</tt>.</p>
+
+<a name="SZDD_file_format"><h2>SZDD file format</h2></a>
+
+<p>An SZDD file begins with this fixed header:</p>
+
+<table class="wikitable">
+<caption>SZDD header format</caption>
+<tr><th>Offset</th><th>Length</th><th>Description</th></tr>
+<tr><td>0x00</td><td>8</td><td>"SZDD" signature: 0x53,0x5A,0x44,0x44,0x88,0xF0,0x27,0x33</td></tr>
+<tr><td>0x08</td><td>1</td><td>Compression mode: only "A" (0x41) is valid here</td></tr>
+<tr><td>0x09</td><td>1</td><td>The character missing from the end of the filename (0=unknown)</td></tr>
+<tr><td>0x0A</td><td>4</td><td>The integer length of the file when unpacked</td></tr>
+</table>
+
+<p>The header is immediately followed by the compressed data. The
+following pseudocode explains how to unpack this data; it's a form of
+the LZSS algorithm.</p>
+
+<table class="wikitable">
+<caption>SZDD decompression pseudocode</caption>
+<tr><td>
+<div dir="ltr" style="text-align: left;"><div class="c source-c" style="font-family:monospace;"><pre class="de1"><span class="kw4">char</span> window<span class="br0">&#91;</span><span class="nu0">4096</span><span class="br0">&#93;</span><span class="sy0">;</span>
+<span class="kw4">int</span> pos <span class="sy0">=</span> <span class="nu0">4096</span> <span class="sy0">-</span> <span class="nu0">16</span><span class="sy0">;</span>
+memset<span class="br0">&#40;</span>window<span class="sy0">,</span> <span class="nu12">0x20</span><span class="sy0">,</span> <span class="nu0">4096</span><span class="br0">&#41;</span><span class="sy0">;</span> <span class="coMULTI">/* window initially full of spaces */</span>
+<span class="kw1">for</span> <span class="br0">&#40;</span><span class="sy0">;;</span><span class="br0">&#41;</span> <span class="br0">&#123;</span>
+    <span class="kw4">int</span> control <span class="sy0">=</span> GETBYTE<span class="br0">&#40;</span><span class="br0">&#41;</span><span class="sy0">;</span>
+    <span class="kw1">if</span> <span class="br0">&#40;</span>control <span class="sy0">==</span> EOF<span class="br0">&#41;</span> <span class="kw2">break</span><span class="sy0">;</span> <span class="coMULTI">/* exit if no more to read */</span>
+    <span class="kw1">for</span> <span class="br0">&#40;</span><span class="kw4">int</span> cbit <span class="sy0">=</span> <span class="nu12">0x01</span><span class="sy0">;</span> cbit <span class="sy0">&amp;</span> <span class="nu12">0xFF</span><span class="sy0">;</span> cbit <span class="sy0">&lt;&lt;=</span> <span class="nu0">1</span><span class="br0">&#41;</span> <span class="br0">&#123;</span>
+        <span class="kw1">if</span> <span class="br0">&#40;</span>control <span class="sy0">&amp;</span> cbit<span class="br0">&#41;</span> <span class="br0">&#123;</span>
+            <span class="coMULTI">/* literal */</span>
+            PUTBYTE<span class="br0">&#40;</span>window<span class="br0">&#91;</span>pos<span class="sy0">++</span><span class="br0">&#93;</span> <span class="sy0">=</span> GETBYTE<span class="br0">&#40;</span><span class="br0">&#41;</span><span class="br0">&#41;</span><span class="sy0">;</span>
+        <span class="br0">&#125;</span>
+        <span class="kw1">else</span> <span class="br0">&#123;</span>
+            <span class="coMULTI">/* match */</span>
+            <span class="kw4">int</span> matchpos <span class="sy0">=</span> GETBYTE<span class="br0">&#40;</span><span class="br0">&#41;</span><span class="sy0">;</span>
+            <span class="kw4">int</span> matchlen <span class="sy0">=</span> GETBYTE<span class="br0">&#40;</span><span class="br0">&#41;</span><span class="sy0">;</span>
+            matchpos <span class="sy0">|=</span> <span class="br0">&#40;</span>matchlen <span class="sy0">&amp;</span> <span class="nu12">0xF0</span><span class="br0">&#41;</span> <span class="sy0">&lt;&lt;</span> <span class="nu0">4</span><span class="sy0">;</span>
+            matchlen <span class="sy0">=</span> <span class="br0">&#40;</span>matchlen <span class="sy0">&amp;</span> <span class="nu12">0x0F</span><span class="br0">&#41;</span> <span class="sy0">+</span> <span class="nu0">3</span><span class="sy0">;</span>
+            <span class="kw1">while</span> <span class="br0">&#40;</span>matchlen<span class="sy0">--</span><span class="br0">&#41;</span> <span class="br0">&#123;</span>
+                PUTBYTE<span class="br0">&#40;</span>window<span class="br0">&#91;</span>pos<span class="sy0">++</span><span class="br0">&#93;</span> <span class="sy0">=</span> window<span class="br0">&#91;</span>matchpos<span class="sy0">++</span><span class="br0">&#93;</span><span class="br0">&#41;</span><span class="sy0">;</span>
+                pos <span class="sy0">&amp;=</span> <span class="nu0">4095</span><span class="sy0">;</span> matchpos <span class="sy0">&amp;=</span> <span class="nu0">4095</span><span class="sy0">;</span>
+            <span class="br0">&#125;</span>
+        <span class="br0">&#125;</span>
+    <span class="br0">&#125;</span>
+<span class="br0">&#125;</span></pre></div></div>
+</td></tr></table>
+
+<p>There is also a variant SZDD format seen in the installation
+package for QBasic 4.5, so I call it the QBasic variant. It has a
+different header and the <tt>pos</tt> variable in the pseudocode above
+is set to <tt>4096-18</tt> instead of <tt>4096-16</tt>.</p>
+
+<table class="wikitable">
+<caption>QBasic SZDD variant header format</caption>
+<tr><th>Offset</th><th>Length</th><th>Description</th></tr>
+<tr><td>0x00</td><td>8</td><td>"SZ" signature: 0x53,0x5A,0x20,0x88,0xF0,0x27,0x33,0xD1</td></tr>
+<tr><td>0x08</td><td>4</td><td>The integer length of the file when unpacked</td></tr></table>
+
+<a name="KWAJ_file_format"><h2>KWAJ file format</h2></a>
+
+<p>A KWAJ file begins with this fixed header:</p>
+
+<table class="wikitable">
+<caption>KWAJ header format</caption>
+<tr><th>Offset</th><th>Length</th><th>Description</th></tr>
+<tr><td>0x00</td><td>8</td><td>"KWAJ" signature: 0x4B,0x57,0x41,0x4A,0x88,0xF0,0x27,0xD1</td></tr>
+<tr><td>0x08</td><td>2</td><td>compression method (0-4)</td></tr>
+<tr><td>0x0A</td><td>2</td><td>file offset of compressed data</td></tr>
+<tr><td>0x0C</td><td>2</td><td>header flags to mark header extensions</td></tr>
+</table>
+
+<a name="Compression_methods"><h3>Compression methods</h3></a>
+
+<p>The "compression method" field indicates the type of data
+compression used:</p>
+
+<ol start="0">
+<li>No compression</li>
+<li>No compression, data is XORed with byte 0xFF</li>
+<li>The same compression method as regular SZDD</li>
+<li>LZ + Huffman "Jeff Johnson" compression</li>
+<li>MS-ZIP</li>
+</ol>
+
+<a name="Header_extensions"><h3>Header extensions</h3></a>
+
+<p>Header extensions immediately follow the header.</p>
+
+<p>If you don't care about the header extensions, use the file offset
+to skip to the compressed data.</p>
+
+<p>The header extensions appear in this order:</p>
+
+<dl>
+<dt>When header flags bit 0 is set</dt><dd>4 bytes: decompressed length of file</dd>
+<dt>When header flags bit 1 is set</dt><dd>2 bytes: unknown purpose</dd>
+<dt>When header flags bit 2 is set</dt><dd>2 bytes: length of data, followed by that many bytes of (unknown purpose) data</dd>
+<dt>When header flags bit 3 is set</dt><dd>1-9 bytes: null-terminated string with max length 8: file name</dd>
+<dt>When header flags bit 4 is set</dt><dd>1-4 bytes: null-terminated string with max length 3: file extension</dd>
+<dt>When header flags bit 5 is set</dt><dd>2 bytes: length of data, followed by that many bytes of (arbitrary text) data</dd>
+</dl>
+
+<a name="KWAJ_compression_method_3"><h3>KWAJ compression method 3</h3></a>
+
+<p>Compression method 3 is unique to the KWAJ format. It's an
+LZ+Huffman algorithm created by Jeff Johnson.</p>
+
+<p>Bits are always read from MSB to LSB, one byte at a time.</p>
+
+<p>There are three parts:</p>
+
+<ol>
+ <li>The data starts off with 6 nybbles; 4 bits each. Each nybble is
+  between 0-3 and is the encoding type of the 5 huffman length lists to
+  follow. The 6th nybble is just padding.</li>
+ <li>Then follow 5 huffman code length lists.</li>
+ <li>Then follows the compressed data, which is a mix of huffman
+  symbols and raw bits.</li>
+</ol>
+
+<a name="Huffman_code_length_lists"><h4>Huffman code length lists</h4></a>
+
+<p>KWAJ uses 5 huffman trees. They always have the same number of
+symbols in them. They are, in order:</p>
+
+<ol>
+ <li>16 symbol tree (0-15) to store match run lengths (MATCHLEN)</li>
+ <li>16 symbol tree (0-15) to store match run lengths immediately following a short literal run (MATCHLEN2)</li>
+ <li>32 symbol tree (0-31) to store literal run lengths (LITLEN)</li>
+ <li>64 symbol tree (0-63) to store the upper 6 bits of match distances (OFFSET)</li>
+ <li>256 symbol tree (0-255) to store literals (LITERAL)</li>
+</ol>
+
+<p>Canonical huffman codes are used, which means you simply need to
+know how many symbols in each huffman tree (given above), and how long
+each huffman symbol is</p>
+
+<p>How the symbol lengths are encoded depends on the encoding type, as
+given by the 6 nybbles at the start of the compressed data.</p>
+
+<p>Symbol lengths are read in ascending order, and the number of
+symbols to read is implied by which tree you're defining.</p>
+
+<dl>
+<dt>Huffman code length list, encoding type 0</dt>
+<dd>All symbol have the same length, implied by the number of symbols in the tree:
+<ul>
+ <li>16 symbols -&gt; all symbols are length 4</li>
+ <li>32 symbols -&gt; all symbols are length 5</li>
+ <li>64 symbols -&gt; all symbols are length 6</li>
+ <li>256 symbols -&gt; all symbols are length 8</li>
+</ul>
+</dd>
+<dd>You don't need to read anything.</dd>
+</dl>
+
+<dl>
+<dt>Huffman code length list, encoding type 1</dt>
+<dd>A run-length encoding is used:
+<ul>
+ <li>read 4 bits for the first symbol length (0-15)</li>
+ <li>LOOP:
+  <ul>
+   <li>read 1 bit == 0 if symbol length is the same as the previous, OTHERWISE:</li>
+   <li>read 1 bit == 0 if symbol length is previous + 1, OTHERWISE:</li>
+   <li>read 4 bits for symbol length (0-15)</li>
+  </ul>
+ </li>
+</ul>
+</dd>
+</dl>
+
+<dl>
+<dt>Huffman code length list, encoding type 2</dt>
+<dd>Another run-length encoding is used:
+<ul>
+ <li>read 4 bits for the first symbol length (0-15)</li>
+ <li>LOOP:
+  <ul>
+   <li> read 2 bits as selector (0-3):
+    <ul>
+     <li> selector == 3: read 4 bits for symbol length, OTHERWISE:</li>
+     <li> symbol length is previous symbol + (selector-1), i.e. -1, 0 or +1</li>
+    </ul>
+   </li>
+  </ul>
+ </li>
+</ul>
+</dd>
+</dl>
+
+<dl>
+<dt>Huffman code length list, encoding type 3</dt>
+<dd>There is no compression. Read 4 bits per symbol (0-15).</dd>
+</dl>
+
+<a name="Compressed_data"><h4>Compressed data</h4></a>
+
+<p>At this point, the compressed data begins.</p>
+
+<p>We have a 4096 byte ring buffer, initially filled with byte 0x20
+(ASCII space). Unlike the SZDD format, the starting position in the
+buffer is irrelevant, as match positions are stored relative to the
+current position in the window, not as absolute positions in the
+window.</p>
+
+<p>Pseudo-code:</p>
+<pre>
+ ring buffer position = 4096-17
+ selected table = MATCHLEN
+ LOOP:
+     code = read huffman code using selected table (MATCHLEN or MATCHLEN2)
+     if EOF reached, exit loop
+     if code &gt; 0, this is a match:
+         match length = code + 2
+         x = read huffman code using OFFSET table
+         y = read 6 bits
+         match offset = current ring buffer position - (x&lt;&lt;6 | y)
+         copy match as output and into the ring buffer
+         selected table = MATCHLEN
+     if code == 0, this is a run of literals:
+         x = read huffman code using LITLEN table
+         if x != 31, selected table = MATCHLEN2
+         read {x+1} literals using LITERAL huffman table, copy as output and into the ring buffer
+</pre>
+
+<a name="MSZIP"><h2>MS-ZIP</h2></a>
+
+KWAJ type 4 compression is called MS-ZIP, because it is almost
+identical to the MS-ZIP compression found in Microsoft Cabinet files.
+
+Each 32768 bytes of data is compressed independently using Phil
+Katz's DEFLATE algorithm. However, the history window is shared
+between blocks, so they must be unpacked in order.
+The format of each block is as follows:
+
+<table class="wikitable">
+<caption>KWAJ MS-ZIP block format</caption>
+<tr><th>Offset</th><th>Length</th><th>Description</th></tr>
+<tr><td>0</td><td>2</td><td>Compressed length of this block (n).
+  Stored in Intel byte order.
+  Doesn't include these two bytes.</td></tr>
+<tr><td>2</td><td>2</td><td>"CK" in ASCII (0x43, 0x4B)</td></tr>
+<tr><td>4</td><td>n-2</td><td>Data compressed in DEFLATE format</td></tr>
+</table>
+
+The final block will unpack to 1-32768 bytes. It will be followed by two
+zero bytes.
+
+</body></html>

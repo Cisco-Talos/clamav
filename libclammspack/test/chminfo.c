@@ -68,7 +68,7 @@ void print_dir(struct mschmd_header *chm, char *filename) {
   if (!(chunk = (unsigned char *) malloc(chm->chunk_size))) return;
   
   if ((fh = fopen(filename, "rb"))) {
-#ifdef HAVE_FSEEKO
+#if HAVE_FSEEKO
     fseeko(fh, chm->dir_offset - 84, SEEK_SET);
 #else
     fseek(fh, chm->dir_offset - 84, SEEK_SET);

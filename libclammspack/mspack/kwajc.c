@@ -15,13 +15,10 @@
 struct mskwaj_compressor *
   mspack_create_kwaj_compressor(struct mspack_system *sys)
 {
-  (void) sys;
   /* todo */
   return NULL;
 }
 
 void mspack_destroy_kwaj_compressor(struct mskwaj_compressor *self) {
-  (void) self;
   /* todo */
-  return;
 }
