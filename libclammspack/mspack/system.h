@@ -28,32 +28,21 @@ extern "C" {
 # undef read
 #endif
 
-
-
-
-
-#ifdef DEBUG
-# include <stdio.h>
-# include <stdint.h>
-
-extern uint8_t cli_debug_flag;
 /* Old GCCs don't have __func__, but __FUNCTION__:
  * http://gcc.gnu.org/onlinedocs/gcc/Function-Names.html
  */
-# if __STDC_VERSION__ < 199901L
-#  if __GNUC__ >= 2
-#   define __func__ __FUNCTION__
-#  else
-#   define __func__ "<unknown>"
-#  endif
+#if __STDC_VERSION__ < 199901L
+# if __GNUC__ >= 2
+#  define __func__ __FUNCTION__
+# else
+#  define __func__ "<unknown>"
 # endif
-/* Adding custom clamav debug code. */
-# define D(x) do {   if(cli_debug_flag) { \
-                        printf("LibClamAV debug: %s:%d (%s)", __FILE__, __LINE__, __func__); \
-                        printf x ; fputc('\n', stdout); fflush(stdout); \
-                     } \
-                  } while (0);
+#endif
 
+#if DEBUG
+# include <stdio.h>
+# define D(x) do { printf("%s:%d (%s) ",__FILE__, __LINE__, __func__); \
+                   printf x ; fputc('\n', stdout); fflush(stdout);} while (0);
 #else
 # define D(x)
 #endif
@@ -65,21 +54,30 @@ extern uint8_t cli_debug_flag;
  * greater than 2GB is detected, an error message indicating the library
  * can't support the file should be printed.
  */
-#ifdef HAVE_LIMITS_H
+#if HAVE_LIMITS_H
 # include <limits.h>
+#endif
+
+#if HAVE_INTTYPES_H
+# include <inttypes.h>
+#else
+# define PRId64 "lld"
+# define PRIu64 "llu"
+# define PRId32 "ld"
+# define PRIu32 "lu"
 #endif
 
 #if ((defined(_FILE_OFFSET_BITS) && _FILE_OFFSET_BITS >= 64) || \
      (defined(FILESIZEBITS)      && FILESIZEBITS      >= 64) || \
      (defined(SIZEOF_OFF_T)      && SIZEOF_OFF_T      >= 8)  || \
      defined(_LARGEFILE_SOURCE) || defined(_LARGEFILE64_SOURCE))
-# define LARGEFILE_SUPPORT
-# define LD "lld"
-# define LU "llu"
+# define LARGEFILE_SUPPORT 1
+# define LD PRId64
+# define LU PRIu64
 #else
 extern const char *largefile_msg;
-# define LD "ld"
-# define LU "lu"
+# define LD PRId32
+# define LU PRIu32
 #endif
 
 /* endian-neutral reading of little-endian data */

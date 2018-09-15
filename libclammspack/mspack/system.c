@@ -13,7 +13,7 @@
 
 #include <system.h>
 
-#ifndef LARGEFILE_SUPPORT
+#if !LARGEFILE_SUPPORT
 const char *largefile_msg = "library not compiled to support large files.";
 #endif
 
@@ -118,8 +118,6 @@ static struct mspack_file *msp_open(struct mspack_system *self,
   struct mspack_file_p *fh;
   const char *fmode;
 
-  (void) self;
-
   switch (mode) {
   case MSPACK_SYS_OPEN_READ:   fmode = "rb";  break;
   case MSPACK_SYS_OPEN_WRITE:  fmode = "wb";  break;
@@ -171,7 +169,7 @@ static int msp_seek(struct mspack_file *file, off_t offset, int mode) {
     case MSPACK_SYS_SEEK_END:   mode = SEEK_END; break;
     default: return -1;
     }
-#ifdef HAVE_FSEEKO
+#if HAVE_FSEEKO
     return fseeko(self->fh, offset, mode);
 #else
     return fseek(self->fh, offset, mode);
@@ -182,7 +180,7 @@ static int msp_seek(struct mspack_file *file, off_t offset, int mode) {
 
 static off_t msp_tell(struct mspack_file *file) {
   struct mspack_file_p *self = (struct mspack_file_p *) file;
-#ifdef HAVE_FSEEKO
+#if HAVE_FSEEKO
   return (self) ? (off_t) ftello(self->fh) : 0;
 #else
   return (self) ? (off_t) ftell(self->fh) : 0;
@@ -200,21 +198,19 @@ static void msp_msg(struct mspack_file *file, const char *format, ...) {
 }
 
 static void *msp_alloc(struct mspack_system *self, size_t bytes) {
-#ifdef DEBUG
+#if DEBUG
   /* make uninitialised data obvious */
   char *buf = malloc(bytes + 8);
-  (void) self;
   if (buf) memset(buf, 0xDC, bytes);
   *((size_t *)buf) = bytes;
   return &buf[8];
 #else
-  (void) self;
   return malloc(bytes);
 #endif
 }
 
 static void msp_free(void *buffer) {
-#ifdef DEBUG
+#if DEBUG
   char *buf = buffer;
   size_t bytes;
   if (buf) {

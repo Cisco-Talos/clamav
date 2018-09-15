@@ -187,15 +187,9 @@ static int inflate(struct mszipd_stream *zip) {
       }
       if (bits_left != 0) return INF_ERR_BITBUF;
       while (i < 4) {
-        if (i_ptr >= i_end) {
-          if (read_input(BITS_VAR)) return BITS_VAR->error;
-          i_ptr = BITS_VAR->i_ptr;
-          i_end = BITS_VAR->i_end;
-          if(i_ptr >= i_end) break;
-        }
-        lens_buf[i++] = *i_ptr++;
+	READ_IF_NEEDED;
+	lens_buf[i++] = *i_ptr++;
       }
-      if (i < 4) return INF_ERR_BITBUF;
 
       /* get the length and its complement */
       length = lens_buf[0] | (lens_buf[1] << 8);
@@ -204,12 +198,7 @@ static int inflate(struct mszipd_stream *zip) {
 
       /* read and copy the uncompressed data into the window */
       while (length > 0) {
-        if (i_ptr >= i_end) {
-          if (read_input(BITS_VAR)) return BITS_VAR->error;
-          i_ptr = BITS_VAR->i_ptr;
-          i_end = BITS_VAR->i_end;
-          if(i_ptr == i_end) break;
-        }
+	READ_IF_NEEDED;
 
 	this_run = length;
 	if (this_run > (unsigned int)(i_end - i_ptr)) this_run = i_end - i_ptr;
@@ -360,8 +349,9 @@ struct mszipd_stream *mszipd_init(struct mspack_system *system,
 
   if (!system) return NULL;
 
+  /* round up input buffer size to multiple of two */
   input_buffer_size = (input_buffer_size + 1) & -2;
-  if (!input_buffer_size) return NULL;
+  if (input_buffer_size < 2) return NULL;
 
   /* allocate decompression state */
   if (!(zip = (struct mszipd_stream *) system->alloc(system, sizeof(struct mszipd_stream)))) {

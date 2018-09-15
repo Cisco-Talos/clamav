@@ -8,12 +8,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <mspack.h>
+#include <system.h>
 
 unsigned int test_count = 0;
 
 #define TEST(x) do {\
   test_count++; \
-  if (!(x)) {printf("%s:%d FAILED %s\n",__FUNCTION__,__LINE__,#x);exit(1);} \
+  if (!(x)) {printf("%s:%d FAILED %s\n",__func__,__LINE__,#x);exit(1);} \
 } while (0)
 
 /* open where cab file doesn't exist */
@@ -140,6 +141,10 @@ void cabd_open_test_04() {
   cab = cabd->open(cabd, "test_files/cabd/bad_folderindex.cab");
   TEST(cab == NULL);
 
+  /* cab has one file with empty filename */
+  cab = cabd->open(cabd, "test_files/cabd/filename-read-violation-1.cab");
+  TEST(cab == NULL);
+
   mspack_destroy_cab_decompressor(cabd);
 }
 
@@ -186,7 +191,8 @@ void cabd_open_test_05() {
   for (i = 0; i < (sizeof(str_files)/sizeof(char *)); i++) {
     cab = cabd->open(cabd, str_files[i]);
     TEST(cab == NULL);
-    TEST(cabd->last_error(cabd) == MSPACK_ERR_DATAFORMAT);
+    TEST(cabd->last_error(cabd) == MSPACK_ERR_DATAFORMAT ||
+         cabd->last_error(cabd) == MSPACK_ERR_READ);
   }
 
   /* lack of data blocks should NOT be a problem for merely reading */
@@ -358,7 +364,66 @@ void cabd_merge_test_02() {
   cabd->close(cabd, cab[0]);
   mspack_destroy_cab_decompressor(cabd);
 }
-  
+
+/* test bad cabinets cannot be extracted */
+void cabd_extract_test_01() {
+    struct mscab_decompressor *cabd;
+    struct mscabd_cabinet *cab;
+    struct mscabd_file *file;
+    unsigned int i;
+    const char *files[] = {
+        "test_files/cabd/cve-2010-2800-mszip-infinite-loop.cab",
+        "test_files/cabd/cve-2014-9556-qtm-infinite-loop.cab",
+        "test_files/cabd/cve-2015-4470-mszip-over-read.cab",
+        "test_files/cabd/cve-2015-4471-lzx-under-read.cab",
+        "test_files/cabd/filename-read-violation-2.cab",
+        "test_files/cabd/filename-read-violation-3.cab",
+        "test_files/cabd/filename-read-violation-4.cab",
+        "test_files/cabd/lzx-main-tree-no-lengths.cab",
+        "test_files/cabd/lzx-premature-matches.cab"
+    };
+
+    cabd = mspack_create_cab_decompressor(NULL);
+    TEST(cabd != NULL);
+
+    for (i = 0; i < (sizeof(files)/sizeof(char *)); i++) {
+        cab = cabd->open(cabd, files[i]);
+        TEST(cab != NULL);
+        TEST(cab->files != NULL);
+        for (file = cab->files; file; file = file->next) {
+            int err = cabd->extract(cabd, file, "/dev/null");
+            TEST(err == MSPACK_ERR_DATAFORMAT || err == MSPACK_ERR_DECRUNCH);
+        }
+        cabd->close(cabd, cab);
+    }
+    mspack_destroy_cab_decompressor(cabd);
+}
+
+/* test that CVE-2014-9732 is fixed */
+void cabd_extract_test_02() {
+    struct mscab_decompressor *cabd;
+    struct mscabd_cabinet *cab;
+    int err;
+
+    /* the first file in this cabinet belongs to a valid folder. The
+     * second belongs to an invalid folder. Unpacking files 1, 2, 1
+     * caused cabd.c to try and free the invalid folder state left by
+     * extracting from folder 2, which caused a jump to NULL / segfault
+     */
+    cabd = mspack_create_cab_decompressor(NULL);
+    TEST(cabd != NULL);
+    cab = cabd->open(cabd, "test_files/cabd/cve-2014-9732-folders-segfault.cab");
+    TEST(cab != NULL);
+    err = cabd->extract(cabd, cab->files, "/dev/null");
+    TEST(err == MSPACK_ERR_OK);
+    err = cabd->extract(cabd, cab->files->next, "/dev/null");
+    TEST(err == MSPACK_ERR_DATAFORMAT || err == MSPACK_ERR_DECRUNCH);
+    err = cabd->extract(cabd, cab->files, "/dev/null");
+    TEST(err == MSPACK_ERR_OK);
+    cabd->close(cabd, cab);
+    mspack_destroy_cab_decompressor(cabd);
+}
+
 int main() {
   int selftest;
 
@@ -379,7 +444,8 @@ int main() {
   cabd_merge_test_01();
   cabd_merge_test_02();
 
-  /* extract() tests */
+  cabd_extract_test_01();
+  cabd_extract_test_02();
 
   printf("ALL %d TESTS PASSED.\n", test_count);
   return 0;

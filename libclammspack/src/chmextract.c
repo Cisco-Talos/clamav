@@ -11,6 +11,18 @@
 
 #include <error.h>
 
+#if HAVE_MKDIR
+# if MKDIR_TAKES_ONE_ARG
+#  define mkdir(a, b) mkdir(a)
+# endif
+#else
+# if HAVE__MKDIR
+#  define mkdir(a, b) _mkdir(a)
+# else
+#  error "Don't know how to create a directory on this system."
+# endif
+#endif
+
 mode_t user_umask;
 
 #define FILENAME ".test.chmx"

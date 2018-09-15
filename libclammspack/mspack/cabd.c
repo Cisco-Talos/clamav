@@ -24,7 +24,6 @@
 #include <system.h>
 #include <cab.h>
 #include <assert.h>
-#include <ctype.h>
 
 /* Notes on compliance with cabinet specification:
  *
@@ -156,7 +155,7 @@ struct mscab_decompressor *
     self->error           = MSPACK_ERR_OK;
 
     self->param[MSCABD_PARAM_SEARCHBUF] = 32768;
-    self->param[MSCABD_PARAM_FIXMSZIP]  = 1;
+    self->param[MSCABD_PARAM_FIXMSZIP]  = 0;
     self->param[MSCABD_PARAM_DECOMPBUF] = 4096;
   }
   return (struct mscab_decompressor *) self;
@@ -296,33 +295,6 @@ static void cabd_close(struct mscab_decompressor *base,
   }
 }
 
-static int cab_chkname(
-           struct mspack_system *sys,
-           char *name,
-           int san)
-{
-  size_t i, len = 0;
-
-  if (NULL == sys || NULL == name) return 1;
-
-  len = strlen(name);
-
-  for (i = 0; i < len; i++)
-  {
-    if (!san && (strchr("%/*?|\\\"+=<>;:\t ", name[i]) || !isascii(name[i])))
-    {
-      sys->message(NULL, "cab_chkname: File name contains disallowed characters");
-      return 1;
-    }
-    else if (san && !isalnum((unsigned char)(name[i])))
-    {
-      name[i] = '*';
-    }
-  }
-
-  return 0;
-}
-
 /***************************************
  * CABD_READ_HEADERS
  ***************************************
@@ -335,9 +307,7 @@ static int cabd_read_headers(struct mspack_system *sys,
 			     struct mscabd_cabinet_p *cab,
 			     off_t offset, int quiet)
 {
-  unsigned int found_files = 0, found_folders = 0;
-  unsigned int num_folders, num_files, folder_resv, i, x, fidx;
-  int read_string_errno = 0;
+  int num_folders, num_files, folder_resv, i, x;
   struct mscabd_folder_p *fol, *linkfol = NULL;
   struct mscabd_file *file, *linkfile = NULL;
   unsigned char buf[64];
@@ -375,26 +345,24 @@ static int cabd_read_headers(struct mspack_system *sys,
   /* get the number of folders */
   num_folders = EndGetI16(&buf[cfhead_NumFolders]);
   if (num_folders == 0) {
-    sys->message(fh, "no folders in cabinet.");
+    if (!quiet) sys->message(fh, "no folders in cabinet.");
     return MSPACK_ERR_DATAFORMAT;
   }
 
   /* get the number of files */
   num_files = EndGetI16(&buf[cfhead_NumFiles]);
   if (num_files == 0) {
-    sys->message(fh, "no files in cabinet.");
+    if (!quiet) sys->message(fh, "no files in cabinet.");
     return MSPACK_ERR_DATAFORMAT;
   }
 
   /* check cabinet version */
   if ((buf[cfhead_MajorVersion] != 1) && (buf[cfhead_MinorVersion] != 3)) {
-    sys->message(fh, "WARNING; unexpected cabinet version %d.%d (expected 1.3)", buf[cfhead_MajorVersion], buf[cfhead_MinorVersion]);
+    if (!quiet) sys->message(fh, "WARNING; cabinet version is not 1.3");
   }
 
   /* read the reserved-sizes part of header, if present */
   cab->base.flags = EndGetI16(&buf[cfhead_Flags]);
-  cab->base.file_offset = EndGetI32(&buf[cfhead_FileOffset]);
-
   if (cab->base.flags & cfheadRESERVE_PRESENT) {
     if (sys->read(fh, &buf[0], cfheadext_SIZEOF) != cfheadext_SIZEOF) {
       return MSPACK_ERR_READ;
@@ -422,31 +390,15 @@ static int cabd_read_headers(struct mspack_system *sys,
 
   /* read name and info of preceeding cabinet in set, if present */
   if (cab->base.flags & cfheadPREV_CABINET) {
-    cab->base.prevname = cabd_read_string(sys, fh, &read_string_errno); if (read_string_errno) return read_string_errno;
-    if(cab_chkname(sys, cab->base.prevname, 0))
-        sys->message(NULL, "CAB: Invalid name of preceding cabinet");
-    else
-        sys->message(NULL, "CAB: Preceding cabinet name: %s", cab->base.prevname);
-    cab->base.previnfo = cabd_read_string(sys, fh, &read_string_errno); if (read_string_errno) return read_string_errno;
-    if(cab_chkname(sys, cab->base.previnfo, 0))
-        sys->message(NULL, "CAB: Invalid info of preceding cabinet");
-    else
-        sys->message(NULL, "CAB: Preceding cabinet info: %s", cab->base.previnfo);
+    cab->base.prevname = cabd_read_string(sys, fh, &x); if (x) return x;
+    cab->base.previnfo = cabd_read_string(sys, fh, &x); if (x) return x;
   }
 
   /* read name and info of next cabinet in set, if present */
   if (cab->base.flags & cfheadNEXT_CABINET) {
-    cab->base.nextname = cabd_read_string(sys, fh, &read_string_errno); if (read_string_errno) return read_string_errno;
-    if(cab_chkname(sys, cab->base.nextname, 0))
-        sys->message(NULL, "CAB: Invalid name of next cabinet");
-    else
-        sys->message(NULL, "CAB: Next cabinet name: %s", cab->base.nextname);
-    cab->base.nextinfo = cabd_read_string(sys, fh, &read_string_errno); if (read_string_errno) return read_string_errno;
-    if(cab_chkname(sys, cab->base.nextinfo, 0))
-        sys->message(NULL, "CAB: Invalid info of next cabinet");
-    else
-        sys->message(NULL, "CAB: Next cabinet info: %s", cab->base.nextinfo);
-}
+    cab->base.nextname = cabd_read_string(sys, fh, &x); if (x) return x;
+    cab->base.nextinfo = cabd_read_string(sys, fh, &x); if (x) return x;
+  }
 
   /* read folders */
   for (i = 0; i < num_folders; i++) {
@@ -472,26 +424,10 @@ static int cabd_read_headers(struct mspack_system *sys,
     fol->merge_prev      = NULL;
     fol->merge_next      = NULL;
 
-    sys->message(fh, "CAB: Folder record %u", i);
-    sys->message(fh, "CAB: Folder offset: %u", (unsigned int) fol->data.offset);
-    sys->message(fh, "CAB: Folder compression method: %d", fol->base.comp_type);
-
     /* link folder into list of folders */
     if (!linkfol) cab->base.folders = (struct mscabd_folder *) fol;
     else linkfol->base.next = (struct mscabd_folder *) fol;
     linkfol = fol;
-    found_folders++;
-  }
-
-  sys->message(fh, "CAB: Recorded folders: %u", found_folders);
-
-  /* if the # folders found does not match the # listed in the header
-   * then adjust the offset to point to the first file entry because
-   * the offset is probably incorrect now */
-  if(num_folders != found_folders) {
-    /* if the file offset is bogus and we just seeked out of the file,
-     * the next read will fail */
-    sys->seek(fh, cab->base.file_offset, MSPACK_SYS_SEEK_START);
   }
 
   /* read files */
@@ -504,37 +440,31 @@ static int cabd_read_headers(struct mspack_system *sys,
       return MSPACK_ERR_NOMEMORY;
     }
 
-    file->folder   = NULL;
     file->next     = NULL;
     file->length   = EndGetI32(&buf[cffile_UncompressedSize]);
     file->attribs  = EndGetI16(&buf[cffile_Attribs]);
     file->offset   = EndGetI32(&buf[cffile_FolderOffset]);
 
     /* set folder pointer */
-    fidx = EndGetI16(&buf[cffile_FolderIndex]);
-    if (fidx < num_folders) {
+    x = EndGetI16(&buf[cffile_FolderIndex]);
+    if (x < cffileCONTINUED_FROM_PREV) {
       /* normal folder index; count up to the correct folder. the folder
        * pointer will be NULL if folder index is invalid */
       struct mscabd_folder *ifol = cab->base.folders; 
-      while (fidx--) if (ifol) ifol = ifol->next;
+      while (x--) if (ifol) ifol = ifol->next;
       file->folder = ifol;
 
       if (!ifol) {
-        sys->free(file);
-        sys->message(NULL, "Folder not found for file %s", file->filename);
-        /* ignore invalid file and continue parsing */
-        if (file->filename) {
-          sys->free(file->filename);
-          file->filename = NULL;
-        }
-        sys->free(file);
-        continue;
+	sys->free(file);
+	D(("invalid folder index"))
+	return MSPACK_ERR_DATAFORMAT;
       }
     }
-    else if (fidx >= cffileCONTINUED_FROM_PREV) {
+    else {
       /* either CONTINUED_TO_NEXT, CONTINUED_FROM_PREV or
        * CONTINUED_PREV_AND_NEXT */
-      if ((fidx == cffileCONTINUED_TO_NEXT) || (fidx == cffileCONTINUED_PREV_AND_NEXT))
+      if ((x == cffileCONTINUED_TO_NEXT) ||
+	  (x == cffileCONTINUED_PREV_AND_NEXT))
       {
 	/* get last folder */
 	struct mscabd_folder *ifol = cab->base.folders;
@@ -546,7 +476,8 @@ static int cabd_read_headers(struct mspack_system *sys,
 	if (!fol->merge_next) fol->merge_next = file;
       }
 
-      if ((fidx == cffileCONTINUED_FROM_PREV) || (fidx == cffileCONTINUED_PREV_AND_NEXT))
+      if ((x == cffileCONTINUED_FROM_PREV) ||
+	  (x == cffileCONTINUED_PREV_AND_NEXT))
       {
 	/* get first folder */
 	file->folder = cab->base.folders;
@@ -555,12 +486,6 @@ static int cabd_read_headers(struct mspack_system *sys,
 	fol = (struct mscabd_folder_p *) file->folder;
 	if (!fol->merge_prev) fol->merge_prev = file;
       }
-    }
-    else {
-      /* unexpected/invalid folder index */
-      file->folder = NULL;
-      sys->message(fh, "WARNING; cab header file %d of %d has invalid folder index (%d out of %d folders)", 
-        i + 1, num_files, fidx, num_folders);
     }
 
     /* get time */
@@ -576,59 +501,16 @@ static int cabd_read_headers(struct mspack_system *sys,
     file->date_y = (x >> 9) + 1980;
 
     /* get filename */
-    file->filename = cabd_read_string(sys, fh, &read_string_errno);
-    if (read_string_errno) {
-        /* unexpected/invalid folder index */
-        file->filename = NULL;
-        sys->message(fh, "WARNING; cab header file %d of %d has invalid filename", i + 1, num_files);
-    }
-    else {
-      /* sanitize the name, incase it contains invalid characters */
-      cab_chkname(sys, file->filename, 1);
+    file->filename = cabd_read_string(sys, fh, &x);
+    if (x) { 
+      sys->free(file);
+      return x;
     }
 
-    if (file->folder && !read_string_errno) {
-        sys->message(NULL, "CAB: File record %u", i);
-        sys->message(NULL, "CAB: File name: %s", file->filename);
-        sys->message(NULL, "CAB: File offset: %u", (unsigned int) file->offset);
-        sys->message(NULL, "CAB: File folder index: %u", fidx);
-        sys->message(NULL, "CAB: File attribs: 0x%x", file->attribs);
-        if(file->attribs & 0x01)
-            sys->message(NULL, "CAB:   * file is read-only");
-        if(file->attribs & 0x02)
-            sys->message(NULL, "CAB:   * file is hidden");
-        if(file->attribs & 0x04)
-            sys->message(NULL, "CAB:   * file is a system file");
-        if(file->attribs & 0x20)
-            sys->message(NULL, "CAB:   * file modified since last backup");
-        if(file->attribs & 0x40)
-            sys->message(NULL, "CAB:   * file to be run after extraction");
-        if(file->attribs & 0x80)
-            sys->message(NULL, "CAB:   * file name contains UTF");
-    
-        /* link file entry into file list */
-        if (!linkfile) cab->base.files = file;
-        else linkfile->next = file;
-        linkfile = file;
-        found_files++;
-    }
-    else {
-        /* ignore invalid file and continue parsing */
-        if (file->filename) {
-          sys->free(file->filename);
-          file->filename = NULL;
-        }
-        sys->free(file);
-        sys->message(fh, "WARNING; omitting file %d of %d from file list.", i, num_files);
-    }
-  }
-  sys->message(NULL, "CAB: Recorded files: %u\n", found_files);
-
-  if (cab->base.files == NULL) {
-    /* We never actually added any files to the file list.  Something went wrong.
-     * The file header may have been invalid */
-    sys->message(NULL, "No files found, even though header claimed to have %d files", num_files);
-    return MSPACK_ERR_DATAFORMAT;
+    /* link file entry into file list */
+    if (!linkfile) cab->base.files = file;
+    else linkfile->next = file;
+    linkfile = file;
   }
 
   return MSPACK_ERR_OK;
@@ -639,21 +521,21 @@ static char *cabd_read_string(struct mspack_system *sys,
 {
   off_t base = sys->tell(fh);
   char buf[256], *str;
-  unsigned int ok;
-  int i, len;
+  int len, i, ok;
 
   /* read up to 256 bytes */
-  len = sys->read(fh, &buf[0], 256);
-  if (len <= 0) {
-      *error = MSPACK_ERR_READ;
-      return NULL;
+  if ((len = sys->read(fh, &buf[0], 256)) <= 0) {
+    *error = MSPACK_ERR_READ;
+    return NULL;
   }
-  
-  /* search for a null terminator in the buffer. reject empty strings */
-  for (i = 1, ok = 0; i < len; i++) if (!buf[i]) { ok = 1; break; }
+
+  /* search for a null terminator in the buffer */
+  for (i = 0, ok = 0; i < len; i++) if (!buf[i]) { ok = 1; break; }
+  /* reject empty strings */
+  if (i == 0) ok = 0;
+
   if (!ok) {
     *error = MSPACK_ERR_DATAFORMAT;
-    sys->message(NULL, "Unable to find null terminator for string read in buffer of len %d", len);
     return NULL;
   }
 
@@ -751,7 +633,7 @@ static int cabd_find(struct mscab_decompressor_p *self, unsigned char *buf,
   unsigned int cablen_u32 = 0, foffset_u32 = 0;
   int false_cabs = 0;
 
-#ifndef LARGEFILE_SUPPORT
+#if !LARGEFILE_SUPPORT
   /* detect 32-bit off_t overflow */
   if (flen < 0) {
     sys->message(fh, largefile_msg);
@@ -853,7 +735,7 @@ static int cabd_find(struct mscab_decompressor_p *self, unsigned char *buf,
 	    /* cause the search to restart after this cab's data. */
 	    offset = caboff + (off_t) cablen_u32;
 
-#ifndef LARGEFILE_SUPPORT
+#if !LARGEFILE_SUPPORT
 	    /* detect 32-bit off_t overflow */
 	    if (offset < caboff) {
 	      sys->message(fh, largefile_msg);
@@ -976,7 +858,6 @@ static int cabd_merge(struct mscab_decompressor *base,
   else {
     /* folder merge required - do the files match? */
     if (! cabd_can_merge_folders(sys, lfol, rfol)) {
-      sys->message(NULL, "Failed to merge folders");
       return self->error = MSPACK_ERR_DATAFORMAT;
     }
 
@@ -1112,7 +993,7 @@ static int cabd_extract(struct mscab_decompressor *base,
   struct mscab_decompressor_p *self = (struct mscab_decompressor_p *) base;
   struct mscabd_folder_p *fol;
   struct mspack_system *sys;
-  struct mspack_file *fh = NULL;
+  struct mspack_file *fh;
 
   if (!self) return MSPACK_ERR_ARGS;
   if (!file) return self->error = MSPACK_ERR_ARGS;
@@ -1124,8 +1005,6 @@ static int cabd_extract(struct mscab_decompressor *base,
   if ( (file->offset > CAB_LENGTHMAX) || (file->length > CAB_LENGTHMAX) ||
       ((file->offset + file->length) > CAB_LENGTHMAX))
   {
-    sys->message(NULL, "ERROR; file \"%s\" cannot be extracted, "
-      "invalid file offset and length.", file->filename);
     return self->error = MSPACK_ERR_DATAFORMAT;
   }
 
@@ -1206,11 +1085,9 @@ static int cabd_extract(struct mscab_decompressor *base,
      *   and pass back MSPACK_ERR_READ
      */
     self->d->outfh = NULL;
-    if ((self->d->comp_type & cffoldCOMPTYPE_MASK) != cffoldCOMPTYPE_LZX) {
-        if ((bytes = file->offset - self->d->offset)) {
-            error = self->d->decompress(self->d->state, bytes);
-            self->error = (error == MSPACK_ERR_READ) ? self->read_error : error;
-        }
+    if ((bytes = file->offset - self->d->offset)) {
+      error = self->d->decompress(self->d->state, bytes);
+      self->error = (error == MSPACK_ERR_READ) ? self->read_error : error;
     }
 
     /* if getting to the correct offset was error free, unpack file */
@@ -1248,32 +1125,27 @@ static int cabd_init_decomp(struct mscab_decompressor_p *self, unsigned int ct)
 
   switch (ct & cffoldCOMPTYPE_MASK) {
   case cffoldCOMPTYPE_NONE:
-    self->d->sys.message(NULL, "Detected CAB Compression Type: None (%x)", ct & cffoldCOMPTYPE_MASK);
     self->d->decompress = (int (*)(void *, off_t)) &noned_decompress;
     self->d->state = noned_init(&self->d->sys, fh, fh,
 				self->param[MSCABD_PARAM_DECOMPBUF]);
     break;
   case cffoldCOMPTYPE_MSZIP:
-    self->d->sys.message(NULL, "Detected CAB Compression Type: MSZIP (%x)", ct & cffoldCOMPTYPE_MASK);
     self->d->decompress = (int (*)(void *, off_t)) &mszipd_decompress;
     self->d->state = mszipd_init(&self->d->sys, fh, fh,
 				 self->param[MSCABD_PARAM_DECOMPBUF],
 				 self->param[MSCABD_PARAM_FIXMSZIP]);
     break;
   case cffoldCOMPTYPE_QUANTUM:
-    self->d->sys.message(NULL, "Detected CAB Compression Type: QUANTUM (%x)", ct & cffoldCOMPTYPE_MASK);
     self->d->decompress = (int (*)(void *, off_t)) &qtmd_decompress;
     self->d->state = qtmd_init(&self->d->sys, fh, fh, (int) (ct >> 8) & 0x1f,
 			       self->param[MSCABD_PARAM_DECOMPBUF]);
     break;
   case cffoldCOMPTYPE_LZX:
-    self->d->sys.message(NULL, "Detected CAB Compression Type: LZX (%x)", ct & cffoldCOMPTYPE_MASK);
     self->d->decompress = (int (*)(void *, off_t)) &lzxd_decompress;
     self->d->state = lzxd_init(&self->d->sys, fh, fh, (int) (ct >> 8) & 0x1f, 0,
 			       self->param[MSCABD_PARAM_DECOMPBUF], (off_t)0,0);
     break;
   default:
-    self->d->sys.message(NULL, "Unsupported compression type for CAB: %x", ct & cffoldCOMPTYPE_MASK);
     return self->error = MSPACK_ERR_DATAFORMAT;
   }
   return self->error = (self->d->state) ? MSPACK_ERR_OK : MSPACK_ERR_NOMEMORY;
@@ -1330,10 +1202,8 @@ static int cabd_sys_read(struct mspack_file *file, void *buffer, int bytes) {
       /* out of data, read a new block */
 
       /* check if we're out of input blocks, advance block counter */
-        //sys->message(NULL, "block num: %d", self->d->block);
-        //sys->message(NULL, "folder num of blocks: %d", self->d->folder->base.num_blocks);
       if (self->d->block++ >= self->d->folder->base.num_blocks) {
-	sys->message(NULL, "Ran out of CAB input blocks prematurely");
+	self->read_error = MSPACK_ERR_DATAFORMAT;
 	break;
       }
 
@@ -1355,11 +1225,15 @@ static int cabd_sys_read(struct mspack_file *file, void *buffer, int bytes) {
 	  /* special LZX hack -- on the last block, inform LZX of the
 	   * size of the output data stream. */
 	  lzxd_set_output_length((struct lzxd_stream *) self->d->state, (off_t)
-				 ((self->d->block-1) * CAB_BLOCKSTD + outlen));
+				 ((self->d->block-1) * CAB_BLOCKMAX + outlen));
 	}
       }
       else {
-        /* not the last block */
+	/* not the last block */
+	if (outlen != CAB_BLOCKMAX) {
+	  self->system->message(self->d->infh,
+				"WARNING; non-maximal data block");
+	}
       }
     } /* if (avail) */
   } /* while (todo > 0) */
@@ -1387,9 +1261,7 @@ static int cabd_sys_read_block(struct mspack_system *sys,
 {
   unsigned char hdr[cfdata_SIZEOF];
   unsigned int cksum;
-  unsigned int len;
-
-  (void) ignore_cksum;
+  int len;
 
   /* reset the input block pointer and end of block pointer */
   d->i_ptr = d->i_end = &d->input[0];
@@ -1411,19 +1283,19 @@ static int cabd_sys_read_block(struct mspack_system *sys,
     /* blocks must not be over CAB_INPUTMAX in size */
     len = EndGetI16(&hdr[cfdata_CompressedSize]);
     if (((d->i_end - d->i_ptr) + len) > CAB_INPUTMAX) {
-      sys->message(NULL, "block size > CAB_INPUTMAX (%ld + %d)",
-          (long)(d->i_end - d->i_ptr), len);
+      D(("block size > CAB_INPUTMAX (%ld + %d)",
+          (long)(d->i_end - d->i_ptr), len))
       return MSPACK_ERR_DATAFORMAT;
     }
 
      /* blocks must not expand to more than CAB_BLOCKMAX */
     if (EndGetI16(&hdr[cfdata_UncompressedSize]) > CAB_BLOCKMAX) {
-      sys->message(NULL, "block size > CAB_BLOCKMAX");
+      D(("block size > CAB_BLOCKMAX"))
       return MSPACK_ERR_DATAFORMAT;
     }
 
     /* read the block data */
-    if (sys->read(d->infh, d->i_end, len) != (int)len) {
+    if (sys->read(d->infh, d->i_end, len) != len) {
       return MSPACK_ERR_READ;
     }
 
@@ -1431,13 +1303,8 @@ static int cabd_sys_read_block(struct mspack_system *sys,
     if ((cksum = EndGetI32(&hdr[cfdata_CheckSum]))) {
       unsigned int sum2 = cabd_checksum(d->i_end, (unsigned int) len, 0);
       if (cabd_checksum(&hdr[4], 4, sum2) != cksum) {
-        /* 
-         * Do not validate the checksum --
-         * Because the checksum does not necessarily matter
-         * and we still want to scan the block if possible
-         */
-        //if (!ignore_cksum) return MSPACK_ERR_CHECKSUM;
-        sys->message(d->infh, "WARNING; bad block checksum found: 0x%x", cksum);
+	if (!ignore_cksum) return MSPACK_ERR_CHECKSUM;
+	sys->message(d->infh, "WARNING; bad block checksum found");
       }
     }
 
@@ -1462,7 +1329,7 @@ static int cabd_sys_read_block(struct mspack_system *sys,
 
     /* advance to next member in the cabinet set */
     if (!(d->data = d->data->next)) {
-      sys->message(NULL, "ran out of splits in cabinet set");
+      D(("ran out of splits in cabinet set"))
       return MSPACK_ERR_DATAFORMAT;
     }
 
@@ -1494,8 +1361,8 @@ static unsigned int cabd_checksum(unsigned char *data, unsigned int bytes,
   }
 
   switch (bytes & 3) {
-  case 3: ul |= *data++ << 16;
-  case 2: ul |= *data++ <<  8;
+  case 3: ul |= *data++ << 16; /*@fallthrough@*/
+  case 2: ul |= *data++ <<  8; /*@fallthrough@*/
   case 1: ul |= *data;
   }
   cksum ^= ul;

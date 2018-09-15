@@ -1,0 +1,14 @@
+Source: libmspack
+Section: libs
+Priority: optional
+Maintainer: Markus Sinner <sinner@herdsoft.com>
+Build-Depends: debhelper (>> 3.0.0)
+Standards-Version: 3.5.2
+
+Package: libmspack
+Architecture: any
+Depends: ${shlibs:Depends}
+Description: Library that implements different Microsoft-Compressions
+ The purpose of libmspack is to provide both compression and decompression
+ of some loosely related file formats used by Microsoft. Currently the most
+ common formats are implemented.
