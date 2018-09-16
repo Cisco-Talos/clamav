@@ -126,7 +126,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>HAVE_STRUCT_TIMESPEC;HAVE_STDBOOL_H;HAVE_CONFIG_H;WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;PTW32_STATIC_LIB;THIS_IS_LIBCLAMAV;WIN32;PCRE_STATIC;_DEBUG;_WINDOWS;_USRDLL;LIBCLAMAV_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\libxml2;$(SolutionDir)3rdparty\libxml2\include;$(SolutionDir)3rdparty\pcre2;$(SolutionDir)..;..\libclamav\libmspack-0.5alpha\mspack;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\libxml2;$(SolutionDir)3rdparty\libxml2\include;$(SolutionDir)3rdparty\pcre2;$(SolutionDir)..;..\libclammspack\mspack;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4996;4090;4244;4018;4101;4333;4146</DisableSpecificWarnings>
     </ClCompile>
@@ -144,7 +144,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>HAVE_STRUCT_TIMESPEC;HAVE_STDBOOL_H;HAVE_CONFIG_H;WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;PTW32_STATIC_LIB;THIS_IS_LIBCLAMAV;WIN32;PCRE_STATIC;_DEBUG;_WINDOWS;_USRDLL;LIBCLAMAV_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\libxml2;$(SolutionDir)3rdparty\libxml2\include;$(SolutionDir)3rdparty\pcre2;$(SolutionDir)..;..\libclamav\libmspack-0.5alpha\mspack;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\libxml2;$(SolutionDir)3rdparty\libxml2\include;$(SolutionDir)3rdparty\pcre2;$(SolutionDir)..;..\libclammspack\mspack;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4996;4090;4244;4018;4101;4333;4146;4267;4334</DisableSpecificWarnings>
     </ClCompile>
@@ -164,7 +164,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>HAVE_STRUCT_TIMESPEC;HAVE_STDBOOL_H;HAVE_CONFIG_H;WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;PTW32_STATIC_LIB;THIS_IS_LIBCLAMAV;WIN32;PCRE_STATIC;NDEBUG;_WINDOWS;_USRDLL;LIBCLAMAV_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\libxml2;$(SolutionDir)3rdparty\libxml2\include;$(SolutionDir)3rdparty\pcre2;$(SolutionDir)..;..\libclamav\libmspack-0.5alpha\mspack;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\libxml2;$(SolutionDir)3rdparty\libxml2\include;$(SolutionDir)3rdparty\pcre2;$(SolutionDir)..;..\libclammspack\mspack;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4996;4090;4244;4018;4101;4333;4146</DisableSpecificWarnings>
     </ClCompile>
@@ -186,7 +186,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>HAVE_STRUCT_TIMESPEC;HAVE_STDBOOL_H;HAVE_CONFIG_H;WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;PTW32_STATIC_LIB;THIS_IS_LIBCLAMAV;WIN32;PCRE_STATIC;NDEBUG;_WINDOWS;_USRDLL;LIBCLAMAV_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\libxml2;$(SolutionDir)3rdparty\libxml2\include;$(SolutionDir)3rdparty\pcre2;$(SolutionDir)..;..\libclamav\libmspack-0.5alpha\mspack;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;..\libclamav\libmspack-0.5alpha\mspack</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\libxml2;$(SolutionDir)3rdparty\libxml2\include;$(SolutionDir)3rdparty\pcre2;$(SolutionDir)..;..\libclammspack\mspack;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;..\libclamav\libmspack-0.5alpha\mspack</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4996;4090;4244;4018;4101;4333;4146</DisableSpecificWarnings>
     </ClCompile>
@@ -208,7 +208,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>HAVE_STRUCT_TIMESPEC;HAVE_STDBOOL_H;HAVE_CONFIG_H;WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;PTW32_STATIC_LIB;THIS_IS_LIBCLAMAV;WIN32;PCRE_STATIC;NDEBUG;_WINDOWS;_USRDLL;LIBCLAMAV_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\libxml2;$(SolutionDir)3rdparty\libxml2\include;$(SolutionDir)3rdparty\pcre2;$(SolutionDir)..;..\libclamav\libmspack-0.5alpha\mspack;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\libxml2;$(SolutionDir)3rdparty\libxml2\include;$(SolutionDir)3rdparty\pcre2;$(SolutionDir)..;..\libclammspack\mspack;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4996;4090;4244;4018;4101;4333;4146;4267;4334</DisableSpecificWarnings>
     </ClCompile>
@@ -230,7 +230,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>HAVE_STRUCT_TIMESPEC;HAVE_STDBOOL_H;HAVE_CONFIG_H;LIBCLAMAV_STATIC;WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;PTW32_STATIC_LIB;THIS_IS_LIBCLAMAV;WIN32;PCRE_STATIC;NDEBUG;_WINDOWS;_USRDLL;LIBCLAMAV_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\libxml2;$(SolutionDir)3rdparty\libxml2\include;$(SolutionDir)3rdparty\pcre2;$(SolutionDir)..;..\libclamav\libmspack-0.5alpha\mspack;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\libxml2;$(SolutionDir)3rdparty\libxml2\include;$(SolutionDir)3rdparty\pcre2;$(SolutionDir)..;..\libclammspack\mspack;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4996;4090;4244;4018;4101;4333;4146;4267;4334</DisableSpecificWarnings>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
