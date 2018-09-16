@@ -61,4 +61,3 @@ libclamav/c++/llvm/tools/llvmc/plugins/Base/Base.td
 *.obj
 *.opendb
 .vscode
-libclamav/libmspack-0.5alpha/autom4te.cache/
