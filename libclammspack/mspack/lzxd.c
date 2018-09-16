@@ -399,7 +399,7 @@ int lzxd_decompress(struct lzxd_stream *lzx, off_t out_bytes) {
   register unsigned short sym;
 
   int match_length, length_footer, extra, verbatim_bits, bytes_todo;
-  int this_run, main_element, aligned_bits, j;
+  int this_run, main_element, aligned_bits, j, warned = 0;
   unsigned char *window, *runsrc, *rundest, buf[12];
   unsigned int frame_size=0, end_frame, match_offset, window_posn;
   unsigned int R0, R1, R2;
@@ -435,8 +435,12 @@ int lzxd_decompress(struct lzxd_stream *lzx, off_t out_bytes) {
     /* have we reached the reset interval? (if there is one?) */
     if (lzx->reset_interval && ((lzx->frame % lzx->reset_interval) == 0)) {
       if (lzx->block_remaining) {
-	D(("%d bytes remaining at reset interval", lzx->block_remaining))
-	return lzx->error = MSPACK_ERR_DECRUNCH;
+        /* this is a file format error, we can make a best effort to extract what we can */
+        D(("%d bytes remaining at reset interval", lzx->block_remaining))
+        if (!warned) {
+          lzx->sys->message(NULL, "WARNING; invalid reset interval detected during LZX decompression");
+          warned++;
+        }
       }
 
       /* re-read the intel header and reset the huffman lengths */

@@ -67,7 +67,8 @@
  * more than 6144 bytes. Quantum has no documentation, but the largest
  * block seen in the wild is 337 bytes above uncompressed size.
  */
-#define CAB_BLOCKMAX (32768)
+#define CAB_BLOCKMAX (65535)
+#define CAB_BLOCKSTD (32768)
 #define CAB_INPUTMAX (CAB_BLOCKMAX+6144)
 
 /* There are no more than 65535 data blocks per folder, so a folder cannot
@@ -75,7 +76,7 @@
  * one folder, this is also their max offset, length and offset+length limit.
  */
 #define CAB_FOLDERMAX (65535)
-#define CAB_LENGTHMAX (CAB_BLOCKMAX * CAB_FOLDERMAX)
+#define CAB_LENGTHMAX UINT_MAX
 
 /* CAB compression definitions */
 
@@ -107,7 +108,7 @@ struct mscab_decompressor_p {
   struct mscab_decompressor base;
   struct mscabd_decompress_state *d;
   struct mspack_system *system;
-  int param[3]; /* !!! MATCH THIS TO NUM OF PARAMS IN MSPACK.H !!! */
+  int param[4]; /* !!! MATCH THIS TO NUM OF PARAMS IN MSPACK.H !!! */
   int error, read_error;
 };
 

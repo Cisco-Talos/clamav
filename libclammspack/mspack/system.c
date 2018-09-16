@@ -27,10 +27,13 @@ int mspack_version(int entity) {
     * - added mschmd_header::chunk_cache;
     */
   case MSPACK_VER_MSCHMD:
+  /* CAB decoder version 1 -> 2 changes:
+   * - added MSCABD_PARAM_SALVAGE
+   */
+  case MSPACK_VER_MSCABD:
     return 2;
   case MSPACK_VER_LIBRARY:
   case MSPACK_VER_SYSTEM:
-  case MSPACK_VER_MSCABD:
   case MSPACK_VER_MSSZDDD:
   case MSPACK_VER_MSKWAJD:
   case MSPACK_VER_MSOABD:
