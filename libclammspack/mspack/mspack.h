@@ -934,6 +934,13 @@ struct mscabd_file {
 #define MSCABD_PARAM_FIXMSZIP  (1)
 /** mscab_decompressor::set_param() parameter: size of decompression buffer */
 #define MSCABD_PARAM_DECOMPBUF (2)
+/** mscab_decompressor::set_param() parameter: salvage data from bad cabinets?
+ * If enabled, open() will skip file with bad folder indices or filenames
+ * rather than reject the whole cabinet, and extract() will limit rather than
+ * reject files with invalid offsets and lengths, and bad data block checksums
+ * will be ignored. Available only in CAB decoder version 2 and above.
+ */
+#define MSCABD_PARAM_SALVAGE   (3)
 
 /** TODO */
 struct mscab_compressor {

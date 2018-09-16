@@ -536,7 +536,7 @@ static int chmd_fast_find(struct mschm_decompressor *base,
     struct mschm_decompressor_p *self = (struct mschm_decompressor_p *) base;
     struct mspack_system *sys;
     struct mspack_file *fh;
-    const unsigned char *chunk, *p, *end;
+    const unsigned char *chunk, *p = NULL, *end = NULL;
     int err = MSPACK_ERR_OK, result = -1;
     unsigned int n, sec;
 

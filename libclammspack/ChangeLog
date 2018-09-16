@@ -1,3 +1,18 @@
+18-09-16  Stuart Caie <kyzer@cabextract.org.uk>
+
+    * cabd.c: add new parameter, MSCABD_PARAM_SALVAGE, which makes CAB file
+    reading and extraction more lenient, to allow damaged or mangled CABs
+    to be extracted. When enabled, cabd->open() will no longer reject
+    cabinets entirely if they have files with invalid folder indicies
+    or filenames, but will simply ignore those files. Also, cabd->extract()
+    will limit files with invalid lengths to the maximum possible, rather
+    than reject them. Finally, invalid data block checksums will produce
+    warnings, but won't cause decompression to fail. It's still possible
+    for corrupted files to fail extraction, but hopefully more data can
+    be extracted before they do. This new parameter doesn't affect the
+    existing MSCABD_PARAM_FIXMSZIP parameter, which ignores MSZIP
+    decompression failures.
+
 2018-08-09  Stuart Caie <kyzer@cabextract.org.uk>
 
 	* Makefile.am: the test file cve-2015-4467-reset-interval-zero.chm is

@@ -369,6 +369,9 @@ int cli_scanmscab(cli_ctx *ctx, off_t sfx_offset)
 		return CL_EUNPACK;
 	}
 
+	cab_d->set_param(cab_d, MSCABD_PARAM_FIXMSZIP, 1);
+	cab_d->set_param(cab_d, MSCABD_PARAM_SALVAGE, 1);
+
 	cab_h = cab_d->open(cab_d, (char *)&mspack_fmap);
 	if (!cab_h) {
 		ret = CL_EFORMAT;
