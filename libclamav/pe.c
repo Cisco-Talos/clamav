@@ -4821,11 +4821,26 @@ out_no_petite:
 
 
     /* ASPACK support */
-    while((DCONF & PE_CONF_ASPACK) && ep+58+0x70e < fsize && !memcmp(epbuff,"\x60\xe8\x03\x00\x00\x00\xe9\xeb",8)) {
+    while((DCONF & PE_CONF_ASPACK) && 
+          ((ep+ASPACK_EP_OFFSET_212 < fsize) || 
+           (ep+ASPACK_EP_OFFSET_OTHER < fsize) || 
+           (ep+ASPACK_EP_OFFSET_242 < fsize)) && 
+          (!memcmp(epbuff,"\x60\xe8\x03\x00\x00\x00\xe9\xeb",8))) {
         char *src;
+        aspack_version_t aspack_ver = ASPACK_VER_NONE;
 
-        if(epsize<0x3bf || memcmp(epbuff+0x3b9, "\x68\x00\x00\x00\x00\xc3",6))
+        if(epsize<0x3bf)
             break;
+        
+        if ( 0 == memcmp(epbuff+ASPACK_EPBUFF_OFFSET_212, "\x68\x00\x00\x00\x00\xc3",6)) {
+            aspack_ver = ASPACK_VER_212;
+        } else if ( 0 == memcmp(epbuff+ASPACK_EPBUFF_OFFSET_OTHER, "\x68\x00\x00\x00\x00\xc3",6)) {
+            aspack_ver = ASPACK_VER_OTHER;
+        } else if ( 0 == memcmp(epbuff+ASPACK_EPBUFF_OFFSET_242, "\x68\x00\x00\x00\x00\xc3",6)) {
+            aspack_ver = ASPACK_VER_242;
+        } else {
+            break;
+        }
         ssize = 0;
         for(i=0 ; i< nsections ; i++)
             if(ssize<exe_sections[i].rva+exe_sections[i].vsz)
@@ -4863,7 +4878,7 @@ out_no_petite:
 #endif
 
         CLI_UNPTEMP("Aspack",(src,exe_sections,0));
-        CLI_UNPRESULTS("Aspack",(unaspack212((uint8_t *)src, ssize, exe_sections, nsections, vep-1, EC32(optional_hdr32.ImageBase), ndesc)),1,(src,0));
+        CLI_UNPRESULTS("Aspack",(unaspack((uint8_t *)src, ssize, exe_sections, nsections, vep-1, EC32(optional_hdr32.ImageBase), ndesc, aspack_ver)),1,(src,0));
         break;
     }
 
