@@ -729,6 +729,10 @@ LIBBZ2
 MAINT
 MAINTAINER_MODE_FALSE
 MAINTAINER_MODE_TRUE
+LIBMSPACK_LIBS
+LIBMSPACK_CFLAGS
+USE_INTERNAL_MSPACK_FALSE
+USE_INTERNAL_MSPACK_TRUE
 pcreconfig
 HAVE_LIBXML2_FALSE
 HAVE_LIBXML2_TRUE
@@ -930,6 +934,7 @@ with_xml
 with_openssl
 with_libjson
 with_pcre
+with_system_libmspack
 enable_maintainer_mode
 with_zlib
 enable_zlib_vcheck
@@ -993,6 +998,8 @@ YACC
 YFLAGS
 CHECK_CFLAGS
 CHECK_LIBS
+LIBMSPACK_CFLAGS
+LIBMSPACK_LIBS
 SYSTEMD_CFLAGS
 SYSTEMD_LIBS'
 ac_subdirs_all='
@@ -1697,6 +1704,9 @@ Optional Packages:
   --with-pcre[=DIR]       path to directory containing libpcre library,
                           prioritizes PCRE2 over PCRE [default=search PATH
                           environment variable]
+  --with-system-libmspack Specify system libmspack location or to use internal
+                          package, uses full path to libmspack or bin
+                          directory (default=search PATH environment variable)
   --with-zlib[=DIR]       path to directory containing zlib library
                           [default=/usr/local or /usr if not found in
                           /usr/local]
@@ -1752,6 +1762,10 @@ Some influential environment variables:
   CHECK_CFLAGS
               C compiler flags for CHECK, overriding pkg-config
   CHECK_LIBS  linker flags for CHECK, overriding pkg-config
+  LIBMSPACK_CFLAGS
+              C compiler flags for LIBMSPACK, overriding pkg-config
+  LIBMSPACK_LIBS
+              linker flags for LIBMSPACK, overriding pkg-config
   SYSTEMD_CFLAGS
               C compiler flags for SYSTEMD, overriding pkg-config
   SYSTEMD_LIBS
@@ -22739,6 +22753,111 @@ fi
 
 
 
+# Check whether --with-system-libmspack was given.
+if test "${with_system_libmspack+set}" = set; then :
+  withval=$with_system_libmspack; system_libmspack=$withval
+else
+  system_libmspack="no"
+fi
+
+
+if test "x$system_libmspack" = "xno"; then
+    use_internal_mspack=yes
+     if test TRUE; then
+  USE_INTERNAL_MSPACK_TRUE=
+  USE_INTERNAL_MSPACK_FALSE='#'
+else
+  USE_INTERNAL_MSPACK_TRUE='#'
+  USE_INTERNAL_MSPACK_FALSE=
+fi
+
+else
+
+pkg_failed=no
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for LIBMSPACK" >&5
+$as_echo_n "checking for LIBMSPACK... " >&6; }
+
+if test -n "$LIBMSPACK_CFLAGS"; then
+    pkg_cv_LIBMSPACK_CFLAGS="$LIBMSPACK_CFLAGS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libmspack\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libmspack") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_LIBMSPACK_CFLAGS=`$PKG_CONFIG --cflags "libmspack" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+if test -n "$LIBMSPACK_LIBS"; then
+    pkg_cv_LIBMSPACK_LIBS="$LIBMSPACK_LIBS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libmspack\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libmspack") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_LIBMSPACK_LIBS=`$PKG_CONFIG --libs "libmspack" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+	        LIBMSPACK_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "libmspack" 2>&1`
+        else
+	        LIBMSPACK_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "libmspack" 2>&1`
+        fi
+	# Put the nasty error message in config.log where it belongs
+	echo "$LIBMSPACK_PKG_ERRORS" >&5
+
+	use_internal_mspack=yes
+elif test $pkg_failed = untried; then
+     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+	use_internal_mspack=yes
+else
+	LIBMSPACK_CFLAGS=$pkg_cv_LIBMSPACK_CFLAGS
+	LIBMSPACK_LIBS=$pkg_cv_LIBMSPACK_LIBS
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+	use_internal_mspack=no
+fi
+     if test "x$use_internal_mspack" = "xyes"; then
+  USE_INTERNAL_MSPACK_TRUE=
+  USE_INTERNAL_MSPACK_FALSE='#'
+else
+  USE_INTERNAL_MSPACK_TRUE='#'
+  USE_INTERNAL_MSPACK_FALSE=
+fi
+
+fi
+
+
+if test "x$use_internal_mspack" = "xno"; then
+    mspack_msg="External, $LIBMSPACK_CFLAGS $LIBMSPACK_LIBS"
+fi
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to enable maintainer-specific portions of Makefiles" >&5
 $as_echo_n "checking whether to enable maintainer-specific portions of Makefiles... " >&6; }
     # Check whether --enable-maintainer-mode was given.
@@ -29223,6 +29342,14 @@ if test -z "${HAVE_LIBXML2_TRUE}" && test -z "${HAVE_LIBXML2_FALSE}"; then
   as_fn_error $? "conditional \"HAVE_LIBXML2\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
+if test -z "${USE_INTERNAL_MSPACK_TRUE}" && test -z "${USE_INTERNAL_MSPACK_FALSE}"; then
+  as_fn_error $? "conditional \"USE_INTERNAL_MSPACK\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${USE_INTERNAL_MSPACK_TRUE}" && test -z "${USE_INTERNAL_MSPACK_FALSE}"; then
+  as_fn_error $? "conditional \"USE_INTERNAL_MSPACK\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 if test -z "${MAINTAINER_MODE_TRUE}" && test -z "${MAINTAINER_MODE_FALSE}"; then
   as_fn_error $? "conditional \"MAINTAINER_MODE\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -32080,6 +32207,14 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_LIBXML2_TRUE}" && test -z "${HAVE_LIBXML2_FALSE}"; then
   as_fn_error $? "conditional \"HAVE_LIBXML2\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${USE_INTERNAL_MSPACK_TRUE}" && test -z "${USE_INTERNAL_MSPACK_FALSE}"; then
+  as_fn_error $? "conditional \"USE_INTERNAL_MSPACK\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${USE_INTERNAL_MSPACK_TRUE}" && test -z "${USE_INTERNAL_MSPACK_FALSE}"; then
+  as_fn_error $? "conditional \"USE_INTERNAL_MSPACK\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${MAINTAINER_MODE_TRUE}" && test -z "${MAINTAINER_MODE_FALSE}"; then
@@ -35106,6 +35241,19 @@ else
 fi
 
 fi
+
+
+   $as_echo_n "              libmspack   : "
+   if test "x$mspack_msg" = "xno"; then :
+  $as_echo "yes (disabled)"
+elif test "x$mspack_msg" = "xyes"; then :
+  $as_echo "yes"
+elif test "x$mspack_msg" = "x"; then :
+  $as_echo "yes"
+else
+  $as_echo "yes ($mspack_msg)"
+fi
+
 if test "x$XML_LIBS" = "x"; then
 
 

@@ -88,6 +88,11 @@ m4_include([m4/reorganization/libs/xml.m4])
 m4_include([m4/reorganization/libs/openssl.m4])
 m4_include([m4/reorganization/libs/json.m4])
 m4_include([m4/reorganization/libs/pcre.m4])
+m4_include([m4/reorganization/libs/libmspack.m4])
+
+if test "x$use_internal_mspack" = "xno"; then
+    mspack_msg="External, $LIBMSPACK_CFLAGS $LIBMSPACK_LIBS"
+fi
 
 AM_MAINTAINER_MODE
 m4_include([m4/reorganization/libs/libz.m4])
@@ -280,6 +285,7 @@ if test "x$PCRE_HOME" = "x"; then
 else
     CL_MSG_STATUS([pcre        ],[$PCRE_HOME],[$have_pcre])
 fi
+CL_MSG_STATUS([libmspack   ],[yes],[$mspack_msg])
 if test "x$XML_LIBS" = "x"; then 
     CL_MSG_STATUS([libxml2     ],[no],[])
 else
