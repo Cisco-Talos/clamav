@@ -370,7 +370,9 @@ int cli_scanmscab(cli_ctx *ctx, off_t sfx_offset)
 	}
 
 	cab_d->set_param(cab_d, MSCABD_PARAM_FIXMSZIP, 1);
+#if MSCABD_PARAM_SALVAGE
 	cab_d->set_param(cab_d, MSCABD_PARAM_SALVAGE, 1);
+#endif
 
 	cab_h = cab_d->open(cab_d, (char *)&mspack_fmap);
 	if (!cab_h) {

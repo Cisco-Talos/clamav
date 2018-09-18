@@ -126,6 +126,7 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
 	$(top_srcdir)/m4/reorganization/libs/openssl.m4 \
 	$(top_srcdir)/m4/reorganization/libs/json.m4 \
 	$(top_srcdir)/m4/reorganization/libs/pcre.m4 \
+	$(top_srcdir)/m4/reorganization/libs/libmspack.m4 \
 	$(top_srcdir)/m4/reorganization/libs/libz.m4 \
 	$(top_srcdir)/m4/reorganization/libs/bzip.m4 \
 	$(top_srcdir)/m4/reorganization/libs/unrar.m4 \
@@ -349,6 +350,8 @@ LIBCLAMAV_VERSION = @LIBCLAMAV_VERSION@
 LIBCLAMSHARED_CPPFLAGS = @LIBCLAMSHARED_CPPFLAGS@
 LIBLTDL = @LIBLTDL@
 LIBM = @LIBM@
+LIBMSPACK_CFLAGS = @LIBMSPACK_CFLAGS@
+LIBMSPACK_LIBS = @LIBMSPACK_LIBS@
 LIBOBJS = @LIBOBJS@
 LIBPRELUDE_CFLAGS = @LIBPRELUDE_CFLAGS@
 LIBPRELUDE_CONFIG = @LIBPRELUDE_CONFIG@

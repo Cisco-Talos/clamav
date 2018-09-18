@@ -174,8 +174,9 @@ c++/Makefile: c++/Makefile.nollvm.in
 distclean-recursive distdir maintainer-clean-recursive: c++/Makefile
 endif
 
+if USE_INTERNAL_MSPACK
 # libmspack version:
-LIBMSPACK_VERSION = 0:7:1
+LIBMSPACK_VERSION = 7:1:0
 
 libclammspack_la_CFLAGS = -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -Wno-unused-parameter -I@top_srcdir@/libclammspack/mspack
 libclammspack_la_LDFLAGS = -version-info $(LIBMSPACK_VERSION) -no-undefined -export-symbols-regex '^mspack_'
@@ -229,10 +230,29 @@ libclammspack_la_SOURCES = \
 lib_LTLIBRARIES += libclammspack.la
 # EXTRA_DIST += @top_srcdir@/libclammspack/libclammspack.map
 
-MSPACK_CFLAGS = -I@top_srcdir@/libclammspack/mspack
+MSPACK_CFLAGS = -I@top_srcdir@/libclammspack/mspack -DHAVE_INTERNAL_MSPACK
 MSPACKLIBADD = -lclammspack
 MSPACKDEP = libclammspack.la
 
+else
+MSPACK_CFLAGS = $(LIBMSPACK_CFLAGS)
+MSPACKLIBADD = $(LIBMSPACK_LIBS)
+MSPACKDEP =
+
+# EXTRA_DIST += libmspack-0.5alpha
+libmspack/Makefile: 
+.PHONY: distdir distclean maintainer-clean
+distdir:
+	echo "make distdir requires --with-system-libmspack=no"
+	exit 1
+
+# nothing to do here, rules must exist for distclean to succeed
+distclean:
+	-rm -f Makefile
+maintainer-clean:
+
+distclean-recursive distdir maintainer-clean-recursive: libmspack/Makefile
+endif
 
 if ENABLE_YARA
 YARA_CFLAGS=-DHAVE_YARA
@@ -243,7 +263,7 @@ libclamav_nocxx_la_CFLAGS=$(AM_CFLAGS) @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPF
 
 libclamav_la_LIBADD = @SSL_LIBS@ @JSON_LIBS@ @PCRE_LIBS@ @LIBCLAMAV_LIBS@ @LIBLTDL@ $(IFACELIBADD) $(MSPACKLIBADD) $(LLVMLIBADD) libclamav_internal_utils.la @THREAD_LIBS@ @LIBM@
 libclamav_la_DEPENDENCIES =  @LTDLDEPS@ $(IFACEDEP) $(LLVMDEP) $(MSPACKDEP) libclamav_internal_utils.la
-libclamav_la_CFLAGS =$(AM_CFLAGS) $(YARA_CFLAGS) -DSEARCH_LIBDIR=\"$(libdir)\" @LIBCLAMAV_CPPFLAGS@ @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @ICONV_CPPFLAGS@ @PCRE_CPPFLAGS@ @XML_CPPFLAGS@ $(MSPACK_CFLAGS)
+libclamav_la_CFLAGS = $(MSPACK_CFLAGS) $(AM_CFLAGS) $(YARA_CFLAGS) -DSEARCH_LIBDIR=\"$(libdir)\" @LIBCLAMAV_CPPFLAGS@ @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @ICONV_CPPFLAGS@ @PCRE_CPPFLAGS@ @XML_CPPFLAGS@
 libclamav_la_LDFLAGS = @SSL_LDFLAGS@ @TH_SAFE@ @JSON_LDFLAGS@ @ICONV_LDFLAGS@ $(XML_LIBS) -version-info @LIBCLAMAV_VERSION@ -no-undefined
 
 if VERSIONSCRIPT
