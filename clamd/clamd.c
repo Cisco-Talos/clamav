@@ -370,6 +370,15 @@ int main(int argc, char **argv)
             break;
         }
 
+        /* TODO: Re-enable OnAccessExtraScanning once the thread resource consumption issue is resolved. */
+        if(optget(opts, "OnAccessExtraScanning")->enabled) {
+            logg("^ScanOnAccess: OnAccessExtraScanning was requested, but has "
+                 "been disabled due to a known issue with thread resource "
+                 "cleanup. The OnAccessExtraScanning feature will be "
+                 "re-enabled in a future release when the issue is resolved. "
+                 "For details, see: https://bugzilla.clamav.net/show_bug.cgi?id=12048\n");
+        }
+
         if(!(engine = cl_engine_new())) {
             logg("!Can't initialize antivirus engine\n");
             ret = 1;
