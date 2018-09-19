@@ -45,12 +45,6 @@
         }
         "Entry"
         {
-        "MsmKey" = "8:_34ABBE7BA07840EF88EA7871CB37FA93"
-        "OwnerKey" = "8:_AEEE233E18744216B82A92A7FD6FDBB0"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
         "MsmKey" = "8:_35A3D49EBED3432995879235B83E4D3D"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
@@ -195,7 +189,7 @@
         "DisplayName" = "8:Debug"
         "IsDebugOnly" = "11:TRUE"
         "IsReleaseOnly" = "11:FALSE"
-        "OutputFilename" = "8:Debug\\ClamAV-0.100.1-x86.msi"
+        "OutputFilename" = "8:Debug\\ClamAV-0.100.2-x86.msi"
         "PackageFilesAs" = "3:2"
         "PackageFileSize" = "3:-2147483648"
         "CabType" = "3:1"
@@ -227,7 +221,7 @@
         "DisplayName" = "8:Release"
         "IsDebugOnly" = "11:FALSE"
         "IsReleaseOnly" = "11:TRUE"
-        "OutputFilename" = "8:Release\\ClamAV-0.100.1-x86.msi"
+        "OutputFilename" = "8:Release\\ClamAV-0.100.2-x86.msi"
         "PackageFilesAs" = "3:2"
         "PackageFileSize" = "3:-2147483648"
         "CabType" = "3:1"
@@ -741,15 +735,15 @@
         {
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:ClamAV"
-        "ProductCode" = "8:{F6452BFA-7AC1-4102-AB3E-D07134CC31D2}"
-        "PackageCode" = "8:{762A4859-8C51-4E9D-AEF9-53DEDE967123}"
+        "ProductCode" = "8:{A255C00A-967F-4F50-83A6-4B2CB7961E49}"
+        "PackageCode" = "8:{C6701441-C2DD-4151-A2CD-077FC92244FD}"
         "UpgradeCode" = "8:{8C7E41DE-9820-4B16-9949-43B1B267AC37}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"
         "RemovePreviousVersions" = "11:TRUE"
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:TRUE"
-        "ProductVersion" = "8:0.100.1"
+        "ProductVersion" = "8:0.100.2"
         "Manufacturer" = "8:Cisco Systems, Inc"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:https://www.clamav.net"
@@ -1258,20 +1252,6 @@
         }
         "MergeModule"
         {
-            "{CEE29DC0-9FBA-4B99-8D47-5BC643D9B626}:_34ABBE7BA07840EF88EA7871CB37FA93"
-            {
-            "UseDynamicProperties" = "11:TRUE"
-            "IsDependency" = "11:TRUE"
-            "SourcePath" = "8:microsoft_vc140_crt_x86.msm"
-                "Properties"
-                {
-                }
-            "LanguageId" = "3:0"
-            "Exclude" = "11:FALSE"
-            "Folder" = "8:"
-            "Feature" = "8:"
-            "IsolateTo" = "8:"
-            }
         }
         "ProjectOutput"
         {
