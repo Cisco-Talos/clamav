@@ -1880,9 +1880,10 @@ static char *pdf_readstring(const char *q0, int len, const char *key, unsigned *
         return s0;
     }
 
-    if (*q == '<') {
+    if ((*q == '<') && (len >= 3))  {
         start = ++q;
-        q = memchr(q+1, '>', len);
+        len--;
+        q = memchr(q+1, '>', len-1);
         if (!q)
             return NULL;
 
