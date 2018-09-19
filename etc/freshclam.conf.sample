@@ -63,15 +63,10 @@ Example
 # Default: current.cvd.clamav.net
 #DNSDatabaseInfo current.cvd.clamav.net
 
-# Uncomment the following line and replace XY with your country
-# code. See https://www.iana.org/domains/root/db for the full list.
-# You can use db.XY.ipv6.clamav.net for IPv6 connections.
-#DatabaseMirror db.XY.clamav.net
-
-# database.clamav.net is a round-robin record which points to our most 
-# reliable mirrors. It's used as a fall back in case db.XY.clamav.net is 
-# not working. DO NOT TOUCH the following line unless you know what you
-# are doing.
+# database.clamav.net is now the primary domain name to be used world-wide.
+# Now that CloudFlare is being used as our Content Delivery Network (CDN), 
+# this one domain name works world-wide to direct freshclam to the closest 
+# geographic endpoint.
 DatabaseMirror database.clamav.net
 
 # How many attempts to make before giving up.

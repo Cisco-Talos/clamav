@@ -50,8 +50,8 @@
 #endif
 #endif
 
-#define IGNORE_LONG	3 * 86400
-#define IGNORE_SHORT	6 * 3600
+#define IGNORE_SHORT    (3600)              /* 1 hour */
+#define IGNORE_LONG     (6 * IGNORE_SHORT)  /* 6 hours */
 
 void
 mirman_free (struct mirdat *mdat)
@@ -315,8 +315,28 @@ mirman_list (const struct mirdat *mdat)
         printf ("Successes: %u\n", mdat->mirtab[i].succ);
         printf ("Failures: %u\n", mdat->mirtab[i].fail);
         tm = mdat->mirtab[i].atime;
-        printf ("Last access: %s", ctime ((const time_t *) &tm));
-        printf ("Ignore: %s\n", mdat->mirtab[i].ignore ? "Yes" : "No");
+        printf("Last access: %s", ctime((const time_t *) &tm));
+        if (mdat->mirtab[i].ignore) {
+            time_t ignore_expires = tm + ((mdat->mirtab[i].ignore == 1) ? IGNORE_LONG
+                                                                        : IGNORE_SHORT);
+            double difference = difftime(ignore_expires, time(NULL));
+            if (difference > 0) {
+                uint32_t remaining = difference;
+                uint32_t seconds, minutes, hours;
+                seconds = remaining % 60;
+                remaining = remaining / 60;
+                minutes = remaining % 60;
+                remaining = remaining / 60;
+                hours = remaining % 60;
+
+                printf("Ignore: Yes,  %d hours %d minutes %d seconds remaining.\n",
+                    hours, minutes, seconds);
+            } else {
+                printf("Ignore: No\n");
+            }
+        } else {
+            printf("Ignore: No\n");
+        }
         if (i != mdat->num - 1)
             printf ("-------------------------------------\n");
     }

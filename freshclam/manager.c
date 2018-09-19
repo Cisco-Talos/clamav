@@ -678,7 +678,16 @@ remote_cvdhead (const char *cvdfile, const char *localfile,
         && !strstr (buffer, "HTTP/1.1 206")
         && !strstr (buffer, "HTTP/1.0 206"))
     {
-        logg ("%cUnknown response from remote server\n", logerr ? '!' : '^');
+        char * respcode = NULL;
+        if ((NULL != (respcode = strstr (buffer, "HTTP/1.0 "))) ||
+            (NULL != (respcode = strstr (buffer, "HTTP/1.1 ")))) {
+            /* There was some sort of response code...*/
+            respcode = cli_strndup(respcode, MIN(FILEBUFF - (size_t)(respcode - buffer), 13));
+            logg ("%cremote_cvdhead: Unknown response from %s (IP: %s): %s\n", logerr ? '!' : '^', hostname, ipaddr, respcode);
+            free (respcode);
+        } else {
+            logg ("%cremote_cvdhead: Unknown response from %s (IP: %s)\n", logerr ? '!' : '^', hostname, ipaddr);
+        }
         mirman_update (mdat->currip, mdat->af, mdat, 1);
         return NULL;
     }
@@ -882,13 +891,27 @@ getfile_mirman (const char *srcfile, const char *destfile,
     if (!strstr (buffer, "HTTP/1.1 200") && !strstr (buffer, "HTTP/1.0 200")
         && !strstr (buffer, "HTTP/1.1 206")
         && !strstr (buffer, "HTTP/1.0 206"))
-    {
-        if (proxy)
-            logg ("%cgetfile: Unknown response from %s\n",
-                  logerr ? '!' : '^', hostname);
-        else
-            logg ("%cgetfile: Unknown response from %s (IP: %s)\n",
-                  logerr ? '!' : '^', hostname, ipaddr);
+    {        char * respcode = NULL;
+        if ((NULL != (respcode = strstr (buffer, "HTTP/1.0 "))) ||
+            (NULL != (respcode = strstr (buffer, "HTTP/1.1 ")))) {
+            /* There was some sort of response code...*/
+            respcode = cli_strndup(respcode, MIN(FILEBUFF - (size_t)(respcode - buffer), 13));
+            if (proxy)
+                logg ("%cgetfile: Unknown response from %s: %s\n",
+                    logerr ? '!' : '^', hostname, respcode);
+            else
+                logg ("%cgetfile: Unknown response from %s (IP: %s): %s\n",
+                    logerr ? '!' : '^', hostname, ipaddr, respcode);
+            free (respcode);
+        }
+        else {
+            if (proxy)
+                logg ("%cgetfile: Unknown response from %s\n",
+                    logerr ? '!' : '^', hostname);
+            else
+                logg ("%cgetfile: Unknown response from %s (IP: %s)\n",
+                    logerr ? '!' : '^', hostname, ipaddr);
+        }
         if (mdat)
             mirman_update (mdat->currip, mdat->af, mdat, 1);
         return FCE_FAILEDGET;
@@ -1116,10 +1139,17 @@ getcvd (const char *cvdfile, const char *newfile, const char *hostname,
     if (cvd->version < newver)
     {
         logg ("^Mirror %s is not synchronized.\n", ip);
-        mirman_update (mdat->currip, mdat->af, mdat, 2);
-        cl_cvdfree (cvd);
         unlink (newfile);
-        return FCE_MIRRORNOTSYNC;
+        if (cvd->version < newver - 1)
+        {
+            logg ("^Mirror is more than 1 version out of date. Recording mirror failure.\n");
+            mirman_update (mdat->currip, mdat->af, mdat, FCE_MIRRORNOTSYNC);
+            cl_cvdfree (cvd);
+            return FCE_MIRRORNOTSYNC;
+        }
+
+        cl_cvdfree (cvd);
+        return FC_UPTODATE;
     }
 
     cl_cvdfree (cvd);
