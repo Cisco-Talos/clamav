@@ -682,9 +682,10 @@ remote_cvdhead (const char *cvdfile, const char *localfile,
         if ((NULL != (respcode = strstr (buffer, "HTTP/1.0 "))) ||
             (NULL != (respcode = strstr (buffer, "HTTP/1.1 ")))) {
             /* There was some sort of response code...*/
-            respcode = cli_strndup(respcode, MIN(FILEBUFF - (size_t)(respcode - buffer), 13));
-            logg ("%cremote_cvdhead: Unknown response from %s (IP: %s): %s\n", logerr ? '!' : '^', hostname, ipaddr, respcode);
-            free (respcode);
+            char * httpcode = calloc(MIN(FILEBUFF - (size_t)(respcode - buffer), 13) + 1, 1);
+            memcpy(httpcode, respcode, MIN(FILEBUFF - (size_t)(respcode - buffer), 13));
+            logg ("%cremote_cvdhead: Unknown response from %s (IP: %s): %s\n", logerr ? '!' : '^', hostname, ipaddr, httpcode);
+            free (httpcode);
         } else {
             logg ("%cremote_cvdhead: Unknown response from %s (IP: %s)\n", logerr ? '!' : '^', hostname, ipaddr);
         }
@@ -895,14 +896,15 @@ getfile_mirman (const char *srcfile, const char *destfile,
         if ((NULL != (respcode = strstr (buffer, "HTTP/1.0 "))) ||
             (NULL != (respcode = strstr (buffer, "HTTP/1.1 ")))) {
             /* There was some sort of response code...*/
-            respcode = cli_strndup(respcode, MIN(FILEBUFF - (size_t)(respcode - buffer), 13));
+            char * httpcode = calloc(MIN(FILEBUFF - (size_t)(respcode - buffer), 13) + 1, 1);
+            memcpy(httpcode, respcode, MIN(FILEBUFF - (size_t)(respcode - buffer), 13));
             if (proxy)
                 logg ("%cgetfile: Unknown response from %s: %s\n",
-                    logerr ? '!' : '^', hostname, respcode);
+                    logerr ? '!' : '^', hostname, httpcode);
             else
                 logg ("%cgetfile: Unknown response from %s (IP: %s): %s\n",
-                    logerr ? '!' : '^', hostname, ipaddr, respcode);
-            free (respcode);
+                    logerr ? '!' : '^', hostname, ipaddr, httpcode);
+            free (httpcode);
         }
         else {
             if (proxy)
