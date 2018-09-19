@@ -3,6 +3,52 @@
 Note: This file refers to the source tarball. Things described here may differ
  slightly from the binary packages.
 
+## 0.100.2
+
+ClamAV 0.100.2 is a patch release to address a set of vulnerabilities.
+
+- Fixes for the following ClamAV vulnerabilities:
+  - [CVE-2018-15378](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-15378):
+    Vulnerability in ClamAV's MEW unpacking feature that could allow an
+    unauthenticated, remote attacker to cause a denial of service (DoS)
+    condition on an affected device.
+    Reported by Secunia Research at Flexera.
+  - Fix for a 2-byte buffer over-read bug in ClamAV's PDF parsing code.
+    Reported by Alex Gaynor.
+- Fixes for the following vulnerabilities in bundled third-party libraries:
+  - [CVE-2018-14680](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-14680):
+    An issue was discovered in mspack/chmd.c in libmspack before 0.7alpha. It
+    does not reject blank CHM filenames.
+  - [CVE-2018-14681](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-14681):
+    An issue was discovered in kwajd_read_headers in mspack/kwajd.c in
+    libmspack before 0.7alpha. Bad KWAJ file header extensions could cause
+    a one or two byte overwrite.
+  - [CVE-2018-14682](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-14682):
+    An issue was discovered in mspack/chmd.c in libmspack before 0.7alpha.
+    There is an off-by-one error in the TOLOWER() macro for CHM decompression.
+  - Additionally, 0.100.2 reverted 0.100.1's patch for CVE-2018-14679, and applied
+    libmspack's version of the fix in its place.
+- Other changes:
+  - Some users have reported freshclam signature update failures as a result of
+    a delay between the time the new signature database content is announced and
+    the time that the content-delivery-network has the content available for
+    download. To mitigate these errors, this patch release includes some
+    modifications to freshclam to make it more lenient, and to reduce the time
+    that freshclam will ignore a mirror when it detects an issue.
+  - On-Access "Extra Scanning", an opt-in minor feature of OnAccess scanning on
+    Linux systems, has been disabled due to a known issue with resource cleanup.
+    OnAccessExtraScanning will be re-enabled in a future release when the issue
+    is resolved. In the mean-time, users who enabled the feature in clamd.conf
+    will see a warning informing them that the feature is not active.
+    For details, see: https://bugzilla.clamav.net/show_bug.cgi?id=12048
+
+Thank you to the following ClamAV community members for your code submissions
+and bug reports!
+
+- Alex Gaynor
+- Hiroya Ito
+- Laurent Delosieres, Secunia Research at Flexera
+
 ## 0.100.1
 
 ClamAV 0.100.1 is a hotfix release to patch a set of vulnerabilities.
@@ -20,6 +66,7 @@ ClamAV 0.100.1 is a hotfix release to patch a set of vulnerabilities.
   - Buffer over-read in unRAR code due to missing max value checks in table
     initialization.  Reported by Rui Reis.
   - Libmspack heap buffer over-read in CHM parser. Reported by Hanno Böck.
+    CVE ID: [CVE-2018-14679](https://nvd.nist.gov/vuln/detail/CVE-2018-14679)
   - PDF parser bugs reported by Alex Gaynor.
     - Buffer length checks when reading integers from non-NULL terminated strings.
     - Buffer length tracking when reading strings from dictionary objects.
