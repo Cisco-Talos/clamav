@@ -672,6 +672,8 @@ Example
 # Toggles extra scanning and notifications when a file or directory is
 # created or moved.
 # Requires the  DDD system to kick-off extra scans.
+# NOTE:  This feature is disabled until a thread resource leak bug
+#        in the OnAccessExtraScanning code can be resolved.
 # (On-access scan only)
 # Default: no
 #OnAccessExtraScanning yes

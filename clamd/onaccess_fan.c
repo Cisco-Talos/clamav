@@ -252,9 +252,14 @@ void *onas_fan_th(void *arg)
 
 		if((check = onas_fan_checkowner(fmd->pid, tharg->opts))) {
 		    scan = 0;
-		    if (check != CHK_SELF || !(optget(tharg->opts, "OnAccessExtraScanning")->enabled)) {
-			logg("*ScanOnAccess: %s skipped (excluded UID)\n", fname);
-                    }
+	/* TODO: Re-enable OnAccessExtraScanning once the thread resource consumption issue is resolved. */
+	#if 0
+			if ((check != CHK_SELF) || !(optget(tharg->opts, "OnAccessExtraScanning")->enabled)) {
+	#else
+			if (check != CHK_SELF) {
+	#endif
+				logg("*ScanOnAccess: %s skipped (excluded UID)\n", fname);
+			}
 		}
 
 		if(sizelimit) {

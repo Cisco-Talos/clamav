@@ -385,9 +385,12 @@ void *onas_ddd_th(void *arg) {
 		}
 	}
 
+	/* TODO: Re-enable OnAccessExtraScanning once the thread resource consumption issue is resolved. */
+#if 0
 	if(optget(tharg->opts, "OnAccessExtraScanning")->enabled) {
 		logg("ScanOnAccess: Extra scanning and notifications enabled.\n");
-	}
+}
+	#endif
 
 
 	FD_ZERO(&rfds);
@@ -476,6 +479,9 @@ static void onas_ddd_handle_in_create(struct ddd_thrarg *tharg,
 		const char *path, const char *child_path, const struct inotify_event *event, int wd, uint64_t in_mask) {
 
 	struct stat s;
+
+	/* TODO: Re-enable OnAccessExtraScanning once the thread resource consumption issue is resolved. */
+#if 0
 	if (optget(tharg->opts, "OnAccessExtraScanning")->enabled) {
 		if(stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) {
 			onas_ddd_handle_extra_scanning(tharg, child_path, ONAS_SCTH_ISFILE);
@@ -487,8 +493,10 @@ static void onas_ddd_handle_in_create(struct ddd_thrarg *tharg,
 
 			onas_ddd_handle_extra_scanning(tharg, child_path, ONAS_SCTH_ISDIR);
 		}
-	} else {
-
+	}
+	else
+#endif
+	{
 		if(stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) return;
 		if(!(event->mask & IN_ISDIR)) return;
 
@@ -504,6 +512,8 @@ static void onas_ddd_handle_in_moved_to(struct ddd_thrarg *tharg,
 		const char *path, const char *child_path, const struct inotify_event *event, int wd, uint64_t in_mask) {
 
 	struct stat s;
+	/* TODO: Re-enable OnAccessExtraScanning once the thread resource consumption issue is resolved. */
+#if 0
 	if (optget(tharg->opts, "OnAccessExtraScanning")->enabled) {
 		if(stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) {
 			onas_ddd_handle_extra_scanning(tharg, child_path, ONAS_SCTH_ISFILE);
@@ -515,7 +525,10 @@ static void onas_ddd_handle_in_moved_to(struct ddd_thrarg *tharg,
 
 			onas_ddd_handle_extra_scanning(tharg, child_path, ONAS_SCTH_ISDIR);
 		}
-	} else {
+	}
+	else
+#endif
+	{
 		if(stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) return;
 		if(!(event->mask & IN_ISDIR)) return;
 
