@@ -54,25 +54,11 @@ struct cli_pcre_off {
 
 #define CLI_PCRE_DISABLED  0x80000000 /* used for dconf or fail to build */
 
-#define CLI_PCRE_BCOMP_HEX 0x10
-#define CLI_PCRE_BCOMP_DEC 0x20
-#define CLI_PCRE_BCOMP_LE  0x01 
-#define CLI_PCRE_BCOMP_BE  0x02
-
-struct cli_pcre_bcomp {
-    size_t offset;
-    uint32_t options;
-    size_t byte_len;
-    char comp_symbol;
-    uint32_t comp_value;
-};
-
 struct cli_pcre_meta {
     char *trigger;
     char *virname;
     uint32_t lsigid[3]; /* 0=valid, 1=lsigid, 2=subsigid */
     struct cli_pcre_data pdata;
-    struct cli_pcre_bcomp bcmp_data;
     /* clamav offset data */
     uint32_t offdata[4];
     uint32_t offset_min, offset_max;
@@ -96,8 +82,6 @@ void cli_pcre_freeoff(struct cli_pcre_off *data);
 int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const char **virname, struct cli_ac_result **res, const struct cli_matcher *root, struct cli_ac_data *mdata, const struct cli_pcre_off *data, cli_ctx *ctx);
 void cli_pcre_freemeta(struct cli_matcher *root, struct cli_pcre_meta *pm);
 void cli_pcre_freetable(struct cli_matcher *root);
-int cli_pcre_bcmp_compare_check(const unsigned char *buffer, uint32_t length, int offset, struct cli_pcre_meta *pm);
-int cli_pcre_bcmp_add_opts(const char **opt, struct cli_pcre_bcomp *bcomp);
 #else
 /* NO-PCRE DECLARATIONS - defined because encasing everything in '#if' is a pain and because dynamic library mappings are weird */
 #define PCRE_BYPASS ""
