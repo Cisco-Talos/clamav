@@ -180,6 +180,24 @@ static inline int matcher_run(const struct cli_matcher *root,
             return ret;
     }
 
+    if (root->bcomp_metas) {
+        ret = cli_bcomp_scanbuf(map, virname, acres, root, mdata, ctx);
+        if (ret != CL_CLEAN) {
+            if (ret == CL_VIRUS) {
+                if (SCAN_ALL)
+                    viruses_found = 1;
+                else {
+                    ret = cli_append_virus(ctx, *virname);
+                    if (ret != CL_CLEAN)
+                        return ret;
+                }
+            } else if (ret > CL_TYPENO && acmode & AC_SCAN_VIR)
+                saved_ret = ret;
+            else
+                return ret;
+        }
+    }
+
     /* due to logical triggered, pcres cannot be evaluated until after full subsig matching */
     /* cannot save pcre execution state without possible evasion; must scan entire buffer */
     /* however, scanning the whole buffer may require the whole buffer being loaded into memory */
@@ -228,13 +246,16 @@ static inline int matcher_run(const struct cli_matcher *root,
 #endif /* HAVE_PCRE */
     /* end experimental fragment */
 
-    if (ctx && !SCAN_ALLMATCHES && ret == CL_VIRUS)
+    if (ctx && !SCAN_ALLMATCHES && ret == CL_VIRUS) {
         return cli_append_virus(ctx, *virname);
-    if (ctx && SCAN_ALLMATCHES && viruses_found)
+    }
+    if (ctx && SCAN_ALLMATCHES && viruses_found) {
         return CL_VIRUS;
-
-    if (saved_ret && ret == CL_CLEAN)
+    }
+    if (saved_ret && ret == CL_CLEAN) {
         return saved_ret;
+    }
+
     return ret;
 }
 
@@ -1217,6 +1238,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
         if(bm_offmode)
             cli_bm_freeoff(&toff);
         cli_pcre_freeoff(&tpoff);
+
     }
 
     if(groot) {
@@ -1231,10 +1253,16 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 
     cli_hashset_destroy(&info.exeinfo.vinfo);
 
+<<<<<<< HEAD
     if (SCAN_ALLMATCHES && viruses_found)
+=======
+    if (SCAN_ALL && viruses_found) {
+>>>>>>> refactoring byte compare functionality as a subsig; adding loader and matchers for bytecompare subsig
         return CL_VIRUS;
-    if(ret == CL_VIRUS)
+    }
+    if(ret == CL_VIRUS) {
         return CL_VIRUS;
+    }
 
     return (acmode & AC_SCAN_FT) ? type : CL_CLEAN;
 }

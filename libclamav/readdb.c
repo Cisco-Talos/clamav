@@ -49,6 +49,7 @@
 #include "matcher-ac.h"
 #include "matcher-bm.h"
 #include "matcher-pcre.h"
+#include "matcher-byte-comp.h"
 #include "matcher-hash.h"
 #include "matcher.h"
 #include "others.h"
@@ -125,7 +126,7 @@ char *cli_virname(const char *virname, unsigned int official)
 
 int cli_sigopts_handler(struct cli_matcher *root, const char *virname, const char *hexsig, uint8_t sigopts, uint16_t rtype, uint16_t type, const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options)
 {
-    char *hexcpy, *start, *end;
+    char *hexcpy, *start, *end, *mid;
     unsigned int i;
     int ret = CL_SUCCESS;
 
@@ -187,6 +188,19 @@ int cli_sigopts_handler(struct cli_matcher *root, const char *virname, const cha
             return CL_EMALFDB;
         }
 
+        ret = cli_parse_add(root, virname, hexcpy, sigopts, rtype, type, offset, target, lsigid, options);
+        free(hexcpy);
+        return ret;
+    }
+
+    /* BCOMP sigopt handling */
+    start = strchr(hexcpy, '#');
+    end = strrchr(hexcpy, '#');
+    mid = strchr(hexcpy, '(');
+
+    if (start != end && mid && (*(++mid) == '#' ||  !strncmp(mid, ">>", 2) ||
+                                    !strncmp(mid, "<<", 2) || !strncmp(mid, "0#", 2))) {
+        /* TODO byte compare currently does not have support for sigopts, pass through */
         ret = cli_parse_add(root, virname, hexcpy, sigopts, rtype, type, offset, target, lsigid, options);
         free(hexcpy);
         return ret;
@@ -299,7 +313,7 @@ int cli_sigopts_handler(struct cli_matcher *root, const char *virname, const cha
 int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hexsig, uint8_t sigopts, uint16_t rtype, uint16_t type, const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options)
 {
     struct cli_bm_patt *bm_new;
-    char *pt, *hexcpy, *start, *n, l, r;
+    char *pt, *hexcpy, *start = NULL, *mid = NULL, *end = NULL, *n, l, r;
     const char *wild;
     int ret, asterisk = 0, range;
     unsigned int i, j, hexlen, nest, parts = 0;
@@ -582,9 +596,17 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 
             free(pt);
         }
+    } else if((start = strchr(hexsig, '(')) && (mid = strchr(hexsig, '#')) && (end = strrchr(hexsig, '#')) && mid != end) {
+
+        /* format seems to match byte_compare */
+        if ( ret = cli_bcomp_addpatt(root, virname, hexsig, offset, lsigid, options) ) {
+            cli_errmsg("cli_parse_add(): Problem adding signature (2b).\n");
+            return ret;
+        }
+
     } else if(root->ac_only || type || lsigid || sigopts || strpbrk(hexsig, "?([") || (root->bm_offmode && (!strcmp(offset, "*") || strchr(offset, ','))) || strstr(offset, "VI") || strchr(offset, '$')) {
         if((ret = cli_ac_addsig(root, virname, hexsig, sigopts, 0, 0, 0, rtype, type, 0, 0, offset, lsigid, options))) {
-            cli_errmsg("cli_parse_add(): Problem adding signature (3).\n");
+            cli_errmsg("cli_parse_add(): Problem adding signature (3). %s \n", hexsig);
             return ret;
         }
     } else {

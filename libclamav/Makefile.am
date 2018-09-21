@@ -578,7 +578,9 @@ libclamav_la_SOURCES = \
 	hwp.c \
 	hwp.h \
 	lzw/lzwdec.c \
-	lzw/lzwdec.h
+	lzw/lzwdec.h \
+	matcher-byte-comp.c \
+	matcher-byte-comp.h
 
 if ENABLE_YARA
 libclamav_la_SOURCES += yara_arena.c \
