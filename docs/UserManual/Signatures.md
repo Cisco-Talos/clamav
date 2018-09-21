@@ -597,6 +597,29 @@ to:
 
 - For more information and examples please see <https://bugzilla.clamav.net/show_bug.cgi?id=164>.
 
+### Byte Compare Subsignatures (clamav-0.101) : <span class="nodecor">`ref_subsig([offset_shift]offset#[options]byte_length#[comparison_symbol]comparison_value)`</span>
+
+Byte compare subsignatures can be used to evaluate a numeric value at a given offset from the start of another (matched) subsignature within the same logical signature. These are executed after all other subsignatures within the logical subsignature are fired, with the exception of PCRE subsignatures. They can evaluate offsets only from a single referenced subsignature, and that subsignature must give a valid match for the evaluation to occur.
+
+- `ref_subsig` is a required field and may refer to any single non-PCRE subsignature within the lsig. The byte compare subsig will evaluate if `ref_subsig` matches. Multiple referenced subsigs or logic based referencing is not currently supported.
+
+- `offset_shift` is a required field that can be either `>>` or `<<` where the former denotes a positive offset and the latter denotes a negative offset. The offset is calculated from the start of ref_subsigid, which allows for byte extraction before the specified match, after the match, and within the match itself.
+
+- `offset` is a required field that must be a positive hex or decimal value. This will be the number of bytes from the start of the referenced subsig match within the file buffer to begin the comparison
+
+- `options` are a required field which specify the numeric type and endianess of the extracted byte sequence in that order. This field follows the form `[h|d][l|b]`
+
+  - `h|d` where `h` specifies the byte sequence will be in hex and `d` decimal
+
+  - `l|b` where `l` specifies the byte sequence will be in little endian order and `b` big endian.
+
+- `byte_length` is a required field which species the exact number of bytes to extract during the evaluation. If any invalid characters are found within the specified length, the evaluation will return a clean finding.
+
+- `comparison_symbol` is a required field which denotes how to evaluate the extracted byte sequence. The supported comparison symbols are `<`, `>`, `=`.
+
+- `comparison_value` is a required field which must be a numeric hex or decimal value. If all other conditions are met, the byte compare subsig will evalutate the extracted byte sequence against this number based on the provided `comparison_symbol`.
+
+
 ### PCRE subsignatures (clamav-0.99) : <span class="nodecor">`Trigger/PCRE/[Flags]`</span>
 
 PCRE subsignatures are used within a logical signature (`.ldb`) to specify regex matches that execute once triggered by a conditional based on preceding subsignatures. Signatures using PCRE subsignatures require `Engine:81-255` for backwards-compatibility.
