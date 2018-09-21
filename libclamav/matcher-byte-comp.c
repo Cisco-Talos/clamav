@@ -357,7 +357,7 @@ int cli_bcomp_scanbuf(fmap_t *map, const char **virname, struct cli_ac_result **
                 *virname = bcomp->virname;
             }
             /* if we aren't scanning all, let's just exit here */
-            if (!SCAN_ALL) {
+            if (!SCAN_ALLMATCHES) {
                 break;
             } else {
                 ret = cli_append_virus(ctx, (const char *)bcomp->virname);

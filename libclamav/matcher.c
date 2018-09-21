@@ -184,7 +184,7 @@ static inline int matcher_run(const struct cli_matcher *root,
         ret = cli_bcomp_scanbuf(map, virname, acres, root, mdata, ctx);
         if (ret != CL_CLEAN) {
             if (ret == CL_VIRUS) {
-                if (SCAN_ALL)
+                if (SCAN_ALLMATCHES)
                     viruses_found = 1;
                 else {
                     ret = cli_append_virus(ctx, *virname);
