@@ -5,17 +5,257 @@ Note: This file refers to the source tarball. Things described here may differ
 
 ## 0.101.0
 
-ClamAV 0.101.0 is in development!
+ClamAV 0.101.0 is a feature release with an assortment of improvements that
+we've cooked up over the past 6 months.
 
-Here are the new features and improvements found in 0.101.0 in addition to
-an assortment of minor fixes:
+### Some of the more obvious changes
 
-- User manual has been converted from latex/pdf/html over to Markdown. Markdown
-  is easier to read & edit than latex, and is easier to contribute to as it
-  eliminates the need to generate documents (the PDF, HTML).  Find the user
-  manual under docs/UserManual[.md].
+- Our user manual has been converted from latex/pdf/html into **Markdown**!
+  Markdown is easier to read & edit than latex, and is easier to contribute
+  to as it eliminates the need to generate documents (the PDF, HTML).
+  Find the user manual under docs/UserManual[.md].
+  [Check it out!](https://github.com/Cisco-Talos/clamav-devel/blob/dev/0.101/docs/UserManual.md)
+- Support for RAR v5 archive extraction! We replaced the legacy C-based unrar
+  implementation with RarLabs UnRAR 5.6.5 library. Licensing is the same as
+  before, although our `libclamunrar_iface` supporting library has changed from
+  LGPL to the BSD 3-Clause license.
+- Libclamav API changes:
+  - Scanning options have been converted from a single flag bit-field into
+    a structure of multiple categorized flag bit-fields. This change enabled
+    us to add new scanning options requested by the community. In addition,
+    the name of each scan option has changed a little.
+    As a result, the API changes will require libclamav users to modify
+    how they initialize and pass scan options into calls such as `cl_scandesc()`.
+    For details:
+    - [example code](https://github.com/Cisco-Talos/clamav-devel/blob/dev/0.101/examples/ex1.c#L89)
+    - [documentation](https://github.com/Cisco-Talos/clamav-devel/blob/dev/0.101/docs/UserManual/libclamav.md#data-scan-functions)
+  - With our move to openssl versions >1.0.1, the `cl_cleanup_crypto()` function
+    has been deprecated. This is because cleanup of open-ssl init functions is
+    now handled by an auto-deinit procedure within the openssl library, meaning
+    the call to `EVP_cleanup()` may cause problems to processes external to Clam.
+  - `CL_SCAN_HEURISTIC_ENCRYPTED` scan option was replaced by 2 new scan options:
+    - `CL_SCAN_HEURISTIC_ENCRYPTED_ARCHIVE`
+    - `CL_SCAN_HEURISTIC_ENCRYPTED_DOC`
+- `clamd.conf` and command line interface (CLI) changes:
+  - As in 0.100.2, the clamd.conf `OnAccessExtraScanning` has been temporarily
+    disabled in order to prevent resource cleanup issues from impacting clamd
+    stability. As noted below, `OnAccessExtraScanning` is an opt-in minor
+    feature of on-access scanning on Linux systems and its loss does not
+    significantly impact the effectiveness of on-access scanning.
+    The option still exists, but the feature will not be enabled and a warning
+    will show if `LogVerbose` is enabled.
+    For details, see: https://bugzilla.clamav.net/show_bug.cgi?id=12048
+  - "Heuristic Alerts" (aka "Algorithmic Detection") options have been changed
+    to make the names more consistent. The original options are deprecated in
+    0.101, and will be removed in a future feature release.
+  - In addition, _two new scan options_ were added to alert specifically on
+    encrypted archives or encrypted docs. Previous functionality did both, even
+    though it claimed to be specific to archives:
+  - Scan option details:
+
+    | Old `clamd.conf` option          | *New* `clamd.conf` option    |
+    | -------------------------------- | ---------------------------- |
+    | `AlgorithmicDetection`           | `HeuristicAlerts`            |
+    | `DetectBrokenExecutables`        | `AlertBrokenExecutables`     |
+    | `PhishingAlwaysBlockCloak`       | `AlertPhishingCloak`         |
+    | `PhishingAlwaysBlockSSLMismatch` | `AlertPhishingSSLMismatch`   |
+    | `PartitionIntersection`          | `AlertPartitionIntersection` |
+    | `BlockMax`                       | `AlertExceedsMax`            |
+    | `OLE2BlockMacros`                | `AlertOLE2Macros`            |
+    | `ArchiveBlockEncrypted`          | `AlertEncrypted`             |
+    |                                  | `AlertEncryptedArchive`      |
+    |                                  | `AlertEncryptedDoc`          |
+
+    | Old `clamscan` option        | *New* `clamscan` option          |
+    | ---------------------------- | -------------------------------- |
+    | `--algorithmic-detection`    | `--heuristic-alerts`             |
+    | `--detect-broken`            | `--alert-broken`                 |
+    | `--phishing-cloak`           | `--alert-phishing-cloak`         |
+    | `--phishing-ssl`             | `--alert-phishing-ssl`           |
+    | `--partition-intersection`   | `--alert-partition-intersection` |
+    | `--block-max`                | `--alert-exceeds-max`            |
+    | `--block-macros`             | `--alert-macros`                 |
+    | `--block-encrypted`          | `--alert-encrypted`              |
+    |                              | `--alert-encrypted-archive`      |
+    |                              | `--alert-encrypted-doc`          |
+
+### Some more subtle improvements
+
+- Logical signatures have been extended with a new subsignature type which
+  allows for numerical byte sequence comparison. For those familiar with
+  Snort, this byte comparison feature works similarly to the byte_extract
+  and byte_test feature, in that it allows signature writers to extract and
+  compare a specified number of bytes (offset from a match) against another
+  numeric value. You can read more about this feature, see how it works, and
+  look over examples in [our documentation](docs/UserManual/Signatures.md).
 - Backwards compatibility improvements for detecting the OpenSSL dependency.
-- freshclam updated to match exit codes defined in the freshclam.1 man page.
+- Freshclam updated to match exit codes defined in the freshclam.1 man page.
+- Upgrade from libmspack 0.5alpha to libmspack 0.7.1alpha. As a reminder, we
+  support system-installed versions of libmspack. _However_, at this time the
+  ClamAV-provided version of libmspack provides additional abilities to parse
+  broken or non-standard CAB files beyond what the stock libmspack 0.7.1alpha
+  provides. We are working with the upstream project to incorporate our
+  modifications, and hopefully these changes will appear in a future release
+  of libmspack.
+- Updated the bundled 3rd party library libxml2 included for Windows builds to
+  version 2.9.8.
+- Updated the bundled 3rd party library pcre included for Windows builds to
+  pcre2 version 10.31.
+- Upgraded Aspack PE unpacking capability with support up to version 2.42.
+- Improvements to PDF parsing capability.
+- Replaced the Windows installer with a new installer built using InnoSetup 5.
+- Improved `curl-config` detection logic.
+  GitHub pull-request by Thomas Petazzoni.
+- Added file type `CL_TYPE_LNK` to more easily identify Windows Shortcut files
+  when writing signatures.
+- Windows executable (PE) Authenticode parsing improvements.
+- Some simplification to freshclam mirror management code, including changes
+  to reduce timeout on ignoring mirrors after errors, and to make freshclam
+  more tolerant when there is a delay between the time the new signature
+  database content is announced and the time that the content-delivery-network
+  has the content available for download.
+- Email MIME Header parsing changes to accept argument values with unbalanced
+  quotes. Improvement should improve detection of attachments on malformed
+  emails.
+  GitHub pull-request by monnerat.
+- Included the config filename when reporting errors parsing ClamAV configs.
+  GitHub pull-request by Josh Soref.
+- Improvement to build scripts for clamav-milter.
+  GitHub pull-request by Renato Botelho.
+
+### Other changes
+
+- Removed option handler for `AllowSupplementaryGroups` from libfreshclam.
+  This option was previously deprecated from freshclam in ClamAV 0.100.0 but
+  remained in libfreshclam by mistake.
+- In older versions of pcre2 and in pcre, a higher `PCRERecMatchLimit` may
+  cause `clamd` to crash on select files. We have lowered the default
+  `PCRERecMatchLimit` to 2000 to reduce the likelihood of a crash and have
+  added warnings to recommend using pcre2 v10.30 or higher to eliminate
+  the issue.
+
+### Supporting infrastructure
+
+As you might imagine, ClamAV is much more than just the tarball or EXE you
+download and install. Here at Talos, we've been working hard on the support
+infrastructure that's so easy to take for granted.
+
+- Test Frameworks
+  - Feature Testing:
+    Throughout the development of ClamAV 0.101, our quality assurance engineers
+    have been hard at work rebuilding our QA automation framework in Python from
+    the ground up to test ClamAV features on 32-and-64bit versions:
+    - Linux: Ubuntu, Debian, CentOS, Fedora
+    - FreeBSD 11
+    - Windows 10
+
+    In addition to building out the framework, they've written over 260
+    individual feature tests to validate correctness of the new features going
+    into 0.101 as well as to validate many existing features.
+
+  - Build Acceptance Testing:
+    Another major task accomplished during the development of 0.101 was the
+    creation of a build acceptance test framework that we run from our Jenkins
+    CI server.
+
+    Similar to the feature testing framework, our build acceptance framework
+    tests accross 64bit and 32bit (where available):
+    - macOS 10 (.10, .11, .13)
+    - Windows (7, 10)
+    - Debian (8, 9), Ubuntu (16.04, 18.04), CentOS (6, 7)
+    - FreeBSD (10, 11)
+
+    This pipeline creates our release materials including the Windows installers,
+    and then validates that the basic install, update, start, scan, and stop
+    procedures all work as expected each time commits are made to our
+    development branches.
+
+- Signature Database Distribution:
+  During the course of ClamAV 0.101 development, our web and ops teams have been
+  able to migrate us from a network of third-party mirrors over to use the
+  services of CloudFlare to provide a more unified content-delivery-network.
+
+  With CloudFlare, some users in geographic regions that had few mirrors
+  will notice much improved signature update speeds and reliability.
+  In addition, we're excited to be able to finally see user metrics that will
+  help us continue to improve ClamAV.
+
+  We are of course grateful to all of the community members who have donated
+  their server bandwidth to mirror the ClamAV signature databases over the
+  years. Thank-you so much!
+
+- Development Processes:
+  As many of you know, ClamAV 0.100 was in development for a good two years.
+  Not only was this frustrating for users awaiting new features and bug-fixes,
+  it also made for a difficult transition for users that weren't expecting two
+  years worth of change when 0.100 landed.
+
+  We have learned from the experience and are committed to providing shorter
+  and more responsive ClamAV development cycles.
+
+  ClamAV 0.101 is the first of many smaller feature releases where we created
+  a roadmap with distinct deadlines and with specific planned features. We based
+  the feature list on both community requests and our own needs and then
+  executed that plan.
+
+  We're very proud of ClamAV 0.101 and we hope you enjoy it.
+
+### Acknowledgements
+
+The ClamAV team thanks the following individuals for their code submissions:
+
+- Craig Andrews
+- Josh Soref
+- monnerat
+- Renato Botelho
+- tchernomax
+- Thomas Petazzoni
+
+## 0.100.2
+
+ClamAV 0.100.2 is a patch release to address a set of vulnerabilities.
+
+- Fixes for the following ClamAV vulnerabilities:
+  - [CVE-2018-15378](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-15378):
+    Vulnerability in ClamAV's MEW unpacking feature that could allow an
+    unauthenticated, remote attacker to cause a denial of service (DoS)
+    condition on an affected device.
+    Reported by Secunia Research at Flexera.
+  - Fix for a 2-byte buffer over-read bug in ClamAV's PDF parsing code.
+    Reported by Alex Gaynor.
+- Fixes for the following vulnerabilities in bundled third-party libraries:
+  - [CVE-2018-14680](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-14680):
+    An issue was discovered in mspack/chmd.c in libmspack before 0.7alpha. It
+    does not reject blank CHM filenames.
+  - [CVE-2018-14681](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-14681):
+    An issue was discovered in kwajd_read_headers in mspack/kwajd.c in
+    libmspack before 0.7alpha. Bad KWAJ file header extensions could cause
+    a one or two byte overwrite.
+  - [CVE-2018-14682](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-14682):
+    An issue was discovered in mspack/chmd.c in libmspack before 0.7alpha.
+    There is an off-by-one error in the TOLOWER() macro for CHM decompression.
+  - Additionally, 0.100.2 reverted 0.100.1's patch for CVE-2018-14679, and applied
+    libmspack's version of the fix in its place.
+- Other changes:
+  - Some users have reported freshclam signature update failures as a result of
+    a delay between the time the new signature database content is announced and
+    the time that the content-delivery-network has the content available for
+    download. To mitigate these errors, this patch release includes some
+    modifications to freshclam to make it more lenient, and to reduce the time
+    that freshclam will ignore a mirror when it detects an issue.
+  - On-Access "Extra Scanning", an opt-in minor feature of OnAccess scanning on
+    Linux systems, has been disabled due to a known issue with resource cleanup.
+    OnAccessExtraScanning will be re-enabled in a future release when the issue
+    is resolved. In the mean-time, users who enabled the feature in clamd.conf
+    will see a warning informing them that the feature is not active.
+    For details, see: https://bugzilla.clamav.net/show_bug.cgi?id=12048
+
+Thank you to the following ClamAV community members for your code submissions
+and bug reports!
+
+- Alex Gaynor
+- Hiroya Ito
+- Laurent Delosieres, Secunia Research at Flexera
 
 ## 0.100.1
 
