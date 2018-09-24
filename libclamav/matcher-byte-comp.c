@@ -244,7 +244,7 @@ int cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, const char 
 
     bcomp->byte_len = byte_length;
 
-    /* currectly only >, <, and = are supported comparison symbols--this makes parsing very simple */
+    /* currently only >, <, and = are supported comparison symbols--this makes parsing very simple */
     buf_start = tokens[2];
     switch (*buf_start) {
         case '<':
@@ -322,6 +322,7 @@ int cli_bcomp_scanbuf(fmap_t *map, const char **virname, struct cli_ac_result **
     uint32_t offset = 0;
     uint8_t viruses_found = 0;
     struct cli_bcomp_meta *bcomp = NULL;
+    struct cli_ac_result *newres = NULL;
 
     if (!(root) || !(root->bcomp_metas) || !(root->bcomp_metatable) || !(mdata) || !(mdata->offmatrix) || !(ctx)) {
         return CL_SUCCESS;
@@ -333,17 +334,34 @@ int cli_bcomp_scanbuf(fmap_t *map, const char **virname, struct cli_ac_result **
         lsigid = bcomp->lsigid[1];
         ref_subsigid = bcomp->ref_subsigid;
 
-        /* ensures the referenced subsig matches as expected, and also ensures mdata has the needed offset */
-        if (ret = lsig_sub_matched(root, mdata, lsigid, ref_subsigid, CLI_OFF_NONE, 0)) {
-            continue;
-        }
+        /* check to see if we are being run in sigtool or not */
+        if (bcomp->lsigid[0]) {
+            /* ensures the referenced subsig matches as expected, and also ensures mdata has the needed offset */
+            if (ret = lsig_sub_matched(root, mdata, lsigid, ref_subsigid, CLI_OFF_NONE, 0)) {
+                continue;
+            }
 
-        /* grab the needed offset using from the last matched subsig offset matrix, i.e. the match performed above */
-        if (mdata->lsigsuboff_last[lsigid]) {
-            offset = mdata->lsigsuboff_last[lsigid][ref_subsigid]; 
+            /* grab the needed offset using from the last matched subsig offset matrix, i.e. the match performed above */
+            if (mdata->lsigsuboff_last[lsigid]) {
+                offset = mdata->lsigsuboff_last[lsigid][ref_subsigid];
+            } else {
+                ret = CL_SUCCESS;
+                continue;
+            }
         } else {
-            ret = CL_SUCCESS;
-            continue;
+        /* can't run lsig_sub_matched in sigtool, and mdata isn't populated so run the raw matcher stuffs */
+            if(res) {
+                newres = (struct cli_ac_result *)cli_calloc(1, sizeof(struct cli_ac_result));
+                if(!newres) {
+                    cli_errmsg("cli_bcomp_scanbuff: Can't allocate memory for new result\n");
+                    ret = CL_EMEM;
+                    break;
+                }
+                newres->virname = bcomp->virname;
+                newres->customdata = NULL;
+                newres->next = *res;
+                *res = newres;
+            }
         }
 
         /* no offset available, make a best effort */
