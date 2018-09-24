@@ -75,7 +75,7 @@ size_t cli_strtokenize(char *buffer, const char delim, const size_t token_count,
 size_t cli_ldbtokenize(char *buffer, const char delim, const size_t token_count, const char **tokens, int token_skip);
 long cli_strntol(const char* nptr, size_t n, char** endptr, register int base);
 unsigned long cli_strntoul(const char* nptr, size_t n, char** endptr, register int base);
-cl_errot_t cli_strntol_wrap(const char *buf, size_t buf_size, int fail_at_nondigit, int base, long *result);
+cl_error_t cli_strntol_wrap(const char *buf, size_t buf_size, int fail_at_nondigit, int base, long *result);
 cl_error_t cli_strntoul_wrap(const char *buf, size_t buf_size, int fail_at_nondigit, int base, unsigned long *result);
 int cli_isnumber(const char *str);
 char *cli_unescape(const char *str);
