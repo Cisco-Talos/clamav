@@ -227,22 +227,12 @@ static int cli_scandir(const char *dirname, cli_ctx *ctx)
  * @param metadata  unrar metadata structure
  * @param ctx       scanning context structure
  * @param files     
- * @param sfx_check 
- * @return cl_error_t  Returns CL_CLEAN if nothing found, CL_VIRUS if something found, CL_EUNPACK if encrypted, or CL_BREAK to end extraction.
+ * @return cl_error_t  Returns CL_CLEAN if nothing found, CL_VIRUS if something found, CL_EUNPACK if encrypted.
  */
-static cl_error_t cli_unrar_scanmetadata(unrar_metadata_t* metadata, cli_ctx* ctx, unsigned int files, uint32_t* sfx_check)
+static cl_error_t cli_unrar_scanmetadata(unrar_metadata_t* metadata, cli_ctx* ctx, unsigned int files)
 {
     cl_error_t status = CL_CLEAN;
     int virus_found = 0;
-
-    if (files == 1 && sfx_check) {
-        if (*sfx_check == metadata->crc) {
-            status = CL_BREAK; /* break extract loop */
-            goto done;
-        } else {
-            *sfx_check = metadata->crc;
-        }
-    }
 
     cli_dbgmsg("RAR: %s, crc32: 0x%x, encrypted: %u, compressed: %u, normal: %u, method: %u, ratio: %u\n",
         metadata->filename, metadata->crc, metadata->encrypted, (unsigned int)metadata->pack_size,
@@ -261,7 +251,7 @@ done:
     return status;
 }
 
-static cl_error_t cli_scanrar(const char *filepath, int desc, cli_ctx* ctx, uint32_t* sfx_check)
+static cl_error_t cli_scanrar(const char *filepath, int desc, cli_ctx* ctx)
 {
     cl_error_t status = CL_EPARSE;
     cl_unrar_error_t unrar_ret = UNRAR_ERR;
@@ -414,7 +404,7 @@ static cl_error_t cli_scanrar(const char *filepath, int desc, cli_ctx* ctx, uint
             /*
             * Scan the metadata for the file in question since the content was clean, or we're running in all-match.
             */
-            status = cli_unrar_scanmetadata(&metadata, ctx, file_count, sfx_check);
+            status = cli_unrar_scanmetadata(&metadata, ctx, file_count);
             if ((status == CL_VIRUS) && SCAN_ALLMATCHES) {
                 status = CL_CLEAN;
                 viruses_found++;
@@ -601,14 +591,12 @@ done:
     return status;
 }
 
-static int cli_scanarj(cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_check)
+static int cli_scanarj(cli_ctx *ctx, off_t sfx_offset)
 {
     int ret = CL_CLEAN, rc, file = 0;
     arj_metadata_t metadata;
     char *dir;
     int virus_found = 0;
-
-    UNUSEDPARAM(sfx_check);
 
     cli_dbgmsg("in cli_scanarj()\n");
 
@@ -2614,7 +2602,6 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
     {
         perf_nested_start(ctx, PERFT_RAWTYPENO, PERFT_SCAN);
         ctx->recursion++;
-        lastrar = 0xdeadbeef;
         fpt = ftoffset;
 
         while (fpt)
@@ -2694,7 +2681,7 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
                         }
 
                         /* scan file */
-                        nret = cli_scanrar(filepath, fd, ctx, &lastrar);
+                        nret = cli_scanrar(filepath, fd, ctx);
 
                         if (tmpfd != -1)
                         {
@@ -2740,7 +2727,7 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
                         size_t csize = map->len - fpt->offset; /* not precise */
                         cli_set_container(ctx, CL_TYPE_ARJ, csize);
                         cli_dbgmsg("ARJ-SFX signature found at %u\n", (unsigned int)fpt->offset);
-                        nret = cli_scanarj(ctx, fpt->offset, &lastrar);
+                        nret = cli_scanarj(ctx, fpt->offset);
                     }
                     break;
 
@@ -3377,7 +3364,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
             }
 
             /* scan file */
-            ret = cli_scanrar(filepath, fd, ctx, NULL);
+            ret = cli_scanrar(filepath, fd, ctx);
 
             if (tmpfd != -1) {
                 /* If dumped tempfile, need to cleanup */
@@ -3456,7 +3443,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 
     case CL_TYPE_ARJ:
         if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ARJ))
-            ret = cli_scanarj(ctx, 0, NULL);
+            ret = cli_scanarj(ctx, 0);
         break;
 
     case CL_TYPE_NULSFT:
