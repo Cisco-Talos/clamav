@@ -346,6 +346,11 @@ int cli_bcomp_scanbuf(fmap_t *map, const char **virname, struct cli_ac_result **
             continue;
         }
 
+        /* no offset available, make a best effort */
+        if (offset == CLI_OFF_NONE) {
+            offset = 0;
+        }
+
         /* now we have all the pieces of the puzzle, so lets do our byte compare check */
         ret = cli_bcmp_compare_check(map, offset, bcomp);
 
@@ -410,6 +415,10 @@ int cli_bcmp_compare_check(fmap_t *map, int offset, struct cli_bcomp_meta *bm)
     /* jump to byte compare offset, then store off specified bytes into a null terminated buffer */
     offset += bm->offset;
     buffer = fmap_need_off_once(map, offset, byte_len);
+    if (!buffer) {
+        bcm_dbgmsg("bcmp_compare_check: could not extract bytes from buffer offset\n");
+        return CL_EMEM;
+    }
     bcm_dbgmsg("bcmp_compare_check: literal extracted bytes before comparison (%s)\n", buffer);
 
     /* handle byte length options to convert the string appropriately */
