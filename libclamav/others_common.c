@@ -961,10 +961,25 @@ cl_error_t cli_gentempfd_with_prefix(const char* dir, char* prefix, char** name,
      * errors
      */
     if (*fd == -1) {
-        cli_errmsg("cli_gentempfd_with_prefix: Can't create temporary file %s: %s\n", *name, strerror(errno));
-        free(*name);
-        *name = NULL;
-        return CL_ECREAT;
+        if ((EILSEQ == errno) || (EINVAL == errno) || (ENAMETOOLONG == errno)) {
+            cli_dbgmsg("cli_gentempfd_with_prefix: Can't create temp file using prefix. Using a randomly generated name instead.\n");
+            free(*name);
+            *name = cli_gentemp(dir);
+            if (!*name)
+                return CL_EMEM;
+            *fd = open(*name, O_RDWR | O_CREAT | O_TRUNC | O_BINARY | O_EXCL, S_IRWXU);
+            if (*fd == -1) {
+                cli_errmsg("cli_gentempfd_with_prefix: Can't create temporary file %s: %s\n", *name, strerror(errno));
+                free(*name);
+                *name = NULL;
+                return CL_ECREAT;
+            }
+        } else {
+            cli_errmsg("cli_gentempfd_with_prefix: Can't create temporary file %s: %s\n", *name, strerror(errno));
+            free(*name);
+            *name = NULL;
+            return CL_ECREAT;
+        }
     }
 
     return CL_SUCCESS;
