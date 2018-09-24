@@ -1253,11 +1253,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 
     cli_hashset_destroy(&info.exeinfo.vinfo);
 
-<<<<<<< HEAD
-    if (SCAN_ALLMATCHES && viruses_found)
-=======
-    if (SCAN_ALL && viruses_found) {
->>>>>>> refactoring byte compare functionality as a subsig; adding loader and matchers for bytecompare subsig
+    if (SCAN_ALLMATCHES && viruses_found) {
         return CL_VIRUS;
     }
     if(ret == CL_VIRUS) {

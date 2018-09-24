@@ -156,7 +156,7 @@ int cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, const char 
     buf_start = tokens[0];
     switch (buf_start[0]) {
         case '<':
-            if ((++buf_start)[0]  == '<') {
+            if ((++buf_start)[0] == '<') {
                 offset_param = strtol(++buf_start, (char**) &buf_end, 0);
                 if (buf_end && buf_end+1 != tokens[1]) {
                     cli_errmsg("cli_bcomp_addpatt: while parsing (%s#%s#%s), offset parameter included invalid characters\n", tokens[0], tokens[1], tokens[2]);
@@ -176,8 +176,8 @@ int cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, const char 
             break;
 
         case '>':
-            if ((++buf_start)[0]  == '>') {
-                offset_param = strtol(buf_start, (char**) &buf_end, 0);
+            if ((++buf_start)[0] == '>') {
+                offset_param = strtol(++buf_start, (char**) &buf_end, 0);
                 if (buf_end && buf_end+1 != tokens[1]) {
                     cli_errmsg("cli_bcomp_addpatt: while parsing (%s#%s#%s), offset parameter included invalid characters\n", tokens[0], tokens[1], tokens[2]);
                     free(buf);
