@@ -171,11 +171,8 @@ static int hashpe(const char *filename, unsigned int class, int type)
     const char *fmptr;
     struct cl_engine *engine;
     cli_ctx ctx;
-	struct cl_scan_options options;
+    struct cl_scan_options options;
     int fd, ret;
-
-	memset(&options, 0, sizeof(struct cl_scan_options));
-	ctx.options = &options;
 
     /* build engine */
     if(!(engine = cl_engine_new())) {
@@ -204,7 +201,9 @@ static int hashpe(const char *filename, unsigned int class, int type)
 
     /* prepare context */
     memset(&ctx, '\0', sizeof(cli_ctx));
+    memset(&options, 0, sizeof(struct cl_scan_options));
     ctx.engine = engine;
+    ctx.options = &options;
     ctx.options->parse = ~0;
     ctx.containers = cli_calloc(sizeof(cli_ctx_container), engine->maxreclevel + 2);
     if(!ctx.containers) {
@@ -2214,8 +2213,6 @@ static void matchsig(const char *sig, const char *offset, int fd)
 	struct cl_scan_options options;
 	int ret;
 
-	memset(&options, 0, sizeof(struct cl_scan_options));
-	ctx.options = &options;
 
     mprintf("SUBSIG: %s\n", sig);
 
@@ -2243,7 +2240,9 @@ static void matchsig(const char *sig, const char *offset, int fd)
 	return;
     }
     memset(&ctx, '\0', sizeof(cli_ctx));
+    memset(&options, 0, sizeof(struct cl_scan_options));
     ctx.engine = engine;
+    ctx.options = &options;
     ctx.options->parse = ~0;
     ctx.containers = cli_calloc(sizeof(cli_ctx_container), engine->maxreclevel + 2);
     if(!ctx.containers) {
@@ -3396,12 +3395,9 @@ static int dumpcerts(const struct optstruct *opts)
     const char * fmptr;
     struct cl_engine *engine;
     cli_ctx ctx;
-	struct cl_scan_options options;
+    struct cl_scan_options options;
     int fd, ret;
     uint8_t shash1[SHA1_HASH_SIZE];
-
-	memset(&options, 0, sizeof(struct cl_scan_options));
-	ctx.options = &options;
 	
     logg_file = NULL;
 
@@ -3441,7 +3437,9 @@ static int dumpcerts(const struct optstruct *opts)
 
     /* prepare context */
     memset(&ctx, '\0', sizeof(cli_ctx));
+    memset(&options, 0, sizeof(struct cl_scan_options));
     ctx.engine = engine;
+    ctx.options = &options;
     ctx.options->parse = ~0;
     ctx.containers = cli_calloc(sizeof(cli_ctx_container), engine->maxreclevel + 2);
     if(!ctx.containers) {
