@@ -40,6 +40,7 @@ struct cli_target_info {
 #include "matcher-bm.h"
 #include "matcher-hash.h"
 #include "matcher-pcre.h"
+#include "matcher-byte-comp.h"
 #include "regex_pcre.h"
 #include "fmap.h"
 #include "mpool.h"

@@ -57,22 +57,23 @@
  * @param options additional options for pattern matching, stored as a bitmask
  *
  */
-int cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, const char *hexsig, const char *offset, const uint32_t *lsigid, unsigned int options) {
-
-    if (!hexsig || !(*hexsig) || !root)
-        return CL_ENULLARG;
+cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, const char *hexsig, const uint32_t *lsigid, unsigned int options) {
 
     size_t len = 0;
     const char *buf_start = NULL;
     const char *buf_end = NULL;
     char *buf = NULL;
-    const char *tokens[3];
+    const char *tokens[4];
     size_t toks = 0;
     int16_t ref_subsigid = -1;
     int64_t offset_param = 0;
     size_t byte_length = 0;
     uint32_t comp_val = 0;
     char *hexcpy = NULL;
+
+    if (!hexsig || !(*hexsig) || !root || !virname) {
+        return CL_ENULLARG;
+    }
 
     /* we'll be using these to help the root matcher struct keep track of each loaded byte compare pattern */
     struct cli_bcomp_meta **newmetatable; 
@@ -149,6 +150,7 @@ int cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, const char 
         cli_bcomp_freemeta(root, bcomp);
         return CL_EMALFDB;
     }
+    tokens[3] = NULL;
 
     /* since null termination is super guaranteed thanks to strndup and cli_strokenize, we can use strtol to grab the
      * offset params. this has the added benefit of letting us parse hex values too */
@@ -315,7 +317,7 @@ int cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, const char 
  * @param ctx the clamav context struct
  *
  */
-int cli_bcomp_scanbuf(fmap_t *map, const char **virname, struct cli_ac_result **res, const struct cli_matcher *root, struct cli_ac_data *mdata, cli_ctx *ctx) {
+cl_error_t cli_bcomp_scanbuf(fmap_t *map, const char **virname, struct cli_ac_result **res, const struct cli_matcher *root, struct cli_ac_data *mdata, cli_ctx *ctx) {
 
     int64_t i = 0, rc = 0, ret = CL_SUCCESS;
     uint32_t lsigid, ref_subsigid;
@@ -370,7 +372,7 @@ int cli_bcomp_scanbuf(fmap_t *map, const char **virname, struct cli_ac_result **
         }
 
         /* now we have all the pieces of the puzzle, so lets do our byte compare check */
-        ret = cli_bcmp_compare_check(map, offset, bcomp);
+        ret = cli_bcomp_compare_check(map, offset, bcomp);
 
         /* set and append our lsig's virus name if the comparison came back positive */
         if (CL_VIRUS == ret) {
@@ -402,20 +404,24 @@ int cli_bcomp_scanbuf(fmap_t *map, const char **virname, struct cli_ac_result **
  * @param bm the byte comparison meta data struct, contains all the other info needed to do the comparison
  *
  */
-int cli_bcmp_compare_check(fmap_t *map, int offset, struct cli_bcomp_meta *bm)
+cl_error_t cli_bcomp_compare_check(fmap_t *map, int offset, struct cli_bcomp_meta *bm)
 {
-    if (!map || !bm) {
-        bcm_dbgmsg("bcmp_compare_check: a param is null\n");
-        return CL_ENULLARG;
-    }
 
-    const uint32_t byte_len = bm->byte_len;
-    uint32_t length = map->len;
+    uint32_t byte_len = 0;
+    uint32_t length = 0;
     const unsigned char *buffer = NULL;
     unsigned char *conversion_buf = NULL;
     char opt = (char) bm->options;
     uint32_t value = 0;
     const unsigned char* end_buf = NULL;
+
+    if (!map || !bm) {
+        bcm_dbgmsg("bcmp_compare_check: a param is null\n");
+        return CL_ENULLARG;
+    }
+
+    byte_len = bm->byte_len;
+    length = map->len;
 
     /* ensure we won't run off the end of the file buffer */
     if (bm->offset > 0) {
@@ -443,7 +449,7 @@ int cli_bcmp_compare_check(fmap_t *map, int offset, struct cli_bcomp_meta *bm)
     switch(opt) {
         /*hl*/
         case CLI_BCOMP_HEX | CLI_BCOMP_LE:
-            value = cli_strntoul(buffer, byte_len, (char**) &end_buf, 16);
+            value = cli_strntoul((char*) buffer, byte_len, (char**) &end_buf, 16);
             if (value < 0 || NULL == end_buf || buffer+byte_len != end_buf) {
                 bcm_dbgmsg("bcmp_compare_check: little endian hex conversion unsuccessful\n");
                 return CL_CLEAN;
@@ -454,7 +460,7 @@ int cli_bcmp_compare_check(fmap_t *map, int offset, struct cli_bcomp_meta *bm)
 
         /*hb*/  
         case CLI_BCOMP_HEX | CLI_BCOMP_BE:
-            value = cli_strntoul(buffer, byte_len, (char**) &end_buf, 16);
+            value = cli_strntoul((char*) buffer, byte_len, (char**) &end_buf, 16);
             if (value < 0 || NULL == end_buf || buffer+byte_len != end_buf) {
 
                 bcm_dbgmsg("bcmp_compare_check: big endian hex conversion unsuccessful\n");
@@ -466,7 +472,7 @@ int cli_bcmp_compare_check(fmap_t *map, int offset, struct cli_bcomp_meta *bm)
 
         /*dl*/
         case CLI_BCOMP_DEC | CLI_BCOMP_LE:
-            value = cli_strntoul(buffer, byte_len, (char**) &end_buf, 10);
+            value = cli_strntoul((char*) buffer, byte_len, (char**) &end_buf, 10);
             if (value < 0 || NULL == end_buf || buffer+byte_len != end_buf) {
 
                 bcm_dbgmsg("bcmp_compare_check: little endian decimal conversion unsuccessful\n");
@@ -478,7 +484,7 @@ int cli_bcmp_compare_check(fmap_t *map, int offset, struct cli_bcomp_meta *bm)
 
         /*db*/
         case CLI_BCOMP_DEC | CLI_BCOMP_BE:
-            value = cli_strntoul(buffer, byte_len, (char**) &end_buf, 10);
+            value = cli_strntoul((char*) buffer, byte_len, (char**) &end_buf, 10);
             if (value < 0 || NULL == end_buf || buffer+byte_len != end_buf) {
 
                 bcm_dbgmsg("bcmp_compare_check: big endian decimal conversion unsuccessful\n");
@@ -535,7 +541,7 @@ int cli_bcmp_compare_check(fmap_t *map, int offset, struct cli_bcomp_meta *bm)
  */
 void cli_bcomp_freemeta(struct cli_matcher *root, struct cli_bcomp_meta *bm) {
 
-    if(!bm) {
+    if(!root || !bm) {
         return;
     }
     

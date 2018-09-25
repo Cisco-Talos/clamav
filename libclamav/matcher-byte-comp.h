@@ -50,9 +50,9 @@ struct cli_bcomp_meta {
     uint32_t comp_value;
 };
 
-int cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, const char* hexsig, const char *offset, const uint32_t *lsigid, unsigned int options);
-int cli_pcre_bcmp_compare_check(fmap_t *map, int offset, struct cli_bcomp_meta *bm);
+cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, const char* hexsig, const uint32_t *lsigid, unsigned int options);
+cl_error_t cli_bcomp_scanbuf(fmap_t *map, const char **virname, struct cli_ac_result **res, const struct cli_matcher *root, struct cli_ac_data *mdata, cli_ctx *ctx);
+cl_error_t cli_bcomp_compare_check(fmap_t *map, int offset, struct cli_bcomp_meta *bm);
 void cli_bcomp_freemeta(struct cli_matcher *root, struct cli_bcomp_meta *bm);
-int cli_bcomp_scanbuf(fmap_t *map, const char **virname, struct cli_ac_result **res, const struct cli_matcher *root, struct cli_ac_data *mdata, cli_ctx *ctx);
 
 #endif

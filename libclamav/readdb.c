@@ -599,7 +599,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
     } else if((start = strchr(hexsig, '(')) && (mid = strchr(hexsig, '#')) && (end = strrchr(hexsig, '#')) && mid != end) {
 
         /* format seems to match byte_compare */
-        if ( ret = cli_bcomp_addpatt(root, virname, hexsig, offset, lsigid, options) ) {
+        if ( ret = cli_bcomp_addpatt(root, virname, hexsig, lsigid, options) ) {
             cli_errmsg("cli_parse_add(): Problem adding signature (2b).\n");
             return ret;
         }
