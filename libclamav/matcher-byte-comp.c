@@ -25,6 +25,8 @@
 #include "clamav-config.h"
 #endif
 
+#include <errno.h>
+
 #include "clamav.h"
 #include "cltypes.h"
 #include "others.h"
@@ -67,8 +69,9 @@ cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, cons
     size_t toks = 0;
     int16_t ref_subsigid = -1;
     int64_t offset_param = 0;
+    int64_t ret = CL_SUCCESS;
     size_t byte_length = 0;
-    uint32_t comp_val = 0;
+    uint64_t comp_val = 0;
     char *hexcpy = NULL;
 
     if (!hexsig || !(*hexsig) || !root || !virname) {
@@ -210,35 +213,75 @@ cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, cons
     /* the byte length indicator options are stored in a bitmask--by design each option gets its own nibble */
     buf_start = tokens[1];
 
-    switch (*buf_start) {
-        case 'h': bcomp->options |= CLI_BCOMP_HEX;    break;
-        case 'd': bcomp->options |= CLI_BCOMP_DEC;    break;
+    while (!isdigit(*buf_start)) {
 
-        default:
-            cli_errmsg("cli_bcomp_addpatt: while parsing (%s#%s#%s), hex/decimal byte length indicator was found invalid\n", tokens[0], tokens[1], tokens[2]);
+        switch (*buf_start) {
+            case 'h':
+                /* hex, decimal, and binary options are mutually exclusive parameters */
+                if (bcomp->options & CLI_BCOMP_DEC || bcomp->options & CLI_BCOMP_BIN) {
+                    ret = CL_EMALFDB;
+                } else {
+                    bcomp->options |= CLI_BCOMP_HEX;
+                } break;
+            case 'd':
+                /* hex, decimal, and binary options are mutually exclusive parameters */
+                if (bcomp->options & CLI_BCOMP_HEX || bcomp->options & CLI_BCOMP_BIN) {
+                    ret = CL_EMALFDB;
+                } else {
+                    bcomp->options |= CLI_BCOMP_DEC;
+                } break;
+            case 'i':
+                /* hex, decimal, and binary options are mutually exclusive parameters */
+                if (bcomp->options & CLI_BCOMP_HEX || bcomp->options & CLI_BCOMP_DEC) {
+                    ret = CL_EMALFDB;
+                } else {
+                    bcomp->options |= CLI_BCOMP_BIN;
+                } break;
+            case 'l':
+                /* little and big endian options are mutually exclusive parameters */
+                if (bcomp->options & CLI_BCOMP_BE) {
+                    ret = CL_EMALFDB;
+                } else {
+                    bcomp->options |= CLI_BCOMP_LE;
+                } break;
+            case 'b':
+                /* little and big endian options are mutually exclusive parameters */
+                if (bcomp->options & CLI_BCOMP_LE) {
+                    ret = CL_EMALFDB;
+                } else {
+                    bcomp->options |= CLI_BCOMP_BE;
+                } break;
+            case 'e':
+                /* for exact byte length matches */
+                bcomp->options |= CLI_BCOMP_EXACT;
+                break;
+
+            default:
+                ret = CL_EMALFDB;
+                break;
+        }
+
+        if (CL_EMALFDB == ret) {
+            cli_errmsg("cli_bcomp_addpatt: while parsing (%s#%s#%s), option parameter was found invalid\n", tokens[0], tokens[1], tokens[2]);
             free(buf);
             cli_bcomp_freemeta(root, bcomp);
-            return CL_EMALFDB;
-    }
-
-    buf_start++;
-    switch (*buf_start) {
-        case 'l': bcomp->options |= CLI_BCOMP_LE;    break;
-        case 'b': bcomp->options |= CLI_BCOMP_BE;    break;
-
-        default:
-            cli_errmsg("cli_bcomp_addpatt: while parsing (%s#%s#%s), little/big endian byte length indicator was invalid\n", tokens[0], tokens[1], tokens[2]);
-            free(buf);
-            cli_bcomp_freemeta(root, bcomp);
-            return CL_EMALFDB;
+            return ret;
+        }
+        buf_start++;
     }
 
     /* parse out the byte length parameter */
-    buf_start++;
     buf_end = NULL;
     byte_length = strtol(buf_start, (char **) &buf_end, 0);
     if (buf_end && buf_end+1 != tokens[2]) {
         cli_errmsg("cli_bcomp_addpatt: while parsing (%s#%s#%s), byte length parameter included invalid characters\n", tokens[0], tokens[1], tokens[3]);
+        free(buf);
+        cli_bcomp_freemeta(root, bcomp);
+        return CL_EMALFDB;
+    }
+
+    if (bcomp->options | CLI_BCOMP_BIN && byte_length > CLI_BCOMP_MAX_BIN_BLEN) {
+        cli_errmsg("cli_bcomp_addpatt: while parsing (%s#%s#%s), byte length for binary extraction was too long (max size (%d))\n", tokens[0], tokens[1], tokens[3], CLI_BCOMP_MAX_BIN_BLEN);
         free(buf);
         cli_bcomp_freemeta(root, bcomp);
         return CL_EMALFDB;
@@ -262,10 +305,10 @@ cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, cons
     }
 
 
-    /* no more tokens after this, so we take advantage of strtol and check if the buf_end is null terminated or not */
+    /* no more tokens after this, so we take advantage of strtoll and check if the buf_end is null terminated or not */
     buf_start++;
     buf_end = NULL;
-    comp_val = strtol(buf_start, (char **) &buf_end, 0);
+    comp_val = strtoll(buf_start, (char **) &buf_end, 0);
     if (*buf_end) {
         cli_errmsg("cli_bcomp_addpatt: while parsing (%s#%s#%s), comparison value contained invalid input\n", tokens[0], tokens[1], tokens[2]);
         free(buf);
@@ -276,12 +319,13 @@ cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, cons
     bcomp->comp_value = comp_val;
 
     /* manually verify successful pattern parsing */
-    bcm_dbgmsg("Matcher Byte Compare: (%s%ld#%c%c%zu#%c%d)\n",
+    bcm_dbgmsg("Matcher Byte Compare: (%s%ld#%c%c%s%zu#%c%lu)\n",
                     bcomp->offset ==  0 ? "" : 
                     (bcomp->offset < 0 ? "<<" : ">>"),
                     bcomp->offset,
-                    bcomp->options & CLI_BCOMP_HEX ? 'h' : 'd',
+                    bcomp->options & CLI_BCOMP_HEX ? 'h' : (bcomp->options & CLI_BCOMP_DEC ? 'd' : 'i'),
                     bcomp->options & CLI_BCOMP_LE ? 'l' : 'b',
+                    bcomp->options & CLI_BCOMP_EXACT ? "e" : "",
                     bcomp->byte_len,
                     bcomp->comp_symbol,
                     bcomp->comp_value);
@@ -409,10 +453,11 @@ cl_error_t cli_bcomp_compare_check(fmap_t *map, int offset, struct cli_bcomp_met
 
     uint32_t byte_len = 0;
     uint32_t length = 0;
+    uint16_t opt = 0;
     const unsigned char *buffer = NULL;
     unsigned char *conversion_buf = NULL;
-    char opt = (char) bm->options;
-    uint32_t value = 0;
+    uint64_t value = 0;
+    uint64_t *bin_value = NULL;
     const unsigned char* end_buf = NULL;
 
     if (!map || !bm) {
@@ -422,6 +467,7 @@ cl_error_t cli_bcomp_compare_check(fmap_t *map, int offset, struct cli_bcomp_met
 
     byte_len = bm->byte_len;
     length = map->len;
+    opt = bm->options;
 
     /* ensure we won't run off the end of the file buffer */
     if (bm->offset > 0) {
@@ -443,57 +489,110 @@ cl_error_t cli_bcomp_compare_check(fmap_t *map, int offset, struct cli_bcomp_met
         bcm_dbgmsg("bcmp_compare_check: could not extract bytes from buffer offset\n");
         return CL_EMEM;
     }
-    bcm_dbgmsg("bcmp_compare_check: literal extracted bytes before comparison (%s)\n", buffer);
+    bcm_dbgmsg("bcmp_compare_check: literal extracted bytes before comparison %s\n", buffer);
 
-    /* handle byte length options to convert the string appropriately */
-    switch(opt) {
+    /* grab the first byte to handle byte length options to convert the string appropriately */
+    switch((opt & 0x00FF)) {
         /*hl*/
         case CLI_BCOMP_HEX | CLI_BCOMP_LE:
+            errno = 0;
             value = cli_strntoul((char*) buffer, byte_len, (char**) &end_buf, 16);
-            if (value < 0 || NULL == end_buf || buffer+byte_len != end_buf) {
+            if ((((value == LONG_MAX) || (value == LONG_MIN)) && errno == ERANGE) || NULL == end_buf) {
+
                 bcm_dbgmsg("bcmp_compare_check: little endian hex conversion unsuccessful\n");
                 return CL_CLEAN;
             }
+            /*hle*/
+            if (opt & CLI_BCOMP_EXACT) {
+                if (buffer+byte_len != end_buf) {
 
-            value = le32_to_host(value);
+                    bcm_dbgmsg("bcmp_compare_check: couldn't extract the exact number of requested bytes\n");
+                    return CL_CLEAN;
+                }
+            }
+
+            value = le64_to_host(value);
             break;
 
         /*hb*/  
         case CLI_BCOMP_HEX | CLI_BCOMP_BE:
             value = cli_strntoul((char*) buffer, byte_len, (char**) &end_buf, 16);
-            if (value < 0 || NULL == end_buf || buffer+byte_len != end_buf) {
+            if ((((value == LONG_MAX) || (value == LONG_MIN)) && errno == ERANGE) || NULL == end_buf) {
 
                 bcm_dbgmsg("bcmp_compare_check: big endian hex conversion unsuccessful\n");
                 return CL_CLEAN;
             }
+            /*hbe*/
+            if (opt & CLI_BCOMP_EXACT) {
+                if (buffer+byte_len != end_buf) {
 
-            value = be32_to_host(value);
+                    bcm_dbgmsg("bcmp_compare_check: couldn't extract the exact number of requested bytes\n");
+                    return CL_CLEAN;
+                }
+            }
+
+            value = be64_to_host(value);
             break;
 
         /*dl*/
         case CLI_BCOMP_DEC | CLI_BCOMP_LE:
             value = cli_strntoul((char*) buffer, byte_len, (char**) &end_buf, 10);
-            if (value < 0 || NULL == end_buf || buffer+byte_len != end_buf) {
+            if ((((value == LONG_MAX) || (value == LONG_MIN)) && errno == ERANGE) || NULL == end_buf) {
 
                 bcm_dbgmsg("bcmp_compare_check: little endian decimal conversion unsuccessful\n");
                 return CL_CLEAN;
             }
+            /*dle*/
+            if (opt & CLI_BCOMP_EXACT) {
+                if (buffer+byte_len != end_buf) {
 
-            value = le32_to_host(value);
+                    bcm_dbgmsg("bcmp_compare_check: couldn't extract the exact number of requested bytes\n");
+                    return CL_CLEAN;
+                }
+            }
+
+            value = le64_to_host(value);
             break;
 
         /*db*/
         case CLI_BCOMP_DEC | CLI_BCOMP_BE:
             value = cli_strntoul((char*) buffer, byte_len, (char**) &end_buf, 10);
-            if (value < 0 || NULL == end_buf || buffer+byte_len != end_buf) {
+            if ((((value == LONG_MAX) || (value == LONG_MIN)) && errno == ERANGE) || NULL == end_buf) {
 
                 bcm_dbgmsg("bcmp_compare_check: big endian decimal conversion unsuccessful\n");
                 return CL_CLEAN;
             }
+            /*dbe*/
+            if (opt & CLI_BCOMP_EXACT) {
+                if (buffer+byte_len != end_buf) {
 
-            value = be32_to_host(value);
+                    bcm_dbgmsg("bcmp_compare_check: couldn't extract the exact number of requested bytes\n");
+                    return CL_CLEAN;
+                }
+            }
+
+            value = be64_to_host(value);
             break;
+        case CLI_BCOMP_BIN | CLI_BCOMP_LE:
+            /* dropping bin_value on the heap to ensure our local stack is isolated from raw user input */
+            bin_value = cli_calloc(1, sizeof(uint64_t));
 
+            /* copy, then shift to align */
+            memcpy(bin_value, buffer, byte_len);
+            *bin_value = *bin_value >> CLI_BCOMP_MAX_BIN_BLEN - byte_len;
+
+            value = le64_to_host(*bin_value);
+            break;
+        case CLI_BCOMP_BIN | CLI_BCOMP_BE:
+            /* dropping bin_value on the heap to ensure our local stack is isolated from raw user input */
+            bin_value = cli_calloc(1, sizeof(uint64_t));
+
+            /* copy, then shift to align */
+            memcpy(bin_value, buffer, byte_len);
+            *bin_value = *bin_value >> CLI_BCOMP_MAX_BIN_BLEN - byte_len;
+
+            value = be64_to_host(*bin_value);
+            break;
         default:
             return CL_ENULLARG;
     }
@@ -503,21 +602,21 @@ cl_error_t cli_bcomp_compare_check(fmap_t *map, int offset, struct cli_bcomp_met
 
         case '>':
             if (value > bm->comp_value) {
-                bcm_dbgmsg("bcmp_compare_check: extracted value (%u) greater than comparison value (%u)\n", value, bm->comp_value);
+                bcm_dbgmsg("bcmp_compare_check: extracted value (%lu) greater than comparison value (%lu)\n", value, bm->comp_value);
                 return CL_VIRUS;
             }
             break;
 
         case '<':
             if (value < bm->comp_value) {
-                bcm_dbgmsg("bcmp_compare_check: extracted value (%u) less than comparison value (%u)\n", value, bm->comp_value);
+                bcm_dbgmsg("bcmp_compare_check: extracted value (%lu) less than comparison value (%lu)\n", value, bm->comp_value);
                 return CL_VIRUS;
             }
             break;
 
         case '=':
             if (value == bm->comp_value) {
-                bcm_dbgmsg("bcmp_compare_check: extracted value (%u) equal to comparison value (%u)\n", value, bm->comp_value);
+                bcm_dbgmsg("bcmp_compare_check: extracted value (%lu) equal to comparison value (%lu)\n", value, bm->comp_value);
                 return CL_VIRUS;
             }
             break;
@@ -528,7 +627,7 @@ cl_error_t cli_bcomp_compare_check(fmap_t *map, int offset, struct cli_bcomp_met
     }
 
     /* comparison was not successful */
-    bcm_dbgmsg("bcmp_compare_check: extracted value was not %c %u\n", bm->comp_symbol, bm->comp_value);
+    bcm_dbgmsg("bcmp_compare_check: extracted value was not %c %lu\n", bm->comp_symbol, bm->comp_value);
     return CL_CLEAN;
 }
 
