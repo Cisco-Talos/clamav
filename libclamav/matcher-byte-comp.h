@@ -51,7 +51,7 @@ struct cli_bcomp_meta {
     uint16_t options; /* bitmask */
     size_t byte_len;
     char comp_symbol; /* <, >, = are supported */
-    uint64_t comp_value;
+    int64_t comp_value;
 };
 
 cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, const char* hexsig, const uint32_t *lsigid, unsigned int options);
