@@ -399,7 +399,7 @@ cl_error_t cli_bcomp_scanbuf(fmap_t *map, const char **virname, struct cli_ac_re
             if(res) {
                 newres = (struct cli_ac_result *)cli_calloc(1, sizeof(struct cli_ac_result));
                 if(!newres) {
-                    cli_errmsg("cli_bcomp_scanbuff: Can't allocate memory for new result\n");
+                    cli_errmsg("cli_bcomp_scanbuf: Can't allocate memory for new result\n");
                     ret = CL_EMEM;
                     break;
                 }
@@ -460,7 +460,7 @@ cl_error_t cli_bcomp_compare_check(fmap_t *map, int offset, struct cli_bcomp_met
     const unsigned char* end_buf = NULL;
 
     if (!map || !bm) {
-        bcm_dbgmsg("bcmp_compare_check: a param is null\n");
+        bcm_dbgmsg("cli_bcomp_compare_check: a param is null\n");
         return CL_ENULLARG;
     }
 
@@ -471,12 +471,12 @@ cl_error_t cli_bcomp_compare_check(fmap_t *map, int offset, struct cli_bcomp_met
     /* ensure we won't run off the end of the file buffer */
     if (bm->offset > 0) {
         if (!((offset + bm->offset + byte_len <= length))) {
-            bcm_dbgmsg("bcmp_compare_check: %u bytes requested at offset %zu would go past file buffer of %u\n", byte_len, (offset + bm->offset), length);
+            bcm_dbgmsg("cli_bcomp_compare_check: %u bytes requested at offset %zu would go past file buffer of %u\n", byte_len, (offset + bm->offset), length);
             return CL_CLEAN; 
         }
     } else {
         if (!(offset + bm->offset > 0)) {
-            bcm_dbgmsg("bcmp_compare_check: negative offset would underflow buffer\n");
+            bcm_dbgmsg("cli_bcomp_compare_check: negative offset would underflow buffer\n");
             return CL_CLEAN; 
         }
     }
@@ -485,10 +485,10 @@ cl_error_t cli_bcomp_compare_check(fmap_t *map, int offset, struct cli_bcomp_met
     offset += bm->offset;
     buffer = fmap_need_off_once(map, offset, byte_len);
     if (!buffer) {
-        bcm_dbgmsg("bcmp_compare_check: could not extract bytes from buffer offset\n");
+        bcm_dbgmsg("cli_bcomp_compare_check: could not extract bytes from buffer offset\n");
         return CL_EMEM;
     }
-    bcm_dbgmsg("bcmp_compare_check: literal extracted bytes before comparison %s\n", buffer);
+    bcm_dbgmsg("cli_bcomp_compare_check: literal extracted bytes before comparison %s\n", buffer);
 
     /* grab the first byte to handle byte length options to convert the string appropriately */
     switch((opt & 0x00FF)) {
@@ -498,14 +498,14 @@ cl_error_t cli_bcomp_compare_check(fmap_t *map, int offset, struct cli_bcomp_met
             value = cli_strntol((char*) buffer, byte_len, (char**) &end_buf, 16);
             if ((((value == LONG_MAX) || (value == LONG_MIN)) && errno == ERANGE) || NULL == end_buf) {
 
-                bcm_dbgmsg("bcmp_compare_check: little endian hex conversion unsuccessful\n");
+                bcm_dbgmsg("cli_bcomp_compare_check: little endian hex conversion unsuccessful\n");
                 return CL_CLEAN;
             }
             /*hle*/
             if (opt & CLI_BCOMP_EXACT) {
                 if (buffer+byte_len != end_buf) {
 
-                    bcm_dbgmsg("bcmp_compare_check: couldn't extract the exact number of requested bytes\n");
+                    bcm_dbgmsg("cli_bcomp_compare_check: couldn't extract the exact number of requested bytes\n");
                     return CL_CLEAN;
                 }
             }
@@ -518,14 +518,14 @@ cl_error_t cli_bcomp_compare_check(fmap_t *map, int offset, struct cli_bcomp_met
             value = cli_strntol((char*) buffer, byte_len, (char**) &end_buf, 16);
             if ((((value == LONG_MAX) || (value == LONG_MIN)) && errno == ERANGE) || NULL == end_buf) {
 
-                bcm_dbgmsg("bcmp_compare_check: big endian hex conversion unsuccessful\n");
+                bcm_dbgmsg("cli_bcomp_compare_check: big endian hex conversion unsuccessful\n");
                 return CL_CLEAN;
             }
             /*hbe*/
             if (opt & CLI_BCOMP_EXACT) {
                 if (buffer+byte_len != end_buf) {
 
-                    bcm_dbgmsg("bcmp_compare_check: couldn't extract the exact number of requested bytes\n");
+                    bcm_dbgmsg("cli_bcomp_compare_check: couldn't extract the exact number of requested bytes\n");
                     return CL_CLEAN;
                 }
             }
@@ -538,14 +538,14 @@ cl_error_t cli_bcomp_compare_check(fmap_t *map, int offset, struct cli_bcomp_met
             value = cli_strntol((char*) buffer, byte_len, (char**) &end_buf, 10);
             if ((((value == LONG_MAX) || (value == LONG_MIN)) && errno == ERANGE) || NULL == end_buf) {
 
-                bcm_dbgmsg("bcmp_compare_check: little endian decimal conversion unsuccessful\n");
+                bcm_dbgmsg("cli_bcomp_compare_check: little endian decimal conversion unsuccessful\n");
                 return CL_CLEAN;
             }
             /*dle*/
             if (opt & CLI_BCOMP_EXACT) {
                 if (buffer+byte_len != end_buf) {
 
-                    bcm_dbgmsg("bcmp_compare_check: couldn't extract the exact number of requested bytes\n");
+                    bcm_dbgmsg("cli_bcomp_compare_check: couldn't extract the exact number of requested bytes\n");
                     return CL_CLEAN;
                 }
             }
@@ -558,14 +558,14 @@ cl_error_t cli_bcomp_compare_check(fmap_t *map, int offset, struct cli_bcomp_met
             value = cli_strntol((char*) buffer, byte_len, (char**) &end_buf, 10);
             if ((((value == LONG_MAX) || (value == LONG_MIN)) && errno == ERANGE) || NULL == end_buf) {
 
-                bcm_dbgmsg("bcmp_compare_check: big endian decimal conversion unsuccessful\n");
+                bcm_dbgmsg("cli_bcomp_compare_check: big endian decimal conversion unsuccessful\n");
                 return CL_CLEAN;
             }
             /*dbe*/
             if (opt & CLI_BCOMP_EXACT) {
                 if (buffer+byte_len != end_buf) {
 
-                    bcm_dbgmsg("bcmp_compare_check: couldn't extract the exact number of requested bytes\n");
+                    bcm_dbgmsg("cli_bcomp_compare_check: couldn't extract the exact number of requested bytes\n");
                     return CL_CLEAN;
                 }
             }
@@ -582,7 +582,7 @@ cl_error_t cli_bcomp_compare_check(fmap_t *map, int offset, struct cli_bcomp_met
                 case 8: value = le64_to_host( *(int64_t*) buffer); break;
 
                 default:
-                    bcm_dbgmsg("bcmp_compare_check: invalid byte size for binary integer field (%u)\n", byte_len);
+                    bcm_dbgmsg("cli_bcomp_compare_check: invalid byte size for binary integer field (%u)\n", byte_len);
                     return CL_EARG;
             }
             break;
@@ -596,7 +596,7 @@ cl_error_t cli_bcomp_compare_check(fmap_t *map, int offset, struct cli_bcomp_met
                 case 8: value = be64_to_host( *(int64_t*) buffer); break;
 
                 default:
-                    bcm_dbgmsg("bcmp_compare_check: invalid byte size for binary integer field (%u)\n", byte_len);
+                    bcm_dbgmsg("cli_bcomp_compare_check: invalid byte size for binary integer field (%u)\n", byte_len);
                     return CL_EARG;
             }
             break;
@@ -609,32 +609,32 @@ cl_error_t cli_bcomp_compare_check(fmap_t *map, int offset, struct cli_bcomp_met
 
         case '>':
             if (value > bm->comp_value) {
-                bcm_dbgmsg("bcmp_compare_check: extracted value (%ld) greater than comparison value (%ld)\n", value, bm->comp_value);
+                bcm_dbgmsg("cli_bcomp_compare_check: extracted value (%ld) greater than comparison value (%ld)\n", value, bm->comp_value);
                 return CL_VIRUS;
             }
             break;
 
         case '<':
             if (value < bm->comp_value) {
-                bcm_dbgmsg("bcmp_compare_check: extracted value (%ld) less than comparison value (%ld)\n", value, bm->comp_value);
+                bcm_dbgmsg("cli_bcomp_compare_check: extracted value (%ld) less than comparison value (%ld)\n", value, bm->comp_value);
                 return CL_VIRUS;
             }
             break;
 
         case '=':
             if (value == bm->comp_value) {
-                bcm_dbgmsg("bcmp_compare_check: extracted value (%ld) equal to comparison value (%ld)\n", value, bm->comp_value);
+                bcm_dbgmsg("cli_bcomp_compare_check: extracted value (%ld) equal to comparison value (%ld)\n", value, bm->comp_value);
                 return CL_VIRUS;
             }
             break;
 
         default:
-            bcm_dbgmsg("bcmp_compare_check: comparison symbol (%c) invalid\n", bm->comp_symbol);
+            bcm_dbgmsg("cli_bcomp_compare_check: comparison symbol (%c) invalid\n", bm->comp_symbol);
             return CL_ENULLARG;
     }
 
     /* comparison was not successful */
-    bcm_dbgmsg("bcmp_compare_check: extracted value was not %c %ld\n", bm->comp_symbol, bm->comp_value);
+    bcm_dbgmsg("cli_bcomp_compare_check: extracted value was not %c %ld\n", bm->comp_symbol, bm->comp_value);
     return CL_CLEAN;
 }
 
