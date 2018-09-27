@@ -62,6 +62,7 @@
 cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, const char *hexsig, const uint32_t *lsigid, unsigned int options) {
 
     size_t len = 0;
+    uint32_t i = 0;
     const char *buf_start = NULL;
     const char *buf_end = NULL;
     char *buf = NULL;
@@ -72,6 +73,9 @@ cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, cons
     int64_t ret = CL_SUCCESS;
     size_t byte_length = 0;
     int64_t comp_val = 0;
+    char *comp_buf = NULL;
+    char *comp_start = NULL;
+    char *comp_end = NULL;
     char *hexcpy = NULL;
 
     if (!hexsig || !(*hexsig) || !root || !virname) {
@@ -289,47 +293,108 @@ cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, cons
 
     bcomp->byte_len = byte_length;
 
-    /* currently only >, <, and = are supported comparison symbols--this makes parsing very simple */
-    buf_start = tokens[2];
-    switch (*buf_start) {
-        case '<':
-        case '>':
-        case '=':
-            bcomp->comp_symbol = *buf_start;    break;
+    /* we can have up to two comparison eval statements, each sperated by a comma, let's parse them in a separate string */
+    comp_buf = cli_strdup(tokens[2]);
+    if (!comp_buf) {
+        cli_errmsg("cli_bcomp_addpatt: Unable to allocate memory for comparison buffer\n");
+        cli_bcomp_freemeta(root, bcomp);
+        return CL_EMEM;
+    }
+    /* use different buffer start and end markers so we can keep track of what we need to free later */
+    buf_start = comp_buf;
+    comp_start = strchr(comp_buf, ',');
+    comp_end = strrchr(comp_buf, ',');
 
-        default:
-            cli_errmsg("cli_bcomp_addpatt: while parsing (%s#%s#%s), byte comparison symbol was invalid (>, <, = are supported operators)\n", tokens[0], tokens[1], tokens[2]);
+    /* check to see if we have exactly one comma, then set our count and tokenize our string apropriately */
+    if (comp_start && comp_end) {
+        if (comp_end == comp_start) {
+            comp_start[0] = '\0';
+            bcomp->comp_count = 2;
+
+        } else {
+            cli_errmsg("cli_bcomp_addpatt: while parsing (%s#%s#%s), too many commas found in comparison string\n", tokens[0], tokens[1], tokens[2]);
+            cli_bcomp_freemeta(root, bcomp);
             free(buf);
+            free((void*)buf_start);
+            return CL_EPARSE;
+        }
+    } else {
+        comp_start = comp_buf;
+        bcomp->comp_count = 1;
+    }
+
+    /* allocate comp struct list space with the root structure's mempool instance */
+    bcomp->comps = (struct cli_bcomp_comp **) mpool_calloc(root->mempool, bcomp->comp_count, sizeof(struct cli_bcomp_comp *));
+    if(!bcomp->comps) {
+        cli_errmsg("cli_bcomp_addpatt: unable to allocate memory for comp struct pointers\n");
+        free(buf);
+        free((void*)buf_start);
+        cli_bcomp_freemeta(root, bcomp);
+        return CL_EMEM;
+    }
+
+    /* loop through our new list, allocate, and parse out the needed comparison evaluation bits for this subsig */
+    for (i = 0; i < bcomp->comp_count; i++) {
+
+        bcomp->comps[i] = (struct cli_bcomp_comp*) mpool_calloc(root->mempool, 1, sizeof(struct cli_bcomp_comp));
+        if(!bcomp->virname) {
+            cli_errmsg("cli_bcomp_addpatt: unable to allocate memory for comp struct\n");
+            free(buf);
+            free((void*)buf_start);
+            cli_bcomp_freemeta(root, bcomp);
+            return CL_EMEM;
+        }
+
+        /* currently only >, <, and = are supported comparison symbols--this makes parsing very simple */
+        switch (*comp_buf) {
+            case '<':
+            case '>':
+            case '=':
+                bcomp->comps[i]->comp_symbol = *comp_buf;    break;
+
+            default:
+                cli_errmsg("cli_bcomp_addpatt: while parsing (%s#%s#%s), byte comparison symbol was invalid (>, <, = are supported operators) %s\n", tokens[0], tokens[1], tokens[2], comp_buf);
+                free(buf);
+                free((void*)buf_start);
+                cli_bcomp_freemeta(root, bcomp);
+                return CL_EMALFDB;
+        }
+
+        /* grab the comparison value itself */
+        comp_end = NULL;
+        comp_buf++;
+        comp_val = strtoll(comp_buf, (char **) &comp_end, 0);
+        if (*comp_end) {
+            cli_errmsg("cli_bcomp_addpatt: while parsing (%s#%s#%s), comparison value contained invalid input\n", tokens[0], tokens[1], tokens[2]);
+            free(buf);
+            free((void*)buf_start);
             cli_bcomp_freemeta(root, bcomp);
             return CL_EMALFDB;
+        }
+
+        bcomp->comps[i]->comp_value = comp_val;
+
+        /* a bit of tricksy pointer stuffs which handles all count cases, taking advantage of where strtoll drops endptr */
+        if (comp_end == comp_start) {
+            comp_buf = comp_start;
+            comp_buf++;
+        }
+
+        /* manually verify successful pattern parsing */
+        bcm_dbgmsg("Matcher Byte Compare: (%s%ld#%c%c%s%zu#%c%ld)\n",
+                bcomp->offset ==  0 ? "" :
+                (bcomp->offset < 0 ? "<<" : ">>"),
+                bcomp->offset,
+                bcomp->options & CLI_BCOMP_HEX ? 'h' : (bcomp->options & CLI_BCOMP_DEC ? 'd' : 'i'),
+                bcomp->options & CLI_BCOMP_LE ? 'l' : 'b',
+                bcomp->options & CLI_BCOMP_EXACT ? "e" : "",
+                bcomp->byte_len,
+                bcomp->comps[i]->comp_symbol,
+                bcomp->comps[i]->comp_value);
     }
 
-
-    /* no more tokens after this, so we take advantage of strtoll and check if the buf_end is null terminated or not */
-    buf_start++;
-    buf_end = NULL;
-    comp_val = strtoll(buf_start, (char **) &buf_end, 0);
-    if (*buf_end) {
-        cli_errmsg("cli_bcomp_addpatt: while parsing (%s#%s#%s), comparison value contained invalid input\n", tokens[0], tokens[1], tokens[2]);
-        free(buf);
-        cli_bcomp_freemeta(root, bcomp);
-        return CL_EMALFDB;
-    }
-
-    bcomp->comp_value = comp_val;
-
-    /* manually verify successful pattern parsing */
-    bcm_dbgmsg("Matcher Byte Compare: (%s%ld#%c%c%s%zu#%c%ld)\n",
-                    bcomp->offset ==  0 ? "" : 
-                    (bcomp->offset < 0 ? "<<" : ">>"),
-                    bcomp->offset,
-                    bcomp->options & CLI_BCOMP_HEX ? 'h' : (bcomp->options & CLI_BCOMP_DEC ? 'd' : 'i'),
-                    bcomp->options & CLI_BCOMP_LE ? 'l' : 'b',
-                    bcomp->options & CLI_BCOMP_EXACT ? "e" : "",
-                    bcomp->byte_len,
-                    bcomp->comp_symbol,
-                    bcomp->comp_value);
-
+    free((void*)buf_start);
+    buf_start = NULL;
     /* add byte compare info to the root after reallocation */
     bcomp_count = root->bcomp_metas+1;
 
@@ -468,6 +533,8 @@ cl_error_t cli_bcomp_compare_check(fmap_t *map, int offset, struct cli_bcomp_met
 
     uint32_t byte_len = 0;
     uint32_t length = 0;
+    uint32_t i = 0;
+    cl_error_t ret = 0;
     uint16_t opt = 0;
     const unsigned char *buffer = NULL;
     unsigned char *conversion_buf = NULL;
@@ -623,37 +690,51 @@ cl_error_t cli_bcomp_compare_check(fmap_t *map, int offset, struct cli_bcomp_met
     }
 
     /* do the actual comparison */
-    switch (bm->comp_symbol) {
+    ret = CL_CLEAN;
+    for (i = 0; i < bm->comp_count; i++) {
+        if (bm->comps && bm->comps[i]) {
+            switch (bm->comps[i]->comp_symbol) {
 
-        case '>':
-            if (value > bm->comp_value) {
-                bcm_dbgmsg("cli_bcomp_compare_check: extracted value (%ld) greater than comparison value (%ld)\n", value, bm->comp_value);
-                return CL_VIRUS;
+                case '>':
+                    if (value > bm->comps[i]->comp_value) {
+                        bcm_dbgmsg("cli_bcomp_compare_check: extracted value (%ld) greater than comparison value (%ld)\n", value, bm->comps[i]->comp_value);
+                        ret = CL_VIRUS;
+                    } else {
+                        ret = CL_CLEAN;
+                    }
+                    break;
+
+                case '<':
+                    if (value < bm->comps[i]->comp_value) {
+                        bcm_dbgmsg("cli_bcomp_compare_check: extracted value (%ld) less than comparison value (%ld)\n", value, bm->comps[i]->comp_value);
+                        ret = CL_VIRUS;
+                    } else {
+                        ret = CL_CLEAN;
+                    }
+                    break;
+
+                case '=':
+                    if (value == bm->comps[i]->comp_value) {
+                        bcm_dbgmsg("cli_bcomp_compare_check: extracted value (%ld) equal to comparison value (%ld)\n", value, bm->comps[i]->comp_value);
+                        ret = CL_VIRUS;
+                    } else {
+                        ret = CL_CLEAN;
+                    }
+                    break;
+
+                default:
+                    bcm_dbgmsg("cli_bcomp_compare_check: comparison symbol (%c) invalid\n", bm->comps[i]->comp_symbol);
+                    return CL_ENULLARG;
             }
-            break;
 
-        case '<':
-            if (value < bm->comp_value) {
-                bcm_dbgmsg("cli_bcomp_compare_check: extracted value (%ld) less than comparison value (%ld)\n", value, bm->comp_value);
-                return CL_VIRUS;
+            if (CL_CLEAN == ret) {
+                /* comparison was not successful */
+                bcm_dbgmsg("cli_bcomp_compare_check: extracted value was not %c %ld\n", bm->comps[i]->comp_symbol, bm->comps[i]->comp_value);
+                return CL_CLEAN;
             }
-            break;
-
-        case '=':
-            if (value == bm->comp_value) {
-                bcm_dbgmsg("cli_bcomp_compare_check: extracted value (%ld) equal to comparison value (%ld)\n", value, bm->comp_value);
-                return CL_VIRUS;
-            }
-            break;
-
-        default:
-            bcm_dbgmsg("cli_bcomp_compare_check: comparison symbol (%c) invalid\n", bm->comp_symbol);
-            return CL_ENULLARG;
+        }
     }
-
-    /* comparison was not successful */
-    bcm_dbgmsg("cli_bcomp_compare_check: extracted value was not %c %ld\n", bm->comp_symbol, bm->comp_value);
-    return CL_CLEAN;
+    return ret;
 }
 
 /**
@@ -665,6 +746,8 @@ cl_error_t cli_bcomp_compare_check(fmap_t *map, int offset, struct cli_bcomp_met
  */
 void cli_bcomp_freemeta(struct cli_matcher *root, struct cli_bcomp_meta *bm) {
 
+    int i = 0;
+
     if(!root || !bm) {
         return;
     }
@@ -673,7 +756,20 @@ void cli_bcomp_freemeta(struct cli_matcher *root, struct cli_bcomp_meta *bm) {
         mpool_free(root->mempool, bm->virname);
         bm->virname = NULL;
     }
-    
+
+    /* can never have more than 2 */
+    if (bm->comps) {
+        for (i = 0; i < 2; i++) {
+            if (bm->comps[i]) {
+                mpool_free(root->mempool, bm->comps[i]);
+                bm->comps[i] = NULL;
+            }
+        }
+
+        mpool_free(root->mempool, bm->comps);
+        bm->comps = NULL;
+    }
+
     mpool_free(root->mempool, bm);
     bm = NULL;
 
