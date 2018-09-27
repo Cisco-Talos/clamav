@@ -370,6 +370,10 @@ cl_error_t cli_bcomp_scanbuf(fmap_t *map, const char **virname, struct cli_ac_re
     struct cli_bcomp_meta *bcomp = NULL;
     struct cli_ac_result *newres = NULL;
 
+    uint32_t evalcnt = 0;
+    uint64_t evalids = 0;
+    char *subsigid = NULL;
+
     if (!(root) || !(root->bcomp_metas) || !(root->bcomp_metatable) || !(mdata) || !(mdata->offmatrix) || !(ctx)) {
         return CL_SUCCESS;
     }
@@ -382,9 +386,20 @@ cl_error_t cli_bcomp_scanbuf(fmap_t *map, const char **virname, struct cli_ac_re
 
         /* check to see if we are being run in sigtool or not */
         if (bcomp->lsigid[0]) {
+
+            subsigid = cli_calloc(3, sizeof(char));
+            sprintf(subsigid, "%hu", bcomp->ref_subsigid);
+
+            /* verify the ref_subsigid */
+            if (cli_ac_chklsig(subsigid, subsigid + strlen(subsigid),
+                        mdata->lsigcnt[bcomp->lsigid[1]], &evalcnt, &evalids, 0) != 1) {
+                bcm_dbgmsg("cli_bcomp_scanbuf: could not verify a match for lsig reference subsigid (%s)\n", subsigid);
+                continue;
+            }
+
             /* ensures the referenced subsig matches as expected, and also ensures mdata has the needed offset */
             if (ret = lsig_sub_matched(root, mdata, lsigid, ref_subsigid, CLI_OFF_NONE, 0)) {
-                continue;
+                break;
             }
 
             /* grab the needed offset using from the last matched subsig offset matrix, i.e. the match performed above */
@@ -395,11 +410,11 @@ cl_error_t cli_bcomp_scanbuf(fmap_t *map, const char **virname, struct cli_ac_re
                 continue;
             }
         } else {
-        /* can't run lsig_sub_matched in sigtool, and mdata isn't populated so run the raw matcher stuffs */
+            /* can't run lsig_sub_matched in sigtool, and mdata isn't populated so run the raw matcher stuffs */
             if(res) {
                 newres = (struct cli_ac_result *)cli_calloc(1, sizeof(struct cli_ac_result));
                 if(!newres) {
-                    cli_errmsg("cli_bcomp_scanbuf: Can't allocate memory for new result\n");
+                    cli_errmsg("cli_bcomp_scanbuf: can't allocate memory for new result\n");
                     ret = CL_EMEM;
                     break;
                 }
@@ -572,34 +587,37 @@ cl_error_t cli_bcomp_compare_check(fmap_t *map, int offset, struct cli_bcomp_met
 
             value = be64_to_host(value);
             break;
+
         /*il*/
         case CLI_BCOMP_BIN | CLI_BCOMP_LE:
             /* exact byte_length option is implied for binary extraction */
             switch (byte_len) {
-                case 1: value = ( *(int8_t*) buffer);              break;
-                case 2: value = le16_to_host( *(int16_t*) buffer); break;
-                case 4: value = le32_to_host( *(int32_t*) buffer); break;
-                case 8: value = le64_to_host( *(int64_t*) buffer); break;
+                case 1: value = (*(int8_t*) buffer);                           break;
+                case 2: value =   (int16_t) le16_to_host( *(int16_t*) buffer); break;
+                case 4: value =   (int32_t) le32_to_host( *(int32_t*) buffer); break;
+                case 8: value =   (int64_t) le64_to_host( *(int64_t*) buffer); break;
 
                 default:
                     bcm_dbgmsg("cli_bcomp_compare_check: invalid byte size for binary integer field (%u)\n", byte_len);
                     return CL_EARG;
             }
             break;
+
         /*ib*/
         case CLI_BCOMP_BIN | CLI_BCOMP_BE:
             /* exact byte_length option is implied for binary extraction */
             switch (byte_len) {
-                case 1: value = ( *(int8_t*) buffer);              break;
-                case 2: value = be16_to_host( *(int16_t*) buffer); break;
-                case 4: value = be32_to_host( *(int32_t*) buffer); break;
-                case 8: value = be64_to_host( *(int64_t*) buffer); break;
+                case 1: value = ( *(int8_t*) buffer);                           break;
+                case 2: value =    (int16_t) be16_to_host( *(int16_t*) buffer); break;
+                case 4: value =    (int32_t) be32_to_host( *(int32_t*) buffer); break;
+                case 8: value =    (int64_t) be64_to_host( *(int64_t*) buffer); break;
 
                 default:
                     bcm_dbgmsg("cli_bcomp_compare_check: invalid byte size for binary integer field (%u)\n", byte_len);
                     return CL_EARG;
             }
             break;
+
         default:
             return CL_ENULLARG;
     }
