@@ -45,11 +45,17 @@
 
 struct cli_bcomp_meta {
     char *virname;
-    uint16_t ref_subsigid; /* identifies the dependent subsig from which we will do comparisons from */
+    uint16_t ref_subsigid; /* identifies the dependent subsig from which we will do comparisons */
     uint32_t lsigid[3];
     ssize_t offset; /* offset from the referenced subsig, handled at match-time */
     uint16_t options; /* bitmask */
     size_t byte_len;
+    struct cli_bcomp_comp **comps;
+    uint32_t comp_count;
+};
+
+/* each byte compare subsig can perform multiple comparisons on the same extracted byte sequence */
+struct cli_bcomp_comp {
     char comp_symbol; /* <, >, = are supported */
     int64_t comp_value;
 };
