@@ -426,7 +426,7 @@ cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, cons
  * @param ctx the clamav context struct
  *
  */
-cl_error_t cli_bcomp_scanbuf(fmap_t *map, const char **virname, struct cli_ac_result **res, const struct cli_matcher *root, struct cli_ac_data *mdata, cli_ctx *ctx) {
+cl_error_t cli_bcomp_scanbuf(const unsigned char *buffer, size_t buffer_length, const char **virname, struct cli_ac_result **res, const struct cli_matcher *root, struct cli_ac_data *mdata, cli_ctx *ctx) {
 
     int64_t i = 0, rc = 0, ret = CL_SUCCESS;
     uint32_t lsigid, ref_subsigid;
@@ -496,7 +496,7 @@ cl_error_t cli_bcomp_scanbuf(fmap_t *map, const char **virname, struct cli_ac_re
         }
 
         /* now we have all the pieces of the puzzle, so lets do our byte compare check */
-        ret = cli_bcomp_compare_check(map, offset, bcomp);
+        ret = cli_bcomp_compare_check(buffer, buffer_length, offset, bcomp);
 
         /* set and append our lsig's virus name if the comparison came back positive */
         if (CL_VIRUS == ret) {
@@ -528,7 +528,7 @@ cl_error_t cli_bcomp_scanbuf(fmap_t *map, const char **virname, struct cli_ac_re
  * @param bm the byte comparison meta data struct, contains all the other info needed to do the comparison
  *
  */
-cl_error_t cli_bcomp_compare_check(fmap_t *map, int offset, struct cli_bcomp_meta *bm)
+cl_error_t cli_bcomp_compare_check(const unsigned char* buffer, size_t buffer_length, int offset, struct cli_bcomp_meta *bm)
 {
 
     uint32_t byte_len = 0;
@@ -536,18 +536,16 @@ cl_error_t cli_bcomp_compare_check(fmap_t *map, int offset, struct cli_bcomp_met
     uint32_t i = 0;
     cl_error_t ret = 0;
     uint16_t opt = 0;
-    const unsigned char *buffer = NULL;
-    unsigned char *conversion_buf = NULL;
     int64_t value = 0;
     const unsigned char* end_buf = NULL;
 
-    if (!map || !bm) {
+    if (!buffer || !bm) {
         bcm_dbgmsg("cli_bcomp_compare_check: a param is null\n");
         return CL_ENULLARG;
     }
 
     byte_len = bm->byte_len;
-    length = map->len;
+    length = buffer_length;
     opt = bm->options;
 
     /* ensure we won't run off the end of the file buffer */
@@ -565,11 +563,8 @@ cl_error_t cli_bcomp_compare_check(fmap_t *map, int offset, struct cli_bcomp_met
 
     /* jump to byte compare offset, then store off specified bytes into a null terminated buffer */
     offset += bm->offset;
-    buffer = fmap_need_off_once(map, offset, byte_len);
-    if (!buffer) {
-        bcm_dbgmsg("cli_bcomp_compare_check: could not extract bytes from buffer offset\n");
-        return CL_EMEM;
-    }
+    buffer += offset;
+
     bcm_dbgmsg("cli_bcomp_compare_check: literal extracted bytes before comparison %s\n", buffer);
 
     /* grab the first byte to handle byte length options to convert the string appropriately */
