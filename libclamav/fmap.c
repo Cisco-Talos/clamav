@@ -750,7 +750,6 @@ cl_error_t fmap_dump_to_file(fmap_t* map, const char* filepath, const char* tmpd
 
     char* filebase = NULL;
     char* prefix = NULL;
-    uint32_t prefix_allocated = 0;
 
     char* tmpname = NULL;
     int tmpfd = -1;
@@ -782,11 +781,13 @@ cl_error_t fmap_dump_to_file(fmap_t* map, const char* filepath, const char* tmpd
                 return CL_EMEM;
             }
             snprintf(prefix, prefix_len, "%s.%zu-%zu", filebase, start_offset, end_offset);
-            prefix_allocated = 1;
+
+            free(filebase);
+            filebase = NULL;
         } else {
             /* Else if we're dumping the whole thing, use the filebase as the prefix */
             prefix = filebase;
-            prefix_allocated = 0;
+            filebase = NULL;
         }
     }
 
@@ -794,18 +795,16 @@ cl_error_t fmap_dump_to_file(fmap_t* map, const char* filepath, const char* tmpd
     ret = cli_gentempfd_with_prefix(tmpdir, prefix, &tmpname, &tmpfd);
     if (ret != CL_SUCCESS) {
         cli_dbgmsg("fmap_dump_to_file: failed to generate temporary file.\n");
-        if ((NULL != prefix) && (prefix_allocated)) {
+        if (NULL != prefix) {
             free(prefix);
             prefix = NULL;
-            prefix_allocated = 0;
         }
         return ret;
     }
 
-    if ((NULL != prefix) && (prefix_allocated)) {
+    if (NULL != prefix) {
         free(prefix);
         prefix = NULL;
-        prefix_allocated = 0;
     }
 
     do {

@@ -397,8 +397,20 @@ int pdf_findobj_in_objstm(struct pdf_struct *pdf, struct objstm_struct *objstm, 
             status = CL_EPARSE;
             goto done;
         }
+        else if (next_objoff <= objoff) {
+            /* Failed to find obj offset for next obj */
+            cli_dbgmsg("pdf_findobj_in_objstm: Found next obj offset for obj in object stream but it's less than or equal to the current one!\n");
+            status = CL_EPARSE;
+            goto done;
+        }
+        else if (objstm->first + next_objoff > objstm->streambuf_len) {
+            /* Failed to find obj offset for next obj */
+            cli_dbgmsg("pdf_findobj_in_objstm: Found next obj offset for obj in object stream but it's further out than the size of the stream!\n");
+            status = CL_EPARSE;
+            goto done;
+        }
 
-        obj->size = objstm->first + next_objoff - obj->start;
+        obj->size = next_objoff - objoff;
     } 
     else 
     {
@@ -1364,15 +1376,20 @@ int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
 {
     cli_ctx *ctx = pdf->ctx;
     char fullname[NAME_MAX + 1];
-    int fout;
-    ptrdiff_t sum = 0;
+    int fout = -1;
+    size_t sum = 0;
     cl_error_t rc = CL_SUCCESS;
     int dump = 1;
 
     cli_dbgmsg("pdf_extract_obj: obj %u %u\n", obj->id>>8, obj->id&0xff);
 
-    if (obj->objstm)
+    if (obj->objstm) {
         cli_dbgmsg("pdf_extract_obj: extracting obj found in objstm.\n");
+        if (obj->objstm->streambuf == NULL) {
+            cli_warnmsg("pdf_extract_obj: object in object stream has null stream buffer!\n");
+            return CL_EFORMAT;
+        }
+    }
 
     /* TODO: call bytecode hook here, allow override dumpability */
     if ((!(obj->flags & (1 << OBJ_STREAM)) || (obj->flags & (1 << OBJ_HASFILTERS))) && !(obj->flags & DUMP_MASK)) {
@@ -1584,17 +1601,25 @@ int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
                 }
 
                 sum = pdf_decodestream(pdf, obj, dparams, start + p_stream, (uint32_t)length, xref, fout, &rc, objstm);
-                if (sum < 0) {
-                    /*
-                    * If we were expecting an objstm and there was a failure...
-                    *   discard the memory for last object stream.
-                    */
-                    if (NULL != objstm)
-                    {
+                if ((CL_SUCCESS != rc) && (CL_VIRUS != rc)) {
+                    cli_dbgmsg("Error decoding stream! Error code: %d\n", rc);
+
+                    /* It's ok if we couldn't decode the stream,
+                     *   make a best effort to keep parsing. */
+                    if (CL_EPARSE == rc)
+                        rc = CL_SUCCESS;
+
+                    if (NULL != objstm) {
+                        /*
+                         * If we were expecting an objstm and there was a failure...
+                         *   discard the memory for last object stream.
+                         */
                         if (NULL != pdf->objstms) {
                             if (NULL != pdf->objstms[pdf->nobjstms - 1]) {
-                                pdf->objstms[pdf->nobjstms - 1]->streambuf = NULL;
-
+                                if (NULL != pdf->objstms[pdf->nobjstms - 1]->streambuf) {
+                                    free(pdf->objstms[pdf->nobjstms - 1]->streambuf);
+                                    pdf->objstms[pdf->nobjstms - 1]->streambuf = NULL;
+                                }
                                 free(pdf->objstms[pdf->nobjstms - 1]);
                                 pdf->objstms[pdf->nobjstms - 1] = NULL;
                             }
@@ -1602,11 +1627,16 @@ int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
                             /* Pop the objstm off the end of the pdf->objstms array. */
                             if (pdf->nobjstms > 0) {
                                 pdf->nobjstms--;
-                                pdf->objstms = cli_realloc2(pdf->objstms, sizeof(struct objstm_struct*) * pdf->nobjstms);
+                                if (0 == pdf->nobjstms) {
+                                    free(pdf->objstms);
+                                    pdf->objstms = NULL;
+                                } else {
+                                    pdf->objstms = cli_realloc2(pdf->objstms, sizeof(struct objstm_struct*) * pdf->nobjstms);
 
-                                if (!pdf->objstms) {
-                                    cli_warnmsg("pdf_extract_obj: out of memory when shrinking down objstm array\n");
-                                    return CL_EMEM;
+                                    if (!pdf->objstms) {
+                                        cli_warnmsg("pdf_extract_obj: out of memory when shrinking down objstm array\n");
+                                        return CL_EMEM;
+                                    }
                                 }
                             } else {
                                 /* hm.. this shouldn't happen */
@@ -1619,7 +1649,7 @@ int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
                 if (dparams)
                     pdf_free_dict(dparams);
 
-                if (sum < 0 || ((rc == CL_VIRUS) && !SCAN_ALLMATCHES)) {
+                if ((rc == CL_VIRUS) && !SCAN_ALLMATCHES) {
                     sum = 0; /* prevents post-filter scan */
                     break;
                 }
