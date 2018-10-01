@@ -76,7 +76,7 @@ struct pdf_token {
     uint8_t *content;  /* content stream */
 };
 
-static ptrdiff_t pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token, int fout, cl_error_t *status, struct objstm_struct *objstm);
+static size_t pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token, int fout, cl_error_t *status, struct objstm_struct *objstm);
 static cl_error_t pdf_decode_dump(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_token *token, int lvl);
 
 static cl_error_t filter_ascii85decode(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_token *token);
@@ -101,33 +101,35 @@ static cl_error_t filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, 
  * @param fout      File descriptor to write to to be scanned.
  * @param[out] rc   Return code ()
  * @param objstm    (optional) Object stream context structure.
- * @return ptrdiff_t   The number of bytes written to 'fout' to be scanned. -1 if failed out.
+ * @return size_t   The number of bytes written to 'fout' to be scanned.
  */
-ptrdiff_t pdf_decodestream(
+size_t pdf_decodestream(
     struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params,
     const char *stream, uint32_t streamlen, int xref, int fout, cl_error_t *status,
     struct objstm_struct *objstm)
 {
     struct pdf_token *token = NULL;
-    ptrdiff_t bytes_scanned = -1;
-    cl_error_t retval = CL_SUCCESS;
+    size_t bytes_scanned = 0;
+    cli_ctx *ctx = pdf->ctx;
 
     if (!status) {
         /* invalid args, and no way to pass back the status code */
-        return -1;
+        return 0;
     }
 
     if (!pdf || !obj) {
         /* Invalid args */
-        retval = CL_EARG;
+        *status = CL_EARG;
         goto done;
     }
 
     if (!stream || !streamlen || fout < 0) {
         cli_dbgmsg("pdf_decodestream: no filters or stream on obj %u %u\n", obj->id>>8, obj->id&0xff);
-        retval = CL_ENULLARG;
+        *status = CL_ENULLARG;
         goto done;
     }
+
+    *status = CL_SUCCESS;
 
 #if 0
     if (params)
@@ -136,7 +138,7 @@ ptrdiff_t pdf_decodestream(
 
     token = cli_malloc(sizeof(struct pdf_token));
     if (!token) {
-        retval = CL_EMEM;
+        *status = CL_EMEM;
         goto done;
     }
 
@@ -149,7 +151,7 @@ ptrdiff_t pdf_decodestream(
     token->content = cli_malloc(streamlen);
     if (!token->content) {
         free(token);
-        retval = CL_EMEM;
+        *status = CL_EMEM;
         goto done;
     }
     memcpy(token->content, stream, streamlen);
@@ -157,38 +159,35 @@ ptrdiff_t pdf_decodestream(
 
     cli_dbgmsg("pdf_decodestream: detected %lu applied filters\n", (long unsigned)(obj->numfilters));
 
-    bytes_scanned = pdf_decodestream_internal(pdf, obj, params, token, fout, &retval, objstm);
-    /* 
-     * Pass back the return value, though we really only care
-     * if it is CV_VIRUS or CL_SUCCESS.
-     */
-    if (retval == CL_VIRUS)
-        retval = CL_VIRUS;
-    else
-        retval = CL_SUCCESS;
+    bytes_scanned = pdf_decodestream_internal(pdf, obj, params, token, fout, status, objstm);
 
-    if (!token->success) {
+    if ((CL_VIRUS == *status) && !SCAN_ALLMATCHES) {
+        goto done;
+    }
+
+    if (0 == token->success) {
         /*
-         * If it was successful, the internal() function calls cli_writen()
-         * However, in this case... no non-forced filter are decoded, 
-         *   so return the raw stream.
+         * Either:
+         *  a) it failed to decode any filters, or
+         *  b) there were no filters.
+         *
+         * Write out the raw stream to be scanned.
+         *
+         * Nota bene: If it did decode any filters, the internal() function would
+         *            have written out the decoded stream to be scanned.
          */
         if (!cli_checklimits("pdf", pdf->ctx, streamlen, 0, 0)) {
             cli_dbgmsg("pdf_decodestream: no non-forced filters decoded, returning raw stream\n");
 
             if (cli_writen(fout, stream, streamlen) != streamlen) {
-                cli_errmsg("pdf_decodestream: failed to write output file\n");
-                retval = CL_EWRITE;
-                bytes_scanned = -1;
-                goto done;
+                cli_errmsg("pdf_decodestream: failed to write raw stream to output file\n");
+            } else {
+                bytes_scanned = streamlen;
             }
-            bytes_scanned = streamlen;
         }
     }
 
 done:
-    *status = retval;
-
     /*
      * Free up the token, and token content, if any.
      */
@@ -220,27 +219,29 @@ done:
  * @param objstm        (optional) Object stream context structure.
  * @return ptrdiff_t    The number of bytes we wrote to 'fout'. -1 if failed out.
  */
-static ptrdiff_t pdf_decodestream_internal(
+static size_t pdf_decodestream_internal(
     struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params,
     struct pdf_token *token, int fout, cl_error_t *status, struct objstm_struct *objstm)
 {
     cl_error_t vir = CL_CLEAN;
     cl_error_t retval = CL_SUCCESS;
-    ptrdiff_t bytes_scanned = -1;
+    size_t bytes_scanned = 0;
     cli_ctx *ctx = pdf->ctx;
     const char *filter = NULL;
     int i;
 
     if (!status) {
         /* invalid args, and no way to pass back the status code */
-        return -1;
+        return 0;
     }
 
     if (!pdf || !obj || !token) {
         /* Invalid args */
-        retval = CL_EARG;
+        *status = CL_EARG;
         goto done;
     }
+    
+    *status = CL_SUCCESS;
     
     /*
      * if pdf is decryptable, scan for CRYPT filter
@@ -253,6 +254,7 @@ static ptrdiff_t pdf_decodestream_internal(
             cli_dbgmsg("pdf_decodestream_internal: decoding => non-filter CRYPT\n");
             retval = filter_decrypt(pdf, obj, params, token, 1);
             if (retval != CL_SUCCESS) {
+                *status = CL_EPARSE;
                 goto done;
             }
         }
@@ -323,12 +325,15 @@ static ptrdiff_t pdf_decodestream_internal(
 
                 switch (retval) {
                 case CL_VIRUS:
+                    *status = CL_VIRUS;
                     reason = "detection";
                     break;
                 case CL_BREAK:
+                    *status = CL_SUCCESS;
                     reason = "decoding break";
                     break;
                 default:
+                    *status = CL_EPARSE;
                     reason = "decoding error";
                     break;
                 }
@@ -341,31 +346,35 @@ static ptrdiff_t pdf_decodestream_internal(
 
         /* Dump the stream content to a text file if keeptmp is enabled. */
         if (pdf->ctx->engine->keeptmp) {
-            retval = pdf_decode_dump(pdf, obj, token, i+1);
-            if (retval != CL_SUCCESS) {
-                goto done;
+            if (CL_SUCCESS != pdf_decode_dump(pdf, obj, token, i+1)) {
+                cli_errmsg("pdf_decodestream_internal: failed to write decoded stream content to temp file\n");
             }
         }
     }
 
     if (token->success > 0) {
         /*
-         * Looks like we successfully decoded the stream, so lets write it out.
-         *   In the failure case, the caller will deal with the raw stream.
+         * Looks like we successfully decoded some or all of the stream filters,
+         * so lets write it out to a file descriptor we scan.
+         *
+         * In the event that we didn't decode any filters (or maybe there
+         * weren't any filters), the calling function will do the same with
+         * the raw stream.
          */
-        if (!cli_checklimits("pdf", pdf->ctx, token->length, 0, 0)) {
+        if (CL_SUCCESS == cli_checklimits("pdf", pdf->ctx, token->length, 0, 0)) {
             if (cli_writen(fout, token->content, token->length) != token->length) {
-                cli_errmsg("pdf_decodestream_internal: failed to write output file\n");
-                retval = CL_EWRITE;
-                bytes_scanned = -1;
-                goto done;
+                cli_errmsg("pdf_decodestream_internal: failed to write decoded stream content to output file\n");
+            } else {
+                bytes_scanned = token->length;
             }
-            bytes_scanned = token->length;
         }
     }
 
-    if (NULL != objstm)
+    if ((NULL != objstm) &&
+        ((CL_SUCCESS == *status) || ((CL_VIRUS == *status) && SCAN_ALLMATCHES)))
     {
+        int objs_found = pdf->nobjs;
+
         /*
          * The caller indicated that the decoded data is an object stream.
          * Perform experimental object stream parsing to extract objects from the stream.
@@ -377,7 +386,9 @@ static ptrdiff_t pdf_decodestream_internal(
         token->content = NULL;
         token->length = 0;
 
-        int objs_found = pdf->nobjs;
+        /* Don't store the result. It's ok if some or all objects failed to parse.
+           It would be far worse to add objects from a stream to the list, and then free
+           the stream buffer due to an "error". */
         if (CL_SUCCESS != pdf_find_and_parse_objs_in_objstm(pdf, objstm))
         {
             cli_dbgmsg("pdf_decodestream_internal: pdf_find_and_parse_objs_in_objstm failed!\n");
@@ -392,13 +403,8 @@ static ptrdiff_t pdf_decodestream_internal(
 
 done:
 
-    *status = retval;
-
     if (vir == CL_VIRUS)
         *status = CL_VIRUS;
-
-    if (*status == CL_BREAK)
-        *status = CL_SUCCESS;
 
     return bytes_scanned;
 }
