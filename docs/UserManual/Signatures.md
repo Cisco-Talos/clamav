@@ -1,6 +1,7 @@
 # Creating signatures for ClamAV
 
 Table of Contents
+
 - [Creating signatures for ClamAV](#creating-signatures-for-clamav)
 - [Introduction](#introduction)
 - [Debug information from libclamav](#debug-information-from-libclamav)
@@ -21,6 +22,7 @@ Table of Contents
         - [Subsignature Modifiers](#subsignature-modifiers)
     - [Special Subsignature Types](#special-subsignature-types)
         - [Macro subsignatures (clamav-0.96) : `${min-max}MACROID$`](#macro-subsignatures-clamav-096--min-maxmacroid)
+        - [Byte Compare Subsignatures (clamav-0.101) : `subsigid_trigger(offset#byte_options#comparisons)`](#byte-compare-subsignatures-clamav-0101--subsigid_triggeroffsetbyte_optionscomparisons)
         - [PCRE subsignatures (clamav-0.99) : `Trigger/PCRE/[Flags]`](#pcre-subsignatures-clamav-099--triggerpcreflags)
     - [Icon signatures for PE files](#icon-signatures-for-pe-files)
     - [Signatures for Version Information metadata in PE files](#signatures-for-version-information-metadata-in-pe-files)
@@ -597,27 +599,33 @@ to:
 
 - For more information and examples please see <https://bugzilla.clamav.net/show_bug.cgi?id=164>.
 
-### Byte Compare Subsignatures (clamav-0.101) : <span class="nodecor">`ref_subsig([offset_shift]offset#[options]byte_length#[comparison_symbol]comparison_value)`</span>
+### Byte Compare Subsignatures (clamav-0.101) : <span class="nodecor">`subsigid_trigger(offset#byte_options#comparisons)`</span>
 
 Byte compare subsignatures can be used to evaluate a numeric value at a given offset from the start of another (matched) subsignature within the same logical signature. These are executed after all other subsignatures within the logical subsignature are fired, with the exception of PCRE subsignatures. They can evaluate offsets only from a single referenced subsignature, and that subsignature must give a valid match for the evaluation to occur.
 
-- `ref_subsig` is a required field and may refer to any single non-PCRE subsignature within the lsig. The byte compare subsig will evaluate if `ref_subsig` matches. Multiple referenced subsigs or logic based referencing is not currently supported.
+- `subsigid_trigger` is a required field and may refer to any single non-PCRE, non-Byte Compare subsignature within the lsig. The byte compare subsig will evaluate if `subsigid_trigger` matches. Triggering on multiple subsigs or logic based triggering is not currently supported.
 
-- `offset_shift` is a required field that can be either `>>` or `<<` where the former denotes a positive offset and the latter denotes a negative offset. The offset is calculated from the start of ref_subsigid, which allows for byte extraction before the specified match, after the match, and within the match itself.
+- `offset` is a required field that consists of an `offset_modifier` and a numeric `offset` (hex or decimal offsets are okay).
 
-- `offset` is a required field that must be a positive hex or decimal value. This will be the number of bytes from the start of the referenced subsig match within the file buffer to begin the comparison
+  - `offset_modifier` can be either `>>` or `<<` where the former denotes a positive offset and the latter denotes a negative offset. The offset is calculated from the start of `subsigid_trigger`, which allows for byte extraction before the specified match, after the match, and within the match itself.
 
-- `options` are a required field which specify the numeric type and endianess of the extracted byte sequence in that order. This field follows the form `[h|d][l|b]`
+  - `offset` must be a positive hex or decimal value. This will be the number of bytes from the start of the referenced `subsigid_trigger` match within the file buffer to begin the comparison.
 
-  - `h|d` where `h` specifies the byte sequence will be in hex and `d` decimal
+- `byte_options` are used to specify the numeric type and endianess of the extracted byte sequence in that order as well as the number of bytes to be read. By default ClamAV will attempt to matchup up to the number of byte specified, unless the `e` (exact) option is specified or the numeric type is `b` (binary).  This field follows the form `[h|d|i][l|b][e]num_bytes`
+
+  - `h|d|i` where `h` specifies the byte sequence will be in hex, `d` decimal, and `i` signifies raw binary data.
 
   - `l|b` where `l` specifies the byte sequence will be in little endian order and `b` big endian.
 
-- `byte_length` is a required field which species the exact number of bytes to extract during the evaluation. If any invalid characters are found within the specified length, the evaluation will return a clean finding.
+  - `e` specifies that ClamAV will only evaluate the comparison if it can extract the exact number of bytes specified. This option is implicitly declared when using the `i` flag.
 
-- `comparison_symbol` is a required field which denotes how to evaluate the extracted byte sequence. The supported comparison symbols are `<`, `>`, `=`.
+  - `num_bytes` specifies the number of bytes to extract. This can be a hex or decimal value. If `i` is specified only 1, 2, 4, and 8 are valid options.
 
-- `comparison_value` is a required field which must be a numeric hex or decimal value. If all other conditions are met, the byte compare subsig will evalutate the extracted byte sequence against this number based on the provided `comparison_symbol`.
+- `comparisons` are a required field which denotes how to evaluate the extracted byte sequence. Each Byte Compare signature can have one or two `comparison_sets` separated by a comma. Each `comparison_set` consists of a `Comparison_symbol` and a `Comparison_value` and takes the form `Comparison_symbolComparison_value`. Thus, `comparisons` takes the form `comparison_set[,comparison_set]`
+
+  - `Comparison_symbol` denotes the type of comparison to be done. The supported comparison symbols are `<`, `>`, `=`.
+
+  - `Comparison_value` is a required field which must be a numeric hex or decimal value. If all other conditions are met, the byte compare subsig will evalutate the extracted byte sequence against this number based on the provided `comparison_symbol`.
 
 
 ### PCRE subsignatures (clamav-0.99) : <span class="nodecor">`Trigger/PCRE/[Flags]`</span>
