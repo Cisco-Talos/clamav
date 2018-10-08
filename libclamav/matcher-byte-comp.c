@@ -221,26 +221,38 @@ cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, cons
 
         switch (*buf_start) {
             case 'h':
-                /* hex, decimal, and binary options are mutually exclusive parameters */
-                if (bcomp->options & CLI_BCOMP_DEC || bcomp->options & CLI_BCOMP_BIN) {
+                /* hex, decimal, auto, and binary options are mutually exclusive parameters */
+                if (bcomp->options & CLI_BCOMP_DEC || bcomp->options & CLI_BCOMP_BIN || bcomp->options & CLI_BCOMP_AUTO) {
                     ret = CL_EMALFDB;
                 } else {
                     bcomp->options |= CLI_BCOMP_HEX;
                 } break;
+
             case 'd':
-                /* hex, decimal, and binary options are mutually exclusive parameters */
-                if (bcomp->options & CLI_BCOMP_HEX || bcomp->options & CLI_BCOMP_BIN) {
+                /* hex, decimal, auto, and binary options are mutually exclusive parameters */
+                if (bcomp->options & CLI_BCOMP_HEX || bcomp->options & CLI_BCOMP_BIN || bcomp->options & CLI_BCOMP_AUTO) {
                     ret = CL_EMALFDB;
                 } else {
                     bcomp->options |= CLI_BCOMP_DEC;
                 } break;
+
             case 'i':
-                /* hex, decimal, and binary options are mutually exclusive parameters */
-                if (bcomp->options & CLI_BCOMP_HEX || bcomp->options & CLI_BCOMP_DEC) {
+                /* hex, decimal, auto, and binary options are mutually exclusive parameters */
+                if (bcomp->options & CLI_BCOMP_HEX || bcomp->options & CLI_BCOMP_DEC || bcomp->options & CLI_BCOMP_AUTO) {
                     ret = CL_EMALFDB;
                 } else {
                     bcomp->options |= CLI_BCOMP_BIN;
                 } break;
+
+            case 'a':
+                /* for automatic hex or decimal run-time detection */
+                /* hex, decimal, auto, and binary options are mutually exclusive parameters */
+                if (bcomp->options & CLI_BCOMP_HEX || bcomp->options & CLI_BCOMP_DEC || bcomp->options & CLI_BCOMP_BIN) {
+                    ret = CL_EMALFDB;
+                } else {
+                    bcomp->options |= CLI_BCOMP_AUTO;
+                } break;
+
             case 'l':
                 /* little and big endian options are mutually exclusive parameters */
                 if (bcomp->options & CLI_BCOMP_BE) {
@@ -248,6 +260,7 @@ cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, cons
                 } else {
                     bcomp->options |= CLI_BCOMP_LE;
                 } break;
+
             case 'b':
                 /* little and big endian options are mutually exclusive parameters */
                 if (bcomp->options & CLI_BCOMP_LE) {
@@ -255,6 +268,7 @@ cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, cons
                 } else {
                     bcomp->options |= CLI_BCOMP_BE;
                 } break;
+
             case 'e':
                 /* for exact byte length matches */
                 bcomp->options |= CLI_BCOMP_EXACT;
@@ -286,6 +300,14 @@ cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, cons
 
     if (bcomp->options & CLI_BCOMP_BIN && (byte_length > CLI_BCOMP_MAX_BIN_BLEN || CLI_BCOMP_MAX_BIN_BLEN % byte_length)) {
         cli_errmsg("cli_bcomp_addpatt: while parsing (%s#%s#%s), byte length was either too long or not a valid number of bytes\n", tokens[0], tokens[1], tokens[2]);
+        free(buf);
+        cli_bcomp_freemeta(root, bcomp);
+        return CL_EMALFDB;
+    }
+
+    /* same deal with hex byte lengths */
+    if (bcomp->options & CLI_BCOMP_HEX && (byte_length > CLI_BCOMP_MAX_HEX_BLEN)) {
+        cli_errmsg("cli_bcomp_addpatt: while parsing (%s#%s#%s), byte length was too long\n", tokens[0], tokens[1], tokens[2]);
         free(buf);
         cli_bcomp_freemeta(root, bcomp);
         return CL_EMALFDB;
@@ -569,6 +591,47 @@ cl_error_t cli_bcomp_compare_check(const unsigned char* buffer, size_t buffer_le
 
     /* grab the first byte to handle byte length options to convert the string appropriately */
     switch((opt & 0x00FF)) {
+        /*al*/
+        case CLI_BCOMP_AUTO | CLI_BCOMP_LE:
+            errno = 0;
+            value = cli_strntol((char*) buffer, byte_len, (char**) &end_buf, 0);
+            if ((((value == LONG_MAX) || (value == LONG_MIN)) && errno == ERANGE) || NULL == end_buf) {
+
+                bcm_dbgmsg("cli_bcomp_compare_check: little endian conversion unsuccessful\n");
+                return CL_CLEAN;
+            }
+            /*hle*/
+            if (opt & CLI_BCOMP_EXACT) {
+                if (buffer+byte_len != end_buf) {
+
+                    bcm_dbgmsg("cli_bcomp_compare_check: couldn't extract the exact number of requested bytes\n");
+                    return CL_CLEAN;
+                }
+            }
+
+            value = le64_to_host(value);
+            break;
+
+        /*ab*/  
+        case CLI_BCOMP_AUTO | CLI_BCOMP_BE:
+            value = cli_strntol((char*) buffer, byte_len, (char**) &end_buf, 0);
+            if ((((value == LONG_MAX) || (value == LONG_MIN)) && errno == ERANGE) || NULL == end_buf) {
+
+                bcm_dbgmsg("cli_bcomp_compare_check: big endian conversion unsuccessful\n");
+                return CL_CLEAN;
+            }
+            /*hbe*/
+            if (opt & CLI_BCOMP_EXACT) {
+                if (buffer+byte_len != end_buf) {
+
+                    bcm_dbgmsg("cli_bcomp_compare_check: couldn't extract the exact number of requested bytes\n");
+                    return CL_CLEAN;
+                }
+            }
+
+            value = be64_to_host(value);
+            break;
+
         /*hl*/
         case CLI_BCOMP_HEX | CLI_BCOMP_LE:
             errno = 0;

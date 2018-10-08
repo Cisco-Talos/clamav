@@ -35,10 +35,12 @@
 #include "mpool.h"
 
 #define CLI_BCOMP_MAX_BIN_BLEN 8
+#define CLI_BCOMP_MAX_HEX_BLEN 18
 
 #define CLI_BCOMP_HEX   0x0001
 #define CLI_BCOMP_DEC   0x0002
 #define CLI_BCOMP_BIN   0x0004
+#define CLI_BCOMP_AUTO  0x0008
 #define CLI_BCOMP_LE    0x0010
 #define CLI_BCOMP_BE    0x0020
 #define CLI_BCOMP_EXACT 0x0100
