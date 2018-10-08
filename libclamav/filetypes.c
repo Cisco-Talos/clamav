@@ -130,6 +130,8 @@ static const struct ftmap_s {
     { "CL_TYPE_PS",           CL_TYPE_PS           },
     { "CL_TYPE_MHTML",        CL_TYPE_MHTML        },
     { "CL_TYPE_LNK",          CL_TYPE_LNK          },
+    { "CL_TYPE_EGG",          CL_TYPE_EGG          },
+    { "CL_TYPE_EGGSFX",       CL_TYPE_EGGSFX       },
     { NULL,                   CL_TYPE_IGNORED      }
 };
 // clang-format on

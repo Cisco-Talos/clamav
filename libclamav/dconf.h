@@ -95,6 +95,7 @@ struct cli_dconf {
 #define ARCH_CONF_MBR     0x800000
 #define ARCH_CONF_GPT     0x1000000
 #define ARCH_CONF_APM     0x2000000
+#define ARCH_CONF_EGG     0x4000000
 
 /* Document flags */
 #define DOC_CONF_HTML         0x1
@@ -149,10 +150,12 @@ struct cli_dconf {
 #define BYTECODE_ENGINE_MASK (BYTECODE_INTERPRETER | BYTECODE_JIT_X86 | BYTECODE_JIT_PPC | BYTECODE_JIT_ARM)
 
 #ifdef USE_MPOOL
-struct cli_dconf *cli_dconf_init(mpool_t *);
+struct cli_dconf *
+cli_dconf_init(mpool_t *);
 #define cli_mpool_dconf_init(a) cli_dconf_init(a)
 #else
-struct cli_dconf *cli_dconf_init(void);
+struct cli_dconf *
+cli_dconf_init(void);
 #define cli_mpool_dconf_init(a) cli_dconf_init()
 #endif
 void cli_dconf_print(struct cli_dconf *dconf);

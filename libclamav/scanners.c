@@ -110,6 +110,7 @@
 #include "hwp.h"
 #include "msdoc.h"
 #include "execs.h"
+#include "egg.h"
 
 #ifdef HAVE_BZLIB_H
 #include <bzlib.h>
@@ -566,6 +567,398 @@ done:
     }
 
     cli_dbgmsg("RAR: Exit code: %d\n", status);
+
+    if (SCAN_ALLMATCHES && viruses_found)
+        status = CL_VIRUS;
+
+    return status;
+}
+
+/**
+ * @brief  Scan the metadata using cli_matchmeta()
+ *
+ * @param metadata  egg metadata structure
+ * @param ctx       scanning context structure
+ * @param files     number of files
+ * @return cl_error_t  Returns CL_CLEAN if nothing found, CL_VIRUS if something found, CL_EUNPACK if encrypted.
+ */
+static cl_error_t cli_egg_scanmetadata(cl_egg_metadata *metadata, cli_ctx *ctx, unsigned int files)
+{
+    cl_error_t status = CL_CLEAN;
+    int virus_found   = 0;
+
+    cli_dbgmsg("EGG: %s, encrypted: %u, compressed: %u, normal: %u, ratio: %u\n",
+               metadata->filename, metadata->encrypted, (unsigned int)metadata->pack_size,
+               (unsigned int)metadata->unpack_size,
+               metadata->pack_size ? (unsigned int)(metadata->unpack_size / metadata->pack_size) : 0);
+
+    if (CL_VIRUS == cli_matchmeta(ctx, metadata->filename, metadata->pack_size, metadata->unpack_size, metadata->encrypted, files, 0, NULL)) {
+        status = CL_VIRUS;
+    } else if (SCAN_HEURISTIC_ENCRYPTED_ARCHIVE && metadata->encrypted) {
+        cli_dbgmsg("EGG: Encrypted files found in archive.\n");
+        status = CL_EUNPACK;
+    }
+
+done:
+
+    return status;
+}
+
+static cl_error_t cli_scanegg(cli_ctx *ctx, size_t sfx_offset)
+{
+    cl_error_t status      = CL_EPARSE;
+    cl_egg_error_t egg_ret = EGG_ERR;
+
+    char *buffer      = NULL;
+    size_t buffer_len = 0;
+
+    char *extract_dir          = NULL; /* temp dir to write extracted files to */
+    unsigned int file_count    = 0;
+    unsigned int viruses_found = 0;
+
+    uint32_t nEncryptedFilesFound = 0;
+    uint32_t nTooLargeFilesFound  = 0;
+
+    void *hArchive = NULL;
+
+    char *comment         = NULL;
+    uint32_t comment_size = 0;
+
+    cl_egg_metadata metadata;
+    char *filename_base    = NULL;
+    char *extract_fullpath = NULL;
+    char *comment_fullpath = NULL;
+
+    if (ctx == NULL) {
+        cli_dbgmsg("EGG: Invalid arguments!\n");
+        return CL_EARG;
+    }
+
+    cli_dbgmsg("in scanegg()\n");
+
+    /* Zero out the metadata struct before we read the header */
+    memset(&metadata, 0, sizeof(cl_egg_metadata));
+
+    /* Determine file basename */
+    if (NULL != ctx->sub_filepath) {
+        if (CL_SUCCESS != cli_basename(ctx->sub_filepath, strlen(ctx->sub_filepath), &filename_base)) {
+            status = CL_EARG;
+            goto done;
+        }
+    }
+
+    if (ctx->engine->keeptmp) {
+        /* generate the temporary directory for extracted files. */
+        if (!(extract_dir = cli_gentemp_with_prefix(ctx->engine->tmpdir, filename_base))) {
+            status = CL_EMEM;
+            goto done;
+        }
+        if (mkdir(extract_dir, 0700)) {
+            cli_dbgmsg("EGG: Can't create temporary directory for extracted files %s\n", extract_dir);
+            status = CL_ETMPDIR;
+            goto done;
+        }
+    }
+    /*
+     * Open the archive.
+     */
+    if (CL_SUCCESS != (egg_ret = cli_egg_open(*ctx->fmap, sfx_offset, &hArchive, &comment, &comment_size))) {
+        if (egg_ret == EGG_ENCRYPTED) {
+            cli_dbgmsg("EGG: Encrypted main header\n");
+            status = CL_EUNPACK;
+            goto done;
+        }
+        if (egg_ret == EGG_EMEM) {
+            status = CL_EMEM;
+            goto done;
+        } else {
+            status = CL_EFORMAT;
+            goto done;
+        }
+    }
+
+    /* If the archive header had a comment, write it to the comment dir. */
+    if ((comment != NULL) && (comment_size > 0)) {
+        /*
+         * Drop the comment to a temp file, if requested
+         */
+        if (ctx->engine->keeptmp) {
+            int comment_fd = -1;
+            if (!(comment_fullpath = cli_gentemp_with_prefix(extract_dir, "comments"))) {
+                status = CL_EMEM;
+                goto done;
+            }
+
+            comment_fd = open(comment_fullpath, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0600);
+            if (comment_fd < 0) {
+                cli_dbgmsg("EGG: ERROR: Failed to open output file\n");
+            } else {
+                cli_dbgmsg("EGG: Writing the archive comment to temp file: %s\n", comment_fullpath);
+                if (0 == write(comment_fd, comment, comment_size)) {
+                    cli_dbgmsg("EGG: ERROR: Failed to write to output file\n");
+                } else {
+                    close(comment_fd);
+                    comment_fd = -1;
+                }
+            }
+        }
+
+        /*
+         * Scan the comment.
+         */
+        status = cli_mem_scandesc(comment, comment_size, ctx);
+
+        if ((status == CL_VIRUS) && SCAN_ALLMATCHES) {
+            status = CL_CLEAN;
+            viruses_found++;
+        }
+        if ((status == CL_VIRUS) || (status == CL_BREAK)) {
+            goto done;
+        }
+    }
+
+    /*
+     * Read & scan each file header.
+     * Extract & scan each file.
+     *
+     * Skip files if they will exceed max filesize or max scansize.
+     * Count the number of encrypted file headers and encrypted files.
+     *  - Alert if there are encrypted files,
+     *      if the Heuristic for encrypted archives is enabled,
+     *      and if we have not detected a signature match.
+     */
+    do {
+        status = CL_CLEAN;
+
+        /* Zero out the metadata struct before we read the header */
+        memset(&metadata, 0, sizeof(unrar_metadata_t));
+
+        /*
+         * Get the header information for the next file in the archive.
+         */
+        egg_ret = cli_egg_peek_file_header(hArchive, &metadata);
+        if (egg_ret != EGG_OK) {
+            if (egg_ret == EGG_ENCRYPTED) {
+                /* Found an encrypted file header, must skip. */
+                cli_dbgmsg("EGG: Encrypted file header, unable to reading file metadata and file contents. Skipping file...\n");
+                nEncryptedFilesFound += 1;
+
+                if (EGG_OK != cli_egg_skip_file(hArchive)) {
+                    /* Failed to skip!  Break extraction loop. */
+                    cli_dbgmsg("EGG: Failed to skip file. EGG archive extraction has failed.\n");
+                    break;
+                }
+            } else if (egg_ret == EGG_BREAK) {
+                /* No more files. Break extraction loop. */
+                cli_dbgmsg("EGG: No more files in archive.\n");
+                break;
+            } else {
+                /* Memory error or some other error reading the header info. */
+                cli_dbgmsg("EGG: Error (%u) reading file header!\n", egg_ret);
+                break;
+            }
+        } else {
+            file_count += 1;
+
+            /*
+            * Scan the metadata for the file in question since the content was clean, or we're running in all-match.
+            */
+            status = cli_egg_scanmetadata(&metadata, ctx, file_count);
+            if ((status == CL_VIRUS) && SCAN_ALLMATCHES) {
+                status = CL_CLEAN;
+                viruses_found++;
+            }
+            if ((status == CL_VIRUS) || (status == CL_BREAK)) {
+                break;
+            }
+
+            /* Check if we've already exceeded the scan limit */
+            if (cli_checklimits("EGG", ctx, 0, 0, 0))
+                break;
+
+            if (metadata.is_dir) {
+                /* Entry is a directory. Skip. */
+                cli_dbgmsg("EGG: Found directory. Skipping to next file.\n");
+
+                if (EGG_OK != cli_egg_skip_file(hArchive)) {
+                    /* Failed to skip!  Break extraction loop. */
+                    cli_dbgmsg("EGG: Failed to skip directory. EGG archive extraction has failed.\n");
+                    break;
+                }
+            } else if (cli_checklimits("EGG", ctx, metadata.unpack_size, 0, 0)) {
+                /* File size exceeds maxfilesize, must skip extraction.
+                * Although we may be able to scan the metadata */
+                nTooLargeFilesFound += 1;
+
+                cli_dbgmsg("EGG: Next file is too large (%" PRIu64 " bytes); it would exceed max scansize.  Skipping to next file.\n", metadata.unpack_size);
+
+                if (EGG_OK != cli_egg_skip_file(hArchive)) {
+                    /* Failed to skip!  Break extraction loop. */
+                    cli_dbgmsg("EGG: Failed to skip file. EGG archive extraction has failed.\n");
+                    break;
+                }
+            } else if (metadata.encrypted != 0) {
+                /* Found an encrypted file, must skip. */
+                cli_dbgmsg("EGG: Encrypted file, unable to extract file contents. Skipping file...\n");
+                nEncryptedFilesFound += 1;
+
+                if (EGG_OK != cli_egg_skip_file(hArchive)) {
+                    /* Failed to skip!  Break extraction loop. */
+                    cli_dbgmsg("EGG: Failed to skip file. EGG archive extraction has failed.\n");
+                    break;
+                }
+            } else {
+                /*
+                * Extract the file...
+                */
+                char *extract_filename    = NULL;
+                char *extract_buffer      = NULL;
+                size_t extract_buffer_len = 0;
+
+                cli_dbgmsg("EGG: Extracting file: %s\n", metadata.filename);
+
+                egg_ret = cli_egg_extract_file(hArchive, (const char **)&extract_filename, (const char **)&extract_buffer, &extract_buffer_len);
+                if (egg_ret != EGG_OK) {
+                    /*
+                     * Some other error extracting the file
+                     */
+                    cli_dbgmsg("EGG: Error extracting file: %s\n", metadata.filename);
+                } else if (!extract_buffer || 0 == extract_buffer_len) {
+                    /*
+                     * Empty file. Skip.
+                     */
+                    cli_dbgmsg("EGG: Skipping empty file: %s\n", metadata.filename);
+                } else {
+                    /*
+                     * Drop to a temp file, if requested.
+                     */
+                    if (ctx->engine->keeptmp) {
+                        int extracted_fd = -1;
+                        if (!(extract_fullpath = cli_gentemp(extract_dir))) {
+                            status = CL_EMEM;
+                            break;
+                        }
+
+                        extracted_fd = open(extract_fullpath, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0600);
+                        if (extracted_fd < 0) {
+                            cli_dbgmsg("EGG: ERROR: Failed to open output file\n");
+                        } else {
+                            cli_dbgmsg("EGG: Writing the extracted file contents to temp file: %s\n", extract_fullpath);
+                            if (0 == write(extracted_fd, extract_buffer, extract_buffer_len)) {
+                                cli_dbgmsg("EGG: ERROR: Failed to write to output file\n");
+                            } else {
+                                close(extracted_fd);
+                                extracted_fd = -1;
+                            }
+                        }
+                    }
+
+                    /*
+                     * Scan the extracted file (buffer)...
+                     */
+                    cli_dbgmsg("EGG: Extraction complete.  Scanning now...\n");
+                    status = cli_mem_scandesc(extract_buffer, extract_buffer_len, ctx);
+                    if (status == CL_VIRUS) {
+                        cli_dbgmsg("EGG: infected with %s\n", cli_get_last_virus(ctx));
+                        status = CL_VIRUS;
+                        viruses_found++;
+                    }
+
+                    if (NULL != extract_filename) {
+                        free(extract_filename);
+                        extract_filename = NULL;
+                    }
+                    if (NULL != extract_buffer) {
+                        free(extract_buffer);
+                        extract_buffer = NULL;
+                    }
+                }
+
+                /* Free up that the filepath */
+                if (NULL != extract_fullpath) {
+                    free(extract_fullpath);
+                    extract_fullpath = NULL;
+                }
+            }
+        }
+
+        if (status == CL_VIRUS) {
+            if (SCAN_ALLMATCHES)
+                status = CL_SUCCESS;
+            else
+                break;
+        }
+
+        if (ctx->engine->maxscansize && ctx->scansize >= ctx->engine->maxscansize) {
+            status = CL_CLEAN;
+            break;
+        }
+
+        /*
+         * TODO: Free up any malloced metadata...
+         */
+        if (metadata.filename != NULL) {
+            free(metadata.filename);
+            metadata.filename = NULL;
+        }
+
+    } while (status == CL_CLEAN);
+
+    if (status == CL_BREAK)
+        status = CL_CLEAN;
+
+done:
+    if (NULL != comment) {
+        free(comment);
+        comment = NULL;
+    }
+
+    if (NULL != comment_fullpath) {
+        free(comment_fullpath);
+        comment_fullpath = NULL;
+    }
+
+    if (NULL != hArchive) {
+        cli_egg_close(hArchive);
+        hArchive = NULL;
+    }
+
+    if (NULL != filename_base) {
+        free(filename_base);
+        filename_base = NULL;
+    }
+
+    if (metadata.filename != NULL) {
+        free(metadata.filename);
+        metadata.filename = NULL;
+    }
+
+    if (NULL != extract_fullpath) {
+        free(extract_fullpath);
+        extract_fullpath = NULL;
+    }
+
+    if (NULL != extract_dir) {
+        free(extract_dir);
+        extract_dir = NULL;
+    }
+
+    /* If return value was a failure due to encryption, scan the un-extracted archive just in case... */
+    if ((CL_VIRUS != status) && ((CL_EUNPACK == status) || (nEncryptedFilesFound > 0))) {
+        status = cli_mem_scandesc(buffer, buffer_len, ctx);
+
+        /* If no virus, and user requests enabled the Heuristic for encrypted archives... */
+        if ((status != CL_VIRUS) && SCAN_HEURISTIC_ENCRYPTED_ARCHIVE) {
+            if (CL_VIRUS == cli_append_virus(ctx, "Heuristics.Encrypted.EGG")) {
+                status = CL_VIRUS;
+            }
+        }
+        if (status != CL_VIRUS) {
+            status = CL_CLEAN;
+        }
+    }
+
+    cli_dbgmsg("EGG: Exit code: %d\n", status);
 
     if (SCAN_ALLMATCHES && viruses_found)
         status = CL_VIRUS;
@@ -2500,6 +2893,15 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
                         }
                         break;
 
+                    case CL_TYPE_EGGSFX:
+                        if (type != CL_TYPE_EGG && SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_EGG)) {
+                            size_t csize = map->len - fpt->offset; /* not precise */
+                            cli_set_container(ctx, CL_TYPE_EGG, csize);
+                            cli_dbgmsg("EGG/EGG-SFX signature found at %u\n", (unsigned int)fpt->offset);
+                            nret = cli_scanegg(ctx, fpt->offset);
+                        }
+                        break;
+
                     case CL_TYPE_ZIPSFX:
                         if (type != CL_TYPE_ZIP && SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ZIP)) {
                             size_t csize = map->len - fpt->offset; /* not precise */
@@ -3133,6 +3535,11 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
                     free(tmpname);
                 }
             }
+            break;
+
+        case CL_TYPE_EGG:
+            if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_EGG))
+                ret = cli_scanegg(ctx, 0);
             break;
 
         case CL_TYPE_OOXML_WORD:

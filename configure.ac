@@ -310,6 +310,11 @@ fi
 CL_MSG_STATUS([mempool     ],[$have_mempool],[$enable_mempool])
 
 AC_MSG_NOTICE([Summary of engine detection features])
+if test "X$have_iconv" = "Xyes"; then
+    CL_MSG_STATUS([iconv       ],[yes, from $ICONV_HOME],[])
+else
+    CL_MSG_STATUS([iconv       ],[no],[])
+fi
 CL_MSG_STATUS([bzip2       ],[$bzip_check],[$want_bzip2])
 CL_MSG_STATUS([zlib        ],[$ZLIB_HOME],[yes])
 CL_MSG_STATUS([unrar       ],[$want_unrar],[$want_unrar])
