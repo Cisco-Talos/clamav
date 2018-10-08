@@ -87,6 +87,7 @@ typedef enum {
     CL_TYPE_HWP3,
     CL_TYPE_OOXML_HWP,
     CL_TYPE_PS,
+    CL_TYPE_EGG,
 
     /* Section for partition types */
     CL_TYPE_PART_ANY, /* unknown partition type */
@@ -102,6 +103,7 @@ typedef enum {
     CL_TYPE_7ZSFX,
     CL_TYPE_CABSFX,
     CL_TYPE_ARJSFX,
+    CL_TYPE_EGGSFX,
     CL_TYPE_NULSFT, /* on the fly */
     CL_TYPE_AUTOIT,
     CL_TYPE_ISHIELD_MSI,
