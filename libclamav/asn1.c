@@ -333,6 +333,10 @@ static int asn1_expect_algo(fmap_t *map, const void **asn1data, unsigned int *as
 
     if((ret = asn1_expect_obj(map, &obj.content, &avail, ASN1_TYPE_OBJECT_ID, algo_size, algo))) /* ALGO */
         return ret;
+
+    // The specification says that the NULL is a required parameter for this
+    // data type, but in practice it doesn't always exist in the ASN1. If
+    // there is something after the ALGO OID, assume it's the NULL
     if(avail && (ret = asn1_expect_obj(map, &obj.content, &avail, ASN1_TYPE_NULL, 0, NULL))) { /* NULL */
         cli_dbgmsg("asn1_expect_algo: expected NULL after AlgorithmIdentifier OID\n");
         return ret;
@@ -406,7 +410,10 @@ static int asn1_expect_hash_algo(fmap_t *map, const void **asn1data, unsigned in
         cli_dbgmsg("asn1_expect_hash_algo: unknown digest OID in AlgorithmIdentifier\n");
         return 1;
     }
-    if(ret = asn1_expect_obj(map, &obj.next, &avail, ASN1_TYPE_NULL, 0, NULL)) {
+    // The specification says that the NULL is a required parameter for this
+    // data type, but in practice it doesn't always exist in the ASN1. If
+    // there is something after the ALGO OID, assume it's the NULL
+    if(avail && (ret = asn1_expect_obj(map, &obj.next, &avail, ASN1_TYPE_NULL, 0, NULL))) {
         cli_dbgmsg("asn1_expect_hash_algo: expected NULL after AlgorithmIdentifier OID\n");
         return ret;
     }
@@ -496,7 +503,10 @@ static int asn1_expect_rsa(fmap_t *map, const void **asn1data, unsigned int *asn
         cli_dbgmsg("asn1_expect_rsa: OID mismatch (size %u)\n", obj.size);
         return 1;
     }
-    if((ret = asn1_expect_obj(map, &obj.next, &avail, ASN1_TYPE_NULL, 0, NULL))) { /* NULL */
+    // The specification says that the NULL is a required parameter for this
+    // data type, but in practice it doesn't always exist in the ASN1. If
+    // there is something after the ALGO OID, assume it's the NULL
+    if(avail && (ret = asn1_expect_obj(map, &obj.next, &avail, ASN1_TYPE_NULL, 0, NULL))) { /* NULL */
         cli_dbgmsg("asn1_expect_rsa: expected NULL following RSA OID\n");
         return ret;
     }
@@ -621,8 +631,10 @@ static int asn1_get_rsa_pubkey(fmap_t *map, const void **asn1data, unsigned int 
     *asn1data = obj.next;
 
     avail = obj.size;
-    if(asn1_expect_algo(map, &obj.content, &avail, lenof(OID_rsaEncryption), OID_rsaEncryption)) /* rsaEncryption */
+    if(asn1_expect_algo(map, &obj.content, &avail, lenof(OID_rsaEncryption), OID_rsaEncryption)) { /* rsaEncryption */
+       cli_dbgmsg("asn1_get_rsa_pubkey: AlgorithmIdentifier other than RSA not yet supported\n");
        return 1;
+    }
 
     if(asn1_expect_objtype(map, obj.content, &avail, &obj, ASN1_TYPE_BIT_STRING)) /* BIT STRING - subjectPublicKey */
         return 1;
@@ -828,8 +840,10 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
             break;
         if(map_sha1(map, obj.content, obj.size, x509.subject))
             break;
-        if(asn1_get_rsa_pubkey(map, &obj.next, &tbs.size, &x509)) /* subjectPublicKeyInfo */
+        if(asn1_get_rsa_pubkey(map, &obj.next, &tbs.size, &x509)) { /* subjectPublicKeyInfo */
+            cli_dbgmsg("asn1_get_x509: failed to get RSA public key\n");
             break;
+        }
 
         if (1 == version && tbs.size) {
             cli_dbgmsg("asn1_get_x509: TBSCertificate should not contain fields beyond subjectPublicKeyInfo if version == 1\n");
@@ -1094,6 +1108,7 @@ static int asn1_parse_countersignature(fmap_t *map, const void **asn1data, unsig
     unsigned int avail;
     uint8_t hash[MAX_HASH_SIZE];
     cli_crt_hashtype hashtype;
+    cli_crt_hashtype hashtype2;
     unsigned int hashsize;
     uint8_t md[MAX_HASH_SIZE];
     int result;
@@ -1287,33 +1302,18 @@ static int asn1_parse_countersignature(fmap_t *map, const void **asn1data, unsig
             break;
         }
 
-        if(asn1_expect_objtype(map, asn1.next, &avail, &asn1, ASN1_TYPE_SEQUENCE)) { /* digestEncryptionAlgorithm == sha1 */
-            cli_dbgmsg("asn1_parse_countersignature: expected to parse SEQUENCE after counterSignature attributes\n");
+        // TODO For some reason there tends to be more variability here than
+        // when parsing the regular signature - we have to support at least
+        // szOID_RSA_RSA and szOID_RSA_SHA1RSA based on samples seen in the
+        // wild.  The spec says this should only be the RSA and DSA OIDs,
+        // though.
+        if (asn1_expect_rsa(map, &asn1.next, &avail, &hashtype2)) {
+            cli_dbgmsg("asn1_parse_countersignature: unable to parse the digestEncryptionAlgorithm\n");
             break;
         }
-        if(asn1_expect_objtype(map, asn1.content, &asn1.size, &deep, ASN1_TYPE_OBJECT_ID)) {/* digestEncryptionAlgorithm == sha1 */
-            cli_dbgmsg("asn1_parse_countersignature: unexpected value when parsing counterSignature digestEncryptionAlgorithm\n");
-            break;
-        }
-        if(deep.size != lenof(OID_rsaEncryption)) { /* lenof(OID_rsaEncryption) = lenof(OID_sha1WithRSAEncryption) = 9 */
-            cli_dbgmsg("asn1_parse_countersignature: wrong digestEncryptionAlgorithm size in countersignature\n");
-            break;
-        }
-        if(!fmap_need_ptr_once(map, deep.content, lenof(OID_rsaEncryption))) {
-            cli_dbgmsg("asn1_parse_countersignature: cannot read digestEncryptionAlgorithm in countersignature\n");
-            break;
-        }
-        /* rsaEncryption or sha1withRSAEncryption */
-        if(memcmp(deep.content, OID_rsaEncryption, lenof(OID_rsaEncryption)) && memcmp(deep.content, OID_sha1WithRSAEncryption, lenof(OID_sha1WithRSAEncryption))) {
-            cli_dbgmsg("asn1_parse_countersignature: digestEncryptionAlgorithm in countersignature is not sha1\n");
-            break;
-        }
-        if(asn1.size && asn1_expect_obj(map, &deep.next, &asn1.size, ASN1_TYPE_NULL, 0, NULL)) {
-            cli_dbgmsg("asn1_parse_countersignature: expected NULL after counterSignature digestEncryptionAlgorithm OID\n");
-            break;
-        }
-        if(asn1.size) {
-            cli_dbgmsg("asn1_parse_countersignature: extra data in digestEncryptionAlgorithm in countersignature\n");
+
+        if (hashtype2 != CLI_RSA && hashtype2 != hashtype) {
+            cli_dbgmsg("asn1_parse_countersignature: digestEncryptionAlgorithm conflicts with digestAlgorithm\n");
             break;
         }
 
@@ -2142,8 +2142,10 @@ int asn1_load_mscat(fmap_t *map, struct cl_engine *engine) {
                 return 1;
             }
 
-            if(asn1_expect_algo(map, &tagval2.content, &tagval2.size, lenof(OID_sha1), OID_sha1)) /* objid 1.3.14.3.2.26 - sha1 */
+            if(asn1_expect_algo(map, &tagval2.content, &tagval2.size, lenof(OID_sha1), OID_sha1)) { /* objid 1.3.14.3.2.26 - sha1 */
+                cli_dbgmsg("asn1_load_mscat: currently only SHA1 hashes are supported for .cat file signatures\n");
                 return 1;
+            }
 
             if(asn1_expect_objtype(map, tagval2.content, &tagval2.size, &tagval3, ASN1_TYPE_OCTET_STRING))
                 return 1;
