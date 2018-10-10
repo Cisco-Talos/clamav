@@ -186,6 +186,7 @@ wwwconnect (const char *server, const char *proxy, int pport, char *ip,
             const char *localip, int ctimeout, struct mirdat *mdat,
             int logerr, unsigned int can_whitelist, unsigned int attempt)
 {
+    mir_status_t mirror_status = MIRROR_OK;
     int socketfd, port, ret;
     unsigned int ips = 0, ignored = 0, i;
     struct addrinfo hints, *res = NULL, *rp, *loadbal_rp = NULL, *addrs[128];
@@ -193,7 +194,7 @@ wwwconnect (const char *server, const char *proxy, int pport, char *ip,
     uint32_t loadbal = 1, minsucc = 0xffffffff, minfail =
         0xffffffff, addrnum = 0;
     int ipv4start = -1, ipv4end = -1;
-    struct mirdat_ip *md;
+    struct mirdat_ip *md = NULL;
     char ipaddr[46];
     const char *hostpt;
 
@@ -288,25 +289,32 @@ wwwconnect (const char *server, const char *proxy, int pport, char *ip,
             return -1;
         }
 
-        if (mdat && (ret = mirman_check (addr, rp->ai_family, mdat, &md)))
+        if (mdat)
         {
-            if (ret == 1)
-                logg ("*Ignoring mirror %s (due to previous errors)\n",
-                      ipaddr);
-            else
-                logg ("*Ignoring mirror %s (has connected too many times with an outdated version)\n", ipaddr);
-
-            ignored++;
-            if (!loadbal || i + 1 < addrnum)
+            if (FC_SUCCESS != (ret = mirman_check (addr, rp->ai_family, mdat, &md, &mirror_status)))
             {
-                i++;
-                continue;
+                logg ("!Failed to check mirrors.dat!\n");
+                return -1;
+            }
+            else if (MIRROR_OK != mirror_status)
+            {
+                if (MIRROR_IGNORE__PREV_ERRS == mirror_status)
+                    logg ("*Ignoring mirror %s (due to previous errors)\n", ipaddr);
+                else if (MIRROR_IGNORE__OUTDATED_VERSION == mirror_status)
+                    logg ("*Ignoring mirror %s (has connected too many times with an outdated version)\n", ipaddr);
+
+                ignored++;
+                if (!loadbal || i + 1 < addrnum)
+                {
+                    i++;
+                    continue;
+                }
             }
         }
 
         if (mdat && loadbal)
         {
-            if (!ret)
+            if (MIRROR_OK == mirror_status)
             {
                 if (!md)
                 {
@@ -387,7 +395,7 @@ wwwconnect (const char *server, const char *proxy, int pport, char *ip,
             else
                 i++;
             if (mdat)
-                mirman_update (addr, rp->ai_family, mdat, 2);
+                mirman_update (addr, rp->ai_family, mdat, FCE_CONNECTION);
             continue;
         }
         else
@@ -647,7 +655,7 @@ remote_cvdhead (const char *cvdfile, const char *localfile,
     {
         logg ("%cremote_cvdhead: Error while reading CVD header from %s\n",
               logerr ? '!' : '^', hostname);
-        mirman_update (mdat->currip, mdat->af, mdat, 1);
+        mirman_update (mdat->currip, mdat->af, mdat, FCE_FAILEDGET);
         return NULL;
     }
 
@@ -656,7 +664,7 @@ remote_cvdhead (const char *cvdfile, const char *localfile,
     {
         logg ("%c%s not found on remote server\n", logerr ? '!' : '^',
               cvdfile);
-        mirman_update (mdat->currip, mdat->af, mdat, 2);
+        mirman_update (mdat->currip, mdat->af, mdat, FCE_FAILEDGET);
         return NULL;
     }
 
@@ -667,7 +675,7 @@ remote_cvdhead (const char *cvdfile, const char *localfile,
         /* mirror status: up to date */
         *ims = 0;
         logg ("OK (IMS)\n");
-        mirman_update (mdat->currip, mdat->af, mdat, 0);
+        mirman_update (mdat->currip, mdat->af, mdat, FC_SUCCESS);
         return NULL;
     }
     else
@@ -680,8 +688,18 @@ remote_cvdhead (const char *cvdfile, const char *localfile,
         && !strstr (buffer, "HTTP/1.1 206")
         && !strstr (buffer, "HTTP/1.0 206"))
     {
-        logg ("%cUnknown response from remote server\n", logerr ? '!' : '^');
-        mirman_update (mdat->currip, mdat->af, mdat, 1);
+        char * respcode = NULL;
+        if ((NULL != (respcode = strstr (buffer, "HTTP/1.0 "))) ||
+            (NULL != (respcode = strstr (buffer, "HTTP/1.1 ")))) {
+            /* There was some sort of response code...*/
+            char * httpcode = calloc(MIN(FILEBUFF - (size_t)(respcode - buffer), 13) + 1, 1);
+            memcpy(httpcode, respcode, MIN(FILEBUFF - (size_t)(respcode - buffer), 13));
+            logg ("%cremote_cvdhead: Unknown response from %s (IP: %s): %s\n", logerr ? '!' : '^', hostname, ipaddr, httpcode);
+            free (httpcode);
+        } else {
+            logg ("%cremote_cvdhead: Unknown response from %s (IP: %s)\n", logerr ? '!' : '^', hostname, ipaddr);
+        }
+        mirman_update (mdat->currip, mdat->af, mdat, FCE_FAILEDGET);
         return NULL;
     }
 
@@ -704,7 +722,7 @@ remote_cvdhead (const char *cvdfile, const char *localfile,
     {
         logg ("%cremote_cvdhead: Malformed CVD header (too short)\n",
               logerr ? '!' : '^');
-        mirman_update (mdat->currip, mdat->af, mdat, 1);
+        mirman_update (mdat->currip, mdat->af, mdat, FCE_BADCVD);
         return NULL;
     }
 
@@ -716,7 +734,7 @@ remote_cvdhead (const char *cvdfile, const char *localfile,
         {
             logg ("%cremote_cvdhead: Malformed CVD header (bad chars)\n",
                   logerr ? '!' : '^');
-            mirman_update (mdat->currip, mdat->af, mdat, 1);
+            mirman_update (mdat->currip, mdat->af, mdat, FCE_BADCVD);
             return NULL;
         }
         head[j] = ch[j];
@@ -726,18 +744,18 @@ remote_cvdhead (const char *cvdfile, const char *localfile,
     {
         logg ("%cremote_cvdhead: Malformed CVD header (can't parse)\n",
               logerr ? '!' : '^');
-        mirman_update (mdat->currip, mdat->af, mdat, 1);
+        mirman_update (mdat->currip, mdat->af, mdat, FCE_BADCVD);
     }
     else
     {
         logg ("OK\n");
-        mirman_update (mdat->currip, mdat->af, mdat, 0);
+        mirman_update (mdat->currip, mdat->af, mdat, FC_SUCCESS);
     }
 
     return cvd;
 }
 
-static int
+static fc_error_t
 getfile_mirman (const char *srcfile, const char *destfile,
                 const char *hostname, char *ip, const char *localip,
                 const char *proxy, int port, const char *user,
@@ -756,6 +774,8 @@ getfile_mirman (const char *srcfile, const char *destfile,
     UNUSEDPARAM(port);
     UNUSEDPARAM(ctimeout);
     UNUSEDPARAM(can_whitelist);
+
+    memset (buffer, 0, sizeof(FILEBUFF));
 
     if (proxy)
     {
@@ -842,7 +862,7 @@ getfile_mirman (const char *srcfile, const char *destfile,
             else
                 logg ("%cgetfile: Error while reading database from %s (IP: %s): %s\n", logerr ? '!' : '^', hostname, ipaddr, strerror (errno));
             if (mdat)
-                mirman_update (mdat->currip, mdat->af, mdat, 1);
+                mirman_update (mdat->currip, mdat->af, mdat, FCE_FAILEDGET);
             return FCE_CONNECTION;
         }
 
@@ -869,7 +889,7 @@ getfile_mirman (const char *srcfile, const char *destfile,
                   ipaddr);
 
         if (mdat)
-            mirman_update (mdat->currip, mdat->af, mdat, 2);
+            mirman_update (mdat->currip, mdat->af, mdat, FCE_FAILEDGET);
         return FCE_FAILEDGET;
     }
 
@@ -877,7 +897,7 @@ getfile_mirman (const char *srcfile, const char *destfile,
     if (strstr (buffer, "HTTP/1.1 304") || strstr (buffer, "HTTP/1.0 304"))
     {
         if (mdat)
-            mirman_update (mdat->currip, mdat->af, mdat, 0);
+            mirman_update (mdat->currip, mdat->af, mdat, FC_SUCCESS);
         return FC_UPTODATE;
     }
 
@@ -885,14 +905,30 @@ getfile_mirman (const char *srcfile, const char *destfile,
         && !strstr (buffer, "HTTP/1.1 206")
         && !strstr (buffer, "HTTP/1.0 206"))
     {
-        if (proxy)
-            logg ("%cgetfile: Unknown response from %s\n",
-                  logerr ? '!' : '^', hostname);
-        else
-            logg ("%cgetfile: Unknown response from %s (IP: %s)\n",
-                  logerr ? '!' : '^', hostname, ipaddr);
+        char * respcode = NULL;
+        if ((NULL != (respcode = strstr (buffer, "HTTP/1.0 "))) ||
+            (NULL != (respcode = strstr (buffer, "HTTP/1.1 ")))) {
+            /* There was some sort of response code...*/
+            char * httpcode = calloc(MIN(FILEBUFF - (size_t)(respcode - buffer), 13) + 1, 1);
+            memcpy(httpcode, respcode, MIN(FILEBUFF - (size_t)(respcode - buffer), 13));
+            if (proxy)
+                logg ("%cgetfile: Unknown response from %s: %s\n",
+                    logerr ? '!' : '^', hostname, httpcode);
+            else
+                logg ("%cgetfile: Unknown response from %s (IP: %s): %s\n",
+                    logerr ? '!' : '^', hostname, ipaddr, httpcode);
+            free (httpcode);
+        }
+        else {
+            if (proxy)
+                logg ("%cgetfile: Unknown response from %s\n",
+                    logerr ? '!' : '^', hostname);
+            else
+                logg ("%cgetfile: Unknown response from %s (IP: %s)\n",
+                    logerr ? '!' : '^', hostname, ipaddr);
+        }
         if (mdat)
-            mirman_update (mdat->currip, mdat->af, mdat, 1);
+            mirman_update (mdat->currip, mdat->af, mdat, FCE_FAILEDGET);
         return FCE_FAILEDGET;
     }
 
@@ -983,7 +1019,7 @@ getfile_mirman (const char *srcfile, const char *destfile,
             logg ("%cgetfile: Download interrupted: %s (IP: %s)\n",
                   logerr ? '!' : '^', strerror (errno), ipaddr);
         if (mdat)
-            mirman_update (mdat->currip, mdat->af, mdat, 2);
+            mirman_update (mdat->currip, mdat->af, mdat, FCE_CONNECTION);
         return FCE_CONNECTION;
     }
 
@@ -996,8 +1032,8 @@ getfile_mirman (const char *srcfile, const char *destfile,
         logg ("Downloading %s [*]\n", fname);
 
     if (mdat)
-        mirman_update (mdat->currip, mdat->af, mdat, 0);
-    return 0;
+        mirman_update (mdat->currip, mdat->af, mdat, FC_SUCCESS);
+    return FC_SUCCESS;
 }
 
 static int
@@ -1024,23 +1060,13 @@ getfile (const char *srcfile, const char *destfile, const char *hostname,
     if (sd < 0)
         return FCE_CONNECTION;
 
-    if (mdat)
-    {
-        mirman_update_sf (mdat->currip, mdat->af, mdat, 0, 1);
-        mirman_write ("mirrors.dat", dbdir, mdat);
-    }
-
-    ret =
-        getfile_mirman (srcfile, destfile, hostname, ip, localip, proxy, port,
+    ret = getfile_mirman (srcfile, destfile, hostname, ip, localip, proxy, port,
                         user, pass, uas, ctimeout, rtimeout, mdat, logerr,
                         can_whitelist, ims, ipaddr, sd);
     closesocket (sd);
 
-    if (mdat)
-    {
-        mirman_update_sf (mdat->currip, mdat->af, mdat, 0, -1);
-        mirman_write ("mirrors.dat", dbdir, mdat);
-    }
+    /* Update mirrors.dat */
+    (void) mirman_write ("mirrors.dat", dbdir, mdat);
 
     return ret;
 }
@@ -1118,14 +1144,21 @@ getcvd (const char *cvdfile, const char *newfile, const char *hostname,
     if (cvd->version < newver)
     {
         logg ("^Mirror %s is not synchronized.\n", ip);
-        mirman_update (mdat->currip, mdat->af, mdat, 2);
-        cl_cvdfree (cvd);
         unlink (newfile);
-        return FCE_MIRRORNOTSYNC;
+        if (cvd->version < newver - 1)
+        {
+            logg ("^Mirror is more than 1 version out of date. Recording mirror failure.\n");
+            mirman_update (mdat->currip, mdat->af, mdat, FCE_MIRRORNOTSYNC);
+            cl_cvdfree (cvd);
+            return FCE_MIRRORNOTSYNC;
+        }
+
+        cl_cvdfree (cvd);
+        return FC_UPTODATE;
     }
 
     cl_cvdfree (cvd);
-    return 0;
+    return FC_SUCCESS;
 }
 
 static int
@@ -1251,7 +1284,7 @@ getpatch (const char *dbname, const char *tmpdir, int version,
         logg ("!getpatch: Can't chdir to %s\n", olddir);
         return FCE_DIRECTORY;
     }
-    return 0;
+    return FC_SUCCESS;
 }
 
 static struct cl_cvd *
@@ -1508,7 +1541,7 @@ test_database (const char *newfile, const char *newdb, int bytecode)
         && engine->domainlist_matcher->sha256_pfx_set.keys)
         cli_hashset_destroy (&engine->domainlist_matcher->sha256_pfx_set);
     cl_engine_free (engine);
-    return 0;
+    return FC_SUCCESS;
 }
 
 #ifndef WIN32
@@ -1582,7 +1615,7 @@ test_database_wrap (const char *file, const char *newdb, int bytecode)
             }
             if (firstline[0])
                 logg ("^Database successfully loaded, but there is stderr output\n");
-            return 0;
+            return FC_SUCCESS;
         }
         if (WIFSIGNALED (status))
         {
@@ -2260,7 +2293,7 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
     }
 #endif
     cl_cvdfree (current);
-    return 0;
+    return FC_SUCCESS;
 }
 
 static int
@@ -2480,14 +2513,13 @@ updatecustomdb (const char *url, int *signo, const struct optstruct *opts,
 
     logg ("%s updated (version: custom database, sigs: %u)\n", dbname, sigs);
     *signo += sigs;
-    return 0;
+    return FC_SUCCESS;
 }
 
 int
 downloadmanager (const struct optstruct *opts, const char *hostname,
                  unsigned int attempt)
 {
-    time_t currtime;
     int ret, custret = 0, updated = 0, outdated = 0, signo = 0, logerr;
     unsigned int ttl;
     char ipaddr[46], *dnsreply = NULL, *pt, *localip = NULL, *newver = NULL;
@@ -2511,10 +2543,6 @@ downloadmanager (const struct optstruct *opts, const char *hostname,
         logg ("Hint: The database directory must be writable for UID %d or GID %d\n", getuid (), getgid ());
         return FCE_DBDIRACCESS;
     }
-
-    time (&currtime);
-    logg ("ClamAV update process started at %s", ctime (&currtime));
-    logg ("*Using IPv6 aware code\n");
 
 #ifdef HAVE_RESOLV_H
     dnsdbinfo = optget (opts, "DNSDatabaseInfo")->strarg;
@@ -2635,7 +2663,7 @@ downloadmanager (const struct optstruct *opts, const char *hostname,
                 }
                 free (dnsreply);
                 free (newver);
-                mirman_write ("mirrors.dat", dbdir, &mdat);
+                (void) mirman_write ("mirrors.dat", dbdir, &mdat);
                 mirman_free (&mdat);
                 cli_rmdirs (updtmpdir);
                 return custret;
@@ -2663,7 +2691,7 @@ downloadmanager (const struct optstruct *opts, const char *hostname,
                     free (dnsreply);
                 if (newver)
                     free (newver);
-                mirman_write ("mirrors.dat", dbdir, &mdat);
+                (void) mirman_write ("mirrors.dat", dbdir, &mdat);
                 mirman_free (&mdat);
                 cli_rmdirs (updtmpdir);
                 return ret;
@@ -2685,7 +2713,7 @@ downloadmanager (const struct optstruct *opts, const char *hostname,
                 free (dnsreply);
             if (newver)
                 free (newver);
-            mirman_write ("mirrors.dat", dbdir, &mdat);
+            (void) mirman_write ("mirrors.dat", dbdir, &mdat);
             mirman_free (&mdat);
             cli_rmdirs (updtmpdir);
             return ret;
@@ -2702,7 +2730,7 @@ downloadmanager (const struct optstruct *opts, const char *hostname,
                 free (dnsreply);
             if (newver)
                 free (newver);
-            mirman_write ("mirrors.dat", dbdir, &mdat);
+            (void) mirman_write ("mirrors.dat", dbdir, &mdat);
             mirman_free (&mdat);
             cli_rmdirs (updtmpdir);
             return ret;
@@ -2736,7 +2764,7 @@ downloadmanager (const struct optstruct *opts, const char *hostname,
                 free (dnsreply);
             if (newver)
                 free (newver);
-            mirman_write ("mirrors.dat", dbdir, &mdat);
+            (void) mirman_write ("mirrors.dat", dbdir, &mdat);
             mirman_free (&mdat);
             cli_rmdirs (updtmpdir);
             return ret;
@@ -2771,7 +2799,7 @@ downloadmanager (const struct optstruct *opts, const char *hostname,
                 free (dnsreply);
             if (newver)
                 free (newver);
-            mirman_write ("mirrors.dat", dbdir, &mdat);
+            (void) mirman_write ("mirrors.dat", dbdir, &mdat);
             mirman_free (&mdat);
             cli_rmdirs (updtmpdir);
             return ret;
@@ -2793,7 +2821,7 @@ downloadmanager (const struct optstruct *opts, const char *hostname,
                         free (dnsreply);
                     if (newver)
                         free (newver);
-                    mirman_write ("mirrors.dat", dbdir, &mdat);
+                    (void) mirman_write ("mirrors.dat", dbdir, &mdat);
                     mirman_free (&mdat);
                     cli_rmdirs (updtmpdir);
                     return ret;
@@ -2808,7 +2836,7 @@ downloadmanager (const struct optstruct *opts, const char *hostname,
     if (dnsreply)
         free (dnsreply);
 
-    mirman_write ("mirrors.dat", dbdir, &mdat);
+    (void) mirman_write ("mirrors.dat", dbdir, &mdat);
     mirman_free (&mdat);
 
     cli_rmdirs (updtmpdir);
