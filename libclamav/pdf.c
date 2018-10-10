@@ -3099,7 +3099,7 @@ cl_error_t pdf_find_and_extract_objs(struct pdf_struct *pdf, uint32_t *alerts)
                (pdf->flags & (1 << DECRYPTABLE_PDF)) ?
                "decryptable" : "not decryptable, stream will probably fail to decompress");
 
-    if (SCAN_HEURISTIC_ENCRYPTED &&
+    if (SCAN_HEURISTIC_ENCRYPTED_DOC &&
        (pdf->flags & (1 << ENCRYPTED_PDF)) &&
        !(pdf->flags & (1 << DECRYPTABLE_PDF)))
     {

@@ -338,10 +338,15 @@ Only include a specific PUA category. This directive can be used multiple times.
 .br
 Default: disabled
 .TP 
-\fBAlgorithmicDetection BOOL\fR
+\fBHeuristicAlerts BOOL\fR
 In some cases (eg. complex malware, exploits in graphic files, and others), ClamAV uses special algorithms to provide accurate detection. This option controls the algorithmic detection.
 .br 
 Default: yes
+.TP
+\fBHeuristicScanPrecedence BOOL\fR
+Allow heuristic match to take precedence. When enabled, if a heuristic scan (such as phishingScan) detects a possible virus/phishing it will stop scanning immediately. Recommended, saves CPU scan-time. When disabled, virus/phishing detected by heuristic scans will be reported only at the end of a scan. If an archive contains both a heuristically detected virus/phishing, and a real malware, the real malware will be reported. Keep this disabled if you intend to handle "*.Heuristics.*" viruses  differently from "real" malware. If a non-heuristically-detected virus (signature-based) is found first, the scan is interrupted immediately, regardless of this config option.
+.br
+Default: no
 .TP 
 \fBScanPE BOOL\fR
 PE stands for Portable Executable \- it's an executable file format used in all 32 and 64\-bit versions of Windows operating systems. This option allows ClamAV to perform a deeper analysis of executable files and it's also required for decompression of popular executable packers such as UPX.  
@@ -357,11 +362,6 @@ If you turn off this option, the original files will still be scanned, but witho
 .br 
 Default: yes
 .TP 
-\fBDetectBrokenExecutables BOOL\fR
-With this option clamd will try to detect broken executables (both PE and ELF) and mark them as Broken.Executable.
-.br 
-Default: no
-.TP 
 \fBScanMail BOOL\fR
 Enable scanning of mail files. 
 .br
@@ -375,34 +375,14 @@ Scan RFC1341 messages split over many emails. You will need to periodically clea
 Default: no
 .TP
 \fBPhishingSignatures BOOL\fR
-With this option enabled ClamAV will try to detect phishing attempts by using signatures.
+Enable email signature-based phishing detection.
 .br 
 Default: yes
 .TP
 \fBPhishingScanURLs BOOL\fR
-Scan URLs found in mails for phishing attempts using heuristics. This will classify "Possibly Unwanted" phishing emails as Phishing.Heuristics.Email.*
+Enable URL signature-based phishing detection (Phishing.Heuristics.Email.*)
 .br
 Default: yes
-.TP
-\fBPhishingAlwaysBlockCloak BOOL\fR
-Always block cloaked URLs, even if URL isn't in database. This can lead to false positives.
-.br
-Default: no
-.TP
-\fBPhishingAlwaysBlockSSLMismatch BOOL\fR
-Always block SSL mismatches in URLs, even if the URL isn't in the database. This can lead to false positives.
-.br
-Default: no
-.TP
-\fBPartitionIntersection BOOL\fR
-Detect partition intersections in raw disk images using heuristics.
-.br
-Default: no
-.TP
-\fBHeuristicScanPrecedence BOOL\fR
-Allow heuristic match to take precedence. When enabled, if a heuristic scan (such as phishingScan) detects a possible virus/phishing it will stop scanning immediately. Recommended, saves CPU scan-time. When disabled, virus/phishing detected by heuristic scans will be reported only at the end of a scan. If an archive contains both a heuristically detected virus/phishing, and a real malware, the real malware will be reported. Keep this disabled if you intend to handle "*.Heuristics.*" viruses  differently from "real" malware. If a non-heuristically-detected virus (signature-based) is found first, the scan is interrupted immediately, regardless of this config option.
-.br
-Default: no
 .TP
 \fBStructuredDataDetection BOOL\fR
 Enable the DLP module.
@@ -443,16 +423,6 @@ If you turn off this option, the original files will still be scanned, but witho
 .br 
 Default: yes
 .TP 
-\fBOLE2BlockMacros BOOL\fR
-With this option enabled OLE2 files with VBA macros, which were not detected by signatures will be marked as "Heuristics.OLE2.ContainsMacros".
-.br 
-Default: no
-.TP
-\fBBlockMax BOOL\fR
- Flag files with "Heuristics.Limits.Exceeded" when scanning is incomplete due to exceeding a scan or file size limit.
-.br 
-Default: no
-.TP 
 \fBScanPDF BOOL\fR
 This option enables scanning within PDF files.
 .br
@@ -487,9 +457,49 @@ Scan within archives and compressed files.
 If you turn off this option, the original files will still be scanned, but without unpacking and additional processing.
 .br 
 Default: yes
+.TP 
+\fBAlertBrokenExecutables BOOL\fR
+Alert on broken executable files (PE & ELF).
+.br 
+Default: no
 .TP
-\fBArchiveBlockEncrypted BOOL\fR
-Mark encrypted archives as viruses (Encrypted.Zip, Encrypted.RAR).
+\fBAlertEncrypted BOOL\fR
+Alert on encrypted archives and documents (encrypted .zip, .7zip, .rar, .pdf).
+.br
+Default: no
+.TP
+\fBAlertEncryptedArchive BOOL\fR
+Alert on encrypted archives (encrypted .zip, .7zip, .rar).
+.br
+Default: no
+.TP
+\fBAlertEncryptedDoc BOOL\fR
+Alert on encrypted documents (encrypted .pdf).
+.br
+Default: no
+.TP 
+\fBAlertOLE2Macros BOOL\fR
+Alert on OLE2 files containing VBA macros (Heuristics.OLE2.ContainsMacros).
+.br 
+Default: no
+.TP
+\fBAlertExceedsMax BOOL\fR
+Alert on files that exceed max file size, max scan size, or max recursion limit (Heuristics.Limits.Exceeded).
+.br 
+Default: no
+.TP
+\fBAlertPhishingSSLMismatch BOOL\fR
+Alert on emails containing SSL mismatches in URLs (might lead to false positives!).
+.br
+Default: no
+.TP
+\fBAlertPhishingCloak BOOL\fR
+Alert on emails containing cloaked URLs (might lead to some false positives).
+.br
+Default: no
+.TP
+\fBAlertPartitionIntersection BOOL\fR
+Alert on raw DMG image files containing partition intersections.
 .br
 Default: no
 .TP
