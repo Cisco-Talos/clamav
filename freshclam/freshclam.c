@@ -186,9 +186,13 @@ help (void)
 static int
 download (const struct optstruct *opts, const char *cfgfile)
 {
+    time_t currtime;
     int ret = 0, try = 1, maxattempts = 0;
     const struct optstruct *opt;
 
+    time(&currtime);
+    logg("ClamAV update process started at %s", ctime(&currtime));
+    logg("*Using IPv6 aware code\n");
 
     maxattempts = optget (opts, "MaxAttempts")->numarg;
     logg ("*Max retries == %d\n", maxattempts);
@@ -225,6 +229,7 @@ download (const struct optstruct *opts, const char *cfgfile)
                     {
                         logg ("Update failed. Your network may be down or none of the mirrors listed in %s is working. Check https://www.clamav.net/documents/official-mirror-faq for possible reasons.\n", cfgfile);
                     }
+                    try = 1;
                 }
 
             }
@@ -299,7 +304,7 @@ main (int argc, char **argv)
     {
         help ();
         optfree (opts);
-        return 0;
+        return FC_SUCCESS;
     }
 
     /* check foreground option from command line to override config file */
@@ -337,7 +342,7 @@ main (int argc, char **argv)
     {
         print_version (optget (opts, "DatabaseDirectory")->strarg);
         optfree (opts);
-        return 0;
+        return FC_SUCCESS;
     }
 
     if (optget (opts, "HTTPProxyPassword")->enabled)
@@ -492,7 +497,7 @@ main (int argc, char **argv)
 
     if (optget (opts, "list-mirrors")->enabled)
     {
-        if (mirman_read ("mirrors.dat", &mdat, 1) == -1)
+        if (mirman_read("mirrors.dat", &mdat, 1) != FC_SUCCESS)
         {
             printf ("Can't read mirrors.dat\n");
             optfree (opts);
@@ -501,7 +506,7 @@ main (int argc, char **argv)
         mirman_list (&mdat);
         mirman_free (&mdat);
         optfree (opts);
-        return 0;
+        return FC_SUCCESS;
     }
 
     if ((opt = optget (opts, "PrivateMirror"))->enabled)

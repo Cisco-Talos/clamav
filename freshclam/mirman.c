@@ -50,11 +50,11 @@
 #endif
 #endif
 
-#define IGNORE_LONG	3 * 86400
-#define IGNORE_SHORT	6 * 3600
+#define IGNORE_SHORT    (3600)              /* 1 hour */
+#define IGNORE_LONG     (6 * IGNORE_SHORT)  /* 6 hours */
 
 void
-mirman_free (struct mirdat *mdat)
+mirman_free(struct mirdat *mdat)
 {
     if (mdat && mdat->num)
     {
@@ -63,34 +63,32 @@ mirman_free (struct mirdat *mdat)
     }
 }
 
-int
-mirman_read (const char *file, struct mirdat *mdat, uint8_t active)
+fc_error_t mirman_read(const char *file, struct mirdat *mdat, uint8_t active)
 {
     struct mirdat_ip mip;
     int fd, bread;
 
-
-    memset (mdat, 0, sizeof (struct mirdat));
+    memset (mdat, 0, sizeof(struct mirdat));
 
     if (!(mdat->active = active))
-        return 0;
+        return FC_SUCCESS;
 
     if ((fd = open (file, O_RDONLY | O_BINARY)) == -1)
-        return -1;
+        return FCE_OPEN;
 
-    while ((bread = read (fd, &mip, sizeof (mip))) == sizeof (mip))
+    while ((bread = read (fd, &mip, sizeof(mip))) == sizeof(mip))
     {
         mdat->mirtab =
             (struct mirdat_ip *) realloc (mdat->mirtab,
-                                          (mdat->num + 1) * sizeof (mip));
+                                          (mdat->num + 1) * sizeof(mip));
         if (!mdat->mirtab)
         {
-            logg ("!Can't allocate memory for mdat->mirtab\n");
+            logg("!Can't allocate memory for mdat->mirtab\n");
             mirman_free (mdat);
             close (fd);
-            return -1;
+            return FCE_MEM;
         }
-        memcpy (&mdat->mirtab[mdat->num], &mip, sizeof (mip));
+        memcpy (&mdat->mirtab[mdat->num], &mip, sizeof(mip));
         mdat->num++;
     }
 
@@ -98,156 +96,136 @@ mirman_read (const char *file, struct mirdat *mdat, uint8_t active)
 
     if (bread)
     {
-        logg ("^Removing broken %s file.\n", file);
+        logg("^Removing broken %s file.\n", file);
         unlink (file);
         mirman_free (mdat);
-        return -1;
+        return FCE_FILE;
     }
 
-    return 0;
+    return FC_SUCCESS;
 }
 
-int
-mirman_check (uint32_t * ip, int af, struct mirdat *mdat,
-              struct mirdat_ip **md)
+fc_error_t mirman_check(uint32_t * ip, int af, struct mirdat *mdat,
+                        struct mirdat_ip **md, mir_status_t *mirror_status)
 {
-    unsigned int i, flevel = cl_retflevel ();
+    fc_error_t status = FC_SUCCESS;
+    unsigned int i;
+    unsigned int flevel = cl_retflevel ();
 
+    if (NULL == md || NULL == mdat || NULL == ip) {
+        logg("!mirman_check: Invalid arguments.\n");
+        status = FCE_ARG;
+        goto done;
+    }
 
-    if (md)
-        *md = NULL;
+    *md = NULL;
 
     if (!mdat->active)
-        return 0;
+    {
+        *mirror_status = MIRROR_OK;
+        goto done;
+    }
 
     for (i = 0; i < mdat->num; i++)
     {
-
-        if ((af == AF_INET && mdat->mirtab[i].ip4 == *ip)
-            || (af == AF_INET6
-                && !memcmp (mdat->mirtab[i].ip6, ip, 4 * sizeof (uint32_t))))
+        if ((af == AF_INET && mdat->mirtab[i].ip4 == *ip) ||
+            ((af == AF_INET6) && (!memcmp (mdat->mirtab[i].ip6, ip, 4 * sizeof(uint32_t)))))
         {
+            /*
+             * Mirror found in mirror table.
+             */
 
-            if (!mdat->mirtab[i].atime && !mdat->mirtab[i].ignore)
+            if (mdat->dbflevel && (mdat->dbflevel > flevel) && (mdat->dbflevel - flevel > 3))
             {
-                if (md)
-                    *md = &mdat->mirtab[i];
-                return 0;
+                /* Functionality level of database is lower than
+                 * level of the database we already have */
+                if (difftime(time(NULL), mdat->mirtab[i].atime) < (mdat->dbflevel - flevel) * 3600)
+                {
+                    *mirror_status = MIRROR_IGNORE__OUTDATED_VERSION;
+                    goto done;
+                }
             }
 
-            if (mdat->dbflevel && (mdat->dbflevel > flevel)
-                && (mdat->dbflevel - flevel > 3))
-                if (time (NULL) - mdat->mirtab[i].atime <
-                    (mdat->dbflevel - flevel) * 3600)
-                    return 2;
-
-            if (mdat->mirtab[i].ignore)
+            if ((mdat->mirtab[i].atime > 0) &&
+                (IGNORE_NO != mdat->mirtab[i].ignore))
             {
-                if (!mdat->mirtab[i].atime)
-                    return 1;
-
-                if (time (NULL) - mdat->mirtab[i].atime > IGNORE_LONG)
+                /*
+                 * Found, but the ignore flag is set.
+                 */
+                if (difftime(time(NULL), mdat->mirtab[i].atime) > IGNORE_LONG)
                 {
-                    mdat->mirtab[i].ignore = 0;
-                    if (md)
-                        *md = &mdat->mirtab[i];
-                    return 0;
+                    /* Long-Ignore timeout expired,
+                     * the mirror can be attempted again */
+                    mdat->mirtab[i].ignore = IGNORE_NO;
+                }
+                else if ((mdat->mirtab[i].ignore == IGNORE_SHORTTERM) &&
+                        (difftime(time(NULL), mdat->mirtab[i].atime) > IGNORE_SHORT))
+                {
+                    /* Mirror was only set to Short-Term ignore...
+                     * the Short-Ignore timeout expired,
+                     * the mirror can be attempted again */
+                    mdat->mirtab[i].ignore = IGNORE_NO;
                 }
                 else
                 {
-                    if (mdat->mirtab[i].ignore == 2
-                        && (time (NULL) - mdat->mirtab[i].atime >
-                            IGNORE_SHORT))
-                    {
-                        if (md)
-                            *md = &mdat->mirtab[i];
-                        return 0;
-                    }
-                    return 1;
+                    *mirror_status = MIRROR_IGNORE__PREV_ERRS;
+                    goto done;
                 }
             }
 
-            if (md)
-                *md = &mdat->mirtab[i];
-            return 0;
+            /* Mirror found, and is ok to try. */
+            *md = &mdat->mirtab[i];
+            *mirror_status = MIRROR_OK;
+            goto done;
         }
     }
 
-    return 0;
+    /* Mirror wasn't in mirror table. */
+    *mirror_status = MIRROR_OK;
+
+done:
+
+    return status;
 }
 
-static int
-mirman_update_int (uint32_t * ip, int af, struct mirdat *mdat, uint8_t broken,
-                   int succ, int fail)
+fc_error_t mirman_update(uint32_t * ip, int af, struct mirdat *mdat, fc_error_t error)
 {
-    unsigned int i, found = 0;
+    fc_error_t status = FCE_ARG;
+    unsigned int i = 0;
+    struct mirdat_ip *mirror = NULL;
 
+    if (!mdat->active) {
+        /* Disable mirrors.dat management when using a proxy. */
+        return FC_SUCCESS;
+    }
 
-    if (!mdat->active)
-        return 0;
-
+    /*
+     * Attempt to find the ip in the mirror table.
+     */
     for (i = 0; i < mdat->num; i++)
     {
-        if ((af == AF_INET && mdat->mirtab[i].ip4 == *ip)
-            || (af == AF_INET6
-                && !memcmp (mdat->mirtab[i].ip6, ip, 4 * sizeof (uint32_t))))
+        if (((af == AF_INET) && (mdat->mirtab[i].ip4 == *ip)) ||
+            ((af == AF_INET6) && (!memcmp(mdat->mirtab[i].ip6, ip, 4 * sizeof(uint32_t)))))
         {
-            found = 1;
+            mirror = &mdat->mirtab[i];
             break;
         }
     }
 
-    if (found)
+    if (NULL == mirror)
     {
-        mdat->mirtab[i].atime = 0;  /* will be updated in mirman_write() */
-        if (succ || fail)
-        {
-            if ((int) mdat->mirtab[i].fail + fail < 0)
-                mdat->mirtab[i].fail = 0;
-            else
-                mdat->mirtab[i].fail += fail;
-
-            if ((int) mdat->mirtab[i].succ + succ < 0)
-                mdat->mirtab[i].succ = 0;
-            else
-                mdat->mirtab[i].succ += succ;
-        }
-        else
-        {
-            if (broken)
-                mdat->mirtab[i].fail++;
-            else
-                mdat->mirtab[i].succ++;
-
-            if (broken == 2)
-            {
-                mdat->mirtab[i].ignore = 2;
-            }
-            else
-            {
-                /*
-                 * If the total number of failures is less than 3 then never
-                 * mark a permanent failure, in other case use the real status.
-                 */
-                if (mdat->mirtab[i].fail < 3)
-                    mdat->mirtab[i].ignore = 0;
-                else
-                    mdat->mirtab[i].ignore = broken;
-            }
-        }
-    }
-    else
-    {
+        /*
+         * Allocate space in the mirror table for the new mirror IP
+         */
         mdat->mirtab =
-            (struct mirdat_ip *) realloc (mdat->mirtab,
-                                          (mdat->num +
-                                           1) * sizeof (struct mirdat_ip));
+            (struct mirdat_ip *) realloc(mdat->mirtab,
+                                        (mdat->num + 1) * sizeof(struct mirdat_ip));
         if (!mdat->mirtab)
         {
-            logg ("!Can't allocate memory for new element in mdat->mirtab\n");
-            return -1;
+            logg("!Can't allocate memory for new element in mdat->mirtab\n");
+            return FCE_MEM;
         }
-        memset (&mdat->mirtab[mdat->num], 0, sizeof (struct mirdat_ip));
+        memset (&mdat->mirtab[mdat->num], 0, sizeof(struct mirdat_ip));
         if (af == AF_INET)
         {
             mdat->mirtab[mdat->num].ip4 = *ip;
@@ -255,116 +233,163 @@ mirman_update_int (uint32_t * ip, int af, struct mirdat *mdat, uint8_t broken,
         else
         {
             mdat->mirtab[mdat->num].ip4 = 0;
-            memcpy (mdat->mirtab[mdat->num].ip6, ip, 4 * sizeof (uint32_t));
+            memcpy (mdat->mirtab[mdat->num].ip6, ip, 4 * sizeof(uint32_t));
         }
         mdat->mirtab[mdat->num].atime = 0;
-        mdat->mirtab[mdat->num].succ = (succ > 0) ? succ : 0;
-        mdat->mirtab[mdat->num].fail = (fail > 0) ? fail : 0;
-        mdat->mirtab[mdat->num].ignore = (broken == 2) ? 2 : 0;
-        if (!succ && !fail)
-        {
-            if (broken)
-                mdat->mirtab[mdat->num].fail++;
-            else
-                mdat->mirtab[mdat->num].succ++;
-        }
+        mdat->mirtab[mdat->num].succ = 0;
+        mdat->mirtab[mdat->num].fail = 0;
+        mdat->mirtab[mdat->num].ignore = 0;
+
+        mirror = &mdat->mirtab[mdat->num];
         mdat->num++;
     }
 
-    return 0;
+    mirror->atime = 0;  /* will be updated in mirman_write() */
+
+    if (FC_SUCCESS == error) {
+        mirror->succ++;
+        mirror->fail = 0;
+    }
+    else
+    {
+        mirror->succ = 0;
+        mirror->fail++;
+    }
+
+    if (mirror->fail >= 6)
+    {
+        mirror->ignore = IGNORE_LONGTERM;
+    }
+    else if (mirror->fail >= 3)
+    {
+        mirror->ignore = IGNORE_SHORTTERM;
+    }
+    else
+    {
+        mirror->ignore = IGNORE_NO;
+    }
+
+    return FC_SUCCESS;
 }
 
-int
-mirman_update (uint32_t * ip, int af, struct mirdat *mdat, uint8_t broken)
-{
-    return mirman_update_int (ip, af, mdat, broken, 0, 0);
-}
-
-int
-mirman_update_sf (uint32_t * ip, int af, struct mirdat *mdat, int succ,
-                  int fail)
-{
-    return mirman_update_int (ip, af, mdat, 0, succ, fail);
-}
-
-void
-mirman_list (const struct mirdat *mdat)
+void mirman_list(const struct mirdat *mdat)
 {
     unsigned int i;
     time_t tm;
     char ip[46];
 
-
     for (i = 0; i < mdat->num; i++)
     {
-        printf ("Mirror #%u\n", i + 1);
+        printf("Mirror #%u\n", i + 1);
 #ifdef HAVE_GETADDRINFO
         if (mdat->mirtab[i].ip4)
-            printf ("IP: %s\n",
-                    inet_ntop (AF_INET, &mdat->mirtab[i].ip4, ip,
-                               sizeof (ip)));
+            printf("IP: %s\n",
+                inet_ntop(AF_INET, &mdat->mirtab[i].ip4, ip, sizeof(ip)));
         else
-            printf ("IP: %s\n",
-                    inet_ntop (AF_INET6, mdat->mirtab[i].ip6, ip,
-                               sizeof (ip)));
+            printf("IP: %s\n",
+                inet_ntop(AF_INET6, mdat->mirtab[i].ip6, ip, sizeof(ip)));
 #else
         if (mdat->mirtab[i].ip4)
-            printf ("IP: %s\n",
-                    inet_ntoa (*(struct in_addr *) &mdat->mirtab[i].ip4));
+            printf("IP: %s\n",
+                inet_ntoa(*(struct in_addr *)&mdat->mirtab[i].ip4));
 #endif
-        printf ("Successes: %u\n", mdat->mirtab[i].succ);
-        printf ("Failures: %u\n", mdat->mirtab[i].fail);
+        printf("Successes: %u\n", mdat->mirtab[i].succ);
+        printf("Failures: %u\n", mdat->mirtab[i].fail);
         tm = mdat->mirtab[i].atime;
-        printf ("Last access: %s", ctime ((const time_t *) &tm));
-        printf ("Ignore: %s\n", mdat->mirtab[i].ignore ? "Yes" : "No");
+        printf("Last access: %s", ctime((const time_t *) &tm));
+        if (mdat->mirtab[i].ignore) {
+            time_t ignore_expires = tm + ((mdat->mirtab[i].ignore == IGNORE_LONGTERM) ? IGNORE_LONG
+                                                                                      : IGNORE_SHORT);
+            double difference = difftime(ignore_expires, time(NULL));
+            if (difference > 0) {
+                uint32_t remaining = difference;
+                uint32_t seconds, minutes, hours;
+                seconds = remaining % 60;
+                remaining = remaining / 60;
+                minutes = remaining % 60;
+                remaining = remaining / 60;
+                hours = remaining % 60;
+
+                printf("Ignore: Yes,  %d hours %d minutes %d seconds remaining.\n",
+                    hours, minutes, seconds);
+            } else {
+                printf("Ignore: No\n");
+            }
+        } else {
+            printf("Ignore: No\n");
+        }
         if (i != mdat->num - 1)
-            printf ("-------------------------------------\n");
+            printf("-------------------------------------\n");
     }
 }
 
-void
-mirman_whitelist (struct mirdat *mdat, unsigned int mode)
+void mirman_whitelist(struct mirdat *mdat, unsigned int mode)
 {
     unsigned int i;
 
-    logg ("*Whitelisting %s blacklisted mirrors\n",
-          mode == 1 ? "all" : "short-term");
+    if (NULL == mdat) {
+        logg("!mirman_whitelist: Invalid arguments!\n");
+        return;
+    }
+
+    switch (mode)
+    {
+    case 1:
+        logg("*Whitelisting all blacklisted mirrors\n");
+        break;
+    case 2:
+        logg("*Whitelisting short-term blacklisted mirrors\n");
+        break;
+    default:
+        logg("!mirman_whitelist: Unexpected mode argument: %u\n", mode);
+        return;
+    }
+
     for (i = 0; i < mdat->num; i++)
-        if (mode == 1 || (mode == 2 && mdat->mirtab[i].ignore == 2))
-            mdat->mirtab[i].ignore = 0;
+    {
+        if (mode == 1)
+        {
+            mdat->mirtab[i].ignore = IGNORE_NO;
+        }
+        else if ((mode == 2) && (IGNORE_SHORTTERM == mdat->mirtab[i].ignore))
+        {
+            mdat->mirtab[i].ignore = IGNORE_NO;
+        }
+    }
+
+    return;
 }
 
-int
-mirman_write (const char *file, const char *dir, struct mirdat *mdat)
+fc_error_t mirman_write(const char *file, const char *dir, struct mirdat *mdat)
 {
     int fd;
     unsigned int i;
     char path[512];
 
-    snprintf (path, sizeof (path), "%s/%s", dir, file);
-    path[sizeof (path) - 1] = 0;
+    snprintf(path, sizeof(path), "%s/%s", dir, file);
+    path[sizeof(path) - 1] = 0;
 
     if (!mdat->num)
-        return 0;
+        return FC_SUCCESS;
 
     if ((fd =
-         open (path, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0600)) == -1)
+         open(path, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0600)) == -1)
     {
-        logg ("!Can't open %s for writing\n", path);
-        return -1;
+        logg("!Can't open %s for writing\n", path);
+        return FCE_OPEN;
     }
 
     for (i = 0; i < mdat->num; i++)
         if (!mdat->mirtab[i].atime)
-            mdat->mirtab[i].atime = (uint32_t) time (NULL);
+            mdat->mirtab[i].atime = (uint32_t) time(NULL);
 
-    if (write (fd, mdat->mirtab, mdat->num * sizeof (struct mirdat_ip)) == -1)
+    if (write(fd, mdat->mirtab, mdat->num * sizeof(struct mirdat_ip)) == -1)
     {
-        logg ("!Can't write to %s\n", path);
-        close (fd);
-        return -1;
+        logg("!Can't write to %s\n", path);
+        close(fd);
+        return FCE_FILE;
     }
 
-    close (fd);
-    return 0;
+    close(fd);
+    return FC_SUCCESS;
 }
