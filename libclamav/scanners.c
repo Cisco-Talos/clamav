@@ -243,7 +243,7 @@ static int cli_unrar_scanmetadata(int desc, unrar_metadata_t *metadata, cli_ctx 
         virus_found = 1;
     }
 
-    if (SCAN_HEURISTIC_ENCRYPTED && metadata->encrypted)
+    if (SCAN_HEURISTIC_ENCRYPTED_ARCHIVE && metadata->encrypted)
     {
         cli_dbgmsg("RAR: Encrypted files found in archive.\n");
         ret = cli_scandesc(desc, ctx, 0, 0, NULL, AC_SCAN_VIR, NULL);
@@ -292,7 +292,7 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
         if (ret == UNRAR_PASSWD)
         {
             cli_dbgmsg("RAR: Encrypted main header\n");
-            if (SCAN_HEURISTIC_ENCRYPTED)
+            if (SCAN_HEURISTIC_ENCRYPTED_ARCHIVE)
             {
                 if (lseek(desc, 0, SEEK_SET) == -1)
                 {

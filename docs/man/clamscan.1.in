@@ -133,25 +133,16 @@ This option sets the lowest number of Credit Card numbers found in a file to gen
 Scan mail files. If you turn off this option, the original files will still be scanned, but without parsing individual messages/attachments.
 .TP 
 \fB\-\-phishing\-sigs[=yes(*)/no]\fR
-Use the signature-based phishing detection.
+Enable email signature-based phishing detection.
 .TP 
 \fB\-\-phishing\-scan\-urls[=yes(*)/no]\fR
-Use the url-based heuristic phishing detection (Phishing.Heuristics.Email.*)
+Enable URL signature-based phishing detection (Phishing.Heuristics.Email.*)
+.TP
+\fB\-\-heuristic\-alerts[=yes(*)/no]\fR
+In some cases (eg. complex malware, exploits in graphic files, and others), ClamAV uses special algorithms to provide accurate detection. This option can be used to control the algorithmic detection.
 .TP
 \fB\-\-heuristic\-scan\-precedence[=yes/no(*)]\fR
 Allow heuristic match to take precedence. When enabled, if a heuristic scan (such as phishingScan) detects a possible virus/phish it will stop scan immediately. Recommended, saves CPU scan-time. When disabled, virus/phish detected by heuristic scans will be reported only at the end of a scan. If an archive contains both a heuristically detected  virus/phish, and a real malware, the real malware will be reported Keep this disabled if you intend to handle "*.Heuristics.*" viruses  differently from "real" malware. If a non-heuristically-detected virus (signature-based) is found first,  the scan is interrupted immediately, regardless of this config option.
-.TP
-\fB\-\-phishing\-ssl[=yes/no(*)]\fR
-Block SSL mismatches in URLs (might lead to false positives!).
-.TP
-\fB\-\-phishing\-cloak[=yes/no(*)]\fR
-Block cloaked URLs (might lead to some false positives).
-.TP
-\fB\-\-partition\-intersection[=yes/no(*)]\fR
-Detect partition intersections in raw disk images using heuristics.
-.TP
-\fB\-\-algorithmic\-detection[=yes(*)/no]\fR
-In some cases (eg. complex malware, exploits in graphic files, and others), ClamAV uses special algorithms to provide accurate detection. This option can be used to control the algorithmic detection.
 .TP
 \fB\-\-normalize[=yes(*)/no]\fR
 Normalize (compress whitespace, downcase, etc.) html, script, and text files. Use normalize=no for yara compatibility. 
@@ -183,17 +174,32 @@ Scan HWP3 files. If you turn off this option, the original files will still be s
 \fB\-\-scan\-archive[=yes(*)/no]\fR
 Scan archives supported by libclamav. If you turn off this option, the original files will still be scanned, but without unpacking and additional processing.
 .TP 
-\fB\-\-detect\-broken[=yes/no(*)]\fR
-Mark broken executables as viruses (Broken.Executable).
+\fB\-\-alert\-broken[=yes/no(*)]\fR
+Alert on broken executable files (PE & ELF).
 .TP 
-\fB\-\-block\-encrypted[=yes/no(*)]\fR
-Mark encrypted archives as viruses (Encrypted.Zip, Encrypted.RAR).
+\fB\-\-alert\-encrypted[=yes/no(*)]\fR
+Alert on encrypted archives and documents (encrypted .zip, .7zip, .rar, .pdf).
 .TP 
-\fB\-\-block\-macros[=yes/no(*)]\fR
-Mark OLE2 files containing VBA macros as viruses (Heuristics.OLE2.ContainsMacros).
+\fB\-\-alert\-encrypted-archive[=yes/no(*)]\fR
+Alert on encrypted archives (encrypted .zip, .7zip, .rar, .pdf).
 .TP 
-\fB\-\-block\-max[=yes/no(*)]\fR
-Flag files with "Heuristics.Limits.Exceeded" when scanning is incomplete due to exceeding a scan or file size limit.
+\fB\-\-alert\-encrypted-doc[=yes/no(*)]\fR
+Alert on encrypted documents (encrypted .zip, .7zip, .rar, .pdf).
+.TP 
+\fB\-\-alert\-macros[=yes/no(*)]\fR
+Alert on OLE2 files containing VBA macros (Heuristics.OLE2.ContainsMacros).
+.TP 
+\fB\-\-alert\-exceeds\-max[=yes/no(*)]\fR
+Alert on files that exceed max file size, max scan size, or max recursion limit (Heuristics.Limits.Exceeded).
+.TP 
+\fB\-\-alert\-phishing\-ssl[=yes/no(*)]\fR
+Alert on emails containing SSL mismatches in URLs (might lead to false positives!).
+.TP
+\fB\-\-alert\-phishing\-cloak[=yes/no(*)]\fR
+Alert on emails containing cloaked URLs (might lead to some false positives).
+.TP
+\fB\-\-alert\-partition\-intersection[=yes/no(*)]\fR
+Detect partition intersections in raw disk images using heuristics.
 .TP 
 \fB\-\-max\-filesize=#n\fR
 Extract and scan at most #n bytes from each archive. You may pass the value in kilobytes in format xK or xk, or megabytes in format xM or xm, where x is a number. This option protects your system against DoS attacks (default: 25 MB, max: <4 GB)

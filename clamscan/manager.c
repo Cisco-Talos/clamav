@@ -1017,13 +1017,19 @@ int scanmanager(const struct optstruct *opts)
         options.general |= CL_SCAN_GENERAL_ALLMATCHES;
     }
 
-    if(optget(opts,"phishing-ssl")->enabled)
+    /* TODO: Remove deprecated option in a future feature release */
+    if ((optget(opts,"phishing-ssl")->enabled) ||
+        (optget(opts,"alert-phishing-ssl")->enabled))
         options.heuristic |= CL_SCAN_HEURISTIC_PHISHING_SSL_MISMATCH;
 
-    if(optget(opts,"phishing-cloak")->enabled)
+    /* TODO: Remove deprecated option in a future feature release */
+    if ((optget(opts,"phishing-cloak")->enabled) ||
+        (optget(opts,"alert-phishing-cloak")->enabled))
         options.heuristic |= CL_SCAN_HEURISTIC_PHISHING_CLOAK;
 
-    if(optget(opts,"partition-intersection")->enabled)
+    /* TODO: Remove deprecated option in a future feature release */
+    if ((optget(opts,"partition-intersection")->enabled) ||
+        (optget(opts,"alert-partition-intersection")->enabled))
         options.heuristic |= CL_SCAN_HEURISTIC_PARTITION_INTXN;
 
     if(optget(opts,"heuristic-scan-precedence")->enabled)
@@ -1032,14 +1038,30 @@ int scanmanager(const struct optstruct *opts)
     if(optget(opts, "scan-archive")->enabled)
         options.parse |= CL_SCAN_PARSE_ARCHIVE;
 
-    if(optget(opts, "detect-broken")->enabled)
+    /* TODO: Remove deprecated option in a future feature release */
+    if ((optget(opts, "detect-broken")->enabled) || 
+        (optget(opts, "alert-broken")->enabled)) {
         options.heuristic |= CL_SCAN_HEURISTIC_BROKEN;
+    }
 
-    if(optget(opts, "block-encrypted")->enabled)
-        options.heuristic |= CL_SCAN_HEURISTIC_ENCRYPTED;
+    /* TODO: Remove deprecated option in a future feature release */
+    if ((optget(opts, "block-encrypted")->enabled) ||
+        (optget(opts, "alert-encrypted")->enabled)) {
+        options.heuristic |= CL_SCAN_HEURISTIC_ENCRYPTED_ARCHIVE;
+        options.heuristic |= CL_SCAN_HEURISTIC_ENCRYPTED_DOC;
+    }
 
-    if(optget(opts, "block-macros")->enabled)
+    if (optget(opts, "alert-encrypted-archive")->enabled)
+        options.heuristic |= CL_SCAN_HEURISTIC_ENCRYPTED_ARCHIVE;
+
+    if (optget(opts, "alert-encrypted-doc")->enabled)
+        options.heuristic |= CL_SCAN_HEURISTIC_ENCRYPTED_DOC;
+
+    /* TODO: Remove deprecated option in a future feature release */
+    if ((optget(opts, "block-macros")->enabled) ||
+        (optget(opts, "alert-macros")->enabled)) {
         options.heuristic |= CL_SCAN_HEURISTIC_MACROS;
+    }
 
     if(optget(opts, "scan-pe")->enabled)
         options.parse |= CL_SCAN_PARSE_PE;
@@ -1071,7 +1093,9 @@ int scanmanager(const struct optstruct *opts)
     if(optget(opts, "algorithmic-detection")->enabled)
         options.general |= CL_SCAN_GENERAL_HEURISTICS;
 
-    if(optget(opts, "block-max")->enabled) {
+    /* TODO: Remove deprecated option in a future feature release */
+    if ((optget(opts, "block-max")->enabled) || 
+        (optget(opts, "alert-exceeds-max")->enabled)) {
         options.heuristic |= CL_SCAN_HEURISTIC_EXCEEDS_MAX;
     }
 

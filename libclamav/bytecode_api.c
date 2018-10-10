@@ -1319,7 +1319,8 @@ uint32_t cli_bcapi_engine_scan_options(struct cli_bc_ctx *ctx)
         options |= CL_SCAN_PHISHING_BLOCKCLOAK;
     if (cctx->options->heuristic & CL_SCAN_HEURISTIC_MACROS)
         options |= CL_SCAN_BLOCKMACROS;
-    if (cctx->options->heuristic & CL_SCAN_HEURISTIC_ENCRYPTED)
+    if ((cctx->options->heuristic & CL_SCAN_HEURISTIC_ENCRYPTED_ARCHIVE) || 
+        (cctx->options->heuristic & CL_SCAN_HEURISTIC_ENCRYPTED_DOC))
         options |= CL_SCAN_BLOCKENCRYPTED;
     if (cctx->options->heuristic & CL_SCAN_HEURISTIC_PARTITION_INTXN)
         options |= CL_SCAN_PARTITION_INTXN;
@@ -1429,8 +1430,11 @@ uint32_t cli_bcapi_engine_scan_options_ex(struct cli_bc_ctx *ctx, const uint8_t 
         if (cli_memstr(option_name_l, name_len, "macros", sizeof("macros"))) {
             return (cctx->options->heuristic & CL_SCAN_HEURISTIC_MACROS) ? 1 : 0;
         }
-        if (cli_memstr(option_name_l, name_len, "encrypted", sizeof("encrypted"))) {
-            return (cctx->options->heuristic & CL_SCAN_HEURISTIC_ENCRYPTED) ? 1 : 0;
+        if (cli_memstr(option_name_l, name_len, "encrypted archive", sizeof("encrypted archive"))) {
+            return (cctx->options->heuristic & CL_SCAN_HEURISTIC_ENCRYPTED_ARCHIVE) ? 1 : 0;
+        }
+        if (cli_memstr(option_name_l, name_len, "encrypted doc", sizeof("encrypted doc"))) {
+            return (cctx->options->heuristic & CL_SCAN_HEURISTIC_ENCRYPTED_DOC) ? 1 : 0;
         }
         if (cli_memstr(option_name_l, name_len, "partition intxn", sizeof("partition intxn"))) {
             return (cctx->options->heuristic & CL_SCAN_HEURISTIC_PARTITION_INTXN) ? 1 : 0;

@@ -923,31 +923,83 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     val = cl_engine_get_num(engine, CL_ENGINE_PCRE_MAX_FILESIZE, NULL);
     logg("Limits: PCREMaxFileSize limit set to %llu.\n", val);
 
-    if(optget(opts, "ScanArchive")->enabled) {
-	logg("Archive support enabled.\n");
-	options.parse |= CL_SCAN_PARSE_ARCHIVE;
-
-	if(optget(opts, "ArchiveBlockEncrypted")->enabled) {
-	    logg("Archive: Blocking encrypted archives.\n");
-	    options.heuristic |= CL_SCAN_HEURISTIC_ENCRYPTED;
-	}
-
+    if (optget(opts, "ScanArchive")->enabled) {
+        logg("Archive support enabled.\n");
+        options.parse |= CL_SCAN_PARSE_ARCHIVE;
     } else {
-	logg("Archive support disabled.\n");
+        logg("Archive support disabled.\n");
     }
 
+    /* TODO: Remove deprecated option in a future feature release. */
+    if (optget(opts, "ArchiveBlockEncrypted")->enabled) {
+        if (options.parse & CL_SCAN_PARSE_ARCHIVE) {
+            logg(
+              "^Using deprecated option \"ArchiveBlockEncrypted\" to alert on "
+              "encrypted archives _and_ documents. Please update your "
+              "configuration to use replacement options \"AlertEncrypted\", or "
+              "\"AlertEncryptedArchive\" and/or \"AlertEncryptedDoc\".\n");
+            options.heuristic |= CL_SCAN_HEURISTIC_ENCRYPTED_ARCHIVE;
+            options.heuristic |= CL_SCAN_HEURISTIC_ENCRYPTED_DOC;
+        } else {
+            logg(
+              "^Using deprecated option \"ArchiveBlockEncrypted\" to alert on "
+              "encrypted documents. Please update your configuration to use "
+              "replacement options \"AlertEncrypted\", or "
+              "\"AlertEncryptedArchive\" and/or \"AlertEncryptedDoc\".\n");
+            options.heuristic |= CL_SCAN_HEURISTIC_ENCRYPTED_DOC;
+        }
+    }
+
+    if (optget(opts, "AlertEncrypted")->enabled) {
+        if (options.parse & CL_SCAN_PARSE_ARCHIVE) {
+            logg("Alerting of encrypted archives _and_ documents enabled.\n");
+            options.heuristic |= CL_SCAN_HEURISTIC_ENCRYPTED_ARCHIVE;
+            options.heuristic |= CL_SCAN_HEURISTIC_ENCRYPTED_DOC;
+        } else {
+            logg("Alerting of encrypted documents enabled.\n");
+            options.heuristic |= CL_SCAN_HEURISTIC_ENCRYPTED_DOC;
+        }
+    }
+
+    if (optget(opts, "AlertEncryptedArchive")->enabled) {
+        if (options.parse & CL_SCAN_PARSE_ARCHIVE) {
+            logg("Alerting of encrypted archives _and_ documents enabled.\n");
+            options.heuristic |= CL_SCAN_HEURISTIC_ENCRYPTED_ARCHIVE;
+        } else {
+            logg("^Encrypted archive alerting requested, but archive support "
+                 "is disabled!\n");
+        }
+    }
+
+    if (optget(opts, "AlertEncryptedDoc")->enabled) {
+        logg("Alerting of encrypted documents enabled.\n");
+        options.heuristic |= CL_SCAN_HEURISTIC_ENCRYPTED_DOC;
+    }
+
+    /* TODO: Remove deprecated option in a future feature release. */
     if (optget(opts, "BlockMax")->enabled) {
-        logg("BlockMax heuristic detection enabled.\n");
+        logg("^Using deprecated option \"BlockMax\" to enable heuristic alerts "
+             "when scans exceed set maximums. Please update your configuration "
+             "to use replacement option \"AlertExceedsMax\".\n");
+        options.heuristic |= CL_SCAN_HEURISTIC_EXCEEDS_MAX;
+    } else if (optget(opts, "AlertExceedsMax")->enabled) {
+        logg("Heuristic alerting enabled for scans that exceed set maximums.\n");
         options.heuristic |= CL_SCAN_HEURISTIC_EXCEEDS_MAX;
     } else {
-        logg("BlockMax heuristic detection disabled.\n");
+        logg("AlertExceedsMax heuristic detection disabled.\n");
     }
 
-    if(optget(opts, "AlgorithmicDetection")->enabled) {
-	logg("Algorithmic detection enabled.\n");
-	options.general |= CL_SCAN_GENERAL_HEURISTICS;
+    /* TODO: Remove deprecated option in a future feature release. */
+    if (optget(opts, "AlgorithmicDetection")->enabled) {
+        logg("^Using deprecated option \"AlgorithmicDetection\" to enable "
+             "heuristic alerts. Please update your configuration to use "
+             "replacement option \"HeuristicAlerts\".\n");
+        options.heuristic |= CL_SCAN_GENERAL_HEURISTICS;
+    } else if (optget(opts, "HeuristicAlerts")->enabled) {
+        logg("Heuristic alerts enabled.\n");
+        options.general |= CL_SCAN_GENERAL_HEURISTICS;
     } else {
-	logg("Algorithmic detection disabled.\n");
+        logg("Heuristic alerts disabled.\n");
     }
 
     if(optget(opts, "ScanPE")->enabled) {
@@ -964,11 +1016,13 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	logg("ELF support disabled.\n");
     }
 
-    if(optget(opts, "ScanPE")->enabled || optget(opts, "ScanELF")->enabled) {
-	if(optget(opts, "DetectBrokenExecutables")->enabled) {
-	    logg("Detection of broken executables enabled.\n");
-	    options.heuristic |= CL_SCAN_HEURISTIC_BROKEN;
-	}
+	/* TODO: Remove deprecated option in a future feature release */
+    if (optget(opts, "ScanPE")->enabled || optget(opts, "ScanELF")->enabled) {
+        if ((optget(opts, "DetectBrokenExecutables")->enabled) || 
+			(optget(opts, "AlertBrokenExecutables")->enabled)) {
+            logg("Alerting on broken executables enabled.\n");
+            options.heuristic |= CL_SCAN_HEURISTIC_BROKEN;
+        }
     }
 
     if(optget(opts, "ScanMail")->enabled) {
@@ -984,15 +1038,18 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	logg("Mail files support disabled.\n");
     }
 
-    if(optget(opts, "ScanOLE2")->enabled) {
-	logg("OLE2 support enabled.\n");
-	options.parse |= CL_SCAN_PARSE_OLE2;
-	if(optget(opts, "OLE2BlockMacros")->enabled) {
-	    logg("OLE2: Blocking all VBA macros.\n");
-	    options.heuristic |= CL_SCAN_HEURISTIC_MACROS;
-	}
+    if (optget(opts, "ScanOLE2")->enabled) {
+        logg("OLE2 support enabled.\n");
+        options.parse |= CL_SCAN_PARSE_OLE2;
+		
+		/* TODO: Remove deprecated option in a future feature release */
+        if ((optget(opts, "OLE2BlockMacros")->enabled) ||
+        	(optget(opts, "AlertOLE2Macros")->enabled)) {
+            logg("OLE2: Alerting on all VBA macros.\n");
+            options.heuristic |= CL_SCAN_HEURISTIC_MACROS;
+        }
     } else {
-	logg("OLE2 support disabled.\n");
+        logg("OLE2 support disabled.\n");
     }
 
     if(optget(opts, "ScanPDF")->enabled) {
@@ -1030,22 +1087,26 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	logg("HWP3 support disabled.\n");
     }
 
-    if(optget(opts,"PhishingScanURLs")->enabled) {
-
-	if(optget(opts,"PhishingAlwaysBlockCloak")->enabled) {
-	    options.heuristic |= CL_SCAN_HEURISTIC_PHISHING_CLOAK; 
-	    logg("Phishing: Always checking for cloaked urls\n");
-	}
-
-	if(optget(opts,"PhishingAlwaysBlockSSLMismatch")->enabled) {
-	    options.heuristic |= CL_SCAN_HEURISTIC_PHISHING_SSL_MISMATCH;
-	    logg("Phishing: Always checking for ssl mismatches\n");
-	}
+    if (optget(opts, "PhishingScanURLs")->enabled) {
+		/* TODO: Remove deprecated option in a future feature release */
+        if ((optget(opts, "PhishingAlwaysBlockCloak")->enabled) ||
+            (optget(opts, "AlertPhishingCloak")->enabled)) {
+            options.heuristic |= CL_SCAN_HEURISTIC_PHISHING_CLOAK;
+            logg("Phishing: Always checking for cloaked urls\n");
+        }
+		/* TODO: Remove deprecated option in a future feature release */
+        if ((optget(opts, "PhishingAlwaysBlockSSLMismatch")->enabled) ||
+            (optget(opts, "AlertPhishingSSLMismatch")->enabled)) {
+            options.heuristic |= CL_SCAN_HEURISTIC_PHISHING_SSL_MISMATCH;
+            logg("Phishing: Always checking for ssl mismatches\n");
+        }
     }
 
-    if(optget(opts,"PartitionIntersection")->enabled) {
+	/* TODO: Remove deprecated option in a future feature release */
+    if ((optget(opts,"PartitionIntersection")->enabled) ||
+		(optget(opts,"AlertPartitionIntersection")->enabled)) {
         options.heuristic |= CL_SCAN_HEURISTIC_PARTITION_INTXN;
-        logg("Raw DMG: Always checking for partitions intersections\n");
+        logg("Raw DMG: Alert on partitions intersections\n");
     }
 
     if(optget(opts,"HeuristicScanPrecedence")->enabled) {

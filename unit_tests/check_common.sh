@@ -171,7 +171,7 @@ EOF
 	die "Failed to run clamscan (phish-test)";
     fi
 
-    if test_run 1 $CLAMSCAN --quiet --phishing-ssl --phishing-cloak -dtest-db $abs_srcdir/input/phish-test-* --log=clamscan3.log; then
+    if test_run 1 $CLAMSCAN --quiet --alert-phishing-ssl --alert-phishing-cloak -dtest-db $abs_srcdir/input/phish-test-* --log=clamscan3.log; then
 	cat clamscan3.log;
 	die "Failed to run clamscan (phish-test2)";
     fi

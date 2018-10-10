@@ -106,7 +106,7 @@ int cli_7unz (cli_ctx *ctx, size_t offset) {
 
     SzArEx_Init(&db);
     res = SzArEx_Open(&db, &lookStream.s, &allocImp, &allocTempImp);
-    if(res == SZ_ERROR_ENCRYPTED && SCAN_HEURISTIC_ENCRYPTED) {
+    if(res == SZ_ERROR_ENCRYPTED && SCAN_HEURISTIC_ENCRYPTED_ARCHIVE) {
 	cli_dbgmsg("cli_7unz: Encrypted header found in archive.\n");
 	found = cli_append_virus(ctx, "Heuristics.Encrypted.7Zip");
     } else if(res == SZ_OK) {
@@ -158,7 +158,7 @@ int cli_7unz (cli_ctx *ctx, size_t offset) {
 	    res = SzArEx_Extract(&db, &lookStream.s, i, &blockIndex, &outBuffer, &outBufferSize, &offset, &outSizeProcessed, &allocImp, &allocTempImp);
 	    if(res == SZ_ERROR_ENCRYPTED) {
 		encrypted = 1;
-		if(SCAN_HEURISTIC_ENCRYPTED) {
+		if(SCAN_HEURISTIC_ENCRYPTED_ARCHIVE) {
 		    cli_dbgmsg("cli_7unz: Encrypted files found in archive.\n");
 		    found = cli_append_virus(ctx, "Heuristics.Encrypted.7Zip");
                     if (found != CL_CLEAN) {

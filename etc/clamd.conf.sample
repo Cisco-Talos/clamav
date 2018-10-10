@@ -244,12 +244,6 @@ Example
 #IncludePUA Scanner
 #IncludePUA RAT
 
-# In some cases (eg. complex malware, exploits in graphic files, and others),
-# ClamAV uses special algorithms to provide accurate detection. This option
-# controls the algorithmic detection.
-# Default: yes
-#AlgorithmicDetection yes
-
 # This option causes memory or nested map scans to dump the content to disk.
 # If you turn on this option, more data is written to disk and is available
 # when the LeaveTemporaryFiles option is enabled.
@@ -261,6 +255,71 @@ Example
 # have a negative performance impact on large scans.
 # Default: no
 #DisableCache yes
+
+# In some cases (eg. complex malware, exploits in graphic files, and others),
+# ClamAV uses special algorithms to detect abnormal patterns and behaviors that
+# may be malicious.  This option enables alerting on such heuristically
+# detected potential threats.
+# Default: yes
+#HeuristicAlerts yes
+
+# Allow heuristic alerts to take precedence.
+# When enabled, if a heuristic scan (such as phishingScan) detects
+# a possible virus/phish it will stop scan immediately. Recommended, saves CPU
+# scan-time.
+# When disabled, virus/phish detected by heuristic scans will be reported only at
+# the end of a scan. If an archive contains both a heuristically detected
+# virus/phish, and a real malware, the real malware will be reported
+#
+# Keep this disabled if you intend to handle "*.Heuristics.*" viruses 
+# differently from "real" malware.
+# If a non-heuristically-detected virus (signature-based) is found first, 
+# the scan is interrupted immediately, regardless of this config option.
+#
+# Default: no
+#HeuristicScanPrecedence yes
+
+
+##
+## Heuristic Alerts
+##
+
+# With this option clamav will try to detect broken executables (both PE and
+# ELF) and alert on them with the Broken.Executable heuristic signature.
+# Default: no
+#AlertBrokenExecutables yes
+
+# Alert on encrypted archives _and_ documents with heuristic signature (encrypted .zip, .7zip, .rar, .pdf).
+# Default: no
+#AlertEncrypted yes
+
+# Alert on encrypted archives with heuristic signature (encrypted .zip, .7zip, .rar).
+# Default: no
+#AlertEncryptedArchive yes
+
+# Alert on encrypted archives with heuristic signature (encrypted .pdf).
+# Default: no
+#AlertEncryptedDoc yes
+
+# With this option enabled OLE2 files containing VBA macros, which were not
+# detected by signatures will be marked as "Heuristics.OLE2.ContainsMacros".
+# Default: no
+#AlertOLE2Macros yes
+
+# Alert on SSL mismatches in URLs, even if the URL isn't in the database.
+# This can lead to false positives.
+# Default: no
+#AlertPhishingSSLMismatch yes
+
+# Alert on cloaked URLs, even if URL isn't in database.
+# This can lead to false positives.
+# Default: no
+#AlertPhishingCloak yes
+
+# Alert on raw DMG image files containing partition intersections
+# Default: no
+#AlertPartitionIntersection yes
+
 
 ##
 ## Executable files
@@ -292,11 +351,6 @@ Example
 # Default: yes
 #ScanELF yes
 
-# With this option clamav will try to detect broken executables (both PE and
-# ELF) and mark them as Broken.Executable.
-# Default: no
-#DetectBrokenExecutables yes
-
 
 ##
 ## Documents
@@ -308,11 +362,6 @@ Example
 # without additional processing.
 # Default: yes
 #ScanOLE2 yes
-
-# With this option enabled OLE2 files with VBA macros, which were not
-# detected by signatures will be marked as "Heuristics.OLE2.ContainsMacros".
-# Default: no
-#OLE2BlockMacros no
 
 # This option enables scanning within PDF files.
 # If you turn off this option, the original files will still be scanned, but
@@ -358,45 +407,14 @@ Example
 #ScanPartialMessages yes
 
 # With this option enabled ClamAV will try to detect phishing attempts by using
-# signatures.
+# HTML.Phishing and Email.Phishing NDB signatures.
 # Default: yes
-#PhishingSignatures yes
+#PhishingSignatures no
 
-# Scan URLs found in mails for phishing attempts using heuristics.
+# With this option enabled ClamAV will try to detect phishing attempts by
+# analyzing URLs found in emails using WDB and PDB signature databases.
 # Default: yes
-#PhishingScanURLs yes
-
-# Always block SSL mismatches in URLs, even if the URL isn't in the database.
-# This can lead to false positives.
-#
-# Default: no
-#PhishingAlwaysBlockSSLMismatch no
-
-# Always block cloaked URLs, even if URL isn't in database.
-# This can lead to false positives.
-#
-# Default: no
-#PhishingAlwaysBlockCloak no
-
-# Detect partition intersections in raw disk images using heuristics.
-# Default: no
-#PartitionIntersection no
-
-# Allow heuristic match to take precedence.
-# When enabled, if a heuristic scan (such as phishingScan) detects
-# a possible virus/phish it will stop scan immediately. Recommended, saves CPU
-# scan-time.
-# When disabled, virus/phish detected by heuristic scans will be reported
-# only at the end of a scan. If an archive contains both a heuristically
-# detected virus/phish, and a real malware, the real malware will be reported.
-#
-# Keep this disabled if you intend to handle "*.Heuristics.*" viruses 
-# differently from "real" malware.
-# If a non-heuristically-detected virus (signature-based) is found first, 
-# the scan is interrupted immediately, regardless of this config option.
-#
-# Default: no
-#HeuristicScanPrecedence yes
+#PhishingScanURLs no
 
 
 ##
@@ -448,10 +466,6 @@ Example
 # without unpacking and additional processing.
 # Default: yes
 #ScanArchive yes
-
-# Mark encrypted archives as viruses (Encrypted.Zip, Encrypted.RAR).
-# Default: no
-#ArchiveBlockEncrypted no
 
 
 ##
@@ -589,11 +603,12 @@ Example
 # Default: 25M
 #PCREMaxFileSize 100M
 
-# When BlockMax is set, files exceeding the MaxFileSize, MaxScanSize, or
+# When AlertExceedsMax is set, files exceeding the MaxFileSize, MaxScanSize, or
 # MaxRecursion limit will be flagged with the virus
 # "Heuristics.Limits.Exceeded".
 # Default: no
-#BlockMax yes
+#AlertExceedsMax yes
+
 
 ##
 ## On-access Scan Settings

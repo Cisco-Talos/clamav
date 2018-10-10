@@ -175,16 +175,17 @@ struct cl_scan_options {
 #define CL_SCAN_PARSE_PE                            0x200
 
 /* heuristic alerting options */
-#define CL_SCAN_HEURISTIC_BROKEN                    0x2
-#define CL_SCAN_HEURISTIC_EXCEEDS_MAX               0x4
-#define CL_SCAN_HEURISTIC_PHISHING_SSL_MISMATCH     0x8
-#define CL_SCAN_HEURISTIC_PHISHING_CLOAK            0x10
-#define CL_SCAN_HEURISTIC_MACROS                    0x20
-#define CL_SCAN_HEURISTIC_ENCRYPTED                 0x40
-#define CL_SCAN_HEURISTIC_PARTITION_INTXN           0x80 /* alert if partition table size doesn't make sense */
-#define CL_SCAN_HEURISTIC_STRUCTURED                0x100 /* data loss prevention options, i.e. alert when detecting personal information */
-#define CL_SCAN_HEURISTIC_STRUCTURED_SSN_NORMAL     0x200 /* alert when detecting social security numbers */
-#define CL_SCAN_HEURISTIC_STRUCTURED_SSN_STRIPPED   0x400 /* alert when detecting stripped social security numbers */
+#define CL_SCAN_HEURISTIC_BROKEN                    0x2   /* alert on broken PE and broken ELF files */
+#define CL_SCAN_HEURISTIC_EXCEEDS_MAX               0x4   /* alert when files exceed scan limits (filesize, max scansize, or max recursion depth) */
+#define CL_SCAN_HEURISTIC_PHISHING_SSL_MISMATCH     0x8   /* alert on SSL mismatches */
+#define CL_SCAN_HEURISTIC_PHISHING_CLOAK            0x10  /* alert on cloaked URLs in emails */
+#define CL_SCAN_HEURISTIC_MACROS                    0x20  /* alert on OLE2 files containing macros */
+#define CL_SCAN_HEURISTIC_ENCRYPTED_ARCHIVE         0x40  /* alert if archive is encrypted (rar, zip, etc) */
+#define CL_SCAN_HEURISTIC_ENCRYPTED_DOC             0x80  /* alert if a document is encrypted (pdf, docx, etc) */
+#define CL_SCAN_HEURISTIC_PARTITION_INTXN           0x100 /* alert if partition table size doesn't make sense */
+#define CL_SCAN_HEURISTIC_STRUCTURED                0x200 /* data loss prevention options, i.e. alert when detecting personal information */
+#define CL_SCAN_HEURISTIC_STRUCTURED_SSN_NORMAL     0x400 /* alert when detecting social security numbers */
+#define CL_SCAN_HEURISTIC_STRUCTURED_SSN_STRIPPED   0x800 /* alert when detecting stripped social security numbers */
 
 /* mail scanning options */
 #define CL_SCAN_MAIL_PARTIAL_MESSAGE                0x1

@@ -316,16 +316,18 @@ Supported flags for each of the fields are as follows:
 
 - **CL_SCAN_GENERAL_HEURISTIC_PRECEDENCE**
     Allow heuristic match to take precedence. When enabled, if a heuristic scan (such as phishingScan) detects a possible virus/phish it will stop scan immediately. Recommended, saves CPU scan-time. When *disabled*, virus/phish detected by heuristic scans will be reported only at the end of a scan. If an archive contains both a heuristically detected virus/phishing, and a real malware, the real malware will be reported.
-- **CL_SCAN_HEURISTIC_ENCRYPTED**
-    With this flag the library will mark encrypted archives as viruses (Encrypted.Zip, Encrypted.RAR).
+- **CL_SCAN_HEURISTIC_ENCRYPTED_ARCHIVE**
+    With this flag the library will mark encrypted archives as viruses (encrypted .zip, .7zip, .rar).
+- **CL_SCAN_HEURISTIC_ENCRYPTED_DOC**
+    With this flag the library will mark encrypted docuemnts as viruses (encrypted .pdf).
 - **CL_SCAN_HEURISTIC_BROKEN**
     libclamav will try to detect broken executables and mark them as Broken.Executable.
 - **CL_SCAN_HEURISTIC_EXCEEDS_MAX**
     Alert when the scan of any file exceeds maximums such as max filesize, max scansize, max recursion level.
 - **CL_SCAN_HEURISTIC_PHISHING_SSL_MISMATCH**
-    Heuristic for Phishing module: always block SSL mismatches in URLs.
+    Heuristic for phishing module: alert on SSL mismatches in URLs.
 - **CL_SCAN_HEURISTIC_PHISHING_CLOAK**
-    Phishing module: always block cloaked URLs.
+    Heuristic for phishing module: alert on cloaked URLs.
 - **CL_SCAN_HEURISTIC_MACROS**
     OLE2 containers, which contain VBA macros will be marked infected (Heuristics.OLE2.ContainsMacros).
 - **CL_SCAN_HEURISTIC_PARTITION_INTXN**

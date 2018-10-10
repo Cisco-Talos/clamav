@@ -216,12 +216,6 @@ TCPAddr 127.0.0.1
 #IncludePUA Scanner
 #IncludePUA RAT
 
-# In some cases (eg. complex malware, exploits in graphic files, and others),
-# ClamAV uses special algorithms to provide accurate detection. This option
-# controls the algorithmic detection.
-# Default: yes
-#AlgorithmicDetection yes
-
 # This option causes memory or nested map scans to dump the content to disk.
 # If you turn on this option, more data is written to disk and is available
 # when the LeaveTemporaryFiles option is enabled.
@@ -233,6 +227,71 @@ TCPAddr 127.0.0.1
 # have a negative performance impact on large scans.
 # Default: no
 #DisableCache yes
+
+# In some cases (eg. complex malware, exploits in graphic files, and others),
+# ClamAV uses special algorithms to detect abnormal patterns and behaviors that
+# may be malicious.  This option enables alerting on such heuristically
+# detected potential threats.
+# Default: yes
+#HeuristicAlerts yes
+
+# Allow heuristic alerts to take precedence.
+# When enabled, if a heuristic scan (such as phishingScan) detects
+# a possible virus/phish it will stop scan immediately. Recommended, saves CPU
+# scan-time.
+# When disabled, virus/phish detected by heuristic scans will be reported only at
+# the end of a scan. If an archive contains both a heuristically detected
+# virus/phish, and a real malware, the real malware will be reported
+#
+# Keep this disabled if you intend to handle "*.Heuristics.*" viruses 
+# differently from "real" malware.
+# If a non-heuristically-detected virus (signature-based) is found first, 
+# the scan is interrupted immediately, regardless of this config option.
+#
+# Default: no
+#HeuristicScanPrecedence yes
+
+
+##
+## Heuristic Alerts
+##
+
+# With this option clamav will try to detect broken executables (both PE and
+# ELF) and alert on them with the Broken.Executable heuristic signature.
+# Default: no
+#AlertBrokenExecutables yes
+
+# Alert on encrypted archives _and_ documents with heuristic signature (encrypted .zip, .7zip, .rar, .pdf).
+# Default: no
+#AlertEncrypted yes
+
+# Alert on encrypted archives with heuristic signature (encrypted .zip, .7zip, .rar).
+# Default: no
+#AlertEncryptedArchive yes
+
+# Alert on encrypted archives with heuristic signature (encrypted .pdf).
+# Default: no
+#AlertEncryptedDoc yes
+
+# With this option enabled OLE2 files containing VBA macros, which were not
+# detected by signatures will be marked as "Heuristics.OLE2.ContainsMacros".
+# Default: no
+#AlertOLE2Macros yes
+
+# Alert on SSL mismatches in URLs, even if the URL isn't in the database.
+# This can lead to false positives.
+# Default: no
+#AlertPhishingSSLMismatch yes
+
+# Alert on cloaked URLs, even if URL isn't in database.
+# This can lead to false positives.
+# Default: no
+#AlertPhishingCloak yes
+
+# Alert on raw DMG image files containing partition intersections.
+# Default: no
+#PartitionIntersection yes
+
 
 ##
 ## Executable files
@@ -264,11 +323,6 @@ TCPAddr 127.0.0.1
 # Default: yes
 #ScanELF yes
 
-# With this option clamav will try to detect broken executables (both PE and
-# ELF) and mark them as Broken.Executable.
-# Default: no
-#DetectBrokenExecutables yes
-
 
 ##
 ## Documents
@@ -280,11 +334,6 @@ TCPAddr 127.0.0.1
 # without additional processing.
 # Default: yes
 #ScanOLE2 yes
-
-# With this option enabled OLE2 files with VBA macros, which were not
-# detected by signatures will be marked as "Heuristics.OLE2.ContainsMacros".
-# Default: no
-#OLE2BlockMacros no
 
 # This option enables scanning within PDF files.
 # If you turn off this option, the original files will still be scanned, but
@@ -329,45 +378,14 @@ TCPAddr 127.0.0.1
 #ScanPartialMessages yes
 
 # With this option enabled ClamAV will try to detect phishing attempts by using
-# signatures.
+# HTML.Phishing and Email.Phishing NDB signatures.
 # Default: yes
-#PhishingSignatures yes
+#PhishingSignatures no
 
-# Scan URLs found in mails for phishing attempts using heuristics.
+# With this option enabled ClamAV will try to detect phishing attempts by
+# analyzing URLs found in emails using WDB and PDB signature databases.
 # Default: yes
-#PhishingScanURLs yes
-
-# Always block SSL mismatches in URLs, even if the URL isn't in the database.
-# This can lead to false positives.
-#
-# Default: no
-#PhishingAlwaysBlockSSLMismatch no
-
-# Always block cloaked URLs, even if URL isn't in database.
-# This can lead to false positives.
-#
-# Default: no
-#PhishingAlwaysBlockCloak no
-
-# Detect partition intersections in raw disk images using heuristics.
-# Default: no
-#PartitionIntersection no
-
-# Allow heuristic match to take precedence.
-# When enabled, if a heuristic scan (such as phishingScan) detects
-# a possible virus/phish it will stop scan immediately. Recommended, saves CPU
-# scan-time.
-# When disabled, virus/phish detected by heuristic scans will be reported only at
-# the end of a scan. If an archive contains both a heuristically detected
-# virus/phish, and a real malware, the real malware will be reported
-#
-# Keep this disabled if you intend to handle "*.Heuristics.*" viruses 
-# differently from "real" malware.
-# If a non-heuristically-detected virus (signature-based) is found first, 
-# the scan is interrupted immediately, regardless of this config option.
-#
-# Default: no
-#HeuristicScanPrecedence yes
+#PhishingScanURLs no
 
 
 ##
@@ -419,10 +437,6 @@ TCPAddr 127.0.0.1
 # without unpacking and additional processing.
 # Default: yes
 #ScanArchive yes
-
-# Mark encrypted archives as viruses (Encrypted.Zip, Encrypted.RAR).
-# Default: no
-#ArchiveBlockEncrypted no
 
 
 ##
@@ -500,74 +514,93 @@ TCPAddr 127.0.0.1
 # Default: 1M
 #MaxZipTypeRcg 1M
 
-# This option sets the maximum number of partitions of a raw disk image to be scanned.
-# Raw disk images with more partitions than this value will have up to the value number
-# partitions scanned. Negative values are not allowed.
-# Note: setting this limit too high may result in severe damage or impact performance.
+# This option sets the maximum number of partitions of a raw disk image to be
+# scanned.
+# Raw disk images with more partitions than this value will have up to
+# the value number partitions scanned. Negative values are not allowed.
+# Note: setting this limit too high may result in severe damage or impact
+# performance.
 # Default: 50
 #MaxPartitions 128
 
 # This option sets the maximum number of icons within a PE to be scanned.
-# PE files with more icons than this value will have up to the value number icons scanned.
+# PE files with more icons than this value will have up to the value number
+# icons scanned.
 # Negative values are not allowed.
-# WARNING: setting this limit too high may result in severe damage or impact performance.
+# WARNING: setting this limit too high may result in severe damage or impact
+# performance.
 # Default: 100
 #MaxIconsPE 200
 
-# This option sets the maximum recursive calls for HWP3 parsing during scanning.
-# HWP3 files using more than this limit will be terminated and alert the user.
-# Scans will be unable to scan any HWP3 attachments if the recursive limit is reached.
+# This option sets the maximum recursive calls for HWP3 parsing during
+# scanning. HWP3 files using more than this limit will be terminated and
+# alert the user.
+# Scans will be unable to scan any HWP3 attachments if the recursive limit
+# is reached.
 # Negative values are not allowed.
-# WARNING: setting this limit too high may result in severe damage or impact performance.
+# WARNING: setting this limit too high may result in severe damage or impact
+# performance.
 # Default: 16
 #MaxRecHWP3 16
 
-# This option sets the maximum calls to the PCRE match function during an instance of regex matching.
-# Instances using more than this limit will be terminated and alert the user but the scan will continue.
+# This option sets the maximum calls to the PCRE match function during
+# an instance of regex matching.
+# Instances using more than this limit will be terminated and alert the user
+# but the scan will continue.
 # For more information on match_limit, see the PCRE documentation.
 # Negative values are not allowed.
 # WARNING: setting this limit too high may severely impact performance.
 # Default: 100000
 #PCREMatchLimit 20000
 
-# This option sets the maximum recursive calls to the PCRE match function during an instance of regex matching.
-# Instances using more than this limit will be terminated and alert the user but the scan will continue.
+# This option sets the maximum recursive calls to the PCRE match function
+# during an instance of regex matching.
+# Instances using more than this limit will be terminated and alert the user
+# but the scan will continue.
 # For more information on match_limit_recursion, see the PCRE documentation.
 # Negative values are not allowed and values > PCREMatchLimit are superfluous.
 # WARNING: setting this limit too high may severely impact performance.
 # Default: 2000
 #PCRERecMatchLimit 10000
 
-# This option sets the maximum filesize for which PCRE subsigs will be executed.
-# Files exceeding this limit will not have PCRE subsigs executed unless a subsig is encompassed to a smaller buffer.
+# This option sets the maximum filesize for which PCRE subsigs will be
+# executed. Files exceeding this limit will not have PCRE subsigs executed
+# unless a subsig is encompassed to a smaller buffer.
 # Negative values are not allowed.
 # Setting this value to zero disables the limit.
-# WARNING: setting this limit too high or disabling it may severely impact performance.
+# WARNING: setting this limit too high or disabling it may severely impact
+# performance.
 # Default: 25M
 #PCREMaxFileSize 100M
 
-# When BlockMax is set, files exceeding the MaxFileSize, MaxScanSize, or MaxRecursion limit will be flagged
-# with the virus "Heuristics.Limits.Exceeded".
+# When AlertExceedsMax is set, files exceeding the MaxFileSize, MaxScanSize, or
+# MaxRecursion limit will be flagged with the virus
+# "Heuristics.Limits.Exceeded".
 # Default: no
-#BlockMax yes
+#AlertExceedsMax yes
+
 
 ##
 ## Bytecode
 ##
 
 # With this option enabled ClamAV will load bytecode from the database. 
-# It is highly recommended you keep this option on, otherwise you'll miss detections for many new viruses.
+# It is highly recommended you keep this option on, otherwise you'll miss
+# detections for many new viruses.
 # Default: yes
 #Bytecode yes
 
 # Set bytecode security level.
 # Possible values:
-#       None - no security at all, meant for debugging. DO NOT USE THIS ON PRODUCTION SYSTEMS
-#         This value is only available if clamav was built with --enable-debug!
-#       TrustSigned - trust bytecode loaded from signed .c[lv]d files,
-#                insert runtime safety checks for bytecode loaded from other sources
-#       Paranoid - don't trust any bytecode, insert runtime checks for all
-# Recommended: TrustSigned, because bytecode in .cvd files already has these checks
+#   None -      No security at all, meant for debugging.
+#               DO NOT USE THIS ON PRODUCTION SYSTEMS.
+#               This value is only available if clamav was built
+#               with --enable-debug!
+#   TrustSigned - Trust bytecode loaded from signed .c[lv]d files, insert
+#               runtime safety checks for bytecode loaded from other sources.
+#   Paranoid -  Don't trust any bytecode, insert runtime checks for all.
+# Recommended: TrustSigned, because bytecode in .cvd files already has these
+# checks.
 # Note that by default only signed bytecode is loaded, currently you can only
 # load unsigned bytecode in --enable-debug mode.
 #
