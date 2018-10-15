@@ -577,7 +577,7 @@ long cli_strntol(const char* nptr, size_t n, char** endptr, register int base)
     }
 
     if (base == 0 || base == 16) {
-        if (c == '0' && (*s == 'x' || *s == 'X')) {
+        if (c == '0' && (s + 1 < nptr + n) && (*(s+1) == 'x' || *(s+1) == 'X')) {
             if (s + 2 >= nptr + n) {
                 goto done;
             }
@@ -696,7 +696,7 @@ cli_strntoul(const char* nptr, size_t n, char** endptr, register int base)
     }
 
     if (base == 0 || base == 16) {
-        if (c == '0' && (*s == 'x' || *s == 'X')) {
+        if (c == '0' && (s + 1 < nptr + n) && (*(s+1) == 'x' || *(s+1) == 'X')) {
             if (s + 2 >= nptr + n) {
                 goto done;
             }

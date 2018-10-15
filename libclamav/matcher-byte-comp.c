@@ -131,7 +131,7 @@ cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, cons
     /* use the passed hexsig buffer to find the start and ending parens and store the param length (minus starting paren) */
     buf_start = buf_end;
     if (buf_start[0] == '(') {
-        if (buf_end = strchr(buf_start, ')')) {
+        if (( buf_end = strchr(buf_start, ')') )) {
             len = (size_t) (buf_end - ++buf_start);
         }
         else {
@@ -230,10 +230,12 @@ cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, cons
 
             case 'd':
                 /* hex, decimal, auto, and binary options are mutually exclusive parameters */
-                if (bcomp->options & CLI_BCOMP_HEX || bcomp->options & CLI_BCOMP_BIN || bcomp->options & CLI_BCOMP_AUTO) {
+                /* decimal may not be used with little-endian. big-endian is implied. */
+                if (bcomp->options & CLI_BCOMP_HEX || bcomp->options & CLI_BCOMP_BIN || bcomp->options & CLI_BCOMP_AUTO || bcomp->options & CLI_BCOMP_LE) {
                     ret = CL_EMALFDB;
                 } else {
                     bcomp->options |= CLI_BCOMP_DEC;
+                    bcomp->options |= CLI_BCOMP_BE;
                 } break;
 
             case 'i':
@@ -255,7 +257,8 @@ cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, cons
 
             case 'l':
                 /* little and big endian options are mutually exclusive parameters */
-                if (bcomp->options & CLI_BCOMP_BE) {
+                /* decimal may not be used with little-endian */
+                if (bcomp->options & CLI_BCOMP_BE || bcomp->options & CLI_BCOMP_DEC) {
                     ret = CL_EMALFDB;
                 } else {
                     bcomp->options |= CLI_BCOMP_LE;
@@ -485,7 +488,7 @@ cl_error_t cli_bcomp_scanbuf(const unsigned char *buffer, size_t buffer_length, 
             }
 
             /* ensures the referenced subsig matches as expected, and also ensures mdata has the needed offset */
-            if (ret = lsig_sub_matched(root, mdata, lsigid, ref_subsigid, CLI_OFF_NONE, 0)) {
+            if (( ret = lsig_sub_matched(root, mdata, lsigid, ref_subsigid, CLI_OFF_NONE, 0) )) {
                 break;
             }
 
@@ -629,7 +632,17 @@ cl_error_t cli_bcomp_compare_check(const unsigned char* buffer, size_t buffer_le
     opt_val = opt;
     if (opt_val & CLI_BCOMP_AUTO) {
         if (tmp_buffer) {
-            if(!strncmp((char*) tmp_buffer, "0x", 2) || !strncmp((char*) tmp_buffer, "0X", 2)) {
+            /* tmp_buffer is based on the size of byte_len, so we can check against that safely */
+            if ((opt & 0x00F0) & CLI_BCOMP_LE && byte_len >= 3) {
+                if(!strncmp((char*) &tmp_buffer[byte_len-2], "0x", 2) || !strncmp((char*) &tmp_buffer[byte_len-2], "0X", 2)) {
+                    tmp_buffer[byte_len-2] = '\0';
+                    bcm_dbgmsg("cli_bcomp_compare_check: adjusted bytes before comparison %.*s\n", byte_len-2, tmp_buffer);
+                    opt |= CLI_BCOMP_HEX;
+                } else {
+                    opt |= CLI_BCOMP_DEC;
+                }
+            }
+            else if(!strncmp((char*) tmp_buffer, "0x", 2) || !strncmp((char*) tmp_buffer, "0X", 2)) {
                 opt |= CLI_BCOMP_HEX;
             } else {
                 opt |= CLI_BCOMP_DEC;
@@ -689,28 +702,9 @@ cl_error_t cli_bcomp_compare_check(const unsigned char* buffer, size_t buffer_le
 
         /*dl*/
         case CLI_BCOMP_DEC | CLI_BCOMP_LE:
-            value = cli_strntol((char*) buffer, byte_len, (char**) &end_buf, 10);
-            if ((((value == LONG_MAX) || (value == LONG_MIN)) && errno == ERANGE) || NULL == end_buf) {
-
-                if (tmp_buffer) {
-                    free(tmp_buffer);
-                }
-                bcm_dbgmsg("cli_bcomp_compare_check: little endian decimal conversion unsuccessful\n");
-                return CL_CLEAN;
-            }
-            /*dle*/
-            if (opt & CLI_BCOMP_EXACT) {
-                if (buffer+byte_len != end_buf) {
-
-                    if (tmp_buffer) {
-                        free(tmp_buffer);
-                    }
-                    bcm_dbgmsg("cli_bcomp_compare_check: couldn't extract the exact number of requested bytes\n");
-                    return CL_CLEAN;
-                }
-            }
-
-            value = le64_to_host(value);
+            /* it may be possible for the auto option to proc this */
+            bcm_dbgmsg("cli_bcomp_compare_check: auto detection found ascii decimal for specified little endian byte extraction, which is unsupported\n");
+            return CL_CLEAN;
             break;
 
         /*db*/
