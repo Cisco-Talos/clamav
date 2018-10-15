@@ -615,7 +615,7 @@ Byte compare subsignatures can be used to evaluate a numeric value at a given of
 
   - `h|d|a|i` where `h` specifies the byte sequence will be in hex, `d` decimal, `a` automatic detection of hex or decimal at runtime, and `i` signifies raw binary data.
 
-  - `l|b` where `l` specifies the byte sequence will be in little endian order and `b` big endian.
+  - `l|b` where `l` specifies the byte sequence will be in little endian order and `b` big endian. If decimal `d` is specified, big-endian is implied and using `l` will result in a malformed database error.
 
   - `e` specifies that ClamAV will only evaluate the comparison if it can extract the exact number of bytes specified. This option is implicitly declared when using the `i` flag.
 
