@@ -3,7 +3,52 @@ This page aims to provide information useful when developing, debugging, or
 profiling ClamAV.
 
 ## Building ClamAV for Development
-Below are some recommendations for building ClamAV so that it's easy to debug:
+Below are some recommendations for building ClamAV so that it's easy to debug.
+
+### Satisfying Build Dependencies
+To satisify all build dependencies:
+
+#### Debian/Ubuntu:
+```
+sudo apt-get install libxml2-dev libxml2 libbz2-dev bzip2 check make libssl-dev openssl zlib1g zlib1g-dev gcc gettext autoconf automake libtool cmake autoconf-archive pkg-config g++-multilib libmilter1.0.1 libmilter-dev valgrind libcurl4-openssl-dev libjson-c-dev ncurses-dev libpcre3-dev
+```
+
+#### CentOS/RHEL/Fedora
+```
+sudo yum install libxml2-devel libxml2 bzip2-devel bzip2 check make openssl-devel openssl zlib zlib-devel gcc gettext autoconf automake libtool cmake autoreconf pkg-config g++-multilib sendmail sendmail-devel libtool-ltdl-devel valgrind
+
+sudo yum groupinstall "Development Tools"
+```
+
+#### Solaris (using OpenCSW)
+```
+sudo /opt/csw/bin/pkgutil -y -i common coreutils automake autoconf libxml2_2 libxml2_dev bzip2 libbz2_dev libcheck0 libcheck_dev gmake cmake libssl1_0_0 libssl_dev openssl_utilslibgcc_s1 libiconv2 zlib1 libstdc++6 libpcre1 libltdl7 lzlib_stub zlib_stub libmilter libtool ggrep gsed pkgconfig ggettext gcc4core gcc4g++ libgcc_s1 libgccpp1
+
+sudo pkg install system/header
+
+sudo ln -sf /opt/csw/bin/gnm /usr/bin/nm
+sudo ln -sf /opt/csw/bin/gsed /usr/bin/sed
+sudo ln -sf /opt/csw/bin/gmake /usr/bin/make
+```
+If you receive an error message like
+`gcc: error: /opt/csw/lib/libstdc++.so: No such file or directory`,
+change versions with `/opt/csw/sbin/alternatives --config automake`
+
+#### FreeBSD
+The easiest way to install dependencies for FreeBSD is to just rely on ports:
+```
+cd /usr/ports/security/clamav
+make
+```
+
+### Download the Source
+```
+git clone https://github.com/Cisco-Talos/clamav-devel.git
+cd clamav-devel
+```
+
+If you intend to make changes and submit a pull request, fork the clamav-devel
+repo first and then clone your fork of the repository.
 
 ### Running ./configure
 Suggestions:
@@ -38,14 +83,10 @@ Suggestions:
       The json output contains additional metadata that might be helpful when
       debugging.
 
-    - `--enable-static --disable-shared`: This will only build libclamav and
-      the supporting libraries as static libraries, and will result in the
-      clamscan that is built having this code embedded.  This is useful for
-      running programs like gprof which don't handle profiling code in shared
-      objects.
-
     - `--with-systemdsystemunitdir=no`: Don't try to register clamd as a
-      systemd service
+      systemd service (on systems that use systemd). You likely don't want this
+      development build of clamd to register as a service, and this eliminates
+      the need to run `make install` with `sudo`.
 
     - You might want to include the following flags also so that the optional
       functionality is enabled: `--enable-experimental --enable-clamdtop
@@ -53,19 +94,38 @@ Suggestions:
       Note that this may require you to install additional development
       libraries.
 
-    - I ran into problems building with llvm on Ubuntu 18.04, so add
-      `--disable-llvm`
+    - `--disable-llvm`: When enabled, LLVM provides the capability to
+      just-in-time compile ClamAV bytecode signatures. Without LLVM, ClamAV
+      uses a built-in bytecode interpreter to execute bytecode signatures.
+      The mechanism is different, but the results are same and the performance
+      overall is comparable.  At present only LLVM versions up to LLVM 3.6.2
+      are supported by ClamAV, and LLVM 3.6.2 is old enough that newer
+      distributions no longer provide it. Therefore, we recommend using
+      the `--disable-llvm` configure option.
 
 Altogether, the following configure command can be used:
 
 ```
-CFLAGS="-ggdb -O0" ./configure --prefix=`pwd`/built --enable-debug --enable-check --enable-coverage --enable-libjson --enable-static --disable-shared --with-systemdsystemunitdir=no --enable-experimental --enable-clamdtop --enable-libjson --enable-xml --enable-pcre --disable-llvm
+CFLAGS="-ggdb -O0" ./configure --prefix=`pwd`/installed --enable-debug --enable-check --enable-coverage --enable-libjson --with-systemdsystemunitdir=no --enable-experimental --enable-clamdtop --enable-libjson --enable-xml --enable-pcre --disable-llvm
 ```
-To satisify all library dependencies, something like this should work
-(from Ubuntu 18.04):
-```
-sudo apt-get install git gcc libxml2-dev libssl-dev make libmilter-dev libcurl4-openssl-dev libjson-c-dev check pkgconf libncurses5-dev libpcre3-dev g++ libtool libbz2-dev
-```
+
+NOTE: It is possible to build libclamav as a static library and have it
+statically linked into clamscan/clamd (to do this, run `./configure` with
+`--enable-static --disable-shared`).  This is useful for using tools like gprof
+that do not support profiling code in shared objects.  However, there are two
+drawbacks to doing this:
+
+ - clamscan/clamd will not be able to extract files from RAR archives.  Based
+   on the software license of the unrar library that ClamAV uses, the library
+   can only be dynamically loaded.  ClamAV will attempt to dlopen the unrar
+   library shared object and will continue on without RAR extraction support
+   if the library can't be found (or if it doesn't get built, which is what
+   happens if you indicate that shared libraries should not be built).
+
+ - If you make changes to libclamav, you'll need to `make clean`, `make`, and
+   `make install` again to have clamscan/clamd rebuilt using the new
+   libclamav.a.  The makefiles don't seem to know to rebuild clamscan/clamd
+   when libclamav.a changes (TODO, fix this).
 
 ### Running make
 Run the following to finishing building.  `-j2` in the code below is used to
@@ -79,15 +139,18 @@ Also, you can run 'make check' to run the unit tests
 
 ### Downloading the Official Ruleset
 If you plan to use custom rules for testing, you can invoke clamscan via
-`./built/bin/clamscan`, specifying your custom rule files via `-d` parameters.
+`./installed/bin/clamscan`, specifying your custom rule files via `-d` parameters.
 
 If you want to download the official ruleset to use with clamscan, do the
 following:
-1. Run `mkdir -p built/share/clamav`
+1. Run `mkdir -p installed/share/clamav`
 2. Comment out line 8 of etc/freshclam.conf.sample
-3. Run `./built/bin/freshclam --config-file etc/freshclam.conf.sample`
+3. Run `./installed/bin/freshclam --config-file etc/freshclam.conf.sample`
 
 ## General Debugging
+NOTE: Some of the debugging/profiling tools mentioned in the sections below are
+specific to Linux
+
 ### Useful clamscan Flags
 The following are useful flags to include when debugging clamscan:
 
@@ -105,7 +168,8 @@ The following are useful flags to include when debugging clamscan:
   an executable is determined to be broken, some functionality might not get
   invoked for the sample, and this could be an indication of an issue parsing
   the PE header or file.  This causes those binary to generate an alert instead
-  of just continuing on.
+  of just continuing on.  NOTE: This will be renamed to `--alert-broken`
+  starting in ClamAV 0.101.
 
 - `--max-filesize=2000M --max-scansize=2000M --max-files=2000000
    --max-recursion=2000000 --max-embeddedpe=2000M --max-htmlnormalize=2000000
@@ -140,42 +204,11 @@ writing:
   about the certificates stored within the binary.  Note - sigtool has this
   functionality as well and doesn't require a rule match to view the cert data
 
-### Useful sigtool Flags
-sigtool pulls in libclamav and provides shortcuts to doing tasks that clamscan
-does behind the scenes.  These can be really useful when writing a signature or
-trying to get information about a signature that might be causing FPs or
-performance problems.
-
-The following sigtool flags can be useful when debugging:
-
-- `--unpack`: Unpack the specified CVD/CLD file
-
-- `--decode`: Given a ClamAV signature from STDIN, show a more user-friendly
-  representation of it
-
-- `--hex-dump`: Given a sequence of bytes from STDIN, print the hex equivalent
-
-- `--mdb`: Generate section hashes of the specified file
-
-- `--imp`: Generate import hashes of the specified file
-
-- `--html-normalise`: Normalize the specified HTML file in the way that
-  clamscan will before looking for rule matches.  This makes it either to write
-  rules that will actually match.
-
-- `--ascii-normalise`: Normalized the specified ASCII text file in the way that
-  clamscan will before looking for rule matches
-
-- `--print-certs`: Print the Authenticode signatures of any PE files specified.
-  This is useful when writing signature-based .crb rule files.
-
-- `--vba`: Extract VBA/Word6 macro code
-
 ### Using gdb
 Given that you might want to pass a lot of arguments to gdb, consider taking
 advantage of the `--args` parameter.  For example:
 ```
-gdb --args ./built/bin/clamscan -d /tmp/test.ldb -d /tmp/blacklist.crb -d --dumpcerts --debug --verbose --max-filesize=2000M --max-scansize=2000M --max-files=2000000 --max-recursion=2000000 --max-embeddedpe=2000M --max-iconspe=2000000 f8f101166fec5785b4e240e4b9e748fb6c14fdc3cd7815d74205fc59ce121515
+gdb --args ./installed/bin/clamscan -d /tmp/test.ldb -d /tmp/blacklist.crb -d --dumpcerts --debug --verbose --max-filesize=2000M --max-scansize=2000M --max-files=2000000 --max-recursion=2000000 --max-embeddedpe=2000M --max-iconspe=2000000 f8f101166fec5785b4e240e4b9e748fb6c14fdc3cd7815d74205fc59ce121515
 ```
 
 When using ClamAV without libclamav statically linked, if you set breakpoints
@@ -195,12 +228,12 @@ If checking for leaks, be sure to run clamscan with samples that will hit as
 many of the unique code paths in the code you are testing.  An example
 invocation is as follows:
 ```
-valgrind --leak-check=full ./built/bin/clamscan -d /tmp/test.ldb --leave-temps --tempdir /tmp/test --debug --verbose /tmp/upx-samples/ > /tmp/upx-results-2.txt 2>&1
+valgrind --leak-check=full ./installed/bin/clamscan -d /tmp/test.ldb --leave-temps --tempdir /tmp/test --debug --verbose /tmp/upx-samples/ > /tmp/upx-results-2.txt 2>&1
 ```
 Alternatively, on Linux, you can use glibc's built-in leak checking
 functionality:
 ```
-MALLOC_CHECK_=7 ./built/bin/clamscan
+MALLOC_CHECK_=7 ./installed/bin/clamscan
 ```
 See the [mallopt man page](http://manpages.ubuntu.com/manpages/trusty/man3/mallopt.3.html) for more details
 
@@ -251,7 +284,7 @@ $ sudo su
 Invoke clamscan via perf record as follows, and run perf script to collect the
 profiling data:
 ```
-perf record -F 100 -g -- ./built/bin/clamscan -d /tmp/test.ldb /tmp/2aa6b18d509090c60c3e4ecdd8aeb16e5f149807e3404c86892112710eab576d
+perf record -F 100 -g -- ./installed/bin/clamscan -d /tmp/test.ldb /tmp/2aa6b18d509090c60c3e4ecdd8aeb16e5f149807e3404c86892112710eab576d
 perf script > out.perf
 ```
 The '-F' parameter indicates how many samples should be collected during
