@@ -2408,7 +2408,7 @@ static int cli_scanembpe(cli_ctx *ctx, off_t offset)
     return CL_CLEAN;
 }
 
-#if defined(_WIN32) || defined(C_LINUX)
+#if defined(_WIN32) || defined(C_LINUX) || defined(C_DARWIN)
 #define PERF_MEASURE
 #endif
 
