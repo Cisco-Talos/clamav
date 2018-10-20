@@ -36,7 +36,7 @@
     <Filter Include="Source Files\libxml2">
       <UniqueIdentifier>{8f0b6856-1d86-4ab3-b519-14a403a3058a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\pcre">
+    <Filter Include="Source Files\pcre2">
       <UniqueIdentifier>{21226063-d886-46c0-b786-a5a5254e0dca}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -957,71 +957,86 @@
     <ClCompile Include="..\libclamav\tiff.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="3rdparty\pcre\pcre_byte_order.c">
-      <Filter>Source Files\pcre</Filter>
-    </ClCompile>
-    <ClCompile Include="3rdparty\pcre\pcre_chartables.c">
-      <Filter>Source Files\pcre</Filter>
-    </ClCompile>
-    <ClCompile Include="3rdparty\pcre\pcre_compile.c">
-      <Filter>Source Files\pcre</Filter>
-    </ClCompile>
-    <ClCompile Include="3rdparty\pcre\pcre_config.c">
-      <Filter>Source Files\pcre</Filter>
-    </ClCompile>
-    <ClCompile Include="3rdparty\pcre\pcre_dfa_exec.c">
-      <Filter>Source Files\pcre</Filter>
-    </ClCompile>
-    <ClCompile Include="3rdparty\pcre\pcre_exec.c">
-      <Filter>Source Files\pcre</Filter>
-    </ClCompile>
-    <ClCompile Include="3rdparty\pcre\pcre_fullinfo.c">
-      <Filter>Source Files\pcre</Filter>
-    </ClCompile>
-    <ClCompile Include="3rdparty\pcre\pcre_get.c">
-      <Filter>Source Files\pcre</Filter>
-    </ClCompile>
-    <ClCompile Include="3rdparty\pcre\pcre_globals.c">
-      <Filter>Source Files\pcre</Filter>
-    </ClCompile>
-    <ClCompile Include="3rdparty\pcre\pcre_jit_compile.c">
-      <Filter>Source Files\pcre</Filter>
-    </ClCompile>
-    <ClCompile Include="3rdparty\pcre\pcre_maketables.c">
-      <Filter>Source Files\pcre</Filter>
-    </ClCompile>
-    <ClCompile Include="3rdparty\pcre\pcre_newline.c">
-      <Filter>Source Files\pcre</Filter>
-    </ClCompile>
-    <ClCompile Include="3rdparty\pcre\pcre_ord2utf8.c">
-      <Filter>Source Files\pcre</Filter>
-    </ClCompile>
-    <ClCompile Include="3rdparty\pcre\pcre_refcount.c">
-      <Filter>Source Files\pcre</Filter>
-    </ClCompile>
-    <ClCompile Include="3rdparty\pcre\pcre_string_utils.c">
-      <Filter>Source Files\pcre</Filter>
-    </ClCompile>
-    <ClCompile Include="3rdparty\pcre\pcre_study.c">
-      <Filter>Source Files\pcre</Filter>
-    </ClCompile>
-    <ClCompile Include="3rdparty\pcre\pcre_tables.c">
-      <Filter>Source Files\pcre</Filter>
-    </ClCompile>
-    <ClCompile Include="3rdparty\pcre\pcre_ucd.c">
-      <Filter>Source Files\pcre</Filter>
-    </ClCompile>
-    <ClCompile Include="3rdparty\pcre\pcre_valid_utf8.c">
-      <Filter>Source Files\pcre</Filter>
-    </ClCompile>
-    <ClCompile Include="3rdparty\pcre\pcre_version.c">
-      <Filter>Source Files\pcre</Filter>
-    </ClCompile>
-    <ClCompile Include="3rdparty\pcre\pcre_xclass.c">
-      <Filter>Source Files\pcre</Filter>
-    </ClCompile>
     <ClCompile Include="..\libclamav\hwp.c">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre2\pcre2_auto_possess.c">
+      <Filter>Source Files\pcre2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre2\pcre2_compile.c">
+      <Filter>Source Files\pcre2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre2\pcre2_config.c">
+      <Filter>Source Files\pcre2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre2\pcre2_context.c">
+      <Filter>Source Files\pcre2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre2\pcre2_convert.c">
+      <Filter>Source Files\pcre2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre2\pcre2_dfa_match.c">
+      <Filter>Source Files\pcre2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre2\pcre2_error.c">
+      <Filter>Source Files\pcre2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre2\pcre2_extuni.c">
+      <Filter>Source Files\pcre2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre2\pcre2_find_bracket.c">
+      <Filter>Source Files\pcre2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre2\pcre2_maketables.c">
+      <Filter>Source Files\pcre2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre2\pcre2_match.c">
+      <Filter>Source Files\pcre2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre2\pcre2_match_data.c">
+      <Filter>Source Files\pcre2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre2\pcre2_newline.c">
+      <Filter>Source Files\pcre2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre2\pcre2_ord2utf.c">
+      <Filter>Source Files\pcre2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre2\pcre2_pattern_info.c">
+      <Filter>Source Files\pcre2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre2\pcre2_serialize.c">
+      <Filter>Source Files\pcre2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre2\pcre2_string_utils.c">
+      <Filter>Source Files\pcre2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre2\pcre2_study.c">
+      <Filter>Source Files\pcre2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre2\pcre2_substitute.c">
+      <Filter>Source Files\pcre2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre2\pcre2_substring.c">
+      <Filter>Source Files\pcre2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre2\pcre2_tables.c">
+      <Filter>Source Files\pcre2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre2\pcre2_ucd.c">
+      <Filter>Source Files\pcre2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre2\pcre2_valid_utf.c">
+      <Filter>Source Files\pcre2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre2\pcre2_xclass.c">
+      <Filter>Source Files\pcre2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre2\pcre2_jit_compile.c">
+      <Filter>Source Files\pcre2</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdparty\pcre2\pcre2_chartables.c">
+      <Filter>Source Files\pcre2</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1036,6 +1051,15 @@
     </ClInclude>
     <ClInclude Include="..\libclamav\xdp.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="3rdparty\pcre2\pcre2_internal.h">
+      <Filter>Source Files\pcre2</Filter>
+    </ClInclude>
+    <ClInclude Include="3rdparty\pcre2\pcre2_intmodedep.h">
+      <Filter>Source Files\pcre2</Filter>
+    </ClInclude>
+    <ClInclude Include="3rdparty\pcre2\pcre2_ucp.h">
+      <Filter>Source Files\pcre2</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
