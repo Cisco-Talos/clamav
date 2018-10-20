@@ -128,6 +128,7 @@ static const struct ftmap_s {
     { "CL_TYPE_OOXML_HWP",	CL_TYPE_OOXML_HWP	},
     { "CL_TYPE_PS",		CL_TYPE_PS		},
     { "CL_TYPE_MHTML",		CL_TYPE_MHTML		},
+    { "CL_TYPE_LNK", 		CL_TYPE_LNK		},
     { NULL,			CL_TYPE_IGNORED		}
 };
 
