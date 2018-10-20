@@ -130,7 +130,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>HAVE_STRUCT_TIMESPEC;HAVE_STDBOOL_H;WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\pcre;$(SolutionDir)..;$(CLAM_DEPENDENCIES)\$(PlatformName)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\pcre2;$(SolutionDir)..;$(CLAM_DEPENDENCIES)\$(PlatformName)\include</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4996;4244;4090;4018;4101</DisableSpecificWarnings>
     </ClCompile>
@@ -147,7 +147,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>HAVE_STRUCT_TIMESPEC;HAVE_STDBOOL_H;WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\pcre;$(SolutionDir)..;$(CLAM_DEPENDENCIES)\$(PlatformName)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\pcre2;$(SolutionDir)..;$(CLAM_DEPENDENCIES)\$(PlatformName)\include</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4996;4244;4090;4018;4101;4267</DisableSpecificWarnings>
     </ClCompile>
@@ -166,7 +166,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>HAVE_STRUCT_TIMESPEC;HAVE_STDBOOL_H;WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\pcre;$(SolutionDir)..;$(CLAM_DEPENDENCIES)\$(PlatformName)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\pcre2;$(SolutionDir)..;$(CLAM_DEPENDENCIES)\$(PlatformName)\include</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4996;4244;4090;4018;4101</DisableSpecificWarnings>
     </ClCompile>
@@ -187,7 +187,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>HAVE_STRUCT_TIMESPEC;HAVE_STDBOOL_H;WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\pcre;$(SolutionDir)..;$(CLAM_DEPENDENCIES)\$(PlatformName)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\pcre2;$(SolutionDir)..;$(CLAM_DEPENDENCIES)\$(PlatformName)\include</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4996;4244;4090;4018;4101</DisableSpecificWarnings>
     </ClCompile>
@@ -208,7 +208,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>HAVE_STRUCT_TIMESPEC;HAVE_STDBOOL_H;WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\pcre;$(SolutionDir)..;$(CLAM_DEPENDENCIES)\$(PlatformName)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\pcre2;$(SolutionDir)..;$(CLAM_DEPENDENCIES)\$(PlatformName)\include</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4996;4244;4090;4018;4101;4267</DisableSpecificWarnings>
     </ClCompile>
@@ -229,7 +229,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>HAVE_STRUCT_TIMESPEC;HAVE_STDBOOL_H;WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\pcre;$(SolutionDir)..;$(CLAM_DEPENDENCIES)\$(PlatformName)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\pcre2;$(SolutionDir)..;$(CLAM_DEPENDENCIES)\$(PlatformName)\include</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4996;4244;4090;4018;4101;4267</DisableSpecificWarnings>
     </ClCompile>

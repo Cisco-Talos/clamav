@@ -203,6 +203,7 @@
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 /* #undef HAVE_INTTYPES_H */
+#define HAVE_INTTYPES_H 1
 
 /* in_addr_t is defined */
 /* #undef HAVE_IN_ADDR_T */
@@ -228,8 +229,9 @@
 /* Define to '1' if you have the curses.h library */
 /* #undef HAVE_LIBPDCURSES */
 
-/* Define to 1 if you have the 'pcre' library (-lpcre). */
+/* Define to 1 if you have the 'pcre2' library (-lpcre2). */
 #define HAVE_PCRE 1
+#define USING_PCRE2 1
 
 /* Define to 1 if you have the 'libxml2' library (-lxml2). */
 #define HAVE_LIBXML2 1
@@ -336,6 +338,7 @@
 
 /* Define to 1 if you have the <stdint.h> header file. */
 /* #undef HAVE_STDINT_H */
+#define HAVE_STDINT_H 1
 
 /* Define to 1 if you have the <stdlib.h> header file. */
 #define HAVE_STDLIB_H 1
