@@ -1105,7 +1105,7 @@ int scanmanager(const struct optstruct *opts)
 #endif
 
     if(optget(opts, "dev-performance")->enabled)
-        options.general |= CL_SCAN_DEV_COLLECT_PERFORMANCE_INFO;
+        options.dev |= CL_SCAN_DEV_COLLECT_PERFORMANCE_INFO;
 
     if(optget(opts, "detect-structured")->enabled) {
         options.heuristic |= CL_SCAN_HEURISTIC_STRUCTURED;
