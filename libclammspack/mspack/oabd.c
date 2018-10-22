@@ -236,14 +236,10 @@ static int oabd_decompress(struct msoab_decompressor *_self, const char *input,
   }
 
  out:
-  if (lzx)
-    lzxd_free(lzx);
-  if (buf)
-    sys->free(buf);
-  if (outfh)
-    sys->close(outfh);
-  if (infh)
-    sys->close(infh);
+  if (lzx) lzxd_free(lzx);
+  if (outfh) sys->close(outfh);
+  if (infh) sys->close(infh);
+  sys->free(buf);
 
   return ret;
 }
@@ -390,16 +386,11 @@ static int oabd_decompress_incremental(struct msoab_decompressor *_self,
   }
 
  out:
-  if (lzx)
-    lzxd_free(lzx);
-  if (buf)
-    sys->free(buf);
-  if (outfh)
-    sys->close(outfh);
-  if (basefh)
-    sys->close(basefh);
-  if (infh)
-    sys->close(infh);
+  if (lzx) lzxd_free(lzx);
+  if (outfh) sys->close(outfh);
+  if (basefh) sys->close(basefh);
+  if (infh) sys->close(infh);
+  sys->free(buf);
 
   return ret;
 }

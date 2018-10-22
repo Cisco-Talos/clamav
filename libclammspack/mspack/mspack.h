@@ -424,7 +424,7 @@ struct mspack_system {
   /**
    * Frees memory.
    * 
-   * @param ptr the memory to be freed.
+   * @param ptr the memory to be freed. NULL is accepted and ignored.
    * @see alloc()
    */
   void (*free)(void *ptr);

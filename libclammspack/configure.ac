@@ -1,7 +1,7 @@
 # -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 AC_PREREQ(2.59)
-AC_INIT([libmspack],[0.7.1alpha],[kyzer@cabextract.org.uk])
+AC_INIT([libmspack],[0.8alpha],[kyzer@cabextract.org.uk])
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE
 AC_CONFIG_SRCDIR([mspack/mspack.h])

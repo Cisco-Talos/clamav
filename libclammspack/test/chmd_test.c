@@ -34,6 +34,32 @@ void chmd_open_test_01() {
     mspack_destroy_chm_decompressor(chmd);
 }
 
+/* check no files are returned with blank filenames */
+void chmd_open_test_02() {
+    struct mschm_decompressor *chmd;
+    struct mschmd_header *chm;
+    struct mschmd_file *f;
+    unsigned int i;
+    const char *files[] = {
+        "test_files/chmd/blank-filenames.chm"
+    };
+
+    chmd =  mspack_create_chm_decompressor(NULL);
+    TEST(chmd != NULL);
+    for (i = 0; i < (sizeof(files)/sizeof(char *)); i++) {
+        chm = chmd->open(chmd, files[i]);
+        TEST(chm != NULL);
+        for (f = chm->files; f; f = f->next) {
+            TEST(f->filename && f->filename[0]);
+        }
+        for (f = chm->sysfiles; f; f = f->next) {
+            TEST(f->filename && f->filename[0]);
+        }
+    }
+    mspack_destroy_chm_decompressor(chmd);
+}
+
+
 /* check searching bad files doesn't crash */
 void chmd_search_test_01() {
     struct mschm_decompressor *chmd;
@@ -95,6 +121,7 @@ int main() {
   TEST(selftest == MSPACK_ERR_OK);
 
   chmd_open_test_01();
+  chmd_open_test_02();
   chmd_search_test_01();
   chmd_extract_test_01();
 

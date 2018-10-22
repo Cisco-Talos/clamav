@@ -1,4 +1,4 @@
-libmspack 0.7.1alpha
+libmspack 0.8alpha
 
 The purpose of libmspack is to provide compressors and decompressors,
 archivers and dearchivers for Microsoft compression formats: CAB, CHM, WIM,
@@ -36,12 +36,11 @@ make install
 This will install the main libmspack library and mspack.h header file.
 Some other libraries and executables are built, but not installed.
 
-If building from the Subversion repository, running rebuild.sh will create
-all the automatically generated files like the configure script, and will
-then ./configure, make and make distcheck. Running cleanup.sh will perform
-a thorough clean, deleting all automatically generated files.
+If building from the Git repository, running rebuild.sh will create all the
+auto-generated files, then run ./configure && make. Running cleanup.sh will
+perform a thorough clean, deleting all auto-generated files.
 
-In addition to gcc, you also need the following for building from Subversion:
+In addition to gcc, you also need the following for building from repository:
 
 - at least autoconf 2.57
 - at least automake 1.7

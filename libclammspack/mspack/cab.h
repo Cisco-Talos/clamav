@@ -1,5 +1,5 @@
 /* This file is part of libmspack.
- * (C) 2003-2004 Stuart Caie.
+ * (C) 2003-2018 Stuart Caie.
  *
  * libmspack is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License (LGPL) version 2.1
@@ -67,16 +67,24 @@
  * more than 6144 bytes. Quantum has no documentation, but the largest
  * block seen in the wild is 337 bytes above uncompressed size.
  */
-#define CAB_BLOCKMAX (65535)
-#define CAB_BLOCKSTD (32768)
+#define CAB_BLOCKMAX (32768)
 #define CAB_INPUTMAX (CAB_BLOCKMAX+6144)
+
+/* input buffer needs to be CAB_INPUTMAX + 1 byte to allow for max-sized block
+ * plus 1 trailer byte added by cabd_sys_read_block() for Quantum alignment.
+ *
+ * When MSCABD_PARAM_SALVAGE is set, block size is not checked so can be
+ * up to 65535 bytes, so max input buffer size needed is 65535 + 1
+ */
+#define CAB_INPUTMAX_SALVAGE (65535)
+#define CAB_INPUTBUF (CAB_INPUTMAX_SALVAGE + 1)
 
 /* There are no more than 65535 data blocks per folder, so a folder cannot
  * be more than 32768*65535 bytes in length. As files cannot span more than
  * one folder, this is also their max offset, length and offset+length limit.
  */
 #define CAB_FOLDERMAX (65535)
-#define CAB_LENGTHMAX UINT_MAX
+#define CAB_LENGTHMAX (CAB_BLOCKMAX * CAB_FOLDERMAX)
 
 /* CAB compression definitions */
 
@@ -93,6 +101,7 @@ struct mscabd_decompress_state {
   struct mscabd_folder_data *data;   /* current folder split we're in        */
   unsigned int offset;               /* uncompressed offset within folder    */
   unsigned int block;                /* which block are we decompressing?    */
+  off_t outlen;                      /* cumulative sum of block output sizes */
   struct mspack_system sys;          /* special I/O code for decompressor    */
   int comp_type;                     /* type of compression used by folder   */
   int (*decompress)(void *, off_t);  /* decompressor code                    */
@@ -101,7 +110,7 @@ struct mscabd_decompress_state {
   struct mspack_file *infh;          /* input file handle                    */
   struct mspack_file *outfh;         /* output file handle                   */
   unsigned char *i_ptr, *i_end;      /* input data consumed, end             */
-  unsigned char input[CAB_INPUTMAX]; /* one input block of data              */
+  unsigned char input[CAB_INPUTBUF]; /* one input block of data              */
 };
 
 struct mscab_decompressor_p {

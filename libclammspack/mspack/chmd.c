@@ -447,13 +447,13 @@ static int chmd_read_headers(struct mspack_system *sys, struct mspack_file *fh,
     while (num_entries--) {
       READ_ENCINT(name_len);
       if (name_len > (unsigned int) (end - p)) goto chunk_end;
-      /* consider blank filenames to be an error */
-      if (name_len == 0) goto chunk_end;
       name = p; p += name_len;
-
       READ_ENCINT(section);
       READ_ENCINT(offset);
       READ_ENCINT(length);
+
+      /* ignore blank or one-char (e.g. "/") filenames we'd return as blank */
+      if (name_len < 2 || !name[0] || !name[1]) continue;
 
       /* empty files and directory names are stored as a file entry at
        * offset 0 with length 0. We want to keep empty files, but not
@@ -536,7 +536,7 @@ static int chmd_fast_find(struct mschm_decompressor *base,
     struct mschm_decompressor_p *self = (struct mschm_decompressor_p *) base;
     struct mspack_system *sys;
     struct mspack_file *fh;
-    const unsigned char *chunk, *p = NULL, *end = NULL;
+    const unsigned char *chunk, *p, *end;
     int err = MSPACK_ERR_OK, result = -1;
     unsigned int n, sec;
 
