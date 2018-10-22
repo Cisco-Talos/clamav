@@ -380,7 +380,8 @@ void cabd_extract_test_01() {
         "test_files/cabd/filename-read-violation-3.cab",
         "test_files/cabd/filename-read-violation-4.cab",
         "test_files/cabd/lzx-main-tree-no-lengths.cab",
-        "test_files/cabd/lzx-premature-matches.cab"
+        "test_files/cabd/lzx-premature-matches.cab",
+        "test_files/cabd/qtm-max-size-block.cab"
     };
 
     cabd = mspack_create_cab_decompressor(NULL);

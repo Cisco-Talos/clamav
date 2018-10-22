@@ -1,17 +1,64 @@
-18-09-16  Stuart Caie <kyzer@cabextract.org.uk>
+2018-10-20  Stuart Caie <kyzer@cabextract.org.uk>
 
-    * cabd.c: add new parameter, MSCABD_PARAM_SALVAGE, which makes CAB file
-    reading and extraction more lenient, to allow damaged or mangled CABs
-    to be extracted. When enabled, cabd->open() will no longer reject
-    cabinets entirely if they have files with invalid folder indicies
-    or filenames, but will simply ignore those files. Also, cabd->extract()
-    will limit files with invalid lengths to the maximum possible, rather
-    than reject them. Finally, invalid data block checksums will produce
-    warnings, but won't cause decompression to fail. It's still possible
-    for corrupted files to fail extraction, but hopefully more data can
-    be extracted before they do. This new parameter doesn't affect the
-    existing MSCABD_PARAM_FIXMSZIP parameter, which ignores MSZIP
-    decompression failures.
+	* src/chmextract.c: add anti "../" and leading slash protection to
+	chmextract. I'm not pleased about this. All the sample code provided
+	with libmspack is meant to be simple examples of library use, not
+	"productised" binaries. Making the "useful" code samples install
+	as binaries was a mistake. They were never intended to protect you
+	from unpacking archive files with relative/absolute paths, and I
+	would prefer that they never will be.
+
+2018-10-17  Stuart Caie <kyzer@cabextract.org.uk>
+
+	* cab.h: Make the CAB block input buffer one byte larger, to allow
+	a maximum-allowed-size input block and the special extra byte added
+	after the block by cabd_sys_read_block to help Quantum alignment.
+	Thanks to Henri Salo for reporting this.
+
+2018-10-17  Stuart Caie <kyzer@cabextract.org.uk>
+
+	* chmd_read_headers(): again reject files with blank filenames, this
+	time because their 1st or 2nd byte is null, not because their length
+	is zero.  Thanks again to Hanno Böck for finding the issue.
+
+2018-10-16  Stuart Caie <kyzer@cabextract.org.uk>
+
+	* Makefile.am: using automake _DEPENDENCIES for chmd_test appears to
+	override the default dependencies (e.g. sources), so libchmd.la was no
+	longer considered a dependency of chmd_test. This breaks parallel
+	builds like "make -j4". Added libchmd.la explicitly to dependencies.
+	Thanks to Thomas Deutschmann for reporting this.
+
+2018-10-16  Stuart Caie <kyzer@cabextract.org.uk>
+
+	* cabd.c: add new parameter, MSCABD_PARAM_SALVAGE, which makes CAB file
+	reading and extraction more lenient, to allow damaged or mangled CABs
+	to be extracted. When enabled:
+	- cabd->open() won't reject cabinets with files that have invalid
+	  folder indices or filenames. These files will simply be skipped
+	- cabd->extract() won't reject files with invalid lengths, but will
+	  limit them to the maximum possible
+	- block output sizes over 32768 bytes won't be rejected
+	- invalid data block checksums won't be rejected
+	
+	It's still possible for corrupted files to fail extraction, but more
+	data can be extracted before they do.
+	
+	This new parameter doesn't affect the existing MSCABD_PARAM_FIXMSZIP
+	parameter, which ignores MSZIP decompression failures. You can enable
+	both at once.
+	
+	Thanks to Micah Snyder from ClamAV for working with me to get this
+	feature into libmspack. This also helps ClamAV move towards using a
+	vanilla copy of libmspack without needing their own patchset.
+
+2018-08-13  Stuart Caie <kyzer@cabextract.org.uk>
+
+	* mspack.h: clarify that mspack_system.free() should allow NULL. If your
+	mspack_system implementation doesn't, it would already have crashed, as
+	there are several places where libmspack calls sys->free(NULL). This
+	change makes it official, and amends a few "if (x) sys->free(x)" cases
+	to the simpler "sys->free(x)" to make it clearer.
 
 2018-08-09  Stuart Caie <kyzer@cabextract.org.uk>
 

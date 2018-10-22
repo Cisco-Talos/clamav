@@ -99,8 +99,8 @@ static struct msszddd_header *szddd_open(struct msszdd_decompressor *base,
     }
     
     if (self->error) {
-	if (fh)  sys->close(fh);
-	if (hdr) sys->free(hdr);
+	if (fh) sys->close(fh);
+	sys->free(hdr);
 	hdr = NULL;
     }
 
