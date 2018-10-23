@@ -64,7 +64,10 @@ struct cli_bcomp_comp {
 
 cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, const char* hexsig, const uint32_t *lsigid, unsigned int options);
 cl_error_t cli_bcomp_scanbuf(const unsigned char *buffer, size_t buffer_length, const char **virname, struct cli_ac_result **res, const struct cli_matcher *root, struct cli_ac_data *mdata, cli_ctx *ctx);
-cl_error_t cli_bcomp_compare_check(const unsigned char *buffer, size_t buffer_length, int offset, struct cli_bcomp_meta *bm);
+cl_error_t cli_bcomp_compare_check(const unsigned char *f_buffer, size_t buffer_length, int offset, struct cli_bcomp_meta *bm);
 void cli_bcomp_freemeta(struct cli_matcher *root, struct cli_bcomp_meta *bm);
+uint16_t cli_bcomp_chk_hex(const unsigned char* buffer, uint16_t opt, uint32_t len, uint32_t check_only);
+unsigned char* cli_bcomp_normalize_buffer(const unsigned char* buffer, uint32_t byte_len, uint32_t *pad_len,  uint16_t opt, uint16_t whitespace_only);
+
 
 #endif

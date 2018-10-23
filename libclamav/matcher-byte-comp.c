@@ -553,10 +553,12 @@ cl_error_t cli_bcomp_scanbuf(const unsigned char *buffer, size_t buffer_length, 
  * @param bm the byte comparison meta data struct, contains all the other info needed to do the comparison
  *
  */
-cl_error_t cli_bcomp_compare_check(const unsigned char* buffer, size_t buffer_length, int offset, struct cli_bcomp_meta *bm)
+cl_error_t cli_bcomp_compare_check(const unsigned char* f_buffer, size_t buffer_length, int offset, struct cli_bcomp_meta *bm)
 {
 
     uint32_t byte_len = 0;
+    uint32_t pad_len = 0;
+    uint32_t norm_len = 0;
     uint32_t length = 0;
     uint32_t i = 0;
     cl_error_t ret = 0;
@@ -564,9 +566,10 @@ cl_error_t cli_bcomp_compare_check(const unsigned char* buffer, size_t buffer_le
     uint16_t opt_val = 0;
     int64_t value = 0;
     const unsigned char* end_buf = NULL;
+    const unsigned char* buffer = NULL;
     unsigned char* tmp_buffer = NULL;
 
-    if (!buffer || !bm) {
+    if (!f_buffer || !bm) {
         bcm_dbgmsg("cli_bcomp_compare_check: a param is null\n");
         return CL_ENULLARG;
     }
@@ -590,71 +593,40 @@ cl_error_t cli_bcomp_compare_check(const unsigned char* buffer, size_t buffer_le
 
     /* jump to byte compare offset, then store off specified bytes into a null terminated buffer */
     offset += bm->offset;
-    buffer += offset;
+    f_buffer += offset;
 
-    bcm_dbgmsg("cli_bcomp_compare_check: literal extracted bytes before comparison %.*s\n", byte_len, buffer);
+    bcm_dbgmsg("cli_bcomp_compare_check: literal extracted bytes before comparison %.*s\n", byte_len, f_buffer);
+
+    /* normalize buffer for whitespace */
+
+    opt_val = opt & 0x000F;
+    if ( !(opt_val & CLI_BCOMP_BIN) ) {
+        buffer = cli_bcomp_normalize_buffer(f_buffer, byte_len, &pad_len, opt, 1);
+        if (NULL == buffer) {
+            cli_errmsg("cli_bcomp_compare_check: unable to whitespace normalize temp buffer, allocation failed\n");
+            return CL_EMEM;
+        }
+
+        /* adjust byte_len accordingly */
+        byte_len -= pad_len;
+    }
 
     /* normalize buffer for little endian vals */
     opt_val = opt & 0x00F0;
     if (opt_val == CLI_BCOMP_LE) {
         opt_val = opt & 0x000F;
-        if (opt_val & CLI_BCOMP_HEX || opt_val & CLI_BCOMP_AUTO) {
-            tmp_buffer = cli_calloc(byte_len+1, sizeof(char));
+        if ( !(opt_val & CLI_BCOMP_BIN) ) {
+            tmp_buffer = cli_bcomp_normalize_buffer(f_buffer, byte_len, NULL, opt, 0);
             if (NULL == tmp_buffer) {
-                cli_errmsg("cli_bcomp_compare_check: unable to allocate memory for temp buffer\n");
+                cli_errmsg("cli_bcomp_compare_check: unable to normalize temp, allocation failed\n");
                 return CL_EMEM;
             }
-
-            if (byte_len == 1) {
-                tmp_buffer[0] = buffer[0];
-            } else {
-                for (i = 0; i < byte_len; i = i+2) {
-                    if (((int32_t) byte_len - (int32_t) i) - 2 >= 0) {
-                        if ( isxdigit(buffer[byte_len-i-2]) || toupper(buffer[byte_len-i-2]) == 'X' ) {
-                            tmp_buffer[i] = buffer[byte_len-i-2];
-                        } else {
-                            tmp_buffer[i] = '0';
-                        }
-                    }
-
-                    if ( isxdigit(buffer[byte_len-i-1]) || toupper(buffer[byte_len-i-1]) == 'X' ) {
-                        tmp_buffer[i+1] = buffer[byte_len-i-1];
-                    } else {
-                        tmp_buffer[i+1] = '0';
-                    }
-                }
-            }
-            tmp_buffer[byte_len+1] = '\0';
-            bcm_dbgmsg("cli_bcomp_compare_check: normalized extracted bytes before comparison %.*s\n", byte_len, tmp_buffer);
         }
     }
 
     opt_val = opt;
     if (opt_val & CLI_BCOMP_AUTO) {
-        if (tmp_buffer) {
-            /* tmp_buffer is based on the size of byte_len, so we can check against that safely */
-            if ((opt & 0x00F0) & CLI_BCOMP_LE && byte_len >= 3) {
-                if(!strncmp((char*) &tmp_buffer[byte_len-2], "0x", 2) || !strncmp((char*) &tmp_buffer[byte_len-2], "0X", 2)) {
-                    tmp_buffer[byte_len-2] = '\0';
-                    bcm_dbgmsg("cli_bcomp_compare_check: adjusted bytes before comparison %.*s\n", byte_len-2, tmp_buffer);
-                    opt |= CLI_BCOMP_HEX;
-                } else {
-                    opt |= CLI_BCOMP_DEC;
-                }
-            }
-            else if(!strncmp((char*) tmp_buffer, "0x", 2) || !strncmp((char*) tmp_buffer, "0X", 2)) {
-                opt |= CLI_BCOMP_HEX;
-            } else {
-                opt |= CLI_BCOMP_DEC;
-            }
-        } else {
-            if(!strncmp((char*) buffer, "0x", 2) || !strncmp((char*) buffer, "0X", 2)) {
-                opt |= CLI_BCOMP_HEX;
-            } else {
-                opt |= CLI_BCOMP_DEC;
-            }
-        }
-        opt ^= CLI_BCOMP_AUTO;
+        opt = cli_bcomp_chk_hex(f_buffer, opt_val, byte_len, 0);
     }
 
     /* grab the first byte to handle byte length options to convert the string appropriately */
@@ -671,7 +643,7 @@ cl_error_t cli_bcomp_compare_check(const unsigned char* buffer, size_t buffer_le
             }
             /*hle*/
             if (opt & CLI_BCOMP_EXACT) {
-                if (tmp_buffer+byte_len != end_buf) {
+                if (tmp_buffer+byte_len != end_buf || pad_len != 0) {
 
                     free(tmp_buffer);
                     bcm_dbgmsg("cli_bcomp_compare_check: couldn't extract the exact number of requested bytes\n");
@@ -691,7 +663,7 @@ cl_error_t cli_bcomp_compare_check(const unsigned char* buffer, size_t buffer_le
             }
             /*hbe*/
             if (opt & CLI_BCOMP_EXACT) {
-                if (buffer+byte_len != end_buf) {
+                if (buffer+byte_len != end_buf || pad_len != 0) {
 
                     bcm_dbgmsg("cli_bcomp_compare_check: couldn't extract the exact number of requested bytes\n");
                     return CL_CLEAN;
@@ -717,24 +689,23 @@ cl_error_t cli_bcomp_compare_check(const unsigned char* buffer, size_t buffer_le
             }
             /*dbe*/
             if (opt & CLI_BCOMP_EXACT) {
-                if (buffer+byte_len != end_buf) {
+                if (buffer+byte_len != end_buf || pad_len != 0) {
 
                     bcm_dbgmsg("cli_bcomp_compare_check: couldn't extract the exact number of requested bytes\n");
                     return CL_CLEAN;
                 }
             }
 
-            value = be64_to_host(value);
             break;
 
         /*il*/
         case CLI_BCOMP_BIN | CLI_BCOMP_LE:
             /* exact byte_length option is implied for binary extraction */
             switch (byte_len) {
-                case 1: value = (*(int8_t*) buffer);                           break;
-                case 2: value =   (int16_t) le16_to_host( *(int16_t*) buffer); break;
-                case 4: value =   (int32_t) le32_to_host( *(int32_t*) buffer); break;
-                case 8: value =   (int64_t) le64_to_host( *(int64_t*) buffer); break;
+                case 1: value = (*(int8_t*) f_buffer);                           break;
+                case 2: value =   (int16_t) le16_to_host( *(int16_t*) f_buffer); break;
+                case 4: value =   (int32_t) le32_to_host( *(int32_t*) f_buffer); break;
+                case 8: value =   (int64_t) le64_to_host( *(int64_t*) f_buffer); break;
 
                 default:
                     bcm_dbgmsg("cli_bcomp_compare_check: invalid byte size for binary integer field (%u)\n", byte_len);
@@ -746,10 +717,10 @@ cl_error_t cli_bcomp_compare_check(const unsigned char* buffer, size_t buffer_le
         case CLI_BCOMP_BIN | CLI_BCOMP_BE:
             /* exact byte_length option is implied for binary extraction */
             switch (byte_len) {
-                case 1: value = ( *(int8_t*) buffer);                           break;
-                case 2: value =    (int16_t) be16_to_host( *(int16_t*) buffer); break;
-                case 4: value =    (int32_t) be32_to_host( *(int32_t*) buffer); break;
-                case 8: value =    (int64_t) be64_to_host( *(int64_t*) buffer); break;
+                case 1: value = ( *(int8_t*) f_buffer);                           break;
+                case 2: value =    (int16_t) be16_to_host( *(int16_t*) f_buffer); break;
+                case 4: value =    (int32_t) be32_to_host( *(int32_t*) f_buffer); break;
+                case 8: value =    (int64_t) be64_to_host( *(int64_t*) f_buffer); break;
 
                 default:
                     bcm_dbgmsg("cli_bcomp_compare_check: invalid byte size for binary integer field (%u)\n", byte_len);
@@ -815,6 +786,165 @@ cl_error_t cli_bcomp_compare_check(const unsigned char* buffer, size_t buffer_le
         }
     }
     return ret;
+}
+
+/**
+ * @brief checks to see if an ascii buffer should be considered hex or not
+ *
+ * @param buffer is the buffer to evaluate
+ * @param opts the bcomp opts bitfield to set/evaluate during the check
+ * @param len the length of the buffer, must be larger than 3 bytes
+ * @param check_only specifies whether to return true/false or the modified opt value
+ *
+ * @return if check only is set, it will return true or false, otherwise it returns a modifiied byte compare bitfield
+ */
+uint16_t cli_bcomp_chk_hex(const unsigned char* buffer, uint16_t opt, uint32_t len, uint32_t check_only) {
+
+    uint16_t check = 0;
+
+    if (!buffer || len < 3) {
+        return check_only ? check : opt;
+    }
+
+    if(!strncmp((char*) buffer, "0x", 2) || !strncmp((char*) buffer, "0X", 2)) {
+        opt |= CLI_BCOMP_HEX;
+        check = 1;
+    } else {
+        opt |= CLI_BCOMP_DEC;
+        check = 0;
+    }
+    opt ^= CLI_BCOMP_AUTO;
+
+    return check_only ? check : opt;
+}
+
+/**
+ * @brief multipurpose buffer normalization support function for bytcompare
+ *
+ * Currently can be used to normalize a little endian hex buffer to big endian.
+ * Can also be used to trim whitespace from the front of the buffer.
+ *
+ * @param buffer is the ascii bytes which are to be normalized
+ * @param byte_len is the length of these bytes
+ * @param pad_len if the address passed is non-null function will store the amount of whitespace found in bytes
+ * @param opt the byte compare option bitfield
+ * @param whitespace_only if true will only do whitespace normalization, will not perform whitespace
+ * normalization if set to no
+ *
+ * @return returns an allocated, normalized buffer or NULL if an allocation error has occurred
+ */
+unsigned char* cli_bcomp_normalize_buffer(const unsigned char* buffer, uint32_t byte_len, uint32_t *pad_len,  uint16_t opt, uint16_t whitespace_only) {
+    uint32_t norm_len = 0;
+    uint32_t pad = 0;
+    uint32_t i = 0;
+    uint16_t opt_val = 0;
+    uint16_t hex = 0;
+    unsigned char* tmp_buffer = NULL;
+    unsigned char* hex_buffer = NULL;
+
+    if (!buffer) {
+        cli_errmsg("cli_bcomp_compare_check: unable to normalize temp buffer, params null\n");
+        return NULL;
+    }
+
+    if (whitespace_only) {
+        for(i = 0; i < byte_len; i++) {
+            if (isspace(buffer[i])) {
+                bcm_dbgmsg("cli_bcomp_compare_check: buffer has whitespace \n");
+                pad++;
+            } else {
+                /* break on first non-padding whitespace */
+                break;
+            }
+        }
+        /* keep in mind byte_len is a stack variable so this won't change byte_len in our calling functioning */
+        byte_len = byte_len - pad;
+        tmp_buffer = cli_calloc(byte_len+1, sizeof(char));
+        if (NULL == tmp_buffer) {
+            cli_errmsg("cli_bcomp_compare_check: unable to allocate memory for whitespace normalized temp buffer\n");
+            return NULL;
+        }
+        memset(tmp_buffer, '0', byte_len+1);
+        memcpy(tmp_buffer, buffer+pad, byte_len);
+        tmp_buffer[byte_len] = '\0';
+        if (pad_len) {
+            *pad_len = pad;
+        }
+        return tmp_buffer;
+    }
+
+    opt_val = opt & 0x000F;
+    if (opt_val & CLI_BCOMP_HEX || opt_val & CLI_BCOMP_AUTO) {
+        norm_len = (byte_len % 2) == 0 ? byte_len : byte_len + 1;
+        tmp_buffer = cli_calloc(norm_len+1, sizeof(char));
+        if (NULL == tmp_buffer) {
+            cli_errmsg("cli_bcomp_compare_check: unable to allocate memory for normalized temp buffer\n");
+            return NULL;
+        }
+
+        hex_buffer = cli_calloc(norm_len+1, sizeof(char));
+        if(NULL == hex_buffer) {
+            free(tmp_buffer);
+            cli_errmsg("cli_bcomp_compare_check: unable to reallocate memory for hex buffer\n");
+            return NULL;
+        }
+
+        memset(tmp_buffer, '0', norm_len+1);
+        memset(hex_buffer, '0', norm_len+1);
+
+        if (byte_len == 1) {
+            tmp_buffer[0] = buffer[0];
+        } else {
+
+            if (norm_len == byte_len + 1) {
+                opt_val = opt;
+                if (cli_bcomp_chk_hex(buffer, opt_val, byte_len, 1)) {
+                    memcpy(hex_buffer+3, buffer+2, byte_len-2);
+                    hex_buffer[0] = 'x';
+                } else {
+                    memcpy(hex_buffer+1, buffer, byte_len);
+                }
+            } else {
+                opt_val = opt;
+                memcpy(hex_buffer, buffer, byte_len);
+                if (cli_bcomp_chk_hex(buffer, opt_val, byte_len, 1)) {
+                    hex_buffer[0] = 'x';
+                }
+            }
+
+            for (i = 0; i < norm_len; i = i+2) {
+                if (((int32_t) norm_len - (int32_t) i) - 2 >= 0) {
+                    /* 0000BA -> B0000A */
+                    if ( isxdigit(hex_buffer[norm_len-i-2]) || toupper(hex_buffer[norm_len-i-2]) == 'X' ) {
+                        if ( isxdigit(hex_buffer[norm_len-i-2]) ) {
+                            hex = 1;
+                        }
+                        tmp_buffer[i] = hex_buffer[norm_len-i-2];
+                    } else {
+                        /* non-hex detected, our current buffer is invalid so zero it out and continue */
+                        memset(tmp_buffer, '0', norm_len+1);
+                        hex = 0;
+                    }
+                }
+
+                /* 0000BA -> 0A00B0 */
+                if ( isxdigit(hex_buffer[norm_len-i-1]) || toupper(hex_buffer[norm_len-i-1]) == 'X' ) {
+                        if ( isxdigit(hex_buffer[norm_len-i-2]) ) {
+                            hex = 1;
+                        }
+                        tmp_buffer[i+1] = hex_buffer[norm_len-i-1];
+                } else {
+                    /* non-hex detected, our current buffer is invalid so zero it out and continue */
+                    memset(tmp_buffer, '0', norm_len+1);
+                    hex = 0;
+                }
+            }
+        }
+        tmp_buffer[norm_len+1] = '\0';
+        bcm_dbgmsg("cli_bcomp_compare_check: normalized extracted bytes before comparison %.*s\n", byte_len, tmp_buffer);
+    }
+
+    return tmp_buffer;
 }
 
 /**
