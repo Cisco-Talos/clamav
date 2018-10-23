@@ -1090,8 +1090,11 @@ int scanmanager(const struct optstruct *opts)
     if(optget(opts, "scan-hwp3")->enabled)
         options.parse |= CL_SCAN_PARSE_HWP3;
 
-    if(optget(opts, "algorithmic-detection")->enabled)
+    /* TODO: Remove deprecated option in a future feature release */
+    if ((optget(opts, "algorithmic-detection")->enabled) && /* && used due to default-yes for both options */
+        (optget(opts, "heuristic-alerts")->enabled)) {
         options.general |= CL_SCAN_GENERAL_HEURISTICS;
+    }
 
     /* TODO: Remove deprecated option in a future feature release */
     if ((optget(opts, "block-max")->enabled) || 
