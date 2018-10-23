@@ -990,16 +990,15 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     }
 
     /* TODO: Remove deprecated option in a future feature release. */
-    if (optget(opts, "AlgorithmicDetection")->enabled) {
-        logg("^Using deprecated option \"AlgorithmicDetection\" to enable "
+    if (!optget(opts, "AlgorithmicDetection")->enabled) {
+        logg("^Using deprecated option \"AlgorithmicDetection\" to disable "
              "heuristic alerts. Please update your configuration to use "
              "replacement option \"HeuristicAlerts\".\n");
-        options.heuristic |= CL_SCAN_GENERAL_HEURISTICS;
-    } else if (optget(opts, "HeuristicAlerts")->enabled) {
-        logg("Heuristic alerts enabled.\n");
-        options.general |= CL_SCAN_GENERAL_HEURISTICS;
-    } else {
+    } else if (!optget(opts, "HeuristicAlerts")->enabled) {
         logg("Heuristic alerts disabled.\n");
+	} else {
+		logg("Heuristic alerts enabled.\n");
+		options.general |= CL_SCAN_GENERAL_HEURISTICS;
     }
 
     if(optget(opts, "ScanPE")->enabled) {
