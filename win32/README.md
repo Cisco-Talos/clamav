@@ -1,4 +1,7 @@
-# ClamAV for Win32
+# Win32 ClamAV Build Instructions
+
+This document describes how to build ClamAV on Windows using Visual Studio.
+For information on how to use ClamAV, please refer to our [User Manual](../docs/UserManual.md).
 
 ## News
 
@@ -47,22 +50,24 @@ Visual Studio 2017 should work fine, but we currently work with Visual Studio 20
 
 ## Getting the code
 
-ClamAV source code is freely available via github at https://github.com/Cisco-Talos/clamav-devel
+ClamAV source code is freely available on [GitHub](https://github.com/Cisco-Talos/clamav-devel)
 
-To obtain a copy of the code, open a Git Bash terminal.  Navigate to a directory where you want to store the code, eg "workspace" and clone the repository using the https web URL.  For example:
-
-1. `cd`
-2. `mkdir workspace`
-3. `cd workspace`
-4. `git clone https://github.com/vrtadmin/clamav-devel.git`
+To obtain a copy of the code, open a Git Bash terminal. Navigate to a directory where you want to store the code, eg "workspace" and clone the repository using the https web URL.  For example:
+```cmd
+cd
+mkdir workspace
+cd workspace
+git clone https://github.com/vrtadmin/clamav-devel.git
+```
 
 Step into the win32 directory and open an Explorer window.
+```cmd
+cd clamav-devel
+cd win32
+explorer .
+```
 
-1. `cd clamav-devel`
-2. `cd win32`
-3. `explorer .`
-
-ClamAV for Windows uses the same code base as Unix/Linux based operating systems.  However, Windows specific files for building ClamAV are found under the win32 directory.
+ClamAV for Windows uses the same code base as Unix/Linux based operating systems. However, Windows specific files for building ClamAV are found under the win32 directory.
 
 ## Code configuration
 
@@ -71,25 +76,23 @@ After downloading the source code, minimal configuration is required:
 1. Run the `win32/configure.bat` script *from within the git shell*. Skip this step if you are building from an official release tarball.
 2. Obtain OpenSSL V1.1.0 or higher.  You will need the headers, libs, and bins for the platform (Win32 or x64) that you're targeting.
 3. Place the headers and binaries in a directory with the following structure:
-
-  ├───vcredist
-  │   ├───vc_redist.x64.exe <-- Visual Studio 2015 Redistributables installer (x64)
-  │   └───vc_redist.x86.exe <-- Visual Studio 2015 Redistributables installer (x86)
-  ├───Win32
-  │   ├───include
-  │   │   └───openssl  <-- openssl headers in here
-  │   └───lib          <-- .DLLs and .LIBs in here
-  └───x64
-      ├───include
-      │   └───openssl  <-- openssl headers in here
-      └───lib          <-- .DLLs and .LIBs in here
-
-4. Add an environment variable with the name `CLAM_DEPENDENCIES` and set the value to the path of the above directory.
-5. At present, the Inno Setup script `ClamAV-Installer.iss` requires this directory to be located here in order to build the installer:
-
-```
+    ```
     C:\clam_dependencies
-```
+    │
+    ├───vcredist
+    │   ├───vc_redist.x64.exe <-- VS 2015 Redistributables installer (x64)
+    │   └───vc_redist.x86.exe <-- VS 2015 Redistributables installer (x86)
+    ├───Win32
+    │   ├───include
+    │   │   └───openssl  <-- openssl headers here
+    │   └───lib          <-- .DLLs and .LIBs here
+    └───x64
+        ├───include
+        │   └───openssl  <-- openssl headers here
+        └───lib          <-- .DLLs and .LIBs here
+    ```
+4. Add an environment variable with the name `CLAM_DEPENDENCIES` and set the value to the path of the above directory.
+5. At present, the Inno Setup script `ClamAV-Installer.iss` requires this directory to be located specifically at `C:\clam_dependencies` in order to build the installer:
 
 ## Compilation
 
@@ -100,35 +103,35 @@ The output directory for the binaries is either `/win32/(Win32|x64)/Debug` or
 Alternatively, you can build from the command line (aka `cmd.exe`) by following these steps:
 
 x64:
-```
-    call "C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat" x64
-    setx CLAM_DEPENDENCIES "C:\\clam_dependencies"
-    call configure.bat
-    devenv ClamAV.sln /Clean "Release|x64" /useenv /ProjectConfig "Release|x64"
-    devenv ClamAV.sln /Rebuild "Release|x64" /useenv /ProjectConfig "Release|x64"'''
+```cmd
+call "C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat" x64
+setx CLAM_DEPENDENCIES "C:\\clam_dependencies"
+call configure.bat
+devenv ClamAV.sln /Clean "Release|x64" /useenv /ProjectConfig "Release|x64"
+devenv ClamAV.sln /Rebuild "Release|x64" /useenv /ProjectConfig "Release|x64"'''
 ```
 
 x86:
-```
-    reg Query "HKLM\\Hardware\\Description\\System\\CentralProcessor\\0" | find /i "x86" > NUL && set OS=32BIT || set OS=64BIT
-    if %OS%==32BIT call "C:\\Program Files\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat" x86
-    if %OS%==64BIT call "C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat" x86
-    setx CLAM_DEPENDENCIES "C:\\clam_dependencies"
-    call configure.bat
-    devenv ClamAV.sln /Clean "Release|Win32" /useenv /ProjectConfig "Release|Win32"
-    devenv ClamAV.sln /Rebuild "Release|Win32" /useenv /ProjectConfig "Release|Win32"'''
+```cmd
+reg Query "HKLM\\Hardware\\Description\\System\\CentralProcessor\\0" | find /i "x86" > NUL && set OS=32BIT || set OS=64BIT
+if %OS%==32BIT call "C:\\Program Files\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat" x86
+if %OS%==64BIT call "C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat" x86
+setx CLAM_DEPENDENCIES "C:\\clam_dependencies"
+call configure.bat
+devenv ClamAV.sln /Clean "Release|Win32" /useenv /ProjectConfig "Release|Win32"
+devenv ClamAV.sln /Rebuild "Release|Win32" /useenv /ProjectConfig "Release|Win32"'''
 ```
 
 To build the installer:
 
-1. Build ClamAV for both `x64` **and** `Win32`.  The installer requires both versions to be available.
+1. Build ClamAV for both `x64` **and** `Win32`. The installer requires both versions to be available.
 2. Open `win32\ClamAV-Installer.iss` using Inno Setup 5.  
-3. Run "Compile". 
+3. Run "Compile".
 
 Alternatively, you can invoke the Inno Setup command line installer from cmd.exe:
 
-```
-    "C:\Program Files (x86)\Inno Setup 5\ISCC.exe" .\ClamAV-Installer.iss
+```cmd
+"C:\Program Files (x86)\Inno Setup 5\ISCC.exe" .\ClamAV-Installer.iss
 ```
 
 After compilation, the installer will be located at `win32\ClamAV-<version>.exe`

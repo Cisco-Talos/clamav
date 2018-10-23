@@ -7,7 +7,9 @@
 Table Of Contents
 
 1. [Introduction to ClamAV](UserManual/Introduction.md)
-2. [Installing ClamAV](UserManual/Installation.md)
+2. Installing ClamAV
+    * [Unix/Linux/macOS](UserManual/Installation-Unix.md)
+    * [Windows](UserManual/Installation-Windows.md)
 3. [Configuring ClamAV](UserManual/Configuration.md)
 4. [Using ClamAV](UserManual/Usage.md)
 5. [Build \[lib\]ClamAV Into Your Programs](UserManual/libclamav.md)
