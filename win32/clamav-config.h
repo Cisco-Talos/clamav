@@ -469,7 +469,7 @@
 #define PACKAGE_NAME "ClamAV"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "ClamAV devel"
+#define PACKAGE_STRING "ClamAV 0.101.0-beta"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "clamav"
@@ -478,7 +478,7 @@
 #define PACKAGE_URL "https://www.clamav.net/"
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "devel"
+#define PACKAGE_VERSION "0.101.0-beta"
 
 /* scan buffer size */
 #define SCANBUFF 131072
@@ -514,7 +514,7 @@
 /* #undef USE_SYSLOG */
 
 /* Version number of package */
-#define VERSION "0.101.0-devel"
+#define VERSION "0.101.0-beta"
 
 /* Version suffix for package */
 #define VERSION_SUFFIX ""
