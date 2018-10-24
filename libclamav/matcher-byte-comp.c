@@ -803,6 +803,12 @@ uint16_t cli_bcomp_chk_hex(const unsigned char* buffer, uint16_t opt, uint32_t l
     uint16_t check = 0;
 
     if (!buffer || len < 3) {
+        if (buffer && len < 3) {
+            if ((opt & 0x00F0) & CLI_BCOMP_AUTO) {
+                opt |= CLI_BCOMP_DEC;
+                opt ^= CLI_BCOMP_AUTO;
+            }
+        }
         return check_only ? check : opt;
     }
 
@@ -924,6 +930,8 @@ unsigned char* cli_bcomp_normalize_buffer(const unsigned char* buffer, uint32_t 
                         /* non-hex detected, our current buffer is invalid so zero it out and continue */
                         memset(tmp_buffer, '0', norm_len+1);
                         hex = 0;
+                        /* nibbles after this are non-good, so skip them */
+                        continue;
                     }
                 }
 
