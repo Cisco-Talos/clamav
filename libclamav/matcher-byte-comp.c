@@ -38,7 +38,7 @@
 #include "str.h"
 
 /* DEBUGGING */
-//#define MATCHER_BCOMP_DEBUG
+#define MATCHER_BCOMP_DEBUG
 #ifdef MATCHER_BCOMP_DEBUG
 #  define bcm_dbgmsg(...) cli_dbgmsg( __VA_ARGS__)
 #else
@@ -633,8 +633,13 @@ cl_error_t cli_bcomp_compare_check(const unsigned char* f_buffer, size_t buffer_
     switch(opt & 0x00FF) {
         /*hl*/
         case CLI_BCOMP_HEX | CLI_BCOMP_LE:
+            if (byte_len != 1) {
+                norm_len = (byte_len % 2) == 0 ? byte_len : byte_len + 1;
+            } else {
+                norm_len = 1;
+            }
             errno = 0;
-            value = cli_strntol((char*) tmp_buffer, byte_len, (char**) &end_buf, 16);
+            value = cli_strntol((char*) tmp_buffer, norm_len, (char**) &end_buf, 16);
             if ((((value == LONG_MAX) || (value == LONG_MIN)) && errno == ERANGE) || NULL == end_buf) {
 
                 free(tmp_buffer);
@@ -949,7 +954,7 @@ unsigned char* cli_bcomp_normalize_buffer(const unsigned char* buffer, uint32_t 
             }
         }
         tmp_buffer[norm_len+1] = '\0';
-        bcm_dbgmsg("cli_bcomp_compare_check: normalized extracted bytes before comparison %.*s\n", byte_len, tmp_buffer);
+        bcm_dbgmsg("cli_bcomp_compare_check: normalized extracted bytes before comparison %.*s\n", norm_len, tmp_buffer);
     }
 
     return tmp_buffer;
