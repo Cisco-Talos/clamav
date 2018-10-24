@@ -103,6 +103,12 @@ Output help information and exit.
 \fB\-V, \-\-version\fR
 Print the version number and exit.
 .TP 
+\fB\-F, \-\-foreground\fR
+Run in foreground; do not daemonize.
+.TP 
+\fB\-\-debug\fR
+Enable debug mode.
+.TP
 \fB\-c FILE, \-\-config\-file=FILE\fR
 Read configuration from FILE.
 .SH "SIGNALS"
