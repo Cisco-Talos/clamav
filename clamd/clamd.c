@@ -90,6 +90,7 @@ static void help(void)
     printf("\n");
     printf("    --help                   -h             Show this help\n");
     printf("    --version                -V             Show version number\n");
+    printf("    --foreground             -F             Run in foreground; do not daemonize\n");
     printf("    --debug                                 Enable debug mode\n");
     printf("    --config-file=FILE       -c FILE        Read configuration from FILE\n");
     printf("\n");

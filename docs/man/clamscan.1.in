@@ -103,7 +103,7 @@ With this option enabled ClamAV will load bytecode from the database. It is high
 Allow loading bytecode from outside digitally signed .c[lv]d files.
 .TP 
 \fB\-\-bytecode\-timeout=N\fR
-Set bytecode timeout in milliseconds (default: 60000 = 60s)
+Set bytecode timeout in milliseconds (default: 5000 = 5s)
 .TP 
 \fB\-\-statistics[=none(*)/bytecode/pcre]\fR
 Collect and print execution statistics.
