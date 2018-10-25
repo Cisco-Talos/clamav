@@ -1737,8 +1737,15 @@ int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
 
             if (bytesleft < 0)
                 rc = CL_EFORMAT;
-            else if (filter_writen(pdf, obj, fout , pdf->map + obj->start, bytesleft, (size_t*)&sum) != (size_t)bytesleft)
-                rc = CL_EWRITE;
+            else {
+                if (obj->objstm) {
+                    if (filter_writen(pdf, obj, fout , obj->objstm->streambuf + obj->start, bytesleft, (size_t*)&sum) != (size_t)bytesleft)
+                        rc = CL_EWRITE;
+                } else {
+                    if (filter_writen(pdf, obj, fout , pdf->map + obj->start, bytesleft, (size_t*)&sum) != (size_t)bytesleft)
+                        rc = CL_EWRITE;
+                }
+            }
         }
     } while (0);
 
@@ -2842,7 +2849,8 @@ void pdf_handle_enc(struct pdf_struct *pdf)
     }
 
     len = obj_size(pdf, obj, 1);
-    q = pdf->map + obj->start;
+    q = (obj->objstm) ? (const char *)(obj->start + obj->objstm->streambuf)
+                      : (const char *)(obj->start + pdf->map);
 
     O = U = UE = StmF = StrF = EFF = NULL;
     do {
@@ -4105,6 +4113,7 @@ static void Pages_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname
     unsigned long npages=0, count;
     struct pdf_array_node *node;
     json_object *pdfobj;
+    size_t countsize = 0;
 
     UNUSEDPARAM(act);
 
@@ -4151,7 +4160,10 @@ static void Pages_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname
         goto cleanup;
     }
 
-    if ((CL_SUCCESS != cli_strntoul_wrap(begin, (size_t)(obj->start + pdf->map + objsize - begin), 0, 10, &count)) ||
+    countsize = (obj->objstm) ? (size_t)(obj->start + obj->objstm->streambuf + objsize - begin)
+                              : (size_t)(obj->start + pdf->map + objsize - begin);
+
+    if ((CL_SUCCESS != cli_strntoul_wrap(begin, countsize, 0, 10, &count)) ||
         (count != npages)) {
         cli_jsonbool(pdfobj, "IncorrectPagesCount", 1);
     }
