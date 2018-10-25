@@ -173,7 +173,7 @@ static int unz(const uint8_t *src, uint32_t csize, uint32_t usize, uint16_t meth
       break;
     }
     unz_end(&strm);
-    if (res == Z_STREAM_END) res=0;
+    if ((res == Z_STREAM_END) | (res == Z_BUF_ERROR)) res=0;
     break;
   }
 
