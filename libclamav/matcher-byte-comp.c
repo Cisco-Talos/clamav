@@ -38,7 +38,7 @@
 #include "str.h"
 
 /* DEBUGGING */
-#define MATCHER_BCOMP_DEBUG
+//#define MATCHER_BCOMP_DEBUG
 #ifdef MATCHER_BCOMP_DEBUG
 #  define bcm_dbgmsg(...) cli_dbgmsg( __VA_ARGS__)
 #else
@@ -616,7 +616,7 @@ cl_error_t cli_bcomp_compare_check(const unsigned char* f_buffer, size_t buffer_
     if (opt_val == CLI_BCOMP_LE) {
         opt_val = opt & 0x000F;
         if ( !(opt_val & CLI_BCOMP_BIN) ) {
-            tmp_buffer = cli_bcomp_normalize_buffer(f_buffer, byte_len, NULL, opt, 0);
+            tmp_buffer = cli_bcomp_normalize_buffer(buffer, byte_len, NULL, opt, 0);
             if (NULL == tmp_buffer) {
                 cli_errmsg("cli_bcomp_compare_check: unable to normalize temp, allocation failed\n");
                 return CL_EMEM;
@@ -626,7 +626,7 @@ cl_error_t cli_bcomp_compare_check(const unsigned char* f_buffer, size_t buffer_
 
     opt_val = opt;
     if (opt_val & CLI_BCOMP_AUTO) {
-        opt = cli_bcomp_chk_hex(f_buffer, opt_val, byte_len, 0);
+        opt = cli_bcomp_chk_hex(buffer, opt_val, byte_len, 0);
     }
 
     /* grab the first byte to handle byte length options to convert the string appropriately */
@@ -651,6 +651,7 @@ cl_error_t cli_bcomp_compare_check(const unsigned char* f_buffer, size_t buffer_
                 if (tmp_buffer+byte_len != end_buf || pad_len != 0) {
 
                     free(tmp_buffer);
+                    free(buffer);
                     bcm_dbgmsg("cli_bcomp_compare_check: couldn't extract the exact number of requested bytes\n");
                     return CL_CLEAN;
                 }
@@ -670,6 +671,7 @@ cl_error_t cli_bcomp_compare_check(const unsigned char* f_buffer, size_t buffer_
             if (opt & CLI_BCOMP_EXACT) {
                 if (buffer+byte_len != end_buf || pad_len != 0) {
 
+                    free(buffer);
                     bcm_dbgmsg("cli_bcomp_compare_check: couldn't extract the exact number of requested bytes\n");
                     return CL_CLEAN;
                 }
@@ -680,6 +682,10 @@ cl_error_t cli_bcomp_compare_check(const unsigned char* f_buffer, size_t buffer_
         /*dl*/
         case CLI_BCOMP_DEC | CLI_BCOMP_LE:
             /* it may be possible for the auto option to proc this */
+
+            if (buffer) {
+                free(buffer);
+            }
             bcm_dbgmsg("cli_bcomp_compare_check: auto detection found ascii decimal for specified little endian byte extraction, which is unsupported\n");
             return CL_CLEAN;
             break;
@@ -689,6 +695,7 @@ cl_error_t cli_bcomp_compare_check(const unsigned char* f_buffer, size_t buffer_
             value = cli_strntol((char*) buffer, byte_len, (char**) &end_buf, 10);
             if ((((value == LONG_MAX) || (value == LONG_MIN)) && errno == ERANGE) || NULL == end_buf) {
 
+                free(buffer);
                 bcm_dbgmsg("cli_bcomp_compare_check: big endian decimal conversion unsuccessful\n");
                 return CL_CLEAN;
             }
@@ -696,6 +703,7 @@ cl_error_t cli_bcomp_compare_check(const unsigned char* f_buffer, size_t buffer_
             if (opt & CLI_BCOMP_EXACT) {
                 if (buffer+byte_len != end_buf || pad_len != 0) {
 
+                    free(buffer);
                     bcm_dbgmsg("cli_bcomp_compare_check: couldn't extract the exact number of requested bytes\n");
                     return CL_CLEAN;
                 }
@@ -714,6 +722,7 @@ cl_error_t cli_bcomp_compare_check(const unsigned char* f_buffer, size_t buffer_
 
                 default:
                     bcm_dbgmsg("cli_bcomp_compare_check: invalid byte size for binary integer field (%u)\n", byte_len);
+                    free(buffer);
                     return CL_EARG;
             }
             break;
@@ -729,6 +738,7 @@ cl_error_t cli_bcomp_compare_check(const unsigned char* f_buffer, size_t buffer_
 
                 default:
                     bcm_dbgmsg("cli_bcomp_compare_check: invalid byte size for binary integer field (%u)\n", byte_len);
+                    free(buffer);
                     return CL_EARG;
             }
             break;
@@ -738,11 +748,19 @@ cl_error_t cli_bcomp_compare_check(const unsigned char* f_buffer, size_t buffer_
             if (tmp_buffer) {
                 free(tmp_buffer);
             }
+
+            if(buffer) {
+                free(buffer);
+            }
             return CL_ENULLARG;
     }
 
     if (tmp_buffer) {
         free(tmp_buffer);
+    }
+
+    if (buffer) {
+        free(buffer);
     }
 
     /* do the actual comparison */
