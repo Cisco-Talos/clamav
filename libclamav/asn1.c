@@ -2202,6 +2202,7 @@ cl_error_t asn1_check_mscat(struct cl_engine *engine, fmap_t *map, size_t offset
     crtmgr certs;
     int ret;
     void *ctx;
+    unsigned int i;
 
     // TODO Move these into cli_checkfp_pe
     if (!(engine->dconf->pe & PE_CONF_CERTS))
@@ -2253,7 +2254,7 @@ cl_error_t asn1_check_mscat(struct cl_engine *engine, fmap_t *map, size_t offset
 
     // Now that we know the hash algorithm, compute the authenticode hash
     // across the required regions of memory.
-    for(unsigned int i = 0; i < nregions; i++) {
+    for(i = 0; i < nregions; i++) {
         const uint8_t *hptr;
         if (0 == regions[i].size) {
             continue;
@@ -2269,7 +2270,7 @@ cl_error_t asn1_check_mscat(struct cl_engine *engine, fmap_t *map, size_t offset
 
     if(cli_debug_flag) {
         char hashtxt[MAX_HASH_SIZE*2+1];
-        for(unsigned int i=0; i<hashsize; i++)
+        for(i=0; i<hashsize; i++)
             sprintf(&hashtxt[i*2], "%02x", hash[i]);
         cli_dbgmsg("Authenticode: %s\n", hashtxt);
     }
