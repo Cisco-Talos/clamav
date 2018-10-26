@@ -239,7 +239,6 @@ MSPACK_CFLAGS = $(LIBMSPACK_CFLAGS)
 MSPACKLIBADD = $(LIBMSPACK_LIBS)
 MSPACKDEP =
 
-# EXTRA_DIST += libmspack-0.5alpha
 libmspack/Makefile: 
 .PHONY: distdir distclean maintainer-clean
 distdir:
