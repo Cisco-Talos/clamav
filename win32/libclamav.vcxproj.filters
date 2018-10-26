@@ -1113,6 +1113,9 @@
     <ClCompile Include="3rdparty\libxml2\nanoftp.c">
       <Filter>Source Files\libxml2</Filter>
     </ClCompile>
+    <ClCompile Include="..\libclamav\matcher-byte-comp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\libclamav\hostid.h">
