@@ -4544,7 +4544,6 @@ uninstall-am: uninstall-includeHEADERS uninstall-libLTLIBRARIES
 @ENABLE_LLVM_FALSE@	$(AM_V_at) cp $< $@
 @ENABLE_LLVM_FALSE@distclean-recursive distdir maintainer-clean-recursive: c++/Makefile
 
-# EXTRA_DIST += libmspack-0.5alpha
 @USE_INTERNAL_MSPACK_FALSE@libmspack/Makefile: 
 @USE_INTERNAL_MSPACK_FALSE@.PHONY: distdir distclean maintainer-clean
 @USE_INTERNAL_MSPACK_FALSE@distdir:
