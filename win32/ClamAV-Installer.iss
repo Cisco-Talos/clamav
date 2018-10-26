@@ -20,7 +20,7 @@ UninstallDisplayName=ClamAV
 Compression=lzma2
 SolidCompression=yes
 OutputDir=.
-OutputBaseFilename=ClamAV-0.101.0
+OutputBaseFilename=ClamAV-0.101.0-beta
 WizardImageFile=demon.bmp
 WizardSmallImageFile=talos.bmp
 
@@ -88,14 +88,7 @@ Source: "..\ChangeLog.md"; DestDir: "{app}\docs"; DestName: "ChangeLog.md"
 Source: "..\NEWS.md"; DestDir: "{app}\docs"; DestName: "NEWS.md"              
 Source: "..\README.md"; DestDir: "{app}"; DestName: "README.md"
 Source: "..\docs\UserManual.md"; DestDir: "{app}\docs"; DestName: "UserManual.md"
-Source: "..\docs\UserManual\Configuration.md"; DestDir: "{app}\docs\UserManual"; DestName: "Configuration.md"
-Source: "..\docs\UserManual\Installation.md"; DestDir: "{app}\docs\UserManual"; DestName: "Installation.md"
-Source: "..\docs\UserManual\Introduction.md"; DestDir: "{app}\docs\UserManual"; DestName: "Introduction.md"
-Source: "..\docs\UserManual\libclamav.md"; DestDir: "{app}\docs\UserManual"; DestName: "libclamav.md"
-Source: "..\docs\UserManual\PhishSigs.md"; DestDir: "{app}\docs\UserManual"; DestName: "PhishSigs.md"
-Source: "..\docs\UserManual\Signatures.md"; DestDir: "{app}\docs\UserManual"; DestName: "Signatures.md"
-Source: "..\docs\UserManual\Usage.md"; DestDir: "{app}\docs\UserManual"; DestName: "Usage.md"
-Source: "..\docs\UserManual\images\demon.png"; DestDir: "{app}\docs\UserManual\images"; DestName: "demon.png"
+Source: "..\docs\UserManual\*"; DestDir: "{app}\docs\UserManual"; Flags: recursesubdirs
 
 [Dirs]
 Name: "{app}\database"
