@@ -63,34 +63,7 @@ There is a special thread in `clamd` that performs on-access scanning under Linu
 - Watch your entire filesystem only using the `clamd.conf` OnAccessMountPath option. While this will disable on-access prevention, it will avoid potential system lockups caused by fanotify’s blocking functionality.
 - Using the On-Access Scanner to watch a virtual filesystem will result in undefined behaviour.
 
-The default configuration utilizes inotify to recursively keep track of directories. If you need to protect more than 8192 directories it will be necessary to change inotify’s `max_user_watches` value.
-
-This can be done temporarily with:
-
-```bash
-    $ sysctl fs.inotify.max_user_watches=<n>
-```
-
-Where `<n>` is the new maximum desired.
-
-To watch your entire filesystem add the following lines to `clamd.conf`:
-
-```ini
-    ScanOnAccess yes
-    OnAccessMountPath /
-```
-
-Similarly, to protect your home directory add the following lines to
-`clamd.conf`:
-
-```ini
-    ScanOnAccess yes
-    OnAccessIncludePath /home
-    OnAccessExcludePath /home/user/temp/dir/of/your/mail/scanning/software
-    OnAccessPrevention yes
-```
-
-For more configuration options, type ’man clamd.conf’ or reference the example clamd.conf.
+For more configuration options, type ’man clamd.conf’ or reference the example clamd.conf. And for additional details on how to use this feature, please reference the [OnAccess usage manual](OnAccess.md).
 
 ## Clamdtop
 
@@ -185,7 +158,7 @@ LDFLAGS:
 Configure: '--prefix=/xclam/gcc/release/' '--disable-clamav' '--enable-debug' 'CFLAGS=-g -O0'
 sizeof(void*) = 4
 Engine flevel: 77, dconf: 77
- 
+
 ```
 
 For more detailed help, type ’man clamconf’ or ’clamconf –help’.
@@ -207,7 +180,7 @@ For more detailed help, type ’man clamconf’ or ’clamconf –help’.
 When a virus is found its name is printed between the `filename:` and `FOUND` strings. In case of archives the scanner depends on libclamav and only prints the first virus found within an archive:
 
 ```bash
-    $ clamscan malware.zip 
+    $ clamscan malware.zip
     malware.zip: Worm.Mydoom.U FOUND
 ```
 
