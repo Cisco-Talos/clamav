@@ -21,14 +21,13 @@ Table of Contents
         - [Logical signatures](#logical-signatures)
         - [Subsignature Modifiers](#subsignature-modifiers)
     - [Special Subsignature Types](#special-subsignature-types)
-        - [Macro subsignatures (clamav-0.96) : `${min-max}MACROID$`](#macro-subsignatures-clamav-096--min-maxmacroid)
-        - [Byte Compare Subsignatures (clamav-0.101) : `subsigid_trigger(offset#byte_options#comparisons)`](#byte-compare-subsignatures-clamav-0101--subsigid_triggeroffsetbyte_optionscomparisons)
-        - [PCRE subsignatures (clamav-0.99) : `Trigger/PCRE/[Flags]`](#pcre-subsignatures-clamav-099--triggerpcreflags)
+        - [Macro subsignatures](#macro-subsignatures)
+        - [Byte Compare Subsignatures](#byte-compare-subsignatures)
+        - [PCRE subsignatures](#pcre-subsignatures)
     - [Icon signatures for PE files](#icon-signatures-for-pe-files)
     - [Signatures for Version Information metadata in PE files](#signatures-for-version-information-metadata-in-pe-files)
     - [Trusted and Revoked Certificates](#trusted-and-revoked-certificates)
     - [Signatures based on container metadata](#signatures-based-on-container-metadata)
-    - [Signatures based on ZIP/RAR metadata (obsolete)](#signatures-based-on-ziprar-metadata-obsolete)
     - [Whitelist databases](#whitelist-databases)
     - [Signature names](#signature-names)
     - [Using YARA rules in ClamAV](#using-yara-rules-in-clamav)
@@ -480,9 +479,17 @@ Keywords used in `TargetDescriptionBlock`:
 
 - `NumberOfSections`: Required number of sections in executable (range; 0.96)
 
-- `Container:CL_TYPE_*`: File type of the container which stores the scanned file. Specifying `CL_TYPE_ANY` matches on root objects only.
+- `Container:CL_TYPE_*`: File type of the container which stores the scanned file.
 
-- `Intermediates:CL_TYPE_*>CL_TYPE_*`: File types of intermediate containers which stores the scanned file. Specify 1-16 file types separated by ’`>`’ in top-down order (’`>`’ separator not needed for single file type), last type should be the immediate container for the malicious content. `CL_TYPE_ANY` can be used as a wildcard file type. (expr; 0.100.0)
+  Specifying `CL_TYPE_ANY` matches on root objects only (i.e. the target file is explicitely _not_ in a container). Chances slim that you would want to use `CL_TYPE_ANY` in a signature, because placing the malicious file in an archive will then prevent it from alerting.
+
+  Every ClamAV file type has the potential to be a container for additional files, although some are more likely than others. When a file is parsed and data in the file is identified to be scanned as a unique type, that parent file becomes a container the moment the embedded content is scanned. For a list of possible CL_TYPEs, refer to the [File Types Reference](ClamAV-File-Types.md).
+
+- `Intermediates:CL_TYPE_*>CL_TYPE_*`: Specify one or more layers of file types containing the scanned file. _This is an alternative to using `Container`._
+
+  You may specify up to 16 layers of file types separated by ’`>`’ in top-down order. Note that the ’`>`’ separator is not needed if you only specify a single container. The last type should be the immediate container containing the malicious file. Unlike with the `Container` option, `CL_TYPE_ANY` can be used as a wildcard file type. (expr; 0.100.0)
+
+  For a list of possible CL_TYPEs, refer to the [File Types Reference](ClamAV-File-Types.md).
 
 - `IconGroup1`: Icon group name 1 from .idb signature Required engine functionality (range; 0.96)
 
@@ -498,9 +505,13 @@ Modifiers for subexpressions:
 
 - `A>X`: If the SUB-EXPRESSION A refers to a single signature then this signature must get matched more than X times; if it refers to a (logical) block of signatures then this block must generate more than X matches (with any of its sigs).
 
-- `A>X,Y`: If the SUB-EXPRESSION A refers to a single signature then this signature must get matched more than X times; if it refers to a (logical) block of signatures then this block must generate more than X matches and at least Y different signatures must be matched.
+- `A>X,Y`: If the SUB-EXPRESSION A refers to a single signature then this signature must get matched more than X times; if it refers to a (logical) block of signatures then this block must generate more than X matches _and_ at least Y different signatures must be matched.
 
-- `A<X` and `A<X,Y` as above with the change of "more" to "less".
+- `A<X`: Just like `A>Z` above with the change of "more" to "less".
+
+  If the SUB-EXPRESSION A refers to a single signature then this signature must get matched less than X times; if it refers to a (logical) block of signatures then this block must generate less than X matches (with any of its sigs).
+
+- `A<X,Y`: Similar to `A>X,Y`. If the SUB-EXPRESSION A refers to a single signature then this signature must get matched less than X times; if it refers to a (logical) block of signatures then this block must generate less than X matches _and_ at least Y different signatures must be matched.
 
 Examples:
 
@@ -523,7 +534,7 @@ dcf43987e4f519d629b103375;SL+550:6300680065005c0046006900
 ### Subsignature Modifiers
 
 ClamAV (clamav-0.99) supports a number of additional subsignature
-modifiers for logical signatures. This is done by specifying ’::’
+modifiers for logical signatures. This is done by specifying `::`
 followed by a number of characters representing the desired options.
 Signatures using subsignature modifiers require `Engine:81-255` for
 backwards-compatibility.
@@ -563,7 +574,11 @@ clamav-wide-C0;Engine:81-255,Target:0;0&1;414141;68656c6c6f::iwfa
 
 ## Special Subsignature Types
 
-### Macro subsignatures (clamav-0.96) : <span class="nodecor">`${min-max}MACROID$`</span>
+### Macro subsignatures
+
+Introduced in ClamAV 0.96
+
+Format: `${min-max}MACROID$`
 
 Macro subsignatures are used to combine a number of existing extended
 signatures (`.ndb`) into a on-the-fly generated alternate string logical
@@ -599,7 +614,11 @@ to:
 
 - For more information and examples please see <https://bugzilla.clamav.net/show_bug.cgi?id=164>.
 
-### Byte Compare Subsignatures (clamav-0.101) : <span class="nodecor">`subsigid_trigger(offset#byte_options#comparisons)`</span>
+### Byte Compare Subsignatures
+
+Introduced in ClamAV 0.101
+
+Format: `subsigid_trigger(offset#byte_options#comparisons)`
 
 Byte compare subsignatures can be used to evaluate a numeric value at a given offset from the start of another (matched) subsignature within the same logical signature. These are executed after all other subsignatures within the logical subsignature are fired, with the exception of PCRE subsignatures. They can evaluate offsets only from a single referenced subsignature, and that subsignature must give a valid match for the evaluation to occur.
 
@@ -627,8 +646,11 @@ Byte compare subsignatures can be used to evaluate a numeric value at a given of
 
   - `Comparison_value` is a required field which must be a numeric hex or decimal value. If all other conditions are met, the byte compare subsig will evalutate the extracted byte sequence against this number based on the provided `comparison_symbol`.
 
+### PCRE subsignatures
 
-### PCRE subsignatures (clamav-0.99) : <span class="nodecor">`Trigger/PCRE/[Flags]`</span>
+Introduced in ClamAV 0.99
+
+Format: `Trigger/PCRE/[Flags]`
 
 PCRE subsignatures are used within a logical signature (`.ldb`) to specify regex matches that execute once triggered by a conditional based on preceding subsignatures. Signatures using PCRE subsignatures require `Engine:81-255` for backwards-compatibility.
 
@@ -827,7 +849,7 @@ where the corresponding fields are:
 
 - `VirusName:` Virus name to be displayed when signature matches
 
-- `ContainerType:` one of
+- `ContainerType:` The file type containing the target file.  For example:
   - `CL_TYPE_ZIP`,
   - `CL_TYPE_RAR`,
   - `CL_TYPE_ARJ`,
@@ -835,8 +857,10 @@ where the corresponding fields are:
   - `CL_TYPE_7Z`,
   - `CL_TYPE_MAIL`,
   - `CL_TYPE_(POSIX|OLD)_TAR`,
-  - `CL_TYPE_CPIO_(OLD|ODC|NEWC|CRC)` or
-  - `*` to match any of the container types listed here
+  - `CL_TYPE_CPIO_(OLD|ODC|NEWC|CRC)`
+
+  Use `*` as a wild card to indicate that container type may be any file type.
+  For a full list of ClamAV file types, see the [ClamAV File Types Reference](ClamAV-File-Types.md)
 
 - `ContainerSize:` size of the container file itself (eg. size of the zip archive) specified in bytes as absolute value or range `x-y`
 
@@ -846,47 +870,15 @@ where the corresponding fields are:
 
 - `FileSizeReal:` usually uncompressed size; for MAIL, TAR and CPIO == `FileSizeInContainer`; absolute value or range
 
-- `IsEncrypted`: 1 if the target file is encrypted, 0 if it’s not and `*` to ignore
+- `IsEncrypted:` 1 if the target file is encrypted, 0 if it’s not and `*` to ignore
 
-- `FilePos`: file position in container (counting from 1); absolute value or range
+- `FilePos:` file position in container (counting from 1); absolute value or range
 
-- `Res1`: when `ContainerType` is `CL_TYPE_ZIP` or `CL_TYPE_RAR` this field is treated as a CRC sum of the target file specified in hexadecimal format; for other container types it’s ignored
+- `Res1:` when `ContainerType` is `CL_TYPE_ZIP` or `CL_TYPE_RAR` this field is treated as a CRC sum of the target file specified in hexadecimal format; for other container types it’s ignored
 
-- `Res2`: not used as of ClamAV 0.96
+- `Res2:` not used as of ClamAV 0.96
 
 The signatures for container files are stored inside `.cdb` files.
-
-## Signatures based on ZIP/RAR metadata (obsolete)
-
-The (now obsolete) archive metadata signatures can be only applied to
-ZIP and RAR files and have the following format:
-
-```
-    virname:encrypted:filename:normal size:csize:crc32:cmethod:
-    fileno:max depth
-```
-
-where the corresponding fields are:
-
-- Virus name
-
-- Encryption flag (1 – encrypted, 0 – not encrypted)
-
-- File name (this is a regular expression - \* to ignore)
-
-- Normal (uncompressed) size (\* to ignore)
-
-- Compressed size (\* to ignore)
-
-- CRC32 (\* to ignore)
-
-- Compression method (\* to ignore)
-
-- File position in archive (\* to ignore)
-
-- Maximum number of nested archives (\* to ignore)
-
-The database file should have the extension of `.zmd` or `.rmd` for zip or rar metadata respectively.
 
 ## Whitelist databases
 
