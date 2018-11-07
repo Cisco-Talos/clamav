@@ -2,7 +2,7 @@
 
 Below are the steps for installing ClamAV from source on Debian and Ubuntu Linux.
 
-## Install prerequisitesaa
+## Install prerequisites
 
 1. Install ClamAV dependencies
     1. Install the developer tools

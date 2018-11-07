@@ -15,7 +15,6 @@ Table Of Contents
 5. [ClamAV Developer Tips and Tricks](UserManual/development.md)
 6. [Build \[lib\]ClamAV Into Your Programs](UserManual/libclamav.md)
 7. [Writing ClamAV Signatures](UserManual/Signatures.md)
-8. [Writing ClamAV Phishing Signatures](UserManual/PhishSigs.md)
 
 -----
 
