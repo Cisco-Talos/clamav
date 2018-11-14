@@ -565,6 +565,8 @@ cl_error_t cli_bcomp_compare_check(const unsigned char* f_buffer, size_t buffer_
     uint16_t opt = 0;
     uint16_t opt_val = 0;
     int64_t value = 0;
+    uint64_t bin_value = 0;
+    int16_t compare_check = 0;
     const unsigned char* end_buf = NULL;
     const unsigned char* buffer = NULL;
     unsigned char* tmp_buffer = NULL;
@@ -715,10 +717,10 @@ cl_error_t cli_bcomp_compare_check(const unsigned char* f_buffer, size_t buffer_
         case CLI_BCOMP_BIN | CLI_BCOMP_LE:
             /* exact byte_length option is implied for binary extraction */
             switch (byte_len) {
-                case 1: value = (*(int8_t*) f_buffer);                           break;
-                case 2: value =   (int16_t) le16_to_host( *(int16_t*) f_buffer); break;
-                case 4: value =   (int32_t) le32_to_host( *(int32_t*) f_buffer); break;
-                case 8: value =   (int64_t) le64_to_host( *(int64_t*) f_buffer); break;
+                case 1: bin_value = (*(uint8_t*) f_buffer);                           break;
+                case 2: bin_value =   (uint16_t) le16_to_host( *(uint16_t*) f_buffer); break;
+                case 4: bin_value =   (uint32_t) le32_to_host( *(uint32_t*) f_buffer); break;
+                case 8: bin_value =   (uint64_t) le64_to_host( *(uint64_t*) f_buffer); break;
 
                 default:
                     bcm_dbgmsg("cli_bcomp_compare_check: invalid byte size for binary integer field (%u)\n", byte_len);
@@ -731,10 +733,10 @@ cl_error_t cli_bcomp_compare_check(const unsigned char* f_buffer, size_t buffer_
         case CLI_BCOMP_BIN | CLI_BCOMP_BE:
             /* exact byte_length option is implied for binary extraction */
             switch (byte_len) {
-                case 1: value = ( *(int8_t*) f_buffer);                           break;
-                case 2: value =    (int16_t) be16_to_host( *(int16_t*) f_buffer); break;
-                case 4: value =    (int32_t) be32_to_host( *(int32_t*) f_buffer); break;
-                case 8: value =    (int64_t) be64_to_host( *(int64_t*) f_buffer); break;
+                case 1: bin_value = ( *(uint8_t*) f_buffer);                           break;
+                case 2: bin_value =    (uint16_t) be16_to_host( *(uint16_t*) f_buffer); break;
+                case 4: bin_value =    (uint32_t) be32_to_host( *(uint32_t*) f_buffer); break;
+                case 8: bin_value =    (uint64_t) be64_to_host( *(uint64_t*) f_buffer); break;
 
                 default:
                     bcm_dbgmsg("cli_bcomp_compare_check: invalid byte size for binary integer field (%u)\n", byte_len);
@@ -770,8 +772,13 @@ cl_error_t cli_bcomp_compare_check(const unsigned char* f_buffer, size_t buffer_
             switch (bm->comps[i]->comp_symbol) {
 
                 case '>':
-                    if (value > bm->comps[i]->comp_value) {
-                        bcm_dbgmsg("cli_bcomp_compare_check: extracted value (%ld) greater than comparison value (%ld)\n", value, bm->comps[i]->comp_value);
+                    if (opt & CLI_BCOMP_BIN) {
+                        compare_check = (bin_value > bm->comps[i]->comp_value);
+                    } else {
+                        compare_check = (value > bm->comps[i]->comp_value);
+                    }
+                    if (compare_check) {
+                        bcm_dbgmsg("cli_bcomp_compare_check: extracted value (%ld) greater than comparison value (%ld)\n", (opt & CLI_BCOMP_BIN) ? bin_value : value, bm->comps[i]->comp_value);
                         ret = CL_VIRUS;
                     } else {
                         ret = CL_CLEAN;
@@ -779,8 +786,13 @@ cl_error_t cli_bcomp_compare_check(const unsigned char* f_buffer, size_t buffer_
                     break;
 
                 case '<':
-                    if (value < bm->comps[i]->comp_value) {
-                        bcm_dbgmsg("cli_bcomp_compare_check: extracted value (%ld) less than comparison value (%ld)\n", value, bm->comps[i]->comp_value);
+                    if (opt & CLI_BCOMP_BIN) {
+                        compare_check = (bin_value < bm->comps[i]->comp_value);
+                    } else {
+                        compare_check = (value < bm->comps[i]->comp_value);
+                    }
+                    if (compare_check) {
+                        bcm_dbgmsg("cli_bcomp_compare_check: extracted value (%ld) less than comparison value (%ld)\n", (opt & CLI_BCOMP_BIN) ? bin_value : value, bm->comps[i]->comp_value);
                         ret = CL_VIRUS;
                     } else {
                         ret = CL_CLEAN;
@@ -788,8 +800,13 @@ cl_error_t cli_bcomp_compare_check(const unsigned char* f_buffer, size_t buffer_
                     break;
 
                 case '=':
-                    if (value == bm->comps[i]->comp_value) {
-                        bcm_dbgmsg("cli_bcomp_compare_check: extracted value (%ld) equal to comparison value (%ld)\n", value, bm->comps[i]->comp_value);
+                    if (opt & CLI_BCOMP_BIN) {
+                        compare_check = (bin_value == bm->comps[i]->comp_value);
+                    } else {
+                        compare_check = (value == bm->comps[i]->comp_value);
+                    }
+                    if (compare_check) {
+                        bcm_dbgmsg("cli_bcomp_compare_check: extracted value (%ld) equal to comparison value (%ld)\n", (opt & CLI_BCOMP_BIN) ? bin_value : value, bm->comps[i]->comp_value);
                         ret = CL_VIRUS;
                     } else {
                         ret = CL_CLEAN;
@@ -803,11 +820,12 @@ cl_error_t cli_bcomp_compare_check(const unsigned char* f_buffer, size_t buffer_
 
             if (CL_CLEAN == ret) {
                 /* comparison was not successful */
-                bcm_dbgmsg("cli_bcomp_compare_check: extracted value (%ld) was not %c %ld\n", value, bm->comps[i]->comp_symbol, bm->comps[i]->comp_value);
+                bcm_dbgmsg("cli_bcomp_compare_check: extracted value (%ld) was not %c %ld\n", (opt & CLI_BCOMP_BIN) ? bin_value : value, bm->comps[i]->comp_symbol, bm->comps[i]->comp_value);
                 return CL_CLEAN;
             }
         }
     }
+
     return ret;
 }
 
