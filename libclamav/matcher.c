@@ -180,7 +180,7 @@ static inline int matcher_run(const struct cli_matcher *root,
             return ret;
     }
 
-    if (root->bcomp_metas && !(acmode & AC_SCAN_FT)) {
+    if (root->bcomp_metas) {
         ret = cli_bcomp_scanbuf(orig_buffer, orig_length, virname, acres, root, mdata, ctx);
         if (ret != CL_CLEAN) {
             if (ret == CL_VIRUS) {
