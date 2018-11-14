@@ -267,8 +267,10 @@ static struct node *parse_regex(const char *p, size_t *last)
                     return NULL;
                 /* (x) */
                 right = dup_node(v);
-                if (!right)
+                if (!right) {
+                    free(tmp);
                     return NULL;
+                }
                 /* (x)*(x) => (x)+ */
                 v = make_node(concat, tmp, right);
                 if (!v)

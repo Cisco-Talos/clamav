@@ -317,9 +317,6 @@ static cl_error_t cli_scanrar(const char *filepath, int desc, cli_ctx *ctx)
             if (0 == write(comment_fd, comment, comment_size)) {
                 cli_dbgmsg("RAR: ERROR: Failed to write to output file\n");
             } else {
-                close(comment_fd);
-                comment_fd = -1;
-
                 /* Scan the comment file */
                 status = cli_scanfile(comment_fullpath, ctx);
 
@@ -336,6 +333,7 @@ static cl_error_t cli_scanrar(const char *filepath, int desc, cli_ctx *ctx)
                     goto done;
                 }
             }
+            close(comment_fd);
         }
     }
 
@@ -3803,11 +3801,8 @@ static cl_error_t scan_common(int desc, cl_fmap_t *map, const char *filepath, co
                     if (pc_map) {
                         cli_bytecode_context_setctx(bc_ctx, &ctx);
                         rc = cli_bytecode_runhook(&ctx, ctx.engine, bc_ctx, BC_PRECLASS, pc_map);
-                        cli_bytecode_context_destroy(bc_ctx);
-
-                        if (!map)
-                            funmap(pc_map);
                     }
+                    cli_bytecode_context_destroy(bc_ctx);
                 }
 
                 /* backwards compatibility: scan the json string unless a virus was detected */

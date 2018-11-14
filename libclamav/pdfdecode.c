@@ -109,7 +109,7 @@ size_t pdf_decodestream(
 {
     struct pdf_token *token = NULL;
     size_t bytes_scanned    = 0;
-    cli_ctx *ctx            = pdf->ctx;
+    cli_ctx *ctx            = NULL;
 
     if (!status) {
         /* invalid args, and no way to pass back the status code */
@@ -121,6 +121,8 @@ size_t pdf_decodestream(
         *status = CL_EARG;
         goto done;
     }
+
+    ctx = pdf->ctx;
 
     if (!stream || !streamlen || fout < 0) {
         cli_dbgmsg("pdf_decodestream: no filters or stream on obj %u %u\n", obj->id >> 8, obj->id & 0xff);
@@ -149,7 +151,6 @@ size_t pdf_decodestream(
 
     token->content = cli_malloc(streamlen);
     if (!token->content) {
-        free(token);
         *status = CL_EMEM;
         goto done;
     }
@@ -224,7 +225,7 @@ static size_t pdf_decodestream_internal(
     cl_error_t vir       = CL_CLEAN;
     cl_error_t retval    = CL_SUCCESS;
     size_t bytes_scanned = 0;
-    cli_ctx *ctx         = pdf->ctx;
+    cli_ctx *ctx         = NULL;
     const char *filter   = NULL;
     int i;
 
@@ -239,6 +240,7 @@ static size_t pdf_decodestream_internal(
         goto done;
     }
 
+    ctx     = pdf->ctx;
     *status = CL_SUCCESS;
 
     /*
@@ -350,7 +352,7 @@ static size_t pdf_decodestream_internal(
         }
     }
 
-    if (token->success > 0) {
+    if ((token->success > 0) && (NULL != token->content)) {
         /*
          * Looks like we successfully decoded some or all of the stream filters,
          * so lets write it out to a file descriptor we scan.

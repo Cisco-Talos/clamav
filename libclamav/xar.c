@@ -319,7 +319,8 @@ static int xar_scan_subdocuments(xmlTextReaderPtr reader, cli_ctx *ctx)
                         cli_dbgmsg("cli_scanxar: cli_writen error writing subdoc temporary file.\n");
                         rc = CL_EWRITE;
                     }
-                    rc = xar_cleanup_temp_file(ctx, fd, tmpname);
+                    rc      = xar_cleanup_temp_file(ctx, fd, tmpname);
+                    tmpname = NULL;
                 }
             }
 
@@ -428,7 +429,7 @@ int cli_scanxar(cli_ctx *ctx)
     size_t length, offset, size, at;
     int encoding;
     z_stream strm;
-    char *toc, *tmpname;
+    char *toc, *tmpname = NULL;
     xmlTextReaderPtr reader = NULL;
     int a_hash, e_hash;
     unsigned char *a_cksum = NULL, *e_cksum = NULL;
@@ -529,7 +530,8 @@ int cli_scanxar(cli_ctx *ctx)
             xar_cleanup_temp_file(ctx, fd, tmpname);
             goto exit_toc;
         }
-        rc = xar_cleanup_temp_file(ctx, fd, tmpname);
+        rc      = xar_cleanup_temp_file(ctx, fd, tmpname);
+        tmpname = NULL;
         if (rc != CL_SUCCESS)
             goto exit_toc;
     }
@@ -559,7 +561,8 @@ int cli_scanxar(cli_ctx *ctx)
 
         /* clean up temp file from previous loop iteration */
         if (fd > -1 && tmpname) {
-            rc = xar_cleanup_temp_file(ctx, fd, tmpname);
+            rc      = xar_cleanup_temp_file(ctx, fd, tmpname);
+            tmpname = NULL;
             if (rc != CL_SUCCESS)
                 goto exit_reader;
         }

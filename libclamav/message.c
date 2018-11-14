@@ -575,7 +575,7 @@ void messageAddArguments(message *m, const char *s)
 
             if (!data) {
                 cli_dbgmsg("Can't parse header \"%s\" - if you believe this file contains a missed virus, report it to bugs@clamav.net\n", s);
-                free((char *)key);
+                free(kcopy);
                 return;
             }
 

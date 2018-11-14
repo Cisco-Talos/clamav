@@ -586,7 +586,6 @@ int onas_ht_add_child(struct onas_ht *ht, const char *prntpath, size_t prntlen, 
 /* Adds the hierarchy under pathname to the tree and allocates all necessary memory. */
 int onas_ht_add_hierarchy(struct onas_ht *ht, const char *pathname)
 {
-
     if (!ht || !pathname) return CL_ENULLARG;
 
     FTS *ftsp         = NULL;
@@ -631,8 +630,10 @@ int onas_ht_add_hierarchy(struct onas_ht *ht, const char *pathname)
         if ((childlist = _priv_fts_children(ftsp, 0))) {
             do {
                 if (childlist->fts_info == FTS_D) {
-                    if (CL_EMEM == onas_add_hashnode_child(hnode, childlist->fts_name))
+                    if (CL_EMEM == onas_add_hashnode_child(hnode, childlist->fts_name)) {
+                        onas_free_hashnode(hnode);
                         return CL_EMEM;
+                    }
                 }
 
             } while ((childlist = childlist->fts_link));
@@ -641,7 +642,10 @@ int onas_ht_add_hierarchy(struct onas_ht *ht, const char *pathname)
         struct onas_element *elem = onas_element_init(hnode, hnode->pathname, hnode->pathlen);
         if (!elem) return CL_EMEM;
 
-        if (onas_ht_insert(ht, elem)) return -1;
+        if (onas_ht_insert(ht, elem)) {
+            onas_free_element(elem);
+            return CL_EMEM;
+        }
     }
 
     _priv_fts_close(ftsp);

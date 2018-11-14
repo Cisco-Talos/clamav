@@ -624,6 +624,7 @@ static inline int parsehwp3_docsummary(cli_ctx *ctx, off_t offset)
             b64           = cli_calloc(1, b64len);
             if (!b64) {
                 cli_errmsg("HWP3.x: Failed to allocate memory for b64 boolean\n");
+                free(str);
                 return CL_EMEM;
             }
             snprintf(b64, b64len, "%s_base64", hwp3_docsummary_fields[i].name);

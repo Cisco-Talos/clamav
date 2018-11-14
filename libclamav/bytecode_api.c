@@ -1344,6 +1344,7 @@ uint32_t cli_bcapi_engine_scan_options(struct cli_bc_ctx *ctx)
 uint32_t cli_bcapi_engine_scan_options_ex(struct cli_bc_ctx *ctx, const uint8_t *option_name, uint32_t name_len)
 {
     uint32_t i          = 0;
+    uint32_t result     = 0;
     char *option_name_l = NULL;
 
     if (ctx == NULL || option_name == NULL || name_len == 0) {
@@ -1365,107 +1366,83 @@ uint32_t cli_bcapi_engine_scan_options_ex(struct cli_bc_ctx *ctx, const uint8_t 
 
     if (strncmp(option_name_l, "general", MIN(name_len, sizeof("general")))) {
         if (cli_memstr(option_name_l, name_len, "allmatch", sizeof("allmatch"))) {
-            return (cctx->options->general & CL_SCAN_GENERAL_ALLMATCHES) ? 1 : 0;
-        }
-        if (cli_memstr(option_name_l, name_len, "collect metadata", sizeof("collect metadata"))) {
-            return (cctx->options->general & CL_SCAN_GENERAL_COLLECT_METADATA) ? 1 : 0;
-        }
-        if (cli_memstr(option_name_l, name_len, "heuristics", sizeof("heuristics"))) {
-            return (cctx->options->general & CL_SCAN_GENERAL_HEURISTICS) ? 1 : 0;
-        }
-        if (cli_memstr(option_name_l, name_len, "precedence", sizeof("precedence"))) {
-            return (cctx->options->general & CL_SCAN_GENERAL_HEURISTIC_PRECEDENCE) ? 1 : 0;
+            result = (cctx->options->general & CL_SCAN_GENERAL_ALLMATCHES) ? 1 : 0;
+        } else if (cli_memstr(option_name_l, name_len, "collect metadata", sizeof("collect metadata"))) {
+            result = (cctx->options->general & CL_SCAN_GENERAL_COLLECT_METADATA) ? 1 : 0;
+        } else if (cli_memstr(option_name_l, name_len, "heuristics", sizeof("heuristics"))) {
+            result = (cctx->options->general & CL_SCAN_GENERAL_HEURISTICS) ? 1 : 0;
+        } else if (cli_memstr(option_name_l, name_len, "precedence", sizeof("precedence"))) {
+            result = (cctx->options->general & CL_SCAN_GENERAL_HEURISTIC_PRECEDENCE) ? 1 : 0;
         }
         /* else unknown option */
-        return 0;
     } else if (strncmp(option_name_l, "parse", MIN(name_len, sizeof("parse")))) {
         if (cli_memstr(option_name_l, name_len, "archive", sizeof("archive"))) {
-            return (cctx->options->parse & CL_SCAN_PARSE_ARCHIVE) ? 1 : 0;
-        }
-        if (cli_memstr(option_name_l, name_len, "elf", sizeof("elf"))) {
-            return (cctx->options->parse & CL_SCAN_PARSE_ELF) ? 1 : 0;
-        }
-        if (cli_memstr(option_name_l, name_len, "pdf", sizeof("pdf"))) {
-            return (cctx->options->parse & CL_SCAN_PARSE_PDF) ? 1 : 0;
-        }
-        if (cli_memstr(option_name_l, name_len, "swf", sizeof("swf"))) {
-            return (cctx->options->parse & CL_SCAN_PARSE_SWF) ? 1 : 0;
-        }
-        if (cli_memstr(option_name_l, name_len, "hwp3", sizeof("hwp3"))) {
-            return (cctx->options->parse & CL_SCAN_PARSE_HWP3) ? 1 : 0;
-        }
-        if (cli_memstr(option_name_l, name_len, "xmldocs", sizeof("xmldocs"))) {
-            return (cctx->options->parse & CL_SCAN_PARSE_XMLDOCS) ? 1 : 0;
-        }
-        if (cli_memstr(option_name_l, name_len, "mail", sizeof("mail"))) {
-            return (cctx->options->parse & CL_SCAN_PARSE_MAIL) ? 1 : 0;
-        }
-        if (cli_memstr(option_name_l, name_len, "ole2", sizeof("ole2"))) {
-            return (cctx->options->parse & CL_SCAN_PARSE_OLE2) ? 1 : 0;
-        }
-        if (cli_memstr(option_name_l, name_len, "html", sizeof("html"))) {
-            return (cctx->options->parse & CL_SCAN_PARSE_HTML) ? 1 : 0;
-        }
-        if (cli_memstr(option_name_l, name_len, "pe", sizeof("pe"))) {
-            return (cctx->options->parse & CL_SCAN_PARSE_PE) ? 1 : 0;
+            result = (cctx->options->parse & CL_SCAN_PARSE_ARCHIVE) ? 1 : 0;
+        } else if (cli_memstr(option_name_l, name_len, "elf", sizeof("elf"))) {
+            result = (cctx->options->parse & CL_SCAN_PARSE_ELF) ? 1 : 0;
+        } else if (cli_memstr(option_name_l, name_len, "pdf", sizeof("pdf"))) {
+            result = (cctx->options->parse & CL_SCAN_PARSE_PDF) ? 1 : 0;
+        } else if (cli_memstr(option_name_l, name_len, "swf", sizeof("swf"))) {
+            result = (cctx->options->parse & CL_SCAN_PARSE_SWF) ? 1 : 0;
+        } else if (cli_memstr(option_name_l, name_len, "hwp3", sizeof("hwp3"))) {
+            result = (cctx->options->parse & CL_SCAN_PARSE_HWP3) ? 1 : 0;
+        } else if (cli_memstr(option_name_l, name_len, "xmldocs", sizeof("xmldocs"))) {
+            result = (cctx->options->parse & CL_SCAN_PARSE_XMLDOCS) ? 1 : 0;
+        } else if (cli_memstr(option_name_l, name_len, "mail", sizeof("mail"))) {
+            result = (cctx->options->parse & CL_SCAN_PARSE_MAIL) ? 1 : 0;
+        } else if (cli_memstr(option_name_l, name_len, "ole2", sizeof("ole2"))) {
+            result = (cctx->options->parse & CL_SCAN_PARSE_OLE2) ? 1 : 0;
+        } else if (cli_memstr(option_name_l, name_len, "html", sizeof("html"))) {
+            result = (cctx->options->parse & CL_SCAN_PARSE_HTML) ? 1 : 0;
+        } else if (cli_memstr(option_name_l, name_len, "pe", sizeof("pe"))) {
+            result = (cctx->options->parse & CL_SCAN_PARSE_PE) ? 1 : 0;
         }
         /* else unknown option */
-        return 0;
     } else if (strncmp(option_name_l, "heuristic", MIN(name_len, sizeof("heuristic")))) {
         if (cli_memstr(option_name_l, name_len, "broken", sizeof("broken"))) {
-            return (cctx->options->heuristic & CL_SCAN_HEURISTIC_BROKEN) ? 1 : 0;
-        }
-        if (cli_memstr(option_name_l, name_len, "exceeds max", sizeof("exceeds max"))) {
-            return (cctx->options->heuristic & CL_SCAN_HEURISTIC_EXCEEDS_MAX) ? 1 : 0;
-        }
-        if (cli_memstr(option_name_l, name_len, "phishing ssl mismatch", sizeof("phishing ssl mismatch"))) {
-            return (cctx->options->heuristic & CL_SCAN_HEURISTIC_PHISHING_SSL_MISMATCH) ? 1 : 0;
-        }
-        if (cli_memstr(option_name_l, name_len, "phishing cloak", sizeof("phishing cloak"))) {
-            return (cctx->options->heuristic & CL_SCAN_HEURISTIC_PHISHING_CLOAK) ? 1 : 0;
-        }
-        if (cli_memstr(option_name_l, name_len, "macros", sizeof("macros"))) {
-            return (cctx->options->heuristic & CL_SCAN_HEURISTIC_MACROS) ? 1 : 0;
-        }
-        if (cli_memstr(option_name_l, name_len, "encrypted archive", sizeof("encrypted archive"))) {
-            return (cctx->options->heuristic & CL_SCAN_HEURISTIC_ENCRYPTED_ARCHIVE) ? 1 : 0;
-        }
-        if (cli_memstr(option_name_l, name_len, "encrypted doc", sizeof("encrypted doc"))) {
-            return (cctx->options->heuristic & CL_SCAN_HEURISTIC_ENCRYPTED_DOC) ? 1 : 0;
-        }
-        if (cli_memstr(option_name_l, name_len, "partition intxn", sizeof("partition intxn"))) {
-            return (cctx->options->heuristic & CL_SCAN_HEURISTIC_PARTITION_INTXN) ? 1 : 0;
-        }
-        if (cli_memstr(option_name_l, name_len, "structured", sizeof("structured"))) {
-            return (cctx->options->heuristic & CL_SCAN_HEURISTIC_STRUCTURED) ? 1 : 0;
-        }
-        if (cli_memstr(option_name_l, name_len, "structured ssn normal", sizeof("structured ssn normal"))) {
-            return (cctx->options->heuristic & CL_SCAN_HEURISTIC_STRUCTURED_SSN_NORMAL) ? 1 : 0;
-        }
-        if (cli_memstr(option_name_l, name_len, "structured ssn stripped", sizeof("structured ssn stripped"))) {
-            return (cctx->options->heuristic & CL_SCAN_HEURISTIC_STRUCTURED_SSN_STRIPPED) ? 1 : 0;
+            result = (cctx->options->heuristic & CL_SCAN_HEURISTIC_BROKEN) ? 1 : 0;
+        } else if (cli_memstr(option_name_l, name_len, "exceeds max", sizeof("exceeds max"))) {
+            result = (cctx->options->heuristic & CL_SCAN_HEURISTIC_EXCEEDS_MAX) ? 1 : 0;
+        } else if (cli_memstr(option_name_l, name_len, "phishing ssl mismatch", sizeof("phishing ssl mismatch"))) {
+            result = (cctx->options->heuristic & CL_SCAN_HEURISTIC_PHISHING_SSL_MISMATCH) ? 1 : 0;
+        } else if (cli_memstr(option_name_l, name_len, "phishing cloak", sizeof("phishing cloak"))) {
+            result = (cctx->options->heuristic & CL_SCAN_HEURISTIC_PHISHING_CLOAK) ? 1 : 0;
+        } else if (cli_memstr(option_name_l, name_len, "macros", sizeof("macros"))) {
+            result = (cctx->options->heuristic & CL_SCAN_HEURISTIC_MACROS) ? 1 : 0;
+        } else if (cli_memstr(option_name_l, name_len, "encrypted archive", sizeof("encrypted archive"))) {
+            result = (cctx->options->heuristic & CL_SCAN_HEURISTIC_ENCRYPTED_ARCHIVE) ? 1 : 0;
+        } else if (cli_memstr(option_name_l, name_len, "encrypted doc", sizeof("encrypted doc"))) {
+            result = (cctx->options->heuristic & CL_SCAN_HEURISTIC_ENCRYPTED_DOC) ? 1 : 0;
+        } else if (cli_memstr(option_name_l, name_len, "partition intxn", sizeof("partition intxn"))) {
+            result = (cctx->options->heuristic & CL_SCAN_HEURISTIC_PARTITION_INTXN) ? 1 : 0;
+        } else if (cli_memstr(option_name_l, name_len, "structured", sizeof("structured"))) {
+            result = (cctx->options->heuristic & CL_SCAN_HEURISTIC_STRUCTURED) ? 1 : 0;
+        } else if (cli_memstr(option_name_l, name_len, "structured ssn normal", sizeof("structured ssn normal"))) {
+            result = (cctx->options->heuristic & CL_SCAN_HEURISTIC_STRUCTURED_SSN_NORMAL) ? 1 : 0;
+        } else if (cli_memstr(option_name_l, name_len, "structured ssn stripped", sizeof("structured ssn stripped"))) {
+            result = (cctx->options->heuristic & CL_SCAN_HEURISTIC_STRUCTURED_SSN_STRIPPED) ? 1 : 0;
         }
         /* else unknown option */
-        return 0;
     } else if (strncmp(option_name_l, "mail", MIN(name_len, sizeof("mail")))) {
         if (cli_memstr(option_name_l, name_len, "partial message", sizeof("partial message"))) {
-            return (cctx->options->mail & CL_SCAN_MAIL_PARTIAL_MESSAGE) ? 1 : 0;
+            result = (cctx->options->mail & CL_SCAN_MAIL_PARTIAL_MESSAGE) ? 1 : 0;
         }
         /* else unknown option */
-        return 0;
     } else if (strncmp(option_name_l, "dev", MIN(name_len, sizeof("dev")))) {
         if (cli_memstr(option_name_l, name_len, "collect sha", sizeof("collect sha"))) {
-            return (cctx->options->dev & CL_SCAN_DEV_COLLECT_SHA) ? 1 : 0;
-        }
-        if (cli_memstr(option_name_l, name_len, "collect performance info", sizeof("collect performance info"))) {
-            return (cctx->options->dev & CL_SCAN_DEV_COLLECT_PERFORMANCE_INFO) ? 1 : 0;
+            result = (cctx->options->dev & CL_SCAN_DEV_COLLECT_SHA) ? 1 : 0;
+        } else if (cli_memstr(option_name_l, name_len, "collect performance info", sizeof("collect performance info"))) {
+            result = (cctx->options->dev & CL_SCAN_DEV_COLLECT_PERFORMANCE_INFO) ? 1 : 0;
         }
         /* else unknown option */
-        return 0;
-    } else {
-        /* else unknown option */
-        return 0;
     }
+    /* else unknown option */
+
+done:
+    if (NULL != option_name_l)
+        free(option_name_l);
+
+    return result;
 }
 
 uint32_t cli_bcapi_engine_db_options(struct cli_bc_ctx *ctx)

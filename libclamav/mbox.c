@@ -3104,8 +3104,10 @@ rfc2047(const char *in)
         /*cli_dbgmsg("Need to decode '%s' with method '%c'\n", enctext, encoding);*/
 
         m = messageCreate();
-        if (m == NULL)
+        if (m == NULL) {
+            free(enctext);
             break;
+        }
         messageAddStr(m, enctext);
         free(enctext);
         switch (encoding) {

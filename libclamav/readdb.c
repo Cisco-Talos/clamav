@@ -3552,6 +3552,7 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
                 engine->test_root = (struct cli_matcher *)mpool_calloc(engine->mempool, 1, sizeof(struct cli_matcher));
                 if (!engine->test_root) {
                     cli_errmsg("load_oneyara[verify]: cannot allocate memory for test cli_matcher\n");
+                    free(substr);
                     return CL_EMEM;
                 }
 #ifdef USE_MPOOL
@@ -3559,6 +3560,7 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
 #endif
                 if ((ret = cli_ac_init(engine->test_root, engine->ac_mindepth, engine->ac_maxdepth, engine->dconf->other & OTHER_CONF_PREFILTERING))) {
                     cli_errmsg("load_oneyara: cannot initialize test ac root\n");
+                    free(substr);
                     return ret;
                 }
             }
@@ -3569,6 +3571,7 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
                 tsig = (struct cli_ac_lsig *)mpool_calloc(engine->mempool, 1, sizeof(struct cli_ac_lsig));
                 if (!tsig) {
                     cli_errmsg("load_oneyara: cannot allocate memory for test lsig\n");
+                    free(substr);
                     return CL_EMEM;
                 }
 
@@ -3583,6 +3586,7 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
                     root->ac_lsigs--;
                     cli_errmsg("load_oneyara: cannot allocate test root->ac_lsigtable\n");
                     mpool_free(engine->mempool, tsig);
+                    free(substr);
                     return CL_EMEM;
                 }
 

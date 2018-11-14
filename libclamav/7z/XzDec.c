@@ -817,6 +817,7 @@ SRes XzUnpacker_Code(CXzUnpacker *p, Byte *dest, SizeT *destLen,
           else
           {
             Byte digest[SHA256_DIGEST_SIZE];
+            memset(&digest, 0, SHA256_DIGEST_SIZE);
             p->state = XZ_STATE_STREAM_INDEX_CRC;
             p->indexSize += 4;
             p->pos = 0;

@@ -489,6 +489,7 @@ void mpool_destroy(struct MP *mp)
     struct MPMAP *mpm_next = mp->u.mpm.next, *mpm;
     size_t mpmsize;
 
+    spam("Destroying map @%p\n", mp);
     while ((mpm = mpm_next)) {
         mpmsize  = mpm->size;
         mpm_next = mpm->next;
@@ -510,7 +511,6 @@ void mpool_destroy(struct MP *mp)
 #else
     VirtualFree(mp, 0, MEM_RELEASE);
 #endif
-    spam("Map destroyed @%p\n", mp);
 }
 
 void mpool_flush(struct MP *mp)
