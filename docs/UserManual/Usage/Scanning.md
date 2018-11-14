@@ -1,4 +1,7 @@
 # Scanning
+
+---
+
 <!-- TOC depthFrom:2 depthTo:6 withLinks:1 updateOnSave:1 orderedList:0 -->
 
 - [Daemon](#daemon)
@@ -11,17 +14,21 @@
 
 <!-- /TOC -->
 
+---
+
 ## Daemon
+
+---
 
 ### clamd
 
-`clamd` is a multi-threaded daemon that uses *libclamav* to scan files for viruses. Scanning behaviour can be fully configured to fit most needs by modifying `clamd.conf`.
+`clamd` is a multi-threaded daemon that uses *libclamav* to scan files for viruses. Scanning behaviour can be fully configured to fit most needs by [modifying `clamd.conf`](Configuration.md#clamdconf).
 
-As `clamd` requires a virus signature database to run, we recommend setting up ClamAV's official signatures before running `clamd` using `freshclam`.
+As `clamd` requires a virus signature database to run, we recommend setting up ClamAV's official signatures before running `clamd` [using `freshclam`](SignatureManagement.md#freshclam).
 
 The daemon works by listening for commands on the sockets specified in `clamd.conf`. Listening is supported over both unix local sockets and TCP sockets.
 
-**IMPORTANT:** `clamd` does not currently protect or authenticate traffic coming over the TCP socket, meaning it will accept any and all of the following commands listed from *any* source. Thus, we strongly recommend following best networking practices when setting up your `clamd` instance. I.e. don't expose your TCP socket to the Internet.
+**IMPORTANT:** `clamd` does not currently protect or authenticate traffic coming over the TCP socket, meaning it will accept any and all of the following commands listed from *any* source. Thus, we strongly recommend following best networking practices when setting up your `clamd` instance. **i.e. don't expose your TCP socket to the open Internet.**
 
 Here is a quick list of the commands accepted by `clamd` over the socket.
 
@@ -49,27 +56,31 @@ The daemon also handles the following signals as so:
 - `SIGHUP` - reopen the log file
 - `SIGUSR2` - reload the database
 
-It should be noted that `clamd` should not be started using the shell operator `&` or other external tools which would start it as a background process. Instead, you should run `clamd` which will load the database and then daemonize itself (unless you have specified otherwise in `clamd.conf`). After that, clamd is ready to accept connections and perform file scanning.
+It should be noted that `clamd` should not be started using the shell operator `&` or other external tools which would start it as a background process. Instead, you should run `clamd` which will load the database and then daemonize itself (unless you have [specified otherwise in `clamd.conf`](Configuration.md#clamdconf)). After that, clamd is ready to accept connections and perform file scanning.
 
 Once you have set up your configuration to your liking, and understand how you will be sending commands to the daemon, running `clamd` itself is simple. Simply execute the command:
 
 > $ clamd
 
+---
+
 ### clamdscan
 
-`clamdscan` is a `clamd` client, which greatly simplifies the task of scanning files with `clamd`. It sends commands to the `clamd` daemon across the socket specified in `clamd.conf` and generates a scan report after all requested scanning has been completed by the daemon.
+`clamdscan` is a `clamd` client, which greatly simplifies the task of scanning files with `clamd`. It sends commands to the `clamd` daemon across the socket [specified in `clamd.conf`](Configuration.md#clamdconf) and generates a scan report after all requested scanning has been completed by the daemon.
 
 Thus, **to run `clamdscan`, you must have an instance of `clamd` already running** as well.
 
-Please keep in mind, that as a simple scanning client, `clamdscan` cannot change scanning and engine configurations. These are tied to the `clamd` instance and the configuration you set up in `clamd.conf`. Therefore, while `clamdscan` will accept many of the same commands as its sister tool `clamscan`, it will simply ignore most of them as (by design) no mechanism exists to make ClamAV engine configuration changes over the `clamd` socket.
+Please keep in mind, that as a simple scanning client, `clamdscan` cannot change scanning and engine configurations. These are tied to the `clamd` instance and the [configuration you set up in `clamd.conf`](Configuration.md#clamdconf). Therefore, while `clamdscan` will accept many of the same commands as its sister tool `clamscan`, it will simply ignore most of them as (by design) no mechanism exists to make ClamAV engine configuration changes over the `clamd` socket.
 
-Again, running `clamdscan`, once you have a working `clamd` instance, is simple:
+Again, running `clamdscan`, once you have a [working `clamd` instance](#clamd), is simple:
 
 > $ clamdscan [*options*] [*file/directory/-*]
 
+---
+
 ### clamdtop
 
-`clamdtop` is a tool to monitor one or multiple instances of `clamd`. It has a colorized *ncurses* interface, which shows each job queued, memory usage, and information about the loaded signature database for the connected `clamd` instance(s). By default it will attempt to connect to the local `clamd` as defined in `clamd.conf`. However, you can specify other `clamd` instances at the command line.
+`clamdtop` is a tool to monitor one or multiple instances of `clamd`. It has a colorized *ncurses* interface, which shows each job queued, memory usage, and information about the loaded signature database for the connected `clamd` instance(s). By default it will attempt to connect to the local `clamd` as [defined in `clamd.conf`](Configuration.md#clamdconf). However, you can specify other `clamd` instances at the command line.
 
 To learn more, use the commands
 
@@ -79,17 +90,25 @@ or
 
 > $ clamdtop --help
 
+---
+
 ### On-Access Scanning
+
+---
 
 To be updated.
 
+---
+
 ## One-Time Scanning
+
+---
 
 ### clamscan
 
 `clamscan` is a command line tool which uses *libclamav* to scan files and/or directories for viruses. Unlike `clamdscan`, `clamscan` does *not* require a running `clamd` instance to function. Instead, `clamscan` will create a new engine and load in the virus database each time it is run. It will then scan the files and/or directories specified at the command line, create a scan report, and exit.
 
-By default, when loading databases, `clamscan` will check the location to which `freshclam` installed the virus database signatures. This behaviour, along with a myriad of other scanning and engine controls, can be modified by providing flags and other options at the command line.
+By default, when loading databases, `clamscan` will check the location to which [`freshclam` installed the virus database signatures](SignatureManagement.md#freshclam). This behaviour, along with a myriad of other scanning and engine controls, can be modified by providing flags and other options at the command line.
 
 There are too many options to list all of them here. So we'll only cover a few common and more interesting ones:
 

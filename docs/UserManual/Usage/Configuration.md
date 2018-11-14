@@ -1,5 +1,7 @@
 # Configuration
 
+---
+
 <!-- TOC depthFrom:2 depthTo:6 withLinks:1 updateOnSave:1 orderedList:0 -->
 
 - [clamconf](#clamconf)
@@ -10,11 +12,15 @@
 
 <!-- /TOC -->
 
+---
+
 ## clamconf
+
+---
 
 `clamconf` is a tool ClamAV provides for checking your entire system configuration, as it relates to your ClamAV installation. When run, it displays values used when configuring ClamAV at compilation time, important OS details, the contents (and validity) of both `clamd.conf` and `freshclam.conf`, along with other important engine, database, platform, and build information.
 
-It can also generate example configuration files for `clamd.conf` and `freshclam.conf`.
+It can also generate example configuration files for [`clamd.conf`](#clamdconf) and [`freshclam.conf`](#freshclamconf).
 
 To use `clamconf`, and see all the information it provides, simply run the following command:
 
@@ -28,9 +34,13 @@ or
 
 > $ clamconf --help
 
+---
+
 ## clamd.conf
 
-Currently, ClamAV requires users edit their `clamd.conf.example` file before they can run the daemon. At a bare minimum, users will nee to comment out the line that reads "Example", else `clamd` will consider the configuration invalid, ala:
+---
+
+Currently, ClamAV requires users to edit their `clamd.conf.example` file before they can run the daemon. At a bare minimum, users will nee to comment out the line that reads "Example", else `clamd` will consider the configuration invalid, ala:
 
 <pre>
   7 # Comment or remove the line below.
@@ -42,7 +52,7 @@ You will also need to rename `clamd.conf.example` to `clamd.conf` via:
 
 > $ mv ./clamd.conf.example ./clamd.conf
 
-If you are setting up a simple, local `clamd` instance then some other configuration options of interests to you will be as follows:
+If you are setting up a simple, local [`clamd` instance](Scanning.md#clamd) then some other configuration options of interests to you will be as follows:
 
 <pre>
 91 # Path to a local socket file the daemon will listen on.
@@ -62,11 +72,19 @@ If needed, you can find out even more about the formatting and options available
 
 > man clamd.conf
 
+---
+
 ### On-Access Scanning
+
+---
 
 You can configure On-Access Scanning through `clamd.conf` (starting at *line 613* in `clamd.conf.example`) and read the [on-access](Usage.md#On-access-Scanning) section for On-Access Scanning usage details.
 
+---
+
 ## freshclam.conf
+
+---
 
 `freshclam` is the automatic database update tool for Clam AntiVirus. It can be configured to work in two modes:
 
@@ -108,9 +126,13 @@ to check for a new database every hour. **N should be a number between 3 and 57 
     HTTPProxyPassword mypass
 </pre>
 
+---
+
 ## clamav-milter
 
-ClamAV includes a mail filtering tool called `clamav-milter`. This tool interfaces directly with `clamd`, and thus requires and a working `clamd` instance to run. However, `clamav-milter`'s configuration and log files are separate from that of `clamd`.
+---
+
+ClamAV includes a mail filtering tool called `clamav-milter`. This tool interfaces directly with `clamd`, and thus requires and a working [`clamd` instance](Scanning.md#clamd) to run. However, `clamav-milter`'s configuration and log files are separate from that of `clamd`.
 
 Ensuring ClamAV compiles with `clamav-milter` must be done at configure time with the command:
 

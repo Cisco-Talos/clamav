@@ -1,5 +1,7 @@
 # Signature Testing and Management
 
+---
+
 <!-- TOC depthFrom:2 depthTo:6 withLinks:1 updateOnSave:1 orderedList:0 -->
 
 - [freshclam](#freshclam)
@@ -8,9 +10,13 @@
 
 <!-- /TOC -->
 
+---
+
 ## freshclam
 
-The tool `freshclam` is used to download and update ClamAV’s official virus signature databases. While easy to use in its base configuration, `freshclam` does require a working `freshclam.conf` configuration file to run (the location of which can be passed in via command line if the default search location does not fit your needs).
+---
+
+The tool `freshclam` is used to download and update ClamAV’s official virus signature databases. While easy to use in its base configuration, `freshclam` does require a working [`freshclam.conf` configuration file](Configuration.md#freshclam) to run (the location of which can be passed in via command line if the default search location does not fit your needs).
 
 Once you have a valid configuration file, you can invoke freshclam with the following command:
 
@@ -18,7 +24,7 @@ Once you have a valid configuration file, you can invoke freshclam with the foll
 
 By default, `freshclam` will then attempt to connect to ClamAV's virus signature database distribution network. If no databases exist in the directory specified, `freshclam` will do a fresh download of the requested databases. Otherwise, `freshclam` will attempt to update existing databases, pairing them against downloaded cdiffs. If a database is found to be corrupted, it is not updated and instead replaced with a fresh download.
 
-Of course, all this behaviour--and more--can be changed to suit your needs by modifying `freshclam.conf` and/or using various command line options.
+Of course, all this behaviour--and more--can be changed to suit your needs by [modifying `freshclam.conf` and/or using various command line options](Configuration.md#freshclamconf).
 
 You can find more information about freshclam with the commands:
 
@@ -28,7 +34,11 @@ and
 
 > $ freshclam --help
 
+---
+
 ## sigtool
+
+---
 
 ClamAV provides `sigtool` as a command-line testing tool for assisting users in their efforts creating and working with virus signatures. While sigtool has many uses--including crafting signatures--of particular note, is sigtool's ability to help users and analysts in determining if a file detected by *libclamav*'s virus signatures is a false positive.
 
@@ -56,8 +66,11 @@ and
 
 > $ man sigtool
 
+---
 
 ## clambc
+
+---
 
 `clambc` is Clam Anti-Virus’ bytecode signature testing tool. It can be used to test newly crafted bytecode signatures or to help verify existing bytecode is executing against a sample as expected.
 
