@@ -137,6 +137,7 @@ ole2_convert_utf(summary_ctx_t *sctx, char *begin, size_t sz, const char *encodi
             outbuf = (char *)cli_realloc(outbuf, sz2 + 1);
             if (!outbuf) {
                 free(buf);
+                iconv_close(cd);
                 return NULL;
             }
 
@@ -487,8 +488,11 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
 
                 snprintf(b64jstr, PROPSTRLIMIT, "%s_base64", sctx->propname);
                 ret = cli_jsonbool(sctx->summary, b64jstr, 1);
-                if (ret != CL_SUCCESS)
+                if (ret != CL_SUCCESS) {
+                    free(outstr);
+                    free(outstr2);
                     return ret;
+                }
             }
 
             ret = cli_jsonstr(sctx->summary, sctx->propname, outstr2);

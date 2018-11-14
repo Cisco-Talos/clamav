@@ -3072,6 +3072,12 @@ cl_error_t pdf_find_and_extract_objs(struct pdf_struct *pdf, uint32_t *alerts)
     uint32_t badobjects = 0;
     cli_ctx *ctx        = pdf->ctx;
 
+    if (NULL == pdf || NULL == alerts) {
+        cli_errmsg("pdf_find_and_extract_objs: Invalid arguments.\n");
+        status = CL_EARG;
+        goto done;
+    }
+
     /* parse PDF and find obj offsets */
     while (CL_BREAK != (rv = pdf_findobj(pdf))) {
         if (rv == CL_EMEM) {
@@ -3109,7 +3115,7 @@ cl_error_t pdf_find_and_extract_objs(struct pdf_struct *pdf, uint32_t *alerts)
          * a password to decrypt */
         status = cli_append_virus(pdf->ctx, "Heuristics.Encrypted.PDF");
         if (status == CL_VIRUS) {
-            alerts++;
+            *alerts++;
             if (SCAN_ALLMATCHES)
                 status = CL_CLEAN;
         }
@@ -3119,7 +3125,7 @@ cl_error_t pdf_find_and_extract_objs(struct pdf_struct *pdf, uint32_t *alerts)
         status = run_pdf_hooks(pdf, PDF_PHASE_PARSED, -1, -1);
         cli_dbgmsg("pdf_find_and_extract_objs: (parsed hooks) returned %d\n", status);
         if (status == CL_VIRUS) {
-            alerts++;
+            *alerts++;
             if (SCAN_ALLMATCHES) {
                 status = CL_CLEAN;
             }
@@ -3147,7 +3153,7 @@ cl_error_t pdf_find_and_extract_objs(struct pdf_struct *pdf, uint32_t *alerts)
                 status = CL_CLEAN;
                 break;
             case CL_VIRUS:
-                alerts++;
+                *alerts++;
                 if (SCAN_ALLMATCHES) {
                     status = CL_CLEAN;
                 }

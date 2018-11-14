@@ -87,7 +87,8 @@ int cli_7unz(cli_ctx *ctx, size_t offset)
     CSzArEx db;
     SRes res;
     UInt16 utf16buf[UTFBUFSZ], *utf16name = utf16buf;
-    int namelen = UTFBUFSZ, found = CL_CLEAN;
+    int namelen            = UTFBUFSZ;
+    cl_error_t found       = CL_CLEAN;
     Int64 begin_of_archive = offset;
     UInt32 viruses_found   = 0;
 
@@ -180,7 +181,9 @@ int cli_7unz(cli_ctx *ctx, size_t offset)
             }
             if (res != SZ_OK)
                 cli_dbgmsg("cli_unz: extraction failed with %d\n", res);
-            else {
+            else if ((outBuffer == NULL) || (outSizeProcessed == 0)) {
+                cli_dbgmsg("cli_unz: extracted empty file\n");
+            } else {
                 if ((found = cli_gentempfd(ctx->engine->tmpdir, &name, &fd)))
                     break;
 

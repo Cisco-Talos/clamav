@@ -369,6 +369,11 @@ int cli_writen(int fd, const void *buff, unsigned int count)
     unsigned int todo;
     const unsigned char *current;
 
+    if (!buff) {
+        cli_errmsg("cli_writen: invalid NULL buff argument\n");
+        return -1;
+    }
+
     todo    = count;
     current = (const unsigned char *)buff;
 

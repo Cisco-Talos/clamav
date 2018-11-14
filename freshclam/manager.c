@@ -1007,6 +1007,7 @@ getcvd(const char *cvdfile, const char *newfile, const char *hostname,
              strerror(errno));
         unlink(newfile2);
         free(newfile2);
+        cl_cvdfree(cvd);
         return FCE_DBDIRACCESS;
     }
     free(newfile2);

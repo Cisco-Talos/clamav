@@ -305,12 +305,13 @@ cl_unrar_error_t unrar_peek_file_header(void* hArchive, unrar_metadata_t* file_m
 
     wchar_t RedirName[1024];
 
+    memset(&headerData, 0, sizeof(struct RARHeaderDataEx));
+
     if (NULL == hArchive || NULL == file_metadata) {
         unrar_dbgmsg("unrar_peek_file_header: Invalid arguments.\n");
         goto done;
     }
 
-    memset(&headerData, 0, sizeof(struct RARHeaderDataEx));
     memset(file_metadata, 0, sizeof(unrar_metadata_t));
 
     /*
