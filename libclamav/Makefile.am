@@ -175,8 +175,8 @@ distclean-recursive distdir maintainer-clean-recursive: c++/Makefile
 endif
 
 if USE_INTERNAL_MSPACK
-# libmspack version:
-LIBMSPACK_VERSION = 7:1:0
+# libmspack version: 0.8alpha (1:0:1)
+LIBMSPACK_VERSION = 1:0:1
 
 libclammspack_la_CFLAGS = -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -Wno-unused-parameter -I@top_srcdir@/libclammspack/mspack
 libclammspack_la_LDFLAGS = -version-info $(LIBMSPACK_VERSION) -no-undefined -export-symbols-regex '^mspack_'
