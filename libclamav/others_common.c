@@ -1077,7 +1077,7 @@ cl_error_t cli_get_filepath_from_filedesc(int desc, char** filepath)
 #else
 
 	cli_dbgmsg("cli_get_filepath_from_filedesc: No mechanism implemented to determine filename from file descriptor.\n");
-	*filename = NULL;
+	*filepath = NULL;
 	status = CL_BREAK;
 	goto done;
 
