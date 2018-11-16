@@ -116,10 +116,10 @@ DWORD GetMsecSincePerfCounter(LARGE_INTEGER beginTime64,BOOL fComputeTimeQueryPe
     return dwRet;
 }
 
-int ReadFileMemory(const char* filename,long* plFileSize,void** pFilePtr)
+int ReadFileMemory(const char* filename,long* plFileSize,unsigned char** pFilePtr)
 {
     FILE* stream;
-    void* ptr;
+    unsigned char* ptr;
     int retVal=1;
     stream=fopen(filename, "rb");
     if (stream==NULL)
@@ -184,10 +184,6 @@ int main(int argc, char *argv[])
     lBufferSizeUncpr = lBufferSizeCpr;
 
     CprPtr=(unsigned char*)malloc(lBufferSizeCpr + BlockSizeCompress);
-    if (CprPtr == NULL) { /* oops, malloc() failed */
-    	fprintf(stderr, "memory allocation failure\n");
-	return -1
-    }
 
     BeginCountPerfCounter(&li_qp,TRUE);
     dwGetTick=GetTickCount();
@@ -228,13 +224,7 @@ int main(int argc, char *argv[])
     }
 
     CprPtr=(unsigned char*)realloc(CprPtr,lSizeCpr);
-    if (CprPtr == NULL) /* oops, memory reallocation failed */
-	fprintf(stderr, "memory reallocation failed, original buffer unchanged\n");
     UncprPtr=(unsigned char*)malloc(lBufferSizeUncpr + BlockSizeUncompress);
-    if (UncprPtr == NULL) { /* oops, malloc() failed, print warning message and leave */
-	fprintf(stderr, "memory allocation failure.\n");
-	return -1;
-    }
 
     BeginCountPerfCounter(&li_qp,TRUE);
     dwGetTick=GetTickCount();
