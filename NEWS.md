@@ -108,7 +108,13 @@ we've cooked up over the past 6 months.
   GitHub pull-request by Thomas Petazzoni.
 - Added file type `CL_TYPE_LNK` to more easily identify Windows Shortcut files
   when writing signatures.
-- Windows executable (PE) Authenticode parsing improvements.
+- Improved parsing of Windows executable (PE) Authenticode signatures. Pull-
+  request by Andrew Williams.
+  - Added support for Authenticode signature properties commonly used by
+    Windows system files. These files are now much more likely to be
+    whitelisted correctly.
+  - Signature parsing now works correctly on big endian systems.
+
 - Some simplification to freshclam mirror management code, including changes
   to reduce timeout on ignoring mirrors after errors, and to make freshclam
   more tolerant when there is a delay between the time the new signature
@@ -204,6 +210,7 @@ infrastructure that's so easy to take for granted.
 
 The ClamAV team thanks the following individuals for their code submissions:
 
+- Andrew Williams
 - Craig Andrews
 - Josh Soref
 - monnerat
