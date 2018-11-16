@@ -1065,8 +1065,10 @@ getfile (const char *srcfile, const char *destfile, const char *hostname,
                         can_whitelist, ims, ipaddr, sd);
     closesocket (sd);
 
-    /* Update mirrors.dat */
-    (void) mirman_write ("mirrors.dat", dbdir, mdat);
+    if (mdat) {
+        /* Update mirrors.dat */
+        (void) mirman_write ("mirrors.dat", dbdir, mdat);
+    }
 
     return ret;
 }
