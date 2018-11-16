@@ -567,8 +567,8 @@ cl_error_t cli_bcomp_compare_check(const unsigned char* f_buffer, size_t buffer_
     int64_t value = 0;
     uint64_t bin_value = 0;
     int16_t compare_check = 0;
-    const unsigned char* end_buf = NULL;
-    const unsigned char* buffer = NULL;
+    unsigned char* end_buf = NULL;
+    unsigned char* buffer = NULL;
     unsigned char* tmp_buffer = NULL;
 
     if (!f_buffer || !bm) {
