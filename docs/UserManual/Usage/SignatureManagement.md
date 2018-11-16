@@ -28,11 +28,11 @@ Of course, all this behaviour--and more--can be changed to suit your needs by [m
 
 You can find more information about freshclam with the commands:
 
-> $ man freshclam
+> $ `man freshclam`
 
 and
 
-> $ freshclam --help
+> $ `freshclam --help`
 
 ---
 
@@ -44,15 +44,15 @@ ClamAV provides `sigtool` as a command-line testing tool for assisting users in 
 
 This can be accomplished by using the command:
 
-> $ sigtool --unpack=FILE
+> $ `sigtool --unpack=FILE`
 
 Where FILE points to your virus signature databases. Then, once `sigtool` has finished unpacking the database into the directory from which you ran the command, you can search for the offending signature name (provided either by [`clamscan`](./Scanning.md#clamscan) scan reports or [`clamd`](./Scanning.md#clamd) logs). As an example:
 
-> $ grep "Win.Test.EICAR" ./*
+> $ `grep "Win.Test.EICAR" ./*`
 
 Or, do all that in one step with:
 
-> $ sigtool --find="Win.Test.EICAR"
+> $ `sigtool --find="Win.Test.EICAR"`
 
 This should give you the offending signature(s) in question, which can then be included as part of your [false positive report](https://www.clamav.net/reports/fp).
 
@@ -60,11 +60,11 @@ To learn more in depth information on how `sigtool` can be used to help create v
 
 Otherwise, information on available sigtool functions can be easily referenced with:
 
-> $ sigtool --help
+> $ `sigtool --help`
 
 and
 
-> $ man sigtool
+> $ `man sigtool`
 
 ---
 
@@ -76,8 +76,8 @@ and
 
 For more detailed help, please use:
 
-> $ man clambc
+> $ `man clambc`
 
 or
 
-> $ clambc --help
+> $ `clambc --help`
