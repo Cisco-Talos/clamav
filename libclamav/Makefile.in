@@ -1220,8 +1220,8 @@ SUBDIRS = $(am__append_6)
 @ENABLE_LLVM_FALSE@LLVMDEP = libclamav_nocxx.la
 @ENABLE_LLVM_TRUE@LLVMDEP = c++/libclamavcxx.la
 
-# libmspack version:
-@USE_INTERNAL_MSPACK_TRUE@LIBMSPACK_VERSION = 7:1:0
+# libmspack version: 0.8alpha (1:0:1)
+@USE_INTERNAL_MSPACK_TRUE@LIBMSPACK_VERSION = 1:0:1
 @USE_INTERNAL_MSPACK_TRUE@libclammspack_la_CFLAGS = -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -Wno-unused-parameter -I@top_srcdir@/libclammspack/mspack
 @USE_INTERNAL_MSPACK_TRUE@libclammspack_la_LDFLAGS = -version-info $(LIBMSPACK_VERSION) -no-undefined -export-symbols-regex '^mspack_'
 
