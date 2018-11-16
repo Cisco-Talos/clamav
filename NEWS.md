@@ -20,6 +20,14 @@ we've cooked up over the past 6 months.
   before, although our `libclamunrar_iface` supporting library has changed from
   LGPL to the BSD 3-Clause license.
 - Libclamav API changes:
+  - The following scanning functions now require a filename argument.
+    This will enable ClamAV to report more details warning and error
+    information in the future, and will also allow for more sensible temp
+    file names. The filename argument may be `NULL` if a filename is not
+    available.
+    - `cl_scandesc`
+    - `cl_scandesc_callback`
+    - `cl_scanmap_callback`
   - Scanning options have been converted from a single flag bit-field into
     a structure of multiple categorized flag bit-fields. This change enabled
     us to add new scanning options requested by the community. In addition,
