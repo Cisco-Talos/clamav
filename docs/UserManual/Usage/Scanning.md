@@ -41,7 +41,7 @@ Here is a quick list of the commands accepted by `clamd` over the socket.
 
 As with most ClamAV tools, you can find out more about these by invoking the command:
 
-> $ man clamd
+> `$ man clamd`
 
 The daemon also handles the following signals as so:
 
@@ -53,7 +53,7 @@ It should be noted that `clamd` should not be started using the shell operator `
 
 Once you have set up your configuration to your liking, and understand how you will be sending commands to the daemon, running `clamd` itself is simple. Simply execute the command:
 
-> $ clamd
+> `$ clamd`
 
 ### clamdscan
 
@@ -65,7 +65,7 @@ Please keep in mind, that as a simple scanning client, `clamdscan` cannot change
 
 Again, running `clamdscan`, once you have a working `clamd` instance, is simple:
 
-> $ clamdscan [*options*] [*file/directory/-*]
+> `$ clamdscan [*options*] [*file/directory/-*]`
 
 ### clamdtop
 
@@ -73,21 +73,21 @@ Again, running `clamdscan`, once you have a working `clamd` instance, is simple:
 
 To learn more, use the commands
 
-> $ man clamdtop
+> `$ man clamdtop`
 
 or
 
-> $ clamdtop --help
+> `$ clamdtop --help`
 
 ### On-Access Scanning
 
-There is a special thread in `clamd` that performs On-Access Scanning under Linux. This thread shares the virus signature database with the daemon and is capable of blocking discovered threats at the kernel level, although by default it is only configured to alert on detection.
+The ClamAV daemon can be configured to perform On-Access Scanning under Linux. ClamAV's On-Access Scanning runs *alongside* the `clamd` instance, and shares the same engine and virus signature database with the daemon used to kick it off. The On-Access Scanner is capable of blocking access to/from any malicious files it discovers, but by default it is configured to only alert the user if it detects a malicious file.
 
 You can can set-up On-Access Scanning [through `clamd.conf`](Configuration.md#on-access-scanning) and learn more about the options available to you by reading the [On-Access Scanning User Guide](../OnAccess.md).
 
-Once you have set up the On-Access Scanner to your liking, you will need to run `clamd` as *root* (or another user with elevated permissions) to start it:
+Once you have set up the On-Access Scanner (and `clamd`) to your liking, you will need to run `clamd` as *root* (or another user with elevated permissions) to start it:
 
-> $ sudo clamd
+> `$ sudo clamd`
 
 ## One-Time Scanning
 
@@ -102,7 +102,7 @@ There are too many options to list all of them here. So we'll only cover a few c
 - `--log=FILE` - save scan report to FILE
 - `--database=FILE/DIR` - load virus database from FILE or load all supported db files from DIR
 - `--official-db-only[=yes/no(*)]` - only load official signatures
-- `-max-filesize=#n` - files larger than this will be skipped and assumed clean
+- `--max-filesize=#n` - files larger than this will be skipped and assumed clean
 - `--max-scansize=#n` - the maximum amount of data to scan for each container file
 - `--leave-temps[=yes/no(*)]`- do not remove temporary files
 - `--file-list=FILE` - scan files from FILE
@@ -119,13 +119,13 @@ There are too many options to list all of them here. So we'll only cover a few c
 
 To learn more about the options available when using `clamscan` please reference:
 
-> $ man clamscan
+> `$ man clamscan`
 
 and
 
-> $ clamscan --help
+> `$ clamscan --help`
 
 
 Otherwise, the general usage of clamscan is:
 
-> clamscan [options] [file/directory/-]
+> `clamscan [options] [file/directory/-]`
