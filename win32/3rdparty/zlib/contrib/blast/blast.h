@@ -1,6 +1,6 @@
 /* blast.h -- interface for blast.c
-  Copyright (C) 2003 Mark Adler
-  version 1.1, 16 Feb 2003
+  Copyright (C) 2003, 2012, 2013 Mark Adler
+  version 1.3, 24 Aug 2013
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the author be held liable for any damages
@@ -28,6 +28,10 @@
  * that library.  (Note: PKWare overused the "implode" verb, and the format
  * used by their library implode() function is completely different and
  * incompatible with the implode compression method supported by PKZIP.)
+ *
+ * The binary mode for stdio functions should be used to assure that the
+ * compressed data is not corrupted when read or written.  For example:
+ * fopen(..., "rb") and fopen(..., "wb").
  */
 
 
@@ -38,7 +42,8 @@ typedef int (*blast_out)(void *how, unsigned char *buf, unsigned len);
  */
 
 
-int blast(blast_in infun, void *inhow, blast_out outfun, void *outhow);
+int blast(blast_in infun, void *inhow, blast_out outfun, void *outhow,
+          unsigned *left, unsigned char **in);
 /* Decompress input to output using the provided infun() and outfun() calls.
  * On success, the return value of blast() is zero.  If there is an error in
  * the source data, i.e. it is not in the proper format, then a negative value
@@ -51,11 +56,18 @@ int blast(blast_in infun, void *inhow, blast_out outfun, void *outhow);
  * an input error.  (blast() only asks for input if it needs it.)  inhow is for
  * use by the application to pass an input descriptor to infun(), if desired.
  *
+ * If left and in are not NULL and *left is not zero when blast() is called,
+ * then the *left bytes are *in are consumed for input before infun() is used.
+ *
  * The output function is invoked: err = outfun(how, buf, len), where the bytes
  * to be written are buf[0..len-1].  If err is not zero, then blast() returns
  * with an output error.  outfun() is always called with len <= 4096.  outhow
  * is for use by the application to pass an output descriptor to outfun(), if
  * desired.
+ *
+ * If there is any unused input, *left is set to the number of bytes that were
+ * read and *in points to them.  Otherwise *left is set to zero and *in is set
+ * to NULL.  If left or in are NULL, then they are not set.
  *
  * The return codes are:
  *

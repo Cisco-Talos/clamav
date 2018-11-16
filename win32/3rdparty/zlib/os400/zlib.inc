@@ -1,7 +1,7 @@
       *  ZLIB.INC - Interface to the general purpose compression library
       *
       *  ILE RPG400 version by Patrick Monnerat, DATASPHERE.
-      *  Version 1.2.3.9
+      *  Version 1.2.11
       *
       *
       *  WARNING:
@@ -22,16 +22,25 @@
       *
       *  Versioning information.
       *
-     D ZLIB_VERSION    C                   '1.2.3.9'
-     D ZLIB_VERNUM     C                   X'1239'
+     D ZLIB_VERSION    C                   '1.2.11'
+     D ZLIB_VERNUM     C                   X'12a0'
+     D ZLIB_VER_MAJOR  C                   1
+     D ZLIB_VER_MINOR  C                   2
+     D ZLIB_VER_REVISION...
+     D                 C                   11
+     D ZLIB_VER_SUBREVISION...
+     D                 C                   0
       *
       *  Other equates.
       *
      D Z_NO_FLUSH      C                   0
+     D Z_PARTIAL_FLUSH...
+     D                 C                   1
      D Z_SYNC_FLUSH    C                   2
      D Z_FULL_FLUSH    C                   3
      D Z_FINISH        C                   4
      D Z_BLOCK         C                   5
+     D Z_TREES         C                   6
       *
      D Z_OK            C                   0
      D Z_STREAM_END    C                   1
@@ -41,7 +50,7 @@
      D Z_DATA_ERROR    C                   -3
      D Z_MEM_ERROR     C                   -4
      D Z_BUF_ERROR     C                   -5
-     DZ_VERSION_ERROR  C                   -6
+     D Z_VERSION_ERROR C                   -6
       *
      D Z_NO_COMPRESSION...
      D                 C                   0
@@ -71,7 +80,9 @@
       *
      D z_streamp       S               *                                        Stream struct ptr
      D gzFile          S               *                                        File pointer
+     D gz_headerp      S               *
      D z_off_t         S             10i 0                                      Stream offsets
+     D z_off64_t       S             20i 0                                      Stream offsets
       *
       **************************************************************************
       *                               Structures
@@ -101,15 +112,15 @@
       **************************************************************************
       *
      D compress        PR            10I 0 extproc('compress')
-     D  dest                      32767    options(*varsize)                    Destination buffer
+     D  dest                      65535    options(*varsize)                    Destination buffer
      D  destLen                      10U 0                                      Destination length
-     D  source                    32767    const options(*varsize)              Source buffer
+     D  source                    65535    const options(*varsize)              Source buffer
      D  sourceLen                    10u 0 value                                Source length
       *
      D compress2       PR            10I 0 extproc('compress2')
-     D  dest                      32767    options(*varsize)                    Destination buffer
+     D  dest                      65535    options(*varsize)                    Destination buffer
      D  destLen                      10U 0                                      Destination length
-     D  source                    32767    const options(*varsize)              Source buffer
+     D  source                    65535    const options(*varsize)              Source buffer
      D  sourceLen                    10U 0 value                                Source length
      D  level                        10I 0 value                                Compression level
       *
@@ -117,35 +128,69 @@
      D  sourceLen                    10U 0 value
       *
      D uncompress      PR            10I 0 extproc('uncompress')
-     D  dest                      32767    options(*varsize)                    Destination buffer
+     D  dest                      65535    options(*varsize)                    Destination buffer
      D  destLen                      10U 0                                      Destination length
-     D  source                    32767    const options(*varsize)              Source buffer
+     D  source                    65535    const options(*varsize)              Source buffer
      D  sourceLen                    10U 0 value                                Source length
       *
+     D uncompress2     PR            10I 0 extproc('uncompress2')
+     D  dest                      65535    options(*varsize)                    Destination buffer
+     D  destLen                      10U 0                                      Destination length
+     D  source                    65535    const options(*varsize)              Source buffer
+     D  sourceLen                    10U 0                                      Source length
+      *
+      /if not defined(LARGE_FILES)
      D gzopen          PR                  extproc('gzopen')
      D                                     like(gzFile)
      D  path                           *   value options(*string)               File pathname
      D  mode                           *   value options(*string)               Open mode
+      /else
+     D gzopen          PR                  extproc('gzopen64')
+     D                                     like(gzFile)
+     D  path                           *   value options(*string)               File pathname
+     D  mode                           *   value options(*string)               Open mode
+      *
+     D gzopen64        PR                  extproc('gzopen64')
+     D                                     like(gzFile)
+     D  path                           *   value options(*string)               File pathname
+     D  mode                           *   value options(*string)               Open mode
+      /endif
       *
      D gzdopen         PR                  extproc('gzdopen')
      D                                     like(gzFile)
-     D  fd                           10i 0 value                                File descriptor
+     D  fd                           10I 0 value                                File descriptor
      D  mode                           *   value options(*string)               Open mode
+      *
+     D gzbuffer        PR            10I 0 extproc('gzbuffer')
+     D  file                               value like(gzFile)                   File pointer
+     D  size                         10U 0 value
       *
      D gzsetparams     PR            10I 0 extproc('gzsetparams')
      D  file                               value like(gzFile)                   File pointer
      D  level                        10I 0 value
-     D  strategy                     10i 0 value
+     D  strategy                     10I 0 value
       *
      D gzread          PR            10I 0 extproc('gzread')
      D  file                               value like(gzFile)                   File pointer
-     D  buf                       32767    options(*varsize)                    Buffer
+     D  buf                       65535    options(*varsize)                    Buffer
      D  len                          10u 0 value                                Buffer length
+      *
+     D gzfread          PR           20I 0 extproc('gzfread')
+     D  buf                       65535    options(*varsize)                    Buffer
+     D  size                         20u 0 value                                Buffer length
+     D  nitems                       20u 0 value                                Buffer length
+     D  file                               value like(gzFile)                   File pointer
       *
      D gzwrite         PR            10I 0 extproc('gzwrite')
      D  file                               value like(gzFile)                   File pointer
-     D  buf                       32767    const options(*varsize)              Buffer
+     D  buf                       65535    const options(*varsize)              Buffer
      D  len                          10u 0 value                                Buffer length
+      *
+     D gzfwrite         PR           20I 0 extproc('gzfwrite')
+     D  buf                       65535    options(*varsize)                    Buffer
+     D  size                         20u 0 value                                Buffer length
+     D  nitems                       20u 0 value                                Buffer length
+     D  file                               value like(gzFile)                   File pointer
       *
      D gzputs          PR            10I 0 extproc('gzputs')
      D  file                               value like(gzFile)                   File pointer
@@ -153,27 +198,88 @@
       *
      D gzgets          PR              *   extproc('gzgets')
      D  file                               value like(gzFile)                   File pointer
-     D  buf                       32767    options(*varsize)                    Read buffer
+     D  buf                       65535    options(*varsize)                    Read buffer
      D  len                          10i 0 value                                Buffer length
+      *
+     D gzputc          PR            10i 0 extproc('gzputc')
+     D  file                               value like(gzFile)                   File pointer
+     D  c                            10I 0 value                                Character to write
+      *
+     D gzgetc          PR            10i 0 extproc('gzgetc')
+     D  file                               value like(gzFile)                   File pointer
+      *
+     D gzgetc_         PR            10i 0 extproc('gzgetc_')
+     D  file                               value like(gzFile)                   File pointer
+      *
+     D gzungetc        PR            10i 0 extproc('gzungetc')
+     D  c                            10I 0 value                                Character to push
+     D  file                               value like(gzFile)                   File pointer
       *
      D gzflush         PR            10i 0 extproc('gzflush')
      D  file                               value like(gzFile)                   File pointer
      D  flush                        10I 0 value                                Type of flush
       *
+      /if not defined(LARGE_FILES)
      D gzseek          PR                  extproc('gzseek')
      D                                     like(z_off_t)
      D  file                               value like(gzFile)                   File pointer
      D  offset                             value like(z_off_t)                  Offset
      D  whence                       10i 0 value                                Origin
+      /else
+     D gzseek          PR                  extproc('gzseek64')
+     D                                     like(z_off_t)
+     D  file                               value like(gzFile)                   File pointer
+     D  offset                             value like(z_off_t)                  Offset
+     D  whence                       10i 0 value                                Origin
+      *
+     D gzseek64        PR                  extproc('gzseek64')
+     D                                     like(z_off64_t)
+     D  file                               value like(gzFile)                   File pointer
+     D  offset                             value like(z_off64_t)                Offset
+     D  whence                       10i 0 value                                Origin
+      /endif
       *
      D gzrewind        PR            10i 0 extproc('gzrewind')
      D  file                               value like(gzFile)                   File pointer
       *
+      /if not defined(LARGE_FILES)
      D gztell          PR                  extproc('gztell')
      D                                     like(z_off_t)
      D  file                               value like(gzFile)                   File pointer
+      /else
+     D gztell          PR                  extproc('gztell64')
+     D                                     like(z_off_t)
+     D  file                               value like(gzFile)                   File pointer
+      *
+     D gztell64        PR                  extproc('gztell64')
+     D                                     like(z_off64_t)
+     D  file                               value like(gzFile)                   File pointer
+      /endif
+      *
+      /if not defined(LARGE_FILES)
+     D gzoffset        PR                  extproc('gzoffset')
+     D                                     like(z_off_t)
+     D  file                               value like(gzFile)                   File pointer
+      /else
+     D gzoffset        PR                  extproc('gzoffset64')
+     D                                     like(z_off_t)
+     D  file                               value like(gzFile)                   File pointer
+      *
+     D gzoffset64      PR                  extproc('gzoffset64')
+     D                                     like(z_off64_t)
+     D  file                               value like(gzFile)                   File pointer
+      /endif
       *
      D gzeof           PR            10i 0 extproc('gzeof')
+     D  file                               value like(gzFile)                   File pointer
+      *
+     D gzdirect        PR            10i 0 extproc('gzdirect')
+     D  file                               value like(gzFile)                   File pointer
+      *
+     D gzclose_r       PR            10i 0 extproc('gzclose_r')
+     D  file                               value like(gzFile)                   File pointer
+      *
+     D gzclose_w       PR            10i 0 extproc('gzclose_w')
      D  file                               value like(gzFile)                   File pointer
       *
      D gzclose         PR            10i 0 extproc('gzclose')
@@ -227,14 +333,14 @@
      D  method                       10I 0 value                                Compression method
      D  windowBits                   10I 0 value                                log2(window size)
      D  memLevel                     10I 0 value                                Mem/cmpress tradeoff
-     D  strategy                     10I 0 value                                Compression stategy
+     D  strategy                     10I 0 value                                Compression strategy
      D  version                        *   value options(*string)               Version string
      D  stream_size                  10i 0 value                                Stream struct. size
       *
      D deflateSetDictionary...
      D                 PR            10I 0 extproc('deflateSetDictionary')      Init. dictionary
      D  strm                               like(z_stream)                       Compression stream
-     D  dictionary                32767    const options(*varsize)              Dictionary bytes
+     D  dictionary                65535    const options(*varsize)              Dictionary bytes
      D  dictLength                   10U 0 value                                Dictionary length
       *
      D deflateCopy     PR            10I 0 extproc('deflateCopy')               Compress strm 2 strm
@@ -247,15 +353,27 @@
      D deflateParams   PR            10I 0 extproc('deflateParams')             Change level & strat
      D  strm                               like(z_stream)                       Compression stream
      D  level                        10I 0 value                                Compression level
-     D  strategy                     10I 0 value                                Compression stategy
+     D  strategy                     10I 0 value                                Compression strategy
+      *
+     D deflateTune     PR            10I 0 extproc('deflateTune')
+     D  strm                               like(z_stream)                       Compression stream
+     D  good                         10I 0 value
+     D  lazy                         10I 0 value
+     D  nice                         10I 0 value
+     D  chain                        10I 0 value
       *
      D deflateBound    PR            10U 0 extproc('deflateBound')              Change level & strat
      D  strm                               like(z_stream)                       Compression stream
      D  sourcelen                    10U 0 value                                Compression level
       *
+     D deflatePending  PR            10I 0 extproc('deflatePending')            Change level & strat
+     D  strm                               like(z_stream)                       Compression stream
+     D  pending                      10U 0                                      Pending bytes
+     D  bits                         10I 0                                      Pending bits
+      *
      D deflatePrime    PR            10I 0 extproc('deflatePrime')              Change level & strat
      D  strm                               like(z_stream)                       Compression stream
-     D  bits                         10I 0 value                                Number of bits to insert
+     D  bits                         10I 0 value                                # of bits to insert
      D  value                        10I 0 value                                Bits to insert
       *
      D inflateInit2    PR            10I 0 extproc('inflateInit2_')             Init. expansion
@@ -267,8 +385,20 @@
      D inflateSetDictionary...
      D                 PR            10I 0 extproc('inflateSetDictionary')      Init. dictionary
      D  strm                               like(z_stream)                       Expansion stream
-     D  dictionary                32767    const options(*varsize)              Dictionary bytes
+     D  dictionary                65535    const options(*varsize)              Dictionary bytes
      D  dictLength                   10U 0 value                                Dictionary length
+      *
+     D inflateGetDictionary...
+     D                 PR            10I 0 extproc('inflateGetDictionary')      Get dictionary
+     D  strm                               like(z_stream)                       Expansion stream
+     D  dictionary                65535    options(*varsize)                    Dictionary bytes
+     D  dictLength                   10U 0                                      Dictionary length
+      *
+     D deflateGetDictionary...
+     D                 PR            10I 0 extproc('deflateGetDictionary')      Get dictionary
+     D  strm                               like(z_stream)                       Expansion stream
+     D  dictionary                65535    options(*varsize)                    Dictionary bytes
+     D  dictLength                   10U 0                                      Dictionary length
       *
      D inflateSync     PR            10I 0 extproc('inflateSync')               Sync. expansion
      D  strm                               like(z_stream)                       Expansion stream
@@ -280,11 +410,42 @@
      D inflateReset    PR            10I 0 extproc('inflateReset')              End and init. stream
      D  strm                               like(z_stream)                       Expansion stream
       *
+     D inflateReset2   PR            10I 0 extproc('inflateReset2')             End and init. stream
+     D  strm                               like(z_stream)                       Expansion stream
+     D  windowBits                   10I 0 value                                Log2(buffer size)
+      *
+     D inflatePrime    PR            10I 0 extproc('inflatePrime')              Insert bits
+     D  strm                               like(z_stream)                       Expansion stream
+     D  bits                         10I 0 value                                Bit count
+     D  value                        10I 0 value                                Bits to insert
+      *
+     D inflateMark     PR            10I 0 extproc('inflateMark')               Get inflate info
+     D  strm                               like(z_stream)                       Expansion stream
+      *
+     D inflateCodesUsed...
+                       PR            20U 0 extproc('inflateCodesUsed')
+     D  strm                               like(z_stream)                       Expansion stream
+      *
+     D inflateValidate...
+                       PR            20U 0 extproc('inflateValidate')
+     D  strm                               like(z_stream)                       Expansion stream
+     D  check                        10I 0 value
+      *
+     D inflateGetHeader...
+                       PR            10U 0 extproc('inflateGetHeader')
+     D  strm                               like(z_stream)                       Expansion stream
+     D  head                               like(gz_headerp)
+      *
+     D deflateSetHeader...
+                       PR            10U 0 extproc('deflateSetHeader')
+     D  strm                               like(z_stream)                       Expansion stream
+     D  head                               like(gz_headerp)
+      *
      D inflateBackInit...
      D                 PR            10I 0 extproc('inflateBackInit_')
      D  strm                               like(z_stream)                       Expansion stream
      D  windowBits                   10I 0 value                                Log2(buffer size)
-     D  window                    32767    options(*varsize)                    Buffer
+     D  window                    65535    options(*varsize)                    Buffer
      D  version                        *   value options(*string)               Version string
      D  stream_size                  10i 0 value                                Stream struct. size
       *
@@ -307,13 +468,35 @@
       *
      D adler32         PR            10U 0 extproc('adler32')                   New checksum
      D  adler                        10U 0 value                                Old checksum
-     D  buf                       32767    const options(*varsize)              Bytes to accumulate
+     D  buf                       65535    const options(*varsize)              Bytes to accumulate
      D  len                          10U 0 value                                Buffer length
+      *
+     D adler32_combine...
+                       PR            10U 0 extproc('adler32_combine')           New checksum
+     D  adler1                       10U 0 value                                Old checksum
+     D  adler2                       10U 0 value                                Old checksum
+     D  len2                         20U 0 value                                Buffer length
+      *
+     D adler32_z       PR            10U 0 extproc('adler32_z')                 New checksum
+     D  adler                        10U 0 value                                Old checksum
+     D  buf                       65535    const options(*varsize)              Bytes to accumulate
+     D  len                          20U 0 value                                Buffer length
       *
      D crc32           PR            10U 0 extproc('crc32')                     New checksum
      D  crc                          10U 0 value                                Old checksum
-     D  buf                       32767    const options(*varsize)              Bytes to accumulate
+     D  buf                       65535    const options(*varsize)              Bytes to accumulate
      D  len                          10U 0 value                                Buffer length
+      *
+     D crc32_combine...
+                       PR            10U 0 extproc('crc32_combine')             New checksum
+     D  crc1                         10U 0 value                                Old checksum
+     D  crc2                         10U 0 value                                Old checksum
+     D  len2                         20U 0 value                                Buffer length
+      *
+     D crc32_z         PR            10U 0 extproc('crc32_z')                   New checksum
+     D  crc                          10U 0 value                                Old checksum
+     D  buf                       65535    const options(*varsize)              Bytes to accumulate
+     D  len                          20U 0 value                                Buffer length
       *
       **************************************************************************
       *                     Miscellaneous function prototypes
@@ -327,5 +510,18 @@
      D  strm                               like(z_stream)                       Expansion stream
       *
      D get_crc_table   PR              *   extproc('get_crc_table')             Ptr to ulongs
+      *
+     D inflateUndermine...
+     D                 PR            10I 0 extproc('inflateUndermine')
+     D  strm                               like(z_stream)                       Expansion stream
+     D  arg                          10I 0 value                                Error code
+      *
+     D inflateResetKeep...
+     D                 PR            10I 0 extproc('inflateResetKeep')          End and init. stream
+     D  strm                               like(z_stream)                       Expansion stream
+      *
+     D deflateResetKeep...
+     D                 PR            10I 0 extproc('deflateResetKeep')          End and init. stream
+     D  strm                               like(z_stream)                       Expansion stream
       *
       /endif
