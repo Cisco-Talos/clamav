@@ -1131,7 +1131,7 @@ cl_error_t cli_basename(const char *filepath, size_t filepath_len, char **fileba
     if ((index != filepath) || (index[0] == PATHSEP[0]))
         index++;
 
-    if (0 == strnlen(index, filepath_len - (index - filepath))) {
+    if (0 == cli_strnlen(index, filepath_len - (index - filepath))) {
         cli_dbgmsg("cli_basename: Provided path does not include a file name.\n");
         status = CL_EFORMAT;
         goto done;

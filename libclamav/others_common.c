@@ -1023,7 +1023,7 @@ cl_error_t cli_get_filepath_from_filedesc(int desc, char** filepath)
 	/* Success. Add null terminator */
 	fname[linksz] = '\0';
 
-    *filepath = cli_strndup(fname, strnlen(fname, PATH_MAX));
+    *filepath = cli_strndup(fname, cli_strnlen(fname, PATH_MAX));
 	if (NULL == *filepath) {
 		cli_errmsg("cli_get_filepath_from_filedesc: Failed to allocate memory to store filename\n");
 		status = CL_EMEM;
@@ -1040,7 +1040,7 @@ cl_error_t cli_get_filepath_from_filedesc(int desc, char** filepath)
         goto done;
     }
 
-    *filepath = cli_strndup(fname, strnlen(fname, PATH_MAX));
+    *filepath = cli_strndup(fname, cli_strnlen(fname, PATH_MAX));
 	if (NULL == *filepath) {
 		cli_errmsg("cli_get_filepath_from_filedesc: Failed to allocate memory to store filename\n");
 		status = CL_EMEM;
@@ -1073,6 +1073,13 @@ cl_error_t cli_get_filepath_from_filedesc(int desc, char** filepath)
 		status = CL_EOPEN;
 		goto done;
 	}
+
+#else
+
+	cli_dbgmsg("cli_get_filepath_from_filedesc: No mechanism implemented to determine filename from file descriptor.\n");
+	*filename = NULL;
+	status = CL_BREAK;
+	goto done;
 
 #endif
 
