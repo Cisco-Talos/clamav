@@ -93,7 +93,8 @@ static inline int insert_list(struct cli_matcher *root, struct cli_ac_patt *patt
     struct cli_ac_patt *php;
     struct cli_ac_special *a1, *a2;
     struct cli_alt_node *b1, *b2;
-    uint8_t i, j, match;
+    int match;
+    uint16_t i, j;
 
     new = (struct cli_ac_list *)mpool_calloc(root->mempool, 1, sizeof(struct cli_ac_list));
     if (!new) {
@@ -309,7 +310,7 @@ int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
 {
     struct cli_ac_patt **newtable;
     uint16_t len = MIN(root->ac_maxdepth, pattern->length[0]);
-    uint8_t i;
+    uint16_t i;
 
     for(i = 0; i < len; i++) {
         if(pattern->pattern[i] & CLI_MATCH_WILDCARD) {
@@ -1769,7 +1770,7 @@ int cli_ac_scanbuff(
 
                             found = 0;
                             if(pt->partno != 1) {
-                                for(j = 1; j <= CLI_DEFAULT_AC_TRACKLEN + 1 && offmatrix[pt->partno - 2][j] != (uint32_t)-1; j++) {
+                                for(j = 1; (j <= CLI_DEFAULT_AC_TRACKLEN + 1) && (offmatrix[pt->partno - 2][j] != (uint32_t)-1); j++) {
                                     found = j;
                                     if(realoff < offmatrix[pt->partno - 2][j])
                                         found = 0;
@@ -1954,10 +1955,10 @@ static int qcompare_fstr(const void *arg, const void *a, const void *b)
 }
 
 /* returns if level of nesting, end set to MATCHING paren, start AFTER staring paren */
-inline static int find_paren_end(char *hexstr, char **end)
+inline static size_t find_paren_end(char *hexstr, char **end)
 {
-    unsigned long i;
-    int nest = 0, level = 0;
+    size_t i;
+    size_t nest = 0, level = 0;
 
     *end = NULL;
     for (i = 0; i < strlen(hexstr); i++) {
@@ -2543,7 +2544,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 
     if(strchr(hexsig, '(')) {
         char *hexnew, *start;
-        uint8_t nest;
+        size_t nest;
         size_t hexnewsz;
 
         if(hex) {
