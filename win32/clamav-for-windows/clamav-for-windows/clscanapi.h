@@ -39,7 +39,7 @@
 /* CLAMAPI - return codes */
 /* Always check for the return value of CLAMAPI's 
  * Possible values are:
- * - return_value == CLAMAPI_SUCCESS: API succeded
+ * - return_value == CLAMAPI_SUCCESS: API succeeded
  * - return_value != CLAMAPI_SUCCESS: API failed (call Scan_GetErrorMsg(return_value) to retrieve the error message)
  */
 #define CLAMAPI_SUCCESS 0
@@ -307,7 +307,7 @@ int CLAMAPI Scan_SetLimit(int option, unsigned int value);
  * INPUT @param option : option enum
  * INPUT @param value : location to store value
  * INPUT @param inputLength : size of input buffer
- * OUTPUT @param outLength : mimimum size require to store data
+ * OUTPUT @param outLength : minimum size require to store data
  */
 int CLAMAPI Scan_GetOption(CClamAVScanner *pScanner, int option, void *value, unsigned long inputLength, unsigned long *outLength);
 
@@ -330,7 +330,7 @@ CLAMAPI const wchar_t * Scan_GetErrorMsg(int errorCode);
 
 /*
  * Reload the virus database
- * INPUT @param bLoadMinDefs : full or minimal defininition selector
+ * INPUT @param bLoadMinDefs : full or minimal definition selector
  */
 CLAMAPI void Scan_ReloadDatabase(BOOL bLoadMinDefs);
 

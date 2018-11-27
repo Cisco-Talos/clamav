@@ -54,8 +54,8 @@ Extract Word6 macros from given MS Office document and display the corresponding
 \fB\-i, \-\-info\fR
 Print a CVD information and verify MD5 and a digital signature.
 .TP 
-\fB\-b, \-\-build\fR
-Build a CVD file. \-s, \-\-server is required.
+\fB\-\-build=FILE, \-b FILE\fR
+Build a CVD file. \-s, \-\-server is required for signed virus databases(.cvd), or, \-\-unsigned for unsigned(.cud).
 .TP 
 \fB\-\-max\-bad\-sigs=NUMBER\fR
 Maximum number of mismatched signatures when building a CVD. Default: 3000
@@ -74,7 +74,7 @@ NOTE: If a CVD is found in the \-\-datadir its version+1 is used and this value 
 Don't create a .cdiff file when building a new database file.
 .TP 
 \fB\-\-unsigned\fR
-Create a database file without digital signatures (.cua).
+Create a database file without digital signatures (.cud).
 .TP 
 \fB\-\-server\fR
 ClamAV Signing Service address (for virus database maintainers only).

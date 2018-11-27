@@ -32,7 +32,7 @@ clamsubmit_SOURCES = \
 AM_CFLAGS=@WERR_CFLAGS@ @CLAMSUBMIT_CFLAGS@
 DEFS = @DEFS@ -DCL_NOTHREADS
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
-LIBS = $(top_builddir)/libclamav/libclamav.la @CLAMSUBMIT_LIBS@ @THREAD_LIBS@
+LIBS = $(top_builddir)/libclamav/libclamav.la @CLAMSUBMIT_LIBS@ @THREAD_LIBS@ @JSON_LIBS@
 
 AM_INSTALLCHECK_STD_OPTIONS_EXEMPT=clamsubmit$(EXEEXT)
 CLEANFILES=*.gcda *.gcno

@@ -1,7 +1,7 @@
 /*
  *  ClamdTOP
  *
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2008 - 2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
@@ -497,8 +497,8 @@ static void print_con_info(conn_t *conn, const char *fmt, ...)
 	va_start(ap, fmt);
 	if (stats_head_window) {
 		char *buf = malloc(maxx);
-		memset(buf, ' ', maxx);
 		OOM_CHECK(buf);
+		memset(buf, ' ', maxx);
 		vsnprintf(buf, maxx-1, fmt, ap);
 		buf[strlen(buf)] = ' ';
 		buf[maxx-1] = '\0';
@@ -610,7 +610,7 @@ char *make_ip(const char *host, const char *port)
 
 static int make_connection_real(const char *soname, conn_t *conn)
 {
-    int s;
+    int s = -1;
     struct timeval tv;
     char *port=NULL;
     char *pt = strdup(soname);
@@ -1233,16 +1233,18 @@ static void sigint(int a)
 static void help(void)
 {
     printf("\n");
-    printf("           Clam AntiVirus: Monitoring Tool %s\n", get_version());
-    printf("           By The ClamAV Team: http://www.clamav.net/about.html#credits\n");
-    printf("           (C) 2008-2015 Cisco Systems, Inc.\n\n");
-    printf("clamdtop [-hVc] [host[:port] /path/to/clamd.socket ...]\n\n");
-    printf("    --help                 -h         Show help\n");
+    printf("                       Clam AntiVirus: Monitoring Tool %s\n", get_version());
+    printf("           By The ClamAV Team: https://www.clamav.net/about.html#credits\n");
+    printf("           (C) 2008-2018 Cisco Systems, Inc.\n");
+    printf("\n");
+    printf("    clamdtop [-hVc] [host[:port] /path/to/clamd.socket ...]\n");
+    printf("\n");
+    printf("    --help                 -h         Show this help\n");
     printf("    --version              -V         Show version\n");
     printf("    --config-file=FILE     -c FILE    Read clamd's configuration files from FILE\n");
-    printf("    --defaultcolors	       -d	  Use default terminal colors\n");
-    printf("	host[:port]			  Connect to clamd on host at port (default 3310)\n");
-    printf("    /path/to/clamd.socket		  Connect to clamd over a local socket\n");
+    printf("    --defaultcolors	       -d         Use default terminal colors\n");
+    printf("    host[:port]                       Connect to clamd on host at port (default 3310)\n");
+    printf("    /path/to/clamd.socket             Connect to clamd over a local socket\n");
     printf("\n");
     return;
 }

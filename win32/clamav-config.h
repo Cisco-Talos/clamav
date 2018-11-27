@@ -460,7 +460,7 @@
 #define PACKAGE PACKAGE_NAME
 
 /* Define to the address where bug reports for this package should be sent. */
-#define PACKAGE_BUGREPORT "http://bugs.clamav.net/"
+#define PACKAGE_BUGREPORT "https://bugzilla.clamav.net/"
 
 /* Define to the full name of this package. */
 #define PACKAGE_NAME "ClamAV"
@@ -472,7 +472,7 @@
 #define PACKAGE_TARNAME "clamav"
 
 /* Define to the home page for this package. */
-#define PACKAGE_URL "http://www.clamav.net/"
+#define PACKAGE_URL "https://www.clamav.net/"
 
 /* Define to the version of this package. */
 #define PACKAGE_VERSION "devel"
@@ -511,7 +511,7 @@
 /* #undef USE_SYSLOG */
 
 /* Version number of package */
-#define VERSION "devel-clamav-0.97-408-ge11f7cc"
+#define VERSION "0.101.0-devel"
 
 /* Version suffix for package */
 #define VERSION_SUFFIX ""

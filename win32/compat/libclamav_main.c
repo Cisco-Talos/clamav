@@ -32,6 +32,7 @@
 
 void fix_paths(void);
 
+#ifndef LIBCLAMAV_STATIC
 BOOL APIENTRY DllMain(HMODULE hm, DWORD why, LPVOID rsrv) {
     WSADATA wsa;
     switch (why) {
@@ -57,6 +58,7 @@ BOOL APIENTRY DllMain(HMODULE hm, DWORD why, LPVOID rsrv) {
 	break;
     }
 }
+#endif
 
 /*
     The trick is:

@@ -1,8 +1,11 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2008 Sourcefire, Inc.
  *
  *  Authors: Alberto Wu, Tomasz Kojm
+ * 
+ *  Acknowledgements: The header structures were based upon a PE format 
+ *                    analysis by B. Luevelsmeyer.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -165,8 +168,16 @@ int cli_scanpe(cli_ctx *ctx);
 #define CL_CHECKFP_PE_FLAG_STATS            0x00000001
 #define CL_CHECKFP_PE_FLAG_AUTHENTICODE     0x00000002
 
+enum {
+    CL_GENHASH_PE_CLASS_SECTION,
+    CL_GENHASH_PE_CLASS_IMPTBL,
+    /* place new class types above this line */
+    CL_GENHASH_PE_CLASS_LAST
+};
+
 int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo);
 int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uint32_t flags);
+int cli_genhash_pe(cli_ctx *ctx, unsigned int class, int type);
 
 uint32_t cli_rawaddr(uint32_t, const struct cli_exe_section *, uint16_t, unsigned int *, size_t, uint32_t);
 void findres(uint32_t, uint32_t, uint32_t, fmap_t *map, struct cli_exe_section *, uint16_t, uint32_t, int (*)(void *, uint32_t, uint32_t, uint32_t, uint32_t), void *);

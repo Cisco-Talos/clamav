@@ -15,7 +15,7 @@
 |*   [u]int(32|64)_t : typedefs for signed and unsigned 32/64 bit system types*|
 |*   [U]INT(8|16|32|64)_(MIN|MAX) : Constants for the min and max values.     *|
 |*                                                                            *|
-|* No library is required when using these functinons.                        *|
+|* No library is required when using these functions.                         *|
 |*                                                                            *|
 |*===----------------------------------------------------------------------===*/
 
@@ -92,6 +92,7 @@ typedef u_int64_t uint64_t;
 #else /* _MSC_VER */
 /* Visual C++ doesn't provide standard integer headers, but it does provide
    built-in data types. */
+#include <stdint.h>
 #include <stdlib.h>
 #include <stddef.h>
 #include <sys/types.h>
@@ -109,18 +110,36 @@ typedef unsigned short uint16_t;
 typedef signed char int8_t;
 typedef unsigned char uint8_t;
 typedef signed int ssize_t;
-#define INT8_MAX 127
-#define INT8_MIN -128
-#define UINT8_MAX 255
-#define INT16_MAX 32767
-#define INT16_MIN -32768
-#define UINT16_MAX 65535
-#define INT32_MAX 2147483647
-#define INT32_MIN -2147483648
-#define UINT32_MAX 4294967295U
 /* Certain compatibility updates to VC++ introduce the `cstdint'
- * header, which defines the INT*_C macros. On default installs they
- * are absent. */
+* header, which defines the INT*_C macros. On default installs they
+* are absent. */
+#ifndef INT8_MAX
+#define INT8_MAX 127
+#endif
+#ifndef INT8_MIN
+#define INT8_MIN -128
+#endif
+#ifndef UINT8_MAX
+#define UINT8_MAX 255
+#endif
+#ifndef INT16_MAX
+#define INT16_MAX 32767
+#endif
+#ifndef INT16_MIN
+#define INT16_MIN -32768
+#endif
+#ifndef UINT16_MAX
+#define UINT16_MAX 65535
+#endif
+#ifndef INT32_MAX
+#define INT32_MAX 2147483647
+#endif
+#ifndef INT32_MIN
+#define INT32_MIN -2147483648
+#endif
+#ifndef UINT32_MAX
+#define UINT32_MAX 4294967295U
+#endif
 #ifndef INT8_C
 # define INT8_C(C)   C
 #endif

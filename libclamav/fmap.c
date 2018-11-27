@@ -145,12 +145,12 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty) { /* WIN3
 	return NULL;
     }
     if(!(m = cl_fmap_open_memory(data, len))) {
-	cli_errmsg("fmap: canot allocate fmap_t\n", fd);
+	cli_errmsg("fmap: cannot allocate fmap_t\n", fd);
 	CloseHandle(mh);
 	CloseHandle(fh);
 	return NULL;
     }
-    m->handle = (void*)(ssize_t)fd;
+    m->handle = (void*)(size_t)fd;
     m->handle_is_fd = 1;
     m->fh = fh;
     m->mh = mh;
@@ -401,7 +401,7 @@ static int fmap_readpage(fmap_t *m, unsigned int first_page, unsigned int count,
 	    /* we have some pending reads to perform */
 	    if (m->handle_is_fd) {
 		unsigned int j;
-		int _fd = (int)(ssize_t)m->handle;
+		int _fd = (int)(ptrdiff_t)m->handle;
 		for(j=first_page; j<page; j++) {
 		    if(fmap_bitmap[j] & FM_MASK_SEEN) {
 			/* page we've seen before: check mtime */
@@ -547,7 +547,7 @@ static void unmap_mmap(fmap_t *m)
     size_t len = m->pages * m->pgsz + m->hdrsz;
     fmap_lock;
     if (munmap((void *)m, len) == -1) /* munmap() failed */
-        cli_warnmsg("funmap: unable to unmap memory segment at address: %p with length: %d\n", (void *)m, len);
+        cli_warnmsg("funmap: unable to unmap memory segment at address: %p with length: %zu\n", (void *)m, len);
     fmap_unlock;
 #endif
 }
@@ -784,7 +784,7 @@ int fmap_fd(fmap_t *m)
     int fd;
     if (!m->handle_is_fd)
 	return -1;
-    fd = (int)(ssize_t)m->handle;
+    fd = (int)(ptrdiff_t)m->handle;
     lseek(fd, 0, SEEK_SET);
     return fd;
 }

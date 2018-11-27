@@ -6,7 +6,7 @@ AC_ARG_WITH([pcre],[AS_HELP_STRING([--with-pcre@<:@=DIR@:>@],
     @<:@default=search PATH environment variable@:>@])],
   [pcreser=$withval],[pcreser="yes"])
 
-dnl detemine if specified (or default) is valid
+dnl determine if specified (or default) is valid
 case "$pcreser" in
 no)
   pcreconfig=""
@@ -54,8 +54,13 @@ if test "x$pcreconfig" != "x"; then
     fi
 
     AC_MSG_RESULT([$pcre_version])
-    pcrever_major=`echo "$pcre_version" | sed -e 's/\([[0-9]]\+\).*/\1/'`
-    pcrever_minor=`echo "$pcre_version" | sed -e 's/[[0-9]]\+\.\([[0-9]]\+\).*/\1/'`
+
+    pcrever_prefix=`expr "$pcre_version" : '\([[^0-9]]*\)'`
+    pcrever_frag=${pcre_version#$pcrever_prefix}
+
+    pcrever_major=`expr "$pcrever_frag" : '\([[0-9]]*\)'`
+    pcrever_frag=${pcrever_frag#*\.}
+    pcrever_minor=`expr "$pcrever_frag" : '\([[0-9]]*\)'`
 
     dnl check for match_limit_recursion support
     if test "$pcrelib" = "pcre"; then

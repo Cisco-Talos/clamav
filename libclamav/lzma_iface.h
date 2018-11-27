@@ -1,8 +1,11 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
- *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *  Copyright (C) 2015-2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2007-2014 Sourcefire, Inc.
  *
  *  Authors: Alberto Wu
+ * 
+ *  Acknowledgements: This contains an implementation of the LZMA algorithm 
+ *                    from Igor Pavlov (see COPYING.lzma).
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as

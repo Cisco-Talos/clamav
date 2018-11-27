@@ -27,6 +27,8 @@
 #include "clupdate.h"
 #include "flog.h"
 
+#define FRESHCLAM_EXIT_CODE_SUCCESS(dw) (dw == 0||dw == 1)
+
 struct my_f {
     HANDLE h;
     char buf[1024];
@@ -221,16 +223,20 @@ DWORD WINAPI watch_stop(LPVOID x) {
     o.hEvent = read_event;
     while(1) {
 	if(!ReadFile(updpipe, &st, sizeof(st), NULL, NULL)) {
-	    if(GetLastError() != ERROR_IO_PENDING || !GetOverlappedResult(updpipe, &o, &got, TRUE)) {
+		DWORD err = GetLastError();
+		if ( err == ERROR_BROKEN_PIPE ) {
+		break;
+		}
+		else if( err != ERROR_IO_PENDING || !GetOverlappedResult(updpipe, &o, &got, TRUE) ) {
 		flog("ERROR: failed to read stop event from pipe");
 		return 0;
-	    }
+		}
 	}
 	if(st.state == UPD_STOP)
 	    break;
 	flog("WARNING: received bogus message (%d)", st.state);
     }
-    flog("STOP event received, killing freshclam");
+    flog("STOP event received/pipe broken, killing freshclam");
     kill_freshclam();
     cleanup(NULL);
     return 0;
@@ -321,10 +327,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     /* Early exit for custom only */
     if(customonly) {
-        if(dw == 0) 
-            SENDMSG_AND_RETURN(UPD_DONE, dw);
-        else
-            SENDMSG_AND_RETURN(UPD_ABORT, dw);
+		switch(dw){
+		case 0:
+			SENDMSG_AND_RETURN(UPD_DONE, dw);
+		case 1:
+			SENDMSG_AND_RETURN(UPD_NONE, dw);
+		default:
+			SENDMSG_AND_RETURN(UPD_ABORT, dw);
+		}
     }
 
     /* Make pipe for freshclam stdio */
@@ -476,7 +486,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	SENDFAIL_AND_QUIT(UPD_ABORT);
     }
     CloseHandle(pinfo.hProcess);
-    if(dw) {
+    if(!FRESHCLAM_EXIT_CODE_SUCCESS(dw)) {
 	if(dw == STILL_ACTIVE) {
 	    flog("WARNING: freshclam didn't exit, killing it...");
 	    kill_freshclam();

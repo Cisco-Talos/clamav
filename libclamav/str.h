@@ -1,8 +1,11 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2008 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm, Nigel Horne, Török Edvin
+ * 
+ *  Acknowledgements: cli_strcasestr() contains a public domain code from:
+ *                    http://unixpapa.com/incnote/string.html
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -33,6 +36,18 @@
 const char *cli_strcasestr(const char *haystack, const char *needle);
 #endif
 
+#if defined(HAVE_STRNDUP) && !defined(HAVE_STRNI)
+#define cli_strndup strndup
+#else
+char *cli_strndup(const char *s, size_t n);
+#endif
+
+#if defined(HAVE_STRNLEN) && !defined(HAVE_STRNI)
+#define cli_strnlen strnlen
+#else
+size_t cli_strnlen(const char *s, size_t n);
+#endif
+
 #include <stdio.h>
 #define cli_nocase(val) tolower(val)
 #define cli_nocasei(val) toupper(val)
@@ -53,6 +68,8 @@ const char *cli_memstr(const char *haystack, unsigned int hs, const char *needle
 char *cli_strrcpy(char *dest, const char *source);
 size_t cli_strtokenize(char *buffer, const char delim, const size_t token_count, const char **tokens);
 size_t cli_ldbtokenize(char *buffer, const char delim, const size_t token_count, const char **tokens, int token_skip);
+int cli_strntol_wrap(const char *buf, size_t buf_size, int fail_at_nondigit, int base, long *result);
+int cli_strntoul_wrap(const char *buf, size_t buf_size, int fail_at_nondigit, int base, unsigned long *result);
 int cli_isnumber(const char *str);
 char *cli_unescape(const char *str);
 struct text_buffer;

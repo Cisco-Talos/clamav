@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2017 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2008 Sourcefire, Inc.
  *
  *  Authors: Michal 'GiM' Spadlinski
@@ -385,11 +385,18 @@ int mew_lzma(char *orgsource, const char *buf, uint32_t size_sum, uint32_t vma, 
 		if (!special)
 		{
 			source = pushed_ebx;
+			if (!CLI_ISCONTAINED(orgsource, size_sum, source, 16))
+				return -1;
+
 			if (cli_readint32(source) == 0)
 			{
 				return 0;
 			}
+		} else {
+			if (!CLI_ISCONTAINED(orgsource, size_sum, source, 12))
+				return -1;
 		}
+
 		var28 = cli_readint32 (source);
 		source += 4;
 		temp = cli_readint32 (source) - vma;
@@ -417,6 +424,8 @@ int mew_lzma(char *orgsource, const char *buf, uint32_t size_sum, uint32_t vma, 
 		loc_edi = 1;
 		var14 = var10 = var24 = 1;
 
+                if(!CLI_ISCONTAINED(orgsource, size_sum, var2C, 5))
+                    return -1;
 		lzma_bswap_4861dc(&var40, var2C);
 		new_edx = 0;
 	} while (var28 <= loc_esi); /* source = 0 */
@@ -776,7 +785,7 @@ uint32_t lzma_upack_esi_54(struct lzmastate *p, uint32_t old_eax, uint32_t *old_
 }
 
 
-int unmew11(char *src, int off, int ssize, int dsize, uint32_t base, uint32_t vadd, int uselzma, int filedesc)
+int unmew11(char *src, uint32_t off, uint32_t ssize, uint32_t dsize, uint32_t base, uint32_t vadd, int uselzma, int filedesc)
 {
 	uint32_t entry_point, newedi, loc_ds=dsize, loc_ss=ssize;
 	char *source = src + dsize + off;
@@ -856,7 +865,7 @@ int unmew11(char *src, int off, int ssize, int dsize, uint32_t base, uint32_t va
              * or, in other words, exceed the specified size of destination
              */
             if (section[i].raw + section[i].rsz > dsize) {
-                cli_dbgmsg("MEW: Section %i [%d, %d] exceeds destination size %d\n",
+                cli_dbgmsg("MEW: Section %i [%d, %d] exceeds destination size %u\n",
                            i, section[i].raw, section[i].raw+section[i].rsz, dsize);
                 free(section);
                 return -1;

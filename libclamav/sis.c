@@ -407,13 +407,13 @@ static int real_scansis(cli_ctx *ctx, const char *tmpd) {
 	sftype = "sub sis";
 	break;
       case FTcontsis:
-	sftype = "conatiner sis";
+	sftype = "container sis";
 	break;
       case FTtextuninst:
 	sftype = "uninstall text";
 	break;
       case FTnotinst:
-	sftype = "not to be intalled";
+	sftype = "not to be installed";
 	break;
       default:
 	sftype = "unknown";
@@ -832,7 +832,7 @@ static int real_scansis9x(cli_ctx *ctx, const char *tmpd) {
 /* #define GETD(VAR) \ */
 /*   if (cbuff) { \ */
 /*     if (sleft<4) { \ */
-/*       printf("Unespectedly reached end of compressed buffer\n"); \ */
+/*       printf("Unexpectedly reached end of compressed buffer\n"); \ */
 /*       free(cbuff); \ */
 /*       cbuff=NULL; \ */
 /*       smax=sleft=0; \ */
@@ -999,7 +999,7 @@ static int real_scansis9x(cli_ctx *ctx, const char *tmpd) {
 /*       break; */
 /*     } */
 /*     if(!this->optional && this->expect!=field) { */
-/*       printf("Error: expecing %s but found %s\n", sisfields[this->expect], sisfields[field]); */
+/*       printf("Error: expected %s but found %s\n", sisfields[this->expect], sisfields[field]); */
 /*       goto SIS_ERROR; */
 /*     } */
 /*     printf("Got %s field (%d) with size %x(%u)\n", sisfields[field], field, fsz, fsz); */

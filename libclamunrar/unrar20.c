@@ -25,7 +25,7 @@
 #ifdef RAR_HIGH_DEBUG
 #define rar_dbgmsg printf
 #else
-static void rar_dbgmsg(const char* fmt,...){}
+static void rar_dbgmsg(const char* fmt,...){(void)fmt;}
 #endif
 
 void unpack_init_data20(int solid, unpack_data_t *unpack_data)
@@ -116,6 +116,10 @@ static int read_tables20(int fd, unpack_data_t *unpack_data)
 		} else if (number == 16) {
 			n = (rar_getbits(unpack_data) >> 14) + 3;
 			rar_addbits(unpack_data, 2);
+			if (i == 0) {
+				/* We cannot have "repeat previous" code at the first position */
+				return FALSE;
+			}
 			while ((n-- > 0) && (i < table_size)) {
 				table[i] = table[i-1];
 				i++;
@@ -337,13 +341,26 @@ int rar_unpack20(int fd, int solid, unpack_data_t *unpack_data)
 			continue;
 		}
 		if (number > 269) {
-			length = ldecode[number-=270]+3;
+			/* If number is higher or equal to 298 in this instance something has likely
+			 * gone horribly wrong and/or this is a RAR 5 file that Clam does not yet
+			 * support parsing. Either way, this is a total failure case. */
+			if (number < 298) {
+				length = ldecode[number-=270]+3;
+			} else {
+				retval = FALSE;
+				break;
+			}
+
 			if ((bits = lbits[number]) > 0) {
 				length += rar_getbits(unpack_data) >> (16-bits);
 				rar_addbits(unpack_data, bits);
 			}
 			
 			dist_number = rar_decode_number(unpack_data, (struct Decode *)&unpack_data->DD);
+			if (dist_number > 47 || dist_number < 0) {
+				retval = FALSE;
+				break;
+			}
 			distance = ddecode[dist_number] + 1;
 			if ((bits = dbits[dist_number]) > 0) {
 				distance += rar_getbits(unpack_data)>>(16-bits);

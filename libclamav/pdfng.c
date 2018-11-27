@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2014 Cisco and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2014, 2017-2018 Cisco and/or its affiliates. All rights reserved.
  *
  *  Author: Shawn Webb
  *
@@ -226,7 +226,7 @@ int is_object_reference(char *begin, char **endchar, uint32_t *id)
     return 0;
 }
 
-static char *pdf_decrypt_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *in, off_t *length)
+static char *pdf_decrypt_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *in, size_t *length)
 {
     enum enc_method enc;
 
@@ -242,8 +242,8 @@ static char *pdf_decrypt_string(struct pdf_struct *pdf, struct pdf_obj *obj, con
 char *pdf_finalize_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *in, size_t len)
 {
     char *wrkstr, *output = NULL;
-    size_t wrklen = len, outlen;
-    unsigned int i, likelyutf = 0;
+    size_t wrklen = len, outlen, i;
+    unsigned int likelyutf = 0;
 
     if (!in)
         return NULL;
@@ -336,9 +336,9 @@ char *pdf_finalize_string(struct pdf_struct *pdf, struct pdf_obj *obj, const cha
     /* check for encryption and decrypt */
     if (pdf->flags & (1 << ENCRYPTED_PDF))
     {
-        off_t tmpsz = (off_t)wrklen;
+        size_t tmpsz = wrklen;
         output = pdf_decrypt_string(pdf, obj, wrkstr, &tmpsz);
-        outlen = (size_t)tmpsz;
+        outlen = tmpsz;
         free(wrkstr);
         if (output) {
             wrkstr = cli_calloc(outlen+1, sizeof(char));
@@ -377,12 +377,18 @@ char *pdf_finalize_string(struct pdf_struct *pdf, struct pdf_obj *obj, const cha
 
 char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *objstart, size_t objsize, const char *str, char **endchar, struct pdf_stats_metadata *meta)
 {
-    const char *q = objstart;
+    const char *q = objstart, *oobj=obj->start+pdf->map;
     char *p1, *p2;
     size_t len, checklen;
     char *res = NULL;
     uint32_t objid;
     size_t i;
+
+    if (objsize > (size_t)(pdf->size - (objstart - pdf->map))) {
+        /* Possible attempt to exploit bb11980 */
+        cli_dbgmsg("Malformed PDF: Alleged size of obj in PDF would extend further than the PDF data.\n");
+        return NULL;
+    }
 
     /*
      * Yes, all of this is required to find the start and end of a potentially UTF-* string
@@ -551,10 +557,10 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
         /* Hex string */
 
         p2 = p1+1;
-        while ((size_t)(p2 - q) < objsize && *p2 != '>')
+        while ((size_t)(p2 - oobj) < objsize && *p2 != '>')
             p2++;
 
-        if ((size_t)(p2 - q) == objsize) {
+        if ((size_t)(p2 - oobj) == objsize) {
             return NULL;
         }
 
@@ -590,6 +596,7 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
 
     /* Make a best effort to find the end of the string and determine if UTF-* */
     p2 = ++p1;
+
     while (p2 < objstart + objsize) {
         int shouldbreak=0;
 
@@ -610,7 +617,7 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
         p2++;
     }
 
-    if (p2 == objstart + objsize)
+    if (p2 >= objstart + objsize)
         return NULL;
 
     len = (size_t)(p2 - p1) + 1;
@@ -794,23 +801,23 @@ struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, siz
 
         switch (begin[0]) {
             case '(':
-                val = pdf_parse_string(pdf, obj, begin, objsz, NULL, &p1, NULL);
+                val = pdf_parse_string(pdf, obj, begin, end - objstart, NULL, &p1, NULL);
                 begin = p1+2;
                 break;
             case '[':
-                arr = pdf_parse_array(pdf, obj, objsz, begin, &p1);
+                arr = pdf_parse_array(pdf, obj, end - objstart, begin, &p1);
                 begin = p1+1;
                 break;
             case '<':
                 if ((size_t)(begin - objstart) < objsz - 2) {
                     if (begin[1] == '<') {
-                        dict = pdf_parse_dict(pdf, obj, objsz, begin, &p1);
+                        dict = pdf_parse_dict(pdf, obj, end - objstart, begin, &p1);
                         begin = p1+2;
                         break;
                     }
                 }
 
-                val = pdf_parse_string(pdf, obj, begin, objsz, NULL, &p1, NULL);
+                val = pdf_parse_string(pdf, obj, begin, end - objstart, NULL, &p1, NULL);
                 begin = p1+2;
                 break;
             default:
@@ -960,7 +967,7 @@ struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj *obj, s
     }
 
     /* More sanity checking */
-    if ((size_t)(end - objstart) == objsz)
+    if ((size_t)(end - objstart) >= objsz)
         return NULL;
 
     if (*end != ']')
@@ -985,19 +992,19 @@ struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj *obj, s
         switch (begin[0]) {
             case '<':
                 if ((size_t)(begin - objstart) < objsz - 2 && begin[1] == '<') {
-                    dict = pdf_parse_dict(pdf, obj, objsz, begin, &begin);
+                    dict = pdf_parse_dict(pdf, obj, end - objstart, begin, &begin);
                     begin+=2;
                     break;
                 }
 
-                /* Not a dictionary. Intentially fall through. */
+                /* Not a dictionary. Intentionally fall through. */
             case '(':
-                val = pdf_parse_string(pdf, obj, begin, objsz, NULL, &begin, NULL);
+                val = pdf_parse_string(pdf, obj, begin, end - objstart, NULL, &begin, NULL);
                 begin += 2;
                 break;
             case '[':
                 /* XXX We should have a recursion counter here */
-                arr = pdf_parse_array(pdf, obj, objsz, begin, &begin);
+                arr = pdf_parse_array(pdf, obj, end - objstart, begin, &begin);
                 begin+=1;
                 break;
             default:

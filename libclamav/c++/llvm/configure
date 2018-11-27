@@ -12803,7 +12803,7 @@ LLVM_CONFIGTIME=`date`
 
 
 
-# Place the various directores into the config.h file as #defines so that we
+# Place the various directories into the config.h file as #defines so that we
 # can know about the installation paths within LLVM.
 
 cat >>confdefs.h <<_ACEOF

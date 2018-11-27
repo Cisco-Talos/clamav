@@ -148,7 +148,7 @@ As a result the following command line options cannot be converted into new conf
  --blacklist-time (-k)
 " if $black;
 
-wwarn "Phising reports are no longer supported.
+wwarn "Phishing reports are no longer supported.
 As a result the following command line options cannot be converted into new config options:
  --report-phish (-r)
  --report-phish-false-positives (-R)
@@ -308,7 +308,7 @@ print <<BLOCK2;
 # Messages originating from these hosts/networks will not be scanned
 # This option takes a host(name)/mask pair in CIRD notation and can be
 # repeated several times. If "/mask" is omitted, a host is assumed.
-# To specify a locally orignated, non-smtp, email use the keyword "local"
+# To specify a locally originated, non-smtp, email use the keyword "local"
 #
 # Default: unset (scan everything regardless of the origin)
 #LocalNet local
@@ -331,19 +331,19 @@ print <<BLOCK2;
 ## Actions
 ##
 
-# The following group of options controls the delievery process under
+# The following group of options controls the delivery process under
 # different circumstances.
 # The following actions are available:
 # - Accept
-#   The message is accepted for delievery
+#   The message is accepted for delivery
 # - Reject
-#   Immediately refuse delievery (a 5xx error is returned to the peer)
+#   Immediately refuse delivery (a 5xx error is returned to the peer)
 # - Defer
 #   Return a temporary failure message (4xx) to the peer
 # - Blackhole (not available for OnFail)
 #   Like accept but the message is sent to oblivion
 # - Quarantine (not available for OnFail)
-#   Like accept but message is quarantined instead of being deilievered
+#   Like accept but message is quarantined instead of being delivered
 #   In sendmail the quarantine queue can be examined via mailq -qQ
 #   For Postfix this causes the message to be accepted but placed on hold
 # 

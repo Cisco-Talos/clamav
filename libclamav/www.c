@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2014 Cisco and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2014, 2017 Cisco and/or its affiliates. All rights reserved.
  *
  *  Author: Shawn Webb
  *
@@ -56,9 +56,9 @@
 
 int connect_host(const char *host, const char *port, uint32_t timeout, int useAsync)
 {
-    int sockfd;
-    struct addrinfo hints, *servinfo, *p;
-    int flags, error;
+    int sockfd = -1;
+    struct addrinfo hints, *servinfo = NULL, *p = NULL;
+    int flags = 0, error;
     socklen_t len;
     fd_set read_fds, write_fds;
     struct timeval tv;
@@ -144,7 +144,7 @@ int connect_host(const char *host, const char *port, uint32_t timeout, int useAs
     freeaddrinfo(servinfo);
 
     /* Return to using a synchronous socket to make Linux happy */
-    if (useAsync) {
+    if (useAsync && (sockfd >= 0)) {
         if (fcntl(sockfd, F_SETFL, flags) < 0) {
             closesocket(sockfd);
             return -1;
@@ -226,11 +226,7 @@ void submit_post(const char *host, const char *port, const char *method, const c
         encoded = encode_data(postdata);
         if (!(encoded))
             return;
-#if defined(_WIN32)
-		snprintf(chunkedlen, sizeof(chunkedlen), "%u", strlen(encoded));
-#else
         snprintf(chunkedlen, sizeof(chunkedlen), "%zu", strlen(encoded));
-#endif
         bufsz += sizeof("Content-Type: application/x-www-form-urlencoded\r\n");
         bufsz += sizeof("Content-Length: \r\n");
         bufsz += strlen(chunkedlen);

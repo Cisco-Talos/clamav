@@ -56,8 +56,8 @@ limitations under the License.
 #include <yara/lexer.h>
 #include <yara/parser.h>
 #else
-#define YYDEBUG 1 /* Set for development testing */
 #include "libclamav/yara_clam.h"
+#include "libclamav/yara_compiler.h"
 #include "clamav-config.h"
 #include "libclamav/yara_grammar.h"
 #include "libclamav/yara_lexer.h"
@@ -114,7 +114,7 @@ limitations under the License.
 
 %expect 2   // expect 2 shift/reduce conflicts
 
-%debug
+// %debug
 %name-prefix="yara_yy"
 %pure-parser
 %parse-param {void *yyscanner}
@@ -1166,7 +1166,7 @@ expression
             yyscanner, OP_INCR_M, mem_offset + 2, NULL);
 
         // If next string is not undefined, go back to the
-        // begining of the loop.
+        // beginning of the loop.
         yr_parser_emit_with_arg_reloc(
             yyscanner,
             OP_JNUNDEF,
@@ -1566,7 +1566,7 @@ primary_expression
     | _TEXT_STRING_
       {
         SIZED_STRING* sized_string = $1;
-        char* string;
+        char* string = NULL;
 
 #if REAL_YARA
         compiler->last_result = yr_arena_write_string(

@@ -55,10 +55,6 @@ Example
 # Default: clamav (may depend on installation options)
 #DatabaseOwner clamav
 
-# Initialize supplementary group access (freshclam must be started by root).
-# Default: no
-#AllowSupplementaryGroups yes
-
 # Use DNS to verify virus database version. Freshclam uses DNS TXT records
 # to verify database and software versions. With this directive you can change
 # the database verification domain.
@@ -68,7 +64,7 @@ Example
 #DNSDatabaseInfo current.cvd.clamav.net
 
 # Uncomment the following line and replace XY with your country
-# code. See http://www.iana.org/cctld/cctld-whois.htm for the full list.
+# code. See https://www.iana.org/domains/root/db for the full list.
 # You can use db.XY.ipv6.clamav.net for IPv6 connections.
 #DatabaseMirror db.XY.clamav.net
 
@@ -173,50 +169,17 @@ DatabaseMirror database.clamav.net
 # Default: yes
 #TestDatabases yes
 
-# When enabled freshclam will submit statistics to the ClamAV Project about
-# the latest virus detections in your environment. The ClamAV maintainers
-# will then use this data to determine what types of malware are the most
-# detected in the field and in what geographic area they are.
-# Freshclam will connect to clamd in order to get recent statistics.
-# Default: no
-#SubmitDetectionStats /path/to/clamd.conf
-
-# Country of origin of malware/detection statistics (for statistical
-# purposes only). The statistics collector at ClamAV.net will look up
-# your IP address to determine the geographical origin of the malware
-# reported by your installation. If this installation is mainly used to
-# scan data which comes from a different location, please enable this
-# option and enter a two-letter code (see http://www.iana.org/domains/root/db/)
-# of the country of origin.
-# Default: disabled
-#DetectionStatsCountry country-code
-
-# This option enables support for our "Personal Statistics" service. 
-# When this option is enabled, the information on malware detected by
-# your clamd installation is made available to you through our website.
-# To get your HostID, log on http://www.stats.clamav.net and add a new
-# host to your host list. Once you have the HostID, uncomment this option
-# and paste the HostID here. As soon as your freshclam starts submitting
-# information to our stats collecting service, you will be able to view
-# the statistics of this clamd installation by logging into
-# http://www.stats.clamav.net with the same credentials you used to
-# generate the HostID. For more information refer to:
-# http://www.clamav.net/documentation.html#cctts 
-# This feature requires SubmitDetectionStats to be enabled.
-# Default: disabled
-#DetectionStatsHostID unique-id
-
 # This option enables support for Google Safe Browsing. When activated for
-# the first time, freshclam will download a new database file (safebrowsing.cvd)
-# which will be automatically loaded by clamd and clamscan during the next
-# reload, provided that the heuristic phishing detection is turned on. This
-# database includes information about websites that may be phishing sites or
-# possible sources of malware. When using this option, it's mandatory to run
-# freshclam at least every 30 minutes.
+# the first time, freshclam will download a new database file
+# (safebrowsing.cvd) which will be automatically loaded by clamd and
+# clamscan during the next reload, provided that the heuristic phishing
+# detection is turned on. This database includes information about websites
+# that may be phishing sites or possible sources of malware. When using this
+# option, it's mandatory to run freshclam at least every 30 minutes.
 # Freshclam uses the ClamAV's mirror infrastructure to distribute the
 # database and its updates but all the contents are provided under Google's
-# terms of use. See http://www.google.com/transparencyreport/safebrowsing
-# and http://www.clamav.net/documentation.html#safebrowsing 
+# terms of use. See https://www.google.com/transparencyreport/safebrowsing
+# and https://www.clamav.net/documents/safebrowsing
 # for more information.
 # Default: disabled
 #SafeBrowsing yes

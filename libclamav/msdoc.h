@@ -1,7 +1,7 @@
 /*
  *  Extract component parts of OLE2 files (e.g. MS Office Documents)
  *
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2017 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2008 Sourcefire, Inc.
  *
  *  Authors: Kevin Lin
@@ -170,7 +170,7 @@ typedef struct summary_ctx {
 
 /* string conversion */
 struct codepage_entry {
-    int16_t codepage;
+    uint16_t codepage;
     const char *encoding;
 };
 

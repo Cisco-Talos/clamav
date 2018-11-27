@@ -63,7 +63,11 @@ endif
 
 libclamavcxx_la_LIBADD+=libllvmcodegen.la libllvmsystem.la
 
-LLVM_CXXFLAGS=-Woverloaded-virtual -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings
+# crdaviso@cisco.com - Removed -pedantic from the following line to allow
+# building on CentOS 5 (g++ 4.1.2). An openssl header file is included that
+# includes a comma at the end of an enumerator list, which is valid in C99 but
+# not C++98, so -pedantic produces an error and the build fails.
+LLVM_CXXFLAGS=-Woverloaded-virtual -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings
 unittest_CXXFLAGS=@NO_VARIADIC_MACROS@ @NO_MISSING_FIELD_INITIALIZERS@ -DGTEST_HAS_TR1_TUPLE=0
 
 TBLGENFILES=llvm/include/llvm/Intrinsics.gen X86GenRegisterInfo.h.inc X86GenRegisterNames.inc X86GenRegisterInfo.inc X86GenInstrNames.inc X86GenInstrInfo.inc\

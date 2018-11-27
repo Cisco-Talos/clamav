@@ -64,9 +64,6 @@
     <ClCompile Include="..\libclamav\c++\llvm\lib\Analysis\IPA\CallGraph.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\libclamav\c++\llvm\lib\Support\GraphWriter.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\libclamav\c++\llvm\lib\VMCore\LLVMContext.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -311,6 +308,54 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\libclamav\c++\llvm\lib\Support\StringRef.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\LiveVariables.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\MachineFunctionPrinterPass.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\Analysis\ProfileInfo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\MC\MCAssembler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\MachineLoopInfo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\VMCore\DebugLoc.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\PostRAHazardRecognizer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\Analysis\AliasSetTracker.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\MC\MCSectionMachO.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\ScheduleDAG.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\UnreachableBlockElim.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\VMCore\PassRegistry.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\MC\MCInst.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\MC\MCSectionCOFF.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\CodeGen\MachineDominators.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\Transforms\Scalar\SimplifyCFGPass.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

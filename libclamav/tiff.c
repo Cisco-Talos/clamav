@@ -83,7 +83,7 @@ int cli_parsetiff(cli_ctx *ctx)
 
         cli_dbgmsg("cli_parsetiff: IFD %u declared %u directory entries\n", ifd_count, num_entries);
 
-        /* tranverse IFD entries */
+        /* transverse IFD entries */
         for(i = 0; i < num_entries; i++) {
             if(fmap_readn(map, &entry, offset, sizeof(entry)) != sizeof(entry))
                 return CL_EPARSE;
@@ -101,7 +101,7 @@ int cli_parsetiff(cli_ctx *ctx)
             case 1: /* BYTE */
                 value_size *= 1;
                 break;
-            case 2: /* ACSII */
+            case 2: /* ASCII */
                 value_size *= 1;
                 break;
             case 3: /* SHORT */
@@ -146,8 +146,7 @@ int cli_parsetiff(cli_ctx *ctx)
                 if(entry.value + value_size > map->len) {
                     cli_warnmsg("cli_parsetiff: TFD entry field %u exceeds bounds of TIFF file [%llu > %llu]\n",
                                 i, (long long unsigned)(entry.value + value_size), (long long unsigned)map->len);
-                    cli_append_virus(ctx, "Heuristic.TIFF.OutOfBoundsAccess");
-                    return CL_VIRUS;
+                    return cli_append_virus(ctx, "Heuristic.TIFF.OutOfBoundsAccess");
                 }
             }
         }

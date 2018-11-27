@@ -64,6 +64,7 @@ int cli_hm_scan(const unsigned char *digest, uint32_t size, const char **virname
 int cli_hm_scan_wild(const unsigned char *digest, const char **virname, const struct cli_matcher *root, enum CLI_HASH_TYPE type);
 int cli_hm_have_size(const struct cli_matcher *root, enum CLI_HASH_TYPE type, uint32_t size);
 int cli_hm_have_wild(const struct cli_matcher *root, enum CLI_HASH_TYPE type);
+int cli_hm_have_any(const struct cli_matcher *root, enum CLI_HASH_TYPE type);
 void hm_free(struct cli_matcher *root);
 
 #endif

@@ -1025,7 +1025,7 @@ xmlHasFeature(xmlFeature feature)
  * xmlDetectSAX2:
  * @ctxt:  an XML parser context
  *
- * Do the SAX2 detection and specific intialization
+ * Do the SAX2 detection and specific initialization
  */
 static void
 xmlDetectSAX2(xmlParserCtxtPtr ctxt) {
@@ -2188,6 +2188,13 @@ xmlPushInput(xmlParserCtxtPtr ctxt, xmlParserInputPtr input) {
 		    ctxt->input->line);
 	xmlGenericError(xmlGenericErrorContext,
 		"Pushing input %d : %.30s\n", ctxt->inputNr+1, input->cur);
+    }
+    if (((ctxt->inputNr > 40) && ((ctxt->options & XML_PARSE_HUGE) == 0)) ||
+        (ctxt->inputNr > 1024)) {
+        xmlFatalErr(ctxt, XML_ERR_ENTITY_LOOP, NULL);
+        while (ctxt->inputNr > 1)
+            xmlFreeInputStream(inputPop(ctxt));
+		return(-1);
     }
     ret = inputPush(ctxt, input);
     if (ctxt->instate == XML_PARSER_EOF)
@@ -7997,9 +8004,10 @@ xmlParsePEReference(xmlParserCtxtPtr ctxt)
 	     * handle the extra spaces added before and after
 	     * c.f. http://www.w3.org/TR/REC-xml#as-PE
 	     */
-	    input = xmlNewEntityInputStream(ctxt, entity);
-	    if (xmlPushInput(ctxt, input) < 0)
-		return;
+		if (xmlPushInput(ctxt, input) < 0) {
+			xmlFreeInputStream(input);
+			return;
+		}
 	    if ((entity->etype == XML_EXTERNAL_PARAMETER_ENTITY) &&
 		(CMP5(CUR_PTR, '<', '?', 'x', 'm', 'l')) &&
 		(IS_BLANK_CH(NXT(5)))) {

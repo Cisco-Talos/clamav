@@ -21,7 +21,8 @@ AM_YFLAGS = -d
 AM_CPPFLAGS = -I$(top_srcdir) -I@srcdir@/nsis $(LTDLINCL)
 AM_CFLAGS=@WERR_CFLAGS@
 lib_LTLIBRARIES =
-EXTRA_DIST = c++/Makefile.nollvm.in
+COMMON_CLEANFILES =
+EXTRA_DIST = c++/Makefile.nollvm.in libmspack-0.5alpha/Makefile.intmspack.in
 if ENABLE_UNRAR
 
 AM_CPPFLAGS += -DWARN_DLOPEN_FAIL
@@ -125,11 +126,12 @@ libclamav_internal_utils_nothreads_la_SOURCES=str.c\
 libclamav_internal_utils_nothreads_la_LDFLAGS=-static @SSL_LDFLAGS@ @JSON_LDFLAGS@
 libclamav_internal_utils_nothreads_la_CFLAGS=$(AM_CFLAGS) -DCL_NOTHREADS @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
 libclamav_internal_utils_nothreads_la_LIBADD=@SSL_LIBS@ @JSON_LIBS@ @PCRE_LIBS@
+SUBDIRS=
 
 if ENABLE_LLVM
 LLVMLIBADD=c++/libclamavcxx.la -lstdc++ -lm
 LLVMDEP=c++/libclamavcxx.la
-SUBDIRS=c++
+SUBDIRS+=c++
 else
 LLVMLIBADD=libclamav_nocxx.la
 LLVMDEP=libclamav_nocxx.la
@@ -147,11 +149,24 @@ libclamav_nocxx_la_CFLAGS=$(AM_CFLAGS) @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPF
 
 libclamav_la_LIBADD = @SSL_LIBS@ @JSON_LIBS@ @PCRE_LIBS@ @LIBCLAMAV_LIBS@ @LIBLTDL@ $(IFACELIBADD) $(LLVMLIBADD) libclamav_internal_utils.la @THREAD_LIBS@ @LIBM@
 libclamav_la_DEPENDENCIES =  @LTDLDEPS@ $(IFACEDEP) $(LLVMDEP) libclamav_internal_utils.la
-libclamav_la_CFLAGS =$(AM_CFLAGS) $(XML_CPPFLAGS) $(YARA_CFLAGS) -DSEARCH_LIBDIR=\"$(libdir)\" @LIBCLAMAV_CPPFLAGS@ @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
-libclamav_la_LDFLAGS = @SSL_LDFLAGS@ @TH_SAFE@ @JSON_LDFLAGS@ $(XML_LIBS) -version-info @LIBCLAMAV_VERSION@ -no-undefined
+libclamav_la_CFLAGS =$(AM_CFLAGS) $(XML_CPPFLAGS) $(YARA_CFLAGS) -DSEARCH_LIBDIR=\"$(libdir)\" @LIBCLAMAV_CPPFLAGS@ @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @ICONV_CPPFLAGS@ @PCRE_CPPFLAGS@
+libclamav_la_LDFLAGS = @SSL_LDFLAGS@ @TH_SAFE@ @JSON_LDFLAGS@ @ICONV_LDFLAGS@ $(XML_LIBS) -version-info @LIBCLAMAV_VERSION@ -no-undefined
 
 if VERSIONSCRIPT
 libclamav_la_LDFLAGS += -Wl,@VERSIONSCRIPTFLAG@,@top_srcdir@/libclamav/libclamav.map
+endif
+
+if USE_INTERNAL_MSPACK
+SUBDIRS += libmspack-0.5alpha
+libclamav_la_CFLAGS := -I@top_srcdir@/libclamav/libmspack-0.5alpha/mspack $(libclamav_la_CFLAGS)
+libclamav_la_LIBADD += libmspack-0.5alpha/libclammspack.la
+else
+libclamav_la_CFLAGS += $(LIBMSPACK_CFLAGS)
+libclamav_la_LDFLAGS += $(LIBMSPACK_LIBS)
+EXTRA_DIST += libmspack-0.5alpha
+libmspack-0.5alpha/Makefile: libmspack-0.5alpha/Makefile.intmspack.in
+	$(AM_V_at) cp $< $@
+distclean-recursive distdir maintainer-clean-recursive: libmspack-0.5alpha/Makefile
 endif
 
 include_HEADERS = clamav.h
@@ -211,8 +226,8 @@ libclamav_la_SOURCES = \
 	upx.h \
 	htmlnorm.c \
 	htmlnorm.h \
-	chmunpack.c \
-	chmunpack.h \
+	libmspack.c \
+	libmspack.h \
 	rebuildpe.c \
 	rebuildpe.h \
 	petite.c \
@@ -267,6 +282,8 @@ libclamav_la_SOURCES = \
 	pdf.c \
 	pdf.h \
 	pdfng.c \
+	pdfdecode.c \
+	pdfdecode.h \
 	spin.c \
 	spin.h \
 	yc.c \
@@ -290,10 +307,6 @@ libclamav_la_SOURCES = \
 	regex_list.h \
 	regex_suffix.c \
 	regex_suffix.h \
-	mspack.c \
-	mspack.h \
-	cab.c \
-	cab.h \
 	entconv.c \
 	entconv.h \
 	entitylist.h \
@@ -462,7 +475,9 @@ libclamav_la_SOURCES = \
 	tiff.c \
 	tiff.h \
 	hwp.c \
-	hwp.h
+	hwp.h \
+	lzw/lzwdec.c \
+	lzw/lzwdec.h
 
 if ENABLE_YARA
 libclamav_la_SOURCES += yara_arena.c \
@@ -592,7 +607,7 @@ noinst_LTLIBRARIES = libclamav_internal_utils.la libclamav_internal_utils_nothre
 EXTRA_DIST += regex/engine.c tomsfastmath/sqr/fp_sqr_comba.c tomsfastmath/mul/fp_mul_comba.c libclamav.map \
 	     jsparse/generated/operators.h jsparse/generated/keywords.h jsparse/future_reserved_words.list\
 	     jsparse/keywords.list jsparse/special_keywords.list jsparse/operators.gperf
-COMMON_CLEANFILES=version.h version.h.tmp *.gcda *.gcno
+COMMON_CLEANFILES+=version.h version.h.tmp *.gcda *.gcno
 if MAINTAINER_MODE
 BUILT_SOURCES=jsparse/generated/operators.h jsparse/generated/keywords.h jsparse-keywords.gperf
 

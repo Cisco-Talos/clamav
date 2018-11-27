@@ -2613,7 +2613,8 @@ void SelectionDAGBuilder::visitShuffleVector(const User &I) {
     // Analyze the access pattern of the vector to see if we can extract
     // two subvectors and do the shuffle. The analysis is done by calculating
     // the range of elements the mask access on both vectors.
-    int MinRange[2] = { SrcNumElts+1, SrcNumElts+1};
+    int MinRange[2] = { static_cast<int>(SrcNumElts+1), 
+	                static_cast<int>(SrcNumElts+1)};
     int MaxRange[2] = {-1, -1};
 
     for (unsigned i = 0; i != MaskNumElts; ++i) {
@@ -3151,7 +3152,7 @@ SelectionDAGBuilder::implVisitBinaryAtomic(const CallInst& I,
   return 0;
 }
 
-// implVisitAluOverflow - Lower arithmetic overflow instrinsics.
+// implVisitAluOverflow - Lower arithmetic overflow intrinsics.
 const char *
 SelectionDAGBuilder::implVisitAluOverflow(const CallInst &I, ISD::NodeType Op) {
   SDValue Op1 = getValue(I.getArgOperand(0));

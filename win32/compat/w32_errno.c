@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2017 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2009 Sourcefire, Inc.
  *
  *  Authors: aCaB <acab@clamav.net>
@@ -23,7 +23,7 @@
 #include "w32_errno.h"
 
 char *w32_strerror(int errnum) {
-    int i;
+    size_t i;
     for(i=0; i<sizeof(w32_errnos) / sizeof(w32_errnos[0]); i++) {
 	if(w32_errnos[i].err == errnum)
 	    return w32_errnos[i].strerr;

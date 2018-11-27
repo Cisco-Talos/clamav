@@ -461,27 +461,27 @@ static void do_phishing_test_allscan(const struct rtest *rtest)
 	fail_unless(rc == CL_CLEAN,"phishingScan");
 	switch(rtest->result) {
 		case 0:
-			fail_unless_fmt(ctx.found_possibly_unwanted,
+			fail_unless_fmt(ctx.num_viruses,
 					"this should be phishing, realURL: %s, displayURL: %s",
 					rtest->realurl, rtest->displayurl);
 			break;
 		case 1:
-			fail_unless_fmt(!ctx.found_possibly_unwanted,
+			fail_unless_fmt(!ctx.num_viruses,
 					"this should be whitelisted, realURL: %s, displayURL: %s",
 					rtest->realurl, rtest->displayurl);
 			break;
 		case 2:
-			fail_unless_fmt(!ctx.found_possibly_unwanted,
+			fail_unless_fmt(!ctx.num_viruses,
 					"this should be clean, realURL: %s, displayURL: %s",
 					rtest->realurl, rtest->displayurl);
 			break;
 		case 3:
 			if(!loaded_2)
-				fail_unless_fmt(!ctx.found_possibly_unwanted,
+				fail_unless_fmt(!ctx.num_viruses,
 					"this should be clean, realURL: %s, displayURL: %s",
 					rtest->realurl, rtest->displayurl);
 			else {
-				fail_unless_fmt(ctx.found_possibly_unwanted,
+				fail_unless_fmt(ctx.num_viruses,
 					"this should be blacklisted, realURL: %s, displayURL: %s",
 					rtest->realurl, rtest->displayurl);
 				if (*ctx.virname)

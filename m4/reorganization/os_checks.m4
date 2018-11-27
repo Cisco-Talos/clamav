@@ -1,11 +1,14 @@
 case "$target_os" in
 linux*)
     AC_DEFINE([C_LINUX],1,[target is linux])
+    have_fanotify="no"
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-lpthread"
 	TH_SAFE="-thread-safe"
 	if test "$want_fanotify" = "yes"; then
-	    AC_CHECK_HEADER([sys/fanotify.h],AC_DEFINE([FANOTIFY],1,[use fanotify]),)
+	    AC_CHECK_HEADER([sys/fanotify.h],
+               [AC_DEFINE([FANOTIFY],1,[use fanotify])
+                have_fanotify="yes"],)
 	fi
     fi
     ;;

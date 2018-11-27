@@ -20,7 +20,7 @@ if test "$gcc_check" = "yes"; then
 		esac
 		case "${gcc_version}" in
 		    [[56789]].* | 4.[[3456789]].*)
-			# bb #1581 - temporarely add -fno-strict-aliasing so gcc 4.4.0
+			# bb #1581 - temporarily add -fno-strict-aliasing so gcc 4.4.0
 			# works correctly
 			CFLAGS="$CFLAGS -fno-strict-aliasing"
 			;;
@@ -141,7 +141,7 @@ int crashtest()
 
 int main(void)
 {
-	int i;
+	size_t i;
 	for(i=0;i<sizeof(values)/sizeof(values[0]);i++) {
 		struct v* v= &values[i];
 		char* dst = v->dst;
@@ -160,7 +160,7 @@ int main(void)
 	return 0;
 }
 ], [AC_MSG_RESULT([ok, bug not present])],
-[AC_MSG_ERROR([your compiler has a bug that causes clamav bug no. 670, use a different compiler, see http://bugs.clamav.net/bugzilla/show_bug.cgi?id=670])], [AC_MSG_RESULT([cross-compiling, assumed ok])])
+[AC_MSG_ERROR([your compiler has a bug that causes clamav bug no. 670, use a different compiler, see https://bugzilla.clamav.net/show_bug.cgi?id=670])], [AC_MSG_RESULT([cross-compiling, assumed ok])])
 
 dnl Check if compiler produces invalid code on gcc PR28045 (affects upx.c)
 dnl testcase from gcc testsuite

@@ -58,5 +58,8 @@
     <ClCompile Include="..\libclamav\c++\llvm\lib\System\Atomic.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\System\Valgrind.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

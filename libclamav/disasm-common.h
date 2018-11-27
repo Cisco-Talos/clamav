@@ -129,7 +129,7 @@ enum X86OPS {
   OP_LODSB,/**< Load String Byte */
   OP_LOOP,/**< Loop According to ECX Counter */
   OP_LOOPE,/**< Loop According to ECX Counter and ZF=1 */
-  OP_LOOPNE,/**< Looop According to ECX Counter and ZF=0 */
+  OP_LOOPNE,/**< Loop According to ECX Counter and ZF=0 */
   OP_JECXZ,/**< Jump if ECX is Zero */
   OP_LSL,/**< Load Segment Limit */
   OP_LSS,/**< Load Far Pointer into SS */
@@ -162,14 +162,14 @@ enum X86OPS {
   OP_RCR,/**< Rotate Carry Right */
   OP_RDMSR,/**< Read from Model Specific Register */
   OP_RDPMC,/**< Read Performance Monitoring Counters */
-  OP_RDTSC,/**< Read Time-Stamp Coutner */
+  OP_RDTSC,/**< Read Time-Stamp Counter */
   OP_PREFIX_REPE,/**< Repeat String Operation Prefix while Equal */
   OP_PREFIX_REPNE,/**< Repeat String Operation Prefix while Not Equal */
   OP_RETF,/**< Return from Far Procedure */
   OP_RETN,/**< Return from Near Procedure */
   OP_ROL,/**< Rotate Left */
   OP_ROR,/**< Rotate Right */
-  OP_RSM,/**< Resumse from System Management Mode */
+  OP_RSM,/**< Resume from System Management Mode */
   OP_SAHF,/**< Store AH into Flags */
   OP_SAR,/**< Shift Arithmetic Right */
   OP_SBB,/**< Subtract with Borrow */

@@ -1,8 +1,10 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015-2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2008 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
+ * 
+ *  Acknowledgements: Decompression scheme by M. Winterhoff.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -98,7 +100,8 @@ int cli_msexpand(cli_ctx *ctx, int ofd)
 	const struct msexp_hdr *hdr;
 	uint8_t i, mask, bits;
 	unsigned char buff[B_SIZE], wbuff[RW_SIZE];
-	const unsigned char *rbuff;
+	const unsigned char *rbuff = NULL; 	// rbuff will be set to a real address by READBYTES
+										// in the first iteration of the loop.
 	unsigned int j = B_SIZE - 16, k, l, r = 0, w = 0, rbytes = 0, wbytes = 0;
 	fmap_t *map = *ctx->fmap;
 	off_t cur_off = sizeof(*hdr);

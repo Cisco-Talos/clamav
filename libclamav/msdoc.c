@@ -1,7 +1,7 @@
 /*
  * Extract component parts of OLE2 files (e.g. MS Office Documents)
  * 
- * Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ * Copyright (C) 2015, 2017 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  * Copyright (C) 2007-2013 Sourcefire, Inc.
  * 
  * Authors: Kevin Lin
@@ -751,7 +751,7 @@ static int ole2_summary_propset_json(summary_ctx_t *sctx, off_t offset)
     else {
         limitprops = numprops;
     }
-    cli_dbgmsg("ole2_summary_propset_json: processing %u of %u (%u max) propeties\n",
+    cli_dbgmsg("ole2_summary_propset_json: processing %u of %u (%u max) properties\n",
                limitprops, numprops, PROPCNTLIMIT);
 
     /* extract remaining fragment of propset */
@@ -913,7 +913,7 @@ int cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
         return CL_EMAP;
     }
     sctx.maplen = sctx.sfmap->len;
-    cli_dbgmsg("ole2_summary_json: streamsize: %u\n", sctx.maplen);
+    cli_dbgmsg("ole2_summary_json: streamsize: %zu\n", sctx.maplen);
 
     switch (mode) {
     case 1:

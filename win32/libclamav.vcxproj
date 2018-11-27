@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -7,6 +7,14 @@
     </ProjectConfiguration>
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release-Static|Win32">
+      <Configuration>Release-Static</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release-Static|x64">
+      <Configuration>Release-Static</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
     <ProjectConfiguration Include="Release|Win32">
@@ -28,23 +36,41 @@
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release-Static|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release-Static|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -58,26 +84,38 @@
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
     <Import Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" />
   </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release-Static|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
     <Import Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" />
   </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release-Static|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <LinkIncremental>true</LinkIncremental>
     <IntDir>$(SolutionDir)build\$(PlatformName)\$(ProjectName)\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)$(PlatformName)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LinkIncremental>true</LinkIncremental>
     <IntDir>$(SolutionDir)build\$(PlatformName)\$(ProjectName)\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)$(PlatformName)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <IntDir>$(SolutionDir)build\$(PlatformName)\$(ProjectName)\$(Configuration)\</IntDir>
+    <OutDir>$(SolutionDir)$(PlatformName)\$(Configuration)\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release-Static|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(SolutionDir)build\$(PlatformName)\$(ProjectName)\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)$(PlatformName)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IntDir>$(SolutionDir)build\$(PlatformName)\$(ProjectName)\$(Configuration)\</IntDir>
+    <OutDir>$(SolutionDir)$(PlatformName)\$(Configuration)\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release-Static|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(SolutionDir)build\$(PlatformName)\$(ProjectName)\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)$(PlatformName)\$(Configuration)\</OutDir>
@@ -87,17 +125,17 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;PTW32_STATIC_LIB;THIS_IS_LIBCLAMAV;WIN32;PCRE_STATIC;_DEBUG;_WINDOWS;_USRDLL;LIBCLAMAV_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\libxml2;$(SolutionDir)3rdparty\libxml2\include;$(SolutionDir)3rdparty\pcre;$(SolutionDir)..;C:\clamdeps\win32\openssl\include</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>HAVE_STRUCT_TIMESPEC;HAVE_STDBOOL_H;WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;PTW32_STATIC_LIB;THIS_IS_LIBCLAMAV;WIN32;PCRE_STATIC;_DEBUG;_WINDOWS;_USRDLL;LIBCLAMAV_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\libxml2;$(SolutionDir)3rdparty\libxml2\include;$(SolutionDir)3rdparty\pcre;$(SolutionDir)..;..\libclamav\libmspack-0.5alpha\mspack;$(CLAM_DEPENDENCIES)\$(PlatformName)\include</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4996;4090;4244;4018;4101;4333;4146</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>mspack.lib;ws2_32.lib;pthreads.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>$(SolutionDir)libclamav.def</ModuleDefinitionFile>
-      <AdditionalLibraryDirectories>C:\clamdeps\win32\openssl\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(PlatformName)\$(Configuration);$(CLAM_DEPENDENCIES)\$(PlatformName)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -105,17 +143,17 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;PTW32_STATIC_LIB;THIS_IS_LIBCLAMAV;WIN32;PCRE_STATIC;_DEBUG;_WINDOWS;_USRDLL;LIBCLAMAV_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\libxml2;$(SolutionDir)3rdparty\libxml2\include;$(SolutionDir)3rdparty\pcre;$(SolutionDir)..;C:\clamdeps\win64\openssl\include</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>HAVE_STRUCT_TIMESPEC;HAVE_STDBOOL_H;WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;PTW32_STATIC_LIB;THIS_IS_LIBCLAMAV;WIN32;PCRE_STATIC;_DEBUG;_WINDOWS;_USRDLL;LIBCLAMAV_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\libxml2;$(SolutionDir)3rdparty\libxml2\include;$(SolutionDir)3rdparty\pcre;$(SolutionDir)..;..\libclamav\libmspack-0.5alpha\mspack;$(CLAM_DEPENDENCIES)\$(PlatformName)\include</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4996;4090;4244;4018;4101;4333;4146;4267;4334</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>mspack.lib;ws2_32.lib;pthreads.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>$(SolutionDir)libclamav.def</ModuleDefinitionFile>
-      <AdditionalLibraryDirectories>C:\clamdeps\win64\openssl\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(PlatformName)\$(Configuration);$(CLAM_DEPENDENCIES)\$(PlatformName)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -125,8 +163,8 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;PTW32_STATIC_LIB;THIS_IS_LIBCLAMAV;WIN32;PCRE_STATIC;NDEBUG;_WINDOWS;_USRDLL;LIBCLAMAV_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\libxml2;$(SolutionDir)3rdparty\libxml2\include;$(SolutionDir)3rdparty\pcre;$(SolutionDir)..;C:\clamdeps\win32\openssl\include</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>HAVE_STRUCT_TIMESPEC;HAVE_STDBOOL_H;WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;PTW32_STATIC_LIB;THIS_IS_LIBCLAMAV;WIN32;PCRE_STATIC;NDEBUG;_WINDOWS;_USRDLL;LIBCLAMAV_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\libxml2;$(SolutionDir)3rdparty\libxml2\include;$(SolutionDir)3rdparty\pcre;$(SolutionDir)..;..\libclamav\libmspack-0.5alpha\mspack;$(CLAM_DEPENDENCIES)\$(PlatformName)\include</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4996;4090;4244;4018;4101;4333;4146</DisableSpecificWarnings>
     </ClCompile>
@@ -135,9 +173,31 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>mspack.lib;ws2_32.lib;pthreads.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>$(SolutionDir)libclamav.def</ModuleDefinitionFile>
-      <AdditionalLibraryDirectories>C:\clamdeps\win32\openssl\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(PlatformName)\$(Configuration);$(CLAM_DEPENDENCIES)\$(PlatformName)\lib</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release-Static|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>HAVE_STRUCT_TIMESPEC;HAVE_STDBOOL_H;WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;PTW32_STATIC_LIB;THIS_IS_LIBCLAMAV;WIN32;PCRE_STATIC;NDEBUG;_WINDOWS;_USRDLL;LIBCLAMAV_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\libxml2;$(SolutionDir)3rdparty\libxml2\include;$(SolutionDir)3rdparty\pcre;$(SolutionDir)..;..\libclamav\libmspack-0.5alpha\mspack;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;..\libclamav\libmspack-0.5alpha\mspack</AdditionalIncludeDirectories>
+      <CompileAs>CompileAsC</CompileAs>
+      <DisableSpecificWarnings>4996;4090;4244;4018;4101;4333;4146</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>ws2_32.lib;mspack.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ModuleDefinitionFile>$(SolutionDir)libclamav.def</ModuleDefinitionFile>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(PlatformName)\Release;$(CLAM_DEPENDENCIES)\$(PlatformName)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -147,8 +207,8 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;PTW32_STATIC_LIB;THIS_IS_LIBCLAMAV;WIN32;PCRE_STATIC;NDEBUG;_WINDOWS;_USRDLL;LIBCLAMAV_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\libxml2;$(SolutionDir)3rdparty\libxml2\include;$(SolutionDir)3rdparty\pcre;$(SolutionDir)..;C:\clamdeps\win64\openssl\include</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>HAVE_STRUCT_TIMESPEC;HAVE_STDBOOL_H;WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;PTW32_STATIC_LIB;THIS_IS_LIBCLAMAV;WIN32;PCRE_STATIC;NDEBUG;_WINDOWS;_USRDLL;LIBCLAMAV_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\libxml2;$(SolutionDir)3rdparty\libxml2\include;$(SolutionDir)3rdparty\pcre;$(SolutionDir)..;..\libclamav\libmspack-0.5alpha\mspack;$(CLAM_DEPENDENCIES)\$(PlatformName)\include</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4996;4090;4244;4018;4101;4333;4146;4267;4334</DisableSpecificWarnings>
     </ClCompile>
@@ -157,10 +217,36 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>mspack.lib;ws2_32.lib;pthreads.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>$(SolutionDir)libclamav.def</ModuleDefinitionFile>
-      <AdditionalLibraryDirectories>C:\clamdeps\win64\openssl\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(PlatformName)\$(Configuration);$(CLAM_DEPENDENCIES)\$(PlatformName)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release-Static|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>HAVE_STRUCT_TIMESPEC;HAVE_STDBOOL_H;LIBCLAMAV_STATIC;WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;PTW32_STATIC_LIB;THIS_IS_LIBCLAMAV;WIN32;PCRE_STATIC;NDEBUG;_WINDOWS;_USRDLL;LIBCLAMAV_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\zlib;$(SolutionDir)3rdparty\pthreads;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\libxml2;$(SolutionDir)3rdparty\libxml2\include;$(SolutionDir)3rdparty\pcre;$(SolutionDir)..;..\libclamav\libmspack-0.5alpha\mspack;$(CLAM_DEPENDENCIES)\$(PlatformName)\include</AdditionalIncludeDirectories>
+      <CompileAs>CompileAsC</CompileAs>
+      <DisableSpecificWarnings>4996;4090;4244;4018;4101;4333;4146;4267;4334</DisableSpecificWarnings>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>ws2_32.lib;mspack.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ModuleDefinitionFile>$(SolutionDir)libclamav.def</ModuleDefinitionFile>
+      <AdditionalLibraryDirectories>$(CLAM_DEPENDENCIES)\$(PlatformName)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+    <Lib>
+      <AdditionalLibraryDirectories>$(CLAM_DEPENDENCIES)\$(PlatformName)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="libclamav.def" />
@@ -313,9 +399,7 @@
     <ClCompile Include="..\libclamav\bytecode_api.c" />
     <ClCompile Include="..\libclamav\bytecode_api_decl.c" />
     <ClCompile Include="..\libclamav\bytecode_vm.c" />
-    <ClCompile Include="..\libclamav\cab.c" />
     <ClCompile Include="..\libclamav\cache.c" />
-    <ClCompile Include="..\libclamav\chmunpack.c" />
     <ClCompile Include="..\libclamav\cpio.c" />
     <ClCompile Include="..\libclamav\cvd.c" />
     <ClCompile Include="..\libclamav\dconf.c" />
@@ -324,8 +408,10 @@
     <ClCompile Include="..\libclamav\dmg.c">
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">/D "LIBXML_STATIC" %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">/D "LIBXML_STATIC" %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release-Static|Win32'">/D "LIBXML_STATIC" %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">/D "LIBXML_STATIC" %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">/D "LIBXML_STATIC" %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release-Static|x64'">/D "LIBXML_STATIC" %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <ClCompile Include="..\libclamav\dsig.c" />
     <ClCompile Include="..\libclamav\elf.c" />
@@ -345,8 +431,10 @@
     <ClCompile Include="..\libclamav\is_tar.c" />
     <ClCompile Include="..\libclamav\jsparse\js-norm.c" />
     <ClCompile Include="..\libclamav\json_api.c" />
+    <ClCompile Include="..\libclamav\libmspack.c" />
     <ClCompile Include="..\libclamav\line.c" />
     <ClCompile Include="..\libclamav\lzma_iface.c" />
+    <ClCompile Include="..\libclamav\lzw\lzwdec.c" />
     <ClCompile Include="..\libclamav\macho.c" />
     <ClCompile Include="..\libclamav\matcher-ac.c" />
     <ClCompile Include="..\libclamav\matcher-bm.c" />
@@ -358,14 +446,15 @@
     <ClCompile Include="..\libclamav\mew.c" />
     <ClCompile Include="..\libclamav\mpool.c" />
     <ClCompile Include="..\libclamav\msexpand.c" />
-    <ClCompile Include="..\libclamav\mspack.c" />
     <ClCompile Include="..\libclamav\msxml.c" />
     <ClCompile Include="..\libclamav\msxml_parser.c" />
     <ClCompile Include="..\libclamav\nsis\bzlib.c">
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)\nsis_bzlib</ObjectFileName>
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)\nsis_bzlib</ObjectFileName>
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)\nsis_bzlib</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release-Static|Win32'">$(IntDir)\nsis_bzlib</ObjectFileName>
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)\nsis_bzlib</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release-Static|x64'">$(IntDir)\nsis_bzlib.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libclamav\nsis\infblock.c" />
     <ClCompile Include="..\libclamav\nsis\nulsft.c" />
@@ -375,6 +464,7 @@
     <ClCompile Include="..\libclamav\others_common.c" />
     <ClCompile Include="..\libclamav\packlibs.c" />
     <ClCompile Include="..\libclamav\pdf.c" />
+    <ClCompile Include="..\libclamav\pdfdecode.c" />
     <ClCompile Include="..\libclamav\pe.c" />
     <ClCompile Include="..\libclamav\perflogging.c" />
     <ClCompile Include="..\libclamav\petite.c" />
@@ -413,8 +503,10 @@
     <ClCompile Include="..\libclamav\xar.c">
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">/D "LIBXML_STATIC" %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">/D "LIBXML_STATIC" %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release-Static|Win32'">/D "LIBXML_STATIC" %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">/D "LIBXML_STATIC" %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">/D "LIBXML_STATIC" %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release-Static|x64'">/D "LIBXML_STATIC" %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <ClCompile Include="..\libclamav\www.c" />
     <ClCompile Include="..\libclamav\xdp.c" />
@@ -434,13 +526,17 @@
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)\bzip2_bzlib</ObjectFileName>
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)\bzip2_bzlib</ObjectFileName>
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)\bzip2_bzlib</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release-Static|Win32'">$(IntDir)\bzip2_bzlib</ObjectFileName>
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)\bzip2_bzlib</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release-Static|x64'">$(IntDir)\bzip2_bzlib.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="3rdparty\bzip2\compress.c">
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)\compress_bzip2</ObjectFileName>
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)\compress_bzip2</ObjectFileName>
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)\compress_bzip2</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release-Static|Win32'">$(IntDir)\compress_bzip2</ObjectFileName>
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)\compress_bzip2</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release-Static|x64'">$(IntDir)\compress_bzip2.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="3rdparty\bzip2\crctable.c" />
     <ClCompile Include="3rdparty\bzip2\decompress.c" />
@@ -454,6 +550,8 @@
     <ClCompile Include="3rdparty\libxml2\error.c" />
     <ClCompile Include="3rdparty\libxml2\globals.c" />
     <ClCompile Include="3rdparty\libxml2\hash.c" />
+    <ClCompile Include="3rdparty\libxml2\HTMLparser.c" />
+    <ClCompile Include="3rdparty\libxml2\HTMLtree.c" />
     <ClCompile Include="3rdparty\libxml2\list.c" />
     <ClCompile Include="3rdparty\libxml2\parser.c" />
     <ClCompile Include="3rdparty\libxml2\parserInternals.c" />
@@ -489,13 +587,14 @@
     <ClCompile Include="3rdparty\pcre\pcre_valid_utf8.c" />
     <ClCompile Include="3rdparty\pcre\pcre_version.c" />
     <ClCompile Include="3rdparty\pcre\pcre_xclass.c" />
-    <ClCompile Include="3rdparty\pthreads\pthread.c" />
     <ClCompile Include="3rdparty\zlib\adler32.c" />
     <ClCompile Include="3rdparty\zlib\compress.c">
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)\compress_zlib</ObjectFileName>
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)\compress_zlib</ObjectFileName>
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)\compress_zlib</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release-Static|Win32'">$(IntDir)\compress_zlib</ObjectFileName>
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)\compress_zlib</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release-Static|x64'">$(IntDir)\compress_zlib.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="3rdparty\zlib\crc32.c" />
     <ClCompile Include="3rdparty\zlib\deflate.c" />
@@ -542,7 +641,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\libclamav\hostid.h" />
-    <ClInclude Include="..\libclamav\hwp.h" />
     <ClInclude Include="..\libclamav\stats.h" />
     <ClInclude Include="..\libclamav\www.h" />
     <ClInclude Include="..\libclamav\xdp.h" />
@@ -551,7 +649,7 @@
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
   <ItemGroup>
-    <Library Include="libeay32.lib" />
-    <Library Include="ssleay32.lib" />
+    <Library Include="libcrypto.lib" />
+    <Library Include="libssl.lib" />
   </ItemGroup>
 </Project>

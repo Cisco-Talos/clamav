@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007 - 2013 Sourcefire, Inc.
  *  Copyright (C) 2002 - 2007 Tomasz Kojm <tkojm@clamav.net>
  *  CDIFF code (C) 2006 Sensory Networks, Inc.
@@ -111,12 +111,14 @@ static const struct dblist_s {
     { "zmd",   1 },
     { "rmd",   1 },
     { "idb",   0 },
-    { "fp",    0 },
+    { "fp",    1 },
     { "sfp",   0 },
     { "gdb",   1 },
     { "pdb",   1 },
     { "wdb",   0 },
-    { "crb", 1 },
+    { "crb",   1 },
+    { "cdb",   1 },
+    { "imp",   1 },
 
     { NULL,	    0 }
 };
@@ -163,7 +165,129 @@ static int hexdump(void)
     return 0;
 }
 
-static int hashsig(const struct optstruct *opts, unsigned int mdb, int type)
+static int hashpe(const char *filename, unsigned int class, int type)
+{
+    STATBUF sb;
+    const char *fmptr;
+    struct cl_engine *engine;
+    cli_ctx ctx;
+    int fd, ret;
+
+    /* build engine */
+    if(!(engine = cl_engine_new())) {
+	mprintf("!hashpe: Can't create new engine\n");
+	return -1;
+    }
+    cl_engine_set_num(engine, CL_ENGINE_AC_ONLY, 1);
+
+    if(cli_initroots(engine, 0) != CL_SUCCESS) {
+	mprintf("!hashpe: cli_initroots() failed\n");
+	cl_engine_free(engine);
+	return -1;
+    }
+
+    if(cli_parse_add(engine->root[0], "test", "deadbeef", 0, 0, 0, "*", 0, NULL, 0) != CL_SUCCESS) {
+	mprintf("!hashpe: Can't parse signature\n");
+	cl_engine_free(engine);
+	return -1;
+    }
+
+    if(cl_engine_compile(engine) != CL_SUCCESS) {
+	mprintf("!hashpe: Can't compile engine\n");
+	cl_engine_free(engine);
+	return -1;
+    }
+
+    /* prepare context */
+    memset(&ctx, '\0', sizeof(cli_ctx));
+    ctx.engine = engine;
+    ctx.options = CL_SCAN_STDOPT;
+    ctx.containers = cli_calloc(sizeof(cli_ctx_container), engine->maxreclevel + 2);
+    if(!ctx.containers) {
+	cl_engine_free(engine);
+	return -1;
+    }
+    ctx.containers[0].type = CL_TYPE_ANY;
+    ctx.dconf = (struct cli_dconf *) engine->dconf;
+    ctx.fmap = calloc(sizeof(fmap_t *), 1);
+    if(!ctx.fmap) {
+        free(ctx.containers);
+	cl_engine_free(engine);
+	return -1;
+    }
+
+    /* Prepare file */
+    fd = open(filename, O_RDONLY);
+    if(fd < 0) {
+	mprintf("!hashpe: Can't open file %s!\n", filename);
+        free(ctx.containers);
+        cl_engine_free(engine);
+        return -1;
+    }
+
+    lseek(fd, 0, SEEK_SET);
+    FSTAT(fd, &sb);
+    if(!(*ctx.fmap = fmap(fd, 0, sb.st_size))) {
+        free(ctx.containers);
+	free(ctx.fmap);
+	close(fd);
+	cl_engine_free(engine);
+	return -1;
+    }
+
+    fmptr = fmap_need_off_once(*ctx.fmap, 0, sb.st_size);
+    if(!fmptr) {
+        mprintf("!hashpe: fmap_need_off_once failed!\n");
+        free(ctx.containers);
+        free(ctx.fmap);
+        close(fd);
+        cl_engine_free(engine);
+	return -1;
+    }
+
+    cl_debug();
+
+    /* Send to PE-specific hasher */
+    switch(class) {
+        case 1:
+	    ret = cli_genhash_pe(&ctx, CL_GENHASH_PE_CLASS_SECTION, type);
+	    break;
+        case 2:
+	    ret = cli_genhash_pe(&ctx, CL_GENHASH_PE_CLASS_IMPTBL, type);
+	    break;
+        default:
+	    mprintf("!hashpe: unknown classification(%u) for pe hash!\n", class);
+        cl_engine_free(engine);
+	    return -1;
+    }
+
+    /* THIS MAY BE UNNECESSARY */
+    switch(ret) {
+        case CL_CLEAN:
+            break;
+        case CL_VIRUS:
+            mprintf("*hashpe: CL_VIRUS after cli_genhash_pe()!\n");
+            break;
+        case CL_BREAK:
+            mprintf("*hashpe: CL_BREAK after cli_genhash_pe()!\n");
+            break;
+        case CL_EFORMAT:
+            mprintf("!hashpe: Not a valid PE file!\n");
+            break;
+        default:
+            mprintf("!hashpe: Other error %d inside cli_genhash_pe.\n", ret);
+            break;
+    }
+
+    /* Cleanup */
+    free(ctx.containers);
+    free(ctx.fmap);
+    close(fd);
+    cl_engine_free(engine);
+    return 0;
+}
+
+static int hashsig(const struct optstruct *opts, unsigned int class, int type)
 {
 	char *hash;
 	unsigned int i;
@@ -178,12 +302,11 @@ static int hashsig(const struct optstruct *opts, unsigned int mdb, int type)
 		return -1;
 	    } else {
 		if((sb.st_mode & S_IFMT) == S_IFREG) {
-		    if((hash = cli_hashfile(opts->filename[i], type))) {
-			if(mdb)
-			    mprintf("%u:%s:%s\n", (unsigned int) sb.st_size, hash, basename(opts->filename[i]));
-			else
-			    mprintf("%s:%u:%s\n", hash, (unsigned int) sb.st_size, basename(opts->filename[i]));
+		    if((class == 0) && (hash = cli_hashfile(opts->filename[i], type))) {
+			mprintf("%s:%u:%s\n", hash, (unsigned int) sb.st_size, basename(opts->filename[i]));
 			free(hash);
+		    } else if((class > 0) && (hashpe(opts->filename[i], class, type) == 0)) {
+			/* intentionally empty - printed in cli_genhash_pe() */
 		    } else {
 			mprintf("!hashsig: Can't generate hash for %s\n", opts->filename[i]);
 			return -1;
@@ -193,6 +316,10 @@ static int hashsig(const struct optstruct *opts, unsigned int mdb, int type)
 	}
 
     } else { /* stream */
+	if (class > 0) {
+	    mprintf("!hashsig: Can't generate requested hash for input stream\n");
+	    return -1;
+	}
 	hash = cli_hashstream(stdin, NULL, type);
 	if(!hash) {
 	    mprintf("!hashsig: Can't generate hash for input stream\n");
@@ -544,7 +671,8 @@ static int writeinfo(const char *dbname, const char *builder, const char *header
 	    }
 	    free(pt);
 	}
-    } else {
+    }
+    if(!dblist2cnt || optget(opts, "hybrid")->enabled) {
 	for(i = 0; dblist[i].ext; i++) {
 	    snprintf(dbfile, sizeof(dbfile), "%s.%s", dbname, dblist[i].ext);
 	    if(strcmp(dblist[i].ext, "info") && !access(dbfile, R_OK)) {
@@ -725,7 +853,7 @@ static int qcompare(const void *a, const void *b)
 
 static int build(const struct optstruct *opts)
 {
-	int ret, bc = 0;
+	int ret, bc = 0, hy = 0;
 	size_t bytes;
 	unsigned int i, sigs = 0, oldsigs = 0, entries = 0, version, real_header, fl, maxentries;
 	STATBUF foo;
@@ -766,6 +894,9 @@ static int build(const struct optstruct *opts)
     if(!strcmp(dbname, "bytecode"))
 	bc = 1;
 
+    if(optget(opts, "hybrid")->enabled)
+	hy = 1;
+
     if(!(engine = cl_engine_new())) {
 	mprintf("!build: Can't initialize antivirus engine\n");
 	return 50;
@@ -781,7 +912,7 @@ static int build(const struct optstruct *opts)
     if(!sigs) {
 	mprintf("!build: There are no signatures in database files\n");
     } else {
-	if(bc) {
+	if(bc || hy) {
 	    if((dd = opendir(".")) == NULL) {
 		mprintf("!build: Can't open current directory\n");
 		return -1;
@@ -830,7 +961,8 @@ static int build(const struct optstruct *opts)
 		dblist2cnt++;
 		entries += countlines("last.hdb");
 	    }
-	} else {
+	}
+	if(!bc || hy) {
 	    for(i = 0; dblist[i].ext; i++) {
 		snprintf(dbfile, sizeof(dbfile), "%s.%s", dbname, dblist[i].ext);
 		if(dblist[i].count && !access(dbfile, R_OK))
@@ -841,15 +973,15 @@ static int build(const struct optstruct *opts)
 	if(entries != sigs)
 	    mprintf("^build: Signatures in %s db files: %u, loaded by libclamav: %u\n", dbname, entries, sigs);
 
-    maxentries = optget(opts, "max-bad-sigs")->numarg;
+	maxentries = optget(opts, "max-bad-sigs")->numarg;
 
-    if (maxentries) {
-        if(!entries || (sigs > entries && sigs - entries >= maxentries)) {
-            mprintf("!Bad number of signatures in database files\n");
-            FREE_LS(dblist2);
-            return -1;
-        }
-    }
+	if (maxentries) {
+	    if(!entries || (sigs > entries && sigs - entries >= maxentries)) {
+		mprintf("!Bad number of signatures in database files\n");
+		FREE_LS(dblist2);
+		return -1;
+	    }
+	}
     }
 
     /* try to read cvd header of current database */
@@ -969,8 +1101,8 @@ static int build(const struct optstruct *opts)
 	return -1;
     }
 
-    if(bc) {
-	if(tar_addfile(-1, tar, "bytecode.info") == -1) {
+    if(bc || hy) {
+	if(!hy && tar_addfile(-1, tar, "bytecode.info") == -1) {
 	    gzclose(tar);
 	    unlink(tarfile);
 	    free(tarfile);
@@ -986,7 +1118,8 @@ static int build(const struct optstruct *opts)
 		return -1;
 	    }
 	}
-    } else {
+    }
+    if(!bc || hy) {
 	for(i = 0; dblist[i].ext; i++) {
 	    snprintf(dbfile, sizeof(dbfile), "%s.%s", dbname, dblist[i].ext);
 	    if(!access(dbfile, R_OK)) {
@@ -1298,7 +1431,8 @@ static int listdir(const char *dirname, const regex_t *regex)
 	     cli_strbcasestr(dent->d_name, ".cbc") ||
 	     cli_strbcasestr(dent->d_name, ".cld") ||
 	     cli_strbcasestr(dent->d_name, ".cvd") ||  
-	     cli_strbcasestr(dent->d_name, ".crb"))) {
+	     cli_strbcasestr(dent->d_name, ".crb") ||
+	     cli_strbcasestr(dent->d_name, ".imp"))) {
 
 		dbfile = (char *) malloc(strlen(dent->d_name) + strlen(dirname) + 2);
 		if(!dbfile) {
@@ -1405,6 +1539,10 @@ static int listdb(const char *filename, const regex_t *regex)
 		continue;
 	    }
 	    line++;
+
+            if(buffer && buffer[0] == '#')
+                continue;
+
 	    pt = strchr(buffer, '=');
 	    if(!pt) {
 		mprintf("!listdb: Malformed pattern line %u (file %s)\n", line, filename);
@@ -1438,7 +1576,7 @@ static int listdb(const char *filename, const regex_t *regex)
             line++;
             mprintf("%s\n", buffer);
         }
-    } else if(cli_strbcasestr(filename, ".hdb") || cli_strbcasestr(filename, ".hdu") || cli_strbcasestr(filename, ".mdb") || cli_strbcasestr(filename, ".mdu") || cli_strbcasestr(filename, ".hsb") || cli_strbcasestr(filename, ".hsu") || cli_strbcasestr(filename, ".msb") || cli_strbcasestr(filename, ".msu")) { /* hash database */
+    } else if(cli_strbcasestr(filename, ".hdb") || cli_strbcasestr(filename, ".hdu") || cli_strbcasestr(filename, ".mdb") || cli_strbcasestr(filename, ".mdu") || cli_strbcasestr(filename, ".hsb") || cli_strbcasestr(filename, ".hsu") || cli_strbcasestr(filename, ".msb") || cli_strbcasestr(filename, ".msu") || cli_strbcasestr(filename, ".imp")) { /* hash database */
 
 	while(fgets(buffer, FILEBUFF, fh)) {
 	    cli_chomp(buffer);
@@ -1448,7 +1586,11 @@ static int listdb(const char *filename, const regex_t *regex)
 		continue;
 	    }
 	    line++;
-	    start = cli_strtok(buffer, 2, ":");
+
+            if(buffer && buffer[0] == '#')
+                continue;
+
+            start = cli_strtok(buffer, 2, ":");
 
 	    if(!start) {
 		mprintf("!listdb: Malformed pattern line %u (file %s)\n", line, filename);
@@ -1474,6 +1616,9 @@ static int listdb(const char *filename, const regex_t *regex)
 		continue;
 	    }
 	    line++;
+
+            if(buffer && buffer[0] == '#')
+                continue;
 
 	    if(cli_strbcasestr(filename, ".ldb") || cli_strbcasestr(filename, ".ldu"))
 		pt = strchr(buffer, ';');
@@ -2092,16 +2237,23 @@ static void matchsig(const char *sig, const char *offset, int fd)
     memset(&ctx, '\0', sizeof(cli_ctx));
     ctx.engine = engine;
     ctx.options = CL_SCAN_STDOPT;
-    ctx.container_type = CL_TYPE_ANY;
+    ctx.containers = cli_calloc(sizeof(cli_ctx_container), engine->maxreclevel + 2);
+    if(!ctx.containers) {
+	cl_engine_free(engine);
+	return;
+    }
+    ctx.containers[0].type = CL_TYPE_ANY;
     ctx.dconf = (struct cli_dconf *) engine->dconf;
     ctx.fmap = calloc(sizeof(fmap_t *), 1);
     if(!ctx.fmap) {
+        free(ctx.containers);
 	cl_engine_free(engine);
 	return;
     }
     lseek(fd, 0, SEEK_SET);
     FSTAT(fd, &sb);
     if(!(*ctx.fmap = fmap(fd, 0, sb.st_size))) {
+        free(ctx.containers);
 	free(ctx.fmap);
 	cl_engine_free(engine);
 	return;
@@ -2129,6 +2281,7 @@ static void matchsig(const char *sig, const char *offset, int fd)
 	acres = acres->next;
 	free(res);
     }
+    free(ctx.containers);
     free(ctx.fmap);
     cl_engine_free(engine);
 }
@@ -2259,7 +2412,7 @@ static char *decodehexspecial(const char *hex, unsigned int *dlen)
 	    free(decoded);
 
 	    if(!(start = get_paren_end(pt))) {
-		mprintf("!decodehexspecial: Missing closing parethesis\n");
+		mprintf("!decodehexspecial: Missing closing parenthesis\n");
 		free(hexcpy);
 		free(buff);
 		return NULL;
@@ -2805,6 +2958,23 @@ static int decodecdb(char **tokens)
 	return 0;
 }
 
+static int decodeftm(char **tokens, int tokens_count)
+{
+    mprintf("FILE TYPE NAME: %s\n", tokens[3]);
+    mprintf("FILE SIGNATURE TYPE: %s\n", tokens[0]);
+    mprintf("FILE MAGIC OFFSET: %s\n", tokens[1]);
+    mprintf("FILE MAGIC HEX: %s\n", tokens[2]);
+    mprintf("FILE MAGIC DECODED:\n");
+    decodehex(tokens[2]);
+    mprintf("FILE TYPE REQUIRED: %s\n", tokens[4]);
+    mprintf("FILE TYPE DETECTED: %s\n", tokens[5]);
+    if(tokens_count == 7)
+        mprintf("FTM FLEVEL: >=%s\n", tokens[6]);
+    else if(tokens_count == 8)
+        mprintf("FTM FLEVEL: %s..%s\n", tokens[6], tokens[7]);
+    return 0;
+}
+
 static int decodesig(char *sig, int fd)
 {
 	char *pt;
@@ -2879,12 +3049,20 @@ static int decodesig(char *sig, int fd)
 		matchsig(subhex, subhex, fd);
 	    }
 	}
-    } else if(strchr(sig, ':')) { /* ndb */
+    } else if(strchr(sig, ':')) { /* ndb or cdb or ftm*/
 	tokens_count = cli_strtokenize(sig, ':', 12 + 1, (const char **) tokens);
 
 	if (tokens_count > 9 && tokens_count < 13) { /* cdb*/
 	    return decodecdb(tokens);
 	}
+
+        if (tokens_count > 5 && tokens_count < 9) { /* ftm */
+            long ftmsigtype;
+            char * end;
+            ftmsigtype = strtol(tokens[0], &end, 10);
+            if (end == tokens[0]+1 && (ftmsigtype == 0||ftmsigtype == 1||ftmsigtype == 4))
+                return decodeftm(tokens, tokens_count);
+        }
 
 	if(tokens_count < 4 || tokens_count > 6) {
 	    mprintf("!decodesig: Invalid or not supported signature format\n");
@@ -3246,17 +3424,23 @@ static int dumpcerts(const struct optstruct *opts)
 	return -1;
     }
 
-    engine->dconf->pe |= PE_CONF_DUMPCERT;
+    cl_engine_set_num(engine, CL_ENGINE_PE_DUMPCERTS, 1);
     cl_debug();
 
     /* prepare context */
     memset(&ctx, '\0', sizeof(cli_ctx));
     ctx.engine = engine;
     ctx.options = CL_SCAN_STDOPT;
-    ctx.container_type = CL_TYPE_ANY;
+    ctx.containers = cli_calloc(sizeof(cli_ctx_container), engine->maxreclevel + 2);
+    if(!ctx.containers) {
+	cl_engine_free(engine);
+	return -1;
+    }
+    ctx.containers[0].type = CL_TYPE_ANY;
     ctx.dconf = (struct cli_dconf *) engine->dconf;
     ctx.fmap = calloc(sizeof(fmap_t *), 1);
     if(!ctx.fmap) {
+        free(ctx.containers);
 	cl_engine_free(engine);
 	return -1;
     }
@@ -3265,6 +3449,7 @@ static int dumpcerts(const struct optstruct *opts)
     fd = open(filename, O_RDONLY);
     if(fd < 0) {
 	mprintf("!dumpcerts: Can't open file %s!\n", filename);
+        free(ctx.containers);
         cl_engine_free(engine);
         return -1;
     }
@@ -3272,6 +3457,7 @@ static int dumpcerts(const struct optstruct *opts)
     lseek(fd, 0, SEEK_SET);
     FSTAT(fd, &sb);
     if(!(*ctx.fmap = fmap(fd, 0, sb.st_size))) {
+        free(ctx.containers);
 	free(ctx.fmap);
 	close(fd);
 	cl_engine_free(engine);
@@ -3281,6 +3467,7 @@ static int dumpcerts(const struct optstruct *opts)
     fmptr = fmap_need_off_once(*ctx.fmap, 0, sb.st_size);
     if(!fmptr) {
         mprintf("!dumpcerts: fmap_need_off_once failed!\n");
+        free(ctx.containers);
         free(ctx.fmap);
         close(fd);
         cl_engine_free(engine);
@@ -3311,6 +3498,7 @@ static int dumpcerts(const struct optstruct *opts)
     }
 
     /* Cleanup */
+    free(ctx.containers);
     free(ctx.fmap);
     close(fd);
     cl_engine_free(engine);
@@ -3320,31 +3508,34 @@ static int dumpcerts(const struct optstruct *opts)
 static void help(void)
 {
     mprintf("\n");
-    mprintf("Clam AntiVirus: Signature Tool (sigtool)  %s\n", get_version());
-    mprintf("       By The ClamAV Team: http://www.clamav.net/team\n");
-    mprintf("       (C) 2007-2015 Cisco Systems, Inc.\n\n");
-
-    mprintf("    --help                 -h              show help\n");
-    mprintf("    --version              -V              print version number and exit\n");
-    mprintf("    --quiet                                be quiet, output only error messages\n");
-    mprintf("    --debug                                enable debug messages\n");
-    mprintf("    --stdout                               write to stdout instead of stderr\n");
-    mprintf("    --hex-dump                             convert data from stdin to a hex\n");
+    mprintf("                      Clam AntiVirus: Signature Tool %s\n", get_version());
+    mprintf("           By The ClamAV Team: https://www.clamav.net/about.html#credits\n");
+    mprintf("           (C) 2007-2018 Cisco Systems, Inc.\n");
+    mprintf("\n");
+    mprintf("    sigtool [options]\n");
+    mprintf("\n");
+    mprintf("    --help                 -h              Show this help\n");
+    mprintf("    --version              -V              Print version number and exit\n");
+    mprintf("    --quiet                                Be quiet, output only error messages\n");
+    mprintf("    --debug                                Enable debug messages\n");
+    mprintf("    --stdout                               Write to stdout instead of stderr\n");
+    mprintf("    --hex-dump                             Convert data from stdin to a hex\n");
     mprintf("                                           string and print it on stdout\n");
-    mprintf("    --md5 [FILES]                          generate MD5 checksum from stdin\n");
+    mprintf("    --md5 [FILES]                          Generate MD5 checksum from stdin\n");
     mprintf("                                           or MD5 sigs for FILES\n");
-    mprintf("    --sha1 [FILES]                         generate SHA1 checksum from stdin\n");
+    mprintf("    --sha1 [FILES]                         Generate SHA1 checksum from stdin\n");
     mprintf("                                           or SHA1 sigs for FILES\n");
-    mprintf("    --sha256 [FILES]                       generate SHA256 checksum from stdin\n");
+    mprintf("    --sha256 [FILES]                       Generate SHA256 checksum from stdin\n");
     mprintf("                                           or SHA256 sigs for FILES\n");
-    mprintf("    --mdb [FILES]                          generate .mdb sigs\n");
-    mprintf("    --html-normalise=FILE                  create normalised parts of HTML file\n");
-    mprintf("    --ascii-normalise=FILE                 create normalised text file from ascii source\n");
-    mprintf("    --utf16-decode=FILE                    decode UTF16 encoded files\n");
-    mprintf("    --info=FILE            -i FILE         print database information\n");
-    mprintf("    --build=NAME [cvd] -b NAME             build a CVD file\n");
+    mprintf("    --mdb [FILES]                          Generate .mdb (section hash) sigs\n");
+    mprintf("    --imp [FILES]                          Generate .imp (import table hash) sigs\n");
+    mprintf("    --html-normalise=FILE                  Create normalised parts of HTML file\n");
+    mprintf("    --ascii-normalise=FILE                 Create normalised text file from ascii source\n");
+    mprintf("    --utf16-decode=FILE                    Decode UTF16 encoded files\n");
+    mprintf("    --info=FILE            -i FILE         Print database information\n");
+    mprintf("    --build=NAME [cvd] -b NAME             Build a CVD file\n");
     mprintf("    --max-bad-sigs=NUMBER                  Maximum number of mismatched signatures\n");
-    mprintf("                                           when building a CVD. Default: 3000\n");
+    mprintf("                                           When building a CVD. Default: 3000\n");
     mprintf("    --flevel=FLEVEL                        Specify a custom flevel.\n");
     mprintf("                                           Default: %u\n", cl_retflevel());
     mprintf("    --cvd-version=NUMBER                   Specify the version number to use for\n");
@@ -3358,6 +3549,7 @@ static void help(void)
     mprintf("                                           this value is ignored.\n");
     mprintf("    --no-cdiff                             Don't generate .cdiff file\n");
     mprintf("    --unsigned                             Create unsigned database file (.cud)\n");
+    mprintf("    --hybrid                               Create a hybrid (standard and bytecode) database file\n");
     mprintf("    --print-certs=FILE                     Print Authenticode details from a PE\n");
     mprintf("    --server=ADDR                          ClamAV Signing Service address\n");
     mprintf("    --datadir=DIR                          Use DIR as default database directory\n");
@@ -3432,6 +3624,8 @@ int main(int argc, char **argv)
 	ret = hashsig(opts, 0, 3);
     else if(optget(opts, "mdb")->enabled)
 	ret = hashsig(opts, 1, 1);
+    else if(optget(opts, "imp")->enabled)
+	ret = hashsig(opts, 2, 1);
     else if(optget(opts, "html-normalise")->enabled)
 	ret = htmlnorm(opts);
     else if(optget(opts, "ascii-normalise")->enabled)

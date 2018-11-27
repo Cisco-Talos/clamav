@@ -391,6 +391,8 @@ static SRes SzFolder_Decode2(const CSzFolder *folder, const UInt64 *packSizes,
         else
           return SZ_ERROR_UNSUPPORTED;
       }
+      if (!packSizes)
+        return SZ_ERROR_FAIL;
       offset = GetSum(packSizes, si);
       inSize = packSizes[si];
       RINOK(LookInStream_SeekTo(inStream, startPos + offset));

@@ -164,11 +164,11 @@ my %CONF = (
     'NOBZ2PREFIX' => -1,
     'NO_FD_SET' => -1,
     'PACKAGE' => 'PACKAGE_NAME',
-    'PACKAGE_BUGREPORT' => '"http://bugs.clamav.net/"',
+    'PACKAGE_BUGREPORT' => '"https://bugs.clamav.net/"',
     'PACKAGE_NAME' => '"ClamAV"',
     'PACKAGE_STRING' => '"ClamAV devel"',
     'PACKAGE_TARNAME' => '"clamav"',
-    'PACKAGE_URL' => '"http://www.clamav.net/"',
+    'PACKAGE_URL' => '"https://www.clamav.net/"',
     'PACKAGE_VERSION' => '"devel"',
     'SCANBUFF' => '131072',
     'SETPGRP_VOID' => '1',
@@ -242,10 +242,10 @@ my @PROJECTS = (
     # LLVMsystem #
     {makefile => 'libclamav/c++', sections => ['libllvmsystem'], output => 'win32/LLVMsystem.vcxproj'},
 
-    # LLVMcodgen #
+    # LLVMcodegen #
     {makefile => 'libclamav/c++', sections => ['libllvmcodegen'], output => 'win32/LLVMcodegen.vcxproj'},
 
-    # LLVMx86codgen #
+    # LLVMx86codegen #
     {makefile => 'libclamav/c++', sections => ['libllvmx86codegen'], output => 'win32/LLVMx86codegen.vcxproj'},
 
     # LLVMjit #

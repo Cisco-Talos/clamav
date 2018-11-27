@@ -201,7 +201,7 @@ XMLPUBFUN void XMLCALL xmlCheckVersion(int version);
  *
  * Whether the HTML support is configured in
  */
-#if 0
+#if 1
 #define LIBXML_HTML_ENABLED
 #endif
 

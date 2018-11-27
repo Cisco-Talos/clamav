@@ -1500,7 +1500,7 @@ process_external_subset:
 	while (attr != NULL) {
 	    /*
 	     * Make sure that attributes redefinition occuring in the
-	     * internal subset are not overriden by definitions in the
+	     * internal subset are not overridden by definitions in the
 	     * external subset.
 	     */
 	    if (attr->defaultValue != NULL) {

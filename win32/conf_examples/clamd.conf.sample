@@ -1,0 +1,584 @@
+##
+## Example config file for the Clam AV daemon
+## Please read the clamd.conf(5) manual before editing this file.
+##
+
+
+# Comment or remove the line below.
+Example
+
+# Uncomment this option to enable logging.
+# LogFile must be writable for the user running daemon.
+# A full path is required.
+# Default: disabled
+#LogFile "C:\Program Files\ClamAV\clamd.log"
+
+# By default the log file is locked for writing - the lock protects against
+# running clamd multiple times (if want to run another clamd, please
+# copy the configuration file, change the LogFile variable, and run
+# the daemon with --config-file option).
+# This option disables log file locking.
+# Default: no
+#LogFileUnlock yes
+
+# Maximum size of the log file.
+# Value of 0 disables the limit.
+# You may use 'M' or 'm' for megabytes (1M = 1m = 1048576 bytes)
+# and 'K' or 'k' for kilobytes (1K = 1k = 1024 bytes). To specify the size
+# in bytes just don't use modifiers. If LogFileMaxSize is enabled, log
+# rotation (the LogRotate option) will always be enabled.
+# Default: 1M
+#LogFileMaxSize 2M
+
+# Log time with each message.
+# Default: no
+#LogTime yes
+
+# Also log clean files. Useful in debugging but drastically increases the
+# log size.
+# Default: no
+#LogClean yes
+
+# Enable verbose logging.
+# Default: no
+#LogVerbose yes
+
+# Enable log rotation. Always enabled when LogFileMaxSize is enabled.
+# Default: no
+#LogRotate yes
+
+# Enable Prelude output.
+# Default: no
+#PreludeEnable yes
+#
+# Set the name of the analyzer used by prelude-admin.
+# Default: ClamAV
+#PreludeAnalyzerName ClamAV
+
+# Log additional information about the infected file, such as its
+# size and hash, together with the virus name.
+#ExtendedDetectionInfo yes
+
+# This option allows you to save a process identifier of the listening
+# daemon (main thread).
+# Default: disabled
+#PidFile "C:\Program Files\ClamAV\clamd.pid"
+
+# Optional path to the global temporary directory.
+# Default: system specific (usually /tmp or /var/tmp).
+#TemporaryDirectory "C:\temp"
+
+# Path to the database directory.
+# Default: hardcoded (depends on installation options)
+#DatabaseDirectory "C:\Program Files\ClamAV\database"
+
+# Only load the official signatures published by the ClamAV project.
+# Default: no
+#OfficialDatabaseOnly no
+
+# The daemon on Windows only supports unsecured TCP sockets. 
+# Due to security reasons make sure that your IP & port is not 
+# exposed to the open internet.
+
+# TCP port address.
+# Default: no
+TCPSocket 3310
+
+# TCP address.
+# By default we bind to INADDR_ANY, probably not wise.
+# Enable the following to provide some degree of protection
+# from the outside world. This option can be specified multiple
+# times if you want to listen on multiple IPs. IPv6 is now supported.
+# Default: no
+TCPAddr 127.0.0.1
+
+# Maximum length the queue of pending connections may grow to.
+# Default: 200
+#MaxConnectionQueueLength 30
+
+# Clamd uses FTP-like protocol to receive data from remote clients.
+# If you are using clamav-milter to balance load between remote clamd daemons
+# on firewall servers you may need to tune the options below.
+
+# Close the connection when the data size limit is exceeded.
+# The value should match your MTA's limit for a maximum attachment size.
+# Default: 25M
+#StreamMaxLength 10M
+
+# Limit port range.
+# Default: 1024
+#StreamMinPort 30000
+# Default: 2048
+#StreamMaxPort 32000
+
+# Maximum number of threads running at the same time.
+# Default: 10
+#MaxThreads 20
+
+# Waiting for data from a client socket will timeout after this time (seconds).
+# Default: 120
+#ReadTimeout 300
+
+# This option specifies the time (in seconds) after which clamd should
+# timeout if a client doesn't provide any initial command after connecting.
+# Default: 5
+#CommandReadTimeout 5
+
+# This option specifies how long to wait (in milliseconds) if the send buffer is full.
+# Keep this value low to prevent clamd hanging
+#
+# Default: 500
+#SendBufTimeout 200
+
+# Maximum number of queued items (including those being processed by MaxThreads threads)
+# It is recommended to have this value at least twice MaxThreads if possible.
+# WARNING: you shouldn't increase this too much to avoid running out  of file descriptors,
+# the following condition should hold:
+# MaxThreads*MaxRecursion + (MaxQueue - MaxThreads) + 6< RLIMIT_NOFILE (usual max is 1024)
+#
+# Default: 100
+#MaxQueue 200
+
+# Waiting for a new job will timeout after this time (seconds).
+# Default: 30
+#IdleTimeout 60
+
+# Don't scan files and directories matching regex
+# This directive can be used multiple times
+# Default: scan all
+#ExcludePath "C:\temp"
+#ExcludePath "C:\Windows"
+
+# Maximum depth directories are scanned at.
+# Default: 15
+#MaxDirectoryRecursion 20
+
+# Follow directory symlinks.
+# Default: no
+#FollowDirectorySymlinks yes
+
+# Follow regular file symlinks.
+# Default: no
+#FollowFileSymlinks yes
+
+# Scan files and directories on other filesystems.
+# Default: yes
+#CrossFilesystems yes
+
+# Perform a database check.
+# Default: 600 (10 min)
+#SelfCheck 600
+
+# Execute a command when virus is found. In the command string %v will
+# be replaced with the virus name.
+# Default: no
+#VirusEvent "C:\example\SendEmail.ps1" email@addresscom "VIRUS ALERT: %v"
+
+# Run as another user (clamd must be started by root for this option to work)
+# Default: don't drop privileges
+#User clamav
+
+# Stop daemon when libclamav reports out of memory condition.
+#ExitOnOOM yes
+
+# Don't fork into background.
+# Default: no
+#Foreground yes
+
+# Enable debug messages in libclamav.
+# Default: no
+#Debug yes
+
+# Do not remove temporary files (for debug purposes).
+# Default: no
+#LeaveTemporaryFiles yes
+
+# Permit use of the ALLMATCHSCAN command. If set to no, clamd will reject
+# any ALLMATCHSCAN command as invalid.
+# Default: yes
+#AllowAllMatchScan no
+
+# Detect Possibly Unwanted Applications.
+# Default: no
+#DetectPUA yes
+
+# Exclude a specific PUA category. This directive can be used multiple times.
+# See https://github.com/vrtadmin/clamav-faq/blob/master/faq/faq-pua.md for 
+# the complete list of PUA categories.
+# Default: Load all categories (if DetectPUA is activated)
+#ExcludePUA NetTool
+#ExcludePUA PWTool
+
+# Only include a specific PUA category. This directive can be used multiple
+# times.
+# Default: Load all categories (if DetectPUA is activated)
+#IncludePUA Spy
+#IncludePUA Scanner
+#IncludePUA RAT
+
+# In some cases (eg. complex malware, exploits in graphic files, and others),
+# ClamAV uses special algorithms to provide accurate detection. This option
+# controls the algorithmic detection.
+# Default: yes
+#AlgorithmicDetection yes
+
+# This option causes memory or nested map scans to dump the content to disk.
+# If you turn on this option, more data is written to disk and is available
+# when the LeaveTemporaryFiles option is enabled.
+#ForceToDisk yes
+
+# This option allows you to disable the caching feature of the engine. By
+# default, the engine will store an MD5 in a cache of any files that are
+# not flagged as virus or that hit limits checks. Disabling the cache will
+# have a negative performance impact on large scans.
+# Default: no
+#DisableCache yes
+
+##
+## Executable files
+##
+
+# PE stands for Portable Executable - it's an executable file format used
+# in all 32 and 64-bit versions of Windows operating systems. This option allows
+# ClamAV to perform a deeper analysis of executable files and it's also
+# required for decompression of popular executable packers such as UPX, FSG,
+# and Petite. If you turn off this option, the original files will still be
+# scanned, but without additional processing.
+# Default: yes
+#ScanPE yes
+
+# Certain PE files contain an authenticode signature. By default, we check
+# the signature chain in the PE file against a database of trusted and
+# revoked certificates if the file being scanned is marked as a virus.
+# If any certificate in the chain validates against any trusted root, but
+# does not match any revoked certificate, the file is marked as whitelisted.
+# If the file does match a revoked certificate, the file is marked as virus.
+# The following setting completely turns off authenticode verification.
+# Default: no
+#DisableCertCheck yes
+
+# Executable and Linking Format is a standard format for UN*X executables.
+# This option allows you to control the scanning of ELF files.
+# If you turn off this option, the original files will still be scanned, but
+# without additional processing.
+# Default: yes
+#ScanELF yes
+
+# With this option clamav will try to detect broken executables (both PE and
+# ELF) and mark them as Broken.Executable.
+# Default: no
+#DetectBrokenExecutables yes
+
+
+##
+## Documents
+##
+
+# This option enables scanning of OLE2 files, such as Microsoft Office
+# documents and .msi files.
+# If you turn off this option, the original files will still be scanned, but
+# without additional processing.
+# Default: yes
+#ScanOLE2 yes
+
+# With this option enabled OLE2 files with VBA macros, which were not
+# detected by signatures will be marked as "Heuristics.OLE2.ContainsMacros".
+# Default: no
+#OLE2BlockMacros no
+
+# This option enables scanning within PDF files.
+# If you turn off this option, the original files will still be scanned, but
+# without decoding and additional processing.
+# Default: yes
+#ScanPDF yes
+
+# This option enables scanning within SWF files.
+# If you turn off this option, the original files will still be scanned, but
+# without decoding and additional processing.
+# Default: yes
+#ScanSWF yes
+
+# This option enables scanning xml-based document files supported by libclamav.
+# If you turn off this option, the original files will still be scanned, but
+# without additional processing.
+# Default: yes
+#ScanXMLDOCS yes
+
+# This option enables scanning of HWP3 files.
+# If you turn off this option, the original files will still be scanned, but
+# without additional processing.
+# Default: yes
+#ScanHWP3 yes
+
+
+##
+## Mail files
+##
+
+# Enable internal e-mail scanner.
+# If you turn off this option, the original files will still be scanned, but
+# without parsing individual messages/attachments.
+# Default: yes
+#ScanMail yes
+
+# Scan RFC1341 messages split over many emails.
+# You will need to periodically clean up $TemporaryDirectory/clamav-partial directory.
+# WARNING: This option may open your system to a DoS attack.
+#	   Never use it on loaded servers.
+# Default: no
+#ScanPartialMessages yes
+
+# With this option enabled ClamAV will try to detect phishing attempts by using
+# signatures.
+# Default: yes
+#PhishingSignatures yes
+
+# Scan URLs found in mails for phishing attempts using heuristics.
+# Default: yes
+#PhishingScanURLs yes
+
+# Always block SSL mismatches in URLs, even if the URL isn't in the database.
+# This can lead to false positives.
+#
+# Default: no
+#PhishingAlwaysBlockSSLMismatch no
+
+# Always block cloaked URLs, even if URL isn't in database.
+# This can lead to false positives.
+#
+# Default: no
+#PhishingAlwaysBlockCloak no
+
+# Detect partition intersections in raw disk images using heuristics.
+# Default: no
+#PartitionIntersection no
+
+# Allow heuristic match to take precedence.
+# When enabled, if a heuristic scan (such as phishingScan) detects
+# a possible virus/phish it will stop scan immediately. Recommended, saves CPU
+# scan-time.
+# When disabled, virus/phish detected by heuristic scans will be reported only at
+# the end of a scan. If an archive contains both a heuristically detected
+# virus/phish, and a real malware, the real malware will be reported
+#
+# Keep this disabled if you intend to handle "*.Heuristics.*" viruses 
+# differently from "real" malware.
+# If a non-heuristically-detected virus (signature-based) is found first, 
+# the scan is interrupted immediately, regardless of this config option.
+#
+# Default: no
+#HeuristicScanPrecedence yes
+
+
+##
+## Data Loss Prevention (DLP)
+##
+
+# Enable the DLP module
+# Default: No
+#StructuredDataDetection yes
+
+# This option sets the lowest number of Credit Card numbers found in a file
+# to generate a detect.
+# Default: 3
+#StructuredMinCreditCardCount 5
+
+# This option sets the lowest number of Social Security Numbers found
+# in a file to generate a detect.
+# Default: 3
+#StructuredMinSSNCount 5
+
+# With this option enabled the DLP module will search for valid
+# SSNs formatted as xxx-yy-zzzz
+# Default: yes
+#StructuredSSNFormatNormal yes
+
+# With this option enabled the DLP module will search for valid
+# SSNs formatted as xxxyyzzzz
+# Default: no
+#StructuredSSNFormatStripped yes
+
+
+##
+## HTML
+##
+
+# Perform HTML normalisation and decryption of MS Script Encoder code.
+# Default: yes
+# If you turn off this option, the original files will still be scanned, but
+# without additional processing.
+#ScanHTML yes
+
+
+##
+## Archives
+##
+
+# ClamAV can scan within archives and compressed files.
+# If you turn off this option, the original files will still be scanned, but
+# without unpacking and additional processing.
+# Default: yes
+#ScanArchive yes
+
+# Mark encrypted archives as viruses (Encrypted.Zip, Encrypted.RAR).
+# Default: no
+#ArchiveBlockEncrypted no
+
+
+##
+## Limits
+##
+
+# The options below protect your system against Denial of Service attacks
+# using archive bombs.
+
+# This option sets the maximum amount of data to be scanned for each input file.
+# Archives and other containers are recursively extracted and scanned up to this
+# value.
+# Value of 0 disables the limit
+# Note: disabling this limit or setting it too high may result in severe damage
+# to the system.
+# Default: 100M
+#MaxScanSize 150M
+
+# Files larger than this limit won't be scanned. Affects the input file itself
+# as well as files contained inside it (when the input file is an archive, a
+# document or some other kind of container).
+# Value of 0 disables the limit.
+# Note: disabling this limit or setting it too high may result in severe damage
+# to the system.
+# Default: 25M
+#MaxFileSize 30M
+
+# Nested archives are scanned recursively, e.g. if a Zip archive contains a RAR
+# file, all files within it will also be scanned. This options specifies how
+# deeply the process should be continued.
+# Note: setting this limit too high may result in severe damage to the system.
+# Default: 16
+#MaxRecursion 10
+
+# Number of files to be scanned within an archive, a document, or any other
+# container file.
+# Value of 0 disables the limit.
+# Note: disabling this limit or setting it too high may result in severe damage
+# to the system.
+# Default: 10000
+#MaxFiles 15000
+
+# Maximum size of a file to check for embedded PE. Files larger than this value
+# will skip the additional analysis step.
+# Note: disabling this limit or setting it too high may result in severe damage
+# to the system.
+# Default: 10M
+#MaxEmbeddedPE 10M
+
+# Maximum size of a HTML file to normalize. HTML files larger than this value
+# will not be normalized or scanned.
+# Note: disabling this limit or setting it too high may result in severe damage
+# to the system.
+# Default: 10M
+#MaxHTMLNormalize 10M
+
+# Maximum size of a normalized HTML file to scan. HTML files larger than this
+# value after normalization will not be scanned.
+# Note: disabling this limit or setting it too high may result in severe damage
+# to the system.
+# Default: 2M
+#MaxHTMLNoTags 2M
+
+# Maximum size of a script file to normalize. Script content larger than this
+# value will not be normalized or scanned.
+# Note: disabling this limit or setting it too high may result in severe damage
+# to the system.
+# Default: 5M
+#MaxScriptNormalize 5M
+
+# Maximum size of a ZIP file to reanalyze type recognition. ZIP files larger
+# than this value will skip the step to potentially reanalyze as PE.
+# Note: disabling this limit or setting it too high may result in severe damage
+# to the system.
+# Default: 1M
+#MaxZipTypeRcg 1M
+
+# This option sets the maximum number of partitions of a raw disk image to be scanned.
+# Raw disk images with more partitions than this value will have up to the value number
+# partitions scanned. Negative values are not allowed.
+# Note: setting this limit too high may result in severe damage or impact performance.
+# Default: 50
+#MaxPartitions 128
+
+# This option sets the maximum number of icons within a PE to be scanned.
+# PE files with more icons than this value will have up to the value number icons scanned.
+# Negative values are not allowed.
+# WARNING: setting this limit too high may result in severe damage or impact performance.
+# Default: 100
+#MaxIconsPE 200
+
+# This option sets the maximum recursive calls for HWP3 parsing during scanning.
+# HWP3 files using more than this limit will be terminated and alert the user.
+# Scans will be unable to scan any HWP3 attachments if the recursive limit is reached.
+# Negative values are not allowed.
+# WARNING: setting this limit too high may result in severe damage or impact performance.
+# Default: 16
+#MaxRecHWP3 16
+
+# This option sets the maximum calls to the PCRE match function during an instance of regex matching.
+# Instances using more than this limit will be terminated and alert the user but the scan will continue.
+# For more information on match_limit, see the PCRE documentation.
+# Negative values are not allowed.
+# WARNING: setting this limit too high may severely impact performance.
+# Default: 100000
+#PCREMatchLimit 20000
+
+# This option sets the maximum recursive calls to the PCRE match function during an instance of regex matching.
+# Instances using more than this limit will be terminated and alert the user but the scan will continue.
+# For more information on match_limit_recursion, see the PCRE documentation.
+# Negative values are not allowed and values > PCREMatchLimit are superfluous.
+# WARNING: setting this limit too high may severely impact performance.
+# Default: 5000
+#PCRERecMatchLimit 10000
+
+# This option sets the maximum filesize for which PCRE subsigs will be executed.
+# Files exceeding this limit will not have PCRE subsigs executed unless a subsig is encompassed to a smaller buffer.
+# Negative values are not allowed.
+# Setting this value to zero disables the limit.
+# WARNING: setting this limit too high or disabling it may severely impact performance.
+# Default: 25M
+#PCREMaxFileSize 100M
+
+# When BlockMax is set, files exceeding the MaxFileSize, MaxScanSize, or MaxRecursion limit will be flagged
+# with the virus "Heuristic.Limits.Exceeded".
+# Default: no
+#BlockMax yes
+
+##
+## Bytecode
+##
+
+# With this option enabled ClamAV will load bytecode from the database. 
+# It is highly recommended you keep this option on, otherwise you'll miss detections for many new viruses.
+# Default: yes
+#Bytecode yes
+
+# Set bytecode security level.
+# Possible values:
+#       None - no security at all, meant for debugging. DO NOT USE THIS ON PRODUCTION SYSTEMS
+#         This value is only available if clamav was built with --enable-debug!
+#       TrustSigned - trust bytecode loaded from signed .c[lv]d files,
+#                insert runtime safety checks for bytecode loaded from other sources
+#       Paranoid - don't trust any bytecode, insert runtime checks for all
+# Recommended: TrustSigned, because bytecode in .cvd files already has these checks
+# Note that by default only signed bytecode is loaded, currently you can only
+# load unsigned bytecode in --enable-debug mode.
+#
+# Default: TrustSigned
+#BytecodeSecurity TrustSigned
+
+# Set bytecode timeout in milliseconds.
+# 
+# Default: 5000
+# BytecodeTimeout 1000
+
+##
+## Statistics gathering and submitting
+##

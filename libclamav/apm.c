@@ -248,6 +248,7 @@ static int apm_prtn_intxn(cli_ctx *ctx, struct apm_partition_info *aptable, size
     int ret = CL_CLEAN, tmp = CL_CLEAN;
     off_t pos;
     uint32_t max_prtns = 0;
+    int virus_found = 0;
 
     prtn_intxn_list_init(&prtncheck);
 
@@ -286,35 +287,30 @@ static int apm_prtn_intxn(cli_ctx *ctx, struct apm_partition_info *aptable, size
 
         tmp = prtn_intxn_list_check(&prtncheck, &pitxn, apentry.pBlockStart, apentry.pBlockCount);
         if (tmp != CL_CLEAN) {
-            if ((ctx->options & CL_SCAN_ALLMATCHES) && (tmp == CL_VIRUS)) {
+            if (tmp == CL_VIRUS) {
                 apm_parsemsg("Name: %s\n", (char*)aptable.name);
                 apm_parsemsg("Type: %s\n", (char*)aptable.type);
 
                 cli_dbgmsg("cli_scanapm: detected intersection with partitions "
                            "[%u, %u]\n", pitxn, i);
-                cli_append_virus(ctx, PRTN_INTXN_DETECTION);
+                ret = cli_append_virus(ctx, PRTN_INTXN_DETECTION);
+                if (ret == CL_VIRUS)
+                    virus_found = 1;
+                if (SCAN_ALL || ret == CL_CLEAN)
+                    tmp = 0;
+                else
+                    goto leave;
+            } else {
                 ret = tmp;
-                tmp = 0;
-            }
-            else if (tmp == CL_VIRUS) {
-                apm_parsemsg("Name: %s\n", (char*)aptable.name);
-                apm_parsemsg("Type: %s\n", (char*)aptable.type);
-
-                cli_dbgmsg("cli_scanapm: detected intersection with partitions "
-                           "[%u, %u]\n", pitxn, i);
-                cli_append_virus(ctx, PRTN_INTXN_DETECTION);
-                prtn_intxn_list_free(&prtncheck);
-                return CL_VIRUS;
-            }
-            else {
-                prtn_intxn_list_free(&prtncheck);
-                return tmp;
+                goto leave;
             }
         }
-
         pos += sectorsize;
     }
 
+ leave:
     prtn_intxn_list_free(&prtncheck);
+    if (virus_found)
+        return CL_VIRUS;
     return ret;
 }

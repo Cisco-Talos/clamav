@@ -1,8 +1,13 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2008 Sourcefire, Inc.
  *
  *  Authors: Nigel Horne
+ * 
+ *  Summary: Extract files compressed with TAR compression format.
+ * 
+ *  Acknowledgements: ClamAV untar code is based on a public domain minitar utility
+ *                    by Charles G. Waldman.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -43,7 +48,9 @@
 #include "scanners.h"
 #include "matcher.h"
 
-#define BLOCKSIZE 512
+#define TARHEADERSIZE 512
+/* BLOCKSIZE must be >= TARHEADERSIZE */
+#define BLOCKSIZE TARHEADERSIZE
 #define TARSIZEOFFSET 124
 #define TARSIZELEN 12
 #define TARCHECKSUMOFFSET 148
@@ -182,6 +189,10 @@ cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx)
 			if((ret=cli_checklimits("cli_untar", ctx, 0, 0, 0))!=CL_CLEAN)
 				return ret;
 
+			if (nread < TARHEADERSIZE) {
+				return CL_CLEAN;
+			}
+
 			checksum = getchecksum(block);
 			cli_dbgmsg("cli_untar: Candidate checksum = %d, [%o in octal]\n", checksum, checksum);
 			if(testchecksum(block, checksum) != 0) {
@@ -197,7 +208,6 @@ cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx)
 				cli_dbgmsg("cli_untar: Checksum %d is valid.\n", checksum);
 			}
 
-			/* Notice assumption that BLOCKSIZE > 262 */
 			if(posix) {
 				strncpy(magic, block+257, 5);
 				magic[5] = '\0';

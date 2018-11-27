@@ -68,12 +68,12 @@
 
 #include <limits.h>
 #include "libclamav/clamav.h"
+#include "libclamav/scanners.h"
 #include "shared/optparser.h"
 #include "shared/output.h"
 #include "shared/misc.h"
 #include "libclamav/others.h"
 
-#include "session.h"
 #include "others.h"
 
 static pthread_mutex_t virusaction_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -800,28 +800,3 @@ fds_free (struct fd_data *data)
     data->nfds = 0;
     fds_unlock (data);
 }
-
-#ifdef FANOTIFY
-int
-onas_fan_checkowner (int pid, const struct optstruct *opts)
-{
-    char path[32];
-    STATBUF sb;
-    const struct optstruct *opt;
-
-    if (!(opt = optget (opts, "OnAccessExcludeUID"))->enabled)
-        return 0;
-
-    snprintf (path, sizeof (path), "/proc/%u", pid);
-    if (CLAMSTAT (path, &sb) == 0)
-    {
-        while (opt)
-        {
-            if (opt->numarg == (long long) sb.st_uid)
-                return 1;
-            opt = opt->nextarg;
-        }
-    }
-    return 0;
-}
-#endif

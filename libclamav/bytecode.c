@@ -1,7 +1,7 @@
 /*
  *  Load, and verify ClamAV bytecode.
  *
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2017 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2009-2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
@@ -479,7 +479,7 @@ static inline operand_t readOperand(struct cli_bc_func *func, unsigned char *p,
 	dest = &func->constants[func->numConstants];
 	/* Write the constant to the correct place according to its type.
 	 * This is needed on big-endian machines, because constants are always
-	 * read as u64, but accesed as one of these types: u8, u16, u32, u64 */
+	 * read as u64, but accessed as one of these types: u8, u16, u32, u64 */
 	*dest= 0;
 	ty = 8*readFixedNumber(p, off, len, ok, 1);
 	if (!ty) {
@@ -553,7 +553,7 @@ static inline char *readData(const unsigned char *p, unsigned *off, unsigned len
 
 static inline char *readString(const unsigned char *p, unsigned *off, unsigned len, char *ok)
 {
-    unsigned stringlen;
+    unsigned stringlen = 0;
     char *str = readData(p, off, len, ok, &stringlen);
     if (*ok && stringlen && str[stringlen-1] != '\0') {
 	str[stringlen-1] = '\0';
@@ -820,7 +820,7 @@ static int parseTypes(struct cli_bc *bc, unsigned char *buffer)
 }
 
 /* checks whether the type described by tid is the same as the one described by
- * expectty. */
+ * apitid. */
 static int types_equal(const struct cli_bc *bc, uint16_t *apity2ty, uint16_t tid, uint16_t apitid)
 {
     unsigned i;
@@ -1393,11 +1393,11 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 	offset++;
     }
     if (buffer[offset] == 'D') {
-	unsigned num;
+		uint32_t num;
 	offset += 3;
 	if (offset >= len)
 	    return CL_EMALFDB;
-	num = readNumber(buffer, &offset, len, &ok);
+	num = (uint32_t)readNumber(buffer, &offset, len, &ok);
 	if (!ok)
 	    return CL_EMALFDB;
 	if (num != bcfunc->numInsts) {
@@ -1406,10 +1406,10 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 	}
 	bcfunc->dbgnodes = cli_malloc(num*sizeof(*bcfunc->dbgnodes));
 	if (!bcfunc->dbgnodes) {
-        cli_errmsg("Unable to allocate memory for dbg nodes: %u\n", num*sizeof(*bcfunc->dbgnodes));
+        cli_errmsg("Unable to allocate memory for dbg nodes: %u\n", num * (uint32_t)sizeof(*bcfunc->dbgnodes));
 	    return CL_EMEM;
     }
-	for (i=0;i<num;i++) {
+	for (i=0; (uint32_t)i < num; i++) {
 	    bcfunc->dbgnodes[i] = readNumber(buffer, &offset, len, &ok);
 	    if (!ok)
 		return CL_EMALFDB;
@@ -1497,7 +1497,7 @@ void cli_sigperf_print()
     cli_infomsg (NULL, "%-*s %*s %*s %*s %*s\n", max_name_len, "=============",
 	    8, "=====", 8, "========", 12, "===========", 9, "=========");
     while (elem->run_count) {
-	cli_infomsg (NULL, "%-*s %*lu %*lu %*llu %*.2f\n", max_name_len, elem->bc_name,
+	cli_infomsg (NULL, "%-*s %*lu %*lu %*" PRIu64 " %*.2f\n", max_name_len, elem->bc_name,
 		     8, elem->run_count, 8, elem->match_count, 
 		12, elem->usecs, 9, (double)elem->usecs/elem->run_count);
 	elem++;
@@ -1749,7 +1749,7 @@ static struct {
 
 static int register_events(cli_events_t *ev)
 {
-    unsigned i;
+    size_t i;
     for (i=0;i<sizeof(bc_events)/sizeof(bc_events[0]);i++) {
 	if (cli_event_define(ev, bc_events[i].id, bc_events[i].name, bc_events[i].type,
 			     bc_events[i].multiple) == -1)
@@ -1821,7 +1821,7 @@ int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, stru
 	inst.u.ops.funcid = ctx->funcid;
 	inst.u.ops.ops = ctx->operands;
 	inst.u.ops.opsizes = ctx->opsizes;
-	cli_dbgmsg("Bytecode %u: executing in interpeter mode\n", bc->id);
+	cli_dbgmsg("Bytecode %u: executing in interpreter mode\n", bc->id);
 
 	ctx->on_jit = 0;
 
@@ -1834,7 +1834,7 @@ int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, stru
 
 	/* need to be called here to catch any extracted but not yet scanned files
 	*/
-	if (ctx->outfd)
+	if (ctx->outfd && (ret != CL_VIRUS || cctx->options & CL_SCAN_ALLMATCHES))
 	    cli_bcapi_extract_new(ctx, -1);
     }
     if (bc->state == bc_jit || test_mode) {
@@ -1854,7 +1854,7 @@ int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, stru
 
 	/* need to be called here to catch any extracted but not yet scanned files
 	*/
-	if (ctx->outfd)
+	if (ctx->outfd && (ret != CL_VIRUS || cctx->options & CL_SCAN_ALLMATCHES))
 	    cli_bcapi_extract_new(ctx, -1);
     }
     cli_event_time_stop(g_sigevents, bc->sigtime_id);
@@ -2071,7 +2071,7 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
     bc->numGlobalBytes = 0;
     gmap = cli_malloc(bc->num_globals*sizeof(*gmap));
     if (!gmap) {
-        cli_errmsg("interpreter: Unable to allocate memory for global map: %u\n", bc->num_globals*sizeof(*gmap));
+        cli_errmsg("interpreter: Unable to allocate memory for global map: %zu\n", bc->num_globals*sizeof(*gmap));
         return CL_EMEM;
     }
     for (j=0;j<bc->num_globals;j++) {
@@ -2151,9 +2151,9 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
     for (i=0;i<bc->num_func && ret == CL_SUCCESS;i++) {
 	struct cli_bc_func *bcfunc = &bc->funcs[i];
 	unsigned totValues = bcfunc->numValues + bcfunc->numConstants + bc->num_globals;
-	unsigned *map = cli_malloc(sizeof(*map)*totValues);
+	unsigned *map = cli_malloc(sizeof(*map) * (size_t)totValues);
 	if (!map) {
-        cli_errmsg("interpreter: Unable to allocate memory for map: %u\n", sizeof(*map)*totValues);
+        cli_errmsg("interpreter: Unable to allocate memory for map: %zu\n", sizeof(*map) * (size_t)totValues);
         free(gmap);
 	    return CL_EMEM;
     }
@@ -2649,7 +2649,7 @@ int cli_bytecode_prepare2(struct cl_engine *engine, struct cli_all_bc *bcs, unsi
     }
     rc = run_builtin_or_loaded(bcs, BC_STARTUP, builtin_bc_startup, ctx, "BC_STARTUP");
     if (rc != CL_SUCCESS) {
-	cli_warnmsg("Bytecode: BC_STARTUP failed to run, disabling ALL bytecodes! Please report to http://bugs.clamav.net\n");
+	cli_warnmsg("Bytecode: BC_STARTUP failed to run, disabling ALL bytecodes! Please report to https://bugzilla.clamav.net\n");
 	ctx->bytecode_disable_status = 2;
     } else {
 	cli_dbgmsg("Bytecode: disable status is %d\n", ctx->bytecode_disable_status);
@@ -2657,7 +2657,7 @@ int cli_bytecode_prepare2(struct cl_engine *engine, struct cli_all_bc *bcs, unsi
 	/* check magic number, don't use 0 here because it is too easy for a
 	 * buggy bytecode to return 0 */
 	if ((unsigned int)rc != (unsigned int)0xda7aba5e) {
-	    cli_warnmsg("Bytecode: selftest failed with code %08x. Please report to http://bugs.clamav.net\n",
+	    cli_warnmsg("Bytecode: selftest failed with code %08x. Please report to https://bugzilla.clamav.net\n",
 			rc);
 	    if (engine->bytecode_mode == CL_BYTECODE_MODE_TEST)
 		return CL_EBYTECODE_TESTFAIL;
@@ -2771,6 +2771,9 @@ int cli_bytecode_runlsig(cli_ctx *cctx, struct cli_target_info *tinfo,
     const struct cli_bc *bc = &bcs->all_bcs[bc_idx-1];
     struct cli_pe_hook_data pehookdata;
 
+    if (bc_idx == 0) 
+        return CL_ENULLARG;
+
     memset(&ctx, 0, sizeof(ctx));
     cli_bytecode_context_setfuncid(&ctx, bc, 0);
     ctx.hooks.match_counts = lsigcnt;
@@ -2803,20 +2806,24 @@ int cli_bytecode_runlsig(cli_ctx *cctx, struct cli_target_info *tinfo,
     cli_dbgmsg("Running bytecode for logical signature match\n");
     ret = cli_bytecode_run(bcs, bc, &ctx);
     if (ret != CL_SUCCESS) {
-	cli_warnmsg("Bytcode %u failed to run: %s\n", bc->id, cl_strerror(ret));
+	cli_warnmsg("Bytecode %u failed to run: %s\n", bc->id, cl_strerror(ret));
 	cli_bytecode_context_clear(&ctx);
 	return CL_SUCCESS;
     }
     if (ctx.virname) {
-	int rc;
-	cli_dbgmsg("Bytecode found virus: %s\n", ctx.virname);
-	cli_append_virus(cctx, ctx.virname);
-	if (!strncmp(ctx.virname, "BC.Heuristics", 13))
-	    rc = cli_found_possibly_unwanted(cctx);
-	else
-	    rc = CL_VIRUS;
-	cli_bytecode_context_clear(&ctx);
-	return rc;
+        if (cctx->num_viruses == 0) {
+            int rc;
+            cli_dbgmsg("Bytecode found virus: %s\n", ctx.virname);
+            if (!strncmp(ctx.virname, "BC.Heuristics", 13))
+                rc = cli_append_possibly_unwanted(cctx, ctx.virname);
+            else
+                rc = cli_append_virus(cctx, ctx.virname);
+            cli_bytecode_context_clear(&ctx);
+            return rc;
+        }
+        else {
+            return CL_VIRUS;
+        }
     }
     ret = cli_bytecode_context_getresult_int(&ctx);
     cli_dbgmsg("Bytecode %u returned code: %u\n", bc->id, ret);
@@ -3132,7 +3139,7 @@ static void cli_bytetype_helper(const struct cli_bc *bc, unsigned tid)
 
     i = tid - 65;
     if (i >= bc->num_types) {
-        printf("invaltype");
+        printf("invalid type");
         return;
     }
     ty = &bc->types[i];
@@ -3192,16 +3199,16 @@ void cli_bytetype_describe(const struct cli_bc *bc)
 
 void cli_bytevalue_describe(const struct cli_bc *bc, unsigned funcid)
 {
-    unsigned i, j, total = 0;
+    unsigned i, total = 0;
     const struct cli_bc_func *func;
 
     if (funcid >= bc->num_func) {
-        printf("bytecode diagnostic: funcid [%u] outside byecode numfuncs [%u]\n",
+        printf("bytecode diagnostic: funcid [%u] outside bytecode numfuncs [%u]\n",
                funcid, bc->num_func);
         return;
     }
     // globals
-    printf("found a total of %d globals\n", bc->num_globals);
+    printf("found a total of %zu globals\n", bc->num_globals);
     printf("GID  ID    VALUE\n");
     printf("------------------------------------------------------------------------\n");
     for (i = 0; i < bc->num_globals; ++i) {
@@ -3231,7 +3238,7 @@ void cli_bytevalue_describe(const struct cli_bc *bc, unsigned funcid)
     printf("CID  ID    VALUE\n");
     printf("------------------------------------------------------------------------\n");
     for (i = 0; i < func->numConstants; ++i) {
-        printf("%3u [%3u]: %llu(0x%llx)\n", i, total++, func->constants[i], func->constants[i]);
+        printf("%3u [%3u]: " STDu64 "(0x" STDx64 ")\n", i, total++, func->constants[i], func->constants[i]);
     }
     printf("------------------------------------------------------------------------\n");
     printf("found a total of %u total values\n", total);
@@ -3298,13 +3305,13 @@ void cli_byteinst_describe(const struct cli_bc_inst *inst, unsigned *bbnum)
 
         // casting operations
     case OP_BC_TRUNC:
-        printf("%d = %d trunc %llx", inst->dest, inst->u.cast.source, inst->u.cast.mask);
+        printf("%d = %d trunc " STDx64, inst->dest, inst->u.cast.source, inst->u.cast.mask);
         break;
     case OP_BC_SEXT:
-        printf("%d = %d sext %llx", inst->dest, inst->u.cast.source, inst->u.cast.mask);
+        printf("%d = %d sext " STDx64, inst->dest, inst->u.cast.source, inst->u.cast.mask);
         break;
     case OP_BC_ZEXT:
-        printf("%d = %d zext %llx", inst->dest, inst->u.cast.source, inst->u.cast.mask);
+        printf("%d = %d zext " STDx64, inst->dest, inst->u.cast.source, inst->u.cast.mask);
         break;
         
         // control operations (termination instructions)
@@ -3456,7 +3463,7 @@ void cli_byteinst_describe(const struct cli_bc_inst *inst, unsigned *bbnum)
         printf("load  %d <- p.%d", inst->dest, inst->u.unaryop);
         break;
 
-        // llvm instrinsics
+        // llvm intrinsics
     case OP_BC_MEMSET:
         printf("%d = memset (p.%d, %d, %d)", inst->dest, inst->u.three[0],
                inst->u.three[1], inst->u.three[2]);
@@ -3514,7 +3521,7 @@ void cli_bytefunc_describe(const struct cli_bc *bc, unsigned funcid)
     const struct cli_bc_func *func;
 
     if (funcid >= bc->num_func) {
-        printf("bytecode diagnostic: funcid [%u] outside byecode numfuncs [%u]\n",
+        printf("bytecode diagnostic: funcid [%u] outside bytecode numfuncs [%u]\n",
                funcid, bc->num_func);
         return;
     }

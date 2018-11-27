@@ -223,7 +223,7 @@ sure both macros are undefined; an emulation function will then be used. */
    steam using pcre_recurse_malloc() to obtain memory from the heap. For more
    detail, see the comments and other stuff just above the match() function.
    */
-/* #undef NO_RECURSE */
+#define NO_RECURSE
 
 /* Name of package */
 #define PACKAGE "pcre"

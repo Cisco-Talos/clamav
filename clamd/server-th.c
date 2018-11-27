@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2017 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2009 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm, Trog, Török Edvin
@@ -50,6 +50,8 @@
 #include "shared/output.h"
 #include "shared/optparser.h"
 #include "shared/misc.h"
+
+#include "shared/idmef_logging.h"
 
 #include "onaccess_fan.h"
 #include "server.h"
@@ -435,7 +437,7 @@ static void *acceptloop_th(void *arg)
 	    } else if (errno != EINTR) {
 		/* very bad - need to exit or restart */
 #ifdef HAVE_STRERROR_R
-		strerror_r(errno, buff, BUFFSIZE);
+		(void)strerror_r(errno, buff, BUFFSIZE);
 		logg("!accept() failed: %s\n", buff);
 #else
 		logg("!accept() failed\n");
@@ -931,6 +933,13 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	logg("Archive support disabled.\n");
     }
 
+    if (optget(opts, "BlockMax")->enabled) {
+        logg("BlockMax heuristic detection enabled.\n");
+        options |= CL_SCAN_BLOCKMAX;
+    } else {
+        logg("BlockMax heuristic detection disabled.\n");
+    }
+
     if(optget(opts, "AlgorithmicDetection")->enabled) {
 	logg("Algorithmic detection enabled.\n");
 	options |= CL_SCAN_ALGORITHMIC;
@@ -1033,7 +1042,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 
     if(optget(opts,"PartitionIntersection")->enabled) {
         options |= CL_SCAN_PARTITION_INTXN;
-        logg("Raw DMG: Always checking for partitons intersections\n");
+        logg("Raw DMG: Always checking for partitions intersections\n");
     }
 
     if(optget(opts,"HeuristicScanPrecedence")->enabled) {
@@ -1115,22 +1124,60 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	int max_max_queue;
 	unsigned warn = optget(opts, "MaxQueue")->active;
 	const unsigned clamdfiles = 6;
+#ifdef C_SOLARIS
+	int solaris_has_extended_stdio = 0;
+#endif
 	/* Condition to not run out of file descriptors:
 	 * MaxThreads * MaxRecursion + (MaxQueue - MaxThreads) + CLAMDFILES < RLIMIT_NOFILE 
 	 * CLAMDFILES is 6: 3 standard FD + logfile + 2 FD for reloading the DB
 	 * */
 #ifdef C_SOLARIS
+
+	/*
+	**  If compiling 64bit, then set the solaris_has_extended_stdio
+	**  flag
+	*/
+
+#if defined(_LP64)
+	solaris_has_extended_stdio++;
+#endif
+
 #ifdef HAVE_ENABLE_EXTENDED_FILE_STDIO
 	if (enable_extended_FILE_stdio(-1, -1) == -1) {
 	    logg("^Unable to set extended FILE stdio, clamd will be limited to max 256 open files\n");
 	    rlim.rlim_cur = rlim.rlim_cur > 255 ? 255 : rlim.rlim_cur;
 	}
+	else
+	{
+	   solaris_has_extended_stdio++;
+	}
+
 #elif !defined(_LP64)
-	if (rlim.rlim_cur > 255) {
+	if (solaris_has_extended_stdio && rlim.rlim_cur > 255) {
 	    rlim.rlim_cur = 255;
 	    logg("^Solaris only supports 256 open files for 32-bit processes, you need at least Solaris 10u4, or compile as 64-bit to support more!\n");
 	}
 #endif
+
+	/*
+	**  If compiling in 64bit or the file stdio has been extended,
+	**  then increase the soft limit for the number of open files
+	**  as the default is usually 256
+	*/
+
+	if (solaris_has_extended_stdio)
+	{
+	   rlim_t saved_soft_limit = rlim.rlim_cur;
+
+	   rlim.rlim_cur = rlim.rlim_max;
+	   if (setrlimit (RLIMIT_NOFILE, &rlim) < 0)
+	   {
+	      logg("!setrlimit() for RLIMIT_NOFILE to %lu failed: %s\n",
+		   (unsigned long) rlim.rlim_cur, strerror (errno));
+	      rlim.rlim_cur = saved_soft_limit;
+	   }
+	} /*  If 64bit or has extended stdio  */
+
 #endif
 	opt = optget(opts,"MaxRecursion");
 	maxrec = opt->numarg;

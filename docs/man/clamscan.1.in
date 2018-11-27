@@ -51,6 +51,9 @@ Create temporary files in DIRECTORY. Directory must be writable for the '@CLAMAV
 \fB\-\-leave\-temps\fR
 Do not remove temporary files.
 .TP 
+\fB\-\-gen\-json\fR
+Generate JSON description of scanned file(s). JSON will be printed and also dropped to the temp directory if --leave-temps is enabled.
+.TP 
 \fB\-d FILE/DIR, \-\-database=FILE/DIR\fR
 Load virus database from FILE or load all virus database files from DIR.
 .TP 
@@ -109,10 +112,10 @@ Collect and print execution statistics.
 Detect Possibly Unwanted Applications.
 .TP 
 \fB\-\-exclude\-pua=CATEGORY\fR
-Exclude a specific PUA category. This option can be used multiple times. See http://www.clamav.net/doc/pua.html for the complete list of PUA
+Exclude a specific PUA category. This option can be used multiple times. See https://www.clamav.net/documents/potentially-unwanted-applications-pua for the complete list of PUA
 .TP 
 \fB\-\-include\-pua=CATEGORY\fR
-Only include a specific PUA category. This option can be used multiple times. See http://www.clamav.net/doc/pua.html for the complete list of PUA
+Only include a specific PUA category. This option can be used multiple times. See https://www.clamav.net/documents/potentially-unwanted-applications-pua for the complete list of PUA
 .TP 
 \fB\-\-detect\-structured[=yes/no(*)]\fR
 Use the DLP (Data Loss Prevention) module to detect SSN and Credit Card numbers inside documents/text files.
@@ -149,6 +152,9 @@ Detect partition intersections in raw disk images using heuristics.
 .TP
 \fB\-\-algorithmic\-detection[=yes(*)/no]\fR
 In some cases (eg. complex malware, exploits in graphic files, and others), ClamAV uses special algorithms to provide accurate detection. This option can be used to control the algorithmic detection.
+.TP
+\fB\-\-normalize[=yes(*)/no]\fR
+Normalize (compress whitespace, downcase, etc.) html, script, and text files. Use normalize=no for yara compatibility. 
 .TP 
 \fB\-\-scan\-pe[=yes(*)/no]\fR
 PE stands for Portable Executable \- it's an executable file format used in all 32\-bit versions of Windows operating systems. By default ClamAV performs deeper analysis of executable files and attempts to decompress popular executable packers such as UPX, Petite, and FSG. If you turn off this option, the original files will still be scanned but without additional processing.
@@ -182,6 +188,12 @@ Mark broken executables as viruses (Broken.Executable).
 .TP 
 \fB\-\-block\-encrypted[=yes/no(*)]\fR
 Mark encrypted archives as viruses (Encrypted.Zip, Encrypted.RAR).
+.TP 
+\fB\-\-block\-macros[=yes/no(*)]\fR
+Mark OLE2 files containing VBA macros as viruses (Heuristics.OLE2.ContainsMacros).
+.TP 
+\fB\-\-block\-max[=yes/no(*)]\fR
+Flag files with "Heuristics.Limits.Exceeded" when scanning is incomplete due to exceeding a scan or file size limit.
 .TP 
 \fB\-\-max\-filesize=#n\fR
 Extract and scan at most #n bytes from each archive. You may pass the value in kilobytes in format xK or xk, or megabytes in format xM or xm, where x is a number. This option protects your system against DoS attacks (default: 25 MB, max: <4 GB)
@@ -224,25 +236,13 @@ This option sets the maximum number of icons within a PE to be scanned. This mus
 This option sets the maximum recursive calls to HWP3 parsing function (default: 16).
 .TP
 \fB\-\-pcre-match-limit=#n\fR
-Maximum calls to the PCRE match function (default: 10000).
+Maximum calls to the PCRE match function (default: 100000).
 .TP
 \fB\-\-pcre-recmatch-limit=#n\fR
 Maximum recursive calls to the PCRE match function (default: 5000).
 .TP
 \fB\-\-pcre-max-filesize=#n\fR
 Maximum size file to perform PCRE subsig matching (default: 25 MB, max: <4 GB).
-.TP
-\fB\-\-enable\-stats\fR
-This option enables submission of statistical data. (Default: stats submissions disabled)
-.TP
-\fB\-\-stats\-host\-id\fR
-This option sets the HostID, in the form of an UUID, to use when submitting statistical information.
-.TP
-\fB\-\-disable\-pe\-stats\fR
-This option disables the submission of PE section data. (Default: submitting of PE section data enabled if stats submissions as a whole is enabled).
-.TP
-\fB\-\-stats\-timeout=#n\fR
-This option sets the timeout in seconds to wait for communication back from the stats server. (Default: 10).
 .TP
 \fB\-\-disable\-cache\fR
 Disable caching and cache checks for hash sums of scanned files.
@@ -278,7 +278,7 @@ Disable caching and cache checks for hash sums of scanned files.
 .TP 
 1 : Virus(es) found.
 .TP 
-2 : Some error(s) occured.
+2 : Some error(s) occurred.
 .SH "CREDITS"
 Please check the full documentation for credits.
 .SH "AUTHOR"

@@ -28,7 +28,6 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <fts.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <pthread.h>
@@ -44,6 +43,7 @@
 
 #include "libclamav/clamav.h"
 #include "libclamav/scanners.h"
+#include "libclamav/str.h"
 
 #include "shared/optparser.h"
 #include "shared/output.h"
@@ -51,6 +51,7 @@
 #include "server.h"
 #include "others.h"
 #include "scanner.h"
+#include "priv_fts.h"
 
 static struct onas_bucket *onas_bucket_init();
 static void onas_free_bucket(struct onas_bucket *bckt);
@@ -438,7 +439,7 @@ static int onas_add_hashnode_child(struct onas_hnode *node, const char* dirname)
 	if (!child) return CL_EMEM;
 	
 	size_t n = strlen(dirname);
-	child->dirname = strndup(dirname, n);
+	child->dirname = cli_strndup(dirname, n);
 
 	onas_add_listnode(node->childtail, child);
 
@@ -500,7 +501,7 @@ inline static char *onas_get_parent(const char *pathname, size_t len) {
 		idx++;
 	}
 
-	ret = strndup(pathname, idx);
+	ret = cli_strndup(pathname, idx);
 	if (!ret) {
 		errno = ENOMEM;
 		return NULL;
@@ -580,12 +581,12 @@ int onas_ht_add_hierarchy(struct onas_ht *ht, const char *pathname) {
 	free(prnt);
 
 	char * const pathargv[] = { (char*) pathname, NULL };
-	if (!(ftsp = fts_open(pathargv, ftspopts, NULL))) {
+	if (!(ftsp = _priv_fts_open(pathargv, ftspopts, NULL))) {
 		logg("!ScanOnAccess: Could not open '%s'\n", pathname);
 		return CL_EARG;
 	}
 
-	while((curr = fts_read(ftsp))) {
+	while((curr = _priv_fts_read(ftsp))) {
 
 		struct onas_hnode *hnode = NULL;
 
@@ -596,7 +597,7 @@ int onas_ht_add_hierarchy(struct onas_ht *ht, const char *pathname) {
 				if (!hnode) return CL_EMEM;
 
 				hnode->pathlen = curr->fts_pathlen;
-				hnode->pathname = strndup(curr->fts_path, hnode->pathlen);
+				hnode->pathname = cli_strndup(curr->fts_path, hnode->pathlen);
 
 				hnode->prnt_pathname = onas_get_parent(hnode->pathname, hnode->pathlen);
 				if (hnode->prnt_pathname)
@@ -608,11 +609,9 @@ int onas_ht_add_hierarchy(struct onas_ht *ht, const char *pathname) {
 				continue;
 		}
 
-		if((childlist = fts_children(ftsp, 0))) {
+		if((childlist = _priv_fts_children(ftsp, 0))) {
 			do {
-				if (childlist->fts_info & FTS_D &&
-				    !(childlist->fts_info & FTS_DNR) &&
-				    !(childlist->fts_info & FTS_SL)) {
+				if (childlist->fts_info == FTS_D) {
 					if(CL_EMEM == onas_add_hashnode_child(hnode, childlist->fts_name))
 						return CL_EMEM;
 				}
@@ -626,7 +625,7 @@ int onas_ht_add_hierarchy(struct onas_ht *ht, const char *pathname) {
 		if (onas_ht_insert(ht, elem)) return -1;
 	}
 
-	fts_close(ftsp);
+	_priv_fts_close(ftsp);
 	return CL_SUCCESS;
 }
 

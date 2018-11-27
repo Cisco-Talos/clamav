@@ -30,6 +30,7 @@
 #include <unistd.h>
 #endif
 
+#include <limits.h>
 #include <time.h>
 #include <string.h>
 #include "cltypes.h"
@@ -80,6 +81,7 @@ struct cl_fmap {
     HANDLE fh;
     HANDLE mh;
 #endif
+    unsigned char maphash[16];
     uint32_t placeholder_for_bitmap;
 };
 
@@ -142,7 +144,7 @@ static inline int fmap_readn(fmap_t *m, void *dst, size_t at, size_t len)
     if(!src)
 	return -1;
     memcpy(dst, src, len);
-    return len;
+    return (len <= INT_MAX) ? (int)len : -1;
 }
 
 static inline const void *fmap_need_str(fmap_t *m, const void *ptr, size_t len_hint)
@@ -162,12 +164,13 @@ static inline const void *fmap_gets(fmap_t *m, char *dst, size_t *at, size_t max
 static inline const void *fmap_need_off_once_len(fmap_t *m, size_t at, size_t len, size_t *lenout)
 {
     const void *p;
-    if(at >= m->len) {
-	*lenout = 0;
-	return (void*)0xE0F00000;/* EOF, not read error */
+    if (at >= m->len)
+    {
+        *lenout = 0;
+        return NULL; /* EOF, not read error */
     }
-    if(len > m->len - at)
-	len = m->len - at;
+    if (len > m->len - at)
+        len = m->len - at;
     p = fmap_need_off_once(m, at, len);
     *lenout = p ? len : 0;
     return p;

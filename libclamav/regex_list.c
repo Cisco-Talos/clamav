@@ -68,7 +68,7 @@ static int add_static_pattern(struct regex_matcher *matcher, char* pattern);
 #define MATCH_FAILED  -1
 
 /*
- * Call this function when an unrecoverable error has occured, (instead of exit).
+ * Call this function when an unrecoverable error has occurred, (instead of exit).
  */
 static void fatal_error(struct regex_matcher* matcher)
 {
@@ -77,7 +77,7 @@ static void fatal_error(struct regex_matcher* matcher)
 }
 
 
-static inline size_t get_char_at_pos_with_skip(const struct pre_fixup_info* info, const char* buffer, size_t pos)
+static inline char get_char_at_pos_with_skip(const struct pre_fixup_info* info, const char* buffer, size_t pos)
 {
 	const char* str;
 	size_t realpos = 0;
@@ -252,7 +252,7 @@ int regex_list_match(struct regex_matcher* matcher,char* real_url,const char* di
 
 
 /* Initialization & loading */
-/* Initializes @matcher, allocating necesarry substructures */
+/* Initializes @matcher, allocating necessary substructures */
 int init_regex_list(struct regex_matcher* matcher, uint8_t dconf_prefiltering)
 {
 #ifdef USE_MPOOL
@@ -586,7 +586,7 @@ static int add_newsuffix(struct regex_matcher *matcher, struct regex_list *info,
 	new->mindist = 0;
 	new->maxdist = 0;
 	new->offset_min = CLI_OFF_ANY;
-	new->length[0] = len;
+	new->length[0] = (uint16_t)len;
 
 	new->ch[0] = new->ch[1] |= CLI_MATCH_IGNORE;
 	if(new->length[0] > root->maxpatlen)
@@ -631,6 +631,7 @@ static int add_pattern_suffix(void *cbdata, const char *suffix, size_t suffix_le
 	struct regex_matcher *matcher = cbdata;
 	struct regex_list *regex = cli_malloc(sizeof(*regex));
 	const struct cli_element *el;
+	void *tmp_matcher;  /*	save original address if OOM occurs */
 
 	assert(matcher);
 	if(!regex) {
@@ -651,11 +652,13 @@ static int add_pattern_suffix(void *cbdata, const char *suffix, size_t suffix_le
 		/* new suffix */
 		size_t n = matcher->suffix_cnt++;
 		el = cli_hashtab_insert(&matcher->suffix_hash, suffix, suffix_len, n);
-		matcher->suffix_regexes = cli_realloc(matcher->suffix_regexes, (n+1)*sizeof(*matcher->suffix_regexes));
-		if(!matcher->suffix_regexes) {
+		tmp_matcher = matcher->suffix_regexes;	/*  save the current value before cli_realloc()	*/
+		tmp_matcher = cli_realloc(matcher->suffix_regexes, (n+1)*sizeof(*matcher->suffix_regexes));
+		if(!tmp_matcher) {
 			free (regex);
 			return CL_EMEM;
 		}
+		matcher->suffix_regexes = tmp_matcher;	/*  success, point at new memory location   */
 		matcher->suffix_regexes[n].tail = regex;
 		matcher->suffix_regexes[n].head = regex;
 		if (suffix[0] == '/' && suffix[1] == '\0')

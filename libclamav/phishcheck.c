@@ -63,8 +63,8 @@
 
 
 /*
-* Phishing design documentation,
-(initially written at http://wiki.clamav.net/index.php/phishing_design as discussed with aCaB)
+ * Phishing design documentation
+ * -----------------------------
 
 TODO: update this doc whenever behaviour changes
 
@@ -265,7 +265,7 @@ static int string_assign_concatenated(struct string* dest, const char* prefix, c
 	const size_t prefix_len = strlen(prefix);
 	char* ret = cli_malloc(prefix_len + end - begin + 1);
 	if(!ret) {
-        cli_errmsg("Phishcheck: Unable to allocate memory for string_assign_concatonated\n");
+        cli_errmsg("Phishcheck: Unable to allocate memory for string_assign_concatenated\n");
 		return CL_EMEM;
     }
 	strncpy(ret, prefix, prefix_len);
@@ -814,32 +814,31 @@ int phishingScan(cli_ctx* ctx,tag_arguments_t* hrefs)
 				case CL_PHISH_CLEAN:
 					continue;
 				case CL_PHISH_NUMERIC_IP:
-				    cli_append_virus(ctx, "Heuristics.Phishing.Email.Cloaked.NumericIP");
+				    cli_append_possibly_unwanted(ctx, "Heuristics.Phishing.Email.Cloaked.NumericIP");
 					break;
 				case CL_PHISH_CLOAKED_NULL:
-				    cli_append_virus(ctx, "Heuristics.Phishing.Email.Cloaked.Null");/*fakesite%01%00@fake.example.com*/
+				    cli_append_possibly_unwanted(ctx, "Heuristics.Phishing.Email.Cloaked.Null");/*fakesite%01%00@fake.example.com*/
 					break;
 				case CL_PHISH_SSL_SPOOF:
-				    cli_append_virus(ctx, "Heuristics.Phishing.Email.SSL-Spoof");
+				    cli_append_possibly_unwanted(ctx, "Heuristics.Phishing.Email.SSL-Spoof");
 					break;
 				case CL_PHISH_CLOAKED_UIU:
-				    cli_append_virus(ctx, "Heuristics.Phishing.Email.Cloaked.Username");/*http://banksite@fake.example.com*/
+				    cli_append_possibly_unwanted(ctx, "Heuristics.Phishing.Email.Cloaked.Username");/*http://banksite@fake.example.com*/
 					break;
 				case CL_PHISH_HASH0:
-				    cli_append_virus(ctx, "Heuristics.Safebrowsing.Suspected-malware_safebrowsing.clamav.net");
+				    cli_append_possibly_unwanted(ctx, "Heuristics.Safebrowsing.Suspected-malware_safebrowsing.clamav.net");
 					break;
 				case CL_PHISH_HASH1:
-				    cli_append_virus(ctx, "Heuristics.Phishing.URL.Blacklisted");
+				    cli_append_possibly_unwanted(ctx, "Heuristics.Phishing.URL.Blacklisted");
 					break;
 				case CL_PHISH_HASH2:
-				    cli_append_virus(ctx, "Heuristics.Safebrowsing.Suspected-phishing_safebrowsing.clamav.net");
+				    cli_append_possibly_unwanted(ctx, "Heuristics.Safebrowsing.Suspected-phishing_safebrowsing.clamav.net");
 					break;
 				case CL_PHISH_NOMATCH:
 				default:
-				    cli_append_virus(ctx, "Heuristics.Phishing.Email.SpoofedDomain");
+				    cli_append_possibly_unwanted(ctx, "Heuristics.Phishing.Email.SpoofedDomain");
 					break;
 			}
-			return cli_found_possibly_unwanted(ctx);
 	}
 	return CL_CLEAN;
 }
@@ -1265,7 +1264,9 @@ int cli_url_canon(const char *inurl, size_t len, char *urlbuff, size_t dest_len,
 	++host_begin;
 
 	/* ignore username in URL */
-	p = strchr(host_begin, '@');
+	while((host_begin < urlend) && *host_begin == '/') ++host_begin;
+	host_len = strcspn(host_begin, ":/?");
+	p = memchr(host_begin, '@', host_len);
 	if (p)
 	    host_begin = p+1;
 	url = host_begin;
@@ -1399,7 +1400,7 @@ static int url_hash_match(const struct regex_matcher *rlist, const char *inurl, 
 		while(k < COMPONENTS+2) {
 			p = strchr(path_begin + pp[k-1] + 1, '/');
 			if(p && p > path_begin) {
-				pp[k++] = p - path_begin;
+				pp[k++] = p - path_begin + 1;
 			} else
 				break;
 		}

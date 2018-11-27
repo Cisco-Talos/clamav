@@ -46,6 +46,9 @@
     <ClCompile Include="..\shared\output.c">
       <Filter>Source Files\shared</Filter>
     </ClCompile>
+    <ClCompile Include="..\shared\idmef_logging.c">
+        <Filter>Source Files\shared</Filter>
+    </ClCompile>
     <ClCompile Include="..\shared\misc.c">
       <Filter>Source Files\shared</Filter>
     </ClCompile>

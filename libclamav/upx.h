@@ -27,6 +27,6 @@
 int upx_inflate2b(const char *, uint32_t, char *, uint32_t *, uint32_t, uint32_t, uint32_t);
 int upx_inflate2d(const char *, uint32_t, char *, uint32_t *, uint32_t, uint32_t, uint32_t);
 int upx_inflate2e(const char *, uint32_t, char *, uint32_t *, uint32_t, uint32_t, uint32_t);
-int upx_inflatelzma(const char *, uint32_t, char *, uint32_t *, uint32_t, uint32_t, uint32_t);
+int upx_inflatelzma(const char *, uint32_t, char *, uint32_t *, uint32_t, uint32_t, uint32_t, uint32_t);
 
 #endif

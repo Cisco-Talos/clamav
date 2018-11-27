@@ -53,6 +53,7 @@
 
 #include "mbox.h"
 #include "clamav.h"
+#include "json_api.h"
 
 #ifndef isblank
 #define isblank(c)	(((c) == ' ') || ((c) == '\t'))
@@ -91,7 +92,7 @@ static	char	*rfc2231(const char *in);
 static	int	simil(const char *str1, const char *str2);
 
 /*
- * These maps are ordered in decreasing likelyhood of their appearance
+ * These maps are ordered in decreasing likelihood of their appearance
  * in an e-mail. Probably these should be in a table...
  */
 static	const	struct	encoding_map {
@@ -198,6 +199,11 @@ messageReset(message *m)
 		assert(m->numberOfEncTypes > 0);
 		free(m->encodingTypes);
 	}
+
+#if HAVE_JSON
+	if(m->jobj)
+		cli_json_delobj(m->jobj);
+#endif
 
 	memset(m, '\0', sizeof(message));
 	m->mimeType = NOMIME;
@@ -439,8 +445,12 @@ messageAddArgument(message *m, const char *arg)
 			 * FIXME: Bounce message handling is corrupting the in
 			 * core copies of headers
 			 */
-			cli_dbgmsg("Possible data corruption fixed\n");
-			p[8] = '=';
+                        if (strlen(p) > 8) {
+                            cli_dbgmsg("Possible data corruption fixed\n");
+                            p[8] = '=';
+                        } else {
+                            cli_dbgmsg("Possible data corruption not fixed\n");
+                        }
 		} else {
 			if(*p)
 				cli_dbgmsg("messageAddArgument, '%s' contains no '='\n", p);
@@ -676,7 +686,8 @@ messageFindArgument(const message *m, const char *variable)
 				cli_dbgmsg("messageFindArgument: no '=' sign found in MIME header '%s' (%s)\n", variable, messageGetArgument(m, i));
 				return NULL;
 			}
-			if((*++ptr == '"') && (strchr(&ptr[1], '"') != NULL)) {
+                        ptr++;
+                        if((strlen(ptr) > 1) && (*ptr == '"') && (strchr(&ptr[1], '"') != NULL)) {
 				/* Remove any quote characters */
 				char *ret = cli_strdup(++ptr);
 				char *p;
@@ -849,7 +860,7 @@ messageSetEncoding(message *m, const char *enctype)
 			 * The stated encoding type is illegal, so we
 			 * use a best guess of what it should be.
 			 *
-			 * 50% is arbitary. For example 7bi will match as
+			 * 50% is arbitrary. For example 7bi will match as
 			 * 66% certain to be 7bit
 			 */
 			if(highestSimil >= 50) {
@@ -957,7 +968,7 @@ messageAddStr(message *m, const char *data)
 			 * blank lines
 			 */
 			if(messageGetMimeType(m) != TEXT)
-				/* don't save two blank lines in sucession */
+				/* don't save two blank lines in succession */
 				return 1;
 
 		m->body_last->t_next = (text *)cli_malloc(sizeof(text));
@@ -1064,8 +1075,10 @@ messageMoveText(message *m, text *t, message *old_message)
 			for(u = old_message->body_first; u != t;) {
 				text *next;
 
-				if(u->t_line)
+				if(u->t_line) {
 					lineUnlink(u->t_line);
+					u->t_line = NULL;
+				}
 				next = u->t_next;
 
 				free(u);
@@ -2011,7 +2024,7 @@ decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(
 			b3 = (*decoder)(*in++);
 			/*
 			 * Put this line here to help on some compilers which
-			 * can make use of some architecure's ability to
+			 * can make use of some architecture's ability to
 			 * multiprocess when different variables can be
 			 * updated at the same time - here b3 is used in
 			 * one line, b1/b2 in the next and b4 in the next after
@@ -2317,15 +2330,16 @@ rfc2231(const char *in)
 						in++;
 						continue;
 					}
-					*p = '\0';
 					break;
 				case '=':
 					/*strcpy(p, in);*/
 					strcpy(p, "=rfc2231failure");
+                                        p += strlen ("=rfc2231failure");
 					break;
 			}
 			break;
 		} while(*in);
+                *p = '\0';
 
 		cli_dbgmsg("RFC2231 parameter continuations are not yet handled, returning \"%s\"\n",
 			ret);
@@ -2630,3 +2644,15 @@ isuuencodebegin(const char *line)
 		isdigit(line[6]) && isdigit(line[7]) &&
 		isdigit(line[8]) && (line[9] == ' ');
 }
+
+#if HAVE_JSON
+json_object *messageGetJObj(message *m)
+{
+	assert(m != NULL);
+
+	if(m->jobj == NULL)
+		m->jobj = cli_jsonobj(NULL, NULL);
+
+	return m->jobj;
+}
+#endif

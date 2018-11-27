@@ -86,8 +86,10 @@ int dconnect() {
         if ((sockd = socket(AF_UNIX, SOCK_STREAM, 0)) >= 0) {
             if (connect(sockd, (struct sockaddr *)&nixsock, sizeof(nixsock)) == 0)
                 return sockd;
-            else
+            else {
+                logg("!Could not connect to clamd on LocalSocket %s: %s\n", opt->strarg, strerror(errno));
                 close(sockd);
+            }
         }
     }
 #endif
@@ -96,38 +98,39 @@ int dconnect() {
 
     opt = optget(clamdopts, "TCPAddr");
     while (opt) {
-        ipaddr = NULL;
-        if (opt->strarg)
-            ipaddr = (!strcmp(opt->strarg, "any") ? NULL : opt->strarg);
+        if (opt->enabled) {
+            ipaddr = NULL;
+            if (opt->strarg)
+                ipaddr = (!strcmp(opt->strarg, "any") ? NULL : opt->strarg);
 
-        memset(&hints, 0x00, sizeof(struct addrinfo));
-        hints.ai_family = AF_UNSPEC;
-        hints.ai_socktype = SOCK_STREAM;
+            memset(&hints, 0x00, sizeof(struct addrinfo));
+            hints.ai_family = AF_UNSPEC;
+            hints.ai_socktype = SOCK_STREAM;
 
-        if ((res = getaddrinfo(ipaddr, port, &hints, &info))) {
-            logg("!Could not lookup %s: %s\n", ipaddr ? ipaddr : "", gai_strerror(res));
-            opt = opt->nextarg;
-            continue;
-        }
-
-        for (p = info; p != NULL; p = p->ai_next) {
-            if((sockd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) < 0) {
-                logg("!Can't create the socket: %s\n", strerror(errno));
+            if ((res = getaddrinfo(ipaddr, port, &hints, &info))) {
+                logg("!Could not lookup %s: %s\n", ipaddr ? ipaddr : "", gai_strerror(res));
+                opt = opt->nextarg;
                 continue;
             }
 
-            if(connect(sockd, p->ai_addr, p->ai_addrlen) < 0) {
-                logg("!Could not connect to clamd on %s: %s\n", opt->strarg, strerror(errno));
-                closesocket(sockd);
-                continue;
+            for (p = info; p != NULL; p = p->ai_next) {
+                if((sockd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) < 0) {
+                    logg("!Can't create the socket: %s\n", strerror(errno));
+                    continue;
+                }
+
+                if(connect(sockd, p->ai_addr, p->ai_addrlen) < 0) {
+                    logg("!Could not connect to clamd on %s: %s\n", opt->strarg, strerror(errno));
+                    closesocket(sockd);
+                    continue;
+                }
+
+                freeaddrinfo(info);
+                return sockd;
             }
 
             freeaddrinfo(info);
-            return sockd;
         }
-
-        freeaddrinfo(info);
-
         opt = opt->nextarg;
     }
 

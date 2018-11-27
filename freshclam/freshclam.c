@@ -70,7 +70,6 @@ int sigchld_wait = 1;
 const char *pidfile = NULL;
 char hostid[37];
 
-void submit_host_info(struct optstruct *opts);
 char *get_hostid(void *cbdata);
 int is_valid_hostid(void);
 
@@ -146,63 +145,41 @@ help (void)
 {
     mprintf_stdout = 1;
 
-    mprintf ("\n");
-    mprintf ("                   Clam AntiVirus: freshclam  %s\n",
-             get_version ());
-    printf ("           By The ClamAV Team: http://www.clamav.net/about.html#credits\n");
-    printf ("           (C) 2007-2015 Cisco Systems, Inc.\n\n");
-
-    mprintf ("    --help               -h              show help\n");
-    mprintf
-        ("    --version            -V              print version number and exit\n");
-    mprintf ("    --verbose            -v              be verbose\n");
-    mprintf
-        ("    --debug                              enable debug messages\n");
-    mprintf
-        ("    --quiet                              only output error messages\n");
-    mprintf
-        ("    --no-warnings                        don't print and log warnings\n");
-    mprintf
-        ("    --stdout                             write to stdout instead of stderr\n");
-    mprintf
-        ("    --show-progress                      show download progress percentage\n");
-    mprintf ("\n");
-    mprintf
-        ("    --config-file=FILE                   read configuration from FILE.\n");
-    mprintf ("    --log=FILE           -l FILE         log into FILE\n");
+    mprintf("\n");
+    mprintf("                      Clam AntiVirus: Database Updater %s\n", get_version());
+    mprintf("           By The ClamAV Team: https://www.clamav.net/about.html#credits\n");
+    mprintf("           (C) 2007-2018 Cisco Systems, Inc.\n");
+    mprintf("\n");
+    mprintf("    freshclam [options]\n");
+    mprintf("\n");
+    mprintf("    --help               -h              Show this help\n");
+    mprintf("    --version            -V              Print version number and exit\n");
+    mprintf("    --verbose            -v              Be verbose\n");
+    mprintf("    --debug                              Enable debug messages\n");
+    mprintf("    --quiet                              Only output error messages\n");
+    mprintf("    --no-warnings                        Don't print and log warnings\n");
+    mprintf("    --stdout                             Write to stdout instead of stderr\n");
+    mprintf("    --show-progress                      Show download progress percentage\n");
+    mprintf("\n");
+    mprintf("    --config-file=FILE                   Read configuration from FILE.\n");
+    mprintf("    --log=FILE           -l FILE         Log into FILE\n");
 #ifndef _WIN32
-    mprintf ("    --daemon             -d              run in daemon mode\n");
-    mprintf
-        ("    --pid=FILE           -p FILE         save daemon's pid in FILE\n");
-    mprintf ("    --user=USER          -u USER         run as USER\n");
+    mprintf("    --daemon             -d              Run in daemon mode\n");
+    mprintf("    --pid=FILE           -p FILE         Save daemon's pid in FILE\n");
+    mprintf("    --user=USER          -u USER         Run as USER\n");
 #endif
-    mprintf
-        ("    --no-dns                             force old non-DNS verification method\n");
-    mprintf
-        ("    --checks=#n          -c #n           number of checks per day, 1 <= n <= 50\n");
-    mprintf
-        ("    --datadir=DIRECTORY                  download new databases into DIRECTORY\n");
+    mprintf("    --no-dns                             Force old non-DNS verification method\n");
+    mprintf("    --checks=#n          -c #n           Number of checks per day, 1 <= n <= 50\n");
+    mprintf("    --datadir=DIRECTORY                  Download new databases into DIRECTORY\n");
 #ifdef BUILD_CLAMD
-    mprintf
-        ("    --daemon-notify[=/path/clamd.conf]   send RELOAD command to clamd\n");
+    mprintf("    --daemon-notify[=/path/clamd.conf]   Send RELOAD command to clamd\n");
 #endif
-    mprintf
-        ("    --local-address=IP   -a IP           bind to IP for HTTP downloads\n");
-    mprintf
-        ("    --on-update-execute=COMMAND          execute COMMAND after successful update\n");
-    mprintf
-        ("    --on-error-execute=COMMAND           execute COMMAND if errors occured\n");
-    mprintf
-        ("    --on-outdated-execute=COMMAND        execute COMMAND when software is outdated\n");
-    mprintf
-        ("    --list-mirrors                       print mirrors from mirrors.dat\n");
-    mprintf
-        ("    --enable-stats                       enable statistical information reporting\n");
-    mprintf
-        ("    --stats-host-id=UUID                 HostID in the form of an UUID to use when submitting statistical information\n");
-    mprintf
-        ("    --update-db=DBNAME                   only update database DBNAME\n");
-
+    mprintf("    --local-address=IP   -a IP           Bind to IP for HTTP downloads\n");
+    mprintf("    --on-update-execute=COMMAND          Execute COMMAND after successful update\n");
+    mprintf("    --on-error-execute=COMMAND           Execute COMMAND if errors occurred\n");
+    mprintf("    --on-outdated-execute=COMMAND        Execute COMMAND when software is outdated\n");
+    mprintf("    --list-mirrors                       Print mirrors from mirrors.dat\n");
+    mprintf("    --update-db=DBNAME                   Only update database DBNAME\n");
     mprintf ("\n");
 }
 
@@ -246,7 +223,7 @@ download (const struct optstruct *opts, const char *cfgfile)
                     opt = (struct optstruct *) opt->nextarg;
                     if (!opt)
                     {
-                        logg ("Update failed. Your network may be down or none of the mirrors listed in %s is working. Check http://www.clamav.net/doc/mirrors-faq.html for possible reasons.\n", cfgfile);
+                        logg ("Update failed. Your network may be down or none of the mirrors listed in %s is working. Check https://www.clamav.net/documents/official-mirror-faq for possible reasons.\n", cfgfile);
                     }
                 }
 
@@ -363,28 +340,6 @@ main (int argc, char **argv)
         return 0;
     }
 
-    /* Stats/intelligence gathering  */
-    if (optget(opts, "stats-host-id")->enabled) {
-        char *p = optget(opts, "stats-host-id")->strarg;
-
-        if (strcmp(p, "default")) {
-            if (!strcmp(p, "anonymous")) {
-                strcpy(hostid, STATS_ANON_UUID);
-            } else {
-                if (strlen(p) > 36) {
-                    logg("!Invalid HostID\n");
-                    optfree(opts);
-                    return FCE_INIT;
-                }
-
-                strcpy(hostid, p);
-            }
-        } else {
-            strcpy(hostid, "default");
-        }
-    }
-    submit_host_info(opts);
-
     if (optget (opts, "HTTPProxyPassword")->enabled)
     {
         if (CLAMSTAT (cfgfile, &statbuf) == -1)
@@ -419,28 +374,19 @@ main (int argc, char **argv)
             return FCE_USERINFO;
         }
 
-        if (optget (opts, "AllowSupplementaryGroups")->enabled)
-        {
 #ifdef HAVE_INITGROUPS
-            if (initgroups (dbowner, user->pw_gid))
-            {
-                logg ("^initgroups() failed.\n");
+	if (initgroups(dbowner, user->pw_gid)) {
+		logg ("^initgroups() failed.\n");
                 optfree (opts);
-                return FCE_USERORGROUP;
-            }
-#endif
-        }
-        else
-        {
-#ifdef HAVE_SETGROUPS
-            if (setgroups (1, &user->pw_gid))
-            {
-                logg ("^setgroups() failed.\n");
+		return FCE_USERORGROUP;
+	}
+#elif HAVE_SETGROUPS
+	if (setgroups(1, &user->pw_gid)) {
+		logg ("^setgroups() failed.\n");
                 optfree (opts);
-                return FCE_USERORGROUP;
-            }
+		return FCE_USERORGROUP;
+	}
 #endif
-        }
 
         if (setgid (user->pw_gid))
         {
@@ -778,54 +724,6 @@ main (int argc, char **argv)
     cl_cleanup_crypto();
 
     return (ret);
-}
-
-void submit_host_info(struct optstruct *opts)
-{
-    struct cl_engine *engine;
-    cli_intel_t *intel;
-
-    if (!optget(opts, "enable-stats")->enabled)
-        return;
-
-    engine = cl_engine_new();
-    if (!(engine))
-        return;
-
-    if (optget (opts, "Debug")->enabled || optget (opts, "debug")->enabled)
-        cl_debug ();
-
-    if (optget (opts, "verbose")->enabled)
-        mprintf_verbose = 1;
-
-    cl_engine_stats_enable(engine);
-
-    intel = engine->stats_data;
-    if (!(intel)) {
-        engine->cb_stats_submit = NULL;
-        cl_engine_free(engine);
-        return;
-    }
-
-    intel->host_info = calloc(1, strlen(TARGET_OS_TYPE) + strlen(TARGET_ARCH_TYPE) + 2);
-    if (!(intel->host_info)) {
-        engine->cb_stats_submit = NULL;
-        cl_engine_free(engine);
-        return;
-    }
-
-    sprintf(intel->host_info, "%s %s", TARGET_OS_TYPE, TARGET_ARCH_TYPE);
-
-    if (!strcmp(hostid, "none"))
-        cl_engine_set_clcb_stats_get_hostid(engine, NULL);
-    else if (strcmp(hostid, "default"))
-        cl_engine_set_clcb_stats_get_hostid(engine, get_hostid);
-
-    if (optget(opts, "stats-timeout")->enabled) {
-        cl_engine_set_num(engine, CL_ENGINE_STATS_TIMEOUT, optget(opts, "StatsTimeout")->numarg);
-    }
-
-    cl_engine_free(engine);
 }
 
 int is_valid_hostid(void)

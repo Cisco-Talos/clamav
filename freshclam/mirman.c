@@ -247,6 +247,7 @@ mirman_update_int (uint32_t * ip, int af, struct mirdat *mdat, uint8_t broken,
             logg ("!Can't allocate memory for new element in mdat->mirtab\n");
             return -1;
         }
+        memset (&mdat->mirtab[mdat->num], 0, sizeof (struct mirdat_ip));
         if (af == AF_INET)
         {
             mdat->mirtab[mdat->num].ip4 = *ip;
@@ -260,8 +261,6 @@ mirman_update_int (uint32_t * ip, int af, struct mirdat *mdat, uint8_t broken,
         mdat->mirtab[mdat->num].succ = (succ > 0) ? succ : 0;
         mdat->mirtab[mdat->num].fail = (fail > 0) ? fail : 0;
         mdat->mirtab[mdat->num].ignore = (broken == 2) ? 2 : 0;
-        memset (&mdat->mirtab[mdat->num].res, 0xff,
-                sizeof (mdat->mirtab[mdat->num].res));
         if (!succ && !fail)
         {
             if (broken)

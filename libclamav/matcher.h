@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2017 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -54,11 +54,12 @@ struct cli_target_info {
 #define CLI_MATCH_NIBBLE_LOW	0x0400
 
 struct cli_lsig_tdb {
-#define CLI_TDB_UINT	0
-#define CLI_TDB_RANGE	1
-#define CLI_TDB_STR	2
-#define CLI_TDB_RANGE2	3
-#define CLI_TDB_FTYPE	4
+#define CLI_TDB_UINT		0
+#define CLI_TDB_RANGE		1
+#define CLI_TDB_STR		2
+#define CLI_TDB_RANGE2		3
+#define CLI_TDB_FTYPE		4
+#define CLI_TDB_FTYPE_EXPR	5
     uint32_t *val, *range;
     char *str;
     uint32_t cnt[3];
@@ -67,6 +68,7 @@ struct cli_lsig_tdb {
     const uint32_t *target;
     const uint32_t *engine, *nos, *ep, *filesize;
     const uint32_t *container, *handlertype;
+    const uint32_t *intermediates;
     /*
     const uint32_t *sectoff, *sectrva, *sectvsz, *sectraw, *sectrsz,
 		   *secturva, *sectuvsz, *secturaw, *sectursz;
@@ -131,6 +133,9 @@ struct cli_matcher {
     uint32_t pcre_reloff_num, pcre_absoff_num;
 #endif
 
+    /* Bytecode Tracker */
+    uint32_t linked_bcs;
+
 #ifdef USE_MPOOL
     mpool_t *mempool;
 #endif
@@ -138,18 +143,18 @@ struct cli_matcher {
 
 struct cli_cdb
 {
-    char	*virname;   /* virus name */
-    cli_file_t	ctype;	    /* container type */
-    regex_t	name;	    /* filename regex */
-    size_t	csize[2];   /* container size (min, max); if csize[0] != csize[1]
-			     * then value of 0 makes the field ignored
-			     */
-    size_t	fsizec[2];  /* file size in container */
-    size_t	fsizer[2];  /* real file size */
-    int		encrypted;  /* file is encrypted; 2 == ignore */
-    int		filepos[2]; /* file position in container */
-    int		res1;	    /* reserved / format specific */
-    void	*res2;	    /* reserved / format specific */
+    char	        *virname;   /* virus name */
+    cli_file_t	    ctype;	    /* container type */
+    regex_t	        name;	    /* filename regex */
+    size_t	        csize[2];   /* container size (min, max); if csize[0] != csize[1]
+			                     * then value of 0 makes the field ignored
+			                     */
+    size_t	        fsizec[2];  /* file size in container */
+    size_t	        fsizer[2];  /* real file size */
+    int		        encrypted;  /* file is encrypted; 2 == ignore */
+    unsigned int    filepos[2]; /* file position in container */
+    int		        res1;	    /* reserved / format specific */
+    void	        *res2;	    /* reserved / format specific */
 
     struct cli_cdb *next;
 };
@@ -203,6 +208,7 @@ int cli_exp_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *acd
 int cli_caloff(const char *offstr, const struct cli_target_info *info, unsigned int target, uint32_t *offdata, uint32_t *offset_min, uint32_t *offset_max);
 
 int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx);
+int cli_checkfp_virus(unsigned char *digest, size_t size, cli_ctx *ctx, const char * vname);
 
 int cli_matchmeta(cli_ctx *ctx, const char *fname, size_t fsizec, size_t fsizer, int encrypted, unsigned int filepos, int res1, void *res2);
 

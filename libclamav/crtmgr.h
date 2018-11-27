@@ -29,8 +29,13 @@
 typedef enum { CLI_SHA1RSA, CLI_MD5RSA } cli_crt_hashtype;
 typedef enum {VRFY_CODE, VRFY_TIME} cli_vrfy_type;
 
+#define CRT_RAWMAXLEN 64
 typedef struct cli_crt_t {
     char *name;
+    uint8_t raw_subject[CRT_RAWMAXLEN];
+    uint8_t raw_issuer[CRT_RAWMAXLEN];
+    uint8_t raw_tbshash[CRT_RAWMAXLEN];
+    uint8_t raw_serial[CRT_RAWMAXLEN];
     uint8_t subject[SHA1_HASH_SIZE];
     uint8_t issuer[SHA1_HASH_SIZE];
     uint8_t tbshash[SHA1_HASH_SIZE];

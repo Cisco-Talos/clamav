@@ -1,23 +1,26 @@
 /*
- * Extract component parts of OLE2 files (e.g. MS Office Documents)
+ *  Copyright (C) 2015, 2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *
+ *  Authors: Trog
  * 
- * Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
- * Copyright (C) 2007-2013 Sourcefire, Inc.
+ *  Summary: Extract component parts of OLE2 files (e.g. MS Office Documents).
  * 
- * Authors: Trog
- * 
- * This program is free software; you can redistribute it and/or modify it under
- * the terms of the GNU General Public License version 2 as published by the
- * Free Software Foundation.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
- * more details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc., 51
- * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ *  Acknowledgements: Some ideas and algorithms were based upon OpenOffice and libgsf.
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License version 2 as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ *  MA 02110-1301, USA.
  */
 
 #if HAVE_CONFIG_H
@@ -357,8 +360,6 @@ print_ole2_property(property_t * property)
 static void
 print_ole2_header(ole2_header_t * hdr)
 {
-    int             i;
-
     if (!hdr || !cli_debug_flag) {
         return;
     }
@@ -978,10 +979,10 @@ handler_enum(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * 
 
                 /* reading safety checks; do-while used for breaks */
                 do {
-                    if ((prop->start_block < 0) && (prop->size <= 0))
+                    if (prop->size == 0)
                         break;
 
-                    if (prop->start_block > (int32_t) hdr->max_block_no)
+                    if (prop->start_block > hdr->max_block_no)
                         break;
 
                     /* read the header block (~256 bytes) */
@@ -1154,7 +1155,7 @@ scan_mso_stream(int fd, cli_ctx *ctx)
         if (count) {
             if (cli_checklimits("MSO", ctx, outsize + count, 0, 0) != CL_SUCCESS)
                 break;
-            if (cli_writen(ofd, outbuf, count) != count) {
+            if (cli_writen(ofd, outbuf, count) != (int)count) {
                 cli_errmsg("scan_mso_stream: Can't write to file %s\n", tmpname);
                 ret = CL_EWRITE;
                 goto mso_end;
@@ -1228,11 +1229,19 @@ handler_otf(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * c
         return CL_ECREAT;
     }
     current_block = prop->start_block;
-    len = prop->size;
+    len = (int32_t)prop->size;
+
+    if (cli_debug_flag) {
+        if (!name)
+            name = get_property_name2(prop->name, prop->name_size);
+        cli_dbgmsg("OLE2 [handler_otf]: Dumping '%s' to '%s'\n", name, tempfile);
+    }
 
     buff = (unsigned char *)cli_malloc(1 << hdr->log2_big_block_size);
     if (!buff) {
         close(ofd);
+        if (name)
+            free(name);
         cli_unlink(tempfile);
         free(tempfile);
         return CL_EMEM;
@@ -1243,6 +1252,8 @@ handler_otf(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * c
         cli_errmsg("OLE2: OTF handler init bitset failed\n");
         free(buff);
         close(ofd);
+        if (name)
+            free(name);
         if (cli_unlink(tempfile)) {
             free(tempfile);
             return CL_EUNLINK;
@@ -1274,6 +1285,8 @@ handler_otf(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * c
             offset = (1 << hdr->log2_small_block_size) * (current_block % (1 << (hdr->log2_big_block_size - hdr->log2_small_block_size)));
             if (cli_writen(ofd, &buff[offset], MIN(len, 1 << hdr->log2_small_block_size)) != MIN(len, 1 << hdr->log2_small_block_size)) {
                 close(ofd);
+                if (name)
+                    free(name);
                 free(buff);
                 cli_bitset_free(blk_bitset);
                 if (cli_unlink(tempfile)) {
@@ -1293,6 +1306,8 @@ handler_otf(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * c
             if (cli_writen(ofd, buff, MIN(len, (1 << hdr->log2_big_block_size))) !=
                     MIN(len, (1 << hdr->log2_big_block_size))) {
                 close(ofd);
+                if (name)
+                    free(name);
                 free(buff);
                 cli_bitset_free(blk_bitset);
                 if (cli_unlink(tempfile)) {
@@ -1312,6 +1327,8 @@ handler_otf(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * c
     is_mso = likely_mso_stream(ofd);
     if (lseek(ofd, 0, SEEK_SET) == -1) {
         close(ofd);
+        if (name)
+            free(name);
         if (ctx && !(ctx->engine->keeptmp))
             cli_unlink(tempfile);
 
@@ -1324,7 +1341,8 @@ handler_otf(ole2_header_t * hdr, property_t * prop, const char *dir, cli_ctx * c
 #if HAVE_JSON
     /* JSON Output Summary Information */
     if (ctx->options & CL_SCAN_FILE_PROPERTIES && ctx->properties != NULL) {
-        name = get_property_name2(prop->name, prop->name_size);
+        if (!name)
+            name = get_property_name2(prop->name, prop->name_size);
         if (name) {
             if (!strncmp(name, "_5_summaryinformation", 21)) {
                 cli_dbgmsg("OLE2: detected a '_5_summaryinformation' stream\n");

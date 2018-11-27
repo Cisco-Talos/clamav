@@ -1,8 +1,13 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2010 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
+ * 
+ *  Summary: Code to parse Clamav CVD database format.
+ * 
+ *  Acknowledgements: ClamAV untar code is based on a public domain minitar utility
+ *                    by Charles G. Waldman.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -213,7 +218,7 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
 	unsigned int type, size, pad, compr = 1;
 	off_t off;
 	struct cli_dbinfo *db;
-	unsigned char hash[32];
+	char hash[32];
 
     cli_dbgmsg("in cli_tgzload()\n");
 
@@ -666,10 +671,10 @@ int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigne
     }
 
     if(cvd.fl > cl_retflevel()) {
-	cli_warnmsg("***********************************************************\n");
-	cli_warnmsg("***  This version of the ClamAV engine is outdated.     ***\n");
-	cli_warnmsg("***   Read http://www.clamav.net/doc/install.html       ***\n");
-	cli_warnmsg("***********************************************************\n");
+	cli_warnmsg("*******************************************************************\n");
+	cli_warnmsg("***  This version of the ClamAV engine is outdated.             ***\n");
+	cli_warnmsg("***   Read https://www.clamav.net/documents/installing-clamav   ***\n");
+	cli_warnmsg("*******************************************************************\n");
     }
 
     cfd = fileno(fs);

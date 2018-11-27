@@ -51,7 +51,7 @@
 
 #include <assert.h>
 
-/* Scehduled for rewite in 0.94 (bb#804). Disabling for now */
+/* Scheduled for rewrite in 0.94 (bb#804). Disabling for now */
 /* #define	MAX_SCAN_SIZE	20*1024	/\* */
 /* 				 * The performance benefit of scanning */
 /* 				 * early disappears on medium and */
@@ -457,11 +457,11 @@ fileblobDestroy(fileblob *fb)
 	} else if(fb->b.data) {
 		free(fb->b.data);
 		if(fb->b.name) {
-			cli_errmsg("fileblobDestroy: %s not saved: report to http://bugs.clamav.net\n",
+			cli_errmsg("fileblobDestroy: %s not saved: report to https://bugzilla.clamav.net\n",
 				(fb->fullname) ? fb->fullname : fb->b.name);
 			free(fb->b.name);
 		} else
-			cli_errmsg("fileblobDestroy: file not saved (%lu bytes): report to http://bugs.clamav.net\n",
+			cli_errmsg("fileblobDestroy: file not saved (%lu bytes): report to https://bugzilla.clamav.net\n",
 				(unsigned long)fb->b.len);
 	}
 	if(fb->fullname)
@@ -619,6 +619,7 @@ fileblobScan(const fileblob *fb)
 {
 	int rc;
 	STATBUF sb;
+        int virus_found = 0;
 
 	if(fb->isInfected)
 		return CL_VIRUS;
@@ -636,11 +637,14 @@ fileblobScan(const fileblob *fb)
 	fflush(fb->fp);
 	lseek(fb->fd, 0, SEEK_SET);
 	FSTAT(fb->fd, &sb);
-	if(cli_matchmeta(fb->ctx, fb->b.name, sb.st_size, sb.st_size, 0, 0, 0, NULL) == CL_VIRUS)
-	    return CL_VIRUS;
+	if(cli_matchmeta(fb->ctx, fb->b.name, sb.st_size, sb.st_size, 0, 0, 0, NULL) == CL_VIRUS) {
+            if (!(fb->ctx->options & CL_SCAN_ALLMATCHES))
+                return CL_VIRUS;
+            virus_found = 1;
+        }
 
 	rc = cli_magic_scandesc(fb->fd, fb->ctx);
-	if(rc == CL_VIRUS) {
+	if(rc == CL_VIRUS || virus_found != 0) {
 		cli_dbgmsg("%s is infected\n", fb->fullname);
 		return CL_VIRUS;
 	}

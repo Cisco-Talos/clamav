@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2017-2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2012 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -197,15 +197,16 @@ int main(int argc, char **argv)
 
 void help(void)
 {
-
     mprintf_stdout = 1;
 
     mprintf("\n");
-    mprintf("                       Clam AntiVirus Scanner %s\n", get_version());
-    printf("           By The ClamAV Team: http://www.clamav.net/about.html#credits\n");
-    printf("           (C) 2007-2015 Cisco Systems, Inc.\n\n");
-
-    mprintf("    --help                -h             Print this help screen\n");
+    mprintf("                       Clam AntiVirus: Scanner %s\n", get_version());
+    printf("           By The ClamAV Team: https://www.clamav.net/about.html#credits\n");
+    printf("           (C) 2007-2018 Cisco Systems, Inc.\n");
+    mprintf("\n");
+    mprintf("    clamscan [options] [file/directory/-]\n");
+    mprintf("\n");
+    mprintf("    --help                -h             Show this help\n");
     mprintf("    --version             -V             Print version number\n");
     mprintf("    --verbose             -v             Be verbose\n");
     mprintf("    --archive-verbose     -a             Show filenames inside scanned archives\n");
@@ -219,8 +220,9 @@ void help(void)
     mprintf("\n");
     mprintf("    --tempdir=DIRECTORY                  Create temporary files in DIRECTORY\n");
     mprintf("    --leave-temps[=yes/no(*)]            Do not remove temporary files\n");
-    mprintf("    --database=FILE/DIR   -d FILE/DIR    Load virus database from FILE or load\n");
-    mprintf("                                         all supported db files from DIR\n");
+    mprintf("    --gen-json[=yes/no(*)]               Generate JSON description of scanned file(s). JSON will be printed and also-\n");
+    mprintf("                                         dropped to the temp directory if --leave-temps is enabled.\n");
+    mprintf("    --database=FILE/DIR   -d FILE/DIR    Load virus database from FILE or load all supported db files from DIR\n");
     mprintf("    --official-db-only[=yes/no(*)]       Only load official signatures\n");
     mprintf("    --log=FILE            -l FILE        Save scan report to FILE\n");
     mprintf("    --recursive[=yes/no(*)]  -r          Scan subdirectories recursively\n");
@@ -253,10 +255,11 @@ void help(void)
     mprintf("    --phishing-sigs[=yes(*)/no]          Signature-based phishing detection\n");
     mprintf("    --phishing-scan-urls[=yes(*)/no]     URL-based phishing detection\n");
     mprintf("    --heuristic-scan-precedence[=yes/no(*)] Stop scanning as soon as a heuristic match is found\n");
-    mprintf("    --phishing-ssl[=yes/no(*)]           Always block SSL mismatches in URLs (phishing module)\n");
-    mprintf("    --phishing-cloak[=yes/no(*)]         Always block cloaked URLs (phishing module)\n");
-    mprintf("    --partition-intersection[=yes/no(*)] Detect partition intersections in raw disk images using heuristics.\n");
+    mprintf("    --phishing-ssl[=yes/no(*)]           Always block (flag) SSL mismatches in URLs (phishing module)\n");
+    mprintf("    --phishing-cloak[=yes/no(*)]         Always block (flag) cloaked URLs (phishing module)\n");
+    mprintf("    --partition-intersection[=yes/no(*)] Detect partition intersections in raw disk images using heuristics\n");
     mprintf("    --algorithmic-detection[=yes(*)/no]  Algorithmic detection\n");
+    mprintf("    --normalize[=yes(*)/no]              Normalize html, script, and text files. Use normalize=no for yara compatibility\n");
     mprintf("    --scan-pe[=yes(*)/no]                Scan PE files\n");
     mprintf("    --scan-elf[=yes(*)/no]               Scan ELF files\n");
     mprintf("    --scan-ole2[=yes(*)/no]              Scan OLE2 containers\n");
@@ -267,7 +270,9 @@ void help(void)
     mprintf("    --scan-hwp3[=yes(*)/no]              Scan HWP3 files\n");
     mprintf("    --scan-archive[=yes(*)/no]           Scan archive files (supported by libclamav)\n");
     mprintf("    --detect-broken[=yes/no(*)]          Try to detect broken executable files\n");
-    mprintf("    --block-encrypted[=yes/no(*)]        Block encrypted archives\n");
+    mprintf("    --block-encrypted[=yes/no(*)]        Block (flag) encrypted archives\n");
+    mprintf("    --block-macros[=yes/no(*)]           Block (flag) OLE2 files with VBA macros\n");
+    mprintf("    --block-max[=yes/no(*)]              Block (flag) files that exceed max file size, max scan size, or max recursion limit\n");
     mprintf("    --nocerts                            Disable authenticode certificate chain verification in PE files\n");
     mprintf("    --dumpcerts                          Dump authenticode certificate chain in PE files\n");
     mprintf("\n");
@@ -289,11 +294,9 @@ void help(void)
     mprintf("    --pcre-recmatch-limit=#n             Maximum recursive calls to the PCRE match function.\n");
     mprintf("    --pcre-max-filesize=#n               Maximum size file to perform PCRE subsig matching.\n");
 #endif /* HAVE_PCRE */
-    mprintf("    --enable-stats                       Enable statistical reporting of malware\n");
-    mprintf("    --disable-pe-stats                   Disable submission of individual PE sections in stats submissions\n");
-    mprintf("    --stats-timeout=#n                   Number of seconds to wait for waiting a response back from the stats server\n");
-    mprintf("    --stats-host-id=UUID                 Set the Host ID used when submitting statistical info.\n");
     mprintf("    --disable-cache                      Disable caching and cache checks for hash sums of scanned files.\n");
+    mprintf("\n");
+    mprintf("Pass in - as the filename for stdin.\n");
     mprintf("\n");
     mprintf("(*) Default scan settings\n");
     mprintf("(**) Certain files (e.g. documents, archives, etc.) may in turn contain other\n");

@@ -33,15 +33,11 @@ Example
 # Default: yes
 #FixStaleSocket yes
 
-# Run as another user (clamav-milter must be started by root for this option to work)
+# Run as another user (clamav-milter must be started by root for this option
+# to work)
 #
 # Default: unset (don't drop privileges)
 #User clamav
-
-# Initialize supplementary group access (clamav-milter must be started by root).
-#
-# Default: no
-#AllowSupplementaryGroups no
 
 # Waiting for data from clamd will timeout after this time (seconds).
 # Value of 0 disables the timeout.
@@ -55,7 +51,8 @@ Example
 #Foreground yes
 
 # Chroot to the specified directory.
-# Chrooting is performed just after reading the config file and before dropping privileges.
+# Chrooting is performed just after reading the config file and before
+# dropping privileges.
 #
 # Default: unset (don't chroot)
 #Chroot /newroot
@@ -87,7 +84,8 @@ Example
 #     ClamdSocket tcp:192.168.0.1
 #
 # This option can be repeated several times with different sockets or even
-# with the same socket: clamd servers will be selected in a round-robin fashion.
+# with the same socket: clamd servers will be selected in a round-robin
+# fashion.
 #
 # Default: no default
 #ClamdSocket tcp:scanner.mydomain:7357
@@ -100,7 +98,7 @@ Example
 # Messages originating from these hosts/networks will not be scanned
 # This option takes a host(name)/mask pair in CIRD notation and can be
 # repeated several times. If "/mask" is omitted, a host is assumed.
-# To specify a locally orignated, non-smtp, email use the keyword "local"
+# To specify a locally originated, non-smtp, email use the keyword "local"
 #
 # Default: unset (scan everything regardless of the origin)
 #LocalNet local
@@ -140,13 +138,13 @@ Example
 ## Actions
 ##
 
-# The following group of options controls the delievery process under
+# The following group of options controls the delivery process under
 # different circumstances.
 # The following actions are available:
 # - Accept
-#   The message is accepted for delievery
+#   The message is accepted for delivery
 # - Reject
-#   Immediately refuse delievery (a 5xx error is returned to the peer)
+#   Immediately refuse delivery (a 5xx error is returned to the peer)
 # - Defer
 #   Return a temporary failure message (4xx) to the peer
 # - Blackhole (not available for OnFail)
@@ -193,13 +191,14 @@ Example
 # Default: disabled
 #ReportHostname my.mail.server.name
 
-# Execute a command (possibly searching PATH) when an infected message is found.
+# Execute a command (possibly searching PATH) when an infected message is
+# found.
 # The following parameters are passed to the invoked program in this order:
 # virus name, queue id, sender, destination, subject, message id, message date.
 # Note #1: this requires MTA macroes to be available (see LogInfected below)
 # Note #2: the process is invoked in the context of clamav-milter
 # Note #3: clamav-milter will wait for the process to exit. Be quick or fork to
-# avoid unnecessary delays in email delievery
+# avoid unnecessary delays in email delivery
 # Default: disabled
 #VirusAction /usr/local/bin/my_infected_message_handler
 
@@ -270,7 +269,8 @@ Example
 # Default: disabled
 #LogInfected Basic
 
-# This option allows to tune what is logged when no threat is found in a scanned message.
+# This option allows to tune what is logged when no threat is found in
+# a scanned message.
 # See LogInfected for possible values and caveats.
 # Useful in debugging but drastically increases the log size.
 # Default: disabled
@@ -286,7 +286,8 @@ Example
 # then one line is logged for each recipient and the command indicated
 # by VirusAction is also executed once for each recipient.
 # 
-# Note: although it's probably a good idea to enable this option, the default value
+# Note: although it's probably a good idea to enable this option, the default
+# value
 # is currently set to off for legacy reasons.
 # Default: no
 #SupportMultipleRecipients yes

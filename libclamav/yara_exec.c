@@ -153,7 +153,7 @@ int yr_execute_code(
   int i;
   int found;
   int count;
-  int result;
+  int result = -1;
   int cycle = 0;
 #if REAL_YARA
   int tidx = yr_get_tidx();
@@ -885,7 +885,7 @@ int yr_execute_code(
           NULL,
           NULL);
 #else
-        //TDB CLAMAV
+        result = -1;  //matches not currently supported in ClamAV. push(FALSE).
 #endif
 
         push(result >= 0);

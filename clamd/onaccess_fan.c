@@ -44,9 +44,8 @@
 #include "shared/optparser.h"
 #include "shared/output.h"
 
+#include "onaccess_others.h"
 #include "server.h"
-#include "others.h"
-#include "scanner.h"
 
 #include "onaccess_fan.h"
 #include "onaccess_hash.h"
@@ -73,23 +72,19 @@ static void onas_fan_exit(int sig)
 static int onas_fan_scanfile(int fan_fd, const char *fname, struct fanotify_event_metadata *fmd, int scan, int extinfo, struct thrarg *tharg)
 {
 	struct fanotify_response res;
-	struct cb_context context;
 	const char *virname;
 	int ret = 0;
 
     res.fd = fmd->fd;
     res.response = FAN_ALLOW;
-    context.filename = fname;
-    context.virsize = 0;
-    context.scandata = NULL;
-    if(scan && cl_scandesc_callback(fmd->fd, &virname, NULL, tharg->engine, tharg->options, &context) == CL_VIRUS) {
-	if(extinfo && context.virsize)
-	    logg("ScanOnAccess: %s: %s(%s:%llu) FOUND\n", fname, virname, context.virhash, context.virsize);
-	else
-	    logg("ScanOnAccess: %s: %s FOUND\n", fname, virname);
-	virusaction(fname, virname, tharg->opts);
 
-	res.response = FAN_DENY;
+    if (scan) {
+        if (onas_scan(fname, fmd->fd, &virname, tharg->engine, tharg->options, extinfo) == CL_VIRUS) {
+            /* TODO : FIXME? virusaction forks. This could be extraordinarily problematic, lead to deadlocks, 
+             * or at the very least lead to extreme memory consumption. Leaving disabled for now.*/ 
+            //virusaction(fname, virname, tharg->opts);
+            res.response = FAN_DENY;
+        }
     }
 
     if(fmd->mask & FAN_ALL_PERM_EVENTS) {
@@ -108,7 +103,7 @@ void *onas_fan_th(void *arg)
         struct sigaction act;
 	const struct optstruct *pt;
 	short int scan;
-	int sizelimit = 0, extinfo;
+	unsigned int sizelimit = 0, extinfo;
 	STATBUF sb;
         uint64_t fan_mask = FAN_EVENT_ON_CHILD | FAN_CLOSE;
         fd_set rfds;
@@ -116,7 +111,7 @@ void *onas_fan_th(void *arg)
 	ssize_t bread;
 	struct fanotify_event_metadata *fmd;
 	char fname[1024];
-	int ret, len;
+	int ret, len, check;
 	char err[128];
 
 	pthread_attr_t ddd_attr;
@@ -214,7 +209,7 @@ void *onas_fan_th(void *arg)
     /* Load other options. */
     sizelimit = optget(tharg->opts, "OnAccessMaxFileSize")->numarg;
     if(sizelimit)
-	logg("ScanOnAccess: Max file size limited to %d bytes\n", sizelimit);
+	logg("ScanOnAccess: Max file size limited to %u bytes\n", sizelimit);
     else
 	logg("ScanOnAccess: File size limit disabled\n");
 
@@ -255,9 +250,11 @@ void *onas_fan_th(void *arg)
 		}
 		fname[len] = 0;
 
-		if(onas_fan_checkowner(fmd->pid, tharg->opts)) {
+		if((check = onas_fan_checkowner(fmd->pid, tharg->opts))) {
 		    scan = 0;
-		    logg("*ScanOnAccess: %s skipped (excluded UID)\n", fname);
+		    if (check != CHK_SELF || !(optget(tharg->opts, "OnAccessExtraScanning")->enabled)) {
+			logg("*ScanOnAccess: %s skipped (excluded UID)\n", fname);
+                    }
 		}
 
 		if(sizelimit) {
@@ -292,6 +289,8 @@ void *onas_fan_th(void *arg)
     return NULL;
 }
 
+
+/* CLAMAUTH is deprecated */
 #elif defined(CLAMAUTH)
 
 #include <stdio.h>

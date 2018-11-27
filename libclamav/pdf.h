@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2017-2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Nigel Horne
@@ -22,11 +22,15 @@
 #define __PDF_H
 
 #include "others.h"
+#define PDF_FILTERLIST_MAX  64
+
 struct pdf_obj {
     uint32_t start;
     uint32_t id;
     uint32_t flags;
     uint32_t statsflags;
+    uint32_t numfilters;
+    uint32_t filterlist[PDF_FILTERLIST_MAX];
     char *path;
 };
 
@@ -156,9 +160,11 @@ int pdf_findobj(struct pdf_struct *pdf);
 struct pdf_obj *find_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t objid);
 
 void pdf_handle_enc(struct pdf_struct *pdf);
-char *decrypt_any(struct pdf_struct *pdf, uint32_t id, const char *in, off_t *length, enum enc_method enc_method);
+char *decrypt_any(struct pdf_struct *pdf, uint32_t id, const char *in, size_t *length, enum enc_method enc_method);
 enum enc_method get_enc_method(struct pdf_struct *pdf, struct pdf_obj *obj);
+enum enc_method parse_enc_method(const char *dict, unsigned len, const char *key, enum enc_method def);
 
+void pdfobj_flag(struct pdf_struct *pdf, struct pdf_obj *obj, enum pdf_flag flag);
 char *pdf_finalize_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *in, size_t len);
 char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *objstart, size_t objsize, const char *str, char **endchar, struct pdf_stats_metadata *stats);
 struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj *obj, size_t objsz, char *begin, char **endchar);

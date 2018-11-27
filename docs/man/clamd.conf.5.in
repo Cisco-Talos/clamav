@@ -270,11 +270,6 @@ Run the daemon as a specified user (the process must be started by root).
 .br
 Default: disabled
 .TP
-\fBAllowSupplementaryGroups BOOL\fR
-Initialize a supplementary group access (the process must be started by root).
-.br
-Default: no
-.TP
 \fBBytecode BOOL\fR
 With this option enabled ClamAV will load bytecode from the database. It is highly recommended you keep this option turned on, otherwise you may miss detections for many new viruses.
 .br
@@ -334,12 +329,12 @@ Detect Possibly Unwanted Applications.
 Default: No
 .TP
 \fBExcludePUA CATEGORY\fR
-Exclude a specific PUA category. This directive can be used multiple times. See http://www.clamav.net/doc/pua.html for the complete list of PUA categories.
+Exclude a specific PUA category. This directive can be used multiple times. See https://www.clamav.net/documents/potentially-unwanted-applications-pua for the complete list of PUA categories.
 .br
 Default: disabled
 .TP
 \fBIncludePUA CATEGORY\fR
-Only include a specific PUA category. This directive can be used multiple times. See http://www.clamav.net/doc/pua.html for the complete list of PUA categories.
+Only include a specific PUA category. This directive can be used multiple times. See https://www.clamav.net/documents/potentially-unwanted-applications-pua for the complete list of PUA categories.
 .br
 Default: disabled
 .TP 
@@ -457,6 +452,11 @@ Default: yes
 With this option enabled OLE2 files with VBA macros, which were not detected by signatures will be marked as "Heuristics.OLE2.ContainsMacros".
 .br 
 Default: no
+.TP
+\fBBlockMax BOOL\fR
+ Flag files with "Heuristics.Limits.Exceeded" when scanning is incomplete due to exceeding a scan or file size limit.
+.br 
+Default: no
 .TP 
 \fBScanPDF BOOL\fR
 This option enables scanning within PDF files.
@@ -502,8 +502,6 @@ Default: no
 This option causes memory or nested map scans to dump the content to disk.
 .br
 If you turn on this option, more data is written to disk and is available when the leave-temps option is enabled at the cost of more disk writes.
-.br
-Default: no
 .br 
 Default: no
 .TP 
@@ -663,10 +661,21 @@ This option allows excluding directories from on-access scanning. It can be used
 .br
 Default: disabled
 .TP
+\fBOnAccessExcludeRootUID BOOL\fR
+With this option you can whitelist the root UID (0). Processes run under root will be able to access all files without triggering scans or permission denied events.
+.br
+Note that if clamd cannot check the uid of the process that generated an on-access scan event (e.g., because \fBOnAccessPrevention\fR was not enabled, and the process already exited), clamd will perform a scan.  Thus, setting \fBOnAccessExcludeRootUID\fR is not \fIguaranteed\fR to prevent every access by the root user from triggering a scan (unless \fBOnAccessPrevention\fR is enabled).
+.br
+Default: no
+.TP
 \fBOnAccessExcludeUID NUMBER\fR
-With this option you can whitelist specific UIDs. Processes with these UIDs will be able to access all files.
+With this option you can whitelist specific UIDs. Processes with these UIDs will be able to access all files without triggering scans or permission denied events.
 .br
 This option can be used multiple times (one per line).
+.br
+Note: using a value of 0 on any line will disable this option entirely. To whitelist the root UID (0) please enable the OnAccessExcludeRootUID option.
+.br
+Also note that if clamd cannot check the uid of the process that generated an on-access scan event (e.g., because \fBOnAccessPrevention\fR was not enabled, and the process already exited), clamd will perform a scan.  Thus, setting \fBOnAccessExcludeUID\fR is not \fIguaranteed\fR to prevent every access by the specified uid from triggering a scan (unless \fBOnAccessPrevention\fR is enabled).
 .br
 Default: disabled
 .TP
@@ -694,29 +703,9 @@ Default: disabled
 Disable authenticode certificate chain verification in PE files.
 .br
 Default: no
-.TP
-\fBStatsEnabled BOOL\fR
-Enable submission of statistical data
-.br
-Default: no
-.TP
-\fBStatsHostID STRING\fR
-HostID in the form of an UUID to use when submitting statistical information.
-.br
-Default: auto
-.TP
-\fBStatsPEDisabled BOOL\fR
-Disable submission of PE section statistical data.
-.br
-Default: no
-.TP
-\fBStatsTimeout NUMBER\fR
-Timeout in seconds to timeout communication with the stats server.
-.br
-Default: 10
 .SH "NOTES"
 .LP 
-All options expressing a size are limited to max 4GB. Values in excess will be resetted to the maximum.
+All options expressing a size are limited to max 4GB. Values in excess will be reset to the maximum.
 .SH "FILES"
 .LP 
 @CFGDIR@/clamd.conf

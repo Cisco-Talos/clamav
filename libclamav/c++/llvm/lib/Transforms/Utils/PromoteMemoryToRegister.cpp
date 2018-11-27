@@ -493,7 +493,7 @@ void PromoteMem2Reg::run() {
     A->eraseFromParent();
   }
 
-  // Remove alloca's dbg.declare instrinsics from the function.
+  // Remove alloca's dbg.declare intrinsics from the function.
   for (unsigned i = 0, e = AllocaDbgDeclares.size(); i != e; ++i)
     if (DbgDeclareInst *DDI = AllocaDbgDeclares[i])
       DDI->eraseFromParent();

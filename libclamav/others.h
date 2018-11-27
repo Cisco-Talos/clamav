@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015-2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -72,7 +72,7 @@
  * in re-enabling affected modules.
  */
 
-#define CL_FLEVEL 82
+#define CL_FLEVEL 100
 #define CL_FLEVEL_DCONF	CL_FLEVEL
 #define CL_FLEVEL_SIGTOOL CL_FLEVEL
 
@@ -80,21 +80,40 @@ extern uint8_t cli_debug_flag;
 extern uint8_t cli_always_gen_section_hash;
 
 /*
- * CLI_ISCONTAINED(buf1, size1, buf2, size2) checks if buf2 is contained
- * within buf1.
+ * CLI_ISCONTAINED(bb, bb_size, sb, sb_size) checks if sb (sub buffer) is contained
+ * within bb (buffer).
  *
- * buf1 and buf2 are pointers (or offsets) for the main buffer and the
- * sub-buffer respectively, and size1/2 are their sizes
+ * bb and sb are pointers (or offsets) for the main buffer and the
+ * sub-buffer respectively, and bb_size and sb_size are their sizes
  *
  * The macro can be used to protect against wraps.
  */
-#define CLI_ISCONTAINED(bb, bb_size, sb, sb_size)	\
-  ((bb_size) > 0 && (sb_size) > 0 && (size_t)(sb_size) <= (size_t)(bb_size) \
-   && (sb) >= (bb) && ((sb) + (sb_size)) <= ((bb) + (bb_size)) && ((sb) + (sb_size)) > (bb) && (sb) < ((bb) + (bb_size)))
+#define CLI_ISCONTAINED(bb, bb_size, sb, sb_size)                                           \
+    (                                                                                       \
+        (size_t)(bb_size) > 0 && (size_t)(sb_size) > 0 &&                                   \
+        (size_t)(sb_size) <= (size_t)(bb_size) &&                                           \
+        (ptrdiff_t)(sb) >= (ptrdiff_t)(bb) &&                                               \
+        (ptrdiff_t)(sb) + (ptrdiff_t)(sb_size) <= (ptrdiff_t)(bb) + (ptrdiff_t)(bb_size) && \
+        (ptrdiff_t)(sb) + (ptrdiff_t)(sb_size) > (ptrdiff_t)(bb) &&                         \
+        (ptrdiff_t)(sb) < (ptrdiff_t)(bb) + (ptrdiff_t)(bb_size)                            \
+    )
 
-#define CLI_ISCONTAINED2(bb, bb_size, sb, sb_size)	\
-  ((bb_size) > 0 && (sb_size) >= 0 && (size_t)(sb_size) <= (size_t)(bb_size) \
-   && (sb) >= (bb) && ((sb) + (sb_size)) <= ((bb) + (bb_size)) && ((sb) + (sb_size)) >= (bb) && (sb) < ((bb) + (bb_size)))
+/*
+ * CLI_ISCONTAINED2(bb, bb_size, sb, sb_size) checks if sb (sub buffer) is contained
+ * within bb (buffer).
+ *
+ * CLI_ISCONTAINED2 is the same as CLI_ISCONTAINED except that it allows for sub-
+ * buffers with sb_size == 0.
+ */
+#define CLI_ISCONTAINED2(bb, bb_size, sb, sb_size)                                          \
+    (                                                                                       \
+        (size_t)(bb_size) > 0 && (size_t)(sb_size) >= 0 &&                                  \
+        (size_t)(sb_size) <= (size_t)(bb_size) &&                                           \
+        (ptrdiff_t)(sb) >= (ptrdiff_t)(bb) &&                                               \
+        (ptrdiff_t)(sb) + (ptrdiff_t)(sb_size) <= (ptrdiff_t)(bb) + (ptrdiff_t)(bb_size) && \
+        (ptrdiff_t)(sb) + (ptrdiff_t)(sb_size) >= (ptrdiff_t)(bb) &&                        \
+        (ptrdiff_t)(sb) < (ptrdiff_t)(bb) + (ptrdiff_t)(bb_size)                            \
+    )
 
 #define CLI_MAX_ALLOCATION (182*1024*1024)
 
@@ -126,6 +145,13 @@ typedef struct bitset_tag
         unsigned long length;
 } bitset_t;
 
+typedef struct cli_ctx_container_tag {
+    cli_file_t type;
+    size_t size;
+    unsigned char flag;
+} cli_ctx_container;
+#define CONTAINER_FLAG_VALID 0x01
+
 /* internal clamav context */
 typedef struct cli_ctx_tag {
     const char **virname;
@@ -140,8 +166,7 @@ typedef struct cli_ctx_tag {
     unsigned int found_possibly_unwanted;
     unsigned int corrupted_input;
     unsigned int img_validate;
-    cli_file_t container_type; /* FIXME: to be made into a stack or array - see bb#1579 & bb#1293 */
-    size_t container_size;
+    cli_ctx_container *containers; /* set container type after recurse */
     unsigned char handlertype_hash[16];
     struct cli_dconf *dconf;
     fmap_t **fmap;
@@ -157,6 +182,7 @@ typedef struct cli_ctx_tag {
     struct json_object *wrkproperty;
 #endif
     struct timeval time_limit;
+    int limit_exceeded;
 } cli_ctx;
 
 #define STATS_ANON_UUID "5b585e8f-3be5-11e3-bf0b-18037319526c"
@@ -227,7 +253,7 @@ struct icon_matcher {
 
 struct cli_dbinfo {
     char *name;
-    unsigned char *hash;
+    char *hash;
     size_t size;
     struct cl_cvd *cvd;
     struct cli_dbinfo *next;
@@ -242,7 +268,7 @@ typedef enum {
 
 struct cli_pwdb {
     char *name;
-    unsigned char *passwd;
+    char *passwd;
     uint16_t length;
     struct cli_pwdb *next;
 };
@@ -271,7 +297,7 @@ struct cl_engine {
 				     * within a single archive
 				     */
     /* This is for structured data detection.  You can set the minimum
-     * number of occurences of an CC# or SSN before the system will
+     * number of occurrences of an CC# or SSN before the system will
      * generate a notification.
      */
     uint32_t min_cc_count;
@@ -284,6 +310,8 @@ struct cl_engine {
     struct cli_matcher *hm_hdb;
     /* hash matcher for MD5 sigs for PE sections */
     struct cli_matcher *hm_mdb;
+    /* hash matcher for MD5 sigs for PE import tables */
+    struct cli_matcher *hm_imp;
     /* hash matcher for whitelist db */
     struct cli_matcher *hm_fp;
 
@@ -471,7 +499,7 @@ extern int have_rar;
 #define SCAN_ELF	    (ctx->options & CL_SCAN_ELF)
 #define SCAN_ALGO 	    (ctx->options & CL_SCAN_ALGORITHMIC)
 #define DETECT_ENCRYPTED    (ctx->options & CL_SCAN_BLOCKENCRYPTED)
-/* #define BLOCKMAX	    (ctx->options & CL_SCAN_BLOCKMAX) */
+#define BLOCKMAX	    (ctx->options & CL_SCAN_BLOCKMAX)
 #define DETECT_BROKEN	    (ctx->options & CL_SCAN_BLOCKBROKEN)
 #define BLOCK_MACROS	    (ctx->options & CL_SCAN_BLOCKMACROS)
 #define SCAN_STRUCTURED	    (ctx->options & CL_SCAN_STRUCTURED)
@@ -531,56 +559,77 @@ struct unaligned_ptr {
 #endif
 
 #if WORDS_BIGENDIAN == 0
-
-/* Little endian */
-#define le16_to_host(v)	(v)
-#define le32_to_host(v)	(v)
-#define le64_to_host(v)	(v)
-#define	be16_to_host(v)	cbswap16(v)
-#define	be32_to_host(v)	cbswap32(v)
-#define be64_to_host(v) cbswap64(v)
-#define cli_readint32(buff) (((const union unaligned_32 *)(buff))->una_s32)
-#define cli_readint16(buff) (((const union unaligned_16 *)(buff))->una_s16)
-#define cli_writeint32(offset, value) (((union unaligned_32 *)(offset))->una_u32=(uint32_t)(value))
+    /* Little endian */
+    #define le16_to_host(v)	(v)
+    #define le32_to_host(v)	(v)
+    #define le64_to_host(v)	(v)
+    #define	be16_to_host(v)	cbswap16(v)
+    #define	be32_to_host(v)	cbswap32(v)
+    #define be64_to_host(v) cbswap64(v)
+    #define cli_readint64(buff) (((const union unaligned_64 *)(buff))->una_s64)
+    #define cli_readint32(buff) (((const union unaligned_32 *)(buff))->una_s32)
+    #define cli_readint16(buff) (((const union unaligned_16 *)(buff))->una_s16)
+    #define cli_writeint32(offset, value) (((union unaligned_32 *)(offset))->una_u32=(uint32_t)(value))
 #else
-/* Big endian */
-#define	le16_to_host(v)	cbswap16(v)
-#define	le32_to_host(v)	cbswap32(v)
-#define le64_to_host(v) cbswap64(v)
-#define be16_to_host(v)	(v)
-#define be32_to_host(v)	(v)
-#define be64_to_host(v)	(v)
+    /* Big endian */
+    #define	le16_to_host(v)	cbswap16(v)
+    #define	le32_to_host(v)	cbswap32(v)
+    #define le64_to_host(v) cbswap64(v)
+    #define be16_to_host(v)	(v)
+    #define be32_to_host(v)	(v)
+    #define be64_to_host(v)	(v)
 
-static inline int32_t cli_readint32(const void *buff)
-{
-	int32_t ret;
-    ret = ((const char *)buff)[0] & 0xff;
-    ret |= (((const char *)buff)[1] & 0xff) << 8;
-    ret |= (((const char *)buff)[2] & 0xff) << 16;
-    ret |= (((const char *)buff)[3] & 0xff) << 24;
-    return ret;
-}
+    static inline int64_t cli_readint64(const void *buff)
+    {
+        int64_t ret;
+        ret = (int64_t)((const char *)buff)[0] & 0xff;
+        ret |= (int64_t)(((const char *)buff)[1] & 0xff) << 8;
+        ret |= (int64_t)(((const char *)buff)[2] & 0xff) << 16;
+        ret |= (int64_t)(((const char *)buff)[3] & 0xff) << 24;
 
-static inline int16_t cli_readint16(const void *buff)
-{
-	int16_t ret;
-    ret = ((const char *)buff)[0] & 0xff;
-    ret |= (((const char *)buff)[1] & 0xff) << 8;
-    return ret;
-}
+        ret |= (int64_t)(((const char *)buff)[4] & 0xff) << 32;
+        ret |= (int64_t)(((const char *)buff)[5] & 0xff) << 40;
+        ret |= (int64_t)(((const char *)buff)[6] & 0xff) << 48;
+        ret |= (int64_t)(((const char *)buff)[7] & 0xff) << 56;
+        return ret;
+    }
 
-static inline void cli_writeint32(void *offset, uint32_t value)
-{
-    ((char *)offset)[0] = value & 0xff;
-    ((char *)offset)[1] = (value & 0xff00) >> 8;
-    ((char *)offset)[2] = (value & 0xff0000) >> 16;
-    ((char *)offset)[3] = (value & 0xff000000) >> 24;
-}
+    static inline int32_t cli_readint32(const void *buff)
+    {
+        int32_t ret;
+        ret = (int32_t)((const char *)buff)[0] & 0xff;
+        ret |= (int32_t)(((const char *)buff)[1] & 0xff) << 8;
+        ret |= (int32_t)(((const char *)buff)[2] & 0xff) << 16;
+        ret |= (int32_t)(((const char *)buff)[3] & 0xff) << 24;
+        return ret;
+    }
+
+    static inline int16_t cli_readint16(const void *buff)
+    {
+        int16_t ret;
+        ret = (int16_t)((const char *)buff)[0] & 0xff;
+        ret |= (int16_t)(((const char *)buff)[1] & 0xff) << 8;
+        return ret;
+    }
+
+    static inline void cli_writeint32(void *offset, uint32_t value)
+    {
+        ((char *)offset)[0] = value & 0xff;
+        ((char *)offset)[1] = (value & 0xff00) >> 8;
+        ((char *)offset)[2] = (value & 0xff0000) >> 16;
+        ((char *)offset)[3] = (value & 0xff000000) >> 24;
+    }
 #endif
 
-void cli_append_virus(cli_ctx *ctx, const char *virname);
+int cli_append_virus(cli_ctx *ctx, const char *virname);
 const char *cli_get_last_virus(const cli_ctx *ctx);
 const char *cli_get_last_virus_str(const cli_ctx *ctx);
+void cli_virus_found_cb(cli_ctx *ctx);
+
+void cli_set_container(cli_ctx *ctx, cli_file_t type, size_t size);
+cli_file_t cli_get_container(cli_ctx *ctx, int index);
+size_t cli_get_container_size(cli_ctx *ctx, int index);
+cli_file_t cli_get_container_intermediate(cli_ctx *ctx, int index);
 
 /* used by: spin, yc (C) aCaB */
 #define __SHIFTBITS(a) (sizeof(a)<<3)
@@ -693,6 +742,7 @@ void cli_bitset_free(bitset_t *bs);
 int cli_bitset_set(bitset_t *bs, unsigned long bit_offset);
 int cli_bitset_test(bitset_t *bs, unsigned long bit_offset);
 const char* cli_ctime(const time_t *timep, char *buf, const size_t bufsize);
+void cli_check_blockmax(cli_ctx *, int);
 int cli_checklimits(const char *, cli_ctx *, unsigned long, unsigned long, unsigned long);
 int cli_updatelimits(cli_ctx *, unsigned long);
 unsigned long cli_getsizelimit(cli_ctx *, unsigned long);
@@ -700,6 +750,7 @@ int cli_matchregex(const char *str, const char *regex);
 void cli_qsort(void *a, size_t n, size_t es, int (*cmp)(const void *, const void *));
 void cli_qsort_r(void *a, size_t n, size_t es, int (*cmp)(const void*, const void *, const void *), void *arg);
 int cli_checktimelimit(cli_ctx *ctx);
+int cli_append_possibly_unwanted(cli_ctx * ctx, const char * virname);
 
 /* symlink behaviour */
 #define CLI_FTW_FOLLOW_FILE_SYMLINK 0x01

@@ -940,14 +940,14 @@ void ppm_cleanup(ppm_data_t *ppm_data)
 
 int ppm_decode_init(ppm_data_t *ppm_data, int fd, unpack_data_t *unpack_data, int *EscChar)
 {
-	int max_order, Reset, MaxMB;
+	int max_order = 0, Reset = 0, MaxMB = 0;
 	
-	max_order = rar_get_char(fd, unpack_data);
+	max_order = (int) rar_get_char(fd, unpack_data);
 	rar_dbgmsg("ppm_decode_init max_order=%d\n", max_order);
 	Reset = (max_order & 0x20) ? 1 : 0;
 	rar_dbgmsg("ppm_decode_init Reset=%d\n", Reset);
 	if (Reset) {
-		MaxMB = rar_get_char(fd, unpack_data);
+		MaxMB = (int) rar_get_char(fd, unpack_data);
 		rar_dbgmsg("ppm_decode_init MaxMB=%d\n", MaxMB);
 	} else {
 		if (sub_allocator_get_allocated_memory(&ppm_data->sub_alloc) == 0) {

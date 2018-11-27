@@ -26,6 +26,9 @@ Required option for setting the name of the sender for the submission.
 .TP
 \fB-p FILE\fR
 Submit a file that reports as a false positive (ClamAV flags the file as virus). FILE can be \- to specify stdin. Mutually exclusive with \-n.
+.TP
+\fB-V VIRUS\fR
+The name of the virus detected as false positive. This option is required for false positive submissions.
 .SH "AUTHOR"
 .LP 
 Shawn Webb <swebb@sourcefire.com>

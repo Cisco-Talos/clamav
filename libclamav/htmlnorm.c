@@ -1,11 +1,11 @@
 /*
- *  Normalise HTML text.
- *  Decode MS Script Encoder protection. 
- *
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Trog
+ * 
+ *  Summary: Normalise HTML text. Decode MS Script Encoder protection. 
+ *           The ScrEnc decoder was initially based upon an analysis by Andreas Marx.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -986,7 +986,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 				if ((tag_val_length == 5) && (strncmp(tag_val, "data:", 5) == 0)) {
 					/* RFC2397 inline data */
 
-					/* Rewind one byte so we don't recursuive */
+					/* Rewind one byte so we don't recursive */
 					if (file_buff_o2 && (file_buff_o2->length > 0)) {
 						file_buff_o2->length--;
 					}
@@ -1000,7 +1000,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 				} else if ((tag_val_length == 6) && (strncmp(tag_val, "\"data:", 6) == 0)) {
 					/* RFC2397 inline data */
 
-					/* Rewind one byte so we don't recursuive */
+					/* Rewind one byte so we don't recursive */
 					if (file_buff_o2 && (file_buff_o2->length > 0)) {
 						file_buff_o2->length--;
 					}
@@ -1766,7 +1766,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 	}
 
 	if(dconf_entconv) {
-		/* handle "unfinished" entitites */
+		/* handle "unfinished" entities */
 		size_t i;
 		const char* normalized;
 		entity_val[entity_val_length] = '\0';
@@ -1818,7 +1818,7 @@ abort:
 	}
 	if(file_tmp_o1) {
 		html_output_flush(file_tmp_o1);
-		if(file_buff_text && file_buff_text->fd != -1)
+		if(file_tmp_o1 && file_tmp_o1->fd != -1)
 			close(file_tmp_o1->fd);
 		free(file_tmp_o1);
 	}
@@ -1852,7 +1852,7 @@ int html_normalise_map(fmap_t *map, const char *dirname, tag_arguments_t *hrefs,
 int html_screnc_decode(fmap_t *map, const char *dirname)
 {
 	int count, retval=FALSE;
-	unsigned char *line, tmpstr[6];
+	unsigned char *line = NULL, tmpstr[6];
 	unsigned char *ptr, filename[1024];
 	int ofd;
 	struct screnc_state screnc_state;
@@ -1877,7 +1877,8 @@ int html_screnc_decode(fmap_t *map, const char *dirname)
 			break;
 		}
 		free(line);
-        }
+		line = NULL;
+	}
 	if (!line) {
 		goto abort;
 	}
@@ -1914,6 +1915,7 @@ int html_screnc_decode(fmap_t *map, const char *dirname)
 		screnc_decode(ptr, &screnc_state);
 		cli_writen(ofd, ptr, strlen((const char*)ptr));
 		free(line);
+		line = NULL;
 		if (screnc_state.length) {
 			ptr = line = cli_readchunk(NULL, &m_area, 8192);
 		}
@@ -1925,5 +1927,8 @@ int html_screnc_decode(fmap_t *map, const char *dirname)
 
 abort:
 	close(ofd);
+	if (line) {
+		free(line);
+	}
 	return retval;
 }

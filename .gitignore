@@ -52,3 +52,14 @@ libclamav/c++/llvmunittest_VMCore
 libclamav/c++/not
 libclamav/c++/tblgen
 libclamav/c++/llvm/tools/llvmc/plugins/Base/Base.td
+*.lib
+*.pdb
+*.exe
+*.iobj
+*.exp
+*.ipdb
+*.dll
+*.obj
+*.opendb
+.vscode
+libclamav/libmspack-0.5alpha/autom4te.cache/

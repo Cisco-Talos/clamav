@@ -277,7 +277,7 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
       uint8_t goback;
       unsigned int q;
       
-      /* Unpak each original section in turn */
+      /* Unpack each original section in turn */
 
       if ( ! CLI_ISCONTAINED(buf, bufsz, packed+4, 8)) {
 	if (usects)

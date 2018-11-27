@@ -89,10 +89,11 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
 	$(top_srcdir)/m4/ax_check_uname_syscall.m4 \
 	$(top_srcdir)/m4/fdpassing.m4 $(top_srcdir)/m4/lib-ld.m4 \
 	$(top_srcdir)/m4/lib-link.m4 $(top_srcdir)/m4/lib-prefix.m4 \
-	$(top_srcdir)/m4/libtool.m4 $(top_srcdir)/m4/llvm.m4 \
-	$(top_srcdir)/m4/ltargz.m4 $(top_srcdir)/m4/ltdl.m4 \
-	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
-	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
+	$(top_srcdir)/m4/lib-prelude.m4 $(top_srcdir)/m4/libtool.m4 \
+	$(top_srcdir)/m4/llvm.m4 $(top_srcdir)/m4/ltargz.m4 \
+	$(top_srcdir)/m4/ltdl.m4 $(top_srcdir)/m4/ltoptions.m4 \
+	$(top_srcdir)/m4/ltsugar.m4 $(top_srcdir)/m4/ltversion.m4 \
+	$(top_srcdir)/m4/lt~obsolete.m4 \
 	$(top_srcdir)/m4/mmap_private.m4 $(top_srcdir)/m4/resolv.m4 \
 	$(top_srcdir)/m4/reorganization/version.m4 \
 	$(top_srcdir)/m4/reorganization/build_tools.m4 \
@@ -147,11 +148,18 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
 	$(top_srcdir)/m4/reorganization/clamdtop.m4 \
 	$(top_srcdir)/m4/reorganization/distcheck.m4 \
 	$(top_srcdir)/m4/reorganization/llvm.m4 \
+	$(top_srcdir)/libclamav/c++/m4/llvm-opts.m4 \
 	$(top_srcdir)/m4/reorganization/sha_collect.m4 \
 	$(top_srcdir)/m4/reorganization/yara.m4 \
+	$(top_srcdir)/m4/reorganization/code_checks/fts.m4 \
+	$(top_srcdir)/m4/reorganization/libfreshclam.m4 \
+	$(top_srcdir)/m4/reorganization/prelude.m4 \
 	$(top_srcdir)/m4/reorganization/bsd.m4 \
 	$(top_srcdir)/m4/reorganization/libs/curl.m4 \
 	$(top_srcdir)/m4/reorganization/substitutions.m4 \
+	$(top_srcdir)/m4/reorganization/libmspack.m4 \
+	$(top_srcdir)/libclamav/libmspack-0.5alpha/m4/libmspack-opts.m4 \
+	$(top_srcdir)/m4/reorganization/strni.m4 \
 	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
@@ -528,7 +536,10 @@ GENHTML = @GENHTML@
 GETENT = @GETENT@
 GPERF = @GPERF@
 GREP = @GREP@
+HAVE_STRNI = @HAVE_STRNI@
 HAVE_YARA = @HAVE_YARA@
+ICONV_CPPFLAGS = @ICONV_CPPFLAGS@
+ICONV_LDFLAGS = @ICONV_LDFLAGS@
 INCLTDL = @INCLTDL@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
@@ -556,7 +567,16 @@ LIBCLAMAV_VERSION = @LIBCLAMAV_VERSION@
 LIBCLAMSHARED_CPPFLAGS = @LIBCLAMSHARED_CPPFLAGS@
 LIBLTDL = @LIBLTDL@
 LIBM = @LIBM@
+LIBMSPACK_CFLAGS = @LIBMSPACK_CFLAGS@
+LIBMSPACK_LIBS = @LIBMSPACK_LIBS@
 LIBOBJS = @LIBOBJS@
+LIBPRELUDE_CFLAGS = @LIBPRELUDE_CFLAGS@
+LIBPRELUDE_CONFIG = @LIBPRELUDE_CONFIG@
+LIBPRELUDE_CONFIG_PREFIX = @LIBPRELUDE_CONFIG_PREFIX@
+LIBPRELUDE_LDFLAGS = @LIBPRELUDE_LDFLAGS@
+LIBPRELUDE_LIBS = @LIBPRELUDE_LIBS@
+LIBPRELUDE_PREFIX = @LIBPRELUDE_PREFIX@
+LIBPRELUDE_PTHREAD_CFLAGS = @LIBPRELUDE_PTHREAD_CFLAGS@
 LIBS = @LIBS@
 LIBTOOL = @LIBTOOL@
 LIPO = @LIPO@
@@ -650,6 +670,7 @@ infodir = @infodir@
 install_sh = @install_sh@
 libdir = @libdir@
 libexecdir = @libexecdir@
+llvmconfig = @llvmconfig@
 localedir = @localedir@
 localstatedir = @localstatedir@
 ltdl_LIBOBJS = @ltdl_LIBOBJS@

@@ -106,7 +106,7 @@
  *   - probability for end[Q] to match low (avoid 0000, and other common case
  *   - choose the most "diverse" subset from a long pattern
  *
- * diverse = refering to what we are scanning, so that the filter rarely
+ * diverse = referring to what we are scanning, so that the filter rarely
  * matches, so this actually means that we *want* to avoid adding more
  * characters to the filter, if we have 2 patterns:
  * abxfg, and dalabxpo, it may be preferable to shift the 2nd one so that we
@@ -412,7 +412,7 @@ static inline int32_t spec_iter(const struct char_spec *spec)
 {
     unsigned count;
     assert(spec->step);
-    count = (1 + spec->end - spec->start)/spec->step;
+    count = (spec->step + spec->end - spec->start)/spec->step;
     if (spec->negative) /* all chars except itself are added */
 	count *= 254;
     return count;
@@ -440,7 +440,7 @@ int  filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
 	j = MIN(prefix_len + pat->length[0], MAXPATLEN);
 	for(i=0;i<j;i++) {
 		const uint16_t p = i < prefix_len ? pat->prefix[i] : pat->pattern[i - prefix_len];
-		if ((p&CLI_MATCH_WILDCARD) != CLI_MATCH_CHAR)
+		if ((p&CLI_MATCH_METADATA) != CLI_MATCH_CHAR)
 			break;
 		patc[i] = (uint8_t)p;
 	}
@@ -452,7 +452,7 @@ int  filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
 	cli_perf_log_count(TRIE_ORIG_LEN, j > 8 ? 8 : j);
 	i = 0;
 	if (!prefix_len) {
-	    while ((pat->pattern[i] & CLI_MATCH_WILDCARD) == CLI_MATCH_SPECIAL) {
+	    while ((pat->pattern[i] & CLI_MATCH_METADATA) == CLI_MATCH_SPECIAL) {
 		/* we support only ALT_CHAR, skip the rest */
 		if (pat->special_table[altcnt]->type == 1)
 		    break;
@@ -466,10 +466,26 @@ int  filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
 		const uint16_t p = i < prefix_len ? pat->prefix[i] : pat->pattern[i - prefix_len];
 		spec->alt = NULL;
 		spec->negative = 0;
-		switch (p & CLI_MATCH_WILDCARD) {
+		switch (p & CLI_MATCH_METADATA) {
 			case CLI_MATCH_CHAR:
 				spec->start = spec->end = (uint8_t)p;
 				spec->step  = 1;
+				break;
+			case CLI_MATCH_NOCASE:
+				if ((uint8_t)p >= 'a' && (uint8_t)p <= 'z') {
+					spec->start = (uint8_t)p - ('a' - 'A');
+					spec->end   = (uint8_t)p;
+					spec->step  = ('a' - 'A');
+				}
+				else if ((uint8_t)p >= 'A' && (uint8_t)p <= 'Z') {
+					spec->start = (uint8_t)p;
+					spec->end   = (uint8_t)p + ('a' - 'A');
+					spec->step  = ('a' - 'A');
+				}
+				else {
+					spec->start = spec->end = (uint8_t)p;
+					spec->step  = 1;
+				}
 				break;
 			case CLI_MATCH_IGNORE:
 				spec->start = 0x00;

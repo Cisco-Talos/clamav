@@ -1,8 +1,11 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015-2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2008 Sourcefire, Inc.
  *
  *  Authors: Nigel Horne
+ * 
+ *  Acknowledgements: The algorithm was based on 
+ *                    kdepim/ktnef/lib/ktnefparser.cpp from KDE.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -167,7 +170,7 @@ cli_tnef(const char *dir, cli_ctx *ctx)
 					if(fout >= 0) {
 						int count;
 
-						cli_warnmsg("Saving dump to %s:  refer to http://www.clamav.net/doc/install.html\n", filename);
+						cli_warnmsg("Saving dump to %s:  refer to https://www.clamav.net/documents/installing-clamav\n", filename);
 
 						pos = 0;
 						while ((count = fmap_readn(*ctx->fmap, buffer, pos, sizeof(buffer))) > 0) {
@@ -265,7 +268,7 @@ tnef_message(fmap_t *map, off_t *pos, uint16_t type, uint16_t tag, int32_t lengt
 
 	/*cli_dbgmsg("%lu %lu\n", (long)(offset + length), ftell(fp));*/
 
-	if(!CLI_ISCONTAINED2(0, fsize, (off_t)offset, (off_t)length)) {
+	if(!CLI_ISCONTAINED2(0, fsize, offset, (off_t)length)) {
 		cli_dbgmsg("TNEF: Incorrect length field in tnef_message\n");
 		return -1;
 	}

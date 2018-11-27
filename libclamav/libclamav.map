@@ -114,6 +114,7 @@ CLAMAV_PRIVATE {
     cli_malloc;
     cli_memstr;
     cli_strdup;
+    cli_strndup;
     cli_realloc;
     cli_ctime;
     tableCreate;
@@ -174,6 +175,7 @@ CLAMAV_PRIVATE {
     cli_scanbuff;
     cli_fmap_scandesc;
     cli_checkfp_pe;
+    cli_genhash_pe;
     html_screnc_decode;
     mpool_create;
     mpool_calloc;

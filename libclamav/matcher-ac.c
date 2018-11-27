@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015-2017 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2009 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -307,7 +307,6 @@ static int cli_ac_addpatt_recursive(struct cli_matcher *root, struct cli_ac_patt
 
 int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
 {
-    struct cli_ac_node *pt;
     struct cli_ac_patt **newtable;
     uint16_t len = MIN(root->ac_maxdepth, pattern->length[0]);
     uint8_t i;
@@ -1067,7 +1066,7 @@ inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t off
 static int ac_backward_match_branch(const unsigned char *buffer, uint32_t bp, uint32_t offset, uint32_t fileoffset, uint32_t length,
                                     const struct cli_ac_patt *pattern, uint32_t pp, uint16_t specialcnt, uint32_t *start, uint32_t *end)
 {
-    int match;
+    int match = 0;
     uint16_t wc, i;
     uint32_t filestart;
 
@@ -1275,7 +1274,7 @@ int cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t lsigs,
 
     data->partsigs = partsigs;
     if(partsigs) {
-        data->offmatrix = (int32_t ***) cli_calloc(partsigs, sizeof(int32_t **));
+        data->offmatrix = (uint32_t ***) cli_calloc(partsigs, sizeof(uint32_t **));
         if(!data->offmatrix) {
             cli_errmsg("cli_ac_init: Can't allocate memory for data->offmatrix\n");
 
@@ -1529,7 +1528,6 @@ int lsig_sub_matched(const struct cli_matcher *root, struct cli_ac_data *mdata, 
     }
 
     if (ac_lsig->type & CLI_YARA_OFFSET && realoff != CLI_OFF_NONE) {
-        uint32_t * offs;
         struct cli_subsig_matches * ss_matches;
         struct cli_lsig_matches * ls_matches;
         cli_dbgmsg("lsig_sub_matched lsig %u:%u at %u\n", lsigid1, lsigid2, realoff);
@@ -1624,7 +1622,19 @@ int cli_ac_chkmacro(struct cli_matcher *root, struct cli_ac_data *data, unsigned
 }
 
 
-int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, void **customdata, struct cli_ac_result **res, const struct cli_matcher *root, struct cli_ac_data *mdata, uint32_t offset, cli_file_t ftype, struct cli_matched_type **ftoffset, unsigned int mode, cli_ctx *ctx)
+int cli_ac_scanbuff(
+    const unsigned char *buffer, 
+    uint32_t length, 
+    const char **virname, 
+    void **customdata, 
+    struct cli_ac_result **res, 
+    const struct cli_matcher *root, 
+    struct cli_ac_data *mdata, 
+    uint32_t offset, 
+    cli_file_t ftype, 
+    struct cli_matched_type **ftoffset, 
+    unsigned int mode, 
+    cli_ctx *ctx)
 {
     struct cli_ac_node *current;
     struct cli_ac_list *pattN, *ptN;
@@ -1632,7 +1642,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
     uint32_t i, bp, exptoff[2], realoff, matchstart, matchend;
     uint16_t j;
     uint8_t found, viruses_found = 0;
-    int32_t **offmatrix, swp;
+    uint32_t **offmatrix, swp;
     int type = CL_CLEAN;
     struct cli_ac_result *newres;
     int rc;
@@ -1741,14 +1751,14 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
                                     return CL_EMEM;
                                 }
 
-                                mdata->offmatrix[pt->sigid - 1][0] = cli_malloc(pt->parts * (CLI_DEFAULT_AC_TRACKLEN + 2) * sizeof(int32_t));
+                                mdata->offmatrix[pt->sigid - 1][0] = cli_malloc(pt->parts * (CLI_DEFAULT_AC_TRACKLEN + 2) * sizeof(uint32_t));
                                 if(!mdata->offmatrix[pt->sigid - 1][0]) {
                                     cli_errmsg("cli_ac_scanbuff: Can't allocate memory for mdata->offmatrix[%u][0]\n", pt->sigid - 1);
                                     free(mdata->offmatrix[pt->sigid - 1]);
                                     mdata->offmatrix[pt->sigid - 1] = NULL;
                                     return CL_EMEM;
                                 }
-                                memset(mdata->offmatrix[pt->sigid - 1][0], -1, pt->parts * (CLI_DEFAULT_AC_TRACKLEN + 2) * sizeof(int32_t));
+                                memset(mdata->offmatrix[pt->sigid - 1][0], (uint32_t)-1, pt->parts * (CLI_DEFAULT_AC_TRACKLEN + 2) * sizeof(uint32_t));
                                 mdata->offmatrix[pt->sigid - 1][0][0] = 0;
                                 for(j = 1; j < pt->parts; j++) {
                                     mdata->offmatrix[pt->sigid - 1][j] = mdata->offmatrix[pt->sigid - 1][0] + j * (CLI_DEFAULT_AC_TRACKLEN + 2);
@@ -1759,9 +1769,12 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 
                             found = 0;
                             if(pt->partno != 1) {
-                                for(j = 1; j <= CLI_DEFAULT_AC_TRACKLEN + 1 && offmatrix[pt->partno - 2][j] != -1; j++) {
+                                for(j = 1; j <= CLI_DEFAULT_AC_TRACKLEN + 1 && offmatrix[pt->partno - 2][j] != (uint32_t)-1; j++) {
                                     found = j;
-                                    if(pt->maxdist)
+                                    if(realoff < offmatrix[pt->partno - 2][j])
+                                        found = 0;
+
+                                    if(found && pt->maxdist)
                                         if(realoff - offmatrix[pt->partno - 2][j] > pt->maxdist)
                                             found = 0;
 
@@ -1807,12 +1820,12 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
                                             /* FIXME: the first offset in the array is most likely the correct one but
                                              * it may happen it is not
                                              */
-                                            for(j = 1; j <= CLI_DEFAULT_AC_TRACKLEN + 1 && offmatrix[0][j] != -1; j++)
+                                            for(j = 1; j <= CLI_DEFAULT_AC_TRACKLEN + 1 && offmatrix[0][j] != (uint32_t)-1; j++)
                                                 if(ac_addtype(ftoffset, type, offmatrix[pt->parts - 1][j], ctx))
                                                     return CL_EMEM;
                                         }
 
-                                        memset(offmatrix[0], -1, pt->parts * (CLI_DEFAULT_AC_TRACKLEN + 2) * sizeof(int32_t));
+                                        memset(offmatrix[0], (uint32_t)-1, pt->parts * (CLI_DEFAULT_AC_TRACKLEN + 2) * sizeof(uint32_t));
                                         for(j = 0; j < pt->parts; j++)
                                             offmatrix[j][0] = 0;
                                     }
@@ -1835,7 +1848,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
                                         newres->virname = pt->virname;
                                         newres->customdata = pt->customdata;
                                         newres->next = *res;
-                                        newres->offset = offmatrix[pt->parts - 1][1];
+                                        newres->offset = (off_t)offmatrix[pt->parts - 1][1];
                                         *res = newres;
 
                                         ptN = ptN->next_same;
@@ -1889,7 +1902,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
                                     }
                                     newres->virname = pt->virname;
                                     newres->customdata = pt->customdata;
-                                    newres->offset = realoff;
+                                    newres->offset = (off_t)realoff;
                                     newres->next = *res;
                                     *res = newres;
 
@@ -1943,7 +1956,8 @@ static int qcompare_fstr(const void *arg, const void *a, const void *b)
 /* returns if level of nesting, end set to MATCHING paren, start AFTER staring paren */
 inline static int find_paren_end(char *hexstr, char **end)
 {
-    int i, nest = 0, level = 0;
+    unsigned long i;
+    int nest = 0, level = 0;
 
     *end = NULL;
     for (i = 0; i < strlen(hexstr); i++) {
@@ -1967,7 +1981,8 @@ inline static int find_paren_end(char *hexstr, char **end)
  * counts applied to start of expr (not end, i.e. numexpr starts at 1 for the first expr     */
 inline static int ac_analyze_expr(char *hexstr, int *fixed_len, int *sub_len)
 {
-    int i, level = 0, len = 0, numexpr = 1;
+    unsigned long i;
+    int level = 0, len = 0, numexpr = 1;
     int flen, slen;
 
     flen = 1;
@@ -2023,7 +2038,7 @@ inline static int ac_analyze_expr(char *hexstr, int *fixed_len, int *sub_len)
 
 inline static int ac_uicmp(uint16_t *a, size_t alen, uint16_t *b, size_t blen, int *wild)
 {
-    uint16_t cmp, awild, bwild, side_wild;
+    uint16_t awild, bwild, side_wild;
     size_t i, minlen = MIN(alen, blen);
 
     side_wild = 0;
@@ -2138,12 +2153,12 @@ inline static int ac_addspecial_add_alt_node(const char *subexpr, uint8_t sigopt
 
     s = cli_mpool_hex2ui(root->mempool, subexpr);
     if (!s) {
-        free(newnode);
+        mpool_free(root->mempool, newnode);
         return CL_EMALFDB;
     }
 
     newnode->str = s;
-    newnode->len = strlen(subexpr)/2;
+    newnode->len = (uint16_t)strlen(subexpr)/2;
     newnode->unique = 1;
 
     /* setting nocase match */
@@ -2338,13 +2353,13 @@ inline static int ac_special_altstr(const char *hexpr, uint8_t sigopts, struct c
 
         for (i = 0; i < num; i++) {
             if (num == 1) {
-                c = (char *) cli_mpool_hex2str(root->mempool, hexprcpy);
+                c = cli_mpool_hex2str(root->mempool, hexprcpy);
             } else {
                 if(!(h = cli_strtok(hexprcpy, i, "|"))) {
                     free(hexprcpy);
                     return CL_EMEM;
                 }
-                c = (char *) cli_mpool_hex2str(root->mempool, h);
+                c = cli_mpool_hex2str(root->mempool, h);
                 free(h);
             }
             if (!c) {
@@ -2353,10 +2368,10 @@ inline static int ac_special_altstr(const char *hexpr, uint8_t sigopts, struct c
             }
 
             if (special->type == AC_SPECIAL_ALT_CHAR) {
-                (special->alt).byte[i] = *c;
+                (special->alt).byte[i] = (unsigned char)*c;
                 mpool_free(root->mempool, c);
             } else {
-                (special->alt).f_str[i] = c;
+                (special->alt).f_str[i] = (unsigned char*)c;
             }
             special->num++;
         }
@@ -2401,7 +2416,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
     char *pt, *pt2, *hex = NULL, *hexcpy = NULL;
     uint16_t i, j, ppos = 0, pend, *dec, nzpos = 0;
     uint8_t wprefix = 0, zprefix = 1, plen = 0, nzplen = 0;
-    struct cli_ac_special *newspecial, *specialpt, **newtable;
+    struct cli_ac_special *newspecial, **newtable;
     int ret, error = CL_SUCCESS;
 
 
@@ -2584,8 +2599,9 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 
             if (nest > ACPATT_ALTN_MAXNEST) {
                 cli_errmsg("ac_addspecial: Expression exceeds maximum alternate nesting limit\n");
-                free(hexcpy);
-                return CL_EMALFDB;
+                mpool_free(root->mempool, newspecial);
+                error = CL_EMALFDB;
+                break;
             }
 
             if(!strcmp(pt, "B")) {
@@ -2684,7 +2700,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
         return CL_EMALFDB;
     }
 
-    new->length[0] = strlen(hex ? hex : hexsig) / 2;
+    new->length[0] = (uint16_t)strlen(hex ? hex : hexsig) / 2;
     for(i = 0, j = 0; i < new->length[0]; i++) {
         if((new->pattern[i] & CLI_MATCH_METADATA) == CLI_MATCH_SPECIAL) {
             new->length[1] += new->special_table[j]->len[0];

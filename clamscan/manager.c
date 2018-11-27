@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2017 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -183,7 +183,7 @@ static int print_chain(struct metachain *c, char *str, size_t len)
 static cl_error_t post(int fd, int result, const char *virname, void *context)
 {
     struct clamscan_cb_data *d = context;
-    struct metachain *c;
+    struct metachain *c = NULL;
     char str[128];
 
     UNUSEDPARAM(fd);
@@ -369,6 +369,12 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
         chain.chains = malloc(sizeof(char **));
         if (chain.chains) {
             chain.chains[0] = strdup(filename);
+            if (!chain.chains[0]) {
+                free(chain.chains);
+                logg("Unable to allocate memory in scanfile()\n");
+                info.errors++;
+                return;
+            }
             chain.nchains = 1;
         }
     }
@@ -394,9 +400,6 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
                 logg("~%s!(%llu): %s FOUND\n", filename, (long long unsigned)(chain.lastvir-1), virname);
             }
         }
-        if (!(options & CL_SCAN_ALLMATCHES))
-            logg("~%s: %s FOUND\n", filename, virname);
-
         info.files++;
         info.ifiles++;
 
@@ -590,9 +593,6 @@ static int scanstdin(const struct cl_engine *engine, const struct optstruct *opt
     data.filename = "stdin";
     data.chain = NULL;
     if((ret = cl_scanfile_callback(file, &virname, &info.blocks, engine, options, &data)) == CL_VIRUS) {
-        if (!(options & CL_SCAN_ALLMATCHES))
-            logg("stdin: %s FOUND\n", virname);
-
         info.ifiles++;
 
         if(bell)
@@ -670,44 +670,10 @@ int scanmanager(const struct optstruct *opts)
         return 2;
     }
 
+    cl_engine_set_clcb_virus_found(engine, clamscan_virus_found_cb);
+    
     if (optget(opts, "disable-cache")->enabled)
         cl_engine_set_num(engine, CL_ENGINE_DISABLE_CACHE, 1);
-
-    if (optget(opts, "disable-pe-stats")->enabled) {
-        cl_engine_set_num(engine, CL_ENGINE_DISABLE_PE_STATS, 1);
-    }
-
-    if (optget(opts, "enable-stats")->enabled) {
-        cl_engine_stats_enable(engine);
-    }
-
-    if (optget(opts, "stats-timeout")->enabled) {
-        cl_engine_set_num(engine, CL_ENGINE_STATS_TIMEOUT, optget(opts, "StatsTimeout")->numarg);
-    }
-
-    if (optget(opts, "stats-host-id")->enabled) {
-        char *p = optget(opts, "stats-host-id")->strarg;
-
-        if (strcmp(p, "default")) {
-            if (!strcmp(p, "none")) {
-                cl_engine_set_clcb_stats_get_hostid(engine, NULL);
-            } else if (!strcmp(p, "anonymous")) {
-                strcpy(hostid, STATS_ANON_UUID);
-            } else {
-                if (strlen(p) > 36) {
-                    logg("!Invalid HostID\n");
-
-                    cl_engine_set_clcb_stats_submit(engine, NULL);
-                    cl_engine_free(engine);
-                    return 2;
-                }
-
-                strcpy(hostid, p);
-            }
-
-            cl_engine_set_clcb_stats_get_hostid(engine, get_hostid);
-        }
-    }
 
     if(optget(opts, "detect-pua")->enabled) {
         dboptions |= CL_DB_PUA;
@@ -792,6 +758,12 @@ int scanmanager(const struct optstruct *opts)
     if((opt = optget(opts,"bytecode-timeout"))->enabled)
         cl_engine_set_num(engine, CL_ENGINE_BYTECODE_TIMEOUT, opt->numarg);
 
+    if (optget(opts, "nocerts")->enabled)
+        cl_engine_set_num(engine, CL_ENGINE_DISABLE_PE_CERTS, 1);
+
+    if (optget(opts, "dumpcerts")->enabled)
+        cl_engine_set_num(engine, CL_ENGINE_PE_DUMPCERTS, 1);
+
     if((opt = optget(opts,"bytecode-mode"))->enabled) {
         enum bytecode_mode mode;
 
@@ -818,6 +790,19 @@ int scanmanager(const struct optstruct *opts)
 	    opt = opt->nextarg;
         }
     }
+
+    /* JSON check to prevent engine loading if specified without libjson-c  */
+#if HAVE_JSON
+    if (optget(opts, "gen-json")->enabled)
+        options |= CL_SCAN_FILE_PROPERTIES;
+#else
+    if (optget(opts, "gen-json")->enabled) {
+        logg("!Can't generate json (gen-json). libjson-c dev library was missing or misconfigured when ClamAV was built.\n");
+
+        cl_engine_free(engine);
+        return 2;
+    }
+#endif
 
     if((opt = optget(opts, "tempdir"))->enabled) {
         if((ret = cl_engine_set_str(engine, CL_ENGINE_TMPDIR, opt->strarg))) {
@@ -882,12 +867,6 @@ int scanmanager(const struct optstruct *opts)
         cl_engine_set_clcb_pre_cache(engine, pre);
         cl_engine_set_clcb_post_scan(engine, post);
     }
-
-    if (optget(opts, "nocerts")->enabled)
-        engine->dconf->pe |= PE_CONF_DISABLECERT;
-
-    if (optget(opts, "dumpcerts")->enabled)
-        engine->dconf->pe |= PE_CONF_DUMPCERT;
 
     /* set limits */
 
@@ -1032,7 +1011,6 @@ int scanmanager(const struct optstruct *opts)
     /* set scan options */
     if(optget(opts, "allmatch")->enabled) {
         options |= CL_SCAN_ALLMATCHES;
-        cl_engine_set_clcb_virus_found(engine, clamscan_virus_found_cb);
     }
 
     if(optget(opts,"phishing-ssl")->enabled)
@@ -1056,6 +1034,9 @@ int scanmanager(const struct optstruct *opts)
     if(optget(opts, "block-encrypted")->enabled)
         options |= CL_SCAN_BLOCKENCRYPTED;
 
+    if(optget(opts, "block-macros")->enabled)
+        options |= CL_SCAN_BLOCKMACROS;
+
     if(optget(opts, "scan-pe")->enabled)
         options |= CL_SCAN_PE;
 
@@ -1071,7 +1052,7 @@ int scanmanager(const struct optstruct *opts)
     if(optget(opts, "scan-swf")->enabled)
         options |= CL_SCAN_SWF;
 
-    if(optget(opts, "scan-html")->enabled)
+    if(optget(opts, "scan-html")->enabled && optget(opts, "normalize")->enabled)
         options |= CL_SCAN_HTML;
 
     if(optget(opts, "scan-mail")->enabled)
@@ -1085,6 +1066,10 @@ int scanmanager(const struct optstruct *opts)
 
     if(optget(opts, "algorithmic-detection")->enabled)
         options |= CL_SCAN_ALGORITHMIC;
+
+    if(optget(opts, "block-max")->enabled) {
+        options |= CL_SCAN_BLOCKMAX;
+    }
 
 #ifdef HAVE__INTERNAL__SHA_COLLECT
     if(optget(opts, "dev-collect-hashes")->enabled)
@@ -1153,11 +1138,6 @@ int scanmanager(const struct optstruct *opts)
     procdev = (dev_t) 0;
     if(CLAMSTAT("/proc", &sb) != -1 && !sb.st_size)
         procdev = sb.st_dev;
-#endif
-
-#if HAVE_JSON
-    if (optget(opts, "gen-json")->enabled)
-        options |= CL_SCAN_FILE_PROPERTIES;
 #endif
 
     /* check filetype */

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2008 Sourcefire, Inc.
  *
  *  Authors: Michal 'GiM' Spadlinski
@@ -58,8 +58,8 @@ enum { UPACK_399, UPACK_11_12, UPACK_0151477, UPACK_0297729 };
 int unupack(int upack, char *dest, uint32_t dsize, char *buff, uint32_t vma, uint32_t ep, uint32_t base, uint32_t va, int file)
 {
 	int j, searchval;
-	char *loc_esi, *loc_edi = NULL, *loc_ebx, *end_edi, *save_edi, *alvalue;
-	char *paddr, *pushed_esi, *save2;
+	char *loc_esi = NULL, *loc_edi = NULL, *loc_ebx = NULL, *end_edi = NULL, *save_edi = NULL, *alvalue = NULL;
+	char *paddr = NULL, *pushed_esi = NULL, *save2 = NULL;
 	uint32_t save1, save3, loc_ecx, count, shlsize, original_ep, ret, loc_ebx_u;
 	struct cli_exe_section section;
 	int upack_version = UPACK_399;
@@ -525,7 +525,7 @@ int unupack399(char *bs, uint32_t bl, uint32_t init_eax, char *init_ebx, uint32_
 						do {
 							uint32_t temp_edx;
 							/* compare with lzma_upack_esi_00 */
-							/* do not put in one statment because of difference in signedness */
+							/* do not put in one statement because of difference in signedness */
 							if (!CLI_ISCONTAINED(bs, bl, p.p0, 4))
 								return -1;
 							temp_edx = cli_readint32((char *)p.p0);

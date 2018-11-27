@@ -1,4 +1,4 @@
-.TH "clamav-milter.conf" "5" "February 12, 2007" "ClamAV @VERSION@" "Clam AntiVirus"
+.TH "clamav-milter.conf" "5" "Feb 25, 2009" "ClamAV @VERSION@" "Clam AntiVirus"
 .SH "NAME"
 .LP 
 \fBclamav-milter.conf\fR \- Configuration file for clamav-milter
@@ -57,11 +57,6 @@ Run as another user (clamav-milter must be started by root for this option to wo
 .br
 Default: unset (don\'t drop privileges)
 .TP 
-\fBAllowSupplementaryGroups BOOL\fR
-Initialize supplementary group access (clamav-milter must be started by root).
-.br 
-Default: no
-.TP 
 \fBReadTimeout NUMBER\fR
 Waiting for data from clamd will timeout after this time (seconds).
 .br 
@@ -109,7 +104,7 @@ Default: no default
 .SH "EXCLUSIONS"
 .TP 
 \fBLocalNet STRING\fR
-Messages originating from these hosts/networks will not be scanned. This option takes a host(name)/mask pair in CIRD notation and can be repeated several times. If "/mask" is omitted, a host is assumed. To specify a locally orignated, non-smtp, email use the keyword "local"
+Messages originating from these hosts/networks will not be scanned. This option takes a host(name)/mask pair in CIRD notation and can be repeated several times. If "/mask" is omitted, a host is assumed. To specify a locally originated, non-smtp, email use the keyword "local"
 .br
 Default: unset (scan everything regardless of the origin)
 .TP 
@@ -128,11 +123,11 @@ Messages larger than this value won\'t be scanned. Make sure this value is lower
 .br
 Default: 25M
 .SH "ACTIONS"
-The following group of options controls the delievery process under  different circumstances. The following actions are available:
+The following group of options controls the delivery process under  different circumstances. The following actions are available:
 .br
-- Accept: The message is accepted for delievery
+- Accept: The message is accepted for delivery
 .br
-- Reject: Immediately refuse delievery (a 5xx error is returned to the peer)
+- Reject: Immediately refuse delivery (a 5xx error is returned to the peer)
 .br
 - Defer: Return a temporary failure message (4xx) to the peer
 .br
@@ -171,7 +166,7 @@ When AddHeader is in use, this option allows you to set the reported hostname. T
 Default: disabled
 .TP 
 \fBVirusAction STRING\fr
-Execute a command (possibly searching PATH) when an infected message is found. The following parameters are passed to the invoked program in this order: virus name, queue id, sender, destination, subject, message id, message date. Note #1: this requires MTA macroes to be available (see LogInfected below). Note #2: the process is invoked in the context of clamav-milter. Note #3: clamav-milter will wait for the process to exit. Be quick or fork to avoid unnecessary delays in email delievery.
+Execute a command (possibly searching PATH) when an infected message is found. The following parameters are passed to the invoked program in this order: virus name, queue id, sender, destination, subject, message id, message date. Note #1: this requires MTA macroes to be available (see LogInfected below). Note #2: the process is invoked in the context of clamav-milter. Note #3: clamav-milter will wait for the process to exit. Be quick or fork to avoid unnecessary delays in email delivery.
 .br
 Default: disabled
 .SH "LOGGING OPTIONS"
@@ -241,7 +236,7 @@ Note: although it's probably a good idea to enable this option, the default valu
 Default: no
 .SH "NOTES"
 .LP 
-All options expressing a size are limited to max 4GB. Values in excess will be resetted to the maximum.
+All options expressing a size are limited to max 4GB. Values in excess will be reset to the maximum.
 .SH "FILES"
 .LP 
 @CFGDIR@/clamav-milter.conf

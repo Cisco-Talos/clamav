@@ -242,7 +242,7 @@ start(in_addr_t ip)
 
 	proto = getprotobyname("tcp");
 	if(proto == NULL) {
-		fputs("Unknown prototol tcp, check /etc/protocols\n", stderr);
+		fputs("Unknown protocol tcp, check /etc/protocols\n", stderr);
 		return -1;
 	} else if((sock = socket(AF_INET, SOCK_STREAM, proto->p_proto)) < 0) {
 		perror("socket");

@@ -1005,7 +1005,7 @@ int cli_unarj_prepare_file(const char *dirname, arj_metadata_t *metadata)
 	if (!metadata || !dirname) {
 		return CL_ENULLARG;
 	}
-	/* Each file is preceeded by the ARJ file marker */
+	/* Each file is preceded by the ARJ file marker */
 	if (!is_arj_archive(metadata)) {
 		cli_dbgmsg("Not in ARJ format\n");
 		return CL_EFORMAT;

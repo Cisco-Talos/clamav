@@ -32,7 +32,11 @@
 #include <openssl/err.h>
 
 /* Certain OSs already use 64bit variables in their stat struct */
-#define STAT64_BLACKLIST !defined(__FreeBSD__) && !defined(__APPLE__)
+#if ( !defined(__FreeBSD__) && !defined(__APPLE__) )
+#define STAT64_BLACKLIST 1
+#else
+#define STAT64_BLACKLIST 0
+#endif
 
 #if defined(HAVE_STAT64) && STAT64_BLACKLIST
 
@@ -151,7 +155,7 @@ typedef enum {
 #define CL_SCAN_PE			0x20
 #define CL_SCAN_BLOCKBROKEN		0x40
 #define CL_SCAN_MAILURL			0x80 /* ignored */
-#define CL_SCAN_BLOCKMAX		0x100 /* ignored */
+#define CL_SCAN_BLOCKMAX		0x100
 #define CL_SCAN_ALGORITHMIC		0x200
 #define CL_SCAN_PHISHING_BLOCKSSL	0x800 /* ssl mismatches, not ssl by itself*/
 #define CL_SCAN_PHISHING_BLOCKCLOAK	0x1000
@@ -186,6 +190,8 @@ typedef enum {
 #define ENGINE_OPTIONS_DISABLE_CACHE    0x1
 #define ENGINE_OPTIONS_FORCE_TO_DISK    0x2
 #define ENGINE_OPTIONS_DISABLE_PE_STATS 0x4
+#define ENGINE_OPTIONS_DISABLE_PE_CERTS 0x8
+#define ENGINE_OPTIONS_PE_DUMPCERTS     0x10
 
 struct cl_engine;
 struct cl_settings;
@@ -242,7 +248,9 @@ enum cl_engine_field {
     CL_ENGINE_TIME_LIMIT,           /* uint32_t */
     CL_ENGINE_PCRE_MATCH_LIMIT,     /* uint64_t */
     CL_ENGINE_PCRE_RECMATCH_LIMIT,  /* uint64_t */
-    CL_ENGINE_PCRE_MAX_FILESIZE     /* uint64_t */
+    CL_ENGINE_PCRE_MAX_FILESIZE,    /* uint64_t */
+    CL_ENGINE_DISABLE_PE_CERTS,     /* uint32_t */
+    CL_ENGINE_PE_DUMPCERTS          /* uint32_t */
 };
 
 enum bytecode_security {
@@ -296,7 +304,7 @@ extern int cli_cache_enable(struct cl_engine *engine);
 
 /* CALLBACKS */
 
-/* I certainly wish I could declare the callback protoes stable and
+/* I certainly wish I could declare the callback protos stable and
    move on to better things. But real life crossed my way enough times
    already and what looked perfect had to evolve somehow.
    So all I can say is I'll try my best not to break these things in the long run.
@@ -555,7 +563,7 @@ extern int cl_scanmap_callback(cl_fmap_t *map, const char **virname, unsigned lo
  @param[out] olen An optional pointer that stores how long the generated hash is.
  @return A pointer to the generated hash or obuf if obuf is not NULL.
  */
-unsigned char *cl_hash_data(char *alg, const void *buf, size_t len, unsigned char *obuf, unsigned int *olen);
+unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsigned char *obuf, unsigned int *olen);
 
 /** Generate a hash of a file.
  @param[in] ctx A pointer to the OpenSSL EVP_MD_CTX object
@@ -571,7 +579,7 @@ unsigned char *cl_hash_file_fd_ctx(EVP_MD_CTX *ctx, int fd, unsigned int *olen);
  @param[out] olen An optional pointer that stores how long the generated hash is
  @return A pointer to a dynamically-created buffer that holds the generated hash
  */
-unsigned char *cl_hash_file_fd(int fd, char *alg, unsigned int *olen);
+unsigned char *cl_hash_file_fd(int fd, const char *alg, unsigned int *olen);
 
 /** Generate a hash of a file.
  @param[in] fp A pointer to a FILE object
@@ -579,7 +587,7 @@ unsigned char *cl_hash_file_fd(int fd, char *alg, unsigned int *olen);
  @param[out] olen An optional pointer that stores how long the generated hash is
  @return A pointer to a dynamically-created buffer that holds the generated hash
  */
-unsigned char *cl_hash_file_fp(FILE *fp, char *alg, unsigned int *olen);
+unsigned char *cl_hash_file_fp(FILE *fp, const char *alg, unsigned int *olen);
 
 /** Generate a sha256 hash of data
  @param[in] buf The data to hash
@@ -609,7 +617,7 @@ unsigned char *cl_sha1(const void *buf, size_t len, unsigned char *obuf, unsigne
  @param[in] decode Whether or not to base64-decode the signature prior to verification. 1 for yes, 0 for no.
  @return 0 for success, -1 for error or invalid signature
  */
-int cl_verify_signature(EVP_PKEY *pkey, char *alg, unsigned char *sig, unsigned int siglen, unsigned char *data, size_t datalen, int decode);
+int cl_verify_signature(EVP_PKEY *pkey, const char *alg, unsigned char *sig, unsigned int siglen, unsigned char *data, size_t datalen, int decode);
 
 /** Verify validity of signed data
  @param[in] pkey The public key of the keypair that signed the data
@@ -619,7 +627,7 @@ int cl_verify_signature(EVP_PKEY *pkey, char *alg, unsigned char *sig, unsigned 
  @param[in] digest The hash of the signed data
  @return 0 for success, -1 for error or invalid signature
  */
-int cl_verify_signature_hash(EVP_PKEY *pkey, char *alg, unsigned char *sig, unsigned int siglen, unsigned char *digest);
+int cl_verify_signature_hash(EVP_PKEY *pkey, const char *alg, unsigned char *sig, unsigned int siglen, unsigned char *digest);
 
 /** Verify validity of signed data
  @param[in] pkey The public key of the keypair that signed the data
@@ -629,7 +637,7 @@ int cl_verify_signature_hash(EVP_PKEY *pkey, char *alg, unsigned char *sig, unsi
  @param[in] fd The file descriptor
  @return 0 for success, -1 for error or invalid signature
  */
-int cl_verify_signature_fd(EVP_PKEY *pkey, char *alg, unsigned char *sig, unsigned int siglen, int fd);
+int cl_verify_signature_fd(EVP_PKEY *pkey, const char *alg, unsigned char *sig, unsigned int siglen, int fd);
 
 /** Verify validity of signed data
  @param[in] x509path The path to the public key of the keypair that signed the data
@@ -639,7 +647,7 @@ int cl_verify_signature_fd(EVP_PKEY *pkey, char *alg, unsigned char *sig, unsign
  @param[in] digest The hash of the signed data
  @return 0 for success, -1 for error or invalid signature
  */
-int cl_verify_signature_hash_x509_keyfile(char *x509path, char *alg, unsigned char *sig, unsigned int siglen, unsigned char *digest);
+int cl_verify_signature_hash_x509_keyfile(char *x509path, const char *alg, unsigned char *sig, unsigned int siglen, unsigned char *digest);
 
 /** Verify validity of signed data
  @param[in] x509path The path to the public key of the keypair that signed the data
@@ -649,7 +657,7 @@ int cl_verify_signature_hash_x509_keyfile(char *x509path, char *alg, unsigned ch
  @param[in] fd The file descriptor
  @return 0 for success, -1 for error or invalid signature
  */
-int cl_verify_signature_fd_x509_keyfile(char *x509path, char *alg, unsigned char *sig, unsigned int siglen, int fd);
+int cl_verify_signature_fd_x509_keyfile(char *x509path, const char *alg, unsigned char *sig, unsigned int siglen, int fd);
 
 /** Verify validity of signed data
  @param[in] x509path The path to the public key of the keypair that signed the data
@@ -661,7 +669,7 @@ int cl_verify_signature_fd_x509_keyfile(char *x509path, char *alg, unsigned char
  @param[in] decode Whether or not to base64-decode the signature prior to verification. 1 for yes, 0 for no.
  @return 0 for success, -1 for error or invalid signature
  */
-int cl_verify_signature_x509_keyfile(char *x509path, char *alg, unsigned char *sig, unsigned int siglen, unsigned char *data, size_t datalen, int decode);
+int cl_verify_signature_x509_keyfile(char *x509path, const char *alg, unsigned char *sig, unsigned int siglen, unsigned char *data, size_t datalen, int decode);
 
 /** Verify validity of signed data
  @param[in] x509 The X509 object of the public key of the keypair that signed the data
@@ -671,7 +679,7 @@ int cl_verify_signature_x509_keyfile(char *x509path, char *alg, unsigned char *s
  @param[in] digest The hash of the signed data
  @return 0 for success, -1 for error or invalid signature
  */
-int cl_verify_signature_hash_x509(X509 *x509, char *alg, unsigned char *sig, unsigned int siglen, unsigned char *digest);
+int cl_verify_signature_hash_x509(X509 *x509, const char *alg, unsigned char *sig, unsigned int siglen, unsigned char *digest);
 
 /** Verify validity of signed data
  @param[in] x509 The X509 object of the public key of the keypair that signed the data
@@ -681,7 +689,7 @@ int cl_verify_signature_hash_x509(X509 *x509, char *alg, unsigned char *sig, uns
  @param[in] fd The file descriptor
  @return 0 for success, -1 for error or invalid signature
  */
-int cl_verify_signature_fd_x509(X509 *x509, char *alg, unsigned char *sig, unsigned int siglen, int fd);
+int cl_verify_signature_fd_x509(X509 *x509, const char *alg, unsigned char *sig, unsigned int siglen, int fd);
 
 /** Verify validity of signed data
  @param[in] x509 The X509 object of the public key of the keypair that signed the data
@@ -693,7 +701,7 @@ int cl_verify_signature_fd_x509(X509 *x509, char *alg, unsigned char *sig, unsig
  @param[in] decode Whether or not to base64-decode the signature prior to verification. 1 for yes, 0 for no.
  @return 0 for success, -1 for error or invalid signature
  */
-int cl_verify_signature_x509(X509 *x509, char *alg, unsigned char *sig, unsigned int siglen, unsigned char *data, size_t datalen, int decode);
+int cl_verify_signature_x509(X509 *x509, const char *alg, unsigned char *sig, unsigned int siglen, unsigned char *data, size_t datalen, int decode);
 
 /** Get an X509 object from memory
  * @param[in] data A pointer to a spot in memory that contains the PEM X509 cert
@@ -742,7 +750,7 @@ X509_CRL *cl_load_crl(const char *timeobj);
  @param[in] Whether or not to base64-encode the signature. 1 for yes, 0 for no.
  @return The generated signature
  */
-unsigned char *cl_sign_data_keyfile(char *keypath, char *alg, unsigned char *hash, unsigned int *olen, int encode);
+unsigned char *cl_sign_data_keyfile(char *keypath, const char *alg, unsigned char *hash, unsigned int *olen, int encode);
 
 /** Sign data with an RSA private key object
  @param[in] pkey The RSA private key object
@@ -752,7 +760,7 @@ unsigned char *cl_sign_data_keyfile(char *keypath, char *alg, unsigned char *has
  @param[in] Whether or not to base64-encode the signature. 1 for yes, 0 for no.
  @return The generated signature
  */
-unsigned char *cl_sign_data(EVP_PKEY *pkey, char *alg, unsigned char *hash, unsigned int *olen, int encode);
+unsigned char *cl_sign_data(EVP_PKEY *pkey, const char *alg, unsigned char *hash, unsigned int *olen, int encode);
 
 /** Sign a file with an RSA private key object
  @param[in] fd The file descriptor
@@ -761,7 +769,7 @@ unsigned char *cl_sign_data(EVP_PKEY *pkey, char *alg, unsigned char *hash, unsi
  @param[out] olen A pointer that stores the size of the signature
  @param[in] encode Whether or not to base64-encode the signature. 1 for yes, 0 for no.
  */
-unsigned char *cl_sign_file_fd(int fd, EVP_PKEY *pkey, char *alg, unsigned int *olen, int encode);
+unsigned char *cl_sign_file_fd(int fd, EVP_PKEY *pkey, const char *alg, unsigned int *olen, int encode);
 
 /** Sign a file with an RSA private key object
  @param[in] fp A pointer to a FILE object
@@ -770,7 +778,7 @@ unsigned char *cl_sign_file_fd(int fd, EVP_PKEY *pkey, char *alg, unsigned int *
  @param[out] olen A pointer that stores the size of the signature
  @param[in] encode Whether or not to base64-encode the signature. 1 for yes, 0 for no.
  */
-unsigned char *cl_sign_file_fp(FILE *fp, EVP_PKEY *pkey, char *alg, unsigned int *olen, int encode);
+unsigned char *cl_sign_file_fp(FILE *fp, EVP_PKEY *pkey, const char *alg, unsigned int *olen, int encode);
 
 /** Get the Private Key stored on disk
  * @param[in] keypath The path on disk where the private key is stored
@@ -779,7 +787,7 @@ unsigned char *cl_sign_file_fp(FILE *fp, EVP_PKEY *pkey, char *alg, unsigned int
 EVP_PKEY *cl_get_pkey_file(char *keypath);
 
 void *cl_hash_init(const char *alg);
-int cl_update_hash(void *ctx, void *data, size_t sz);
+int cl_update_hash(void *ctx, const void *data, size_t sz);
 int cl_finish_hash(void *ctx, void *buf);
 void cl_hash_destroy(void *ctx);
 /* End of crypto/hashing functions */

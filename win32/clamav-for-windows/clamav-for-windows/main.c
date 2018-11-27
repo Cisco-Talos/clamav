@@ -93,7 +93,7 @@ BOOL init() {
 	return FALSE;
     }
     ret = interface_setup();
-    logg("ClamAV module initialization %s\n", ret == TRUE ? "succeded" : "failed! Aborting...");
+    logg("ClamAV module initialization %s\n", ret == TRUE ? "succeeded" : "failed! Aborting...");
     return ret;
 }
 

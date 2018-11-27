@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015-2017 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2008 Sourcefire, Inc.
  *
  *  Authors: aCaB <acab@clamav.net>
@@ -364,6 +364,7 @@ static const unsigned int fragsz[] = {
   134217728,
 };
 #endif
+
 #define FRAGSBITS (sizeof(fragsz)/sizeof(fragsz[0]))
 
 struct MPMAP {
@@ -615,7 +616,7 @@ void *mpool_malloc(struct MP *mp, size_t size) {
 
   /*  check_all(mp); */
   if (!size || sbits == FRAGSBITS) {
-    cli_errmsg("mpool_malloc(): Attempt to allocate %lu bytes. Please report to http://bugs.clamav.net\n", (unsigned long) size);
+    cli_errmsg("mpool_malloc(): Attempt to allocate %lu bytes. Please report to https://bugzilla.clamav.net\n", (unsigned long) size);
     return NULL;
   }
 
@@ -640,7 +641,7 @@ void *mpool_malloc(struct MP *mp, size_t size) {
   }
 
   if (!(needed = from_bits(sbits))) {
-    cli_errmsg("mpool_malloc(): Attempt to allocate %lu bytes. Please report to http://bugs.clamav.net\n", (unsigned long) size);
+    cli_errmsg("mpool_malloc(): Attempt to allocate %lu bytes. Please report to https://bugzilla.clamav.net\n", (unsigned long) size);
     return NULL;
   }
 
@@ -721,7 +722,7 @@ void *mpool_realloc(struct MP *mp, void *ptr, size_t size) {
   if (!ptr) return mpool_malloc(mp, size);
 
   if(!size || !(csize = from_bits(f->u.a.sbits))) {
-    cli_errmsg("mpool_realloc(): Attempt to allocate %lu bytes. Please report to http://bugs.clamav.net\n", (unsigned long) size);
+    cli_errmsg("mpool_realloc(): Attempt to allocate %lu bytes. Please report to https://bugzilla.clamav.net\n", (unsigned long) size);
     return NULL;
   }
   csize -= FRAG_OVERHEAD + f->u.a.padding;
@@ -745,8 +746,8 @@ void *mpool_realloc2(struct MP *mp, void *ptr, size_t size) {
     return NULL;
 }
 
-unsigned char *cli_mpool_hex2str(mpool_t *mp, const char *hex) {
-    unsigned char *str;
+char *cli_mpool_hex2str(mpool_t *mp, const char *hex) {
+    char *str;
     size_t len = strlen((const char*)hex);
 
     if (len&1) {
@@ -759,7 +760,7 @@ unsigned char *cli_mpool_hex2str(mpool_t *mp, const char *hex) {
 	cli_errmsg("cli_mpool_hex2str(): Can't allocate memory (%lu bytes).\n", (unsigned long)(len/2 + 1));
 	return NULL;
     }
-    if (cli_hex2str_to(hex, (char*)str, len) == -1) {
+    if (cli_hex2str_to(hex, str, len) == -1) {
 	mpool_free(mp, str);
 	return NULL;
     }
@@ -772,7 +773,7 @@ char *cli_mpool_strdup(mpool_t *mp, const char *s) {
   size_t strsz;
 
   if(s == NULL) {
-    cli_errmsg("cli_mpool_strdup(): s == NULL. Please report to http://bugs.clamav.net\n");
+    cli_errmsg("cli_mpool_strdup(): s == NULL. Please report to https://bugzilla.clamav.net\n");
     return NULL;
   }
 
@@ -782,6 +783,25 @@ char *cli_mpool_strdup(mpool_t *mp, const char *s) {
     cli_errmsg("cli_mpool_strdup(): Can't allocate memory (%lu bytes).\n", (unsigned long) strsz);
   else
     memcpy(alloc, s, strsz);
+  return alloc;
+}
+
+char *cli_mpool_strndup(mpool_t *mp, const char *s, size_t n) {
+  char *alloc;
+  size_t strsz;
+
+  if(s == NULL) {
+    cli_errmsg("cli_mpool_strndup(): s == NULL. Please report to https://bugzilla.clamav.net\n");
+    return NULL;
+  }
+
+  strsz = cli_strnlen(s, n) + 1;
+  alloc = mpool_malloc(mp, strsz);
+  if(!alloc)
+    cli_errmsg("cli_mpool_strndup(): Can't allocate memory (%lu bytes).\n", (unsigned long) strsz);
+  else
+    memcpy(alloc, s, strsz-1);
+  alloc[strsz-1] = '\0';
   return alloc;
 }
 

@@ -1,6 +1,6 @@
 /*
  *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
- *  Copyright (C)2008 Sourcefire, Inc.
+ *  Copyright (C) 2008 Sourcefire, Inc.
  *
  *  Author: aCaB <acab@clamav.net>
  *
@@ -37,7 +37,9 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/time.h>
+#ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
+#endif
 #include <time.h>
 #include <errno.h>
 #include <netdb.h>

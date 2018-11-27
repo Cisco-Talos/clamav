@@ -20,7 +20,7 @@ AC_DEFUN([AC_C_FUNC_MMAP_PRIVATE],
 int main(void)
 {
 	char *data, *data2, *data3;
-	unsigned i, datasize = 1024;
+	size_t i, datasize = 1024;
 	int fd;
 
   	/* First, make a file with some known garbage in it. */

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2009 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm, Török Edvin
@@ -52,7 +52,7 @@ int tcpserver(int **lsockets, unsigned int *nlsockets, char *ipaddr, const struc
     struct addrinfo hints, *info, *p;
     char host[NI_MAXHOST], serv[NI_MAXSERV];
     int *sockets;
-    int sockfd, backlog;
+    int sockfd = 0, backlog;
     int *t;
     char *estr, port[10];
     int yes = 1;

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2017 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007 Sourcefire, Inc.
  *
  *  The unRAR sources may be used in any software to handle RAR
@@ -19,7 +19,7 @@
 #ifdef RAR_HIGH_DEBUG
 #define rar_dbgmsg printf
 #else
-static void rar_dbgmsg(const char* fmt,...){}
+static void rar_dbgmsg(const char* fmt,...){(void)fmt;}
 #endif
 
 #define RAR_MAX_ALLOCATION 184549376
@@ -30,7 +30,7 @@ void *rar_malloc(size_t size)
 
 
     if(!size || size > RAR_MAX_ALLOCATION) {
-	rar_dbgmsg("UNRAR: rar_malloc(): Attempt to allocate %lu bytes. Please report to http://bugs.clamav.net\n", size);
+	rar_dbgmsg("UNRAR: rar_malloc(): Attempt to allocate %lu bytes. Please report to https://bugzilla.clamav.net\n", size);
 	return NULL;
     }
 
@@ -48,7 +48,7 @@ void *rar_realloc2(void *ptr, size_t size)
 
 
     if(!size || size > RAR_MAX_ALLOCATION) {
-	rar_dbgmsg("UNRAR: rar_realloc2(): Attempt to allocate %lu bytes. Please report to http://bugs.clamav.net\n", size);
+	rar_dbgmsg("UNRAR: rar_realloc2(): Attempt to allocate %lu bytes. Please report to https://bugzilla.clamav.net\n", size);
 	return NULL;
     }
 

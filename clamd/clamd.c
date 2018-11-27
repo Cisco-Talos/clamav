@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2009 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -82,14 +82,19 @@ int is_valid_hostid(void);
 static void help(void)
 {
     printf("\n");
-    printf("                      Clam AntiVirus Daemon %s\n", get_version());
-    printf("           By The ClamAV Team: http://www.clamav.net/about.html#credits\n");
-    printf("           (C) 2007-2015 Cisco Systems, Inc.\n\n");
-
-    printf("    --help                   -h             Show this help.\n");
-    printf("    --version                -V             Show version number.\n");
-    printf("    --debug                                 Enable debug mode.\n");
-    printf("    --config-file=FILE       -c FILE        Read configuration from FILE.\n\n");
+    printf("                      Clam AntiVirus: Daemon %s\n", get_version());
+    printf("           By The ClamAV Team: https://www.clamav.net/about.html#credits\n");
+    printf("           (C) 2007-2018 Cisco Systems, Inc.\n");
+    printf("\n");
+    printf("    clamd [options]\n");
+    printf("\n");
+    printf("    --help                   -h             Show this help\n");
+    printf("    --version                -V             Show version number\n");
+    printf("    --debug                                 Enable debug mode\n");
+    printf("    --config-file=FILE       -c FILE        Read configuration from FILE\n");
+    printf("\n");
+    printf("Pass in - as the filename for stdin.\n");
+    printf("\n");
 }
 
 static struct optstruct *opts;
@@ -216,27 +221,19 @@ int main(int argc, char **argv)
             return 1;
         }
 
-        if(optget(opts, "AllowSupplementaryGroups")->enabled) {
 #ifdef HAVE_INITGROUPS
-            if(initgroups(opt->strarg, user->pw_gid)) {
-                fprintf(stderr, "ERROR: initgroups() failed.\n");
+	if(initgroups(opt->strarg, user->pw_gid)) {
+		fprintf(stderr, "ERROR: initgroups() failed.\n");
+                optfree(opts);
+		return 1;
+	}
+#elif HAVE_SETGROUPS
+	if(setgroups(1, &user->pw_gid)) {
+		fprintf(stderr, "ERROR: setgroups() failed.\n");
                 optfree(opts);
                 return 1;
-            }
-#else
-            mprintf("!AllowSupplementaryGroups: initgroups() is not available, please disable AllowSupplementaryGroups in %s\n", cfgfile);
-            optfree(opts);
-            return 1;
+	}
 #endif
-        } else {
-#ifdef HAVE_SETGROUPS
-            if(setgroups(1, &user->pw_gid)) {
-                fprintf(stderr, "ERROR: setgroups() failed.\n");
-                optfree(opts);
-                return 1;
-            }
-#endif
-        }
 
         if(setgid(user->pw_gid)) {
             fprintf(stderr, "ERROR: setgid(%d) failed.\n", (int) user->pw_gid);
@@ -465,42 +462,6 @@ int main(int argc, char **argv)
             logg("#Not loading PUA signatures.\n");
         }
 
-        if (optget(opts, "StatsEnabled")->enabled) {
-            cl_engine_stats_enable(engine);
-        }
-
-        if (optget(opts, "StatsPEDisabled")->enabled) {
-            cl_engine_set_num(engine, CL_ENGINE_DISABLE_PE_STATS, 1);
-        }
-
-        if (optget(opts, "StatsTimeout")->enabled) {
-            cl_engine_set_num(engine, CL_ENGINE_STATS_TIMEOUT, optget(opts, "StatsTimeout")->numarg);
-        }
-
-        if (optget(opts, "StatsHostID")->enabled) {
-            char *p = optget(opts, "StatsHostID")->strarg;
-
-            if (strcmp(p, "default")) {
-                if (!strcmp(p, "none")) {
-                    cl_engine_set_clcb_stats_get_hostid(engine, NULL);
-                } else if (!strcmp(p, "anonymous")) {
-                    strcpy(hostid, STATS_ANON_UUID);
-                } else {
-                    if (strlen(p) > 36) {
-                        logg("!Invalid HostID\n");
-                        cl_engine_set_clcb_stats_submit(engine, NULL);
-                        cl_engine_free(engine);
-                        ret = 1;
-                        break;
-                    }
-
-                    strcpy(hostid, p);
-                }
-
-                cl_engine_set_clcb_stats_get_hostid(engine, get_hostid);
-            }
-        }
-
         if(optget(opts, "OfficialDatabaseOnly")->enabled) {
             dboptions |= CL_DB_OFFICIAL_ONLY;
             logg("#Only loading official signatures.\n");
@@ -608,7 +569,7 @@ int main(int argc, char **argv)
         }
 
         if (optget(opts, "DisableCertCheck")->enabled)
-            engine->dconf->pe |= PE_CONF_DISABLECERT;
+            cl_engine_set_num(engine, CL_ENGINE_DISABLE_PE_CERTS, 1);
 
         logg("#Loaded %u signatures.\n", sigs);
 

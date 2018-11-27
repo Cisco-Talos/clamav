@@ -1,7 +1,7 @@
 /*
  *  Execute ClamAV bytecode.
  *
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015-2017 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2009-2010 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
@@ -71,7 +71,7 @@ static inline int bcfail(const char *msg, long a, long b,
 #define CHECK_EQ(a,b)
 #define CHECK_GT(a,b)
 #endif
-#ifdef CL_DEBUG
+#if 0 /* too verbose, use #ifdef CL_DEBUG if needed */
 #define CHECK_UNREACHABLE do { cli_dbgmsg("bytecode: unreachable executed!\n"); return CL_EBYTECODE; } while(0)
 #define TRACE_PTR(ptr, s) cli_dbgmsg("bytecode trace: ptr %llx, +%x\n", ptr, s);
 #define TRACE_R(x) cli_dbgmsg("bytecode trace: %u, read %llx\n", pc, (long long)x);
@@ -153,7 +153,7 @@ static always_inline void* cli_stack_alloc(struct stack *stack, unsigned bytes)
     /* not enough room here, allocate new chunk */
     chunk = cli_malloc(sizeof(*stack->chunk));
     if (!chunk) {
-        cli_warnmsg("cli_stack_alloc: Unable to allocate memory for stack-chunk: bytes: %u!\n", sizeof(*stack->chunk));
+        cli_warnmsg("cli_stack_alloc: Unable to allocate memory for stack-chunk: bytes: %zu!\n", sizeof(*stack->chunk));
         return NULL;
     }
 
@@ -462,15 +462,16 @@ static always_inline struct stack_entry *pop_stack(struct stack *stack,
 
 #define DEFINE_OP_BC_RET_N(OP, T, R0, W0) \
     case OP: {\
+                operand_t ret;\
                 T tmp;\
                 R0(tmp, inst->u.unaryop);\
                 CHECK_GT(stack_depth, 0);\
                 stack_depth--;\
-                stack_entry = pop_stack(&stack, stack_entry, &func, &i, &bb,\
+                stack_entry = pop_stack(&stack, stack_entry, &func, &ret, &bb,\
                                         &bb_inst);\
                 values = stack_entry ? stack_entry->values : ctx->values;\
-                CHECK_GT(func->numBytes, i);\
-                W0(i, tmp);\
+                CHECK_GT(func->numBytes, ret);\
+                W0(ret, tmp);\
                 if (!bb) {\
                     stop = CL_BREAK;\
                     continue;\
@@ -634,7 +635,9 @@ static struct {
 
 int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct cli_bc_func *func, const struct cli_bc_inst *inst)
 {
-    unsigned i, j, stack_depth=0, bb_inst=0, stop=0, pc=0;
+    size_t i;
+    uint32_t j;
+    unsigned stack_depth=0, bb_inst=0, stop=0, pc=0;
     struct cli_bc_func *func2;
     struct stack stack;
     struct stack_entry *stack_entry = NULL;
@@ -647,7 +650,7 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 
     memset(&ptrinfos, 0, sizeof(ptrinfos));
     memset(&stack, 0, sizeof(stack));
-    for (i=0;i < cli_apicall_maxglobal - _FIRST_GLOBAL; i++) {
+    for (i=0; i < (size_t)cli_apicall_maxglobal - _FIRST_GLOBAL; i++) {
         void *apiptr;
         uint32_t size;
         const struct cli_apiglobal *g = &cli_globals[i];
@@ -704,7 +707,7 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
             DEFINE_BINOP(OP_BC_XOR, res = op0 ^ op1);
 
             DEFINE_SCASTOP(OP_BC_SEXT,
-                          CHOOSE(READ1(sres, inst->u.cast.source); res = sres ? ~0ull : 0,
+                          CHOOSE(READ1(sres, inst->u.cast.source); res = sres ? ~0 : 0,
                                  READ8(sres, inst->u.cast.source); res=sres=SIGNEXT(sres, inst->u.cast.mask),
                                  READ16(sres, inst->u.cast.source); res=sres=SIGNEXT(sres, inst->u.cast.mask),
                                  READ32(sres, inst->u.cast.source); res=sres=SIGNEXT(sres, inst->u.cast.mask),
@@ -820,7 +823,6 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
                         break;
                     }
                     case 1: {
-                        unsigned i;
                         void* arg1;
                         unsigned arg2, arg1size;
                         READ32(arg2, inst->u.ops.ops[1]);
@@ -1113,7 +1115,7 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
                 }
 
                 if (!(inst->interp_op%5)) {
-                    // how do negative offsets affect pointer intialization?
+                    // how do negative offsets affect pointer initialization?
                     WRITE64(inst->dest, ptr_compose(stackid,
                                                     inst->u.three[1]+off));
                 } else {
@@ -1213,12 +1215,9 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
                 if (off < 0) {
                     cli_dbgmsg("bytecode warning: GEP with negative offset %d!\n", off);
                 }
-                if (inst->u.three[0] < 0) {
-                    cli_dbgmsg("bytecode warning: GEP with negative size %d!\n", inst->u.three[0]);
-                }
 
                 if (!(inst->interp_op%5)) {
-                    // how do negative offsets affect pointer intialization?
+                    // how do negative offsets affect pointer initialization?
                     cli_dbgmsg("bytecode warning: untested case for GEP1\n");
                     off *= inst->u.three[0];
                     WRITE64(inst->dest, ptr_compose(stackid,
@@ -1249,12 +1248,12 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
         gettimeofday(&tv1, NULL);
         tv1.tv_sec -= tv0.tv_sec;
         tv1.tv_usec -= tv0.tv_usec;
-        cli_dbgmsg("intepreter bytecode run finished in %luus, after executing %u opcodes\n",
+        cli_dbgmsg("interpreter bytecode run finished in %luus, after executing %u opcodes\n",
                    tv1.tv_sec*1000000 + tv1.tv_usec, pc);
     }
     if (stop == CL_EBYTECODE) {
         cli_event_error_str(ctx->bc_events, "interpreter finished with error\n");
-        cli_dbgmsg("intepreter finished with error\n");
+        cli_dbgmsg("interpreter finished with error\n");
     }
 
     cli_stack_destroy(&stack);

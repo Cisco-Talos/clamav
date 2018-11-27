@@ -1,7 +1,7 @@
 /*
  *  Support for matcher using PCRE
  *
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2015, 2017 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *  All Rights Reserved.
  *
@@ -444,7 +444,7 @@ int cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, lon
             ret = cli_pcre_compile(&(pm->pdata), match_limit, recmatch_limit, 0, 0);
         }
         else {
-            /* compile the regex, options overrided and disabled */
+            /* compile the regex, options overridden and disabled */
             pm_dbgmsg("cli_pcre_build: Compiling regex: /%s/ (without options)\n", pm->pdata.expression);
             ret = cli_pcre_compile(&(pm->pdata), match_limit, recmatch_limit, 0, 1);
         }
@@ -593,7 +593,7 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const char **
     unsigned int i, evalcnt = 0;
     uint64_t maxfilesize, evalids = 0;
     uint32_t global, encompass, rolling;
-    int rc, offset, ret = CL_SUCCESS, options=0;
+    int rc = 0, offset = 0, ret = CL_SUCCESS, options=0;
     uint8_t viruses_found = 0;
 
     if ((root->pcre_metas == 0) || (!root->pcre_metatable) || (ctx && ctx->dconf && !(ctx->dconf->pcre & PCRE_CONF_SUPPORT)))
@@ -619,7 +619,7 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const char **
 
         /* evaluate trigger */
         if (pm->lsigid[0]) {
-            cli_dbgmsg("cli_pcre_scanbuf: checking %s; running regex /%s/\n", pm->trigger, pd->expression);
+            pm_dbgmsg("cli_pcre_scanbuf: checking %s; running regex /%s/\n", pm->trigger, pd->expression);
 #ifdef PCRE_BYPASS
             if (strcmp(pm->trigger, PCRE_BYPASS))
 #endif
@@ -627,7 +627,7 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const char **
                     continue;
         }
         else {
-            cli_dbgmsg("cli_pcre_scanbuf: skipping %s check due to unintialized lsigid\n", pm->trigger);
+            cli_dbgmsg("cli_pcre_scanbuf: skipping %s check due to uninitialized lsigid\n", pm->trigger);
             /* fall-through to unconditional execution - sigtool-only */
         }
 
@@ -636,7 +636,7 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const char **
         rolling = (pm->flags & CLI_PCRE_ROLLING);     /* rolling search (unanchored) */
         offset = pd->search_offset;                   /* this is usually 0 */
 
-        cli_dbgmsg("cli_pcre_scanbuf: triggered %s; running regex /%s/%s%s\n", pm->trigger, pd->expression, 
+        pm_dbgmsg("cli_pcre_scanbuf: triggered %s; running regex /%s/%s%s\n", pm->trigger, pd->expression, 
                    global ? " (global)":"", rolling ? " (rolling)":"");
 
         /* adjust the buffer sent to cli_pcre_match for offset and maxshift */
@@ -738,16 +738,15 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const char **
                         newres->offset = adjbuffer+p_res.match[0];
                         *res = newres;
                     } else {
-                        if (ctx && SCAN_ALL) {
-                            viruses_found = 1;
-                            cli_append_virus(ctx, (const char *)pm->virname);
-                        }
+                        ret = CL_CLEAN;
+                        viruses_found = 1;
+                        if (ctx)
+                            ret = cli_append_virus(ctx, (const char *)pm->virname);
                         if (virname)
                             *virname = pm->virname;
-                        if (!ctx || !SCAN_ALL) {
-                            ret = CL_VIRUS;
-                            break;
-                        }
+                        if (!ctx || !SCAN_ALL)
+                            if (ret != CL_CLEAN)
+                                break;
                     }
                 }
             }

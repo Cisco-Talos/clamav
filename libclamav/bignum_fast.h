@@ -455,7 +455,7 @@ typedef int tfm_prime_callback(unsigned char *dst, int len, void *dat);
 
 int fp_prime_random_ex(fp_int *a, int t, int size, int flags, tfm_prime_callback cb, void *dat);
 
-/* radix conersions */
+/* radix conversions */
 int fp_count_bits(fp_int *a);
 
 int fp_unsigned_bin_size(fp_int *a);

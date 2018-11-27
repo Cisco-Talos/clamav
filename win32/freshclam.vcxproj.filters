@@ -66,7 +66,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Library Include="libeay32.lib" />
-    <Library Include="ssleay32.lib" />
+    <Library Include="libcrypto.lib" />
+    <Library Include="libssl.lib" />
   </ItemGroup>
 </Project>

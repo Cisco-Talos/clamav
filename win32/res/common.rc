@@ -6,8 +6,8 @@
 #define REPO_VERSION VERSION
 #endif
 
-#define RES_VER_Q 0,99,0,0
-#define RES_VER_S "ClamAV 0.99.0"
+#define RES_VER_Q 0,101,0,0
+#define RES_VER_S "ClamAV 0.101.0-devel"
 
 VS_VERSION_INFO VERSIONINFO
     FILEVERSION RES_VER_Q
@@ -21,11 +21,14 @@ VS_VERSION_INFO VERSIONINFO
     FILEOS VOS_NT_WINDOWS32
 #ifdef THIS_IS_LIBCLAMAV
     FILETYPE VFT_DLL
-#else
+#else
+
     FILETYPE VFT_APP
-#endif
+#endif
+
     FILESUBTYPE 0
-BEGIN
+BEGIN
+
     BLOCK "StringFileInfo" {
 	BLOCK "040904B0" {
 	    VALUE "CompanyName", "Cisco Systems, Inc."
@@ -35,7 +38,7 @@ BEGIN
 	    VALUE "OriginalFilename", RES_FNAME
 	    VALUE "ProductName", "ClamAV"
 	    VALUE "ProductVersion", RES_VER_S " ("  REPO_VERSION ")"
-	    VALUE "LegalCopyright", "(C) 2015 Cisco Systems, Inc."
+	    VALUE "LegalCopyright", "(C) 2017 Cisco Systems, Inc."
 	    VALUE "LegalTrademarks", "License: GNU GPL, Version 2"
 	    VALUE "Comments", REPO_VERSION
 	}

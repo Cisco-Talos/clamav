@@ -37,7 +37,7 @@
 // derive from another pass manager.
 //
 // PassManager and FunctionPassManager are two top-level pass manager that
-// represents the external interface of this entire pass manager infrastucture.
+// represents the external interface of this entire pass manager infrastructure.
 //
 // Important classes :
 //

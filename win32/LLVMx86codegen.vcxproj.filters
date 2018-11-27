@@ -16,9 +16,6 @@
     <ClCompile Include="..\libclamav\c++\llvm\lib\Target\X86\X86ISelLowering.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\libclamav\c++\llvm\lib\Target\X86\X86FloatingPointRegKill.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\libclamav\c++\llvm\lib\MC\MCCodeEmitter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -67,13 +64,40 @@
     <ClCompile Include="..\libclamav\c++\llvm\lib\Target\X86\X86MCAsmInfo.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\libclamav\c++\llvm\lib\Target\X86\X86MCTargetExpr.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\libclamav\c++\llvm\lib\Target\X86\X86TargetMachine.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\libclamav\c++\llvm\lib\Target\X86\X86TargetObjectFile.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\Target\X86\SSEDomainFix.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\MC\MCMachOStreamer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\MC\ELFObjectWriter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\MC\WinCOFFStreamer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\Target\X86\X86SelectionDAGInfo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\MC\WinCOFFObjectWriter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\MC\MachObjectWriter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\MC\MCObjectWriter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\MC\MCELFStreamer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libclamav\c++\llvm\lib\MC\MCObjectStreamer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

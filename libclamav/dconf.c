@@ -72,9 +72,9 @@ static struct dconf_module modules[] = {
     { "PE",     "UPACK",        PE_CONF_UPACK,      1 },
     { "PE",     "ASPACK",       PE_CONF_ASPACK,     1 },
     { "PE",     "CATALOG",      PE_CONF_CATALOG,        1 },
-    { "PE",     "DISABLECERT",  PE_CONF_DISABLECERT,    0 },
-    { "PE",     "DUMPCERT",     PE_CONF_DUMPCERT,       0 },
-    { "PE",     "MATCHICON",     PE_CONF_MATCHICON,       1 },
+    { "PE",     "CERTS",        PE_CONF_CERTS,      1 },
+    { "PE",     "MATCHICON",    PE_CONF_MATCHICON,       1 },
+    { "PE",     "IMPTBL",       PE_CONF_IMPTBL,          1 },
 
     { "ELF",        NULL,       0x1,            1 },
 
@@ -131,6 +131,7 @@ static struct dconf_module modules[] = {
     { "OTHER",      "PREFILTERING", OTHER_CONF_PREFILTERING,1 },
     { "OTHER",      "PDFNAMEOBJ",   OTHER_CONF_PDFNAMEOBJ,  1 },
     { "OTHER",      "PRTNINTXN",   OTHER_CONF_PRTNINTXN,  1 },
+    { "OTHER",      "LZW",      OTHER_CONF_LZW,     1 },
 
     { "PHISHING",   "ENGINE",       PHISHING_CONF_ENGINE,   1 },
     { "PHISHING",   "ENTCONV",      PHISHING_CONF_ENTCONV,  1 },

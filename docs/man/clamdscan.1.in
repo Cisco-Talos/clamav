@@ -90,7 +90,7 @@ Forces file streaming to clamd. This is generally not needed as clamdscan detect
 .TP 
 1 : Virus(es) found.
 .TP 
-2 : An error occured.
+2 : An error occurred.
 .SH "CREDITS"
 Please check the full documentation for credits.
 .SH "AUTHOR"

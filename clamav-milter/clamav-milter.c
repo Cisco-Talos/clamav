@@ -1,6 +1,6 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
- *  Copyright (C)2008 Sourcefire, Inc.
+ *  Copyright (C) 2015, 2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2008 Sourcefire, Inc.
  *
  *  Author: aCaB <acab@clamav.net>
  *
@@ -122,10 +122,17 @@ int main(int argc, char **argv) {
     }
 
     if(optget(opts, "help")->enabled) {
-	printf("Usage: %s [-c <config-file>]\n\n", argv[0]);
+    printf("\n");
+    printf("                       Clam AntiVirus: Milter Mail Scanner %s\n", get_version());
+    printf("           By The ClamAV Team: https://www.clamav.net/about.html#credits\n");
+    printf("           (C) 2009-2018 Cisco Systems, Inc.\n");
+    printf("\n");
+	printf("    %s [-c <config-file>]\n\n", argv[0]);
+    printf("\n");
 	printf("    --help                   -h       Show this help\n");
-	printf("    --version                -V       Show version and exit\n");
-	printf("    --config-file <file>     -c       Read configuration from file\n\n");
+	printf("    --version                -V       Show version\n");
+	printf("    --config-file <file>     -c       Read configuration from file\n");
+    printf("\n");
 	optfree(opts);
 	return 0;
     }
@@ -298,28 +305,19 @@ int main(int argc, char **argv) {
 	    return 1;
 	}
 
-	if(optget(opts, "AllowSupplementaryGroups")->enabled) {
 #ifdef HAVE_INITGROUPS
-	    if(initgroups(opt->strarg, user->pw_gid)) {
-		fprintf(stderr, "ERROR: initgroups() failed.\n");
-		optfree(opts);
-		return 1;
-	    }
-#else
-	    mprintf("!AllowSupplementaryGroups: initgroups() is not available, please disable AllowSupplementaryGroups\n");
+	if(initgroups(opt->strarg, user->pw_gid)) {
+	    fprintf(stderr, "ERROR: initgroups() failed.\n");
 	    optfree(opts);
 	    return 1;
-#endif
-	} else {
-#ifdef HAVE_SETGROUPS
-	    if(setgroups(1, &user->pw_gid)) {
-		fprintf(stderr, "ERROR: setgroups() failed.\n");
-		optfree(opts);
-		return 1;
-	    }
-#endif
 	}
-
+#elif HAVE_SETGROUPS
+	if(setgroups(1, &user->pw_gid)) {
+	    fprintf(stderr, "ERROR: setgroups() failed.\n");
+	    optfree(opts);
+	    return 1;
+	}
+#endif
 	if(setgid(user->pw_gid)) {
 	    fprintf(stderr, "ERROR: setgid(%d) failed.\n", (int) user->pw_gid);
 	    optfree(opts);
