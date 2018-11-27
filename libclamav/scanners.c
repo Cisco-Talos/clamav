@@ -2040,7 +2040,7 @@ static int cli_scan_structured(cli_ctx *ctx)
     int done = 0;
     fmap_t *map;
     size_t pos = 0;
-	int (*ccfunc)(const unsigned char *buffer, int length, int cc_only);
+    int (*ccfunc)(const unsigned char *buffer, int length, int cc_only);
     int (*ssnfunc)(const unsigned char *buffer, int length);
     unsigned int viruses_found = 0;
 
@@ -2085,7 +2085,7 @@ static int cli_scan_structured(cli_ctx *ctx)
     while (!done && ((result = fmap_readn(map, buf, pos, 8191)) > 0))
     {
         pos += result;
-		if ((cc_count += ccfunc((const unsigned char *)buf, result, (ctx->options & CL_SCAN_STRUCTURED_CC_ONLY)?1:0)) >= ctx->engine->min_cc_count)
+        if ((cc_count += ccfunc((const unsigned char *)buf, result, (ctx->options & CL_SCAN_STRUCTURED_CC_ONLY)?1:0)) >= ctx->engine->min_cc_count)
         {
             done = 1;
         }
