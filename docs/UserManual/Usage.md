@@ -4,11 +4,12 @@
 
 <!-- TOC depthFrom:2 depthTo:6 withLinks:1 updateOnSave:1 orderedList:0 -->
 
-- [Purpose](#purpose)
-- [Daemon](#daemon)
-- [Scanner](#scanner)
-- [Signature Testing and Management](#signature-testing-and-management)
-- [Configuration](#configuration)
+- [Usage](#usage)
+  - [Purpose](#purpose)
+  - [Daemon](#daemon)
+  - [Scanner](#scanner)
+  - [Signature Testing and Management](#signature-testing-and-management)
+  - [Configuration](#configuration)
 
 <!-- /TOC -->
 
@@ -38,7 +39,7 @@ The ClamAV Daemon, or [`clamd`](Usage/Scanning.md#clamd), is a multi-threaded da
 
 ---
 
-ClamAV also provides a command-line tool for [simple scanning](Usage/Scanning.md) tasks with *libclamav* called [`clamscan`](Usage/Scanning,md#clamscan). Unlike the daemon, `clamscan` is not a persistent process and is best suited for use cases where one-time scanning with minimal setup is needed.
+ClamAV also provides a command-line tool for [simple scanning](Usage/Scanning.md) tasks with *libclamav* called [`clamscan`](Usage/Scanning.md#clamscan). Unlike the daemon, `clamscan` is not a persistent process and is best suited for use cases where one-time scanning with minimal setup is needed.
 
 ---
 
