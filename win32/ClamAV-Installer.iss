@@ -20,7 +20,7 @@ UninstallDisplayName=ClamAV
 Compression=lzma2
 SolidCompression=yes
 OutputDir=.
-OutputBaseFilename=ClamAV-0.101.0-rc
+OutputBaseFilename=ClamAV-0.101.0
 WizardImageFile=demon.bmp
 WizardSmallImageFile=talos.bmp
 
@@ -87,8 +87,7 @@ Source: "..\COPYING.zlib"; DestDir: "{app}\COPYING"; DestName: "COPYING.zlib"
 Source: "..\ChangeLog.md"; DestDir: "{app}\docs"; DestName: "ChangeLog.md"
 Source: "..\NEWS.md"; DestDir: "{app}\docs"; DestName: "NEWS.md"              
 Source: "..\README.md"; DestDir: "{app}"; DestName: "README.md"
-Source: "..\docs\UserManual.md"; DestDir: "{app}\docs"; DestName: "UserManual.md"
-Source: "..\docs\UserManual\*"; DestDir: "{app}\docs\UserManual"; Flags: recursesubdirs
+Source: "..\docs\html\*"; DestDir: "{app}\docs"; Flags: recursesubdirs
 
 [Dirs]
 Name: "{app}\database"
@@ -99,7 +98,7 @@ Name: "{app}\database"
 [Run]
 Filename: "{tmp}\vc_redist.x86.exe"; Parameters: "/q /norestart"; Check: not Is64BitInstallMode and VCRedistNeedsInstall; WorkingDir: {app}\redist; StatusMsg: Installing VC++ 2015 Redistributables...; Flags: shellexec
 Filename: "{tmp}\vc_redist.x64.exe"; Parameters: "/q /norestart"; Check: Is64BitInstallMode and VCRedistNeedsInstall; WorkingDir: {app}\redist; StatusMsg: Installing VC++ 2015 Redistributables...; Flags: shellexec
-Filename: https://github.com/Cisco-Talos/clamav-devel/blob/dev/0.101/README.md; Description: "View Readme on GitHub"; Flags: postinstall shellexec
+Filename: file://{app}/docs/UserManual.html; Description: "Open the User Manual in the default browser"; Flags: postinstall shellexec
 
 [Code]
 #IFDEF UNICODE

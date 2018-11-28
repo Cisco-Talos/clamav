@@ -16,7 +16,7 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #  MA 02110-1301, USA.
 
-EXTRA_DIST = UserManual UserManual.md $(top_srcdir)/docs/man/*.in  
+EXTRA_DIST = html UserManual UserManual.md $(top_srcdir)/docs/man/*.in  
 man_MANS = man/clamscan.1 man/freshclam.1 man/sigtool.1 man/clamd.8 man/clamd.conf.5 man/clamdscan.1 man/clamav-milter.8 man/clamav-milter.conf.5 man/freshclam.conf.5 man/clamconf.1 man/clamdtop.1 man/clambc.1
 
 if ENABLE_CLAMSUBMIT
