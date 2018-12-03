@@ -56,76 +56,76 @@ uint8_t sf_decode64tab[256] = {
 */
 int sf_base64decode(uint8_t *inbuf, size_t inbuf_size, uint8_t *outbuf, size_t outbuf_size, size_t *bytes_written)
 {
-   uint8_t *cursor, *endofinbuf;
-   uint8_t *outbuf_ptr;
-   uint8_t base64data[4], *base64data_ptr; /* temporary holder for current base64 chunk */
-   uint8_t tableval_a, tableval_b, tableval_c, tableval_d;
+    uint8_t *cursor, *endofinbuf;
+    uint8_t *outbuf_ptr;
+    uint8_t base64data[4], *base64data_ptr; /* temporary holder for current base64 chunk */
+    uint8_t tableval_a, tableval_b, tableval_c, tableval_d;
 
-   size_t n;
-   size_t max_base64_chars;  /* The max number of decoded base64 chars that fit into outbuf */
+    size_t n;
+    size_t max_base64_chars; /* The max number of decoded base64 chars that fit into outbuf */
 
-   int error = 0;
+    int error = 0;
 
-   /* This algorithm will waste up to 4 bytes but we really don't care.
+    /* This algorithm will waste up to 4 bytes but we really don't care.
       At the end we're going to copy the exact number of bytes requested. */
-   max_base64_chars = (outbuf_size / 3) * 4 + 4; /* 4 base64 bytes gives 3 data bytes, plus
+    max_base64_chars = (outbuf_size / 3) * 4 + 4; /* 4 base64 bytes gives 3 data bytes, plus
                                                     an extra 4 to take care of any rounding */
 
-   base64data_ptr = base64data;
-   endofinbuf = inbuf + inbuf_size;
+    base64data_ptr = base64data;
+    endofinbuf     = inbuf + inbuf_size;
 
-   /* Strip non-base64 chars from inbuf and decode */
-   n = 0;
-   *bytes_written = 0;
-   cursor = inbuf;
-   outbuf_ptr = outbuf;
-   while((cursor < endofinbuf) && (n < max_base64_chars)) {
-      if(sf_decode64tab[*cursor] != 100) {
-         *base64data_ptr++ = *cursor;
-         n++;  /* Number of base64 bytes we've stored */
-         if(!(n % 4)) {
-            /* We have four databytes upon which to operate */
+    /* Strip non-base64 chars from inbuf and decode */
+    n              = 0;
+    *bytes_written = 0;
+    cursor         = inbuf;
+    outbuf_ptr     = outbuf;
+    while ((cursor < endofinbuf) && (n < max_base64_chars)) {
+        if (sf_decode64tab[*cursor] != 100) {
+            *base64data_ptr++ = *cursor;
+            n++; /* Number of base64 bytes we've stored */
+            if (!(n % 4)) {
+                /* We have four databytes upon which to operate */
 
-            if((base64data[0] == '=') || (base64data[1] == '=')) {
-               /* Error in input data */
-               error = 1;
-               break;
+                if ((base64data[0] == '=') || (base64data[1] == '=')) {
+                    /* Error in input data */
+                    error = 1;
+                    break;
+                }
+
+                /* retrieve values from lookup table */
+                tableval_a = sf_decode64tab[base64data[0]];
+                tableval_b = sf_decode64tab[base64data[1]];
+                tableval_c = sf_decode64tab[base64data[2]];
+                tableval_d = sf_decode64tab[base64data[3]];
+
+                if (*bytes_written < outbuf_size) {
+                    *outbuf_ptr++ = (tableval_a << 2) | (tableval_b >> 4);
+                    (*bytes_written)++;
+                }
+
+                if ((base64data[2] != '=') && (*bytes_written < outbuf_size)) {
+                    *outbuf_ptr++ = (tableval_b << 4) | (tableval_c >> 2);
+                    (*bytes_written)++;
+                } else {
+                    break;
+                }
+
+                if ((base64data[3] != '=') && (*bytes_written < outbuf_size)) {
+                    *outbuf_ptr++ = (tableval_c << 6) | tableval_d;
+                    (*bytes_written)++;
+                } else {
+                    break;
+                }
+
+                /* Reset our decode pointer for the next group of four */
+                base64data_ptr = base64data;
             }
+        }
+        cursor++;
+    }
 
-            /* retrieve values from lookup table */
-            tableval_a = sf_decode64tab[base64data[0]];
-            tableval_b = sf_decode64tab[base64data[1]];
-            tableval_c = sf_decode64tab[base64data[2]];
-            tableval_d = sf_decode64tab[base64data[3]];
-
-            if(*bytes_written < outbuf_size) {
-               *outbuf_ptr++ = (tableval_a << 2) | (tableval_b >> 4);
-               (*bytes_written)++;
-            }
-
-            if((base64data[2] != '=') && (*bytes_written < outbuf_size)) {
-               *outbuf_ptr++ = (tableval_b << 4) | (tableval_c >> 2);
-               (*bytes_written)++;
-            }  else {
-               break;
-            }
-
-            if((base64data[3] != '=') && (*bytes_written < outbuf_size)) {
-               *outbuf_ptr++ = (tableval_c << 6) | tableval_d;
-               (*bytes_written)++;
-            }  else {
-               break;
-            }
-
-            /* Reset our decode pointer for the next group of four */
-            base64data_ptr = base64data;
-         }
-      }
-      cursor++;
-   }
-
-   if(error)
-      return(-1);
-   else
-      return(0);
+    if (error)
+        return (-1);
+    else
+        return (0);
 }

@@ -47,52 +47,51 @@
 
 #define EC32(x) le32_to_host(x) /* Convert little endian to host */
 #define EC16(x) le16_to_host(x) /* Convert little endian to host */
-#define PEALIGN(o,a) (((a))?(((o)/(a))*(a)):(o))
-#define PESALIGN(o,a) (((a))?(((o)/(a)+((o)%(a)!=0))*(a)):(o))
-
+#define PEALIGN(o, a) (((a)) ? (((o) / (a)) * (a)) : (o))
+#define PESALIGN(o, a) (((a)) ? (((o) / (a) + ((o) % (a) != 0)) * (a)) : (o))
 
 struct IMAGE_PE_HEADER {
     uint32_t Signature;
     /* FILE HEADER */
-    uint16_t    Machine;
-    uint16_t    NumberOfSections;
-    uint32_t   TimeDateStamp;
-    uint32_t   PointerToSymbolTable;
-    uint32_t   NumberOfSymbols;
-    uint16_t    SizeOfOptionalHeader;
-    uint16_t    Characteristics;
+    uint16_t Machine;
+    uint16_t NumberOfSections;
+    uint32_t TimeDateStamp;
+    uint32_t PointerToSymbolTable;
+    uint32_t NumberOfSymbols;
+    uint16_t SizeOfOptionalHeader;
+    uint16_t Characteristics;
     /* OPTIONAL HEADER */
-    uint16_t    Magic;
-    uint8_t    MajorLinkerVersion;
-    uint8_t    MinorLinkerVersion;
-    uint32_t   SizeOfCode;
-    uint32_t   SizeOfInitializedData;
-    uint32_t   SizeOfUninitializedData;
-    uint32_t   AddressOfEntryPoint;
-    uint32_t   BaseOfCode;
-    uint32_t   BaseOfData;
+    uint16_t Magic;
+    uint8_t MajorLinkerVersion;
+    uint8_t MinorLinkerVersion;
+    uint32_t SizeOfCode;
+    uint32_t SizeOfInitializedData;
+    uint32_t SizeOfUninitializedData;
+    uint32_t AddressOfEntryPoint;
+    uint32_t BaseOfCode;
+    uint32_t BaseOfData;
     /* NT additional fields. */
-    uint32_t   ImageBase;
-    uint32_t   SectionAlignment;
-    uint32_t   FileAlignment;
-    uint16_t    MajorOperatingSystemVersion;
-    uint16_t    MinorOperatingSystemVersion;
-    uint16_t    MajorImageVersion;
-    uint16_t    MinorImageVersion;
-    uint16_t    MajorSubsystemVersion;
-    uint16_t    MinorSubsystemVersion;
-    uint32_t   Win32VersionValue;
-    uint32_t   SizeOfImage;
-    uint32_t   SizeOfHeaders;
-    uint32_t   CheckSum;
-    uint16_t    Subsystem;
-    uint16_t    DllCharacteristics;
-    uint32_t   SizeOfStackReserve;
-    uint32_t   SizeOfStackCommit;
-    uint32_t   SizeOfHeapReserve;
-    uint32_t   SizeOfHeapCommit;
-    uint32_t   LoaderFlags;
-    uint32_t   NumberOfRvaAndSizes;
+    uint32_t ImageBase;
+    uint32_t SectionAlignment;
+    uint32_t FileAlignment;
+    uint16_t MajorOperatingSystemVersion;
+    uint16_t MinorOperatingSystemVersion;
+    uint16_t MajorImageVersion;
+    uint16_t MinorImageVersion;
+    uint16_t MajorSubsystemVersion;
+    uint16_t MinorSubsystemVersion;
+    uint32_t Win32VersionValue;
+    uint32_t SizeOfImage;
+    uint32_t SizeOfHeaders;
+    uint32_t CheckSum;
+    uint16_t Subsystem;
+    uint16_t DllCharacteristics;
+    uint32_t SizeOfStackReserve;
+    uint32_t SizeOfStackCommit;
+    uint32_t SizeOfHeapReserve;
+    uint32_t SizeOfHeapCommit;
+    uint32_t LoaderFlags;
+    uint32_t NumberOfRvaAndSizes;
     /* IMAGE_DATA_DIRECTORY follows.... */
 };
 
@@ -122,90 +121,90 @@ struct IMAGE_PE_HEADER {
 
 int cli_rebuildpe(char *buffer, struct cli_exe_section *sections, int sects, uint32_t base, uint32_t ep, uint32_t ResRva, uint32_t ResSize, int file)
 {
-  return cli_rebuildpe_align(buffer, sections, sects, base, ep, ResRva, ResSize, file, 0);
+    return cli_rebuildpe_align(buffer, sections, sects, base, ep, ResRva, ResSize, file, 0);
 }
 
 int cli_rebuildpe_align(char *buffer, struct cli_exe_section *sections, int sects, uint32_t base, uint32_t ep, uint32_t ResRva, uint32_t ResSize, int file, uint32_t align)
 {
-  uint32_t datasize=0, rawbase=PESALIGN(0x148+0x80+0x28*sects, 0x200);
-  char *pefile=NULL, *curpe;
-  struct IMAGE_PE_HEADER *fakepe;
-  int i, gotghost=(sections[0].rva > PESALIGN(rawbase, 0x1000));
+    uint32_t datasize = 0, rawbase = PESALIGN(0x148 + 0x80 + 0x28 * sects, 0x200);
+    char *pefile = NULL, *curpe;
+    struct IMAGE_PE_HEADER *fakepe;
+    int i, gotghost = (sections[0].rva > PESALIGN(rawbase, 0x1000));
 
-  if (gotghost) rawbase=PESALIGN(0x148+0x80+0x28*(sects+1), 0x200);
+    if (gotghost) rawbase = PESALIGN(0x148 + 0x80 + 0x28 * (sects + 1), 0x200);
 
-  if(sects+gotghost > 96)
-    return 0;
+    if (sects + gotghost > 96)
+        return 0;
 
-  if (!align)
-    for (i=0; i < sects; i++)
-      datasize+=PESALIGN(sections[i].rsz, 0x200);
-  else
-    for (i=0; i < sects; i++)
-      datasize+=PESALIGN(PESALIGN(sections[i].rsz, align), 0x200);
+    if (!align)
+        for (i = 0; i < sects; i++)
+            datasize += PESALIGN(sections[i].rsz, 0x200);
+    else
+        for (i = 0; i < sects; i++)
+            datasize += PESALIGN(PESALIGN(sections[i].rsz, align), 0x200);
 
-  if(datasize > CLI_MAX_ALLOCATION)
-    return 0;
+    if (datasize > CLI_MAX_ALLOCATION)
+        return 0;
 
-  pefile = (char *) cli_calloc(rawbase+datasize, 1);
-  if(!pefile)
-      return 0;
+    pefile = (char *)cli_calloc(rawbase + datasize, 1);
+    if (!pefile)
+        return 0;
 
-  memcpy(pefile, HEADERS, 0x148);
+    memcpy(pefile, HEADERS, 0x148);
 
-  datasize = PESALIGN(rawbase, 0x1000);
+    datasize = PESALIGN(rawbase, 0x1000);
 
-  fakepe = (struct IMAGE_PE_HEADER *)(pefile+0xd0);
-  fakepe->NumberOfSections = EC16(sects+gotghost);
-  fakepe->AddressOfEntryPoint = EC32(ep);
-  fakepe->ImageBase = EC32(base);
-  fakepe->SizeOfHeaders = EC32(rawbase);
-  memset(pefile+0x148, 0, 0x80);
-  cli_writeint32(pefile+0x148+0x10, ResRva);
-  cli_writeint32(pefile+0x148+0x14, ResSize);
-  curpe = pefile+0x148+0x80;
+    fakepe                      = (struct IMAGE_PE_HEADER *)(pefile + 0xd0);
+    fakepe->NumberOfSections    = EC16(sects + gotghost);
+    fakepe->AddressOfEntryPoint = EC32(ep);
+    fakepe->ImageBase           = EC32(base);
+    fakepe->SizeOfHeaders       = EC32(rawbase);
+    memset(pefile + 0x148, 0, 0x80);
+    cli_writeint32(pefile + 0x148 + 0x10, ResRva);
+    cli_writeint32(pefile + 0x148 + 0x14, ResSize);
+    curpe = pefile + 0x148 + 0x80;
 
-  if (gotghost) {
-      snprintf(curpe, 8, "empty");
-      cli_writeint32(curpe+8, sections[0].rva-datasize); /* vsize */
-      cli_writeint32(curpe+12, datasize); /* rva */
-      cli_writeint32(curpe+0x24, 0xffffffff);
-      curpe+=40;
-      datasize+=PESALIGN(sections[0].rva-datasize, 0x1000);
-  }
+    if (gotghost) {
+        snprintf(curpe, 8, "empty");
+        cli_writeint32(curpe + 8, sections[0].rva - datasize); /* vsize */
+        cli_writeint32(curpe + 12, datasize);                  /* rva */
+        cli_writeint32(curpe + 0x24, 0xffffffff);
+        curpe += 40;
+        datasize += PESALIGN(sections[0].rva - datasize, 0x1000);
+    }
 
-  for (i=0; i < sects; i++) {
-      snprintf(curpe, 8, ".clam%.2d", i+1);
-      if (!align) {
-          cli_writeint32(curpe+8, sections[i].vsz);
-          cli_writeint32(curpe+12, sections[i].rva);
-          cli_writeint32(curpe+16, sections[i].rsz);
-          cli_writeint32(curpe+20, rawbase);
-      } else {
-          cli_writeint32(curpe+8, PESALIGN(sections[i].vsz, align));
-          cli_writeint32(curpe+12, PESALIGN(sections[i].rva, align));
-          cli_writeint32(curpe+16, PESALIGN(sections[i].rsz, align));
-          cli_writeint32(curpe+20, rawbase);
-      }
-      /* already zeroed
+    for (i = 0; i < sects; i++) {
+        snprintf(curpe, 8, ".clam%.2d", i + 1);
+        if (!align) {
+            cli_writeint32(curpe + 8, sections[i].vsz);
+            cli_writeint32(curpe + 12, sections[i].rva);
+            cli_writeint32(curpe + 16, sections[i].rsz);
+            cli_writeint32(curpe + 20, rawbase);
+        } else {
+            cli_writeint32(curpe + 8, PESALIGN(sections[i].vsz, align));
+            cli_writeint32(curpe + 12, PESALIGN(sections[i].rva, align));
+            cli_writeint32(curpe + 16, PESALIGN(sections[i].rsz, align));
+            cli_writeint32(curpe + 20, rawbase);
+        }
+        /* already zeroed
          cli_writeint32(curpe+24, 0);
          cli_writeint32(curpe+28, 0);
          cli_writeint32(curpe+32, 0);
       */
-      cli_writeint32(curpe+0x24, 0xffffffff);
-      memcpy(pefile+rawbase, buffer+sections[i].raw, sections[i].rsz);
-      curpe+=40;
-      if (!align) {
-          rawbase+=PESALIGN(sections[i].rsz, 0x200);
-          datasize+=PESALIGN(sections[i].vsz, 0x1000);
-      } else {
-          rawbase+=PESALIGN(PESALIGN(sections[i].rsz, align), 0x200);
-          datasize+=PESALIGN(PESALIGN(sections[i].vsz, align), 0x1000);
-      }
-  }
-  fakepe->SizeOfImage = EC32(datasize);
+        cli_writeint32(curpe + 0x24, 0xffffffff);
+        memcpy(pefile + rawbase, buffer + sections[i].raw, sections[i].rsz);
+        curpe += 40;
+        if (!align) {
+            rawbase += PESALIGN(sections[i].rsz, 0x200);
+            datasize += PESALIGN(sections[i].vsz, 0x1000);
+        } else {
+            rawbase += PESALIGN(PESALIGN(sections[i].rsz, align), 0x200);
+            datasize += PESALIGN(PESALIGN(sections[i].vsz, align), 0x1000);
+        }
+    }
+    fakepe->SizeOfImage = EC32(datasize);
 
-  i = (cli_writen(file, pefile, rawbase)!=-1);
-  free(pefile);
-  return i;
+    i = (cli_writen(file, pefile, rawbase) != -1);
+    free(pefile);
+    return i;
 }

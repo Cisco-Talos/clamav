@@ -32,7 +32,7 @@
 #include <openssl/err.h>
 
 /* Certain OSs already use 64bit variables in their stat struct */
-#if ( !defined(__FreeBSD__) && !defined(__APPLE__) )
+#if (!defined(__FreeBSD__) && !defined(__APPLE__))
 #define STAT64_BLACKLIST 1
 #else
 #define STAT64_BLACKLIST 0
@@ -46,7 +46,7 @@
 #define CLAMSTAT stat64
 #define LSTAT lstat64
 #define FSTAT fstat64
-#define safe_open(a, b) open(a, b|O_LARGEFILE)
+#define safe_open(a, b) open(a, b | O_LARGEFILE)
 #else
 
 #define STATBUF struct stat
@@ -68,8 +68,7 @@
 #include "cltypes.h"
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 #define CL_COUNT_PRECISION 4096
@@ -77,7 +76,7 @@ extern "C"
 /* return codes */
 typedef enum cl_error_t {
     /* libclamav specific */
-    CL_CLEAN = 0,
+    CL_CLEAN   = 0,
     CL_SUCCESS = 0,
     CL_VIRUS,
     CL_ENULLARG,
@@ -110,7 +109,7 @@ typedef enum cl_error_t {
     CL_EMAXFILES,
     CL_EFORMAT,
     CL_EPARSE,
-    CL_EBYTECODE,/* may be reported in testmode */
+    CL_EBYTECODE,          /* may be reported in testmode */
     CL_EBYTECODE_TESTFAIL, /* may be reported in testmode */
 
     /* c4w error codes */
@@ -250,7 +249,7 @@ int cl_initialize_crypto(void);
  */
 void cl_cleanup_crypto(void);
 
-#define CL_INIT_DEFAULT	0x0
+#define CL_INIT_DEFAULT 0x0
 /**
  * @brief Initialize the ClamAV library.
  *
@@ -269,56 +268,56 @@ extern int cl_init(unsigned int initoptions);
 extern struct cl_engine *cl_engine_new(void);
 
 enum cl_engine_field {
-    CL_ENGINE_MAX_SCANSIZE,	    /* uint64_t */
-    CL_ENGINE_MAX_FILESIZE,	    /* uint64_t */
-    CL_ENGINE_MAX_RECURSION,	    /* uint32_t */
-    CL_ENGINE_MAX_FILES,	    /* uint32_t */
-    CL_ENGINE_MIN_CC_COUNT,	    /* uint32_t */
-    CL_ENGINE_MIN_SSN_COUNT,	    /* uint32_t */
-    CL_ENGINE_PUA_CATEGORIES,	    /* (char *) */
-    CL_ENGINE_DB_OPTIONS,	    /* uint32_t */
-    CL_ENGINE_DB_VERSION,	    /* uint32_t */
-    CL_ENGINE_DB_TIME,		    /* time_t */
-    CL_ENGINE_AC_ONLY,		    /* uint32_t */
-    CL_ENGINE_AC_MINDEPTH,	    /* uint32_t */
-    CL_ENGINE_AC_MAXDEPTH,	    /* uint32_t */
-    CL_ENGINE_TMPDIR,		    /* (char *) */
-    CL_ENGINE_KEEPTMP,		    /* uint32_t */
-    CL_ENGINE_BYTECODE_SECURITY,    /* uint32_t */
-    CL_ENGINE_BYTECODE_TIMEOUT,     /* uint32_t */
-    CL_ENGINE_BYTECODE_MODE,        /* uint32_t */
-    CL_ENGINE_MAX_EMBEDDEDPE,       /* uint64_t */
-    CL_ENGINE_MAX_HTMLNORMALIZE,    /* uint64_t */
-    CL_ENGINE_MAX_HTMLNOTAGS,       /* uint64_t */
-    CL_ENGINE_MAX_SCRIPTNORMALIZE,  /* uint64_t */
-    CL_ENGINE_MAX_ZIPTYPERCG,       /* uint64_t */
-    CL_ENGINE_FORCETODISK,          /* uint32_t */
-    CL_ENGINE_DISABLE_CACHE,        /* uint32_t */
-    CL_ENGINE_DISABLE_PE_STATS,     /* uint32_t */
-    CL_ENGINE_STATS_TIMEOUT,        /* uint32_t */
-    CL_ENGINE_MAX_PARTITIONS,       /* uint32_t */
-    CL_ENGINE_MAX_ICONSPE,          /* uint32_t */
-    CL_ENGINE_MAX_RECHWP3,          /* uint32_t */
-    CL_ENGINE_TIME_LIMIT,           /* uint32_t */
-    CL_ENGINE_PCRE_MATCH_LIMIT,     /* uint64_t */
-    CL_ENGINE_PCRE_RECMATCH_LIMIT,  /* uint64_t */
-    CL_ENGINE_PCRE_MAX_FILESIZE,    /* uint64_t */
-    CL_ENGINE_DISABLE_PE_CERTS,     /* uint32_t */
-    CL_ENGINE_PE_DUMPCERTS          /* uint32_t */
+    CL_ENGINE_MAX_SCANSIZE,        /* uint64_t */
+    CL_ENGINE_MAX_FILESIZE,        /* uint64_t */
+    CL_ENGINE_MAX_RECURSION,       /* uint32_t */
+    CL_ENGINE_MAX_FILES,           /* uint32_t */
+    CL_ENGINE_MIN_CC_COUNT,        /* uint32_t */
+    CL_ENGINE_MIN_SSN_COUNT,       /* uint32_t */
+    CL_ENGINE_PUA_CATEGORIES,      /* (char *) */
+    CL_ENGINE_DB_OPTIONS,          /* uint32_t */
+    CL_ENGINE_DB_VERSION,          /* uint32_t */
+    CL_ENGINE_DB_TIME,             /* time_t */
+    CL_ENGINE_AC_ONLY,             /* uint32_t */
+    CL_ENGINE_AC_MINDEPTH,         /* uint32_t */
+    CL_ENGINE_AC_MAXDEPTH,         /* uint32_t */
+    CL_ENGINE_TMPDIR,              /* (char *) */
+    CL_ENGINE_KEEPTMP,             /* uint32_t */
+    CL_ENGINE_BYTECODE_SECURITY,   /* uint32_t */
+    CL_ENGINE_BYTECODE_TIMEOUT,    /* uint32_t */
+    CL_ENGINE_BYTECODE_MODE,       /* uint32_t */
+    CL_ENGINE_MAX_EMBEDDEDPE,      /* uint64_t */
+    CL_ENGINE_MAX_HTMLNORMALIZE,   /* uint64_t */
+    CL_ENGINE_MAX_HTMLNOTAGS,      /* uint64_t */
+    CL_ENGINE_MAX_SCRIPTNORMALIZE, /* uint64_t */
+    CL_ENGINE_MAX_ZIPTYPERCG,      /* uint64_t */
+    CL_ENGINE_FORCETODISK,         /* uint32_t */
+    CL_ENGINE_DISABLE_CACHE,       /* uint32_t */
+    CL_ENGINE_DISABLE_PE_STATS,    /* uint32_t */
+    CL_ENGINE_STATS_TIMEOUT,       /* uint32_t */
+    CL_ENGINE_MAX_PARTITIONS,      /* uint32_t */
+    CL_ENGINE_MAX_ICONSPE,         /* uint32_t */
+    CL_ENGINE_MAX_RECHWP3,         /* uint32_t */
+    CL_ENGINE_TIME_LIMIT,          /* uint32_t */
+    CL_ENGINE_PCRE_MATCH_LIMIT,    /* uint64_t */
+    CL_ENGINE_PCRE_RECMATCH_LIMIT, /* uint64_t */
+    CL_ENGINE_PCRE_MAX_FILESIZE,   /* uint64_t */
+    CL_ENGINE_DISABLE_PE_CERTS,    /* uint32_t */
+    CL_ENGINE_PE_DUMPCERTS         /* uint32_t */
 };
 
 enum bytecode_security {
-    CL_BYTECODE_TRUST_ALL=0, /* obsolete */
-    CL_BYTECODE_TRUST_SIGNED, /* default */
-    CL_BYTECODE_TRUST_NOTHING /* paranoid setting */
+    CL_BYTECODE_TRUST_ALL = 0, /* obsolete */
+    CL_BYTECODE_TRUST_SIGNED,  /* default */
+    CL_BYTECODE_TRUST_NOTHING  /* paranoid setting */
 };
 
 enum bytecode_mode {
-    CL_BYTECODE_MODE_AUTO=0, /* JIT if possible, fallback to interpreter */
-    CL_BYTECODE_MODE_JIT, /* force JIT */
+    CL_BYTECODE_MODE_AUTO = 0,    /* JIT if possible, fallback to interpreter */
+    CL_BYTECODE_MODE_JIT,         /* force JIT */
     CL_BYTECODE_MODE_INTERPRETER, /* force interpreter */
-    CL_BYTECODE_MODE_TEST, /* both JIT and interpreter, compare results, all failures are fatal */
-    CL_BYTECODE_MODE_OFF /* for query only, not settable */
+    CL_BYTECODE_MODE_TEST,        /* both JIT and interpreter, compare results, all failures are fatal */
+    CL_BYTECODE_MODE_OFF          /* for query only, not settable */
 };
 
 struct cli_section_hash {
@@ -571,8 +570,8 @@ extern void cl_engine_set_clcb_sigload(struct cl_engine *engine, clcb_sigload ca
 enum cl_msg {
     /* leave room for more message levels in the future */
     CL_MSG_INFO_VERBOSE = 32, /* verbose */
-    CL_MSG_WARN = 64, /* LibClamAV WARNING: */
-    CL_MSG_ERROR = 128/* LibClamAV ERROR: */
+    CL_MSG_WARN         = 64, /* LibClamAV WARNING: */
+    CL_MSG_ERROR        = 128 /* LibClamAV ERROR: */
 };
 
 /**
@@ -646,8 +645,8 @@ extern void cl_engine_set_clcb_hash(struct cl_engine *engine, clcb_hash callback
  * @return                  CL_VIRUS to blacklist
  * @return                  CL_CLEAN to continue scanning
  */
-typedef cl_error_t (*clcb_meta)(const char* container_type, unsigned long fsize_container, const char *filename,
-			  unsigned long fsize_real,  int is_encrypted, unsigned int filepos_container, void *context);
+typedef cl_error_t (*clcb_meta)(const char *container_type, unsigned long fsize_container, const char *filename,
+                                unsigned long fsize_real, int is_encrypted, unsigned int filepos_container, void *context);
 /**
  * @brief Set a custom archive metadata matching callback function.
  *
@@ -813,7 +812,7 @@ extern void cl_engine_set_clcb_stats_get_size(struct cl_engine *engine, clcb_sta
  *
  * @param cbdata    The statistics data. Probably a pointer to a malloc'd struct.
  */
-typedef char * (*clcb_stats_get_hostid)(void *cbdata);
+typedef char *(*clcb_stats_get_hostid)(void *cbdata);
 /**
  * @brief Set a custom callback function to get the machine's unique host ID.
  *
@@ -844,7 +843,7 @@ extern void cl_engine_stats_enable(struct cl_engine *engine);
  * @param scanoptions       Scanning options.
  * @return cl_error_t       CL_CLEAN, CL_VIRUS, or an error code if an error occured during the scan.
  */
-extern int cl_scandesc(int desc, const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options* scanoptions);
+extern int cl_scandesc(int desc, const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *scanoptions);
 
 /**
  * @brief Scan a file, given a file descriptor.
@@ -860,7 +859,7 @@ extern int cl_scandesc(int desc, const char *filename, const char **virname, uns
  * @param[in/out] context   An opaque context structure allowing the caller to record details about the sample being scanned.
  * @return cl_error_t       CL_CLEAN, CL_VIRUS, or an error code if an error occured during the scan.
  */
-extern int cl_scandesc_callback(int desc, const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options* scanoptions, void *context);
+extern int cl_scandesc_callback(int desc, const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *scanoptions, void *context);
 
 /**
  * @brief Scan a file, given a filename.
@@ -872,7 +871,7 @@ extern int cl_scandesc_callback(int desc, const char *filename, const char **vir
  * @param scanoptions       Scanning options.
  * @return cl_error_t       CL_CLEAN, CL_VIRUS, or an error code if an error occured during the scan.
  */
-extern int cl_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options* scanoptions);
+extern int cl_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *scanoptions);
 
 /**
  * @brief Scan a file, given a filename.
@@ -887,7 +886,7 @@ extern int cl_scanfile(const char *filename, const char **virname, unsigned long
  * @param[in/out] context   An opaque context structure allowing the caller to record details about the sample being scanned.
  * @return cl_error_t       CL_CLEAN, CL_VIRUS, or an error code if an error occured during the scan.
  */
-extern int cl_scanfile_callback(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options* scanoptions, void *context);
+extern int cl_scanfile_callback(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *scanoptions, void *context);
 
 /* ----------------------------------------------------------------------------
  * Database handling.
@@ -899,16 +898,16 @@ extern const char *cl_retdbdir(void);
  * CVD / database functions
  */
 
-struct cl_cvd {		    /* field no. */
-    char *time;		    /* 2 */
-    unsigned int version;   /* 3 */
-    unsigned int sigs;	    /* 4 */
-    unsigned int fl;	    /* 5 */
-			    /* padding */
-    char *md5;		    /* 6 */
-    char *dsig;		    /* 7 */
-    char *builder;	    /* 8 */
-    unsigned int stime;	    /* 9 */
+struct cl_cvd {           /* field no. */
+    char *time;           /* 2 */
+    unsigned int version; /* 3 */
+    unsigned int sigs;    /* 4 */
+    unsigned int fl;      /* 5 */
+                          /* padding */
+    char *md5;            /* 6 */
+    char *dsig;           /* 7 */
+    char *builder;        /* 8 */
+    unsigned int stime;   /* 9 */
 };
 
 /**
@@ -1053,7 +1052,7 @@ typedef struct cl_fmap cl_fmap_t;
  *                  end-of-file, zero is returned. Otherwise, a -1 is returned
  *                  and the global variable errno is set to indicate the error.
  */
-typedef off_t (*clcb_pread)(void* handle, void *buf, size_t count, off_t offset);
+typedef off_t (*clcb_pread)(void *handle, void *buf, size_t count, off_t offset);
 
 /**
  * @brief Open a map given a handle.
@@ -1072,8 +1071,8 @@ typedef off_t (*clcb_pread)(void* handle, void *buf, size_t count, off_t offset)
  * @param pread_cb      A callback function to read data from the handle.
  * @return cl_fmap_t*   A map representing the handle interface.
  */
-extern cl_fmap_t *cl_fmap_open_handle(void* handle, size_t offset, size_t len,
-				      clcb_pread, int use_aging);
+extern cl_fmap_t *cl_fmap_open_handle(void *handle, size_t offset, size_t len,
+                                      clcb_pread, int use_aging);
 
 /**
  * @brief Open a map given a buffer.
@@ -1097,7 +1096,7 @@ extern cl_fmap_t *cl_fmap_open_memory(const void *start, size_t len);
  *
  * @param map           Map to be closed.
  */
-extern void cl_fmap_close(cl_fmap_t*);
+extern void cl_fmap_close(cl_fmap_t *);
 
 /**
  * @brief Scan custom data.

@@ -25,13 +25,13 @@
 #include "others.h"
 #define SWIZZ_MAXERRORS 2000
 struct swizz_stats {
-	uint16_t gngrams[17576];
-	uint32_t total;
-	uint32_t suspicious;
-	int has_version;
-	int has_manifest;
-	int errors;
-	int entries;
+    uint16_t gngrams[17576];
+    uint32_t total;
+    uint32_t suspicious;
+    int has_version;
+    int has_manifest;
+    int errors;
+    int entries;
 };
 
 int cli_check_mydoom_log(cli_ctx *ctx);

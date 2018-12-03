@@ -18,9 +18,9 @@
  *  MA 02110-1301, USA.
  */
 
-#ifndef _OPENIOC_H_ 
-#define _OPENIOC_H_ 
+#ifndef _OPENIOC_H_
+#define _OPENIOC_H_
 
-int openioc_parse(const char * fname, int fd, struct cl_engine *engine, unsigned int options);
+int openioc_parse(const char *fname, int fd, struct cl_engine *engine, unsigned int options);
 
 #endif

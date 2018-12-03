@@ -28,12 +28,28 @@
 #define __MBOX_H
 
 /* See RFC1521 */
-typedef	enum {
-	NOMIME, APPLICATION, AUDIO, IMAGE, MESSAGE, MULTIPART, TEXT, VIDEO, MEXTENSION
+typedef enum {
+    NOMIME,
+    APPLICATION,
+    AUDIO,
+    IMAGE,
+    MESSAGE,
+    MULTIPART,
+    TEXT,
+    VIDEO,
+    MEXTENSION
 } mime_type;
 
 typedef enum {
-	NOENCODING, QUOTEDPRINTABLE, BASE64, EIGHTBIT, BINARY, UUENCODE, YENCODE, EEXTENSION, BINHEX
+    NOENCODING,
+    QUOTEDPRINTABLE,
+    BASE64,
+    EIGHTBIT,
+    BINARY,
+    UUENCODE,
+    YENCODE,
+    EEXTENSION,
+    BINHEX
 } encoding_type;
 
 /* tk: shut up manager.c warning */
@@ -41,7 +57,8 @@ typedef enum {
 
 /* classes supported by this system */
 typedef enum {
-	INVALIDCLASS, BLOBCLASS
+    INVALIDCLASS,
+    BLOBCLASS
 } object_type;
 
 #ifdef C_BSD
@@ -55,7 +72,7 @@ typedef enum {
 #include "message.h"
 #include "uuencode.h"
 
-size_t	strstrip(char *s);	/* remove trailing white space */
-int	cli_mbox(const char *dir, cli_ctx *ctx);
+size_t strstrip(char *s); /* remove trailing white space */
+int cli_mbox(const char *dir, cli_ctx *ctx);
 
 #endif /* __MBOX_H */

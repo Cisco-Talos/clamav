@@ -22,17 +22,19 @@
 #include <string.h>
 #include "w32_errno.h"
 
-char *w32_strerror(int errnum) {
+char *w32_strerror(int errnum)
+{
     size_t i;
-    for(i=0; i<sizeof(w32_errnos) / sizeof(w32_errnos[0]); i++) {
-	if(w32_errnos[i].err == errnum)
-	    return w32_errnos[i].strerr;
+    for (i = 0; i < sizeof(w32_errnos) / sizeof(w32_errnos[0]); i++) {
+        if (w32_errnos[i].err == errnum)
+            return w32_errnos[i].strerr;
     }
     return "Unknown error";
 }
 
-int w32_strerror_r(int errnum, char *buf, size_t buflen) {
+int w32_strerror_r(int errnum, char *buf, size_t buflen)
+{
     strncpy(buf, w32_strerror(errnum), buflen);
-    if(buflen) buf[buflen-1] = '\0';
+    if (buflen) buf[buflen - 1] = '\0';
     return 0;
 }

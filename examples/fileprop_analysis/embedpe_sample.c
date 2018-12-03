@@ -13,7 +13,7 @@ FUNCTIONALITY_LEVEL_MIN(FUNC_LEVEL_098_7)
 
 #define STR_MAXLEN 256
 
-int entrypoint ()
+int entrypoint()
 {
     int i;
     int32_t type, obj, objarr, objit, arrlen, strlen;
@@ -26,7 +26,7 @@ int entrypoint ()
 
     /* acquire array of internal contained objects */
     objarr = json_get_object("ContainedObjects", 16, 0);
-    type = json_get_type(objarr);
+    type   = json_get_type(objarr);
     /* debug print uint (no '\n' or prepended message */
     debug_print_uint(type);
 
@@ -49,18 +49,18 @@ int entrypoint ()
         type = json_get_type(obj);
         if (type == JSON_TYPE_STRING) {
             /* acquire string length, note +1 is for the NULL terminator */
-            strlen = json_get_string_length(obj)+1;
+            strlen = json_get_string_length(obj) + 1;
             /* prevent buffer overflow */
             if (strlen > STR_MAXLEN)
                 strlen = STR_MAXLEN;
             /* acquire string data, note strlen includes NULL terminator */
             if (json_get_string(str, strlen, obj)) {
                 /* debug print str (with '\n' and prepended message */
-                debug_print_str(str,strlen);
+                debug_print_str(str, strlen);
 
                 /* check the contained object's type */
                 if (strlen == 14 && !memcmp(str, "CL_TYPE_MSEXE", 14)) {
-                //if (!strcmp(str, strlen, "CL_TYPE_MSEXE", strlen)) {
+                    //if (!strcmp(str, strlen, "CL_TYPE_MSEXE", strlen)) {
                     /* alert for submission */
                     foundVirus("EmbedPE");
                     return 0;

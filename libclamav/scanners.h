@@ -88,6 +88,6 @@ int cli_map_scan(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx, cli_
  */
 int cli_mem_scandesc(const void *buffer, size_t length, cli_ctx *ctx);
 
-int cli_found_possibly_unwanted(cli_ctx* ctx);
+int cli_found_possibly_unwanted(cli_ctx *ctx);
 
 #endif

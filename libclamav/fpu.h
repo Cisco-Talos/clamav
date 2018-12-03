@@ -22,10 +22,10 @@
 #ifndef __FPU_H
 #define __FPU_H
 
-#define FPU_ENDIAN_INITME	0
-#define FPU_ENDIAN_BIG		1
-#define FPU_ENDIAN_LITTLE	2
-#define FPU_ENDIAN_UNKNOWN	3
+#define FPU_ENDIAN_INITME 0
+#define FPU_ENDIAN_BIG 1
+#define FPU_ENDIAN_LITTLE 2
+#define FPU_ENDIAN_UNKNOWN 3
 
 /* get_fpu_endian() - identify float point byteorder
  * Parameters - none

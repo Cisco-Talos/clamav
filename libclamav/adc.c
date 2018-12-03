@@ -37,9 +37,9 @@
 /* #define DEBUG_ADC */
 
 #ifdef DEBUG_ADC
-#  define adc_dbgmsg(...) cli_dbgmsg( __VA_ARGS__ )
+#define adc_dbgmsg(...) cli_dbgmsg(__VA_ARGS__)
 #else
-#  define adc_dbgmsg(...) ;
+#define adc_dbgmsg(...) ;
 #endif
 
 /* Initialize values and collect buffer
@@ -59,10 +59,10 @@ int adc_decompressInit(adc_stream *strm)
         return ADC_MEM_ERROR;
     }
     strm->buffered = 0;
-    strm->state = ADC_STATE_GETTYPE;
-    strm->length = 0;
-    strm->offset = 0;
-    strm->curr = strm->buffer;
+    strm->state    = ADC_STATE_GETTYPE;
+    strm->length   = 0;
+    strm->offset   = 0;
+    strm->curr     = strm->buffer;
 
     return ADC_OK;
 }
@@ -94,18 +94,17 @@ int adc_decompress(adc_stream *strm)
         /* Exit if needs more in bytes and none available */
         int needsInput;
         switch (strm->state) {
-           case ADC_STATE_SHORTLOOK:
-           case ADC_STATE_LONGLOOK:
-               needsInput = 0;
-               break;
-           default:
-               needsInput = 1;
-               break;
+            case ADC_STATE_SHORTLOOK:
+            case ADC_STATE_LONGLOOK:
+                needsInput = 0;
+                break;
+            default:
+                needsInput = 1;
+                break;
         }
         if (needsInput && (strm->avail_in == 0)) {
             break;
-        }
-        else {
+        } else {
             didNothing = 0;
         }
 
@@ -117,36 +116,34 @@ int adc_decompress(adc_stream *strm)
                 strm->next_in++;
                 strm->avail_in--;
                 if (bData & 0x80) {
-                    strm->state = ADC_STATE_RAWDATA;
+                    strm->state  = ADC_STATE_RAWDATA;
                     strm->offset = 0;
                     strm->length = (bData & 0x7F) + 1;
-                }
-                else if (bData & 0x40) {
-                    strm->state = ADC_STATE_LONGOP2;
+                } else if (bData & 0x40) {
+                    strm->state  = ADC_STATE_LONGOP2;
                     strm->offset = 0;
                     strm->length = (bData & 0x3F) + 4;
-                }
-                else {
-                    strm->state = ADC_STATE_SHORTOP;
+                } else {
+                    strm->state  = ADC_STATE_SHORTOP;
                     strm->offset = (bData & 0x3) * 0x100;
                     strm->length = ((bData & 0x3C) >> 2) + 3;
                 }
                 adc_dbgmsg("adc_decompress: GETTYPE bData %x state %u offset %u length %u\n",
                            bData, strm->state, strm->offset, strm->length);
                 break;
-           }
-           case ADC_STATE_LONGOP2: {
+            }
+            case ADC_STATE_LONGOP2: {
                 /* Grab first offset byte */
                 bData = *(strm->next_in);
                 strm->next_in++;
                 strm->avail_in--;
                 strm->offset = bData * 0x100;
-                strm->state = ADC_STATE_LONGOP1;
+                strm->state  = ADC_STATE_LONGOP1;
                 adc_dbgmsg("adc_decompress: LONGOP2 bData %x state %u offset %u length %u\n",
                            bData, strm->state, strm->offset, strm->length);
                 break;
-           }
-           case ADC_STATE_LONGOP1: {
+            }
+            case ADC_STATE_LONGOP1: {
                 /* Grab second offset byte */
                 bData = *(strm->next_in);
                 strm->next_in++;
@@ -156,8 +153,8 @@ int adc_decompress(adc_stream *strm)
                 adc_dbgmsg("adc_decompress: LONGOP1 bData %x state %u offset %u length %u\n",
                            bData, strm->state, strm->offset, strm->length);
                 break;
-           }
-           case ADC_STATE_SHORTOP: {
+            }
+            case ADC_STATE_SHORTOP: {
                 /* Grab offset byte */
                 bData = *(strm->next_in);
                 strm->next_in++;
@@ -167,9 +164,9 @@ int adc_decompress(adc_stream *strm)
                 adc_dbgmsg("adc_decompress: SHORTOP bData %x state %u offset %u length %u\n",
                            bData, strm->state, strm->offset, strm->length);
                 break;
-           }
+            }
 
-           case ADC_STATE_RAWDATA: {
+            case ADC_STATE_RAWDATA: {
                 /* Grab data */
                 adc_dbgmsg("adc_decompress: RAWDATA offset %u length %u\n", strm->offset, strm->length);
                 while ((strm->avail_in > 0) && (strm->avail_out > 0) && (strm->length > 0)) {
@@ -197,20 +194,19 @@ int adc_decompress(adc_stream *strm)
                     strm->state = ADC_STATE_GETTYPE;
                 }
                 break;
-           }
+            }
 
-           case ADC_STATE_SHORTLOOK:
-           case ADC_STATE_LONGLOOK: {
+            case ADC_STATE_SHORTLOOK:
+            case ADC_STATE_LONGLOOK: {
                 /* Copy data */
                 adc_dbgmsg("adc_decompress: LOOKBACK offset %u length %u avail_in %u avail_out %u\n",
-                    strm->offset, strm->length, strm->avail_in, strm->avail_out);
+                           strm->offset, strm->length, strm->avail_in, strm->avail_out);
                 while ((strm->avail_out > 0) && (strm->length > 0)) {
                     /* state validation first */
                     if (strm->offset > 0x10000) {
                         cli_dbgmsg("adc_decompress: bad LOOKBACK offset %u\n", strm->offset);
                         return ADC_DATA_ERROR;
-                    }
-                    else if ((strm->state == ADC_STATE_SHORTLOOK) && (strm->offset > 0x400)) {
+                    } else if ((strm->state == ADC_STATE_SHORTLOOK) && (strm->offset > 0x400)) {
                         cli_dbgmsg("adc_decompress: bad LOOKBACK offset %u\n", strm->offset);
                         return ADC_DATA_ERROR;
                     }
@@ -224,8 +220,7 @@ int adc_decompress(adc_stream *strm)
                     }
                     if (strm->curr >= (strm->buffer + strm->offset)) {
                         bData = *(uint8_t *)(strm->curr - strm->offset);
-                    }
-                    else {
+                    } else {
                         bData = *(uint8_t *)(strm->curr + ADC_BUFF_SIZE - strm->offset);
                     }
                     /* store to output */
@@ -254,15 +249,14 @@ int adc_decompress(adc_stream *strm)
                 return ADC_DATA_ERROR;
             }
         } /* end switch */
-    } /* end while */
+    }     /* end while */
 
     /* There really isn't a terminator, just end of data */
     if (didNothing && strm->avail_out) {
         if (strm->state == ADC_STATE_GETTYPE) {
             /* Nothing left to do */
             return ADC_STREAM_END;
-        }
-        else {
+        } else {
             /* Ended mid phrase */
             cli_dbgmsg("adc_decompress: stream ended mid-phrase, state %u\n", strm->state);
             return ADC_DATA_ERROR;
@@ -285,10 +279,9 @@ int adc_decompressEnd(adc_stream *strm)
         free(strm->buffer);
     }
     strm->buffered = 0;
-    strm->state = ADC_STATE_UNINIT;
-    strm->length = 0;
-    strm->offset = 0;
+    strm->state    = ADC_STATE_UNINIT;
+    strm->length   = 0;
+    strm->offset   = 0;
 
     return ADC_OK;
 }
-

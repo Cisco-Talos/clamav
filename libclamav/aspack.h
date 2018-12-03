@@ -25,16 +25,16 @@
 #include "cltypes.h"
 #include "execs.h"
 
-#define ASPACK_EP_OFFSET_212    (58+0x70e)
-#define ASPACK_EP_OFFSET_OTHER  (58+0x76a)
-#define ASPACK_EP_OFFSET_242    (58+0x776)
+#define ASPACK_EP_OFFSET_212 (58 + 0x70e)
+#define ASPACK_EP_OFFSET_OTHER (58 + 0x76a)
+#define ASPACK_EP_OFFSET_242 (58 + 0x776)
 
-#define ASPACK_EPBUFF_OFFSET_212    (0x3b9)
-#define ASPACK_EPBUFF_OFFSET_OTHER  (0x41f)
-#define ASPACK_EPBUFF_OFFSET_242    (0x42B)
+#define ASPACK_EPBUFF_OFFSET_212 (0x3b9)
+#define ASPACK_EPBUFF_OFFSET_OTHER (0x41f)
+#define ASPACK_EPBUFF_OFFSET_242 (0x42B)
 
 typedef enum aspack_version_tag {
-    ASPACK_VER_NONE=0,
+    ASPACK_VER_NONE = 0,
     ASPACK_VER_212,
     ASPACK_VER_OTHER,
     ASPACK_VER_242

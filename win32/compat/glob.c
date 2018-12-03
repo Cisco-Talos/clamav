@@ -68,7 +68,8 @@
     #define wrapper.
 */
 
-static int glob_add(char *path, int *argc, char ***argv) {
+static int glob_add(char *path, int *argc, char ***argv)
+{
     char *tail = strchr(path, '*'), *tailqmark;
     char *dup1, *dup2, *dir, *base, *taildirsep, *tailwldsep;
     struct dirent *de;
@@ -77,131 +78,132 @@ static int glob_add(char *path, int *argc, char ***argv) {
     DIR *d;
     void *p;
 
-    if(strlen(path) > 4 && !memcmp(path, "\\\\?\\", 4))
-	tailqmark = strchr(&path[4], '?');
+    if (strlen(path) > 4 && !memcmp(path, "\\\\?\\", 4))
+        tailqmark = strchr(&path[4], '?');
     else
-	tailqmark = strchr(path, '?');
+        tailqmark = strchr(path, '?');
 
-    if(tailqmark && (!tail || tailqmark < tail))
-	tail = tailqmark;
+    if (tailqmark && (!tail || tailqmark < tail))
+        tail = tailqmark;
 
-    if(!tail) {
+    if (!tail) {
         p = realloc(*argv, sizeof(**argv) * (*argc + 1));
         if (p == NULL) {
             /* realloc() failed, print warning */
-           fprintf(stderr, "warning: realloc() for '*argv' failed\n");
-           return -1;
+            fprintf(stderr, "warning: realloc() for '*argv' failed\n");
+            return -1;
         }
-        *argv = (char **)p;
+        *argv          = (char **)p;
         (*argv)[*argc] = path;
         (*argc)++;
         return strlen(path);
     }
 
-    if(tail!=path && tail[-1] == '\\') {
-	tail[-1] = '\0';
-	mergedir = 1;
+    if (tail != path && tail[-1] == '\\') {
+        tail[-1] = '\0';
+        mergedir = 1;
     }
-    while(*tail) {
-	if(*tail == '?') {
-	    if(tail == tailqmark || qmarklen) 
-		qmarklen++;
-	    *tail = 0;
-	} else if(*tail == '*') {
-	    *tail = '\0';
-	    qmarklen = 0;
-	} else 
-	    break;
-	tail++;
+    while (*tail) {
+        if (*tail == '?') {
+            if (tail == tailqmark || qmarklen)
+                qmarklen++;
+            *tail = 0;
+        } else if (*tail == '*') {
+            *tail    = '\0';
+            qmarklen = 0;
+        } else
+            break;
+        tail++;
     }
-    taillen = strlen(tail);
+    taillen    = strlen(tail);
     taildirsep = strchr(tail, '\\');
-    if(taildirsep && taildirsep - tail == taillen - 1) {
-	*taildirsep = '\0';
-	taildirsep = NULL;
-	taillen--;
+    if (taildirsep && taildirsep - tail == taillen - 1) {
+        *taildirsep = '\0';
+        taildirsep  = NULL;
+        taillen--;
     }
-    if(!taildirsep)
-	taildirsep = tail + taillen;
+    if (!taildirsep)
+        taildirsep = tail + taillen;
 
     tailwldsep = strchr(tail, '*');
-    tailqmark = strchr(tail, '?');
-    if(tailqmark && (!tailwldsep || tailqmark < tailwldsep))
-	tailwldsep = tailqmark;
-    if(!tailwldsep)
-	tailwldsep = tail + taillen;
+    tailqmark  = strchr(tail, '?');
+    if (tailqmark && (!tailwldsep || tailqmark < tailwldsep))
+        tailwldsep = tailqmark;
+    if (!tailwldsep)
+        tailwldsep = tail + taillen;
 
     baselen = strlen(path) + 1;
-    dup1 = (char *)_alloca(baselen * 2);
+    dup1    = (char *)_alloca(baselen * 2);
     memcpy(dup1, path, baselen);
     dup2 = dup1 + baselen;
     memcpy(dup2, path, baselen);
 
-    if(!mergedir) {
-	dir = dirname(dup1);
-	base = basename(dup2);
+    if (!mergedir) {
+        dir  = dirname(dup1);
+        base = basename(dup2);
     } else {
-	dir = dup1;
-	base = dup2;
-	*dup2 = '\0';
+        dir   = dup1;
+        base  = dup2;
+        *dup2 = '\0';
     }
 
-    dirlen = strlen(dir);
+    dirlen  = strlen(dir);
     baselen = strlen(base);
 
     d = opendir(dir);
-    while(d && (de = readdir(d))) {
-	int namelen = strlen(de->d_name);
-	char *newpath;
+    while (d && (de = readdir(d))) {
+        int namelen = strlen(de->d_name);
+        char *newpath;
 
-	if(!strcmp(de->d_name, ".") || !strcmp(de->d_name, "..")) continue;
-	if(namelen < baselen) continue;
-	if(strncasecmp(base, de->d_name, baselen)) continue;
-	if(de->d_type == DT_DIR && taildirsep < tailwldsep) {
-	    int d_taillen = taildirsep - tail;
-	    if(namelen < baselen + d_taillen) continue;
-	    if(strncasecmp(tail, &de->d_name[namelen - d_taillen], d_taillen)) continue;
-	    newpath = (char *)malloc(dirlen + namelen + taillen - d_taillen + 3);
-	    if (newpath == NULL) { /* oops, malloc() has failed */
-		fprintf(stderr, "warning: malloc() failed in function 'globadd'...\n");
-		return -1;
-	    }
-	    sprintf(newpath, "%s\\%s\\%s", dir, de->d_name, &tail[d_taillen+1]);
-	    outlen += glob_add(newpath, argc, argv);
-	} else {
-	    int d_taillen = tailwldsep - tail;
-	    char *start;
-	    if(namelen < baselen + d_taillen) continue;
-	    if(qmarklen && baselen + qmarklen + d_taillen != namelen)	continue;
-	    if(d_taillen == taillen) {
-		start = &de->d_name[namelen - d_taillen];
-		namelen = d_taillen;
-	    } else {
-		start = &de->d_name[baselen];
-		namelen -= baselen;
-	    }
+        if (!strcmp(de->d_name, ".") || !strcmp(de->d_name, "..")) continue;
+        if (namelen < baselen) continue;
+        if (strncasecmp(base, de->d_name, baselen)) continue;
+        if (de->d_type == DT_DIR && taildirsep < tailwldsep) {
+            int d_taillen = taildirsep - tail;
+            if (namelen < baselen + d_taillen) continue;
+            if (strncasecmp(tail, &de->d_name[namelen - d_taillen], d_taillen)) continue;
+            newpath = (char *)malloc(dirlen + namelen + taillen - d_taillen + 3);
+            if (newpath == NULL) { /* oops, malloc() has failed */
+                fprintf(stderr, "warning: malloc() failed in function 'globadd'...\n");
+                return -1;
+            }
+            sprintf(newpath, "%s\\%s\\%s", dir, de->d_name, &tail[d_taillen + 1]);
+            outlen += glob_add(newpath, argc, argv);
+        } else {
+            int d_taillen = tailwldsep - tail;
+            char *start;
+            if (namelen < baselen + d_taillen) continue;
+            if (qmarklen && baselen + qmarklen + d_taillen != namelen) continue;
+            if (d_taillen == taillen) {
+                start   = &de->d_name[namelen - d_taillen];
+                namelen = d_taillen;
+            } else {
+                start = &de->d_name[baselen];
+                namelen -= baselen;
+            }
 
-	    for(; namelen >= d_taillen; start++, namelen--) {
-		if(strncasecmp(start, tail, d_taillen)) continue;
-		newpath = (char *)malloc(dirlen + (start - de->d_name) +  taillen + 2);
-		if (newpath == NULL) { /* oops, malloc() has failed */
-			fprintf(stderr, "warning: malloc() failed in function 'globadd'...\n");
-			return -1;
-		}
-		sprintf(newpath, "%s\\", dir);
-		memcpy(&newpath[dirlen + 1], de->d_name, start - de->d_name);
-		strcpy(&newpath[dirlen + 1 + start - de->d_name], tail);
-		outlen += glob_add(newpath, argc, argv);
-	    }
-	}
+            for (; namelen >= d_taillen; start++, namelen--) {
+                if (strncasecmp(start, tail, d_taillen)) continue;
+                newpath = (char *)malloc(dirlen + (start - de->d_name) + taillen + 2);
+                if (newpath == NULL) { /* oops, malloc() has failed */
+                    fprintf(stderr, "warning: malloc() failed in function 'globadd'...\n");
+                    return -1;
+                }
+                sprintf(newpath, "%s\\", dir);
+                memcpy(&newpath[dirlen + 1], de->d_name, start - de->d_name);
+                strcpy(&newpath[dirlen + 1 + start - de->d_name], tail);
+                outlen += glob_add(newpath, argc, argv);
+            }
+        }
     }
-    if(d) closedir(d);
+    if (d) closedir(d);
     _freea(dup1);
     free(path);
     return outlen;
 }
 
-void w32_glob(int *argc_ptr, char ***argv_ptr) {
+void w32_glob(int *argc_ptr, char ***argv_ptr)
+{
     wchar_t *wtmp = GetCommandLineW();
     char *cur, *begparm = NULL, *endparm = NULL;
     char **argv = NULL, c;
@@ -209,108 +211,108 @@ void w32_glob(int *argc_ptr, char ***argv_ptr) {
     void *p;
 
     linelen = wcslen(wtmp);
-    cur = (char *)_alloca(linelen * 6 + 1);
-    if(!WideCharToMultiByte(CP_UTF8, 0, wtmp, -1, cur, linelen * 6 + 1, NULL, NULL))
-	cur = GetCommandLineA();
+    cur     = (char *)_alloca(linelen * 6 + 1);
+    if (!WideCharToMultiByte(CP_UTF8, 0, wtmp, -1, cur, linelen * 6 + 1, NULL, NULL))
+        cur = GetCommandLineA();
 
     do {
-	c = *cur;
-	switch(c) {
-	    case '\0':
-		endparm = cur;
-		break;
-	    case ' ':
-		if(begparm && !(in_sq | in_dq))
-		    endparm = cur;
-		break;
-	    case '\'':
-		if(!in_dq) {
-		    in_sq = !in_sq;
-		    if(!in_sq)
-			endparm = cur;
-		}
-		break;
-	    case '"':
-		if(!in_sq) {
-		    in_dq = !in_dq;
-		    if(!in_dq)
-			endparm = cur;
-		}
-		break;
-	    case '*':
-	    case '?':
-		if(!in_sq)
-		    need_glob = 1;
-	    default:
-		if(!begparm) {
-		    begparm = cur;
-		    endparm = NULL;
-		}
-	}
-	if (begparm && endparm) {
-	    if(begparm < endparm) {
-			int arglen = 0;
-		char *path = (char *)malloc(endparm - begparm + 1), *quotes;
-		if (path == NULL) { /* oops, malloc() failed */
-			fprintf(stderr, "warning: malloc() failed for '*path'...\n");
-			return;
-		}
+        c = *cur;
+        switch (c) {
+            case '\0':
+                endparm = cur;
+                break;
+            case ' ':
+                if (begparm && !(in_sq | in_dq))
+                    endparm = cur;
+                break;
+            case '\'':
+                if (!in_dq) {
+                    in_sq = !in_sq;
+                    if (!in_sq)
+                        endparm = cur;
+                }
+                break;
+            case '"':
+                if (!in_sq) {
+                    in_dq = !in_dq;
+                    if (!in_dq)
+                        endparm = cur;
+                }
+                break;
+            case '*':
+            case '?':
+                if (!in_sq)
+                    need_glob = 1;
+            default:
+                if (!begparm) {
+                    begparm = cur;
+                    endparm = NULL;
+                }
+        }
+        if (begparm && endparm) {
+            if (begparm < endparm) {
+                int arglen = 0;
+                char *path = (char *)malloc(endparm - begparm + 1), *quotes;
+                if (path == NULL) { /* oops, malloc() failed */
+                    fprintf(stderr, "warning: malloc() failed for '*path'...\n");
+                    return;
+                }
 
-		memcpy(path, begparm, endparm - begparm);
-		path[endparm - begparm] = '\0';
-		quotes = path;
-		while((quotes = strchr(quotes, '"')))
-		    memmove(quotes, quotes + 1, (endparm - begparm) - (quotes - path));
-		if(argc && need_glob) {
-		    arglen = glob_add(path, &argc, &argv);
-		    if(!arglen) {
-			path = (char *)malloc(endparm - begparm + 1);
-			if (path == NULL) { /* oops, malloc() failed */
-			    fprintf(stderr, "warning: malloc failed for 'path'...\n");
-			    return;
-			}
-			memcpy(path, begparm, endparm - begparm);
-			path[endparm - begparm] = '\0';
-		    }
-		}
-		if(!arglen) {
-		    p = realloc(argv, sizeof(*argv) * (argc + 1));
-		    if (p == NULL) { /* realloc() failed */
-    			fprintf(stderr, "warning: realloc() for 'argv' failed, original value unchanged...\n");
-                return;
+                memcpy(path, begparm, endparm - begparm);
+                path[endparm - begparm] = '\0';
+                quotes                  = path;
+                while ((quotes = strchr(quotes, '"')))
+                    memmove(quotes, quotes + 1, (endparm - begparm) - (quotes - path));
+                if (argc && need_glob) {
+                    arglen = glob_add(path, &argc, &argv);
+                    if (!arglen) {
+                        path = (char *)malloc(endparm - begparm + 1);
+                        if (path == NULL) { /* oops, malloc() failed */
+                            fprintf(stderr, "warning: malloc failed for 'path'...\n");
+                            return;
+                        }
+                        memcpy(path, begparm, endparm - begparm);
+                        path[endparm - begparm] = '\0';
+                    }
+                }
+                if (!arglen) {
+                    p = realloc(argv, sizeof(*argv) * (argc + 1));
+                    if (p == NULL) { /* realloc() failed */
+                        fprintf(stderr, "warning: realloc() for 'argv' failed, original value unchanged...\n");
+                        return;
+                    }
+                    argv       = (char **)p;
+                    argv[argc] = path;
+                    argc++;
+                    arglen = endparm - begparm;
+                }
+                allarglen += arglen;
             }
-            argv = (char **)p;
-		    argv[argc] = path;
-		    argc++;
-		    arglen = endparm - begparm;
-		}
-		allarglen += arglen;
-	    }
-	    need_glob = 0;
-	    in_sq = 0;
-	    in_dq = 0;
-	    begparm = NULL;
-	    endparm = NULL;
-	}
-	cur++;
+            need_glob = 0;
+            in_sq     = 0;
+            in_dq     = 0;
+            begparm   = NULL;
+            endparm   = NULL;
+        }
+        cur++;
     } while (c);
-    if(argc) {
-	int i, argvlen = sizeof(*argv) * (argc + 1), argclen = 0;
-	p = realloc(argv, argvlen + allarglen + argc);
-	if (p == NULL) { /* oops, realloc() failed */
-	    fprintf(stderr, "warning: realloc() for 'argv' failed, original value unchanged...\n");
-		return;
-	}
-	argv = (char **)p;
-	argv[argc] = NULL;
-	for(i=0; i<argc; i++) {
-	    int curlen = strlen(argv[i]) + 1;
-	    char *curarg = (char *)argv + argvlen + argclen;
-	    memcpy(curarg, argv[i], curlen);
-	    argclen += curlen;
-	    free(argv[i]);
-	    argv[i] = curarg;
-	}
+    if (argc) {
+        int i, argvlen = sizeof(*argv) * (argc + 1), argclen = 0;
+        p = realloc(argv, argvlen + allarglen + argc);
+        if (p == NULL) { /* oops, realloc() failed */
+            fprintf(stderr, "warning: realloc() for 'argv' failed, original value unchanged...\n");
+            return;
+        }
+        argv       = (char **)p;
+        argv[argc] = NULL;
+        for (i = 0; i < argc; i++) {
+            int curlen   = strlen(argv[i]) + 1;
+            char *curarg = (char *)argv + argvlen + argclen;
+            memcpy(curarg, argv[i], curlen);
+            argclen += curlen;
+            free(argv[i]);
+            argv[i] = curarg;
+        }
     }
     *argc_ptr = argc;
     *argv_ptr = argv;

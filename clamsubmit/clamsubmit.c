@@ -18,13 +18,13 @@ void version(void);
 
 typedef struct _header_data {
     int len;
-    char * cfduid;
-    char * session;
+    char *cfduid;
+    char *session;
 } header_data;
 
 typedef struct _write_data {
     int len;
-    char * str;
+    char *str;
 } write_data;
 
 void usage(char *name)
@@ -56,11 +56,11 @@ void version(void)
 
 size_t header_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
 {
-    int len = size*nmemb;
+    int len = size * nmemb;
     char *sp, *ep, *mem;
-    header_data *hd = (header_data *) userdata;
+    header_data *hd        = (header_data *)userdata;
     const char *set_cookie = "Set-Cookie:";
-    int clen = strlen(set_cookie);
+    int clen               = strlen(set_cookie);
 
     if (len > clen) {
         if (strncmp(ptr, set_cookie, clen))
@@ -71,13 +71,13 @@ size_t header_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
             fprintf(stderr, "header_cb(): malformed cookie\n");
             return 0;
         }
-        mem = malloc(ep-sp+1);
+        mem = malloc(ep - sp + 1);
         if (mem == NULL) {
             fprintf(stderr, "header_cb(): malloc failed\n");
             return 0;
         }
-        memcpy(mem, sp, ep-sp);
-        mem[ep-sp] = '\0';
+        memcpy(mem, sp, ep - sp);
+        mem[ep - sp] = '\0';
         if (!strncmp(mem, "__cfduid", 8))
             hd->cfduid = mem;
         else if (!strncmp(mem, "_clamav-net_session", strlen("_clamav-net_session")))
@@ -90,19 +90,19 @@ size_t header_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
 
 size_t write_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
 {
-    int len = size*nmemb;
-    char * str;
-    write_data *wd = (write_data *) userdata;
+    int len = size * nmemb;
+    char *str;
+    write_data *wd = (write_data *)userdata;
 
     if (len) {
         str = realloc(wd->str, wd->len + len + 1);
         if (str == NULL) {
-            fprintf (stderr, "write_cb() realloc failure\n");
+            fprintf(stderr, "write_cb() realloc failure\n");
             return 0;
         }
         memcpy(str + wd->len, ptr, len);
         str[wd->len + len] = '\0';
-        wd->str = str;
+        wd->str            = str;
         wd->len += len;
     }
     return len;
@@ -115,10 +115,10 @@ size_t write_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
  * @param key           The Key
  * @return const char*  The Value on Success, NULL on Failure.
  */
-const char* presigned_get_string(json_object * ps_json_obj, char * key)
+const char *presigned_get_string(json_object *ps_json_obj, char *key)
 {
-    json_object * json_obj = NULL;
-    const char * json_str = NULL;
+    json_object *json_obj = NULL;
+    const char *json_str  = NULL;
 
     if (json_object_object_get_ex(ps_json_obj, key, &json_obj)) {
         json_str = json_object_get_string(json_obj);
@@ -133,27 +133,27 @@ const char* presigned_get_string(json_object * ps_json_obj, char * key)
 
 int main(int argc, char *argv[])
 {
-    int status = 1;
+    int status      = 1;
     CURL *clam_curl = NULL, *aws_curl = NULL;
     CURLcode res;
     int ch;
-    struct curl_httppost *post=NULL, *last=NULL;
+    struct curl_httppost *post = NULL, *last = NULL;
     struct curl_slist *slist = NULL;
-    char *name=NULL, *email=NULL, *filename=NULL;
-    int setURL=0, fromStream=0;
-    const char * json_str;
-    write_data wd = {0, NULL};
-    header_data hd_malware = {0, NULL, NULL};
+    char *name = NULL, *email = NULL, *filename = NULL;
+    int setURL = 0, fromStream = 0;
+    const char *json_str;
+    write_data wd            = {0, NULL};
+    header_data hd_malware   = {0, NULL, NULL};
     header_data hd_presigned = {0, NULL, NULL};
-    json_object * ps_json_obj = NULL;
-    json_object * json_obj = NULL;
-    int malware = 0;
-    int len = 0;
-    char * submissionID = NULL;
-    char * fpvname = NULL;
+    json_object *ps_json_obj = NULL;
+    json_object *json_obj    = NULL;
+    int malware              = 0;
+    int len                  = 0;
+    char *submissionID       = NULL;
+    char *fpvname            = NULL;
     char *sp, *ep, *str;
-    char * authenticity_token = NULL;
-    char * urlp;
+    char *authenticity_token = NULL;
+    char *urlp;
 
     curl_global_init(CURL_GLOBAL_ALL);
 
@@ -182,7 +182,7 @@ int main(int argc, char *argv[])
             case 'n':
                 if (setURL)
                     usage(argv[0]);
-                malware = 1;
+                malware  = 1;
                 filename = optarg;
                 break;
             case 'V':
@@ -208,9 +208,8 @@ int main(int argc, char *argv[])
             fprintf(stderr, "ERROR: Unable to read stream\n");
             goto cleanup;
         }
-        fromStream=1;
+        fromStream = 1;
     }
-
 
     /*** The GET malware|fp ***/
     if (malware == 1)
@@ -225,39 +224,38 @@ int main(int argc, char *argv[])
     curl_easy_setopt(clam_curl, CURLOPT_HEADERFUNCTION, header_cb);
     res = curl_easy_perform(clam_curl);
     if (res != CURLE_OK) {
-        fprintf(stderr, "Error in GET %s: %s\n", urlp , curl_easy_strerror(res));
+        fprintf(stderr, "Error in GET %s: %s\n", urlp, curl_easy_strerror(res));
         goto cleanup;
     }
     if (wd.str != NULL) {
         sp = strstr(wd.str, "name=\"authenticity_token\"");
         if (sp == NULL) {
-            fprintf (stderr, "Authenticity token element not found.\n");
+            fprintf(stderr, "Authenticity token element not found.\n");
             goto cleanup;
         }
         sp = strstr(sp, "value=");
         if (sp == NULL) {
-            fprintf (stderr, "Authenticity token value not found.\n");
+            fprintf(stderr, "Authenticity token value not found.\n");
             goto cleanup;
         }
         sp += 7;
         ep = strchr(sp, '"');
         if (ep == NULL) {
-            fprintf (stderr, "Authenticity token malformed.\n");
+            fprintf(stderr, "Authenticity token malformed.\n");
             goto cleanup;
         }
-        authenticity_token = malloc(ep-sp+1);
+        authenticity_token = malloc(ep - sp + 1);
         if (authenticity_token == NULL) {
-            fprintf (stderr, "no memory for authenticity token.\n");
+            fprintf(stderr, "no memory for authenticity token.\n");
             goto cleanup;
         }
-        memcpy(authenticity_token, sp, ep-sp);
-        authenticity_token[ep-sp] = '\0';
-        free (wd.str);
+        memcpy(authenticity_token, sp, ep - sp);
+        authenticity_token[ep - sp] = '\0';
+        free(wd.str);
         wd.str = NULL;
     }
     wd.len = 0;
-    urlp = NULL;
-
+    urlp   = NULL;
 
     /*** The GET presigned ***/
     if (malware == 1)
@@ -267,7 +265,7 @@ int main(int argc, char *argv[])
     curl_easy_setopt(clam_curl, CURLOPT_HTTPGET, 1);
 
     if (NULL == hd_malware.cfduid || NULL == hd_malware.session) {
-        fprintf (stderr, "invalid cfduid and/or session id values provided by clamav.net/presigned. Unable to continue submission.");
+        fprintf(stderr, "invalid cfduid and/or session id values provided by clamav.net/presigned. Unable to continue submission.");
         goto cleanup;
     }
 
@@ -300,7 +298,7 @@ int main(int argc, char *argv[])
     curl_easy_setopt(clam_curl, CURLOPT_HTTPHEADER, slist);
     curl_easy_setopt(clam_curl, CURLOPT_HEADERDATA, &hd_presigned);
     curl_easy_setopt(clam_curl, CURLOPT_HEADERFUNCTION, header_cb);
-    if (malware ==1)
+    if (malware == 1)
         curl_easy_setopt(clam_curl, CURLOPT_REFERER, "https://www.clamav.net/reports/malware");
     else
         curl_easy_setopt(clam_curl, CURLOPT_REFERER, "https://www.clamav.net/reports/fp");
@@ -312,7 +310,6 @@ int main(int argc, char *argv[])
     }
     curl_slist_free_all(slist);
     slist = NULL;
-
 
     /*** The POST to AWS ***/
     ps_json_obj = json_tokener_parse(wd.str);
@@ -336,19 +333,19 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Error: malformed 'key' string in GET presigned response (missing '-'.\n");
         goto cleanup;
     }
-    submissionID = malloc(ep-sp+1);
+    submissionID = malloc(ep - sp + 1);
     if (submissionID == NULL) {
         fprintf(stderr, "Error: malloc submissionID.\n");
         goto cleanup;
     }
-    memcpy(submissionID, sp, ep-sp);
-    submissionID[ep-sp] = '\0';
-    aws_curl = curl_easy_init();
+    memcpy(submissionID, sp, ep - sp);
+    submissionID[ep - sp] = '\0';
+    aws_curl              = curl_easy_init();
     if (!(aws_curl)) {
         fprintf(stderr, "ERROR: Could not initialize libcurl POST presigned\n");
         goto cleanup;
     }
-    submissionID[ep-sp] = '\0';
+    submissionID[ep - sp] = '\0';
     curl_formadd(&post, &last, CURLFORM_COPYNAME, "key", CURLFORM_COPYCONTENTS, json_str, CURLFORM_END);
 
     json_str = presigned_get_string(ps_json_obj, "acl");
@@ -424,11 +421,10 @@ int main(int argc, char *argv[])
     wd.str = NULL;
     wd.len = 0;
 
-
     /*** The POST submit to clamav.net ***/
     slist = curl_slist_append(slist, "Expect:");
-    len = strlen(hd_malware.cfduid) + strlen(hd_malware.session) + 3;
-    str = malloc(len);
+    len   = strlen(hd_malware.cfduid) + strlen(hd_malware.session) + 3;
+    str   = malloc(len);
     if (str == NULL) {
         fprintf(stderr, "No memory for POST submit cookies.\n");
         goto cleanup;
@@ -443,14 +439,14 @@ int main(int argc, char *argv[])
     curl_formadd(&post, &last, CURLFORM_COPYNAME, "utf8", CURLFORM_COPYCONTENTS, "\x27\x13", CURLFORM_END);
     curl_formadd(&post, &last, CURLFORM_COPYNAME, "authenticity_token", CURLFORM_COPYCONTENTS, authenticity_token, CURLFORM_END);
     curl_formadd(&post, &last, CURLFORM_COPYNAME, "submissionID", CURLFORM_COPYCONTENTS, submissionID, CURLFORM_END);
-    curl_formadd(&post, &last, CURLFORM_COPYNAME, "type", CURLFORM_COPYCONTENTS, malware?"malware":"fp", CURLFORM_END);
+    curl_formadd(&post, &last, CURLFORM_COPYNAME, "type", CURLFORM_COPYCONTENTS, malware ? "malware" : "fp", CURLFORM_END);
     curl_formadd(&post, &last, CURLFORM_COPYNAME, "sendername", CURLFORM_COPYCONTENTS, name, CURLFORM_END);
     curl_formadd(&post, &last, CURLFORM_COPYNAME, "email", CURLFORM_COPYCONTENTS, email, CURLFORM_END);
     if (malware == 0) {
         curl_formadd(&post, &last, CURLFORM_COPYNAME, "virusname", CURLFORM_COPYCONTENTS, fpvname, CURLFORM_END);
     } else {
-    if (malware == 1)
-        curl_formadd(&post, &last, CURLFORM_COPYNAME, "shareSample", CURLFORM_COPYCONTENTS, "on", CURLFORM_END);
+        if (malware == 1)
+            curl_formadd(&post, &last, CURLFORM_COPYNAME, "shareSample", CURLFORM_COPYCONTENTS, "on", CURLFORM_END);
     }
     curl_formadd(&post, &last, CURLFORM_COPYNAME, "description", CURLFORM_COPYCONTENTS, "clamsubmit", CURLFORM_END);
     curl_formadd(&post, &last, CURLFORM_COPYNAME, "notify", CURLFORM_COPYCONTENTS, "on", CURLFORM_END);
@@ -466,7 +462,7 @@ int main(int argc, char *argv[])
     } else {
         long response_code;
         curl_easy_getinfo(clam_curl, CURLINFO_RESPONSE_CODE, &response_code);
-        if (response_code/100 == 3) {
+        if (response_code / 100 == 3) {
             curl_easy_getinfo(clam_curl, CURLINFO_REDIRECT_URL, &urlp);
             if (urlp == NULL) {
                 fprintf(stderr, "POST submit Location URL is NULL.\n");
@@ -475,19 +471,15 @@ int main(int argc, char *argv[])
             sp = strstr(urlp, "/reports/");
             if (sp == NULL) {
                 fprintf(stderr, "POST submit Location URL is malformed.\n");
-            }
-            else if (!strcmp(sp, "/reports/success")) {
+            } else if (!strcmp(sp, "/reports/success")) {
                 fprintf(stdout, "Submission success!\n");
                 status = 0;
-            }
-            else if (!strcmp(sp, "/reports/failure")) {
+            } else if (!strcmp(sp, "/reports/failure")) {
                 fprintf(stdout, "Submission failed\n");
-            }
-            else {
+            } else {
                 fprintf(stdout, "Unknown submission status %s\n", sp);
             }
-        }
-        else {
+        } else {
             fprintf(stderr, "Unexpected POST submit response code: %li\n", response_code);
         }
     }
@@ -529,7 +521,7 @@ cleanup:
     }
     if (submissionID != NULL) {
         free(submissionID);
-    } 
+    }
     if (authenticity_token != NULL) {
         free(authenticity_token);
     }
@@ -540,7 +532,6 @@ cleanup:
 
     return status;
 }
-
 
 char *read_stream(void)
 {
@@ -562,7 +553,7 @@ char *read_stream(void)
 
     while (!feof(stdin)) {
         nwritten = 0;
-        nread = fread(buf, 1, sizeof(buf), stdin);
+        nread    = fread(buf, 1, sizeof(buf), stdin);
         if (nread == 0) {
             fclose(fp);
             remove(filename);

@@ -22,7 +22,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#ifdef	HAVE_UNISTD_H
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 #include <string.h>
@@ -30,12 +30,12 @@
 #include <signal.h>
 #include <time.h>
 #include <sys/types.h>
-#ifndef	_WIN32
+#ifndef _WIN32
 #include <sys/wait.h>
 #endif
 #include <sys/stat.h>
 #include <fcntl.h>
-#ifdef	HAVE_PWD_H
+#ifdef HAVE_PWD_H
 #include <pwd.h>
 #endif
 #ifdef HAVE_GRP_H
@@ -66,7 +66,7 @@ extern int active_children;
 
 static short foreground = -1;
 char updtmpdir[512], dbdir[512];
-int sigchld_wait = 1;
+int sigchld_wait    = 1;
 const char *pidfile = NULL;
 char hostid[37];
 
@@ -74,74 +74,70 @@ char *get_hostid(void *cbdata);
 int is_valid_hostid(void);
 
 static void
-sighandler (int sig)
+sighandler(int sig)
 {
 
-    switch (sig)
-    {
-#ifdef	SIGCHLD
-    case SIGCHLD:
-        if (sigchld_wait)
-            waitpid (-1, NULL, WNOHANG);
-        active_children--;
-        break;
+    switch (sig) {
+#ifdef SIGCHLD
+        case SIGCHLD:
+            if (sigchld_wait)
+                waitpid(-1, NULL, WNOHANG);
+            active_children--;
+            break;
 #endif
 
 #ifdef SIGPIPE
-    case SIGPIPE:
-        /* no action, app will get EPIPE */
-        break;
+        case SIGPIPE:
+            /* no action, app will get EPIPE */
+            break;
 #endif
 
-#ifdef	SIGALRM
-    case SIGALRM:
-        terminate = -1;
-        break;
+#ifdef SIGALRM
+        case SIGALRM:
+            terminate = -1;
+            break;
 #endif
-#ifdef	SIGUSR1
-    case SIGUSR1:
-        terminate = -1;
-        break;
-#endif
-
-#ifdef	SIGHUP
-    case SIGHUP:
-        terminate = -2;
-        break;
+#ifdef SIGUSR1
+        case SIGUSR1:
+            terminate = -1;
+            break;
 #endif
 
-    default:
-        if (*updtmpdir)
-            cli_rmdirs (updtmpdir);
-        if (pidfile)
-            unlink (pidfile);
-        logg ("Update process terminated\n");
-        exit (0);
+#ifdef SIGHUP
+        case SIGHUP:
+            terminate = -2;
+            break;
+#endif
+
+        default:
+            if (*updtmpdir)
+                cli_rmdirs(updtmpdir);
+            if (pidfile)
+                unlink(pidfile);
+            logg("Update process terminated\n");
+            exit(0);
     }
 
     return;
 }
 
 static void
-writepid (const char *pidfile)
+writepid(const char *pidfile)
 {
     FILE *fd;
     int old_umask;
-    old_umask = umask (0006);
-    if ((fd = fopen (pidfile, "w")) == NULL)
-    {
-        logg ("!Can't save PID to file %s: %s\n", pidfile, strerror (errno));
+    old_umask = umask(0006);
+    if ((fd = fopen(pidfile, "w")) == NULL) {
+        logg("!Can't save PID to file %s: %s\n", pidfile, strerror(errno));
+    } else {
+        fprintf(fd, "%d\n", (int)getpid());
+        fclose(fd);
     }
-    else
-    {
-        fprintf (fd, "%d\n", (int) getpid ());
-        fclose (fd);
-    }
-    umask (old_umask);
+    umask(old_umask);
 }
 
 static void
-help (void)
+help(void)
 {
     mprintf_stdout = 1;
 
@@ -180,11 +176,11 @@ help (void)
     mprintf("    --on-outdated-execute=COMMAND        Execute COMMAND when software is outdated\n");
     mprintf("    --list-mirrors                       Print mirrors from mirrors.dat\n");
     mprintf("    --update-db=DBNAME                   Only update database DBNAME\n");
-    mprintf ("\n");
+    mprintf("\n");
 }
 
 static int
-download (const struct optstruct *opts, const char *cfgfile)
+download(const struct optstruct *opts, const char *cfgfile)
 {
     time_t currtime;
     int ret = 0, attempt = 1, maxattempts = 0;
@@ -194,47 +190,35 @@ download (const struct optstruct *opts, const char *cfgfile)
     logg("ClamAV update process started at %s", ctime(&currtime));
     logg("*Using IPv6 aware code\n");
 
-    maxattempts = optget (opts, "MaxAttempts")->numarg;
-    logg ("*Max retries == %d\n", maxattempts);
+    maxattempts = optget(opts, "MaxAttempts")->numarg;
+    logg("*Max retries == %d\n", maxattempts);
 
-    if (!(opt = optget (opts, "DatabaseMirror"))->enabled)
-    {
-        logg ("^You must specify at least one database mirror in %s\n",
-              cfgfile);
+    if (!(opt = optget(opts, "DatabaseMirror"))->enabled) {
+        logg("^You must specify at least one database mirror in %s\n",
+             cfgfile);
         return FCE_CONFIG;
-    }
-    else
-    {
-        while (opt)
-        {
-            ret = downloadmanager (opts, opt->strarg, attempt);
+    } else {
+        while (opt) {
+            ret = downloadmanager(opts, opt->strarg, attempt);
 #ifndef _WIN32
-            alarm (0);
+            alarm(0);
 #endif
-            if (ret == FCE_CONNECTION || ret == FCE_BADCVD
-                || ret == FCE_FAILEDGET || ret == FCE_MIRRORNOTSYNC)
-            {
-                if (attempt < maxattempts)
-                {
-                    logg ("Trying again in 5 secs...\n");
+            if (ret == FCE_CONNECTION || ret == FCE_BADCVD || ret == FCE_FAILEDGET || ret == FCE_MIRRORNOTSYNC) {
+                if (attempt < maxattempts) {
+                    logg("Trying again in 5 secs...\n");
                     attempt++;
-                    sleep (5);
+                    sleep(5);
                     continue;
-                }
-                else
-                {
-                    logg ("Giving up on %s...\n", opt->strarg);
-                    opt = (struct optstruct *) opt->nextarg;
-                    if (!opt)
-                    {
-                        logg ("Update failed. Your network may be down or none of the mirrors listed in %s is working. Check https://www.clamav.net/documents/official-mirror-faq for possible reasons.\n", cfgfile);
+                } else {
+                    logg("Giving up on %s...\n", opt->strarg);
+                    opt = (struct optstruct *)opt->nextarg;
+                    if (!opt) {
+                        logg("Update failed. Your network may be down or none of the mirrors listed in %s is working. Check https://www.clamav.net/documents/official-mirror-faq for possible reasons.\n", cfgfile);
                     }
                     attempt = 1;
                 }
 
-            }
-            else
-            {
+            } else {
                 return ret;
             }
         }
@@ -244,35 +228,33 @@ download (const struct optstruct *opts, const char *cfgfile)
 }
 
 static void
-msg_callback (enum cl_msg severity, const char *fullmsg, const char *msg,
-              void *ctx)
+msg_callback(enum cl_msg severity, const char *fullmsg, const char *msg,
+             void *ctx)
 {
     UNUSEDPARAM(fullmsg);
     UNUSEDPARAM(ctx);
 
-    switch (severity)
-    {
-    case CL_MSG_ERROR:
-        logg ("^[LibClamAV] %s", msg);
-        break;
-    case CL_MSG_WARN:
-        logg ("~[LibClamAV] %s", msg);
-	break;
-    default:
-        logg ("*[LibClamAV] %s", msg);
-        break;
+    switch (severity) {
+        case CL_MSG_ERROR:
+            logg("^[LibClamAV] %s", msg);
+            break;
+        case CL_MSG_WARN:
+            logg("~[LibClamAV] %s", msg);
+            break;
+        default:
+            logg("*[LibClamAV] %s", msg);
+            break;
     }
 }
 
-int
-main (int argc, char **argv)
+int main(int argc, char **argv)
 {
     int ret = FCE_CONNECTION, retcl;
     const char *cfgfile, *arg = NULL;
     char *pt;
     struct optstruct *opts;
     const struct optstruct *opt;
-#ifndef	_WIN32
+#ifndef _WIN32
     struct sigaction sigact;
     struct sigaction oldact;
 #endif
@@ -282,85 +264,73 @@ main (int argc, char **argv)
 #endif
     STATBUF statbuf;
     struct mirdat mdat;
-	int j;
+    int j;
 
-    if (check_flevel ())
-        exit (FCE_INIT);
+    if (check_flevel())
+        exit(FCE_INIT);
 
-    if ((retcl = cl_init (CL_INIT_DEFAULT)))
-    {
-        mprintf ("!Can't initialize libclamav: %s\n", cl_strerror (retcl));
+    if ((retcl = cl_init(CL_INIT_DEFAULT))) {
+        mprintf("!Can't initialize libclamav: %s\n", cl_strerror(retcl));
         return FCE_INIT;
     }
 
     if ((opts =
-         optparse (NULL, argc, argv, 1, OPT_FRESHCLAM, 0, NULL)) == NULL)
-    {
-        mprintf ("!Can't parse command line options\n");
+             optparse(NULL, argc, argv, 1, OPT_FRESHCLAM, 0, NULL)) == NULL) {
+        mprintf("!Can't parse command line options\n");
         return FCE_INIT;
     }
 
-    if (optget (opts, "help")->enabled)
-    {
-        help ();
-        optfree (opts);
+    if (optget(opts, "help")->enabled) {
+        help();
+        optfree(opts);
         return FC_SUCCESS;
     }
 
     /* check foreground option from command line to override config file */
-    for(j = 0; j < argc; j += 1)
-    {
-        if ((memcmp(argv[j], "--foreground", 12) == 0) || (memcmp(argv[j], "-F", 2) == 0))
-        {
+    for (j = 0; j < argc; j += 1) {
+        if ((memcmp(argv[j], "--foreground", 12) == 0) || (memcmp(argv[j], "-F", 2) == 0)) {
             /* found */
             break;
         }
     }
 
-	if (j < argc) {
-		if(optget(opts, "Foreground")->enabled) {
-			foreground = 1;
-		}
-		else {
-			foreground = 0;
-		}
-	}
+    if (j < argc) {
+        if (optget(opts, "Foreground")->enabled) {
+            foreground = 1;
+        } else {
+            foreground = 0;
+        }
+    }
 
     /* parse the config file */
-    cfgfile = optget (opts, "config-file")->strarg;
-    pt = strdup (cfgfile);
+    cfgfile = optget(opts, "config-file")->strarg;
+    pt      = strdup(cfgfile);
     if ((opts =
-         optparse (cfgfile, 0, NULL, 1, OPT_FRESHCLAM, 0, opts)) == NULL)
-    {
-        fprintf (stderr, "ERROR: Can't open/parse the config file %s\n", pt);
-        free (pt);
+             optparse(cfgfile, 0, NULL, 1, OPT_FRESHCLAM, 0, opts)) == NULL) {
+        fprintf(stderr, "ERROR: Can't open/parse the config file %s\n", pt);
+        free(pt);
         return FCE_INIT;
     }
-    free (pt);
+    free(pt);
 
-    if (optget (opts, "version")->enabled)
-    {
-        print_version (optget (opts, "DatabaseDirectory")->strarg);
-        optfree (opts);
+    if (optget(opts, "version")->enabled) {
+        print_version(optget(opts, "DatabaseDirectory")->strarg);
+        optfree(opts);
         return FC_SUCCESS;
     }
 
-    if (optget (opts, "HTTPProxyPassword")->enabled)
-    {
-        if (CLAMSTAT (cfgfile, &statbuf) == -1)
-        {
-            logg ("^Can't stat %s (critical error)\n", cfgfile);
-            optfree (opts);
+    if (optget(opts, "HTTPProxyPassword")->enabled) {
+        if (CLAMSTAT(cfgfile, &statbuf) == -1) {
+            logg("^Can't stat %s (critical error)\n", cfgfile);
+            optfree(opts);
             return FCE_CONFIG;
         }
 
 #ifndef _WIN32
-        if (statbuf.
-            st_mode & (S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH |
-                       S_IXOTH))
-        {
-            logg ("^Insecure permissions (for HTTPProxyPassword): %s must have no more than 0700 permissions.\n", cfgfile);
-            optfree (opts);
+        if (statbuf.st_mode & (S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH |
+                               S_IXOTH)) {
+            logg("^Insecure permissions (for HTTPProxyPassword): %s must have no more than 0700 permissions.\n", cfgfile);
+            optfree(opts);
             return FCE_CONFIG;
         }
 #endif
@@ -368,42 +338,38 @@ main (int argc, char **argv)
 
 #ifdef HAVE_PWD_H
     /* freshclam shouldn't work with root privileges */
-    dbowner = optget (opts, "DatabaseOwner")->strarg;
+    dbowner = optget(opts, "DatabaseOwner")->strarg;
 
-    if (!geteuid ())
-    {
-        if ((user = getpwnam (dbowner)) == NULL)
-        {
-            logg ("^Can't get information about user %s.\n", dbowner);
-            optfree (opts);
+    if (!geteuid()) {
+        if ((user = getpwnam(dbowner)) == NULL) {
+            logg("^Can't get information about user %s.\n", dbowner);
+            optfree(opts);
             return FCE_USERINFO;
         }
 
 #ifdef HAVE_INITGROUPS
-	if (initgroups(dbowner, user->pw_gid)) {
-		logg ("^initgroups() failed.\n");
-                optfree (opts);
-		return FCE_USERORGROUP;
-	}
+        if (initgroups(dbowner, user->pw_gid)) {
+            logg("^initgroups() failed.\n");
+            optfree(opts);
+            return FCE_USERORGROUP;
+        }
 #elif HAVE_SETGROUPS
-	if (setgroups(1, &user->pw_gid)) {
-		logg ("^setgroups() failed.\n");
-                optfree (opts);
-		return FCE_USERORGROUP;
-	}
+        if (setgroups(1, &user->pw_gid)) {
+            logg("^setgroups() failed.\n");
+            optfree(opts);
+            return FCE_USERORGROUP;
+        }
 #endif
 
-        if (setgid (user->pw_gid))
-        {
-            logg ("^setgid(%d) failed.\n", (int) user->pw_gid);
-            optfree (opts);
+        if (setgid(user->pw_gid)) {
+            logg("^setgid(%d) failed.\n", (int)user->pw_gid);
+            optfree(opts);
             return FCE_USERORGROUP;
         }
 
-        if (setuid (user->pw_uid))
-        {
-            logg ("^setuid(%d) failed.\n", (int) user->pw_uid);
-            optfree (opts);
+        if (setuid(user->pw_uid)) {
+            logg("^setuid(%d) failed.\n", (int)user->pw_uid);
+            optfree(opts);
             return FCE_USERORGROUP;
         }
     }
@@ -411,202 +377,175 @@ main (int argc, char **argv)
 
     /* initialize some important variables */
 
-    if (optget (opts, "Debug")->enabled || optget (opts, "debug")->enabled)
-        cl_debug ();
+    if (optget(opts, "Debug")->enabled || optget(opts, "debug")->enabled)
+        cl_debug();
 
-    if (optget (opts, "verbose")->enabled)
+    if (optget(opts, "verbose")->enabled)
         mprintf_verbose = 1;
 
-    if (optget (opts, "quiet")->enabled)
+    if (optget(opts, "quiet")->enabled)
         mprintf_quiet = 1;
 
-    if (optget (opts, "no-warnings")->enabled)
-    {
+    if (optget(opts, "no-warnings")->enabled) {
         mprintf_nowarn = 1;
-        logg_nowarn = 1;
+        logg_nowarn    = 1;
     }
 
-    if (optget (opts, "stdout")->enabled)
+    if (optget(opts, "stdout")->enabled)
         mprintf_stdout = 1;
 
-    if (optget (opts, "show-progress")->enabled)
+    if (optget(opts, "show-progress")->enabled)
         mprintf_progress = 1;
 
     /* initialize logger */
-    logg_verbose = mprintf_verbose ? 1 : optget (opts, "LogVerbose")->enabled;
-    logg_time = optget (opts, "LogTime")->enabled;
-    logg_size = optget (opts, "LogFileMaxSize")->numarg;
+    logg_verbose = mprintf_verbose ? 1 : optget(opts, "LogVerbose")->enabled;
+    logg_time    = optget(opts, "LogTime")->enabled;
+    logg_size    = optget(opts, "LogFileMaxSize")->numarg;
     if (logg_size)
         logg_rotate = optget(opts, "LogRotate")->enabled;
 
-    if ((opt = optget (opts, "UpdateLogFile"))->enabled)
-    {
+    if ((opt = optget(opts, "UpdateLogFile"))->enabled) {
         logg_file = opt->strarg;
-        if (logg ("#--------------------------------------\n"))
-        {
-            mprintf ("!Problem with internal logger (UpdateLogFile = %s).\n",
-                     logg_file);
-            optfree (opts);
+        if (logg("#--------------------------------------\n")) {
+            mprintf("!Problem with internal logger (UpdateLogFile = %s).\n",
+                    logg_file);
+            optfree(opts);
             return FCE_LOGGING;
         }
-    }
-    else
+    } else
         logg_file = NULL;
 
 #if defined(USE_SYSLOG) && !defined(C_AIX)
-    if (optget (opts, "LogSyslog")->enabled)
-    {
+    if (optget(opts, "LogSyslog")->enabled) {
         int fac = LOG_LOCAL6;
 
-        if ((opt = optget (opts, "LogFacility"))->enabled)
-        {
-            if ((fac = logg_facility (opt->strarg)) == -1)
-            {
-                mprintf ("!LogFacility: %s: No such facility.\n",
-                         opt->strarg);
-                optfree (opts);
+        if ((opt = optget(opts, "LogFacility"))->enabled) {
+            if ((fac = logg_facility(opt->strarg)) == -1) {
+                mprintf("!LogFacility: %s: No such facility.\n",
+                        opt->strarg);
+                optfree(opts);
                 return FCE_LOGGING;
             }
         }
 
-        openlog ("freshclam", LOG_PID, fac);
+        openlog("freshclam", LOG_PID, fac);
         logg_syslog = 1;
     }
 #endif
 
-    cl_set_clcb_msg (msg_callback);
+    cl_set_clcb_msg(msg_callback);
     /* change the current working directory */
-    if (chdir (optget (opts, "DatabaseDirectory")->strarg))
-    {
-        logg ("!Can't change dir to %s\n",
-              optget (opts, "DatabaseDirectory")->strarg);
-        optfree (opts);
+    if (chdir(optget(opts, "DatabaseDirectory")->strarg)) {
+        logg("!Can't change dir to %s\n",
+             optget(opts, "DatabaseDirectory")->strarg);
+        optfree(opts);
         return FCE_DIRECTORY;
-    }
-    else
-    {
-        if (!getcwd (dbdir, sizeof (dbdir)))
-        {
-            logg ("!getcwd() failed\n");
-            optfree (opts);
+    } else {
+        if (!getcwd(dbdir, sizeof(dbdir))) {
+            logg("!getcwd() failed\n");
+            optfree(opts);
             return FCE_DIRECTORY;
         }
-        logg ("*Current working dir is %s\n", dbdir);
+        logg("*Current working dir is %s\n", dbdir);
     }
 
-
-    if (optget (opts, "list-mirrors")->enabled)
-    {
-        if (mirman_read("mirrors.dat", &mdat, 1) != FC_SUCCESS)
-        {
-            printf ("Can't read mirrors.dat\n");
-            optfree (opts);
+    if (optget(opts, "list-mirrors")->enabled) {
+        if (mirman_read("mirrors.dat", &mdat, 1) != FC_SUCCESS) {
+            printf("Can't read mirrors.dat\n");
+            optfree(opts);
             return FCE_FILE;
         }
-        mirman_list (&mdat);
-        mirman_free (&mdat);
-        optfree (opts);
+        mirman_list(&mdat);
+        mirman_free(&mdat);
+        optfree(opts);
         return FC_SUCCESS;
     }
 
-    if ((opt = optget (opts, "PrivateMirror"))->enabled)
-    {
+    if ((opt = optget(opts, "PrivateMirror"))->enabled) {
         struct optstruct *dbm, *opth;
 
-        dbm = (struct optstruct *) optget (opts, "DatabaseMirror");
+        dbm         = (struct optstruct *)optget(opts, "DatabaseMirror");
         dbm->active = dbm->enabled = 1;
-        do
-        {
-            if (cli_strbcasestr (opt->strarg, ".clamav.net"))
-            {
-                logg ("!PrivateMirror: *.clamav.net is not allowed in this mode\n");
-                optfree (opts);
+        do {
+            if (cli_strbcasestr(opt->strarg, ".clamav.net")) {
+                logg("!PrivateMirror: *.clamav.net is not allowed in this mode\n");
+                optfree(opts);
                 return FCE_PRIVATEMIRROR;
             }
 
             if (dbm->strarg)
-                free (dbm->strarg);
-            dbm->strarg = strdup (opt->strarg);
-            if (!dbm->strarg)
-            {
-                logg ("!strdup() failed\n");
-                optfree (opts);
+                free(dbm->strarg);
+            dbm->strarg = strdup(opt->strarg);
+            if (!dbm->strarg) {
+                logg("!strdup() failed\n");
+                optfree(opts);
                 return FCE_MEM;
             }
-            if (!dbm->nextarg)
-            {
+            if (!dbm->nextarg) {
                 dbm->nextarg =
-                    (struct optstruct *) calloc (1,
-                                                 sizeof (struct optstruct));
-                if (!dbm->nextarg)
-                {
-                    logg ("!calloc() failed\n");
-                    optfree (opts);
+                    (struct optstruct *)calloc(1,
+                                               sizeof(struct optstruct));
+                if (!dbm->nextarg) {
+                    logg("!calloc() failed\n");
+                    optfree(opts);
                     return FCE_MEM;
                 }
             }
             opth = dbm;
-            dbm = dbm->nextarg;
-        }
-        while ((opt = opt->nextarg));
+            dbm  = dbm->nextarg;
+        } while ((opt = opt->nextarg));
 
         opth->nextarg = NULL;
-        while (dbm)
-        {
-            free (dbm->name);
-            free (dbm->cmd);
-            free (dbm->strarg);
+        while (dbm) {
+            free(dbm->name);
+            free(dbm->cmd);
+            free(dbm->strarg);
             opth = dbm;
-            dbm = dbm->nextarg;
-            free (opth);
+            dbm  = dbm->nextarg;
+            free(opth);
         }
 
         /* disable DNS db checks */
-        opth = (struct optstruct *) optget (opts, "no-dns");
+        opth         = (struct optstruct *)optget(opts, "no-dns");
         opth->active = opth->enabled = 1;
 
         /* disable scripted updates */
-        opth = (struct optstruct *) optget (opts, "ScriptedUpdates");
+        opth         = (struct optstruct *)optget(opts, "ScriptedUpdates");
         opth->active = opth->enabled = 0;
     }
 
     *updtmpdir = 0;
 
 #ifdef _WIN32
-    signal (SIGINT, sighandler);
+    signal(SIGINT, sighandler);
 #else
-    memset (&sigact, 0, sizeof (struct sigaction));
+    memset(&sigact, 0, sizeof(struct sigaction));
     sigact.sa_handler = sighandler;
-    sigaction (SIGINT, &sigact, NULL);
-    sigaction (SIGPIPE, &sigact, NULL);
+    sigaction(SIGINT, &sigact, NULL);
+    sigaction(SIGPIPE, &sigact, NULL);
 #endif
-    if (optget (opts, "daemon")->enabled)
-    {
+    if (optget(opts, "daemon")->enabled) {
         int bigsleep, checks;
-#ifndef	_WIN32
+#ifndef _WIN32
         time_t now, wakeup;
 
-        sigaction (SIGTERM, &sigact, NULL);
-        sigaction (SIGHUP, &sigact, NULL);
-        sigaction (SIGCHLD, &sigact, NULL);
+        sigaction(SIGTERM, &sigact, NULL);
+        sigaction(SIGHUP, &sigact, NULL);
+        sigaction(SIGCHLD, &sigact, NULL);
 #endif
 
-        checks = optget (opts, "Checks")->numarg;
+        checks = optget(opts, "Checks")->numarg;
 
-        if (checks <= 0)
-        {
-            logg ("^Number of checks must be a positive integer.\n");
-            optfree (opts);
+        if (checks <= 0) {
+            logg("^Number of checks must be a positive integer.\n");
+            optfree(opts);
             return FCE_CHECKS;
         }
 
-        if (!optget (opts, "DNSDatabaseInfo")->enabled
-            || optget (opts, "no-dns")->enabled)
-        {
-            if (checks > 50)
-            {
-                logg ("^Number of checks must be between 1 and 50.\n");
-                optfree (opts);
+        if (!optget(opts, "DNSDatabaseInfo")->enabled || optget(opts, "no-dns")->enabled) {
+            if (checks > 50) {
+                logg("^Number of checks must be between 1 and 50.\n");
+                optfree(opts);
                 return FCE_CHECKS;
             }
         }
@@ -615,116 +554,97 @@ main (int argc, char **argv)
 
 #ifndef _WIN32
         /* fork into background */
-        if (foreground == -1)
-        {
-            if (optget(opts, "Foreground")->enabled)
-            {
+        if (foreground == -1) {
+            if (optget(opts, "Foreground")->enabled) {
                 foreground = 1;
-            }
-            else
-            {
+            } else {
                 foreground = 0;
             }
         }
-        if(foreground == 0)
-        {
-            if (daemonize () == -1)
-            {
-                logg ("!daemonize() failed\n");
-                optfree (opts);
+        if (foreground == 0) {
+            if (daemonize() == -1) {
+                logg("!daemonize() failed\n");
+                optfree(opts);
                 return FCE_FAILEDUPDATE;
             }
             mprintf_disabled = 1;
         }
 #endif
 
-        if ((opt = optget (opts, "PidFile"))->enabled)
-        {
+        if ((opt = optget(opts, "PidFile"))->enabled) {
             pidfile = opt->strarg;
-            writepid (pidfile);
+            writepid(pidfile);
         }
 
         active_children = 0;
 
-        logg ("#freshclam daemon %s (OS: " TARGET_OS_TYPE ", ARCH: "
-              TARGET_ARCH_TYPE ", CPU: " TARGET_CPU_TYPE ")\n",
-              get_version ());
+        logg("#freshclam daemon %s (OS: " TARGET_OS_TYPE ", ARCH: " TARGET_ARCH_TYPE ", CPU: " TARGET_CPU_TYPE ")\n",
+             get_version());
 
-        while (!terminate)
-        {
-            ret = download (opts, cfgfile);
+        while (!terminate) {
+            ret = download(opts, cfgfile);
 
-            if (ret > 1)
-            {
-                if ((opt = optget (opts, "OnErrorExecute"))->enabled)
+            if (ret > 1) {
+                if ((opt = optget(opts, "OnErrorExecute"))->enabled)
                     arg = opt->strarg;
 
                 if (arg)
-                    execute ("OnErrorExecute", arg, opts);
+                    execute("OnErrorExecute", arg, opts);
 
                 arg = NULL;
             }
 
-            logg ("#--------------------------------------\n");
-#ifdef	SIGALRM
-            sigaction (SIGALRM, &sigact, &oldact);
+            logg("#--------------------------------------\n");
+#ifdef SIGALRM
+            sigaction(SIGALRM, &sigact, &oldact);
 #endif
-#ifdef	SIGUSR1
-            sigaction (SIGUSR1, &sigact, &oldact);
+#ifdef SIGUSR1
+            sigaction(SIGUSR1, &sigact, &oldact);
 #endif
 
-#ifdef	_WIN32
-            sleep (bigsleep);
+#ifdef _WIN32
+            sleep(bigsleep);
 #else
-            time (&wakeup);
+            time(&wakeup);
             wakeup += bigsleep;
-            alarm (bigsleep);
-            do
-            {
-                pause ();
-                time (&now);
-            }
-            while (!terminate && now < wakeup);
+            alarm(bigsleep);
+            do {
+                pause();
+                time(&now);
+            } while (!terminate && now < wakeup);
 
-            if (terminate == -1)
-            {
-                logg ("Received signal: wake up\n");
+            if (terminate == -1) {
+                logg("Received signal: wake up\n");
                 terminate = 0;
-            }
-            else if (terminate == -2)
-            {
-                logg ("Received signal: re-opening log file\n");
+            } else if (terminate == -2) {
+                logg("Received signal: re-opening log file\n");
                 terminate = 0;
-                logg_close ();
+                logg_close();
             }
 #endif
 
-#ifdef	SIGALRM
-            sigaction (SIGALRM, &oldact, NULL);
+#ifdef SIGALRM
+            sigaction(SIGALRM, &oldact, NULL);
 #endif
-#ifdef	SIGUSR1
-            sigaction (SIGUSR1, &oldact, NULL);
+#ifdef SIGUSR1
+            sigaction(SIGUSR1, &oldact, NULL);
 #endif
         }
 
-    }
-    else
-    {
-        ret = download (opts, cfgfile);
+    } else {
+        ret = download(opts, cfgfile);
     }
 
-    if (ret > 1)
-    {
-        if ((opt = optget (opts, "OnErrorExecute"))->enabled)
-            execute ("OnErrorExecute", opt->strarg, opts);
+    if (ret > 1) {
+        if ((opt = optget(opts, "OnErrorExecute"))->enabled)
+            execute("OnErrorExecute", opt->strarg, opts);
     }
 
-    if (pidfile)
-    {
-        unlink (pidfile);
+    if (pidfile) {
+        unlink(pidfile);
     }
 
-    optfree (opts);
+    optfree(opts);
 
     cl_cleanup_crypto();
 
@@ -738,8 +658,8 @@ int is_valid_hostid(void)
     if (strlen(hostid) != 36)
         return 0;
 
-    count=0;
-    for (i=0; i < 36; i++)
+    count = 0;
+    for (i = 0; i < 36; i++)
         if (hostid[i] == '-')
             count++;
 

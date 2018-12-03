@@ -69,9 +69,15 @@ struct fd_data {
 };
 
 #ifdef HAVE_POLL
-#define FDS_INIT(mutex) { (mutex), NULL, 0, NULL, 0}
+#define FDS_INIT(mutex)           \
+    {                             \
+        (mutex), NULL, 0, NULL, 0 \
+    }
 #else
-#define FDS_INIT(mutex) { (mutex), NULL, 0}
+#define FDS_INIT(mutex)  \
+    {                    \
+        (mutex), NULL, 0 \
+    }
 #endif
 
 int poll_fd(int fd, int timeout_sec, int check_signals);

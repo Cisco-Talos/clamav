@@ -47,11 +47,11 @@
 
 #if USING_PCRE2
 struct cli_pcre_data {
-    pcre2_code *re;               /* compiled pcre regex */
-    pcre2_match_context *mctx;    /* match context */
-    int options;                  /* pcre options */
-    char *expression;             /* copied regular expression */
-    uint32_t search_offset;       /* start offset to search at for pcre_exec */
+    pcre2_code *re;            /* compiled pcre regex */
+    pcre2_match_context *mctx; /* match context */
+    int options;               /* pcre options */
+    char *expression;          /* copied regular expression */
+    uint32_t search_offset;    /* start offset to search at for pcre_exec */
 };
 
 struct cli_pcre_results {

@@ -25,8 +25,7 @@
 #ifndef __HTMLNORM_H
 #define __HTMLNORM_H
 
-typedef struct tag_arguments_tag
-{
+typedef struct tag_arguments_tag {
     int count;
     int scanContents;
     unsigned char **tag;
@@ -34,8 +33,7 @@ typedef struct tag_arguments_tag
     unsigned char **contents;
 } tag_arguments_t;
 
-typedef struct m_area_tag
-{
+typedef struct m_area_tag {
     unsigned char *buffer;
     off_t length;
     off_t offset;

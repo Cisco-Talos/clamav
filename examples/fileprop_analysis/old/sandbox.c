@@ -22,7 +22,7 @@ bool logical_trigger(void)
     return matches(Signatures.sig1);
 }
 
-int entrypoint ()
+int entrypoint()
 {
     return 0;
 }

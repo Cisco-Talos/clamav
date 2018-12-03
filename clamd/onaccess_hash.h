@@ -22,70 +22,69 @@
 #ifndef __ONAS_HASH_H
 #define __ONAS_HASH_H
 
-#define ONAS_FANWATCH   0x1
-#define ONAS_INWATCH   0x2
+#define ONAS_FANWATCH 0x1
+#define ONAS_INWATCH 0x2
 #define ONAS_STOPWATCH 0x3
 
 #define ONAS_DEFAULT_HT_SIZE 1 << 18
 
 struct onas_element {
 
-	const char* key;
-	size_t klen;
-	struct onas_hnode *data;
+    const char *key;
+    size_t klen;
+    struct onas_hnode *data;
 
-	struct onas_element *next;
-	struct onas_element *prev;
+    struct onas_element *next;
+    struct onas_element *prev;
 };
 
 struct onas_bucket {
 
-	uint32_t size;
+    uint32_t size;
 
-	struct onas_element *head;
-	struct onas_element *tail;
+    struct onas_element *head;
+    struct onas_element *tail;
 };
 
 struct onas_ht {
 
-	struct onas_bucket **htable;
+    struct onas_bucket **htable;
 
-	/* Must be a sufficiently high power of two--will not grow. */
-	uint32_t size;
-	uint32_t nbckts;
+    /* Must be a sufficiently high power of two--will not grow. */
+    uint32_t size;
+    uint32_t nbckts;
 };
 
 /* Directory node struct for lists */
 struct onas_lnode {
 
-	/* List stuffs */
-	char *dirname;
-	struct onas_lnode *next;
-	struct onas_lnode *prev;
+    /* List stuffs */
+    char *dirname;
+    struct onas_lnode *next;
+    struct onas_lnode *prev;
 };
 
 /* Directory node struct for hash tables */
 struct onas_hnode {
 
-	/* Path info */
-	int pathlen;
-	char *pathname;
+    /* Path info */
+    int pathlen;
+    char *pathname;
 
-	/* Parent info */
-	int prnt_pathlen;
-	char *prnt_pathname;
+    /* Parent info */
+    int prnt_pathlen;
+    char *prnt_pathname;
 
-	/* Child head and tail are empty sentinels */
-	struct onas_lnode *childhead;
-	struct onas_lnode *childtail;
+    /* Child head and tail are empty sentinels */
+    struct onas_lnode *childhead;
+    struct onas_lnode *childtail;
 
-	/* Inotify watch descriptor */
-	int wd;
+    /* Inotify watch descriptor */
+    int wd;
 
-	/* Watched stuffs */
-	uint32_t watched;
+    /* Watched stuffs */
+    uint32_t watched;
 };
-
 
 void onas_free_ht(struct onas_ht *ht);
 int onas_ht_init(struct onas_ht **ht, uint32_t table_size);

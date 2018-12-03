@@ -38,12 +38,12 @@
 #define APM_SIGNATURE 0x504D /* partition map signature ('PM') */
 
 /* partition flags */
-#define VALID          0x00000001
-#define ALLOCATED      0x00000002
-#define IN_USE         0x00000004
-#define BOOTABLE       0x00000008
-#define READABLE       0x00000010
-#define WRITEABLE      0x00000020
+#define VALID 0x00000001
+#define ALLOCATED 0x00000002
+#define IN_USE 0x00000004
+#define BOOTABLE 0x00000008
+#define READABLE 0x00000010
+#define WRITEABLE 0x00000020
 #define POSINDEPENDENT 0x00000040
 /* end of partition flags */
 
@@ -61,20 +61,20 @@
 
 /* 8-byte driver description entry for ddmap, big endian */
 struct apm_driver_desc_entry {
-    uint32_t block  __attribute__ ((packed));
-    uint16_t size  __attribute__ ((packed));
-    uint16_t type  __attribute__ ((packed));
+    uint32_t block __attribute__((packed));
+    uint16_t size __attribute__((packed));
+    uint16_t type __attribute__((packed));
 }; //NOTE may need to be renamed
 
 /* 512(82)-byte driver descriptor map (Block0), big endian */
 struct apm_driver_desc_map {
-    uint16_t signature  __attribute__ ((packed));
-    uint16_t blockSize  __attribute__ ((packed));
-    uint32_t blockCount  __attribute__ ((packed));
-    uint16_t deviceType  __attribute__ ((packed));
-    uint16_t deviceID  __attribute__ ((packed));
-    uint32_t driverData  __attribute__ ((packed));
-    uint16_t driverCount  __attribute__ ((packed));
+    uint16_t signature __attribute__((packed));
+    uint16_t blockSize __attribute__((packed));
+    uint32_t blockCount __attribute__((packed));
+    uint16_t deviceType __attribute__((packed));
+    uint16_t deviceID __attribute__((packed));
+    uint32_t driverData __attribute__((packed));
+    uint16_t driverCount __attribute__((packed));
     struct apm_driver_desc_entry driverTable[8];
     /* zeroes fill remainder of sector (430 bytes in 512 sector size) */
 };
@@ -84,23 +84,23 @@ struct apm_driver_desc_map {
  * struct to describe their details
  */
 struct apm_partition_info {
-    uint16_t signature  __attribute__ ((packed));
-    uint16_t reserved  __attribute__ ((packed));
-    uint32_t numPartitions  __attribute__ ((packed));
-    uint32_t pBlockStart  __attribute__ ((packed));
-    uint32_t pBlockCount  __attribute__ ((packed));
+    uint16_t signature __attribute__((packed));
+    uint16_t reserved __attribute__((packed));
+    uint32_t numPartitions __attribute__((packed));
+    uint32_t pBlockStart __attribute__((packed));
+    uint32_t pBlockCount __attribute__((packed));
     uint8_t name[32];
     uint8_t type[32];
-    uint32_t lBlockStart  __attribute__ ((packed));
-    uint32_t lBlockCount  __attribute__ ((packed));
-    uint32_t flags  __attribute__ ((packed));
-    uint32_t bootBlockStart  __attribute__ ((packed));
-    uint32_t bootSize  __attribute__ ((packed));
-    uint32_t bootAddr  __attribute__ ((packed));
-    uint32_t bootAddr2  __attribute__ ((packed));
-    uint32_t bootEntry  __attribute__ ((packed));
-    uint32_t bootEntry2  __attribute__ ((packed));
-    uint32_t bootChecksum  __attribute__ ((packed));
+    uint32_t lBlockStart __attribute__((packed));
+    uint32_t lBlockCount __attribute__((packed));
+    uint32_t flags __attribute__((packed));
+    uint32_t bootBlockStart __attribute__((packed));
+    uint32_t bootSize __attribute__((packed));
+    uint32_t bootAddr __attribute__((packed));
+    uint32_t bootAddr2 __attribute__((packed));
+    uint32_t bootEntry __attribute__((packed));
+    uint32_t bootEntry2 __attribute__((packed));
+    uint32_t bootChecksum __attribute__((packed));
     uint8_t processor[16];
     /* zeroes fill remainder of sector (376 bytes in 512 sector size) */
 };

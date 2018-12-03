@@ -62,7 +62,7 @@
 
 #ifdef CL_THREAD_SAFE
 #include <pthread.h>
-pthread_mutex_t logg_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t logg_mutex     = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mdprintf_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
@@ -84,7 +84,7 @@ pthread_mutex_t mdprintf_mutex = PTHREAD_MUTEX_INITIALIZER;
 FILE *logg_fp = NULL;
 
 short int logg_verbose = 0, logg_nowarn = 0, logg_lock = 1, logg_time = 0, logg_foreground = 1, logg_noflush = 0, logg_rotate = 0;
-off_t logg_size = 0;
+off_t logg_size       = 0;
 const char *logg_file = NULL;
 #if defined(USE_SYSLOG) && !defined(C_AIX)
 short logg_syslog;
@@ -93,40 +93,37 @@ short logg_syslog;
 short int mprintf_disabled = 0, mprintf_verbose = 0, mprintf_quiet = 0,
           mprintf_stdout = 0, mprintf_nowarn = 0, mprintf_send_timeout = 100, mprintf_progress = 0;
 
-#define ARGLEN(args, str, len)                 \
-    {                                          \
-        size_t arglen = 1, i;                  \
-        char *pt;                              \
-        va_start(args, str);                   \
-        len = strlen(str);                     \
-        for (i = 0; i < len - 1; i++)          \
-        {                                      \
-            if (str[i] == '%')                 \
-            {                                  \
-                switch (str[++i])              \
-                {                              \
-                case 's':                      \
-                    pt = va_arg(args, char *); \
-                    if (pt)                    \
-                        arglen += strlen(pt);  \
-                    break;                     \
-                case 'f':                      \
-                    va_arg(args, double);      \
-                    arglen += 25;              \
-                    break;                     \
-                case 'l':                      \
-                    va_arg(args, long);        \
-                    arglen += 20;              \
-                    break;                     \
-                default:                       \
-                    va_arg(args, int);         \
-                    arglen += 10;              \
-                    break;                     \
-                }                              \
-            }                                  \
-        }                                      \
-        va_end(args);                          \
-        len += arglen;                         \
+#define ARGLEN(args, str, len)                     \
+    {                                              \
+        size_t arglen = 1, i;                      \
+        char *pt;                                  \
+        va_start(args, str);                       \
+        len = strlen(str);                         \
+        for (i = 0; i < len - 1; i++) {            \
+            if (str[i] == '%') {                   \
+                switch (str[++i]) {                \
+                    case 's':                      \
+                        pt = va_arg(args, char *); \
+                        if (pt)                    \
+                            arglen += strlen(pt);  \
+                        break;                     \
+                    case 'f':                      \
+                        va_arg(args, double);      \
+                        arglen += 25;              \
+                        break;                     \
+                    case 'l':                      \
+                        va_arg(args, long);        \
+                        arglen += 20;              \
+                        break;                     \
+                    default:                       \
+                        va_arg(args, int);         \
+                        arglen += 10;              \
+                        break;                     \
+                }                                  \
+            }                                      \
+        }                                          \
+        va_end(args);                              \
+        len += arglen;                             \
     }
 
 int mdprintf(int desc, const char *str, ...)
@@ -137,21 +134,15 @@ int mdprintf(int desc, const char *str, ...)
     size_t len;
 
     ARGLEN(args, str, len);
-    if (len <= sizeof(buffer))
-    {
-        len = sizeof(buffer);
+    if (len <= sizeof(buffer)) {
+        len  = sizeof(buffer);
         buff = buffer;
-    }
-    else
-    {
+    } else {
         abuffer = malloc(len);
-        if (!abuffer)
-        {
-            len = sizeof(buffer);
+        if (!abuffer) {
+            len  = sizeof(buffer);
             buff = buffer;
-        }
-        else
-        {
+        } else {
             buff = abuffer;
         }
     }
@@ -160,8 +151,7 @@ int mdprintf(int desc, const char *str, ...)
     va_end(args);
     buff[len - 1] = 0;
 
-    if (bytes < 0)
-    {
+    if (bytes < 0) {
         if (len > sizeof(buffer))
             free(abuffer);
         return bytes;
@@ -175,11 +165,9 @@ int mdprintf(int desc, const char *str, ...)
      * important for IDSESSION */
     pthread_mutex_lock(&mdprintf_mutex);
 #endif
-    while (todo > 0)
-    {
+    while (todo > 0) {
         ret = send(desc, buff, bytes, 0);
-        if (ret < 0)
-        {
+        if (ret < 0) {
             struct timeval tv;
             if (errno != EWOULDBLOCK)
                 break;
@@ -187,10 +175,9 @@ int mdprintf(int desc, const char *str, ...)
 #ifdef CL_THREAD_SAFE
             pthread_mutex_unlock(&mdprintf_mutex);
 #endif
-            tv.tv_sec = 0;
+            tv.tv_sec  = 0;
             tv.tv_usec = mprintf_send_timeout * 1000;
-            do
-            {
+            do {
                 fd_set wfds;
                 FD_ZERO(&wfds);
                 FD_SET(desc, &wfds);
@@ -199,15 +186,12 @@ int mdprintf(int desc, const char *str, ...)
 #ifdef CL_THREAD_SAFE
             pthread_mutex_lock(&mdprintf_mutex);
 #endif
-            if (!ret)
-            {
+            if (!ret) {
                 /* timed out */
                 ret = -1;
                 break;
             }
-        }
-        else
-        {
+        } else {
             todo -= ret;
             buff += ret;
         }
@@ -229,10 +213,8 @@ static int rename_logg(STATBUF *sb)
     time_t t;
     struct tm tmp;
 
-    if (!logg_rotate)
-    {
-        if (logg_fp)
-        {
+    if (!logg_rotate) {
+        if (logg_fp) {
             fprintf(logg_fp, "Log size = %lld, max = %lld\n", (long long int)sb->st_size, (long long int)logg_size);
             fprintf(logg_fp, "WARNING: Log size limit met but log file rotation turned off. Forcing log file rotation anyways.\n");
         }
@@ -241,9 +223,8 @@ static int rename_logg(STATBUF *sb)
     }
 
     rotate_file_len = strlen(logg_file) + sizeof("-YYYY-MM-DD_HH:MM:SS");
-    rotate_file = calloc(1, rotate_file_len + 1);
-    if (!rotate_file)
-    {
+    rotate_file     = calloc(1, rotate_file_len + 1);
+    if (!rotate_file) {
         if (logg_fp)
             fprintf(logg_fp, "Need to rotate log file due to size but ran out of memory.\n");
 
@@ -251,8 +232,7 @@ static int rename_logg(STATBUF *sb)
     }
 
     t = time(NULL);
-    if (!localtime_r(&t, &tmp))
-    {
+    if (!localtime_r(&t, &tmp)) {
         if (logg_fp)
             fprintf(logg_fp, "Need to rotate log file due to size but could not get local time.\n");
 
@@ -263,14 +243,12 @@ static int rename_logg(STATBUF *sb)
     strcpy(rotate_file, logg_file);
     strftime(rotate_file + strlen(rotate_file), rotate_file_len - strlen(rotate_file), "-%Y%m%d_%H%M%S", &tmp);
 
-    if (logg_fp)
-    {
+    if (logg_fp) {
         fclose(logg_fp);
         logg_fp = NULL;
     }
 
-    if (rename(logg_file, rotate_file))
-    {
+    if (rename(logg_file, rotate_file)) {
         free(rotate_file);
         return -1;
     }
@@ -303,8 +281,7 @@ void logg_close(void)
 #ifdef CL_THREAD_SAFE
     pthread_mutex_lock(&logg_mutex);
 #endif
-    if (logg_fp)
-    {
+    if (logg_fp) {
         fclose(logg_fp);
         logg_fp = NULL;
     }
@@ -348,21 +325,15 @@ int logg(const char *str, ...)
         return 0;
 
     ARGLEN(args, str, len);
-    if (len <= sizeof(buffer))
-    {
-        len = sizeof(buffer);
+    if (len <= sizeof(buffer)) {
+        len  = sizeof(buffer);
         buff = buffer;
-    }
-    else
-    {
+    } else {
         abuffer = malloc(len);
-        if (!abuffer)
-        {
-            len = sizeof(buffer);
+        if (!abuffer) {
+            len  = sizeof(buffer);
             buff = buffer;
-        }
-        else
-        {
+        } else {
             buff = abuffer;
         }
     }
@@ -377,11 +348,9 @@ int logg(const char *str, ...)
 
     logg_open();
 
-    if (!logg_fp && logg_file)
-    {
+    if (!logg_fp && logg_file) {
         old_umask = umask(0037);
-        if ((logg_fp = fopen(logg_file, "at")) == NULL)
-        {
+        if ((logg_fp = fopen(logg_file, "at")) == NULL) {
             umask(old_umask);
 #ifdef CL_THREAD_SAFE
             pthread_mutex_unlock(&logg_mutex);
@@ -390,17 +359,14 @@ int logg(const char *str, ...)
             if (len > sizeof(buffer))
                 free(abuffer);
             return -1;
-        }
-        else
+        } else
             umask(old_umask);
 
 #ifdef F_WRLCK
-        if (logg_lock)
-        {
+        if (logg_lock) {
             memset(&fl, 0, sizeof(fl));
             fl.l_type = F_WRLCK;
-            if (fcntl(fileno(logg_fp), F_SETLK, &fl) == -1)
-            {
+            if (fcntl(fileno(logg_fp), F_SETLK, &fl) == -1) {
 #ifdef EOPNOTSUPP
                 if (errno == EOPNOTSUPP)
                     printf("WARNING: File locking not supported (NFS?)\n");
@@ -420,14 +386,12 @@ int logg(const char *str, ...)
 #endif
     }
 
-    if (logg_fp)
-    {
+    if (logg_fp) {
         char flush = !logg_noflush;
         /* Need to avoid logging time for verbose messages when logverbose
                is not set or we get a bunch of timestamps in the log without
                newlines... */
-        if (logg_time && ((*buff != '*') || logg_verbose))
-        {
+        if (logg_time && ((*buff != '*') || logg_verbose)) {
             char timestr[32];
             time(&currtime);
             cli_ctime(&currtime, timestr, sizeof(timestr));
@@ -436,74 +400,52 @@ int logg(const char *str, ...)
             fprintf(logg_fp, "%s -> ", timestr);
         }
 
-        if (*buff == '!')
-        {
+        if (*buff == '!') {
             fprintf(logg_fp, "ERROR: %s", buff + 1);
             flush = 1;
-        }
-        else if (*buff == '^')
-        {
+        } else if (*buff == '^') {
             if (!logg_nowarn)
                 fprintf(logg_fp, "WARNING: %s", buff + 1);
             flush = 1;
-        }
-        else if (*buff == '*' || *buff == '$')
-        {
+        } else if (*buff == '*' || *buff == '$') {
             fprintf(logg_fp, "%s", buff + 1);
-        }
-        else if (*buff == '#' || *buff == '~')
-        {
+        } else if (*buff == '#' || *buff == '~') {
             fprintf(logg_fp, "%s", buff + 1);
-        }
-        else
+        } else
             fprintf(logg_fp, "%s", buff);
 
         if (flush)
             fflush(logg_fp);
     }
 
-    if (logg_foreground)
-    {
-        if (buff[0] != '#')
-        {
-            if (logg_time)
-            {
+    if (logg_foreground) {
+        if (buff[0] != '#') {
+            if (logg_time) {
                 char timestr[32];
                 time(&currtime);
                 cli_ctime(&currtime, timestr, sizeof(timestr));
                 /* cut trailing \n */
                 timestr[strlen(timestr) - 1] = '\0';
                 mprintf("%s -> %s", timestr, buff);
-            }
-            else
-            {
+            } else {
                 mprintf("%s", buff);
             }
         }
     }
 
 #if defined(USE_SYSLOG) && !defined(C_AIX)
-    if (logg_syslog)
-    {
+    if (logg_syslog) {
         cli_chomp(buff);
-        if (buff[0] == '!')
-        {
+        if (buff[0] == '!') {
             syslog(LOG_ERR, "%s", buff + 1);
-        }
-        else if (buff[0] == '^')
-        {
+        } else if (buff[0] == '^') {
             if (!logg_nowarn)
                 syslog(LOG_WARNING, "%s", buff + 1);
-        }
-        else if (buff[0] == '*' || buff[0] == '$')
-        {
+        } else if (buff[0] == '*' || buff[0] == '$') {
             syslog(LOG_DEBUG, "%s", buff + 1);
-        }
-        else if (buff[0] == '#' || buff[0] == '~')
-        {
+        } else if (buff[0] == '#' || buff[0] == '~') {
             syslog(LOG_INFO, "%s", buff + 1);
-        }
-        else
+        } else
             syslog(LOG_INFO, "%s", buff);
     }
 #endif
@@ -545,21 +487,15 @@ void mprintf(const char *str, ...)
  */
 
     ARGLEN(args, str, len);
-    if (len <= sizeof(buffer))
-    {
-        len = sizeof(buffer);
+    if (len <= sizeof(buffer)) {
+        len  = sizeof(buffer);
         buff = buffer;
-    }
-    else
-    {
+    } else {
         abuffer = malloc(len);
-        if (!abuffer)
-        {
-            len = sizeof(buffer);
+        if (!abuffer) {
+            len  = sizeof(buffer);
             buff = buffer;
-        }
-        else
-        {
+        } else {
             buff = abuffer;
         }
     }
@@ -569,27 +505,23 @@ void mprintf(const char *str, ...)
     buff[len - 1] = 0;
 
 #ifdef _WIN32
-    do
-    {
-        int tmplen = len + 1;
+    do {
+        int tmplen    = len + 1;
         wchar_t *tmpw = malloc(tmplen * sizeof(wchar_t));
         char *nubuff;
         if (!tmpw)
             break;
-        if (!MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, buff, -1, tmpw, tmplen))
-        {
+        if (!MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, buff, -1, tmpw, tmplen)) {
             free(tmpw);
             break;
         }
         /* FIXME CHECK IT'S REALLY UTF8 */
         nubuff = (char *)malloc(tmplen);
-        if (!nubuff)
-        {
+        if (!nubuff) {
             free(tmpw);
             break;
         }
-        if (!WideCharToMultiByte(CP_OEMCP, 0, tmpw, -1, nubuff, tmplen, NULL, NULL))
-        {
+        if (!WideCharToMultiByte(CP_OEMCP, 0, tmpw, -1, nubuff, tmplen, NULL, NULL)) {
             free(nubuff);
             free(tmpw);
             break;
@@ -598,42 +530,30 @@ void mprintf(const char *str, ...)
         if (len > sizeof(buffer))
             free(abuffer);
         abuffer = buff = nubuff;
-        len = sizeof(buffer) + 1;
+        len            = sizeof(buffer) + 1;
     } while (0);
 #endif
-    if (buff[0] == '!')
-    {
+    if (buff[0] == '!') {
         if (!mprintf_stdout)
             fd = stderr;
         fprintf(fd, "ERROR: %s", &buff[1]);
-    }
-    else if (buff[0] == '@')
-    {
+    } else if (buff[0] == '@') {
         if (!mprintf_stdout)
             fd = stderr;
         fprintf(fd, "ERROR: %s", &buff[1]);
-    }
-    else if (!mprintf_quiet)
-    {
-        if (buff[0] == '^')
-        {
-            if (!mprintf_nowarn)
-            {
+    } else if (!mprintf_quiet) {
+        if (buff[0] == '^') {
+            if (!mprintf_nowarn) {
                 if (!mprintf_stdout)
                     fd = stderr;
                 fprintf(fd, "WARNING: %s", &buff[1]);
             }
-        }
-        else if (buff[0] == '*')
-        {
+        } else if (buff[0] == '*') {
             if (mprintf_verbose)
                 fprintf(fd, "%s", &buff[1]);
-        }
-        else if (buff[0] == '~')
-        {
+        } else if (buff[0] == '~') {
             fprintf(fd, "%s", &buff[1]);
-        }
-        else
+        } else
             fprintf(fd, "%s", buff);
     }
 
@@ -644,8 +564,7 @@ void mprintf(const char *str, ...)
         free(abuffer);
 }
 
-struct facstruct
-{
+struct facstruct {
     const char *name;
     int code;
 };

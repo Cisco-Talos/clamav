@@ -29,22 +29,22 @@
 #include "platform.h"
 #include "optparser.h"
 /* Maximum filenames under various systems - njh */
-#ifndef	NAME_MAX	/* e.g. Linux */
-# ifdef	MAXNAMELEN	/* e.g. Solaris */
-#   define	NAME_MAX	MAXNAMELEN
-# else
-#   ifdef	FILENAME_MAX	/* e.g. SCO */
-#     define	NAME_MAX	FILENAME_MAX
-#   endif
-# endif
+#ifndef NAME_MAX  /* e.g. Linux */
+#ifdef MAXNAMELEN /* e.g. Solaris */
+#define NAME_MAX MAXNAMELEN
+#else
+#ifdef FILENAME_MAX /* e.g. SCO */
+#define NAME_MAX FILENAME_MAX
+#endif
+#endif
 #endif
 
 #ifdef HAVE_SYSTEMD
-# include <systemd/sd-daemon.h>
+#include <systemd/sd-daemon.h>
 #else
-# define sd_listen_fds(u) 0
-# define SD_LISTEN_FDS_START 3
-# define sd_is_socket(f, a, s, l) 1
+#define sd_listen_fds(u) 0
+#define SD_LISTEN_FDS_START 3
+#define sd_is_socket(f, a, s, l) 1
 #endif
 
 #include <limits.h>

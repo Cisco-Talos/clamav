@@ -61,14 +61,14 @@ static char *dump_xdp(cli_ctx *ctx, const char *start, size_t sz)
 {
     int fd;
     char *filename;
-    size_t nwritten=0;
+    size_t nwritten = 0;
     ssize_t writeret;
 
     if (cli_gentempfd(ctx->engine->tmpdir, &filename, &fd) != CL_SUCCESS)
         return NULL;
 
     while (nwritten < sz) {
-        writeret = write(fd, start+nwritten, sz-nwritten);
+        writeret = write(fd, start + nwritten, sz - nwritten);
         if (writeret < 0) {
             if (errno == EAGAIN)
                 continue;
@@ -94,7 +94,7 @@ int cli_scanxdp(cli_ctx *ctx)
 {
 #if HAVE_LIBXML2
     xmlTextReaderPtr reader = NULL;
-    fmap_t *map = *(ctx->fmap);
+    fmap_t *map             = *(ctx->fmap);
     const char *buf;
     const xmlChar *name, *value;
     char *decoded;
@@ -102,7 +102,7 @@ int cli_scanxdp(cli_ctx *ctx)
     int rc = CL_SUCCESS;
     char *dumpname;
     size_t i;
-    
+
     buf = (const char *)fmap_need_off_once(map, map->offset, map->len);
     if (!(buf))
         return CL_EREAD;
@@ -134,18 +134,18 @@ int cli_scanxdp(cli_ctx *ctx)
             if (value) {
                 decoded = cl_base64_decode((char *)value, strlen((const char *)value), NULL, &decodedlen, 0);
                 if (decoded) {
-                    unsigned int shouldscan=0;
+                    unsigned int shouldscan = 0;
 
                     if (decodedlen > 5) {
-                        for (i=0; i < MIN(MAGIC_BUFFER_SIZE, decodedlen-5); i++) {
+                        for (i = 0; i < MIN(MAGIC_BUFFER_SIZE, decodedlen - 5); i++) {
                             if (decoded[i] != '%')
                                 continue;
 
-                            if (decoded[i+1] == 'P' || decoded[i+1] == 'p') {
-                                if (decoded[i+2] == 'D' || decoded[i+2] == 'd') {
-                                    if (decoded[i+3] == 'F' || decoded[i+3] == 'f') {
-                                        if (decoded[i+4] == '-') {
-                                            shouldscan=1;
+                            if (decoded[i + 1] == 'P' || decoded[i + 1] == 'p') {
+                                if (decoded[i + 2] == 'D' || decoded[i + 2] == 'd') {
+                                    if (decoded[i + 3] == 'F' || decoded[i + 3] == 'f') {
+                                        if (decoded[i + 4] == '-') {
+                                            shouldscan = 1;
                                             break;
                                         }
                                     }

@@ -92,12 +92,12 @@
 #endif
 
 #include <stdlib.h>
-#ifdef	C_DARWIN
+#ifdef C_DARWIN
 #include <sys/types.h>
 #include <sys/malloc.h>
 #else
 #ifdef HAVE_MALLOC_H /* tk: FreeBSD-CURRENT doesn't support malloc.h */
-#ifndef	C_BSD	/* BSD now uses stdlib.h */
+#ifndef C_BSD        /* BSD now uses stdlib.h */
 #include <malloc.h>
 #endif
 #endif
@@ -112,109 +112,108 @@
 
 #include "mbox.h"
 
-static	text	*textCopy(const text *t_head);
-static	text	*textAdd(text *t_head, const text *t);
-static	void	addToFileblob(const line_t *line, void *arg);
-static	void	getLength(const line_t *line, void *arg);
-static	void	addToBlob(const line_t *line, void *arg);
-static	void	*textIterate(text *t_text, void (*cb)(const line_t *line, void *arg), void *arg, int destroy);
+static text *textCopy(const text *t_head);
+static text *textAdd(text *t_head, const text *t);
+static void addToFileblob(const line_t *line, void *arg);
+static void getLength(const line_t *line, void *arg);
+static void addToBlob(const line_t *line, void *arg);
+static void *textIterate(text *t_text, void (*cb)(const line_t *line, void *arg), void *arg, int destroy);
 
-void
-textDestroy(text *t_head)
+void textDestroy(text *t_head)
 {
-	while(t_head) {
-		text *t_next = t_head->t_next;
-		if(t_head->t_line) {
-			lineUnlink(t_head->t_line);
-			t_head->t_line = NULL;
-		}
-		free(t_head);
-		t_head = t_next;
-	}
+    while (t_head) {
+        text *t_next = t_head->t_next;
+        if (t_head->t_line) {
+            lineUnlink(t_head->t_line);
+            t_head->t_line = NULL;
+        }
+        free(t_head);
+        t_head = t_next;
+    }
 }
 
 /* Clone the current object */
 static text *
 textCopy(const text *t_head)
 {
-	text *first = NULL, *last = NULL;
+    text *first = NULL, *last = NULL;
 
-	while(t_head) {
-		if(first == NULL)
-			last = first = (text *)cli_malloc(sizeof(text));
-		else {
-			last->t_next = (text *)cli_malloc(sizeof(text));
-			last = last->t_next;
-		}
+    while (t_head) {
+        if (first == NULL)
+            last = first = (text *)cli_malloc(sizeof(text));
+        else {
+            last->t_next = (text *)cli_malloc(sizeof(text));
+            last         = last->t_next;
+        }
 
-		if(last == NULL) {
-			cli_errmsg("textCopy: Unable to allocate memory to clone object\n");
-			if(first)
-				textDestroy(first);
-			return NULL;
-		}
+        if (last == NULL) {
+            cli_errmsg("textCopy: Unable to allocate memory to clone object\n");
+            if (first)
+                textDestroy(first);
+            return NULL;
+        }
 
-		last->t_next = NULL;
+        last->t_next = NULL;
 
-		if(t_head->t_line)
-			last->t_line = lineLink(t_head->t_line);
-		else
-			last->t_line = NULL;
+        if (t_head->t_line)
+            last->t_line = lineLink(t_head->t_line);
+        else
+            last->t_line = NULL;
 
-		t_head = t_head->t_next;
-	}
+        t_head = t_head->t_next;
+    }
 
-	if(first)
-		last->t_next = NULL;
+    if (first)
+        last->t_next = NULL;
 
-	return first;
+    return first;
 }
 
 /* Add a copy of a text to the end of the current object */
 static text *
 textAdd(text *t_head, const text *t)
 {
-	text *ret;
-	int count;
+    text *ret;
+    int count;
 
-	if(t_head == NULL) {
-		if(t == NULL) {
-			cli_errmsg("textAdd fails sanity check\n");
-			return NULL;
-		}
-		return textCopy(t);
-	}
+    if (t_head == NULL) {
+        if (t == NULL) {
+            cli_errmsg("textAdd fails sanity check\n");
+            return NULL;
+        }
+        return textCopy(t);
+    }
 
-	if(t == NULL)
-		return t_head;
+    if (t == NULL)
+        return t_head;
 
-	ret = t_head;
+    ret = t_head;
 
-	count = 0;
-	while(t_head->t_next) {
-		count++;
-		t_head = t_head->t_next;
-	}
+    count = 0;
+    while (t_head->t_next) {
+        count++;
+        t_head = t_head->t_next;
+    }
 
-	cli_dbgmsg("textAdd: count = %d\n", count);
+    cli_dbgmsg("textAdd: count = %d\n", count);
 
-	while(t) {
-		t_head->t_next = (text *)cli_malloc(sizeof(text));
-		t_head = t_head->t_next;
+    while (t) {
+        t_head->t_next = (text *)cli_malloc(sizeof(text));
+        t_head         = t_head->t_next;
 
-		assert(t_head != NULL);
+        assert(t_head != NULL);
 
-		if(t->t_line)
-			t_head->t_line = lineLink(t->t_line);
-		else
-			t_head->t_line = NULL;
+        if (t->t_line)
+            t_head->t_line = lineLink(t->t_line);
+        else
+            t_head->t_line = NULL;
 
-		t = t->t_next;
-	}
+        t = t->t_next;
+    }
 
-	t_head->t_next = NULL;
+    t_head->t_next = NULL;
 
-	return ret;
+    return ret;
 }
 
 /*
@@ -223,20 +222,20 @@ textAdd(text *t_head, const text *t)
 text *
 textAddMessage(text *aText, message *aMessage)
 {
-	assert(aMessage != NULL);
+    assert(aMessage != NULL);
 
-	if(messageGetEncoding(aMessage) == NOENCODING)
-		return textAdd(aText, messageGetBody(aMessage));
-	else {
-		text *anotherText = messageToText(aMessage);
+    if (messageGetEncoding(aMessage) == NOENCODING)
+        return textAdd(aText, messageGetBody(aMessage));
+    else {
+        text *anotherText = messageToText(aMessage);
 
-		if(aText) {
-			text *newHead = textMove(aText, anotherText);
-			free(anotherText);
-			return newHead;
-		}
-		return anotherText;
-	}
+        if (aText) {
+            text *newHead = textMove(aText, anotherText);
+            free(anotherText);
+            return newHead;
+        }
+        return anotherText;
+    }
 }
 
 /*
@@ -247,56 +246,56 @@ textAddMessage(text *aText, message *aMessage)
 text *
 textMove(text *t_head, text *t)
 {
-	text *ret;
+    text *ret;
 
-	if(t_head == NULL) {
-		if(t == NULL) {
-			cli_errmsg("textMove fails sanity check\n");
-			return NULL;
-		}
-		t_head = (text *)cli_malloc(sizeof(text));
-		if(t_head == NULL) {
-            cli_errmsg("textMove: Unable to allocate memory for head\n");
-			return NULL;
+    if (t_head == NULL) {
+        if (t == NULL) {
+            cli_errmsg("textMove fails sanity check\n");
+            return NULL;
         }
-		t_head->t_line = t->t_line;
-		t_head->t_next = t->t_next;
-		t->t_line = NULL;
-		t->t_next = NULL;
-		return t_head;
-	}
+        t_head = (text *)cli_malloc(sizeof(text));
+        if (t_head == NULL) {
+            cli_errmsg("textMove: Unable to allocate memory for head\n");
+            return NULL;
+        }
+        t_head->t_line = t->t_line;
+        t_head->t_next = t->t_next;
+        t->t_line      = NULL;
+        t->t_next      = NULL;
+        return t_head;
+    }
 
-	if(t == NULL)
-		return t_head;
+    if (t == NULL)
+        return t_head;
 
-	ret = t_head;
+    ret = t_head;
 
-	while(t_head->t_next)
-		t_head = t_head->t_next;
+    while (t_head->t_next)
+        t_head = t_head->t_next;
 
-	/*
+    /*
 	 * Move the first line manually so that the caller is left clean but
 	 * empty, the rest is moved by a simple pointer reassignment
 	 */
-	t_head->t_next = (text *)cli_malloc(sizeof(text));
-	if(t_head->t_next == NULL) {
+    t_head->t_next = (text *)cli_malloc(sizeof(text));
+    if (t_head->t_next == NULL) {
         cli_errmsg("textMove: Unable to allocate memory for head->next\n");
-		return NULL;
+        return NULL;
     }
-	t_head = t_head->t_next;
+    t_head = t_head->t_next;
 
-	assert(t_head != NULL);
+    assert(t_head != NULL);
 
-	if(t->t_line) {
-		t_head->t_line = t->t_line;
-		t->t_line = NULL;
-	} else
-		t_head->t_line = NULL;
+    if (t->t_line) {
+        t_head->t_line = t->t_line;
+        t->t_line      = NULL;
+    } else
+        t_head->t_line = NULL;
 
-	t_head->t_next = t->t_next;
-	t->t_next = NULL;
+    t_head->t_next = t->t_next;
+    t->t_next      = NULL;
 
-	return ret;
+    return ret;
 }
 
 /*
@@ -306,34 +305,34 @@ textMove(text *t_head, text *t)
 blob *
 textToBlob(text *t, blob *b, int destroy)
 {
-	size_t s;
-	blob *bin;
+    size_t s;
+    blob *bin;
 
-	if(t == NULL)
-		return NULL;
+    if (t == NULL)
+        return NULL;
 
-	s = 0;
+    s = 0;
 
-	(void)textIterate(t, getLength, &s, 0);
+    (void)textIterate(t, getLength, &s, 0);
 
-	if(s == 0)
-		return b;
+    if (s == 0)
+        return b;
 
-	/*
+    /*
 	 * copy b. If b is NULL and an error occurs we know we need to free
 	 *	before returning
 	 */
-	bin = b;
-	if(b == NULL) {
-		b = blobCreate();
+    bin = b;
+    if (b == NULL) {
+        b = blobCreate();
 
-		if(b == NULL)
-			return NULL;
-	}
+        if (b == NULL)
+            return NULL;
+    }
 
-	if(blobGrow(b, s) != CL_SUCCESS) {
-		cli_warnmsg("Couldn't grow the blob: we may be low on memory\n");
-#if	0
+    if (blobGrow(b, s) != CL_SUCCESS) {
+        cli_warnmsg("Couldn't grow the blob: we may be low on memory\n");
+#if 0
 		if(!destroy) {
 			if(bin == NULL)
 				blobDestroy(b);
@@ -344,96 +343,96 @@ textToBlob(text *t, blob *b, int destroy)
 		 * create the blob
 		 */
 #else
-		if(bin == NULL)
-			blobDestroy(b);
-		return NULL;
+        if (bin == NULL)
+            blobDestroy(b);
+        return NULL;
 #endif
-	}
+    }
 
-	(void)textIterate(t, addToBlob, b, destroy);
+    (void)textIterate(t, addToBlob, b, destroy);
 
-	if(destroy && t->t_next) {
-		textDestroy(t->t_next);
-		t->t_next = NULL;
-	}
+    if (destroy && t->t_next) {
+        textDestroy(t->t_next);
+        t->t_next = NULL;
+    }
 
-	blobClose(b);
+    blobClose(b);
 
-	return b;
+    return b;
 }
 
 fileblob *
 textToFileblob(text *t, fileblob *fb, int destroy)
 {
-	assert(fb != NULL);
-	assert(t != NULL);
+    assert(fb != NULL);
+    assert(t != NULL);
 
-	if(fb == NULL) {
-		cli_dbgmsg("textToFileBlob, destroy = %d\n", destroy);
-		fb = fileblobCreate();
+    if (fb == NULL) {
+        cli_dbgmsg("textToFileBlob, destroy = %d\n", destroy);
+        fb = fileblobCreate();
 
-		if(fb == NULL)
-			return NULL;
-	} else {
-		cli_dbgmsg("textToFileBlob to %s, destroy = %d\n",
-			fileblobGetFilename(fb), destroy);
+        if (fb == NULL)
+            return NULL;
+    } else {
+        cli_dbgmsg("textToFileBlob to %s, destroy = %d\n",
+                   fileblobGetFilename(fb), destroy);
 
-		fb->ctx = NULL;	/* no need to scan */
-	}
+        fb->ctx = NULL; /* no need to scan */
+    }
 
-	fb = textIterate(t, addToFileblob, fb, destroy);
-	if(destroy && t->t_next) {
-		textDestroy(t->t_next);
-		t->t_next = NULL;
-	}
-	return fb;
+    fb = textIterate(t, addToFileblob, fb, destroy);
+    if (destroy && t->t_next) {
+        textDestroy(t->t_next);
+        t->t_next = NULL;
+    }
+    return fb;
 }
 
 static void
 getLength(const line_t *line, void *arg)
 {
-	size_t *length = (size_t *)arg;
+    size_t *length = (size_t *)arg;
 
-	if(line)
-		*length += strlen(lineGetData(line)) + 1;
-	else
-		(*length)++;
+    if (line)
+        *length += strlen(lineGetData(line)) + 1;
+    else
+        (*length)++;
 }
 
 static void
 addToBlob(const line_t *line, void *arg)
 {
-	blob *b = (blob *)arg;
+    blob *b = (blob *)arg;
 
-	if(line) {
-		const char *l = lineGetData(line);
+    if (line) {
+        const char *l = lineGetData(line);
 
-		blobAddData(b, (const unsigned char *)l, strlen(l));
-	}
-	blobAddData(b, (const unsigned char *)"\n", 1);
+        blobAddData(b, (const unsigned char *)l, strlen(l));
+    }
+    blobAddData(b, (const unsigned char *)"\n", 1);
 }
 
 static void
 addToFileblob(const line_t *line, void *arg)
 {
-	fileblob *fb = (fileblob *)arg;
+    fileblob *fb = (fileblob *)arg;
 
-	if(line) {
-		const char *l = lineGetData(line);
+    if (line) {
+        const char *l = lineGetData(line);
 
-		fileblobAddData(fb, (const unsigned char *)l, strlen(l));
-	}
-	fileblobAddData(fb, (const unsigned char *)"\n", 1);
+        fileblobAddData(fb, (const unsigned char *)l, strlen(l));
+    }
+    fileblobAddData(fb, (const unsigned char *)"\n", 1);
 }
 
 static void *
 textIterate(text *t_text, void (*cb)(const line_t *item, void *arg), void *arg, int destroy)
 {
-	/*
+    /*
 	 * Have two loops rather than one, so that we're not checking the
 	 * value of "destroy" lots and lots of times
 	 */
-#if	0
+#if 0
 	while(t_text) {
 		(*cb)(t_text->t_line, arg);
 
@@ -445,23 +444,23 @@ textIterate(text *t_text, void (*cb)(const line_t *item, void *arg), void *arg, 
 		t_text = t_text->t_next;
 	}
 #else
-	if(destroy)
-		while(t_text) {
-			(*cb)(t_text->t_line, arg);
+    if (destroy)
+        while (t_text) {
+            (*cb)(t_text->t_line, arg);
 
-			if(t_text->t_line) {
-				lineUnlink(t_text->t_line);
-				t_text->t_line = NULL;
-			}
+            if (t_text->t_line) {
+                lineUnlink(t_text->t_line);
+                t_text->t_line = NULL;
+            }
 
-			t_text = t_text->t_next;
-		}
-	else
-		while(t_text) {
-			(*cb)(t_text->t_line, arg);
+            t_text = t_text->t_next;
+        }
+    else
+        while (t_text) {
+            (*cb)(t_text->t_line, arg);
 
-			t_text = t_text->t_next;
-		}
+            t_text = t_text->t_next;
+        }
 #endif
-	return arg;
+    return arg;
 }

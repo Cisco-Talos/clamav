@@ -27,42 +27,43 @@
 #include "w32_stat.h"
 #include "shared/misc.h"
 
-DIR *opendir(const char *name) {
+DIR *opendir(const char *name)
+{
     DIR *d;
     DWORD attrs;
     int len;
     struct stat sb;
     wchar_t *wpath;
 
-    if(stat(name, &sb) < 0)
-	return NULL;
+    if (stat(name, &sb) < 0)
+        return NULL;
 
-    if(!S_ISDIR(sb.st_mode)) {
-	errno = ENOTDIR;
-	return NULL;
+    if (!S_ISDIR(sb.st_mode)) {
+        errno = ENOTDIR;
+        return NULL;
     }
-    if(!(d = cli_malloc(sizeof(*d)))) {
-	errno = ENOMEM;
-	return NULL;
+    if (!(d = cli_malloc(sizeof(*d)))) {
+        errno = ENOMEM;
+        return NULL;
     }
     wpath = uncpath(name);
-    if(!wpath)
-	return NULL;
+    if (!wpath)
+        return NULL;
     wcsncpy(d->entry, wpath, sizeof(d->entry) / sizeof(d->entry[0]));
     free(wpath);
     d->entry[sizeof(d->entry) / sizeof(d->entry[0])] = L'\0';
-    len = wcslen(d->entry);
+    len                                              = wcslen(d->entry);
 
-    if(len >= sizeof(d->entry) / sizeof(d->entry[0]) - 4) {
-	free(d);
-	errno = ENAMETOOLONG;
-	return NULL;
+    if (len >= sizeof(d->entry) / sizeof(d->entry[0]) - 4) {
+        free(d);
+        errno = ENAMETOOLONG;
+        return NULL;
     }
-    while(len--) {
-	if(d->entry[len] == L'\\')
-	    d->entry[len] = L'\0';
-	else
-	    break;
+    while (len--) {
+        if (d->entry[len] == L'\\')
+            d->entry[len] = L'\0';
+        else
+            break;
     }
 
     wcsncat(d->entry, L"\\*.*", 4);
@@ -70,36 +71,39 @@ DIR *opendir(const char *name) {
     return d;
 }
 
-struct dirent *readdir(DIR *dirp) {
-    while(1) {
-	if(dirp->dh == INVALID_HANDLE_VALUE) {
-	    if((dirp->dh = FindFirstFileW(dirp->entry, &dirp->wfd)) == INVALID_HANDLE_VALUE) {
-		errno = ENOENT;
-		return NULL;
-	    }
-	} else {
-	    if(!(FindNextFileW(dirp->dh, &dirp->wfd))) {
-		errno = (GetLastError() == ERROR_NO_MORE_FILES) ? 0 : ENOENT;
-		return NULL;
-	    }
-	}
-	if(!WideCharToMultiByte(CP_UTF8, 0, dirp->wfd.cFileName, -1, dirp->ent.d_name, sizeof(dirp->ent.d_name), NULL, NULL))
-	    continue;/* FIXME: WARN HERE ! */
-	dirp->ent.d_ino = dirp->wfd.ftCreationTime.dwLowDateTime ^ dirp->wfd.nFileSizeLow;
-	if(!dirp->ent.d_ino) dirp->ent.d_ino = 0x1337;
-	dirp->ent.d_type = (dirp->wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) ? DT_DIR : DT_REG;
-	break;
+struct dirent *readdir(DIR *dirp)
+{
+    while (1) {
+        if (dirp->dh == INVALID_HANDLE_VALUE) {
+            if ((dirp->dh = FindFirstFileW(dirp->entry, &dirp->wfd)) == INVALID_HANDLE_VALUE) {
+                errno = ENOENT;
+                return NULL;
+            }
+        } else {
+            if (!(FindNextFileW(dirp->dh, &dirp->wfd))) {
+                errno = (GetLastError() == ERROR_NO_MORE_FILES) ? 0 : ENOENT;
+                return NULL;
+            }
+        }
+        if (!WideCharToMultiByte(CP_UTF8, 0, dirp->wfd.cFileName, -1, dirp->ent.d_name, sizeof(dirp->ent.d_name), NULL, NULL))
+            continue; /* FIXME: WARN HERE ! */
+        dirp->ent.d_ino = dirp->wfd.ftCreationTime.dwLowDateTime ^ dirp->wfd.nFileSizeLow;
+        if (!dirp->ent.d_ino) dirp->ent.d_ino = 0x1337;
+        dirp->ent.d_type = (dirp->wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) ? DT_DIR : DT_REG;
+        break;
     }
     return &dirp->ent;
 }
 
-void rewinddir(DIR *dirp) {
-    if(dirp->dh != INVALID_HANDLE_VALUE)
-	FindClose(dirp->dh);
+void rewinddir(DIR *dirp)
+{
+    if (dirp->dh != INVALID_HANDLE_VALUE)
+        FindClose(dirp->dh);
     dirp->dh = INVALID_HANDLE_VALUE;
 }
 
-int closedir(DIR *dirp) {
+int closedir(DIR *dirp)
+{
     rewinddir(dirp);
     free(dirp);
     return 0;

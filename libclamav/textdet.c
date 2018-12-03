@@ -49,10 +49,10 @@
 #include "textdet.h"
 #include "others.h"
 
-#define F 0   /* character never appears in text */
-#define T 1   /* character appears in plain ASCII text */
-#define I 2   /* character appears in ISO-8859 text */
-#define X 3   /* character appears in non-ISO extended ASCII (Mac, IBM PC) */
+#define F 0 /* character never appears in text */
+#define T 1 /* character appears in plain ASCII text */
+#define I 2 /* character appears in ISO-8859 text */
+#define X 3 /* character appears in non-ISO extended ASCII (Mac, IBM PC) */
 
 // clang-format off
 static char text_chars[256] = {
@@ -80,82 +80,81 @@ static char text_chars[256] = {
 
 static int td_isascii(const unsigned char *buf, unsigned int len)
 {
-	unsigned int i;
+    unsigned int i;
 
-	// @TODO:  UTF8 BOM Detection. 
-	//    The following BOM detection results in False Negatives in regression testing
-	//    which can be eliminated by adding a condition to call cli_scanhtml for CL_TYPE_TEXT_UTF8
-	//    in scanners.c:cli_scanraw().  However, cli_scanhtml was written for ASCII and has 
-	//    not been validated to correctly handle multibyte UTF8. 
-	// /* Check for the Byte-Order-Mark for UTF-8 */
-	// if ((len >= 3) &&
-	//    (buf[0] == 0xEF) &&
-	//    (buf[1] == 0xBB) &&
-	//    (buf[2] == 0xBF))
-	// {
-	//    return 0;
-	// }
+    // @TODO:  UTF8 BOM Detection.
+    //    The following BOM detection results in False Negatives in regression testing
+    //    which can be eliminated by adding a condition to call cli_scanhtml for CL_TYPE_TEXT_UTF8
+    //    in scanners.c:cli_scanraw().  However, cli_scanhtml was written for ASCII and has
+    //    not been validated to correctly handle multibyte UTF8.
+    // /* Check for the Byte-Order-Mark for UTF-8 */
+    // if ((len >= 3) &&
+    //    (buf[0] == 0xEF) &&
+    //    (buf[1] == 0xBB) &&
+    //    (buf[2] == 0xBF))
+    // {
+    //    return 0;
+    // }
 
-	/* Validate that the data all falls within the bounds of 
+    /* Validate that the data all falls within the bounds of 
 	 * plain ASCII, ISO-8859 text, and non-ISO extended ASCII (Mac, IBM PC)
 	 */
-	for(i = 0; i < len; i++)
-		if(text_chars[buf[i]] == F)
-			return 0;
+    for (i = 0; i < len; i++)
+        if (text_chars[buf[i]] == F)
+            return 0;
 
     return 1;
 }
 
 static int td_isutf8(const unsigned char *buf, unsigned int len)
 {
-	unsigned int i, j, gotone = 0;
+    unsigned int i, j, gotone = 0;
 
-
-    for(i = 0; i < len; i++) {
-	if((buf[i] & 0x80) == 0) {  /* 0xxxxxxx is plain ASCII */
-	    /*
+    for (i = 0; i < len; i++) {
+        if ((buf[i] & 0x80) == 0) { /* 0xxxxxxx is plain ASCII */
+            /*
 	     * Even if the whole file is valid UTF-8 sequences,
 	     * still reject it if it uses weird control characters.
 	     */
-	    if(text_chars[buf[i]] != T)
-		return 0;
+            if (text_chars[buf[i]] != T)
+                return 0;
 
-	} else if((buf[i] & 0x40) == 0) { /* 10xxxxxx never 1st byte */
-	    return 0;
-	} else {			   /* 11xxxxxx begins UTF-8 */
-		unsigned int following;
+        } else if ((buf[i] & 0x40) == 0) { /* 10xxxxxx never 1st byte */
+            return 0;
+        } else { /* 11xxxxxx begins UTF-8 */
+            unsigned int following;
 
-	    if((buf[i] & 0x20) == 0) {		/* 110xxxxx */
-		/* c = buf[i] & 0x1f; */
-		following = 1;
-	    } else if((buf[i] & 0x10) == 0) {	/* 1110xxxx */
-		/* c = buf[i] & 0x0f; */
-		following = 2;
-	    } else if((buf[i] & 0x08) == 0) {	/* 11110xxx */
-		/* c = buf[i] & 0x07; */
-		following = 3;
-	    } else if((buf[i] & 0x04) == 0) {	/* 111110xx */
-		/* c = buf[i] & 0x03; */
-		following = 4;
-	    } else if((buf[i] & 0x02) == 0) {	/* 1111110x */
-		/* c = buf[i] & 0x01; */
-		following = 5;
-	    } else {
-		return 0;
-	    }
+            if ((buf[i] & 0x20) == 0) { /* 110xxxxx */
+                /* c = buf[i] & 0x1f; */
+                following = 1;
+            } else if ((buf[i] & 0x10) == 0) { /* 1110xxxx */
+                /* c = buf[i] & 0x0f; */
+                following = 2;
+            } else if ((buf[i] & 0x08) == 0) { /* 11110xxx */
+                /* c = buf[i] & 0x07; */
+                following = 3;
+            } else if ((buf[i] & 0x04) == 0) { /* 111110xx */
+                /* c = buf[i] & 0x03; */
+                following = 4;
+            } else if ((buf[i] & 0x02) == 0) { /* 1111110x */
+                /* c = buf[i] & 0x01; */
+                following = 5;
+            } else {
+                return 0;
+            }
 
-	    for(j = 0; j < following; j++) {
-		if(++i >= len)
-		    return gotone;
+            for (j = 0; j < following; j++) {
+                if (++i >= len)
+                    return gotone;
 
-		if((buf[i] & 0x80) == 0 || (buf[i] & 0x40))
-		    return 0;
+                if ((buf[i] & 0x80) == 0 || (buf[i] & 0x40))
+                    return 0;
 
-		/* c = (c << 6) + (buf[i] & 0x3f); */
-	    }
+                /* c = (c << 6) + (buf[i] & 0x3f); */
+            }
 
-	    gotone = 1;
-	}
+            gotone = 1;
+        }
     }
 
     return gotone;
@@ -163,62 +162,61 @@ static int td_isutf8(const unsigned char *buf, unsigned int len)
 
 static int td_isutf16(const unsigned char *buf, unsigned int len)
 {
-	unsigned int be = 1, nobom = 0, i, c, bad = 0, high = 0;
+    unsigned int be = 1, nobom = 0, i, c, bad = 0, high = 0;
 
+    if (len < 2)
+        return 0;
 
-    if(len < 2)
-	return 0;
-
-    if(buf[0] == 0xff && buf[1] == 0xfe)
-	be = 0;
-    else if(buf[0] == 0xfe && buf[1] == 0xff)
-	be = 1;
+    if (buf[0] == 0xff && buf[1] == 0xfe)
+        be = 0;
+    else if (buf[0] == 0xfe && buf[1] == 0xff)
+        be = 1;
     else
-	nobom = 1;
+        nobom = 1;
 
-    for(i = 2; i + 1 < len; i += 2) {
-	if(be)
-	    c = buf[i + 1] + 256 * buf[i];
-	else
-	    c = buf[i] + 256 * buf[i + 1];
+    for (i = 2; i + 1 < len; i += 2) {
+        if (be)
+            c = buf[i + 1] + 256 * buf[i];
+        else
+            c = buf[i] + 256 * buf[i + 1];
 
-	if(c == 0xfffe)
-	    return 0;
+        if (c == 0xfffe)
+            return 0;
 
-	if(c < 128 && text_chars[c] != T) {
-	    if(nobom)
-		return 0;
-	    else
-		bad++;
-	} else if (c >= 128) {
-        high++;
-    }
+        if (c < 128 && text_chars[c] != T) {
+            if (nobom)
+                return 0;
+            else
+                bad++;
+        } else if (c >= 128) {
+            high++;
+        }
     }
 
     //   if (nobom && high >= len / 4)
     //        return 0;
 
-    if(!nobom && bad >= len / 2)
-	return 0;
+    if (!nobom && bad >= len / 2)
+        return 0;
 
     return 1 + be;
 }
 
 cli_file_t cli_texttype(const unsigned char *buf, unsigned int len)
 {
-	int ret;
+    int ret;
 
-    if(td_isascii(buf, len)) {
-	cli_dbgmsg("Recognized ASCII text\n");
-	return CL_TYPE_TEXT_ASCII;
-    } else if(td_isutf8(buf, len)) {
-	cli_dbgmsg("Recognized UTF-8 character data\n");
-	return CL_TYPE_TEXT_UTF8;
-    } else if((ret = td_isutf16(buf, len))) {
-	cli_dbgmsg("Recognized %s character data\n", (ret == 1) ? "UTF-16LE" : "UTF-16BE");
-	return (ret == 1) ? CL_TYPE_TEXT_UTF16LE : CL_TYPE_TEXT_UTF16BE;
+    if (td_isascii(buf, len)) {
+        cli_dbgmsg("Recognized ASCII text\n");
+        return CL_TYPE_TEXT_ASCII;
+    } else if (td_isutf8(buf, len)) {
+        cli_dbgmsg("Recognized UTF-8 character data\n");
+        return CL_TYPE_TEXT_UTF8;
+    } else if ((ret = td_isutf16(buf, len))) {
+        cli_dbgmsg("Recognized %s character data\n", (ret == 1) ? "UTF-16LE" : "UTF-16BE");
+        return (ret == 1) ? CL_TYPE_TEXT_UTF16LE : CL_TYPE_TEXT_UTF16BE;
     } else {
-	cli_dbgmsg("Recognized binary data\n");
-	return CL_TYPE_BINARY_DATA;
+        cli_dbgmsg("Recognized binary data\n");
+        return CL_TYPE_BINARY_DATA;
     }
 }

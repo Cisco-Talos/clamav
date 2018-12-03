@@ -47,16 +47,16 @@
  */
 static size_t base64_len(const char *data, size_t len)
 {
-    int padding=0;
+    int padding = 0;
     size_t i;
 
     if (!len)
         return 0;
 
-    for (i=len-1; i > 0 && data[i] == '='; i--)
+    for (i = len - 1; i > 0 && data[i] == '='; i--)
         padding++;
 
-    return (size_t)((3*len)/4 - padding);
+    return (size_t)((3 * len) / 4 - padding);
 }
 
 /** Decode a base64-encoded string
@@ -71,7 +71,7 @@ void *cl_base64_decode(char *data, size_t len, void *obuf, size_t *olen, int one
     BIO *bio, *b64;
     void *buf;
 
-    buf = (obuf) ? obuf : malloc(base64_len(data, len)+1);
+    buf = (obuf) ? obuf : malloc(base64_len(data, len) + 1);
     if (!(buf))
         return NULL;
 
@@ -130,14 +130,14 @@ char *cl_base64_encode(void *data, size_t len)
     elen = (size_t)BIO_get_mem_data(bio, &buf);
 
     /* Ensure we're dealing with a NULL-terminated string */
-    p = (char *)malloc(elen+1);
+    p = (char *)malloc(elen + 1);
     if (NULL == p) {
         BIO_free(b64);
         return NULL;
     }
     memcpy((void *)p, (void *)buf, elen);
     p[elen] = 0x00;
-    buf = p;
+    buf     = p;
 
     BIO_free_all(bio);
 
@@ -151,12 +151,12 @@ int main(int argc, char *argv[])
     char *plaintext, *encoded, *decoded;
     unsigned char *sha_plaintext, *sha_decoded;
     size_t len;
-    int ret=0;
+    int ret = 0;
     unsigned int shalen;
 
     initialize_crypto();
 
-    plaintext = (argv[1]) ? argv[1] : "Hello. This is dog";
+    plaintext     = (argv[1]) ? argv[1] : "Hello. This is dog";
     sha_plaintext = sha256(plaintext, strlen(plaintext), NULL, NULL);
     if (!(sha_plaintext)) {
         fprintf(stderr, "Could not generate sha256 of plaintext\n");

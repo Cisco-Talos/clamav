@@ -28,7 +28,7 @@
 #include <string.h>
 #include <signal.h>
 
-#ifdef	HAVE_UNISTD_H
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 #ifndef _WIN32
@@ -59,17 +59,17 @@ short printinfected = 0, printclean = 1;
 
 int main(int argc, char **argv)
 {
-	int ds, dms, ret;
-	double mb, rmb;
-	struct timeval t1, t2;
+    int ds, dms, ret;
+    double mb, rmb;
+    struct timeval t1, t2;
 #ifndef _WIN32
-	sigset_t sigset;
+    sigset_t sigset;
 #endif
-	struct optstruct *opts;
-	const struct optstruct *opt;
+    struct optstruct *opts;
+    const struct optstruct *opt;
 
     if (check_flevel())
-	    exit(2);
+        exit(2);
 
 #if !defined(_WIN32) && !defined(C_BEOS)
     sigemptyset(&sigset);
@@ -79,79 +79,77 @@ int main(int argc, char **argv)
 
     cl_initialize_crypto();
 
-
-    if((opts = optparse(NULL, argc, argv, 1, OPT_CLAMSCAN, 0, NULL)) == NULL) {
-	mprintf("!Can't parse command line options\n");
-	return 2;
+    if ((opts = optparse(NULL, argc, argv, 1, OPT_CLAMSCAN, 0, NULL)) == NULL) {
+        mprintf("!Can't parse command line options\n");
+        return 2;
     }
 
-    if(optget(opts, "verbose")->enabled) {
-	mprintf_verbose = 1;
-	logg_verbose = 1;
+    if (optget(opts, "verbose")->enabled) {
+        mprintf_verbose = 1;
+        logg_verbose    = 1;
     }
 
-    if(optget(opts, "quiet")->enabled)
-	mprintf_quiet = 1;
+    if (optget(opts, "quiet")->enabled)
+        mprintf_quiet = 1;
 
-    if(optget(opts, "stdout")->enabled)
-	mprintf_stdout = 1;
+    if (optget(opts, "stdout")->enabled)
+        mprintf_stdout = 1;
 
-
-    if(optget(opts, "debug")->enabled) {
+    if (optget(opts, "debug")->enabled) {
 #if defined(C_LINUX)
-	    /* njh@bandsman.co.uk: create a dump if needed */
-	    struct rlimit rlim;
+        /* njh@bandsman.co.uk: create a dump if needed */
+        struct rlimit rlim;
 
-	rlim.rlim_cur = rlim.rlim_max = RLIM_INFINITY;
-	if(setrlimit(RLIMIT_CORE, &rlim) < 0)
-	    perror("setrlimit");
+        rlim.rlim_cur = rlim.rlim_max = RLIM_INFINITY;
+        if (setrlimit(RLIMIT_CORE, &rlim) < 0)
+            perror("setrlimit");
 #endif
-	cl_debug(); /* enable debug messages */
+        cl_debug(); /* enable debug messages */
     }
 
     if (optget(opts, "gen-mdb")->enabled) {
         cl_always_gen_section_hash();
     }
 
-    if(optget(opts, "version")->enabled) {
-	print_version(optget(opts, "database")->strarg);
-	optfree(opts);
-	return 0;
+    if (optget(opts, "version")->enabled) {
+        print_version(optget(opts, "database")->strarg);
+        optfree(opts);
+        return 0;
     }
 
-    if(optget(opts, "help")->enabled) {
-	optfree(opts);
-    	help();
-	return 0;
+    if (optget(opts, "help")->enabled) {
+        optfree(opts);
+        help();
+        return 0;
     }
 
-    if(optget(opts, "recursive")->enabled)
-	recursion = 1;
+    if (optget(opts, "recursive")->enabled)
+        recursion = 1;
 
-    if(optget(opts, "infected")->enabled)
-	printinfected = 1;
+    if (optget(opts, "infected")->enabled)
+        printinfected = 1;
 
-    if(optget(opts, "suppress-ok-results")->enabled)
-	printclean = 0;
+    if (optget(opts, "suppress-ok-results")->enabled)
+        printclean = 0;
 
-    if(optget(opts, "bell")->enabled)
-	bell = 1;
+    if (optget(opts, "bell")->enabled)
+        bell = 1;
 
     /* initialize logger */
-    if((opt = optget(opts, "log"))->enabled) {
-	logg_file = opt->strarg;
-	if(logg("#\n-------------------------------------------------------------------------------\n\n")) {
-	    mprintf("!Problem with internal logger.\n");
-	    optfree(opts);
-	    return 2;
-	}
-    } else 
-	logg_file = NULL;
+    if ((opt = optget(opts, "log"))->enabled) {
+        logg_file = opt->strarg;
+        if (logg("#\n-------------------------------------------------------------------------------\n\n")) {
+            mprintf("!Problem with internal logger.\n");
+            optfree(opts);
+            return 2;
+        }
+    } else
+        logg_file = NULL;
 
-    if(actsetup(opts)) {
-	optfree(opts);
-	logg_close();
-	exit(2);
+    if (actsetup(opts)) {
+        optfree(opts);
+        logg_close();
+        exit(2);
     }
 
     memset(&info, 0, sizeof(struct s_info));
@@ -160,32 +158,32 @@ int main(int argc, char **argv)
 
     ret = scanmanager(opts);
 
-    if(!optget(opts, "no-summary")->enabled) {
-	gettimeofday(&t2, NULL);
+    if (!optget(opts, "no-summary")->enabled) {
+        gettimeofday(&t2, NULL);
 
-    ds = t2.tv_sec - t1.tv_sec;
-	dms = t2.tv_usec - t1.tv_usec;
-	ds -= (dms < 0) ? (1):(0);
-	dms += (dms < 0) ? (1000000):(0);
-	logg("\n----------- SCAN SUMMARY -----------\n");
-	logg("Known viruses: %u\n", info.sigs);
-	logg("Engine version: %s\n", get_version());
-	logg("Scanned directories: %u\n", info.dirs);
-	logg("Scanned files: %u\n", info.files);
-	logg("Infected files: %u\n", info.ifiles);
-	if(info.errors)
-	    logg("Total errors: %u\n", info.errors);
-	if(notremoved) {
-	    logg("Not removed: %u\n", notremoved);
-	}
-	if(notmoved) {
-	    logg("Not %s: %u\n", optget(opts, "copy")->enabled ? "moved" : "copied", notmoved);
-	}
-	mb = info.blocks * (CL_COUNT_PRECISION / 1024) / 1024.0;
-	logg("Data scanned: %2.2lf MB\n", mb);
-	rmb = info.rblocks * (CL_COUNT_PRECISION / 1024) / 1024.0;
-	logg("Data read: %2.2lf MB (ratio %.2f:1)\n", rmb, info.rblocks ? (double)info.blocks/(double)info.rblocks : 0);
-	logg("Time: %u.%3.3u sec (%u m %u s)\n", ds, dms/1000, ds/60, ds%60);
+        ds  = t2.tv_sec - t1.tv_sec;
+        dms = t2.tv_usec - t1.tv_usec;
+        ds -= (dms < 0) ? (1) : (0);
+        dms += (dms < 0) ? (1000000) : (0);
+        logg("\n----------- SCAN SUMMARY -----------\n");
+        logg("Known viruses: %u\n", info.sigs);
+        logg("Engine version: %s\n", get_version());
+        logg("Scanned directories: %u\n", info.dirs);
+        logg("Scanned files: %u\n", info.files);
+        logg("Infected files: %u\n", info.ifiles);
+        if (info.errors)
+            logg("Total errors: %u\n", info.errors);
+        if (notremoved) {
+            logg("Not removed: %u\n", notremoved);
+        }
+        if (notmoved) {
+            logg("Not %s: %u\n", optget(opts, "copy")->enabled ? "moved" : "copied", notmoved);
+        }
+        mb = info.blocks * (CL_COUNT_PRECISION / 1024) / 1024.0;
+        logg("Data scanned: %2.2lf MB\n", mb);
+        rmb = info.rblocks * (CL_COUNT_PRECISION / 1024) / 1024.0;
+        logg("Data read: %2.2lf MB (ratio %.2f:1)\n", rmb, info.rblocks ? (double)info.blocks / (double)info.rblocks : 0);
+        logg("Time: %u.%3.3u sec (%u m %u s)\n", ds, dms / 1000, ds / 60, ds % 60);
     }
 
     optfree(opts);

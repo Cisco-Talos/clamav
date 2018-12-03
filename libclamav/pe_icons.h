@@ -26,7 +26,8 @@
 int cli_scanicon(icon_groupset *set, uint32_t resdir_rva, cli_ctx *ctx, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size);
 
 void cli_icongroupset_add(const char *groupname, icon_groupset *set, unsigned int type, cli_ctx *ctx);
-static inline void cli_icongroupset_init(icon_groupset *set) {
+static inline void cli_icongroupset_init(icon_groupset *set)
+{
     set->v[0][0] = 0;
     set->v[0][1] = 0;
     set->v[0][2] = 0;
@@ -36,6 +37,5 @@ static inline void cli_icongroupset_init(icon_groupset *set) {
     set->v[1][2] = 0;
     set->v[1][3] = 0;
 }
-
 
 #endif

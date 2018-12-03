@@ -34,7 +34,8 @@
 #endif
 
 #ifdef _WIN32
-int filter_memcpy(unsigned int code, struct _EXCEPTION_POINTERS *ep) {
+int filter_memcpy(unsigned int code, struct _EXCEPTION_POINTERS *ep)
+{
     if ((code == EXCEPTION_IN_PAGE_ERROR) || (code == STATUS_DEVICE_DATA_ERROR)) {
         return EXCEPTION_EXECUTE_HANDLER;
     }
@@ -49,13 +50,11 @@ int cli_memcpy(void *target, const void *source, unsigned long size)
 #ifdef _WIN32
     __try {
 #endif
-    memcpy(target, source, size);
+        memcpy(target, source, size);
 #ifdef _WIN32
-    }
-    __except (filter_memcpy(GetExceptionCode(), GetExceptionInformation())) {
+    } __except (filter_memcpy(GetExceptionCode(), GetExceptionInformation())) {
         ret = 1;
     }
 #endif
     return ret;
 }
-

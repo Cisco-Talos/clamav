@@ -28,6 +28,6 @@
 
 #include "others.h"
 
-int cli_7unz (cli_ctx *, size_t);
+int cli_7unz(cli_ctx *, size_t);
 
 #endif

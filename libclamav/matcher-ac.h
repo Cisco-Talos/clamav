@@ -34,16 +34,16 @@
 
 /* AC scanning modes */
 #define AC_SCAN_VIR 1
-#define AC_SCAN_FT  2
+#define AC_SCAN_FT 2
 
 /* Pattern options */
-#define ACPATT_OPTION_NOOPTS   0x00
-#define ACPATT_OPTION_NOCASE   0x01
+#define ACPATT_OPTION_NOOPTS 0x00
+#define ACPATT_OPTION_NOCASE 0x01
 #define ACPATT_OPTION_FULLWORD 0x02
-#define ACPATT_OPTION_WIDE     0x04
-#define ACPATT_OPTION_ASCII    0x08
+#define ACPATT_OPTION_WIDE 0x04
+#define ACPATT_OPTION_ASCII 0x08
 
-#define ACPATT_OPTION_ONCE     0x80
+#define ACPATT_OPTION_ONCE 0x80
 
 struct cli_subsig_matches {
     uint32_t last;
@@ -53,7 +53,7 @@ struct cli_subsig_matches {
 
 struct cli_lsig_matches {
     uint32_t subsigs;
-    struct cli_subsig_matches * matches[1]; /* matches[] is variable length */ 
+    struct cli_subsig_matches *matches[1]; /* matches[] is variable length */
 };
 
 struct cli_ac_data {

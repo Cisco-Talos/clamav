@@ -42,41 +42,39 @@
 
 #include "mpool.h"
 
-int whitelist_match(const struct cl_engine* engine,char* real_url,const char* display_url,int hostOnly)
+int whitelist_match(const struct cl_engine* engine, char* real_url, const char* display_url, int hostOnly)
 {
-	const char* info;/*unused*/
-	cli_dbgmsg("Phishing: looking up in whitelist: %s:%s; host-only:%d\n",real_url,display_url,hostOnly);
-	return	engine->whitelist_matcher ? regex_list_match(engine->whitelist_matcher,real_url,display_url,NULL,hostOnly,&info,1) : 0;
+    const char* info; /*unused*/
+    cli_dbgmsg("Phishing: looking up in whitelist: %s:%s; host-only:%d\n", real_url, display_url, hostOnly);
+    return engine->whitelist_matcher ? regex_list_match(engine->whitelist_matcher, real_url, display_url, NULL, hostOnly, &info, 1) : 0;
 }
 
 int init_whitelist(struct cl_engine* engine)
 {
-	if(engine) {
-		engine->whitelist_matcher = (struct regex_matcher *) mpool_malloc(engine->mempool, sizeof(struct regex_matcher));
-		if(!engine->whitelist_matcher) {
+    if (engine) {
+        engine->whitelist_matcher = (struct regex_matcher*)mpool_malloc(engine->mempool, sizeof(struct regex_matcher));
+        if (!engine->whitelist_matcher) {
             cli_errmsg("Phish_whitelist: Unable to allocate memory for whitelist_match\n");
-			return CL_EMEM;
+            return CL_EMEM;
         }
 #ifdef USE_MPOOL
-		((struct regex_matcher *)(engine->whitelist_matcher))->mempool = engine->mempool;
+        ((struct regex_matcher*)(engine->whitelist_matcher))->mempool = engine->mempool;
 #endif
-		return	init_regex_list(engine->whitelist_matcher, engine->dconf->other&OTHER_CONF_PREFILTERING);
-	}
-	else
-		return CL_ENULLARG;
+        return init_regex_list(engine->whitelist_matcher, engine->dconf->other & OTHER_CONF_PREFILTERING);
+    } else
+        return CL_ENULLARG;
 }
 
 int is_whitelist_ok(const struct cl_engine* engine)
 {
-	return (engine && engine->whitelist_matcher) ? is_regex_ok(engine->whitelist_matcher) : 1;
+    return (engine && engine->whitelist_matcher) ? is_regex_ok(engine->whitelist_matcher) : 1;
 }
 
 void whitelist_done(struct cl_engine* engine)
 {
-	if(engine && engine->whitelist_matcher) {
-		regex_list_done(engine->whitelist_matcher);
-		mpool_free(engine->mempool, engine->whitelist_matcher);
-		engine->whitelist_matcher = NULL;
-	}
+    if (engine && engine->whitelist_matcher) {
+        regex_list_done(engine->whitelist_matcher);
+        mpool_free(engine->mempool, engine->whitelist_matcher);
+        engine->whitelist_matcher = NULL;
+    }
 }
-

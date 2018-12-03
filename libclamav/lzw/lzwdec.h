@@ -56,22 +56,22 @@ typedef struct lzw_stream_s {
 
 typedef lzw_stream *lzw_streamp;
 
-#define LZW_OK             0
-#define LZW_STREAM_END     1
+#define LZW_OK 0
+#define LZW_STREAM_END 1
 #define LZW_STREAM_ERROR (-2)
-#define LZW_DATA_ERROR   (-3)
-#define LZW_MEM_ERROR    (-4)
-#define LZW_BUF_ERROR    (-5)
-#define LZW_DICT_ERROR   (-7)
+#define LZW_DATA_ERROR (-3)
+#define LZW_MEM_ERROR (-4)
+#define LZW_BUF_ERROR (-5)
+#define LZW_DICT_ERROR (-7)
 
 /* option flags */
-#define LZW_NOFLAGS        0x0
-#define LZW_FLAG_EARLYCHG  0x1 /* code point changes one code earlier */
-#define LZW_FLAG_EXTNCODE  0x2 /* use extended code points (12+ bits) */
+#define LZW_NOFLAGS 0x0
+#define LZW_FLAG_EARLYCHG 0x1 /* code point changes one code earlier */
+#define LZW_FLAG_EXTNCODE 0x2 /* use extended code points (12+ bits) */
 /* state flags */
-#define LZW_FLAG_FULLDICT     0x100 /* dictionary consumes all usable codes */
-#define LZW_FLAG_EXTNCODEUSE  0x200 /* extended dictionary uses 12+ bit codes */
-#define LZW_FLAG_INVALIDCODE  0x400 /* input references invalid code entry (data error) */
+#define LZW_FLAG_FULLDICT 0x100    /* dictionary consumes all usable codes */
+#define LZW_FLAG_EXTNCODEUSE 0x200 /* extended dictionary uses 12+ bit codes */
+#define LZW_FLAG_INVALIDCODE 0x400 /* input references invalid code entry (data error) */
 
 int lzwInit(lzw_streamp strm);
 int lzwInflate(lzw_streamp strm);

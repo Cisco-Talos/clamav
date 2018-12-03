@@ -30,43 +30,48 @@
 void *__xz_wrap_alloc(void *unused, size_t size);
 void __xz_wrap_free(void *unused, void *freeme);
 
-void *__xz_wrap_alloc(void *unused, size_t size) {
+void *__xz_wrap_alloc(void *unused, size_t size)
+{
     UNUSEDPARAM(unused);
-    if(!size || size > CLI_MAX_ALLOCATION)
-	return NULL;
-    if(!size || size > CLI_MAX_ALLOCATION) {
-	cli_dbgmsg("xz_iface: Attempt to allocate %lu bytes exceeds CLI_MAX_ALLOCATION.\n",
-                   (unsigned long int) size);
-	return NULL;
+    if (!size || size > CLI_MAX_ALLOCATION)
+        return NULL;
+    if (!size || size > CLI_MAX_ALLOCATION) {
+        cli_dbgmsg("xz_iface: Attempt to allocate %lu bytes exceeds CLI_MAX_ALLOCATION.\n",
+                   (unsigned long int)size);
+        return NULL;
     }
     return cli_malloc(size);
 }
-void __xz_wrap_free(void *unused, void *freeme) {
+void __xz_wrap_free(void *unused, void *freeme)
+{
     UNUSEDPARAM(unused);
     free(freeme);
 }
 
-static ISzAlloc g_Alloc = { __xz_wrap_alloc, __xz_wrap_free };
-    
-int cli_XzInit(struct CLI_XZ *XZ) {
+static ISzAlloc g_Alloc = {__xz_wrap_alloc, __xz_wrap_free};
+
+int cli_XzInit(struct CLI_XZ *XZ)
+{
     if (SZ_OK != XzUnpacker_Create(&XZ->state, &g_Alloc))
         return XZ_RESULT_DATA_ERROR;
     if (g_Crc64Table[1] == 0)
         Crc64GenerateTable();
     return XZ_RESULT_OK;
 }
-	
-void cli_XzShutdown(struct CLI_XZ *XZ) {
+
+void cli_XzShutdown(struct CLI_XZ *XZ)
+{
     XzUnpacker_Free(&XZ->state);
 }
 
-int cli_XzDecode(struct CLI_XZ *XZ) {
+int cli_XzDecode(struct CLI_XZ *XZ)
+{
     SRes res;
     SizeT outbytes, inbytes;
 
-    inbytes = XZ->avail_in;
+    inbytes  = XZ->avail_in;
     outbytes = XZ->avail_out;
-    res = XzUnpacker_Code(&XZ->state, XZ->next_out, &outbytes, 
+    res      = XzUnpacker_Code(&XZ->state, XZ->next_out, &outbytes,
                           XZ->next_in, &inbytes, CODER_FINISH_ANY, &XZ->status);
     XZ->avail_in -= inbytes;
     XZ->next_in += inbytes;
@@ -80,7 +85,7 @@ int cli_XzDecode(struct CLI_XZ *XZ) {
         if (res == SZ_ERROR_MEM) {
             return XZ_DIC_HEURISTIC;
         }
-	return XZ_RESULT_DATA_ERROR;
+        return XZ_RESULT_DATA_ERROR;
     }
     return XZ_RESULT_OK;
 }

@@ -72,7 +72,7 @@ struct cli_bc {
     uint32_t numGlobalBytes;
     uint8_t *globalBytes;
     uint32_t sigtime_id, sigmatch_id;
-    char * hook_name;
+    char *hook_name;
 };
 
 struct cli_all_bc {
@@ -80,7 +80,7 @@ struct cli_all_bc {
     unsigned count;
     struct cli_bcengine *engine;
     struct cli_environment env;
-    int    inited;
+    int inited;
 };
 
 struct cli_pe_hook_data;
@@ -123,12 +123,11 @@ void cli_bytevalue_describe(const struct cli_bc *bc, unsigned funcid);
 void cli_byteinst_describe(const struct cli_bc_inst *inst, unsigned *bbnum);
 void cli_bytefunc_describe(const struct cli_bc *bc, unsigned funcid);
 
-
 /* Hooks */
 struct cli_exe_info;
 struct cli_ctx_tag;
 struct cli_target_info;
-int cli_bytecode_runlsig(struct cli_ctx_tag *ctx, struct cli_target_info *info, const struct cli_all_bc *bcs, unsigned bc_idx, const uint32_t* lsigcnt, const uint32_t *lsigsuboff, fmap_t *map);
+int cli_bytecode_runlsig(struct cli_ctx_tag *ctx, struct cli_target_info *info, const struct cli_all_bc *bcs, unsigned bc_idx, const uint32_t *lsigcnt, const uint32_t *lsigsuboff, fmap_t *map);
 int cli_bytecode_runhook(struct cli_ctx_tag *cctx, const struct cl_engine *engine, struct cli_bc_ctx *ctx, unsigned id, fmap_t *map);
 
 #ifdef __cplusplus
@@ -142,15 +141,15 @@ void cli_bytecode_printversion(void);
 void cli_bytecode_debug_printsrc(const struct cli_bc_ctx *ctx);
 void cli_printcxxver(void);
 
-typedef void (*bc_dbg_callback_trace)(struct cli_bc_ctx*, unsigned event);
-typedef void (*bc_dbg_callback_trace_op)(struct cli_bc_ctx*, const char *op);
-typedef void (*bc_dbg_callback_trace_val)(struct cli_bc_ctx*, const char *name, uint32_t value);
-typedef void (*bc_dbg_callback_trace_ptr)(struct cli_bc_ctx*, const void *val);
-void cli_bytecode_context_set_trace(struct cli_bc_ctx*, unsigned level,
-				    bc_dbg_callback_trace,
-				    bc_dbg_callback_trace_op,
-				    bc_dbg_callback_trace_val,
-				    bc_dbg_callback_trace_ptr);
+typedef void (*bc_dbg_callback_trace)(struct cli_bc_ctx *, unsigned event);
+typedef void (*bc_dbg_callback_trace_op)(struct cli_bc_ctx *, const char *op);
+typedef void (*bc_dbg_callback_trace_val)(struct cli_bc_ctx *, const char *name, uint32_t value);
+typedef void (*bc_dbg_callback_trace_ptr)(struct cli_bc_ctx *, const void *val);
+void cli_bytecode_context_set_trace(struct cli_bc_ctx *, unsigned level,
+                                    bc_dbg_callback_trace,
+                                    bc_dbg_callback_trace_op,
+                                    bc_dbg_callback_trace_val,
+                                    bc_dbg_callback_trace_ptr);
 void cli_sigperf_print(void);
 void cli_sigperf_events_destroy(void);
 #ifdef __cplusplus

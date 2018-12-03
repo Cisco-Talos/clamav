@@ -25,12 +25,13 @@
 #include "random.h"
 
 static unsigned long next = 1;
-int w32_rand(void) {
+int w32_rand(void)
+{
     next = next * 1103515245 + 12345;
-    return((unsigned)(next/65536) % (RAND_MAX+1));
+    return ((unsigned)(next / 65536) % (RAND_MAX + 1));
 }
 
-void w32_srand(unsigned int seed) {
+void w32_srand(unsigned int seed)
+{
     next = seed;
 }
-

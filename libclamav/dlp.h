@@ -27,8 +27,8 @@
 #include <stdio.h>
 
 /* these macros define the SSN string format to search for */
-#define SSN_FORMAT_HYPHENS    0     /* xxx-yy-zzzz */
-#define SSN_FORMAT_STRIPPED   1     /* xxxyyzzzz */
+#define SSN_FORMAT_HYPHENS 0  /* xxx-yy-zzzz */
+#define SSN_FORMAT_STRIPPED 1 /* xxxyyzzzz */
 
 /*
  * will check if a valid credit card number exists within the 
@@ -138,4 +138,4 @@ int cdn_ctn_is_valid(const char *, int);
 int cdn_eft_is_valid(const char *, int);
 int us_micr_is_valid(const char *, int);
 
-#endif  /* __DLP_H_ */
+#endif /* __DLP_H_ */

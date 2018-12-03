@@ -34,7 +34,7 @@
 
 /* ELF File Headers */
 struct elf_file_hdr32 {
-    uint8_t  e_ident[16];
+    uint8_t e_ident[16];
     uint16_t e_type;
     uint16_t e_machine;
     uint32_t e_version;
@@ -52,7 +52,7 @@ struct elf_file_hdr32 {
 };
 
 struct elf_file_hdr64 {
-    uint8_t  e_ident[16];
+    uint8_t e_ident[16];
     uint16_t e_type;
     uint16_t e_machine;
     uint32_t e_version;
@@ -111,7 +111,7 @@ struct elf_program_hdr64 {
 /* Notable ELF section header flags */
 #define ELF_SHF_WRITE (1 << 0)
 #define ELF_SHF_ALLOC (1 << 1)
-#define ELF_SHF_EXECINSTR  (1 << 2)
+#define ELF_SHF_EXECINSTR (1 << 2)
 
 /* There are more section header flags, but these are the ones we log */
 #define ELF_SHF_MASK (ELF_SHF_WRITE | ELF_SHF_ALLOC | ELF_SHF_EXECINSTR)

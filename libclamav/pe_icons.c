@@ -35,9 +35,9 @@
 
 #define USE_FLOATS
 #ifdef USE_FLOATS
-#  define LABDIFF(x) labdiff(x)
+#define LABDIFF(x) labdiff(x)
 #else
-#  define LABDIFF(x) labdiff2(x)
+#define LABDIFF(x) labdiff2(x)
 #endif
 
 /* #define LOGPARSEICONDETAILS */
@@ -66,15 +66,16 @@ struct ICON_ENV {
 
 int cli_groupiconscan(struct ICON_ENV *icon_env, uint32_t rva);
 
-static int groupicon_scan_cb(void *ptr, uint32_t type, uint32_t name, uint32_t lang, uint32_t rva) {
+static int groupicon_scan_cb(void *ptr, uint32_t type, uint32_t name, uint32_t lang, uint32_t rva)
+{
     struct ICON_ENV *icon_env = ptr;
-    int ret = CL_CLEAN;
+    int ret                   = CL_CLEAN;
 
     UNUSEDPARAM(type);
     UNUSEDPARAM(lang);
 
     cli_dbgmsg("groupicon_cb: scanning group %x\n", name);
-    if(!icon_env->gcnt || icon_env->lastg == name) {
+    if (!icon_env->gcnt || icon_env->lastg == name) {
         icon_env->gcnt++;
         icon_env->lastg = name;
 
@@ -91,7 +92,8 @@ static int groupicon_scan_cb(void *ptr, uint32_t type, uint32_t name, uint32_t l
 
 static int parseicon(struct ICON_ENV *icon_env, uint32_t rva);
 
-static int icon_scan_cb(void *ptr, uint32_t type, uint32_t name, uint32_t lang, uint32_t rva) {
+static int icon_scan_cb(void *ptr, uint32_t type, uint32_t name, uint32_t lang, uint32_t rva)
+{
     struct ICON_ENV *icon_env = ptr;
 
     UNUSEDPARAM(type);
@@ -108,31 +110,32 @@ static int icon_scan_cb(void *ptr, uint32_t type, uint32_t name, uint32_t lang, 
     return 0;
 }
 
-int cli_scanicon(icon_groupset *set, uint32_t resdir_rva, cli_ctx *ctx, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size) {
+int cli_scanicon(icon_groupset *set, uint32_t resdir_rva, cli_ctx *ctx, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size)
+{
     struct ICON_ENV icon_env;
-    fmap_t *map = *ctx->fmap;
+    fmap_t *map        = *ctx->fmap;
     uint32_t err_total = 0;
 
-    icon_env.ctx = ctx;
-    icon_env.gcnt = 0;
-    icon_env.hcnt = 0;
-    icon_env.icnt = 0;
-    icon_env.lastg = 0;
+    icon_env.ctx    = ctx;
+    icon_env.gcnt   = 0;
+    icon_env.hcnt   = 0;
+    icon_env.icnt   = 0;
+    icon_env.lastg  = 0;
     icon_env.result = CL_CLEAN;
 
-    icon_env.set = set;
-    icon_env.resdir_rva = resdir_rva;
+    icon_env.set          = set;
+    icon_env.resdir_rva   = resdir_rva;
     icon_env.exe_sections = exe_sections;
-    icon_env.nsections = nsections;
-    icon_env.hdr_size = hdr_size;
+    icon_env.nsections    = nsections;
+    icon_env.hdr_size     = hdr_size;
 
     icon_env.max_icons = ctx->engine->maxiconspe;
 
-    icon_env.err_oof = 0;
+    icon_env.err_oof   = 0;
     icon_env.err_bhoof = 0;
-    icon_env.err_bhts = 0;
-    icon_env.err_tstl = 0;
-    icon_env.err_insl = 0;
+    icon_env.err_bhts  = 0;
+    icon_env.err_tstl  = 0;
+    icon_env.err_insl  = 0;
 
     /* icon group scan callback --> groupicon_scan_cb() */
     findres(14, 0xffffffff, resdir_rva, map, exe_sections, nsections, hdr_size, groupicon_scan_cb, &icon_env);
@@ -143,7 +146,7 @@ int cli_scanicon(icon_groupset *set, uint32_t resdir_rva, cli_ctx *ctx, struct c
 
     cli_dbgmsg("cli_scanicon: scanned a total of %u[%u actual] icons across %u groups\n", icon_env.icnt, icon_env.hcnt, icon_env.gcnt);
     if (icon_env.hcnt < icon_env.icnt)
-        cli_warnmsg("cli_scanicon: found %u invalid icon entries of %u total\n", icon_env.icnt-icon_env.hcnt, icon_env.icnt);
+        cli_warnmsg("cli_scanicon: found %u invalid icon entries of %u total\n", icon_env.icnt - icon_env.hcnt, icon_env.icnt);
 
     err_total = icon_env.err_oof + icon_env.err_bhoof + icon_env.err_bhts + icon_env.err_tstl + icon_env.err_insl;
     if (err_total > 0) {
@@ -170,19 +173,19 @@ int cli_scanicon(icon_groupset *set, uint32_t resdir_rva, cli_ctx *ctx, struct c
 int cli_groupiconscan(struct ICON_ENV *icon_env, uint32_t rva)
 {
     /* import environment */
-    uint32_t resdir_rva = icon_env->resdir_rva;
-    cli_ctx *ctx = icon_env->ctx;
+    uint32_t resdir_rva                  = icon_env->resdir_rva;
+    cli_ctx *ctx                         = icon_env->ctx;
     struct cli_exe_section *exe_sections = icon_env->exe_sections;
-    uint16_t nsections = icon_env->nsections;
-    uint32_t hdr_size = icon_env->hdr_size;
+    uint16_t nsections                   = icon_env->nsections;
+    uint32_t hdr_size                    = icon_env->hdr_size;
 
-    int err = 0;
-    fmap_t *map = *ctx->fmap;
+    int err            = 0;
+    fmap_t *map        = *ctx->fmap;
     const uint8_t *grp = fmap_need_off_once(map, cli_rawaddr(rva, exe_sections, nsections, (unsigned int *)(&err), map->len, hdr_size), 16);
 
-    if(grp && !err) {
+    if (grp && !err) {
         uint32_t gsz = cli_readint32(grp + 4);
-        if(gsz>6) {
+        if (gsz > 6) {
             uint32_t icnt, raddr;
             unsigned int piconcnt;
             struct icondir {
@@ -194,18 +197,18 @@ int cli_groupiconscan(struct ICON_ENV *icon_env, uint32_t rva)
                 uint16_t depth;
                 uint32_t sz;
                 uint16_t id;
-            } *dir;
+            } * dir;
 
             raddr = cli_rawaddr(cli_readint32(grp), exe_sections, nsections, (unsigned int *)(&err), map->len, hdr_size);
             cli_dbgmsg("cli_scanicon: icon group @%x\n", raddr);
             grp = fmap_need_off_once(map, raddr, gsz);
-            if(grp && !err) {
-                icnt = cli_readint32(grp+2) >> 16;
+            if (grp && !err) {
+                icnt = cli_readint32(grp + 2) >> 16;
 
                 grp += 6;
                 gsz -= 6;
 
-                while(icnt && gsz >= 14 /* && (remaining amount of icons) */) {
+                while (icnt && gsz >= 14 /* && (remaining amount of icons) */) {
                     piconcnt = icon_env->hcnt;
 
                     dir = (struct icondir *)grp;
@@ -242,12 +245,9 @@ int cli_groupiconscan(struct ICON_ENV *icon_env, uint32_t rva)
     return icon_env->result;
 }
 
-
-
-
 /* static const int gaussk[]={1,10,45,120,210,252,210,120,45,10,1}; */
-static const int gaussk[]={1,2,1};
-static const int gkernsz = (sizeof(gaussk) / sizeof(gaussk[0]));
+static const int gaussk[] = {1, 2, 1};
+static const int gkernsz  = (sizeof(gaussk) / sizeof(gaussk[0]));
 
 #ifndef USE_FLOATS
 // clang-format off
@@ -647,875 +647,794 @@ static const int gkernsz = (sizeof(gaussk) / sizeof(gaussk[0]));
 #endif
 
 #ifdef USE_FLOATS
-    static void lab(double r, double g, double b, double *L, double *A, double *B) {
-        double x, y, z;
-        r /= 255.0f;
-        g /= 255.0f;
-        b /= 255.0f;
+static void lab(double r, double g, double b, double *L, double *A, double *B)
+{
+    double x, y, z;
+    r /= 255.0f;
+    g /= 255.0f;
+    b /= 255.0f;
 
-        if (r > 0.04045f) r = pow(((r + 0.055f) / 1.055f), 2.4f);
-        else r /= 12.92f;
-        if (g > 0.04045f) g = pow(((g + 0.055f) / 1.055f), 2.4f);
-        else g /= 12.92f;
-        if (b > 0.04045f) b = pow(((b + 0.055f) / 1.055f), 2.4f);
-        else b /= 12.92f;
+    if (r > 0.04045f)
+        r = pow(((r + 0.055f) / 1.055f), 2.4f);
+    else
+        r /= 12.92f;
+    if (g > 0.04045f)
+        g = pow(((g + 0.055f) / 1.055f), 2.4f);
+    else
+        g /= 12.92f;
+    if (b > 0.04045f)
+        b = pow(((b + 0.055f) / 1.055f), 2.4f);
+    else
+        b /= 12.92f;
 
-        r *= 100.0f;
-        g *= 100.0f;
-        b *= 100.0f;
+    r *= 100.0f;
+    g *= 100.0f;
+    b *= 100.0f;
 
-        x = r * 0.4124f + g * 0.3576f + b * 0.1805f;
-        y = r * 0.2126f + g * 0.7152f + b * 0.0722f;
-        z = r * 0.0193f + g * 0.1192f + b * 0.9505f;
+    x = r * 0.4124f + g * 0.3576f + b * 0.1805f;
+    y = r * 0.2126f + g * 0.7152f + b * 0.0722f;
+    z = r * 0.0193f + g * 0.1192f + b * 0.9505f;
 
-        x /= 95.047f;
-        y /= 100.000f;
-        z /= 108.883f;
+    x /= 95.047f;
+    y /= 100.000f;
+    z /= 108.883f;
 
-        if (x > 0.008856f) x = pow(x, 1.0f/3.0f);
-        else x = (7.787f * x) + (16.0f / 116.0f);
-        if (y > 0.008856f) y = pow(y, (1.0f/3.0f));
-        else y = (7.787f * y) + (16.0f / 116.0f);
-        if (z > 0.008856f) z = pow(z, (1.0f/3.0f));
-        else z = (7.787f * z) + (16.0f / 116.0f);
+    if (x > 0.008856f)
+        x = pow(x, 1.0f / 3.0f);
+    else
+        x = (7.787f * x) + (16.0f / 116.0f);
+    if (y > 0.008856f)
+        y = pow(y, (1.0f / 3.0f));
+    else
+        y = (7.787f * y) + (16.0f / 116.0f);
+    if (z > 0.008856f)
+        z = pow(z, (1.0f / 3.0f));
+    else
+        z = (7.787f * z) + (16.0f / 116.0f);
 
-        *L = (116.0f * y) - 16.0f;
-        *A = 500.0f * (x - y);
-        *B = 200.0f * (y - z);
-    }
-    
-    static double labdiff(unsigned int rgb) {
-        unsigned int r, g, b;
-        const double L1 = 53.192777691077211f, A1 = 0.0031420942181448197f, B1 = -0.0062075877844014471f;
-        double L2, A2, B2;
+    *L = (116.0f * y) - 16.0f;
+    *A = 500.0f * (x - y);
+    *B = 200.0f * (y - z);
+}
 
-        r = (rgb>>16) & 0xff;
-        g = (rgb>>8) & 0xff;
-        b = rgb & 0xff;
+static double labdiff(unsigned int rgb)
+{
+    unsigned int r, g, b;
+    const double L1 = 53.192777691077211f, A1 = 0.0031420942181448197f, B1 = -0.0062075877844014471f;
+    double L2, A2, B2;
 
-        lab(r, g, b, &L2, &A2, &B2);
+    r = (rgb >> 16) & 0xff;
+    g = (rgb >> 8) & 0xff;
+    b = rgb & 0xff;
 
-        return sqrt(pow(L1 - L2, 2.0f) + pow(A1 - A2, 2.0f) + pow(B1 - B2, 2.0f));
-    }
+    lab(r, g, b, &L2, &A2, &B2);
+
+    return sqrt(pow(L1 - L2, 2.0f) + pow(A1 - A2, 2.0f) + pow(B1 - B2, 2.0f));
+}
 #else
-    static void lab2(uint32_t r, uint32_t g, uint32_t b, int32_t *L, int32_t *A, int32_t *B) {
-        uint32_t xx,yy,zz;
+static void lab2(uint32_t r, uint32_t g, uint32_t b, int32_t *L, int32_t *A, int32_t *B)
+{
+    uint32_t xx, yy, zz;
 
-        xx = rtable[r][0] + gtable[g][0] + btable[b][0];
-        yy = rtable[r][1] + gtable[g][1] + btable[b][1];
-        zz = rtable[r][2] + gtable[g][2] + btable[b][2];
-        if (xx > 148587) {
-        xx = (1<<24)*pow(xx/(95.047*(1<<24)), 1.0/3.0);
-        }
-        else {
-        xx = xx * 24389/3132 + 2314099;
-        }
-        if (yy > 148587) {
-        yy = (1<<24)*pow(yy/(100.0*(1<<24)), 1.0/3.0);
-        }
-        else {
-        yy = yy * 24389/3132 + 2314099;
-        }
-        if (zz > 148587) {
-        zz = (1<<24)*pow(zz/(108.883*(1<<24)), 1.0/3.0);
-        }
-        else {
-        zz = zz * 24389/3132 + 2314099;
-        }
-        *L = (116*yy - 116*2314099);
-        *A = 500/4*(xx - yy);
-        *B = 200/4*(yy - zz);/* /4 to avoid overflow */
+    xx = rtable[r][0] + gtable[g][0] + btable[b][0];
+    yy = rtable[r][1] + gtable[g][1] + btable[b][1];
+    zz = rtable[r][2] + gtable[g][2] + btable[b][2];
+    if (xx > 148587) {
+        xx = (1 << 24) * pow(xx / (95.047 * (1 << 24)), 1.0 / 3.0);
+    } else {
+        xx = xx * 24389 / 3132 + 2314099;
     }
-    static uint32_t labdiff2(unsigned int b) {
-        unsigned int r2, g2, b2;
-        int32_t L1, A1, B1, L2, A2, B2;
-        int64_t ld,ad,bd;
-
-        r2 = (b>>16) & 0xff;
-        g2 = (b>>8) & 0xff;
-        b2 = b & 0xff;
-
-        /* ref = 0x7f7f7f -> L*a*b ~ (53,0,0) */
-        L1 = 53*(1<<24);
-        A1 = 0;
-        B1 = 0;
-        lab2(r2, g2, b2, &L2, &A2, &B2);
-        ld = L1 - L2;
-        ld *= ld;
-        ad = A1 - A2;
-        ad *= ad;
-        bd = B1 - B2;
-        bd *= bd;
-        ld += ad + bd;
-        return ((uint32_t)(sqrt(ld/1024.0)))>>17;
+    if (yy > 148587) {
+        yy = (1 << 24) * pow(yy / (100.0 * (1 << 24)), 1.0 / 3.0);
+    } else {
+        yy = yy * 24389 / 3132 + 2314099;
     }
+    if (zz > 148587) {
+        zz = (1 << 24) * pow(zz / (108.883 * (1 << 24)), 1.0 / 3.0);
+    } else {
+        zz = zz * 24389 / 3132 + 2314099;
+    }
+    *L = (116 * yy - 116 * 2314099);
+    *A = 500 / 4 * (xx - yy);
+    *B = 200 / 4 * (yy - zz); /* /4 to avoid overflow */
+}
+static uint32_t labdiff2(unsigned int b)
+{
+    unsigned int r2, g2, b2;
+    int32_t L1, A1, B1, L2, A2, B2;
+    int64_t ld, ad, bd;
+
+    r2 = (b >> 16) & 0xff;
+    g2 = (b >> 8) & 0xff;
+    b2 = b & 0xff;
+
+    /* ref = 0x7f7f7f -> L*a*b ~ (53,0,0) */
+    L1 = 53 * (1 << 24);
+    A1 = 0;
+    B1 = 0;
+    lab2(r2, g2, b2, &L2, &A2, &B2);
+    ld = L1 - L2;
+    ld *= ld;
+    ad = A1 - A2;
+    ad *= ad;
+    bd = B1 - B2;
+    bd *= bd;
+    ld += ad + bd;
+    return ((uint32_t)(sqrt(ld / 1024.0))) >> 17;
+}
 #endif
 
-    static void makebmp(const char *step, const char *tempd, int w, int h, void *data)
-    {
-        unsigned int tmp1 = 0, tmp2 = 0, tmp3 = 0, tmp4 = 0, y;
-        char *fname;
-        FILE *f;
+static void makebmp(const char *step, const char *tempd, int w, int h, void *data)
+{
+    unsigned int tmp1 = 0, tmp2 = 0, tmp3 = 0, tmp4 = 0, y;
+    char *fname;
+    FILE *f;
 
-        if (!tempd)
-            return;
-        if (!(fname = cli_gentemp(tempd)))
-            return;
-        if (!(f = fopen(fname, "wb")))
-        {
-            cli_unlink(fname);
-            cli_dbgmsg("makebmp: failed to create file %s\n", fname);
-            free(fname);
-            return;
-        }
-        cli_writeint32(&tmp1, 0x28 + 0xe + w * h * 4);
-        cli_writeint32(&tmp2, (32 << 16) | 1);
-        tmp3 = 0;
-        cli_writeint32(&tmp4, w * h * 4);
-        if (!fwrite("BM", 2, 1, f) ||
-            !fwrite(&tmp1, 4, 1, f) ||
-            !fwrite("aCaB\x36\x00\x00\x00\x28\x00\x00\x00", 12, 1, f) ||
-            !fwrite(&w, 4, 1, f) ||
-            !fwrite(&h, 4, 1, f) ||
-            !fwrite(&tmp2, 4, 1, f) ||
-            !fwrite(&tmp3, 4, 1, f) ||
-            !fwrite(&tmp4, 4, 1, f) ||
-            !fwrite("\1\0\0\0\1\0\0\0\0\0\0\0\0\0\0\0", 16, 1, f))
-        {
-            fclose(f);
-            cli_unlink(fname);
-            free(fname);
-            cli_dbgmsg("makebmp: failed to write output\n");
-            return;
-        }
-
-        for (y = h - 1; y < (unsigned int)h; y--)
-#if WORDS_BIGENDIAN == 0
-            if (!fwrite(&((unsigned int *)data)[y * w], w * 4, 1, f))
-                break;
-#else
-        {
-            int x;
-            for (x = 0; x < w; x++)
-            {
-                cli_writeint32(&tmp1, ((unsigned int *)data)[y * w]);
-                if (!fwrite(&tmp1, 4, 1, f))
-                    break;
-            }
-            if (x != w)
-                break;
-        }
-#endif
-        fclose(f);
-        if (y < (unsigned int)h)
-            cli_unlink(fname);
-        else
-            cli_dbgmsg("makebmp: Image %s dumped to %s\n", step, fname);
+    if (!tempd)
+        return;
+    if (!(fname = cli_gentemp(tempd)))
+        return;
+    if (!(f = fopen(fname, "wb"))) {
+        cli_unlink(fname);
+        cli_dbgmsg("makebmp: failed to create file %s\n", fname);
         free(fname);
+        return;
+    }
+    cli_writeint32(&tmp1, 0x28 + 0xe + w * h * 4);
+    cli_writeint32(&tmp2, (32 << 16) | 1);
+    tmp3 = 0;
+    cli_writeint32(&tmp4, w * h * 4);
+    if (!fwrite("BM", 2, 1, f) ||
+        !fwrite(&tmp1, 4, 1, f) ||
+        !fwrite("aCaB\x36\x00\x00\x00\x28\x00\x00\x00", 12, 1, f) ||
+        !fwrite(&w, 4, 1, f) ||
+        !fwrite(&h, 4, 1, f) ||
+        !fwrite(&tmp2, 4, 1, f) ||
+        !fwrite(&tmp3, 4, 1, f) ||
+        !fwrite(&tmp4, 4, 1, f) ||
+        !fwrite("\1\0\0\0\1\0\0\0\0\0\0\0\0\0\0\0", 16, 1, f)) {
+        fclose(f);
+        cli_unlink(fname);
+        free(fname);
+        cli_dbgmsg("makebmp: failed to write output\n");
+        return;
     }
 
-    static unsigned int matchpoint(unsigned int side, unsigned int *x1, unsigned int *y1, unsigned int *avg1, const unsigned int *x2, const unsigned int *y2, const unsigned int *avg2, unsigned int max)
+    for (y = h - 1; y < (unsigned int)h; y--)
+#if WORDS_BIGENDIAN == 0
+        if (!fwrite(&((unsigned int *)data)[y * w], w * 4, 1, f))
+            break;
+#else
     {
-        unsigned int i, j, best, match = 0, ksize = side / 4;
-
-        for (i = 0; i < 3; i++)
-        {
-            best = 0;
-            for (j = 0; j < 3; j++)
-            {
-                /* approximately measure the distance from the best matching reference - avoid N*N total war */
-                int diffx = (int)x1[i] - (int)x2[j];
-                int diffy = ((int)y1[i] - (int)y2[j]);
-                unsigned int diff = sqrt(diffx * diffx + diffy * diffy);
-                if (diff > ksize * 3 / 4 || (unsigned int)abs((int)avg1[i] - (int)avg2[j]) > max / 5)
-                    continue;
-
-                diff = 100 - diff * 60 / (ksize * 3 / 4);
-                if (diff > best)
-                    best = diff;
-            }
-            match += best;
+        int x;
+        for (x = 0; x < w; x++) {
+            cli_writeint32(&tmp1, ((unsigned int *)data)[y * w]);
+            if (!fwrite(&tmp1, 4, 1, f))
+                break;
         }
-        return match / 3;
+        if (x != w)
+            break;
+    }
+#endif
+    fclose(f);
+    if (y < (unsigned int)h)
+        cli_unlink(fname);
+    else
+        cli_dbgmsg("makebmp: Image %s dumped to %s\n", step, fname);
+    free(fname);
+}
+
+static unsigned int matchpoint(unsigned int side, unsigned int *x1, unsigned int *y1, unsigned int *avg1, const unsigned int *x2, const unsigned int *y2, const unsigned int *avg2, unsigned int max)
+{
+    unsigned int i, j, best, match = 0, ksize = side / 4;
+
+    for (i = 0; i < 3; i++) {
+        best = 0;
+        for (j = 0; j < 3; j++) {
+            /* approximately measure the distance from the best matching reference - avoid N*N total war */
+            int diffx         = (int)x1[i] - (int)x2[j];
+            int diffy         = ((int)y1[i] - (int)y2[j]);
+            unsigned int diff = sqrt(diffx * diffx + diffy * diffy);
+            if (diff > ksize * 3 / 4 || (unsigned int)abs((int)avg1[i] - (int)avg2[j]) > max / 5)
+                continue;
+
+            diff = 100 - diff * 60 / (ksize * 3 / 4);
+            if (diff > best)
+                best = diff;
+        }
+        match += best;
+    }
+    return match / 3;
+}
+
+static unsigned int matchbwpoint(unsigned int side, unsigned int *x1a, unsigned int *y1a, unsigned int *avg1a, unsigned int *x1b, unsigned int *y1b, unsigned int *avg1b, const unsigned int *x2a, const unsigned int *y2a, const unsigned int *avg2a, const unsigned int *x2b, const unsigned int *y2b, const unsigned int *avg2b)
+{
+    unsigned int i, j, best, match = 0, ksize = side / 4;
+    unsigned int x1[6], y1[6], avg1[6], x2[6], y2[6], avg2[6];
+
+    for (i = 0; i < 3; i++) {
+        x1[i]   = x1a[i];
+        y1[i]   = y1a[i];
+        avg1[i] = avg1a[i];
+        x2[i]   = x2a[i];
+        y2[i]   = y2a[i];
+        avg2[i] = avg2a[i];
+
+        x1[i + 3]   = x1b[i];
+        y1[i + 3]   = y1b[i];
+        avg1[i + 3] = avg1b[i];
+        x2[i + 3]   = x2b[i];
+        y2[i + 3]   = y2b[i];
+        avg2[i + 3] = avg2b[i];
     }
 
-    static unsigned int matchbwpoint(unsigned int side, unsigned int *x1a, unsigned int *y1a, unsigned int *avg1a, unsigned int *x1b, unsigned int *y1b, unsigned int *avg1b, const unsigned int *x2a, const unsigned int *y2a, const unsigned int *avg2a, const unsigned int *x2b, const unsigned int *y2b, const unsigned int *avg2b)
-    {
-        unsigned int i, j, best, match = 0, ksize = side / 4;
-        unsigned int x1[6], y1[6], avg1[6], x2[6], y2[6], avg2[6];
+    for (i = 0; i < 6; i++) {
+        best = 0;
+        for (j = 0; j < 6; j++) {
+            /* approximately measure the distance from the best matching reference - avoid N*N total war */
+            int diffx         = (int)x1[i] - (int)x2[j];
+            int diffy         = ((int)y1[i] - (int)y2[j]);
+            unsigned int diff = sqrt(diffx * diffx + diffy * diffy);
+            if (diff > ksize * 3 / 4 || (unsigned int)abs((int)avg1[i] - (int)avg2[j]) > 255 / 5)
+                continue;
 
-        for (i = 0; i < 3; i++)
-        {
-            x1[i] = x1a[i];
-            y1[i] = y1a[i];
-            avg1[i] = avg1a[i];
-            x2[i] = x2a[i];
-            y2[i] = y2a[i];
-            avg2[i] = avg2a[i];
-
-            x1[i + 3] = x1b[i];
-            y1[i + 3] = y1b[i];
-            avg1[i + 3] = avg1b[i];
-            x2[i + 3] = x2b[i];
-            y2[i + 3] = y2b[i];
-            avg2[i + 3] = avg2b[i];
+            diff = 100 - diff * 60 / (ksize * 3 / 4);
+            if (diff > best)
+                best = diff;
         }
+        match += best;
+    }
+    return match / 6;
+}
 
-        for (i = 0; i < 6; i++)
-        {
-            best = 0;
-            for (j = 0; j < 6; j++)
-            {
-                /* approximately measure the distance from the best matching reference - avoid N*N total war */
-                int diffx = (int)x1[i] - (int)x2[j];
-                int diffy = ((int)y1[i] - (int)y2[j]);
-                unsigned int diff = sqrt(diffx * diffx + diffy * diffy);
-                if (diff > ksize * 3 / 4 || (unsigned int)abs((int)avg1[i] - (int)avg2[j]) > 255 / 5)
-                    continue;
+static void hsv(unsigned int c, unsigned int *r, unsigned int *g, unsigned int *b, unsigned int *s, unsigned int *v, unsigned int *delta)
+{
+    unsigned int min, max;
+    *r     = (c >> 16) & 0xff;
+    *g     = (c >> 8) & 0xff;
+    *b     = c & 0xff;
+    min    = MIN(*r, MIN(*g, *b));
+    max    = MAX(*r, MAX(*g, *b));
+    *v     = max;
+    *delta = max - min;
+    if (!*delta)
+        *s = 0;
+    else
+        *s = 255 * (*delta) / max;
+}
 
-                diff = 100 - diff * 60 / (ksize * 3 / 4);
-                if (diff > best)
-                    best = diff;
-            }
-            match += best;
-        }
-        return match / 6;
+static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr *res, const char *tempd)
+{
+    unsigned int x, y, xk, yk, i, j, *tmp;
+    unsigned int ksize = side / 4, bwonly = 0;
+    unsigned int edge_avg[6], edge_x[6] = {0, 0, 0, 0, 0, 0}, edge_y[6] = {0, 0, 0, 0, 0, 0}, noedge_avg[6], noedge_x[6] = {0, 0, 0, 0, 0, 0}, noedge_y[6] = {0, 0, 0, 0, 0, 0};
+    double *sobel;
+
+    if (!(tmp = cli_malloc(side * side * 4 * 2))) {
+        cli_errmsg("getmetrics: Unable to allocate memory for tmp %u\n", (side * side * 4 * 2));
+        return CL_EMEM;
     }
 
-    static void hsv(unsigned int c, unsigned int *r, unsigned int *g, unsigned int *b, unsigned int *s, unsigned int *v, unsigned int *delta)
-    {
-        unsigned int min, max;
-        *r = (c >> 16) & 0xff;
-        *g = (c >> 8) & 0xff;
-        *b = c & 0xff;
-        min = MIN(*r, MIN(*g, *b));
-        max = MAX(*r, MAX(*g, *b));
-        *v = max;
-        *delta = max - min;
-        if (!*delta)
-            *s = 0;
-        else
-            *s = 255 * (*delta) / max;
-    }
+    memset(res, 0, sizeof(*res));
 
-    static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr *res, const char *tempd)
-    {
-        unsigned int x, y, xk, yk, i, j, *tmp;
-        unsigned int ksize = side / 4, bwonly = 0;
-        unsigned int edge_avg[6], edge_x[6] = {0, 0, 0, 0, 0, 0}, edge_y[6] = {0, 0, 0, 0, 0, 0}, noedge_avg[6], noedge_x[6] = {0, 0, 0, 0, 0, 0}, noedge_y[6] = {0, 0, 0, 0, 0, 0};
-        double *sobel;
+    /* compute colored, gray, bright and dark areas, color presence */
+    for (y = 0; y <= side - ksize; y++) {
+        for (x = 0; x <= side - ksize; x++) {
+            unsigned int colsum = 0, lightsum = 0;
+            unsigned int r, g, b, s, v, delta;
 
-        if (!(tmp = cli_malloc(side * side * 4 * 2)))
-        {
-            cli_errmsg("getmetrics: Unable to allocate memory for tmp %u\n", (side * side * 4 * 2));
-            return CL_EMEM;
-        }
+            if (x == 0 && y == 0) {
+                /* Here we handle the 1st window which is fully calculated */
+                for (yk = 0; yk < ksize; yk++) {
+                    for (xk = 0; xk < ksize; xk++) {
+                        hsv(imagedata[yk * side + xk], &r, &g, &b, &s, &v, &delta);
+                        colsum += (unsigned int)sqrt(s * s * v);
+                        lightsum += v;
 
-        memset(res, 0, sizeof(*res));
-
-        /* compute colored, gray, bright and dark areas, color presence */
-        for (y = 0; y <= side - ksize; y++)
-        {
-            for (x = 0; x <= side - ksize; x++)
-            {
-                unsigned int colsum = 0, lightsum = 0;
-                unsigned int r, g, b, s, v, delta;
-
-                if (x == 0 && y == 0)
-                {
-                    /* Here we handle the 1st window which is fully calculated */
-                    for (yk = 0; yk < ksize; yk++)
-                    {
-                        for (xk = 0; xk < ksize; xk++)
-                        {
-                            hsv(imagedata[yk * side + xk], &r, &g, &b, &s, &v, &delta);
-                            colsum += (unsigned int)sqrt(s * s * v);
-                            lightsum += v;
-
-                            /* count colors (full square) */
-                            if (s > 85 && v > 85)
-                            {
-                                res->ccount++;
-                                res->rsum += 100 - 100 * abs((int)g - (int)b) / delta;
-                                res->gsum += 100 - 100 * abs((int)r - (int)b) / delta;
-                                res->bsum += 100 - 100 * abs((int)r - (int)g) / delta;
-                            }
+                        /* count colors (full square) */
+                        if (s > 85 && v > 85) {
+                            res->ccount++;
+                            res->rsum += 100 - 100 * abs((int)g - (int)b) / delta;
+                            res->gsum += 100 - 100 * abs((int)r - (int)b) / delta;
+                            res->bsum += 100 - 100 * abs((int)r - (int)g) / delta;
                         }
                     }
                 }
-                else if (x)
-                { /* Here we incrementally calculate rows and columns
+            } else if (x) { /* Here we incrementally calculate rows and columns
                   code is split as gcc produces faster code this way */
-                    colsum = tmp[y * side + x - 1];
-                    lightsum = tmp[side * side + y * side + x - 1];
-                    for (yk = 0; yk < ksize; yk++)
-                    {
-                        /* remove previous column */
-                        hsv(imagedata[(y + yk) * side + x - 1], &r, &g, &b, &s, &v, &delta);
-                        colsum -= (unsigned int)sqrt(s * s * v);
-                        lightsum -= v;
-                        /* add next column */
-                        hsv(imagedata[(y + yk) * side + x + ksize - 1], &r, &g, &b, &s, &v, &delta);
-                        colsum += (unsigned int)sqrt(s * s * v);
-                        lightsum += v;
+                colsum   = tmp[y * side + x - 1];
+                lightsum = tmp[side * side + y * side + x - 1];
+                for (yk = 0; yk < ksize; yk++) {
+                    /* remove previous column */
+                    hsv(imagedata[(y + yk) * side + x - 1], &r, &g, &b, &s, &v, &delta);
+                    colsum -= (unsigned int)sqrt(s * s * v);
+                    lightsum -= v;
+                    /* add next column */
+                    hsv(imagedata[(y + yk) * side + x + ksize - 1], &r, &g, &b, &s, &v, &delta);
+                    colsum += (unsigned int)sqrt(s * s * v);
+                    lightsum += v;
 
-                        /* count colors (full column or only the last px) */
-                        if ((y == 0 || yk == ksize - 1) && s > 85 && v > 85)
-                        {
-                            res->ccount++;
-                            res->rsum += 100 - 100 * abs((int)g - (int)b) / delta;
-                            res->gsum += 100 - 100 * abs((int)r - (int)b) / delta;
-                            res->bsum += 100 - 100 * abs((int)r - (int)g) / delta;
-                        }
+                    /* count colors (full column or only the last px) */
+                    if ((y == 0 || yk == ksize - 1) && s > 85 && v > 85) {
+                        res->ccount++;
+                        res->rsum += 100 - 100 * abs((int)g - (int)b) / delta;
+                        res->gsum += 100 - 100 * abs((int)r - (int)b) / delta;
+                        res->bsum += 100 - 100 * abs((int)r - (int)g) / delta;
                     }
                 }
-                else
-                {
-                    colsum = tmp[(y - 1) * side];
-                    lightsum = tmp[side * side + (y - 1) * side];
-                    for (xk = 0; xk < ksize; xk++)
-                    {
-                        /* remove previous row */
-                        hsv(imagedata[(y - 1) * side + xk], &r, &g, &b, &s, &v, &delta);
-                        colsum -= (unsigned int)sqrt(s * s * v);
-                        lightsum -= v;
+            } else {
+                colsum   = tmp[(y - 1) * side];
+                lightsum = tmp[side * side + (y - 1) * side];
+                for (xk = 0; xk < ksize; xk++) {
+                    /* remove previous row */
+                    hsv(imagedata[(y - 1) * side + xk], &r, &g, &b, &s, &v, &delta);
+                    colsum -= (unsigned int)sqrt(s * s * v);
+                    lightsum -= v;
 
-                        /* add next row */
-                        hsv(imagedata[(y + ksize - 1) * side + xk], &r, &g, &b, &s, &v, &delta);
-                        colsum += (unsigned int)sqrt(s * s * v);
-                        lightsum += v;
+                    /* add next row */
+                    hsv(imagedata[(y + ksize - 1) * side + xk], &r, &g, &b, &s, &v, &delta);
+                    colsum += (unsigned int)sqrt(s * s * v);
+                    lightsum += v;
 
-                        /* count colors (full row) */
-                        if (s > 85 && v > 85)
-                        {
-                            res->ccount++;
-                            res->rsum += 100 - 100 * abs((int)g - (int)b) / delta;
-                            res->gsum += 100 - 100 * abs((int)r - (int)b) / delta;
-                            res->bsum += 100 - 100 * abs((int)r - (int)g) / delta;
-                        }
+                    /* count colors (full row) */
+                    if (s > 85 && v > 85) {
+                        res->ccount++;
+                        res->rsum += 100 - 100 * abs((int)g - (int)b) / delta;
+                        res->gsum += 100 - 100 * abs((int)r - (int)b) / delta;
+                        res->bsum += 100 - 100 * abs((int)r - (int)g) / delta;
                     }
                 }
-                tmp[y * side + x] = colsum;
-                tmp[side * side + y * side + x] = lightsum;
             }
+            tmp[y * side + x]               = colsum;
+            tmp[side * side + y * side + x] = lightsum;
         }
+    }
 
-        /* extract top 3 non overlapping areas for: colored, gray, bright and dark areas, color presence */
-        for (i = 0; i < 3; i++)
-        {
-            res->gray_avg[i] = 0xffffffff;
-            res->dark_avg[i] = 0xffffffff;
-            for (y = 0; y < side - ksize; y++)
-            {
-                for (x = 0; x < side - 1 - ksize; x++)
-                {
-                    unsigned int colsum = tmp[y * side + x], lightsum = tmp[side * side + y * side + x];
+    /* extract top 3 non overlapping areas for: colored, gray, bright and dark areas, color presence */
+    for (i = 0; i < 3; i++) {
+        res->gray_avg[i] = 0xffffffff;
+        res->dark_avg[i] = 0xffffffff;
+        for (y = 0; y < side - ksize; y++) {
+            for (x = 0; x < side - 1 - ksize; x++) {
+                unsigned int colsum = tmp[y * side + x], lightsum = tmp[side * side + y * side + x];
 
-                    if (colsum > res->color_avg[i])
-                    {
-                        for (j = 0; j < i; j++)
-                        {
-                            if (x + ksize > res->color_x[j] && x < res->color_x[j] + ksize &&
-                                y + ksize > res->color_y[j] && y < res->color_y[j] + ksize)
-                                break;
-                        }
-                        if (j == i)
-                        {
-                            res->color_avg[i] = colsum;
-                            res->color_x[i] = x;
-                            res->color_y[i] = y;
-                        }
+                if (colsum > res->color_avg[i]) {
+                    for (j = 0; j < i; j++) {
+                        if (x + ksize > res->color_x[j] && x < res->color_x[j] + ksize &&
+                            y + ksize > res->color_y[j] && y < res->color_y[j] + ksize)
+                            break;
                     }
-                    if (colsum < res->gray_avg[i])
-                    {
-                        for (j = 0; j < i; j++)
-                        {
-                            if (x + ksize > res->gray_x[j] && x < res->gray_x[j] + ksize &&
-                                y + ksize > res->gray_y[j] && y < res->gray_y[j] + ksize)
-                                break;
-                        }
-                        if (j == i)
-                        {
-                            res->gray_avg[i] = colsum;
-                            res->gray_x[i] = x;
-                            res->gray_y[i] = y;
-                        }
+                    if (j == i) {
+                        res->color_avg[i] = colsum;
+                        res->color_x[i]   = x;
+                        res->color_y[i]   = y;
                     }
-                    if (lightsum > res->bright_avg[i])
-                    {
-                        for (j = 0; j < i; j++)
-                        {
-                            if (x + ksize > res->bright_x[j] && x < res->bright_x[j] + ksize &&
-                                y + ksize > res->bright_y[j] && y < res->bright_y[j] + ksize)
-                                break;
-                        }
-                        if (j == i)
-                        {
-                            res->bright_avg[i] = lightsum;
-                            res->bright_x[i] = x;
-                            res->bright_y[i] = y;
-                        }
+                }
+                if (colsum < res->gray_avg[i]) {
+                    for (j = 0; j < i; j++) {
+                        if (x + ksize > res->gray_x[j] && x < res->gray_x[j] + ksize &&
+                            y + ksize > res->gray_y[j] && y < res->gray_y[j] + ksize)
+                            break;
                     }
-                    if (lightsum < res->dark_avg[i])
-                    {
-                        for (j = 0; j < i; j++)
-                        {
-                            if (x + ksize > res->dark_x[j] && x < res->dark_x[j] + ksize &&
-                                y + ksize > res->dark_y[j] && y < res->dark_y[j] + ksize)
-                                break;
-                        }
-                        if (j == i)
-                        {
-                            res->dark_avg[i] = lightsum;
-                            res->dark_x[i] = x;
-                            res->dark_y[i] = y;
-                        }
+                    if (j == i) {
+                        res->gray_avg[i] = colsum;
+                        res->gray_x[i]   = x;
+                        res->gray_y[i]   = y;
+                    }
+                }
+                if (lightsum > res->bright_avg[i]) {
+                    for (j = 0; j < i; j++) {
+                        if (x + ksize > res->bright_x[j] && x < res->bright_x[j] + ksize &&
+                            y + ksize > res->bright_y[j] && y < res->bright_y[j] + ksize)
+                            break;
+                    }
+                    if (j == i) {
+                        res->bright_avg[i] = lightsum;
+                        res->bright_x[i]   = x;
+                        res->bright_y[i]   = y;
+                    }
+                }
+                if (lightsum < res->dark_avg[i]) {
+                    for (j = 0; j < i; j++) {
+                        if (x + ksize > res->dark_x[j] && x < res->dark_x[j] + ksize &&
+                            y + ksize > res->dark_y[j] && y < res->dark_y[j] + ksize)
+                            break;
+                    }
+                    if (j == i) {
+                        res->dark_avg[i] = lightsum;
+                        res->dark_x[i]   = x;
+                        res->dark_y[i]   = y;
                     }
                 }
             }
         }
+    }
 
-        /* abs->avg */
-        for (i = 0; i < 3; i++)
-        {
-            res->color_avg[i] /= ksize * ksize;
-            res->gray_avg[i] /= ksize * ksize;
-            res->bright_avg[i] /= ksize * ksize;
-            res->dark_avg[i] /= ksize * ksize;
-        }
+    /* abs->avg */
+    for (i = 0; i < 3; i++) {
+        res->color_avg[i] /= ksize * ksize;
+        res->gray_avg[i] /= ksize * ksize;
+        res->bright_avg[i] /= ksize * ksize;
+        res->dark_avg[i] /= ksize * ksize;
+    }
 
-        if (res->ccount * 100 / side / side > 5)
-        {
-            res->rsum /= res->ccount;
-            res->gsum /= res->ccount;
-            res->bsum /= res->ccount;
-            res->ccount = res->ccount * 100 / side / side;
-        }
-        else
-        {
-            res->ccount = 0;
-            res->rsum = 0;
-            res->gsum = 0;
-            res->bsum = 0;
-            bwonly = 1;
-        }
+    if (res->ccount * 100 / side / side > 5) {
+        res->rsum /= res->ccount;
+        res->gsum /= res->ccount;
+        res->bsum /= res->ccount;
+        res->ccount = res->ccount * 100 / side / side;
+    } else {
+        res->ccount = 0;
+        res->rsum   = 0;
+        res->gsum   = 0;
+        res->bsum   = 0;
+        bwonly      = 1;
+    }
 
-        /* Edge detection - Sobel */
+    /* Edge detection - Sobel */
 
-        /* Sobel 1 - gradients */
-        i = 0;
+    /* Sobel 1 - gradients */
+    i = 0;
 #ifdef USE_FLOATS
-        sobel = cli_malloc(side * side * sizeof(double));
-        if (!sobel)
-        {
-            cli_errmsg("getmetrics: Unable to allocate memory for edge detection %llu\n", (long long unsigned)(side * side * sizeof(double)));
-            free(tmp);
-            return CL_EMEM;
-        }
+    sobel = cli_malloc(side * side * sizeof(double));
+    if (!sobel) {
+        cli_errmsg("getmetrics: Unable to allocate memory for edge detection %llu\n", (long long unsigned)(side * side * sizeof(double)));
+        free(tmp);
+        return CL_EMEM;
+    }
 #else
 #define sobel imagedata
 #endif
-        for (y = 0; y < side; y++)
-        {
-            for (x = 0; x < side; x++)
-            {
-                sobel[y * side + x] = LABDIFF(imagedata[y * side + x]);
-            }
+    for (y = 0; y < side; y++) {
+        for (x = 0; x < side; x++) {
+            sobel[y * side + x] = LABDIFF(imagedata[y * side + x]);
         }
-        for (y = 1; y < side - 1; y++)
-        {
-            for (x = 1; x < side - 1; x++)
-            {
-                unsigned int sob;
+    }
+    for (y = 1; y < side - 1; y++) {
+        for (x = 1; x < side - 1; x++) {
+            unsigned int sob;
 #ifdef USE_FLOATS
-                double gx, gy;
+            double gx, gy;
 #else
-                unsigned int gx, gy;
+            unsigned int gx, gy;
 #endif
 
-                /* X matrix */
-                gx = sobel[(y - 1) * side + (x - 1)];
-                gx += sobel[(y + 0) * side + (x - 1)] * 2;
-                gx += sobel[(y + 1) * side + (x - 1)];
-                gx -= sobel[(y - 1) * side + (x + 1)];
-                gx -= sobel[(y + 0) * side + (x + 1)] * 2;
-                gx -= sobel[(y + 1) * side + (x + 1)];
+            /* X matrix */
+            gx = sobel[(y - 1) * side + (x - 1)];
+            gx += sobel[(y + 0) * side + (x - 1)] * 2;
+            gx += sobel[(y + 1) * side + (x - 1)];
+            gx -= sobel[(y - 1) * side + (x + 1)];
+            gx -= sobel[(y + 0) * side + (x + 1)] * 2;
+            gx -= sobel[(y + 1) * side + (x + 1)];
 
-                /* Y matrix */
-                gy = sobel[(y - 1) * side + (x - 1)];
-                gy += sobel[(y - 1) * side + (x + 0)] * 2;
-                gy += sobel[(y - 1) * side + (x + 1)];
-                gy -= sobel[(y + 1) * side + (x - 1)];
-                gy -= sobel[(y + 1) * side + (x + 0)] * 2;
-                gy -= sobel[(y + 1) * side + (x + 1)];
+            /* Y matrix */
+            gy = sobel[(y - 1) * side + (x - 1)];
+            gy += sobel[(y - 1) * side + (x + 0)] * 2;
+            gy += sobel[(y - 1) * side + (x + 1)];
+            gy -= sobel[(y + 1) * side + (x - 1)];
+            gy -= sobel[(y + 1) * side + (x + 0)] * 2;
+            gy -= sobel[(y + 1) * side + (x + 1)];
 
-                sob = (int)sqrt(gx * gx + gy * gy);
-                tmp[y * side + x] = sob;
-                if (sob > i)
-                    i = sob;
-            }
+            sob               = (int)sqrt(gx * gx + gy * gy);
+            tmp[y * side + x] = sob;
+            if (sob > i)
+                i = sob;
         }
+    }
 #ifdef USE_FLOATS
-        free(sobel);
+    free(sobel);
 #endif
 
-        /* Sobel 2 - norm to max */
-        if (i)
-        {
-            for (y = 1; y < side - 1; y++)
-            {
-                for (x = 1; x < side - 1; x++)
-                {
-                    unsigned int c = tmp[y * side + x];
-                    c = c * 255 / i;
-                    imagedata[y * side + x] = 0xff000000 | c | (c << 8) | (c << 16);
-                }
+    /* Sobel 2 - norm to max */
+    if (i) {
+        for (y = 1; y < side - 1; y++) {
+            for (x = 1; x < side - 1; x++) {
+                unsigned int c          = tmp[y * side + x];
+                c                       = c * 255 / i;
+                imagedata[y * side + x] = 0xff000000 | c | (c << 8) | (c << 16);
             }
         }
-
-        /* black borders */
-        for (x = 0; x < side; x++)
-        {
-            imagedata[x] = 0xff000000;
-            imagedata[(side - 1) * side + x] = 0xff000000;
-        }
-        for (y = 0; y < side; y++)
-        {
-            imagedata[y * side] = 0xff000000;
-            imagedata[y * side + side - 1] = 0xff000000;
-        }
-        makebmp("3-edge", tempd, side, side, imagedata);
-
-        /* gaussian blur */
-        for (y = 1; y < side - 1; y++)
-        {
-            for (x = 1; x < side - 1; x++)
-            {
-                unsigned int sum = 0, tot = 0;
-                int disp;
-                for (disp = -MIN((int)x, gkernsz / 2); disp <= MIN((int)(side - 1 - x), gkernsz / 2); disp++)
-                {
-                    unsigned int c = imagedata[y * side + x + disp] & 0xff;
-                    sum += c * gaussk[disp + gkernsz / 2];
-                    tot += gaussk[disp + gkernsz / 2];
-                }
-                sum /= tot;
-                imagedata[y * side + x] &= 0xff;
-                imagedata[y * side + x] |= sum << 8;
-            }
-        }
-        i = 0;
-        for (y = 1; y < side - 1; y++)
-        {
-            for (x = 1; x < side - 1; x++)
-            {
-                unsigned int sum = 0, tot = 0;
-                int disp;
-                for (disp = -MIN((int)y, gkernsz / 2); disp <= MIN((int)(side - 1 - y), gkernsz / 2); disp++)
-                {
-                    unsigned int c = (imagedata[(y + disp) * side + x] >> 8) & 0xff;
-                    sum += c * gaussk[disp + gkernsz / 2];
-                    tot += gaussk[disp + gkernsz / 2];
-                }
-                sum /= tot;
-                if (sum > i)
-                    i = sum;
-                imagedata[y * side + x] = 0xff000000 | sum | (sum << 8) | (sum << 16);
-            }
-        }
-        makebmp("4-gauss", tempd, side, side, imagedata);
-
-        /* calculate edges */
-        for (y = 0; y <= side - ksize; y++)
-        {
-            for (x = 0; x <= side - 1 - ksize; x++)
-            {
-                unsigned int sum = 0;
-
-                if (x == 0 && y == 0)
-                { /* 1st windows */
-                    for (yk = 0; yk < ksize; yk++)
-                    {
-                        for (xk = 0; xk < ksize; xk++)
-                            sum += imagedata[(y + yk) * side + x + xk] & 0xff;
-                    }
-                }
-                else if (x)
-                { /* next column */
-                    sum = tmp[y * side + x - 1];
-                    for (yk = 0; yk < ksize; yk++)
-                    {
-                        sum -= imagedata[(y + yk) * side + x - 1] & 0xff;
-                        sum += imagedata[(y + yk) * side + x + ksize - 1] & 0xff;
-                    }
-                }
-                else
-                { /* next row */
-                    sum = tmp[(y - 1) * side];
-                    for (xk = 0; xk < ksize; xk++)
-                    {
-                        sum -= imagedata[(y - 1) * side + xk] & 0xff;
-                        sum += imagedata[(y + ksize - 1) * side + xk] & 0xff;
-                    }
-                }
-                tmp[y * side + x] = sum;
-            }
-        }
-
-        /* calculate best and worst 3 (or 6) edged areas */
-        for (i = 0; i < 3 * (bwonly + 1); i++)
-        {
-            edge_avg[i] = 0;
-            noedge_avg[i] = 0xffffffff;
-            for (y = 0; y < side - ksize; y++)
-            {
-                for (x = 0; x < side - 1 - ksize; x++)
-                {
-                    unsigned int sum = tmp[y * side + x];
-
-                    if (sum > edge_avg[i])
-                    {
-                        for (j = 0; j < i; j++)
-                        {
-                            if (x + ksize > edge_x[j] && x < edge_x[j] + ksize &&
-                                y + ksize > edge_y[j] && y < edge_y[j] + ksize)
-                                break;
-                        }
-                        if (j == i)
-                        {
-                            edge_avg[i] = sum;
-                            edge_x[i] = x;
-                            edge_y[i] = y;
-                        }
-                    }
-                    if (sum < noedge_avg[i])
-                    {
-                        for (j = 0; j < i; j++)
-                        {
-                            if (x + ksize > noedge_x[j] && x < noedge_x[j] + ksize &&
-                                y + ksize > noedge_y[j] && y < noedge_y[j] + ksize)
-                                break;
-                        }
-                        if (j == i)
-                        {
-                            noedge_avg[i] = sum;
-                            noedge_x[i] = x;
-                            noedge_y[i] = y;
-                        }
-                    }
-                }
-            }
-        }
-
-        free(tmp);
-
-        /* abs->avg */
-        for (i = 0; i < 3; i++)
-        {
-            res->edge_avg[i] = edge_avg[i] / ksize / ksize;
-            res->edge_x[i] = edge_x[i];
-            res->edge_y[i] = edge_y[i];
-            res->noedge_avg[i] = noedge_avg[i] / ksize / ksize;
-            res->noedge_x[i] = noedge_x[i];
-            res->noedge_y[i] = noedge_y[i];
-        }
-        if (bwonly)
-        {
-            for (i = 0; i < 3; i++)
-            {
-                res->color_avg[i] = edge_avg[i + 3] / ksize / ksize;
-                res->color_x[i] = edge_x[i + 3];
-                res->color_y[i] = edge_y[i + 3];
-                res->gray_avg[i] = noedge_avg[i + 3] / ksize / ksize;
-                res->gray_x[i] = edge_x[i + 3];
-                res->gray_y[i] = edge_y[i + 3];
-            }
-        }
-
-        cli_dbgmsg("edge areas: %u@(%u,%u) %u@(%u,%u) %u@(%u,%u)\n", res->edge_avg[0], res->edge_x[0], res->edge_y[0], res->edge_avg[1], res->edge_x[1], res->edge_y[1], res->edge_avg[2], res->edge_x[2], res->edge_y[2]);
-        cli_dbgmsg("noedge areas: %u@(%u,%u) %u@(%u,%u) %u@(%u,%u)\n", res->noedge_avg[0], res->noedge_x[0], res->noedge_y[0], res->noedge_avg[1], res->noedge_x[1], res->noedge_y[1], res->noedge_avg[2], res->noedge_x[2], res->noedge_y[2]);
-        cli_dbgmsg("%s areas: %u@(%u,%u) %u@(%u,%u) %u@(%u,%u)\n", bwonly ? "edge(2nd)" : "color", res->color_avg[0], res->color_x[0], res->color_y[0], res->color_avg[1], res->color_x[1], res->color_y[1], res->color_avg[2], res->color_x[2], res->color_y[2]);
-        cli_dbgmsg("%s areas: %u@(%u,%u) %u@(%u,%u) %u@(%u,%u)\n", bwonly ? "noedge(2nd)" : "gray", res->gray_avg[0], res->gray_x[0], res->gray_y[0], res->gray_avg[1], res->gray_x[1], res->gray_y[1], res->gray_avg[2], res->gray_x[2], res->gray_y[2]);
-        cli_dbgmsg("bright areas: %u@(%u,%u) %u@(%u,%u) %u@(%u,%u)\n", res->bright_avg[0], res->bright_x[0], res->bright_y[0], res->bright_avg[1], res->bright_x[1], res->bright_y[1], res->bright_avg[2], res->bright_x[2], res->bright_y[2]);
-        cli_dbgmsg("dark areas: %u@(%u,%u) %u@(%u,%u) %u@(%u,%u)\n", res->dark_avg[0], res->dark_x[0], res->dark_y[0], res->dark_avg[1], res->dark_x[1], res->dark_y[1], res->dark_avg[2], res->dark_x[2], res->dark_y[2]);
-        if (!bwonly)
-            cli_dbgmsg("color spread: %u,%u,%u %u%%\n", res->rsum, res->gsum, res->bsum, res->ccount);
-
-        if (cli_debug_flag)
-        {
-#define ICOSIGSZ (2 + (3 + 2 + 2) * 3 * 2 + (2 + 2 + 2) * 3 * 4 + 2 + 2 + 2 + 2)
-            char mstr[ICOSIGSZ + 1], *ptr = mstr;
-
-            sprintf(ptr, "%02x", side);
-            ptr += 2;
-            for (i = 0; i < 3; i++)
-            {
-                sprintf(ptr, "%03x", res->color_avg[i]);
-                ptr += 3;
-                sprintf(ptr, "%02x", res->color_x[i]);
-                ptr += 2;
-                sprintf(ptr, "%02x", res->color_y[i]);
-                ptr += 2;
-            }
-            for (i = 0; i < 3; i++)
-            {
-                sprintf(ptr, "%03x", res->gray_avg[i]);
-                ptr += 3;
-                sprintf(ptr, "%02x", res->gray_x[i]);
-                ptr += 2;
-                sprintf(ptr, "%02x", res->gray_y[i]);
-                ptr += 2;
-            }
-            for (i = 0; i < 3; i++)
-            {
-                sprintf(ptr, "%02x", res->bright_avg[i]);
-                ptr += 2;
-                sprintf(ptr, "%02x", res->bright_x[i]);
-                ptr += 2;
-                sprintf(ptr, "%02x", res->bright_y[i]);
-                ptr += 2;
-            }
-            for (i = 0; i < 3; i++)
-            {
-                sprintf(ptr, "%02x", res->dark_avg[i]);
-                ptr += 2;
-                sprintf(ptr, "%02x", res->dark_x[i]);
-                ptr += 2;
-                sprintf(ptr, "%02x", res->dark_y[i]);
-                ptr += 2;
-            }
-            for (i = 0; i < 3; i++)
-            {
-                sprintf(ptr, "%02x", res->edge_avg[i]);
-                ptr += 2;
-                sprintf(ptr, "%02x", res->edge_x[i]);
-                ptr += 2;
-                sprintf(ptr, "%02x", res->edge_y[i]);
-                ptr += 2;
-            }
-            for (i = 0; i < 3; i++)
-            {
-                sprintf(ptr, "%02x", res->noedge_avg[i]);
-                ptr += 2;
-                sprintf(ptr, "%02x", res->noedge_x[i]);
-                ptr += 2;
-                sprintf(ptr, "%02x", res->noedge_y[i]);
-                ptr += 2;
-            }
-            sprintf(ptr, "%02x", res->rsum);
-            ptr += 2;
-            sprintf(ptr, "%02x", res->gsum);
-            ptr += 2;
-            sprintf(ptr, "%02x", res->bsum);
-            ptr += 2;
-            sprintf(ptr, "%02x", res->ccount);
-            cli_dbgmsg("IDB SIGNATURE: ICON_NAME:GROUP1:GROUP2:%s\n", mstr);
-        }
-
-        return CL_CLEAN;
     }
 
-    static int parseicon(struct ICON_ENV *icon_env, uint32_t rva)
+    /* black borders */
+    for (x = 0; x < side; x++) {
+        imagedata[x]                     = 0xff000000;
+        imagedata[(side - 1) * side + x] = 0xff000000;
+    }
+    for (y = 0; y < side; y++) {
+        imagedata[y * side]            = 0xff000000;
+        imagedata[y * side + side - 1] = 0xff000000;
+    }
+    makebmp("3-edge", tempd, side, side, imagedata);
+
+    /* gaussian blur */
+    for (y = 1; y < side - 1; y++) {
+        for (x = 1; x < side - 1; x++) {
+            unsigned int sum = 0, tot = 0;
+            int disp;
+            for (disp = -MIN((int)x, gkernsz / 2); disp <= MIN((int)(side - 1 - x), gkernsz / 2); disp++) {
+                unsigned int c = imagedata[y * side + x + disp] & 0xff;
+                sum += c * gaussk[disp + gkernsz / 2];
+                tot += gaussk[disp + gkernsz / 2];
+            }
+            sum /= tot;
+            imagedata[y * side + x] &= 0xff;
+            imagedata[y * side + x] |= sum << 8;
+        }
+    }
+    i = 0;
+    for (y = 1; y < side - 1; y++) {
+        for (x = 1; x < side - 1; x++) {
+            unsigned int sum = 0, tot = 0;
+            int disp;
+            for (disp = -MIN((int)y, gkernsz / 2); disp <= MIN((int)(side - 1 - y), gkernsz / 2); disp++) {
+                unsigned int c = (imagedata[(y + disp) * side + x] >> 8) & 0xff;
+                sum += c * gaussk[disp + gkernsz / 2];
+                tot += gaussk[disp + gkernsz / 2];
+            }
+            sum /= tot;
+            if (sum > i)
+                i = sum;
+            imagedata[y * side + x] = 0xff000000 | sum | (sum << 8) | (sum << 16);
+        }
+    }
+    makebmp("4-gauss", tempd, side, side, imagedata);
+
+    /* calculate edges */
+    for (y = 0; y <= side - ksize; y++) {
+        for (x = 0; x <= side - 1 - ksize; x++) {
+            unsigned int sum = 0;
+
+            if (x == 0 && y == 0) { /* 1st windows */
+                for (yk = 0; yk < ksize; yk++) {
+                    for (xk = 0; xk < ksize; xk++)
+                        sum += imagedata[(y + yk) * side + x + xk] & 0xff;
+                }
+            } else if (x) { /* next column */
+                sum = tmp[y * side + x - 1];
+                for (yk = 0; yk < ksize; yk++) {
+                    sum -= imagedata[(y + yk) * side + x - 1] & 0xff;
+                    sum += imagedata[(y + yk) * side + x + ksize - 1] & 0xff;
+                }
+            } else { /* next row */
+                sum = tmp[(y - 1) * side];
+                for (xk = 0; xk < ksize; xk++) {
+                    sum -= imagedata[(y - 1) * side + xk] & 0xff;
+                    sum += imagedata[(y + ksize - 1) * side + xk] & 0xff;
+                }
+            }
+            tmp[y * side + x] = sum;
+        }
+    }
+
+    /* calculate best and worst 3 (or 6) edged areas */
+    for (i = 0; i < 3 * (bwonly + 1); i++) {
+        edge_avg[i]   = 0;
+        noedge_avg[i] = 0xffffffff;
+        for (y = 0; y < side - ksize; y++) {
+            for (x = 0; x < side - 1 - ksize; x++) {
+                unsigned int sum = tmp[y * side + x];
+
+                if (sum > edge_avg[i]) {
+                    for (j = 0; j < i; j++) {
+                        if (x + ksize > edge_x[j] && x < edge_x[j] + ksize &&
+                            y + ksize > edge_y[j] && y < edge_y[j] + ksize)
+                            break;
+                    }
+                    if (j == i) {
+                        edge_avg[i] = sum;
+                        edge_x[i]   = x;
+                        edge_y[i]   = y;
+                    }
+                }
+                if (sum < noedge_avg[i]) {
+                    for (j = 0; j < i; j++) {
+                        if (x + ksize > noedge_x[j] && x < noedge_x[j] + ksize &&
+                            y + ksize > noedge_y[j] && y < noedge_y[j] + ksize)
+                            break;
+                    }
+                    if (j == i) {
+                        noedge_avg[i] = sum;
+                        noedge_x[i]   = x;
+                        noedge_y[i]   = y;
+                    }
+                }
+            }
+        }
+    }
+
+    free(tmp);
+
+    /* abs->avg */
+    for (i = 0; i < 3; i++) {
+        res->edge_avg[i]   = edge_avg[i] / ksize / ksize;
+        res->edge_x[i]     = edge_x[i];
+        res->edge_y[i]     = edge_y[i];
+        res->noedge_avg[i] = noedge_avg[i] / ksize / ksize;
+        res->noedge_x[i]   = noedge_x[i];
+        res->noedge_y[i]   = noedge_y[i];
+    }
+    if (bwonly) {
+        for (i = 0; i < 3; i++) {
+            res->color_avg[i] = edge_avg[i + 3] / ksize / ksize;
+            res->color_x[i]   = edge_x[i + 3];
+            res->color_y[i]   = edge_y[i + 3];
+            res->gray_avg[i]  = noedge_avg[i + 3] / ksize / ksize;
+            res->gray_x[i]    = edge_x[i + 3];
+            res->gray_y[i]    = edge_y[i + 3];
+        }
+    }
+
+    cli_dbgmsg("edge areas: %u@(%u,%u) %u@(%u,%u) %u@(%u,%u)\n", res->edge_avg[0], res->edge_x[0], res->edge_y[0], res->edge_avg[1], res->edge_x[1], res->edge_y[1], res->edge_avg[2], res->edge_x[2], res->edge_y[2]);
+    cli_dbgmsg("noedge areas: %u@(%u,%u) %u@(%u,%u) %u@(%u,%u)\n", res->noedge_avg[0], res->noedge_x[0], res->noedge_y[0], res->noedge_avg[1], res->noedge_x[1], res->noedge_y[1], res->noedge_avg[2], res->noedge_x[2], res->noedge_y[2]);
+    cli_dbgmsg("%s areas: %u@(%u,%u) %u@(%u,%u) %u@(%u,%u)\n", bwonly ? "edge(2nd)" : "color", res->color_avg[0], res->color_x[0], res->color_y[0], res->color_avg[1], res->color_x[1], res->color_y[1], res->color_avg[2], res->color_x[2], res->color_y[2]);
+    cli_dbgmsg("%s areas: %u@(%u,%u) %u@(%u,%u) %u@(%u,%u)\n", bwonly ? "noedge(2nd)" : "gray", res->gray_avg[0], res->gray_x[0], res->gray_y[0], res->gray_avg[1], res->gray_x[1], res->gray_y[1], res->gray_avg[2], res->gray_x[2], res->gray_y[2]);
+    cli_dbgmsg("bright areas: %u@(%u,%u) %u@(%u,%u) %u@(%u,%u)\n", res->bright_avg[0], res->bright_x[0], res->bright_y[0], res->bright_avg[1], res->bright_x[1], res->bright_y[1], res->bright_avg[2], res->bright_x[2], res->bright_y[2]);
+    cli_dbgmsg("dark areas: %u@(%u,%u) %u@(%u,%u) %u@(%u,%u)\n", res->dark_avg[0], res->dark_x[0], res->dark_y[0], res->dark_avg[1], res->dark_x[1], res->dark_y[1], res->dark_avg[2], res->dark_x[2], res->dark_y[2]);
+    if (!bwonly)
+        cli_dbgmsg("color spread: %u,%u,%u %u%%\n", res->rsum, res->gsum, res->bsum, res->ccount);
+
+    if (cli_debug_flag) {
+#define ICOSIGSZ (2 + (3 + 2 + 2) * 3 * 2 + (2 + 2 + 2) * 3 * 4 + 2 + 2 + 2 + 2)
+        char mstr[ICOSIGSZ + 1], *ptr = mstr;
+
+        sprintf(ptr, "%02x", side);
+        ptr += 2;
+        for (i = 0; i < 3; i++) {
+            sprintf(ptr, "%03x", res->color_avg[i]);
+            ptr += 3;
+            sprintf(ptr, "%02x", res->color_x[i]);
+            ptr += 2;
+            sprintf(ptr, "%02x", res->color_y[i]);
+            ptr += 2;
+        }
+        for (i = 0; i < 3; i++) {
+            sprintf(ptr, "%03x", res->gray_avg[i]);
+            ptr += 3;
+            sprintf(ptr, "%02x", res->gray_x[i]);
+            ptr += 2;
+            sprintf(ptr, "%02x", res->gray_y[i]);
+            ptr += 2;
+        }
+        for (i = 0; i < 3; i++) {
+            sprintf(ptr, "%02x", res->bright_avg[i]);
+            ptr += 2;
+            sprintf(ptr, "%02x", res->bright_x[i]);
+            ptr += 2;
+            sprintf(ptr, "%02x", res->bright_y[i]);
+            ptr += 2;
+        }
+        for (i = 0; i < 3; i++) {
+            sprintf(ptr, "%02x", res->dark_avg[i]);
+            ptr += 2;
+            sprintf(ptr, "%02x", res->dark_x[i]);
+            ptr += 2;
+            sprintf(ptr, "%02x", res->dark_y[i]);
+            ptr += 2;
+        }
+        for (i = 0; i < 3; i++) {
+            sprintf(ptr, "%02x", res->edge_avg[i]);
+            ptr += 2;
+            sprintf(ptr, "%02x", res->edge_x[i]);
+            ptr += 2;
+            sprintf(ptr, "%02x", res->edge_y[i]);
+            ptr += 2;
+        }
+        for (i = 0; i < 3; i++) {
+            sprintf(ptr, "%02x", res->noedge_avg[i]);
+            ptr += 2;
+            sprintf(ptr, "%02x", res->noedge_x[i]);
+            ptr += 2;
+            sprintf(ptr, "%02x", res->noedge_y[i]);
+            ptr += 2;
+        }
+        sprintf(ptr, "%02x", res->rsum);
+        ptr += 2;
+        sprintf(ptr, "%02x", res->gsum);
+        ptr += 2;
+        sprintf(ptr, "%02x", res->bsum);
+        ptr += 2;
+        sprintf(ptr, "%02x", res->ccount);
+        cli_dbgmsg("IDB SIGNATURE: ICON_NAME:GROUP1:GROUP2:%s\n", mstr);
+    }
+
+    return CL_CLEAN;
+}
+
+static int parseicon(struct ICON_ENV *icon_env, uint32_t rva)
+{
+    icon_groupset *set                   = icon_env->set;
+    cli_ctx *ctx                         = icon_env->ctx;
+    struct cli_exe_section *exe_sections = icon_env->exe_sections;
+    uint16_t nsections                   = icon_env->nsections;
+    uint32_t hdr_size                    = icon_env->hdr_size;
+
+    struct
     {
-        icon_groupset *set = icon_env->set;
-        cli_ctx *ctx = icon_env->ctx;
-        struct cli_exe_section *exe_sections = icon_env->exe_sections;
-        uint16_t nsections = icon_env->nsections;
-        uint32_t hdr_size = icon_env->hdr_size;
+        unsigned int sz;
+        unsigned int w;
+        unsigned int h;
+        unsigned short planes;
+        unsigned short depth;
+        unsigned int comp;
+        unsigned int imagesize;
+        unsigned int dpix;
+        unsigned int dpiy;
+        unsigned int used;
+        unsigned int important;
+    } bmphdr;
 
-        struct
-        {
-            unsigned int sz;
-            unsigned int w;
-            unsigned int h;
-            unsigned short planes;
-            unsigned short depth;
-            unsigned int comp;
-            unsigned int imagesize;
-            unsigned int dpix;
-            unsigned int dpiy;
-            unsigned int used;
-            unsigned int important;
-        } bmphdr;
+    struct icomtr metrics;
+    const unsigned char *rawimage;
+    const char *tempd;
+    const uint32_t *palette = NULL;
+    uint32_t *imagedata;
+    unsigned int scanlinesz, andlinesz;
+    unsigned int width, height, depth, x, y;
+    unsigned int err, scalemode = 2, enginesize;
+    fmap_t *map;
+    uint32_t icoff;
+    struct icon_matcher *matcher;
+    unsigned int special_32_is_32 = 0;
 
-        struct icomtr metrics;
-        const unsigned char *rawimage;
-        const char *tempd;
-        const uint32_t *palette = NULL;
-        uint32_t *imagedata;
-        unsigned int scanlinesz, andlinesz;
-        unsigned int width, height, depth, x, y;
-        unsigned int err, scalemode = 2, enginesize;
-        fmap_t *map;
-        uint32_t icoff;
-        struct icon_matcher *matcher;
-        unsigned int special_32_is_32 = 0;
+    if (!ctx || !ctx->engine || !(matcher = ctx->engine->iconcheck))
+        return CL_SUCCESS;
+    map   = *ctx->fmap;
+    tempd = (cli_debug_flag && ctx->engine->keeptmp) ? (ctx->engine->tmpdir ? ctx->engine->tmpdir : cli_gettmpdir()) : NULL;
+    icoff = cli_rawaddr(rva, exe_sections, nsections, &err, map->len, hdr_size);
 
-        if (!ctx || !ctx->engine || !(matcher = ctx->engine->iconcheck))
-            return CL_SUCCESS;
-        map = *ctx->fmap;
-        tempd = (cli_debug_flag && ctx->engine->keeptmp) ? (ctx->engine->tmpdir ? ctx->engine->tmpdir : cli_gettmpdir()) : NULL;
-        icoff = cli_rawaddr(rva, exe_sections, nsections, &err, map->len, hdr_size);
+    /* read the bitmap header */
+    if (err || !(rawimage = fmap_need_off_once(map, icoff, 4))) {
+        icon_env->err_oof++;
+        //cli_dbgmsg("parseicon: offset to icon is out of file\n");
+        return CL_SUCCESS;
+    }
 
-        /* read the bitmap header */
-        if (err || !(rawimage = fmap_need_off_once(map, icoff, 4)))
-        {
-            icon_env->err_oof++;
-            //cli_dbgmsg("parseicon: offset to icon is out of file\n");
-            return CL_SUCCESS;
-        }
+    rva   = cli_readint32(rawimage);
+    icoff = cli_rawaddr(rva, exe_sections, nsections, &err, map->len, hdr_size);
+    if (err || fmap_readn(map, &bmphdr, icoff, sizeof(bmphdr)) != sizeof(bmphdr)) {
+        icon_env->err_bhoof++;
+        //cli_dbgmsg("parseicon: bmp header is out of file\n");
+        return CL_SUCCESS;
+    }
 
-        rva = cli_readint32(rawimage);
-        icoff = cli_rawaddr(rva, exe_sections, nsections, &err, map->len, hdr_size);
-        if (err || fmap_readn(map, &bmphdr, icoff, sizeof(bmphdr)) != sizeof(bmphdr))
-        {
-            icon_env->err_bhoof++;
-            //cli_dbgmsg("parseicon: bmp header is out of file\n");
-            return CL_SUCCESS;
-        }
+    if ((size_t)READ32(bmphdr.sz) < sizeof(bmphdr)) {
+        icon_env->err_bhts++;
+        //cli_dbgmsg("parseicon: BMP header too small\n");
+        return CL_SUCCESS;
+    }
 
-        if ((size_t)READ32(bmphdr.sz) < sizeof(bmphdr))
-        {
-            icon_env->err_bhts++;
-            //cli_dbgmsg("parseicon: BMP header too small\n");
-            return CL_SUCCESS;
-        }
+    /* seek to the end of v4/v5 header */
+    icoff += READ32(bmphdr.sz);
 
-        /* seek to the end of v4/v5 header */
-        icoff += READ32(bmphdr.sz);
+    width  = READ32(bmphdr.w);
+    height = READ32(bmphdr.h) / 2;
+    depth  = READ16(bmphdr.depth);
+    if (width > 256 || height > 256 || width < 16 || height < 16) {
+        icon_env->err_tstl++;
+        //cli_dbgmsg("parseicon: Image too small or too big (%ux%u)\n", width, height);
+        return CL_SUCCESS;
+    }
+    if (width < height * 3 / 4 || height < width * 3 / 4) {
+        icon_env->err_insl++;
+        //cli_dbgmsg("parseicon: Image not square enough (%ux%u)\n", width, height);
+        return CL_SUCCESS;
+    }
 
-        width = READ32(bmphdr.w);
-        height = READ32(bmphdr.h) / 2;
-        depth = READ16(bmphdr.depth);
-        if (width > 256 || height > 256 || width < 16 || height < 16)
-        {
-            icon_env->err_tstl++;
-            //cli_dbgmsg("parseicon: Image too small or too big (%ux%u)\n", width, height);
-            return CL_SUCCESS;
-        }
-        if (width < height * 3 / 4 || height < width * 3 / 4)
-        {
-            icon_env->err_insl++;
-            //cli_dbgmsg("parseicon: Image not square enough (%ux%u)\n", width, height);
-            return CL_SUCCESS;
-        }
+    /* scaling logic */
+    if (width == height) {
+        if (width == 16 || width == 24 || width == 32)
+            scalemode = 0;
+        else if (!(width % 32) || !(width % 24))
+            scalemode = 1;
+        else
+            scalemode = 2;
+    }
 
-        /* scaling logic */
-        if (width == height)
-        {
-            if (width == 16 || width == 24 || width == 32)
-                scalemode = 0;
-            else if (!(width % 32) || !(width % 24))
-                scalemode = 1;
-            else
-                scalemode = 2;
-        }
+    cli_dbgmsg("parseicon: Bitmap - %ux%ux%u\n", width, height, depth);
 
-        cli_dbgmsg("parseicon: Bitmap - %ux%ux%u\n", width, height, depth);
-
-        /* check color depth and load palette */
-        switch (depth)
-        {
+    /* check color depth and load palette */
+    switch (depth) {
         default:
         case 0:
             /* PNG OR JPEG */
@@ -1536,44 +1455,37 @@ static const int gkernsz = (sizeof(gaussk) / sizeof(gaussk[0]));
         case 32:
             /* NO PALETTE */
             break;
-        }
+    }
 
-        /* compute line sizes */
-        scanlinesz = 4 * (width * depth / 32) + 4 * (width * depth % 32 != 0);
-        andlinesz = ((depth & 0x1f) != 0) * (4 * (width / 32) + 4 * (width % 32 != 0));
+    /* compute line sizes */
+    scanlinesz = 4 * (width * depth / 32) + 4 * (width * depth % 32 != 0);
+    andlinesz  = ((depth & 0x1f) != 0) * (4 * (width / 32) + 4 * (width % 32 != 0));
 
-        /* read the raw image */
+    /* read the raw image */
 
-        if (!(rawimage = fmap_need_off_once(map, icoff, height * (scanlinesz + andlinesz))))
-        {
-            if (palette)
-                fmap_unneed_ptr(map, palette, (1 << depth) * sizeof(int));
-            return CL_SUCCESS;
-        }
-        if (!(imagedata = cli_malloc(width * height * sizeof(*imagedata))))
-        {
-            if (palette)
-                fmap_unneed_ptr(map, palette, (1 << depth) * sizeof(int));
-            return CL_SUCCESS;
-        }
+    if (!(rawimage = fmap_need_off_once(map, icoff, height * (scanlinesz + andlinesz)))) {
+        if (palette)
+            fmap_unneed_ptr(map, palette, (1 << depth) * sizeof(int));
+        return CL_SUCCESS;
+    }
+    if (!(imagedata = cli_malloc(width * height * sizeof(*imagedata)))) {
+        if (palette)
+            fmap_unneed_ptr(map, palette, (1 << depth) * sizeof(int));
+        return CL_SUCCESS;
+    }
 
-        /* decode the image to an RGBA array */
-        for (y = 0; y < height; y++)
-        {
-            unsigned int x_off = y * scanlinesz;
-            switch (depth)
-            {
+    /* decode the image to an RGBA array */
+    for (y = 0; y < height; y++) {
+        unsigned int x_off = y * scanlinesz;
+        switch (depth) {
             case 1:
             case 4:
-            case 8:
-            {
+            case 8: {
                 unsigned int have = 0;
-                unsigned char c = 0; // will be set in first loop
-                for (x = 0; x < width; x++)
-                {
-                    if (!have)
-                    {
-                        c = rawimage[x_off++];
+                unsigned char c   = 0; // will be set in first loop
+                for (x = 0; x < width; x++) {
+                    if (!have) {
+                        c    = rawimage[x_off++];
                         have = 8;
                     }
                     have -= depth;
@@ -1581,120 +1493,102 @@ static const int gkernsz = (sizeof(gaussk) / sizeof(gaussk[0]));
                 }
                 break;
             }
-            case 16:
-            {
-                for (x = 0; x < width; x++)
-                {
-                    unsigned int b = (rawimage[x_off] & 0x1f);
-                    unsigned int g = ((rawimage[x_off] >> 5) | ((rawimage[x_off + 1] & 0x3) << 3));
-                    unsigned int r = (rawimage[x_off + 1] & 0xfc);
-                    b = (b << 3) | (b >> 2);
-                    g = ((g << 3) | (g >> 2)) << 11;
-                    r = ((r << 3) | (r >> 2)) << 17;
+            case 16: {
+                for (x = 0; x < width; x++) {
+                    unsigned int b                          = (rawimage[x_off] & 0x1f);
+                    unsigned int g                          = ((rawimage[x_off] >> 5) | ((rawimage[x_off + 1] & 0x3) << 3));
+                    unsigned int r                          = (rawimage[x_off + 1] & 0xfc);
+                    b                                       = (b << 3) | (b >> 2);
+                    g                                       = ((g << 3) | (g >> 2)) << 11;
+                    r                                       = ((r << 3) | (r >> 2)) << 17;
                     imagedata[(height - 1 - y) * width + x] = r | g | b;
                     x_off += 2;
                 }
                 break;
             }
             case 24:
-                for (x = 0; x < width; x++)
-                {
-                    unsigned int c = rawimage[x_off] | (rawimage[x_off + 1] << 8) | (rawimage[x_off + 2] << 16);
+                for (x = 0; x < width; x++) {
+                    unsigned int c                          = rawimage[x_off] | (rawimage[x_off + 1] << 8) | (rawimage[x_off + 2] << 16);
                     imagedata[(height - 1 - y) * width + x] = c;
                     x_off += 3;
                 }
                 break;
             case 32:
-                for (x = 0; x < width; x++)
-                {
-                    unsigned int a = rawimage[x_off + 3] << 24;
+                for (x = 0; x < width; x++) {
+                    unsigned int a                          = rawimage[x_off + 3] << 24;
                     imagedata[(height - 1 - y) * width + x] = rawimage[x_off] | (rawimage[x_off + 1] << 8) | (rawimage[x_off + 2] << 16) | a;
                     special_32_is_32 |= a;
                     x_off += 4;
                 }
                 break;
-            }
         }
+    }
 
-        if (palette)
-            fmap_unneed_ptr(map, palette, (1 << depth) * sizeof(int));
-        makebmp("0-noalpha", tempd, width, height, imagedata);
+    if (palette)
+        fmap_unneed_ptr(map, palette, (1 << depth) * sizeof(int));
+    makebmp("0-noalpha", tempd, width, height, imagedata);
 
-        if (depth == 32 && !special_32_is_32)
-        { /* Sometimes it really is 24. Exploited live - see sample 0013839101 */
-            andlinesz = 4 * (width / 32) + 4 * (width % 32 != 0);
-            if (!(rawimage = fmap_need_off_once(map, icoff + height * scanlinesz, height * andlinesz)))
-            {
-                /* Likely a broken sample - 32bit icon with 24bit data and a broken mask:
+    if (depth == 32 && !special_32_is_32) { /* Sometimes it really is 24. Exploited live - see sample 0013839101 */
+        andlinesz = 4 * (width / 32) + 4 * (width % 32 != 0);
+        if (!(rawimage = fmap_need_off_once(map, icoff + height * scanlinesz, height * andlinesz))) {
+            /* Likely a broken sample - 32bit icon with 24bit data and a broken mask:
            i could really break out here but i've got the full image, so i'm just forcing full alpha
            Found in samples: 0008777448, 0009116157, 0009116157 */
-                for (y = 0; y < height; y++)
-                    for (x = 0; x < width; x++)
-                        imagedata[y * width + x] |= 0xff000000;
-                special_32_is_32 = 1;
-                cli_dbgmsg("parseicon: found a broken and stupid icon\n");
-            }
-            else
-                cli_dbgmsg("parseicon: found a stupid icon\n");
-        }
-        else
-            rawimage += height * scanlinesz;
-
-        /* Set alpha on or off based on the mask */
-        if ((depth & 0x1f) || !special_32_is_32)
-        {
             for (y = 0; y < height; y++)
-            {
-                unsigned int x_off = y * andlinesz;
-                unsigned int have = 0;
-                unsigned char c = 0; // will be set in first loop
                 for (x = 0; x < width; x++)
-                {
-                    if (!have)
-                    {
-                        c = rawimage[x_off++];
-                        have = 8;
-                    }
-                    have--;
-                    imagedata[(height - 1 - y) * width + x] |= (!((c >> have) & 1)) * 0xff000000;
+                    imagedata[y * width + x] |= 0xff000000;
+            special_32_is_32 = 1;
+            cli_dbgmsg("parseicon: found a broken and stupid icon\n");
+        } else
+            cli_dbgmsg("parseicon: found a stupid icon\n");
+    } else
+        rawimage += height * scanlinesz;
+
+    /* Set alpha on or off based on the mask */
+    if ((depth & 0x1f) || !special_32_is_32) {
+        for (y = 0; y < height; y++) {
+            unsigned int x_off = y * andlinesz;
+            unsigned int have  = 0;
+            unsigned char c    = 0; // will be set in first loop
+            for (x = 0; x < width; x++) {
+                if (!have) {
+                    c    = rawimage[x_off++];
+                    have = 8;
                 }
+                have--;
+                imagedata[(height - 1 - y) * width + x] |= (!((c >> have) & 1)) * 0xff000000;
             }
         }
-        makebmp("1-alpha-mask", tempd, width, height, imagedata);
+    }
+    makebmp("1-alpha-mask", tempd, width, height, imagedata);
 
-        /* Blend alpha */
-        for (y = 0; y < height; y++)
-        {
-            for (x = 0; x < width; x++)
-            {
-                unsigned int r, g, b, a;
-                unsigned int c = imagedata[y * width + x];
-                a = c >> 24;
-                r = (c >> 16) & 0xff;
-                g = (c >> 8) & 0xff;
-                b = c & 0xff;
-                r = 0xff - a + a * r / 0xff;
-                g = 0xff - a + a * g / 0xff;
-                b = 0xff - a + a * b / 0xff;
-                imagedata[y * width + x] = 0xff000000 | (r << 16) | (g << 8) | b;
-            }
+    /* Blend alpha */
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+            unsigned int r, g, b, a;
+            unsigned int c           = imagedata[y * width + x];
+            a                        = c >> 24;
+            r                        = (c >> 16) & 0xff;
+            g                        = (c >> 8) & 0xff;
+            b                        = c & 0xff;
+            r                        = 0xff - a + a * r / 0xff;
+            g                        = 0xff - a + a * g / 0xff;
+            b                        = 0xff - a + a * b / 0xff;
+            imagedata[y * width + x] = 0xff000000 | (r << 16) | (g << 8) | b;
         }
+    }
 
-        switch (scalemode)
-        {
+    switch (scalemode) {
         case 0:
             break;
         case 1:
             /* Fast 50% scaler with linear gamma */
-            while (width > 32)
-            {
-                for (y = 0; y < height; y += 2)
-                {
-                    for (x = 0; x < width; x += 2)
-                    {
+            while (width > 32) {
+                for (y = 0; y < height; y += 2) {
+                    for (x = 0; x < width; x += 2) {
                         unsigned int c1 = imagedata[y * width + x], c2 = imagedata[y * width + x + 1], c3 = imagedata[(y + 1) * width + x], c4 = imagedata[(y + 1) * width + x + 1];
-                        c1 = (((c1 ^ c2) & 0xfefefefe) >> 1) + (c1 & c2);
-                        c2 = (((c3 ^ c4) & 0xfefefefe) >> 1) + (c3 & c4);
+                        c1                                   = (((c1 ^ c2) & 0xfefefefe) >> 1) + (c1 & c2);
+                        c2                                   = (((c3 ^ c4) & 0xfefefefe) >> 1) + (c3 & c4);
                         imagedata[y / 2 * width / 2 + x / 2] = (((c1 ^ c2) & 0xfefefefe) >> 1) + (c1 & c2);
                     }
                 }
@@ -1718,136 +1612,122 @@ static const int gkernsz = (sizeof(gaussk) / sizeof(gaussk[0]));
                     newsize = 16;
                 scalex = (double)width / newsize;
                 scaley = (double)height / newsize;
-                if (!(newdata = cli_malloc(newsize * newsize * sizeof(*newdata))))
-                {
+                if (!(newdata = cli_malloc(newsize * newsize * sizeof(*newdata)))) {
                     cli_errmsg("parseicon: Unable to allocate memory for scaling image\n");
                     return CL_EMEM;
                 }
                 cli_dbgmsg("parseicon: Slow scaling to %ux%u (%f, %f)\n", newsize, newsize, scalex, scaley);
-                for (y = 0; y < newsize; y++)
-                {
+                for (y = 0; y < newsize; y++) {
                     unsigned int oldy = (unsigned int)(y * scaley) * width;
                     for (x = 0; x < newsize; x++)
                         newdata[y * newsize + x] = imagedata[oldy + (unsigned int)(x * scalex + 0.5f)];
                 }
                 free(imagedata);
-                height = newsize;
-                width = newsize;
+                height    = newsize;
+                width     = newsize;
                 imagedata = newdata;
             }
-        }
-        makebmp("2-alpha-blend", tempd, width, height, imagedata);
-
-        getmetrics(width, imagedata, &metrics, tempd);
-        free(imagedata);
-
-        enginesize = (width >> 3) - 2;
-        for (x = 0; x < matcher->icon_counts[enginesize]; x++)
-        {
-            unsigned int color = 0, gray = 0, bright, dark, edge, noedge, reds, greens, blues, ccount;
-            unsigned int colors, confidence, bwmatch = 0, positivematch = 64 + 4 * (2 - enginesize);
-            unsigned int i, j;
-
-            i = matcher->icons[enginesize][x].group[0];
-            j = i % 64;
-            i /= 64;
-            if (!(set->v[0][i] & ((uint64_t)1 << j)))
-                continue;
-            i = matcher->icons[enginesize][x].group[1];
-            j = i % 64;
-            i /= 64;
-            if (!(set->v[1][i] & ((uint64_t)1 << j)))
-                continue;
-
-            if (!metrics.ccount && !matcher->icons[enginesize][x].ccount)
-            {
-                /* BW matching */
-                edge = matchbwpoint(width, metrics.edge_x, metrics.edge_y, metrics.edge_avg, metrics.color_x, metrics.color_y, metrics.color_avg, matcher->icons[enginesize][x].edge_x, matcher->icons[enginesize][x].edge_y, matcher->icons[enginesize][x].edge_avg, matcher->icons[enginesize][x].color_x, matcher->icons[enginesize][x].color_y, matcher->icons[enginesize][x].color_avg);
-                noedge = matchbwpoint(width, metrics.noedge_x, metrics.noedge_y, metrics.noedge_avg, metrics.gray_x, metrics.gray_y, metrics.gray_avg, matcher->icons[enginesize][x].noedge_x, matcher->icons[enginesize][x].noedge_y, matcher->icons[enginesize][x].noedge_avg, matcher->icons[enginesize][x].gray_x, matcher->icons[enginesize][x].gray_y, matcher->icons[enginesize][x].gray_avg);
-                bwmatch = 1;
-            }
-            else
-            {
-                edge = matchpoint(width, metrics.edge_x, metrics.edge_y, metrics.edge_avg, matcher->icons[enginesize][x].edge_x, matcher->icons[enginesize][x].edge_y, matcher->icons[enginesize][x].edge_avg, 255);
-                noedge = matchpoint(width, metrics.noedge_x, metrics.noedge_y, metrics.noedge_avg, matcher->icons[enginesize][x].noedge_x, matcher->icons[enginesize][x].noedge_y, matcher->icons[enginesize][x].noedge_avg, 255);
-                if (metrics.ccount && matcher->icons[enginesize][x].ccount)
-                {
-                    /* color matching */
-                    color = matchpoint(width, metrics.color_x, metrics.color_y, metrics.color_avg, matcher->icons[enginesize][x].color_x, matcher->icons[enginesize][x].color_y, matcher->icons[enginesize][x].color_avg, 4072);
-                    gray = matchpoint(width, metrics.gray_x, metrics.gray_y, metrics.gray_avg, matcher->icons[enginesize][x].gray_x, matcher->icons[enginesize][x].gray_y, matcher->icons[enginesize][x].gray_avg, 4072);
-                }
-            }
-
-            bright = matchpoint(width, metrics.bright_x, metrics.bright_y, metrics.bright_avg, matcher->icons[enginesize][x].bright_x, matcher->icons[enginesize][x].bright_y, matcher->icons[enginesize][x].bright_avg, 255);
-            dark = matchpoint(width, metrics.dark_x, metrics.dark_y, metrics.dark_avg, matcher->icons[enginesize][x].dark_x, matcher->icons[enginesize][x].dark_y, matcher->icons[enginesize][x].dark_avg, 255);
-
-            reds = abs((int)metrics.rsum - (int)matcher->icons[enginesize][x].rsum) * 10;
-            reds = (reds < 100) * (100 - reds);
-            greens = abs((int)metrics.gsum - (int)matcher->icons[enginesize][x].gsum) * 10;
-            greens = (greens < 100) * (100 - greens);
-            blues = abs((int)metrics.bsum - (int)matcher->icons[enginesize][x].bsum) * 10;
-            blues = (blues < 100) * (100 - blues);
-            ccount = abs((int)metrics.ccount - (int)matcher->icons[enginesize][x].ccount) * 10;
-            ccount = (ccount < 100) * (100 - ccount);
-            colors = (reds + greens + blues + ccount) / 4;
-
-            if (bwmatch)
-            {
-                confidence = (bright + dark + edge * 2 + noedge) / 6;
-                positivematch = 70;
-            }
-            else
-                confidence = (color + (gray + bright + noedge) * 2 / 3 + dark + edge + colors) / 6;
-
-#ifdef LOGPARSEICONDETAILS
-            cli_dbgmsg("parseicon: edge confidence: %u%%\n", edge);
-            cli_dbgmsg("parseicon: noedge confidence: %u%%\n", noedge);
-            if (!bwmatch)
-            {
-                cli_dbgmsg("parseicon: color confidence: %u%%\n", color);
-                cli_dbgmsg("parseicon: gray confidence: %u%%\n", gray);
-            }
-            cli_dbgmsg("parseicon: bright confidence: %u%%\n", bright);
-            cli_dbgmsg("parseicon: dark confidence: %u%%\n", dark);
-            if (!bwmatch)
-                cli_dbgmsg("parseicon: spread confidence: red %u%%, green %u%%, blue %u%% - colors %u%%\n", reds, greens, blues, ccount);
-#endif
-
-            if (confidence >= positivematch)
-            {
-                cli_dbgmsg("confidence: %u\n", confidence);
-                return CL_VIRUS;
-            }
-        }
-
-        return CL_SUCCESS;
     }
+    makebmp("2-alpha-blend", tempd, width, height, imagedata);
 
-    void cli_icongroupset_add(const char *groupname, icon_groupset *set, unsigned int type, cli_ctx *ctx)
-    {
-        struct icon_matcher *matcher;
+    getmetrics(width, imagedata, &metrics, tempd);
+    free(imagedata);
+
+    enginesize = (width >> 3) - 2;
+    for (x = 0; x < matcher->icon_counts[enginesize]; x++) {
+        unsigned int color = 0, gray = 0, bright, dark, edge, noedge, reds, greens, blues, ccount;
+        unsigned int colors, confidence, bwmatch = 0, positivematch = 64 + 4 * (2 - enginesize);
         unsigned int i, j;
 
-        if (type > 1 || !ctx || !ctx->engine || !(matcher = ctx->engine->iconcheck) || !matcher->group_counts[type])
-            return;
+        i = matcher->icons[enginesize][x].group[0];
+        j = i % 64;
+        i /= 64;
+        if (!(set->v[0][i] & ((uint64_t)1 << j)))
+            continue;
+        i = matcher->icons[enginesize][x].group[1];
+        j = i % 64;
+        i /= 64;
+        if (!(set->v[1][i] & ((uint64_t)1 << j)))
+            continue;
 
-        j = matcher->group_counts[type];
-        if (groupname[0] == '*' && !groupname[1])
-        {
-            set->v[type][0] = set->v[type][1] = set->v[type][2] = set->v[type][3] = ~0;
-            return;
+        if (!metrics.ccount && !matcher->icons[enginesize][x].ccount) {
+            /* BW matching */
+            edge    = matchbwpoint(width, metrics.edge_x, metrics.edge_y, metrics.edge_avg, metrics.color_x, metrics.color_y, metrics.color_avg, matcher->icons[enginesize][x].edge_x, matcher->icons[enginesize][x].edge_y, matcher->icons[enginesize][x].edge_avg, matcher->icons[enginesize][x].color_x, matcher->icons[enginesize][x].color_y, matcher->icons[enginesize][x].color_avg);
+            noedge  = matchbwpoint(width, metrics.noedge_x, metrics.noedge_y, metrics.noedge_avg, metrics.gray_x, metrics.gray_y, metrics.gray_avg, matcher->icons[enginesize][x].noedge_x, matcher->icons[enginesize][x].noedge_y, matcher->icons[enginesize][x].noedge_avg, matcher->icons[enginesize][x].gray_x, matcher->icons[enginesize][x].gray_y, matcher->icons[enginesize][x].gray_avg);
+            bwmatch = 1;
+        } else {
+            edge   = matchpoint(width, metrics.edge_x, metrics.edge_y, metrics.edge_avg, matcher->icons[enginesize][x].edge_x, matcher->icons[enginesize][x].edge_y, matcher->icons[enginesize][x].edge_avg, 255);
+            noedge = matchpoint(width, metrics.noedge_x, metrics.noedge_y, metrics.noedge_avg, matcher->icons[enginesize][x].noedge_x, matcher->icons[enginesize][x].noedge_y, matcher->icons[enginesize][x].noedge_avg, 255);
+            if (metrics.ccount && matcher->icons[enginesize][x].ccount) {
+                /* color matching */
+                color = matchpoint(width, metrics.color_x, metrics.color_y, metrics.color_avg, matcher->icons[enginesize][x].color_x, matcher->icons[enginesize][x].color_y, matcher->icons[enginesize][x].color_avg, 4072);
+                gray  = matchpoint(width, metrics.gray_x, metrics.gray_y, metrics.gray_avg, matcher->icons[enginesize][x].gray_x, matcher->icons[enginesize][x].gray_y, matcher->icons[enginesize][x].gray_avg, 4072);
+            }
         }
-        for (i = 0; i < j; i++)
-        {
-            if (!strcmp(groupname, matcher->group_names[type][i]))
-                break;
+
+        bright = matchpoint(width, metrics.bright_x, metrics.bright_y, metrics.bright_avg, matcher->icons[enginesize][x].bright_x, matcher->icons[enginesize][x].bright_y, matcher->icons[enginesize][x].bright_avg, 255);
+        dark   = matchpoint(width, metrics.dark_x, metrics.dark_y, metrics.dark_avg, matcher->icons[enginesize][x].dark_x, matcher->icons[enginesize][x].dark_y, matcher->icons[enginesize][x].dark_avg, 255);
+
+        reds   = abs((int)metrics.rsum - (int)matcher->icons[enginesize][x].rsum) * 10;
+        reds   = (reds < 100) * (100 - reds);
+        greens = abs((int)metrics.gsum - (int)matcher->icons[enginesize][x].gsum) * 10;
+        greens = (greens < 100) * (100 - greens);
+        blues  = abs((int)metrics.bsum - (int)matcher->icons[enginesize][x].bsum) * 10;
+        blues  = (blues < 100) * (100 - blues);
+        ccount = abs((int)metrics.ccount - (int)matcher->icons[enginesize][x].ccount) * 10;
+        ccount = (ccount < 100) * (100 - ccount);
+        colors = (reds + greens + blues + ccount) / 4;
+
+        if (bwmatch) {
+            confidence    = (bright + dark + edge * 2 + noedge) / 6;
+            positivematch = 70;
+        } else
+            confidence = (color + (gray + bright + noedge) * 2 / 3 + dark + edge + colors) / 6;
+
+#ifdef LOGPARSEICONDETAILS
+        cli_dbgmsg("parseicon: edge confidence: %u%%\n", edge);
+        cli_dbgmsg("parseicon: noedge confidence: %u%%\n", noedge);
+        if (!bwmatch) {
+            cli_dbgmsg("parseicon: color confidence: %u%%\n", color);
+            cli_dbgmsg("parseicon: gray confidence: %u%%\n", gray);
         }
-        if (i == j)
-            cli_dbgmsg("cli_icongroupset_add: failed to locate icon group%u %s\n", type, groupname);
-        else
-        {
-            j = i % 64;
-            i /= 64;
-            set->v[type][i] |= (uint64_t)1 << j;
+        cli_dbgmsg("parseicon: bright confidence: %u%%\n", bright);
+        cli_dbgmsg("parseicon: dark confidence: %u%%\n", dark);
+        if (!bwmatch)
+            cli_dbgmsg("parseicon: spread confidence: red %u%%, green %u%%, blue %u%% - colors %u%%\n", reds, greens, blues, ccount);
+#endif
+
+        if (confidence >= positivematch) {
+            cli_dbgmsg("confidence: %u\n", confidence);
+            return CL_VIRUS;
         }
     }
+
+    return CL_SUCCESS;
+}
+
+void cli_icongroupset_add(const char *groupname, icon_groupset *set, unsigned int type, cli_ctx *ctx)
+{
+    struct icon_matcher *matcher;
+    unsigned int i, j;
+
+    if (type > 1 || !ctx || !ctx->engine || !(matcher = ctx->engine->iconcheck) || !matcher->group_counts[type])
+        return;
+
+    j = matcher->group_counts[type];
+    if (groupname[0] == '*' && !groupname[1]) {
+        set->v[type][0] = set->v[type][1] = set->v[type][2] = set->v[type][3] = ~0;
+        return;
+    }
+    for (i = 0; i < j; i++) {
+        if (!strcmp(groupname, matcher->group_names[type][i]))
+            break;
+    }
+    if (i == j)
+        cli_dbgmsg("cli_icongroupset_add: failed to locate icon group%u %s\n", type, groupname);
+    else {
+        j = i % 64;
+        i /= 64;
+        set->v[type][i] |= (uint64_t)1 << j;
+    }
+}

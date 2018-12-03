@@ -11,7 +11,7 @@ PRECLASS_HOOK_DECLARE
 /* PRECLASS_HOOK_DECLARE will require FUNC_LEVEL_098_7 = 80 */
 FUNCTIONALITY_LEVEL_MIN(FUNC_LEVEL_098_7)
 
-int entrypoint ()
+int entrypoint()
 {
     return 0;
 }

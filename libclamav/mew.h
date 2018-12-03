@@ -29,8 +29,8 @@
 #include "cltypes.h"
 
 struct lzmastate {
-	const char *p0;
-	uint32_t p1, p2;
+    const char *p0;
+    uint32_t p1, p2;
 };
 
 int mew_lzma(char *, const char *, uint32_t, uint32_t, uint32_t);

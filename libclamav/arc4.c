@@ -33,13 +33,13 @@ void arc4_init(struct arc4_state *a, const uint8_t *key, unsigned keylength)
     uint8_t j;
     uint32_t *S = &a->S[0];
 
-    for (i=0; i < 256;i ++)
-	S[i] = i;
-    for (i=0,j=0; i < 256; i++) {
-	uint8_t tmp = S[i];
-	j = j + S[i] + key[i % keylength];
-	S[i] = S[j];
-	S[j] = tmp;
+    for (i = 0; i < 256; i++)
+        S[i] = i;
+    for (i = 0, j = 0; i < 256; i++) {
+        uint8_t tmp = S[i];
+        j           = j + S[i] + key[i % keylength];
+        S[i]        = S[j];
+        S[j]        = tmp;
     }
     a->i = a->j = 0;
 }
@@ -50,14 +50,14 @@ void arc4_apply(struct arc4_state *s, uint8_t *data, unsigned len)
     uint32_t *S = &s->S[0];
 
     while (len-- > 0) {
-	uint32_t a, b;
-	i++;
-	a = S[i];
-	j += a;
-	b = S[i] = S[j];
-	b += a;
-	S[j] = a;
-	*data++ ^= S[b & 0xff];
+        uint32_t a, b;
+        i++;
+        a = S[i];
+        j += a;
+        b = S[i] = S[j];
+        b += a;
+        S[j] = a;
+        *data++ ^= S[b & 0xff];
     }
 
     s->i = i;

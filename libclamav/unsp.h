@@ -26,18 +26,18 @@
 #include "others.h"
 
 struct UNSP {
-  const char *src_curr;
-  const char *src_end;
-  uint32_t bitmap;
-  uint32_t oldval;
-  int error;
-  /* the following are not in the original structure */
-  uint32_t tablesz;
-  char *table;
+    const char *src_curr;
+    const char *src_end;
+    uint32_t bitmap;
+    uint32_t oldval;
+    int error;
+    /* the following are not in the original structure */
+    uint32_t tablesz;
+    char *table;
 };
 
 uint32_t unspack(const char *, char *, cli_ctx *, uint32_t, uint32_t, uint32_t, int);
-uint32_t very_real_unpack(uint16_t *, uint32_t, uint32_t, uint32_t, uint32_t,const char *, uint32_t, char *, uint32_t);
+uint32_t very_real_unpack(uint16_t *, uint32_t, uint32_t, uint32_t, uint32_t, const char *, uint32_t, char *, uint32_t);
 uint32_t get_byte(struct UNSP *);
 int getbit_from_table(uint16_t *, struct UNSP *);
 uint32_t get_100_bits_from_tablesize(uint16_t *, struct UNSP *, uint32_t);

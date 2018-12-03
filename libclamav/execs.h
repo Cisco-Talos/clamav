@@ -31,11 +31,11 @@
   \group_pe
 */
 struct cli_exe_section {
-    uint32_t rva;/**< Relative VirtualAddress */
-    uint32_t vsz;/**< VirtualSize */
-    uint32_t raw;/**< Raw offset (in file) */
-    uint32_t rsz;/**< Raw size (in file) */
-    uint32_t chr;/**< Section characteristics */
+    uint32_t rva;  /**< Relative VirtualAddress */
+    uint32_t vsz;  /**< VirtualSize */
+    uint32_t raw;  /**< Raw offset (in file) */
+    uint32_t rsz;  /**< Raw size (in file) */
+    uint32_t chr;  /**< Section characteristics */
     uint32_t urva; /**< PE - unaligned VirtualAddress */
     uint32_t uvsz; /**< PE - unaligned VirtualSize */
     uint32_t uraw; /**< PE - unaligned PointerToRawData */
@@ -55,7 +55,7 @@ struct cli_exe_info {
     uint32_t ep;
     /** Number of sections*/
     uint16_t nsections;
-    void *dummy;/* for compat - preserve offset */
+    void *dummy; /* for compat - preserve offset */
     /** Resources RVA - PE ONLY */
     uint32_t res_addr;
     /** Address size - PE ONLY */

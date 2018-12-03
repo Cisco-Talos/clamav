@@ -40,9 +40,9 @@
 //#define DEBUG_APM_PARSE
 
 #ifdef DEBUG_APM_PARSE
-#  define apm_parsemsg(...) cli_dbgmsg( __VA_ARGS__)
+#define apm_parsemsg(...) cli_dbgmsg(__VA_ARGS__)
 #else
-#  define apm_parsemsg(...) ;
+#define apm_parsemsg(...) ;
 #endif
 
 static int apm_prtn_intxn(cli_ctx *ctx, struct apm_partition_info *aptable, size_t sectorsize, int old_school);
@@ -69,8 +69,8 @@ int cli_scanapm(cli_ctx *ctx)
     }
 
     /* convert driver description map big-endian to host */
-    ddm.signature = be16_to_host(ddm.signature);
-    ddm.blockSize = be16_to_host(ddm.blockSize);
+    ddm.signature  = be16_to_host(ddm.signature);
+    ddm.blockSize  = be16_to_host(ddm.blockSize);
     ddm.blockCount = be32_to_host(ddm.blockCount);
 
     /* check DDM signature */
@@ -113,10 +113,10 @@ int cli_scanapm(cli_ctx *ctx)
     }
 
     /* convert partition table big endian to host */
-    aptable.signature = be16_to_host(aptable.signature);
+    aptable.signature     = be16_to_host(aptable.signature);
     aptable.numPartitions = be32_to_host(aptable.numPartitions);
-    aptable.pBlockStart = be32_to_host(aptable.pBlockStart);
-    aptable.pBlockCount = be32_to_host(aptable.pBlockCount);
+    aptable.pBlockStart   = be32_to_host(aptable.pBlockStart);
+    aptable.pBlockCount   = be32_to_host(aptable.pBlockCount);
 
     /* check the partition entry signature */
     if (aptable.signature != APM_SIGNATURE) {
@@ -125,9 +125,9 @@ int cli_scanapm(cli_ctx *ctx)
     }
 
     /* check if partition table partition */
-    if (strncmp((char*)aptable.type, "Apple_Partition_Map", 32) &&
-        strncmp((char*)aptable.type, "Apple_partition_map", 32) &&
-        strncmp((char*)aptable.type, "Apple_patition_map", 32)){
+    if (strncmp((char *)aptable.type, "Apple_Partition_Map", 32) &&
+        strncmp((char *)aptable.type, "Apple_partition_map", 32) &&
+        strncmp((char *)aptable.type, "Apple_patition_map", 32)) {
         cli_dbgmsg("cli_scanapm: Initial Apple Partition Map partition is not detected\n");
         return CL_EFORMAT;
     }
@@ -145,8 +145,8 @@ int cli_scanapm(cli_ctx *ctx)
 
     /* print debugging info on partition tables */
     cli_dbgmsg("APM Partition Table:\n");
-    cli_dbgmsg("Name: %s\n", (char*)aptable.name);
-    cli_dbgmsg("Type: %s\n", (char*)aptable.type);
+    cli_dbgmsg("Name: %s\n", (char *)aptable.name);
+    cli_dbgmsg("Type: %s\n", (char *)aptable.type);
     cli_dbgmsg("Signature: %x\n", aptable.signature);
     cli_dbgmsg("Partition Count: %u\n", aptable.numPartitions);
     cli_dbgmsg("Blocks: [%u, +%u), ([%lu, +%lu))\n",
@@ -157,8 +157,7 @@ int cli_scanapm(cli_ctx *ctx)
     /* check engine maxpartitions limit */
     if (aptable.numPartitions < ctx->engine->maxpartitions) {
         max_prtns = aptable.numPartitions;
-    }
-    else {
+    } else {
         max_prtns = ctx->engine->maxpartitions;
     }
 
@@ -172,11 +171,11 @@ int cli_scanapm(cli_ctx *ctx)
         }
 
         /* convert partition entry big endian to host */
-        apentry.signature = be16_to_host(apentry.signature);
-        apentry.reserved = be16_to_host(apentry.reserved);
+        apentry.signature     = be16_to_host(apentry.signature);
+        apentry.reserved      = be16_to_host(apentry.reserved);
         apentry.numPartitions = be32_to_host(apentry.numPartitions);
-        apentry.pBlockStart = be32_to_host(apentry.pBlockStart);
-        apentry.pBlockCount = be32_to_host(apentry.pBlockCount);
+        apentry.pBlockStart   = be32_to_host(apentry.pBlockStart);
+        apentry.pBlockCount   = be32_to_host(apentry.pBlockCount);
 
         /* check the partition entry signature */
         if (aptable.signature != APM_SIGNATURE) {
@@ -185,39 +184,39 @@ int cli_scanapm(cli_ctx *ctx)
         }
 
         /* check if a out-of-order partition map */
-        if (!strncmp((char*)apentry.type, "Apple_Partition_Map", 32) ||
-            !strncmp((char*)apentry.type, "Apple_partition_map", 32) ||
-            !strncmp((char*)apentry.type, "Apple_patition_map", 32)) {
+        if (!strncmp((char *)apentry.type, "Apple_Partition_Map", 32) ||
+            !strncmp((char *)apentry.type, "Apple_partition_map", 32) ||
+            !strncmp((char *)apentry.type, "Apple_patition_map", 32)) {
 
             cli_dbgmsg("cli_scanapm: Out of order Apple Partition Map partition\n");
             continue;
         }
 
-        partoff = apentry.pBlockStart * sectorsize;
+        partoff  = apentry.pBlockStart * sectorsize;
         partsize = apentry.pBlockCount * sectorsize;
         /* re-calculate if old_school and aligned [512 * 4 => 2048] */
         if (old_school && ((i % 4) == 0)) {
-            if (!strncmp((char*)apentry.type, "Apple_Driver",       32) ||
-                !strncmp((char*)apentry.type, "Apple_Driver43",     32) ||
-                !strncmp((char*)apentry.type, "Apple_Driver43_CD",  32) ||
-                !strncmp((char*)apentry.type, "Apple_Driver_ATA",   32) ||
-                !strncmp((char*)apentry.type, "Apple_Driver_ATAPI", 32) ||
-                !strncmp((char*)apentry.type, "Apple_Patches",      32)) {
+            if (!strncmp((char *)apentry.type, "Apple_Driver", 32) ||
+                !strncmp((char *)apentry.type, "Apple_Driver43", 32) ||
+                !strncmp((char *)apentry.type, "Apple_Driver43_CD", 32) ||
+                !strncmp((char *)apentry.type, "Apple_Driver_ATA", 32) ||
+                !strncmp((char *)apentry.type, "Apple_Driver_ATAPI", 32) ||
+                !strncmp((char *)apentry.type, "Apple_Patches", 32)) {
 
                 partsize = apentry.pBlockCount * 2048;
             }
         }
 
         /* check if invalid partition */
-        if ((partoff == 0) || (partoff+partsize > maplen)) {
+        if ((partoff == 0) || (partoff + partsize > maplen)) {
             cli_dbgmsg("cli_scanapm: Detected invalid Apple partition entry\n");
             continue;
         }
 
         /* print debugging info on partition */
         cli_dbgmsg("APM Partition Entry %u:\n", i);
-        cli_dbgmsg("Name: %s\n", (char*)apentry.name);
-        cli_dbgmsg("Type: %s\n", (char*)apentry.type);
+        cli_dbgmsg("Name: %s\n", (char *)apentry.name);
+        cli_dbgmsg("Type: %s\n", (char *)apentry.type);
         cli_dbgmsg("Signature: %x\n", apentry.signature);
         cli_dbgmsg("Partition Count: %u\n", apentry.numPartitions);
         cli_dbgmsg("Blocks: [%u, +%u), ([%lu, +%lu))\n",
@@ -231,7 +230,7 @@ int cli_scanapm(cli_ctx *ctx)
             else
                 return ret;
         }
-    } 
+    }
 
     if (i >= ctx->engine->maxpartitions) {
         cli_dbgmsg("cli_scanapm: max partitions reached\n");
@@ -248,15 +247,14 @@ static int apm_prtn_intxn(cli_ctx *ctx, struct apm_partition_info *aptable, size
     int ret = CL_CLEAN, tmp = CL_CLEAN;
     off_t pos;
     uint32_t max_prtns = 0;
-    int virus_found = 0;
+    int virus_found    = 0;
 
     prtn_intxn_list_init(&prtncheck);
 
     /* check engine maxpartitions limit */
     if (aptable->numPartitions < ctx->engine->maxpartitions) {
         max_prtns = aptable->numPartitions;
-    }
-    else {
+    } else {
         max_prtns = ctx->engine->maxpartitions;
     }
 
@@ -274,12 +272,12 @@ static int apm_prtn_intxn(cli_ctx *ctx, struct apm_partition_info *aptable, size
         apentry.pBlockCount = be32_to_host(apentry.pBlockCount);
         /* re-calculate if old_school and aligned [512 * 4 => 2048] */
         if (old_school && ((i % 4) == 0)) {
-            if (!strncmp((char*)apentry.type, "Apple_Driver",       32) ||
-                !strncmp((char*)apentry.type, "Apple_Driver43",     32) ||
-                !strncmp((char*)apentry.type, "Apple_Driver43_CD",  32) ||
-                !strncmp((char*)apentry.type, "Apple_Driver_ATA",   32) ||
-                !strncmp((char*)apentry.type, "Apple_Driver_ATAPI", 32) ||
-                !strncmp((char*)apentry.type, "Apple_Patches",      32)) {
+            if (!strncmp((char *)apentry.type, "Apple_Driver", 32) ||
+                !strncmp((char *)apentry.type, "Apple_Driver43", 32) ||
+                !strncmp((char *)apentry.type, "Apple_Driver43_CD", 32) ||
+                !strncmp((char *)apentry.type, "Apple_Driver_ATA", 32) ||
+                !strncmp((char *)apentry.type, "Apple_Driver_ATAPI", 32) ||
+                !strncmp((char *)apentry.type, "Apple_Patches", 32)) {
 
                 apentry.pBlockCount = apentry.pBlockCount * 4;
             }
@@ -288,11 +286,12 @@ static int apm_prtn_intxn(cli_ctx *ctx, struct apm_partition_info *aptable, size
         tmp = prtn_intxn_list_check(&prtncheck, &pitxn, apentry.pBlockStart, apentry.pBlockCount);
         if (tmp != CL_CLEAN) {
             if (tmp == CL_VIRUS) {
-                apm_parsemsg("Name: %s\n", (char*)aptable.name);
-                apm_parsemsg("Type: %s\n", (char*)aptable.type);
+                apm_parsemsg("Name: %s\n", (char *)aptable.name);
+                apm_parsemsg("Type: %s\n", (char *)aptable.type);
 
                 cli_dbgmsg("cli_scanapm: detected intersection with partitions "
-                           "[%u, %u]\n", pitxn, i);
+                           "[%u, %u]\n",
+                           pitxn, i);
                 ret = cli_append_virus(ctx, PRTN_INTXN_DETECTION);
                 if (ret == CL_VIRUS)
                     virus_found = 1;
@@ -308,7 +307,7 @@ static int apm_prtn_intxn(cli_ctx *ctx, struct apm_partition_info *aptable, size
         pos += sectorsize;
     }
 
- leave:
+leave:
     prtn_intxn_list_free(&prtncheck);
     if (virus_found)
         return CL_VIRUS;

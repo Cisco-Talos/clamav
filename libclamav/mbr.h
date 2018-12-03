@@ -39,13 +39,13 @@
 /* MBR Status */
 #define MBR_STATUS_INACTIVE 0x00
 /* other values are invalid status */
-#define MBR_STATUS_ACTIVE   0x80
+#define MBR_STATUS_ACTIVE 0x80
 /* End MBR Status */
 
 /* MBR Partition Types */
-#define MBR_EMPTY      0x00
-#define MBR_EXTENDED   0x05
-#define MBR_HYBRID     0xed
+#define MBR_EMPTY 0x00
+#define MBR_EXTENDED 0x05
+#define MBR_HYBRID 0xed
 #define MBR_PROTECTIVE 0xee
 /* End Partition Types */
 
@@ -67,14 +67,14 @@ struct mbr_partition_entry {
     uint8_t firstCHS[3];
     uint8_t type;
     uint8_t lastCHS[3];
-    uint32_t firstLBA  __attribute__ ((packed));
-    uint32_t numLBA  __attribute__ ((packed));
+    uint32_t firstLBA __attribute__((packed));
+    uint32_t numLBA __attribute__((packed));
 };
 
 struct mbr_boot_record {
     /* 446 bytes of reserved, implementation-based data */
     struct mbr_partition_entry entries[4];
-    uint16_t signature  __attribute__ ((packed));
+    uint16_t signature __attribute__((packed));
 };
 
 #ifdef HAVE_PRAGMA_PACK

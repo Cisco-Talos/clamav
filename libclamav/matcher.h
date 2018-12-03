@@ -151,20 +151,19 @@ struct cli_matcher {
 #endif
 };
 
-struct cli_cdb
-{
-    char	        *virname;   /* virus name */
-    cli_file_t	    ctype;	    /* container type */
-    regex_t	        name;	    /* filename regex */
-    size_t	        csize[2];   /* container size (min, max); if csize[0] != csize[1]
+struct cli_cdb {
+    char *virname;           /* virus name */
+    cli_file_t ctype;        /* container type */
+    regex_t name;            /* filename regex */
+    size_t csize[2];         /* container size (min, max); if csize[0] != csize[1]
 			                     * then value of 0 makes the field ignored
 			                     */
-    size_t	        fsizec[2];  /* file size in container */
-    size_t	        fsizer[2];  /* real file size */
-    int		        encrypted;  /* file is encrypted; 2 == ignore */
-    unsigned int    filepos[2]; /* file position in container */
-    int		        res1;	    /* reserved / format specific */
-    void	        *res2;	    /* reserved / format specific */
+    size_t fsizec[2];        /* file size in container */
+    size_t fsizer[2];        /* real file size */
+    int encrypted;           /* file is encrypted; 2 == ignore */
+    unsigned int filepos[2]; /* file position in container */
+    int res1;                /* reserved / format specific */
+    void *res2;              /* reserved / format specific */
 
     struct cli_cdb *next;
 };
@@ -173,7 +172,7 @@ struct cli_cdb
 struct cli_mtarget {
     cli_file_t target[CLI_MAX_TARGETS];
     const char *name;
-    uint8_t idx;    /* idx of matcher */
+    uint8_t idx; /* idx of matcher */
     uint8_t ac_only;
     uint8_t enable_prefiltering;
     uint8_t target_count; /* must be synced with non-zero values in the target array */
@@ -222,7 +221,7 @@ int cli_exp_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *acd
 int cli_caloff(const char *offstr, const struct cli_target_info *info, unsigned int target, uint32_t *offdata, uint32_t *offset_min, uint32_t *offset_max);
 
 int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx);
-int cli_checkfp_virus(unsigned char *digest, size_t size, cli_ctx *ctx, const char * vname);
+int cli_checkfp_virus(unsigned char *digest, size_t size, cli_ctx *ctx, const char *vname);
 
 int cli_matchmeta(cli_ctx *ctx, const char *fname, size_t fsizec, size_t fsizer, int encrypted, unsigned int filepos, int res1, void *res2);
 

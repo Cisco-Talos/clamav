@@ -45,7 +45,6 @@ struct CLI_LZMA {
     SizeT avail_out;
 };
 
-
 struct stream_state {
     uint32_t avail_in;
     unsigned char *next_in;
