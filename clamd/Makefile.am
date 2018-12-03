@@ -49,16 +49,6 @@ clamd_SOURCES = \
     others.c \
     others.h \
     shared.h \
-    onaccess_others.c \
-    onaccess_others.h \
-    onaccess_fan.c \
-    onaccess_fan.h \
-    onaccess_ddd.c \
-    onaccess_ddd.h \
-    onaccess_hash.c \
-    onaccess_hash.h \
-    onaccess_scth.c \
-    onaccess_scth.h \
     priv_fts.h
 
 if !SYSTEM_LFS_FTS

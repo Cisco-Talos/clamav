@@ -35,6 +35,9 @@ clamonacc_SOURCES = \
     $(top_srcdir)/shared/actions.h \
     $(top_srcdir)/shared/clamdcom.c \
     $(top_srcdir)/shared/clamdcom.h \
+    clamonacc.c \
+    onaccess_client.c \
+    onaccess_client.h \
     onaccess_ddd.c \
     onaccess_ddd.h \
     onaccess_fan.c \
@@ -51,8 +54,8 @@ endif
 
 
 DEFS = @DEFS@ -DCL_NOTHREADS -DCL_NOLIBCLAMAV
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/clamscan -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @SSL_CPPFLAGS@ @CLAMONACC_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
-LIBS = $(top_builddir)/libclamav/libclamav_internal_utils_nothreads.la  @CLAMONACC_LIBS@
+LIBS = $(top_builddir)/libclamav/libclamav_internal_utils.la  @CLAMONACC_LIBS@ @THREAD_LIBS@
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/clamd -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @SSL_CPPFLAGS@ @CLAMONACC_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
 
 AM_INSTALLCHECK_STD_OPTIONS_EXEMPT=clamonacc$(EXEEXT)
 CLEANFILES=*.gcda *.gcno

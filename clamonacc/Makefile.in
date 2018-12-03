@@ -14,9 +14,10 @@
 
 @SET_MAKE@
 
-#  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
-#  Copyright (C) 2007-2013 Sourcefire, Inc.
-#  Copyright (C) 2002-2007 Tomasz Kojm <tkojm@clamav.net>
+#
+#  Copyright (C) 2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+#
+#  Authors: Mickey Sola
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -108,8 +109,8 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@BUILD_CLAMD_TRUE@bin_PROGRAMS = clamdscan$(EXEEXT)
-subdir = clamdscan
+@BUILD_CLAMD_TRUE@bin_PROGRAMS = clamonacc$(EXEEXT)
+subdir = clamonacc
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
 	$(top_srcdir)/m4/ax_check_uname_syscall.m4 \
@@ -127,7 +128,6 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
 	$(top_srcdir)/m4/reorganization/c_options.m4 \
 	$(top_srcdir)/m4/reorganization/compiler_checks.m4 \
 	$(top_srcdir)/m4/reorganization/linker_checks.m4 \
-	$(top_srcdir)/m4/reorganization/code_checks/fuzz.m4 \
 	$(top_srcdir)/m4/reorganization/code_checks/functions.m4 \
 	$(top_srcdir)/m4/reorganization/code_checks/mpool.m4 \
 	$(top_srcdir)/m4/reorganization/code_checks/unit_tests.m4 \
@@ -164,6 +164,7 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
 	$(top_srcdir)/m4/reorganization/os_checks.m4 \
 	$(top_srcdir)/m4/reorganization/milter/check.m4 \
 	$(top_srcdir)/m4/reorganization/code_checks/pthread_02.m4 \
+	$(top_srcdir)/m4/reorganization/code_checks/readdir.m4 \
 	$(top_srcdir)/m4/reorganization/code_checks/ctime.m4 \
 	$(top_srcdir)/m4/reorganization/code_checks/socklen_t.m4 \
 	$(top_srcdir)/m4/reorganization/clamav_user.m4 \
@@ -179,12 +180,12 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
 	$(top_srcdir)/m4/reorganization/sha_collect.m4 \
 	$(top_srcdir)/m4/reorganization/yara.m4 \
 	$(top_srcdir)/m4/reorganization/code_checks/fts.m4 \
+	$(top_srcdir)/m4/reorganization/libfreshclam.m4 \
 	$(top_srcdir)/m4/reorganization/prelude.m4 \
 	$(top_srcdir)/m4/reorganization/bsd.m4 \
 	$(top_srcdir)/m4/reorganization/libs/curl.m4 \
 	$(top_srcdir)/m4/reorganization/substitutions.m4 \
 	$(top_srcdir)/m4/reorganization/strni.m4 \
-	$(top_srcdir)/m4/reorganization/types.m4 \
 	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
@@ -196,21 +197,29 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am__clamdscan_SOURCES_DIST = $(top_srcdir)/shared/output.c \
+am__clamonacc_SOURCES_DIST = $(top_srcdir)/shared/output.c \
 	$(top_srcdir)/shared/output.h $(top_srcdir)/shared/optparser.c \
 	$(top_srcdir)/shared/optparser.h $(top_srcdir)/shared/misc.c \
 	$(top_srcdir)/shared/misc.h $(top_srcdir)/shared/getopt.c \
 	$(top_srcdir)/shared/getopt.h $(top_srcdir)/shared/actions.c \
 	$(top_srcdir)/shared/actions.h $(top_srcdir)/shared/clamdcom.c \
-	$(top_srcdir)/shared/clamdcom.h clamdscan.c proto.c proto.h \
-	client.c client.h
-@BUILD_CLAMD_TRUE@am_clamdscan_OBJECTS = output.$(OBJEXT) \
+	$(top_srcdir)/shared/clamdcom.h clamonacc.c onaccess_client.c \
+	onaccess_client.h onaccess_ddd.c onaccess_ddd.h onaccess_fan.c \
+	onaccess_fan.h onaccess_hash.c onaccess_hash.h \
+	onaccess_others.c onaccess_others.h onaccess_scth.c \
+	onaccess_scth.h
+@BUILD_CLAMD_TRUE@am_clamonacc_OBJECTS = output.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	optparser.$(OBJEXT) misc.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	getopt.$(OBJEXT) actions.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	clamdcom.$(OBJEXT) clamdscan.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	proto.$(OBJEXT) client.$(OBJEXT)
-clamdscan_OBJECTS = $(am_clamdscan_OBJECTS)
-clamdscan_LDADD = $(LDADD)
+@BUILD_CLAMD_TRUE@	clamdcom.$(OBJEXT) clamonacc.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	onaccess_client.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	onaccess_ddd.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	onaccess_fan.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	onaccess_hash.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	onaccess_others.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	onaccess_scth.$(OBJEXT)
+clamonacc_OBJECTS = $(am_clamonacc_OBJECTS)
+clamonacc_LDADD = $(LDADD)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
@@ -249,8 +258,8 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(clamdscan_SOURCES)
-DIST_SOURCES = $(am__clamdscan_SOURCES_DIST)
+SOURCES = $(clamonacc_SOURCES)
+DIST_SOURCES = $(am__clamonacc_SOURCES_DIST)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -317,9 +326,6 @@ CLAMSUBMIT_CFLAGS = @CLAMSUBMIT_CFLAGS@
 CLAMSUBMIT_LIBS = @CLAMSUBMIT_LIBS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
-CURL_CPPFLAGS = @CURL_CPPFLAGS@
-CURL_LDFLAGS = @CURL_LDFLAGS@
-CURL_LIBS = @CURL_LIBS@
 CURSES_CPPFLAGS = @CURSES_CPPFLAGS@
 CURSES_LIBS = @CURSES_LIBS@
 CXX = @CXX@
@@ -328,8 +334,6 @@ CXXDEPMODE = @CXXDEPMODE@
 CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
 DBDIR = @DBDIR@
-DEFINE_SF32_PREFIX = @DEFINE_SF32_PREFIX@
-DEFINE_SF64_PREFIX = @DEFINE_SF64_PREFIX@
 DEFS = @DEFS@ -DCL_NOTHREADS -DCL_NOLIBCLAMAV
 DEPDIR = @DEPDIR@
 DLLTOOL = @DLLTOOL@
@@ -344,7 +348,6 @@ FGREP = @FGREP@
 FRESHCLAM_CPPFLAGS = @FRESHCLAM_CPPFLAGS@
 FRESHCLAM_LIBS = @FRESHCLAM_LIBS@
 GCOV = @GCOV@
-GENERATE_WARNING = @GENERATE_WARNING@
 GENHTML = @GENHTML@
 GETENT = @GETENT@
 GPERF = @GPERF@
@@ -359,11 +362,6 @@ INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
-INT16_DEF = @INT16_DEF@
-INT32_DEF = @INT32_DEF@
-INT64_DEF = @INT64_DEF@
-INT8_DEF = @INT8_DEF@
-INT_TYPES_HEADER = @INT_TYPES_HEADER@
 JSON_CPPFLAGS = @JSON_CPPFLAGS@
 JSON_LDFLAGS = @JSON_LDFLAGS@
 JSON_LIBS = @JSON_LIBS@
@@ -383,7 +381,6 @@ LIBCLAMAV_CPPFLAGS = @LIBCLAMAV_CPPFLAGS@
 LIBCLAMAV_LIBS = @LIBCLAMAV_LIBS@
 LIBCLAMAV_VERSION = @LIBCLAMAV_VERSION@
 LIBCLAMSHARED_CPPFLAGS = @LIBCLAMSHARED_CPPFLAGS@
-LIBFRESHCLAM_VERSION = @LIBFRESHCLAM_VERSION@
 LIBLTDL = @LIBLTDL@
 LIBM = @LIBM@
 LIBMSPACK_CFLAGS = @LIBMSPACK_CFLAGS@
@@ -396,7 +393,7 @@ LIBPRELUDE_LDFLAGS = @LIBPRELUDE_LDFLAGS@
 LIBPRELUDE_LIBS = @LIBPRELUDE_LIBS@
 LIBPRELUDE_PREFIX = @LIBPRELUDE_PREFIX@
 LIBPRELUDE_PTHREAD_CFLAGS = @LIBPRELUDE_PTHREAD_CFLAGS@
-LIBS = $(top_builddir)/libclamav/libclamav_internal_utils_nothreads.la  @CLAMDSCAN_LIBS@
+LIBS = $(top_builddir)/libclamav/libclamav_internal_utils.la  @CLAMONACC_LIBS@ @THREAD_LIBS@
 LIBTOOL = @LIBTOOL@
 LIPO = @LIPO@
 LN_S = @LN_S@
@@ -416,9 +413,6 @@ MANIFEST_TOOL = @MANIFEST_TOOL@
 MKDIR_P = @MKDIR_P@
 NM = @NM@
 NMEDIT = @NMEDIT@
-OBJC = @OBJC@
-OBJCDEPMODE = @OBJCDEPMODE@
-OBJCFLAGS = @OBJCFLAGS@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 OTOOL = @OTOOL@
@@ -449,10 +443,6 @@ SYSTEMD_CFLAGS = @SYSTEMD_CFLAGS@
 SYSTEMD_LIBS = @SYSTEMD_LIBS@
 THREAD_LIBS = @THREAD_LIBS@
 TH_SAFE = @TH_SAFE@
-UINT16_DEF = @UINT16_DEF@
-UINT32_DEF = @UINT32_DEF@
-UINT64_DEF = @UINT64_DEF@
-UINT8_DEF = @UINT8_DEF@
 VERSION = @VERSION@
 VERSIONSCRIPTFLAG = @VERSIONSCRIPTFLAG@
 WERR_CFLAGS = @WERR_CFLAGS@
@@ -469,7 +459,6 @@ ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
 ac_ct_CXX = @ac_ct_CXX@
 ac_ct_DUMPBIN = @ac_ct_DUMPBIN@
-ac_ct_OBJC = @ac_ct_OBJC@
 am__include = @am__include@
 am__leading_dot = @am__leading_dot@
 am__quote = @am__quote@
@@ -527,7 +516,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-@BUILD_CLAMD_TRUE@clamdscan_SOURCES = \
+@BUILD_CLAMD_TRUE@clamonacc_SOURCES = \
 @BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/output.c \
 @BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/output.h \
 @BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/optparser.c \
@@ -540,15 +529,23 @@ top_srcdir = @top_srcdir@
 @BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/actions.h \
 @BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/clamdcom.c \
 @BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/clamdcom.h \
-@BUILD_CLAMD_TRUE@    clamdscan.c \
-@BUILD_CLAMD_TRUE@    proto.c \
-@BUILD_CLAMD_TRUE@    proto.h \
-@BUILD_CLAMD_TRUE@    client.c \
-@BUILD_CLAMD_TRUE@    client.h
+@BUILD_CLAMD_TRUE@    clamonacc.c \
+@BUILD_CLAMD_TRUE@    onaccess_client.c \
+@BUILD_CLAMD_TRUE@    onaccess_client.h \
+@BUILD_CLAMD_TRUE@    onaccess_ddd.c \
+@BUILD_CLAMD_TRUE@    onaccess_ddd.h \
+@BUILD_CLAMD_TRUE@    onaccess_fan.c \
+@BUILD_CLAMD_TRUE@    onaccess_fan.h \
+@BUILD_CLAMD_TRUE@    onaccess_hash.c \
+@BUILD_CLAMD_TRUE@    onaccess_hash.h \
+@BUILD_CLAMD_TRUE@    onaccess_others.c \
+@BUILD_CLAMD_TRUE@    onaccess_others.h \
+@BUILD_CLAMD_TRUE@    onaccess_scth.c \
+@BUILD_CLAMD_TRUE@    onaccess_scth.h
 
 @BUILD_CLAMD_TRUE@AM_CFLAGS = @WERR_CFLAGS@
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/clamscan -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @SSL_CPPFLAGS@ @CLAMDSCAN_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
-AM_INSTALLCHECK_STD_OPTIONS_EXEMPT = clamdscan$(EXEEXT)
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/clamd -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @SSL_CPPFLAGS@ @CLAMONACC_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
+AM_INSTALLCHECK_STD_OPTIONS_EXEMPT = clamonacc$(EXEEXT)
 CLEANFILES = *.gcda *.gcno
 all: all-am
 
@@ -563,9 +560,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign clamdscan/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign clamonacc/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign clamdscan/Makefile
+	  $(AUTOMAKE) --foreign clamonacc/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
@@ -649,9 +646,9 @@ installcheck-binPROGRAMS: $(bin_PROGRAMS)
 	  done; \
 	done; rm -f c$${pid}_.???; exit $$bad
 
-clamdscan$(EXEEXT): $(clamdscan_OBJECTS) $(clamdscan_DEPENDENCIES) $(EXTRA_clamdscan_DEPENDENCIES) 
-	@rm -f clamdscan$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(clamdscan_OBJECTS) $(clamdscan_LDADD) $(LIBS)
+clamonacc$(EXEEXT): $(clamonacc_OBJECTS) $(clamonacc_DEPENDENCIES) $(EXTRA_clamonacc_DEPENDENCIES) 
+	@rm -f clamonacc$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(clamonacc_OBJECTS) $(clamonacc_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -661,13 +658,17 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/actions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clamdcom.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clamdscan.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/client.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clamonacc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getopt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/misc.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/onaccess_client.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/onaccess_ddd.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/onaccess_fan.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/onaccess_hash.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/onaccess_others.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/onaccess_scth.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/optparser.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/output.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proto.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

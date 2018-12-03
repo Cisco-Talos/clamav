@@ -35,7 +35,7 @@
 #include "shared/output.h"
 
 #include "others.h"
-#include "priv_fts.h"
+#include "clamd/priv_fts.h"
 #include "onaccess_others.h"
 #include "onaccess_scth.h"
 #include "onaccess_others.h"
