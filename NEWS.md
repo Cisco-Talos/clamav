@@ -3,6 +3,20 @@
 Note: This file refers to the source tarball. Things described here may differ
  slightly from the binary packages.
 
+## 0.102.0
+
+ClamAV 0.102.0 is in development.
+
+### Notable changes in 0.102
+
+-
+
+### Acknowledgements
+
+The ClamAV team thanks the following individuals for their code submissions:
+
+-
+
 ## 0.101.0
 
 ClamAV 0.101.0 is a feature release with an assortment of improvements that
