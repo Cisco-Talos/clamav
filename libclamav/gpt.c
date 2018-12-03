@@ -401,7 +401,7 @@ static int gpt_validate_header(cli_ctx *ctx, struct gpt_header hdr, size_t secto
     hdr.tableStartLBA = le64_to_host(hdr.tableStartLBA);
     hdr.tableNumEntries = le32_to_host(hdr.tableNumEntries);
     hdr.tableEntrySize = le32_to_host(hdr.tableEntrySize);
-    hdr.tableCRC32 = le32_to_host(hdr.tableCRC32);;
+    hdr.tableCRC32 = le32_to_host(hdr.tableCRC32);
 
     ptable_start = hdr.tableStartLBA * sectorsize;
     ptable_len = hdr.tableNumEntries * hdr.tableEntrySize;

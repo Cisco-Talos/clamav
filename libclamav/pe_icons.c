@@ -250,6 +250,7 @@ static const int gaussk[]={1,2,1};
 static const int gkernsz = (sizeof(gaussk) / sizeof(gaussk[0]));
 
 #ifndef USE_FLOATS
+// clang-format off
     static const uint32_t rtable[256][3] = {
         {0x00000000,0x00000000,0x00000000}, {0x00033475,0x0001a70c,0x00002675},
         {0x000668e9,0x00034e18,0x00004ceb}, {0x00099d5e,0x0004f525,0x00007360},
@@ -642,6 +643,7 @@ static const int gkernsz = (sizeof(gaussk) / sizeof(gaussk[0]));
         {0x119089da,0x07069d8a,0x5c81c488}, {0x11b93635,0x0716e27b,0x5d57faec},
         {0x11e2194b,0x07273d51,0x5e2f5196}, {0x120b3333,0x0737ae14,0x5f07c8f3},
     };
+// clang-format on
 #endif
 
 #ifdef USE_FLOATS

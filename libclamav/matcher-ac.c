@@ -47,6 +47,8 @@
 
 #include "mpool.h"
 
+// clang-format off
+
 #define AC_SPECIAL_ALT_CHAR             1
 #define AC_SPECIAL_ALT_STR_FIXED        2
 #define AC_SPECIAL_ALT_STR              3
@@ -85,6 +87,8 @@ static char boundary[256] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
+
+// clang-format on
 
 static inline int insert_list(struct cli_matcher *root, struct cli_ac_patt *pattern, struct cli_ac_node *pt)
 {

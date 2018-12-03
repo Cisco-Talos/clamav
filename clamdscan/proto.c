@@ -669,7 +669,7 @@ int parallel_client_scan(char *file, int scantype, int *infected, int *err, int 
     }
 
     sendln(cdata.sockd, "zEND", 5);
-    while(cdata.ids && !dspresult(&cdata));
+    while (cdata.ids && !dspresult(&cdata)) continue;
     closesocket(cdata.sockd);
 
     *infected += cdata.infected;

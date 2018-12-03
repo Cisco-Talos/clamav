@@ -175,7 +175,7 @@ virusaction (const char *filename, const char *virname,
     else if (pid > 0)
     {                           /* parent */
         pthread_mutex_unlock (&virusaction_lock);
-        while (waitpid (pid, NULL, 0) == -1 && errno == EINTR);
+        while (waitpid (pid, NULL, 0) == -1 && errno == EINTR) continue;
     }
     else
     {

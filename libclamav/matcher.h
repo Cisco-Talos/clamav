@@ -45,26 +45,29 @@ struct cli_target_info {
 #include "fmap.h"
 #include "mpool.h"
 
-#define CLI_MATCH_METADATA	0xff00
-#define CLI_MATCH_WILDCARD	0x0f00
-#define CLI_MATCH_CHAR		0x0000
-#define CLI_MATCH_NOCASE	0x1000
-#define CLI_MATCH_IGNORE	0x0100
-#define CLI_MATCH_SPECIAL	0x0200
-#define CLI_MATCH_NIBBLE_HIGH	0x0300
-#define CLI_MATCH_NIBBLE_LOW	0x0400
+// clang-format off
+
+#define CLI_MATCH_METADATA    0xff00
+#define CLI_MATCH_WILDCARD    0x0f00
+#define CLI_MATCH_CHAR        0x0000
+#define CLI_MATCH_NOCASE      0x1000
+#define CLI_MATCH_IGNORE      0x0100
+#define CLI_MATCH_SPECIAL     0x0200
+#define CLI_MATCH_NIBBLE_HIGH 0x0300
+#define CLI_MATCH_NIBBLE_LOW  0x0400
+
+#define CLI_TDB_UINT        0
+#define CLI_TDB_RANGE       1
+#define CLI_TDB_STR         2
+#define CLI_TDB_RANGE2      3
+#define CLI_TDB_FTYPE       4
+#define CLI_TDB_FTYPE_EXPR  5
 
 struct cli_lsig_tdb {
-#define CLI_TDB_UINT		0
-#define CLI_TDB_RANGE		1
-#define CLI_TDB_STR		2
-#define CLI_TDB_RANGE2		3
-#define CLI_TDB_FTYPE		4
-#define CLI_TDB_FTYPE_EXPR	5
-    uint32_t *val, *range;
-    char *str;
-    uint32_t cnt[3];
-    uint32_t subsigs;
+    uint32_t       *val, *range;
+    char           *str;
+    uint32_t       cnt[3];
+    uint32_t       subsigs;
 
     const uint32_t *target;
     const uint32_t *engine, *nos, *ep, *filesize;
@@ -72,14 +75,16 @@ struct cli_lsig_tdb {
     const uint32_t *intermediates;
     /*
     const uint32_t *sectoff, *sectrva, *sectvsz, *sectraw, *sectrsz,
-		   *secturva, *sectuvsz, *secturaw, *sectursz;
+                   *secturva, *sectuvsz, *secturaw, *sectursz;
     */
-    const char *icongrp1, *icongrp2;
-    uint32_t *macro_ptids;
+    const char     *icongrp1, *icongrp2;
+    uint32_t       *macro_ptids;
 #ifdef USE_MPOOL
-    mpool_t *mempool;
+    mpool_t        *mempool;
 #endif
 };
+
+// clang-format on
 
 #define CLI_LSIG_FLAG_PRIVATE 0x01
 
@@ -174,6 +179,8 @@ struct cli_mtarget {
     uint8_t target_count; /* must be synced with non-zero values in the target array */
 };
 
+// clang-format off
+
 #define CLI_MTARGETS 15
 static const struct cli_mtarget cli_mtargets[CLI_MTARGETS] =  {
     { {0, 0},                                   "GENERIC",      0,  0, 1, 1 },
@@ -194,7 +201,7 @@ static const struct cli_mtarget cli_mtargets[CLI_MTARGETS] =  {
 };
 
 #define CLI_OFF_ANY         0xffffffff
-#define CLI_OFF_NONE	    0xfffffffe
+#define CLI_OFF_NONE        0xfffffffe
 #define CLI_OFF_ABSOLUTE    1
 #define CLI_OFF_EOF_MINUS   2
 #define CLI_OFF_EP_PLUS     3
@@ -203,7 +210,9 @@ static const struct cli_mtarget cli_mtargets[CLI_MTARGETS] =  {
 #define CLI_OFF_SX_PLUS     6
 #define CLI_OFF_VERSION     7
 #define CLI_OFF_MACRO       8
-#define CLI_OFF_SE	    9
+#define CLI_OFF_SE          9
+
+// clang-format on
 
 int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, cli_ctx *ctx, cli_file_t ftype, struct cli_ac_data **acdata);
 

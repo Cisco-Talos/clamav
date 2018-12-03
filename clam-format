@@ -1,0 +1,73 @@
+#!/bin/bash
+
+clang-format -style='{ Language: Cpp, UseTab: Never, IndentWidth: 4, AlignTrailingComments: true, AlignConsecutiveAssignments: true, AlignAfterOpenBracket: true, AlignEscapedNewlines: Left, AlignOperands: true, AllowShortFunctionsOnASingleLine: Empty, AllowShortIfStatementsOnASingleLine: true, AllowShortLoopsOnASingleLine: true, BreakBeforeBraces: Linux, BreakBeforeTernaryOperators: true, ColumnLimit: 0, FixNamespaceComments: true, SortIncludes: false, MaxEmptyLinesToKeep: 1, SpaceBeforeParens: ControlStatements, IndentCaseLabels: true, DerivePointerAlignment: true }' -dump-config > .clang-format
+
+clang-format -i -verbose clamav-milter/*.c
+clang-format -i -verbose clamav-milter/*.h
+clang-format -i -verbose clambc/*.c
+clang-format -i -verbose clambc/*.h
+clang-format -i -verbose clamconf/*.c
+clang-format -i -verbose clamconf/*.h
+clang-format -i -verbose clamd/*.c
+clang-format -i -verbose clamd/*.h
+clang-format -i -verbose clamdscan/*.c
+clang-format -i -verbose clamdscan/*.h
+clang-format -i -verbose clamdtop/*.c
+clang-format -i -verbose clamdtop/*.h
+clang-format -i -verbose clamscan/*.c
+clang-format -i -verbose clamscan/*.h
+clang-format -i -verbose clamsubmit/*.c
+clang-format -i -verbose clamsubmit/*.h
+clang-format -i -verbose examples/*.c
+clang-format -i -verbose examples/*.h
+clang-format -i -verbose examples/fileprop_analysis/*.c
+clang-format -i -verbose examples/fileprop_analysis/old/*.c
+clang-format -i -verbose freshclam/*.c
+clang-format -i -verbose freshclam/*.h
+clang-format -i -verbose libclamav/*.c
+clang-format -i -verbose libclamav/*.h
+clang-format -i -verbose libclamav/jsparse/*.c
+clang-format -i -verbose libclamav/jsparse/*.h
+clang-format -i -verbose libclamav/lzw/*.c
+clang-format -i -verbose libclamav/lzw/*.h
+clang-format -i -verbose libclamav/nsis/nulsft.*
+clang-format -i -verbose libclamunrar_iface/*.c
+clang-format -i -verbose libclamunrar_iface/*.h
+clang-format -i -verbose libfreshclam/*.c
+clang-format -i -verbose libfreshclam/*.h
+clang-format -i -verbose shared/*.c
+clang-format -i -verbose shared/*.h
+clang-format -i -verbose sigtool/*.c
+clang-format -i -verbose sigtool/*.h
+clang-format -i -verbose unit_tests/*.c
+clang-format -i -verbose unit_tests/*.h
+clang-format -i -verbose win32/compat/*.c
+clang-format -i -verbose win32/compat/*.h
+clang-format -i -verbose win32/*.h
+
+# Undo changes to specific files (whitelist)
+git checkout clamd/fts.c
+git checkout clamd/priv_fts.h
+git checkout libclamav/iana_cctld.h
+git checkout libclamav/bytecode_api_decl.c
+git checkout libclamav/bytecode_api_impl.h
+git checkout libclamav/bytecode_hooks.h
+git checkout libclamav/rijndael.c
+git checkout libclamav/rijndael.h
+git checkout libclamav/yara_lexer.c
+git checkout libclamav/yara_grammar.c
+git checkout libclamav/yara_grammar.h
+git checkout libclamav/yara_exec.c
+git checkout libclamav/yara_exec.h
+git checkout libclamav/yara_compiler.h
+git checkout libclamav/yara_compiler.h
+git checkout libclamav/yara_parser.h
+git checkout libclamav/yara_hash.c
+git checkout libclamav/yara_hash.h
+git checkout libclamav/yara_arena.c
+git checkout libclamav/yara_arena.h
+git checkout libclamav/inffixed64.h
+git checkout libclamav/inflate64.h
+git checkout libclamav/inflate64.c
+git checkout libclamav/inflate64_priv.h
+git checkout shared/queue.h

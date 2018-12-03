@@ -54,27 +54,29 @@
 #define I 2   /* character appears in ISO-8859 text */
 #define X 3   /* character appears in non-ISO extended ASCII (Mac, IBM PC) */
 
+// clang-format off
 static char text_chars[256] = {
-	/*                  BEL BS HT LF    FF CR    */
-	F, F, F, F, F, F, F, T, T, T, T, F, T, T, F, F,  /* 0x0X */
-        /*                              ESC          */
-	F, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F,  /* 0x1X */
-	T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T,  /* 0x2X */
-	T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T,  /* 0x3X */
-	T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T,  /* 0x4X */
-	T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T,  /* 0x5X */
-	T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T,  /* 0x6X */
-	T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, F,  /* 0x7X */
-	/*            NEL                            */
-	X, X, X, X, X, T, X, X, X, X, X, X, X, X, X, X,  /* 0x8X */
-	X, X, X, X, X, X, X, X, X, X, X, X, X, X, X, X,  /* 0x9X */
-	I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I,  /* 0xaX */
-	I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I,  /* 0xbX */
-	I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I,  /* 0xcX */
-	I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I,  /* 0xdX */
-	I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I,  /* 0xeX */
-	I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I   /* 0xfX */
+    /*                  BEL BS HT LF    FF CR    */
+    F, F, F, F, F, F, F, T, T, T, T, F, T, T, F, F,  /* 0x0X */
+    /*                              ESC          */
+    F, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F,  /* 0x1X */
+    T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T,  /* 0x2X */
+    T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T,  /* 0x3X */
+    T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T,  /* 0x4X */
+    T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T,  /* 0x5X */
+    T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, T,  /* 0x6X */
+    T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, F,  /* 0x7X */
+    /*            NEL                            */
+    X, X, X, X, X, T, X, X, X, X, X, X, X, X, X, X,  /* 0x8X */
+    X, X, X, X, X, X, X, X, X, X, X, X, X, X, X, X,  /* 0x9X */
+    I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I,  /* 0xaX */
+    I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I,  /* 0xbX */
+    I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I,  /* 0xcX */
+    I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I,  /* 0xdX */
+    I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I,  /* 0xeX */
+    I, I, I, I, I, I, I, I, I, I, I, I, I, I, I, I   /* 0xfX */
 };
+// clang-format on
 
 static int td_isascii(const unsigned char *buf, unsigned int len)
 {
@@ -87,11 +89,11 @@ static int td_isascii(const unsigned char *buf, unsigned int len)
 	//    not been validated to correctly handle multibyte UTF8. 
 	// /* Check for the Byte-Order-Mark for UTF-8 */
 	// if ((len >= 3) &&
-	// 	(buf[0] == 0xEF) &&
-	// 	(buf[1] == 0xBB) &&
-	// 	(buf[2] == 0xBF))
+	//    (buf[0] == 0xEF) &&
+	//    (buf[1] == 0xBB) &&
+	//    (buf[2] == 0xBF))
 	// {
-	// 	return 0;
+	//    return 0;
 	// }
 
 	/* Validate that the data all falls within the bounds of 

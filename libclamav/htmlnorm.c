@@ -100,6 +100,7 @@ struct tag_contents {
 	unsigned char contents[MAX_TAG_CONTENTS_LENGTH + 1];
 };
 
+// clang-format off
 static const int base64_chars[256] = {
     -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
     -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
@@ -118,6 +119,7 @@ static const int base64_chars[256] = {
     -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
     -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
 };
+// clang-format on
 
 int table_order[] = {
        00, 02, 01, 00, 02, 01, 02, 01, 01, 02, 01, 02, 00, 01, 02, 01,

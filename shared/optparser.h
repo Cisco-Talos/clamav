@@ -23,21 +23,23 @@
 #define __OPTPARSER_H
 
 /* don't share bits! */
-#define OPT_CLAMD	1
-#define OPT_FRESHCLAM	2
-#define OPT_MILTER	4
-#define OPT_CLAMSCAN	8
-#define OPT_CLAMDSCAN	16
-#define OPT_SIGTOOL	32
-#define OPT_CLAMCONF	64
-#define OPT_CLAMDTOP	128
-#define OPT_CLAMBC      256
-#define OPT_DEPRECATED	512
+// clang-format off
+#define OPT_CLAMD           1
+#define OPT_FRESHCLAM       2
+#define OPT_MILTER          4
+#define OPT_CLAMSCAN        8
+#define OPT_CLAMDSCAN       16
+#define OPT_SIGTOOL         32
+#define OPT_CLAMCONF        64
+#define OPT_CLAMDTOP        128
+#define OPT_CLAMBC          256
+#define OPT_DEPRECATED      512
 
-#define CLOPT_TYPE_STRING  1	/* quoted/regular string */
-#define CLOPT_TYPE_NUMBER  2	/* raw number */
-#define CLOPT_TYPE_SIZE    3	/* number possibly followed by modifiers (M/m or K/k) */
-#define CLOPT_TYPE_BOOL    4	/* boolean */
+#define CLOPT_TYPE_STRING   1    /* quoted/regular string */
+#define CLOPT_TYPE_NUMBER   2    /* raw number */
+#define CLOPT_TYPE_SIZE     3    /* number possibly followed by modifiers (M/m or K/k) */
+#define CLOPT_TYPE_BOOL     4    /* boolean */
+// clang-format on
 
 struct optstruct {
     char *name;

@@ -82,7 +82,7 @@ int main(int argc, char **argv)
 
     /* build engine */
     if((ret = cl_engine_compile(engine)) != CL_SUCCESS) {
-	printf("Database initialization error: %s\n", cl_strerror(ret));;
+	printf("Database initialization error: %s\n", cl_strerror(ret));
         cl_engine_free(engine);
 	close(fd);
 	return 2;

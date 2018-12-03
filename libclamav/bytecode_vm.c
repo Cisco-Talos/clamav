@@ -706,12 +706,14 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
             DEFINE_BINOP(OP_BC_OR, res = op0 | op1);
             DEFINE_BINOP(OP_BC_XOR, res = op0 ^ op1);
 
+// clang-format off
             DEFINE_SCASTOP(OP_BC_SEXT,
                           CHOOSE(READ1(sres, inst->u.cast.source); res = sres ? ~0 : 0,
                                  READ8(sres, inst->u.cast.source); res=sres=SIGNEXT(sres, inst->u.cast.mask),
                                  READ16(sres, inst->u.cast.source); res=sres=SIGNEXT(sres, inst->u.cast.mask),
                                  READ32(sres, inst->u.cast.source); res=sres=SIGNEXT(sres, inst->u.cast.mask),
                                  READ64(sres, inst->u.cast.source); res=sres=SIGNEXT(sres, inst->u.cast.mask)));
+// clang-format on
             DEFINE_CASTOP(OP_BC_ZEXT,
                           CHOOSE(READ1(res, inst->u.cast.source),
                                  READ8(res, inst->u.cast.source),

@@ -123,6 +123,7 @@ typedef enum cl_error_t {
 } cl_error_t;
 
 /* db options */
+// clang-format off
 #define CL_DB_PHISHING          0x2
 #define CL_DB_PHISHING_URLS     0x8
 #define CL_DB_PUA               0x10
@@ -195,9 +196,9 @@ struct cl_scan_options {
 #define CL_SCAN_DEV_COLLECT_PERFORMANCE_INFO        0x2 /* collect performance timings */
 
 /* cl_countsigs options */
-#define CL_COUNTSIGS_OFFICIAL	    0x1
-#define CL_COUNTSIGS_UNOFFICIAL	    0x2
-#define CL_COUNTSIGS_ALL	    (CL_COUNTSIGS_OFFICIAL | CL_COUNTSIGS_UNOFFICIAL)
+#define CL_COUNTSIGS_OFFICIAL                       0x1
+#define CL_COUNTSIGS_UNOFFICIAL                     0x2
+#define CL_COUNTSIGS_ALL                            (CL_COUNTSIGS_OFFICIAL | CL_COUNTSIGS_UNOFFICIAL)
 
 /* For the new engine_options bit field in the engine */
 #define ENGINE_OPTIONS_NONE             0x0
@@ -206,6 +207,7 @@ struct cl_scan_options {
 #define ENGINE_OPTIONS_DISABLE_PE_STATS 0x4
 #define ENGINE_OPTIONS_DISABLE_PE_CERTS 0x8
 #define ENGINE_OPTIONS_PE_DUMPCERTS     0x10
+// clang-format on
 
 struct cl_engine;
 struct cl_settings;
@@ -269,7 +271,7 @@ extern struct cl_engine *cl_engine_new(void);
 enum cl_engine_field {
     CL_ENGINE_MAX_SCANSIZE,	    /* uint64_t */
     CL_ENGINE_MAX_FILESIZE,	    /* uint64_t */
-    CL_ENGINE_MAX_RECURSION,	    /* uint32_t	*/
+    CL_ENGINE_MAX_RECURSION,	    /* uint32_t */
     CL_ENGINE_MAX_FILES,	    /* uint32_t */
     CL_ENGINE_MIN_CC_COUNT,	    /* uint32_t */
     CL_ENGINE_MIN_SSN_COUNT,	    /* uint32_t */
@@ -315,8 +317,7 @@ enum bytecode_mode {
     CL_BYTECODE_MODE_AUTO=0, /* JIT if possible, fallback to interpreter */
     CL_BYTECODE_MODE_JIT, /* force JIT */
     CL_BYTECODE_MODE_INTERPRETER, /* force interpreter */
-    CL_BYTECODE_MODE_TEST, /* both JIT and interpreter, compare results,
-			      all failures are fatal */
+    CL_BYTECODE_MODE_TEST, /* both JIT and interpreter, compare results, all failures are fatal */
     CL_BYTECODE_MODE_OFF /* for query only, not settable */
 };
 

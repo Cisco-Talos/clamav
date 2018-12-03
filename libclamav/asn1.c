@@ -2170,7 +2170,7 @@ int asn1_load_mscat(fmap_t *map, struct cl_engine *engine) {
             }
             if(!engine->hm_fp) {
                 if(!(engine->hm_fp = mpool_calloc(engine->mempool, 1, sizeof(*db)))) {
-                    tag.size = 1;;
+                    tag.size = 1;
                     return 1;
                 }
 #ifdef USE_MPOOL

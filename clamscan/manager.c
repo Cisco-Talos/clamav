@@ -860,7 +860,7 @@ int scanmanager(const struct optstruct *opts)
     }
 
     if((ret = cl_engine_compile(engine)) != 0) {
-        logg("!Database initialization error: %s\n", cl_strerror(ret));;
+        logg("!Database initialization error: %s\n", cl_strerror(ret));
 
         cl_engine_free(engine);
         return 2;

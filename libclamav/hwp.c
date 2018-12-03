@@ -1065,7 +1065,7 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                     hwp3_debug("HWP3.x: Paragraph[%d, %d]: box cell paragraph list starts @ %llu\n", level, p, (long long unsigned)offset);
                     for (i = 0; i < ncells; i++) {
                         l = 0;
-                        while (!l && ((ret = parsehwp3_paragraph(ctx, map, sp++, level+1, &offset, &l)) == CL_SUCCESS));
+                        while (!l && ((ret = parsehwp3_paragraph(ctx, map, sp++, level+1, &offset, &l)) == CL_SUCCESS)) continue;
                         if (ret != CL_SUCCESS)
                             return ret;
                     }
@@ -1073,7 +1073,7 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                     /* box caption paragraph list */
                     hwp3_debug("HWP3.x: Paragraph[%d, %d]: box cell caption paragraph list starts @ %llu\n", level, p, (long long unsigned)offset);
                     l = 0;
-                    while (!l && ((ret = parsehwp3_paragraph(ctx, map, sp++, level+1, &offset, &l)) == CL_SUCCESS));
+                    while (!l && ((ret = parsehwp3_paragraph(ctx, map, sp++, level+1, &offset, &l)) == CL_SUCCESS)) continue;
                     if (ret != CL_SUCCESS)
                         return ret;
                     break;
@@ -1110,7 +1110,7 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                     /* caption paragraph list */
                     hwp3_debug("HWP3.x: Paragraph[%d, %d]: drawing caption paragraph list starts @ %llu\n", level, p, (long long unsigned)offset);
                     l = 0;
-                    while (!l && ((ret = parsehwp3_paragraph(ctx, map, sp++, level+1, &offset, &l)) == CL_SUCCESS));
+                    while (!l && ((ret = parsehwp3_paragraph(ctx, map, sp++, level+1, &offset, &l)) == CL_SUCCESS)) continue;
                     if (ret != CL_SUCCESS)
                         return ret;
                     break;
@@ -1155,7 +1155,7 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                     /* hidden description paragraph list */
                     hwp3_debug("HWP3.x: Paragraph[%d, %d]: hidden description paragraph list starts @ %llu\n", level, p, (long long unsigned)offset);
                     l = 0;
-                    while (!l && ((ret = parsehwp3_paragraph(ctx, map, sp++, level+1, &offset, &l)) == CL_SUCCESS));
+                    while (!l && ((ret = parsehwp3_paragraph(ctx, map, sp++, level+1, &offset, &l)) == CL_SUCCESS)) continue;
                     if (ret != CL_SUCCESS)
                         return ret;
                     break;
@@ -1197,7 +1197,7 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                     /* content paragraph list */
                     hwp3_debug("HWP3.x: Paragraph[%d, %d]: header/footer paragraph list starts @ %llu\n", level, p, (long long unsigned)offset);
                     l = 0;
-                    while (!l && ((ret = parsehwp3_paragraph(ctx, map, sp++, level+1, &offset, &l)) == CL_SUCCESS));
+                    while (!l && ((ret = parsehwp3_paragraph(ctx, map, sp++, level+1, &offset, &l)) == CL_SUCCESS)) continue;
                     if (ret != CL_SUCCESS)
                         return ret;
                     break;
@@ -1225,7 +1225,7 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
                     /* content paragraph list */
                     hwp3_debug("HWP3.x: Paragraph[%d, %d]: footnote/endnote paragraph list starts @ %llu\n", level, p, (long long unsigned)offset);
                     l = 0;
-                    while (!l && ((ret = parsehwp3_paragraph(ctx, map, sp++, level+1, &offset, &l)) == CL_SUCCESS));
+                    while (!l && ((ret = parsehwp3_paragraph(ctx, map, sp++, level+1, &offset, &l)) == CL_SUCCESS)) continue;
                     if (ret != CL_SUCCESS)
                         return ret;
                     break;
@@ -1840,7 +1840,7 @@ static int hwp3_cb(void *cbdata, int fd, const char* filepath, cli_ctx *ctx)
     last = 0;
     /* Paragraphs - variable */
     /* Paragraphs - are terminated with 0x0d00[13(CR) as hchar], empty paragraph marks end of section and do NOT end with 0x0d00 */
-    while (!last && ((ret = parsehwp3_paragraph(ctx, map, p++, 0, &offset, &last)) == CL_SUCCESS));
+    while (!last && ((ret = parsehwp3_paragraph(ctx, map, p++, 0, &offset, &last)) == CL_SUCCESS)) continue;
     /* return is never a virus */
     if (ret != CL_SUCCESS) {
         if (dmap)
@@ -1854,7 +1854,7 @@ static int hwp3_cb(void *cbdata, int fd, const char* filepath, cli_ctx *ctx)
 
     last = 0;
     /* 'additional information block #1's - attachments and media */
-    while (!last && ((ret = parsehwp3_infoblk_1(ctx, map, &offset, &last)) == CL_SUCCESS));
+    while (!last && ((ret = parsehwp3_infoblk_1(ctx, map, &offset, &last)) == CL_SUCCESS)) continue;
 
     /* scan the uncompressed stream - both compressed and uncompressed cases [ALLMATCH] */
     if ((ret == CL_SUCCESS) || ((SCAN_ALLMATCHES) && (ret == CL_VIRUS))) {

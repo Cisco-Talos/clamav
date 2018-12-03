@@ -440,7 +440,7 @@ int main(int argc, char *argv[])
     }
     curl_easy_setopt(clam_curl, CURLOPT_COOKIE, str);
     free(str);
-    curl_formadd(&post, &last, CURLFORM_COPYNAME, "utf8", CURLFORM_COPYCONTENTS, "\x27" "\x13", CURLFORM_END);
+    curl_formadd(&post, &last, CURLFORM_COPYNAME, "utf8", CURLFORM_COPYCONTENTS, "\x27\x13", CURLFORM_END);
     curl_formadd(&post, &last, CURLFORM_COPYNAME, "authenticity_token", CURLFORM_COPYCONTENTS, authenticity_token, CURLFORM_END);
     curl_formadd(&post, &last, CURLFORM_COPYNAME, "submissionID", CURLFORM_COPYCONTENTS, submissionID, CURLFORM_END);
     curl_formadd(&post, &last, CURLFORM_COPYNAME, "type", CURLFORM_COPYCONTENTS, malware?"malware":"fp", CURLFORM_END);
