@@ -50,9 +50,9 @@
 #include "shared/optparser.h"
 #include "shared/output.h"
 
-#include "server.h"
-#include "others.h"
-#include "scanner.h"
+#include "clamd/server.h"
+#include "clamd/others.h"
+#include "clamd/scanner.h"
 
 static int onas_ddd_init_ht(uint32_t ht_size);
 static int onas_ddd_init_wdlt(uint64_t nwatches);

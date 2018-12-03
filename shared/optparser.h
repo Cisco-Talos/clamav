@@ -33,7 +33,8 @@
 #define OPT_CLAMCONF        64
 #define OPT_CLAMDTOP        128
 #define OPT_CLAMBC          256
-#define OPT_DEPRECATED      512
+#define OPT_CLAMONAC    512
+#define OPT_DEPRECATED	1024
 
 #define CLOPT_TYPE_STRING   1    /* quoted/regular string */
 #define CLOPT_TYPE_NUMBER   2    /* raw number */

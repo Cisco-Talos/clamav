@@ -53,7 +53,6 @@
 
 #include "shared/idmef_logging.h"
 
-#include "onaccess_fan.h"
 #include "server.h"
 #include "thrmgr.h"
 #include "session.h"
@@ -1261,7 +1260,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     acceptdata.max_queue = max_queue;
 
     if (optget(opts, "ScanOnAccess")->enabled)
-
+/*
 #if defined(FANOTIFY) || defined(CLAMAUTH)
     {
         int thread_started = 1;
@@ -1269,7 +1268,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
             if (pthread_attr_init(&fan_attr)) break;
             pthread_attr_setdetachstate(&fan_attr, PTHREAD_CREATE_JOINABLE);
 
-            /* Allocate memory for arguments. Thread is responsible for freeing it. */
+			Allocate memory for arguments. Thread is responsible for freeing it.
             if (!(tharg = (struct thrarg *)calloc(sizeof(struct thrarg), 1))) break;
             if (!(tharg->options = (struct cl_scan_options *)calloc(sizeof(struct cl_scan_options), 1))) break;
 
@@ -1281,7 +1280,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
         } while (0);
 
         if (0 != thread_started) {
-            /* Failed to create thread. Free anything we may have allocated. */
+			Failed to create thread. Free anything we may have allocated.
             logg("!Unable to start on-access scan.\n");
             if (NULL != tharg) {
                 if (NULL != tharg->options) {
@@ -1296,6 +1295,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 #else
         logg("!On-access scan is not available\n");
 #endif
+*/
 
 #ifndef _WIN32
     /* set up signal handling */

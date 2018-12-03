@@ -47,10 +47,10 @@
 #include "shared/optparser.h"
 #include "shared/output.h"
 
-#include "server.h"
-#include "others.h"
-#include "scanner.h"
-#include "priv_fts.h"
+#include "clamd/server.h"
+#include "clamd/others.h"
+#include "clamd/scanner.h"
+#include "clamd/priv_fts.h"
 
 static struct onas_bucket *onas_bucket_init();
 static void onas_free_bucket(struct onas_bucket *bckt);

@@ -189,6 +189,7 @@ clamd/Makefile
 clamd/clamav-daemon.service
 clamd/clamav-daemon.socket
 clamdscan/Makefile
+clamonacc/Makefile
 clamsubmit/Makefile
 clamav-milter/Makefile
 freshclam/clamav-freshclam.service
