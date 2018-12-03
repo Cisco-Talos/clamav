@@ -34,7 +34,7 @@
 #define UCS4_3412 "UCS-4"
 #define UTF16_BE "UTF-16BE"
 #define UTF16_LE "UTF-16LE"
-#define UTF8     "UTF-8"
+#define UTF8 "UTF-8"
 #define UNDECIDED_32_1234 UCS4_1234
 #define UNDECIDED_32_4321 UCS4_4321
 #define UNDECIDED_32_2143 UCS4_2143
@@ -46,15 +46,24 @@
 #define MAX_ENTITY_SIZE 22
 
 struct entity_conv {
-	unsigned char entity_buff[MAX_ENTITY_SIZE+2];
+    unsigned char entity_buff[MAX_ENTITY_SIZE + 2];
 };
 
-enum encodings {E_UCS4,E_UTF16,E_UCS4_1234,E_UCS4_4321,E_UCS4_2143,E_UCS4_3412,E_UTF16_BE,E_UTF16_LE,E_UTF8, E_UNKNOWN,E_OTHER};
+enum encodings { E_UCS4,
+                 E_UTF16,
+                 E_UCS4_1234,
+                 E_UCS4_4321,
+                 E_UCS4_2143,
+                 E_UCS4_3412,
+                 E_UTF16_BE,
+                 E_UTF16_LE,
+                 E_UTF8,
+                 E_UNKNOWN,
+                 E_OTHER };
 
 unsigned char* u16_normalize_tobuffer(uint16_t u16, unsigned char* dst, size_t dst_size);
-const char* entity_norm(struct entity_conv* conv,const unsigned char* entity);
+const char* entity_norm(struct entity_conv* conv, const unsigned char* entity);
 const char* encoding_detect_bom(const unsigned char* bom, const size_t length);
 int encoding_normalize_toascii(const m_area_t* in_m_area, const char* initial_encoding, m_area_t* out_m_area);
 
 #endif
-

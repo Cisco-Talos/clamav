@@ -12,8 +12,7 @@
 #include <process.h>
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 #include "gettimeofday.h"
@@ -39,7 +38,7 @@ typedef unsigned short mode_t;
 #define strcasecmp lstrcmpi
 #define strncasecmp strnicmp
 #define mkdir(path, mode) mkdir(path)
-#define sleep(sex) Sleep(1000*(sex))
+#define sleep(sex) Sleep(1000 * (sex))
 #define getuid() 0
 #define getgid() 0
 
@@ -81,18 +80,18 @@ char *strptime(const char *s, const char *format, struct tm *tm);
 #define EAI_SYSTEM 0
 
 #ifndef MIN
-#define MIN(a, b)	(((a) < (b)) ? (a) : (b))
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #endif
 #ifndef MAX
-#define MAX(a,b)	(((a) > (b)) ? (a) : (b))
+#define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #endif
 
 #ifndef HAVE_IN_PORT_T
-typedef	unsigned	short	in_port_t;
+typedef unsigned short in_port_t;
 #endif
 
 #ifndef HAVE_IN_ADDR_T
-typedef	unsigned	int	in_addr_t;
+typedef unsigned int in_addr_t;
 #endif
 
 #define PATHSEP "\\"
@@ -117,8 +116,14 @@ LIBCLAMAV_EXPORT extern const char *CONFDIR_MILTER;
 #undef OUT
 #endif
 
-int real_main(int, char**);
-#define main main(int argc, char **argv) { _setmode(_fileno(stdin), _O_BINARY); w32_glob(&argc, &argv); return real_main(argc, argv); }; int real_main
+int real_main(int, char **);
+#define main                                 \
+    main(int argc, char **argv)              \
+    {                                        \
+        _setmode(_fileno(stdin), _O_BINARY); \
+        w32_glob(&argc, &argv);              \
+        return real_main(argc, argv);        \
+    };                                       \
+    int real_main
 
 #endif /* __PLATFORM_H */
-

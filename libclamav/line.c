@@ -69,49 +69,49 @@
 line_t *
 lineCreate(const char *data)
 {
-	const size_t size = strlen(data);
-	line_t *ret = (line_t *)cli_malloc(size + 2);
+    const size_t size = strlen(data);
+    line_t *ret       = (line_t *)cli_malloc(size + 2);
 
-    if(ret == NULL) {
+    if (ret == NULL) {
         cli_errmsg("lineCreate: Unable to allocate memory for ret\n");
         return (line_t *)NULL;
     }
 
-	ret[0] = (char)1;
-	/*strcpy(&ret[1], data);*/
-	memcpy(&ret[1], data, size);
-	ret[size + 1] = '\0';
+    ret[0] = (char)1;
+    /*strcpy(&ret[1], data);*/
+    memcpy(&ret[1], data, size);
+    ret[size + 1] = '\0';
 
-	return ret;
+    return ret;
 }
 
 line_t *
 lineLink(line_t *line)
 {
-	assert(line != NULL);
-	if((unsigned char)line[0] == (unsigned char)255) {
-		cli_dbgmsg("lineLink: linkcount too large (%s)\n", lineGetData(line));
-		return lineCreate(lineGetData(line));
-	}
-	line[0]++;
-	/*printf("%d:\n\t'%s'\n", (int)line[0], &line[1]);*/
-	return line;
+    assert(line != NULL);
+    if ((unsigned char)line[0] == (unsigned char)255) {
+        cli_dbgmsg("lineLink: linkcount too large (%s)\n", lineGetData(line));
+        return lineCreate(lineGetData(line));
+    }
+    line[0]++;
+    /*printf("%d:\n\t'%s'\n", (int)line[0], &line[1]);*/
+    return line;
 }
 
 line_t *
 lineUnlink(line_t *line)
 {
-	/*printf("%d:\n\t'%s'\n", (int)line[0], &line[1]);*/
+    /*printf("%d:\n\t'%s'\n", (int)line[0], &line[1]);*/
 
-	if(--line[0] == 0) {
-		free(line);
-		return NULL;
-	}
-	return line;
+    if (--line[0] == 0) {
+        free(line);
+        return NULL;
+    }
+    return line;
 }
 
 const char *
 lineGetData(const line_t *line)
 {
-	return line ? &line[1] : NULL;
+    return line ? &line[1] : NULL;
 }

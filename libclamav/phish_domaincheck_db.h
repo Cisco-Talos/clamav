@@ -21,7 +21,6 @@
  *  MA 02110-1301, USA.
  */
 
-
 #ifndef _PHISH_DOMAINCHECK_DB_H
 #define _PHISH_DOMAINCHECK_DB_H
 #include "clamav.h"
@@ -30,7 +29,6 @@ int init_domainlist(struct cl_engine* engine);
 void domainlist_done(struct cl_engine* engine);
 void domainlist_cleanup(const struct cl_engine* engine);
 int is_domainlist_ok(const struct cl_engine* engine);
-int domainlist_match(const struct cl_engine *engine, char* real_url,const char* display_url,const struct pre_fixup_info* pre_fixup, int hostOnly);
+int domainlist_match(const struct cl_engine* engine, char* real_url, const char* display_url, const struct pre_fixup_info* pre_fixup, int hostOnly);
 
 #endif
-

@@ -30,21 +30,21 @@ struct cli_events;
 typedef struct cli_events cli_events_t;
 
 cli_events_t *cli_events_new(unsigned max_event);
-void cli_events_free(cli_events_t*);
+void cli_events_free(cli_events_t *);
 
 enum ev_type {
     ev_none = 0,
     ev_string,
     ev_data,
-    ev_data_fast,/* checksum, and length */
+    ev_data_fast, /* checksum, and length */
     ev_int,
-    ev_time/* implicit time measurement */
+    ev_time /* implicit time measurement */
 };
 
 enum multiple_handling {
-    multiple_last,/* keep only last */
-    multiple_chain,/* chain them */
-    multiple_sum,/* sum, only for ev_int and ev_time */
+    multiple_last,  /* keep only last */
+    multiple_chain, /* chain them */
+    multiple_sum,   /* sum, only for ev_int and ev_time */
     multiple_concat
 };
 
@@ -58,8 +58,8 @@ union ev_val {
 /* Defines a new event with the given id, name, type. If event is triggered
  * multiple times then it is handled according to the event type. */
 int cli_event_define(cli_events_t *ctx, unsigned id,
-		     const char *name, enum ev_type type,
-		     enum multiple_handling multiple);
+                     const char *name, enum ev_type type,
+                     enum multiple_handling multiple);
 
 /* error events */
 void cli_event_error_str(cli_events_t *ctx, const char *str);
@@ -70,7 +70,7 @@ void cli_event_int(cli_events_t *ctx, unsigned id, uint64_t arg);
 /* for strings live at _diff_all, usually constant strings */
 void cli_event_string(cli_events_t *ctx, unsigned id, const char *str);
 /* for random data, alloced and copied */
-void cli_event_data(cli_events_t *ctx, unsigned id, const void* data, uint32_t len);
+void cli_event_data(cli_events_t *ctx, unsigned id, const void *data, uint32_t len);
 /* don't record data, just a checksum and size */
 void cli_event_fastdata(cli_events_t *ctx, unsigned id, const void *data, uint32_t len);
 
@@ -82,9 +82,9 @@ void cli_event_time_nested_stop(cli_events_t *ctx, unsigned id, unsigned nestedi
 /* event_count is implemented as ev_int, with ev_multiple_sum multiple */
 void cli_event_count(cli_events_t *ctx, unsigned id);
 
-void cli_event_get(cli_events_t* ctx, unsigned id, union ev_val *val, uint32_t *count);
+void cli_event_get(cli_events_t *ctx, unsigned id, union ev_val *val, uint32_t *count);
 
-const char * cli_event_get_name(cli_events_t* ctx, unsigned id);
+const char *cli_event_get_name(cli_events_t *ctx, unsigned id);
 
 /* print all recorded events */
 void cli_event_debug_all(cli_events_t *ctx);

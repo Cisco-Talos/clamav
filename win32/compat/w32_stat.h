@@ -26,9 +26,9 @@
 
 #define S_IRUSR S_IREAD
 #define S_IWUSR S_IWRITE
-#define S_IRWXU (S_IRUSR|S_IWUSR)
-#define S_ISDIR(mode) ((_S_IFDIR & mode)!=0)
-#define S_ISREG(mode) ((_S_IFREG & mode)!=0)
+#define S_IRWXU (S_IRUSR | S_IWUSR)
+#define S_ISDIR(mode) ((_S_IFDIR & mode) != 0)
+#define S_ISREG(mode) ((_S_IFREG & mode) != 0)
 #define S_ISLNK(mode) (0)
 #define F_OK 0
 #define W_OK 2
@@ -45,7 +45,6 @@ int w32_access(const char *pathname, int mode);
 #define access(pathname, mode) w32_access(pathname, mode)
 
 wchar_t *uncpath(const char *path);
-int safe_open(const char *path, int flags, ... );
+int safe_open(const char *path, int flags, ...);
 
 #endif
-

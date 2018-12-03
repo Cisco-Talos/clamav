@@ -60,12 +60,12 @@
 
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
-#define  API_MISUSE() cli_event_error_str(EV, "API misuse @" TOSTRING(__LINE__ ))
+#define API_MISUSE() cli_event_error_str(EV, "API misuse @" TOSTRING(__LINE__))
 
 uint32_t cli_bcapi_test1(struct cli_bc_ctx *ctx, uint32_t a, uint32_t b)
 {
     UNUSEDPARAM(ctx);
-    return (a==0xf00dbeef && b==0xbeeff00d) ? 0x12345678 : 0x55;
+    return (a == 0xf00dbeef && b == 0xbeeff00d) ? 0x12345678 : 0x55;
 }
 
 uint32_t cli_bcapi_test2(struct cli_bc_ctx *ctx, uint32_t a)
@@ -74,7 +74,7 @@ uint32_t cli_bcapi_test2(struct cli_bc_ctx *ctx, uint32_t a)
     return a == 0xf00d ? 0xd00f : 0x5555;
 }
 
-int32_t cli_bcapi_read(struct cli_bc_ctx* ctx, uint8_t *data, int32_t size)
+int32_t cli_bcapi_read(struct cli_bc_ctx *ctx, uint8_t *data, int32_t size)
 {
     int n;
     if (!ctx->fmap) {
@@ -99,7 +99,7 @@ int32_t cli_bcapi_read(struct cli_bc_ctx* ctx, uint8_t *data, int32_t size)
     return n;
 }
 
-int32_t cli_bcapi_seek(struct cli_bc_ctx* ctx, int32_t pos, uint32_t whence)
+int32_t cli_bcapi_seek(struct cli_bc_ctx *ctx, int32_t pos, uint32_t whence)
 {
     off_t off;
     if (!ctx->fmap) {
@@ -135,7 +135,7 @@ int32_t cli_bcapi_seek(struct cli_bc_ctx* ctx, int32_t pos, uint32_t whence)
 uint32_t cli_bcapi_debug_print_str(struct cli_bc_ctx *ctx, const uint8_t *str, uint32_t len)
 {
     UNUSEDPARAM(len);
-    cli_event_fastdata(EV, BCEV_DBG_STR, str, strlen((const char*)str));
+    cli_event_fastdata(EV, BCEV_DBG_STR, str, strlen((const char *)str));
     cli_dbgmsg("bytecode debug: %s\n", str);
     return 0;
 }
@@ -153,10 +153,10 @@ uint32_t cli_bcapi_debug_print_uint(struct cli_bc_ctx *ctx, uint32_t a)
 /*TODO: compiler should make sure that only constants are passed here, and not
  * pointers to arbitrary locations that may not be valid when bytecode finishes
  * executing */
-uint32_t cli_bcapi_setvirusname(struct cli_bc_ctx* ctx, const uint8_t *name, uint32_t len)
+uint32_t cli_bcapi_setvirusname(struct cli_bc_ctx *ctx, const uint8_t *name, uint32_t len)
 {
     UNUSEDPARAM(len);
-    ctx->virname = (const char*)name;
+    ctx->virname = (const char *)name;
     return 0;
 }
 
@@ -164,7 +164,7 @@ uint32_t cli_bcapi_disasm_x86(struct cli_bc_ctx *ctx, struct DISASM_RESULT *res,
 {
     int n;
     const unsigned char *buf;
-    const unsigned char* next;
+    const unsigned char *next;
     UNUSEDPARAM(len);
     if (!res || !ctx->fmap || (size_t)(ctx->off) >= ctx->fmap->len) {
         API_MISUSE();
@@ -172,7 +172,7 @@ uint32_t cli_bcapi_disasm_x86(struct cli_bc_ctx *ctx, struct DISASM_RESULT *res,
     }
     /* 32 should be longest instr we support decoding.
      * When we'll support mmx/sse instructions this should be updated! */
-    n = MIN(32, ctx->fmap->len - ctx->off);
+    n   = MIN(32, ctx->fmap->len - ctx->off);
     buf = fmap_need_off_once(ctx->fmap, ctx->off, n);
     if (buf)
         next = cli_disasm_one(buf, n, res, 0);
@@ -190,12 +190,12 @@ uint32_t cli_bcapi_disasm_x86(struct cli_bc_ctx *ctx, struct DISASM_RESULT *res,
  * after hooks/other bytecodes are run. TODO: need a more generic solution
  * to avoid uselessly recursing on bytecode-unpacked files, but also a way to
  * override the limit if we need it in a special situation */
-int32_t cli_bcapi_write(struct cli_bc_ctx *ctx, uint8_t*data, int32_t len)
+int32_t cli_bcapi_write(struct cli_bc_ctx *ctx, uint8_t *data, int32_t len)
 {
     char err[128];
     int32_t res;
 
-    cli_ctx *cctx = (cli_ctx*)ctx->ctx;
+    cli_ctx *cctx = (cli_ctx *)ctx->ctx;
     if (len < 0) {
         cli_warnmsg("Bytecode API: called with negative length!\n");
         API_MISUSE();
@@ -208,7 +208,7 @@ int32_t cli_bcapi_write(struct cli_bc_ctx *ctx, uint8_t*data, int32_t len)
             cli_event_error_oom(EV, 0);
             return -1;
         }
-        ctx->outfd = open(ctx->tempfile, O_RDWR|O_CREAT|O_EXCL|O_TRUNC|O_BINARY, 0600);
+        ctx->outfd = open(ctx->tempfile, O_RDWR | O_CREAT | O_EXCL | O_TRUNC | O_BINARY, 0600);
         if (ctx->outfd == -1) {
             ctx->outfd = 0;
             cli_warnmsg("Bytecode API: Can't create file %s: %s\n", ctx->tempfile, cli_strerror(errno, err, sizeof(err)));
@@ -231,16 +231,16 @@ int32_t cli_bcapi_write(struct cli_bc_ctx *ctx, uint8_t*data, int32_t len)
     return res;
 }
 
-void cli_bytecode_context_set_trace(struct cli_bc_ctx* ctx, unsigned level,
+void cli_bytecode_context_set_trace(struct cli_bc_ctx *ctx, unsigned level,
                                     bc_dbg_callback_trace trace,
                                     bc_dbg_callback_trace_op trace_op,
                                     bc_dbg_callback_trace_val trace_val,
                                     bc_dbg_callback_trace_ptr trace_ptr)
 {
-    ctx->trace = trace;
-    ctx->trace_op = trace_op;
-    ctx->trace_val = trace_val;
-    ctx->trace_ptr = trace_ptr;
+    ctx->trace       = trace;
+    ctx->trace_op    = trace_op;
+    ctx->trace_val   = trace_val;
+    ctx->trace_ptr   = trace_ptr;
     ctx->trace_level = level;
 }
 
@@ -248,23 +248,23 @@ uint32_t cli_bcapi_trace_scope(struct cli_bc_ctx *ctx, const uint8_t *scope, uin
 {
     if (LIKELY(!ctx->trace_level))
         return 0;
-    if (ctx->scope != (const char*)scope) {
-        ctx->scope = (const char*)scope ? (const char*)scope : "?";
+    if (ctx->scope != (const char *)scope) {
+        ctx->scope   = (const char *)scope ? (const char *)scope : "?";
         ctx->scopeid = scopeid;
-        ctx->trace_level |= 0x80;/* temporarily increase level to print params */
+        ctx->trace_level |= 0x80; /* temporarily increase level to print params */
     } else if ((ctx->trace_level >= trace_scope) && ctx->scopeid != scopeid) {
         ctx->scopeid = scopeid;
-        ctx->trace_level |= 0x40;/* temporarily increase level to print location */
+        ctx->trace_level |= 0x40; /* temporarily increase level to print location */
     }
     return 0;
 }
 
-uint32_t cli_bcapi_trace_directory(struct cli_bc_ctx *ctx, const uint8_t* dir, uint32_t dummy)
+uint32_t cli_bcapi_trace_directory(struct cli_bc_ctx *ctx, const uint8_t *dir, uint32_t dummy)
 {
     UNUSEDPARAM(dummy);
     if (LIKELY(!ctx->trace_level))
         return 0;
-    ctx->directory = (const char*)dir ? (const char*)dir : "";
+    ctx->directory = (const char *)dir ? (const char *)dir : "";
     return 0;
 }
 
@@ -272,9 +272,9 @@ uint32_t cli_bcapi_trace_source(struct cli_bc_ctx *ctx, const uint8_t *file, uin
 {
     if (LIKELY(ctx->trace_level < trace_line))
         return 0;
-    if (ctx->file != (const char*)file || ctx->line != line) {
-        ctx->col = 0;
-        ctx->file =(const char*)file ? (const char*)file : "??";
+    if (ctx->file != (const char *)file || ctx->line != line) {
+        ctx->col  = 0;
+        ctx->file = (const char *)file ? (const char *)file : "??";
         ctx->line = line;
     }
     return 0;
@@ -284,10 +284,10 @@ uint32_t cli_bcapi_trace_op(struct cli_bc_ctx *ctx, const uint8_t *op, uint32_t 
 {
     if (LIKELY(ctx->trace_level < trace_col))
         return 0;
-    if (ctx->trace_level&0xc0) {
+    if (ctx->trace_level & 0xc0) {
         ctx->col = col;
         /* func/scope changed and they needed param/location event */
-        ctx->trace(ctx, (ctx->trace_level&0x80) ? trace_func : trace_scope);
+        ctx->trace(ctx, (ctx->trace_level & 0x80) ? trace_func : trace_scope);
         ctx->trace_level &= ~0xc0;
     }
     if (LIKELY(ctx->trace_level < trace_col))
@@ -301,31 +301,31 @@ uint32_t cli_bcapi_trace_op(struct cli_bc_ctx *ctx, const uint8_t *op, uint32_t 
     if (LIKELY(ctx->trace_level < trace_op))
         return 0;
     if (ctx->trace_op && op)
-        ctx->trace_op(ctx, (const char*)op);
+        ctx->trace_op(ctx, (const char *)op);
     return 0;
 }
 
-uint32_t cli_bcapi_trace_value(struct cli_bc_ctx *ctx, const uint8_t* name, uint32_t value)
+uint32_t cli_bcapi_trace_value(struct cli_bc_ctx *ctx, const uint8_t *name, uint32_t value)
 {
     if (LIKELY(ctx->trace_level < trace_val))
         return 0;
-    if (ctx->trace_level&0x80) {
-        if ((ctx->trace_level&0x7f) < trace_param)
+    if (ctx->trace_level & 0x80) {
+        if ((ctx->trace_level & 0x7f) < trace_param)
             return 0;
         ctx->trace(ctx, trace_param);
     }
     if (ctx->trace_val && name)
-        ctx->trace_val(ctx, (const char*)name, value);
+        ctx->trace_val(ctx, (const char *)name, value);
     return 0;
 }
 
-uint32_t cli_bcapi_trace_ptr(struct cli_bc_ctx *ctx, const uint8_t* ptr, uint32_t dummy)
+uint32_t cli_bcapi_trace_ptr(struct cli_bc_ctx *ctx, const uint8_t *ptr, uint32_t dummy)
 {
     UNUSEDPARAM(dummy);
     if (LIKELY(ctx->trace_level < trace_val))
         return 0;
-    if (ctx->trace_level&0x80) {
-        if ((ctx->trace_level&0x7f) < trace_param)
+    if (ctx->trace_level & 0x80) {
+        if ((ctx->trace_level & 0x7f) < trace_param)
             return 0;
         ctx->trace(ctx, trace_param);
     }
@@ -336,19 +336,19 @@ uint32_t cli_bcapi_trace_ptr(struct cli_bc_ctx *ctx, const uint8_t* ptr, uint32_
 
 uint32_t cli_bcapi_pe_rawaddr(struct cli_bc_ctx *ctx, uint32_t rva)
 {
-  uint32_t ret;
-  unsigned err = 0;
-  const struct cli_pe_hook_data *pe = ctx->hooks.pedata;
-  ret = cli_rawaddr(rva, ctx->sections, pe->nsections, &err,
-                    ctx->file_size, pe->hdr_size);
-  if (err) {
-    cli_dbgmsg("bcapi_pe_rawaddr invalid rva: %u\n", rva);
-    return PE_INVALID_RVA;
-  }
-  return ret;
+    uint32_t ret;
+    unsigned err                      = 0;
+    const struct cli_pe_hook_data *pe = ctx->hooks.pedata;
+    ret                               = cli_rawaddr(rva, ctx->sections, pe->nsections, &err,
+                      ctx->file_size, pe->hdr_size);
+    if (err) {
+        cli_dbgmsg("bcapi_pe_rawaddr invalid rva: %u\n", rva);
+        return PE_INVALID_RVA;
+    }
+    return ret;
 }
 
-static inline const char* cli_memmem(const char *haystack, unsigned hlen,
+static inline const char *cli_memmem(const char *haystack, unsigned hlen,
                                      const unsigned char *needle, unsigned nlen)
 {
     const char *p;
@@ -361,20 +361,20 @@ static inline const char* cli_memmem(const char *haystack, unsigned hlen,
         return memchr(haystack, c, hlen);
 
     while (hlen >= nlen) {
-        p = haystack;
+        p        = haystack;
         haystack = memchr(haystack, c, hlen - nlen + 1);
         if (!haystack)
             return NULL;
-        hlen -= haystack+1 - p;
+        hlen -= haystack + 1 - p;
         p = haystack + 1;
-        if (!memcmp(p, needle, nlen-1))
+        if (!memcmp(p, needle, nlen - 1))
             return haystack;
         haystack = p;
     }
     return NULL;
 }
 
-int32_t cli_bcapi_file_find(struct cli_bc_ctx *ctx, const uint8_t* data, uint32_t len)
+int32_t cli_bcapi_file_find(struct cli_bc_ctx *ctx, const uint8_t *data, uint32_t len)
 {
     fmap_t *map = ctx->fmap;
     if (!map || len <= 0) {
@@ -385,14 +385,14 @@ int32_t cli_bcapi_file_find(struct cli_bc_ctx *ctx, const uint8_t* data, uint32_
     return cli_bcapi_file_find_limit(ctx, data, len, map->len);
 }
 
-int32_t cli_bcapi_file_find_limit(struct cli_bc_ctx *ctx , const uint8_t* data, uint32_t len, int32_t limit)
+int32_t cli_bcapi_file_find_limit(struct cli_bc_ctx *ctx, const uint8_t *data, uint32_t len, int32_t limit)
 {
     char buf[4096];
-    fmap_t *map = ctx->fmap;
+    fmap_t *map  = ctx->fmap;
     uint32_t off = ctx->off;
     int n;
 
-    if (!map || len > sizeof(buf)/4 || len <= 0 || limit <= 0) {
+    if (!map || len > sizeof(buf) / 4 || len <= 0 || limit <= 0) {
         cli_dbgmsg("bcapi_file_find_limit preconditions not met\n");
         API_MISUSE();
         return -1;
@@ -434,7 +434,7 @@ int32_t cli_bcapi_file_byteat(struct cli_bc_ctx *ctx, uint32_t off)
     return c;
 }
 
-uint8_t* cli_bcapi_malloc(struct cli_bc_ctx *ctx, uint32_t size)
+uint8_t *cli_bcapi_malloc(struct cli_bc_ctx *ctx, uint32_t size)
 {
     void *v;
 #if USE_MPOOL
@@ -457,7 +457,7 @@ uint8_t* cli_bcapi_malloc(struct cli_bc_ctx *ctx, uint32_t size)
     return v;
 }
 
-int32_t cli_bcapi_get_pe_section(struct cli_bc_ctx *ctx, struct cli_exe_section* section, uint32_t num)
+int32_t cli_bcapi_get_pe_section(struct cli_bc_ctx *ctx, struct cli_exe_section *section, uint32_t num)
 {
     if (num < ctx->hooks.pedata->nsections) {
         memcpy(section, &ctx->sections[num], sizeof(struct cli_exe_section));
@@ -466,7 +466,7 @@ int32_t cli_bcapi_get_pe_section(struct cli_bc_ctx *ctx, struct cli_exe_section*
     return -1;
 }
 
-int32_t cli_bcapi_fill_buffer(struct cli_bc_ctx *ctx, uint8_t* buf,
+int32_t cli_bcapi_fill_buffer(struct cli_bc_ctx *ctx, uint8_t *buf,
                               uint32_t buflen, uint32_t filled,
                               uint32_t pos, uint32_t fill)
 {
@@ -484,20 +484,20 @@ int32_t cli_bcapi_fill_buffer(struct cli_bc_ctx *ctx, uint8_t* buf,
     }
     remaining = filled - pos;
     if (remaining) {
-        if (!CLI_ISCONTAINED(buf, buflen, buf+pos, remaining)) {
+        if (!CLI_ISCONTAINED(buf, buflen, buf + pos, remaining)) {
             cli_dbgmsg("fill_buffer3\n");
             API_MISUSE();
             return -1;
         }
-        memmove(buf, buf+pos, remaining);
+        memmove(buf, buf + pos, remaining);
     }
     tofill = buflen - remaining;
-    if (!CLI_ISCONTAINED(buf, buflen, buf+remaining, tofill)) {
+    if (!CLI_ISCONTAINED(buf, buflen, buf + remaining, tofill)) {
         cli_dbgmsg("fill_buffer4\n");
         API_MISUSE();
         return -1;
     }
-    res = cli_bcapi_read(ctx, buf+remaining, tofill);
+    res = cli_bcapi_read(ctx, buf + remaining, tofill);
     if (res <= 0) {
         cli_dbgmsg("fill_buffer5\n");
         API_MISUSE();
@@ -523,7 +523,7 @@ int32_t cli_bcapi_extract_new(struct cli_bc_ctx *ctx, int32_t id)
         return CL_ESEEK;
     }
     cli_dbgmsg("bytecode: scanning extracted file %s\n", ctx->tempfile);
-    cctx = (cli_ctx*)ctx->ctx;
+    cctx = (cli_ctx *)ctx->ctx;
     if (cctx) {
         cctx->recursion++;
         if (ctx->containertype != CL_TYPE_ANY) {
@@ -534,7 +534,7 @@ int32_t cli_bcapi_extract_new(struct cli_bc_ctx *ctx, int32_t id)
         cctx->recursion--;
         if (res == CL_VIRUS) {
             ctx->virname = cli_get_last_virus(cctx);
-            ctx->found = 1;
+            ctx->found   = 1;
         }
     }
     if ((cctx && cctx->engine->keeptmp) ||
@@ -545,7 +545,7 @@ int32_t cli_bcapi_extract_new(struct cli_bc_ctx *ctx, int32_t id)
             cli_unlink(ctx->tempfile);
         free(ctx->tempfile);
         ctx->tempfile = NULL;
-        ctx->outfd = 0;
+        ctx->outfd    = 0;
     }
     cli_dbgmsg("bytecode: extracting new file with id %u\n", id);
     return res;
@@ -562,10 +562,10 @@ int32_t cli_bcapi_read_number(struct cli_bc_ctx *ctx, uint32_t radix)
         return -1;
     cli_event_int(EV, BCEV_OFFSET, ctx->off);
     while ((p = fmap_need_off_once(ctx->fmap, ctx->off, BUF))) {
-        for (i=0;i<BUF;i++) {
+        for (i = 0; i < BUF; i++) {
             if ((p[i] >= '0' && p[i] <= '9') || (radix == 16 && ((p[i] >= 'a' && p[i] <= 'f') || (p[i] >= 'A' && p[i] <= 'F')))) {
                 char *endptr;
-                p = fmap_need_ptr_once(ctx->fmap, p+i, 16);
+                p = fmap_need_ptr_once(ctx->fmap, p + i, 16);
                 if (!p)
                     return -1;
                 result = strtoul(p, &endptr, radix);
@@ -578,19 +578,19 @@ int32_t cli_bcapi_read_number(struct cli_bc_ctx *ctx, uint32_t radix)
     return -1;
 }
 
-int32_t cli_bcapi_hashset_new(struct cli_bc_ctx *ctx )
+int32_t cli_bcapi_hashset_new(struct cli_bc_ctx *ctx)
 {
-    unsigned  n = ctx->nhashsets+1;
-    struct cli_hashset *s = cli_realloc(ctx->hashsets, sizeof(*ctx->hashsets)*n);
+    unsigned n            = ctx->nhashsets + 1;
+    struct cli_hashset *s = cli_realloc(ctx->hashsets, sizeof(*ctx->hashsets) * n);
     if (!s) {
         cli_event_error_oom(EV, 0);
         return -1;
     }
-    ctx->hashsets = s;
+    ctx->hashsets  = s;
     ctx->nhashsets = n;
-    s = &s[n-1];
+    s              = &s[n - 1];
     cli_hashset_init(s, 16, 80);
-    return n-1;
+    return n - 1;
 }
 
 static struct cli_hashset *get_hashset(struct cli_bc_ctx *ctx, int32_t id)
@@ -602,7 +602,7 @@ static struct cli_hashset *get_hashset(struct cli_bc_ctx *ctx, int32_t id)
     return &ctx->hashsets[id];
 }
 
-int32_t cli_bcapi_hashset_add(struct cli_bc_ctx *ctx , int32_t id, uint32_t key)
+int32_t cli_bcapi_hashset_add(struct cli_bc_ctx *ctx, int32_t id, uint32_t key)
 {
     struct cli_hashset *s = get_hashset(ctx, id);
     if (!s)
@@ -610,7 +610,7 @@ int32_t cli_bcapi_hashset_add(struct cli_bc_ctx *ctx , int32_t id, uint32_t key)
     return cli_hashset_addkey(s, key);
 }
 
-int32_t cli_bcapi_hashset_remove(struct cli_bc_ctx *ctx , int32_t id, uint32_t key)
+int32_t cli_bcapi_hashset_remove(struct cli_bc_ctx *ctx, int32_t id, uint32_t key)
 {
     struct cli_hashset *s = get_hashset(ctx, id);
     if (!s)
@@ -618,7 +618,7 @@ int32_t cli_bcapi_hashset_remove(struct cli_bc_ctx *ctx , int32_t id, uint32_t k
     return cli_hashset_removekey(s, key);
 }
 
-int32_t cli_bcapi_hashset_contains(struct cli_bc_ctx *ctx , int32_t id, uint32_t key)
+int32_t cli_bcapi_hashset_contains(struct cli_bc_ctx *ctx, int32_t id, uint32_t key)
 {
     struct cli_hashset *s = get_hashset(ctx, id);
     if (!s)
@@ -632,19 +632,19 @@ int32_t cli_bcapi_hashset_empty(struct cli_bc_ctx *ctx, int32_t id)
     return s ? !s->count : 1;
 }
 
-int32_t cli_bcapi_hashset_done(struct cli_bc_ctx *ctx , int32_t id)
+int32_t cli_bcapi_hashset_done(struct cli_bc_ctx *ctx, int32_t id)
 {
     struct cli_hashset *s = get_hashset(ctx, id);
     if (!s)
         return -1;
     cli_hashset_destroy(s);
-    if ((unsigned int)id == ctx->nhashsets-1) {
+    if ((unsigned int)id == ctx->nhashsets - 1) {
         ctx->nhashsets--;
         if (!ctx->nhashsets) {
             free(ctx->hashsets);
             ctx->hashsets = NULL;
         } else {
-            s = cli_realloc(ctx->hashsets, ctx->nhashsets*sizeof(*s));
+            s = cli_realloc(ctx->hashsets, ctx->nhashsets * sizeof(*s));
             if (s)
                 ctx->hashsets = s;
         }
@@ -661,22 +661,22 @@ int32_t cli_bcapi_buffer_pipe_new(struct cli_bc_ctx *ctx, uint32_t size)
     data = cli_calloc(1, size);
     if (!data)
         return -1;
-    b = cli_realloc(ctx->buffers, sizeof(*ctx->buffers)*n);
+    b = cli_realloc(ctx->buffers, sizeof(*ctx->buffers) * n);
     if (!b) {
         free(data);
         return -1;
     }
-    ctx->buffers = b;
+    ctx->buffers  = b;
     ctx->nbuffers = n;
-    b = &b[n-1];
+    b             = &b[n - 1];
 
-    b->data = data;
-    b->size = size;
+    b->data         = data;
+    b->size         = size;
     b->write_cursor = b->read_cursor = 0;
-    return n-1;
+    return n - 1;
 }
 
-int32_t cli_bcapi_buffer_pipe_new_fromfile(struct cli_bc_ctx *ctx , uint32_t at)
+int32_t cli_bcapi_buffer_pipe_new_fromfile(struct cli_bc_ctx *ctx, uint32_t at)
 {
     struct bc_buffer *b;
     unsigned n = ctx->nbuffers + 1;
@@ -684,20 +684,20 @@ int32_t cli_bcapi_buffer_pipe_new_fromfile(struct cli_bc_ctx *ctx , uint32_t at)
     if (at >= ctx->file_size)
         return -1;
 
-    b = cli_realloc(ctx->buffers, sizeof(*ctx->buffers)*n);
+    b = cli_realloc(ctx->buffers, sizeof(*ctx->buffers) * n);
     if (!b) {
         return -1;
     }
-    ctx->buffers = b;
+    ctx->buffers  = b;
     ctx->nbuffers = n;
-    b = &b[n-1];
+    b             = &b[n - 1];
 
     /* NULL data means read from file at pos read_cursor */
-    b->data = NULL;
-    b->size = 0;
-    b->read_cursor = at;
+    b->data         = NULL;
+    b->size         = 0;
+    b->read_cursor  = at;
     b->write_cursor = 0;
-    return n-1;
+    return n - 1;
 }
 
 static struct bc_buffer *get_buffer(struct cli_bc_ctx *ctx, int32_t id)
@@ -709,7 +709,7 @@ static struct bc_buffer *get_buffer(struct cli_bc_ctx *ctx, int32_t id)
     return &ctx->buffers[id];
 }
 
-uint32_t cli_bcapi_buffer_pipe_read_avail(struct cli_bc_ctx *ctx , int32_t id)
+uint32_t cli_bcapi_buffer_pipe_read_avail(struct cli_bc_ctx *ctx, int32_t id)
 {
     struct bc_buffer *b = get_buffer(ctx, id);
     if (!b)
@@ -726,7 +726,7 @@ uint32_t cli_bcapi_buffer_pipe_read_avail(struct cli_bc_ctx *ctx , int32_t id)
     return ctx->file_size - b->read_cursor;
 }
 
-const uint8_t* cli_bcapi_buffer_pipe_read_get(struct cli_bc_ctx *ctx , int32_t id, uint32_t size)
+const uint8_t *cli_bcapi_buffer_pipe_read_get(struct cli_bc_ctx *ctx, int32_t id, uint32_t size)
 {
     struct bc_buffer *b = get_buffer(ctx, id);
     if (!b || size > cli_bcapi_buffer_pipe_read_avail(ctx, id) || !size)
@@ -736,7 +736,7 @@ const uint8_t* cli_bcapi_buffer_pipe_read_get(struct cli_bc_ctx *ctx , int32_t i
     return fmap_need_off(ctx->fmap, b->read_cursor, size);
 }
 
-int32_t cli_bcapi_buffer_pipe_read_stopped(struct cli_bc_ctx *ctx , int32_t id, uint32_t amount)
+int32_t cli_bcapi_buffer_pipe_read_stopped(struct cli_bc_ctx *ctx, int32_t id, uint32_t amount)
 {
     struct bc_buffer *b = get_buffer(ctx, id);
     if (!b)
@@ -769,7 +769,7 @@ uint32_t cli_bcapi_buffer_pipe_write_avail(struct cli_bc_ctx *ctx, int32_t id)
     return b->size - b->write_cursor;
 }
 
-uint8_t* cli_bcapi_buffer_pipe_write_get(struct cli_bc_ctx *ctx, int32_t id, uint32_t size)
+uint8_t *cli_bcapi_buffer_pipe_write_get(struct cli_bc_ctx *ctx, int32_t id, uint32_t size)
 {
     struct bc_buffer *b = get_buffer(ctx, id);
     if (!b || size > cli_bcapi_buffer_pipe_write_avail(ctx, id) || !size)
@@ -779,7 +779,7 @@ uint8_t* cli_bcapi_buffer_pipe_write_get(struct cli_bc_ctx *ctx, int32_t id, uin
     return b->data + b->write_cursor;
 }
 
-int32_t cli_bcapi_buffer_pipe_write_stopped(struct cli_bc_ctx *ctx , int32_t id, uint32_t size)
+int32_t cli_bcapi_buffer_pipe_write_stopped(struct cli_bc_ctx *ctx, int32_t id, uint32_t size)
 {
     struct bc_buffer *b = get_buffer(ctx, id);
     if (!b || !b->data)
@@ -791,7 +791,7 @@ int32_t cli_bcapi_buffer_pipe_write_stopped(struct cli_bc_ctx *ctx , int32_t id,
     return 0;
 }
 
-int32_t cli_bcapi_buffer_pipe_done(struct cli_bc_ctx *ctx , int32_t id)
+int32_t cli_bcapi_buffer_pipe_done(struct cli_bc_ctx *ctx, int32_t id)
 {
     struct bc_buffer *b = get_buffer(ctx, id);
     if (!b)
@@ -811,16 +811,16 @@ int32_t cli_bcapi_inflate_init(struct cli_bc_ctx *ctx, int32_t from, int32_t to,
         cli_dbgmsg("bytecode api: inflate_init: invalid buffers!\n");
         return -1;
     }
-    b = cli_realloc(ctx->inflates, sizeof(*ctx->inflates)*n);
+    b = cli_realloc(ctx->inflates, sizeof(*ctx->inflates) * n);
     if (!b) {
         return -1;
     }
-    ctx->inflates = b;
+    ctx->inflates  = b;
     ctx->ninflates = n;
-    b = &b[n-1];
+    b              = &b[n - 1];
 
-    b->from = from;
-    b->to = to;
+    b->from     = from;
+    b->to       = to;
     b->needSync = 0;
     memset(&b->stream, 0, sizeof(stream));
     ret = inflateInit2(&b->stream, windowBits);
@@ -841,7 +841,7 @@ int32_t cli_bcapi_inflate_init(struct cli_bc_ctx *ctx, int32_t from, int32_t to,
             return -1;
     }
 
-    return n-1;
+    return n - 1;
 }
 
 static struct bc_inflate *get_inflate(struct cli_bc_ctx *ctx, int32_t id)
@@ -851,7 +851,7 @@ static struct bc_inflate *get_inflate(struct cli_bc_ctx *ctx, int32_t id)
     return &ctx->inflates[id];
 }
 
-int32_t cli_bcapi_inflate_process(struct cli_bc_ctx *ctx , int32_t id)
+int32_t cli_bcapi_inflate_process(struct cli_bc_ctx *ctx, int32_t id)
 {
     int ret;
     unsigned avail_in_orig, avail_out_orig;
@@ -862,8 +862,8 @@ int32_t cli_bcapi_inflate_process(struct cli_bc_ctx *ctx , int32_t id)
     b->stream.avail_in = avail_in_orig =
         cli_bcapi_buffer_pipe_read_avail(ctx, b->from);
 
-    b->stream.next_in = (void*)cli_bcapi_buffer_pipe_read_get(ctx, b->from,
-                                                       b->stream.avail_in);
+    b->stream.next_in = (void *)cli_bcapi_buffer_pipe_read_get(ctx, b->from,
+                                                               b->stream.avail_in);
 
     b->stream.avail_out = avail_out_orig =
         cli_bcapi_buffer_pipe_write_avail(ctx, b->to);
@@ -911,7 +911,7 @@ int32_t cli_bcapi_inflate_process(struct cli_bc_ctx *ctx , int32_t id)
     return ret;
 }
 
-int32_t cli_bcapi_inflate_done(struct cli_bc_ctx *ctx , int32_t id)
+int32_t cli_bcapi_inflate_done(struct cli_bc_ctx *ctx, int32_t id)
 {
     int ret;
     struct bc_inflate *b = get_inflate(ctx, id);
@@ -924,10 +924,10 @@ int32_t cli_bcapi_inflate_done(struct cli_bc_ctx *ctx , int32_t id)
     return ret;
 }
 
-int32_t cli_bcapi_bytecode_rt_error(struct cli_bc_ctx *ctx , int32_t id)
+int32_t cli_bcapi_bytecode_rt_error(struct cli_bc_ctx *ctx, int32_t id)
 {
     int32_t line = id >> 8;
-    int32_t col = id&0xff;
+    int32_t col  = id & 0xff;
     UNUSEDPARAM(ctx);
     cli_warnmsg("Bytecode runtime error at line %u, col %u\n", line, col);
     return 0;
@@ -937,7 +937,7 @@ int32_t cli_bcapi_jsnorm_init(struct cli_bc_ctx *ctx, int32_t from)
 {
     struct parser_state *state;
     struct bc_jsnorm *b;
-    unsigned  n = ctx->njsnorms + 1;
+    unsigned n = ctx->njsnorms + 1;
     if (!get_buffer(ctx, from)) {
         cli_dbgmsg("bytecode api: jsnorm_init: invalid buffers!\n");
         return -1;
@@ -945,18 +945,18 @@ int32_t cli_bcapi_jsnorm_init(struct cli_bc_ctx *ctx, int32_t from)
     state = cli_js_init();
     if (!state)
         return -1;
-    b = cli_realloc(ctx->jsnorms, sizeof(*ctx->jsnorms)*n);
+    b = cli_realloc(ctx->jsnorms, sizeof(*ctx->jsnorms) * n);
     if (!b) {
         cli_js_destroy(state);
         return -1;
     }
-    ctx->jsnorms = b;
+    ctx->jsnorms  = b;
     ctx->njsnorms = n;
-    b = &b[n-1];
-    b->from = from;
-    b->state = state;
+    b             = &b[n - 1];
+    b->from       = from;
+    b->state      = state;
     if (!ctx->jsnormdir) {
-        cli_ctx *cctx = (cli_ctx*)ctx->ctx;
+        cli_ctx *cctx  = (cli_ctx *)ctx->ctx;
         ctx->jsnormdir = cli_gentemp(cctx ? cctx->engine->tmpdir : NULL);
         if (ctx->jsnormdir) {
             if (mkdir(ctx->jsnormdir, 0700)) {
@@ -966,7 +966,7 @@ int32_t cli_bcapi_jsnorm_init(struct cli_bc_ctx *ctx, int32_t from)
             }
         }
     }
-    return n-1;
+    return n - 1;
 }
 
 static struct bc_jsnorm *get_jsnorm(struct cli_bc_ctx *ctx, int32_t id)
@@ -980,23 +980,23 @@ int32_t cli_bcapi_jsnorm_process(struct cli_bc_ctx *ctx, int32_t id)
 {
     unsigned avail;
     const unsigned char *in;
-    cli_ctx *cctx = ctx->ctx;
+    cli_ctx *cctx       = ctx->ctx;
     struct bc_jsnorm *b = get_jsnorm(ctx, id);
     if (!b || b->from == -1 || !b->state)
         return -1;
 
     avail = cli_bcapi_buffer_pipe_read_avail(ctx, b->from);
-    in = cli_bcapi_buffer_pipe_read_get(ctx, b->from, avail);
+    in    = cli_bcapi_buffer_pipe_read_get(ctx, b->from, avail);
     if (!avail || !in)
         return -1;
     if (cctx && cli_checklimits("bytecode js api", cctx, ctx->jsnormwritten + avail, 0, 0))
         return -1;
     cli_bcapi_buffer_pipe_read_stopped(ctx, b->from, avail);
-    cli_js_process_buffer(b->state, (char*)in, avail);
+    cli_js_process_buffer(b->state, (char *)in, avail);
     return 0;
 }
 
-int32_t cli_bcapi_jsnorm_done(struct cli_bc_ctx *ctx , int32_t id)
+int32_t cli_bcapi_jsnorm_done(struct cli_bc_ctx *ctx, int32_t id)
 {
     struct bc_jsnorm *b = get_jsnorm(ctx, id);
     if (!b || b->from == -1)
@@ -1014,8 +1014,8 @@ int32_t cli_bcapi_jsnorm_done(struct cli_bc_ctx *ctx , int32_t id)
 static inline double myround(double a)
 {
     if (a < 0)
-        return a-0.5;
-    return a+0.5;
+        return a - 0.5;
+    return a + 0.5;
 }
 
 int32_t cli_bcapi_ilog2(struct cli_bc_ctx *ctx, uint32_t a, uint32_t b)
@@ -1025,7 +1025,7 @@ int32_t cli_bcapi_ilog2(struct cli_bc_ctx *ctx, uint32_t a, uint32_t b)
     if (!b)
         return 0x7fffffff;
     /* log(a/b) is -32..32, so 2^26*32=2^31 covers the entire range of int32 */
-    f = (1<<26)*log((double)a / b) / log(2);
+    f = (1 << 26) * log((double)a / b) / log(2);
     return (int32_t)myround(f);
 }
 
@@ -1034,7 +1034,7 @@ int32_t cli_bcapi_ipow(struct cli_bc_ctx *ctx, int32_t a, int32_t b, int32_t c)
     UNUSEDPARAM(ctx);
     if (!a && b < 0)
         return 0x7fffffff;
-    return (int32_t)myround(c*pow(a,b));
+    return (int32_t)myround(c * pow(a, b));
 }
 
 uint32_t cli_bcapi_iexp(struct cli_bc_ctx *ctx, int32_t a, int32_t b, int32_t c)
@@ -1043,7 +1043,7 @@ uint32_t cli_bcapi_iexp(struct cli_bc_ctx *ctx, int32_t a, int32_t b, int32_t c)
     UNUSEDPARAM(ctx);
     if (!b)
         return 0x7fffffff;
-    f= c*exp((double)a/b);
+    f = c * exp((double)a / b);
     return (uint32_t)myround(f);
 }
 
@@ -1053,7 +1053,7 @@ int32_t cli_bcapi_isin(struct cli_bc_ctx *ctx, int32_t a, int32_t b, int32_t c)
     UNUSEDPARAM(ctx);
     if (!b)
         return 0x7fffffff;
-    f = c*sin((double)a/b);
+    f = c * sin((double)a / b);
     return (int32_t)myround(f);
 }
 
@@ -1063,12 +1063,12 @@ int32_t cli_bcapi_icos(struct cli_bc_ctx *ctx, int32_t a, int32_t b, int32_t c)
     UNUSEDPARAM(ctx);
     if (!b)
         return 0x7fffffff;
-    f = c*cos((double)a/b);
+    f = c * cos((double)a / b);
     return (int32_t)myround(f);
 }
 
-int32_t cli_bcapi_memstr(struct cli_bc_ctx *ctx, const uint8_t* h, int32_t hs,
-                         const uint8_t*n, int32_t ns)
+int32_t cli_bcapi_memstr(struct cli_bc_ctx *ctx, const uint8_t *h, int32_t hs,
+                         const uint8_t *n, int32_t ns)
 {
     const uint8_t *s;
     if (!h || !n || hs < 0 || ns < 0) {
@@ -1077,7 +1077,7 @@ int32_t cli_bcapi_memstr(struct cli_bc_ctx *ctx, const uint8_t* h, int32_t hs,
     }
     cli_event_fastdata(EV, BCEV_MEM_1, h, hs);
     cli_event_fastdata(EV, BCEV_MEM_2, n, ns);
-    s = (const uint8_t*) cli_memstr((const char*)h, hs, (const char*)n, ns);
+    s = (const uint8_t *)cli_memstr((const char *)h, hs, (const char *)n, ns);
     if (!s)
         return -1;
     return s - h;
@@ -1092,34 +1092,34 @@ int32_t cli_bcapi_hex2ui(struct cli_bc_ctx *ctx, uint32_t ah, uint32_t bh)
     in[0] = ah;
     in[1] = bh;
 
-    if (cli_hex2str_to((const char*)in, &result, 2) == -1)
+    if (cli_hex2str_to((const char *)in, &result, 2) == -1)
         return -1;
     return result;
 }
 
-int32_t cli_bcapi_atoi(struct cli_bc_ctx *ctx, const uint8_t* str, int32_t len)
+int32_t cli_bcapi_atoi(struct cli_bc_ctx *ctx, const uint8_t *str, int32_t len)
 {
-    int32_t number = 0;
+    int32_t number     = 0;
     const uint8_t *end = str + len;
     UNUSEDPARAM(ctx);
 
     while (isspace(*str) && str < end) str++;
     if (str == end)
-        return -1;/* all spaces */
+        return -1; /* all spaces */
     if (*str == '+') str++;
     if (str == end)
-        return -1;/* all spaces and +*/
+        return -1; /* all spaces and +*/
     if (*str == '-')
-        return -1;/* only positive numbers */
+        return -1; /* only positive numbers */
     if (!isdigit(*str))
         return -1;
     while (isdigit(*str) && str < end) {
-        number = number*10 + (*str - '0');
+        number = number * 10 + (*str - '0');
     }
     return number;
 }
 
-uint32_t cli_bcapi_debug_print_str_start(struct cli_bc_ctx *ctx , const uint8_t* s, uint32_t len)
+uint32_t cli_bcapi_debug_print_str_start(struct cli_bc_ctx *ctx, const uint8_t *s, uint32_t len)
 {
     UNUSEDPARAM(ctx);
 
@@ -1130,7 +1130,7 @@ uint32_t cli_bcapi_debug_print_str_start(struct cli_bc_ctx *ctx , const uint8_t*
     return 0;
 }
 
-uint32_t cli_bcapi_debug_print_str_nonl(struct cli_bc_ctx *ctx , const uint8_t* s, uint32_t len)
+uint32_t cli_bcapi_debug_print_str_nonl(struct cli_bc_ctx *ctx, const uint8_t *s, uint32_t len)
 {
     UNUSEDPARAM(ctx);
 
@@ -1141,46 +1141,46 @@ uint32_t cli_bcapi_debug_print_str_nonl(struct cli_bc_ctx *ctx , const uint8_t* 
     return fwrite(s, 1, len, stderr);
 }
 
-uint32_t cli_bcapi_entropy_buffer(struct cli_bc_ctx *ctx , uint8_t* s, int32_t len)
+uint32_t cli_bcapi_entropy_buffer(struct cli_bc_ctx *ctx, uint8_t *s, int32_t len)
 {
     uint32_t probTable[256];
     unsigned int i;
     double entropy = 0;
-    double log2 = log(2);
+    double log2    = log(2);
 
     UNUSEDPARAM(ctx);
 
     if (!s || len <= 0)
         return -1;
     memset(probTable, 0, sizeof(probTable));
-    for (i=0;i<(unsigned int)len;i++) {
+    for (i = 0; i < (unsigned int)len; i++) {
         probTable[s[i]]++;
     }
-    for (i=0;i<256;i++) {
+    for (i = 0; i < 256; i++) {
         double p;
         if (!probTable[i])
             continue;
         p = (double)probTable[i] / len;
-        entropy += -p*log(p)/log2;
+        entropy += -p * log(p) / log2;
     }
-    entropy *= 1<<26;
+    entropy *= 1 << 26;
     return (uint32_t)entropy;
 }
 
 int32_t cli_bcapi_map_new(struct cli_bc_ctx *ctx, int32_t keysize, int32_t valuesize)
 {
-    unsigned n = ctx->nmaps+1;
+    unsigned n = ctx->nmaps + 1;
     struct cli_map *s;
     if (!keysize)
         return -1;
-    s = cli_realloc(ctx->maps, sizeof(*ctx->maps)*n);
+    s = cli_realloc(ctx->maps, sizeof(*ctx->maps) * n);
     if (!s)
         return -1;
-    ctx->maps = s;
+    ctx->maps  = s;
     ctx->nmaps = n;
-    s = &s[n-1];
+    s          = &s[n - 1];
     cli_map_init(s, keysize, valuesize, 16);
-    return n-1;
+    return n - 1;
 }
 
 static struct cli_map *get_hashtab(struct cli_bc_ctx *ctx, int32_t id)
@@ -1190,7 +1190,7 @@ static struct cli_map *get_hashtab(struct cli_bc_ctx *ctx, int32_t id)
     return &ctx->maps[id];
 }
 
-int32_t cli_bcapi_map_addkey(struct cli_bc_ctx *ctx , const uint8_t* key, int32_t keysize, int32_t id)
+int32_t cli_bcapi_map_addkey(struct cli_bc_ctx *ctx, const uint8_t *key, int32_t keysize, int32_t id)
 {
     struct cli_map *s = get_hashtab(ctx, id);
     if (!s)
@@ -1198,7 +1198,7 @@ int32_t cli_bcapi_map_addkey(struct cli_bc_ctx *ctx , const uint8_t* key, int32_
     return cli_map_addkey(s, key, keysize);
 }
 
-int32_t cli_bcapi_map_setvalue(struct cli_bc_ctx *ctx, const uint8_t* value, int32_t valuesize, int32_t id)
+int32_t cli_bcapi_map_setvalue(struct cli_bc_ctx *ctx, const uint8_t *value, int32_t valuesize, int32_t id)
 {
     struct cli_map *s = get_hashtab(ctx, id);
     if (!s)
@@ -1206,7 +1206,7 @@ int32_t cli_bcapi_map_setvalue(struct cli_bc_ctx *ctx, const uint8_t* value, int
     return cli_map_setvalue(s, value, valuesize);
 }
 
-int32_t cli_bcapi_map_remove(struct cli_bc_ctx *ctx , const uint8_t* key, int32_t keysize, int32_t id)
+int32_t cli_bcapi_map_remove(struct cli_bc_ctx *ctx, const uint8_t *key, int32_t keysize, int32_t id)
 {
     struct cli_map *s = get_hashtab(ctx, id);
     if (!s)
@@ -1214,7 +1214,7 @@ int32_t cli_bcapi_map_remove(struct cli_bc_ctx *ctx , const uint8_t* key, int32_
     return cli_map_removekey(s, key, keysize);
 }
 
-int32_t cli_bcapi_map_find(struct cli_bc_ctx *ctx , const uint8_t* key, int32_t keysize, int32_t id)
+int32_t cli_bcapi_map_find(struct cli_bc_ctx *ctx, const uint8_t *key, int32_t keysize, int32_t id)
 {
     struct cli_map *s = get_hashtab(ctx, id);
     if (!s)
@@ -1230,7 +1230,7 @@ int32_t cli_bcapi_map_getvaluesize(struct cli_bc_ctx *ctx, int32_t id)
     return cli_map_getvalue_size(s);
 }
 
-uint8_t* cli_bcapi_map_getvalue(struct cli_bc_ctx *ctx , int32_t id, int32_t valuesize)
+uint8_t *cli_bcapi_map_getvalue(struct cli_bc_ctx *ctx, int32_t id, int32_t valuesize)
 {
     struct cli_map *s = get_hashtab(ctx, id);
     if (!s)
@@ -1240,19 +1240,19 @@ uint8_t* cli_bcapi_map_getvalue(struct cli_bc_ctx *ctx , int32_t id, int32_t val
     return cli_map_getvalue(s);
 }
 
-int32_t cli_bcapi_map_done(struct cli_bc_ctx *ctx , int32_t id)
+int32_t cli_bcapi_map_done(struct cli_bc_ctx *ctx, int32_t id)
 {
     struct cli_map *s = get_hashtab(ctx, id);
     if (!s)
         return -1;
     cli_map_delete(s);
-    if ((unsigned int)id == ctx->nmaps-1) {
+    if ((unsigned int)id == ctx->nmaps - 1) {
         ctx->nmaps--;
         if (!ctx->nmaps) {
             free(ctx->maps);
             ctx->maps = NULL;
         } else {
-            s = cli_realloc(ctx->maps, ctx->nmaps*(sizeof(*s)));
+            s = cli_realloc(ctx->maps, ctx->nmaps * (sizeof(*s)));
             if (s)
                 ctx->maps = s;
         }
@@ -1274,9 +1274,9 @@ uint32_t cli_bcapi_engine_dconf_level(struct cli_bc_ctx *ctx)
 
 uint32_t cli_bcapi_engine_scan_options(struct cli_bc_ctx *ctx)
 {
-    cli_ctx *cctx = (cli_ctx*)ctx->ctx;
+    cli_ctx *cctx    = (cli_ctx *)ctx->ctx;
     uint32_t options = CL_SCAN_RAW;
-    
+
     if (cctx->options->general & CL_SCAN_GENERAL_ALLMATCHES)
         options |= CL_SCAN_ALLMATCHES;
     if (cctx->options->general & CL_SCAN_GENERAL_HEURISTICS)
@@ -1319,7 +1319,7 @@ uint32_t cli_bcapi_engine_scan_options(struct cli_bc_ctx *ctx)
         options |= CL_SCAN_PHISHING_BLOCKCLOAK;
     if (cctx->options->heuristic & CL_SCAN_HEURISTIC_MACROS)
         options |= CL_SCAN_BLOCKMACROS;
-    if ((cctx->options->heuristic & CL_SCAN_HEURISTIC_ENCRYPTED_ARCHIVE) || 
+    if ((cctx->options->heuristic & CL_SCAN_HEURISTIC_ENCRYPTED_ARCHIVE) ||
         (cctx->options->heuristic & CL_SCAN_HEURISTIC_ENCRYPTED_DOC))
         options |= CL_SCAN_BLOCKENCRYPTED;
     if (cctx->options->heuristic & CL_SCAN_HEURISTIC_PARTITION_INTXN)
@@ -1344,7 +1344,7 @@ uint32_t cli_bcapi_engine_scan_options(struct cli_bc_ctx *ctx)
 
 uint32_t cli_bcapi_engine_scan_options_ex(struct cli_bc_ctx *ctx, const uint8_t *option_name, uint32_t name_len)
 {
-    uint32_t i = 0;
+    uint32_t i          = 0;
     char *option_name_l = NULL;
 
     if (ctx == NULL || option_name == NULL || name_len == 0) {
@@ -1352,7 +1352,7 @@ uint32_t cli_bcapi_engine_scan_options_ex(struct cli_bc_ctx *ctx, const uint8_t 
         return 0;
     }
 
-    cli_ctx *cctx = (cli_ctx*)ctx->ctx;
+    cli_ctx *cctx = (cli_ctx *)ctx->ctx;
     if (cctx == NULL || cctx->options == NULL) {
         cli_warnmsg("engine_scan_options_ex: Invalid arguments!");
         return 0;
@@ -1379,8 +1379,7 @@ uint32_t cli_bcapi_engine_scan_options_ex(struct cli_bc_ctx *ctx, const uint8_t 
         }
         /* else unknown option */
         return 0;
-    }
-    else if (strncmp(option_name_l, "parse", MIN(name_len, sizeof("parse")))) {
+    } else if (strncmp(option_name_l, "parse", MIN(name_len, sizeof("parse")))) {
         if (cli_memstr(option_name_l, name_len, "archive", sizeof("archive"))) {
             return (cctx->options->parse & CL_SCAN_PARSE_ARCHIVE) ? 1 : 0;
         }
@@ -1413,8 +1412,7 @@ uint32_t cli_bcapi_engine_scan_options_ex(struct cli_bc_ctx *ctx, const uint8_t 
         }
         /* else unknown option */
         return 0;
-    }
-    else if (strncmp(option_name_l, "heuristic", MIN(name_len, sizeof("heuristic")))) {
+    } else if (strncmp(option_name_l, "heuristic", MIN(name_len, sizeof("heuristic")))) {
         if (cli_memstr(option_name_l, name_len, "broken", sizeof("broken"))) {
             return (cctx->options->heuristic & CL_SCAN_HEURISTIC_BROKEN) ? 1 : 0;
         }
@@ -1450,15 +1448,13 @@ uint32_t cli_bcapi_engine_scan_options_ex(struct cli_bc_ctx *ctx, const uint8_t 
         }
         /* else unknown option */
         return 0;
-    }
-    else if (strncmp(option_name_l, "mail", MIN(name_len, sizeof("mail")))) {
+    } else if (strncmp(option_name_l, "mail", MIN(name_len, sizeof("mail")))) {
         if (cli_memstr(option_name_l, name_len, "partial message", sizeof("partial message"))) {
             return (cctx->options->mail & CL_SCAN_MAIL_PARTIAL_MESSAGE) ? 1 : 0;
         }
         /* else unknown option */
         return 0;
-    }
-    else if (strncmp(option_name_l, "dev", MIN(name_len, sizeof("dev")))) {
+    } else if (strncmp(option_name_l, "dev", MIN(name_len, sizeof("dev")))) {
         if (cli_memstr(option_name_l, name_len, "collect sha", sizeof("collect sha"))) {
             return (cctx->options->dev & CL_SCAN_DEV_COLLECT_SHA) ? 1 : 0;
         }
@@ -1475,7 +1471,7 @@ uint32_t cli_bcapi_engine_scan_options_ex(struct cli_bc_ctx *ctx, const uint8_t 
 
 uint32_t cli_bcapi_engine_db_options(struct cli_bc_ctx *ctx)
 {
-    cli_ctx *cctx = (cli_ctx*)ctx->ctx;
+    cli_ctx *cctx = (cli_ctx *)ctx->ctx;
     return cctx->engine->dboptions;
 }
 
@@ -1487,14 +1483,14 @@ int32_t cli_bcapi_extract_set_container(struct cli_bc_ctx *ctx, uint32_t ftype)
     return 0;
 }
 
-int32_t cli_bcapi_input_switch(struct cli_bc_ctx *ctx , int32_t extracted_file)
+int32_t cli_bcapi_input_switch(struct cli_bc_ctx *ctx, int32_t extracted_file)
 {
     fmap_t *map;
     if (ctx->extracted_file_input == (unsigned int)extracted_file)
         return 0;
     if (!extracted_file) {
         cli_dbgmsg("bytecode api: input switched back to main file\n");
-        ctx->fmap = ctx->save_map;
+        ctx->fmap                 = ctx->save_map;
         ctx->extracted_file_input = 0;
         return 0;
     }
@@ -1512,7 +1508,7 @@ int32_t cli_bcapi_input_switch(struct cli_bc_ctx *ctx , int32_t extracted_file)
     return 0;
 }
 
-uint32_t cli_bcapi_get_environment(struct cli_bc_ctx *ctx , struct cli_environment* env, uint32_t len)
+uint32_t cli_bcapi_get_environment(struct cli_bc_ctx *ctx, struct cli_environment *env, uint32_t len)
 {
     if (len > sizeof(*env)) {
         cli_dbgmsg("cli_bcapi_get_environment len %u > %lu\n", len, (unsigned long)sizeof(*env));
@@ -1522,7 +1518,7 @@ uint32_t cli_bcapi_get_environment(struct cli_bc_ctx *ctx , struct cli_environme
     return 0;
 }
 
-uint32_t cli_bcapi_disable_bytecode_if(struct cli_bc_ctx *ctx , const int8_t* reason, uint32_t len, uint32_t cond)
+uint32_t cli_bcapi_disable_bytecode_if(struct cli_bc_ctx *ctx, const int8_t *reason, uint32_t len, uint32_t cond)
 {
     UNUSEDPARAM(len);
     if (ctx->bc->kind != BC_STARTUP) {
@@ -1532,14 +1528,14 @@ uint32_t cli_bcapi_disable_bytecode_if(struct cli_bc_ctx *ctx , const int8_t* re
     if (!cond)
         return ctx->bytecode_disable_status;
     if (*reason == '^')
-        cli_warnmsg("Bytecode: disabling completely because %s\n", reason+1);
+        cli_warnmsg("Bytecode: disabling completely because %s\n", reason + 1);
     else
         cli_dbgmsg("Bytecode: disabling completely because %s\n", reason);
     ctx->bytecode_disable_status = 2;
     return ctx->bytecode_disable_status;
 }
 
-uint32_t cli_bcapi_disable_jit_if(struct cli_bc_ctx *ctx , const int8_t* reason, uint32_t len, uint32_t cond)
+uint32_t cli_bcapi_disable_jit_if(struct cli_bc_ctx *ctx, const int8_t *reason, uint32_t len, uint32_t cond)
 {
     UNUSEDPARAM(len);
     if (ctx->bc->kind != BC_STARTUP) {
@@ -1549,7 +1545,7 @@ uint32_t cli_bcapi_disable_jit_if(struct cli_bc_ctx *ctx , const int8_t* reason,
     if (!cond)
         return ctx->bytecode_disable_status;
     if (*reason == '^')
-        cli_warnmsg("Bytecode: disabling JIT because %s\n", reason+1);
+        cli_warnmsg("Bytecode: disabling JIT because %s\n", reason + 1);
     else
         cli_dbgmsg("Bytecode: disabling JIT because %s\n", reason);
     if (ctx->bytecode_disable_status != 2) /* no reenabling */
@@ -1557,16 +1553,17 @@ uint32_t cli_bcapi_disable_jit_if(struct cli_bc_ctx *ctx , const int8_t* reason,
     return ctx->bytecode_disable_status;
 }
 
-int32_t cli_bcapi_version_compare(struct cli_bc_ctx *ctx , const uint8_t* lhs, uint32_t lhs_len, 
-                                  const uint8_t* rhs, uint32_t rhs_len)
+int32_t cli_bcapi_version_compare(struct cli_bc_ctx *ctx, const uint8_t *lhs, uint32_t lhs_len,
+                                  const uint8_t *rhs, uint32_t rhs_len)
 {
     unsigned i = 0, j = 0;
-    unsigned long li=0, ri=0;
+    unsigned long li = 0, ri = 0;
     UNUSEDPARAM(ctx);
     do {
         while (i < lhs_len && j < rhs_len && lhs[i] == rhs[j] &&
                !isdigit(lhs[i]) && !isdigit(rhs[j])) {
-            i++; j++;
+            i++;
+            j++;
         }
         if (i == lhs_len && j == rhs_len)
             return 0;
@@ -1577,9 +1574,9 @@ int32_t cli_bcapi_version_compare(struct cli_bc_ctx *ctx , const uint8_t* lhs, u
         if (!isdigit(lhs[i]) || !isdigit(rhs[j]))
             return lhs[i] < rhs[j] ? -1 : 1;
         while (isdigit(lhs[i]) && i < lhs_len)
-            li = 10*li + (lhs[i++] - '0');
+            li = 10 * li + (lhs[i++] - '0');
         while (isdigit(rhs[j]) && j < rhs_len)
-            ri = 10*ri + (rhs[j++] - '0');
+            ri = 10 * ri + (rhs[j++] - '0');
         if (li < ri)
             return -1;
         if (li > ri)
@@ -1589,15 +1586,15 @@ int32_t cli_bcapi_version_compare(struct cli_bc_ctx *ctx , const uint8_t* lhs, u
 
 static int check_bits(uint32_t query, uint32_t value, uint8_t shift, uint8_t mask)
 {
-    uint8_t q = (query >> shift)&mask;
-    uint8_t v = (value >> shift)&mask;
+    uint8_t q = (query >> shift) & mask;
+    uint8_t v = (value >> shift) & mask;
     /* q == mask -> ANY */
     if (q == v || q == mask)
         return 1;
     return 0;
 }
 
-uint32_t cli_bcapi_check_platform(struct cli_bc_ctx *ctx , uint32_t a, uint32_t b , uint32_t c)
+uint32_t cli_bcapi_check_platform(struct cli_bc_ctx *ctx, uint32_t a, uint32_t b, uint32_t c)
 {
     unsigned ret =
         check_bits(a, ctx->env->platform_id_a, 24, 0xff) &&
@@ -1615,7 +1612,7 @@ uint32_t cli_bcapi_check_platform(struct cli_bc_ctx *ctx , uint32_t a, uint32_t 
         check_bits(c, ctx->env->platform_id_c, 8, 0xff) &&
         check_bits(c, ctx->env->platform_id_c, 0, 0xff);
     if (ret) {
-        cli_dbgmsg("check_platform(0x%08x,0x%08x,0x%08x) = match\n",a,b,c);
+        cli_dbgmsg("check_platform(0x%08x,0x%08x,0x%08x) = match\n", a, b, c);
     }
     return ret;
 }
@@ -1625,12 +1622,12 @@ int cli_bytecode_context_setpdf(struct cli_bc_ctx *ctx, unsigned phase,
                                 struct pdf_obj **objs, uint32_t *pdf_flags,
                                 uint32_t pdfsize, uint32_t pdfstartoff)
 {
-    ctx->pdf_nobjs = nobjs;
-    ctx->pdf_objs = objs;
-    ctx->pdf_flags = pdf_flags;
-    ctx->pdf_size = pdfsize;
+    ctx->pdf_nobjs    = nobjs;
+    ctx->pdf_objs     = objs;
+    ctx->pdf_flags    = pdf_flags;
+    ctx->pdf_size     = pdfsize;
     ctx->pdf_startoff = pdfstartoff;
-    ctx->pdf_phase = phase;
+    ctx->pdf_phase    = phase;
     return 0;
 }
 
@@ -1648,7 +1645,7 @@ int32_t cli_bcapi_pdf_get_flags(struct cli_bc_ctx *ctx)
     return *ctx->pdf_flags;
 }
 
-int32_t cli_bcapi_pdf_set_flags(struct cli_bc_ctx *ctx , int32_t flags)
+int32_t cli_bcapi_pdf_set_flags(struct cli_bc_ctx *ctx, int32_t flags)
 {
     if (!ctx->pdf_phase)
         return -1;
@@ -1659,31 +1656,31 @@ int32_t cli_bcapi_pdf_set_flags(struct cli_bc_ctx *ctx , int32_t flags)
     return 0;
 }
 
-int32_t cli_bcapi_pdf_lookupobj(struct cli_bc_ctx *ctx , uint32_t objid)
+int32_t cli_bcapi_pdf_lookupobj(struct cli_bc_ctx *ctx, uint32_t objid)
 {
     unsigned i;
     if (!ctx->pdf_phase)
         return -1;
-    for (i=0;i<ctx->pdf_nobjs;i++) {
+    for (i = 0; i < ctx->pdf_nobjs; i++) {
         if (ctx->pdf_objs[i]->id == objid)
             return i;
     }
     return -1;
 }
 
-uint32_t cli_bcapi_pdf_getobjsize(struct cli_bc_ctx *ctx , int32_t objidx)
+uint32_t cli_bcapi_pdf_getobjsize(struct cli_bc_ctx *ctx, int32_t objidx)
 {
     if (!ctx->pdf_phase ||
         (uint32_t)objidx >= ctx->pdf_nobjs ||
         ctx->pdf_phase == PDF_PHASE_POSTDUMP /* map is obj itself, no access to pdf anymore */
-       )
+    )
         return 0;
     if ((uint32_t)(objidx + 1) == ctx->pdf_nobjs)
         return ctx->pdf_size - ctx->pdf_objs[objidx]->start;
-    return ctx->pdf_objs[objidx+1]->start - ctx->pdf_objs[objidx]->start - 4;
+    return ctx->pdf_objs[objidx + 1]->start - ctx->pdf_objs[objidx]->start - 4;
 }
 
-const uint8_t* cli_bcapi_pdf_getobj(struct cli_bc_ctx *ctx , int32_t objidx, uint32_t amount)
+const uint8_t *cli_bcapi_pdf_getobj(struct cli_bc_ctx *ctx, int32_t objidx, uint32_t amount)
 {
     uint32_t size = cli_bcapi_pdf_getobjsize(ctx, objidx);
     if (amount > size)
@@ -1691,7 +1688,7 @@ const uint8_t* cli_bcapi_pdf_getobj(struct cli_bc_ctx *ctx , int32_t objidx, uin
     return fmap_need_off(ctx->fmap, ctx->pdf_objs[objidx]->start, amount);
 }
 
-int32_t cli_bcapi_pdf_getobjid(struct cli_bc_ctx *ctx , int32_t objidx)
+int32_t cli_bcapi_pdf_getobjid(struct cli_bc_ctx *ctx, int32_t objidx)
 {
     if (!ctx->pdf_phase ||
         (uint32_t)objidx >= ctx->pdf_nobjs)
@@ -1699,7 +1696,7 @@ int32_t cli_bcapi_pdf_getobjid(struct cli_bc_ctx *ctx , int32_t objidx)
     return ctx->pdf_objs[objidx]->id;
 }
 
-int32_t cli_bcapi_pdf_getobjflags(struct cli_bc_ctx *ctx , int32_t objidx)
+int32_t cli_bcapi_pdf_getobjflags(struct cli_bc_ctx *ctx, int32_t objidx)
 {
     if (!ctx->pdf_phase ||
         (uint32_t)objidx >= ctx->pdf_nobjs)
@@ -1707,7 +1704,7 @@ int32_t cli_bcapi_pdf_getobjflags(struct cli_bc_ctx *ctx , int32_t objidx)
     return ctx->pdf_objs[objidx]->flags;
 }
 
-int32_t cli_bcapi_pdf_setobjflags(struct cli_bc_ctx *ctx , int32_t objidx, int32_t flags)
+int32_t cli_bcapi_pdf_setobjflags(struct cli_bc_ctx *ctx, int32_t objidx, int32_t flags)
 {
     if (!ctx->pdf_phase ||
         (uint32_t)objidx >= ctx->pdf_nobjs)
@@ -1719,7 +1716,7 @@ int32_t cli_bcapi_pdf_setobjflags(struct cli_bc_ctx *ctx , int32_t objidx, int32
     return 0;
 }
 
-int32_t cli_bcapi_pdf_get_offset(struct cli_bc_ctx *ctx , int32_t objidx)
+int32_t cli_bcapi_pdf_get_offset(struct cli_bc_ctx *ctx, int32_t objidx)
 {
     if (!ctx->pdf_phase ||
         (uint32_t)objidx >= ctx->pdf_nobjs)
@@ -1739,22 +1736,22 @@ int32_t cli_bcapi_pdf_get_dumpedobjid(struct cli_bc_ctx *ctx)
     return ctx->pdf_dumpedid;
 }
 
-int32_t cli_bcapi_running_on_jit(struct cli_bc_ctx *ctx )
+int32_t cli_bcapi_running_on_jit(struct cli_bc_ctx *ctx)
 {
     ctx->no_diff = 1;
     return ctx->on_jit;
 }
 
-int32_t cli_bcapi_get_file_reliability(struct cli_bc_ctx *ctx )
+int32_t cli_bcapi_get_file_reliability(struct cli_bc_ctx *ctx)
 {
-    cli_ctx *cctx = (cli_ctx*)ctx->ctx;
+    cli_ctx *cctx = (cli_ctx *)ctx->ctx;
     return cctx ? cctx->corrupted_input : 3;
 }
 
-int32_t cli_bcapi_json_is_active(struct cli_bc_ctx *ctx )
+int32_t cli_bcapi_json_is_active(struct cli_bc_ctx *ctx)
 {
 #if HAVE_JSON
-    cli_ctx *cctx = (cli_ctx*)ctx->ctx;
+    cli_ctx *cctx = (cli_ctx *)ctx->ctx;
     if (cctx->properties != NULL) {
         return 1;
     }
@@ -1765,20 +1762,21 @@ int32_t cli_bcapi_json_is_active(struct cli_bc_ctx *ctx )
     return 0;
 }
 
-static int32_t cli_bcapi_json_objs_init(struct cli_bc_ctx *ctx) {
-#if HAVE_JSON 
+static int32_t cli_bcapi_json_objs_init(struct cli_bc_ctx *ctx)
+{
+#if HAVE_JSON
     unsigned n = ctx->njsonobjs + 1;
     json_object **j, **jobjs = (json_object **)(ctx->jsonobjs);
     cli_ctx *cctx = (cli_ctx *)ctx->ctx;
 
-    j = cli_realloc(jobjs, sizeof(json_object *)*n);
+    j = cli_realloc(jobjs, sizeof(json_object *) * n);
     if (!j) { /* memory allocation failure */
         cli_event_error_oom(EV, 0);
         return -1;
     }
-    ctx->jsonobjs = (void **)j;
+    ctx->jsonobjs  = (void **)j;
     ctx->njsonobjs = n;
-    j[n-1] = cctx->properties;    
+    j[n - 1]       = cctx->properties;
 
     return 0;
 #else
@@ -1787,16 +1785,16 @@ static int32_t cli_bcapi_json_objs_init(struct cli_bc_ctx *ctx) {
 #endif
 }
 
-#define INIT_JSON_OBJS(ctx)                                             \
-    if (!cli_bcapi_json_is_active(ctx))                                 \
-        return -1;                                                      \
-    if (ctx->njsonobjs == 0) {                                          \
-        if (cli_bcapi_json_objs_init(ctx)) {                            \
-            return -1;                                                  \
-        }                                                               \
-    }                                                                   \
+#define INIT_JSON_OBJS(ctx)                  \
+    if (!cli_bcapi_json_is_active(ctx))      \
+        return -1;                           \
+    if (ctx->njsonobjs == 0) {               \
+        if (cli_bcapi_json_objs_init(ctx)) { \
+            return -1;                       \
+        }                                    \
+    }
 
-int32_t cli_bcapi_json_get_object(struct cli_bc_ctx *ctx, const int8_t* name, int32_t name_len, int32_t objid)
+int32_t cli_bcapi_json_get_object(struct cli_bc_ctx *ctx, const int8_t *name, int32_t name_len, int32_t objid)
 {
 #if HAVE_JSON
     unsigned n;
@@ -1815,14 +1813,14 @@ int32_t cli_bcapi_json_get_object(struct cli_bc_ctx *ctx, const int8_t* name, in
         return -1;
     }
 
-    n = ctx->njsonobjs + 1;
+    n    = ctx->njsonobjs + 1;
     jobj = jobjs[objid];
     if (!jobj) /* shouldn't be possible */
         return -1;
-    namep = (char*)cli_malloc(sizeof(char)*(name_len+1));
+    namep = (char *)cli_malloc(sizeof(char) * (name_len + 1));
     if (!namep)
         return -1;
-    strncpy(namep, (char*)name, name_len);
+    strncpy(namep, (char *)name, name_len);
     namep[name_len] = '\0';
 
     if (!json_object_object_get_ex(jobj, namep, &jobj)) { /* object not found */
@@ -1830,19 +1828,19 @@ int32_t cli_bcapi_json_get_object(struct cli_bc_ctx *ctx, const int8_t* name, in
         return 0;
     }
 
-    j = cli_realloc(jobjs, sizeof(json_object *)*n);
+    j = cli_realloc(jobjs, sizeof(json_object *) * n);
     if (!j) { /* memory allocation failure */
         free(namep);
         cli_event_error_oom(EV, 0);
         return -1;
     }
-    ctx->jsonobjs = (void **)j;
+    ctx->jsonobjs  = (void **)j;
     ctx->njsonobjs = n;
-    j[n-1] = jobj;
+    j[n - 1]       = jobj;
 
-    cli_dbgmsg("bytecode api[json_get_object]: assigned %s => ID %d\n", namep, n-1);
+    cli_dbgmsg("bytecode api[json_get_object]: assigned %s => ID %d\n", namep, n - 1);
     free(namep);
-    return n-1;
+    return n - 1;
 #else
     UNUSEDPARAM(ctx);
     UNUSEDPARAM(name);
@@ -1868,24 +1866,24 @@ int32_t cli_bcapi_json_get_type(struct cli_bc_ctx *ctx, int32_t objid)
 
     type = json_object_get_type(jobjs[objid]);
     switch (type) {
-    case json_type_null:
-        return JSON_TYPE_NULL;
-    case json_type_boolean:
-        return JSON_TYPE_BOOLEAN;
-    case json_type_double:
-        return JSON_TYPE_DOUBLE;
-    case json_type_int:
-        return JSON_TYPE_INT;
-    case json_type_object:
-        return JSON_TYPE_OBJECT;
-    case json_type_array:
-        return JSON_TYPE_ARRAY;
-    case json_type_string:
-        return JSON_TYPE_STRING;
-    default:
-        cli_dbgmsg("bytecode api[json_get_type]: unrecognized json type %d\n", type);
+        case json_type_null:
+            return JSON_TYPE_NULL;
+        case json_type_boolean:
+            return JSON_TYPE_BOOLEAN;
+        case json_type_double:
+            return JSON_TYPE_DOUBLE;
+        case json_type_int:
+            return JSON_TYPE_INT;
+        case json_type_object:
+            return JSON_TYPE_OBJECT;
+        case json_type_array:
+            return JSON_TYPE_ARRAY;
+        case json_type_string:
+            return JSON_TYPE_STRING;
+        default:
+            cli_dbgmsg("bytecode api[json_get_type]: unrecognized json type %d\n", type);
     }
-    
+
 #else
     UNUSEDPARAM(ctx);
     UNUSEDPARAM(objid);
@@ -1949,22 +1947,22 @@ int32_t cli_bcapi_json_get_array_idx(struct cli_bc_ctx *ctx, int32_t idx, int32_
     if (idx >= 0 && idx < length) {
         n = ctx->njsonobjs + 1;
 
-        jobj = json_object_array_get_idx(jarr,idx);
+        jobj = json_object_array_get_idx(jarr, idx);
         if (!jobj) { /* object not found */
             return 0;
         }
 
-        j = cli_realloc(jobjs, sizeof(json_object *)*n);
+        j = cli_realloc(jobjs, sizeof(json_object *) * n);
         if (!j) { /* memory allocation failure */
             cli_event_error_oom(EV, 0);
             return -1;
         }
-        ctx->jsonobjs = (void **)j;
+        ctx->jsonobjs  = (void **)j;
         ctx->njsonobjs = n;
-        j[n-1] = jobj;
+        j[n - 1]       = jobj;
 
-        cli_dbgmsg("bytecode api[json_array_get_idx]: assigned array @ %d => ID %d\n", idx, n-1);
-        return n-1;
+        cli_dbgmsg("bytecode api[json_array_get_idx]: assigned array @ %d => ID %d\n", idx, n - 1);
+        return n - 1;
     }
 
     return 0;
@@ -2003,7 +2001,7 @@ int32_t cli_bcapi_json_get_string_length(struct cli_bc_ctx *ctx, int32_t objid)
 
     //len = json_object_get_string_len(jobj); /* not in JSON <0.10 */
     jstr = json_object_get_string(jobj);
-    len = strlen(jstr);
+    len  = strlen(jstr);
 
     return len;
 #else
@@ -2014,7 +2012,7 @@ int32_t cli_bcapi_json_get_string_length(struct cli_bc_ctx *ctx, int32_t objid)
 #endif
 }
 
-int32_t cli_bcapi_json_get_string(struct cli_bc_ctx *ctx, int8_t* str, int32_t str_len, int32_t objid)
+int32_t cli_bcapi_json_get_string(struct cli_bc_ctx *ctx, int8_t *str, int32_t str_len, int32_t objid)
 {
 #if HAVE_JSON
     enum json_type type;
@@ -2040,19 +2038,18 @@ int32_t cli_bcapi_json_get_string(struct cli_bc_ctx *ctx, int8_t* str, int32_t s
 
     //len = json_object_get_string_len(jobj); /* not in JSON <0.10 */
     jstr = json_object_get_string(jobj);
-    len = strlen(jstr);
+    len  = strlen(jstr);
 
-    if (len+1 > str_len) {
+    if (len + 1 > str_len) {
         /* limit on str-len */
-        strncpy((char *)str, jstr, str_len-1);
-        str[str_len-1] = '\0';
+        strncpy((char *)str, jstr, str_len - 1);
+        str[str_len - 1] = '\0';
         return str_len;
-    }
-    else {
+    } else {
         /* limit on len+1 */
         strncpy((char *)str, jstr, len);
         str[len] = '\0';
-        return len+1;
+        return len + 1;
     }
 #else
     UNUSEDPARAM(ctx);

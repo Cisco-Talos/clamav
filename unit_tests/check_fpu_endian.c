@@ -30,9 +30,9 @@
  *     3 - fpu endian unknown
  */
 
-int main (int argc, char **argv)
+int main(int argc, char **argv)
 {
     UNUSEDPARAM(argc);
     UNUSEDPARAM(argv);
-    return  get_fpu_endian();
+    return get_fpu_endian();
 }

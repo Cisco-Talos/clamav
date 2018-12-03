@@ -39,8 +39,8 @@ typedef uint16_t bbid_t;
 typedef uint16_t funcid_t;
 
 struct cli_bc_callop {
-    operand_t* ops;
-    uint16_t* opsizes;
+    operand_t *ops;
+    uint16_t *opsizes;
     funcid_t funcid;
     uint8_t numOps;
 };
@@ -54,7 +54,7 @@ struct branch {
 struct cli_bc_cast {
     uint64_t mask;
     operand_t source;
-    uint8_t size;/* 0: 1-bit, 1: 8b, 2: 16b, 3: 32b, 4: 64b */
+    uint8_t size; /* 0: 1-bit, 1: 8b, 2: 16b, 3: 32b, 4: 64b */
 };
 
 typedef uint8_t interp_op_t;
@@ -62,7 +62,7 @@ struct cli_bc_inst {
     enum bc_opcode opcode;
     uint16_t type;
     operand_t dest;
-    interp_op_t interp_op;/* opcode for interpreter */
+    interp_op_t interp_op; /* opcode for interpreter */
     union {
         operand_t unaryop;
         struct cli_bc_cast cast;
@@ -83,9 +83,9 @@ struct cli_bc_func {
     uint8_t numArgs;
     uint16_t numLocals;
     uint32_t numInsts;
-    uint32_t numValues;/* without constants */
+    uint32_t numValues; /* without constants */
     uint32_t numConstants;
-    uint32_t numBytes;/* stack size */
+    uint32_t numBytes; /* stack size */
     uint16_t numBB;
     uint16_t returnType;
     uint16_t *types;
@@ -105,12 +105,12 @@ struct cli_bc_dbgnode_element {
 
 struct cli_bc_dbgnode {
     unsigned numelements;
-    struct cli_bc_dbgnode_element* elements;
+    struct cli_bc_dbgnode_element *elements;
 };
 
 #define MAX_OP ~0u
 enum trace_level {
-    trace_none=0,
+    trace_none = 0,
     trace_func,
     trace_param,
     trace_scope,
@@ -131,7 +131,7 @@ struct bc_inflate {
     z_stream stream;
     int32_t from;
     int32_t to;
-    int8_t  needSync;
+    int8_t needSync;
 };
 
 struct bc_jsnorm {
@@ -162,7 +162,7 @@ enum bc_events {
 };
 
 struct cli_bc_ctx {
-    uint8_t timeout;/* must be first byte in struct! */
+    uint8_t timeout; /* must be first byte in struct! */
     uint16_t funcid;
     unsigned numParams;
     /* id and params of toplevel function called */
@@ -185,7 +185,7 @@ struct cli_bc_ctx {
     uint32_t lsigoff[64];
     uint32_t pdf_nobjs;
     struct pdf_obj **pdf_objs;
-    uint32_t* pdf_flags;
+    uint32_t *pdf_flags;
     uint32_t pdf_size;
     uint32_t pdf_startoff;
     unsigned pdf_phase;
@@ -210,14 +210,14 @@ struct cli_bc_ctx {
     unsigned line;
     unsigned col;
     mpool_t *mpool;
-    struct bc_inflate* inflates;
+    struct bc_inflate *inflates;
     struct bc_buffer *buffers;
     unsigned nbuffers;
     unsigned nhashsets;
     unsigned njsnorms;
     unsigned jsnormwritten;
     struct cli_hashset *hashsets;
-    struct bc_jsnorm* jsnorms;
+    struct bc_jsnorm *jsnorms;
     char *jsnormdir;
     struct cli_map *maps;
     unsigned nmaps;

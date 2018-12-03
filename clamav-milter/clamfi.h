@@ -30,7 +30,6 @@ extern int addxvirus;
 extern char xvirushdr[255];
 extern int multircpt;
 
-
 sfsistat clamfi_body(SMFICTX *ctx, unsigned char *bodyp, size_t len);
 sfsistat clamfi_abort(SMFICTX *ctx);
 sfsistat clamfi_eom(SMFICTX *ctx);

@@ -39,13 +39,13 @@
 #ifndef __LINE_H
 #define __LINE_H
 
-typedef	char	line_t;	/* first byte is the ref count */
+typedef char line_t; /* first byte is the ref count */
 
-line_t	*lineCreate(const char *data);
-line_t	*lineLink(line_t *line);
-line_t	*lineUnlink(line_t *line);
-const	char	*lineGetData(const line_t *line);
+line_t *lineCreate(const char *data);
+line_t *lineLink(line_t *line);
+line_t *lineUnlink(line_t *line);
+const char *lineGetData(const line_t *line);
 
-#define	lineGetRefCount(line)	((unsigned char)line[0])
+#define lineGetRefCount(line) ((unsigned char)line[0])
 
 #endif

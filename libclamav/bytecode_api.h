@@ -42,7 +42,7 @@ struct cli_exe_section;
 struct DISASM_RESULT;
 #endif
 
-  /**
+/**
 \group_pe
    * Invalid RVA specified
    */
@@ -54,12 +54,12 @@ struct DISASM_RESULT;
  */
 enum BytecodeKind {
     /** generic bytecode, not tied a specific hook */
-    BC_GENERIC=0,
+    BC_GENERIC = 0,
     /** triggered at startup, only one is allowed per ClamAV startup */
-    BC_STARTUP=1,
-    _BC_START_HOOKS=256,
+    BC_STARTUP      = 1,
+    _BC_START_HOOKS = 256,
     /** executed on a logical trigger */
-    BC_LOGICAL=256,
+    BC_LOGICAL = 256,
     /** specifies a PE unpacker, executed on PE files on a logical trigger */
     BC_PE_UNPACKER,
     /** specifies a PDF hook, executes at a predetermined point of PDF parsing for PDF files */
@@ -78,43 +78,43 @@ enum BytecodeKind {
  * LibClamAV functionality level constants
  */
 enum FunctionalityLevels {
-    FUNC_LEVEL_096       = 51, /* LibClamAV release 0.96.0: bytecode engine released */
-    FUNC_LEVEL_096_dev   = 52,
-    FUNC_LEVEL_096_1     = 53, /* LibClamAV release 0.96.1: logical signature use of VI/macros requires this minimum functionality level */
-    FUNC_LEVEL_096_1_dev = 54,
-    FUNC_LEVEL_096_2     = 54, /* LibClamAV release 0.96.2: PDF Hooks require this minimum level */
-    FUNC_LEVEL_096_2_dev = 55,
-    FUNC_LEVEL_096_3     = 55, /* LibClamAV release 0.96.3: BC_PE_ALL bytecodes require this minimum level */
-    FUNC_LEVEL_096_4     = 56, /* LibClamAV release 0.96.4: minimum recommended engine version, older versions have quadratic load time */
-    FUNC_LEVEL_096_5     = 58, /* LibClamAV release 0.96.5 */
-    FUNC_LEVEL_097       = 60, /* LibClamAV release 0.97.0: older bytecodes may incorrectly use 57 */
-    FUNC_LEVEL_097_1     = 61, /* LibClamAV release 0.97.1 */
-    FUNC_LEVEL_097_2     = 62, /* LibClamAV release 0.97.2 */
-    FUNC_LEVEL_097_3     = 63, /* LibClamAV release 0.97.3: last bcc changes as former team resigns*/
-    FUNC_LEVEL_097_4     = 64, /* LibClamAV release 0.97.4 */
-    FUNC_LEVEL_097_5     = 65, /* LibClamAV release 0.97.5 */
-    FUNC_LEVEL_097_6     = 67, /* LibClamAV release 0.97.6 */
-    FUNC_LEVEL_097_7     = 68, /* LibClamAV release 0.97.7 */
-    FUNC_LEVEL_097_8     = 69, /* LibClamAV release 0.97.8 */
-    FUNC_LEVEL_098_1     = 76, /* LibClamAV release 0.98.1: last syncing to clamav*/
-    FUNC_LEVEL_098_2     = 77, /* LibClamAV release 0.98.2 */
-    FUNC_LEVEL_098_3     = 77, /* LibClamAV release 0.98.3 */
-    FUNC_LEVEL_098_4     = 77, /* LibClamAV release 0.98.4 */
-    FUNC_LEVEL_098_5     = 79, /* LibClamAV release 0.98.5: JSON reading API requires this minimum level */
-    FUNC_LEVEL_098_6     = 79, /* LibClamAV release 0.98.6 */
-    FUNC_LEVEL_098_7     = 80, /* LibClamAV release 0.98.7: BC_PRECLASS bytecodes require minimum level */
-    FUNC_LEVEL_099       = 81, /* LibClamAV release 0.99, 0.99-beta1(.1-.5), 0.99-beta2 */
-    FUNC_LEVEL_099_1     = 82, /* LibClamAV release 0.99.1 */
-    FUNC_LEVEL_099_2     = 82, /* LibClamAV release 0.99.2 */
-    FUNC_LEVEL_099_3     = 84, /* LibClamAV release 0.99.3 */
-    FUNC_LEVEL_099_4     = 85, /* LibClamAV release 0.99.4 */
-    FUNC_LEVEL_0100_0_BETA = 90, /* LibClamAV beta release 0.100.0-beta */
-    FUNC_LEVEL_0100_0    = 91, /* LibClamAV release 0.100.0, 0.100.0-rc */
-    FUNC_LEVEL_0100_1    = 92, /**< LibClamAV release 0.100.1 */
-    FUNC_LEVEL_0100_2    = 93, /**< LibClamAV release 0.100.2 */
+    FUNC_LEVEL_096         = 51, /* LibClamAV release 0.96.0: bytecode engine released */
+    FUNC_LEVEL_096_dev     = 52,
+    FUNC_LEVEL_096_1       = 53, /* LibClamAV release 0.96.1: logical signature use of VI/macros requires this minimum functionality level */
+    FUNC_LEVEL_096_1_dev   = 54,
+    FUNC_LEVEL_096_2       = 54, /* LibClamAV release 0.96.2: PDF Hooks require this minimum level */
+    FUNC_LEVEL_096_2_dev   = 55,
+    FUNC_LEVEL_096_3       = 55,  /* LibClamAV release 0.96.3: BC_PE_ALL bytecodes require this minimum level */
+    FUNC_LEVEL_096_4       = 56,  /* LibClamAV release 0.96.4: minimum recommended engine version, older versions have quadratic load time */
+    FUNC_LEVEL_096_5       = 58,  /* LibClamAV release 0.96.5 */
+    FUNC_LEVEL_097         = 60,  /* LibClamAV release 0.97.0: older bytecodes may incorrectly use 57 */
+    FUNC_LEVEL_097_1       = 61,  /* LibClamAV release 0.97.1 */
+    FUNC_LEVEL_097_2       = 62,  /* LibClamAV release 0.97.2 */
+    FUNC_LEVEL_097_3       = 63,  /* LibClamAV release 0.97.3: last bcc changes as former team resigns*/
+    FUNC_LEVEL_097_4       = 64,  /* LibClamAV release 0.97.4 */
+    FUNC_LEVEL_097_5       = 65,  /* LibClamAV release 0.97.5 */
+    FUNC_LEVEL_097_6       = 67,  /* LibClamAV release 0.97.6 */
+    FUNC_LEVEL_097_7       = 68,  /* LibClamAV release 0.97.7 */
+    FUNC_LEVEL_097_8       = 69,  /* LibClamAV release 0.97.8 */
+    FUNC_LEVEL_098_1       = 76,  /* LibClamAV release 0.98.1: last syncing to clamav*/
+    FUNC_LEVEL_098_2       = 77,  /* LibClamAV release 0.98.2 */
+    FUNC_LEVEL_098_3       = 77,  /* LibClamAV release 0.98.3 */
+    FUNC_LEVEL_098_4       = 77,  /* LibClamAV release 0.98.4 */
+    FUNC_LEVEL_098_5       = 79,  /* LibClamAV release 0.98.5: JSON reading API requires this minimum level */
+    FUNC_LEVEL_098_6       = 79,  /* LibClamAV release 0.98.6 */
+    FUNC_LEVEL_098_7       = 80,  /* LibClamAV release 0.98.7: BC_PRECLASS bytecodes require minimum level */
+    FUNC_LEVEL_099         = 81,  /* LibClamAV release 0.99, 0.99-beta1(.1-.5), 0.99-beta2 */
+    FUNC_LEVEL_099_1       = 82,  /* LibClamAV release 0.99.1 */
+    FUNC_LEVEL_099_2       = 82,  /* LibClamAV release 0.99.2 */
+    FUNC_LEVEL_099_3       = 84,  /* LibClamAV release 0.99.3 */
+    FUNC_LEVEL_099_4       = 85,  /* LibClamAV release 0.99.4 */
+    FUNC_LEVEL_0100_0_BETA = 90,  /* LibClamAV beta release 0.100.0-beta */
+    FUNC_LEVEL_0100_0      = 91,  /* LibClamAV release 0.100.0, 0.100.0-rc */
+    FUNC_LEVEL_0100_1      = 92,  /**< LibClamAV release 0.100.1 */
+    FUNC_LEVEL_0100_2      = 93,  /**< LibClamAV release 0.100.2 */
     FUNC_LEVEL_0101_0_BETA = 100, /* LibClamAV beta release 0.101.0-beta */
-    FUNC_LEVEL_0101_0    = 101, /* LibClamAV release 0.101.0, 0.101.0-rc */
-    FUNC_LEVEL_100       = 255 /* future release candidate */
+    FUNC_LEVEL_0101_0      = 101, /* LibClamAV release 0.101.0, 0.101.0-rc */
+    FUNC_LEVEL_100         = 255  /* future release candidate */
 };
 
 /**
@@ -134,7 +134,7 @@ enum pdf_phase {
  * PDF flags 
  */
 enum pdf_flag {
-    BAD_PDF_VERSION=0,      /* */
+    BAD_PDF_VERSION = 0,    /* */
     BAD_PDF_HEADERPOS,      /* */
     BAD_PDF_TRAILER,        /* */
     BAD_PDF_TOOMANYOBJS,    /* */
@@ -162,7 +162,7 @@ enum pdf_flag {
  * PDF obj flags
  */
 enum pdf_objflags {
-    OBJ_STREAM=0,        /* */
+    OBJ_STREAM = 0,      /* */
     OBJ_DICT,            /* */
     OBJ_EMBEDDED_FILE,   /* */
     OBJ_FILTER_AH,       /* */
@@ -194,13 +194,13 @@ enum pdf_objflags {
  * JSON types
  */
 enum bc_json_type {
-    JSON_TYPE_NULL=0,    /* */
-    JSON_TYPE_BOOLEAN,   /* */
-    JSON_TYPE_DOUBLE,    /* */
-    JSON_TYPE_INT,       /* */
-    JSON_TYPE_OBJECT,    /* */
-    JSON_TYPE_ARRAY,     /* */
-    JSON_TYPE_STRING     /* */
+    JSON_TYPE_NULL = 0, /* */
+    JSON_TYPE_BOOLEAN,  /* */
+    JSON_TYPE_DOUBLE,   /* */
+    JSON_TYPE_INT,      /* */
+    JSON_TYPE_OBJECT,   /* */
+    JSON_TYPE_ARRAY,    /* */
+    JSON_TYPE_STRING    /* */
 };
 
 /**
@@ -296,14 +296,14 @@ uint32_t test1(uint32_t a, uint32_t b);
  * @param[out] data pointer to buffer where data is read into
  * @return amount read.
  */
-int32_t read(uint8_t *data, int32_t size);
+int32_t read(uint8_t* data, int32_t size);
 
 /**
 \group_file
  */
 enum {
     /**set file position to specified absolute position */
-    SEEK_SET=0,
+    SEEK_SET = 0,
     /**set file position relative to current position */
     SEEK_CUR,
     /**set file position relative to file end*/
@@ -320,7 +320,7 @@ enum {
  * byte
  * @return amount of bytes successfully written
  */
-int32_t write(uint8_t *data, int32_t size);
+int32_t write(uint8_t* data, int32_t size);
 
 /**
 \group_file
@@ -339,7 +339,7 @@ int32_t seek(int32_t pos, uint32_t whence);
  * @param[in] len length of the virusname
  * @return 0
  */
-uint32_t setvirusname(const uint8_t *name, uint32_t len);
+uint32_t setvirusname(const uint8_t* name, uint32_t len);
 
 /**
 \group_debug
@@ -348,7 +348,7 @@ uint32_t setvirusname(const uint8_t *name, uint32_t len);
  * @param[in] len length of message to print
  * @return 0
  */
-uint32_t debug_print_str(const uint8_t *str, uint32_t len);
+uint32_t debug_print_str(const uint8_t* str, uint32_t len);
 
 /**
 \group_debug
@@ -436,7 +436,7 @@ uint32_t test2(uint32_t a);
  * @return  0 - success
  * @return -1 - failure
  */
-int32_t get_pe_section(struct cli_exe_section *section, uint32_t num);
+int32_t get_pe_section(struct cli_exe_section* section, uint32_t num);
 
 /**
 \group_file
@@ -534,7 +534,7 @@ int32_t hashset_empty(int32_t id);
  * @param[in] size size of buffer
  * @return ID of newly created buffer_pipe
  */
-int32_t  buffer_pipe_new(uint32_t size);
+int32_t buffer_pipe_new(uint32_t size);
 
 /**
   \group_adt
@@ -543,7 +543,7 @@ int32_t  buffer_pipe_new(uint32_t size);
   * @param[in] pos starting position of pipe input in current file
   * @return ID of newly created buffer_pipe
   */
-int32_t  buffer_pipe_new_fromfile(uint32_t pos);
+int32_t buffer_pipe_new_fromfile(uint32_t pos);
 
 /**
 \group_adt
@@ -564,7 +564,7 @@ uint32_t buffer_pipe_read_avail(int32_t id);
   * specified amount
   */
 //uint8_t *buffer_pipe_read_get(int32_t id, uint32_t amount);
-const uint8_t *buffer_pipe_read_get(int32_t id, uint32_t amount);
+const uint8_t* buffer_pipe_read_get(int32_t id, uint32_t amount);
 
 /**
 \group_adt
@@ -573,7 +573,7 @@ const uint8_t *buffer_pipe_read_get(int32_t id, uint32_t amount);
   * @param[in] amount amount of bytes to move read cursor
   * @return 0 on success
   */
-int32_t  buffer_pipe_read_stopped(int32_t id, uint32_t amount);
+int32_t buffer_pipe_read_stopped(int32_t id, uint32_t amount);
 
 /**
 \group_adt
@@ -593,7 +593,7 @@ uint32_t buffer_pipe_write_avail(int32_t id);
   * @return pointer to write buffer, or NULL if requested amount
   * is more than what is available in the buffer
   */
-uint8_t *buffer_pipe_write_get(int32_t id, uint32_t size);
+uint8_t* buffer_pipe_write_get(int32_t id, uint32_t size);
 
 /**
 \group_adt
@@ -602,7 +602,7 @@ uint8_t *buffer_pipe_write_get(int32_t id, uint32_t size);
   * @param[in] amount amount of bytes to move write cursor
   * @return 0 on success
   */
-int32_t  buffer_pipe_write_stopped(int32_t id, uint32_t amount);
+int32_t buffer_pipe_write_stopped(int32_t id, uint32_t amount);
 
 /**
 \group_adt
@@ -613,7 +613,7 @@ int32_t  buffer_pipe_write_stopped(int32_t id, uint32_t amount);
   * @param[in] id ID of buffer_pipe
   * @return 0 on success
   */
-int32_t  buffer_pipe_done(int32_t id);
+int32_t buffer_pipe_done(int32_t id);
 
 /**
 \group_adt
@@ -782,7 +782,7 @@ int32_t atoi(const uint8_t* str, int32_t size);
   * @param[in] len length of \p str
   * @return 0
   */
-uint32_t debug_print_str_start(const uint8_t *str, uint32_t len);
+uint32_t debug_print_str_start(const uint8_t* str, uint32_t len);
 
 /**
 \group_debug
@@ -792,7 +792,7 @@ uint32_t debug_print_str_start(const uint8_t *str, uint32_t len);
   * @param[in] len length of \p str
   * @return 0
   */
-uint32_t debug_print_str_nonl(const uint8_t *str, uint32_t len);
+uint32_t debug_print_str_nonl(const uint8_t* str, uint32_t len);
 
 /**
 \group_string
@@ -823,7 +823,7 @@ int32_t map_new(int32_t keysize, int32_t valuesize);
   * @return 1 - if key didn't exist before
   * @return <0 - if ksize doesn't match keysize specified at table creation
   */
-int32_t map_addkey(const uint8_t *key, int32_t ksize, int32_t id);
+int32_t map_addkey(const uint8_t* key, int32_t ksize, int32_t id);
 
 /**
 \group_adt
@@ -834,7 +834,7 @@ int32_t map_addkey(const uint8_t *key, int32_t ksize, int32_t id);
   * @return 0 - if update was successful
   * @return <0 - if there is no last key
   */
-int32_t map_setvalue(const uint8_t *value, int32_t vsize, int32_t id);
+int32_t map_setvalue(const uint8_t* value, int32_t vsize, int32_t id);
 
 /**
 \group_adt
@@ -903,7 +903,7 @@ int32_t map_done(int32_t id);
   * match_pos + \p len < \p maxpos
   * @return offset in the current file if match is found, -1 otherwise 
   */
-int32_t file_find_limit(const uint8_t *data, uint32_t len, int32_t maxpos);
+int32_t file_find_limit(const uint8_t* data, uint32_t len, int32_t maxpos);
 
 /* ------------- Engine Query ----------------------------------------------- */
 /**
@@ -971,7 +971,7 @@ int32_t input_switch(int32_t extracted_file);
   * @param[in] len - size of \p env
   * @return 0
   */
-uint32_t get_environment(struct cli_environment *env, uint32_t len);
+uint32_t get_environment(struct cli_environment* env, uint32_t len);
 
 /**
 \group_env
@@ -984,7 +984,7 @@ uint32_t get_environment(struct cli_environment *env, uint32_t len);
   * @return 1 - JIT disabled
   * @return 2 - fully disabled
   */
-uint32_t disable_bytecode_if(const int8_t *reason, uint32_t len, uint32_t cond);
+uint32_t disable_bytecode_if(const int8_t* reason, uint32_t len, uint32_t cond);
 
 /**
 \group_env
@@ -1011,7 +1011,7 @@ uint32_t disable_jit_if(const int8_t* reason, uint32_t len, uint32_t cond);
   * @return 1 - lhs > rhs
   */
 int32_t version_compare(const uint8_t* lhs, uint32_t lhs_len,
-                    const uint8_t* rhs, uint32_t rhs_len);
+                        const uint8_t* rhs, uint32_t rhs_len);
 
 /**
 \group_env
@@ -1077,7 +1077,7 @@ uint32_t pdf_getobjsize(int32_t objidx);
  * @return NULL - invalid objidx/amount
  * @return pointer - pointer to original object */
 //uint8_t *pdf_getobj(int32_t objidx, uint32_t amount);
-const uint8_t *pdf_getobj(int32_t objidx, uint32_t amount);
+const uint8_t* pdf_getobj(int32_t objidx, uint32_t amount);
 
 /**
 \group_pdf
@@ -1303,7 +1303,7 @@ int32_t json_get_int(int32_t objid);
   * @param[in] scan_options enum value for desired scan option category.
   * @return CL_SCAN_<OPTION>_* flags 
   */
-uint32_t engine_scan_options_ex(const uint8_t *option_name, uint32_t name_len);
+uint32_t engine_scan_options_ex(const uint8_t* option_name, uint32_t name_len);
 
 /* ----------------- END 0.101 APIs ---------------------------------- */
 #endif

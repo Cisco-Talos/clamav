@@ -23,7 +23,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#ifdef	HAVE_UNISTD_H
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 #include <string.h>
@@ -37,52 +37,43 @@
 
 int active_children;
 
-void
-execute (const char *type, const char *text, const struct optstruct *opts)
+void execute(const char *type, const char *text, const struct optstruct *opts)
 {
     int ret;
 
-    if (!optget (opts, "daemon")->enabled)
-    {
-        if (sscanf (text, "EXIT_%d", &ret) == 1)
-        {
-            logg ("*%s: EXIT_%d\n", type, ret);
-            exit (ret);
+    if (!optget(opts, "daemon")->enabled) {
+        if (sscanf(text, "EXIT_%d", &ret) == 1) {
+            logg("*%s: EXIT_%d\n", type, ret);
+            exit(ret);
         }
-        if (system (text) == -1)
-            logg ("%s: system(%s) failed\n", type, text);
+        if (system(text) == -1)
+            logg("%s: system(%s) failed\n", type, text);
 
         return;
     }
 
 #ifdef _WIN32
-    if (spawnlp (_P_NOWAIT, text, text, NULL) == -1)
-    {
-        logg ("^%s: couldn't execute \"%s\".\n", type, text);
+    if (spawnlp(_P_NOWAIT, text, text, NULL) == -1) {
+        logg("^%s: couldn't execute \"%s\".\n", type, text);
         return;
     }
 #else
-    if (active_children < MAX_CHILDREN)
-    {
+    if (active_children < MAX_CHILDREN) {
         pid_t pid;
-        switch (pid = fork ())
-        {
-        case 0:
-            if (-1 == system (text))
-            {
-                logg ("^%s: couldn't execute \"%s\".\n", type, text);
-            }
-            exit (0);
-        case -1:
-            logg ("^%s::fork() failed, %s.\n", type, strerror (errno));
-            break;
-        default:
-            active_children++;
+        switch (pid = fork()) {
+            case 0:
+                if (-1 == system(text)) {
+                    logg("^%s: couldn't execute \"%s\".\n", type, text);
+                }
+                exit(0);
+            case -1:
+                logg("^%s::fork() failed, %s.\n", type, strerror(errno));
+                break;
+            default:
+                active_children++;
         }
-    }
-    else
-    {
-        logg ("^%s: already %d processes active.\n", type, active_children);
+    } else {
+        logg("^%s: already %d processes active.\n", type, active_children);
     }
 #endif
 }

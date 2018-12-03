@@ -21,7 +21,6 @@
  *  MA 02110-1301, USA.
  */
 
-
 #ifndef _REGEX_LIST_H
 #define _REGEX_LIST_H
 
@@ -35,38 +34,37 @@
 #include "mpool.h"
 
 struct regex_list_ht {
-	struct regex_list *head;
-	struct regex_list *tail;
+    struct regex_list* head;
+    struct regex_list* tail;
 };
 
 struct regex_matcher {
-	struct cli_hashtable suffix_hash;
-	size_t suffix_cnt;
-	struct regex_list_ht *suffix_regexes;
-	size_t root_regex_idx;
-	size_t regex_cnt;
-	regex_t **all_pregs;
-	struct cli_matcher suffixes;
-	struct cli_matcher sha256_hashes;
-	struct cli_hashset sha256_pfx_set;
-	struct cli_matcher hostkey_prefix;
-	struct filter filter;
+    struct cli_hashtable suffix_hash;
+    size_t suffix_cnt;
+    struct regex_list_ht* suffix_regexes;
+    size_t root_regex_idx;
+    size_t regex_cnt;
+    regex_t** all_pregs;
+    struct cli_matcher suffixes;
+    struct cli_matcher sha256_hashes;
+    struct cli_hashset sha256_pfx_set;
+    struct cli_matcher hostkey_prefix;
+    struct filter filter;
 #ifdef USE_MPOOL
-	mpool_t *mempool;
+    mpool_t* mempool;
 #endif
-	int list_inited:2;
-	int list_loaded:2;
-	int list_built:2;
+    int list_inited : 2;
+    int list_loaded : 2;
+    int list_built : 2;
 };
 
 int cli_build_regex_list(struct regex_matcher* matcher);
-int regex_list_add_pattern(struct regex_matcher *matcher, char *pattern);
-int regex_list_match(struct regex_matcher* matcher, char* real_url,const char* display_url,const struct pre_fixup_info* pre_fixup, int hostOnly,const char **info, int is_whitelist);
+int regex_list_add_pattern(struct regex_matcher* matcher, char* pattern);
+int regex_list_match(struct regex_matcher* matcher, char* real_url, const char* display_url, const struct pre_fixup_info* pre_fixup, int hostOnly, const char** info, int is_whitelist);
 int init_regex_list(struct regex_matcher* matcher, uint8_t dconf_prefiltering);
-int load_regex_matcher(struct cl_engine *engine,struct regex_matcher* matcher,FILE* fd,unsigned int *signo,unsigned int options,int is_whitelist,struct cli_dbio *dbio,uint8_t dconf_prefiltering);
+int load_regex_matcher(struct cl_engine* engine, struct regex_matcher* matcher, FILE* fd, unsigned int* signo, unsigned int options, int is_whitelist, struct cli_dbio* dbio, uint8_t dconf_prefiltering);
 void regex_list_cleanup(struct regex_matcher* matcher);
 void regex_list_done(struct regex_matcher* matcher);
 int is_regex_ok(struct regex_matcher* matcher);
 
 #endif
-

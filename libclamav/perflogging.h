@@ -39,19 +39,19 @@
 #include "cltypes.h"
 
 enum perf_log_sumable {
-	RAW_BYTES_SCANNED,
-	FILTER_BYTES_SCANNED,
-  AC_SCANNED,
-	BM_SCANNED,
-	__LAST_SUMABLE
+    RAW_BYTES_SCANNED,
+    FILTER_BYTES_SCANNED,
+    AC_SCANNED,
+    BM_SCANNED,
+    __LAST_SUMABLE
 };
 
 enum perf_log_countable {
-	TRIE_SCANNED,
-	FILTER_LOAD,
-	FILTER_END_LOAD,
-	TRIE_ORIG_LEN,
-	__LAST_COUNTABLE
+    TRIE_SCANNED,
+    FILTER_LOAD,
+    FILTER_END_LOAD,
+    TRIE_ORIG_LEN,
+    __LAST_COUNTABLE
 };
 
 extern __thread int last_flushed;
@@ -68,36 +68,38 @@ void cli_perf_flush(void);
 
 static inline void cli_perf_enter(void)
 {
-	if (!cli_perf_registered) cli_perf_register();
-	if (cli_perf_sum_tls[RAW_BYTES_SCANNED] - last_flushed > 100*1024*1024) {
-		cli_perf_flush();
-		last_flushed = cli_perf_sum_tls[RAW_BYTES_SCANNED];
-	}
+    if (!cli_perf_registered) cli_perf_register();
+    if (cli_perf_sum_tls[RAW_BYTES_SCANNED] - last_flushed > 100 * 1024 * 1024) {
+        cli_perf_flush();
+        last_flushed = cli_perf_sum_tls[RAW_BYTES_SCANNED];
+    }
 }
 
 static inline void cli_perf_log_add(enum perf_log_sumable kind, uint64_t add)
 {
-	cli_perf_enter();
-	assert( kind < __LAST_SUMABLE);
-	cli_perf_sum_tls[kind] += add;
+    cli_perf_enter();
+    assert(kind < __LAST_SUMABLE);
+    cli_perf_sum_tls[kind] += add;
 }
 
 static inline void cli_perf_log_count2(enum perf_log_countable kind, uint8_t event, uint64_t cnt)
 {
-	cli_perf_enter();
-	assert( kind < __LAST_COUNTABLE);
-	cli_perf_count_tls[kind][event] += cnt;
+    cli_perf_enter();
+    assert(kind < __LAST_COUNTABLE);
+    cli_perf_count_tls[kind][event] += cnt;
 }
 
 static inline void cli_perf_log_count(enum perf_log_countable kind, uint8_t event)
 {
-	cli_perf_log_count2(kind, event, 1);
+    cli_perf_log_count2(kind, event, 1);
 }
 
 #endif
 
 #else
-#define cli_perf_log_count(a,b) do {} while(0)
+#define cli_perf_log_count(a, b) \
+    do {                         \
+    } while (0)
 #endif
 
 #endif

@@ -46,32 +46,31 @@ unsigned int notmoved = 0, notremoved = 0;
 static char *actarget;
 static int targlen;
 
-
-
-static int getdest(const char *fullpath, char **newname) {
+static int getdest(const char *fullpath, char **newname)
+{
     char *tmps, *filename;
     int fd, i;
 
     tmps = strdup(fullpath);
-    if(!tmps) {
-        *newname=NULL;
+    if (!tmps) {
+        *newname = NULL;
         return -1;
     }
     filename = basename(tmps);
 
-    if(!(*newname = (char *)malloc(targlen + strlen(filename) + 6))) {
-	free(tmps);
-	return -1;
+    if (!(*newname = (char *)malloc(targlen + strlen(filename) + 6))) {
+        free(tmps);
+        return -1;
     }
-    sprintf(*newname, "%s"PATHSEP"%s", actarget, filename);
-    for(i=1; i<1000; i++) {
-	fd = open(*newname, O_WRONLY | O_CREAT | O_EXCL, 0600);
-	if(fd >= 0) {
-	    free(tmps);
-	    return fd;
-	}
-	if(errno != EEXIST) break;
-	sprintf(*newname, "%s"PATHSEP"%s.%03u", actarget, filename, i);
+    sprintf(*newname, "%s" PATHSEP "%s", actarget, filename);
+    for (i = 1; i < 1000; i++) {
+        fd = open(*newname, O_WRONLY | O_CREAT | O_EXCL, 0600);
+        if (fd >= 0) {
+            free(tmps);
+            return fd;
+        }
+        if (errno != EEXIST) break;
+        sprintf(*newname, "%s" PATHSEP "%s.%03u", actarget, filename, i);
     }
     free(tmps);
     free(*newname);
@@ -79,66 +78,71 @@ static int getdest(const char *fullpath, char **newname) {
     return -1;
 }
 
-static void action_move(const char *filename) {
+static void action_move(const char *filename)
+{
     char *nuname;
     int fd = getdest(filename, &nuname), copied = 0;
 
-    if(fd<0 || (rename(filename, nuname) && (copied=1) && filecopy(filename, nuname))) {
-	logg("!Can't move file %s\n", filename);
-	notmoved++;
-	if(nuname) unlink(nuname);
+    if (fd < 0 || (rename(filename, nuname) && (copied = 1) && filecopy(filename, nuname))) {
+        logg("!Can't move file %s\n", filename);
+        notmoved++;
+        if (nuname) unlink(nuname);
     } else {
-	if(copied && unlink(filename))
-	    logg("!Can't unlink '%s': %s\n", filename, strerror(errno));
-	else
-	    logg("~%s: moved to '%s'\n", filename, nuname);
+        if (copied && unlink(filename))
+            logg("!Can't unlink '%s': %s\n", filename, strerror(errno));
+        else
+            logg("~%s: moved to '%s'\n", filename, nuname);
     }
 
-    if(fd>=0) close(fd);
-    if(nuname) free(nuname);
+    if (fd >= 0) close(fd);
+    if (nuname) free(nuname);
 }
 
-static void action_copy(const char *filename) {
+static void action_copy(const char *filename)
+{
     char *nuname;
     int fd = getdest(filename, &nuname);
 
-    if(fd < 0 || filecopy(filename, nuname)) {
-	logg("!Can't copy file '%s'\n", filename);
-	notmoved++;
-	if(nuname) unlink(nuname);
+    if (fd < 0 || filecopy(filename, nuname)) {
+        logg("!Can't copy file '%s'\n", filename);
+        notmoved++;
+        if (nuname) unlink(nuname);
     } else
-	logg("~%s: copied to '%s'\n", filename, nuname);
+        logg("~%s: copied to '%s'\n", filename, nuname);
 
-    if(fd>=0) close(fd);
-    if(nuname) free(nuname);
+    if (fd >= 0) close(fd);
+    if (nuname) free(nuname);
 }
 
-static void action_remove(const char *filename) {
-    if(unlink(filename)) {
-	logg("!Can't remove file '%s'.\n", filename);
-	notremoved++;
+static void action_remove(const char *filename)
+{
+    if (unlink(filename)) {
+        logg("!Can't remove file '%s'.\n", filename);
+        notremoved++;
     } else {
-	logg("~%s: Removed.\n", filename);
+        logg("~%s: Removed.\n", filename);
     }
 }
 
-static int isdir(void) {
+static int isdir(void)
+{
     STATBUF sb;
-    if(CLAMSTAT(actarget, &sb) || !S_ISDIR(sb.st_mode)) {
-	logg("!'%s' doesn't exist or is not a directory\n", actarget);
-	return 0;
+    if (CLAMSTAT(actarget, &sb) || !S_ISDIR(sb.st_mode)) {
+        logg("!'%s' doesn't exist or is not a directory\n", actarget);
+        return 0;
     }
     return 1;
 }
 
-int actsetup(const struct optstruct *opts) {
+int actsetup(const struct optstruct *opts)
+{
     int move = optget(opts, "move")->enabled;
-    if(move || optget(opts, "copy")->enabled) {
-	actarget = optget(opts, move ? "move" : "copy")->strarg;
-	if(!isdir()) return 1;
-	action = move ? action_move : action_copy;
-	targlen = strlen(actarget);
-    } else if(optget(opts, "remove")->enabled)
-	action = action_remove;
+    if (move || optget(opts, "copy")->enabled) {
+        actarget = optget(opts, move ? "move" : "copy")->strarg;
+        if (!isdir()) return 1;
+        action  = move ? action_move : action_copy;
+        targlen = strlen(actarget);
+    } else if (optget(opts, "remove")->enabled)
+        action = action_remove;
     return 0;
 }

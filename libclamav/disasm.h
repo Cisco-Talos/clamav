@@ -29,6 +29,6 @@
 #include "others.h"
 
 const uint8_t* cli_disasm_one(const uint8_t*, unsigned, struct DISASM_RESULT*, int);
-int disasmbuf(const uint8_t *, unsigned int, int);
+int disasmbuf(const uint8_t*, unsigned int, int);
 
 #endif

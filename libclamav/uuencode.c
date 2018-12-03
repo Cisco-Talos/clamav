@@ -21,18 +21,18 @@
 
 #include "clamav.h"
 
-#if	HAVE_CONFIG_H
+#if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
 
-#ifdef	HAVE_UNISTD_H
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 
 #include <stdio.h>
 #include <memory.h>
 #include <sys/stat.h>
-#ifdef	HAVE_STRINGS_H
+#ifdef HAVE_STRINGS_H
 #include <strings.h>
 #endif
 
@@ -43,39 +43,38 @@
 #include "uuencode.h"
 
 /* Maximum line length according to RFC821 */
-#define	RFC2821LENGTH	1000
+#define RFC2821LENGTH 1000
 
-int
-cli_uuencode(const char *dir, fmap_t *map)
+int cli_uuencode(const char *dir, fmap_t *map)
 {
-	message *m;
-	char buffer[RFC2821LENGTH + 1];
-	size_t at = 0;
+    message *m;
+    char buffer[RFC2821LENGTH + 1];
+    size_t at = 0;
 
-	if(!fmap_gets(map, buffer, &at, sizeof(buffer) - 1)) {
-		/* empty message */
-		return CL_CLEAN;
-	}
-	if(!isuuencodebegin(buffer)) {
-		cli_dbgmsg("Message is not in uuencoded format\n");
-		return CL_EFORMAT;
-	}
+    if (!fmap_gets(map, buffer, &at, sizeof(buffer) - 1)) {
+        /* empty message */
+        return CL_CLEAN;
+    }
+    if (!isuuencodebegin(buffer)) {
+        cli_dbgmsg("Message is not in uuencoded format\n");
+        return CL_EFORMAT;
+    }
 
-	m = messageCreate();
-	if(m == NULL) {
-		return CL_EMEM;
-	}
+    m = messageCreate();
+    if (m == NULL) {
+        return CL_EMEM;
+    }
 
-	cli_dbgmsg("found uuencode file\n");
+    cli_dbgmsg("found uuencode file\n");
 
-	if(uudecodeFile(m, buffer, dir, map, &at) < 0) {
-		messageDestroy(m);
-		cli_dbgmsg("Message is not in uuencoded format\n");
-		return CL_EFORMAT;
-	}
-	messageDestroy(m);
+    if (uudecodeFile(m, buffer, dir, map, &at) < 0) {
+        messageDestroy(m);
+        cli_dbgmsg("Message is not in uuencoded format\n");
+        return CL_EFORMAT;
+    }
+    messageDestroy(m);
 
-	return CL_CLEAN;	/* a lie - but it gets things going */
+    return CL_CLEAN; /* a lie - but it gets things going */
 }
 
 /*
@@ -83,50 +82,49 @@ cli_uuencode(const char *dir, fmap_t *map)
  * to include it in the parse tree. Saves memory and parse time.
  * Return < 0 for failure
  */
-int
-uudecodeFile(message *m, const char *firstline, const char *dir, fmap_t *map, size_t *at)
+int uudecodeFile(message *m, const char *firstline, const char *dir, fmap_t *map, size_t *at)
 {
-	fileblob *fb;
-	char buffer[RFC2821LENGTH + 1];
-	char *filename = cli_strtok(firstline, 2, " ");
+    fileblob *fb;
+    char buffer[RFC2821LENGTH + 1];
+    char *filename = cli_strtok(firstline, 2, " ");
 
-	if(filename == NULL)
-		return -1;
+    if (filename == NULL)
+        return -1;
 
-	fb = fileblobCreate();
-	if(fb == NULL) {
-		free(filename);
-		return -1;
-	}
+    fb = fileblobCreate();
+    if (fb == NULL) {
+        free(filename);
+        return -1;
+    }
 
-	fileblobSetFilename(fb, dir, filename);
-	cli_dbgmsg("uudecode %s\n", filename);
-	free(filename);
+    fileblobSetFilename(fb, dir, filename);
+    cli_dbgmsg("uudecode %s\n", filename);
+    free(filename);
 
-	while(fmap_gets(map, buffer, at, sizeof(buffer) - 1)) {
-		unsigned char data[1024];
-		const unsigned char *uptr;
-		size_t len;
+    while (fmap_gets(map, buffer, at, sizeof(buffer) - 1)) {
+        unsigned char data[1024];
+        const unsigned char *uptr;
+        size_t len;
 
-		cli_chomp(buffer);
-		if(strcasecmp(buffer, "end") == 0)
-			break;
-		if(buffer[0] == '\0')
-			break;
+        cli_chomp(buffer);
+        if (strcasecmp(buffer, "end") == 0)
+            break;
+        if (buffer[0] == '\0')
+            break;
 
-		uptr = decodeLine(m, UUENCODE, buffer, data, sizeof(data));
-		if(uptr == NULL)
-			break;
+        uptr = decodeLine(m, UUENCODE, buffer, data, sizeof(data));
+        if (uptr == NULL)
+            break;
 
-		len = (size_t)(uptr - data);
-		if((len > 62) || (len == 0))
-			break;
+        len = (size_t)(uptr - data);
+        if ((len > 62) || (len == 0))
+            break;
 
-		if(fileblobAddData(fb, data, len) < 0)
-			break;
-	}
+        if (fileblobAddData(fb, data, len) < 0)
+            break;
+    }
 
-	fileblobDestroy(fb);
+    fileblobDestroy(fb);
 
-	return 1;
+    return 1;
 }

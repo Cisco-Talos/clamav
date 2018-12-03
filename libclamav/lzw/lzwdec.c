@@ -61,91 +61,93 @@
 #include "lzwdec.h"
 #include "../others.h"
 
-#define MAXCODE(n)  ((1L<<(n))-1)
+#define MAXCODE(n) ((1L << (n)) - 1)
 /*
  * The spec specifies that encoded bit
  * strings SHOULD range from 9 to 12 bits.
  */
-#define BITS_MIN    9       /* start with 9 bits */
-#define BITS_VALID  12      /* 12 bit codes are the max valid */
-#define BITS_MAX    14      /* max of 14 bit codes (2 bits extension) */
+#define BITS_MIN 9    /* start with 9 bits */
+#define BITS_VALID 12 /* 12 bit codes are the max valid */
+#define BITS_MAX 14   /* max of 14 bit codes (2 bits extension) */
 /* predefined codes */
-#define CODE_BASIC  256     /* last basic code + 1 */
-#define CODE_CLEAR  256     /* code to clear string table */
-#define CODE_EOI    257     /* end-of-information code */
-#define CODE_FIRST  258     /* first free code entry */
-#define CODE_VALID  MAXCODE(BITS_VALID)
-#define CODE_MAX    MAXCODE(BITS_MAX)
+#define CODE_BASIC 256 /* last basic code + 1 */
+#define CODE_CLEAR 256 /* code to clear string table */
+#define CODE_EOI 257   /* end-of-information code */
+#define CODE_FIRST 258 /* first free code entry */
+#define CODE_VALID MAXCODE(BITS_VALID)
+#define CODE_MAX MAXCODE(BITS_MAX)
 
-#define CSIZE       (MAXCODE(BITS_MAX)+1L)
+#define CSIZE (MAXCODE(BITS_MAX) + 1L)
 
-typedef uint16_t hcode_t;     /* codes fit in 16 bits */
+typedef uint16_t hcode_t; /* codes fit in 16 bits */
 
 /*
  * Decoding-specific state.
  */
 typedef struct code_ent {
     struct code_ent *next;
-    uint16_t length;         /* string len, including this token */
-    uint8_t  value;          /* data value */
-    uint8_t  firstchar;      /* first token of string */
+    uint16_t length;   /* string len, including this token */
+    uint8_t value;     /* data value */
+    uint8_t firstchar; /* first token of string */
 } code_t;
 
 struct lzw_internal_state {
     /* general state */
-    uint16_t    nbits;      /* # of bits/code */
-    long        nextdata;   /* next bits of i/o */
-    long        nextbits;   /* # of valid bits in lzw_nextdata */
+    uint16_t nbits; /* # of bits/code */
+    long nextdata;  /* next bits of i/o */
+    long nextbits;  /* # of valid bits in lzw_nextdata */
 
     /* decoding-specific state */
-    long    dec_nbitsmask;  /* lzw_nbits 1 bits, right adjusted */
-    long    dec_restart;    /* restart count */
-    code_t *dec_codep;      /* current recognized code */
-    code_t *dec_oldcodep;   /* previously recognized code */
-    code_t *dec_free_entp;  /* next free entry */
-    code_t *dec_maxcodep;   /* max available entry */
-    code_t *dec_codetab;    /* kept separate for small machines */
+    long dec_nbitsmask;    /* lzw_nbits 1 bits, right adjusted */
+    long dec_restart;      /* restart count */
+    code_t *dec_codep;     /* current recognized code */
+    code_t *dec_oldcodep;  /* previously recognized code */
+    code_t *dec_free_entp; /* next free entry */
+    code_t *dec_maxcodep;  /* max available entry */
+    code_t *dec_codetab;   /* kept separate for small machines */
 };
 
 static void code_print(code_t *code);
 static void dict_print(code_t *codetab, uint16_t start, uint16_t maxcode);
 
-#define GetNextCode(code) {                                           \
-    if (have == 0)                                                    \
-        break;                                                        \
-    nextdata = nextdata << 8 | *(from)++;                             \
-    have--;                                                           \
-    nextbits += 8;                                                    \
-    if (nextbits < nbits) {                                           \
-        if (have == 0)                                                \
-break;                                                    \
-        nextdata = nextdata << 8 | *(from)++;                         \
-        have--;                                                       \
-        nextbits += 8;                                                \
-    }                                                                 \
-    code = (hcode_t)((nextdata >> (nextbits-nbits)) & nbitsmask);     \
-    nextbits -= nbits;                                                \
-}
+#define GetNextCode(code)                                               \
+    {                                                                   \
+        if (have == 0)                                                  \
+            break;                                                      \
+        nextdata = nextdata << 8 | *(from)++;                           \
+        have--;                                                         \
+        nextbits += 8;                                                  \
+        if (nextbits < nbits) {                                         \
+            if (have == 0)                                              \
+                break;                                                  \
+            nextdata = nextdata << 8 | *(from)++;                       \
+            have--;                                                     \
+            nextbits += 8;                                              \
+        }                                                               \
+        code = (hcode_t)((nextdata >> (nextbits - nbits)) & nbitsmask); \
+        nextbits -= nbits;                                              \
+    }
 
-#define CodeClear(code) {                                               \
-    free_code = CODE_FIRST;                                             \
-    free_entp = state->dec_codetab + CODE_FIRST;                        \
-    nbits = BITS_MIN;                                                   \
-    nbitsmask = MAXCODE(BITS_MIN);                                      \
-    maxcodep = state->dec_codetab + nbitsmask-1;                        \
-    while (code == CODE_CLEAR) /* clears out consecutive CODE_CLEARs */ \
-        GetNextCode(code);                                              \
-    if (code < CODE_BASIC)                                              \
-        *to++ = code, left--;                                           \
-    else if (code == CODE_EOI)                                          \
-        ret = LZW_STREAM_END;                                           \
-    else if (code >= CODE_FIRST) {                                      \
-        /* cannot reference unpopulated dictionary entries */           \
-        strm->msg = "cannot reference unpopulated dictionary entries";  \
-        ret = LZW_DATA_ERROR;                                           \
-    }                                                                   \
-    oldcodep = state->dec_codetab + code;                               \
-}
+#define CodeClear(code)                                                     \
+    {                                                                       \
+        free_code = CODE_FIRST;                                             \
+        free_entp = state->dec_codetab + CODE_FIRST;                        \
+        nbits     = BITS_MIN;                                               \
+        nbitsmask = MAXCODE(BITS_MIN);                                      \
+        maxcodep  = state->dec_codetab + nbitsmask - 1;                     \
+        while (code == CODE_CLEAR) /* clears out consecutive CODE_CLEARs */ \
+            GetNextCode(code);                                              \
+        if (code < CODE_BASIC)                                              \
+            *to++ = code, left--;                                           \
+        else if (code == CODE_EOI)                                          \
+            ret = LZW_STREAM_END;                                           \
+        else if (code >= CODE_FIRST) {                                      \
+            /* cannot reference unpopulated dictionary entries */           \
+            strm->msg = "cannot reference unpopulated dictionary entries";  \
+            ret       = LZW_DATA_ERROR;                                     \
+        }                                                                   \
+        oldcodep = state->dec_codetab + code;                               \
+    }
 
 int lzwInit(lzw_streamp strm)
 {
@@ -159,7 +161,7 @@ int lzwInit(lzw_streamp strm)
     }
 
     /* general state setup */
-    state->nbits = BITS_MIN;
+    state->nbits    = BITS_MIN;
     state->nextdata = 0;
     state->nextbits = 0;
 
@@ -172,17 +174,17 @@ int lzwInit(lzw_streamp strm)
     }
 
     for (code = 0; code < CODE_BASIC; code++) {
-        state->dec_codetab[code].next = NULL;
-        state->dec_codetab[code].length = 1;
-        state->dec_codetab[code].value = code;
+        state->dec_codetab[code].next      = NULL;
+        state->dec_codetab[code].length    = 1;
+        state->dec_codetab[code].value     = code;
         state->dec_codetab[code].firstchar = code;
     }
 
-    state->dec_restart = 0;
+    state->dec_restart   = 0;
     state->dec_nbitsmask = MAXCODE(BITS_MIN);
     state->dec_free_entp = state->dec_codetab + CODE_FIRST;
-    state->dec_oldcodep = &state->dec_codetab[CODE_CLEAR];
-    state->dec_maxcodep = &state->dec_codetab[state->dec_nbitsmask-1];
+    state->dec_oldcodep  = &state->dec_codetab[CODE_CLEAR];
+    state->dec_maxcodep  = &state->dec_codetab[state->dec_nbitsmask - 1];
 
     strm->state = state;
     return LZW_OK;
@@ -207,7 +209,7 @@ int lzwInflate(lzw_streamp strm)
         return LZW_STREAM_ERROR;
 
     /* load state */
-    to = strm->next_out;
+    to  = strm->next_out;
     out = left = strm->avail_out;
 
     from = strm->next_in;
@@ -216,16 +218,16 @@ int lzwInflate(lzw_streamp strm)
     flags = strm->flags;
     state = strm->state;
 
-    nbits = state->nbits;
-    nextdata = state->nextdata;
-    nextbits = state->nextbits;
+    nbits     = state->nbits;
+    nextdata  = state->nextdata;
+    nextbits  = state->nextbits;
     nbitsmask = state->dec_nbitsmask;
-    oldcodep = state->dec_oldcodep;
+    oldcodep  = state->dec_oldcodep;
     free_entp = state->dec_free_entp;
-    maxcodep = state->dec_maxcodep;
+    maxcodep  = state->dec_maxcodep;
 
-    echg = flags & LZW_FLAG_EARLYCHG;
-    cext = flags & LZW_FLAG_EXTNCODE;
+    echg      = flags & LZW_FLAG_EARLYCHG;
+    cext      = flags & LZW_FLAG_EXTNCODE;
     free_code = free_entp - &state->dec_codetab[0];
 
     if (oldcodep == &state->dec_codetab[CODE_EOI])
@@ -237,7 +239,7 @@ int lzwInflate(lzw_streamp strm)
     if (state->dec_restart) {
         long residue;
 
-        codep = state->dec_codep;
+        codep   = state->dec_codep;
         residue = codep->length - state->dec_restart;
         if (residue > left) {
             /*
@@ -292,7 +294,7 @@ int lzwInflate(lzw_streamp strm)
         codep = state->dec_codetab + code;
 
         /* cap dictionary codes to valid range (12-bits) */
-        if (free_code < CODE_VALID+1 || cext) {
+        if (free_code < CODE_VALID + 1 || cext) {
             /* non-earlychange bit expansion */
             if (!echg && free_entp > maxcodep) {
                 if (++nbits > BITS_VALID) {
@@ -302,7 +304,7 @@ int lzwInflate(lzw_streamp strm)
                         nbits = BITS_MAX;
                 }
                 nbitsmask = MAXCODE(nbits);
-                maxcodep = state->dec_codetab + nbitsmask-1;
+                maxcodep  = state->dec_codetab + nbitsmask - 1;
             }
             /*
              * Add the new entry to the code table.
@@ -314,11 +316,10 @@ int lzwInflate(lzw_streamp strm)
                 ret = LZW_DICT_ERROR;
                 break;
             }
-            free_entp->next = oldcodep;
+            free_entp->next      = oldcodep;
             free_entp->firstchar = free_entp->next->firstchar;
-            free_entp->length = free_entp->next->length+1;
-            free_entp->value = (codep < free_entp) ?
-                codep->firstchar : free_entp->firstchar;
+            free_entp->length    = free_entp->next->length + 1;
+            free_entp->value     = (codep < free_entp) ? codep->firstchar : free_entp->firstchar;
             free_entp++;
             /* earlychange bit expansion */
             if (echg && free_entp > maxcodep) {
@@ -329,7 +330,7 @@ int lzwInflate(lzw_streamp strm)
                         nbits = BITS_MAX;
                 }
                 nbitsmask = MAXCODE(nbits);
-                maxcodep = state->dec_codetab + nbitsmask-1;
+                maxcodep  = state->dec_codetab + nbitsmask - 1;
             }
             if (free_code++ > CODE_VALID)
                 flags |= LZW_FLAG_EXTNCODEUSE;
@@ -362,10 +363,10 @@ int lzwInflate(lzw_streamp strm)
                 } while (codep->length > left);
                 state->dec_restart = left;
                 to = wp = to + left;
-                do  {
+                do {
                     *--wp = codep->value;
                     codep = codep->next;
-                }  while (--left);
+                } while (--left);
                 goto inf_end;
             }
 
@@ -374,26 +375,26 @@ int lzwInflate(lzw_streamp strm)
             do {
                 *--wp = codep->value;
                 codep = codep->next;
-            } while(codep != NULL);
+            } while (codep != NULL);
         } else
             *to++ = code, left--;
     }
 
 inf_end:
     /* restore state */
-    strm->next_out = to;
+    strm->next_out  = to;
     strm->avail_out = left;
-    strm->next_in = from;
-    strm->avail_in = have;
-    strm->flags = flags;
+    strm->next_in   = from;
+    strm->avail_in  = have;
+    strm->flags     = flags;
 
-    state->nbits = (uint16_t)nbits;
-    state->nextdata = nextdata;
-    state->nextbits = nextbits;
+    state->nbits         = (uint16_t)nbits;
+    state->nextdata      = nextdata;
+    state->nextbits      = nextbits;
     state->dec_nbitsmask = nbitsmask;
-    state->dec_oldcodep = oldcodep;
+    state->dec_oldcodep  = oldcodep;
     state->dec_free_entp = free_entp;
-    state->dec_maxcodep = maxcodep;
+    state->dec_maxcodep  = maxcodep;
 
     /* update state */
     in -= strm->avail_in;
@@ -403,7 +404,7 @@ inf_end:
 
     if ((in == 0 && out == 0) && ret == LZW_OK) {
         strm->msg = "no data was processed";
-        ret = LZW_BUF_ERROR;
+        ret       = LZW_BUF_ERROR;
     }
     return ret;
 }
@@ -422,7 +423,7 @@ static void code_print(code_t *code)
     uint8_t *string;
     int i = 0;
 
-    string = cli_calloc(code->length+1, sizeof(uint8_t));
+    string = cli_calloc(code->length + 1, sizeof(uint8_t));
     if (!string)
         return;
 

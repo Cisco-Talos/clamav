@@ -82,7 +82,7 @@ struct device *get_device_entry(struct device *devices, size_t *ndevices, const 
         if (!found) {
             p = realloc(devices, sizeof(struct device) * (*ndevices + 1));
             if (!(p)) {
-                for (i=0; i < *ndevices; i++)
+                for (i = 0; i < *ndevices; i++)
                     free(devices[i].name);
                 free(devices);
                 return NULL;
@@ -109,9 +109,9 @@ struct device *get_device_entry(struct device *devices, size_t *ndevices, const 
 #if HAVE_GETIFADDRS
 struct device *get_devices(void)
 {
-    struct ifaddrs *addrs=NULL, *addr;
-    struct device *devices=NULL;
-    size_t ndevices=0, i, j;
+    struct ifaddrs *addrs  = NULL, *addr;
+    struct device *devices = NULL;
+    size_t ndevices        = 0, i, j;
     void *p;
     uint8_t *mac;
     int sock;
@@ -129,7 +129,7 @@ struct device *get_devices(void)
         if (!(addr->ifa_addr))
             continue;
 
-        /*
+            /*
          * Even though POSIX (BSD) sockets define AF_LINK, Linux decided to be clever
          * and use AF_PACKET instead.
          */
@@ -156,7 +156,7 @@ struct device *get_devices(void)
          * Windows, or FreeBSD.
          */
 #if !defined(SIOCGIFHWADDR) || defined(__GNU__)
-        for (i=0; i < ndevices; i++) {
+        for (i = 0; i < ndevices; i++) {
             if (!(strcmp(devices[i].name, addr->ifa_name))) {
                 sdl = (struct sockaddr_dl *)(addr->ifa_addr);
 
@@ -165,8 +165,8 @@ struct device *get_devices(void)
 #else
                 mac = ((uint8_t *)(sdl->sdl_data + sdl->sdl_nlen));
 #endif
-                for (j=0; j<6; j++)
-                    snprintf(devices[i].mac+strlen(devices[i].mac), sizeof(devices[i].mac)-strlen(devices[i].mac)-1, "%02x:", mac[j]);
+                for (j = 0; j < 6; j++)
+                    snprintf(devices[i].mac + strlen(devices[i].mac), sizeof(devices[i].mac) - strlen(devices[i].mac) - 1, "%02x:", mac[j]);
 
                 break;
             }
@@ -181,7 +181,7 @@ struct device *get_devices(void)
 
     /* This is the Linux version of getting the MAC addresses */
 #if defined(SIOCGIFHWADDR) && !defined(__GNU__)
-    for (i=0; i < ndevices; i++) {
+    for (i = 0; i < ndevices; i++) {
         if (!(devices[i].name))
             continue;
 
@@ -204,8 +204,8 @@ struct device *get_devices(void)
         if (!(mac))
             continue;
 
-        for (j=0; j<6; j++)
-            snprintf(devices[i].mac+strlen(devices[i].mac), sizeof(devices[i].mac)-strlen(devices[i].mac)-1, "%02x:", mac[j]);
+        for (j = 0; j < 6; j++)
+            snprintf(devices[i].mac + strlen(devices[i].mac), sizeof(devices[i].mac) - strlen(devices[i].mac) - 1, "%02x:", mac[j]);
     }
 #endif
 
@@ -213,15 +213,15 @@ struct device *get_devices(void)
     if (!(p))
         goto err;
 
-    devices = p;
-    devices[ndevices].name =  NULL;
+    devices                = p;
+    devices[ndevices].name = NULL;
     memset(devices[ndevices].mac, 0x00, sizeof(devices[ndevices].mac));
 
     return devices;
 
 err:
     if (devices) {
-        for (i=0; i < ndevices; i++)
+        for (i = 0; i < ndevices; i++)
             if (devices[i].name)
                 free(devices[i].name);
 
@@ -262,7 +262,7 @@ char *internal_get_host_id(void)
 
     ctx = cl_hash_init("md5");
     if (!(ctx)) {
-        for (i=0; devices[i].name != NULL; i++)
+        for (i = 0; devices[i].name != NULL; i++)
             free(devices[i].name);
 
         free(devices);
@@ -271,16 +271,16 @@ char *internal_get_host_id(void)
         return NULL;
     }
 
-    for (i=0; devices[i].name != NULL; i++)
+    for (i = 0; devices[i].name != NULL; i++)
         cl_update_hash(ctx, devices[i].mac, sizeof(devices[i].mac));
 
     cl_finish_hash(ctx, raw_md5);
 
-    for (i=0; devices[i].name != NULL; i++)
+    for (i = 0; devices[i].name != NULL; i++)
         free(devices[i].name);
     free(devices);
 
-    for (i=0; i < sizeof(raw_md5); i++) {
+    for (i = 0; i < sizeof(raw_md5); i++) {
         size_t len = strlen(printable_md5);
         switch (len) {
             case 8:
@@ -291,7 +291,7 @@ char *internal_get_host_id(void)
                 break;
         }
 
-        sprintf(printable_md5+len, "%02x", raw_md5[i]);
+        sprintf(printable_md5 + len, "%02x", raw_md5[i]);
     }
 
     return printable_md5;

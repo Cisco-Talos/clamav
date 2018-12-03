@@ -22,7 +22,6 @@
 #ifndef __SESSION_H
 #define __SESSION_H
 
-
 #define CMD1 "SCAN"
 /* #define CMD2 "RAWSCAN" */
 #define CMD3 "QUIT" /* deprecated */
@@ -52,7 +51,7 @@
 #include "others.h"
 
 enum commands {
-    COMMAND_UNKNOWN = 0,
+    COMMAND_UNKNOWN  = 0,
     COMMAND_SHUTDOWN = 1,
     COMMAND_RELOAD,
     COMMAND_END,

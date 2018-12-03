@@ -25,63 +25,70 @@
 
 #include "utf8_util.h"
 
-char *cli_strdup_to_utf8(const char *s) {
+char *cli_strdup_to_utf8(const char *s)
+{
     char *r = cli_to_utf8_maybe_alloc(s);
-    if(!r) return NULL;
-    if(r == s) return strdup(r);
+    if (!r) return NULL;
+    if (r == s) return strdup(r);
     return r;
 }
 
-#define MAYBE_FREE_W do { if(wdup != tmpw) free(wdup); } while (0)
-#define MAYBE_FREE_U do { if(utf8 != tmpu) free(utf8); } while (0)
-char *cli_to_utf8_maybe_alloc(const char *s) {
+#define MAYBE_FREE_W                  \
+    do {                              \
+        if (wdup != tmpw) free(wdup); \
+    } while (0)
+#define MAYBE_FREE_U                  \
+    do {                              \
+        if (utf8 != tmpu) free(utf8); \
+    } while (0)
+char *cli_to_utf8_maybe_alloc(const char *s)
+{
     int len = strlen(s) + 1;
     wchar_t tmpw[1024], *wdup;
     char tmpu[1024], *utf8;
 
-    if(len >= sizeof(tmpw) / sizeof(*tmpw)) {
-	wdup = (wchar_t *)malloc(len * sizeof(wchar_t));
-	if(!wdup) return NULL;
+    if (len >= sizeof(tmpw) / sizeof(*tmpw)) {
+        wdup = (wchar_t *)malloc(len * sizeof(wchar_t));
+        if (!wdup) return NULL;
     } else
-	wdup = tmpw;
+        wdup = tmpw;
 
     /* Check if already UTF8 first... */
-    if(MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, s, -1, wdup, len)) {
-	/* XP acts funny on MB_ERR_INVALID_CHARS, so we translate back and compare
+    if (MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, s, -1, wdup, len)) {
+        /* XP acts funny on MB_ERR_INVALID_CHARS, so we translate back and compare
 	   On Vista+ the flag is honored and there is no such overhead */
-	int ulen;
-	if((ulen = WideCharToMultiByte(CP_UTF8, 0, wdup, -1, NULL, 0, NULL, NULL))) {
-	    if(ulen > sizeof(tmpu)) {
-		utf8 = (char *)malloc(ulen);
-		if(!utf8) {
-		    MAYBE_FREE_W;
-		    return NULL;
-		}
-	    } else
-		utf8 = tmpu;
-	    if(WideCharToMultiByte(CP_UTF8, 0, wdup, -1, utf8, ulen, NULL, NULL) && !strcmp(s, utf8)) {
-		    MAYBE_FREE_W;
-		    MAYBE_FREE_U;
-		    return s;
-	    }
-	    MAYBE_FREE_U;
-	}
-	/* We should never land here */
+        int ulen;
+        if ((ulen = WideCharToMultiByte(CP_UTF8, 0, wdup, -1, NULL, 0, NULL, NULL))) {
+            if (ulen > sizeof(tmpu)) {
+                utf8 = (char *)malloc(ulen);
+                if (!utf8) {
+                    MAYBE_FREE_W;
+                    return NULL;
+                }
+            } else
+                utf8 = tmpu;
+            if (WideCharToMultiByte(CP_UTF8, 0, wdup, -1, utf8, ulen, NULL, NULL) && !strcmp(s, utf8)) {
+                MAYBE_FREE_W;
+                MAYBE_FREE_U;
+                return s;
+            }
+            MAYBE_FREE_U;
+        }
+        /* We should never land here */
     }
 
     /* ... then assume ANSI */
-    if(MultiByteToWideChar(CP_ACP, MB_ERR_INVALID_CHARS, s, -1, wdup, len)) {
-	if((len = WideCharToMultiByte(CP_UTF8, 0, wdup, -1, NULL, 0, NULL, NULL))) {
-	    if((utf8 = (char *)malloc(len))) {
-		if(WideCharToMultiByte(CP_UTF8, 0, wdup, -1, utf8, len, NULL, NULL)) {
-		    MAYBE_FREE_W;
-		    return utf8;
-		}
-		free(utf8);
-	    }
-	}
+    if (MultiByteToWideChar(CP_ACP, MB_ERR_INVALID_CHARS, s, -1, wdup, len)) {
+        if ((len = WideCharToMultiByte(CP_UTF8, 0, wdup, -1, NULL, 0, NULL, NULL))) {
+            if ((utf8 = (char *)malloc(len))) {
+                if (WideCharToMultiByte(CP_UTF8, 0, wdup, -1, utf8, len, NULL, NULL)) {
+                    MAYBE_FREE_W;
+                    return utf8;
+                }
+                free(utf8);
+            }
+        }
     }
     MAYBE_FREE_W;
     return NULL;
 }
-

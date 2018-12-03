@@ -28,47 +28,47 @@
 #include "cltypes.h"
 
 enum {
-  EXPLODE_EBUFF,
-  EXPLODE_ESTREAM
+    EXPLODE_EBUFF,
+    EXPLODE_ESTREAM
 };
 
 #define EXPLODE_OK EXPLODE_EBUFF
 
 enum XPL_STATE {
-  GRABLITS,
-  GRABLENS,
-  GRABDISTS,
-  EXPLODE,
-  EXPLODE_LITCODES,
-  EXPLODE_LITS,
-  EXPLODE_BASEDIST,
-  EXPLODE_DECODEDISTS,
-  EXPLODE_DECODELENS,
-  EXPLODE_DECODEEXTRA,
-  EXPLODE_WBYTE,
-  EXPLODE_BACKCOPY
+    GRABLITS,
+    GRABLENS,
+    GRABDISTS,
+    EXPLODE,
+    EXPLODE_LITCODES,
+    EXPLODE_LITS,
+    EXPLODE_BASEDIST,
+    EXPLODE_DECODEDISTS,
+    EXPLODE_DECODELENS,
+    EXPLODE_DECODEEXTRA,
+    EXPLODE_WBYTE,
+    EXPLODE_BACKCOPY
 };
 
 struct xplstate {
-  uint8_t *next_in;
-  uint8_t *next_out;
-  unsigned int got;
-  unsigned int minlen;
-  unsigned int mask;
-  unsigned int cur;
-  uint32_t lit_tree[256];
-  uint32_t len_tree[64];
-  uint32_t dist_tree[64];
-  uint32_t bitmap;
-  uint32_t avail_in;
-  uint32_t avail_out;
-  uint16_t backbytes;
-  uint16_t backsize;
-  uint8_t window[8192];
-  enum XPL_STATE state;
-  uint8_t bits;
-  uint8_t largewin;
-  uint8_t litcodes;
+    uint8_t *next_in;
+    uint8_t *next_out;
+    unsigned int got;
+    unsigned int minlen;
+    unsigned int mask;
+    unsigned int cur;
+    uint32_t lit_tree[256];
+    uint32_t len_tree[64];
+    uint32_t dist_tree[64];
+    uint32_t bitmap;
+    uint32_t avail_in;
+    uint32_t avail_out;
+    uint16_t backbytes;
+    uint16_t backsize;
+    uint8_t window[8192];
+    enum XPL_STATE state;
+    uint8_t bits;
+    uint8_t largewin;
+    uint8_t litcodes;
 };
 
 int explode_init(struct xplstate *, uint16_t);

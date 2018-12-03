@@ -13,7 +13,7 @@ FUNCTIONALITY_LEVEL_MIN(FUNC_LEVEL_098_7)
 
 #define STR_MAXLEN 256
 
-int entrypoint ()
+int entrypoint()
 {
     int32_t i, root = 0, embedded = 0;
     int32_t type, obj, strlen, objarr, objit, arrlen;
@@ -32,14 +32,14 @@ int entrypoint ()
     type = json_get_type(obj);
     if (type == JSON_TYPE_STRING) {
         /* acquire string length, note +1 is for the NULL terminator */
-        strlen = json_get_string_length(obj)+1;
+        strlen = json_get_string_length(obj) + 1;
         /* prevent buffer overflow */
         if (strlen > STR_MAXLEN)
             strlen = STR_MAXLEN;
         /* acquire string data, note strlen includes NULL terminator */
         if (json_get_string(str, strlen, obj)) {
             /* debug print str (with '\n' and prepended message */
-            debug_print_str(str,strlen);
+            debug_print_str(str, strlen);
 
             /* check the contained object's type */
             if (strlen == 14 && !memcmp(str, "CL_TYPE_MSEXE", 14)) {
@@ -83,14 +83,14 @@ int entrypoint ()
         type = json_get_type(obj);
         if (type == JSON_TYPE_STRING) {
             /* acquire string length, note +1 is for the NULL terminator */
-            strlen = json_get_string_length(obj)+1;
+            strlen = json_get_string_length(obj) + 1;
             /* prevent buffer overflow */
             if (strlen > STR_MAXLEN)
                 strlen = STR_MAXLEN;
             /* acquire string data, note strlen includes NULL terminator */
             if (json_get_string(str, strlen, obj)) {
                 /* debug print str (with '\n' and prepended message */
-                debug_print_str(str,strlen);
+                debug_print_str(str, strlen);
 
                 /* check the contained object's type */
                 if (strlen == 14 && !memcmp(str, "CL_TYPE_MSEXE", 14)) {
@@ -108,11 +108,9 @@ int entrypoint ()
 
     if (root && embedded) {
         foundVirus("RootEmbedded");
-    }
-    else if (root) {
+    } else if (root) {
         foundVirus("Root");
-    }
-    else if (embedded) {
+    } else if (embedded) {
         foundVirus("Embedded");
     }
 

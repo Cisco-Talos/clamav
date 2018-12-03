@@ -47,11 +47,11 @@ struct cli_pcre_off {
 
 #if HAVE_PCRE
 #define PCRE_BYPASS "7374756c747a676574737265676578"
-#define CLI_PCRE_GLOBAL    0x00000001 /* g */
+#define CLI_PCRE_GLOBAL 0x00000001    /* g */
 #define CLI_PCRE_ENCOMPASS 0x00000002 /* e */
-#define CLI_PCRE_ROLLING   0x00000004 /* r */
+#define CLI_PCRE_ROLLING 0x00000004   /* r */
 
-#define CLI_PCRE_DISABLED  0x80000000 /* used for dconf or fail to build */
+#define CLI_PCRE_DISABLED 0x80000000 /* used for dconf or fail to build */
 
 struct cli_pcre_meta {
     char *trigger;
@@ -74,7 +74,7 @@ void cli_pcre_perf_events_destroy();
 
 /* PCRE MATCHER DECLARATIONS */
 int cli_pcre_init();
-int cli_pcre_addpatt(struct cli_matcher *root, const char *virname, const char *trigger,  const char *pattern, const char *cflags, const char *offset, const uint32_t *lsigid, unsigned int options);
+int cli_pcre_addpatt(struct cli_matcher *root, const char *virname, const char *trigger, const char *pattern, const char *cflags, const char *offset, const uint32_t *lsigid, unsigned int options);
 int cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, long long unsigned recmatch_limit, const struct cli_dconf *dconf);
 int cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data, struct cli_target_info *info, cli_ctx *ctx);
 void cli_pcre_freeoff(struct cli_pcre_off *data);

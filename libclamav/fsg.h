@@ -26,9 +26,6 @@
 #include "execs.h"
 
 int unfsg_200(const char *, char *, int, int, uint32_t, uint32_t, uint32_t, int);
-int unfsg_133(const char *, char *, int , int, struct cli_exe_section *, int, uint32_t, uint32_t, int);
+int unfsg_133(const char *, char *, int, int, struct cli_exe_section *, int, uint32_t, uint32_t, int);
 
 #endif
-
-
-

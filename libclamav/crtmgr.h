@@ -26,8 +26,15 @@
 
 #include "bignum.h"
 
-typedef enum {CLI_SHA1RSA, CLI_MD5RSA, CLI_MD2RSA, CLI_RSA, CLI_SHA256RSA, CLI_SHA384RSA, CLI_SHA512RSA } cli_crt_hashtype;
-typedef enum {VRFY_CODE, VRFY_TIME} cli_vrfy_type;
+typedef enum { CLI_SHA1RSA,
+               CLI_MD5RSA,
+               CLI_MD2RSA,
+               CLI_RSA,
+               CLI_SHA256RSA,
+               CLI_SHA384RSA,
+               CLI_SHA512RSA } cli_crt_hashtype;
+typedef enum { VRFY_CODE,
+               VRFY_TIME } cli_vrfy_type;
 
 #define CRT_RAWMAXLEN 64
 typedef struct cli_crt_t {
@@ -61,7 +68,6 @@ typedef struct {
     unsigned int items;
 } crtmgr;
 
-
 int cli_crt_init(cli_crt *x509);
 void cli_crt_clear(cli_crt *x509);
 void crtmgr_init(crtmgr *m);
@@ -72,6 +78,5 @@ void crtmgr_del(crtmgr *m, cli_crt *x509);
 cli_crt *crtmgr_verify_crt(crtmgr *m, cli_crt *x509);
 cli_crt *crtmgr_verify_pkcs7(crtmgr *m, const uint8_t *issuer, const uint8_t *serial, const void *signature, unsigned int signature_len, cli_crt_hashtype hashtype, const uint8_t *refhash, cli_vrfy_type vrfytype);
 int crtmgr_add_roots(struct cl_engine *engine, crtmgr *m);
-
 
 #endif

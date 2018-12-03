@@ -63,17 +63,17 @@ int connect_host(const char *host, const char *port, uint32_t timeout, int useAs
     fd_set read_fds, write_fds;
     struct timeval tv;
 #ifdef _WIN32
-	int iResult;
-	WSADATA wsaData;
+    int iResult;
+    WSADATA wsaData;
 
-	/* Force initialization of Windows sockets, even if it already happened elsewhere */
-	iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
-	if (iResult != 0)
-		return -1;
+    /* Force initialization of Windows sockets, even if it already happened elsewhere */
+    iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+    if (iResult != 0)
+        return -1;
 #endif
 
     memset(&hints, 0x00, sizeof(struct addrinfo));
-    hints.ai_family = AF_UNSPEC;
+    hints.ai_family   = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
 
     if (getaddrinfo(host, port, &hints, &servinfo))
@@ -106,7 +106,7 @@ int connect_host(const char *host, const char *port, uint32_t timeout, int useAs
                 FD_SET(sockfd, &write_fds);
 
                 /* TODO: Make this timeout configurable */
-                tv.tv_sec = timeout;
+                tv.tv_sec  = timeout;
                 tv.tv_usec = 0;
                 if (select(sockfd + 1, &read_fds, &write_fds, NULL, &tv) <= 0) {
                     closesocket(sockfd);
@@ -128,7 +128,6 @@ int connect_host(const char *host, const char *port, uint32_t timeout, int useAs
                 continue;
             }
         }
-
 
         /* Connected to host */
         break;
@@ -157,7 +156,7 @@ int connect_host(const char *host, const char *port, uint32_t timeout, int useAs
 size_t encoded_size(const char *postdata)
 {
     const char *p;
-    size_t len=0;
+    size_t len = 0;
 
     for (p = postdata; *p != '\0'; p++)
         len += isalnum(*p) ? 1 : 3;
@@ -174,15 +173,15 @@ char *encode_data(const char *postdata)
     if (bufsz == 0)
         return NULL;
 
-    buf = cli_calloc(1, bufsz+1);
+    buf = cli_calloc(1, bufsz + 1);
     if (!(buf))
         return NULL;
 
-    for (i=0, j=0; postdata[i] != '\0'; i++) {
+    for (i = 0, j = 0; postdata[i] != '\0'; i++) {
         if (isalnum(postdata[i])) {
             buf[j++] = postdata[i];
         } else {
-            sprintf(buf+j, "%%%02x", postdata[i]);
+            sprintf(buf + j, "%%%02x", postdata[i]);
             j += 3;
         }
     }
@@ -194,7 +193,7 @@ void submit_post(const char *host, const char *port, const char *method, const c
 {
     int sockfd, n;
     unsigned int i;
-    char *buf, *encoded=NULL;
+    char *buf, *encoded = NULL;
     size_t bufsz;
     ssize_t recvsz;
     char chunkedlen[21];
@@ -204,10 +203,9 @@ void submit_post(const char *host, const char *port, const char *method, const c
         "GET",
         "PUT",
         "POST",
-        NULL
-    };
+        NULL};
 
-    for (i=0; acceptable_methods[i] != NULL; i++)
+    for (i = 0; acceptable_methods[i] != NULL; i++)
         if (!strcmp(method, acceptable_methods[i]))
             break;
 
@@ -242,18 +240,18 @@ void submit_post(const char *host, const char *port, const char *method, const c
     }
 
     snprintf(buf, bufsz, "%s %s HTTP/1.1\r\n", method, url);
-    snprintf(buf+strlen(buf), bufsz-strlen(buf), "Host: %s\r\n", host);
-    snprintf(buf+strlen(buf), bufsz-strlen(buf), "Connection: Close\r\n");
+    snprintf(buf + strlen(buf), bufsz - strlen(buf), "Host: %s\r\n", host);
+    snprintf(buf + strlen(buf), bufsz - strlen(buf), "Connection: Close\r\n");
 
     if (!strcmp(method, "POST") || !strcmp(method, "PUT")) {
-        snprintf(buf+strlen(buf), bufsz-strlen(buf), "Content-Type: application/x-www-form-urlencoded\r\n");
-        snprintf(buf+strlen(buf), bufsz-strlen(buf), "Content-Length: %s\r\n", chunkedlen);
-        snprintf(buf+strlen(buf), bufsz-strlen(buf), "\r\n");
-        snprintf(buf+strlen(buf), bufsz-strlen(buf), "%s", encoded);
+        snprintf(buf + strlen(buf), bufsz - strlen(buf), "Content-Type: application/x-www-form-urlencoded\r\n");
+        snprintf(buf + strlen(buf), bufsz - strlen(buf), "Content-Length: %s\r\n", chunkedlen);
+        snprintf(buf + strlen(buf), bufsz - strlen(buf), "\r\n");
+        snprintf(buf + strlen(buf), bufsz - strlen(buf), "%s", encoded);
         free(encoded);
     }
 #if defined(_WIN32)
-	sockfd = connect_host(host, port, timeout, 0);
+    sockfd = connect_host(host, port, timeout, 0);
 #else
     sockfd = connect_host(host, port, timeout, 1);
 #endif
@@ -281,17 +279,17 @@ void submit_post(const char *host, const char *port, const char *method, const c
          * while it's being processed). Give a ten-second timeout so we don't have a major
          * impact on scanning.
          */
-        tv.tv_sec = timeout;
+        tv.tv_sec  = timeout;
         tv.tv_usec = 0;
-        if ((n = select(sockfd+1, &readfds, NULL, NULL, &tv)) <= 0)
+        if ((n = select(sockfd + 1, &readfds, NULL, NULL, &tv)) <= 0)
             break;
 
         if (FD_ISSET(sockfd, &readfds)) {
             memset(buf, 0x00, bufsz);
-            if ((recvsz = recv(sockfd, buf, bufsz-1, 0) <= 0))
+            if ((recvsz = recv(sockfd, buf, bufsz - 1, 0) <= 0))
                 break;
 
-            buf[bufsz-1] = '\0';
+            buf[bufsz - 1] = '\0';
 
             cli_dbgmsg("stats - received: %s\n", buf);
 

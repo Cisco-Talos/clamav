@@ -37,7 +37,7 @@
 #endif
 
 #include <stdio.h>
-#include <stddef.h> 
+#include <stddef.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <ctype.h>
@@ -45,10 +45,10 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <errno.h>
-#ifdef	HAVE_LIMITS_H
+#ifdef HAVE_LIMITS_H
 #include <limits.h>
 #endif
-#ifdef	HAVE_UNISTD_H
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 #include <zlib.h>
@@ -69,10 +69,10 @@
 #define PDFTOKEN_FLAG_XREF 0x1
 
 struct pdf_token {
-    uint32_t flags;    /* tracking flags */
-    uint32_t success;  /* successfully decoded filters */
-    uint32_t length;   /* length of current content; TODO: transition to size_t */
-    uint8_t *content;  /* content stream */
+    uint32_t flags;   /* tracking flags */
+    uint32_t success; /* successfully decoded filters */
+    uint32_t length;  /* length of current content; TODO: transition to size_t */
+    uint8_t *content; /* content stream */
 };
 
 static size_t pdf_decodestream_internal(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token, int fout, cl_error_t *status, struct objstm_struct *objstm);
@@ -108,8 +108,8 @@ size_t pdf_decodestream(
     struct objstm_struct *objstm)
 {
     struct pdf_token *token = NULL;
-    size_t bytes_scanned = 0;
-    cli_ctx *ctx = pdf->ctx;
+    size_t bytes_scanned    = 0;
+    cli_ctx *ctx            = pdf->ctx;
 
     if (!status) {
         /* invalid args, and no way to pass back the status code */
@@ -123,7 +123,7 @@ size_t pdf_decodestream(
     }
 
     if (!stream || !streamlen || fout < 0) {
-        cli_dbgmsg("pdf_decodestream: no filters or stream on obj %u %u\n", obj->id>>8, obj->id&0xff);
+        cli_dbgmsg("pdf_decodestream: no filters or stream on obj %u %u\n", obj->id >> 8, obj->id & 0xff);
         *status = CL_ENULLARG;
         goto done;
     }
@@ -190,12 +190,11 @@ done:
     /*
      * Free up the token, and token content, if any.
      */
-    if (NULL != token)
-    {
+    if (NULL != token) {
         if (NULL != token->content) {
             free(token->content);
             token->content = NULL;
-            token->length = 0;
+            token->length  = 0;
         }
         free(token);
         token = NULL;
@@ -222,11 +221,11 @@ static size_t pdf_decodestream_internal(
     struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params,
     struct pdf_token *token, int fout, cl_error_t *status, struct objstm_struct *objstm)
 {
-    cl_error_t vir = CL_CLEAN;
-    cl_error_t retval = CL_SUCCESS;
+    cl_error_t vir       = CL_CLEAN;
+    cl_error_t retval    = CL_SUCCESS;
     size_t bytes_scanned = 0;
-    cli_ctx *ctx = pdf->ctx;
-    const char *filter = NULL;
+    cli_ctx *ctx         = pdf->ctx;
+    const char *filter   = NULL;
     int i;
 
     if (!status) {
@@ -239,9 +238,9 @@ static size_t pdf_decodestream_internal(
         *status = CL_EARG;
         goto done;
     }
-    
+
     *status = CL_SUCCESS;
-    
+
     /*
      * if pdf is decryptable, scan for CRYPT filter
      * if none, force a DECRYPT filter application
@@ -260,55 +259,55 @@ static size_t pdf_decodestream_internal(
     }
 
     for (i = 0; i < obj->numfilters; i++) {
-        switch(obj->filterlist[i]) {
-        case OBJ_FILTER_A85:
-            cli_dbgmsg("pdf_decodestream_internal: decoding [%d] => ASCII85DECODE\n", obj->filterlist[i]);
-            retval = filter_ascii85decode(pdf, obj, token);
-            break;
+        switch (obj->filterlist[i]) {
+            case OBJ_FILTER_A85:
+                cli_dbgmsg("pdf_decodestream_internal: decoding [%d] => ASCII85DECODE\n", obj->filterlist[i]);
+                retval = filter_ascii85decode(pdf, obj, token);
+                break;
 
-        case OBJ_FILTER_RL:
-            cli_dbgmsg("pdf_decodestream_internal: decoding [%d] => RLDECODE\n", obj->filterlist[i]);
-            retval = filter_rldecode(pdf, obj, token);
-            break;
+            case OBJ_FILTER_RL:
+                cli_dbgmsg("pdf_decodestream_internal: decoding [%d] => RLDECODE\n", obj->filterlist[i]);
+                retval = filter_rldecode(pdf, obj, token);
+                break;
 
-        case OBJ_FILTER_FLATE:
-            cli_dbgmsg("pdf_decodestream_internal: decoding [%d] => FLATEDECODE\n", obj->filterlist[i]);
-            retval = filter_flatedecode(pdf, obj, params, token);
-            break;
+            case OBJ_FILTER_FLATE:
+                cli_dbgmsg("pdf_decodestream_internal: decoding [%d] => FLATEDECODE\n", obj->filterlist[i]);
+                retval = filter_flatedecode(pdf, obj, params, token);
+                break;
 
-        case OBJ_FILTER_AH:
-            cli_dbgmsg("pdf_decodestream_internal: decoding [%d] => ASCIIHEXDECODE\n", obj->filterlist[i]);
-            retval = filter_asciihexdecode(pdf, obj, token);
-            break;
+            case OBJ_FILTER_AH:
+                cli_dbgmsg("pdf_decodestream_internal: decoding [%d] => ASCIIHEXDECODE\n", obj->filterlist[i]);
+                retval = filter_asciihexdecode(pdf, obj, token);
+                break;
 
-        case OBJ_FILTER_CRYPT:
-            cli_dbgmsg("pdf_decodestream_internal: decoding [%d] => CRYPT\n", obj->filterlist[i]);
-            retval = filter_decrypt(pdf, obj, params, token, 0);
-            break;
+            case OBJ_FILTER_CRYPT:
+                cli_dbgmsg("pdf_decodestream_internal: decoding [%d] => CRYPT\n", obj->filterlist[i]);
+                retval = filter_decrypt(pdf, obj, params, token, 0);
+                break;
 
-        case OBJ_FILTER_LZW:
-            cli_dbgmsg("pdf_decodestream_internal: decoding [%d] => LZWDECODE\n", obj->filterlist[i]);
-            retval = filter_lzwdecode(pdf, obj, params, token);
-            break;
+            case OBJ_FILTER_LZW:
+                cli_dbgmsg("pdf_decodestream_internal: decoding [%d] => LZWDECODE\n", obj->filterlist[i]);
+                retval = filter_lzwdecode(pdf, obj, params, token);
+                break;
 
-        case OBJ_FILTER_JPX:
-            if (!filter) filter = "JPXDECODE";
-        case OBJ_FILTER_DCT:
-            if (!filter) filter = "DCTDECODE";
-        case OBJ_FILTER_FAX:
-            if (!filter) filter = "FAXDECODE";
-        case OBJ_FILTER_JBIG2:
-            if (!filter) filter = "JBIG2DECODE";
+            case OBJ_FILTER_JPX:
+                if (!filter) filter = "JPXDECODE";
+            case OBJ_FILTER_DCT:
+                if (!filter) filter = "DCTDECODE";
+            case OBJ_FILTER_FAX:
+                if (!filter) filter = "FAXDECODE";
+            case OBJ_FILTER_JBIG2:
+                if (!filter) filter = "JBIG2DECODE";
 
-            cli_dbgmsg("pdf_decodestream_internal: unimplemented filter type [%d] => %s\n", obj->filterlist[i], filter);
-            filter = NULL;
-            retval = CL_BREAK;
-            break;
+                cli_dbgmsg("pdf_decodestream_internal: unimplemented filter type [%d] => %s\n", obj->filterlist[i], filter);
+                filter = NULL;
+                retval = CL_BREAK;
+                break;
 
-        default:
-            cli_dbgmsg("pdf_decodestream_internal: unknown filter type [%d]\n", obj->filterlist[i]);
-            retval = CL_BREAK;
-            break;
+            default:
+                cli_dbgmsg("pdf_decodestream_internal: unknown filter type [%d]\n", obj->filterlist[i]);
+                retval = CL_BREAK;
+                break;
         }
 
         if (!(token->content) || !(token->length)) {
@@ -320,21 +319,21 @@ static size_t pdf_decodestream_internal(
             if (retval == CL_VIRUS && SCAN_ALLMATCHES) {
                 vir = CL_VIRUS;
             } else {
-                const char* reason;
+                const char *reason;
 
                 switch (retval) {
-                case CL_VIRUS:
-                    *status = CL_VIRUS;
-                    reason = "detection";
-                    break;
-                case CL_BREAK:
-                    *status = CL_SUCCESS;
-                    reason = "decoding break";
-                    break;
-                default:
-                    *status = CL_EPARSE;
-                    reason = "decoding error";
-                    break;
+                    case CL_VIRUS:
+                        *status = CL_VIRUS;
+                        reason  = "detection";
+                        break;
+                    case CL_BREAK:
+                        *status = CL_SUCCESS;
+                        reason  = "decoding break";
+                        break;
+                    default:
+                        *status = CL_EPARSE;
+                        reason  = "decoding error";
+                        break;
                 }
 
                 cli_dbgmsg("pdf_decodestream_internal: stopping after %d (of %lu) filters (reason: %s)\n", i, (long unsigned)(obj->numfilters), reason);
@@ -345,7 +344,7 @@ static size_t pdf_decodestream_internal(
 
         /* Dump the stream content to a text file if keeptmp is enabled. */
         if (pdf->ctx->engine->keeptmp) {
-            if (CL_SUCCESS != pdf_decode_dump(pdf, obj, token, i+1)) {
+            if (CL_SUCCESS != pdf_decode_dump(pdf, obj, token, i + 1)) {
                 cli_errmsg("pdf_decodestream_internal: failed to write decoded stream content to temp file\n");
             }
         }
@@ -370,26 +369,24 @@ static size_t pdf_decodestream_internal(
     }
 
     if ((NULL != objstm) &&
-        ((CL_SUCCESS == *status) || ((CL_VIRUS == *status) && SCAN_ALLMATCHES)))
-    {
+        ((CL_SUCCESS == *status) || ((CL_VIRUS == *status) && SCAN_ALLMATCHES))) {
         int objs_found = pdf->nobjs;
 
         /*
          * The caller indicated that the decoded data is an object stream.
          * Perform experimental object stream parsing to extract objects from the stream.
          */
-        objstm->streambuf = (char*)token->content;
+        objstm->streambuf     = (char *)token->content;
         objstm->streambuf_len = (size_t)token->length;
 
         /* Take ownership of the malloc'd buffer */
         token->content = NULL;
-        token->length = 0;
+        token->length  = 0;
 
         /* Don't store the result. It's ok if some or all objects failed to parse.
            It would be far worse to add objects from a stream to the list, and then free
            the stream buffer due to an "error". */
-        if (CL_SUCCESS != pdf_find_and_parse_objs_in_objstm(pdf, objstm))
-        {
+        if (CL_SUCCESS != pdf_find_and_parse_objs_in_objstm(pdf, objstm)) {
             cli_dbgmsg("pdf_decodestream_internal: pdf_find_and_parse_objs_in_objstm failed!\n");
         }
 
@@ -425,8 +422,8 @@ static cl_error_t pdf_decode_dump(struct pdf_struct *pdf, struct pdf_obj *obj, s
     char fname[1024];
     int ifd;
 
-    snprintf(fname, sizeof(fname), "%s"PATHSEP"pdf%02u_%02ui", pdf->dir, (pdf->files-1), lvl);
-    ifd = open(fname, O_RDWR|O_CREAT|O_EXCL|O_TRUNC|O_BINARY, 0600);
+    snprintf(fname, sizeof(fname), "%s" PATHSEP "pdf%02u_%02ui", pdf->dir, (pdf->files - 1), lvl);
+    ifd = open(fname, O_RDWR | O_CREAT | O_EXCL | O_TRUNC | O_BINARY, 0600);
     if (ifd < 0) {
         char err[128];
 
@@ -434,7 +431,7 @@ static cl_error_t pdf_decode_dump(struct pdf_struct *pdf, struct pdf_obj *obj, s
         return CL_ETMPFILE;
     }
 
-    cli_dbgmsg("cli_pdf: decoded filter %d obj %u %u\n", lvl, obj->id>>8, obj->id&0xff);
+    cli_dbgmsg("cli_pdf: decoded filter %d obj %u %u\n", lvl, obj->id >> 8, obj->id & 0xff);
     cli_dbgmsg("         ... to %s\n", fname);
 
     if (cli_writen(ifd, token->content, token->length) != token->length) {
@@ -462,23 +459,23 @@ static cl_error_t filter_ascii85decode(struct pdf_struct *pdf, struct pdf_obj *o
     uint64_t sum = 0;
 
     /* 5:4 decoding ratio, with 1:4 expansion sequences => (4*length)+1 */
-    if (!(dptr = decoded = (uint8_t *)cli_malloc((4*remaining)+1))) {
+    if (!(dptr = decoded = (uint8_t *)cli_malloc((4 * remaining) + 1))) {
         cli_errmsg("cli_pdf: cannot allocate memory for decoded output\n");
         return CL_EMEM;
     }
 
-    if(cli_memstr((const char *)ptr, remaining, "~>", 2) == NULL)
+    if (cli_memstr((const char *)ptr, remaining, "~>", 2) == NULL)
         cli_dbgmsg("cli_pdf: no EOF marker found\n");
 
     while (remaining > 0) {
         int byte = (remaining--) ? (int)*ptr++ : EOF;
 
-        if((byte == '~') && (remaining > 0) && (*ptr == '>'))
+        if ((byte == '~') && (remaining > 0) && (*ptr == '>'))
             byte = EOF;
 
-        if(byte >= '!' && byte <= 'u') {
+        if (byte >= '!' && byte <= 'u') {
             sum = (sum * 85) + ((uint32_t)byte - '!');
-            if(++quintet == 5) {
+            if (++quintet == 5) {
                 *dptr++ = (unsigned char)(sum >> 24);
                 *dptr++ = (unsigned char)((sum >> 16) & 0xFF);
                 *dptr++ = (unsigned char)((sum >> 8) & 0xFF);
@@ -486,10 +483,10 @@ static cl_error_t filter_ascii85decode(struct pdf_struct *pdf, struct pdf_obj *o
 
                 declen += 4;
                 quintet = 0;
-                sum = 0;
+                sum     = 0;
             }
-        } else if(byte == 'z') {
-            if(quintet) {
+        } else if (byte == 'z') {
+            if (quintet) {
                 cli_dbgmsg("cli_pdf: unexpected 'z'\n");
                 rc = CL_EFORMAT;
                 break;
@@ -501,32 +498,32 @@ static cl_error_t filter_ascii85decode(struct pdf_struct *pdf, struct pdf_obj *o
             *dptr++ = '\0';
 
             declen += 4;
-        } else if(byte == EOF) {
+        } else if (byte == EOF) {
             cli_dbgmsg("cli_pdf: last quintet contains %d bytes\n", quintet);
-            if(quintet) {
+            if (quintet) {
                 int i;
 
-                if(quintet == 1) {
+                if (quintet == 1) {
                     cli_dbgmsg("cli_pdf: invalid last quintet (only 1 byte)\n");
                     rc = CL_EFORMAT;
                     break;
                 }
 
-                for(i = quintet; i < 5; i++)
+                for (i = quintet; i < 5; i++)
                     sum *= 85;
 
-                if(quintet > 1)
+                if (quintet > 1)
                     sum += (0xFFFFFF >> ((quintet - 2) * 8));
 
-                for(i = 0; i < quintet - 1; i++)
+                for (i = 0; i < quintet - 1; i++)
                     *dptr++ = (uint8_t)((sum >> (24 - 8 * i)) & 0xFF);
-                declen += quintet-1;
+                declen += quintet - 1;
             }
 
             break;
-        } else if(!isspace(byte)) {
+        } else if (!isspace(byte)) {
             cli_dbgmsg("cli_pdf: invalid character 0x%x @ %lu\n",
-                       byte & 0xFF, (unsigned long)(token->length-remaining));
+                       byte & 0xFF, (unsigned long)(token->length - remaining));
 
             rc = CL_EFORMAT;
             break;
@@ -540,13 +537,13 @@ static cl_error_t filter_ascii85decode(struct pdf_struct *pdf, struct pdf_obj *o
                    (unsigned long)declen, (unsigned long)(token->length));
 
         token->content = decoded;
-        token->length = declen;
+        token->length  = declen;
     } else {
         if (!(obj->flags & ((1 << OBJ_IMAGE) | (1 << OBJ_TRUNCATED))))
             pdfobj_flag(pdf, obj, BAD_ASCIIDECODE);
 
         cli_dbgmsg("cli_pdf: error occurred parsing byte %lu of %lu\n",
-                   (unsigned long)(token->length-remaining), (unsigned long)(token->length));
+                   (unsigned long)(token->length - remaining), (unsigned long)(token->length));
         free(decoded);
     }
     return rc;
@@ -559,9 +556,9 @@ static cl_error_t filter_rldecode(struct pdf_struct *pdf, struct pdf_obj *obj, s
     uint32_t declen = 0, capacity = 0;
 
     uint8_t *content = (uint8_t *)token->content;
-    uint32_t length = token->length;
-    uint32_t offset = 0;
-    int rc = CL_SUCCESS;
+    uint32_t length  = token->length;
+    uint32_t offset  = 0;
+    int rc           = CL_SUCCESS;
 
     UNUSEDPARAM(obj);
 
@@ -577,12 +574,12 @@ static cl_error_t filter_rldecode(struct pdf_struct *pdf, struct pdf_obj *obj, s
             /* direct copy of (srclen + 1) bytes */
             if (offset + srclen + 1 > length) {
                 cli_dbgmsg("cli_pdf: required source length (%lu) exceeds remaining length (%lu)\n",
-                           (long unsigned)(offset+srclen+1), (long unsigned)(length-offset));
+                           (long unsigned)(offset + srclen + 1), (long unsigned)(length - offset));
                 rc = CL_EFORMAT;
                 break;
             }
             if (declen + srclen + 1 > capacity) {
-                if ((rc = cli_checklimits("pdf", pdf->ctx, capacity+BUFSIZ, 0, 0)) != CL_SUCCESS)
+                if ((rc = cli_checklimits("pdf", pdf->ctx, capacity + BUFSIZ, 0, 0)) != CL_SUCCESS)
                     break;
 
                 if (!(temp = cli_realloc(decoded, capacity + BUFSIZ))) {
@@ -594,19 +591,19 @@ static cl_error_t filter_rldecode(struct pdf_struct *pdf, struct pdf_obj *obj, s
                 capacity += BUFSIZ;
             }
 
-            memcpy(decoded+declen, content+offset, srclen+1);
+            memcpy(decoded + declen, content + offset, srclen + 1);
             offset += srclen + 1;
             declen += srclen + 1;
         } else if (srclen > 128) {
             /* copy the next byte (257 - srclen) times */
             if (offset + 1 > length) {
                 cli_dbgmsg("cli_pdf: required source length (%lu) exceeds remaining length (%lu)\n",
-                           (long unsigned)(offset+srclen+1), (long unsigned)(length-offset));
+                           (long unsigned)(offset + srclen + 1), (long unsigned)(length - offset));
                 rc = CL_EFORMAT;
                 break;
             }
             if (declen + (257 - srclen) + 1 > capacity) {
-                if ((rc = cli_checklimits("pdf", pdf->ctx, capacity+BUFSIZ, 0, 0)) != CL_SUCCESS)
+                if ((rc = cli_checklimits("pdf", pdf->ctx, capacity + BUFSIZ, 0, 0)) != CL_SUCCESS)
                     break;
 
                 if (!(temp = cli_realloc(decoded, capacity + BUFSIZ))) {
@@ -618,13 +615,13 @@ static cl_error_t filter_rldecode(struct pdf_struct *pdf, struct pdf_obj *obj, s
                 capacity += BUFSIZ;
             }
 
-            memset(decoded+declen, content[offset], 257-srclen);
+            memset(decoded + declen, content[offset], 257 - srclen);
             offset++;
             declen += 257 - srclen;
         } else { /* srclen == 128 */
             /* end of data */
             cli_dbgmsg("cli_pdf: end-of-stream marker @ offset %lu (%lu bytes remaining)\n",
-                       (unsigned long)offset, (long unsigned)(token->length-offset));
+                       (unsigned long)offset, (long unsigned)(token->length - offset));
             break;
         }
     }
@@ -636,7 +633,7 @@ static cl_error_t filter_rldecode(struct pdf_struct *pdf, struct pdf_obj *obj, s
                    (unsigned long)declen, (unsigned long)(token->length));
 
         token->content = decoded;
-        token->length = declen;
+        token->length  = declen;
     } else {
         cli_dbgmsg("cli_pdf: error occurred parsing byte %lu of %lu\n",
                    (unsigned long)offset, (unsigned long)(token->length));
@@ -667,7 +664,7 @@ static cl_error_t filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj
     uint32_t declen = 0, capacity = 0;
 
     uint8_t *content = (uint8_t *)token->content;
-    uint32_t length = token->length;
+    uint32_t length  = token->length;
     z_stream stream;
     int zstat, skip = 0, rc = CL_SUCCESS;
 
@@ -692,13 +689,13 @@ static cl_error_t filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj
     capacity = BUFSIZ;
 
     memset(&stream, 0, sizeof(stream));
-    stream.next_in = (Bytef *)content;
-    stream.avail_in = length;
-    stream.next_out = (Bytef *)decoded;
+    stream.next_in   = (Bytef *)content;
+    stream.avail_in  = length;
+    stream.next_out  = (Bytef *)decoded;
     stream.avail_out = BUFSIZ;
 
     zstat = inflateInit(&stream);
-    if(zstat != Z_OK) {
+    if (zstat != Z_OK) {
         cli_warnmsg("cli_pdf: inflateInit failed\n");
         free(decoded);
         return CL_EMEM;
@@ -716,13 +713,13 @@ static cl_error_t filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj
             length -= q - content;
             content = q;
 
-            stream.next_in = (Bytef *)content;
-            stream.avail_in = length;
-            stream.next_out = (Bytef *)decoded;
+            stream.next_in   = (Bytef *)content;
+            stream.avail_in  = length;
+            stream.next_out  = (Bytef *)decoded;
             stream.avail_out = capacity;
 
             zstat = inflateInit(&stream);
-            if(zstat != Z_OK) {
+            if (zstat != Z_OK) {
                 cli_warnmsg("cli_pdf: inflateInit failed\n");
                 free(decoded);
                 return CL_EMEM;
@@ -736,8 +733,8 @@ static cl_error_t filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj
 
     while (zstat == Z_OK && stream.avail_in) {
         /* extend output capacity if needed,*/
-        if(stream.avail_out == 0) {
-            if ((rc = cli_checklimits("pdf", pdf->ctx, capacity+BUFSIZ, 0, 0)) != CL_SUCCESS)
+        if (stream.avail_out == 0) {
+            if ((rc = cli_checklimits("pdf", pdf->ctx, capacity + BUFSIZ, 0, 0)) != CL_SUCCESS)
                 break;
 
             if (!(temp = cli_realloc(decoded, capacity + BUFSIZ))) {
@@ -745,8 +742,8 @@ static cl_error_t filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj
                 rc = CL_EMEM;
                 break;
             }
-            decoded = temp;
-            stream.next_out = decoded + capacity;
+            decoded          = temp;
+            stream.next_out  = decoded + capacity;
             stream.avail_out = BUFSIZ;
             declen += BUFSIZ;
             capacity += BUFSIZ;
@@ -760,37 +757,37 @@ static cl_error_t filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj
     declen += (BUFSIZ - stream.avail_out);
 
     /* error handling */
-    switch(zstat) {
-    case Z_OK:
-        cli_dbgmsg("cli_pdf: Z_OK on stream inflation completion\n");
-        /* intentional fall-through */
-    case Z_STREAM_END:
-        cli_dbgmsg("cli_pdf: inflated %lu bytes from %lu total bytes (%lu bytes remaining)\n",
-                   (unsigned long)declen, (unsigned long)(token->length), (unsigned long)(stream.avail_in));
-        break;
+    switch (zstat) {
+        case Z_OK:
+            cli_dbgmsg("cli_pdf: Z_OK on stream inflation completion\n");
+            /* intentional fall-through */
+        case Z_STREAM_END:
+            cli_dbgmsg("cli_pdf: inflated %lu bytes from %lu total bytes (%lu bytes remaining)\n",
+                       (unsigned long)declen, (unsigned long)(token->length), (unsigned long)(stream.avail_in));
+            break;
 
-    /* potentially fatal - *mostly* ignored as per older version */
-    case Z_STREAM_ERROR:
-    case Z_NEED_DICT:
-    case Z_DATA_ERROR:
-    case Z_MEM_ERROR:
-    default:
-        if(stream.msg)
-            cli_dbgmsg("cli_pdf: after writing %lu bytes, got error \"%s\" inflating PDF stream in %u %u obj\n",
-                       (unsigned long)declen, stream.msg, obj->id>>8, obj->id&0xff);
-        else
-            cli_dbgmsg("cli_pdf: after writing %lu bytes, got error %d inflating PDF stream in %u %u obj\n",
-                       (unsigned long)declen, zstat, obj->id>>8, obj->id&0xff);
+        /* potentially fatal - *mostly* ignored as per older version */
+        case Z_STREAM_ERROR:
+        case Z_NEED_DICT:
+        case Z_DATA_ERROR:
+        case Z_MEM_ERROR:
+        default:
+            if (stream.msg)
+                cli_dbgmsg("cli_pdf: after writing %lu bytes, got error \"%s\" inflating PDF stream in %u %u obj\n",
+                           (unsigned long)declen, stream.msg, obj->id >> 8, obj->id & 0xff);
+            else
+                cli_dbgmsg("cli_pdf: after writing %lu bytes, got error %d inflating PDF stream in %u %u obj\n",
+                           (unsigned long)declen, zstat, obj->id >> 8, obj->id & 0xff);
 
-        if (declen == 0) {
-            pdfobj_flag(pdf, obj, BAD_FLATESTART);
-            cli_dbgmsg("cli_pdf: no bytes were inflated.\n");
+            if (declen == 0) {
+                pdfobj_flag(pdf, obj, BAD_FLATESTART);
+                cli_dbgmsg("cli_pdf: no bytes were inflated.\n");
 
-            rc = CL_EFORMAT;
-        } else {
-            pdfobj_flag(pdf, obj, BAD_FLATE);
-        }
-        break;
+                rc = CL_EFORMAT;
+            } else {
+                pdfobj_flag(pdf, obj, BAD_FLATE);
+            }
+            break;
     }
 
     (void)inflateEnd(&stream);
@@ -799,10 +796,10 @@ static cl_error_t filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj
         free(token->content);
 
         token->content = decoded;
-        token->length = declen;
+        token->length  = declen;
     } else {
         cli_dbgmsg("cli_pdf: error occurred parsing byte %lu of %lu\n",
-                   (unsigned long)(length-stream.avail_in), (unsigned long)(token->length));
+                   (unsigned long)(length - stream.avail_in), (unsigned long)(token->length));
         free(decoded);
     }
 
@@ -814,23 +811,23 @@ static cl_error_t filter_asciihexdecode(struct pdf_struct *pdf, struct pdf_obj *
     uint8_t *decoded;
 
     const uint8_t *content = (uint8_t *)token->content;
-    uint32_t length = token->length;
+    uint32_t length        = token->length;
     uint32_t i, j;
     cl_error_t rc = CL_SUCCESS;
 
-    if (!(decoded = (uint8_t *)cli_calloc(length/2 + 1, sizeof(uint8_t)))) {
+    if (!(decoded = (uint8_t *)cli_calloc(length / 2 + 1, sizeof(uint8_t)))) {
         cli_errmsg("cli_pdf: cannot allocate memory for decoded output\n");
         return CL_EMEM;
     }
 
-    for (i = 0, j = 0; i+1 < length; i++) {
+    for (i = 0, j = 0; i + 1 < length; i++) {
         if (content[i] == ' ')
             continue;
 
         if (content[i] == '>')
             break;
 
-        if (cli_hex2str_to((const char *)content+i, (char *)decoded+j, 2) == -1) {
+        if (cli_hex2str_to((const char *)content + i, (char *)decoded + j, 2) == -1) {
             if (length - i < 4)
                 continue;
 
@@ -849,7 +846,7 @@ static cl_error_t filter_asciihexdecode(struct pdf_struct *pdf, struct pdf_obj *
                    (unsigned long)j, (unsigned long)(token->length));
 
         token->content = decoded;
-        token->length = j;
+        token->length  = j;
     } else {
         if (!(obj->flags & ((1 << OBJ_IMAGE) | (1 << OBJ_TRUNCATED))))
             pdfobj_flag(pdf, obj, BAD_ASCIIDECODE);
@@ -865,7 +862,7 @@ static cl_error_t filter_asciihexdecode(struct pdf_struct *pdf, struct pdf_obj *
 static cl_error_t filter_decrypt(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params, struct pdf_token *token, int mode)
 {
     char *decrypted;
-    size_t length = (size_t)token->length;
+    size_t length       = (size_t)token->length;
     enum enc_method enc = ENC_IDENTITY;
 
     if (mode)
@@ -899,10 +896,9 @@ static cl_error_t filter_decrypt(struct pdf_struct *pdf, struct pdf_obj *obj, st
     cli_dbgmsg("cli_pdf: decrypted %zu bytes from %u total bytes\n",
                length, token->length);
 
-
     free(token->content);
     token->content = (uint8_t *)decrypted;
-    token->length = (uint32_t)length; /* this may truncate unfortunately, TODO: use 64-bit values internally? */
+    token->length  = (uint32_t)length; /* this may truncate unfortunately, TODO: use 64-bit values internally? */
     return CL_SUCCESS;
 }
 
@@ -912,7 +908,7 @@ static cl_error_t filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, 
     uint32_t declen = 0, capacity = 0;
 
     uint8_t *content = (uint8_t *)token->content;
-    uint32_t length = token->length;
+    uint32_t length  = token->length;
     lzw_stream stream;
     int echg = 1, lzwstat, skip = 0, rc = CL_SUCCESS;
 
@@ -959,15 +955,15 @@ static cl_error_t filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, 
     capacity = BUFSIZ;
 
     memset(&stream, 0, sizeof(stream));
-    stream.next_in = content;
-    stream.avail_in = length;
-    stream.next_out = decoded;
+    stream.next_in   = content;
+    stream.avail_in  = length;
+    stream.next_out  = decoded;
     stream.avail_out = BUFSIZ;
     if (echg)
         stream.flags |= LZW_FLAG_EARLYCHG;
 
     lzwstat = lzwInit(&stream);
-    if(lzwstat != Z_OK) {
+    if (lzwstat != Z_OK) {
         cli_warnmsg("cli_pdf: lzwInit failed\n");
         free(decoded);
         return CL_EMEM;
@@ -985,13 +981,13 @@ static cl_error_t filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, 
             length -= q - content;
             content = q;
 
-            stream.next_in = (Bytef *)content;
-            stream.avail_in = length;
-            stream.next_out = (Bytef *)decoded;
+            stream.next_in   = (Bytef *)content;
+            stream.avail_in  = length;
+            stream.next_out  = (Bytef *)decoded;
             stream.avail_out = capacity;
 
             lzwstat = lzwInit(&stream);
-            if(lzwstat != Z_OK) {
+            if (lzwstat != Z_OK) {
                 cli_warnmsg("cli_pdf: lzwInit failed\n");
                 free(decoded);
                 return CL_EMEM;
@@ -1005,8 +1001,8 @@ static cl_error_t filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, 
 
     while (lzwstat == Z_OK && stream.avail_in) {
         /* extend output capacity if needed,*/
-        if(stream.avail_out == 0) {
-            if ((rc = cli_checklimits("pdf", pdf->ctx, capacity+BUFSIZ, 0, 0)) != CL_SUCCESS)
+        if (stream.avail_out == 0) {
+            if ((rc = cli_checklimits("pdf", pdf->ctx, capacity + BUFSIZ, 0, 0)) != CL_SUCCESS)
                 break;
 
             if (!(temp = cli_realloc(decoded, capacity + BUFSIZ))) {
@@ -1014,8 +1010,8 @@ static cl_error_t filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, 
                 rc = CL_EMEM;
                 break;
             }
-            decoded = temp;
-            stream.next_out = decoded + capacity;
+            decoded          = temp;
+            stream.next_out  = decoded + capacity;
             stream.avail_out = BUFSIZ;
             declen += BUFSIZ;
             capacity += BUFSIZ;
@@ -1029,38 +1025,38 @@ static cl_error_t filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, 
     declen += (BUFSIZ - stream.avail_out);
 
     /* error handling */
-    switch(lzwstat) {
-    case LZW_OK:
-        cli_dbgmsg("cli_pdf: LZW_OK on stream inflation completion\n");
-        /* intentional fall-through */
-    case LZW_STREAM_END:
-        cli_dbgmsg("cli_pdf: inflated %lu bytes from %lu total bytes (%lu bytes remaining)\n",
-                   (unsigned long)declen, (unsigned long)(token->length), (unsigned long)(stream.avail_in));
-        break;
+    switch (lzwstat) {
+        case LZW_OK:
+            cli_dbgmsg("cli_pdf: LZW_OK on stream inflation completion\n");
+            /* intentional fall-through */
+        case LZW_STREAM_END:
+            cli_dbgmsg("cli_pdf: inflated %lu bytes from %lu total bytes (%lu bytes remaining)\n",
+                       (unsigned long)declen, (unsigned long)(token->length), (unsigned long)(stream.avail_in));
+            break;
 
-    /* potentially fatal - *mostly* ignored as per older version */
-    case LZW_STREAM_ERROR:
-    case LZW_DATA_ERROR:
-    case LZW_MEM_ERROR:
-    case LZW_BUF_ERROR:
-    case LZW_DICT_ERROR:
-    default:
-        if(stream.msg)
-            cli_dbgmsg("cli_pdf: after writing %lu bytes, got error \"%s\" inflating PDF stream in %u %u obj\n",
-                       (unsigned long)declen, stream.msg, obj->id>>8, obj->id&0xff);
-        else
-            cli_dbgmsg("cli_pdf: after writing %lu bytes, got error %d inflating PDF stream in %u %u obj\n",
-                       (unsigned long)declen, lzwstat, obj->id>>8, obj->id&0xff);
+        /* potentially fatal - *mostly* ignored as per older version */
+        case LZW_STREAM_ERROR:
+        case LZW_DATA_ERROR:
+        case LZW_MEM_ERROR:
+        case LZW_BUF_ERROR:
+        case LZW_DICT_ERROR:
+        default:
+            if (stream.msg)
+                cli_dbgmsg("cli_pdf: after writing %lu bytes, got error \"%s\" inflating PDF stream in %u %u obj\n",
+                           (unsigned long)declen, stream.msg, obj->id >> 8, obj->id & 0xff);
+            else
+                cli_dbgmsg("cli_pdf: after writing %lu bytes, got error %d inflating PDF stream in %u %u obj\n",
+                           (unsigned long)declen, lzwstat, obj->id >> 8, obj->id & 0xff);
 
-        if (declen == 0) {
-            pdfobj_flag(pdf, obj, BAD_FLATESTART);
-            cli_dbgmsg("cli_pdf: no bytes were inflated.\n");
+            if (declen == 0) {
+                pdfobj_flag(pdf, obj, BAD_FLATESTART);
+                cli_dbgmsg("cli_pdf: no bytes were inflated.\n");
 
-            rc = CL_EFORMAT;
-        } else {
-            pdfobj_flag(pdf, obj, BAD_FLATE);
-        }
-        break;
+                rc = CL_EFORMAT;
+            } else {
+                pdfobj_flag(pdf, obj, BAD_FLATE);
+            }
+            break;
     }
 
     (void)lzwInflateEnd(&stream);
@@ -1069,10 +1065,10 @@ static cl_error_t filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, 
         free(token->content);
 
         token->content = decoded;
-        token->length = declen;
+        token->length  = declen;
     } else {
         cli_dbgmsg("cli_pdf: error occurred parsing byte %lu of %lu\n",
-                   (unsigned long)(length-stream.avail_in), (unsigned long)(token->length));
+                   (unsigned long)(length - stream.avail_in), (unsigned long)(token->length));
         free(decoded);
     }
 

@@ -61,7 +61,7 @@ int cli_json_parse_error(json_object *root, const char *errstr)
     return cli_jsonstr(perr, NULL, errstr);
 }
 
-int cli_jsonnull(json_object *obj, const char* key)
+int cli_jsonnull(json_object *obj, const char *key)
 {
     json_type objty;
     json_object *fpobj = NULL;
@@ -78,15 +78,14 @@ int cli_jsonnull(json_object *obj, const char* key)
         }
 
         json_object_object_add(obj, key, fpobj);
-    }
-    else if (objty == json_type_array) {
+    } else if (objty == json_type_array) {
         json_object_array_add(obj, fpobj);
     }
 
     return CL_SUCCESS;
 }
 
-int cli_jsonstr(json_object *obj, const char* key, const char* s)
+int cli_jsonstr(json_object *obj, const char *key, const char *s)
 {
     json_type objty;
     json_object *fpobj;
@@ -101,8 +100,7 @@ int cli_jsonstr(json_object *obj, const char* key, const char* s)
             cli_dbgmsg("json: null string specified as 'key' to cli_jsonstr\n");
             return CL_ENULLARG;
         }
-    }
-    else if (objty != json_type_array) {
+    } else if (objty != json_type_array) {
         return CL_EARG;
     }
 
@@ -125,7 +123,7 @@ int cli_jsonstr(json_object *obj, const char* key, const char* s)
     return CL_SUCCESS;
 }
 
-int cli_jsonstrlen(json_object *obj, const char* key, const char* s, int len)
+int cli_jsonstrlen(json_object *obj, const char *key, const char *s, int len)
 {
     json_type objty;
     json_object *fpobj;
@@ -140,8 +138,7 @@ int cli_jsonstrlen(json_object *obj, const char* key, const char* s, int len)
             cli_dbgmsg("json: null string specified as 'key' to cli_jsonstr\n");
             return CL_ENULLARG;
         }
-    }
-    else if (objty != json_type_array) {
+    } else if (objty != json_type_array) {
         return CL_EARG;
     }
 
@@ -164,7 +161,7 @@ int cli_jsonstrlen(json_object *obj, const char* key, const char* s, int len)
     return CL_SUCCESS;
 }
 
-int cli_jsonint(json_object *obj, const char* key, int32_t i)
+int cli_jsonint(json_object *obj, const char *key, int32_t i)
 {
     json_type objty;
     json_object *fpobj;
@@ -174,13 +171,12 @@ int cli_jsonint(json_object *obj, const char* key, int32_t i)
     }
     objty = json_object_get_type(obj);
 
-    if (objty == json_type_object) {    
+    if (objty == json_type_object) {
         if (NULL == key) {
             cli_dbgmsg("json: null string specified as key to cli_jsonint\n");
             return CL_ENULLARG;
         }
-    }
-    else if (objty != json_type_array) {
+    } else if (objty != json_type_array) {
         return CL_EARG;
     }
 
@@ -199,7 +195,7 @@ int cli_jsonint(json_object *obj, const char* key, int32_t i)
 }
 
 #ifdef JSON10
-int cli_jsonint64(json_object *obj, const char* key, int64_t i)
+int cli_jsonint64(json_object *obj, const char *key, int64_t i)
 {
     json_type objty;
     json_object *fpobj;
@@ -214,8 +210,7 @@ int cli_jsonint64(json_object *obj, const char* key, int64_t i)
             cli_dbgmsg("json: null string specified as key to cli_jsonint64\n");
             return CL_ENULLARG;
         }
-    }
-    else if (objty != json_type_array) {
+    } else if (objty != json_type_array) {
         return CL_EARG;
     }
 
@@ -233,7 +228,7 @@ int cli_jsonint64(json_object *obj, const char* key, int64_t i)
     return CL_SUCCESS;
 }
 #else
-int cli_jsonint64(json_object *obj, const char* key, int64_t i)
+int cli_jsonint64(json_object *obj, const char *key, int64_t i)
 {
     json_type objty;
     int32_t li, hi;
@@ -250,8 +245,7 @@ int cli_jsonint64(json_object *obj, const char* key, int64_t i)
             cli_dbgmsg("json: null string specified as key to cli_jsonint64\n");
             return CL_ENULLARG;
         }
-    }
-    else if (objty != json_type_array) {
+    } else if (objty != json_type_array) {
         return CL_EARG;
     }
 
@@ -291,7 +285,7 @@ int cli_jsonint64(json_object *obj, const char* key, int64_t i)
 //#define cli_jsonint64(o,n,i) cli_dbgmsg("%s: %lld [%llx]\n", n, i, i)
 #endif
 
-int cli_jsonbool(json_object *obj, const char* key, int i)
+int cli_jsonbool(json_object *obj, const char *key, int i)
 {
     json_type objty;
     json_object *fpobj;
@@ -306,8 +300,7 @@ int cli_jsonbool(json_object *obj, const char* key, int i)
             cli_dbgmsg("json: null string specified as key to cli_jsonbool\n");
             return CL_ENULLARG;
         }
-    }
-    else if (objty != json_type_array) {
+    } else if (objty != json_type_array) {
         return CL_EARG;
     }
 
@@ -325,7 +318,7 @@ int cli_jsonbool(json_object *obj, const char* key, int i)
     return CL_SUCCESS;
 }
 
-int cli_jsondouble(json_object *obj, const char* key, double d)
+int cli_jsondouble(json_object *obj, const char *key, double d)
 {
     json_type objty;
     json_object *fpobj;
@@ -340,8 +333,7 @@ int cli_jsondouble(json_object *obj, const char* key, double d)
             cli_dbgmsg("json: null string specified as key to cli_jsondouble\n");
             return CL_ENULLARG;
         }
-    }
-    else if (objty != json_type_array) {
+    } else if (objty != json_type_array) {
         return CL_EARG;
     }
 
@@ -465,8 +457,7 @@ int cli_json_addowner(json_object *owner, json_object *child, const char *key, i
             return CL_ENULLARG;
         }
         json_object_object_add(owner, key, child);
-    }
-    else if (objty == json_type_array) {
+    } else if (objty == json_type_array) {
         if (idx < 0 || NULL == json_object_array_get_idx(owner, idx))
             json_object_array_add(owner, child);
         else if (0 != json_object_array_put_idx(owner, idx, child)) {
@@ -474,8 +465,7 @@ int cli_json_addowner(json_object *owner, json_object *child, const char *key, i
             cli_dbgmsg("json: cannot delete idx %d of owner array\n", idx);
             return CL_BREAK;
         }
-    }
-    else {
+    } else {
         cli_dbgmsg("json: no owner object cannot hold ownership\n");
         return CL_EARG;
     }
@@ -508,8 +498,7 @@ int cli_json_delowner(json_object *owner, const char *key, int idx)
         }
 
         json_object_object_del(owner, key);
-    }
-    else if (objty == json_type_array) {
+    } else if (objty == json_type_array) {
         json_object *empty;
 
         if (NULL == json_object_array_get_idx(owner, idx)) {
@@ -527,8 +516,7 @@ int cli_json_delowner(json_object *owner, const char *key, int idx)
             cli_dbgmsg("json: cannot delete idx %d of owner array\n", idx);
             return CL_BREAK;
         }
-    }
-    else {
+    } else {
         cli_dbgmsg("json: no owner object cannot hold ownership\n");
         return CL_EARG;
     }
@@ -558,10 +546,10 @@ int cli_jsonstr_nojson(const char* key, const char* s)
 
 int cli_jsonstrlen_nojson(const char* key, const char* s, int len)
 {
-    char *sp = cli_malloc(len+1);
+    char* sp = cli_malloc(len + 1);
     if (NULL == sp) {
-	cli_errmsg("json: no memory for json strlen object.\n");
-	return CL_EMEM;
+        cli_errmsg("json: no memory for json strlen object.\n");
+        return CL_EMEM;
     }
     strncpy(sp, s, len);
     sp[len] = '\0';
@@ -586,7 +574,7 @@ int cli_jsonint64_nojson(const char* key, int64_t i)
 
 int cli_jsonbool_nojson(const char* key, int i)
 {
-    nojson_func("nojson: %s: %s\n", key, i ? "true" : "false"); 
+    nojson_func("nojson: %s: %s\n", key, i ? "true" : "false");
     return CL_SUCCESS;
 }
 
@@ -596,7 +584,7 @@ int cli_jsondouble_nojson(const char* key, double d)
     return CL_SUCCESS;
 }
 
-void *cli_jsonarray_nojson(const char *key)
+void* cli_jsonarray_nojson(const char* key)
 {
     nojson_func("nojson: %s\n", key);
     return NULL;

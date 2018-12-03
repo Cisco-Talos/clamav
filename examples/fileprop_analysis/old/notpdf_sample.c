@@ -27,7 +27,7 @@ bool logical_trigger(void)
 
 #define STR_MAXLEN 256
 
-int entrypoint ()
+int entrypoint()
 {
     foundVirus("Submit");
     return 0;

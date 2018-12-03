@@ -32,19 +32,19 @@ int lt_dlinit(void);
 lt_dlhandle lt_dlopen(const char *filename);
 void *lt_dlsym(lt_dlhandle handle, const char *name);
 const char *lt_dlerror(void);
-int lt_dlclose (lt_dlhandle handle);
+int lt_dlclose(lt_dlhandle handle);
 int lt_dladdsearchdir(const char *search_dir);
 const char *lt_dlgetsearchpath(void);
 
-typedef	struct {
-  char *	filename;	/* file name */
-  char *	name;		/* module name */
-  int		ref_count;	/* number of times lt_dlopened minus
+typedef struct {
+    char *filename;                /* file name */
+    char *name;                    /* module name */
+    int ref_count;                 /* number of times lt_dlopened minus
 				   number of times lt_dlclosed. */
-  unsigned int	is_resident:1;	/* module can't be unloaded. */
-  unsigned int	is_symglobal:1;	/* module symbols can satisfy
+    unsigned int is_resident : 1;  /* module can't be unloaded. */
+    unsigned int is_symglobal : 1; /* module symbols can satisfy
 				   subsequently loaded modules.  */
-  unsigned int	is_symlocal:1;	/* module symbols are only available
+    unsigned int is_symlocal : 1;  /* module symbols are only available
 				   locally. */
 } lt_dlinfo;
 const lt_dlinfo *lt_dlgetinfo(lt_dlhandle handle);

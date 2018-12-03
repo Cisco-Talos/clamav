@@ -51,37 +51,36 @@ int onas_fan_checkowner(int pid, const struct optstruct *opts)
 {
     char path[32];
     STATBUF sb;
-    const struct optstruct *opt = NULL;
+    const struct optstruct *opt      = NULL;
     const struct optstruct *opt_root = NULL;
 
     /* always ignore ourselves */
-    if (pid == (int) getpid()) {
+    if (pid == (int)getpid()) {
         return CHK_SELF;
     }
 
     /* look up options */
-    opt = optget (opts, "OnAccessExcludeUID");
-    opt_root = optget (opts, "OnAccessExcludeRootUID");
+    opt      = optget(opts, "OnAccessExcludeUID");
+    opt_root = optget(opts, "OnAccessExcludeRootUID");
 
     /* we can return immediately if no uid exclusions were requested */
     if (!(opt->enabled || opt_root->enabled))
         return CHK_CLEAN;
 
     /* perform exclusion checks if we can stat OK */
-    snprintf (path, sizeof (path), "/proc/%u", pid);
-    if (CLAMSTAT (path, &sb) == 0) {
+    snprintf(path, sizeof(path), "/proc/%u", pid);
+    if (CLAMSTAT(path, &sb) == 0) {
         /* check all our non-root UIDs first */
         if (opt->enabled) {
-            while (opt)
-            {
-                if (opt->numarg == (long long) sb.st_uid)
+            while (opt) {
+                if (opt->numarg == (long long)sb.st_uid)
                     return CHK_FOUND;
                 opt = opt->nextarg;
             }
         }
         /* finally check root UID */
         if (opt_root->enabled) {
-            if (0 == (long long) sb.st_uid)
+            if (0 == (long long)sb.st_uid)
                 return CHK_FOUND;
         }
     } else if (errno == EACCES) {
@@ -102,9 +101,9 @@ int onas_scan(const char *fname, int fd, const char **virname, const struct cl_e
     pthread_mutex_lock(&onas_scan_lock);
 
     context.filename = fname;
-    context.virsize = 0;
+    context.virsize  = 0;
     context.scandata = NULL;
- 
+
     ret = cl_scandesc_callback(fd, fname, virname, NULL, engine, options, &context);
 
     if (ret) {

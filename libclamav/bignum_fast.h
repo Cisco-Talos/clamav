@@ -31,11 +31,11 @@
 #include <limits.h>
 
 #ifndef MIN
-   #define MIN(x,y) ((x)<(y)?(x):(y))
+#define MIN(x, y) ((x) < (y) ? (x) : (y))
 #endif
 
 #ifndef MAX
-   #define MAX(x,y) ((x)>(y)?(x):(y))
+#define MAX(x, y) ((x) > (y) ? (x) : (y))
 #endif
 
 /* externally define this symbol to ignore the default settings, useful for changing the build from the make process */
@@ -103,212 +103,211 @@
 
 /* autodetect x86-64 and make sure we are using 64-bit digits with x86-64 asm */
 #if defined(__x86_64__)
-   #if defined(TFM_X86) || defined(TFM_SSE2) || defined(TFM_ARM) 
-       #error x86-64 detected, x86-32/SSE2/ARM optimizations are not valid!
-   #endif
-   #if !defined(TFM_X86_64) && !defined(TFM_NO_ASM)
-      #define TFM_X86_64
-   #endif
+#if defined(TFM_X86) || defined(TFM_SSE2) || defined(TFM_ARM)
+#error x86-64 detected, x86-32/SSE2/ARM optimizations are not valid!
+#endif
+#if !defined(TFM_X86_64) && !defined(TFM_NO_ASM)
+#define TFM_X86_64
+#endif
 #endif
 #if defined(TFM_X86_64)
-    #if !defined(FP_64BIT)
-       #define FP_64BIT
-    #endif
+#if !defined(FP_64BIT)
+#define FP_64BIT
+#endif
 #endif
 
 /* try to detect x86-32 */
 #if defined(__i386__) && !defined(TFM_SSE2)
-   #if defined(TFM_X86_64) || defined(TFM_ARM) 
-       #error x86-32 detected, x86-64/ARM optimizations are not valid!
-   #endif
-   #if !defined(TFM_X86) && !defined(TFM_NO_ASM)
-      #define TFM_X86
-   #endif
+#if defined(TFM_X86_64) || defined(TFM_ARM)
+#error x86-32 detected, x86-64/ARM optimizations are not valid!
+#endif
+#if !defined(TFM_X86) && !defined(TFM_NO_ASM)
+#define TFM_X86
+#endif
 #endif
 
 /* make sure we're 32-bit for x86-32/sse/arm/ppc32 */
 #if (defined(TFM_X86) || defined(TFM_SSE2) || defined(TFM_ARM) || defined(TFM_PPC32)) && defined(FP_64BIT)
-   #warning x86-32, SSE2 and ARM, PPC32 optimizations require 32-bit digits (undefining)
-   #undef FP_64BIT
+#warning x86-32, SSE2 and ARM, PPC32 optimizations require 32-bit digits (undefining)
+#undef FP_64BIT
 #endif
 
 /* multi asms? */
 #ifdef TFM_X86
-   #define TFM_ASM
+#define TFM_ASM
 #endif
 #ifdef TFM_X86_64
-   #ifdef TFM_ASM
-      #error TFM_ASM already defined!
-   #endif
-   #define TFM_ASM
+#ifdef TFM_ASM
+#error TFM_ASM already defined!
+#endif
+#define TFM_ASM
 #endif
 #ifdef TFM_SSE2
-   #ifdef TFM_ASM
-      #error TFM_ASM already defined!
-   #endif
-   #define TFM_ASM
+#ifdef TFM_ASM
+#error TFM_ASM already defined!
+#endif
+#define TFM_ASM
 #endif
 #ifdef TFM_ARM
-   #ifdef TFM_ASM
-      #error TFM_ASM already defined!
-   #endif
-   #define TFM_ASM
+#ifdef TFM_ASM
+#error TFM_ASM already defined!
+#endif
+#define TFM_ASM
 #endif
 #ifdef TFM_PPC32
-   #ifdef TFM_ASM
-      #error TFM_ASM already defined!
-   #endif
-   #define TFM_ASM
+#ifdef TFM_ASM
+#error TFM_ASM already defined!
+#endif
+#define TFM_ASM
 #endif
 #ifdef TFM_PPC64
-   #ifdef TFM_ASM
-      #error TFM_ASM already defined!
-   #endif
-   #define TFM_ASM
+#ifdef TFM_ASM
+#error TFM_ASM already defined!
+#endif
+#define TFM_ASM
 #endif
 #ifdef TFM_AVR32
-   #ifdef TFM_ASM
-      #error TFM_ASM already defined!
-   #endif
-   #define TFM_ASM
+#ifdef TFM_ASM
+#error TFM_ASM already defined!
+#endif
+#define TFM_ASM
 #endif
 
 /* we want no asm? */
 #ifdef TFM_NO_ASM
-   #undef TFM_X86
-   #undef TFM_X86_64
-   #undef TFM_SSE2
-   #undef TFM_ARM
-   #undef TFM_PPC32
-   #undef TFM_PPC64
-   #undef TFM_AVR32
-   #undef TFM_ASM   
+#undef TFM_X86
+#undef TFM_X86_64
+#undef TFM_SSE2
+#undef TFM_ARM
+#undef TFM_PPC32
+#undef TFM_PPC64
+#undef TFM_AVR32
+#undef TFM_ASM
 #endif
 
 /* ECC helpers */
 #ifdef TFM_ECC192
-   #ifdef FP_64BIT
-       #define TFM_MUL3
-       #define TFM_SQR3
-   #else
-       #define TFM_MUL6
-       #define TFM_SQR6
-   #endif
+#ifdef FP_64BIT
+#define TFM_MUL3
+#define TFM_SQR3
+#else
+#define TFM_MUL6
+#define TFM_SQR6
+#endif
 #endif
 
 #ifdef TFM_ECC224
-   #ifdef FP_64BIT
-       #define TFM_MUL4
-       #define TFM_SQR4
-   #else
-       #define TFM_MUL7
-       #define TFM_SQR7
-   #endif
+#ifdef FP_64BIT
+#define TFM_MUL4
+#define TFM_SQR4
+#else
+#define TFM_MUL7
+#define TFM_SQR7
+#endif
 #endif
 
 #ifdef TFM_ECC256
-   #ifdef FP_64BIT
-       #define TFM_MUL4
-       #define TFM_SQR4
-   #else
-       #define TFM_MUL8
-       #define TFM_SQR8
-   #endif
+#ifdef FP_64BIT
+#define TFM_MUL4
+#define TFM_SQR4
+#else
+#define TFM_MUL8
+#define TFM_SQR8
+#endif
 #endif
 
 #ifdef TFM_ECC384
-   #ifdef FP_64BIT
-       #define TFM_MUL6
-       #define TFM_SQR6
-   #else
-       #define TFM_MUL12
-       #define TFM_SQR12
-   #endif
+#ifdef FP_64BIT
+#define TFM_MUL6
+#define TFM_SQR6
+#else
+#define TFM_MUL12
+#define TFM_SQR12
+#endif
 #endif
 
 #ifdef TFM_ECC521
-   #ifdef FP_64BIT
-       #define TFM_MUL9
-       #define TFM_SQR9
-   #else
-       #define TFM_MUL17
-       #define TFM_SQR17
-   #endif
+#ifdef FP_64BIT
+#define TFM_MUL9
+#define TFM_SQR9
+#else
+#define TFM_MUL17
+#define TFM_SQR17
 #endif
-
+#endif
 
 /* some default configurations.
  */
 #if defined(FP_64BIT)
-   /* for GCC only on supported platforms */
+/* for GCC only on supported platforms */
 #ifndef CRYPT
-   typedef unsigned long ulong64;
+typedef unsigned long ulong64;
 #endif
-   typedef ulong64            fp_digit;
-   typedef unsigned long      fp_word __attribute__ ((mode(TI)));
+typedef ulong64 fp_digit;
+typedef unsigned long fp_word __attribute__((mode(TI)));
 #else
-   /* this is to make porting into LibTomCrypt easier :-) */
+/* this is to make porting into LibTomCrypt easier :-) */
 #ifndef CRYPT
-   #if defined(_MSC_VER) || defined(__BORLANDC__) 
-      typedef unsigned __int64   ulong64;
-      typedef signed __int64     long64;
-   #else
-      typedef unsigned long long ulong64;
-      typedef signed long long   long64;
-   #endif
+#if defined(_MSC_VER) || defined(__BORLANDC__)
+typedef unsigned __int64 ulong64;
+typedef signed __int64 long64;
+#else
+typedef unsigned long long ulong64;
+typedef signed long long long64;
 #endif
-   /* The code requires that fp_word be twice the size of fp_digit.
+#endif
+/* The code requires that fp_word be twice the size of fp_digit.
     * Add size-checking for special case (both long and long long are 64) */
-   #if (SIZEOF_LONG == 8) && (SIZEOF_LONG_LONG == 8)
-      typedef unsigned int       fp_digit;
-   #else
-      typedef unsigned long      fp_digit;
-   #endif
-   typedef ulong64            fp_word;
+#if (SIZEOF_LONG == 8) && (SIZEOF_LONG_LONG == 8)
+typedef unsigned int fp_digit;
+#else
+typedef unsigned long fp_digit;
+#endif
+typedef ulong64 fp_word;
 #endif
 
 /* # of digits this is */
-#define DIGIT_BIT  (int)((CHAR_BIT) * sizeof(fp_digit))
+#define DIGIT_BIT (int)((CHAR_BIT) * sizeof(fp_digit))
 /* Max size of any number in bits.  Basically the largest size you will be multiplying
  * should be half [or smaller] of FP_MAX_SIZE-four_digit
  *
  * You can externally define this or it defaults to 4096-bits [allowing multiplications upto 2048x2048 bits ]
  */
 #ifndef FP_MAX_SIZE
-   #define FP_MAX_SIZE           (8192+(8*DIGIT_BIT))
+#define FP_MAX_SIZE (8192 + (8 * DIGIT_BIT))
 #endif
 
 /* will this lib work? */
 #if (CHAR_BIT & 7)
-   #error CHAR_BIT must be a multiple of eight.
+#error CHAR_BIT must be a multiple of eight.
 #endif
 
-#define FP_MASK    (fp_digit)(-1)
-#define FP_SIZE    (FP_MAX_SIZE/DIGIT_BIT)
+#define FP_MASK (fp_digit)(-1)
+#define FP_SIZE (FP_MAX_SIZE / DIGIT_BIT)
 
 /* signs */
-#define FP_ZPOS     0
-#define FP_NEG      1
+#define FP_ZPOS 0
+#define FP_NEG 1
 
 /* return codes */
-#define FP_OKAY     0
-#define FP_VAL      1
-#define FP_MEM      2
+#define FP_OKAY 0
+#define FP_VAL 1
+#define FP_MEM 2
 
 /* equalities */
-#define FP_LT        -1   /* less than */
-#define FP_EQ         0   /* equal to */
-#define FP_GT         1   /* greater than */
+#define FP_LT -1 /* less than */
+#define FP_EQ 0  /* equal to */
+#define FP_GT 1  /* greater than */
 
 /* replies */
-#define FP_YES        1   /* yes response */
-#define FP_NO         0   /* no response */
+#define FP_YES 1 /* yes response */
+#define FP_NO 0  /* no response */
 
 /* a FP type */
 typedef struct {
     fp_digit dp[FP_SIZE];
-    int      used, 
-             sign;
+    int used,
+        sign;
 } fp_int;
 
 /* functions */
@@ -317,27 +316,40 @@ typedef struct {
 const char *fp_ident(void);
 
 /* initialize [or zero] an fp int */
-#define fp_init(a)  (void)memset((a), 0, sizeof(fp_int))
-#define fp_zero(a)  fp_init(a)
+#define fp_init(a) (void)memset((a), 0, sizeof(fp_int))
+#define fp_zero(a) fp_init(a)
 
 /* zero/even/odd ? */
 #define fp_iszero(a) (((a)->used == 0) ? FP_YES : FP_NO)
 #define fp_iseven(a) (((a)->used >= 0 && (((a)->dp[0] & 1) == 0)) ? FP_YES : FP_NO)
-#define fp_isodd(a)  (((a)->used > 0  && (((a)->dp[0] & 1) == 1)) ? FP_YES : FP_NO)
+#define fp_isodd(a) (((a)->used > 0 && (((a)->dp[0] & 1) == 1)) ? FP_YES : FP_NO)
 
 /* set to a small digit */
 void fp_set(fp_int *a, fp_digit b);
 
 /* copy from a to b */
-#define fp_copy(a, b)      (void)(((a) != (b)) && memcpy((b), (a), sizeof(fp_int)))
+#define fp_copy(a, b) (void)(((a) != (b)) && memcpy((b), (a), sizeof(fp_int)))
 #define fp_init_copy(a, b) fp_copy(b, a)
 
 /* clamp digits */
-#define fp_clamp(a)   { while ((a)->used && (a)->dp[(a)->used-1] == 0) --((a)->used); (a)->sign = (a)->used ? (a)->sign : FP_ZPOS; }
+#define fp_clamp(a)                                                     \
+    {                                                                   \
+        while ((a)->used && (a)->dp[(a)->used - 1] == 0) --((a)->used); \
+        (a)->sign = (a)->used ? (a)->sign : FP_ZPOS;                    \
+    }
 
 /* negate and absolute */
-#define fp_neg(a, b)  { fp_copy(a, b); (b)->sign ^= 1; fp_clamp(b); }
-#define fp_abs(a, b)  { fp_copy(a, b); (b)->sign  = 0; }
+#define fp_neg(a, b)    \
+    {                   \
+        fp_copy(a, b);  \
+        (b)->sign ^= 1; \
+        fp_clamp(b);    \
+    }
+#define fp_abs(a, b)   \
+    {                  \
+        fp_copy(a, b); \
+        (b)->sign = 0; \
+    }
 
 /* right shift x digits */
 void fp_rshd(fp_int *a, int x);
@@ -355,7 +367,7 @@ int fp_cmp_mag(fp_int *a, fp_int *b);
 void fp_div_2d(fp_int *a, int b, fp_int *c, fp_int *d);
 void fp_mod_2d(fp_int *a, int b, fp_int *c);
 void fp_mul_2d(fp_int *a, int b, fp_int *c);
-void fp_2expt (fp_int *a, int b);
+void fp_2expt(fp_int *a, int b);
 void fp_mul_2(fp_int *a, fp_int *c);
 void fp_div_2(fp_int *a, fp_int *c);
 
@@ -437,21 +449,21 @@ int fp_exptmod(fp_int *a, fp_int *b, fp_int *c, fp_int *d);
 /* primality stuff */
 
 /* perform a Miller-Rabin test of a to the base b and store result in "result" */
-void fp_prime_miller_rabin (fp_int * a, fp_int * b, int *result);
+void fp_prime_miller_rabin(fp_int *a, fp_int *b, int *result);
 
 /* 256 trial divisions + 8 Miller-Rabins, returns FP_YES if probable prime  */
 int fp_isprime(fp_int *a);
 
 /* Primality generation flags */
-#define TFM_PRIME_BBS      0x0001 /* BBS style prime */
-#define TFM_PRIME_SAFE     0x0002 /* Safe prime (p-1)/2 == prime */
+#define TFM_PRIME_BBS 0x0001      /* BBS style prime */
+#define TFM_PRIME_SAFE 0x0002     /* Safe prime (p-1)/2 == prime */
 #define TFM_PRIME_2MSB_OFF 0x0004 /* force 2nd MSB to 0 */
-#define TFM_PRIME_2MSB_ON  0x0008 /* force 2nd MSB to 1 */
+#define TFM_PRIME_2MSB_ON 0x0008  /* force 2nd MSB to 1 */
 
 /* callback for fp_prime_random, should fill dst with random bytes and return how many read [upto len] */
 typedef int tfm_prime_callback(unsigned char *dst, int len, void *dat);
 
-#define fp_prime_random(a, t, size, bbs, cb, dat) fp_prime_random_ex(a, t, ((size) * 8) + 1, (bbs==1)?TFM_PRIME_BBS:0, cb, dat)
+#define fp_prime_random(a, t, size, bbs, cb, dat) fp_prime_random_ex(a, t, ((size)*8) + 1, (bbs == 1) ? TFM_PRIME_BBS : 0, cb, dat)
 
 int fp_prime_random_ex(fp_int *a, int t, int size, int flags, tfm_prime_callback cb, void *dat);
 
@@ -468,8 +480,7 @@ void fp_to_signed_bin(fp_int *a, unsigned char *b);
 
 int fp_read_radix(fp_int *a, const char *str, int radix);
 int fp_toradix(fp_int *a, char *str, int radix);
-int fp_toradix_n(fp_int * a, char *str, int radix, int maxlen);
-
+int fp_toradix_n(fp_int *a, char *str, int radix, int maxlen);
 
 /* VARIOUS LOW LEVEL STUFFS */
 void s_fp_add(fp_int *a, fp_int *b, fp_int *c);
@@ -578,7 +589,6 @@ void fp_sqr_comba64(fp_int *A, fp_int *B);
 extern const char *fp_s_rmap;
 
 #endif
-
 
 /* $Source: /cvs/libtom/tomsfastmath/src/headers/tfm.h,v $ */
 /* $Revision: 1.3 $ */

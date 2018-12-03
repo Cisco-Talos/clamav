@@ -34,29 +34,28 @@
 
 int text_normalize_init(struct text_norm_state *state, unsigned char *out, size_t out_len)
 {
-	if(!state) {
-		return CL_ENULLARG;
-	}
-	state->out = out;
-	state->out_len = out_len;
-	state->out_pos = 0;
-	state->space_written = 0;
-	return CL_SUCCESS;
+    if (!state) {
+        return CL_ENULLARG;
+    }
+    state->out           = out;
+    state->out_len       = out_len;
+    state->out_pos       = 0;
+    state->space_written = 0;
+    return CL_SUCCESS;
 }
 
-void text_normalize_reset(struct text_norm_state* state)
+void text_normalize_reset(struct text_norm_state *state)
 {
-	state->out_pos = 0;
-	state->space_written = 0;
+    state->out_pos       = 0;
+    state->space_written = 0;
 }
 
 enum normalize_action {
-	NORMALIZE_COPY,
-	NORMALIZE_SKIP,
-	NORMALIZE_AS_WHITESPACE,
-	NORMALIZE_ADD_32
+    NORMALIZE_COPY,
+    NORMALIZE_SKIP,
+    NORMALIZE_AS_WHITESPACE,
+    NORMALIZE_ADD_32
 };
-
 
 /* use shorter names in the table */
 #define IGN NORMALIZE_SKIP
@@ -72,90 +71,88 @@ enum normalize_action {
  */
 
 static const enum normalize_action char_action[256] = {
-	IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, WSP, WSP, WSP, WSP, WSP, IGN, IGN,
-	IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN,
-	WSP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP,/* 0x20 - 0x2f */
-	NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP,
-	NOP, A32, A32, A32, A32, A32, A32, A32, A32, A32, A32, A32, A32, A32, A32, A32,
-        A32, A32, A32, A32, A32, A32, A32, A32, A32, A32, A32, NOP, NOP, NOP, NOP, NOP,
-	NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP,
-	NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP,/* 0x70 - 0x7f */
-	IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN,
-	IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN,
-	IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN,
-	IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN,
-	IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN,
-	IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN,
-	IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN,
-	IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN
-};
+    IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, WSP, WSP, WSP, WSP, WSP, IGN, IGN,
+    IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN,
+    WSP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, /* 0x20 - 0x2f */
+    NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP,
+    NOP, A32, A32, A32, A32, A32, A32, A32, A32, A32, A32, A32, A32, A32, A32, A32,
+    A32, A32, A32, A32, A32, A32, A32, A32, A32, A32, A32, NOP, NOP, NOP, NOP, NOP,
+    NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP,
+    NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, NOP, /* 0x70 - 0x7f */
+    IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN,
+    IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN,
+    IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN,
+    IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN,
+    IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN,
+    IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN,
+    IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN,
+    IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN};
 
 /* Normalizes the text at @buf of length @buf_len, @buf can include \0 characters.
  * Stores the normalized text in @state's buffer. 
  * Returns how many bytes it consumed of the input. */
 size_t text_normalize_buffer(struct text_norm_state *state, const unsigned char *buf, const size_t buf_len)
 {
-	size_t i;
-	const unsigned char *out_end = state->out + state->out_len;
-	unsigned char *p = state->out + state->out_pos;
+    size_t i;
+    const unsigned char *out_end = state->out + state->out_len;
+    unsigned char *p             = state->out + state->out_pos;
 
-	for(i=0; i < buf_len && p < out_end; i++) {
-		unsigned char c = buf[i];
-		switch(char_action[c]) {
-			case NORMALIZE_SKIP:
-				continue;
-			case NORMALIZE_AS_WHITESPACE:
-				/* convert consecutive whitespaces to a single space */
-				if(!state->space_written) {
-					*p++ = ' ';
-				}
-				state->space_written = 1;
-				continue;
-			case NORMALIZE_ADD_32:
-				/* aka uppercase to lowercase */
-				c += 32;
-				/* fall through */
-			case NORMALIZE_COPY:
-				state->space_written = 0;
-				*p++ = c;
-		}
-	}
-	state->out_pos = p - state->out;
-	return i;
+    for (i = 0; i < buf_len && p < out_end; i++) {
+        unsigned char c = buf[i];
+        switch (char_action[c]) {
+            case NORMALIZE_SKIP:
+                continue;
+            case NORMALIZE_AS_WHITESPACE:
+                /* convert consecutive whitespaces to a single space */
+                if (!state->space_written) {
+                    *p++ = ' ';
+                }
+                state->space_written = 1;
+                continue;
+            case NORMALIZE_ADD_32:
+                /* aka uppercase to lowercase */
+                c += 32;
+                /* fall through */
+            case NORMALIZE_COPY:
+                state->space_written = 0;
+                *p++                 = c;
+        }
+    }
+    state->out_pos = p - state->out;
+    return i;
 }
 
 /* Normalizes the text in @fmap and stores the result in @state's buffer.
  * Returns number of characters written to buffer. */
 size_t text_normalize_map(struct text_norm_state *state, fmap_t *map, size_t offset)
 {
-	const unsigned char *map_loc;
-	unsigned int map_pgsz;
-	uint64_t map_len;
-	size_t buff_len;
-	size_t acc;
-	size_t acc_total;
-	size_t acc_len;
+    const unsigned char *map_loc;
+    unsigned int map_pgsz;
+    uint64_t map_len;
+    size_t buff_len;
+    size_t acc;
+    size_t acc_total;
+    size_t acc_len;
 
-	map_len = map->len;
-	map_pgsz = map->pgsz;
-	buff_len = state->out_len;
+    map_len  = map->len;
+    map_pgsz = map->pgsz;
+    buff_len = state->out_len;
 
-	acc_total = 0;
-	acc = 0;
+    acc_total = 0;
+    acc       = 0;
 
-	while (1) {
-		/* Break out if we've reached the end of the map or our buffer. */
-		if(!(acc_len = MIN_3(map_pgsz, map_len - offset, buff_len - acc_total))) break;
+    while (1) {
+        /* Break out if we've reached the end of the map or our buffer. */
+        if (!(acc_len = MIN_3(map_pgsz, map_len - offset, buff_len - acc_total))) break;
 
-		/* If map_loc is NULL, then there's nothing left to do but recover. */
-		if(!(map_loc = fmap_need_off_once(map, offset, acc_len))) break;
-		offset += acc_len;
+        /* If map_loc is NULL, then there's nothing left to do but recover. */
+        if (!(map_loc = fmap_need_off_once(map, offset, acc_len))) break;
+        offset += acc_len;
 
-		/* If we didn't normalize anything, no need to update values, just break out. */
-		if(!(acc = text_normalize_buffer(state, map_loc, acc_len))) break;
-		acc_total += acc;
-	}
+        /* If we didn't normalize anything, no need to update values, just break out. */
+        if (!(acc = text_normalize_buffer(state, map_loc, acc_len))) break;
+        acc_total += acc;
+    }
 
-	return acc_total;
+    return acc_total;
 }
-

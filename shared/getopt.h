@@ -37,10 +37,10 @@ extern int optind, opterr, optopt;
 extern char *optarg;
 
 struct option {
-  const char *name;
-  int has_arg;
-  int *flag;
-  int val;
+    const char *name;
+    int has_arg;
+    int *flag;
+    int val;
 };
 
 /* human-readable values for has_arg */
@@ -52,11 +52,11 @@ struct option {
 #define optional_argument 2
 
 /* GNU-style long-argument parsers */
-extern int my_getopt_long(int argc, char * argv[], const char *shortopts,
-                       const struct option *longopts, int *longind);
+extern int my_getopt_long(int argc, char *argv[], const char *shortopts,
+                          const struct option *longopts, int *longind);
 
-extern int my_getopt_long_only(int argc, char * argv[], const char *shortopts,
-                            const struct option *longopts, int *longind);
+extern int my_getopt_long_only(int argc, char *argv[], const char *shortopts,
+                               const struct option *longopts, int *longind);
 
 #ifdef __cplusplus
 }

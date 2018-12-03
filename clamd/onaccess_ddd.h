@@ -28,23 +28,21 @@
 /*
  * Extra options for onas_scan_th(). 
  */
-#define ONAS_IN 	0x01
-#define ONAS_FAN 	0x02
+#define ONAS_IN 0x01
+#define ONAS_FAN 0x02
 
 #define MAX_WATCH_LEN 7
 
 struct ddd_thrarg {
-	int sid;
-	struct cl_scan_options *options;
-	int fan_fd;
-	uint64_t fan_mask;
-	const struct optstruct *opts;
-	const struct cl_engine *engine;
+    int sid;
+    struct cl_scan_options *options;
+    int fan_fd;
+    uint64_t fan_mask;
+    const struct optstruct *opts;
+    const struct cl_engine *engine;
 };
-
 
 int onas_ddd_init(uint64_t nwatches, size_t ht_size);
 void *onas_ddd_th(void *arg);
-
 
 #endif

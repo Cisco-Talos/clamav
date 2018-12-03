@@ -17,13 +17,12 @@
  *  MA 02110-1301, USA.
  */
 
-
 #ifndef __EXECUTE_H
 #define __EXECUTE_H
 
 #include "shared/optparser.h"
 
-void execute (const char *type, const char *text,
-              const struct optstruct *opts);
+void execute(const char *type, const char *text,
+             const struct optstruct *opts);
 
 #endif

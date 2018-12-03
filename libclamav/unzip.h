@@ -71,30 +71,29 @@ int unzip_search_single(cli_ctx *, const char *, size_t, uint32_t *);
 // clang-format on
 
 enum ALGO {
-  ALG_STORED,
-  ALG_SHRUNK,
-  ALG_REDUCE1,
-  ALG_REDUCE2,
-  ALG_REDUCE3,
-  ALG_REDUCE4,
-  ALG_IMPLODE,
-  ALG_TOKENZD,
-  ALG_DEFLATE,
-  ALG_DEFLATE64,
-  ALG_OLDTERSE,
-  ALG_RSVD1,
-  ALG_BZIP2,
-  ALG_RSVD2,
-  ALG_LZMA,
-  ALG_RSVD3,
-  ALG_RSVD4,
-  ALG_RSVD5,
-  ALG_NEWTERSE,
-  ALG_LZ77,
-  ALG_WAVPACK = 97,
-  ALG_PPMD
+    ALG_STORED,
+    ALG_SHRUNK,
+    ALG_REDUCE1,
+    ALG_REDUCE2,
+    ALG_REDUCE3,
+    ALG_REDUCE4,
+    ALG_IMPLODE,
+    ALG_TOKENZD,
+    ALG_DEFLATE,
+    ALG_DEFLATE64,
+    ALG_OLDTERSE,
+    ALG_RSVD1,
+    ALG_BZIP2,
+    ALG_RSVD2,
+    ALG_LZMA,
+    ALG_RSVD3,
+    ALG_RSVD4,
+    ALG_RSVD5,
+    ALG_NEWTERSE,
+    ALG_LZ77,
+    ALG_WAVPACK = 97,
+    ALG_PPMD
 };
-
 
 /* struct LH { */
 /*   uint32_t magic; */

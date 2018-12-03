@@ -38,13 +38,12 @@
 #endif
 #include <libxml/xmlreader.h>
 
-
 #define MSXML_RECLEVEL_MAX 20
 #define MSXML_JSON_STRLEN_MAX 128
 
 /* reader usage flags */
-#define MSXML_FLAG_JSON  0x1
-#define MSXML_FLAG_WALK  0x2
+#define MSXML_FLAG_JSON 0x1
+#define MSXML_FLAG_WALK 0x2
 
 struct msxml_ictx;
 
@@ -55,21 +54,21 @@ struct attrib_entry {
 
 struct key_entry {
 /* how */
-#define MSXML_IGNORE          0x0
-#define MSXML_IGNORE_ELEM     0x1
-#define MSXML_SCAN_CB         0x2
-#define MSXML_SCAN_B64        0x4
-#define MSXML_COMMENT_CB      0x8
+#define MSXML_IGNORE 0x0
+#define MSXML_IGNORE_ELEM 0x1
+#define MSXML_SCAN_CB 0x2
+#define MSXML_SCAN_B64 0x4
+#define MSXML_COMMENT_CB 0x8
 /* where */
-#define MSXML_JSON_ROOT       0x10
-#define MSXML_JSON_WRKPTR     0x20
-#define MSXML_JSON_MULTI      0x40
+#define MSXML_JSON_ROOT 0x10
+#define MSXML_JSON_WRKPTR 0x20
+#define MSXML_JSON_MULTI 0x40
 
 #define MSXML_JSON_TRACK (MSXML_JSON_ROOT | MSXML_JSON_WRKPTR)
 /* what */
-#define MSXML_JSON_COUNT      0x100
-#define MSXML_JSON_VALUE      0x200
-#define MSXML_JSON_ATTRIB     0x400
+#define MSXML_JSON_COUNT 0x100
+#define MSXML_JSON_VALUE 0x200
+#define MSXML_JSON_ATTRIB 0x400
 
     const char *key;
     const char *name;

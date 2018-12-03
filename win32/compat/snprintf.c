@@ -30,17 +30,18 @@
 
 #ifndef HAVE_SNPRINTF
 
-int snprintf(char *str, size_t size, const char *format, ...) {
-	va_list va;
-	int len;
+int snprintf(char *str, size_t size, const char *format, ...)
+{
+    va_list va;
+    int len;
 
-	va_start(va, format);
-	errno = 0;
-	len = vsnprintf(str, size, format, va);
-	if(len == -1 && errno == ERANGE) 
-		len = size;
-	va_end(va);
-	return len;
+    va_start(va, format);
+    errno = 0;
+    len   = vsnprintf(str, size, format, va);
+    if (len == -1 && errno == ERANGE)
+        len = size;
+    va_end(va);
+    return len;
 }
 
 #endif

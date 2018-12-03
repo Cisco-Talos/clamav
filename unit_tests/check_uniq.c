@@ -31,66 +31,67 @@
 #include "../libclamav/uniq.h"
 #include "checks.h"
 
-START_TEST (test_uniq_initfail) {
-  struct uniq *U;
-  U = uniq_init(0);
-  fail_unless(U==NULL, "uniq_init(0)!=NULL");
+START_TEST(test_uniq_initfail)
+{
+    struct uniq *U;
+    U = uniq_init(0);
+    fail_unless(U == NULL, "uniq_init(0)!=NULL");
 }
 END_TEST
 
-START_TEST (test_uniq_known) {
-  char *hash;
-  uint32_t u;
-  struct {
-    const char *key;
-    const uint32_t key_len;
-    const char *expected;
-  } tests[] = {
-    { NULL, 0, "d41d8cd98f00b204e9800998ecf8427e" }, 
-    { "_vba_project", 12, "ae4f6474bee50ccdf1a6b853ba8ad32a" },
-    { "powerpoint document", 19, "87320d137f01f7b183eb533a1de6c62a" },
-    { "worddocument", 12, "126ea3fd0ff7f18c9c5eec0c07398c49" },
-    { "_1_ole10native", 14, "e74f5f7bbf0b77708bc591157d708d3d" },
-    { NULL, 0, NULL }
-  };
-  int i;
+START_TEST(test_uniq_known)
+{
+    char *hash;
+    uint32_t u;
+    struct {
+        const char *key;
+        const uint32_t key_len;
+        const char *expected;
+    } tests[] = {
+        {NULL, 0, "d41d8cd98f00b204e9800998ecf8427e"},
+        {"_vba_project", 12, "ae4f6474bee50ccdf1a6b853ba8ad32a"},
+        {"powerpoint document", 19, "87320d137f01f7b183eb533a1de6c62a"},
+        {"worddocument", 12, "126ea3fd0ff7f18c9c5eec0c07398c49"},
+        {"_1_ole10native", 14, "e74f5f7bbf0b77708bc591157d708d3d"},
+        {NULL, 0, NULL}};
+    int i;
 
-  struct uniq *U = uniq_init(5);
-  fail_unless(U!=0, "uniq_init");
+    struct uniq *U = uniq_init(5);
+    fail_unless(U != 0, "uniq_init");
 
-  for(i=0; tests[i].expected; i++) {
-    u = uniq_add(U, tests[i].key, tests[i].key_len, &hash);
-    fail_unless_fmt(u==0 && strcmp(hash, tests[i].expected)==0, "uniq_add(%s) = %u - expected %s, got %s", tests[i].key, u, tests[i].expected, hash);
-  }
+    for (i = 0; tests[i].expected; i++) {
+        u = uniq_add(U, tests[i].key, tests[i].key_len, &hash);
+        fail_unless_fmt(u == 0 && strcmp(hash, tests[i].expected) == 0, "uniq_add(%s) = %u - expected %s, got %s", tests[i].key, u, tests[i].expected, hash);
+    }
 
-  for(i=0; tests[i].expected; i++) {
-    u = uniq_get(U, tests[i].key, tests[i].key_len, &hash);
-    fail_unless_fmt(u==1 && strcmp(hash, tests[i].expected)==0, "uniq_get(%s) = %u - expected %s, got %s", tests[i].key, u, tests[i].expected, hash);
-  }
+    for (i = 0; tests[i].expected; i++) {
+        u = uniq_get(U, tests[i].key, tests[i].key_len, &hash);
+        fail_unless_fmt(u == 1 && strcmp(hash, tests[i].expected) == 0, "uniq_get(%s) = %u - expected %s, got %s", tests[i].key, u, tests[i].expected, hash);
+    }
 
-  uniq_free(U);
+    uniq_free(U);
 }
 END_TEST
 
+START_TEST(test_uniq_colls)
+{
+    uint32_t u;
+    const char *tests[] = {"_vba_project", "powerpoint document", "worddocument", "_1_ole10native"};
+    int i, j;
 
-START_TEST (test_uniq_colls) {
-  uint32_t u;
-  const char *tests[] = { "_vba_project", "powerpoint document", "worddocument", "_1_ole10native" };
-  int i, j;
+    struct uniq *U = uniq_init(10);
+    fail_unless(U != 0, "uniq_init");
 
-  struct uniq *U = uniq_init(10);
-  fail_unless(U!=0, "uniq_init");
+    for (j = 4; j > 0; j--)
+        for (i = 0; i < j; i++)
+            u = uniq_add(U, tests[i], strlen(tests[i]), NULL);
 
-  for(j=4; j>0; j--)
-    for (i=0; i<j; i++)
-      u = uniq_add(U, tests[i], strlen(tests[i]), NULL);
-  
-  for (i=0; i<4; i++) {
-    u = uniq_add(U, tests[i], strlen(tests[i]), NULL);
-    fail_unless_fmt(u+i==4, "uniq_get(%s) = %u - expected %u", tests[i], u, 4-i);
-  }
+    for (i = 0; i < 4; i++) {
+        u = uniq_add(U, tests[i], strlen(tests[i]), NULL);
+        fail_unless_fmt(u + i == 4, "uniq_get(%s) = %u - expected %u", tests[i], u, 4 - i);
+    }
 
-  uniq_free(U);
+    uniq_free(U);
 }
 END_TEST
 
@@ -99,10 +100,9 @@ Suite *test_uniq_suite(void)
     Suite *s = suite_create("unique");
     TCase *tc_uniq;
     tc_uniq = tcase_create("unique");
-    suite_add_tcase (s, tc_uniq);
+    suite_add_tcase(s, tc_uniq);
     tcase_add_test(tc_uniq, test_uniq_initfail);
     tcase_add_test(tc_uniq, test_uniq_known);
     tcase_add_test(tc_uniq, test_uniq_colls);
     return s;
 }
-

@@ -24,15 +24,15 @@
 #include "shared/optparser.h"
 #include "libclamav/clamav.h"
 
-#define ONAS_SCTH_ISDIR  0x01
+#define ONAS_SCTH_ISDIR 0x01
 #define ONAS_SCTH_ISFILE 0x02
 
 struct scth_thrarg {
-	uint32_t extra_options;
-	struct cl_scan_options *options;
-	const struct optstruct *opts;
-	const struct cl_engine *engine;
-	char *pathname;
+    uint32_t extra_options;
+    struct cl_scan_options *options;
+    const struct optstruct *opts;
+    const struct cl_engine *engine;
+    char *pathname;
 };
 
 void *onas_scan_th(void *arg);

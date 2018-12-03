@@ -23,37 +23,35 @@
 #include "freshclamcodes.h"
 
 typedef enum mir_status_tag {
-    MIRROR_OK=0,
+    MIRROR_OK = 0,
     MIRROR_FAILURE,
     MIRROR_IGNORE__PREV_ERRS,
     MIRROR_IGNORE__OUTDATED_VERSION
 } mir_status_t;
 
 typedef enum mir_ignore_tag {
-    IGNORE_NO=0,
+    IGNORE_NO = 0,
     IGNORE_LONGTERM,
     IGNORE_SHORTTERM
 } mir_ignore_t;
 
-struct mirdat_ip
-{
-    uint32_t ip4;               /* IPv4 address */
-    time_t atime;             /* last access time */
-    uint32_t succ;              /* number of successful downloads from this ip */
-    uint32_t fail;              /* number of failures */
-    uint8_t ignore;             /* ignore flag */
-    uint32_t ip6[4];            /* IPv6 address */
-    char res[16];               /* reserved */
+struct mirdat_ip {
+    uint32_t ip4;    /* IPv4 address */
+    time_t atime;    /* last access time */
+    uint32_t succ;   /* number of successful downloads from this ip */
+    uint32_t fail;   /* number of failures */
+    uint8_t ignore;  /* ignore flag */
+    uint32_t ip6[4]; /* IPv6 address */
+    char res[16];    /* reserved */
 };
 
-struct mirdat
-{
-    uint8_t active;             /* 1 if active, 2 if disabled */
-    unsigned int num;           /* number of mirrors */
-    uint32_t currip[4];         /* IP currently attempting */
-    uint32_t af;                /* AF_INET or AF_INET6 for current IP */
-    uint32_t dbflevel;          /* functionality level of current database */
-    struct mirdat_ip *mirtab;   /* mirror table of known mirror IP addresses */
+struct mirdat {
+    uint8_t active;           /* 1 if active, 2 if disabled */
+    unsigned int num;         /* number of mirrors */
+    uint32_t currip[4];       /* IP currently attempting */
+    uint32_t af;              /* AF_INET or AF_INET6 for current IP */
+    uint32_t dbflevel;        /* functionality level of current database */
+    struct mirdat_ip *mirtab; /* mirror table of known mirror IP addresses */
 };
 
 /**
@@ -80,7 +78,7 @@ fc_error_t mirman_read(const char *file, struct mirdat *mdat, uint8_t active);
  *                              MIRROR_IGNORE__OUTDATED_VERSION
  * @return fc_error_t           FC_SUCCESS or an FCE error code.
  */
-fc_error_t mirman_check(uint32_t * ip, int af, struct mirdat *mdat,
+fc_error_t mirman_check(uint32_t *ip, int af, struct mirdat *mdat,
                         struct mirdat_ip **md, mir_status_t *mirror_status);
 
 /**
@@ -92,7 +90,7 @@ fc_error_t mirman_check(uint32_t * ip, int af, struct mirdat *mdat,
  * @param error         FC_SUCCESS or an FCE error code.
  * @return fc_error_t   FC_SUCCESS or an FCE error code.
  */
-fc_error_t mirman_update(uint32_t * ip, int af, struct mirdat *mdat, fc_error_t mirror_status);
+fc_error_t mirman_update(uint32_t *ip, int af, struct mirdat *mdat, fc_error_t mirror_status);
 
 /**
  * @brief   Print out the mirror info.

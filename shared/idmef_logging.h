@@ -27,4 +27,3 @@ int prelude_initialize_client(const char *analyzer_name);
 #endif
 
 void prelude_logging(const char *filename, const char *virname, const char *virhash, int virsize);
-

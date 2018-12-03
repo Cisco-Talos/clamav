@@ -42,7 +42,7 @@
      tmpname - name of file to unlink, address of storage to free
    returns - CL_SUCCESS or CL_EUNLINK
  */
-static int xar_cleanup_temp_file(cli_ctx *ctx, int fd, char * tmpname)
+static int xar_cleanup_temp_file(cli_ctx *ctx, int fd, char *tmpname)
 {
     int rc = CL_SUCCESS;
     if (fd > -1)
@@ -50,7 +50,7 @@ static int xar_cleanup_temp_file(cli_ctx *ctx, int fd, char * tmpname)
     if (tmpname != NULL) {
         if (!ctx->engine->keeptmp) {
             if (cli_unlink(tmpname)) {
-                cli_dbgmsg("cli_scanxar: error unlinking tmpfile %s\n", tmpname); 
+                cli_dbgmsg("cli_scanxar: error unlinking tmpfile %s\n", tmpname);
                 rc = CL_EUNLINK;
             }
         }
@@ -66,17 +66,17 @@ static int xar_cleanup_temp_file(cli_ctx *ctx, int fd, char * tmpname)
      value - pointer to long to contain the returned value
    returns - CL_SUCCESS or CL_EFORMAT
  */
-static int xar_get_numeric_from_xml_element(xmlTextReaderPtr reader, size_t * value)
+static int xar_get_numeric_from_xml_element(xmlTextReaderPtr reader, size_t *value)
 {
-    const xmlChar * numstr;
+    const xmlChar *numstr;
 
     if (xmlTextReaderRead(reader) == 1 && xmlTextReaderNodeType(reader) == XML_READER_TYPE_TEXT) {
         numstr = xmlTextReaderConstValue(reader);
         if (numstr) {
             long numval;
             char *endptr = NULL;
-            errno = 0;
-            numval = strtol((const char *)numstr, &endptr, 10);
+            errno        = 0;
+            numval       = strtol((const char *)numstr, &endptr, 10);
             if (((numval == LONG_MAX || numval == LONG_MIN) && errno) || endptr == numstr) {
                 cli_dbgmsg("cli_scanxar: XML element value invalid\n");
                 return CL_EFORMAT;
@@ -100,17 +100,17 @@ static int xar_get_numeric_from_xml_element(xmlTextReaderPtr reader, size_t * va
     hash - pointer to int for returning checksum algorithm.
   returns - void
  */
-static void xar_get_checksum_values(xmlTextReaderPtr reader, unsigned char ** cksum, int * hash)
+static void xar_get_checksum_values(xmlTextReaderPtr reader, unsigned char **cksum, int *hash)
 {
-    xmlChar * style = xmlTextReaderGetAttribute(reader, (const xmlChar *)"style");
-    const xmlChar * xmlval;
+    xmlChar *style = xmlTextReaderGetAttribute(reader, (const xmlChar *)"style");
+    const xmlChar *xmlval;
 
     *hash = XAR_CKSUM_NONE;
     if (style == NULL) {
         cli_dbgmsg("cli_scaxar: xmlTextReaderGetAttribute no style attribute "
                    "for checksum element\n");
     } else {
-        cli_dbgmsg("cli_scanxar: checksum algorithm is %s.\n", style);        
+        cli_dbgmsg("cli_scanxar: checksum algorithm is %s.\n", style);
         if (0 == xmlStrcasecmp(style, (const xmlChar *)"sha1")) {
             *hash = XAR_CKSUM_SHA1;
         } else if (0 == xmlStrcasecmp(style, (const xmlChar *)"md5")) {
@@ -127,23 +127,19 @@ static void xar_get_checksum_values(xmlTextReaderPtr reader, unsigned char ** ck
         xmlval = xmlTextReaderConstValue(reader);
         if (xmlval) {
             cli_dbgmsg("cli_scanxar: checksum value is %s.\n", xmlval);
-            if (( (*hash == XAR_CKSUM_SHA1)  &&  (xmlStrlen(xmlval) == 2 * CLI_HASHLEN_SHA1))  ||
-                ( (*hash == XAR_CKSUM_MD5)  &&  (xmlStrlen(xmlval) == 2 * CLI_HASHLEN_MD5) ))
-                {
-                    *cksum = xmlStrdup(xmlval); 
-                } 
-            else
-                {
-                    cli_dbgmsg("cli_scanxar: checksum type is unknown or length is invalid.\n");
-                    *hash = XAR_CKSUM_OTHER;
-                    *cksum = NULL;
-                }
+            if (((*hash == XAR_CKSUM_SHA1) && (xmlStrlen(xmlval) == 2 * CLI_HASHLEN_SHA1)) ||
+                ((*hash == XAR_CKSUM_MD5) && (xmlStrlen(xmlval) == 2 * CLI_HASHLEN_MD5))) {
+                *cksum = xmlStrdup(xmlval);
+            } else {
+                cli_dbgmsg("cli_scanxar: checksum type is unknown or length is invalid.\n");
+                *hash  = XAR_CKSUM_OTHER;
+                *cksum = NULL;
+            }
         } else {
             *cksum = NULL;
-            cli_dbgmsg("cli_scanxar: xmlTextReaderConstValue() returns NULL for checksum value.\n");           
+            cli_dbgmsg("cli_scanxar: xmlTextReaderConstValue() returns NULL for checksum value.\n");
         }
-    }
-    else
+    } else
         cli_dbgmsg("cli_scanxar: No text for XML checksum element.\n");
 }
 
@@ -163,16 +159,16 @@ static void xar_get_checksum_values(xmlTextReaderPtr reader, unsigned char ** ck
    returns - CL_FORMAT, CL_SUCCESS, CL_BREAK. CL_BREAK indicates no more <data>/<ea> element.
  */
 static int xar_get_toc_data_values(xmlTextReaderPtr reader, size_t *length, size_t *offset, size_t *size, int *encoding,
-                                   unsigned char ** a_cksum, int * a_hash, unsigned char ** e_cksum, int * e_hash)
+                                   unsigned char **a_cksum, int *a_hash, unsigned char **e_cksum, int *e_hash)
 {
     const xmlChar *name;
     int indata = 0, inea = 0;
-    int rc, gotoffset=0, gotlength=0, gotsize=0;
+    int rc, gotoffset = 0, gotlength = 0, gotsize = 0;
 
-    *a_cksum = NULL;
-    *a_hash = XAR_CKSUM_NONE;
-    *e_cksum = NULL;
-    *e_hash = XAR_CKSUM_NONE;
+    *a_cksum  = NULL;
+    *a_hash   = XAR_CKSUM_NONE;
+    *e_cksum  = NULL;
+    *e_hash   = XAR_CKSUM_NONE;
     *encoding = CL_TYPE_ANY;
 
     rc = xmlTextReaderRead(reader);
@@ -180,26 +176,26 @@ static int xar_get_toc_data_values(xmlTextReaderPtr reader, size_t *length, size
         name = xmlTextReaderConstLocalName(reader);
         if (indata || inea) {
             /*  cli_dbgmsg("cli_scanxar: xmlTextReaderRead read %s\n", name); */
-            if (xmlStrEqual(name, (const xmlChar *)"offset") && 
+            if (xmlStrEqual(name, (const xmlChar *)"offset") &&
                 xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT) {
                 if (CL_SUCCESS == xar_get_numeric_from_xml_element(reader, offset))
-                    gotoffset=1;
+                    gotoffset = 1;
 
             } else if (xmlStrEqual(name, (const xmlChar *)"length") &&
                        xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT) {
                 if (CL_SUCCESS == xar_get_numeric_from_xml_element(reader, length))
-                    gotlength=1;
+                    gotlength = 1;
 
             } else if (xmlStrEqual(name, (const xmlChar *)"size") &&
                        xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT) {
                 if (CL_SUCCESS == xar_get_numeric_from_xml_element(reader, size))
-                    gotsize=1;
+                    gotsize = 1;
 
             } else if (xmlStrEqual(name, (const xmlChar *)"archived-checksum") &&
                        xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT) {
                 cli_dbgmsg("cli_scanxar: <archived-checksum>:\n");
                 xar_get_checksum_values(reader, a_cksum, a_hash);
-                
+
             } else if ((xmlStrEqual(name, (const xmlChar *)"extracted-checksum") ||
                         xmlStrEqual(name, (const xmlChar *)"unarchived-checksum")) &&
                        xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT) {
@@ -208,24 +204,24 @@ static int xar_get_toc_data_values(xmlTextReaderPtr reader, size_t *length, size
 
             } else if (xmlStrEqual(name, (const xmlChar *)"encoding") &&
                        xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT) {
-                xmlChar * style = xmlTextReaderGetAttribute(reader, (const xmlChar *)"style");
+                xmlChar *style = xmlTextReaderGetAttribute(reader, (const xmlChar *)"style");
                 if (style == NULL) {
                     cli_dbgmsg("cli_scaxar: xmlTextReaderGetAttribute no style attribute "
                                "for encoding element\n");
                     *encoding = CL_TYPE_ANY;
                 } else if (xmlStrEqual(style, (const xmlChar *)"application/x-gzip")) {
                     cli_dbgmsg("cli_scanxar: encoding = application/x-gzip.\n");
-                    *encoding = CL_TYPE_GZ; 
+                    *encoding = CL_TYPE_GZ;
                 } else if (xmlStrEqual(style, (const xmlChar *)"application/octet-stream")) {
                     cli_dbgmsg("cli_scanxar: encoding = application/octet-stream.\n");
-                    *encoding = CL_TYPE_ANY; 
+                    *encoding = CL_TYPE_ANY;
                 } else if (xmlStrEqual(style, (const xmlChar *)"application/x-bzip2")) {
                     cli_dbgmsg("cli_scanxar: encoding = application/x-bzip2.\n");
                     *encoding = CL_TYPE_BZ;
                 } else if (xmlStrEqual(style, (const xmlChar *)"application/x-lzma")) {
                     cli_dbgmsg("cli_scanxar: encoding = application/x-lzma.\n");
                     *encoding = CL_TYPE_7Z;
-                 } else if (xmlStrEqual(style, (const xmlChar *)"application/x-xz")) {
+                } else if (xmlStrEqual(style, (const xmlChar *)"application/x-xz")) {
                     cli_dbgmsg("cli_scanxar: encoding = application/x-xz.\n");
                     *encoding = CL_TYPE_XZ;
                 } else {
@@ -235,7 +231,7 @@ static int xar_get_toc_data_values(xmlTextReaderPtr reader, size_t *length, size
                 if (style != NULL)
                     xmlFree(style);
 
-           } else if (indata && xmlStrEqual(name, (const xmlChar *)"data") &&
+            } else if (indata && xmlStrEqual(name, (const xmlChar *)"data") &&
                        xmlTextReaderNodeType(reader) == XML_READER_TYPE_END_ELEMENT) {
                 break;
 
@@ -243,7 +239,7 @@ static int xar_get_toc_data_values(xmlTextReaderPtr reader, size_t *length, size
                        xmlTextReaderNodeType(reader) == XML_READER_TYPE_END_ELEMENT) {
                 break;
             }
-            
+
         } else {
             if (xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT) {
                 if (xmlStrEqual(name, (const xmlChar *)"data")) {
@@ -255,17 +251,16 @@ static int xar_get_toc_data_values(xmlTextReaderPtr reader, size_t *length, size
                 }
             } else if ((xmlTextReaderNodeType(reader) == XML_READER_TYPE_END_ELEMENT) &&
                        xmlStrEqual(name, (const xmlChar *)"xar")) {
-                cli_dbgmsg("cli_scanxar: finished parsing xar TOC.\n");   
+                cli_dbgmsg("cli_scanxar: finished parsing xar TOC.\n");
                 break;
             }
         }
         rc = xmlTextReaderRead(reader);
     }
-    
+
     if (gotoffset && gotlength && gotsize) {
         rc = CL_SUCCESS;
-    }
-    else if (0 == gotoffset + gotlength + gotsize)
+    } else if (0 == gotoffset + gotlength + gotsize)
         rc = CL_BREAK;
     else
         rc = CL_EFORMAT;
@@ -282,13 +277,13 @@ static int xar_get_toc_data_values(xmlTextReaderPtr reader, size_t *length, size
   Returns:
      CL_SUCCESS - subdoc found and clean scan (or virus found and SCAN_ALLMATCHES), or no subdocument
      other - error return code from cli_mem_scandesc()
-*/                        
+*/
 static int xar_scan_subdocuments(xmlTextReaderPtr reader, cli_ctx *ctx)
 {
     int rc = CL_SUCCESS, subdoc_len, fd;
-    xmlChar * subdoc;
+    xmlChar *subdoc;
     const xmlChar *name;
-    char * tmpname;
+    char *tmpname;
 
     while (xmlTextReaderRead(reader) == 1) {
         name = xmlTextReaderConstLocalName(reader);
@@ -297,10 +292,10 @@ static int xar_scan_subdocuments(xmlTextReaderPtr reader, cli_ctx *ctx)
             rc = CL_EFORMAT;
             break;
         }
-        if (xmlStrEqual(name, (const xmlChar *)"toc") && 
+        if (xmlStrEqual(name, (const xmlChar *)"toc") &&
             xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT)
             return CL_SUCCESS;
-        if (xmlStrEqual(name, (const xmlChar *)"subdoc") && 
+        if (xmlStrEqual(name, (const xmlChar *)"subdoc") &&
             xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT) {
             subdoc = xmlTextReaderReadInnerXml(reader);
             if (subdoc == NULL) {
@@ -313,9 +308,9 @@ static int xar_scan_subdocuments(xmlTextReaderPtr reader, cli_ctx *ctx)
             rc = cli_mem_scandesc(subdoc, subdoc_len, ctx);
             if (rc == CL_VIRUS && SCAN_ALLMATCHES)
                 rc = CL_SUCCESS;
-            
+
             /* make a file to leave if --leave-temps in effect */
-            if(ctx->engine->keeptmp) {
+            if (ctx->engine->keeptmp) {
                 if ((rc = cli_gentempfd(ctx->engine->tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
                     cli_dbgmsg("cli_scanxar: Can't create temporary file for subdocument.\n");
                 } else {
@@ -332,82 +327,82 @@ static int xar_scan_subdocuments(xmlTextReaderPtr reader, cli_ctx *ctx)
             if (rc != CL_SUCCESS)
                 return rc;
             xmlTextReaderNext(reader);
-        }        
+        }
     }
     return rc;
 }
 
-static void * xar_hash_init(int hash, void **sc, void **mc)
+static void *xar_hash_init(int hash, void **sc, void **mc)
 {
     if (!sc && !mc)
         return NULL;
     switch (hash) {
-    case XAR_CKSUM_SHA1:
-        *sc = cl_hash_init("sha1");
-        if (!(*sc)) {
-            return NULL;
-        }
+        case XAR_CKSUM_SHA1:
+            *sc = cl_hash_init("sha1");
+            if (!(*sc)) {
+                return NULL;
+            }
 
-        return *sc;
-    case XAR_CKSUM_MD5:
-        *mc = cl_hash_init("md5");
-        if (!(*mc)) {
-            return NULL;
-        }
+            return *sc;
+        case XAR_CKSUM_MD5:
+            *mc = cl_hash_init("md5");
+            if (!(*mc)) {
+                return NULL;
+            }
 
-        return *mc;
-    case XAR_CKSUM_OTHER:
-    case XAR_CKSUM_NONE:
-    default:
-        return NULL;
+            return *mc;
+        case XAR_CKSUM_OTHER:
+        case XAR_CKSUM_NONE:
+        default:
+            return NULL;
     }
 }
 
-static void xar_hash_update(void * hash_ctx, void * data, unsigned long size, int hash)
+static void xar_hash_update(void *hash_ctx, void *data, unsigned long size, int hash)
 {
     if (!hash_ctx || !data || !size)
         return;
 
     switch (hash) {
-    case XAR_CKSUM_NONE:
-    case XAR_CKSUM_OTHER:
-        return;
+        case XAR_CKSUM_NONE:
+        case XAR_CKSUM_OTHER:
+            return;
     }
 
     cl_update_hash(hash_ctx, data, size);
 }
 
-static void xar_hash_final(void * hash_ctx, void * result, int hash)
+static void xar_hash_final(void *hash_ctx, void *result, int hash)
 {
     if (!hash_ctx || !result)
         return;
 
     switch (hash) {
-    case XAR_CKSUM_OTHER:
-    case XAR_CKSUM_NONE:
-        return;
+        case XAR_CKSUM_OTHER:
+        case XAR_CKSUM_NONE:
+            return;
     }
 
     cl_finish_hash(hash_ctx, result);
 }
 
-static int xar_hash_check(int hash, const void * result, const void * expected)
+static int xar_hash_check(int hash, const void *result, const void *expected)
 {
     int len;
 
     if (!result || !expected)
         return 1;
     switch (hash) {
-    case XAR_CKSUM_SHA1:
-        len = CLI_HASHLEN_SHA1;
-        break;
-    case XAR_CKSUM_MD5:
-        len = CLI_HASHLEN_MD5;
-        break;
-    case XAR_CKSUM_OTHER:
-    case XAR_CKSUM_NONE:
-    default:
-        return 1;
+        case XAR_CKSUM_SHA1:
+            len = CLI_HASHLEN_SHA1;
+            break;
+        case XAR_CKSUM_MD5:
+            len = CLI_HASHLEN_MD5;
+            break;
+        case XAR_CKSUM_OTHER:
+        case XAR_CKSUM_NONE:
+        default:
+            return 1;
     }
     return memcmp(result, expected, len);
 }
@@ -423,8 +418,8 @@ static int xar_hash_check(int hash, const void * result, const void * expected)
 
 int cli_scanxar(cli_ctx *ctx)
 {
-    int rc = CL_SUCCESS;
-    unsigned int cksum_fails = 0;
+    int rc                      = CL_SUCCESS;
+    unsigned int cksum_fails    = 0;
     unsigned int extract_errors = 0;
 #if HAVE_LIBXML2
     int fd = -1;
@@ -451,16 +446,15 @@ int cli_scanxar(cli_ctx *ctx)
 
     if (hdr.magic == XAR_HEADER_MAGIC) {
         cli_dbgmsg("cli_scanxar: Matched magic\n");
-    }
-    else {
+    } else {
         cli_dbgmsg("cli_scanxar: Invalid magic\n");
         return CL_EFORMAT;
     }
-    hdr.size = be16_to_host(hdr.size);
-    hdr.version = be16_to_host(hdr.version);
-    hdr.toc_length_compressed = be64_to_host(hdr.toc_length_compressed);
+    hdr.size                    = be16_to_host(hdr.size);
+    hdr.version                 = be16_to_host(hdr.version);
+    hdr.toc_length_compressed   = be64_to_host(hdr.toc_length_compressed);
     hdr.toc_length_decompressed = be64_to_host(hdr.toc_length_decompressed);
-    hdr.chksum_alg = be32_to_host(hdr.chksum_alg);
+    hdr.chksum_alg              = be32_to_host(hdr.chksum_alg);
 
     /* cli_dbgmsg("hdr.magic %x\n", hdr.magic); */
     /* cli_dbgmsg("hdr.size %i\n", hdr.size); */
@@ -468,28 +462,28 @@ int cli_scanxar(cli_ctx *ctx)
     /* cli_dbgmsg("hdr.toc_length_compressed %lu\n", hdr.toc_length_compressed); */
     /* cli_dbgmsg("hdr.toc_length_decompressed %lu\n", hdr.toc_length_decompressed); */
     /* cli_dbgmsg("hdr.chksum_alg %i\n", hdr.chksum_alg); */
- 
+
     /* Uncompress TOC */
     strm.next_in = (unsigned char *)fmap_need_off_once(*ctx->fmap, hdr.size, hdr.toc_length_compressed);
     if (strm.next_in == NULL) {
         cli_dbgmsg("cli_scanxar: fmap_need_off_once fails on TOC.\n");
         return CL_EREAD;
     }
-    strm.avail_in = hdr.toc_length_compressed; 
-    toc = cli_malloc(hdr.toc_length_decompressed+1);
+    strm.avail_in = hdr.toc_length_compressed;
+    toc           = cli_malloc(hdr.toc_length_decompressed + 1);
     if (toc == NULL) {
         cli_dbgmsg("cli_scanxar: cli_malloc fails on TOC decompress buffer.\n");
         return CL_EMEM;
     }
     toc[hdr.toc_length_decompressed] = '\0';
-    strm.avail_out = hdr.toc_length_decompressed;
-    strm.next_out = (unsigned char *)toc;
-    rc = inflateInit(&strm);
+    strm.avail_out                   = hdr.toc_length_decompressed;
+    strm.next_out                    = (unsigned char *)toc;
+    rc                               = inflateInit(&strm);
     if (rc != Z_OK) {
         cli_dbgmsg("cli_scanxar:inflateInit error %i \n", rc);
         rc = CL_EFORMAT;
         goto exit_toc;
-    }    
+    }
     rc = inflate(&strm, Z_SYNC_FLUSH);
     if (rc != Z_OK && rc != Z_STREAM_END) {
         cli_dbgmsg("cli_scanxar:inflate error %i \n", rc);
@@ -506,7 +500,7 @@ int cli_scanxar(cli_ctx *ctx)
     if (hdr.toc_length_decompressed != strm.total_out) {
         cli_dbgmsg("TOC decompress length %" PRIu64 " does not match amount decompressed %lu\n",
                    hdr.toc_length_decompressed, strm.total_out);
-        toc[strm.total_out] = '\0';
+        toc[strm.total_out]         = '\0';
         hdr.toc_length_decompressed = strm.total_out;
     }
 
@@ -516,15 +510,15 @@ int cli_scanxar(cli_ctx *ctx)
     /* printf("cli_scanxar: TOC end:\n"); */
 
     /* scan the xml */
-    cli_dbgmsg("cli_scanxar: scanning xar TOC xml in memory.\n"); 
+    cli_dbgmsg("cli_scanxar: scanning xar TOC xml in memory.\n");
     rc = cli_mem_scandesc(toc, hdr.toc_length_decompressed, ctx);
     if (rc != CL_SUCCESS) {
         if (rc != CL_VIRUS || !SCAN_ALLMATCHES)
-            goto exit_toc;        
+            goto exit_toc;
     }
 
     /* make a file to leave if --leave-temps in effect */
-    if(ctx->engine->keeptmp) {
+    if (ctx->engine->keeptmp) {
         if ((rc = cli_gentempfd(ctx->engine->tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
             cli_dbgmsg("cli_scanxar: Can't create temporary file for TOC.\n");
             goto exit_toc;
@@ -553,15 +547,15 @@ int cli_scanxar(cli_ctx *ctx)
     }
 
     /* Walk the TOC XML and extract files */
-    fd = -1;
+    fd      = -1;
     tmpname = NULL;
     while (CL_SUCCESS == (rc = xar_get_toc_data_values(reader, &length, &offset, &size, &encoding,
                                                        &a_cksum, &a_hash, &e_cksum, &e_hash))) {
         int do_extract_cksum = 1;
-        unsigned char * blockp;
+        unsigned char *blockp;
         void *a_sc, *e_sc;
         void *a_mc, *e_mc;
-        char * expected;
+        char *expected;
 
         /* clean up temp file from previous loop iteration */
         if (fd > -1 && tmpname) {
@@ -581,86 +575,85 @@ int cli_scanxar(cli_ctx *ctx)
                    "from xar heap offset %zu length %zu\n",
                    tmpname, size, offset, length);
 
-
         a_hash_ctx = xar_hash_init(a_hash, &a_sc, &a_mc);
         e_hash_ctx = xar_hash_init(e_hash, &e_sc, &e_mc);
 
         switch (encoding) {
-        case CL_TYPE_GZ:
-            /* inflate gzip directly because file segments do not contain magic */
-            memset(&strm, 0, sizeof(strm));
-            if ((rc = inflateInit(&strm)) != Z_OK) {
-                cli_dbgmsg("cli_scanxar: InflateInit failed: %d\n", rc);
-                rc = CL_EFORMAT;
-                extract_errors++;
-                break;
-            }
-            
-            while ((size_t)at < map->len && (unsigned long)at < offset+hdr.toc_length_compressed+hdr.size+length) {
-                unsigned long avail_in;
-                void * next_in;
-                unsigned int bytes = MIN(map->len - at, map->pgsz);
-                bytes = MIN(length, bytes);
-                if(!(strm.next_in = next_in = (void*)fmap_need_off_once(map, at, bytes))) {
-                    cli_dbgmsg("cli_scanxar: Can't read %u bytes @ %lu.\n", bytes, (long unsigned)at);
-                    inflateEnd(&strm);
-                    rc = CL_EREAD;
-                    goto exit_tmpfile;
+            case CL_TYPE_GZ:
+                /* inflate gzip directly because file segments do not contain magic */
+                memset(&strm, 0, sizeof(strm));
+                if ((rc = inflateInit(&strm)) != Z_OK) {
+                    cli_dbgmsg("cli_scanxar: InflateInit failed: %d\n", rc);
+                    rc = CL_EFORMAT;
+                    extract_errors++;
+                    break;
                 }
-                at += bytes;
-                strm.avail_in = avail_in = bytes;
-                do {
-                    int inf, outsize = 0;
-                    unsigned char buff[FILEBUFF];
-                    strm.avail_out = sizeof(buff);
-                    strm.next_out = buff;
-                    inf = inflate(&strm, Z_SYNC_FLUSH);
-                    if (inf != Z_OK && inf != Z_STREAM_END && inf != Z_BUF_ERROR) {
-                        cli_dbgmsg("cli_scanxar: inflate error %i %s.\n", inf, strm.msg?strm.msg:"");
-                        rc = CL_EFORMAT;
-                        extract_errors++;
-                        break;
-                    }
 
-                    bytes = sizeof(buff) - strm.avail_out;
-
-                    if (e_hash_ctx != NULL)
-                        xar_hash_update(e_hash_ctx, buff, bytes, e_hash);
-                   
-                    if (cli_writen(fd, buff, bytes) < 0) {
-                        cli_dbgmsg("cli_scanxar: cli_writen error file %s.\n", tmpname);
+                while ((size_t)at < map->len && (unsigned long)at < offset + hdr.toc_length_compressed + hdr.size + length) {
+                    unsigned long avail_in;
+                    void *next_in;
+                    unsigned int bytes = MIN(map->len - at, map->pgsz);
+                    bytes              = MIN(length, bytes);
+                    if (!(strm.next_in = next_in = (void *)fmap_need_off_once(map, at, bytes))) {
+                        cli_dbgmsg("cli_scanxar: Can't read %u bytes @ %lu.\n", bytes, (long unsigned)at);
                         inflateEnd(&strm);
-                        rc = CL_EWRITE;
+                        rc = CL_EREAD;
                         goto exit_tmpfile;
                     }
-                    outsize += sizeof(buff) - strm.avail_out;
-                    if (cli_checklimits("cli_scanxar", ctx, outsize, 0, 0) != CL_CLEAN) {
+                    at += bytes;
+                    strm.avail_in = avail_in = bytes;
+                    do {
+                        int inf, outsize = 0;
+                        unsigned char buff[FILEBUFF];
+                        strm.avail_out = sizeof(buff);
+                        strm.next_out  = buff;
+                        inf            = inflate(&strm, Z_SYNC_FLUSH);
+                        if (inf != Z_OK && inf != Z_STREAM_END && inf != Z_BUF_ERROR) {
+                            cli_dbgmsg("cli_scanxar: inflate error %i %s.\n", inf, strm.msg ? strm.msg : "");
+                            rc = CL_EFORMAT;
+                            extract_errors++;
+                            break;
+                        }
+
+                        bytes = sizeof(buff) - strm.avail_out;
+
+                        if (e_hash_ctx != NULL)
+                            xar_hash_update(e_hash_ctx, buff, bytes, e_hash);
+
+                        if (cli_writen(fd, buff, bytes) < 0) {
+                            cli_dbgmsg("cli_scanxar: cli_writen error file %s.\n", tmpname);
+                            inflateEnd(&strm);
+                            rc = CL_EWRITE;
+                            goto exit_tmpfile;
+                        }
+                        outsize += sizeof(buff) - strm.avail_out;
+                        if (cli_checklimits("cli_scanxar", ctx, outsize, 0, 0) != CL_CLEAN) {
+                            break;
+                        }
+                        if (inf == Z_STREAM_END) {
+                            break;
+                        }
+                    } while (strm.avail_out == 0);
+
+                    if (rc != CL_SUCCESS)
                         break;
-                    }
-                    if (inf == Z_STREAM_END) {
-                        break;
-                    }
-                } while (strm.avail_out == 0);
 
-                if (rc != CL_SUCCESS)
-                    break;
+                    avail_in -= strm.avail_in;
+                    if (a_hash_ctx != NULL)
+                        xar_hash_update(a_hash_ctx, next_in, avail_in, a_hash);
+                }
 
-                avail_in -= strm.avail_in;
-                if (a_hash_ctx != NULL)
-                    xar_hash_update(a_hash_ctx, next_in, avail_in, a_hash);
-            }
-
-            inflateEnd(&strm);
-            break;
-        case CL_TYPE_7Z:
-#define CLI_LZMA_OBUF_SIZE 1024*1024
-#define CLI_LZMA_HDR_SIZE LZMA_PROPS_SIZE+8
-#define CLI_LZMA_IBUF_SIZE CLI_LZMA_OBUF_SIZE>>2 /* estimated compression ratio 25% */
+                inflateEnd(&strm);
+                break;
+            case CL_TYPE_7Z:
+#define CLI_LZMA_OBUF_SIZE 1024 * 1024
+#define CLI_LZMA_HDR_SIZE LZMA_PROPS_SIZE + 8
+#define CLI_LZMA_IBUF_SIZE CLI_LZMA_OBUF_SIZE >> 2 /* estimated compression ratio 25% */
             {
                 struct CLI_LZMA lz;
                 unsigned long in_remaining = MIN(length, map->len - at);
-                unsigned long out_size = 0;
-                unsigned char * buff = __lzma_wrap_alloc(NULL, CLI_LZMA_OBUF_SIZE);
+                unsigned long out_size     = 0;
+                unsigned char *buff        = __lzma_wrap_alloc(NULL, CLI_LZMA_OBUF_SIZE);
                 int lret;
 
                 if (length > in_remaining)
@@ -671,10 +664,9 @@ int cli_scanxar(cli_ctx *ctx)
                     cli_dbgmsg("cli_scanxar: memory request for lzma decompression buffer fails.\n");
                     rc = CL_EMEM;
                     goto exit_tmpfile;
-                    
                 }
 
-                blockp = (void*)fmap_need_off_once(map, at, CLI_LZMA_HDR_SIZE);
+                blockp = (void *)fmap_need_off_once(map, at, CLI_LZMA_HDR_SIZE);
                 if (blockp == NULL) {
                     char errbuff[128];
                     cli_strerror(errno, errbuff, sizeof(errbuff));
@@ -685,7 +677,7 @@ int cli_scanxar(cli_ctx *ctx)
                     goto exit_tmpfile;
                 }
 
-                lz.next_in = blockp;
+                lz.next_in  = blockp;
                 lz.avail_in = CLI_LZMA_HDR_SIZE;
 
                 if (a_hash_ctx != NULL)
@@ -705,13 +697,13 @@ int cli_scanxar(cli_ctx *ctx)
                 while (at < map->len && at < offset + (size_t)hdr.toc_length_compressed + (size_t)hdr.size + length) {
                     SizeT avail_in;
                     SizeT avail_out;
-                    void * next_in;
+                    void *next_in;
                     unsigned long in_consumed;
 
-                    lz.next_out = buff;
+                    lz.next_out  = buff;
                     lz.avail_out = CLI_LZMA_OBUF_SIZE;
                     lz.avail_in = avail_in = MIN(CLI_LZMA_IBUF_SIZE, in_remaining);
-                    lz.next_in = next_in = (void*)fmap_need_off_once(map, at, lz.avail_in);
+                    lz.next_in = next_in = (void *)fmap_need_off_once(map, at, lz.avail_in);
                     if (lz.next_in == NULL) {
                         char errbuff[128];
                         cli_strerror(errno, errbuff, sizeof(errbuff));
@@ -735,14 +727,14 @@ int cli_scanxar(cli_ctx *ctx)
                     in_remaining -= in_consumed;
                     at += in_consumed;
                     avail_out = CLI_LZMA_OBUF_SIZE - lz.avail_out;
-                    
+
                     if (avail_out == 0)
                         cli_dbgmsg("cli_scanxar: cli_LzmaDecode() produces no output for "
                                    "avail_in %llu, avail_out %llu.\n",
                                    (long long unsigned)avail_in, (long long unsigned)avail_out);
 
                     if (a_hash_ctx != NULL)
-                        xar_hash_update(a_hash_ctx, next_in, in_consumed, a_hash);                    
+                        xar_hash_update(a_hash_ctx, next_in, in_consumed, a_hash);
                     if (e_hash_ctx != NULL)
                         xar_hash_update(e_hash_ctx, buff, avail_out, e_hash);
 
@@ -772,39 +764,38 @@ int cli_scanxar(cli_ctx *ctx)
 
                 cli_LzmaShutdown(&lz);
                 __lzma_wrap_free(NULL, buff);
-            }
-            break; 
-        case CL_TYPE_ANY:
-        default:
-        case CL_TYPE_BZ:
-        case CL_TYPE_XZ:
-            /* for uncompressed, bzip2, xz, and unknown, just pull the file, cli_magic_scandesc does the rest */
-            do_extract_cksum = 0;
-            {
-                size_t writelen = MIN(map->len - at, length);
+            } break;
+            case CL_TYPE_ANY:
+            default:
+            case CL_TYPE_BZ:
+            case CL_TYPE_XZ:
+                /* for uncompressed, bzip2, xz, and unknown, just pull the file, cli_magic_scandesc does the rest */
+                do_extract_cksum = 0;
+                {
+                    size_t writelen = MIN(map->len - at, length);
 
-                if (ctx->engine->maxfilesize)
-                    writelen = MIN((size_t)(ctx->engine->maxfilesize), writelen);
-                    
-                if (!(blockp = (void*)fmap_need_off_once(map, at, writelen))) {
-                    char errbuff[128];
-                    cli_strerror(errno, errbuff, sizeof(errbuff));
-                    cli_dbgmsg("cli_scanxar: Can't read %zu bytes @ %zu, errno:%s.\n",
-                               writelen, at, errbuff);
-                    rc = CL_EREAD;
-                    goto exit_tmpfile;
+                    if (ctx->engine->maxfilesize)
+                        writelen = MIN((size_t)(ctx->engine->maxfilesize), writelen);
+
+                    if (!(blockp = (void *)fmap_need_off_once(map, at, writelen))) {
+                        char errbuff[128];
+                        cli_strerror(errno, errbuff, sizeof(errbuff));
+                        cli_dbgmsg("cli_scanxar: Can't read %zu bytes @ %zu, errno:%s.\n",
+                                   writelen, at, errbuff);
+                        rc = CL_EREAD;
+                        goto exit_tmpfile;
+                    }
+
+                    if (a_hash_ctx != NULL)
+                        xar_hash_update(a_hash_ctx, blockp, writelen, a_hash);
+
+                    if (cli_writen(fd, blockp, writelen) < 0) {
+                        cli_dbgmsg("cli_scanxar: cli_writen error %zu bytes @ %zu.\n", writelen, at);
+                        rc = CL_EWRITE;
+                        goto exit_tmpfile;
+                    }
+                    /*break;*/
                 }
-                
-                if (a_hash_ctx != NULL)
-                    xar_hash_update(a_hash_ctx, blockp, writelen, a_hash);
-                
-                if (cli_writen(fd, blockp, writelen) < 0) {
-                    cli_dbgmsg("cli_scanxar: cli_writen error %zu bytes @ %zu.\n", writelen, at);
-                    rc = CL_EWRITE;
-                    goto exit_tmpfile;
-                }
-                /*break;*/
-            }          
         } /* end of switch */
 
         if (rc == CL_SUCCESS) {
@@ -821,7 +812,7 @@ int cli_scanxar(cli_ctx *ctx)
                     cli_dbgmsg("cli_scanxar: archived-checksum mismatch.\n");
                     cksum_fails++;
                 } else {
-                    cli_dbgmsg("cli_scanxar: archived-checksum matched.\n");                
+                    cli_dbgmsg("cli_scanxar: archived-checksum matched.\n");
                 }
                 free(expected);
             }
@@ -840,12 +831,12 @@ int cli_scanxar(cli_ctx *ctx)
                         cli_dbgmsg("cli_scanxar: extracted-checksum mismatch.\n");
                         cksum_fails++;
                     } else {
-                        cli_dbgmsg("cli_scanxar: extracted-checksum matched.\n");                
+                        cli_dbgmsg("cli_scanxar: extracted-checksum matched.\n");
                     }
                     free(expected);
                 }
             }
-        
+
             rc = cli_magic_scandesc(fd, tmpname, ctx);
             if (rc != CL_SUCCESS) {
                 if (rc == CL_VIRUS) {
@@ -858,7 +849,7 @@ int cli_scanxar(cli_ctx *ctx)
                 }
             }
         }
-        
+
         if (a_cksum != NULL) {
             xmlFree(a_cksum);
             a_cksum = NULL;
@@ -869,22 +860,22 @@ int cli_scanxar(cli_ctx *ctx)
         }
     }
 
- exit_tmpfile:
+exit_tmpfile:
     xar_cleanup_temp_file(ctx, fd, tmpname);
     if (a_hash_ctx != NULL)
         xar_hash_final(a_hash_ctx, result, a_hash);
     if (e_hash_ctx != NULL)
         xar_hash_final(e_hash_ctx, result, e_hash);
- 
- exit_reader:
+
+exit_reader:
     if (a_cksum != NULL)
-        xmlFree(a_cksum);   
+        xmlFree(a_cksum);
     if (e_cksum != NULL)
         xmlFree(e_cksum);
     xmlTextReaderClose(reader);
     xmlFreeTextReader(reader);
 
- exit_toc:
+exit_toc:
     free(toc);
     if (rc == CL_BREAK)
         rc = CL_SUCCESS;
@@ -893,7 +884,7 @@ int cli_scanxar(cli_ctx *ctx)
 #endif
     if (cksum_fails + extract_errors != 0) {
         cli_dbgmsg("cli_scanxar: %u checksum errors and %u extraction errors.\n",
-                    cksum_fails, extract_errors);
+                   cksum_fails, extract_errors);
     }
 
     return rc;

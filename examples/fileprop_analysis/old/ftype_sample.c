@@ -26,7 +26,7 @@ bool logical_trigger(void)
 
 #define STR_MAXLEN 256
 
-int entrypoint ()
+int entrypoint()
 {
     int32_t objid, type, strlen;
     char str[STR_MAXLEN];
@@ -48,15 +48,15 @@ int entrypoint ()
     }
 
     /* acquire string length, note +1 is for the NULL terminator */
-    strlen = json_get_string_length(objid)+1;
+    strlen = json_get_string_length(objid) + 1;
     /* prevent buffer overflow */
     if (strlen > STR_MAXLEN)
         strlen = STR_MAXLEN;
-    
+
     /* acquire string data, note strlen includes NULL terminator */
     if (json_get_string(str, strlen, objid)) {
         /* debug print str (with '\n' and prepended message */
-        debug_print_str(str,strlen);
+        debug_print_str(str, strlen);
 
         /* check the contained object's filetype */
         if (strlen == 14 && !memcmp(str, "CL_TYPE_MSEXE", 14)) {

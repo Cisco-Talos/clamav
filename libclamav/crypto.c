@@ -65,21 +65,24 @@
 #include "iowrap.h"
 
 #if defined(_WIN32)
-char * strptime(const char *buf, const char *fmt, struct tm *tm);
+char *strptime(const char *buf, const char *fmt, struct tm *tm);
 #endif
 
 #if defined(_WIN32)
 #define EXCEPTION_PREAMBLE __try {
-#define EXCEPTION_POSTAMBLE } __except (filter_memcpy(GetExceptionCode(), GetExceptionInformation())) { \
-    winres=1; \
-}
+#define EXCEPTION_POSTAMBLE                                                 \
+    }                                                                       \
+    __except (filter_memcpy(GetExceptionCode(), GetExceptionInformation())) \
+    {                                                                       \
+        winres = 1;                                                         \
+    }
 #else
 #define EXCEPTION_PREAMBLE
 #define EXCEPTION_POSTAMBLE
 #endif
 
 #if !defined(MIN)
-    #define MIN(x,y) ((x)<(y)?(x):(y))
+#define MIN(x, y) ((x) < (y) ? (x) : (y))
 #endif
 
 #if !defined(HAVE_TIMEGM) && !defined(_WIN32)
@@ -92,24 +95,22 @@ time_t timegm(struct tm *t)
     time_t tl, tb;
     struct tm *tg;
 
-    tl = mktime (t);
-    if (tl == -1)
-    {
+    tl = mktime(t);
+    if (tl == -1) {
         t->tm_hour--;
-        tl = mktime (t);
+        tl = mktime(t);
         if (tl == -1)
             return -1; /* can't deal with output from strptime */
         tl += 3600;
     }
 
-    tg = gmtime (&tl);
+    tg           = gmtime(&tl);
     tg->tm_isdst = 0;
-    tb = mktime (tg);
+    tb           = mktime(tg);
 
-    if (tb == -1)
-    {
+    if (tb == -1) {
         tg->tm_hour--;
-        tb = mktime (tg);
+        tb = mktime(tg);
         if (tb == -1)
             return -1; /* can't deal with output from gmtime */
 
@@ -119,7 +120,6 @@ time_t timegm(struct tm *t)
     return (tl - (tb - tl));
 }
 #endif
-
 
 /**
  * @brief This function initializes the openssl crypto system
@@ -162,7 +162,7 @@ unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsign
     const EVP_MD *md;
     unsigned int i;
     size_t cur;
-    int winres=0;
+    int winres = 0;
 
     md = EVP_get_digestbyname(alg);
     if (!(md))
@@ -198,12 +198,12 @@ unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsign
         return NULL;
     }
 
-    cur=0;
+    cur = 0;
     while (cur < len) {
-        size_t todo = MIN((unsigned long)EVP_MD_block_size(md), (unsigned long)(len-cur));
+        size_t todo = MIN((unsigned long)EVP_MD_block_size(md), (unsigned long)(len - cur));
 
         EXCEPTION_PREAMBLE
-        if (!EVP_DigestUpdate(ctx, (void *)(((unsigned char *)buf)+cur), todo)) {
+        if (!EVP_DigestUpdate(ctx, (void *)(((unsigned char *)buf) + cur), todo)) {
             if (!(obuf))
                 free(ret);
 
@@ -285,9 +285,9 @@ unsigned char *cl_hash_file_fd_ctx(EVP_MD_CTX *ctx, int fd, unsigned int *olen)
     int mdsz;
     unsigned int hashlen;
     STATBUF sb;
-    int winres=0;
+    int winres = 0;
 
-	unsigned int blocksize;
+    unsigned int blocksize;
 
 #ifdef _WIN32
     int nread;
@@ -302,9 +302,9 @@ unsigned char *cl_hash_file_fd_ctx(EVP_MD_CTX *ctx, int fd, unsigned int *olen)
     }
 
 #ifdef _WIN32
-	blocksize = 8192;
+    blocksize = 8192;
 #else
-	blocksize = sb.st_blksize;
+    blocksize = sb.st_blksize;
 #endif
 
     buf = (unsigned char *)malloc(blocksize);
@@ -488,7 +488,7 @@ int cl_verify_signature(EVP_PKEY *pkey, const char *alg, unsigned char *sig, uns
         if (!(newsig))
             return -1;
 
-        sig = newsig;
+        sig    = newsig;
         siglen = newsiglen;
     }
 
@@ -765,7 +765,7 @@ unsigned char *cl_sign_data(EVP_PKEY *pkey, const char *alg, unsigned char *hash
         }
 
         free(sig);
-        sig = newsig;
+        sig    = newsig;
         siglen = (unsigned int)strlen((const char *)newsig);
     }
 
@@ -831,8 +831,8 @@ X509 *cl_get_x509_from_mem(void *data, unsigned int len)
 
 int cl_validate_certificate_chain_ts_dir(char *tsdir, char *certpath)
 {
-    char **authorities=NULL, **t;
-    size_t nauths = 0;
+    char **authorities = NULL, **t;
+    size_t nauths      = 0;
     int res;
     DIR *dp;
     struct dirent *dirent;
@@ -872,7 +872,7 @@ int cl_validate_certificate_chain_ts_dir(char *tsdir, char *certpath)
             return -1;
         }
 
-        authorities = t;
+        authorities         = t;
         authorities[nauths] = (char *)malloc(strlen(tsdir) + strlen(dirent->d_name) + 2);
         if (!authorities[nauths]) {
             if (nauths) {
@@ -886,7 +886,7 @@ int cl_validate_certificate_chain_ts_dir(char *tsdir, char *certpath)
             return -1;
         }
 
-        sprintf(authorities[nauths], "%s"PATHSEP"%s", tsdir, dirent->d_name);
+        sprintf(authorities[nauths], "%s" PATHSEP "%s", tsdir, dirent->d_name);
         nauths++;
     }
 
@@ -903,14 +903,14 @@ int cl_validate_certificate_chain_ts_dir(char *tsdir, char *certpath)
         return -1;
     }
 
-    authorities = t;
+    authorities         = t;
     authorities[nauths] = NULL;
 
     res = cl_validate_certificate_chain(authorities, NULL, certpath);
 
     while (nauths > 0)
         free(authorities[--nauths]);
-    
+
     free(authorities);
 
     return res;
@@ -918,11 +918,11 @@ int cl_validate_certificate_chain_ts_dir(char *tsdir, char *certpath)
 
 int cl_validate_certificate_chain(char **authorities, char *crlpath, char *certpath)
 {
-    X509_STORE *store=NULL;
+    X509_STORE *store = NULL;
     X509_STORE_CTX *store_ctx;
-    X509_LOOKUP *lookup=NULL;
-    X509_CRL *crl=NULL;
-    X509_VERIFY_PARAM *param=NULL;
+    X509_LOOKUP *lookup      = NULL;
+    X509_CRL *crl            = NULL;
+    X509_VERIFY_PARAM *param = NULL;
     X509 *cert;
     unsigned long i;
     int res;
@@ -960,7 +960,7 @@ int cl_validate_certificate_chain(char **authorities, char *crlpath, char *certp
     }
 
     /* Support multi-tiered setups */
-    for (i=0; authorities[i]; i++) {
+    for (i = 0; authorities[i]; i++) {
         if (!X509_LOOKUP_load_file(lookup, authorities[i], X509_FILETYPE_PEM)) {
             X509_STORE_free(store);
             if ((crl))
@@ -1058,8 +1058,8 @@ X509 *cl_load_cert(const char *certpath)
 struct tm *cl_ASN1_GetTimeT(ASN1_TIME *timeobj)
 {
     struct tm *t;
-    char* str;
-    const char *fmt=NULL;
+    char *str;
+    const char *fmt = NULL;
     time_t localt;
 #ifdef _WIN32
     struct tm localtm, *ltm;
@@ -1087,8 +1087,7 @@ struct tm *cl_ASN1_GetTimeT(ASN1_TIME *timeobj)
         } else {
             str[3]--;
         }
-    }
-    else if (timeobj->type == V_ASN1_GENERALIZEDTIME) {
+    } else if (timeobj->type == V_ASN1_GENERALIZEDTIME) {
         /* four digit year */
         fmt = "%Y%m%d%H%M%S";
         if (str[5] == '0') {
@@ -1123,7 +1122,7 @@ struct tm *cl_ASN1_GetTimeT(ASN1_TIME *timeobj)
 
 X509_CRL *cl_load_crl(const char *file)
 {
-    X509_CRL *x=NULL;
+    X509_CRL *x = NULL;
     FILE *fp;
 
     if (!(file))
@@ -1138,13 +1137,13 @@ X509_CRL *cl_load_crl(const char *file)
     fclose(fp);
 
     if ((x)) {
-	ASN1_TIME *tme;
+        ASN1_TIME *tme;
 
-	tme = X509_CRL_get_nextUpdate(x);
-	if (!tme || X509_cmp_current_time(tme) < 0) {
-		X509_CRL_free(x);
-		return NULL;
-	}
+        tme = X509_CRL_get_nextUpdate(x);
+        if (!tme || X509_cmp_current_time(tme) < 0) {
+            X509_CRL_free(x);
+            return NULL;
+        }
     }
 
     return x;
@@ -1179,7 +1178,7 @@ void *cl_hash_init(const char *alg)
 
 int cl_update_hash(void *ctx, const void *data, size_t sz)
 {
-    int winres=0;
+    int winres = 0;
 
     if (!(ctx) || !(data))
         return -1;
@@ -1197,7 +1196,7 @@ int cl_update_hash(void *ctx, const void *data, size_t sz)
 
 int cl_finish_hash(void *ctx, void *buf)
 {
-    int res=0;
+    int res = 0;
 
     if (!(ctx) || !(buf))
         return -1;

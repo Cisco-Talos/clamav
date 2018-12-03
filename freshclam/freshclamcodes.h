@@ -21,33 +21,33 @@
 #define __FRESHCLAMCODES_H
 
 typedef enum fc_error_tag {
-    FC_SUCCESS          = 0,
-    FC_UPTODATE         = 1,
+    FC_SUCCESS  = 0,
+    FC_UPTODATE = 1,
 
-    FCE_INIT            = 40,
-    FCE_CHECKS          = 41,
-    FCE_PRIVATEMIRROR   = 45,
+    FCE_INIT          = 40,
+    FCE_CHECKS        = 41,
+    FCE_PRIVATEMIRROR = 45,
 
-    FCE_DIRECTORY       = 50,
-    FCE_CONNECTION      = 52,
-    FCE_EMPTYFILE       = 53,
-    FCE_BADCVD          = 54,
-    FCE_FILE            = 55,
-/* TESTFAIL is also 55, consider moving to new value */
-    FCE_TESTFAIL        = 55,
-    FCE_CONFIG          = 56,
-    FCE_DBDIRACCESS     = 57,
-    FCE_FAILEDGET       = 58,
-    FCE_MIRRORNOTSYNC   = 59,
+    FCE_DIRECTORY  = 50,
+    FCE_CONNECTION = 52,
+    FCE_EMPTYFILE  = 53,
+    FCE_BADCVD     = 54,
+    FCE_FILE       = 55,
+    /* TESTFAIL is also 55, consider moving to new value */
+    FCE_TESTFAIL      = 55,
+    FCE_CONFIG        = 56,
+    FCE_DBDIRACCESS   = 57,
+    FCE_FAILEDGET     = 58,
+    FCE_MIRRORNOTSYNC = 59,
 
-    FCE_USERINFO        = 60,
-    FCE_USERORGROUP     = 61,
-    FCE_LOGGING         = 62,
+    FCE_USERINFO    = 60,
+    FCE_USERORGROUP = 61,
+    FCE_LOGGING     = 62,
 
-    FCE_FAILEDUPDATE    = 70,
-    FCE_MEM             = 75,
-    FCE_ARG             = 76,
-    FCE_OPEN            = 77
+    FCE_FAILEDUPDATE = 70,
+    FCE_MEM          = 75,
+    FCE_ARG          = 76,
+    FCE_OPEN         = 77
 } fc_error_t;
 
 #endif

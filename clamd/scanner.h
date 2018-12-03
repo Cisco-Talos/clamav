@@ -30,7 +30,10 @@
 #include "thrmgr.h"
 #include "session.h"
 
-enum scan_type { TYPE_INIT = -1, TYPE_SCAN = 0, TYPE_CONTSCAN = 1, TYPE_MULTISCAN = 2 };
+enum scan_type { TYPE_INIT      = -1,
+                 TYPE_SCAN      = 0,
+                 TYPE_CONTSCAN  = 1,
+                 TYPE_MULTISCAN = 2 };
 
 struct scan_cb_data {
     int scantype;

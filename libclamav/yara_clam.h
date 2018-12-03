@@ -494,4 +494,3 @@ typedef yc_string YR_STRING;
 // clang-format on
 
 #endif
-

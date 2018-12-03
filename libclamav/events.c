@@ -32,8 +32,7 @@
 #include "str.h"
 #include <string.h>
 
-struct cli_event
-{
+struct cli_event {
     const char *name;
     union ev_val u;
     uint32_t count;
@@ -41,8 +40,7 @@ struct cli_event
     enum multiple_handling multiple : 8;
 };
 
-struct cli_events
-{
+struct cli_events {
     struct cli_event *events;
     struct cli_event errors;
     uint64_t oom_total;
@@ -55,23 +53,21 @@ cli_events_t *cli_events_new(unsigned max_event)
     struct cli_events *ev = cli_calloc(1, sizeof(*ev));
     if (!ev)
         return NULL;
-    ev->max = max_event;
+    ev->max    = max_event;
     ev->events = cli_calloc(max_event, sizeof(*ev->events));
-    if (!ev->events)
-    {
+    if (!ev->events) {
         free(ev);
         return NULL;
     }
-    ev->errors.name = "errors";
-    ev->errors.type = ev_string;
+    ev->errors.name     = "errors";
+    ev->errors.type     = ev_string;
     ev->errors.multiple = multiple_chain;
     return ev;
 }
 
 void cli_events_free(cli_events_t *ev)
 {
-    if (ev)
-    {
+    if (ev) {
         /* TODO: free components */
         free(ev->events);
         free(ev);
@@ -93,31 +89,27 @@ int cli_event_define(cli_events_t *ctx, unsigned id,
                      const char *name, enum ev_type type, enum multiple_handling multiple)
 {
     struct cli_event *ev = &ctx->events[id];
-    if (id >= ctx->max)
-    {
+    if (id >= ctx->max) {
         cli_event_error_str(ctx, "cli_event_define: event id out of range");
         return -1;
     }
     if (multiple == multiple_sum &&
-        (type != ev_int && type != ev_time && type != ev_data_fast))
-    {
+        (type != ev_int && type != ev_time && type != ev_data_fast)) {
         cli_event_error_str(ctx, "cli_event_define: can only sum ev_int, ev_time, and ev_data_fast");
         return -1;
     }
-    if (type == ev_data_fast && multiple != multiple_sum)
-    {
+    if (type == ev_data_fast && multiple != multiple_sum) {
         cli_event_error_str(ctx, "cli_event_define: ev_data_fast can only be sumed");
         return -1;
     }
-    if (multiple == multiple_concat && type != ev_data)
-    {
+    if (multiple == multiple_concat && type != ev_data) {
         cli_event_error_str(ctx, "cli_event_define: only ev_data can be concatenated");
         return -1;
     }
     /* default was ev_none */
-    ev->type = type;
-    ev->name = name;
-    ev->type = type;
+    ev->type     = type;
+    ev->name     = name;
+    ev->type     = type;
     ev->multiple = multiple;
     if (type == ev_data_fast)
         ev->u.v_int = CRC_INIT_VAL;
@@ -128,8 +120,7 @@ static inline struct cli_event *get_event(cli_events_t *ctx, unsigned id)
 {
     if (!ctx)
         return NULL;
-    if (id >= ctx->max)
-    {
+    if (id >= ctx->max) {
         cli_event_error_str(ctx, "event id out of range");
         return NULL;
     }
@@ -142,12 +133,11 @@ static inline void ev_chain(cli_events_t *ctx, struct cli_event *ev, union ev_va
     uint32_t siz = sizeof(*chain) * (ev->count + 1);
 
     chain = cli_realloc(ev->u.v_chain, siz);
-    if (!chain)
-    {
+    if (!chain) {
         cli_event_error_oom(ctx, siz);
         return;
     }
-    ev->u.v_chain = chain;
+    ev->u.v_chain            = chain;
     ev->u.v_chain[ev->count] = *val;
     ev->count++;
 }
@@ -165,31 +155,28 @@ void cli_event_int(cli_events_t *ctx, unsigned id, uint64_t arg)
     struct cli_event *ev = get_event(ctx, id);
     if (!ev)
         return;
-    if (ev->type != ev_int)
-    {
+    if (ev->type != ev_int) {
         cli_event_error_str(ctx, "cli_event_int must be called with ev_int type");
         return;
     }
-    switch (ev->multiple)
-    {
-    case multiple_last:
-        ev->u.v_int = arg;
-        ev->count++;
-        break;
-    case multiple_sum:
-        ev->count++;
-        ev->u.v_int += arg;
-        break;
-    case multiple_chain:
-    {
-        union ev_val val;
-        val.v_int = arg;
-        ev_chain(ctx, ev, &val);
-        break;
-    }
-    default:
-        // TODO: Consider if we should handle multiple_concat cases.
-        break;
+    switch (ev->multiple) {
+        case multiple_last:
+            ev->u.v_int = arg;
+            ev->count++;
+            break;
+        case multiple_sum:
+            ev->count++;
+            ev->u.v_int += arg;
+            break;
+        case multiple_chain: {
+            union ev_val val;
+            val.v_int = arg;
+            ev_chain(ctx, ev, &val);
+            break;
+        }
+        default:
+            // TODO: Consider if we should handle multiple_concat cases.
+            break;
     }
 }
 
@@ -199,8 +186,7 @@ void cli_event_time_start(cli_events_t *ctx, unsigned id)
     struct cli_event *ev = get_event(ctx, id);
     if (!ev)
         return;
-    if (ev->type != ev_time)
-    {
+    if (ev->type != ev_time) {
         cli_event_error_str(ctx, "cli_event_time* must be called with ev_time type");
         return;
     }
@@ -212,12 +198,11 @@ void cli_event_time_start(cli_events_t *ctx, unsigned id)
 void cli_event_time_nested_start(cli_events_t *ctx, unsigned id, unsigned nestedid)
 {
     struct timeval tv;
-    struct cli_event *ev = get_event(ctx, id);
+    struct cli_event *ev       = get_event(ctx, id);
     struct cli_event *evnested = get_event(ctx, nestedid);
     if (!ev || !evnested)
         return;
-    if (ev->type != ev_time || evnested->type != ev_time)
-    {
+    if (ev->type != ev_time || evnested->type != ev_time) {
         cli_event_error_str(ctx, "cli_event_time* must be called with ev_time type");
         return;
     }
@@ -233,8 +218,7 @@ void cli_event_time_stop(cli_events_t *ctx, unsigned id)
     struct cli_event *ev = get_event(ctx, id);
     if (!ev)
         return;
-    if (ev->type != ev_time)
-    {
+    if (ev->type != ev_time) {
         cli_event_error_str(ctx, "cli_event_time* must be called with ev_time type");
         return;
     }
@@ -245,12 +229,11 @@ void cli_event_time_stop(cli_events_t *ctx, unsigned id)
 void cli_event_time_nested_stop(cli_events_t *ctx, unsigned id, unsigned nestedid)
 {
     struct timeval tv;
-    struct cli_event *ev = get_event(ctx, id);
+    struct cli_event *ev       = get_event(ctx, id);
     struct cli_event *evnested = get_event(ctx, nestedid);
     if (!ev || !evnested)
         return;
-    if (ev->type != ev_time || evnested->type != ev_time)
-    {
+    if (ev->type != ev_time || evnested->type != ev_time) {
         cli_event_error_str(ctx, "cli_event_time* must be called with ev_time type");
         return;
     }
@@ -263,22 +246,20 @@ static void event_string(cli_events_t *ctx, struct cli_event *ev, const char *st
 {
     if (!str)
         str = "";
-    switch (ev->multiple)
-    {
-    case multiple_last:
-        ev->u.v_string = str;
-        ev->count++;
-        break;
-    case multiple_chain:
-    {
-        union ev_val val;
-        val.v_string = str;
-        ev_chain(ctx, ev, &val);
-        break;
-    }
-    default:
-        // TODO: Consider if we should handle multiple_sum, multiple_concat cases.
-        break;
+    switch (ev->multiple) {
+        case multiple_last:
+            ev->u.v_string = str;
+            ev->count++;
+            break;
+        case multiple_chain: {
+            union ev_val val;
+            val.v_string = str;
+            ev_chain(ctx, ev, &val);
+            break;
+        }
+        default:
+            // TODO: Consider if we should handle multiple_sum, multiple_concat cases.
+            break;
     }
 }
 
@@ -295,8 +276,7 @@ void cli_event_string(cli_events_t *ctx, unsigned id, const char *str)
     struct cli_event *ev = get_event(ctx, id);
     if (!ev)
         return;
-    if (ev->type != ev_string)
-    {
+    if (ev->type != ev_string) {
         cli_event_error_str(ctx, "cli_event_string must be called with ev_string type");
         return;
     }
@@ -308,46 +288,36 @@ void cli_event_data(cli_events_t *ctx, unsigned id, const void *data, uint32_t l
     struct cli_event *ev = get_event(ctx, id);
     if (!ev)
         return;
-    if (ev->type != ev_data)
-    {
+    if (ev->type != ev_data) {
         cli_event_error_str(ctx, "cli_event_string must be called with ev_data type");
         return;
     }
-    switch (ev->multiple)
-    {
-    case multiple_last:
-    {
-        void *v_data = cli_realloc2(ev->u.v_data, len);
-        if (v_data)
-        {
-            ev->u.v_data = v_data;
-            memcpy(v_data, data, len);
-            ev->count = len;
+    switch (ev->multiple) {
+        case multiple_last: {
+            void *v_data = cli_realloc2(ev->u.v_data, len);
+            if (v_data) {
+                ev->u.v_data = v_data;
+                memcpy(v_data, data, len);
+                ev->count = len;
+            } else {
+                cli_event_error_oom(ctx, len);
+            }
+            break;
         }
-        else
-        {
-            cli_event_error_oom(ctx, len);
+        case multiple_concat: {
+            void *v_data = cli_realloc2(ev->u.v_data, ev->count + len);
+            if (v_data) {
+                ev->u.v_data = v_data;
+                memcpy((char *)v_data + ev->count, data, len);
+                ev->count += len;
+            } else {
+                cli_event_error_oom(ctx, ev->count + len);
+            }
+            break;
         }
-        break;
-    }
-    case multiple_concat:
-    {
-        void *v_data = cli_realloc2(ev->u.v_data, ev->count + len);
-        if (v_data)
-        {
-            ev->u.v_data = v_data;
-            memcpy((char *)v_data + ev->count, data, len);
-            ev->count += len;
-        }
-        else
-        {
-            cli_event_error_oom(ctx, ev->count + len);
-        }
-        break;
-    }
-    default:
-        // TODO: Consider if we should handle multiple_sum, multiple_chain cases.
-        break;
+        default:
+            // TODO: Consider if we should handle multiple_sum, multiple_chain cases.
+            break;
     }
 }
 
@@ -356,8 +326,7 @@ void cli_event_fastdata(cli_events_t *ctx, unsigned id, const void *data, uint32
     struct cli_event *ev = get_event(ctx, id);
     if (!ev)
         return;
-    if (ev->type != ev_data_fast)
-    {
+    if (ev->type != ev_data_fast) {
         cli_event_error_str(ctx, "cli_event_fastdata must be called with ev_data_fast");
         return;
     }
@@ -383,51 +352,48 @@ void cli_event_get(cli_events_t *ctx, unsigned id, union ev_val *val, uint32_t *
 
 static inline void ev_debug(enum ev_type type, union ev_val *val, uint32_t count)
 {
-    switch (type)
-    {
-    case ev_string:
-        cli_dbgmsg("\t(%u): %s\n", count, val->v_string);
-        break;
-    case ev_data:
-    {
-        char *d = cli_str2hex(val->v_data, count);
-        cli_dbgmsg("\t%d bytes\n", count);
-        cli_dbgmsg("\t%s\n", d);
-        free(d);
-        break;
-    }
-    case ev_data_fast:
-        cli_dbgmsg("\t%08x checksum, %u bytes\n", (uint32_t)val->v_int, count);
-        break;
-    case ev_int:
-        cli_dbgmsg("\t(%u): 0x%llx\n", count, (long long)val->v_int);
-        break;
-    case ev_time:
-        cli_dbgmsg("\t(%u): %d.%06us\n", count, (signed)(val->v_int / 1000000),
-                   (unsigned)(val->v_int % 1000000));
-        break;
-    default:
-        // TODO: Consider if we should handle ev_none cases.
-        break;
+    switch (type) {
+        case ev_string:
+            cli_dbgmsg("\t(%u): %s\n", count, val->v_string);
+            break;
+        case ev_data: {
+            char *d = cli_str2hex(val->v_data, count);
+            cli_dbgmsg("\t%d bytes\n", count);
+            cli_dbgmsg("\t%s\n", d);
+            free(d);
+            break;
+        }
+        case ev_data_fast:
+            cli_dbgmsg("\t%08x checksum, %u bytes\n", (uint32_t)val->v_int, count);
+            break;
+        case ev_int:
+            cli_dbgmsg("\t(%u): 0x%llx\n", count, (long long)val->v_int);
+            break;
+        case ev_time:
+            cli_dbgmsg("\t(%u): %d.%06us\n", count, (signed)(val->v_int / 1000000),
+                       (unsigned)(val->v_int % 1000000));
+            break;
+        default:
+            // TODO: Consider if we should handle ev_none cases.
+            break;
     }
 }
 
 static inline const char *evtype(enum ev_type type)
 {
-    switch (type)
-    {
-    case ev_string:
-        return "ev_string";
-    case ev_data:
-        return "ev_data";
-    case ev_data_fast:
-        return "ev_data_fast";
-    case ev_int:
-        return "ev_data_int";
-    case ev_time:
-        return "ev_time";
-    default:
-        return "";
+    switch (type) {
+        case ev_string:
+            return "ev_string";
+        case ev_data:
+            return "ev_data";
+        case ev_data_fast:
+            return "ev_data_fast";
+        case ev_int:
+            return "ev_data_int";
+        case ev_time:
+            return "ev_time";
+        default:
+            return "";
     }
 }
 
@@ -438,15 +404,12 @@ void cli_event_debug(cli_events_t *ctx, unsigned id)
     if (!ev)
         return;
     tstr = evtype(ev->type);
-    if (ev->multiple == multiple_chain && ev->type != ev_data)
-    {
+    if (ev->multiple == multiple_chain && ev->type != ev_data) {
         unsigned i;
         cli_dbgmsg("%s: ev_chain %u %s\n", ev->name, ev->count, tstr);
         for (i = 0; i < ev->count; i++)
             ev_debug(ev->type, &ev->u.v_chain[i], i);
-    }
-    else
-    {
+    } else {
         cli_dbgmsg("%s: %s\n", ev->name, tstr);
         ev_debug(ev->type, &ev->u, ev->count);
     }
@@ -455,8 +418,7 @@ void cli_event_debug(cli_events_t *ctx, unsigned id)
 void cli_event_debug_all(cli_events_t *ctx)
 {
     unsigned i;
-    for (i = 0; i < ctx->max; i++)
-    {
+    for (i = 0; i < ctx->max; i++) {
         if (ctx->events[i].count)
             cli_event_debug(ctx, i);
     }
@@ -464,20 +426,19 @@ void cli_event_debug_all(cli_events_t *ctx)
 
 static int ev_diff(enum ev_type type, union ev_val *v1, union ev_val *v2, uint32_t count)
 {
-    switch (type)
-    {
-    case ev_data_fast:
-    case ev_int:
-        return v1->v_int != v2->v_int;
-    case ev_string:
-        return strcmp(v1->v_string, v2->v_string);
-    case ev_data:
-        return memcmp(v1->v_data, v2->v_data, count);
-    case ev_time:
-        return 0;
-    default:
-        // TODO: Consider if we should handle ev_none cases.
-        break;
+    switch (type) {
+        case ev_data_fast:
+        case ev_int:
+            return v1->v_int != v2->v_int;
+        case ev_string:
+            return strcmp(v1->v_string, v2->v_string);
+        case ev_data:
+            return memcmp(v1->v_data, v2->v_data, count);
+        case ev_time:
+            return 0;
+        default:
+            // TODO: Consider if we should handle ev_none cases.
+            break;
     }
     return 0;
 }
@@ -492,25 +453,20 @@ int cli_event_diff(cli_events_t *ctx1, cli_events_t *ctx2, unsigned id)
         return 1;
     if (ev1->type != ev2->type ||
         ev1->multiple != ev2->multiple ||
-        ev1->name != ev2->name)
-    {
+        ev1->name != ev2->name) {
         cli_warnmsg("cli_event_diff: comparing incompatible events");
         return 1;
     }
-    if (ev1->count != ev2->count)
-    {
+    if (ev1->count != ev2->count) {
         cli_dbgmsg("diff: %s count %u vs %u\n", ev1->name, ev1->count, ev2->count);
         return 1;
     }
     diff = 0;
-    if (ev1->multiple == multiple_chain && ev1->type != ev_data)
-    {
+    if (ev1->multiple == multiple_chain && ev1->type != ev_data) {
         unsigned i;
-        for (i = 0; i < ev1->count; i++)
-        {
+        for (i = 0; i < ev1->count; i++) {
             unsigned di = ev_diff(ev1->type, &ev1->u.v_chain[i], &ev2->u.v_chain[i], ev1->count);
-            if (di)
-            {
+            if (di) {
                 if (!diff)
                     cli_dbgmsg("diff: %s\n", ev1->name);
                 ev_debug(ev1->type, &ev1->u.v_chain[i], i);
@@ -518,12 +474,9 @@ int cli_event_diff(cli_events_t *ctx1, cli_events_t *ctx2, unsigned id)
             }
             diff += di;
         }
-    }
-    else
-    {
+    } else {
         diff = ev_diff(ev1->type, &ev1->u, &ev2->u, ev1->count);
-        if (diff)
-        {
+        if (diff) {
             cli_dbgmsg("diff: %s\n", ev1->name);
             ev_debug(ev1->type, &ev1->u, ev1->count);
             ev_debug(ev2->type, &ev2->u, ev2->count);
@@ -537,14 +490,12 @@ int cli_event_diff(cli_events_t *ctx1, cli_events_t *ctx2, unsigned id)
 int cli_event_diff_all(cli_events_t *ctx1, cli_events_t *ctx2, compare_filter_t filter)
 {
     unsigned i, diff = 0;
-    if (ctx1->max != ctx2->max)
-    {
+    if (ctx1->max != ctx2->max) {
         cli_dbgmsg("diffall: incompatible event maximums %u vs %u\n",
                    ctx1->max, ctx2->max);
         return 1;
     }
-    for (i = 0; i < ctx1->max; i++)
-    {
+    for (i = 0; i < ctx1->max; i++) {
         struct cli_event *ev1 = &ctx1->events[i];
         if (filter && filter(i, ev1->type))
             continue;

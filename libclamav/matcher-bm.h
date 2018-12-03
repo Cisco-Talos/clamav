@@ -28,7 +28,7 @@
 #include "fmap.h"
 #include "others.h"
 
-#define BM_BOUNDARY_EOL	1
+#define BM_BOUNDARY_EOL 1
 
 struct cli_bm_patt {
     unsigned char *pattern, *prefix;

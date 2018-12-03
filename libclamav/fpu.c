@@ -27,10 +27,10 @@
 int get_fpu_endian(void)
 {
 #ifdef _WIN32
-  return FPU_ENDIAN_LITTLE;
+    return FPU_ENDIAN_LITTLE;
 #else
-    const char * fpu_le = "elleemme";
-    const char * fpu_be = "emmeelle";
+    const char* fpu_le = "elleemme";
+    const char* fpu_be = "emmeelle";
     const union sd {
         double d;
         char mem[8];
@@ -44,7 +44,7 @@ int get_fpu_endian(void)
     } else {
         cli_dbgmsg("fpu: Floating point endian detection failed. "
                    "Bytes: %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x \n",
-                   u_md.mem[0], u_md.mem[1], u_md.mem[2], u_md.mem[3], 
+                   u_md.mem[0], u_md.mem[1], u_md.mem[2], u_md.mem[3],
                    u_md.mem[4], u_md.mem[5], u_md.mem[6], u_md.mem[7]);
     }
     return FPU_ENDIAN_UNKNOWN;

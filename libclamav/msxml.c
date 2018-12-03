@@ -87,11 +87,11 @@ static inline size_t msxml_read_cb_new_window(struct msxml_cbdata *cbdata)
     }
 
     new_mappos = cbdata->mappos + cbdata->winsize;
-    bytes = MIN(cbdata->map->len - new_mappos, MSXML_READBUFF);
+    bytes      = MIN(cbdata->map->len - new_mappos, MSXML_READBUFF);
     if (!bytes) {
-        cbdata->window = NULL;
-        cbdata->winpos = 0;
-        cbdata->mappos = cbdata->map->len;
+        cbdata->window  = NULL;
+        cbdata->winpos  = 0;
+        cbdata->mappos  = cbdata->map->len;
         cbdata->winsize = 0;
 
         cli_msxmlmsg("msxml_read_cb: fmap EOF\n");
@@ -104,9 +104,9 @@ static inline size_t msxml_read_cb_new_window(struct msxml_cbdata *cbdata)
         return -1;
     }
 
-    cbdata->window = new_window;
-    cbdata->winpos = 0;
-    cbdata->mappos = new_mappos;
+    cbdata->window  = new_window;
+    cbdata->winpos  = 0;
+    cbdata->mappos  = new_mappos;
     cbdata->winsize = bytes;
 
     cli_msxmlmsg("msxml_read_cb: acquired new window @ [%llu(+%llu)(max:%llu)]\n",
@@ -130,7 +130,7 @@ int msxml_read_cb(void *ctx, char *buffer, int len)
             return winret;
     }
 
-    cli_msxmlmsg("msxml_read_cb: requested %d bytes from offset %llu\n", len, (long long unsigned)(cbdata->mappos+cbdata->winpos));
+    cli_msxmlmsg("msxml_read_cb: requested %d bytes from offset %llu\n", len, (long long unsigned)(cbdata->mappos + cbdata->winpos));
 
     wbytes = 0;
     rbytes = cbdata->winsize - cbdata->winpos;
@@ -163,42 +163,42 @@ int msxml_read_cb(void *ctx, char *buffer, int len)
 #endif
 
         read_from = cbdata->window + cbdata->winpos;
-        state = &(cbdata->state);
+        state     = &(cbdata->state);
 
         while (rbytes > 0 && wbytes < len) {
             switch (*state) {
-            case MSXML_STATE_NORMAL:
-                if ((*read_from) == '&')
-                    *state = MSXML_STATE_ENTITY_START_1;
-                break;
-            case MSXML_STATE_ENTITY_START_1:
-                if ((*read_from) == '#')
-                    *state = MSXML_STATE_ENTITY_START_2;
-                else
-                    *state = MSXML_STATE_NORMAL;
-                break;
-            case MSXML_STATE_ENTITY_START_2:
-                if ((*read_from) == 'x')
-                    *state = MSXML_STATE_ENTITY_HEX;
-                else if (((*read_from) >= '0') && ((*read_from) <= '9'))
-                    *state = MSXML_STATE_ENTITY_DEC;
-                else
-                    *state = MSXML_STATE_NORMAL;
-                break;
-            case MSXML_STATE_ENTITY_HEX:
-                if ((((*read_from) >= '0') && ((*read_from) <= '9')) ||
-                    (((*read_from) >= 'a') && ((*read_from) <= 'f')) ||
-                    (((*read_from) >= 'A') && ((*read_from) <= 'F'))) {}
-                else
-                    *state = MSXML_STATE_ENTITY_CLOSE;
-                break;
-            case MSXML_STATE_ENTITY_DEC:
-                if (((*read_from) >= '0') && ((*read_from) <= '9')) {}
-                else
-                    *state = MSXML_STATE_ENTITY_CLOSE;
-                break;
-            default:
-                cli_errmsg("unknown *state: %d\n", *state);
+                case MSXML_STATE_NORMAL:
+                    if ((*read_from) == '&')
+                        *state = MSXML_STATE_ENTITY_START_1;
+                    break;
+                case MSXML_STATE_ENTITY_START_1:
+                    if ((*read_from) == '#')
+                        *state = MSXML_STATE_ENTITY_START_2;
+                    else
+                        *state = MSXML_STATE_NORMAL;
+                    break;
+                case MSXML_STATE_ENTITY_START_2:
+                    if ((*read_from) == 'x')
+                        *state = MSXML_STATE_ENTITY_HEX;
+                    else if (((*read_from) >= '0') && ((*read_from) <= '9'))
+                        *state = MSXML_STATE_ENTITY_DEC;
+                    else
+                        *state = MSXML_STATE_NORMAL;
+                    break;
+                case MSXML_STATE_ENTITY_HEX:
+                    if ((((*read_from) >= '0') && ((*read_from) <= '9')) ||
+                        (((*read_from) >= 'a') && ((*read_from) <= 'f')) ||
+                        (((*read_from) >= 'A') && ((*read_from) <= 'F'))) {
+                    } else
+                        *state = MSXML_STATE_ENTITY_CLOSE;
+                    break;
+                case MSXML_STATE_ENTITY_DEC:
+                    if (((*read_from) >= '0') && ((*read_from) <= '9')) {
+                    } else
+                        *state = MSXML_STATE_ENTITY_CLOSE;
+                    break;
+                default:
+                    cli_errmsg("unknown *state: %d\n", *state);
             }
 
             if (*state == MSXML_STATE_ENTITY_CLOSE) {

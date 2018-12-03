@@ -33,14 +33,14 @@
 int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 {
     unsigned i;
-    for (i=0;i<bcs->count;i++) {
-	if (bcs->all_bcs[i].state == bc_skip)
-	    continue;
-	if (bcs->all_bcs[i].state != bc_loaded &&
-	    bcs->all_bcs[i].kind != BC_STARTUP) {
-	    cli_warnmsg("Cannot prepare for JIT, because it has already been converted to interpreter\n");
-	    return CL_EBYTECODE;
-	}
+    for (i = 0; i < bcs->count; i++) {
+        if (bcs->all_bcs[i].state == bc_skip)
+            continue;
+        if (bcs->all_bcs[i].state != bc_loaded &&
+            bcs->all_bcs[i].kind != BC_STARTUP) {
+            cli_warnmsg("Cannot prepare for JIT, because it has already been converted to interpreter\n");
+            return CL_EBYTECODE;
+        }
     }
     cli_dbgmsg("Cannot prepare for JIT, LLVM is not compiled or not linked\n");
     return CL_EBYTECODE;
@@ -68,8 +68,9 @@ int cli_bytecode_done_jit(struct cli_all_bc *allbc, int partial)
     return CL_SUCCESS;
 }
 
-void cli_bytecode_debug(int argc, char **argv) {
-  /* Empty */
+void cli_bytecode_debug(int argc, char **argv)
+{
+    /* Empty */
     UNUSEDPARAM(argc);
     UNUSEDPARAM(argv);
 }
@@ -79,14 +80,16 @@ int bytecode_init(void)
     return 0;
 }
 
-void cli_bytecode_debug_printsrc(const struct cli_bc_ctx *ctx) {
+void cli_bytecode_debug_printsrc(const struct cli_bc_ctx *ctx)
+{
     /* Empty */
     UNUSEDPARAM(ctx);
 }
-void cli_bytecode_printversion(void) {
-  printf("LLVM is not compiled or not linked\n");
+void cli_bytecode_printversion(void)
+{
+    printf("LLVM is not compiled or not linked\n");
 }
-int have_clamjit=0;
+int have_clamjit = 0;
 void cli_printcxxver()
 {
     /* Empty */

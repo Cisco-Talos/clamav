@@ -25,7 +25,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#ifdef	HAVE_UNISTD_H
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 #include <string.h>
@@ -74,7 +74,8 @@ extern struct optstruct *clamdopts;
 
 /* Inits the communication layer
  * Returns 0 if clamd is local, non zero if clamd is remote */
-static int isremote(const struct optstruct *opts) {
+static int isremote(const struct optstruct *opts)
+{
     int s, ret;
     const struct optstruct *opt;
     char *ipaddr, port[10];
@@ -84,15 +85,15 @@ static int isremote(const struct optstruct *opts) {
     UNUSEDPARAM(opts);
 
 #ifndef _WIN32
-    if((opt = optget(clamdopts, "LocalSocket"))->enabled) {
+    if ((opt = optget(clamdopts, "LocalSocket"))->enabled) {
         memset((void *)&nixsock, 0, sizeof(nixsock));
         nixsock.sun_family = AF_UNIX;
         strncpy(nixsock.sun_path, opt->strarg, sizeof(nixsock.sun_path));
-        nixsock.sun_path[sizeof(nixsock.sun_path)-1]='\0';
+        nixsock.sun_path[sizeof(nixsock.sun_path) - 1] = '\0';
         return 0;
     }
 #endif
-    if(!(opt = optget(clamdopts, "TCPSocket"))->enabled)
+    if (!(opt = optget(clamdopts, "TCPSocket"))->enabled)
         return 0;
 
     snprintf(port, sizeof(port), "%lld", optget(clamdopts, "TCPSocket")->numarg);
@@ -104,9 +105,9 @@ static int isremote(const struct optstruct *opts) {
             ipaddr = (!strcmp(opt->strarg, "any") ? NULL : opt->strarg);
 
         memset(&hints, 0x00, sizeof(struct addrinfo));
-        hints.ai_family = AF_UNSPEC;
+        hints.ai_family   = AF_UNSPEC;
         hints.ai_socktype = SOCK_STREAM;
-        hints.ai_flags = AI_PASSIVE;
+        hints.ai_flags    = AI_PASSIVE;
 
         if ((res = getaddrinfo(ipaddr, port, &hints, &info))) {
             logg("!Can't lookup clamd hostname: %s\n", gai_strerror(res));
@@ -115,20 +116,20 @@ static int isremote(const struct optstruct *opts) {
         }
 
         for (p = info; p != NULL; p = p->ai_next) {
-            if((s = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) < 0) {
+            if ((s = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) < 0) {
                 logg("isremote: socket() returning: %s.\n", strerror(errno));
                 continue;
             }
 
             switch (p->ai_family) {
-            case AF_INET:
-                ((struct sockaddr_in *)(p->ai_addr))->sin_port = htons(INADDR_ANY);
-                break;
-            case AF_INET6:
-                ((struct sockaddr_in6 *)(p->ai_addr))->sin6_port = htons(INADDR_ANY);
-                break;
-            default:
-                break;
+                case AF_INET:
+                    ((struct sockaddr_in *)(p->ai_addr))->sin_port = htons(INADDR_ANY);
+                    break;
+                case AF_INET6:
+                    ((struct sockaddr_in6 *)(p->ai_addr))->sin6_port = htons(INADDR_ANY);
+                    break;
+                default:
+                    break;
             }
 
             ret = bind(s, p->ai_addr, p->ai_addrlen);
@@ -159,34 +160,34 @@ static int isremote(const struct optstruct *opts) {
     return 0;
 }
 
-
 /* Turns a relative path into an absolute one
  * Returns a pointer to the path (which must be 
  * freed by the caller) or NULL on error */
-static char *makeabs(const char *basepath) {
+static char *makeabs(const char *basepath)
+{
     int namelen;
     char *ret;
 
-    if(!(ret = malloc(PATH_MAX + 1))) {
-	logg("^Can't make room for fullpath.\n");
-	return NULL;
+    if (!(ret = malloc(PATH_MAX + 1))) {
+        logg("^Can't make room for fullpath.\n");
+        return NULL;
     }
-    if(!cli_is_abspath(basepath)) {
-	if(!getcwd(ret, PATH_MAX)) {
-	    logg("^Can't get absolute pathname of current working directory.\n");
-	    free(ret);
-	    return NULL;
-	}
+    if (!cli_is_abspath(basepath)) {
+        if (!getcwd(ret, PATH_MAX)) {
+            logg("^Can't get absolute pathname of current working directory.\n");
+            free(ret);
+            return NULL;
+        }
 #ifdef _WIN32
-	if(*basepath == '\\') {
-	    namelen = 2;
-	    basepath++;
-	} else
+        if (*basepath == '\\') {
+            namelen = 2;
+            basepath++;
+        } else
 #endif
-	namelen = strlen(ret);
-	snprintf(&ret[namelen], PATH_MAX - namelen, PATHSEP"%s", basepath);
+            namelen = strlen(ret);
+        snprintf(&ret[namelen], PATH_MAX - namelen, PATHSEP "%s", basepath);
     } else {
-	strncpy(ret, basepath, PATH_MAX);
+        strncpy(ret, basepath, PATH_MAX);
     }
     ret[PATH_MAX] = '\0';
     return ret;
@@ -194,41 +195,42 @@ static char *makeabs(const char *basepath) {
 
 /* Recursively scans a path with the given scantype
  * Returns non zero for serious errors, zero otherwise */
-static int client_scan(const char *file, int scantype, int *infected, int *err, int maxlevel, int session, int flags) {
+static int client_scan(const char *file, int scantype, int *infected, int *err, int maxlevel, int session, int flags)
+{
     int ret;
     char *fullpath = makeabs(file);
 
-    if(!fullpath)
-	return 0;
+    if (!fullpath)
+        return 0;
     if (!session)
-	ret = serial_client_scan(fullpath, scantype, infected, err, maxlevel, flags);
+        ret = serial_client_scan(fullpath, scantype, infected, err, maxlevel, flags);
     else
-	ret = parallel_client_scan(fullpath, scantype, infected, err, maxlevel, flags);
+        ret = parallel_client_scan(fullpath, scantype, infected, err, maxlevel, flags);
     free(fullpath);
     return ret;
 }
 
 int get_clamd_version(const struct optstruct *opts)
 {
-	char *buff;
-	int len, sockd;
-	struct RCVLN rcv;
+    char *buff;
+    int len, sockd;
+    struct RCVLN rcv;
 
     isremote(opts);
-    if((sockd = dconnect()) < 0) return 2;
+    if ((sockd = dconnect()) < 0) return 2;
     recvlninit(&rcv, sockd);
 
-    if(sendln(sockd, "zVERSION", 9)) {
-	closesocket(sockd);
-	return 2;
+    if (sendln(sockd, "zVERSION", 9)) {
+        closesocket(sockd);
+        return 2;
     }
 
-    while((len = recvln(&rcv, &buff, NULL))) {
-	if(len == -1) {
-	    logg("!Error occurred while receiving version information.\n");
-	    break;
-	}
-	printf("%s\n", buff);
+    while ((len = recvln(&rcv, &buff, NULL))) {
+        if (len == -1) {
+            logg("!Error occurred while receiving version information.\n");
+            break;
+        }
+        printf("%s\n", buff);
     }
 
     closesocket(sockd);
@@ -237,23 +239,23 @@ int get_clamd_version(const struct optstruct *opts)
 
 int reload_clamd_database(const struct optstruct *opts)
 {
-	char *buff;
-	int len, sockd;
-	struct RCVLN rcv;
+    char *buff;
+    int len, sockd;
+    struct RCVLN rcv;
 
     isremote(opts);
-    if((sockd = dconnect()) < 0) return 2;
+    if ((sockd = dconnect()) < 0) return 2;
     recvlninit(&rcv, sockd);
 
-    if(sendln(sockd, "zRELOAD", 8)) {
-	closesocket(sockd);
-	return 2;
+    if (sendln(sockd, "zRELOAD", 8)) {
+        closesocket(sockd);
+        return 2;
     }
 
-    if(!(len = recvln(&rcv, &buff, NULL)) || len < 10 || memcmp(buff, "RELOADING", 9)) {
-	logg("!Clamd did not reload the database\n");
-	closesocket(sockd);
-	return 2;
+    if (!(len = recvln(&rcv, &buff, NULL)) || len < 10 || memcmp(buff, "RELOADING", 9)) {
+        logg("!Clamd did not reload the database\n");
+        closesocket(sockd);
+        return 2;
     }
     closesocket(sockd);
     return 0;
@@ -261,68 +263,70 @@ int reload_clamd_database(const struct optstruct *opts)
 
 int client(const struct optstruct *opts, int *infected, int *err)
 {
-	int remote, scantype, session = 0, errors = 0, scandash = 0, maxrec, flags = 0;
-	const char *fname;
+    int remote, scantype, session = 0, errors = 0, scandash = 0, maxrec, flags = 0;
+    const char *fname;
 
     scandash = (opts->filename && opts->filename[0] && !strcmp(opts->filename[0], "-") && !optget(opts, "file-list")->enabled && !opts->filename[1]);
-    remote = isremote(opts) | optget(opts, "stream")->enabled;
+    remote   = isremote(opts) | optget(opts, "stream")->enabled;
 #ifdef HAVE_FD_PASSING
-    if(!remote && optget(clamdopts, "LocalSocket")->enabled && (optget(opts, "fdpass")->enabled || scandash)) {
-	scantype = FILDES;
-	session = optget(opts, "multiscan")->enabled;
-    } else 
+    if (!remote && optget(clamdopts, "LocalSocket")->enabled && (optget(opts, "fdpass")->enabled || scandash)) {
+        scantype = FILDES;
+        session  = optget(opts, "multiscan")->enabled;
+    } else
 #endif
-    if(remote || scandash) {
-	scantype = STREAM;
-	session = optget(opts, "multiscan")->enabled;
-    } 
-    else if(optget(opts, "multiscan")->enabled) scantype = MULTI;
-    else if(optget(opts, "allmatch")->enabled) scantype = ALLMATCH;
-    else scantype = CONT;
+        if (remote || scandash) {
+        scantype = STREAM;
+        session  = optget(opts, "multiscan")->enabled;
+    } else if (optget(opts, "multiscan")->enabled)
+        scantype = MULTI;
+    else if (optget(opts, "allmatch")->enabled)
+        scantype = ALLMATCH;
+    else
+        scantype = CONT;
 
-    maxrec = optget(clamdopts, "MaxDirectoryRecursion")->numarg;
+    maxrec    = optget(clamdopts, "MaxDirectoryRecursion")->numarg;
     maxstream = optget(clamdopts, "StreamMaxLength")->numarg;
     if (optget(clamdopts, "FollowDirectorySymlinks")->enabled)
-	flags |= CLI_FTW_FOLLOW_DIR_SYMLINK;
+        flags |= CLI_FTW_FOLLOW_DIR_SYMLINK;
     if (optget(clamdopts, "FollowFileSymlinks")->enabled)
-	flags |= CLI_FTW_FOLLOW_FILE_SYMLINK;
+        flags |= CLI_FTW_FOLLOW_FILE_SYMLINK;
     flags |= CLI_FTW_TRIM_SLASHES;
 
     *infected = 0;
 
-    if(scandash) {
-	int sockd, ret;
-	STATBUF sb;
-	if(FSTAT(0, &sb) < 0) {
-	    logg("client.c: fstat failed for file name \"%s\", with %s\n.", 
-		 opts->filename[0], strerror(errno));
-	    return 2;
-	}
-	if((sb.st_mode & S_IFMT) != S_IFREG) scantype = STREAM;
-	if((sockd = dconnect()) >= 0 && (ret = dsresult(sockd, scantype, NULL, &ret, NULL)) >= 0)
-	    *infected = ret;
-	else
-	    errors = 1;
-	if(sockd >= 0) closesocket(sockd);
-    } else if(opts->filename || optget(opts, "file-list")->enabled) {
-	if(opts->filename && optget(opts, "file-list")->enabled)
-	    logg("^Only scanning files from --file-list (files passed at cmdline are ignored)\n");
+    if (scandash) {
+        int sockd, ret;
+        STATBUF sb;
+        if (FSTAT(0, &sb) < 0) {
+            logg("client.c: fstat failed for file name \"%s\", with %s\n.",
+                 opts->filename[0], strerror(errno));
+            return 2;
+        }
+        if ((sb.st_mode & S_IFMT) != S_IFREG) scantype = STREAM;
+        if ((sockd = dconnect()) >= 0 && (ret = dsresult(sockd, scantype, NULL, &ret, NULL)) >= 0)
+            *infected = ret;
+        else
+            errors = 1;
+        if (sockd >= 0) closesocket(sockd);
+    } else if (opts->filename || optget(opts, "file-list")->enabled) {
+        if (opts->filename && optget(opts, "file-list")->enabled)
+            logg("^Only scanning files from --file-list (files passed at cmdline are ignored)\n");
 
-	while((fname = filelist(opts, NULL))) {
-	    if(!strcmp(fname, "-")) {
-		logg("!Scanning from standard input requires \"-\" to be the only file argument\n");
-		continue;
-	    }
-	    errors += client_scan(fname, scantype, infected, err, maxrec, session, flags);
-	    /* this may be too strict
+        while ((fname = filelist(opts, NULL))) {
+            if (!strcmp(fname, "-")) {
+                logg("!Scanning from standard input requires \"-\" to be the only file argument\n");
+                continue;
+            }
+            errors += client_scan(fname, scantype, infected, err, maxrec, session, flags);
+            /* this may be too strict
 	    if(errors >= 10) {
 		logg("!Too many errors\n");
 		break;
 	    }
 	    */
-	}
+        }
     } else {
-	errors = client_scan("", scantype, infected, err, maxrec, session, flags);
+        errors = client_scan("", scantype, infected, err, maxrec, session, flags);
     }
     return *infected ? 1 : (errors ? 2 : 0);
 }

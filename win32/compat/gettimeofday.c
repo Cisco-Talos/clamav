@@ -27,11 +27,12 @@
 #include <sys/timeb.h>
 #include "gettimeofday.h"
 
-int gettimeofday(struct timeval *tv, struct timezone *tz) {
-	struct _timeb t;
+int gettimeofday(struct timeval *tv, struct timezone *tz)
+{
+    struct _timeb t;
 
-	_ftime_s(&t);
-	tv->tv_sec = t.time;
-	tv->tv_usec = t.millitm * 1000;
-	return 0;
+    _ftime_s(&t);
+    tv->tv_sec  = t.time;
+    tv->tv_usec = t.millitm * 1000;
+    return 0;
 }

@@ -36,34 +36,29 @@ limitations under the License.
 #undef YY_FATAL_ERROR
 #undef YY_EXTRA_TYPE
 
-#define yyparse       yara_yyparse
-#define yylex         yara_yylex
-#define yyerror       yara_yyerror
-#define yyfatal       yara_yyfatal
-#define yywarning     yara_yywarning
-#define yychar        yara_yychar
-#define yydebug       yara_yydebug
-#define yynerrs       yara_yynerrs
-#define yyget_extra   yara_yyget_extra
-#define yyget_lineno  yara_yyget_lineno
-
+#define yyparse yara_yyparse
+#define yylex yara_yylex
+#define yyerror yara_yyerror
+#define yyfatal yara_yyfatal
+#define yywarning yara_yywarning
+#define yychar yara_yychar
+#define yydebug yara_yydebug
+#define yynerrs yara_yynerrs
+#define yyget_extra yara_yyget_extra
+#define yyget_lineno yara_yyget_lineno
 
 #ifndef YY_TYPEDEF_YY_SCANNER_T
 #define YY_TYPEDEF_YY_SCANNER_T
 typedef void* yyscan_t;
 #endif
 
-
 #define YY_DECL int yylex( \
     YYSTYPE* yylval_param, yyscan_t yyscanner, YR_COMPILER* compiler)
 
-
 #define YY_FATAL_ERROR(msg) yara_yyfatal(yyscanner, msg)
-
 
 #define YY_EXTRA_TYPE YR_COMPILER*
 #define YY_USE_CONST
-
 
 int yyget_lineno(yyscan_t yyscanner);
 
@@ -73,21 +68,21 @@ int yylex(
     YR_COMPILER* compiler);
 
 int yyparse(
-    void *yyscanner,
+    void* yyscanner,
     YR_COMPILER* compiler);
 
 void yyerror(
     yyscan_t yyscanner,
     YR_COMPILER* compiler,
-    const char *error_message);
+    const char* error_message);
 
 void yywarning(
     yyscan_t yyscanner,
-    const char *warning_message);
+    const char* warning_message);
 
 void yyfatal(
     yyscan_t yyscanner,
-    const char *error_message);
+    const char* error_message);
 
 YY_EXTRA_TYPE yyget_extra(
     yyscan_t yyscanner);

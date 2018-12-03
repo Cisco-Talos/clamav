@@ -40,7 +40,7 @@ int prtn_intxn_list_init(prtn_intxn_list_t* list)
     return CL_SUCCESS;
 }
 
-int prtn_intxn_list_check(prtn_intxn_list_t* list, unsigned *pitxn, off_t start, size_t size)
+int prtn_intxn_list_check(prtn_intxn_list_t* list, unsigned* pitxn, off_t start, size_t size)
 {
     prtn_intxn_node_t *new_node, *check_node;
     int ret = CL_CLEAN;
@@ -52,18 +52,16 @@ int prtn_intxn_list_check(prtn_intxn_list_t* list, unsigned *pitxn, off_t start,
         (*pitxn)--;
 
         if (start > check_node->Start) {
-            if (check_node->Start+check_node->Size > (unsigned long)start) {
+            if (check_node->Start + check_node->Size > (unsigned long)start) {
                 ret = CL_VIRUS;
                 break;
             }
-        }
-        else if (start < check_node->Start) {
-            if (start+size > (unsigned long)(check_node->Start)) {
+        } else if (start < check_node->Start) {
+            if (start + size > (unsigned long)(check_node->Start)) {
                 ret = CL_VIRUS;
                 break;
             }
-        }
-        else {
+        } else {
             ret = CL_VIRUS;
             break;
         }
@@ -72,7 +70,7 @@ int prtn_intxn_list_check(prtn_intxn_list_t* list, unsigned *pitxn, off_t start,
     }
 
     /* allocate new node for partition bounds */
-    new_node = (prtn_intxn_node_t *) cli_malloc(sizeof(prtn_intxn_node_t));
+    new_node = (prtn_intxn_node_t*)cli_malloc(sizeof(prtn_intxn_node_t));
     if (!new_node) {
         cli_dbgmsg("PRTN_INTXN: could not allocate new node for checklist!\n");
         prtn_intxn_list_free(list);
@@ -80,8 +78,8 @@ int prtn_intxn_list_check(prtn_intxn_list_t* list, unsigned *pitxn, off_t start,
     }
 
     new_node->Start = start;
-    new_node->Size = size;
-    new_node->Next = list->Head;
+    new_node->Size  = size;
+    new_node->Next  = list->Head;
 
     list->Head = new_node;
     (list->Size)++;
@@ -90,7 +88,7 @@ int prtn_intxn_list_check(prtn_intxn_list_t* list, unsigned *pitxn, off_t start,
 
 int prtn_intxn_list_free(prtn_intxn_list_t* list)
 {
-    prtn_intxn_node_t *next = NULL;
+    prtn_intxn_node_t* next = NULL;
 
     while (!prtn_intxn_list_is_empty(list)) {
         next = list->Head->Next;

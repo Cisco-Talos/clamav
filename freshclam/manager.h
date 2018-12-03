@@ -20,12 +20,12 @@
 #ifndef __MANAGER_H
 #define __MANAGER_H
 
-#define SUBMIT_MIN_ENTRIES    10
-#define SUBMIT_MAX_ENTRIES    50
+#define SUBMIT_MIN_ENTRIES 10
+#define SUBMIT_MAX_ENTRIES 50
 
 #include "shared/optparser.h"
 
-int downloadmanager (const struct optstruct *opts, const char *hostname,
-                     unsigned int attempt);
+int downloadmanager(const struct optstruct *opts, const char *hostname,
+                    unsigned int attempt);
 
 #endif

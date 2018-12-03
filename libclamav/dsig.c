@@ -43,22 +43,20 @@
 
 static char cli_ndecode(unsigned char value)
 {
-	unsigned int i;
-	char ncodec[] = {
-	    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 
-	    'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 
-	    'y', 'z',
-	    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 
-	    'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 
-	    'Y', 'Z',
-	    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-	    '+', '/'
-	};
+    unsigned int i;
+    char ncodec[] = {
+        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l',
+        'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x',
+        'y', 'z',
+        'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L',
+        'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X',
+        'Y', 'Z',
+        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+        '+', '/'};
 
-
-    for(i = 0; i < 64; i++)
-	if(ncodec[i] == value)
-	    return i;
+    for (i = 0; i < 64; i++)
+        if (ncodec[i] == value)
+            return i;
 
     cli_errmsg("cli_ndecode: value out of range\n");
     return -1;
@@ -66,38 +64,37 @@ static char cli_ndecode(unsigned char value)
 
 static unsigned char *cli_decodesig(const char *sig, unsigned int plen, mp_int e, mp_int n)
 {
-	int i, slen = strlen(sig), dec;
-	unsigned char *plain;
-	mp_int r, p, c;
-
+    int i, slen = strlen(sig), dec;
+    unsigned char *plain;
+    mp_int r, p, c;
 
     mp_init(&r);
     mp_init(&c);
-    for(i = 0; i < slen; i++) {
-	if((dec = cli_ndecode(sig[i])) < 0) {
-	    mp_clear(&r);
-	    mp_clear(&c);
-	    return NULL;
-	}
-	mp_set_int(&r, dec);
-	mp_mul_2d(&r, 6 * i, &r);
-	mp_add(&r, &c, &c);
+    for (i = 0; i < slen; i++) {
+        if ((dec = cli_ndecode(sig[i])) < 0) {
+            mp_clear(&r);
+            mp_clear(&c);
+            return NULL;
+        }
+        mp_set_int(&r, dec);
+        mp_mul_2d(&r, 6 * i, &r);
+        mp_add(&r, &c, &c);
     }
 
-    plain = (unsigned char *) cli_calloc(plen + 1, sizeof(unsigned char));
-    if(!plain) {
-	cli_errmsg("cli_decodesig: Can't allocate memory for 'plain'\n");
-	mp_clear(&r);
-	mp_clear(&c);
-	return NULL;
+    plain = (unsigned char *)cli_calloc(plen + 1, sizeof(unsigned char));
+    if (!plain) {
+        cli_errmsg("cli_decodesig: Can't allocate memory for 'plain'\n");
+        mp_clear(&r);
+        mp_clear(&c);
+        return NULL;
     }
     mp_init(&p);
     mp_exptmod(&c, &e, &n, &p); /* plain = cipher^e mod n */
     mp_clear(&c);
     mp_set_int(&c, 256);
-    for(i = plen - 1; i >= 0; i--) { /* reverse */
-	mp_div(&p, &c, &p, &r);
-	plain[i] = mp_get_int(&r);
+    for (i = plen - 1; i >= 0; i--) { /* reverse */
+        mp_div(&p, &c, &p, &r);
+        plain[i] = mp_get_int(&r);
     }
     mp_clear(&c);
     mp_clear(&p);
@@ -108,13 +105,13 @@ static unsigned char *cli_decodesig(const char *sig, unsigned int plen, mp_int e
 
 int cli_versig(const char *md5, const char *dsig)
 {
-	mp_int n, e;
-	char *pt, *pt2;
+    mp_int n, e;
+    char *pt, *pt2;
 
-    if(strlen(md5) != 32 || !isalnum(md5[0])) {
-	/* someone is trying to fool us with empty/malformed MD5 ? */
-	cli_errmsg("SECURITY WARNING: MD5 basic test failure.\n");
-	return CL_EVERIFY;
+    if (strlen(md5) != 32 || !isalnum(md5[0])) {
+        /* someone is trying to fool us with empty/malformed MD5 ? */
+        cli_errmsg("SECURITY WARNING: MD5 basic test failure.\n");
+        return CL_EVERIFY;
     }
 
     mp_init(&n);
@@ -122,10 +119,10 @@ int cli_versig(const char *md5, const char *dsig)
     mp_init(&e);
     mp_read_radix(&e, CLI_ESTR, 10);
 
-    if(!(pt = (char *) cli_decodesig(dsig, 16, e, n))) {
-	mp_clear(&n);
-	mp_clear(&e);
-	return CL_EVERIFY;
+    if (!(pt = (char *)cli_decodesig(dsig, 16, e, n))) {
+        mp_clear(&n);
+        mp_clear(&e);
+        return CL_EVERIFY;
     }
 
     pt2 = cli_str2hex(pt, 16);
@@ -133,12 +130,12 @@ int cli_versig(const char *md5, const char *dsig)
 
     cli_dbgmsg("cli_versig: Decoded signature: %s\n", pt2);
 
-    if(strncmp(md5, pt2, 32)) {
-	cli_dbgmsg("cli_versig: Signature doesn't match.\n");
-	free(pt2);
-	mp_clear(&n);
-	mp_clear(&e);
-	return CL_EVERIFY;
+    if (strncmp(md5, pt2, 32)) {
+        cli_dbgmsg("cli_versig: Signature doesn't match.\n");
+        free(pt2);
+        mp_clear(&n);
+        mp_clear(&e);
+        return CL_EVERIFY;
     }
 
     free(pt2);
@@ -149,17 +146,17 @@ int cli_versig(const char *md5, const char *dsig)
     return CL_SUCCESS;
 }
 
-#define HASH_LEN    32
-#define SALT_LEN    32
-#define PAD_LEN	    (2048 / 8)
-#define BLK_LEN	    (PAD_LEN - HASH_LEN - 1)
+#define HASH_LEN 32
+#define SALT_LEN 32
+#define PAD_LEN (2048 / 8)
+#define BLK_LEN (PAD_LEN - HASH_LEN - 1)
 int cli_versig2(const unsigned char *sha256, const char *dsig_str, const char *n_str, const char *e_str)
 {
-	unsigned char *decoded, digest1[HASH_LEN], digest2[HASH_LEN], digest3[HASH_LEN], *salt;
-	unsigned char mask[BLK_LEN], data[BLK_LEN], final[8 + 2 * HASH_LEN], c[4];
-	unsigned int i, rounds;
+    unsigned char *decoded, digest1[HASH_LEN], digest2[HASH_LEN], digest3[HASH_LEN], *salt;
+    unsigned char mask[BLK_LEN], data[BLK_LEN], final[8 + 2 * HASH_LEN], c[4];
+    unsigned int i, rounds;
     void *ctx;
-	mp_int n, e;
+    mp_int n, e;
 
     mp_init(&e);
     mp_read_radix(&e, e_str, 10);
@@ -169,12 +166,12 @@ int cli_versig2(const unsigned char *sha256, const char *dsig_str, const char *n
     decoded = cli_decodesig(dsig_str, PAD_LEN, e, n);
     mp_clear(&n);
     mp_clear(&e);
-    if(!decoded)
-	return CL_EVERIFY;
+    if (!decoded)
+        return CL_EVERIFY;
 
-    if(decoded[PAD_LEN - 1] != 0xbc) {
-	free(decoded);
-	return CL_EVERIFY;
+    if (decoded[PAD_LEN - 1] != 0xbc) {
+        free(decoded);
+        return CL_EVERIFY;
     }
 
     memcpy(mask, decoded, BLK_LEN);
@@ -182,34 +179,34 @@ int cli_versig2(const unsigned char *sha256, const char *dsig_str, const char *n
     free(decoded);
 
     c[0] = c[1] = 0;
-    rounds = (BLK_LEN + HASH_LEN - 1) / HASH_LEN;
-    for(i = 0; i < rounds; i++) {
-	c[2] = (unsigned char) (i / 256);
-	c[3] = (unsigned char) i;
+    rounds      = (BLK_LEN + HASH_LEN - 1) / HASH_LEN;
+    for (i = 0; i < rounds; i++) {
+        c[2] = (unsigned char)(i / 256);
+        c[3] = (unsigned char)i;
 
-    ctx = cl_hash_init("sha256");
-    if (!(ctx))
-        return CL_EMEM;
+        ctx = cl_hash_init("sha256");
+        if (!(ctx))
+            return CL_EMEM;
 
-	cl_update_hash(ctx, digest2, HASH_LEN);
-	cl_update_hash(ctx, c, 4);
-	cl_finish_hash(ctx, digest3);
-	if(i + 1 == rounds)
+        cl_update_hash(ctx, digest2, HASH_LEN);
+        cl_update_hash(ctx, c, 4);
+        cl_finish_hash(ctx, digest3);
+        if (i + 1 == rounds)
             memcpy(&data[i * 32], digest3, BLK_LEN - i * HASH_LEN);
-	else
-	    memcpy(&data[i * 32], digest3, HASH_LEN);
+        else
+            memcpy(&data[i * 32], digest3, HASH_LEN);
     }
 
-    for(i = 0; i < BLK_LEN; i++)
-	data[i] ^= mask[i];
+    for (i = 0; i < BLK_LEN; i++)
+        data[i] ^= mask[i];
     data[0] &= (0xff >> 1);
 
-    if(!(salt = memchr(data, 0x01, BLK_LEN)))
-	return CL_EVERIFY;
+    if (!(salt = memchr(data, 0x01, BLK_LEN)))
+        return CL_EVERIFY;
     salt++;
 
-    if(data + BLK_LEN - salt != SALT_LEN)
-	return CL_EVERIFY;
+    if (data + BLK_LEN - salt != SALT_LEN)
+        return CL_EVERIFY;
 
     memset(final, 0, 8);
     memcpy(&final[8], sha256, HASH_LEN);
@@ -219,8 +216,8 @@ int cli_versig2(const unsigned char *sha256, const char *dsig_str, const char *n
     if (!(ctx))
         return CL_EMEM;
 
-	cl_update_hash(ctx, final, sizeof(final));
-	cl_finish_hash(ctx, digest1);
+    cl_update_hash(ctx, final, sizeof(final));
+    cl_finish_hash(ctx, digest1);
 
     return memcmp(digest1, digest2, HASH_LEN) ? CL_EVERIFY : CL_SUCCESS;
 }

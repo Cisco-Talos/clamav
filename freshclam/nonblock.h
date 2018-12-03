@@ -24,19 +24,19 @@
 #endif
 
 #include <sys/types.h>
-#ifndef	_WIN32
+#ifndef _WIN32
 #include <sys/socket.h>
 #endif
 
 /*
 	wait_connect(): wrapper for connect(), with explicit 'secs' timeout
 */
-int wait_connect (int sock, const struct sockaddr *addr, socklen_t addrlen,
-                  int secs);
+int wait_connect(int sock, const struct sockaddr *addr, socklen_t addrlen,
+                 int secs);
 
 /*
         wait_recv(): wrapper for recv(), with explicit 'secs' timeout
 */
-ssize_t wait_recv (int sock, void *buf, size_t len, int flags, int secs);
+ssize_t wait_recv(int sock, void *buf, size_t len, int flags, int secs);
 
 #endif /* NONBLOCK_H */

@@ -37,7 +37,7 @@
 #define MAX_EMBEDDED_OBJ 10
 
 typedef enum {
-    CL_TYPE_ANY = 0,
+    CL_TYPE_ANY        = 0,
     CL_TYPE_TEXT_ASCII = CL_TYPENO, /* X3.4, ISO-8859, non-ISO ext. ASCII */
     CL_TYPE_TEXT_UTF8,
     CL_TYPE_TEXT_UTF16LE,
@@ -95,9 +95,9 @@ typedef enum {
 
     /* bigger numbers have higher priority (in o-t-f detection) */
     CL_TYPE_MBR,
-    CL_TYPE_HTML, /* on the fly */
-    CL_TYPE_MAIL,  /* magic + on the fly */
-    CL_TYPE_SFX, /* foo SFX marker */
+    CL_TYPE_HTML,   /* on the fly */
+    CL_TYPE_MAIL,   /* magic + on the fly */
+    CL_TYPE_SFX,    /* foo SFX marker */
     CL_TYPE_ZIPSFX, /* on the fly */
     CL_TYPE_RARSFX, /* on the fly */
     CL_TYPE_7ZSFX,
@@ -118,7 +118,7 @@ typedef enum {
     CL_TYPE_MHTML,
     CL_TYPE_LNK,
 
-    CL_TYPE_OTHER, /* on-the-fly, used for target 14 (OTHER) */
+    CL_TYPE_OTHER,  /* on-the-fly, used for target 14 (OTHER) */
     CL_TYPE_IGNORED /* please don't add anything below */
 } cli_file_t;
 

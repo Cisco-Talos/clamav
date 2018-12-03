@@ -46,15 +46,15 @@
 //#define DEBUG_GPT_PRINT
 
 #ifdef DEBUG_GPT_PARSE
-#  define gpt_parsemsg(...) cli_dbgmsg( __VA_ARGS__)
+#define gpt_parsemsg(...) cli_dbgmsg(__VA_ARGS__)
 #else
-#  define gpt_parsemsg(...) ;
+#define gpt_parsemsg(...) ;
 #endif
 
 #ifdef DEBUG_GPT_PRINT
-#  define gpt_printmsg(...) cli_dbgmsg( __VA_ARGS__)
+#define gpt_printmsg(...) cli_dbgmsg(__VA_ARGS__)
 #else
-#  define gpt_printmsg(...) ;
+#define gpt_printmsg(...) ;
 #endif
 
 enum GPT_SCANSTATE {
@@ -68,8 +68,8 @@ static int gpt_scan_partitions(cli_ctx *ctx, struct gpt_header hdr, size_t secto
 static int gpt_validate_header(cli_ctx *ctx, struct gpt_header hdr, size_t sectorsize);
 static int gpt_check_mbr(cli_ctx *ctx, size_t sectorsize);
 static void gpt_printSectors(cli_ctx *ctx, size_t sectorsize);
-static void gpt_printName(uint16_t name[], const char* msg);
-static void gpt_printGUID(uint8_t GUID[], const char* msg);
+static void gpt_printName(uint16_t name[], const char *msg);
+static void gpt_printGUID(uint8_t GUID[], const char *msg);
 static int gpt_prtn_intxn(cli_ctx *ctx, struct gpt_header hdr, size_t sectorsize);
 
 /* returns 0 on failing to detect sectorsize */
@@ -77,22 +77,22 @@ size_t gpt_detect_size(fmap_t *map)
 {
     unsigned char *buff;
 
-    buff = (unsigned char*)fmap_need_off_once(map, 512, 8);
+    buff = (unsigned char *)fmap_need_off_once(map, 512, 8);
     if (!buff) return 0;
     if (0 == strncmp((const char *)buff, GPT_SIGNATURE_STR, 8))
         return 512;
 
-    buff = (unsigned char*)fmap_need_off_once(map, 1024, 8);
+    buff = (unsigned char *)fmap_need_off_once(map, 1024, 8);
     if (!buff) return 0;
     if (0 == strncmp((const char *)buff, GPT_SIGNATURE_STR, 8))
         return 1024;
 
-    buff = (unsigned char*)fmap_need_off_once(map, 2048, 8);
+    buff = (unsigned char *)fmap_need_off_once(map, 2048, 8);
     if (!buff) return 0;
     if (0 == strncmp((const char *)buff, GPT_SIGNATURE_STR, 8))
         return 2048;
 
-    buff = (unsigned char*)fmap_need_off_once(map, 4096, 8);
+    buff = (unsigned char *)fmap_need_off_once(map, 4096, 8);
     if (!buff) return 0;
     if (0 == strncmp((const char *)buff, GPT_SIGNATURE_STR, 8))
         return 4096;
@@ -171,8 +171,7 @@ int cli_scangpt(cli_ctx *ctx, size_t sectorsize)
             cli_dbgmsg("cli_scangpt: Disk is unusable\n");
             return CL_EFORMAT;
         }
-    }
-    else {
+    } else {
         cli_dbgmsg("cli_scangpt: Checking secondary GPT header\n");
 
         state = PRIMARY_ONLY;
@@ -180,19 +179,17 @@ int cli_scangpt(cli_ctx *ctx, size_t sectorsize)
         /* check validity of secondary header; still using the primary */
         if (fmap_readn(*ctx->fmap, &shdr, pos, sizeof(shdr)) != sizeof(shdr)) {
             cli_dbgmsg("cli_scangpt: Invalid secondary GPT header\n");
-        }
-        else if (gpt_validate_header(ctx, shdr, sectorsize)) {
+        } else if (gpt_validate_header(ctx, shdr, sectorsize)) {
             cli_dbgmsg("cli_scangpt: Secondary GPT header is invalid\n");
         }
         /* check that the two partition table crc32 checksum match, 
          * may want a different hashing function */
-        else if (phdr.tableCRC32 != shdr.tableCRC32){
+        else if (phdr.tableCRC32 != shdr.tableCRC32) {
             cli_dbgmsg("cli_scangpt: Primary and secondary GPT header table CRC32 differ\n");
             cli_dbgmsg("cli_scangpt: Set to scan primary and secondary partition tables\n");
 
             state = BOTH;
-        }
-        else {
+        } else {
             cli_dbgmsg("cli_scangpt: Secondary GPT header check OK\n");
         }
     }
@@ -217,46 +214,46 @@ int cli_scangpt(cli_ctx *ctx, size_t sectorsize)
 
     /* scanning partitions */
     switch (state) {
-    case PRIMARY_ONLY:
-        cli_dbgmsg("cli_scangpt: Scanning primary GPT partitions only\n");
-        ret = gpt_scan_partitions(ctx, phdr, sectorsize);
-        if (ret != CL_CLEAN) {
-            if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
-                detection = CL_VIRUS;
-            else
-                return ret;
-        }
-        break;
-    case SECONDARY_ONLY:
-        cli_dbgmsg("cli_scangpt: Scanning secondary GPT partitions only\n");
-        ret = gpt_scan_partitions(ctx, shdr, sectorsize);
-        if (ret != CL_CLEAN) {
-            if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
-                detection = CL_VIRUS;
-            else
-                return ret;
-        }
-        break;
-    case BOTH:
-        cli_dbgmsg("cli_scangpt: Scanning primary GPT partitions\n");
-        ret = gpt_scan_partitions(ctx, phdr, sectorsize);
-        if (ret != CL_CLEAN) {
-            if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
-                detection = CL_VIRUS;
-            else
-                return ret;
-        }
-        cli_dbgmsg("cli_scangpt: Scanning secondary GPT partitions\n");
-        ret = gpt_scan_partitions(ctx, shdr, sectorsize);
-        if (ret != CL_CLEAN) {
-            if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
-                detection = CL_VIRUS;
-            else
-                return ret;
-        }
-        break;
-    default:
-        cli_dbgmsg("cli_scangpt: State is invalid\n");
+        case PRIMARY_ONLY:
+            cli_dbgmsg("cli_scangpt: Scanning primary GPT partitions only\n");
+            ret = gpt_scan_partitions(ctx, phdr, sectorsize);
+            if (ret != CL_CLEAN) {
+                if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
+                    detection = CL_VIRUS;
+                else
+                    return ret;
+            }
+            break;
+        case SECONDARY_ONLY:
+            cli_dbgmsg("cli_scangpt: Scanning secondary GPT partitions only\n");
+            ret = gpt_scan_partitions(ctx, shdr, sectorsize);
+            if (ret != CL_CLEAN) {
+                if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
+                    detection = CL_VIRUS;
+                else
+                    return ret;
+            }
+            break;
+        case BOTH:
+            cli_dbgmsg("cli_scangpt: Scanning primary GPT partitions\n");
+            ret = gpt_scan_partitions(ctx, phdr, sectorsize);
+            if (ret != CL_CLEAN) {
+                if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
+                    detection = CL_VIRUS;
+                else
+                    return ret;
+            }
+            cli_dbgmsg("cli_scangpt: Scanning secondary GPT partitions\n");
+            ret = gpt_scan_partitions(ctx, shdr, sectorsize);
+            if (ret != CL_CLEAN) {
+                if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
+                    detection = CL_VIRUS;
+                else
+                    return ret;
+            }
+            break;
+        default:
+            cli_dbgmsg("cli_scangpt: State is invalid\n");
     }
 
     return detection;
@@ -266,25 +263,25 @@ static int gpt_scan_partitions(cli_ctx *ctx, struct gpt_header hdr, size_t secto
 {
     struct gpt_partition_entry gpe;
     int ret = CL_CLEAN, detection = CL_CLEAN;
-    size_t maplen, part_size = 0;
+    size_t maplen, part_size      = 0;
     off_t pos = 0, part_off = 0;
     unsigned i = 0, j = 0;
     uint32_t max_prtns = 0;
 
     /* convert endian to host */
-    hdr.signature = be64_to_host(hdr.signature);
-    hdr.revision = be32_to_host(hdr.revision);
-    hdr.headerSize = le32_to_host(hdr.headerSize);
-    hdr.headerCRC32 = le32_to_host(hdr.headerCRC32);
-    hdr.reserved = le32_to_host(hdr.reserved);
-    hdr.currentLBA = le64_to_host(hdr.currentLBA);
-    hdr.backupLBA = le64_to_host(hdr.backupLBA);
-    hdr.firstUsableLBA = le64_to_host(hdr.firstUsableLBA);
-    hdr.lastUsableLBA = le64_to_host(hdr.lastUsableLBA);
-    hdr.tableStartLBA = le64_to_host(hdr.tableStartLBA);
+    hdr.signature       = be64_to_host(hdr.signature);
+    hdr.revision        = be32_to_host(hdr.revision);
+    hdr.headerSize      = le32_to_host(hdr.headerSize);
+    hdr.headerCRC32     = le32_to_host(hdr.headerCRC32);
+    hdr.reserved        = le32_to_host(hdr.reserved);
+    hdr.currentLBA      = le64_to_host(hdr.currentLBA);
+    hdr.backupLBA       = le64_to_host(hdr.backupLBA);
+    hdr.firstUsableLBA  = le64_to_host(hdr.firstUsableLBA);
+    hdr.lastUsableLBA   = le64_to_host(hdr.lastUsableLBA);
+    hdr.tableStartLBA   = le64_to_host(hdr.tableStartLBA);
     hdr.tableNumEntries = le32_to_host(hdr.tableNumEntries);
-    hdr.tableEntrySize = le32_to_host(hdr.tableEntrySize);
-    hdr.tableCRC32 = le32_to_host(hdr.tableCRC32);
+    hdr.tableEntrySize  = le32_to_host(hdr.tableEntrySize);
+    hdr.tableCRC32      = le32_to_host(hdr.tableCRC32);
 
     /* print header info for the debug */
     cli_dbgmsg("GPT Header:\n");
@@ -299,8 +296,7 @@ static int gpt_scan_partitions(cli_ctx *ctx, struct gpt_header hdr, size_t secto
     /* check engine maxpartitions limit */
     if (hdr.tableNumEntries < ctx->engine->maxpartitions) {
         max_prtns = hdr.tableNumEntries;
-    }
-    else {
+    } else {
         max_prtns = ctx->engine->maxpartitions;
     }
 
@@ -314,8 +310,8 @@ static int gpt_scan_partitions(cli_ctx *ctx, struct gpt_header hdr, size_t secto
         }
 
         /* convert the endian to host */
-        gpe.firstLBA = le64_to_host(gpe.firstLBA);
-        gpe.lastLBA = le64_to_host(gpe.lastLBA);
+        gpe.firstLBA   = le64_to_host(gpe.firstLBA);
+        gpe.lastLBA    = le64_to_host(gpe.lastLBA);
         gpe.attributes = le64_to_host(gpe.attributes);
         for (j = 0; j < 36; ++j) {
             gpe.name[i] = le16_to_host(gpe.name[i]);
@@ -324,18 +320,15 @@ static int gpt_scan_partitions(cli_ctx *ctx, struct gpt_header hdr, size_t secto
         /* check that partition is not empty and within a valid location */
         if (gpe.firstLBA == 0) {
             /* empty partition, invalid */
-        }
-        else if ((gpe.firstLBA > gpe.lastLBA) ||
-                 (gpe.firstLBA < hdr.firstUsableLBA) || (gpe.lastLBA > hdr.lastUsableLBA)) {
+        } else if ((gpe.firstLBA > gpe.lastLBA) ||
+                   (gpe.firstLBA < hdr.firstUsableLBA) || (gpe.lastLBA > hdr.lastUsableLBA)) {
             cli_dbgmsg("cli_scangpt: GPT partition exists outside specified bounds\n");
             gpt_parsemsg("%llu < %llu, %llu > %llu\n", gpe.firstLBA, hdr.firstUsableLBA,
                          gpe.lastLBA, hdr.lastUsableLBA);
             /* partition exists outside bounds specified by header or invalid */
-        }
-        else if (((gpe.lastLBA+1) * sectorsize) > maplen) {
+        } else if (((gpe.lastLBA + 1) * sectorsize) > maplen) {
             /* partition exists outside bounds of the file map */
-        }
-        else {
+        } else {
             /* print partition entry data for debug */
             cli_dbgmsg("GPT Partition Entry %u:\n", i);
             gpt_printName(gpe.name, "Name");
@@ -343,13 +336,13 @@ static int gpt_scan_partitions(cli_ctx *ctx, struct gpt_header hdr, size_t secto
             gpt_printGUID(gpe.uniqueGUID, "Unique GUID");
             cli_dbgmsg("Attributes: %llx\n", (long long unsigned)gpe.attributes);
             cli_dbgmsg("Blocks: [%llu(%llu) -> %llu(%llu)]\n",
-                (long long unsigned)gpe.firstLBA, (long long unsigned)(gpe.firstLBA * sectorsize), 
-                (long long unsigned)gpe.lastLBA, (long long unsigned)((gpe.lastLBA+1) * sectorsize));
+                       (long long unsigned)gpe.firstLBA, (long long unsigned)(gpe.firstLBA * sectorsize),
+                       (long long unsigned)gpe.lastLBA, (long long unsigned)((gpe.lastLBA + 1) * sectorsize));
 
             /* send the partition to cli_map_scan */
-            part_off = gpe.firstLBA * sectorsize;
+            part_off  = gpe.firstLBA * sectorsize;
             part_size = (gpe.lastLBA - gpe.firstLBA + 1) * sectorsize;
-            ret = cli_map_scan(*ctx->fmap, part_off, part_size, ctx, CL_TYPE_PART_ANY);
+            ret       = cli_map_scan(*ctx->fmap, part_off, part_size, ctx, CL_TYPE_PART_ANY);
             if (ret != CL_CLEAN) {
                 if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
                     detection = CL_VIRUS;
@@ -379,9 +372,9 @@ static int gpt_validate_header(cli_ctx *ctx, struct gpt_header hdr, size_t secto
     maplen = (*ctx->fmap)->real_len;
 
     /* checking header crc32 checksum */
-    crc32_ref = le32_to_host(hdr.headerCRC32);
+    crc32_ref       = le32_to_host(hdr.headerCRC32);
     hdr.headerCRC32 = 0; /* checksum is calculated with field = 0 */
-    crc32_calc = crc32(0, (unsigned char*)&hdr, sizeof(hdr));
+    crc32_calc      = crc32(0, (unsigned char *)&hdr, sizeof(hdr));
     if (crc32_calc != crc32_ref) {
         cli_dbgmsg("cli_scangpt: GPT header checksum mismatch\n");
         gpt_parsemsg("%x != %x\n", crc32_calc, crc32_ref);
@@ -389,24 +382,24 @@ static int gpt_validate_header(cli_ctx *ctx, struct gpt_header hdr, size_t secto
     }
 
     /* convert endian to host to check partition table */
-    hdr.signature = be64_to_host(hdr.signature);
-    hdr.revision = be32_to_host(hdr.revision);
-    hdr.headerSize = le32_to_host(hdr.headerSize);
-    hdr.headerCRC32 = crc32_ref;
-    hdr.reserved = le32_to_host(hdr.reserved);
-    hdr.currentLBA = le64_to_host(hdr.currentLBA);
-    hdr.backupLBA = le64_to_host(hdr.backupLBA);
-    hdr.firstUsableLBA = le64_to_host(hdr.firstUsableLBA);
-    hdr.lastUsableLBA = le64_to_host(hdr.lastUsableLBA);
-    hdr.tableStartLBA = le64_to_host(hdr.tableStartLBA);
+    hdr.signature       = be64_to_host(hdr.signature);
+    hdr.revision        = be32_to_host(hdr.revision);
+    hdr.headerSize      = le32_to_host(hdr.headerSize);
+    hdr.headerCRC32     = crc32_ref;
+    hdr.reserved        = le32_to_host(hdr.reserved);
+    hdr.currentLBA      = le64_to_host(hdr.currentLBA);
+    hdr.backupLBA       = le64_to_host(hdr.backupLBA);
+    hdr.firstUsableLBA  = le64_to_host(hdr.firstUsableLBA);
+    hdr.lastUsableLBA   = le64_to_host(hdr.lastUsableLBA);
+    hdr.tableStartLBA   = le64_to_host(hdr.tableStartLBA);
     hdr.tableNumEntries = le32_to_host(hdr.tableNumEntries);
-    hdr.tableEntrySize = le32_to_host(hdr.tableEntrySize);
-    hdr.tableCRC32 = le32_to_host(hdr.tableCRC32);
+    hdr.tableEntrySize  = le32_to_host(hdr.tableEntrySize);
+    hdr.tableCRC32      = le32_to_host(hdr.tableCRC32);
 
     ptable_start = hdr.tableStartLBA * sectorsize;
-    ptable_len = hdr.tableNumEntries * hdr.tableEntrySize;
+    ptable_len   = hdr.tableNumEntries * hdr.tableEntrySize;
     tableLastLBA = (hdr.tableStartLBA + (ptable_len / sectorsize)) - 1;
-    lastLBA = (maplen / sectorsize) - 1;
+    lastLBA      = (maplen / sectorsize) - 1;
 
     /** HEADER CHECKS **/
     gpt_printSectors(ctx, sectorsize);
@@ -414,7 +407,7 @@ static int gpt_validate_header(cli_ctx *ctx, struct gpt_header hdr, size_t secto
     /* check signature */
     if (hdr.signature != GPT_SIGNATURE) {
         cli_dbgmsg("cli_scangpt: Invalid GPT header signature %llx\n",
-            (long long unsigned)hdr.signature);
+                   (long long unsigned)hdr.signature);
         return CL_EFORMAT;
     }
 
@@ -461,7 +454,6 @@ static int gpt_validate_header(cli_ctx *ctx, struct gpt_header hdr, size_t secto
         return CL_EFORMAT;
     }
 
-
     /* check valid table */
     if ((ptable_start + ptable_len) > maplen) {
         cli_dbgmsg("cli_scangpt: GPT partition table extends over fmap limit\n");
@@ -471,7 +463,7 @@ static int gpt_validate_header(cli_ctx *ctx, struct gpt_header hdr, size_t secto
     /** END HEADER CHECKS **/
 
     /* checking partition table crc32 checksum */
-    ptable = (unsigned char*)fmap_need_off_once((*ctx->fmap), ptable_start, ptable_len);
+    ptable     = (unsigned char *)fmap_need_off_once((*ctx->fmap), ptable_start, ptable_len);
     crc32_calc = crc32(0, ptable, ptable_len);
     if (crc32_calc != hdr.tableCRC32) {
         cli_dbgmsg("cli_scangpt: GPT partition table checksum mismatch\n");
@@ -486,12 +478,12 @@ static int gpt_check_mbr(cli_ctx *ctx, size_t sectorsize)
 {
     struct mbr_boot_record pmbr;
     off_t pos = 0, mbr_base = 0;
-    int ret = CL_CLEAN;
+    int ret    = CL_CLEAN;
     unsigned i = 0;
 
     /* read the mbr */
     mbr_base = sectorsize - sizeof(struct mbr_boot_record);
-    pos = (MBR_SECTOR * sectorsize) + mbr_base;
+    pos      = (MBR_SECTOR * sectorsize) + mbr_base;
 
     if (fmap_readn(*ctx->fmap, &pmbr, pos, sizeof(pmbr)) != sizeof(pmbr)) {
         cli_dbgmsg("cli_scangpt: Invalid primary MBR header\n");
@@ -516,12 +508,10 @@ static int gpt_check_mbr(cli_ctx *ctx, size_t sectorsize)
                 break;
             }
         }
-    }
-    else if (pmbr.entries[0].type == MBR_HYBRID) {
+    } else if (pmbr.entries[0].type == MBR_HYBRID) {
         /* hybrid mbr detected */
         cli_warnmsg("cli_scangpt: detected a hybrid MBR\n");
-    }
-    else {
+    } else {
         /* non-protective mbr detected */
         cli_warnmsg("cli_scangpt: detected a non-protective MBR\n");
     }
@@ -547,7 +537,7 @@ static void gpt_printSectors(cli_ctx *ctx, size_t sectorsize)
 
     maplen = (*ctx->fmap)->real_len;
 
-    ppos = 1 * sectorsize; /* sector 1 (second sector) is the primary gpt header */
+    ppos = 1 * sectorsize;      /* sector 1 (second sector) is the primary gpt header */
     spos = maplen - sectorsize; /* last sector is the secondary gpt header */
 
     /* read in the primary and secondary gpt headers */
@@ -560,8 +550,8 @@ static void gpt_printSectors(cli_ctx *ctx, size_t sectorsize)
         return;
     }
 
-    pptable_len = phdr.tableNumEntries * phdr.tableEntrySize;
-    sptable_len = shdr.tableNumEntries * shdr.tableEntrySize;
+    pptable_len   = phdr.tableNumEntries * phdr.tableEntrySize;
+    sptable_len   = shdr.tableNumEntries * shdr.tableEntrySize;
     ptableLastLBA = (phdr.tableStartLBA + (pptable_len / sectorsize)) - 1;
     stableLastLBA = (shdr.tableStartLBA + (sptable_len / sectorsize)) - 1;
 
@@ -578,17 +568,17 @@ static void gpt_printSectors(cli_ctx *ctx, size_t sectorsize)
 #endif
 }
 
-static void gpt_printName(uint16_t name[], const char* msg)
+static void gpt_printName(uint16_t name[], const char *msg)
 {
     char *namestr;
 
-    namestr = (char*)cli_utf16toascii((char*)name, 72);
+    namestr = (char *)cli_utf16toascii((char *)name, 72);
     cli_dbgmsg("%s: %s\n", msg, namestr);
 
     free(namestr);
 }
 
-static void gpt_printGUID(uint8_t GUID[], const char* msg)
+static void gpt_printGUID(uint8_t GUID[], const char *msg)
 {
     cli_dbgmsg("%s: %02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x\n",
                msg, GUID[0], GUID[1], GUID[2], GUID[3], GUID[4], GUID[5], GUID[6], GUID[7],
@@ -604,21 +594,20 @@ static int gpt_prtn_intxn(cli_ctx *ctx, struct gpt_header hdr, size_t sectorsize
     off_t pos;
     size_t maplen;
     uint32_t max_prtns = 0;
-    int virus_found = 0;
+    int virus_found    = 0;
 
     maplen = (*ctx->fmap)->real_len;
 
     /* convert endian to host to check partition table */
-    hdr.tableStartLBA = le64_to_host(hdr.tableStartLBA);
+    hdr.tableStartLBA   = le64_to_host(hdr.tableStartLBA);
     hdr.tableNumEntries = le32_to_host(hdr.tableNumEntries);
 
-    prtn_intxn_list_init(&prtncheck);    
+    prtn_intxn_list_init(&prtncheck);
 
     /* check engine maxpartitions limit */
     if (hdr.tableNumEntries < ctx->engine->maxpartitions) {
         max_prtns = hdr.tableNumEntries;
-    }
-    else {
+    } else {
         max_prtns = ctx->engine->maxpartitions;
     }
 
@@ -633,24 +622,22 @@ static int gpt_prtn_intxn(cli_ctx *ctx, struct gpt_header hdr, size_t sectorsize
 
         /* convert the endian to host */
         gpe.firstLBA = le64_to_host(gpe.firstLBA);
-        gpe.lastLBA = le64_to_host(gpe.lastLBA);
+        gpe.lastLBA  = le64_to_host(gpe.lastLBA);
 
         if (gpe.firstLBA == 0) {
             /* empty partition, invalid */
-        }
-        else if ((gpe.firstLBA > gpe.lastLBA) ||
-                 (gpe.firstLBA < hdr.firstUsableLBA) || (gpe.lastLBA > hdr.lastUsableLBA)) {
+        } else if ((gpe.firstLBA > gpe.lastLBA) ||
+                   (gpe.firstLBA < hdr.firstUsableLBA) || (gpe.lastLBA > hdr.lastUsableLBA)) {
             /* partition exists outside bounds specified by header or invalid */
-        }
-        else if (((gpe.lastLBA+1) * sectorsize) > maplen) {
+        } else if (((gpe.lastLBA + 1) * sectorsize) > maplen) {
             /* partition exists outside bounds of the file map */
-        }
-        else {
+        } else {
             tmp = prtn_intxn_list_check(&prtncheck, &pitxn, gpe.firstLBA, gpe.lastLBA - gpe.firstLBA + 1);
             if (tmp != CL_CLEAN) {
                 if (tmp == CL_VIRUS) {
                     cli_dbgmsg("cli_scangpt: detected intersection with partitions "
-                               "[%u, %u]\n", pitxn, i);
+                               "[%u, %u]\n",
+                               pitxn, i);
                     ret = cli_append_virus(ctx, PRTN_INTXN_DETECTION);
                     if (ret == CL_VIRUS)
                         virus_found = 1;
@@ -669,7 +656,7 @@ static int gpt_prtn_intxn(cli_ctx *ctx, struct gpt_header hdr, size_t sectorsize
         pos += hdr.tableEntrySize;
     }
 
- leave:
+leave:
     prtn_intxn_list_free(&prtncheck);
     if (virus_found)
         return CL_VIRUS;

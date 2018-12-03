@@ -30,27 +30,27 @@
 typedef unsigned short ino_t; /* WTF?!? */
 
 struct dirent {
-    ino_t d_ino;	/* inode number */
-    unsigned char d_type;	/* type of file */
-    char d_name[MAX_PATH];	/* filename */
+    ino_t d_ino;           /* inode number */
+    unsigned char d_type;  /* type of file */
+    char d_name[MAX_PATH]; /* filename */
 };
 
 typedef struct {
-	HANDLE dh;
-	WIN32_FIND_DATAW wfd;
-	struct dirent ent;
-	wchar_t entry[PATH_MAX];
+    HANDLE dh;
+    WIN32_FIND_DATAW wfd;
+    struct dirent ent;
+    wchar_t entry[PATH_MAX];
 } DIR;
 
 enum {
-	DT_BLOCK,
-	DT_CHR,
-	DT_DIR,
-	DT_FIFO,
-	DT_LNK,
-	DT_REG,
-	DT_SOCK,
-	DT_UNKNOWN
+    DT_BLOCK,
+    DT_CHR,
+    DT_DIR,
+    DT_FIFO,
+    DT_LNK,
+    DT_REG,
+    DT_SOCK,
+    DT_UNKNOWN
 };
 
 DIR *opendir(const char *name);

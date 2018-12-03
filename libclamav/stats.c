@@ -75,8 +75,8 @@ char *get_hash(unsigned char *md5)
     if (!(hash))
         return NULL;
 
-    for (i=0; i<16; i++)
-        sprintf(hash+(i*2), "%02x", md5[i]);
+    for (i = 0; i < 16; i++)
+        sprintf(hash + (i * 2), "%02x", md5[i]);
 
     return hash;
 }
@@ -87,15 +87,15 @@ char *get_sample_names(char **names)
     size_t n, i, sz;
 
     sz = 0;
-    for (n=0; names[n] != NULL; n++)
+    for (n = 0; names[n] != NULL; n++)
         sz += strlen(names[n]);
 
     ret = calloc(1, sz + n + 1);
     if (!(ret))
         return NULL;
 
-    for (i=0; names[i] != NULL; i++)
-        sprintf(ret+strlen(ret), "%s%s", (i==0) ? "" : " ", names[i]);
+    for (i = 0; names[i] != NULL; i++)
+        sprintf(ret + strlen(ret), "%s%s", (i == 0) ? "" : " ", names[i]);
 
     return ret;
 }
@@ -123,7 +123,7 @@ void print_sample(cli_flagged_sample_t *sample)
         cli_warnmsg("    * Names: %s\n", names);
 
     if (sample->sections && sample->sections->nsections) {
-        for (i=0; i < sample->sections->nsections; i++) {
+        for (i = 0; i < sample->sections->nsections; i++) {
             hash = get_hash(sample->sections->sections[i].md5);
             if ((hash)) {
                 cli_warnmsg("    * Section[%zu] (%zu): %s\n", i, sample->sections->sections[i].len, hash);
@@ -143,7 +143,7 @@ void clamav_stats_add_sample(const char *virname, const unsigned char *md5, size
     cli_flagged_sample_t *sample;
     size_t i;
     char **p;
-    int err, submit=0;
+    int err, submit = 0;
 
     if (!(cbdata))
         return;
@@ -198,13 +198,13 @@ void clamav_stats_add_sample(const char *virname, const unsigned char *md5, size
             if (!(sample))
                 goto end;
 
-            sample->next = intel->samples;
+            sample->next         = intel->samples;
             intel->samples->prev = sample;
-            intel->samples = sample;
+            intel->samples       = sample;
         }
 
         if ((sample->virus_name)) {
-            for (i=0; sample->virus_name[i] != NULL; i++)
+            for (i = 0; sample->virus_name[i] != NULL; i++)
                 ;
             p = realloc(sample->virus_name, sizeof(char **) * (i + 1));
             if (!(p)) {
@@ -218,7 +218,7 @@ void clamav_stats_add_sample(const char *virname, const unsigned char *md5, size
 
             sample->virus_name = p;
         } else {
-            i=0;
+            i                  = 0;
             sample->virus_name = calloc(1, sizeof(char **));
             if (!(sample->virus_name)) {
                 free(sample);
@@ -239,7 +239,7 @@ void clamav_stats_add_sample(const char *virname, const unsigned char *md5, size
             goto end;
         }
 
-        p = realloc(sample->virus_name, sizeof(char **) * (i+2));
+        p = realloc(sample->virus_name, sizeof(char **) * (i + 2));
         if (!(p)) {
             free(sample->virus_name);
             free(sample);
@@ -249,8 +249,8 @@ void clamav_stats_add_sample(const char *virname, const unsigned char *md5, size
             goto end;
         }
 
-        sample->virus_name = p;
-        sample->virus_name[i+1] = NULL;
+        sample->virus_name        = p;
+        sample->virus_name[i + 1] = NULL;
 
         memcpy(sample->md5, md5, sizeof(sample->md5));
         sample->size = (uint32_t)size;
@@ -303,13 +303,13 @@ void clamav_stats_flush(struct cl_engine *engine, void *cbdata)
     }
 #endif
 
-    for (sample=intel->samples; sample != NULL; sample = next) {
+    for (sample = intel->samples; sample != NULL; sample = next) {
         next = sample->next;
 
         free_sample(sample);
     }
 
-    intel->samples = NULL;
+    intel->samples  = NULL;
     intel->nsamples = 0;
     if (intel->hostid) {
         free(intel->hostid);
@@ -328,7 +328,7 @@ void free_sample(cli_flagged_sample_t *sample)
     size_t i;
 
     if ((sample->virus_name)) {
-        for (i=0; sample->virus_name[i] != NULL; i++)
+        for (i = 0; sample->virus_name[i] != NULL; i++)
             free(sample->virus_name[i]);
 
         free(sample->virus_name);
@@ -380,7 +380,7 @@ void clamav_stats_submit(struct cl_engine *engine, void *cbdata)
 
     /* Empty out the cached intelligence data so that other threads don't sit waiting to add data to the cache */
     memcpy(&myintel, intel, sizeof(cli_intel_t));
-    intel->samples = NULL;
+    intel->samples  = NULL;
     intel->nsamples = 0;
 
     json = export_stats_to_json(engine, &myintel);
@@ -392,7 +392,7 @@ void clamav_stats_submit(struct cl_engine *engine, void *cbdata)
     }
 #endif
 
-    for (sample=myintel.samples; sample != NULL; sample = next) {
+    for (sample = myintel.samples; sample != NULL; sample = next) {
 #if DEBUG_STATS
         print_sample(sample);
 #endif
@@ -485,7 +485,7 @@ void clamav_stats_decrement_count(const char *virname, const unsigned char *md5,
 
     sample->hits--;
 
- clamav_stats_decrement_end:
+clamav_stats_decrement_end:
 #ifdef CL_THREAD_SAFE
     err = pthread_mutex_unlock(&(intel->mutex));
     if (err) {
@@ -531,7 +531,7 @@ size_t clamav_stats_get_size(void *cbdata)
     for (sample = intel->samples; sample != NULL; sample = sample->next) {
         sz += sizeof(cli_flagged_sample_t);
         if ((sample->virus_name)) {
-            for (i=0; sample->virus_name[i] != NULL; i++)
+            for (i = 0; sample->virus_name[i] != NULL; i++)
                 sz += strlen(sample->virus_name[i]);
             sz += sizeof(char **) * i;
         }
@@ -574,8 +574,7 @@ char *clamav_stats_get_hostid(void *cbdata)
 {
     char *sysctls[] = {
         "kern.hostuuid",
-        NULL
-    };
+        NULL};
     size_t bufsz, i;
     char *buf;
 
@@ -586,7 +585,7 @@ char *clamav_stats_get_hostid(void *cbdata)
      * FreeBSD provides a handy-dandy sysctl for grabbing the system's HostID. In a jail that
      * hasn't run the hostid rc.d script, the hostid defaults to all zeros.
      */
-    for (i=0; sysctls[i] != NULL; i++) {
+    for (i = 0; sysctls[i] != NULL; i++) {
         if (sysctlbyname(sysctls[i], NULL, &bufsz, NULL, 0))
             continue;
 
@@ -594,7 +593,7 @@ char *clamav_stats_get_hostid(void *cbdata)
     }
 
     if (sysctls[i] != NULL) {
-        buf = calloc(1, bufsz+1);
+        buf = calloc(1, bufsz + 1);
         if (sysctlbyname(sysctls[i], buf, &bufsz, NULL, 0))
             return strdup(STATS_ANON_UUID); /* Not sure why this would happen, but we'll just default to the anon uuid on error */
 
@@ -630,7 +629,7 @@ static cli_flagged_sample_t *find_sample(cli_intel_t *intel, const char *virname
 
         if ((sections) && (sample->sections)) {
             if (sections->nsections == sample->sections->nsections) {
-                for (i=0; i < sections->nsections; i++)
+                for (i = 0; i < sections->nsections; i++)
                     if (sections->sections[i].len == sample->sections->sections[i].len)
                         if (memcmp(sections->sections[i].md5, sample->sections->sections[i].md5, sizeof(stats_section_t)))
                             break;
@@ -643,7 +642,7 @@ static cli_flagged_sample_t *find_sample(cli_intel_t *intel, const char *virname
         }
 
         if (foundSections)
-            for (i=0; sample->virus_name[i] != NULL; i++)
+            for (i = 0; sample->virus_name[i] != NULL; i++)
                 if (!strcmp(sample->virus_name[i], virname))
                     return sample;
     }
@@ -699,5 +698,5 @@ void cl_engine_set_clcb_stats_get_hostid(struct cl_engine *engine, clcb_stats_ge
 void cl_engine_stats_enable(struct cl_engine *engine)
 {
     engine->cb_stats_add_sample = clamav_stats_add_sample;
-    engine->cb_stats_submit = clamav_stats_submit;
+    engine->cb_stats_submit     = clamav_stats_submit;
 }

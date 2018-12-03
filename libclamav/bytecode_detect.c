@@ -39,7 +39,8 @@
 #include <sys/utsname.h>
 #endif
 
-#define CHECK_ARCH(a) if (!strcmp(TARGET_ARCH_TYPE, #a)) env->arch = arch_##a
+#define CHECK_ARCH(a) \
+    if (!strcmp(TARGET_ARCH_TYPE, #a)) env->arch = arch_##a
 
 extern int have_clamjit;
 
@@ -52,22 +53,22 @@ static void cli_print_environment(struct cli_environment *env)
     /* the space separated groups can be a concrete value, or 0xff for ANY */
     cli_dbgmsg("environment detected:\n");
     cli_dbgmsg("check_platform(0x%08x, 0x%08x, 0x%08x)\n",
-	       id_a, id_b, id_c);
+               id_a, id_b, id_c);
     cli_dbgmsg("check_platform(0x%02x  %01x  %01x  %02x  %02x,"
-	       "0x%01x  %01x       %02x %02x %02x,"
-	       "0x%02x    %02x %02x %02x)\n",
-	       env->os_category, env->arch, env->compiler,
-	       env->functionality_level,
-	       env->dconf_level,
+               "0x%01x  %01x       %02x %02x %02x,"
+               "0x%02x    %02x %02x %02x)\n",
+               env->os_category, env->arch, env->compiler,
+               env->functionality_level,
+               env->dconf_level,
                env->big_endian,
                env->sizeof_ptr,
-	       (env->cpp_version >> 16)&0xff,
-	       (env->cpp_version >> 8)&0xff,
-	       env->cpp_version&0xff,
-	       env->os_features,
-	       (env->c_version >> 16)&0xff,
-	       (env->c_version >> 8)&0xff,
-	       env->c_version&0xff);
+               (env->cpp_version >> 16) & 0xff,
+               (env->cpp_version >> 8) & 0xff,
+               env->cpp_version & 0xff,
+               env->os_features,
+               (env->c_version >> 16) & 0xff,
+               (env->c_version >> 8) & 0xff,
+               env->c_version & 0xff);
     cli_dbgmsg("check_platform( OS CPU COM FL DCONF,BE PTR CXX VV.VV.VV, FLG CC VV.VV.VV)\n");
     cli_dbgmsg("Engine version: %s\n", env->engine_version);
     cli_dbgmsg("Host triple: %s\n", env->triple);
@@ -89,14 +90,14 @@ static int detect_PaX(void)
     int pax = 0;
     FILE *f = fopen("/proc/self/status", "r");
     if (!f)
-	return 0;
+        return 0;
     while (fgets(line, sizeof(line), f)) {
-	if (!memcmp(line, "PaX:", 4)) {
-	    pax = 1;
-	    if (!strchr(line,'m'))
-		pax = 2;
-	    break;
-	}
+        if (!memcmp(line, "PaX:", 4)) {
+            pax = 1;
+            if (!strchr(line, 'm'))
+                pax = 2;
+            break;
+        }
     }
     fclose(f);
     return pax;
@@ -107,37 +108,37 @@ static int detect_SELinux(void)
     char line[128];
     int selinux = 0;
     int enforce = 0;
-    FILE *f = fopen("/proc/filesystems", "r");
+    FILE *f     = fopen("/proc/filesystems", "r");
     if (!f) {
-	f = fopen("/selinux/enforce", "r");
+        f = fopen("/selinux/enforce", "r");
         if (!f && errno == EACCES)
-		return 2;
-	if (f) {
-	    if (fscanf(f, "%d", &enforce) == 1)
-		selinux = 2;
-	    fclose(f);
-	}
-	return selinux;
+            return 2;
+        if (f) {
+            if (fscanf(f, "%d", &enforce) == 1)
+                selinux = 2;
+            fclose(f);
+        }
+        return selinux;
     }
     while (fgets(line, sizeof(line), f)) {
-	if (strstr(line, "selinuxfs\n")) {
-	    selinux = 1;
-	    break;
-	}
+        if (strstr(line, "selinuxfs\n")) {
+            selinux = 1;
+            break;
+        }
     }
     fclose(f);
     if (!selinux)
-	return 0;
+        return 0;
 
     f = fopen("/selinux/enforce", "r");
     if (f) {
-	if (fscanf(f, "%d", &enforce) == 1) {
-	    if (enforce == 1)
-		selinux = 2;
-	    if (enforce == -1)
-		selinux = 0;
-	}
-	fclose(f);
+        if (fscanf(f, "%d", &enforce) == 1) {
+            if (enforce == 1)
+                selinux = 2;
+            if (enforce == -1)
+                selinux = 0;
+        }
+        fclose(f);
     }
     return selinux;
 }
@@ -146,24 +147,24 @@ static void detect_os_features(uint8_t *os_features)
 {
     int features = 0;
     switch (detect_PaX()) {
-	case 2:
-	    features |= 1 << feature_pax_mprotect;
-	    /* fall through */
-	case 1:
-	    features |= 1 << feature_pax;
-	    break;
-	default:
-	    break;
+        case 2:
+            features |= 1 << feature_pax_mprotect;
+            /* fall through */
+        case 1:
+            features |= 1 << feature_pax;
+            break;
+        default:
+            break;
     }
     switch (detect_SELinux()) {
-	case 2:
-	    features |= 1 << feature_selinux_enforcing;
-	    /* fall through */
-	case 1:
-	    features |= 1 << feature_selinux;
-	    break;
-	default:
-	    break;
+        case 2:
+            features |= 1 << feature_selinux_enforcing;
+            /* fall through */
+        case 1:
+            features |= 1 << feature_selinux;
+            break;
+        default:
+            break;
     }
 
     *os_features = features;
@@ -185,15 +186,15 @@ void cli_detect_environment(struct cli_environment *env)
 #if WORDS_BIGENDIAN == 0
     env->big_endian = 0;
 #else
-    env->big_endian = 1;
+    env->big_endian  = 1;
 #endif
-    env->sizeof_ptr = sizeof(void*);
+    env->sizeof_ptr = sizeof(void *);
 
     /* -- Detect arch -- */
     CHECK_ARCH(i386);
     else CHECK_ARCH(x86_64);
-    else if (!strcmp(TARGET_ARCH_TYPE,"amd64")) env->arch = arch_x86_64;
-    else if (!strcmp(TARGET_ARCH_TYPE,"ppc")) env->arch = arch_ppc32;/* llvm will fix ppc64 */
+    else if (!strcmp(TARGET_ARCH_TYPE, "amd64")) env->arch = arch_x86_64;
+    else if (!strcmp(TARGET_ARCH_TYPE, "ppc")) env->arch   = arch_ppc32; /* llvm will fix ppc64 */
     else CHECK_ARCH(arm);
     else CHECK_ARCH(sparc);
     else CHECK_ARCH(sparc64);
@@ -248,29 +249,29 @@ void cli_detect_environment(struct cli_environment *env)
 
     /* check GNUC last, because some other compilers might define it */
 #ifdef __INTEL_COMPILER
-    env->compiler = compiler_intel;
+    env->compiler  = compiler_intel;
     env->c_version = __INTEL_COMPILER;
 #elif defined(_MSC_VER)
-    env->compiler = compiler_msc;
+    env->compiler  = compiler_msc;
     env->c_version = _MSC_VER;
 #elif defined(__SUNPRO_C)
-    env->compiler = compiler_sun;
-    env->c_version = __SUNPRO_C;
+    env->compiler    = compiler_sun;
+    env->c_version   = __SUNPRO_C;
 #elif defined(__GNUC__)
 
 #ifdef __clang__
-    env->compiler = compiler_clang;
+    env->compiler    = compiler_clang;
 #elif defined(__llvm__)
     env->compiler = compiler_llvm;
 #else
     env->compiler = compiler_gnuc;
 #endif
     env->c_version =
-	MAKE_VERSION(0, __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
+        MAKE_VERSION(0, __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
 
 #else
-    env->compiler = compiler_other;
-    env->c_version = 0;
+    env->compiler    = compiler_other;
+    env->c_version   = 0;
 #endif
     env->cpp_version = 0;
 
@@ -278,40 +279,40 @@ void cli_detect_environment(struct cli_environment *env)
 
     /* engine */
     env->functionality_level = cl_retflevel();
-    env->dconf_level = CL_FLEVEL_DCONF;
+    env->dconf_level         = CL_FLEVEL_DCONF;
 
     INIT_STRFIELD(env->engine_version, cl_retver());
 #ifdef HAVE_UNAME_SYSCALL
     {
-	struct utsname name;
-	if (uname(&name) == 0) {
-	    INIT_STRFIELD(env->sysname, name.sysname);
-	    INIT_STRFIELD(env->release, name.release);
-	    INIT_STRFIELD(env->version, name.version);
-	    INIT_STRFIELD(env->machine, name.machine);
-	}
+        struct utsname name;
+        if (uname(&name) == 0) {
+            INIT_STRFIELD(env->sysname, name.sysname);
+            INIT_STRFIELD(env->release, name.release);
+            INIT_STRFIELD(env->version, name.version);
+            INIT_STRFIELD(env->machine, name.machine);
+        }
     }
 #endif
 #ifdef _WIN32
     {
-	OSVERSIONINFOEX info;
-	info.dwOSVersionInfoSize = sizeof(info);
-	if (GetVersionEx((OSVERSIONINFO *)&info) != 0 && info.dwPlatformId == VER_PLATFORM_WIN32_NT) {
-	    if (info.wProductType == VER_NT_WORKSTATION)
-		INIT_STRFIELD(env->sysname, "Microsoft Windows");
-	    else
-		INIT_STRFIELD(env->sysname, "Microsoft Windows Server");
-	    snprintf((char*)env->release, sizeof(env->release), "%d.%d SP%d.%d",
-		     info.dwMajorVersion, info.dwMinorVersion,
-		     info.wServicePackMajor, info.wServicePackMinor);
-	    snprintf((char*)env->version, sizeof(env->version),"Build %d",
-		     info.dwBuildNumber);
-	}
+        OSVERSIONINFOEX info;
+        info.dwOSVersionInfoSize = sizeof(info);
+        if (GetVersionEx((OSVERSIONINFO *)&info) != 0 && info.dwPlatformId == VER_PLATFORM_WIN32_NT) {
+            if (info.wProductType == VER_NT_WORKSTATION)
+                INIT_STRFIELD(env->sysname, "Microsoft Windows");
+            else
+                INIT_STRFIELD(env->sysname, "Microsoft Windows Server");
+            snprintf((char *)env->release, sizeof(env->release), "%d.%d SP%d.%d",
+                     info.dwMajorVersion, info.dwMinorVersion,
+                     info.wServicePackMajor, info.wServicePackMinor);
+            snprintf((char *)env->version, sizeof(env->version), "Build %d",
+                     info.dwBuildNumber);
+        }
     }
-    
+
 #endif
     if (!env->sysname[0]) {
-	INIT_STRFIELD(env->sysname, TARGET_OS_TYPE);
+        INIT_STRFIELD(env->sysname, TARGET_OS_TYPE);
     }
 
     detect_os_features(&env->os_features);
@@ -319,10 +320,10 @@ void cli_detect_environment(struct cli_environment *env)
     cli_detect_env_jit(env);
 
     env->platform_id_a = (env->os_category << 24) | (env->arch << 20) |
-	(env->compiler << 16) | (env->functionality_level << 8) |
-	(env->dconf_level);
+                         (env->compiler << 16) | (env->functionality_level << 8) |
+                         (env->dconf_level);
     env->platform_id_b = (env->big_endian << 28) | (env->sizeof_ptr << 24) |
-      env->cpp_version;
+                         env->cpp_version;
     env->platform_id_c = (env->os_features << 24) | env->c_version;
     cli_print_environment(env);
 }

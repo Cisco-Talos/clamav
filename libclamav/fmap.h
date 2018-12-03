@@ -58,10 +58,10 @@ struct cl_fmap {
     const void *data;
 
     /* common interface */
-    size_t offset;/* file offset */
-    size_t nested_offset;/* buffer offset for nested scan*/
-    size_t real_len;/* amount of data mapped from file, starting at offset */
-    size_t len;/* length of data accessible via current fmap */
+    size_t offset;        /* file offset */
+    size_t nested_offset; /* buffer offset for nested scan*/
+    size_t real_len;      /* amount of data mapped from file, starting at offset */
+    size_t len;           /* length of data accessible via current fmap */
 
     /* real_len = nested_offset + len
      * file_offset = offset + nested_offset + need_offset
@@ -72,11 +72,11 @@ struct cl_fmap {
      * to disk and remapping (for uncompressed archives for example) */
 
     /* vtable for implementation */
-    void        (*unmap)(fmap_t*);
-    const void* (*need)(fmap_t*, size_t at, size_t len, int lock);
-    const void* (*need_offstr)(fmap_t*, size_t at, size_t len_hint);
-    const void* (*gets)(fmap_t*, char *dst, size_t *at, size_t max_len);
-    void        (*unneed_off)(fmap_t*, size_t at, size_t len);
+    void (*unmap)(fmap_t *);
+    const void *(*need)(fmap_t *, size_t at, size_t len, int lock);
+    const void *(*need_offstr)(fmap_t *, size_t at, size_t len_hint);
+    const void *(*gets)(fmap_t *, char *dst, size_t *at, size_t max_len);
+    void (*unneed_off)(fmap_t *, size_t at, size_t len);
 #ifdef _WIN32
     HANDLE fh;
     HANDLE mh;
@@ -105,9 +105,9 @@ static inline const void *fmap_need_off_once(fmap_t *m, size_t at, size_t len)
 
 static inline size_t fmap_ptr2off(const fmap_t *m, const void *ptr)
 {
-    return (m->data ?
-	  (const char*)ptr - (const char*)m->data
-	 :(const char*)ptr - (const char*)m - m->hdrsz) - m->nested_offset;
+    return (m->data ? (const char *)ptr - (const char *)m->data
+                    : (const char *)ptr - (const char *)m - m->hdrsz) -
+           m->nested_offset;
 }
 
 static inline const void *fmap_need_ptr(fmap_t *m, const void *ptr, size_t len)
@@ -134,15 +134,15 @@ static inline int fmap_readn(fmap_t *m, void *dst, size_t at, size_t len)
 {
     const void *src;
 
-    if(at == m->len || !len)
-	return 0;
-    if(at > m->len)
-	return -1;
-    if(len > m->len - at)
-	len = m->len - at;
+    if (at == m->len || !len)
+        return 0;
+    if (at > m->len)
+        return -1;
+    if (len > m->len - at)
+        len = m->len - at;
     src = fmap_need_off_once(m, at, len);
-    if(!src)
-	return -1;
+    if (!src)
+        return -1;
     memcpy(dst, src, len);
     return (len <= INT_MAX) ? (int)len : -1;
 }
@@ -157,21 +157,21 @@ static inline const void *fmap_need_offstr(fmap_t *m, size_t at, size_t len_hint
     return m->need_offstr(m, at, len_hint);
 }
 
-static inline const void *fmap_gets(fmap_t *m, char *dst, size_t *at, size_t max_len) {
+static inline const void *fmap_gets(fmap_t *m, char *dst, size_t *at, size_t max_len)
+{
     return m->gets(m, dst, at, max_len);
 }
 
 static inline const void *fmap_need_off_once_len(fmap_t *m, size_t at, size_t len, size_t *lenout)
 {
     const void *p;
-    if (at >= m->len)
-    {
+    if (at >= m->len) {
         *lenout = 0;
         return NULL; /* EOF, not read error */
     }
     if (len > m->len - at)
         len = m->len - at;
-    p = fmap_need_off_once(m, at, len);
+    p       = fmap_need_off_once(m, at, len);
     *lenout = p ? len : 0;
     return p;
 }

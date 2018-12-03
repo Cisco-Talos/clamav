@@ -99,21 +99,23 @@
 #endif
 
 typedef struct {
-	unsigned short	id; /* fake stuff */
+    unsigned short id; /* fake stuff */
 } HEADER;
 
 #define INT16SZ 2
 
-#define GETSHORT(var, ptr) do { \
-    var = ((uint16_t)(*(uint8_t *)ptr++)) << 8; \
-    var |= *(uint8_t *)ptr++; \
+#define GETSHORT(var, ptr)                          \
+    do {                                            \
+        var = ((uint16_t)(*(uint8_t *)ptr++)) << 8; \
+        var |= *(uint8_t *)ptr++;                   \
     } while (0)
 
-#define GETLONG(var, ptr) do { \
-    var = ((uint32_t)(*(uint8_t *)ptr++)) << 24; \
-    var = ((uint32_t)(*(uint8_t *)ptr++)) << 16; \
-    var = ((uint32_t)(*(uint8_t *)ptr++)) << 8; \
-    var |= *(uint8_t *)ptr++; \
+#define GETLONG(var, ptr)                            \
+    do {                                             \
+        var = ((uint32_t)(*(uint8_t *)ptr++)) << 24; \
+        var = ((uint32_t)(*(uint8_t *)ptr++)) << 16; \
+        var = ((uint32_t)(*(uint8_t *)ptr++)) << 8;  \
+        var |= *(uint8_t *)ptr++;                    \
     } while (0)
 
 int res_init(void);

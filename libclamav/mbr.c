@@ -44,19 +44,19 @@
 //#define DEBUG_EBR_PARSE
 
 #ifndef PRTN_INTXN_DETECTION
-#  define PRTN_INTXN_DETECTION "heuristic.mbrprtnintersect"
+#define PRTN_INTXN_DETECTION "heuristic.mbrprtnintersect"
 #endif
 
 #ifdef DEBUG_MBR_PARSE
-#  define mbr_parsemsg(...) cli_dbgmsg( __VA_ARGS__)
+#define mbr_parsemsg(...) cli_dbgmsg(__VA_ARGS__)
 #else
-#  define mbr_parsemsg(...) ;
+#define mbr_parsemsg(...) ;
 #endif
 
 #ifdef DEBUG_EBR_PARSE
-#  define ebr_parsemsg(...) cli_dbgmsg( __VA_ARGS__)
+#define ebr_parsemsg(...) cli_dbgmsg(__VA_ARGS__)
 #else
-#  define ebr_parsemsg(...) ;
+#define ebr_parsemsg(...) ;
 #endif
 
 enum MBR_STATE {
@@ -66,16 +66,17 @@ enum MBR_STATE {
     SEEN_EMPTY
 };
 
-static int mbr_scanextprtn(cli_ctx *ctx, unsigned *prtncount, off_t extlba, 
+static int mbr_scanextprtn(cli_ctx *ctx, unsigned *prtncount, off_t extlba,
                            size_t extlbasize, size_t sectorsize);
 static int mbr_check_mbr(struct mbr_boot_record *record, size_t maplen, size_t sectorsize);
 static int mbr_check_ebr(struct mbr_boot_record *record);
 static int mbr_primary_prtn_intxn(cli_ctx *ctx, struct mbr_boot_record mbr, size_t sectorsize);
 static int mbr_extended_prtn_intxn(cli_ctx *ctx, unsigned *prtncount, off_t extlba, size_t sectorsize);
 
-int cli_mbr_check(const unsigned char *buff, size_t len, size_t maplen) {
+int cli_mbr_check(const unsigned char *buff, size_t len, size_t maplen)
+{
     struct mbr_boot_record mbr;
-    off_t mbr_base = 0;
+    off_t mbr_base    = 0;
     size_t sectorsize = 512;
 
     if (len < sectorsize) {
@@ -83,7 +84,7 @@ int cli_mbr_check(const unsigned char *buff, size_t len, size_t maplen) {
     }
 
     mbr_base = sectorsize - sizeof(struct mbr_boot_record);
-    memcpy(&mbr, buff+mbr_base, sizeof(mbr));
+    memcpy(&mbr, buff + mbr_base, sizeof(mbr));
     mbr_convert_to_host(&mbr);
 
     if ((mbr.entries[0].type == MBR_PROTECTIVE) || (mbr.entries[0].type == MBR_HYBRID))
@@ -92,7 +93,8 @@ int cli_mbr_check(const unsigned char *buff, size_t len, size_t maplen) {
     return mbr_check_mbr(&mbr, maplen, sectorsize);
 }
 
-int cli_mbr_check2(cli_ctx *ctx, size_t sectorsize) {
+int cli_mbr_check2(cli_ctx *ctx, size_t sectorsize)
+{
     struct mbr_boot_record mbr;
     off_t pos = 0, mbr_base = 0;
     size_t maplen;
@@ -219,15 +221,14 @@ int cli_scanmbr(cli_ctx *ctx, size_t sectorsize)
         if (mbr.entries[i].type == MBR_EMPTY) {
             /* empty partition entry */
             prtncount++;
-        }
-        else if (mbr.entries[i].type == MBR_EXTENDED) {
+        } else if (mbr.entries[i].type == MBR_EXTENDED) {
             if (state == SEEN_EXTENDED) {
                 cli_dbgmsg("cli_scanmbr: detected a master boot record "
                            "with multiple extended partitions\n");
             }
             state = SEEN_EXTENDED; /* used only to detect multiple extended partitions */
 
-            ret = mbr_scanextprtn(ctx, &prtncount, mbr.entries[i].firstLBA, 
+            ret = mbr_scanextprtn(ctx, &prtncount, mbr.entries[i].firstLBA,
                                   mbr.entries[i].numLBA, sectorsize);
             if (ret != CL_CLEAN) {
                 if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
@@ -235,11 +236,10 @@ int cli_scanmbr(cli_ctx *ctx, size_t sectorsize)
                 else
                     return ret;
             }
-        }
-        else {
+        } else {
             prtncount++;
 
-            partoff = mbr.entries[i].firstLBA * sectorsize;
+            partoff  = mbr.entries[i].firstLBA * sectorsize;
             partsize = mbr.entries[i].numLBA * sectorsize;
             mbr_parsemsg("cli_map_scan: [%u, +%u)\n", partoff, partsize);
             ret = cli_map_scan(*ctx->fmap, partoff, partsize, ctx, CL_TYPE_PART_ANY);
@@ -273,8 +273,8 @@ static int mbr_scanextprtn(cli_ctx *ctx, unsigned *prtncount, off_t extlba, size
     mbr_base = sectorsize - sizeof(struct mbr_boot_record);
 
     logiclba = 0;
-    extoff = extlba * sectorsize;
-    extsize = extlbasize * sectorsize;
+    extoff   = extlba * sectorsize;
+    extsize  = extlbasize * sectorsize;
     do {
         pos = extlba * sectorsize; /* start of extended partition */
 
@@ -313,72 +313,70 @@ static int mbr_scanextprtn(cli_ctx *ctx, unsigned *prtncount, off_t extlba, size
 
                 if (ebr.entries[j].type == MBR_EMPTY) {
                     /* empty partition entry */
-                    switch(state) {
-                    case SEEN_NOTHING:
-                        state = SEEN_EMPTY;
-                        break;
-                    case SEEN_PARTITION:
-                        logiclba = 0;
-                        break;
-                    case SEEN_EMPTY:
-                        logiclba = 0;
-                        /* fall-through */
-                    case SEEN_EXTENDED:
-                        cli_warnmsg("cli_scanebr: detected a logical boot record "
-                                    "without a partition record\n");
-                        break;
-                    default:
-                        cli_warnmsg("cli_scanebr: undefined state for EBR parsing\n");
-                        return CL_EPARSE;
+                    switch (state) {
+                        case SEEN_NOTHING:
+                            state = SEEN_EMPTY;
+                            break;
+                        case SEEN_PARTITION:
+                            logiclba = 0;
+                            break;
+                        case SEEN_EMPTY:
+                            logiclba = 0;
+                            /* fall-through */
+                        case SEEN_EXTENDED:
+                            cli_warnmsg("cli_scanebr: detected a logical boot record "
+                                        "without a partition record\n");
+                            break;
+                        default:
+                            cli_warnmsg("cli_scanebr: undefined state for EBR parsing\n");
+                            return CL_EPARSE;
                     }
-                }
-                else if (ebr.entries[j].type == MBR_EXTENDED) {
-                    switch(state) {
-                    case SEEN_NOTHING:
-                        state = SEEN_EXTENDED;
-                        break;
-                    case SEEN_PARTITION:
-                        break;
-                    case SEEN_EMPTY:
-                        cli_warnmsg("cli_scanebr: detected a logical boot record "
-                                    "without a partition record\n");
-                        break;
-                    case SEEN_EXTENDED:
-                        cli_warnmsg("cli_scanebr: detected a logical boot record "
-                                    "with multiple extended partition records\n");
-                        return CL_EFORMAT;
-                    default:
-                        cli_dbgmsg("cli_scanebr: undefined state for EBR parsing\n");
-                        return CL_EPARSE;
+                } else if (ebr.entries[j].type == MBR_EXTENDED) {
+                    switch (state) {
+                        case SEEN_NOTHING:
+                            state = SEEN_EXTENDED;
+                            break;
+                        case SEEN_PARTITION:
+                            break;
+                        case SEEN_EMPTY:
+                            cli_warnmsg("cli_scanebr: detected a logical boot record "
+                                        "without a partition record\n");
+                            break;
+                        case SEEN_EXTENDED:
+                            cli_warnmsg("cli_scanebr: detected a logical boot record "
+                                        "with multiple extended partition records\n");
+                            return CL_EFORMAT;
+                        default:
+                            cli_dbgmsg("cli_scanebr: undefined state for EBR parsing\n");
+                            return CL_EPARSE;
                     }
 
                     logiclba = ebr.entries[j].firstLBA;
-                }
-                else {
-                    switch(state) {
-                    case SEEN_NOTHING:
-                        state = SEEN_PARTITION;
-                        break;
-                    case SEEN_PARTITION:
-                        cli_warnmsg("cli_scanebr: detected a logical boot record "
-                                    "with multiple partition records\n");
-                        logiclba = 0; /* no extended partitions are possible */
-                        break;
-                    case SEEN_EXTENDED:
-                        cli_warnmsg("cli_scanebr: detected a logical boot record "
-                                    "with extended partition record first\n");
-                        break;
-                    case SEEN_EMPTY:
-                        cli_warnmsg("cli_scanebr: detected a logical boot record "
-                                    "with empty partition record first\n");
-                        logiclba = 0; /* no extended partitions are possible */
-                        break;
-                    default:
-                        cli_dbgmsg("cli_scanebr: undefined state for EBR parsing\n");
-                        return CL_EPARSE;
+                } else {
+                    switch (state) {
+                        case SEEN_NOTHING:
+                            state = SEEN_PARTITION;
+                            break;
+                        case SEEN_PARTITION:
+                            cli_warnmsg("cli_scanebr: detected a logical boot record "
+                                        "with multiple partition records\n");
+                            logiclba = 0; /* no extended partitions are possible */
+                            break;
+                        case SEEN_EXTENDED:
+                            cli_warnmsg("cli_scanebr: detected a logical boot record "
+                                        "with extended partition record first\n");
+                            break;
+                        case SEEN_EMPTY:
+                            cli_warnmsg("cli_scanebr: detected a logical boot record "
+                                        "with empty partition record first\n");
+                            logiclba = 0; /* no extended partitions are possible */
+                            break;
+                        default:
+                            cli_dbgmsg("cli_scanebr: undefined state for EBR parsing\n");
+                            return CL_EPARSE;
                     }
 
-                    partoff = (extlba + logiclba + ebr.entries[j].firstLBA) * sectorsize;
+                    partoff  = (extlba + logiclba + ebr.entries[j].firstLBA) * sectorsize;
                     partsize = ebr.entries[j].numLBA * sectorsize;
                     if (partoff + partsize > extoff + extsize) {
                         cli_dbgmsg("cli_scanebr: Invalid extended partition entry\n");
@@ -393,12 +391,12 @@ static int mbr_scanextprtn(cli_ctx *ctx, unsigned *prtncount, off_t extlba, size
                             return ret;
                     }
                 }
-            }
-            else {
+            } else {
                 /* check the last two entries to be empty */
                 if (ebr.entries[j].type != MBR_EMPTY) {
                     cli_dbgmsg("cli_scanebr: detected a non-empty partition "
-                               "entry at index %u\n", j);
+                               "entry at index %u\n",
+                               j);
                     /* should we attempt to use these entries? */
                     return CL_EFORMAT;
                 }
@@ -415,31 +413,31 @@ void mbr_convert_to_host(struct mbr_boot_record *record)
 {
     struct mbr_partition_entry *entry;
     unsigned i;
- 
+
     for (i = 0; i < MBR_MAX_PARTITION_ENTRIES; ++i) {
         entry = &record->entries[i];
- 
+
         entry->firstLBA = le32_to_host(entry->firstLBA);
-        entry->numLBA = le32_to_host(entry->numLBA);
+        entry->numLBA   = le32_to_host(entry->numLBA);
     }
     record->signature = be16_to_host(record->signature);
 }
 
 static int mbr_check_mbr(struct mbr_boot_record *record, size_t maplen, size_t sectorsize)
 {
-    unsigned i = 0;
-    off_t partoff = 0;
+    unsigned i      = 0;
+    off_t partoff   = 0;
     size_t partsize = 0;
 
     for (i = 0; i < MBR_MAX_PARTITION_ENTRIES; ++i) {
         /* check status */
-        if ((record->entries[i].status != MBR_STATUS_INACTIVE) && 
+        if ((record->entries[i].status != MBR_STATUS_INACTIVE) &&
             (record->entries[i].status != MBR_STATUS_ACTIVE)) {
             cli_dbgmsg("cli_scanmbr: Invalid boot record status\n");
             return CL_EFORMAT;
         }
 
-        partoff = record->entries[i].firstLBA * sectorsize;
+        partoff  = record->entries[i].firstLBA * sectorsize;
         partsize = record->entries[i].numLBA * sectorsize;
         if (partoff + partsize > maplen) {
             cli_dbgmsg("cli_scanmbr: Invalid partition entry\n");
@@ -466,9 +464,9 @@ static int mbr_check_ebr(struct mbr_boot_record *record)
 {
     unsigned i = 0;
 
-    for (i = 0; i < MBR_MAX_PARTITION_ENTRIES-2; ++i) {
+    for (i = 0; i < MBR_MAX_PARTITION_ENTRIES - 2; ++i) {
         /* check status */
-        if ((record->entries[i].status != MBR_STATUS_INACTIVE) && 
+        if ((record->entries[i].status != MBR_STATUS_INACTIVE) &&
             (record->entries[i].status != MBR_STATUS_ACTIVE)) {
             cli_dbgmsg("cli_scanmbr: Invalid boot record status\n");
             return CL_EFORMAT;
@@ -497,14 +495,14 @@ static int mbr_primary_prtn_intxn(cli_ctx *ctx, struct mbr_boot_record mbr, size
         if (mbr.entries[i].type == MBR_EMPTY) {
             /* empty partition entry */
             prtncount++;
-        }
-        else {
+        } else {
             tmp = prtn_intxn_list_check(&prtncheck, &pitxn, mbr.entries[i].firstLBA,
                                         mbr.entries[i].numLBA);
             if (tmp != CL_CLEAN) {
                 if (tmp == CL_VIRUS) {
                     cli_dbgmsg("cli_scanmbr: detected intersection with partitions "
-                               "[%u, %u]\n", pitxn, i);
+                               "[%u, %u]\n",
+                               pitxn, i);
                     ret = cli_append_virus(ctx, PRTN_INTXN_DETECTION);
                     if (SCAN_ALLMATCHES || ret == CL_CLEAN)
                         tmp = 0;
@@ -518,24 +516,21 @@ static int mbr_primary_prtn_intxn(cli_ctx *ctx, struct mbr_boot_record mbr, size
 
             if (mbr.entries[i].type == MBR_EXTENDED) {
                 /* check the logical partitions */
-                tmp = mbr_extended_prtn_intxn(ctx, &prtncount, 
-                                  mbr.entries[i].firstLBA, sectorsize);
+                tmp = mbr_extended_prtn_intxn(ctx, &prtncount,
+                                              mbr.entries[i].firstLBA, sectorsize);
                 if (tmp != CL_CLEAN) {
                     if (SCAN_ALLMATCHES && (tmp == CL_VIRUS)) {
                         ret = tmp;
                         tmp = 0;
-                    }
-                    else if (tmp == CL_VIRUS) {
+                    } else if (tmp == CL_VIRUS) {
                         prtn_intxn_list_free(&prtncheck);
                         return CL_VIRUS;
-                    }
-                    else {
+                    } else {
                         prtn_intxn_list_free(&prtncheck);
                         return tmp;
                     }
                 }
-            }
-            else {
+            } else {
                 prtncount++;
             }
         }
@@ -560,7 +555,8 @@ static int mbr_extended_prtn_intxn(cli_ctx *ctx, unsigned *prtncount, off_t extl
 
     prtn_intxn_list_init(&prtncheck);
 
-    logiclba = 0; i = 0;
+    logiclba = 0;
+    i        = 0;
     do {
         pos = extlba * sectorsize; /* start of extended partition */
 
@@ -583,7 +579,8 @@ static int mbr_extended_prtn_intxn(cli_ctx *ctx, unsigned *prtncount, off_t extl
         if (tmp != CL_CLEAN) {
             if (tmp == CL_VIRUS) {
                 cli_dbgmsg("cli_scanebr: detected intersection with partitions "
-                           "[%u, %u]\n", pitxn, i);
+                           "[%u, %u]\n",
+                           pitxn, i);
                 ret = cli_append_virus(ctx, PRTN_INTXN_DETECTION);
                 if (ret == CL_VIRUS)
                     virus_found = 1;
@@ -608,7 +605,7 @@ static int mbr_extended_prtn_intxn(cli_ctx *ctx, unsigned *prtncount, off_t extl
         ++i;
     } while (logiclba != 0 && (*prtncount) < ctx->engine->maxpartitions);
 
- leave:
+leave:
     prtn_intxn_list_free(&prtncheck);
     if (virus_found)
         return CL_VIRUS;
