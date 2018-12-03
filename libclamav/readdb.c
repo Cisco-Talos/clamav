@@ -1381,35 +1381,38 @@ struct lsig_attrib {
 /* TODO: rework this */
 static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
 {
-    struct lsig_attrib attrtab[] = {
+// clang-format off
 #define ATTRIB_TOKENS   10
 #define EXPR_TOKEN_MAX  16
-        { "Target",         CLI_TDB_UINT,   (void **) &tdb->target      },
-        { "Engine",         CLI_TDB_RANGE,  (void **) &tdb->engine      },
+    struct lsig_attrib attrtab[] = {
+        { "Target",             CLI_TDB_UINT,       (void **) &tdb->target          },
+        { "Engine",             CLI_TDB_RANGE,      (void **) &tdb->engine          },
 
-        { "FileSize",       CLI_TDB_RANGE,  (void **) &tdb->filesize    },
-        { "EntryPoint",     CLI_TDB_RANGE,  (void **) &tdb->ep      },
-        { "NumberOfSections",   CLI_TDB_RANGE,  (void **) &tdb->nos     },
+        { "FileSize",           CLI_TDB_RANGE,      (void **) &tdb->filesize        },
+        { "EntryPoint",         CLI_TDB_RANGE,      (void **) &tdb->ep              },
+        { "NumberOfSections",   CLI_TDB_RANGE,      (void **) &tdb->nos             },
 
-        { "IconGroup1",     CLI_TDB_STR,    (void **) &tdb->icongrp1    },
-        { "IconGroup2",     CLI_TDB_STR,    (void **) &tdb->icongrp2    },
+        { "IconGroup1",         CLI_TDB_STR,        (void **) &tdb->icongrp1        },
+        { "IconGroup2",         CLI_TDB_STR,        (void **) &tdb->icongrp2        },
 
-        { "Container",      CLI_TDB_FTYPE,  (void **) &tdb->container   },
-        { "HandlerType",        CLI_TDB_FTYPE,  (void **) &tdb->handlertype },
-        { "Intermediates",  CLI_TDB_FTYPE_EXPR, (void **) &tdb->intermediates },
+        { "Container",          CLI_TDB_FTYPE,      (void **) &tdb->container       },
+        { "HandlerType",        CLI_TDB_FTYPE,      (void **) &tdb->handlertype     },
+        { "Intermediates",      CLI_TDB_FTYPE_EXPR, (void **) &tdb->intermediates   },
 /*
-        { "SectOff",    CLI_TDB_RANGE2, (void **) &tdb->sectoff     },
-        { "SectRVA",    CLI_TDB_RANGE2, (void **) &tdb->sectrva     },
-        { "SectVSZ",    CLI_TDB_RANGE2, (void **) &tdb->sectvsz     },
-        { "SectRAW",    CLI_TDB_RANGE2, (void **) &tdb->sectraw     },
-        { "SectRSZ",    CLI_TDB_RANGE2, (void **) &tdb->sectrsz     },
-        { "SectURVA",   CLI_TDB_RANGE2, (void **) &tdb->secturva    },
-        { "SectUVSZ",   CLI_TDB_RANGE2, (void **) &tdb->sectuvsz    },
-        { "SectURAW",   CLI_TDB_RANGE2, (void **) &tdb->secturaw    },
-        { "SectURSZ",   CLI_TDB_RANGE2, (void **) &tdb->sectursz    },
+        { "SectOff",            CLI_TDB_RANGE2,     (void **) &tdb->sectoff         },
+        { "SectRVA",            CLI_TDB_RANGE2,     (void **) &tdb->sectrva         },
+        { "SectVSZ",            CLI_TDB_RANGE2,     (void **) &tdb->sectvsz         },
+        { "SectRAW",            CLI_TDB_RANGE2,     (void **) &tdb->sectraw         },
+        { "SectRSZ",            CLI_TDB_RANGE2,     (void **) &tdb->sectrsz         },
+        { "SectURVA",           CLI_TDB_RANGE2,     (void **) &tdb->secturva        },
+        { "SectUVSZ",           CLI_TDB_RANGE2,     (void **) &tdb->sectuvsz        },
+        { "SectURAW",           CLI_TDB_RANGE2,     (void **) &tdb->secturaw        },
+        { "SectURSZ",           CLI_TDB_RANGE2,     (void **) &tdb->sectursz        },
 */
-        { NULL,     0,          NULL,               }
+        { NULL,                 0,                  NULL,                           }
     };
+// clang-format on
+
     struct lsig_attrib *apt;
     char *tokens[ATTRIB_TOKENS], *pt, *pt2;
     unsigned int v1, v2, v3, i, j, tokens_count, have_newext = 0;
@@ -4304,7 +4307,7 @@ int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo
 
 
     if(dbio && dbio->chkonly) {
-	while(cli_dbgets(buff, FILEBUFF, NULL, dbio));
+	while (cli_dbgets(buff, FILEBUFF, NULL, dbio)) continue;
 	return CL_SUCCESS;
     }
 

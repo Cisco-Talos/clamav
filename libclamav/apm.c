@@ -204,7 +204,7 @@ int cli_scanapm(cli_ctx *ctx)
                 !strncmp((char*)apentry.type, "Apple_Driver_ATAPI", 32) ||
                 !strncmp((char*)apentry.type, "Apple_Patches",      32)) {
 
-                partsize = apentry.pBlockCount * 2048;;
+                partsize = apentry.pBlockCount * 2048;
             }
         }
 
@@ -281,7 +281,7 @@ static int apm_prtn_intxn(cli_ctx *ctx, struct apm_partition_info *aptable, size
                 !strncmp((char*)apentry.type, "Apple_Driver_ATAPI", 32) ||
                 !strncmp((char*)apentry.type, "Apple_Patches",      32)) {
 
-                apentry.pBlockCount = apentry.pBlockCount * 4;;
+                apentry.pBlockCount = apentry.pBlockCount * 4;
             }
         }
 

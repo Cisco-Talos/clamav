@@ -71,8 +71,7 @@
 struct pdf_token {
     uint32_t flags;    /* tracking flags */
     uint32_t success;  /* successfully decoded filters */
-
-    uint32_t length;   /* length of current content */ /* TODO: transition to size_t */
+    uint32_t length;   /* length of current content; TODO: transition to size_t */
     uint8_t *content;  /* content stream */
 };
 

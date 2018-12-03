@@ -58,7 +58,7 @@ ole2_convert_utf(summary_ctx_t *sctx, char *begin, size_t sz, const char *encodi
     char *buf, *p1, *p2;
     off_t offset;
     size_t inlen, outlen, nonrev, sz2;
-    int i, try;
+    int i, attempt;
     iconv_t cd;
 #endif
     /* applies in the both case */
@@ -131,9 +131,9 @@ ole2_convert_utf(summary_ctx_t *sctx, char *begin, size_t sz, const char *encodi
     }
     else {
         offset = 0;
-        for (try = 1; try <= 3; ++try) {
+        for (attempt = 1; attempt <= 3; ++attempt) {
             /* charset to UTF-8 should never exceed sz*6 */
-            sz2 = (try*2) * sz;
+            sz2 = (attempt*2) * sz;
             /* use cli_realloc, reuse the buffer that has already been translated */
             outbuf = (char *)cli_realloc(outbuf, sz2+1);
             if (!outbuf) {
@@ -166,9 +166,9 @@ ole2_convert_utf(summary_ctx_t *sctx, char *begin, size_t sz, const char *encodi
             //cli_dbgmsg("%u %s\n", inlen, outbuf);
 
             offset = sz2 - outlen;
-            if (try < 3)
+            if (attempt < 3)
                 cli_dbgmsg("ole2_convert_utf: outbuf is too small, resizing %llu -> %llu\n",
-                           (long long unsigned)((try*2) * sz), (long long unsigned)(((try+1)*2) * sz));
+                           (long long unsigned)((attempt*2) * sz), (long long unsigned)(((attempt+1)*2) * sz));
         }
 
         if (errno == E2BIG && nonrev == (size_t)-1) {
@@ -955,7 +955,7 @@ int cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
     if (sumstub.byte_order != 0xfffe) {
         cli_dbgmsg("ole2_summary_json: byteorder 0x%x is invalid\n", sumstub.byte_order);
         sctx.flags |= OLE2_SUMMARY_ERROR_INVALID_ENTRY;
-        return cli_ole2_summary_json_cleanup(&sctx, CL_EFORMAT);;
+        return cli_ole2_summary_json_cleanup(&sctx, CL_EFORMAT);
     }
     sumstub.version = sum16_endian_convert(sumstub.version); /*unused*/
     sumstub.system = sum32_endian_convert(sumstub.system); /*unused*/

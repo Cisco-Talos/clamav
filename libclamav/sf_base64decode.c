@@ -27,6 +27,7 @@
 
 #include "sf_base64decode.h"
 
+// clang-format off
 uint8_t sf_decode64tab[256] = {
         100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,
         100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,
@@ -44,6 +45,7 @@ uint8_t sf_decode64tab[256] = {
         100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,
         100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,
         100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100};
+// clang-format on
 
 /* base64decode assumes the input data terminates with '=' and/or at the end of the input buffer
  * at inbuf_size.  If extra characters exist within inbuf before inbuf_size is reached, it will

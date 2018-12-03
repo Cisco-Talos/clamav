@@ -45,6 +45,8 @@
 #include "jsparse/textbuf.h"
 #include "platform.h"
 
+// clang-format off
+
 static const int hex_chars[256] = {
     -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
     -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
@@ -63,6 +65,8 @@ static const int hex_chars[256] = {
     -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
     -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
 };
+
+// clang-format on
 
 static inline int cli_hex2int(const char c)
 {
@@ -442,7 +446,7 @@ char *cli_strrcpy(char *dest, const char *source) /* by NJH */
 	return NULL;
     }
 
-    while((*dest++ = *source++));
+    while((*dest++ = *source++)) continue;
 
     return --dest;
 }

@@ -43,56 +43,71 @@
 
 #if HAVE_LIBXML2 && HAVE_JSON
 
+// clang-format off
+
 /*** OOXML MSDOC ***/
 static const struct key_entry ooxml_keys[] = {
-    { "coreproperties",     "CoreProperties",     MSXML_JSON_ROOT | MSXML_JSON_ATTRIB },
-    { "title",              "Title",              MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
-    { "subject",            "Subject",            MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
-    { "creator",            "Author",             MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
-    { "keywords",           "Keywords",           MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
-    { "comments",           "Comments",           MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
-    { "description",        "Description",        MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
-    { "lastmodifiedby",     "LastAuthor",         MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
-    { "revision",           "Revision",           MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
-    { "created",            "Created",            MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
-    { "modified",           "Modified",           MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
-    { "category",           "Category",           MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
-    { "contentstatus",      "ContentStatus",      MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
-
-    { "properties",         "ExtendedProperties", MSXML_JSON_ROOT | MSXML_JSON_ATTRIB },
-    { "application",        "Application",        MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
-    { "appversion",         "AppVersion",         MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
-    { "characters",         "Characters",         MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "coreproperties",     "CoreProperties",         MSXML_JSON_ROOT | MSXML_JSON_ATTRIB },
+    { "title",              "Title",                  MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "subject",            "Subject",                MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "creator",            "Author",                 MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "keywords",           "Keywords",               MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "comments",           "Comments",               MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "description",        "Description",            MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "lastmodifiedby",     "LastAuthor",             MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "revision",           "Revision",               MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "created",            "Created",                MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "modified",           "Modified",               MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "category",           "Category",               MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "contentstatus",      "ContentStatus",          MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "properties",         "ExtendedProperties",     MSXML_JSON_ROOT | MSXML_JSON_ATTRIB },
+    { "application",        "Application",            MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "appversion",         "AppVersion",             MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "characters",         "Characters",             MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
     { "characterswithspaces", "CharactersWithSpaces", MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
-    { "company",            "Company",            MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
-    { "digsig",             "DigSig",             MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
-    { "docsecurity",        "DocSecurity",        MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
-    //{ "headingpairs",       "HeadingPairs",       MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
-    { "hiddenslides",       "HiddenSlides",       MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
-    { "hlinks",             "HLinks",             MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
-    { "hyperlinkbase",      "HyperlinkBase",      MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
-    { "hyperlinkschanged",  "HyperlinksChanged",  MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
-    { "lines",              "Lines",              MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
-    { "linksuptodate",      "LinksUpToDate",      MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
-    { "manager",            "Manager",            MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
-    { "mmclips",            "MultimediaClips",    MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
-    { "notes",              "Notes",              MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
-    { "pages",              "Pages",              MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
-    { "paragraphs",         "Paragraphs",         MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
-    { "presentationformat", "PresentationFormat", MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
-    //{ "properties",         "Properties",         MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
-    { "scalecrop",          "ScaleCrop",          MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
-    { "shareddoc",          "SharedDocs",         MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
-    { "slides",             "Slides",             MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
-    { "template",           "Template",           MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
-    //{ "titleofparts",       "TitleOfParts",       MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
-    { "totaltime",          "TotalTime",          MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
-    { "words",              "Words",              MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "company",            "Company",                MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "digsig",             "DigSig",                 MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "docsecurity",        "DocSecurity",            MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    //{ "headingpairs",       "HeadingPairs",           MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "hiddenslides",       "HiddenSlides",           MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "hlinks",             "HLinks",                 MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "hyperlinkbase",      "HyperlinkBase",          MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "hyperlinkschanged",  "HyperlinksChanged",      MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "lines",              "Lines",                  MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "linksuptodate",      "LinksUpToDate",          MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "manager",            "Manager",                MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "mmclips",            "MultimediaClips",        MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "notes",              "Notes",                  MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "pages",              "Pages",                  MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "paragraphs",         "Paragraphs",             MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "presentationformat", "PresentationFormat",     MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    //{ "properties",         "Properties",             MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "scalecrop",          "ScaleCrop",              MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "shareddoc",          "SharedDocs",             MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "slides",             "Slides",                 MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "template",           "Template",               MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    //{ "titleofparts",       "TitleOfParts",           MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "totaltime",          "TotalTime",              MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "words",              "Words",                  MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
 
     /* Should NOT Exist */
-    { "bindata",            "BinaryData",         MSXML_SCAN_B64 | MSXML_JSON_COUNT | MSXML_JSON_ROOT }
+    { "bindata",            "BinaryData",             MSXML_SCAN_B64 | MSXML_JSON_COUNT | MSXML_JSON_ROOT }
 };
 static size_t num_ooxml_keys = sizeof(ooxml_keys) / sizeof(struct key_entry);
+
+/*** OOXML HWP ***/
+static const struct key_entry ooxml_hwp_keys[] = {
+    { "hcfversion",         "HCFVersion",             MSXML_JSON_ROOT | MSXML_JSON_ATTRIB },
+    { "package",            "Properties",             MSXML_JSON_ROOT | MSXML_JSON_ATTRIB },
+    { "metadata",           "Metadata",               MSXML_JSON_WRKPTR | MSXML_JSON_ATTRIB },
+    { "title",              "Title",                  MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "language",           "Language",               MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
+    { "meta",               "MetaFields",             MSXML_JSON_WRKPTR | MSXML_JSON_ATTRIB | MSXML_JSON_VALUE | MSXML_JSON_COUNT | MSXML_JSON_MULTI },
+    { "item",               "Contents",               MSXML_JSON_WRKPTR | MSXML_JSON_ATTRIB | MSXML_JSON_COUNT | MSXML_JSON_MULTI }
+};
+static size_t num_ooxml_hwp_keys = sizeof(ooxml_hwp_keys) / sizeof(struct key_entry);
+
+// clang-format on
 
 static int ooxml_updatelimits(int fd, cli_ctx *ctx)
 {
@@ -338,19 +353,6 @@ static int ooxml_content_cb(int fd, const char* filepath, cli_ctx *ctx)
     xmlFreeTextReader(reader);
     return ret;
 }
-
-/*** OOXML HWP ***/
-static const struct key_entry ooxml_hwp_keys[] = {
-    { "hcfversion",         "HCFVersion",         MSXML_JSON_ROOT | MSXML_JSON_ATTRIB },
-
-    { "package",            "Properties",         MSXML_JSON_ROOT | MSXML_JSON_ATTRIB },
-    { "metadata",           "Metadata",           MSXML_JSON_WRKPTR | MSXML_JSON_ATTRIB },
-    { "title",              "Title",              MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
-    { "language",           "Language",           MSXML_JSON_WRKPTR | MSXML_JSON_VALUE },
-    { "meta",               "MetaFields",         MSXML_JSON_WRKPTR | MSXML_JSON_ATTRIB | MSXML_JSON_VALUE | MSXML_JSON_COUNT | MSXML_JSON_MULTI },
-    { "item",               "Contents",           MSXML_JSON_WRKPTR | MSXML_JSON_ATTRIB | MSXML_JSON_COUNT | MSXML_JSON_MULTI }
-};
-static size_t num_ooxml_hwp_keys = sizeof(ooxml_hwp_keys) / sizeof(struct key_entry);
 
 static int ooxml_hwp_cb(int fd, const char* filepath, cli_ctx *ctx)
 {

@@ -59,9 +59,9 @@ limitations under the License.
 #include "others.h"
 #endif
 
-#define todigit(x)  ((x) >='A'&& (x) <='F')? \
-                    ((uint8_t) (x - 'A' + 10)) : \
-                    ((uint8_t) (x - '0'))
+#define todigit(x)  ((x) >='A'&& (x) <='F') \
+                    ? ((uint8_t) (x - 'A' + 10)) \
+                    : ((uint8_t) (x - '0'))
 
 
 int yr_parser_emit(

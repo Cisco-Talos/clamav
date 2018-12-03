@@ -34,6 +34,8 @@
 #include "disasm.h"
 #include "clamav.h"
 
+// clang-format off
+
 enum ADDRS {
   ADDR_REG_EAX,
   ADDR_REG_ECX,
@@ -1176,6 +1178,7 @@ static const struct OPCODES x86ops[2][256] = {{
 
 }};
 
+// clang-format on
 
 static const char *dis_size[] = {"byte", "word", "dword", "fword", "qword", "tword", "acab"};
 

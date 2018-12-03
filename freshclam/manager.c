@@ -1597,7 +1597,7 @@ test_database_wrap (const char *file, const char *newdb, int bytecode)
         }
         fclose (f);
 
-        while ((ret = waitpid (pid, &status, 0)) == -1 && errno == EINTR);
+        while ((ret = waitpid (pid, &status, 0)) == -1 && errno == EINTR) continue;
         if (ret == -1 && errno != ECHILD)
             logg ("^waitpid() failed: %s\n", strerror (errno));
         cli_chomp (firstline);

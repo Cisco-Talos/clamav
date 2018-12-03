@@ -69,7 +69,7 @@ char updtmpdir[512], dbdir[512];
 static int
 download (const struct optstruct *opts, const char *cfgfile)
 {
-    int ret = 0, try = 1, maxattempts = 0;
+    int ret = 0, attempt = 1, maxattempts = 0;
     const struct optstruct *opt;
     
     
@@ -86,17 +86,17 @@ download (const struct optstruct *opts, const char *cfgfile)
     {
         while (opt)
         {
-            ret = downloadmanager (opts, opt->strarg, try);
+            ret = downloadmanager (opts, opt->strarg, attempt);
 #ifndef _WIN32
             alarm (0);
 #endif
             if (ret == FCE_CONNECTION || ret == FCE_BADCVD
                 || ret == FCE_FAILEDGET || ret == FCE_MIRRORNOTSYNC)
             {
-                if (try < maxattempts)
+                if (attempt < maxattempts)
                 {
                     logg ("Trying again in 5 secs...\n");
-                    try++;
+                    attempt++;
                     sleep (5);
                     continue;
                 }

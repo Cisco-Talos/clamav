@@ -19,8 +19,9 @@
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
-/* Most of this file was derived from yara 2.1.0 libyara/yara.h and
-   other YARA header files. Following is the YARA copyright. */
+/* Most of this file was derived from Yara 2.1.0 libyara/yara.h and
+ * other YARA header files. Following is the YARA copyright. */
+
 /*
 Copyright (c) 2007-2013. The YARA Authors. All Rights Reserved.
 
@@ -45,7 +46,11 @@ limitations under the License.
 #include "others.h"
 #include "str.h"
 
-/* From libyara/include/yara/types.h            */
+// clang-format off
+
+/*
+ * From libyara/include/yara/types.h
+ */
 #define DECLARE_REFERENCE(type, name) \
     union { type name; int64_t name##_; }
 
@@ -53,7 +58,6 @@ limitations under the License.
 #define META_TYPE_INTEGER   1
 #define META_TYPE_STRING    2
 #define META_TYPE_BOOLEAN   3
-
 
 #define STRING_GFLAGS_REFERENCED        0x01
 #define STRING_GFLAGS_HEXADECIMAL       0x02
@@ -163,44 +167,44 @@ limitations under the License.
 
 typedef struct _YR_OBJECT
 {
-  OBJECT_COMMON_FIELDS
+    OBJECT_COMMON_FIELDS
 
 } YR_OBJECT;
 
 typedef struct _YR_OBJECT_INTEGER
 {
-  OBJECT_COMMON_FIELDS
-  int64_t value;
+    OBJECT_COMMON_FIELDS
+    int64_t value;
 
 } YR_OBJECT_INTEGER;
 
 
 typedef struct _YR_OBJECT_STRING
 {
-  OBJECT_COMMON_FIELDS
-  char* value;
+    OBJECT_COMMON_FIELDS
+    char* value;
 
 } YR_OBJECT_STRING;
 
 typedef struct _YR_OBJECT_ARRAY
 {
-  OBJECT_COMMON_FIELDS
-  struct _YR_ARRAY_ITEMS* items;
+    OBJECT_COMMON_FIELDS
+    struct _YR_ARRAY_ITEMS* items;
 
 } YR_OBJECT_ARRAY;
 
 typedef struct _YR_SCAN_CONTEXT
 {
-  uint64_t  file_size;
-  uint64_t  entry_point;
+    uint64_t  file_size;
+    uint64_t  entry_point;
 
-  int flags;
-  void* user_data;
+    int flags;
+    void* user_data;
 
-  //YR_MEMORY_BLOCK*  mem_block;
-  YR_HASH_TABLE*  objects_table;
-  //YR_CALLBACK_FUNC  callback;
-  fmap_t * fmap;
+    //YR_MEMORY_BLOCK*  mem_block;
+    YR_HASH_TABLE*  objects_table;
+    //YR_CALLBACK_FUNC  callback;
+    fmap_t * fmap;
 } YR_SCAN_CONTEXT;
 
 struct _YR_OBJECT_FUNCTION;
@@ -212,23 +216,25 @@ typedef int (*YR_MODULE_FUNC)(
 
 typedef struct _YR_OBJECT_FUNCTION
 {
-  OBJECT_COMMON_FIELDS
+    OBJECT_COMMON_FIELDS
 
-  const char* arguments_fmt;
+    const char* arguments_fmt;
 
-  YR_OBJECT* return_obj;
-  YR_MODULE_FUNC code;
+    YR_OBJECT* return_obj;
+    YR_MODULE_FUNC code;
 
 } YR_OBJECT_FUNCTION;
 
 typedef struct _YR_ARRAY_ITEMS
 {
-  int count;
-  YR_OBJECT* objects[1];
+    int count;
+    YR_OBJECT* objects[1];
 
 } YR_ARRAY_ITEMS;
 
-/* From libyara/include/yara/sizedstr.h            */
+/*
+ * From libyara/include/yara/sizedstr.h
+ */
 #define SIZED_STRING_FLAGS_NO_CASE  1
 #define SIZED_STRING_FLAGS_DOT_ALL  2
 
@@ -241,7 +247,9 @@ typedef struct _SIZED_STRING
 } SIZED_STRING;
 
 
-/* From libyara/include/yara/error.h            */
+/*
+ * From libyara/include/yara/error.h
+ */
 #ifndef ERROR_SUCCESS
 #define ERROR_SUCCESS                           0
 #endif
@@ -287,21 +295,23 @@ typedef struct _SIZED_STRING
 #define ERROR_WRONG_NUMBER_OF_ARGUMENTS         40
 
 #define FAIL_ON_ERROR(x) { \
-  int result = (x); \
-  if (result != ERROR_SUCCESS) \
-    return result; \
+    int result = (x); \
+    if (result != ERROR_SUCCESS) \
+        return result; \
 }
 
 #define FAIL_ON_COMPILER_ERROR(x) { \
-  compiler->last_result = (x); \
-  if (compiler->last_result != ERROR_SUCCESS) { \
-    if (compiler->last_result == ERROR_INSUFICIENT_MEMORY) \
-      yyfatal(yyscanner, "YARA fatal error: terminating rule parse\n"); \
-    return compiler->last_result; \
-  } \
+    compiler->last_result = (x); \
+    if (compiler->last_result != ERROR_SUCCESS) { \
+        if (compiler->last_result == ERROR_INSUFICIENT_MEMORY) \
+            yyfatal(yyscanner, "YARA fatal error: terminating rule parse\n"); \
+        return compiler->last_result; \
+    } \
 }
 
-/* From libyara/include/yara/re.h            */
+/*
+ * From libyara/include/yara/re.h
+ */
 #define RE_FLAGS_FAST_HEX_REGEXP          0x02
 #define RE_FLAGS_BACKWARDS                0x04
 #define RE_FLAGS_EXHAUSTIVE               0x08
@@ -309,96 +319,100 @@ typedef struct _SIZED_STRING
 #define RE_FLAGS_NO_CASE                  0x20
 #define RE_FLAGS_SCAN                     0x40
 #define RE_FLAGS_DOT_ALL                  0x80
-#define RE_FLAGS_NOT_AT_START            0x100
+#define RE_FLAGS_NOT_AT_START             0x100
 
 typedef struct _YR_META
 {
-  int32_t type;
-  int32_t integer;
+    int32_t type;
+    int32_t integer;
 
-  DECLARE_REFERENCE(char*, identifier);
-  DECLARE_REFERENCE(char*, string);
+    DECLARE_REFERENCE(char*, identifier);
+    DECLARE_REFERENCE(char*, string);
 
 } YR_META;
 
 #if REAL_YARA
 typedef struct _YR_STRING
 {
-  int32_t g_flags;
-  int32_t length;
+    int32_t g_flags;
+    int32_t length;
 
-  DECLARE_REFERENCE(char*, identifier);
-  DECLARE_REFERENCE(uint8_t*, string);
-  DECLARE_REFERENCE(struct _YR_STRING*, chained_to);
+    DECLARE_REFERENCE(char*, identifier);
+    DECLARE_REFERENCE(uint8_t*, string);
+    DECLARE_REFERENCE(struct _YR_STRING*, chained_to);
 
-  int32_t chain_gap_min;
-  int32_t chain_gap_max;
+    int32_t chain_gap_min;
+    int32_t chain_gap_max;
 
-    //  YR_MATCHES matches[MAX_THREADS];
-    //  YR_MATCHES unconfirmed_matches[MAX_THREADS];
+        //  YR_MATCHES matches[MAX_THREADS];
+        //  YR_MATCHES unconfirmed_matches[MAX_THREADS];
 
 } YR_STRING;
 #endif
 
 typedef struct _YR_EXTERNAL_VARIABLE
 {
-  int32_t type;
-  int64_t integer;
+    int32_t type;
+    int64_t integer;
 
-  DECLARE_REFERENCE(char*, identifier);
-  DECLARE_REFERENCE(char*, string);
+    DECLARE_REFERENCE(char*, identifier);
+    DECLARE_REFERENCE(char*, string);
 
 } YR_EXTERNAL_VARIABLE;
 
 typedef struct _YR_NAMESPACE
 {
 
-  DECLARE_REFERENCE(char*, name);
+    DECLARE_REFERENCE(char*, name);
 
 } YR_NAMESPACE;
 
-/* From libyara/include/yara/exec.h            */
+/*
+ * From libyara/include/yara/exec.h
+ */
 typedef struct RE RE;
 typedef struct RE_NODE RE_NODE;
 
 struct RE_NODE
 {
-  int type;
+    int type;
 
-  union {
-    int value;
-    int count;
-    int start;
-  };
+    union {
+        int value;
+        int count;
+        int start;
+    };
 
-  union {
-    int mask;
-    int end;
-  };
+    union {
+        int mask;
+        int end;
+    };
 
-  int greedy;
+    int greedy;
 
-  uint8_t* class_vector;
+    uint8_t* class_vector;
 
-  RE_NODE* left;
-  RE_NODE* right;
+    RE_NODE* left;
+    RE_NODE* right;
 
-  void* forward_code;
-  void* backward_code;
+    void* forward_code;
+    void* backward_code;
 };
 
 
 struct RE {
 
-  uint32_t flags;
-  RE_NODE* root_node;
+    uint32_t flags;
+    RE_NODE* root_node;
 
-  const char* error_message;
-  int error_code;
+    const char* error_message;
+    int error_code;
 };
 
 
-/* From libyara/include/yara/limits.h            */
+/*
+ * From libyara/include/yara/limits.h
+ */
 #define MAX_COMPILER_ERROR_EXTRA_INFO   256
 #define MAX_LOOP_NESTING                4
 #define MAX_FUNCTION_ARGS               128
@@ -406,10 +420,12 @@ struct RE {
 #define LEX_BUF_SIZE                    1024
 #define MAX_INCLUDE_DEPTH               16
 #ifndef MAX_PATH
-#define MAX_PATH 1024
+#define MAX_PATH                        1024
 #endif
 
-/* From libyara/include/yara/object.h            */
+/*
+ * From libyara/include/yara/object.h
+ */
 #define OBJECT_TYPE_INTEGER     1
 #define OBJECT_TYPE_STRING      2
 #define OBJECT_TYPE_STRUCTURE   3
@@ -417,7 +433,9 @@ struct RE {
 #define OBJECT_TYPE_FUNCTION    5
 #define OBJECT_TYPE_REGEXP      6
 
-/* From libyara/include/yara/utils.h */
+/*
+ * From libyara/include/yara/utils.h
+ */
 #define UINT64_TO_PTR(type, x)  ((type)(size_t) x)
 #define PTR_TO_UINT64(x)  ((uint64_t) (size_t) x)
 
@@ -431,7 +449,9 @@ struct RE {
 #define RULE_OFFSETS    32
 #endif
 
-/* YARA to ClamAV function mappings */
+/*
+ * YARA to ClamAV function mappings
+ */
 #define yr_strdup cli_strdup
 #define yr_malloc cli_malloc
 #define yr_realloc cli_realloc
@@ -443,7 +463,9 @@ struct RE {
 #define strlcpy cli_strlcpy
 #define strlcat cli_strlcat
 
-/* YARA-defined structure replacements for ClamAV */
+/*
+ * YARA-defined structure replacements for ClamAV
+ */
 struct _yc_rule {
     STAILQ_ENTRY(_yc_rule) link;
     STAILQ_HEAD(sq, _yc_string) strings;
@@ -468,6 +490,8 @@ typedef struct _yc_string {
 
 typedef yc_rule YR_RULE;
 typedef yc_string YR_STRING;
+
+// clang-format on
 
 #endif
 

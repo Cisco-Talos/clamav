@@ -2386,8 +2386,7 @@ rfc2231(const char *in)
 
 	*out++ = '=';
 
-	while(*ptr++ != '=')
-		;
+	while (*ptr++ != '=') continue;
 
 	/*
 	 * We don't do anything with the language and character set, just skip

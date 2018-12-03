@@ -168,12 +168,12 @@ typedef	enum {
  * more than one machine you must make sure that .../partial is on a shared
  * network filesystem
  */
-/*#define	NEW_WORLD*/
 
-/*#define	SCAN_UNENCODED_BOUNCES	*//*
-					 * Slows things down a lot and only catches unencoded copies
-					 * of EICAR within bounces, which don't matter
-					 */
+/*
+ * Slows things down a lot and only catches unencoded copies
+ * of EICAR within bounces, which don't matter
+ */
+//#define	SCAN_UNENCODED_BOUNCES
 
 typedef	struct	mbox_ctx {
 	const	char	*dir;

@@ -48,9 +48,9 @@
 
 #ifndef timercmp
 #define timercmp(a, b, cmp)          \
-  (((a)->tv_sec == (b)->tv_sec) ?     \
-   ((a)->tv_usec cmp (b)->tv_usec) :  \
-   ((a)->tv_sec cmp (b)->tv_sec))
+  (((a)->tv_sec == (b)->tv_sec)      \
+   ? ((a)->tv_usec cmp (b)->tv_usec)   \
+   : ((a)->tv_sec cmp (b)->tv_sec))
 #endif /* timercmp */
 
 #ifndef timersub

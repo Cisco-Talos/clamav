@@ -187,7 +187,7 @@ static int
 download (const struct optstruct *opts, const char *cfgfile)
 {
     time_t currtime;
-    int ret = 0, try = 1, maxattempts = 0;
+    int ret = 0, attempt = 1, maxattempts = 0;
     const struct optstruct *opt;
 
     time(&currtime);
@@ -207,17 +207,17 @@ download (const struct optstruct *opts, const char *cfgfile)
     {
         while (opt)
         {
-            ret = downloadmanager (opts, opt->strarg, try);
+            ret = downloadmanager (opts, opt->strarg, attempt);
 #ifndef _WIN32
             alarm (0);
 #endif
             if (ret == FCE_CONNECTION || ret == FCE_BADCVD
                 || ret == FCE_FAILEDGET || ret == FCE_MIRRORNOTSYNC)
             {
-                if (try < maxattempts)
+                if (attempt < maxattempts)
                 {
                     logg ("Trying again in 5 secs...\n");
-                    try++;
+                    attempt++;
                     sleep (5);
                     continue;
                 }
@@ -229,7 +229,7 @@ download (const struct optstruct *opts, const char *cfgfile)
                     {
                         logg ("Update failed. Your network may be down or none of the mirrors listed in %s is working. Check https://www.clamav.net/documents/official-mirror-faq for possible reasons.\n", cfgfile);
                     }
-                    try = 1;
+                    attempt = 1;
                 }
 
             }

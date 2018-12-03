@@ -24,6 +24,7 @@
 
 #include "others.h"
 
+// clang-format off
 #define HWP5_COMPRESSED     0x1
 #define HWP5_PASSWORD       0x2
 #define HWP5_DISTRIBUTABLE  0x4
@@ -36,6 +37,7 @@
 #define HWP5_CERT_EXTRA     0x200
 #define HWP5_CERT_DRM       0x400
 #define HWP5_CCL            0x800
+// clang-format on
 
 typedef struct hwp5_header {
     uint8_t signature[32];

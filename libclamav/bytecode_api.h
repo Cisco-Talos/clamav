@@ -80,25 +80,23 @@ enum BytecodeKind {
 enum FunctionalityLevels {
     FUNC_LEVEL_096       = 51, /* LibClamAV release 0.96.0: bytecode engine released */
     FUNC_LEVEL_096_dev   = 52,
-    FUNC_LEVEL_096_1     = 53, /* LibClamAV release 0.96.1: logical signature use of VI/macros
-                                * requires this minimum functionality level */
+    FUNC_LEVEL_096_1     = 53, /* LibClamAV release 0.96.1: logical signature use of VI/macros requires this minimum functionality level */
     FUNC_LEVEL_096_1_dev = 54,
     FUNC_LEVEL_096_2     = 54, /* LibClamAV release 0.96.2: PDF Hooks require this minimum level */
     FUNC_LEVEL_096_2_dev = 55,
     FUNC_LEVEL_096_3     = 55, /* LibClamAV release 0.96.3: BC_PE_ALL bytecodes require this minimum level */
-    FUNC_LEVEL_096_4     = 56, /* LibClamAV release 0.96.4: minimum recommended engine version, older versions 
-                                * have quadratic load time */
+    FUNC_LEVEL_096_4     = 56, /* LibClamAV release 0.96.4: minimum recommended engine version, older versions have quadratic load time */
     FUNC_LEVEL_096_5     = 58, /* LibClamAV release 0.96.5 */
     FUNC_LEVEL_097       = 60, /* LibClamAV release 0.97.0: older bytecodes may incorrectly use 57 */
     FUNC_LEVEL_097_1     = 61, /* LibClamAV release 0.97.1 */
     FUNC_LEVEL_097_2     = 62, /* LibClamAV release 0.97.2 */
-    FUNC_LEVEL_097_3     = 63, /* LibClamAV release 0.97.3 */ /*last bcc changes as former team resigns*/
+    FUNC_LEVEL_097_3     = 63, /* LibClamAV release 0.97.3: last bcc changes as former team resigns*/
     FUNC_LEVEL_097_4     = 64, /* LibClamAV release 0.97.4 */
     FUNC_LEVEL_097_5     = 65, /* LibClamAV release 0.97.5 */
     FUNC_LEVEL_097_6     = 67, /* LibClamAV release 0.97.6 */
     FUNC_LEVEL_097_7     = 68, /* LibClamAV release 0.97.7 */
     FUNC_LEVEL_097_8     = 69, /* LibClamAV release 0.97.8 */
-    FUNC_LEVEL_098_1     = 76, /* LibClamAV release 0.98.1 */ /*last syncing to clamav*/
+    FUNC_LEVEL_098_1     = 76, /* LibClamAV release 0.98.1: last syncing to clamav*/
     FUNC_LEVEL_098_2     = 77, /* LibClamAV release 0.98.2 */
     FUNC_LEVEL_098_3     = 77, /* LibClamAV release 0.98.3 */
     FUNC_LEVEL_098_4     = 77, /* LibClamAV release 0.98.4 */
@@ -209,6 +207,7 @@ enum bc_json_type {
 \group_engine
  * Scan option flag values for engine_scan_options(). *DEPRECATED*
  */
+// clang-format off
 #define CL_SCAN_RAW                     0x0
 #define CL_SCAN_ARCHIVE                 0x1
 #define CL_SCAN_MAIL                    0x2
@@ -242,7 +241,7 @@ enum bc_json_type {
 //#define UNUSED                        0x20000000
 #define CL_SCAN_PERFORMANCE_INFO        0x40000000 /* Collect performance timings */
 #define CL_SCAN_INTERNAL_COLLECT_SHA    0x80000000 /* Enables hash output in sha-collect builds - for internal use only */
-
+// clang-format on
 
 #ifdef __CLAMBC__
 
