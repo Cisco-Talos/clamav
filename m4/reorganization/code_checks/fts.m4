@@ -1,5 +1,5 @@
 AC_MSG_CHECKING([LFS safe fts implementation])
-AC_COMPILE_IFELSE( [
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([
 #include <fts.h>
 
 int main(void) {
@@ -7,7 +7,7 @@ int main(void) {
 
     return 0;
 }
-],
+])],
 [have_LFS_fts=yes],
 [have_LFS_fts=no],
 [have_LFS_fts=no]

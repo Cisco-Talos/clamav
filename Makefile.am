@@ -42,6 +42,8 @@ lcov:
 	($(MAKE); cd unit_tests; $(MAKE) lcov)
 quick-check:
 	($(MAKE); cd unit_tests; $(MAKE) quick-check)
+fuzz:
+	($(MAKE); $(MAKE) -C fuzz check)
 
 dist-hook:
 	rm -rf $(distdir)/win32/clamav-for-windows $(distdir)/win32/build
