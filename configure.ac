@@ -78,6 +78,7 @@ fi
 build_configure_args=`echo "$ac_configure_args" | sed -e 's/[\"]//g'`
 AC_SUBST([BUILD_CONFIGURE_FLAGS], [$build_configure_args])
 
+m4_include([m4/reorganization/code_checks/fuzz.m4])
 m4_include([m4/reorganization/code_checks/functions.m4])
 m4_include([m4/reorganization/code_checks/mpool.m4])
 m4_include([m4/reorganization/code_checks/unit_tests.m4])
@@ -170,6 +171,7 @@ clamconf/Makefile
 etc/Makefile
 test/Makefile
 unit_tests/Makefile
+fuzz/Makefile
 clamdtop/Makefile
 clambc/Makefile
 libfreshclam/Makefile
