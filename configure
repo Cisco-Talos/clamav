@@ -976,6 +976,7 @@ with_libprelude_prefix
 with_libcurl
 enable_strni
 enable_largefile
+enable_mmap_for_cross_compiling
 '
       ac_precious_vars='build_alias
 host_alias
@@ -20585,7 +20586,11 @@ if ${ac_cv_c_mmap_private+:} false; then :
 else
 
 		if test "$cross_compiling" = yes; then :
+	if test "$enable_mmap_for_cross_compiling" = yes; then
+  ac_cv_c_mmap_private=yes
+	else
   ac_cv_c_mmap_private=no
+	fi
 else
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
