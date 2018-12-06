@@ -5932,7 +5932,7 @@ $as_echo "$ac_cv_safe_to_define___extensions__" >&6; }
 VERSION="0.102.0-devel-`date +%Y%m%d`"
 
 LC_CURRENT=9
-LC_REVISION=0
+LC_REVISION=1
 LC_AGE=0
 LIBCLAMAV_VERSION="$LC_CURRENT":"$LC_REVISION":"$LC_AGE"
 
