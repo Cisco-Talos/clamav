@@ -1,3 +1,4 @@
+AC_ARG_ENABLE([mmap-for-cross-compiling],[AS_HELP_STRING([--enable-mmap-for-cross-compiling], [set to "yes" to force enable mmap support without checking under cross-compiling. This could help enable mempool feature.])], enable_mmap_for_cross_compiling=$enableval, mmap_for_cross_compiling="no")
 dnl Check for mmap()
 dnl AC_FUNC_MMAP checks for private fixed mappings, we don't need
 dnl fixed mappings, so check only wether private mappings work.
@@ -67,7 +68,13 @@ int main(void)
 }])],
 	[ac_cv_c_mmap_private=yes],
 	[ac_cv_c_mmap_private=no],
-	[ac_cv_c_mmap_private=no])])
+	[
+	if test $enable_mmap_for_cross_compiling = yes; then
+  ac_cv_c_mmap_private=yes
+	else
+  ac_cv_c_mmap_private=no
+	fi
+	])])
 if test $ac_cv_c_mmap_private = yes; then
 	AC_DEFINE(HAVE_MMAP, 1,
 		[Define to 1 if you have a working `mmap' system call that supports MAP_PRIVATE.])
