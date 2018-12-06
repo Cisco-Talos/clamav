@@ -6,9 +6,9 @@ If you wish to build ClamAV from source using Visual Studio 2015, please head ov
 
 Important: Installing ClamAV using the Installer will require Administrator privileges.
 
-1. Download: http://www.clamav.net/downloads/production/ClamAV-0.101.0.exe
+1. Download: http://www.clamav.net/downloads/production/ClamAV-0.101.1.exe
 2. Locate the file in your Downloads directory.
-3. Right-click on `ClamAV-0.101.0.exe` and select `Run as administrator`. You may receive a warning message along the lines of "Windows protected your PC".  Select `More info` and then select `Run anyway`.
+3. Right-click on `ClamAV-0.101.1.exe` and select `Run as administrator`. You may receive a warning message along the lines of "Windows protected your PC".  Select `More info` and then select `Run anyway`.
 4. Select `I accept the agreement` and click `Next`.
 5. Click `Next` again. If you've removed a previous installation of ClamAV, you may receive the prompt "The folder ... already exists...". If you do, select `Yes`.
 6. Click `Install`.
@@ -28,9 +28,9 @@ Continue on to "First Time Set-Up" below...
 
 ## Install using the ClamAV Portable Install Package
 
-1. Download: https://www.clamav.net/downloads/production/clamav-0.101.0-win-x64-portable.zip
+1. Download: https://www.clamav.net/downloads/production/clamav-0.101.1-win-x64-portable.zip
 2. Unzip it.
-3. Open the `clamav-0.101.0-win-x64-portable` directory.
+3. Open the `clamav-0.101.1-win-x64-portable` directory.
 4. Hold down Shift and then right-click on the background in the current directory (but not on one of the files). Select `"Open PowerShell window here"`. If that option doesn't appear, try again.
 
 Continue on to "First Time Set-Up"...
