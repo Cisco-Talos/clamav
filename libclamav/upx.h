@@ -22,7 +22,7 @@
 #ifndef __UPX_H
 #define __UPX_H
 
-#include "cltypes.h"
+#include "clamav-types.h"
 
 int upx_inflate2b(const char *, uint32_t, char *, uint32_t *, uint32_t, uint32_t, uint32_t);
 int upx_inflate2d(const char *, uint32_t, char *, uint32_t *, uint32_t, uint32_t, uint32_t);

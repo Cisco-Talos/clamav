@@ -34,7 +34,6 @@
 #endif
 #include <time.h>
 
-#include "cltypes.h"
 #include "jpeg.h"
 #include "clamav.h"
 

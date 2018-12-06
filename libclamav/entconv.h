@@ -24,7 +24,7 @@
 #ifndef _ENTITIES_H
 #define _ENTITIES_H
 
-#include "cltypes.h"
+#include "clamav-types.h"
 
 #include "hashtab.h"
 

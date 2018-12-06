@@ -22,7 +22,7 @@
 #ifndef __WWP32_H
 #define __WWP32_H
 
-#include "cltypes.h"
+#include "clamav-types.h"
 #include "execs.h"
 
 int wwunpack(uint8_t *, uint32_t, uint8_t *, struct cli_exe_section *, uint16_t, uint32_t, int);

@@ -29,7 +29,7 @@
 #include <stdlib.h>
 #include "shared/optparser.h"
 #include "thrmgr.h"
-#include "cltypes.h"
+#include "clamav-types.h"
 
 enum mode {
     MODE_COMMAND,

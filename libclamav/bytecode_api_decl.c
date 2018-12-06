@@ -26,7 +26,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE
  */
-#include "cltypes.h"
+#include "clamav-types.h"
 #include "type_desc.h"
 #include "bytecode_api.h"
 #include "bytecode_api_impl.h"

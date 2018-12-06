@@ -22,7 +22,7 @@
 #ifndef __SPIN_H
 #define __SPIN_H
 
-#include "cltypes.h"
+#include "clamav-types.h"
 #include "rebuildpe.h"
 
 int unspin(char *, int, struct cli_exe_section *, int, uint32_t, int, cli_ctx *);

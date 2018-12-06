@@ -55,7 +55,6 @@
 #include <string.h>
 
 #include "clamav.h"
-#include "cltypes.h"
 #include "pe.h"
 #include "rebuildpe.h"
 #include "execs.h"

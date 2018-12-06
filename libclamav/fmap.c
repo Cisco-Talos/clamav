@@ -46,7 +46,6 @@
 
 #include "clamav.h"
 #include "others.h"
-#include "cltypes.h"
 #include "str.h"
 
 static inline unsigned int fmap_align_items(unsigned int sz, unsigned int al);

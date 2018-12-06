@@ -38,7 +38,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "cltypes.h"
 
 #include "clamav.h"
 #include "dconf.h"

@@ -27,7 +27,6 @@
 
 #include "clamav.h"
 #include "target.h"
-#include "cltypes.h"
 
 #include "bytecode_detect.h"
 #include "others.h"

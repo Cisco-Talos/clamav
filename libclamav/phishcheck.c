@@ -36,7 +36,6 @@
 #include <ctype.h>
 
 #include "clamav.h"
-#include "cltypes.h"
 #include "others.h"
 #include "htmlnorm.h"
 #include "phishcheck.h"

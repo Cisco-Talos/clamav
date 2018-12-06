@@ -54,7 +54,6 @@
 #include <string.h>
 
 #include "clamav.h"
-#include "cltypes.h"
 #include "others.h"
 #include "upx.h"
 #include "str.h"

@@ -24,7 +24,6 @@
 #endif
 
 #include "clamav.h"
-#include "cltypes.h"
 #include "others.h"
 #include "hfsplus.h"
 #include "scanners.h"

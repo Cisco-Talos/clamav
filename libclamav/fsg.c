@@ -42,7 +42,6 @@
 #include <stdlib.h>
 
 #include "clamav.h"
-#include "cltypes.h"
 #include "rebuildpe.h"
 #include "others.h"
 #include "packlibs.h"

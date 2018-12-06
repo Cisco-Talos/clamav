@@ -24,7 +24,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "cltypes.h"
 #include "bytecode.h"
 #include "bytecode_priv.h"
 #include "clamav.h"

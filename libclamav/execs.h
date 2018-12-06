@@ -22,7 +22,7 @@
 #ifndef __EXECS_H
 #define __EXECS_H
 
-#include "cltypes.h"
+#include "clamav-types.h"
 #include "hashtab.h"
 #include "bcfeatures.h"
 

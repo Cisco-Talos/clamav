@@ -52,7 +52,6 @@
 #include "checks_common.h"
 #include "libclamav/clamav.h"
 #include "libclamav/version.h"
-#include "libclamav/cltypes.h"
 
 #ifdef CHECK_HAVE_LOOPS
 

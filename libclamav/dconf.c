@@ -30,7 +30,6 @@
 #include <zlib.h>
 
 #include "clamav.h"
-#include "cltypes.h"
 #include "dconf.h"
 #include "readdb.h"
 #include "str.h"

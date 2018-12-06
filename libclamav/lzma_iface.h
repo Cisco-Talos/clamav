@@ -28,7 +28,7 @@
 #define __LZMA_IFACE_H
 
 #include "7z/LzmaDec.h"
-#include "cltypes.h"
+#include "clamav-types.h"
 #include "others.h"
 
 struct CLI_LZMA {

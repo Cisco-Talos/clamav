@@ -23,7 +23,7 @@
 #define MPOOL_H
 
 #ifdef USE_MPOOL
-#include "cltypes.h"
+#include "clamav-types.h"
 typedef struct MP mpool_t;
 struct cl_engine;
 
