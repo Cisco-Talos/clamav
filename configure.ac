@@ -190,7 +190,11 @@ docs/man/freshclam.conf.5
 docs/man/sigtool.1
 docs/man/clamdtop.1
 docs/man/clamsubmit.1
+clamav-types.h
 ])
+
+# Define variables needed to generate clamav-types.h.
+m4_include([m4/reorganization/types.m4])
 
 AC_OUTPUT
 

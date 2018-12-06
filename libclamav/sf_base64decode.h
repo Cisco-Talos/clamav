@@ -25,7 +25,7 @@
 #define _SF_BASE64DECODE_H_
 
 #include <stdio.h>
-#include "cltypes.h"
+#include "clamav-types.h"
 
 int sf_base64decode(uint8_t*, size_t, uint8_t*, size_t, size_t*); 
 

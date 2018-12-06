@@ -24,7 +24,7 @@
 
 #include "pe.h"
 #include "execs.h"
-#include "cltypes.h"
+#include "clamav-types.h"
 
 int yc_decrypt(cli_ctx *, char *, unsigned int, struct cli_exe_section *, unsigned int, uint32_t, int,uint32_t,int16_t);
 

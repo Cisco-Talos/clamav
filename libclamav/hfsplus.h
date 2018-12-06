@@ -26,7 +26,7 @@
 #include "clamav-config.h"
 #endif
 
-#include "cltypes.h"
+#include "clamav-types.h"
 
 /* Structures based on Apple Technote 1150 */
 

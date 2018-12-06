@@ -35,7 +35,6 @@
 
 #include "libclamav/clamav.h"
 #include "libclamav/vba_extract.h"
-#include "libclamav/cltypes.h"
 #include "libclamav/ole2_extract.h"
 #include "shared/output.h"
 

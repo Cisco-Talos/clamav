@@ -63,7 +63,6 @@
 #include "libclamav/matcher-pcre.h"
 #include "libclamav/str.h"
 #include "libclamav/readdb.h"
-#include "libclamav/cltypes.h"
 
 #ifdef C_LINUX
 dev_t procdev;

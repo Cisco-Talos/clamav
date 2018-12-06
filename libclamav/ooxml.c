@@ -24,7 +24,6 @@
 #endif
 
 #include "clamav.h"
-#include "cltypes.h"
 #include "filetypes.h"
 #include "others.h"
 #include "unzip.h"

@@ -25,7 +25,6 @@
 #include <sys/types.h>
 
 #include "clamav.h"
-#include "cltypes.h"
 #include "fmap.h"
 
 #define CL_FILE_MBUFF_SIZE 1024

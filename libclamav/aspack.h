@@ -22,7 +22,7 @@
 #ifndef __ASPACK_H
 #define __ASPACK_H
 
-#include "cltypes.h"
+#include "clamav-types.h"
 #include "execs.h"
 
 #define ASPACK_EP_OFFSET_212    (58+0x70e)

@@ -42,7 +42,6 @@
 #include "hashtab.h"
 #include "entconv.h"
 #include "entitylist.h"
-#include "cltypes.h"
 
 #ifdef HAVE_ICONV
 #include <iconv.h>

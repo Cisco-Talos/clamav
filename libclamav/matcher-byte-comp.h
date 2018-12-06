@@ -30,7 +30,7 @@
 
 #include <sys/types.h>
 
-#include "cltypes.h"
+#include "clamav-types.h"
 #include "dconf.h"
 #include "mpool.h"
 

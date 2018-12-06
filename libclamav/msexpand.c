@@ -33,7 +33,6 @@
 #include <string.h>
 
 #include "clamav.h"
-#include "cltypes.h"
 #include "others.h"
 #include "msexpand.h"
 #include "fmap.h"

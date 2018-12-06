@@ -39,7 +39,6 @@
 #include "matcher.h"
 #include "matcher-ac.h"
 #include "filetypes.h"
-#include "cltypes.h"
 #include "str.h"
 #include "readdb.h"
 #include "default.h"

@@ -646,6 +646,18 @@ am__EXEEXT_FALSE
 am__EXEEXT_TRUE
 LTLIBOBJS
 LIBOBJS
+DEFINE_SF64_PREFIX
+DEFINE_SF32_PREFIX
+INT_TYPES_HEADER
+UINT64_DEF
+INT64_DEF
+UINT32_DEF
+INT32_DEF
+UINT16_DEF
+INT16_DEF
+UINT8_DEF
+INT8_DEF
+GENERATE_WARNING
 HAVE_STRNI
 JSON_LDFLAGS
 JSON_LIBS
@@ -29156,7 +29168,148 @@ else
     mspack_msg="External, $LIBMSPACK_CFLAGS $LIBMSPACK_LIBS"
 fi
 
-ac_config_files="$ac_config_files clamscan/Makefile database/Makefile docs/Makefile clamd/Makefile clamd/clamav-daemon.service clamd/clamav-daemon.socket clamdscan/Makefile clamsubmit/Makefile clamav-milter/Makefile freshclam/clamav-freshclam.service freshclam/Makefile sigtool/Makefile clamconf/Makefile etc/Makefile test/Makefile unit_tests/Makefile clamdtop/Makefile clambc/Makefile libfreshclam/Makefile Makefile clamav-config libclamav.pc platform.h docs/man/clamav-milter.8 docs/man/clamav-milter.conf.5 docs/man/clambc.1 docs/man/clamconf.1 docs/man/clamd.8 docs/man/clamd.conf.5 docs/man/clamdscan.1 docs/man/clamscan.1 docs/man/freshclam.1 docs/man/freshclam.conf.5 docs/man/sigtool.1 docs/man/clamdtop.1 docs/man/clamsubmit.1"
+ac_config_files="$ac_config_files clamscan/Makefile database/Makefile docs/Makefile clamd/Makefile clamd/clamav-daemon.service clamd/clamav-daemon.socket clamdscan/Makefile clamsubmit/Makefile clamav-milter/Makefile freshclam/clamav-freshclam.service freshclam/Makefile sigtool/Makefile clamconf/Makefile etc/Makefile test/Makefile unit_tests/Makefile clamdtop/Makefile clambc/Makefile libfreshclam/Makefile Makefile clamav-config libclamav.pc platform.h docs/man/clamav-milter.8 docs/man/clamav-milter.conf.5 docs/man/clambc.1 docs/man/clamconf.1 docs/man/clamd.8 docs/man/clamd.conf.5 docs/man/clamdscan.1 docs/man/clamscan.1 docs/man/freshclam.1 docs/man/freshclam.conf.5 docs/man/sigtool.1 docs/man/clamdtop.1 docs/man/clamsubmit.1 clamav-types.h"
+
+
+# Define variables needed to generate clamav-types.h.
+# Define a warning for the user, so they don't edit clamav-types.h
+GENERATE_WARNING="Warning: This file is generated with ./configure. Do not edit!"
+
+
+# Initialize definitions to empty strings, in case they're not needed.
+INT8_DEF=""
+
+UINT8_DEF=""
+
+INT16_DEF=""
+
+UINT16_DEF=""
+
+INT32_DEF=""
+
+UINT32_DEF=""
+
+INT64_DEF=""
+
+UINT64_DEF=""
+
+
+# Check sys/int_types.h first, to give it higher priority on Solaris
+ac_fn_c_check_header_mongrel "$LINENO" "sys/int_types.h" "ac_cv_header_sys_int_types_h" "$ac_includes_default"
+if test "x$ac_cv_header_sys_int_types_h" = xyes; then :
+           INT_TYPES_HEADER="#include <sys/int_types.h>"
+
+
+else
+           ac_fn_c_check_header_mongrel "$LINENO" "inttypes.h" "ac_cv_header_inttypes_h" "$ac_includes_default"
+if test "x$ac_cv_header_inttypes_h" = xyes; then :
+                   INT_TYPES_HEADER="#include <inttypes.h>"
+
+
+else
+                   ac_fn_c_check_header_mongrel "$LINENO" "stdint.h" "ac_cv_header_stdint_h" "$ac_includes_default"
+if test "x$ac_cv_header_stdint_h" = xyes; then :
+                           INT_TYPES_HEADER="#include <stdint.h>"
+
+
+else
+                           cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+                                        #ifndef _MSC_VER
+                                            error: _MSC_VER not found!
+                                        #endif
+
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+                                   INT_TYPES_HEADER="#include <stdint.h>"
+
+
+else
+                                   INT8_DEF="typedef signed char int8_t;"
+
+                                UINT8_DEF="typedef unsigned char uint8_t;"
+
+
+                                if test $ac_cv_sizeof_int = 2; then
+                                    INT16_DEF="typedef signed int int16_t;"
+
+                                    UINT16_DEF="typedef unsigned int uint16_t;"
+
+                                elif test $ac_cv_sizeof_short = 2; then
+                                    INT16_DEF="typedef signed short int16_t;"
+
+                                    UINT16_DEF="typedef unsigned short uint16_t;"
+
+                                fi
+
+                                if test $ac_cv_sizeof_int = 4; then
+                                    INT32_DEF="typedef signed int int32_t;"
+
+                                    UINT32_DEF="typedef unsigned int uint32_t;"
+
+                                elif test $ac_cv_sizeof_long = 4; then
+                                    INT32_DEF="typedef signed long int32_t;"
+
+                                    UINT32_DEF="typedef unsigned long uint32_t;"
+
+                                fi
+
+                                if test $ac_cv_sizeof_long = 8; then
+                                    INT64_DEF="typedef signed long int64_t;"
+
+                                    UINT64_DEF="typedef unsigned long uint64_t;"
+
+                                elif test $ac_cv_sizeof_long_long = 8; then
+                                    INT64_DEF="typedef signed long long int64_t;"
+
+                                    UINT64_DEF="typedef unsigned long long uint64_t;"
+
+                                fi
+
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+fi
+
+
+
+fi
+
+
+
+fi
+
+
+
+# If _SF64_PREFIX isn't defined, this may be used.
+if test $ac_cv_sizeof_int = 4; then
+    DEFINE_SF32_PREFIX="#define _SF32_PREFIX \"\""
+
+elif test $ac_cv_sizeof_long = 4; then
+    DEFINE_SF32_PREFIX="#define _SF32_PREFIX \"l\""
+
+fi
+
+# If _SF32_PREFIX isn't defined, this may be used.
+if test $ac_cv_sizeof_long = 8; then
+    DEFINE_SF64_PREFIX="#define _SF64_PREFIX \"l\""
+
+elif test $ac_cv_sizeof_long_long = 8; then
+    DEFINE_SF64_PREFIX="#define _SF64_PREFIX \"ll\""
+
+fi
 
 
 cat >confcache <<\_ACEOF
@@ -30405,6 +30558,7 @@ do
     "docs/man/sigtool.1") CONFIG_FILES="$CONFIG_FILES docs/man/sigtool.1" ;;
     "docs/man/clamdtop.1") CONFIG_FILES="$CONFIG_FILES docs/man/clamdtop.1" ;;
     "docs/man/clamsubmit.1") CONFIG_FILES="$CONFIG_FILES docs/man/clamsubmit.1" ;;
+    "clamav-types.h") CONFIG_FILES="$CONFIG_FILES clamav-types.h" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac
@@ -33289,6 +33443,7 @@ do
     "docs/man/sigtool.1") CONFIG_FILES="$CONFIG_FILES docs/man/sigtool.1" ;;
     "docs/man/clamdtop.1") CONFIG_FILES="$CONFIG_FILES docs/man/clamdtop.1" ;;
     "docs/man/clamsubmit.1") CONFIG_FILES="$CONFIG_FILES docs/man/clamsubmit.1" ;;
+    "clamav-types.h") CONFIG_FILES="$CONFIG_FILES clamav-types.h" ;;
     "libclamav/Makefile") CONFIG_FILES="$CONFIG_FILES libclamav/Makefile" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;

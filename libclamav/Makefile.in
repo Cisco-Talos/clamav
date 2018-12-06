@@ -205,6 +205,7 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
 	$(top_srcdir)/m4/reorganization/libs/curl.m4 \
 	$(top_srcdir)/m4/reorganization/substitutions.m4 \
 	$(top_srcdir)/m4/reorganization/strni.m4 \
+	$(top_srcdir)/m4/reorganization/types.m4 \
 	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
@@ -254,14 +255,13 @@ am__libclamav_la_SOURCES_DIST = matcher-ac.c matcher-ac.h matcher-bm.c \
 	filetypes.h filetypes_int.h rtf.c rtf.h blob.c blob.h mbox.c \
 	mbox.h message.c message.h table.c table.h text.c text.h \
 	ole2_extract.c ole2_extract.h vba_extract.c vba_extract.h \
-	cltypes.h msexpand.c msexpand.h pe.c pe.h pe_icons.c \
-	pe_icons.h disasm.c disasm.h disasm-common.h disasmpriv.h \
-	upx.c upx.h htmlnorm.c htmlnorm.h libmspack.c libmspack.h \
-	rebuildpe.c rebuildpe.h petite.c petite.h wwunpack.c \
-	wwunpack.h unsp.c unsp.h aspack.c aspack.h packlibs.c \
-	packlibs.h fsg.c fsg.h mew.c mew.h upack.c upack.h line.c \
-	line.h untar.c untar.h unzip.c unzip.h ooxml.c ooxml.h \
-	inflate64.c inflate64.h inffixed64.h inflate64_priv.h \
+	msexpand.c msexpand.h pe.c pe.h pe_icons.c pe_icons.h disasm.c \
+	disasm.h disasm-common.h disasmpriv.h upx.c upx.h htmlnorm.c \
+	htmlnorm.h libmspack.c libmspack.h rebuildpe.c rebuildpe.h \
+	petite.c petite.h wwunpack.c wwunpack.h unsp.c unsp.h aspack.c \
+	aspack.h packlibs.c packlibs.h fsg.c fsg.h mew.c mew.h upack.c \
+	upack.h line.c line.h untar.c untar.h unzip.c unzip.h ooxml.c \
+	ooxml.h inflate64.c inflate64.h inffixed64.h inflate64_priv.h \
 	special.c special.h binhex.c binhex.h is_tar.c is_tar.h tnef.c \
 	tnef.h autoit.c autoit.h unarj.c unarj.h nsis/bzlib.c \
 	nsis/bzlib_private.h nsis/nsis_bzlib.h nsis/nulsft.c \
@@ -903,6 +903,8 @@ CXXDEPMODE = @CXXDEPMODE@
 CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
 DBDIR = @DBDIR@
+DEFINE_SF32_PREFIX = @DEFINE_SF32_PREFIX@
+DEFINE_SF64_PREFIX = @DEFINE_SF64_PREFIX@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
 DLLTOOL = @DLLTOOL@
@@ -917,6 +919,7 @@ FGREP = @FGREP@
 FRESHCLAM_CPPFLAGS = @FRESHCLAM_CPPFLAGS@
 FRESHCLAM_LIBS = @FRESHCLAM_LIBS@
 GCOV = @GCOV@
+GENERATE_WARNING = @GENERATE_WARNING@
 GENHTML = @GENHTML@
 GETENT = @GETENT@
 GPERF = @GPERF@
@@ -931,6 +934,11 @@ INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
+INT16_DEF = @INT16_DEF@
+INT32_DEF = @INT32_DEF@
+INT64_DEF = @INT64_DEF@
+INT8_DEF = @INT8_DEF@
+INT_TYPES_HEADER = @INT_TYPES_HEADER@
 JSON_CPPFLAGS = @JSON_CPPFLAGS@
 JSON_LDFLAGS = @JSON_LDFLAGS@
 JSON_LIBS = @JSON_LIBS@
@@ -1012,6 +1020,10 @@ SYSTEMD_CFLAGS = @SYSTEMD_CFLAGS@
 SYSTEMD_LIBS = @SYSTEMD_LIBS@
 THREAD_LIBS = @THREAD_LIBS@
 TH_SAFE = @TH_SAFE@
+UINT16_DEF = @UINT16_DEF@
+UINT32_DEF = @UINT32_DEF@
+UINT64_DEF = @UINT64_DEF@
+UINT8_DEF = @UINT8_DEF@
 VERSION = @VERSION@
 VERSIONSCRIPTFLAG = @VERSIONSCRIPTFLAG@
 WERR_CFLAGS = @WERR_CFLAGS@
@@ -1294,14 +1306,13 @@ libclamav_la_SOURCES = matcher-ac.c matcher-ac.h matcher-bm.c \
 	filetypes.h filetypes_int.h rtf.c rtf.h blob.c blob.h mbox.c \
 	mbox.h message.c message.h table.c table.h text.c text.h \
 	ole2_extract.c ole2_extract.h vba_extract.c vba_extract.h \
-	cltypes.h msexpand.c msexpand.h pe.c pe.h pe_icons.c \
-	pe_icons.h disasm.c disasm.h disasm-common.h disasmpriv.h \
-	upx.c upx.h htmlnorm.c htmlnorm.h libmspack.c libmspack.h \
-	rebuildpe.c rebuildpe.h petite.c petite.h wwunpack.c \
-	wwunpack.h unsp.c unsp.h aspack.c aspack.h packlibs.c \
-	packlibs.h fsg.c fsg.h mew.c mew.h upack.c upack.h line.c \
-	line.h untar.c untar.h unzip.c unzip.h ooxml.c ooxml.h \
-	inflate64.c inflate64.h inffixed64.h inflate64_priv.h \
+	msexpand.c msexpand.h pe.c pe.h pe_icons.c pe_icons.h disasm.c \
+	disasm.h disasm-common.h disasmpriv.h upx.c upx.h htmlnorm.c \
+	htmlnorm.h libmspack.c libmspack.h rebuildpe.c rebuildpe.h \
+	petite.c petite.h wwunpack.c wwunpack.h unsp.c unsp.h aspack.c \
+	aspack.h packlibs.c packlibs.h fsg.c fsg.h mew.c mew.h upack.c \
+	upack.h line.c line.h untar.c untar.h unzip.c unzip.h ooxml.c \
+	ooxml.h inflate64.c inflate64.h inffixed64.h inflate64_priv.h \
 	special.c special.h binhex.c binhex.h is_tar.c is_tar.h tnef.c \
 	tnef.h autoit.c autoit.h unarj.c unarj.h nsis/bzlib.c \
 	nsis/bzlib_private.h nsis/nsis_bzlib.h nsis/nulsft.c \

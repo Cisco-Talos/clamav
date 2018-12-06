@@ -24,7 +24,7 @@
 #ifndef _UNIQ_H
 #define _UNIQ_H
 
-#include "cltypes.h"
+#include "clamav-types.h"
 
 struct UNIQMD5 {
   struct UNIQMD5 *next;

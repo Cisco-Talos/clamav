@@ -24,7 +24,7 @@
 #ifndef EVENTS_H
 #define EVENTS_H
 
-#include "cltypes.h"
+#include "clamav-types.h"
 
 struct cli_events;
 typedef struct cli_events cli_events_t;

@@ -24,7 +24,7 @@
 
 #include "matcher.h"
 #include "filetypes.h"
-#include "cltypes.h"
+#include "clamav-types.h"
 #include "fmap.h"
 #include "others.h"
 

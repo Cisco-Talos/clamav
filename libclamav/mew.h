@@ -26,7 +26,7 @@
 #include "clamav-config.h"
 #endif
 
-#include "cltypes.h"
+#include "clamav-types.h"
 
 struct lzmastate {
 	const char *p0;

@@ -50,7 +50,6 @@
 #endif
 
 #include "clamav.h"
-#include "cltypes.h"
 #include "pe.h"
 #include "others.h"
 #include "mew.h"

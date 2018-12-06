@@ -36,7 +36,6 @@
 #include <assert.h>
 
 #include "clamav.h"
-#include "cltypes.h"
 #include "jsparse/lexglobal.h"
 #include "hashtab.h"
 #include "others.h"

@@ -26,7 +26,6 @@
 #include <zlib.h>
 
 #include "clamav.h"
-#include "cltypes.h"
 #include "cvd.h"
 
 #include "mpool.h"

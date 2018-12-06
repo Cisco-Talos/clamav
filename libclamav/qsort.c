@@ -34,7 +34,6 @@
 
 #include "clamav.h"
 #include "platform.h"
-#include "cltypes.h"
 #include "others.h"
 
 static inline char	*med3(char *, char *, char *, int (*)(const void *, const void *));

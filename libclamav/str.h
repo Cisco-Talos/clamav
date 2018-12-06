@@ -30,7 +30,6 @@
 #include <limits.h>
 
 #include "clamav.h"
-#include "cltypes.h"
 #include "clamav.h"
 
 #define SIZE_T_CHARLEN ( (sizeof(size_t) * CHAR_BIT + 2) / 3 + 1 )

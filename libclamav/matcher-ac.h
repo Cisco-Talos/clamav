@@ -25,7 +25,7 @@
 #include <sys/types.h>
 
 #include "filetypes.h"
-#include "cltypes.h"
+#include "clamav-types.h"
 #include "fmap.h"
 #include "hashtab.h"
 

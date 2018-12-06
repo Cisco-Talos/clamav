@@ -22,7 +22,7 @@
 #ifndef __REBUILDPE_H
 #define __REBUILDPE_H
 
-#include "cltypes.h"
+#include "clamav-types.h"
 #include "execs.h"
 
 int cli_rebuildpe(char *, struct cli_exe_section *, int, uint32_t, uint32_t, uint32_t, uint32_t, int);

@@ -22,7 +22,7 @@
 #ifndef __UNSP_H
 #define __UNSP_H
 
-#include "cltypes.h"
+#include "clamav-types.h"
 #include "others.h"
 
 struct UNSP {

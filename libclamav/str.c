@@ -41,7 +41,6 @@
 #include "clamav.h"
 #include "others.h"
 #include "matcher.h"
-#include "cltypes.h"
 #include "jsparse/textbuf.h"
 #include "platform.h"
 

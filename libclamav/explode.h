@@ -25,7 +25,7 @@
 #ifndef __EXPLODE_H
 #define __EXPLODE_H
 
-#include "cltypes.h"
+#include "clamav-types.h"
 
 enum {
   EXPLODE_EBUFF,

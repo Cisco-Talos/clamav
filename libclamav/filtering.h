@@ -22,7 +22,7 @@
  */
 #ifndef FILTER_H
 #define FILTER_H
-#include "cltypes.h"
+#include "clamav-types.h"
 struct filter {
 	uint8_t B[65536];
 	uint8_t end[65536];

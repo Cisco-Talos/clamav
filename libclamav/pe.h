@@ -28,7 +28,6 @@
 #include "clamav.h"
 #include "execs.h"
 #include "others.h"
-#include "cltypes.h"
 #include "fmap.h"
 #include "bcfeatures.h"
 /** @file */

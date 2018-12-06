@@ -30,7 +30,7 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <sys/types.h>
-#include "cltypes.h"
+#include "clamav-types.h"
 #include "mpool.h"
 typedef long cli_element_data;
 

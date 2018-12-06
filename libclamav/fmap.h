@@ -33,7 +33,7 @@
 #include <limits.h>
 #include <time.h>
 #include <string.h>
-#include "cltypes.h"
+
 #include "clamav.h"
 
 struct cl_fmap;

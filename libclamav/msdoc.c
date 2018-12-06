@@ -42,7 +42,6 @@
 #endif
 
 #include "clamav.h"
-#include "cltypes.h"
 #include "others.h"
 #include "msdoc.h"
 #include "scanners.h"

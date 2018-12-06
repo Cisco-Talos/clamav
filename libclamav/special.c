@@ -37,7 +37,6 @@
 
 #include "clamav.h"
 #include "others.h"
-#include "cltypes.h"
 #include "special.h"
 #include "matcher.h"
 

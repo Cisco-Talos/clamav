@@ -33,6 +33,7 @@
 #  MA 02110-1301, USA.
 
 
+
 VPATH = @srcdir@
 am__is_gnu_make = test -n '$(MAKEFILE_LIST)' && test -n '$(MAKELEVEL)'
 am__make_running_with_option = \
@@ -119,7 +120,8 @@ DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/docs/man/freshclam.conf.5.in \
 	$(top_srcdir)/docs/man/sigtool.1.in \
 	$(top_srcdir)/docs/man/clamdtop.1.in \
-	$(top_srcdir)/docs/man/clamsubmit.1.in COPYING config/ar-lib \
+	$(top_srcdir)/docs/man/clamsubmit.1.in \
+	$(srcdir)/clamav-types.h.in COPYING config/ar-lib \
 	config/compile config/config.guess config/config.rpath \
 	config/config.sub config/install-sh config/missing \
 	config/ylwrap config/ltmain.sh $(top_srcdir)/config/ar-lib \
@@ -203,6 +205,7 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
 	$(top_srcdir)/m4/reorganization/libs/curl.m4 \
 	$(top_srcdir)/m4/reorganization/substitutions.m4 \
 	$(top_srcdir)/m4/reorganization/strni.m4 \
+	$(top_srcdir)/m4/reorganization/types.m4 \
 	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
@@ -215,7 +218,8 @@ CONFIG_CLEAN_FILES = clamav-config libclamav.pc platform.h \
 	docs/man/clambc.1 docs/man/clamconf.1 docs/man/clamd.8 \
 	docs/man/clamd.conf.5 docs/man/clamdscan.1 docs/man/clamscan.1 \
 	docs/man/freshclam.1 docs/man/freshclam.conf.5 \
-	docs/man/sigtool.1 docs/man/clamdtop.1 docs/man/clamsubmit.1
+	docs/man/sigtool.1 docs/man/clamdtop.1 docs/man/clamsubmit.1 \
+	clamav-types.h
 CONFIG_CLEAN_VPATH_FILES =
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
@@ -244,7 +248,8 @@ am__uninstall_files_from_dir = { \
     || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
          $(am__cd) "$$dir" && rm -f $$files; }; \
   }
-am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(pkgconfigdir)"
+am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(pkgconfigdir)" \
+	"$(DESTDIR)$(includedir)"
 SCRIPTS = $(bin_SCRIPTS)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
@@ -274,6 +279,7 @@ am__can_run_installinfo = \
     *) (install-info --version) >/dev/null 2>&1;; \
   esac
 DATA = $(pkgconfig_DATA)
+HEADERS = $(nodist_include_HEADERS)
 RECURSIVE_CLEAN_TARGETS = mostlyclean-recursive clean-recursive	\
   distclean-recursive maintainer-clean-recursive
 am__recursive_targets = \
@@ -393,6 +399,8 @@ CXXDEPMODE = @CXXDEPMODE@
 CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
 DBDIR = @DBDIR@
+DEFINE_SF32_PREFIX = @DEFINE_SF32_PREFIX@
+DEFINE_SF64_PREFIX = @DEFINE_SF64_PREFIX@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
 DLLTOOL = @DLLTOOL@
@@ -407,6 +415,7 @@ FGREP = @FGREP@
 FRESHCLAM_CPPFLAGS = @FRESHCLAM_CPPFLAGS@
 FRESHCLAM_LIBS = @FRESHCLAM_LIBS@
 GCOV = @GCOV@
+GENERATE_WARNING = @GENERATE_WARNING@
 GENHTML = @GENHTML@
 GETENT = @GETENT@
 GPERF = @GPERF@
@@ -421,6 +430,11 @@ INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
+INT16_DEF = @INT16_DEF@
+INT32_DEF = @INT32_DEF@
+INT64_DEF = @INT64_DEF@
+INT8_DEF = @INT8_DEF@
+INT_TYPES_HEADER = @INT_TYPES_HEADER@
 JSON_CPPFLAGS = @JSON_CPPFLAGS@
 JSON_LDFLAGS = @JSON_LDFLAGS@
 JSON_LIBS = @JSON_LIBS@
@@ -502,6 +516,10 @@ SYSTEMD_CFLAGS = @SYSTEMD_CFLAGS@
 SYSTEMD_LIBS = @SYSTEMD_LIBS@
 THREAD_LIBS = @THREAD_LIBS@
 TH_SAFE = @TH_SAFE@
+UINT16_DEF = @UINT16_DEF@
+UINT32_DEF = @UINT32_DEF@
+UINT64_DEF = @UINT64_DEF@
+UINT8_DEF = @UINT8_DEF@
 VERSION = @VERSION@
 VERSIONSCRIPTFLAG = @VERSIONSCRIPTFLAG@
 WERR_CFLAGS = @WERR_CFLAGS@
@@ -582,6 +600,7 @@ EXTRA_DIST = examples shared libclamav.pc.in COPYING.bzip2 COPYING.lzma COPYING.
 bin_SCRIPTS = clamav-config
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libclamav.pc
+nodist_include_HEADERS = clamav-types.h
 
 # don't complain that configuration files and databases are not removed, this is intended
 distuninstallcheck_listfiles = find . -type f ! -name clamd.conf ! -name freshclam.conf ! -name daily.cvd ! -name main.cvd -print
@@ -680,6 +699,8 @@ docs/man/clamdtop.1: $(top_builddir)/config.status $(top_srcdir)/docs/man/clamdt
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 docs/man/clamsubmit.1: $(top_builddir)/config.status $(top_srcdir)/docs/man/clamsubmit.1.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
+clamav-types.h: $(top_builddir)/config.status $(srcdir)/clamav-types.h.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
 install-binSCRIPTS: $(bin_SCRIPTS)
 	@$(NORMAL_INSTALL)
 	@list='$(bin_SCRIPTS)'; test -n "$(bindir)" || list=; \
@@ -760,6 +781,27 @@ uninstall-pkgconfigDATA:
 	@list='$(pkgconfig_DATA)'; test -n "$(pkgconfigdir)" || list=; \
 	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
 	dir='$(DESTDIR)$(pkgconfigdir)'; $(am__uninstall_files_from_dir)
+install-nodist_includeHEADERS: $(nodist_include_HEADERS)
+	@$(NORMAL_INSTALL)
+	@list='$(nodist_include_HEADERS)'; test -n "$(includedir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(includedir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(includedir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_HEADER) $$files '$(DESTDIR)$(includedir)'"; \
+	  $(INSTALL_HEADER) $$files "$(DESTDIR)$(includedir)" || exit $$?; \
+	done
+
+uninstall-nodist_includeHEADERS:
+	@$(NORMAL_UNINSTALL)
+	@list='$(nodist_include_HEADERS)'; test -n "$(includedir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	dir='$(DESTDIR)$(includedir)'; $(am__uninstall_files_from_dir)
 
 # This directory's subdirectories are mostly independent; you can cd
 # into them and run 'make' without going through this Makefile.
@@ -1059,10 +1101,10 @@ distcleancheck: distclean
 	       exit 1; } >&2
 check-am: all-am
 check: check-recursive
-all-am: Makefile $(SCRIPTS) $(DATA) clamav-config.h
+all-am: Makefile $(SCRIPTS) $(DATA) $(HEADERS) clamav-config.h
 installdirs: installdirs-recursive
 installdirs-am:
-	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(pkgconfigdir)"; do \
+	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(pkgconfigdir)" "$(DESTDIR)$(includedir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-recursive
@@ -1118,7 +1160,7 @@ info: info-recursive
 
 info-am:
 
-install-data-am: install-pkgconfigDATA
+install-data-am: install-nodist_includeHEADERS install-pkgconfigDATA
 
 install-dvi: install-dvi-recursive
 
@@ -1164,7 +1206,8 @@ ps: ps-recursive
 
 ps-am:
 
-uninstall-am: uninstall-binSCRIPTS uninstall-pkgconfigDATA
+uninstall-am: uninstall-binSCRIPTS uninstall-nodist_includeHEADERS \
+	uninstall-pkgconfigDATA
 
 .MAKE: $(am__recursive_targets) all install-am install-strip
 
@@ -1179,13 +1222,14 @@ uninstall-am: uninstall-binSCRIPTS uninstall-pkgconfigDATA
 	install-binSCRIPTS install-data install-data-am install-dvi \
 	install-dvi-am install-exec install-exec-am install-html \
 	install-html-am install-info install-info-am install-man \
-	install-pdf install-pdf-am install-pkgconfigDATA install-ps \
-	install-ps-am install-strip installcheck installcheck-am \
-	installcheck-binSCRIPTS installdirs installdirs-am \
-	maintainer-clean maintainer-clean-generic mostlyclean \
-	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	tags tags-am uninstall uninstall-am uninstall-binSCRIPTS \
-	uninstall-pkgconfigDATA
+	install-nodist_includeHEADERS install-pdf install-pdf-am \
+	install-pkgconfigDATA install-ps install-ps-am install-strip \
+	installcheck installcheck-am installcheck-binSCRIPTS \
+	installdirs installdirs-am maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-generic \
+	mostlyclean-libtool pdf pdf-am ps ps-am tags tags-am uninstall \
+	uninstall-am uninstall-binSCRIPTS \
+	uninstall-nodist_includeHEADERS uninstall-pkgconfigDATA
 
 lcov:
 	($(MAKE); cd unit_tests; $(MAKE) lcov)

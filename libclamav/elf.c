@@ -38,7 +38,6 @@
 #endif
 #include <time.h>
 
-#include "cltypes.h"
 #include "elf.h"
 #include "clamav.h"
 #include "execs.h"

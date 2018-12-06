@@ -33,7 +33,6 @@
 #include <unistd.h>
 #endif
 
-#include "cltypes.h"
 #include "clamav.h"
 #include "others.h"
 

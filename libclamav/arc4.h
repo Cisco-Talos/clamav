@@ -19,7 +19,7 @@
  *  MA 02110-1301, USA.
  */
 
-#include "cltypes.h"
+#include "clamav-types.h"
 struct arc4_state {
     /* really just 8 bit, but it is faster if reads are aligned */
     uint32_t S[256];

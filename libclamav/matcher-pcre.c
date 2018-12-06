@@ -27,7 +27,6 @@
 #endif
 
 #include "clamav.h"
-#include "cltypes.h"
 #include "dconf.h"
 #include "events.h"
 #include "others.h"

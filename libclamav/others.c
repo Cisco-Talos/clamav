@@ -68,7 +68,6 @@
 
 #include "clamav.h"
 #include "others.h"
-#include "cltypes.h"
 #include "regex/regex.h"
 #include "ltdl.h"
 #include "matcher-ac.h"

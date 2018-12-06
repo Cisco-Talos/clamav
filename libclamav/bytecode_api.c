@@ -36,7 +36,6 @@
 #include <ctype.h>
 
 #include "clamav.h"
-#include "cltypes.h"
 #include "clambc.h"
 #include "bytecode.h"
 #include "bytecode_priv.h"

@@ -23,7 +23,7 @@
 #include "clamav-config.h"
 #endif
 
-#include "cltypes.h"
+#include "clamav-types.h"
 #include "arc4.h"
 #include <string.h>
 

@@ -25,7 +25,7 @@
 #define __VBA_EXTRACT_H
 
 #include "others.h"
-#include "cltypes.h"
+#include "clamav-types.h"
 #include "uniq.h"
 
 typedef struct vba_project_tag {

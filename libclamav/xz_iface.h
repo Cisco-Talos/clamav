@@ -23,7 +23,7 @@
 #define __XZ_IFACE_H
 
 #include "7z/Xz.h"
-#include "cltypes.h"
+#include "clamav-types.h"
 #include "others.h"
 
 struct CLI_XZ {
