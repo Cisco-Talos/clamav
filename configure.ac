@@ -20,7 +20,7 @@ dnl   MA 02110-1301, USA.
 AC_PREREQ([2.59])
 dnl For a release change [devel] to the real version [0.xy]
 dnl also change VERSION below
-AC_INIT([ClamAV], [0.101.0], [https://bugzilla.clamav.net/], [clamav], [https://www.clamav.net/])
+AC_INIT([ClamAV], [0.101.1], [https://bugzilla.clamav.net/], [clamav], [https://www.clamav.net/])
 
 dnl enable C++
 AC_PROG_CXX()

@@ -3,6 +3,18 @@
 Note: This file refers to the source tarball. Things described here may differ
  slightly from the binary packages.
 
+## 0.101.1
+
+ClamAV 0.101.1 is an urgent patch release to address an issue in 0.101.0
+specifically for developers that depend on libclamav.
+
+The issue in 0.101.0 is that `clamav.h` required supporting headers that were
+not provided on `make install`.
+
+To address this issue, the internal `cltypes.h` header has been replaced by
+a `clamav-types.h` that is generated on `./configure` and will be installed
+alongside `clamav.h`.
+
 ## 0.101.0
 
 ClamAV 0.101.0 is a feature release with an assortment of improvements that
