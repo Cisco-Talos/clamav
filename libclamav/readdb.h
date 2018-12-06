@@ -24,7 +24,6 @@
 #include "clamav.h"
 #include "matcher.h"
 #include "str.h"
-#include "cltypes.h"
 #include "cvd.h"
 
 #ifdef HAVE_YARA

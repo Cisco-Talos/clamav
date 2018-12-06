@@ -45,7 +45,6 @@
 #include <time.h>
 #include <zlib.h>
 
-#include "cltypes.h"
 #include "swf.h"
 #include "clamav.h"
 #include "scanners.h"

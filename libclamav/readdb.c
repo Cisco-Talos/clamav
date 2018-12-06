@@ -58,7 +58,6 @@
 #include "filetypes.h"
 #include "filetypes_int.h"
 #include "readdb.h"
-#include "cltypes.h"
 #include "default.h"
 #include "dsig.h"
 #include "asn1.h"

@@ -45,7 +45,6 @@
 
 #include "clamav.h"
 #include "scanners.h"
-#include "cltypes.h"
 #include "others.h"
 #include "fmap.h"
 #include "ishield.h"

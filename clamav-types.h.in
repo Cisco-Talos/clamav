@@ -1,0 +1,84 @@
+/*
+ *  Copyright (C) 2015-2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *
+ *  Authors: Tomasz Kojm, Micah Snyder
+ *
+ *  @GENERATE_WARNING@
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License version 2 as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ *  MA 02110-1301, USA.
+ */
+
+#ifndef __CLAMAV_TYPES_H
+#define __CLAMAV_TYPES_H
+
+@INT_TYPES_HEADER@
+
+@INT8_DEF@
+@UINT8_DEF@
+
+@INT16_DEF@
+@UINT16_DEF@
+
+@INT32_DEF@
+@UINT32_DEF@
+
+@INT64_DEF@
+@UINT64_DEF@
+
+/* Ensure we have print format types */
+/* PRIu64 should be in <inttypes.h> */
+#ifndef _SF64_PREFIX
+    @DEFINE_SF64_PREFIX@
+#endif
+
+#ifndef PRIu64
+    #define PRIu64 _SF64_PREFIX "u"
+#endif
+#ifndef PRIx64
+    #define PRIx64 _SF64_PREFIX "i"
+#endif
+#ifndef PRIi64
+    #define PRIi64 _SF64_PREFIX "x"
+#endif
+
+#ifndef STDu64
+    #define STDu64 "%" PRIu64
+    #define STDi64 "%" PRIi64
+    #define STDx64 "%" PRIx64
+#endif
+
+/* PRIu32 should also be in <inttypes.h> */
+#ifndef PRIu32
+    #ifndef _SF32_PREFIX
+        @DEFINE_SF32_PREFIX@
+    #endif
+
+    #define PRIu32 _SF32_PREFIX "u"
+    #define PRIi32 _SF32_PREFIX "i"
+    #define PRIx32 _SF32_PREFIX "x"
+#endif
+
+#ifndef STDu32
+    #define STDu32 "%" PRIu32
+    #define STDi32 "%" PRIi32
+    #define STDx32 "%" PRIx32
+#endif
+
+#ifndef INT32_MAX
+    #define INT32_MAX 2147483647
+#endif
+
+#endif

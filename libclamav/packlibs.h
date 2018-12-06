@@ -26,7 +26,7 @@
 #include "clamav-config.h"
 #endif
 
-#include "cltypes.h"
+#include "clamav-types.h"
 #include "rebuildpe.h"
 
 int cli_unfsg(const char *, char *, int, int, const char **, char **);

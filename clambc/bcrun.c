@@ -23,7 +23,6 @@
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
-#include "cltypes.h"
 #ifndef _WIN32
 #include <sys/time.h>
 #endif

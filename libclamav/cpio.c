@@ -34,7 +34,6 @@
 #include <fcntl.h>
 
 #include "clamav.h"
-#include "cltypes.h"
 #include "others.h"
 #include "cpio.h"
 #include "scanners.h"

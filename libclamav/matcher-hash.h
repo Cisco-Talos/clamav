@@ -26,7 +26,7 @@
 #include "clamav-config.h"
 #endif
 
-#include "cltypes.h"
+#include "clamav-types.h"
 #include "hashtab.h"
 
 enum CLI_HASH_TYPE {

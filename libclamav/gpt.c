@@ -33,7 +33,6 @@
 #include <zlib.h>
 
 #include "clamav.h"
-#include "cltypes.h"
 #include "others.h"
 #include "gpt.h"
 #include "mbr.h"

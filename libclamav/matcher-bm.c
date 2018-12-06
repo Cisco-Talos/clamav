@@ -29,7 +29,6 @@
 #include "clamav.h"
 #include "memory.h"
 #include "others.h"
-#include "cltypes.h"
 #include "matcher.h"
 #include "matcher-bm.h"
 #include "filetypes.h"

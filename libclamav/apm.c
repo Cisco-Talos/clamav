@@ -30,7 +30,7 @@
 #include <ctype.h>
 #include <fcntl.h>
 
-#include "cltypes.h"
+#include "clamav-types.h"
 #include "others.h"
 #include "apm.h"
 #include "prtn_intxn.h"

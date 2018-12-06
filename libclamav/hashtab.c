@@ -30,7 +30,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "cltypes.h"
 #include "clamav.h"
 #include "others.h"
 #include "hashtab.h"

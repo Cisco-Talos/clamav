@@ -39,7 +39,6 @@
 
 #include "mirman.h"
 
-#include "libclamav/cltypes.h"
 #include "libclamav/clamav.h"
 
 #include "shared/output.h"

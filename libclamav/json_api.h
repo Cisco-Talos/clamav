@@ -30,7 +30,7 @@
 #include "json.h"
 #endif
 
-#include "cltypes.h"
+#include "clamav-types.h"
 #include "others.h"
 
 #if HAVE_JSON

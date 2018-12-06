@@ -112,7 +112,6 @@ nsp1:00435A5A                 push    8000h
 
 #include <stdlib.h>
 
-#include "cltypes.h"
 #include "clamav.h"
 #include "others.h"
 #include "rebuildpe.h"

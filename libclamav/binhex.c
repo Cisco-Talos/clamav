@@ -27,7 +27,6 @@
 #include <string.h>
 
 #include "scanners.h"
-#include "cltypes.h"
 #include "others.h"
 #include "clamav.h"
 #include "fmap.h"

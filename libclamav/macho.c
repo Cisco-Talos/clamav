@@ -30,7 +30,6 @@
 #include <fcntl.h>
 
 #include "clamav.h"
-#include "cltypes.h"
 #include "others.h"
 #include "macho.h"
 #include "execs.h"

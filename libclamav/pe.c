@@ -62,7 +62,6 @@
 #include <time.h>
 #include <stdarg.h>
 
-#include "cltypes.h"
 #include "clamav.h"
 #include "others.h"
 #include "pe.h"

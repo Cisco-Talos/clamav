@@ -22,7 +22,7 @@
 #ifndef __FSG_H
 #define __FSG_H
 
-#include "cltypes.h"
+#include "clamav-types.h"
 #include "execs.h"
 
 int unfsg_200(const char *, char *, int, int, uint32_t, uint32_t, uint32_t, int);

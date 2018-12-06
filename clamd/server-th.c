@@ -61,7 +61,6 @@
 #include "shared.h"
 #include "libclamav/others.h"
 #include "libclamav/readdb.h"
-#include "libclamav/cltypes.h"
 
 #define BUFFSIZE 1024
 

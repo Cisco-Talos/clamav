@@ -22,7 +22,7 @@
 #ifndef __PETITE_H
 #define __PETITE_H
 
-#include "cltypes.h"
+#include "clamav-types.h"
 #include "pe.h"
 
 int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli_exe_section *sections, unsigned int sectcount, uint32_t Imagebase, uint32_t pep, int desc, int version, uint32_t ResRva, uint32_t ResSize);

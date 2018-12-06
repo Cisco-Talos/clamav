@@ -22,7 +22,7 @@
  */
 #ifndef BYTECODE_H
 #define BYTECODE_H
-#include "cltypes.h"
+#include "clamav-types.h"
 #include "clambc.h"
 #include <stdio.h>
 #include "fmap.h"

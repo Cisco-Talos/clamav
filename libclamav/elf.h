@@ -26,7 +26,6 @@
 #ifndef __ELF_H
 #define __ELF_H
 
-#include "cltypes.h"
 #include "clamav.h"
 #include "execs.h"
 #include "others.h"

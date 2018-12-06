@@ -33,7 +33,6 @@
 
 #include "clamav.h"
 #include "others.h"
-#include "cltypes.h"
 #include "nsis_bzlib.h"
 /* #include "zlib.h" */
 #include "nsis_zlib.h"

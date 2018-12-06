@@ -41,7 +41,6 @@
 #endif
 
 #include "clamav.h"
-#include "cltypes.h"
 #include "pe.h"
 #include "rebuildpe.h"
 #include "others.h"

@@ -34,11 +34,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <clamav.h>
 #include <ctype.h>
 
 #include "clamav.h"
-#include "cltypes.h"
 #include "others.h"
 #include "unarj.h"
 

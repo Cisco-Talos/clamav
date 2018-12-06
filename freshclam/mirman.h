@@ -19,7 +19,7 @@
 #ifndef __MIRMAN_H
 #define __MIRMAN_H
 
-#include "libclamav/cltypes.h"
+#include "clamav-types.h"
 #include "freshclamcodes.h"
 
 typedef enum mir_status_tag {
