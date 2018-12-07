@@ -145,8 +145,8 @@ Example
 
 # This option specifies the time (in seconds) after which clamd should
 # timeout if a client doesn't provide any initial command after connecting.
-# Default: 5
-#CommandReadTimeout 5
+# Default: 30
+#CommandReadTimeout 30
 
 # This option specifies how long to wait (in milliseconds) if the send buffer
 # is full.

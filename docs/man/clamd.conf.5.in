@@ -171,11 +171,13 @@ Default: 120
 .TP
 \fBCommandReadTimeout NUMBER\fR
 This option specifies the time (in seconds) after which clamd should
-timeout if a client doesn't provide any initial command after connecting.
+timeout if a client doesn't provide any initial command after connecting.  The
+default is set to 30 to avoid timeouts with TCP sockets when processing large
+messages.  If using a Unix socket, the value can be changed to 5.
 Note: the timeout for subsequents commands, and/or data chunks is specified by
 ReadTimeout.
 .br
-Default: 5
+Default: 30
 .TP
 \fBSendBufTimeout NUMBER\fR
 This option specifies how long to wait (in milliseconds) if the send buffer is full.
