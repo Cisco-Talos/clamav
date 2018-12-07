@@ -419,10 +419,10 @@
 /* #undef HAVE__INTERNAL__SHA_COLLECT */
 
 /* "Full library version number" */
-#define LIBCLAMAV_FULLVER "6.0.4"
+#define LIBCLAMAV_FULLVER "9.0.1"
 
 /* "Major library version number" */
-#define LIBCLAMAV_MAJORVER 6
+#define LIBCLAMAV_MAJORVER 9
 
 /* Define if the OS needs help to load dependent libraries for dlopen(). */
 /* #undef LTDL_DLOPEN_DEPLIBS */

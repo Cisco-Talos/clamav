@@ -24,13 +24,12 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-#include <clamav-config.h>
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
 #include "clamav.h"
+#include "clamav-config.h"
 #include "others.h"
 #include "hashtab.h"
 
