@@ -15,6 +15,15 @@ To address this issue, the internal `cltypes.h` header has been replaced by
 a `clamav-types.h` that is generated on `./configure` and will be installed
 alongside `clamav.h`.
 
+Additional Changes:
+- Increased the default CommandReadTimeout to reduce the chance of mail loss
+  if using clamav-milter with the TCP socket. Contribution by Scott Kitterman.
+
+### Acknowledgements
+
+The ClamAV team thanks the following individuals for their code submissions:
+- Scott Kitterman
+
 ## 0.101.0
 
 ClamAV 0.101.0 is a feature release with an assortment of improvements that
