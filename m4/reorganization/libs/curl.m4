@@ -12,7 +12,10 @@ if test "X$withval" = "Xyes"; then
     find_curl="yes"
 else
     if test "X$withval" != "Xno"; then
-        LIBCURL_HOME="$withval"
+        if test -f "${withval}/bin/curl-config"; then
+            LIBCURL_HOME="$withval"
+            have_curl="yes"
+        fi
     fi
 fi
 ],
