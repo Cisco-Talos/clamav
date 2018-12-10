@@ -12,7 +12,10 @@ if test "X$withval" = "Xyes"; then
     find_json="yes"
 else
     if test "X$withval" != "Xno"; then
-        LIBJSON_HOME="$withval"
+        if test -f "${withval}/include/json/json.h" -o -f "${withval}/include/json-c/json.h"; then
+            LIBJSON_HOME="$withval"
+            have_json_header="yes"
+        fi
     fi
 fi
 ],
