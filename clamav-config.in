@@ -3,7 +3,7 @@
 
 prefix=@prefix@
 exec_prefix=@exec_prefix@
-includedir=@includedir@
+includedir=@includedir@/clamav
 libdir=@libdir@
 
 usage()
@@ -55,7 +55,7 @@ while test $# -gt 0; do
 	;;
 
     --cflags)
-       	echo -I@includedir@ @CFLAGS@
+           echo -I${includedir} @CFLAGS@
        	;;
 
     --libs)
