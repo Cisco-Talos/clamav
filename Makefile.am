@@ -23,6 +23,8 @@ EXTRA_DIST = examples shared libclamav.pc.in COPYING.bzip2 COPYING.lzma COPYING.
 
 bin_SCRIPTS=clamav-config
 
+pkginclude_HEADERS = clamav-config.h platform.h
+
 if ENABLE_CLAMSUBMIT
 SUBDIRS += clamsubmit
 endif

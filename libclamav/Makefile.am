@@ -269,7 +269,7 @@ if VERSIONSCRIPT
 libclamav_la_LDFLAGS += -Wl,@VERSIONSCRIPTFLAG@,@top_srcdir@/libclamav/libclamav.map
 endif
 
-pkginclude_HEADERS = clamav.h
+pkginclude_HEADERS = clamav.h cltypes.h
 
 libclamav_la_SOURCES = \
         matcher-ac.c \
