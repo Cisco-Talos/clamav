@@ -30,7 +30,7 @@
 #define CL_THREAD_SAFE 1
 
 /* where to look for the config file */
-#define CONFDIR "C:\\ClamAV"
+/* #undef CONFDIR */
 
 /* curses header location */
 /* #undef CURSES_INCLUDE */
@@ -81,7 +81,7 @@
 /* #undef C_SOLARIS */
 
 /* Path to virus database directory. */
-#define DATADIR "C:\\ClamAV\\db"
+/* #undef DATADIR */
 
 /* "default FD_SETSIZE value" */
 #define DEFAULT_FD_SETSIZE 1024

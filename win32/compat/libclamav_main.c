@@ -62,26 +62,36 @@ BOOL APIENTRY DllMain(HMODULE hm, DWORD why, LPVOID rsrv) {
 
 /*
     The trick is:
-    1 - Reinclude clamav-config.h which is not guarded against multiple inclusions.
-	In platform.h we do undef them and re-export as extern pointers, however, since
-	platform.h is guarded, the undef won't trigger.
-	This gives back to us the original CONFDIR and DATADIR macroes.
+    1 - Define BACKUP_DATADIR and BACKUP_CONFDIR macros directly, rather than
+		defining them in clamav-config.h, because it is not guarded against multiple inclusions.
     2 - We define _static_ buffers to contain those strings.
     3 - We undef the macroes, which re-turns them back into extern pointers and we set them
-	to point to the above defined buffer.
-    4 - We now give the original macros the names of the above buffers and include optparser.c
-	This result in clam_options struct in optparser be defined with proper pointers.
+		to point to the above defined buffer.
+    4 - We now give the original macros the names of the above buffers and include optparser.c.
+		This result in clam_options struct in optparser be defined with proper pointers.
+
+	In platform.h, we export DATADIR and CONFDIR as extern pointers so they are available
+	directly to libclamav users.
 */
 
-#include "clamav-config.h"
-char _DATADIR[MAX_PATH] = DATADIR;
-char _CONFDIR[MAX_PATH] = CONFDIR;
-char _CONFDIR_CLAMD[MAX_PATH] = CONFDIR"\\clamd.conf";
-char _CONFDIR_FRESHCLAM[MAX_PATH] = CONFDIR"\\freshclam.conf";
-char _CONFDIR_MILTER[MAX_PATH] = CONFDIR"\\clamav-milter.conf";
+#ifndef BACKUP_DATADIR
+#define BACKUP_DATADIR "C:\\ClamAV\\db"
+#endif
+#ifndef BACKUP_CONFDIR
+#define BACKUP_CONFDIR "C:\\ClamAV"
+#endif
+char _DATADIR[MAX_PATH] = BACKUP_DATADIR;
+char _CONFDIR[MAX_PATH] = BACKUP_CONFDIR;
+char _CONFDIR_CLAMD[MAX_PATH] = BACKUP_CONFDIR"\\clamd.conf";
+char _CONFDIR_FRESHCLAM[MAX_PATH] = BACKUP_CONFDIR"\\freshclam.conf";
+char _CONFDIR_MILTER[MAX_PATH] = BACKUP_CONFDIR"\\clamav-milter.conf";
 
+#ifdef DATADIR
 #undef DATADIR
+#endif
+#ifdef DATADIR
 #undef CONFDIR
+#endif
 const char *DATADIR = _DATADIR;
 const char *CONFDIR = _CONFDIR;
 const char *CONFDIR_CLAMD = _CONFDIR_CLAMD;
