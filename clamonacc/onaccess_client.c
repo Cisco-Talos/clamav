@@ -62,7 +62,7 @@
 #include "libclamav/others.h"
 
 #include "onaccess_client.h"
-#include "clamdscan/proto.h"
+#include "onaccess_proto.h"
 
 unsigned long int maxstream;
 struct sockaddr_un nixsock;

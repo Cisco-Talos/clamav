@@ -147,7 +147,7 @@ int main(int argc, char **argv)
 
     gettimeofday(&t1, NULL);
 
-    /*ret = client(opts, &infected, &err);*/
+    ret = client(opts, &infected, &err);
 
     optfree(clamdopts);
     logg_close();

@@ -204,15 +204,16 @@ am__clamonacc_SOURCES_DIST = $(top_srcdir)/shared/output.c \
 	$(top_srcdir)/shared/getopt.h $(top_srcdir)/shared/actions.c \
 	$(top_srcdir)/shared/actions.h $(top_srcdir)/shared/clamdcom.c \
 	$(top_srcdir)/shared/clamdcom.h clamonacc.c onaccess_client.c \
-	onaccess_client.h onaccess_ddd.c onaccess_ddd.h onaccess_fan.c \
-	onaccess_fan.h onaccess_hash.c onaccess_hash.h \
-	onaccess_others.c onaccess_others.h onaccess_scth.c \
-	onaccess_scth.h
+	onaccess_client.h onaccess_proto.c onaccess_proto.h \
+	onaccess_ddd.c onaccess_ddd.h onaccess_fan.c onaccess_fan.h \
+	onaccess_hash.c onaccess_hash.h onaccess_others.c \
+	onaccess_others.h onaccess_scth.c onaccess_scth.h
 @BUILD_CLAMD_TRUE@am_clamonacc_OBJECTS = output.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	optparser.$(OBJEXT) misc.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	getopt.$(OBJEXT) actions.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	clamdcom.$(OBJEXT) clamonacc.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	onaccess_client.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	onaccess_proto.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	onaccess_ddd.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	onaccess_fan.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	onaccess_hash.$(OBJEXT) \
@@ -334,7 +335,7 @@ CXXDEPMODE = @CXXDEPMODE@
 CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
 DBDIR = @DBDIR@
-DEFS = @DEFS@ -DCL_NOTHREADS -DCL_NOLIBCLAMAV
+DEFS = @DEFS@ -DCL_NOLIBCLAMAV
 DEPDIR = @DEPDIR@
 DLLTOOL = @DLLTOOL@
 DSYMUTIL = @DSYMUTIL@
@@ -532,6 +533,8 @@ top_srcdir = @top_srcdir@
 @BUILD_CLAMD_TRUE@    clamonacc.c \
 @BUILD_CLAMD_TRUE@    onaccess_client.c \
 @BUILD_CLAMD_TRUE@    onaccess_client.h \
+@BUILD_CLAMD_TRUE@    onaccess_proto.c \
+@BUILD_CLAMD_TRUE@    onaccess_proto.h \
 @BUILD_CLAMD_TRUE@    onaccess_ddd.c \
 @BUILD_CLAMD_TRUE@    onaccess_ddd.h \
 @BUILD_CLAMD_TRUE@    onaccess_fan.c \
@@ -666,6 +669,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/onaccess_fan.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/onaccess_hash.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/onaccess_others.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/onaccess_proto.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/onaccess_scth.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/optparser.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/output.Po@am__quote@

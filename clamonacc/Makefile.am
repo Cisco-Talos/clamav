@@ -38,6 +38,8 @@ clamonacc_SOURCES = \
     clamonacc.c \
     onaccess_client.c \
     onaccess_client.h \
+    onaccess_proto.c \
+    onaccess_proto.h \
     onaccess_ddd.c \
     onaccess_ddd.h \
     onaccess_fan.c \
@@ -53,7 +55,7 @@ AM_CFLAGS=@WERR_CFLAGS@
 endif
 
 
-DEFS = @DEFS@ -DCL_NOTHREADS -DCL_NOLIBCLAMAV
+DEFS = @DEFS@ -DCL_NOLIBCLAMAV
 LIBS = $(top_builddir)/libclamav/libclamav_internal_utils.la  @CLAMONACC_LIBS@ @THREAD_LIBS@
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/clamd -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @SSL_CPPFLAGS@ @CLAMONACC_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
 
