@@ -11,7 +11,11 @@ Below are the steps for installing ClamAV from source on Debian and Ubuntu Linux
         ```
     2. Install library dependencies
         ```bash
-        sudo apt-get install openssl libssl-dev zlib1g-dev libpng-dev libxml2-dev libjson-c-dev libbz2-dev libpcre3-dev
+        sudo apt-get install openssl libssl-dev libcurl4-openssl-dev zlib1g-dev libpng-dev libxml2-dev libjson-c-dev libbz2-dev libpcre3-dev ncurses-dev
+        ```
+    3. (very optional) Those wishing to use clamav-milter may wish to install the following
+        ```bash
+        sudo apt-get install libmilter1.0.1 libmilter-dev
         ```
 
 2. Install the unit testing dependencies
