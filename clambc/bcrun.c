@@ -348,8 +348,13 @@ int main(int argc, char *argv[])
         print_src(opts->filename[0]);
     } else if (optget(opts, "printbcir")->enabled) {
         cli_bytetype_describe(bc);
-        cli_bytevalue_describe(bc, 0);
-        cli_bytefunc_describe(bc, 0);
+        for (unsigned i = 0; i < bc->num_func; ++i) {
+            printf("########################################################################\n"
+                   "####################### Function id %3u ################################\n"
+                   "########################################################################\n", i);
+            cli_bytevalue_describe(bc, i);
+            cli_bytefunc_describe(bc, i);
+        }
     } else {
         cli_ctx cctx;
         struct cl_engine *engine = cl_engine_new();
