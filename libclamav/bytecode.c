@@ -3220,7 +3220,7 @@ void cli_bytevalue_describe(const struct cli_bc *bc, unsigned funcid)
         printf("%3u [%3u]: ", i, total++);
         cli_bytetype_helper(bc, func->types[i]);
         if (i < func->numArgs)
-            printf("argument");
+            printf(" argument");
         printf("\n");
     }
     printf("------------------------------------------------------------------------\n");
