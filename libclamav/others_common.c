@@ -1082,7 +1082,7 @@ cl_error_t cli_get_filepath_from_filedesc(int desc, char** filepath)
 
 #endif
 
-	cli_errmsg("cli_get_filepath_from_filedesc: File path for fd [%d] is: %s\n", desc, *filepath);
+	cli_dbgmsg("cli_get_filepath_from_filedesc: File path for fd [%d] is: %s\n", desc, *filepath);
 	status = CL_SUCCESS;
 
 done:
