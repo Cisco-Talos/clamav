@@ -89,6 +89,7 @@ static inline int bcfail(const char *msg, long a, long b,
 #define TRACE_R(x) cli_dbgmsg("bytecode trace: %u, read %llx\n", pc, (long long)x);
 #define TRACE_W(x, w, p) cli_dbgmsg("bytecode trace: %u, write%d @%u %llx\n", pc, p, w, (long long)(x));
 #define TRACE_EXEC(id, dest, ty, stack) cli_dbgmsg("bytecode trace: executing %d, -> %u (%u); %u\n", id, dest, ty, stack)
+#define TRACE_INST(inst) do {unsigned bbnum = 0; printf("LibClamAV debug: bytecode trace: executing instruction "); cli_byteinst_describe(inst, &bbnum); printf("\n");} while (0)
 #define TRACE_API(s, dest, ty, stack) cli_dbgmsg("bytecode trace: executing %s, -> %u (%u); %u\n", s, dest, ty, stack)
 #else
 #define CHECK_UNREACHABLE return CL_EBYTECODE
@@ -96,6 +97,7 @@ static inline int bcfail(const char *msg, long a, long b,
 #define TRACE_R(x)
 #define TRACE_W(x, w, p)
 #define TRACE_EXEC(id, dest, ty, stack)
+#define TRACE_INST(inst)
 #define TRACE_API(s, dest, ty, stack)
 #endif
 
@@ -725,6 +727,9 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
                 break;
             }
         }
+
+        TRACE_INST(inst);
+
         switch (inst->interp_op) {
             DEFINE_BINOP(OP_BC_ADD, res = op0 + op1);
             DEFINE_BINOP(OP_BC_SUB, res = op0 - op1);
