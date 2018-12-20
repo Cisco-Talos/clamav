@@ -1281,12 +1281,14 @@ static void pdf_parse_encrypt(struct pdf_struct *pdf, const char *enc, int len)
     uint32_t objid;
 
     if (len >= 16 && !strncmp(enc, "/EncryptMetadata", 16)) {
-        q = cli_memstr(enc+16, len-16, "/Encrypt", 8);
-        if (!q)
-            return;
+        do {
+            q = cli_memstr(enc + 16, len - 16, "/Encrypt", 8);
+            if (!q)
+              return;
 
-        len -= q - enc;
-        enc = q;
+           len -= q - enc;
+           enc = q;
+        } while (len >= 8 && *(enc+8) == 'M');
     }
 
     q = enc + 8;
