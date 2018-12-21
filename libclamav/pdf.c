@@ -2534,10 +2534,10 @@ static char *pdf_readstring(const char *q0, int len, const char *key, unsigned *
                         case '8':
                         case '9':
                             /* octal escape */
-                            if (q + 2 < end)
-                                q++;
-
-                            *s++ = 64 * (q[0] - '0') + 8 * (q[1] - '0') + (q[2] - '0');
+                            if (q + 2 < end) {
+                                *s++ = 64*(q[0] - '0') + 8*(q[1] - '0') + (q[2] - '0');
+                                q++; q++;
+                            }
                             break;
                         default:
                             /* ignore */
