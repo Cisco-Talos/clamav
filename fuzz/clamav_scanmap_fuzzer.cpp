@@ -33,7 +33,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
-#include <memory>
+#include <string.h>
 
 #include "clamav.h"
 

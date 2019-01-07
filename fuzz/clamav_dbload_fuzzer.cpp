@@ -34,7 +34,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <memory>
 
 #include "clamav.h"
 
