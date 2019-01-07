@@ -104,12 +104,12 @@ static char *checkpe(char *dst, uint32_t dsize, char *pehdr, uint32_t *valign, u
   if (!CLI_ISCONTAINED(dst, dsize,  pehdr, 0xf8)) return NULL;
 
   if (cli_readint32(pehdr) != 0x4550 ) return NULL;
-  
+
   if (!(*valign=cli_readint32(pehdr+0x38))) return NULL;
-  
+
   sections = pehdr+0xf8;
   if (!(*sectcnt = (unsigned char)pehdr[6] + (unsigned char)pehdr[7]*256)) return NULL;
-  
+
   if (!CLI_ISCONTAINED(dst, dsize, sections, *sectcnt*0x28)) return NULL;
 
   return sections;
@@ -137,7 +137,7 @@ static int pefromupx (const char *src, uint32_t ssize, char *dst, uint32_t *dsiz
   if (!valign && CLI_ISCONTAINED(src, ssize - 8, src + ep - upx1 + 0x80, 8)) {
     const char *pt = &src[ep - upx1 + 0x80];
     cli_dbgmsg("UPX: bad magic - scanning for imports\n");
-    
+
     while ((pt=cli_memstr(pt, ssize - (pt-src) - 8, "\x8d\xbe", 2))) {
       if (pt[6] == '\x8b' && pt[7] == '\x07') { /* lea edi, [esi+imports] / mov eax, [edi] */
 	valign=pt-src+2-ep+upx1;
@@ -149,9 +149,9 @@ static int pefromupx (const char *src, uint32_t ssize, char *dst, uint32_t *dsiz
 
   if (valign && CLI_ISCONTAINED(src, ssize, src + ep - upx1 + valign, 4)) {
     imports = dst + cli_readint32(src + ep - upx1 + valign);
-    
+
     realstuffsz = imports-dst;
-    
+
     if (realstuffsz >= *dsize ) {
       cli_dbgmsg("UPX: wrong realstuff size\n");
       /* fallback and eventually craft */
@@ -167,7 +167,7 @@ static int pefromupx (const char *src, uint32_t ssize, char *dst, uint32_t *dsiz
 	}
 	pehdr++;
       }
-      
+
       pehdr+=4;
       if (!(sections=checkpe(dst, *dsize, pehdr, &valign, &sectcnt))) pehdr=NULL;
     }
@@ -207,17 +207,17 @@ static int pefromupx (const char *src, uint32_t ssize, char *dst, uint32_t *dsiz
   if (!sections)
     sectcnt = 0;
   foffset = PESALIGN(foffset+0x28*sectcnt, valign);
-  
+
   for (upd = 0; upd <sectcnt ; upd++) {
     uint32_t vsize=PESALIGN((uint32_t)cli_readint32(sections+8), valign);
     uint32_t urva=PEALIGN((uint32_t)cli_readint32(sections+12), valign);
-    
+
     /* Within bounds ? */
     if (!CLI_ISCONTAINED(upx0, realstuffsz, urva, vsize)) {
       cli_dbgmsg("UPX: Sect %d out of bounds - giving up rebuild\n", upd);
       return 0;
     }
-    
+
     cli_writeint32(sections+8, vsize);
     cli_writeint32(sections+12, urva);
     cli_writeint32(sections+16, vsize);
@@ -227,7 +227,7 @@ static int pefromupx (const char *src, uint32_t ssize, char *dst, uint32_t *dsiz
         return 0;
     }
     foffset+=vsize;
-    
+
     sections+=0x28;
   }
 
@@ -238,7 +238,7 @@ static int pefromupx (const char *src, uint32_t ssize, char *dst, uint32_t *dsiz
     cli_dbgmsg("UPX: malloc failed - giving up rebuild\n");
     return 0;
   }
-  
+
   memcpy(newbuf, HEADERS, 0xd0);
   memcpy(newbuf+0xd0, pehdr,0xf8+0x28*sectcnt);
   sections = pehdr+0xf8;
@@ -301,7 +301,7 @@ int upx_inflate2b(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, u
   int32_t backbytes, unp_offset = -1;
   uint32_t backsize, myebx = 0, scur=0, dcur=0, i, magic[]={0x108,0x110,0xd5,0};
   int oob;
-  
+
   while (1) {
     while ((oob = doubleebx(src, &myebx, &scur, ssize)) == 1) {
       if (scur>=ssize || dcur>=*dsize)
@@ -311,7 +311,7 @@ int upx_inflate2b(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, u
 
     if ( oob == -1 )
       return -1;
-    
+
     backbytes = 1;
 
     while (1) {
@@ -325,7 +325,7 @@ int upx_inflate2b(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, u
     }
 
     backbytes-=3;
-  
+
     if ( backbytes >= 0 ) {
 
       if (scur>=ssize)
@@ -405,7 +405,7 @@ int upx_inflate2d(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, u
 
     backsize = 0;
     backbytes-=3;
-  
+
     if ( backbytes >= 0 ) {
 
       if (scur>=ssize)
@@ -423,7 +423,7 @@ int upx_inflate2d(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, u
       if ( (backsize = (uint32_t)doubleebx(src, &myebx, &scur, ssize)) == 0xffffffff )
         return -1;
     }
- 
+
     if ( (oob = doubleebx(src, &myebx, &scur, ssize)) == -1 )
       return -1;
     backsize = backsize*2 + oob;
@@ -439,7 +439,7 @@ int upx_inflate2d(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, u
       backsize+=2;
     }
 
-    if ( (uint32_t)unp_offset < 0xfffffb00 ) 
+    if ( (uint32_t)unp_offset < 0xfffffb00 )
       backsize++;
 
     backsize++;
@@ -485,7 +485,7 @@ int upx_inflate2e(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, u
     }
 
     backbytes-=3;
-  
+
     if ( backbytes >= 0 ) {
 
       if (scur>=ssize)
@@ -526,8 +526,8 @@ int upx_inflate2e(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, u
 	  backsize+=2;
 	}
     }
- 
-    if ( (uint32_t)unp_offset < 0xfffffb00 ) 
+
+    if ( (uint32_t)unp_offset < 0xfffffb00 )
       backsize++;
 
     backsize+=2;
@@ -551,7 +551,7 @@ int upx_inflatelzma(const char *src, uint32_t ssize, char *dst, uint32_t *dsize,
   cli_writeint32(fake_lzmahdr + 1, *dsize);
   uint8_t lc = properties & 0xff;
   uint8_t lp = (properties >> 8) & 0xff;
-  uint8_t pb = (properties >> 16) & 0xff; 
+  uint8_t pb = (properties >> 16) & 0xff;
   if (lc >= 9 || lp >= 5 || pb >= 5)
       return -1;
 
